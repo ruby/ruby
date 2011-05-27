@@ -1270,7 +1270,7 @@ rb_file_chardev_p(VALUE obj, VALUE fname)
  * Return <code>true</code> if the named file exists.
  */
 
-VALUE // TODO: Mark this as static again
+VALUE
 rb_file_exist_p(VALUE obj, VALUE fname)
 {
     struct stat st;

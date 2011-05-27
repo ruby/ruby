@@ -36,7 +36,7 @@ void rb_provide(const char *feature);
 static void rb_provide_feature(VALUE);
 
 /* 
- * TODO: These functions are all conceptually related, and should be extracted
+ * These functions are all conceptually related, and could be extracted
  * into a separate file.
  */
 static VALUE rb_locate_file(VALUE);
@@ -49,7 +49,7 @@ static int rb_path_is_relative(VALUE);
 VALUE rb_get_expanded_load_path();
 
 /* 
- * TODO: These functions are all conceptually related, and should be extracted
+ * These functions are all conceptually related, and could be extracted
  * into a separate file.
  */
 static VALUE rb_cLoadedFeaturesProxy;
@@ -57,16 +57,33 @@ static void rb_rehash_loaded_features();
 static VALUE rb_loaded_features_hook(int, VALUE*, VALUE);
 static void define_loaded_features_proxy();
 
-VALUE ary_new(VALUE, long); // array.c
+VALUE ary_new(VALUE, long);          // array.c
+VALUE rb_file_exist_p(VALUE, VALUE); // file.c
 
-static const char *const loadable_ext[] = {
-    ".rb", 
-    DLEXT,
+const char *available_extensions[] = {
+  ".rb",
+  DLEXT,
 #ifdef DLEXT2
-    DLEXT2,
+  DLEXT2,
 #endif
-    0
+  ""
 };
+
+#ifdef DLEXT2
+VALUE available_ext_rb_str[4];
+#else
+VALUE available_ext_rb_str[3];
+#endif
+
+const char *alternate_dl_extensions[] = {
+  DLEXT,
+#ifdef DLEXT2
+  DLEXT2
+#endif
+};
+
+#define CHAR_ARRAY_LEN(array) sizeof(array) / sizeof(char*)
+#define VALUE_ARRAY_LEN(array) sizeof(array) / sizeof(VALUE)
 
 VALUE
 rb_get_load_path(void)
@@ -481,39 +498,11 @@ rb_f_autoload_p(VALUE obj, VALUE sym)
     return rb_mod_autoload_p(klass, sym);
 }
 
-VALUE
-rb_file_exist_p(VALUE obj, VALUE path);
-
 static int
 rb_feature_exists(VALUE expanded_path)
 {
   return rb_funcall(rb_cFile, rb_intern("file?"), 1, expanded_path) == Qtrue;
 }
-
-const char *available_extensions[] = {
-  ".rb",
-  DLEXT,
-#ifdef DLEXT2
-  DLEXT2,
-#endif
-  ""
-};
-
-#ifdef DLEXT2
-VALUE available_ext_rb_str[4];
-#else
-VALUE available_ext_rb_str[3];
-#endif
-
-const char *alternate_dl_extensions[] = {
-  DLEXT,
-#ifdef DLEXT2
-  DLEXT2
-#endif
-};
-
-#define CHAR_ARRAY_LEN(array) sizeof(array) / sizeof(char*)
-#define VALUE_ARRAY_LEN(array) sizeof(array) / sizeof(VALUE)
 
 static VALUE
 rb_locate_file_with_extension(VALUE base_file_name, VALUE extension) {
