@@ -1,3 +1,7 @@
+Sat May 28 02:06:26 2011  KOSAKI Motohiro  <kosaki@KOSAKI-Motohiro-no-MacBook-Pro.local>
+
+	* io.c (fill_cbuf): Fix test-all crash.
+
 Sat May 28 00:58:40 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/ostruct.rb (method_missing): Handle [] and []= correctly.
