@@ -400,6 +400,12 @@ class Tester < Test::Unit::TestCase
     assert_equal( '<a><b/><c/></a>', doc.to_s )
   end
 
+  def test_text_frozen
+    string = "Frozen".freeze
+    text = Text.new(string)
+    assert_equal(string, text.to_s)
+  end
+
   def test_xmldecl
     source = "<?xml version='1.0'?>"
     # test args

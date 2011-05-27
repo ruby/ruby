@@ -132,7 +132,6 @@ class Tempfile < DelegateClass(File)
     ObjectSpace.define_finalizer(self, @clean_proc)
 
     create(basename, *rest) do |tmpname, n, opts|
-      lock = tmpname + '.lock'
       mode = File::RDWR|File::CREAT|File::EXCL
       perm = 0600
       if opts
@@ -142,12 +141,9 @@ class Tempfile < DelegateClass(File)
       else
         opts = perm
       end
-      self.class.mkdir(lock)
-      begin
+      self.class.locking(tmpname) do
         @data[1] = @tmpfile = File.open(tmpname, mode, opts)
         @data[0] = @tmpname = tmpname
-      ensure
-        self.class.rmdir(lock)
       end
       @mode = mode & ~(File::CREAT|File::EXCL)
       perm or opts.freeze
@@ -326,18 +322,22 @@ class Tempfile < DelegateClass(File)
       end
     end
 
-    # :call-seq:
-    #   mkdir(string, [integer]) -> 0
-    #
-    # Synonym for Dir.mkdir.
+    # :stopdoc:
+
+    # yields with locking for +tmpname+ and returns the result of the
+    # block.
+    def locking(tmpname)
+      lock = tmpname + '.lock'
+      mkdir(lock)
+      yield
+    ensure
+      rmdir(lock) if lock
+    end
+
     def mkdir(*args)
       Dir.mkdir(*args)
     end
 
-    # :call-seq:
-    #   rmdir(string) -> 0
-    #
-    # Synonym for Dir.rmdir.
     def rmdir(*args)
       Dir.rmdir(*args)
     end

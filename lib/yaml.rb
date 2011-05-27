@@ -30,6 +30,14 @@ module YAML
   ENGINE = YAML::EngineManager.new
 end
 
+begin
+  require 'psych'
+rescue LoadError
+  warn "#{caller[0]}:"
+  warn "It seems your ruby installation is missing psych (for YAML output)."
+  warn "To eliminate this warning, please install libyaml and reinstall your ruby."
+end
+
 engine = (!defined?(Syck) && defined?(Psych) ? 'psych' : 'syck')
 
 module Syck

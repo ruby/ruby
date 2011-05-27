@@ -541,7 +541,7 @@ module Net
     end
 
     # internal method for Net::POP3.start
-    def do_start(account, password)
+    def do_start(account, password) # :nodoc:
       s = timeout(@open_timeout) { TCPSocket.open(@address, port) }
       if use_ssl?
         raise 'openssl library not installed' unless defined?(OpenSSL)
@@ -577,7 +577,7 @@ module Net
     private :do_start
 
     # Does nothing
-    def on_connect
+    def on_connect # :nodoc:
     end
     private :on_connect
 
@@ -592,7 +592,7 @@ module Net
     # - number counter for mails
     # - number counter for bytes
     # - quits the current command, if any
-    def do_finish
+    def do_finish # :nodoc:
       @mails = nil
       @n_mails = nil
       @n_bytes = nil
@@ -608,7 +608,7 @@ module Net
     # Returns the current command.
     #
     # Raises IOError if there is no active socket
-    def command
+    def command # :nodoc:
       raise IOError, 'POP session not opened yet' \
                                       if not @socket or @socket.closed?
       @command

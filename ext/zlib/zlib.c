@@ -2678,29 +2678,27 @@ get_gzfile(VALUE obj)
  *
  * == Method Catalogue
  *
- * - wrap
- * - open
+ * - ::wrap
+ * - ::open (Zlib::GzipReader::open and Zlib::GzipWriter::open)
  * - #close
  * - #closed?
  * - #comment
- * - #comment=
+ * - comment= (Zlib::GzipWriter#comment=)
  * - #crc
- * - #eof?
+ * - eof? (Zlib::GzipReader#eof?)
  * - #finish
  * - #level
- * - #lineno
- * - #lineno=
+ * - lineno (Zlib::GzipReader#lineno)
+ * - lineno= (Zlib::GzipReader#lineno=)
  * - #mtime
- * - #mtime=
+ * - mtime= (Zlib::GzipWriter#mtime=)
  * - #orig_name
- * - #orig_name=
+ * - orig_name (Zlib::GzipWriter#orig_name=)
  * - #os_code
- * - #path
+ * - path (when the underlying IO supports #path)
  * - #sync
  * - #sync=
  * - #to_io
- * - #total_in
- * - #total_out
  *
  * (due to internal structure, documentation may appear under Zlib::GzipReader
  * or Zlib::GzipWriter)
@@ -2899,7 +2897,7 @@ rb_gzfile_lineno(VALUE obj)
 }
 
 /*
- * Document-method: Zlib::GzipFile#set_lineno
+ * Document-method: Zlib::GzipReader#lineno=
  *
  * Specify line number of the last row read from this file.
  */
@@ -2912,7 +2910,7 @@ rb_gzfile_set_lineno(VALUE obj, VALUE lineno)
 }
 
 /*
- * Document-method: Zlib::GzipFile#set_mtime
+ * Document-method: Zlib::GzipWriter#mtime=
  *
  * Specify the modification time (+mtime+) in the gzip header.
  * Using a Fixnum or Integer
@@ -2938,7 +2936,7 @@ rb_gzfile_set_mtime(VALUE obj, VALUE mtime)
 }
 
 /*
- * Document-method: Zlib::GzipFile#set_orig_name
+ * Document-method: Zlib::GzipFile#orig_name=
  *
  * Specify the original name (+str+) in the gzip header.
  */

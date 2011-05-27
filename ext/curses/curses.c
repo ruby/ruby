@@ -957,7 +957,7 @@ curses_use_default_colors(VALUE obj)
 
 #if defined(HAVE_TABSIZE)
 /*
- * Document-method: TABSIZE=
+ * Document-method: Curses.TABSIZE=
  * call-seq: TABSIZE=(value)
  *
  * Sets the TABSIZE to Integer +value+
@@ -987,7 +987,7 @@ curses_tabsize_get(VALUE ojb)
 
 #if defined(HAVE_ESCDELAY)
 /*
- * call-seq: ESCDELAY=(value)
+ * call-seq: Curses.ESCDELAY=(value)
  *
  * Sets the ESCDELAY to Integer +value+
  */
@@ -1359,9 +1359,8 @@ DEFINE_MOUSE_GET_MEMBER(curs_mouse_z, z)
 /*
  * Document-method: Curses::MouseEvent.bstate
  *
- * Returns the current mouse's B state.
- *
- * ???
+ * Returns the current mouse's button state.  Use this with the button state
+ * constants to determine which buttons were pressed.
  */
 DEFINE_MOUSE_GET_MEMBER(curs_mouse_bstate, bstate)
 #undef define_curs_mouse_member
@@ -2464,23 +2463,8 @@ window_timeout(VALUE obj, VALUE delay)
  *
  * === Modules
  *
- * * Curses - basis for the curses implementation
- * * Curses::Key - the collection of constants
- *
- * === Constants
- *
- * For whatever reason, these are not picked up in the RDoc
- * These are Integer of the colors.
- *
- * * COLOR_BLACK	= 0
- * * COLOR_RED		= 1
- * * COLOR_GREEN	= 2
- * * COLOR_YELLOW	= 3
- * * COLOR_BLUE		= 4
- * * COLOR_MAGENTA	= 5
- * * COLOR_CYAN		= 6
- * * COLOR_WHITE	= 7
- *
+ * Curses:: The curses implementation
+ * Curses::Key:: Collection of constants for keypress events
  *
  * == Examples
  *
@@ -2741,56 +2725,56 @@ Init_curses(void)
     /*
      * Document-const: Curses::COLORS
      *
-     * Integer of the colors available
+     * Number of the colors available
      */
     rb_curses_define_const(COLORS);
 #endif
     /*
      * Document-const: Curses::COLOR_BLACK
      *
-     * Integer of the color black
+     * Value of the color black
      */
     rb_curses_define_const(COLOR_BLACK);
     /*
      * Document-const: COLOR_RED
      *
-     * Integer of the color red
+     * Value of the color red
      */
     rb_curses_define_const(COLOR_RED);
     /*
      * Document-const: COLOR_GREEN
      *
-     * Integer of the color green
+     * Value of the color green
      */
     rb_curses_define_const(COLOR_GREEN);
     /*
      * Document-const: COLOR_YELLOW
      *
-     * Integer of the color yellow
+     * Value of the color yellow
      */
     rb_curses_define_const(COLOR_YELLOW);
     /*
      * Document-const: COLOR_BLUE
      *
-     * Integer of the color blue
+     * Value of the color blue
      */
     rb_curses_define_const(COLOR_BLUE);
     /*
      * Document-const: COLOR_MAGENTA
      *
-     * Integer of the color magenta
+     * Value of the color magenta
      */
     rb_curses_define_const(COLOR_MAGENTA);
     /*
      * Document-const: COLOR_CYAN
      *
-     * Integer of the color cyan
+     * Value of the color cyan
      */
     rb_curses_define_const(COLOR_CYAN);
     /*
      * Document-const: COLOR_WHITE
      *
-     * Integer of the color white
+     * Value of the color white
      */
     rb_curses_define_const(COLOR_WHITE);
 #endif /* USE_COLOR */
@@ -2883,7 +2867,7 @@ Init_curses(void)
 #ifdef KEY_MIN
     /* Document-const: MIN
      *
-     * ???
+     * The minimum allowed curses key value.
      */
     rb_curses_define_const(KEY_MIN);
     rb_define_const(mKey, "MIN", INT2NUM(KEY_MIN));
@@ -3616,7 +3600,7 @@ Init_curses(void)
 #ifdef KEY_MAX
     /* Document-const: MAX
      *
-     * ???
+     * The maximum allowed curses key value.
      */
     rb_curses_define_const(KEY_MAX);
     rb_define_const(mKey, "MAX", INT2NUM(KEY_MAX));

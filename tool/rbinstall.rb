@@ -544,12 +544,13 @@ install?(:ext, :comm, :gem) do
 
   destdir = File.join(gpath, directories.grep(/^spec/)[0])
   default_gems = [
-    ['rake', 'rake.rb'],
-    ['rdoc', 'rdoc.rb'],
-    ['minitest', 'minitest/unit.rb'],
+    ['rake', 'lib/rake.rb'],
+    ['rdoc', 'lib/rdoc.rb'],
+    ['minitest', 'lib/minitest/unit.rb'],
+    ['json', 'ext/json/lib/json/version.rb'],
   ]
   default_gems.each do |name, src|
-    src = File.join(srcdir, "lib", src)
+    src = File.join(srcdir, src)
     version = open(src) {|f| f.find {|s| /^\s*\w*VERSION\s*=(?!=)/ =~ s}} or next
     version = version.split(%r"=\s*", 2)[1].strip[/\A([\'\"])(.*?)\1/, 2]
     puts "#{" "*30}#{name} #{version}"

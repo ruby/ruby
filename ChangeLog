@@ -1,3 +1,147 @@
+Sat May 28 03:04:27 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (fill_cbuf): return MORE_CHAR_SUSPENDED when cbuf is not empty.
+
+Sat May 28 02:22:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* string.c (rb_str_bytesize): rb_str_bytesize() should use LONG2NUM().
+	  Patch by Nikolai Weibull. [Bug #4789] [ruby-core:36511]
+
+Sat May 28 02:06:26 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (fill_cbuf): Fix test-all crash.
+
+Sat May 28 00:58:40 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/ostruct.rb (method_missing): Handle [] and []= correctly.
+	  Based on a patch by Caius Durling, bug #4179 [ruby-core:33792]
+
+Fri May 27 23:56:54 2011  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_core.rb (Tester::test_text_frozen): split frozen
+	  string test. refs #4783
+
+Fri May 27 22:46:23 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (gem): install gemspec of json.  fixed #4784
+
+Fri May 27 22:45:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (validate_enc_binmode): do not clear textmode flag if
+	  default.  fixed #4732
+
+	* io.c (fill_cbuf): finish reading at EOF.
+
+Fri May 27 11:31:51 2011  misfo <tedwardo2@gmail.com>
+
+	* lib/rexml/text.rb (REXML::Text#initialize): prevent an error
+	  when passing a frozen string to REXML::Text.new
+
+	  dup the string passed in instead of cloning so that it's frozen
+	  state is ignored
+
+Fri May 27 08:47:26 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* thread.c (ppoll): typo bug fix.
+
+Fri May 27 08:35:04 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: hang-up at exit before calling Tk.mainloop.
+
+	* ext/tk/lib/tk/extconf.rb: cannot make on MinGW [Ruby 1.9 - Bug #4141].
+
+Thu May 27 00:34:07 2011  James Edward Gray II  <jeg2@ruby-lang.org>
+
+    * lib/csv.rb: Enhance each() to support Enumerator.
+
+Thu May 26 10:32:11 2011  James Edward Gray II  <jeg2@ruby-lang.org>
+
+    * lib/csv.rb: Documentation improvements from Ysiad Ferreiras.
+      [Ruby 1.9 - Bug #4785]
+
+Thu May 26 15:42:02 2011  Cezary Baginski <cezary.baginski@gmail.com>
+
+	* lib/xmlrpc/parser.rb (FaultException): fix to_s and inspect
+
+	* test/xmlrpc/parser.rb: test for the above
+
+Wed May 25 11:54:31 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/curses/curses.c:  Remove color constants block.
+	  [Ruby 1.9 - Bug #4748]
+
+Wed May 25 09:56:45 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/curses/curses.c:  Add missing documentation for button state, MIN
+	  and MAX comments.  Add Curses. to TABSIZE= and ESCDELAY= methods.
+	  [Ruby 1.9 - Bug #4747]
+
+Wed May 25 09:35:31 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/benchmark.rb:  Restore nodoc for Benchmark::Job and
+	  Benchmark::Report.  [Ruby 1.9 - Bug #4726]
+
+Wed May 25 09:29:38 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/pop.rb:  Hide implementation details from RDoc.
+	  [Ruby 1.9 - Bug #4711]
+
+Wed May 25 09:26:29 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/ftp.rb:  Add :nodoc: for private methods.
+	  [Ruby 1.9 - Bug #4710]
+
+Wed May 25 09:19:17 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c:  Fix Document-method declarations.  Improve
+	  Zlib::GzipFile's method catalog.  [Ruby 1.9 - Bug #4695]
+
+Wed May 25 08:22:12 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/erb.rb:  Hide documentation for implementation details of ERB.
+	  [Ruby 1.9 - Bug #4694]
+
+Wed May 25 07:58:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile.{mkdir,rmdir}): revert for backward
+	  compatibility.
+
+Wed May 25 07:13:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* spec/README: update the description.
+
+Wed May 25 07:12:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile.{lock,unlock}_tempfile): refactor.
+
+Tue May 24 17:30:36 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* spec/README: fix typo.
+	  patched by bowsersenior. https://github.com/ruby/ruby/pull/24
+
+Tue May 24 07:06:34 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: fail to start Tk.mainloop (exit immediately) on
+	  some environment (reported on [ruby-talk:381444]).
+
+	* ext/tk/lib/tk/canvas.rb: support creating a canvas item object from
+	  an item ID number.
+
+	* ext/tk/lib/tk/image.rb: import documents which are pull-requested.
+	  [Ruby 1.9 - Feature #4595]
+
+	* ext/tk/lib/tk/extconf.rb: search directories for 64bit library (e.g.
+	  /usr/lib64), add some new configure options (see README.tcltklib),
+	  and bug fix.
+
+	* ext/tk/lib/tk/README.tcltklib: modify docs for some new configure
+	  options.
+
+Tue May 24 04:01:46 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/yaml.rb: switch default YAML engine to Psych, old syck engine
+	  may be enabled via YAML::ENGINE.yamler = "syck". [ruby-core:36374]
+
 Mon May 23 09:45:26 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* include/ruby/defines.h (CASEFOLD_FILESYSTEM): Revert r30508. Forgot to

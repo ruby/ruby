@@ -2759,14 +2759,14 @@ int ppoll(struct pollfd *fds, nfds_t nfds,
 	    timeout_ms = -1;
 	else {
 	    tmp = ts->tv_sec * 1000;
-	    tmp2 = tv->tv_nsec / (1000 * 1000);
+	    tmp2 = ts->tv_nsec / (1000 * 1000);
 	    if (TIMET_MAX - tmp < tmp2)
 		timeout_ms = -1;
 	    else
 		timeout_ms = tmp + tmp2;
 	}
     } else
-	timeout = -1;
+	timeout_ms = -1;
 
     return poll(fds, nfds, timeout_ms);
 }

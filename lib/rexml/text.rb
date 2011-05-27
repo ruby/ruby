@@ -105,7 +105,7 @@ module REXML
       @normalized = @unnormalized = nil
 
       if arg.kind_of? String
-        @string = arg.clone
+        @string = arg.dup
         @string.squeeze!(" \n\t") unless respect_whitespace
       elsif arg.kind_of? Text
         @string = arg.to_s

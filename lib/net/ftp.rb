@@ -152,10 +152,12 @@ module Net
       end
     end
 
-    # Sends a command to destination host, with the current binary sendmode type.
-    # If binary mode is +true+, then send "TYPE I" (image)
-    # else send "TYPE A" (ascii).
-    def send_type_command
+    # Sends a command to destination host, with the current binary sendmode
+    # type.
+    #
+    # If binary mode is +true+, then "TYPE I" (image) is sent, otherwise "TYPE
+    # A" (ascii) is sent.
+    def send_type_command # :nodoc:
       if @binary
         voidcmd("TYPE I")
       else
@@ -169,7 +171,7 @@ module Net
     # transaction with binary sendmode of +newmode+.
     #
     # +newmode+ is either +true+ or +false+
-    def with_binary(newmode)
+    def with_binary(newmode) # :nodoc:
       oldmode = binary
       self.binary = newmode
       begin
@@ -181,21 +183,22 @@ module Net
     private :with_binary
 
     # Obsolete
-    def return_code
+    def return_code # :nodoc:
       $stderr.puts("warning: Net::FTP#return_code is obsolete and do nothing")
       return "\n"
     end
 
     # Obsolete
-    def return_code=(s)
+    def return_code=(s) # :nodoc:
       $stderr.puts("warning: Net::FTP#return_code= is obsolete and do nothing")
     end
 
     # Contructs a socket with +host+ and +port+.
-    # If SOCKSSocket is defined and the environment (ENV)
-    # defines SOCKS_SERVER, then a SOCKSSocket is returned,
-    # else a TCPSocket is returned.
-    def open_socket(host, port)
+    #
+    # If SOCKSSocket is defined and the environment (ENV) defines
+    # SOCKS_SERVER, then a SOCKSSocket is returned, else a TCPSocket is
+    # returned.
+    def open_socket(host, port) # :nodoc:
       if defined? SOCKSSocket and ENV["SOCKS_SERVER"]
         @passive = true
         return SOCKSSocket.open(host, port)
@@ -233,9 +236,9 @@ module Net
       end
     end
 
-    # If string +s+ includes the PASS command (password),
-    # then the contents of the password are cleaned from the string using "*"
-    def sanitize(s)
+    # If string +s+ includes the PASS command (password), then the contents of
+    # the password are cleaned from the string using "*"
+    def sanitize(s) # :nodoc:
       if s =~ /^PASS /i
         return s[0, 5] + "*" * (s.length - 5)
       else
@@ -244,9 +247,9 @@ module Net
     end
     private :sanitize
 
-    # Ensures that +line+ has a control return / line feed (CRLF)
-    # and writes it to the socket.
-    def putline(line)
+    # Ensures that +line+ has a control return / line feed (CRLF) and writes
+    # it to the socket.
+    def putline(line) # :nodoc:
       if @debug_mode
         print "put: ", sanitize(line), "\n"
       end
@@ -255,9 +258,8 @@ module Net
     end
     private :putline
 
-    # Reads a line from the sock.
-    # If EOF, then it will raise EOFError
-    def getline
+    # Reads a line from the sock.  If EOF, then it will raise EOFError
+    def getline # :nodoc:
       line = @sock.readline # if get EOF, raise EOFError
       line.sub!(/(\r\n|\n|\r)\z/n, "")
       if @debug_mode
@@ -268,7 +270,7 @@ module Net
     private :getline
 
     # Receive a section of lines until the response code's match.
-    def getmultiline
+    def getmultiline # :nodoc:
       line = getline
       buff = line
       if line[3] == ?-
@@ -283,9 +285,10 @@ module Net
     private :getmultiline
 
     # Recieves a response from the destination host.
-    # Either returns the response code, FTPTempError,
-    # FTPPermError, or FTPProtoError
-    def getresp
+    #
+    # Returns the response code or raises FTPTempError, FTPPermError, or
+    # FTPProtoError
+    def getresp # :nodoc:
       @last_response = getmultiline
       @last_response_code = @last_response[0, 3]
       case @last_response_code
@@ -302,8 +305,10 @@ module Net
     private :getresp
 
     # Recieves a response.
-    # Raises FTPReplyError if the first position of the response code is not equal 2.
-    def voidresp
+    #
+    # Raises FTPReplyError if the first position of the response code is not
+    # equal 2.
+    def voidresp # :nodoc:
       resp = getresp
       if resp[0] != ?2
         raise FTPReplyError, resp
@@ -332,7 +337,7 @@ module Net
     end
 
     # Constructs and send the appropriate PORT (or EPRT) command
-    def sendport(host, port)
+    def sendport(host, port) # :nodoc:
       af = (@sock.peeraddr)[0]
       if af == "AF_INET"
         cmd = "PORT " + (host.split(".") + port.divmod(256)).join(",")
@@ -348,7 +353,7 @@ module Net
     # Constructs a TCPServer socket, and sends it the PORT command
     #
     # Returns the constructed TCPServer socket
-    def makeport
+    def makeport # :nodoc:
       sock = TCPServer.open(@sock.addr[3], 0)
       port = sock.addr[1]
       host = sock.addr[3]
@@ -358,7 +363,7 @@ module Net
     private :makeport
 
     # sends the appropriate command to enable a passive connection
-    def makepasv
+    def makepasv # :nodoc:
       if @sock.peeraddr[0] == "AF_INET"
         host, port = parse227(sendcmd("PASV"))
       else
@@ -370,7 +375,7 @@ module Net
     private :makepasv
 
     # Constructs a connection for transferring data
-    def transfercmd(cmd, rest_offset = nil)
+    def transfercmd(cmd, rest_offset = nil) # :nodoc:
       if @passive
         host, port = makepasv
         conn = open_socket(host, port)
@@ -914,7 +919,7 @@ module Net
     # (Entering Passive Mode (h1,h2,h3,h4,p1,p2))
     #
     # Returns host and port.
-    def parse227(resp)
+    def parse227(resp) # :nodoc:
       if resp[0, 3] != "227"
         raise FTPReplyError, resp
       end
@@ -937,7 +942,7 @@ module Net
     # (Entering Long Passive Mode)
     #
     # Returns host and port.
-    def parse228(resp)
+    def parse228(resp) # :nodoc:
       if resp[0, 3] != "228"
         raise FTPReplyError, resp
       end
@@ -973,7 +978,7 @@ module Net
     # (Extended Passive Mode Entered)
     #
     # Returns host and port.
-    def parse229(resp)
+    def parse229(resp) # :nodoc:
       if resp[0, 3] != "229"
         raise FTPReplyError, resp
       end
@@ -996,7 +1001,7 @@ module Net
     # ("PATHNAME" created)
     #
     # Returns host and port.
-    def parse257(resp)
+    def parse257(resp) # :nodoc:
       if resp[0, 3] != "257"
         raise FTPReplyError, resp
       end
