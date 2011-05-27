@@ -1,3 +1,8 @@
+Sat May 28 02:22:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* string.c (rb_str_bytesize): rb_str_bytesize() should use LONG2NUM().
+	  Patch by Nikolai Weibull. [Bug #4789] [ruby-core:36511]
+
 Sat May 28 02:06:26 2011  KOSAKI Motohiro  <kosaki@KOSAKI-Motohiro-no-MacBook-Pro.local>
 
 	* io.c (fill_cbuf): Fix test-all crash.

@@ -1150,7 +1150,7 @@ rb_str_length(VALUE str)
 static VALUE
 rb_str_bytesize(VALUE str)
 {
-    return INT2NUM(RSTRING_LEN(str));
+    return LONG2NUM(RSTRING_LEN(str));
 }
 
 /*
