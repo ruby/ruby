@@ -1,3 +1,8 @@
+Sat May 28 00:58:40 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/ostruct.rb (method_missing): Handle [] and []= correctly.
+	  Based on a patch by Caius Durling, bug #4179 [ruby-core:33792]
+
 Fri May 27 23:56:54 2011  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_core.rb (Tester::test_text_frozen): split frozen
