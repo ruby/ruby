@@ -1,4 +1,7 @@
-Fri May 27 22:38:54 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri May 27 22:45:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (validate_enc_binmode): do not clear textmode flag if
+	  default.  fixed #4732
 
 	* io.c (fill_cbuf): finish reading at EOF.
 

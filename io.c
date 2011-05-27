@@ -4419,10 +4419,12 @@ validate_enc_binmode(int *fmode_p, int ecflags, rb_encoding *enc, rb_encoding *e
 	fmode |= DEFAULT_TEXTMODE;
 	*fmode_p = fmode;
     }
+#if !DEFAULT_TEXTMODE
     else if (!(ecflags & ECONV_NEWLINE_DECORATOR_MASK)) {
 	fmode &= ~FMODE_TEXTMODE;
 	*fmode_p = fmode;
     }
+#endif
 }
 
 static void
