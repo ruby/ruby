@@ -516,6 +516,19 @@ const char *alternate_dl_extensions[] = {
 #define VALUE_ARRAY_LEN(array) sizeof(array) / sizeof(VALUE)
 
 static VALUE
+rb_locate_file_with_extension(VALUE base_file_name, VALUE extension) {
+	VALUE file_name_with_extension = rb_str_plus(
+			base_file_name,
+			extension);
+
+	if (rb_feature_exists(file_name_with_extension)) {
+		return file_name_with_extension;
+	} else {
+		return Qnil;
+	}
+}
+
+static VALUE
 rb_locate_file_with_extensions(VALUE base_file_name) {
 	unsigned int j;
 	VALUE file_name_with_extension;
@@ -580,13 +593,12 @@ rb_locate_file_relative(VALUE fname)
 }
 
 static VALUE
-rb_locate_file_in_load_path(VALUE path)
+rb_locate_rb_file_in_load_path(VALUE path, VALUE load_path, VALUE sep)
 {
-	long i, j;
-	VALUE load_path = rb_get_expanded_load_path();
-	VALUE expanded_file_name = Qnil;
-	VALUE base_file_name = Qnil;
-	VALUE sep = rb_str_new2("/");
+	long i;
+	VALUE base_file_name;
+	VALUE expanded_file_name;
+	VALUE rb_ext = rb_str_new2(".rb");
 
 	for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 		VALUE directory = RARRAY_PTR(load_path)[i];
@@ -594,6 +606,47 @@ rb_locate_file_in_load_path(VALUE path)
 		base_file_name = rb_str_plus(directory, sep);
 		base_file_name = rb_str_concat(base_file_name, path);
 
+		expanded_file_name = rb_locate_file_with_extension(base_file_name, rb_ext);
+
+		if (expanded_file_name != Qnil) {
+			return expanded_file_name;
+		}
+	}
+	return Qnil;
+}
+
+static VALUE
+rb_locate_file_in_load_path(VALUE path)
+{
+	long i;
+	VALUE load_path          = rb_get_expanded_load_path();
+	VALUE expanded_file_name = Qnil;
+	VALUE base_file_name     = Qnil;
+	VALUE sep                = rb_str_new2("/");
+	VALUE base_extension     = rb_funcall(rb_cFile, rb_intern("extname"), 1, path);
+
+	if (RSTRING_LEN(base_extension) == 0) {
+		/* Do an initial loop through the load path only looking for .rb files.
+		 * This is the most common case, so optimize for it. If not found, fall 
+		 * back so searching all extensions.
+		 */
+		expanded_file_name = rb_locate_rb_file_in_load_path(path, load_path, sep);
+
+		if (expanded_file_name != Qnil) {
+			return expanded_file_name;
+		}
+	}
+
+	for (i = 0; i < RARRAY_LEN(load_path); ++i) {
+		VALUE directory = RARRAY_PTR(load_path)[i];
+
+		base_file_name = rb_str_plus(directory, sep);
+		base_file_name = rb_str_concat(base_file_name, path);
+
+		/* The .rb extension will be checked again in this call, which is redundant
+		 * since it was checked in the loop above. This hasn't been optimized to 
+		 * keep the code cleaner.
+		 */
 		expanded_file_name = rb_locate_file_with_extensions(base_file_name);
 
 		if (expanded_file_name != Qnil) {
