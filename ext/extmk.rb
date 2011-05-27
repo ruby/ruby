@@ -36,8 +36,8 @@ require 'rbconfig'
 $topdir = "."
 $top_srcdir = srcdir
 
-$" << "mkmf.rb"
-load File.expand_path("lib/mkmf.rb", srcdir)
+$:.unshift(srcdir + '/lib')
+require 'mkmf'
 require 'optparse/shellwords'
 
 def sysquote(x)

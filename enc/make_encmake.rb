@@ -3,10 +3,8 @@
 dir = File.expand_path("../..", __FILE__)
 $:.unshift(dir)
 $:.unshift(".")
-if $".grep(/mkmf/).empty?
-  $" << "mkmf.rb"
-  load File.expand_path("lib/mkmf.rb", dir)
-end
+$:.unshift(dir + '/lib')
+require 'mkmf'
 require 'erb'
 
 CONFIG["MAKEDIRS"] ||= '$(MINIRUBY) -run -e mkdir -- -p'
