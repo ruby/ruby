@@ -1,3 +1,7 @@
+Sat May 28 03:04:27 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (fill_cbuf): return MORE_CHAR_SUSPENDED when cbuf is not empty.
+
 Sat May 28 02:22:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* string.c (rb_str_bytesize): rb_str_bytesize() should use LONG2NUM().

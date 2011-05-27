@@ -1720,6 +1720,9 @@ fill_cbuf(rb_io_t *fptr, int ec_flags)
             }
         }
     }
+    if (cbuf_len0 != fptr->cbuf.len)
+	return MORE_CHAR_SUSPENDED;
+
     return MORE_CHAR_FINISHED;
 }
 
