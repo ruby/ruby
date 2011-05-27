@@ -43,7 +43,7 @@ static VALUE rb_locate_file(VALUE);
 static VALUE rb_locate_file_absolute(VALUE);
 static VALUE rb_locate_file_relative(VALUE);
 static VALUE rb_locate_file_in_load_path(VALUE);
-static VALUE rb_locate_file_with_extensions(VALUE);
+static VALUE rb_locate_file_with_extensions(VALUE, VALUE);
 static int rb_path_is_absolute(VALUE);
 static int rb_path_is_relative(VALUE);
 VALUE rb_get_expanded_load_path();
@@ -529,13 +529,10 @@ rb_locate_file_with_extension(VALUE base_file_name, VALUE extension) {
 }
 
 static VALUE
-rb_locate_file_with_extensions(VALUE base_file_name) {
+rb_locate_file_with_extensions(VALUE base_file_name, VALUE extension) {
 	unsigned int j;
 	VALUE file_name_with_extension;
-	VALUE extension;
 	VALUE directory, basename;
-
-	extension = rb_funcall(rb_cFile, rb_intern("extname"), 1, base_file_name);
 
 	if (RSTRING_LEN(extension) == 0) {
 		for (j = 0; j < VALUE_ARRAY_LEN(available_ext_rb_str); ++j) {
@@ -581,17 +578,25 @@ rb_locate_file_with_extensions(VALUE base_file_name) {
 }
 
 static VALUE
+rb_file_extension(VALUE path)
+{
+	return rb_funcall(rb_cFile, rb_intern("extname"), 1, path);
+}
+
+static VALUE
 rb_locate_file_absolute(VALUE fname)
 {
-	return rb_locate_file_with_extensions(fname);
+	return rb_locate_file_with_extensions(fname, rb_file_extension(fname));
 }
 
 static VALUE
 rb_locate_file_relative(VALUE fname)
 {
-	return rb_locate_file_with_extensions(rb_file_expand_path(fname, Qnil));
+    VALUE path = rb_file_expand_path(fname, Qnil);
+	return rb_locate_file_with_extensions(path, rb_file_extension(path));
 }
 
+/* This function is only used as an optimization in rb_locate_file_in_load_path */
 static VALUE
 rb_locate_rb_file_in_load_path(VALUE path, VALUE load_path, VALUE sep)
 {
@@ -623,7 +628,7 @@ rb_locate_file_in_load_path(VALUE path)
 	VALUE expanded_file_name = Qnil;
 	VALUE base_file_name     = Qnil;
 	VALUE sep                = rb_str_new2("/");
-	VALUE base_extension     = rb_funcall(rb_cFile, rb_intern("extname"), 1, path);
+	VALUE base_extension     = rb_file_extension(path);
 
 	if (RSTRING_LEN(base_extension) == 0) {
 		/* Do an initial loop through the load path only looking for .rb files.
@@ -647,7 +652,7 @@ rb_locate_file_in_load_path(VALUE path)
 		 * since it was checked in the loop above. This hasn't been optimized to 
 		 * keep the code cleaner.
 		 */
-		expanded_file_name = rb_locate_file_with_extensions(base_file_name);
+		expanded_file_name = rb_locate_file_with_extensions(base_file_name, base_extension);
 
 		if (expanded_file_name != Qnil) {
 			return expanded_file_name;
