@@ -851,7 +851,7 @@ rb_loaded_features_hook(int argc, VALUE *argv, VALUE self)
 static void 
 define_loaded_features_proxy()
 {
-	const char* methods_to_hook[] = {"push", "clear", "replace", "delete"};
+	const char* methods_to_hook[] = {"<<", "push", "clear", "replace", "delete"};
 	unsigned int i;
 
 	rb_cLoadedFeaturesProxy = rb_define_class("LoadedFeaturesProxy", rb_cArray); 
