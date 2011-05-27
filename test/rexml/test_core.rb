@@ -349,9 +349,6 @@ class Tester < Test::Unit::TestCase
     assert_equal(string, text.to_s)
     text2 = Text.new(text)
     assert_equal(text, text2)
-    string = "Frozen".freeze
-    text3 = Text.new(string)
-    assert_equal(string, text3.to_s)
     #testing substitution
     string = "0 < ( 1 & 1 )"
     correct = "0 &lt; ( 1 &amp; 1 )"
@@ -401,6 +398,12 @@ class Tester < Test::Unit::TestCase
     assert_equal( '<a><b/>Russell<c/></a>', doc.to_s )
     doc.root.text = nil
     assert_equal( '<a><b/><c/></a>', doc.to_s )
+  end
+
+  def test_text_frozen
+    string = "Frozen".freeze
+    text = Text.new(string)
+    assert_equal(string, text.to_s)
   end
 
   def test_xmldecl

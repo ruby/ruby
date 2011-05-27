@@ -1,3 +1,8 @@
+Fri May 27 23:56:54 2011  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_core.rb (Tester::test_text_frozen): split frozen
+	  string test. refs #4783
+
 Fri May 27 22:46:23 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (gem): install gemspec of json.  fixed #4784
