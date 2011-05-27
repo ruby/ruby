@@ -1,3 +1,7 @@
+Fri May 27 22:46:23 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (gem): install gemspec of json.  fixed #4784
+
 Fri May 27 22:45:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (validate_enc_binmode): do not clear textmode flag if
