@@ -1,3 +1,11 @@
+Fri May 27 11:31:51 2011  misfo <tedwardo2@gmail.com>
+
+	* lib/rexml/text.rb (REXML::Text#initialize): prevent an error
+	  when passing a frozen string to REXML::Text.new
+
+	  dup the string passed in instead of cloning so that it's frozen
+	  state is ignored
+
 Fri May 27 08:47:26 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* thread.c (ppoll): typo bug fix.
