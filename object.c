@@ -1701,12 +1701,14 @@ rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
  *  call-seq:
  *     mod.const_get(sym, inherit=true)    -> obj
  *
- *  Returns the value of the named constant in <i>mod</i>.
+ *  Checks for a constant with the given name in <i>mod</i>
+ *  If +inherit+ is set, the lookup will also search
+ *  the ancestors (and +Object+ if <i>mod</i> is a +Module+.)
+ *
+ *  The value of the constant is returned if a definition is found,
+ *  otherwise a +NameError+ is raised.
  *
  *     Math.const_get(:PI)   #=> 3.14159265358979
- *
- *  If the constant is not defined or is defined by the ancestors and
- *  +inherit+ is false, +NameError+ will be raised.
  */
 
 static VALUE
@@ -1757,12 +1759,15 @@ rb_mod_const_set(VALUE mod, VALUE name, VALUE value)
  *  call-seq:
  *     mod.const_defined?(sym, inherit=true)   -> true or false
  *
- *  Returns <code>true</code> if a constant with the given name is
- *  defined by <i>mod</i>, or its ancestors if +inherit+ is not false.
+ *  Checks for a constant with the given name in <i>mod</i>
+ *  If +inherit+ is set, the lookup will also search
+ *  the ancestors (and +Object+ if <i>mod</i> is a +Module+.)
+ *
+ *  Returns whether or not a definition is found:
  *
  *     Math.const_defined? "PI"   #=> true
- *     IO.const_defined? "SYNC"   #=> true
- *     IO.const_defined? "SYNC", false   #=> false
+ *     IO.const_defined? :SYNC   #=> true
+ *     IO.const_defined? :SYNC, false   #=> false
  */
 
 static VALUE
