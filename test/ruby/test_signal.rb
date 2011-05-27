@@ -119,21 +119,21 @@ class TestSignal < Test::Unit::TestCase
       Timeout.timeout(10) do
         x = false
         Process.kill(SignalException.new(:INT).signo, $$)
-        nil until x
+        sleep(0.01) until x
 
         x = false
         Process.kill("INT", $$)
-        nil until x
+        sleep(0.01) until x
 
         x = false
         Process.kill("SIGINT", $$)
-        nil until x
+        sleep(0.01) until x
 
         x = false
         o = Object.new
         def o.to_str; "SIGINT"; end
         Process.kill(o, $$)
-        nil until x
+        sleep(0.01) until x
       end
 
       assert_raise(ArgumentError) { Process.kill(Object.new, $$) }
