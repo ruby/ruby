@@ -100,4 +100,14 @@ class PStoreTest < Test::Unit::TestCase
       File.unlink("pstore.tmp2.#{Process.pid}") rescue nil
     end
   end
+  
+  def test_nested_transaction_raises_error
+    assert_raise(PStore::Error) do
+      @pstore.transaction { @pstore.transaction { } }
+    end
+    pstore = PStore.new("pstore.tmp2.#{Process.pid}", true)
+    assert_raise(PStore::Error) do
+      pstore.transaction { pstore.transaction { } }
+    end
+  end
 end

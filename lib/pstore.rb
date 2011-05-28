@@ -341,6 +341,8 @@ class PStore
       end
     end
     value
+  rescue ThreadError
+    raise PStore::Error, "nested transaction"
   end
 
   private
