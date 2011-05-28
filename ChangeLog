@@ -1,3 +1,7 @@
+Sun May 29 02:16:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/net/http/utils.rb (TestNetHTTPUtils#teardown): add nil check.
+
 Sun May 29 00:22:40 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* process.c (before_exec, after_exec): change from macro to function.
