@@ -5173,7 +5173,7 @@ get_exception_sym2type(VALUE sym)
     if (sym == symNext)   return CATCH_TYPE_NEXT;
     sym_inspect = rb_inspect(sym);
     rb_raise(rb_eSyntaxError, "invalid exception symbol: %s",
-	     RSTRING_PTR(RB_GC_GUARD(sym_inspect)));
+	     StringValuePtr(sym_inspect));
     return 0;
 }
 

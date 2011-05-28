@@ -310,7 +310,8 @@ rb_class_name(VALUE klass)
 const char *
 rb_class2name(VALUE klass)
 {
-    return RSTRING_PTR(rb_class_name(klass));
+    VALUE name = rb_class_name(klass);
+    return RSTRING_PTR(name);
 }
 
 const char *
