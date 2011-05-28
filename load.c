@@ -82,8 +82,8 @@ const char *alternate_dl_extensions[] = {
 #endif
 };
 
-#define CHAR_ARRAY_LEN(array) sizeof(array) / sizeof(char*)
-#define VALUE_ARRAY_LEN(array) sizeof(array) / sizeof(VALUE)
+#define CHAR_ARRAY_LEN(array)  (sizeof(array) / sizeof(char*))
+#define VALUE_ARRAY_LEN(array) (sizeof(array) / sizeof(VALUE))
 
 VALUE
 rb_get_load_path(void)
