@@ -1,3 +1,10 @@
+Mon Mar  7 22:59:39 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/pstore.rb: Delete variable @transaction and fix #4474. Patch by
+	  Masaki Matsushita (Glass_saga).
+
+	* test/test_pstore.rb(test_thread_safe): Add test for #4474.
+
 Sat Mar  5 22:54:36 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* include/ruby/intern.h: fix a typo of prototype declaration.
