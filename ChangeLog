@@ -1,3 +1,8 @@
+Mon Feb 28 13:02:15 2011  Danial Pearce <github@tigris.id.au>
+
+	* lib/tempfile.rb: Fix example file paths in docs for tempfile.
+	  https://github.com/ruby/ruby/pull/5
+
 Mon Feb 21 10:54:29 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/json/stream.rb: do not emit custom tags in maps
