@@ -521,7 +521,6 @@ inject_op_i(VALUE i, VALUE p, int argc, VALUE *argv)
  *     enum.inject(sym)          -> obj
  *     enum.inject(initial) {| memo, obj | block }  -> obj
  *     enum.inject          {| memo, obj | block }  -> obj
- *
  *     enum.reduce(initial, sym) -> obj
  *     enum.reduce(sym)          -> obj
  *     enum.reduce(initial) {| memo, obj | block }  -> obj
