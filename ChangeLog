@@ -1,3 +1,9 @@
+Thu Mar 10 16:00:22 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* parse.y (parser_encode_length): fix typo: the length of
+	  "-dos" and "-mac" is not 5 but 4.
+	  patched by James M. Lawrence [ruby-core:35476] fixes #4489
+
 Mon Mar  7 22:59:39 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/pstore.rb: Delete variable @transaction and fix #4474. Patch by

@@ -6220,7 +6220,7 @@ parser_encode_length(struct parser_params *parser, const char *name, long len)
 	if (rb_memcicmp(name + nlen + 1, "unix", 4) == 0)
 	    return nlen;
     }
-    if (len > 4 && name[nlen = len - 5] == '-') {
+    if (len > 4 && name[nlen = len - 4] == '-') {
 	if (rb_memcicmp(name + nlen + 1, "dos", 3) == 0)
 	    return nlen;
 	if (rb_memcicmp(name + nlen + 1, "mac", 3) == 0)
