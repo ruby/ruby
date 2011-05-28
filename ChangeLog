@@ -1,3 +1,11 @@
+Sat May 14 12:20:22 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* strftime.c (STRFTIME):  return 0 and ERANGE when precision is too
+	  large. [ruby-dev:43284] fixes #4456
+	  based on r31011.
+
+	* test/test_time.rb (TestTime#test_huge_precision): test for #4456.
+
 Sat Feb 26 07:10:05 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: fix parsing timezone's whose

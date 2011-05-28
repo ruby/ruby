@@ -309,6 +309,7 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
 			i = rb_strftime_with_timespec(s, endp - s, fmt, vtm, timev, ts, gmt); \
 			if (!i) return 0; \
 			if (precision > i) {\
+				NEEDS(precision); \
 				memmove(s + precision - i, s, i);\
 				memset(s, padding ? padding : ' ', precision - i); \
 				s += precision;	\
