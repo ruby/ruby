@@ -1,3 +1,9 @@
+Sat May 28 16:08:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (Init_signal, default_handler): change default SIGPIPE handler
+	  from empty function to SIG_IGN. [ruby-dev:43215]
+	* signal.c (sigpipe): removed.
+
 Sat May 28 03:04:27 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (fill_cbuf): return MORE_CHAR_SUSPENDED when cbuf is not empty.
