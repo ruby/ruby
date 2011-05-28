@@ -1,3 +1,10 @@
+Sat May 28 19:30:17 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* process.c (before_exec, after_exec): change SIGPIPE handler to SIG_DFL
+	  before calling execve(). Because r31760 reintroduced an issue that
+	  system() may hang up (i.e. [ruby-dev:12261]).
+	* process.c (save_sigpipe, restore_sigpipe): new.
+
 Sat May 28 16:08:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (Init_signal, default_handler): change default SIGPIPE handler

@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'tmpdir'
 require 'pathname'
+require 'timeout'
 require_relative 'envutil'
 require 'rbconfig'
 
@@ -1249,5 +1250,22 @@ class TestProcess < Test::Unit::TestCase
     exs = [Errno::ENOENT]
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
     assert_raise(*exs, bug4315) {Process.spawn('"a"|'*10_000_000)}
+  end
+
+  def test_system_sigpipe
+    return if /mswin|mingw/ =~ RUBY_PLATFORM
+
+    pid = 0
+
+    with_tmpchdir do
+      assert_nothing_raised('[ruby-dev:12261]') do
+        timeout(3) do
+          pid = spawn('yes | ls')
+          Process.waitpid pid
+        end
+      end
+    end
+  ensure
+    Process.kill(:KILL, pid) if (pid != 0) rescue false
   end
 end
