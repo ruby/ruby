@@ -328,6 +328,8 @@ module Buffering
     osync = @sync
     @sync = true
     do_write ""
+    return self
+  ensure
     @sync = osync
   end
 

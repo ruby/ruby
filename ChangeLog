@@ -1,3 +1,9 @@
+Wed Mar 16 15:06:21 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/lib/openssl/buffering.rb (module OpenSSL): #flush should
+	  not change sync mode on exception.
+	* test/openssl/test_buffering.rb: added
+
 Sun Mar 13 16:07:58 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/pstore.rb: Fix don't raise "nested transaction" when thread_safe
