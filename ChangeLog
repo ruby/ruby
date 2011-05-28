@@ -1,3 +1,12 @@
+Mon Feb 21 10:54:29 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/json/stream.rb: do not emit custom tags in maps
+	  or sequences when emitting JSON.
+	* ext/psych/lib/psych/json/tree_builder.rb: do not emit custom tags in
+	  sequences when emitting JSON.
+	* test/psych/json/test_stream.rb: tests for custom stream emits.
+	* test/psych/test_json_tree.rb: tests for JSON emits.
+
 Sun Feb 20 16:26:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (exec_recursive): prevent temporary objects from GC.
