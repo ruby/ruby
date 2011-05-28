@@ -992,33 +992,47 @@ static RETSIGTYPE (*saved_sigpipe_handler)(int) = 0;
 # define signal(a,b) posix_signal((a),(b))
 #endif
 
-static void save_sigpipe(void)
+static void before_exec(void)
 {
+    /*
+     * signalmask is inherited across exec() and almost system commands don't
+     * work if signalmask is blocked.
+     */
+    rb_enable_interrupt();
+
 #ifdef SIGPIPE
     /*
-     * Some OS commands don't initialize signal handler properly. Thus we have to
-     * reset signal handler before exec(). Otherwise, system() and similar child process
-     * interaction might fail. (e.g. ruby -e "system 'yes | ls'") [ruby-dev:12261]
+     * Some OS commands don't initialize signal handler properly. Thus we have
+     * to reset signal handler before exec(). Otherwise, system() and similar
+     * child process interaction might fail. (e.g. ruby -e "system 'yes | ls'")
+     * [ruby-dev:12261]
      */
     saved_sigpipe_handler = signal(SIGPIPE, SIG_DFL);
 #endif
+
+    if (!forked_child) {
+	/*
+	 * On old MacOS X, exec() may return ENOTSUPP if the process have
+	 * multiple threads. Therefore we have to kill internal threads at once.
+	 * [ruby-core: 10583]
+	 */
+	rb_thread_stop_timer_thread();
+    }
 }
 
-static void restore_sigpipe(void)
+static void after_exec(void)
 {
+    rb_thread_reset_timer_thread();
+    rb_thread_start_timer_thread();
+
 #ifdef SIGPIPE
     signal(SIGPIPE, saved_sigpipe_handler);
 #endif
+
+    forked_child = 0;
+    rb_disable_interrupt();
 }
 
-/*
- * On old MacOS X, exec() may return ENOTSUPP if the process have multiple threads.
- * Therefore we have to kill internal threads at once. [ruby-core: 10583]
- */
-#define before_exec() \
-    (rb_enable_interrupt(), save_sigpipe(), (void)(forked_child ? 0 : (rb_thread_stop_timer_thread(), 1)))
-#define after_exec() \
-    (rb_thread_reset_timer_thread(), rb_thread_start_timer_thread(), forked_child = 0, restore_sigpipe(), rb_disable_interrupt())
 #define before_fork() before_exec()
 #define after_fork() (GET_THREAD()->thrown_errinfo = 0, after_exec())
 
