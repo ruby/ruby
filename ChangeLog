@@ -1,3 +1,8 @@
+Sun May 29 23:17:29 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_match): fix rdoc of Regexp#=~.
+	  patched by Tsuyoshi Sawada. [Bug #4781]
+
 Sun May 29 23:10:42 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/https.rb (WEBrick::HTTPRequest#parse_uri):
