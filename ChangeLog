@@ -1,3 +1,8 @@
+Wed Mar 23 00:12:16 2011  Tajima Akio <artonx@yahoo.co.jp>
+
+	* win32/win32.c: wait process real termination after reading 
+	  exit code. fixes #4518
+
 Wed Mar 16 15:06:21 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/openssl/lib/openssl/buffering.rb (module OpenSSL): #flush should
