@@ -1,3 +1,8 @@
+Wed Apr  6 11:36:44 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_pkey_rsa.c (ossl_rsa_initialize):
+	  pop pushed error after each try of reading. fixes #4550
+
 Mon Apr  4 21:41:26 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_io_syswrite): While local FS writes are usually
