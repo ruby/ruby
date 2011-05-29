@@ -1,3 +1,7 @@
+Thu Apr 14 16:01:45 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* io.c (rb_f_syscall): reduce warning: "HAVE___SYSCALL" is not defined.
+
 Tue Apr 12 19:19:50 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb: avoid race condition. fixes #4572
