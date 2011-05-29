@@ -1,3 +1,8 @@
+Sun May 29 23:10:42 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/https.rb (WEBrick::HTTPRequest#parse_uri):
+	  keep parse_uri as private. patched by okkez. [Bug #4773]
+
 Sun May 29 17:53:03 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* numeric.c: add #include "interna.h" for rb_big_uminus() prototype.
