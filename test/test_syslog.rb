@@ -43,10 +43,11 @@ class TestSyslog < Test::Unit::TestCase
     Syslog.close
 
     # given parameters
-    Syslog.open("foo", Syslog::LOG_NDELAY | Syslog::LOG_PERROR, Syslog::LOG_DAEMON)
+    options = Syslog::LOG_NDELAY | Syslog::LOG_PID
+    Syslog.open("foo", options, Syslog::LOG_DAEMON)
 
     assert_equal('foo', Syslog.ident)
-    assert_equal(Syslog::LOG_NDELAY | Syslog::LOG_PERROR, Syslog.options)
+    assert_equal(options, Syslog.options)
     assert_equal(Syslog::LOG_DAEMON, Syslog.facility)
 
     Syslog.close
@@ -134,8 +135,9 @@ class TestSyslog < Test::Unit::TestCase
     stderr[1].close
     Process.waitpid(pid)
 
-    # LOG_PERROR is not yet implemented on Cygwin.
-    return if RUBY_PLATFORM =~ /cygwin/
+    # LOG_PERROR is not implemented on Cygwin or Solaris.  Only test
+    # these on systems that define it.
+    return unless Syslog.const_defined?(:LOG_PERROR)
 
     2.times {
       assert_equal("syslog_test: test1 - hello, world!\n", stderr[0].gets)
