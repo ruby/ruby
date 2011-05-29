@@ -87,7 +87,7 @@ ossl_x509name_alloc(VALUE klass)
     return obj;
 }
 
-static int id_aref;
+static ID id_aref;
 static VALUE ossl_x509name_add_entry(int, VALUE*, VALUE);
 #define rb_aref(obj, key) rb_funcall(obj, id_aref, 1, key)
 
