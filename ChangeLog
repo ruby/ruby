@@ -1,3 +1,7 @@
+Tue Apr 12 19:19:50 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/common.rb: avoid race condition. fixes #4572
+
 Tue Apr 12 10:37:39 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/win32.h: VC doesn't have ftruncate() and others, but
