@@ -124,13 +124,17 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(nil, ENV["test"])
     assert_raise(ArgumentError) { ENV["foo\0bar"] = "test" }
     assert_raise(ArgumentError) { ENV["test"] = "foo\0bar" }
-    if /netbsd|openbsd/ =~ RUBY_PLATFORM
+
+    begin
+      # setenv(3) allowed the name includes '=',
+      # but POSIX.1-2001 says it should fail with EINVAL.
+      # see also http://togetter.com/li/22380
       ENV["foo=bar"] = "test"
       assert_equal("test", ENV["foo=bar"])
       assert_equal("test", ENV["foo"])
-    else
-      assert_raise(Errno::EINVAL) { ENV["foo=bar"] = "test" }
+    rescue Errno::EINVAL
     end
+
     ENV[PATH_ENV] = "/tmp/".taint
     assert_equal("/tmp/", ENV[PATH_ENV])
   end
