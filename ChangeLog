@@ -1,3 +1,12 @@
+Wed Apr  6 15:12:40 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_pkey_dh.c (ossl_dh_initialize):
+	  pop pushed error after each try of reading. fixes #4550
+
+	* ext/openssl/ossl_pkey_dsa.c (ossl_dsa_initialize): ditto.
+
+	* ext/openssl/ossl_pkey_ec.c (ossl_ec_initialize): ditto.
+
 Wed Apr  6 11:36:44 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl_pkey_rsa.c (ossl_rsa_initialize):

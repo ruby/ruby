@@ -44,6 +44,13 @@ class OpenSSL::TestPKeyRSA < Test::Unit::TestCase
     key4 = OpenSSL::PKey::RSA.new(key3.to_der)
     assert(!key4.private?)
   end
+
+  def test_new
+    key = OpenSSL::PKey::RSA.new 512
+    pem  = key.public_key.to_pem
+    OpenSSL::PKey::RSA.new pem
+    assert_equal([], OpenSSL.errors)
+  end
 end
 
 end

@@ -187,14 +187,17 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
             ec = PEM_read_bio_ECPrivateKey(in, NULL, NULL, NULL);
             if (!ec) {
                 (void)BIO_reset(in);
+                (void)ERR_get_error();
                 ec = PEM_read_bio_EC_PUBKEY(in, NULL, NULL, NULL);
             }
             if (!ec) {
                 (void)BIO_reset(in);
+                (void)ERR_get_error();
                 ec = d2i_ECPrivateKey_bio(in, NULL);
             }
             if (!ec) {
                 (void)BIO_reset(in);
+                (void)ERR_get_error();
                 ec = d2i_EC_PUBKEY_bio(in, NULL);
             }
 
@@ -204,6 +207,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
                 const char *name = StringValueCStr(arg);
                 int nid = OBJ_sn2nid(name);
 
+                (void)ERR_get_error();
                 if (nid == NID_undef)
                     ossl_raise(eECError, "unknown curve name (%s)\n", name);
 
