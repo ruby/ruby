@@ -12,6 +12,7 @@
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
+#include "internal.h"
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
