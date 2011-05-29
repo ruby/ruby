@@ -1,3 +1,9 @@
+Fri Apr  8 16:01:56 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_getline): check whether str is
+	  a string when str and lim are given.
+	  https://twitter.com/watson1978/status/56225052152168449
+
 Wed Apr  6 15:12:40 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl_pkey_dh.c (ossl_dh_initialize):

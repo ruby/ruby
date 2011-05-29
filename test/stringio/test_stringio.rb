@@ -51,6 +51,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("abc\n", StringIO.new("abc\n\ndef\n").gets)
     assert_equal("abc\n\ndef\n", StringIO.new("abc\n\ndef\n").gets(nil))
     assert_equal("abc\n\n", StringIO.new("abc\n\ndef\n").gets(""))
+    assert_raise(TypeError){StringIO.new("").gets(1, 1)}
+    assert_raise(TypeError){StringIO.new("").gets(nil, nil)}
   end
 
   def test_readlines
