@@ -3854,7 +3854,7 @@ rb_io_syswrite(VALUE io, VALUE str)
         rb_io_check_closed(fptr);
     }
 
-    n = write(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
+    n = rb_write_internal(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
 
     if (n == -1) rb_sys_fail_path(fptr->pathv);
 
