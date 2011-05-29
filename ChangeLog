@@ -1,3 +1,8 @@
+Thu Apr 14 21:21:01 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h (ftruncate, truncate): mingw64 misses
+	  prototypes.
+
 Thu Apr 14 16:01:45 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* io.c (rb_f_syscall): reduce warning: "HAVE___SYSCALL" is not defined.
