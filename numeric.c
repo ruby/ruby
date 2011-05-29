@@ -1512,7 +1512,7 @@ flo_round(int argc, VALUE *argv, VALUE num)
 		VALUE f10 = int_pow(10, -ndigits);
 		VALUE n10 = f10;
 		if (number < 0) {
-		    f10 = FIXNUM_P(f10) ? fix_uminus(f10) : rb_big_uminus(f10);
+		    n10 = FIXNUM_P(n10) ? fix_uminus(n10) : rb_big_uminus(n10);
 		}
 		num = rb_big_idiv(rb_dbl2big(absnum), n10);
 		return FIXNUM_P(num) ? fix_mul(num, f10) : rb_big_mul(num, f10);

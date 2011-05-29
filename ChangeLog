@@ -1,3 +1,7 @@
+Sun May 29 23:22:46 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_round): use absolute value as divisor.
+
 Sun May 29 23:17:29 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (rb_reg_match): fix rdoc of Regexp#=~.
