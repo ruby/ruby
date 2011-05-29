@@ -385,4 +385,32 @@ class TestRequire < Test::Unit::TestCase
     $:.replace(load_path)
     $".replace(loaded)
   end
+
+  def test_require_file_with_multiple_dots
+    load_path      = $:.dup
+    loaded         = $".dup
+    initial_length = loaded.length
+
+    Dir.mktmpdir do |tmp|
+      Dir.chdir(tmp) do
+        Dir.mkdir "a"
+        File.open("a/test.1.rb", "w") {|f| f.puts '' }
+
+        $".clear
+        $:.unshift(File.join(tmp, "a"))
+        require 'test.1'
+        assert $"[0].include?('test.1.rb')
+
+        $".clear
+        File.open("a/test.rb.rb", "w") {|f| f.puts '' }
+        File.open("a/test.rb", "w") {|f| f.puts '' }
+
+        require 'test.rb'
+        assert !$"[0].include?('test.rb.rb')
+      end
+    end
+  ensure
+    $:.replace(load_path)
+    $".replace(loaded)
+  end
 end

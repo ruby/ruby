@@ -537,6 +537,18 @@ rb_locate_file_with_extensions(VALUE base_file_name, VALUE extension) {
 		if (rb_feature_exists(base_file_name)) {
 			return base_file_name;
 		} else {
+			for (j = 0; j < VALUE_ARRAY_LEN(available_ext_rb_str); ++j) {
+				// Also try loading 'dot.dot.bundle' for 'dot.dot'
+				// Also try loading 'test.1.rb'      for 'test.1'
+				file_name_with_extension = rb_str_plus(
+						base_file_name,
+						available_ext_rb_str[j]);
+
+				if (rb_feature_exists(file_name_with_extension)) {
+					return file_name_with_extension;
+				}
+			}
+
 			for (j = 0; j < CHAR_ARRAY_LEN(alternate_dl_extensions); ++j) {
 				// Try loading the native DLEXT version of this platform.
 				// This allows 'pathname.so' to require 'pathname.bundle' on OSX
@@ -547,15 +559,6 @@ rb_locate_file_with_extensions(VALUE base_file_name, VALUE extension) {
 
 				file_name_with_extension = rb_funcall(rb_cFile, rb_intern("join"), 2, 
 						directory, basename);
-
-				if (rb_feature_exists(file_name_with_extension)) {
-					return file_name_with_extension;
-				}
-
-				// Also try loading 'dot.dot.bundle' for 'dot.dot'
-				file_name_with_extension = rb_str_plus(
-						base_file_name,
-						rb_str_new2(alternate_dl_extensions[j]));
 
 				if (rb_feature_exists(file_name_with_extension)) {
 					return file_name_with_extension;
