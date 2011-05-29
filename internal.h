@@ -25,6 +25,8 @@ struct rb_classext_struct {
     struct st_table *const_tbl;
 };
 
+VALUE rb_big_uminus(VALUE x);
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

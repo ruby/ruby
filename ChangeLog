@@ -1,3 +1,7 @@
+Sun May 29 15:09:05 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_round): fix for negative value.
+
 Sun May 29 02:16:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/net/http/utils.rb (TestNetHTTPUtils#teardown): add nil check.

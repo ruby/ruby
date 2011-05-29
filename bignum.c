@@ -1641,7 +1641,7 @@ rb_big_eql(VALUE x, VALUE y)
  * Unary minus (returns an integer whose value is 0-big)
  */
 
-static VALUE
+VALUE
 rb_big_uminus(VALUE x)
 {
     VALUE z = rb_big_clone(x);
