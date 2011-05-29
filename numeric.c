@@ -97,6 +97,9 @@ round(double x)
 }
 #endif
 
+static VALUE fix_mul(VALUE x, VALUE y);
+static VALUE int_pow(long x, unsigned long y);
+
 static ID id_coerce, id_to_i, id_eq;
 
 VALUE rb_cNumeric;
@@ -1450,7 +1453,15 @@ flo_round(int argc, VALUE *argv, VALUE num)
 	if (ndigits < 0) number = 0;
     }
     else {
-	if (ndigits < 0) number /= f;
+	if (ndigits < 0) {
+	    if (fabs(number) < f) return INT2FIX(0);
+	    if (!FIXABLE(number)) {
+		VALUE f10 = int_pow(10, -ndigits);
+		num = rb_big_idiv(rb_dbl2big(number), f10);
+		return FIXNUM_P(num) ? fix_mul(num, f10) : rb_big_mul(num, f10);
+	    }
+	    number /= f;
+	}
 	else number *= f;
 	number = round(number);
 	if (ndigits < 0) number *= f;
