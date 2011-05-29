@@ -4332,7 +4332,7 @@ rb_chsize(HANDLE h, off_t size)
 }
 
 int
-truncate(const char *path, off_t length)
+rb_w32_truncate(const char *path, off_t length)
 {
     HANDLE h;
     int ret;
@@ -4358,7 +4358,7 @@ truncate(const char *path, off_t length)
 }
 
 int
-ftruncate(int fd, off_t length)
+rb_w32_ftruncate(int fd, off_t length)
 {
     HANDLE h;
 
@@ -4431,7 +4431,7 @@ fseeko(FILE *stream, off_t offset, int whence)
 }
 
 off_t
-ftello(FILE *stream)
+rb_w32_ftello(FILE *stream)
 {
     off_t pos;
     if (fgetpos(stream, (fpos_t *)&pos)) return (off_t)-1;

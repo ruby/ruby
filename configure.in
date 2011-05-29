@@ -938,9 +938,7 @@ main()
 		ac_cv_func_isnan=yes
 		ac_cv_func_finite=yes
 		ac_cv_func_link=yes
-		ac_cv_func_truncate=yes
 		ac_cv_func_fseeko=yes
-		ac_cv_func_ftello=yes
 		ac_cv_lib_crypt_crypt=no
 		ac_cv_func_getpgrp_void=no
 		ac_cv_func_setpgrp_void=yes
@@ -1187,7 +1185,7 @@ else
   AC_LIBOBJ([signbit])
 fi
 AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall __syscall chroot getcwd eaccess\
-	      truncate ftruncate chsize times utimes utimensat fcntl lockf lstat\
+	      truncate ftruncate ftello chsize times utimes utimensat fcntl lockf lstat\
 	      link symlink readlink readdir_r fsync fdatasync fchown\
 	      setitimer setruid seteuid setreuid setresuid setproctitle socketpair\
 	      setrgid setegid setregid setresgid issetugid pause lchown lchmod\
