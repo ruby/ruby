@@ -202,7 +202,7 @@ class TestSignal < Test::Unit::TestCase
     t = Tempfile.new(%w"require_ensure_test .rb")
     t.puts "sleep"
     t.close
-    error = IO.popen([EnvUtil.rubybin, "-e", <<EOS, t.path, err: :close]) do |child|
+    error = IO.popen([EnvUtil.rubybin, "-e", <<EOS, t.path]) do |child|
 th = Thread.new do
   begin
     require ARGV[0]
