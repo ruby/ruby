@@ -1461,8 +1461,9 @@ opt_mult
 	    val = recv;
 	}
 	else {
+	    volatile long c;
 	    b = FIX2LONG(obj);
-	    volatile long c = a * b;
+	    c = a * b;
 
 	    if (FIXABLE(c) && c / a == b) {
 		val = LONG2FIX(c);
