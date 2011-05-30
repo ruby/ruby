@@ -1,3 +1,8 @@
+Sat Oct  9 16:54:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RSHIFT): quote to get rid of argument expansion
+	  for autoconf 2.68.
+
 Wed Apr 20 14:41:28 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_each_line): check string's length when compare
