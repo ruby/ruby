@@ -1,3 +1,10 @@
+Fri Apr 22 04:16:14 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c (parse): strings from psych have proper taint
+	  markings.
+
+	* test/psych/test_tainted.rb: test for string taint
+
 Thu Apr 21 01:01:28 2011  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* win32/win32.c (CreateChild): maximum length of lpCommandLine is
