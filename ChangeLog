@@ -1,3 +1,8 @@
+Thu Apr 21 01:01:28 2011  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* win32/win32.c (CreateChild): maximum length of lpCommandLine is
+	  32,768 characters, including the Unicode terminating null character.
+	
 Sat Oct  9 16:54:28 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RSHIFT): quote to get rid of argument expansion

@@ -1040,6 +1040,12 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
 
     dwCreationFlags = (NORMAL_PRIORITY_CLASS);
 
+    if (lstrlenW(cmd) > 32767) {
+	child->pid = 0;		/* release the slot */
+	errno = E2BIG;
+	return NULL;
+    }
+
     RUBY_CRITICAL({
 	fRet = CreateProcess(prog, (char *)cmd, psa, psa,
 			     psa->bInheritHandle, dwCreationFlags, NULL, NULL,
