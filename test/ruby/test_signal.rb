@@ -198,7 +198,7 @@ class TestSignal < Test::Unit::TestCase
   end
 
   def test_signal_requiring
-    skip "limitation of GenerateConsoleCtrlEvent()" if /mswin|mignw/ =~ RUBY_PLATFORM
+    skip "limitation of GenerateConsoleCtrlEvent()" if /mswin|mingw/ =~ RUBY_PLATFORM
     t = Tempfile.new(%w"require_ensure_test .rb")
     t.puts "sleep"
     t.close
