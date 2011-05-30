@@ -1,3 +1,8 @@
+Wed Apr 27 07:42:44 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (STRIP): use proper toolchain.  based on a patch
+	  from Jon Forums at [ruby-core:35909].  fixes #4617
+
 Wed Apr 27 00:51:01 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_truncate): fix function.

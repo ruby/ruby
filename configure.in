@@ -2009,18 +2009,17 @@ test ".$DLEXT"  = "." || AC_DEFINE_UNQUOTED(DLEXT,  ".$DLEXT")
 test ".$DLEXT2" = "." || AC_DEFINE_UNQUOTED(DLEXT2, ".$DLEXT2")
 AC_SUBST(DLEXT)
 
-AC_SUBST(STRIP)dnl
 if test "$with_dln_a_out" = yes; then
   STRIP=true
 else
-  STRIP=strip
+  AC_CHECK_TOOL(STRIP, strip, :)dnl
 fi
 
 AS_CASE(["$target_os"],
   [linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu], [
-	STRIP='strip -S -x'],
+	STRIP="$STRIP -S -x"],
   [nextstep* | openstep* | rhapsody* | darwin*], [
-	STRIP='strip -A -n'])
+	STRIP="$STRIP -A -n"])
 
 AC_ARG_WITH(ext,
             AC_HELP_STRING([--with-ext=EXTS],
