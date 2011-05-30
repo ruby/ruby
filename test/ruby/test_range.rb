@@ -186,9 +186,9 @@ class TestRange < Test::Unit::TestCase
     assert_equal(6, (1...6.3).step.to_a.size)
     assert_equal(5, (1.1...6).step.to_a.size)
     assert_equal(5, (1...6).step(1.1).to_a.size)
-    assert_equal(3, (1.0...6.3).step(1.8).to_a.size)
-    assert_equal(3, (1.0...6.4).step(1.8).to_a.size)
-    assert_equal(4, (1.0...6.5).step(1.8).to_a.size)
+    assert_equal(3, (1.0...5.4).step(1.5).to_a.size)
+    assert_equal(3, (1.0...5.5).step(1.5).to_a.size)
+    assert_equal(4, (1.0...5.6).step(1.5).to_a.size)
   end
 
   def test_each

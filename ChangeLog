@@ -1,3 +1,8 @@
+Mon Apr 18 12:15:46 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_range.rb (TestRange#test_step_ruby_core_35753):
+	  avoid float error. [ruby-core:35804]
+
 Fri Apr 15 15:10:29 2011  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/uri/generic.rb (#route_from_path): Fix a bug where
