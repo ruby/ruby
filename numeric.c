@@ -2386,7 +2386,7 @@ fix_mul(VALUE x, VALUE y)
 #if SIZEOF_LONG * 2 <= SIZEOF_LONG_LONG
 	LONG_LONG d;
 #else
-	long c;
+	volatile long c;
 	VALUE r;
 #endif
 

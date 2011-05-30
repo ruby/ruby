@@ -1454,7 +1454,7 @@ opt_mult
 {
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_MULT)) {
-	long a, b, c;
+	long a, b;
 
 	a = FIX2LONG(recv);
 	if (a == 0) {
@@ -1462,7 +1462,7 @@ opt_mult
 	}
 	else {
 	    b = FIX2LONG(obj);
-	    c = a * b;
+	    volatile long c = a * b;
 
 	    if (FIXABLE(c) && c / a == b) {
 		val = LONG2FIX(c);
