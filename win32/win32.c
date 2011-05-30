@@ -3743,7 +3743,7 @@ kill(int pid, int sig)
     int ret = 0;
     DWORD err;
 
-    if (pid <= 0) {
+    if (pid < 0) {
 	errno = EINVAL;
 	return -1;
     }
