@@ -31,9 +31,11 @@ module TestNetHTTPUtils
   end
 
   def teardown
-    @server.shutdown
-    until @server.status == :Stop
-      sleep 0.1
+    if @server
+      @server.shutdown
+      until @server.status == :Stop
+        sleep 0.1
+      end
     end
     # resume global state
     Net::HTTP.version_1_2

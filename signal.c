@@ -623,14 +623,6 @@ sigsegv(int sig SIGINFO_ARG)
 }
 #endif
 
-#ifdef SIGPIPE
-static RETSIGTYPE
-sigpipe(int sig)
-{
-    /* do nothing */
-}
-#endif
-
 static void
 signal_exec(VALUE cmd, int safe, int sig)
 {
@@ -746,7 +738,7 @@ default_handler(int sig)
 #endif
 #ifdef SIGPIPE
       case SIGPIPE:
-        func = sigpipe;
+        func = SIG_IGN;
         break;
 #endif
       default:
@@ -1143,7 +1135,7 @@ Init_signal(void)
 #endif
     }
 #ifdef SIGPIPE
-    install_sighandler(SIGPIPE, sigpipe);
+    install_sighandler(SIGPIPE, SIG_IGN);
 #endif
 
 #if defined(SIGCLD)

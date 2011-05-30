@@ -1641,7 +1641,7 @@ rb_big_eql(VALUE x, VALUE y)
  * Unary minus (returns an integer whose value is 0-big)
  */
 
-static VALUE
+VALUE
 rb_big_uminus(VALUE x)
 {
     VALUE z = rb_big_clone(x);
@@ -2279,7 +2279,7 @@ static VALUE bigdivrem(VALUE, VALUE, volatile VALUE*, volatile VALUE*);
 static VALUE
 bigmul1_toom3(VALUE x, VALUE y)
 {
-    long i, n, xn, yn, zn;
+    long n, xn, yn, zn;
     VALUE x0, x1, x2, y0, y1, y2;
     VALUE u0, u1, u2, u3, u4, v1, v2, v3;
     VALUE z0, z1, z2, z3, z4, z, t;
