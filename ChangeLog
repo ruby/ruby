@@ -1,3 +1,8 @@
+Sat Apr 30 03:25:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/io/wait/test_io_wait.rb: New. for testing ext/io/wait.
+	  the patch was written by Eric Wong. [Feature #4531]
+
 Thu Apr 28 15:32:53 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/dl/test_base.rb (DL::LIBC_SO): its always msvc*.dll on
