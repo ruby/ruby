@@ -35,7 +35,7 @@ Sun May 29 23:10:42 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Sun May 29 17:53:03 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
-	* numeric.c: add #include "interna.h" for rb_big_uminus() prototype.
+	* numeric.c: add #include "internal.h" for rb_big_uminus() prototype.
 
 Sun May 29 15:09:05 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
