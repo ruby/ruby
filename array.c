@@ -305,7 +305,7 @@ ary_alloc(VALUE klass)
     return (VALUE)ary;
 }
 
-static VALUE
+VALUE
 ary_new(VALUE klass, long capa)
 {
     VALUE ary;

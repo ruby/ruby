@@ -1171,6 +1171,4 @@ Init_Enumerator(void)
     id_rewind = rb_intern("rewind");
     id_each = rb_intern("each");
     sym_each = ID2SYM(id_each);
-
-    rb_provide("enumerator.so");	/* for backward compatibility */
 }

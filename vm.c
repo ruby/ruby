@@ -1527,6 +1527,14 @@ rb_vm_mark(void *ptr)
 	    rb_mark_tbl(vm->loading_table);
 	}
 
+	if (vm->loaded_features_hash) {
+	    rb_mark_tbl(vm->loaded_features_hash);
+	}
+
+	if (vm->filename_expansion_hash) {
+	    rb_mark_tbl(vm->filename_expansion_hash);
+	}
+
 	mark_event_hooks(vm->event_hooks);
 
 	for (i = 0; i < RUBY_NSIG; i++) {
