@@ -1186,6 +1186,7 @@ else
 fi
 AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall __syscall chroot getcwd eaccess\
 	      truncate ftruncate ftello chsize times utimes utimensat fcntl lockf lstat\
+	      truncate64 ftruncate64 ftello64 fseeko fseeko64 \
 	      link symlink readlink readdir_r fsync fdatasync fchown\
 	      setitimer setruid seteuid setreuid setresuid setproctitle socketpair\
 	      setrgid setegid setregid setresgid issetugid pause lchown lchmod\
