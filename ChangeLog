@@ -1,3 +1,8 @@
+Wed May 18 20:25:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/timeout.rb (Timeout#timeout): don't leak "execution expired"
+	  exception. [Bug #4283] [ruby-core:34534].
+
 Wed May 18 03:14:49 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* test/test_singleton.rb:  Add tests from lib/singleton.rb.  Patch by
