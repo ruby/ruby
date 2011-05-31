@@ -297,6 +297,7 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(11100.0, 11111.1.round(-2))
 
     assert_equal(10**300, 1.1e300.round(-300))
+    assert_equal(-10**300, -1.1e300.round(-300))
   end
 
   VS = [

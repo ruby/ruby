@@ -1,3 +1,7 @@
+Sun May 29 15:09:05 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_round): fix for negative value.
+
 Sat May 28 03:04:27 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (fill_cbuf): return MORE_CHAR_SUSPENDED when cbuf is not empty.

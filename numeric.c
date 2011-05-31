@@ -97,6 +97,7 @@ round(double x)
 }
 #endif
 
+static VALUE fix_uminus(VALUE num);
 static VALUE fix_mul(VALUE x, VALUE y);
 static VALUE int_pow(long x, unsigned long y);
 
@@ -1454,10 +1455,16 @@ flo_round(int argc, VALUE *argv, VALUE num)
     }
     else {
 	if (ndigits < 0) {
-	    if (fabs(number) < f) return INT2FIX(0);
+	    double absnum = fabs(number);
+	    if (absnum < f) return INT2FIX(0);
 	    if (!FIXABLE(number)) {
 		VALUE f10 = int_pow(10, -ndigits);
-		num = rb_big_idiv(rb_dbl2big(number), f10);
+		VALUE n10 = f10;
+		if (number < 0) {
+                    extern VALUE rb_big_uminus(VALUE x);
+		    f10 = FIXNUM_P(f10) ? fix_uminus(f10) : rb_big_uminus(f10);
+		}
+		num = rb_big_idiv(rb_dbl2big(absnum), n10);
 		return FIXNUM_P(num) ? fix_mul(num, f10) : rb_big_mul(num, f10);
 	    }
 	    number /= f;
