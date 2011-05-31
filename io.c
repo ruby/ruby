@@ -1694,10 +1694,15 @@ fill_cbuf(rb_io_t *fptr, int ec_flags)
                     res = rb_econv_convert(fptr->readconv, NULL, NULL, &dp, de, 0);
                     fptr->cbuf_len += (int)(dp - ds);
                     rb_econv_check_error(fptr->readconv);
+                    break;
                 }
             }
         }
     }
+    if (cbuf_len0 != fptr->cbuf_len)
+	return MORE_CHAR_SUSPENDED;
+
+    return MORE_CHAR_FINISHED;
 }
 
 static VALUE

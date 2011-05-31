@@ -1,3 +1,11 @@
+Sat May 28 03:04:27 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (fill_cbuf): return MORE_CHAR_SUSPENDED when cbuf is not empty.
+
+Fri May 27 22:38:54 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (fill_cbuf): finish reading at EOF.
+
 Fri May 27 11:31:51 2011  misfo <tedwardo2@gmail.com>
 
 	* lib/rexml/text.rb (REXML::Text#initialize): prevent an error
