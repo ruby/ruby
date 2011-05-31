@@ -7959,7 +7959,7 @@ static void
 io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 {
     rb_encoding *enc, *enc2;
-    int ecflags;
+    int ecflags = fptr->encs.ecflags;
     VALUE ecopts, tmp;
 
     if (!NIL_P(v2)) {
@@ -7980,24 +7980,22 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 	}
 	else
 	    enc = rb_to_encoding(v2);
-        ecflags = rb_econv_prepare_opts(opt, &ecopts);
+	ecflags = rb_econv_prepare_options(opt, &ecopts, ecflags);
     }
     else {
 	if (NIL_P(v1)) {
 	    /* Set to default encodings */
 	    rb_io_ext_int_to_encs(NULL, NULL, &enc, &enc2);
-            ecflags = 0;
             ecopts = Qnil;
 	}
 	else {
 	    tmp = rb_check_string_type(v1);
 	    if (!NIL_P(tmp) && rb_enc_asciicompat(rb_enc_get(tmp))) {
                 parse_mode_enc(RSTRING_PTR(tmp), &enc, &enc2, NULL);
-                ecflags = rb_econv_prepare_opts(opt, &ecopts);
+                ecflags = rb_econv_prepare_options(opt, &ecopts, ecflags);
 	    }
 	    else {
 		rb_io_ext_int_to_encs(rb_to_encoding(v1), NULL, &enc, &enc2);
-                ecflags = 0;
                 ecopts = Qnil;
 	    }
 	}

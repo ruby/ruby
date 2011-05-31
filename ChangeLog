@@ -1,3 +1,8 @@
+Wed Jun  1 01:15:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_encoding_set): should honor already set ecflags since it
+	  might be set by mode option.  fixed #4804
+
 Wed Jun  1 00:34:04 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* ext/bigdecimal/bigdecimal.c (GetVpValueWithPrec): remove unused
