@@ -1,3 +1,8 @@
+Wed May 18 03:14:49 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* test/test_singleton.rb:  Add tests from lib/singleton.rb.  Patch by
+	  Pete Higgins.  [Ruby 1.9 - Bug #4715]
+
 Tue May 17 20:20:49 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm_core.h (rb_thread_struct): add volatile to
