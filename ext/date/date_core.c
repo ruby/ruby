@@ -1868,10 +1868,12 @@ offset_to_sec(VALUE vof, int *rof)
 	{
 	    double n;
 
-	    n = NUM2DBL(vof);
+	    n = NUM2DBL(vof) * DAY_IN_SECONDS;
 	    if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
 		return 0;
-	    *rof = round(n * DAY_IN_SECONDS);
+	    *rof = round(n);
+	    if (*rof != n)
+		rb_warning("fraction of offset is ignored");
 	    return 1;
 	}
       case T_RATIONAL:
@@ -1879,17 +1881,21 @@ offset_to_sec(VALUE vof, int *rof)
 	    VALUE vs = day_to_sec(vof);
 	    VALUE vn = RRATIONAL(vs)->num;
 	    VALUE vd = RRATIONAL(vs)->den;
-	    long n, d;
+	    long n;
 
-	    if (!FIXNUM_P(vn) || !FIXNUM_P(vd))
-		return 0;
-	    n = FIX2LONG(vn);
-	    d = FIX2LONG(vd);
-	    if (d != 1)
-		return 0;
-	    if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
-		return 0;
-	    *rof = n;
+	    if (FIXNUM_P(vn) && FIXNUM_P(vd) && (FIX2LONG(vd) == 1))
+		n = FIX2LONG(vn);
+	    else {
+		vn = f_round(vs);
+		if (!f_eqeq_p(vn, vs))
+		    rb_warning("fraction of offset is ignored");
+		if (!FIXNUM_P(vn))
+		    return 0;
+		n = FIX2LONG(vn);
+		if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
+		    return 0;
+	    }
+	    *rof = (int)n;
 	    return 1;
 	}
       case T_STRING:

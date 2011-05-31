@@ -1,3 +1,7 @@
+Tue May 31 23:49:08 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (offset_to_sec): fixed invalid validation.
+
 Tue May 31 23:43:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (GetVpValueWithPrec): replace the algorithm for
