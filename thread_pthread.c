@@ -133,10 +133,22 @@ native_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 static int
 native_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, struct timespec *ts)
 {
-    int r = pthread_cond_timedwait(cond, mutex, ts);
-    if (r != 0 && r != ETIMEDOUT && r != EINTR /* Linux */) {
+    int r;
+
+    /*
+     * An old Linux may return EINTR. Even though POSIX says
+     *   "These functions shall not return an error code of [EINTR]".
+     *   http://pubs.opengroup.org/onlinepubs/009695399/functions/pthread_cond_timedwait.html
+     * Let's hide it from arch generic code.
+     */
+    do {
+        r = pthread_cond_timedwait(cond, mutex, ts);
+    } while (r == EINTR);
+
+    if (r != 0 && r != ETIMEDOUT) {
 	rb_bug_errno("pthread_cond_timedwait", r);
     }
+
     return r;
 }
 
@@ -789,7 +801,7 @@ thread_timer(void *dummy)
     while (system_working > 0) {
 	int err = WAIT_FOR_10MS();
 	if (err == ETIMEDOUT);
-	else if (err == 0 || err == EINTR) {
+	else if (err == 0) {
 	    if (rb_signal_buff_size() == 0) break;
 	}
 	else rb_bug_errno("thread_timer/timedwait", err);

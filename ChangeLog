@@ -1,3 +1,8 @@
+Sun May  8 19:39:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (native_cond_timedwait): add to care EINTR.
+	* thread_pthread.c (thread_timer): remove EINTR check.
+
 Fri May  6 15:01:11 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* ext/syck/rubyext.c (mktime_do): avoid buffer overrun, by
