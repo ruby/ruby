@@ -1,3 +1,10 @@
+Sun May 15 21:22:35 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* cont.c (cont_init): clear macihne_stack_start/end of saved thread to
+	  prevent mark machine stack of GC'ed Thread. root Fiber is not initialized by
+	  fiber_init(). based on a patch by Serge Balyuk [ruby-core:35891] fixes #4612
+	* test/ruby/test_fiber.rb (test_gc_root_fiber): add test for it.
+
 Wed May 11 19:45:27 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/forwardable.rb: support 'delegate :foo => :bar' for to meet

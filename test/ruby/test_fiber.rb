@@ -189,5 +189,16 @@ class TestFiber < Test::Unit::TestCase
       f1.transfer
     }, '[ruby-dev:40833]'
   end
+
+  def test_gc_root_fiber
+    bug4612 = '[ruby-core:35891]'
+
+    assert_normal_exit %q{
+      require 'fiber'
+      GC.stress = true
+      Thread.start{ Fiber.current; nil }.join
+      GC.start
+    }, bug4612
+  end
 end
 
