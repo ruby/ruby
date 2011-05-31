@@ -1,3 +1,12 @@
+Mon May 30 15:44:16 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* insns.def (opt_mult): as r31805, volatile it.
+	  Without this, clang -O fails calculation.
+
+	* numeric.c (fix_mul): ditto.
+
+	* rational.c (f_imul): ditto.
+
 Mon May 30 10:26:51 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric.c (int_pow): make sure to assign the result of x * z.

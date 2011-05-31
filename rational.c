@@ -588,7 +588,7 @@ inline static VALUE
 f_imul(long a, long b)
 {
     VALUE r;
-    long c;
+    volatile long c;
 
     if (a == 0 || b == 0)
 	return ZERO;
