@@ -1,3 +1,8 @@
+Tue May 31 21:28:33 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_signal.rb (TestSignal#test_signal_requiring):
+	  initialize SIGINT handler.
+
 Tue May 31 17:03:24 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* lib/net/http.rb, lib/net/protocol.rb: Allow to configure to wait

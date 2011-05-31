@@ -203,6 +203,7 @@ class TestSignal < Test::Unit::TestCase
     t.puts "sleep"
     t.close
     error = IO.popen([EnvUtil.rubybin, "-e", <<EOS, t.path]) do |child|
+trap(:INT, "DEFAULT")
 th = Thread.new do
   begin
     require ARGV[0]
