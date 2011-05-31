@@ -190,14 +190,17 @@ module Psych
           o.children.each_slice(2) { |k,v|
             key = accept(k)
 
-            if key == '<<' && Nodes::Alias === v
-              # FIXME: remove this when "<<" syntax is deprecated
-              if $VERBOSE
-                where = caller.find { |x| x !~ /psych/ }
-                warn where
-                warn "\"<<: *#{v.anchor}\" is no longer supported, please switch to \"*#{v.anchor}\""
+            if key == '<<'
+              case v
+              when Nodes::Alias
+                hash.merge! accept(v)
+              when Nodes::Sequence
+                accept(v).reverse_each do |value|
+                  hash.merge! value
+                end
+              else
+                hash[key] = accept(v)
               end
-              return accept(v)
             else
               hash[key] = accept(v)
             end
