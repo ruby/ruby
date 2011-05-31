@@ -1,3 +1,22 @@
+Fri May  6 15:01:11 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* ext/syck/rubyext.c (mktime_do): avoid buffer overrun, by
+	  silently ignoring lesser significant digits.  Required buffer
+	  length can be computable so you might at first think of
+	  allocating enough memory space on the fly using alloca().  That
+	  is a wrong idea because when using alloca there is always risk
+	  of integer overflow.  A function that accepts outer-process
+	  resources like this should not blindly trust its inputs.  In
+	  this particular case we just want to generate miliseconds
+	  resolution by strtod() so the string in question needs no more
+	  length than what we originally have.  Ignoring lesser
+	  significant digits should suffice I believe.
+
+Fri May  6 14:25:53 2011  Tinco Andringa <mail@tinco.nl>
+
+	* ext/syck/rubyext.c (mktime_do): YAML.load time correctly parse
+	  usecs smaller than 1 fixes #4571
+
 Thu May  5 17:36:31 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* eval.c (frame_func_id): store result of method_entry_of_iseq() to
