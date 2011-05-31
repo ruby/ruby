@@ -1,3 +1,10 @@
+Tue May 31 13:00:17 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* strftime.c (rb_strftime_with_timespec): improved style consistency.
+	  constified some variables.
+
+	* test/test_time.rb (TestTime#test_huge_precision): test for #4456.
+
 Tue May 31 12:53:10 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/io/wait/test_io_wait.rb (TestIOWait#{test_nread,test_ready?,

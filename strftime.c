@@ -170,8 +170,8 @@ max(int a, int b)
 static size_t
 rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const struct vtm *vtm, VALUE timev, struct timespec *ts, int gmt)
 {
-	char *endp = s + maxsize;
-	char *start = s;
+	const char *const endp = s + maxsize;
+	const char *const start = s;
 	const char *sp, *tp;
 	auto char tbuf[100];
 	long off;
@@ -237,10 +237,7 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
 			i = rb_strftime_with_timespec(s, endp - s, (fmt), vtm, timev, ts, gmt); \
 			if (!i) return 0; \
 			if (precision > i) {\
-				if (start + maxsize < s + precision) { \
-					errno = ERANGE; \
-					return 0; \
-				} \
+				NEEDS(precision); \
 				memmove(s + precision - i, s, i);\
 				memset(s, padding ? padding : ' ', precision - i); \
 				s += precision;	\
@@ -618,7 +615,7 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
 
                                 if (*format == 'G') {
                                         if (FIXNUM_P(yv)) {
-                                                long y = FIX2LONG(yv);
+                                                const long y = FIX2LONG(yv);
                                                 FMT('0', 0 <= y ? 4 : 5, "ld", y);
                                         }
                                         else {
