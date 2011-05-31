@@ -581,6 +581,7 @@ module Net   #:nodoc:
       @started = false
       @open_timeout = nil
       @read_timeout = 60
+      @continue_timeout = nil
       @debug_output = nil
       @use_ssl = false
       @ssl_context = nil
@@ -632,6 +633,16 @@ module Net   #:nodoc:
     def read_timeout=(sec)
       @socket.read_timeout = sec if @socket
       @read_timeout = sec
+    end
+
+    # Seconds to wait for 100 Continue response.  If the HTTP object does not
+    # receive a response in this many seconds it sends the request body.
+    attr_reader :continue_timeout
+
+    # Setter for the continue_timeout attribute.
+    def continue_timeout=(sec)
+      @socket.continue_timeout = sec if @socket
+      @continue_timeout = sec
     end
 
     # Returns true if the HTTP session has been started.
@@ -764,6 +775,7 @@ module Net   #:nodoc:
       end
       @socket = BufferedIO.new(s)
       @socket.read_timeout = @read_timeout
+      @socket.continue_timeout = @continue_timeout
       @socket.debug_output = @debug_output
       if use_ssl?
         begin
@@ -1298,12 +1310,15 @@ module Net   #:nodoc:
 
     def transport_request(req)
       begin_transport req
-      req.exec @socket, @curr_http_version, edit_path(req.path)
-      begin
-        res = HTTPResponse.read_new(@socket)
-      end while res.kind_of?(HTTPContinue)
-      res.reading_body(@socket, req.response_body_permitted?) {
-        yield res if block_given?
+      res = catch(:response) {
+        req.exec @socket, @curr_http_version, edit_path(req.path)
+        begin
+          res = HTTPResponse.read_new(@socket)
+        end while res.kind_of?(HTTPContinue)
+        res.reading_body(@socket, req.response_body_permitted?) {
+          yield res if block_given?
+        }
+        res
       }
       end_transport req, res
       res
@@ -1915,6 +1930,7 @@ module Net   #:nodoc:
       delete 'Transfer-Encoding'
       supply_default_content_type
       write_header sock, ver, path
+      wait_for_continue sock, ver if sock.continue_timeout
       sock.write body
     end
 
@@ -1925,6 +1941,7 @@ module Net   #:nodoc:
       end
       supply_default_content_type
       write_header sock, ver, path
+      wait_for_continue sock, ver if sock.continue_timeout
       if chunked?
         while s = f.read(1024)
           sock.write(sprintf("%x\r\n", s.length) << s << "\r\n")
@@ -2028,6 +2045,22 @@ module Net   #:nodoc:
       return if content_type()
       warn 'net/http: warning: Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
       set_content_type 'application/x-www-form-urlencoded'
+    end
+
+    ##
+    # Waits up to the continue timeout for a response from the server provided
+    # we're speaking HTTP 1.1 and are expecting a 100-continue response.
+
+    def wait_for_continue(sock, ver)
+      if ver >= '1.1' and @header['expect'] and
+          @header['expect'].include?('100-continue')
+        if IO.select([sock.io], nil, nil, sock.continue_timeout)
+          res = HTTPResponse.read_new(sock)
+          unless res.kind_of?(Net::HTTPContinue)
+            throw :response, res
+          end
+        end
+      end
     end
 
     def write_header(sock, ver, path)

@@ -464,3 +464,84 @@ class TestNetHTTP_v1_2_chunked < Test::Unit::TestCase
     }
   end
 end
+
+class TestNetHTTPContinue < Test::Unit::TestCase
+  CONFIG = {
+    'host' => '127.0.0.1',
+    'port' => 10081,
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+    'chunked' => true,
+  }
+
+  include TestNetHTTPUtils
+
+  def logfile
+    @debug = StringIO.new('')
+  end
+
+  def mount_proc(&block)
+    @server.mount('/continue', WEBrick::HTTPServlet::ProcHandler.new(block.to_proc))
+  end
+
+  def test_expect_continue
+    mount_proc {|req, res|
+      req.continue
+      res.body = req.query['body']
+    }
+    start {|http|
+      http.continue_timeout = 0.2
+      http.request_post('/continue', 'body=BODY', 'expect' => '100-continue') {|res|
+        assert_equal('BODY', res.read_body)
+      }
+    }
+    assert_match(/Expect: 100-continue/, @debug.string)
+    assert_match(/HTTP\/1.1 100 continue/, @debug.string)
+  end
+
+  def test_expect_continue_timeout
+    mount_proc {|req, res|
+      sleep 0.2
+      req.continue # just ignored because it's '100'
+      res.body = req.query['body']
+    }
+    start {|http|
+      http.continue_timeout = 0
+      http.request_post('/continue', 'body=BODY', 'expect' => '100-continue') {|res|
+        assert_equal('BODY', res.read_body)
+      }
+    }
+    assert_match(/Expect: 100-continue/, @debug.string)
+    assert_match(/HTTP\/1.1 100 continue/, @debug.string)
+  end
+
+  def test_expect_continue_error
+    mount_proc {|req, res|
+      res.status = 501
+      res.body = req.query['body']
+    }
+    start {|http|
+      http.continue_timeout = 0
+      http.request_post('/continue', 'body=ERROR', 'expect' => '100-continue') {|res|
+        assert_equal('ERROR', res.read_body)
+      }
+    }
+    assert_match(/Expect: 100-continue/, @debug.string)
+    assert_not_match(/HTTP\/1.1 100 continue/, @debug.string)
+  end
+
+  def test_expect_continue_error_while_waiting
+    mount_proc {|req, res|
+      res.status = 501
+      res.body = req.query['body']
+    }
+    start {|http|
+      http.continue_timeout = 0.5
+      http.request_post('/continue', 'body=ERROR', 'expect' => '100-continue') {|res|
+        assert_equal('ERROR', res.read_body)
+      }
+    }
+    assert_match(/Expect: 100-continue/, @debug.string)
+    assert_not_match(/HTTP\/1.1 100 continue/, @debug.string)
+  end
+end

@@ -1,3 +1,14 @@
+Tue May 31 17:03:24 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* lib/net/http.rb, lib/net/protocol.rb: Allow to configure to wait
+	  server returning '100 continue' response befor sending HTTP request
+	  body. See NEWS for more detail. See #3622.
+	  Original patch is made by Eric Hodel <drbrain@segment7.net>.
+
+	* test/net/http/test_http.rb: test it.
+
+	* NEWS: Add new feature.
+
 Tue May 31 14:17:49 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_io_s_pipe): potential bug. the mode of read IO is set as

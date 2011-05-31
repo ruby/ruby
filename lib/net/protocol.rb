@@ -50,12 +50,14 @@ module Net # :nodoc:
     def initialize(io)
       @io = io
       @read_timeout = 60
+      @continue_timeout = nil
       @debug_output = nil
       @rbuf = ''
     end
 
     attr_reader :io
     attr_accessor :read_timeout
+    attr_accessor :continue_timeout
     attr_accessor :debug_output
 
     def inspect

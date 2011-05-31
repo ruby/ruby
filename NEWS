@@ -98,6 +98,17 @@ with all sufficient information, see the ChangeLog file.
 * net/http
   * SNI (Server Name Indication) supported for HTTPS. 
 
+  * Allow to configure to wait server returning '100 continue' response
+    before sending HTTP request body. Set Net::HTTP#continue_timeout AND pass
+    'expect' => '100-continue' to a extra HTTP header. 
+
+    For example, the following code sends HTTP header and waits for getting
+    '100 continue' response before sending HTTP request body. When 0.5 [sec]
+    timeout occurs or the server send '100 continue', the client sends HTTP
+    request body.
+      http.continue_timeout = 0.5
+      http.request_post('/continue', 'body=BODY', 'expect' => '100-continue')
+
 * openssl
   * PKey::RSA and PKey::DSA now use the generic X.509 encoding scheme 
     (e.g. used in a X.509 certificate's Subject Public Key Info) when
