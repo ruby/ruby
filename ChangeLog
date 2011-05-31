@@ -1,3 +1,8 @@
+Sat Dec 25 20:01:40 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (pipe_open): Added rb_thread_atfork(). We must reinitialize
+	  GVL at new process creation.
+
 Sat Feb  5 10:09:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_get_expanded_load_path): always expand load paths.

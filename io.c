@@ -5018,6 +5018,7 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
 	fflush(stdin);		/* is it really needed? */
 	pid = rb_fork(&status, 0, 0, Qnil);
 	if (pid == 0) {		/* child */
+	    rb_thread_atfork();
 	    popen_redirect(&arg);
 	    rb_io_synchronized(RFILE(orig_stdout)->fptr);
 	    rb_io_synchronized(RFILE(orig_stderr)->fptr);
