@@ -1,3 +1,8 @@
+Mon May  2 00:36:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/socket/init.c (rsock_connect): add to care EINTR. based
+	  on a patch from Eric Wong at [ruby-core:35621][Bug #4555]
+
 Sat Apr 30 03:25:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/io/wait/test_io_wait.rb: New. for testing ext/io/wait.
