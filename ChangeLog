@@ -1,3 +1,9 @@
+Tue Jul  6 22:57:21 2010  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (nogvl_copy_stream_sendfile): jump to retry_sendfile directly
+	  to avoid select() on a socket which TCP state is CLOSED.
+	  patch by Eric Wong.  [ruby-core:31053]
+
 Mon May 30 15:44:16 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* insns.def (opt_mult): as r31805, volatile it.

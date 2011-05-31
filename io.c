@@ -8218,8 +8218,7 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
         stp->total += ss;
         copy_length -= ss;
         if (0 < copy_length) {
-            ss = -1;
-            errno = EAGAIN;
+            goto retry_sendfile;
         }
     }
     if (ss == -1) {
