@@ -1,3 +1,17 @@
+Tue May 31 22:44:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_new): support instantiation a
+	  BigDecimal object from an Integer.
+
+	* test/bigdecimal/test_bigdecimal.rb (test_new_with_integer):
+	  add for testing the above change.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_global_new): replace its body
+	  with a BigDecimal_new call.
+
+	* test/bigdecimal/test_bigdecimal.rb (test_global_new_with_integer):
+	  add for testing the above change.
+
 Tue May 31 22:24:39 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: use simple/complex mode instead of light/right mode.

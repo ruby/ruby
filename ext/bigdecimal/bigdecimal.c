@@ -1738,37 +1738,21 @@ BigDecimal_power(VALUE self, VALUE p)
     return ToValue(y);
 }
 
-static VALUE
-BigDecimal_global_new(int argc, VALUE *argv, VALUE self)
-{
-    ENTER(5);
-    Real *pv;
-    size_t mf;
-    VALUE  nFig;
-    VALUE  iniValue;
-
-    if(rb_scan_args(argc,argv,"11",&iniValue,&nFig)==1) {
-	mf = 0;
-    } else {
-	mf = GetPositiveInt(nFig);
-    }
-    SafeStringValue(iniValue);
-    GUARD_OBJ(pv,VpCreateRbObject(mf, RSTRING_PTR(iniValue)));
-    return ToValue(pv);
-}
-
- /* call-seq:
-  * new(initial, digits)
-  *
-  * Create a new BigDecimal object.
-  *
-  * initial:: The initial value, as a String. Spaces are ignored, unrecognized characters terminate the value.
-  *
-  * digits:: The number of significant digits, as a Fixnum. If omitted or 0, the number of significant digits is determined from the initial value.
-  *
-  * The actual number of significant digits used in computation is usually
-  * larger than the specified number.
-  */
+/* call-seq:
+ *   new(initial, digits)
+ *
+ * Create a new BigDecimal object.
+ *
+ * initial:: The initial value, as a String. Spaces are ignored, unrecognized
+ *           characters terminate the value.
+ *
+ * digits:: The number of significant digits, as a Fixnum. If omitted or 0,
+ *          the number of significant digits is determined from the initial
+ *          value.
+ *
+ * The actual number of significant digits used in computation is usually
+ * larger than the specified number.
+ */
 static VALUE
 BigDecimal_new(int argc, VALUE *argv, VALUE self)
 {
@@ -1778,14 +1762,34 @@ BigDecimal_new(int argc, VALUE *argv, VALUE self)
     VALUE  nFig;
     VALUE  iniValue;
 
-    if(rb_scan_args(argc,argv,"11",&iniValue,&nFig)==1) {
+    if (rb_scan_args(argc, argv, "11", &iniValue, &nFig) == 1) {
         mf = 0;
-    } else {
+    }
+    else {
         mf = GetPositiveInt(nFig);
     }
+
+    switch (TYPE(iniValue)) {
+      case T_FIXNUM:
+	/* fall through */
+      case T_BIGNUM:
+	return ToValue(GetVpValue(iniValue, 1));
+
+      case T_STRING:
+	/* fall through */
+      default:
+	break;
+    }
     SafeStringValue(iniValue);
-    GUARD_OBJ(pv,VpNewRbClass(mf, RSTRING_PTR(iniValue),self));
+    GUARD_OBJ(pv, VpNewRbClass(mf, RSTRING_PTR(iniValue),self));
+
     return ToValue(pv);
+}
+
+static VALUE
+BigDecimal_global_new(int argc, VALUE *argv, VALUE self)
+{
+    return BigDecimal_new(argc, argv, rb_cBigDecimal);
 }
 
  /* call-seq:

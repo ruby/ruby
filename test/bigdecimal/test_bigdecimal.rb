@@ -29,6 +29,13 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_raise(ArgumentError) { BigDecimal("1", -1) }
   end
 
+  def test_global_new_with_integer
+    assert_equal(BigDecimal("1"), BigDecimal(1))
+    assert_equal(BigDecimal("-1"), BigDecimal(-1))
+    assert_equal(BigDecimal((2**100).to_s), BigDecimal(2**100))
+    assert_equal(BigDecimal((-2**100).to_s), BigDecimal(-2**100))
+  end
+
   def test_new
     assert_equal(1, BigDecimal.new("1"))
     assert_equal(1, BigDecimal.new("1", 1))
@@ -42,6 +49,13 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(-1, BigDecimal.new("-Infinity").infinite?)
     assert_equal(true, BigDecimal.new("NaN").nan?)
     assert_equal( 1, BigDecimal.new("1E1111111111111111111").infinite?)
+  end
+
+  def test_new_with_integer
+    assert_equal(BigDecimal("1"), BigDecimal.new(1))
+    assert_equal(BigDecimal("-1"), BigDecimal.new(-1))
+    assert_equal(BigDecimal((2**100).to_s), BigDecimal.new(2**100))
+    assert_equal(BigDecimal((-2**100).to_s), BigDecimal.new(-2**100))
   end
 
   def _test_mode(type)
