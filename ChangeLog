@@ -22,10 +22,10 @@ Tue May 31 23:43:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_new): support instantiation from a
 	  Rational.
 
-	* test/bigdecimal/test_bigdecimal.rb (test_global_new_with_rationao): add a
+	* test/bigdecimal/test_bigdecimal.rb (test_global_new_with_rational): add a
 	  test for the above change.
 
-	* test/bigdecimal/test_bigdecimal.rb (test_new_with_rationao): ditto.
+	* test/bigdecimal/test_bigdecimal.rb (test_new_with_rational): ditto.
 
 Tue May 31 22:44:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
@@ -54,7 +54,7 @@ Tue May 31 21:28:33 2011  Tanaka Akira  <akr@fsij.org>
 Tue May 31 17:03:24 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* lib/net/http.rb, lib/net/protocol.rb: Allow to configure to wait
-	  server returning '100 continue' response befor sending HTTP request
+	  server returning '100 continue' response before sending HTTP request
 	  body. See NEWS for more detail. See #3622.
 	  Original patch is made by Eric Hodel <drbrain@segment7.net>.
 
