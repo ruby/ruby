@@ -1,3 +1,7 @@
+Thu May 19 07:47:26 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_pkey_rsa.rb: Add tests for sign/verify.
+
 Wed May 18 20:25:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/timeout.rb (Timeout#timeout): don't leak "execution expired"

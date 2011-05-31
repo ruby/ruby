@@ -51,6 +51,36 @@ class OpenSSL::TestPKeyRSA < Test::Unit::TestCase
     OpenSSL::PKey::RSA.new pem
     assert_equal([], OpenSSL.errors)
   end
-end
 
+  def test_sign_verify
+    key = OpenSSL::PKey::RSA.new(512)
+    digest = OpenSSL::Digest::SHA1.new
+    data = 'Sign me!'
+    sig = key.sign(digest, data)
+    assert(key.verify(digest, sig, data))
+  end
+
+  def test_digest_state_irrelevant_sign
+    key = OpenSSL::PKey::RSA.new(512)
+    digest1 = OpenSSL::Digest::SHA1.new
+    digest2 = OpenSSL::Digest::SHA1.new
+    data = 'Sign me!'
+    digest1 << 'Change state of digest1'
+    sig1 = key.sign(digest1, data)
+    sig2 = key.sign(digest2, data)
+    assert_equal(sig1, sig2)
+  end
+
+  def test_digest_state_irrelevant_verify
+    key = OpenSSL::PKey::RSA.new(512)
+    digest1 = OpenSSL::Digest::SHA1.new
+    digest2 = OpenSSL::Digest::SHA1.new
+    data = 'Sign me!'
+    sig = key.sign(digest1, data)
+    digest1.reset
+    digest1 << 'Change state of digest1'
+    assert(key.verify(digest1, sig, data))
+    assert(key.verify(digest2, sig, data))
+  end
+end
 end
