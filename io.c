@@ -979,7 +979,7 @@ io_write(VALUE io, VALUE str, int nosync)
  *  to a string using <code>to_s</code>. Returns the number of bytes
  *  written.
  *
- *     count = $stdout.write( "This is a test\n" )
+ *     count = $stdout.write("This is a test\n")
  *     puts "That was #{count} bytes of data"
  *
  *  <em>produces:</em>
@@ -5457,8 +5457,8 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
  *  Document-method: IO::open
  *
  *  call-seq:
- *     IO.open(fd, mode_string="r" [, opt] )               -> io
- *     IO.open(fd, mode_string="r" [, opt] ) {|io| block } -> obj
+ *     IO.open(fd, mode_string="r" [, opt])               -> io
+ *     IO.open(fd, mode_string="r" [, opt]) {|io| block } -> obj
  *
  *  With no associated block, <code>open</code> is a synonym for
  *  <code>IO.new</code>. If the optional code block is given, it will
@@ -5536,8 +5536,8 @@ check_pipe_command(VALUE filename_or_command)
 
 /*
  *  call-seq:
- *     open(path [, mode_enc [, perm]] [, opt] )                -> io or nil
- *     open(path [, mode_enc [, perm]] [, opt] ) {|io| block }  -> obj
+ *     open(path [, mode_enc [, perm]] [, opt])                -> io or nil
+ *     open(path [, mode_enc [, perm]] [, opt]) {|io| block }  -> obj
  *
  *  Creates an <code>IO</code> object connected to the given stream,
  *  file, or subprocess.
@@ -5937,7 +5937,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
 
 /*
  *  call-seq:
- *     ios.printf(format_string [, obj, ...] )   -> nil
+ *     ios.printf(format_string [, obj, ...])   -> nil
  *
  *  Formats and writes to <em>ios</em>, converting parameters under
  *  control of the format string. See <code>Kernel#sprintf</code>
@@ -5953,8 +5953,8 @@ rb_io_printf(int argc, VALUE *argv, VALUE out)
 
 /*
  *  call-seq:
- *     printf(io, string [, obj ... ] )    -> nil
- *     printf(string [, obj ... ] )        -> nil
+ *     printf(io, string [, obj ... ])    -> nil
+ *     printf(string [, obj ... ])        -> nil
  *
  *  Equivalent to:
  *     io.write(sprintf(string, obj, ...)
