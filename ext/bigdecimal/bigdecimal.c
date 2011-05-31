@@ -50,6 +50,7 @@ static ID id_banker;
 static ID id_ceiling;
 static ID id_ceil;
 static ID id_floor;
+static ID id_to_r;
 
 /* MACRO's to guard objects from GC by keeping them in stack */
 #define ENTER(n) volatile VALUE vStack[n];int iStack=0
@@ -145,6 +146,11 @@ GetVpValueWithPrec(VALUE v, long prec, int must)
 again:
     switch(TYPE(v))
     {
+      case T_FLOAT:
+	if (prec < 0) goto unable_to_coerce_without_prec;
+	if (prec > DBL_DIG+1)goto SomeOneMayDoIt;
+	v = rb_funcall(v, id_to_r, 0);
+	/* fall through */
       case T_RATIONAL:
 	if (prec < 0) goto unable_to_coerce_without_prec;
 
@@ -171,6 +177,7 @@ again:
 	    goto SomeOneMayDoIt;
 	}
 	break;
+
       case T_FIXNUM:
 	sprintf(szD, "%ld", FIX2LONG(v));
 	return VpCreateRbObject(VpBaseFig() * 2 + 1, szD);
@@ -1803,6 +1810,11 @@ BigDecimal_new(int argc, VALUE *argv, VALUE self)
       case T_BIGNUM:
 	return ToValue(GetVpValue(iniValue, 1));
 
+      case T_FLOAT:
+	if (mf > DBL_DIG+1) {
+	    rb_raise(rb_eArgError, "precision too large.");
+	}
+	/* fall through */
       case T_RATIONAL:
 	if (NIL_P(nFig)) {
 	    rb_raise(rb_eArgError, "can't omit precision for a Rational.");
@@ -2232,6 +2244,7 @@ Init_bigdecimal(void)
     id_ceiling = rb_intern_const("ceiling");
     id_ceil = rb_intern_const("ceil");
     id_floor = rb_intern_const("floor");
+    id_to_r = rb_intern_const("to_r");
 }
 
 /*

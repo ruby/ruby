@@ -1,3 +1,15 @@
+Tue Jun  1 00:32:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (GetVpValueWithPrec): support instantiation from
+	  a Float through Rational.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_new): ditto.
+
+	* test/bigdecimal/test_bigdecimal.rb (test_global_new_float): add a test for
+	  the above changes.
+
+	* test/bigdecimal/test_bigdecimal.rb (test_new_with_float): ditto.
+
 Tue Jun  1 00:07:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_coerce): support coerce with a
