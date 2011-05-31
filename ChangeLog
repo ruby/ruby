@@ -1,3 +1,8 @@
+Mon May 30 10:26:51 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (int_pow): make sure to assign the result of x * z.
+	  If xz is optimized out, the value won't overflow.
+
 Sun May 29 15:09:05 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_round): fix for negative value.
