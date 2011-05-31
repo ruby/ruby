@@ -1,3 +1,8 @@
+Wed Jun  1 00:34:04 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* ext/bigdecimal/bigdecimal.c (GetVpValueWithPrec): remove unused
+	  variable.
+
 Tue Jun  1 00:32:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (GetVpValueWithPrec): support instantiation from

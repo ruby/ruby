@@ -141,7 +141,6 @@ GetVpValueWithPrec(VALUE v, long prec, int must)
     VALUE num, bg, args[2];
     char szD[128];
     VALUE orig = Qundef;
-    int util_loaded = 0;
 
 again:
     switch(TYPE(v))
