@@ -1,3 +1,8 @@
+Wed May 11 19:45:27 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/forwardable.rb: support 'delegate :foo => :bar' for to meet
+	  by specification of RDOC.
+
 Sun May  8 19:39:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (native_cond_timedwait): add to care EINTR.
