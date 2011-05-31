@@ -880,6 +880,69 @@ rb_mod_include(int argc, VALUE *argv, VALUE module)
     return module;
 }
 
+/*
+ *  call-seq:
+ *     mix(module, ...)    -> module
+ *
+ *  Mix +Module+> into self.
+ */
+
+static VALUE
+rb_mod_mix_into(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE module, tmp, constants = Qnil, methods = Qnil;
+    st_table *const_tbl = 0, *method_tbl = 0;
+    int i = 0;
+
+    if (argc < 1 || argc > 3) {
+      wrong_args:
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
+    }
+    module = argv[i++];
+
+    switch (TYPE(module)) {
+      case T_CLASS:
+      case T_MODULE:
+	break;
+      default:
+	Check_Type(module, T_CLASS);
+	break;
+    }
+    if (i < argc) {
+	constants = argv[i++];
+	if (!NIL_P(tmp = rb_check_array_type(constants))) {
+	    constants = tmp;
+	}
+	else if (!NIL_P(methods = rb_check_hash_type(constants))) {
+	    constants = Qnil;
+	}
+	else {
+	    Check_Type(constants, T_HASH);
+	}
+    }
+    if (i < argc && NIL_P(methods)) {
+	methods = argv[i++];
+	if (NIL_P(tmp = rb_check_hash_type(methods))) {
+	    Check_Type(methods, T_HASH);
+	}
+	methods = tmp;
+    }
+    if (i < argc) goto wrong_args;
+    if (!NIL_P(constants)) {
+	VALUE hash = rb_hash_new();
+	for (i = 0; i < RARRAY_LEN(constants); ++i) {
+	    rb_hash_update_by(hash, RARRAY_PTR(constants)[i], NULL);
+	}
+	const_tbl = RHASH_TBL(RB_GC_GUARD(constants) = hash);
+    }
+    if (!NIL_P(methods)) {
+	method_tbl = RHASH_TBL(RB_GC_GUARD(methods));
+    }
+
+    rb_mix_module(klass, module, const_tbl, method_tbl);
+    return module;
+}
+
 void
 rb_obj_call_init(VALUE obj, int argc, VALUE *argv)
 {
@@ -1144,6 +1207,7 @@ Init_eval(void)
     rb_define_private_method(rb_cModule, "append_features", rb_mod_append_features, 1);
     rb_define_private_method(rb_cModule, "extend_object", rb_mod_extend_object, 1);
     rb_define_private_method(rb_cModule, "include", rb_mod_include, -1);
+    rb_define_private_method(rb_cModule, "mix", rb_mod_mix_into, -1);
 
     rb_undef_method(rb_cClass, "module_function");
 

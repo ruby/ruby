@@ -100,5 +100,6 @@ void rb_mark_method_entry(const rb_method_entry_t *me);
 void rb_free_method_entry(rb_method_entry_t *me);
 void rb_sweep_method_entry(void *vm);
 void rb_free_m_table(st_table *tbl);
+void rb_mix_module(VALUE klass, VALUE module, struct st_table *constants, struct st_table *methods);
 
 #endif /* METHOD_H */
