@@ -1,3 +1,8 @@
+Tue May 17 20:20:49 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm_core.h (rb_thread_struct): add volatile to
+	  transition_for_lock because it is not protected by lock.
+
 Sun May 15 21:22:35 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* cont.c (cont_init): clear macihne_stack_start/end of saved thread to

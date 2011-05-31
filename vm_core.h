@@ -427,7 +427,7 @@ typedef struct rb_thread_struct
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
     struct rb_mutex_struct *keeping_mutexes;
-    int transition_for_lock;
+    volatile int transition_for_lock;
 
     struct rb_vm_tag *tag;
     struct rb_vm_protect_tag *protect_tag;
