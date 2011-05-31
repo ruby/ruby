@@ -1,3 +1,11 @@
+Fri May 27 11:31:51 2011  misfo <tedwardo2@gmail.com>
+
+	* lib/rexml/text.rb (REXML::Text#initialize): prevent an error
+	  when passing a frozen string to REXML::Text.new
+
+	  dup the string passed in instead of cloning so that it's frozen
+	  state is ignored
+
 Sun May 22 07:10:25 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_pkey_dsa.rb: Add tests for sign/verify.

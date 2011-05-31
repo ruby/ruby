@@ -371,6 +371,9 @@ class Tester < Test::Unit::TestCase
     assert_equal(string, text.to_s)
     text2 = Text.new(text)
     assert_equal(text, text2)
+    string = "Frozen".freeze
+    text3 = Text.new(string)
+    assert_equal(string, text3.to_s)
     #testing substitution
     string = "0 < ( 1 & 1 )"
     correct = "0 &lt; ( 1 &amp; 1 )"
