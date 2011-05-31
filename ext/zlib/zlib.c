@@ -2960,7 +2960,7 @@ rb_gzfile_set_orig_name(VALUE obj, VALUE str)
 }
 
 /*
- * Document-method: Zlib::GzipFile#set_comment
+ * Document-method: Zlib::GzipFile#comment=
  *
  * Specify the comment (+str+) in the gzip header.
  */
@@ -3057,7 +3057,7 @@ rb_gzfile_sync(VALUE obj)
 }
 
 /*
- * Document-method: Zlib::GzipFile#set_sync
+ * Document-method: Zlib::GzipFile#sync=
  *
  * call-seq: sync = flag
  *

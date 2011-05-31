@@ -1,3 +1,8 @@
+Wed Jun  1 07:21:40 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c:  Fix document-method declarations for set_sync and
+	  set_comment.  [Ruby 1.9 - Bug #4695]
+
 Wed Jun  1 06:43:13 2011  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* load.c (loaded_feature_path): cut nonsence loop execution to fix
