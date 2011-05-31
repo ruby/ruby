@@ -1,3 +1,8 @@
+Tue May 31 12:53:10 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/io/wait/test_io_wait.rb (TestIOWait#{test_nread,test_ready?,
+	  test_wait}: give system some time to process the written data.
+
 Tue May 31 12:40:49 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io.rb (TestIO#test_open_mode): MUST release resources
