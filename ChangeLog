@@ -1,3 +1,12 @@
+Tue Jun  1 00:07:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_coerce): support coerce with a
+	  Rational.  The precision used for instantiate a BigDecimal from the
+	  given Rational is obtained from the receiver BigDecimal.
+
+	* test/bigdecimal/test_bigdecimal.rb (test_coerce): add a test for the
+	  above change.
+
 Tue May 31 23:49:08 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (offset_to_sec): fixed invalid validation.

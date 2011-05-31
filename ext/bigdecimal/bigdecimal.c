@@ -675,12 +675,21 @@ BigDecimal_coerce(VALUE self, VALUE other)
     ENTER(2);
     VALUE obj;
     Real *b;
+
     if (TYPE(other) == T_FLOAT) {
 	obj = rb_assoc_new(other, BigDecimal_to_f(self));
-    } else {
-	GUARD_OBJ(b,GetVpValue(other,1));
+    }
+    else {
+	if (TYPE(other) == T_RATIONAL) {
+	    Real* pv = DATA_PTR(self);
+	    GUARD_OBJ(b, GetVpValueWithPrec(other, pv->Prec*VpBaseFig(), 1));
+	}
+	else {
+	    GUARD_OBJ(b, GetVpValue(other, 1));
+	}
 	obj = rb_assoc_new(b->obj, self);
     }
+
     return obj;
 }
 
