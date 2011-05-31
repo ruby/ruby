@@ -1,3 +1,8 @@
+Wed Jun  1 06:43:13 2011  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* load.c (loaded_feature_path): cut nonsence loop execution to fix
+	  performance bug.
+
 Wed Jun  1 01:16:02 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_mix_module): implement Module#mix.
