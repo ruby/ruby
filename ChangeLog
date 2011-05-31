@@ -1,3 +1,17 @@
+Thu May  5 17:36:31 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* eval.c (frame_func_id): store result of method_entry_of_iseq() to
+	  cfp->me because method_entry_of_iseq() might become expensive.
+
+Thu May  5 15:03:51 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* eval.c (frame_func_id): __method__ return different name from
+	  methods defined by Module#define_method with a same block.
+	  [ruby-core:35386] fixes #4606
+	* eval (method_entry_of_iseq): new helper function. search control
+	  frame stack for a method entry which has given iseq.
+	* test/ruby/test_method.rb: add tests for #4696
+
 Mon May  2 00:36:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/socket/init.c (rsock_connect): add to care EINTR. based
