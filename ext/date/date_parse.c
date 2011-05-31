@@ -623,7 +623,7 @@ static int
 parse_time_cb(VALUE m, VALUE hash)
 {
     static const char pat_source[] =
-            "\\A(\\d+)h?"
+	    "\\A(\\d+)h?"
 	      "(?:\\s*:?\\s*(\\d+)m?"
 		"(?:"
 		  "\\s*:?\\s*(\\d+)(?:[,.](\\d+))?s?"

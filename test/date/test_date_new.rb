@@ -68,9 +68,6 @@ class TestDateNew < Test::Unit::TestCase
 
   def test_ordinal__ex
     assert_raise(ArgumentError) do
-      Date.ordinal(2001,1.1)
-    end
-    assert_raise(ArgumentError) do
       Date.ordinal(2001,366)
     end
     assert_raise(ArgumentError) do
@@ -129,9 +126,6 @@ class TestDateNew < Test::Unit::TestCase
   end
 
   def test_civil__ex
-    assert_raise(ArgumentError) do
-      Date.civil(2001,2,1.1)
-    end
     assert_raise(ArgumentError) do
       Date.civil(2001,2,29)
     end
@@ -199,9 +193,6 @@ class TestDateNew < Test::Unit::TestCase
   end
 
   def test_commercial__ex
-    assert_raise(ArgumentError) do
-      Date.commercial(1997,1,1.1)
-    end
     assert_raise(ArgumentError) do
       Date.commercial(1997,53,1)
     end

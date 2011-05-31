@@ -184,8 +184,12 @@ class TestDateStrftime < Test::Unit::TestCase
     s = '2006-08-08T23:15:33'
     (-24..24).collect{|x| '%+.2d' % x}.each do |hh|
       %w(00 30).each do |mm|
+	r = hh + mm
+	if r[-4,4] == '2430'
+	  r = '+0000'
+	end
 	d = DateTime.parse(s + hh + mm)
-	assert_equal(hh + mm, d.strftime('%z'))
+	assert_equal(r, d.strftime('%z'))
       end
     end
   end

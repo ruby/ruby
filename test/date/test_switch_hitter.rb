@@ -235,6 +235,116 @@ class TestSH < Test::Unit::TestCase
     assert_equal(false, Date.new(2001,2,3) === Rational('4903886/2'))
   end
 
+  def test_period
+    # -5000
+    d = Date.new(-5000,1,1)
+    assert_equal([-5000, 1, 1, 5], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.gregorian
+    assert_equal([-5001, 11, 22, 5], [d2.year, d2.mon, d2.mday, d.wday])
+
+    d = Date.new(-5000,1,1,Date::JULIAN)
+    assert_equal([-5000, 1, 1, 5], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.gregorian
+    assert_equal([-5001, 11, 22, 5], [d2.year, d2.mon, d2.mday, d.wday])
+
+    d = Date.new(-5000,1,1,Date::GREGORIAN)
+    assert_equal([-5000, 1, 1, 3], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.julian
+    assert_equal([-5000, 2, 10, 3], [d2.year, d2.mon, d2.mday, d.wday])
+
+    d = Date.jd(-105192)
+    assert_equal([-5000, 1, 1, 5], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.gregorian
+    assert_equal([-5001, 11, 22, 5], [d2.year, d2.mon, d2.mday, d.wday])
+
+    d = Date.jd(-105192,Date::JULIAN)
+    assert_equal([-5000, 1, 1, 5], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.gregorian
+    assert_equal([-5001, 11, 22, 5], [d2.year, d2.mon, d2.mday, d.wday])
+
+    d = Date.jd(-105152,Date::GREGORIAN)
+    assert_equal([-5000, 1, 1, 3], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.julian
+    assert_equal([-5000, 2, 10, 3], [d2.year, d2.mon, d2.mday, d.wday])
+
+    # -5000000
+    d = Date.new(-5_000_000,1,1)
+    assert_equal([-5_000_000, 1, 1, 3], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.gregorian
+    assert_equal([-5_000_103, 4, 28, 3], [d2.year, d2.mon, d2.mday, d.wday])
+
+    d = Date.new(-5_000_000,1,1,Date::JULIAN)
+    assert_equal([-5_000_000, 1, 1, 3], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.gregorian
+    assert_equal([-5_000_103, 4, 28, 3], [d2.year, d2.mon, d2.mday, d.wday])
+
+    d = Date.new(-5_000_000,1,1,Date::GREGORIAN)
+    assert_equal([-5_000_000, 1, 1, 6], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.julian
+    assert_equal([-4_999_898, 9, 4, 6], [d2.year, d2.mon, d2.mday, d.wday])
+
+    d = Date.jd(-1824528942)
+    assert_equal([-5_000_000, 1, 1, 3], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.gregorian
+    assert_equal([-5_000_103, 4, 28, 3], [d2.year, d2.mon, d2.mday, d.wday])
+
+    d = Date.jd(-1824528942,Date::JULIAN)
+    assert_equal([-5_000_000, 1, 1, 3], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.gregorian
+    assert_equal([-5_000_103, 4, 28, 3], [d2.year, d2.mon, d2.mday, d.wday])
+
+    d = Date.jd(-1824491440,Date::GREGORIAN)
+    assert_equal([-5_000_000, 1, 1, 6], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.julian
+    assert_equal([-4_999_898, 9, 4, 6], [d2.year, d2.mon, d2.mday, d.wday])
+
+    # 5000000
+    d = Date.new(5_000_000,1,1)
+    assert_equal([5_000_000, 1, 1, 6], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.julian
+    assert_equal([4_999_897, 5, 3, 6], [d2.year, d2.mon, d2.mday, d.wday])
+
+    d = Date.new(5_000_000,1,1,Date::JULIAN)
+    assert_equal([5_000_000, 1, 1, 5], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.gregorian
+    assert_equal([5_000_102, 9, 1, 5], [d2.year, d2.mon, d2.mday, d.wday])
+
+    d = Date.new(5_000_000,1,1,Date::GREGORIAN)
+    assert_equal([5_000_000, 1, 1, 6], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.julian
+    assert_equal([4_999_897, 5, 3, 6], [d2.year, d2.mon, d2.mday, d.wday])
+
+    d = Date.jd(1827933560)
+    assert_equal([5_000_000, 1, 1, 6], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.julian
+    assert_equal([4_999_897, 5, 3, 6], [d2.year, d2.mon, d2.mday, d.wday])
+
+    d = Date.jd(1827971058,Date::JULIAN)
+    assert_equal([5_000_000, 1, 1, 5], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.gregorian
+    assert_equal([5_000_102, 9, 1, 5], [d2.year, d2.mon, d2.mday, d.wday])
+
+    d = Date.jd(1827933560,Date::GREGORIAN)
+    assert_equal([5_000_000, 1, 1, 6], [d.year, d.mon, d.mday, d.wday])
+    d2 = d.julian
+    assert_equal([4_999_897, 5, 3, 6], [d2.year, d2.mon, d2.mday, d.wday])
+
+    # dt
+    d = DateTime.new(-123456789,2,3,4,5,6,0)
+    assert_equal([-123456789, 2, 3, 4, 5, 6, 1],
+		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.wday])
+    d2 = d.gregorian
+    assert_equal([-123459325, 12, 27, 4, 5, 6, 1],
+		 [d2.year, d2.mon, d2.mday, d2.hour, d2.min, d2.sec, d.wday])
+
+    d = DateTime.new(123456789,2,3,4,5,6,0)
+    assert_equal([123456789, 2, 3, 4, 5, 6, 5],
+		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.wday])
+    d2 = d.julian
+    assert_equal([123454254, 1, 19, 4, 5, 6, 5],
+		 [d2.year, d2.mon, d2.mday, d2.hour, d2.min, d2.sec, d.wday])
+  end
+
   def test_marshal
     s = "\x04\bU:\tDate[\bU:\rRational[\ai\x03\xCF\xD3Ji\ai\x00o:\x13Date::Infinity\x06:\a@di\xFA"
     d = Marshal.load(s)
@@ -243,11 +353,6 @@ class TestSH < Test::Unit::TestCase
     s = "\x04\bU:\rDateTime[\bU:\rRational[\al+\b\xC9\xB0\x81\xBD\x02\x00i\x02\xC0\x12U;\x06[\ai\bi\ro:\x13Date::Infinity\x06:\a@di\xFA"
     d = Marshal.load(s)
     assert_equal(DateTime.new(2001,2,3,4,5,6,Rational(9,24),Date::GREGORIAN), d)
-  end
-
-  def test_base
-    skip unless defined?(Date.test_all)
-    assert_equal(true, Date.test_all)
   end
 
   def test_taint
@@ -275,6 +380,25 @@ class TestSH < Test::Unit::TestCase
     assert_equal(false, s.tainted?)
     s = DateTime.now.strftime('super $record'.taint)
     assert_equal(true, s.tainted?)
+  end
+
+  def test_dup
+    d = Date.new(2001,2,3)
+    d2 = d.dup
+    assert_not_equal(d.object_id, d2.object_id)
+    assert_kind_of(Date, d2)
+    assert_equal(d, d2)
+
+    d = DateTime.new(2001,2,3)
+    d2 = d.dup
+    assert_not_equal(d.object_id, d2.object_id)
+    assert_kind_of(DateTime, d2)
+    assert_equal(d, d2)
+  end
+
+  def test_base
+    skip unless defined?(Date.test_all)
+    assert_equal(true, Date.test_all)
   end
 
 end

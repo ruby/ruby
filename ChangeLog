@@ -1,3 +1,8 @@
+Tue May 31 22:24:39 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: use simple/complex mode instead of light/right mode.
+	* test/date/*.rb: followed the above changes.
+
 Tue May 31 21:28:33 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_signal.rb (TestSignal#test_signal_requiring):
