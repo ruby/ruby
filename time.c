@@ -1392,7 +1392,7 @@ gmtimew(wideval_t timew, struct vtm *result)
     return result;
 }
 
-static struct tm *localtime_with_gmtoff(const time_t *t, struct tm *result, long *gmtoff);
+static struct tm *localtime_with_gmtoff_zone(const time_t *t, struct tm *result, long *gmtoff, const char **zone);
 
 /*
  * The idea is come from Perl:
@@ -1488,30 +1488,43 @@ calc_wday(int year, int month, int day)
 }
 
 static VALUE
-guess_local_offset(struct vtm *vtm_utc)
+guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, const char **zone_ret)
 {
-    VALUE off = INT2FIX(0);
     struct tm tm;
     long gmtoff;
+    const char *zone;
     time_t t;
     struct vtm vtm2;
     VALUE timev;
     int y, wday;
 
-# if defined(NEGATIVE_TIME_T)
-    /* 1901-12-13 20:45:52 UTC : The oldest time in 32-bit signed time_t. */
-    if (localtime_with_gmtoff((t = (time_t)0x80000000, &t), &tm, &gmtoff))
-	off = LONG2FIX(gmtoff);
-    else
-# endif
-    /* 1970-01-01 00:00:00 UTC : The Unix epoch - the oldest time in portable time_t. */
-    if (localtime_with_gmtoff((t = 0, &t), &tm, &gmtoff))
-	off = LONG2FIX(gmtoff);
-
     /* The first DST is at 1916 in German.
      * So we don't need to care DST before that. */
-    if (lt(vtm_utc->year, INT2FIX(1916)))
+    if (lt(vtm_utc->year, INT2FIX(1916))) {
+        VALUE off = INT2FIX(0);
+        int isdst = 0;
+        zone = "UTC";
+
+# if defined(NEGATIVE_TIME_T)
+        /* 1901-12-13 20:45:52 UTC : The oldest time in 32-bit signed time_t. */
+        if (localtime_with_gmtoff_zone((t = (time_t)0x80000000, &t), &tm, &gmtoff, &zone)) {
+            off = LONG2FIX(gmtoff);
+            isdst = tm.tm_isdst;
+        }
+        else
+# endif
+        /* 1970-01-01 00:00:00 UTC : The Unix epoch - the oldest time in portable time_t. */
+        if (localtime_with_gmtoff_zone((t = 0, &t), &tm, &gmtoff, &zone)) {
+            off = LONG2FIX(gmtoff);
+            isdst = tm.tm_isdst;
+        }
+
+        if (isdst_ret)
+            *isdst_ret = isdst;
+        if (zone_ret)
+            *zone_ret = zone;
         return off;
+    }
 
     /* It is difficult to guess future. */
 
@@ -1527,17 +1540,28 @@ guess_local_offset(struct vtm *vtm_utc)
 
     timev = w2v(rb_time_unmagnify(timegmw(&vtm2)));
     t = NUM2TIMET(timev);
-    if (localtime_with_gmtoff(&t, &tm, &gmtoff))
+    zone = "UTC";
+    if (localtime_with_gmtoff_zone(&t, &tm, &gmtoff, &zone)) {
+        if (isdst_ret)
+            *isdst_ret = tm.tm_isdst;
+        if (zone_ret)
+            *zone_ret = zone;
         return LONG2FIX(gmtoff);
+    }
 
     {
         /* Use the current time offset as a last resort. */
         static time_t now = 0;
         static long now_gmtoff = 0;
+        static const char *now_zone = "UTC";
         if (now == 0) {
             now = time(NULL);
-            localtime_with_gmtoff(&now, &tm, &now_gmtoff);
+            localtime_with_gmtoff_zone(&now, &tm, &now_gmtoff, &now_zone);
         }
+        if (isdst_ret)
+            *isdst_ret = tm.tm_isdst;
+        if (zone_ret)
+            *zone_ret = now_zone;
         return LONG2FIX(now_gmtoff);
     }
 }
@@ -1643,7 +1667,7 @@ timelocalw(struct vtm *vtm)
 }
 
 static struct tm *
-localtime_with_gmtoff(const time_t *t, struct tm *result, long *gmtoff)
+localtime_with_gmtoff_zone(const time_t *t, struct tm *result, long *gmtoff, const char **zone)
 {
     struct tm tm;
 
@@ -1671,6 +1695,22 @@ localtime_with_gmtoff(const time_t *t, struct tm *result, long *gmtoff)
 	off = off * 60 + l->tm_sec - u->tm_sec;
 	*gmtoff = off;
 #endif
+
+        if (zone) {
+#if defined(HAVE_TM_ZONE)
+            *zone = zone_str(tm.tm_zone);
+#elif defined(HAVE_TZNAME) && defined(HAVE_DAYLIGHT)
+            /* this needs tzset or localtime, instead of localtime_r */
+            *zone = zone_str(tzname[daylight && tm.tm_isdst]);
+#else
+            {
+                char buf[64];
+                strftime(buf, sizeof(buf), "%Z", &tm);
+                *zone = zone_str(buf);
+            }
+#endif
+        }
+
         *result = tm;
 	return result;
     }
@@ -1701,6 +1741,8 @@ static struct vtm *
 localtimew(wideval_t timew, struct vtm *result)
 {
     VALUE subsecx, offset;
+    const char *zone;
+    int isdst;
 
     if (!timew_out_of_timet_range(timew)) {
         time_t t;
@@ -1712,7 +1754,7 @@ localtimew(wideval_t timew, struct vtm *result)
 
         t = WV2TIMET(timew2);
 
-        if (localtime_with_gmtoff(&t, &tm, &gmtoff)) {
+        if (localtime_with_gmtoff_zone(&t, &tm, &gmtoff, &zone)) {
             result->year = LONG2NUM((long)tm.tm_year + 1900);
             result->mon = tm.tm_mon + 1;
             result->mday = tm.tm_mday;
@@ -1724,19 +1766,7 @@ localtimew(wideval_t timew, struct vtm *result)
             result->yday = tm.tm_yday+1;
             result->isdst = tm.tm_isdst;
             result->utc_offset = LONG2NUM(gmtoff);
-#if defined(HAVE_TM_ZONE)
-            result->zone = zone_str(tm.tm_zone);
-#elif defined(HAVE_TZNAME) && defined(HAVE_DAYLIGHT)
-            /* this needs tzset or localtime, instead of localtime_r */
-            result->zone = zone_str(tzname[daylight && tm.tm_isdst]);
-#else
-            {
-                char buf[64];
-                strftime(buf, sizeof(buf), "%Z", &tm);
-                result->zone = zone_str(buf);
-            }
-#endif
-
+            result->zone = zone;
             return result;
         }
     }
@@ -1744,12 +1774,14 @@ localtimew(wideval_t timew, struct vtm *result)
     if (!gmtimew(timew, result))
         return NULL;
 
-    offset = guess_local_offset(result);
+    offset = guess_local_offset(result, &isdst, &zone);
 
     if (!gmtimew(wadd(timew, rb_time_magnify(v2w(offset))), result))
         return NULL;
 
     result->utc_offset = offset;
+    result->isdst = isdst;
+    result->zone = zone;
 
     return result;
 }
