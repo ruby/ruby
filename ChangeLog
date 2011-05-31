@@ -374,48 +374,48 @@ Mon May 23 08:32:59 2011  Eric Hodel  <drbrain@segment7.net>
 Mon May 23 07:19:45 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* NEWS (openssl): Infinite length support. Different behavior of
-	Constructive and Primitive constructors.
+	  Constructive and Primitive constructors.
 
 Mon May 23 06:58:33 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: Forbid Constructives whose value is not an
-	Array to prevent segfault. Added test.
+	  Array to prevent segfault. Added test.
 
 Mon May 23 06:33:17 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: Forbid Constructive without infinite
-	length. This also prevents a segfault. Added test and improved
-	documentation.
+	  length. This also prevents a segfault. Added test and improved
+	  documentation.
 
 Mon May 23 05:58:14 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: Fix decoding of infinite length values.
-	Simplified ossl_asn1_decode0 by splitting it into three separate
-	functions. Add tests.
-	[Ruby 1.9 - Bug #4374][ruby-core:35123]
+	  Simplified ossl_asn1_decode0 by splitting it into three separate
+	  functions. Add tests.
+	  [Ruby 1.9 - Bug #4374][ruby-core:35123]
 
 Mon May 23 04:03:46 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c (ossl_asn1_initialize): Allow creation of
-	Constructives with an explicit tag_class parameter without
-	automatically setting tagging to :EXPLICIT. Fixes a bug when encoding
-	infinite length primitive values.
+	  Constructives with an explicit tag_class parameter without
+	  automatically setting tagging to :EXPLICIT. Fixes a bug when encoding
+	  infinite length primitive values.
 
 Mon May 23 04:03:46 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c (ossl_asn1_cons_to_der): Add an additional
-	EOC for infinite length Constructives that are supposed to be encoded
-	with explicit tagging. Also tabify method correctly.
+	  EOC for infinite length Constructives that are supposed to be encoded
+	  with explicit tagging. Also tabify method correctly.
 
 Mon May 23 03:44:39 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c (ossl_asn1data_to_der): Remove redundant
-	flag tmp_cons.
+	  flag tmp_cons.
 
 Mon May 23 00:35:00 2001  Kenta Murata  <mrkn@mrkn.jp>
 
-	* bignum.c (dump_bignum, bigmul1_balance, big_split, biglsh_bang,
-	  bigrsh_bang, big_split3, bigmul1_toom3, bigmul0): implement Toom3 (Toom-Cook)
+	* bignum.c (dump_bignum, bigmul1_balance, big_split, biglsh_bang),
+	  (bigrsh_bang, big_split3, bigmul1_toom3, bigmul0): implement Toom3 (Toom-Cook)
 	  multiplication.
 
 	* include/ruby/defines.h: add format prefixes for BDIGIT and BDIGIT_DBL.
@@ -423,12 +423,12 @@ Mon May 23 00:35:00 2001  Kenta Murata  <mrkn@mrkn.jp>
 Sun May 22 23:24:02 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: Instead of rb_intern use static symbols to
-	improve performance.
+	  improve performance.
 
 Sun May 22 21:56:51 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: Use OpenSSL constants V_ASN1_xxx instead of
-	hardcoded numbers for initializing class_tag_map.
+	  hardcoded numbers for initializing class_tag_map.
 
 Sun May 22 21:29:29 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
@@ -486,8 +486,8 @@ Sun May 22 09:29:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Sun May 22 08:57:13 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: Default tag lookup in constant time via hash
-	instead of previous linear algorithm.
-	[Ruby 1.9 - Feature #4309][ruby-core:34813]
+	  instead of previous linear algorithm.
+	  [Ruby 1.9 - Feature #4309][ruby-core:34813]
 
 Sun May 22 07:54:16 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
@@ -500,7 +500,7 @@ Sun May 22 07:10:25 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 Sun May 22 06:07:17 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_x509cert.rb: Merge DSA-related tests from ruby_1_8
-	branch.
+	  branch.
 
 Sun May 22 04:11:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
