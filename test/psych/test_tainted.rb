@@ -1,4 +1,4 @@
-require 'psych/helper'
+require 'psych/handler'
 
 module Psych
   class TestStringTainted < TestCase
