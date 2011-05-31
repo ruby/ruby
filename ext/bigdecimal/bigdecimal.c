@@ -131,11 +131,13 @@ ToValue(Real *p)
     return p->obj;
 }
 
-static Real *
-GetVpValue(VALUE v, int must)
+static VALUE BigDecimal_div2(int, VALUE*, VALUE);
+
+static Real*
+GetVpValueWithPrec(VALUE v, long prec, int must)
 {
     Real *pv;
-    VALUE bg;
+    VALUE num, bg, args[2];
     char szD[128];
     VALUE orig = Qundef;
     int util_loaded = 0;
@@ -143,54 +145,71 @@ GetVpValue(VALUE v, int must)
 again:
     switch(TYPE(v))
     {
-    case T_RATIONAL:
-        if(orig == Qundef ? (orig = v, 1) : orig != v) {
-            if(!util_loaded) {
-                rb_require("bigdecimal/util");
-                util_loaded = 1;
-            }
-            v = rb_funcall2(v, rb_intern("to_d"), 0, 0);
-            goto again;
-        }
-        v = orig;
-        goto SomeOneMayDoIt;
+      case T_RATIONAL:
+	if (prec < 0) goto unable_to_coerce_without_prec;
 
-    case T_DATA:
-        if(rb_typeddata_is_kind_of(v, &BigDecimal_data_type)) {
-            pv = DATA_PTR(v);
-            return pv;
-        } else {
-            goto SomeOneMayDoIt;
-        }
-        break;
-    case T_FIXNUM:
-        sprintf(szD, "%ld", FIX2LONG(v));
-        return VpCreateRbObject(VpBaseFig() * 2 + 1, szD);
+	if (orig == Qundef ? (orig = v, 1) : orig != v) {
+	    num = RRATIONAL(v)->num;
+	    pv = GetVpValueWithPrec(num, -1, must);
+	    if (pv == NULL) goto SomeOneMayDoIt;
+
+	    args[0] = RRATIONAL(v)->den;
+	    args[1] = LONG2NUM(prec);
+	    v = BigDecimal_div2(2, args, ToValue(pv));
+	    goto again;
+	}
+
+	v = orig;
+	goto SomeOneMayDoIt;
+
+      case T_DATA:
+	if (rb_typeddata_is_kind_of(v, &BigDecimal_data_type)) {
+	    pv = DATA_PTR(v);
+	    return pv;
+	}
+	else {
+	    goto SomeOneMayDoIt;
+	}
+	break;
+      case T_FIXNUM:
+	sprintf(szD, "%ld", FIX2LONG(v));
+	return VpCreateRbObject(VpBaseFig() * 2 + 1, szD);
 
 #ifdef ENABLE_NUMERIC_STRING
-    case T_STRING:
-        SafeStringValue(v);
-        return VpCreateRbObject(strlen(RSTRING_PTR(v)) + VpBaseFig() + 1,
-                                RSTRING_PTR(v));
+      case T_STRING:
+	SafeStringValue(v);
+	return VpCreateRbObject(strlen(RSTRING_PTR(v)) + VpBaseFig() + 1,
+				RSTRING_PTR(v));
 #endif /* ENABLE_NUMERIC_STRING */
 
-    case T_BIGNUM:
-        bg = rb_big2str(v, 10);
-        return VpCreateRbObject(strlen(RSTRING_PTR(bg)) + VpBaseFig() + 1,
-                                RSTRING_PTR(bg));
-    default:
-        goto SomeOneMayDoIt;
+      case T_BIGNUM:
+	bg = rb_big2str(v, 10);
+	return VpCreateRbObject(strlen(RSTRING_PTR(bg)) + VpBaseFig() + 1,
+				RSTRING_PTR(bg));
+      default:
+	goto SomeOneMayDoIt;
     }
 
 SomeOneMayDoIt:
-    if(must) {
-        rb_raise(rb_eTypeError, "%s can't be coerced into BigDecimal",
-                    rb_special_const_p(v)?
-                    RSTRING_PTR(rb_inspect(v)):
-                    rb_obj_classname(v)
-                );
+    if (must) {
+	rb_raise(rb_eTypeError, "%s can't be coerced into BigDecimal",
+		 rb_special_const_p(v) ? RSTRING_PTR(rb_inspect(v)) : rb_obj_classname(v));
     }
     return NULL; /* NULL means to coerce */
+
+unable_to_coerce_without_prec:
+    if (must) {
+	rb_raise(rb_eArgError,
+		 "%s can't be coerced into BigDecimal without a precision",
+		 rb_obj_classname(v));
+    }
+    return NULL;
+}
+
+static Real*
+GetVpValue(VALUE v, int must)
+{
+    return GetVpValueWithPrec(v, -1, must);
 }
 
 /* call-seq:
@@ -1774,6 +1793,12 @@ BigDecimal_new(int argc, VALUE *argv, VALUE self)
 	/* fall through */
       case T_BIGNUM:
 	return ToValue(GetVpValue(iniValue, 1));
+
+      case T_RATIONAL:
+	if (NIL_P(nFig)) {
+	    rb_raise(rb_eArgError, "can't omit precision for a Rational.");
+	}
+	return ToValue(GetVpValueWithPrec(iniValue, mf, 1));
 
       case T_STRING:
 	/* fall through */

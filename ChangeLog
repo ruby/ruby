@@ -1,3 +1,19 @@
+Tue May 31 23:43:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (GetVpValueWithPrec): replace the algorithm for
+	  coercing from a Rational to stop requiring "bigecimal/util.rb".
+	  [ruby-core:34318]
+
+	* ext/bigdecimal/bigdecimal.c (GetVpValue): refactoring.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_new): support instantiation from a
+	  Rational.
+
+	* test/bigdecimal/test_bigdecimal.rb (test_global_new_with_rationao): add a
+	  test for the above change.
+
+	* test/bigdecimal/test_bigdecimal.rb (test_new_with_rationao): ditto.
+
 Tue May 31 22:44:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_new): support instantiation a
