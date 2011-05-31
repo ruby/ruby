@@ -1,3 +1,8 @@
+Tue May 31 10:49:55 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_exec.c: remove conditions for clang
+	  because clang version 3.0 (trunk 132165) doesn't need them.
+
 Mon May 30 22:19:33 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_signal.rb (TestSignal#test_signal_requiring): don't
