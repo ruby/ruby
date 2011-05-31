@@ -1,3 +1,9 @@
+Mon Nov 22 14:22:45 2010  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c (time_zone): use rb_locale_str_new_cstr to set encoding
+	  as locale and convert its content to internal encoding.
+	  [ruby-core:33278]
+
 Fri Jan 14 14:01:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* pack.c (pack_unpack): the resulted string of unpack('M') must have

@@ -4151,11 +4151,11 @@ time_zone(VALUE time)
     MAKE_TM(time, tobj);
 
     if (TIME_UTC_P(tobj)) {
-	return rb_str_new2("UTC");
+	return rb_obj_untaint(rb_locale_str_new_cstr("UTC"));
     }
     if (tobj->vtm.zone == NULL)
         return Qnil;
-    return rb_str_new2(tobj->vtm.zone);
+    return rb_obj_untaint(rb_locale_str_new_cstr(tobj->vtm.zone));
 }
 
 /*
