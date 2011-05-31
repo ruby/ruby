@@ -1,3 +1,7 @@
+Sat Feb  5 10:09:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_get_expanded_load_path): always expand load paths.
+
 Tue Jul  6 22:57:21 2010  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (nogvl_copy_stream_sendfile): jump to retry_sendfile directly
