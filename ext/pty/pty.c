@@ -648,7 +648,7 @@ pty_check(int argc, VALUE *argv, VALUE self)
 
     if (!RTEST(exc)) return rb_last_status_get();
     raise_from_check(cpid, status);
-    return Qnil;
+    return Qnil;		/* not reached */
 }
 
 static VALUE cPTY;
