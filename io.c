@@ -8115,7 +8115,15 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     rb_io_synchronized(fptr2);
 
     extract_binmode(opt, &fmode);
+#if DEFAULT_TEXTMODE
+    if ((fptr->mode & FMODE_TEXTMODE) && (fmode & FMODE_BINMODE))
+	fptr->mode &= ~FMODE_TEXTMODE;
+#endif
     fptr->mode |= fmode;
+#if DEFAULT_TEXTMODE
+    if ((fptr2->mode & FMODE_TEXTMODE) && (fmode & FMODE_BINMODE))
+	fptr2->mode &= ~FMODE_TEXTMODE;
+#endif
     fptr2->mode |= fmode;
 
     ret = rb_assoc_new(r, w);

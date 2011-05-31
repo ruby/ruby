@@ -1,3 +1,11 @@
+Tue May 31 14:17:49 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_io_s_pipe): potential bug. the mode of read IO is set as
+	  DEFAULT_TEXTMODE in call of io_set_encoding(), and of write IO is
+	  also set as it in call of io_new_instance() via rb_protect().
+	  so, if DEFAULT_TEXTMODE is not 0, we should check the result of
+	  extract_binmode() and avoid crush of default IO mode and the result.
+
 Tue May 31 13:00:17 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* strftime.c (rb_strftime_with_timespec): improved style consistency.
