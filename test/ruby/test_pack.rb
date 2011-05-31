@@ -555,6 +555,8 @@ class TestPack < Test::Unit::TestCase
     assert_equal(["\x0a"], "=0A=\n".unpack("M"))
     assert_equal([""], "=0Z=\n".unpack("M"))
     assert_equal([""], "=\r\n".unpack("M"))
+    assert_equal([""], "=\r\n".unpack("M"))
+    assert_equal(["\xC6\xF7"], "=C6=F7".unpack('M*'))
   end
 
   def test_pack_unpack_P2

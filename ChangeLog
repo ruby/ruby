@@ -1,3 +1,8 @@
+Fri Jan 14 14:01:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* pack.c (pack_unpack): the resulted string of unpack('M') must have
+	  ASCII-8BIT encoding (and ENC_CODERANGE_VALID). [ruby-core:34482]
+
 Sat Dec 25 20:01:40 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (pipe_open): Added rb_thread_atfork(). We must reinitialize

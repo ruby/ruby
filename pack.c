@@ -1978,7 +1978,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		    s++;
 		}
 		rb_str_set_len(buf, ptr - RSTRING_PTR(buf));
-		ENCODING_CODERANGE_SET(buf, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
+		ENCODING_CODERANGE_SET(buf, rb_ascii8bit_encindex(), ENC_CODERANGE_VALID);
 		UNPACK_PUSH(buf);
 	    }
 	    break;
