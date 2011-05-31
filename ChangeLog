@@ -1,3 +1,7 @@
+Sun May 22 07:10:25 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_pkey_dsa.rb: Add tests for sign/verify.
+
 Thu May 19 07:47:26 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_pkey_rsa.rb: Add tests for sign/verify.
