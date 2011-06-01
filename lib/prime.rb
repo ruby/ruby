@@ -46,11 +46,17 @@ end
 # The set of all prime numbers.
 #
 # == Example
-#  Prime.each(100) do |prime|
-#    p prime  #=> 2, 3, 5, 7, 11, ...., 97
-#  end
+#
+#   Prime.each(100) do |prime|
+#     p prime  #=> 2, 3, 5, 7, 11, ...., 97
+#   end
+#
+# Prime is Enumerable:
+#
+#   Prime.first 5 # => [2, 3, 5, 7, 11]
 #
 # == Retrieving the instance
+#
 # +Prime+.new is obsolete. Now +Prime+ has the default instance and you can
 # access it as +Prime+.instance.
 #
@@ -58,10 +64,11 @@ end
 # as a class method of +Prime+.
 #
 # e.g.
-#  Prime.instance.prime?(2)  #=> true
-#  Prime.prime?(2)           #=> true
+#   Prime.instance.prime?(2)  #=> true
+#   Prime.prime?(2)           #=> true
 #
 # == Generators
+#
 # A "generator" provides an implementation of enumerating pseudo-prime
 # numbers and it remembers the position of enumeration and upper bound.
 # Futhermore, it is a external iterator of prime enumeration which is
@@ -80,6 +87,7 @@ end
 #   is faster and uses much less memory than other generators. So,
 #   it is suitable for factorizing an integer which is not large but
 #   has many prime factors. e.g. for Prime#prime? .
+
 class Prime
   include Enumerable
   @the_instance = Prime.new
@@ -105,6 +113,7 @@ class Prime
   # Iterates the given block over all prime numbers.
   #
   # == Parameters
+  #
   # +ubound+::
   #   Optional. An arbitrary positive number.
   #   The upper bound of enumeration. The method enumerates
@@ -113,11 +122,13 @@ class Prime
   #   Optional. An implementation of pseudo-prime generator.
   #
   # == Return value
+  #
   # An evaluated value of the given block at the last time.
   # Or an enumerator which is compatible to an +Enumerator+
   # if no block given.
   #
   # == Description
+  #
   # Calls +block+ once for each prime number, passing the prime as
   # a parameter.
   #
@@ -126,6 +137,7 @@ class Prime
   #   yields all prime numbers p <= +ubound+.
   #
   # == Note
+  #
   # +Prime+.+new+ returns a object extended by +Prime+::+OldCompatibility+
   # in order to compatibility to Ruby 1.8, and +Prime+#each is overwritten
   # by +Prime+::+OldCompatibility+#+each+.
@@ -141,6 +153,7 @@ class Prime
   # Returns true if +value+ is prime, false for a composite.
   #
   # == Parameters
+  #
   # +value+:: an arbitrary integer to be checked.
   # +generator+:: optional. A pseudo-prime generator.
   def prime?(value, generator = Prime::Generator23.new)
@@ -161,10 +174,11 @@ class Prime
   #        and a natural number -- an exponent.
   #
   # == Example
-  # For [[p_1, e_1], [p_2, e_2], ...., [p_n, e_n]], it returns
-  # p_1**e_1 * p_2**e_2 * .... * p_n**e_n.
+  # For <tt>[[p_1, e_1], [p_2, e_2], ...., [p_n, e_n]]</tt>, it returns:
   #
-  #  Prime.int_from_prime_division([[2,2], [3,1]])  #=> 12
+  #   p_1**e_1 * p_2**e_2 * .... * p_n**e_n.
+  #
+  #   Prime.int_from_prime_division([[2,2], [3,1]])  #=> 12
   def int_from_prime_division(pd)
     pd.inject(1){|value, (prime, index)|
       value *= prime**index
@@ -185,12 +199,15 @@ class Prime
   # +ZeroDivisionError+:: when +value+ is zero.
   #
   # == Example
-  # For an arbitrary integer
-  # n = p_1**e_1 * p_2**e_2 * .... * p_n**e_n,
-  # prime_division(n) returns
-  # [[p_1, e_1], [p_2, e_2], ...., [p_n, e_n]].
+  # For an arbitrary integer:
   #
-  #  Prime.prime_division(12) #=> [[2,2], [3,1]]
+  #   n = p_1**e_1 * p_2**e_2 * .... * p_n**e_n,
+  #
+  # prime_division(n) returns:
+  #
+  #   [[p_1, e_1], [p_2, e_2], ...., [p_n, e_n]].
+  #
+  #   Prime.prime_division(12) #=> [[2,2], [3,1]]
   #
   def prime_division(value, generator= Prime::Generator23.new)
     raise ZeroDivisionError if value == 0
@@ -353,9 +370,6 @@ class Prime
     end
   end
 
-
-
-
   # Internal use. An implementation of prime table by trial division method.
   class TrialDivision
     include Singleton
@@ -483,8 +497,8 @@ class Prime
 
     # Overwrites Prime#each.
     #
-    # Iterates the given block over all prime numbers. Note that enumeration starts from
-    # the current position of internal pointer, not rewound.
+    # Iterates the given block over all prime numbers. Note that enumeration
+    # starts from the current position of internal pointer, not rewound.
     def each(&block)
       return @generator.dup unless block_given?
       loop do

@@ -1,3 +1,8 @@
+Wed Jun  1 09:21:30 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/prime.rb:  Indent examples enough to appear as code sections.
+	  Note that Prime is Enumerable.  [#4762]
+
 Wed Jun  1 07:34:57 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* hash.c (key_i):  Change rdoc from "the first occurence" to "an
