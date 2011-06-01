@@ -55,7 +55,7 @@ class TestGemSilentUI < Gem::TestCase
 
     assert_empty out, 'No output'
     assert_empty err, 'No output'
-    
+
     out, err = capture_io do
       use_ui @sui do
         value = @sui.ask_yes_no 'Problem?', true
@@ -66,7 +66,7 @@ class TestGemSilentUI < Gem::TestCase
     assert_empty err, 'No output'
 
     assert value, 'Value is true'
-    
+
     out, err = capture_io do
       use_ui @sui do
         value = @sui.ask_yes_no 'Problem?', false

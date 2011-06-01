@@ -216,7 +216,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
   def test_uninstall_selection_greater_than_one
     util_make_gems
-    
+
     list = Gem::Specification.find_all_by_name('a')
 
     uninstaller = Gem::Uninstaller.new('a')

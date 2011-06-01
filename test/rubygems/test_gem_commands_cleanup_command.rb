@@ -8,7 +8,7 @@ require 'rubygems/test_case'
 require 'rubygems/commands/cleanup_command'
 
 class TestGemCommandsCleanupCommand < Gem::TestCase
-  
+
   def setup
     super
 
