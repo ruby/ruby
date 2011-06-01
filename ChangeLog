@@ -27,9 +27,7 @@ Wed Jun  1 15:40:46 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Jun  1 14:07:57 2011  Ryan Davis  <ryand-ruby@zenspider.com>
 
-	* lib/minitest/*: MOSTLY Imported minitest 2.2.1 (r6277)... One
-	  feature wouldn't run and I don't know how to fix it. I need
-	  sora_h's help to get it running happy with test/unit.
+	* lib/minitest/*: Imported minitest 2.2.2 (r6281)
 	* test/minitest/*: ditto
 
 Wed Jun  1 12:35:50 2011  Ryan Davis  <ryand-ruby@zenspider.com>

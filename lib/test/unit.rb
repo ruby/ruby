@@ -595,6 +595,7 @@ module Test
           yield self if block_given?
           files
         end
+        Runner.runner = @runner
         @options = @runner.option_parser
         @argv = argv
       end

@@ -51,7 +51,7 @@ Finished tests in 0.00
 
   def teardown
     MiniTest::Unit.output = $stdout
-    # HACK for ruby-trunk: MiniTest::Unit.runner = nil
+    MiniTest::Unit.runner = nil
     Object.send :remove_const, :ATestCase if defined? ATestCase
   end
 
@@ -392,13 +392,10 @@ not yet
   end
 
   def test_default_runner_is_minitest_unit
-    skip "ruby-trunk won't run with runner code :("
-
     assert_instance_of MiniTest::Unit, MiniTest::Unit.runner
   end
 
   def test_run_with_other_runner
-    skip "ruby-trunk won't run with runner code :("
 
     runner = Class.new(MiniTest::Unit) do
       # Run once before each suite
@@ -542,7 +539,7 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
            @@ -1 +1 @@
            -#<#<Class:0xXXXXXX>:0xXXXXXX @name=\"a\">
            +#<#<Class:0xXXXXXX>:0xXXXXXX @name=\"b\">
-           .".gsub(/^ +/, "")
+           ".gsub(/^ +/, "")
 
     util_assert_triggered msg do
       @tc.assert_equal o1, o2
@@ -555,7 +552,7 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
 
     msg = "No visible difference.
            You should look at your implementation of Object#==.
-           #<Object:0xXXXXXX>.".gsub(/^ +/, "")
+           #<Object:0xXXXXXX>".gsub(/^ +/, "")
 
     util_assert_triggered msg do
       @tc.assert_equal o1, o2
@@ -568,7 +565,7 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
            @@ -1 +1 @@
            -\"hahahahahahahahahahahahahahahahahahahaha\"
            +\"blahblahblahblahblahblahblahblahblahblah\"
-           .".gsub(/^ +/, "")
+           ".gsub(/^ +/, "")
 
     util_assert_triggered msg do
       o1 = "haha" * 10
@@ -581,7 +578,7 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
   def test_assert_equal_different_long_invisible
     msg = "No visible difference.
            You should look at your implementation of String#==.
-           \"blahblahblahblahblahblahblahblahblahblah\".".gsub(/^ +/, "")
+           \"blahblahblahblahblahblahblahblahblahblah\"".gsub(/^ +/, "")
 
     util_assert_triggered msg do
       o1 = "blah" * 10
@@ -600,7 +597,7 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
            @@ -1 +1 @@
            -\"hahahahahahahahahahahahahahahahahahahaha\"
            +\"blahblahblahblahblahblahblahblahblahblah\"
-           .".gsub(/^ +/, "")
+           ".gsub(/^ +/, "")
 
     util_assert_triggered msg do
       o1 = "haha" * 10
@@ -622,7 +619,7 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
   end
 
   def test_assert_equal_different_short_multiline
-    msg = "--- expected\n+++ actual\n@@ -1,2 +1,2 @@\n \"a\n-b\"\n+c\"\n."
+    msg = "--- expected\n+++ actual\n@@ -1,2 +1,2 @@\n \"a\n-b\"\n+c\"\n"
     util_assert_triggered msg do
       @tc.assert_equal "a\nb", "a\nc"
     end
@@ -1292,7 +1289,7 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
   end
 
   def util_msg exp, act, msg = nil
-    s = "Expected: #{exp.inspect}\n  Actual: #{act.inspect}."
+    s = "Expected: #{exp.inspect}\n  Actual: #{act.inspect}"
     s = "#{msg}.\n#{s}" if msg
     s
   end

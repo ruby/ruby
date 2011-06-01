@@ -121,10 +121,11 @@ module MiniTest
 
       Tempfile.open("expect") do |a|
         a.puts expect
-        a.rewind
+        a.flush
+
         Tempfile.open("butwas") do |b|
           b.puts butwas
-          b.rewind
+          b.flush
 
           result = `#{MiniTest::Assertions.diff} #{a.path} #{b.path}`
           result.sub!(/^\-\-\- .+/, "--- expected")
@@ -216,7 +217,7 @@ module MiniTest
     # See also: MiniTest::Assertions.diff
 
     def assert_equal exp, act, msg = nil
-      msg = message(msg) { diff exp, act }
+      msg = message(msg, "") { diff exp, act }
       assert(exp == act, msg)
     end
 
@@ -464,10 +465,10 @@ module MiniTest
     ##
     # Returns a proc that will output +msg+ along with the default message.
 
-    def message msg = nil, &default
+    def message msg = nil, ending = ".", &default
       proc {
         custom_message = "#{msg}.\n" unless msg.nil? or msg.to_s.empty?
-        "#{custom_message}#{default.call}."
+        "#{custom_message}#{default.call}#{ending}"
       }
     end
 
@@ -619,7 +620,7 @@ module MiniTest
   end
 
   class Unit
-    VERSION = "2.2.1" # :nodoc:
+    VERSION = "2.2.2" # :nodoc:
 
     attr_accessor :report, :failures, :errors, :skips # :nodoc:
     attr_accessor :test_count, :assertion_count       # :nodoc:
@@ -688,6 +689,23 @@ module MiniTest
 
     def self.output= stream
       @@out = stream
+    end
+
+    ##
+    # Tells MiniTest::Unit to delegate to +runner+, an instance of a
+    # MiniTest::Unit subclass, when MiniTest::Unit#run is called.
+
+    def self.runner= runner
+      @@runner = runner
+    end
+
+    ##
+    # Returns the MiniTest::Unit subclass instance that will be used
+    # to run the tests. A MiniTest::Unit instance is the default
+    # runner.
+
+    def self.runner
+      @@runner ||= self.new
     end
 
     ##
@@ -860,9 +878,16 @@ module MiniTest
     end
 
     ##
-    # Top level driver, controls all output and filtering.
+    # Begins the full test run. Delegates to +runner+'s #_run method.
 
     def run args = []
+      self.class.runner._run(args)
+    end
+
+    ##
+    # Top level driver, controls all output and filtering.
+
+    def _run args = []
       self.options = process_args args
 
       puts "Run options: #{help}"
