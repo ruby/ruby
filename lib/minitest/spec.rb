@@ -61,17 +61,41 @@ module Kernel
   #
   # TODO: find good tutorial url.
   #
-  # Defines a test class subclassing from either
-  # MiniTest::Unit::TestCase or from the surrounding describe's class.
+  # Defines a test class subclassing from either MiniTest::Spec or
+  # from the surrounding describe's class. The surrounding class may
+  # subclass MiniTest::Spec manually in order to easily share code:
+  #
+  #     class MySpec < MiniTest::Spec
+  #       # ... shared code ...
+  #     end
+  #
+  #     class TestStuff < MySpec
+  #       it "does stuff" do
+  #         # shared code available here
+  #       end
+  #       describe "inner stuff" do
+  #         it "still does stuff" do
+  #           # ...and here
+  #         end
+  #       end
+  #     end
 
-  def describe desc, &block
+  def describe desc, &block # :doc:
     stack = MiniTest::Spec.describe_stack
     name  = [stack.last, desc].compact.join("::")
-    cls   = Class.new(stack.last || MiniTest::Spec)
+    sclas = stack.last || if Class === self && self < MiniTest::Spec then
+                            self
+                          else
+                            MiniTest::Spec.spec_type desc
+                          end
+    cls   = Class.new sclas
+
+    sclas.children << cls unless cls == MiniTest::Spec
 
     # :stopdoc:
     # omg this sucks
     (class << cls; self; end).send(:define_method, :to_s) { name }
+    (class << cls; self; end).send(:define_method, :desc) { desc }
     # :startdoc:
 
     cls.nuke_test_methods!
@@ -84,21 +108,40 @@ module Kernel
   private :describe
 end
 
-class Module
-  def classes type = Object # :nodoc:
-    constants.map { |n| const_get n }.find_all { |c|
-      c.class == Class and type > c
-    } - [self]
-  end
-end
-
 ##
 # MiniTest::Spec -- The faster, better, less-magical spec framework!
 #
 # For a list of expectations, see Object.
 
-
 class MiniTest::Spec < MiniTest::Unit::TestCase
+  ##
+  # Contains pairs of matchers and Spec classes to be used to
+  # calculate the superclass of a top-level describe. This allows for
+  # automatically customizable spec types.
+  #
+  # See: register_spec_type and spec_type
+
+  TYPES = [[//, MiniTest::Spec]]
+
+  ##
+  # Register a new type of spec that matches the spec's description. Eg:
+  #
+  #     register_spec_plugin(/Controller$/, MiniTest::Spec::Rails)
+
+  def self.register_spec_type matcher, klass
+    TYPES.unshift [matcher, klass]
+  end
+
+  ##
+  # Figure out the spec class to use based on a spec's description. Eg:
+  #
+  #     spec_type("BlahController") # => MiniTest::Spec::Rails
+
+  def self.spec_type desc
+    desc = desc.to_s
+    TYPES.find { |re, klass| re === desc }.last
+  end
+
   @@describe_stack = []
   def self.describe_stack # :nodoc:
     @@describe_stack
@@ -106,6 +149,10 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
 
   def self.current # :nodoc:
     @@current_spec
+  end
+
+  def self.children
+    @children ||= []
   end
 
   def initialize name # :nodoc:
@@ -119,12 +166,22 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
     end
   end
 
+  ##
+  # Spec users want setup/teardown to be inherited and NOTHING ELSE.
+  # It is almost like method reuse is lost on them.
+
   def self.define_inheritable_method name, &block # :nodoc:
+    # regular super() warns
     super_method = self.superclass.instance_method name
 
+    teardown     = name.to_s == "teardown"
+    super_before = super_method && ! teardown
+    super_after  = super_method && teardown
+
     define_method name do
-      super_method.bind(self).call if super_method # regular super() warns
+      super_method.bind(self).call if super_before
       instance_eval(&block)
+      super_method.bind(self).call if super_after
     end
   end
 
@@ -171,8 +228,8 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
 
     define_method name, &block
 
-    classes(MiniTest::Spec).each do |mod|
-      mod.send :undef_method, name if mod.respond_to? name
+    self.children.each do |mod|
+      mod.send :undef_method, name if mod.public_method_defined? name
     end
   end
 end

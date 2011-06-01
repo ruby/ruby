@@ -111,10 +111,16 @@ class MiniTest::Unit
 
     ##
     # Runs the given +work+ and asserts that the times gathered fit to
-    # match a constant rate (eg, linear slope == 0) within a given error
-    # +threshold+.
+    # match a constant rate (eg, linear slope == 0) within a given
+    # +threshold+. Note: because we're testing for a slope of 0, R^2
+    # is not a good determining factor for the fit, so the threshold
+    # is applied against the slope itself. As such, you probably want
+    # to tighten it from the default.
     #
-    # Fit is calculated by #fit_constant.
+    # See http://www.graphpad.com/curvefit/goodness_of_fit.htm for
+    # more details.
+    #
+    # Fit is calculated by #fit_linear.
     #
     # Ranges are specified by ::bench_range.
     #
@@ -328,7 +334,7 @@ class MiniTest::Spec
   #     end
   #   end
 
-  def self.bench_performance_linear name, threshold = 0.9, &work
+  def self.bench_performance_linear name, threshold = 0.99, &work
     bench name do
       assert_performance_linear threshold, &work
     end

@@ -5,6 +5,7 @@
 ######################################################################
 
 require 'minitest/spec'
+require 'stringio'
 
 MiniTest::Unit.autorun
 
@@ -202,34 +203,112 @@ describe MiniTest::Spec do
 end
 
 class TestMeta < MiniTest::Unit::TestCase
-  def test_structure
+  def test_setup
+    srand 42
+    MiniTest::Unit::TestCase.reset
+  end
+
+  def util_structure
     x = y = z = nil
+    before_list = []
+    after_list  = []
     x = describe "top-level thingy" do
-      before {}
-      after  {}
+      before { before_list << 1 }
+      after  { after_list  << 1 }
 
       it "top-level-it" do end
 
       y = describe "inner thingy" do
-        before {}
+        before { before_list << 2 }
+        after  { after_list  << 2 }
         it "inner-it" do end
 
         z = describe "very inner thingy" do
-          before {}
+          before { before_list << 3 }
+          after  { after_list  << 3 }
           it "inner-it" do end
         end
       end
     end
 
+    return x, y, z, before_list, after_list
+  end
+
+  def test_structure
+    x, y, z, * = util_structure
+
     assert_equal "top-level thingy", x.to_s
     assert_equal "top-level thingy::inner thingy", y.to_s
     assert_equal "top-level thingy::inner thingy::very inner thingy", z.to_s
 
+    assert_equal "top-level thingy", x.desc
+    assert_equal "inner thingy", y.desc
+    assert_equal "very inner thingy", z.desc
+
     top_methods = %w(setup teardown test_0001_top_level_it)
-    inner_methods = %w(setup test_0001_inner_it)
+    inner_methods = %w(setup teardown test_0001_inner_it)
 
     assert_equal top_methods,   x.instance_methods(false).sort.map {|o| o.to_s }
     assert_equal inner_methods, y.instance_methods(false).sort.map {|o| o.to_s }
     assert_equal inner_methods, z.instance_methods(false).sort.map {|o| o.to_s }
+  end
+
+  def test_setup_teardown_behavior
+    _, _, z, before_list, after_list = util_structure
+
+    tc = z.new(nil)
+    tc.setup
+    tc.teardown
+
+    assert_equal [1, 2, 3], before_list
+    assert_equal [3, 2, 1], after_list
+  end
+
+  def test_children
+    MiniTest::Spec.children.clear
+
+    x = y = z = nil
+    x = describe "top-level thingy" do
+      y = describe "first thingy" do end
+
+      it "top-level-it" do end
+
+      z = describe "second thingy" do end
+    end
+
+    assert_equal [x], MiniTest::Spec.children
+    assert_equal [y, z], x.children
+    assert_equal [], y.children
+    assert_equal [], z.children
+  end
+
+  def test_describe_first_structure
+    x = y = z = nil
+    x = describe "top-level thingy" do
+      y = describe "first thingy" do end
+
+      it "top-level-it" do end
+
+      z = describe "second thingy" do end
+    end
+
+    assert_equal ['test_0001_top_level_it'],
+      x.instance_methods.grep(/^test/).map {|o| o.to_s}
+    assert_equal [], y.instance_methods.grep(/^test/)
+    assert_equal [], z.instance_methods.grep(/^test/)
+  end
+
+  def test_structure_subclasses
+    z = nil
+    x = Class.new MiniTest::Spec do
+      def xyz; end
+    end
+    y = Class.new x do
+      z = describe("inner") {}
+    end
+
+    assert_respond_to x.new(nil), "xyz"
+    assert_respond_to y.new(nil), "xyz"
+    assert_respond_to z.new(nil), "xyz"
   end
 end

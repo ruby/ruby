@@ -50,6 +50,21 @@ class TestMiniTestBenchmark < MiniTest::Unit::TestCase
     assert_fit :exponential, x, y, 0.95, 13.81148, -0.1820
   end
 
+  def test_fit_constant_clean
+    x = (1..5).to_a
+    y = [5.0, 5.0, 5.0, 5.0, 5.0]
+
+    assert_fit :linear, x, y, nil, 5.0, 0
+  end
+
+  def test_fit_constant_noisy
+    x = (1..5).to_a
+    y = [1.0, 1.2, 1.0, 0.8, 1.0]
+
+    # verified in numbers and R
+    assert_fit :linear, x, y, nil, 1.12, -0.04
+  end
+
   def test_fit_linear_clean
     # y = m * x + b where m = 2.2, b = 3.1
     x = (1..5).to_a
@@ -96,7 +111,7 @@ class TestMiniTestBenchmark < MiniTest::Unit::TestCase
   def assert_fit msg, x, y, fit, exp_a, exp_b
     a, b, rr = send "fit_#{msg}", x, y
 
-    assert_operator rr, :>=, fit
+    assert_operator rr, :>=, fit if fit
     assert_in_delta exp_a, a
     assert_in_delta exp_b, b
   end

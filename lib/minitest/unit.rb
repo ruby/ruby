@@ -5,6 +5,7 @@
 ######################################################################
 
 require 'optparse'
+require 'rbconfig'
 
 ##
 # Minimal (mostly drop-in) replacement for test-unit.
@@ -65,14 +66,103 @@ module MiniTest
 
   module Assertions
 
+    WINDOZE = RbConfig::CONFIG['host_os'] =~ /mswin|mingw/
+
     ##
-    # mu_pp gives a human-readable version of +obj+.  By default #inspect is
-    # called.  You can override this to use #pretty_print if you want.
+    # Returns the diff command to use in #diff. Tries to intelligently
+    # figure out what diff to use.
+
+    def self.diff
+      @diff = if WINDOZE
+                "diff.exe -u"
+              else
+                if system("gdiff", __FILE__, __FILE__)
+                  "gdiff -u" # solaris and kin suck
+                elsif system("diff", __FILE__, __FILE__)
+                  "diff -u"
+                else
+                  nil
+                end
+              end unless defined? @diff
+
+      @diff
+    end
+
+    ##
+    # Set the diff command to use in #diff.
+
+    def self.diff= o
+      @diff = o
+    end
+
+    ##
+    # Returns a diff between +exp+ and +act+. If there is no known
+    # diff command or if it doesn't make sense to diff the output
+    # (single line, short output), then it simply returns a basic
+    # comparison between the two.
+
+    def diff exp, act
+      require "tempfile"
+
+      expect = mu_pp_for_diff exp
+      butwas = mu_pp_for_diff act
+      result = nil
+
+      need_to_diff =
+        MiniTest::Assertions.diff &&
+        (expect.include?("\n")    ||
+         butwas.include?("\n")    ||
+         expect.size > 30         ||
+         butwas.size > 30         ||
+         expect == butwas)
+
+      return "Expected: #{mu_pp exp}\n  Actual: #{mu_pp act}" unless
+        need_to_diff
+
+      Tempfile.open("expect") do |a|
+        a.puts expect
+        a.rewind
+        Tempfile.open("butwas") do |b|
+          b.puts butwas
+          b.rewind
+
+          result = `#{MiniTest::Assertions.diff} #{a.path} #{b.path}`
+          result.sub!(/^\-\-\- .+/, "--- expected")
+          result.sub!(/^\+\+\+ .+/, "+++ actual")
+
+          if result.empty? then
+            klass = exp.class
+            result = [
+                      "No visible difference.",
+                      "You should look at your implementation of #{klass}#==.",
+                      expect
+                     ].join "\n"
+          end
+        end
+      end
+
+      result
+    end
+
+    ##
+    # This returns a human-readable version of +obj+. By default
+    # #inspect is called. You can override this to use #pretty_print
+    # if you want.
 
     def mu_pp obj
       s = obj.inspect
       s = s.force_encoding Encoding.default_external if defined? Encoding
       s
+    end
+
+    ##
+    # This returns a diff-able human-readable version of +obj+. This
+    # differs from the regular mu_pp because it expands escaped
+    # newlines and makes hex-values generic (like object_ids). This
+    # uses mu_pp to do the first pass and then cleans it up.
+
+    def mu_pp_for_diff obj # TODO: possibly rename
+      mu_pp(obj).gsub(/\\n/, "\n").gsub(/0x[a-f0-9]+/m, '0xXXXXXX')
     end
 
     def _assertions= n # :nodoc:
@@ -114,12 +204,19 @@ module MiniTest
     end
 
     ##
-    # Fails unless <tt>exp == act</tt>.
+    # Fails unless <tt>exp == act</tt> printing the difference between
+    # the two, if possible.
     #
-    # For floats use assert_in_delta
+    # If there is no visible difference but the assertion fails, you
+    # should suspect that your #== is buggy, or your inspect output is
+    # missing crucial details.
+    #
+    # For floats use assert_in_delta.
+    #
+    # See also: MiniTest::Assertions.diff
 
     def assert_equal exp, act, msg = nil
-      msg = message(msg) { "Expected #{mu_pp(exp)}, not #{mu_pp(act)}" }
+      msg = message(msg) { diff exp, act }
       assert(exp == act, msg)
     end
 
@@ -181,7 +278,7 @@ module MiniTest
     def assert_match exp, act, msg = nil
       msg = message(msg) { "Expected #{mu_pp(exp)} to match #{mu_pp(act)}" }
       assert_respond_to act, :"=~"
-      exp = /#{Regexp.escape exp}/ if String === exp && String === act
+      exp = Regexp.new Regexp.escape exp if String === exp and String === act
       assert exp =~ act, msg
     end
 
@@ -225,8 +322,8 @@ module MiniTest
     # Fails unless the block raises one of +exp+
 
     def assert_raises *exp
-      msg = String === exp.last ? exp.pop : nil
-      msg = msg.to_s + "\n" if msg
+      msg = "#{exp.pop}\n" if String === exp.last
+
       should_raise = false
       begin
         yield
@@ -346,7 +443,14 @@ module MiniTest
     # Returns details for exception +e+
 
     def exception_details e, msg
-      "#{msg}\nClass: <#{e.class}>\nMessage: <#{e.message.inspect}>\n---Backtrace---\n#{MiniTest::filter_backtrace(e.backtrace).join("\n")}\n---------------"
+      [
+       "#{msg}",
+       "Class: <#{e.class}>",
+       "Message: <#{e.message.inspect}>",
+       "---Backtrace---",
+       "#{MiniTest::filter_backtrace(e.backtrace).join("\n")}",
+       "---------------",
+      ].join "\n"
     end
 
     ##
@@ -362,14 +466,8 @@ module MiniTest
 
     def message msg = nil, &default
       proc {
-        if msg then
-          msg = msg.to_s unless String === msg
-          msg += '.' unless msg.empty?
-          msg += "\n#{default.call}."
-          msg.strip
-        else
-          "#{default.call}."
-        end
+        custom_message = "#{msg}.\n" unless msg.nil? or msg.to_s.empty?
+        "#{custom_message}#{default.call}."
       }
     end
 
@@ -521,7 +619,7 @@ module MiniTest
   end
 
   class Unit
-    VERSION = "2.0.2" # :nodoc:
+    VERSION = "2.2.1" # :nodoc:
 
     attr_accessor :report, :failures, :errors, :skips # :nodoc:
     attr_accessor :test_count, :assertion_count       # :nodoc:
@@ -698,6 +796,7 @@ module MiniTest
       e = case e
           when MiniTest::Skip then
             @skips += 1
+            return "S" unless @verbose
             "Skipped:\n#{meth}(#{klass}) [#{location e}]:\n#{e.message}\n"
           when MiniTest::Assertion then
             @failures += 1

@@ -89,10 +89,10 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
   def test_assign_per_mock_return_values
     a = MiniTest::Mock.new
     b = MiniTest::Mock.new
-
+    
     a.expect(:foo, :a)
     b.expect(:foo, :b)
-
+    
     assert_equal :a, a.foo
     assert_equal :b, b.foo
   end
