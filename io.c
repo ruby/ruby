@@ -6238,9 +6238,8 @@ rb_p(VALUE obj) /* for debug print within C code */
  *     p(obj1, obj2, ...)  -> [obj, ...]
  *     p()                 -> nil
  *
- *  For each object, directly writes
- *  _obj_.+inspect+ followed by the current output
- *  record separator to the program's standard output.
+ *  For each object, directly writes _obj_.+inspect+ followed by a
+ *  newline to the program's standard output.
  *
  *     S = Struct.new(:name, :state)
  *     s = S['dave', 'TX']
