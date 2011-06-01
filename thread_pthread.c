@@ -824,8 +824,6 @@ ubf_pthread_cond_signal(void *ptr)
     native_cond_signal(&th->native_thread_data.sleep_cond);
 }
 
-#define PER_NANO 1000000000
-
 static void
 native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 {

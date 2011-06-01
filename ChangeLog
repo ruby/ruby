@@ -1,3 +1,7 @@
+Wed Jun  1 17:19:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c: remove unused macro.
+
 Wed Jun  1 15:42:18 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (peek_n): new macro to see next nth char.
