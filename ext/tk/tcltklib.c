@@ -505,7 +505,7 @@ static int have_rb_thread_waiting_for_value = 0;
 #ifdef RUBY_USE_NATIVE_THREAD
 #define DEFAULT_EVENT_LOOP_MAX        800/*counts*/
 #define DEFAULT_NO_EVENT_TICK          10/*counts*/
-#define DEFAULT_NO_EVENT_WAIT           1/*milliseconds ( 1 -- 999 ) */
+#define DEFAULT_NO_EVENT_WAIT           5/*milliseconds ( 1 -- 999 ) */
 #define WATCHDOG_INTERVAL              10/*milliseconds ( 1 -- 999 ) */
 #define DEFAULT_TIMER_TICK              0/*milliseconds ( 0 -- 999 ) */
 #define NO_THREAD_INTERRUPT_TIME      100/*milliseconds ( 1 -- 999 ) */
@@ -1980,6 +1980,21 @@ lib_num_of_mainwindows(self)
 #endif
 }
 
+void
+rbtk_EventSetupProc(ClientData clientData, int flag)
+{
+    Tcl_Time tcl_time;
+    tcl_time.sec  = 0;
+    tcl_time.usec = 1000L * (long)no_event_tick;
+    Tcl_SetMaxBlockTime(&tcl_time);
+}
+
+void
+rbtk_EventCheckProc(ClientData clientData, int flag)
+{
+    rb_thread_schedule();
+}
+
 
 #ifdef RUBY_USE_NATIVE_THREAD  /* Ruby 1.9+ !!! */
 static VALUE
@@ -2178,7 +2193,7 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
     if (update_flag) DUMP1("update loop start!!");
 
     t.tv_sec = 0;
-    t.tv_usec = (long)(no_event_wait*1000.0);
+    t.tv_usec = 1000 * (long)no_event_wait;
 
     Tcl_DeleteTimerHandler(timer_token);
     run_timer_flag = 0;
@@ -2209,7 +2224,8 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
             event_loop_wait_event = 0;
 
             if (update_flag) {
-                event_flag = update_flag | TCL_DONT_WAIT; /* for safety */
+                event_flag = update_flag;
+                /* event_flag = update_flag | TCL_DONT_WAIT; */ /* for safety */
             } else {
 	        event_flag = TCL_ALL_EVENTS;
 	        /* event_flag = TCL_ALL_EVENTS | TCL_DONT_WAIT; */
@@ -2315,9 +2331,11 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
             found_event = 1;
 
             if (update_flag) {
-                event_flag = update_flag | TCL_DONT_WAIT; /* for safety */
+                event_flag = update_flag; /* for safety */
+                /* event_flag = update_flag | TCL_DONT_WAIT; */ /* for safety */
             } else {
-                event_flag = TCL_ALL_EVENTS | TCL_DONT_WAIT;
+                event_flag = TCL_ALL_EVENTS;
+                /* event_flag = TCL_ALL_EVENTS | TCL_DONT_WAIT; */
             }
 
             timer_tick = req_timer_tick;
@@ -2337,6 +2355,7 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                 if (NIL_P(eventloop_thread) || current == eventloop_thread) {
                     int st;
                     int status;
+
 #ifdef RUBY_USE_NATIVE_THREAD
 		    if (update_flag) {
 		      st = RTEST(rb_protect(call_DoOneEvent,
@@ -2430,8 +2449,8 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
 
                         tick_counter += no_event_tick;
 
+#if 0
                         /* rb_thread_wait_for(t); */
-
                         rb_protect(eventloop_sleep, Qnil, &status);
 
                         if (status) {
@@ -2465,6 +2484,7 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                                 }
                             }
                         }
+#endif
                     }
 
                 } else {
@@ -2534,6 +2554,8 @@ lib_eventloop_main_core(args)
 
     check_rootwidget_flag = params->check_root;
 
+    Tcl_CreateEventSource(rbtk_EventSetupProc, rbtk_EventCheckProc, (ClientData)args);
+
     if (lib_eventloop_core(params->check_root,
                            params->update_flag,
                            params->check_var,
@@ -2585,6 +2607,8 @@ lib_eventloop_ensure(args)
 {
     struct evloop_params *ptr = (struct evloop_params *)args;
     volatile VALUE current_evloop = rb_thread_current();
+
+    Tcl_DeleteEventSource(rbtk_EventSetupProc, rbtk_EventCheckProc, (ClientData)args);
 
     DUMP2("eventloop_ensure: current-thread : %lx", current_evloop);
     DUMP2("eventloop_ensure: eventloop-thread : %lx", eventloop_thread);

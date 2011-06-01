@@ -1,3 +1,7 @@
+Thu Jun  2 07:56:24 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: reduce CPU power required by an eventloop.
+
 Tue May 31 21:28:33 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_signal.rb (TestSignal#test_signal_requiring):
