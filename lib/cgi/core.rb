@@ -17,6 +17,7 @@ class CGI
 
   REVISION = '$Id$' #:nodoc:
 
+  # Whether processing will be required in binary vs text
   NEEDS_BINMODE = File::BINARY != 0
 
   # Path separators in different environments.
@@ -450,6 +451,15 @@ class CGI
       @params.update(hash)
     end
 
+    ##
+    # Parses multipart form elements according to 
+    #   http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2
+    #
+    # Returns a hash of multipart form parameters with bodies of type StringIO or 
+    # Tempfile depending on whether the multipart form element exceeds 10 KB
+    #
+    #   params[name => body]
+    #
     def read_multipart(boundary, content_length)
       ## read first boundary
       stdin = $stdin
@@ -655,6 +665,7 @@ class CGI
     end
     private :initialize_query
 
+    # Returns whether the form contained multipart/form-data
     def multipart?
       @multipart
     end
@@ -705,7 +716,6 @@ class CGI
   #
   #   CGI.accept_charset = "EUC-JP"
   #
-
   @@accept_charset="UTF-8"
 
   # Return the accept character set for all new CGI instances.

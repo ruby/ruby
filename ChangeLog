@@ -1,3 +1,9 @@
+Wed Jun  1 09:41:14 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/cgi/util.rb:  Improve documentation.  Patch by Kuba Fietkiewicz.
+	  [Ruby 1.9 - Bug #4775]
+	* lib/cgi/core.rb:  ditto
+
 Wed Jun  1 09:26:05 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/mathn.rb:  Improve documentation and attach it to Numeric.
