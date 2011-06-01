@@ -532,14 +532,10 @@ install?(:local, :comm, :man) do
 end
 
 install?(:ext, :comm, :gem) do
-  directories = []
-  IO.foreach(File.join(srcdir, "lib/rubygems.rb")) do |line|
-    if /^\s*DIRECTORIES\s*=\s*%w\[(.*?)\]/ =~ line
-      directories = $1.split
-      break
-    end
-  end
-  gpath = CONFIG["sitelibdir"].sub(%r'/site_ruby/(?=[^/]+)', '/gems/')
+  $:.unshift(File.join(srcdir, "lib"))
+  require("rubygems.rb")
+  gpath = Gem.default_dir
+  directories = Gem.ensure_gem_subdirectories(gpath)
   prepare "default gems", gpath, directories
 
   destdir = File.join(gpath, directories.grep(/^spec/)[0])
