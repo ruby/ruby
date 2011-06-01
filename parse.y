@@ -5364,7 +5364,8 @@ parser_str_new(const char *p, long n, rb_encoding *enc, int func, rb_encoding *e
 }
 
 #define lex_goto_eol(parser) ((parser)->parser_lex_p = (parser)->parser_lex_pend)
-#define peek(c) (lex_p < lex_pend && (c) == *lex_p)
+#define peek(c) peek_n((c), 0)
+#define peek_n(c,n) (lex_p+(n) < lex_pend && (c) == (unsigned char)lex_p[n])
 
 static inline int
 parser_nextc(struct parser_params *parser)
@@ -6531,6 +6532,8 @@ parser_prepare(struct parser_params *parser)
 #define IS_END() (lex_state == EXPR_END || lex_state == EXPR_ENDARG || lex_state == EXPR_ENDFN)
 #define IS_BEG() (lex_state == EXPR_BEG || lex_state == EXPR_MID || lex_state == EXPR_VALUE || lex_state == EXPR_CLASS)
 #define IS_SPCARG(c) (IS_ARG() && space_seen && !ISSPACE(c))
+#define IS_LABEL_POSSIBLE() ((lex_state == EXPR_BEG && !cmd_state) || IS_ARG())
+#define IS_LABEL_SUFFIX(n) (peek_n(':',(n)) && !peek_n(':', (n)+1))
 
 #ifndef RIPPER
 #define ambiguous_operator(op, syn) ( \
@@ -7742,7 +7745,7 @@ parser_yylex(struct parser_params *parser)
 	    else {
 		if (lex_state == EXPR_FNAME) {
 		    if ((c = nextc()) == '=' && !peek('~') && !peek('>') &&
-			(!peek('=') || (lex_p + 1 < lex_pend && lex_p[1] == '>'))) {
+			(!peek('=') || (peek_n('>', 1)))) {
 			result = tIDENTIFIER;
 			tokadd(c);
 			tokfix();
@@ -7759,9 +7762,8 @@ parser_yylex(struct parser_params *parser)
 		}
 	    }
 
-	    if ((lex_state == EXPR_BEG && !cmd_state) ||
-		IS_ARG()) {
-		if (peek(':') && !(lex_p + 1 < lex_pend && lex_p[1] == ':')) {
+	    if (IS_LABEL_POSSIBLE()) {
+		if (IS_LABEL_SUFFIX(0)) {
 		    lex_state = EXPR_BEG;
 		    nextc();
 		    set_yylval_name(TOK_INTERN(!ENC_SINGLE(mb)));
