@@ -714,11 +714,11 @@ enumerator_peek(VALUE obj)
  * call-seq:
  *   e.feed obj   -> nil
  *
- * Set the value for the next yield in the enumerator returns.
+ * Sets the value to be returned by the next yield inside +e+.
  *
  * If the value is not set, the yield returns nil.
  *
- * This value is cleared after being used.
+ * This value is cleared after being yielded.
  *
  *   o = Object.new
  *   def o.each
