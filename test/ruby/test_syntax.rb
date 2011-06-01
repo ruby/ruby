@@ -15,7 +15,7 @@ class TestSyntax < Test::Unit::TestCase
   def test_syntax
     assert_nothing_raised(Exception) do
       for script in Dir[File.expand_path("../../../{lib,sample,ext,test}/**/*.rb", __FILE__)].sort
-        assert(valid_syntax?(IO::read(script), script))
+        assert(valid_syntax?(IO::read(script), script), script)
       end
     end
   end
