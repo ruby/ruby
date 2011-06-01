@@ -1,3 +1,8 @@
+Thu Jun  2 00:45:26 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: fix for uninitialized global variables.
+	  [Ruby 1.9 - Bug #4811]
+
 Wed Jun  1 21:57:08 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (native_sleep): fix 1000times calculation error.
