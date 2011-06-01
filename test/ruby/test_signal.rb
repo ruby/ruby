@@ -202,7 +202,7 @@ class TestSignal < Test::Unit::TestCase
     t = Tempfile.new(%w"require_ensure_test .rb")
     t.puts "sleep"
     t.close
-    error = IO.popen([EnvUtil.rubybin, "-e", <<EOS, t.path]) do |child|
+    error = IO.popen([EnvUtil.rubybin, "-e", <<EOS, t.path, :err => File::NULL]) do |child|
 trap(:INT, "DEFAULT")
 th = Thread.new do
   begin
