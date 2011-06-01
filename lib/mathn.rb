@@ -1,42 +1,44 @@
-##
-# = mathn
-#
-# mathn is a library for changing the way Ruby does math. If you need
-# more precise rounding with multiple division or exponentiation
-# operations, then mathn is the right tool. It makes sense to use this
-# library if you can use it's late rounding. Mathn does not convert
-# Fixnums into Floats as long as you do not convert it yourself.
-# Instead of using Float as intermediate value it use Rational as
-# value representation.
-#
-# Example Fixnum with intermediate Float:
-#
-#   20 / 9 * 3 * 14 / 7 * 3 / 2  # => 18
-#
-# Example: using mathn Fixnum/Rational:
-#
-#   require 'mathn'
-#   20 / 9 * 3 * 14 / 7 * 3 / 2  # => 20
-#
-# == Usage
-#
-# To start using this library, simply:
-#
-#   require "mathn"
-#
-# This will change the way division works for Fixnums, specifically
-#
-#   3 / 2
-#
-# will return +Rational+ (3/2) instead of the usual +Fixnum+ 1.
-#
-# == Copyright
-#
-# Author: Keiju ISHITSUKA(SHL Japan Inc.)
-#
 #--
 # $Release Version: 0.5 $
 # $Revision: 1.1.1.1.4.1 $
+
+##
+# = mathn
+#
+# mathn is a library for changing the way Ruby does math.  If you need
+# more precise rounding with multiple division or exponentiation
+# operations, then mathn is the right tool.
+#
+# Without mathn:
+#
+#   3 / 2 => 1 # Integer
+#
+# With mathn:
+#
+#   3 / 2 => 3/2 # Rational
+#
+# mathn features late rounding and lacks truncation of intermediate results:
+#
+# Without mathn:
+#
+#   20 / 9 * 3 * 14 / 7 * 3 / 2 # => 18
+#
+# With mathn:
+#
+#   20 / 9 * 3 * 14 / 7 * 3 / 2 # => 20
+#
+#
+# When you require 'mathn' the libraries for Prime, CMath, Matrix and Vector
+# are also loaded.
+#
+# == Copyright
+#
+# Author: Keiju ISHITSUKA (SHL Japan Inc.)
+#--
+# class Numeric follows to make this documentation findable in a reasonable
+# location
+
+class Numeric; end
 
 require "cmath.rb"
 require "matrix.rb"
