@@ -32,7 +32,7 @@ Wed Jun  1 09:21:30 2011  Eric Hodel  <drbrain@segment7.net>
 
 Wed Jun  1 07:34:57 2011  Eric Hodel  <drbrain@segment7.net>
 
-	* hash.c (key_i):  Change rdoc from "the first occurence" to "an
+	* hash.c (key_i):  Change rdoc from "the first occurrence" to "an
 	  occurrence" since first occurrence is not a specification of
 	  Hash#key.  [Ruby 1.9 - Bug #4760]
 
@@ -93,7 +93,7 @@ Tue May 31 23:49:08 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 Tue May 31 23:43:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (GetVpValueWithPrec): replace the algorithm for
-	  coercing from a Rational to stop requiring "bigecimal/util.rb".
+	  coercing from a Rational to stop requiring "bigdecimal/util.rb".
 	  [ruby-core:34318]
 
 	* ext/bigdecimal/bigdecimal.c (GetVpValue): refactoring.
@@ -503,7 +503,7 @@ Sun May 22 18:26:43 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun May 22 11:44:53 2011  Eric Hodel  <drbrain@segment7.net>
 
-	* ext/pty/pty.c:  Improve documentaton.  Patch by David Copeland.
+	* ext/pty/pty.c:  Improve documentation.  Patch by David Copeland.
 	  [Ruby 1.9 - Bug #4756]
 
 Sun May 22 11:26:39 2011  Eric Hodel  <drbrain@segment7.net>
@@ -898,7 +898,7 @@ Sun May 15 03:23:46 2011  Eric Hodel  <drbrain@segment7.net>
 Sun May 15 00:58:47 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	fix mswin32 build error.
 
-	* missing/setproctitle.c: oadd #ifdef HAVE_UNISTD_H.
+	* missing/setproctitle.c: add #ifdef HAVE_UNISTD_H.
 	* win32/Makefile.sub (MISSING): add setproctitle.obj
 
 Sat May 14 22:45:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
@@ -1093,7 +1093,7 @@ Thu May 12 14:50:52 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Thu May 12 14:47:53 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* lib/mkmf.rb (Logging.postpone): copy only when tmporary logfile
+	* lib/mkmf.rb (Logging.postpone): copy only when temporary logfile
 	  exists.
 
 Thu May 12 12:24:22 2011  Nobuhiro Iwamatsu  <iwamatsu@nigauri.org>
