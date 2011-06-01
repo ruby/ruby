@@ -93,7 +93,7 @@ lock it down to the exact version.
 
       spec.runtime_dependencies.each do |dep|
         next if locked[dep.name]
-        candidates = Gem.source_index.search dep
+        candidates = dep.matching_specs
 
         if candidates.empty? then
           complain "Unable to satisfy '#{dep}' from currently installed gems"
@@ -105,11 +105,11 @@ lock it down to the exact version.
   end
 
   def spec_path(gem_full_name)
-    gemspecs = Gem.path.map do |path|
+    gemspecs = Gem.path.map { |path|
       File.join path, "specifications", "#{gem_full_name}.gemspec"
-    end
+    }
 
-    gemspecs.find { |gemspec| File.exist? gemspec }
+    gemspecs.find { |path| File.exist? path }
   end
 
 end

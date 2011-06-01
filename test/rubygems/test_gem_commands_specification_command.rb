@@ -17,7 +17,8 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
 
   def test_execute
     foo = quick_spec 'foo'
-    Gem.source_index.add_spec foo
+
+    install_specs foo
 
     @cmd.options[:args] = %w[foo]
 
@@ -77,8 +78,9 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
   end
 
   def test_execute_field
-    foo = quick_spec 'foo'
-    Gem.source_index.add_spec foo
+    foo = new_spec 'foo', '2'
+
+    install_specs foo
 
     @cmd.options[:args] = %w[foo name]
 
@@ -90,8 +92,9 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
   end
 
   def test_execute_marshal
-    foo = quick_spec 'foo'
-    Gem.source_index.add_spec foo
+    foo = new_spec 'foo', '2'
+
+    install_specs foo
 
     @cmd.options[:args] = %w[foo]
     @cmd.options[:format] = :marshal
@@ -127,7 +130,8 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
 
   def test_execute_ruby
     foo = quick_spec 'foo'
-    Gem.source_index.add_spec foo
+
+    install_specs foo
 
     @cmd.options[:args] = %w[foo]
     @cmd.options[:format] = :ruby

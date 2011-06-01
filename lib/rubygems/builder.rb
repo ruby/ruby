@@ -44,7 +44,7 @@ class Gem::Builder
     @signer = sign
     write_package
     say success if Gem.configuration.verbose
-    @spec.file_name
+    File.basename @spec.cache_file
   end
 
   def success
@@ -52,7 +52,7 @@ class Gem::Builder
   Successfully built RubyGem
   Name: #{@spec.name}
   Version: #{@spec.version}
-  File: #{@spec.file_name}
+  File: #{File.basename @spec.cache_file}
 EOM
   end
 
@@ -79,16 +79,17 @@ EOM
   end
 
   def write_package
-    open @spec.file_name, 'wb' do |gem_io|
+    file_name = File.basename @spec.cache_file
+    open file_name, 'wb' do |gem_io|
       Gem::Package.open gem_io, 'w', @signer do |pkg|
         yaml = @spec.to_yaml
         pkg.metadata = yaml
 
         @spec.files.each do |file|
-          next if File.directory? file
-          next if file == @spec.file_name # Don't add gem onto itself
+          next if File.directory?(file)
+          next if file == file_name # Don't add gem onto itself
 
-          stat = File.stat file
+          stat = File.stat(file)
           mode = stat.mode & 0777
           size = stat.size
 

@@ -5,12 +5,8 @@
 ######################################################################
 
 require 'rubygems/command'
-require 'rubygems/gem_path_searcher'
 
 class Gem::Commands::WhichCommand < Gem::Command
-
-  EXT = %w[.rb .rbw .so .dll .bundle] # HACK
-
   def initialize
     super 'which', 'Find the location of a library file you can require',
           :search_gems_first => false, :show_all => false
@@ -34,14 +30,13 @@ class Gem::Commands::WhichCommand < Gem::Command
   end
 
   def execute
-    searcher = Gem::GemPathSearcher.new
-
     found = false
 
     options[:args].each do |arg|
-      arg = arg.sub(/#{Regexp.union(*EXT)}$/, '')
+      arg = arg.sub(/#{Regexp.union(*Gem.suffixes)}$/, '')
       dirs = $LOAD_PATH
-      spec = searcher.find arg
+
+      spec = Gem::Specification.find_by_path arg
 
       if spec then
         if options[:search_gems_first] then
@@ -51,6 +46,7 @@ class Gem::Commands::WhichCommand < Gem::Command
         end
       end
 
+      # TODO: this is totally redundant and stupid
       paths = find_paths arg, dirs
 
       if paths.empty? then
@@ -68,7 +64,7 @@ class Gem::Commands::WhichCommand < Gem::Command
     result = []
 
     dirs.each do |dir|
-      EXT.each do |ext|
+      Gem.suffixes.each do |ext|
         full_path = File.join dir, "#{package_name}#{ext}"
         if File.exist? full_path then
           result << full_path

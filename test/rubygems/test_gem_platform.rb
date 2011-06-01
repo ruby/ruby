@@ -144,7 +144,7 @@ class TestGemPlatform < Gem::TestCase
   def test_empty
     platform = Gem::Platform.new 'cpu-other_platform1'
     assert_respond_to platform, :empty?
-    assert_equal false, platform.empty?
+    assert_equal false, Deprecate.skip_during { platform.empty? }
   end
 
   def test_to_s

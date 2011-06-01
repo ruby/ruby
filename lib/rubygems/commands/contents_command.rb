@@ -58,24 +58,24 @@ class Gem::Commands::ContentsCommand < Gem::Command
     end.flatten
 
     path_kind = if spec_dirs.empty? then
-                  spec_dirs = Gem::SourceIndex.installed_spec_directories
+                  spec_dirs = Gem::Specification.dirs
                   "default gem paths"
                 else
                   "specified path"
                 end
 
-    si = Gem::SourceIndex.from_gems_in(*spec_dirs)
-
     gem_names = if options[:all] then
-                  si.map { |_, spec| spec.name }
+                  Gem::Specification.map(&:name)
                 else
                   get_all_gem_names
                 end
 
     gem_names.each do |name|
-      gem_spec = si.find_name(name, version).last
+      # HACK: find_by_name fails for some reason... ARGH
+      # How many places must we embed our resolve logic?
+      spec = Gem::Specification.find_all_by_name(name, version).last
 
-      unless gem_spec then
+      unless spec then
         say "Unable to find gem '#{name}' in #{path_kind}"
 
         if Gem.configuration.verbose then
@@ -86,16 +86,19 @@ class Gem::Commands::ContentsCommand < Gem::Command
         terminate_interaction 1 if gem_names.length == 1
       end
 
-      files = options[:lib_only] ? gem_spec.lib_files : gem_spec.files
+      gem_path = spec.full_gem_path
+      extra    = "/{#{spec.require_paths.join ','}}" if options[:lib_only]
+      glob     = "#{gem_path}#{extra}/**/*"
+      files    = Dir[glob]
 
-      files.each do |f|
-        path = if options[:prefix] then
-                 File.join gem_spec.full_gem_path, f
-               else
-                 f
-               end
+      gem_path = File.join gem_path, '' # add trailing / if missing
 
-        say path
+      files.sort.each do |file|
+        next if File.directory? file
+
+        file = file.sub gem_path, '' unless options[:prefix]
+
+        say file
       end
     end
   end

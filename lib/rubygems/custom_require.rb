@@ -41,19 +41,20 @@ module Kernel
     if Gem.unresolved_deps.empty? or Gem.loaded_path? path then
       gem_original_require path
     else
-      spec = Gem.searcher.find_active path
+      spec = Gem::Specification.find { |s|
+        s.activated? and s.contains_requirable_file? path
+      }
 
       unless spec then
-        found_specs = Gem.searcher.find_in_unresolved path
+        found_specs = Gem::Specification.find_in_unresolved path
         unless found_specs.empty? then
           found_specs = [found_specs.last]
         else
-          found_specs = Gem.searcher.find_in_unresolved_tree path
+          found_specs = Gem::Specification.find_in_unresolved_tree path
         end
 
         found_specs.each do |found_spec|
-          # FIX: this is dumb, activate a spec instead of name/version
-          Gem.activate found_spec.name, found_spec.version
+          found_spec.activate
         end
       end
 

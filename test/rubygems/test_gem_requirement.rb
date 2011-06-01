@@ -256,6 +256,19 @@ class TestGemRequirement < Gem::TestCase
     refute_satisfied_by "2.0",   "~> 1.4.4"
   end
 
+  def test_specific
+    refute req('> 1') .specific?
+    refute req('>= 1').specific?
+
+    assert req('!= 1').specific?
+    assert req('< 1') .specific?
+    assert req('<= 1').specific?
+    assert req('= 1') .specific?
+    assert req('~> 1').specific?
+
+    assert req('> 1', '> 2').specific? # GIGO
+  end
+
   def test_bad
     refute_satisfied_by "",            "> 0.1"
     refute_satisfied_by "1.2.3",       "!= 1.2.3"

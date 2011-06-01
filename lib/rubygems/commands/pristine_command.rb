@@ -16,12 +16,18 @@ class Gem::Commands::PristineCommand < Gem::Command
   def initialize
     super 'pristine',
           'Restores installed gems to pristine condition from files located in the gem cache',
-          :version => Gem::Requirement.default
+          :version => Gem::Requirement.default, :extensions => true,
+          :all => false
 
     add_option('--all',
                'Restore all installed gems to pristine',
                'condition') do |value, options|
       options[:all] = value
+    end
+
+    add_option('--[no-]extensions',
+               'Restore gems with extensions') do |value, options|
+      options[:extensions] = value
     end
 
     add_version_option('restore to', 'pristine condition')
@@ -32,7 +38,7 @@ class Gem::Commands::PristineCommand < Gem::Command
   end
 
   def defaults_str # :nodoc:
-    "--all"
+    "--all --extensions"
   end
 
   def description # :nodoc:
@@ -46,6 +52,9 @@ for the gem are regenerated.
 
 If the cached gem cannot be found, you will need to use `gem install` to
 revert the gem.
+
+If --no-extensions is provided pristine will not attempt to restore gems with
+extensions.
     EOF
   end
 
@@ -54,21 +63,17 @@ revert the gem.
   end
 
   def execute
-    gem_name = nil
-
     specs = if options[:all] then
-              Gem::SourceIndex.from_installed_gems.map do |name, spec|
-                spec
-              end
+              Gem::Specification.map
             else
-              gem_name = get_one_gem_name
-              Gem::SourceIndex.from_installed_gems.find_name(gem_name,
-                                                          options[:version])
+              get_all_gem_names.map do |gem_name|
+                Gem::Specification.find_all_by_name gem_name, options[:version]
+              end.flatten
             end
 
-    if specs.empty? then
+    if specs.to_a.empty? then
       raise Gem::Exception,
-            "Failed to find gem #{gem_name} #{options[:version]}"
+            "Failed to find gems #{options[:args]} #{options[:version]}"
     end
 
     install_dir = Gem.dir # TODO use installer option
@@ -76,25 +81,32 @@ revert the gem.
     raise Gem::FilePermissionError.new(install_dir) unless
       File.writable?(install_dir)
 
-    say "Restoring gem(s) to pristine condition..."
+    say "Restoring gems to pristine condition..."
 
     specs.each do |spec|
-      gem = spec.cache_gem
+      unless spec.extensions.empty? or options[:extensions] then
+        say "Skipped #{spec.full_name}, it needs to compile an extension"
+        next
+      end
 
-      if gem.nil? then
+      gem = spec.cache_file
+
+      unless File.exist? gem then
+        require 'rubygems/remote_fetcher'
+
         say "Cached gem for #{spec.full_name} not found, attempting to fetch..."
         dep = Gem::Dependency.new spec.name, spec.version
         Gem::RemoteFetcher.fetcher.download_to_cache dep
-        gem = spec.cache_gem
       end
 
       # TODO use installer options
-      installer = Gem::Installer.new gem, :wrappers => true, :force => true
+      installer = Gem::Installer.new(gem,
+                                     :wrappers => true,
+                                     :force => true,
+                                     :install_dir => spec.base_dir)
       installer.install
 
       say "Restored #{spec.full_name}"
     end
   end
-
 end
-

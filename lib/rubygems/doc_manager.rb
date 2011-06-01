@@ -92,7 +92,7 @@ class Gem::DocManager
   def initialize(spec, rdoc_args="")
     require 'fileutils'
     @spec = spec
-    @doc_dir = File.join(spec.installation_path, "doc", spec.full_name)
+    @doc_dir = spec.doc_dir
     @rdoc_args = rdoc_args.nil? ? [] : rdoc_args.split
   end
 
@@ -224,25 +224,24 @@ class Gem::DocManager
   # Remove RDoc and RI documentation
 
   def uninstall_doc
-    raise Gem::FilePermissionError.new(@spec.installation_path) unless
-    File.writable? @spec.installation_path
+    base_dir = @spec.base_dir
+    raise Gem::FilePermissionError.new base_dir unless File.writable? base_dir
 
-    original_name = [
+    # TODO: ok... that's twice... ugh
+    old_name = [
       @spec.name, @spec.version, @spec.original_platform].join '-'
 
-    doc_dir = File.join @spec.installation_path, 'doc', @spec.full_name
+    doc_dir = @spec.doc_dir
     unless File.directory? doc_dir then
-      doc_dir = File.join @spec.installation_path, 'doc', original_name
+      doc_dir = File.join File.dirname(doc_dir), old_name
+    end
+
+    ri_dir = @spec.ri_dir
+    unless File.directory? ri_dir then
+      ri_dir = File.join File.dirname(ri_dir), old_name
     end
 
     FileUtils.rm_rf doc_dir
-
-    ri_dir = File.join @spec.installation_path, 'ri', @spec.full_name
-
-    unless File.directory? ri_dir then
-      ri_dir = File.join @spec.installation_path, 'ri', original_name
-    end
-
     FileUtils.rm_rf ri_dir
   end
 

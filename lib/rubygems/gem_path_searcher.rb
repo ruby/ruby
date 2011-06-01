@@ -4,6 +4,9 @@
 # File a patch instead and assign it to Ryan Davis or Eric Hodel.
 ######################################################################
 
+require "rubygems"
+require "rubygems/deprecate"
+
 ##
 # GemPathSearcher has the capability to find loadable files inside
 # gems.  It generates data up front to speed up searches later.
@@ -53,6 +56,15 @@ class Gem::GemPathSearcher
     @gemspecs.find do |spec|
       # TODO: inverted responsibility
       matching_file? spec, glob
+    end
+  end
+
+  # Looks through the available gemspecs and finds the first
+  # one that contains +file+ as a requirable file.
+
+  def find_spec_for_file(file)
+    @gemspecs.find do |spec|
+      return spec if spec.contains_requirable_file?(file)
     end
   end
 
@@ -138,9 +150,7 @@ class Gem::GemPathSearcher
   # in reverse version order.  (bar-2, bar-1, foo-2)
 
   def init_gemspecs
-    specs = Gem.source_index.map { |_, spec| spec }
-
-    specs.sort { |a, b|
+    Gem::Specification.sort { |a, b|
       names = a.name <=> b.name
       next names if names.nonzero?
       b.version <=> a.version
@@ -156,5 +166,13 @@ class Gem::GemPathSearcher
       spec.require_paths
   end
 
-end
+  extend Deprecate
 
+  deprecate :initialize,              :none,  2011, 10
+  deprecate :find,                    :none,  2011, 10
+  deprecate :find_active,             :none,  2011, 10
+  deprecate :find_all,                :none,  2011, 10
+  deprecate :find_in_unresolved,      :none,  2011, 10
+  deprecate :find_in_unresolved_tree, :none,  2011, 10
+  deprecate :find_spec_for_file,      :none,  2011, 10
+end

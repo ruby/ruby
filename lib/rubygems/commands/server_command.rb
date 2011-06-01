@@ -50,7 +50,7 @@ class Gem::Commands::ServerCommand < Gem::Command
       options[:addresses].push(*address)
     end
 
-    add_option '-l', '--launch[=COMMAND]',
+    add_option '-l', '--launch[=COMMAND]', 
                'launches a browser window',
                "COMMAND defaults to 'start' on Windows",
                "and 'open' on all other platforms" do |launch, options|

@@ -106,7 +106,7 @@ class Gem::PackageTask < Rake::PackageTask
 
     task :package => [:gem]
 
-    gem_file = gem_spec.file_name
+    gem_file = File.basename gem_spec.cache_file
     gem_path = File.join package_dir, gem_file
     gem_dir  = File.join package_dir, gem_spec.full_name
 

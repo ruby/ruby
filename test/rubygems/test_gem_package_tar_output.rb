@@ -6,6 +6,7 @@
 
 require 'rubygems/package/tar_test_case'
 require 'rubygems/package/tar_output'
+require 'rubygems/security'
 
 class TestGemPackageTarOutput < Gem::Package::TarTestCase
 

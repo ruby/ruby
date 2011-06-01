@@ -21,7 +21,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     super
 
     @gems_dir  = File.join @tempdir, 'gems'
-    @cache_dir = Gem.cache_dir @gemhome
+    @cache_dir = File.join @gemhome, "cache"
 
     FileUtils.mkdir @gems_dir
 

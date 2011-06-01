@@ -46,10 +46,9 @@ class TestKernel < Gem::TestCase
       gem 'a', '= 2'
     end
 
-    assert_match(/activate a \(= 2\)/, ex.message)
+    assert_equal "can't activate a-2, already activated a-1", ex.message
     assert_match(/activated a-1/, ex.message)
     assert_equal 'a', ex.name
-    assert_equal Gem::Requirement.new('= 2'), ex.requirement
 
     assert $:.any? { |p| %r{a-1/lib} =~ p }
     refute $:.any? { |p| %r{a-2/lib} =~ p }

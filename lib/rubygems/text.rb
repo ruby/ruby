@@ -21,7 +21,7 @@ module Gem::Text
 
     while work.length > wrap do
       if work =~ /^(.{0,#{wrap}})[ \n]/ then
-        result << $1
+        result << $1.rstrip
         work.slice!(0, $&.length)
       else
         result << work.slice!(0, wrap)

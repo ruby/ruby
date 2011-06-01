@@ -15,11 +15,18 @@ class TestGemCommandsContentsCommand < Gem::TestCase
     @cmd = Gem::Commands::ContentsCommand.new
   end
 
+  def gem name
+    spec = quick_gem name do |gem|
+      gem.files = %W[lib/#{name}.rb Rakefile]
+    end
+    write_file File.join(*%W[gems #{spec.full_name} lib #{name}.rb])
+    write_file File.join(*%W[gems #{spec.full_name} Rakefile])
+  end
+
   def test_execute
     @cmd.options[:args] = %w[foo]
-    quick_gem 'foo' do |gem|
-      gem.files = %w[lib/foo.rb Rakefile]
-    end
+
+    gem 'foo'
 
     use_ui @ui do
       @cmd.execute
@@ -33,13 +40,8 @@ class TestGemCommandsContentsCommand < Gem::TestCase
   def test_execute_all
     @cmd.options[:all] = true
 
-    quick_gem 'foo' do |gem|
-      gem.files = %w[lib/foo.rb Rakefile]
-    end
-
-    quick_gem 'bar' do |gem|
-      gem.files = %w[lib/bar.rb Rakefile]
-    end
+    gem 'foo'
+    gem 'bar'
 
     use_ui @ui do
       @cmd.execute
@@ -67,13 +69,8 @@ class TestGemCommandsContentsCommand < Gem::TestCase
 
   def test_execute_exact_match
     @cmd.options[:args] = %w[foo]
-    quick_gem 'foo' do |gem|
-      gem.files = %w[lib/foo.rb Rakefile]
-    end
-
-    quick_gem 'foo_bar' do |gem|
-      gem.files = %w[lib/foo_bar.rb Rakefile]
-    end
+    gem 'foo'
+    gem 'bar'
 
     use_ui @ui do
       @cmd.execute
@@ -88,9 +85,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
     @cmd.options[:args] = %w[foo]
     @cmd.options[:lib_only] = true
 
-    quick_gem 'foo' do |gem|
-      gem.files = %w[lib/foo.rb Rakefile]
-    end
+    gem 'foo'
 
     use_ui @ui do
       @cmd.execute
@@ -104,13 +99,9 @@ class TestGemCommandsContentsCommand < Gem::TestCase
 
   def test_execute_multiple
     @cmd.options[:args] = %w[foo bar]
-    quick_gem 'foo' do |gem|
-      gem.files = %w[lib/foo.rb Rakefile]
-    end
 
-    quick_gem 'bar' do |gem|
-      gem.files = %w[lib/bar.rb Rakefile]
-    end
+    gem 'foo'
+    gem 'bar'
 
     use_ui @ui do
       @cmd.execute
@@ -126,17 +117,15 @@ class TestGemCommandsContentsCommand < Gem::TestCase
     @cmd.options[:args] = %w[foo]
     @cmd.options[:prefix] = false
 
-    quick_gem 'foo' do |gem|
-      gem.files = %w[lib/foo.rb Rakefile]
-    end
+    gem 'foo'
 
     use_ui @ui do
       @cmd.execute
     end
 
     expected = <<-EOF
-lib/foo.rb
 Rakefile
+lib/foo.rb
     EOF
 
     assert_equal expected, @ui.output

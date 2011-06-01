@@ -8,6 +8,25 @@ require 'rubygems/installer_test_case'
 
 class TestGemInstaller < Gem::InstallerTestCase
 
+  def setup
+    super
+
+    if __name__ !~ /^test_install(_|$)/ then
+      @gemhome = @installer_tmp
+      Gem.use_paths @installer_tmp
+
+      @spec = Gem::Specification.find_by_name 'a'
+      @user_spec = Gem::Specification.find_by_name 'b'
+
+      @installer.spec = @spec
+      @installer.gem_home = @installer_tmp
+      @installer.gem_dir = @spec.gem_dir
+      @user_installer.spec = @user_spec
+      @user_installer.gem_home = @installer_tmp
+    end
+  end
+
+
   def test_app_script_text
     @spec.version = 2
     util_make_exec @spec, ''
@@ -108,7 +127,7 @@ load Gem.bin_path('a', 'executable', version)
   def test_extract_files
     format = Object.new
     def format.file_entries
-      [[{'size' => 7, 'mode' => 0400, 'path' => 'thefile'}, 'thefile']]
+      [[{'size' => 7, 'mode' => 0400, 'path' => 'thefile'}, 'content']]
     end
 
     @installer.format = format
@@ -116,7 +135,7 @@ load Gem.bin_path('a', 'executable', version)
     @installer.extract_files
 
     thefile_path = File.join(util_gem_dir, 'thefile')
-    assert_equal 'thefile', File.read(thefile_path)
+    assert_equal 'content', File.read(thefile_path)
 
     unless Gem.win_platform? then
       assert_equal 0400, File.stat(thefile_path).mode & 0777
@@ -145,8 +164,9 @@ load Gem.bin_path('a', 'executable', version)
       @installer.extract_files
     end
 
-    assert_equal "attempt to install file into \"../thefile\" under #{util_gem_dir.inspect}",
-                 e.message
+    dir = util_gem_dir
+    expected = "attempt to install file into \"../thefile\" under #{dir}"
+    assert_equal expected, e.message
     assert_equal false, File.file?(File.join(@tempdir, '../thefile')),
                  "You may need to remove this file if you broke the test once"
   end
@@ -163,7 +183,7 @@ load Gem.bin_path('a', 'executable', version)
       @installer.extract_files
     end
 
-    assert_equal 'attempt to install file into "/thefile"', e.message
+    assert_equal 'attempt to install file into /thefile', e.message
     assert_equal false, File.file?(File.join('/thefile')),
                  "You may need to remove this file if you broke the test once"
   end
@@ -241,7 +261,7 @@ load Gem.bin_path('a', 'executable', version)
     @installer.wrappers = true
     @spec.executables = %w[executable]
 
-    gem_dir = File.join "#{@gemhome}2", 'gems', @spec.full_name
+    gem_dir = File.join("#{@gemhome}2", "gems", @spec.full_name)
     gem_bindir = File.join gem_dir, 'bin'
     FileUtils.mkdir_p gem_bindir
     File.open File.join(gem_bindir, 'executable'), 'w' do |f|
@@ -253,7 +273,7 @@ load Gem.bin_path('a', 'executable', version)
 
     @installer.generate_bin
 
-    installed_exec = File.join("#{@gemhome}2", 'bin', 'executable')
+    installed_exec = File.join("#{@gemhome}2", "bin", 'executable')
     assert_equal true, File.exist?(installed_exec)
     assert_equal mask, File.stat(installed_exec).mode unless win_platform?
 
@@ -279,14 +299,14 @@ load Gem.bin_path('a', 'executable', version)
     if win_platform?
       skip('test_generate_bin_script_no_perms skipped on MS Windows')
     else
-      File.chmod 0000, util_inst_bindir
+      FileUtils.chmod 0000, util_inst_bindir
 
       assert_raises Gem::FilePermissionError do
         @installer.generate_bin
       end
     end
   ensure
-    File.chmod 0700, util_inst_bindir unless $DEBUG
+    FileUtils.chmod 0755, util_inst_bindir unless ($DEBUG or win_platform?)
   end
 
   def test_generate_bin_script_no_shebang
@@ -346,7 +366,7 @@ load Gem.bin_path('a', 'executable', version)
 
     @installer.generate_bin
     assert_equal true, File.directory?(util_inst_bindir)
-    installed_exec = File.join(util_inst_bindir, 'executable')
+    installed_exec = File.join util_inst_bindir, 'executable'
     assert_equal true, File.symlink?(installed_exec)
     assert_equal(File.join(util_gem_dir, 'bin', 'executable'),
                  File.readlink(installed_exec))
@@ -371,14 +391,14 @@ load Gem.bin_path('a', 'executable', version)
     if win_platform?
       skip('test_generate_bin_symlink_no_perms skipped on MS Windows')
     else
-      File.chmod 0000, util_inst_bindir
+      FileUtils.chmod 0000, util_inst_bindir
 
       assert_raises Gem::FilePermissionError do
         @installer.generate_bin
       end
     end
   ensure
-    File.chmod 0700, util_inst_bindir unless $DEBUG
+    FileUtils.chmod 0755, util_inst_bindir unless ($DEBUG or win_platform?)
   end
 
   def test_generate_bin_symlink_update_newer
@@ -404,10 +424,10 @@ load Gem.bin_path('a', 'executable', version)
 
     @spec.version = 3
     util_make_exec
-    @installer.gem_dir = File.join util_gem_dir @spec
+    @installer.gem_dir = util_gem_dir @spec
     @installer.generate_bin
     installed_exec = File.join(util_inst_bindir, 'executable')
-    assert_equal(File.join(util_gem_bindir(@spec), 'executable'),
+    assert_equal(@spec.bin_file('executable'),
                  File.readlink(installed_exec),
                  "Ensure symlink moved to latest version")
   end
@@ -441,8 +461,9 @@ load Gem.bin_path('a', 'executable', version)
 
     @installer.generate_bin
 
-    installed_exec = File.join(util_inst_bindir, 'executable')
-    assert_equal(File.join(util_gem_dir, 'bin', 'executable'),
+    installed_exec = File.join util_inst_bindir, 'executable'
+    expected = File.join util_gem_dir, 'bin', 'executable'
+    assert_equal(expected,
                  File.readlink(installed_exec),
                  "Ensure symlink not moved")
   end
@@ -455,7 +476,7 @@ load Gem.bin_path('a', 'executable', version)
     @installer.gem_dir = util_gem_dir
 
     @installer.generate_bin
-    installed_exec = File.join(util_inst_bindir, 'executable')
+    installed_exec = File.join util_inst_bindir, 'executable'
     assert_equal true, File.exist?(installed_exec)
 
     @spec = Gem::Specification.new do |s|
@@ -522,7 +543,7 @@ load Gem.bin_path('a', 'executable', version)
 
     Dir.mkdir util_inst_bindir
     util_build_gem spec
-    FileUtils.mv Gem.cache_gem(spec.file_name, @gemhome), @tempdir
+    FileUtils.mv spec.cache_file, @tempdir
 
     installer = Gem::Installer.new gem
 
@@ -535,7 +556,7 @@ load Gem.bin_path('a', 'executable', version)
     util_clear_gems
 
     gemdir     = File.join @gemhome, 'gems', @spec.full_name
-    cache_file = Gem.cache_gem(@spec.file_name, @gemhome)
+    cache_file = File.join @gemhome, 'cache', @spec.file_name
     stub_exe   = File.join @gemhome, 'bin', 'executable'
     rakefile   = File.join gemdir, 'ext', 'a', 'Rakefile'
 
@@ -555,12 +576,14 @@ load Gem.bin_path('a', 'executable', version)
       assert File.exist?(cache_file), 'cache file must exist'
     end
 
+    @newspec = nil
     build_rake_in do
       use_ui @ui do
-        assert_equal @spec, @installer.install
+        @newspec = @installer.install
       end
     end
 
+    assert_equal @spec, @newspec
     assert File.exist? gemdir
     assert File.exist?(stub_exe), 'gem executable must exist'
 
@@ -576,7 +599,7 @@ load Gem.bin_path('a', 'executable', version)
 
     spec_file = File.join(@gemhome, 'specifications', @spec.spec_name)
 
-    assert_equal spec_file, @spec.loaded_from
+    assert_equal spec_file, @newspec.loaded_from
     assert File.exist?(spec_file)
 
     assert_same @installer, @post_build_hook_arg
@@ -656,17 +679,17 @@ load Gem.bin_path('a', 'executable', version)
     gemhome2 = "#{@gemhome}2"
     @spec.add_dependency 'b'
 
-    b2 = quick_spec 'b', 2
+    quick_gem 'b', 2
 
     FileUtils.mv @gemhome, gemhome2
-    Gem.source_index.gems.delete b2.full_name
-    source_index = Gem::SourceIndex.from_gems_in File.join(gemhome2,
-                                                           'specifications')
+
+    Gem::Specification.dirs = [gemhome2] # TODO: switch all dirs= to use_paths
 
     util_setup_gem
 
-    @installer = Gem::Installer.new @gem, :install_dir => gemhome2,
-                                    :source_index => source_index
+    @installer = Gem::Installer.new @gem, :install_dir => gemhome2
+
+    gem_home = Gem.dir
 
     build_rake_in do
       use_ui @ui do
@@ -675,6 +698,7 @@ load Gem.bin_path('a', 'executable', version)
     end
 
     assert File.exist?(File.join(gemhome2, 'gems', @spec.full_name))
+    assert_equal gem_home, Gem.dir
   end
 
   def test_install_force
@@ -712,7 +736,7 @@ load Gem.bin_path('a', 'executable', version)
   end
 
   def test_install_missing_dirs
-    FileUtils.rm_f Gem.cache_dir
+    FileUtils.rm_f File.join(Gem.dir, 'cache')
     FileUtils.rm_f File.join(Gem.dir, 'docs')
     FileUtils.rm_f File.join(Gem.dir, 'specifications')
 
@@ -722,11 +746,11 @@ load Gem.bin_path('a', 'executable', version)
       @installer.install
     end
 
-    File.directory? Gem.cache_dir
+    File.directory? File.join(Gem.dir, 'cache')
     File.directory? File.join(Gem.dir, 'docs')
     File.directory? File.join(Gem.dir, 'specifications')
 
-    assert File.exist?(Gem.cache_gem(@spec.file_name, @gemhome))
+    assert File.exist?(File.join(@gemhome, 'cache', @spec.file_name))
     assert File.exist?(File.join(@gemhome, 'specifications', @spec.spec_name))
   end
 
@@ -812,8 +836,9 @@ load Gem.bin_path('a', 'executable', version)
     @spec.post_install_message = 'I am a shiny gem!'
 
     use_ui @ui do
-      Dir.chdir @tempdir do Gem::Builder.new(@spec).build end
+      path = Gem::Builder.new(@spec).build
 
+      @installer = Gem::Installer.new path
       @installer.install
     end
 
@@ -838,7 +863,7 @@ load Gem.bin_path('a', 'executable', version)
 
     util_build_gem spec
 
-    gem = Gem.cache_gem(spec.file_name, @gemhome)
+    gem = File.join(@gemhome, 'cache', spec.file_name)
 
     use_ui @ui do
       @installer = Gem::Installer.new gem
@@ -1002,6 +1027,10 @@ load Gem.bin_path('a', 'executable', version)
     assert_equal @spec, eval(File.read(spec_file))
   end
 
+  def test_dir
+    assert_match @installer.dir, %r!/installer/gems/a-2$!
+  end
+
   def old_ruby_required
     spec = quick_spec 'old_ruby_required', '1' do |s|
       s.required_ruby_version = '= 1.4.6'
@@ -1009,20 +1038,17 @@ load Gem.bin_path('a', 'executable', version)
 
     util_build_gem spec
 
-    Gem.cache_gem(spec.file_name, @gemhome)
+    spec.cache_file
   end
 
   def util_execless
     @spec = quick_spec 'z'
+    util_build_gem @spec
 
-    gem = File.join @tempdir, @spec.file_name
-
-    @installer = util_installer @spec, gem, @gemhome
+    @installer = util_installer @spec, @gemhome
   end
 
   def mask
     0100755 & (~File.umask)
   end
-
 end
-

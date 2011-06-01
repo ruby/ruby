@@ -1,3 +1,8 @@
+Wed Jun  1 12:35:50 2011  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/rubygems*: Import rubygems 1.8.5 (released @ 137c80f)
+	* test/rubygems: Ditto
+
 Wed Jun  1 12:34:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* NEWS: add new features of bigdecimal.

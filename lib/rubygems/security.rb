@@ -393,7 +393,7 @@ module Gem::Security
     :munge_re   => Regexp.new(/[^a-z0-9_.-]+/),
 
     # output directory for trusted certificate checksums
-    :trust_dir => File::join(Gem.user_home, '.gem', 'trust'),
+    :trust_dir => File.join(Gem.user_home, '.gem', 'trust'),
 
     # default permissions for trust directory and certs
     :perms => {

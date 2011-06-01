@@ -17,7 +17,8 @@ class Gem::Commands::StaleCommand < Gem::Command
 
   def execute
     gem_to_atime = {}
-    Gem.source_index.each do |name, spec|
+    Gem::Specification.each do |spec|
+      name = spec.full_name
       Dir["#{spec.full_gem_path}/**/*.*"].each do |file|
         next if File.directory?(file)
         stat = File.stat(file)

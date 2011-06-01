@@ -29,6 +29,7 @@ class TestGemCommandManager < Gem::TestCase
     end
   ensure
     $:.replace old_load_path
+    Gem::CommandManager.reset
   end
 
   def test_run_crash_command
@@ -46,6 +47,7 @@ class TestGemCommandManager < Gem::TestCase
     end
   ensure
     $:.replace old_load_path
+    @command_manager.unregister_command :crash
   end
 
   def test_process_args_bad_arg

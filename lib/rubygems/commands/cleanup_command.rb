@@ -5,7 +5,6 @@
 ######################################################################
 
 require 'rubygems/command'
-require 'rubygems/source_index'
 require 'rubygems/dependency_list'
 require 'rubygems/uninstaller'
 
@@ -44,28 +43,20 @@ installed elsewhere in GEM_PATH the cleanup command won't touch it.
     say "Cleaning up installed gems..."
     primary_gems = {}
 
-    Gem.source_index.each do |name, spec|
+    Gem::Specification.each do |spec|
       if primary_gems[spec.name].nil? or
          primary_gems[spec.name].version < spec.version then
         primary_gems[spec.name] = spec
       end
     end
 
-    gems_to_cleanup = []
-
-    unless options[:args].empty? then
-      options[:args].each do |gem_name|
-        dep = Gem::Dependency.new gem_name, Gem::Requirement.default
-        specs = Gem.source_index.search dep
-        specs.each do |spec|
-          gems_to_cleanup << spec
-        end
-      end
-    else
-      Gem.source_index.each do |name, spec|
-        gems_to_cleanup << spec
-      end
-    end
+    gems_to_cleanup = unless options[:args].empty? then
+                        options[:args].map do |gem_name|
+                          Gem::Specification.find_all_by_name gem_name
+                        end.flatten
+                      else
+                        Gem::Specification.to_a
+                      end
 
     gems_to_cleanup = gems_to_cleanup.select { |spec|
       primary_gems[spec.name].version != spec.version
@@ -89,8 +80,8 @@ installed elsewhere in GEM_PATH the cleanup command won't touch it.
           :version => "= #{spec.version}",
         }
 
-        if Gem.user_dir == spec.installation_path then
-          uninstall_options[:install_dir] = spec.installation_path
+        if Gem.user_dir == spec.base_dir then
+          uninstall_options[:install_dir] = spec.base_dir
         end
 
         uninstaller = Gem::Uninstaller.new spec.name, uninstall_options

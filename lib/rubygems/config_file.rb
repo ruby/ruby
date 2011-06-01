@@ -207,11 +207,15 @@ class Gem::ConfigFile
   # Location of RubyGems.org credentials
 
   def credentials_path
-    File.join(Gem.user_home, '.gem', 'credentials')
+    File.join Gem.user_home, '.gem', 'credentials'
   end
 
   def load_api_keys
-    @api_keys = File.exists?(credentials_path) ? load_file(credentials_path) : @hash
+    @api_keys = if File.exist? credentials_path then
+                  load_file(credentials_path)
+                else
+                  @hash
+                end
     if @api_keys.key? :rubygems_api_key then
       @rubygems_api_key = @api_keys[:rubygems_api_key]
       @api_keys[:rubygems] = @api_keys.delete :rubygems_api_key unless @api_keys.key? :rubygems
@@ -221,8 +225,8 @@ class Gem::ConfigFile
   def rubygems_api_key=(api_key)
     config = load_file(credentials_path).merge(:rubygems_api_key => api_key)
 
-    dirname = File.dirname(credentials_path)
-    Dir.mkdir(dirname) unless File.exists?(dirname)
+    dirname = File.dirname credentials_path
+    Dir.mkdir(dirname) unless File.exist? dirname
 
     Gem.load_yaml
 
@@ -236,7 +240,7 @@ class Gem::ConfigFile
   def load_file(filename)
     Gem.load_yaml
 
-    return {} unless filename and File.exists?(filename)
+    return {} unless filename and File.exist? filename
     begin
       YAML.load(File.read(filename))
     rescue ArgumentError
@@ -360,6 +364,4 @@ class Gem::ConfigFile
   protected
 
   attr_reader :hash
-
 end
-

@@ -56,7 +56,7 @@ class Gem::Commands::CertCommand < Gem::Command
                'Build private key and self-signed',
                'certificate for EMAIL_ADDR.') do |value, options|
       vals = Gem::Security.build_self_signed_cert(value)
-      File.chmod 0600, vals[:key_path]
+      FileUtils.chmod 0600, vals[:key_path]
       say "Public Cert: #{vals[:cert_path]}"
       say "Private Key: #{vals[:key_path]}"
       say "Don't forget to move the key file to somewhere private..."

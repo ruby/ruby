@@ -410,10 +410,12 @@ class Gem::Command
       end
     end
 
-    @parser.separator nil
-    @parser.separator "  Summary:"
-    wrap(@summary, 80 - 4).split("\n").each do |line|
-      @parser.separator "    #{line.strip}"
+    if @summary then
+      @parser.separator nil
+      @parser.separator "  Summary:"
+      wrap(@summary, 80 - 4).split("\n").each do |line|
+        @parser.separator "    #{line.strip}"
+      end
     end
 
     if description then

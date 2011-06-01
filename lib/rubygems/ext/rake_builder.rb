@@ -23,12 +23,12 @@ class Gem::Ext::RakeBuilder < Gem::Ext::Builder
     end
 
     # Deal with possible spaces in the path, e.g. C:/Program Files
-    dest_path = '"' + dest_path + '"' if dest_path.include?(' ')
+    dest_path = '"' + dest_path.to_s + '"' if dest_path.to_s.include?(' ')
 
     rake = ENV['rake']
 
     rake ||= begin
-               "\"#{Gem.ruby}\" -rubygems #{Gem.bin_path('rake')}"
+               "\"#{Gem.ruby}\" -rubygems #{Gem.bin_path('rake', 'rake')}"
              rescue Gem::Exception
              end
 

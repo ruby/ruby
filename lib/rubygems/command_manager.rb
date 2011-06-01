@@ -44,6 +44,13 @@ class Gem::CommandManager
   end
 
   ##
+  # Reset the authoritative instance of the command manager.
+
+  def self.reset
+    @command_manager = nil
+  end
+
+  ##
   # Register all the subcommands supported by the gem command.
 
   def initialize
@@ -84,6 +91,13 @@ class Gem::CommandManager
 
   def register_command(command)
     @commands[command] = false
+  end
+
+  ##
+  # Unregister the Symbol +command+ as a gem command.
+
+  def unregister_command(command)
+    @commands.delete command
   end
 
   ##
@@ -166,7 +180,7 @@ class Gem::CommandManager
     retried = false
 
     begin
-      commands.const_get const_name
+      commands.const_get(const_name).new
     rescue NameError
       raise if retried
 
@@ -179,7 +193,7 @@ class Gem::CommandManager
           Gem.configuration.backtrace
       end
       retry
-    end.new
+    end
   end
 
 end
