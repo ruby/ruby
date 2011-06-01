@@ -1,3 +1,8 @@
+Wed Jun  1 21:57:08 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (native_sleep): fix 1000times calculation error.
+	  this is a regression since r31457. [Bug #4808] [ruby-dev:43606]
+
 Wed Jun  1 17:19:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c: remove unused macro.

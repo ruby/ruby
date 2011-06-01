@@ -836,7 +836,7 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 	struct timespec timeout_rel;
 
 	timeout_rel.tv_sec = timeout_tv->tv_sec;
-	timeout_rel.tv_nsec = timeout_tv->tv_usec;
+	timeout_rel.tv_nsec = timeout_tv->tv_usec * 1000;
 
 	timeout = native_cond_timeout(cond, timeout_rel);
     }
