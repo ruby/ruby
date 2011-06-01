@@ -83,7 +83,16 @@ with all sufficient information, see the ChangeLog file.
   * Process
     * Process#maxgroups and Process#maxgroups= now raise NotImplementedError if
       the platform don't support supplementary groups concept.
-  
+
+  * bigdecimal
+    * Kernel.BigDecimal and BigDecimal.new now accept instances of Integer,
+      Rational, and Float.  If you pass a Rational or a Float to them, you must
+      specify the precision to produce the digits of a BigDecimal.
+
+    * The behavior of BigDecimal#coerce with a Rational is changed.  It uses
+      the precision of the receiver BigDecimal to produce the digits of a
+      BigDecimal from the given Rational.
+
 * io/console
   * new methods:
     * IO#noecho {|io| }

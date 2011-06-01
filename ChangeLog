@@ -1,3 +1,7 @@
+Wed Jun  1 12:34:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* NEWS: add new features of bigdecimal.
+
 Wed Jun  1 09:41:14 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/cgi/util.rb:  Improve documentation.  Patch by Kuba Fietkiewicz.
@@ -49,7 +53,7 @@ Wed Jun  1 00:34:04 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 	* ext/bigdecimal/bigdecimal.c (GetVpValueWithPrec): remove unused
 	  variable.
 
-Tue Jun  1 00:32:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+Wed Jun  1 00:32:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (GetVpValueWithPrec): support instantiation from
 	  a Float through Rational.
@@ -61,7 +65,7 @@ Tue Jun  1 00:32:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* test/bigdecimal/test_bigdecimal.rb (test_new_with_float): ditto.
 
-Tue Jun  1 00:07:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+Wed Jun  1 00:07:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_coerce): support coerce with a
 	  Rational.  The precision used for instantiate a BigDecimal from the
