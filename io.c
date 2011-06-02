@@ -682,6 +682,9 @@ io_fflush(rb_io_t *fptr)
 	    return -1;
         rb_io_check_closed(fptr);
     }
+#ifdef _WIN32
+    fsync(fptr->fd);
+#endif
     return 0;
 }
 
@@ -1054,9 +1057,6 @@ rb_io_flush(VALUE io)
     if (fptr->mode & FMODE_WRITABLE) {
         if (io_fflush(fptr) < 0)
             rb_sys_fail(0);
-#ifdef _WIN32
-	fsync(fptr->fd);
-#endif
     }
     if (fptr->mode & FMODE_READABLE) {
         io_unread(fptr);
