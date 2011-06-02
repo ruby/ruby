@@ -1331,7 +1331,6 @@ autoload_delete(mod, id)
     VALUE val;
     st_data_t load = 0;
 
-    st_delete(RCLASS(mod)->iv_tbl, (st_data_t*)&id, 0);
     if (st_lookup(RCLASS(mod)->iv_tbl, autoload, &val)) {
 	struct st_table *tbl = check_autoload_table(val);
 
@@ -1346,18 +1345,55 @@ autoload_delete(mod, id)
     return (NODE *)load;
 }
 
+static NODE *
+autoload_node(mod, id)
+    VALUE mod;
+    ID id;
+{
+    st_data_t val, load, n = id;
+    struct st_table *p, *q;
+
+    if ((p = RCLASS(mod)->iv_tbl) == 0) {
+        return 0;
+    }
+    else if (!st_lookup(p, n, &val)) {
+        return 0;
+    }
+    else if (val != Qundef) {
+        return 0;
+    }
+    else if (!st_lookup(p, autoload, &val)) {
+        return 0;
+    }
+    else if ((q = check_autoload_table((VALUE)val)) == 0) {
+        return 0;
+    }
+    else if (!st_lookup(q, n, &load)) {
+        return 0;
+    }
+    else {
+        return (NODE *)load;
+    }
+}
+
 VALUE
 rb_autoload_load(klass, id)
     VALUE klass;
     ID id;
 {
-    VALUE file;
-    NODE *load = autoload_delete(klass, id);
+    NODE *load = 0;
+    VALUE ret = 0;
 
-    if (!load || !(file = load->nd_lit) || rb_provided(RSTRING(file)->ptr)) {
-	return Qfalse;
+    if ((load = autoload_node(klass, id)) == 0) {
+        return 0;
     }
-    return rb_require_safe(file, load->nd_nth);
+    else if ((ret = rb_require_safe(load->nd_lit, load->nd_nth)) == Qfalse) {
+        return 0;
+    }
+    else {
+        (void) autoload_delete(klass, id);
+        return ret;
+    }
 }
 
 static VALUE
@@ -1419,8 +1455,15 @@ rb_const_get_0(klass, id, exclude, recurse)
     while (tmp) {
 	while (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
 	    if (value == Qundef) {
-		if (!RTEST(rb_autoload_load(tmp, id))) break;
-		continue;
+		rb_autoload_load(tmp, id);
+                st_lookup(RCLASS(tmp)->iv_tbl, id, &value);
+                if (value == Qundef) {
+                    /* the autoload above did not assign a constant */
+                    break;
+                }
+                else {
+                    continue;
+                }
 	    }
 	    if (exclude && tmp == rb_cObject && klass != rb_cObject) {
 		rb_warn("toplevel constant %s referenced by %s::%s",
