@@ -1865,4 +1865,61 @@ End
     end
   end
 
+  def test_s_write
+    t = Tempfile.new("foo")
+    path = t.path
+    t.close(false)
+    File.write(path, "foo\nbar\nbaz")
+    assert_equal("foo\nbar\nbaz", File.read(path))
+    File.write(path, "FOO", 0)
+    assert_equal("FOO\nbar\nbaz", File.read(path))
+    File.write(path, "BAR")
+    assert_equal("BAR", File.read(path))
+    File.write(path, "\u{3042}", mode: "w", encoding: "EUC-JP")
+    assert_equal("\u{3042}".encode("EUC-JP"), File.read(path, encoding: "EUC-JP"))
+    File.delete t
+    assert_equal(6, File.write(path,'string',2))
+    File.delete t
+    assert_raise(Errno::EINVAL) { File.write('/tmp/nonexisting','string',-2) }
+    assert_equal(6, File.write(path, 'string'))
+    assert_equal(3, File.write(path, 'sub', 1))
+    assert_equal("ssubng", File.read(path))
+    File.delete t
+    assert_equal(3, File.write(path, "foo", encoding: "UTF-8"))
+    File.delete t
+    assert_equal(3, File.write(path, "foo", 0, encoding: "UTF-8"))
+    assert_equal("foo", File.read(path))
+    assert_equal(1, File.write(path, "f", 1, encoding: "UTF-8"))
+    assert_equal("ffo", File.read(path))
+    File.delete t
+    assert_equal(1, File.write(path, "f", 1, encoding: "UTF-8"))
+    assert_equal("\00f", File.read(path))
+    assert_equal(1, File.write(path, "f", 0, encoding: "UTF-8"))
+    assert_equal("ff", File.read(path))
+    t.unlink
+  end
+
+  def test_s_binwrite
+    t = Tempfile.new("foo")
+    path = t.path
+    t.close(false)
+    File.binwrite(path, "foo\nbar\nbaz")
+    assert_equal("foo\nbar\nbaz", File.read(path))
+    File.binwrite(path, "FOO", 0)
+    assert_equal("FOO\nbar\nbaz", File.read(path))
+    File.binwrite(path, "BAR")
+    assert_equal("BAR", File.read(path))
+    File.binwrite(path, "\u{3042}")
+    assert_equal("\u{3042}".force_encoding("ASCII-8BIT"), File.binread(path))
+    File.delete t
+    assert_equal(6, File.binwrite(path,'string',2))
+    File.delete t
+    assert_equal(6, File.binwrite(path, 'string'))
+    assert_equal(3, File.binwrite(path, 'sub', 1))
+    assert_equal("ssubng", File.binread(path))
+    assert_equal(6, File.size(path))
+    assert_raise(Errno::EINVAL) { File.binwrite('/tmp/nonexisting','string',-2) }
+    assert_nothing_raised(TypeError) { File.binwrite(path, "string", mode: "w", encoding: "EUC-JP") }
+    t.unlink
+  end
 end

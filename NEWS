@@ -57,8 +57,13 @@ with all sufficient information, see the ChangeLog file.
   * IO
     * extended method:
       * IO#putc supports multibyte characters
-    * new method:
+    * new methods:
       * IO#advise
+      * IO.write(name, string, [offset] )
+        Write `string` to file `name`.
+        Opposite with File.read.
+      * IO.binwrite(name, string, [offset] )
+        binary virsion of IO.write.
 
   * Kernel
     * Kernel#respond_to? now returns false for protected methods.

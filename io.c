@@ -808,6 +808,12 @@ struct binwrite_arg {
     long length;
 };
 
+struct write_arg {
+    VALUE io;
+    VALUE str;
+    int nosync;
+};
+
 static VALUE
 io_binwrite_string(VALUE arg)
 {
@@ -8371,6 +8377,124 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
     return rb_ensure(io_s_read, (VALUE)&arg, rb_io_close, arg.io);
 }
 
+static VALUE
+io_s_write0(struct write_arg *arg)
+{
+    return io_write(arg->io,arg->str,arg->nosync);
+}
+
+static VALUE
+io_s_write(int argc, VALUE *argv, int binary)
+{
+    VALUE string, offset, opt;
+    struct foreach_arg arg;
+    struct write_arg warg;
+
+    rb_scan_args(argc, argv, "21:", NULL, &string, &offset, &opt);
+
+    if (NIL_P(opt)) opt = rb_hash_new();
+    else opt = rb_hash_dup(opt);
+
+
+    if (NIL_P(rb_hash_aref(opt,sym_mode))) {
+       int mode = O_WRONLY|O_CREAT;
+#ifdef O_BINARY
+       if (binary) mode |= O_BINARY;
+#endif
+       if (NIL_P(offset)) mode |= O_TRUNC;
+       rb_hash_aset(opt,sym_mode,INT2NUM(mode));
+    }
+    open_key_args(argc,argv,opt,&arg);
+
+#ifndef O_BINARY
+    if (binary) rb_io_binmode_m(arg.io);
+#endif
+
+    if (NIL_P(arg.io)) return Qnil;
+    if (!NIL_P(offset)) {
+       struct seek_arg sarg;
+       int state = 0;
+       sarg.io = arg.io;
+       sarg.offset = offset;
+       sarg.mode = SEEK_SET;
+       rb_protect(seek_before_access, (VALUE)&sarg, &state);
+       if (state) {
+           rb_io_close(arg.io);
+           rb_jump_tag(state);
+       }
+    }
+
+    warg.io = arg.io;
+    warg.str = string;
+    warg.nosync = 0;
+
+    return rb_ensure(io_s_write0, (VALUE)&warg, rb_io_close, arg.io);
+}
+
+/*
+ *  call-seq:
+ *     IO.write(name, string, [offset] )   => fixnum
+ *     IO.write(name, string, [offset], open_args )   => fixnum
+ *
+ *  Opens the file, optionally seeks to the given <i>offset</i>, writes
+ *  <i>string</i>, then returns the length written.
+ *  <code>write</code> ensures the file is closed before returning.
+ *  If <i>offset</i> is not given, the file is truncated.  Otherwise,
+ *  it is not truncated.
+ *
+ *  If the last argument is a hash, it specifies option for internal
+ *  open().  The key would be the following.  open_args: is exclusive
+ *  to others.
+ *
+ *   encoding: string or encoding
+ *
+ *    specifies encoding of the read string.  encoding will be ignored
+ *    if length is specified.
+ *
+ *   mode: string
+ *
+ *    specifies mode argument for open().  it should start with "w" or "a" or "r+"
+ *    otherwise it would cause error.
+ *
+ *   perm: fixnum
+ *
+ *    specifies perm argument for open().
+ *
+ *   open_args: array of strings
+ *
+ *    specifies arguments for open() as an array.
+ *
+ *     IO.write("testfile", "0123456789")      #=> "0123456789"
+ *     IO.write("testfile", "0123456789", 20)  #=> "This is line one\nThi0123456789two\nThis is line three\nAnd so on...\n"
+ */
+
+static VALUE
+rb_io_s_write(int argc, VALUE *argv, VALUE io)
+{
+    io_s_write(argc, argv, 0);
+}
+
+/*
+ *  call-seq:
+ *     IO.binwrite(name, string, [offset] )   => fixnum
+ *
+ *  Opens the file, optionally seeks to the given <i>offset</i>, write
+ *  <i>string</i> then returns the length written.
+ *  <code>binwrite</code> ensures the file is closed before returning.
+ *  The open mode would be "wb:ASCII-8BIT".
+ *  If <i>offset</i> is not given, the file is truncated.  Otherwise,
+ *  it is not truncated.
+ *
+ *     IO.binwrite("testfile", "0123456789")      #=> "0123456789"
+ *     IO.binwrite("testfile", "0123456789", 20)  #=> "This is line one\nThi0123456789two\nThis is line three\nAnd so on...\n"
+ */
+
+static VALUE
+rb_io_s_binwrite(int argc, VALUE *argv, VALUE io)
+{
+    io_s_write(argc, argv, 1);
+}
+
 struct copy_stream_struct {
     VALUE src;
     VALUE dst;
@@ -10320,6 +10444,8 @@ Init_IO(void)
     rb_define_singleton_method(rb_cIO, "readlines", rb_io_s_readlines, -1);
     rb_define_singleton_method(rb_cIO, "read", rb_io_s_read, -1);
     rb_define_singleton_method(rb_cIO, "binread", rb_io_s_binread, -1);
+    rb_define_singleton_method(rb_cIO, "write", rb_io_s_write, -1);
+    rb_define_singleton_method(rb_cIO, "binwrite", rb_io_s_binwrite, -1);
     rb_define_singleton_method(rb_cIO, "select", rb_f_select, -1);
     rb_define_singleton_method(rb_cIO, "pipe", rb_io_s_pipe, -1);
     rb_define_singleton_method(rb_cIO, "try_convert", rb_io_s_try_convert, 1);
