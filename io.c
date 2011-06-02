@@ -8471,7 +8471,7 @@ io_s_write(int argc, VALUE *argv, int binary)
 static VALUE
 rb_io_s_write(int argc, VALUE *argv, VALUE io)
 {
-    io_s_write(argc, argv, 0);
+    return io_s_write(argc, argv, 0);
 }
 
 /*
@@ -8492,7 +8492,7 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_s_binwrite(int argc, VALUE *argv, VALUE io)
 {
-    io_s_write(argc, argv, 1);
+    return io_s_write(argc, argv, 1);
 }
 
 struct copy_stream_struct {

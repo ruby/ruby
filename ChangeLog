@@ -1,3 +1,7 @@
+Thu Jun  2 20:05:57 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_io_s_write, rb_io_s_binwrite): return!!!
+
 Thu Jun  2 16:29:34 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* io.c: Add File.write, File.binwrite. [Feature #1081] [ruby-core:21701]
