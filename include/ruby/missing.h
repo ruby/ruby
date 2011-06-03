@@ -80,6 +80,10 @@ RUBY_EXTERN int dup2(int, int);
 RUBY_EXTERN int eaccess(const char*, int);
 #endif
 
+#ifndef HAVE_ROUND
+RUBY_EXTERN double round(double);	/* numeric.c */
+#endif
+
 #ifndef HAVE_FINITE
 RUBY_EXTERN int finite(double);
 #endif

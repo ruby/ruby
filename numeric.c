@@ -78,8 +78,6 @@ const unsigned char rb_nan[] = "\x00\x00\xc0\x7f";
 const unsigned char rb_nan[] = "\x7f\xc0\x00\x00";
 #endif
 
-extern double round(double);
-
 #ifndef HAVE_ROUND
 double
 round(double x)
