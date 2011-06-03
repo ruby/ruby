@@ -94,7 +94,7 @@ module URI
     #
     def request_uri
       r = path_query
-      if r[0] != ?/
+      if r && r[0] != ?/
         r = '/' + r
       end
 
