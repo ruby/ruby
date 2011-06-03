@@ -1,3 +1,8 @@
+Fri Jun  3 21:48:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rubygems/test_case.rb: Refix for test-all in separate directory.
+	  r31147 + r31151.
+
 Fri Jun  3 20:58:47 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/date/date_core.c (d_lite_plus): get rid of compiler warnings.

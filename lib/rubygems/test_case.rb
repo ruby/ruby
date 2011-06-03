@@ -103,7 +103,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   undef_method :default_test if instance_methods.include? 'default_test' or
                                 instance_methods.include? :default_test
 
-  @@project_dir = Dir.pwd
+  @@project_dir = Dir.pwd unless defined?(@@project_dir)
 
   ##
   # #setup prepares a sandboxed location to install gems.  All installs are
@@ -122,6 +122,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     @orig_gem_home = ENV['GEM_HOME']
     @orig_gem_path = ENV['GEM_PATH']
 
+    @current_dir = Dir.pwd
     @ui = Gem::MockGemUi.new
 
     tmpdir = nil
@@ -228,7 +229,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
       Gem::RemoteFetcher.fetcher = nil
     end
 
-    Dir.chdir @@project_dir
+    Dir.chdir @current_dir
 
     FileUtils.rm_rf @tempdir unless ENV['KEEP_FILES']
 
