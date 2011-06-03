@@ -5128,7 +5128,7 @@ d_lite_plus(VALUE self, VALUE other)
 
 	    if (!df && f_zero_p(sf) && !m_of(dat))
 		return d_simple_new_internal(CLASS_OF(self),
-					     nth, jd,
+					     nth, (int)jd,
 					     m_sg(dat),
 					     0, 0, 0,
 					     (dat->s.flags | HAVE_JD) &
@@ -5136,7 +5136,7 @@ d_lite_plus(VALUE self, VALUE other)
 					       COMPLEX_DAT));
 	    else
 		return d_complex_new_internal(CLASS_OF(self),
-					      nth, jd,
+					      nth, (int)jd,
 					      df, sf,
 					      m_of(dat), m_sg(dat),
 					      0, 0, 0,

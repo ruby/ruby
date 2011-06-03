@@ -1,8 +1,12 @@
+Fri Jun  3 20:58:47 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/date/date_core.c (d_lite_plus): get rid of compiler warnings.
+
 Fri Jun  3 20:56:40 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/missing.h, numeric.c (round): moved prototype of round()
 	  from numeric.c to missing.h.  (note: round() is C99 feature, so ruby
-	  provides it if not exists in C runtime.)
+	  provides it if not exist in C runtime.)
 
 Fri Jun  3 19:58:14 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
