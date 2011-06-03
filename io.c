@@ -683,7 +683,9 @@ io_fflush(rb_io_t *fptr)
         rb_io_check_closed(fptr);
     }
 #ifdef _WIN32
-    fsync(fptr->fd);
+    if (GetFileType((HANDLE)rb_w32_get_osfhandle(fptr->fd)) == FILE_TYPE_DISK) {
+	fsync(fptr->fd);
+    }
 #endif
     return 0;
 }
@@ -1368,8 +1370,10 @@ rb_io_fsync(VALUE io)
 
     if (io_fflush(fptr) < 0)
         rb_sys_fail(0);
+#ifndef _WIN32	/* already called in io_fflush() */
     if (fsync(fptr->fd) < 0)
 	rb_sys_fail_path(fptr->pathv);
+#endif
     return INT2FIX(0);
 }
 #else
