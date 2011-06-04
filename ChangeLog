@@ -1,3 +1,8 @@
+Sat Jun  4 16:59:26 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (d_lite_inspect): changed the format.
+	* ext/date/date_core.c: refactoring and fixing some bugs.
+
 Sat Jun  4 11:30:57 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (check_mix_method_i, do_mix_method_i): not mix methods
