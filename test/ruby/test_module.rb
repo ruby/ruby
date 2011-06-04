@@ -1096,5 +1096,20 @@ class TestModule < Test::Unit::TestCase
         mix japanese, :address => :jp_address, :address= => :jp_address=
       }
     }
+
+    japanese_american = Class.new
+    assert_nothing_raised(ArgumentError) {
+      japanese_american.class_eval {
+        mix japanese, :address => nil, :address= => nil
+      }
+    }
+    assert_raise(NoMethodError) {
+      japanese_american.new.address
+    }
+    assert_nothing_raised(ArgumentError) {
+      japanese_american.class_eval {
+        mix american
+      }
+    }
   end
 end

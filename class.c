@@ -745,6 +745,7 @@ check_mix_method_i(st_data_t key, st_data_t value, st_data_t arg)
     st_data_t alias;
 
     if (aliasing && st_lookup(aliasing, ID2SYM(id), &alias)) {
+	if (NIL_P(alias)) return ST_CONTINUE;
 	id = rb_to_id(alias);
     }
     if (st_lookup(argp->mtbl, id, NULL)) {
@@ -763,6 +764,7 @@ do_mix_method_i(st_data_t key, st_data_t value, st_data_t arg)
     st_data_t old, alias;
 
     if (aliasing && st_lookup(aliasing, ID2SYM(id), &alias)) {
+	if (NIL_P(alias)) return ST_CONTINUE;
 	id = rb_to_id(alias);
     }
     if (st_lookup(argp->mtbl, id, &old)) {

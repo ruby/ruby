@@ -1,3 +1,8 @@
+Sat Jun  4 11:30:57 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (check_mix_method_i, do_mix_method_i): not mix methods
+	  renamed as nil.
+
 Sat Jun  4 04:04:41 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/rubygems/test_gem_commands_which_command.rb:
