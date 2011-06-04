@@ -1,3 +1,7 @@
+Sun Jun  5 06:22:02 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* NEWS: wrote about changes of date.
+
 Sat Jun  4 16:59:26 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (d_lite_inspect): changed the format.

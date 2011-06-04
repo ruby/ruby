@@ -98,6 +98,47 @@ with all sufficient information, see the ChangeLog file.
       the precision of the receiver BigDecimal to produce the digits of a
       BigDecimal from the given Rational.
 
+* date
+
+  * Accepts flonum explicitly with limitations.
+    * If the given offset is flonum, DateTime assumes its precision is
+      at most second.
+
+      DateTime.new(2001,2,3,0,0,0,3.0/24) ==
+      DateTime.new(2001,2,3,0,0,0,'+03:00')
+        #=> true
+
+    * If the given operand for -/+ is flonum, DateTime assumes its
+      precision is at most nanosecond.
+
+      DateTime.new(2001,2,3) + 0.5 == DateTime.new(2001,2,3,12)
+        #=> true
+
+    * Precision of offset is always at most second.
+
+      Rational('0.5') == Rational('0.500001')  #=> false
+      DateTime.new(2001,2,3,0,0,0,Rational('0.5')) ==
+      DateTime.new(2001,2,3,0,0,0,Rational('0.500001'))
+        #=> true
+
+  * Ignores long offset and far reform day (with warning).
+
+    * Now accepts only:
+
+      -1<=offset<=1 (-24:00..+24:00)
+      2298874<=start<=2426355 or -/+oo
+        (proleptic Gregorian/Julian mean -/+oo)
+
+  * A method strftime cannot produce huge output (same as Time's one).
+
+    * Even though Date/DateTime can handle far dates, the following gives
+      an empty string:
+
+      DateTime.new(1<<10000).strftime('%Y')  #=> ""
+
+  * Changed the format of inspect.
+  * Changed the format of marshal (but, can load old dumps).
+
 * io/console
   * new methods:
     * IO#noecho {|io| }
