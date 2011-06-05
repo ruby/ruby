@@ -1,3 +1,9 @@
+Sun Jun  5 23:26:15 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* eval.c: remove rb_thread_stop_timer_thread function declaration.
+	  Instead, include vm_core.h.
+	* process.c: ditto.
+
 Sun Jun  5 21:38:51 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (thread_timer): add to care a spurious wakeup.

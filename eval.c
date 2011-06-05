@@ -16,6 +16,7 @@
 #include "gc.h"
 #include "ruby/vm.h"
 #include "ruby/encoding.h"
+#include "vm_core.h"
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 
@@ -35,7 +36,6 @@ VALUE rb_eSysStackError;
 /* initialize ruby */
 
 void rb_clear_trace_func(void);
-void rb_thread_stop_timer_thread(void);
 
 void rb_call_inits(void);
 void Init_heap(void);
@@ -117,8 +117,6 @@ ruby_finalize(void)
     ruby_finalize_0();
     ruby_finalize_1();
 }
-
-void rb_thread_stop_timer_thread(void);
 
 int
 ruby_cleanup(volatile int ex)

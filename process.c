@@ -978,10 +978,6 @@ proc_detach(VALUE obj, VALUE pid)
 char *strtok();
 #endif
 
-void rb_thread_stop_timer_thread(void);
-void rb_thread_start_timer_thread(void);
-void rb_thread_reset_timer_thread(void);
-
 static int forked_child = 0;
 
 #ifdef SIGPIPE
