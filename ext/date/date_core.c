@@ -1707,18 +1707,32 @@ m_wday(union DateData *x)
     return c_jd_to_wday(m_local_jd(x));
 }
 
-static VALUE
+static int
 m_cwyear(union DateData *x)
 {
-    double sg;
     int ry, rw, rd;
-    VALUE ry2;
 
-    sg = x_sg(x); /* !=m_sg() */
-    c_jd_to_commercial(m_local_jd(x), sg,
+    c_jd_to_commercial(m_local_jd(x), x_sg(x), /* !=m_sg() */
 		       &ry, &rw, &rd);
-    encode_year(m_nth(x), ry, sg, &ry2);
-    return ry2;
+    return ry;
+}
+
+static VALUE
+m_real_cwyear(union DateData *x)
+{
+    VALUE nth, ry;
+    int year;
+
+    nth = m_nth(x);
+    year = m_cwyear(x);
+
+    if (f_zero_p(nth))
+	return INT2FIX(year);
+
+    encode_year(nth, year,
+		m_gregorian_p(x) ? -1 : +1,
+		&ry);
+    return ry;
 }
 
 static int
@@ -4716,7 +4730,7 @@ static VALUE
 d_lite_cwyear(VALUE self)
 {
     get_d1(self);
-    return m_cwyear(dat);
+    return m_real_cwyear(dat);
 }
 
 /*
@@ -6396,7 +6410,7 @@ static struct tmx_funcs tmx_funcs = {
     (int (*)(void *))m_yday,
     (int (*)(void *))m_mon,
     (int (*)(void *))m_mday,
-    (VALUE (*)(void *))m_cwyear,
+    (VALUE (*)(void *))m_real_cwyear,
     (int (*)(void *))m_cweek,
     (int (*)(void *))m_cwday,
     (int (*)(void *))m_wnum0,

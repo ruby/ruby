@@ -1,3 +1,8 @@
+Sun Jun  5 17:50:01 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (m_real_cwyear): new.  derived from m_cwyear.
+	* ext/date/date_strftime.c: trivial changes.
+
 Sun Jun  5 17:22:01 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/config_list.in: add new options for tcltklib.

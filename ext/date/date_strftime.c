@@ -180,7 +180,6 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	long off;
 	ptrdiff_t i;
 	int w;
-	long y;
 	int precision, flags, colons;
 	char padding;
 	enum {LEFT, CHCASE, LOWER, UPPER, LOCALE_O, LOCALE_E};
@@ -300,10 +299,13 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
 			}
-			if (tmx_wday < 0 || tmx_wday > 6)
-				i = 1, tp = "?";
-			else
-				i = 3, tp = days_l[tmx_wday];
+			{
+				int wday = tmx_wday;
+				if (wday < 0 || wday > 6)
+					i = 1, tp = "?";
+				else
+					i = 3, tp = days_l[wday];
+			}
 			break;
 
 		case 'A':	/* full weekday name */
@@ -311,10 +313,13 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
 			}
-			if (tmx_wday < 0 || tmx_wday > 6)
-				i = 1, tp = "?";
-			else
-				i = strlen(tp = days_l[tmx_wday]);
+			{
+				int wday = tmx_wday;
+				if (wday < 0 || wday > 6)
+					i = 1, tp = "?";
+				else
+					i = strlen(tp = days_l[wday]);
+			}
 			break;
 
 #ifdef SYSV_EXT
@@ -325,10 +330,13 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
 			}
-			if (tmx_mon < 1 || tmx_mon > 12)
-				i = 1, tp = "?";
-			else
-				i = 3, tp = months_l[tmx_mon-1];
+			{
+				int mon = tmx_mon;
+				if (mon < 1 || mon > 12)
+					i = 1, tp = "?";
+				else
+					i = 3, tp = months_l[mon-1];
+			}
 			break;
 
 		case 'B':	/* full month name */
@@ -336,10 +344,13 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
 			}
-			if (tmx_mon < 1 || tmx_mon > 12)
-				i = 1, tp = "?";
-			else
-				i = strlen(tp = months_l[tmx_mon-1]);
+			{
+				int mon = tmx_mon;
+				if (mon < 1 || mon > 12)
+					i = 1, tp = "?";
+				else
+					i = strlen(tp = months_l[mon-1]);
+			}
 			break;
 
 		case 'c':	/* appropriate date and time representation */
@@ -410,8 +421,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			}
                         continue;
 
-		case 'S':	/* second, 00 - 60 */
-			i = range(0, tmx_sec, 60);
+		case 'S':	/* second, 00 - 59 */
+			i = range(0, tmx_sec, 59);
 			FMT('0', 2, "d", (int)i);
 			continue;
 
@@ -442,13 +453,16 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'Y':	/* year with century */
-                        if (FIXNUM_P(tmx_year)) {
-                            long y = FIX2LONG(tmx_year);
-                            FMT('0', 0 <= y ? 4 : 5, "ld", y);
-                        }
-                        else {
-                            FMTV('0', 4, "d", tmx_year);
-                        }
+			{
+				VALUE year = tmx_year;
+				if (FIXNUM_P(year)) {
+					long y = FIX2LONG(year);
+					FMT('0', 0 <= y ? 4 : 5, "ld", y);
+				}
+				else {
+					FMTV('0', 4, "d", year);
+				}
+			}
 			continue;
 
 #ifdef MAILHEADER_EXT
@@ -549,11 +563,14 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(LOWER);
 			}
-                        if (tmx_zone == NULL)
-                            tp = "";
-                        else
-                            tp = tmx_zone;
-			i = strlen(tp);
+			{
+				char *zone = tmx_zone;
+				if (zone == NULL)
+					tp = "";
+				else
+					tp = zone;
+				i = strlen(tp);
+			}
 			break;
 
 #ifdef SYSV_EXT
@@ -639,24 +656,21 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 #endif	/* POSIX2_DATE */
 
 #ifdef ISO_DATE_EXT
-		case 'G':
-		case 'g':
+		case 'g':	/* year of ISO week without a century */
+			i = NUM2INT(mod(tmx_cwyear, INT2FIX(100)));
+			FMT('0', 2, "d", (int)i);
+			continue;
+
+		case 'G':	/* year of ISO week with century */
 			{
-				VALUE yv = tmx_cwyear;
-                                if (*format == 'G') {
-					if (FIXNUM_P(yv)) {
-						long y = FIX2LONG(yv);
-						FMT('0', 0 <= y ? 4 : 5, "ld", y);
-					}
-					else {
-						FMTV('0', 4, "d", yv);
-					}
+				VALUE year = tmx_cwyear;
+				if (FIXNUM_P(year)) {
+					long y = FIX2LONG(year);
+					FMT('0', 0 <= y ? 4 : 5, "ld", y);
 				}
-                                else {
-                                        yv = mod(yv, INT2FIX(100));
-                                        y = FIX2LONG(yv);
-                                        FMT('0', 2, "ld", y);
-                                }
+				else {
+					FMTV('0', 4, "d", year);
+				}
                                 continue;
 			}
 
