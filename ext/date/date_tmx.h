@@ -1,16 +1,49 @@
-struct tmx {
-    VALUE year;
-    int yday;
-    int mon;
-    int mday;
-    int hour;
-    int min;
-    int sec;
-    int wday;
-    VALUE offset;
-    const char *zone;
-    VALUE timev;
+#ifndef DATE_TMX_H
+#define DATE_TMX_H
+
+struct tmx_funcs {
+    VALUE (*year)(void *dat);
+    int (*yday)(void *dat);
+    int (*mon)(void *dat);
+    int (*mday)(void *dat);
+    VALUE (*cwyear)(void *dat);
+    int (*cweek)(void *dat);
+    int (*cwday)(void *dat);
+    int (*wnum0)(void *dat);
+    int (*wnum1)(void *dat);
+    int (*wday)(void *dat);
+    int (*hour)(void *dat);
+    int (*min)(void *dat);
+    int (*sec)(void *dat);
+    VALUE (*offset)(void *dat);
+    char *(*zone)(void *dat);
+    VALUE (*timev)(void *dat);
 };
+struct tmx {
+    void *dat;
+    struct tmx_funcs *funcs;
+};
+
+#define tmx_attr(x) (tmx->funcs->x)(tmx->dat)
+
+#define tmx_year tmx_attr(year)
+#define tmx_yday tmx_attr(yday)
+#define tmx_mon tmx_attr(mon)
+#define tmx_mday tmx_attr(mday)
+#define tmx_cwyear tmx_attr(cwyear)
+#define tmx_cweek tmx_attr(cweek)
+#define tmx_cwday tmx_attr(cwday)
+#define tmx_wnum0 tmx_attr(wnum0)
+#define tmx_wnum1 tmx_attr(wnum1)
+#define tmx_wday tmx_attr(wday)
+#define tmx_hour tmx_attr(hour)
+#define tmx_min tmx_attr(min)
+#define tmx_sec tmx_attr(sec)
+#define tmx_offset tmx_attr(offset)
+#define tmx_zone tmx_attr(zone)
+#define tmx_timev tmx_attr(timev)
+
+#endif
 
 /*
 Local variables:

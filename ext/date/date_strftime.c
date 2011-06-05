@@ -97,6 +97,7 @@
 
 #undef strchr	/* avoid AIX weirdness */
 
+#if 0
 #if !defined __STDC__ && !defined _WIN32
 #define const	/**/
 static int weeknumber();
@@ -108,6 +109,7 @@ static int weeknumber(const struct tm *timeptr, int firstweekday);
 adddecl(static int iso8601wknum(const struct tm *timeptr);)
 static int weeknumber_v(const struct tmx *tmx, int firstweekday);
 adddecl(static int iso8601wknum_v(const struct tmx *tmx);)
+#endif
 #endif
 
 #ifdef STDC_HEADERS
@@ -298,10 +300,10 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
 			}
-			if (tmx->wday < 0 || tmx->wday > 6)
+			if (tmx_wday < 0 || tmx_wday > 6)
 				i = 1, tp = "?";
 			else
-				i = 3, tp = days_l[tmx->wday];
+				i = 3, tp = days_l[tmx_wday];
 			break;
 
 		case 'A':	/* full weekday name */
@@ -309,10 +311,10 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
 			}
-			if (tmx->wday < 0 || tmx->wday > 6)
+			if (tmx_wday < 0 || tmx_wday > 6)
 				i = 1, tp = "?";
 			else
-				i = strlen(tp = days_l[tmx->wday]);
+				i = strlen(tp = days_l[tmx_wday]);
 			break;
 
 #ifdef SYSV_EXT
@@ -323,10 +325,10 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
 			}
-			if (tmx->mon < 1 || tmx->mon > 12)
+			if (tmx_mon < 1 || tmx_mon > 12)
 				i = 1, tp = "?";
 			else
-				i = 3, tp = months_l[tmx->mon-1];
+				i = 3, tp = months_l[tmx_mon-1];
 			break;
 
 		case 'B':	/* full month name */
@@ -334,10 +336,10 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
 			}
-			if (tmx->mon < 1 || tmx->mon > 12)
+			if (tmx_mon < 1 || tmx_mon > 12)
 				i = 1, tp = "?";
 			else
-				i = strlen(tp = months_l[tmx->mon-1]);
+				i = strlen(tp = months_l[tmx_mon-1]);
 			break;
 
 		case 'c':	/* appropriate date and time representation */
@@ -345,17 +347,17 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'd':	/* day of the month, 01 - 31 */
-			i = range(1, tmx->mday, 31);
+			i = range(1, tmx_mday, 31);
 			FMT('0', 2, "d", (int)i);
 			continue;
 
 		case 'H':	/* hour, 24-hour clock, 00 - 23 */
-			i = range(0, tmx->hour, 23);
+			i = range(0, tmx_hour, 23);
 			FMT('0', 2, "d", (int)i);
 			continue;
 
 		case 'I':	/* hour, 12-hour clock, 01 - 12 */
-			i = range(0, tmx->hour, 23);
+			i = range(0, tmx_hour, 23);
 			if (i == 0)
 				i = 12;
 			else if (i > 12)
@@ -364,16 +366,16 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'j':	/* day of the year, 001 - 366 */
-			FMT('0', 3, "d", tmx->yday);
+			FMT('0', 3, "d", tmx_yday);
 			continue;
 
 		case 'm':	/* month, 01 - 12 */
-			i = range(1, tmx->mon, 12);
+			i = range(1, tmx_mon, 12);
 			FMT('0', 2, "d", (int)i);
 			continue;
 
 		case 'M':	/* minute, 00 - 59 */
-			i = range(0, tmx->min, 59);
+			i = range(0, tmx_min, 59);
 			FMT('0', 2, "d", (int)i);
 			continue;
 
@@ -384,7 +386,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(LOWER);
 			}
-			i = range(0, tmx->hour, 23);
+			i = range(0, tmx_hour, 23);
 			if (i < 12)
 				tp = ampm[0];
 			else
@@ -394,14 +396,14 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 
 		case 's':
 			{
-                                VALUE sec = div(tmx->timev, INT2FIX(1));
+                                VALUE sec = div(tmx_timev, INT2FIX(1));
                                 FMTV('0', 1, "d", sec);
                         }
                         continue;
 
 		case 'Q':
 			{
-				VALUE sec = div(tmx->timev,
+				VALUE sec = div(tmx_timev,
 						rb_rational_new2(INT2FIX(1),
 								 INT2FIX(1000)));
 				FMTV('0', 1, "d", sec);
@@ -409,21 +411,21 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
                         continue;
 
 		case 'S':	/* second, 00 - 60 */
-			i = range(0, tmx->sec, 60);
+			i = range(0, tmx_sec, 60);
 			FMT('0', 2, "d", (int)i);
 			continue;
 
 		case 'U':	/* week of year, Sunday is first day of week */
-			FMT('0', 2, "d", weeknumber_v(tmx, 0));
+			FMT('0', 2, "d", tmx_wnum0);
 			continue;
 
 		case 'w':	/* weekday, Sunday == 0, 0 - 6 */
-			i = range(0, tmx->wday, 6);
+			i = range(0, tmx_wday, 6);
 			FMT('0', 1, "d", (int)i);
 			continue;
 
 		case 'W':	/* week of year, Monday is first day of week */
-			FMT('0', 2, "d", weeknumber_v(tmx, 1));
+			FMT('0', 2, "d", tmx_wnum1);
 			continue;
 
 		case 'x':	/* appropriate date representation */
@@ -435,17 +437,17 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'y':	/* year without a century, 00 - 99 */
-			i = NUM2INT(mod(tmx->year, INT2FIX(100)));
+			i = NUM2INT(mod(tmx_year, INT2FIX(100)));
 			FMT('0', 2, "d", (int)i);
 			continue;
 
 		case 'Y':	/* year with century */
-                        if (FIXNUM_P(tmx->year)) {
-                            long y = FIX2LONG(tmx->year);
+                        if (FIXNUM_P(tmx_year)) {
+                            long y = FIX2LONG(tmx_year);
                             FMT('0', 0 <= y ? 4 : 5, "ld", y);
                         }
                         else {
-                            FMTV('0', 4, "d", tmx->year);
+                            FMTV('0', 4, "d", tmx_year);
                         }
 			continue;
 
@@ -455,7 +457,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				long aoff;
 				int hl, hw;
 
-				off = NUM2LONG(rb_funcall(tmx->offset, rb_intern("round"), 0));
+				off = NUM2LONG(rb_funcall(tmx_offset, rb_intern("round"), 0));
 
 				aoff = off;
 				if (aoff < 0)
@@ -547,10 +549,10 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(LOWER);
 			}
-                        if (tmx->zone == NULL)
+                        if (tmx_zone == NULL)
                             tp = "";
                         else
-                            tp = tmx->zone;
+                            tp = tmx_zone;
 			i = strlen(tp);
 			break;
 
@@ -570,7 +572,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'e':	/* day of month, blank padded */
-			FMT(' ', 2, "d", range(1, tmx->mday, 31));
+			FMT(' ', 2, "d", range(1, tmx_mday, 31));
 			continue;
 
 		case 'r':	/* time as %I:%M:%S %p */
@@ -588,12 +590,12 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 
 #ifdef SUNOS_EXT
 		case 'k':	/* hour, 24-hour clock, blank pad */
-			i = range(0, tmx->hour, 23);
+			i = range(0, tmx_hour, 23);
 			FMT(' ', 2, "d", (int)i);
 			continue;
 
 		case 'l':	/* hour, 12-hour clock, 1 - 12, blank pad */
-			i = range(0, tmx->hour, 23);
+			i = range(0, tmx_hour, 23);
 			if (i == 0)
 				i = 12;
 			else if (i > 12)
@@ -610,7 +612,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 
 #ifdef POSIX2_DATE
 		case 'C':
-                        FMTV('0', 2, "d", div(tmx->year, INT2FIX(100)));
+                        FMTV('0', 2, "d", div(tmx_year, INT2FIX(100)));
 			continue;
 
 		case 'E':
@@ -627,51 +629,36 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				goto again;
 			goto unknown;
 		case 'V':	/* week of year according ISO 8601 */
-			FMT('0', 2, "d", iso8601wknum_v(tmx));
+			FMT('0', 2, "d", tmx_cweek);
 			continue;
 
 		case 'u':
 		/* ISO 8601: Weekday as a decimal number [1 (Monday) - 7] */
-			FMT('0', 1, "d", tmx->wday == 0 ? 7 : tmx->wday);
+			FMT('0', 1, "d", tmx_cwday);
 			continue;
 #endif	/* POSIX2_DATE */
 
 #ifdef ISO_DATE_EXT
 		case 'G':
 		case 'g':
-			/*
-			 * Year of ISO week.
-			 *
-			 * If it's December but the ISO week number is one,
-			 * that week is in next year.
-			 * If it's January but the ISO week number is 52 or
-			 * 53, that week is in last year.
-			 * Otherwise, it's this year.
-			 */
-                        {
-                                VALUE yv = tmx->year;
-                                w = iso8601wknum_v(tmx);
-                                if (tmx->mon == 12 && w == 1)
-                                        yv = add(yv, INT2FIX(1));
-                                else if (tmx->mon == 1 && w >= 52)
-                                        yv = sub(yv, INT2FIX(1));
-
+			{
+				VALUE yv = tmx_cwyear;
                                 if (*format == 'G') {
-                                        if (FIXNUM_P(yv)) {
-                                                long y = FIX2LONG(yv);
-                                                FMT('0', 0 <= y ? 4 : 5, "ld", y);
-                                        }
-                                        else {
-                                                FMTV('0', 4, "d", yv);
-                                        }
-                                }
+					if (FIXNUM_P(yv)) {
+						long y = FIX2LONG(yv);
+						FMT('0', 0 <= y ? 4 : 5, "ld", y);
+					}
+					else {
+						FMTV('0', 4, "d", yv);
+					}
+				}
                                 else {
                                         yv = mod(yv, INT2FIX(100));
                                         y = FIX2LONG(yv);
                                         FMT('0', 2, "ld", y);
                                 }
                                 continue;
-                        }
+			}
 
 #endif /* ISO_DATE_EXT */
 
@@ -696,7 +683,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
                         NEEDS(precision);
 
 			{
-                                VALUE subsec = mod(tmx->timev, INT2FIX(1));
+                                VALUE subsec = mod(tmx_timev, INT2FIX(1));
                                 int ww;
                                 long n;
 
@@ -817,6 +804,7 @@ date_strftime(char *s, size_t maxsize, const char *format,
 	return date_strftime_with_tmx(s, maxsize, format, tmx);
 }
 
+#if 0
 /* isleap --- is a year a leap year? */
 
 #ifndef __STDC__
@@ -837,21 +825,21 @@ tmx2tm_noyear(const struct tmx *tmx, struct tm *result)
     struct tm tm;
 
     /* for isleap() in iso8601wknum.  +100 is -1900 (mod 400). */
-    tm.tm_year = FIX2INT(mod(tmx->year, INT2FIX(400))) + 100;
+    tm.tm_year = FIX2INT(mod(tmx_year, INT2FIX(400))) + 100;
 
-    tm.tm_mon = tmx->mon-1;
-    tm.tm_mday = tmx->mday;
-    tm.tm_hour = tmx->hour;
-    tm.tm_min = tmx->min;
-    tm.tm_sec = tmx->sec;
-    tm.tm_wday = tmx->wday;
-    tm.tm_yday = tmx->yday-1;
+    tm.tm_mon = tmx_mon-1;
+    tm.tm_mday = tmx_mday;
+    tm.tm_hour = tmx_hour;
+    tm.tm_min = tmx_min;
+    tm.tm_sec = tmx_sec;
+    tm.tm_wday = tmx_wday;
+    tm.tm_yday = tmx_yday-1;
     tm.tm_isdst = 0;
 #if defined(HAVE_STRUCT_TM_TM_GMTOFF)
-    tm.tm_gmtoff = NUM2LONG(tmx->offset);
+    tm.tm_gmtoff = NUM2LONG(tmx_offset);
 #endif
 #if defined(HAVE_TM_ZONE)
-    tm.tm_zone = (char *)tmx->zone;
+    tm.tm_zone = (char *)tmx_zone;
 #endif
     *result = tm;
 }
@@ -1018,6 +1006,7 @@ weeknumber_v(const struct tmx *tmx, int firstweekday)
         tmx2tm_noyear(tmx, &tm);
         return weeknumber(&tm, firstweekday);
 }
+#endif
 
 #if 0
 /* ADR --- I'm loathe to mess with ado's code ... */

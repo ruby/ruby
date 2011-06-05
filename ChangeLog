@@ -1,3 +1,11 @@
+Sun Jun  5 10:06:50 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_tmx.h: now does not place decoded data.  allows to
+	  access indirectly via functions on demand.
+	* ext/date/date_strftime.c: ditto.
+	* ext/date/date_core.c: ditto.
+	* ext/date/date_core.c ({d|dt}_lite_to_s): use strftime.
+
 Sun Jun  5 06:22:02 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* NEWS: wrote about changes of date.

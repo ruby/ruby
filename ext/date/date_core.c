@@ -1701,6 +1701,69 @@ m_yday(union DateData *x)
     return rd;
 }
 
+static int
+m_wday(union DateData *x)
+{
+    return c_jd_to_wday(m_local_jd(x));
+}
+
+static VALUE
+m_cwyear(union DateData *x)
+{
+    double sg;
+    int ry, rw, rd;
+    VALUE ry2;
+
+    sg = x_sg(x); /* !=m_sg() */
+    c_jd_to_commercial(m_local_jd(x), sg,
+		       &ry, &rw, &rd);
+    encode_year(m_nth(x), ry, sg, &ry2);
+    return ry2;
+}
+
+static int
+m_cweek(union DateData *x)
+{
+    int ry, rw, rd;
+
+    c_jd_to_commercial(m_local_jd(x), x_sg(x), /* !=m_sg() */
+		       &ry, &rw, &rd);
+    return rw;
+}
+
+static int
+m_cwday(union DateData *x)
+{
+    int w;
+
+    w = m_wday(x);
+    if (w == 0)
+	w = 7;
+    return w;
+}
+
+static int
+m_wnumx(union DateData *x, int f)
+{
+    int ry, rw, rd;
+
+    c_jd_to_weeknum(m_local_jd(x), f, x_sg(x), /* !=m_sg() */
+		    &ry, &rw, &rd);
+    return rw;
+}
+
+static int
+m_wnum0(union DateData *x)
+{
+    return m_wnumx(x, 0);
+}
+
+static int
+m_wnum1(union DateData *x)
+{
+    return m_wnumx(x, 1);
+}
+
 inline static int
 m_hour(union DateData *x)
 {
@@ -1744,12 +1807,6 @@ m_sec(union DateData *x)
 	return EX_SEC(x->c.pc);
 #endif
     }
-}
-
-static int
-m_wday(union DateData *x)
-{
-    return c_jd_to_wday(m_local_jd(x));
 }
 
 #define decode_offset(of,s,h,m)\
@@ -4648,109 +4705,6 @@ d_lite_day_fraction(VALUE self)
     return m_fr(dat);
 }
 
-static VALUE
-d_lite_wnum0(VALUE self)
-{
-    int ry, rw, rd;
-
-    get_d1(self);
-    c_jd_to_weeknum(m_local_jd(dat), 0, x_sg(dat), /* !=m_sg() */
-		    &ry, &rw, &rd);
-    return INT2FIX(rw);
-}
-
-static VALUE
-d_lite_wnum1(VALUE self)
-{
-    int ry, rw, rd;
-
-    get_d1(self);
-    c_jd_to_weeknum(m_local_jd(dat), 1, x_sg(dat), /* !=m_sg() */
-		    &ry, &rw, &rd);
-    return INT2FIX(rw);
-}
-
-/*
- * call-seq:
- *    d.hour
- *
- * Get the hour of this date.
- */
-static VALUE
-d_lite_hour(VALUE self)
-{
-    get_d1(self);
-    return INT2FIX(m_hour(dat));
-}
-
-/*
- * call-seq:
- *    d.min
- *    d.minute
- *
- * Get the minute of this date.
- */
-static VALUE
-d_lite_min(VALUE self)
-{
-    get_d1(self);
-    return INT2FIX(m_min(dat));
-}
-
-/*
- * call-seq:
- *    d.sec
- *    d.second
- *
- * Get the second of this date.
- */
-static VALUE
-d_lite_sec(VALUE self)
-{
-    get_d1(self);
-    return INT2FIX(m_sec(dat));
-}
-
-/*
- * call-seq:
- *    d.sec_fraction
- *    d.second_fraction
- *
- * Get the fraction-of-a-second of this date.
- */
-static VALUE
-d_lite_sec_fraction(VALUE self)
-{
-    get_d1(self);
-    return m_sf_in_sec(dat);
-}
-
-/*
- * call-seq:
- *    d.offset
- *
- * Get the offset of this date.
- */
-static VALUE
-d_lite_offset(VALUE self)
-{
-    get_d1(self);
-    return m_of_in_day(dat);
-}
-
-/*
- * call-seq:
- *    d.zone
- *
- * Get the zone name of this date.
- */
-static VALUE
-d_lite_zone(VALUE self)
-{
-    get_d1(self);
-    return m_zone(dat);
-}
-
 /*
  * call-seq:
  *    d.cwyear
@@ -4761,16 +4715,8 @@ d_lite_zone(VALUE self)
 static VALUE
 d_lite_cwyear(VALUE self)
 {
-    double sg;
-    int ry, rw, rd;
-    VALUE ry2;
-
     get_d1(self);
-    sg = x_sg(dat); /* !=m_sg() */
-    c_jd_to_commercial(m_local_jd(dat), sg,
-		       &ry, &rw, &rd);
-    encode_year(m_nth(dat), ry, sg, &ry2);
-    return ry2;
+    return m_cwyear(dat);
 }
 
 /*
@@ -4782,12 +4728,8 @@ d_lite_cwyear(VALUE self)
 static VALUE
 d_lite_cweek(VALUE self)
 {
-    int ry, rw, rd;
-
     get_d1(self);
-    c_jd_to_commercial(m_local_jd(dat), x_sg(dat), /* !=m_sg() */
-		       &ry, &rw, &rd);
-    return INT2FIX(rw);
+    return INT2FIX(m_cweek(dat));
 }
 
 /*
@@ -4800,13 +4742,22 @@ d_lite_cweek(VALUE self)
 static VALUE
 d_lite_cwday(VALUE self)
 {
-    int w;
-
     get_d1(self);
-    w = m_wday(dat);
-    if (w == 0)
-	w = 7;
-    return INT2FIX(w);
+    return INT2FIX(m_cwday(dat));
+}
+
+static VALUE
+d_lite_wnum0(VALUE self)
+{
+    get_d1(self);
+    return INT2FIX(m_wnum0(dat));
+}
+
+static VALUE
+d_lite_wnum1(VALUE self)
+{
+    get_d1(self);
+    return INT2FIX(m_wnum1(dat));
 }
 
 /*
@@ -4933,6 +4884,87 @@ d_lite_nth_kday_p(VALUE self, VALUE n, VALUE k)
     return Qtrue;
 }
 #endif
+
+/*
+ * call-seq:
+ *    d.hour
+ *
+ * Get the hour of this date.
+ */
+static VALUE
+d_lite_hour(VALUE self)
+{
+    get_d1(self);
+    return INT2FIX(m_hour(dat));
+}
+
+/*
+ * call-seq:
+ *    d.min
+ *    d.minute
+ *
+ * Get the minute of this date.
+ */
+static VALUE
+d_lite_min(VALUE self)
+{
+    get_d1(self);
+    return INT2FIX(m_min(dat));
+}
+
+/*
+ * call-seq:
+ *    d.sec
+ *    d.second
+ *
+ * Get the second of this date.
+ */
+static VALUE
+d_lite_sec(VALUE self)
+{
+    get_d1(self);
+    return INT2FIX(m_sec(dat));
+}
+
+/*
+ * call-seq:
+ *    d.sec_fraction
+ *    d.second_fraction
+ *
+ * Get the fraction-of-a-second of this date.
+ */
+static VALUE
+d_lite_sec_fraction(VALUE self)
+{
+    get_d1(self);
+    return m_sf_in_sec(dat);
+}
+
+/*
+ * call-seq:
+ *    d.offset
+ *
+ * Get the offset of this date.
+ */
+static VALUE
+d_lite_offset(VALUE self)
+{
+    get_d1(self);
+    return m_of_in_day(dat);
+}
+
+/*
+ * call-seq:
+ *    d.zone
+ *
+ * Get the zone name of this date.
+ */
+static VALUE
+d_lite_zone(VALUE self)
+{
+    get_d1(self);
+    return m_zone(dat);
+}
 
 /*
  * call-seq:
@@ -6192,8 +6224,10 @@ d_lite_hash(VALUE self)
     return LONG2FIX(v);
 }
 
-#define AVOID_SPRINTF_BUG
-#define FMT_TO_S "%.4d-%02d-%02d"
+#include "date_tmx.h"
+static void set_tmx(VALUE, struct tmx *);
+static VALUE strftimev(const char *, VALUE,
+		       void (*)(VALUE, struct tmx *));
 
 /*
  * call-seq:
@@ -6204,24 +6238,7 @@ d_lite_hash(VALUE self)
 static VALUE
 d_lite_to_s(VALUE self)
 {
-    get_d1(self);
-
-    if (f_zero_p(m_nth(dat))
-#ifdef AVOID_SPRINTF_BUG
-	&& m_year(dat) >= 0
-#endif
-	)
-	return rb_enc_sprintf(rb_usascii_encoding(), FMT_TO_S,
-			      m_year(dat), m_mon(dat), m_mday(dat));
-    else {
-	VALUE argv[4];
-
-	argv[0] = rb_usascii_str_new2(FMT_TO_S);
-	argv[1] = m_real_year(dat);
-	argv[2] = INT2FIX(m_mon(dat));
-	argv[3] = INT2FIX(m_mday(dat));
-	return rb_f_sprintf(4, argv);
-    }
+    return strftimev("%Y-%m-%d", self, set_tmx);
 }
 
 #ifndef NDEBUG
@@ -6316,9 +6333,8 @@ d_lite_inspect(VALUE self)
 #include <errno.h>
 #include "date_tmx.h"
 
-size_t
-date_strftime(char *s, size_t maxsize, const char *format,
-	      const struct tmx *tmx);
+size_t date_strftime(char *s, size_t maxsize, const char *format,
+		     const struct tmx *tmx);
 
 #define SMALLBUF 100
 static size_t
@@ -6352,35 +6368,54 @@ date_strftime_alloc(char **buf, const char *format,
     return len;
 }
 
+static VALUE
+tmx_m_of(union DateData *x)
+{
+    return INT2FIX(m_of(x));
+}
+
+static char *
+tmx_m_zone(union DateData *x)
+{
+    return RSTRING_PTR(m_zone(x));
+}
+
+static VALUE
+tmx_m_timev(union DateData *x)
+{
+    if (simple_dat_p(x))
+	return day_to_sec(f_sub(m_real_jd(x),
+				UNIX_EPOCH_IN_CJD));
+    else
+	return day_to_sec(f_sub(m_ajd(x),
+				UNIX_EPOCH_IN_AJD));
+}
+
+static struct tmx_funcs tmx_funcs = {
+    (VALUE (*)(void *))m_real_year,
+    (int (*)(void *))m_yday,
+    (int (*)(void *))m_mon,
+    (int (*)(void *))m_mday,
+    (VALUE (*)(void *))m_cwyear,
+    (int (*)(void *))m_cweek,
+    (int (*)(void *))m_cwday,
+    (int (*)(void *))m_wnum0,
+    (int (*)(void *))m_wnum1,
+    (int (*)(void *))m_wday,
+    (int (*)(void *))m_hour,
+    (int (*)(void *))m_min,
+    (int (*)(void *))m_sec,
+    (VALUE (*)(void *))tmx_m_of,
+    (char *(*)(void *))tmx_m_zone,
+    (VALUE (*)(void *))tmx_m_timev
+};
+
 static void
-d_lite_set_tmx(VALUE self, struct tmx *tmx)
+set_tmx(VALUE self, struct tmx *tmx)
 {
     get_d1(self);
-
-    tmx->year = m_real_year(dat);
-    tmx->yday = m_yday(dat);
-    tmx->mon = m_mon(dat);
-    tmx->mday = m_mday(dat);
-    tmx->wday = m_wday(dat);
-
-    if (simple_dat_p(dat)) {
-	tmx->hour = 0;
-	tmx->min = 0;
-	tmx->sec = 0;
-	tmx->offset = INT2FIX(0);
-	tmx->zone = "+00:00";
-	tmx->timev = day_to_sec(f_sub(m_real_jd(dat),
-				      UNIX_EPOCH_IN_CJD));
-    }
-    else {
-	tmx->hour = m_hour(dat);
-	tmx->min = m_min(dat);
-	tmx->sec = m_sec(dat);
-	tmx->offset = INT2FIX(m_of(dat));
-	tmx->zone = RSTRING_PTR(m_zone(dat));
-	tmx->timev = day_to_sec(f_sub(m_ajd(dat),
-				      UNIX_EPOCH_IN_AJD));
-    }
+    tmx->dat = (void *)dat;
+    tmx->funcs = &tmx_funcs;
 }
 
 static VALUE
@@ -6449,7 +6484,7 @@ static VALUE
 d_lite_strftime(int argc, VALUE *argv, VALUE self)
 {
     return date_strftime_internal(argc, argv, self,
-				  "%F", d_lite_set_tmx);
+				  "%F", set_tmx);
 }
 
 static VALUE
@@ -6479,7 +6514,7 @@ strftimev(const char *fmt, VALUE self,
 static VALUE
 d_lite_asctime(VALUE self)
 {
-    return strftimev("%c", self, d_lite_set_tmx);
+    return strftimev("%c", self, set_tmx);
 }
 
 /*
@@ -6492,7 +6527,7 @@ d_lite_asctime(VALUE self)
 static VALUE
 d_lite_iso8601(VALUE self)
 {
-    return strftimev("%F", self, d_lite_set_tmx);
+    return strftimev("%F", self, set_tmx);
 }
 
 /*
@@ -6504,7 +6539,7 @@ d_lite_iso8601(VALUE self)
 static VALUE
 d_lite_rfc3339(VALUE self)
 {
-    return strftimev("%FT%T%:z", self, d_lite_set_tmx);
+    return strftimev("%FT%T%:z", self, set_tmx);
 }
 
 /*
@@ -6517,7 +6552,7 @@ d_lite_rfc3339(VALUE self)
 static VALUE
 d_lite_rfc2822(VALUE self)
 {
-    return strftimev("%a, %-d %b %Y %T %z", self, d_lite_set_tmx);
+    return strftimev("%a, %-d %b %Y %T %z", self, set_tmx);
 }
 
 /*
@@ -6531,7 +6566,7 @@ static VALUE
 d_lite_httpdate(VALUE self)
 {
     volatile VALUE dup = dup_obj_with_new_offset(self, 0);
-    return strftimev("%a, %d %b %Y %T GMT", dup, d_lite_set_tmx);
+    return strftimev("%a, %d %b %Y %T GMT", dup, set_tmx);
 }
 
 static VALUE
@@ -6574,9 +6609,9 @@ d_lite_jisx0301(VALUE self)
     if (!gengo(m_real_local_jd(dat),
 	       m_real_year(dat),
 	       argv))
-	return strftimev("%F", self, d_lite_set_tmx);
+	return strftimev("%F", self, set_tmx);
     return f_add(rb_f_sprintf(2, argv),
-		 strftimev(".%m.%d", self, d_lite_set_tmx));
+		 strftimev(".%m.%d", self, set_tmx));
 }
 
 #ifndef NDEBUG
@@ -7618,9 +7653,6 @@ datetime_s_jisx0301(int argc, VALUE *argv, VALUE klass)
     }
 }
 
-#undef FMT_TO_S
-#define FMT_TO_S "%.4d-%02d-%02d" "T" "%02d:%02d:%02d" "%c%02d:%02d"
-
 /*
  * call-seq:
  *    dt.to_s
@@ -7630,38 +7662,7 @@ datetime_s_jisx0301(int argc, VALUE *argv, VALUE klass)
 static VALUE
 dt_lite_to_s(VALUE self)
 {
-    get_d1(self);
-
-    if (f_zero_p(m_nth(dat))
-#ifdef AVOID_SPRINTF_BUG
-	&& m_year(dat) >= 0
-#endif
-	) {
-	int s, h, m;
-
-	decode_offset(m_of(dat), s, h, m);
-	return rb_enc_sprintf(rb_usascii_encoding(), FMT_TO_S,
-			      m_year(dat), m_mon(dat), m_mday(dat),
-			      m_hour(dat), m_min(dat), m_sec(dat),
-			      s, h, m);
-    }
-    else {
-	int s, h, m;
-	VALUE argv[10];
-
-	decode_offset(m_of(dat), s, h, m);
-	argv[0] = rb_usascii_str_new2(FMT_TO_S);
-	argv[1] = m_real_year(dat);
-	argv[2] = INT2FIX(m_mon(dat));
-	argv[3] = INT2FIX(m_mday(dat));
-	argv[4] = INT2FIX(m_hour(dat));
-	argv[5] = INT2FIX(m_min(dat));
-	argv[6] = INT2FIX(m_sec(dat));
-	argv[7] = INT2FIX(s);
-	argv[8] = INT2FIX(h);
-	argv[9] = INT2FIX(m);
-	return rb_f_sprintf(10, argv);
-    }
+    return strftimev("%Y-%m-%dT%H:%M:%S%:z", self, set_tmx);
 }
 
 /*
@@ -7674,7 +7675,7 @@ static VALUE
 dt_lite_strftime(int argc, VALUE *argv, VALUE self)
 {
     return date_strftime_internal(argc, argv, self,
-				  "%FT%T%:z", d_lite_set_tmx);
+				  "%FT%T%:z", set_tmx);
 }
 
 static VALUE
@@ -7699,7 +7700,7 @@ dt_lite_iso8601_timediv(VALUE self, VALUE n)
     fmt = f_add3(rb_usascii_str_new2("T%T"),
 		 f,
 		 rb_usascii_str_new2("%:z"));
-    return strftimev(RSTRING_PTR(fmt), self, d_lite_set_tmx);
+    return strftimev(RSTRING_PTR(fmt), self, set_tmx);
 }
 
 /*
@@ -7720,7 +7721,7 @@ dt_lite_iso8601(int argc, VALUE *argv, VALUE self)
     if (argc < 1)
 	n = INT2FIX(0);
 
-    return f_add(strftimev("%F", self, d_lite_set_tmx),
+    return f_add(strftimev("%F", self, set_tmx),
 		 dt_lite_iso8601_timediv(self, n));
 }
 
@@ -7759,10 +7760,10 @@ dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
 	if (!gengo(m_real_local_jd(dat),
 		   m_real_year(dat),
 		   argv2))
-	    return f_add(strftimev("%F", self, d_lite_set_tmx),
+	    return f_add(strftimev("%F", self, set_tmx),
 			 dt_lite_iso8601_timediv(self, n));
 	return f_add(f_add(rb_f_sprintf(2, argv2),
-			   strftimev(".%m.%d", self, d_lite_set_tmx)),
+			   strftimev(".%m.%d", self, set_tmx)),
 		     dt_lite_iso8601_timediv(self, n));
     }
 }
@@ -8655,22 +8656,12 @@ Init_date_core(void)
     rb_define_method(cDate, "day", d_lite_mday, 0);
     rb_define_method(cDate, "day_fraction", d_lite_day_fraction, 0);
 
-    rb_define_private_method(cDate, "wnum0", d_lite_wnum0, 0);
-    rb_define_private_method(cDate, "wnum1", d_lite_wnum1, 0);
-
-    rb_define_private_method(cDate, "hour", d_lite_hour, 0);
-    rb_define_private_method(cDate, "min", d_lite_min, 0);
-    rb_define_private_method(cDate, "minute", d_lite_min, 0);
-    rb_define_private_method(cDate, "sec", d_lite_sec, 0);
-    rb_define_private_method(cDate, "second", d_lite_sec, 0);
-    rb_define_private_method(cDate, "sec_fraction", d_lite_sec_fraction, 0);
-    rb_define_private_method(cDate, "second_fraction", d_lite_sec_fraction, 0);
-    rb_define_private_method(cDate, "offset", d_lite_offset, 0);
-    rb_define_private_method(cDate, "zone", d_lite_zone, 0);
-
     rb_define_method(cDate, "cwyear", d_lite_cwyear, 0);
     rb_define_method(cDate, "cweek", d_lite_cweek, 0);
     rb_define_method(cDate, "cwday", d_lite_cwday, 0);
+
+    rb_define_private_method(cDate, "wnum0", d_lite_wnum0, 0);
+    rb_define_private_method(cDate, "wnum1", d_lite_wnum1, 0);
 
     rb_define_method(cDate, "wday", d_lite_wday, 0);
 
@@ -8685,6 +8676,16 @@ Init_date_core(void)
 #ifndef NDEBUG
     rb_define_method(cDate, "nth_kday?", d_lite_nth_kday_p, 2);
 #endif
+
+    rb_define_private_method(cDate, "hour", d_lite_hour, 0);
+    rb_define_private_method(cDate, "min", d_lite_min, 0);
+    rb_define_private_method(cDate, "minute", d_lite_min, 0);
+    rb_define_private_method(cDate, "sec", d_lite_sec, 0);
+    rb_define_private_method(cDate, "second", d_lite_sec, 0);
+    rb_define_private_method(cDate, "sec_fraction", d_lite_sec_fraction, 0);
+    rb_define_private_method(cDate, "second_fraction", d_lite_sec_fraction, 0);
+    rb_define_private_method(cDate, "offset", d_lite_offset, 0);
+    rb_define_private_method(cDate, "zone", d_lite_zone, 0);
 
     rb_define_method(cDate, "julian?", d_lite_julian_p, 0);
     rb_define_method(cDate, "gregorian?", d_lite_gregorian_p, 0);
