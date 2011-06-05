@@ -1,3 +1,7 @@
+Sun Jun  5 17:22:01 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/config_list.in: add new options for tcltklib.
+
 Sun Jun  5 10:06:50 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_tmx.h: now does not place decoded data.  allows to
