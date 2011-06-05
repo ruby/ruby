@@ -1,3 +1,11 @@
+Mon Jun  6 07:08:54 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/drb/ut_array.rb: uses 'druby://localhost:0' instead of nil
+	  as well as test/drb/ut_drb.rb.  This fixes the same problem as
+	  [ruby-dev:23078].
+
+	* test/drb/ut_array_drbssl.rb: ditto.
+
 Fri May 27 08:35:04 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: hang-up at exit before calling Tk.mainloop.
