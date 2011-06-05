@@ -1,3 +1,12 @@
+Fri May 27 08:35:04 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: hang-up at exit before calling Tk.mainloop.
+
+Tue May 24 07:06:34 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: fail to start Tk.mainloop (exit immediately) on
+	  some environment (reported on [ruby-talk:381444]).
+
 Sat Jan 22 11:49:55 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: fixing merge key support
