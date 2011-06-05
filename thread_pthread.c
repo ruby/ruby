@@ -993,27 +993,33 @@ static void *
 thread_timer(void *dummy)
 {
     struct timespec timeout_10ms;
+    struct timespec timeout;
 
     timeout_10ms.tv_sec = 0;
     timeout_10ms.tv_nsec = 10 * 1000 * 1000;
 
     native_mutex_lock(&timer_thread_lock);
     native_cond_broadcast(&timer_thread_cond);
+    timeout = native_cond_timeout(&timer_thread_cond, timeout_10ms);
+
     while (system_working > 0) {
 	int err;
-	struct timespec timeout;
 
-	timeout = native_cond_timeout(&timer_thread_cond, timeout_10ms);
 	err = native_cond_timedwait(&timer_thread_cond, &timer_thread_lock,
 				    &timeout);
-	if (err == ETIMEDOUT);
-	else if (err == 0) {
-	    if (rb_signal_buff_size() == 0) break;
+	if (err == 0) {
+	    /*
+	     * Spurious wakeup or native_stop_timer_thread() was called.
+	     * We need to recheck a system_working state.
+	     */
 	}
-	else rb_bug_errno("thread_timer/timedwait", err);
-
-	ping_signal_thread_list();
-	timer_thread_function(dummy);
+	else if (err == ETIMEDOUT) {
+	    ping_signal_thread_list();
+	    timer_thread_function(dummy);
+	    timeout = native_cond_timeout(&timer_thread_cond, timeout_10ms);
+	}
+	else
+	    rb_bug_errno("thread_timer/timedwait", err);
     }
     native_mutex_unlock(&timer_thread_lock);
     return NULL;

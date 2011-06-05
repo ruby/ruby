@@ -1,3 +1,10 @@
+Sun Jun  5 21:38:51 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (thread_timer): add to care a spurious wakeup.
+	  When native_cond_timedwait() return 0 by spurious wakeup, we
+	  don't have to neither 1) call timer_thread_function and 2)
+	  exit the timer thread.
+
 Sun Jun  5 17:50:01 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (m_real_cwyear): new.  derived from m_cwyear.
