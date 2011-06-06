@@ -1,3 +1,10 @@
+Mon Jun  6 14:11:11 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/date/date_core.c (valid_jd_sub): need to convert from VALUE to
+	  double.
+
+	* ext/date/date_core.c (offset_to_sec): get rid of a compiler warning.
+
 Mon Jun  6 14:09:08 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/defines.h (rb_inifinity, rb_nan): export for Windows.

@@ -2241,7 +2241,7 @@ offset_to_sec(VALUE vof, int *rof)
 	    n = NUM2DBL(vof) * DAY_IN_SECONDS;
 	    if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
 		return 0;
-	    *rof = round(n);
+	    *rof = (int)round(n);
 	    if (*rof != n)
 		rb_warning("fraction of offset is ignored");
 	    return 1;
@@ -2303,7 +2303,8 @@ offset_to_sec(VALUE vof, int *rof)
 static VALUE
 valid_jd_sub(int argc, VALUE *argv, VALUE klass, int need_jd)
 {
-    valid_sg(argv[1]);
+    double sg = NUM2DBL(argv[1]);
+    valid_sg(sg);
     return argv[0];
 }
 
