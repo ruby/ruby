@@ -384,6 +384,33 @@ class TestSH < Test::Unit::TestCase
     assert_equal(true, s.tainted?)
   end
 
+  def test_enc
+    h = Date._strptime('15:43+09:00'.force_encoding('euc-jp'), '%R%z')
+    assert_equal(Encoding::EUC_JP, h[:zone].encoding)
+    h = Date._strptime('15:43+09:00'.force_encoding('ascii-8bit'), '%R%z')
+    assert_equal(Encoding::ASCII_8BIT, h[:zone].encoding)
+
+    h = Date._strptime('1;1/0'.force_encoding('euc-jp'), '%d')
+    assert_equal(Encoding::EUC_JP, h[:leftover].encoding)
+    h = Date._strptime('1;1/0'.force_encoding('ascii-8bit'), '%d')
+    assert_equal(Encoding::ASCII_8BIT, h[:leftover].encoding)
+
+    h = Date._parse('15:43+09:00'.force_encoding('euc-jp'))
+    assert_equal(Encoding::EUC_JP, h[:zone].encoding)
+    h = Date._parse('15:43+09:00'.force_encoding('ascii-8bit'))
+    assert_equal(Encoding::ASCII_8BIT, h[:zone].encoding)
+
+    s = Date.today.strftime('new 105'.force_encoding('euc-jp'))
+    assert_equal(Encoding::EUC_JP, s.encoding)
+    s = Date.today.strftime('new 105'.force_encoding('ascii-8bit'))
+    assert_equal(Encoding::ASCII_8BIT, s.encoding)
+
+    s = DateTime.now.strftime('super $record'.force_encoding('euc-jp'))
+    assert_equal(Encoding::EUC_JP, s.encoding)
+    s = DateTime.now.strftime('super $record'.force_encoding('ascii-8bit'))
+    assert_equal(Encoding::ASCII_8BIT, s.encoding)
+  end
+
   def test_dup
     d = Date.new(2001,2,3)
     d2 = d.dup

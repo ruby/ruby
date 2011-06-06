@@ -1,3 +1,7 @@
+Mon Jun  6 21:59:23 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/date/test_switch_hitter.rb: added a test.
+
 Mon Jun  6 21:37:45 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: added notes.
