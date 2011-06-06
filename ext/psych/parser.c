@@ -304,6 +304,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 	    done = 1;
 	    break;
 	}
+	yaml_event_delete(&event);
     }
 
     return self;

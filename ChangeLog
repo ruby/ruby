@@ -1,3 +1,8 @@
+Mon Jun  6 09:39:43 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c (parse): release event objects to plug memory
+	leak.  Thanks Mark J. Titorenko!
+
 Sun Jun  5 23:26:15 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* eval.c: remove rb_thread_stop_timer_thread function declaration.
