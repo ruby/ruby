@@ -1,3 +1,9 @@
+Mon Jun  6 22:51:43 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* cont.c: use #if FIBER_USE_NATIVE instead of #ifdef.
+	  you can suppress use of setcontext for Fiber with compile option
+	  -DFIBER_USE_NATIVE=0
+
 Mon Jun  6 21:59:23 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/date/test_switch_hitter.rb: added a test.
