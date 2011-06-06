@@ -1,3 +1,10 @@
+Mon Jun  6 14:35:48 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/rdoc/test_rdoc_markup_pre_process.rb (TestRDocMarkupPreProcess#
+	  {test_include_file,test_include_file_encoding_incompatible}): no
+	  need to write such workaround.  don't hide the bug of ruby (and the
+	  bug is already fixed)
+
 Mon Jun  6 14:11:11 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/date/date_core.c (valid_jd_sub): need to convert from VALUE to
