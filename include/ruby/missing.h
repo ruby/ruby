@@ -119,6 +119,22 @@ RUBY_EXTERN double lgamma_r(double, int *);
 RUBY_EXTERN double cbrt(double);
 #endif
 
+#ifdef INFINITY
+# define HAVE_INFINITY
+#else
+/** @internal */
+RUBY_EXTERN const unsigned char rb_infinity[];
+# define INFINITY (*(float *)rb_infinity)
+#endif
+
+#ifdef NAN
+# define HAVE_NAN
+#else
+/** @internal */
+RUBY_EXTERN const unsigned char rb_nan[];
+# define NAN (*(float *)rb_nan)
+#endif
+
 #ifndef isinf
 # ifndef HAVE_ISINF
 #  if defined(HAVE_FINITE) && defined(HAVE_ISNAN)
