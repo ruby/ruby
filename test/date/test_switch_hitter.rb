@@ -375,6 +375,8 @@ class TestSH < Test::Unit::TestCase
     assert_equal(false, s.tainted?)
     s = Date.today.strftime('new 105'.taint)
     assert_equal(true, s.tainted?)
+    s = Date.today.strftime("new \000 105".taint)
+    assert_equal(true, s.tainted?)
 
     s = DateTime.now.strftime('super $record')
     assert_equal(false, s.tainted?)

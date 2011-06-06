@@ -1,3 +1,8 @@
+Mon Jun  6 21:02:12 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: flattened format to strftimev.
+	* ext/date/date_core.c (date_strftime_internal): taints run.
+
 Mon Jun  6 15:10:17 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/{defines,missing}.h (rb_infinity, rb_nan): move from

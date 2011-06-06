@@ -6476,6 +6476,8 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
 		for (fmt = p; p < pe && !*p; ++p);
 		if (p > fmt) rb_str_cat(str, fmt, p - fmt);
 	    }
+	    rb_enc_copy(str, vfmt);
+	    OBJ_INFECT(str, vfmt);
 	    return str;
 	}
 	else
@@ -6499,7 +6501,7 @@ static VALUE
 d_lite_strftime(int argc, VALUE *argv, VALUE self)
 {
     return date_strftime_internal(argc, argv, self,
-				  "%F", set_tmx);
+				  "%Y-%m-%d", set_tmx);
 }
 
 static VALUE
@@ -6529,7 +6531,7 @@ strftimev(const char *fmt, VALUE self,
 static VALUE
 d_lite_asctime(VALUE self)
 {
-    return strftimev("%c", self, set_tmx);
+    return strftimev("%a %b %e %H:%M:%S %Y", self, set_tmx);
 }
 
 /*
@@ -6542,7 +6544,7 @@ d_lite_asctime(VALUE self)
 static VALUE
 d_lite_iso8601(VALUE self)
 {
-    return strftimev("%F", self, set_tmx);
+    return strftimev("%Y-%m-%d", self, set_tmx);
 }
 
 /*
@@ -6554,7 +6556,7 @@ d_lite_iso8601(VALUE self)
 static VALUE
 d_lite_rfc3339(VALUE self)
 {
-    return strftimev("%FT%T%:z", self, set_tmx);
+    return strftimev("%Y-%m-%dT%H:%M:%S%:z", self, set_tmx);
 }
 
 /*
@@ -6624,7 +6626,7 @@ d_lite_jisx0301(VALUE self)
     if (!gengo(m_real_local_jd(dat),
 	       m_real_year(dat),
 	       argv))
-	return strftimev("%F", self, set_tmx);
+	return strftimev("%Y-%m-%d", self, set_tmx);
     return f_add(rb_f_sprintf(2, argv),
 		 strftimev(".%m.%d", self, set_tmx));
 }
@@ -7690,7 +7692,7 @@ static VALUE
 dt_lite_strftime(int argc, VALUE *argv, VALUE self)
 {
     return date_strftime_internal(argc, argv, self,
-				  "%FT%T%:z", set_tmx);
+				  "%Y-%m-%dT%H:%M:%S%:z", set_tmx);
 }
 
 static VALUE
@@ -7712,7 +7714,7 @@ dt_lite_iso8601_timediv(VALUE self, VALUE n)
 				  f_expt(INT2FIX(10), n))));
 	f = rb_f_sprintf(3, argv);
     }
-    fmt = f_add3(rb_usascii_str_new2("T%T"),
+    fmt = f_add3(rb_usascii_str_new2("T%H:%M:%S"),
 		 f,
 		 rb_usascii_str_new2("%:z"));
     return strftimev(RSTRING_PTR(fmt), self, set_tmx);
@@ -7736,7 +7738,7 @@ dt_lite_iso8601(int argc, VALUE *argv, VALUE self)
     if (argc < 1)
 	n = INT2FIX(0);
 
-    return f_add(strftimev("%F", self, set_tmx),
+    return f_add(strftimev("%Y-%m-%d", self, set_tmx),
 		 dt_lite_iso8601_timediv(self, n));
 }
 
@@ -7775,7 +7777,7 @@ dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
 	if (!gengo(m_real_local_jd(dat),
 		   m_real_year(dat),
 		   argv2))
-	    return f_add(strftimev("%F", self, set_tmx),
+	    return f_add(strftimev("%Y-%m-%d", self, set_tmx),
 			 dt_lite_iso8601_timediv(self, n));
 	return f_add(f_add(rb_f_sprintf(2, argv2),
 			   strftimev(".%m.%d", self, set_tmx)),
