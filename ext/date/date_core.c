@@ -8433,6 +8433,10 @@ mk_ary_of_str(long len, const char *a[])
  * Note: in the Julian Calendar, New Years Day was March 25.  The
  * Date class does not follow this convention.
  *
+ * Note: The Julian Day Number of the Day of Calendar Reform should be
+ * 2298874 to 2426355 (approx. 1582-1930 CE) or -/+oo (proleptic
+ * Julian/Gregorain Calendar).
+ *
  * === Offsets
  *
  * DateTime objects support a simple representation
@@ -8442,8 +8446,7 @@ mk_ary_of_str(long len, const char *a[])
  * how much local time is later (or earlier) than UTC.
  * As you travel east, the offset increases until you
  * reach the dateline in the middle of the Pacific Ocean;
- * as you travel west, the offset decreases.  This offset
- * is abbreviated as +offset+ in the Date class.
+ * as you travel west, the offset decreases.
  *
  * This simple representation of offsets does not take
  * into account the common practice of Daylight Savings
@@ -8456,6 +8459,8 @@ mk_ary_of_str(long len, const char *a[])
  *
  * The Date class does not support offsets, in that
  * there is no way to create a Date object with non-utc offset.
+ *
+ * Note: Offset should be -1 to 1 (-24:00-+24:00).
  *
  * == Examples of use
  *
