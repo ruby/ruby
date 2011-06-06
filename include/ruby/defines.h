@@ -137,7 +137,7 @@ void xfree(void*);
 # define HAVE_INFINITY
 #else
 /** @internal */
-extern const unsigned char rb_infinity[];
+RUBY_EXTERN const unsigned char rb_infinity[];
 # define INFINITY (*(float *)rb_infinity)
 #endif
 
@@ -145,7 +145,7 @@ extern const unsigned char rb_infinity[];
 # define HAVE_NAN
 #else
 /** @internal */
-extern const unsigned char rb_nan[];
+RUBY_EXTERN const unsigned char rb_nan[];
 # define NAN (*(float *)rb_nan)
 #endif
 
