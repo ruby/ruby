@@ -141,8 +141,8 @@ Thu Jun  2 16:29:34 2011  Shota Fukumori  <sorah@tubusu.net>
 
 Thu Jun  2 12:33:09 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* io.c (io_flush, rb_io_flush): need to fsync() when ruby calls internal
-	  flush. [ruby-core:36670] [Bug #4813]
+	* io.c (io_fflush, rb_io_flush): need to fsync() when ruby calls
+	  internal flush. [ruby-core:36670] [Bug #4813]
 
 Thu Jun  2 07:56:24 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
