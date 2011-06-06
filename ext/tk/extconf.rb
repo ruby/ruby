@@ -111,6 +111,10 @@ def is_macosx?
  /darwin/ =~ RUBY_PLATFORM
 end
 
+def maybe_64bit?
+  /64|universal/ =~ RUBY_PLATFORM
+end
+
 def check_tcltk_version(version)
   return [nil, nil] unless version.kind_of? String
 
@@ -187,13 +191,17 @@ def get_shlib_path_head
   if CROSS_COMPILING
   elsif is_win32?
     if TkLib_Config["ActiveTcl"]
-      path_head.concat ["c:/ActiveTcl", "c:/Program Files/ActiveTcl"]
+      path_head.concat ["c:/ActiveTcl", "c:/Program Files/ActiveTcl",
+                        "c:/Program Files (x86)/ActiveTcl"]
     end
     path_head.concat [
-      "c:/Tcl", "c:/Program Files/Tcl",
-      "/Tcl", "/Program Files/Tcl"
+      "c:/Tcl", "c:/Program Files/Tcl", "c:/Program Files (x86)/Tcl",
+      "/Tcl", "/Program Files/Tcl", "/Program Files (x86)/Tcl"
     ]
     path_head.each{|dir| path_dirs << "#{dir}"}
+
+    path_dirs |= ENV['LIBRARY_PATH'].split(';')  if ENV['LIBRARY_PATH']
+    path_dirs |= ENV['PATH'].split(';')  if ENV['PATH']
 
   else
     [
@@ -203,6 +211,7 @@ def get_shlib_path_head
     ].each{|dir|
       next unless File.directory?(dir)
 
+      path_dirs << "#{dir}/lib64"
       path_dirs << "#{dir}/lib"
       path_dirs << "#{dir}" unless Dir.glob("#{dir}/lib*.*", File::FNM_CASEFOLD).empty?
 
@@ -387,18 +396,20 @@ def get_tclConfig_dirs
       end
       dirs.concat [
         "c:/ActiveTcl*/lib", "c:/Tcl*/lib",
-        "c:/Program Files/ActiveTcl*/lib", "c:/Program Files/Tcl*/lib",
+        "c:/Program Files*/ActiveTcl*/lib", "c:/Program Files*/Tcl*/lib",
         "/ActiveTcl*/lib", "/Tcl*/lib",
-        "/Program Files/ActiveTcl*/lib", "/Program Files/Tcl*/lib"
+        "/Program Files*/ActiveTcl*/lib", "/Program Files*/Tcl*/lib"
       ]
     else
       dirs = [
-        "c:/Tcl*/lib", "c:/Program Files/Tcl*/lib",
-        "/Tcl*/lib", "/Program Files/Tcl*/lib"
+        "c:/Tcl*/lib", "c:/Program Files*/Tcl*/lib",
+        "/Tcl*/lib", "/Program Files*/Tcl*/lib"
       ]
     end
     dirs.collect{|d| Dir.glob(d, File::FNM_CASEFOLD)}.flatten!
     dirs |= dirs
+    dirs |= ENV['LIBRARY_PATH'].split(';')  if ENV['LIBRARY_PATH']
+    dirs |= ENV['PATH'].split(';')  if ENV['PATH']
 
     exeext = RbConfig::CONFIG['EXEEXT']
     ENV['PATH'].split(File::PATH_SEPARATOR).each{|dir|
@@ -443,14 +454,16 @@ def get_tclConfig_dirs
       end
     end
 
-    config_dir.concat [
-      RbConfig::CONFIG['libdir'],
-      File.join(RbConfig::CONFIG['exec_prefix'], 'lib'),
-      File.join(RbConfig::CONFIG['prefix'], 'lib'), 
-      "/usr/local/opt/lib", "/usr/local/pkg/lib", "/usr/local/share/lib", 
-      "/usr/local/lib", "/usr/opt/lib", "/usr/pkg/lib", 
-      "/usr/share/lib", "/usr/contrib/lib", "/usr/lib"
-    ]
+    config_dir << RbConfig::CONFIG['libdir']
+    ((maybe_64bit?)? ['lib64', 'lib']: ['lib']).each{|dir|
+      config_dir.concat [
+        File.join(RbConfig::CONFIG['exec_prefix'], dir),
+        File.join(RbConfig::CONFIG['prefix'], dir), 
+        "/usr/local/opt/#{dir}", "/usr/local/pkg/#{dir}", "/usr/local/share/#{dir}", 
+        "/usr/local/#{dir}", "/usr/opt/#{dir}", "/usr/pkg/#{dir}", 
+        "/usr/share/#{dir}", "/usr/contrib/#{dir}", "/usr/#{dir}"
+      ]
+    }
 
     config_dir.concat [
       '/opt', '/pkg', '/share', 
@@ -877,9 +890,12 @@ def find_tcl(tcllib, stubs, version, *opt_paths)
 
   if !CROSS_COMPILING and is_win32?
     default_paths.concat [
-      "c:/Tcl/lib", "c:/Program Files/Tcl/lib",
-      "/Tcl/lib", "/Program Files/Tcl/lib"
+      "c:/Tcl/lib", "c:/Program Files/Tcl/lib","c:/Program Files (x86)/Tcl/lib",
+      "/Tcl/lib", "/Program Files/Tcl/lib","/Program Files (x86)/Tcl/lib"
     ].find_all{|dir| File.directory?(dir)}
+
+    default_paths |= ENV['LIBRARY_PATH'].split(';')  if ENV['LIBRARY_PATH']
+    default_paths |= ENV['PATH'].split(';')  if ENV['PATH']
   end
 
   unless TkLib_Config["space-on-tk-libpath"]
@@ -989,9 +1005,12 @@ def find_tk(tklib, stubs, version, *opt_paths)
 
   if !CROSS_COMPILING and is_win32?
     default_paths.concat [
-      "c:/Tcl/lib", "c:/Program Files/Tcl/lib",
-      "/Tcl/lib", "/Program Files/Tcl/lib"
+      "c:/Tcl/lib", "c:/Program Files/Tcl/lib", "c:/Program Files (x86)/Tcl/lib",
+      "/Tcl/lib", "/Program Files/Tcl/lib","/Program Files (x86)/Tcl/lib"
     ].find_all{|dir| File.directory?(dir)}
+
+    default_paths |= ENV['LIBRARY_PATH'].split(';')  if ENV['LIBRARY_PATH']
+    default_paths |= ENV['PATH'].split(';')  if ENV['PATH']
   end
 
   unless TkLib_Config["space-on-tk-libpath"]
@@ -1086,8 +1105,12 @@ def find_tcltk_header(tclver, tkver)
   if !CROSS_COMPILING && is_win32?
     base_dir.concat [
       "c:/Tcl/include", "c:/Program Files/Tcl/include",
-      "/Tcl/include", "/Program Files/Tcl/include"
+      "c:/Program Files (x86)/Tcl/include",
+      "/Tcl/include", "/Program Files/Tcl/include",
+      "/Program Files (x86)/Tcl/include"
     ].find_all{|dir| File.directory?(dir)}
+
+    base_dir |= ENV['CPATH'].split(';')  if ENV['CPATH']
   end
 
   unless TkLib_Config["space-on-tk-libpath"]

@@ -1,3 +1,8 @@
+Tue May 24 07:06:34 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/extconf.rb: search directories for 64bit library (e.g.
+	  /usr/lib64) and bug fix.
+
 Mon Jun  6 07:08:54 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/drb/ut_array.rb: uses 'druby://localhost:0' instead of nil
