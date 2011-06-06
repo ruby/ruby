@@ -1,3 +1,7 @@
+Mon Jun  6 10:52:13 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb: don't use autoload.
+
 Mon Jun  6 09:39:43 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/parser.c (parse): release event objects to plug memory

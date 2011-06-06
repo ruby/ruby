@@ -20,9 +20,7 @@
 #
 
 require 'net/protocol'
-autoload :OpenSSL, 'openssl'
 require 'uri'
-autoload :SecureRandom, 'securerandom'
 
 module Net   #:nodoc:
 
@@ -545,7 +543,10 @@ module Net   #:nodoc:
       http = new(address, port, p_addr, p_port, p_user, p_pass)
 
       if opt
-        opt = {verify_mode: OpenSSL::SSL::VERIFY_PEER}.update(opt) if opt[:use_ssl]
+        if opt[:use_ssl]
+          require 'openssl' unless defined?(OpenSSL)
+          opt = {verify_mode: OpenSSL::SSL::VERIFY_PEER}.update(opt)
+        end
         http.methods.grep(/\A(\w+)=\z/) do |meth|
           key = $1.to_sym
           opt.key?(key) or next
@@ -656,6 +657,7 @@ module Net   #:nodoc:
 
     # Returns true if SSL/TLS is being used with HTTP.
     def use_ssl?
+      require 'openssl' unless defined?(OpenSSL)
       @use_ssl
     end
 
@@ -1961,6 +1963,7 @@ module Net   #:nodoc:
       end
 
       opt = @form_option.dup
+      require 'securerandom' unless defined?(SecureRandom)
       opt[:boundary] ||= SecureRandom.urlsafe_base64(40)
       self.set_content_type(self.content_type, boundary: opt[:boundary])
       if chunked?
@@ -1981,6 +1984,7 @@ module Net   #:nodoc:
     def encode_multipart_form_data(out, params, opt)
       charset = opt[:charset]
       boundary = opt[:boundary]
+      require 'securerandom' unless defined?(SecureRandom)
       boundary ||= SecureRandom.urlsafe_base64(40)
       chunked_p = chunked?
 
