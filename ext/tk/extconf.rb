@@ -370,7 +370,7 @@ def collect_tcltk_defs(tcl_defs_str, tk_defs_str)
           vtcl != vtk )
   }
 
-  defs.map{|ary| s = ary.join(''); (s.strip.empty?)? "": "-D" << s}.join(' ')
+  defs.map{|ary| s = ary.join(''); (s.strip.empty?)? "": "-D" << s}
 end
 
 def parse_tclConfig(file)
@@ -1942,7 +1942,7 @@ TkLib_Config["checked_shlib_dirs"] =
 $CPPFLAGS ||= ""
 # $CPPFLAGS += " #{TclConfig_Info['TCL_DEFS']}"
 # $CPPFLAGS += " #{TkConfig_Info['TK_DEFS']}"
-$CPPFLAGS += collect_tcltk_defs(TclConfig_Info['TCL_DEFS'], TkConfig_Info['TK_DEFS'])
+$defs += collect_tcltk_defs(TclConfig_Info['TCL_DEFS'], TkConfig_Info['TK_DEFS'])
 
 # MacOS X Frameworks?
 if TkLib_Config["tcltk-framework"]
@@ -2018,9 +2018,8 @@ if (TkLib_Config["tcltk-framework"] ||
   $INSTALLFILES << ["lib/tkextlib/SUPPORT_STATUS", "$(RUBYLIBDIR)", "lib"]
 
   # create
-  $CPPFLAGS ||= ""
-  $CPPFLAGS << %[ -DRUBY_VERSION=\\"#{RUBY_VERSION}\\"]
-  $CPPFLAGS << %[ -DRUBY_RELEASE_DATE=\\"#{RUBY_RELEASE_DATE}\\"]
+  $defs << %[-DRUBY_VERSION=\\"#{RUBY_VERSION}\\"]
+  $defs << %[-DRUBY_RELEASE_DATE=\\"#{RUBY_RELEASE_DATE}\\"]
 
   create_makefile("tcltklib")
 

@@ -1,3 +1,8 @@
+Tue Jun  7 13:36:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/extconf.rb: use $defs not $CPPFLAGS to get rid of
+	  command line escape issues on Windows.  fixed #4835.
+
 Tue Jun  7 03:18:45 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_io.rb (TestIO#test_s_{,bin}write): do not create a
