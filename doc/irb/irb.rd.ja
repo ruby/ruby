@@ -266,7 +266,7 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両方定義されて
 --- kill n, irb_kill n
       サブirbをkillする. nはfgと同じ.
 
---- souce, irb_source  path
+--- source, irb_source  path
     UNIXシェルコマンドのsourceと似ている. 現在の環境上でpath内のスクリ
     プトを評価する.
 

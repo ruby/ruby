@@ -4538,7 +4538,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 2005-11-15(Tue) 00:42:49 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c : support rb_frame_pop() and rb_frame_callee(),
-	add rb_sourcefile(), rb_souceline(),
+	add rb_sourcefile(), rb_sourceline(),
 	
 
 	* compile.c : support postposition while/until,

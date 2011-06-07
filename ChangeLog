@@ -1,3 +1,10 @@
+Tue Jun  7 20:50:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* doc/irb/irb.rd: fix typo. patch by Nobuhiro IMAI.
+	  [Bug #4843] [ruby-dev:43639]
+	* doc/irb/irb.rd.ja: ditto.
+	* doc/ChangeLog-YARV: ditto.
+
 Tue Jun  7 18:52:55 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rubygems/user_interaction.rb (Gem::StreamUI#tty?): IO#tty? of
