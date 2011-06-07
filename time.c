@@ -905,20 +905,20 @@ rb_localtime_r2(const time_t *t, struct tm *result)
 #define LOCALTIME(tm, result) (tzset(),rb_localtime_r2((tm), &(result)))
 
 #if !defined(HAVE_STRUCT_TM_TM_GMTOFF)
-    static struct tm *
-    rb_gmtime_r2(const time_t *t, struct tm *result)
-    {
-        result = rb_gmtime_r(t, result);
+static struct tm *
+rb_gmtime_r2(const time_t *t, struct tm *result)
+{
+    result = rb_gmtime_r(t, result);
 #if defined(HAVE_TIMEGM) && defined(LOCALTIME_OVERFLOW_PROBLEM)
-        if (result) {
-            struct tm tmp = *result;
-            time_t t2 = timegm(&tmp);
-            if (*t != t2)
-                result = NULL;
-        }
-#endif
-        return result;
+    if (result) {
+	struct tm tmp = *result;
+	time_t t2 = timegm(&tmp);
+	if (*t != t2)
+	    result = NULL;
     }
+#endif
+    return result;
+}
 #   define GMTIME(tm, result) rb_gmtime_r2((tm), &(result))
 #endif
 
