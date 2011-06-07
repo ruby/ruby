@@ -418,7 +418,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_set_program_name
-    skip if /linux|freebsd|netbsd|openbsd/ !~ RUBY_PLATFORM
+    skip "platform dependent feature" if /linux|freebsd|netbsd|openbsd/ !~ RUBY_PLATFORM
 
     with_tmpchdir do
       write_file("test-script", "$0 = 'hello world'; sleep 60")

@@ -1,3 +1,8 @@
+Tue Jun  7 18:15:00 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_set_program_name):
+	  should show some messages when skippning tests.
+
 Tue Jun  7 13:59:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/date_core.c (date_s_today, datetime_s_now): check the
