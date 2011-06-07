@@ -3483,7 +3483,8 @@ date_s_today(int argc, VALUE *argv, VALUE klass)
 
     if (time(&t) == -1)
 	rb_sys_fail("time");
-    localtime_r(&t, &tm);
+    if (!localtime_r(&t, &tm))
+	rb_sys_fail("localtime");
 
     y = tm.tm_year + 1900;
     m = tm.tm_mon + 1;
@@ -7288,7 +7289,8 @@ datetime_s_now(int argc, VALUE *argv, VALUE klass)
 	rb_sys_fail("gettimeofday");
     sec = tv.tv_sec;
 #endif
-    localtime_r(&sec, &tm);
+    if (!localtime_r(&sec, &tm))
+	rb_sys_fail("localtime");
 
     y = tm.tm_year + 1900;
     m = tm.tm_mon + 1;

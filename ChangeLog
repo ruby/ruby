@@ -1,3 +1,8 @@
+Tue Jun  7 13:59:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_core.c (date_s_today, datetime_s_now): check the
+	  result of localtime_r().
+
 Tue Jun  7 13:36:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/extconf.rb: use $defs not $CPPFLAGS to get rid of
