@@ -988,9 +988,9 @@ class TestGem < Gem::TestCase
     end
   end
 
-  if Gem.win_platform? then
+  if Gem.win_platform? && '1.9' > RUBY_VERSION
+    # Ruby 1.9 properly handles ~ path expansion, so no need to run such tests.
     def test_self_user_home_userprofile
-      skip 'Ruby 1.9 properly handles ~ path expansion' unless '1.9' > RUBY_VERSION
 
       Gem.clear_paths
 
@@ -1009,8 +1009,6 @@ class TestGem < Gem::TestCase
     end
 
     def test_self_user_home_user_drive_and_path
-      skip 'Ruby 1.9 properly handles ~ path expansion' unless '1.9' > RUBY_VERSION
-
       Gem.clear_paths
 
       # safe-keep env variables

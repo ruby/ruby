@@ -1,3 +1,9 @@
+Tue Jun  7 18:36:41 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/rubygems/test_gem.rb (TestGem#{test_self_user_home_userprofile,
+	  test_self_user_home_user_drive_and_path}): should simply ignore
+	  meaningless tests instead of skipping them.
+
 Tue Jun  7 18:15:00 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_set_program_name):
