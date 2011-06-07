@@ -1,3 +1,10 @@
+Tue Jun  7 18:52:55 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/rubygems/user_interaction.rb (Gem::StreamUI#tty?): IO#tty? of
+	  Windows has been fixed at r29969.
+
+	* test/rubygems/test_gem_stream_ui.rb: now can run tests.
+
 Tue Jun  7 18:36:41 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/rubygems/test_gem.rb (TestGem#{test_self_user_home_userprofile,

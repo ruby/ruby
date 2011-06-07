@@ -142,12 +142,8 @@ class Gem::StreamUI
   end
 
   def tty?
-    if RUBY_PLATFORM =~ /mingw|mswin/
-      @usetty
-    else
-      @usetty && @ins.tty?
-    end
-  end
+    @usetty && @ins.tty?
+ end
 
   ##
   # Choose from a list of options.  +question+ is a prompt displayed above

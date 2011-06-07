@@ -41,8 +41,6 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask
-    skip 'TTY detection broken on windows' if Gem.win_platform?
-
     timeout(1) do
       expected_answer = "Arthur, King of the Britons"
       @in.string = "#{expected_answer}\n"
@@ -52,8 +50,6 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask_no_tty
-    skip 'TTY handling is broken on windows' if Gem.win_platform?
-
     @in.tty = false
 
     timeout(0.1) do
@@ -63,8 +59,6 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask_for_password
-    skip 'Always uses $stdin on windows' if Gem.win_platform?
-
     timeout(1) do
       expected_answer = "Arthur, King of the Britons"
       @in.string = "#{expected_answer}\n"
@@ -74,8 +68,6 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask_for_password_no_tty
-    skip 'TTY handling is broken on windows' if Gem.win_platform?
-
     @in.tty = false
 
     timeout(0.1) do
@@ -85,8 +77,6 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask_yes_no_no_tty_with_default
-    skip 'TTY handling is broken on windows' if Gem.win_platform?
-
     @in.tty = false
 
     timeout(0.1) do
@@ -99,8 +89,6 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask_yes_no_no_tty_without_default
-    skip 'TTY handling is broken on windows' if Gem.win_platform?
-
     @in.tty = false
 
     timeout(0.1) do
