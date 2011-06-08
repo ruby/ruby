@@ -1,3 +1,10 @@
+Wed Jun  8 21:38:57 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* cont.c (root_fiber_alloc): set root fiber's status RUNNING.
+	  in cont_mark() only RUNNING fiber's machine stack is marked.
+	  root fiber's status should be RUNNING at the beginning regardless of
+	  FIBER_USE_NATIVE.
+
 Tue Jun  7 20:50:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* doc/irb/irb.rd: fix typo. patch by Nobuhiro IMAI.

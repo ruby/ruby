@@ -1148,8 +1148,8 @@ root_fiber_alloc(rb_thread_t *th)
 #ifdef _WIN32
     fib->fib_handle = ConvertThreadToFiber(0);
 #endif
-    fib->status = RUNNING;
 #endif
+    fib->status = RUNNING;
     fib->prev_fiber = fib->next_fiber = fib;
 
     return fib;
