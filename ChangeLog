@@ -28,7 +28,7 @@ Tue Jun  7 18:36:41 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 Tue Jun  7 18:15:00 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_set_program_name):
-	  should show some messages when skippning tests.
+	  should show some messages when skipping tests.
 
 Tue Jun  7 13:59:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -284,7 +284,7 @@ Wed Jun  1 07:21:40 2011  Eric Hodel  <drbrain@segment7.net>
 
 Wed Jun  1 06:43:13 2011  Masaya Tarui  <tarui@ruby-lang.org>
 
-	* load.c (loaded_feature_path): cut nonsence loop execution to fix
+	* load.c (loaded_feature_path): cut nonsense loop execution to fix
 	  performance bug.
 
 Wed Jun  1 01:16:02 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
