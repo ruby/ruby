@@ -1,3 +1,7 @@
+Fri Jun 10 00:25:03 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* gc.c: remove an unused declaration.
+
 Fri Jun 10 00:24:04 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (string_to_r): Rational#** may return flonum.
