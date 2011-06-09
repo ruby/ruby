@@ -1,3 +1,7 @@
+Fri Jun 10 01:06:29 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/bigdecimal (BigDecimal_to_i): Integer#** may return flonum.
+
 Fri Jun 10 00:35:12 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (string_to_c_internal): uses rb_reg_nth_match;

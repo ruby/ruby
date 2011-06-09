@@ -564,19 +564,24 @@ BigDecimal_to_i(VALUE self)
 	VALUE a = BigDecimal_split(self);
 	VALUE digits = RARRAY_PTR(a)[1];
 	VALUE numerator = rb_funcall(digits, rb_intern("to_i"), 0);
+	VALUE ret;
 	ssize_t dpower = e - (ssize_t)RSTRING_LEN(digits);
 
 	if (VpGetSign(p) < 0) {
 	    numerator = rb_funcall(numerator, '*', 1, INT2FIX(-1));
 	}
 	if (dpower < 0) {
-	    return rb_funcall(numerator, rb_intern("div"), 1,
+	    ret = rb_funcall(numerator, rb_intern("div"), 1,
 			      rb_funcall(INT2FIX(10), rb_intern("**"), 1,
 					 INT2FIX(-dpower)));
 	}
-        return rb_funcall(numerator, '*', 1,
-			  rb_funcall(INT2FIX(10), rb_intern("**"), 1,
-				     INT2FIX(dpower)));
+	else
+	    ret = rb_funcall(numerator, '*', 1,
+			     rb_funcall(INT2FIX(10), rb_intern("**"), 1,
+					INT2FIX(dpower)));
+	if (TYPE(ret) == T_FLOAT)
+	    rb_raise(rb_eFloatDomainError, "Infinity");
+	return ret;
     }
 }
 
