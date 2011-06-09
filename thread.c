@@ -3350,6 +3350,17 @@ static const rb_data_type_t mutex_data_type = {
     {mutex_mark, mutex_free, mutex_memsize,},
 };
 
+VALUE
+rb_obj_is_mutex(VALUE obj)
+{
+    if (rb_typeddata_is_kind_of(obj, &mutex_data_type)) {
+	return Qtrue;
+    }
+    else {
+	return Qfalse;
+    }
+}
+
 static VALUE
 mutex_alloc(VALUE klass)
 {

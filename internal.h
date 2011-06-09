@@ -27,6 +27,9 @@ struct rb_classext_struct {
 
 VALUE rb_big_uminus(VALUE x);
 
+VALUE rb_obj_is_thread(VALUE obj);
+VALUE rb_obj_is_mutex(VALUE obj);
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

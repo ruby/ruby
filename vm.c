@@ -1780,6 +1780,17 @@ const rb_data_type_t ruby_thread_data_type = {
     },
 };
 
+VALUE
+rb_obj_is_thread(VALUE obj)
+{
+    if (rb_typeddata_is_kind_of(obj, &thread_data_type)) {
+	return Qtrue;
+    }
+    else {
+	return Qfalse;
+    }
+}
+
 static VALUE
 thread_alloc(VALUE klass)
 {

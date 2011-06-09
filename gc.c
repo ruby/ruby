@@ -3005,7 +3005,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
 		DATA_PTR(p) && RANY(p)->as.data.dfree &&
-		RANY(p)->as.basic.klass != rb_cThread && RANY(p)->as.basic.klass != rb_cMutex) {
+		!rb_obj_is_thread((VALUE)p) && !rb_obj_is_mutex((VALUE)p) ) {
 		p->as.free.flags = 0;
 		if (RTYPEDDATA_P(p)) {
 		    RDATA(p)->dfree = RANY(p)->as.typeddata.type->function.dfree;

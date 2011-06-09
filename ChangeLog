@@ -1,3 +1,11 @@
+Thu Jun  9 23:34:01 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* gc.c (rb_objspace_call_finalizer): use rb_typeddata_is_kind_of() for
+	  type check to get rid of a double free when main Thread has singleton
+	  class. [ruby-core:36741] [Bug #4828]
+	* thread.c (rb_obj_is_mutex): add a new utility function.
+	* vm.c (rb_obj_is_thread): ditto.
+
 Thu Jun  9 22:53:49 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* test/ruby/test_thread.rb (TestThread#test_kill_thread_subclass):
