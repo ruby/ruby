@@ -1,3 +1,7 @@
+Fri Jun 10 02:25:53 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: updating version to match released gem.
+
 Fri Jun 10 01:06:29 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/bigdecimal (BigDecimal_to_i): Integer#** may return flonum.
