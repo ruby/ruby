@@ -46,6 +46,7 @@
 
 #include "eval_intern.h"
 #include "gc.h"
+#include "internal.h"
 #include "ruby/io.h"
 
 #ifndef USE_NATIVE_THREAD_PRIORITY
@@ -1356,6 +1357,12 @@ void
 rb_threadptr_execute_interrupts(rb_thread_t *th)
 {
     rb_threadptr_execute_interrupts_rec(th, 0);
+}
+
+void
+rb_thread_execute_interrupts(VALUE th)
+{
+    rb_threadptr_execute_interrupts_rec((rb_thread_t *)th, 0);
 }
 
 void

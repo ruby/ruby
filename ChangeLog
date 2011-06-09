@@ -1,3 +1,16 @@
+Thu Jun  9 23:57:53 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c: fix IO.copy_stream interrupt handling.
+	  based on the patch by Eric Wong.  [ruby-core:36156]
+
+	* vm_core.h (rb_thread_call_with_gvl): don't declare here.
+
+	* thread.c: include internal.h.
+	  (rb_thread_execute_interrupts): new function.
+
+	* internal.h (rb_thread_execute_interrupts): declared.
+	  (rb_thread_call_with_gvl): declared.
+
 Thu Jun  9 23:34:01 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* gc.c (rb_objspace_call_finalizer): use rb_typeddata_is_kind_of() for
