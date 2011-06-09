@@ -300,6 +300,13 @@ class TestThread < Test::Unit::TestCase
     INPUT
   end
 
+  def test_kill_wrong_argument
+    bug4367 = '[ruby-core:35086]'
+    assert_raise(TypeError, bug4367) {
+      Thread.kill(nil)
+    }
+  end
+
   def test_exit
     s = 0
     Thread.new do

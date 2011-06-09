@@ -1,3 +1,9 @@
+Thu Jun  9 22:31:47 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/ruby/test_thread.rb (TestThread#test_kill_wrong_argument):
+	  test for [ruby-core:35086].
+	  partially forward porting r31402 from ruby_1_9_2 branch.
+
 Thu Jun  9 18:36:00 2011  Kenta Murata <mrkn@mrkn.jp>
 
 	* string.c: Fix the ambiguous description of the behavior of
