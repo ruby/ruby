@@ -1,3 +1,8 @@
+Thu Jun  9 22:53:49 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/ruby/test_thread.rb (TestThread#test_kill_thread_subclass):
+	  add test for Thread.kill with Thread subclass instance.
+
 Thu Jun  9 22:31:47 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* test/ruby/test_thread.rb (TestThread#test_kill_wrong_argument):
