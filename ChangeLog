@@ -1,3 +1,7 @@
+Thu Jun  9 20:30:00 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb: zone_to_diff in this version is just class method.
+
 Thu Jun  9 19:43:57 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (time_to_day_fraction): accepts flonum without Float#to_r.

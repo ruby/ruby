@@ -1030,7 +1030,7 @@ class Date
 	  end
 	end;
       end
-    end
+    end # <<dummy
 
     private :once
 
@@ -1231,7 +1231,7 @@ class Date
 
   def new_offset(of=0)
     if String === of
-      of = Rational(zone_to_diff(of) || 0, 86400)
+      of = Rational(self.class.zone_to_diff(of) || 0, 86400)
     end
     self.class.new!(@ajd, of, @sg)
   end
@@ -1490,7 +1490,7 @@ class DateTime < Date
       raise ArgumentError, 'invalid date'
     end
     if String === of
-      of = Rational(zone_to_diff(of) || 0, 86400)
+      of = Rational(self.class.zone_to_diff(of) || 0, 86400)
     end
     new!(jd_to_ajd(jd, fr, of), of, sg)
   end
@@ -1515,7 +1515,7 @@ class DateTime < Date
       raise ArgumentError, 'invalid date'
     end
     if String === of
-      of = Rational(zone_to_diff(of) || 0, 86400)
+      of = Rational(self.class.zone_to_diff(of) || 0, 86400)
     end
     new!(jd_to_ajd(jd, fr, of), of, sg)
   end
@@ -1540,7 +1540,7 @@ class DateTime < Date
       raise ArgumentError, 'invalid date'
     end
     if String === of
-      of = Rational(zone_to_diff(of) || 0, 86400)
+      of = Rational(self.class.zone_to_diff(of) || 0, 86400)
     end
     new!(jd_to_ajd(jd, fr, of), of, sg)
   end
@@ -1568,7 +1568,7 @@ class DateTime < Date
       raise ArgumentError, 'invalid date'
     end
     if String === of
-      of = Rational(zone_to_diff(of) || 0, 86400)
+      of = Rational(self.class.zone_to_diff(of) || 0, 86400)
     end
     new!(jd_to_ajd(jd, fr, of), of, sg)
   end
@@ -1579,7 +1579,7 @@ class DateTime < Date
       raise ArgumentError, 'invalid date'
     end
     if String === of
-      of = Rational(zone_to_diff(of) || 0, 86400)
+      of = Rational(self.class.zone_to_diff(of) || 0, 86400)
     end
     new!(jd_to_ajd(jd, fr, of), of, sg)
   end
