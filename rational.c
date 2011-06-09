@@ -2018,12 +2018,6 @@ make_patterns(void)
 #define id_match rb_intern("match")
 #define f_match(x,y) rb_funcall((x), id_match, 1, (y))
 
-#define id_aref rb_intern("[]")
-#define f_aref(x,y) rb_funcall((x), id_aref, 1, (y))
-
-#define id_post_match rb_intern("post_match")
-#define f_post_match(x) rb_funcall((x), id_post_match, 0)
-
 #define id_split rb_intern("split")
 #define f_split(x,y) rb_funcall((x), id_split, 1, (y))
 
@@ -2043,10 +2037,10 @@ string_to_r_internal(VALUE self)
 
     if (!NIL_P(m)) {
 	VALUE v, ifp, exp, ip, fp;
-	VALUE si = f_aref(m, INT2FIX(1));
-	VALUE nu = f_aref(m, INT2FIX(2));
-	VALUE de = f_aref(m, INT2FIX(3));
-	VALUE re = f_post_match(m);
+	VALUE si = rb_reg_nth_match(1, m);
+	VALUE nu = rb_reg_nth_match(2, m);
+	VALUE de = rb_reg_nth_match(3, m);
+	VALUE re = rb_reg_match_post(m);
 
 	{
 	    VALUE a;

@@ -1445,12 +1445,6 @@ make_patterns(void)
 #define id_match rb_intern("match")
 #define f_match(x,y) rb_funcall((x), id_match, 1, (y))
 
-#define id_aref rb_intern("[]")
-#define f_aref(x,y) rb_funcall((x), id_aref, 1, (y))
-
-#define id_post_match rb_intern("post_match")
-#define f_post_match(x) rb_funcall((x), id_post_match, 0)
-
 #define id_gsub_bang rb_intern("gsub!")
 #define f_gsub_bang(x,y,z) rb_funcall((x), id_gsub_bang, 2, (y), (z))
 
@@ -1470,27 +1464,27 @@ string_to_c_internal(VALUE self)
 
 	m = f_match(comp_pat0, s);
 	if (!NIL_P(m)) {
-	  sr = f_aref(m, INT2FIX(1));
-	  si = f_aref(m, INT2FIX(2));
-	  re = f_post_match(m);
-	  po = 1;
+	    sr = rb_reg_nth_match(1, m);
+	    si = rb_reg_nth_match(2, m);
+	    re = rb_reg_match_post(m);
+	    po = 1;
 	}
 	if (NIL_P(m)) {
 	    m = f_match(comp_pat1, s);
 	    if (!NIL_P(m)) {
 		sr = Qnil;
-		si = f_aref(m, INT2FIX(1));
+		si = rb_reg_nth_match(1, m);
 		if (NIL_P(si))
 		    si = rb_usascii_str_new2("");
 		{
 		    VALUE t;
 
-		    t = f_aref(m, INT2FIX(2));
+		    t = rb_reg_nth_match(2, m);
 		    if (NIL_P(t))
 			t = rb_usascii_str_new2("1");
 		    rb_str_concat(si, t);
 		}
-		re = f_post_match(m);
+		re = rb_reg_match_post(m);
 		po = 0;
 	    }
 	}
@@ -1498,19 +1492,19 @@ string_to_c_internal(VALUE self)
 	    m = f_match(comp_pat2, s);
 	    if (NIL_P(m))
 		return rb_assoc_new(Qnil, self);
-	    sr = f_aref(m, INT2FIX(1));
-	    if (NIL_P(f_aref(m, INT2FIX(2))))
+	    sr = rb_reg_nth_match(1, m);
+	    if (NIL_P(rb_reg_nth_match(2, m)))
 		si = Qnil;
 	    else {
 		VALUE t;
 
-		si = f_aref(m, INT2FIX(3));
-		t = f_aref(m, INT2FIX(4));
+		si = rb_reg_nth_match(3, m);
+		t = rb_reg_nth_match(4, m);
 		if (NIL_P(t))
 		    t = rb_usascii_str_new2("1");
 		rb_str_concat(si, t);
 	    }
-	    re = f_post_match(m);
+	    re = rb_reg_match_post(m);
 	    po = 0;
 	}
 	r = INT2FIX(0);

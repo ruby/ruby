@@ -1,3 +1,8 @@
+Fri Jun 10 00:35:12 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (string_to_c_internal): uses rb_reg_nth_match;
+	* rational.c (string_to_r_internal): ditto.
+
 Fri Jun 10 00:25:03 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* gc.c: remove an unused declaration.
