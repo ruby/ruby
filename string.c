@@ -3168,7 +3168,8 @@ rb_str_aref(VALUE str, VALUE indx)
  *  characters at offsets given by the range is returned. In all three cases, if
  *  an offset is negative, it is counted from the end of <i>str</i>. Returns
  *  <code>nil</code> if the initial offset falls outside the string, the length
- *  is negative, or the beginning of the range is greater than the end.
+ *  is negative, or the beginning of the range is greater than the end of the
+ *  string.
  *
  *  If a <code>Regexp</code> is supplied, the matching portion of <i>str</i> is
  *  returned. If a numeric or name parameter follows the regular expression, that
