@@ -265,7 +265,10 @@ module Psych
       end
 
       def visit_Hash o
-        register(o, @emitter.start_mapping(nil, nil, true, Psych::Nodes::Mapping::BLOCK))
+        tag      = o.class == ::Hash ? nil : "!ruby/hash:#{o.class}"
+        implicit = !tag
+
+        register(o, @emitter.start_mapping(nil, tag, implicit, Psych::Nodes::Mapping::BLOCK))
 
         o.each do |k,v|
           accept k
