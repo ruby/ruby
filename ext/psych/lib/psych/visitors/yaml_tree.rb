@@ -247,7 +247,8 @@ module Psych
       end
 
       def visit_Class o
-        raise TypeError, "can't dump anonymous class #{o.class}"
+        raise TypeError, "can't dump anonymous class: #{o}" unless o.name
+        @emitter.scalar o.name, nil, '!ruby/class', false, false, Nodes::Scalar::SINGLE_QUOTED
       end
 
       def visit_Range o

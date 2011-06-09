@@ -57,6 +57,8 @@ module Psych
           Complex(o.value)
         when "!ruby/object:Rational"
           Rational(o.value)
+        when "!ruby/class"
+          resolve_class o.value
         when "tag:yaml.org,2002:float", "!float"
           Float(@ss.tokenize(o.value))
         when "!ruby/regexp"

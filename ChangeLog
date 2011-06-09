@@ -1,3 +1,11 @@
+Thu Jun  9 09:05:04 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: Ruby classes can be loaded
+	  from YAML files.
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: Ruby classes can be
+	  dumped to YAML files.
+	* test/psych/test_class.rb: corresponding test.
+
 Wed Jun  8 21:38:57 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* cont.c (root_fiber_alloc): set root fiber's status RUNNING.
