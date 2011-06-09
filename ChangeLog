@@ -1,3 +1,11 @@
+Thu Jun  9 09:18:51 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: Ruby modules can be loaded
+	  from YAML files.
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: Ruby modules can be
+	  dumped to YAML files.
+	* test/psych/test_class.rb: corresponding test.
+
 Thu Jun  9 09:05:04 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: Ruby classes can be loaded
