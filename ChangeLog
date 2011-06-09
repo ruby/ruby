@@ -1,3 +1,7 @@
+Thu Jun  9 19:43:57 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb (time_to_day_fraction): accepts flonum without Float#to_r.
+
 Wed May 25 18:40:47 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* variable.c (rb_const_get_0):  Fix  previous change.   There were

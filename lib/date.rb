@@ -511,6 +511,20 @@ class Date
     return h, min, s, fr
   end
 
+  def self.decode(num)
+    f, n = Math.frexp(num)
+    f = Math.ldexp(f, Float::MANT_DIG).to_i
+    n -= Float::MANT_DIG
+    return f, n
+  end
+
+  def self.f_to_r(num)
+    f, n = decode(num)
+    Rational(f * Float::RADIX ** n)
+  end
+
+  private_class_method :decode, :f_to_r
+
   # Convert an +h+ hour, +min+ minutes, +s+ seconds period
   # to a fractional day.
   begin
@@ -521,11 +535,15 @@ class Date
     end
   rescue
     def self.time_to_day_fraction(h, min, s)
-	if Integer === h && Integer === min && Integer === s
-	  Rational(h * 3600 + min * 60 + s, 86400) # 4p
-	else
-	  (h * 3600 + min * 60 + s).to_r/86400 # 4p
+      x = h * 3600 + min * 60 + s
+      if Integer === x
+	Rational(x, 86400) # 4p
+      else
+	if Float === x
+	  x = f_to_r(x)
 	end
+	x / 86400 # 4p
+      end
     end
   end
 
