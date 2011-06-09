@@ -2152,7 +2152,7 @@ string_to_r_strict(VALUE self)
 static VALUE
 string_to_r(VALUE self)
 {
-    VALUE s, a, backref;
+    VALUE s, a, a1, backref;
 
     backref = rb_backref_get();
     rb_match_busy(backref);
@@ -2162,8 +2162,12 @@ string_to_r(VALUE self)
 
     rb_backref_set(backref);
 
-    if (!NIL_P(RARRAY_PTR(a)[0]))
-	return RARRAY_PTR(a)[0];
+    a1 = RARRAY_PTR(a)[0];
+    if (!NIL_P(a1)) {
+	if (TYPE(a1) == T_FLOAT)
+	    rb_raise(rb_eFloatDomainError, "Infinity");
+	return a1;
+    }
     return rb_rational_new1(INT2FIX(0));
 }
 

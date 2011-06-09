@@ -1,3 +1,7 @@
+Fri Jun 10 00:24:04 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c (string_to_r): Rational#** may return flonum.
+
 Thu Jun  9 23:57:53 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c: fix IO.copy_stream interrupt handling.
