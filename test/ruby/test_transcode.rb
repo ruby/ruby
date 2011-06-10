@@ -1879,7 +1879,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u77AC", "\xC0\xFE", 'Big5-HKSCS') # 瞬
     check_both_ways("\u8B96", "\xC6\x40", 'Big5-HKSCS') # 讖
     check_both_ways("\u7C72", "\xC6\x7E", 'Big5-HKSCS') # 籲
-	#assert_raise(Encoding::UndefinedConversionError) { "\xC6\xA1".encode("utf-8", 'Big5-HKSCS') }
+    #assert_raise(Encoding::UndefinedConversionError) { "\xC6\xA1".encode("utf-8", 'Big5-HKSCS') }
     #assert_raise(Encoding::UndefinedConversionError) { "\xC7\x40".encode("utf-8", 'Big5-HKSCS') }
     #assert_raise(Encoding::UndefinedConversionError) { "\xC8\x40".encode("utf-8", 'Big5-HKSCS') }
     check_both_ways("\u4E42", "\xC9\x40", 'Big5-HKSCS') # 乂
