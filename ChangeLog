@@ -1,3 +1,8 @@
+Fri Jun 10 14:34:24 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: restore TESTRUN_SCRIPT to "$(srcdir)/test.rb".
+	  TESTRUN_SCRIPT is used by "make run", "make gdb" and so on.
+
 Fri Jun 10 13:04:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions#skip): reason to
