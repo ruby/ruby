@@ -1,3 +1,8 @@
+Fri Jun 10 23:18:09 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/tk/tcltklib.c (lib_eventloop_core): replace CHECK_INTS with
+	  rb_thread_check_ints(). Because current code can't be compiled.
+
 Fri Jun 10 16:38:13 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_locale_charmap): When ruby process is run as Windows

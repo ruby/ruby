@@ -2530,7 +2530,7 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
 #ifdef RUBY_USE_NATIVE_THREAD
         /* if (update_flag == 0) CHECK_INTS; */ /*XXXXXXXXXXXXX  TODO !!!! */
 #else
-        if (update_flag == 0) CHECK_INTS;
+	if (update_flag == 0) rb_thread_check_ints();
 #endif
 
     }
