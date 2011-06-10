@@ -24,6 +24,11 @@ module Test
         super
       end
 
+      def skip(msg = nil, bt = caller)
+        raise ArgumentError, "no reason to skip" unless msg
+        super
+      end
+
       def assert_block(*msgs)
         assert yield, *msgs
       end

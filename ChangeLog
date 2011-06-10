@@ -1,4 +1,7 @@
-Fri Jun 10 13:01:24 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jun 10 13:04:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions#skip): reason to
+	  skip should be explained.
 
 	* test/ruby/test_module.rb (TestModule#remove_rake_mixins): remove all
 	  module related to Rake.
