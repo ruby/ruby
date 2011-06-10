@@ -1,3 +1,11 @@
+Fri Jun 10 16:38:13 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_locale_charmap): When ruby process is run as Windows
+	  Service the console codepage is not set, GetConsoleCP returns 0.
+	  So on such environment, use GetACP().
+	  http://blogs.msdn.com/b/michkap/archive/2005/02/08/369197.aspx
+	  patched by Rafal Bigaj [ruby-core:36832] [Bug #4854]
+
 Fri Jun 10 14:34:24 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: restore TESTRUN_SCRIPT to "$(srcdir)/test.rb".

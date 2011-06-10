@@ -1427,7 +1427,9 @@ rb_locale_charmap(VALUE klass)
     const char *codeset = nl_langinfo_codeset();
     char cp[sizeof(int) * 3 + 4];
     if (!codeset) {
-	snprintf(cp, sizeof(cp), "CP%d", GetConsoleCP());
+	UINT codepage = GetConsoleCP();
+	if(!codepage) codepage = GetACP();
+	snprintf(cp, sizeof(cp), "CP%d", codepage);
 	codeset = cp;
     }
     return rb_usascii_str_new2(codeset);
