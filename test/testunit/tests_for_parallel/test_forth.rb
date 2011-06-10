@@ -7,7 +7,7 @@ class TestE < TestCaseForParallelTest
   end
 
   def ptest_always_skip
-    skip
+    skip "always"
   end
 
   def ptest_always_fail
