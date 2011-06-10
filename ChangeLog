@@ -1,3 +1,8 @@
+Fri Jun 10 13:01:24 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_module.rb (TestModule#remove_rake_mixins): remove all
+	  module related to Rake.
+
 Fri Jun 10 09:52:38 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* encoding.c:  Mention that Encoding.compatible? can work with more

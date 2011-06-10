@@ -73,9 +73,10 @@ class TestModule < Test::Unit::TestCase
   end
 
   def remove_rake_mixins(list)
-    list.
-      reject {|c| c.to_s == "RakeFileUtils" }.
-      reject {|c| c.to_s.start_with?("FileUtils") }
+    list.reject {|c|
+      name = c.name
+      name.start_with?("Rake") or name.start_with?("FileUtils")
+    }
   end
 
   module Mixin
