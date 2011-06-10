@@ -1,3 +1,8 @@
+Fri Jun 10 09:52:38 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* encoding.c:  Mention that Encoding.compatible? can work with more
+	  than just Strings.
+
 Fri Jun 10 02:25:53 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: updating version to match released gem.

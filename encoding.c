@@ -1042,12 +1042,13 @@ enc_find(VALUE klass, VALUE enc)
 
 /*
  * call-seq:
- *   Encoding.compatible?(str1, str2) -> enc or nil
+ *   Encoding.compatible?(obj1, obj2) -> enc or nil
  *
- * Checks the compatibility of two strings.
- * If they are compatible, means concatenatable,
- * returns an encoding which the concatenated string will be.
- * If they are not compatible, nil is returned.
+ * Checks the compatibility of two objects.
+ *
+ * If the objects are both strings they are compatible when they are
+ * concatenatable.  The encoding of the concatenated string will be returned
+ * if they are compatible, nil if they are not.
  *
  *   Encoding.compatible?("\xa1".force_encoding("iso-8859-1"), "b")
  *   #=> #<Encoding:ISO-8859-1>
@@ -1056,6 +1057,11 @@ enc_find(VALUE klass, VALUE enc)
  *     "\xa1".force_encoding("iso-8859-1"),
  *     "\xa1\xa1".force_encoding("euc-jp"))
  *   #=> nil
+ *
+ * If the objects are non-strings their encodings are compatible when they
+ * have an encoding and:
+ * * Either encoding is US ASCII compatible
+ * * One of the encodings is a 7-bit encoding
  *
  */
 static VALUE
