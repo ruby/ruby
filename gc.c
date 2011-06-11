@@ -86,41 +86,6 @@ static unsigned int initial_malloc_limit   = GC_MALLOC_LIMIT;
 static unsigned int initial_heap_min_slots = HEAP_MIN_SLOTS;
 static unsigned int initial_free_min       = FREE_MIN;
 
-void
-rb_gc_set_params(void)
-{
-    char *malloc_limit_ptr, *heap_min_slots_ptr, *free_min_ptr;
-
-    if (rb_safe_level() > 0) return;
-
-    malloc_limit_ptr = getenv("RUBY_GC_MALLOC_LIMIT");
-    if (malloc_limit_ptr != NULL) {
-	int malloc_limit_i = atoi(malloc_limit_ptr);
-	printf("malloc_limit=%d (%d)\n", malloc_limit_i, initial_malloc_limit);
-	if (malloc_limit_i > 0) {
-	    initial_malloc_limit = malloc_limit_i;
-	}
-    }
-
-    heap_min_slots_ptr = getenv("RUBY_HEAP_MIN_SLOTS");
-    if (heap_min_slots_ptr != NULL) {
-	int heap_min_slots_i = atoi(heap_min_slots_ptr);
-	printf("heap_min_slots=%d (%d)\n", heap_min_slots_i, initial_heap_min_slots);
-	if (heap_min_slots_i > 0) {
-	    initial_heap_min_slots = heap_min_slots_i;
-	}
-    }
-
-    free_min_ptr = getenv("RUBY_FREE_MIN");
-    if (free_min_ptr != NULL) {
-	int free_min_i = atoi(free_min_ptr);
-	printf("free_min=%d (%d)\n", free_min_i, initial_free_min);
-	if (free_min_i > 0) {
-	    initial_free_min = free_min_i;
-	}
-    }
-}
-
 #define nomem_error GET_VM()->special_exceptions[ruby_error_nomemory]
 
 #define MARK_STACK_MAX 1024
@@ -437,6 +402,44 @@ rb_objspace_alloc(void)
     ruby_gc_stress = ruby_initial_gc_stress;
 
     return objspace;
+}
+
+static void initial_expand_heap(rb_objspace_t *objspace);
+
+void
+rb_gc_set_params(void)
+{
+    char *malloc_limit_ptr, *heap_min_slots_ptr, *free_min_ptr;
+
+    if (rb_safe_level() > 0) return;
+
+    malloc_limit_ptr = getenv("RUBY_GC_MALLOC_LIMIT");
+    if (malloc_limit_ptr != NULL) {
+	int malloc_limit_i = atoi(malloc_limit_ptr);
+	printf("malloc_limit=%d (%d)\n", malloc_limit_i, initial_malloc_limit);
+	if (malloc_limit_i > 0) {
+	    initial_malloc_limit = malloc_limit_i;
+	}
+    }
+
+    heap_min_slots_ptr = getenv("RUBY_HEAP_MIN_SLOTS");
+    if (heap_min_slots_ptr != NULL) {
+	int heap_min_slots_i = atoi(heap_min_slots_ptr);
+	printf("heap_min_slots=%d (%d)\n", heap_min_slots_i, initial_heap_min_slots);
+	if (heap_min_slots_i > 0) {
+	    initial_heap_min_slots = heap_min_slots_i;
+	}
+    }
+
+    free_min_ptr = getenv("RUBY_FREE_MIN");
+    if (free_min_ptr != NULL) {
+	int free_min_i = atoi(free_min_ptr);
+	printf("free_min=%d (%d)\n", free_min_i, initial_free_min);
+	if (free_min_i > 0) {
+	    initial_free_min = free_min_i;
+	}
+    }
+    initial_expand_heap(&rb_objspace);
 }
 
 static void gc_sweep(rb_objspace_t *);
@@ -1058,13 +1061,11 @@ assign_heap_slot(rb_objspace_t *objspace)
 }
 
 static void
-init_heap(rb_objspace_t *objspace)
+add_heap_slots(rb_objspace_t *objspace, int add)
 {
-    size_t add, i;
+    int i;
 
-    add = initial_heap_min_slots / HEAP_OBJ_LIMIT;
-
-    if (!add) {
+    if (add < 1) {
         add = 1;
     }
 
@@ -1075,9 +1076,30 @@ init_heap(rb_objspace_t *objspace)
     for (i = 0; i < add; i++) {
         assign_heap_slot(objspace);
     }
+}
+
+static void
+init_heap(rb_objspace_t *objspace)
+{
+    int add;
+
+    add = HEAP_MIN_SLOTS / HEAP_OBJ_LIMIT;
+    add_heap_slots(objspace, add);
+
     heaps_inc = 0;
     objspace->profile.invoke_time = getrusage_time();
     finalizer_table = st_init_numtable();
+}
+
+static void
+initial_expand_heap(rb_objspace_t *objspace)
+{
+    int add;
+
+    add = ((initial_heap_min_slots / HEAP_OBJ_LIMIT) - heaps_used);
+    if (add > 0) {
+        add_heap_slots(objspace, add);
+    }
 }
 
 static void
@@ -2562,7 +2584,6 @@ Init_heap(void)
 {
     init_heap(&rb_objspace);
 }
-
 
 static VALUE
 lazy_sweep_enable(void)

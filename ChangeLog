@@ -1,3 +1,8 @@
+Sat Jun 11 19:40:45 2011  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: expand heap if initial_heap_min_slots is bigger than
+	  HEAP_MIN_SLOTS.
+
 Sat Jun 11 19:42:50 2011  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ChangeLog (vim): set shiftwidth to 2.
