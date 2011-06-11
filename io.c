@@ -2887,7 +2887,7 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
 	}
 	else {
 	    io_shift_cbuf(fptr, MBCLEN_CHARFOUND_LEN(r), &str);
-	    cr = ENC_CODERANGE_VALID;
+	    cr = ISASCII(r) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID;
 	}
 	str = io_enc_str(str, fptr);
 	ENC_CODERANGE_SET(str, cr);

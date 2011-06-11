@@ -2060,5 +2060,14 @@ EOT
            r.close
          end)
   end
+
+  def test_getc_ascii_only
+    bug4557 = '[ruby-core:35630]'
+    c = with_tmpdir {
+      open("a", "wb") {|f| f.puts "a"}
+      open("a", "rt") {|f| f.getc}
+    }
+    assert(c.ascii_only?, "should be ascii_only #{bug4557}")
+  end
 end
 
