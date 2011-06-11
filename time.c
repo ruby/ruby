@@ -4438,7 +4438,7 @@ strftimev(const char *fmt, VALUE time)
  *      %c - date and time (%a %b %e %T %Y)
  *      %D - Date (%m/%d/%y)
  *      %F - The ISO 8601 date format (%Y-%m-%d)
- *      %v - VMS date (%e-%b-%Y)
+ *      %v - VMS date (%e-%^b-%4Y)
  *      %x - Same as %D
  *      %X - Same as %T
  *      %r - 12-hour time (%I:%M:%S %p)

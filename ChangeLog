@@ -1,3 +1,7 @@
+Sat Jun 11 22:41:37 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* time.c: a correction of doc for strftime (%v).
+
 Sat Jun 11 22:30:53 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: replaced doc for strftime based on Time's one.
