@@ -1,3 +1,7 @@
+Sat Jun 11 14:20:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm.c (thread_memsize): don't ignore size of th->local_storage.
+
 Sat Jun 11 10:32:46 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb: should quote arch_hdrdir and libpath for the case

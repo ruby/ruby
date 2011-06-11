@@ -1761,7 +1761,7 @@ thread_memsize(const void *ptr)
 	    size += th->stack_size * sizeof(VALUE);
 	}
 	if (th->local_storage) {
-	    st_memsize(th->local_storage);
+	    size += st_memsize(th->local_storage);
 	}
 	return size;
     }
