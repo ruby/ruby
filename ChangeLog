@@ -1,3 +1,7 @@
+Sat Jun 11 21:58:31 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: added examples.
+
 Sat Jun 11 19:40:45 2011  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: expand heap if initial_heap_min_slots is bigger than
