@@ -1,3 +1,12 @@
+Sat Jun 11 16:28:25 2011  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/formatters/pretty.rb
+	  (REXML::Formatters::Pretty#write_text),
+	  test/rexml/test_core.rb
+	  (Tester#test_pretty_format_long_text_finite): don't ignore
+	  'width' parameter in pretty formatter. fixes #4498
+	  Reported by Michael Frasca. Thanks!!!
+
 Sat Jun 11 16:11:36 2011  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_core.rb

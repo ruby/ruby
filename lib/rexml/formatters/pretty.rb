@@ -88,7 +88,7 @@ module REXML
         s = node.to_s()
         s.gsub!(/\s/,' ')
         s.squeeze!(" ")
-        s = wrap(s, 80-@level)
+        s = wrap(s, @width - @level)
         s = indent_text(s, @level, " ", true)
         output << (' '*@level + s)
       end
