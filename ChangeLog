@@ -1,3 +1,10 @@
+Sat Jun 11 19:27:06 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_x509req.c: raise RequestError instead of
+	  CertificateError when Request#to_der gets an error from OpenSSL.
+	  Patch from Ippei Obayashi, see #4420. I cannot write a test for
+	  this... Request does not allow to create broken bytes...
+
 Sat Jun 11 19:34:51 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (Date::(ABBR_)?(MONTH|DAY)NAMES): should be usascii.
