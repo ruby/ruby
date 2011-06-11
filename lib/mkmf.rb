@@ -392,22 +392,22 @@ end
 def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
   conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote,
                                 'src' => "#{CONFTEST_C}",
-                                'arch_hdrdir' => "#$arch_hdrdir",
+                                'arch_hdrdir' => $arch_hdrdir.quote,
                                 'top_srcdir' => $top_srcdir.quote,
                                 'INCFLAGS' => "#$INCFLAGS",
                                 'CPPFLAGS' => "#$CPPFLAGS",
                                 'CFLAGS' => "#$CFLAGS",
                                 'ARCH_FLAG' => "#$ARCH_FLAG",
                                 'LDFLAGS' => "#$LDFLAGS #{ldflags}",
-                                'LIBPATH' => libpathflag(libpath),
                                 'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
                                 'LIBS' => "#$LIBRUBYARG_STATIC #{opt} #$LIBS")
+  conf['LIBPATH'] = libpathflag(libpath.map {|s| RbConfig::expand(s.dup, conf)})
   RbConfig::expand(TRY_LINK.dup, conf)
 end
 
 def cc_command(opt="")
   conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
-                                'arch_hdrdir' => "#$arch_hdrdir",
+                                'arch_hdrdir' => $arch_hdrdir.quote,
                                 'top_srcdir' => $top_srcdir.quote)
   RbConfig::expand("$(CC) #$INCFLAGS #$CPPFLAGS #$CFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_C}",
                    conf)
@@ -415,7 +415,7 @@ end
 
 def cpp_command(outfile, opt="")
   conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
-                                'arch_hdrdir' => "#$arch_hdrdir",
+                                'arch_hdrdir' => $arch_hdrdir.quote,
                                 'top_srcdir' => $top_srcdir.quote)
   RbConfig::expand("$(CPP) #$INCFLAGS #$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}",
                    conf)
@@ -1648,7 +1648,7 @@ ECHO = $(ECHO1:0=@echo)
 srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {mkintpath(CONFIG[$1||$2])}.quote}
 topdir = #{mkintpath($extmk ? CONFIG["topdir"] : $topdir).quote}
 hdrdir = #{mkintpath(CONFIG["hdrdir"]).quote}
-arch_hdrdir = #{$arch_hdrdir}
+arch_hdrdir = #{$arch_hdrdir.quote}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
   if $extmk

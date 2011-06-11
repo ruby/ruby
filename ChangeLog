@@ -1,3 +1,8 @@
+Sat Jun 11 10:32:46 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: should quote arch_hdrdir and libpath for the case
+	  installed prefix contains spaces.
+
 Sat Jun 11 10:20:52 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (native_cond_timeout): wrap conditinally used label.
