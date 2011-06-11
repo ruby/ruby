@@ -143,7 +143,7 @@ module Test
         end
         files.map! {|f|
           f = f.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
-          [*(paths if /\A\.\.?(?:\z|\/)/ !~ f), nil].uniq.any? do |prefix|
+          ((paths if /\A\.\.?(?:\z|\/)/ !~ f) | [nil]).any? do |prefix|
             if prefix
               path = f.empty? ? prefix : "#{prefix}/#{f}"
             else

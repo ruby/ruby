@@ -1,3 +1,8 @@
+Sat Jun 11 19:04:15 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::GlobOption#non_options): should run
+	  with 1.8.
+
 Sat Jun 11 18:05:57 2011  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* bootstraptest/runner.rb: should initilize $stress to avoid warnings.
