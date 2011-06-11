@@ -1,3 +1,12 @@
+Sat Jun 11 23:02:36 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/buffering.rb (module OpenSSL):
+	  Buffering#each_byte should return String in accordance with IO in
+	  1.9.
+
+	* test/openssl/test_buffering.rb (class OpenSSL): add tests for getc
+	  and each_byte.
+
 Sat Jun 11 22:41:37 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* time.c: a correction of doc for strftime (%v).

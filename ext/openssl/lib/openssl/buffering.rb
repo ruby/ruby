@@ -252,8 +252,7 @@ module OpenSSL::Buffering
   # file.
 
   def getc
-    c = read(1)
-    c ? c[0] : nil
+    read(1)
   end
 
   ##
@@ -261,7 +260,7 @@ module OpenSSL::Buffering
 
   def each_byte # :yields: byte
     while c = getc
-      yield(c)
+      yield(c.ord)
     end
   end
 
