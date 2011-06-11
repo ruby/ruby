@@ -909,7 +909,7 @@ change: PHONY
 	$(BASERUBY) -C "$(srcdir)" ./tool/change_maker.rb $(CHANGES) > change.log
 
 love: up all test install test-all
-	@echo love is the all you need
+	@echo love is all you need
 
 help: PHONY
 	$(MESSAGE_BEGIN) \

@@ -1,3 +1,6 @@
+Sat Jun 11 15:36:36 2011  Martin Duerst  <duerst@it.aoyama.ac.jp>
+	* common.mk: fixed a grammatical error
+
 Sat Jun 11 14:20:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm.c (thread_memsize): don't ignore size of th->local_storage.
