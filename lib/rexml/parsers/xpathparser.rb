@@ -17,8 +17,9 @@ module REXML
       end
 
       def parse path
+        path = path.dup
         path.gsub!(/([\(\[])\s+/, '\1') # Strip ignorable spaces
-        path.gsub!( /\s+([\]\)])/, '\1' )
+        path.gsub!( /\s+([\]\)])/, '\1')
         parsed = []
         path = OrExpr(path, parsed)
         parsed

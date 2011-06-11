@@ -84,6 +84,15 @@ class ElementsTester < Test::Unit::TestCase
     assert_equal 7, count
   end
 
+  def test_each_with_frozen_condition
+    doc = Document.new('<books><book name="Ruby"/><book name="XML"/></books>')
+    names = []
+    doc.root.elements.each('book'.freeze) do |element|
+      names << element.attributes["name"]
+    end
+    assert_equal(["Ruby", "XML"], names)
+  end
+
   def test_to_a
     doc = Document.new '<a>sean<b/>elliott<c/></a>'
     assert_equal 2, doc.root.elements.to_a.size
