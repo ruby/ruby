@@ -1,3 +1,8 @@
+Sat Jun 11 22:07:56 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (datetime_s_{iso8601,rfc3339,xmlschema,rfc2822,httpdate}):
+	  do not take argument comp.
+
 Sat Jun 11 21:58:31 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: added examples.

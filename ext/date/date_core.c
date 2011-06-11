@@ -7545,16 +7545,14 @@ datetime_s_parse(int argc, VALUE *argv, VALUE klass)
 static VALUE
 datetime_s_iso8601(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, comp, sg;
+    VALUE str, sg;
 
-    rb_scan_args(argc, argv, "03", &str, &comp, &sg);
+    rb_scan_args(argc, argv, "02", &str, &sg);
 
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
       case 1:
-	comp = Qtrue;
-      case 2:
 	sg = INT2FIX(DEFAULT_SG);
     }
 
@@ -7579,16 +7577,14 @@ datetime_s_iso8601(int argc, VALUE *argv, VALUE klass)
 static VALUE
 datetime_s_rfc3339(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, comp, sg;
+    VALUE str, sg;
 
-    rb_scan_args(argc, argv, "03", &str, &comp, &sg);
+    rb_scan_args(argc, argv, "02", &str, &sg);
 
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
       case 1:
-	comp = Qtrue;
-      case 2:
 	sg = INT2FIX(DEFAULT_SG);
     }
 
@@ -7613,16 +7609,14 @@ datetime_s_rfc3339(int argc, VALUE *argv, VALUE klass)
 static VALUE
 datetime_s_xmlschema(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, comp, sg;
+    VALUE str, sg;
 
-    rb_scan_args(argc, argv, "03", &str, &comp, &sg);
+    rb_scan_args(argc, argv, "02", &str, &sg);
 
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
       case 1:
-	comp = Qtrue;
-      case 2:
 	sg = INT2FIX(DEFAULT_SG);
     }
 
@@ -7648,16 +7642,14 @@ datetime_s_xmlschema(int argc, VALUE *argv, VALUE klass)
 static VALUE
 datetime_s_rfc2822(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, comp, sg;
+    VALUE str, sg;
 
-    rb_scan_args(argc, argv, "03", &str, &comp, &sg);
+    rb_scan_args(argc, argv, "02", &str, &sg);
 
     switch (argc) {
       case 0:
 	str = rb_str_new2("Mon, 1 Jan -4712 00:00:00 +0000");
       case 1:
-	comp = Qtrue;
-      case 2:
 	sg = INT2FIX(DEFAULT_SG);
     }
 
@@ -7682,16 +7674,14 @@ datetime_s_rfc2822(int argc, VALUE *argv, VALUE klass)
 static VALUE
 datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, comp, sg;
+    VALUE str, sg;
 
-    rb_scan_args(argc, argv, "03", &str, &comp, &sg);
+    rb_scan_args(argc, argv, "02", &str, &sg);
 
     switch (argc) {
       case 0:
 	str = rb_str_new2("Mon, 01 Jan -4712 00:00:00 GMT");
       case 1:
-	comp = Qtrue;
-      case 2:
 	sg = INT2FIX(DEFAULT_SG);
     }
 
@@ -7716,16 +7706,14 @@ datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
 static VALUE
 datetime_s_jisx0301(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE str, comp, sg;
+    VALUE str, sg;
 
-    rb_scan_args(argc, argv, "03", &str, &comp, &sg);
+    rb_scan_args(argc, argv, "02", &str, &sg);
 
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
       case 1:
-	comp = Qtrue;
-      case 2:
 	sg = INT2FIX(DEFAULT_SG);
     }
 
