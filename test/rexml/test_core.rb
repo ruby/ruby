@@ -1145,9 +1145,7 @@ EOL
       return skip_message
     end
     output = ""
-    assert_nothing_raised do
-      formatter.write(document, output)
-    end
+    formatter.write(document, output)
     assert_equal("<doc>\n" +
                  ((" " + (" aaaa" * 15) + "\n") * (n / 15)) +
                  "  " + ("aaaa " * (n % 15)) + "\n" +

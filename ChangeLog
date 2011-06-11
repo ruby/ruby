@@ -1,9 +1,15 @@
+Sat Jun 11 16:11:36 2011  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_core.rb
+	  (Tester#test_pretty_format_long_text_finite): remove needless
+	  assert_nothing_raised.
+
 Sat Jun 11 16:04:03 2011  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/xpathparser.rb
 	  (REXML::Parsers::XPathParser#parse),
 	  test/rexml/test_elements.rb
-	  (ElementsTester::test_each_with_frozen_condition):
+	  (ElementsTester#test_each_with_frozen_condition):
 	  don't modify original XPath. fixes #4164
 	  Reported by Pavel Shved. Thanks!!!
 
