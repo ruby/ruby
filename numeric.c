@@ -2118,7 +2118,7 @@ rb_enc_uint_chr(unsigned int code, rb_encoding *enc)
     int n;
     VALUE str;
     if ((n = rb_enc_codelen(code, enc)) <= 0) {
-	rb_raise(rb_eRangeError, "%d out of char range", code);
+	rb_raise(rb_eRangeError, "%u out of char range", code);
     }
     str = rb_enc_str_new(0, n, enc);
     rb_enc_mbcput(code, RSTRING_PTR(str), enc);

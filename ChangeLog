@@ -1,3 +1,7 @@
+Sat Jun 11 16:52:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (rb_enc_uint_chr): fix message format. Bug#4869
+
 Sat Jun 11 16:28:25 2011  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/formatters/pretty.rb

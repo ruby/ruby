@@ -1192,6 +1192,10 @@ class TestM17N < Test::Unit::TestCase
       assert_equal([b].pack("C"), b.chr)
     }
     assert_equal("\x84\x31\xA4\x39".force_encoding("GB18030"), 0x8431A439.chr("GB18030"))
+    e = assert_raise(RangeError) {
+      2206368128.chr(Encoding::UTF_8)
+    }
+    assert_not_match(/-\d+ out of char range/, e.message)
   end
 
   def test_marshal
