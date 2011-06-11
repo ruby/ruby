@@ -1,3 +1,7 @@
+Sat Jun 11 10:00:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_process_options): add missing return type.
+
 Fri Jun 10 23:18:09 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/tk/tcltklib.c (lib_eventloop_core): replace CHECK_INTS with

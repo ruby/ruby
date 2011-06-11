@@ -1802,7 +1802,7 @@ ruby_process_options(int argc, char **argv)
 
 #ifndef HAVE_SETPROCTITLE
     {
-	extern compat_init_setproctitle(int argc, char *argv[]);
+	extern void compat_init_setproctitle(int argc, char *argv[]);
 	compat_init_setproctitle(argc, argv);
     }
 #endif
