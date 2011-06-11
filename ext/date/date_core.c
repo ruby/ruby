@@ -8114,7 +8114,7 @@ mk_ary_of_str(long len, const char *a[])
 	if (!a[i])
 	    e = Qnil;
 	else {
-	    e = rb_str_new2(a[i]);
+	    e = rb_usascii_str_new2(a[i]);
 	    rb_obj_freeze(e);
 	}
 	rb_ary_push(o, e);

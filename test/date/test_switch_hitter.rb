@@ -385,6 +385,19 @@ class TestSH < Test::Unit::TestCase
   end
 
   def test_enc
+    Date::MONTHNAMES.each do |s|
+      assert_equal(Encoding::US_ASCII, s.encoding) if s
+    end
+    Date::DAYNAMES.each do |s|
+      assert_equal(Encoding::US_ASCII, s.encoding) if s
+    end
+    Date::ABBR_MONTHNAMES.each do |s|
+      assert_equal(Encoding::US_ASCII, s.encoding) if s
+    end
+    Date::ABBR_DAYNAMES.each do |s|
+      assert_equal(Encoding::US_ASCII, s.encoding) if s
+    end
+
     h = Date._strptime('15:43+09:00'.force_encoding('euc-jp'), '%R%z')
     assert_equal(Encoding::EUC_JP, h[:zone].encoding)
     h = Date._strptime('15:43+09:00'.force_encoding('ascii-8bit'), '%R%z')

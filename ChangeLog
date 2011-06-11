@@ -1,3 +1,7 @@
+Sat Jun 11 19:34:51 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (Date::(ABBR_)?(MONTH|DAY)NAMES): should be usascii.
+
 Sat Jun 11 19:24:33 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: rewrote doc.
