@@ -1,3 +1,7 @@
+Sat Jun 11 19:42:50 2011  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ChangeLog (vim): set shiftwidth to 2.
+
 Sat Jun 11 19:27:06 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_x509req.c: raise RequestError instead of
@@ -9929,4 +9933,4 @@ indent-tabs-mode: t
 tab-width: 8
 change-log-indent-text: 2
 end:
-vim: tabstop=8
+vim: tabstop=8 shiftwidth=2
