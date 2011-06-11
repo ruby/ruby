@@ -349,7 +349,9 @@ native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
     now.tv_sec = tv.tv_sec;
     now.tv_nsec = tv.tv_usec * 1000;
 
+#if USE_MONOTONIC_COND
   out:
+#endif
     timeout.tv_sec = now.tv_sec;
     timeout.tv_nsec = now.tv_nsec;
     timeout.tv_sec += timeout_rel.tv_sec;
@@ -828,7 +830,6 @@ static void
 native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 {
     struct timespec timeout;
-    struct timeval tvn;
     pthread_mutex_t *lock = &th->interrupt_lock;
     rb_thread_cond_t *cond = &th->native_thread_data.sleep_cond;
 
