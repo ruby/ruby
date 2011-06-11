@@ -60,6 +60,7 @@ end
 def main
   @ruby = File.expand_path('miniruby')
   @verbose = false
+  $stress = false
   dir = nil
   quiet = false
   tests = nil
