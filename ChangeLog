@@ -1,3 +1,15 @@
+Sat Jun 11 23:18:00 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm_core.h (RUBY_VM_SET_TIMER_INTERRUPT, RUBY_VM_SET_INTERRUPT,
+	  RUBY_VM_SET_FINALIZER_INTERRUPT): use atomic ops for preventing
+	  interrupt_flag bit lost.
+	* thread.c (rb_threadptr_execute_interrupts_rec): ditto.
+	* vm_core.h (typedef struct rb_thread_struct): change type of
+	  interrupt_flag to rb_atomic_t.
+	* atomic.h: move atomic ops definition from signal.c.
+	* signal.c: remove atomic ops definition.
+	* common.mk (gc, signal, thread, cont): add to dependency to atomic.h.
+
 Sat Jun 11 23:23:52 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: edited doc.

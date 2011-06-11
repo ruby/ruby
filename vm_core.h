@@ -22,6 +22,7 @@
 #include "vm_opts.h"
 #include "id.h"
 #include "method.h"
+#include "atomic.h"
 
 #if   defined(_WIN32)
 #include "thread_win32.h"
@@ -430,7 +431,7 @@ typedef struct rb_thread_struct {
     VALUE thrown_errinfo;
     int exec_signal;
 
-    int interrupt_flag;
+    rb_atomic_t interrupt_flag;
     rb_thread_lock_t interrupt_lock;
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
@@ -686,9 +687,9 @@ extern rb_vm_t *ruby_current_vm;
 #error "unsupported thread model"
 #endif
 
-#define RUBY_VM_SET_INTERRUPT(th) ((th)->interrupt_flag |= 0x02)
-#define RUBY_VM_SET_TIMER_INTERRUPT(th) ((th)->interrupt_flag |= 0x01)
-#define RUBY_VM_SET_FINALIZER_INTERRUPT(th) ((th)->interrupt_flag |= 0x04)
+#define RUBY_VM_SET_TIMER_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, 0x01)
+#define RUBY_VM_SET_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, 0x02)
+#define RUBY_VM_SET_FINALIZER_INTERRUPT(th)	ATOMIC_OR((th)->interrupt_flag, 0x04)
 #define RUBY_VM_INTERRUPTED(th) ((th)->interrupt_flag & 0x02)
 
 int rb_signal_buff_size(void);

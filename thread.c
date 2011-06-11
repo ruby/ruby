@@ -1290,19 +1290,20 @@ thread_s_pass(VALUE klass)
 static void
 rb_threadptr_execute_interrupts_rec(rb_thread_t *th, int sched_depth)
 {
+    rb_atomic_t interrupt;
+
     if (GET_VM()->main_thread == th) {
 	while (rb_signal_buff_size() && !th->exec_signal) native_thread_yield();
     }
 
     if (th->raised_flag) return;
 
-    while (th->interrupt_flag) {
+    while ((interrupt = ATOMIC_EXCHANGE(th->interrupt_flag, 0)) != 0) {
 	enum rb_thread_status status = th->status;
-	int timer_interrupt = th->interrupt_flag & 0x01;
-	int finalizer_interrupt = th->interrupt_flag & 0x04;
+	int timer_interrupt = interrupt & 0x01;
+	int finalizer_interrupt = interrupt & 0x04;
 
 	th->status = THREAD_RUNNABLE;
-	th->interrupt_flag = 0;
 
 	/* signal handling */
 	if (th->exec_signal) {
