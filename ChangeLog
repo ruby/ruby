@@ -1,3 +1,7 @@
+Sat Jun 11 19:24:33 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: rewrote doc.
+
 Sat Jun 11 19:04:15 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::GlobOption#non_options): should run
