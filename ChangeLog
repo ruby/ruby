@@ -19,7 +19,7 @@ Sat Jun 11 16:04:03 2011  Kouhei Sutou  <kou@cozmixng.org>
 	  (REXML::Parsers::XPathParser#parse),
 	  test/rexml/test_elements.rb
 	  (ElementsTester#test_each_with_frozen_condition):
-	  don't modify original XPath. fixes #4164
+	  don't modify original XPath. fixes #4161
 	  Reported by Pavel Shved. Thanks!!!
 
 Sat Jun 11 15:53:27 2011  Kouhei Sutou  <kou@cozmixng.org>
