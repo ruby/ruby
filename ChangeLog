@@ -1,3 +1,8 @@
+Sat Jun 11 15:53:27 2011  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_elements.rb (ElementsTester): remove needless
+	  prefix from test name.
+
 Sat Jun 11 15:36:36 2011  Martin Duerst  <duerst@it.aoyama.ac.jp>
 	* common.mk: fixed a grammatical error
 

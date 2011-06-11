@@ -3,14 +3,14 @@ require 'rexml/document'
 
 class ElementsTester < Test::Unit::TestCase
   include REXML
-  def test_elements_accessor
+  def test_accessor
     doc = Document.new '<a><b/><c id="1"/><c id="2"/><d/></a>'
     assert_equal 'b', doc.root.elements[1].name
     assert_equal '1', doc.root.elements['c'].attributes['id']
     assert_equal '2', doc.root.elements[2,'c'].attributes['id']
   end
 
-  def test_elements_indexing
+  def test_indexing
     doc = Document.new '<a/>'
     doc.root.elements[10] = Element.new('b')
     assert_equal 'b', doc.root.elements[1].name
@@ -20,7 +20,7 @@ class ElementsTester < Test::Unit::TestCase
     assert_equal 'd', doc.root.elements[1].name
   end
 
-  def test_elements_delete
+  def test_delete
     doc = Document.new '<a><b/><c/><c id="1"/></a>'
     block = proc { |str|
       out = ''
@@ -36,7 +36,7 @@ class ElementsTester < Test::Unit::TestCase
     block.call( '<a/>' )
   end
 
-  def test_elements_delete_all
+  def test_delete_all
     doc = Document.new '<a><c/><c/><c/><c/></a>'
     deleted = doc.elements.delete_all 'a/c'
     assert_equal 4, deleted.size
@@ -53,7 +53,7 @@ class ElementsTester < Test::Unit::TestCase
     assert_equal( 2, deleted.size )
   end
 
-  def test_elements_add
+  def test_add
     a = Element.new 'a'
     a.elements.add Element.new('b')
     assert_equal 'b', a.elements[1].name
@@ -61,13 +61,13 @@ class ElementsTester < Test::Unit::TestCase
     assert_equal 'c', a.elements[2].name
   end
 
-  def test_elements_size
+  def test_size
     doc = Document.new '<a>sean<b/>elliott<b/>russell<b/></a>'
     assert_equal 6, doc.root.size
     assert_equal 3, doc.root.elements.size
   end
 
-  def test_elements_each
+  def test_each
     doc = Document.new '<a><b/><c/><d/>sean<b/><c/><d/></a>'
     count = 0
     block = proc {|e| count += 1}
@@ -84,20 +84,20 @@ class ElementsTester < Test::Unit::TestCase
     assert_equal 7, count
   end
 
-  def test_elements_to_a
+  def test_to_a
     doc = Document.new '<a>sean<b/>elliott<c/></a>'
     assert_equal 2, doc.root.elements.to_a.size
     assert_equal 2, doc.root.elements.to_a("child::node()").size
     assert_equal 4, XPath.match(doc.root, "child::node()").size
   end
 
-  def test_elements_collect
+  def test_collect
     doc = Document.new( "<a><b id='1'/><b id='2'/></a>" )
     r = doc.elements.collect( "/a/b" ) { |e| e.attributes["id"].to_i }
     assert_equal( [1,2], r )
   end
 
-  def test_elements_inject
+  def test_inject
     doc = Document.new( "<a><b id='1'/><b id='2'/></a>" )
     r = doc.elements.inject( "/a/b", 3 ) { |s, e|
       s + e.attributes["id"].to_i
