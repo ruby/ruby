@@ -1,3 +1,9 @@
+Sat Jun 11 10:15:50 2011  Tanaka Akira  <akr@fsij.org>
+
+	* thread.c (rb_thread_execute_interrupts): use GetThreadPtr to extract
+	  rb_thread_t from VALUE.
+	  reorted by Motohiro KOSAKI.  [ruby-dev:43700]
+
 Sat Jun 11 10:00:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (ruby_process_options): add missing return type.

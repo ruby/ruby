@@ -1360,9 +1360,11 @@ rb_threadptr_execute_interrupts(rb_thread_t *th)
 }
 
 void
-rb_thread_execute_interrupts(VALUE th)
+rb_thread_execute_interrupts(VALUE thval)
 {
-    rb_threadptr_execute_interrupts_rec((rb_thread_t *)th, 0);
+    rb_thread_t *th;
+    GetThreadPtr(thval, th);
+    rb_threadptr_execute_interrupts_rec(th, 0);
 }
 
 void
