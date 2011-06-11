@@ -2,7 +2,7 @@ Sat Jun 11 23:18:00 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm_core.h (RUBY_VM_SET_TIMER_INTERRUPT, RUBY_VM_SET_INTERRUPT,
 	  RUBY_VM_SET_FINALIZER_INTERRUPT): use atomic ops for preventing
-	  interrupt_flag bit lost.
+	  interrupt_flag bit lost. [Bug #4770][ruby-dev:43467]
 	* thread.c (rb_threadptr_execute_interrupts_rec): ditto.
 	* vm_core.h (typedef struct rb_thread_struct): change type of
 	  interrupt_flag to rb_atomic_t.
