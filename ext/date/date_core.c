@@ -3224,10 +3224,10 @@ date_s_ordinal(int argc, VALUE *argv, VALUE klass)
  * They should not be zero.
  *
  * The last argument should be a Julian day number which denotes the
- * day of calendar reform.  Date::ITALY (1582-10-15), Date::ENGLAND
- * (1752-09-14), Date::GREGORIAN (the proleptic Gregorian calendar)
- * and Date::JULIAN (the proleptic Julian calendar) can be specified
- * as a day of calendar reform.
+ * day of calendar reform.  Date::ITALY (2299161=1582-10-15),
+ * Date::ENGLAND (2361222=1752-09-14), Date::GREGORIAN (the proleptic
+ * Gregorian calendar) and Date::JULIAN (the proleptic Julian
+ * calendar) can be specified as a day of calendar reform.
  *
  * For example:
  *
@@ -4718,7 +4718,7 @@ d_lite_year(VALUE self)
 
 /*
  * call-seq:
- *    d.yday  ->  integer
+ *    d.yday  ->  fixnum
  *
  * Returns the day of the year (1-366).
  */
@@ -4731,8 +4731,8 @@ d_lite_yday(VALUE self)
 
 /*
  * call-seq:
- *    d.mon  ->  integer
- *    d.month  ->  integer
+ *    d.mon  ->  fixnum
+ *    d.month  ->  fixnum
  *
  * Returns the month (1-12).
  */
@@ -4745,8 +4745,8 @@ d_lite_mon(VALUE self)
 
 /*
  * call-seq:
- *    d.mday  ->  integer
- *    d.day  ->  integer
+ *    d.mday  ->  fixnum
+ *    d.day  ->  fixnum
  *
  * Returns the day of the month (1-31).
  */
@@ -4787,7 +4787,7 @@ d_lite_cwyear(VALUE self)
 
 /*
  * call-seq:
- *    d.cweek  ->  integer
+ *    d.cweek  ->  fixnum
  *
  * Returns the calendar week number (1-53).
  */
@@ -4800,7 +4800,7 @@ d_lite_cweek(VALUE self)
 
 /*
  * call-seq:
- *    d.cwday  ->  integer
+ *    d.cwday  ->  fixnum
  *
  *  Returns the day of calendar week (1-7, Monday is 1).
  */
@@ -4827,7 +4827,7 @@ d_lite_wnum1(VALUE self)
 
 /*
  * call-seq:
- *    d.wday  ->  integer
+ *    d.wday  ->  fixnum
  *
  * Returns the day of week (0-6, Sunday is zero).
  */
@@ -4951,7 +4951,7 @@ d_lite_nth_kday_p(VALUE self, VALUE n, VALUE k)
 
 /*
  * call-seq:
- *    d.hour  ->  integer
+ *    d.hour  ->  fixnum
  *
  * Returns the hour (0-23).
  */
@@ -4964,8 +4964,8 @@ d_lite_hour(VALUE self)
 
 /*
  * call-seq:
- *    d.min  ->  integer
- *    d.minute  ->  integer
+ *    d.min  ->  fixnum
+ *    d.minute  ->  fixnum
  *
  * Returns the minute (0-59).
  */
@@ -4978,8 +4978,8 @@ d_lite_min(VALUE self)
 
 /*
  * call-seq:
- *    d.sec  ->  integer
- *    d.second  ->  integer
+ *    d.sec  ->  fixnum
+ *    d.second  ->  fixnum
  *
  * Returns the second (0-59).
  */
@@ -6070,6 +6070,9 @@ cmp_dd(VALUE self, VALUE other)
  *    Date.new(2001,2,3) <=> Date.new(2001,2,3)	#=> 0
  *    Date.new(2001,2,3) <=> Date.new(2001,2,2)	#=> 1
  *    Date.new(2001,2,3) <=> Object.new		#=> nil
+ *    Date.new(2001,2,3) <=> Rational(4903887,2)#=> 0
+ *
+ * See also Comparable.
  */
 static VALUE
 d_lite_cmp(VALUE self, VALUE other)
@@ -6633,7 +6636,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  *
  *      %M - Minute of the hour (00..59)
  *
- *      %S - Second of the minute (00..60)
+ *      %S - Second of the minute (00..59)
  *
  *      %L - Millisecond of the second (000..999)
  *      %N - Fractional seconds digits, default is 9 digits (nanosecond)
@@ -8002,7 +8005,7 @@ dt_lite_to_s(VALUE self)
  *
  *      %M - Minute of the hour (00..59)
  *
- *      %S - Second of the minute (00..60)
+ *      %S - Second of the minute (00..59)
  *
  *      %L - Millisecond of the second (000..999)
  *      %N - Fractional seconds digits, default is 9 digits (nanosecond)
@@ -8869,7 +8872,8 @@ Init_date_core(void)
      *
      * An optional argument the day of calendar reform (start) as a
      * Julian day number, which should be 2298874 to 2426355 or -/+oo.
-     * The default value is Date::ITALY.  See also sample/cal.rb.
+     * The default value is Date::ITALY (2299161=1582-10-15).  See
+     * also sample/cal.rb.
      *
      *     $ ruby sample/cal.rb -c it 10 1582
      *         October 1582
@@ -8922,8 +8926,8 @@ Init_date_core(void)
      * An optional argument offset indicates the difference between
      * the local time and UTC.  For example, Rational(3,24) represents
      * ahead of 3 hours of UTC, Rational(-5,24) represents behind of 5
-     * hours of UTC.  The offset's precision is at most second.  The
-     * default value is zero (UTC).
+     * hours of UTC.  The offset should be -1 to +1, and its precision
+     * is at most second.  The default value is zero (equals to UTC).
      *
      *     DateTime.new(2001,2,3,4,5,6,Rational(3,24))
      *				#=> #<DateTime: 2001-02-03T03:04:05+03:00 ...>
@@ -8934,7 +8938,7 @@ Init_date_core(void)
      *
      * An optional argument the day of calendar reform (start) denotes
      * a Julian day number, which should be 2298874 to 2426355 or
-     * -/+oo.  The default value is Date::ITALY.
+     * -/+oo.  The default value is Date::ITALY (2299161=1582-10-15).
      *
      * DateTime object has various methods. See each reference.
      *
