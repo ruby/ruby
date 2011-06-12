@@ -1,3 +1,7 @@
+Sun Jun 12 18:12:07 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm3_clearmethodcache.rb: added.
+
 Sun Jun 12 17:40:29 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_method.c (rb_clear_cache*): update only vm state version.
