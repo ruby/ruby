@@ -103,9 +103,13 @@ dh_generate(int size, int gen)
  *  call-seq:
  *     DH.generate(size [, generator]) -> dh
  *
- *  === Parameters
- *  * +size+ is an integer representing the desired key size.  Keys smaller than 1024 should be considered insecure.
- *  * +generator+ is a small number > 1, typically 2 or 5.
+ * Creates a new DH instance from scratch by generating the private and public
+ * components alike.
+ *
+ * === Parameters
+ * * +size+ is an integer representing the desired key size. Keys smaller than
+ * 1024 bits should be considered insecure.
+ * * +generator+ is a small number > 1, typically 2 or 5.
  *
  */
 static VALUE
@@ -132,16 +136,20 @@ ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
  *  call-seq:
  *     DH.new([size [, generator] | string]) -> dh
  *
- *  === Parameters
- *  * +size+ is an integer representing the desired key size.  Keys smaller than 1024 should be considered insecure.
- *  * +generator+ is a small number > 1, typically 2 or 5.
- *  * +string+ contains the DER or PEM encoded key.
+ * Either generates a DH instance from scratch or by reading already existing
+ * DH parameters from +string+.
  *
- *  === Examples
- *  * DH.new -> dh
- *  * DH.new(1024) -> dh
- *  * DH.new(1024, 5) -> dh
- *  * DH.new(File.read('key.pem')) -> dh
+ * === Parameters
+ * * +size+ is an integer representing the desired key size. Keys smaller than
+ * 1024 bits should be considered insecure.
+ * * +generator+ is a small number > 1, typically 2 or 5.
+ * * +string+ contains the DER or PEM encoded key.
+ *
+ * === Examples
+ *  DH.new # -> dh
+ *  DH.new(1024) # -> dh
+ *  DH.new(1024, 5) # -> dh
+ *  DH.new(File.read('key.pem')) # -> dh
  */
 static VALUE
 ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
@@ -190,6 +198,8 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     dh.public? -> true | false
  *
+ * Indicates whether this DH instance has a public key associated with it or
+ * not. The public key may be retrieved with DH#public_key.
  */
 static VALUE
 ossl_dh_is_public(VALUE self)
@@ -205,6 +215,8 @@ ossl_dh_is_public(VALUE self)
  *  call-seq:
  *     dh.private? -> true | false
  *
+ * Indicates whether this DH instance has a private key associated with it or
+ * not. The private key may be retrieved with DH#private_key.
  */
 static VALUE
 ossl_dh_is_private(VALUE self)
@@ -220,6 +232,7 @@ ossl_dh_is_private(VALUE self)
  *  call-seq:
  *     dh.to_pem -> aString
  *
+ * Encodes this DH to its PEM encoding.
  */
 static VALUE
 ossl_dh_export(VALUE self)
@@ -245,6 +258,7 @@ ossl_dh_export(VALUE self)
  *  call-seq:
  *     dh.to_der -> aString
  *
+ * Encodes this DH to its DER encoding.
  */
 static VALUE
 ossl_dh_to_der(VALUE self)
@@ -324,7 +338,16 @@ ossl_dh_to_text(VALUE self)
  *  call-seq:
  *     dh.public_key -> aDH
  *
- *  Makes new instance DH PUBLIC_KEY from PRIVATE_KEY
+ * Returns a new DH instance that carries just the public information.
+ * If the current instance has also private information, this will no
+ * longer be present in the new instance. This feature is helpful for
+ * publishing the public information without leaking any of the private
+ * information.
+ *
+ * === Example
+ *  dh = OpenSSL::PKey::DH.new(2048) # has public and private information
+ *  pub_key = dh.public_key # has only the public part available
+ *  pub_key_der = pub_key.to_der # it's safe to publish this
  */
 static VALUE
 ossl_dh_to_public_key(VALUE self)
@@ -348,6 +371,9 @@ ossl_dh_to_public_key(VALUE self)
  *  call-seq:
  *     dh.check_params -> true | false
  *
+ * Validates the Diffie-Hellman parameters associated with this instance.
+ * It checks whether a safe prime and a suitable generator are used. If this
+ * is not the case, +false+ is returned.
  */
 static VALUE
 ossl_dh_check_params(VALUE self)
@@ -370,6 +396,8 @@ ossl_dh_check_params(VALUE self)
  *  call-seq:
  *     dh.generate_key -> self
  *
+ * Generates a private key unless one already exists. It also computes the
+ * public key for the generated private key.
  */
 static VALUE
 ossl_dh_generate_key(VALUE self)
@@ -389,13 +417,11 @@ ossl_dh_generate_key(VALUE self)
  *  call-seq:
  *     dh.compute_key(pub_bn) -> aString
  *
- *  === Parameters
- *  * +pub_bn+ is a OpenSSL::BN.
+ * Returns aString containing a shared secret computed from the other parties public value.
+ * See DH_compute_key() for further information.
  *
- *  Returns aString containing a shared secret computed from the other parties public value.
- *
- *  See DH_compute_key() for further information.
- *
+ * === Parameters
+ * * +pub_bn+ is a OpenSSL::BN.
  */
 static VALUE
 ossl_dh_compute_key(VALUE self, VALUE pub)
@@ -498,7 +524,19 @@ Init_ossl_dh()
     mPKey = rb_define_module_under(mOSSL, "PKey");
 #endif
 
+    /* Document-class: OpenSSL::PKey::DHError
+     *
+     * Generic exception that is raised if an operation on a DH PKey
+     * fails unexpectedly or in case an instantiation of an instance of DH
+     * fails due to non-conformant input data.
+     */
     eDHError = rb_define_class_under(mPKey, "DHError", ePKeyError);
+    /* Document-class: OpenSSL::PKey::DH
+     *
+     * An implementation of the Diffie-Hellman key exchange protocol based on
+     * discrete logarithms in finite fields, the same basis that DSA is built
+     * on.
+     */
     cDH = rb_define_class_under(mPKey, "DH", cPKey);
     rb_define_singleton_method(cDH, "generate", ossl_dh_s_generate, -1);
     rb_define_method(cDH, "initialize", ossl_dh_initialize, -1);

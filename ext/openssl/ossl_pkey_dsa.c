@@ -107,7 +107,7 @@ dsa_generate(int size)
  * from scratch.
  *
  * === Parameters
- * +size+ is an integer representing the desired key size.
+ * * +size+ is an integer representing the desired key size.
  *
  */
 static VALUE
@@ -131,9 +131,9 @@ ossl_dsa_s_generate(VALUE klass, VALUE size)
  * Creates a new DSA instance by reading an existing key from +string+.
  *
  * === Parameters
- * +size+ is an integer representing the desired key size.
- * +string+ contains a DER or PEM encoded key.
- * +pass+ is a string that contains an optional password.
+ * * +size+ is an integer representing the desired key size.
+ * * +string+ contains a DER or PEM encoded key.
+ * * +pass+ is a string that contains an optional password.
  *
  * === Examples
  *  DSA.new -> dsa
@@ -240,8 +240,8 @@ ossl_dsa_is_private(VALUE self)
  * Encodes this DSA to its PEM encoding.
  *
  * === Parameters
- * +cipher+ is an OpenSSL::Cipher.
- * +password+ is a string containing your password.
+ * * +cipher+ is an OpenSSL::Cipher.
+ * * +password+ is a string containing your password.
  *
  * === Examples
  *  DSA.to_pem -> aString
@@ -383,7 +383,7 @@ ossl_dsa_to_text(VALUE self)
  * information.
  *
  * === Example
- *  dsa = OpenSSL::DSA.new(2048) # has public and private information
+ *  dsa = OpenSSL::PKey::DSA.new(2048) # has public and private information
  *  pub_key = dsa.public_key # has only the public part available
  *  pub_key_der = pub_key.to_der # it's safe to publish this
  *
@@ -418,10 +418,10 @@ ossl_dsa_to_public_key(VALUE self)
  * data. The signature is issued using the private key of this DSA instance.
  *
  * === Parameters
- * +string+ is a message digest of the original input data to be signed
+ * * +string+ is a message digest of the original input data to be signed
  *
  * === Example
- *  dsa = OpenSSL::DSA.new(2048)
+ *  dsa = OpenSSL::PKey::DSA.new(2048)
  *  doc = "Sign me"
  *  digest = OpenSSL::Digest::SHA1.digest(doc)
  *  sig = dsa.syssign(digest)
@@ -459,11 +459,11 @@ ossl_dsa_sign(VALUE self, VALUE data)
  * does so by validating +sig+ using the public key of this DSA instance.
  *
  * === Parameters
- * +digest+ is a message digest of the original input data to be signed
- * +sig+ is a DSA signature value
+ * * +digest+ is a message digest of the original input data to be signed
+ * * +sig+ is a DSA signature value
  *
  * === Example
- *  dsa = OpenSSL::DSA.new(2048)
+ *  dsa = OpenSSL::PKey::DSA.new(2048)
  *  doc = "Sign me"
  *  digest = OpenSSL::Digest::SHA1.digest(doc)
  *  sig = dsa.syssign(digest)
