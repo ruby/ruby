@@ -1,3 +1,7 @@
+Sun Jun 12 16:19:48 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: fail on Mac OS X. [Bug #4853][ruby-dev:43655]
+
 Sun Jun 12 15:56:08 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c: remove th->transition_for_lock. It's thread unsafe.

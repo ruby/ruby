@@ -1467,11 +1467,9 @@ def setup_for_macosx_framework(tclver, tkver)
   end
 
   if TkLib_Config["tcl-framework-header"]
-    (TclConfig_Info['TCL_INCLUDE_SPEC'] ||= "") <<
+    TclConfig_Info['TCL_INCLUDE_SPEC'][0,0] =
       " -I#{TkLib_Config["tcl-framework-header"].quote} "
   else
-    TclConfig_Info['TCL_INCLUDE_SPEC'] = ""
-
     tcl_base = File.join(TkLib_Config["tcltk-framework"], 'Tcl.framework')
     if tclver
       TclConfig_Info['TCL_INCLUDE_SPEC'] <<
@@ -1488,11 +1486,9 @@ def setup_for_macosx_framework(tclver, tkver)
   end
 
   if TkLib_Config["tk-framework-header"]
-    TkConfig_Info['TK_INCLUDE_SPEC'] =
+    TkConfig_Info['TK_INCLUDE_SPEC'][0,0] =
       " -I#{TkLib_Config["tk-framework-header"].quote} "
   else
-    TkConfig_Info['TK_INCLUDE_SPEC'] = ""
-
     tk_base  = File.join(TkLib_Config["tcltk-framework"], 'Tk.framework')
     if tkver
       TkConfig_Info['TK_INCLUDE_SPEC'] <<
@@ -1889,6 +1885,11 @@ tcl_ldir = tk_ldir unless tcl_ldir
 tk_idir = tcl_idir unless tk_idir
 tk_ldir = tcl_ldir unless tk_ldir
 
+TclConfig_Info['TCL_INCLUDE_SPEC'] ||= ""
+TkConfig_Info['TK_INCLUDE_SPEC']   ||= ""
+TclConfig_Info['TCL_INCLUDE_SPEC'][0,0] = "-I#{tcl_idir.quote} " if tcl_idir
+TkConfig_Info['TK_INCLUDE_SPEC'][0,0]   = "-I#{tk_idir.quote} "  if tk_idir
+
 # get tclConfig.sh/tkConfig.sh
 TkLib_Config["tcl-NG-path"] = []
 TkLib_Config["tk-NG-path"] = []
@@ -1907,9 +1908,6 @@ TclConfig_Info.merge!(TkLib_Config["tclConfig_info"]) if TkLib_Config["tclConfig
 TkConfig_Info.merge!(TkLib_Config["tkConfig_info"]) if TkLib_Config["tkConfig_info"]
 TclConfig_Info['config_file_path'] ||= tclcfg
 TkConfig_Info['config_file_path'] ||= tkcfg
-
-TclConfig_Info['TCL_INCLUDE_SPEC'] = "-I#{tcl_idir.quote}" if tcl_idir
-TkConfig_Info['TK_INCLUDE_SPEC']   = "-I#{tk_idir.quote}"  if tk_idir
 
 tk_cfg_dir  = File.dirname(TkConfig_Info['config_file_path'])  rescue nil
 tcl_cfg_dir = File.dirname(TclConfig_Info['config_file_path']) rescue nil
@@ -1950,6 +1948,7 @@ if TkLib_Config["tcltk-framework"]
   ($LDFLAGS ||= "") << " -L#{TkLib_Config["tcl-build-dir"].quote} -Wl,-R#{TkLib_Config["tcl-build-dir"].quote}" if TkLib_Config["tcl-build-dir"]
 
   if tcl_cfg_dir
+    TclConfig_Info['TCL_LIBS'] ||= ""
     ($INCFLAGS ||= "") << ' ' << TclConfig_Info['TCL_INCLUDE_SPEC']
     $LDFLAGS  << ' ' << TclConfig_Info['TCL_LIBS']
     if stubs
@@ -1974,6 +1973,7 @@ if TkLib_Config["tcltk-framework"]
   $LDFLAGS  << " -L#{TkLib_Config["tk-build-dir"].quote} -Wl,-R#{TkLib_Config["tk-build-dir"].quote}" if TkLib_Config["tk-build-dir"]
 
   if tk_cfg_dir
+    TkConfig_Info['TK_LIBS'] ||= ""
     ($INCFLAGS ||= "") << ' ' << TkConfig_Info['TK_INCLUDE_SPEC']
     $LDFLAGS  << ' ' << TkConfig_Info['TK_LIBS']
     if stubs
