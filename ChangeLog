@@ -1,3 +1,10 @@
+Mon Jun 13 03:07:38 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/benchmark/test_benchmark.rb (capture_output):
+	  replace '-' as space. On NetBSD, subtract between two Process.times
+	  after and before the short process may return negative value like:
+	  t0=Process.times; yield; t1=Process.times; p t1.utime-t0.utime
+
 Mon Jun 13 02:40:23 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_pkey_dsa.rb: Test for DSA#syssign/sysverify.

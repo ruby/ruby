@@ -36,7 +36,7 @@ describe Benchmark do
   end
 
   def capture_output
-    capture_io { yield }.first.gsub(/\d\.\d{6}/, '--time--')
+    capture_io { yield }.first.gsub(/[ \-]\d\.\d{6}/, ' --time--')
   end
 
   def capture_bench_output(type, *args, &block)
