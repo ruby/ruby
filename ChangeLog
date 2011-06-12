@@ -1,3 +1,14 @@
+Sun Jun 12 13:33:52 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm3_thread_mutex.rb: remove it.
+
+	* benchmark/bm_vm3_thread_mutex[1-3].rb: added 3 benchmarks.
+	    1: one thread with one mutex (no contention).
+	    2: two threads with one mutex (contention).
+	    3: 1000 threads with one mutex (huge number of contention)
+	  Abobe removed benchmark was type 3.
+	  Therefore, this commit adds type 1 and 2 benchmark.
+
 Sun Jun 12 11:16:59 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c: use select() appropriately for sendfile().
