@@ -3459,9 +3459,6 @@ lock_func(rb_thread_t *th, mutex_t *mutex, int timeout_ms)
     int interrupted = 0;
     int err = 0;
 
-    native_mutex_lock(&mutex->lock);
-    th->transition_for_lock = 0;
-
     mutex->cond_waiting++;
     for (;;) {
 	if (!mutex->th) {
@@ -3492,9 +3489,6 @@ lock_func(rb_thread_t *th, mutex_t *mutex, int timeout_ms)
 	}
     }
     mutex->cond_waiting--;
-
-    th->transition_for_lock = 1;
-    native_mutex_unlock(&mutex->lock);
 
     return interrupted;
 }
@@ -3537,23 +3531,23 @@ rb_mutex_lock(VALUE self)
 
 	    set_unblock_function(th, lock_interrupt, mutex, &oldubf);
 	    th->status = THREAD_STOPPED_FOREVER;
-	    th->vm->sleeper++;
 	    th->locking_mutex = self;
 
+	    native_mutex_lock(&mutex->lock);
+	    th->vm->sleeper++;
 	    /*
-	     * Carefully! while some contended threads are in lock_fun(),
+	     * Carefully! while some contended threads are in lock_func(),
 	     * vm->sleepr is unstable value. we have to avoid both deadlock
 	     * and busy loop.
 	     */
 	    if (vm_living_thread_num(th->vm) == th->vm->sleeper) {
 		timeout_ms = 100;
 	    }
+	    GVL_UNLOCK_BEGIN();
+	    interrupted = lock_func(th, mutex, timeout_ms);
+	    native_mutex_unlock(&mutex->lock);
+	    GVL_UNLOCK_END();
 
-	    th->transition_for_lock = 1;
-	    BLOCKING_REGION_CORE({
-		interrupted = lock_func(th, mutex, timeout_ms);
-	    });
-	    th->transition_for_lock = 0;
 	    reset_unblock_function(th, &oldubf);
 
 	    th->locking_mutex = Qfalse;
@@ -4728,7 +4722,7 @@ check_deadlock_i(st_data_t key, st_data_t val, int *found)
     rb_thread_t *th;
     GetThreadPtr(thval, th);
 
-    if (th->status != THREAD_STOPPED_FOREVER || RUBY_VM_INTERRUPTED(th) || th->transition_for_lock) {
+    if (th->status != THREAD_STOPPED_FOREVER || RUBY_VM_INTERRUPTED(th)) {
 	*found = 1;
     }
     else if (th->locking_mutex) {
@@ -4753,7 +4747,7 @@ debug_i(st_data_t key, st_data_t val, int *found)
     rb_thread_t *th;
     GetThreadPtr(thval, th);
 
-    printf("th:%p %d %d %d", th, th->status, th->interrupt_flag, th->transition_for_lock);
+    printf("th:%p %d %d", th, th->status, th->interrupt_flag);
     if (th->locking_mutex) {
 	mutex_t *mutex;
 	GetMutexPtr(th->locking_mutex, mutex);

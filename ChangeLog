@@ -1,3 +1,8 @@
+Sun Jun 12 15:56:08 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c: remove th->transition_for_lock. It's thread unsafe.
+	  [Bug #4723][ruby-dev:43563]
+
 Sun Jun 12 15:47:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c: introduce spurious wakeup safe deadlock check.
