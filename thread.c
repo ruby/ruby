@@ -335,7 +335,7 @@ typedef struct rb_mutex_struct
     rb_thread_lock_t lock;
     rb_thread_cond_t cond;
     struct rb_thread_struct volatile *th;
-    volatile int cond_waiting, cond_notified;
+    int cond_waiting;
     struct rb_mutex_struct *next_mutex;
 } mutex_t;
 
@@ -3457,41 +3457,42 @@ static int
 lock_func(rb_thread_t *th, mutex_t *mutex, int timeout_ms)
 {
     int interrupted = 0;
+    int err = 0;
 
     native_mutex_lock(&mutex->lock);
     th->transition_for_lock = 0;
+
+    mutex->cond_waiting++;
     for (;;) {
 	if (!mutex->th) {
 	    mutex->th = th;
 	    break;
 	}
+	if (RUBY_VM_INTERRUPTED(th)) {
+	    interrupted = 1;
+	    break;
+	}
+	if (err == ETIMEDOUT) {
+	    interrupted = 2;
+	    break;
+	}
 
-	mutex->cond_waiting++;
 	if (timeout_ms) {
-	    int ret;
 	    struct timespec timeout_rel;
 	    struct timespec timeout;
 
 	    timeout_rel.tv_sec = 0;
 	    timeout_rel.tv_nsec = timeout_ms * 1000 * 1000;
 	    timeout = native_cond_timeout(&mutex->cond, timeout_rel);
-	    ret = native_cond_timedwait(&mutex->cond, &mutex->lock, &timeout);
-	    if (ret == ETIMEDOUT) {
-		interrupted = 2;
-		mutex->cond_waiting--;
-		break;
-	    }
+	    err = native_cond_timedwait(&mutex->cond, &mutex->lock, &timeout);
 	}
 	else {
 	    native_cond_wait(&mutex->cond, &mutex->lock);
-	}
-	mutex->cond_notified--;
-
-	if (RUBY_VM_INTERRUPTED(th)) {
-	    interrupted = 1;
-	    break;
+	    err = 0;
 	}
     }
+    mutex->cond_waiting--;
+
     th->transition_for_lock = 1;
     native_mutex_unlock(&mutex->lock);
 
@@ -3503,11 +3504,8 @@ lock_interrupt(void *ptr)
 {
     mutex_t *mutex = (mutex_t *)ptr;
     native_mutex_lock(&mutex->lock);
-    if (mutex->cond_waiting > 0) {
+    if (mutex->cond_waiting > 0)
 	native_cond_broadcast(&mutex->cond);
-	mutex->cond_notified = mutex->cond_waiting;
-	mutex->cond_waiting = 0;
-    }
     native_mutex_unlock(&mutex->lock);
 }
 
@@ -3593,12 +3591,8 @@ mutex_unlock(mutex_t *mutex, rb_thread_t volatile *th)
     }
     else {
 	mutex->th = 0;
-	if (mutex->cond_waiting > 0) {
-	    /* waiting thread */
+	if (mutex->cond_waiting > 0)
 	    native_cond_signal(&mutex->cond);
-	    mutex->cond_waiting--;
-	    mutex->cond_notified++;
-	}
     }
 
     native_mutex_unlock(&mutex->lock);
@@ -4742,7 +4736,7 @@ check_deadlock_i(st_data_t key, st_data_t val, int *found)
 	GetMutexPtr(th->locking_mutex, mutex);
 
 	native_mutex_lock(&mutex->lock);
-	if (mutex->th == th || (!mutex->th && mutex->cond_notified)) {
+	if (mutex->th == th || (!mutex->th && mutex->cond_waiting)) {
 	    *found = 1;
 	}
 	native_mutex_unlock(&mutex->lock);
@@ -4751,7 +4745,7 @@ check_deadlock_i(st_data_t key, st_data_t val, int *found)
     return (*found) ? ST_STOP : ST_CONTINUE;
 }
 
-#if 0 /* for debug */
+#ifdef DEBUG_DEADLOCK_CHECK
 static int
 debug_i(st_data_t key, st_data_t val, int *found)
 {
@@ -4765,10 +4759,11 @@ debug_i(st_data_t key, st_data_t val, int *found)
 	GetMutexPtr(th->locking_mutex, mutex);
 
 	native_mutex_lock(&mutex->lock);
-	printf(" %p %d\n", mutex->th, mutex->cond_notified);
+	printf(" %p %d\n", mutex->th, mutex->cond_waiting);
 	native_mutex_unlock(&mutex->lock);
     }
-    else puts("");
+    else
+	puts("");
 
     return ST_CONTINUE;
 }
@@ -4788,7 +4783,7 @@ rb_check_deadlock(rb_vm_t *vm)
 	VALUE argv[2];
 	argv[0] = rb_eFatal;
 	argv[1] = rb_str_new2("deadlock detected");
-#if 0 /* for debug */
+#ifdef DEBUG_DEADLOCK_CHECK
 	printf("%d %d %p %p\n", vm->living_threads->num_entries, vm->sleeper, GET_THREAD(), vm->main_thread);
 	st_foreach(vm->living_threads, debug_i, (st_data_t)0);
 #endif

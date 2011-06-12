@@ -1,3 +1,8 @@
+Sun Jun 12 15:47:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c: introduce spurious wakeup safe deadlock check.
+	  [Bug #4696][ruby-dev:43554]
+
 Sun Jun 12 13:33:52 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_vm3_thread_mutex.rb: remove it.
