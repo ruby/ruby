@@ -1,3 +1,17 @@
+Mon Jun 13 05:17:29 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_pkey.c: added PKey.read module function that allows
+	  reading arbitrary public/private keys from DER-/PEM-encoded File or
+	  string instances.
+	* ext/openssl/ossl_pkey_dh.c: improved documentation.
+	* test/openssl/utils.rb: added EC test key.
+	* test/openssl/test_pkey_rsa.rb
+	  test/openssl/test_pkey_dsa.rb: Test PKey.read. Reuse keys from 
+	  OpenSSL::TestUtils.
+	* test/openssl/test_pkey_ec.rb: Created test file for EC tests.
+	  Test PKey.read.
+	  [Ruby 1.9 - Feature #4424] [ruby-core:35330]
+
 Mon Jun 13 04:42:24 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c (total_i): fix to skip no ruby objects.
@@ -85,8 +99,7 @@ Sun Jun 12 11:16:59 2011  Tanaka Akira  <akr@fsij.org>
 
 Sun Jun 12 09:32:13 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* atomic.h (ATOMIC_OR): _InterlockedOr is not available on migw.
-
+	* atomic.h (ATOMIC_OR): _InterlockedOr is not available on migw.h
 	* gc.c (rb_gc_set_params): VM_OBJSPACE is disabled on mignw.
 
 Sun Jun 12 01:07:09 2011  Tadayoshi Funaba  <tadf@dotrb.org>

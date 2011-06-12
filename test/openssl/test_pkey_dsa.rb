@@ -23,7 +23,7 @@ class OpenSSL::TestPKeyDSA < Test::Unit::TestCase
   end
 
   def test_sys_sign_verify
-    key = OpenSSL::PKey::DSA.new(256)
+    key = OpenSSL::TestUtils::TEST_KEY_DSA256
     data = 'Sign me!'
     digest = OpenSSL::Digest::SHA1.digest(data)
     sig = key.syssign(digest)
@@ -45,7 +45,7 @@ if (OpenSSL::OPENSSL_VERSION_NUMBER > 0x10000000)
 end
 
   def test_digest_state_irrelevant_verify
-    key = OpenSSL::PKey::DSA.new(256)
+    key = OpenSSL::TestUtils::TEST_KEY_DSA256
     digest1 = OpenSSL::Digest::DSS1.new
     digest2 = OpenSSL::Digest::DSS1.new
     data = 'Sign me!'
@@ -128,7 +128,7 @@ YNMbNw==
   end
 
   def test_export_format_is_DSA_PUBKEY_pem
-    key = OpenSSL::PKey::DSA.new(256)
+    key = OpenSSL::TestUtils::TEST_KEY_DSA256
     pem = key.public_key.to_pem
     pem.gsub!(/^-+(\w|\s)+-+$/, "") # eliminate --------BEGIN...-------
     asn1 = OpenSSL::ASN1.decode(Base64.decode64(pem))
@@ -156,10 +156,56 @@ YNMbNw==
     assert_equal(key.pub_key, pub_key.value)
   end
 
+  def test_read_private_key_der
+    key = OpenSSL::TestUtils::TEST_KEY_DSA256
+    der = key.to_der
+    key2 = OpenSSL::PKey.read(der)
+    assert(key2.private?)
+    assert_equal(der, key2.to_der)
+  end
+
+  def test_read_private_key_pem
+    key = OpenSSL::TestUtils::TEST_KEY_DSA256
+    pem = key.to_pem
+    key2 = OpenSSL::PKey.read(pem)
+    assert(key2.private?)
+    assert_equal(pem, key2.to_pem)
+  end
+
+  def test_read_public_key_der
+    key = OpenSSL::TestUtils::TEST_KEY_DSA256.public_key
+    der = key.to_der
+    key2 = OpenSSL::PKey.read(der)
+    assert(!key2.private?)
+    assert_equal(der, key2.to_der)
+  end
+
+  def test_read_public_key_pem
+    key = OpenSSL::TestUtils::TEST_KEY_DSA256.public_key
+    pem = key.to_pem
+    key2 = OpenSSL::PKey.read(pem)
+    assert(!key2.private?)
+    assert_equal(pem, key2.to_pem)
+  end
+
+  def test_read_private_key_pem_pw
+    key = OpenSSL::TestUtils::TEST_KEY_DSA256
+    pem = key.to_pem(OpenSSL::Cipher.new('AES-128-CBC'), 'secret')
+    #callback form for password
+    key2 = OpenSSL::PKey.read(pem) do
+      'secret'
+    end
+    assert(key2.private?)
+    # pass password directly
+    key2 = OpenSSL::PKey.read(pem, 'secret')
+    assert(key2.private?)
+    #omit pem equality check, will be different due to cipher iv
+  end
+
   private
 
   def check_sign_verify(digest)
-    key = OpenSSL::PKey::DSA.new(256)
+    key = OpenSSL::TestUtils::TEST_KEY_DSA256
     data = 'Sign me!'
     sig = key.sign(digest, data)
     assert(key.verify(digest, sig, data))

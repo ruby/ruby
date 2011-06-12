@@ -338,15 +338,17 @@ ossl_dh_to_text(VALUE self)
  *  call-seq:
  *     dh.public_key -> aDH
  *
- * Returns a new DH instance that carries just the public information.
- * If the current instance has also private information, this will no
+ * Returns a new DH instance that carries just the public information, i.e.
+ * the prime +p+ and the generator +g+, but no public/private key yet. Such
+ * a pair may be generated using DH#generate_key!.
+ * If the current instance already contains private information, this will no
  * longer be present in the new instance. This feature is helpful for
  * publishing the public information without leaking any of the private
  * information.
  *
  * === Example
  *  dh = OpenSSL::PKey::DH.new(2048) # has public and private information
- *  pub_key = dh.public_key # has only the public part available
+ *  pub_key = dh.public_key # contains only prime and generator
  *  pub_key_der = pub_key.to_der # it's safe to publish this
  */
 static VALUE
@@ -394,10 +396,15 @@ ossl_dh_check_params(VALUE self)
 
 /*
  *  call-seq:
- *     dh.generate_key -> self
+ *     dh.generate_key! -> self
  *
- * Generates a private key unless one already exists. It also computes the
- * public key for the generated private key.
+ * Generates a private and public key unless one already exists.
+ *
+ * === Example
+ *   dh = OpenSSL::PKey::DH.new(2048)
+ *   public_key = dh.public_key #contains no private/public key yet
+ *   public_key.generate_key!
+ *   puts public_key.private? # => true
  */
 static VALUE
 ossl_dh_generate_key(VALUE self)
