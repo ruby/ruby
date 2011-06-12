@@ -1,3 +1,12 @@
+Sun Jun 12 11:16:59 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c: use select() appropriately for sendfile().
+	  Fixed by Eric Wong.  [ruby-core:36150]
+	  (maygvl_copy_stream_wait_readwrite): removed.
+	  (nogvl_copy_stream_sendfile): use nogvl_copy_stream_wait_write and
+	  maygvl_copy_stream_wait_read instead of
+	  maygvl_copy_stream_wait_readwrite.
+
 Sun Jun 12 09:32:13 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* atomic.h (ATOMIC_OR): _InterlockedOr is not available on migw.

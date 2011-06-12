@@ -8649,22 +8649,6 @@ simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
 
 #ifdef USE_SENDFILE
 static int
-maygvl_copy_stream_wait_readwrite(int has_gvl, struct copy_stream_struct *stp)
-{
-    int ret;
-    rb_fd_zero(&stp->fds);
-    rb_fd_set(stp->src_fd, &stp->fds);
-    rb_fd_set(stp->dst_fd, &stp->fds);
-    ret = maygvl_select(has_gvl, rb_fd_max(&stp->fds), &stp->fds, NULL, NULL, NULL);
-    if (ret == -1) {
-        stp->syserr = "select";
-        stp->error_no = errno;
-        return -1;
-    }
-    return 0;
-}
-
-static int
 nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 {
     struct stat src_stat, dst_stat;
@@ -8746,7 +8730,18 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
-            if (maygvl_copy_stream_wait_readwrite(0, stp) == -1)
+#ifndef linux
+           /*
+            * Linux requires stp->src_fd to be a mmap-able (regular) file,
+            * select() reports regular files to always be "ready", so
+            * there is no need to select() on it.
+            * Other OSes may have the same limitation for sendfile() which
+            * allow us to bypass maygvl_copy_stream_wait_read()...
+            */
+            if (maygvl_copy_stream_wait_read(0, stp) == -1)
+                return -1;
+#endif
+            if (nogvl_copy_stream_wait_write(stp) == -1)
                 return -1;
             goto retry_sendfile;
         }
