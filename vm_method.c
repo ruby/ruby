@@ -13,6 +13,7 @@ static ID removed, singleton_removed, undefined, singleton_undefined;
 static ID added, singleton_added, attached;
 
 struct cache_entry {		/* method hash table. */
+    VALUE filled_version;        /* filled state version */
     ID mid;			/* method's id */
     VALUE klass;		/* receiver's class */
     rb_method_entry_t *me;
@@ -25,79 +26,25 @@ static struct cache_entry cache[CACHE_SIZE];
 void
 rb_clear_cache(void)
 {
-    struct cache_entry *ent, *end;
-
     rb_vm_change_state();
-
-    if (!ruby_running)
-	return;
-    ent = cache;
-    end = ent + CACHE_SIZE;
-    while (ent < end) {
-	ent->me = 0;
-	ent->mid = 0;
-	ent++;
-    }
 }
 
 static void
 rb_clear_cache_for_undef(VALUE klass, ID id)
 {
-    struct cache_entry *ent, *end;
-
     rb_vm_change_state();
-
-    if (!ruby_running)
-	return;
-    ent = cache;
-    end = ent + CACHE_SIZE;
-    while (ent < end) {
-	if ((ent->me && ent->me->klass == klass) && ent->mid == id) {
-	    ent->me = 0;
-	    ent->mid = 0;
-	}
-	ent++;
-    }
 }
 
 static void
 rb_clear_cache_by_id(ID id)
 {
-    struct cache_entry *ent, *end;
-
     rb_vm_change_state();
-
-    if (!ruby_running)
-	return;
-    ent = cache;
-    end = ent + CACHE_SIZE;
-    while (ent < end) {
-	if (ent->mid == id) {
-	    ent->me = 0;
-	    ent->mid = 0;
-	}
-	ent++;
-    }
 }
 
 void
 rb_clear_cache_by_class(VALUE klass)
 {
-    struct cache_entry *ent, *end;
-
     rb_vm_change_state();
-
-    if (!ruby_running)
-	return;
-    ent = cache;
-    end = ent + CACHE_SIZE;
-    while (ent < end) {
-	if (ent->klass == klass || (ent->me && ent->me->klass == klass)) {
-	    ent->me = 0;
-	    ent->mid = 0;
-	}
-	ent++;
-    }
 }
 
 VALUE
@@ -420,6 +367,7 @@ rb_method_entry_get_without_cache(VALUE klass, ID id)
     if (ruby_running) {
 	struct cache_entry *ent;
 	ent = cache + EXPR1(klass, id);
+	ent->filled_version = GET_VM_STATE_VERSION();
 	ent->klass = klass;
 
 	if (UNDEFINED_METHOD_ENTRY_P(me)) {
@@ -442,7 +390,8 @@ rb_method_entry(VALUE klass, ID id)
     struct cache_entry *ent;
 
     ent = cache + EXPR1(klass, id);
-    if (ent->mid == id && ent->klass == klass) {
+    if (ent->filled_version == GET_VM_STATE_VERSION() &&
+	ent->mid == id && ent->klass == klass) {
 	return ent->me;
     }
 

@@ -1,3 +1,13 @@
+Sun Jun 12 17:40:29 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_method.c (rb_clear_cache*): update only vm state version.
+
+	* vm_method.c (rb_method_entry_get_without_cache, rb_method_entry): 
+	  Fill method cache entry with vm state version, and
+	  check current vm state version for method (cache) look up.
+	  This modification speed-up invaridating of global method cache table.
+	  [Ruby 1.9 - Feature #3905] [ruby-core:36908]
+
 Sun Jun 12 16:19:48 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: fail on Mac OS X. [Bug #4853][ruby-dev:43655]
