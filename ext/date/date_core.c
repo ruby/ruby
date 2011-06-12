@@ -4066,6 +4066,11 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
  * Parses the given representation of dates and times with the given
  * template, and returns a hash of parsed elements.
  *
+ * For example:
+ *
+ *    Date._strptime('2001-02-03', '%Y-%m-%d')
+ *				#=> {:year=>2001, :mon=>2, :mday=>3}
+ *
  *  See also strptime(3) and strftime.
  */
 static VALUE
@@ -4085,7 +4090,11 @@ date_s__strptime(int argc, VALUE *argv, VALUE klass)
  *
  *    Date.strptime('2001-02-03', '%Y-%m-%d')	#=> #<Date: 2001-02-03 ...>
  *    Date.strptime('03-02-2001', '%d-%m-%Y')	#=> #<Date: 2001-02-03 ...>
+ *    Date.strptime('2001-034', '%Y-%j')	#=> #<Date: 2001-02-03 ...>
  *    Date.strptime('2001-W05-6', '%G-W%V-%u')	#=> #<Date: 2001-02-03 ...>
+ *    Date.strptime('2001 04 6', '%Y %U %w')	#=> #<Date: 2001-02-03 ...>
+ *    Date.strptime('2001 05 6', '%Y %W %u')	#=> #<Date: 2001-02-03 ...>
+ *    Date.strptime('sat3feb01', '%a%d%b%y')	#=> #<Date: 2001-02-03 ...>
  *
  * See also strptime(3) and strftime.
  */
@@ -4155,6 +4164,10 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
  * If the optional second argument is true and the detected year is in
  * the range "00" to "99", considers the year a 2-digit form and makes
  * it full.
+ *
+ * For example:
+ *
+ *    Date._parse('2001-02-03')	#=> {:year=>2001, :mon=>2, :mday=>3}
  */
 static VALUE
 date_s__parse(int argc, VALUE *argv, VALUE klass)
@@ -4637,8 +4650,13 @@ d_lite_fill(VALUE self)
  * call-seq:
  *    d.ajd  ->  rational
  *
- * Returns the Astronomical Julian Day Number.  This is fractional
- * number, which is not affected by offset.
+ * Returns the Astronomical Julian Day Number.  This is a fractional
+ * number, which is not adjusted by offset.
+ *
+ * For example:
+ *
+ *    DateTime.new(2001,2,3,4,5,6,'+7').ajd	#=> (11769328217/4800)
+ *    DateTime.new(2001,2,2,14,5,6,'-7').ajd	#=> (11769328217/4800)
  */
 static VALUE
 d_lite_ajd(VALUE self)
@@ -4652,7 +4670,12 @@ d_lite_ajd(VALUE self)
  *    d.amjd  ->  rational
  *
  * Returns the Astronomical Modified Julian Day Number.  This is
- * fractional number, which is not affected by offset.
+ * a fractional number, which is not adjusted by offset.
+ *
+ * For example:
+ *
+ *    DateTime.new(2001,2,3,4,5,6,'+7').amjd	#=> (249325817/4800)
+ *    DateTime.new(2001,2,2,14,5,6,'-7').amjd	#=> (249325817/4800)
  */
 static VALUE
 d_lite_amjd(VALUE self)
@@ -4665,8 +4688,13 @@ d_lite_amjd(VALUE self)
  * call-seq:
  *    d.jd  ->  integer
  *
- * Returns the Julian Day Number.  This is whole number, which is
- * affected by offset.
+ * Returns the Julian Day Number.  This is a whole number, which is
+ * adjusted by offset as the local time.
+ *
+ * For example:
+ *
+ *    DateTime.new(2001,2,3,4,5,6,'+7').jd	#=> 2451944
+ *    DateTime.new(2001,2,3,4,5,6,'-7').jd	#=> 2451944
  */
 static VALUE
 d_lite_jd(VALUE self)
@@ -4679,8 +4707,13 @@ d_lite_jd(VALUE self)
  * call-seq:
  *    d.mjd  ->  integer
  *
- * Returns the Modified Julian Day Number.  This is whole number,
- * which is affected by offset.
+ * Returns the Modified Julian Day Number.  This is a whole number,
+ * which is adjusted by offset as the local time.
+ *
+ * For example:
+ *
+ *    DateTime.new(2001,2,3,4,5,6,'+7').mjd	#=> 51943
+ *    DateTime.new(2001,2,3,4,5,6,'-7').mjd	#=> 51943
  */
 static VALUE
 d_lite_mjd(VALUE self)
@@ -4693,8 +4726,12 @@ d_lite_mjd(VALUE self)
  * call-seq:
  *    d.ld  ->  integer
  *
- * Returns the Lilian Day Number.  This is whole number, which is
- * affected by offset.
+ * Returns the Lilian Day Number.  This is a whole number, which is
+ * adjusted by offset as the local time.
+ *
+ * For example:
+ *
+ *     Date.new(2001,2,3).ld		#=> 152784
  */
 static VALUE
 d_lite_ld(VALUE self)
@@ -4708,6 +4745,11 @@ d_lite_ld(VALUE self)
  *    d.year  ->  integer
  *
  * Returns the year.
+ *
+ * For example:
+ *
+ *    Date.new(2001,2,3).year		#=> 2001
+ *    (Date.new(1,1,1) - 1).year	#=> 0
  */
 static VALUE
 d_lite_year(VALUE self)
@@ -4721,6 +4763,10 @@ d_lite_year(VALUE self)
  *    d.yday  ->  fixnum
  *
  * Returns the day of the year (1-366).
+ *
+ * For example:
+ *
+ *    Date.new(2001,2,3).yday		#=> 34
  */
 static VALUE
 d_lite_yday(VALUE self)
@@ -4735,6 +4781,10 @@ d_lite_yday(VALUE self)
  *    d.month  ->  fixnum
  *
  * Returns the month (1-12).
+ *
+ * For example:
+ *
+ *    Date.new(2001,2,3).mon		#=> 2
  */
 static VALUE
 d_lite_mon(VALUE self)
@@ -4749,6 +4799,10 @@ d_lite_mon(VALUE self)
  *    d.day  ->  fixnum
  *
  * Returns the day of the month (1-31).
+ *
+ * For example:
+ *
+ *    Date.new(2001,2,3).mday		#=> 3
  */
 static VALUE
 d_lite_mday(VALUE self)
@@ -4762,6 +4816,10 @@ d_lite_mday(VALUE self)
  *    d.day_fraction  ->  rational
  *
  * Returns the fractional part of the day.
+ *
+ * For example:
+ *
+ *    DateTime.new(2001,2,3,12).day_fraction	#=> (1/2)
  */
 static VALUE
 d_lite_day_fraction(VALUE self)
@@ -4777,6 +4835,11 @@ d_lite_day_fraction(VALUE self)
  *    d.cwyear  ->  integer
  *
  * Returns the calendar week based year.
+ *
+ * For example:
+ *
+ *    Date.new(2001,2,3).cwyear		#=> 2001
+ *    Date.new(2000,1,1).cwyear		#=> 1999
  */
 static VALUE
 d_lite_cwyear(VALUE self)
@@ -4790,6 +4853,10 @@ d_lite_cwyear(VALUE self)
  *    d.cweek  ->  fixnum
  *
  * Returns the calendar week number (1-53).
+ *
+ * For example:
+ *
+ *    Date.new(2001,2,3).cweek		#=> 5
  */
 static VALUE
 d_lite_cweek(VALUE self)
@@ -4802,7 +4869,11 @@ d_lite_cweek(VALUE self)
  * call-seq:
  *    d.cwday  ->  fixnum
  *
- *  Returns the day of calendar week (1-7, Monday is 1).
+ * Returns the day of calendar week (1-7, Monday is 1).
+ *
+ * For example:
+ *
+ *    Date.new(2001,2,3).cwday		#=> 6
  */
 static VALUE
 d_lite_cwday(VALUE self)
@@ -4830,6 +4901,10 @@ d_lite_wnum1(VALUE self)
  *    d.wday  ->  fixnum
  *
  * Returns the day of week (0-6, Sunday is zero).
+ *
+ * For example:
+ *
+ *    Date.new(2001,2,3).wday		#=> 6
  */
 static VALUE
 d_lite_wday(VALUE self)
@@ -4954,6 +5029,10 @@ d_lite_nth_kday_p(VALUE self, VALUE n, VALUE k)
  *    d.hour  ->  fixnum
  *
  * Returns the hour (0-23).
+ *
+ * For example:
+ *
+ *    DateTime.new(2001,2,3,4,5,6).hour		#=> 4
  */
 static VALUE
 d_lite_hour(VALUE self)
@@ -4968,6 +5047,10 @@ d_lite_hour(VALUE self)
  *    d.minute  ->  fixnum
  *
  * Returns the minute (0-59).
+ *
+ * For example:
+ *
+ *    DateTime.new(2001,2,3,4,5,6).min		#=> 5
  */
 static VALUE
 d_lite_min(VALUE self)
@@ -4982,6 +5065,10 @@ d_lite_min(VALUE self)
  *    d.second  ->  fixnum
  *
  * Returns the second (0-59).
+ *
+ * For example:
+ *
+ *    DateTime.new(2001,2,3,4,5,6).sec		#=> 6
  */
 static VALUE
 d_lite_sec(VALUE self)
@@ -4996,6 +5083,10 @@ d_lite_sec(VALUE self)
  *    d.second_fraction  ->  rational
  *
  * Returns the fractional part of the second.
+ *
+ * For example:
+ *
+ *    DateTime.new(2001,2,3,4,5,6.5).sec_fraction	#=> (1/2)
  */
 static VALUE
 d_lite_sec_fraction(VALUE self)
@@ -5009,6 +5100,10 @@ d_lite_sec_fraction(VALUE self)
  *    d.offset  ->  rational
  *
  * Returns the offset.
+ *
+ * For example:
+ *
+ *    DateTime.parse('04pm+0730').offset	#=> (5/16)
  */
 static VALUE
 d_lite_offset(VALUE self)
@@ -5022,6 +5117,10 @@ d_lite_offset(VALUE self)
  *    d.zone  ->  string
  *
  * Returns the timezone.
+ *
+ * For example:
+ *
+ *    DateTime.parse('04pm+0730').zone		#=> "+07:30"
  */
 static VALUE
 d_lite_zone(VALUE self)
@@ -5035,6 +5134,11 @@ d_lite_zone(VALUE self)
  *    d.julian?  ->  bool
  *
  * Retruns true if the date is in the Julian Calendar.
+ *
+ * For example:
+ *
+ *     Date.new(1582,10,15).julian?		#=> false
+ *     (Date.new(1582,10,15) - 1).julian?	#=> true
  */
 static VALUE
 d_lite_julian_p(VALUE self)
@@ -5048,6 +5152,11 @@ d_lite_julian_p(VALUE self)
  *    d.gregorian?  ->  bool
  *
  * Retunrs true if the date is in the Gregorian Calendar.
+ *
+ * For example:
+ *
+ *     Date.new(1582,10,15).gregorian?		#=> true
+ *     (Date.new(1582,10,15) - 1).gregorian?	#=> false
  */
 static VALUE
 d_lite_gregorian_p(VALUE self)
@@ -5063,6 +5172,11 @@ d_lite_gregorian_p(VALUE self)
  *    d.leap?  ->  bool
  *
  * Returns true if the year is a leap year.
+ *
+ * For example:
+ *
+ *    Date.new(2000).leap?	#=> true
+ *    Date.new(2001).leap?	#=> false
  */
 static VALUE
 d_lite_leap_p(VALUE self)
@@ -5084,6 +5198,11 @@ d_lite_leap_p(VALUE self)
  *    d.start  ->  float
  *
  * Returns a Julian day number denoting the day of calendar reform.
+ *
+ * For example:
+ *
+ *    Date.new(2001,2,3).start			#=> 2299161.0
+ *    Date.new(2001,2,3,Date::GREGORIAN).start	#=> -Infinity
  */
 static VALUE
 d_lite_start(VALUE self)
@@ -6677,6 +6796,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  *
  *    Seconds since the Epoch:
  *      %s - Number of seconds since 1970-01-01 00:00:00 UTC.
+ *      %Q - Number of microseconds since 1970-01-01 00:00:00 UTC.
  *
  *    Literal string:
  *      %n - Newline character (\n)
@@ -6868,7 +6988,7 @@ gengo(VALUE jd, VALUE y, VALUE *a)
  * call-seq:
  *    d.jisx0301  ->  string
  *
- * Returns a string in an JIS X 0301 format.
+ * Returns a string in a JIS X 0301 format.
  *
  * For example:
  *
@@ -7652,6 +7772,16 @@ datetime_s__strptime(int argc, VALUE *argv, VALUE klass)
  *				#=> #<DateTime: 2001-02-03T16:05:06+00:00 ...>
  *    DateTime.strptime('2001-W05-6T04:05:06+07:00', '%G-W%V-%uT%H:%M:%S%z')
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
+ *    DateTime.strptime('2001 04 6 04 05 06 +7', '%Y %U %w %H %M %S %z')
+ *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
+ *    DateTime.strptime('2001 05 6 04 05 06 +7', '%Y %W %u %H %M %S %z')
+ *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
+ *    DateTime.strptime('-1', '%s')
+ *				#=> #<DateTime: 1969-12-31T23:59:59+00:00 ...>
+ *    DateTime.strptime('-1000', '%Q')
+ *				#=> #<DateTime: 1969-12-31T23:59:59+00:00 ...>
+ *    DateTime.strptime('sat3feb014pm+7', '%a%d%b%y%H%p%z')
+ *				#=> #<DateTime: 2001-02-03T16:00:00+07:00 ...>
  *
  * See also strptime(3) and strftime.
  */
@@ -8046,6 +8176,7 @@ dt_lite_to_s(VALUE self)
  *
  *    Seconds since the Epoch:
  *      %s - Number of seconds since 1970-01-01 00:00:00 UTC.
+ *      %Q - Number of microseconds since 1970-01-01 00:00:00 UTC.
  *
  *    Literal string:
  *      %n - Newline character (\n)
@@ -8199,7 +8330,7 @@ dt_lite_rfc3339(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *    dt.jisx0301([n=0])  ->  string
  *
- * Returns a string in an JIS X 0301 format.  The optional argument n
+ * Returns a string in a JIS X 0301 format.  The optional argument n
  * is length of fractional seconds.
  *
  * For example:
@@ -8849,8 +8980,11 @@ Init_date_core(void)
      * A subclass of Object includes Comparable module, easily handles
      * date.
      *
-     * A date can be represented as tuple of the day count, the offset
-     * and the day of calendar reform.
+     * The concept of this date can be represented as tuple of the day
+     * count, the offset and the day of calendar reform.
+     *
+     * All date objects are immutable; hence cannnot modify
+     * themselves.
      *
      * Date object is created with Date::new, Date::jd, Date::ordinal,
      * Date::commercial, Date::parse, Date::strptime, Date::today,
@@ -8907,6 +9041,9 @@ Init_date_core(void)
      * A subclass of Date easily handles date, hour, minute, second and
      * offset.
      *
+     * DateTime does not consider any leapseconds, does not track
+     * any summer time rules.
+     *
      * DateTime object is created with DateTime::new, DateTime::jd,
      * DateTime::ordinal, DateTime::commercial, DateTime::parse,
      * DateTime::strptime, DateTime::now, Time#to_datetime or etc.
@@ -8962,13 +9099,13 @@ Init_date_core(void)
 
     rb_include_module(cDate, rb_mComparable);
 
-    /* An array of stirng of full month name in English.
-     * The first element is nil.
+    /* An array of stirng of full month name in English.  The first
+     * element is nil.
      */
     rb_define_const(cDate, "MONTHNAMES", mk_ary_of_str(13, monthnames));
 
-    /* An array of string of abbreviated month name in English.
-     * The first element is nil.
+    /* An array of string of abbreviated month name in English.  The
+     * first element is nil.
      */
     rb_define_const(cDate, "ABBR_MONTHNAMES",
 		    mk_ary_of_str(13, abbr_monthnames));
@@ -8978,8 +9115,8 @@ Init_date_core(void)
      */
     rb_define_const(cDate, "DAYNAMES", mk_ary_of_str(7, daynames));
 
-    /* An array of string of abbreviated day name in English.
-     * The first is "Sun".
+    /* An array of string of abbreviated day name in English.  The
+     * first is "Sun".
      */
     rb_define_const(cDate, "ABBR_DAYNAMES", mk_ary_of_str(7, abbr_daynames));
 
@@ -8993,13 +9130,13 @@ Init_date_core(void)
      */
     rb_define_const(cDate, "ENGLAND", INT2FIX(ENGLAND));
 
-    /* The Julian day number of the day of calendar reform for
-     * the proleptic Julian calendar
+    /* The Julian day number of the day of calendar reform for the
+     * proleptic Julian calendar
      */
     rb_define_const(cDate, "JULIAN", DBL2NUM(JULIAN));
 
-    /* The Julian day number of the day of calendar reform for
-     * the proleptic Gregorian calendar
+    /* The Julian day number of the day of calendar reform for the
+     * proleptic Gregorian calendar
      */
     rb_define_const(cDate, "GREGORIAN", DBL2NUM(GREGORIAN));
 
@@ -9200,6 +9337,8 @@ Init_date_core(void)
 #endif
     rb_define_method(cDate, "marshal_dump", d_lite_marshal_dump, 0);
     rb_define_method(cDate, "marshal_load", d_lite_marshal_load, 1);
+
+    /* datetime */
 
     cDateTime = rb_define_class("DateTime", cDate);
 
