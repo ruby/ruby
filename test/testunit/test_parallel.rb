@@ -27,7 +27,10 @@ module TestParallel
             Process.waitpid(@worker_pid)
           end
         rescue IOError, Errno::EPIPE, Timeout::Error
-          Process.kill(:KILL, @worker_pid)
+          begin
+            Process.kill(:KILL, @worker_pid)
+          rescue Errno::ESRCH
+          end
         end
       end
     end
