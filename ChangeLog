@@ -1,3 +1,7 @@
+Sun Jun 12 21:01:56 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (d_lite_marshal_load): should give converted value.
+
 Sun Jun 12 20:36:30 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: edited doc.

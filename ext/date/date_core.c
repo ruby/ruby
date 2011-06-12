@@ -7079,7 +7079,7 @@ d_lite_marshal_load(VALUE self, VALUE a)
 		       &nth, &jd, &df, &sf, &rof, &rsg);
 
 	    if (!df && f_zero_p(sf) && !rof) {
-		set_to_simple(&dat->s, nth, jd, sg, 0, 0, 0, HAVE_JD);
+		set_to_simple(&dat->s, nth, jd, rsg, 0, 0, 0, HAVE_JD);
 	    } else {
 		if (!complex_dat_p(dat))
 		    rb_raise(rb_eArgError,
