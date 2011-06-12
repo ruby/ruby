@@ -2,13 +2,19 @@
 #define RUBY_ATOMIC_H
 
 #ifdef _WIN32
+#ifdef _MSC_VER
 #pragma intrinsic(_InterlockedOr)
+#endif
 typedef LONG rb_atomic_t;
 
 # define ATOMIC_SET(var, val) InterlockedExchange(&(var), (val))
 # define ATOMIC_INC(var) InterlockedIncrement(&(var))
 # define ATOMIC_DEC(var) InterlockedDecrement(&(var))
+#if defined __GNUC__
+# define ATOMIC_OR(var, val) __asm__("lock\n\t" "orl\t%1, %0" : "=m"(var) : "Ir"(val))
+#else
 # define ATOMIC_OR(var, val) _InterlockedOr(&(var), (val))
+#endif
 # define ATOMIC_EXCHANGE(var, val) InterlockedExchange(&(var), (val))
 
 #elif defined HAVE_GCC_ATOMIC_BUILTINS

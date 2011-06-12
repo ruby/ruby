@@ -83,7 +83,9 @@ void *alloca ();
 #define FREE_MIN  4096
 
 static unsigned int initial_malloc_limit   = GC_MALLOC_LIMIT;
+#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 static unsigned int initial_heap_min_slots = HEAP_MIN_SLOTS;
+#endif
 static unsigned int initial_free_min       = FREE_MIN;
 
 #define nomem_error GET_VM()->special_exceptions[ruby_error_nomemory]
@@ -473,6 +475,11 @@ rb_objspace_free(rb_objspace_t *objspace)
 	heaps = 0;
     }
     free(objspace);
+}
+#else
+void
+rb_gc_set_params(void)
+{
 }
 #endif
 
@@ -1091,6 +1098,7 @@ init_heap(rb_objspace_t *objspace)
     finalizer_table = st_init_numtable();
 }
 
+#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 static void
 initial_expand_heap(rb_objspace_t *objspace)
 {
@@ -1101,6 +1109,7 @@ initial_expand_heap(rb_objspace_t *objspace)
         add_heap_slots(objspace, add);
     }
 }
+#endif
 
 static void
 set_heaps_increment(rb_objspace_t *objspace)

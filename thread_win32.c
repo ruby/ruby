@@ -532,7 +532,6 @@ native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
     now.tv_sec = tv.tv_sec;
     now.tv_nsec = tv.tv_usec * 1000;
 
-  out:
     timeout.tv_sec = now.tv_sec;
     timeout.tv_nsec = now.tv_nsec;
     timeout.tv_sec += timeout_rel.tv_sec;

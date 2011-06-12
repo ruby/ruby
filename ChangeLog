@@ -1,3 +1,9 @@
+Sun Jun 12 09:32:13 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* atomic.h (ATOMIC_OR): _InterlockedOr is not available on migw.
+
+	* gc.c (rb_gc_set_params): VM_OBJSPACE is disabled on mignw.
+
 Sun Jun 12 01:07:09 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: edited doc.
