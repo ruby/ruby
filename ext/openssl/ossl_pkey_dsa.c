@@ -103,8 +103,11 @@ dsa_generate(int size)
  *  call-seq:
  *    DSA.generate(size) -> dsa
  *
- *  === Parameters
- *  * +size+ is an integer representing the desired key size.
+ * Creates a new DSA instance by generating a private/public key pair
+ * from scratch.
+ *
+ * === Parameters
+ * +size+ is an integer representing the desired key size.
  *
  */
 static VALUE
@@ -125,16 +128,18 @@ ossl_dsa_s_generate(VALUE klass, VALUE size)
  *  call-seq:
  *    DSA.new([size | string [, pass]) -> dsa
  *
- *  === Parameters
- *  * +size+ is an integer representing the desired key size.
- *  * +string+ contains a DER or PEM encoded key.
- *  * +pass+ is a string that contains a optional password.
+ * Creates a new DSA instance by reading an existing key from +string+.
  *
- *  === Examples
- *  * DSA.new -> dsa
- *  * DSA.new(1024) -> dsa
- *  * DSA.new(File.read('dsa.pem')) -> dsa
- *  * DSA.new(File.read('dsa.pem'), 'mypassword') -> dsa
+ * === Parameters
+ * +size+ is an integer representing the desired key size.
+ * +string+ contains a DER or PEM encoded key.
+ * +pass+ is a string that contains an optional password.
+ *
+ * === Examples
+ *  DSA.new -> dsa
+ *  DSA.new(1024) -> dsa
+ *  DSA.new(File.read('dsa.pem')) -> dsa
+ *  DSA.new(File.read('dsa.pem'), 'mypassword') -> dsa
  *
  */
 static VALUE
@@ -198,6 +203,8 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *    dsa.public? -> true | false
  *
+ * Indicates whether this DSA instance has a public key associated with it or
+ * not. The public key may be retrieved with DSA#public_key.
  */
 static VALUE
 ossl_dsa_is_public(VALUE self)
@@ -213,6 +220,8 @@ ossl_dsa_is_public(VALUE self)
  *  call-seq:
  *    dsa.private? -> true | false
  *
+ * Indicates whether this DSA instance has a private key associated with it or
+ * not. The private key may be retrieved with DSA#private_key.
  */
 static VALUE
 ossl_dsa_is_private(VALUE self)
@@ -228,13 +237,15 @@ ossl_dsa_is_private(VALUE self)
  *  call-seq:
  *    dsa.to_pem([cipher, password]) -> aString
  *
- *  === Parameters
- *  +cipher+ is an OpenSSL::Cipher.
- *  +password+ is a string containing your password.
+ * Encodes this DSA to its PEM encoding.
  *
- *  === Examples
- *  * DSA.to_pem -> aString
- *  * DSA.to_pem(cipher, 'mypassword') -> aString
+ * === Parameters
+ * +cipher+ is an OpenSSL::Cipher.
+ * +password+ is a string containing your password.
+ *
+ * === Examples
+ *  DSA.to_pem -> aString
+ *  DSA.to_pem(cipher, 'mypassword') -> aString
  *
  */
 static VALUE
@@ -277,6 +288,8 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 /*
  *  call-seq:
  *    dsa.to_der -> aString
+ *
+ * Encodes this DSA to its DER encoding.
  *
  */
 static VALUE
@@ -363,7 +376,18 @@ ossl_dsa_to_text(VALUE self)
  *  call-seq:
  *    dsa.public_key -> aDSA
  *
- * Makes new instance DSA PUBLIC_KEY from PRIVATE_KEY
+ * Returns a new DSA instance that carries just the public key information.
+ * If the current instance has also private key information, this will no
+ * longer be present in the new instance. This feature is helpful for
+ * publishing the public key information without leaking any of the private
+ * information.
+ *
+ * === Example
+ *  dsa = OpenSSL::DSA.new(2048) # has public and private information
+ *  pub_key = dsa.public_key # has only the public part available
+ *  pub_key_der = pub_key.to_der # it's safe to publish this
+ *
+ *
  */
 static VALUE
 ossl_dsa_to_public_key(VALUE self)
@@ -388,6 +412,20 @@ ossl_dsa_to_public_key(VALUE self)
 /*
  *  call-seq:
  *    dsa.syssign(string) -> aString
+ *
+ * Computes and returns the DSA signature of +string+, where +string+ is
+ * expected to be an already-computed message digest of the original input
+ * data. The signature is issued using the private key of this DSA instance.
+ *
+ * === Parameters
+ * +string+ is a message digest of the original input data to be signed
+ *
+ * === Example
+ *  dsa = OpenSSL::DSA.new(2048)
+ *  doc = "Sign me"
+ *  digest = OpenSSL::Digest::SHA1.digest(doc)
+ *  sig = dsa.syssign(digest)
+ *
  *
  */
 static VALUE
@@ -416,6 +454,20 @@ ossl_dsa_sign(VALUE self, VALUE data)
 /*
  *  call-seq:
  *    dsa.sysverify(digest, sig) -> true | false
+ *
+ * Verifies whether the signature is valid given the message digest input. It
+ * does so by validating +sig+ using the public key of this DSA instance.
+ *
+ * === Parameters
+ * +digest+ is a message digest of the original input data to be signed
+ * +sig+ is a DSA signature value
+ *
+ * === Example
+ *  dsa = OpenSSL::DSA.new(2048)
+ *  doc = "Sign me"
+ *  digest = OpenSSL::Digest::SHA1.digest(doc)
+ *  sig = dsa.syssign(digest)
+ *  puts dsa.sysverify(digest, sig) # => true
  *
  */
 static VALUE
@@ -457,8 +509,26 @@ Init_ossl_dsa()
     mPKey = rb_define_module_under(mOSSL, "PKey");
 #endif
 
+    /* Document-class: OpenSSL::PKey::DSAError
+     *
+     * Generic exception that is raised if an operation on a DSA PKey
+     * fails unexpectedly or in case an instantiation of an instance of DSA
+     * fails due to non-conformant input data.
+     */
     eDSAError = rb_define_class_under(mPKey, "DSAError", ePKeyError);
 
+    /* Document-class: OpenSSL::PKey::DSA
+     *
+     * DSA, the Digital Signature Algorithm, is specified in NIST's 
+     * FIPS 186-3. It is an asymmetric public key algorithm that may be used
+     * similar to e.g. RSA.
+     * Please note that for OpenSSL versions prior to 1.0.0 the digest
+     * algorithms OpenSSL::Digest::DSS (equivalent to SHA) or
+     * OpenSSL::Digest::DSS1 (equivalent to SHA-1) must be used for issuing
+     * signatures with a DSA key using OpenSSL::PKey#sign.
+     * Starting with OpenSSL 1.0.0, digest algorithms are no longer restricted,
+     * any Digest may be used for signing.
+     */
     cDSA = rb_define_class_under(mPKey, "DSA", cPKey);
 
     rb_define_singleton_method(cDSA, "generate", ossl_dsa_s_generate, 1);

@@ -1,3 +1,7 @@
+Mon Jun 13 00:25:10 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_pkey_dsa.c: completed documentation.
+
 Sun Jun 12 23:36:46 2011  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb (kill_sub_thread): remove the method. [ruby-core:34185]
