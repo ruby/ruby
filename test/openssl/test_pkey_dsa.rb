@@ -22,6 +22,14 @@ class OpenSSL::TestPKeyDSA < Test::Unit::TestCase
     assert_equal([], OpenSSL.errors)
   end
 
+  def test_sys_sign_verify
+    key = OpenSSL::PKey::DSA.new(256)
+    data = 'Sign me!'
+    digest = OpenSSL::Digest::SHA1.digest(data)
+    sig = key.syssign(digest)
+    assert(key.sysverify(digest, sig))
+  end
+
   def test_sign_verify
     check_sign_verify(OpenSSL::Digest::DSS1.new)
   end

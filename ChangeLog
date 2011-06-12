@@ -1,3 +1,7 @@
+Mon Jun 13 02:40:23 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_pkey_dsa.rb: Test for DSA#syssign/sysverify.
+
 Mon Jun 13 01:59:19 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_pkey_dh.c: completed documentation.
