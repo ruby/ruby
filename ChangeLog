@@ -1,3 +1,7 @@
+Sun Jun 12 23:36:46 2011  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb (kill_sub_thread): remove the method. [ruby-core:34185]
+
 Sun Jun 12 21:01:56 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (d_lite_marshal_load): should give converted value.

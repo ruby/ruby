@@ -1412,20 +1412,6 @@ module DRb
     end
 
     private
-    def kill_sub_thread
-      Thread.new do
-        grp = ThreadGroup.new
-        grp.add(Thread.current)
-        list = @grp.list
-        while list.size > 0
-          list.each do |th|
-            th.kill if th.alive?
-          end
-          list = @grp.list
-        end
-      end
-    end
-
     def run
       Thread.start do
         begin
@@ -1434,7 +1420,6 @@ module DRb
           end
         ensure
           @protocol.close if @protocol
-          kill_sub_thread
         end
       end
     end
