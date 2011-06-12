@@ -1,3 +1,7 @@
+Mon Jun 13 04:42:24 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c (total_i): fix to skip no ruby objects.
+
 Mon Jun 13 03:07:38 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/benchmark/test_benchmark.rb (capture_output):
