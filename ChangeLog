@@ -1,3 +1,8 @@
+Mon Jun 13 10:13:08 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/pkey_dh.c: clarify difference between DH#public_key and
+	DH#pub_key in documentation.
+
 Mon Jun 13 05:50:43 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* NEWS: introduce PKey.read.
