@@ -148,6 +148,10 @@ class TestIO_Console < Test::Unit::TestCase
     }
   end
 
+  def test_sync
+    assert(helper {IO.console.sync}, "console should be unbuffered")
+  end
+
   private
   def helper
     m, s = PTY.open
