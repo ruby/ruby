@@ -544,33 +544,33 @@ console_dev(VALUE klass)
     {
 	VALUE args[2];
 #if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H || defined HAVE_SGTTY_H
-# define CONSOLE_DEVISE "/dev/tty"
+# define CONSOLE_DEVICE "/dev/tty"
 #elif defined _WIN32
-# define CONSOLE_DEVISE "con$"
-# define CONSOLE_DEVISE_FOR_READING "conin$"
-# define CONSOLE_DEVISE_FOR_WRITING "conout$"
+# define CONSOLE_DEVICE "con$"
+# define CONSOLE_DEVICE_FOR_READING "conin$"
+# define CONSOLE_DEVICE_FOR_WRITING "conout$"
 #endif
-#ifndef CONSOLE_DEVISE_FOR_READING
-# define CONSOLE_DEVISE_FOR_READING CONSOLE_DEVISE
+#ifndef CONSOLE_DEVICE_FOR_READING
+# define CONSOLE_DEVICE_FOR_READING CONSOLE_DEVICE
 #endif
-#ifdef CONSOLE_DEVISE_FOR_WRITING
+#ifdef CONSOLE_DEVICE_FOR_WRITING
 	VALUE out;
 	rb_io_t *ofptr;
 #endif
 
 	args[1] = INT2FIX(O_RDWR);
-#ifdef CONSOLE_DEVISE_FOR_WRITING
-	args[0] = rb_str_new2(CONSOLE_DEVISE_FOR_WRITING);
+#ifdef CONSOLE_DEVICE_FOR_WRITING
+	args[0] = rb_str_new2(CONSOLE_DEVICE_FOR_WRITING);
 	out = rb_class_new_instance(2, args, klass);
 #endif
-	args[0] = rb_str_new2(CONSOLE_DEVISE_FOR_READING);
+	args[0] = rb_str_new2(CONSOLE_DEVICE_FOR_READING);
 	con = rb_class_new_instance(2, args, klass);
-#ifdef CONSOLE_DEVISE_FOR_WRITING
+#ifdef CONSOLE_DEVICE_FOR_WRITING
 	GetOpenFile(con, fptr);
 	GetOpenFile(out, ofptr);
 # ifdef HAVE_RB_IO_GET_WRITE_IO
 #   ifdef _WIN32
-	ofptr->pathv = fptr->pathv = rb_str_new2(CONSOLE_DEVISE);
+	ofptr->pathv = fptr->pathv = rb_str_new2(CONSOLE_DEVICE);
 #   endif
 	fptr->tied_io_for_writing = out;
 # else
