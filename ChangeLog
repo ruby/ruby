@@ -1,3 +1,7 @@
+Mon Jun 13 14:17:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* lib/test/unit.rb (Test::Unit::GlobOption#non_options): fix typo.
+
 Mon Jun 13 13:04:20 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_digest.c: fix error for digests that have no oid
