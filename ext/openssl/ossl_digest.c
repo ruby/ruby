@@ -41,9 +41,12 @@ GetDigestPtr(VALUE obj)
     if (TYPE(obj) == T_STRING) {
     	const char *name = StringValueCStr(obj);
 
-	oid = OBJ_txt2obj(name, 0);
-	md = EVP_get_digestbyobj(oid);
-	ASN1_OBJECT_free(oid);
+	md = EVP_get_digestbyname(name);
+	if (!md) {
+	    oid = OBJ_txt2obj(name, 0);
+	    md = EVP_get_digestbyobj(oid);
+	    ASN1_OBJECT_free(oid);
+	}
 	if(!md)
             ossl_raise(rb_eRuntimeError, "Unsupported digest algorithm (%s).", name);
     } else {

@@ -56,6 +56,18 @@ class OpenSSL::TestDigest < Test::Unit::TestCase
     assert_equal(dig1, dig2, "reset")
   end
 
+  def test_digest_constants
+    algs = %w(DSS1 MD4 MD5 MDC2 RIPEMD160 SHA SHA1)
+    if OpenSSL::OPENSSL_VERSION_NUMBER > 0x00908000
+      algs += %w(SHA224 SHA256 SHA384 SHA512)
+    end
+    algs.each do |alg|
+      assert_not_nil(OpenSSL::Digest.new(alg))
+      klass = OpenSSL::Digest.const_get(alg)
+      assert_not_nil(klass.new)
+    end
+  end
+
   def test_digest_by_oid_and_name
     check_digest(OpenSSL::ASN1::ObjectId.new("MD5"))
     check_digest(OpenSSL::ASN1::ObjectId.new("SHA1"))
