@@ -160,3 +160,13 @@ class TestIO_Console < Test::Unit::TestCase
     s.close if s
   end
 end if defined?(PTY) and defined?(IO::console)
+
+class TestIO_Console < Test::Unit::TestCase
+  require_relative '../../ruby/envutil'
+
+  def test_noctty
+    assert_in_out_err(["-rio/console"],
+                      "Process.daemon(true, true); p IO.console",
+                      ["nil"])
+  end
+end if defined?(Process.daemon) and defined?(IO::console)

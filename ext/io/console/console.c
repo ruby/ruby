@@ -557,27 +557,36 @@ console_dev(VALUE klass)
 	VALUE out;
 	rb_io_t *ofptr;
 #endif
+	int fd, mode;
 
-	args[1] = INT2FIX(O_RDWR);
 #ifdef CONSOLE_DEVICE_FOR_WRITING
-	args[0] = rb_str_new2(CONSOLE_DEVICE_FOR_WRITING);
+	fd = open(CONSOLE_DEVICE_FOR_WRITING, O_WRONLY);
+	if (fd < 0) return Qnil;
+	args[1] = INT2FIX(O_WRONLY);
+	args[0] = INT2NUM(fd);
 	out = rb_class_new_instance(2, args, klass);
 #endif
-	args[0] = rb_str_new2(CONSOLE_DEVICE_FOR_READING);
-	con = rb_class_new_instance(2, args, klass);
+	fd = open(CONSOLE_DEVICE_FOR_READING, O_RDWR);
+	if (fd < 0) {
 #ifdef CONSOLE_DEVICE_FOR_WRITING
+	    rb_io_close(out);
+#endif
+	    return Qnil;
+	}
+	args[1] = INT2FIX(O_RDWR);
+	args[0] = INT2NUM(fd);
+	con = rb_class_new_instance(2, args, klass);
 	GetOpenFile(con, fptr);
+	fptr->pathv = rb_obj_freeze(rb_str_new2(CONSOLE_DEVICE));
+#ifdef CONSOLE_DEVICE_FOR_WRITING
 	GetOpenFile(out, ofptr);
 # ifdef HAVE_RB_IO_GET_WRITE_IO
-#   ifdef _WIN32
-	ofptr->pathv = fptr->pathv = rb_str_new2(CONSOLE_DEVICE);
-#   endif
+	ofptr->pathv = fptr->pathv;
 	fptr->tied_io_for_writing = out;
 # else
 	fptr->f2 = ofptr->f;
 	ofptr->f = 0;
 # endif
-	fptr->mode |= FMODE_WRITABLE;
 #endif
 	rb_const_set(klass, id_console, con);
     }

@@ -1,3 +1,8 @@
+Mon Jun 13 23:28:50 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (console_dev): take care of no-ctty
+	  case.
+
 Mon Jun 13 23:06:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c: rewrite GVL completely.
