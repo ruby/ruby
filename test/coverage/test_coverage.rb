@@ -1,5 +1,6 @@
 require "test/unit"
 require "coverage"
+require "tmpdir"
 
 class TestCoverage < Test::Unit::TestCase
   def test_result_without_start
@@ -13,5 +14,30 @@ class TestCoverage < Test::Unit::TestCase
       assert_kind_of(String, key)
       assert_kind_of(Array, val)
     end
+  end
+
+  def test_restarting_coverage
+    loaded_features = $".dup
+
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts <<-EOS
+            def coverage_test_method
+              :ok
+            end
+          EOS
+        end
+
+        Coverage.start
+        require tmp + '/test.rb'
+        Coverage.result
+        Coverage.start
+        coverage_test_method
+        assert_equal 1, Coverage.result.size
+      }
+    }
+  ensure
+    $".replace loaded_features
   end
 end

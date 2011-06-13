@@ -1,3 +1,8 @@
+Tue Jun 14 01:10:38 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/coverage/test_coverage.rb: add a test for restart.  a patch
+	  from Xavier Shay.  [ruby-core:36745] 
+
 Tue Jun 14 01:05:10 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/coverage/coverage.c: make it restartable.  [ruby-core:36539]
