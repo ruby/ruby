@@ -3,6 +3,15 @@ require 'yaml'
 
 module Syck
   class TestClass < Test::Unit::TestCase
+    def setup
+      @engine = YAML::ENGINE.yamler
+      YAML::ENGINE.yamler = 'syck'
+    end
+
+    def teardown
+      YAML::ENGINE.yamler = @engine
+    end
+
     def test_to_yaml
       assert_raises(::TypeError) do
         TestClass.to_yaml
