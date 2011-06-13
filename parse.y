@@ -5984,6 +5984,18 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
 
     tokfix();
     set_yylval_str(STR_NEW3(tok(), toklen(), enc, func));
+
+#ifdef RIPPER
+    if (!NIL_P(parser->delayed)){
+	ptrdiff_t len = lex_p - parser->tokp;
+	if (len > 0) {
+	    rb_enc_str_buf_cat(parser->delayed, parser->tokp, len, enc);
+	}
+	ripper_dispatch_delayed_token(parser, tSTRING_CONTENT);
+	parser->tokp = lex_p;
+    }
+#endif
+
     return tSTRING_CONTENT;
 }
 
@@ -7853,6 +7865,7 @@ yylex(void *p)
 #ifdef RIPPER
     if (!NIL_P(parser->delayed)) {
 	ripper_dispatch_delayed_token(parser, t);
+	return t;
     }
     if (t != 0)
 	ripper_dispatch_scan_event(parser, t);

@@ -67,10 +67,17 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                   [[3, 0], :on_heredoc_end, "EOS"]],
                  Ripper.lex("<<EOS\nheredoc\nEOS")
     assert_equal [[[1, 0], :on_regexp_beg, "/"],
-                  [[1, 1], :on_tstring_content, "foo\n"],
-                  [[2, 0], :on_tstring_content, "bar"],
+                  [[1, 1], :on_tstring_content, "foo\nbar"],
                   [[2, 3], :on_regexp_end, "/"]],
                  Ripper.lex("/foo\nbar/")
+    assert_equal [[[1, 0], :on_regexp_beg, "/"],
+                  [[1, 1], :on_tstring_content, "foo\n\u3020"],
+                  [[2, 3], :on_regexp_end, "/"]],
+                 Ripper.lex("/foo\n\u3020/")
+    assert_equal [[[1, 0], :on_tstring_beg, "'"],
+                  [[1, 1], :on_tstring_content, "foo\n\xe3\x80\xa0"],
+                  [[2, 3], :on_tstring_end, "'"]],
+                 Ripper.lex("'foo\n\xe3\x80\xa0'")
   end
 
   def test_location
@@ -534,6 +541,12 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('tstring_content', '"abc#{1}def"')
     assert_equal ['sym'],
                  scan('tstring_content', ':"sym"')
+    assert_equal ['a b c'],
+                 scan('tstring_content', ':"a b c"'),
+                 "bug#4544"
+    assert_equal ["a\nb\nc"],
+                 scan('tstring_content', ":'a\nb\nc'"),
+                 "bug#4544"
   end
 
   def test_tstring_end

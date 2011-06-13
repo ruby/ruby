@@ -1,3 +1,11 @@
+Mon Jun 13 23:38:23 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_parse_string): flush delayed token.  based on a
+	  patch by Masaya Tarui in [ruby-dev:43762].  Bug #4544
+
+	* parse.y (yylex): revert r24557.  delayed token at the end of
+	  string should be flushed already by the above change.
+
 Mon Jun 13 23:33:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/console.c (console_dev): console should be
