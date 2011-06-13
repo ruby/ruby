@@ -1,3 +1,10 @@
+Mon Jun 13 23:55:40 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_schedule_rec): call gvl_yield() unconditionally.
+	* thread_pthread.c: remove HAVE_GVL_YIELD macro.
+	* thread_win32.c (gvl_yield): new. this fallback logic was moved from
+	  rb_thread_schedule_rec().
+
 Mon Jun 13 23:50:25 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/io/console/console.c (console_dev): typo.

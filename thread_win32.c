@@ -106,6 +106,15 @@ gvl_release(rb_vm_t *vm)
 }
 
 static void
+gvl_yield(rb_vm_t *vm, rb_thread_t *th)
+{
+  gvl_release(th->vm);
+  native_thread_yield();
+  gvl_acquire(vm, th);
+}
+
+
+static void
 gvl_atfork(rb_vm_t *vm)
 {
     rb_bug("gvl_atfork() is called on win32");

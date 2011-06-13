@@ -83,7 +83,6 @@ gvl_release(rb_vm_t *vm)
     native_mutex_unlock(&vm->gvl.lock);
 }
 
-#define HAVE_GVL_YIELD 1
 static void
 gvl_yield(rb_vm_t *vm, rb_thread_t *th)
 {

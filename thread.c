@@ -1025,18 +1025,8 @@ rb_thread_schedule_rec(int sched_depth, unsigned long limits_us)
 
 	RB_GC_SAVE_MACHINE_CONTEXT(th);
 
-#if HAVE_GVL_YIELD
-	{
-	    if (th->running_time_us >= limits_us)
-		gvl_yield(th->vm, th);
-	}
-#else
-	gvl_release(th->vm);
-	{
-	    native_thread_yield();
-	}
-	gvl_acquire(th->vm, th);
-#endif
+	if (th->running_time_us >= limits_us)
+	    gvl_yield(th->vm, th);
 
 	rb_thread_set_current(th);
 	thread_debug("rb_thread_schedule/switch done\n");
