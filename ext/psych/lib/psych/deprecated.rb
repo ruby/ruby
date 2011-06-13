@@ -76,6 +76,7 @@ module Psych
 end
 
 class Object
+  undef :to_yaml_properties rescue nil
   def to_yaml_properties # :nodoc:
     instance_variables
   end

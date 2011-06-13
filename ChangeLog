@@ -1,3 +1,8 @@
+Mon Jun 13 12:23:39 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/psych/lib/psych/deprecated.rb (Object#to_yaml_properties):
+	  undef to_yaml_properties before redefine it.
+
 Mon Jun 13 11:30:10 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_digest.c: allow Digests to be created by sn, ln or
