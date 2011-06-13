@@ -1,3 +1,16 @@
+Mon Jun 13 20:18:55 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h, vm_insnhelper.h: move decl. of 
+	  ruby_vm_global_state_version and related macros
+	  from vm_core.h to vm_insnhelper.h.
+
+	* vm.c (vm_clear_all_cache): added.  This function is called
+	  when ruby_vm_global_state_version overflows.
+	  TODO: vm_clear_all_inline_method_cache() is only place holder.
+	        We need to implement it ASAP.
+
+	* vm_method.c (vm_clear_global_method_cache): added.
+
 Mon Jun 13 19:46:21 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/cmath.rb: add new methd Object#real?. fix #3137

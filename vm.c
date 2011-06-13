@@ -36,7 +36,6 @@ VALUE rb_cThread;
 VALUE rb_cEnv;
 VALUE rb_mRubyVMFrozenCore;
 
-VALUE ruby_vm_global_state_version = 1;
 VALUE ruby_vm_const_missing_count = 0;
 
 char ruby_vm_redefined_flag[BOP_LAST_];
@@ -56,6 +55,25 @@ void
 rb_vm_change_state(void)
 {
     INC_VM_STATE_VERSION();
+}
+
+static void vm_clear_global_method_cache(void);
+
+static void
+vm_clear_all_inline_method_cache(void)
+{
+    /* TODO: Clear all inline cache entries in all iseqs.
+             How to iterate all iseqs in sweep phase?
+             rb_objspace_each_objects() doesn't work at sweep phase.
+     */
+}
+
+static void
+vm_clear_all_cache()
+{
+    vm_clear_global_method_cache();
+    vm_clear_all_inline_method_cache();
+    ruby_vm_global_state_version = 1;
 }
 
 void

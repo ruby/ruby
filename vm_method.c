@@ -23,6 +23,19 @@ static struct cache_entry cache[CACHE_SIZE];
 #define ruby_running (GET_VM()->running)
 /* int ruby_running = 0; */
 
+static void
+vm_clear_global_method_cache(void)
+{
+    struct cache_entry *ent, *end;
+
+    ent = cache;
+    end = ent + CACHE_SIZE;
+    while (ent < end) {
+	ent->filled_version = 0;
+	ent++;
+    }
+}
+
 void
 rb_clear_cache(void)
 {
