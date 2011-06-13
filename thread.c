@@ -1015,7 +1015,7 @@ rb_thread_sleep(int sec)
 static void rb_threadptr_execute_interrupts_rec(rb_thread_t *, int);
 
 static void
-rb_thread_schedule_rec(int sched_depth)
+rb_thread_schedule_rec(int sched_depth, unsigned long limits_us)
 {
     thread_debug("rb_thread_schedule\n");
     if (!rb_thread_alone()) {
@@ -1024,11 +1024,19 @@ rb_thread_schedule_rec(int sched_depth)
 	thread_debug("rb_thread_schedule/switch start\n");
 
 	RB_GC_SAVE_MACHINE_CONTEXT(th);
+
+#if HAVE_GVL_YIELD
+	{
+	    if (th->running_time_us >= limits_us)
+		gvl_yield(th->vm, th);
+	}
+#else
 	gvl_release(th->vm);
 	{
 	    native_thread_yield();
 	}
 	gvl_acquire(th->vm, th);
+#endif
 
 	rb_thread_set_current(th);
 	thread_debug("rb_thread_schedule/switch done\n");
@@ -1042,7 +1050,7 @@ rb_thread_schedule_rec(int sched_depth)
 void
 rb_thread_schedule(void)
 {
-    rb_thread_schedule_rec(0);
+    rb_thread_schedule_rec(0, 0);
 }
 
 /* blocking region */
@@ -1333,23 +1341,20 @@ rb_threadptr_execute_interrupts_rec(rb_thread_t *th, int sched_depth)
 	}
 
 	if (!sched_depth && timer_interrupt) {
-            sched_depth++;
+	    unsigned long limits_us = 250 * 1000;
+
+	    if (th->priority > 0)
+		limits_us <<= th->priority;
+	    else
+		limits_us >>= -th->priority;
+
+	    if (status == THREAD_RUNNABLE)
+		th->running_time_us += TIME_QUANTUM_USEC;
+
+	    sched_depth++;
 	    EXEC_EVENT_HOOK(th, RUBY_EVENT_SWITCH, th->cfp->self, 0, 0);
 
-	    if (th->slice > 0) {
-		th->slice--;
-	    }
-	    else {
-	      reschedule:
-		rb_thread_schedule_rec(sched_depth+1);
-		if (th->slice < 0) {
-		    th->slice++;
-		    goto reschedule;
-		}
-		else {
-		    th->slice = th->priority;
-		}
-	    }
+	    rb_thread_schedule_rec(sched_depth+1, limits_us);
 	}
     }
 }
@@ -2293,7 +2298,6 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
 	priority = RUBY_THREAD_PRIORITY_MIN;
     }
     th->priority = priority;
-    th->slice = priority;
 #endif
     return INT2NUM(th->priority);
 }

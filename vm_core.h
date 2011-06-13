@@ -419,7 +419,6 @@ typedef struct rb_thread_struct {
     rb_thread_id_t thread_id;
     enum rb_thread_status status;
     int priority;
-    int slice;
 
     native_thread_data_t native_thread_data;
     void *blocking_region_buffer;
@@ -484,6 +483,7 @@ typedef struct rb_thread_struct {
 #ifdef USE_SIGALTSTACK
     void *altstack;
 #endif
+    unsigned long running_time_us;
 } rb_thread_t;
 
 /* iseq.c */
@@ -673,6 +673,9 @@ extern rb_vm_t *ruby_current_vm;
 #define GET_THREAD() ruby_current_thread
 #define rb_thread_set_current_raw(th) (void)(ruby_current_thread = (th))
 #define rb_thread_set_current(th) do { \
+    if ((th)->vm->running_thread != (th)) { \
+	(th)->vm->running_thread->running_time_us = 0; \
+    } \
     rb_thread_set_current_raw(th); \
     (th)->vm->running_thread = (th); \
 } while (0)

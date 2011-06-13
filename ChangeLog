@@ -1,3 +1,11 @@
+Mon Jun 13 23:06:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c: rewrite GVL completely.
+	* thread_win32.c: ditto.
+	* thread_pthread.h: ditto.
+	* vm_core.h: ditto.
+	* thread.c: ditto.
+
 Mon Jun 13 23:11:52 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/socket/test_unix.rb: don't use Thread.abort_on_exception.

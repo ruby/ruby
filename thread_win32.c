@@ -13,7 +13,7 @@
 
 #include <process.h>
 
-#define WIN32_WAIT_TIMEOUT 10	/* 10 ms */
+#define TIME_QUANTUM_USEC (100 * 1000)
 #define RB_CONDATTR_CLOCK_MONOTONIC 1 /* no effect */
 
 #undef Sleep
@@ -680,7 +680,7 @@ static unsigned long _stdcall
 timer_thread_func(void *dummy)
 {
     thread_debug("timer_thread\n");
-    while (WaitForSingleObject(timer_thread_lock, WIN32_WAIT_TIMEOUT) ==
+    while (WaitForSingleObject(timer_thread_lock, TIME_QUANTUM_USEC/1000) ==
 	   WAIT_TIMEOUT) {
 	timer_thread_function(dummy);
     }
