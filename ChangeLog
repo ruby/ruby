@@ -1,3 +1,10 @@
+Mon Jun 13 18:33:04 2011  Tanaka Akira  <akr@fsij.org>
+
+	* lib/securerandom.rb (SecureRandom.random_bytes): modify PRNG state
+	  to prevent random number sequence repeatation at forked
+	  child process which has same pid.
+	  reported by Eric Wong.  [ruby-core:35765]
+
 Thu Jun  9 20:30:00 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb: zone_to_diff in this version is just class method.
