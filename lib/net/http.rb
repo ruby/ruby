@@ -544,7 +544,6 @@ module Net   #:nodoc:
 
       if opt
         if opt[:use_ssl]
-          require 'openssl' unless defined?(OpenSSL)
           opt = {verify_mode: OpenSSL::SSL::VERIFY_PEER}.update(opt)
         end
         http.methods.grep(/\A(\w+)=\z/) do |meth|
@@ -657,10 +656,7 @@ module Net   #:nodoc:
 
     # Returns true if SSL/TLS is being used with HTTP.
     def use_ssl?
-      if @use_ssl
-        require 'openssl' unless defined?(OpenSSL)
-        true
-      end
+      @use_ssl
     end
 
     # Turn on/off SSL.
@@ -668,7 +664,12 @@ module Net   #:nodoc:
     # If you change use_ssl value after session started,
     # a Net::HTTP object raises IOError.
     def use_ssl=(flag)
-      flag = (flag ? true : false)
+      flag = if flag
+        require 'openssl' unless defined?(OpenSSL)
+        true
+      else
+        false
+      end
       if started? and @use_ssl != flag
         raise IOError, "use_ssl value changed, but session already started"
       end
