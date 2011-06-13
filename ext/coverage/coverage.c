@@ -11,6 +11,8 @@
 #include "ruby.h"
 #include "vm_core.h"
 
+static VALUE rb_coverages = Qundef;
+
 /*
  * call-seq:
  *    Coverage.start  => nil
@@ -21,19 +23,25 @@ static VALUE
 rb_coverage_start(VALUE klass)
 {
     if (!RTEST(rb_get_coverages())) {
-	VALUE coverages = rb_hash_new();
-	RBASIC(coverages)->klass = 0;
-	rb_set_coverages(coverages);
+	if (rb_coverages == Qundef) {
+	    rb_coverages = rb_hash_new();
+	    RBASIC(rb_coverages)->klass = 0;
+	}
+	rb_set_coverages(rb_coverages);
     }
     return Qnil;
 }
 
 static int
-coverage_result_i(st_data_t key, st_data_t val, st_data_t dummy)
+coverage_result_i(st_data_t key, st_data_t val, st_data_t h)
 {
+    VALUE path = (VALUE)key;
     VALUE coverage = (VALUE)val;
-    RBASIC(coverage)->klass = rb_cArray;
+    VALUE coverages = (VALUE)h;
+    coverage = rb_ary_dup(coverage);
+    rb_ary_clear((VALUE)val);
     rb_ary_freeze(coverage);
+    rb_hash_aset(coverages, path, coverage);
     return ST_CONTINUE;
 }
 
@@ -48,14 +56,14 @@ static VALUE
 rb_coverage_result(VALUE klass)
 {
     VALUE coverages = rb_get_coverages();
+    VALUE ncoverages = rb_hash_new();
     if (!RTEST(coverages)) {
 	rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
     }
-    RBASIC(coverages)->klass = rb_cHash;
-    st_foreach(RHASH_TBL(coverages), coverage_result_i, 0);
-    rb_hash_freeze(coverages);
+    st_foreach(RHASH_TBL(coverages), coverage_result_i, ncoverages);
+    rb_hash_freeze(ncoverages);
     rb_reset_coverages();
-    return coverages;
+    return ncoverages;
 }
 
 /* Coverage provides coverage measurement feature for Ruby.

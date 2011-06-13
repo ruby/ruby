@@ -1,3 +1,7 @@
+Tue Jun 14 01:05:10 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/coverage/coverage.c: make it restartable.  [ruby-core:36539]
+
 Mon Jun 13 23:55:40 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_thread_schedule_rec): call gvl_yield() unconditionally.
