@@ -1,3 +1,11 @@
+Mon Jun 13 20:50:49 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_ec.rb
+	  test/openssl/test_pkey_ec.rb: merge both files into test_pkey_ec.rb.
+	  Removed redundant group instantiation from PKey tests.
+	* test/openssl/utils.rb: only create TEST_PKEY_EC_P256V1 if EC is
+	  defined. 
+
 Mon Jun 13 20:28:24 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/digest.rb: remove MDC2 from test, it is not available

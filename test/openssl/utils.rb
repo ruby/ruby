@@ -80,6 +80,8 @@ Q1VB8qkJN7rA7/2HrCR3gTsWNb1YhAsnFsoeRscC+LxXoXi9OAIUBG98h4tilg6S
 -----END DSA PRIVATE KEY-----
   _end_of_pem_
 
+if defined?(OpenSSL::PKey::EC)
+
   TEST_KEY_EC_P256V1 = OpenSSL::PKey::EC.new <<-_end_of_pem_
 -----BEGIN EC PRIVATE KEY-----
 MHcCAQEEIID49FDqcf1O1eO8saTgG70UbXQw9Fqwseliit2aWhH1oAoGCCqGSM49
@@ -87,6 +89,8 @@ AwEHoUQDQgAEFglk2c+oVUIKQ64eZG9bhLNPWB7lSZ/ArK41eGy5wAzU/0G51Xtt
 CeBUl+MahZtn9fO1JKdF4qJmS39dXnpENg==
 -----END EC PRIVATE KEY-----
   _end_of_pem_
+
+end
 
   TEST_KEY_DH512 = OpenSSL::PKey::DH.new <<-_end_of_pem_
 -----BEGIN DH PARAMETERS-----
