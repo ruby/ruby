@@ -1,7 +1,11 @@
 Mon Jun 13 12:23:39 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
+Mon Jun 13 12:23:39 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
 	* ext/psych/lib/psych/deprecated.rb (Object#to_yaml_properties):
 	  undef to_yaml_properties before redefine it.
+
+	* ext/syck/lib/syck/rubytypes.rb: ditto.
 
 Mon Jun 13 11:30:10 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
