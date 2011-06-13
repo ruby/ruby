@@ -1,3 +1,8 @@
+Mon Jun 13 17:02:34 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP#use_ssl?): require 'openssl' only when
+	  https is needed. fixes r31933.
+
 Mon Jun 13 14:35:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* lib/cmath.rb (CMath.cbrt): returns the principal value of the cube

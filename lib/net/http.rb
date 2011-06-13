@@ -657,8 +657,10 @@ module Net   #:nodoc:
 
     # Returns true if SSL/TLS is being used with HTTP.
     def use_ssl?
-      require 'openssl' unless defined?(OpenSSL)
-      @use_ssl
+      if @use_ssl
+        require 'openssl' unless defined?(OpenSSL)
+        true
+      end
     end
 
     # Turn on/off SSL.
