@@ -587,7 +587,7 @@ console_dev(VALUE klass)
 	fptr->f2 = ofptr->f;
 	ofptr->f = 0;
 # endif
-	optr->mode |= FMODE_SYNC;
+	ofptr->mode |= FMODE_SYNC;
 #endif
 	fptr->mode |= FMODE_SYNC;
 	rb_const_set(klass, id_console, con);

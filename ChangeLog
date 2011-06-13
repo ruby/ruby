@@ -1,3 +1,7 @@
+Mon Jun 13 23:50:25 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/io/console/console.c (console_dev): typo.
+
 Mon Jun 13 23:38:23 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_parse_string): flush delayed token.  based on a
