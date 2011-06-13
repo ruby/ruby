@@ -1,3 +1,7 @@
+Mon Jun 13 19:46:21 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/cmath.rb: add new methd Object#real?. fix #3137
+
 Mon Jun 13 18:52:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (is_kind_of_BigDecimal): new function to

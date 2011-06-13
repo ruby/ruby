@@ -314,3 +314,9 @@ module CMath
   module_function :lgamma
 
 end
+
+class Object
+  def real?
+    raise TypeError, "Numeric Number required"
+  end
+end
