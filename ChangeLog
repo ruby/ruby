@@ -1,3 +1,8 @@
+Mon Jun 13 18:52:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (is_kind_of_BigDecimal): new function to
+	  examine the whether the object is kind of BigDecimal.
+
 Mon Jun 13 18:49:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimalCmp): use GetVpValueWithPrec

@@ -119,6 +119,12 @@ static const rb_data_type_t BigDecimal_data_type = {
     {0, BigDecimal_delete, BigDecimal_memsize,},
 };
 
+static inline int
+is_kind_of_BigDecimal(VALUE const v)
+{
+    return rb_typeddata_is_kind_of(v, &BigDecimal_data_type);
+}
+
 static VALUE
 ToValue(Real *p)
 {
@@ -168,7 +174,7 @@ again:
 	goto SomeOneMayDoIt;
 
       case T_DATA:
-	if (rb_typeddata_is_kind_of(v, &BigDecimal_data_type)) {
+	if (is_kind_of_BigDecimal(v)) {
 	    pv = DATA_PTR(v);
 	    return pv;
 	}
@@ -798,7 +804,7 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
     GUARD_OBJ(a,GetVpValue(self,1));
     switch (TYPE(r)) {
     case T_DATA:
-	if (!rb_typeddata_is_kind_of(r, &BigDecimal_data_type)) break;
+	if (!is_kind_of_BigDecimal(r)) break;
 	/* fall through */
     case T_FIXNUM:
 	/* fall through */
