@@ -1,3 +1,10 @@
+Mon Jun 13 18:33:04 2011  Tanaka Akira  <akr@fsij.org>
+
+	* lib/securerandom.rb (SecureRandom.random_bytes): modify PRNG state
+	  to prevent random number sequence repeatation at forked child
+	  process which has same pid.
+	  reported by Eric Wong.  [ruby-core:35765]
+
 Mon Jun 13 17:02:34 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP#use_ssl?): require 'openssl' only when
