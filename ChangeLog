@@ -1,3 +1,7 @@
+Mon Jun 13 23:11:52 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/socket/test_unix.rb: don't use Thread.abort_on_exception.
+
 Mon Jun 13 23:05:01 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/unixsocket.c (unix_send_io): race condition fixed.

@@ -108,8 +108,6 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     r1, w = IO.pipe
     s1, s2 = UNIXSocket.pair
     s1.nonblock = s2.nonblock = true
-    aoe = Thread.abort_on_exception
-    Thread.abort_on_exception = true
     lock = Mutex.new
     nr = 0
     x = 2
@@ -125,13 +123,13 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
             s2.recv_io.close
             lock.synchronize { nr += 1 }
           end
+          true
         end
       end
       (x * y).times { s1.send_io r1 }
-      thrs.each { |t| t.join }
+      assert_equal([true]*x, thrs.map { |t| t.value })
       assert_equal x * y, nr
     ensure
-      Thread.abort_on_exception = aoe
       s1.close
       s2.close
       w.close
