@@ -414,9 +414,6 @@ native_cond_signal(rb_thread_cond_t *cond)
 
 	SetEvent(e->event);
     }
-    else {
-	rb_bug("native_cond_signal: no pending threads");
-    }
 }
 
 static void

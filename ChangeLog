@@ -1,3 +1,8 @@
+Mon Jun 13 21:41:05 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_win32.c (native_cond_signal): remove unnecessary rb_bug().
+	  It's addional fix for r32021. [Bug #4696]
+
 Mon Jun 13 20:50:49 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_ec.rb
