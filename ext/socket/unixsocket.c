@@ -248,9 +248,10 @@ unix_send_io(VALUE sock, VALUE val)
 #endif
 
     arg.fd = fptr->fd;
-    rb_thread_fd_writable(arg.fd);
-    if ((int)BLOCKING_REGION_FD(sendmsg_blocking, &arg) == -1)
-	rb_sys_fail("sendmsg(2)");
+    while ((int)BLOCKING_REGION_FD(sendmsg_blocking, &arg) == -1) {
+	if (!rb_io_wait_writable(arg.fd))
+	    rb_sys_fail("sendmsg(2)");
+    }
 
     return Qnil;
 }
@@ -334,9 +335,10 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 #endif
 
     arg.fd = fptr->fd;
-    rb_thread_wait_fd(arg.fd);
-    if ((int)BLOCKING_REGION_FD(recvmsg_blocking, &arg) == -1)
-	rb_sys_fail("recvmsg(2)");
+    while ((int)BLOCKING_REGION_FD(recvmsg_blocking, &arg) == -1) {
+	if (!rb_io_wait_readable(arg.fd))
+	    rb_sys_fail("recvmsg(2)");
+    }
 
 #if FD_PASSING_BY_MSG_CONTROL
     if (arg.msg.msg_controllen < (socklen_t)sizeof(struct cmsghdr)) {

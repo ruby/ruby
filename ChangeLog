@@ -1,3 +1,11 @@
+Mon Jun 13 23:05:01 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/unixsocket.c (unix_send_io): race condition fixed.
+	  (unix_recv_io): ditto.
+	  fixed by Eric Wong.  [ruby-core:35574]
+
+	* test/socket/test_unix.rb: test added for above problem.
+
 Mon Jun 13 21:41:05 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_win32.c (native_cond_signal): remove unnecessary rb_bug().
