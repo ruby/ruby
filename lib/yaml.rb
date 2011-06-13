@@ -13,7 +13,7 @@ module YAML
     def yamler= engine
       raise(ArgumentError, "bad engine") unless %w{syck psych}.include?(engine)
 
-      require engine
+      require engine unless (engine == 'syck' ? Syck : Psych).const_defined?(:VERSION)
 
       Object.class_eval <<-eorb, __FILE__, __LINE__ + 1
         remove_const 'YAML'
@@ -30,15 +30,22 @@ module YAML
   ENGINE = YAML::EngineManager.new
 end
 
-begin
-  require 'psych'
-rescue LoadError
-  warn "#{caller[0]}:"
-  warn "It seems your ruby installation is missing psych (for YAML output)."
-  warn "To eliminate this warning, please install libyaml and reinstall your ruby."
+if defined?(Psych)
+  engine = 'psych'
+elsif defined?(Syck)
+  engine = 'syck'
+else
+  begin
+    require 'psych'
+    engine = 'psych'
+  rescue LoadError
+    warn "#{caller[0]}:"
+    warn "It seems your ruby installation is missing psych (for YAML output)."
+    warn "To eliminate this warning, please install libyaml and reinstall your ruby."
+    require 'syck'
+    engine = 'syck'
+  end
 end
-
-engine = (!defined?(Syck) && defined?(Psych) ? 'psych' : 'syck')
 
 module Syck
   ENGINE = YAML::ENGINE

@@ -1,3 +1,7 @@
+Mon Jun 13 12:51:51 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/yaml.rb: load psych only when syck is not loaded.
+
 Mon Jun 13 12:23:39 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Mon Jun 13 12:23:39 2011  NARUSE, Yui  <naruse@ruby-lang.org>
