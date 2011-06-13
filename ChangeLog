@@ -1,3 +1,11 @@
+Mon Jun 13 14:35:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* lib/cmath.rb (CMath.cbrt): returns the principal value of the cube
+	  root of the argument.  fix #3676
+
+	* test/test_cmath.rb (test_cbrt_returns_principal_value_of_cube_root):
+	  test for the above change.
+
 Mon Jun 13 14:17:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* lib/test/unit.rb (Test::Unit::GlobOption#non_options): fix typo.
