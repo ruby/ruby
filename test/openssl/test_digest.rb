@@ -57,7 +57,7 @@ class OpenSSL::TestDigest < Test::Unit::TestCase
   end
 
   def test_digest_constants
-    algs = %w(DSS1 MD4 MD5 MDC2 RIPEMD160 SHA SHA1)
+    algs = %w(DSS1 MD4 MD5 RIPEMD160 SHA SHA1)
     if OpenSSL::OPENSSL_VERSION_NUMBER > 0x00908000
       algs += %w(SHA224 SHA256 SHA384 SHA512)
     end
