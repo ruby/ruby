@@ -36,12 +36,15 @@ const EVP_MD *
 GetDigestPtr(VALUE obj)
 {
     const EVP_MD *md;
+    ASN1_OBJECT *oid = NULL;
 
     if (TYPE(obj) == T_STRING) {
     	const char *name = StringValueCStr(obj);
 
-        md = EVP_get_digestbyname(name);
-        if (!md)
+	oid = OBJ_txt2obj(name, 0);
+	md = EVP_get_digestbyobj(oid);
+	ASN1_OBJECT_free(oid);
+	if(!md)
             ossl_raise(rb_eRuntimeError, "Unsupported digest algorithm (%s).", name);
     } else {
         EVP_MD_CTX *ctx;
@@ -260,8 +263,9 @@ ossl_digest_size(VALUE self)
  *      digest.block_length -> integer
  *
  * Returns the block length of the digest algorithm, i.e. the length in bytes
- * of an individual block. Most modern partition a message to be digested into
- * a sequence of fix-sized blocks that are processed consecutively.
+ * of an individual block. Most modern algorithms partition a message to be
+ * digested into a sequence of fix-sized blocks that are processed
+ * consecutively.
  *
  * === Example
  *   digest = OpenSSL::Digest::SHA1.new

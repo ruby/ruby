@@ -1,3 +1,10 @@
+Mon Jun 13 11:30:10 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_digest.c: allow Digests to be created by sn, ln or
+	  oid.
+	* test/openssl/test_digest.rb: add tests for this.
+	  [Ruby 1.9 - Feature #4412] [ruby-core:35319]
+
 Mon Jun 13 10:54:03 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/pkey_dh.c: corrected documentation.
