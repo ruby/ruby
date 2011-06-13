@@ -10,7 +10,7 @@ end
 class Object
     yaml_as "tag:ruby.yaml.org,2002:object"
     def to_yaml_style; end
-    undef to_yaml_properties
+    undef to_yaml_properties rescue nil
     def to_yaml_properties; instance_variables.sort; end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( self, opts ) do |out|
