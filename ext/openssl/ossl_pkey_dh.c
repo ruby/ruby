@@ -137,9 +137,9 @@ ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
  *
  * Either generates a DH instance from scratch or by reading already existing
  * DH parameters from +string+. Note that when reading a DH instance from
- * data that was encoded from a DH#public_key DH instance the result
- * will *not* contain a public/private key pair yet. This needs to be
- * generated using DH#generate_key! first.
+ * data that was encoded from a DH instance by using DH#to_pem or DH#to_der
+ * the result will *not* contain a public/private key pair yet. This needs to
+ * be generated using DH#generate_key! first.
  *
  * === Parameters
  * * +size+ is an integer representing the desired key size. Keys smaller than 1024 bits should be considered insecure.
@@ -150,9 +150,7 @@ ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
  *  DH.new # -> dh
  *  DH.new(1024) # -> dh
  *  DH.new(1024, 5) # -> dh
- *  #Reading a "private" DH key
- *  DH.new(File.read('key.pem')) # -> dh
- *  #Reading public DH parameters
+ *  #Reading DH parameters
  *  dh = DH.new(File.read('parameters.pem')) # -> dh, but no public/private key yet
  *  dh.generate_key! # -> dh with public and private key
  */
@@ -237,7 +235,9 @@ ossl_dh_is_private(VALUE self)
  *  call-seq:
  *     dh.to_pem -> aString
  *
- * Encodes this DH to its PEM encoding.
+ * Encodes this DH to its PEM encoding. Note that any existing per-session
+ * public/private keys will *not* get encoded, just the Diffie-Hellman
+ * parameters will be encoded.
  */
 static VALUE
 ossl_dh_export(VALUE self)
@@ -263,7 +263,10 @@ ossl_dh_export(VALUE self)
  *  call-seq:
  *     dh.to_der -> aString
  *
- * Encodes this DH to its DER encoding.
+ * Encodes this DH to its DER encoding. Note that any existing per-session
+ * public/private keys will *not* get encoded, just the Diffie-Hellman
+ * parameters will be encoded.
+
  */
 static VALUE
 ossl_dh_to_der(VALUE self)

@@ -88,6 +88,13 @@ CeBUl+MahZtn9fO1JKdF4qJmS39dXnpENg==
 -----END EC PRIVATE KEY-----
   _end_of_pem_
 
+  TEST_KEY_DH512 = OpenSSL::PKey::DH.new <<-_end_of_pem_
+-----BEGIN DH PARAMETERS-----
+MEYCQQDmWXGPqk76sKw/edIOdhAQD4XzjJ+AR/PTk2qzaGs+u4oND2yU5D2NN4wr
+aPgwHyJBiK1/ebK3tYcrSKrOoRyrAgEC
+-----END DH PARAMETERS-----
+  _end_of_pem_
+
   module_function
 
   def issue_cert(dn, key, serial, not_before, not_after, extensions,

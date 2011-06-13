@@ -1,3 +1,9 @@
+Mon Jun 13 10:54:03 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/pkey_dh.c: corrected documentation.
+	* test/openssl/utils.rb: add test key for DH.
+	* test/openssl/test_pkey_dh.rb: add tests.
+
 Mon Jun 13 10:13:08 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/pkey_dh.c: clarify difference between DH#public_key and
