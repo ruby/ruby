@@ -1,3 +1,14 @@
+Mon Jun 13 18:49:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimalCmp): use GetVpValueWithPrec
+	  for Float and Rational arguments.
+
+	* test/bigdecimal/test_bigdecimal.rb (test_new, test_cmp, test_power):
+	  add and modify tests for the above change.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimalCmp): modify coding style to
+	  match ruby's standard.
+
 Mon Jun 13 18:33:04 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb (SecureRandom.random_bytes): modify PRNG state

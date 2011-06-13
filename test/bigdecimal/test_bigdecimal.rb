@@ -56,6 +56,7 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(1, BigDecimal.new(" 1 "))
     assert_equal(111, BigDecimal.new("1_1_1_"))
     assert_equal(0, BigDecimal.new("_1_1_1"))
+    assert_equal(10**(-1), BigDecimal.new("1E-1"), '#4825')
 
     BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
     BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
@@ -351,6 +352,9 @@ class TestBigDecimal < Test::Unit::TestCase
     inf = BigDecimal.new("Infinity")
     assert_operator(inf, :>, 1)
     assert_operator(1, :<, inf)
+
+    assert_operator(BigDecimal("1E-1"), :==, 10**(-1), '#4825')
+    assert_equal(0, BigDecimal("1E-1") <=> 10**(-1), '#4825')
   end
 
   def test_cmp_nan
@@ -763,7 +767,8 @@ class TestBigDecimal < Test::Unit::TestCase
   def test_power
     x = BigDecimal.new("3")
     assert_equal(81, x ** 4)
-    assert_equal(1.0/81, x ** -4)
+    assert_equal(1.0/81, (x ** -4).to_f)
+    assert_equal(1.quo(81), x ** -4)
     assert_equal(1, x ** 0)
     assert_raise(TypeError) { x ** x }
     assert_equal(0, BigDecimal.new("0") ** 4)

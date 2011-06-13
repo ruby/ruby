@@ -794,34 +794,90 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
 {
     ENTER(5);
     SIGNED_VALUE e;
-    Real *a, *b;
+    Real *a, *b=0;
     GUARD_OBJ(a,GetVpValue(self,1));
-    b = GetVpValue(r,0);
-    if(!b) {
+    switch (TYPE(r)) {
+    case T_DATA:
+	if (!rb_typeddata_is_kind_of(r, &BigDecimal_data_type)) break;
+	/* fall through */
+    case T_FIXNUM:
+	/* fall through */
+    case T_BIGNUM:
+	GUARD_OBJ(b, GetVpValue(r,0));
+	break;
+
+    case T_FLOAT:
+	GUARD_OBJ(b, GetVpValueWithPrec(r, DBL_DIG+1, 0));
+	break;
+
+    case T_RATIONAL:
+	GUARD_OBJ(b, GetVpValueWithPrec(r, a->Prec*VpBaseFig(), 0));
+	break;
+
+    default:
+	break;
+    }
+    if (b == NULL) {
 	ID f = 0;
 
-	switch(op)
-	{
-	  case '*': return rb_num_coerce_cmp(self,r,rb_intern("<=>"));
-	  case '=': return RTEST(rb_num_coerce_cmp(self,r,rb_intern("=="))) ? Qtrue : Qfalse;
-	  case 'G': f = rb_intern(">="); break;
-	  case 'L': f = rb_intern("<="); break;
-	  case '>': case '<': f = (ID)op; break;
+	switch (op) {
+	case '*':
+	    return rb_num_coerce_cmp(self, r, rb_intern("<=>"));
+
+	case '=':
+	    return RTEST(rb_num_coerce_cmp(self, r, rb_intern("=="))) ? Qtrue : Qfalse;
+
+	case 'G':
+	    f = rb_intern(">=");
+	    break;
+
+	case 'L':
+	    f = rb_intern("<=");
+	    break;
+
+	case '>':
+	    /* fall through */
+	case '<':
+	    f = (ID)op;
+	    break;
+
+	default:
+	    break;
 	}
-	return rb_num_coerce_relop(self,r,f);
+	return rb_num_coerce_relop(self, r, f);
     }
     SAVE(b);
     e = VpComp(a, b);
-    if(e==999) return (op == '*') ? Qnil : Qfalse;
-    switch(op)
-    {
-    case '*': return   INT2FIX(e); /* any op */
-    case '=': if(e==0) return Qtrue ; return Qfalse;
-    case 'G': if(e>=0) return Qtrue ; return Qfalse;
-    case '>': if(e> 0) return Qtrue ; return Qfalse;
-    case 'L': if(e<=0) return Qtrue ; return Qfalse;
-    case '<': if(e< 0) return Qtrue ; return Qfalse;
+    if (e == 999)
+	return (op == '*') ? Qnil : Qfalse;
+    switch (op) {
+    case '*':
+	return   INT2FIX(e); /* any op */
+
+    case '=':
+	if(e==0) return Qtrue;
+	return Qfalse;
+
+    case 'G':
+	if(e>=0) return Qtrue;
+	return Qfalse;
+
+    case '>':
+	if(e> 0) return Qtrue;
+	return Qfalse;
+
+    case 'L':
+	if(e<=0) return Qtrue;
+	return Qfalse;
+
+    case '<':
+	if(e< 0) return Qtrue;
+	return Qfalse;
+
+    default:
+	break;
     }
+
     rb_bug("Undefined operation in BigDecimalCmp()");
 }
 
