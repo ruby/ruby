@@ -430,6 +430,7 @@ rb_gc_set_params(void)
 	printf("heap_min_slots=%d (%d)\n", heap_min_slots_i, initial_heap_min_slots);
 	if (heap_min_slots_i > 0) {
 	    initial_heap_min_slots = heap_min_slots_i;
+            initial_expand_heap(&rb_objspace);
 	}
     }
 
@@ -441,7 +442,6 @@ rb_gc_set_params(void)
 	    initial_free_min = free_min_i;
 	}
     }
-    initial_expand_heap(&rb_objspace);
 }
 
 static void gc_sweep(rb_objspace_t *);

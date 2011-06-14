@@ -1,3 +1,8 @@
+Tue Jun 14 11:05:03 2011  Narihiro Nakamura  <narihiro@netlab.jp>
+
+	* gc.c (rb_gc_set_params): call initial_expand_heap if
+	  initial_heap_min_slots is set.
+
 Tue Jun 14 11:02:08 2011  Narihiro Nakamura  <narihiro@netlab.jp>
 
 	* gc.c: use size_t.
