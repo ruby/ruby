@@ -908,8 +908,11 @@ info-arch:
 change: PHONY
 	$(BASERUBY) -C "$(srcdir)" ./tool/change_maker.rb $(CHANGES) > change.log
 
-love: up all test install test-all
+love: sudo-precheck up all test install test-all
 	@echo love is all you need
+
+sudo-precheck:
+	@$(SUDO) true
 
 help: PHONY
 	$(MESSAGE_BEGIN) \
