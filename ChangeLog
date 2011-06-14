@@ -1,3 +1,7 @@
+Tue Jun 14 11:02:08 2011  Narihiro Nakamura  <narihiro@netlab.jp>
+
+	* gc.c: use size_t.
+
 Tue Jun 14 01:10:38 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/coverage/test_coverage.rb: add a test for restart.  a patch

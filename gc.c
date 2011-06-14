@@ -1068,13 +1068,9 @@ assign_heap_slot(rb_objspace_t *objspace)
 }
 
 static void
-add_heap_slots(rb_objspace_t *objspace, int add)
+add_heap_slots(rb_objspace_t *objspace, size_t add)
 {
-    int i;
-
-    if (add < 1) {
-        add = 1;
-    }
+    size_t i;
 
     if ((heaps_used + add) > heaps_length) {
         allocate_sorted_heaps(objspace, heaps_used + add);
@@ -1088,10 +1084,7 @@ add_heap_slots(rb_objspace_t *objspace, int add)
 static void
 init_heap(rb_objspace_t *objspace)
 {
-    int add;
-
-    add = HEAP_MIN_SLOTS / HEAP_OBJ_LIMIT;
-    add_heap_slots(objspace, add);
+    add_heap_slots(objspace, HEAP_MIN_SLOTS / HEAP_OBJ_LIMIT);
 
     heaps_inc = 0;
     objspace->profile.invoke_time = getrusage_time();
@@ -1102,11 +1095,10 @@ init_heap(rb_objspace_t *objspace)
 static void
 initial_expand_heap(rb_objspace_t *objspace)
 {
-    int add;
+    size_t min_size = initial_heap_min_slots / HEAP_OBJ_LIMIT;
 
-    add = ((initial_heap_min_slots / HEAP_OBJ_LIMIT) - heaps_used);
-    if (add > 0) {
-        add_heap_slots(objspace, add);
+    if (min_size > heaps_used) {
+        add_heap_slots(objspace, min_size - heaps_used);
     }
 }
 #endif
