@@ -1,3 +1,8 @@
+Tue Jun 14 22:09:58 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: renamed some functions.
+	* ext/date/date_core.c: modified doc.
+
 Tue Jun 14 21:26:01 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* cont.c (cont_save_thread): add new utility function.

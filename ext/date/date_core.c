@@ -1025,7 +1025,7 @@ decode_day(VALUE d, VALUE *jd, VALUE *df, VALUE *sf)
 }
 
 inline static double
-s_sg(union DateData *x)
+s_virtual_sg(union DateData *x)
 {
     if (isinf(x->s.sg))
 	return x->s.sg;
@@ -1037,7 +1037,7 @@ s_sg(union DateData *x)
 }
 
 inline static double
-c_sg(union DateData *x)
+c_virtual_sg(union DateData *x)
 {
     if (isinf(x->c.sg))
 	return x->c.sg;
@@ -1049,12 +1049,12 @@ c_sg(union DateData *x)
 }
 
 inline static double
-x_sg(union DateData *x)
+m_virtual_sg(union DateData *x)
 {
     if (simple_dat_p(x))
-	return s_sg(x);
+	return s_virtual_sg(x);
     else
-	return c_sg(x);
+	return c_virtual_sg(x);
 }
 
 inline static void
@@ -1066,10 +1066,11 @@ get_s_jd(union DateData *x)
 
 	assert(have_civil_p(x));
 #ifndef USE_PACK
-	c_civil_to_jd(x->s.year, x->s.mon, x->s.mday, s_sg(x), &jd, &ns);
+	c_civil_to_jd(x->s.year, x->s.mon, x->s.mday,
+		      s_virtual_sg(x), &jd, &ns);
 #else
 	c_civil_to_jd(x->s.year, EX_MON(x->s.pc), EX_MDAY(x->s.pc),
-		      s_sg(x), &jd, &ns);
+		      s_virtual_sg(x), &jd, &ns);
 #endif
 	x->s.jd = jd;
 	x->s.flags |= HAVE_JD;
@@ -1084,7 +1085,7 @@ get_s_civil(union DateData *x)
 	int y, m, d;
 
 	assert(have_jd_p(x));
-	c_jd_to_civil(x->s.jd, s_sg(x), &y, &m, &d);
+	c_jd_to_civil(x->s.jd, s_virtual_sg(x), &y, &m, &d);
 	x->s.year = y;
 #ifndef USE_PACK
 	x->s.mon = m;
@@ -1149,10 +1150,11 @@ get_c_jd(union DateData *x)
 
 	assert(have_civil_p(x));
 #ifndef USE_PACK
-	c_civil_to_jd(x->c.year, x->c.mon, x->c.mday, c_sg(x), &jd, &ns);
+	c_civil_to_jd(x->c.year, x->c.mon, x->c.mday,
+		      c_virtual_sg(x), &jd, &ns);
 #else
 	c_civil_to_jd(x->c.year, EX_MON(x->c.pc), EX_MDAY(x->c.pc),
-		      c_sg(x), &jd, &ns);
+		      c_virtual_sg(x), &jd, &ns);
 #endif
 
 	get_c_time(x);
@@ -1185,7 +1187,7 @@ get_c_civil(union DateData *x)
 	assert(have_jd_p(x));
 	get_c_df(x);
 	jd = jd_utc_to_local(x->c.jd, x->c.df, x->c.of);
-	c_jd_to_civil(jd, c_sg(x), &y, &m, &d);
+	c_jd_to_civil(jd, c_virtual_sg(x), &y, &m, &d);
 	x->c.year = y;
 #ifndef USE_PACK
 	x->c.mon = m;
@@ -1290,7 +1292,7 @@ encode_jd(VALUE nth, int jd, VALUE *rjd)
 }
 
 inline static double
-style_p(VALUE y, double sg)
+guess_style(VALUE y, double sg) /* -/+oo or zero */
 {
     double style = 0;
 
@@ -1534,12 +1536,12 @@ m_julian_p(union DateData *x)
     if (simple_dat_p(x)) {
 	get_s_jd(x);
 	jd = x->s.jd;
-	sg = s_sg(x);
+	sg = s_virtual_sg(x);
     }
     else {
 	get_c_jd(x);
 	jd = x->c.jd;
-	sg = c_sg(x);
+	sg = c_virtual_sg(x);
     }
     if (isinf(sg))
 	return sg == positive_inf;
@@ -1690,7 +1692,7 @@ m_yday(union DateData *x)
     double sg;
 
     jd = m_local_jd(x);
-    sg = x_sg(x); /* !=m_sg() */
+    sg = m_virtual_sg(x); /* !=m_sg() */
 
     if (m_proleptic_gregorian_p(x) ||
 	(jd - sg) > 366)
@@ -1712,7 +1714,7 @@ m_cwyear(union DateData *x)
 {
     int ry, rw, rd;
 
-    c_jd_to_commercial(m_local_jd(x), x_sg(x), /* !=m_sg() */
+    c_jd_to_commercial(m_local_jd(x), m_virtual_sg(x), /* !=m_sg() */
 		       &ry, &rw, &rd);
     return ry;
 }
@@ -1740,7 +1742,7 @@ m_cweek(union DateData *x)
 {
     int ry, rw, rd;
 
-    c_jd_to_commercial(m_local_jd(x), x_sg(x), /* !=m_sg() */
+    c_jd_to_commercial(m_local_jd(x), m_virtual_sg(x), /* !=m_sg() */
 		       &ry, &rw, &rd);
     return rw;
 }
@@ -1761,7 +1763,7 @@ m_wnumx(union DateData *x, int f)
 {
     int ry, rw, rd;
 
-    c_jd_to_weeknum(m_local_jd(x), f, x_sg(x), /* !=m_sg() */
+    c_jd_to_weeknum(m_local_jd(x), f, m_virtual_sg(x), /* !=m_sg() */
 		    &ry, &rw, &rd);
     return rw;
 }
@@ -1880,7 +1882,7 @@ civil_to_jd(VALUE y, int m, int d, double sg,
 	    int *rjd,
 	    int *ns)
 {
-    double style = style_p(y, sg);
+    double style = guess_style(y, sg);
 
     if (style == 0) {
 	int jd;
@@ -1915,7 +1917,7 @@ ordinal_to_jd(VALUE y, int d, double sg,
 	      int *rjd,
 	      int *ns)
 {
-    double style = style_p(y, sg);
+    double style = guess_style(y, sg);
 
     if (style == 0) {
 	int jd;
@@ -1950,7 +1952,7 @@ commercial_to_jd(VALUE y, int w, int d, double sg,
 		 int *rjd,
 		 int *ns)
 {
-    double style = style_p(y, sg);
+    double style = guess_style(y, sg);
 
     if (style == 0) {
 	int jd;
@@ -1985,7 +1987,7 @@ weeknum_to_jd(VALUE y, int w, int d, int f, double sg,
 	      int *rjd,
 	      int *ns)
 {
-    double style = style_p(y, sg);
+    double style = guess_style(y, sg);
 
     if (style == 0) {
 	int jd;
@@ -2020,7 +2022,7 @@ nth_kday_to_jd(VALUE y, int m, int n, int k, double sg,
 	       int *rjd,
 	       int *ns)
 {
-    double style = style_p(y, sg);
+    double style = guess_style(y, sg);
 
     if (style == 0) {
 	int jd;
@@ -2056,7 +2058,7 @@ valid_ordinal_p(VALUE y, int d, double sg,
 		int *rd, int *rjd,
 		int *ns)
 {
-    double style = style_p(y, sg);
+    double style = guess_style(y, sg);
     int r;
 
     if (style == 0) {
@@ -2095,7 +2097,7 @@ valid_civil_p(VALUE y, int m, int d, double sg,
 	      int *rm, int *rd, int *rjd,
 	      int *ns)
 {
-    double style = style_p(y, sg);
+    double style = guess_style(y, sg);
     int r;
 
     if (style == 0) {
@@ -2132,7 +2134,7 @@ valid_commercial_p(VALUE y, int w, int d, double sg,
 		   int *rw, int *rd, int *rjd,
 		   int *ns)
 {
-    double style = style_p(y, sg);
+    double style = guess_style(y, sg);
     int r;
 
     if (style == 0) {
@@ -2162,7 +2164,7 @@ valid_weeknum_p(VALUE y, int w, int d, int f, double sg,
 		int *rw, int *rd, int *rjd,
 		int *ns)
 {
-    double style = style_p(y, sg);
+    double style = guess_style(y, sg);
     int r;
 
     if (style == 0) {
@@ -2193,7 +2195,7 @@ valid_nth_kday_p(VALUE y, int m, int n, int k, double sg,
 		 int *rm, int *rn, int *rk, int *rjd,
 		 int *ns)
 {
-    double style = style_p(y, sg);
+    double style = guess_style(y, sg);
     int r;
 
     if (style == 0) {
@@ -2372,7 +2374,7 @@ valid_civil_sub(int argc, VALUE *argv, VALUE klass, int need_jd)
 
     valid_sg(sg);
 
-    if (!need_jd && (style_p(y, sg) < 0)) {
+    if (!need_jd && (guess_style(y, sg) < 0)) {
 	if (!valid_gregorian_p(y, m, d,
 			       &nth, &ry,
 			       &rm, &rd))
@@ -2774,7 +2776,7 @@ date_s_zone_to_diff(VALUE klass, VALUE str)
  * call-seq:
  *    Date.julian_leap?(year)  ->  bool
  *
- * Returns true if the given year is a leap year on the proleptic
+ * Returns true if the given year is a leap year of the proleptic
  * Julian calendar.
  *
  * For example:
@@ -2797,7 +2799,7 @@ date_s_julian_leap_p(VALUE klass, VALUE y)
  *    Date.gregorian_leap?(year)  ->  bool
  *    Date.leap?(year)  ->  bool
  *
- * Returns true if the given year is a leap year on the proleptic
+ * Returns true if the given year is a leap year of the proleptic
  * Gregorian calendar.
  *
  * For example:
@@ -3106,7 +3108,8 @@ static VALUE d_lite_plus(VALUE, VALUE);
  * call-seq:
  *    Date.jd([jd=0[, start=Date::ITALY]])  ->  date
  *
- * Creates a date object denoting the given Julian day number.
+ * Creates a date object denoting the given chronological Julian day
+ * number.
  *
  * For example:
  *
@@ -3156,8 +3159,9 @@ date_s_jd(int argc, VALUE *argv, VALUE klass)
  *
  * Creates a date object denoting the given ordinal date.
  *
- * The day of year should be a negative or a positive number (reverse
- * order when negative).  It should not be zero.
+ * The day of year should be a negative or a positive number (as a
+ * relative day from the end of year when negative).  It should not be
+ * zero.
  *
  * For example:
  *
@@ -3220,8 +3224,8 @@ date_s_ordinal(int argc, VALUE *argv, VALUE klass)
  * In this class, BCE years are counted astronomically.  Thus, the
  * year before the year 1 is the year zero, and the year preceding the
  * year zero is the year -1.  The month and the day of month should be
- * a negative or a positive number (reverse order when negative).
- * They should not be zero.
+ * a negative or a positive number (as a relative month/day from the
+ * end of year/month when negative).  They should not be zero.
  *
  * The last argument should be a Julian day number which denotes the
  * day of calendar reform.  Date::ITALY (2299161=1582-10-15),
@@ -3263,7 +3267,7 @@ date_s_civil(int argc, VALUE *argv, VALUE klass)
 	y = vy;
     }
 
-    if (style_p(y, sg) < 0) {
+    if (guess_style(y, sg) < 0) {
 	VALUE nth;
 	int ry, rm, rd;
 
@@ -3305,7 +3309,8 @@ date_s_civil(int argc, VALUE *argv, VALUE klass)
  * Creates a date object denoting the given week date.
  *
  * The week and the day of week should be a negative or a positive
- * number (reverse order when negative).  They should not be zero.
+ * number (as a relative week/day from the end of year/week when
+ * negative).  They should not be zero.
  *
  * For example:
  *
@@ -4063,7 +4068,7 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
  * call-seq:
  *    Date._strptime(string[, format="%F"])  ->  hash
  *
- * Parses the given representation of dates and times with the given
+ * Parses the given representation of date and time with the given
  * template, and returns a hash of parsed elements.
  *
  * For example:
@@ -4081,9 +4086,9 @@ date_s__strptime(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.strptime([string="-4712-01-01"[, format="%F"[,start=ITALY]]])  ->  date
+ *    Date.strptime([string="-4712-01-01"[, format="%F"[, start=ITALY]]])  ->  date
  *
- * Parses the given representation of dates and times with the given
+ * Parses the given representation of date and time with the given
  * template, and creates a date object.
  *
  * For example:
@@ -4158,7 +4163,7 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *    Date._parse(string[, comp=true])  ->  hash
  *
- * Parses the given representation of dates and times, and returns a
+ * Parses the given representation of date and time, and returns a
  * hash of parsed elements.
  *
  * If the optional second argument is true and the detected year is in
@@ -4177,9 +4182,9 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.parse(string="-4712-01-01"[, comp=true[,start=ITALY]])  ->  date
+ *    Date.parse(string="-4712-01-01"[, comp=true[, start=ITALY]])  ->  date
  *
- * Parses the given representation of dates and times, and creates a
+ * Parses the given representation of date and time, and creates a
  * date object.
  *
  * If the optional second argument is true and the detected year is in
@@ -4239,7 +4244,7 @@ date_s__iso8601(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *    Date.iso8601(string="-4712-01-01"[,start=ITALY])  ->  date
+ *    Date.iso8601(string="-4712-01-01"[, start=ITALY])  ->  date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical ISO 8601 format.
@@ -4284,7 +4289,7 @@ date_s__rfc3339(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *    Date.rfc3339(string="-4712-01-01T00:00:00+00:00"[,start=ITALY])  ->  date
+ *    Date.rfc3339(string="-4712-01-01T00:00:00+00:00"[, start=ITALY])  ->  date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical RFC 3339 format.
@@ -4327,7 +4332,7 @@ date_s__xmlschema(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *    Date.xmlschema(string="-4712-01-01"[,start=ITALY])  ->  date
+ *    Date.xmlschema(string="-4712-01-01"[, start=ITALY])  ->  date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical XML Schema format.
@@ -4371,8 +4376,8 @@ date_s__rfc2822(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *    Date.rfc2822(string="Mon, 1 Jan -4712 00:00:00 +0000"[,start=ITALY])  ->  date
- *    Date.rfc822(string="Mon, 1 Jan -4712 00:00:00 +0000"[,start=ITALY])  ->  date
+ *    Date.rfc2822(string="Mon, 1 Jan -4712 00:00:00 +0000"[, start=ITALY])  ->  date
+ *    Date.rfc822(string="Mon, 1 Jan -4712 00:00:00 +0000"[, start=ITALY])  ->  date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical RFC 2822 format.
@@ -4416,7 +4421,7 @@ date_s__httpdate(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *    Date.httpdate(string="Mon, 01 Jan -4712 00:00:00 GMT"[,start=ITALY])  ->  date
+ *    Date.httpdate(string="Mon, 01 Jan -4712 00:00:00 GMT"[, start=ITALY])  ->  date
  *
  * Creates a new Date object by parsing from a string according to
  * some RFC 2616 format.
@@ -4461,7 +4466,7 @@ date_s__jisx0301(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *    Date.jisx0301(string="-4712-01-01"[,start=ITALY])  ->  date
+ *    Date.jisx0301(string="-4712-01-01"[, start=ITALY])  ->  date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical JIS X 0301 format.
@@ -4650,8 +4655,8 @@ d_lite_fill(VALUE self)
  * call-seq:
  *    d.ajd  ->  rational
  *
- * Returns the Astronomical Julian Day Number.  This is a fractional
- * number, which is not adjusted by offset.
+ * Returns the astronomical Julian day number.  This is a fractional
+ * number, which is not adjusted by the offset.
  *
  * For example:
  *
@@ -4669,8 +4674,8 @@ d_lite_ajd(VALUE self)
  * call-seq:
  *    d.amjd  ->  rational
  *
- * Returns the Astronomical Modified Julian Day Number.  This is
- * a fractional number, which is not adjusted by offset.
+ * Returns the astronomical modified Julian day number.  This is
+ * a fractional number, which is not adjusted by the offset.
  *
  * For example:
  *
@@ -4688,8 +4693,8 @@ d_lite_amjd(VALUE self)
  * call-seq:
  *    d.jd  ->  integer
  *
- * Returns the Julian Day Number.  This is a whole number, which is
- * adjusted by offset as the local time.
+ * Returns the Julian day number.  This is a whole number, which is
+ * adjusted by the offset as the local time.
  *
  * For example:
  *
@@ -4707,8 +4712,8 @@ d_lite_jd(VALUE self)
  * call-seq:
  *    d.mjd  ->  integer
  *
- * Returns the Modified Julian Day Number.  This is a whole number,
- * which is adjusted by offset as the local time.
+ * Returns the modified Julian day number.  This is a whole number,
+ * which is adjusted by the offset as the local time.
  *
  * For example:
  *
@@ -4726,8 +4731,8 @@ d_lite_mjd(VALUE self)
  * call-seq:
  *    d.ld  ->  integer
  *
- * Returns the Lilian Day Number.  This is a whole number, which is
- * adjusted by offset as the local time.
+ * Returns the Lilian day number.  This is a whole number, which is
+ * adjusted by the offset as the local time.
  *
  * For example:
  *
@@ -5016,7 +5021,7 @@ d_lite_nth_kday_p(VALUE self, VALUE n, VALUE k)
 	return Qfalse;
 
     c_nth_kday_to_jd(m_year(dat), m_mon(dat),
-		     NUM2INT(n), NUM2INT(k), x_sg(dat), /* !=m_sg() */
+		     NUM2INT(n), NUM2INT(k), m_virtual_sg(dat), /* !=m_sg() */
 		     &rjd, &ns);
     if (m_local_jd(dat) != rjd)
 	return Qfalse;
@@ -5133,7 +5138,7 @@ d_lite_zone(VALUE self)
  * call-seq:
  *    d.julian?  ->  bool
  *
- * Retruns true if the date is in the Julian Calendar.
+ * Retruns true if the date is before the day of calendar reform.
  *
  * For example:
  *
@@ -5151,7 +5156,7 @@ d_lite_julian_p(VALUE self)
  * call-seq:
  *    d.gregorian?  ->  bool
  *
- * Retunrs true if the date is in the Gregorian Calendar.
+ * Retunrs true if the date is on or after the day of calendar reform.
  *
  * For example:
  *
@@ -5164,8 +5169,6 @@ d_lite_gregorian_p(VALUE self)
     get_d1(self);
     return f_boolcast(m_gregorian_p(dat));
 }
-
-#define fix_style(dat) (m_julian_p(dat) ? JULIAN : GREGORIAN)
 
 /*
  * call-seq:
@@ -5187,9 +5190,9 @@ d_lite_leap_p(VALUE self)
     if (m_gregorian_p(dat))
 	return f_boolcast(c_gregorian_leap_p(m_year(dat)));
 
-    c_civil_to_jd(m_year(dat), 3, 1, fix_style(dat),
+    c_civil_to_jd(m_year(dat), 3, 1, m_virtual_sg(dat),
 		  &rjd, &ns);
-    c_jd_to_civil(rjd - 1, fix_style(dat), &ry, &rm, &rd);
+    c_jd_to_civil(rjd - 1, m_virtual_sg(dat), &ry, &rm, &rd);
     return f_boolcast(rd == 29);
 }
 
@@ -5197,7 +5200,7 @@ d_lite_leap_p(VALUE self)
  * call-seq:
  *    d.start  ->  float
  *
- * Returns a Julian day number denoting the day of calendar reform.
+ * Returns the Julian day number denoting the day of calendar reform.
  *
  * For example:
  *
@@ -7136,7 +7139,8 @@ d_lite_marshal_load(VALUE self, VALUE a)
  * call-seq:
  *    DateTime.jd([jd=0[, hour=0[, minute=0[, second=0[, offset=0[, start=Date::ITALY]]]]]])  ->  datetime
  *
- * Creates a date-time object denoting the given Julian day number.
+ * Creates a datetime object denoting the given chronological Julian
+ * day number.
  *
  * For example:
  *
@@ -7328,7 +7332,7 @@ datetime_s_civil(int argc, VALUE *argv, VALUE klass)
 	y = vy;
     }
 
-    if (style_p(y, sg) < 0) {
+    if (guess_style(y, sg) < 0) {
 	VALUE nth;
 	int ry, rm, rd, rh, rmin, rs;
 
@@ -7746,7 +7750,7 @@ dt_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
  * call-seq:
  *    DateTime._strptime(string[, format="%FT%T%z"])  ->  hash
  *
- * Parses the given representation of dates and times with the given
+ * Parses the given representation of date and time with the given
  * template, and returns a hash of parsed elements.
  *
  *  See also strptime(3) and strftime.
@@ -7759,9 +7763,9 @@ datetime_s__strptime(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.strptime([string="-4712-01-01T00:00:00+00:00"[, format="%FT%T%z"[,start=ITALY]]])  ->  datetime
+ *    DateTime.strptime([string="-4712-01-01T00:00:00+00:00"[, format="%FT%T%z"[ ,start=ITALY]]])  ->  datetime
  *
- * Parses the given representation of dates and times with the given
+ * Parses the given representation of date and time with the given
  * template, and creates a date object.
  *
  * For example:
@@ -7813,17 +7817,17 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.parse(string="-4712-01-01T00:00:00+00:00"[, comp=true[,start=ITALY]])  ->  datetime
+ *    Date.parse(string="-4712-01-01T00:00:00+00:00"[, comp=true[, start=ITALY]])  ->  datetime
  *
- * Parses the given representation of dates and times, and creates a
+ * Parses the given representation of date and time, and creates a
  * date object.
  *
  * If the optional second argument is true and the detected year is in
- * the range "00" to "99", considers the year a 2-digit form and makes
- * it full.
+ * the range "00" to "99", makes it full.
  *
  * For example:
  *
+ *    Date.parse('11-06-13')	#=> #<Date: 2011-06-13 ...>
  *    DateTime.parse('2001-02-03T04:05:06+07:00')
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
  *    DateTime.parse('20010203T040506+0700')
@@ -7859,7 +7863,7 @@ datetime_s_parse(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.iso8601(string="-4712-01-01T00:00:00+00:00"[,start=ITALY])  ->  datetime
+ *    DateTime.iso8601(string="-4712-01-01T00:00:00+00:00"[, start=ITALY])  ->  datetime
  *
  * Creates a new Date object by parsing from a string according to
  * some typical ISO 8601 format.
@@ -7895,7 +7899,7 @@ datetime_s_iso8601(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.rfc3339(string="-4712-01-01T00:00:00+00:00"[,start=ITALY])  ->  datetime
+ *    DateTime.rfc3339(string="-4712-01-01T00:00:00+00:00"[, start=ITALY])  ->  datetime
  *
  * Creates a new Date object by parsing from a string according to
  * some typical RFC 3339 format.
@@ -7927,7 +7931,7 @@ datetime_s_rfc3339(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.xmlschema(string="-4712-01-01T00:00:00+00:00"[,start=ITALY])  ->  datetime
+ *    DateTime.xmlschema(string="-4712-01-01T00:00:00+00:00"[, start=ITALY])  ->  datetime
  *
  * Creates a new Date object by parsing from a string according to
  * some typical XML Schema format.
@@ -7959,8 +7963,8 @@ datetime_s_xmlschema(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.rfc2822(string="Mon, 1 Jan -4712 00:00:00 +0000"[,start=ITALY])  ->  datetime
- *    DateTime.rfc822(string="Mon, 1 Jan -4712 00:00:00 +0000"[,start=ITALY])  ->  datetime
+ *    DateTime.rfc2822(string="Mon, 1 Jan -4712 00:00:00 +0000"[, start=ITALY])  ->  datetime
+ *    DateTime.rfc822(string="Mon, 1 Jan -4712 00:00:00 +0000"[, start=ITALY])  ->  datetime
  *
  * Creates a new Date object by parsing from a string according to
  * some typical RFC 2822 format.
@@ -7992,7 +7996,7 @@ datetime_s_rfc2822(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.httpdate(string="Mon, 01 Jan -4712 00:00:00 GMT"[,start=ITALY])  ->  datetime
+ *    DateTime.httpdate(string="Mon, 01 Jan -4712 00:00:00 GMT"[, start=ITALY])  ->  datetime
  *
  * Creates a new Date object by parsing from a string according to
  * some RFC 2616 format.
@@ -8024,7 +8028,7 @@ datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.jisx0301(string="-4712-01-01T00:00:00+00:00"[,start=ITALY])  ->  datetime
+ *    DateTime.jisx0301(string="-4712-01-01T00:00:00+00:00"[, start=ITALY])  ->  datetime
  *
  * Creates a new Date object by parsing from a string according to
  * some typical JIS X 0301 format.
@@ -8980,12 +8984,6 @@ Init_date_core(void)
      * A subclass of Object includes Comparable module, easily handles
      * date.
      *
-     * The concept of this date can be represented as tuple of the day
-     * count, the offset and the day of calendar reform.
-     *
-     * All date objects are immutable; hence cannnot modify
-     * themselves.
-     *
      * Date object is created with Date::new, Date::jd, Date::ordinal,
      * Date::commercial, Date::parse, Date::strptime, Date::today,
      * Time#to_date or etc.
@@ -9001,7 +8999,21 @@ Init_date_core(void)
      *					#=> #<Date: 2001-02-03 ...>
      *     Time.new(2001,2,3).to_date	#=> #<Date: 2001-02-03 ...>
      *
-     * In this class, the offset is usually zero, and cannot be
+     * All date objects are immutable; hence cannot modify themselves.
+     *
+     * The concept of this date object can be represented as a tuple
+     * of the day count, the offset and the day of calendar reform.
+     *
+     * The day count denotes the absolute position of a temporal
+     * dimension.  The offset is relative adjustment, which determines
+     * decoded local time with the day count.  The day of calendar
+     * reform denotes the start day of the new style.  The old style
+     * of the West is the Julian calendar which was adopted by
+     * Caersar.  The new style is the Gregorian calendar, which is the
+     * current civil calendar of many countries.
+     *
+     * The day count is virtually the astronomical Julian day number.
+     * The offset in this class is usually zero, and cannot be
      * specified directly.
      *
      * An optional argument the day of calendar reform (start) as a
@@ -9060,11 +9072,12 @@ Init_date_core(void)
      *     DateTime.new(2001,2,3.5)
      *				#=> #<DateTime: 2001-02-03T12:00:00+00:00 ...>
      *
-     * An optional argument offset indicates the difference between
-     * the local time and UTC.  For example, Rational(3,24) represents
-     * ahead of 3 hours of UTC, Rational(-5,24) represents behind of 5
-     * hours of UTC.  The offset should be -1 to +1, and its precision
-     * is at most second.  The default value is zero (equals to UTC).
+     * An optional argument the offset indicates the difference
+     * between the local time and UTC.  For example, Rational(3,24)
+     * represents ahead of 3 hours of UTC, Rational(-5,24) represents
+     * behind of 5 hours of UTC.  The offset should be -1 to +1, and
+     * its precision is at most second.  The default value is zero
+     * (equals to UTC).
      *
      *     DateTime.new(2001,2,3,4,5,6,Rational(3,24))
      *				#=> #<DateTime: 2001-02-03T03:04:05+03:00 ...>
