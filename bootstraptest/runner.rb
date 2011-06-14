@@ -155,11 +155,9 @@ def exec_test(pathes)
   end
 end
 
-def assert_check(testsrc, message = '', opt = '')
+def show_progress(message = '')
   $stderr.puts "\##{@count} #{@location}" if @verbose
-  result = get_result_string(testsrc, opt)
-  check_coredump
-  faildesc = yield(result)
+  faildesc = yield
   if !faildesc
     $stderr.print '.'
   else
@@ -169,6 +167,14 @@ def assert_check(testsrc, message = '', opt = '')
 rescue Exception => err
   $stderr.print 'E'
   error err.message, message
+end
+
+def assert_check(testsrc, message = '', opt = '')
+  show_progress(message) {
+    result = get_result_string(testsrc, opt)
+    check_coredump
+    yield(result)
+  }
 end
 
 def assert_equal(expected, testsrc, message = '')
@@ -215,107 +221,89 @@ def assert_valid_syntax(testsrc, message = '')
 end
 
 def assert_normal_exit(testsrc, *rest)
+  newtest
   opt = {}
   opt = rest.pop if Hash === rest.last
   message, ignore_signals = rest
   message ||= ''
   timeout = opt[:timeout]
-  newtest
-  $stderr.puts "\##{@count} #{@location}" if @verbose
-  faildesc = nil
-  filename = make_srcfile(testsrc)
-  old_stderr = $stderr.dup
-  timeout_signaled = false
-  begin
-    $stderr.reopen("assert_normal_exit.log", "w")
-    io = IO.popen("#{@ruby} -W0 #{filename}")
-    pid = io.pid
-    th = Thread.new {
-      io.read
-      io.close
-      $?
-    }
-    if !th.join(timeout)
-      Process.kill :KILL, pid
-      timeout_signaled = true
+  show_progress(message) {
+    faildesc = nil
+    filename = make_srcfile(testsrc)
+    old_stderr = $stderr.dup
+    timeout_signaled = false
+    begin
+      $stderr.reopen("assert_normal_exit.log", "w")
+      io = IO.popen("#{@ruby} -W0 #{filename}")
+      pid = io.pid
+      th = Thread.new {
+        io.read
+        io.close
+        $?
+      }
+      if !th.join(timeout)
+        Process.kill :KILL, pid
+        timeout_signaled = true
+      end
+      status = th.value
+    ensure
+      $stderr.reopen(old_stderr)
+      old_stderr.close
     end
-    status = th.value
-  ensure
-    $stderr.reopen(old_stderr)
-    old_stderr.close
-  end
-  if status.signaled?
-    signo = status.termsig
-    signame = Signal.list.invert[signo]
-    unless ignore_signals and ignore_signals.include?(signame)
-      sigdesc = "signal #{signo}"
-      if signame
-        sigdesc = "SIG#{signame} (#{sigdesc})"
-      end
-      if timeout_signaled
-        sigdesc << " (timeout)"
-      end
-      faildesc = pretty(testsrc, "killed by #{sigdesc}", nil)
-      stderr_log = File.read("assert_normal_exit.log")
-      if !stderr_log.empty?
-        faildesc << "\n" if /\n\z/ !~ faildesc
-        stderr_log << "\n" if /\n\z/ !~ stderr_log
-        stderr_log.gsub!(/^.*\n/) { '| ' + $& }
-        faildesc << stderr_log
+    if status.signaled?
+      signo = status.termsig
+      signame = Signal.list.invert[signo]
+      unless ignore_signals and ignore_signals.include?(signame)
+        sigdesc = "signal #{signo}"
+        if signame
+          sigdesc = "SIG#{signame} (#{sigdesc})"
+        end
+        if timeout_signaled
+          sigdesc << " (timeout)"
+        end
+        faildesc = pretty(testsrc, "killed by #{sigdesc}", nil)
+        stderr_log = File.read("assert_normal_exit.log")
+        if !stderr_log.empty?
+          faildesc << "\n" if /\n\z/ !~ faildesc
+          stderr_log << "\n" if /\n\z/ !~ stderr_log
+          stderr_log.gsub!(/^.*\n/) { '| ' + $& }
+          faildesc << stderr_log
+        end
       end
     end
-  end
-  if !faildesc
-    $stderr.print '.'
-    true
-  else
-    $stderr.print 'F'
-    error faildesc, message
-    false
-  end
-rescue Exception => err
-  $stderr.print 'E'
-  error err.message, message
-  false
+    faildesc
+  }
 end
 
 def assert_finish(timeout_seconds, testsrc, message = '')
   newtest
-  $stderr.puts "\##{@count} #{@location}" if @verbose
-  faildesc = nil
-  filename = make_srcfile(testsrc)
-  io = IO.popen("#{@ruby} -W0 #{filename}")
-  pid = io.pid
-  waited = false
-  tlimit = Time.now + timeout_seconds
-  while Time.now < tlimit
-    if Process.waitpid pid, Process::WNOHANG
-      waited = true
-      break
+  show_progress(message) {
+    faildesc = nil
+    filename = make_srcfile(testsrc)
+    io = IO.popen("#{@ruby} -W0 #{filename}")
+    pid = io.pid
+    waited = false
+    tlimit = Time.now + timeout_seconds
+    while Time.now < tlimit
+      if Process.waitpid pid, Process::WNOHANG
+        waited = true
+        break
+      end
+      sleep 0.1
     end
-    sleep 0.1
-  end
-  if !waited
-    Process.kill(:KILL, pid)
-    Process.waitpid pid
-    faildesc = pretty(testsrc, "not finished in #{timeout_seconds} seconds", nil)
-  end
-  io.close
-  if !faildesc
-    $stderr.print '.'
-  else
-    $stderr.print 'F'
-    error faildesc, message
-  end
-rescue Exception => err
-  $stderr.print 'E'
-  error err.message, message
+    if !waited
+      Process.kill(:KILL, pid)
+      Process.waitpid pid
+      faildesc = pretty(testsrc, "not finished in #{timeout_seconds} seconds", nil)
+    end
+    io.close
+    faildesc
+  }
 end
 
 def flunk(message = '')
   newtest
-  $stderr.print 'F'
-  error message, ''
+  show_progress('') { message }
 end
 
 def pretty(src, desc, result)

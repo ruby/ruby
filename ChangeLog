@@ -1,3 +1,11 @@
+Tue Jun 14 23:02:36 2011  Tanaka Akira  <akr@fsij.org>
+
+	* bootstraptest/runner.rb (show_progress): extracted from assert_check.
+	  (assert_check): use show_progress.
+	  (assert_normal_exit): ditto.
+	  (assert_finish): ditto.
+	  (flunk): ditto.
+
 Tue Jun 14 22:51:42 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/date/test_*.rb: added tests.
