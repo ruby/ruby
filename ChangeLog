@@ -1,3 +1,7 @@
+Tue Jun 14 19:50:49 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_autoload.rb: remove temporary directory.
+
 Tue Jun 14 11:05:03 2011  Narihiro Nakamura  <narihiro@netlab.jp>
 
 	* gc.c (rb_gc_set_params): call initial_expand_heap if
