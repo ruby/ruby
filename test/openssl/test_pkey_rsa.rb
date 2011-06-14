@@ -42,6 +42,7 @@ class OpenSSL::TestPKeyRSA < Test::Unit::TestCase
   end
 
   def test_new
+    OpenSSL.errors
     key = OpenSSL::PKey::RSA.new 512
     pem  = key.public_key.to_pem
     OpenSSL::PKey::RSA.new pem
