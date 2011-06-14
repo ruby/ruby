@@ -1,3 +1,11 @@
+Wed Jun 15 04:28:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* benchmark/bm_vm4_thread_pass.rb: rename bm_vm4* to
+	  bm_vm_thread_*. suggested by ko1.
+	* benchmark/bm_vm4_pipe.rb: ditto.
+	* benchmark/bm_vm4_alive_check1.rb: ditto.
+	* benchmark/bm_vm4_pass_flood.rb: ditto.
+
 Wed Jun 15 03:52:50 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* benchmark/bm_vm4_pass_flood.rb: new benchmark for GVL fairness.
