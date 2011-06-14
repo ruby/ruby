@@ -70,7 +70,7 @@ Mon Jun 13 23:05:01 2011  Tanaka Akira  <akr@fsij.org>
 Mon Jun 13 21:41:05 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_win32.c (native_cond_signal): remove unnecessary rb_bug().
-	  It's addional fix for r32021. [Bug #4696]
+	  It's additional fix for r32021. [Bug #4696]
 
 Mon Jun 13 20:50:49 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
@@ -100,7 +100,7 @@ Mon Jun 13 20:18:55 2011  Koichi Sasada  <ko1@atdot.net>
 
 Mon Jun 13 19:46:21 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
-	* lib/cmath.rb: add new methd Object#real?. fix #3137
+	* lib/cmath.rb: add new method Object#real?. fix #3137
 
 Mon Jun 13 18:52:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
@@ -121,7 +121,7 @@ Mon Jun 13 18:49:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 Mon Jun 13 18:33:04 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb (SecureRandom.random_bytes): modify PRNG state
-	  to prevent random number sequence repeatation at forked child
+	  to prevent random number sequence repetition at forked child
 	  process which has same pid.
 	  reported by Eric Wong.  [ruby-core:35765]
 
@@ -245,7 +245,7 @@ Sun Jun 12 17:40:29 2011  Koichi Sasada  <ko1@atdot.net>
 	* vm_method.c (rb_method_entry_get_without_cache, rb_method_entry): 
 	  Fill method cache entry with vm state version, and
 	  check current vm state version for method (cache) look up.
-	  This modification speed-up invaridating of global method cache table.
+	  This modification speed-up invalidating of global method cache table.
 	  [Ruby 1.9 - Feature #3905] [ruby-core:36908]
 
 Sun Jun 12 16:19:48 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
@@ -270,7 +270,7 @@ Sun Jun 12 13:33:52 2011  Koichi Sasada  <ko1@atdot.net>
 	    1: one thread with one mutex (no contention).
 	    2: two threads with one mutex (contention).
 	    3: 1000 threads with one mutex (huge number of contention)
-	  Abobe removed benchmark was type 3.
+	  Above removed benchmark was type 3.
 	  Therefore, this commit adds type 1 and 2 benchmark.
 
 Sun Jun 12 11:16:59 2011  Tanaka Akira  <akr@fsij.org>
