@@ -1,3 +1,8 @@
+Tue Jun 14 23:16:22 2011  Tanaka Akira  <akr@fsij.org>
+
+	* bootstraptest/runner.rb (show_progress): refine verbose mode.
+	  (exec_test): ditto.
+
 Tue Jun 14 23:02:36 2011  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (show_progress): extracted from assert_check.

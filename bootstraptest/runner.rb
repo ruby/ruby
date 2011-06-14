@@ -136,6 +136,7 @@ def exec_test(pathes)
   @location = nil
   pathes.each do |path|
     $stderr.print "\n#{File.basename(path)} "
+    $stderr.puts if @verbose
     load File.expand_path(path)
   end
   $stderr.puts
@@ -156,16 +157,21 @@ def exec_test(pathes)
 end
 
 def show_progress(message = '')
-  $stderr.puts "\##{@count} #{@location}" if @verbose
+  if @verbose
+    $stderr.print "\##{@count} #{@location} "
+  end
   faildesc = yield
   if !faildesc
     $stderr.print '.'
+    $stderr.puts if @verbose
   else
     $stderr.print 'F'
+    $stderr.puts if @verbose
     error faildesc, message
   end
 rescue Exception => err
   $stderr.print 'E'
+  $stderr.puts if @verbose
   error err.message, message
 end
 
