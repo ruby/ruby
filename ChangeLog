@@ -86,7 +86,9 @@ Mon Jun 13 23:33:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Jun 13 23:06:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* thread_pthread.c: rewrite GVL completely.
+	* thread_pthread.c: rewrite GVL completely. This fix improve some
+	  benchmark dramatically (e.g. vm3_thread_mutex result changed
+	  form 120.601sec to 3.426sec).
 	* thread_win32.c: ditto.
 	* thread_pthread.h: ditto.
 	* vm_core.h: ditto.
