@@ -366,11 +366,6 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 
     MEMCPY(cont->machine_register_stack, cont->machine_register_stack_src, VALUE, size);
 #endif
-
-    sth->machine_stack_start = sth->machine_stack_end = 0;
-#ifdef __ia64
-    sth->machine_register_stack_start = sth->machine_register_stack_end = 0;
-#endif
 }
 
 static const rb_data_type_t cont_data_type = {
@@ -379,12 +374,26 @@ static const rb_data_type_t cont_data_type = {
 };
 
 static void
-cont_init(rb_context_t *cont, rb_thread_t *th)
+cont_save_thread(rb_context_t *cont, rb_thread_t *th)
 {
     /* save thread context */
     cont->saved_thread = *th;
+    /* saved_thread->machine_stack_(start|end) should be NULL */
+    /* because it may happen GC afterward */
+    cont->saved_thread.machine_stack_start = 0;
+    cont->saved_thread.machine_stack_end = 0;
+#ifdef __ia64
+    cont->saved_thread.machine_register_stack_start = 0
+    cont->saved_thread.machine_register_stack_end = 0
+#endif
+}
+
+static void
+cont_init(rb_context_t *cont, rb_thread_t *th)
+{
+    /* save thread context */
+    cont_save_thread(cont, th);
     cont->saved_thread.local_storage = 0;
-    cont->saved_thread.machine_stack_start = cont->saved_thread.machine_stack_end = 0;
 }
 
 static rb_context_t *
@@ -1006,9 +1015,6 @@ fiber_init(VALUE fibval, VALUE proc)
 
     fiber_link_join(fib);
 
-    /*cont->machine_stack, th->machine_stack_start and th->machine_stack_end should be NULL*/
-    /*because it may happen GC at th->stack allocation*/
-    th->machine_stack_start = th->machine_stack_end = 0;
     th->stack_size = FIBER_VM_STACK_SIZE;
     th->stack = ALLOC_N(VALUE, th->stack_size);
 
@@ -1175,7 +1181,7 @@ fiber_store(rb_fiber_t *next_fib)
 
     if (th->fiber) {
 	GetFiberPtr(th->fiber, fib);
-	fib->cont.saved_thread = *th;
+	cont_save_thread(&fib->cont, th);
     }
     else {
 	/* create current fiber */
