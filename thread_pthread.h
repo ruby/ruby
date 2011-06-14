@@ -45,7 +45,9 @@ typedef struct rb_global_vm_lock_struct {
 
     /* yield */
     rb_thread_cond_t switch_cond;
-    unsigned long need_yield;
+    rb_thread_cond_t switch_wait_cond;
+    int need_yield;
+    int wait_yield;
 } rb_global_vm_lock_t;
 
 #endif /* RUBY_THREAD_PTHREAD_H */

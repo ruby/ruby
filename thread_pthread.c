@@ -88,25 +88,35 @@ gvl_yield(rb_vm_t *vm, rb_thread_t *th)
 {
     native_mutex_lock(&vm->gvl.lock);
 
+    __gvl_release(vm);
+
     /* An another thread is processing GVL yield. */
-    if (vm->gvl.need_yield) {
-	native_mutex_unlock(&vm->gvl.lock);
-	return;
+    if (UNLIKELY(vm->gvl.wait_yield)) {
+	while (vm->gvl.wait_yield)
+	    native_cond_wait(&vm->gvl.switch_wait_cond, &vm->gvl.lock);
+	goto acquire;
     }
+
+    vm->gvl.wait_yield = 1;
 
     if (vm->gvl.waiting > 0)
 	vm->gvl.need_yield = 1;
 
-    __gvl_release(vm);
     if (vm->gvl.need_yield) {
 	/* Wait until another thread task take GVL. */
-	native_cond_wait(&vm->gvl.switch_cond, &vm->gvl.lock);
-    } else {
+	while (vm->gvl.need_yield) {
+	    native_cond_wait(&vm->gvl.switch_cond, &vm->gvl.lock);
+	}
+    }
+    else {
 	native_mutex_unlock(&vm->gvl.lock);
 	sched_yield();
 	native_mutex_lock(&vm->gvl.lock);
     }
 
+    vm->gvl.wait_yield = 0;
+    native_cond_broadcast(&vm->gvl.switch_wait_cond);
+  acquire:
     __gvl_acquire(vm);
     native_mutex_unlock(&vm->gvl.lock);
 }
@@ -119,6 +129,7 @@ gvl_init(rb_vm_t *vm)
     native_mutex_initialize(&vm->gvl.lock);
     native_cond_initialize(&vm->gvl.cond, RB_CONDATTR_CLOCK_MONOTONIC);
     native_cond_initialize(&vm->gvl.switch_cond, RB_CONDATTR_CLOCK_MONOTONIC);
+    native_cond_initialize(&vm->gvl.switch_wait_cond, RB_CONDATTR_CLOCK_MONOTONIC);
     vm->gvl.acquired = 0;
     vm->gvl.waiting = 0;
     vm->gvl.need_yield = 0;

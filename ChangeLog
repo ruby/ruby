@@ -1,3 +1,10 @@
+Wed Jun 15 01:27:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (gvl_yield): fix live lock issue on 1-2 cpus
+	  system. It's additional fix for r32021.
+	* thread_pthread.c (gvl_init): add switch_wait_cond.
+	* thread_pthread.h (typedef struct rb_global_vm_lock_struct): ditto.
+
 Tue Jun 14 23:16:22 2011  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (show_progress): refine verbose mode.
