@@ -1,14 +1,17 @@
 require 'test/unit'
+require 'syck'
+require 'yaml/store'
 
 module Syck
   class YAMLStoreTest < Test::Unit::TestCase
     def setup
-      require 'yaml/store'
+      @engine, YAML::ENGINE.yamler = YAML::ENGINE.yamler, 'syck'
       @yamlstore_file = "yamlstore.tmp.#{Process.pid}"
       @yamlstore = YAML::Store.new(@yamlstore_file)
     end
 
     def teardown
+      YAML::ENGINE.yamler = @engine
       File.unlink(@yamlstore_file) rescue nil
     end
 
