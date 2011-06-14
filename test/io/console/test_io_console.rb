@@ -168,18 +168,22 @@ end if defined?(PTY) and defined?(IO::console)
 class TestIO_Console < Test::Unit::TestCase
   require_relative '../../ruby/envutil'
 
-  def test_noctty
-    if Process.respond_to?(:daemon)
+  case
+  when Process.respond_to?(:daemon)
+    def test_noctty
       assert_in_out_err(["-rio/console"],
                         "Process.daemon(true, true); p IO.console",
                         ["nil"])
-    elsif !(rubyw = RbConfig::CONFIG["RUBYW_INSTALL_NAME"]).empty?
-      require 'tempfile'
+    end
+  when !(rubyw = RbConfig::CONFIG["RUBYW_INSTALL_NAME"]).empty?
+    require 'tempfile'
+    dir, base = File.split(EnvUtil.rubybin)
+    RUBYW = File.join(dir, base.sub(/ruby/, rubyw))
+
+    def test_noctty
       t = Tempfile.new("console")
       t.close
-      dir, base = File.split(EnvUtil.rubybin)
-      rubywbin = File.join(dir, base.sub(/ruby/, rubyw))
-      cmd = [rubywbin, '-rio/console', '-e', 'STDOUT.reopen(ARGV[0]); p IO.console', '--', t.path]
+      cmd = [RUBYW, '-rio/console', '-e', 'STDOUT.reopen(ARGV[0]); p IO.console', '--', t.path]
       system(*cmd)
       t.open
       assert_equal("nil", t.gets.chomp)
