@@ -348,11 +348,15 @@ class TestSH < Test::Unit::TestCase
   def test_marshal
     s = "\x04\bU:\tDate[\bU:\rRational[\ai\x03\xCF\xD3Ji\ai\x00o:\x13Date::Infinity\x06:\a@di\xFA"
     d = Marshal.load(s)
-    assert_equal(Date.new(2001,2,3,Date::GREGORIAN), d)
+    assert_equal(Rational(4903887,2), d.ajd)
+    assert_equal(Rational(0,24), d.send(:offset))
+    assert_equal(Date::GREGORIAN, d.start)
 
     s = "\x04\bU:\rDateTime[\bU:\rRational[\al+\b\xC9\xB0\x81\xBD\x02\x00i\x02\xC0\x12U;\x06[\ai\bi\ro:\x13Date::Infinity\x06:\a@di\xFA"
     d = Marshal.load(s)
-    assert_equal(DateTime.new(2001,2,3,4,5,6,Rational(9,24),Date::GREGORIAN), d)
+    assert_equal(Rational(11769327817,4800), d.ajd)
+    assert_equal(Rational(9,24), d.offset)
+    assert_equal(Date::GREGORIAN, d.start)
   end
 
   def test_taint

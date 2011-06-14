@@ -980,16 +980,40 @@ class TestDateParse < Test::Unit::TestCase
   def test_iso8601
     assert_instance_of(Date, Date.iso8601)
     assert_instance_of(DateTime, DateTime.iso8601)
+
+    d = Date.iso8601('2001-02-03', Date::ITALY + 10)
+    assert_equal(Date.new(2001,2,3), d)
+    assert_equal(Date::ITALY + 10, d.start)
+
+    d = DateTime.iso8601('2001-02-03T04:05:06+07:00', Date::ITALY + 10)
+    assert_equal(DateTime.new(2001,2,3,4,5,6,'+07:00'), d)
+    assert_equal(Date::ITALY + 10, d.start)
   end
 
   def test_rfc3339
     assert_instance_of(Date, Date.rfc3339)
     assert_instance_of(DateTime, DateTime.rfc3339)
+
+    d = Date.rfc3339('2001-02-03T04:05:06+07:00', Date::ITALY + 10)
+    assert_equal(Date.new(2001,2,3), d)
+    assert_equal(Date::ITALY + 10, d.start)
+
+    d = DateTime.rfc3339('2001-02-03T04:05:06+07:00', Date::ITALY + 10)
+    assert_equal(DateTime.new(2001,2,3,4,5,6,'+07:00'), d)
+    assert_equal(Date::ITALY + 10, d.start)
   end
 
   def test_xmlschema
     assert_instance_of(Date, Date.xmlschema)
     assert_instance_of(DateTime, DateTime.xmlschema)
+
+    d = Date.xmlschema('2001-02-03', Date::ITALY + 10)
+    assert_equal(Date.new(2001,2,3), d)
+    assert_equal(Date::ITALY + 10, d.start)
+
+    d = DateTime.xmlschema('2001-02-03T04:05:06+07:00', Date::ITALY + 10)
+    assert_equal(DateTime.new(2001,2,3,4,5,6,'+07:00'), d)
+    assert_equal(Date::ITALY + 10, d.start)
   end
 
   def test_rfc2822
@@ -997,16 +1021,40 @@ class TestDateParse < Test::Unit::TestCase
     assert_instance_of(DateTime, DateTime.rfc2822)
     assert_instance_of(Date, Date.rfc822)
     assert_instance_of(DateTime, DateTime.rfc822)
+
+    d = Date.rfc2822('Sat, 3 Feb 2001 04:05:06 +0700', Date::ITALY + 10)
+    assert_equal(Date.new(2001,2,3), d)
+    assert_equal(Date::ITALY + 10, d.start)
+
+    d = DateTime.rfc2822('Sat, 3 Feb 2001 04:05:06 +0700', Date::ITALY + 10)
+    assert_equal(DateTime.new(2001,2,3,4,5,6,'+07:00'), d)
+    assert_equal(Date::ITALY + 10, d.start)
   end
 
   def test_httpdate
     assert_instance_of(Date, Date.httpdate)
     assert_instance_of(DateTime, DateTime.httpdate)
+
+    d = Date.httpdate('Sat, 03 Feb 2001 04:05:06 GMT', Date::ITALY + 10)
+    assert_equal(Date.new(2001,2,3), d)
+    assert_equal(Date::ITALY + 10, d.start)
+
+    d = DateTime.httpdate('Sat, 03 Feb 2001 04:05:06 GMT', Date::ITALY + 10)
+    assert_equal(DateTime.new(2001,2,3,4,5,6,'+00:00'), d)
+    assert_equal(Date::ITALY + 10, d.start)
   end
 
   def test_jisx0301
     assert_instance_of(Date, Date.jisx0301)
     assert_instance_of(DateTime, DateTime.jisx0301)
+
+    d = Date.jisx0301('H13.02.03', Date::ITALY + 10)
+    assert_equal(Date.new(2001,2,3), d)
+    assert_equal(Date::ITALY + 10, d.start)
+
+    d = DateTime.jisx0301('H13.02.03T04:05:06+07:00', Date::ITALY + 10)
+    assert_equal(DateTime.new(2001,2,3,4,5,6,'+07:00'), d)
+    assert_equal(Date::ITALY + 10, d.start)
   end
 
 end

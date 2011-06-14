@@ -1,3 +1,7 @@
+Tue Jun 14 22:51:42 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/date/test_*.rb: added tests.
+
 Tue Jun 14 22:09:58 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: renamed some functions.
