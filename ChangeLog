@@ -3,7 +3,7 @@ Tue Jun 14 21:26:01 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 	* cont.c (cont_save_thread): add new utility function.
 	  rb_context_t::saved_thread.machine_stack_start and
 	  machine_stack_end should be cleared immediately after a snapshot of
-	  current thread is stored to saved_thread.
+	  current thread is stored to saved_thread. [ruby-dev:43680] [Bug #4855]
 	  this change aims to get rid of unnecessary GC mark at machine stack.
 
 Tue Jun 14 19:50:49 2011  Tanaka Akira  <akr@fsij.org>
