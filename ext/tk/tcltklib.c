@@ -2526,11 +2526,11 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
             rb_thread_schedule();
         }
 
-        DUMP1("trap check & thread scheduling");
-#ifdef RUBY_USE_NATIVE_THREAD
-        /* if (update_flag == 0) CHECK_INTS; */ /*XXXXXXXXXXXXX  TODO !!!! */
-#else
+        DUMP1("check interrupts");
+#if defined(RUBY_USE_NATIVE_THREAD) || defined(RUBY_VM)
 	if (update_flag == 0) rb_thread_check_ints();
+#else
+        if (update_flag == 0) CHECK_INTS;
 #endif
 
     }

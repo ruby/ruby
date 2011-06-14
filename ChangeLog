@@ -1,3 +1,9 @@
+Wed Jun 15 05:12:59 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c (lib_eventloop_core): revert the last change (it's 
+	  the part for ruby_1_8), and use rb_thread_check_ints() when RUBY_VM
+	  is defined.
+
 Wed Jun 15 04:42:47 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_vm3_thread_*.rb: renamed bm_vm3_thread_*.rb to
