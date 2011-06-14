@@ -1,3 +1,8 @@
+Wed Jun 15 04:42:47 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm3_thread_*.rb: renamed bm_vm3_thread_*.rb to
+	  benchmark/bm_vm_thread_*.rb.
+
 Wed Jun 15 04:28:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* benchmark/bm_vm4_thread_pass.rb: rename bm_vm4* to
