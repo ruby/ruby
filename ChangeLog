@@ -1,3 +1,8 @@
+Wed Jun 15 03:52:50 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* benchmark/bm_vm4_pass_flood.rb: new benchmark for GVL fairness.
+	* benchmark/bm_vm4_alive_check1.rb: ditto.
+
 Wed Jun 15 01:27:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (gvl_yield): fix live lock issue on 1-2 cpus
