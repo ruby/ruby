@@ -1,3 +1,11 @@
+Thu Jun 16 03:08:11 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/testunit/test_parallel.rb (TestParallel::TestParallelWorker#
+	  setup): now can run on Windows, probably.
+
+	* test/testunit/test_parallel.rb (TestParallel::TestParalle#setup):
+	  ditto.
+
 Thu Jun 16 03:00:26 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread.c (do_select): Windows: no need to poll if select(2) is
