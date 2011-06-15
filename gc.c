@@ -711,7 +711,7 @@ garbage_collect_with_gvl(rb_objspace_t *objspace)
 
 static void vm_xfree(rb_objspace_t *objspace, void *ptr);
 
-static inline void
+static inline size_t
 vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
 {
     if ((ssize_t)size < 0) {
@@ -727,6 +727,8 @@ vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
 	(malloc_increase+size) > malloc_limit) {
 	garbage_collect_with_gvl(objspace);
     }
+
+    return size;
 }
 
 static inline void *
@@ -757,7 +759,7 @@ vm_xmalloc(rb_objspace_t *objspace, size_t size)
 {
     void *mem;
 
-    vm_malloc_prepare(objspace, size);
+    size = vm_malloc_prepare(objspace, size);
     TRY_WITH_GC(mem = malloc(size));
     return vm_malloc_fixup(objspace, mem, size);
 }
@@ -844,10 +846,12 @@ static void *
 vm_xcalloc(rb_objspace_t *objspace, size_t count, size_t elsize)
 {
     void *mem;
-    const size_t size = xmalloc2_size(count, elsize);
+    size_t size;
 
-    vm_malloc_prepare(objspace, size);
-    TRY_WITH_GC(mem = calloc(count, elsize));
+    size = xmalloc2_size(count, elsize);
+    size = vm_malloc_prepare(objspace, size);
+
+    TRY_WITH_GC(mem = calloc(1, size));
     return vm_malloc_fixup(objspace, mem, size);
 }
 

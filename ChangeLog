@@ -1,3 +1,12 @@
+Wed Jun 15 23:30:45 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* gc.c: fix a regression by r31690 on AIX because AIX malloc
+	  return NULL if it's passed 0. But some caller don't expect it.
+	  patch by Yutaka Kanemoto.
+	(vm_malloc_prepare): return calculated size.
+	(vm_xmalloc): use above result.
+	(vm_xcalloc): ditto.
+
 Wed Jun 15 23:11:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c: remove BLOCKING_REGION_CORE() macro. It's no longer used
