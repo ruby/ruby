@@ -82,8 +82,8 @@ class TestIO < Test::Unit::TestCase
     @usr1_rcvd  = 0
     trap(:USR1) { @usr1_rcvd += 1 }
     yield
-    ensure
-      trap(:USR1, "DEFAULT")
+  ensure
+    trap(:USR1, "DEFAULT")
   end
 
   def test_pipe
@@ -610,19 +610,22 @@ class TestIO < Test::Unit::TestCase
           end
           trapping_usr1 do
             nr = 10
-            pid = fork do
+            begin
+              pid = fork do
+                s1.close
+                IO.select([s2])
+                Process.kill(:USR1, Process.ppid)
+                s2.read
+              end
+              s2.close
+              nr.times do
+                assert_equal megacontent.bytesize, IO.copy_stream("megasrc", s1)
+              end
+              assert_equal(1, @usr1_rcvd)
               s1.close
-              IO.select([s2])
-              Process.kill(:USR1, Process.ppid)
-              s2.read
+            ensure
+              _, status = Process.waitpid2(pid) if pid
             end
-            s2.close
-            nr.times do
-              assert_equal megacontent.bytesize, IO.copy_stream("megasrc", s1)
-            end
-            assert_equal(1, @usr1_rcvd)
-            s1.close
-            _, status = Process.waitpid2(pid)
             assert status.success?, status.inspect
           end
         }

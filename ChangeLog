@@ -1,3 +1,11 @@
+Wed Jun 15 12:35:11 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_io.rb (test_copy_stream_socket): wait a child process
+	  before SIGUSR1 handler is removed.
+
+	* test/pathname/test_pathname.rb (define_assertion): use line number
+	  for test method names.
+
 Wed Jun 15 10:37:43 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (rb_stat_rdev): use DEVT2NUM.

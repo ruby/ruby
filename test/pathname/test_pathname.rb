@@ -10,19 +10,32 @@ require 'enumerator'
 require_relative '../ruby/envutil'
 
 class TestPathname < Test::Unit::TestCase
-  def self.define_assertion(name, &block)
-    @defassert_num ||= {}
-    @defassert_num[name] ||= 0
-    @defassert_num[name] += 1
-    define_method("test_#{name}_#{@defassert_num[name]}", &block)
+  def self.define_assertion(name, linenum, &block)
+    name = "test_#{name}_#{linenum}"
+    define_method(name, &block)
+  end
+
+  def self.get_linenum
+    if /:(\d+):/ =~ caller[1]
+      $1.to_i
+    else
+      nil
+    end
   end
 
   def self.defassert(name, result, *args)
-    define_assertion(name) {
+    define_assertion(name, get_linenum) {
       mesg = "#{name}(#{args.map {|a| a.inspect }.join(', ')})"
       assert_nothing_raised(mesg) {
         assert_equal(result, self.send(name, *args), mesg)
       }
+    }
+  end
+
+  def self.defassert_raise(name, exc, *args)
+    define_assertion(name, get_linenum) {
+      message = "#{name}(#{args.map {|a| a.inspect }.join(', ')})"
+      assert_raise(exc, message) { self.send(name, *args) }
     }
   end
 
@@ -293,13 +306,6 @@ class TestPathname < Test::Unit::TestCase
 
   defassert(:relative_path_from, "a", "a", "b/..")
   defassert(:relative_path_from, "b/c", "b/c", "b/..")
-
-  def self.defassert_raise(name, exc, *args)
-    define_assertion(name) {
-      message = "#{name}(#{args.map {|a| a.inspect }.join(', ')})"
-      assert_raise(exc, message) { self.send(name, *args) }
-    }
-  end
 
   defassert_raise(:relative_path_from, ArgumentError, "/", ".")
   defassert_raise(:relative_path_from, ArgumentError, ".", "/")
