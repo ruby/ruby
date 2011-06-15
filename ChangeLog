@@ -1,3 +1,19 @@
+Thu Jun 16 03:00:26 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread.c (do_select): Windows: no need to poll if select(2) is
+	  cancelable.
+
+	* thread_win32.c (native_fd_select): new function to make select(2)
+	  cancelable.
+
+	* thread_win32.c (rb_w32_check_interrupt): new function for checking
+	  interrupt.
+
+	* win32/win32.c (rb_w32_select_with_thread): new function. cancelable
+	  select(2).
+
+	* win32/win32.c (rb_w32_select): use above function internally.
+
 Wed Jun 15 23:30:45 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* gc.c: fix a regression by r31690 on AIX because AIX malloc

@@ -2591,9 +2591,13 @@ compare(const struct timeval *t1, const struct timeval *t2)
 }
 
 #undef Sleep
-int WSAAPI
-rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
-	      struct timeval *timeout)
+
+int rb_w32_check_interrupt(void *);	/* @internal */
+
+/* @internal */
+int
+rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
+			  struct timeval *timeout, void *th)
 {
     int r;
     rb_fdset_t pipe_rd;
@@ -2672,6 +2676,10 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	wait.tv_sec = 0; wait.tv_usec = 10 * 1000; // 10ms
 	zero.tv_sec = 0; zero.tv_usec = 0;         //  0ms
 	for (;;) {
+	    if (th && rb_w32_check_interrupt(th) != WAIT_TIMEOUT) {
+		r = -1;
+		break;
+	    }
 	    if (nonsock) {
 		// modifying {else,pipe,cons}_rd is safe because
 		// if they are modified, function returns immediately.
@@ -2722,6 +2730,13 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     rb_fd_term(&else_rd);
 
     return r;
+}
+
+int WSAAPI
+rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
+	      struct timeval *timeout)
+{
+    return rb_w32_select_with_thread(nfds, rd, wr, ex, timeout, 0);
 }
 
 static FARPROC

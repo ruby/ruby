@@ -2537,7 +2537,7 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
 # endif
 
     if (timeout) {
-# if defined(__CYGWIN__) || defined(_WIN32)
+# if defined(__CYGWIN__)
 	gettimeofday(&start_time, NULL);
 	limit = (double)start_time.tv_sec + (double)start_time.tv_usec*1e-6;
 # else
@@ -2558,7 +2558,7 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
   retry:
     lerrno = 0;
 
-#if defined(__CYGWIN__) || defined(_WIN32)
+#if defined(__CYGWIN__)
     {
 	int finish = 0;
 	/* polling duration: 100ms */
@@ -2594,6 +2594,14 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
 		} while (__th->interrupt_flag == 0);
 	    }, 0, 0);
 	} while (result == 0 && !finish);
+    }
+#elif defined(_WIN32)
+    {
+	rb_thread_t *th = GET_THREAD();
+	BLOCKING_REGION({
+	    result = native_fd_select(n, read, write, except, timeout, th);
+	    if (result < 0) lerrno = errno;
+	}, ubf_select, th);
     }
 #else
     BLOCKING_REGION({
