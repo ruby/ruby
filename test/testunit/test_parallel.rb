@@ -140,8 +140,15 @@ module TestParallel
       end
     end
 
-    #def test_childs
-    #end
+    def test_ignore_jzero
+      @test_out, o = IO.pipe
+      @test_pid = spawn(*@options[:ruby], TESTS+"/runner.rb",
+                        "-j","0", out: File::NULL, err: o)
+      o.close
+      timeout(10) {
+        assert_match(/Error: parameter of -j option should be greater than 0/,@test_out.read)
+      }
+    end
 
     def test_should_run_all_without_any_leaks
       spawn_runner

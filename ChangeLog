@@ -1,3 +1,11 @@
+Thu Jun 16 07:58:01 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* test/testunit/test_parallel.rb(test_ignore_tzero): Test for r32109.
+
+	* test/testunit/tests_for_parallel/test_third.rb: Use another way to
+	  detect that test is running on worker. This fixes sometimes
+	  TestParallel failing.
+
 Thu Jun 16 07:20:06 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb(Test::Unit::Runner#_run_parallel): Ignore -j0
