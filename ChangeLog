@@ -1,3 +1,8 @@
+Wed Jun 15 21:00:47 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/tesst_config.rb: execute based on the existence of the
+	  OpenSSL module.
+
 Wed Jun 15 12:35:11 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_io.rb (test_copy_stream_socket): wait a child process
