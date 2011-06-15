@@ -1,3 +1,11 @@
+Wed Jun 15 10:37:43 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (rb_stat_rdev): use DEVT2NUM.
+
+	* file.c (rb_stat_rdev_major): ditto.
+
+	* file.c (rb_stat_rdev_minor): ditto.
+
 Wed Jun 15 05:12:59 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (lib_eventloop_core): revert the last change (it's 
