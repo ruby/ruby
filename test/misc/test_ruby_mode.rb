@@ -3,8 +3,10 @@ require 'tempfile'
 
 class TestRubyMode < Test::Unit::TestCase
   MISCDIR = File.expand_path("../../../misc", __FILE__)
-  emacs = %W"#{ENV["EMACS"] || "emacs"} -q --no-site-file --batch --load #{MISCDIR}/ruby-mode.el"
+  e = ENV["EMACS"] || "emacs"
+  emacs = %W"#{e} -q --no-site-file --batch --load #{MISCDIR}/ruby-mode.el"
   begin
+    raise if IO.popen([e, "--version", :err=>[:child, :out]]) {|f| f.read}[/[0-9]+/].to_i < 23
     IO.popen([*emacs, :err=>[:child, :out]]) {|f| f.read}
   rescue
     EMACS = nil
