@@ -1,3 +1,8 @@
+Thu Jun 16 07:20:06 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb(Test::Unit::Runner#_run_parallel): Ignore -j0
+	  because it makes blocking forever by IO.select.
+
 Thu Jun 16 03:08:11 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/testunit/test_parallel.rb (TestParallel::TestParallelWorker#

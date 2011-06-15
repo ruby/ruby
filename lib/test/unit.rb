@@ -388,6 +388,11 @@ module Test
       end
 
       def _run_parallel suites, type, result
+        if @opts[:parallel] < 1
+          warn "Error: parameter of -j option should be greater than 0."
+          return
+        end
+
         begin
           # Require needed things for parallel running
           require 'thread'
