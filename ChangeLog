@@ -382,8 +382,8 @@ Sun Jun 12 11:16:59 2011  Tanaka Akira  <akr@fsij.org>
 
 Sun Jun 12 09:32:13 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* atomic.h (ATOMIC_OR): _InterlockedOr is not available on migw.h
-	* gc.c (rb_gc_set_params): VM_OBJSPACE is disabled on mignw.
+	* atomic.h (ATOMIC_OR): _InterlockedOr is not available on mingw.h
+	* gc.c (rb_gc_set_params): VM_OBJSPACE is disabled on mingw.
 
 Sun Jun 12 01:07:09 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
@@ -462,7 +462,7 @@ Sat Jun 11 19:04:15 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Jun 11 18:05:57 2011  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* bootstraptest/runner.rb: should initilize $stress to avoid warnings.
+	* bootstraptest/runner.rb: should initialize $stress to avoid warnings.
 
 Sat Jun 11 18:02:09 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -515,7 +515,8 @@ Sat Jun 11 10:32:46 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Jun 11 10:20:52 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* thread_pthread.c (native_cond_timeout): wrap conditinally used label.
+	* thread_pthread.c (native_cond_timeout): wrap conditionally used
+	  label.
 
 	* thread_pthread.c (native_sleep): remove unused variable.
 
@@ -523,7 +524,7 @@ Sat Jun 11 10:15:50 2011  Tanaka Akira  <akr@fsij.org>
 
 	* thread.c (rb_thread_execute_interrupts): use GetThreadPtr to extract
 	  rb_thread_t from VALUE.
-	  reorted by Motohiro KOSAKI.  [ruby-dev:43700]
+	  reported by Motohiro KOSAKI.  [ruby-dev:43700]
 
 Sat Jun 11 10:00:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
