@@ -114,13 +114,6 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
   rb_thread_set_current(_th_stored); \
 } while(0)
 
-#define BLOCKING_REGION_CORE(exec) do { \
-    GVL_UNLOCK_BEGIN(); {\
-	    exec; \
-    } \
-    GVL_UNLOCK_END(); \
-} while(0);
-
 #define blocking_region_begin(th, region, func, arg) \
   do { \
     (region)->prev_status = (th)->status; \
