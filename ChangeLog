@@ -1,3 +1,10 @@
+Thu Jun 16 22:55:02 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* test/test_securerandom.rb: Add testcase.  This testcase does NOT aim
+	  to test cryptographically strongness and randomness.  It includes
+	  the test for PID recycle issue of OpenSSL described in #4579 but
+	  it's disabled by default.
+
 Mon Jun 13 18:33:04 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb (SecureRandom.random_bytes): modify PRNG state
