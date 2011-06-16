@@ -2423,7 +2423,7 @@ Thu May  5 15:03:51 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 	  [ruby-core:35386] fixes #4606
 	* eval.c (method_entry_of_iseq): new helper function. search control
 	  frame stack for a method entry which has given iseq.
-	* test/ruby/test_method.rb: add tests for #4696
+	* test/ruby/test_method.rb: add tests for #4606
 
 Wed May  4 22:13:09 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
