@@ -1,3 +1,8 @@
+Thu Jun 16 14:54:09 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/webrick/utils.rb: Document WEBrick::Utils.  Patch by Olivier
+	  Brisse.  [Ruby 1.9 - Bug #4819]
+
 Thu Jun 16 14:26:46 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/webrick/httpservlet/erbhandler.rb:  Allow the ERB document to
