@@ -1,3 +1,10 @@
+Thu Jun 16 19:27:12 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* test/test_securerandom.rb: Add testcase.  This testcase does NOT aim
+	  to test cryptographically strongness and randomness.  It includes
+	  the test for PID recycle issue of OpenSSL described in #4579 but
+	  it's disabled by default.
+
 Thu Jun 16 17:55:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_io.rb (TestIO#test_copy_stream_socket): fix
