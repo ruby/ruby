@@ -1,3 +1,9 @@
+Fri Jun 17 03:07:36 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm4_thread_create_join.rb, 
+	  benchmark/bm_vm4_thread_mutex[1-3].rb: renamed to
+	  bm_thread_* (fix last rename).
+
 Fri Jun 17 02:26:47 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c (native_thread_create): fix debug message.
