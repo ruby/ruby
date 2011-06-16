@@ -18,6 +18,10 @@ class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
     assert_equal "\n", @to.res.join
   end
 
+  def accept_document
+    assert_equal "hello\n", @to.res.join
+  end
+
   def accept_heading
     assert_equal "===== Hello\n", @to.res.join
   end
@@ -321,6 +325,16 @@ words words words words
     EXPECTED
 
     assert_equal expected, @to.end_accepting
+  end
+
+  def test_accept_indented_paragraph
+    ip = RDoc::Markup::IndentedParagraph.new 2, 'cats are cool'
+
+    @to.start_accepting
+
+    @to.accept_indented_paragraph ip
+
+    assert_equal "  cats are cool\n", @to.end_accepting
   end
 
 end

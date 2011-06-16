@@ -220,6 +220,20 @@ class RDoc::TopLevel < RDoc::Context
   end
 
   ##
+  # Creates a new RDoc::TopLevel with +file_name+ only if one with the same
+  # name does not exist in all_files.
+
+  def self.new file_name
+    if top_level = @all_files_hash[file_name] then
+      top_level
+    else
+      top_level = super
+      @all_files_hash[file_name] = top_level
+      top_level
+    end
+  end
+
+  ##
   # Removes from +all_hash+ the contexts that are nodoc or have no content.
   #
   # See RDoc::Context#remove_from_documentation?
@@ -294,6 +308,15 @@ class RDoc::TopLevel < RDoc::Context
 
     RDoc::TopLevel.files_hash[file_name] = self
   end
+
+  ##
+  # An RDoc::TopLevel is equal to another with the same absolute_name
+
+  def == other
+    other.class === self and @absolute_name == other.absolute_name
+  end
+
+  alias eql? ==
 
   ##
   # Adds +an_alias+ to +Object+ instead of +self+.
@@ -373,6 +396,14 @@ class RDoc::TopLevel < RDoc::Context
 
   def full_name
     @relative_name
+  end
+
+  ##
+  # An RDoc::TopLevel has the same hash as another with the same
+  # absolute_name
+
+  def hash
+    @absolute_name.hash
   end
 
   ##

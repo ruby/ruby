@@ -17,6 +17,7 @@ class TestRDocContext < XrefTestCase
     assert_equal nil, @context.parent
     assert_equal :public, @context.visibility
     assert_equal 1, @context.sections.length
+    assert_equal nil, @context.temporary_section
 
     assert_empty @context.classes_hash
     assert_empty @context.modules_hash
@@ -137,6 +138,13 @@ class TestRDocContext < XrefTestCase
     assert_equal 'Object', object.superclass.full_name
   end
 
+  def test_add_class_singleton
+    @c1.add_class RDoc::NormalClass, 'Klass', 'Object'
+
+    assert_includes @c1.classes.map { |k| k.full_name }, 'C1::Klass'
+    assert_includes RDoc::TopLevel.classes.map { |k| k.full_name }, 'C1::Klass'
+  end
+
   def test_add_class_superclass
     @c1.add_class RDoc::NormalClass, 'Klass', 'Object'
     @c1.add_class RDoc::NormalClass, 'Klass', 'Other'
@@ -244,6 +252,29 @@ class TestRDocContext < XrefTestCase
     assert_includes @c1.top_level.requires, req
   end
 
+  def test_add_section
+    default_section = @context.sections.first
+
+    @context.add_section nil, '# comment'
+
+    assert_equal 1, @context.sections.length
+    assert_equal '# comment', @context.sections.first.comment
+
+    @context.add_section nil, '# new comment'
+
+    assert_equal 1, @context.sections.length
+    assert_equal "# comment\n# ---\n# new comment",
+                 @context.sections.first.comment
+
+    @context.add_section 'other', ''
+
+    assert_equal 2, @context.sections.length
+
+    new_section = @context.sections.find { |section| section.title == 'other' }
+    assert new_section
+    assert_equal default_section, @context.current_section
+  end
+
   def test_add_to
     incl = RDoc::Include.new 'Name', 'comment'
     arr = []
@@ -252,6 +283,19 @@ class TestRDocContext < XrefTestCase
     assert_includes arr, incl
     assert_equal @context, incl.parent
     assert_equal @context.current_section, incl.section
+  end
+
+  def test_add_to_temporary_section
+    incl = RDoc::Include.new 'Name', 'comment'
+    arr = []
+    section = @context.add_section 'temporary', ''
+    @context.temporary_section = section
+
+    @context.add_to arr, incl
+
+    assert_includes arr, incl
+    assert_equal @context, incl.parent
+    assert_equal section, incl.section
   end
 
   def test_add_to_no_document_self
@@ -279,6 +323,16 @@ class TestRDocContext < XrefTestCase
   def test_classes
     assert_equal %w[C2::C3], @c2.classes.map { |k| k.full_name }
     assert_equal %w[C3::H1 C3::H2], @c3.classes.map { |k| k.full_name }
+  end
+
+  def test_current_section
+    default_section = @context.current_section
+
+    new_section = @context.add_section 'other', ''
+    @context.temporary_section = new_section
+
+    assert_equal new_section, @context.current_section
+    assert_equal default_section, @context.current_section
   end
 
   def test_defined_in_eh
@@ -594,6 +648,22 @@ class TestRDocContext < XrefTestCase
     @c1.remove_invisible_in methods, :public
 
     assert_equal [@pub, @prot, @priv], methods
+  end
+
+  def test_set_current_section
+    default_section = @context.sections.first
+
+    @context.set_current_section nil, ''
+
+    assert_equal default_section, @context.current_section
+
+    @context.set_current_section 'other', ''
+
+    new_section = @context.sections.find { |section|
+      section != default_section
+    }
+
+    assert_equal new_section, @context.current_section
   end
 
   def util_visibilities

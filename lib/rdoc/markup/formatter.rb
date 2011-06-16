@@ -16,13 +16,23 @@ class RDoc::Markup::Formatter
   ##
   # Creates a new Formatter
 
-  def initialize
-    @markup = RDoc::Markup.new
-    @am = @markup.attribute_manager
+  def initialize markup = nil
+    @markup = markup || RDoc::Markup.new
+    @am     = @markup.attribute_manager
+
     @attr_tags = []
 
     @in_tt = 0
     @tt_bit = RDoc::Markup::Attribute.bitmap_for :TT
+  end
+
+  ##
+  # Adds +document+ to the output
+
+  def accept_document document
+    document.parts.each do |item|
+      item.accept self
+    end
   end
 
   ##

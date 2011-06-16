@@ -478,6 +478,7 @@ require 'rdoc/markup/list'
 require 'rdoc/markup/list_item'
 require 'rdoc/markup/raw'
 require 'rdoc/markup/paragraph'
+require 'rdoc/markup/indented_paragraph'
 require 'rdoc/markup/rule'
 require 'rdoc/markup/verbatim'
 

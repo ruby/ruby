@@ -6,7 +6,7 @@ require 'rdoc/token_stream'
 
 class RDoc::AnyMethod < RDoc::MethodAttr
 
-  MARSHAL_VERSION = 0 # :nodoc:
+  MARSHAL_VERSION = 1 # :nodoc:
 
   ##
   # Don't rename \#initialize to \::new
@@ -44,7 +44,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   ##
   # Adds +an_alias+ as an alias for this method in +context+.
 
-  def add_alias(an_alias, context = nil )
+  def add_alias an_alias, context = nil
     method = self.class.new an_alias.text, an_alias.new_name
 
     method.record_location an_alias.file
@@ -54,7 +54,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     method.comment = an_alias.comment
     method.is_alias_for = self
     @aliases << method
-    context.add_method( method ) if context
+    context.add_method method if context
     method
   end
 
@@ -83,7 +83,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
 
   def marshal_dump
     aliases = @aliases.map do |a|
-      [a.full_name, parse(a.comment)]
+      [a.name, parse(a.comment)]
     end
 
     [ MARSHAL_VERSION,
@@ -96,6 +96,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
       @block_params,
       aliases,
       @params,
+      @file.absolute_name,
     ]
   end
 
@@ -112,6 +113,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     @token_stream           = nil
     @aliases                = []
 
+    version       = array[0]
     @name         = array[1]
     @full_name    = array[2]
     @singleton    = array[3]
@@ -119,6 +121,11 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     @comment      = array[5]
     @call_seq     = array[6]
     @block_params = array[7]
+
+    array[8].each do |new_name, comment|
+      add_alias RDoc::Alias.new(nil, @name, new_name, comment, @singleton)
+    end
+
     @params       = array[9]
 
     @parent_name = if @full_name =~ /#/ then
@@ -129,9 +136,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
                      name.join '::'
                    end
 
-    array[8].each do |new_name, comment|
-      add_alias RDoc::Alias.new(nil, @name, new_name, comment, @singleton)
-    end
+    @file = RDoc::TopLevel.new array[10] if version > 0
   end
 
   ##

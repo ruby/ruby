@@ -30,6 +30,10 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_empty @to.res.join
   end
 
+  def accept_document
+    assert_equal "\n<p>hello</p>\n", @to.res.join
+  end
+
   def accept_heading
     assert_equal "\n<h5>Hello</h5>\n", @to.res.join
   end
@@ -69,7 +73,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal [], @to.list
     assert_equal [], @to.in_list_entry
 
-    assert_equal "<dl></dl>\n", @to.res.join
+    assert_equal "<dl class=\"rdoc-list\"></dl>\n", @to.res.join
   end
 
   def accept_list_end_lalpha
@@ -129,7 +133,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_list_item_start_label
-    assert_equal "<dl><dt>cat</dt>\n<dd>", @to.res.join
+    assert_equal "<dl class=\"rdoc-list\"><dt>cat</dt>\n<dd>", @to.res.join
   end
 
   def accept_list_item_start_lalpha
@@ -171,7 +175,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal [:LABEL], @to.list
     assert_equal [false], @to.in_list_entry
 
-    assert_equal "<dl>", @to.res.join
+    assert_equal '<dl class="rdoc-list">', @to.res.join
   end
 
   def accept_list_start_lalpha

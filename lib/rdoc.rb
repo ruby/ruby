@@ -27,7 +27,8 @@ $DEBUG_RDOC = nil
 # * If you want to use RDoc to create documentation for your Ruby source files,
 #   see RDoc::Markup and refer to <tt>rdoc --help</tt> for command line
 #   usage.
-# * If you want to generate documentation for extensions written in C, see
+# * If you want to write documentation for Ruby files see RDoc::Parser::Ruby
+# * If you want to write documentation for extensions written in C see
 #   RDoc::Parser::C
 # * If you want to generate documentation using <tt>rake</tt> see RDoc::Task.
 # * If you want to drive RDoc programmatically, see RDoc::RDoc.
@@ -103,7 +104,7 @@ module RDoc
   ##
   # RDoc version you are using
 
-  VERSION = '3.6.1'
+  VERSION = '3.7'
 
   ##
   # Method visibilities

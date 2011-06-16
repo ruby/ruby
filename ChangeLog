@@ -1,3 +1,7 @@
+Thu Jun 16 13:25:25 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc*:  Import RDoc 3.7 release candidate
+
 Thu Jun 16 11:35:09 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (search_response): parses SEARCH responses from

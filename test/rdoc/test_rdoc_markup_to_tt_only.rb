@@ -17,6 +17,10 @@ class TestRDocMarkupToTtOnly < RDoc::Markup::FormatterTestCase
     assert_empty @to.end_accepting
   end
 
+  def accept_document
+    assert_equal [], @to.res
+  end
+
   def accept_heading
     assert_empty @to.end_accepting
   end

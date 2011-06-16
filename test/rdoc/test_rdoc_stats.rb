@@ -17,7 +17,7 @@ class TestRDocStats < MiniTest::Unit::TestCase
     tl = RDoc::TopLevel.new 'file.rb'
     c = tl.add_class RDoc::NormalClass, 'C'
     c.record_location tl
-    c.comment = 'C'
+    c.add_comment 'C', tl
 
     a = RDoc::Attr.new nil, 'a', 'RW', nil
     a.record_location tl
@@ -43,7 +43,7 @@ end
     tl = RDoc::TopLevel.new 'file.rb'
     c = tl.add_class RDoc::NormalClass, 'C'
     c.record_location tl
-    c.comment = 'C'
+    c.add_comment 'C', tl
 
     a = RDoc::Attr.new nil, 'a', 'RW', 'a'
     a.record_location tl
@@ -60,7 +60,7 @@ end
     tl = RDoc::TopLevel.new 'file.rb'
     m = tl.add_module RDoc::NormalModule, 'M'
     m.record_location tl
-    m.comment = 'M'
+    m.add_comment 'M', tl
 
     c = RDoc::Constant.new 'C', nil, nil
     c.record_location tl
@@ -152,7 +152,7 @@ end
     tl = RDoc::TopLevel.new 'file.rb'
     c = tl.add_class RDoc::NormalClass, 'C'
     c.record_location tl
-    c.comment = 'C'
+    c.add_comment 'C', tl
 
     m = RDoc::AnyMethod.new nil, 'm'
     m.record_location tl
@@ -170,7 +170,7 @@ end
     tl = RDoc::TopLevel.new 'file.rb'
     c1 = tl.add_class RDoc::NormalClass, 'C1'
     c1.record_location tl
-    c1.comment = 'C1'
+    c1.add_comment 'C1', tl
 
     m1 = RDoc::AnyMethod.new nil, 'm1'
     m1.record_location tl
@@ -231,7 +231,7 @@ The following items are not documented:
 
     c2 = tl.add_class RDoc::NormalClass, 'C2'
     c2.record_location tl
-    c2.comment = 'C2'
+    c2.add_comment 'C2', tl
 
     RDoc::TopLevel.complete :public
 
@@ -291,7 +291,7 @@ end
     tl = RDoc::TopLevel.new 'file.rb'
     c = tl.add_class RDoc::NormalClass, 'C'
     c.record_location tl
-    c.comment = 'C'
+    c.add_comment 'C', tl
 
     m1 = RDoc::AnyMethod.new nil, 'm1'
     m1.record_location tl
@@ -324,7 +324,7 @@ end
     tl = RDoc::TopLevel.new 'file.rb'
     c = tl.add_class RDoc::NormalClass, 'C'
     c.record_location tl
-    c.comment = 'C'
+    c.add_comment 'C', tl
 
     m = RDoc::AnyMethod.new nil, 'm'
     m.record_location tl
@@ -342,7 +342,7 @@ end
     tl = RDoc::TopLevel.new 'file.rb'
     c = tl.add_class RDoc::NormalClass, 'C'
     c.record_location tl
-    c.comment = 'C'
+    c.add_comment 'C', tl
 
     m1 = RDoc::AnyMethod.new nil, 'm1'
     m1.record_location tl
@@ -379,7 +379,7 @@ end
     tl = RDoc::TopLevel.new 'file.rb'
     c = tl.add_class RDoc::NormalClass, 'C'
     c.record_location tl
-    c.comment = 'C'
+    c.add_comment 'C', tl
 
     m = RDoc::AnyMethod.new nil, 'm'
     m.record_location tl
@@ -399,7 +399,7 @@ end
     tl = RDoc::TopLevel.new 'file.rb'
     c = tl.add_class RDoc::NormalClass, 'C'
     c.record_location tl
-    c.comment = 'C'
+    c.add_comment 'C', tl
 
     m = RDoc::AnyMethod.new nil, 'm'
     m.record_location tl
@@ -505,7 +505,7 @@ Total:      1 (1 undocumented)
     tl = RDoc::TopLevel.new 'file.rb'
     c = tl.add_class RDoc::NormalClass, 'C'
     c.record_location tl
-    c.comment = 'C'
+    c.add_comment 'C', tl
 
     m = RDoc::AnyMethod.new nil, 'm'
     m.record_location tl

@@ -8,7 +8,7 @@ class RDoc::Markup::ToAnsi < RDoc::Markup::ToRdoc
   ##
   # Creates a new ToAnsi visitor that is ready to output vibrant ANSI color!
 
-  def initialize
+  def initialize markup = nil
     super
 
     @headings.clear

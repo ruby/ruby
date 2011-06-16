@@ -18,7 +18,10 @@ the time
     STR
 
     m = RDoc::Markup.new
-    out = m.convert str, RDoc::Markup::ToTest.new
+
+    tt = RDoc::Markup::ToTest.new m
+
+    out = m.convert str, tt
 
     expected = [
       "now is the time",
@@ -28,6 +31,26 @@ the time
       "l1",
       "1: ",
       "l2",
+    ]
+
+    assert_equal expected, out
+  end
+
+  def test_convert_custom_markup
+    str = <<-STR
+{stricken}
+    STR
+
+    m = RDoc::Markup.new
+    m.add_word_pair '{', '}', :STRIKE
+
+    tt = RDoc::Markup::ToTest.new m
+    tt.add_tag :STRIKE, 'STRIKE ', ' STRIKE'
+
+    out = m.convert str, tt
+
+    expected = [
+      "STRIKE stricken STRIKE",
     ]
 
     assert_equal expected, out

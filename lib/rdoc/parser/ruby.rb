@@ -350,7 +350,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
   def get_constant_with_optional_parens
     skip_tkspace false
+
     nest = 0
+
     while TkLPAREN === (tk = peek_tk) or TkfLPAREN === tk do
       get_tk
       skip_tkspace
@@ -631,7 +633,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       cls.offset = offset
       cls.line   = line_no
 
-      cls.comment = comment if cls.document_self
+      cls.add_comment comment, @top_level if cls.document_self
 
       @top_level.add_to_classes_or_modules cls
       @stats.add_class cls
@@ -650,7 +652,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
           other.offset  = offset
           other.line    = line_no
 
-          other.comment = comment
+          other.add_comment comment, @top_level
         end
 
         # notify :nodoc: all if not a constant-named class/module
@@ -826,14 +828,19 @@ class RDoc::Parser::Ruby < RDoc::Parser
   ##
   # Parses an +include+ in +context+ with +comment+
 
-  def parse_include(context, comment)
+  def parse_include context, comment
     loop do
       skip_tkspace_comment
 
       name = get_constant_with_optional_parens
-      context.add_include RDoc::Include.new(name, comment) unless name.empty?
+
+      unless name.empty? then
+        incl = context.add_include RDoc::Include.new(name, comment)
+        incl.record_location @top_level
+      end
 
       return unless TkCOMMA === peek_tk
+
       get_tk
     end
   end
@@ -1231,7 +1238,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     mod.record_location @top_level
 
     read_documentation_modifiers mod, RDoc::CLASS_MODIFIERS
-    mod.comment = comment if mod.document_self
+    mod.add_comment comment, @top_level if mod.document_self
     parse_statements(mod)
 
     @top_level.add_to_classes_or_modules mod
@@ -1295,9 +1302,12 @@ class RDoc::Parser::Ruby < RDoc::Parser
           while TkCOMMENT === tk do
             comment << tk.text << "\n"
 
-            tk = get_tk        # this is the newline
-            skip_tkspace false # leading spaces
             tk = get_tk
+
+            if TkNL === tk then
+              skip_tkspace false # leading spaces
+              tk = get_tk
+            end
           end
 
           unless comment.empty? then
@@ -1313,7 +1323,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
           non_comment_seen = true
         end
 
-        unget_tk tk
+        unget_tk tk # TODO peek instead of get then unget
         keep_comment = true
 
       when TkCLASS then

@@ -18,11 +18,12 @@ class RDoc::Generator::RI
 
   def initialize options #:not-new:
     @options     = options
-    @store       = RDoc::RI::Store.new '.'
     @old_siginfo = nil
     @current     = nil
 
-    @store.dry_run = @options.dry_run
+    @store          = RDoc::RI::Store.new '.'
+    @store.dry_run  = @options.dry_run
+    @store.encoding = @options.encoding if @options.respond_to? :encoding
   end
 
   ##

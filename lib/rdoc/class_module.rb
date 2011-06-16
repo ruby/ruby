@@ -6,12 +6,25 @@ require 'rdoc/context'
 
 class RDoc::ClassModule < RDoc::Context
 
-  MARSHAL_VERSION = 0 # :nodoc:
+  ##
+  # 1::
+  #   RDoc 3.7
+  #   * Added visibility, singleton and file to attributes
+  #   * Added file to constants
+  #   * Added file to includes
+  #   * Added file to methods
+
+  MARSHAL_VERSION = 1 # :nodoc:
 
   ##
   # Constants that are aliases for this class or module
 
   attr_accessor :constant_aliases
+
+  ##
+  # Comment and the location it came from.  Use #add_comment to add comments
+
+  attr_reader :comment_location
 
   attr_accessor :diagram # :nodoc:
 
@@ -23,10 +36,16 @@ class RDoc::ClassModule < RDoc::Context
   ##
   # Return a RDoc::ClassModule of class +class_type+ that is a copy
   # of module +module+. Used to promote modules to classes.
+  #--
+  # TODO move to RDoc::NormalClass (I think)
 
-  def self.from_module(class_type, mod)
-    klass = class_type.new(mod.name)
-    klass.comment = mod.comment
+  def self.from_module class_type, mod
+    klass = class_type.new mod.name
+
+    mod.comment_location.each do |comment, location|
+      klass.add_comment comment, location
+    end
+
     klass.parent = mod.parent
     klass.section = mod.section
     klass.viewer = mod.viewer
@@ -85,7 +104,25 @@ class RDoc::ClassModule < RDoc::Context
     @is_alias_for     = nil
     @name             = name
     @superclass       = superclass
+    @comment_location = [] # [[comment, location]]
+
     super()
+  end
+
+  ##
+  # Adds +comment+ to this ClassModule's list of comments at +location+.  This
+  # method is preferred over #comment= since it allows ri data to be updated
+  # across multiple runs.
+
+  def add_comment comment, location
+    return if comment.empty?
+
+    original = comment
+
+    comment = normalize_comment comment
+    @comment_location << [comment, location]
+
+    self.comment = original
   end
 
   ##
@@ -112,6 +149,8 @@ class RDoc::ClassModule < RDoc::Context
   end
 
   ##
+  # This method is deprecated, use #add_comment instead.
+  #
   # Appends +comment+ to the current comment, but separated by a rule.  Works
   # more like <tt>+=</tt>.
 
@@ -119,10 +158,9 @@ class RDoc::ClassModule < RDoc::Context
     return if comment.empty?
 
     comment = normalize_comment comment
-    comment = "#{@comment}\n---\n#{comment}" unless
-      @comment.empty?
+    comment = "#{@comment}\n---\n#{comment}" unless @comment.empty?
 
-    super
+    super comment
   end
 
   ##
@@ -185,15 +223,16 @@ class RDoc::ClassModule < RDoc::Context
   end
 
   def marshal_dump # :nodoc:
-    # TODO must store the singleton attribute
     attrs = attributes.sort.map do |attr|
-      [attr.name, attr.rw]
+      [ attr.name, attr.rw,
+        attr.visibility, attr.singleton, attr.file_name,
+      ]
     end
 
     method_types = methods_by_type.map do |type, visibilities|
       visibilities = visibilities.map do |visibility, methods|
         method_names = methods.map do |method|
-          method.name
+          [method.name, method.file_name]
         end
 
         [visibility, method_names.uniq]
@@ -206,51 +245,67 @@ class RDoc::ClassModule < RDoc::Context
       @name,
       full_name,
       @superclass,
-      parse(@comment),
+      parse(@comment_location),
       attrs,
       constants.map do |const|
-        [const.name, parse(const.comment)]
+        [const.name, parse(const.comment), const.file_name]
       end,
       includes.map do |incl|
-        [incl.name, parse(incl.comment)]
+        [incl.name, parse(incl.comment), incl.file_name]
       end,
       method_types,
     ]
   end
 
   def marshal_load array # :nodoc:
-    # TODO must restore the singleton attribute
     initialize_methods_etc
-    @document_self    = true
-    @done_documenting = false
-    @current_section  = nil
-    @parent           = nil
-    @visibility       = nil
+    @current_section   = nil
+    @document_self     = true
+    @done_documenting  = false
+    @parent            = nil
+    @temporary_section = nil
+    @visibility        = nil
 
     @name       = array[1]
     @full_name  = array[2]
     @superclass = array[3]
     @comment    = array[4]
 
-    array[5].each do |name, rw|
-      add_attribute RDoc::Attr.new(nil, name, rw, nil)
+    @comment_location = if RDoc::Markup::Document === @comment.parts.first then
+                          @comment
+                        else
+                          RDoc::Markup::Document.new @comment
+                        end
+
+    array[5].each do |name, rw, visibility, singleton, file|
+      singleton  ||= false
+      visibility ||= :public
+
+      attr = RDoc::Attr.new nil, name, rw, nil, singleton
+
+      add_attribute attr
+      attr.visibility = visibility
+      attr.record_location RDoc::TopLevel.new file
     end
 
-    array[6].each do |name, comment|
-      add_constant RDoc::Constant.new(name, nil, comment)
+    array[6].each do |name, comment, file|
+      const = add_constant RDoc::Constant.new(name, nil, comment)
+      const.record_location RDoc::TopLevel.new file
     end
 
-    array[7].each do |name, comment|
-      add_include RDoc::Include.new(name, comment)
+    array[7].each do |name, comment, file|
+      incl = add_include RDoc::Include.new(name, comment)
+      incl.record_location RDoc::TopLevel.new file
     end
 
     array[8].each do |type, visibilities|
       visibilities.each do |visibility, methods|
         @visibility = visibility
 
-        methods.each do |name|
+        methods.each do |name, file|
           method = RDoc::AnyMethod.new nil, name
           method.singleton = true if type == 'class'
+          method.record_location RDoc::TopLevel.new file
           add_method method
         end
       end
@@ -258,37 +313,73 @@ class RDoc::ClassModule < RDoc::Context
   end
 
   ##
-  # Merges +class_module+ into this ClassModule
+  # Merges +class_module+ into this ClassModule.
+  #
+  # The data in +class_module+ is preferred over the receiver.
 
   def merge class_module
-    comment = class_module.comment
+    other_document = parse class_module.comment_location
 
-    if comment then
-      document = parse @comment
+    if other_document then
+      document = parse @comment_location
 
-      comment.parts.concat document.parts
+      document = document.merge other_document
 
-      @comment = comment
+      @comment = @comment_location = document
     end
 
-    class_module.each_attribute do |attr|
-      if match = attributes.find { |a| a.name == attr.name } then
-        match.rw = [match.rw, attr.rw].compact.uniq.join
-      else
+    merge_collections attributes, class_module.attributes do |add, attr|
+      if add then
         add_attribute attr
+      else
+        @attributes.delete attr
+        @methods_hash.delete attr.pretty_name
       end
     end
 
-    class_module.each_constant do |const|
-      add_constant const
+    merge_collections constants, class_module.constants do |add, const|
+      if add then
+        add_constant const
+      else
+        @constants.delete const
+        @constants_hash.delete const.name
+      end
     end
 
-    class_module.each_include do |incl|
-      add_include incl
+    merge_collections includes, class_module.includes do |add, incl|
+      if add then
+        add_include incl
+      else
+        @includes.delete incl
+      end
     end
 
-    class_module.each_method do |meth|
-      add_method meth
+    merge_collections method_list, class_module.method_list do |add, meth|
+      if add then
+        add_method meth
+      else
+        @method_list.delete meth
+        @methods_hash.delete meth.pretty_name
+      end
+    end
+
+    self
+  end
+
+  ##
+  # Merges collection +mine+ with +other+ preferring other.
+
+  def merge_collections mine, other, &block # :nodoc:
+    my_things    = mine. group_by { |thing| thing.file }
+    other_things = other.group_by { |thing| thing.file }
+
+    other_things.each do |file, things|
+      my_things[file].each { |thing| yield false, thing } if
+        my_things.include? file
+
+      things.each do |thing|
+        yield true, thing
+      end
     end
   end
 
@@ -306,6 +397,29 @@ class RDoc::ClassModule < RDoc::Context
 
   def name= new_name
     @name = new_name
+  end
+
+  ##
+  # Parses +comment_location+ into an RDoc::Markup::Document composed of
+  # multiple RDoc::Markup::Documents with their file set.
+
+  def parse comment_location
+    case comment_location
+    when String then
+      super
+    when Array then
+      docs = comment_location.map do |comment, location|
+        doc = super comment
+        doc.file = location.absolute_name
+        doc
+      end
+
+      RDoc::Markup::Document.new(*docs)
+    when RDoc::Markup::Document then
+      return comment_location
+    else
+      raise ArgumentError, "unknown comment class #{comment_location.class}"
+    end
   end
 
   ##

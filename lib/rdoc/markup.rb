@@ -48,13 +48,13 @@ require 'rdoc'
 #     end
 #   end
 #
-#   m = RDoc::Markup.new
-#   m.add_word_pair("{", "}", :STRIKE)
-#   m.add_html("no", :STRIKE)
+#   markup = RDoc::Markup.new
+#   markup.add_word_pair("{", "}", :STRIKE)
+#   markup.add_html("no", :STRIKE)
 #
-#   m.add_special(/\b([A-Z][a-z]+[A-Z]\w+)/, :WIKIWORD)
+#   markup.add_special(/\b([A-Z][a-z]+[A-Z]\w+)/, :WIKIWORD)
 #
-#   wh = WikiHtml.new
+#   wh = WikiHtml.new markup
 #   wh.add_tag(:STRIKE, "<strike>", "</strike>")
 #
 #   puts "<body>#{wh.convert ARGF.read}</body>"
@@ -498,15 +498,53 @@ require 'rdoc'
 # [+:main:+ _name_]
 #   Equivalent to the <tt>--main</tt> command line parameter.
 #
+# [<tt>:category: section</tt>]
+#   Adds this item to the named +section+ overriding the current section.  Use
+#   this to group methods by section in RDoc output while maintaining a
+#   sensible ordering (like alphabetical).
+#
+#     # :category: Utility Methods
+#     #
+#     # CGI escapes +text+
+#
+#     def convert_string text
+#       CGI.escapeHTML text
+#     end
+#
+#   An empty category will place the item in the default category:
+#
+#     # :category:
+#     #
+#     # This method is in the default category
+#
+#     def some_method
+#       # ...
+#     end
+#
+#   Unlike the :section: directive, :category: is not sticky.  The category
+#   only applies to the item immediately following the comment.
+#
+#   Use the :section: directive to provide introductory text for a section of
+#   documentation.
+#
 # [<tt>:section: title</tt>]
-#   Starts a new section in the output.  The title following +:section:+ is
-#   used as the section heading, and the remainder of the comment containing
-#   the section is used as introductory text.  Subsequent methods, aliases,
-#   attributes, and classes will be documented in this section.
+#   Provides section introductory text in RDoc output.  The title following
+#   +:section:+ is used as the section name and the remainder of the comment
+#   containing the section is used as introductory text.  A section's comment
+#   block must be separated from following comment blocks.  Use an empty title
+#   to switch to the default section.
+#
+#   The :section: directive is sticky, so subsequent methods, aliases,
+#   attributes, and classes will be contained in this section until the
+#   section is changed.  The :category: directive will override the :section:
+#   directive.
 #
 #   A :section: comment block may have one or more lines before the :section:
 #   directive.  These will be removed, and any identical lines at the end of
-#   the block are also removed.  This allows you to add visual cues such as:
+#   the block are also removed.  This allows you to add visual cues to the
+#   section.
+#
+#   Example:
 #
 #     # ----------------------------------------
 #     # :section: My Section
@@ -514,10 +552,12 @@ require 'rdoc'
 #     # See it glisten in the noon-day sun.
 #     # ----------------------------------------
 #
-#   Sections may be referenced multiple times in a class or module allowing
-#   methods, attributes and constants to be ordered one way for implementation
-#   ordering but still grouped together in documentation.  If a section has
-#   multiple comments they will be concatenated with a dividing rule.
+#     ##
+#     # Comment for some_method
+#
+#     def some_method
+#       # ...
+#     end
 #
 # [+:call-seq:+]
 #   Lines up to the next blank line in the comment are treated as the method's

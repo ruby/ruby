@@ -42,7 +42,9 @@ module RDoc::Generator::Markup
     show_hash = RDoc::RDoc.current.options.show_hash
     hyperlink_all = RDoc::RDoc.current.options.hyperlink_all
     this = RDoc::Context === self ? self : @parent
-    @formatter = RDoc::Markup::ToHtmlCrossref.new this.path, this, show_hash, hyperlink_all
+
+    @formatter = RDoc::Markup::ToHtmlCrossref.new(this.path, this, show_hash,
+                                                  hyperlink_all)
   end
 
   ##

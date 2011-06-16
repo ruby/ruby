@@ -97,6 +97,10 @@ body.file p {
   margin: 1em 0;
 }
 
+.indexpage .rdoc-list p, .file .rdoc-list p {
+  margin: 0em 0;
+}
+
 .indexpage ol,
 .file #documentation ol {
   line-height: 160%;

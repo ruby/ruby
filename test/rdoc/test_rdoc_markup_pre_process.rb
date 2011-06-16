@@ -40,6 +40,11 @@ Regular expressions (<i>regexp</i>s) are patterns which describe the
 contents of a string.
     EXPECTED
 
+    # FIXME 1.9 fix on windoze
+    # preprocessor uses binread, so line endings are \r\n
+    expected.gsub!("\n", "\r\n") if
+      RUBY_VERSION =~ /^1.9/ && RUBY_PLATFORM =~ /mswin|mingw/
+
     assert_equal expected, content
   end
 
@@ -58,6 +63,11 @@ contents of a string.
     content = @pp.include_file @file_name, '', Encoding::US_ASCII
 
     expected = "?\n"
+
+    # FIXME 1.9 fix on windoze
+    # preprocessor uses binread, so line endings are \r\n
+    expected.gsub!("\n", "\r\n") if
+      RUBY_VERSION =~ /^1.9/ && RUBY_PLATFORM =~ /mswin|mingw/
 
     assert_equal expected, content
   end
@@ -84,6 +94,17 @@ contents of a string.
     end
 
     assert_equal "", text
+  end
+
+  def test_handle_category
+    context = RDoc::Context.new
+    original_section = context.current_section
+
+    text = "# :category: other\n"
+
+    @pp.handle text, context
+
+    refute_equal original_section, context.current_section
   end
 
   def test_handle_code_object

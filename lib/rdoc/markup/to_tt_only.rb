@@ -20,7 +20,7 @@ class RDoc::Markup::ToTtOnly < RDoc::Markup::Formatter
   ##
   # Creates a new tt-only formatter.
 
-  def initialize
+  def initialize markup = nil
     super
 
     add_tag :TT, nil, nil

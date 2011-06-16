@@ -120,6 +120,16 @@ class RDoc::Markup::FormatterTestCase < MiniTest::Unit::TestCase
       end
 
       ##
+      # Test case that calls <tt>@to.accept_document</tt>
+
+      def test_accept_document
+        @to.start_accepting
+        @to.accept_document @RM::Document.new @RM::Paragraph.new 'hello'
+
+        accept_document
+      end
+
+      ##
       # Calls accept_heading with a level 5 RDoc::Markup::Heading
 
       def test_accept_heading

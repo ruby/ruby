@@ -157,7 +157,7 @@ http://rubyforge.org/tracker/?atid=2472&group_id=627&func=browse
   def strip_stars text
     encoding = text.encoding if Object.const_defined? :Encoding
 
-    text = text.gsub %r%Document-method:\s+[\w:.#]+%, ''
+    text = text.gsub %r%Document-method:\s+[\w:.#=!?]+%, ''
 
     space = ' '
     space.force_encoding encoding if encoding

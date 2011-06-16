@@ -240,6 +240,23 @@ The comments associated with
     assert_equal expected, strip_stars(text)
   end
 
+  def test_strip_stars_document_method
+    text = <<-TEXT
+/*
+ * Document-method: Zlib::GzipFile#mtime=
+ *
+ * A comment
+ */
+    TEXT
+
+    expected = <<-EXPECTED
+
+   A comment
+    EXPECTED
+
+    assert_equal expected, strip_stars(text)
+  end
+
   def test_strip_stars_encoding
     skip "Encoding not implemented" unless Object.const_defined? :Encoding
 

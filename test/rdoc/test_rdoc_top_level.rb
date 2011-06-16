@@ -81,6 +81,15 @@ class TestRDocTopLevel < XrefTestCase
                  RDoc::TopLevel.modules.map { |m| m.full_name }.sort
   end
 
+  def test_class_new
+    tl1 = RDoc::TopLevel.new 'file.rb'
+    tl2 = RDoc::TopLevel.new 'file.rb'
+    tl3 = RDoc::TopLevel.new 'other.rb'
+
+    assert_same tl1, tl2
+    refute_same tl1, tl3
+  end
+
   def test_class_reset
     RDoc::TopLevel.reset
 
@@ -93,6 +102,24 @@ class TestRDocTopLevel < XrefTestCase
     assert_equal 'top_level.rb', @top_level.base_name
   end
 
+  def test_eql_eh
+    top_level2 = RDoc::TopLevel.new 'path/top_level.rb'
+    other_level = RDoc::TopLevel.new 'path/other_level.rb'
+
+    assert_operator @top_level, :eql?, top_level2
+
+    refute_operator other_level, :eql?, @top_level
+  end
+
+  def test_equals2
+    top_level2 = RDoc::TopLevel.new 'path/top_level.rb'
+    other_level = RDoc::TopLevel.new 'path/other_level.rb'
+
+    assert_equal @top_level, top_level2
+
+    refute_equal other_level, @top_level
+  end
+
   def test_find_class_or_module
     assert_equal @c1,    @xref_data.find_class_or_module('C1')
     assert_equal @c2_c3, @xref_data.find_class_or_module('C2::C3')
@@ -102,6 +129,14 @@ class TestRDocTopLevel < XrefTestCase
 
   def test_full_name
     assert_equal 'path/top_level.rb', @top_level.full_name
+  end
+
+  def test_hash
+    tl2 = RDoc::TopLevel.new 'path/top_level.rb'
+    tl3 = RDoc::TopLevel.new 'other/top_level.rb'
+
+    assert_equal @top_level.hash, tl2.hash
+    refute_equal @top_level.hash, tl3.hash
   end
 
   def test_http_url

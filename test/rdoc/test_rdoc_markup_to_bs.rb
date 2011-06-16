@@ -18,6 +18,10 @@ class TestRDocMarkupToBs < RDoc::Markup::TextFormatterTestCase
     assert_equal "\n", @to.res.join
   end
 
+  def accept_document
+    assert_equal "hello\n", @to.res.join
+  end
+
   def accept_heading
     skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "===== H\bHe\bel\bll\blo\bo\n", @to.res.join

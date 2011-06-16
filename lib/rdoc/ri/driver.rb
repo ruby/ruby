@@ -456,9 +456,13 @@ Options may also be set in the 'RI' environment variable.
     out << RDoc::Markup::Heading.new(1, "#{name}:")
     out << RDoc::Markup::BlankLine.new
 
-    out.push(*methods.map do |method|
-      RDoc::Markup::Verbatim.new method
-    end)
+    if @use_stdout and !@interactive
+      out.push(*methods.map do |method|
+        RDoc::Markup::Verbatim.new method
+      end)
+    else
+      out << RDoc::Markup::IndentedParagraph.new(2, methods.join(', '))
+    end
 
     out << RDoc::Markup::BlankLine.new
   end
@@ -532,8 +536,9 @@ Options may also be set in the 'RI' environment variable.
     klass_name = method ? name : klass
 
     if name !~ /#|\./ then
-      completions = klasses.grep(/^#{klass_name}[^:]*$/)
-      completions.concat klasses.grep(/^#{name}[^:]*$/) if name =~ /::$/
+      completions = klasses.grep(/^#{Regexp.escape klass_name}[^:]*$/)
+      completions.concat klasses.grep(/^#{Regexp.escape name}[^:]*$/) if
+        name =~ /::$/
 
       completions << klass if classes.key? klass # to complete a method name
     elsif selector then

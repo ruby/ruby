@@ -101,6 +101,14 @@ class RDoc::RDoc
   end
 
   ##
+  # Resets all internal state
+
+  def self.reset
+    RDoc::TopLevel.reset
+    RDoc::Parser::C.reset
+  end
+
+  ##
   # Creates a new RDoc::RDoc instance.  Call #document to parse files and
   # generate documentation.
 
@@ -306,8 +314,12 @@ option)
   # Parses +filename+ and returns an RDoc::TopLevel
 
   def parse_file filename
+    if defined?(Encoding) then
+      encoding = @options.encoding
+      filename = filename.encode encoding
+    end
+
     @stats.add_file filename
-    encoding = @options.encoding if defined?(Encoding)
 
     content = RDoc::Encoding.read_file filename, encoding
 
@@ -396,8 +408,7 @@ The internal error was:
   # current directory, so make sure you're somewhere writable before invoking.
 
   def document options
-    RDoc::TopLevel.reset
-    RDoc::Parser::C.reset
+    RDoc::RDoc.reset
 
     if RDoc::Options === options then
       @options = options

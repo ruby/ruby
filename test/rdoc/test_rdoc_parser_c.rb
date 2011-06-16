@@ -46,7 +46,7 @@ assert call-seq correct
 =end
 
 class RDoc::Parser::C
-  attr_accessor :classes, :singleton_classes
+  attr_accessor :classes
 
   public :do_classes, :do_constants
 end
@@ -68,6 +68,22 @@ class TestRDocParserC < MiniTest::Unit::TestCase
 
   def teardown
     @tempfile.close
+  end
+
+  def test_class_can_parse
+    c_parser = RDoc::Parser::C
+
+    assert_equal c_parser, c_parser.can_parse('file.C')
+    assert_equal c_parser, c_parser.can_parse('file.CC')
+    assert_equal c_parser, c_parser.can_parse('file.H')
+    assert_equal c_parser, c_parser.can_parse('file.HH')
+    assert_equal c_parser, c_parser.can_parse('file.c')
+    assert_equal c_parser, c_parser.can_parse('file.cc')
+    assert_equal c_parser, c_parser.can_parse('file.cpp')
+    assert_equal c_parser, c_parser.can_parse('file.cxx')
+    assert_equal c_parser, c_parser.can_parse('file.h')
+    assert_equal c_parser, c_parser.can_parse('file.hh')
+    assert_equal c_parser, c_parser.can_parse('file.y')
   end
 
   def test_do_attr_rb_attr
@@ -222,6 +238,21 @@ VALUE cFoo = boot_defclass("Foo", 0);
     klass = util_get_class content, 'cFoo'
     assert_equal "this is the Foo boot class", klass.comment
     assert_equal nil, klass.superclass
+  end
+
+  def test_do_aliases_missing_class
+    content = <<-EOF
+void Init_Blah(void) {
+  rb_define_alias(cDate, "b", "a");
+}
+    EOF
+
+    _, err = capture_io do
+      refute util_get_class(content, 'cDate')
+    end
+
+    assert_equal "Enclosing class/module \"cDate\" for alias b a not known\n",
+                 err
   end
 
   def test_do_classes_class
@@ -398,6 +429,140 @@ Multiline comment goes here because this comment spans multiple lines.
     assert constants.empty?, constants.inspect
   end
 
+  def test_do_constants_curses
+    content = <<-EOF
+void Init_curses(){
+  mCurses = rb_define_module("Curses");
+
+  /*
+   * Document-const: Curses::COLOR_BLACK
+   *
+   * Value of the color black
+   */
+  rb_curses_define_const(COLOR_BLACK);
+}
+    EOF
+
+    @parser = util_parser content
+
+    @parser.do_classes
+    @parser.do_constants
+
+    klass = @parser.classes['mCurses']
+
+    constants = klass.constants
+    refute_empty klass.constants
+
+    assert_equal 'COLOR_BLACK', constants.first.name
+    assert_equal 'UINT2NUM(COLOR_BLACK)', constants.first.value
+    assert_equal 'Value of the color black', constants.first.comment
+  end
+
+  def test_do_includes
+    content = <<-EOF
+Init_foo() {
+   VALUE cFoo = rb_define_class("Foo", rb_cObject);
+   VALUE mInc = rb_define_module("Inc");
+
+   rb_include_module(cFoo, mInc);
+}
+    EOF
+
+    klass = util_get_class content, 'cFoo'
+
+    incl = klass.includes.first
+    assert_equal 'Inc',      incl.name
+    assert_equal '',         incl.comment
+    assert_equal @top_level, incl.file
+  end
+
+  # HACK parsing warning instead of setting up in file
+  def test_do_methods_in_c
+    content = <<-EOF
+VALUE blah(VALUE klass, VALUE year) {
+}
+
+void Init_Blah(void) {
+  cDate = rb_define_class("Date", rb_cObject);
+
+  rb_define_method(cDate, "blah", blah, 1); /* in blah.c */
+}
+    EOF
+
+    klass = nil
+
+    _, err = capture_io do
+      klass = util_get_class content, 'cDate'
+    end
+
+    assert_match ' blah.c ', err
+  end
+
+  # HACK parsing warning instead of setting up in file
+  def test_do_methods_in_cpp
+    content = <<-EOF
+VALUE blah(VALUE klass, VALUE year) {
+}
+
+void Init_Blah(void) {
+  cDate = rb_define_class("Date", rb_cObject);
+
+  rb_define_method(cDate, "blah", blah, 1); /* in blah.cpp */
+}
+    EOF
+
+    klass = nil
+
+    _, err = capture_io do
+      klass = util_get_class content, 'cDate'
+    end
+
+    assert_match ' blah.cpp ', err
+  end
+
+  # HACK parsing warning instead of setting up in file
+  def test_do_methods_in_y
+    content = <<-EOF
+VALUE blah(VALUE klass, VALUE year) {
+}
+
+void Init_Blah(void) {
+  cDate = rb_define_class("Date", rb_cObject);
+
+  rb_define_method(cDate, "blah", blah, 1); /* in blah.y */
+}
+    EOF
+
+    klass = nil
+
+    _, err = capture_io do
+      klass = util_get_class content, 'cDate'
+    end
+
+    assert_match ' blah.y ', err
+  end
+
+  def test_do_methods_singleton_class
+    content = <<-EOF
+VALUE blah(VALUE klass, VALUE year) {
+}
+
+void Init_Blah(void) {
+  cDate = rb_define_class("Date", rb_cObject);
+  sDate = rb_singleton_class(cDate);
+
+  rb_define_method(sDate, "blah", blah, 1);
+}
+    EOF
+
+    klass = util_get_class content, 'cDate'
+
+    methods = klass.method_list
+    assert_equal 1,      methods.length
+    assert_equal 'blah', methods.first.name
+    assert               methods.first.singleton
+  end
+
   def test_find_alias_comment
     parser = util_parser ''
 
@@ -523,6 +688,53 @@ Init_Foo(void) {
     klass = util_get_class content, 'foo'
 
     assert_equal '', klass.comment
+  end
+
+  def test_find_const_comment_rb_define
+    content = <<-EOF
+/*
+ * A comment
+ */
+rb_define_const(cFoo, "CONST", value);
+    EOF
+
+    parser = util_parser content
+
+    comment = parser.find_const_comment 'const', 'CONST'
+
+    assert_equal "/*\n * A comment\n */\n", comment
+  end
+
+  def test_find_const_comment_document_const
+    content = <<-EOF
+/*
+ * Document-const: CONST
+ *
+ * A comment
+ */
+    EOF
+
+    parser = util_parser content
+
+    comment = parser.find_const_comment nil, 'CONST'
+
+    assert_equal " *\n * A comment\n */", comment
+  end
+
+  def test_find_const_comment_document_const_full_name
+    content = <<-EOF
+/*
+ * Document-const: Foo::CONST
+ *
+ * A comment
+ */
+    EOF
+
+    parser = util_parser content
+
+    comment = parser.find_const_comment nil, 'CONST', 'Foo'
+
+    assert_equal " *\n * A comment\n */", comment
   end
 
   def test_find_body
@@ -699,6 +911,81 @@ Init_Foo(void) {
     assert_equal "a comment for bar", baz.comment
   end
 
+  def test_find_body_document_method_equals
+    content = <<-EOF
+/*
+ * Document-method: Zlib::GzipFile#mtime=
+ *
+ * A comment
+ */
+static VALUE
+rb_gzfile_set_mtime(VALUE obj, VALUE mtime)
+{
+
+void
+Init_zlib() {
+    mZlib = rb_define_module("Zlib");
+    cGzipFile = rb_define_class_under(mZlib, "GzipFile", rb_cObject);
+    cGzipWriter = rb_define_class_under(mZlib, "GzipWriter", cGzipFile);
+    rb_define_method(cGzipWriter, "mtime=", rb_gzfile_set_mtime, 1);
+}
+    EOF
+
+    klass = util_get_class content, 'cGzipWriter'
+    assert_equal 1, klass.method_list.length
+
+    methods = klass.method_list.sort
+
+    bar = methods.first
+    assert_equal 'Zlib::GzipWriter#mtime=', bar.full_name
+    assert_equal 'A comment', bar.comment
+  end
+
+  def test_find_body_document_method_same
+    content = <<-EOF
+VALUE
+s_bar() {
+}
+
+VALUE
+bar() {
+}
+
+/*
+ * Document-method: Foo::bar
+ *
+ * a comment for Foo::bar
+ */
+
+/*
+ * Document-method: Foo#bar
+ *
+ * a comment for Foo#bar
+ */
+
+void
+Init_Foo(void) {
+    VALUE foo = rb_define_class("Foo", rb_cObject);
+
+    rb_define_singleton_method(foo, "bar", s_bar, 0);
+    rb_define_method(foo, "bar", bar, 0);
+}
+    EOF
+
+    klass = util_get_class content, 'foo'
+    assert_equal 2, klass.method_list.length
+
+    methods = klass.method_list.sort
+
+    s_bar = methods.first
+    assert_equal 'Foo::bar', s_bar.full_name
+    assert_equal "a comment for Foo::bar", s_bar.comment
+
+    bar = methods.last
+    assert_equal 'Foo#bar', bar.full_name
+    assert_equal "a comment for Foo#bar", bar.comment
+  end
+
   def test_find_modifiers_call_seq
     comment = <<-COMMENT
 /* call-seq:
@@ -830,7 +1117,6 @@ rb_m(int argc, VALUE *argv, VALUE obj) {
     assert_equal '(p1)', m.params
   end
 
-
   def test_handle_method_args_0
     parser = util_parser "Document-method: BasicObject#==\n blah */"
 
@@ -903,6 +1189,20 @@ rb_m(int argc, VALUE *argv, VALUE obj) {
 
     assert_equal 'new',   new.name
     assert_equal :public, new.visibility
+  end
+
+  def test_handle_singleton
+    parser = util_parser <<-SINGLE
+void Init_Blah(void) {
+  cDate = rb_define_class("Date", rb_cObject);
+  sDate = rb_singleton_class(cDate);
+}
+    SINGLE
+
+    parser.scan
+
+    assert_equal 'Date', parser.known_classes['sDate']
+    assert_equal 'Date', parser.singleton_classes['sDate']
   end
 
   def test_look_for_directives_in

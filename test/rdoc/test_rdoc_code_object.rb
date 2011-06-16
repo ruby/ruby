@@ -30,6 +30,15 @@ class TestRDocCodeObject < XrefTestCase
     assert_equal 'I am a comment', @co.comment
   end
 
+  def test_comment_equals_document
+    doc = RDoc::Markup::Document.new
+    @co.comment = doc
+
+    @co.comment = ''
+
+    assert_equal doc, @co.comment
+  end
+
   def test_comment_equals_encoding
     skip "Encoding not implemented" unless Object.const_defined? :Encoding
 
@@ -127,6 +136,14 @@ class TestRDocCodeObject < XrefTestCase
     end
 
     assert_equal [@parent, @xref_data], parents
+  end
+
+  def test_file_name
+    assert_equal nil, @co.file_name
+
+    @co.record_location RDoc::TopLevel.new 'lib/file.rb'
+
+    assert_equal 'lib/file.rb', @co.file_name
   end
 
   def test_full_name_equals

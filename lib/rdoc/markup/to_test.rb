@@ -21,7 +21,7 @@ class RDoc::Markup::ToTest < RDoc::Markup::Formatter
   end
 
   def accept_paragraph(paragraph)
-    @res << paragraph.text
+    @res << convert_flow(@am.flow(paragraph.text))
   end
 
   def accept_raw raw

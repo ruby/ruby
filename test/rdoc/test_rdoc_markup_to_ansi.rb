@@ -18,6 +18,10 @@ class TestRDocMarkupToAnsi < RDoc::Markup::TextFormatterTestCase
     assert_equal "\e[0m\n", @to.res.join
   end
 
+  def accept_document
+    assert_equal "\e[0mhello\n", @to.res.join
+  end
+
   def accept_heading
     assert_equal "\e[0mHello\n", @to.res.join
   end

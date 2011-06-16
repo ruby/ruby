@@ -74,6 +74,13 @@ class RDoc::Markup::PreProcess
         filename = param.split[0]
         encoding = if defined?(Encoding) then text.encoding else nil end
         include_file filename, prefix, encoding
+      when 'category' then
+        if RDoc::Context === code_object then
+          section = code_object.add_section param, ''
+          code_object.temporary_section = section
+        end
+
+        '' # ignore category if we're not on an RDoc::Context
       else
         result = yield directive, param if block_given?
 

@@ -1,4 +1,4 @@
-require 'rdoc/parser'
+
 require 'rdoc/parser/ruby'
 require 'rdoc/known_classes'
 
@@ -64,8 +64,17 @@ require 'rdoc/known_classes'
 # [Document-variable: +name+]
 #   Documentation for the named +rb_define_variable+
 #
-# [Document-method: +name+]
-#   Documentation for the named method.
+# [Document-method: +method_name+]
+#   Documentation for the named method.  Use this when the method name is
+#   unambiguous.
+#
+# [Document-method: <tt>ClassName::method_name<tt>]
+#   Documentation for a singleton method in the given class.  Use this when
+#   the method name alone is ambiguous.
+#
+# [Document-method: <tt>ClassName#method_name<tt>]
+#   Documentation for a instance method in the given class.  Use this when the
+#   method name alone is ambiguous.
 #
 # [Document-attr: +name+]
 #   Documentation for the named attribute.
@@ -113,6 +122,17 @@ class RDoc::Parser::C < RDoc::Parser
 
   attr_accessor :content
 
+
+  ##
+  # Maps C variable names to names of ruby classes (andsingleton classes)
+
+  attr_reader :known_classes
+
+  ##
+  # Maps C variable names to names of ruby singleton classes
+
+  attr_reader :singleton_classes
+
   ##
   # Resets cross-file state.  Call when parsing different projects that need
   # separate documentation.
@@ -132,8 +152,8 @@ class RDoc::Parser::C < RDoc::Parser
 
     @known_classes = RDoc::KNOWN_CLASSES.dup
     @content = handle_tab_width handle_ifdefs_in(@content)
-    @classes = Hash.new
-    @singleton_classes = Hash.new
+    @classes = {}
+    @singleton_classes = {}
     @file_dir = File.dirname(@file_name)
   end
 
@@ -146,17 +166,25 @@ class RDoc::Parser::C < RDoc::Parser
                    \s*"(.+?)",
                    \s*"(.+?)"
                    \s*\)/xm) do |var_name, new_name, old_name|
-      class_name = @known_classes[var_name] || var_name
-      class_obj  = find_class var_name, class_name
+      class_name = @known_classes[var_name]
+
+      unless class_name then
+        warn "Enclosing class/module %p for alias %s %s not known" % [
+          var_name, new_name, old_name]
+        next
+      end
+
+      class_obj = find_class var_name, class_name
 
       al = RDoc::Alias.new '', old_name, new_name, ''
-      al.singleton = @singleton_classes.key?(var_name)
+      al.singleton = @singleton_classes.key? var_name
 
       comment = find_alias_comment var_name, new_name, old_name
       comment = strip_stars comment
       al.comment = comment
 
       al.record_location @top_level
+
       class_obj.add_alias al
       @stats.add_alias al
     end
@@ -262,6 +290,18 @@ class RDoc::Parser::C < RDoc::Parser
       var_name = "rb_cObject" if !var_name or var_name == "rb_mKernel"
       handle_constants type, var_name, const_name, definition
     end
+
+    @content.scan(%r%
+                  \Wrb_curses_define_const
+                  \s*\(
+                    \s*
+                    (\w+)
+                    \s*
+                  \)
+                  \s*;%xm) do |consts|
+      const = consts.first
+      handle_constants 'const', 'mCurses', const, "UINT2NUM(#{const})"
+    end
   end
 
   ##
@@ -271,7 +311,8 @@ class RDoc::Parser::C < RDoc::Parser
     @content.scan(/rb_include_module\s*\(\s*(\w+?),\s*(\w+?)\s*\)/) do |c,m|
       if cls = @classes[c]
         m = @known_classes[m] || m
-        cls.add_include RDoc::Include.new(m, "")
+        incl = cls.add_include RDoc::Include.new(m, "")
+        incl.record_location @top_level
       end
     end
   end
@@ -293,7 +334,7 @@ class RDoc::Parser::C < RDoc::Parser
                      \s*"([^"]+)",
                      \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
                      \s*(-?\w+)\s*\)
-                   (?:;\s*/[*/]\s+in\s+(\w+?\.[cy]))?
+                   (?:;\s*/[*/]\s+in\s+(\w+?\.(?:cpp|c|y)))?
                  %xm) do |type, var_name, meth_name, function, param_count, source_file|
 
       # Ignore top-object and weird struct.c dynamic stuff
@@ -401,7 +442,7 @@ class RDoc::Parser::C < RDoc::Parser
       # distinct (for example Kernel.hash and Kernel.object_id share the same
       # implementation
 
-      override_comment = find_override_comment class_name, meth_obj.name
+      override_comment = find_override_comment class_name, meth_obj
       comment = override_comment if override_comment
 
       find_modifiers comment, meth_obj if comment
@@ -444,7 +485,7 @@ class RDoc::Parser::C < RDoc::Parser
       warn "No definition for #{meth_name}" if @options.verbosity > 1
       false
     else # No body, but might still have an override comment
-      comment = find_override_comment class_name, meth_obj.name
+      comment = find_override_comment class_name, meth_obj
 
       if comment then
         find_modifiers comment, meth_obj
@@ -524,21 +565,26 @@ class RDoc::Parser::C < RDoc::Parser
 
     comment = look_for_directives_in class_mod, comment
 
-    class_mod.comment = comment
+    class_mod.add_comment comment, @top_level
   end
 
   ##
   # Finds a comment matching +type+ and +const_name+ either above the
   # comment or in the matching Document- section.
 
-  def find_const_comment(type, const_name)
+  def find_const_comment(type, const_name, class_name = nil)
     if @content =~ %r%((?>^\s*/\*.*?\*/\s+))
                    rb_define_#{type}\((?:\s*(\w+),)?\s*
                                       "#{const_name}"\s*,
                                       .*?\)\s*;%xmi then
       $1
+    elsif class_name and
+          @content =~ %r%Document-(?:const|global|variable):\s
+                         #{class_name}::#{const_name}
+                         \s*?\n((?>.*?\*/))%xm then
+      $1
     elsif @content =~ %r%Document-(?:const|global|variable):\s#{const_name}
-                         \s*?\n((?>.*?\*/))%xm
+                         \s*?\n((?>.*?\*/))%xm then
       $1
     else
       ''
@@ -607,12 +653,13 @@ class RDoc::Parser::C < RDoc::Parser
   end
 
   ##
-  # Finds a <tt>Document-method</tt> override for +meth_name+ in +class_name+
+  # Finds a <tt>Document-method</tt> override for +meth_obj+ on +class_name+
 
-  def find_override_comment(class_name, meth_name)
-    name = Regexp.escape(meth_name)
+  def find_override_comment class_name, meth_obj
+    name = Regexp.escape meth_obj.name
+    prefix = Regexp.escape meth_obj.name_prefix
 
-    if @content =~ %r%Document-method:\s+#{class_name}(?:\.|::|#)#{name}\s*?\n((?>.*?\*/))%m then
+    if @content =~ %r%Document-method:\s+#{class_name}#{prefix}#{name}\s*?\n((?>.*?\*/))%m then
       $1
     elsif @content =~ %r%Document-method:\s#{name}\s*?\n((?>.*?\*/))%m then
       $1
@@ -726,7 +773,7 @@ class RDoc::Parser::C < RDoc::Parser
       return
     end
 
-    comment = find_const_comment type, const_name
+    comment = find_const_comment type, const_name, class_name
     comment = strip_stars comment
     comment = normalize_comment comment
 
@@ -781,13 +828,8 @@ class RDoc::Parser::C < RDoc::Parser
 
   def handle_method(type, var_name, meth_name, function, param_count,
                     source_file = nil)
-    singleton = false
     class_name = @known_classes[var_name]
-
-    unless class_name then
-      class_name = @singleton_classes[var_name]
-      singleton = true if class_name
-    end
+    singleton  = @singleton_classes.key? var_name
 
     return unless class_name
 
@@ -845,6 +887,7 @@ class RDoc::Parser::C < RDoc::Parser
   def handle_singleton sclass_var, class_var
     class_name = @known_classes[class_var]
 
+    @known_classes[sclass_var]     = class_name
     @singleton_classes[sclass_var] = class_name
   end
 

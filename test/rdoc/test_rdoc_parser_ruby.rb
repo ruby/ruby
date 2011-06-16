@@ -1084,6 +1084,26 @@ EOF
     assert_equal top_bar, bar.find_module_named('A')
   end
 
+  def test_parse_include
+    klass = RDoc::NormalClass.new 'C'
+    klass.parent = @top_level
+
+    comment = "# my include\n"
+
+    util_parser "include I"
+
+    @parser.get_tk # include
+
+    @parser.parse_include klass, comment
+
+    assert_equal 1, klass.includes.length
+
+    incl = klass.includes.first
+    assert_equal 'I', incl.name
+    assert_equal 'my include', incl.comment
+    assert_equal @top_level, incl.file
+  end
+
   def test_parse_meta_method
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
@@ -2026,6 +2046,33 @@ end
     m = foo.method_list.first
 
     assert_equal 'm comment', m.comment
+  end
+
+  def test_scan_block_comment_nested # Issue #41
+    content = <<-CONTENT
+require 'something'
+=begin rdoc
+findmeindoc
+=end
+module Foo
+    class Bar
+    end
+end
+    CONTENT
+
+    util_parser content
+
+    @parser.scan
+
+    foo = @top_level.modules.first
+
+    assert_equal 'Foo', foo.full_name
+    assert_equal 'findmeindoc', foo.comment
+
+    bar = foo.classes.first
+
+    assert_equal 'Foo::Bar', bar.full_name
+    assert_equal '', bar.comment
   end
 
   def test_scan_block_comment_notflush
