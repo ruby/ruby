@@ -93,6 +93,7 @@ class PrettyPrint
   attr_reader :output, :maxwidth, :newline, :genspace
   attr_reader :indent, :group_queue
 
+  # Returns the group most recently added to the stack.
   def current_group
     @group_stack.last
   end
@@ -119,6 +120,7 @@ class PrettyPrint
     current_group.first?
   end
 
+  # Breaks the buffer into lines that are shorter than #maxwidth
   def break_outmost_groups
     while @maxwidth < @output_width + @buffer_width
       return unless group = @group_queue.deq
@@ -155,11 +157,20 @@ class PrettyPrint
     end
   end
 
+  # This is similar to #breakable, but is less-likely to insert a newline.
+  #
+  # The text sep+ is inserted if a line is not broken at this point.
+  #
+  # If +sep+ is not specified, " " is used.
+  #
+  # If +width+ is not specified, +sep.length+ is used. You will have to
+  # specify this when +sep+ is a multibyte character, for example.
+  #
   def fill_breakable(sep=' ', width=sep.length)
     group { breakable sep, width }
   end
 
-  # This tells "you can break a line here if necessary", and a +width+\-column
+  # This says "you can break a line here if necessary", and a +width+\-column
   # text +sep+ is inserted if a line is not broken at the point.
   #
   # If +sep+ is not specified, " " is used.

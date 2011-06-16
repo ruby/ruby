@@ -1,3 +1,8 @@
+Fri Jun 17 07:38:31 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/prettyprint.rb:  Improve documentation.  Patch by Ysiad
+	  Ferreiras.  [#4834]
+
 Fri Jun 17 07:23:03 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* array.c (rb_ary_drop):  Improve documentation.  Patch by Caley Woods.
