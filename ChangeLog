@@ -1,3 +1,8 @@
+Fri Jun 17 07:23:03 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* array.c (rb_ary_drop):  Improve documentation.  Patch by Caley Woods.
+	  [Ruby 1.9 - Bug #4858]
+
 Fri Jun 17 06:11:31 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/webrick/log.rb:  Improve documentation of BasicLog and Log.

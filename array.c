@@ -4553,8 +4553,8 @@ rb_ary_take_while(VALUE ary)
  *  call-seq:
  *     ary.drop(n)               -> new_ary
  *
- *  Drops first n elements from <i>ary</i>, and returns rest elements
- *  in an array.
+ *  Drops first n elements from +ary+ and returns the rest of
+ *  the elements in an array.
  *
  *     a = [1, 2, 3, 4, 5, 0]
  *     a.drop(3)             #=> [4, 5, 0]
