@@ -1,3 +1,8 @@
+Thu Jun 16 11:35:09 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (search_response): parses SEARCH responses from
+	  the Yahoo IMAP server correctly.  patched by Mark Nadig.  [Bug #4509]
+
 Thu Jun 16 09:12:38 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* fix for build on solaris 10.

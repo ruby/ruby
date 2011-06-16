@@ -2748,8 +2748,9 @@ module Net
               break
             when T_SPACE
               shift_token
+            else
+              data.push(number)
             end
-            data.push(number)
           end
         else
           data = []
