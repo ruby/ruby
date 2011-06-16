@@ -1370,27 +1370,35 @@ const_missing(VALUE klass, ID id)
  * call-seq:
  *    mod.const_missing(sym)    -> obj
  *
- *  Invoked when a reference is made to an undefined constant in
- *  <i>mod</i>. It is passed a symbol for the undefined constant, and
- *  returns a value to be used for that constant. The
- *  following code is a (very bad) example: if reference is made to
- *  an undefined constant, it attempts to load a file whose name is
- *  the lowercase version of the constant (thus class <code>Fred</code> is
- *  assumed to be in file <code>fred.rb</code>). If found, it returns the
- *  value of the loaded class. It therefore implements a perverse
- *  kind of autoload facility.
+ * Invoked when a reference is made to an undefined constant in
+ * <i>mod</i>. It is passed a symbol for the undefined constant, and
+ * returns a value to be used for that constant. The
+ * following code is an example of the same: 
  *
- *    def Object.const_missing(name)
- *      @looked_for ||= {}
- *      str_name = name.to_s
- *      raise "Class not found: #{name}" if @looked_for[str_name]
- *      @looked_for[str_name] = 1
- *      file = str_name.downcase
- *      require file
- *      klass = const_get(name)
- *      return klass if klass
- *      raise "Class not found: #{name}"
- *    end
+ *   def Foo.const_missing(name)
+ *     name # return the constant name as Symbol
+ *   end
+ *
+ *   Foo::UNDEFINED_CONST    #=> :UNDEFINED_CONST: symbol returned
+ *
+ * In the next example when a reference is made to an undefined constant,
+ * it attempts to load a file whose name is the lowercase version of the
+ * constant (thus class <code>Fred</code> is assumed to be in file
+ * <code>fred.rb</code>).  If found, it returns the loaded class. It
+ * therefore implements an autoload feature similar to Kernel#autoload and
+ * Module#autoload.
+ *
+ *   def Object.const_missing(name)
+ *     @looked_for ||= {}
+ *     str_name = name.to_s
+ *     raise "Class not found: #{name}" if @looked_for[str_name]
+ *     @looked_for[str_name] = 1
+ *     file = str_name.downcase
+ *     require file
+ *     klass = const_get(name)
+ *     return klass if klass
+ *     raise "Class not found: #{name}"
+ *   end
  *
  */
 
