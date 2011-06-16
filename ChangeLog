@@ -1,3 +1,8 @@
+Fri Jun 17 08:50:16 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* io.c:  Improve documentation of IO and File open and new.
+	  Patch by Roger Pack.  [Ruby 1.9 - Bug #4790]
+
 Fri Jun 17 07:53:50 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/csv.rb:  Document #raw_encoding.  Patch by David Czarnecki.

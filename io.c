@@ -5457,11 +5457,13 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
  *     File.open(filename, mode="r" [, opt]) {|file| block } -> obj
  *     File.open(filename [, mode [, perm]] [, opt]) {|file| block } -> obj
  *
- *  With no associated block, <code>open</code> is a synonym for
- *  <code>File.new</code>. If the optional code block is given, it will
- *  be passed <i>file</i> as an argument, and the File object will
- *  automatically be closed when the block terminates. In this instance,
+ *  With no associated block, <code>File.open</code> is a synonym for
+ *  File.new. If the optional code block is given, it will
+ *  be passed the opened +file+ as an argument, and the File object will
+ *  automatically be closed when the block terminates.  In this instance,
  *  <code>File.open</code> returns the value of the block.
+ *  
+ *  See IO.new for a list of values for the +opt+ parameter.
  */
 
 /*
@@ -5471,11 +5473,12 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
  *     IO.open(fd, mode_string="r" [, opt])               -> io
  *     IO.open(fd, mode_string="r" [, opt]) {|io| block } -> obj
  *
- *  With no associated block, <code>open</code> is a synonym for
- *  <code>IO.new</code>. If the optional code block is given, it will
- *  be passed <i>io</i> as an argument, and the IO object will
- *  automatically be closed when the block terminates. In this instance,
- *  <code>IO.open</code> returns the value of the block.
+ *  With no associated block, <code>IO.open</code> is a synonym for IO.new. If
+ *  the optional code block is given, it will be passed +io+ as an
+ *  argument, and the IO object will automatically be closed when the block
+ *  terminates. In this instance, IO.open returns the value of the block.
+ *
+ *  See IO.new for a description of values for the +opt+ parameter.
  *
  */
 
@@ -6411,86 +6414,88 @@ rb_io_stdio_file(rb_io_t *fptr)
  *  call-seq:
  *     IO.new(fd [, mode] [, opt])   -> io
  *
- *  Returns a new <code>IO</code> object (a stream) for the given
- *  <code>IO</code> object or integer file descriptor and mode
- *  string. See also <code>IO.sysopen</code> and
- *  <code>IO.for_fd</code>.
+ *  Returns a new IO object (a stream) for the given IO object or integer file
+ *  descriptor and mode string.  See also IO.sysopen and IO.for_fd.
  *
  *  === Parameters
- *  fd:: numeric file descriptor
+ *
+ *  fd:: numeric file descriptor or IO object
  *  mode:: file mode. a string or an integer
- *  opt:: hash for specifying mode by name.
+ *  opt:: hash for specifying +mode+ by name.
  *
  *  ==== Mode
- *  When <code>mode</code> is an integer it must be combination of
- *  the modes defined in <code>File::Constants</code>.
  *
- *  When <code>mode</code> is a string it must be in one of the
- *  following forms:
+ *  When mode is an integer it must be combination of the modes defined in
+ *  File::Constants.
+ *
+ *  When mode is a string it must be in one of the following forms:
  *  - "fmode",
  *  - "fmode:extern",
  *  - "fmode:extern:intern".
  *  <code>extern</code> is the external encoding name for the IO.
  *  <code>intern</code> is the internal encoding.
- *  <code>fmode</code> must be combination of the directives. See
- *  the description of class +IO+ for a description of the directives.
+ *  <code>fmode</code> must be a file open mode string. See the description of
+ *  class IO for mode string directives.
  *
  *  When the mode of original IO is read only, the mode cannot be changed to
  *  be writable.  Similarly, the mode cannot be changed from write only to
  *  readable.
- *  If such a wrong change is directed, timing where the error actually occurs
- *  is different according to the platform.
+ *
+ *  When such a change is attempted the error is raised in different locations
+ *  according to the platform.
  *
  *  ==== Options
- *  <code>opt</code> can have the following keys
+ *  +opt+ can have the following keys
  *  :mode ::
- *    same as <code>mode</code> parameter
+ *    Same as +mode+ parameter
  *  :external_encoding ::
- *    external encoding for the IO. "-" is a
- *    synonym for the default external encoding.
+ *    External encoding for the IO.  "-" is a synonym for the default external
+ *    encoding.
  *  :internal_encoding ::
- *    internal encoding for the IO.
- *    "-" is a synonym for the default internal encoding.
+ *    Internal encoding for the IO.  "-" is a synonym for the default internal
+ *    encoding.
+ *
  *    If the value is nil no conversion occurs.
  *  :encoding ::
- *    specifies external and internal encodings as "extern:intern".
+ *    Specifies external and internal encodings as "extern:intern".
  *  :textmode ::
- *    If the value is truth value, same as "t" in argument <code>mode</code>.
+ *    If the value is truth value, same as "t" in argument +mode+.
  *  :binmode ::
- *    If the value is truth value, same as "b" in argument <code>mode</code>.
+ *    If the value is truth value, same as "b" in argument +mode+.
  *  :autoclose ::
- *    If the value is +false+, the _fd_ will be kept open after this
- *    +IO+ instance gets finalized.
+ *    If the value is +false+, the +fd+ will be kept open after this IO
+ *    instance gets finalized.
  *
- *  Also <code>opt</code> can have same keys in <code>String#encode</code> for
- *  controlling conversion between the external encoding and the internal encoding.
+ *  Also +opt+ can have same keys in String#encode for controlling conversion
+ *  between the external encoding and the internal encoding.
  *
- *  === Example1
+ *  === Example 1
  *
- *     fd = IO.sysopen("/dev/tty", "w")
- *     a = IO.new(fd,"w")
- *     $stderr.puts "Hello"
- *     a.puts "World"
+ *    fd = IO.sysopen("/dev/tty", "w")
+ *    a = IO.new(fd,"w")
+ *    $stderr.puts "Hello"
+ *    a.puts "World"
  *
  *  <em>produces:</em>
  *
- *     Hello
- *     World
+ *    Hello
+ *    World
  *
- *  === Example2
+ *  === Example 2
  *
- *     require 'fcntl'
+ *    require 'fcntl'
  *
- *     fd = STDERR.fcntl(Fcntl::F_DUPFD)
- *     io = IO.new(fd, mode: 'w:UTF-16LE', cr_newline: true)
- *     io.puts "Hello, World!"
+ *    fd = STDERR.fcntl(Fcntl::F_DUPFD)
+ *    io = IO.new(fd, mode: 'w:UTF-16LE', cr_newline: true)
+ *    io.puts "Hello, World!"
  *
- *     fd = STDERR.fcntl(Fcntl::F_DUPFD)
- *     io = IO.new(fd, mode: 'w', cr_newline: true, external_encoding: Encoding::UTF_16LE)
- *     io.puts "Hello, World!"
+ *    fd = STDERR.fcntl(Fcntl::F_DUPFD)
+ *    io = IO.new(fd, mode: 'w', cr_newline: true,
+ *                external_encoding: Encoding::UTF_16LE)
+ *    io.puts "Hello, World!"
  *
- *  both of above print "Hello, World!" in UTF-16LE to standard error output with
- *  converting EOL generated by <code>puts</code> to CR.
+ *  Both of above print "Hello, World!" in UTF-16LE to standard error output
+ *  with converting EOL generated by <code>puts</code> to CR.
  */
 
 static VALUE
@@ -6555,27 +6560,26 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
  *     File.new(filename, mode="r" [, opt])            -> file
  *     File.new(filename [, mode [, perm]] [, opt])    -> file
  *
- *  Opens the file named by _filename_ according to
- *  _mode_ (default is ``r'') and returns a new
- *  <code>File</code> object.
+ *  Opens the file named by +filename+ according to +mode+ (default is "r")
+ *  and returns a new <code>File</code> object.
  *
  *  === Parameters
- *  See the description of class +IO+ for a description of _mode_.
- *  The file mode may optionally be specified as a +Fixnum+
- *  by _or_-ing together the flags (O_RDONLY etc,
- *  again described under +IO+).
  *
- *  Optional permission bits may be given in _perm_.
- *  These mode and permission bits are platform dependent;
- *  on Unix systems, see <code>open(2)</code> for details.
+ *  See the description of class IO for a description of +mode+.  The file
+ *  mode may optionally be specified as a Fixnum by +or+-ing together the
+ *  flags (O_RDONLY etc, again described under +IO+).
  *
- *  Optional _opt_ parameter is same as in <code.IO.open</code>.
+ *  Optional permission bits may be given in +perm+.  These mode and
+ *  permission bits are platform dependent; on Unix systems, see
+ *  <code>open(2)</code> for details.
+ *
+ *  Optional +opt+ parameter is same as in IO.open.
  *
  *  === Examples
  *
- *     f = File.new("testfile", "r")
- *     f = File.new("newfile",  "w+")
- *     f = File.new("newfile", File::CREAT|File::TRUNC|File::RDWR, 0644)
+ *    f = File.new("testfile", "r")
+ *    f = File.new("newfile",  "w+")
+ *    f = File.new("newfile", File::CREAT|File::TRUNC|File::RDWR, 0644)
  */
 
 static VALUE
