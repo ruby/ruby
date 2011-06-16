@@ -1,3 +1,11 @@
+Fri Jun 17 06:11:31 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/webrick/log.rb:  Improve documentation of BasicLog and Log.
+	  Patch by Olivier Brisse.  [Ruby 1.9 - Bug #4833]
+	* lib/webrick/httpstatus.rb:  Improve documentation of
+	  WEBrick::HTTPStatus.  Patch by Olivier Brisse.
+	  [Ruby 1.9 - Bug #4833]
+
 Fri Jun 17 04:48:22 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c, thread_pthread.h: remove unused variables.
