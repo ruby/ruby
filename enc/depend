@@ -133,7 +133,7 @@ $(TRANSOBJS): ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.
 % dependencies.each do |e|
 <%="enc/#{e}.$(OBJEXT)"%>: <%="$(encsrcdir)/#{e}.c"%>
 	-$(Q)$(MAKEDIRS) "$(@D)"
-	$(ECHO) compiling <%= "#{e}.c"%>
+	$(ECHO) compiling <%= "$(encsrcdir)/#{e}.c"%>
 	$(Q)<%=COMPILE_C.gsub(/\$(\()?<(\:[^)]+)?(\))?/){"$(encsrcdir)/#{e}.c"}%>
 
 % end
