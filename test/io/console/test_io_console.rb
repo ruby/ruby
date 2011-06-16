@@ -148,9 +148,17 @@ class TestIO_Console < Test::Unit::TestCase
     }
   end
 
-  def test_sync
-    skip "Can't get console (because of there is no tty?)" unless IO.console
-    assert(helper {IO.console.sync}, "console should be unbuffered")
+  if IO.console
+    def test_sync
+      assert(IO.console.sync, "console should be unbuffered")
+    end
+  else
+    def test_sync
+      r, w, pid = PTY.spawn(EnvUtil.rubybin, "-rio/console", "-e", "p IO.console.class")
+      con = r.gets.chomp
+      Process.wait(pid)
+      assert_match("File", con)
+    end
   end
 
   private

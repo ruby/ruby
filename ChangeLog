@@ -1,3 +1,8 @@
+Thu Jun 16 09:08:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/io/console/test_io_console.rb (TestIO_Console#test_sync):
+	  fix for daemon process.
+
 Thu Jun 16 07:58:01 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* test/testunit/test_parallel.rb(test_ignore_tzero): Test for r32109.
