@@ -36,7 +36,8 @@ module Timeout
   # Perform an operation in a block, timing it out if it takes longer
   # than +sec+ seconds to complete.
   #
-  # +sec+:: number of seconds to wait for the block to terminate
+  # +sec+:: Number of seconds to wait for the block to terminate. Any number
+  #         may be used, including Floats to specify fractional seconds.
   # +klass+:: Exception Class to raise if the block fails to terminate
   #           in +sec+ seconds.  Omitting will use the default, Timeout::Error
   #

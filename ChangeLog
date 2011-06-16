@@ -1,3 +1,9 @@
+Thu Jun 16 14:15:47 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/timeout.rb: Clarify timeout duration types.  Patch by Alf Mikula.
+	  [Ruby 1.9 - Bug #4791]
+	* lib/net/http.rb: ditto
+
 Thu Jun 16 13:25:25 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc*:  Import RDoc 3.7 release candidate
