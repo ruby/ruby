@@ -116,7 +116,7 @@ Wed Jun 15 23:30:45 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Wed Jun 15 23:11:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c: remove BLOCKING_REGION_CORE() macro. It's no longer used
-	  since r32021.
+	  since r32022.
 
 Wed Jun 15 21:00:47 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
