@@ -54,7 +54,7 @@ module WEBrick
         begin
           data = open(@script_filename){|io| io.read }
           res.body = evaluate(ERB.new(data), req, res)
-          res['content-type'] =
+          res['content-type'] ||=
             HTTPUtils::mime_type(@script_filename, @config[:MimeTypes])
         rescue StandardError => ex
           raise

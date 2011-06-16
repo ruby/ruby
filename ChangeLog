@@ -1,3 +1,8 @@
+Thu Jun 16 14:26:46 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/webrick/httpservlet/erbhandler.rb:  Allow the ERB document to
+	  alter the content-type of the response.  [Ruby 1.9 - Bug #4685]
+
 Thu Jun 16 14:15:47 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/timeout.rb: Clarify timeout duration types.  Patch by Alf Mikula.
