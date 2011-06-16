@@ -1345,8 +1345,8 @@ vm_method_search(VALUE id, VALUE klass, IC ic)
 {
     rb_method_entry_t *me;
 #if OPT_INLINE_METHOD_CACHE
-    if (LIKELY(klass == ic->ic_class) &&
-	LIKELY(GET_VM_STATE_VERSION() == ic->ic_vmstat)) {
+    if (LIKELY(klass == ic->ic_class &&
+	GET_VM_STATE_VERSION() == ic->ic_vmstat)) {
 	me = ic->ic_value.method;
     }
     else {

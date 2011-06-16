@@ -1155,7 +1155,7 @@ rb_newobj(void)
 	rb_bug("object allocation during garbage collection phase");
     }
 
-    if (UNLIKELY(ruby_gc_stress) && UNLIKELY(!ruby_disable_gc_stress)) {
+    if (UNLIKELY(ruby_gc_stress && !ruby_disable_gc_stress)) {
 	if (!garbage_collect(objspace)) {
 	    during_gc = 0;
 	    rb_memerror();

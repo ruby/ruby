@@ -1024,7 +1024,7 @@ rb_thread_schedule_rec(int sched_depth, unsigned long limits_us)
 	rb_thread_set_current(th);
 	thread_debug("rb_thread_schedule/switch done\n");
 
-        if (!sched_depth && UNLIKELY(GET_THREAD()->interrupt_flag)) {
+        if (UNLIKELY(!sched_depth && GET_THREAD()->interrupt_flag)) {
             rb_threadptr_execute_interrupts_rec(GET_THREAD(), sched_depth+1);
         }
     }

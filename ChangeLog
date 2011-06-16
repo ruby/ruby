@@ -1,3 +1,9 @@
+Thu Jun 16 23:40:49 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_schedule_rec): fix {UN,}LIKELY macro misuse.
+	* gc.c (rb_newobj): ditto.
+	* vm_insnhelper.c (vm_method_search): ditto.
+
 Thu Jun 16 20:06:15 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* test/testunit/test_parallel.rb: Fix Regexp for test.
