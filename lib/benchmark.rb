@@ -1,5 +1,4 @@
-=begin
-#
+#--
 # benchmark.rb - a performance benchmarking library
 #
 # $Id$
@@ -8,9 +7,8 @@
 #
 # Documentation by Gotoken (original RD), Lyle Johnson (RDoc conversion), and
 # Gavin Sinclair (editing).
+#++
 #
-=end
-
 # == Overview
 #
 # The Benchmark module provides methods for benchmarking Ruby code, giving
@@ -512,6 +510,15 @@ module Benchmark
     end
 
     protected
+    
+    #
+    # Returns a new Tms object obtained by memberwise operation +op+
+    # of the individual times for this Tms object with those of the other
+    # Tms object.
+    #
+    # +op+ can be a mathematical operation such as <tt>+</tt>, <tt>-</tt>,
+    # <tt>*</tt>, <tt>/</tt>
+    #
     def memberwise(op, x)
       case x
       when Benchmark::Tms

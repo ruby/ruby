@@ -1,3 +1,8 @@
+Fri Jun 17 07:46:50 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/benchmark.rb:  Document Benchmark::Tms#memberwise.  Patch by
+	  David Czarnecki.  [Ruby 1.9 - Bug #4873]
+
 Fri Jun 17 07:38:31 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/prettyprint.rb:  Improve documentation.  Patch by Ysiad
