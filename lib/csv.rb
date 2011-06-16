@@ -2319,6 +2319,10 @@ class CSV
 
   private
 
+  # 
+  # Returns the encoding of the internal IO object or the +default+ if the 
+  # encoding cannot be determined.
+  #
   def raw_encoding(default = Encoding::ASCII_8BIT)
     if @io.respond_to? :internal_encoding
       @io.internal_encoding || @io.external_encoding
