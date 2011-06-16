@@ -1,3 +1,8 @@
+Fri Jun 17 04:48:22 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_pthread.c, thread_pthread.h: remove unused variables.
+	  (native_thread_data_t::gvl_cond, native_thread_data_t::gvl_next)
+
 Thu Jun 16 14:32:31 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* time.c (rb_time_new): prevent overflow by "* 1000".

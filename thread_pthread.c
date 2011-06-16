@@ -422,14 +422,12 @@ static void
 native_thread_init(rb_thread_t *th)
 {
     native_cond_initialize(&th->native_thread_data.sleep_cond, RB_CONDATTR_CLOCK_MONOTONIC);
-    native_cond_initialize(&th->native_thread_data.gvl_cond, 0);
     ruby_thread_set_native(th);
 }
 
 static void
 native_thread_destroy(rb_thread_t *th)
 {
-    native_cond_destroy(&th->native_thread_data.gvl_cond);
     native_cond_destroy(&th->native_thread_data.sleep_cond);
 }
 
