@@ -138,6 +138,9 @@ RUBY_EXTERN const unsigned char rb_nan[];
 #ifndef isinf
 # ifndef HAVE_ISINF
 #  if defined(HAVE_FINITE) && defined(HAVE_ISNAN)
+#    ifdef HAVE_IEEEFP_H
+#    include <ieeefp.h>
+#    endif
 #  define isinf(x) (!finite(x) && !isnan(x))
 #  else
 RUBY_EXTERN int isinf(double);

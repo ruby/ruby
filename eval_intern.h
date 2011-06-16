@@ -91,6 +91,7 @@ NORETURN(void _longjmp(jmp_buf, int));
 */
 #ifdef HAVE_SELECT_LARGE_FDSET
 #define select(n, r, w, e, t) select_large_fdset((n), (r), (w), (e), (t))
+extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval *);
 #endif
 
 #ifdef HAVE_SYS_PARAM_H

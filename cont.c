@@ -537,13 +537,14 @@ fiber_machine_stack_alloc(size_t size)
 	}
     }
     else {
+	void *page;
 	STACK_GROW_DIR_DETECTION;
 	ptr = (VALUE*)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
 	if (ptr == (VALUE*)(SIGNED_VALUE)-1) {
 	    rb_raise(rb_eFiberError, "can't alloc machine stack to fiber");
 	}
-	if (mprotect(ptr + STACK_DIR_UPPER((size - RB_PAGE_SIZE) / sizeof(VALUE), 0),
-		     RB_PAGE_SIZE, PROT_READ | PROT_WRITE) < 0) {
+	page = ptr + STACK_DIR_UPPER((size - RB_PAGE_SIZE) / sizeof(VALUE), 0);
+	if (mprotect(page, RB_PAGE_SIZE, PROT_READ | PROT_WRITE) < 0) {
 	    rb_raise(rb_eFiberError, "mprotect failed");
 	}
     }
