@@ -1,3 +1,8 @@
+Fri Jun 17 02:26:47 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_pthread.c (native_thread_create): fix debug message.
+	  (add last newline)
+
 Thu Jun 16 23:40:49 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_thread_schedule_rec): fix {UN,}LIKELY macro misuse.
