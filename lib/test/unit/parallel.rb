@@ -2,6 +2,12 @@ require 'test/unit'
 
 module Test
   module Unit
+    class TestCase < MiniTest::Unit::TestCase
+      def on_parallel_worker?
+        true
+      end
+    end
+
     class Worker < Runner
       class << self
         undef autorun

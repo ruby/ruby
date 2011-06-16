@@ -1,3 +1,16 @@
+Thu Jun 16 20:06:15 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* test/testunit/test_parallel.rb: Fix Regexp for test.
+
+	* test/testunit/tests_for_parallel/test_third.rb: Use
+	  Test::Unit::TestCase#on_parallel_worker? for detecting worker.
+
+	* lib/test/unit/testcase.rb(Test::Unit::TestCase#on_parallel_worker?):
+	  New Method Test::Unit::TestCase#on_parallel_worker? returns true
+	  when a testcase is running on parallel worker.
+	* lib/test/unit/parallel.rb(Test::Unit::TestCase#on_parallel_worker?):
+	  ditto.
+
 Thu Jun 16 19:27:12 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* test/test_securerandom.rb: Add testcase.  This testcase does NOT aim

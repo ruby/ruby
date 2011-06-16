@@ -8,6 +8,10 @@ module Test
     class TestCase < MiniTest::Unit::TestCase
       include Assertions
 
+      def on_parallel_worker?
+        false
+      end
+
       def run runner
         @options = runner.options
         super runner

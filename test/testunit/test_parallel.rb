@@ -122,7 +122,7 @@ module TestParallel
     def spawn_runner(*opt_args)
       @test_out, o = IO.pipe
       @test_pid = spawn(*@options[:ruby], TESTS+"/runner.rb",
-                        "-j","t2",*opt_args, out: o, err: o)
+                        "-j","t1",*opt_args, out: o, err: o)
       o.close
     end
 
@@ -153,14 +153,13 @@ module TestParallel
     def test_should_run_all_without_any_leaks
       spawn_runner
       buf = timeout(10){@test_out.read}
-      assert_match(/^\.*(\.SF\.*F|F\.*\.+SF)\.*$/,buf)
+      assert_match(/^[SF\.]{7}$/,buf)
     end
 
     def test_should_retry_failed_on_workers
       spawn_runner
       buf = timeout(10){@test_out.read}
       assert_match(/^Retrying\.+$/,buf)
-      assert_match(/^\.*SF\.*$/,buf)
     end
 
     def test_no_retry_option
