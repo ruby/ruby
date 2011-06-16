@@ -1,81 +1,91 @@
-=begin
-
-= monitor.rb
-
-Copyright (C) 2001  Shugo Maeda <shugo@ruby-lang.org>
-
-This library is distributed under the terms of the Ruby license.
-You can freely distribute/modify this library.
-
-== example
-
-This is a simple example.
-
-  require 'monitor.rb'
-
-  buf = []
-  buf.extend(MonitorMixin)
-  empty_cond = buf.new_cond
-
-  # consumer
-  Thread.start do
-    loop do
-      buf.synchronize do
-        empty_cond.wait_while { buf.empty? }
-        print buf.shift
-      end
-    end
-  end
-
-  # producer
-  while line = ARGF.gets
-    buf.synchronize do
-      buf.push(line)
-      empty_cond.signal
-    end
-  end
-
-The consumer thread waits for the producer thread to push a line
-to buf while buf.empty?, and the producer thread (main thread)
-reads a line from ARGF and push it to buf, then call
-empty_cond.signal.
-
-=end
+# = monitor.rb
+# 
+# Copyright (C) 2001  Shugo Maeda <shugo@ruby-lang.org>
+# 
+# This library is distributed under the terms of the Ruby license.
+# You can freely distribute/modify this library.
+#
 
 require 'thread'
 
+# 
+# In concurrent programming, a monitor is an object or module intended to be
+# used safely by more than one thread.  The defining characteristic of a
+# monitor is that its methods are executed with mutual exclusion.  That is, at
+# each point in time, at most one thread may be executing any of its methods.
+# This mutual exclusion greatly simplifies reasoning about the implementation
+# of monitors compared to reasoning about parallel code that updates a data
+# structure.
 #
-# Adds monitor functionality to an arbitrary object by mixing the module with
-# +include+.  For example:
+# You can read more about the general principles on the Wikipedia page for
+# Monitors[http://en.wikipedia.org/wiki/Monitor_%28synchronization%29]
+# 
+# == Examples
+# 
+# === Simple object.extend
+# 
+#   require 'monitor.rb'
+# 
+#   buf = []
+#   buf.extend(MonitorMixin)
+#   empty_cond = buf.new_cond
+# 
+#   # consumer
+#   Thread.start do
+#     loop do
+#       buf.synchronize do
+#         empty_cond.wait_while { buf.empty? }
+#         print buf.shift
+#       end
+#     end
+#   end
+# 
+#   # producer
+#   while line = ARGF.gets
+#     buf.synchronize do
+#       buf.push(line)
+#       empty_cond.signal
+#     end
+#   end
+# 
+# The consumer thread waits for the producer thread to push a line to buf
+# while <tt>buf.empty?</tt>.  The producer thread (main thread) reads a
+# line from ARGF and pushes it into buf then calls <tt>empty_cond.signal</tt>
+# to notify the consumer thread of new data.
+# 
+# === Simple Class include
 #
-#    require 'monitor'
+#   require 'monitor'
+# 
+#   class SynchronizedArray < Array
 #
-#    buf = []
-#    buf.extend(MonitorMixin)
-#    empty_cond = buf.new_cond
+#     include MonitorMixin
 #
-#    # consumer
-#    Thread.start do
-#      loop do
-#        buf.synchronize do
-#          empty_cond.wait_while { buf.empty? }
-#          print buf.shift
-#        end
-#      end
-#    end
+#     def initialize(*args)
+#       super(*args)
+#     end
+#     
+#     alias :old_shift :shift
+#     alias :old_unshift :unshift
+#     
+#     def shift(n=1)
+#       self.synchronize do
+#         self.old_shift(n)
+#       end
+#     end
+#   
+#     def unshift(item)
+#       self.synchronize do
+#         self.old_unshift(item)
+#       end
+#     end
+#     
+#     # other methods ...
+#   end
 #
-#    # producer
-#    while line = ARGF.gets
-#      buf.synchronize do
-#        buf.push(line)
-#        empty_cond.signal
-#      end
-#    end
-#
-# The consumer thread waits for the producer thread to push a line
-# to buf while buf.empty?, and the producer thread (main thread)
-# reads a line from ARGF and push it to buf, then call
-# empty_cond.signal.
+# +SynchronizedArray+ implements an Array with synchronized access to items.
+# This Class is implemented as subclass of Array which includes the
+# MonitorMixin module.
 #
 module MonitorMixin
   #
@@ -215,11 +225,16 @@ module MonitorMixin
 
   private
 
+  # Use <tt>extend MonitorMixin</tt> or <tt>include MonitorMixin</tt> instead
+  # of this constructor.  Have look at the examples above to understand how to
+  # use this module.
   def initialize(*args)
     super
     mon_initialize
   end
 
+  # Initializes the MonitorMixin after being included in a class or when an
+  # object has been extended with the MonitorMixin
   def mon_initialize
     @mon_owner = nil
     @mon_count = 0
@@ -245,6 +260,16 @@ module MonitorMixin
   end
 end
 
+# Use the Monitor class when you want to have a lock object for blocks with
+# mutual exclusion. 
+#
+#   require 'monitor'
+#
+#   lock = Monitor.new
+#   lock.synchronize do
+#     # exclusive access
+#   end
+#
 class Monitor
   include MonitorMixin
   alias try_enter try_mon_enter
@@ -260,8 +285,6 @@ end
 #  - All the internals (internal modules Accessible and Initializable, class
 #    ConditionVariable) appear in RDoc.  It might be good to hide them, by
 #    making them private, or marking them :nodoc:, etc.
-#  - The entire example from the RD section at the top is replicated in the RDoc
-#    comment for MonitorMixin.  Does the RD section need to remain?
 #  - RDoc doesn't recognise aliases, so we have mon_synchronize documented, but
 #    not synchronize.
 #  - mon_owner is in Nutshell, but appears as an accessor in a separate module
