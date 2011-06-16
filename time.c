@@ -2299,7 +2299,27 @@ time_new_timew(VALUE klass, wideval_t timew)
 VALUE
 rb_time_new(time_t sec, long usec)
 {
-    return time_new_timew(rb_cTime, nsec2timew(sec, usec * 1000));
+    wideval_t timew;
+
+    if (usec >= 1000000) {
+	long sec2 = usec / 1000000;
+	if (sec > TIMET_MAX - sec2) {
+	    rb_raise(rb_eRangeError, "out of Time range");
+	}
+	usec -= sec2 * 1000000;
+	sec += sec2;
+    }
+    else if (usec <= 1000000) {
+	long sec2 = usec / 1000000;
+	if (sec < -TIMET_MAX - sec2) {
+	    rb_raise(rb_eRangeError, "out of Time range");
+	}
+	usec -= sec2 * 1000000;
+	sec += sec2;
+    }
+
+    timew = nsec2timew(sec, usec * 1000);
+    return time_new_timew(rb_cTime, timew);
 }
 
 VALUE

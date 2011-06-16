@@ -1,3 +1,7 @@
+Thu Jun 16 14:32:31 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c (rb_time_new): prevent overflow by "* 1000".
+
 Fri Jun 17 03:07:36 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_vm4_thread_create_join.rb, 
