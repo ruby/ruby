@@ -1,3 +1,8 @@
+Thu Jun 16 17:55:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_io.rb (TestIO#test_copy_stream_socket): fix
+	  test hanging up issue. Patch by CHIKANAGA Tomoyuki.
+
 Thu Jun 16 15:17:39 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* variable.c (const_missing):  Add simple example of const_missing.

@@ -609,7 +609,7 @@ class TestIO < Test::Unit::TestCase
             skip "nonblocking IO for pipe is not implemented"
           end
           trapping_usr1 do
-            nr = 10
+            nr = 30
             begin
               pid = fork do
                 s1.close
@@ -622,8 +622,8 @@ class TestIO < Test::Unit::TestCase
                 assert_equal megacontent.bytesize, IO.copy_stream("megasrc", s1)
               end
               assert_equal(1, @usr1_rcvd)
-              s1.close
             ensure
+              s1.close
               _, status = Process.waitpid2(pid) if pid
             end
             assert status.success?, status.inspect
