@@ -1,14 +1,14 @@
 # = monitor.rb
-# 
+#
 # Copyright (C) 2001  Shugo Maeda <shugo@ruby-lang.org>
-# 
+#
 # This library is distributed under the terms of the Ruby license.
 # You can freely distribute/modify this library.
 #
 
 require 'thread'
 
-# 
+#
 # In concurrent programming, a monitor is an object or module intended to be
 # used safely by more than one thread.  The defining characteristic of a
 # monitor is that its methods are executed with mutual exclusion.  That is, at
@@ -19,17 +19,17 @@ require 'thread'
 #
 # You can read more about the general principles on the Wikipedia page for
 # Monitors[http://en.wikipedia.org/wiki/Monitor_%28synchronization%29]
-# 
+#
 # == Examples
-# 
+#
 # === Simple object.extend
-# 
+#
 #   require 'monitor.rb'
-# 
+#
 #   buf = []
 #   buf.extend(MonitorMixin)
 #   empty_cond = buf.new_cond
-# 
+#
 #   # consumer
 #   Thread.start do
 #     loop do
@@ -39,7 +39,7 @@ require 'thread'
 #       end
 #     end
 #   end
-# 
+#
 #   # producer
 #   while line = ARGF.gets
 #     buf.synchronize do
@@ -47,16 +47,16 @@ require 'thread'
 #       empty_cond.signal
 #     end
 #   end
-# 
+#
 # The consumer thread waits for the producer thread to push a line to buf
 # while <tt>buf.empty?</tt>.  The producer thread (main thread) reads a
 # line from ARGF and pushes it into buf then calls <tt>empty_cond.signal</tt>
 # to notify the consumer thread of new data.
-# 
+#
 # === Simple Class include
 #
 #   require 'monitor'
-# 
+#
 #   class SynchronizedArray < Array
 #
 #     include MonitorMixin
@@ -64,22 +64,22 @@ require 'thread'
 #     def initialize(*args)
 #       super(*args)
 #     end
-#     
+#
 #     alias :old_shift :shift
 #     alias :old_unshift :unshift
-#     
+#
 #     def shift(n=1)
 #       self.synchronize do
 #         self.old_shift(n)
 #       end
 #     end
-#   
+#
 #     def unshift(item)
 #       self.synchronize do
 #         self.old_unshift(item)
 #       end
 #     end
-#     
+#
 #     # other methods ...
 #   end
 #
@@ -261,7 +261,7 @@ module MonitorMixin
 end
 
 # Use the Monitor class when you want to have a lock object for blocks with
-# mutual exclusion. 
+# mutual exclusion.
 #
 #   require 'monitor'
 #

@@ -1373,7 +1373,7 @@ const_missing(VALUE klass, ID id)
  * Invoked when a reference is made to an undefined constant in
  * <i>mod</i>. It is passed a symbol for the undefined constant, and
  * returns a value to be used for that constant. The
- * following code is an example of the same: 
+ * following code is an example of the same:
  *
  *   def Foo.const_missing(name)
  *     name # return the constant name as Symbol
