@@ -142,6 +142,7 @@ curses_init_screen(void)
  * Document-method: Curses.stdscr
  *
  * The Standard Screen.
+ *
  * Upon initializing curses, a default window called stdscr,
  * which is the size of the terminal screen, is created.
  *
@@ -820,15 +821,17 @@ curses_scrl(VALUE obj, VALUE n)
 
 /*
  * Document-method: Curses.setscrreg
- * call-seq: setscrreg(top, bottom)
+ *
+ * call-seq:
+ *   setscrreg(top, bottom)
  *
  * Set a software scrolling region in a window.
  * +top+ and +bottom+ are lines numbers of the margin.
  *
- *  If this option and Curses.scrollok are enabled, an attempt to move off
- *  the bottom margin line causes all lines in the scrolling region
- *  to scroll one line in the direction of the first line.
- *  Only the text of the window is scrolled.
+ * If this option and Curses.scrollok are enabled, an attempt to move off
+ * the bottom margin line causes all lines in the scrolling region
+ * to scroll one line in the direction of the first line.
+ * Only the text of the window is scrolled.
  *
  */
 static VALUE
@@ -1893,7 +1896,9 @@ window_addstr(VALUE obj, VALUE str)
 
 /*
  * Document-method: Curses::Window.<<
- * call-seq: <<(str)
+ *
+ * call-seq:
+ *   <<(str)
  *
  * Add String +str+ to the current string.
  *
@@ -2087,15 +2092,16 @@ window_idlok(VALUE obj, VALUE bf)
 
 /*
  * Document-method: Curses::Window.setscrreg
- * call-seq: setscrreg(top, bottom)
+ * call-seq:
+ *   setscrreg(top, bottom)
  *
  * Set a software scrolling region in a window.
  * +top+ and +bottom+ are lines numbers of the margin.
  *
- *  If this option and Curses::Window.scrollok are enabled, an attempt to move off
- *  the bottom margin line causes all lines in the scrolling region
- *  to scroll one line in the direction of the first line.
- *  Only the text of the window is scrolled.
+ * If this option and Curses::Window.scrollok are enabled, an attempt to move
+ * off the bottom margin line causes all lines in the scrolling region to
+ * scroll one line in the direction of the first line.  Only the text of the
+ * window is scrolled.
  *
  */
 static VALUE
@@ -2352,16 +2358,19 @@ window_resize(VALUE obj, VALUE lin, VALUE col)
 #ifdef HAVE_KEYPAD
 /*
  * Document-method: Curses::Window.keypad=
- * call-seq: keypad=(bool)
+ * call-seq:
+ *   keypad=(bool)
  *
- * see Curses::Window.keypad
+ * See Curses::Window.keypad
  */
 
 /*
  * Document-method: Curses::Window.keypad
- * call-seq: keypad(bool)
+ * call-seq:
+ *   keypad(bool)
  *
  * Enables the keypad of the user's terminal.
+ *
  * If enabled (+bool+ is +true+), the user can press a function key
  * (such as an arrow key) and wgetch returns a single value representing
  * the function key, as in KEY_LEFT.  If disabled (+bool+ is +false+),
@@ -2602,27 +2611,27 @@ Init_curses(void)
      *
      * The means by which to create and manage frames or windows.
      * While there may be more than one window at a time, only one window
-     * receive the input.
+     * will receive input.
      *
      * == Usage
      *
-     * 		require 'curses'
+     *   require 'curses'
      *
-     *		Curses.init_screen()
+     *   Curses.init_screen()
      *
-     * 		my_str = "LOOK! PONIES!"
-     * 		win = Curses::Window.new( 8, (my_str.length + 10),
-     * 		                          (Curses.lines - 8) / 2,
-     * 		                          (Curses.cols - (my_str.length + 10)) / 2 )
-     * 		win.box("|", "-")
-     * 		win.setpos(2,3)
-     * 		win.addstr(my_str)
-     * 		# or even
-     * 		win << "\nORLY"
-     * 		win << "\nYES!! " + my_str
-     * 		win.refresh
-     * 		win.getch
-     * 		win.close
+     *   my_str = "LOOK! PONIES!"
+     *   win = Curses::Window.new( 8, (my_str.length + 10),
+     *                             (Curses.lines - 8) / 2,
+     *                             (Curses.cols - (my_str.length + 10)) / 2 )
+     *   win.box("|", "-")
+     *   win.setpos(2,3)
+     *   win.addstr(my_str)
+     *   # or even
+     *   win << "\nORLY"
+     *   win << "\nYES!! " + my_str
+     *   win.refresh
+     *   win.getch
+     *   win.close
      *
      */
     cWindow = rb_define_class_under(mCurses, "Window", rb_cData);

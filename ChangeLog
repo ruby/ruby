@@ -1,3 +1,7 @@
+Fri Jun 17 13:09:45 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/curses/curses.c:  Clean up documentation.
+
 Fri Jun 17 09:25:14 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/curses/curses.c:  Document curses constants.  Patch by Vincent
