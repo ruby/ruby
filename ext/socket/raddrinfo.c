@@ -1403,6 +1403,7 @@ addrinfo_protocol(VALUE self)
 /*
  * call-seq:
  *   addrinfo.to_sockaddr => string
+ *   addrinfo.to_s => string
  *
  * returns the socket address as packed struct sockaddr string.
  *
