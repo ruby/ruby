@@ -1,3 +1,8 @@
+Fri Jun 17 09:25:14 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/curses/curses.c:  Document curses constants.  Patch by Vincent
+	  Batts.  [Ruby 1.9 - Bug #4880]
+
 Fri Jun 17 09:11:05 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* object.c:  Document Module#method_added and #method_removed.
