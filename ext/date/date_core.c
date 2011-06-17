@@ -4887,6 +4887,7 @@ d_lite_cwday(VALUE self)
     return INT2FIX(m_cwday(dat));
 }
 
+#ifndef NDEBUG
 static VALUE
 d_lite_wnum0(VALUE self)
 {
@@ -4900,6 +4901,7 @@ d_lite_wnum1(VALUE self)
     get_d1(self);
     return INT2FIX(m_wnum1(dat));
 }
+#endif
 
 /*
  * call-seq:
@@ -9262,8 +9264,10 @@ Init_date_core(void)
     rb_define_method(cDate, "cweek", d_lite_cweek, 0);
     rb_define_method(cDate, "cwday", d_lite_cwday, 0);
 
-    rb_define_private_method(cDate, "wnum0", d_lite_wnum0, 0);
-    rb_define_private_method(cDate, "wnum1", d_lite_wnum1, 0);
+#ifndef NDEBUG
+    de_define_private_method(cDate, "wnum0", d_lite_wnum0, 0);
+    de_define_private_method(cDate, "wnum1", d_lite_wnum1, 0);
+#endif
 
     rb_define_method(cDate, "wday", d_lite_wday, 0);
 
