@@ -1,3 +1,7 @@
+Fri Jun 17 18:57:36 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): fix return value of obj[a,*b]=c.
+
 Fri Jun 17 13:09:45 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/curses/curses.c:  Clean up documentation.

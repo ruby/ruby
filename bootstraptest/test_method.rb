@@ -402,6 +402,10 @@ m(1,2,*ary,&b)
 $result
 }
 
+# aset and splat
+assert_equal '4', %q{class Foo;def []=(a,b,c,d);end;end;Foo.new[1,*a=[2,3]]=4}
+assert_equal '4', %q{class Foo;def []=(a,b,c,d);end;end;def m(&blk)Foo.new[1,*a=[2,3],&blk]=4;end;m{}}
+
 # post test
 assert_equal %q{[1, 2, :o1, :o2, [], 3, 4, NilClass, nil, nil]}, %q{
 def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)

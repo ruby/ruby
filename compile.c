@@ -4968,7 +4968,18 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	    if (flag & VM_CALL_ARGS_BLOCKARG_BIT) {
 		ADD_INSN1(ret, nd_line(node), topn, INT2FIX(1));
+		if (flag & VM_CALL_ARGS_SPLAT_BIT) {
+		    ADD_INSN1(ret, nd_line(node), putobject, INT2FIX(-1));
+		    ADD_SEND(ret, nd_line(node), ID2SYM(idAREF), INT2FIX(1));
+		}
 		ADD_INSN1(ret, nd_line(node), setn, FIXNUM_INC(argc, 3));
+		ADD_INSN (ret, nd_line(node), pop);
+	    }
+	    else if (flag & VM_CALL_ARGS_SPLAT_BIT) {
+		ADD_INSN(ret, nd_line(node), dup);
+		ADD_INSN1(ret, nd_line(node), putobject, INT2FIX(-1));
+		ADD_SEND(ret, nd_line(node), ID2SYM(idAREF), INT2FIX(1));
+		ADD_INSN1(ret, nd_line(node), setn, FIXNUM_INC(argc, 2));
 		ADD_INSN (ret, nd_line(node), pop);
 	    }
 	    else {
