@@ -154,7 +154,7 @@ typedef struct {
  */
 
 VP_EXPORT  Real *
-VpNewRbClass(size_t mx, char *str, VALUE klass);
+VpNewRbClass(size_t mx, char const *str, VALUE klass);
 
 VP_EXPORT  Real *VpCreateRbObject(size_t mx,const char *str);
 

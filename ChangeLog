@@ -1,3 +1,10 @@
+Sat Jun 18 02:36:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (VpNewRbClass): fix type of the 2nd
+	  argument.
+
+	* ext/bigdecimal/bigdecimal.h: ditto.
+
 Sat Jun 18 02:30:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigMath_s_exp): move BigMath.exp from

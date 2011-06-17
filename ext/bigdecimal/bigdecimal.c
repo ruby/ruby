@@ -487,7 +487,7 @@ GetPositiveInt(VALUE v)
 }
 
 VP_EXPORT Real *
-VpNewRbClass(size_t mx, char *str, VALUE klass)
+VpNewRbClass(size_t mx, const char *str, VALUE klass)
 {
     Real *pv = VpAlloc(mx,str);
     pv->obj = TypedData_Wrap_Struct(klass, &BigDecimal_data_type, pv);
