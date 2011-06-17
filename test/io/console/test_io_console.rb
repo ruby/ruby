@@ -196,6 +196,8 @@ class TestIO_Console < Test::Unit::TestCase
       system(*cmd)
       t.open
       assert_equal("nil", t.gets.chomp)
+    ensure
+      t.close! if t and !t.closed?
     end
   end
 end if defined?(IO.console)
