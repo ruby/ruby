@@ -198,7 +198,6 @@ class TestSignal < Test::Unit::TestCase
   end
 
   def test_signal_requiring
-    skip "limitation of GenerateConsoleCtrlEvent()" if /mswin|mingw/ =~ RUBY_PLATFORM
     t = Tempfile.new(%w"require_ensure_test .rb")
     t.puts "sleep"
     t.close
@@ -209,14 +208,13 @@ th = Thread.new do
     require ARGV[0]
   ensure
     Marshal.dump($!, STDOUT)
+    STDOUT.flush
   end
 end
-STDOUT.puts
-STDOUT.flush
+Thread.pass while th.running?
+Process.kill(:INT, $$)
 th.join
 EOS
-      child.gets
-      Process.kill("INT", child.pid)
       Marshal.load(child)
     end
     t.close!
