@@ -12,6 +12,7 @@
 #include "eval_intern.h"
 #include "internal.h"
 #include "gc.h"
+#include "iseq.h"
 
 struct METHOD {
     VALUE recv;
@@ -24,8 +25,6 @@ VALUE rb_cUnboundMethod;
 VALUE rb_cMethod;
 VALUE rb_cBinding;
 VALUE rb_cProc;
-
-VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 
 static VALUE bmcall(VALUE, VALUE);
 static int method_arity(VALUE);

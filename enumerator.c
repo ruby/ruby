@@ -1018,8 +1018,6 @@ generator_init(VALUE obj, VALUE proc)
     return obj;
 }
 
-VALUE rb_obj_is_proc(VALUE proc);
-
 /* :nodoc: */
 static VALUE
 generator_initialize(int argc, VALUE *argv, VALUE obj)

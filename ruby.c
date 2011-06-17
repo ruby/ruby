@@ -17,6 +17,7 @@
 #endif
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "internal.h"
 #include "eval_intern.h"
 #include "dln.h"
 #include <stdio.h>
@@ -50,12 +51,6 @@
 #ifndef HAVE_STDLIB_H
 char *getenv();
 #endif
-
-VALUE rb_parser_get_yydebug(VALUE);
-VALUE rb_parser_set_yydebug(VALUE, VALUE);
-
-const char *ruby_get_inplace_mode(void);
-void ruby_set_inplace_mode(const char *);
 
 #define DISABLE_BIT(bit) (1U << disable_##bit)
 enum disable_flag_bits {
@@ -377,7 +372,6 @@ ruby_init_loadpath_safe(int safe_level)
 #elif defined(HAVE_DLADDR)
     Dl_info dli;
     if (dladdr((void *)(VALUE)expand_include_path, &dli)) {
-	VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
 	char fbuf[MAXPATHLEN];
 	char *f = dln_find_file_r(dli.dli_fname, getenv(PATH_ENV), fbuf, sizeof(fbuf));
 	VALUE fname = rb_str_new_cstr(f ? f : dli.dli_fname);
@@ -477,9 +471,6 @@ add_modules(VALUE *req_list, const char *mod)
     rb_ary_push(list, rb_obj_freeze(rb_str_new2(mod)));
 }
 
-extern void Init_ext(void);
-extern VALUE rb_vm_top_self(void);
-
 static void
 require_libraries(VALUE *req_list)
 {
@@ -568,8 +559,6 @@ process_sflag(int *sflag)
     }
 }
 
-NODE *rb_parser_append_print(VALUE, NODE *);
-NODE *rb_parser_while_loop(VALUE, NODE *, int, int);
 static long proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt);
 
 static void
@@ -1101,8 +1090,6 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
     return argc0 - argc;
 }
 
-void Init_prelude(void);
-
 static void
 ruby_init_prelude(void)
 {
@@ -1236,10 +1223,6 @@ rb_f_chomp(argc, argv)
     rb_lastline_set(str);
     return str;
 }
-
-void rb_stdio_set_default_encoding(void);
-VALUE rb_parser_dump_tree(NODE *node, int comment);
-VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
 
 static VALUE
 process_options(int argc, char **argv, struct cmdline_options *opt)

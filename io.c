@@ -82,8 +82,6 @@
 #include <sys/syscall.h>
 #endif
 
-extern void Init_File(void);
-
 #if defined(__BEOS__) || defined(__HAIKU__)
 # ifndef NOFILE
 #  define NOFILE (OPEN_MAX)
@@ -141,8 +139,6 @@ static VALUE argf;
 static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding;
 static VALUE sym_mode, sym_perm, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode, sym_autoclose;
-
-struct timeval rb_time_interval(VALUE);
 
 struct argf {
     VALUE filename, current_file;

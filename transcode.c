@@ -11,6 +11,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "internal.h"
 #include "transcode_data.h"
 #include <ctype.h>
 
@@ -4298,8 +4299,6 @@ ecerr_incomplete_input(VALUE self)
 {
     return rb_attr_get(self, rb_intern("incomplete_input"));
 }
-
-extern void Init_newline(void);
 
 /*
  *  Document-class: Encoding::UndefinedConversionError

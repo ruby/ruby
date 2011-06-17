@@ -66,7 +66,6 @@ static void sleep_timeval(rb_thread_t *th, struct timeval time);
 static void sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec);
 static void sleep_forever(rb_thread_t *th, int nodeadlock);
 static double timeofday(void);
-struct timeval rb_time_interval(VALUE);
 static int rb_threadptr_dead(rb_thread_t *th);
 
 static void rb_check_deadlock(rb_vm_t *vm);
@@ -409,7 +408,6 @@ thread_cleanup_func(void *th_ptr, int atfork)
 
 extern void ruby_error_print(void);
 static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
-void rb_thread_recycle_stack_release(VALUE *);
 
 void
 ruby_thread_init_stack(rb_thread_t *th)
@@ -996,8 +994,6 @@ rb_thread_interrupted(VALUE thval)
     GetThreadPtr(thval, th);
     return RUBY_VM_INTERRUPTED(th);
 }
-
-struct timeval rb_time_timeval(VALUE);
 
 void
 rb_thread_sleep(int sec)
@@ -2951,8 +2947,6 @@ rb_gc_save_machine_context(rb_thread_t *th)
  *
  */
 
-int rb_get_next_signal(void);
-
 void
 rb_threadptr_check_signal(rb_thread_t *mth)
 {
@@ -4024,7 +4018,6 @@ enum {
 };
 
 static VALUE thread_suppress_tracing(rb_thread_t *th, int ev, VALUE (*func)(VALUE, int), VALUE arg, int always);
-VALUE ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always);
 
 struct event_call_args {
     rb_thread_t *th;
@@ -4561,8 +4554,6 @@ thread_suppress_tracing(rb_thread_t *th, int ev, VALUE (*func)(VALUE, int), VALU
 
     return result;
 }
-
-VALUE rb_thread_backtrace(VALUE thval);
 
 /*
  *  call-seq:

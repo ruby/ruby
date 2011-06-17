@@ -83,8 +83,6 @@ static ID s_dump, s_load, s_mdump, s_mload;
 static ID s_dump_data, s_load_data, s_alloc, s_call;
 static ID s_getbyte, s_read, s_write, s_binmode;
 
-ID rb_id_encoding(void);
-
 typedef struct {
     VALUE newclass;
     VALUE oldclass;

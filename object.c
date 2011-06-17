@@ -1838,11 +1838,6 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
     return RTEST(recur) ? rb_const_defined(mod, id) : rb_const_defined_at(mod, id);
 }
 
-VALUE rb_obj_methods(int argc, VALUE *argv, VALUE obj); /* in class.c */
-VALUE rb_obj_protected_methods(int argc, VALUE *argv, VALUE obj); /* in class.c */
-VALUE rb_obj_private_methods(int argc, VALUE *argv, VALUE obj); /* in class.c */
-VALUE rb_obj_public_methods(int argc, VALUE *argv, VALUE obj); /* in class.c */
-
 /*
  *  call-seq:
  *     obj.instance_variable_get(symbol)    -> obj

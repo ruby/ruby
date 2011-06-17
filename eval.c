@@ -16,6 +16,7 @@
 #include "gc.h"
 #include "ruby/vm.h"
 #include "ruby/encoding.h"
+#include "internal.h"
 #include "vm_core.h"
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
@@ -34,12 +35,6 @@ VALUE rb_eSysStackError;
 #include "eval_jump.c"
 
 /* initialize ruby */
-
-void rb_clear_trace_func(void);
-
-void rb_call_inits(void);
-void Init_heap(void);
-void Init_BareVM(void);
 
 void
 ruby_init(void)
@@ -68,8 +63,6 @@ ruby_init(void)
     }
     GET_VM()->running = 1;
 }
-
-extern void rb_clear_trace_func(void);
 
 void *
 ruby_options(int argc, char **argv)
@@ -1052,9 +1045,6 @@ top_include(int argc, VALUE *argv, VALUE self)
     }
     return rb_mod_include(argc, argv, rb_cObject);
 }
-
-VALUE rb_f_trace_var();
-VALUE rb_f_untrace_var();
 
 static VALUE *
 errinfo_place(rb_thread_t *th)

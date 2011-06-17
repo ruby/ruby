@@ -83,6 +83,7 @@ class Prelude
  sources: <%= @preludes.map {|n,*| prelude_base(n)}.join(', ') %>
 */
 #include "ruby/ruby.h"
+#include "internal.h"
 #include "vm_core.h"
 
 % preludes = @preludes.values.sort
@@ -115,8 +116,6 @@ prelude_prefix_path(VALUE self)
 % end
 
 % unless preludes.empty?
-VALUE rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE filepath, VALUE line, VALUE opt);
-
 static void
 prelude_eval(VALUE code, VALUE name, VALUE line)
 {

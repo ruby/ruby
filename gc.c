@@ -50,8 +50,6 @@
 # define VALGRIND_MAKE_MEM_UNDEFINED(p, n) /* empty */
 #endif
 
-int rb_io_fptr_finalize(struct rb_io_t*);
-
 #define rb_setjmp(env) RUBY_SETJMP(env)
 #define rb_jmp_buf rb_jmpbuf_t
 
@@ -2364,8 +2362,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
 #define GC_NOTIFY 0
 
-void rb_vm_mark(void *ptr);
-
 #if STACK_GROW_DIRECTION < 0
 #define GET_STACK_BOUNDS(start, end, appendix) ((start) = STACK_END, (end) = STACK_START)
 #elif STACK_GROW_DIRECTION > 0
@@ -2405,8 +2401,6 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 			 (STACK_START - STACK_END));
 #endif
 }
-
-void rb_gc_mark_encodings(void);
 
 static void
 gc_clear_mark_on_sweep_slots(rb_objspace_t *objspace)

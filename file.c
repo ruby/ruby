@@ -23,6 +23,7 @@
 #include "ruby/io.h"
 #include "ruby/util.h"
 #include "dln.h"
+#include "internal.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -2202,8 +2203,6 @@ rb_file_s_lchown(int argc, VALUE *argv)
 #else
 #define rb_file_s_lchown rb_f_notimplement
 #endif
-
-struct timespec rb_time_timespec(VALUE time);
 
 struct utime_args {
     const struct timespec* tsp;
@@ -5087,8 +5086,6 @@ is_explicit_relative(const char *path)
     if (*path == '.') path++;
     return isdirsep(*path);
 }
-
-VALUE rb_get_load_path(void);
 
 static VALUE
 copy_path_class(VALUE path, VALUE orig)

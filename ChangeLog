@@ -1,3 +1,26 @@
+Sat Jun 18 07:27:27 2011  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h: declare internal functions here.
+
+	* node.h: declare NODE dependent internal functions here.
+
+	* iseq.h: declare rb_iseq_t dependent internal functions here.
+
+	* vm_core.h: declare rb_thread_t dependent internal functions here.
+
+	* bignum.c, class.c, compile.c, complex.c, cont.c, dir.c, encoding.c,
+	  enumerator.c, error.c, eval.c, file.c, gc.c, hash.c, inits.c, io.c,
+	  iseq.c, load.c, marshal.c, math.c, numeric.c, object.c, parse.y,
+	  proc.c, process.c, range.c, rational.c, re.c, ruby.c, string.c,
+	  thread.c, time.c, transcode.c, variable.c, vm.c,
+	  tool/compile_prelude.rb: don't declare internal functions declared
+	  in above headers.  include above headers if required.
+
+	  Note that rb_thread_mark() was declared as
+	  void rb_thread_mark(rb_thread_t *th) in cont.c but defined as
+	  void rb_thread_mark(void *ptr) in vm.c.  Now it is declared as
+	  the later in internal.h.
+
 Sat Jun 18 02:36:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (VpNewRbClass): fix type of the 2nd

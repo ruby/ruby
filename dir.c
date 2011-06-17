@@ -13,6 +13,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "internal.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -1995,8 +1996,6 @@ file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
 
     return Qfalse;
 }
-
-VALUE rb_home_dir(const char *user, VALUE result);
 
 /*
  *  call-seq:

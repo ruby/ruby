@@ -13,6 +13,7 @@
 #include "ruby/re.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
+#include "internal.h"
 #include "regint.h"
 #include <ctype.h>
 
@@ -313,8 +314,6 @@ rb_reg_check(VALUE re)
 	rb_raise(rb_eTypeError, "uninitialized Regexp");
     }
 }
-
-int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 
 static void
 rb_reg_expr_str(VALUE str, const char *s, long len,

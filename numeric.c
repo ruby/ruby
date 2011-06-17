@@ -2445,8 +2445,6 @@ fixdivmod(long x, long y, long *divp, long *modp)
     if (modp) *modp = mod;
 }
 
-VALUE rb_big_fdiv(VALUE x, VALUE y);
-
 /*
  *  call-seq:
  *     fix.fdiv(numeric)  ->  float
@@ -2474,8 +2472,6 @@ fix_fdiv(VALUE x, VALUE y)
 	return rb_num_coerce_bin(x, y, rb_intern("fdiv"));
     }
 }
-
-VALUE rb_rational_reciprocal(VALUE x);
 
 static VALUE
 fix_divide(VALUE x, VALUE y, ID op)

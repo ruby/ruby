@@ -12,6 +12,7 @@
 #include "ruby/vm.h"
 #include "ruby/st.h"
 #include "ruby/encoding.h"
+#include "internal.h"
 
 #include "gc.h"
 #include "vm_core.h"
@@ -1662,8 +1663,6 @@ thread_recycle_struct(void)
 }
 #endif
 
-void rb_gc_mark_machine_stack(rb_thread_t *th);
-
 void
 rb_thread_mark(void *ptr)
 {
@@ -1865,8 +1864,6 @@ rb_thread_alloc(VALUE klass)
     ruby_thread_init(self);
     return self;
 }
-
-VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
 
 static void
 vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
@@ -2151,9 +2148,6 @@ rb_vm_set_progname(VALUE filename)
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 struct rb_objspace *rb_objspace_alloc(void);
 #endif
-void ruby_thread_init_stack(rb_thread_t *th);
-
-extern void Init_native_thread(void);
 
 void
 Init_BareVM(void)

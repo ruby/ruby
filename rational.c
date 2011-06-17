@@ -6,6 +6,7 @@
 */
 
 #include "ruby.h"
+#include "internal.h"
 #include <math.h>
 #include <float.h>
 

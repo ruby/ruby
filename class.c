@@ -120,8 +120,6 @@ rb_class_new(VALUE super)
     return rb_class_boot(super);
 }
 
-VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
-
 static void
 rb_mod_clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
 {

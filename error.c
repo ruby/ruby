@@ -12,6 +12,7 @@
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "ruby/encoding.h"
+#include "internal.h"
 #include "vm_core.h"
 
 #include <stdio.h>
@@ -229,8 +230,6 @@ rb_warn_m(VALUE self, VALUE mesg)
     }
     return Qnil;
 }
-
-void rb_vm_bugreport(void);
 
 static void
 report_bug(const char *file, int line, const char *fmt, va_list args)

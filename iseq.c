@@ -10,6 +10,7 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
+#include "internal.h"
 
 /* #define RUBY_MARK_FREE_DEBUG 1 */
 #include "gc.h"
@@ -216,8 +217,6 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
 	iseq->parent_iseq = piseq;
     }
 }
-
-VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
 
 static VALUE
 prepare_iseq_build(rb_iseq_t *iseq,

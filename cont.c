@@ -10,6 +10,7 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
+#include "internal.h"
 #include "vm_core.h"
 #include "gc.h"
 #include "eval_intern.h"
@@ -126,7 +127,6 @@ static VALUE rb_eFiberError;
 
 NOINLINE(static VALUE cont_capture(volatile int *stat));
 
-void rb_thread_mark(rb_thread_t *th);
 #define THREAD_MUST_BE_RUNNING(th) do { \
 	if (!(th)->tag) rb_raise(rb_eThreadError, "not running thread");	\
     } while (0)
@@ -408,8 +408,6 @@ cont_new(VALUE klass)
     cont_init(cont, th);
     return cont;
 }
-
-void rb_vm_stack_to_heap(rb_thread_t *th);
 
 static VALUE
 cont_capture(volatile int *stat)

@@ -14,6 +14,7 @@
 #include "ruby/ruby.h"
 #include "ruby/re.h"
 #include "ruby/encoding.h"
+#include "internal.h"
 #include <assert.h>
 
 #define BEG(no) (regs->beg[(no)])
@@ -2052,8 +2053,6 @@ rb_str_append(VALUE str, VALUE str2)
     }
     return rb_str_buf_append(str, str2);
 }
-
-int rb_num_to_uint(VALUE val, unsigned int *ret);
 
 /*
  *  call-seq:
@@ -7458,8 +7457,6 @@ sym_to_sym(VALUE sym)
 {
     return sym;
 }
-
-VALUE rb_funcall_passing_block(VALUE recv, ID mid, int argc, const VALUE *argv);
 
 static VALUE
 sym_call(VALUE args, VALUE sym, int argc, VALUE *argv)

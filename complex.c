@@ -6,6 +6,7 @@
 */
 
 #include "ruby.h"
+#include "internal.h"
 #include <math.h>
 
 #define NDEBUG
@@ -507,8 +508,6 @@ imp1(exp)
 imp2(hypot)
 
 #define m_hypot(x,y) m_hypot_bang((x),(y))
-
-extern VALUE rb_math_log(int argc, VALUE *argv);
 
 static VALUE
 m_log_bang(VALUE x)
@@ -1091,8 +1090,6 @@ nucomp_inexact_p(VALUE self)
     return f_boolcast(!nucomp_exact_p(self));
 }
 #endif
-
-extern VALUE rb_lcm(VALUE x, VALUE y);
 
 /*
  * call-seq:

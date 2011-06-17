@@ -14,6 +14,7 @@
 #include "ruby/ruby.h"
 #include "ruby/io.h"
 #include "ruby/util.h"
+#include "internal.h"
 #include "vm_core.h"
 
 #include <stdio.h>
@@ -38,8 +39,6 @@
 #ifndef EXIT_FAILURE
 #define EXIT_FAILURE 1
 #endif
-
-struct timeval rb_time_interval(VALUE);
 
 #ifdef HAVE_SYS_WAIT_H
 # include <sys/wait.h>
@@ -125,9 +124,6 @@ static VALUE rb_cProcessTms;
 #define preserving_errno(stmts) \
 	do {int saved_errno = errno; stmts; errno = saved_errno;} while (0)
 
-
-ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
-ssize_t rb_io_bufread(VALUE io, void *buf, size_t size);
 
 /*
  *  call-seq:

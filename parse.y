@@ -18,6 +18,7 @@
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "ruby/encoding.h"
+#include "internal.h"
 #include "node.h"
 #include "parse.h"
 #include "id.h"
@@ -403,11 +404,6 @@ static ID  *local_tbl_gen(struct parser_params*);
 #define local_tbl() local_tbl_gen(parser)
 
 static void fixup_nodes(NODE **);
-
-extern int rb_dvar_defined(ID);
-extern int rb_local_defined(ID);
-extern int rb_parse_in_eval(void);
-extern int rb_parse_in_main(void);
 
 static VALUE reg_compile_gen(struct parser_params*, VALUE, int);
 #define reg_compile(str,options) reg_compile_gen(parser, (str), (options))
@@ -5095,8 +5091,6 @@ parser_yyerror(struct parser_params *parser, const char *msg)
 static void parser_prepare(struct parser_params *parser);
 
 #ifndef RIPPER
-VALUE ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always);
-
 static VALUE
 debug_lines(const char *f)
 {
@@ -9213,9 +9207,6 @@ dvar_curr_gen(struct parser_params *parser, ID id)
 }
 
 #ifndef RIPPER
-VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
-VALUE rb_reg_check_preprocess(VALUE);
-
 static void
 reg_fragment_setenc_gen(struct parser_params* parser, VALUE str, int options)
 {

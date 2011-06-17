@@ -690,8 +690,6 @@ rb_hash_default_proc(VALUE hash)
     return Qnil;
 }
 
-VALUE rb_obj_is_proc(VALUE proc);
-
 /*
  *  call-seq:
  *     hsh.default_proc = proc_obj     -> proc_obj
