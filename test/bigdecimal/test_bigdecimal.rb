@@ -896,4 +896,56 @@ class TestBigDecimal < Test::Unit::TestCase
   def test_NAN
     assert(BigDecimal::NAN.nan?, "BigDecimal::NAN is not NaN")
   end
+
+  def test_exp_with_zerp_precision
+    assert_raise(ArgumentError) do
+      BigMath.exp(1, 0)
+    end
+  end
+
+  def test_exp_with_negative_precision
+    assert_raise(ArgumentError) do
+      BigMath.exp(1, -42)
+    end
+  end
+
+  def test_exp_with_complex
+    assert_raise(ArgumentError) do
+      BigMath.exp(Complex(1, 2), 20)
+    end
+  end
+
+  def test_exp_with_negative_infinite
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+      assert_equal(0, BigMath.exp(-BigDecimal::INFINITY, 20))
+    end
+  end
+
+  def test_exp_with_positive_infinite
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+      assert(BigMath.exp(BigDecimal::INFINITY, 20) > 0)
+      assert(BigMath.exp(BigDecimal::INFINITY, 20).infinite?)
+    end
+  end
+
+  def test_exp_with_nan
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+      assert(BigMath.exp(BigDecimal::NAN, 20).nan?)
+    end
+  end
+
+  def test_exp_with_1
+    assert_in_epsilon(Math::E, BigMath.exp(1, 20))
+  end
+
+  def test_BigMath_exp
+    n = 20
+    assert_in_epsilon(Math.exp(n), BigMath.exp(BigDecimal("20"), n))
+    assert_in_epsilon(Math.exp(40), BigMath.exp(BigDecimal("40"), n))
+    assert_in_epsilon(Math.exp(-n), BigMath.exp(BigDecimal("-20"), n))
+    assert_in_epsilon(Math.exp(-40), BigMath.exp(BigDecimal("-40"), n))
+  end
 end

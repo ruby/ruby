@@ -7,7 +7,6 @@ require 'bigdecimal'
 #   sin (x, prec)
 #   cos (x, prec)
 #   atan(x, prec)  Note: |x|<1, x=0.9999 may not converge.
-#   exp (x, prec)
 #   log (x, prec)
 #   PI  (prec)
 #   E   (prec) == exp(1.0,prec)
@@ -144,47 +143,6 @@ module BigMath
     y = pi / 2 - y if inv
     y = -y if neg
     y
-  end
-
-  # Computes the value of e (the base of natural logarithms) raised to the
-  # power of x, to the specified number of digits of precision.
-  #
-  # If x is infinite or NaN, returns NaN.
-  #
-  # BigMath::exp(BigDecimal.new('1'), 10).to_s
-  # -> "0.271828182845904523536028752390026306410273E1"
-  def exp(x, prec)
-    raise ArgumentError, "Zero or negative precision for exp" if prec <= 0
-    if x.infinite?
-      if x < 0
-        return BigDecimal("0", prec)
-      else
-        return BigDecimal("+Infinity", prec)
-      end
-    elsif x.nan?
-      return BigDecimal("NaN", prec)
-    end
-    n    = prec + BigDecimal.double_fig
-    one  = BigDecimal("1")
-    x = -x if neg = x < 0
-    x1 = one
-    y  = one
-    d  = y
-    z  = one
-    i  = 0
-    while d.nonzero? && ((m = n - (y.exponent - d.exponent).abs) > 0)
-      m = BigDecimal.double_fig if m < BigDecimal.double_fig
-      x1  = x1.mult(x,n)
-      i += 1
-      z *= i
-      d  = x1.div(z,m)
-      y += d
-    end
-    if neg
-      one.div(y, prec)
-    else
-      y.round(prec - y.exponent)
-    end
   end
 
   # Computes the natural logarithm of x to the specified number of digits

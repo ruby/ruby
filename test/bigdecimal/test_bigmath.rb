@@ -61,22 +61,6 @@ class TestBigMath < Test::Unit::TestCase
                  atan(BigDecimal("1.08"), 72).round(72), '[ruby-dev:41257]')
   end
 
-  def test_exp
-    assert_in_epsilon(Math::E, exp(BigDecimal("1"), N))
-    assert_in_epsilon(Math.exp(N), exp(BigDecimal("20"), N))
-    assert_in_epsilon(Math.exp(40), exp(BigDecimal("40"), N))
-    assert_in_epsilon(Math.exp(-N), exp(BigDecimal("-20"), N))
-    assert_in_epsilon(Math.exp(-40), exp(BigDecimal("-40"), N))
-    begin
-      old_mode = BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY)
-      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
-      assert(exp(BigDecimal::INFINITY, N).infinite?, "exp(INFINITY) is not an infinity")
-    ensure
-      #BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, old_mode)
-    end
-    assert_equal(0.0, exp(-BigDecimal::INFINITY, N))
-  end
-
   def test_log
     assert_in_delta(0.0, log(BigDecimal("1"), N))
     assert_in_delta(1.0, log(E(N), N))

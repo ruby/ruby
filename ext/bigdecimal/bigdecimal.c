@@ -34,6 +34,7 @@
 /* #define ENABLE_NUMERIC_STRING */
 
 VALUE rb_cBigDecimal;
+VALUE rb_mBigMath;
 
 static ID id_BigDecimal_exception_mode;
 static ID id_BigDecimal_rounding_mode;
@@ -2000,6 +2001,137 @@ BigDecimal_save_limit(VALUE self)
     return ret;
 }
 
+/* call-seq:
+ * BigMath.exp(x, prec)
+ *
+ * Computes the value of e (the base of natural logarithms) raised to the
+ * power of x, to the specified number of digits of precision.
+ *
+ * If x is infinite, returns Infinity.
+ *
+ * If x is NaN, returns NaN.
+ */
+static VALUE
+BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
+{
+    ssize_t prec, n, i;
+    Real* vx = NULL;
+    VALUE one, d, x1, y, z;
+    int negative = 0;
+    int infinite = 0;
+    int nan = 0;
+    double flo;
+
+    prec = NUM2SSIZET(vprec);
+    if (prec <= 0) {
+	rb_raise(rb_eArgError, "Zero or negative precision for exp");
+    }
+
+    /* TODO: the following switch statement is almostly the same as one in the
+     *       BigDecimalCmp function. */
+    switch (TYPE(x)) {
+      case T_DATA:
+	  if (!is_kind_of_BigDecimal(x)) break;
+	  vx = DATA_PTR(x);
+	  negative = VpGetSign(vx) < 0;
+	  infinite = VpIsPosInf(vx) || VpIsNegInf(vx);
+	  nan = VpIsNaN(vx);
+	  break;
+
+      case T_FIXNUM:
+	  /* fall through */
+      case T_BIGNUM:
+	  vx = GetVpValue(x, 0);
+	  break;
+
+      case T_FLOAT:
+	flo = RFLOAT_VALUE(x);
+	negative = flo < 0;
+	infinite = isinf(flo);
+	nan = isnan(flo);
+	if (!infinite && !nan) {
+	    vx = GetVpValueWithPrec(x, DBL_DIG+1, 0);
+	}
+	break;
+
+      case T_RATIONAL:
+	vx = GetVpValueWithPrec(x, prec, 0);
+	break;
+
+      default:
+	break;
+    }
+    if (infinite) {
+	if (negative) {
+	    return ToValue(GetVpValueWithPrec(INT2NUM(0), prec, 1));
+	}
+	else {
+	    Real* vy;
+	    vy = VpCreateRbObject(prec, "#0");
+	    RB_GC_GUARD(vy->obj);
+	    VpSetInf(vy, VP_SIGN_POSITIVE_INFINITE);
+	    return ToValue(vy);
+	}
+    }
+    else if (nan) {
+	Real* vy;
+	vy = VpCreateRbObject(prec, "#0");
+	RB_GC_GUARD(vy->obj);
+	VpSetNaN(vy);
+	return ToValue(vy);
+    }
+    else if (vx == NULL) {
+	rb_raise(rb_eArgError, "%s can't be coerced into BigDecimal",
+		 rb_special_const_p(x) ? RSTRING_PTR(rb_inspect(x)) : rb_obj_classname(x));
+    }
+    RB_GC_GUARD(vx->obj);
+
+    n = prec + rmpd_double_figures();
+    negative = VpGetSign(vx) < 0;
+    if (negative) {
+	VpSetSign(vx, 1);
+    }
+
+    RB_GC_GUARD(one) = ToValue(VpCreateRbObject(1, "1"));
+    RB_GC_GUARD(x1) = one;
+    RB_GC_GUARD(y)  = one;
+    RB_GC_GUARD(d)  = y;
+    RB_GC_GUARD(z)  = one;
+    i  = 0;
+
+    while (!VpIsZero((Real*)DATA_PTR(d))) {
+	VALUE argv[2];
+	SIGNED_VALUE const ey = VpExponent10(DATA_PTR(y));
+	SIGNED_VALUE const ed = VpExponent10(DATA_PTR(d));
+	ssize_t m = n - vabs(ey - ed);
+	if (m <= 0) {
+	    break;
+	}
+	else if ((size_t)m < rmpd_double_figures()) {
+	    m = rmpd_double_figures();
+	}
+
+	x1 = BigDecimal_mult2(x1, x, SSIZET2NUM(n));
+	++i;
+	z = BigDecimal_mult(z, SSIZET2NUM(i));
+	argv[0] = z;
+	argv[1] = SSIZET2NUM(m);
+	d = BigDecimal_div2(2, argv, x1);
+	y = BigDecimal_add(y, d);
+    }
+
+    if (negative) {
+	VALUE argv[2];
+	argv[0] = y;
+	argv[1] = vprec;
+	return BigDecimal_div2(2, argv, one);
+    }
+    else {
+	vprec = SSIZET2NUM(prec - VpExponent10(DATA_PTR(y)));
+	return BigDecimal_round(1, &vprec, y);
+    }
+}
+
 /* Document-class: BigDecimal
  * BigDecimal provides arbitrary-precision floating point decimal arithmetic.
  *
@@ -2294,6 +2426,10 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "finite?",   BigDecimal_IsFinite, 0);
     rb_define_method(rb_cBigDecimal, "truncate",  BigDecimal_truncate, -1);
     rb_define_method(rb_cBigDecimal, "_dump", BigDecimal_dump, -1);
+
+    /* mathematical functions */
+    rb_mBigMath = rb_define_module("BigMath");
+    rb_define_singleton_method(rb_mBigMath, "exp", BigMath_s_exp, 2);
 
     id_BigDecimal_exception_mode = rb_intern_const("BigDecimal.exception_mode");
     id_BigDecimal_rounding_mode = rb_intern_const("BigDecimal.rounding_mode");
