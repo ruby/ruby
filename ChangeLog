@@ -1,3 +1,10 @@
+Sat Jun 18 08:12:54 2011  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk: dependencies updated.
+
+	* tool/update-deps: new file to assist update dependencies in
+	  common.mk.
+
 Sat Jun 18 07:27:27 2011  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h: declare internal functions here.
