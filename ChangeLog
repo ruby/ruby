@@ -1,3 +1,8 @@
+Fri Jun 17 09:11:05 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* object.c:  Document Module#method_added and #method_removed.
+	  Patch by Bryce Kerley.  [Ruby 1.9 - Feature #4867]
+
 Fri Jun 17 08:50:16 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* io.c:  Improve documentation of IO and File open and new.
