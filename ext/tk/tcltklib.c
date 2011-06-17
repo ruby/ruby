@@ -1526,7 +1526,7 @@ call_original_exit(ptr, state)
 	Tcl_Preserve((ClientData)argv); /* XXXXXXXX */
 #endif
 #endif
-        argv[0] = "exit";
+        argv[0] = (char *)"exit";
         /* argv[1] = Tcl_GetString(state_obj); */
         argv[1] = Tcl_GetStringFromObj(state_obj, (int*)NULL);
         argv[2] = (char *)NULL;

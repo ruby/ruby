@@ -327,7 +327,6 @@ static void
 cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 {
     size_t size;
-    rb_thread_t *sth = &cont->saved_thread;
 
     SET_MACHINE_STACK_END(&th->machine_stack_end);
 #ifdef __ia64
