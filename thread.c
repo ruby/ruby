@@ -613,7 +613,6 @@ thread_initialize(VALUE thread, VALUE args)
     }
     GetThreadPtr(thread, th);
     if (th->first_args) {
-	VALUE rb_proc_location(VALUE self);
 	VALUE proc = th->first_proc, line, loc;
 	const char *file;
         if (!proc || !RTEST(loc = rb_proc_location(proc))) {

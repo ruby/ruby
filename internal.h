@@ -39,6 +39,9 @@ struct rb_classext_struct {
 
 struct vtm; /* defined by timev.h */
 
+/* array.c */
+VALUE rb_ary_last(int, VALUE *, VALUE);
+
 /* bignum.c */
 VALUE rb_big_fdiv(VALUE x, VALUE y);
 VALUE rb_big_uminus(VALUE x);
@@ -123,6 +126,9 @@ VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
 VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 
+/* proc.c */
+VALUE rb_proc_location(VALUE self);
+
 /* rational.c */
 VALUE rb_lcm(VALUE x, VALUE y);
 
@@ -173,6 +179,7 @@ void rb_vm_bugreport(void);
 
 /* vm_eval.c */
 void Init_vm_eval(void);
+VALUE rb_current_realfilepath(void);
 
 /* vm_method.c */
 void Init_eval_method(void);

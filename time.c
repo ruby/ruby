@@ -4519,7 +4519,6 @@ strftimev(const char *fmt, VALUE time)
 static VALUE
 time_strftime(VALUE time, VALUE format)
 {
-    void rb_enc_copy(VALUE, VALUE);
     struct time_object *tobj;
     char buffer[SMALLBUF], *buf = buffer;
     const char *fmt;

@@ -1421,8 +1421,6 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
     }
     if ((state = EXEC_TAG()) == 0) {
 	rb_thread_t *th = GET_THREAD();
-	VALUE rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc, const VALUE *argv,
-			 const rb_method_entry_t *me);
 
 	PASS_PASSED_BLOCK_TH(th);
 	result = rb_vm_call(th, data->recv, data->id,  argc, argv, &data->me);

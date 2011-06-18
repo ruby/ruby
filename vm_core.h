@@ -647,6 +647,8 @@ VALUE rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass);
 VALUE rb_vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
 void rb_vm_inc_const_missing_count(void);
 void rb_vm_gvl_destroy(rb_vm_t *vm);
+VALUE rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc,
+                 const VALUE *argv, const rb_method_entry_t *me);
 
 void rb_thread_start_timer_thread(void);
 void rb_thread_stop_timer_thread(void);
@@ -698,6 +700,7 @@ void rb_threadptr_check_signal(rb_thread_t *mth);
 void rb_threadptr_signal_raise(rb_thread_t *th, int sig);
 void rb_threadptr_signal_exit(rb_thread_t *th);
 void rb_threadptr_execute_interrupts(rb_thread_t *);
+void rb_threadptr_interrupt(rb_thread_t *th);
 
 void rb_thread_lock_unlock(rb_thread_lock_t *);
 void rb_thread_lock_destroy(rb_thread_lock_t *);

@@ -15,6 +15,7 @@
 #include "ruby/util.h"
 #include "ruby/st.h"
 #include "ruby/encoding.h"
+#include "internal.h"
 
 #ifndef ARRAY_DEBUG
 # define NDEBUG

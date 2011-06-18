@@ -467,7 +467,6 @@ rb_f_require(VALUE obj, VALUE fname)
 VALUE
 rb_f_require_relative(VALUE obj, VALUE fname)
 {
-    VALUE rb_current_realfilepath(void);
     VALUE base = rb_current_realfilepath();
     if (NIL_P(base)) {
 	rb_raise(rb_eLoadError, "cannot infer basepath");

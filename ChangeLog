@@ -1,3 +1,14 @@
+Sat Jun 18 17:23:38 2011  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c, hash.c, load.c, proc.c, range.c, thread.c, time.c: don't
+	  declare internal functions.
+
+	* internal.h, vm_core.h: declare internal functions.
+
+	* array.c: include internal.h.
+
+	* common.mk: update dependency for array.o.
+
 Sat Jun 18 13:39:33 2011  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h: declarations declared in include/ruby/*.h removed.

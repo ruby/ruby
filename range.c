@@ -600,8 +600,6 @@ range_first(int argc, VALUE *argv, VALUE range)
 static VALUE
 range_last(int argc, VALUE *argv, VALUE range)
 {
-    VALUE rb_ary_last(int, VALUE *, VALUE);
-
     if (argc == 0) return RANGE_END(range);
     return rb_ary_last(argc, argv, rb_Array(range));
 }
