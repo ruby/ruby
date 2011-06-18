@@ -1699,7 +1699,6 @@ opt_eq_func(VALUE recv, VALUE obj, IC ic)
 
     {
 	const rb_method_entry_t *me = vm_method_search(idEq, CLASS_OF(recv), ic);
-	extern VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
 
 	if (check_cfunc(me, rb_obj_equal)) {
 	    return recv == obj ? Qtrue : Qfalse;

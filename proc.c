@@ -1022,7 +1022,6 @@ static VALUE
 method_eq(VALUE method, VALUE other)
 {
     struct METHOD *m1, *m2;
-    extern int rb_method_entry_eq(rb_method_entry_t *m1, rb_method_entry_t *m2);
 
     if (!rb_obj_is_method(other))
 	return Qfalse;

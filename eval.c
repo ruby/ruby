@@ -1196,12 +1196,8 @@ Init_eval(void)
 
     rb_undef_method(rb_cClass, "module_function");
 
-    {
-	extern void Init_vm_eval(void);
-	extern void Init_eval_method(void);
-	Init_vm_eval();
-	Init_eval_method();
-    }
+    Init_vm_eval();
+    Init_eval_method();
 
     rb_define_singleton_method(rb_cModule, "nesting", rb_mod_nesting, 0);
     rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_constants, -1);

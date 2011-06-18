@@ -1967,7 +1967,6 @@ m_core_set_postexe(VALUE self, VALUE iseqval)
 	rb_thread_t *th = GET_THREAD();
 	rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 	VALUE proc;
-	extern void rb_call_end_proc(VALUE data);
 
 	GetISeqPtr(iseqval, blockiseq);
 

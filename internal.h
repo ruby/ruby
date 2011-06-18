@@ -48,6 +48,8 @@ VALUE rb_obj_methods(int argc, VALUE *argv, VALUE obj);
 VALUE rb_obj_protected_methods(int argc, VALUE *argv, VALUE obj);
 VALUE rb_obj_private_methods(int argc, VALUE *argv, VALUE obj);
 VALUE rb_obj_public_methods(int argc, VALUE *argv, VALUE obj);
+int rb_obj_basic_to_s_p(VALUE);
+extern void Init_class_hierarchy(void);
 
 /* compile.c */
 int rb_dvar_defined(ID);
@@ -74,6 +76,13 @@ VALUE rb_check_backtrace(VALUE);
 
 /* eval.c */
 ID rb_frame_callee(void);
+
+/* eval_error.c */
+void ruby_error_print(void);
+VALUE rb_get_backtrace(VALUE info);
+
+/* eval_jump.c */
+void rb_call_end_proc(VALUE data);
 
 /* file.c */
 VALUE rb_home_dir(const char *user, VALUE result);
@@ -114,6 +123,9 @@ VALUE rb_rational_reciprocal(VALUE x);
 int rb_num_to_uint(VALUE val, unsigned int *ret);
 int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl);
 
+/* object.c */
+VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
+
 /* parse.y */
 VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
@@ -149,6 +161,7 @@ void rb_thread_execute_interrupts(VALUE th);
 void *rb_thread_call_with_gvl(void *(*func)(void *), void *data1);
 void rb_clear_trace_func(void);
 VALUE rb_thread_backtrace(VALUE thval);
+VALUE rb_get_coverages(void);
 
 /* thread_pthread.c, thread_win32.c */
 void Init_native_thread(void);
@@ -166,12 +179,17 @@ void rb_thread_recycle_stack_release(VALUE *);
 void rb_vm_change_state(void);
 void rb_vm_inc_const_missing_count(void);
 void rb_thread_mark(void *th);
+const void **rb_vm_get_insns_address_table(void);
 
 /* vm_dump.c */
 void rb_vm_bugreport(void);
 
 /* vm_eval.c */
 VALUE rb_funcall_passing_block(VALUE recv, ID mid, int argc, const VALUE *argv);
+void Init_vm_eval(void);
+
+/* vm_method.c */
+void Init_eval_method(void);
 
 /* miniprelude.c, prelude.c */
 void Init_prelude(void);

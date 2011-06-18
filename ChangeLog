@@ -1,3 +1,19 @@
+Sat Jun 18 12:42:17 2011  Tanaka Akira  <akr@fsij.org>
+
+	* method.h, internal.h iseq.h: declare internal functions.
+
+	* compile.c, eval.c, iseq.c, object.c, parse.y, proc.c, process.c,
+	  thread.c, vm.c, vm_eval.c, vm_insnhelper.c, vm_method.c: don't
+	  declare internal functions.
+
+	  Note that rb_method_entry_eq() is defined in vm_method.c but
+	  there was a declaration in proc.c with different const-ness.
+	  Now it is declared in method.h with same const-ness to the
+	  definition.
+
+	* object.c (rb_mod_module_exec): don't declare functions declared in
+	  include/ruby/intern.h.
+	  
 Sat Jun 18 12:05:08 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/backward/classext.h: for evil gems.  fixed #4803

@@ -537,7 +537,6 @@ int
 rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 {
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-    extern const void **rb_vm_get_insns_address_table(void);
     const void * const *table = rb_vm_get_insns_address_table();
     unsigned long i;
 

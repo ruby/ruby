@@ -2919,8 +2919,6 @@ rb_f_exit(int argc, VALUE *argv)
 VALUE
 rb_f_abort(int argc, VALUE *argv)
 {
-    extern void ruby_error_print(void);
-
     rb_secure(4);
     if (argc == 0) {
 	if (!NIL_P(GET_THREAD()->errinfo)) {

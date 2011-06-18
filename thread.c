@@ -3025,7 +3025,6 @@ clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
 static void
 clear_coverage(void)
 {
-    extern VALUE rb_get_coverages(void);
     VALUE coverages = rb_get_coverages();
     if (RTEST(coverages)) {
 	st_foreach(RHASH_TBL(coverages), clear_coverage_i, 0);

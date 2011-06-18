@@ -29,6 +29,7 @@ struct st_table *ruby_insn_make_insn_table(void);
 
 /* proc.c */
 rb_iseq_t *rb_method_get_iseq(VALUE body);
+rb_iseq_t *rb_proc_get_iseq(VALUE proc, int *is_proc);
 
 struct rb_compile_option_struct {
     int inline_const_cache;

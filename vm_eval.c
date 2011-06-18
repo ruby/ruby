@@ -1038,7 +1038,6 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	    VALUE errinfo = th->errinfo;
 	    if (strcmp(file, "(eval)") == 0) {
 		VALUE mesg, errat, bt2;
-		extern VALUE rb_get_backtrace(VALUE info);
 		ID id_mesg;
 
 		CONST_ID(id_mesg, "mesg");

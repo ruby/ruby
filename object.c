@@ -426,8 +426,6 @@ inspect_obj(VALUE obj, VALUE str, int recur)
 static VALUE
 rb_obj_inspect(VALUE obj)
 {
-    extern int rb_obj_basic_to_s_p(VALUE);
-
     if (TYPE(obj) == T_OBJECT && rb_obj_basic_to_s_p(obj)) {
         int has_ivar = 0;
         VALUE *ptr = ROBJECT_IVPTR(obj);
@@ -1499,8 +1497,6 @@ rb_class_s_alloc(VALUE klass)
 static VALUE
 rb_mod_initialize(VALUE module)
 {
-    extern VALUE rb_mod_module_exec(int argc, VALUE *argv, VALUE mod);
-
     if (rb_block_given_p()) {
 	rb_mod_module_exec(1, &module, module);
     }
@@ -2579,7 +2575,6 @@ rb_f_array(VALUE obj, VALUE arg)
 void
 Init_Object(void)
 {
-    extern void Init_class_hierarchy(void);
     int i;
 
     Init_class_hierarchy();

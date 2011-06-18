@@ -95,6 +95,7 @@ rb_method_entry_t *rb_method_entry_get_without_cache(VALUE klass, ID id);
 rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_flag_t noex);
 
 int rb_method_entry_arity(const rb_method_entry_t *me);
+int rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2);
 
 void rb_mark_method_entry(const rb_method_entry_t *me);
 void rb_free_method_entry(rb_method_entry_t *me);

@@ -1,5 +1,5 @@
 /*
- * This file is included by vm.h
+ * This file is included by vm.c
  */
 
 #define CACHE_SIZE 0x800
@@ -188,7 +188,6 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	    old_def->alias_count == 0 &&
 	    old_def->type != VM_METHOD_TYPE_UNDEF &&
 	    old_def->type != VM_METHOD_TYPE_ZSUPER) {
-	    extern rb_iseq_t *rb_proc_get_iseq(VALUE proc, int *is_proc);
 	    rb_iseq_t *iseq = 0;
 
 	    rb_warning("method redefined; discarding old %s", rb_id2name(mid));
