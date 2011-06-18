@@ -19,11 +19,23 @@ extern "C" {
 #endif
 #endif
 
+struct rb_deprecated_classext_struct {
+    char conflict[sizeof(VALUE) * 3];
+};
+
 struct rb_classext_struct {
     VALUE super;
     struct st_table *iv_tbl;
     struct st_table *const_tbl;
 };
+
+#undef RCLASS_SUPER
+#define RCLASS_EXT(c) (RCLASS(c)->ptr)
+#define RCLASS_SUPER(c) (RCLASS_EXT(c)->super)
+#define RCLASS_IV_TBL(c) (RCLASS_EXT(c)->iv_tbl)
+#define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
+#define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
+#define RCLASS_IV_INDEX_TBL(c) (RCLASS(c)->iv_index_tbl)
 
 struct vtm; /* defined by timev.h */
 

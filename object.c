@@ -1668,6 +1668,12 @@ rb_class_superclass(VALUE klass)
     return super;
 }
 
+VALUE
+rb_class_get_superclass(VALUE klass)
+{
+    return RCLASS_SUPER(klass);
+}
+
 /*
  *  call-seq:
  *     attr_reader(symbol, ...)    -> nil
