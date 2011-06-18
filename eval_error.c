@@ -38,8 +38,6 @@ error_pos(void)
     }
 }
 
-VALUE rb_check_backtrace(VALUE);
-
 static VALUE
 get_backtrace(VALUE info)
 {

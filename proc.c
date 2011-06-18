@@ -28,7 +28,6 @@ VALUE rb_cProc;
 
 static VALUE bmcall(VALUE, VALUE);
 static int method_arity(VALUE);
-rb_iseq_t *rb_method_get_iseq(VALUE method);
 
 /* Proc */
 

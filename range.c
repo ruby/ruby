@@ -305,8 +305,6 @@ step_i(VALUE i, void *arg)
     return Qnil;
 }
 
-extern int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl);
-
 static int
 discrete_object_p(VALUE obj)
 {

@@ -10107,9 +10107,6 @@ static const rb_data_type_t parser_data_type = {
     },
 };
 
-VALUE rb_parser_get_yydebug(VALUE);
-VALUE rb_parser_set_yydebug(VALUE, VALUE);
-
 #ifndef RIPPER
 #undef rb_reserved_word
 
@@ -10583,8 +10580,6 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
 
     return Qnil;
 }
-
-extern VALUE rb_thread_pass(void);
 
 struct ripper_args {
     struct parser_params *parser;

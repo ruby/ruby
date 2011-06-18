@@ -627,8 +627,6 @@ thread_start_func_1(void *th_ptr)
     return 0;
 }
 
-void rb_thread_create_control_thread(void);
-
 struct cached_thread_entry {
     volatile rb_thread_t **th_area;
     pthread_cond_t *cond;

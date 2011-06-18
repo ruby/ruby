@@ -160,8 +160,6 @@ usage(const char *name)
 	printf("  %s\n", *p++);
 }
 
-VALUE rb_get_load_path(void);
-
 #ifdef MANGLED_PATH
 static VALUE
 rubylib_mangled_path(const char *s, unsigned int l)

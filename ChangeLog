@@ -1,3 +1,15 @@
+Sat Jun 18 10:22:39 2011  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h: declare more internal functions.
+
+	* iseq.h (rb_method_get_iseq): declared.
+
+	* compile.c, eval.c, eval_error.c, iseq.c, parse.y, proc.c, range.c,
+	  ruby.c, time.c, util.c, vm.c: don't declare internal functions.
+
+	* eval.c, parse.y, thread_pthread.c: non-existing function declarations
+	  removed.
+
 Sat Jun 18 08:12:54 2011  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk: dependencies updated.

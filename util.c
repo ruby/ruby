@@ -10,6 +10,7 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
+#include "internal.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -260,9 +261,6 @@ static const char suffix1[] = ".$$$";
 static const char suffix2[] = ".~~~";
 
 #define strEQ(s1,s2) (strcmp((s1),(s2)) == 0)
-
-extern const char *ruby_find_basename(const char *, long *, long *);
-extern const char *ruby_find_extname(const char *, long *);
 
 void
 ruby_add_suffix(VALUE str, const char *suffix)

@@ -406,7 +406,6 @@ thread_cleanup_func(void *th_ptr, int atfork)
     native_thread_destroy(th);
 }
 
-extern void ruby_error_print(void);
 static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
 
 void

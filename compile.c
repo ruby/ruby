@@ -98,8 +98,6 @@ struct iseq_compile_data_ensure_node_stack {
 #define compile_debug iseq->compile_data->option->debug_level
 #endif
 
-NORETURN(PRINTF_ARGS(void rb_compile_bug(const char*, int, const char*, ...), 3, 4));
-
 #if CPDEBUG
 
 #define compile_debug_print_indent(level) \

@@ -25,6 +25,8 @@ struct rb_classext_struct {
     struct st_table *const_tbl;
 };
 
+struct vtm; /* defined by timev.h */
+
 /* bignum.c */
 VALUE rb_big_fdiv(VALUE x, VALUE y);
 VALUE rb_big_uminus(VALUE x);
@@ -40,6 +42,7 @@ int rb_dvar_defined(ID);
 int rb_local_defined(ID);
 int rb_parse_in_eval(void);
 int rb_parse_in_main(void);
+VALUE rb_insns_name_array(void);
 
 /* debug.c */
 PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
@@ -53,10 +56,19 @@ ID rb_id_encoding(void);
 /* encoding.c */
 void rb_gc_mark_encodings(void);
 
+/* error.c */
+NORETURN(PRINTF_ARGS(void rb_compile_bug(const char*, int, const char*, ...), 3, 4));
+VALUE rb_check_backtrace(VALUE);
+
+/* eval.c */
+ID rb_frame_callee(void);
+
 /* file.c */
 VALUE rb_home_dir(const char *user, VALUE result);
 VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
 void Init_File(void);
+const char *ruby_find_basename(const char *, long *, long *);
+const char *ruby_find_extname(const char *, long *);
 
 /* gc.c */
 void Init_heap(void);
@@ -88,6 +100,7 @@ void Init_newline(void);
 /* numeric.c */
 VALUE rb_rational_reciprocal(VALUE x);
 int rb_num_to_uint(VALUE val, unsigned int *ret);
+int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl);
 
 /* parse.y */
 VALUE rb_parser_get_yydebug(VALUE);
@@ -102,6 +115,9 @@ VALUE rb_reg_check_preprocess(VALUE);
 
 /* signal.c */
 int rb_get_next_signal(void);
+
+/* strftime.c */
+size_t rb_strftime_timespec(char *s, size_t maxsize, const char *format, const struct vtm *vtm, struct timespec *ts, int gmt);
 
 /* string.c */
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);

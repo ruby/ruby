@@ -27,6 +27,9 @@ VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 struct st_table *ruby_insn_make_insn_table(void);
 
+/* proc.c */
+rb_iseq_t *rb_method_get_iseq(VALUE body);
+
 struct rb_compile_option_struct {
     int inline_const_cache;
     int peephole_optimization;

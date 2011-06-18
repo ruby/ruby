@@ -1024,7 +1024,6 @@ iseq_s_disasm(VALUE klass, VALUE body)
 {
     VALUE ret = Qnil;
     rb_iseq_t *iseq;
-    extern rb_iseq_t *rb_method_get_iseq(VALUE body);
 
     rb_secure(1);
 

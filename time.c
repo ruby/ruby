@@ -4285,9 +4285,6 @@ rb_strftime(char *s, size_t maxsize, const char *format,
             const struct vtm *vtm, VALUE timev,
             int gmt);
 
-size_t
-rb_strftime_timespec(char *s, size_t maxsize, const char *format, const struct vtm *vtm, struct timespec *ts, int gmt);
-
 #define SMALLBUF 100
 static size_t
 rb_strftime_alloc(char **buf, const char *format,

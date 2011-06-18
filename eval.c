@@ -21,11 +21,8 @@
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 
-VALUE proc_invoke(VALUE, VALUE, VALUE, VALUE);
-VALUE rb_binding_new(void);
 NORETURN(void rb_raise_jump(VALUE));
 
-ID rb_frame_callee(void);
 VALUE rb_eLocalJumpError;
 VALUE rb_eSysStackError;
 

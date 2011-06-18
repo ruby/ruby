@@ -46,8 +46,6 @@ rb_vm_t *ruby_current_vm = 0;
 
 static void thread_free(void *ptr);
 
-VALUE rb_insns_name_array(void);
-
 void vm_analysis_operand(int insn, int n, VALUE op);
 void vm_analysis_register(int reg, int isset);
 void vm_analysis_insn(int insn);
