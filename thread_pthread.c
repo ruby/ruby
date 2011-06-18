@@ -40,12 +40,9 @@ static void native_cond_destroy(rb_thread_cond_t *cond);
 #define USE_MONOTONIC_COND 0
 #endif
 
-#define GVL_DEBUG 0
-
 static void
 __gvl_acquire(rb_vm_t *vm)
 {
-
     if (vm->gvl.acquired) {
 	vm->gvl.waiting++;
 	while (vm->gvl.acquired) {
@@ -127,8 +124,6 @@ gvl_yield(rb_vm_t *vm, rb_thread_t *th)
 static void
 gvl_init(rb_vm_t *vm)
 {
-    if (GVL_DEBUG) fprintf(stderr, "gvl init\n");
-
     native_mutex_initialize(&vm->gvl.lock);
     native_cond_initialize(&vm->gvl.cond, RB_CONDATTR_CLOCK_MONOTONIC);
     native_cond_initialize(&vm->gvl.switch_cond, RB_CONDATTR_CLOCK_MONOTONIC);
@@ -141,14 +136,12 @@ gvl_init(rb_vm_t *vm)
 static void
 gvl_destroy(rb_vm_t *vm)
 {
-    if (GVL_DEBUG) fprintf(stderr, "gvl destroy\n");
     native_mutex_destroy(&vm->gvl.lock);
 }
 
 static void
 gvl_atfork(rb_vm_t *vm)
 {
-    if (GVL_DEBUG) fprintf(stderr, "gvl atfork\n");
     gvl_init(vm);
     gvl_acquire(vm, GET_THREAD());
 }

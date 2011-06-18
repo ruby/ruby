@@ -1,3 +1,7 @@
+Sat Jun 18 21:36:29 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c: remove GVL_DEBUG
+
 Sat Jun 18 21:32:02 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm.c, vm_core.h (rb_vm_stack_to_heap): remove const.
