@@ -1,3 +1,8 @@
+Sat Jun 18 21:32:02 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm.c, vm_core.h (rb_vm_stack_to_heap): remove const.
+	  It makes compilations warnings.
+
 Sat Jun 18 18:54:15 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c, vm_core.h (rb_vm_stack_to_heap): fix "const" place.
