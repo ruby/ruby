@@ -478,7 +478,7 @@ rb_vm_make_env_object(rb_thread_t * th, rb_control_frame_t *cfp)
 }
 
 void
-rb_vm_stack_to_heap(rb_thread_t * const th)
+rb_vm_stack_to_heap(const rb_thread_t *th)
 {
     rb_control_frame_t *cfp = th->cfp;
     while ((cfp = rb_vm_get_ruby_level_next_cfp(th, cfp)) != 0) {

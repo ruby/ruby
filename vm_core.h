@@ -660,7 +660,7 @@ int rb_backtrace_each(rb_backtrace_iter_func *iter, void *arg);
 rb_control_frame_t *rb_vm_get_ruby_level_next_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 int rb_vm_get_sourceline(const rb_control_frame_t *);
 VALUE rb_name_err_mesg_new(VALUE obj, VALUE mesg, VALUE recv, VALUE method);
-void rb_vm_stack_to_heap(rb_thread_t *th);
+void rb_vm_stack_to_heap(const rb_thread_t *th);
 void ruby_thread_init_stack(rb_thread_t *th);
 
 NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));

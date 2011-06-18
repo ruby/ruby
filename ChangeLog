@@ -1,3 +1,7 @@
+Sat Jun 18 18:54:15 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c, vm_core.h (rb_vm_stack_to_heap): fix "const" place.
+
 Sat Jun 18 17:23:38 2011  Tanaka Akira  <akr@fsij.org>
 
 	* eval.c, hash.c, load.c, proc.c, range.c, thread.c, time.c: don't
