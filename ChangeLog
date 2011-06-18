@@ -1,3 +1,10 @@
+Sat Jun 18 23:59:24 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (fill_cbuf): finish reading at EOF, and the readconv has
+	  been cleared by another thread while io_fillbuf() is waiting at
+	  select().  a patch in [ruby-core:37197] by Hiroshi Shirosaki
+	  <h.shirosaki AT gmail.com>.  fixed #3840
+
 Sat Jun 18 21:36:29 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c: remove GVL_DEBUG

@@ -1717,6 +1717,9 @@ fill_cbuf(rb_io_t *fptr, int ec_flags)
             if (fptr->rbuf.len == 0) {
 		READ_CHECK(fptr);
                 if (io_fillbuf(fptr) == -1) {
+		    if (!fptr->readconv) {
+			return MORE_CHAR_FINISHED;
+		    }
                     ds = dp = (unsigned char *)fptr->cbuf.ptr + fptr->cbuf.off + fptr->cbuf.len;
                     de = (unsigned char *)fptr->cbuf.ptr + fptr->cbuf.capa;
                     res = rb_econv_convert(fptr->readconv, NULL, NULL, &dp, de, 0);
