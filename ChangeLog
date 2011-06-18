@@ -1,3 +1,7 @@
+Sat Jun 18 11:09:03 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c: supress warnings.
+
 Sat Jun 18 10:22:39 2011  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h: declare more internal functions.

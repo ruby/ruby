@@ -7470,7 +7470,8 @@ do_io_advise(rb_io_t *fptr, VALUE advice, off_t offset, off_t len)
     ias.offset = offset;
     ias.len    = len;
 
-    if (rv = (int)rb_thread_io_blocking_region(io_advise_internal, &ias, fptr->fd))
+    rv = (int)rb_thread_io_blocking_region(io_advise_internal, &ias, fptr->fd);
+    if (rv)
 	/* posix_fadvise(2) doesn't set errno. On success it returns 0; otherwise
 	   it returns the error code. */
 	rb_syserr_fail(rv, RSTRING_PTR(fptr->pathv));
@@ -8539,11 +8540,12 @@ maygvl_copy_stream_continue_p(int has_gvl, struct copy_stream_struct *stp)
 #if defined(ERESTART)
       case ERESTART:
 #endif
-	if (rb_thread_interrupted(stp->th))
+	if (rb_thread_interrupted(stp->th)) {
             if (has_gvl)
                 rb_thread_execute_interrupts(stp->th);
             else
                 rb_thread_call_with_gvl(exec_interrupts, (void *)stp->th);
+        }
 	return TRUE;
     }
     return FALSE;
