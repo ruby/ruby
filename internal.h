@@ -49,7 +49,7 @@ VALUE rb_obj_protected_methods(int argc, VALUE *argv, VALUE obj);
 VALUE rb_obj_private_methods(int argc, VALUE *argv, VALUE obj);
 VALUE rb_obj_public_methods(int argc, VALUE *argv, VALUE obj);
 int rb_obj_basic_to_s_p(VALUE);
-extern void Init_class_hierarchy(void);
+void Init_class_hierarchy(void);
 
 /* compile.c */
 int rb_dvar_defined(ID);
@@ -74,9 +74,6 @@ void rb_gc_mark_encodings(void);
 NORETURN(PRINTF_ARGS(void rb_compile_bug(const char*, int, const char*, ...), 3, 4));
 VALUE rb_check_backtrace(VALUE);
 
-/* eval.c */
-ID rb_frame_callee(void);
-
 /* eval_error.c */
 void ruby_error_print(void);
 VALUE rb_get_backtrace(VALUE info);
@@ -88,8 +85,6 @@ void rb_call_end_proc(VALUE data);
 VALUE rb_home_dir(const char *user, VALUE result);
 VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
 void Init_File(void);
-const char *ruby_find_basename(const char *, long *, long *);
-const char *ruby_find_extname(const char *, long *);
 
 /* gc.c */
 void Init_heap(void);
@@ -100,8 +95,6 @@ void rb_call_inits(void);
 /* io.c */
 const char *ruby_get_inplace_mode(void);
 void ruby_set_inplace_mode(const char *);
-int rb_io_fptr_finalize(struct rb_io_t*);
-ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
 ssize_t rb_io_bufread(VALUE io, void *buf, size_t size);
 void rb_stdio_set_default_encoding(void);
 
@@ -150,9 +143,7 @@ int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);
 
 /* time.c */
-struct timespec rb_time_timespec(VALUE time);
 struct timeval rb_time_timeval(VALUE);
-struct timeval rb_time_interval(VALUE);
 
 /* thread.c */
 VALUE rb_obj_is_mutex(VALUE obj);
@@ -165,10 +156,6 @@ VALUE rb_get_coverages(void);
 
 /* thread_pthread.c, thread_win32.c */
 void Init_native_thread(void);
-
-/* variable.c */
-VALUE rb_f_trace_var(int argc, VALUE *argv);
-VALUE rb_f_untrace_var(int argc, VALUE *argv);
 
 /* vm.c */
 VALUE rb_obj_is_thread(VALUE obj);
@@ -185,7 +172,6 @@ const void **rb_vm_get_insns_address_table(void);
 void rb_vm_bugreport(void);
 
 /* vm_eval.c */
-VALUE rb_funcall_passing_block(VALUE recv, ID mid, int argc, const VALUE *argv);
 void Init_vm_eval(void);
 
 /* vm_method.c */
