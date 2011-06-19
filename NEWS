@@ -206,6 +206,8 @@ with all sufficient information, see the ChangeLog file.
     * --jobs-status: Show status of jobs when parallel running.
     * --no-retry: Don't retry testcases which failed when parallel running.
     * --ruby=RUBY: path to ruby for job(worker) process. optional.
+    * --hide-skip: Hide skip messages. You'll see the number of skips at end of
+      test result.
 
 * uri
   * new methods:

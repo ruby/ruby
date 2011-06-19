@@ -1,3 +1,7 @@
+Sun Jun 19 13:31:26 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* NEWS: Introduce --hide-skip on test/unit.
+
 Sun Jun 19 10:05:16 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit/parallel.rb: Override Test::Unit::TestCase#on_parallel_worker?
