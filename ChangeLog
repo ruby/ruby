@@ -1,3 +1,11 @@
+Sun Jun 19 10:05:16 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit/parallel.rb: Override Test::Unit::TestCase#on_parallel_worker?
+	  only when $0 == __FILE__.
+
+	* lib/test/unit/parallel.rb: Run Test::Unit::Worker.run only when
+	  $0 == __FILE__.
+
 Sat Jun 18 23:59:24 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (fill_cbuf): finish reading at EOF, and the readconv has

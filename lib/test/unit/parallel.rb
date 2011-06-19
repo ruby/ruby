@@ -2,12 +2,6 @@ require 'test/unit'
 
 module Test
   module Unit
-    class TestCase < MiniTest::Unit::TestCase
-      def on_parallel_worker?
-        true
-      end
-    end
-
     class Worker < Runner
       class << self
         undef autorun
@@ -148,4 +142,16 @@ module Test
   end
 end
 
-Test::Unit::Worker.new.run(ARGV)
+if $0 == __FILE__
+  module Test
+    module Unit
+      class TestCase < MiniTest::Unit::TestCase
+        def on_parallel_worker?
+          true
+        end
+      end
+    end
+  end
+
+  Test::Unit::Worker.new.run(ARGV)
+end
