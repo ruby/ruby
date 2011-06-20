@@ -1,3 +1,8 @@
+Mon Jun 20 21:31:03 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (thread_timer): rename timeout_10ms to
+	  time_quantum. it's no longer 10ms.
+
 Mon Jun 20 18:46:02 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_cipher.c, ext/openssl/lib/openssl/cipher.rb:

@@ -984,15 +984,15 @@ static pthread_mutex_t timer_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 static void *
 thread_timer(void *dummy)
 {
-    struct timespec timeout_10ms;
+    struct timespec time_quantum;
     struct timespec timeout;
 
-    timeout_10ms.tv_sec = 0;
-    timeout_10ms.tv_nsec = TIME_QUANTUM_USEC * 1000;
+    time_quantum.tv_sec = 0;
+    time_quantum.tv_nsec = TIME_QUANTUM_USEC * 1000;
 
     native_mutex_lock(&timer_thread_lock);
     native_cond_broadcast(&timer_thread_cond);
-    timeout = native_cond_timeout(&timer_thread_cond, timeout_10ms);
+    timeout = native_cond_timeout(&timer_thread_cond, time_quantum);
 
     while (system_working > 0) {
 	int err;
@@ -1008,7 +1008,7 @@ thread_timer(void *dummy)
 	else if (err == ETIMEDOUT) {
 	    ping_signal_thread_list();
 	    timer_thread_function(dummy);
-	    timeout = native_cond_timeout(&timer_thread_cond, timeout_10ms);
+	    timeout = native_cond_timeout(&timer_thread_cond, time_quantum);
 	}
 	else
 	    rb_bug_errno("thread_timer/timedwait", err);
