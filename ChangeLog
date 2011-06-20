@@ -1,3 +1,13 @@
+Mon Jun 20 15:41:33 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* lib/webrick/cookie.rb (WEBrick::Cookie.parse): Revert r31228.
+	  r31228 was for allowing the 'Cookie:' header which did not have no
+	  SP after ';' for separating cookie-pairs but RFC6265 requires single
+	  SP after ';' there.  We allow multiple SPs here for compatibility
+	  with older WEBrick version.
+
+	* test/webrick/test_cookie.rb: Test it.
+
 Sun Jun 19 13:31:26 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* NEWS: Introduce --hide-skip on test/unit.
