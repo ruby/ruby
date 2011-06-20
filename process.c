@@ -984,6 +984,12 @@ static RETSIGTYPE (*saved_sigpipe_handler)(int) = 0;
 # define signal(a,b) posix_signal((a),(b))
 #endif
 
+#ifdef SIGPIPE
+static RETSIGTYPE sig_do_nothing(int sig)
+{
+}
+#endif
+
 static void before_exec(void)
 {
     /*
@@ -999,7 +1005,7 @@ static void before_exec(void)
      * child process interaction might fail. (e.g. ruby -e "system 'yes | ls'")
      * [ruby-dev:12261]
      */
-    saved_sigpipe_handler = signal(SIGPIPE, SIG_DFL);
+    saved_sigpipe_handler = signal(SIGPIPE, sig_do_nothing);
 #endif
 
     if (!forked_child) {

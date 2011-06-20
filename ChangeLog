@@ -1,3 +1,9 @@
+Mon Jun 20 22:52:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* process.c (before_exec): use sig_do_nothing instead of SIG_DFL
+	  for avoiding a race.
+	* process.c (sig_do_nothing): new function.
+
 Mon Jun 20 21:31:03 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (thread_timer): rename timeout_10ms to
