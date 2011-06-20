@@ -53,7 +53,7 @@ module OpenSSL
       return str
     end
 
-    # This class is only provided for backwards compatibility.  Use OpenSSL::Digest in the future.
+    # This class is only provided for backwards compatibility.  Use OpenSSL::Cipher in the future.
     class Cipher < Cipher
       # add warning
     end

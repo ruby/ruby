@@ -444,7 +444,7 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
 
 /*
  *  call-seq:
- *     cipher.key_length = integer -> integer
+ *     cipher.key_len = integer -> integer
  *
  *  Sets the key length of the cipher.  If the cipher is a fixed length cipher then attempting to set the key
  *  length to any value other than the fixed value is an error.
@@ -507,13 +507,13 @@ CIPHER_0ARG_INT(block_size)
 #if 0
 /*
  *  call-seq:
- *     cipher.key_length -> integer
+ *     cipher.key_len -> integer
  *
  */
 static VALUE ossl_cipher_key_length() { }
 /*
  *  call-seq:
- *     cipher.iv_length -> integer
+ *     cipher.iv_len -> integer
  *
  */
 static VALUE ossl_cipher_iv_length() { }

@@ -1,3 +1,8 @@
+Mon Jun 20 18:46:02 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_cipher.c, ext/openssl/lib/openssl/cipher.rb:
+	  Documentation fix by Ippei Obayashi. See #4419.
+
 Mon Jun 20 15:41:33 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* lib/webrick/cookie.rb (WEBrick::Cookie.parse): Revert r31228.
