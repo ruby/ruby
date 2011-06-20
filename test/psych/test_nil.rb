@@ -4,7 +4,7 @@ module Psych
   class TestNil < TestCase
     def test_nil
       yml = Psych.dump nil
-      assert_equal "--- \n...\n", yml
+      assert_match /--- \n(?:\.\.\.\n)?/, yml
       assert_equal nil, Psych.load(yml)
     end
 
