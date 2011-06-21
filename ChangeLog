@@ -1,3 +1,9 @@
+Tue Jun 21 19:46:23 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_thread.rb (TestThread#test_priority): enable
+	  this test again. Current GVL respect thread priority rather
+	  than past.
+	  
 Tue Jun 21 13:25:35 2011  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/readline.c (readline_getc): applied a patch in
