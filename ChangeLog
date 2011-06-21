@@ -2,7 +2,8 @@ Wed Jun 22 01:28:13 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* test/openssl/test_x509store.rb (test_set_errors): Redhat is
 	  distributing a patched version of OpenSSL that allows multiple CRL
-	  for a key (multi-crl.patch.) Make test pass on such env.
+	  for a key (multi-crl.patch.) Make test pass on such env. See #4122,
+	  #4554.
 
 Tue Jun 21 21:50:37 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
