@@ -159,6 +159,7 @@ void *rb_thread_call_with_gvl(void *(*func)(void *), void *data1);
 void rb_clear_trace_func(void);
 VALUE rb_thread_backtrace(VALUE thval);
 VALUE rb_get_coverages(void);
+VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
 
 /* thread_pthread.c, thread_win32.c */
 void Init_native_thread(void);
