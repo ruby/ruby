@@ -1,3 +1,10 @@
+Wed Jun 22 02:39:54 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP.post_form): Do not ignore query part of
+	  the given URI to post. See #655.
+
+	* test/net/http/test_http.rb, test/net/http/utils.rb: Test it.
+
 Wed Jun 22 01:28:13 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* test/openssl/test_x509store.rb (test_set_errors): Redhat is

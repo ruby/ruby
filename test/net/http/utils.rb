@@ -91,6 +91,7 @@ module TestNetHTTPUtils
     # echo server
     def do_POST(req, res)
       res['Content-Type'] = req['Content-Type']
+      res['X-request-uri'] = req.request_uri.to_s
       res.body = req.body
       res.chunked = @chunked
     end
