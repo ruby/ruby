@@ -258,6 +258,33 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
     assert_equal(stopped, 1)
   end
 
+  def test_response_io_without_chunked_set
+    config = {
+      :ServerName => "localhost"
+    }
+    TestWEBrick.start_httpserver(config){|server, addr, port, log|
+      server.mount_proc("/", lambda { |req, res|
+        r,w = IO.pipe
+        # Test for not setting chunked...
+        # res.chunked = true
+        res.body = r
+        w << "foo"
+        w.close
+      })
+      Thread.pass while server.status != :Running
+      http = Net::HTTP.new(addr, port)
+      req = Net::HTTP::Get.new("/")
+      req['Connection'] = 'Keep-Alive'
+      begin
+        timeout(2) do
+          http.request(req){|res| assert_equal("foo", res.body) }
+        end
+      rescue Timeout::Error
+        flunk('corrupted reponse')
+      end
+    }
+  end
+
   def test_request_handler_callback_is_deprecated
     requested = 0
     config = {

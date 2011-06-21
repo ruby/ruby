@@ -1,3 +1,11 @@
+Tue Jun 21 21:50:37 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* lib/webrick/httpresponse.rb (HTTPResponse#setup_header): Close 
+	  HTTP/1.1 connection when returning an IO object as response body 
+	  without setting HTTPResponse#chunked to true. See #855 no.1.
+
+	* test/webrick/test_httpserver.rb: Test it.
+
 Tue Jun 21 21:27:34 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* internal.h: move rb_thread_io_blocking_region() declaration

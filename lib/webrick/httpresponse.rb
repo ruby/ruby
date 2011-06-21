@@ -204,6 +204,11 @@ module WEBrick
       elsif keep_alive?
         if chunked? || @header['content-length']
           @header['connection'] = "Keep-Alive"
+        else
+          msg = "Could not determine content-length of response body. Set content-length of the response or set Response#chunked = true"
+          @logger.warn(msg)
+          @header['connection'] = "close"
+          @keep_alive = false
         end
       else
         @header['connection'] = "close"
