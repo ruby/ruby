@@ -187,6 +187,14 @@ void Init_eval_method(void);
 /* miniprelude.c, prelude.c */
 void Init_prelude(void);
 
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

@@ -1,3 +1,14 @@
+Tue Jun 21 21:27:34 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* internal.h: move rb_thread_io_blocking_region() declaration
+	  from intern.h to internal.h. It's still experimental API and
+	  need more discussion. [ruby-dev:43698]
+	* include/ruby/intern.h: ditto.
+
+	* ext/socket/rubysocket.h: include internal.h.
+	* ext/socket/depend: add internal.h dependency.
+	* ext/socket/extconf.rb: add $INCFLAGS to topdir.
+
 Tue Jun 21 20:38:47 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (datetime_s_*): canonicalize 24 o'clock.

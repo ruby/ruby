@@ -1,5 +1,7 @@
 require 'mkmf'
 
+$INCFLAGS << " -I$(topdir) -I$(top_srcdir)"
+
 case RUBY_PLATFORM
 when /(ms|bcc)win(32|64)|mingw/
   test_func = "WSACleanup"
