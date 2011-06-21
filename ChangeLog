@@ -2,7 +2,7 @@ Tue Jun 21 19:56:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* internal.h: move rb_thread_io_blocking_region() declaration
 	  from intern.h to internal.h. It's still experimental API and
-	  need more discussion.
+	  need more discussion. [ruby-dev:43698]
 	* include/ruby/intern.h: ditto.
 	
 Tue Jun 21 19:46:23 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
