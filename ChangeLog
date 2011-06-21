@@ -1,3 +1,8 @@
+Tue Jun 21 13:25:35 2011  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/readline.c (readline_getc): applied a patch in
+	  #3827 by by Akio Tajima <artonx AT yahoo.co.jp>. (see #3827)
+
 Tue Jun 21 13:16:31 2011  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/extconf.rb: fixed bug, specify --disable-libedit
