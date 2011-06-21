@@ -36,18 +36,21 @@ have_library("ncurses", "tgetnum") ||
 
 case enable_libedit
 when true
+  # --enable-libedit
   unless (have_readline_header("editline/readline.h") ||
           have_readline_header("readline/readline.h")) &&
           have_library("edit", "readline")
     exit
   end
-when nil
+when false
+  # --disable-libedit
   unless ((have_readline_header("readline/readline.h") &&
            have_readline_header("readline/history.h")) &&
            have_library("readline", "readline"))
     exit
   end
 else
+  # does not specify
   unless ((have_readline_header("readline/readline.h") &&
            have_readline_header("readline/history.h")) &&
            (have_library("readline", "readline") ||

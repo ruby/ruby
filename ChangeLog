@@ -1,3 +1,9 @@
+Tue Jun 21 13:16:31 2011  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/extconf.rb: fixed bug, specify --disable-libedit
+	  then disable libedit, does not specify then check readline and
+	  libedit if failed checking readline. (fixes #3375)
+
 Mon Jun 20 22:52:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* process.c (before_exec): use sig_do_nothing instead of SIG_DFL
