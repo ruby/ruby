@@ -182,7 +182,6 @@ module Psych
         when /^!ruby\/object:?(.*)?$/
           name = $1 || 'Object'
           obj = revive((resolve_class(name) || Object), o)
-          @st[o.anchor] = obj if o.anchor
           obj
 
         when /^!map:(.*)$/, /^!ruby\/hash:(.*)$/
@@ -233,6 +232,7 @@ module Psych
 
       def revive klass, node
         s = klass.allocate
+        @st[node.anchor] = s if node.anchor
         h = Hash[*node.children.map { |c| accept c }]
         init_with(s, h, node)
       end

@@ -1,3 +1,9 @@
+Wed Jun 22 03:20:52 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: Fix cyclic references of
+	  objects.  Thanks to CvX for reporting the bug and a test case.
+	* test/psych/test_object.rb: test for cyclic object references.
+
 Wed Jun 22 02:39:54 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP.post_form): Do not ignore query part of
