@@ -1,3 +1,7 @@
+Tue Jun 21 20:38:47 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (datetime_s_*): canonicalize 24 o'clock.
+
 Tue Jun 21 19:56:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* internal.h: move rb_thread_io_blocking_region() declaration

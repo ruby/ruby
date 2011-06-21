@@ -180,6 +180,21 @@ class TestSH < Test::Unit::TestCase
 		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])
   end
 
+  def test_canon24oc
+    d = DateTime.jd(2451943,24)
+    assert_equal([2001, 2, 3, 0, 0, 0, 0],
+		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])
+    d = DateTime.ordinal(2001,33,24)
+    assert_equal([2001, 2, 3, 0, 0, 0, 0],
+		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])
+    d = DateTime.new(2001,2,2,24)
+    assert_equal([2001, 2, 3, 0, 0, 0, 0],
+		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])
+    d = DateTime.commercial(2001,5,5,24)
+    assert_equal([2001, 2, 3, 0, 0, 0, 0],
+		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])
+  end
+
   def test_zone
     d = Date.new(2001, 2, 3)
     assert_equal(Encoding::US_ASCII, d.send(:zone).encoding)

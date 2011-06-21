@@ -3087,6 +3087,14 @@ s_trunc(VALUE s, VALUE *fr)
     }\
 }
 
+#define canon24oc() \
+{\
+    if (rh == 24) {\
+	rh = 0;\
+	fr2 = f_add(fr2, INT2FIX(1));\
+    }\
+}
+
 #define add_frac() \
 {\
     if (f_nonzero_p(fr2))\
@@ -7188,6 +7196,7 @@ datetime_s_jd(int argc, VALUE *argv, VALUE klass)
 
 	if (!c_valid_time_p(h, min, s, &rh, &rmin, &rs))
 	    rb_raise(rb_eArgError, "invalid date");
+	canon24oc();
 
 	decode_jd(jd, &nth, &rjd);
 	rjd2 = jd_local_to_utc(rjd,
@@ -7265,6 +7274,7 @@ datetime_s_ordinal(int argc, VALUE *argv, VALUE klass)
 	    rb_raise(rb_eArgError, "invalid date");
 	if (!c_valid_time_p(h, min, s, &rh, &rmin, &rs))
 	    rb_raise(rb_eArgError, "invalid date");
+	canon24oc();
 
 	rjd2 = jd_local_to_utc(rjd,
 			       time_to_df(rh, rmin, rs),
@@ -7344,6 +7354,7 @@ datetime_s_civil(int argc, VALUE *argv, VALUE klass)
 	    rb_raise(rb_eArgError, "invalid date");
 	if (!c_valid_time_p(h, min, s, &rh, &rmin, &rs))
 	    rb_raise(rb_eArgError, "invalid date");
+	canon24oc();
 
 	ret = d_complex_new_internal(klass,
 				     nth, 0,
@@ -7364,6 +7375,7 @@ datetime_s_civil(int argc, VALUE *argv, VALUE klass)
 	    rb_raise(rb_eArgError, "invalid date");
 	if (!c_valid_time_p(h, min, s, &rh, &rmin, &rs))
 	    rb_raise(rb_eArgError, "invalid date");
+	canon24oc();
 
 	rjd2 = jd_local_to_utc(rjd,
 			       time_to_df(rh, rmin, rs),
@@ -7442,7 +7454,7 @@ datetime_s_commercial(int argc, VALUE *argv, VALUE klass)
 	    rb_raise(rb_eArgError, "invalid date");
 	if (!c_valid_time_p(h, min, s, &rh, &rmin, &rs))
 	    rb_raise(rb_eArgError, "invalid date");
-
+	canon24oc();
 
 	rjd2 = jd_local_to_utc(rjd,
 			       time_to_df(rh, rmin, rs),
@@ -7513,11 +7525,11 @@ datetime_s_weeknum(int argc, VALUE *argv, VALUE klass)
 	    rb_raise(rb_eArgError, "invalid date");
 	if (!c_valid_time_p(h, min, s, &rh, &rmin, &rs))
 	    rb_raise(rb_eArgError, "invalid date");
+	canon24oc();
 
 	rjd2 = jd_local_to_utc(rjd,
 			       time_to_df(rh, rmin, rs),
 			       rof);
-
 	ret = d_complex_new_internal(klass,
 				     nth, rjd2,
 				     0, INT2FIX(0),
@@ -7582,11 +7594,11 @@ datetime_s_nth_kday(int argc, VALUE *argv, VALUE klass)
 	    rb_raise(rb_eArgError, "invalid date");
 	if (!c_valid_time_p(h, min, s, &rh, &rmin, &rs))
 	    rb_raise(rb_eArgError, "invalid date");
+	canon24oc();
 
 	rjd2 = jd_local_to_utc(rjd,
 			       time_to_df(rh, rmin, rs),
 			       rof);
-
 	ret = d_complex_new_internal(klass,
 				     nth, rjd2,
 				     0, INT2FIX(0),
