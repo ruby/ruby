@@ -1,3 +1,10 @@
+Wed Jun 22 12:41:03 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl_session.c (ossl_ssl_session_to_der):
+	  OpenSSL::SSL::Session#to_der was broken. Fix buffer handling.
+
+	* test/openssl/test_ssl_session.rb (test_session): Test it.
+
 Wed Jun 22 12:38:52 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* test/openssl/test_ssl_session.rb: Split out SSL::Session related

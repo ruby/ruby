@@ -195,20 +195,21 @@ static VALUE ossl_ssl_session_get_id(VALUE self)
 static VALUE ossl_ssl_session_to_der(VALUE self)
 {
 	SSL_SESSION *ctx;
-	unsigned char buf[1024*10], *p;
+	unsigned char *p;
 	int len;
+	VALUE str;
 
 	GetSSLSession(self, ctx);
-
-	p = buf;
-	len = i2d_SSL_SESSION(ctx, &p);
-
-	if (len <= 0)
+	len = i2d_SSL_SESSION(ctx, NULL);
+	if (len <= 0) {
 		ossl_raise(eSSLSession, "i2d_SSL_SESSION");
-	else if (len >= (int)sizeof(buf))
-		ossl_raise(eSSLSession, "i2d_SSL_SESSION too large");
+	}
 
-	return rb_str_new((const char *) p, len);
+	str = rb_str_new(0, len);
+	p = (unsigned char *)RSTRING_PTR(str);
+	i2d_SSL_SESSION(ctx, &p);
+	ossl_str_adjust(str, p);
+	return str;
 }
 
 /*

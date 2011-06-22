@@ -3,6 +3,35 @@ require_relative "utils"
 if defined?(OpenSSL)
 
 class OpenSSL::TestSSLSession < OpenSSL::SSLTestCase
+  def test_session
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true) do |server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx = OpenSSL::SSL::SSLContext.new("TLSv1")
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      ssl.sync_close = true
+      ssl.connect
+      session = ssl.session
+      assert(session == OpenSSL::SSL::Session.new(session.to_pem))
+      assert(session == OpenSSL::SSL::Session.new(ssl))
+      assert_equal(300, session.timeout)
+      session.timeout = 5
+      assert_equal(5, session.timeout)
+      assert_not_nil(session.time)
+      # SSL_SESSION_time keeps long value so we can't keep nsec fragment.
+      session.time = t1 = Time.now.to_i
+      assert_equal(Time.at(t1), session.time)
+      if session.respond_to?(:id)
+        assert_not_nil(session.id)
+      end
+      pem = session.to_pem
+      assert_match(/\A-----BEGIN SSL SESSION PARAMETERS-----/, pem)
+      assert_match(/-----END SSL SESSION PARAMETERS-----\Z/, pem)
+      pem.gsub!(/-----(BEGIN|END) SSL SESSION PARAMETERS-----/, '').gsub!(/[\r\n]+/m, '')
+      assert_equal(session.to_der, pem.unpack('m*')[0])
+      ssl.close
+    end
+  end
+
   def test_client_session
     last_session = nil
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true) do |server, port|
