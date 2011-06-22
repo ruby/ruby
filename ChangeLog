@@ -1,3 +1,9 @@
+Wed Jun 22 14:47:53 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_buffering.rb
+	* test/openssl/test_pkcs12.rb: Inherit from Test::Unit::TestCase
+	  instead of Mintest::Unit::TestCase. [ruby-core:37275]
+	  
 Wed Jun 22 12:41:03 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl_session.c (ossl_ssl_session_to_der):

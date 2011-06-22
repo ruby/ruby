@@ -3,7 +3,7 @@ require_relative "utils"
 if defined?(OpenSSL)
 
 module OpenSSL
-  class TestPKCS12 < MiniTest::Unit::TestCase
+  class TestPKCS12 < Test::Unit::TestCase
     include OpenSSL::TestUtils
 
     def setup
