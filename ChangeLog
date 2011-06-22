@@ -1,3 +1,9 @@
+Wed Jun 22 15:01:24 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_ssl.c: Use SSL_MODE_RELEASE_BUFFERS if available.
+	  Thanks, Eric Wong, for providing the patch.
+	  [ Ruby 1.9 - Feature #4672 ] [ruby-core:36127]
+
 Wed Jun 22 14:47:53 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_buffering.rb

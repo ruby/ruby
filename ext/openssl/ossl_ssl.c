@@ -140,12 +140,17 @@ static VALUE
 ossl_sslctx_s_alloc(VALUE klass)
 {
     SSL_CTX *ctx;
+    long mode = SSL_MODE_ENABLE_PARTIAL_WRITE;
+
+#ifdef SSL_MODE_RELEASE_BUFFERS
+    mode |= SSL_MODE_RELEASE_BUFFERS;
+#endif
 
     ctx = SSL_CTX_new(SSLv23_method());
     if (!ctx) {
         ossl_raise(eSSLError, "SSL_CTX_new:");
     }
-    SSL_CTX_set_mode(ctx, SSL_MODE_ENABLE_PARTIAL_WRITE);
+    SSL_CTX_set_mode(ctx, mode);
     SSL_CTX_set_options(ctx, SSL_OP_ALL);
     return Data_Wrap_Struct(klass, 0, ossl_sslctx_free, ctx);
 }
