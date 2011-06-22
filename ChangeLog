@@ -1,3 +1,16 @@
+Wed Jun 22 19:47:03 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* cont.c (cont_capture): add volatile.
+	  On clang -O, it is needed to avoid the optimization.
+	  With this and llvm/clang's recent fix, clang 3.0 can
+	  build ruby-trunk with -O option.
+
+	* cont.c (cont_capture): use for-loop.
+
+	* array.c (rb_ary_each): add volatile and use it.
+
+	* vm_insnhelper.c (vm_call_cfunc): ditto.
+
 Wed Jun 22 18:20:46 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_sslctx_session_remove_cb):

@@ -1468,9 +1468,10 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
  */
 
 VALUE
-rb_ary_each(VALUE ary)
+rb_ary_each(VALUE array)
 {
     long i;
+    volatile VALUE ary = array;
 
     RETURN_ENUMERATOR(ary, 0, 0);
     for (i=0; i<RARRAY_LEN(ary); i++) {

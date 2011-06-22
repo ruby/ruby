@@ -386,11 +386,11 @@ call_cfunc(VALUE (*func)(), VALUE recv,
 }
 
 static inline VALUE
-vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
+vm_call_cfunc(rb_thread_t *th, volatile rb_control_frame_t *reg_cfp,
 	      int num, VALUE recv, const rb_block_t *blockptr,
 	      const rb_method_entry_t *me)
 {
-    VALUE val = 0;
+    volatile VALUE val = 0;
     const rb_method_definition_t *def = me->def;
     rb_control_frame_t *cfp;
 

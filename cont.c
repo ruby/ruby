@@ -437,7 +437,7 @@ cont_capture(volatile int *stat)
     cont_save_machine_stack(th, cont);
 
     if (ruby_setjmp(cont->jmpbuf)) {
-	VALUE value;
+	volatile VALUE value;
 
 	value = cont->value;
 	if (cont->argc == -1) rb_exc_raise(value);
@@ -654,9 +654,10 @@ cont_restore_1(rb_context_t *cont)
     }
 #endif
     if (cont->machine_stack_src) {
+	size_t i;
 	FLUSH_REGISTER_WINDOWS;
-	MEMCPY(cont->machine_stack_src, cont->machine_stack,
-	       VALUE, cont->machine_stack_size);
+	for (i = 0; i < cont->machine_stack_size; i++)
+	    cont->machine_stack_src[i] = cont->machine_stack[i];
     }
 
 #ifdef __ia64
