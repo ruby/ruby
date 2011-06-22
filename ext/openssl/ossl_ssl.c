@@ -406,7 +406,6 @@ ossl_sslctx_session_new_cb(SSL *ssl, SSL_SESSION *sess)
     return RTEST(ret_obj) ? 1 : 0;
 }
 
-#if 0				/* unused */
 static VALUE
 ossl_call_session_remove_cb(VALUE ary)
 {
@@ -420,7 +419,6 @@ ossl_call_session_remove_cb(VALUE ary)
 
     return rb_funcall(cb, rb_intern("call"), 1, ary);
 }
-#endif
 
 static void
 ossl_sslctx_session_remove_cb(SSL_CTX *ctx, SSL_SESSION *sess)
@@ -442,7 +440,7 @@ ossl_sslctx_session_remove_cb(SSL_CTX *ctx, SSL_SESSION *sess)
     rb_ary_push(ary, sslctx_obj);
     rb_ary_push(ary, sess_obj);
 
-    ret_obj = rb_protect((VALUE(*)_((VALUE)))ossl_call_session_new_cb, ary, &state);
+    ret_obj = rb_protect((VALUE(*)_((VALUE)))ossl_call_session_remove_cb, ary, &state);
     if (state) {
 /*
   the SSL_CTX is frozen, nowhere to save state.

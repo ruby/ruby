@@ -1,3 +1,11 @@
+Wed Jun 22 18:20:46 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_session_remove_cb):
+	  OpenSSL::SSL::SSLContext#session_remove_cb was broken. It wrongly
+	  tried to call the session_*new*_cb callback.
+
+	* test/openssl/test_ssl_session.rb (class OpenSSL): Test it.
+
 Wed Jun 22 17:37:49 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl.h: Introduced OSSL_BIO_reset macro for PEM/DER

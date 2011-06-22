@@ -28,6 +28,7 @@ class OpenSSL::TestSSLSession < OpenSSL::SSLTestCase
       assert_match(/-----END SSL SESSION PARAMETERS-----\Z/, pem)
       pem.gsub!(/-----(BEGIN|END) SSL SESSION PARAMETERS-----/, '').gsub!(/[\r\n]+/m, '')
       assert_equal(session.to_der, pem.unpack('m*')[0])
+      assert_not_nil(session.to_text)
       ssl.close
     end
   end
@@ -151,6 +152,35 @@ class OpenSSL::TestSSLSession < OpenSSL::SSLTestCase
 
         ssl.close
       end
+    end
+  end
+
+  def test_ctx_client_session_cb
+    called = {}
+    ctx = OpenSSL::SSL::SSLContext.new("SSLv3")
+    ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT
+    ctx.session_new_cb = lambda { |ary|
+      sock, sess = ary
+      called[:new] = [sock, sess]
+      true
+    }
+    ctx.session_remove_cb = lambda { |ary|
+      ctx, sess = ary
+      called[:remove] = [ctx, sess]
+      # any resulting value is OK (ignored)
+    }
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true) do |server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      ssl.sync_close = true
+      ssl.connect
+      assert_equal(1, ctx.session_cache_stats[:cache_num])
+      assert_equal(1, ctx.session_cache_stats[:connect_good])
+      assert_equal([ssl, ssl.session], called[:new])
+      assert(ctx.session_remove(ssl.session))
+      assert(!ctx.session_remove(ssl.session))
+      assert_equal([ctx, ssl.session], called[:remove])
+      ssl.close
     end
   end
 end
