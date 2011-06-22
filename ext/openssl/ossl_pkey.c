@@ -18,9 +18,6 @@ VALUE cPKey;
 VALUE ePKeyError;
 ID id_private_q;
 
-#define reset_bio(b)		(void)BIO_reset((b)); \
-				(void)ERR_get_error();
-
 /*
  * callback for generating keys
  */
@@ -114,14 +111,14 @@ ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
 
      bio = ossl_obj2bio(data);
      if (!(pkey = d2i_PrivateKey_bio(bio, NULL))) {
-	reset_bio(bio);
+	OSSL_BIO_reset(bio);
 	if (!NIL_P(pass)) {
 	    passwd = StringValuePtr(pass);
 	}
 	if (!(pkey = PEM_read_bio_PrivateKey(bio, NULL, ossl_pem_passwd_cb, passwd))) {
-	    reset_bio(bio);
+	    OSSL_BIO_reset(bio);
 	    if (!(pkey = d2i_PUBKEY_bio(bio, NULL))) {
-		reset_bio(bio);
+		OSSL_BIO_reset(bio);
 		if (!NIL_P(pass)) {
 		    passwd = StringValuePtr(pass);
 		}

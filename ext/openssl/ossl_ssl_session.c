@@ -53,7 +53,7 @@ static VALUE ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 		ctx = PEM_read_bio_SSL_SESSION(in, NULL, NULL, NULL);
 
 		if (!ctx) {
-			(void)BIO_reset(in);
+		        OSSL_BIO_reset(in);
 			ctx = d2i_SSL_SESSION_bio(in, NULL);
 		}
 
@@ -152,7 +152,7 @@ static VALUE ossl_ssl_session_get_timeout(VALUE self)
 		} else if (FIXNUM_P(time_v)) {					\
 			;							\
 		} else {							\
-			rb_raise(rb_eArgError, "unknown type");			\
+			ossl_raise(rb_eArgError, "unknown type");			\
 		}								\
 										\
 		t = NUM2ULONG(time_v);						\

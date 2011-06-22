@@ -180,13 +180,11 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
 	in = ossl_obj2bio(arg);
 	dh = PEM_read_bio_DHparams(in, NULL, NULL, NULL);
 	if (!dh){
-	    (void)BIO_reset(in);
-	    (void)ERR_get_error();
+	    OSSL_BIO_reset(in);
 	    dh = d2i_DHparams_bio(in, NULL);
 	}
 	BIO_free(in);
 	if (!dh) {
-	    (void)ERR_get_error();
 	    ossl_raise(eDHError, NULL);
 	}
     }

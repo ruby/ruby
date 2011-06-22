@@ -102,7 +102,7 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
     crl = PEM_read_bio_X509_CRL(in, &x, NULL, NULL);
     DATA_PTR(self) = x;
     if (!crl) {
-	(void)BIO_reset(in);
+	OSSL_BIO_reset(in);
 	crl = d2i_X509_CRL_bio(in, &x);
 	DATA_PTR(self) = x;
     }

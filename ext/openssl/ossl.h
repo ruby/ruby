@@ -138,6 +138,13 @@ do{\
 int ossl_pem_passwd_cb(char *, int, int, void *);
 
 /*
+ * Clear BIO* with this in PEM/DER fallback scenarios to avoid decoding
+ * errors piling up in OpenSSL::Errors
+ */
+#define OSSL_BIO_reset(bio)	(void)BIO_reset((bio)); \
+				ERR_clear_error();
+
+/*
  * ERRor messages
  */
 #define OSSL_ErrMsg() ERR_reason_error_string(ERR_get_error())

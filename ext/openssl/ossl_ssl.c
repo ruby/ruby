@@ -493,7 +493,7 @@ ossl_call_servername_cb(VALUE ary)
         Data_Get_Struct(ret_obj, SSL_CTX, ctx2);
         SSL_set_SSL_CTX(ssl, ctx2);
     } else if (!NIL_P(ret_obj)) {
-            rb_raise(rb_eArgError, "servername_cb must return an OpenSSL::SSL::SSLContext object or nil");
+            ossl_raise(rb_eArgError, "servername_cb must return an OpenSSL::SSL::SSLContext object or nil");
     }
 
     return ret_obj;
@@ -952,7 +952,7 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
     } else if (rb_obj_is_instance_of(arg1, rb_cTime)) {
         tm = NUM2LONG(rb_funcall(arg1, rb_intern("to_i"), 0));
     } else {
-        rb_raise(rb_eArgError, "arg must be Time or nil");
+        ossl_raise(rb_eArgError, "arg must be Time or nil");
     }
 
     SSL_CTX_flush_sessions(ctx, (long)tm);

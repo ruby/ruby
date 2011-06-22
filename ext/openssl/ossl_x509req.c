@@ -110,7 +110,7 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
     req = PEM_read_bio_X509_REQ(in, &x, NULL, NULL);
     DATA_PTR(self) = x;
     if (!req) {
-	(void)BIO_reset(in);
+	OSSL_BIO_reset(in);
 	req = d2i_X509_REQ_bio(in, &x);
 	DATA_PTR(self) = x;
     }

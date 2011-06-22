@@ -293,7 +293,7 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
     if(!NIL_P(vsalt)){
 	StringValue(vsalt);
 	if(RSTRING_LEN(vsalt) != PKCS5_SALT_LEN)
-	    rb_raise(eCipherError, "salt must be an 8-octet string");
+	    ossl_raise(eCipherError, "salt must be an 8-octet string");
 	salt = (unsigned char *)RSTRING_PTR(vsalt);
     }
     iter = NIL_P(viter) ? 2048 : NUM2INT(viter);
@@ -331,7 +331,7 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
     StringValue(data);
     in = (unsigned char *)RSTRING_PTR(data);
     if ((in_len = RSTRING_LENINT(data)) == 0)
-        rb_raise(rb_eArgError, "data must not be empty");
+        ossl_raise(rb_eArgError, "data must not be empty");
     GetCipher(self, ctx);
     out_len = in_len+EVP_CIPHER_CTX_block_size(ctx);
 
