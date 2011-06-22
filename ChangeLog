@@ -1,3 +1,8 @@
+Wed Jun 22 12:38:52 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* test/openssl/test_ssl_session.rb: Split out SSL::Session related
+	  tests from test_ssl.rb
+
 Wed Jun 22 03:20:52 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: Fix cyclic references of
