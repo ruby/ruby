@@ -149,7 +149,7 @@ static VALUE ossl_ssl_session_get_timeout(VALUE self)
 										\
 		if (rb_obj_is_instance_of(time_v, rb_cTime)) {			\
 			time_v = rb_funcall(time_v, rb_intern("to_i"), 0);	\
-		} else if (FIXNUM_P(time_v)) {					\
+		} else if (FIXNUM_P(time_v) || TYPE(time_v) == T_BIGNUM) {	\
 			;							\
 		} else {							\
 			ossl_raise(rb_eArgError, "unknown type");			\
