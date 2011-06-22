@@ -159,16 +159,18 @@ class OpenSSL::TestSSLSession < OpenSSL::SSLTestCase
     called = {}
     ctx = OpenSSL::SSL::SSLContext.new("SSLv3")
     ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT
+
     ctx.session_new_cb = lambda { |ary|
       sock, sess = ary
       called[:new] = [sock, sess]
-      true
     }
+
     ctx.session_remove_cb = lambda { |ary|
       ctx, sess = ary
       called[:remove] = [ctx, sess]
       # any resulting value is OK (ignored)
     }
+
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true) do |server, port|
       sock = TCPSocket.new("127.0.0.1", port)
       ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
@@ -182,6 +184,63 @@ class OpenSSL::TestSSLSession < OpenSSL::SSLTestCase
       assert_equal([ctx, ssl.session], called[:remove])
       ssl.close
     end
+  end
+
+  def test_ctx_server_session_cb
+    called = {}
+
+    ctx_proc = Proc.new { |ctx, ssl|
+      ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_SERVER
+      last_server_session = nil
+
+      # get_cb is called whenever a client proposed to resume a session but
+      # the session could not be found in the internal session cache.
+      ctx.session_get_cb = lambda { |ary|
+        sess, data = ary
+        if last_server_session
+          called[:get2] = [sess, data]
+          last_server_session
+        else
+          called[:get1] = [sess, data]
+          last_server_session = sess
+          nil
+        end
+      }
+
+      ctx.session_new_cb = lambda { |ary|
+        sock, sess = ary
+        called[:new] = [sock, sess]
+        # SSL server doesn't cache sessions so get_cb is called next time.
+        ctx.session_remove(sess)
+      }
+
+      ctx.session_remove_cb = lambda { |ary|
+        ctx, sess = ary
+        called[:remove] = [ctx, sess]
+      }
+    }
+
+    server_proc = Proc.new { |c, ssl|
+      session = ssl.session
+      stats = c.session_cache_stats
+      readwrite_loop(c, ssl)
+    }
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, :ctx_proc => ctx_proc, :server_proc => server_proc) do |server, port|
+      last_client_session = nil
+      3.times do
+        sock = TCPSocket.new("127.0.0.1", port)
+        ssl = OpenSSL::SSL::SSLSocket.new(sock, OpenSSL::SSL::SSLContext.new("SSLv3"))
+        ssl.sync_close = true
+        ssl.session = last_client_session if last_client_session
+        ssl.connect
+        last_client_session = ssl.session
+        ssl.close
+        assert(called.delete(:new))
+        assert(called.delete(:remove))
+      end
+    end
+    assert(called[:get1])
+    assert(called[:get2])
   end
 end
 

@@ -400,10 +400,16 @@ ossl_sslctx_session_new_cb(SSL *ssl, SSL_SESSION *sess)
     ret_obj = rb_protect((VALUE(*)_((VALUE)))ossl_call_session_new_cb, ary, &state);
     if (state) {
         rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(state));
-        return 0; /* what should be returned here??? */
     }
 
-    return RTEST(ret_obj) ? 1 : 0;
+    /*
+     * return 0 which means to OpenSSL that the the session is still
+     * valid (since we created Ruby Session object) and was not freed by us
+     * with SSL_SESSION_free(). Call SSLContext#remove_session(sess) in
+     * session_get_cb block if you don't want OpenSSL to cache the session
+     * internally.
+     */
+    return 0;
 }
 
 static VALUE

@@ -1,3 +1,17 @@
+Wed Jun 22 22:34:05 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_session_new_cb): Return 0 to
+	  OpenSSL from the callback for SSL_CTX_sess_set_get_cb().
+	  Returning 0 means to OpenSSL that the the session is still valid
+	  (since we created Ruby Session object) and was not freed by us with
+	  SSL_SESSION_free(). Call SSLContext#remove_session(sess) in
+	  session_get_cb block if you don't want OpenSSL to cache the session
+	  internally.
+	  This potential issue was pointed by Ippei Obayashi. See #4416.
+
+	* test/openssl/test_ssl_session.rb (test_ctx_server_session_cb): Test
+	  it.
+
 Wed Jun 22 22:21:17 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_ssl_session.c: Respect T_BIGNUM time values. Patch by
