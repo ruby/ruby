@@ -93,33 +93,37 @@ module Rake
 
     # Create the tasks defined by this task lib.
     def define
-      lib_path = @libs.join(File::PATH_SEPARATOR)
       desc "Run tests" + (@name==:test ? "" : " for #{@name}")
       task @name do
-        run_code = ''
-        RakeFileUtils.verbose(@verbose) do
-          run_code =
-            case @loader
-            when :direct
-              "-e 'ARGV.each{|f| load f}'"
-            when :testrb
-              "-S testrb"
-            when :rake
-              rake_loader
-            end
-          @ruby_opts.unshift( "-I\"#{lib_path}\"" )
-          @ruby_opts.unshift( "-w" ) if @warning
-          ruby @ruby_opts.join(" ") +
-            " \"#{run_code}\" " +
-            file_list.collect { |fn| "\"#{fn}\"" }.join(' ') +
-            " #{option_list}"
+        FileUtilsExt.verbose(@verbose) do
+          ruby "#{ruby_opts_string} #{run_code} #{file_list_string} #{option_list}"
         end
       end
       self
     end
 
     def option_list # :nodoc:
-      ENV['TESTOPTS'] || @options || ""
+      (ENV['TESTOPTS'] ||
+        ENV['TESTOPT'] ||
+        ENV['TEST_OPTS'] ||
+        ENV['TEST_OPT'] ||
+        @options ||
+        "")
+    end
+
+    def ruby_opts_string
+      opts = @ruby_opts.dup
+      opts.unshift( "-I\"#{lib_path}\"" ) unless @libs.empty?
+      opts.unshift( "-w" ) if @warning
+      opts.join(" ")
+    end
+
+    def lib_path
+      @libs.join(File::PATH_SEPARATOR)
+    end
+
+    def file_list_string
+      file_list.collect { |fn| "\"#{fn}\"" }.join(' ')
     end
 
     def file_list # :nodoc:
@@ -128,8 +132,32 @@ module Rake
       else
         result = []
         result += @test_files.to_a if @test_files
-        result += FileList[ @pattern ].to_a if @pattern
-        FileList[result]
+        result << @pattern if @pattern
+        result
+      end
+    end
+
+    def fix # :nodoc:
+      case ruby_version
+      when '1.8.2'
+        "\"#{find_file 'rake/ruby182_test_unit_fix'}\""
+      else
+        nil
+      end || ''
+    end
+
+    def ruby_version
+      RUBY_VERSION
+    end
+
+    def run_code
+      case @loader
+      when :direct
+        "-e \"ARGV.each{|f| require f}\""
+      when :testrb
+        "-S testrb #{fix}"
+      when :rake
+        "-I\"#{rake_lib_dir}\" \"#{rake_loader}\""
       end
     end
 
@@ -142,6 +170,19 @@ module Rake
       $LOAD_PATH.each do |path|
         file_path = File.join(path, "#{fn}.rb")
         return file_path if File.exist? file_path
+      end
+      nil
+    end
+
+    def rake_lib_dir # :nodoc:
+      find_dir('rake') or
+        fail "unable to find rake lib"
+    end
+
+    def find_dir(fn) # :nodoc:
+      $LOAD_PATH.each do |path|
+        file_path = File.join(path, "#{fn}.rb")
+        return path if File.exist? file_path
       end
       nil
     end

@@ -184,8 +184,12 @@ with all sufficient information, see the ChangeLog file.
 * optparse
   * support for bash/zsh completion.
 
+* Rake
+  * Rake has been upgraded from 0.8.7 to 0.9.2.  For full release notes see
+    https://github.com/jimweirich/rake/blob/master/CHANGES
+
 * RDoc
-  * RDoc has been upgraded to RDoc 3.6.1.  For full release notes see
+  * RDoc has been upgraded from 2.5.8 to 3.6.1.  For full release notes see
     http://docs.seattlerb.org/rdoc/History_txt.html
 
 * rexml

@@ -1,3 +1,7 @@
+Fri Jun 24 07:11:37 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rake: Import Rake 0.9.2
+
 Fri Jun 24 00:44:15 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (c_valid_{julian,gregorian}_p): fixed the range of month.

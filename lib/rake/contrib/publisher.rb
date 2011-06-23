@@ -1,9 +1,5 @@
-# Copyright 2003, 2004, 2005, 2006, 2007, 2008 by Jim Weirich (jim@weirichhouse.org)
+# Copyright 2003-2010 by Jim Weirich (jim.weirich@gmail.com)
 # All rights reserved.
-
-# Permission is granted for use, copying, modification, distribution,
-# and distribution of modified versions of this work as long as the
-# above copyright notice is included.
 
 # Configuration information about an upload host system.
 # * name   :: Name of host system.

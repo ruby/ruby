@@ -1,8 +1,0 @@
-#!/usr/bin/env ruby
-
-task :exit5 do
-  exit(5)
-end
-
-task :normal do
-end

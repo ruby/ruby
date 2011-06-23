@@ -1,46 +1,55 @@
+
 module Rake
+  require 'rake/alt_system'
 
   # Win 32 interface methods for Rake. Windows specific functionality
   # will be placed here to collect that knowledge in one spot.
   module Win32
-    class << self
-      # True if running on a windows system.
-      if File::ALT_SEPARATOR == '\\' # assume other DOSish systems are extinct.
-        def windows?; true end
-      else
-        def windows?; false end
-      end
+
+    # Error indicating a problem in locating the home directory on a
+    # Win32 system.
+    class Win32HomeError < RuntimeError
     end
 
     class << self
+      # True if running on a windows system.
+      def windows?
+        AltSystem::WINDOWS
+      end
+
+      # Run a command line on windows.
+      def rake_system(*cmd)
+        AltSystem.system(*cmd)
+      end
+
       # The standard directory containing system wide rake files on
       # Win 32 systems. Try the following environment variables (in
       # order):
       #
-      # * APPDATA
       # * HOME
       # * HOMEDRIVE + HOMEPATH
+      # * APPDATA
       # * USERPROFILE
       #
-      # If the above are not defined, retruns the personal folder.
+      # If the above are not defined, the return nil.
       def win32_system_dir #:nodoc:
-        win32_shared_path = ENV['APPDATA']
-        if !win32_shared_path or win32_shared_path.empty?
-          win32_shared_path = '~'
+        win32_shared_path = ENV['HOME']
+        if win32_shared_path.nil? && ENV['HOMEDRIVE'] && ENV['HOMEPATH']
+          win32_shared_path = ENV['HOMEDRIVE'] + ENV['HOMEPATH']
         end
-        File.expand_path('Rake', win32_shared_path)
+
+        win32_shared_path ||= ENV['APPDATA']
+        win32_shared_path ||= ENV['USERPROFILE']
+        raise Win32HomeError, "Unable to determine home path environment variable." if
+          win32_shared_path.nil? or win32_shared_path.empty?
+        normalize(File.join(win32_shared_path, 'Rake'))
       end
 
       # Normalize a win32 path so that the slashes are all forward slashes.
       def normalize(path)
-        path.tr('\\', '/')
+        path.gsub(/\\/, '/')
       end
-    end if windows?
-  end
 
-  if Win32.windows?
-    def standard_system_dir
-      Win32.win32_system_dir
     end
   end
 end

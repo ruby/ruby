@@ -99,7 +99,7 @@ module Rake # :nodoc:
       end
     end
 
-    # Create an FTP uploader targetting the directory +path+ on +host+
+    # Create an FTP uploader targeting the directory +path+ on +host+
     # using the given account and password.  +path+ will be the root
     # path of the uploader.
     def initialize(path, host, account, password)
@@ -118,7 +118,7 @@ module Rake # :nodoc:
         current_dir = File.join(route)
         if @created[current_dir].nil?
           @created[current_dir] = true
-          puts "Creating Directory  #{current_dir}" if @verbose
+          $stderr.puts "Creating Directory  #{current_dir}" if @verbose
           @ftp.mkdir(current_dir) rescue nil
         end
       end
@@ -141,7 +141,7 @@ module Rake # :nodoc:
 
     # Upload a single file to the uploader's root path.
     def upload(file)
-      puts "Uploading #{file}" if @verbose
+      $stderr.puts "Uploading #{file}" if @verbose
       dir = File.dirname(file)
       makedirs(dir)
       @ftp.putbinaryfile(file, file) unless File.directory?(file)
