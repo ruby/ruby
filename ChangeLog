@@ -1,3 +1,7 @@
+Fri Jun 24 00:44:15 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (c_valid_{julian,gregorian}_p): fixed the range of month.
+
 Fri Jun 24 00:14:23 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: trivial changes on text.

@@ -693,7 +693,7 @@ c_valid_julian_p(int y, int m, int d, int *rm, int *rd)
 
     if (m < 0)
 	m += 13;
-    if (m < 0 || m > 12)
+    if (m < 1 || m > 12)
 	return 0;
     last = c_julian_last_day_of_month(y, m);
     if (d < 0)
@@ -712,7 +712,7 @@ c_valid_gregorian_p(int y, int m, int d, int *rm, int *rd)
 
     if (m < 0)
 	m += 13;
-    if (m < 0 || m > 12)
+    if (m < 1 || m > 12)
 	return 0;
     last = c_gregorian_last_day_of_month(y, m);
     if (d < 0)
@@ -2114,16 +2114,15 @@ valid_civil_p(VALUE y, int m, int d, double sg,
 	    decode_year(y, ns ? -1 : +1, &nth2, ry);
 	}
     }
-    else if (style > 1) {
+    else {
 	decode_year(y, style, nth, ry);
-	r = c_valid_julian_p(*ry, m, d, rm, rd);
+	if (style < 0)
+	    r = c_valid_gregorian_p(*ry, m, d, rm, rd);
+	else
+	    r = c_valid_julian_p(*ry, m, d, rm, rd);
 	if (!r)
 	    return 0;
 	c_civil_to_jd(*ry, *rm, *rd, style, rjd, ns);
-    }
-    else {
-	decode_year(y, style, nth, ry);
-	r = c_valid_civil_p(*ry, m, d, style, rm, rd, rjd, ns);
     }
     return r;
 }
