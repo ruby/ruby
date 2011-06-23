@@ -1,3 +1,7 @@
+Wed Jun 23 13:30:30 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* signal.c(ruby_atomic_exchange): Fix definement style.
+
 Wed Jun 22 22:34:05 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_sslctx_session_new_cb): Return 0 to
