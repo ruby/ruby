@@ -1,3 +1,15 @@
+Thu Jun 23 19:30:53 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl_session.c (ossl_ssl_session_set_time): Check
+	  argument type with NUM2LONG if the arg is not a Time object.
+	  See #4919.
+
+	* ext/openssl/ossl_ssl_session.c (ossl_ssl_session_set_timeout): Check
+	  type with NUM2LONG. Time as an arg is not allowed. See #4919.
+
+	* test/openssl/test_ssl_session.rb (test_session_time,
+	  test_session_timeout): Test it.
+
 Wed Jun 23 13:30:30 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* signal.c(ruby_atomic_exchange): Fix definition style.

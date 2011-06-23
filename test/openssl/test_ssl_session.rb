@@ -33,6 +33,58 @@ class OpenSSL::TestSSLSession < OpenSSL::SSLTestCase
     end
   end
 
+  DUMMY_SESSION = <<__EOS__
+-----BEGIN SSL SESSION PARAMETERS-----
+MIIDzQIBAQICAwEEAgA5BCAF219w9ZEV8dNA60cpEGOI34hJtIFbf3bkfzSgMyad
+MQQwyGLbkCxE4OiMLdKKem+pyh8V7ifoP7tCxhdmwoDlJxI1v6nVCjai+FGYuncy
+NNSWoQYCBE4DDWuiAwIBCqOCAo4wggKKMIIBcqADAgECAgECMA0GCSqGSIb3DQEB
+BQUAMD0xEzARBgoJkiaJk/IsZAEZFgNvcmcxGTAXBgoJkiaJk/IsZAEZFglydWJ5
+LWxhbmcxCzAJBgNVBAMMAkNBMB4XDTExMDYyMzA5NTQ1MVoXDTExMDYyMzEwMjQ1
+MVowRDETMBEGCgmSJomT8ixkARkWA29yZzEZMBcGCgmSJomT8ixkARkWCXJ1Ynkt
+bGFuZzESMBAGA1UEAwwJbG9jYWxob3N0MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCB
+iQKBgQDLwsSw1ECnPtT+PkOgHhcGA71nwC2/nL85VBGnRqDxOqjVh7CxaKPERYHs
+k4BPCkE3brtThPWc9kjHEQQ7uf9Y1rbCz0layNqHyywQEVLFmp1cpIt/Q3geLv8Z
+D9pihowKJDyMDiN6ArYUmZczvW4976MU3+l54E6lF/JfFEU5hwIDAQABoxIwEDAO
+BgNVHQ8BAf8EBAMCBaAwDQYJKoZIhvcNAQEFBQADggEBACj5WhoZ/ODVeHpwgq1d
+8fW/13ICRYHYpv6dzlWihyqclGxbKMlMnaVCPz+4JaVtMz3QB748KJQgL3Llg3R1
+ek+f+n1MBCMfFFsQXJ2gtLB84zD6UCz8aaCWN5/czJCd7xMz7fRLy3TOIW5boXAU
+zIa8EODk+477K1uznHm286ab0Clv+9d304hwmBZgkzLg6+31Of6d6s0E0rwLGiS2
+sOWYg34Y3r4j8BS9Ak4jzpoLY6cJ0QAKCOJCgmjGr4XHpyXMLbicp3ga1uSbwtVO
+gF/gTfpLhJC+y0EQ5x3Ftl88Cq7ZJuLBDMo/TLIfReJMQu/HlrTT7+LwtneSWGmr
+KkSkAgQApQMCAROqgcMEgcAuDkAVfj6QAJMz9yqTzW5wPFyty7CxUEcwKjUqj5UP
+/Yvky1EkRuM/eQfN7ucY+MUvMqv+R8ZSkHPsnjkBN5ChvZXjrUSZKFVjR4eFVz2V
+jismLEJvIFhQh6pqTroRrOjMfTaM5Lwoytr2FTGobN9rnjIRsXeFQW1HLFbXn7Dh
+8uaQkMwIVVSGRB8T7t6z6WIdWruOjCZ6G5ASI5XoqAHwGezhLodZuvJEfsVyCF9y
+j+RBGfCFrrQbBdnkFI/ztgM=
+-----END SSL SESSION PARAMETERS-----
+__EOS__
+
+  def test_session_time
+    sess = OpenSSL::SSL::Session.new(DUMMY_SESSION)
+    sess.time = (now = Time.now)
+    assert_equal(now.to_i, sess.time.to_i)
+    sess.time = 1
+    assert_equal(1, sess.time.to_i)
+    sess.time = 1.2345
+    assert_equal(1, sess.time.to_i)
+    # Can OpenSSL handle t>2038y correctly? Version?
+    sess.time = 2**31
+    assert_equal(2**31, sess.time.to_i)
+  end
+
+  def test_session_timeout
+    sess = OpenSSL::SSL::Session.new(DUMMY_SESSION)
+    assert_raise(TypeError) do
+      sess.timeout = (now = Time.now)
+    end
+    sess.timeout = 1
+    assert_equal(1, sess.timeout.to_i)
+    sess.timeout = 1.2345
+    assert_equal(1, sess.timeout.to_i)
+    sess.timeout = 2**31
+    assert_equal(2**31, sess.timeout.to_i)
+  end
+
   def test_client_session
     last_session = nil
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true) do |server, port|
