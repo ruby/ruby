@@ -4054,18 +4054,18 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
 	return Qnil;
 
     {
-	VALUE zone = rb_hash_aref(hash, ID2SYM(rb_intern("zone")));
-	VALUE left = rb_hash_aref(hash, ID2SYM(rb_intern("leftover")));
+	VALUE zone = ref_hash("zone");
+	VALUE left = ref_hash("leftover");
 
 	if (!NIL_P(zone)) {
 	    rb_enc_copy(zone, vstr);
 	    OBJ_INFECT(zone, vstr);
-	    rb_hash_aset(hash, ID2SYM(rb_intern("zone")), zone);
+	    set_hash("zone", zone);
 	}
 	if (!NIL_P(left)) {
 	    rb_enc_copy(left, vstr);
 	    OBJ_INFECT(left, vstr);
-	    rb_hash_aset(hash, ID2SYM(rb_intern("leftover")), left);
+	    set_hash("leftover", left);
 	}
     }
 
@@ -4155,12 +4155,12 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
     hash = date__parse(vstr, vcomp);
 
     {
-	VALUE zone = rb_hash_aref(hash, ID2SYM(rb_intern("zone")));
+	VALUE zone = ref_hash("zone");
 
 	if (!NIL_P(zone)) {
 	    rb_enc_copy(zone, vstr);
 	    OBJ_INFECT(zone, vstr);
-	    rb_hash_aset(hash, ID2SYM(rb_intern("zone")), zone);
+	    set_hash("zone", zone);
 	}
     }
 
@@ -6807,7 +6807,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  *      %U - Week number of the year.  The week starts with Sunday.  (00..53)
  *      %W - Week number of the year.  The week starts with Monday.  (00..53)
  *
- *    Seconds since the Epoch:
+ *    Seconds since the Unix Epoch:
  *      %s - Number of seconds since 1970-01-01 00:00:00 UTC.
  *      %Q - Number of microseconds since 1970-01-01 00:00:00 UTC.
  *
@@ -6840,7 +6840,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  *  Examples:
  *
  *    d = DateTime.new(2007,11,19,8,37,48,"-06:00")
- *				#=> #<DateTime: 2007-11-19 08:37:48 -0600 ...>
+ *				#=> #<DateTime: 2007-11-19T08:37:48-0600 ...>
  *    d.strftime("Printed on %m/%d/%Y")   #=> "Printed on 11/19/2007"
  *    d.strftime("at %I:%M%p")            #=> "at 08:37AM"
  *
@@ -7831,7 +7831,7 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.parse(string="-4712-01-01T00:00:00+00:00"[, comp=true[, start=ITALY]])  ->  datetime
+ *    DateTime.parse(string="-4712-01-01T00:00:00+00:00"[, comp=true[, start=ITALY]])  ->  datetime
  *
  * Parses the given representation of date and time, and creates a
  * date object.
@@ -7841,7 +7841,6 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
  *
  * For example:
  *
- *    Date.parse('11-06-13')	#=> #<Date: 2011-06-13 ...>
  *    DateTime.parse('2001-02-03T04:05:06+07:00')
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
  *    DateTime.parse('20010203T040506+0700')
@@ -8192,7 +8191,7 @@ dt_lite_to_s(VALUE self)
  *      %U - Week number of the year.  The week starts with Sunday.  (00..53)
  *      %W - Week number of the year.  The week starts with Monday.  (00..53)
  *
- *    Seconds since the Epoch:
+ *    Seconds since the Unix Epoch:
  *      %s - Number of seconds since 1970-01-01 00:00:00 UTC.
  *      %Q - Number of microseconds since 1970-01-01 00:00:00 UTC.
  *
@@ -8225,7 +8224,7 @@ dt_lite_to_s(VALUE self)
  *  Examples:
  *
  *    d = DateTime.new(2007,11,19,8,37,48,"-06:00")
- *				#=> #<DateTime: 2007-11-19 08:37:48 -0600 ...>
+ *				#=> #<DateTime: 2007-11-19T08:37:48-0600 ...>
  *    d.strftime("Printed on %m/%d/%Y")   #=> "Printed on 11/19/2007"
  *    d.strftime("at %I:%M%p")            #=> "at 08:37AM"
  *

@@ -1,3 +1,7 @@
+Fri Jun 24 00:14:23 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: trivial changes on text.
+
 Thu Jun 23 22:46:57 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_x509name.c: Add X509::Name#hash_old as a wrapper
