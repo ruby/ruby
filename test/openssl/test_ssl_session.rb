@@ -68,8 +68,8 @@ __EOS__
     sess.time = 1.2345
     assert_equal(1, sess.time.to_i)
     # Can OpenSSL handle t>2038y correctly? Version?
-    sess.time = 2**31
-    assert_equal(2**31, sess.time.to_i)
+    sess.time = 2**31 - 1
+    assert_equal(2**31 - 1, sess.time.to_i)
   end
 
   def test_session_timeout
@@ -81,8 +81,8 @@ __EOS__
     assert_equal(1, sess.timeout.to_i)
     sess.timeout = 1.2345
     assert_equal(1, sess.timeout.to_i)
-    sess.timeout = 2**31
-    assert_equal(2**31, sess.timeout.to_i)
+    sess.timeout = 2**31 - 1
+    assert_equal(2**31 - 1, sess.timeout.to_i)
   end
 
   def test_client_session
