@@ -177,6 +177,9 @@ with all sufficient information, see the ChangeLog file.
   * OpenSSL::PKey.read( file | string [, pwd] ) allows to read arbitrary
     public/private keys in DER-/PEM-encoded form with an optional password
     for encrypted PEM encodings.
+  * Add new method OpenSSL::X509::Name#hash_old as a wrapper of
+    X509_NAME_hash_old() defined from OpenSSL 1.0.0. It returns OpenSSL 0.9.8
+    compatible hash value.
 
 * optparse
   * support for bash/zsh completion.
