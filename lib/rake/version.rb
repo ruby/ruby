@@ -1,10 +1,8 @@
 module Rake
+  VERSION = '0.9.2'
+
   module Version
-    NUMBERS = [
-      MAJOR = 0,
-      MINOR = 9,
-      BUILD = 2,
-    ]
+    MAJOR, MINOR, BUILD = VERSION.split '.'
+    NUMBERS = [ MAJOR, MINOR, BUILD ]
   end
-  VERSION = Version::NUMBERS.join('.')
 end

@@ -1,3 +1,10 @@
+Fri Jun 24 07:24:37 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rake/version.rb:  Fixed VERSION to work with tool/rbinstall.rb
+	* bin/rake:  Import bin/rake from 0.9.2
+	* tool/rbinstall.rb (install):  Rake::VERSION is now in
+	  lib/rake/version.rb.  Fixes `make install`
+
 Fri Jun 24 07:11:37 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rake: Import Rake 0.9.2
