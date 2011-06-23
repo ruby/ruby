@@ -1,6 +1,6 @@
 Wed Jun 23 13:30:30 2011  Shota Fukumori  <sorah@tubusu.net>
 
-	* signal.c(ruby_atomic_exchange): Fix definement style.
+	* signal.c(ruby_atomic_exchange): Fix definition style.
 
 Wed Jun 22 22:34:05 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
