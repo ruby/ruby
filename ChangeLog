@@ -1,3 +1,12 @@
+Thu Jun 23 18:38:43 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	backported r26281 from ruby_1_8
+
+	* lib/webrick/accesslog.rb (WEBrick::AccessLog.format): log parameter
+	  embedding did not work. See #4913.
+
+	* test/webrick/test_accesslog.rb: Add for test it.
+
 Thu Jun 16 22:55:02 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* test/test_securerandom.rb: Add testcase.  This testcase does NOT aim
