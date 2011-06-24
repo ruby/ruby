@@ -1,3 +1,14 @@
+Fri Jun 24 19:57:30 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* lib/webrick/httprequest.rb (setup_forwarded_info): Parsing request
+	  header failed when the request is from 2 or more Apache reverse
+	  proxies. It's said that all X-Forwarded-* headers will contain more
+	  than one (comma-separated) value if the original request already
+	  contained one of these headers.  Since we could use these values as
+	  Host header, we choose the initial(first) value. See #4922.
+
+	* test/webrick/test_httprequest.rb (test_forwarded): Test it.
+
 Fri Jun 24 17:06:33 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (proc_daemon): should not start timer thread

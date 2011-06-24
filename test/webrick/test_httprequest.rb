@@ -303,6 +303,28 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
     assert_equal(443, req.port)
     assert_equal("234.234.234.234", req.remote_ip)
     assert(req.ssl?)
+
+    msg = <<-_end_of_message_
+      GET /foo HTTP/1.1
+      Host: localhost:10080
+      Client-IP: 234.234.234.234
+      X-Forwarded-Proto: https
+      X-Forwarded-For: 192.168.1.10
+      X-Forwarded-Host: forward1.example.com:1234, forward2.example.com:5678
+      X-Forwarded-Server: server1.example.com, server2.example.com
+      X-Requested-With: XMLHttpRequest
+      Connection: Keep-Alive
+
+    _end_of_message_
+    msg.gsub!(/^ {6}/, "")
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert_equal("server1.example.com", req.server_name)
+    assert_equal("https://forward1.example.com:1234/foo", req.request_uri.to_s)
+    assert_equal("forward1.example.com", req.host)
+    assert_equal(1234, req.port)
+    assert_equal("234.234.234.234", req.remote_ip)
+    assert(req.ssl?)
   end
 
   def test_continue_sent
