@@ -1,3 +1,8 @@
+Fri Jun 24 17:06:33 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (proc_daemon): should not start timer thread
+	  twice.  fixed Bug#4920.
+
 Fri Jun 24 15:54:14 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_shutdown): Try to shutdown SSL

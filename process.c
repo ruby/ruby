@@ -4806,10 +4806,7 @@ proc_setmaxgroups(VALUE obj, VALUE val)
 #endif
 
 #if defined(HAVE_DAEMON) || (defined(HAVE_FORK) && defined(HAVE_SETSID))
-#ifndef HAVE_DAEMON
 static int rb_daemon(int nochdir, int noclose);
-#define daemon(nochdir, noclose) rb_daemon((nochdir), (noclose))
-#endif
 
 /*
  *  call-seq:
@@ -4835,18 +4832,21 @@ proc_daemon(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "02", &nochdir, &noclose);
 
     prefork();
-    before_fork();
-    n = daemon(RTEST(nochdir), RTEST(noclose));
-    after_fork();
+    n = rb_daemon(RTEST(nochdir), RTEST(noclose));
     if (n < 0) rb_sys_fail("daemon");
     return INT2FIX(n);
 }
 
-#ifndef HAVE_DAEMON
 static int
 rb_daemon(int nochdir, int noclose)
 {
-    int n, err = 0;
+    int err = 0;
+#ifdef HAVE_DAEMON
+    before_fork();
+    err = daemon(nochdir, noclose);
+    after_fork();
+#else
+    int n;
 
     switch (rb_fork(0, 0, 0, Qnil)) {
       case -1:
@@ -4880,8 +4880,8 @@ rb_daemon(int nochdir, int noclose)
 	    (void)close (n);
     }
     return err;
-}
 #endif
+}
 #else
 #define proc_daemon rb_f_notimplement
 #endif

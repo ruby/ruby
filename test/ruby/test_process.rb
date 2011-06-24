@@ -1268,4 +1268,58 @@ class TestProcess < Test::Unit::TestCase
   ensure
     Process.kill(:KILL, pid) if (pid != 0) rescue false
   end
+
+  if Process.respond_to?(:daemon)
+    def test_daemon_default
+      data = IO.popen("-", "r+") do |f|
+        break f.read if f
+        Process.daemon
+        puts "ng"
+      end
+      assert_equal("", data)
+    end
+
+    def test_daemon_noclose
+      data = IO.popen("-", "r+") do |f|
+        break f.read if f
+        Process.daemon(false, true)
+        puts "ok", Dir.pwd
+      end
+      assert_equal("ok\n/\n", data)
+    end
+
+    def test_daemon_nochdir_noclose
+      data = IO.popen("-", "r+") do |f|
+        break f.read if f
+        Process.daemon(true, true)
+        puts "ok", Dir.pwd
+      end
+      assert_equal("ok\n#{Dir.pwd}\n", data)
+    end
+
+    def test_daemon_readwrite
+      data = IO.popen("-", "r+") do |f|
+        if f
+          f.puts "ok?"
+          break f.read
+        end
+        Process.daemon(true, true)
+        puts STDIN.gets
+      end
+      assert_equal("ok?\n", data)
+    end
+
+    if File.directory?("/proc/self/task")
+      def test_daemon_no_threads
+        pid, data = IO.popen("-", "r+") do |f|
+          break f.pid, f.readlines if f
+          Process.daemon(true, true)
+          puts Dir.entries("/proc/self/task") - %W[. ..]
+        end
+        bug4920 = '[ruby-dev:43873]'
+        assert_equal(2, data.size, bug4920)
+        assert_not_include(data.map(&:to_i), pid)
+      end
+    end
+  end
 end
