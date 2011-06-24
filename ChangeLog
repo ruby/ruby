@@ -4,7 +4,7 @@ Fri Jun 24 15:54:14 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 	  connection more gracefully. Call SSL_shutdown() max 4 times until it
 	  returns 1 (success). Bi-directional SSL close has several states but
 	  SSL_shutdown() kicks only 1 transition per call. Max 4 is from
-	  mod_ssl.c of Apache httpd that says 'max 2x pending * 2x data = 4'.
+	  mod_ssl.c of Apache httpd that says 'max 2x pending + 2x data = 4'.
 	  See #4237.
 
 Fri Jun 24 07:24:37 2011  Eric Hodel  <drbrain@segment7.net>
