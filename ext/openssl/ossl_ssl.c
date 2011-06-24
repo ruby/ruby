@@ -970,8 +970,19 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
 static void
 ossl_ssl_shutdown(SSL *ssl)
 {
+    int i, rc;
+
     if (ssl) {
-	SSL_shutdown(ssl);
+	/* 4 is from SSL_smart_shutdown() of mod_ssl.c (v2.2.19) */
+	/* It says max 2x pending + 2x data = 4 */
+	for (i = 0; i < 4; ++i) {
+	    /*
+	     * Ignore the case SSL_shutdown returns -1. Empty handshake_func
+	     * must not happen.
+	     */
+	    if (rc = SSL_shutdown(ssl))
+		break;
+	}
         SSL_clear(ssl);
     }
 }
