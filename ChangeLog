@@ -72,7 +72,7 @@ Wed Jun 22 22:34:05 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_sslctx_session_new_cb): Return 0 to
 	  OpenSSL from the callback for SSL_CTX_sess_set_get_cb().
-	  Returning 0 means to OpenSSL that the the session is still valid
+	  Returning 0 means to OpenSSL that the session is still valid
 	  (since we created Ruby Session object) and was not freed by us with
 	  SSL_SESSION_free(). Call SSLContext#remove_session(sess) in
 	  session_get_cb block if you don't want OpenSSL to cache the session
@@ -134,7 +134,7 @@ Wed Jun 22 17:37:49 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 	* ext/openssl/ossl_cipher.c
 	* ext/openssl/ossl_pkey_ec.c
 	* ext/openssl/ossl_pkcs12.c
-	* ext/openssl/ossl_ssl_session.c: Replace rb_raise occurences by
+	* ext/openssl/ossl_ssl_session.c: Replace rb_raise occurrences by
 	  ossl_raise. This automatically flushes OpenSSL's error queue.
 
 	* ext/openssl/ossl_pkcs7.c: Raise error if DER fallback for parsing
