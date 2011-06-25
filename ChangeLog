@@ -1,3 +1,8 @@
+Sat Jun 25 23:23:14 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* thread.c (sleep_forever): now Kernel#sleep don't wakeup by
+	  signal handler execution. [Bug #4072]
+
 Sat Jun 25 23:14:47 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* thread.c (rb_threadptr_check_signal): remove unnecessary th->status

@@ -834,8 +834,9 @@ static void
 sleep_forever(rb_thread_t *th, int deadlockable)
 {
     enum rb_thread_status prev_status = th->status;
+    enum rb_thread_status status = deadlockable ? THREAD_STOPPED_FOREVER : THREAD_STOPPED;
 
-    th->status = deadlockable ? THREAD_STOPPED_FOREVER : THREAD_STOPPED;
+    th->status = status;
     do {
 	if (deadlockable) {
 	    th->vm->sleeper++;
@@ -846,7 +847,7 @@ sleep_forever(rb_thread_t *th, int deadlockable)
 	    th->vm->sleeper--;
 	}
 	RUBY_VM_CHECK_INTS();
-    } while (th->status == THREAD_STOPPED_FOREVER);
+    } while (th->status == status);
     th->status = prev_status;
 }
 
