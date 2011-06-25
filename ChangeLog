@@ -1,3 +1,11 @@
+Sat Jun 25 23:45:30 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* vm_insnhelper.c (vm_search_superclass): avoid control frame
+	  stack overrun. currently super() in Proc created in a method
+	  defined by Module#define_method raise NoMethodError. [Bug #4881]
+	* test/ruby/test_method.rb t_super_in_proc_from_define_method):
+	  add test for it.
+
 Sat Jun 25 23:23:14 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* thread.c (sleep_forever): now Kernel#sleep don't wakeup by

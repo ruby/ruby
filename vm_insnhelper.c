@@ -1410,9 +1410,14 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq,
 	}
 
 	while (lcfp->iseq != iseq) {
+	    rb_thread_t *th = GET_THREAD();
 	    VALUE *tdfp = GET_PREV_DFP(lcfp->dfp);
 	    while (1) {
 		lcfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(lcfp);
+		if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, lcfp)) {
+		    rb_raise(rb_eNoMethodError,
+			     "super called outside of method");
+		}
 		if (lcfp->dfp == tdfp) {
 		    break;
 		}

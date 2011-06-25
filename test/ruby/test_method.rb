@@ -233,6 +233,20 @@ class TestMethod < Test::Unit::TestCase
     end
   end
 
+  def test_super_in_proc_from_define_method
+    c1 = Class.new {
+      def m
+        :m1
+      end
+    }
+    c2 = Class.new(c1) { define_method(:m) { Proc.new { super() } } }
+    # c2.new.m.call should return :m1, but currently it raise NoMethodError.
+    # see [Bug #4881] and [Bug #3136]
+    assert_raise(NoMethodError) {
+      c2.new.m.call
+    }
+  end
+
   def test_clone
     o = Object.new
     def o.foo; :foo; end
