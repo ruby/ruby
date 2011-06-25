@@ -1,3 +1,9 @@
+Sat Jun 25 23:14:47 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* thread.c (rb_threadptr_check_signal): remove unnecessary th->status
+	  backup. fix race condition which may results unexpected main thread's
+	  status transition. see #4072
+
 Fri Jun 24 19:57:30 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* lib/webrick/httprequest.rb (setup_forwarded_info): Parsing request

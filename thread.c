@@ -2953,13 +2953,10 @@ rb_threadptr_check_signal(rb_thread_t *mth)
     /* mth must be main_thread */
 
     if (!mth->exec_signal && (sig = rb_get_next_signal()) > 0) {
-	enum rb_thread_status prev_status = mth->status;
 	thread_debug("main_thread: %s, sig: %d\n",
-		     thread_status_name(prev_status), sig);
+		     thread_status_name(mth->status), sig);
 	mth->exec_signal = sig;
-	if (mth->status != THREAD_KILLED) mth->status = THREAD_RUNNABLE;
 	rb_threadptr_interrupt(mth);
-	mth->status = prev_status;
     }
 }
 
