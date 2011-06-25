@@ -1,3 +1,8 @@
+Sun Jun 26 01:00:15 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (date_strftime_internal): removed meaningless braces.
+	* ext/date/date_core.c (gengo): the value should be int.
+
 Sat Jun 25 23:45:30 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* vm_insnhelper.c (vm_search_superclass): avoid control frame
