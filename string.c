@@ -385,10 +385,29 @@ str_alloc(VALUE klass)
     return (VALUE)str;
 }
 
+static int str_call_initialize = FALSE;
+
+VALUE
+rb_str_call_initialize_get(VALUE self)
+{
+    if (str_call_initialize == TRUE) return Qtrue;
+    return Qfalse;
+}
+
+VALUE
+rb_str_call_initialize_set(VALUE self, VALUE val)
+{
+    str_call_initialize = FALSE;
+    if (val == Qtrue) str_call_initialize = TRUE;
+
+    return self;
+}
+
 static VALUE
 str_new(VALUE klass, const char *ptr, long len)
 {
     VALUE str;
+    VALUE argv[1];
 
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
@@ -408,6 +427,12 @@ str_new(VALUE klass, const char *ptr, long len)
     }
     STR_SET_LEN(str, len);
     RSTRING_PTR(str)[len] = '\0';
+
+    if (str_call_initialize) {
+	argv[0] = (VALUE)str;
+	rb_obj_call_init((VALUE)str, 1, argv);
+    }
+
     return str;
 }
 
@@ -7449,6 +7474,10 @@ Init_String(void)
     rb_cString  = rb_define_class("String", rb_cObject);
     rb_include_module(rb_cString, rb_mComparable);
     rb_define_alloc_func(rb_cString, str_alloc);
+
+    rb_define_singleton_method(rb_cString, "call_initialize", rb_str_call_initialize_get, 0);
+    rb_define_singleton_method(rb_cString, "call_initialize=", rb_str_call_initialize_set, 1);
+
     rb_define_singleton_method(rb_cString, "try_convert", rb_str_s_try_convert, 1);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
     rb_define_method(rb_cString, "initialize_copy", rb_str_replace, 1);
