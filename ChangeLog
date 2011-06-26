@@ -1,3 +1,16 @@
+Sun Jun 26 17:52:32 2011  Nobuhiro Iwamatsu  <iwamatsu@nigauri.org>
+
+        * ext/openssl/ossl_ssl.c: By trunk@31346, function check of SSLv2 is executed.
+        However, the problem is not revised in this.
+        This adds the control of using function of SSLv2 in made macro by function check.
+
+Sun Jun 26 17:52:32 2011  Nobuhiro Iwamatsu  <iwamatsu@nigauri.org>
+
+	* ext/openssl/extconf.rb: Should check SSLv2_*method.
+	  openssl compiled with "no-ssl2" the extconf don't fail
+	  when running `make' having this compilation errors.
+	  Patched by Laurent Arnoud. fixes #4562, #4556
+
 Sun Jun 26 17:46:43 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* ext/tk/extconf.rb: copy from trunk, as requested by Hidetoshi NAGAI.
