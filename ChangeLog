@@ -1,3 +1,7 @@
+Mon Jun 27 08:01:19 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_parse.c: should use ALLOCA_N.
+
 Mon Jun 27 01:34:18 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/etc/test_etc.rb (TestEtc#test_get{pw,gr}nam): skip entries
