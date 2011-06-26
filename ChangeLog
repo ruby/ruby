@@ -1,3 +1,7 @@
+ Sun Jun 26 22:21:23 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: refactoring.
+
 Sun Jun 26 18:03:30 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* parse.y: comma at the end of line is no longer allowed.

@@ -846,12 +846,11 @@ c_valid_time_p(int h, int min, int s, int *rh, int *rmin, int *rs)
 inline static int
 c_valid_start_p(double sg)
 {
-    if (!isinf(sg)) {
-	if (sg < REFORM_BEGIN_JD)
-	    return 0;
-	if (sg > REFORM_END_JD)
-	    return 0;
-    } else if (isnan(sg))
+    if (isnan(sg))
+	return 0;
+    if (isinf(sg))
+	return 1;
+    if (sg < REFORM_BEGIN_JD || sg > REFORM_END_JD)
 	return 0;
     return 1;
 }
@@ -6970,28 +6969,30 @@ d_lite_httpdate(VALUE self)
     return strftimev("%a, %d %b %Y %T GMT", dup, set_tmx);
 }
 
-static int
-gengo(VALUE jd, VALUE y, VALUE *a)
+static VALUE
+jisx0301_date(VALUE jd, VALUE y)
 {
+    VALUE a[2];
+
     if (f_lt_p(jd, INT2FIX(2405160)))
-       return 0;
+	return rb_usascii_str_new2("%Y-%m-%d");
     if (f_lt_p(jd, INT2FIX(2419614))) {
-	a[0] = rb_usascii_str_new2("M%02d");
+	a[0] = rb_usascii_str_new2("M%02d" ".%%m.%%d");
 	a[1] = f_sub(y, INT2FIX(1867));
     }
     else if (f_lt_p(jd, INT2FIX(2424875))) {
-	a[0] = rb_usascii_str_new2("T%02d");
+	a[0] = rb_usascii_str_new2("T%02d" ".%%m.%%d");
 	a[1] = f_sub(y, INT2FIX(1911));
     }
     else if (f_lt_p(jd, INT2FIX(2447535))) {
-	a[0] = rb_usascii_str_new2("S%02d");
+	a[0] = rb_usascii_str_new2("S%02d" ".%%m.%%d");
 	a[1] = f_sub(y, INT2FIX(1925));
     }
     else {
-	a[0] = rb_usascii_str_new2("H%02d");
+	a[0] = rb_usascii_str_new2("H%02d" ".%%m.%%d");
 	a[1] = f_sub(y, INT2FIX(1988));
     }
-    return 1;
+    return rb_f_sprintf(2, a);
 }
 
 /*
@@ -7007,16 +7008,12 @@ gengo(VALUE jd, VALUE y, VALUE *a)
 static VALUE
 d_lite_jisx0301(VALUE self)
 {
-    VALUE argv[2];
+    VALUE s;
 
     get_d1(self);
-
-    if (!gengo(m_real_local_jd(dat),
-	       m_real_year(dat),
-	       argv))
-	return strftimev("%Y-%m-%d", self, set_tmx);
-    return f_add(rb_f_sprintf(2, argv),
-		 strftimev(".%m.%d", self, set_tmx));
+    s = jisx0301_date(m_real_local_jd(dat),
+		      m_real_year(dat));
+    return strftimev(RSTRING_PTR(s), self, set_tmx);
 }
 
 #ifndef NDEBUG
@@ -8271,7 +8268,7 @@ dt_lite_strftime(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-dt_lite_iso8601_timediv(VALUE self, VALUE n)
+iso8601_timediv(VALUE self, VALUE n)
 {
     VALUE f, fmt;
 
@@ -8319,7 +8316,7 @@ dt_lite_iso8601(int argc, VALUE *argv, VALUE self)
 	n = INT2FIX(0);
 
     return f_add(strftimev("%Y-%m-%d", self, set_tmx),
-		 dt_lite_iso8601_timediv(self, n));
+		 iso8601_timediv(self, n));
 }
 
 /*
@@ -8355,7 +8352,7 @@ dt_lite_rfc3339(int argc, VALUE *argv, VALUE self)
 static VALUE
 dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
 {
-    VALUE n, argv2[2];
+    VALUE n, s;
 
     rb_scan_args(argc, argv, "01", &n);
 
@@ -8364,15 +8361,10 @@ dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
 
     {
 	get_d1(self);
-
-	if (!gengo(m_real_local_jd(dat),
-		   m_real_year(dat),
-		   argv2))
-	    return f_add(strftimev("%Y-%m-%d", self, set_tmx),
-			 dt_lite_iso8601_timediv(self, n));
-	return f_add(f_add(rb_f_sprintf(2, argv2),
-			   strftimev(".%m.%d", self, set_tmx)),
-		     dt_lite_iso8601_timediv(self, n));
+	s = jisx0301_date(m_real_local_jd(dat),
+			  m_real_year(dat));
+	return rb_str_append(strftimev(RSTRING_PTR(s), self, set_tmx),
+			     iso8601_timediv(self, n));
     }
 }
 
@@ -8820,6 +8812,71 @@ date_s_test_nth_kday(VALUE klass)
     return Qtrue;
 }
 
+static int
+test_unit_v2v(VALUE i,
+	      VALUE (* conv1)(VALUE),
+	      VALUE (* conv2)(VALUE))
+{
+    VALUE c, o;
+    c = (*conv1)(i);
+    o = (*conv2)(c);
+    return f_eqeq_p(o, i);
+}
+
+static int
+test_unit_v2v_iter2(VALUE (* conv1)(VALUE),
+		    VALUE (* conv2)(VALUE))
+{
+    if (!test_unit_v2v(INT2FIX(0), conv1, conv2))
+	return 0;
+    if (!test_unit_v2v(INT2FIX(1), conv1, conv2))
+	return 0;
+    if (!test_unit_v2v(INT2FIX(2), conv1, conv2))
+	return 0;
+    if (!test_unit_v2v(INT2FIX(3), conv1, conv2))
+	return 0;
+    if (!test_unit_v2v(INT2FIX(11), conv1, conv2))
+	return 0;
+    if (!test_unit_v2v(INT2FIX(65535), conv1, conv2))
+	return 0;
+    if (!test_unit_v2v(INT2FIX(1073741823), conv1, conv2))
+	return 0;
+    if (!test_unit_v2v(INT2NUM(1073741824), conv1, conv2))
+	return 0;
+    if (!test_unit_v2v(rb_rational_new2(INT2FIX(0), INT2FIX(1)), conv1, conv2))
+	return 0;
+    if (!test_unit_v2v(rb_rational_new2(INT2FIX(1), INT2FIX(1)), conv1, conv2))
+	return 0;
+    if (!test_unit_v2v(rb_rational_new2(INT2FIX(1), INT2FIX(2)), conv1, conv2))
+	return 0;
+    if (!test_unit_v2v(rb_rational_new2(INT2FIX(2), INT2FIX(3)), conv1, conv2))
+	return 0;
+    return 1;
+}
+
+static int
+test_unit_v2v_iter(VALUE (* conv1)(VALUE),
+		   VALUE (* conv2)(VALUE))
+{
+    if (!test_unit_v2v_iter2(conv1, conv2))
+	return 0;
+    if (!test_unit_v2v_iter2(conv2, conv1))
+	return 0;
+    return 1;
+}
+
+static VALUE
+date_s_test_unit_conv(VALUE klass)
+{
+    if (!test_unit_v2v_iter(sec_to_day, day_to_sec))
+	return Qfalse;
+    if (!test_unit_v2v_iter(ns_to_day, day_to_ns))
+	return Qfalse;
+    if (!test_unit_v2v_iter(ns_to_sec, sec_to_ns))
+	return Qfalse;
+    return Qtrue;
+}
+
 static VALUE
 date_s_test_all(VALUE klass)
 {
@@ -8832,6 +8889,8 @@ date_s_test_all(VALUE klass)
     if (date_s_test_weeknum(klass) == Qfalse)
 	return Qfalse;
     if (date_s_test_nth_kday(klass) == Qfalse)
+	return Qfalse;
+    if (date_s_test_unit_conv(klass) == Qfalse)
 	return Qfalse;
     return Qtrue;
 }
@@ -9451,6 +9510,8 @@ Init_date_core(void)
 			       date_s_test_commercial, 0);
     de_define_singleton_method(cDate, "test_weeknum", date_s_test_weeknum, 0);
     de_define_singleton_method(cDate, "test_nth_kday", date_s_test_nth_kday, 0);
+    de_define_singleton_method(cDate, "test_unit_conv",
+			       date_s_test_unit_conv, 0);
     de_define_singleton_method(cDate, "test_all", date_s_test_all, 0);
 #endif
 }
