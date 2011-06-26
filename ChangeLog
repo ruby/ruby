@@ -1,3 +1,7 @@
+Sun Jun 26 17:46:43 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* ext/tk/extconf.rb: copy from trunk, as requested by Hidetoshi NAGAI.
+
 Thu Jun 23 18:38:43 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	backported r26281 from ruby_1_8
