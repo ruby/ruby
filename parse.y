@@ -10146,8 +10146,7 @@ rb_parser_new(void)
  *  call-seq:
  *    ripper#end_seen?   -> Boolean
  *
- *  Return if parsed source ended by +\_\_END\_\_+.
- *  This number starts from 1.
+ *  Return true if parsed source ended by +\_\_END\_\_+.
  */
 VALUE
 rb_parser_end_seen_p(VALUE vparser)

@@ -1,3 +1,8 @@
+Mon Jun 27 00:44:53 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* parse.y (rb_parser_end_seen_p): fix documentation about return
+	  value. patched by Sho Hashimoto. [Bug #4511]
+
 Mon Jun 27 00:40:47 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* hash.c (rb_hash_reject): add documentation that Hash#reject
