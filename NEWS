@@ -164,6 +164,10 @@ with all sufficient information, see the ChangeLog file.
       http.continue_timeout = 0.5
       http.request_post('/continue', 'body=BODY', 'expect' => '100-continue')
 
+  * new method:
+    * Net::HTTPRequest#set_form): Added to support
+      both application/x-www-form-urlencoded and multipart/form-data.
+
 * openssl
   * PKey::RSA and PKey::DSA now use the generic X.509 encoding scheme 
     (e.g. used in a X.509 certificate's Subject Public Key Info) when
