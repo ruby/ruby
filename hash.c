@@ -944,6 +944,7 @@ rb_hash_reject_bang(VALUE hash)
 /*
  *  call-seq:
  *     hsh.reject {| key, value | block }  -> a_hash
+ *     hsh.reject                          -> an_enumerator
  *
  *  Same as <code>Hash#delete_if</code>, but works on (and returns) a
  *  copy of the <i>hsh</i>. Equivalent to

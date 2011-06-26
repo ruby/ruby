@@ -1,3 +1,9 @@
+Mon Jun 27 00:40:47 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* hash.c (rb_hash_reject): add documentation that Hash#reject
+	  without block returns enumerator.
+	  patched by Michael Edgar [Bug #4847] [ruby-core:36800]
+
 Sun Jun 26 23:49:21 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/date/test_switch_hitter.rb: added a test.
