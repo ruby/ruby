@@ -1,3 +1,14 @@
+Sun Jun 26 10:08:28 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/extconf.rb
+	* ext/openssl/ossl_missing.h/.c: add ASN1_put_eoc if missing.
+
+	* ext/openssl/ossl_asn1.c: introduce ossl_asn1_object_size and
+	  ossl_asn1_put_object to wrap functionality depending on OpenSSL
+	  version in use.
+	  Fixes	[ Ruby 1.9 - Bug #4916 ] reported by Hiroshi Nakamura.
+	  [ruby-core:37286]
+
 Sun Jun 26 01:00:15 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (date_strftime_internal): removed meaningless braces.

@@ -342,3 +342,15 @@ PEM_def_callback(char *buf, int num, int w, void *key)
 }
 #endif
 
+#if !defined(HAVE_ASN1_PUT_EOC)
+int
+ASN1_put_eoc(unsigned char **pp)
+{
+    unsigned char *p = *pp;
+    *p++ = 0;
+    *p++ = 0;
+    *pp = p;
+    return 2;
+}
+#endif
+
