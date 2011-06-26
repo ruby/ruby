@@ -1,3 +1,20 @@
+Sun Jun 26 13:35:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm_dump.c (rb_vm_bugreport): change CrashReporter suggestion messages
+	  on Mac. It should be placed after "-- C level backtrace" line.
+	  Suggested by Endoh-san.
+
+	  <before>
+	  -- See Crash Report log file under ~/Library/Logs/CrashReporter or ---------
+	  -- /Library/Logs/CrashReporter, for the more detail of ---------------------
+	  -- C level backtrace information -------------------------------------------
+
+	<after>
+	  -- C level backtrace information -------------------------------------------
+
+	     See Crash Report log file under ~/Library/Logs/CrashReporter or
+	     /Library/Logs/CrashReporter, for the more detail of.
+
 Sun Jun 26 10:08:28 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/extconf.rb
