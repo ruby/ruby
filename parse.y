@@ -2414,6 +2414,18 @@ opt_paren_args	: none
 
 opt_call_args	: none
 		| call_args
+		| args ','
+		    {
+		      $$ = $1;
+		    }
+		| args ',' assocs ','
+		    {
+		    /*%%%*/
+			$$ = arg_append($1, NEW_HASH($3));
+		    /*%
+			$$ = arg_add_assocs($1, $3);
+		    %*/
+		    }
 		;
 
 call_args	: command
@@ -2486,10 +2498,6 @@ block_arg	: tAMPER arg_value
 opt_block_arg	: ',' block_arg
 		    {
 			$$ = $2;
-		    }
-		| ','
-		    {
-			$$ = 0;
 		    }
 		| none
 		    {

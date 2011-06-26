@@ -1,3 +1,9 @@
+Sun Jun 26 18:03:30 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* parse.y: comma at the end of line is no longer allowed.
+	  A patch from Yukihiro Matsumoto  <matz AT ruby-lang.org>.
+	  (fixed #3456).
+
 Sun Jun 26 13:35:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm_dump.c (rb_vm_bugreport): change CrashReporter suggestion messages
