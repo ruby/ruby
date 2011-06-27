@@ -921,7 +921,7 @@ rb_random_real(VALUE obj)
 }
 
 /*
- * call-seq: prng.bytes(size) -> prng
+ * call-seq: prng.bytes(size) -> a_string
  *
  * Returns a random binary string.  The argument size specified the length of
  * the result string.
