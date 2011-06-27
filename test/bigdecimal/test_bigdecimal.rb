@@ -948,4 +948,89 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_in_epsilon(Math.exp(-n), BigMath.exp(BigDecimal("-20"), n))
     assert_in_epsilon(Math.exp(-40), BigMath.exp(BigDecimal("-40"), n))
   end
+
+  def test_BigMath_log_with_nil
+    assert_raise(ArgumentError) do
+      BigMath.log(nil, 20)
+    end
+  end
+
+  def test_BigMath_log_with_nil_precision
+    assert_raise(ArgumentError) do
+      BigMath.log(1, nil)
+    end
+  end
+
+  def test_BigMath_log_with_complex
+    assert_raise(Math::DomainError) do
+      BigMath.log(Complex(1, 2), 20)
+    end
+  end
+
+  def test_BigMath_log_with_zerp_precision
+    assert_raise(ArgumentError) do
+      BigMath.log(1, 0)
+    end
+  end
+
+  def test_BigMath_log_with_negative_precision
+    assert_raise(ArgumentError) do
+      BigMath.log(1, -42)
+    end
+  end
+
+  def test_BigMath_log_with_negative_infinite
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+      assert_raise(Math::DomainError) do
+        BigMath.log(-BigDecimal::INFINITY, 20)
+      end
+    end
+  end
+
+  def test_BigMath_log_with_positive_infinite
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+      assert(BigMath.log(BigDecimal::INFINITY, 20) > 0)
+      assert(BigMath.log(BigDecimal::INFINITY, 20).infinite?)
+    end
+  end
+
+  def test_BigMath_log_with_nan
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+      assert(BigMath.log(BigDecimal::NAN, 20).nan?)
+    end
+  end
+
+  def test_BigMath_log_with_1
+    assert_in_delta(0.0, BigMath.log(1, 20))
+    assert_in_delta(0.0, BigMath.log(1.0, 20))
+    assert_in_delta(0.0, BigMath.log(BigDecimal(1), 20))
+  end
+
+  def test_BigMath_log_with_exp_1
+    assert_in_delta(1.0, BigMath.log(BigMath.exp(1, 20), 20))
+  end
+
+  def test_BigMath_log_with_2
+    assert_in_delta(Math.log(2), BigMath.log(2, 20))
+    assert_in_delta(Math.log(2), BigMath.log(2.0, 20))
+    assert_in_delta(Math.log(2), BigMath.log(BigDecimal(2), 20))
+  end
+
+  def test_BigMath_log_with_square_of_exp_2
+    assert_in_delta(2, BigMath.log(BigMath.exp(1, 20)**2, 20))
+  end
+
+  def test_BigMath_log_with_42
+    assert_in_delta(Math.log(42), BigMath.log(42, 20))
+    assert_in_delta(Math.log(42), BigMath.log(42.0, 20))
+    assert_in_delta(Math.log(42), BigMath.log(BigDecimal(42), 20))
+  end
+
+  def test_BigMath_log_with_reciprocal_of_42
+    assert_in_delta(Math.log(1e-42), BigMath.log(1e-42, 20))
+    assert_in_delta(Math.log(1e-42), BigMath.log(BigDecimal("1e-42"), 20))
+  end
 end

@@ -1,3 +1,15 @@
+Tue Jun 28 01:22:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigMath_s_log): move BigMath.log from
+	  bigdecimal/math.rb.
+
+	* ext/bigdecimal/lib/bigdecimal/math.rb: ditto.
+
+	* test/bigdecimal/test_bigdecimal.rb: move test for BigMath.log from
+	  test/bigdecimal/test_bigmath.rb.
+
+	* test/bigdecimal/test_bigmath.rb: ditto.
+
 Tue Jun 28 01:19:52 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/ruby-lex.rb: fix [Bug #4232].

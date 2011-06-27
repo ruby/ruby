@@ -145,41 +145,6 @@ module BigMath
     y
   end
 
-  # Computes the natural logarithm of x to the specified number of digits
-  # of precision.
-  #
-  # Returns x if x is infinite or NaN.
-  #
-  def log(x, prec)
-    raise ArgumentError, "Zero or negative argument for log" if x <= 0 || prec <= 0
-    return x if x.infinite? || x.nan?
-    one = BigDecimal("1")
-    two = BigDecimal("2")
-    n  = prec + BigDecimal.double_fig
-    if (expo = x.exponent) < 0 || expo >= 3
-      x = x.mult(BigDecimal("1E#{-expo}"), n)
-    else
-      expo = nil
-    end
-    x  = (x - one).div(x + one,n)
-    x2 = x.mult(x,n)
-    y  = x
-    d  = y
-    i = one
-    while d.nonzero? && ((m = n - (y.exponent - d.exponent).abs) > 0)
-      m = BigDecimal.double_fig if m < BigDecimal.double_fig
-      x  = x2.mult(x,n)
-      i += two
-      d  = x.div(i,m)
-      y += d
-    end
-    y *= two
-    if expo
-      y += log(BigDecimal("10"),prec) * BigDecimal(expo.to_s)
-    end
-    y
-  end
-
   # Computes the value of pi to the specified number of digits of precision.
   def PI(prec)
     raise ArgumentError, "Zero or negative argument for PI" if prec <= 0
