@@ -1018,7 +1018,7 @@ rb_thread_wakeup_timer_thread(void)
     }
 }
 
-static int
+static ssize_t
 consume_communication_pipe(void)
 {
     const size_t buff_size = 1024;
@@ -1058,7 +1058,6 @@ thread_timer(void *p)
 {
     rb_global_vm_lock_t *gvl = (rb_global_vm_lock_t *)p;
     int result;
-    int len;
     struct timeval timeout;
 
     if (TT_DEBUG) fprintf(stderr, "start timer thread\n");
@@ -1091,7 +1090,7 @@ thread_timer(void *p)
 	    /* maybe timeout */
 	}
 	else if (result > 0) {
-	    len = consume_communication_pipe();
+	    (void)consume_communication_pipe();
 	}
 	else { /* result < 0 */
 	    if (errno == EINTR) {
