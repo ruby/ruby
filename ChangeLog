@@ -1,3 +1,13 @@
+Tue Jun 28 00:14:13 2011  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: fix [Bug #4409]. add DRbServer#here?.
+
+	* test/drb/test_drb.rb: ditto.
+
+	* test/drb/drbtest.rb: ditto.
+
+	* test/drb/ut_eq.rb: ditto.
+
 Tue Jun 28 00:08:43 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/workspace.rb: fix BUG#4793.

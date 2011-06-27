@@ -1341,6 +1341,7 @@ module DRb
 
       @protocol = DRbProtocol.open_server(uri, @config)
       @uri = @protocol.uri
+      @exported_uri = [@uri]
 
       @front = front
       @idconv = @config[:idconv]
@@ -1386,6 +1387,10 @@ module DRb
     # Is this server alive?
     def alive?
       @thread.alive?
+    end
+    
+    def here?(uri)
+      @exported_uri.include?(uri)
     end
 
     # Stop this server.
@@ -1570,6 +1575,10 @@ module DRb
         @grp.add Thread.current
         Thread.current['DRb'] = { 'client' => client ,
                                   'server' => self }
+        DRb.mutex.synchronize do
+          client_uri = client.uri
+          @exported_uri << client_uri unless @exported_uri.include?(client_uri)
+        end
         loop do
           begin
             succ = false
@@ -1666,7 +1675,8 @@ module DRb
 
   # Is +uri+ the URI for the current local server?
   def here?(uri)
-    (current_server.uri rescue nil) == uri
+    current_server.here?(uri) rescue false
+    # (current_server.uri rescue nil) == uri
   end
   module_function :here?
 
