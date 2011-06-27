@@ -2067,17 +2067,20 @@ rb_thread_local_aref(VALUE thread, ID id)
  *  either a symbol or a string name. If the specified variable does not exist,
  *  returns <code>nil</code>.
  *
- *     a = Thread.new { Thread.current["name"] = "A"; Thread.stop }
- *     b = Thread.new { Thread.current[:name]  = "B"; Thread.stop }
- *     c = Thread.new { Thread.current["name"] = "C"; Thread.stop }
- *     Thread.list.each {|x| puts "#{x.inspect}: #{x[:name]}" }
+ *     [
+ *       Thread.new { Thread.current["name"] = "A" },
+ *       Thread.new { Thread.current[:name]  = "B" },
+ *       Thread.new { Thread.current["name"] = "C" }
+ *     ].each do |th|
+ *       th.join
+ *       puts "#{th.inspect}: #{th[:name]}"
+ *     end
  *
  *  <em>produces:</em>
  *
- *     #<Thread:0x401b3b3c sleep>: C
- *     #<Thread:0x401b3bc8 sleep>: B
- *     #<Thread:0x401b3c68 sleep>: A
- *     #<Thread:0x401bdf4c run>:
+ *     #<Thread:0x00000002a54220 dead>: A
+ *     #<Thread:0x00000002a541a8 dead>: B
+ *     #<Thread:0x00000002a54130 dead>: C
  */
 
 static VALUE

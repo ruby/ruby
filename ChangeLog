@@ -1,3 +1,8 @@
+Tue Jun 28 05:03:32 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* thread.c (rb_thread_local_aref): RDoc fix. Thread#[] example
+	  had a race. See #4480.
+
 Tue Jun 28 01:22:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigMath_s_log): move BigMath.log from
