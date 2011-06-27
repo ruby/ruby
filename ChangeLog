@@ -1,3 +1,8 @@
+Mon Jun 27 09:57:02 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_pthread.c (rb_thread_create_timer_thread): 
+	  Fixes missing initialization of oflags.
+
 Mon Jun 27 09:07:42 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c: Stop polling in the timer thread when there are

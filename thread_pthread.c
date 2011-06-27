@@ -1137,6 +1137,7 @@ rb_thread_create_timer_thread(void)
 	    {
 		int oflags;
 #if defined(O_NONBLOCK)
+		oflags = fcntl(timer_thread_pipe[1], F_GETFL);
 		oflags |= O_NONBLOCK;
 		fcntl(timer_thread_pipe[1], F_SETFL, oflags);
 #endif /* defined(O_NONBLOCK) */
