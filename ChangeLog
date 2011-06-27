@@ -1,3 +1,8 @@
+Mon Jun 27 22:06:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (consume_communication_pipe): don't use C99
+	  style variable length array.
+
 Mon Jun 27 22:04:27 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (consume_communication_pipe): change return

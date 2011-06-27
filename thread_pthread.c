@@ -1022,7 +1022,7 @@ static void
 consume_communication_pipe(void)
 {
     const size_t buff_size = 1024;
-    char buff[buff_size];
+    char buff[1024];
     ssize_t result;
   retry:
     result = read(timer_thread_pipe[0], buff, buff_size);
