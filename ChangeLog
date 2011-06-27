@@ -1,3 +1,7 @@
+Tue Jun 28 00:08:43 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/workspace.rb: fix BUG#4793.
+
 Mon Jun 27 22:06:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (consume_communication_pipe): don't use C99
