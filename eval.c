@@ -146,7 +146,7 @@ ruby_cleanup(volatile int ex)
     ex = error_handle(ex);
     ruby_finalize_1();
     POP_TAG();
-    rb_thread_stop_timer_thread();
+    rb_thread_stop_timer_thread(1);
 
 #if EXIT_SUCCESS != 0 || EXIT_FAILURE != 1
     switch (ex) {

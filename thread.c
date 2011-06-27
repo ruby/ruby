@@ -363,7 +363,6 @@ rb_thread_terminate_all(void)
 	}
 	POP_TAG();
     }
-    rb_thread_stop_timer_thread();
 }
 
 static void
@@ -2985,9 +2984,9 @@ timer_thread_function(void *arg)
 }
 
 void
-rb_thread_stop_timer_thread(void)
+rb_thread_stop_timer_thread(int close_anyway)
 {
-    if (timer_thread_id && native_stop_timer_thread()) {
+    if (timer_thread_id && native_stop_timer_thread(close_anyway)) {
 	native_reset_timer_thread();
     }
 }

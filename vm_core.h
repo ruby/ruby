@@ -651,8 +651,10 @@ VALUE rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc,
                  const VALUE *argv, const rb_method_entry_t *me);
 
 void rb_thread_start_timer_thread(void);
-void rb_thread_stop_timer_thread(void);
+void rb_thread_stop_timer_thread(int);
 void rb_thread_reset_timer_thread(void);
+void rb_thread_wakeup_timer_thread(void);
+
 int ruby_thread_has_gvl_p(void);
 VALUE rb_make_backtrace(void);
 typedef int rb_backtrace_iter_func(void *, VALUE, int, VALUE);

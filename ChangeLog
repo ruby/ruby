@@ -1,3 +1,40 @@
+Mon Jun 27 09:07:42 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_pthread.c: Stop polling in the timer thread when there are
+	  no waiting thread.  If there are 2 or more runnable threads,
+	  the timer thread does polling.  Avoid polling makes power save
+	  for several computers (0.2W per a Ruby process, when I measured).
+	  If outside-event such as signal or Thread#kill was occuerred
+	  when the timer thread does not do polling, then wake-up
+	  the timer thread using communication-pipe (the timer thread
+	  waits this communication-pipe with select(2)).
+	  The discussion about this modification can be found from the post
+	  [ruby-core:33456] and other related posts.
+	  Note that Eric Wong and KOSAKI Motohiro give us the huge
+	  contributions for this modification.  Thanks.
+
+	* thread_pthread.c (rb_thread_wakeup_timer_thread): add a function.
+	  This function wakes up the timer thread using communication-pipe.
+
+	* thread.c (rb_thread_stop_timer_thread): add a parameter which
+	  specify closing communication-pipe or not.
+
+	* thread.c (rb_thread_terminate_all): do not stop timer thread here
+	  (ruby_cleanup() terminate timer thread).
+
+	* signal.c: wake up timer thread using
+	  rb_thread_wakeup_timer_thread() from signal handler.
+
+	* eval.c (ruby_cleanup): use rb_thread_stop_timer_thread(1).
+
+	* process.c: use rb_thread_stop_timer_thread(0)
+	  (reuse communication-pipe).
+
+	* thread_win32.c (rb_thread_wakeup_timer_thread): add a dummy
+	  function.
+
+	* vm_core.h: add and fix decl. of functions.
+
 Mon Jun 27 08:01:19 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_parse.c: should use ALLOCA_N.

@@ -725,6 +725,12 @@ timer_thread_func(void *dummy)
     return 0;
 }
 
+void
+rb_thread_wakeup_timer_thread(void)
+{
+    /* do nothing */
+}
+
 static void
 rb_thread_create_timer_thread(void)
 {

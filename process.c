@@ -1014,7 +1014,7 @@ static void before_exec(void)
 	 * multiple threads. Therefore we have to kill internal threads at once.
 	 * [ruby-core: 10583]
 	 */
-	rb_thread_stop_timer_thread();
+	rb_thread_stop_timer_thread(0);
     }
 }
 
