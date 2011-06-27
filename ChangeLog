@@ -1,3 +1,8 @@
+Mon Jun 27 22:04:27 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (consume_communication_pipe): change return
+	  type to void. caller doesn't use it.
+
 Mon Jun 27 21:29:50 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.h (rb_global_vm_lock_struct): add volatile to

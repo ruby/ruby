@@ -1018,7 +1018,7 @@ rb_thread_wakeup_timer_thread(void)
     }
 }
 
-static ssize_t
+static void
 consume_communication_pipe(void)
 {
     const size_t buff_size = 1024;
@@ -1033,7 +1033,6 @@ consume_communication_pipe(void)
 	    rb_bug_errno("consume_communication_pipe: read", errno);
 	}
     }
-    return result;
 }
 
 static void
@@ -1090,7 +1089,7 @@ thread_timer(void *p)
 	    /* maybe timeout */
 	}
 	else if (result > 0) {
-	    (void)consume_communication_pipe();
+	    consume_communication_pipe();
 	}
 	else { /* result < 0 */
 	    if (errno == EINTR) {
