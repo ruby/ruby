@@ -1,3 +1,8 @@
+Mon Jun 27 21:29:50 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.h (rb_global_vm_lock_struct): add volatile to
+	  gvl->waiting. now thread_timer() access it w/o lock.
+
 Mon Jun 27 21:16:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c: s/__gvl_acquire/gvl_acquire_common/ and
