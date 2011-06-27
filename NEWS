@@ -68,11 +68,17 @@ with all sufficient information, see the ChangeLog file.
   * Kernel
     * Kernel#respond_to? now returns false for protected methods.
     * move #__id__ to BasicObject.
+    * extended method:
+      * Kernel#rand supports range argument
 
   * Module
     * new methods:
       * Module#private_constant
       * Module#public_constant
+
+  * Random
+    * extended method:
+      * Random.rand supports range argument
 
   * String
     * extended method:
