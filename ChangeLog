@@ -1,3 +1,8 @@
+Tue Jun 28 07:50:32 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* object.c (Init_Object):  Teach RDoc what Init_class_hierarchy does to
+	  hook up ri for BasicObject, Object, Module and Class.
+
 Tue Jun 28 05:03:32 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* thread.c (rb_thread_local_aref): RDoc fix. Thread#[] example

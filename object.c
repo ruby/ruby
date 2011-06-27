@@ -2553,23 +2553,24 @@ rb_f_array(VALUE obj, VALUE arg)
  * \ingroup class
  */
 
-/*
+/*  Document-class: BasicObject
  *
- *  <code>BasicObject</code> is the parent class of all classes in Ruby.
- *  It's an explicit blank class.  <code>Object</code>, the root of Ruby's
- *  class hierarchy is a direct subclass of <code>BasicObject</code>.  Its
- *  methods are therefore available to all objects unless explicitly
- *  overridden.
+ *  BasicObject is the parent class of all classes in Ruby.  It's an explicit
+ *  blank class.
+ */
+
+/*  Document-class: Object
  *
- *  <code>Object</code> mixes in the <code>Kernel</code> module, making
- *  the built-in kernel functions globally accessible. Although the
- *  instance methods of <code>Object</code> are defined by the
- *  <code>Kernel</code> module, we have chosen to document them here for
- *  clarity.
+ *  Object is the root of Ruby's class hierarchy.  Its methods are available
+ *  to all classes unless explicitly overridden.
+ *
+ *  Object mixes in the Kernel module, making the built-in kernel functions
+ *  globally accessible. Although the instance methods of Object are defined
+ *  by the Kernel module, we have chosen to document them here for clarity.
  *
  *  In the descriptions of Object's methods, the parameter <i>symbol</i> refers
- *  to a symbol, which is either a quoted string or a
- *  <code>Symbol</code> (such as <code>:name</code>).
+ *  to a symbol, which is either a quoted string or a Symbol (such as
+ *  <code>:name</code>).
  */
 
 void
@@ -2578,6 +2579,14 @@ Init_Object(void)
     int i;
 
     Init_class_hierarchy();
+
+#if 0
+    // teach RDoc about these classes
+    rb_cBasicObject = rb_define_class("BasicObject", Qnil);
+    rb_cObject = rb_define_class("Object", rb_cBasicObject);
+    rb_cModule = rb_define_class("Module", rb_cObject);
+    rb_cClass =  rb_define_class("Class",  rb_cModule);
+#endif
 
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
