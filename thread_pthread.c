@@ -46,7 +46,7 @@ static void native_cond_destroy(rb_thread_cond_t *cond);
 #endif
 
 static void
-__gvl_acquire(rb_vm_t *vm)
+gvl_acquire_common(rb_vm_t *vm)
 {
     if (vm->gvl.acquired) {
 
@@ -75,12 +75,12 @@ static void
 gvl_acquire(rb_vm_t *vm, rb_thread_t *th)
 {
     native_mutex_lock(&vm->gvl.lock);
-    __gvl_acquire(vm);
+    gvl_acquire_common(vm);
     native_mutex_unlock(&vm->gvl.lock);
 }
 
 static void
-__gvl_release(rb_vm_t *vm)
+gvl_release_common(rb_vm_t *vm)
 {
     vm->gvl.acquired = 0;
     if (vm->gvl.waiting > 0)
@@ -91,7 +91,7 @@ static void
 gvl_release(rb_vm_t *vm)
 {
     native_mutex_lock(&vm->gvl.lock);
-    __gvl_release(vm);
+    gvl_release_common(vm);
     native_mutex_unlock(&vm->gvl.lock);
 }
 
@@ -100,7 +100,7 @@ gvl_yield(rb_vm_t *vm, rb_thread_t *th)
 {
     native_mutex_lock(&vm->gvl.lock);
 
-    __gvl_release(vm);
+    gvl_release_common(vm);
 
     /* An another thread is processing GVL yield. */
     if (UNLIKELY(vm->gvl.wait_yield)) {
@@ -129,7 +129,7 @@ gvl_yield(rb_vm_t *vm, rb_thread_t *th)
     vm->gvl.wait_yield = 0;
     native_cond_broadcast(&vm->gvl.switch_wait_cond);
   acquire:
-    __gvl_acquire(vm);
+    gvl_acquire_common(vm);
     native_mutex_unlock(&vm->gvl.lock);
 }
 

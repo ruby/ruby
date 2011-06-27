@@ -1,3 +1,8 @@
+Mon Jun 27 21:16:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c: s/__gvl_acquire/gvl_acquire_common/ and
+	  s/__gvl_release/gvl_release_common/.
+
 Mon Jun 27 11:41:47 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread_pthread.c (rb_thread_create_timer_thread):
