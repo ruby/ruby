@@ -1022,7 +1022,11 @@ static void
 consume_communication_pipe(void)
 {
     const size_t buff_size = 1024;
+#ifdef __FreeBSD__
+    char buff[buff_size];
+#else
     char buff[1024];
+#endif
     ssize_t result;
   retry:
     result = read(timer_thread_pipe[0], buff, buff_size);
