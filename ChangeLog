@@ -1,6 +1,11 @@
+Mon Jun 27 11:41:47 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c (rb_thread_create_timer_thread):
+	  the type of retrun value of write(2) is ssize_t.
+
 Mon Jun 27 09:57:02 2011  Koichi Sasada  <ko1@atdot.net>
 
-	* thread_pthread.c (rb_thread_create_timer_thread): 
+	* thread_pthread.c (rb_thread_create_timer_thread):
 	  Fixes missing initialization of oflags.
 
 Mon Jun 27 09:07:42 2011  Koichi Sasada  <ko1@atdot.net>

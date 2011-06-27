@@ -993,7 +993,7 @@ static int timer_thread_pipe_owner_process;
 void
 rb_thread_wakeup_timer_thread(void)
 {
-    int result;
+    ssize_t result;
 
     /* already opened */
     if (timer_thread_pipe_owner_process == getpid()) {
@@ -1023,7 +1023,7 @@ consume_communication_pipe(void)
 {
     const size_t buff_size = 1024;
     char buff[buff_size];
-    int result;
+    ssize_t result;
   retry:
     result = read(timer_thread_pipe[0], buff, buff_size);
     if (result < 0) {
