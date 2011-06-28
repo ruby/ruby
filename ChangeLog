@@ -1,3 +1,11 @@
+Tue Jun 28 11:49:14 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_pthread.c (consume_communication_pipe): 
+	  Make "buff" as static.  (Maybe) "buff" can be shared between
+	  any caller (any threads) because no one use the read values.
+	  And remove const value "buff_size", and define CCP_READ_BUFF_SIZE
+	  macro.
+
 Tue Jun 28 11:45:30 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rake:  Update rake to fix some bugs and hide deprecated features

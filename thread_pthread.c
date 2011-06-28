@@ -1021,15 +1021,13 @@ rb_thread_wakeup_timer_thread(void)
 static void
 consume_communication_pipe(void)
 {
-    const size_t buff_size = 1024;
-#ifdef __FreeBSD__
-    char buff[buff_size];
-#else
-    char buff[1024];
-#endif
+#define CCP_READ_BUFF_SIZE 1024
+    /* buffer can be shared because no one refers to them. */
+    static char buff[CCP_READ_BUFF_SIZE]; 
     ssize_t result;
+
   retry:
-    result = read(timer_thread_pipe[0], buff, buff_size);
+    result = read(timer_thread_pipe[0], buff, CCP_READ_BUFF_SIZE);
     if (result < 0) {
 	switch (errno) {
 	  case EINTR: goto retry;
