@@ -3,6 +3,8 @@ Tue Jun 28 11:49:14 2011  Koichi Sasada  <ko1@atdot.net>
 	* thread_pthread.c (consume_communication_pipe): 
 	  Make "buff" as static.  (Maybe) "buff" can be shared between
 	  any caller (any threads) because no one use the read values.
+	  "buff" (1024 byte) on stack may cause stack overflow on
+	  several environment (we found a crash on FreeBSD).
 	  And remove const value "buff_size", and define CCP_READ_BUFF_SIZE
 	  macro.
 
