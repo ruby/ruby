@@ -1,3 +1,8 @@
+Tue Jun 28 23:46:08 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/tracer.rb: count only non-internal libraries in stack trace,
+	  ignoring custom_require. 
+
 Tue Jun 28 21:44:58 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/ruby-lex.rb: recognize '\char' in ruby statement.

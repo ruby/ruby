@@ -287,7 +287,7 @@ if $0 == __FILE__
   ARGV.shift
   Tracer.on
   require $0
-elsif caller.count {|bt| /\A<internal:[^<>]+>:/ !~ bt} <= 1
+elsif caller.count {|bt| /\/rubygems\/custom_require.rb:/ !~ bt} <= 1
   Tracer.on
 end
 # :startdoc:
