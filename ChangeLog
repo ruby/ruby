@@ -1,3 +1,34 @@
+Tue Jun 28 15:09:21 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/benchmark.rb: merge eregon/benchmark.
+	  https://github.com/eregon/ruby/tree/benchmark
+	  patched by Benoit Daloze. [ruby-core:37593] [Bug #4940]
+
+	* lib/benchmark (Benchmark#bmbm): bmbm should be consistent with bm
+	  for the return value.
+
+	* test/benchmark: remove preemptive test instead of skipping
+	  I removed the preemptive test I wrote for Feature #4197.
+	  I'll add it back when the implementation will be able to satisfy it.
+
+	* lib/benchmark (Benchmark#bmbm): remove useless explicit call,
+	  #format is an alias of #to_s test/benchmark: add a test for
+	  format of long time.
+
+	* lib/benchmark: fix label width: always add 1 to ensure there is a
+	  space delimiter even with times over 100s
+	  When I asked for Feature #4197, I wanted to make delimiting spaces
+	  consistent for #bm and #bmbm.
+	  But with times over 100s, the output contains no space between the
+	  label and the first time (user).
+	  Now both ensure there is always a space, even if that means 3 spaces
+	  with times under 10s (because it is formatted as %10.6f)
+
+	* test/benchmark: let labels be a constant
+	  lib/benchmark (Benchmark#realtime): avoid creating an unused Proc
+	  lib/benchmark (Benchmark#benchmark): use ensure clause to restore
+	  STDOUT.sync, as in #bmbm
+
 Tue Jun 28 13:41:51 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread_win32.c (native_stop_timer_thread): fixed commit miss of

@@ -19,16 +19,14 @@ describe Benchmark do
     x.report { 1.upto(n) do ; '1'; end }
   end
 
-  def labels
-    %w[first second third]
-  end
+  LABELS = %w[first second third]
 
   def bench(type = :bm, *args, &block)
     if block
       Benchmark.send(type, *args, &block)
     else
       Benchmark.send(type, *args) do |x|
-        labels.each { |label|
+        LABELS.each { |label|
           x.report(label) {}
         }
       end
@@ -50,6 +48,8 @@ describe Benchmark do
       Benchmark::Tms.new(1,2,3,4,5,'label').format('%u %y %U %Y %t %r %n').must_equal \
         "1.000000 2.000000 3.000000 4.000000 10.000000 (5.000000) label"
       Benchmark::Tms.new(1).format('%u %.3f', 2).must_equal "1.000000 2.000"
+      Benchmark::Tms.new(100, 150, 0, 0, 200).to_s.must_equal \
+        "100.000000 150.000000 250.000000 (200.000000)\n"
     end
 
     it 'wont modify the format String given' do
@@ -70,20 +70,17 @@ describe Benchmark do
 
   describe 'bm' do
     it "returns an Array of the times with the labels" do
-      capture_io do
-        results = bench
-        results.must_be_instance_of Array
-        results.size.must_equal labels.size
-        results.zip(labels).each { |tms, label|
-          tms.must_be_instance_of Benchmark::Tms
-          tms.label.must_equal label
-        }
+      [:bm, :bmbm].each do |meth|
+        capture_io do
+          results = bench(meth)
+          results.must_be_instance_of Array
+          results.size.must_equal LABELS.size
+          results.zip(LABELS).each { |tms, label|
+            tms.must_be_instance_of Benchmark::Tms
+            tms.label.must_equal label
+          }
+        end
       end
-    end
-
-    it 'correctly guess the label width even when not given' do
-      skip :not_implemented
-      capture_bench_output(:bm).must_equal BM_OUTPUT
     end
 
     it 'correctly output when the label width is given' do
@@ -130,37 +127,37 @@ describe Benchmark do
 end
 
 BM_OUTPUT = <<BENCH
-            user     system      total        real
-first   --time--   --time--   --time-- (  --time--)
-second  --time--   --time--   --time-- (  --time--)
-third   --time--   --time--   --time-- (  --time--)
+             user     system      total        real
+first    --time--   --time--   --time-- (  --time--)
+second   --time--   --time--   --time-- (  --time--)
+third    --time--   --time--   --time-- (  --time--)
 BENCH
 
 BM_OUTPUT_NO_LABEL = <<BENCH
-      user     system      total        real
-  --time--   --time--   --time-- (  --time--)
-  --time--   --time--   --time-- (  --time--)
-  --time--   --time--   --time-- (  --time--)
+       user     system      total        real
+   --time--   --time--   --time-- (  --time--)
+   --time--   --time--   --time-- (  --time--)
+   --time--   --time--   --time-- (  --time--)
 BENCH
 
 BMBM_OUTPUT = <<BENCH
-Rehearsal -----------------------------------------
-first   --time--   --time--   --time-- (  --time--)
-second  --time--   --time--   --time-- (  --time--)
-third   --time--   --time--   --time-- (  --time--)
--------------------------------- total: --time--sec
+Rehearsal ------------------------------------------
+first    --time--   --time--   --time-- (  --time--)
+second   --time--   --time--   --time-- (  --time--)
+third    --time--   --time--   --time-- (  --time--)
+--------------------------------- total: --time--sec
 
-            user     system      total        real
-first   --time--   --time--   --time-- (  --time--)
-second  --time--   --time--   --time-- (  --time--)
-third   --time--   --time--   --time-- (  --time--)
+             user     system      total        real
+first    --time--   --time--   --time-- (  --time--)
+second   --time--   --time--   --time-- (  --time--)
+third    --time--   --time--   --time-- (  --time--)
 BENCH
 
 BENCHMARK_OUTPUT_WITH_TOTAL_AVG = <<BENCH
-             user     system      total        real
-for:     --time--   --time--   --time-- (  --time--)
-times:   --time--   --time--   --time-- (  --time--)
-upto:    --time--   --time--   --time-- (  --time--)
->total:  --time--   --time--   --time-- (  --time--)
->avg:    --time--   --time--   --time-- (  --time--)
+              user     system      total        real
+for:      --time--   --time--   --time-- (  --time--)
+times:    --time--   --time--   --time-- (  --time--)
+upto:     --time--   --time--   --time-- (  --time--)
+>total:   --time--   --time--   --time-- (  --time--)
+>avg:     --time--   --time--   --time-- (  --time--)
 BENCH
