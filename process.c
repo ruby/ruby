@@ -4879,8 +4879,8 @@ rb_daemon(int nochdir, int noclose)
 	if (n > 2)
 	    (void)close (n);
     }
-    return err;
 #endif
+    return err;
 }
 #else
 #define proc_daemon rb_f_notimplement

@@ -1,3 +1,7 @@
+Tue Jun 28 10:18:42 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* process.c (rb_daemon): fix wrong #endif position.
+
 Tue Jun 28 07:50:32 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* object.c (Init_Object):  Teach RDoc what Init_class_hierarchy does to
