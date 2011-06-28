@@ -1,3 +1,9 @@
+Wed Jun 29 06:21:02 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_pthread.c (native_stop_timer_thread): skip to close
+	  communication pipe to avoid timing bug (process termination timing).
+	  The communication pipe will closed by OS.
+
 Wed Jun 29 06:09:54 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* error.c (rb_async_bug_errno): async-safe bug report function.

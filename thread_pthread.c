@@ -1189,10 +1189,13 @@ native_stop_timer_thread(int close_anyway)
 	/* close communication pipe */
 	if (close_anyway) {
 	    /* TODO: Uninstall all signal handlers or mask all signals.
-	     *       This pass is cleaning phase.  It is too rare case
-             *       to generate problem, so we remains it in TODO.
+	     *       This pass is cleaning phase (terminate ruby process).
+	     *       To avoid such race, we skip to close communication
+	     *       pipe.  OS will close it at process termination.
+	     *       It may not good practice, but pragmatic.
+	     *       We remain it is TODO.
 	     */
-	    close_communication_pipe();
+	    /* close_communication_pipe(); */
 	}
     }
     return stopped;
