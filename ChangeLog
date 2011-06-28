@@ -1,3 +1,8 @@
+Tue Jun 28 13:41:51 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread_win32.c (native_stop_timer_thread): fixed commit miss of
+	  r32244.  grep sources before changing the signature of a function.
+
 Tue Jun 28 11:49:14 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c (consume_communication_pipe): 
