@@ -1750,7 +1750,7 @@ if test x"$enable_pthread" = xyes; then
 	pthread_getattr_np pthread_attr_get_np pthread_attr_getstack\
 	pthread_get_stackaddr_np pthread_get_stacksize_np \
 	thr_stksegment pthread_stackseg_np pthread_getthrds_np \
-	pthread_condattr_setclock)
+	pthread_condattr_setclock pthread_sigmask)
 fi
 if test x"$ac_cv_header_ucontext_h" = xyes; then
     if test x"$rb_with_pthread" = xyes; then

@@ -32,7 +32,7 @@ ruby_atomic_exchange(rb_atomic_t *ptr, rb_atomic_t val)
 #undef SIGBUS
 #endif
 
-#if defined HAVE_SIGPROCMASK || defined HAVE_SIGSETMASK
+#ifdef HAVE_PTHREAD_SIGMASK
 #define USE_TRAP_MASK 1
 #else
 #define USE_TRAP_MASK 0
@@ -520,11 +520,7 @@ rb_signal_buff_size(void)
 }
 
 #if USE_TRAP_MASK
-# ifdef HAVE_SIGPROCMASK
 static sigset_t trap_last_mask;
-# else
-static int trap_last_mask;
-# endif
 #endif
 
 #if HAVE_PTHREAD_H
@@ -670,11 +666,7 @@ rb_signal_exec(rb_thread_t *th, int sig)
 
 struct trap_arg {
 #if USE_TRAP_MASK
-# ifdef HAVE_SIGPROCMASK
     sigset_t mask;
-# else
-    int mask;
-# endif
 #endif
     int sig;
     sighandler_t func;
@@ -854,11 +846,7 @@ trap(struct trap_arg *arg)
     vm->trap_list[sig].safe = rb_safe_level();
     /* enable at least specified signal. */
 #if USE_TRAP_MASK
-#ifdef HAVE_SIGPROCMASK
     sigdelset(&arg->mask, sig);
-#else
-    arg->mask &= ~sigmask(sig);
-#endif
 #endif
     return oldcmd;
 }
@@ -989,16 +977,9 @@ init_sigchld(int sig)
 {
     sighandler_t oldfunc;
 #if USE_TRAP_MASK
-# ifdef HAVE_SIGPROCMASK
     sigset_t mask;
     sigset_t fullmask;
-# else
-    int mask;
-    int fullmask;
-# endif
-#endif
 
-#if USE_TRAP_MASK
     /* disable interrupt */
     sigfillset(&fullmask);
     pthread_sigmask(SIG_BLOCK, &fullmask, &mask);
