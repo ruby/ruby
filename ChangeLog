@@ -1,3 +1,10 @@
+Tue Jun 28 20:39:29 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* lib/debug.rb (var_list): Command 'var *' did not work on 1.9(!).
+	  global_variables, local_variables, and instance_variables returns
+	  Symbols from 1.9 and need to stringify before evaling it.
+	  See #4931.
+
 Tue Jun 28 19:23:01 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c: Now, USE_TRAP_SIGMASK depend on HAVE_PTHREAD_SIGMASK.

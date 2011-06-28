@@ -147,7 +147,7 @@ class DEBUGGER__
     def var_list(ary, binding)
       ary.sort!
       for v in ary
-        stdout.printf "  %s => %s\n", v, eval(v, binding).inspect
+        stdout.printf "  %s => %s\n", v, eval(v.to_s, binding).inspect
       end
     end
 
