@@ -195,7 +195,7 @@ with all sufficient information, see the ChangeLog file.
   * support for bash/zsh completion.
 
 * Rake
-  * Rake has been upgraded from 0.8.7 to 0.9.2.  For full release notes see
+  * Rake has been upgraded from 0.8.7 to 0.9.2.1.  For full release notes see
     https://github.com/jimweirich/rake/blob/master/CHANGES
 
 * RDoc

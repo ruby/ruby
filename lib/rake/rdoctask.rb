@@ -13,6 +13,8 @@ begin
 rescue LoadError, Gem::LoadError
 end
 
+# :stopdoc:
+
 if defined?(RDoc::Task) then
   module Rake
     RDocTask = RDoc::Task unless const_defined? :RDocTask

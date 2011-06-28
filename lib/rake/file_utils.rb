@@ -1,10 +1,9 @@
 require 'rbconfig'
 require 'fileutils'
 
-# ###########################################################################
+#--
 # This a FileUtils extension that defines several additional commands to be
 # added to the FileUtils utility functions.
-#
 module FileUtils
   # Path to the currently running Ruby program
   RUBY = File.join(
@@ -38,6 +37,7 @@ module FileUtils
     options[:noop] ||= Rake::FileUtilsExt.nowrite_flag
     Rake.rake_check_options options, :noop, :verbose
     Rake.rake_output_message cmd.join(" ") if options[:verbose]
+
     unless options[:noop]
       res = rake_system(*cmd)
       status = $?
@@ -46,7 +46,7 @@ module FileUtils
     end
   end
 
-  def create_shell_runner(cmd)
+  def create_shell_runner(cmd) # :nodoc:
     show_command = cmd.join(" ")
     show_command = show_command[0,42] + "..." unless $trace
     lambda { |ok, status|
@@ -55,14 +55,16 @@ module FileUtils
   end
   private :create_shell_runner
 
-  def set_verbose_option(options)
-    if options[:verbose].nil?
-      options[:verbose] = Rake::FileUtilsExt.verbose_flag.nil? || Rake::FileUtilsExt.verbose_flag
+  def set_verbose_option(options) # :nodoc:
+    unless options.key? :verbose
+      options[:verbose] =
+        Rake::FileUtilsExt.verbose_flag == Rake::FileUtilsExt::DEFAULT ||
+        Rake::FileUtilsExt.verbose_flag
     end
   end
   private :set_verbose_option
 
-  def rake_system(*cmd)
+  def rake_system(*cmd) # :nodoc:
     Rake::AltSystem.system(*cmd)
   end
   private :rake_system

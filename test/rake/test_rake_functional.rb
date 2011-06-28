@@ -117,7 +117,7 @@ class TestRakeFunctional < Rake::TestCase
 
     rake
 
-    assert_not_match %r{^BAD:}, @out
+    refute_match %r{^BAD:}, @out
   end
 
   def test_rbext
@@ -441,7 +441,7 @@ class TestRakeFunctional < Rake::TestCase
 
     rake "-T"
 
-    assert_not_match("t2", @out)
+    refute_match("t2", @out)
   end
 
   def test_comment_after_desc_is_ignored
@@ -475,10 +475,6 @@ class TestRakeFunctional < Rake::TestCase
   end
 
   private
-
-  def assert_not_match(pattern, string, comment="'#{pattern}' was found (incorrectly) in '#{string}.inspect")
-    assert_nil Regexp.new(pattern).match(string), comment
-  end
 
   # Run a shell Ruby command with command line options (using the
   # default test options). Output is captured in @out, @err and

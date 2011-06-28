@@ -12,7 +12,10 @@ module Rake
     class << self
       attr_accessor :verbose_flag, :nowrite_flag
     end
-    FileUtilsExt.verbose_flag = nil
+
+    DEFAULT = Object.new
+
+    FileUtilsExt.verbose_flag = DEFAULT
     FileUtilsExt.nowrite_flag = false
 
     $fileutils_verbose = true

@@ -1,13 +1,22 @@
 require 'rake'
 
 # Load the test files from the command line.
+argv = ARGV.select do |argument|
+  case argument
+  when /^-/ then
+    argument
+  when /\*/ then
+    FileList[argument].to_a.each do |file|
+      require File.expand_path file
+    end
 
-ARGV.each do |f|
-  next if f =~ /^-/
-
-  if f =~ /\*/
-    FileList[f].to_a.each { |fn| require File.expand_path(fn) }
+    false
   else
-    require File.expand_path(f)
+    require File.expand_path argument
+
+    false
   end
 end
+
+ARGV.replace argv
+

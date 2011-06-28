@@ -7,6 +7,8 @@ require 'rubygems/package_task'
 
 require 'rake'
 
+# :stopdoc:
+
 module Rake
   GemPackageTask = Gem::PackageTask
 end

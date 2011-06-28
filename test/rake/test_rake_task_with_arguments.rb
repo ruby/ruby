@@ -158,5 +158,13 @@ class TestRakeTaskWithArguments < Rake::TestCase
     t = task(:t  => [:pre])
     t.invoke("bill", "1.2")
   end
+
+  def test_values_at
+    t = task(:pre, [:a, :b, :c]) { |t, args|
+      a, b, c = args.values_at(:a, :b, :c)
+      assert_equal %w[1 2 3], [a, b, c]
+    }
+    t.invoke(*%w[1 2 3])
+  end
 end
 

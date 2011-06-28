@@ -43,6 +43,10 @@ module Rake
       @hash.each(&block)
     end
 
+    def values_at(*keys)
+      keys.map { |k| lookup(k) }
+    end
+
     def method_missing(sym, *args, &block)
       lookup(sym.to_sym)
     end

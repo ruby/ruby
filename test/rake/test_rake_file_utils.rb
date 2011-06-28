@@ -6,6 +6,7 @@ class TestRakeFileUtils < Rake::TestCase
 
   def teardown
     FileUtils::LN_SUPPORTED[0] = true
+    RakeFileUtils.verbose_flag = Rake::FileUtilsExt::DEFAULT
 
     super
   end
@@ -101,7 +102,11 @@ class TestRakeFileUtils < Rake::TestCase
 
   def test_file_utils_methods_are_available_at_top_level
     create_file("a")
-    rm_rf "a"
+
+    capture_io do
+      rm_rf "a"
+    end
+
     refute File.exist?("a")
   end
 
@@ -208,7 +213,7 @@ class TestRakeFileUtils < Rake::TestCase
     assert_equal "shellcommand.rb\n", err
   end
 
-  def test_sh_no_verbose
+  def test_sh_verbose_false
     shellcommand
 
     _, err = capture_io do
@@ -218,6 +223,16 @@ class TestRakeFileUtils < Rake::TestCase
     end
 
     assert_equal '', err
+  end
+
+  def test_sh_verbose_flag_nil
+    shellcommand
+
+    RakeFileUtils.verbose_flag = nil
+
+    assert_silent do
+      sh %{shellcommand.rb}, :noop=>true
+    end
   end
 
   def test_ruby_with_a_single_string_argument

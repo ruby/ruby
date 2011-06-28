@@ -23,7 +23,9 @@
 
 require 'rake/version'
 
+# :stopdoc:
 RAKEVERSION = Rake::VERSION
+# :startdoc:
 
 require 'rbconfig'
 require 'fileutils'

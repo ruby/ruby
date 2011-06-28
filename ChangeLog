@@ -1,3 +1,11 @@
+Tue Jun 28 11:45:30 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rake:  Update rake to fix some bugs and hide deprecated features
+	  from RDoc.
+	* lib/rake/version.rb:  Bump version to 0.9.2.1 to distinguish it from
+	  the released version.
+	* NEWS:  ditto
+
 Tue Jun 28 11:17:28 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Update to RDoc 3.7 (final)
