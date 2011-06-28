@@ -43,7 +43,7 @@ contents of a string.
     # FIXME 1.9 fix on windoze
     # preprocessor uses binread, so line endings are \r\n
     expected.gsub!("\n", "\r\n") if
-      RUBY_VERSION =~ /^1.9/ && RUBY_PLATFORM =~ /mswin|mingw/
+      RUBY_VERSION < "1.9.3" && RUBY_PLATFORM =~ /mswin|mingw/
 
     assert_equal expected, content
   end
@@ -67,7 +67,7 @@ contents of a string.
     # FIXME 1.9 fix on windoze
     # preprocessor uses binread, so line endings are \r\n
     expected.gsub!("\n", "\r\n") if
-      RUBY_VERSION =~ /^1.9/ && RUBY_PLATFORM =~ /mswin|mingw/
+      RUBY_VERSION < "1.9.3" && RUBY_PLATFORM =~ /mswin|mingw/
 
     assert_equal expected, content
   end

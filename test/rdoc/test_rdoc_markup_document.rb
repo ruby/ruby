@@ -55,6 +55,12 @@ class TestRDocMarkupDocument < MiniTest::Unit::TestCase
     refute_empty @d
   end
 
+  def test_empty_eh_document
+    d = @RM::Document.new @d
+
+    assert_empty d
+  end
+
   def test_equals2
     d2 = @RM::Document.new
 

@@ -344,8 +344,8 @@ Options may also be set in the 'RI' environment variable.
     @stores   = []
 
     RDoc::RI::Paths.each(options[:use_system], options[:use_site],
-                                   options[:use_home], options[:use_gems],
-                                   *options[:extra_doc_dirs]) do |path, type|
+                         options[:use_home], options[:use_gems],
+                         *options[:extra_doc_dirs]) do |path, type|
       @doc_dirs << path
 
       store = RDoc::RI::Store.new path, type
@@ -505,6 +505,70 @@ Options may also be set in the 'RI' environment variable.
   end
 
   ##
+  # Builds a RDoc::Markup::Document from +found+, +klasess+ and +includes+
+
+  def class_document name, found, klasses, includes
+    also_in = []
+
+    out = RDoc::Markup::Document.new
+
+    add_class out, name, klasses
+
+    add_includes out, includes
+
+    found.each do |store, klass|
+      comment = klass.comment
+      class_methods    = store.class_methods[klass.full_name]
+      instance_methods = store.instance_methods[klass.full_name]
+      attributes       = store.attributes[klass.full_name]
+
+      if comment.empty? and !(instance_methods or class_methods) then
+        also_in << store
+        next
+      end
+
+      add_from out, store
+
+      unless comment.empty? then
+        out << RDoc::Markup::Rule.new(1)
+        out << comment
+      end
+
+      if class_methods or instance_methods or not klass.constants.empty? then
+        out << RDoc::Markup::Rule.new(1)
+      end
+
+      unless klass.constants.empty? then
+        out << RDoc::Markup::Heading.new(1, "Constants:")
+        out << RDoc::Markup::BlankLine.new
+        list = RDoc::Markup::List.new :NOTE
+
+        constants = klass.constants.sort_by { |constant| constant.name }
+
+        list.push(*constants.map do |constant|
+          parts = constant.comment.parts if constant.comment
+          parts << RDoc::Markup::Paragraph.new('[not documented]') if
+            parts.empty?
+
+          RDoc::Markup::ListItem.new(constant.name, *parts)
+        end)
+
+        out << list
+      end
+
+      add_method_list out, class_methods,    'Class methods'
+      add_method_list out, instance_methods, 'Instance methods'
+      add_method_list out, attributes,       'Attributes'
+
+      out << RDoc::Markup::BlankLine.new
+    end
+
+    add_also_in out, also_in
+
+    out
+  end
+
+  ##
   # Hash mapping a known class or module to the stores it can be loaded from
 
   def classes
@@ -521,6 +585,29 @@ Options may also be set in the 'RI' environment variable.
     end
 
     @classes
+  end
+
+  ##
+  # Returns the stores wherin +name+ is found along with the classes and
+  # includes that match it
+
+  def classes_and_includes_for name
+    klasses = []
+    includes = []
+
+    found = @stores.map do |store|
+      begin
+        klass = store.load_class name
+        klasses  << klass
+        includes << [klass.includes, store] if klass.includes
+        [store, klass]
+      rescue Errno::ENOENT
+      end
+    end.compact
+
+    includes.reject! do |modules,| modules.empty? end
+
+    [found, klasses, includes]
   end
 
   ##
@@ -582,79 +669,11 @@ Options may also be set in the 'RI' environment variable.
   def display_class name
     return if name =~ /#|\./
 
-    klasses = []
-    includes = []
-
-    found = @stores.map do |store|
-      begin
-        klass = store.load_class name
-        klasses  << klass
-        includes << [klass.includes, store] if klass.includes
-        [store, klass]
-      rescue Errno::ENOENT
-      end
-    end.compact
+    found, klasses, includes = classes_and_includes_for name
 
     return if found.empty?
 
-    also_in = []
-
-    includes.reject! do |modules,| modules.empty? end
-
-    out = RDoc::Markup::Document.new
-
-    add_class out, name, klasses
-
-    add_includes out, includes
-
-    found.each do |store, klass|
-      comment = klass.comment
-      class_methods    = store.class_methods[klass.full_name]
-      instance_methods = store.instance_methods[klass.full_name]
-      attributes       = store.attributes[klass.full_name]
-
-      if comment.empty? and !(instance_methods or class_methods) then
-        also_in << store
-        next
-      end
-
-      add_from out, store
-
-      unless comment.empty? then
-        out << RDoc::Markup::Rule.new(1)
-        out << comment
-      end
-
-      if class_methods or instance_methods or not klass.constants.empty? then
-        out << RDoc::Markup::Rule.new(1)
-      end
-
-      unless klass.constants.empty? then
-        out << RDoc::Markup::Heading.new(1, "Constants:")
-        out << RDoc::Markup::BlankLine.new
-        list = RDoc::Markup::List.new :NOTE
-
-        constants = klass.constants.sort_by { |constant| constant.name }
-
-        list.push(*constants.map do |constant|
-          parts = constant.comment.parts if constant.comment
-          parts << RDoc::Markup::Paragraph.new('[not documented]') if
-            parts.empty?
-
-          RDoc::Markup::ListItem.new(constant.name, *parts)
-        end)
-
-        out << list
-      end
-
-      add_method_list out, class_methods,    'Class methods'
-      add_method_list out, instance_methods, 'Instance methods'
-      add_method_list out, attributes,       'Attributes'
-
-      out << RDoc::Markup::BlankLine.new
-    end
-
-    add_also_in out, also_in
+    out = class_document name, found, klasses, includes
 
     display out
   end
@@ -669,32 +688,7 @@ Options may also be set in the 'RI' environment variable.
 
     filtered = filter_methods found, name
 
-    out = RDoc::Markup::Document.new
-
-    out << RDoc::Markup::Heading.new(1, name)
-    out << RDoc::Markup::BlankLine.new
-
-    filtered.each do |store, methods|
-      methods.each do |method|
-        out << RDoc::Markup::Paragraph.new("(from #{store.friendly_path})")
-
-        unless name =~ /^#{Regexp.escape method.parent_name}/ then
-          out << RDoc::Markup::Heading.new(3, "Implementation from #{method.parent_name}")
-        end
-        out << RDoc::Markup::Rule.new(1)
-
-        if method.arglists then
-          arglists = method.arglists.chomp.split "\n"
-          arglists = arglists.map { |line| line + "\n" }
-          out << RDoc::Markup::Verbatim.new(*arglists)
-          out << RDoc::Markup::Rule.new(1)
-        end
-
-        out << RDoc::Markup::BlankLine.new
-        out << method.comment
-        out << RDoc::Markup::BlankLine.new
-      end
-    end
+    out = method_document name, filtered
 
     display out
   end
@@ -736,6 +730,7 @@ Options may also be set in the 'RI' environment variable.
       display_name name
     end
   end
+
   ##
   # Expands abbreviated klass +klass+ into a fully-qualified class.  "Zl::Da"
   # will be expanded to Zlib::DataError.
@@ -1001,6 +996,40 @@ Options may also be set in the 'RI' environment variable.
     end
 
     found.reject do |path, methods| methods.empty? end
+  end
+
+  ##
+  # Builds a RDoc::Markup::Document from +found+, +klasess+ and +includes+
+
+  def method_document name, filtered
+    out = RDoc::Markup::Document.new
+
+    out << RDoc::Markup::Heading.new(1, name)
+    out << RDoc::Markup::BlankLine.new
+
+    filtered.each do |store, methods|
+      methods.each do |method|
+        out << RDoc::Markup::Paragraph.new("(from #{store.friendly_path})")
+
+        unless name =~ /^#{Regexp.escape method.parent_name}/ then
+          out << RDoc::Markup::Heading.new(3, "Implementation from #{method.parent_name}")
+        end
+        out << RDoc::Markup::Rule.new(1)
+
+        if method.arglists then
+          arglists = method.arglists.chomp.split "\n"
+          arglists = arglists.map { |line| line + "\n" }
+          out << RDoc::Markup::Verbatim.new(*arglists)
+          out << RDoc::Markup::Rule.new(1)
+        end
+
+        out << RDoc::Markup::BlankLine.new
+        out << method.comment
+        out << RDoc::Markup::BlankLine.new
+      end
+    end
+
+    out
   end
 
   ##

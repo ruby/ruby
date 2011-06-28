@@ -56,7 +56,12 @@ class RDoc::Markup::Document
     visitor.start_accepting
 
     @parts.each do |item|
-      item.accept visitor
+      case item
+      when RDoc::Markup::Document then # HACK
+        visitor.accept_document item
+      else
+        item.accept visitor
+      end
     end
 
     visitor.end_accepting
@@ -66,7 +71,9 @@ class RDoc::Markup::Document
   # Does this document have no parts?
 
   def empty?
-    @parts.empty?
+    @parts.empty? or
+      (@parts.length == 1 and RDoc::Markup::Document === @parts.first and
+       @parts.first.empty?)
   end
 
   ##

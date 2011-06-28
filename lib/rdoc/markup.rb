@@ -616,11 +616,16 @@ class RDoc::Markup
   end
 
   ##
-  # We take +text+, parse it then invoke the output +formatter+ using a
-  # Visitor to render the result.
+  # We take +input+, parse it if necessary, then invoke the output +formatter+
+  # using a Visitor to render the result.
 
-  def convert text, formatter
-    document = RDoc::Markup::Parser.parse text
+  def convert input, formatter
+    document = case input
+               when RDoc::Markup::Document then
+                 input
+               else
+                 RDoc::Markup::Parser.parse input
+               end
 
     document.accept formatter
   end
