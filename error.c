@@ -21,6 +21,9 @@
 #include <stdlib.h>
 #endif
 #include <errno.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS 0
@@ -35,6 +38,13 @@
 #endif
 
 extern const char ruby_description[];
+
+#define REPORTBUG_MSG \
+	"[NOTE]\n" \
+	"You may have encountered a bug in the Ruby interpreter" \
+	" or extension libraries.\n" \
+	"Bug reports are welcome.\n" \
+	"For details: http://www.ruby-lang.org/bugreport.html\n\n" \
 
 static const char *
 rb_strerrno(int err)
@@ -247,12 +257,7 @@ report_bug(const char *file, int line, const char *fmt, va_list args)
 
 	rb_vm_bugreport();
 
-	fprintf(out,
-		"[NOTE]\n"
-		"You may have encountered a bug in the Ruby interpreter"
-		" or extension libraries.\n"
-		"Bug reports are welcome.\n"
-		"For details: http://www.ruby-lang.org/bugreport.html\n\n");
+	fprintf(out, REPORTBUG_MSG);
     }
 }
 
@@ -284,6 +289,35 @@ rb_bug_errno(const char *mesg, int errno_arg)
         else
             rb_bug("%s: %s (%d)", mesg, strerror(errno_arg), errno_arg);
     }
+}
+
+/*
+ * this is safe to call inside signal handler and timer thread
+ * (which isn't a Ruby Thread object)
+ */
+#define WRITE_CONST(fd,str) write((fd),(str),sizeof(str) - 1)
+
+void rb_async_bug_errno(const char *mesg, int errno_arg)
+{
+    WRITE_CONST(2, "[ASYNC BUG] ");
+    write(2, mesg, strlen(mesg));
+    WRITE_CONST(2, "\n");
+
+    if (errno_arg == 0) {
+	WRITE_CONST(2, "errno == 0 (NOERROR)\n");
+    }
+    else {
+	const char *errno_str = rb_strerrno(errno_arg);
+
+	if (!errno_str)
+	    errno_str = "undefined errno";
+	write(2, errno_str, strlen(errno_str));
+    }
+    WRITE_CONST(2, "\n\n");
+    write(2, ruby_description, strlen(ruby_description));
+    WRITE_CONST(2, "\n\n");
+    WRITE_CONST(2, REPORTBUG_MSG);
+    abort();
 }
 
 void

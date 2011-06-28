@@ -1,3 +1,15 @@
+Wed Jun 29 06:09:54 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* error.c (rb_async_bug_errno): async-safe bug report function.
+	  In timer thread, signal handler shoul use it.
+	  The patch is contributed by Eric Wong <normalperson@yhbt.net>.
+	  Refs: [ruby-core:37644] and [ruby-core:37647]
+
+	* thread_pthread.c: use rb_async_bug_errno().
+	  And replace all fprintf() to write().
+
+	* internal.h (rb_async_bug_errno): add decl. of above func.
+
 Tue Jun 28 23:46:08 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/tracer.rb: count only non-internal libraries in stack trace,

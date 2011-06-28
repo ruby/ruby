@@ -990,6 +990,9 @@ static int timer_thread_pipe_owner_process;
 
 #define TT_DEBUG 0
 
+#define WRITE_CONST(fd, str) write((fd),(str),sizeof(str)-1);
+
+/* only use signal-safe system calls here */
 void
 rb_thread_wakeup_timer_thread(void)
 {
@@ -1008,16 +1011,17 @@ rb_thread_wakeup_timer_thread(void)
 #endif
 		break;
 	      default:
-		rb_bug_errno("rb_thread_wakeup_timer_thread - write", errno);
+		rb_async_bug_errno("rb_thread_wakeup_timer_thread - write", errno);
 	    }
 	}
-	if (TT_DEBUG) fprintf(stderr, "rb_thread_wakeup_timer_thread: write\n");
+	if (TT_DEBUG) WRITE_CONST(2, "rb_thread_wakeup_timer_thread: write\n");
     }
     else {
 	/* ignore wakeup */
     }
 }
 
+/* VM-dependent API is not available for this function */
 static void
 consume_communication_pipe(void)
 {
@@ -1032,7 +1036,7 @@ consume_communication_pipe(void)
 	switch (errno) {
 	  case EINTR: goto retry;
 	  default:
-	    rb_bug_errno("consume_communication_pipe: read", errno);
+	    rb_async_bug_errno("consume_communication_pipe: read\n", errno);
 	}
     }
 }
@@ -1061,7 +1065,7 @@ thread_timer(void *p)
     int result;
     struct timeval timeout;
 
-    if (TT_DEBUG) fprintf(stderr, "start timer thread\n");
+    if (TT_DEBUG) WRITE_CONST(2, "start timer thread\n");
 
     while (system_working > 0) {
 	fd_set rfds;
@@ -1069,7 +1073,7 @@ thread_timer(void *p)
 	/* timer function */
 	ping_signal_thread_list();
 	timer_thread_function(0);
-	if (TT_DEBUG) fprintf(stderr, "tick\n");
+	if (TT_DEBUG) WRITE_CONST(2, "tick\n");
 
 	/* wait */
 	FD_ZERO(&rfds);
@@ -1098,12 +1102,12 @@ thread_timer(void *p)
 		/* interrupted. ignore */
 	    }
 	    else {
-		rb_bug_errno("thread_timer: select", errno);
+		rb_async_bug_errno("thread_timer: select", errno);
 	    }
 	}
     }
 
-    if (TT_DEBUG) fprintf(stderr, "finish timer thread\n");
+    if (TT_DEBUG) WRITE_CONST(2, "finish timer thread\n");
     return NULL;
 }
 
