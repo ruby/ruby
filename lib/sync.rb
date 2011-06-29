@@ -41,6 +41,9 @@ unless defined? Thread
   raise "Thread not available for this ruby interpreter"
 end
 
+##
+# A module that provides a two-phase lock with a counter.
+
 module Sync_m
   RCS_ID='-$Id$-'
 
@@ -298,9 +301,21 @@ module Sync_m
     return ret
   end
 end
+
+##
+# An alias for Sync_m from sync.rb
+
 Synchronizer_m = Sync_m
+
+##
+# A class that providesa two-phase lock with a counter.  See Sync_m for
+# details.
 
 class Sync
   include Sync_m
 end
+
+##
+# An alias for Sync from sync.rb.  See Sync_m for details.
+
 Synchronizer = Sync

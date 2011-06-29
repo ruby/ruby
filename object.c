@@ -2677,6 +2677,9 @@ Init_Object(void)
     rb_define_method(rb_cNilClass, "nil?", rb_true, 0);
     rb_undef_alloc_func(rb_cNilClass);
     rb_undef_method(CLASS_OF(rb_cNilClass), "new");
+    /*
+     * An alias of +nil+
+     */
     rb_define_global_const("NIL", Qnil);
 
     rb_define_method(rb_cModule, "freeze", rb_mod_freeze, 0);
@@ -2746,6 +2749,9 @@ Init_Object(void)
     rb_define_method(rb_cTrueClass, "^", true_xor, 1);
     rb_undef_alloc_func(rb_cTrueClass);
     rb_undef_method(CLASS_OF(rb_cTrueClass), "new");
+    /*
+     * An alias of +true+
+     */
     rb_define_global_const("TRUE", Qtrue);
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
@@ -2755,6 +2761,9 @@ Init_Object(void)
     rb_define_method(rb_cFalseClass, "^", false_xor, 1);
     rb_undef_alloc_func(rb_cFalseClass);
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
+    /*
+     * An alias of +false+
+     */
     rb_define_global_const("FALSE", Qfalse);
 
     id_eq = rb_intern("==");

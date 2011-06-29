@@ -2974,6 +2974,15 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"compare_by_identity", rb_hash_compare_by_id, 0);
     rb_define_method(rb_cHash,"compare_by_identity?", rb_hash_compare_by_id_p, 0);
 
+    /* Document-class: ENV
+     *
+     * ENV is a hash-like accessor for environment variables.
+     */
+
+    /*
+     * Hack to get RDoc to regard ENV as a class:
+     * envtbl = rb_define_class("ENV", rb_cObject);
+     */
     origenviron = environ;
     envtbl = rb_obj_alloc(rb_cObject);
     rb_extend_object(envtbl, rb_mEnumerable);
@@ -3020,5 +3029,10 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl,"assoc", env_assoc, 1);
     rb_define_singleton_method(envtbl,"rassoc", env_rassoc, 1);
 
+    /*
+     * ENV is a Hash-like accessor for environment variables.
+     *
+     * See ENV (the class) for more details.
+     */
     rb_define_global_const("ENV", envtbl);
 }

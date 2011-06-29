@@ -760,6 +760,8 @@ exp1(sqrt)
  */
 
 /*
+ *  Document-class: Math
+ *
  *  The <code>Math</code> module contains module functions for basic
  *  trigonometric and transcendental functions. See class
  *  <code>Float</code> for a list of constants that

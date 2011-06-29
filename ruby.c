@@ -1625,6 +1625,18 @@ load_file_internal(VALUE arg)
     tree = rb_parser_compile_file(parser, fname, f, line_start);
     rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
     if (script && tree && rb_parser_end_seen_p(parser)) {
+	/*
+	 * DATA is a File that contains the data section of the executed file.
+	 * To create a data section use <tt>__END__</tt>:
+	 *
+	 *   $ cat t.rb
+	 *   puts DATA.gets
+	 *   __END__
+	 *   hello world!
+	 *
+	 *   $ ruby t.rb
+	 *   hello world!
+	 */
 	rb_define_global_const("DATA", f);
     }
     else if (f != rb_stdin) {
@@ -1746,6 +1758,13 @@ ruby_prog_init(void)
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
 
+    /*
+     * ARGV contains the command line arguments used to run ruby with the
+     * first value containing the name of the executable.
+     *
+     * A library like OptionParser can be used to process command-line
+     * arguments.
+     */
     rb_define_global_const("ARGV", rb_argv);
 }
 

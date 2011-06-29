@@ -10750,5 +10750,17 @@ Init_ripper(void)
     /* ensure existing in symbol table */
     (void)rb_intern("||");
     (void)rb_intern("&&");
+
+# if 0
+    /* Hack to let RDoc document SCRIPT_LINES__ */
+
+    /*
+     * When a Hash is assigned to +SCRIPT_LINES__+ the contents of files loaded
+     * after the assignment will be added as an Array of lines with the file
+     * name as the key.
+     */
+    rb_define_global_const("SCRIPT_LINES__", Qnil);
+#endif
+
 }
 #endif /* RIPPER */

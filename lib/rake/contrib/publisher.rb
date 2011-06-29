@@ -1,14 +1,18 @@
 # Copyright 2003-2010 by Jim Weirich (jim.weirich@gmail.com)
 # All rights reserved.
 
+# :stopdoc:
+
 # Configuration information about an upload host system.
-# * name   :: Name of host system.
-# * webdir :: Base directory for the web information for the
-#             application.  The application name (APP) is appended to
-#             this directory before using.
-# * pkgdir :: Directory on the host system where packages can be
-#             placed.
+# name   :: Name of host system.
+# webdir :: Base directory for the web information for the
+#           application.  The application name (APP) is appended to
+#           this directory before using.
+# pkgdir :: Directory on the host system where packages can be
+#           placed.
 HostInfo = Struct.new(:name, :webdir, :pkgdir)
+
+# :startdoc:
 
 # Manage several publishers as a single entity.
 class CompositePublisher

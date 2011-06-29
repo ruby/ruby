@@ -2128,6 +2128,9 @@ Init_VM(void)
 	th->cfp->pc = iseq->iseq_encoded;
 	th->cfp->self = th->top_self;
 
+	/*
+	 * The Binding of the top level scope
+	 */
 	rb_define_global_const("TOPLEVEL_BINDING", rb_binding_new());
     }
     vm_init_redefined_flag();

@@ -1,3 +1,21 @@
+Wed Jun 29 12:07:27 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* math.c:  Attach documentation for Math.
+	* object.c:  Document NIL, TRUE, FALSE.
+	* io.c:  Improve grammar in ARGF comment.  Document STDIN/OUT/ERR.
+	  Document ARGF global constant.
+	* lib/rake:  Hide deprecated toplevel constants from RDoc (import from
+	  rake trunk).
+	* lib/thwait.rb:  Document ThWait.
+	* lib/mathn.rb:  Hide Math redefinition from RDoc
+	* lib/sync.rb:  Add a basic comment for Sync_m, Synchronizer_m, Sync,
+	  Synchronizer.
+	* parse.y:  Document SCRIPT_LINES__.
+	* hash.c:  Document ENV class and global constant.
+	* vm.c:  Document TOPLEVEL_BINDING.
+	* version.c:  Document RUBY_* constants.
+	* ruby.c:  Document DATA and ARGV.
+
 Wed Jun 29 10:13:12 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Matrix.zero can build rectangular matrices.

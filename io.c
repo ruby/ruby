@@ -10320,7 +10320,7 @@ argf_write(VALUE argf, VALUE str)
  * Document-class:  ARGF
  *
  * +ARGF+ is a stream designed for use in scripts that process files given as
- * command-line arguments, or passed in via STDIN.
+ * command-line arguments or passed in via STDIN.
  *
  * The arguments passed to your script are stored in the +ARGV+ Array, one
  * argument per element. +ARGF+ assumes that any arguments that aren't
@@ -10336,7 +10336,7 @@ argf_write(VALUE argf, VALUE str)
  * files. For instance, +ARGF.read+ will return the contents of _file1_
  * followed by the contents of _file2_.
  *
- * After a file in +ARGV+ has been read, +ARGF+ removes it from the Array.
+ * After a file in +ARGV+ has been read +ARGF+ removes it from the Array.
  * Thus, after all files have been read +ARGV+ will be empty.
  *
  * You can manipulate +ARGV+ yourself to control what +ARGF+ operates on. If
@@ -10628,9 +10628,11 @@ Init_IO(void)
     orig_stdout = rb_stdout;
     rb_deferr = orig_stderr = rb_stderr;
 
-    /* constants to hold original stdin/stdout/stderr */
+    /* Holds the original stdin */
     rb_define_global_const("STDIN", rb_stdin);
+    /* Holds the original stdout */
     rb_define_global_const("STDOUT", rb_stdout);
+    /* Holds the original stderr */
     rb_define_global_const("STDERR", rb_stderr);
 
     /*
@@ -10707,6 +10709,12 @@ Init_IO(void)
     argf = rb_class_new_instance(0, 0, rb_cARGF);
 
     rb_define_readonly_variable("$<", &argf);
+    /*
+     * ARGF is a stream designed for use in scripts that process files given
+     * as command-line arguments or passed in via STDIN.
+     *
+     * See ARGF (the class) for more details.
+     */
     rb_define_global_const("ARGF", argf);
 
     rb_define_hooked_variable("$.", &argf, argf_lineno_getter, argf_lineno_setter);
