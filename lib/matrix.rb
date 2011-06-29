@@ -365,36 +365,127 @@ class Matrix
 
   #
   # Yields all elements of the matrix, starting with those of the first row,
-  # or returns an Enumerator is no block given
+  # or returns an Enumerator is no block given.
+  # Elements can be restricted by passing an argument:
+  # * :all (default): yields all elements
+  # * :diagonal: yields only elements on the diagonal
+  # * :off_diagonal: yields all elements except on the diagonal
+  # * :lower: yields only elements on or below the diagonal
+  # * :strict_lower: yields only elements below the diagonal
+  # * :strict_upper: yields only elements above the diagonal
+  # * :upper: yields only elements on or above the diagonal
+  #
   #   Matrix[ [1,2], [3,4] ].each { |e| puts e }
   #     # => prints the numbers 1 to 4
+  #   Matrix[ [1,2], [3,4] ].each(:strict_lower).to_a # => [3]
   #
-  def each(&block) # :yield: e
-    return to_enum(:each) unless block_given?
-    @rows.each do |row|
-      row.each(&block)
+  def each(which = :all) # :yield: e
+    return to_enum :each, which unless block_given?
+    last = column_size - 1
+    case which
+    when :all
+      block = Proc.new
+      @rows.each do |row|
+        row.each(&block)
+      end
+    when :diagonal
+      @rows.each_with_index do |row, row_index|
+        yield row.fetch(row_index){return self}
+      end
+    when :off_diagonal
+      @rows.each_with_index do |row, row_index|
+        column_size.times do |col_index|
+          yield row[col_index] unless row_index == col_index
+        end
+      end
+    when :lower
+      @rows.each_with_index do |row, row_index|
+        0.upto([row_index, last].min) do |col_index|
+          yield row[col_index]
+        end
+      end
+    when :strict_lower
+      @rows.each_with_index do |row, row_index|
+        [row_index, column_size].min.times do |col_index|
+          yield row[col_index]
+        end
+      end
+    when :strict_upper
+      @rows.each_with_index do |row, row_index|
+        (row_index+1).upto(last) do |col_index|
+          yield row[col_index]
+        end
+      end
+    when :upper
+      @rows.each_with_index do |row, row_index|
+        row_index.upto(last) do |col_index|
+          yield row[col_index]
+        end
+      end
+    else
+      Matrix.Raise ArgumentError, "expected #{which.inspect} to be one of :all, :diagonal, :off_diagonal, :lower, :strict_lower, :strict_upper or :upper"
     end
     self
   end
 
   #
-  # Yields all elements of the matrix, starting with those of the first row,
-  # along with the row index and column index,
-  # or returns an Enumerator is no block given
+  # Same as #each, but the row index and column index in addition to the element
+  #
   #   Matrix[ [1,2], [3,4] ].each_with_index do |e, row, col|
   #     puts "#{e} at #{row}, #{col}"
   #   end
-  #     # => 1 at 0, 0
-  #     # => 2 at 0, 1
-  #     # => 3 at 1, 0
-  #     # => 4 at 1, 1
+  #     # => Prints:
+  #     #    1 at 0, 0
+  #     #    2 at 0, 1
+  #     #    3 at 1, 0
+  #     #    4 at 1, 1
   #
-  def each_with_index(&block) # :yield: e, row, column
-    return to_enum(:each_with_index) unless block_given?
-    @rows.each_with_index do |row, row_index|
-      row.each_with_index do |e, col_index|
-        yield e, row_index, col_index
+  def each_with_index(which = :all) # :yield: e, row, column
+    return to_enum :each_with_index, which unless block_given?
+    last = column_size - 1
+    case which
+    when :all
+      @rows.each_with_index do |row, row_index|
+        row.each_with_index do |e, col_index|
+          yield e, row_index, col_index
+        end
       end
+    when :diagonal
+      @rows.each_with_index do |row, row_index|
+        yield row.fetch(row_index){return self}, row_index, row_index
+      end
+    when :off_diagonal
+      @rows.each_with_index do |row, row_index|
+        column_size.times do |col_index|
+          yield row[col_index], row_index, col_index unless row_index == col_index
+        end
+      end
+    when :lower
+      @rows.each_with_index do |row, row_index|
+        0.upto([row_index, last].min) do |col_index|
+          yield row[col_index], row_index, col_index
+        end
+      end
+    when :strict_lower
+      @rows.each_with_index do |row, row_index|
+        [row_index, column_size].min.times do |col_index|
+          yield row[col_index], row_index, col_index
+        end
+      end
+    when :strict_upper
+      @rows.each_with_index do |row, row_index|
+        (row_index+1).upto(last) do |col_index|
+          yield row[col_index], row_index, col_index
+        end
+      end
+    when :upper
+      @rows.each_with_index do |row, row_index|
+        row_index.upto(last) do |col_index|
+          yield row[col_index], row_index, col_index
+        end
+      end
+    else
+      Matrix.Raise ArgumentError, "expected #{which.inspect} to be one of :all, :diagonal, :off_diagonal, :lower, :strict_lower, :strict_upper or :upper"
     end
     self
   end

@@ -156,6 +156,10 @@ with all sufficient information, see the ChangeLog file.
     * IO#winsize
     * IO.console
 
+* matrix
+  * extended methods:
+    * Matrix#each and #each_with_index can iterate on a subset of the elements
+
 * net/http
   * SNI (Server Name Indication) supported for HTTPS. 
 

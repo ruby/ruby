@@ -1,3 +1,8 @@
+Wed Jun 29 10:07:32 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Matrix#each{_with_index} can iterate over a subset
+	  of the Matrix
+
 Wed Jun 29 06:21:02 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c (native_stop_timer_thread): skip to close
