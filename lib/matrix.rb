@@ -60,11 +60,21 @@ end
 # * <tt> #minor(*param)                 </tt>
 #
 # Properties of a matrix:
+# * <tt> #diagonal?                     </tt>
 # * <tt> #empty?                        </tt>
+# * <tt> #hermitian?                    </tt>
+# * <tt> #lower_triangular?             </tt>
+# * <tt> #normal?                       </tt>
+# * <tt> #orthogonal?                   </tt>
+# * <tt> #permutation?                  </tt>
 # * <tt> #real?                         </tt>
 # * <tt> #regular?                      </tt>
 # * <tt> #singular?                     </tt>
 # * <tt> #square?                       </tt>
+# * <tt> #symmetric?                    </tt>
+# * <tt> #unitary?                      </tt>
+# * <tt> #upper_triangular?             </tt>
+# * <tt> #zero?                         </tt>
 #
 # Matrix arithmetic:
 # * <tt>  *(m)                          </tt>
@@ -572,11 +582,96 @@ class Matrix
   #++
 
   #
+  # Returns +true+ is this is a diagonal matrix.
+  # Raises an error if matrix is not square.
+  #
+  def diagonal?
+    Matrix.Raise ErrDimensionMismatch unless square?
+    each(:off_diagonal).all?(&:zero?)
+  end
+
+  #
   # Returns +true+ if this is an empty matrix, i.e. if the number of rows
   # or the number of columns is 0.
   #
   def empty?
     column_size == 0 || row_size == 0
+  end
+
+  #
+  # Returns +true+ is this is an hermitian matrix.
+  # Raises an error if matrix is not square.
+  #
+  def hermitian?
+    Matrix.Raise ErrDimensionMismatch unless square?
+    each_with_index(:strict_upper).all? do |e, row, col|
+      e == rows[col][row].conj
+    end
+  end
+
+  #
+  # Returns +true+ is this is a lower triangular matrix.
+  #
+  def lower_triangular?
+    each(:strict_upper).all?(&:zero?)
+  end
+
+  #
+  # Returns +true+ is this is a normal matrix.
+  # Raises an error if matrix is not square.
+  #
+  def normal?
+    Matrix.Raise ErrDimensionMismatch unless square?
+    rows.each_with_index do |row_i, i|
+      rows.each_with_index do |row_j, j|
+        s = 0
+        rows.each_with_index do |row_k, k|
+          s += row_i[k] * row_j[k].conj - row_k[i].conj * row_k[j]
+        end
+        return false unless s == 0
+      end
+    end
+    true
+  end
+
+  #
+  # Returns +true+ is this is an orthogonal matrix
+  # Raises an error if matrix is not square.
+  #
+  def orthogonal?
+    Matrix.Raise ErrDimensionMismatch unless square?
+    rows.each_with_index do |row, i|
+      column_size.times do |j|
+        s = 0
+        row_size.times do |k|
+          s += row[k] * rows[k][j]
+        end
+        return false unless s == (i == j ? 1 : 0)
+      end
+    end
+    true
+  end
+
+  #
+  # Returns +true+ is this is a permutation matrix
+  # Raises an error if matrix is not square.
+  #
+  def permutation?
+    Matrix.Raise ErrDimensionMismatch unless square?
+    cols = Array.new(column_size)
+    rows.each_with_index do |row, i|
+      found = false
+      row.each_with_index do |e, j|
+        if e == 1
+          return false if found || cols[j]
+          found = cols[j] = true
+        elsif e != 0
+          return false
+        end
+      end
+      return false unless found
+    end
+    true
   end
 
   #
@@ -605,6 +700,49 @@ class Matrix
   #
   def square?
     column_size == row_size
+  end
+
+  #
+  # Returns +true+ is this is a symmetric matrix.
+  # Raises an error if matrix is not square.
+  #
+  def symmetric?
+    Matrix.Raise ErrDimensionMismatch unless square?
+    each_with_index(:strict_upper).all? do |e, row, col|
+      e == rows[col][row]
+    end
+  end
+
+  #
+  # Returns +true+ is this is a unitary matrix
+  # Raises an error if matrix is not square.
+  #
+  def unitary?
+    Matrix.Raise ErrDimensionMismatch unless square?
+    rows.each_with_index do |row, i|
+      column_size.times do |j|
+        s = 0
+        row_size.times do |k|
+          s += row[k].conj * rows[k][j]
+        end
+        return false unless s == (i == j ? 1 : 0)
+      end
+    end
+    true
+  end
+
+  #
+  # Returns +true+ is this is an upper triangular matrix.
+  #
+  def upper_triangular?
+    each(:strict_lower).all?(&:zero?)
+  end
+
+  #
+  # Returns +true+ is this is a matrix with only zero elements
+  #
+  def zero?
+    all?(&:zero?)
   end
 
   #--

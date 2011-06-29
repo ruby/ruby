@@ -1,3 +1,9 @@
+Wed Jun 29 10:11:08 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Add Matrix#diagonal?, hermitian?, normal?,
+	  orthogonal?
+	  permutation?, symmetric?, {lower|upper}triangular?, unitary?, zero?
+
 Wed Jun 29 10:09:35 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Specialize Matrix#find_index to return [row, col]
