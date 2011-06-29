@@ -229,13 +229,14 @@ class Matrix
   end
 
   #
-  # Creates an +n+ by +n+ zero matrix.
+  # Creates a zero matrix.
   #   Matrix.zero(2)
   #     => 0 0
   #        0 0
   #
-  def Matrix.zero(n)
-    Matrix.scalar(n, 0)
+  def Matrix.zero(row_size, column_size = row_size)
+    rows = Array.new(row_size){Array.new(column_size, 0)}
+    new rows, column_size
   end
 
   #
@@ -1723,9 +1724,10 @@ class Vector
   # Returns the modulus (Pythagorean distance) of the vector.
   #   Vector[5,8,2].r => 9.643650761
   #
-  def r
+  def magnitude
     Math.sqrt(@elements.inject(0) {|v, e| v + e*e})
   end
+  alias r magnitude
 
   #--
   # CONVERTING

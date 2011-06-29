@@ -1,3 +1,8 @@
+Wed Jun 29 10:13:12 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Matrix.zero can build rectangular matrices.
+	  Vector#r should be called #magnitude
+
 Wed Jun 29 10:11:08 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Add Matrix#diagonal?, hermitian?, normal?,
