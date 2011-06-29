@@ -1,3 +1,7 @@
+Thu Jun 30 00:30:15 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/cmath.rb: make same exception for Math. fix [Bug #3137].
+
 Thu Jun 30 00:03:20 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/completion.rb: complate correctry string literal. fix

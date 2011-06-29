@@ -50,12 +50,16 @@ module CMath
   #   exp(Complex(0,PI))     #=> -1.0+1.2246467991473532e-16i
   #   exp(Complex(0,PI/2.0)) #=> 6.123233995736766e-17+1.0i
   def exp(z)
-    if z.real?
-      exp!(z)
-    else
-      ere = exp!(z.real)
-      Complex(ere * cos!(z.imag),
-              ere * sin!(z.imag))
+    begin
+      if z.real?
+	exp!(z)
+      else
+	ere = exp!(z.real)
+	Complex(ere * cos!(z.imag),
+		ere * sin!(z.imag))
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
@@ -65,35 +69,50 @@ module CMath
   #
   #   log(Complex(0,0)) #=> -Infinity+0.0i
   def log(*args)
-    z, b = args
-    if z.real? and z >= 0 and (b.nil? or b >= 0)
-      log!(*args)
-    else
-      a = Complex(log!(z.abs), z.arg)
-      if b
-        a /= log(b)
+    begin
+      z, b = args
+      unless b.kind_of?(Numeric)
+	raise TypeError,  "Numeric Number required"
       end
-      a
+      if z.real? and z >= 0 and (b.nil? or b >= 0)
+	log!(*args)
+      else
+	a = Complex(log!(z.abs), z.arg)
+	if b
+	  a /= log(b)
+        end
+        a
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
   ##
   # returns the base 2 logarithm of +z+
   def log2(z)
-    if z.real? and z >= 0
-      log2!(z)
-    else
-      log(z) / log!(2)
+    begin
+      if z.real? and z >= 0
+	log2!(z)
+      else
+	log(z) / log!(2)
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
   ##
   # returns the base 10 logarithm of +z+
   def log10(z)
-    if z.real? and z >= 0
-      log10!(z)
-    else
-      log(z) / log!(10)
+    begin
+      if z.real? and z >= 0
+	log10!(z)
+      else
+	log(z) / log!(10)
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
@@ -103,21 +122,25 @@ module CMath
   #   sqrt(Complex(-1,0)) #=> 0.0+1.0i
   #   sqrt(Complex(0,8))  #=> 2.0+2.0i
   def sqrt(z)
-    if z.real?
-      if z < 0
-        Complex(0, sqrt!(-z))
+    begin
+      if z.real?
+	if z < 0
+	  Complex(0, sqrt!(-z))
+	else
+	  sqrt!(z)
+	end
       else
-        sqrt!(z)
+	if z.imag < 0 ||
+	    (z.imag == 0 && z.imag.to_s[0] == '-')
+	  sqrt(z.conjugate).conjugate
+	else
+	  r = z.abs
+	  x = z.real
+	  Complex(sqrt!((r + x) / 2.0), sqrt!((r - x) / 2.0))
+	end
       end
-    else
-      if z.imag < 0 ||
-        (z.imag == 0 && z.imag.to_s[0] == '-')
-        sqrt(z.conjugate).conjugate
-      else
-        r = z.abs
-        x = z.real
-        Complex(sqrt!((r + x) / 2.0), sqrt!((r - x) / 2.0))
-      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
@@ -130,94 +153,130 @@ module CMath
   ##
   # returns the sine of +z+, where +z+ is given in radians
   def sin(z)
-    if z.real?
-      sin!(z)
-    else
-      Complex(sin!(z.real) * cosh!(z.imag),
-              cos!(z.real) * sinh!(z.imag))
+    begin
+      if z.real?
+	sin!(z)
+      else
+	Complex(sin!(z.real) * cosh!(z.imag),
+		cos!(z.real) * sinh!(z.imag))
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
   ##
   # returns the cosine of +z+, where +z+ is given in radians
   def cos(z)
-    if z.real?
-      cos!(z)
-    else
-      Complex(cos!(z.real) * cosh!(z.imag),
-              -sin!(z.real) * sinh!(z.imag))
+    begin
+      if z.real?
+	cos!(z)
+      else
+	Complex(cos!(z.real) * cosh!(z.imag),
+		-sin!(z.real) * sinh!(z.imag))
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
   ##
   # returns the tangent of +z+, where +z+ is given in radians
   def tan(z)
-    if z.real?
-      tan!(z)
-    else
-      sin(z) / cos(z)
+    begin
+      if z.real?
+	tan!(z)
+      else
+	sin(z) / cos(z)
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
   ##
   # returns the hyperbolic sine of +z+, where +z+ is given in radians
   def sinh(z)
-    if z.real?
-      sinh!(z)
-    else
-      Complex(sinh!(z.real) * cos!(z.imag),
-              cosh!(z.real) * sin!(z.imag))
+    begin
+      if z.real?
+	sinh!(z)
+      else
+	Complex(sinh!(z.real) * cos!(z.imag),
+		cosh!(z.real) * sin!(z.imag))
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
   ##
   # returns the hyperbolic cosine of +z+, where +z+ is given in radians
   def cosh(z)
-    if z.real?
-      cosh!(z)
-    else
-      Complex(cosh!(z.real) * cos!(z.imag),
-              sinh!(z.real) * sin!(z.imag))
+    begin
+      if z.real?
+	cosh!(z)
+      else
+	Complex(cosh!(z.real) * cos!(z.imag),
+		sinh!(z.real) * sin!(z.imag))
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
   ##
   # returns the hyperbolic tangent of +z+, where +z+ is given in radians
   def tanh(z)
-    if z.real?
-      tanh!(z)
-    else
-      sinh(z) / cosh(z)
+    begin
+      if z.real?
+	tanh!(z)
+      else
+	sinh(z) / cosh(z)
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
   ##
   # returns the arc sine of +z+
   def asin(z)
-    if z.real? and z >= -1 and z <= 1
-      asin!(z)
-    else
-      (-1.0).i * log(1.0.i * z + sqrt(1.0 - z * z))
+    begin
+      if z.real? and z >= -1 and z <= 1
+	asin!(z)
+      else
+	(-1.0).i * log(1.0.i * z + sqrt(1.0 - z * z))
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
   ##
   # returns the arc cosine of +z+
   def acos(z)
-    if z.real? and z >= -1 and z <= 1
-      acos!(z)
-    else
-      (-1.0).i * log(z + 1.0.i * sqrt(1.0 - z * z))
+    begin
+      if z.real? and z >= -1 and z <= 1
+	acos!(z)
+      else
+	(-1.0).i * log(z + 1.0.i * sqrt(1.0 - z * z))
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
   ##
   # returns the arc tangent of +z+
   def atan(z)
-    if z.real?
-      atan!(z)
-    else
-      1.0.i * log((1.0.i + z) / (1.0.i - z)) / 2.0
+    begin
+      if z.real?
+	atan!(z)
+      else
+	1.0.i * log((1.0.i + z) / (1.0.i - z)) / 2.0
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
@@ -225,40 +284,56 @@ module CMath
   # returns the arc tangent of +y+ divided by +x+ using the signs of +y+ and
   # +x+ to determine the quadrant
   def atan2(y,x)
-    if y.real? and x.real?
-      atan2!(y,x)
-    else
-      (-1.0).i * log((x + 1.0.i * y) / sqrt(x * x + y * y))
+    begin
+      if y.real? and x.real?
+	atan2!(y,x)
+      else
+	(-1.0).i * log((x + 1.0.i * y) / sqrt(x * x + y * y))
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
   ##
   # returns the inverse hyperbolic sine of +z+
   def asinh(z)
-    if z.real?
-      asinh!(z)
-    else
-      log(z + sqrt(1.0 + z * z))
+    begin
+      if z.real?
+	asinh!(z)
+      else
+	log(z + sqrt(1.0 + z * z))
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
   ##
   # returns the inverse hyperbolic cosine of +z+
   def acosh(z)
-    if z.real? and z >= 1
-      acosh!(z)
-    else
-      log(z + sqrt(z * z - 1.0))
+    begin
+      if z.real? and z >= 1
+	acosh!(z)
+      else
+	log(z + sqrt(z * z - 1.0))
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
   ##
   # returns the inverse hyperbolic tangent of +z+
   def atanh(z)
-    if z.real? and z >= -1 and z <= 1
-      atanh!(z)
-    else
-      log((1.0 + z) / (1.0 - z)) / 2.0
+    begin
+      if z.real? and z >= -1 and z <= 1
+	atanh!(z)
+      else
+	log((1.0 + z) / (1.0 - z)) / 2.0
+      end
+    rescue NoMethodError
+      handle_no_method_error
     end
   end
 
@@ -313,10 +388,15 @@ module CMath
   module_function :gamma
   module_function :lgamma
 
+  private
+  def handle_no_method_error
+    if $!.name == :real?
+      raise TypeError, "Numeric Number required"
+    else
+      raise
+    end
+  end
+  module_function :handle_no_method_error
+
 end
 
-class Object
-  def real?
-    raise TypeError, "Numeric Number required"
-  end
-end
