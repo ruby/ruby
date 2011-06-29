@@ -1,3 +1,8 @@
+Thu Jun 30 02:53:26 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_threadptr_execute_interrupts_common): remove
+	  meaningless native_thread_yield(). It never close a race.
+
 Thu Jun 30 02:41:47 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_thread_schedule_limits): minor optimization.

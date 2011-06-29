@@ -1263,10 +1263,6 @@ rb_threadptr_execute_interrupts_common(rb_thread_t *th)
 {
     rb_atomic_t interrupt;
 
-    if (GET_VM()->main_thread == th) {
-	while (rb_signal_buff_size() && !th->exec_signal) native_thread_yield();
-    }
-
     if (th->raised_flag) return;
 
     while ((interrupt = ATOMIC_EXCHANGE(th->interrupt_flag, 0)) != 0) {
