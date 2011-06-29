@@ -1,3 +1,7 @@
+Thu Jun 30 06:23:28 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* thread.c (ruby_thread_s_pass):  Fix typo.
+
 Thu Jun 30 06:16:53 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Update to RDoc 3.8 which contains fixes for documentation

@@ -1240,11 +1240,11 @@ ruby_thread_has_gvl_p(void)
 }
 
 /*
- *  call-seq:
- *     Thread.pass   -> nil
+ * call-seq:
+ *    Thread.pass   -> nil
  *
- * Take the thrad scheduler a hint to pass execution to another thread.
- * A running thread may or may not switch. It depend on OS and processor.
+ * Give the thread scheduler a hint to pass execution to another thread.
+ * A running thread may or may not switch, it depends on OS and processor.
  */
 
 static VALUE
