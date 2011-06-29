@@ -1,3 +1,9 @@
+Thu Jun 30 00:43:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_run): change RDoc. The old example is buggy
+	  and may cause deadlock. The patch is suggested by Heesob Park
+	  <phasis@gmail.com>. Thank you! [Bug #3606][ruby-core:31454]
+
 Thu Jun 30 00:30:15 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/cmath.rb: make same exception for Math. fix [Bug #3137].
