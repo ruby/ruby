@@ -441,6 +441,9 @@ ruby_init_loadpath_safe(int safe_level)
     load_path = GET_VM()->load_path;
 
     if (safe_level == 0) {
+#ifdef MANGLED_PATH
+	rubylib_mangled_path("", 0);
+#endif
 	ruby_push_include(getenv("RUBYLIB"), identical_path);
     }
 

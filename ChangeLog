@@ -1,3 +1,10 @@
+Thu Jun 30 06:37:43 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_init_loadpath_safe): ensure RUBYLIB_PREFIX stored
+	  before RUBYLIB, even if MANGLED_PATH is enabled.  fixed #1679.
+	  MANGLED_PATH is disabled by the default and will be removed
+	  completely in the future.
+
 Thu Jun 30 06:32:21 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/drb/drb.rb:  Hide deprecated toplevel DRb constants.
