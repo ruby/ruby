@@ -287,7 +287,12 @@ if $0 == __FILE__
   ARGV.shift
   Tracer.on
   require $0
-elsif caller.count {|bt| /\/rubygems\/custom_require.rb:/ !~ bt} <= 1
-  Tracer.on
+else
+  # call Tracer.on only if required by -r command-line option
+  count = caller.count {|bt| /\/rubygems\/custom_require.rb:/ !~ bt}
+  if (defined?(Gem) and count == 0) or
+     (!defined?(Gem) and count <= 1)
+    Tracer.on
+  end
 end
 # :startdoc:

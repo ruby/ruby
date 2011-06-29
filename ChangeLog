@@ -1,3 +1,9 @@
+Wed Jun 29 22:04:14 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* lib/tracer.rb: Tracer.on only if required by -r command-line option.
+	  and consider --disable-gems option.
+	* test/test_tracer.rb: add tests for it.
+
 Wed Jun 29 13:55:36 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_const_get_0): should not look for superclasses if
