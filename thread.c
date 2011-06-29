@@ -1660,7 +1660,7 @@ rb_thread_run(VALUE thread)
  *  and schedules execution of another thread.
  *
  *     a = Thread.new { print "a"; Thread.stop; print "c" }
- *     Thread.pass
+ *     sleep 0.1 while a.status!='sleep'
  *     print "b"
  *     a.run
  *     a.join
