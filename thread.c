@@ -1589,7 +1589,9 @@ rb_thread_exit(void)
  *  I/O, however). Does not invoke the scheduler (see <code>Thread#run</code>).
  *
  *     c = Thread.new { Thread.stop; puts "hey!" }
+ *     sleep 0.1 while c.status!='sleep'
  *     c.wakeup
+ *     c.join
  *
  *  <em>produces:</em>
  *
