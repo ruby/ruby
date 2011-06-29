@@ -1768,6 +1768,7 @@ module DRb
   module_function :fetch_server
 end
 
+# :stopdoc:
 DRbObject = DRb::DRbObject
 DRbUndumped = DRb::DRbUndumped
 DRbIdConv = DRb::DRbIdConv
