@@ -1,3 +1,20 @@
+Thu Jun 30 02:28:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_schedule_rec): move interrupt_flag check to
+	  rb_thread_schedule().
+	  And also rename to rb_thead_schedule_limits() and remove
+	  sched_depth argument. It's no longer called recursive.
+	* thread.c (rb_thread_schedule): add to check interrupt_flag as
+	  above explained.
+
+	* thread.c (rb_threadptr_execute_interrupts_rec): rename to
+	  rb_threadptr_execute_interrupts_common() and remove sched_depth
+	  argument. It's no longer called recursive.
+
+	* thread.c (rb_thread_sleep): adapt the renaming.
+	* thread.c (rb_threadptr_execute_interrupts): ditto.
+	* thread.c (rb_thread_execute_interrupts): ditto.
+
 Thu Jun 30 01:31:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_s_pass): change RDoc description and remove

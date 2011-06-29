@@ -999,10 +999,10 @@ rb_thread_sleep(int sec)
     rb_thread_wait_for(rb_time_timeval(INT2FIX(sec)));
 }
 
-static void rb_threadptr_execute_interrupts_rec(rb_thread_t *, int);
+static void rb_threadptr_execute_interrupts_common(rb_thread_t *);
 
 static void
-rb_thread_schedule_rec(int sched_depth, unsigned long limits_us)
+rb_thread_schedule_limits(unsigned long limits_us)
 {
     thread_debug("rb_thread_schedule\n");
     if (!rb_thread_alone()) {
@@ -1017,17 +1017,17 @@ rb_thread_schedule_rec(int sched_depth, unsigned long limits_us)
 
 	rb_thread_set_current(th);
 	thread_debug("rb_thread_schedule/switch done\n");
-
-        if (UNLIKELY(!sched_depth && GET_THREAD()->interrupt_flag)) {
-            rb_threadptr_execute_interrupts_rec(GET_THREAD(), sched_depth+1);
-        }
     }
 }
 
 void
 rb_thread_schedule(void)
 {
-    rb_thread_schedule_rec(0, 0);
+    rb_thread_schedule_limits(0);
+
+    if (UNLIKELY(GET_THREAD()->interrupt_flag)) {
+	rb_threadptr_execute_interrupts_common(GET_THREAD());
+    }
 }
 
 /* blocking region */
@@ -1261,7 +1261,7 @@ thread_s_pass(VALUE klass)
  */
 
 static void
-rb_threadptr_execute_interrupts_rec(rb_thread_t *th, int sched_depth)
+rb_threadptr_execute_interrupts_common(rb_thread_t *th)
 {
     rb_atomic_t interrupt;
 
@@ -1305,7 +1305,7 @@ rb_threadptr_execute_interrupts_rec(rb_thread_t *th, int sched_depth)
 	    rb_gc_finalize_deferred();
 	}
 
-	if (!sched_depth && timer_interrupt) {
+	if (timer_interrupt) {
 	    unsigned long limits_us = 250 * 1000;
 
 	    if (th->priority > 0)
@@ -1316,10 +1316,9 @@ rb_threadptr_execute_interrupts_rec(rb_thread_t *th, int sched_depth)
 	    if (status == THREAD_RUNNABLE)
 		th->running_time_us += TIME_QUANTUM_USEC;
 
-	    sched_depth++;
 	    EXEC_EVENT_HOOK(th, RUBY_EVENT_SWITCH, th->cfp->self, 0, 0);
 
-	    rb_thread_schedule_rec(sched_depth+1, limits_us);
+	    rb_thread_schedule_limits(limits_us);
 	}
     }
 }
@@ -1327,7 +1326,7 @@ rb_threadptr_execute_interrupts_rec(rb_thread_t *th, int sched_depth)
 void
 rb_threadptr_execute_interrupts(rb_thread_t *th)
 {
-    rb_threadptr_execute_interrupts_rec(th, 0);
+    rb_threadptr_execute_interrupts_common(th);
 }
 
 void
@@ -1335,7 +1334,7 @@ rb_thread_execute_interrupts(VALUE thval)
 {
     rb_thread_t *th;
     GetThreadPtr(thval, th);
-    rb_threadptr_execute_interrupts_rec(th, 0);
+    rb_threadptr_execute_interrupts_common(th);
 }
 
 void
