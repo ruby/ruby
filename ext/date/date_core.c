@@ -172,6 +172,7 @@ f_negative_p(VALUE x)
 #define MINUTE_IN_SECONDS 60
 #define HOUR_IN_SECONDS 3600
 #define DAY_IN_SECONDS 86400
+#define SECOND_IN_MILLISECONDS 1000
 #define SECOND_IN_NANOSECONDS 1000000000
 
 #define JC_PERIOD0 1461		/* 365.25 * 4 */
@@ -932,6 +933,14 @@ ns_to_day(VALUE n)
     return f_quo(n, day_in_nanoseconds);
 }
 
+#ifndef NDEBUG
+static VALUE
+ms_to_sec(VALUE n)
+{
+    return f_quo(n, INT2FIX(SECOND_IN_MILLISECONDS));
+}
+#endif
+
 static VALUE
 ns_to_sec(VALUE n)
 {
@@ -974,6 +983,14 @@ day_to_ns(VALUE d)
     return f_mul(d, day_in_nanoseconds);
 }
 #endif
+
+static VALUE
+sec_to_ms(VALUE s)
+{
+    if (safe_mul_p(s, SECOND_IN_MILLISECONDS))
+	return LONG2FIX(FIX2LONG(s) * SECOND_IN_MILLISECONDS);
+    return f_mul(s, INT2FIX(SECOND_IN_MILLISECONDS));
+}
 
 static VALUE
 sec_to_ns(VALUE s)
@@ -6596,6 +6613,38 @@ date_strftime_alloc(char **buf, const char *format,
 }
 
 static VALUE
+tmx_m_secs(union DateData *x)
+{
+    VALUE s;
+    int df;
+
+    s = day_to_sec(f_sub(m_real_jd(x),
+			 UNIX_EPOCH_IN_CJD));
+    if (simple_dat_p(x))
+	return s;
+    df = m_df(x);
+    if (df)
+	s = f_add(s, INT2FIX(df));
+    return s;
+}
+
+#define MILLISECOND_IN_NANOSECONDS 1000000
+
+static VALUE
+tmx_m_msecs(union DateData *x)
+{
+    VALUE s, sf;
+
+    s = sec_to_ms(tmx_m_secs(x));
+    if (simple_dat_p(x))
+	return s;
+    sf = m_sf(x);
+    if (f_nonzero_p(sf))
+	s = f_add(s, f_div(sf, INT2FIX(MILLISECOND_IN_NANOSECONDS)));
+    return s;
+}
+
+static VALUE
 tmx_m_of(union DateData *x)
 {
     return INT2FIX(m_of(x));
@@ -6605,17 +6654,6 @@ static char *
 tmx_m_zone(union DateData *x)
 {
     return RSTRING_PTR(m_zone(x));
-}
-
-static VALUE
-tmx_m_timev(union DateData *x)
-{
-    if (simple_dat_p(x))
-	return day_to_sec(f_sub(m_real_jd(x),
-				UNIX_EPOCH_IN_CJD));
-    else
-	return day_to_sec(f_sub(m_ajd(x),
-				UNIX_EPOCH_IN_AJD));
 }
 
 static struct tmx_funcs tmx_funcs = {
@@ -6632,9 +6670,11 @@ static struct tmx_funcs tmx_funcs = {
     (int (*)(void *))m_hour,
     (int (*)(void *))m_min,
     (int (*)(void *))m_sec,
+    (VALUE (*)(void *))m_sf_in_sec,
+    (VALUE (*)(void *))tmx_m_secs,
+    (VALUE (*)(void *))tmx_m_msecs,
     (VALUE (*)(void *))tmx_m_of,
-    (char *(*)(void *))tmx_m_zone,
-    (VALUE (*)(void *))tmx_m_timev
+    (char *(*)(void *))tmx_m_zone
 };
 
 static void
@@ -8869,6 +8909,8 @@ static VALUE
 date_s_test_unit_conv(VALUE klass)
 {
     if (!test_unit_v2v_iter(sec_to_day, day_to_sec))
+	return Qfalse;
+    if (!test_unit_v2v_iter(ms_to_sec, sec_to_ms))
 	return Qfalse;
     if (!test_unit_v2v_iter(ns_to_day, day_to_ns))
 	return Qfalse;

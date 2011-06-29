@@ -406,19 +406,11 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			break;
 
 		case 's':
-			{
-                                VALUE sec = div(tmx_timev, INT2FIX(1));
-                                FMTV('0', 1, "d", sec);
-                        }
+			FMTV('0', 1, "d", tmx_secs);
                         continue;
 
 		case 'Q':
-			{
-				VALUE sec = div(tmx_timev,
-						rb_rational_new2(INT2FIX(1),
-								 INT2FIX(1000)));
-				FMTV('0', 1, "d", sec);
-			}
+			FMTV('0', 1, "d", tmx_msecs);
                         continue;
 
 		case 'S':	/* second, 00 - 59 */
@@ -697,7 +689,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
                         NEEDS(precision);
 
 			{
-                                VALUE subsec = mod(tmx_timev, INT2FIX(1));
+                                VALUE subsec = tmx_sec_fraction;
                                 int ww;
                                 long n;
 
