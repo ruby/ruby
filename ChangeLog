@@ -1,3 +1,7 @@
+Thu Jun 30 06:17:02 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/cmath.rb (CMath.log): second argument: b can be nil.
+
 Thu Jun 30 06:23:28 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* thread.c (ruby_thread_s_pass):  Fix typo.

@@ -71,7 +71,7 @@ module CMath
   def log(*args)
     begin
       z, b = args
-      unless b.kind_of?(Numeric)
+      unless b.nil? || b.kind_of?(Numeric)
 	raise TypeError,  "Numeric Number required"
       end
       if z.real? and z >= 0 and (b.nil? or b >= 0)
