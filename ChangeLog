@@ -1,3 +1,9 @@
+Thu Jun 30 01:31:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (thread_s_pass): change RDoc description and remove
+	  a sample code. The actual implementaion never behave as explained by
+	  an example. It's a documentation bug.
+
 Thu Jun 30 00:54:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_thread_stop): change RDoc sample code. The old

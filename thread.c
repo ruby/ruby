@@ -1245,20 +1245,8 @@ ruby_thread_has_gvl_p(void)
  *  call-seq:
  *     Thread.pass   -> nil
  *
- *  Invokes the thread scheduler to pass execution to another thread.
- *
- *     a = Thread.new { print "a"; Thread.pass;
- *                      print "b"; Thread.pass;
- *                      print "c" }
- *     b = Thread.new { print "x"; Thread.pass;
- *                      print "y"; Thread.pass;
- *                      print "z" }
- *     a.join
- *     b.join
- *
- *  <em>produces:</em>
- *
- *     axbycz
+ * Take the thrad scheduler a hint to pass execution to another thread.
+ * A running thread may or may not switch. It depend on OS and processor.
  */
 
 static VALUE
