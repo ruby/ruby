@@ -11,7 +11,7 @@ class Bar
     @foo = Foo.new
   end
   attr_reader :foo
-  
+
   def foo?(foo)
     @foo == foo
   end
