@@ -26,6 +26,7 @@ module RDoc
     "rb_cRange"            => "Range",
     "rb_cRegexp"           => "Regexp",
     "rb_cRubyVM"           => "RubyVM",
+    "rb_cSocket"           => "Socket",
     "rb_cString"           => "String",
     "rb_cStruct"           => "Struct",
     "rb_cSymbol"           => "Symbol",
@@ -58,6 +59,7 @@ module RDoc
     "rb_eZeroDivError"     => "ZeroDivError",
 
     "rb_mComparable"       => "Comparable",
+    "rb_mDL"               => "DL",
     "rb_mEnumerable"       => "Enumerable",
     "rb_mErrno"            => "Errno",
     "rb_mFileTest"         => "FileTest",

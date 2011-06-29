@@ -1,3 +1,8 @@
+Thu Jun 30 06:16:53 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc:  Update to RDoc 3.8 which contains fixes for documentation
+	  in trunk.
+
 Thu Jun 30 02:53:26 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_threadptr_execute_interrupts_common): remove

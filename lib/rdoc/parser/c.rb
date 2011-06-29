@@ -340,8 +340,6 @@ class RDoc::Parser::C < RDoc::Parser
       # Ignore top-object and weird struct.c dynamic stuff
       next if var_name == "ruby_top_self"
       next if var_name == "nstr"
-      next if var_name == "envtbl"
-      next if var_name == "argf"   # it'd be nice to handle this one
 
       var_name = "rb_cObject" if var_name == "rb_mKernel"
       handle_method(type, var_name, meth_name, function, param_count,

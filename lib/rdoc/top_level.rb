@@ -322,6 +322,7 @@ class RDoc::TopLevel < RDoc::Context
   # Adds +an_alias+ to +Object+ instead of +self+.
 
   def add_alias(an_alias)
+    object_class.record_location self
     return an_alias unless @document_self
     object_class.add_alias an_alias
   end
@@ -330,6 +331,7 @@ class RDoc::TopLevel < RDoc::Context
   # Adds +constant+ to +Object+ instead of +self+.
 
   def add_constant(constant)
+    object_class.record_location self
     return constant unless @document_self
     object_class.add_constant constant
   end
@@ -338,6 +340,7 @@ class RDoc::TopLevel < RDoc::Context
   # Adds +include+ to +Object+ instead of +self+.
 
   def add_include(include)
+    object_class.record_location self
     return include unless @document_self
     object_class.add_include include
   end
@@ -346,6 +349,7 @@ class RDoc::TopLevel < RDoc::Context
   # Adds +method+ to +Object+ instead of +self+.
 
   def add_method(method)
+    object_class.record_location self
     return method unless @document_self
     object_class.add_method method
   end

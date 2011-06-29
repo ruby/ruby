@@ -218,7 +218,7 @@ with all sufficient information, see the ChangeLog file.
     https://github.com/jimweirich/rake/blob/master/CHANGES
 
 * RDoc
-  * RDoc has been upgraded from 2.5.8 to 3.7.  For full release notes see
+  * RDoc has been upgraded from 2.5.8 to 3.8.  For full release notes see
     http://docs.seattlerb.org/rdoc/History_txt.html
 
 * rexml

@@ -478,7 +478,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
       read_documentation_modifiers att, RDoc::ATTR_MODIFIERS
 
-      context.add_attribute att if att.document_self
+      context.add_attribute att
 
       @stats.add_attribute att
     else
@@ -499,6 +499,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     tmp = RDoc::CodeObject.new
     read_documentation_modifiers tmp, RDoc::ATTR_MODIFIERS
+    # TODO In most other places we let the context keep track of document_self
+    # and add found items appropriately but here we do not.  I'm not sure why.
     return unless tmp.document_self
 
     case tk.name
@@ -557,7 +559,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     al.line   = line_no
 
     read_documentation_modifiers al, RDoc::ATTR_MODIFIERS
-    context.add_alias al if al.document_self
+    context.add_alias al
     @stats.add_alias al
 
     al
@@ -633,7 +635,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       cls.offset = offset
       cls.line   = line_no
 
-      cls.add_comment comment, @top_level if cls.document_self
+      cls.add_comment comment, @top_level
 
       @top_level.add_to_classes_or_modules cls
       @stats.add_class cls
@@ -657,7 +659,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
         # notify :nodoc: all if not a constant-named class/module
         # (and remove any comment)
-        unless name =~ /\A(::)?[A-Z]/
+        unless name =~ /\A(::)?[A-Z]/ then
           other.document_self = nil
           other.document_children = false
           other.clear_comment
@@ -758,7 +760,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     read_documentation_modifiers con, RDoc::CONSTANT_MODIFIERS
 
     @stats.add_constant con
-    container.add_constant con if con.document_self
+    container.add_constant con
     true
   end
 
@@ -797,7 +799,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
       return unless meth.name
 
-      container.add_method meth if meth.document_self
+      container.add_method meth
 
       meth.comment = comment
 
@@ -818,7 +820,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
       att.line      = line_no
 
       container.add_attribute att
-
       @stats.add_attribute att
     end
 
@@ -882,7 +883,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     tmp = RDoc::CodeObject.new
     read_documentation_modifiers tmp, RDoc::ATTR_MODIFIERS
-    return unless tmp.document_self
 
     if comment.sub!(/^# +:?(attr(_reader|_writer|_accessor)?): *(\S*).*?\n/i, '') then
       rw = case $1
@@ -969,7 +969,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
       extract_call_seq comment, meth
 
-      container.add_method meth if meth.document_self
+      container.add_method meth
 
       last_tk = tk
 
@@ -1238,7 +1238,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     mod.record_location @top_level
 
     read_documentation_modifiers mod, RDoc::CLASS_MODIFIERS
-    mod.add_comment comment, @top_level if mod.document_self
+    mod.add_comment comment, @top_level
     parse_statements(mod)
 
     @top_level.add_to_classes_or_modules mod
@@ -1341,23 +1341,15 @@ class RDoc::Parser::Ruby < RDoc::Parser
         end
 
       when TkDEF then
-        if container.document_self then
-          parse_method container, single, tk, comment
-        else
-          nest += 1
-        end
+        parse_method container, single, tk, comment
 
       when TkCONSTANT then
-        if container.document_self then
-          if not parse_constant container, tk, comment then
-            try_parse_comment = true
-          end
+        unless parse_constant container, tk, comment then
+          try_parse_comment = true
         end
 
       when TkALIAS then
-        if container.document_self and not current_method then
-          parse_alias container, single, tk, comment
-        end
+        parse_alias container, single, tk, comment unless current_method
 
       when TkYIELD then
         if current_method.nil? then
@@ -1395,12 +1387,11 @@ class RDoc::Parser::Ruby < RDoc::Parser
           when /^attr_(reader|writer|accessor)$/ then
             parse_attr_accessor container, single, tk, comment
           when 'alias_method' then
-            parse_alias container, single, tk, comment if
-              container.document_self
+            parse_alias container, single, tk, comment
           when 'require', 'include' then
             # ignore
           else
-            if container.document_self and comment =~ /\A#\#$/ then
+            if comment =~ /\A#\#$/ then
               case comment
               when /^# +:?attr(_reader|_writer|_accessor)?:/ then
                 parse_meta_attr container, single, tk, comment
@@ -1523,11 +1514,12 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
   ##
-  # Parses statements at the toplevel in +container+
+  # Parses statements in the top-level +container+
 
   def parse_top_level_statements(container)
     comment = collect_first_comment
     look_for_directives_in(container, comment)
+    # HACK move if to RDoc::Context#comment=
     container.comment = comment if container.document_self unless comment.empty?
     parse_statements container, NORMAL, nil, comment
   end

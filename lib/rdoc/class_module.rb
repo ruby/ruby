@@ -115,7 +115,7 @@ class RDoc::ClassModule < RDoc::Context
   # across multiple runs.
 
   def add_comment comment, location
-    return if comment.empty?
+    return if comment.empty? or not document_self
 
     original = comment
 
@@ -328,7 +328,10 @@ class RDoc::ClassModule < RDoc::Context
       @comment = @comment_location = document
     end
 
-    merge_collections attributes, class_module.attributes do |add, attr|
+    cm = class_module
+    other_files = cm.in_files
+
+    merge_collections attributes, cm.attributes, other_files do |add, attr|
       if add then
         add_attribute attr
       else
@@ -337,7 +340,7 @@ class RDoc::ClassModule < RDoc::Context
       end
     end
 
-    merge_collections constants, class_module.constants do |add, const|
+    merge_collections constants, cm.constants, other_files do |add, const|
       if add then
         add_constant const
       else
@@ -346,7 +349,7 @@ class RDoc::ClassModule < RDoc::Context
       end
     end
 
-    merge_collections includes, class_module.includes do |add, incl|
+    merge_collections includes, cm.includes, other_files do |add, incl|
       if add then
         add_include incl
       else
@@ -354,7 +357,7 @@ class RDoc::ClassModule < RDoc::Context
       end
     end
 
-    merge_collections method_list, class_module.method_list do |add, meth|
+    merge_collections method_list, cm.method_list, other_files do |add, meth|
       if add then
         add_method meth
       else
@@ -367,15 +370,37 @@ class RDoc::ClassModule < RDoc::Context
   end
 
   ##
-  # Merges collection +mine+ with +other+ preferring other.
+  # Merges collection +mine+ with +other+ preferring other.  +other_files+ is
+  # used to help determine which items should be deleted.
+  #
+  # Yields whether the item should be added or removed (true or false) and the
+  # item to be added or removed.
+  #
+  #   merge_collections things, other.things, other.in_files do |add, thing|
+  #     if add then
+  #       # add the thing
+  #     else
+  #       # remove the thing
+  #     end
+  #   end
 
-  def merge_collections mine, other, &block # :nodoc:
+  def merge_collections mine, other, other_files, &block # :nodoc:
     my_things    = mine. group_by { |thing| thing.file }
     other_things = other.group_by { |thing| thing.file }
 
+    my_things.delete_if do |file, things|
+      next false unless other_files.include? file
+
+      things.each do |thing|
+        yield false, thing
+      end
+
+      true
+    end
+
     other_things.each do |file, things|
       my_things[file].each { |thing| yield false, thing } if
-        my_things.include? file
+        my_things.include?(file)
 
       things.each do |thing|
         yield true, thing

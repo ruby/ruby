@@ -268,11 +268,7 @@ class RDoc::RI::Store
     path = class_file full_name
 
     begin
-      disk_klass = nil
-
-      open path, 'rb' do |io|
-        disk_klass = Marshal.load io.read
-      end
+      disk_klass = load_class full_name
 
       klass = disk_klass.merge klass
     rescue Errno::ENOENT
