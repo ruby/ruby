@@ -536,6 +536,7 @@ module XMLRPC
 
         # post request
         resp = @http.post2(@path, request, header)
+        @http.finish
       end
 
       @http_last_response = resp
