@@ -52,7 +52,7 @@ Wed Jun 29 06:21:02 2011  Koichi Sasada  <ko1@atdot.net>
 Wed Jun 29 06:09:54 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* error.c (rb_async_bug_errno): async-safe bug report function.
-	  In timer thread, signal handler shoul use it.
+	  In timer thread, signal handler should use it.
 	  The patch is contributed by Eric Wong <normalperson@yhbt.net>.
 	  Refs: [ruby-core:37644] and [ruby-core:37647]
 
@@ -64,7 +64,7 @@ Wed Jun 29 06:09:54 2011  Koichi Sasada  <ko1@atdot.net>
 Tue Jun 28 23:46:08 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/tracer.rb: count only non-internal libraries in stack trace,
-	  ignoring custom_require. 
+	  ignoring custom_require.
 
 Tue Jun 28 21:44:58 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
@@ -208,7 +208,7 @@ Mon Jun 27 21:16:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Mon Jun 27 11:41:47 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread_pthread.c (rb_thread_create_timer_thread):
-	  the type of retrun value of write(2) is ssize_t.
+	  the type of return value of write(2) is ssize_t.
 
 Mon Jun 27 09:57:02 2011  Koichi Sasada  <ko1@atdot.net>
 
@@ -221,7 +221,7 @@ Mon Jun 27 09:07:42 2011  Koichi Sasada  <ko1@atdot.net>
 	  no waiting thread.  If there are 2 or more runnable threads,
 	  the timer thread does polling.  Avoid polling makes power save
 	  for several computers (0.2W per a Ruby process, when I measured).
-	  If outside-event such as signal or Thread#kill was occuerred
+	  If outside-event such as signal or Thread#kill was occurred
 	  when the timer thread does not do polling, then wake-up
 	  the timer thread using communication-pipe (the timer thread
 	  waits this communication-pipe with select(2)).
@@ -432,7 +432,7 @@ Wed Jun 22 22:21:17 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 Wed Jun 22 21:29:25 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* ext/socket/depend (SOCK_HEADERS): use $(top_srcdir) instaed of
+	* ext/socket/depend (SOCK_HEADERS): use $(top_srcdir) instead of
 	  $(topdir). sorry!
 
 Wed Jun 22 19:47:03 2011  NARUSE, Yui  <naruse@ruby-lang.org>
@@ -501,7 +501,7 @@ Wed Jun 22 14:47:53 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_buffering.rb
 	* test/openssl/test_pkcs12.rb: Inherit from Test::Unit::TestCase
-	  instead of Mintest::Unit::TestCase. [ruby-core:37275]
+	  instead of MiniTest::Unit::TestCase. [ruby-core:37275]
 	  
 Wed Jun 22 12:41:03 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
