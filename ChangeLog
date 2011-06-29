@@ -1,3 +1,7 @@
+Wed Jun 29 22:49:10 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/cmd/help.rb: support RDoc 3.7. fix [Bug #3760].
+
 Wed Jun 29 22:04:14 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* lib/tracer.rb: Tracer.on only if required by -r command-line option.

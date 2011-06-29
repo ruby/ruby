@@ -26,7 +26,7 @@ module IRB
           end
           names.each do |name|
             begin
-              Ri.get_info_for(name.to_s)
+              Ri.display_name(name.to_s)
             rescue RDoc::RI::Error
               puts $!.message
             end
