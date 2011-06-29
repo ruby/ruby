@@ -56,6 +56,7 @@ end
 # * <tt> #map                           </tt>
 # * <tt> #each                          </tt>
 # * <tt> #each_with_index               </tt>
+# * <tt> #find_index                    </tt>
 # * <tt> #minor(*param)                 </tt>
 #
 # Properties of a matrix:
@@ -490,6 +491,36 @@ class Matrix
     self
   end
 
+  SELECTORS = {all: true, diagonal: true, off_diagonal: true, lower: true, strict_lower: true, strict_upper: true, upper: true}.freeze
+  #
+  # :call-seq:
+  #   index(value, selector = :all) -> [row, column]
+  #   index(selector = :all){ block } -> [row, column]
+  #   index(selector = :all) -> an_enumerator
+  #
+  # The index method is specialized to return the index as [row, column]
+  # It also accepts an optional +selector+ argument, see #each for details.
+  #
+  #   Matrix[ [1,2], [3,4] ].index(&:even?) # => [0, 1]
+  #   Matrix[ [1,1], [1,1] ].index(1, :strict_lower) # => [1, 0]
+  #
+  def index(*args)
+    raise ArgumentError, "wrong number of arguments(#{args.size} for 0-2)" if args.size > 2
+    which = (args.size == 2 || SELECTORS.include?(args.last)) ? args.pop : :all
+    return to_enum :find_index, which, *args unless block_given? || args.size == 1
+    if args.size == 1
+      value = args.first
+      each_with_index(which) do |e, row_index, col_index|
+        return row_index, col_index if e == value
+      end
+    else
+      each_with_index(which) do |e, row_index, col_index|
+        return row_index, col_index if yield e
+      end
+    end
+    nil
+  end
+  alias_method :find_index, :index
   #
   # Returns a section of the matrix.  The parameters are either:
   # *  start_row, nrows, start_col, ncols; OR

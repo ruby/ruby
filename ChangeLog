@@ -1,3 +1,8 @@
+Wed Jun 29 10:09:35 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Specialize Matrix#find_index to return [row, col]
+	  and accept the same optional argument as #each
+
 Wed Jun 29 10:07:32 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Matrix#each{_with_index} can iterate over a subset

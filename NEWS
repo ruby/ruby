@@ -159,6 +159,8 @@ with all sufficient information, see the ChangeLog file.
 * matrix
   * extended methods:
     * Matrix#each and #each_with_index can iterate on a subset of the elements
+    * Matrix#find_index returns [row, column] and can iterate on a subset
+      of the elements
 
 * net/http
   * SNI (Server Name Indication) supported for HTTPS. 
