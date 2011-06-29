@@ -1,3 +1,8 @@
+Thu Jun 30 00:03:20 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/completion.rb: complate correctry string literal. fix
+	  [Bug #1145].
+
 Wed Jun 29 23:42:51 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: avoided using timev.
