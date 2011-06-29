@@ -1008,15 +1008,13 @@ rb_thread_schedule_limits(unsigned long limits_us)
     if (!rb_thread_alone()) {
 	rb_thread_t *th = GET_THREAD();
 
-	thread_debug("rb_thread_schedule/switch start\n");
-
-	RB_GC_SAVE_MACHINE_CONTEXT(th);
-
-	if (th->running_time_us >= limits_us)
+	if (th->running_time_us >= limits_us) {
+	    thread_debug("rb_thread_schedule/switch start\n");
+	    RB_GC_SAVE_MACHINE_CONTEXT(th);
 	    gvl_yield(th->vm, th);
-
-	rb_thread_set_current(th);
-	thread_debug("rb_thread_schedule/switch done\n");
+	    rb_thread_set_current(th);
+	    thread_debug("rb_thread_schedule/switch done\n");
+	}
     }
 }
 
