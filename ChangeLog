@@ -1,3 +1,10 @@
+Thu Jun 30 12:25:34 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_pthread.c (rb_thread_create_timer_thread): allocate
+	  machine stack for the timer thread at least 12KB.  FreeBSD 8.2
+	  AMD64 causes machine stack overflow (SIGSEGV) only with
+	  PTHREAD_STACK_MIN (maybe defined as 2KB).
+
 Thu Jun 30 09:36:37 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/weakref.rb:  Attach documentation to WeakRef and add missing

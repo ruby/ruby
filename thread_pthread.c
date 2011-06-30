@@ -1122,8 +1122,18 @@ rb_thread_create_timer_thread(void)
 
 	pthread_attr_init(&attr);
 #ifdef PTHREAD_STACK_MIN
-	pthread_attr_setstacksize(&attr,
-				  PTHREAD_STACK_MIN + (THREAD_DEBUG ? BUFSIZ : 0));
+	if (PTHREAD_STACK_MIN < 4096 * 3) {
+	    /* Allocate the machine stack for the timer thread
+             * at least 12KB (3 pages).  FreeBSD 8.2 AMD64 causes
+             * machine stack overflow only with PTHREAD_STACK_MIN.
+	     */
+	    pthread_attr_setstacksize(&attr,
+				      4096 * 3 + (THREAD_DEBUG ? BUFSIZ : 0));
+	}
+	else {
+	    pthread_attr_setstacksize(&attr,
+				      PTHREAD_STACK_MIN + (THREAD_DEBUG ? BUFSIZ : 0));
+	}
 #endif
 
 	/* communication pipe with timer thread and signal handler */
