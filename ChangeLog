@@ -1,3 +1,8 @@
+Thu Jun 30 09:36:37 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/weakref.rb:  Attach documentation to WeakRef and add missing
+	  documentation
+
 Thu Jun 30 09:30:14 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/yaml.rb:  Document toplevel YAML and YAML::ENGINE to describe
