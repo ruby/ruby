@@ -1,3 +1,8 @@
+Thu Jun 30 09:30:14 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/yaml.rb:  Document toplevel YAML and YAML::ENGINE to describe
+	  Psych vs Syck engines.
+
 Thu Jun 30 09:21:52 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/cmath.rb:  Hide handle_no_method_error from RDoc.
