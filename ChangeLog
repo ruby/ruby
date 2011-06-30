@@ -1,3 +1,8 @@
+Thu Jun 30 23:50:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* misc/ruby-mode.el (ruby-indent-beg-re): Fix broken regular
+	  expression.  Fixes #4546
+
 Thu Jun 30 23:43:30 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl.c/.h: Added ossl_x509_name_sk2ary.
