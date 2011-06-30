@@ -1,3 +1,7 @@
+Thu Jun 30 12:52:56 2011  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/tk/extconf.rb (intptr_t, uintptr_t): support for the latest ActiveTcl with mingw.
+
 Sun Jun 26 17:52:32 2011  Nobuhiro Iwamatsu  <iwamatsu@nigauri.org>
 
         * ext/openssl/ossl_ssl.c: By trunk@31346, function check of SSLv2 is executed.
