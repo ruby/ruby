@@ -340,10 +340,14 @@ END
   end
 
   def test_random_bytes
-    r = Random.new(0)
+    assert_random_bytes(Random.new(0))
+  end
+
+  def assert_random_bytes(r)
     assert_equal("", r.bytes(0))
     assert_equal("\xAC".force_encoding("ASCII-8BIT"), r.bytes(1))
-    assert_equal("/\xAA\xC4\x97u\xA6\x16\xB7\xC0\xCC".force_encoding("ASCII-8BIT"),                                                                                                                              r.bytes(10))
+    assert_equal("/\xAA\xC4\x97u\xA6\x16\xB7\xC0\xCC".force_encoding("ASCII-8BIT"),
+                 r.bytes(10))
   end
 
   def test_random_range
