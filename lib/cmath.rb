@@ -389,7 +389,7 @@ module CMath
   module_function :lgamma
 
   private
-  def handle_no_method_error
+  def handle_no_method_error # :nodoc:
     if $!.name == :real?
       raise TypeError, "Numeric Number required"
     else

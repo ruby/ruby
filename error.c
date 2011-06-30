@@ -1465,10 +1465,28 @@ syserr_eqq(VALUE self, VALUE exc)
  */
 
 /*
+ * Document-class: EncodingError
+ *
+ * EncodingError is the base class for encoding errors.
+ */
+
+/*
  *  Document-class: Encoding::CompatibilityError
  *
  *  Raised by Encoding and String methods when the source encoding is
  *  incompatible with the target encoding.
+ */
+
+/*
+ * Document-class: fatal
+ *
+ * fatal is an Exception that is raised when ruby has encountered a fatal
+ * error and must exit.  You are not able to rescue fatal.
+ */
+
+/*
+ * Document-class: NameError::message
+ * :nodoc:
  */
 
 /*
