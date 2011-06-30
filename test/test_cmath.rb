@@ -7,9 +7,7 @@ class TestCMath < Test::Unit::TestCase
   end
 
   def test_acos
-    c = CMath.acos(Complex(3, 4))
-    assert_in_delta 0.9368124611557199, c.real
-    assert_in_delta -2.305509031243477, c.imag
+    assert_in_delta (CMath.acos(Complex(3, 4)) - Complex(0.9368124611557199,-2.305509031243477)).abs2, 0
   end
 
   def test_cbrt_returns_principal_value_of_cube_root
