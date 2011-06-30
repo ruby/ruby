@@ -1,3 +1,7 @@
+Thu Jun 30 20:12:36 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_module.rb: tests for [Bug #3422] and [Bug #3423].
+
 Thu Jun 30 20:03:39 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: modified doc.
@@ -5,15 +9,15 @@ Thu Jun 30 20:03:39 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 Thu Jun 30 19:09:19 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c (thread_timer): ignore unknown errno.
-	 (we observed that select(2) was canceled by errno=514 on
+	  (we observed that select(2) was canceled by errno=514 on
 	  boron == Linux/Xen environment)
 
 Thu Jun 30 17:33:25 2011  Koichi Sasada  <ko1@atdot.net>
 
-	* ext/objspace/objspace.c (ObjectSpace.count_tdata_objects): 
+	* ext/objspace/objspace.c (ObjectSpace.count_tdata_objects):
 	  Fix rdoc.  Fixes Bug #3892.
 
-	* ext/objspace/objspace.c (ObjectSpace.count_tdata_objects): 
+	* ext/objspace/objspace.c (ObjectSpace.count_tdata_objects):
 	  Change key type if the klass of a object is zero (internal object).
 	  Read rdoc for details.
 
@@ -21,7 +25,7 @@ Thu Jun 30 17:33:25 2011  Koichi Sasada  <ko1@atdot.net>
 
 Thu Jun 30 17:25:08 2011  Koichi Sasada  <ko1@atdot.net>
 
-	* thread_pthread.c (ping_signal_thread_list, thread_timer): 
+	* thread_pthread.c (ping_signal_thread_list, thread_timer):
 	  fix to keep polling state if there are any ping-tasks.
 
 Thu Jun 30 12:25:34 2011  Koichi Sasada  <ko1@atdot.net>

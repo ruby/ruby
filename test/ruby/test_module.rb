@@ -457,7 +457,7 @@ class TestModule < Test::Unit::TestCase
     assert_equal(false, o.respond_to?(:bar=))
   end
 
-  def test_const_get2
+  def test_const_get_evaled
     c1 = Class.new
     c2 = Class.new(c1)
 
@@ -487,14 +487,45 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c1.const_get(:foo) }
   end
 
-  def test_const_set2
+  def test_const_set_invalid_name
     c1 = Class.new
     assert_raise(NameError) { c1.const_set(:foo, :foo) }
   end
 
-  def test_const_get3
+  def test_const_get_invalid_name
     c1 = Class.new
     assert_raise(NameError) { c1.const_defined?(:foo) }
+  end
+
+  def test_const_get_no_inherited
+    bug3422 = '[ruby-core:30719]'
+    assert_in_out_err([], <<-INPUT, %w[1 NameError A], [], bug3422)
+    BasicObject::A = 1
+    puts [true, false].map {|inh|
+      begin
+        Object.const_get(:A, inh)
+      rescue NameError => e
+        [e.class, e.name]
+      end
+    }
+    INPUT
+  end
+
+  def test_const_get_inherited
+    bug3423 = '[ruby-core:30720]'
+    assert_in_out_err([], <<-INPUT, %w[NameError A NameError A], [], bug3423)
+    module Foo; A = 1; end
+    class Object; include Foo; end
+    class Bar; include Foo; end
+
+    puts [Object, Bar].map {|klass|
+      begin
+        klass.const_get(:A, false)
+      rescue NameError => e
+        [e.class, e.name]
+      end
+    }
+    INPUT
   end
 
   def test_class_variable_get
