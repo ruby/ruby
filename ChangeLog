@@ -1,3 +1,9 @@
+Thu Jun 30 19:09:19 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_pthread.c (thread_timer): ignore unknown errno.
+	 (we observed that select(2) was canceled by errno=514 on
+	  boron == Linux/Xen environment)
+
 Thu Jun 30 17:33:25 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c (ObjectSpace.count_tdata_objects): 

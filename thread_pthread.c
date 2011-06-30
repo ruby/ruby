@@ -1104,12 +1104,15 @@ thread_timer(void *p)
 	    consume_communication_pipe();
 	}
 	else { /* result < 0 */
-	    if (errno == EINTR) {
-		/* interrupted. ignore */
-	    }
-	    else {
-		rb_async_bug_errno("thread_timer: select", errno);
-	    }
+	  switch (errno) {
+	    case EBADF:
+	    case EINVAL:
+	    case ENOMEM: /* from Linux man */
+	    case EFAULT: /* from FreeBSD man */
+	      rb_async_bug_errno("thread_timer: select", errno);
+	    default:
+	      /* ignore */;
+	  }
 	}
     }
 
