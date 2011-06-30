@@ -5987,7 +5987,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     set_yylval_str(STR_NEW3(tok(), toklen(), enc, func));
 
 #ifdef RIPPER
-    if (!NIL_P(parser->delayed)){
+    if (!NIL_P(parser->delayed)) {
 	ptrdiff_t len = lex_p - parser->tokp;
 	if (len > 0) {
 	    rb_enc_str_buf_cat(parser->delayed, parser->tokp, len, enc);

@@ -1647,7 +1647,7 @@ ossl_ssl_get_verify_result(VALUE self)
  * call-seq:
  *    ssl.client_ca => [x509name, ...]
  *
- * Returns the list of client CAs. Please note that in contrast to 
+ * Returns the list of client CAs. Please note that in contrast to
  * SSLContext#client_ca= no array of X509::Certificate is returned but
  * X509::Name instances of the CA's subject distinguished name.
  *

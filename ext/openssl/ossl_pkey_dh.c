@@ -357,7 +357,7 @@ ossl_dh_to_text(VALUE self)
  * per-session information.
  *
  * === Example
- *  dh = OpenSSL::PKey::DH.new(2048) # has public and private key set 
+ *  dh = OpenSSL::PKey::DH.new(2048) # has public and private key set
  *  public_key = dh.public_key # contains only prime and generator
  *  parameters = public_key.to_der # it's safe to publish this
  */
@@ -574,10 +574,10 @@ Init_ossl_dh()
      *  dh1 = OpenSSL::PKey::DH.new(2048)
      *  params = dh1.public_key.to_der #you may send this publicly to the participating party
      *  dh2 = OpenSSL::PKey::DH.new(der)
-     *  dh2.generate_key! #generate the per-session key pair 
+     *  dh2.generate_key! #generate the per-session key pair
      *  symm_key1 = dh1.compute_key(dh2.pub_key)
      *  symm_key2 = dh2.compute_key(dh1.pub_key)
-     *  
+     *
      *  puts symm_key1 == symm_key2 # => true
      */
     cDH = rb_define_class_under(mPKey, "DH", cPKey);

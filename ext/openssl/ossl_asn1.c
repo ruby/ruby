@@ -206,7 +206,7 @@ static ID sivVALUE, sivTAG, sivTAG_CLASS, sivTAGGING, sivINFINITE_LENGTH, sivUNU
  * for infinite length values is different in OpenSSL <= 0.9.7
  */
 #if OPENSSL_VERSION_NUMBER < 0x00908000L
-#define ossl_asn1_object_size(cons, len, tag)		(cons) == 2 ? (len) + ASN1_object_size((cons), 0, (tag)) : ASN1_object_size((cons), (len), (tag)) 
+#define ossl_asn1_object_size(cons, len, tag)		(cons) == 2 ? (len) + ASN1_object_size((cons), 0, (tag)) : ASN1_object_size((cons), (len), (tag))
 #define ossl_asn1_put_object(pp, cons, len, tag, xc)	(cons) == 2 ? ASN1_put_object((pp), (cons), 0, (tag), (xc)) : ASN1_put_object((pp), (cons), (len), (tag), (xc))
 #else
 #define ossl_asn1_object_size(cons, len, tag)		ASN1_object_size((cons), (len), (tag))
@@ -1832,7 +1832,7 @@ Init_ossl_asn1()
      * OpenSSL::ASN1::EndOfContent instance.
      *
      * Please note that it is not possible to encode Constructive without
-     * the +infinite_length+ attribute being set to +true+, use 
+     * the +infinite_length+ attribute being set to +true+, use
      * OpenSSL::ASN1::Sequence or OpenSSL::ASN1::Set in these cases instead.
      *
      * === Example - Infinite length OCTET STRING

@@ -322,7 +322,7 @@ ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
     if (!p7) {
 	OSSL_BIO_reset(in);
         p7 = d2i_PKCS7_bio(in, &pkcs);
-	if (!p7) 
+	if (!p7)
 	    ossl_raise(rb_eArgError, "Could not parse the PKCS7");
 	DATA_PTR(self) = pkcs;
     }

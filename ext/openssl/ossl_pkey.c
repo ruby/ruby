@@ -98,7 +98,7 @@ ossl_pkey_new_from_file(VALUE filename)
  * * +pwd+ is an optional password in case +string+ or +file+ is an encrypted
  * PEM resource.
  */
-static VALUE 
+static VALUE
 ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
 {
      FILE *fp;

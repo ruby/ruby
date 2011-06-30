@@ -515,7 +515,7 @@ Init_ossl_dsa()
 
     /* Document-class: OpenSSL::PKey::DSA
      *
-     * DSA, the Digital Signature Algorithm, is specified in NIST's 
+     * DSA, the Digital Signature Algorithm, is specified in NIST's
      * FIPS 186-3. It is an asymmetric public key algorithm that may be used
      * similar to e.g. RSA.
      * Please note that for OpenSSL versions prior to 1.0.0 the digest
