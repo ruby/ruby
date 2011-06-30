@@ -1,3 +1,13 @@
+Thu Jun 30 23:43:30 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl.c/.h: Added ossl_x509_name_sk2ary.
+	* ext/openssl/ossl.c: Replaced ossl_x509_ary2k by generic macro to
+	  simplify future conversions.
+	* ext/openssl/ossl_ssl.c: Implement SSLSocket#client_ca.
+	* test/openssl/test_ssl.rb: Add test for SSLSocket#client_ca.
+	  Thanks to Ippei Obayashi for providing the patch!
+	  [ Ruby 1.9 - Feature #4481 ] [ruby-core:35461]
+
 Thu Jun 30 22:38:58 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_vm2_defined_method.rb: added to measure performance of

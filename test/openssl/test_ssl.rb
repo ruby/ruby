@@ -135,6 +135,28 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_client_ca
+    ctx_proc = Proc.new do |ctx|
+      ctx.client_ca = [@ca_cert]
+    end
+
+    vflag = OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
+    start_server(PORT, vflag, true, :ctx_proc => ctx_proc){|server, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      client_ca_from_server = nil
+      ctx.client_cert_cb = Proc.new do |sslconn|
+        client_ca_from_server = sslconn.client_ca
+        [@cli_cert, @cli_key]
+      end
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      ssl.sync_close = true
+      ssl.connect
+      assert_equal([@ca], client_ca_from_server)
+      ssl.close
+    }
+  end
+
   def test_starttls
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, false){|server, port|
       sock = TCPSocket.new("127.0.0.1", port)

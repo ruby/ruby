@@ -47,48 +47,53 @@ string2hex(const unsigned char *buf, int buf_len, char **hexbuf, int *hexbuf_len
 /*
  * Data Conversion
  */
-STACK_OF(X509) *
-ossl_x509_ary2sk0(VALUE ary)
-{
-    STACK_OF(X509) *sk;
-    VALUE val;
-    X509 *x509;
-    int i;
-
-    Check_Type(ary, T_ARRAY);
-    sk = sk_X509_new_null();
-    if (!sk) ossl_raise(eOSSLError, NULL);
-
-    for (i = 0; i < RARRAY_LEN(ary); i++) {
-        val = rb_ary_entry(ary, i);
-        if (!rb_obj_is_kind_of(val, cX509Cert)) {
-            sk_X509_pop_free(sk, X509_free);
-            ossl_raise(eOSSLError, "object not X509 cert in array");
-        }
-        x509 = DupX509CertPtr(val); /* NEED TO DUP */
-        sk_X509_push(sk, x509);
-    }
-    return sk;
+#define OSSL_IMPL_ARY2SK(name, type, expected_class, dup)	\
+STACK_OF(type) *						\
+ossl_##name##_ary2sk0(VALUE ary)				\
+{								\
+    STACK_OF(type) *sk;						\
+    VALUE val;							\
+    type *x;							\
+    int i;							\
+    								\
+    Check_Type(ary, T_ARRAY);					\
+    sk = sk_##type##_new_null();				\
+    if (!sk) ossl_raise(eOSSLError, NULL);			\
+    								\
+    for (i = 0; i < RARRAY_LEN(ary); i++) {			\
+	val = rb_ary_entry(ary, i);				\
+	if (!rb_obj_is_kind_of(val, expected_class)) {		\
+	    sk_##type##_pop_free(sk, type##_free);		\
+	    ossl_raise(eOSSLError, "object in array not"	\
+		       " of class ##type##");			\
+	}							\
+	x = dup(val); /* NEED TO DUP */				\
+	sk_##type##_push(sk, x);				\
+    }								\
+    return sk;							\
+}								\
+								\
+STACK_OF(type) *						\
+ossl_protect_##name##_ary2sk(VALUE ary, int *status)		\
+{								\
+    return (STACK_OF(type)*)rb_protect(				\
+	    (VALUE(*)_((VALUE)))ossl_##name##_ary2sk0,		\
+	    ary,						\
+	    status);						\
+}								\
+								\
+STACK_OF(type) *						\
+ossl_##name##_ary2sk(VALUE ary)					\
+{								\
+    STACK_OF(type) *sk;						\
+    int status = 0;						\
+    								\
+    sk = ossl_protect_##name##_ary2sk(ary, &status);		\
+    if (status) rb_jump_tag(status);				\
+								\
+    return sk;							\
 }
-
-STACK_OF(X509) *
-ossl_protect_x509_ary2sk(VALUE ary, int *status)
-{
-    return (STACK_OF(X509)*)rb_protect((VALUE(*)_((VALUE)))ossl_x509_ary2sk0,
-				       ary, status);
-}
-
-STACK_OF(X509) *
-ossl_x509_ary2sk(VALUE ary)
-{
-    STACK_OF(X509) *sk;
-    int status = 0;
-
-    sk = ossl_protect_x509_ary2sk(ary, &status);
-    if(status) rb_jump_tag(status);
-
-    return sk;
-}
+OSSL_IMPL_ARY2SK(x509, X509, cX509Cert, DupX509CertPtr)
 
 #define OSSL_IMPL_SK2ARY(name, type)	        \
 VALUE						\
@@ -117,6 +122,7 @@ ossl_##name##_sk2ary(STACK_OF(type) *sk)	\
 }
 OSSL_IMPL_SK2ARY(x509, X509)
 OSSL_IMPL_SK2ARY(x509crl, X509_CRL)
+OSSL_IMPL_SK2ARY(x509name, X509_NAME)
 
 static VALUE
 ossl_str_new(int size)

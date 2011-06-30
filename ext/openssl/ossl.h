@@ -126,6 +126,7 @@ STACK_OF(X509) *ossl_x509_ary2sk(VALUE);
 STACK_OF(X509) *ossl_protect_x509_ary2sk(VALUE,int*);
 VALUE ossl_x509_sk2ary(STACK_OF(X509) *certs);
 VALUE ossl_x509crl_sk2ary(STACK_OF(X509_CRL) *crl);
+VALUE ossl_x509name_sk2ary(STACK_OF(X509_NAME) *names);
 VALUE ossl_buf2str(char *buf, int len);
 #define ossl_str_adjust(str, p) \
 do{\

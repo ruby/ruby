@@ -1643,6 +1643,33 @@ ossl_ssl_get_verify_result(VALUE self)
     return INT2FIX(SSL_get_verify_result(ssl));
 }
 
+/*
+ * call-seq:
+ *    ssl.client_ca => [x509name, ...]
+ *
+ * Returns the list of client CAs. Please note that in contrast to 
+ * SSLContext#client_ca= no array of X509::Certificate is returned but
+ * X509::Name instances of the CA's subject distinguished name.
+ *
+ * In server mode, returns the list set by SSLContext#client_ca=.
+ * In client mode, returns the list of client CAs sent from the server.
+ */
+static VALUE
+ossl_ssl_get_client_ca_list(VALUE self)
+{
+    SSL *ssl;
+    STACK_OF(X509_NAME) *ca;
+
+    Data_Get_Struct(self, SSL, ssl);
+    if (!ssl) {
+	rb_warning("SSL session is not started yet.");
+	return Qnil;
+    }
+
+    ca = SSL_get_client_CA_list(ssl);
+    return ossl_x509name_sk2ary(ca);
+}
+
 void
 Init_ossl_ssl()
 {
@@ -1930,6 +1957,7 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "session_reused?",    ossl_ssl_session_reused, 0);
     rb_define_method(cSSLSocket, "session=",    ossl_ssl_set_session, 1);
     rb_define_method(cSSLSocket, "verify_result", ossl_ssl_get_verify_result, 0);
+    rb_define_method(cSSLSocket, "client_ca", ossl_ssl_get_client_ca_list, 0);
 
 #define ossl_ssl_def_const(x) rb_define_const(mSSL, #x, INT2NUM(SSL_##x))
 
