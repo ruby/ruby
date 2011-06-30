@@ -1265,7 +1265,8 @@ vm_getivar(VALUE obj, ID id, IC ic)
 	VALUE val = Qundef;
 	VALUE klass = RBASIC(obj)->klass;
 
-	if (ic->ic_class == klass) {
+	if (LIKELY(ic->ic_class == klass &&
+		   ic->ic_vmstat == GET_VM_STATE_VERSION())) {
 	    long index = ic->ic_value.index;
 	    long len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
@@ -1287,6 +1288,7 @@ vm_getivar(VALUE obj, ID id, IC ic)
 		    }
 		    ic->ic_class = klass;
 		    ic->ic_value.index = index;
+		    ic->ic_vmstat = GET_VM_STATE_VERSION();
 		}
 	    }
 	}
@@ -1318,7 +1320,8 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
 	VALUE klass = RBASIC(obj)->klass;
 	st_data_t index;
 
-	if (ic->ic_class == klass) {
+	if (LIKELY(ic->ic_class == klass &&
+		   ic->ic_vmstat == GET_VM_STATE_VERSION())) {
 	    long index = ic->ic_value.index;
 	    long len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
@@ -1334,6 +1337,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
 	    if (iv_index_tbl && st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
 		ic->ic_class = klass;
 		ic->ic_value.index = index;
+		ic->ic_vmstat = GET_VM_STATE_VERSION();
 	    }
 	    /* fall through */
 	}

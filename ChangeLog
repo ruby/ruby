@@ -1,3 +1,11 @@
+Fri Jul  1 08:21:28 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_getivar): check vm state version
+	  to invalidate inline chache (ivar index).
+	  fixes Bug #4926.
+
+	* vm_insnhelper.c (vm_setivar): ditto.
+
 Fri Jul  1 08:03:15 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c, thread_pthread.c (WRITE_CONST): suppress warnings
