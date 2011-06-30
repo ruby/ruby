@@ -192,6 +192,7 @@ void Init_prelude(void);
 #pragma GCC visibility push(default)
 #endif
 VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
+const char *rb_objspace_data_type_name(VALUE obj);
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
 #endif
