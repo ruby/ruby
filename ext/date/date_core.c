@@ -1481,6 +1481,8 @@ m_fr(union DateData *x)
     }
 }
 
+#define HALF_DAYS_IN_SECONDS (DAY_IN_SECONDS / 2)
+
 static VALUE
 m_ajd(union DateData *x)
 {
@@ -1495,7 +1497,7 @@ m_ajd(union DateData *x)
 
     r = m_real_jd(x);
     df = m_df(x);
-    df -= 43200; /* 12 hours */
+    df -= HALF_DAYS_IN_SECONDS;
     if (df)
 	r = f_add(r, isec_to_day(df));
     sf = m_sf(x);
