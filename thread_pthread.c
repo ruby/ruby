@@ -994,7 +994,7 @@ static int timer_thread_pipe_owner_process;
 
 #define TT_DEBUG 0
 
-#define WRITE_CONST(fd, str) write((fd),(str),sizeof(str)-1);
+#define WRITE_CONST(fd, str) (void)(write((fd),(str),sizeof(str)-1)<0)
 
 /* only use signal-safe system calls here */
 void

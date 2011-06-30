@@ -1,3 +1,8 @@
+Fri Jul  1 08:03:15 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c, thread_pthread.c (WRITE_CONST): suppress warnings
+	  `ignoring return value'.
+
 Fri Jul  1 06:41:36 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_threadptr_check_signal): only wake up main thread.
@@ -9,7 +14,7 @@ Fri Jul  1 06:41:36 2011  Koichi Sasada  <ko1@atdot.net>
 	* bootstraptest/test_fork.rb: add a test for above.
 
 	* signal.c (rb_get_next_signal): skip if signal_buff is empty.
-	 (check signal_buff.size first)
+	  (check signal_buff.size first)
 
 	* vm_core.h: remove unused variable rb_thread_t::exec_signal.
 

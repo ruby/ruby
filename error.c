@@ -295,12 +295,14 @@ rb_bug_errno(const char *mesg, int errno_arg)
  * this is safe to call inside signal handler and timer thread
  * (which isn't a Ruby Thread object)
  */
-#define WRITE_CONST(fd,str) write((fd),(str),sizeof(str) - 1)
+#define write_or_abort(fd, str, len) (write((fd), (str), (len)) < 0 ? abort() : (void)0)
+#define WRITE_CONST(fd,str) write_or_abort((fd),(str),sizeof(str) - 1)
 
-void rb_async_bug_errno(const char *mesg, int errno_arg)
+void
+rb_async_bug_errno(const char *mesg, int errno_arg)
 {
     WRITE_CONST(2, "[ASYNC BUG] ");
-    write(2, mesg, strlen(mesg));
+    write_or_abort(2, mesg, strlen(mesg));
     WRITE_CONST(2, "\n");
 
     if (errno_arg == 0) {
@@ -311,10 +313,10 @@ void rb_async_bug_errno(const char *mesg, int errno_arg)
 
 	if (!errno_str)
 	    errno_str = "undefined errno";
-	write(2, errno_str, strlen(errno_str));
+	write_or_abort(2, errno_str, strlen(errno_str));
     }
     WRITE_CONST(2, "\n\n");
-    write(2, ruby_description, strlen(ruby_description));
+    write_or_abort(2, ruby_description, strlen(ruby_description));
     WRITE_CONST(2, "\n\n");
     WRITE_CONST(2, REPORTBUG_MSG);
     abort();
