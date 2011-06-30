@@ -18,7 +18,7 @@
 
 static ID id_cmp, id_le_p, id_ge_p, id_eqeq_p;
 static VALUE cDate, cDateTime;
-static VALUE half_days_in_day, unix_epoch_in_ajd, day_in_nanoseconds;
+static VALUE half_days_in_day, day_in_nanoseconds;
 static double positive_inf, negative_inf;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
@@ -166,8 +166,7 @@ f_negative_p(VALUE x)
 #define GREGORIAN negative_inf
 #define DEFAULT_SG ITALY
 
-#define UNIX_EPOCH_IN_AJD unix_epoch_in_ajd /* 1970-01-01 */
-#define UNIX_EPOCH_IN_CJD INT2FIX(2440588)
+#define UNIX_EPOCH_IN_CJD INT2FIX(2440588) /* 1970-01-01 */
 
 #define MINUTE_IN_SECONDS 60
 #define HOUR_IN_SECONDS 3600
@@ -1494,8 +1493,9 @@ m_ajd(union DateData *x)
 				      INT2FIX(1)),
 				INT2FIX(2));
 
-    r = f_sub(m_real_jd(x), half_days_in_day);
+    r = m_real_jd(x);
     df = m_df(x);
+    df -= 43200; /* 12 hours */
     if (df)
 	r = f_add(r, isec_to_day(df));
     sf = m_sf(x);
@@ -3004,7 +3004,7 @@ date_s_new_bang(int argc, VALUE *argv, VALUE klass)
 #endif
 
 inline static int
-integer_p(VALUE x)
+wholenum_p(VALUE x)
 {
     if (FIXNUM_P(x))
 	return 1;
@@ -3032,7 +3032,7 @@ d_trunc(VALUE d, VALUE *fr)
 {
     VALUE rd;
 
-    if (integer_p(d)) {
+    if (wholenum_p(d)) {
 	rd = d;
 	*fr = INT2FIX(0);
     } else {
@@ -3050,7 +3050,7 @@ h_trunc(VALUE h, VALUE *fr)
 {
     VALUE rh;
 
-    if (integer_p(h)) {
+    if (wholenum_p(h)) {
 	rh = h;
 	*fr = INT2FIX(0);
     } else {
@@ -3066,7 +3066,7 @@ min_trunc(VALUE min, VALUE *fr)
 {
     VALUE rmin;
 
-    if (integer_p(min)) {
+    if (wholenum_p(min)) {
 	rmin = min;
 	*fr = INT2FIX(0);
     } else {
@@ -3082,7 +3082,7 @@ s_trunc(VALUE s, VALUE *fr)
 {
     VALUE rs;
 
-    if (integer_p(s)) {
+    if (wholenum_p(s)) {
 	rs = s;
 	*fr = INT2FIX(0);
     } else {
@@ -5675,7 +5675,7 @@ d_lite_plus(VALUE self, VALUE other)
 	    VALUE nth, sf, t;
 	    int jd, df, s;
 
-	    if (integer_p(other))
+	    if (wholenum_p(other))
 		return d_lite_plus(self, RRATIONAL(other)->num);
 
 	    if (f_positive_p(other))
@@ -9010,7 +9010,6 @@ Init_date_core(void)
     id_eqeq_p = rb_intern("==");
 
     half_days_in_day = rb_rational_new2(INT2FIX(1), INT2FIX(2));
-    unix_epoch_in_ajd =  rb_rational_new2(INT2FIX(4881175), INT2FIX(2));
 
 #if (LONG_MAX / DAY_IN_SECONDS) > SECOND_IN_NANOSECONDS
     day_in_nanoseconds = LONG2NUM((long)DAY_IN_SECONDS *
@@ -9024,7 +9023,6 @@ Init_date_core(void)
 #endif
 
     rb_gc_register_mark_object(half_days_in_day);
-    rb_gc_register_mark_object(unix_epoch_in_ajd);
     rb_gc_register_mark_object(day_in_nanoseconds);
 
     positive_inf = +INFINITY;

@@ -1,3 +1,7 @@
+Thu Jun 30 20:36:23 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: trivial changes.
+
 Thu Jun 30 20:12:36 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_module.rb: tests for [Bug #3422] and [Bug #3423].
