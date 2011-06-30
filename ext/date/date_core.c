@@ -2300,17 +2300,17 @@ offset_to_sec(VALUE vof, int *rof)
 
 #ifdef CANONICALIZATION_FOR_MATHN
 	    if (!k_rational_p(vs)) {
-		vn = vs;
-		vd = INT2FIX(1);
+		if (!FIXNUM_P(vs))
+		    return 0;
+		n = FIX2LONG(vs);
+		if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
+		    return 0;
+		*rof = (int)n;
+		return 1;
 	    }
-	    else {
-		vn = RRATIONAL(vs)->num;
-		vd = RRATIONAL(vs)->den;
-	    }
-#else
+#endif
 	    vn = RRATIONAL(vs)->num;
 	    vd = RRATIONAL(vs)->den;
-#endif
 
 	    if (FIXNUM_P(vn) && FIXNUM_P(vd) && (FIX2LONG(vd) == 1))
 		n = FIX2LONG(vn);
