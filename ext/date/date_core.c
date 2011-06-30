@@ -417,7 +417,7 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
     (x)->jd = (y)->jd;\
     (x)->sg = (sg_cast)((y)->sg);\
     (x)->year = (y)->year;\
-    (x)->pc = PACK5(EX_MON((y)->pc), EX_MDAY((y)->pc), 0, 0, 0);\
+    (x)->pc = PACK2(EX_MON((y)->pc), EX_MDAY((y)->pc));\
     (x)->flags = (y)->flags;\
 }
 #endif
@@ -1904,6 +1904,12 @@ k_numeric_p(VALUE x)
     return f_kind_of_p(x, rb_cNumeric);
 }
 
+inline static VALUE
+k_rational_p(VALUE x)
+{
+    return f_kind_of_p(x, rb_cRational);
+}
+
 #ifndef NDEBUG
 static void
 civil_to_jd(VALUE y, int m, int d, double sg,
@@ -2280,13 +2286,31 @@ offset_to_sec(VALUE vof, int *rof)
 	if (!k_numeric_p(vof))
 	    rb_raise(rb_eTypeError, "expected numeric");
 	vof = f_to_r(vof);
+#ifdef CANONICALIZATION_FOR_MATHN
+	if (!k_rational_p(vof))
+	    return offset_to_sec(vof, rof);
+#endif
 	/* fall through */
       case T_RATIONAL:
 	{
-	    VALUE vs = day_to_sec(vof);
-	    VALUE vn = RRATIONAL(vs)->num;
-	    VALUE vd = RRATIONAL(vs)->den;
+	    VALUE vs, vn, vd;
 	    long n;
+
+	    vs = day_to_sec(vof);
+
+#ifdef CANONICALIZATION_FOR_MATHN
+	    if (!k_rational_p(vs)) {
+		vn = vs;
+		vd = INT2FIX(1);
+	    }
+	    else {
+		vn = RRATIONAL(vs)->num;
+		vd = RRATIONAL(vs)->den;
+	    }
+#else
+	    vn = RRATIONAL(vs)->num;
+	    vd = RRATIONAL(vs)->den;
+#endif
 
 	    if (FIXNUM_P(vn) && FIXNUM_P(vd) && (FIX2LONG(vd) == 1))
 		n = FIX2LONG(vn);
@@ -5671,6 +5695,10 @@ d_lite_plus(VALUE self, VALUE other)
 	if (!k_numeric_p(other))
 	    rb_raise(rb_eTypeError, "expected numeric");
 	other = f_to_r(other);
+#ifdef CANONICALIZATION_FOR_MATHN
+	if (!k_rational_p(other))
+	    return d_lite_plus(self, other);
+#endif
 	/* fall through */
       case T_RATIONAL:
 	{
@@ -8323,11 +8351,10 @@ dt_lite_strftime(int argc, VALUE *argv, VALUE self)
 static VALUE
 iso8601_timediv(VALUE self, VALUE n)
 {
-    VALUE f, fmt;
+    VALUE fmt;
 
-    if (f_lt_p(n, INT2FIX(1)))
-	f = rb_usascii_str_new2("");
-    else {
+    fmt = rb_usascii_str_new2("T%H:%M:%S");
+    if (f_gt_p(n, INT2FIX(0))) {
 	VALUE argv[3];
 
 	get_d1(self);
@@ -8337,11 +8364,9 @@ iso8601_timediv(VALUE self, VALUE n)
 	argv[2] = f_round(f_quo(m_sf_in_sec(dat),
 			    f_quo(INT2FIX(1),
 				  f_expt(INT2FIX(10), n))));
-	f = rb_f_sprintf(3, argv);
+	rb_str_append(fmt, rb_f_sprintf(3, argv));
     }
-    fmt = f_add3(rb_usascii_str_new2("T%H:%M:%S"),
-		 f,
-		 rb_usascii_str_new2("%:z"));
+    rb_str_append(fmt, rb_usascii_str_new2("%:z"));
     return strftimev(RSTRING_PTR(fmt), self, set_tmx);
 }
 
