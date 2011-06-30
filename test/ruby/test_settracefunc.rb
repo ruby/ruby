@@ -355,6 +355,28 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal([], events[:add])
   end
 
+  def test_trace_defined_method
+    events = []
+    eval <<-EOF.gsub(/^.*?: /, "")
+     1: class FooBar; define_method(:foobar){}; end
+     2: fb = FooBar.new
+     3: set_trace_func(Proc.new { |event, file, lineno, mid, binding, klass|
+     4:   events << [event, lineno, mid, klass]
+     5: })
+     6: fb.foobar
+     7: set_trace_func(nil)
+    EOF
+
+    [["c-return", 5, :set_trace_func, Kernel],
+     ["line", 6, __method__, self.class],
+     ["call", 6, :foobar, FooBar],
+     ["return", 6, :foobar, FooBar],
+     ["line", 7, __method__, self.class],
+     ["c-call", 7, :set_trace_func, Kernel]].each{|e|
+      assert_equal(e, events.shift)
+    }
+  end
+
   def test_remove_in_trace
     bug3921 = '[ruby-dev:42350]'
     ok = false

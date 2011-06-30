@@ -4447,8 +4447,7 @@ call_trace_proc(VALUE args, int tracing)
     ID id = 0;
     VALUE klass = 0;
 
-    if (p->event == RUBY_EVENT_C_CALL ||
-	p->event == RUBY_EVENT_C_RETURN) {
+    if (p->klass != 0) {
 	id = p->id;
 	klass = p->klass;
     }

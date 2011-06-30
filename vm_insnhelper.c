@@ -421,11 +421,15 @@ vm_call_bmethod(rb_thread_t *th, VALUE recv, int argc, const VALUE *argv,
     rb_proc_t *proc;
     VALUE val;
 
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_CALL, recv, me->called_id, me->klass);
+
     /* control block frame */
     th->passed_me = me;
-
     GetProcPtr(me->def->body.proc, proc);
     val = rb_vm_invoke_proc(th, proc, recv, argc, argv, blockptr);
+
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, recv, me->called_id, me->klass);
+
     return val;
 }
 
