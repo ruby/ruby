@@ -1,6 +1,6 @@
 Fri Jul  1 03:24:03 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
-	* ext/date/date_core.c: mathn still alive (should die soon).
+	* ext/date/date_core.c: mathn is still alive (should die soon).
 
 Thu Jun 30 23:50:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
