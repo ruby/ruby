@@ -229,11 +229,19 @@ f_negative_p(VALUE x)
 #endif
 #endif
 
+/* A set of nth, jd, df and sf denote ajd + 1/2.  Each ajd begin at
+ * noon of GMT (assume equal to UTC).  However, this begins at
+ * midnight.
+ */
+
 struct SimpleDateData
 {
     unsigned flags;
     VALUE nth;	/* not always canonicalized */
     int jd;	/* as utc */
+    /* df is zero */
+    /* sf is zero */
+    /* of is zero */
 #ifndef USE_FLOAT
     double sg;  /* 2298874..2426355 or -/+oo */
 #else
@@ -244,6 +252,9 @@ struct SimpleDateData
 #ifndef USE_PACK
     int mon;
     int mday;
+    /* hour is zero */
+    /* min is zero */
+    /* sec is zero */
 #else
     /* packed civil */
     unsigned pc;
@@ -2436,7 +2447,7 @@ date_s__valid_civil_p(int argc, VALUE *argv, VALUE klass)
 /*
  * call-seq:
  *    Date.valid_civil?(year, month, mday[, start=Date::ITALY])  ->  bool
- *    Date.valid_date?(year, month, mday[, start=Date::ITALY])  ->  bool
+ *    Date.valid_date?(year, month, mday[, start=Date::ITALY])   ->  bool
  *
  * Returns true if the given calendar date is valid, and false if not.
  *
@@ -2812,7 +2823,7 @@ date_s_julian_leap_p(VALUE klass, VALUE y)
 /*
  * call-seq:
  *    Date.gregorian_leap?(year)  ->  bool
- *    Date.leap?(year)  ->  bool
+ *    Date.leap?(year)            ->  bool
  *
  * Returns true if the given year is a leap year of the proleptic
  * Gregorian calendar.
@@ -3240,7 +3251,7 @@ date_s_ordinal(int argc, VALUE *argv, VALUE klass)
 /*
  * call-seq:
  *    Date.civil([year=-4712[, month=1[, mday=1[, start=Date::ITALY]]]])  ->  date
- *    Date.new([year=-4712[, month=1[, mday=1[, start=Date::ITALY]]]])  ->  date
+ *    Date.new([year=-4712[, month=1[, mday=1[, start=Date::ITALY]]]])    ->  date
  *
  * Creates a date object denoting the given calendar date.
  *
@@ -4089,7 +4100,7 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
 
 /*
  * call-seq:
- *    Date._strptime(string[, format="%F"])  ->  hash
+ *    Date._strptime(string[, format='%F'])  ->  hash
  *
  * Parses the given representation of date and time with the given
  * template, and returns a hash of parsed elements.
@@ -4109,7 +4120,7 @@ date_s__strptime(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.strptime([string="-4712-01-01"[, format="%F"[, start=ITALY]]])  ->  date
+ *    Date.strptime([string='-4712-01-01'[, format='%F'[, start=ITALY]]])  ->  date
  *
  * Parses the given representation of date and time with the given
  * template, and creates a date object.
@@ -4205,7 +4216,7 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.parse(string="-4712-01-01"[, comp=true[, start=ITALY]])  ->  date
+ *    Date.parse(string='-4712-01-01'[, comp=true[, start=ITALY]])  ->  date
  *
  * Parses the given representation of date and time, and creates a
  * date object.
@@ -4267,10 +4278,10 @@ date_s__iso8601(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *    Date.iso8601(string="-4712-01-01"[, start=ITALY])  ->  date
+ *    Date.iso8601(string='-4712-01-01'[, start=ITALY])  ->  date
  *
  * Creates a new Date object by parsing from a string according to
- * some typical ISO 8601 format.
+ * some typical ISO 8601 formats.
  *
  * For example:
  *
@@ -4312,10 +4323,10 @@ date_s__rfc3339(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *    Date.rfc3339(string="-4712-01-01T00:00:00+00:00"[, start=ITALY])  ->  date
+ *    Date.rfc3339(string='-4712-01-01T00:00:00+00:00'[, start=ITALY])  ->  date
  *
  * Creates a new Date object by parsing from a string according to
- * some typical RFC 3339 format.
+ * some typical RFC 3339 formats.
  *
  * For example:
  *
@@ -4355,10 +4366,10 @@ date_s__xmlschema(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *    Date.xmlschema(string="-4712-01-01"[, start=ITALY])  ->  date
+ *    Date.xmlschema(string='-4712-01-01'[, start=ITALY])  ->  date
  *
  * Creates a new Date object by parsing from a string according to
- * some typical XML Schema format.
+ * some typical XML Schema formats.
  *
  * For example:
  *
@@ -4387,7 +4398,7 @@ date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
 /*
  * call-seq:
  *    Date._rfc2822(string)  ->  hash
- *    Date._rfc822(string)  ->  hash
+ *    Date._rfc822(string)   ->  hash
  *
  * Returns a hash of parsed elements.
  */
@@ -4399,11 +4410,11 @@ date_s__rfc2822(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *    Date.rfc2822(string="Mon, 1 Jan -4712 00:00:00 +0000"[, start=ITALY])  ->  date
- *    Date.rfc822(string="Mon, 1 Jan -4712 00:00:00 +0000"[, start=ITALY])  ->  date
+ *    Date.rfc2822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=ITALY])  ->  date
+ *    Date.rfc822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=ITALY])   ->  date
  *
  * Creates a new Date object by parsing from a string according to
- * some typical RFC 2822 format.
+ * some typical RFC 2822 formats.
  *
  * For example:
  *
@@ -4444,7 +4455,7 @@ date_s__httpdate(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *    Date.httpdate(string="Mon, 01 Jan -4712 00:00:00 GMT"[, start=ITALY])  ->  date
+ *    Date.httpdate(string='Mon, 01 Jan -4712 00:00:00 GMT'[, start=ITALY])  ->  date
  *
  * Creates a new Date object by parsing from a string according to
  * some RFC 2616 format.
@@ -4489,10 +4500,10 @@ date_s__jisx0301(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *    Date.jisx0301(string="-4712-01-01"[, start=ITALY])  ->  date
+ *    Date.jisx0301(string='-4712-01-01'[, start=ITALY])  ->  date
  *
  * Creates a new Date object by parsing from a string according to
- * some typical JIS X 0301 format.
+ * some typical JIS X 0301 formats.
  *
  * For example:
  *
@@ -4805,7 +4816,7 @@ d_lite_yday(VALUE self)
 
 /*
  * call-seq:
- *    d.mon  ->  fixnum
+ *    d.mon    ->  fixnum
  *    d.month  ->  fixnum
  *
  * Returns the month (1-12).
@@ -4824,7 +4835,7 @@ d_lite_mon(VALUE self)
 /*
  * call-seq:
  *    d.mday  ->  fixnum
- *    d.day  ->  fixnum
+ *    d.day   ->  fixnum
  *
  * Returns the day of the month (1-31).
  *
@@ -5073,7 +5084,7 @@ d_lite_hour(VALUE self)
 
 /*
  * call-seq:
- *    d.min  ->  fixnum
+ *    d.min     ->  fixnum
  *    d.minute  ->  fixnum
  *
  * Returns the minute (0-59).
@@ -5091,7 +5102,7 @@ d_lite_min(VALUE self)
 
 /*
  * call-seq:
- *    d.sec  ->  fixnum
+ *    d.sec     ->  fixnum
  *    d.second  ->  fixnum
  *
  * Returns the second (0-59).
@@ -5109,7 +5120,7 @@ d_lite_sec(VALUE self)
 
 /*
  * call-seq:
- *    d.sec_fraction  ->  rational
+ *    d.sec_fraction     ->  rational
  *    d.second_fraction  ->  rational
  *
  * Returns the fractional part of the second.
@@ -5420,8 +5431,8 @@ d_lite_new_offset(int argc, VALUE *argv, VALUE self)
  *    d + other  ->  date
  *
  * Returns a date object pointing other days after self.  The other
- * should be a numeric value.  If the other is flonum, its precision
- * is at most nanosecond.
+ * should be a numeric value.  If the other is flonum, assumes its
+ * precision is at most nanosecond.
  *
  * For example:
  *
@@ -5824,12 +5835,12 @@ minus_dd(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    d - other  ->  date or numeric
+ *    d - other  ->  date or rational
  *
  * Returns the difference between the two dates if the other is a date
- * object.  If the other is a numeric value, it returns a date object
- * pointing other days before self.  If the other is flonum, its
- * precision is at most nanosecond.
+ * object.  If the other is a numeric value, returns a date object
+ * pointing other days before self.  If the other is flonum, assumes
+ * its precision is at most nanosecond.
  *
  * For example:
  *
@@ -6040,7 +6051,7 @@ static VALUE d_lite_cmp(VALUE, VALUE);
 
 /*
  * call-seq:
- *    d.step(limit[, step=1])  ->  enumerator
+ *    d.step(limit[, step=1])              ->  enumerator
  *    d.step(limit[, step=1]){|date| ...}  ->  self
  *
  * Iterates evaluation of the given block, which takes a date object.
@@ -6094,7 +6105,7 @@ d_lite_step(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    d.upto(max)  ->  enumerator
+ *    d.upto(max)              ->  enumerator
  *    d.upto(max){|date| ...}  ->  self
  *
  * This method is equivalent to step(max, 1){|date| ...}.
@@ -6116,7 +6127,7 @@ d_lite_upto(VALUE self, VALUE max)
 
 /*
  * call-seq:
- *    d.downto(min)  ->  enumerator
+ *    d.downto(min)              ->  enumerator
  *    d.downto(min){|date| ...}  ->  self
  *
  * This method is equivalent to step(min, -1){|date| ...}.
@@ -6743,7 +6754,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
 
 /*
  * call-seq:
- *    d.strftime([format="%F"])  ->  string
+ *    d.strftime([format='%F'])  ->  string
  *
  *  Formats date according to the directives in the given format
  *  string.
@@ -6944,7 +6955,7 @@ strftimev(const char *fmt, VALUE self,
 /*
  * call-seq:
  *    d.asctime  ->  string
- *    d.ctime  ->  string
+ *    d.ctime    ->  string
  *
  * Returns a string in asctime(3) format (but without "\n\0" at the
  * end).  This method is equivalent to strftime('%c').
@@ -6959,7 +6970,7 @@ d_lite_asctime(VALUE self)
 
 /*
  * call-seq:
- *    d.iso8601  ->  string
+ *    d.iso8601    ->  string
  *    d.xmlschema  ->  string
  *
  * This method is equivalent to strftime('%F').
@@ -6985,7 +6996,7 @@ d_lite_rfc3339(VALUE self)
 /*
  * call-seq:
  *    d.rfc2822  ->  string
- *    d.rfc822  ->  string
+ *    d.rfc822   ->  string
  *
  * This method is equivalent to strftime('%a, %-d %b %Y %T %z').
  */
@@ -7329,7 +7340,7 @@ datetime_s_ordinal(int argc, VALUE *argv, VALUE klass)
 /*
  * call-seq:
  *    DateTime.civil([year=-4712[, month=1[, mday=1[, hour=0[, minute=0[, second=0[, offset=0[, start=Date::ITALY]]]]]]]])  ->  datetime
- *    DateTime.new([year=-4712[, month=1[, mday=1[, hour=0[, minute=0[, second=0[, offset=0[, start=Date::ITALY]]]]]]]])  ->  datetime
+ *    DateTime.new([year=-4712[, month=1[, mday=1[, hour=0[, minute=0[, second=0[, offset=0[, start=Date::ITALY]]]]]]]])    ->  datetime
  *
  * Creates a date-time object denoting the given calendar date.
  *
@@ -7796,7 +7807,7 @@ dt_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
 
 /*
  * call-seq:
- *    DateTime._strptime(string[, format="%FT%T%z"])  ->  hash
+ *    DateTime._strptime(string[, format='%FT%T%z'])  ->  hash
  *
  * Parses the given representation of date and time with the given
  * template, and returns a hash of parsed elements.
@@ -7811,7 +7822,7 @@ datetime_s__strptime(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.strptime([string="-4712-01-01T00:00:00+00:00"[, format="%FT%T%z"[ ,start=ITALY]]])  ->  datetime
+ *    DateTime.strptime([string='-4712-01-01T00:00:00+00:00'[, format='%FT%T%z'[ ,start=ITALY]]])  ->  datetime
  *
  * Parses the given representation of date and time with the given
  * template, and creates a date object.
@@ -7865,7 +7876,7 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.parse(string="-4712-01-01T00:00:00+00:00"[, comp=true[, start=ITALY]])  ->  datetime
+ *    DateTime.parse(string='-4712-01-01T00:00:00+00:00'[, comp=true[, start=ITALY]])  ->  datetime
  *
  * Parses the given representation of date and time, and creates a
  * date object.
@@ -7910,10 +7921,10 @@ datetime_s_parse(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.iso8601(string="-4712-01-01T00:00:00+00:00"[, start=ITALY])  ->  datetime
+ *    DateTime.iso8601(string='-4712-01-01T00:00:00+00:00'[, start=ITALY])  ->  datetime
  *
  * Creates a new Date object by parsing from a string according to
- * some typical ISO 8601 format.
+ * some typical ISO 8601 formats.
  *
  * For example:
  *
@@ -7946,10 +7957,10 @@ datetime_s_iso8601(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.rfc3339(string="-4712-01-01T00:00:00+00:00"[, start=ITALY])  ->  datetime
+ *    DateTime.rfc3339(string='-4712-01-01T00:00:00+00:00'[, start=ITALY])  ->  datetime
  *
  * Creates a new Date object by parsing from a string according to
- * some typical RFC 3339 format.
+ * some typical RFC 3339 formats.
  *
  * For example:
  *
@@ -7978,10 +7989,10 @@ datetime_s_rfc3339(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.xmlschema(string="-4712-01-01T00:00:00+00:00"[, start=ITALY])  ->  datetime
+ *    DateTime.xmlschema(string='-4712-01-01T00:00:00+00:00'[, start=ITALY])  ->  datetime
  *
  * Creates a new Date object by parsing from a string according to
- * some typical XML Schema format.
+ * some typical XML Schema formats.
  *
  * For example:
  *
@@ -8010,11 +8021,11 @@ datetime_s_xmlschema(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.rfc2822(string="Mon, 1 Jan -4712 00:00:00 +0000"[, start=ITALY])  ->  datetime
- *    DateTime.rfc822(string="Mon, 1 Jan -4712 00:00:00 +0000"[, start=ITALY])  ->  datetime
+ *    DateTime.rfc2822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=ITALY])  ->  datetime
+ *    DateTime.rfc822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=ITALY])   ->  datetime
  *
  * Creates a new Date object by parsing from a string according to
- * some typical RFC 2822 format.
+ * some typical RFC 2822 formats.
  *
  * For example:
  *
@@ -8043,7 +8054,7 @@ datetime_s_rfc2822(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.httpdate(string="Mon, 01 Jan -4712 00:00:00 GMT"[, start=ITALY])  ->  datetime
+ *    DateTime.httpdate(string='Mon, 01 Jan -4712 00:00:00 GMT'[, start=ITALY])  ->  datetime
  *
  * Creates a new Date object by parsing from a string according to
  * some RFC 2616 format.
@@ -8075,10 +8086,10 @@ datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    DateTime.jisx0301(string="-4712-01-01T00:00:00+00:00"[, start=ITALY])  ->  datetime
+ *    DateTime.jisx0301(string='-4712-01-01T00:00:00+00:00'[, start=ITALY])  ->  datetime
  *
  * Creates a new Date object by parsing from a string according to
- * some typical JIS X 0301 format.
+ * some typical JIS X 0301 formats.
  *
  * For example:
  *
@@ -8125,7 +8136,7 @@ dt_lite_to_s(VALUE self)
 
 /*
  * call-seq:
- *    dt.strftime([format="%FT%T%:z"])  ->  string
+ *    dt.strftime([format='%FT%T%:z'])  ->  string
  *
  *  Formats date according to the directives in the given format
  *  string.
@@ -8334,7 +8345,7 @@ iso8601_timediv(VALUE self, VALUE n)
 
 /*
  * call-seq:
- *    dt.iso8601([n=0])  ->  string
+ *    dt.iso8601([n=0])    ->  string
  *    dt.xmlschema([n=0])  ->  string
  *
  * This method is equivalent to strftime('%FT%T').  The optional
@@ -9177,8 +9188,8 @@ Init_date_core(void)
      *				#=> #<DateTime: 2001-02-03T04:05:06+00:00 ...>
      *
      * The last element of day, hour, minute or senond can be
-     * fractional number. The fractional number's precision is at most
-     * nanosecond.
+     * fractional number. The fractional number's precision is assumed
+     * at most nanosecond.
      *
      *     DateTime.new(2001,2,3.5)
      *				#=> #<DateTime: 2001-02-03T12:00:00+00:00 ...>
@@ -9187,8 +9198,8 @@ Init_date_core(void)
      * between the local time and UTC.  For example, Rational(3,24)
      * represents ahead of 3 hours of UTC, Rational(-5,24) represents
      * behind of 5 hours of UTC.  The offset should be -1 to +1, and
-     * its precision is at most second.  The default value is zero
-     * (equals to UTC).
+     * its precision is assumed at most second.  The default value is
+     * zero (equals to UTC).
      *
      *     DateTime.new(2001,2,3,4,5,6,Rational(3,24))
      *				#=> #<DateTime: 2001-02-03T03:04:05+03:00 ...>

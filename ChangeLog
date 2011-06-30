@@ -1,3 +1,7 @@
+Thu Jun 30 20:03:39 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: modified doc.
+
 Thu Jun 30 19:09:19 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c (thread_timer): ignore unknown errno.
