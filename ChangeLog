@@ -1,7 +1,7 @@
 Thu Jun 30 22:17:04 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_call_bmethod): fix to hook call/return event
-	  for methods defined by define_method().
+	  for methods defined by define_method().  fixes Bug #4613.
 
 	* thread.c (call_trace_proc): Fix to skip if class is not given (0).
 	  Note that ID and Class object are passed for call/return event
