@@ -1,3 +1,8 @@
+Thu Jun 30 22:38:58 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm2_defined_method.rb: added to measure performance of
+	  bmethod (method defined by define_method()).
+
 Thu Jun 30 22:17:04 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_call_bmethod): fix to hook call/return event
