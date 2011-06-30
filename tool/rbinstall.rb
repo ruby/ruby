@@ -544,6 +544,7 @@ install?(:ext, :comm, :gem) do
     ['rdoc', 'lib/rdoc.rb'],
     ['minitest', 'lib/minitest/unit.rb'],
     ['json', 'ext/json/lib/json/version.rb'],
+    ['io-console', 'ext/io/console/io-console.gemspec'],
   ]
   default_gems.each do |name, src|
     src = File.join(srcdir, src)
