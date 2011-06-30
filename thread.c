@@ -981,7 +981,7 @@ rb_thread_check_ints(void)
 int
 rb_thread_check_trap_pending(void)
 {
-    return GET_THREAD()->exec_signal != 0;
+    return rb_signal_buff_size() != 0;
 }
 
 /* This function can be called in blocking region. */
@@ -1269,14 +1269,15 @@ rb_threadptr_execute_interrupts_common(rb_thread_t *th)
 	enum rb_thread_status status = th->status;
 	int timer_interrupt = interrupt & 0x01;
 	int finalizer_interrupt = interrupt & 0x04;
+	int sig;
 
 	th->status = THREAD_RUNNABLE;
 
 	/* signal handling */
-	if (th->exec_signal) {
-	    int sig = th->exec_signal;
-	    th->exec_signal = 0;
-	    rb_signal_exec(th, sig);
+	if (th == th->vm->main_thread) {
+	    while ((sig = rb_get_next_signal()) != 0) {
+		rb_signal_exec(th, sig);
+	    }
 	}
 
 	/* exception from another thread */
@@ -2934,14 +2935,9 @@ rb_gc_save_machine_context(rb_thread_t *th)
 void
 rb_threadptr_check_signal(rb_thread_t *mth)
 {
-    int sig;
-
     /* mth must be main_thread */
-
-    if (!mth->exec_signal && (sig = rb_get_next_signal()) > 0) {
-	thread_debug("main_thread: %s, sig: %d\n",
-		     thread_status_name(mth->status), sig);
-	mth->exec_signal = sig;
+    if (rb_signal_buff_size() > 0) {
+	/* wakeup main thread */
 	rb_threadptr_interrupt(mth);
     }
 }
