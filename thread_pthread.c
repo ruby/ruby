@@ -963,7 +963,7 @@ ubf_select(void *ptr)
     ubf_select_each(th);
 }
 
-static void
+static int
 ping_signal_thread_list(void) {
     if (signal_thread_list_anchor.next) {
 	FGLOCK(&signal_thread_list_lock, {
@@ -975,13 +975,17 @@ ping_signal_thread_list(void) {
 		list = list->next;
 	    }
 	});
+	return 1;
+    }
+    else {
+	return 0;
     }
 }
 #else /* USE_SIGNAL_THREAD_LIST */
 static void add_signal_thread_list(rb_thread_t *th) { }
 static void remove_signal_thread_list(rb_thread_t *th) { }
 #define ubf_select 0
-static void ping_signal_thread_list(void) { }
+static int ping_signal_thread_list(void) { return 0; }
 #endif /* USE_SIGNAL_THREAD_LIST */
 
 static pthread_t timer_thread_id;
@@ -1069,17 +1073,19 @@ thread_timer(void *p)
 
     while (system_working > 0) {
 	fd_set rfds;
+	int need_polling;
 
 	/* timer function */
-	ping_signal_thread_list();
+	need_polling = ping_signal_thread_list();
 	timer_thread_function(0);
+
 	if (TT_DEBUG) WRITE_CONST(2, "tick\n");
 
 	/* wait */
 	FD_ZERO(&rfds);
 	FD_SET(timer_thread_pipe[0], &rfds);
 
-	if (gvl->waiting > 0) {
+	if (gvl->waiting > 0 || need_polling) {
 	    timeout.tv_sec = 0;
 	    timeout.tv_usec = TIME_QUANTUM_USEC;
 
