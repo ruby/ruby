@@ -1829,7 +1829,7 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 		return (int)Qfalse;
 	    return (int)Qtrue;
 	}
-	if (!recurse && klass != rb_cObject) break;
+	if (!recurse) break;
 	tmp = RCLASS_SUPER(tmp);
     }
     if (!exclude && !mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {

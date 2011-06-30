@@ -1,3 +1,11 @@
+Fri Jul  1 03:28:25 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (Init_class_hierarchy): should name BasicObject
+	  explicitly.
+
+	* variable.c (rb_const_defined_0): should not check for
+	  superclasses as const_get.
+
 Fri Jul  1 03:24:03 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: mathn is still alive (should die soon).
