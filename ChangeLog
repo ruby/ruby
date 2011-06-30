@@ -1,7 +1,7 @@
 Thu Jun 30 17:33:25 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c (ObjectSpace.count_tdata_objects): 
-	  Fix rdoc.
+	  Fix rdoc.  Fixes Bug #3892.
 
 	* ext/objspace/objspace.c (ObjectSpace.count_tdata_objects): 
 	  Change key type if the klass of a object is zero (internal object).
