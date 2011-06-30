@@ -474,6 +474,9 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     rb_cv_warnflags="$warnflags"
     warnflags=
 fi
+if test "$GCC" = ""; then
+    AS_CASE(["$target_os"],[aix*],[warnflags="-qinfo=por"])
+fi
 if test "$GCC" = yes; then
     RUBY_TRY_CFLAGS(-fvisibility=hidden, [RUBY_APPEND_OPTION(XCFLAGS, -fvisibility=hidden)])
     AC_SUBST(WERRORFLAG, "-Werror")

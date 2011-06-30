@@ -1,3 +1,8 @@
+Thu Jun 30 21:18:35 2011  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* configure.in: Add warnflags for XL/C on AIX during configure
+	  to avoid [Bug #3971]. See [ruby-core:32859]
+
 Thu Jun 30 21:16:04 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (m_ajd): refers a constant.
