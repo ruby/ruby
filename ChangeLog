@@ -71,7 +71,7 @@ Thu Jun 30 02:28:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Thu Jun 30 01:31:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_s_pass): change RDoc description and remove
-	  a sample code. The actual implementaion never behave as explained by
+	  a sample code. The actual implementation never behave as explained by
 	  an example. It's a documentation bug.
 
 Thu Jun 30 00:54:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
@@ -85,7 +85,7 @@ Thu Jun 30 00:49:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_thread_wakeup): change RDoc sample code. The old
 	  example is buggy and may not display anything by a race.
-	  The patch is suggested by Heesob Parrk <phasis@gmail.com>.
+	  The patch is suggested by Heesob Park <phasis@gmail.com>.
 	  Thank you! [Bug #3606][ruby-core:31454]
 
 Thu Jun 30 00:43:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
@@ -100,7 +100,7 @@ Thu Jun 30 00:30:15 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 Thu Jun 30 00:03:20 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
-	* lib/irb/completion.rb: complate correctry string literal. fix
+	* lib/irb/completion.rb: complement correctly string literal. fix
 	  [Bug #1145].
 
 Wed Jun 29 23:42:51 2011  Tadayoshi Funaba  <tadf@dotrb.org>
