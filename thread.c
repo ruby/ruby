@@ -2620,6 +2620,14 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
 	    break;
 	}
     }
+
+    if (read)
+	rb_fd_term(&orig_read);
+    if (write)
+	rb_fd_term(&orig_write);
+    if (except)
+	rb_fd_term(&orig_except);
+
     return result;
 }
 

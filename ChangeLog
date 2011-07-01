@@ -1,3 +1,8 @@
+Fri Jul  1 11:07:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (do_select): fix memory leak.
+	Patch by Eric Wong. Thank you! [Bug #4953] [ruby-core:37702]
+
 Fri Jul  1 08:21:28 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_getivar): check vm state version
