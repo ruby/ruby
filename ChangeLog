@@ -1,3 +1,8 @@
+Sat Jul  2 07:17:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_reject_bang, rb_ary_delete_if): rejected
+	  elements should be removed.  fixed [Bug #2545]
+
 Wed Jun 29 23:17:57 2011  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/openssl/ossl.h (OPENSSL_SYS_WIN32): support for mingw(msys).
