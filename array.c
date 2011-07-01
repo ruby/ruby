@@ -2210,7 +2210,7 @@ ary_reject(orig, result)
     for (i = 0; i < RARRAY_LEN(orig); i++) {
 	VALUE v = RARRAY_PTR(orig)[i];
 	if (!RTEST(rb_yield(v))) {
-	    rb_ary_push_1(result, v);
+	    rb_ary_push(result, v);
 	}
 	else {
 	    rejected = 1;
