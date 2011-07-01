@@ -1,3 +1,8 @@
+Fri Jul  1 11:41:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (tr_trans): free heap ptr when the str is not embeded.
+	  patched by Eric Wong. [Bug #4956] [ruby-core:37708]
+
 Fri Jul  1 11:07:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (do_select): fix memory leak.

@@ -5117,6 +5117,9 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    CHECK_IF_ASCII(c);
 	    t += tlen;
 	}
+	if (!STR_EMBED_P(str)) {
+	    xfree(RSTRING(str)->as.heap.ptr);
+	}
 	*t = '\0';
 	RSTRING(str)->as.heap.ptr = buf;
 	RSTRING(str)->as.heap.len = t - buf;
