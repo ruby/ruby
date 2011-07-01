@@ -296,6 +296,4 @@ with all sufficient information, see the ChangeLog file.
 
 === Compatibility issues (excluding feature bug fixes)
 
-* Kernel#respond_to?
-
-  See above.
+  None
