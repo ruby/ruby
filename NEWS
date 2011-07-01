@@ -164,6 +164,7 @@ with all sufficient information, see the ChangeLog file.
     * Matrix#normal?
     * Matrix#orthogonal?
     * Matrix#permutation?
+    * Matrix#round
     * Matrix#symmetric?
     * Matrix#unitary?
     * Matrix#upper_triangular?

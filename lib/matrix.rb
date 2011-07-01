@@ -89,6 +89,7 @@ end
 # * <tt> #determinant                   </tt>
 # * <tt> #det                           </tt>
 # * <tt> #rank                          </tt>
+# * <tt> #round                         </tt>
 # * <tt> #trace                         </tt>
 # * <tt> #tr                            </tt>
 # * <tt> #transpose                     </tt>
@@ -1125,6 +1126,12 @@ class Matrix
     rank
   end
 
+  # Returns a matrix with entries rounded to the given precision
+  # (see Float#round)
+  #
+  def round(ndigits=0)
+    map{|e| e.round(ndigits)}
+  end
 
   #
   # Returns the trace (sum of diagonal elements) of the matrix.

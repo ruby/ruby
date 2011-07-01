@@ -1,3 +1,7 @@
+Fri Jul  1 15:10:22 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix: Add Matrix#round
+
 Fri Jul  1 11:41:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (tr_trans): free heap ptr when the str is not embeded.
