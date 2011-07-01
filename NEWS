@@ -40,6 +40,11 @@ with all sufficient information, see the ChangeLog file.
     * extended method:
       * Array#pack supports endian modifiers
 
+  * Bignum
+    * Multiplication algorithm for Bignums with a large number of digits over
+      150 BDIGITs is changed in order to reduce its calculation time.
+      Now such large Bignums are multiplied by using Toom-3 algorithm.
+
   * Encoding
     * new encodings:
       * CP950

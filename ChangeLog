@@ -1,3 +1,7 @@
+Sat Jul  2 00:58:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* NEWS: describe a change of multiplication of Bignum.
+
 Fri Jul  1 18:52:31 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* benchmark/bm_app_erb.rb: increase loop count. too short
