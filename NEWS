@@ -159,12 +159,15 @@ with all sufficient information, see the ChangeLog file.
 * matrix
   * new classes:
     * Matrix::EigenvalueDecomposition
+    * Matrix::LUPDecomposition
   * new methods:
     * Matrix#diagonal?
     * Matrix#eigen
     * Matrix#eigensystem
     * Matrix#hermitian?
     * Matrix#lower_triangular?
+    * Matrix#lup
+    * Matrix#lup_decomposition
     * Matrix#normal?
     * Matrix#orthogonal?
     * Matrix#permutation?

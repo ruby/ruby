@@ -98,6 +98,8 @@ end
 # Matrix decompositions:
 # * <tt> #eigen                         </tt>
 # * <tt> #eigensystem                   </tt>
+# * <tt> #lup                           </tt>
+# * <tt> #lup_decomposition             </tt>
 #
 # Complex arithmetic:
 # * <tt> conj                           </tt>
@@ -122,6 +124,7 @@ class Matrix
   include Enumerable
   include ExceptionForMatrix
   autoload :EigenvalueDecomposition, "matrix/eigenvalue_decomposition"
+  autoload :LUPDecomposition, "matrix/lup_decomposition"
 
   # instance creations
   private_class_method :new
@@ -1186,6 +1189,21 @@ class Matrix
     EigenvalueDecomposition.new(self)
   end
   alias eigen eigensystem
+
+  #
+  # Returns the LUP decomposition of the matrix; see +LUPDecomposition+.
+  #   a = Matrix[[1, 2], [3, 4]]
+  #   l, u, p = a.lup
+  #   l.lower_triangular? # => true
+  #   u.upper_triangular? # => true
+  #   p.permutation?      # => true
+  #   l * u == a * p      # => true
+  #   a.lup.solve([2, 5]) # => Vector[(1/1), (1/2)]
+  #
+  def lup
+    LUPDecomposition.new(self)
+  end
+  alias lup_decomposition lup
 
   #--
   # COMPLEX ARITHMETIC -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
