@@ -95,6 +95,10 @@ end
 # * <tt> #transpose                     </tt>
 # * <tt> #t                             </tt>
 #
+# Matrix decompositions:
+# * <tt> #eigen                         </tt>
+# * <tt> #eigensystem                   </tt>
+#
 # Complex arithmetic:
 # * <tt> conj                           </tt>
 # * <tt> conjugate                      </tt>
@@ -117,6 +121,7 @@ end
 class Matrix
   include Enumerable
   include ExceptionForMatrix
+  autoload :EigenvalueDecomposition, "matrix/eigenvalue_decomposition"
 
   # instance creations
   private_class_method :new
@@ -1161,6 +1166,23 @@ class Matrix
     new_matrix @rows.transpose, row_size
   end
   alias t transpose
+
+  #--
+  # DECOMPOSITIONS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+  #++
+
+  #
+  # Returns the Eigensystem of the matrix; see +EigenvalueDecomposition+.
+  #   m = Matrix[[1, 2], [3, 4]]
+  #   v, d, v_inv = m.eigensystem
+  #   d.diagonal? # => true
+  #   v.inv == v_inv # => true
+  #   (v * d * v_inv).round(5) == m # => true
+  #
+  def eigensystem
+    EigenvalueDecomposition.new(self)
+  end
+  alias eigen eigensystem
 
   #--
   # COMPLEX ARITHMETIC -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=

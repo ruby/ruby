@@ -157,8 +157,12 @@ with all sufficient information, see the ChangeLog file.
     * IO.console
 
 * matrix
+  * new classes:
+    * Matrix::EigenvalueDecomposition
   * new methods:
     * Matrix#diagonal?
+    * Matrix#eigen
+    * Matrix#eigensystem
     * Matrix#hermitian?
     * Matrix#lower_triangular?
     * Matrix#normal?
