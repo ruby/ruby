@@ -5,7 +5,7 @@
 
 n = 60 #Integer(ARGV.shift || 1)
 
-size = 30
+size = 40
 
 def mkmatrix(rows, cols)
     count = 1

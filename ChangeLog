@@ -1,3 +1,53 @@
+Fri Jul  1 18:52:31 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* benchmark/bm_app_erb.rb: increase loop count. too short
+	  mesurement time makes less accuracy.
+	* benchmark/bm_app_factorial.rb: ditto.
+	* benchmark/bm_app_mandelbrot.rb: ditto.
+	* benchmark/bm_app_strconcat.rb: ditto.
+
+	* benchmark/bm_io_file_create.rb: ditto.
+	* benchmark/bm_io_file_read.rb: ditto.
+	* benchmark/bm_io_file_write.rb: ditto.
+
+	* benchmark/bm_so_concatenate.rb: ditto.
+	* benchmark/bm_so_lists.rb: ditto.
+	* benchmark/bm_so_matrix.rb: ditto.
+	* benchmark/bm_so_random.rb: ditto.
+	* benchmark/bm_so_sieve.rb: ditto.
+
+	* benchmark/bm_vm_thread_mutex1.rb: ditto.
+	* benchmark/bm_vm_thread_mutex2.rb: ditto.
+	* benchmark/bm_vm_thread_mutex3.rb: ditto.
+
+	* benchmark/bm_vm1_block.rb: cleanup.
+	* benchmark/bm_vm1_const.rb: cleanup.
+	* benchmark/bm_vm1_ensure.rb: cleanup.
+	* benchmark/bm_vm1_ivar.rb: cleanup.
+	* benchmark/bm_vm1_length.rb: cleanup.
+	* benchmark/bm_vm1_neq.rb: cleanup.
+	* benchmark/bm_vm1_not.rb: cleanup.
+	* benchmark/bm_vm1_rescue.rb: cleanup.
+	* benchmark/bm_vm1_simplereturn.rb: cleanup.
+	* benchmark/bm_vm1_swap.rb: cleanup.
+
+	* benchmark/bm_vm2_array.rb: cleanup.
+	* benchmark/bm_vm2_case.rb: cleanup.
+	* benchmark/bm_vm2_defined_method.rb: cleanup.
+	* benchmark/bm_vm2_eval.rb: cleanup.
+	* benchmark/bm_vm2_method.rb: cleanup.
+	* benchmark/bm_vm2_mutex.rb: cleanup.
+	* benchmark/bm_vm2_poly_method.rb: cleanup.
+	* benchmark/bm_vm2_poly_method_ov.rb: cleanup.
+	* benchmark/bm_vm2_proc.rb: cleanup.
+	* benchmark/bm_vm2_regexp.rb: cleanup.
+	* benchmark/bm_vm2_send.rb: cleanup.
+	* benchmark/bm_vm2_super.rb: cleanup.
+	* benchmark/bm_vm2_unif1.rb: cleanup.
+	* benchmark/bm_vm2_zsuper.rb: cleanup.
+
+	* benchmark/bm_vm_thread_alive_check1.rb: cleanup.
+
 Fri Jul  1 15:23:00 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix: Add LUP decomposition
