@@ -1,3 +1,7 @@
+Fri Jul  1 15:21:14 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Allow non integer exponents for Matrix#**
+
 Fri Jul  1 15:13:25 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix: Add Eigenvalue Decomposition

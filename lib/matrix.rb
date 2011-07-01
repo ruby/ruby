@@ -956,8 +956,10 @@ class Matrix
   private :inverse_from
 
   #
-  # Matrix exponentiation.  Currently implemented for integer powers only.
+  # Matrix exponentiation.
   # Equivalent to multiplying the matrix by itself N times.
+  # Non integer exponents will be handled by diagonalizing the matrix.
+  #
   #   Matrix[[7,6], [3,9]] ** 2
   #     => 67 96
   #        48 99
@@ -977,8 +979,9 @@ class Matrix
         return z if (other >>= 1).zero?
         x *= x
       end
-    when Float, Rational
-      Matrix.Raise ErrOperationNotImplemented, "**", self.class, other.class
+    when Numeric
+      v, d, v_inv = eigensystem
+      v * Matrix.diagonal(*d.each(:diagonal).map{|e| e ** other}) * v_inv
     else
       Matrix.Raise ErrOperationNotDefined, "**", self.class, other.class
     end
