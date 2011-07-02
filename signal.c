@@ -470,7 +470,7 @@ ruby_signal(int signum, sighandler_t handler)
 	sigact.sa_flags |= SA_NOCLDWAIT;
 #endif
 #if defined(SA_ONSTACK) && defined(USE_SIGALTSTACK)
-    if (signum == SIGSEGV)
+    if (signum == SIGSEGV || signum == SIGBUS)
 	sigact.sa_flags |= SA_ONSTACK;
 #endif
     if (sigaction(signum, &sigact, &old) < 0) {
@@ -573,8 +573,21 @@ rb_get_next_signal(void)
 
 #ifdef SIGBUS
 static RETSIGTYPE
-sigbus(int sig)
+sigbus(int sig SIGINFO_ARG)
 {
+/*
+ * Mac OS X makes KERN_PROTECTION_FAILURE when thread touch guard page.
+ * and it's delivered as SIGBUS instaed of SIGSEGV to userland. It's crazy
+ * wrong IMHO. but anyway we have to care it. Sigh.
+ */
+#if defined __MACH__ && defined __APPLE__ && defined USE_SIGALTSTACK
+    int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
+    NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
+    rb_thread_t *th = GET_THREAD();
+    if (ruby_stack_overflowed_p(th, info->si_addr)) {
+	ruby_thread_stack_overflow(th);
+    }
+#endif
     rb_bug("Bus Error");
 }
 #endif
@@ -703,7 +716,7 @@ default_handler(int sig)
         break;
 #ifdef SIGBUS
       case SIGBUS:
-        func = sigbus;
+        func = (sighandler_t)sigbus;
         break;
 #endif
 #ifdef SIGSEGV
@@ -1092,7 +1105,7 @@ Init_signal(void)
 
     if (!ruby_enable_coredump) {
 #ifdef SIGBUS
-	install_sighandler(SIGBUS, sigbus);
+	install_sighandler(SIGBUS, (sighandler_t)sigbus);
 #endif
 #ifdef SIGSEGV
 # ifdef USE_SIGALTSTACK

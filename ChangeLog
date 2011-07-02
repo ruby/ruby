@@ -1,3 +1,13 @@
+Sun Jul  3 04:50:08 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (get_stack): add to a care of gurad page on Mac
+	  OS X. [Bug #1813] [ruby-core:24540]
+	* signal.c (ruby_signal): SIGBUS use alternative stack too.
+	* signal.c (sigbus): On Mac, thread stack overflow makes SIGBUS
+	  instead of SIGSEGV. thus, added stackoverflow check.
+	* signal.c (default_handler): get rid of compilation warning.
+	* signal.c (Init_signal): ditto.
+
 Sat Jul 02 08:59:20 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_ocsp.rb
