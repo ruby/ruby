@@ -13,7 +13,7 @@ Sat Jul  2 07:17:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Jul  2 01:57:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* NEWS: remove a description of Kernel#respond_to? because it has
-	  been reverted at revision 41837.
+	  been reverted at revision 28564.
 
 Sat Jul  2 00:58:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
