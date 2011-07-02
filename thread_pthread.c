@@ -463,19 +463,16 @@ get_stack(void **addr, size_t *size)
     pthread_attr_t attr;
     size_t guard = 0;
 
-# ifdef HAVE_PTHREAD_GETATTR_NP
+# ifdef HAVE_PTHREAD_GETATTR_NP /* Linux */
+    STACK_GROW_DIR_DETECTION;
     CHECK_ERR(pthread_getattr_np(pthread_self(), &attr));
-#   ifdef HAVE_PTHREAD_ATTR_GETSTACK /* Linux */
+#   ifdef HAVE_PTHREAD_ATTR_GETSTACK
     CHECK_ERR(pthread_attr_getstack(&attr, addr, size));
+    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
 #   else
     CHECK_ERR(pthread_attr_getstackaddr(&attr, addr));
     CHECK_ERR(pthread_attr_getstacksize(&attr, size));
 #   endif
-    if (pthread_attr_getguardsize(&attr, &guard) == 0) {
-	STACK_GROW_DIR_DETECTION;
-	STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + guard));
-	*size -= guard;
-    }
 # elif defined HAVE_PTHREAD_ATTR_GET_NP /* FreeBSD, DragonFly BSD, NetBSD */
     CHECK_ERR(pthread_attr_init(&attr));
     CHECK_ERR(pthread_attr_get_np(pthread_self(), &attr));
@@ -603,6 +600,10 @@ native_thread_init_stack(rb_thread_t *th)
     return 0;
 }
 
+#ifndef __CYGWIN__
+#define USE_NATIVE_THREAD_INIT 1
+#endif
+
 static void *
 thread_start_func_1(void *th_ptr)
 {
@@ -613,12 +614,16 @@ thread_start_func_1(void *th_ptr)
 	rb_thread_t *th = th_ptr;
 	VALUE stack_start;
 
-#ifndef __CYGWIN__
+#if defined USE_NATIVE_THREAD_INIT
 	native_thread_init_stack(th);
 #endif
 	native_thread_init(th);
 	/* run */
+#if defined USE_NATIVE_THREAD_INIT
+	thread_start_func_2(th, th->machine_stack_start, rb_ia64_bsp());
+#else
 	thread_start_func_2(th, &stack_start, rb_ia64_bsp());
+#endif
     }
 #if USE_THREAD_CACHE
     if (1) {

@@ -1,3 +1,13 @@
+Sun Jul  3 06:10:26 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (get_stack): pthread_attr_getstack() doesn't
+	  return stack start addres, but stack base address. Thus,
+	  we need to add stack size for getting stack start address.
+	  And, we don't have to decrease guard size twice.
+	* thread_pthread.c (thread_start_func_1): don't use inaccurate
+	  stack start guess if native_thread_init_stack() can be used.
+	  [Bug #1813] [ruby-core:24540]
+
 Sun Jul  3 04:50:08 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (get_stack): add to a care of gurad page on Mac
