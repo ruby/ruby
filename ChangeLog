@@ -1,3 +1,10 @@
+Sat Jul 02 08:59:20 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_ocsp.rb
+	* test/openssl/test_x509_cert.rb: Perform SHA-256 tests only if
+	  supported by the available OpenSSL version. Versions < 0.9.8 don't
+	  support it. [ruby-core:37724]
+
 Sat Jul  2 07:17:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_reject_bang, rb_ary_delete_if): rejected
