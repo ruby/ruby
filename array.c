@@ -2567,42 +2567,34 @@ static VALUE
 ary_reject(VALUE orig, VALUE result)
 {
     long i;
-    int rejected = 0;
 
     for (i = 0; i < RARRAY_LEN(orig); i++) {
 	VALUE v = RARRAY_PTR(orig)[i];
 	if (!RTEST(rb_yield(v))) {
 	    rb_ary_push_1(result, v);
 	}
-	else {
-	    rejected = 1;
-	}
     }
-    return rejected ? result : 0;
-}
-
-static VALUE
-ary_protecting_reject(VALUE arg)
-{
-    VALUE *args = (VALUE *)arg;
-    return ary_reject(args[0], args[1]);
+    return result;
 }
 
 static VALUE
 ary_reject_bang(VALUE ary)
 {
-    VALUE args[2];
-    int state = 0;
+    long i;
+    VALUE result = Qnil;
 
     rb_ary_modify_check(ary);
-    args[0] = ary;
-    args[1] = rb_ary_new();
-    if (!rb_protect(ary_protecting_reject, (VALUE)args, &state)) {
-	return Qnil;
+    for (i = 0; i < RARRAY_LEN(ary); ) {
+	VALUE v = RARRAY_PTR(ary)[i];
+	if (RTEST(rb_yield(v))) {
+	    rb_ary_delete_at(ary, i);
+	    result = ary;
+	}
+	else {
+	    i++;
+	}
     }
-    rb_ary_replace(ary, args[1]);
-    if (state) rb_jump_tag(state);
-    return ary;
+    return result;
 }
 
 /*

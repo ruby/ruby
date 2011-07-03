@@ -1,3 +1,8 @@
+Sun Jul  3 13:44:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (ary_reject_bang): should not remove elements which are
+	  not yielded.  [Bug #2545]
+
 Sun Jul  3 06:10:26 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (get_stack): pthread_attr_getstack() doesn't
