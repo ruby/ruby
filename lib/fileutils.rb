@@ -1577,7 +1577,6 @@ private
   def fu_list(arg)   #:nodoc:
     [arg].flatten.map {|path| File.path(path) }
   end
-  #private_module_function :fu_list
 
   def fu_each_src_dest(src, dest)   #:nodoc:
     fu_each_src_dest0(src, dest) do |s, d|
@@ -1585,7 +1584,6 @@ private
       yield s, d, File.stat(s)
     end
   end
-  #private_module_function :fu_each_src_dest
 
   def fu_each_src_dest0(src, dest)   #:nodoc:
     if tmp = Array.try_convert(src)
@@ -1602,12 +1600,10 @@ private
       end
     end
   end
-  #private_module_function :fu_each_src_dest0
 
   def fu_same?(a, b)   #:nodoc:
     File.identical?(a, b)
   end
-  #private_module_function :fu_same?
 
   def fu_check_options(options, optdecl)   #:nodoc:
     h = options.dup
@@ -1616,7 +1612,6 @@ private
     end
     raise ArgumentError, "no such option: #{h.keys.join(' ')}" unless h.empty?
   end
-  #private_module_function :fu_check_options
 
   def fu_update_option(args, new)   #:nodoc:
     if tmp = Hash.try_convert(args.last)
@@ -1626,17 +1621,12 @@ private
     end
     args
   end
-  #private_module_function :fu_update_option
-
-  @fileutils_output = $stderr
-  @fileutils_label  = ''
 
   def fu_output_message(msg)   #:nodoc:
     @fileutils_output ||= $stderr
     @fileutils_label  ||= ''
     @fileutils_output.puts @fileutils_label + msg
   end
-  #private_module_function :fu_output_message
 
   #
   # Returns an Array of method names which have any options.
