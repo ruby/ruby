@@ -1,3 +1,9 @@
+Thu May 12 12:24:22 2011  Nobuhiro Iwamatsu  <iwamatsu@nigauri.org>
+
+        * ext/openssl/ossl_ssl.c: By trunk@31346, function check of SSLv2 is executed.
+        However, the problem is not revised in this.
+        This adds the control of using function of SSLv2 in made macro by function check.
+
 Mon Jun 13 18:33:04 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb (SecureRandom.random_bytes): modify PRNG state
