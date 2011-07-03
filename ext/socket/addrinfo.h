@@ -172,7 +172,9 @@ extern int getnameinfo __P((
 	int flags));
 
 extern void freehostent __P((struct hostent *));
+#ifndef HAVE_PADDRINFO
 extern void freeaddrinfo __P((struct addrinfo *));
+#endif
 extern
 #ifdef GAI_STRERROR_CONST
 const

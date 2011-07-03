@@ -1,3 +1,9 @@
+Sun Jul  3 21:02:05 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ext/socket/extconf.rb (have_type("PADDRINFO")): new check.
+
+	* ext/socket/addrinfo.h: fixed a compilation problem with VC++ 2010.
+
 Wed Jun 29 23:09:14 2011  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ex/tk/extconf.rb: support for the latest ActiveTcl with mingw.

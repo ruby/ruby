@@ -122,6 +122,8 @@ if have_func("sendmsg") | have_func("recvmsg")
   have_struct_member('struct msghdr', 'msg_accrights', ['sys/types.h', 'sys/socket.h'])
 end
 
+have_type("PADDRINFO", %w[ ws2tcpip.h wspiapi.h ])
+
 getaddr_info_ok = (enable_config("wide-getaddrinfo") && :wide) ||
   (checking_for("wide getaddrinfo") {try_run(<<EOF)} && :os)
 #{cpp_include(headers)}
