@@ -1,3 +1,8 @@
+Mon Jul  4 00:28:05 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ext/tk/extconf.rb (find_tcl): fixed a TypeError on --with-opt-dir.
+	  reported by luislavena and ksmakoto.
+
 Sun Jul  3 22:40:37 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* ext/zlib/zlib.c: added a prototype to get rid of SEGV on x86_64

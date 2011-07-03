@@ -993,7 +993,7 @@ def find_tcl(tcllib, stubs, version, *opt_paths)
     default_paths |= ENV['PATH'].split(';').find_all{|dir| File.directory? dir}.map{|dir| File.expand_path(dir)} if ENV['PATH']
   end
 
-  default_paths |= TkLib_Config["checked_shlib_dirs"]
+  default_paths |= (TkLib_Config["checked_shlib_dirs"] || [])
 
   unless TkLib_Config["space-on-tk-libpath"]
     default_paths.delete_if{|path| path =~ / /}
