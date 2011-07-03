@@ -2388,6 +2388,8 @@ gzfile_reader_rewind(struct gzfile *gz)
     gzfile_reset(gz);
 }
 
+extern VALUE rb_str_resurrect(VALUE str);
+
 static VALUE
 gzfile_reader_get_unused(struct gzfile *gz)
 {

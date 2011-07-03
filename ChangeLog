@@ -1,3 +1,9 @@
+Sun Jul  3 22:40:37 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ext/zlib/zlib.c: added a prototype to get rid of SEGV on x86_64
+	  darwin.
+	  Reported by kosaki and nagachika. Patch by nagachika.
+
 Sun Jul  3 21:02:05 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* ext/socket/extconf.rb (have_type("PADDRINFO")): new check.
