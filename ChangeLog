@@ -1,3 +1,11 @@
+Mon Jun 13 23:05:01 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/unixsocket.c (unix_send_io): race condition fixed.
+	  (unix_recv_io): ditto.
+	  fixed by Eric Wong.  [ruby-core:35574]
+
+	* test/socket/test_unix.rb: test added for above problem.
+
 Thu May 12 12:24:22 2011  Nobuhiro Iwamatsu  <iwamatsu@nigauri.org>
 
         * ext/openssl/ossl_ssl.c: By trunk@31346, function check of SSLv2 is executed.

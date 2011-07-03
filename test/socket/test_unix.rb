@@ -6,6 +6,8 @@ end
 require "test/unit"
 require "tempfile"
 require "tmpdir"
+require "thread"
+require "io/nonblock"
 
 class TestSocket_UNIXSocket < Test::Unit::TestCase
   def test_fd_passing
@@ -100,6 +102,41 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     }
   ensure
     io_ary.each {|io| io.close if !io.closed? }
+  end
+
+  def test_fd_passing_race_condition
+    r1, w = IO.pipe
+    s1, s2 = UNIXSocket.pair
+    s1.nonblock = s2.nonblock = true
+    aoe = Thread.abort_on_exception
+    Thread.abort_on_exception = true
+    lock = Mutex.new
+    nr = 0
+    x = 2
+    y = 1000
+    begin
+      s1.send_io(nil)
+    rescue NotImplementedError
+      assert_raise(NotImplementedError) { s2.recv_io }
+    rescue TypeError
+      thrs = x.times.map do
+        Thread.new do
+          y.times do
+            s2.recv_io.close
+            lock.synchronize { nr += 1 }
+          end
+        end
+      end
+      (x * y).times { s1.send_io r1 }
+      thrs.each { |t| t.join }
+      assert_equal x * y, nr
+    ensure
+      Thread.abort_on_exception = aoe
+      s1.close
+      s2.close
+      w.close
+      r1.close
+    end
   end
 
   def test_sendmsg
