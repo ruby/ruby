@@ -7,18 +7,19 @@ class TestFileUtilsVerbose < Test::Unit::TestCase
 
   include FileUtils::Verbose
 
-  def test_visibility
-    FileUtils::METHODS.each do |m|
+  FileUtils::METHODS.each do |m|
+    define_method "test_singleton_visibility_#{m}" do
       assert_equal true, FileUtils::Verbose.respond_to?(m, true),
                    "FileUtils::Verbose.#{m} is not defined"
       assert_equal true, FileUtils::Verbose.respond_to?(m, false),
                    "FileUtils::Verbose.#{m} is not public"
     end
-    FileUtils::METHODS.each do |m|
+
+    define_method "test_visibility_#{m}" do
       assert_equal true, respond_to?(m, true),
-                   "FileUtils::Verbose.#{m} is not defined"
+                   "FileUtils::Verbose\##{m} is not defined"
       assert_equal true, FileUtils::Verbose.private_method_defined?(m),
-                   "FileUtils::Verbose.#{m} is not private"
+                   "FileUtils::Verbose\##{m} is not private"
     end
   end
 
