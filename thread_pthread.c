@@ -453,6 +453,9 @@ static rb_thread_t *register_cached_thread_and_wait(void);
 #endif
 
 #ifdef STACKADDR_AVAILABLE
+/*
+ * Get the highest address and size of current thread's stack
+ */
 static int
 get_stack(void **addr, size_t *size)
 {
@@ -478,6 +481,7 @@ get_stack(void **addr, size_t *size)
     CHECK_ERR(pthread_attr_get_np(pthread_self(), &attr));
     CHECK_ERR(pthread_attr_getstackaddr(&attr, addr));
     CHECK_ERR(pthread_attr_getstacksize(&attr, size));
+    *addr = (char *)*addr + *size;
 # else /* MacOS X */
     pthread_t th = pthread_self();
     *addr = pthread_get_stackaddr_np(th);
@@ -489,14 +493,14 @@ get_stack(void **addr, size_t *size)
     pthread_attr_destroy(&attr);
 #elif defined HAVE_THR_STKSEGMENT || defined HAVE_PTHREAD_STACKSEG_NP
     stack_t stk;
-# if defined HAVE_THR_STKSEGMENT
+# if defined HAVE_THR_STKSEGMENT /* Solaris */
     CHECK_ERR(thr_stksegment(&stk));
-# else
+# else /* OpenBSD */
     CHECK_ERR(pthread_stackseg_np(pthread_self(), &stk));
 # endif
     *addr = stk.ss_sp;
     *size = stk.ss_size;
-#elif defined HAVE_PTHREAD_GETTHRDS_NP
+#elif defined HAVE_PTHREAD_GETTHRDS_NP /* AIX */
     pthread_t th = pthread_self();
     struct __pthrdsinfo thinfo;
     char reg[256];
@@ -506,6 +510,8 @@ get_stack(void **addr, size_t *size)
 				   &reg, &regsiz));
     *addr = thinfo.__pi_stackaddr;
     *size = thinfo.__pi_stacksize;
+#else
+#error STACKADDR_AVAILABLE is defined but not implemented.
 #endif
     return 0;
 #undef CHECK_ERR

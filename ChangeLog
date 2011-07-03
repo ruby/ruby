@@ -1,3 +1,8 @@
+Mon Jul  4 07:14:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c (get_stack): the return address of get_stack
+	  must be the highest address of the current thread's stack.
+
 Mon Jul  4 06:37:22 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/intern.h, thread_pthread.c (rb_reserved_fd_p,
