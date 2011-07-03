@@ -1,3 +1,22 @@
+Mon Jul  4 06:37:22 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/intern.h, thread_pthread.c (rb_reserved_fd_p,
+	  RB_RESERVED_FD_P): added.  This C API is to limit to access
+	  fds which are used by RubyVM internal.  In this version of
+	  CRuby, return 1 if fd is communication pipe.
+	  If your application needs to close all file descriptors to
+	  preent resource leak, skip internal fds using this C API.
+	  We also define a macro RB_RESERVED_FD_P(fd).  So you can write
+	    #ifndef RB_RESERVED_FD_P
+	    #define RB_RESERVED_FD_P(fd) 0
+	    #endif
+	  for Ruby 1.9.2 or previous version to write compatible extensions.
+	  See [ruby-core:37727]
+
+	* thread_win32.c (rb_reserved_fd_p): added (return 0 for any fds).
+
+	* io.c (rb_io_initialize): raise ArgumentError if given fd is reserved by Ruby.
+
 Sun Jul  3 23:43:56 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* ext/extmk.rb (extmake): suppresses outputs from extconf.rb.

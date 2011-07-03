@@ -1268,4 +1268,16 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 }
 #endif
 
+int
+rb_reserved_fd_p(int fd)
+{
+    if (fd == timer_thread_pipe[0] ||
+	fd == timer_thread_pipe[1]) {
+	return 1;
+    }
+    else {
+	return 0;
+    }
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
