@@ -1,3 +1,8 @@
+Mon Jun  6 09:39:43 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c (parse): release event objects to plug memory
+	leak.  Thanks Mark J. Titorenko!
+
 Tue Dec 21 00:46:20 2010  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_cleanup_func): Don't touch native threading
