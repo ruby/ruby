@@ -1,3 +1,8 @@
+Sun Jul  3 13:44:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (ary_reject_bang): should not remove elements which are
+	  not yielded.  [Bug #2545]
+
 Sat Jul  2 07:17:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_reject_bang, rb_ary_delete_if): rejected
