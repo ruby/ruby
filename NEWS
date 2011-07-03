@@ -58,6 +58,8 @@ with all sufficient information, see the ChangeLog file.
     * new constant:
       * File::NULL
         name of NULL device.
+      * File::DIRECT
+        name of O_DIRECT.
 
   * IO
     * extended method:
