@@ -23,7 +23,7 @@ end
 ##############################################################
 # check configs
 ##############################################################
-$cleanfiles << 'config_list'
+($cleanfiles ||= "") << 'config_list'
 config_list_file = 'config_list'
 config_list_file_source = File.join(File.dirname(__FILE__),'config_list.in')
 if !File.exist?(config_list_file) || 
@@ -198,10 +198,15 @@ def get_shlib_path_head
       "c:/Tcl", "c:/Program Files/Tcl", "c:/Program Files (x86)/Tcl",
       "/Tcl", "/Program Files/Tcl", "/Program Files (x86)/Tcl"
     ]
-    path_head.each{|dir| path_dirs << "#{dir}"}
+    path_head.each{|dir| path_dirs << File.expand_path(dir) if File.directory? dir }
 
-    path_dirs |= ENV['LIBRARY_PATH'].split(';')  if ENV['LIBRARY_PATH']
-    path_dirs |= ENV['PATH'].split(';')  if ENV['PATH']
+    # for MinGW
+    ["/usr/local/lib64", "/usr/lib64", "/usr/local/lib", "/usr/lib"].each{|dir|
+      path_dirs << dir if File.directory? dir
+      path_dirs << File.expand_path(dir) if File.directory? dir
+    }
+    path_dirs |= ENV['LIBRARY_PATH'].split(';').find_all{|dir| File.directory? dir}.map{|dir| File.expand_path(dir)} if ENV['LIBRARY_PATH']
+    path_dirs |= ENV['PATH'].split(';').find_all{|dir| File.directory? dir}.map{|dir| File.expand_path(dir)} if ENV['PATH']
 
   else
     [
@@ -360,7 +365,7 @@ def collect_tcltk_defs(tcl_defs_str, tk_defs_str)
           vtcl != vtk )
   }
 
-  defs.map{|ary| s = ary.join(''); (s.strip.empty?)? "": "-D" << s}.join(' ')
+  defs.map{|ary| s = ary.join(''); (s.strip.empty?)? "": "-D" << s}
 end
 
 def parse_tclConfig(file)
@@ -537,31 +542,97 @@ def libcheck_for_tclConfig(dir, tclconf, tkconf)
     tkfunc  = "Tk_Init"
   end
 
-  libpath = $LIBPATH
+  incflags = ($INCFLAGS ||= "").dup
+  libpath = ($LIBPATH ||= []).dup
+  libs_param = ($libs ||= "").dup
+  defs = ($defs ||= []).dup
   tcllibs = nil
+  mkmf_param = nil
 
-  begin
-    tcllib_ok ||= Dir.glob(File.join(dir, "*tcl#{stub}#{tclconf['TCL_MAJOR_VERSION']}{.,}#{tclconf['TCL_MINOR_VERSION']}*.*"), File::FNM_CASEFOLD).find{|file|
-      if file =~ /^.*(tcl#{stub}#{tclconf['TCL_MAJOR_VERSION']}(\.|)#{tclconf['TCL_MINOR_VERSION']}.*)\.[^.]*$/
-        #puts "check #{file} #{$1} #{tclfunc} #{dir}"
-        #find_library($1, tclfunc, dir)
-        tcllibs = append_library($libs, $1)
+  tcllib_ok ||= Dir.glob(File.join(dir, "*tcl#{stub}#{tclconf['TCL_MAJOR_VERSION']}{.,}#{tclconf['TCL_MINOR_VERSION']}*.*"), File::FNM_CASEFOLD).find{|file|
+    if file =~ /^.*(tcl#{stub}#{tclconf['TCL_MAJOR_VERSION']}(\.|)#{tclconf['TCL_MINOR_VERSION']}.*)\.([^.]*)$/
+      libname, ext = $1, $2
+      begin
+        $INCFLAGS = incflags.dup << " " << tclconf["TCL_INCLUDE_SPEC"]
+        if (tclconf && tclconf["TCL_SHARED_BUILD"] == "0") ||
+          (ext != CONFIG['DLEXT'] && ext == CONFIG['LIBEXT']) || ext == "a"
+          # static link
+          $defs << '-DSTATIC_BUILD'
+          tcllibs = $libs + " " + file.quote
+
+          # FIX ME: avoid pathname trouble (fail to find) on MinGW.
+          #   e.g. TCL_INCLUDE_SPEC describes "-I/usr/local/include",
+          #        but compiler can find "-IC:/msys/1.0/local/include" only.
+          $INCFLAGS << " -I" << File.join(File.dirname(File.dirname(file)),"include") if is_win32?
+        else
+          tcllibs = append_library($libs, libname)
+
+          # FIX ME: avoid pathname trouble (fail to find) on MinGW.
+          $INCFLAGS << " -I" << File.join(File.dirname(dir),"include") if is_win32?
+        end
         $LIBPATH = libpath | [dir]
         try_func(tclfunc, tcllibs)
+        try_func(tclfunc, tcllibs, ["tcl.h"]) ||
+          ( try_func(tclfunc, tcllibs << " " << tclconf['TCL_LIBS'], ["tcl.h"]) if tclconf['TCL_LIBS'] )
+      ensure
+        mkmf_param = {
+          'PATH' => file,
+          'LIBNAME' => libname,
+          'libs' => tcllibs.dup,
+          'INCFLAGS' => $INCFLAGS.dup,
+          'LIBPATH' => $LIBPATH.dup,
+        }
+        $LIBPATH = libpath.dup
+        $libs = libs_param.dup
+        $defs = defs.dup
       end
-    }
-    tklib_ok ||= Dir.glob(File.join(dir, "*tk#{stub}#{tkconf['TK_MAJOR_VERSION']}{.,}#{tkconf['TK_MINOR_VERSION']}*.*"), File::FNM_CASEFOLD).find{|file|
-      if file =~ /^.*(tk#{stub}#{tkconf['TK_MAJOR_VERSION']}(\.|)#{tkconf['TK_MINOR_VERSION']}.*)\.[^.]*$/
-        #puts "check #{file} #{$1} #{tkfunc} #{dir}"
-        # find_library($1, tkfunc, dir)
-        tklibs = append_library(tcllibs, $1)
+    end
+  }
+  tclconf['MKMF_PARAMS'] = mkmf_param if tclconf && tcllib_ok
+
+  tklib_ok ||= Dir.glob(File.join(dir, "*tk#{stub}#{tkconf['TK_MAJOR_VERSION']}{.,}#{tkconf['TK_MINOR_VERSION']}*.*"), File::FNM_CASEFOLD).find{|file|
+    if file =~ /^.*(tk#{stub}#{tkconf['TK_MAJOR_VERSION']}(\.|)#{tkconf['TK_MINOR_VERSION']}.*)\.([^.]*)$/
+      libname, ext = $1, $2
+      begin
+        if (tkconf && tkconf["TCL_SHARED_BUILD"] == "0") ||
+            (ext != CONFIG['DLEXT'] && ext == CONFIG['LIBEXT']) || ext == "a"
+          # static link
+          $defs << '-DSTATIC_BUILD'
+          tklibs = $libs + " " + file.quote
+
+          # FIX ME: avoid pathname trouble (fail to find) on MinGW.
+          $INCFLAGS << " -I" << File.join(File.dirname(File.dirname(file)),"include") if is_win32?
+        else
+          tklibs = append_library("", libname)
+
+          # FIX ME: avoid pathname trouble (fail to find) on MinGW.
+          $INCFLAGS << " -I" << File.join(File.dirname(dir),"include") if is_win32?
+        end
+
+        tklibs << " " <<  tcllibs if tcllibs
+        tmp_tklibs = tklibs.dup
         $LIBPATH = libpath | [dir]
-        try_func(tkfunc, tklibs)
+        try_func(tkfunc, tklibs) ||
+          ( try_func(tkfunc, tklibs << " " << tkconf['TK_LIBS'], ["tcl.h", "tk.h"]) if tkconf['TK_LIBS'] ) ||
+          ( try_func(tkfunc, (tklibs = tmp_tklibs.dup) << " " << tkconf['TK_XLIBSW'], ["tcl.h", "tk.h"]) if tkconf['TK_XLIBSW'] ) ||
+          ( try_func(tkfunc, tklibs << " " << tkconf['TK_LIBS'], ["tcl.h", "tk.h"]) if tkconf['TK_LIBS'] )
+      ensure
+        mkmf_param = {
+          'PATH' => file,
+          'LIBNAME' => libname,
+          'libs' => tklibs.dup,
+          'INCFLAGS' => $INCFLAGS.dup,
+          'LIBPATH' => $LIBPATH.dup,
+        }
+        $LIBPATH = libpath.dup
+        $libs = libs_param.dup
+        $defs = defs.dup
       end
-    }
-  ensure
-    $LIBPATH = libpath
-  end
+    end
+  }
+
+  $INCFLAGS = incflags.dup
+  tkconf['MKMF_PARAMS'] = mkmf_param if tkconf && tklib_ok
 
   [tcllib_ok, tklib_ok]
 end
@@ -769,6 +840,7 @@ def get_tclConfig(tclConfig_file, tkConfig_file, tclConfig_dir, tkConfig_dir)
     dirs |= dirs
     puts("Valid tclConfig.sh and tkConfig.sh are found in #{dirs.inspect}")
     puts("Use [tclConfig.sh,tkConfig.sh] == ['#{tclConfig}','#{tkConfig}']")
+    $LIBPATH ||= []
     $LIBPATH |= [File.dirname(tclConfig)]
     $LIBPATH |= [File.dirname(tkConfig)]
     #TkLib_Config["tclConfig_paths"].each{|tclcfg, tkcfg|
@@ -846,19 +918,37 @@ def check_shlib_search_path(paths)
   $LIBPATH |= path_list
 end
 
-def search_vers_on_path(vers, path, *heads)
+def get_ext_list
   if enable_config("shared") == false
-    exts = CONFIG['LIBEXT'] + ',' + CONFIG['DLEXT']
+    exts = [CONFIG['LIBEXT'], 'a', CONFIG['DLEXT']]
   else
-    exts = CONFIG['DLEXT'] + ',' + CONFIG['LIBEXT']
+    exts = [CONFIG['DLEXT'], CONFIG['LIBEXT'], 'a']
   end
-  exts << ",dll,lib" if is_win32?
-  exts << ",bundle,dylib" if is_macosx? || /nextstep|openstep|rhapsody/ =~ RUBY_PLATFORM
+  exts << "dll" << "lib" if is_win32?
+  exts << "bundle" << "dylib" if is_macosx? || /nextstep|openstep|rhapsody/ =~ RUBY_PLATFORM
+
+  exts
+end
+
+def search_vers_on_path(vers, path, *heads)
+  exts = get_ext_list.join(',')
   files = Dir.glob(File.join(path, "*{#{heads.join(',')}}*.{#{exts}}"), File::FNM_CASEFOLD)
   vers.find_all{|ver| files.find{|f| f =~ /(#{ver}|#{ver.delete('.')})/} }
 end
 
 def find_tcl(tcllib, stubs, version, *opt_paths)
+  if TclConfig_Info['MKMF_PARAMS']
+    # already checked existence of tcl library based on tclConfig.sh
+    $INCFLAGS ||= []
+    $INCFLAGS << " " << TclConfig_Info['MKMF_PARAMS']['INCFLAGS']
+    $LIBPATH ||= []
+    $LIBPATH |= TclConfig_Info['MKMF_PARAMS']['LIBPATH']
+    $libs ||= ""
+    $libs << " " << TclConfig_Info['MKMF_PARAMS']['libs']
+    return [["already checked based on tclConfig.sh", true]]
+  end
+  # else, no available tclConfig.sh on the system
+  
   print "Search Tcl library"
 
   if stubs
@@ -892,11 +982,18 @@ def find_tcl(tcllib, stubs, version, *opt_paths)
     default_paths.concat [
       "c:/Tcl/lib", "c:/Program Files/Tcl/lib","c:/Program Files (x86)/Tcl/lib",
       "/Tcl/lib", "/Program Files/Tcl/lib","/Program Files (x86)/Tcl/lib"
-    ].find_all{|dir| File.directory?(dir)}
+    ].find_all{|dir| File.directory?(dir)}.map{|dir| File.expand_path(dir)}
 
-    default_paths |= ENV['LIBRARY_PATH'].split(';')  if ENV['LIBRARY_PATH']
-    default_paths |= ENV['PATH'].split(';')  if ENV['PATH']
+    # for MinGW
+    ["/usr/local/lib64", "/usr/lib64", "/usr/local/lib", "/usr/lib"].each{|dir|
+      default_paths << File.expand_path(dir) if File.directory? dir
+    }
+
+    default_paths |= ENV['LIBRARY_PATH'].split(';').find_all{|dir| File.directory? dir}.map{|dir| File.expand_path(dir)} if ENV['LIBRARY_PATH']
+    default_paths |= ENV['PATH'].split(';').find_all{|dir| File.directory? dir}.map{|dir| File.expand_path(dir)} if ENV['PATH']
   end
+
+  default_paths |= TkLib_Config["checked_shlib_dirs"]
 
   unless TkLib_Config["space-on-tk-libpath"]
     default_paths.delete_if{|path| path =~ / /}
@@ -978,6 +1075,15 @@ def parse_TK_LIBS(tklibs)
 end
 
 def find_tk(tklib, stubs, version, *opt_paths)
+  if TkConfig_Info['MKMF_PARAMS']
+    # already checked existence of tcl library based on tclConfig.sh
+    ($INCFLAGS ||= "") << " " << TkConfig_Info['MKMF_PARAMS']['INCFLAGS']
+    $LIBPATH ||= []; $LIBPATH |= TkConfig_Info['MKMF_PARAMS']['LIBPATH']
+    $libs ||= ""; $libs << " " << TkConfig_Info['MKMF_PARAMS']['libs']
+    return [["already checked based on tkConfig.sh", true]]
+  end
+  # else, no available tkConfig.sh on the system
+ 
   print "Search Tk library"
 
   if stubs
@@ -1020,7 +1126,6 @@ def find_tk(tklib, stubs, version, *opt_paths)
   if (paths = opt_paths.compact).empty?
     unless TkConfig_Info['config_file_path']
       paths = check_NG_path(default_paths)
-
     else
       # use definisions on tkConfig.sh
       TkConfig_Info['TK_LIB_SPEC'].sub(TkConfig_Info['TK_LIB_FLAG'],"").strip.sub("-L","") =~ /("|'|)([^"']+)\1/
@@ -1079,7 +1184,7 @@ end
 def find_tcltk_library(tcllib, tklib, stubs, tclversion, tkversion, 
                        tcl_opt_paths, tk_opt_paths)
   ret = find_tcl(tcllib, stubs, tclversion, *tcl_opt_paths)
-  unless ret && ret.find{|path, val| val}
+  unless ret && ret.find{|path, val| p val; val}
     puts("Warning:: cannot find Tcl library. tcltklib will not be compiled (tcltklib is disabled on your Ruby == Ruby/Tk will not work). Please check configure options.")
     return false
   end
@@ -1162,20 +1267,18 @@ end
 
 def setup_for_macosx_framework(tclver, tkver)
   # use framework, but no tclConfig.sh
-  unless $LDFLAGS.include?('-framework')
-    $LDFLAGS << ' -framework Tk -framework Tcl'
+  unless $LDFLAGS && $LDFLAGS.include?('-framework')
+    ($LDFLAGS ||= "") << ' -framework Tk -framework Tcl'
   end
 
   if TkLib_Config["tcl-framework-header"]
-    TclConfig_Info['TCL_INCLUDE_SPEC'] <<
-      "-I#{TkLib_Config["tcl-framework-header"].quote} "
+    TclConfig_Info['TCL_INCLUDE_SPEC'][0,0] =
+      " -I#{TkLib_Config["tcl-framework-header"].quote} "
   else
-    TclConfig_Info['TCL_INCLUDE_SPEC'] = ""
-
     tcl_base = File.join(TkLib_Config["tcltk-framework"], 'Tcl.framework')
     if tclver
       TclConfig_Info['TCL_INCLUDE_SPEC'] <<
-        "-I#{File.join(tcl_base, 'Versions', tclver, 'Headers').quote} "
+        " -I#{File.join(tcl_base, 'Versions', tclver, 'Headers').quote} "
     end
 
     TclConfig_Info['TCL_INCLUDE_SPEC'] << File.join(tcl_base, 'Headers')
@@ -1188,15 +1291,13 @@ def setup_for_macosx_framework(tclver, tkver)
   end
 
   if TkLib_Config["tk-framework-header"]
-    TkConfig_Info['TK_INCLUDE_SPEC'] = 
-      "-I#{TkLib_Config["tk-framework-header"].quote} "
+    TkConfig_Info['TK_INCLUDE_SPEC'][0,0] = 
+      " -I#{TkLib_Config["tk-framework-header"].quote} "
   else
-    TkConfig_Info['TK_INCLUDE_SPEC'] = ""
-
     tk_base  = File.join(TkLib_Config["tcltk-framework"], 'Tk.framework')
     if tkver
       TkConfig_Info['TK_INCLUDE_SPEC'] <<
-        "-I#{File.join(tk_base, 'Versions', tkver, 'Headers').quote} "
+        " -I#{File.join(tk_base, 'Versions', tkver, 'Headers').quote} "
     end
 
     TkConfig_Info['TK_INCLUDE_SPEC'] << File.join(tk_base, 'Headers')
@@ -1348,6 +1449,8 @@ EOF
 
   # check pthread mode
   if (TkLib_Config["ruby_with_thread"])
+    $CPPFLAGS ||= ""
+
     # ruby -> enable
     unless tcl_enable_thread
       # ruby -> enable && tcl -> disable
@@ -1454,6 +1557,7 @@ unless is_win32?
   have_library("m", "log", "math.h")
   print("\n") # progress
 end
+$CPPFLAGS ||= ""
 $CPPFLAGS += ' -D_WIN32' if /cygwin/ =~ RUBY_PLATFORM
 
 # Does ruby have nativethread ?
@@ -1509,7 +1613,7 @@ end
 stubs = enable_config("tcltk-stubs") || with_config("tcltk-stubs")
 if (TkLib_Config["tcltk-stubs"] = stubs)
   puts("Compile with Tcl/Tk stubs.")
-  $CPPFLAGS += ' -DUSE_TCL_STUBS -DUSE_TK_STUBS'
+  $CPPFLAGS ||= ""; $CPPFLAGS += ' -DUSE_TCL_STUBS -DUSE_TK_STUBS'
 end
 
 # directory configuration of Tcl/Tk libraries
@@ -1532,8 +1636,9 @@ TkConfig_Info  = TkLib_Config["tkConfig_info"] || {}
 TclConfig_Info['config_file_path'] = tclcfg
 TkConfig_Info['config_file_path'] = tkcfg
 
-TclConfig_Info['TCL_INCLUDE_SPEC'] = "-I#{tcl_idir.quote}" if tcl_idir
-TkConfig_Info['TK_INCLUDE_SPEC']   = "-I#{tk_idir.quote}"  if tk_idir
+TclConfig_Info['TCL_INCLUDE_SPEC'][0,0] = "-I#{tcl_idir.quote} " if tcl_idir
+TkConfig_Info['TK_INCLUDE_SPEC'][0,0]   = "-I#{tk_idir.quote} "  if tk_idir
+
 
 tk_cfg_dir  = File.dirname(TkConfig_Info['config_file_path'])  rescue nil
 tcl_cfg_dir = File.dirname(TclConfig_Info['config_file_path']) rescue nil
@@ -1545,15 +1650,17 @@ tcl_ldir_list = [tcl_ldir, tcl_cfg_dir]
 check_shlib_search_path(with_config('tk-shlib-search-path'))
 
 # set TCL_DEFS and TK_DEFS
+$CPPFLAGS ||= ""
 # $CPPFLAGS += " #{TclConfig_Info['TCL_DEFS']}"
 # $CPPFLAGS += " #{TkConfig_Info['TK_DEFS']}"
-$CPPFLAGS += collect_tcltk_defs(TclConfig_Info['TCL_DEFS'], TkConfig_Info['TK_DEFS'])
+$defs += collect_tcltk_defs(TclConfig_Info['TCL_DEFS'], TkConfig_Info['TK_DEFS'])
 
 # MacOS X Frameworks?
 if TkLib_Config["tcltk-framework"]
   puts("Use MacOS X Frameworks.")
   if tcl_cfg_dir
-    $INCFLAGS << ' ' << TclConfig_Info['TCL_INCLUDE_SPEC']
+    TclConfig_Info['TCL_LIBS'] ||= ""
+    ($INCFLAGS ||= "") << ' ' << TclConfig_Info['TCL_INCLUDE_SPEC']
     $LDFLAGS  << ' ' << TclConfig_Info['TCL_LIBS']
     if stubs
       $LDFLAGS << ' ' << TclConfig_Info['TCL_STUB_LIB_SPEC']
@@ -1562,7 +1669,8 @@ if TkLib_Config["tcltk-framework"]
     end
   end
   if tk_cfg_dir
-    $INCFLAGS << ' ' << TkConfig_Info['TK_INCLUDE_SPEC']
+    TkConfig_Info['TK_LIBS'] ||= ""
+    ($INCFLAGS ||= "") << ' ' << TkConfig_Info['TK_INCLUDE_SPEC']
     $LDFLAGS  << ' ' << TkConfig_Info['TK_LIBS']
     if stubs
       $LDFLAGS << ' ' << TkConfig_Info['TK_STUB_LIB_SPEC']
@@ -1595,8 +1703,12 @@ if (TkLib_Config["tcltk-framework"] ||
   $INSTALLFILES << ["lib/tkextlib/SUPPORT_STATUS", "$(RUBYLIBDIR)", "lib"]
 
   # create
-  $CPPFLAGS << %[ -DRUBY_VERSION=\\"#{RUBY_VERSION}\\"]
-  $CPPFLAGS << %[ -DRUBY_RELEASE_DATE=\\"#{RUBY_RELEASE_DATE}\\"]
+  $defs ||= []
+  $defs << %[-DRUBY_VERSION=\\"#{RUBY_VERSION}\\"]
+  $defs << %[-DRUBY_RELEASE_DATE=\\"#{RUBY_RELEASE_DATE}\\"]
+
+  # remove harmful definitions.
+  $defs.delete_if{|x|/^-Du?intptr_t=/ =~ x}
 
   create_makefile("tcltklib")
 
