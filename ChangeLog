@@ -10,7 +10,7 @@ Sun Jul  3 06:10:26 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Sun Jul  3 04:50:08 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* thread_pthread.c (get_stack): add to a care of gurad page on Mac
+	* thread_pthread.c (get_stack): add to a care of guard page on Mac
 	  OS X. [Bug #1813] [ruby-core:24540]
 	* signal.c (ruby_signal): SIGBUS use alternative stack too.
 	* signal.c (sigbus): On Mac, thread stack overflow makes SIGBUS
