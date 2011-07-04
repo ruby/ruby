@@ -454,7 +454,7 @@ static rb_thread_t *register_cached_thread_and_wait(void);
 
 #ifdef STACKADDR_AVAILABLE
 /*
- * Get the highest address and size of current thread's stack
+ * Get the initial address and size of current thread's stack
  */
 static int
 get_stack(void **addr, size_t *size)
