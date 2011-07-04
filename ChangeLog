@@ -1,3 +1,9 @@
+Mon Jul  4 22:24:46 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (get_stack): For NetBSD/FreeBSD, use
+	  pthread_attr_getstack() if possible. and, remove an assumption
+	  of stack growing direction.
+
 Mon Jul  4 20:42:31 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/coverage/coverage.c: revert r32071.  The commit caused SEGV on

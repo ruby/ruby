@@ -479,9 +479,14 @@ get_stack(void **addr, size_t *size)
 # elif defined HAVE_PTHREAD_ATTR_GET_NP /* FreeBSD, DragonFly BSD, NetBSD */
     CHECK_ERR(pthread_attr_init(&attr));
     CHECK_ERR(pthread_attr_get_np(pthread_self(), &attr));
+#   ifdef HAVE_PTHREAD_ATTR_GETSTACK
+    CHECK_ERR(pthread_attr_getstack(&attr, addr, size));
+    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
+#   else
     CHECK_ERR(pthread_attr_getstackaddr(&attr, addr));
     CHECK_ERR(pthread_attr_getstacksize(&attr, size));
-    *addr = (char *)*addr + *size;
+    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
+#   endif
 # else /* MacOS X */
     pthread_t th = pthread_self();
     *addr = pthread_get_stackaddr_np(th);
