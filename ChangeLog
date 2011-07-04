@@ -1,3 +1,12 @@
+Mon Jul  4 20:42:31 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/coverage/coverage.c: revert r32071.  The commit caused SEGV on
+	  some minor nonfree OS.  I have no means of debugging the bug.  My
+	  personal opinion is that such OS should be unsupported unless there
+	  is an active maintainer.  [ruby-core:37352]
+
+	* test/coverage/test_coverage.rb: ditto.
+
 Mon Jul  4 07:14:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread_pthread.c (get_stack): the return address of get_stack
