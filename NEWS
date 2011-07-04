@@ -191,11 +191,11 @@ with all sufficient information, see the ChangeLog file.
     * Matrix.zero can build rectangular matrices
 
 * net/http
-  * SNI (Server Name Indication) supported for HTTPS. 
+  * SNI (Server Name Indication) supported for HTTPS.
 
   * Allow to configure to wait server returning '100 continue' response
     before sending HTTP request body. Set Net::HTTP#continue_timeout AND pass
-    'expect' => '100-continue' to a extra HTTP header. 
+    'expect' => '100-continue' to a extra HTTP header.
 
     For example, the following code sends HTTP header and waits for getting
     '100 continue' response before sending HTTP request body. When 0.5 [sec]
@@ -209,9 +209,9 @@ with all sufficient information, see the ChangeLog file.
       both application/x-www-form-urlencoded and multipart/form-data.
 
 * openssl
-  * PKey::RSA and PKey::DSA now use the generic X.509 encoding scheme 
+  * PKey::RSA and PKey::DSA now use the generic X.509 encoding scheme
     (e.g. used in a X.509 certificate's Subject Public Key Info) when
-    exporting public keys to DER or PEM. Backward compatibility is 
+    exporting public keys to DER or PEM. Backward compatibility is
     ensured by (already existing) fallbacks during creation.
   * OpenSSL::ASN1::Constructive#new and OpenSSL::ASN1::Primitive#new
     (and the constructors of their sub-classes) will no longer force
@@ -240,7 +240,7 @@ with all sufficient information, see the ChangeLog file.
   * [incompatible] support Ruby native encoding mechanism
     and iconv dependency is dropped.
 * Rubygems
-  * Rubygems has been upgraded to rubygems 1.5.0. For full release notes see 
+  * Rubygems has been upgraded to rubygems 1.5.0. For full release notes see
     http://rubygems.rubyforge.org/rubygems-update/History_txt.html
 
 * stringio
