@@ -1,3 +1,9 @@
+Tue Jul  5 01:24:26 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* cont.c: disable FIBER_USE_NATIVE on Solaris because resuming any
+	  Fiber caused SEGV.  I haven't follow up the issue deeply, but it
+	  works when disabling the feature.
+
 Tue Jul  5 01:22:46 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* addr2line.c: include <alloca.h> to fix a build issue on Solaris.
