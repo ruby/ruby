@@ -33,7 +33,7 @@ Mon Jul  4 06:37:22 2011  Koichi Sasada  <ko1@atdot.net>
 	  fds which are used by RubyVM internal.  In this version of
 	  CRuby, return 1 if fd is communication pipe.
 	  If your application needs to close all file descriptors to
-	  preent resource leak, skip internal fds using this C API.
+	  present resource leak, skip internal fds using this C API.
 	  We also define a macro RB_RESERVED_FD_P(fd).  So you can write
 	    #ifndef RB_RESERVED_FD_P
 	    #define RB_RESERVED_FD_P(fd) 0
@@ -58,7 +58,7 @@ Sun Jul  3 13:44:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sun Jul  3 06:10:26 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (get_stack): pthread_attr_getstack() doesn't
-	  return stack start addres, but stack base address. Thus,
+	  return stack start address, but stack base address. Thus,
 	  we need to add stack size for getting stack start address.
 	  And, we don't have to decrease guard size twice.
 	* thread_pthread.c (thread_start_func_1): don't use inaccurate
@@ -99,7 +99,7 @@ Sat Jul  2 00:58:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 Fri Jul  1 18:52:31 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* benchmark/bm_app_erb.rb: increase loop count. too short
-	  mesurement time makes less accuracy.
+	  measurement time makes less accuracy.
 	* benchmark/bm_app_factorial.rb: ditto.
 	* benchmark/bm_app_mandelbrot.rb: ditto.
 	* benchmark/bm_app_strconcat.rb: ditto.
@@ -164,7 +164,7 @@ Fri Jul  1 15:10:22 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 Fri Jul  1 11:41:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* string.c (tr_trans): free heap ptr when the str is not embeded.
+	* string.c (tr_trans): free heap ptr when the str is not embedded.
 	  patched by Eric Wong. [Bug #4956] [ruby-core:37708]
 
 Fri Jul  1 11:07:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
