@@ -618,7 +618,9 @@ thread_start_func_1(void *th_ptr)
 #endif
     {
 	rb_thread_t *th = th_ptr;
+#if !defined USE_NATIVE_THREAD_INIT
 	VALUE stack_start;
+#endif
 
 #if defined USE_NATIVE_THREAD_INIT
 	native_thread_init_stack(th);
