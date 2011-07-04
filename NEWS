@@ -237,8 +237,8 @@ with all sufficient information, see the ChangeLog file.
     http://docs.seattlerb.org/rdoc/History_txt.html
 
 * rexml
-  * [incompatible] support Ruby native encoding mechanism
-    and iconv dependency is dropped.
+  * Support Ruby native encoding mechanism and iconv dependency is dropped.
+
 * Rubygems
   * Rubygems has been upgraded to rubygems 1.5.0. For full release notes see
     http://rubygems.rubyforge.org/rubygems-update/History_txt.html
