@@ -1,3 +1,7 @@
+Tue Jul  5 01:22:46 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* addr2line.c: include <alloca.h> to fix a build issue on Solaris.
+
 Tue Jul  5 00:49:05 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* ext/coverage/coverage.c: resurrect r32071 + add GC guard for
