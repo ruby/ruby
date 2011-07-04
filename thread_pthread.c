@@ -857,6 +857,19 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 	timeout_rel.tv_sec = timeout_tv->tv_sec;
 	timeout_rel.tv_nsec = timeout_tv->tv_usec * 1000;
 
+	/* Solaris cond_timedwait() return EINVAL if an argument is greater than
+	 * current_time + 100,000,000.  So cut up to 100,000,000.  This is
+	 * considered as a kind of spurious wakeup.  The caller to native_sleep
+	 * should care about spurious wakeup.
+	 *
+	 * See also [Bug #1341] [ruby-core:29702]
+	 * http://download.oracle.com/docs/cd/E19683-01/816-0216/6m6ngupgv/index.html
+	 */
+	if (timeout_rel.tv_sec > 100000000) {
+	    timeout_rel.tv_sec = 100000000;
+	    timeout_rel.tv_nsec = 0;
+	}
+
 	timeout = native_cond_timeout(cond, timeout_rel);
     }
 

@@ -1,3 +1,11 @@
+Tue Jul  5 01:30:01 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread_pthread.c (native_sleep): cut the waiting time up to
+	  100,000,000 because Solaris cond_timedwait() return EINVAL if an
+	  argument is greater than current_time + 100,000,000.  This is
+	  considered as a kind of spurious wakeup.  The caller to native_sleep
+	  should care about spurious wakeup.
+
 Tue Jul  5 01:24:26 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* cont.c: disable FIBER_USE_NATIVE on Solaris because resuming any
