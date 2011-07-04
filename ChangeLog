@@ -1,3 +1,11 @@
+Tue Jul  5 00:49:05 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* ext/coverage/coverage.c: resurrect r32071 + add GC guard for
+	  rb_coverages. [ruby-core:37352] [Bug #4927]
+	  [ruby-core:36539] [Feature #4796]
+
+	* test/coverage/test_coverage.rb resurrect r32071.
+
 Mon Jul  4 22:24:46 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (get_stack): For NetBSD/FreeBSD, use
