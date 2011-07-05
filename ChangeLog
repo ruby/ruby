@@ -1,3 +1,7 @@
+Tue Jul  5 13:49:26 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* addr2line.c: fix r32407 to check HAVE_ALLOCA_H.
+
 Tue Jul  5 14:05:43 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/httpauth/digestauth.rb (_authenticate):
