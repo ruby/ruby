@@ -6095,6 +6095,21 @@ parser_whole_match_p(struct parser_params *parser,
     return strncmp(eos, p, len) == 0;
 }
 
+#ifdef RIPPER
+static void
+ripper_dispatch_heredoc_end(struct parser_params *parser)
+{
+    if (!NIL_P(parser->delayed))
+	ripper_dispatch_delayed_token(parser, tSTRING_CONTENT);
+    lex_goto_eol(parser);
+    ripper_dispatch_ignored_scan_event(parser, tHEREDOC_END);
+}
+
+#define dispatch_heredoc_end() ripper_dispatch_heredoc_end(parser)
+#else
+#define dispatch_heredoc_end() ((void)0)
+#endif
+
 static int
 parser_here_document(struct parser_params *parser, NODE *here)
 {
@@ -6131,6 +6146,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	return 0;
     }
     if (was_bol() && whole_match_p(eos, len, indent)) {
+	dispatch_heredoc_end();
 	heredoc_restore(lex_strterm);
 	return tSTRING_END;
     }
@@ -6192,12 +6208,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	} while (!whole_match_p(eos, len, indent));
 	str = STR_NEW3(tok(), toklen(), enc, func);
     }
-#ifdef RIPPER
-    if (!NIL_P(parser->delayed))
-	ripper_dispatch_delayed_token(parser, tSTRING_CONTENT);
-    lex_goto_eol(parser);
-    ripper_dispatch_ignored_scan_event(parser, tHEREDOC_END);
-#endif
+    dispatch_heredoc_end();
     heredoc_restore(lex_strterm);
     lex_strterm = NEW_STRTERM(-1, 0, 0);
     set_yylval_str(str);

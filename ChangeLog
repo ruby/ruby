@@ -1,3 +1,8 @@
+Tue Jul  5 15:28:04 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_here_document): should dispatch heredoc_end
+	  scanner event on an empty here document.  fixed Bug#4543.
+
 Tue Jul  5 13:49:26 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* addr2line.c: fix r32407 to check HAVE_ALLOCA_H.
