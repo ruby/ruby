@@ -153,7 +153,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
       "#{Digest::MD5.hexdigest(ha1)}:" \
       "#{params['nonce']}:#{'%08x' % nonce_count}:#{cnonce}:#{params['qop']}:" \
       "#{Digest::MD5.hexdigest(ha2)}"
-    p header = "Digest username=\"#{user}\"" \
+    "Digest username=\"#{user}\"" \
       ", realm=\"#{params['realm']}\"" \
       ", nonce=\"#{params['nonce']}\"" \
       ", uri=\"#{params['uri']}\"" \
