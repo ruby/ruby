@@ -517,7 +517,7 @@ fiber_entry(void *arg)
 }
 #else /* _WIN32 */
 
-#ifdef MAP_STACK
+#if defined(MAP_STACK) && !defined(__FreeBSD__)
 #define FIBER_STACK_FLAGS (MAP_PRIVATE | MAP_ANON | MAP_STACK)
 #else
 #define FIBER_STACK_FLAGS (MAP_PRIVATE | MAP_ANON)

@@ -1,3 +1,7 @@
+Thu Jul  7 06:56:15 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* cont.c (FIBER_STACK_FLAGS): workaround fix for r32420 on FreeBSD.
+
 Thu Jul  7 06:46:12 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* benchmark/driver.rb:  Add difference column to report that averages
