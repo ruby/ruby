@@ -1,7 +1,7 @@
 Thu Jul  7 00:40:16 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* win32/win32.c (kill): check the process exited or not before
-	  teminationg it. [Bug #4943]
+	* win32/win32.c (kill): check that the process exited or not before
+	  terminating it. [Bug #4943]
 
 Wed Jul  6 23:13:19 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
