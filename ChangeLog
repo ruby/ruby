@@ -1,3 +1,9 @@
+Thu Jul  7 04:31:26 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (arg): rescue_mod is in inverse order from other
+	  modifiers.  patched by michael.j.edgar AT dartmouth.edu at
+	  [ruby-core:36248].  fixed #4716.
+
 Thu Jul  7 00:40:16 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (kill): check that the process exited or not before

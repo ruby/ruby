@@ -1045,7 +1045,7 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 			NODE *resq = NEW_RESBODY(0, remove_begin($3), 0);
 			$$ = NEW_RESCUE(remove_begin($1), resq, 0);
 		    /*%
-			$$ = dispatch2(rescue_mod, $3, $1);
+			$$ = dispatch2(rescue_mod, $1, $3);
 		    %*/
 		    }
 		| keyword_END '{' compstmt '}'
