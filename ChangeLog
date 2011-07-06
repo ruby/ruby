@@ -1,3 +1,10 @@
+Thu Jul  7 06:19:38 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems.rb:  Reduce requires to improve `make benchmark`.
+	  [#4962]
+	* lib/rubygems/specification.rb:  Delay initialization of rubygems
+	  until require is called.
+
 Thu Jul  7 04:31:26 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (arg): rescue_mod is in inverse order from other

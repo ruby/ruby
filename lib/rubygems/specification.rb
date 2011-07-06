@@ -2126,3 +2126,6 @@ class Gem::Specification
   # deprecate :file_name,           :cache_file, 2011, 10
   # deprecate :full_gem_path,     :cache_file, 2011, 10
 end
+
+Gem.clear_paths
+
