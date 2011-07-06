@@ -1,3 +1,7 @@
+Wed Jul  6 21:22:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* cont.c (fiber_machine_stack_alloc): use MAP_FAILED instead of -1.
+
 Wed Jul  6 21:21:05 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* cont.c (fiber_machine_stack_alloc): remove unnecessary cast.

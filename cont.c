@@ -537,7 +537,7 @@ fiber_machine_stack_alloc(size_t size)
 	void *page;
 	STACK_GROW_DIR_DETECTION;
 	ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
-	if (ptr == (VALUE*)(SIGNED_VALUE)-1) {
+	if (ptr == MAP_FAILED) {
 	    rb_raise(rb_eFiberError, "can't alloc machine stack to fiber");
 	}
 	page = ptr + STACK_DIR_UPPER((size - RB_PAGE_SIZE) / sizeof(VALUE), 0);
