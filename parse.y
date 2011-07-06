@@ -2426,6 +2426,14 @@ opt_call_args	: none
 			$$ = arg_add_assocs($1, $3);
 		    %*/
 		    }
+		| assocs ','
+		    {
+		    /*%%%*/
+			$$ = NEW_LIST(NEW_HASH($1));
+		    /*%
+			$$ = arg_add_assocs(arg_new(), $1);
+		    %*/
+		    }
 		;
 
 call_args	: command

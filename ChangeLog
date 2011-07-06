@@ -1,3 +1,8 @@
+Wed Jul  6 23:13:19 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (opt_call_args): allow trailing comma after assoc
+	  argument e.g. 'foo(bar:1,)'.  fixed #3456
+
 Wed Jul  6 22:11:12 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* test/cgi/test_cgi_header.rb(test_cgi_header_nph): Validate date in
