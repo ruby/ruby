@@ -143,9 +143,14 @@ class CGIHeaderTest < Test::Unit::TestCase
     ENV['SERVER_SOFTWARE'] = 'IIS/5.0'
     actual4 = cgi.header
     actual5 = cgi.header('status'=>'REDIRECT', 'location'=>'http://www.example.com/')
+    date = /^Date: [A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d\d:\d\d:\d\d GMT\r\n/
+    [actual1,actual2,actual3].each do |actual|
+      assert_match(date,actual)
+      actual.sub!(date,"Date: DATE_IS_REMOVED\r\n")
+    end
     ## assertion
     expected =  "HTTP/1.1 200 OK\r\n"
-    expected << "Date: #{CGI.rfc1123_date(now)}\r\n"
+    expected << "Date: DATE_IS_REMOVED\r\n"
     expected << "Server: Apache 2.2.0\r\n"
     expected << "Connection: close\r\n"
     expected << "Content-Type: text/html\r\n"
