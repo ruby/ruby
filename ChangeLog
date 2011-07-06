@@ -1,3 +1,8 @@
+Wed Jul  6 22:11:12 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* test/cgi/test_cgi_header.rb(test_cgi_header_nph): Validate date in
+	  "Date:" header
+
 Wed Jul  6 21:29:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* cont.c (fiber_machine_stack_alloc): cleanup pointer arithmetic.

@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'cgi'
+require 'time'
 
 
 class CGIHeaderTest < Test::Unit::TestCase
@@ -130,6 +131,7 @@ class CGIHeaderTest < Test::Unit::TestCase
 
 
   def test_cgi_header_nph
+    time_start = Time.now.to_i
     cgi = CGI.new
     ## 'nph' is true
     ENV['SERVER_SOFTWARE'] = 'Apache 2.2.0'
@@ -142,9 +144,11 @@ class CGIHeaderTest < Test::Unit::TestCase
     ENV['SERVER_SOFTWARE'] = 'IIS/5.0'
     actual4 = cgi.header
     actual5 = cgi.header('status'=>'REDIRECT', 'location'=>'http://www.example.com/')
-    date = /^Date: [A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d\d:\d\d:\d\d GMT\r\n/
+    time_end = Time.now.to_i
+    date = /^Date: ([A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d\d:\d\d:\d\d GMT)\r\n/
     [actual1, actual2, actual3].each do |actual|
       assert_match(date, actual)
+      assert_includes(time_start..time_end, date =~ actual && Time.parse($1).to_i)
       actual.sub!(date, "Date: DATE_IS_REMOVED\r\n")
     end
     ## assertion
