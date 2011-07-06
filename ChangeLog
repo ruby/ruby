@@ -1,3 +1,11 @@
+Wed Jul  6 21:24:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* cont.c (fiber_machine_stack_alloc): fix mprotect misuse. A stack
+	  guard page should have PROT_NONE.
+	* cont.c (fiber_initialize_machine_stack_context):
+	  th->machine_stack_maxsize shouldn't be included guard pages size.
+	  [Bug #4983][ruby-dev:44043]
+
 Wed Jul  6 21:23:38 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* cont.c (fiber_machine_stack_alloc): use MAP_STACK if it's provided.

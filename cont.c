@@ -543,12 +543,15 @@ fiber_machine_stack_alloc(size_t size)
     else {
 	void *page;
 	STACK_GROW_DIR_DETECTION;
+
 	ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, FIBER_STACK_FLAGS, -1, 0);
 	if (ptr == MAP_FAILED) {
 	    rb_raise(rb_eFiberError, "can't alloc machine stack to fiber");
 	}
+
+	/* guard page setup */
 	page = ptr + STACK_DIR_UPPER((size - RB_PAGE_SIZE) / sizeof(VALUE), 0);
-	if (mprotect(page, RB_PAGE_SIZE, PROT_READ | PROT_WRITE) < 0) {
+	if (mprotect(page, RB_PAGE_SIZE, PROT_NONE) < 0) {
 	    rb_raise(rb_eFiberError, "mprotect failed");
 	}
     }
@@ -572,6 +575,7 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
 	    rb_raise(rb_eFiberError, "can't create fiber");
 	}
     }
+    sth->machine_stack_maxsize = size;
 #else /* not WIN32 */
     ucontext_t *context = &fib->context;
     VALUE *ptr;
@@ -584,9 +588,8 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     context->uc_stack.ss_size = size;
     makecontext(context, rb_fiber_start, 0);
     sth->machine_stack_start = ptr + STACK_DIR_UPPER(0, size / sizeof(VALUE));
+    sth->machine_stack_maxsize = size - RB_PAGE_SIZE;
 #endif
-
-    sth->machine_stack_maxsize = size;
 #ifdef __ia64
     sth->machine_register_stack_maxsize = sth->machine_stack_maxsize;
 #endif
