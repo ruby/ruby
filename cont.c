@@ -515,7 +515,14 @@ fiber_entry(void *arg)
     fiber_set_stack_location();
     rb_fiber_start();
 }
+#else /* _WIN32 */
+
+#ifdef MAP_STACK
+#define FIBER_STACK_FLAGS (MAP_PRIVATE | MAP_ANON | MAP_STACK)
 #else
+#define FIBER_STACK_FLAGS (MAP_PRIVATE | MAP_ANON)
+#endif
+
 static VALUE*
 fiber_machine_stack_alloc(size_t size)
 {
@@ -536,7 +543,7 @@ fiber_machine_stack_alloc(size_t size)
     else {
 	void *page;
 	STACK_GROW_DIR_DETECTION;
-	ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+	ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, FIBER_STACK_FLAGS, -1, 0);
 	if (ptr == MAP_FAILED) {
 	    rb_raise(rb_eFiberError, "can't alloc machine stack to fiber");
 	}
