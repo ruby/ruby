@@ -523,10 +523,10 @@ fiber_entry(void *arg)
 #define FIBER_STACK_FLAGS (MAP_PRIVATE | MAP_ANON)
 #endif
 
-static VALUE*
+static char*
 fiber_machine_stack_alloc(size_t size)
 {
-    VALUE *ptr;
+    char *ptr;
 
     if (machine_stack_cache_index > 0) {
 	if (machine_stack_cache[machine_stack_cache_index - 1].size == (size / sizeof(VALUE))) {
@@ -550,7 +550,7 @@ fiber_machine_stack_alloc(size_t size)
 	}
 
 	/* guard page setup */
-	page = ptr + STACK_DIR_UPPER((size - RB_PAGE_SIZE) / sizeof(VALUE), 0);
+	page = ptr + STACK_DIR_UPPER(size - RB_PAGE_SIZE, 0);
 	if (mprotect(page, RB_PAGE_SIZE, PROT_NONE) < 0) {
 	    rb_raise(rb_eFiberError, "mprotect failed");
 	}
@@ -578,16 +578,16 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     sth->machine_stack_maxsize = size;
 #else /* not WIN32 */
     ucontext_t *context = &fib->context;
-    VALUE *ptr;
+    char *ptr;
     STACK_GROW_DIR_DETECTION;
 
     getcontext(context);
     ptr = fiber_machine_stack_alloc(size);
     context->uc_link = NULL;
-    context->uc_stack.ss_sp = (char *)ptr;
+    context->uc_stack.ss_sp = ptr;
     context->uc_stack.ss_size = size;
     makecontext(context, rb_fiber_start, 0);
-    sth->machine_stack_start = ptr + STACK_DIR_UPPER(0, size / sizeof(VALUE));
+    sth->machine_stack_start = (VALUE*)(ptr + STACK_DIR_UPPER(0, size));
     sth->machine_stack_maxsize = size - RB_PAGE_SIZE;
 #endif
 #ifdef __ia64

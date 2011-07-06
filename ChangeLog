@@ -1,3 +1,9 @@
+Wed Jul  6 21:29:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* cont.c (fiber_machine_stack_alloc): cleanup pointer arithmetic.
+	  "size/sizeof(VALUE)" is ugly and easy confusing.
+	* cont.c (fiber_initialize_machine_stack_context): ditto.
+
 Wed Jul  6 21:24:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* cont.c (fiber_machine_stack_alloc): fix mprotect misuse. A stack
