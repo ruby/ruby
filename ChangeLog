@@ -1,3 +1,8 @@
+Thu Jul  7 06:46:12 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* benchmark/driver.rb:  Add difference column to report that averages
+	  across all runs of a benchmark.  [Ruby 1.9 - Feature #4982]
+
 Thu Jul  7 06:19:38 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems.rb:  Reduce requires to improve `make benchmark`.
