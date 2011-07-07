@@ -1309,12 +1309,12 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 #if defined DOSISH || defined __CYGWIN__
     translit_char(RSTRING_PTR(opt->script_name), '\\', '/');
 #endif
-    rb_obj_freeze(opt->script_name);
 
     ruby_init_loadpath_safe(opt->safe_level);
     rb_enc_find_index("encdb");
     lenc = rb_locale_encoding();
     rb_enc_associate(rb_progname, lenc);
+    rb_obj_freeze(rb_progname);
     parser = rb_parser_new();
     if (opt->dump & DUMP_BIT(yydebug)) {
 	rb_parser_set_yydebug(parser, Qtrue);
@@ -1342,6 +1342,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	opt->intern.enc.index = -1;
     }
     rb_enc_associate(opt->script_name, lenc);
+    rb_obj_freeze(opt->script_name);
     {
 	long i;
 	VALUE load_path = GET_VM()->load_path;
@@ -1694,7 +1695,7 @@ void
 ruby_script(const char *name)
 {
     if (name) {
-	rb_progname = rb_obj_freeze(rb_external_str_new(name, strlen(name)));
+	rb_progname = rb_external_str_new(name, strlen(name));
 	rb_vm_set_progname(rb_progname);
     }
 }

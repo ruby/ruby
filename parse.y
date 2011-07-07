@@ -9723,13 +9723,14 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     int mb;
     st_data_t data;
     struct RString fake_str;
-    fake_str.basic.flags = T_STRING|RSTRING_NOEMBED|FL_FREEZE;
+    fake_str.basic.flags = T_STRING|RSTRING_NOEMBED;
     fake_str.basic.klass = rb_cString;
     fake_str.as.heap.len = len;
     fake_str.as.heap.ptr = (char *)name;
     fake_str.as.heap.aux.capa = len;
     str = (VALUE)&fake_str;
     rb_enc_associate(str, enc);
+    OBJ_FREEZE(str);
 
     if (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN) {
     	rb_raise(rb_eEncodingError, "invalid encoding symbol");
