@@ -453,6 +453,9 @@ static rb_thread_t *register_cached_thread_and_wait(void);
 #endif
 
 #ifdef STACKADDR_AVAILABLE
+/*
+ * Get the initial address and size of current thread's stack
+ */
 static int
 get_stack(void **addr, size_t *size)
 {
@@ -476,8 +479,14 @@ get_stack(void **addr, size_t *size)
 # elif defined HAVE_PTHREAD_ATTR_GET_NP /* FreeBSD, DragonFly BSD, NetBSD */
     CHECK_ERR(pthread_attr_init(&attr));
     CHECK_ERR(pthread_attr_get_np(pthread_self(), &attr));
+#   ifdef HAVE_PTHREAD_ATTR_GETSTACK
+    CHECK_ERR(pthread_attr_getstack(&attr, addr, size));
+    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
+#   else
     CHECK_ERR(pthread_attr_getstackaddr(&attr, addr));
     CHECK_ERR(pthread_attr_getstacksize(&attr, size));
+    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
+#   endif
 # else /* MacOS X */
     pthread_t th = pthread_self();
     *addr = pthread_get_stackaddr_np(th);
@@ -489,14 +498,14 @@ get_stack(void **addr, size_t *size)
     pthread_attr_destroy(&attr);
 #elif defined HAVE_THR_STKSEGMENT || defined HAVE_PTHREAD_STACKSEG_NP
     stack_t stk;
-# if defined HAVE_THR_STKSEGMENT
+# if defined HAVE_THR_STKSEGMENT /* Solaris */
     CHECK_ERR(thr_stksegment(&stk));
-# else
+# else /* OpenBSD */
     CHECK_ERR(pthread_stackseg_np(pthread_self(), &stk));
 # endif
     *addr = stk.ss_sp;
     *size = stk.ss_size;
-#elif defined HAVE_PTHREAD_GETTHRDS_NP
+#elif defined HAVE_PTHREAD_GETTHRDS_NP /* AIX */
     pthread_t th = pthread_self();
     struct __pthrdsinfo thinfo;
     char reg[256];
@@ -506,6 +515,8 @@ get_stack(void **addr, size_t *size)
 				   &reg, &regsiz));
     *addr = thinfo.__pi_stackaddr;
     *size = thinfo.__pi_stacksize;
+#else
+#error STACKADDR_AVAILABLE is defined but not implemented.
 #endif
     return 0;
 #undef CHECK_ERR
@@ -612,7 +623,9 @@ thread_start_func_1(void *th_ptr)
 #endif
     {
 	rb_thread_t *th = th_ptr;
+#if !defined USE_NATIVE_THREAD_INIT
 	VALUE stack_start;
+#endif
 
 #if defined USE_NATIVE_THREAD_INIT
 	native_thread_init_stack(th);
@@ -843,6 +856,19 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 
 	timeout_rel.tv_sec = timeout_tv->tv_sec;
 	timeout_rel.tv_nsec = timeout_tv->tv_usec * 1000;
+
+	/* Solaris cond_timedwait() return EINVAL if an argument is greater than
+	 * current_time + 100,000,000.  So cut up to 100,000,000.  This is
+	 * considered as a kind of spurious wakeup.  The caller to native_sleep
+	 * should care about spurious wakeup.
+	 *
+	 * See also [Bug #1341] [ruby-core:29702]
+	 * http://download.oracle.com/docs/cd/E19683-01/816-0216/6m6ngupgv/index.html
+	 */
+	if (timeout_rel.tv_sec > 100000000) {
+	    timeout_rel.tv_sec = 100000000;
+	    timeout_rel.tv_nsec = 0;
+	}
 
 	timeout = native_cond_timeout(cond, timeout_rel);
     }
@@ -1267,5 +1293,17 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
     return 0;
 }
 #endif
+
+int
+rb_reserved_fd_p(int fd)
+{
+    if (fd == timer_thread_pipe[0] ||
+	fd == timer_thread_pipe[1]) {
+	return 1;
+    }
+    else {
+	return 0;
+    }
+}
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

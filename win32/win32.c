@@ -3847,7 +3847,14 @@ kill(int pid, int sig)
 
       case SIGKILL:
 	RUBY_CRITICAL({
-	    HANDLE hProc = OpenProcess(PROCESS_TERMINATE, FALSE, (DWORD)pid);
+	    HANDLE hProc;
+	    struct ChildRecord* child = FindChildSlot(pid);
+	    if (child) {
+		hProc = child->hProcess;
+	    }
+	    else {
+		hProc = OpenProcess(PROCESS_TERMINATE | PROCESS_QUERY_INFORMATION, FALSE, (DWORD)pid);
+	    }
 	    if (hProc == NULL || hProc == INVALID_HANDLE_VALUE) {
 		if (GetLastError() == ERROR_INVALID_PARAMETER) {
 		    errno = ESRCH;
@@ -3858,11 +3865,24 @@ kill(int pid, int sig)
 		ret = -1;
 	    }
 	    else {
-		if (!TerminateProcess(hProc, 0)) {
-		    errno = EPERM;
+		DWORD status;
+		if (!GetExitCodeProcess(hProc, &status)) {
+		    errno = map_errno(GetLastError());
 		    ret = -1;
 		}
-		CloseHandle(hProc);
+		else if (status == STILL_ACTIVE) {
+		    if (!TerminateProcess(hProc, 0)) {
+			errno = EPERM;
+			ret = -1;
+		    }
+		}
+		else {
+		    errno = ESRCH;
+		    ret = -1;
+		}
+		if (!child) {
+		    CloseHandle(hProc);
+		}
 	    }
 	});
 	break;
@@ -5627,6 +5647,11 @@ wunlink(const WCHAR *path)
 	    ret = -1;
 	    if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
 		SetFileAttributesW(path, attr);
+	    }
+	}
+	else {
+	    while (GetFileAttributesW(path) != (DWORD)-1 || GetLastError() != ERROR_FILE_NOT_FOUND) {
+		Sleep(0);
 	    }
 	}
     });

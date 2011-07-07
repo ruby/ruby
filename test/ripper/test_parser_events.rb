@@ -777,14 +777,18 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_rescue
     thru_rescue = false
-    parse('begin; rescue; end', :on_rescue) {thru_rescue = true}
+    parsed = parse('begin; 1; rescue => e; 2; end', :on_rescue) {thru_rescue = true}
     assert_equal true, thru_rescue
+    assert_match /1.*rescue/, parsed
+    assert_match /rescue\(,var_field\(e\),\[2\]\)/, parsed
   end
 
   def test_rescue_mod
     thru_rescue_mod = false
-    parse('nil rescue nil', :on_rescue_mod) {thru_rescue_mod = true}
+    parsed = parse('1 rescue 2', :on_rescue_mod) {thru_rescue_mod = true}
     assert_equal true, thru_rescue_mod
+    bug4716 = '[ruby-core:36248]'
+    assert_equal "[rescue_mod(1,2)]", parsed, bug4716
   end
 
   def test_rest_param

@@ -8,6 +8,7 @@
 
 **********************************************************************/
 
+#include "ruby/config.h"
 #include "addr2line.h"
 
 #include <stdio.h>
@@ -29,6 +30,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#if defined(HAVE_ALLOCA_H)
+#include <alloca.h>
+#endif
 
 #ifdef HAVE_DL_ITERATE_PHDR
 # ifndef _GNU_SOURCE

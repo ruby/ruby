@@ -779,4 +779,9 @@ ruby_alloca_chkstk(size_t len, void *sp)
     }
 }
 #endif
+int
+rb_reserved_fd_p(int fd)
+{
+    return 0;
+}
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

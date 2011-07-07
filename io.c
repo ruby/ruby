@@ -6517,6 +6517,9 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &fmode, &convconfig);
 
     fd = NUM2INT(fnum);
+    if (rb_reserved_fd_p(fd)) {
+	rb_raise(rb_eArgError, "The given fd is not accessible because RubyVM reserves it");
+    }
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
     oflags = fcntl(fd, F_GETFL);
     if (oflags == -1) rb_sys_fail(0);

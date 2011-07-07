@@ -611,7 +611,7 @@ class TestArray < Test::Unit::TestCase
     bug2545 = '[ruby-core:27366]'
     a = @cls[ 5, 6, 7, 8, 9, 10 ]
     assert_equal(9, a.delete_if {|i| break i if i > 8; i < 7})
-    assert_equal(@cls[7, 8], a, bug2545)
+    assert_equal(@cls[7, 8, 9, 10], a, bug2545)
   end
 
   def test_dup
@@ -1096,7 +1096,7 @@ class TestArray < Test::Unit::TestCase
     bug2545 = '[ruby-core:27366]'
     a = @cls[ 5, 6, 7, 8, 9, 10 ]
     assert_equal(9, a.reject! {|i| break i if i > 8; i < 7})
-    assert_equal(@cls[7, 8], a, bug2545)
+    assert_equal(@cls[7, 8, 9, 10], a, bug2545)
   end
 
   def test_replace
