@@ -517,6 +517,10 @@ fiber_entry(void *arg)
 }
 #else /* _WIN32 */
 
+/*
+ * FreeBSD require a first (i.e. addr) argument of mmap(2) is not NULL
+ * if MAP_STACK is passed.
+ */
 #if defined(MAP_STACK) && !defined(__FreeBSD__)
 #define FIBER_STACK_FLAGS (MAP_PRIVATE | MAP_ANON | MAP_STACK)
 #else
