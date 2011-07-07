@@ -18,11 +18,14 @@ module TestParallel
     def teardown
       if @worker_pid && @worker_in
         begin
-          @worker_in.puts "quit"
+          begin
+            @worker_in.puts "quit"
+          rescue IOError, Errno::EPIPE
+          end
           timeout(2) do
             Process.waitpid(@worker_pid)
           end
-        rescue IOError, Errno::EPIPE, Timeout::Error
+        rescue Timeout::Error
           begin
             Process.kill(:KILL, @worker_pid)
           rescue Errno::ESRCH
