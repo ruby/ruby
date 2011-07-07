@@ -1277,7 +1277,8 @@ ruby_get_stack_grow_direction(volatile VALUE *addr)
 }
 #endif
 
-#define GC_WATER_MARK 512
+#define GC_LEVEL_MAX 250
+#define STACKFRAME_FOR_GC_MARK (GC_LEVEL_MAX * GC_MARK_STACKFRAME_WORD)
 
 size_t
 ruby_stack_length(VALUE **p)
@@ -1289,20 +1290,22 @@ ruby_stack_length(VALUE **p)
 }
 
 static int
-stack_check(void)
+stack_check(int water_mark)
 {
     int ret;
     rb_thread_t *th = GET_THREAD();
     SET_STACK_END;
-    ret = STACK_LENGTH > STACK_LEVEL_MAX - GC_WATER_MARK;
+    ret = STACK_LENGTH > STACK_LEVEL_MAX - water_mark;
 #ifdef __ia64
     if (!ret) {
         ret = (VALUE*)rb_ia64_bsp() - th->machine_register_stack_start >
-              th->machine_register_stack_maxsize/sizeof(VALUE) - GC_WATER_MARK;
+              th->machine_register_stack_maxsize/sizeof(VALUE) - water_mark;
     }
 #endif
     return ret;
 }
+
+#define STACKFRAME_FOR_CALL_CFUNC 512
 
 int
 ruby_stack_check(void)
@@ -1310,7 +1313,7 @@ ruby_stack_check(void)
 #if defined(POSIX_SIGNAL) && defined(SIGSEGV) && defined(HAVE_SIGALTSTACK)
     return 0;
 #else
-    return stack_check();
+    return stack_check(STACKFRAME_FOR_CALL_CFUNC);
 #endif
 }
 
@@ -1600,8 +1603,6 @@ rb_gc_mark_maybe(VALUE obj)
     }
 }
 
-#define GC_LEVEL_MAX 250
-
 static void
 gc_mark(rb_objspace_t *objspace, VALUE ptr, int lev)
 {
@@ -1614,7 +1615,7 @@ gc_mark(rb_objspace_t *objspace, VALUE ptr, int lev)
     obj->as.basic.flags |= FL_MARK;
     objspace->heap.live_num++;
 
-    if (lev > GC_LEVEL_MAX || (lev == 0 && stack_check())) {
+    if (lev > GC_LEVEL_MAX || (lev == 0 && stack_check(STACKFRAME_FOR_GC_MARK))) {
 	if (!mark_stack_overflow) {
 	    if (mark_stack_ptr - mark_stack < MARK_STACK_MAX) {
 		*mark_stack_ptr = ptr;

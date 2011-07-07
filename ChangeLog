@@ -1,3 +1,13 @@
+Thu Jul  7 23:35:31 2011  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: change water_mark value value that may call
+	  gc_mark(lev <= GC_LEVEL_MAX) in gc_mark().
+	  In ruby_stack_check(), water_mark is a value that may call some
+	  C function. Fixes Bug #3781
+
+	* configure.in: define GC_MARK_STACKFRAME_WORD that approximate
+	  size of gc_mark() and gc_mark_children() stackframes.
+
 Thu Jul  7 17:55:05 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/testunit/test_parallel.rb (TestParallelWorker#teardown): wait
