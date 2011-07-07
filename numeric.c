@@ -1973,10 +1973,43 @@ rb_num2ll(VALUE val)
 unsigned LONG_LONG
 rb_num2ull(VALUE val)
 {
-    if (TYPE(val) == T_BIGNUM) {
+    switch (TYPE(val)) {
+      case T_NIL:
+	rb_raise(rb_eTypeError, "no implicit conversion from nil");
+
+      case T_FIXNUM:
+	return (LONG_LONG)FIX2ULONG(val);
+
+      case T_FLOAT:
+	if (RFLOAT_VALUE(val) < ULLONG_MAX_PLUS_ONE
+	    && RFLOAT_VALUE(val) > 0) {
+	    return (unsigned LONG_LONG)(RFLOAT_VALUE(val));
+	}
+	else {
+	    char buf[24];
+	    char *s;
+
+	    snprintf(buf, sizeof(buf), "%-.10g", RFLOAT_VALUE(val));
+	    if ((s = strchr(buf, ' ')) != 0) *s = '\0';
+	    rb_raise(rb_eRangeError, "float %s out of range of unsgined long long", buf);
+	}
+
+      case T_BIGNUM:
 	return rb_big2ull(val);
+
+      case T_STRING:
+	rb_raise(rb_eTypeError, "no implicit conversion from string");
+	return Qnil;            /* not reached */
+
+      case T_TRUE:
+      case T_FALSE:
+	rb_raise(rb_eTypeError, "no implicit conversion from boolean");
+	return Qnil;		/* not reached */
+
+      default:
+	val = rb_to_int(val);
+	return NUM2ULL(val);
     }
-    return (unsigned LONG_LONG)rb_num2ll(val);
 }
 
 #endif  /* HAVE_LONG_LONG */

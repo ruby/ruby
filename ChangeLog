@@ -1,3 +1,8 @@
+Thu Jul  7 15:16:51 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (rb_num2ull): use own switch sentense.
+	  Current implementation can't convert 18446744073709551615.
+
 Thu Jul  7 06:56:15 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* cont.c (FIBER_STACK_FLAGS): workaround fix for r32420 on FreeBSD.
