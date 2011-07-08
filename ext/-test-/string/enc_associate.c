@@ -1,4 +1,5 @@
 #include "ruby.h"
+#include "ruby/encoding.h"
 
 VALUE
 bug_str_enc_associate(VALUE str, VALUE enc)
