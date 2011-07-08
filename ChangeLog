@@ -1,3 +1,9 @@
+Fri Jul  8 14:33:26 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (config.h): define GC_MARK_STACKFRAME_WORD.
+	  fixed build problem of r32438.  the value (30) is temporary value.
+	  maybe it's enough by 20~24 according to my observation.
+
 Fri Jul  8 13:47:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_mutex_unlock_all): folded into
