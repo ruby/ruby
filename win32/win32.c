@@ -5642,16 +5642,11 @@ wunlink(const WCHAR *path)
 	if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
 	    SetFileAttributesW(path, attr & ~FILE_ATTRIBUTE_READONLY);
 	}
-	if (DeleteFileW(path) == FALSE) {
+	if (!DeleteFileW(path)) {
 	    errno = map_errno(GetLastError());
 	    ret = -1;
 	    if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
 		SetFileAttributesW(path, attr);
-	    }
-	}
-	else {
-	    while (GetFileAttributesW(path) != (DWORD)-1 || GetLastError() != ERROR_FILE_NOT_FOUND) {
-		Sleep(0);
 	    }
 	}
     });

@@ -1,3 +1,8 @@
+Fri Jul  8 14:40:39 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (wunlink): reverted a part of r32426. it was mistakenly
+	  mixed.
+
 Fri Jul  8 14:29:47 2011  Narihiro Nakamura  <authornari@gmail.com>
 
 	* configure.in: can't subtract void *.
