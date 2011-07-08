@@ -3,6 +3,7 @@ NULLCMD = :
 RUNCMD = $(SHELL)
 CHDIR = @CHDIR@
 exec = exec
+NULL = /dev/null
 
 #### Start of system configuration section. ####
 

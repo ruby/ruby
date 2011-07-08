@@ -1,3 +1,8 @@
+Fri Jul  8 11:39:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (sudo-precheck): true command is not standard on
+	  Windows.
+
 Fri Jul  8 10:39:52 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (gvl_destroy): fix cond_t leak.

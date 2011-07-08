@@ -929,7 +929,7 @@ love: sudo-precheck up all test install test-all
 	@echo love is all you need
 
 sudo-precheck:
-	@$(SUDO) true
+	@$(SUDO) echo > $(NULL)
 
 help: PHONY
 	$(MESSAGE_BEGIN) \
