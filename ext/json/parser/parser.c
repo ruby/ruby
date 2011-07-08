@@ -1404,13 +1404,13 @@ tr2:
 	{
         *result = json_string_unescape(*result, json->memo + 1, p);
         if (NIL_P(*result)) {
-			p--;
-			{p++; cs = 8; goto _out;}
-		} else {
-			FORCE_UTF8(*result);
-			{p = (( p + 1))-1;}
-		}
-	}
+            p--;
+            {p++; cs = 8; goto _out;}
+        } else {
+            FORCE_UTF8(*result);
+            {p = (( p + 1))-1;}
+        }
+    }
 #line 468 "parser.rl"
 	{ p--; {p++; cs = 8; goto _out;} }
 	goto st8;

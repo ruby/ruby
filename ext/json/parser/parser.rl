@@ -457,13 +457,13 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
     action parse_string {
         *result = json_string_unescape(*result, json->memo + 1, p);
         if (NIL_P(*result)) {
-			fhold;
-			fbreak;
-		} else {
-			FORCE_UTF8(*result);
-			fexec p + 1;
-		}
-	}
+            fhold;
+            fbreak;
+        } else {
+            FORCE_UTF8(*result);
+            fexec p + 1;
+        }
+    }
 
     action exit { fhold; fbreak; }
 
