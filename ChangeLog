@@ -1,3 +1,7 @@
+Fri Jul  8 10:39:52 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (gvl_destroy): fix cond_t leak.
+
 Fri Jul  8 09:17:59 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* gc.c:  Improve documentation

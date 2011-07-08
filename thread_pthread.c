@@ -148,6 +148,9 @@ gvl_init(rb_vm_t *vm)
 static void
 gvl_destroy(rb_vm_t *vm)
 {
+    native_cond_destroy(&vm->gvl.switch_wait_cond);
+    native_cond_destroy(&vm->gvl.switch_cond);
+    native_cond_destroy(&vm->gvl.cond);
     native_mutex_destroy(&vm->gvl.lock);
 }
 
