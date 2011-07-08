@@ -1,3 +1,8 @@
+Fri Jul  8 13:06:09 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* cont.c (FIBER_MACHINE_STACK_ALLOCATION_SIZE): Fiber stack size
+	  don't need to keep multiple number of sizeof(VALUE).
+
 Fri Jul  8 11:39:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (sudo-precheck): true command is not standard on
