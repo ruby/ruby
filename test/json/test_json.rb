@@ -398,4 +398,17 @@ EOT
     json = JSON::Parser.allocate
     assert_raises(TypeError, '[ruby-core:35079]') {json.source}
   end
+
+  def test_argument_encoding
+    source = "{}".force_encoding("ascii-8bit")
+    JSON::Parser.new(source)
+    assert_equal Encoding::ASCII_8BIT, source.encoding
+  end
+
+  def test_frozen_argument
+    source = "{}".force_encoding("ascii-8bit")
+    source.freeze
+    parser = nil
+    assert_nothing_raised {parser = JSON::Parser.new(source)}
+  end
 end

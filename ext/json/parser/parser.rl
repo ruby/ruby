@@ -549,6 +549,7 @@ static VALUE convert_encoding(VALUE source)
             } else if (len >= 4 && ptr[1] == 0 && ptr[3] == 0) {
                 source = rb_funcall(source, i_encode, 2, CEncoding_UTF_8, CEncoding_UTF_16LE);
             } else {
+                source = rb_str_dup(source);
                 FORCE_UTF8(source);
             }
         } else {
