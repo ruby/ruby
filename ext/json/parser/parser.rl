@@ -163,7 +163,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
             VALUE klassname = rb_hash_aref(*result, json->create_id);
             if (!NIL_P(klassname)) {
                 VALUE klass = rb_funcall(mJSON, i_deep_const_get, 1, klassname);
-                if RTEST(rb_funcall(klass, i_json_creatable_p, 0)) {
+                if (RTEST(rb_funcall(klass, i_json_creatable_p, 0))) {
                     *result = rb_funcall(klass, i_json_create, 1, *result);
                 }
             }
