@@ -1,3 +1,9 @@
+Fri Jul  8 13:47:39 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_mutex_unlock_all): folded into
+	  rb_threadptr_unlock_all_locking_mutexes.
+	* thread.c (rb_threadptr_unlock_all_locking_mutexes) ditto.
+
 Fri Jul  8 13:36:02 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_unlock_all_locking_mutexes): rename to
