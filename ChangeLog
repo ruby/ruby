@@ -1,3 +1,8 @@
+Sat Jul  9 08:37:05 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_close): close(2) on a fd which is being read by
+	  another thread causes deadlock on Mac OS X 10.5
+
 Fri Jul  8 21:20:39 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c: use USE_ELF instead of __ELF__ because Solaris

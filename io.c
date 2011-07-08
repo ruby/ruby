@@ -3621,6 +3621,12 @@ rb_io_close(VALUE io)
     if (fptr->fd < 0) return Qnil;
 
     fd = fptr->fd;
+#if defined __APPLE__ && defined(__MACH__) && \
+    (!defined(MAC_OS_X_VERSION_MIN_ALLOWED) || MAC_OS_X_VERSION_MIN_ALLOWED <= 1050)
+    /* close(2) on a fd which is being read by another thread causes
+     * deadlock on Mac OS X 10.5 */
+    rb_thread_fd_close(fd);
+#endif
     rb_io_fptr_cleanup(fptr, FALSE);
     rb_thread_fd_close(fd);
 
