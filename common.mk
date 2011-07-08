@@ -13,6 +13,7 @@ ECHO = $(ECHO1:0=@echo)
 
 RUBYLIB       = -
 RUBYOPT       = -
+RUN_OPTS      = --disable-gems
 
 SPEC_GIT_BASE = git://github.com/rubyspec
 MSPEC_GIT_URL = $(SPEC_GIT_BASE)/mspec.git

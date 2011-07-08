@@ -1,3 +1,7 @@
+Sat Jul  9 08:39:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (RUN_OPT): disable gems.
+
 Sat Jul  9 08:37:05 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_close): close(2) on a fd which is being read by
