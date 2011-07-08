@@ -1235,7 +1235,7 @@ AC_CACHE_CHECK(for gc_mark and gc_children stack frame approximate size(word), r
 CFLAGS="-O0"
 AC_TRY_RUN([
 int word;
-void *stack_start;
+char *stack_start;
 
 void
 set_stackframe_word()
@@ -1243,11 +1243,11 @@ set_stackframe_word()
     int dumy = 42;
     int diff;
 
-    if (stack_start < (void *)&dumy) {
-        diff = (int)((void *)&dumy - stack_start);
+    if (stack_start < (char *)&dumy) {
+        diff = (int)((char *)&dumy - stack_start);
     }
     else {
-        diff = (int)(stack_start - (void *)&dumy);
+        diff = (int)(stack_start - (char *)&dumy);
     }
     word = (diff/sizeof(void *));
     if ((diff % sizeof(void *)) != 0) {
@@ -1275,7 +1275,7 @@ int
 main() {
   int dumy = 42;
 
-  stack_start = (void *)&dumy;
+  stack_start = (char *)&dumy;
   gc_mark(0, 0, 255);
   return word;
 }
