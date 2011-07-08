@@ -265,9 +265,16 @@ void
 rb_bug(const char *fmt, ...)
 {
     va_list args;
+    const char *file = NULL;
+    int line = 0;
+
+    if (GET_THREAD()) {
+	file = rb_sourcefile();
+	line = rb_sourceline();
+    }
 
     va_start(args, fmt);
-    report_bug(rb_sourcefile(), rb_sourceline(), fmt, args);
+    report_bug(file, line, fmt, args);
     va_end(args);
 
 #if defined(_WIN32) && defined(RT_VER) && RT_VER >= 80

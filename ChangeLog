@@ -1,3 +1,8 @@
+Fri Jul  8 15:53:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_bug): get rid of segfault after all threads
+	  disposed.
+
 Fri Jul  8 15:01:06 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/openssl/ossl.h: include openssl/e_os2.h before checking the
