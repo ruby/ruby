@@ -69,7 +69,7 @@ static int convert_UTF32_to_UTF8(char *buf, UTF32 ch)
 #ifdef HAVE_RUBY_ENCODING_H
 static VALUE CEncoding_ASCII_8BIT, CEncoding_UTF_8, CEncoding_UTF_16BE,
     CEncoding_UTF_16LE, CEncoding_UTF_32BE, CEncoding_UTF_32LE;
-static ID i_encoding, i_encode, i_encode_bang, i_force_encoding;
+static ID i_encoding, i_encode;
 #else
 static ID i_iconv;
 #endif
@@ -1543,21 +1543,13 @@ static VALUE convert_encoding(VALUE source)
         VALUE encoding = rb_funcall(source, i_encoding, 0);
         if (encoding == CEncoding_ASCII_8BIT) {
             if (len >= 4 &&  ptr[0] == 0 && ptr[1] == 0 && ptr[2] == 0) {
-                source = rb_str_dup(source);
-                rb_funcall(source, i_force_encoding, 1, CEncoding_UTF_32BE);
-                source = rb_funcall(source, i_encode_bang, 1, CEncoding_UTF_8);
+                source = rb_funcall(source, i_encode, 2, CEncoding_UTF_8, CEncoding_UTF_32BE);
             } else if (len >= 4 && ptr[0] == 0 && ptr[2] == 0) {
-                source = rb_str_dup(source);
-                rb_funcall(source, i_force_encoding, 1, CEncoding_UTF_16BE);
-                source = rb_funcall(source, i_encode_bang, 1, CEncoding_UTF_8);
+                source = rb_funcall(source, i_encode, 2, CEncoding_UTF_8, CEncoding_UTF_16BE);
             } else if (len >= 4 && ptr[1] == 0 && ptr[2] == 0 && ptr[3] == 0) {
-                source = rb_str_dup(source);
-                rb_funcall(source, i_force_encoding, 1, CEncoding_UTF_32LE);
-                source = rb_funcall(source, i_encode_bang, 1, CEncoding_UTF_8);
+                source = rb_funcall(source, i_encode, 2, CEncoding_UTF_8, CEncoding_UTF_32LE);
             } else if (len >= 4 && ptr[1] == 0 && ptr[3] == 0) {
-                source = rb_str_dup(source);
-                rb_funcall(source, i_force_encoding, 1, CEncoding_UTF_16LE);
-                source = rb_funcall(source, i_encode_bang, 1, CEncoding_UTF_8);
+                source = rb_funcall(source, i_encode, 2, CEncoding_UTF_8, CEncoding_UTF_16LE);
             } else {
                 FORCE_UTF8(source);
             }
@@ -1702,16 +1694,16 @@ static VALUE cParser_parse(VALUE self)
     GET_PARSER;
 
 
-#line 1706 "parser.c"
+#line 1698 "parser.c"
 	{
 	cs = JSON_start;
 	}
 
-#line 703 "parser.rl"
+#line 695 "parser.rl"
     p = json->source;
     pe = p + json->len;
 
-#line 1715 "parser.c"
+#line 1707 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -1788,7 +1780,7 @@ st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-#line 1792 "parser.c"
+#line 1784 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st10;
 		case 32: goto st10;
@@ -1845,7 +1837,7 @@ case 9:
 	_out: {}
 	}
 
-#line 706 "parser.rl"
+#line 698 "parser.rl"
 
     if (cs >= JSON_first_final && p == pe) {
         return result;
@@ -1931,8 +1923,6 @@ void Init_parser()
     CEncoding_ASCII_8BIT = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("ascii-8bit"));
     i_encoding = rb_intern("encoding");
     i_encode = rb_intern("encode");
-    i_encode_bang = rb_intern("encode!");
-    i_force_encoding = rb_intern("force_encoding");
 #else
     i_iconv = rb_intern("iconv");
 #endif
