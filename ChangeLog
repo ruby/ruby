@@ -1,3 +1,13 @@
+Fri Jul  8 21:20:39 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c: use USE_ELF instead of __ELF__ because Solaris
+	  doesn't define it. USE_ELF is already provided by configure.
+	  patched by Naohisa Goto. [ruby-dev:44066] [Bug #4998]
+
+	* addr2line.h: ditto.
+
+	* vm_dump.c: ditto.
+
 Fri Jul  8 16:40:38 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/json/parser/parser.rl (convert_encoding): should not modify
