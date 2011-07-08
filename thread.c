@@ -2482,7 +2482,7 @@ rb_fd_set(int fd, rb_fdset_t *set)
 
 #endif
 
-#if defined(__CYGWIN__) || defined(_WIN32)
+#if defined(__CYGWIN__)
 static long
 cmp_tv(const struct timeval *a, const struct timeval *b)
 {
@@ -2519,7 +2519,7 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
     rb_fdset_t UNINITIALIZED_VAR(orig_except);
     double limit = 0;
     struct timeval wait_rest;
-# if defined(__CYGWIN__) || defined(_WIN32)
+# if defined(__CYGWIN__)
     struct timeval start_time;
 # endif
 
