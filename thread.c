@@ -365,8 +365,8 @@ rb_thread_terminate_all(void)
     }
 }
 
-static void
-thread_unlock_all_locking_mutexes(rb_thread_t *th)
+void
+rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 {
     if (th->keeping_mutexes) {
 	rb_mutex_unlock_all(th->keeping_mutexes, th);
@@ -517,7 +517,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    join_th = join_th->join_list_next;
 	}
 
-	thread_unlock_all_locking_mutexes(th);
+	rb_threadptr_unlock_all_locking_mutexes(th);
 	if (th != main_th) rb_check_deadlock(th->vm);
 
 	if (!th->root_fiber) {

@@ -145,6 +145,9 @@ ruby_cleanup(volatile int ex)
     th->errinfo = errs[1];
     ex = error_handle(ex);
     ruby_finalize_1();
+
+    /* unlock again if finalizer took mutexes. */
+    rb_threadptr_unlock_all_locking_mutexes(GET_THREAD());
     POP_TAG();
     rb_thread_stop_timer_thread(1);
 

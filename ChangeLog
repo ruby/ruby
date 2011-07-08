@@ -1,3 +1,13 @@
+Fri Jul  8 13:36:02 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (thread_unlock_all_locking_mutexes): rename to
+	  rb_threadptr_unlock_all_locking_mutexes and remove static.
+	* vm_core.h: add rb_threadptr_unlock_all_locking_mutexes declaration.
+	* thread.c (thread_start_func_2): adjust the above rename.
+
+	* eval.c (ruby_cleanup): call rb_threadptr_unlock_all_locking_mutexes
+	  again after finalizer. [Bug #4988] [ruby-dev:44049]
+
 Fri Jul  8 13:06:09 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* cont.c (FIBER_MACHINE_STACK_ALLOCATION_SIZE): Fiber stack size
