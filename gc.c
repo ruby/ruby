@@ -574,12 +574,12 @@ gc_stress_get(VALUE self)
  *  call-seq:
  *    GC.stress = bool          -> bool
  *
- *  updates GC stress mode.
+ *  Updates the GC stress mode.
  *
- *  When GC.stress = true, GC is invoked for all GC opportunity:
- *  all memory and object allocation.
+ *  When stress mode is enabled the GC is invoked at every GC opportunity:
+ *  all memory and object allocations.
  *
- *  Since it makes Ruby very slow, it is only for debugging.
+ *  Enabling stress mode makes Ruby very slow, it is only for debugging.
  */
 
 static VALUE
@@ -595,7 +595,7 @@ gc_stress_set(VALUE self, VALUE flag)
  *  call-seq:
  *    GC::Profiler.enable?                 -> true or false
  *
- *  returns current status of GC profile mode.
+ *  The current status of GC profile mode.
  */
 
 static VALUE
@@ -609,8 +609,7 @@ gc_profile_enable_get(VALUE self)
  *  call-seq:
  *    GC::Profiler.enable          -> nil
  *
- *  updates GC profile mode.
- *  start profiler for GC.
+ *  Starts the GC profiler.
  *
  */
 
@@ -627,8 +626,7 @@ gc_profile_enable(void)
  *  call-seq:
  *    GC::Profiler.disable          -> nil
  *
- *  updates GC profile mode.
- *  stop profiler for GC.
+ *  Stops the GC profiler.
  *
  */
 
@@ -645,7 +643,7 @@ gc_profile_disable(void)
  *  call-seq:
  *    GC::Profiler.clear          -> nil
  *
- *  clear before profile data.
+ *  Clears the GC profiler data.
  *
  */
 
@@ -3317,15 +3315,24 @@ gc_count(VALUE self)
  *  call-seq:
  *     GC.stat -> Hash
  *
- *  Return information about GC.
+ *  Returns a Hash containing information about the GC.
  *
- *  It returns the hash includes information about internal statistisc
- *  about GC such as: {:count => 42, ...}
+ *  The hash includes information about internal statistics about GC such as:
  *
- *  The contents of the returned hash is implementation defined.
- *  It may be changed in future.
+ *    {
+ *      :count          => 18,
+ *      :heap_used      => 77,
+ *      :heap_length    => 77,
+ *      :heap_increment => 0,
+ *      :heap_live_num  => 23287,
+ *      :heap_free_num  => 8115,
+ *      :heap_final_num => 0,
+ *    }
  *
- *  This method is not expected to work except C Ruby.
+ *  The contents of the hash are implementation defined and may be changed in
+ *  the future.
+ *
+ *  This method is only expected to work on C Ruby.
  *
  */
 
@@ -3429,14 +3436,13 @@ gc_profile_record_get(void)
 
 /*
  *  call-seq:
- *     GC::Profiler.result -> string
+ *     GC::Profiler.result -> String
  *
- *  Report profile data to string.
+ *  Returns a profile data report such as:
  *
- *  It returns a string as:
- *   GC 1 invokes.
- *   Index    Invoke Time(sec)       Use Size(byte)     Total Size(byte)         Total Object                    GC time(ms)
- *       1               0.012               159240               212940                10647         0.00000000000001530000
+ *    GC 1 invokes.
+ *    Index    Invoke Time(sec)       Use Size(byte)     Total Size(byte)         Total Object                    GC time(ms)
+ *        1               0.012               159240               212940                10647         0.00000000000001530000
  */
 
 static VALUE
@@ -3494,8 +3500,9 @@ gc_profile_result(void)
 /*
  *  call-seq:
  *     GC::Profiler.report
+ *     GC::Profiler.report io
  *
- *  GC::Profiler.result display
+ *  Writes the GC::Profiler#result to <tt>$stdout</tt> or the given IO object.
  *
  */
 
@@ -3519,7 +3526,7 @@ gc_profile_report(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     GC::Profiler.total_time -> float
  *
- *  return total time that GC used. (msec)
+ *  The total time used for garbage collection in milliseconds
  */
 
 static VALUE
@@ -3537,11 +3544,31 @@ gc_profile_total_time(VALUE self)
     return DBL2NUM(time);
 }
 
+/*  Document-class: GC::Profiler
+ *
+ *  The GC profiler provides access to information on GC runs including time,
+ *  length and object space size.
+ *
+ *  Example:
+ *
+ *    GC::Profiler.enable
+ *
+ *    require 'rdoc/rdoc'
+ *
+ *    puts GC::Profiler.result
+ *
+ *    GC::Profiler.disable
+ *
+ *  See also GC.count, GC.malloc_allocated_size and GC.malloc_allocations
+ */
 
 /*
  *  The <code>GC</code> module provides an interface to Ruby's mark and
  *  sweep garbage collection mechanism. Some of the underlying methods
- *  are also available via the <code>ObjectSpace</code> module.
+ *  are also available via the ObjectSpace module.
+ *
+ *  You may obtain information about the operation of the GC through
+ *  GC::Profiler.
  */
 
 void
