@@ -1,3 +1,7 @@
+Sat Jul  9 17:17:53 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: some improvements for performance.
+
 Sat Jul  9 16:56:01 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* atomic.h (ATOMIC_OR): _InterlockedOr is unavailable in VC6.

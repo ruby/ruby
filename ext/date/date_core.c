@@ -139,8 +139,6 @@ f_negative_p(VALUE x)
 #define f_min(x) rb_funcall(x, rb_intern("min"), 0)
 #define f_sec(x) rb_funcall(x, rb_intern("sec"), 0)
 
-#define f_compact(x) rb_funcall(x, rb_intern("compact"), 0)
-
 /* copied from time.c */
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
@@ -928,6 +926,8 @@ df_to_time(int df, int *h, int *min, int *s)
 static VALUE
 sec_to_day(VALUE s)
 {
+    if (FIXNUM_P(s))
+	return rb_rational_new2(s, INT2FIX(DAY_IN_SECONDS));
     return f_quo(s, INT2FIX(DAY_IN_SECONDS));
 }
 
@@ -940,20 +940,26 @@ isec_to_day(int s)
 static VALUE
 ns_to_day(VALUE n)
 {
+    if (FIXNUM_P(n))
+	return rb_rational_new2(n, day_in_nanoseconds);
     return f_quo(n, day_in_nanoseconds);
 }
 
 #ifndef NDEBUG
 static VALUE
-ms_to_sec(VALUE n)
+ms_to_sec(VALUE m)
 {
-    return f_quo(n, INT2FIX(SECOND_IN_MILLISECONDS));
+    if (FIXNUM_P(m))
+	return rb_rational_new2(m, INT2FIX(SECOND_IN_MILLISECONDS));
+    return f_quo(m, INT2FIX(SECOND_IN_MILLISECONDS));
 }
 #endif
 
 static VALUE
 ns_to_sec(VALUE n)
 {
+    if (FIXNUM_P(n))
+	return rb_rational_new2(n, INT2FIX(SECOND_IN_NANOSECONDS));
     return f_quo(n, INT2FIX(SECOND_IN_NANOSECONDS));
 }
 
@@ -1009,6 +1015,14 @@ sec_to_ns(VALUE s)
 	return LONG2FIX(FIX2LONG(s) * SECOND_IN_NANOSECONDS);
     return f_mul(s, INT2FIX(SECOND_IN_NANOSECONDS));
 }
+
+#ifndef NDEBUG
+static VALUE
+isec_to_ns(int s)
+{
+    return sec_to_ns(INT2FIX(s));
+}
+#endif
 
 static VALUE
 div_day(VALUE d, VALUE *f)
@@ -1489,11 +1503,19 @@ m_ajd(union DateData *x)
     VALUE r, sf;
     int df;
 
-    if (simple_dat_p(x))
-	return rb_rational_new2(f_sub(f_mul(m_real_jd(x),
-					    INT2FIX(2)),
-				      INT2FIX(1)),
-				INT2FIX(2));
+    if (simple_dat_p(x)) {
+	r = m_real_jd(x);
+	if (FIXNUM_P(r) && FIX2LONG(r) <= (FIXNUM_MAX / 2)) {
+	    long ir = FIX2LONG(r);
+	    ir = ir * 2 - 1;
+	    return rb_rational_new2(LONG2FIX(ir), INT2FIX(2));
+	}
+	else
+	    return rb_rational_new2(f_sub(f_mul(r,
+						INT2FIX(2)),
+					  INT2FIX(1)),
+				    INT2FIX(2));
+    }
 
     r = m_real_jd(x);
     df = m_df(x);
@@ -1513,7 +1535,15 @@ m_amjd(union DateData *x)
     VALUE r, sf;
     int df;
 
-    r = rb_rational_new1(f_sub(m_real_jd(x), INT2FIX(2400001)));
+    r = m_real_jd(x);
+    if (FIXNUM_P(r) && FIX2LONG(r) >= (FIXNUM_MIN + 2400001)) {
+	long ir = FIX2LONG(r);
+	ir -= 2400001;
+	r = rb_rational_new1(LONG2FIX(ir));
+    }
+    else
+	r = rb_rational_new1(f_sub(m_real_jd(x),
+				   INT2FIX(2400001)));
 
     if (simple_dat_p(x))
 	return r;
@@ -2274,7 +2304,7 @@ offset_to_sec(VALUE vof, int *rof)
 	{
 	    double n;
 
-	    n = NUM2DBL(vof) * DAY_IN_SECONDS;
+	    n = RFLOAT_VALUE(vof) * DAY_IN_SECONDS;
 	    if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
 		return 0;
 	    *rof = (int)round(n);
@@ -3039,7 +3069,7 @@ wholenum_p(VALUE x)
 	return 1;
       case T_FLOAT:
 	{
-	    double d = NUM2DBL(x);
+	    double d = RFLOAT_VALUE(x);
 	    return round(d) == d;
 	}
 	break;
@@ -3601,9 +3631,6 @@ rt_rewrite_frags(VALUE hash)
 {
     VALUE seconds;
 
-    if (NIL_P(hash))
-	hash = rb_hash_new();
-
     seconds = ref_hash("seconds");
     if (!NIL_P(seconds)) {
 	VALUE d, h, min, s, fr;
@@ -3633,20 +3660,16 @@ rt_rewrite_frags(VALUE hash)
 
 #define sym(x) ID2SYM(rb_intern(x))
 
-static VALUE
-fv_values_at(VALUE h, VALUE a)
-{
-    return rb_funcall2(h, rb_intern("values_at"),
-		       RARRAY_LENINT(a), RARRAY_PTR(a));
-}
-
+static VALUE d_lite_year(VALUE);
 static VALUE d_lite_wday(VALUE);
+static VALUE d_lite_jd(VALUE);
 
 static VALUE
 rt_complete_frags(VALUE klass, VALUE hash)
 {
     static VALUE tab = Qnil;
-    VALUE t, l, g, d;
+    int g, e;
+    VALUE k, a, d;
 
     if (NIL_P(tab)) {
 	tab = rb_ary_new3(11,
@@ -3742,53 +3765,45 @@ rt_complete_frags(VALUE klass, VALUE hash)
     }
 
     {
-	int i;
-
-	t = rb_ary_new2(RARRAY_LEN(tab));
+	int i, eno = 0, idx = 0;
 
 	for (i = 0; i < RARRAY_LENINT(tab); i++) {
-	    VALUE x, k, a, e;
+	    VALUE x, a;
 
 	    x = RARRAY_PTR(tab)[i];
-	    k = RARRAY_PTR(x)[0];
 	    a = RARRAY_PTR(x)[1];
-	    e = f_compact(fv_values_at(hash, a));
 
-	    if (RARRAY_LEN(e) > 0)
-		rb_ary_push(t, rb_ary_new3(5,
-					   INT2FIX(RARRAY_LENINT(e)),
-					   INT2FIX(-i),
-					   k, a, e));
+	    {
+		int j, n = 0;
+
+		for (j = 0; j < RARRAY_LENINT(a); j++)
+		    if (!NIL_P(ref_hash0(RARRAY_PTR(a)[j])))
+			n++;
+		if (n > eno) {
+		    eno = n;
+		    idx = i;
+		}
+	    }
 	}
-
-	if (RARRAY_LEN(t) == 0)
-	    g = Qnil;
+	if (eno == 0)
+	    g = 0;
 	else {
-	    rb_ary_sort_bang(t);
-	    l = RARRAY_PTR(t)[RARRAY_LENINT(t) - 1];
-	    g = rb_ary_new3(3,
-			    RARRAY_PTR(l)[2],
-			    RARRAY_PTR(l)[3],
-			    RARRAY_PTR(l)[4]);
+	    g = 1;
+	    k = RARRAY_PTR(RARRAY_PTR(tab)[idx])[0];
+	    a = RARRAY_PTR(RARRAY_PTR(tab)[idx])[1];
+	    e =	eno;
 	}
     }
 
     d = Qnil;
 
-    if (!NIL_P(g) && !NIL_P(RARRAY_PTR(g)[0]) &&
-	(RARRAY_LEN(RARRAY_PTR(g)[1]) -
-	 RARRAY_LEN(RARRAY_PTR(g)[2]))) {
-	VALUE k, a;
-
-	if (NIL_P(d))
-	    d = date_s_today(0, (VALUE *)0, cDate);
-
-	k = RARRAY_PTR(g)[0];
-	a = RARRAY_PTR(g)[1];
-
+    if (g && !NIL_P(k) && (RARRAY_LENINT(a) - e)) {
 	if (k == sym("ordinal")) {
-	    if (NIL_P(ref_hash("year")))
-		set_hash("year", f_year(d));
+	    if (NIL_P(ref_hash("year"))) {
+		if (NIL_P(d))
+		    d = date_s_today(0, (VALUE *)0, cDate);
+		set_hash("year", d_lite_year(d));
+	    }
 	    if (NIL_P(ref_hash("yday")))
 		set_hash("yday", INT2FIX(1));
 	}
@@ -3800,6 +3815,8 @@ rt_complete_frags(VALUE klass, VALUE hash)
 
 		if (!NIL_P(ref_hash0(e)))
 		    break;
+		if (NIL_P(d))
+		    d = date_s_today(0, (VALUE *)0, cDate);
 		set_hash0(e, rb_funcall(d, SYM2ID(e), 0));
 	    }
 	    if (NIL_P(ref_hash("mon")))
@@ -3815,6 +3832,8 @@ rt_complete_frags(VALUE klass, VALUE hash)
 
 		if (!NIL_P(ref_hash0(e)))
 		    break;
+		if (NIL_P(d))
+		    d = date_s_today(0, (VALUE *)0, cDate);
 		set_hash0(e, rb_funcall(d, SYM2ID(e), 0));
 	    }
 	    if (NIL_P(ref_hash("cweek")))
@@ -3823,9 +3842,11 @@ rt_complete_frags(VALUE klass, VALUE hash)
 		set_hash("cwday", INT2FIX(1));
 	}
 	else if (k == sym("wday")) {
-	    set_hash("jd", f_jd(f_add(f_sub(d,
-					    d_lite_wday(d)),
-				      ref_hash("wday"))));
+	    if (NIL_P(d))
+		d = date_s_today(0, (VALUE *)0, cDate);
+	    set_hash("jd", d_lite_jd(f_add(f_sub(d,
+						 d_lite_wday(d)),
+					   ref_hash("wday"))));
 	}
 	else if (k == sym("wnum0")) {
 	    int i;
@@ -3835,6 +3856,8 @@ rt_complete_frags(VALUE klass, VALUE hash)
 
 		if (!NIL_P(ref_hash0(e)))
 		    break;
+		if (NIL_P(d))
+		    d = date_s_today(0, (VALUE *)0, cDate);
 		set_hash0(e, rb_funcall(d, SYM2ID(e), 0));
 	    }
 	    if (NIL_P(ref_hash("wnum0")))
@@ -3850,6 +3873,8 @@ rt_complete_frags(VALUE klass, VALUE hash)
 
 		if (!NIL_P(ref_hash0(e)))
 		    break;
+		if (NIL_P(d))
+		    d = date_s_today(0, (VALUE *)0, cDate);
 		set_hash0(e, rb_funcall(d, SYM2ID(e), 0));
 	    }
 	    if (NIL_P(ref_hash("wnum1")))
@@ -3859,12 +3884,12 @@ rt_complete_frags(VALUE klass, VALUE hash)
 	}
     }
 
-    if (!NIL_P(g) && RARRAY_PTR(g)[0] == sym("time")) {
+    if (g && k == sym("time")) {
 	if (f_le_p(klass, cDateTime)) {
 	    if (NIL_P(d))
 		d = date_s_today(0, (VALUE *)0, cDate);
 	    if (NIL_P(ref_hash("jd")))
-		set_hash("jd", f_jd(d));
+		set_hash("jd", d_lite_jd(d));
 	}
     }
 
@@ -3878,22 +3903,6 @@ rt_complete_frags(VALUE klass, VALUE hash)
 	set_hash("sec", INT2FIX(59));
 
     return hash;
-}
-
-#define f_values_at1(o,k1) rb_funcall(o, rb_intern("values_at"), 1, k1)
-#define f_values_at2(o,k1,k2) rb_funcall(o, rb_intern("values_at"), 2, k1, k2)
-#define f_values_at3(o,k1,k2,k3) rb_funcall(o, rb_intern("values_at"), 3,\
-					    k1, k2, k3)
-
-static VALUE
-f_all_p(VALUE a)
-{
-    int i;
-
-    for (i = 0; i < RARRAY_LENINT(a); i++)
-	if (NIL_P(RARRAY_PTR(a)[i]))
-	    return Qfalse;
-    return Qtrue;
 }
 
 static VALUE
@@ -3965,78 +3974,96 @@ rt__valid_weeknum_p(VALUE y, VALUE w, VALUE d, VALUE f, VALUE sg)
 static VALUE
 rt__valid_date_frags_p(VALUE hash, VALUE sg)
 {
-    VALUE a;
+    {
+	VALUE vjd;
 
-    a = f_values_at1(hash, sym("jd"));
-    if (f_all_p(a)) {
-	VALUE jd = rt__valid_jd_p(RARRAY_PTR(a)[0],
-				  sg);
-	if (!NIL_P(jd))
-	    return jd;
+	if (!NIL_P(vjd = ref_hash("jd"))) {
+	    VALUE jd = rt__valid_jd_p(vjd, sg);
+	    if (!NIL_P(jd))
+		return jd;
+	}
     }
 
-    a = f_values_at2(hash, sym("year"), sym("yday"));
-    if (f_all_p(a)) {
-	VALUE jd = rt__valid_ordinal_p(RARRAY_PTR(a)[0],
-				       RARRAY_PTR(a)[1],
-				       sg);
-	if (!NIL_P(jd))
-	    return jd;
+    {
+	VALUE year, yday;
+
+	if (!NIL_P(yday = ref_hash("yday")) &&
+	    !NIL_P(year = ref_hash("year"))) {
+	    VALUE jd = rt__valid_ordinal_p(year, yday, sg);
+	    if (!NIL_P(jd))
+		return jd;
+	}
     }
 
-    a = f_values_at3(hash, sym("year"), sym("mon"), sym("mday"));
-    if (f_all_p(a)) {
-	VALUE jd = rt__valid_civil_p(RARRAY_PTR(a)[0],
-				     RARRAY_PTR(a)[1],
-				     RARRAY_PTR(a)[2],
-				     sg);
-	if (!NIL_P(jd))
-	    return jd;
+    {
+	VALUE year, mon, mday;
+
+	if (!NIL_P(mday = ref_hash("mday")) &&
+	    !NIL_P(mon = ref_hash("mon")) &&
+	    !NIL_P(year = ref_hash("year"))) {
+	    VALUE jd = rt__valid_civil_p(year, mon, mday, sg);
+	    if (!NIL_P(jd))
+		return jd;
+	}
     }
 
-    a = f_values_at3(hash, sym("cwyear"), sym("cweek"), sym("cwday"));
-    if (NIL_P(RARRAY_PTR(a)[2]) && !NIL_P(ref_hash("wday")))
-	if (f_zero_p(ref_hash("wday")))
-	    RARRAY_PTR(a)[2] = INT2FIX(7);
-	else
-	    RARRAY_PTR(a)[2] = ref_hash("wday");
-    if (f_all_p(a)) {
-	VALUE jd = rt__valid_commercial_p(RARRAY_PTR(a)[0],
-					  RARRAY_PTR(a)[1],
-					  RARRAY_PTR(a)[2],
-					  sg);
-	if (!NIL_P(jd))
-	    return jd;
+    {
+	VALUE year, week, wday;
+
+	wday = ref_hash("cwday");
+	if (NIL_P(wday)) {
+	    wday = ref_hash("wday");
+	    if (!NIL_P(wday))
+		if (f_zero_p(wday))
+		    wday = INT2FIX(7);
+	}
+
+	if (!NIL_P(wday) &&
+	    !NIL_P(week = ref_hash("cweek")) &&
+	    !NIL_P(year = ref_hash("cwyear"))) {
+	    VALUE jd = rt__valid_commercial_p(year, week, wday, sg);
+	    if (!NIL_P(jd))
+		return jd;
+	}
     }
 
-    a = f_values_at3(hash, sym("year"), sym("wnum0"), sym("wday"));
-    if (NIL_P(RARRAY_PTR(a)[2]) && !NIL_P(ref_hash("cwday")))
-	RARRAY_PTR(a)[2] = f_mod(ref_hash("cwday"), INT2FIX(7));
-    if (f_all_p(a)) {
-	VALUE jd = rt__valid_weeknum_p(RARRAY_PTR(a)[0],
-				       RARRAY_PTR(a)[1],
-				       RARRAY_PTR(a)[2],
-				       INT2FIX(0),
-				       sg);
-	if (!NIL_P(jd))
-	    return jd;
+    {
+	VALUE year, week, wday;
+
+	wday = ref_hash("wday");
+	if (NIL_P(wday)) {
+	    wday = ref_hash("cwday");
+	    if (!NIL_P(wday))
+		if (f_eqeq_p(wday, INT2FIX(7)))
+		    wday = INT2FIX(0);
+	}
+
+	if (!NIL_P(wday) &&
+	    !NIL_P(week = ref_hash("wnum0")) &&
+	    !NIL_P(year = ref_hash("year"))) {
+	    VALUE jd = rt__valid_weeknum_p(year, week, wday, INT2FIX(0), sg);
+	    if (!NIL_P(jd))
+		return jd;
+	}
     }
 
-    a = f_values_at3(hash, sym("year"), sym("wnum1"), sym("wday"));
-    if (!NIL_P(RARRAY_PTR(a)[2]))
-	RARRAY_PTR(a)[2] = f_mod(f_sub(RARRAY_PTR(a)[2], INT2FIX(1)),
-				 INT2FIX(7));
-    if (NIL_P(RARRAY_PTR(a)[2]) && !NIL_P(ref_hash("cwday")))
-	RARRAY_PTR(a)[2] = f_mod(f_sub(ref_hash("cwday"), INT2FIX(1)),
-				 INT2FIX(7));
-    if (f_all_p(a)) {
-	VALUE jd = rt__valid_weeknum_p(RARRAY_PTR(a)[0],
-				       RARRAY_PTR(a)[1],
-				       RARRAY_PTR(a)[2],
-				       INT2FIX(1),
-				       sg);
-	if (!NIL_P(jd))
-	    return jd;
+    {
+	VALUE year, week, wday;
+
+	wday = ref_hash("wday");
+	if (NIL_P(wday))
+	    wday = ref_hash("cwday");
+	if (!NIL_P(wday))
+	    wday = f_mod(f_sub(wday, INT2FIX(1)),
+			 INT2FIX(7));
+
+	if (!NIL_P(wday) &&
+	    !NIL_P(week = ref_hash("wnum1")) &&
+	    !NIL_P(year = ref_hash("year"))) {
+	    VALUE jd = rt__valid_weeknum_p(year, week, wday, INT2FIX(1), sg);
+	    if (!NIL_P(jd))
+		return jd;
+	}
     }
     return Qnil;
 }
@@ -4051,10 +4078,20 @@ d_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
 	rb_warning("invalid start is ignored");
     }
 
-    hash = rt_rewrite_frags(hash);
-    hash = rt_complete_frags(klass, hash);
+    if (NIL_P(ref_hash("jd")) &&
+	NIL_P(ref_hash("yday")) &&
+	!NIL_P(ref_hash("year")) &&
+	!NIL_P(ref_hash("mon")) &&
+	!NIL_P(ref_hash("mday")))
+	jd = rt__valid_civil_p(ref_hash("year"),
+			       ref_hash("mon"),
+			       ref_hash("mday"), sg);
+    else {
+	hash = rt_rewrite_frags(hash);
+	hash = rt_complete_frags(klass, hash);
+	jd = rt__valid_date_frags_p(hash, sg);
+    }
 
-    jd = rt__valid_date_frags_p(hash, sg);
     if (NIL_P(jd))
 	rb_raise(rb_eArgError, "invalid date");
     {
@@ -5507,19 +5544,25 @@ d_lite_plus(VALUE self, VALUE other)
 	    if (simple_dat_p(dat))
 		return d_simple_new_internal(CLASS_OF(self),
 					     nth, jd,
-					     m_sg(dat),
+					     dat->s.sg,
 					     0, 0, 0,
 					     (dat->s.flags | HAVE_JD) &
 					     ~HAVE_CIVIL);
 	    else
 		return d_complex_new_internal(CLASS_OF(self),
 					      nth, jd,
-					      m_df(dat), m_sf(dat),
-					      m_of(dat), m_sg(dat),
+					      dat->c.df, dat->c.sf,
+					      dat->c.of, dat->c.sg,
 					      0, 0, 0,
-					      m_hour(dat),
-					      m_min(dat),
-					      m_sec(dat),
+#ifndef USE_PACK
+					      dat->c.hour,
+					      dat->c.min,
+					      dat->c.sec,
+#else
+					      EX_HOUR(dat->c.pc),
+					      EX_MIN(dat->c.pc),
+					      EX_SEC(dat->c.pc),
+#endif
 					      (dat->c.flags | HAVE_JD) &
 					      ~HAVE_CIVIL);
 	}
@@ -5566,19 +5609,25 @@ d_lite_plus(VALUE self, VALUE other)
 	    if (simple_dat_p(dat))
 		return d_simple_new_internal(CLASS_OF(self),
 					     nth, jd,
-					     m_sg(dat),
+					     dat->s.sg,
 					     0, 0, 0,
 					     (dat->s.flags | HAVE_JD) &
 					     ~HAVE_CIVIL);
 	    else
 		return d_complex_new_internal(CLASS_OF(self),
 					      nth, jd,
-					      m_df(dat), m_sf(dat),
-					      m_of(dat), m_sg(dat),
+					      dat->c.df, dat->c.sf,
+					      dat->c.of, dat->c.sg,
 					      0, 0, 0,
-					      m_hour(dat),
-					      m_min(dat),
-					      m_sec(dat),
+#ifndef USE_PACK
+					      dat->c.hour,
+					      dat->c.min,
+					      dat->c.sec,
+#else
+					      EX_HOUR(dat->c.pc),
+					      EX_MIN(dat->c.pc),
+					      EX_SEC(dat->c.pc),
+#endif
 					      (dat->c.flags | HAVE_JD) &
 					      ~HAVE_CIVIL);
 	}
@@ -5589,7 +5638,7 @@ d_lite_plus(VALUE self, VALUE other)
 	    int s, df;
 	    VALUE nth, sf;
 
-	    o = NUM2DBL(other);
+	    o = RFLOAT_VALUE(other);
 
 	    if (o > 0)
 		s = +1;
@@ -5892,10 +5941,13 @@ d_lite_minus(VALUE self, VALUE other)
       case T_FIXNUM:
 	return d_lite_plus(self, LONG2NUM(-FIX2LONG(other)));
       case T_FLOAT:
-	return d_lite_plus(self, DBL2NUM(-NUM2DBL(other)));
+	return d_lite_plus(self, DBL2NUM(-RFLOAT_VALUE(other)));
       default:
 	if (!k_numeric_p(other))
 	    rb_raise(rb_eTypeError, "expected numeric");
+	/* fall through */
+      case T_BIGNUM:
+      case T_RATIONAL:
 	return d_lite_plus(self, f_negate(other));
     }
 }
@@ -5968,11 +6020,19 @@ d_lite_rshift(VALUE self, VALUE other)
 
     get_d1(self);
     t = f_add3(f_mul(m_real_year(dat), INT2FIX(12)),
-	       f_sub(INT2FIX(m_mon(dat)), INT2FIX(1)),
+	       INT2FIX(m_mon(dat) - 1),
 	       other);
-    y = f_idiv(t, INT2FIX(12));
-    t = f_mod(t, INT2FIX(12));
-    m = FIX2INT(f_add(t, INT2FIX(1)));
+    if (FIXNUM_P(t)) {
+	long it = FIX2LONG(t);
+	y = LONG2NUM(DIV(it, 12));
+	it = MOD(it, 12);
+	m = (int)it + 1;
+    }
+    else {
+	y = f_idiv(t, INT2FIX(12));
+	t = f_mod(t, INT2FIX(12));
+	m = FIX2INT(t) + 1;
+    }
     d = m_mday(dat);
     sg = m_sg(dat);
 
@@ -5987,7 +6047,7 @@ d_lite_rshift(VALUE self, VALUE other)
 	    rb_raise(rb_eArgError, "invalid date");
     }
     encode_jd(nth, rjd, &rjd2);
-    return f_add(self, f_sub(rjd2, m_real_local_jd(dat)));
+    return d_lite_plus(self, f_sub(rjd2, m_real_local_jd(dat)));
 }
 
 /*
@@ -7782,10 +7842,30 @@ dt_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
 	rb_warning("invalid start is ignored");
     }
 
-    hash = rt_rewrite_frags(hash);
-    hash = rt_complete_frags(klass, hash);
+    if (NIL_P(ref_hash("jd")) &&
+	NIL_P(ref_hash("yday")) &&
+	!NIL_P(ref_hash("year")) &&
+	!NIL_P(ref_hash("mon")) &&
+	!NIL_P(ref_hash("mday"))) {
+	jd = rt__valid_civil_p(ref_hash("year"),
+			       ref_hash("mon"),
+			       ref_hash("mday"), sg);
 
-    jd = rt__valid_date_frags_p(hash, sg);
+	if (NIL_P(ref_hash("hour")))
+	    set_hash("hour", INT2FIX(0));
+	if (NIL_P(ref_hash("min")))
+	    set_hash("min", INT2FIX(0));
+	if (NIL_P(ref_hash("sec")))
+	    set_hash("sec", INT2FIX(0));
+	else if (f_gt_p(ref_hash("sec"), INT2FIX(59)))
+	    set_hash("sec", INT2FIX(59));
+    }
+    else {
+	hash = rt_rewrite_frags(hash);
+	hash = rt_complete_frags(klass, hash);
+	jd = rt__valid_date_frags_p(hash, sg);
+    }
+
     if (NIL_P(jd))
 	rb_raise(rb_eArgError, "invalid date");
 
@@ -8362,8 +8442,8 @@ iso8601_timediv(VALUE self, VALUE n)
 	argv[0] = rb_usascii_str_new2(".%0*d");
 	argv[1] = n;
 	argv[2] = f_round(f_quo(m_sf_in_sec(dat),
-			    f_quo(INT2FIX(1),
-				  f_expt(INT2FIX(10), n))));
+				f_quo(INT2FIX(1),
+				      f_expt(INT2FIX(10), n))));
 	rb_str_append(fmt, rb_f_sprintf(3, argv));
     }
     rb_str_append(fmt, rb_usascii_str_new2("%:z"));
