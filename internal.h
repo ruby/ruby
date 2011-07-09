@@ -110,7 +110,15 @@ VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
 VALUE rb_get_load_path(void);
 
 /* math.c */
+VALUE rb_math_atan2(VALUE, VALUE);
+VALUE rb_math_cos(VALUE);
+VALUE rb_math_cosh(VALUE);
+VALUE rb_math_exp(VALUE);
+VALUE rb_math_hypot(VALUE, VALUE);
 VALUE rb_math_log(int argc, VALUE *argv);
+VALUE rb_math_sin(VALUE);
+VALUE rb_math_sinh(VALUE);
+VALUE rb_math_sqrt(VALUE);
 
 /* newline.c */
 void Init_newline(void);
