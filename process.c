@@ -1010,9 +1010,9 @@ static void before_exec(void)
 
     if (!forked_child) {
 	/*
-	 * On old MacOS X, exec() may return ENOTSUPP if the process have
-	 * multiple threads. Therefore we have to kill internal threads at once.
-	 * [ruby-core: 10583]
+	 * On Mac OS X 10.5.x (Leopard) or earlier, exec() may return ENOTSUPP
+	 * if the process have multiple threads. Therefore we have to kill
+	 * internal threads temporary. [ruby-core: 10583]
 	 */
 	rb_thread_stop_timer_thread(0);
     }
