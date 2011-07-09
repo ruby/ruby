@@ -1,3 +1,8 @@
+Sat Jul  9 19:25:02 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ext/tk/extconf.rb: I gave up to fix the build issue of ext/tk with Windows
+	  installer (mingw32).  Ported whole ext/tk/extconf.rb from trunk.
+
 Mon Jul  4 00:28:05 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* ext/tk/extconf.rb (find_tcl): fixed a TypeError on --with-opt-dir.
