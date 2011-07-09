@@ -1,3 +1,7 @@
+Sat Jul  9 11:41:03 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Add Vector#normalize [ruby-dev:43829]
+
 Sat Jul  9 09:25:06 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* enumerator.c:  Remove "enumeration sequenced by".

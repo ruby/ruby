@@ -182,7 +182,8 @@ with all sufficient information, see the ChangeLog file.
     * Matrix#unitary?
     * Matrix#upper_triangular?
     * Matrix#zero?
-    * Vector#magnitude
+    * Vector#magnitude, #norm
+    * Vector#normalize
   * extended methods:
     * Matrix#each and #each_with_index can iterate on a subset of the elements
     * Matrix#find_index returns [row, column] and can iterate on a subset

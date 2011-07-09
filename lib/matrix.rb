@@ -1517,8 +1517,11 @@ end
 # Vector functions:
 # * <tt> #inner_product(v)                    </tt>
 # * <tt> #collect                             </tt>
+# * <tt> #magnitude                           </tt>
 # * <tt> #map                                 </tt>
 # * <tt> #map2(v)                             </tt>
+# * <tt> #norm                                </tt>
+# * <tt> #normalize                           </tt>
 # * <tt> #r                                   </tt>
 # * <tt> #size                                </tt>
 #
@@ -1778,6 +1781,30 @@ class Vector
     Math.sqrt(@elements.inject(0) {|v, e| v + e*e})
   end
   alias r magnitude
+  alias norm magnitude
+
+  #
+  # Like Vector#collect2, but returns a Vector instead of an Array.
+  #
+  def map2(v, &block) # :yield: e1, e2
+    return to_enum(:map2, v) unless block_given?
+    els = collect2(v, &block)
+    Vector.elements(els, false)
+  end
+
+  class ZeroVectorError < StandardError
+  end
+  #
+  # Returns a new vector with the same direction but with norm 1.
+  #   v = Vector[5,8,2].normalize
+  #   # => Vector[0.5184758473652127, 0.8295613557843402, 0.20739033894608505]
+  #   v.norm => 1.0
+  #
+  def normalize
+    n = magnitude
+    raise ZeroVectorError, "Zero vectors can not be normalized" if n == 0
+    self / n
+  end
 
   #--
   # CONVERTING
