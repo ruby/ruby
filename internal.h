@@ -124,7 +124,6 @@ VALUE rb_math_sqrt(VALUE);
 void Init_newline(void);
 
 /* numeric.c */
-VALUE rb_rational_reciprocal(VALUE x);
 int rb_num_to_uint(VALUE val, unsigned int *ret);
 int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl);
 
@@ -140,6 +139,7 @@ VALUE rb_proc_location(VALUE self);
 
 /* rational.c */
 VALUE rb_lcm(VALUE x, VALUE y);
+VALUE rb_rational_reciprocal(VALUE x);
 
 /* re.c */
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
