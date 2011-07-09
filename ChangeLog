@@ -1,4 +1,6 @@
-Sat Jul  9 16:54:35 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jul  9 16:56:01 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* atomic.h (ATOMIC_OR): _InterlockedOr is unavailable in VC6.
 
 	* numeric.c (ULLONG_MAX): fallback definition.
 

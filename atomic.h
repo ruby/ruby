@@ -2,7 +2,7 @@
 #define RUBY_ATOMIC_H
 
 #ifdef _WIN32
-#ifdef _MSC_VER
+#if defined _MSC_VER && _MSC_VER > 1200
 #pragma intrinsic(_InterlockedOr)
 #endif
 typedef LONG rb_atomic_t;
@@ -12,6 +12,19 @@ typedef LONG rb_atomic_t;
 # define ATOMIC_DEC(var) InterlockedDecrement(&(var))
 #if defined __GNUC__
 # define ATOMIC_OR(var, val) __asm__("lock\n\t" "orl\t%1, %0" : "=m"(var) : "Ir"(val))
+#elif defined _MSC_VER && _MSC_VER <= 1200
+# define ATOMIC_OR(var, val) rb_w32_atomic_or(&(var), (val))
+static inline void
+rb_w32_atomic_or(volatile rb_atomic_t *var, rb_atomic_t val)
+{
+#ifdef _M_IX86
+    __asm mov eax, var;
+    __asm mov ecx, val;
+    __asm lock or [eax], ecx;
+#else
+#error unsupported architecture
+#endif
+}
 #else
 # define ATOMIC_OR(var, val) _InterlockedOr(&(var), (val))
 #endif
