@@ -5124,7 +5124,7 @@ rb_w32_close(int fd)
 }
 
 #undef read
-size_t
+ssize_t
 rb_w32_read(int fd, void *buf, size_t size)
 {
     SOCKET sock = TO_SOCKET(fd);
@@ -5280,7 +5280,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 }
 
 #undef write
-size_t
+ssize_t
 rb_w32_write(int fd, const void *buf, size_t size)
 {
     SOCKET sock = TO_SOCKET(fd);

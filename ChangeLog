@@ -1,3 +1,8 @@
+Sat Jul  9 15:59:19 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_{read,write}): should be signed.
+	  Bug #5001
+
 Sat Jul  9 14:02:20 2011  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb: fix multipart form parsing bug. [Bug #3866]
