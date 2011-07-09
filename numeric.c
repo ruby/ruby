@@ -1927,6 +1927,9 @@ rb_num2fix(VALUE val)
 #define LLONG_MIN_MINUS_ONE ((double)LLONG_MIN-1)
 #define LLONG_MAX_PLUS_ONE (2*(double)(LLONG_MAX/2+1))
 #define ULLONG_MAX_PLUS_ONE (2*(double)(ULLONG_MAX/2+1))
+#ifndef ULLONG_MAX
+#define ULLONG_MAX ((unsigned LONG_LONG)LLONG_MAX*2+1)
+#endif
 
 LONG_LONG
 rb_num2ll(VALUE val)

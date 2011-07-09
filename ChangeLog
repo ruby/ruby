@@ -1,3 +1,7 @@
+Sat Jul  9 16:54:35 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (ULLONG_MAX): fallback definition.
+
 Sat Jul  9 15:59:19 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_{read,write}): should be signed.
