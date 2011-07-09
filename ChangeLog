@@ -1,3 +1,7 @@
+Sat Jul  9 14:02:20 2011  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/core.rb: fix multipart form parsing bug. [Bug #3866]
+
 Sat Jul  9 11:41:03 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Add Vector#normalize [ruby-dev:43829]
