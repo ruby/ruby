@@ -2633,12 +2633,15 @@ rb_io_gets_m(int argc, VALUE *argv, VALUE io)
  *  call-seq:
  *     ios.lineno    -> integer
  *
- *  Returns the current line number in <em>ios</em>. The stream must be
+ *  Returns the current line number in <em>ios</em>.  The stream must be
  *  opened for reading. <code>lineno</code> counts the number of times
- *  <code>gets</code> is called, rather than the number of newlines
- *  encountered. The two values will differ if <code>gets</code> is
- *  called with a separator other than newline. See also the
- *  <code>$.</code> variable.
+ *  #gets is called rather than the number of newlines encountered.  The two
+ *  values will differ if #gets is called with a separator other than newline.
+ *
+ *  Methods that use <code>$/</code> like #each, #lines and #readline will
+ *  also increment <code>lineno</code>.
+ *
+ *  See also the <code>$.</code> variable.
  *
  *     f = File.new("testfile")
  *     f.lineno   #=> 0

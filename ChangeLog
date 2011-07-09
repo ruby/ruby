@@ -1,3 +1,8 @@
+Sat Jul  9 09:14:56 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* io.c:  Note that methods other than IO#gets may increase IO#lineno.
+	  [Ruby 1.9 - Bug #4902]
+
 Sat Jul  9 08:39:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (RUN_OPT): disable gems.
