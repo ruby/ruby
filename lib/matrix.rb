@@ -1765,15 +1765,6 @@ class Vector
   alias map collect
 
   #
-  # Like Vector#collect2, but returns a Vector instead of an Array.
-  #
-  def map2(v, &block) # :yield: e1, e2
-    return to_enum(:map2, v) unless block_given?
-    els = collect2(v, &block)
-    Vector.elements(els, false)
-  end
-
-  #
   # Returns the modulus (Pythagorean distance) of the vector.
   #   Vector[5,8,2].r => 9.643650761
   #
