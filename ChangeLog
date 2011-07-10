@@ -1,3 +1,7 @@
+Sun Jul 10 23:58:55 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* version.h: 1.9.3 is no longer trunk.
+
 Sun Jul 10 23:24:29 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* class.c (rb_mix_module): reverted r31873.
