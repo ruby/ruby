@@ -1,3 +1,9 @@
+Sun Jul 10 11:35:29 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* parse.y (reduce_nodes_gen): NODE_RETURN in rescue body must not be
+	  reduced when there is an else clause.  This caused bizarre behavior
+	  in [Bug #4473] [ruby-core:35629] [ruby-core:37884].
+
 Sun Jul 10 09:46:14 2011  Masaya Tarui  <tarui@ruby-lnag.org>
 
 	* range.c (range_max): fix behavior with excluded end value.
