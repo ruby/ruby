@@ -1,3 +1,14 @@
+Sun Jul 10 16:41:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm_core.h (typedef struct rb_vm_struct): create a new
+	  'inhibit_thread_createion' field.
+	* thread.c (rb_thread_terminate_all): set inhibit_thread_creation.
+	* thread.c (thread_s_new): don't permit to create new thread
+	  if the VM is under destruction. Otherwise evil finalizer code
+	  can make SEGV. [Bug #4992][ruby-core:37858]
+
+	* bootstraptest/test_objectspace.rb: new test for this fix.
+
 Sun Jul 10 16:06:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (sigsegv): use abort() instead of exit() when nested
