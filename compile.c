@@ -2362,7 +2362,14 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *cond_seq, NODE *vals, LABEL *l1, VALUE s
 	    special_literals = Qfalse;
 	}
 
-	COMPILE(cond_seq, "when cond", val);
+	if (nd_type(val) == NODE_STR) {
+	    debugp_param("nd_lit", val->nd_lit);
+	    OBJ_FREEZE(val->nd_lit);
+	    ADD_INSN1(cond_seq, nd_line(val), putobject, val->nd_lit);
+	}
+	else {
+	    COMPILE(cond_seq, "when cond", val);
+	}
 	ADD_INSN1(cond_seq, nd_line(val), topn, INT2FIX(1));
 	ADD_SEND(cond_seq, nd_line(val), ID2SYM(idEqq), INT2FIX(1));
 	ADD_INSNL(cond_seq, nd_line(val), branchif, l1);

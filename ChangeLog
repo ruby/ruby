@@ -1,3 +1,9 @@
+Sun Jul 10 12:08:39 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* compile.c (when_vals): when a string literal is written on when
+	  clause, skip string creation to make it faster.  [ruby-dev:44068]
+	  [Feature #5000]
+
 Sun Jul 10 11:35:29 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* parse.y (reduce_nodes_gen): NODE_RETURN in rescue body must not be
