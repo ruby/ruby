@@ -429,3 +429,30 @@ assert_equal 'ok', %q{
   raise "ok"
 }
 
+assert_equal 'ok', %q{
+  lambda do
+    class A
+      class B
+        proc{return :ng}.call
+      end
+    end
+  end.call
+  :ok
+}
+
+assert_equal 'ok', %q{
+  $proc = proc{return}
+  begin
+    lambda do
+      class A
+        class B
+          $proc.call
+        end
+      end
+    end.call
+    :ng
+  rescue LocalJumpError
+    :ok
+  end
+}
+

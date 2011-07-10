@@ -1,3 +1,11 @@
+Sun Jul 10 16:57:08 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_throw): check a class frame.
+	  Fixes Bug #4648.
+	  The patch is contributed by Kazuki Tsujimoto.
+
+	* bootstraptest/test_proc.rb: add tests for above.
+
 Sun Jul 10 17:28:01 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (mutex_debug): use exit(EXIT_FAILURE) instad of
