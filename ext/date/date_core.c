@@ -308,10 +308,21 @@ union DateData {
     Data_Get_Struct(x, union DateData, adat);\
     Data_Get_Struct(y, union DateData, bdat);
 
+inline static VALUE
+canon(VALUE x)
+{
+    if (TYPE(x) == T_RATIONAL) {
+	VALUE den = RRATIONAL(x)->den;
+	if (FIXNUM_P(den) && FIX2LONG(den) == 1)
+	    return RRATIONAL(x)->num;
+    }
+    return x;
+}
+
 #ifndef USE_PACK
 #define set_to_simple(x, _nth, _jd ,_sg, _year, _mon, _mday, _flags) \
 {\
-    (x)->nth = _nth;\
+    (x)->nth = canon(_nth);\
     (x)->jd = _jd;\
     (x)->sg = (sg_cast)(_sg);\
     (x)->year = _year;\
@@ -322,7 +333,7 @@ union DateData {
 #else
 #define set_to_simple(x, _nth, _jd ,_sg, _year, _mon, _mday, _flags) \
 {\
-    (x)->nth = _nth;\
+    (x)->nth = canon(_nth);\
     (x)->jd = _jd;\
     (x)->sg = (sg_cast)(_sg);\
     (x)->year = _year;\
@@ -335,10 +346,10 @@ union DateData {
 #define set_to_complex(x, _nth, _jd ,_df, _sf, _of, _sg,\
 _year, _mon, _mday, _hour, _min, _sec, _flags) \
 {\
-    (x)->nth = _nth;\
+    (x)->nth = canon(_nth);\
     (x)->jd = _jd;\
     (x)->df = _df;\
-    (x)->sf = _sf;\
+    (x)->sf = canon(_sf);\
     (x)->of = _of;\
     (x)->sg = (sg_cast)(_sg);\
     (x)->year = _year;\
@@ -353,10 +364,10 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
 #define set_to_complex(x, _nth, _jd ,_df, _sf, _of, _sg,\
 _year, _mon, _mday, _hour, _min, _sec, _flags) \
 {\
-    (x)->nth = _nth;\
+    (x)->nth = canon(_nth);\
     (x)->jd = _jd;\
     (x)->df = _df;\
-    (x)->sf = _sf;\
+    (x)->sf = canon(_sf);\
     (x)->of = _of;\
     (x)->sg = (sg_cast)(_sg);\
     (x)->year = _year;\
