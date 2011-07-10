@@ -1,3 +1,11 @@
+Sun Jul 10 17:28:01 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (mutex_debug): use exit(EXIT_FAILURE) instad of
+	  exit(1).
+	* thread_pthread.c (add_signal_thread_list): ditto.
+	* thread.c (rb_thread_call_with_gvl): ditto.
+	* util.c (Bug): ditto.
+
 Sun Jul 10 15:58:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json: Merge json gem 1.5.4+ (f7f78896607b6f6226cd).

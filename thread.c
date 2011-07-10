@@ -1210,7 +1210,7 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
 	 */
 
 	fprintf(stderr, "[BUG] rb_thread_call_with_gvl() is called by non-ruby thread\n");
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 
     brb = (struct rb_blocking_region_buffer *)th->blocking_region_buffer;

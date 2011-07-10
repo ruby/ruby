@@ -170,9 +170,9 @@ mutex_debug(const char *msg, pthread_mutex_t *lock)
 	int r;
 	static pthread_mutex_t dbglock = PTHREAD_MUTEX_INITIALIZER;
 
-	if ((r = pthread_mutex_lock(&dbglock)) != 0) {exit(1);}
+	if ((r = pthread_mutex_lock(&dbglock)) != 0) {exit(EXIT_FAILURE);}
 	fprintf(stdout, "%s: %p\n", msg, (void *)lock);
-	if ((r = pthread_mutex_unlock(&dbglock)) != 0) {exit(1);}
+	if ((r = pthread_mutex_unlock(&dbglock)) != 0) {exit(EXIT_FAILURE);}
     }
 }
 
@@ -946,7 +946,7 @@ add_signal_thread_list(rb_thread_t *th)
 
 	    if (list == 0) {
 		fprintf(stderr, "[FATAL] failed to allocate memory\n");
-		exit(1);
+		exit(EXIT_FAILURE);
 	    }
 
 	    list->th = th;
