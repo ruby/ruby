@@ -1,3 +1,8 @@
+Sun Jul 10 15:09:17 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit/assertions.rb: Import documentation patch by Justin
+	  Collins. [ruby-core:37225] [Feature #4903]
+
 Sun Jul 10 14:57:36 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: canonicalizes nth and sf.
