@@ -126,6 +126,8 @@ module Test
     module GlobOption
       include Options
 
+      @@testfile_prefix = "test"
+
       def setup_options(parser, options)
         super
         parser.on '-b', '--basedir=DIR', 'Base directory of test suites.' do |dir|
@@ -150,7 +152,7 @@ module Test
               next if f.empty?
               path = f
             end
-            if !(match = Dir["#{path}/**/test_*.rb"]).empty?
+            if !(match = Dir["#{path}/**/#{@@testfile_prefix}_*.rb"]).empty?
               if reject
                 match.reject! {|n|
                   n[(prefix.length+1)..-1] if prefix

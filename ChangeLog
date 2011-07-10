@@ -1,3 +1,35 @@
+Sun Jul 10 20:59:38 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb: Add new class variable `@@testfile_prefix`.
+	  This is for changing test name prefix. (For testing)
+
+	* test/testunit/tests_for_parallel/ptest_first.rb: Renamed from
+	  test_first.rb
+
+	* test/testunit/tests_for_parallel/ptest_second.rb: Renamed from
+	  test_second.rb
+
+	* test/testunit/tests_for_parallel/ptest_third.rb: Renamed from
+	  test_third.rb
+
+	* test/testunit/tests_for_parallel/ptest_forth.rb: Renamed from
+	  test_forth.rb
+
+	* test/testunit/tests_for_parallel/runner.rb: Remove misc.rb
+
+	* test/testunit/tests_for_parallel/ptest_first.rb: ditto.
+
+	* test/testunit/tests_for_parallel/ptest_second.rb: ditto.
+
+	* test/testunit/tests_for_parallel/ptest_third.rb: ditto.
+
+	* test/testunit/tests_for_parallel/ptest_forth.rb: ditto.
+
+	* test/testunit/tests_for_parallel/misc.rb: Removed because no longer
+	  needed.
+
+	* test/testunit/test_parallel.rb: Fix assertions for above.
+
 Sun Jul 10 16:57:08 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_throw): check a class frame.
