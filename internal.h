@@ -164,7 +164,6 @@ struct timeval rb_time_timeval(VALUE);
 VALUE rb_obj_is_mutex(VALUE obj);
 VALUE ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always);
 void rb_thread_execute_interrupts(VALUE th);
-void *rb_thread_call_with_gvl(void *(*func)(void *), void *data1);
 void rb_clear_trace_func(void);
 VALUE rb_thread_backtrace(VALUE thval);
 VALUE rb_get_coverages(void);
@@ -199,8 +198,16 @@ void Init_prelude(void);
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)
 #endif
-VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
 const char *rb_objspace_data_type_name(VALUE obj);
+
+/* experimental.  these APIs can be changed. */
+VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
+
+void *rb_thread_call_with_gvl(void *(*func)(void *), void *data1);
+VALUE rb_thread_call_without_gvl(
+    rb_blocking_function_t *func, void *data1,
+    rb_unblock_function_t *ubf, void *data2);
+
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
 #endif

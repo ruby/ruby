@@ -1,3 +1,8 @@
+Sun Jul 10 14:13:50 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* internal.h (rb_thread_call_with_gvl, rb_thread_call_without_gvl):
+	  make them visible as experimental C APIs.  fixes Feature #4328.
+
 Sun Jul 10 12:18:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_power): support non-integral
