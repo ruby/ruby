@@ -1,3 +1,7 @@
+Sun Jul 10 23:30:52 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* version.h (RUBY_VERSION): ruby_1_9_3 branch was forked.
+
 Sun Jul 10 22:50:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (rmpd_power_by_big_decimal): fix

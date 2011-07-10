@@ -1,4 +1,4 @@
-#define RUBY_VERSION "1.9.3"
+#define RUBY_VERSION "1.9.4"
 #define RUBY_RELEASE_DATE "2011-07-10"
 #define RUBY_PATCHLEVEL -1
 #define RUBY_BRANCH_NAME "trunk"
