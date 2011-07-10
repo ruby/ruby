@@ -102,6 +102,8 @@ with all sufficient information, see the ChangeLog file.
       the platform don't support supplementary groups concept.
 
 * bigdecimal
+  * BigDecimal#power and BigDecimal#** support non-integral exponent.
+
   * Kernel.BigDecimal and BigDecimal.new now accept instances of Integer,
     Rational, and Float.  If you pass a Rational or a Float to them, you must
     specify the precision to produce the digits of a BigDecimal.
