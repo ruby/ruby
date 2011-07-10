@@ -1,3 +1,11 @@
+Sun Jul 10 23:24:29 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* class.c (rb_mix_module): reverted r31873.
+	  (check_mix_method_i, do_mix_method_i) reverted r31917.
+
+	* test/ruby/test_module.rb (TestModule#test_mix_const): reverted
+	  r31918.
+
 Sun Jul 10 22:50:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (rmpd_power_by_big_decimal): fix
@@ -2577,11 +2585,6 @@ Sat Jun  4 16:59:26 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (d_lite_inspect): changed the format.
 	* ext/date/date_core.c: refactoring and fixing some bugs.
-
-Sat Jun  4 11:30:57 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* class.c (check_mix_method_i, do_mix_method_i): not mix methods
-	  renamed as nil.
 
 Sat Jun  4 04:04:41 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
