@@ -518,6 +518,7 @@ get_stack(void **addr, size_t *size)
 				   &reg, &regsiz));
     *addr = thinfo.__pi_stackaddr;
     *size = thinfo.__pi_stacksize;
+    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
 #else
 #error STACKADDR_AVAILABLE is defined but not implemented.
 #endif

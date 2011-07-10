@@ -1,3 +1,8 @@
+Mon Jul 11 05:38:05 2011  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* thread_pthread.c (get_stack): need to adjust stack addr for
+	  [Bug #1813] on AIX.
+
 Mon Jul 11 01:16:27 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (rb_thread_create_timer_thread): removed
