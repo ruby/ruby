@@ -1,3 +1,28 @@
+Sun Jul 10 12:18:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_power): support non-integral
+	  exponent.  fixes [Bug #3271]
+
+	* ext/bigdecimal/bigdecimal.c (rmpd_power_by_big_decimal): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_power_op): add a function to
+	  only use for "**" operator.
+
+	* test/bigdecimal/test_bigdecimal.rb: add a bunch of tests for the
+	  above changes.
+
+	* ext/bigdecimal/bigdecimal.c (is_integer): add an utility function.
+
+	* ext/bigdecimal/bigdecimal.c (is_negative): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (is_positive): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (is_zero): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (is_one): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (is_even): ditto.
+
 Sun Jul 10 12:08:39 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (when_vals): when a string literal is written on when

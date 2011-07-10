@@ -52,6 +52,7 @@ static ID id_ceiling;
 static ID id_ceil;
 static ID id_floor;
 static ID id_to_r;
+static ID id_eq;
 
 /* MACRO's to guard objects from GC by keeping them in stack */
 #define ENTER(n) volatile VALUE vStack[n];int iStack=0
@@ -1834,28 +1835,331 @@ BigDecimal_inspect(VALUE self)
     return obj;
 }
 
+static VALUE BigMath_s_exp(VALUE, VALUE, VALUE);
+static VALUE BigMath_s_log(VALUE, VALUE, VALUE);
+
+#define BigMath_exp(x, n) BigMath_s_exp(rb_mBigMath, (x), (n))
+#define BigMath_log(x, n) BigMath_s_log(rb_mBigMath, (x), (n))
+
+inline static int
+is_integer(VALUE x)
+{
+    return (TYPE(x) == T_FIXNUM || TYPE(x) == T_BIGNUM);
+}
+
+inline static int
+is_negative(VALUE x)
+{
+    if (FIXNUM_P(x)) {
+	return FIX2LONG(x) < 0;
+    }
+    else if (TYPE(x) == T_BIGNUM) {
+	return RBIGNUM_NEGATIVE_P(x);
+    }
+    else if (TYPE(x) == T_FLOAT) {
+	return RFLOAT_VALUE(x) < 0.0;
+    }
+    return RTEST(rb_funcall(x, '<', 1, INT2FIX(0)));
+}
+
+#define is_positive(x) (!is_negative(x))
+
+inline static int
+is_zero(VALUE x)
+{
+    VALUE num;
+
+    switch (TYPE(x)) {
+      case T_FIXNUM:
+	return FIX2LONG(x) == 0;
+
+      case T_BIGNUM:
+	return Qfalse;
+
+      case T_RATIONAL:
+	num = RRATIONAL(x)->num;
+	return FIXNUM_P(num) && FIX2LONG(num) == 0;
+
+      default:
+	break;
+    }
+
+    return RTEST(rb_funcall(x, id_eq, 1, INT2FIX(0)));
+}
+
+inline static int
+is_one(VALUE x)
+{
+    VALUE num, den;
+
+    switch (TYPE(x)) {
+      case T_FIXNUM:
+	return FIX2LONG(x) == 1;
+
+      case T_BIGNUM:
+	return Qfalse;
+
+      case T_RATIONAL:
+	num = RRATIONAL(x)->num;
+	den = RRATIONAL(x)->den;
+	return FIXNUM_P(den) && FIX2LONG(den) == 1 &&
+	       FIXNUM_P(num) && FIX2LONG(num) == 1;
+
+      default:
+	break;
+    }
+
+    return RTEST(rb_funcall(x, id_eq, 1, INT2FIX(1)));
+}
+
+inline static int
+is_even(VALUE x)
+{
+    switch (TYPE(x)) {
+      case T_FIXNUM:
+	return (FIX2LONG(x) % 2) == 0;
+
+      case T_BIGNUM:
+	return (RBIGNUM_DIGITS(x)[0] % 2) == 0;
+
+      default:
+	break;
+    }
+
+    return 0;
+}
+
+static VALUE
+rmpd_power_by_big_decimal(Real const* x, Real const* exp, ssize_t const n)
+{
+    VALUE log_x, multiplied, y;
+
+    if (VpIsZero(exp)) {
+	return ToValue(VpCreateRbObject(n, "1"));
+    }
+
+    log_x = BigMath_log(x->obj, n);
+    multiplied = BigDecimal_mult2(exp->obj, log_x, SSIZET2NUM(n));
+    y = BigMath_exp(multiplied, n);
+
+    return y;
+}
+
 /* call-seq:
  * power(n)
+ * power(n, prec)
  *
  * Returns the value raised to the power of n. Note that n must be an Integer.
  *
  * Also available as the operator **
  */
 static VALUE
-BigDecimal_power(VALUE self, VALUE p)
+BigDecimal_power(VALUE self, VALUE vexp, VALUE prec)
 {
     ENTER(5);
+    Real* exp = NULL;
     Real *x, *y;
-    ssize_t mp, ma;
-    SIGNED_VALUE n;
+    ssize_t mp, ma, n;
+    SIGNED_VALUE int_exp;
+    double d;
 
-    Check_Type(p, T_FIXNUM);
-    n = FIX2INT(p);
-    ma = n;
+    GUARD_OBJ(x, GetVpValue(self, 1));
+    n = NIL_P(prec) ? (ssize_t)(x->Prec*VpBaseFig()) : NUM2SSIZET(prec);
+
+    if (VpIsNaN(x)) {
+	y = VpCreateRbObject(n, "0#");
+	RB_GC_GUARD(y->obj);
+	VpSetNaN(y);
+	return ToValue(y);
+    }
+
+retry:
+    switch (TYPE(vexp)) {
+      case T_FIXNUM:
+	break;
+
+      case T_BIGNUM:
+	break;
+
+      case T_FLOAT:
+	d = RFLOAT_VALUE(vexp);
+	if (d == round(d)) {
+	    vexp = LL2NUM((LONG_LONG)round(d));
+	    goto retry;
+	}
+	exp = GetVpValueWithPrec(vexp, DBL_DIG+1, 1);
+	break;
+
+      case T_RATIONAL:
+	if (is_zero(RRATIONAL(vexp)->num)) {
+	    if (is_positive(vexp)) {
+		vexp = INT2FIX(0);
+		goto retry;
+	    }
+	}
+	else if (is_one(RRATIONAL(vexp)->den)) {
+	    vexp = RRATIONAL(vexp)->num;
+	    goto retry;
+	}
+	exp = GetVpValueWithPrec(vexp, n, 1);
+	break;
+
+      case T_DATA:
+	if (is_kind_of_BigDecimal(vexp)) {
+	    VALUE zero = INT2FIX(0);
+	    VALUE rounded = BigDecimal_round(1, &zero, vexp);
+	    if (RTEST(BigDecimal_eq(vexp, rounded))) {
+		vexp = BigDecimal_to_i(vexp);
+		goto retry;
+	    }
+	    exp = DATA_PTR(vexp);
+	    break;
+	}
+	/* fall through */
+      default:
+	rb_raise(rb_eTypeError,
+		 "wrong argument type %s (expected scalar Numeric)",
+		 rb_obj_classname(vexp));
+    }
+
+    if (VpIsZero(x)) {
+	if (is_negative(vexp)) {
+	    y = VpCreateRbObject(n, "#0");
+	    RB_GC_GUARD(y->obj);
+	    if (VpGetSign(x) < 0) {
+		if (is_integer(vexp)) {
+		    if (is_even(vexp)) {
+			/* (-0) ** (-even_integer)  -> Infinity */
+			VpSetPosInf(y);
+		    }
+		    else {
+			/* (-0) ** (-odd_integer)  -> -Infinity */
+			VpSetNegInf(y);
+		    }
+		}
+		else {
+		    /* (-0) ** (-non_integer)  -> Infinity */
+		    VpSetPosInf(y);
+		}
+	    }
+	    else {
+		/* (+0) ** (-num)  -> Infinity */
+		VpSetPosInf(y);
+	    }
+	    return ToValue(y);
+	}
+	else if (is_zero(vexp)) {
+	    return ToValue(VpCreateRbObject(n, "1"));
+	}
+	else {
+	    return ToValue(VpCreateRbObject(n, "0"));
+	}
+    }
+
+    if (is_zero(vexp)) {
+	return ToValue(VpCreateRbObject(n, "1"));
+    }
+    else if (is_one(vexp)) {
+	return self;
+    }
+
+    if (VpIsInf(x)) {
+	if (is_negative(vexp)) {
+	    if (VpGetSign(x) < 0) {
+		if (is_integer(vexp)) {
+		    if (is_even(vexp)) {
+			/* (-Infinity) ** (-even_integer) -> +0 */
+			return ToValue(VpCreateRbObject(n, "0"));
+		    }
+		    else {
+			/* (-Infinity) ** (-odd_integer) -> -0 */
+			return ToValue(VpCreateRbObject(n, "-0"));
+		    }
+		}
+		else {
+		    /* (-Infinity) ** (-non_integer) -> -0 */
+		    return ToValue(VpCreateRbObject(n, "-0"));
+		}
+	    }
+	    else {
+		return ToValue(VpCreateRbObject(n, "0"));
+	    }
+	}
+	else {
+	    y = VpCreateRbObject(n, "0#");
+	    if (VpGetSign(x) < 0) {
+		if (is_integer(vexp)) {
+		    if (is_even(vexp)) {
+			VpSetPosInf(y);
+		    }
+		    else {
+			VpSetNegInf(y);
+		    }
+		}
+		else {
+		    /* TODO: support complex */
+		    rb_raise(rb_eMathDomainError,
+			     "a non-integral exponent for a negative base");
+		}
+	    }
+	    else {
+		VpSetPosInf(y);
+	    }
+	    return ToValue(y);
+	}
+    }
+
+    if (exp != NULL) {
+	return rmpd_power_by_big_decimal(x, exp, n);
+    }
+    else if (TYPE(vexp) == T_BIGNUM) {
+	VALUE abs_value = BigDecimal_abs(self);
+	if (is_one(abs_value)) {
+	    return ToValue(VpCreateRbObject(n, "1"));
+	}
+	else if (RTEST(rb_funcall(abs_value, '<', 1, INT2FIX(1)))) {
+	    if (is_negative(vexp)) {
+		y = VpCreateRbObject(n, "0#");
+		if (is_even(vexp)) {
+		    VpSetInf(y, VpGetSign(x));
+		}
+		else {
+		    VpSetInf(y, -VpGetSign(x));
+		}
+		return ToValue(y);
+	    }
+	    else if (VpGetSign(x) < 0 && is_even(vexp)) {
+		return ToValue(VpCreateRbObject(n, "-0"));
+	    }
+	    else {
+		return ToValue(VpCreateRbObject(n, "0"));
+	    }
+	}
+	else {
+	    if (is_positive(vexp)) {
+		y = VpCreateRbObject(n, "0#");
+		if (is_even(vexp)) {
+		    VpSetInf(y, VpGetSign(x));
+		}
+		else {
+		    VpSetInf(y, -VpGetSign(x));
+		}
+		return ToValue(y);
+	    }
+	    else if (VpGetSign(x) < 0 && is_even(vexp)) {
+		return ToValue(VpCreateRbObject(n, "-0"));
+	    }
+	    else {
+		return ToValue(VpCreateRbObject(n, "0"));
+	    }
+	}
+    }
+
+    int_exp = FIX2INT(vexp);
+    ma = int_exp;
     if (ma < 0)  ma = -ma;
     if (ma == 0) ma = 1;
 
-    GUARD_OBJ(x, GetVpValue(self, 1));
     if (VpIsDef(x)) {
         mp = x->Prec * (VpBaseFig() + 1);
         GUARD_OBJ(y, VpCreateRbObject(mp * (ma + 1), "0"));
@@ -1863,8 +2167,19 @@ BigDecimal_power(VALUE self, VALUE p)
     else {
         GUARD_OBJ(y, VpCreateRbObject(1, "0"));
     }
-    VpPower(y, x, n);
+    VpPower(y, x, int_exp);
     return ToValue(y);
+}
+
+/* call-seq:
+ *   big_decimal ** exp  -> big_decimal
+ *
+ * It is a synonym of big_decimal.power(exp).
+ */
+static VALUE
+BigDecimal_power_op(VALUE self, VALUE exp)
+{
+    return BigDecimal_power(self, exp, Qnil);
 }
 
 /* call-seq:
@@ -2595,8 +2910,8 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "frac", BigDecimal_frac, 0);
     rb_define_method(rb_cBigDecimal, "floor", BigDecimal_floor, -1);
     rb_define_method(rb_cBigDecimal, "ceil", BigDecimal_ceil, -1);
-    rb_define_method(rb_cBigDecimal, "power", BigDecimal_power, 1);
-    rb_define_method(rb_cBigDecimal, "**", BigDecimal_power, 1);
+    rb_define_method(rb_cBigDecimal, "power", BigDecimal_power, 2);
+    rb_define_method(rb_cBigDecimal, "**", BigDecimal_power_op, 1);
     rb_define_method(rb_cBigDecimal, "<=>", BigDecimal_comp, 1);
     rb_define_method(rb_cBigDecimal, "==", BigDecimal_eq, 1);
     rb_define_method(rb_cBigDecimal, "===", BigDecimal_eq, 1);
@@ -2638,6 +2953,7 @@ Init_bigdecimal(void)
     id_ceil = rb_intern_const("ceil");
     id_floor = rb_intern_const("floor");
     id_to_r = rb_intern_const("to_r");
+    id_eq = rb_intern_const("==");
 }
 
 /*
@@ -3963,7 +4279,7 @@ VpDivd(Real *c, Real *r, Real *a, Real *b)
         VpAsgn(c, a, VpGetSign(b));
         VpSetZero(r,VpGetSign(a));
         goto Exit;
-    }
+    } 
 
     word_a = a->Prec;
     word_b = b->Prec;
