@@ -1,3 +1,9 @@
+Sun Jul 10 22:38:09 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (var_ref): distinguish vcall from local variable
+	  references.  based on a patch by Michael Edgar michael.j.edgar
+	  AT dartmouth.edu.  Bug #5002
+
 Sun Jul 10 21:51:29 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* internal.h: add comments (cautions).
