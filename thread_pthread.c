@@ -1159,8 +1159,6 @@ thread_timer(void *p)
 static void
 rb_thread_create_timer_thread(void)
 {
-    rb_enable_interrupt();
-
     if (!timer_thread_id) {
 	pthread_attr_t attr;
 	int err;
@@ -1223,8 +1221,6 @@ rb_thread_create_timer_thread(void)
 	    exit(EXIT_FAILURE);
 	}
     }
-
-    rb_disable_interrupt(); /* only timer thread recieve signal */
 }
 
 static int

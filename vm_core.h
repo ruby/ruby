@@ -634,8 +634,6 @@ void rb_vm_bugreport(void);
 #endif
 VALUE rb_iseq_eval(VALUE iseqval);
 VALUE rb_iseq_eval_main(VALUE iseqval);
-void rb_enable_interrupt(void);
-void rb_disable_interrupt(void);
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
 #endif

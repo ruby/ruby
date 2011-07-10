@@ -430,8 +430,6 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
 	JUMP_TAG(TAG_FATAL);
     }
 
-    rb_trap_restore_mask();
-
     if (tag != TAG_FATAL) {
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->cfp->self, 0, 0);
     }

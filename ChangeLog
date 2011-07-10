@@ -1,3 +1,27 @@
+Mon Jul 11 01:16:27 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (rb_thread_create_timer_thread): removed
+	  rb_disable_interrupt()/rb_enable_interrupt().
+	* vm_core.h: ditto.
+	* process.c (static void before_exec): ditto.
+	* process.c (static void after_exec): ditto.
+	  [Bug #4765] [ruby-dev:43571]
+
+	* eval_intern.h: removed rb_trap_restore_mask().
+	* vm_eval.c (rb_throw_obj): ditto.
+	* eval.c (setup_exception): ditto.
+
+	* signal.c: removed trap_last_mask.
+	* signal.c (trap_restore_mask): removed.
+	* signal.c (init_sigchld): comment clarification why signal block
+	  is needed. and removed trap_last_mask operation.
+	* signal.c (trap_ensure): removed trap_last_mask operation.
+
+	* signal.c (rb_disable_interrupt, rb_enable_interrupt): made
+	  static and removed sigdelset(SIGVTALARM) and sigdelset(SIGSEGV).
+
+	* process.c (rb_syswait): removed implicit signal handler change.
+
 Sun Jul 10 23:49:12 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* docs/NEWS-1.9.3: moved from NEWS.

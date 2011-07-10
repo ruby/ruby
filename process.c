@@ -992,12 +992,6 @@ static RETSIGTYPE sig_do_nothing(int sig)
 
 static void before_exec(void)
 {
-    /*
-     * signalmask is inherited across exec() and almost system commands don't
-     * work if signalmask is blocked.
-     */
-    rb_enable_interrupt();
-
 #ifdef SIGPIPE
     /*
      * Some OS commands don't initialize signal handler properly. Thus we have
@@ -1028,7 +1022,6 @@ static void after_exec(void)
 #endif
 
     forked_child = 0;
-    rb_disable_interrupt();
 }
 
 #define before_fork() before_exec()
@@ -2947,43 +2940,9 @@ rb_f_abort(int argc, VALUE *argv)
 void
 rb_syswait(rb_pid_t pid)
 {
-    static int overriding;
-#ifdef SIGHUP
-    RETSIGTYPE (*hfunc)(int) = 0;
-#endif
-#ifdef SIGQUIT
-    RETSIGTYPE (*qfunc)(int) = 0;
-#endif
-    RETSIGTYPE (*ifunc)(int) = 0;
     int status;
-    int i, hooked = FALSE;
 
-    if (!overriding) {
-#ifdef SIGHUP
-	hfunc = signal(SIGHUP, SIG_IGN);
-#endif
-#ifdef SIGQUIT
-	qfunc = signal(SIGQUIT, SIG_IGN);
-#endif
-	ifunc = signal(SIGINT, SIG_IGN);
-	overriding = TRUE;
-	hooked = TRUE;
-    }
-
-    do {
-	i = rb_waitpid(pid, &status, 0);
-    } while (i == -1 && errno == EINTR);
-
-    if (hooked) {
-#ifdef SIGHUP
-	signal(SIGHUP, hfunc);
-#endif
-#ifdef SIGQUIT
-	signal(SIGQUIT, qfunc);
-#endif
-	signal(SIGINT, ifunc);
-	overriding = FALSE;
-    }
+    rb_waitpid(pid, &status, 0);
 }
 
 static VALUE

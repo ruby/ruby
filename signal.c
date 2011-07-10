@@ -519,27 +519,21 @@ rb_signal_buff_size(void)
     return signal_buff.size;
 }
 
-#if USE_TRAP_MASK
-static sigset_t trap_last_mask;
-#endif
-
 #if HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
 
-void
+static void
 rb_disable_interrupt(void)
 {
 #if USE_TRAP_MASK
     sigset_t mask;
     sigfillset(&mask);
-    sigdelset(&mask, SIGVTALRM);
-    sigdelset(&mask, SIGSEGV);
     pthread_sigmask(SIG_SETMASK, &mask, NULL);
 #endif
 }
 
-void
+static void
 rb_enable_interrupt(void)
 {
 #if USE_TRAP_MASK
@@ -872,18 +866,9 @@ trap_ensure(struct trap_arg *arg)
 {
     /* enable interrupt */
     pthread_sigmask(SIG_SETMASK, &arg->mask, NULL);
-    trap_last_mask = arg->mask;
     return 0;
 }
 #endif
-
-void
-rb_trap_restore_mask(void)
-{
-#if USE_TRAP_MASK
-    pthread_sigmask(SIG_SETMASK, &trap_last_mask, NULL);
-#endif
-}
 
 /*
  * call-seq:
@@ -995,7 +980,12 @@ init_sigchld(int sig)
     sigset_t mask;
     sigset_t fullmask;
 
-    /* disable interrupt */
+    /*
+     * disable interrupt. Otherwise following temmporal signal handler change
+     * has a race.
+     * Note: now we have only single thread, therefore both sigprocmask() and
+     * pthread_sigmask() makes the same effect.
+     */
     sigfillset(&fullmask);
     pthread_sigmask(SIG_BLOCK, &fullmask, &mask);
 #endif
@@ -1010,7 +1000,6 @@ init_sigchld(int sig)
 #if USE_TRAP_MASK
     sigdelset(&mask, sig);
     pthread_sigmask(SIG_SETMASK, &mask, NULL);
-    trap_last_mask = mask;
 #endif
 }
 #endif
