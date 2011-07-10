@@ -1475,7 +1475,7 @@ rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
 {
     VALUE options = e->options;
     ID id;
-#ifdef RLIM2NUM
+#if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
     int rtype;
 #endif
 
