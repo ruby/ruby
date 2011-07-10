@@ -2,6 +2,7 @@ Sun Jul 10 16:06:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (sigsegv): use abort() instead of exit() when nested
 	  SEGV was happen. Because unnested SEGV use abort().
+	  [Bug #5013][ruby-dev:44078]
 
 Sun Jul 10 15:30:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
