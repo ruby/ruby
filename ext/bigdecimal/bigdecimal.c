@@ -1932,15 +1932,15 @@ is_even(VALUE x)
 static VALUE
 rmpd_power_by_big_decimal(Real const* x, Real const* exp, ssize_t const n)
 {
-    VALUE log_x, multiplied, y;
+    VALUE log_x, multiplied, y, vn;
 
     if (VpIsZero(exp)) {
 	return ToValue(VpCreateRbObject(n, "1"));
     }
 
-    log_x = BigMath_log(x->obj, n);
-    multiplied = BigDecimal_mult2(exp->obj, log_x, SSIZET2NUM(n));
-    y = BigMath_exp(multiplied, n);
+    log_x = BigMath_log(x->obj, SSIZET2NUM(n+1));
+    multiplied = BigDecimal_mult2(exp->obj, log_x, SSIZET2NUM(n+1));
+    y = BigMath_exp(multiplied, SSIZET2NUM(n));
 
     return y;
 }
@@ -1954,14 +1954,17 @@ rmpd_power_by_big_decimal(Real const* x, Real const* exp, ssize_t const n)
  * Also available as the operator **
  */
 static VALUE
-BigDecimal_power(VALUE self, VALUE vexp, VALUE prec)
+BigDecimal_power(int argc, VALUE*argv, VALUE self)
 {
     ENTER(5);
+    VALUE vexp, prec;
     Real* exp = NULL;
     Real *x, *y;
     ssize_t mp, ma, n;
     SIGNED_VALUE int_exp;
     double d;
+
+    rb_scan_args(argc, argv, "11", &vexp, &prec);
 
     GUARD_OBJ(x, GetVpValue(self, 1));
     n = NIL_P(prec) ? (ssize_t)(x->Prec*VpBaseFig()) : NUM2SSIZET(prec);
@@ -2179,7 +2182,7 @@ retry:
 static VALUE
 BigDecimal_power_op(VALUE self, VALUE exp)
 {
-    return BigDecimal_power(self, exp, Qnil);
+    return BigDecimal_power(1, &exp, self);
 }
 
 /* call-seq:
@@ -2910,7 +2913,7 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "frac", BigDecimal_frac, 0);
     rb_define_method(rb_cBigDecimal, "floor", BigDecimal_floor, -1);
     rb_define_method(rb_cBigDecimal, "ceil", BigDecimal_ceil, -1);
-    rb_define_method(rb_cBigDecimal, "power", BigDecimal_power, 2);
+    rb_define_method(rb_cBigDecimal, "power", BigDecimal_power, -1);
     rb_define_method(rb_cBigDecimal, "**", BigDecimal_power_op, 1);
     rb_define_method(rb_cBigDecimal, "<=>", BigDecimal_comp, 1);
     rb_define_method(rb_cBigDecimal, "==", BigDecimal_eq, 1);

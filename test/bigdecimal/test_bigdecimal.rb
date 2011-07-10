@@ -964,6 +964,20 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   end
 
+  def test_power_without_prec
+    pi  = BigDecimal("3.14159265358979323846264338327950288419716939937511")
+    e   = BigDecimal("2.71828182845904523536028747135266249775724709369996")
+    pow = BigDecimal("22.4591577183610454734271522045437350275893151339967843873233068")
+    assert_equal(pow, pi.power(e))
+  end
+
+  def test_power_with_prec
+    pi  = BigDecimal("3.14159265358979323846264338327950288419716939937511")
+    e   = BigDecimal("2.71828182845904523536028747135266249775724709369996")
+    pow = BigDecimal("22.459157718361045473")
+    assert_equal(pow, pi.power(e, 20))
+  end
+
   def test_limit
     BigDecimal.limit(1)
     x = BigDecimal.new("3")
