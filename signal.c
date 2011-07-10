@@ -607,7 +607,7 @@ sigsegv(int sig SIGINFO_ARG)
 #endif
     if (segv_received) {
 	fprintf(stderr, "SEGV received in SEGV handler\n");
-	exit(EXIT_FAILURE);
+	abort();
     }
     else {
 	extern int ruby_disable_gc_stress;

@@ -1,3 +1,8 @@
+Sun Jul 10 16:06:16 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (sigsegv): use abort() instead of exit() when nested
+	  SEGV was happen. Because unnested SEGV use abort().
+
 Sun Jul 10 15:30:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* load.c (rb_f_autoload): prevent to autoload for singleton
