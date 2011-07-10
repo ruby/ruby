@@ -23,7 +23,7 @@ module JSON
     # Set the JSON parser class _parser_ to be used by JSON.
     def parser=(parser) # :nodoc:
       @parser = parser
-      remove_const :Parser if const_defined? :Parser
+      remove_const :Parser if JSON.const_defined_in?(self, :Parser)
       const_set :Parser, parser
     end
 
@@ -34,8 +34,8 @@ module JSON
     def deep_const_get(path) # :nodoc:
       path.to_s.split(/::/).inject(Object) do |p, c|
         case
-        when c.empty?             then p
-        when p.const_defined?(c)  then p.const_get(c)
+        when c.empty?                     then p
+        when JSON.const_defined_in?(p, c) then p.const_get(c)
         else
           begin
             p.const_missing(c)
@@ -292,6 +292,7 @@ module JSON
     result
   end
 
+  # Recursively calls passed _Proc_ if the parsed data structure is an _Array_ or _Hash_
   def recurse_proc(result, &proc)
     case result
     when Array
@@ -340,15 +341,36 @@ module JSON
     raise ArgumentError, "exceed depth limit"
   end
 
+  # Swap consecutive bytes of _string_ in place.
+  def self.swap!(string) # :nodoc:
+    0.upto(string.size / 2) do |i|
+      break unless string[2 * i + 1]
+      string[2 * i], string[2 * i + 1] = string[2 * i + 1], string[2 * i]
+    end
+    string
+  end
+
   # Shortuct for iconv.
-  if String.method_defined?(:encode)
+  if ::String.method_defined?(:encode)
+    # Encodes string using Ruby's _String.encode_
     def self.iconv(to, from, string)
       string.encode(to, from)
     end
   else
     require 'iconv'
+    # Encodes string using _iconv_ library
     def self.iconv(to, from, string)
       Iconv.conv(to, from, string)
+    end
+  end
+
+  if ::Object.method(:const_defined?).arity == 1
+    def self.const_defined_in?(modul, constant)
+      modul.const_defined?(constant)
+    end
+  else
+    def self.const_defined_in?(modul, constant)
+      modul.const_defined?(constant, false)
     end
   end
 end
@@ -389,6 +411,7 @@ module ::Kernel
   end
 end
 
+# Extends any Class to include _json_creatable?_ method.
 class ::Class
   # Returns true, if this class can be used to create an instance
   # from a serialised JSON string. The class has to implement a class

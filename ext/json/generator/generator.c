@@ -556,6 +556,7 @@ static VALUE mFalseClass_to_json(int argc, VALUE *argv, VALUE self)
 /*
  * call-seq: to_json(*)
  *
+ * Returns a JSON string for nil: 'null'.
  */
 static VALUE mNilClass_to_json(int argc, VALUE *argv, VALUE self)
 {
@@ -1347,6 +1348,7 @@ void Init_generator()
     rb_define_method(cState, "depth", cState_depth, 0);
     rb_define_method(cState, "depth=", cState_depth_set, 1);
     rb_define_method(cState, "configure", cState_configure, 1);
+    rb_define_alias(cState, "merge", "configure");
     rb_define_method(cState, "to_h", cState_to_h, 0);
     rb_define_method(cState, "[]", cState_aref, 1);
     rb_define_method(cState, "generate", cState_generate, 1);

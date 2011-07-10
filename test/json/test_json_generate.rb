@@ -2,11 +2,7 @@
 # -*- coding: utf-8 -*-
 
 require 'test/unit'
-case ENV['JSON']
-when 'pure' then require 'json/pure'
-when 'ext'  then require 'json/ext'
-else             require 'json'
-end
+require File.join(File.dirname(__FILE__), 'setup_variant')
 
 class TC_JSONGenerate < Test::Unit::TestCase
   include JSON
@@ -58,6 +54,7 @@ EOT
 
   def test_generate_pretty
     json = pretty_generate(@hash)
+    # hashes aren't (insertion) ordered on every ruby implementation assert_equal(@json3, json)
     assert_equal(JSON.parse(@json3), JSON.parse(json))
     parsed_json = parse(json)
     assert_equal(@hash, parsed_json)
