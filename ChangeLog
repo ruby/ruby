@@ -1,3 +1,10 @@
+Sun Jul 10 15:30:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* load.c (rb_f_autoload): prevent to autoload for singleton
+	  classes.  fixes [Bug #4886] [ruby-dev:43816]
+
+	* bootstraptest/test_autoload.rb: add tests for the above change.
+
 Sun Jul 10 15:09:17 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit/assertions.rb: Import documentation patch by Justin
