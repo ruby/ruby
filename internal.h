@@ -200,9 +200,14 @@ void Init_prelude(void);
 #endif
 const char *rb_objspace_data_type_name(VALUE obj);
 
-/* experimental.  these APIs can be changed. */
+/* Temporary.  This API will be removed (renamed). */
 VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
 
+/* experimental.
+ * These APIs can be changed on Ruby 1.9.4 or later.
+ * We will change these APIs (spac, name and so on) if there are something wrong.
+ * If you use these APIs, catch up future changes.
+ */
 void *rb_thread_call_with_gvl(void *(*func)(void *), void *data1);
 VALUE rb_thread_call_without_gvl(
     rb_blocking_function_t *func, void *data1,

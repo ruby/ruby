@@ -1,3 +1,7 @@
+Sun Jul 10 21:51:29 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* internal.h: add comments (cautions).
+
 Sun Jul 10 20:59:38 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb: Add new class variable `@@testfile_prefix`.
