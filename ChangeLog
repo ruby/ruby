@@ -1,3 +1,9 @@
+Mon Jul 11 23:50:39 2011  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* time.c: can't compile time.c on AIX due to missing declaration for
+	  ffs(). It is declared in strings.h on AIX. backported r32518 from
+	  trunk.
+
 Mon Jul 11 23:47:00 2011  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* thread_pthread.c (get_stack):  need to adjust stack addr for
