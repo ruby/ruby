@@ -1,7 +1,8 @@
 Mon Jul 11 15:02:24 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (rb_num2ull): use FIX2LONG instead of FIX2ULONG. see
-	  rb_num2ulong().
+	  rb_num2ulong(). fixed the problem of ObjectSpace._id2ref of IL32LLP64
+	  platforms, introduced at r32433.
 
 Mon Jul 11 05:38:05 2011  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
