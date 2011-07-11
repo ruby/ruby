@@ -1981,7 +1981,7 @@ rb_num2ull(VALUE val)
 	rb_raise(rb_eTypeError, "no implicit conversion from nil");
 
       case T_FIXNUM:
-	return (LONG_LONG)FIX2ULONG(val);
+	return (LONG_LONG)FIX2LONG(val); /* this is FIX2LONG, inteneded */
 
       case T_FLOAT:
 	if (RFLOAT_VALUE(val) < ULLONG_MAX_PLUS_ONE
