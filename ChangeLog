@@ -1,3 +1,8 @@
+Mon Jul 11 23:22:28 2011  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* time.c: can't compile time.c on AIX due to missing declaration for
+	  ffs(). It is declared in strings.h on AIX.
+
 Mon Jul 11 15:54:24 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* process.c: removed signal() macro. It's no longer used.
