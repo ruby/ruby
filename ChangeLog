@@ -1,3 +1,7 @@
+Mon Jul 11 15:54:24 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* process.c: removed signal() macro. It's no longer used.
+
 Mon Jul 11 15:02:24 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (rb_num2ull): use FIX2LONG instead of FIX2ULONG. see

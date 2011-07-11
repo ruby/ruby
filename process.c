@@ -980,10 +980,6 @@ static int forked_child = 0;
 static RETSIGTYPE (*saved_sigpipe_handler)(int) = 0;
 #endif
 
-#if defined(POSIX_SIGNAL)
-# define signal(a,b) posix_signal((a),(b))
-#endif
-
 #ifdef SIGPIPE
 static RETSIGTYPE sig_do_nothing(int sig)
 {
