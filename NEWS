@@ -193,6 +193,10 @@ with all sufficient information, see the ChangeLog file.
     * Matrix#** implements Numeric exponents (using the eigensystem)
     * Matrix.zero can build rectangular matrices
 
+* minitest
+  * Minitest has been updated to version 2.2.2.
+  * For full details, see https://github.com/seattlerb/minitest/blob/master/History.txt
+
 * net/http
   * SNI (Server Name Indication) supported for HTTPS.
 
