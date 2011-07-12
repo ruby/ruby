@@ -870,6 +870,45 @@ trap_ensure(struct trap_arg *arg)
 }
 #endif
 
+int reserved_signal_p(int signo)
+{
+/* Synchronous signal can't deliver to main thread */
+#ifdef SIGSEGV
+    if (signo == SIGSEGV)
+	return 1;
+#endif
+#ifdef SIGBUS
+    if (signo == SIGBUS)
+	return 1;
+#endif
+#ifdef SIGILL
+    if (signo == SIGILL)
+	return 1;
+#endif
+#ifdef SIGFPE
+    if (signo == SIGFPE)
+	return 1;
+#endif
+
+/* used ubf internal see thread_pthread.c. */
+#ifdef SIGVTALRM
+    if (signo == SIGVTALRM)
+	return 1;
+#endif
+
+/* On some OSs, wait() never return if SIGCHLD handler is installed. */
+#ifdef SIGCHLD
+    if (signo == SIGCHLD)
+	return 1;
+#endif
+#ifdef SIGCLD
+    if (signo == SIGCLD)
+	return 1;
+#endif
+
+    return 0;
+}
+
 /*
  * call-seq:
  *   Signal.trap( signal, command ) -> obj
@@ -912,6 +951,10 @@ sig_trap(int argc, VALUE *argv)
     }
 
     arg.sig = trap_signm(argv[0]);
+    if (reserved_signal_p(arg.sig)) {
+	rb_raise(rb_eArgError, "can't trap reserved signal");
+    }
+
     if (argc == 1) {
 	arg.cmd = rb_block_proc();
 	arg.func = sighandler;

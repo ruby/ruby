@@ -220,4 +220,29 @@ EOS
     t.close!
     assert_nil(error)
   end
+
+  def test_reserved_signal
+    assert_raise(ArgumentError) {
+      Signal.trap(:SEGV) {}
+    }
+    assert_raise(ArgumentError) {
+      Signal.trap(:BUS) {}
+    }
+    assert_raise(ArgumentError) {
+      Signal.trap(:ILL) {}
+    }
+    assert_raise(ArgumentError) {
+      Signal.trap(:FPE) {}
+    }
+    assert_raise(ArgumentError) {
+      Signal.trap(:VTALRM) {}
+    }
+    assert_raise(ArgumentError) {
+      Signal.trap(:CHLD) {}
+    }
+    assert_raise(ArgumentError) {
+      Signal.trap(:CLD) {}
+    }
+  end
+
 end
