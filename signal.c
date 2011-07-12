@@ -1021,31 +1021,15 @@ static void
 init_sigchld(int sig)
 {
     sighandler_t oldfunc;
-#if USE_TRAP_MASK
-    sigset_t mask;
-    sigset_t fullmask;
 
-    /*
-     * disable interrupt. Otherwise following temmporal signal handler change
-     * has a race.
-     * Note: now we have only single thread, therefore both sigprocmask() and
-     * pthread_sigmask() makes the same effect.
-     */
-    sigfillset(&fullmask);
-    pthread_sigmask(SIG_BLOCK, &fullmask, &mask);
-#endif
-
+    rb_disable_interrupt();
     oldfunc = ruby_signal(sig, SIG_DFL);
     if (oldfunc != SIG_DFL && oldfunc != SIG_IGN) {
 	ruby_signal(sig, oldfunc);
     } else {
 	GET_VM()->trap_list[sig].cmd = 0;
     }
-
-#if USE_TRAP_MASK
-    sigdelset(&mask, sig);
-    pthread_sigmask(SIG_SETMASK, &mask, NULL);
-#endif
+    rb_enable_interrupt();
 }
 #endif
 
