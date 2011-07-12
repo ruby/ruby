@@ -896,16 +896,6 @@ int reserved_signal_p(int signo)
 	return 1;
 #endif
 
-/* On some OSs, wait() never return if SIGCHLD handler is installed. */
-#ifdef SIGCHLD
-    if (signo == SIGCHLD)
-	return 1;
-#endif
-#ifdef SIGCLD
-    if (signo == SIGCLD)
-	return 1;
-#endif
-
     return 0;
 }
 

@@ -1,3 +1,10 @@
+Tue Jul 12 20:02:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (reserved_signal_p): reverted a part of r32523.
+	  chikanaga noticed trap(:CHLD) has some realworld usecase.
+	* test/ruby/test_signal.rb (TestSignal#test_reserved_signal):
+	  ditto.
+
 Tue Jul 12 17:12:45 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* vm_method.c (rb_add_method): should not call method_added hook

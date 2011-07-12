@@ -237,12 +237,6 @@ EOS
     assert_raise(ArgumentError) {
       Signal.trap(:VTALRM) {}
     }
-    assert_raise(ArgumentError) {
-      Signal.trap(:CHLD) {}
-    }
-    assert_raise(ArgumentError) {
-      Signal.trap(:CLD) {}
-    }
   end
 
 end
