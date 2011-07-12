@@ -1,3 +1,8 @@
+Tue Jul 12 16:58:44 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb(Test::Unit::Options#process_args): Fix bug.
+	  Fix process_args didn't return `@option` after r30939.
+
 Tue Jul 12 14:07:46 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (install_sighandler): fixed a race.
