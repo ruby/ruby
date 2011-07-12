@@ -204,6 +204,16 @@ RUBY_SO_NAME = $(RUBY_SO_NAME)
 $(ARCH) = x64
 !elseif "$(PROCESSOR_ARCHITECTURE)" == "IA64"
 $(ARCH) = ia64
+!elseif defined(PROCESSOR_ARCHITEW6432)
+$(BANG)if "$$(TARGET_OS)" == "mswin64"
+!if "$(PROCESSOR_ARCHITECTURE)" == "IA64"
+$(ARCH) = ia64
+!else
+$(ARCH) = x64
+!endif
+$(BANG)else
+$(ARCH) = $(PROCESSOR_ARCHITECTURE)
+$(BANG)endif
 !else
 $(ARCH) = $(PROCESSOR_ARCHITECTURE)
 !endif

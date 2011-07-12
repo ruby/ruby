@@ -1,3 +1,7 @@
+Tue Jul 12 11:58:28 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/setup.mak: support x86-amd64 cross compile environment.
+
 Mon Jul 11 23:22:28 2011  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* time.c: can't compile time.c on AIX due to missing declaration for
