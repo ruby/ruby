@@ -52,11 +52,11 @@ module Test
         non_options(args, options)
         @help = orig_args.map { |s| s =~ /[\s|&<>$()]/ ? s.inspect : s }.join " "
         @options = options
-        @opts = @options = options
         if @options[:parallel]
           @files = args
           @args = orig_args
         end
+        options
       end
 
       private
@@ -319,12 +319,6 @@ module Test
 
       class << self; undef autorun; end
 
-      undef options
-
-      def options
-        @optss ||= (@options||{}).merge(@opts)
-      end
-
       @@stop_auto_run = false
       def self.autorun
         at_exit {
@@ -336,7 +330,7 @@ module Test
       end
 
       def after_worker_down(worker, e=nil, c=false)
-        return unless @opts[:parallel]
+        return unless @options[:parallel]
         return if @interrupt
         if e
           b = e.backtrace
@@ -354,10 +348,10 @@ module Test
       end
 
       def jobs_status
-        return unless @opts[:job_status]
-        puts "" unless @opts[:verbose]
+        return unless @options[:job_status]
+        puts "" unless @options[:verbose]
         status_line = @workers.map(&:to_s).join(" ")
-        if @opts[:job_status] == :replace and $stdout.tty?
+        if @options[:job_status] == :replace and $stdout.tty?
           @terminal_width ||=
             begin
               require 'io/console'
@@ -377,12 +371,12 @@ module Test
       end
 
       def del_jobs_status
-        return unless @opts[:job_status] == :replace && @jstr_size.nonzero?
+        return unless @options[:job_status] == :replace && @jstr_size.nonzero?
         print "\r"+" "*@jstr_size+"\r"
       end
 
       def after_worker_quit(worker)
-        return unless @opts[:parallel]
+        return unless @options[:parallel]
         return if @interrupt
         @workers.delete(worker)
         @dead_workers << worker
@@ -390,7 +384,7 @@ module Test
       end
 
       def _run_parallel suites, type, result
-        if @opts[:parallel] < 1
+        if @options[:parallel] < 1
           warn "Error: parameter of -j option should be greater than 0."
           return
         end
@@ -407,8 +401,8 @@ module Test
           rep = [] # FIXME: more good naming
 
           # Array of workers.
-          @workers = @opts[:parallel].times.map {
-            worker = Worker.launch(@opts[:ruby],@args)
+          @workers = @options[:parallel].times.map {
+            worker = Worker.launch(@options[:ruby],@args)
             worker.hook(:dead) do |w,info|
               after_worker_quit w
               after_worker_down w, *info unless info.empty?
@@ -459,7 +453,7 @@ module Test
               when /^p (.+?)$/
                 del_jobs_status
                 print $1.unpack("m")[0]
-                jobs_status if @opts[:job_status] == :replace
+                jobs_status if @options[:job_status] == :replace
               when /^after (.+?)$/
                 @warnings << Marshal.load($1.unpack("m")[0])
               when /^bye (.+?)$/
@@ -521,7 +515,7 @@ module Test
             end
           end
 
-          if @interrupt || @opts[:no_retry] || @need_quit
+          if @interrupt || @options[:no_retry] || @need_quit
             rep.each do |r|
               report.push(*r[:report])
             end
@@ -532,7 +526,6 @@ module Test
             puts ""
             puts "Retrying..."
             puts ""
-            @options = @opts
             rep.each do |r|
               if r[:testcase] && r[:file] && !r[:report].empty?
                 require r[:file]
@@ -564,7 +557,7 @@ module Test
       def _run_suites suites, type
         @interrupt = nil
         result = []
-        if @opts[:parallel]
+        if @options[:parallel]
           _run_parallel suites, type, result
         else
           suites.each {|suite|
@@ -576,7 +569,7 @@ module Test
             end
           }
         end
-        report.reject!{|r| r.start_with? "Skipped:" } if @opts[:hide_skip]
+        report.reject!{|r| r.start_with? "Skipped:" } if @options[:hide_skip]
         result
       end
 
