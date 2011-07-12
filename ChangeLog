@@ -1,3 +1,8 @@
+Tue Jul 12 17:12:45 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* vm_method.c (rb_add_method): should not call method_added hook
+	  for undef operation. [Bug #5015]
+
 Tue Jul 12 16:58:44 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb(Test::Unit::Options#process_args): Fix bug.
