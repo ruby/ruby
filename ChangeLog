@@ -1,3 +1,7 @@
+Tue Jul 12 23:41:49 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* NEWS: add a description of Signal.trap change.
+
 Tue Jul 12 20:02:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (reserved_signal_p): reverted a part of r32523.

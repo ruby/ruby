@@ -12,7 +12,17 @@ with all sufficient information, see the ChangeLog file.
 
 === C API updates
 === Library updates (outstanding ones only)
+
+* builtin classes
+
+  * Signal
+    * incompatible changes:
+      * Signal.trap raises ArgumentError when :SEGV, :BUS, :ILL, :FPE, :VTALRM
+        are specified.
+
 === Language changes
 === Compatibility issues (excluding feature bug fixes)
 
-  None
+  * Signal.trap
+
+    See above.
