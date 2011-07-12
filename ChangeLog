@@ -1,3 +1,7 @@
+Tue Jul 12 14:07:46 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (install_sighandler): fixed a race.
+
 Tue Jul 12 13:49:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (sig_trap): don't permit to change a signal handler which

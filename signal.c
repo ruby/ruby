@@ -1008,10 +1008,12 @@ install_sighandler(int signum, sighandler_t handler)
 {
     sighandler_t old;
 
+    rb_disable_interrupt();
     old = ruby_signal(signum, handler);
     if (old != SIG_DFL) {
 	ruby_signal(signum, old);
     }
+    rb_enable_interrupt();
 }
 
 #if defined(SIGCLD) || defined(SIGCHLD)
