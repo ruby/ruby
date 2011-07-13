@@ -77,7 +77,7 @@ Mon Jul 11 01:16:27 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	* signal.c (trap_ensure): removed trap_last_mask operation.
 
 	* signal.c (rb_disable_interrupt, rb_enable_interrupt): made
-	  static and removed sigdelset(SIGVTALARM) and sigdelset(SIGSEGV).
+	  static and removed sigdelset(SIGVTALRM) and sigdelset(SIGSEGV).
 
 	* process.c (rb_syswait): removed implicit signal handler change.
 

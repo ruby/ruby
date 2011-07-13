@@ -61,7 +61,7 @@ Sun Jul 10 16:57:08 2011  Koichi Sasada  <ko1@atdot.net>
 
 Sun Jul 10 17:28:01 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* thread_pthread.c (mutex_debug): use exit(EXIT_FAILURE) instad of
+	* thread_pthread.c (mutex_debug): use exit(EXIT_FAILURE) instead of
 	  exit(1).
 	* thread_pthread.c (add_signal_thread_list): ditto.
 	* thread.c (rb_thread_call_with_gvl): ditto.
@@ -75,7 +75,7 @@ Sun Jul 10 15:58:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 Sun Jul 10 16:41:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm_core.h (typedef struct rb_vm_struct): create a new
-	  'inhibit_thread_createion' field.
+	  'inhibit_thread_creation' field.
 	* thread.c (rb_thread_terminate_all): set inhibit_thread_creation.
 	* thread.c (thread_s_new): don't permit to create new thread
 	  if the VM is under destruction. Otherwise evil finalizer code
