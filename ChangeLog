@@ -1,3 +1,11 @@
+Fri Jul 15 01:51:25 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regint.h (PLATFORM_UNALIGNED_WORD_ACCESS): Power PC does not
+	  allow unaligned word access.
+
+	* st.c (UNALIGNED_WORD_ACCESS): x86_64 allows unaligned word
+	  access as well as i386.
+
 Thu Jul 14 12:19:34 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl.c (ossl_verify_cb): trap the exception from
