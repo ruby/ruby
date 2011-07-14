@@ -188,6 +188,9 @@ int function_call_may_return_twice_false_2 = 0;
        (function_call_may_return_twice_false_2 ? \
         setjmp(function_call_may_return_twice_jmp_buf) : \
         0)
+#  elif defined(__PPC64__)
+#    define JUST_BEFORE_SETJMP(extra_save, j) ((void)0)
+#    define JUST_AFTER_SETJMP(extra_save, j) ((j)->status ? (void)0 : (extra_save))
 #  elif defined(__FreeBSD__) && __FreeBSD__ < 7
 /*
  * workaround for FreeBSD/i386 getcontext/setcontext bug.
@@ -205,16 +208,23 @@ static int volatile freebsd_clear_carry_flag = 0;
 #  ifndef POST_GETCONTEXT
 #    define POST_GETCONTEXT 0
 #  endif
+#  ifndef JUST_BEFORE_SETJMP
+#    define JUST_BEFORE_SETJMP(extra_save, j) (extra_save)
+#  endif
+#  ifndef JUST_AFTER_SETJMP
+#    define JUST_AFTER_SETJMP(extra_save, j) ((void)0)
+#  endif
 #  define ruby_longjmp(env, val) rb_jump_context(env, val)
-#  define ruby_setjmp(just_before_setjmp, j) ((j)->status = 0, \
-     (just_before_setjmp), \
+#  define ruby_setjmp(extra_save, j) ((j)->status = 0, \
+     JUST_BEFORE_SETJMP(extra_save, j), \
      PRE_GETCONTEXT, \
      getcontext(&(j)->context), \
      POST_GETCONTEXT, \
+     JUST_AFTER_SETJMP(extra_save, j), \
      (j)->status)
 #else
-#  define ruby_setjmp(just_before_setjmp, env) \
-     ((just_before_setjmp), RUBY_SETJMP(env))
+#  define ruby_setjmp(extra_save, env) \
+     ((extra_save), RUBY_SETJMP(env))
 #  define ruby_longjmp(env,val) RUBY_LONGJMP(env,val)
 #  ifdef __CYGWIN__
 #    ifndef _setjmp
