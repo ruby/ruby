@@ -1,3 +1,16 @@
+Thu Jul 14 12:40:07 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* backport r32537 from trunk.
+
+	* ext/openssl/ossl.c (ossl_verify_cb): trap the exception from
+	  verify callback of SSLContext and X509Store and make the
+	  verification fail normally. Raising exception directly from callback
+	  causes orphan resouces in OpenSSL stack. Patched by Ippei Obayashi.
+	  See #4445.
+
+	* test/openssl/test_ssl.rb
+	  (test_exception_in_verify_callback_is_ignored): test it.
+
 Wed Jul 13 08:20:08 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb(Test::Unit::Options#process_args): Fix bug.
@@ -13,7 +26,7 @@ Mon Jul 11 23:50:39 2011  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 Mon Jul 11 23:47:00 2011  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* thread_pthread.c (get_stack):  need to adjust stack addr for
-          [Bug #1813] on AIX. backported r32511 from trunk.
+	  [Bug #1813] on AIX. backported r32511 from trunk.
 
 Mon Jul 11 15:17:03 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 

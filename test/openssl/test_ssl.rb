@@ -238,6 +238,26 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_exception_in_verify_callback_is_ignored
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.set_params(
+        :verify_callback => Proc.new do |preverify_ok, store_ctx|
+          store_ctx.error = OpenSSL::X509::V_OK
+          raise RuntimeError
+        end
+      )
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      OpenSSL::TestUtils.silent do
+        # SSLError, not RuntimeError
+        assert_raise(OpenSSL::SSL::SSLError) { ssl.connect }
+      end
+      assert_equal(OpenSSL::X509::V_ERR_CERT_REJECTED, ssl.verify_result)
+      ssl.close
+    }
+  end
+
   def test_sslctx_set_params
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
       sock = TCPSocket.new("127.0.0.1", port)
