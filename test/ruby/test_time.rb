@@ -697,4 +697,18 @@ class TestTime < Test::Unit::TestCase
       off += 0.1
     }
   end
+
+  def test_getlocal_dont_share_eigenclass
+    bug5012 = "[ruby-dev:44071]"
+
+    t0 = Time.now
+    class <<t0; end
+    t1 = t0.getlocal
+
+    def t0.m
+      0
+    end
+
+    assert_raise(NoMethodError, bug5012) { t1.m }
+  end
 end
