@@ -1,3 +1,10 @@
+Fri Jul 15 19:11:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (bigsub_int): add RB_GC_GUARD.  This patch is made by
+	  Makoto Kishimoto.  fixes #4223 [ruby-dev:42907]
+
+	* bignum.c (bigadd_int): ditto.
+
 Fri Jul 15 09:59:12 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* backport r32546 from trunk.
