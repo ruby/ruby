@@ -2074,6 +2074,9 @@ set_pioinfo_extra(void)
 #define FDEV			0x40	/* file handle refers to device */
 #define FTEXT			0x80	/* file handle is in text mode */
 
+static int is_socket(SOCKET);
+static int is_console(SOCKET);
+
 int
 rb_w32_io_cancelable_p(int fd)
 {
