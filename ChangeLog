@@ -1,3 +1,11 @@
+Sat Jul 16 06:27:51 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/uri/common.rb (module): Remove optional parser argument to
+	  Kernel#URI
+	  [ruby-core:38061]
+	
+	* lib/uri/generic.rb (module): ditto
+
 Sat Jul 16 03:19:45 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (is_socket, is_console): add prototypes to fix compile
