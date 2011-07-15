@@ -1,3 +1,11 @@
+Sat Jul 16 06:31:23 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/uri/common.rb (module): Remove optional parser argument to
+	  Kernel#URI
+	  [ruby-core:38061]
+
+	* lib/uri/generic.rb (module): ditto
+
 Sat Jul 16 01:15:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* time.c (time_dup): used rb_obj_class() instead of CLASS_OF().
