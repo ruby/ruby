@@ -1,3 +1,13 @@
+Fri Jul 15 09:10:41 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* ext/digest/sha2/sha2.c (SHA256_Update, SHA512_Update): avoid Bus
+	  Error caused by unalignment access on Sparc-Solaris (and possibly on
+	  other similar environment.) This patch just do memcpy always instead
+	  of checking architecture. I see no perf drop on my 64bit env. For
+	  more details, see #4320.
+
+	* test/digest/test_digest.rb: add test for unalignment access.
+
 Fri Jul 15 01:51:25 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regint.h (PLATFORM_UNALIGNED_WORD_ACCESS): Power PC does not

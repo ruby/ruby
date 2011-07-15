@@ -78,6 +78,15 @@ module TestDigest
     }
   end
 
+  def test_alignment
+    md = self.class::ALGO.new
+    assert_nothing_raised('#4320') {
+      md.update('a' * 97)
+      md.update('a' * 97)
+      md.hexdigest
+    }
+  end
+
   class TestMD5 < Test::Unit::TestCase
     include TestDigest
     ALGO = Digest::MD5
