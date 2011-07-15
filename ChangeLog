@@ -1,3 +1,11 @@
+Sat Jul 16 01:15:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* time.c (time_dup): used rb_obj_class() instead of CLASS_OF().
+	  The patch is made by Kazuki Tsujimoto. [Bug #5012] [ruby-dev:44071]
+
+	* test/ruby/test_time.rb (TestTime#test_getlocal_dont_share_eigenclass):
+	  added a new test for eigenclass of time object.
+
 Fri Jul 15 19:11:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* bignum.c (bigsub_int): add RB_GC_GUARD.  This patch is made by
