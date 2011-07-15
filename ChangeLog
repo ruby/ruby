@@ -2,6 +2,7 @@ Sat Jul 16 03:19:45 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (is_socket, is_console): add prototypes to fix compile
 	  problem with gcc introduced at r32549.
+	  reported by Jon Forums. [Bug #5030] [ruby-core:38079]
 
 Sat Jul 16 00:55:38 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
