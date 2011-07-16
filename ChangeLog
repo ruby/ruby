@@ -1,3 +1,8 @@
+Sat Jul 16 17:29:20 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_UNIVERSAL_ARCH): restore arch flag.
+	  Bug #4977
+
 Sat Jul 16 06:27:51 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/uri/common.rb (module): Remove optional parser argument to

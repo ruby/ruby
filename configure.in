@@ -155,9 +155,10 @@ AC_MSG_RESULT([$ARCH_FLAG])
 
 AC_DEFUN([RUBY_UNIVERSAL_ARCH], [
 # RUBY_UNIVERSAL_ARCH begin
+ARCH_FLAG=`expr " $CFLAGS " : ['.* \(-m[0-9][0-9]*\) ']`
 test ${CFLAGS+set} && CFLAGS=`echo "$CFLAGS" | sed -e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g'`
 test ${LDFLAGS+set} && LDFLAGS=`echo "$LDFLAGS" | sed -e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g'`
-unset ARCH_FLAG universal_binary universal_archnames
+unset universal_binary universal_archnames
 if test ${target_archs+set}; then
     AC_MSG_CHECKING([target architectures])
     target_archs=`echo $target_archs | tr , ' '`
@@ -202,8 +203,6 @@ if test ${target_archs+set}; then
     fi
     AS_CASE(["$target"], [-*], [ target="$target_cpu${target}"])
     AS_CASE(["$target_alias"], [-*], [ target_alias="$target_cpu${target_alias}"])
-    CFLAGS="$CFLAGS ${ARCH_FLAG}"
-    LDFLAGS="${LDFLAGS+$LDFLAGS }${ARCH_FLAG}"
 else
     if test x"$target_alias" = x; then
 	AS_CASE(["$target_os"],
@@ -235,6 +234,10 @@ if test "${target_archs}" != "${rb_cv_target_archs-${target_archs}}"; then
     AC_MSG_ERROR([target arch(s) has changed from ${rb_cv_target_archs-nothing} to ${target_archs}])
 else
     rb_cv_target_archs=${target_archs}
+fi
+if test "x${ARCH_FLAG}" != x; then
+    CFLAGS="$CFLAGS ${ARCH_FLAG}"
+    LDFLAGS="${LDFLAGS+$LDFLAGS }${ARCH_FLAG}"
 fi
 # RUBY_UNIVERSAL_ARCH end
 ])
