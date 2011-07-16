@@ -1,3 +1,9 @@
+Sat Jul 16 11:18:26 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/setup.mak: support to build x64-mswin64 on Windows7 (and Vista,
+	  perhaps).
+	  backported r32521 from trunk
+
 Sat Jul 16 06:31:23 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/uri/common.rb (module): Remove optional parser argument to
