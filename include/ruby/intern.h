@@ -215,15 +215,24 @@ PRINTF_ARGS(void rb_compile_error_with_enc(const char*, int, void *, const char*
 PRINTF_ARGS(void rb_compile_error_append(const char*, ...), 1, 2);
 NORETURN(void rb_load_fail(const char*));
 NORETURN(void rb_error_frozen(const char*));
+void rb_error_untrusted(VALUE);
 void rb_check_frozen(VALUE);
+void rb_check_trusted(VALUE);
 #define rb_check_frozen_internal(obj) do { \
 	VALUE frozen_obj = (obj); \
 	if (OBJ_FROZEN(frozen_obj)) { \
 	    rb_error_frozen(rb_obj_classname(frozen_obj)); \
 	} \
     } while (0)
+#define rb_check_trusted_internal(obj) do { \
+	VALUE untrusted_obj = (obj); \
+	if (!OBJ_UNTRUSTED(untrusted_obj)) { \
+	    rb_error_untrusted(untrusted_obj); \
+	} \
+    } while (0)
 #ifdef __GNUC__
 #define rb_check_frozen(obj) __extension__({rb_check_frozen_internal(obj);})
+#define rb_check_trusted(obj) __extension__({rb_check_trusted_internal(obj);})
 #else
 static inline void
 rb_check_frozen_inline(VALUE obj)
@@ -231,6 +240,12 @@ rb_check_frozen_inline(VALUE obj)
     rb_check_frozen_internal(obj);
 }
 #define rb_check_frozen(obj) rb_check_frozen_inline(obj)
+static inline void
+rb_check_trusted_inline(VALUE obj)
+{
+    rb_check_trusted_internal(obj);
+}
+#define rb_check_trusted(obj) rb_check_trusted_inline(obj)
 #endif
 
 /* eval.c */

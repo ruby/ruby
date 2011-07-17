@@ -1715,6 +1715,22 @@ rb_check_frozen(VALUE obj)
 }
 
 void
+rb_error_untrusted(VALUE obj)
+{
+    if (rb_safe_level() >= 4) {
+	rb_raise(rb_eSecurityError, "Insecure: can't modify %s",
+		 rb_obj_classname(obj));
+    }
+}
+
+#undef rb_check_trusted
+void
+rb_check_trusted(VALUE obj)
+{
+    rb_check_trusted_internal(obj);
+}
+
+void
 Init_syserr(void)
 {
     rb_eNOERROR = set_syserr(0, "NOERROR");

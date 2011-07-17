@@ -1,3 +1,11 @@
+Sun Jul 17 16:26:40 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_check_trusted): new function to check an object is
+	  trusted.
+
+	* struct.c (rb_struct_modify), time.c (time_modify): check by the
+	  above function to show proper class names.  [Bug #5036]
+
 Sun Jul 17 15:30:04 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_warn_m): accept multiple args in like puts.  rdoc

@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'timeout'
+require_relative 'envutil'
 
 class TestStruct < Test::Unit::TestCase
   def test_struct
@@ -248,5 +249,18 @@ class TestStruct < Test::Unit::TestCase
       assert x != z
       assert !x.eql?(z)
     }
+  end
+
+  def test_struct_subclass
+    bug5036 = '[ruby-dev:44122]'
+    st = Class.new(Struct)
+    s = st.new("S", :m).new
+    error = assert_raise(SecurityError) do
+      proc do
+        $SAFE = 4
+        s.m = 1
+      end.call
+    end
+    assert_equal("Insecure: can't modify #{st}::S", error.message, bug5036)
   end
 end

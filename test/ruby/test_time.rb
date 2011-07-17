@@ -3,6 +3,7 @@ require 'rational'
 require 'delegate'
 require 'timeout'
 require 'delegate'
+require_relative 'envutil'
 
 class TestTime < Test::Unit::TestCase
   def setup
@@ -702,7 +703,7 @@ class TestTime < Test::Unit::TestCase
     bug5012 = "[ruby-dev:44071]"
 
     t0 = Time.now
-    class <<t0; end
+    class << t0; end
     t1 = t0.getlocal
 
     def t0.m
@@ -710,5 +711,19 @@ class TestTime < Test::Unit::TestCase
     end
 
     assert_raise(NoMethodError, bug5012) { t1.m }
+  end
+
+  def test_time_subclass
+    bug5036 = '[ruby-dev:44122]'
+    tc = Class.new(Time)
+    tc.inspect
+    t = tc.now
+    error = assert_raise(SecurityError) do
+      proc do
+        $SAFE = 4
+        t.gmtime
+      end.call
+    end
+    assert_equal("Insecure: can't modify #{tc}", error.message, bug5036)
   end
 end
