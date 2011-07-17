@@ -1,3 +1,9 @@
+Mon Jul 18 00:00:46 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/curses/curses.c: added the new class Curses::Pad, which
+	  supports scrolling.  patch by Eric Hodel.  [Feature #4896]
+	  [ruby-core:37206]
+
 Sun Jul 17 16:26:40 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_check_trusted): new function to check an object is
