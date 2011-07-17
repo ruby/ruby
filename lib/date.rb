@@ -879,7 +879,7 @@ class Date
 	  elem[e] = d.__send__(e)
 	end
 	elem[:wnum1] ||= 0
-	elem[:wday]  ||= 0
+	elem[:wday]  ||= 1
       end
     end
 

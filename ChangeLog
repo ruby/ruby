@@ -1,3 +1,8 @@
+Sun Jul 17 18:24:22 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb (complete_frags): Monday must be suitable for %W's
+	  default day.
+
 Sun Jul 17 17:52:19 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (flo_cmp): Infinity is greater than any bignum
