@@ -3,6 +3,18 @@ require "stringio"
 require "test/unit"
 
 class TestWEBrickHTTPRequest < Test::Unit::TestCase
+  def test_simple_request
+    msg = <<-_end_of_message_
+      GET /
+    _end_of_message_
+
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg.gsub(/^ {6}/, '')))
+
+    # assertion fails if @header was not initialized and iteration is attempted on the nil reference
+    assert_nothing_raised('req.meta_vars should be available with HTTP/0.9 simple request') { req.meta_vars }
+  end
+  
   def test_parse_09
     msg = <<-_end_of_message_
       GET /
