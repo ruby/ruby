@@ -225,18 +225,25 @@ rb_warning(const char *fmt, ...)
 
 /*
  * call-seq:
- *    warn(msg)   -> nil
+ *    warn(msg, ...)   -> nil
  *
- * Display the given message (followed by a newline) on STDERR unless
- * warnings are disabled (for example with the <code>-W0</code> flag).
+ * Displays each of the given messages followed by a record separator on
+ * STDERR unless warnings have been disabled (for example with the
+ * <code>-W0</code> flag).
+ *
+ *    warn("warning 1", "warning 2")
+ *
+ *  <em>produces:</em>
+ *
+ *    warning 1
+ *    warning 2
  */
 
 static VALUE
-rb_warn_m(VALUE self, VALUE mesg)
+rb_warn_m(int argc, VALUE *argv, VALUE exc)
 {
-    if (!NIL_P(ruby_verbose)) {
-	rb_io_write(rb_stderr, mesg);
-	rb_io_write(rb_stderr, rb_default_rs);
+    if (!NIL_P(ruby_verbose) && argc > 0) {
+	rb_io_puts(argc, argv, rb_stderr);
     }
     return Qnil;
 }
@@ -1572,7 +1579,7 @@ Init_Exception(void)
 
     rb_mErrno = rb_define_module("Errno");
 
-    rb_define_global_function("warn", rb_warn_m, 1);
+    rb_define_global_function("warn", rb_warn_m, -1);
 }
 
 void

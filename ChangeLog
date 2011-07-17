@@ -1,3 +1,8 @@
+Sun Jul 17 15:30:04 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_warn_m): accept multiple args in like puts.  rdoc
+	  patch by Erik Price at [ruby-core:38119].  [Feature #5029]
+
 Sun Jul 17 07:56:31 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_ssl_session.rb: add PEM SSL session without TLS
