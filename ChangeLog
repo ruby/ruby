@@ -1,3 +1,8 @@
+Sun Jul 17 16:55:34 2011  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in (STRIP): use proper toolchain.  based on a patch
+	  from Jon Forums at [ruby-core:35909].  fixes #4617
+
 Thu Jul 14 16:53:01 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_setjmp): need to save the stack after r2 (the Table
