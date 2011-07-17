@@ -144,4 +144,31 @@ class TestFloat < Test::Unit::TestCase
     assert_operator((-4611686018427387905.0).to_i, :<, 0)
     assert_operator((-4611686018427387906.0).to_i, :<, 0)
   end
+
+  def test_cmp
+    inf = 1.0 / 0.0
+    nan = inf / inf
+    assert_equal(0, 1.0 <=> 1.0)
+    assert_equal(1, 1.0 <=> 0.0)
+    assert_equal(-1, 1.0 <=> 2.0)
+    assert_nil(1.0 <=> nil)
+    assert_nil(1.0 <=> nan)
+    assert_nil(nan <=> 1.0)
+
+    assert_equal(0, 1.0 <=> 1)
+    assert_equal(1, 1.0 <=> 0)
+    assert_equal(-1, 1.0 <=> 2)
+
+    assert_equal(-1, 1.0 <=> 2**32)
+
+    assert_equal(1, inf <=> (Float::MAX.to_i*2))
+    assert_equal(-1, -inf <=> (-Float::MAX.to_i*2))
+    assert_equal(-1, (Float::MAX.to_i*2) <=> inf)
+    assert_equal(1, (-Float::MAX.to_i*2) <=> -inf)
+
+    assert_raise(ArgumentError) { 1.0 > nil }
+    assert_raise(ArgumentError) { 1.0 >= nil }
+    assert_raise(ArgumentError) { 1.0 < nil }
+    assert_raise(ArgumentError) { 1.0 <= nil }
+  end
 end

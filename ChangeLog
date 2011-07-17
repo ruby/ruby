@@ -1,3 +1,10 @@
+Sun Jul 17 17:52:19 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (flo_cmp): Infinity is greater than any bignum
+	  number.  [ruby-dev:38672]
+
+	* bignum.c (rb_big_cmp): ditto.
+
 Sun Jul 17 16:55:34 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (STRIP): use proper toolchain.  based on a patch
