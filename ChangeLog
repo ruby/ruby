@@ -1,3 +1,12 @@
+Mon Jul 18 13:36:47 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: define a new BadAlias error class.
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: raise an exception when
+	  deserializing an alias that does not exist.
+
+	* test/psych/test_merge_keys.rb: corresponding test.
+
 Mon Jul 18 00:00:46 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/curses/curses.c: added the new class Curses::Pad, which
