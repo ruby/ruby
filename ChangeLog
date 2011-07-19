@@ -1,3 +1,12 @@
+Tue Jul 19 16:07:45 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_update_max_fd): new function.
+
+	* internal.h (rb_update_max_fd): declare rb_update_max_fd.
+
+	* thread_pthread.c (rb_thread_create_timer_thread): update max fd when
+	  timer thread pipe is created.
+
 Mon Jul 18 13:36:47 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: define a new BadAlias error class.
