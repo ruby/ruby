@@ -151,14 +151,10 @@ struct argf {
 };
 
 static int max_file_descriptor = NOFILE;
-#define UPDATE_MAXFD(fd) \
-    do { \
-        if (max_file_descriptor < (fd)) max_file_descriptor = (fd); \
-    } while (0)
 void
 rb_update_max_fd(int fd)
 {
-    UPDATE_MAXFD(fd);
+    if (max_file_descriptor < (fd)) max_file_descriptor = (fd);
 }
 
 #define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
@@ -531,7 +527,7 @@ ruby_dup(int orig)
 	    rb_sys_fail(0);
 	}
     }
-    UPDATE_MAXFD(fd);
+    rb_update_max_fd(fd);
     return fd;
 }
 
@@ -4622,7 +4618,7 @@ rb_sysopen(VALUE fname, int oflags, mode_t perm)
 	    rb_sys_fail(RSTRING_PTR(fname));
 	}
     }
-    UPDATE_MAXFD(fd);
+    rb_update_max_fd(fd);
     return fd;
 }
 
@@ -4915,8 +4911,8 @@ rb_pipe(int *pipes)
         }
     }
     if (ret == 0) {
-        UPDATE_MAXFD(pipes[0]);
-        UPDATE_MAXFD(pipes[1]);
+        rb_update_max_fd(pipes[0]);
+        rb_update_max_fd(pipes[1]);
     }
     return ret;
 }
@@ -6540,7 +6536,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 #else
     if (fstat(fd, &st) == -1) rb_sys_fail(0);
 #endif
-    UPDATE_MAXFD(fd);
+    rb_update_max_fd(fd);
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
     ofmode = rb_io_oflags_fmode(oflags);
     if (NIL_P(vmode)) {
@@ -7695,7 +7691,7 @@ io_cntl(int fd, int cmd, long narg, int io_p)
     retval = (int)rb_thread_io_blocking_region(nogvl_io_cntl, &arg, fd);
 #if defined(F_DUPFD)
     if (!io_p && retval != -1 && cmd == F_DUPFD) {
-	UPDATE_MAXFD(retval);
+	rb_update_max_fd(retval);
     }
 #endif
 

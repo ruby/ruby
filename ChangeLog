@@ -1,3 +1,7 @@
+Tue Jul 19 16:25:15 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (UPDATE_MAXFD): removed.
+
 Tue Jul 19 16:07:45 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_update_max_fd): new function.
