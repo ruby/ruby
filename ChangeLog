@@ -1,3 +1,7 @@
+Wed Jul 20 07:16:26 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: mention Kernel#warn.  [ruby-core:38119] [Feature #5029]
+
 Tue Jul 19 16:40:45 2011  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* cont.c (cont_save_thread): fix missing semicolon.

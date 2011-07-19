@@ -15,6 +15,10 @@ with all sufficient information, see the ChangeLog file.
 
 * builtin classes
 
+  * Kernel
+    * extended method:
+      * Kernel#warn accepts multiple args in like puts.
+
   * Signal
     * incompatible changes:
       * Signal.trap raises ArgumentError when :SEGV, :BUS, :ILL, :FPE, :VTALRM
