@@ -1,3 +1,7 @@
+Tue Jul 19 16:40:45 2011  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
+
+	* cont.c (cont_save_thread): fix missing semicolon.
+
 Tue Jul 19 16:25:15 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (UPDATE_MAXFD): removed.

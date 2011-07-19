@@ -382,8 +382,8 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
     cont->saved_thread.machine_stack_start = 0;
     cont->saved_thread.machine_stack_end = 0;
 #ifdef __ia64
-    cont->saved_thread.machine_register_stack_start = 0
-    cont->saved_thread.machine_register_stack_end = 0
+    cont->saved_thread.machine_register_stack_start = 0;
+    cont->saved_thread.machine_register_stack_end = 0;
 #endif
 }
 
