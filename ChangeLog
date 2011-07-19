@@ -118,7 +118,7 @@ Thu Jul 14 12:19:34 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 	* ext/openssl/ossl.c (ossl_verify_cb): trap the exception from
 	  verify callback of SSLContext and X509Store and make the
 	  verification fail normally. Raising exception directly from callback
-	  causes orphan resouces in OpenSSL stack. Patched by Ippei Obayashi.
+	  causes orphan resources in OpenSSL stack. Patched by Ippei Obayashi.
 	  See #4445.
 
 	* test/openssl/test_ssl.rb
