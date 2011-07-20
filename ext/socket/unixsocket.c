@@ -383,6 +383,7 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 #if FD_PASSING_BY_MSG_CONTROL
     memcpy(&fd, CMSG_DATA(&cmsg.hdr), sizeof(int));
 #endif
+    rb_update_max_fd(fd);
 
     if (klass == Qnil)
 	return INT2FIX(fd);

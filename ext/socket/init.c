@@ -48,6 +48,7 @@ rsock_init_sock(VALUE sock, int fd)
 
     if (fstat(fd, &sbuf) < 0)
         rb_sys_fail(0);
+    rb_update_max_fd(fd);
     if (!S_ISSOCK(sbuf.st_mode))
         rb_raise(rb_eArgError, "not a socket file descriptor");
 #else
@@ -250,6 +251,8 @@ rsock_socket(int domain, int type, int proto)
 	    fd = socket(domain, type, proto);
 	}
     }
+    if (0 <= fd)
+        rb_update_max_fd(fd);
     return fd;
 }
 
@@ -463,6 +466,7 @@ rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, s
 	}
         rb_sys_fail("accept(2)");
     }
+    rb_update_max_fd(fd2);
     make_fd_nonblock(fd2);
     return rsock_init_sock(rb_obj_alloc(klass), fd2);
 }
@@ -509,6 +513,7 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 	}
 	rb_sys_fail(0);
     }
+    rb_update_max_fd(fd2);
     if (!klass) return INT2NUM(fd2);
     return rsock_init_sock(rb_obj_alloc(klass), fd2);
 }

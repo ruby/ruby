@@ -101,7 +101,6 @@ const char *ruby_get_inplace_mode(void);
 void ruby_set_inplace_mode(const char *);
 ssize_t rb_io_bufread(VALUE io, void *buf, size_t size);
 void rb_stdio_set_default_encoding(void);
-void rb_update_max_fd(int fd);
 
 /* iseq.c */
 VALUE rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE filepath, VALUE line, VALUE opt);

@@ -1384,6 +1384,7 @@ discard_cmsg(struct cmsghdr *cmh, char *msg_end)
         int *end = (int *)((char *)cmh + cmh->cmsg_len);
         while ((char *)fdp + sizeof(int) <= (char *)end &&
                (char *)fdp + sizeof(int) <= msg_end) {
+            rb_update_max_fd(*fdp);
             close(*fdp);
             fdp++;
         }
@@ -1426,6 +1427,7 @@ make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh, char *msg_end)
             VALUE io;
             if (fstat(fd, &stbuf) == -1)
                 rb_raise(rb_eSocket, "invalid fd in SCM_RIGHTS");
+            rb_update_max_fd(fd);
             if (S_ISSOCK(stbuf.st_mode))
                 io = rsock_init_sock(rb_obj_alloc(rb_cSocket), fd);
             else

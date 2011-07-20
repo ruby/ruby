@@ -4592,7 +4592,11 @@ sysopen_func(void *ptr)
 static inline int
 rb_sysopen_internal(struct sysopen_struct *data)
 {
-    return (int)rb_thread_blocking_region(sysopen_func, data, RUBY_UBF_IO, 0);
+    int fd;
+    fd = (int)rb_thread_blocking_region(sysopen_func, data, RUBY_UBF_IO, 0);
+    if (0 <= fd)
+        rb_update_max_fd(fd);
+    return fd;
 }
 
 static int
@@ -5794,6 +5798,7 @@ io_reopen(VALUE io, VALUE nfile)
 	    /* need to keep FILE objects of stdin, stdout and stderr */
 	    if (dup2(fd2, fd) < 0)
 		rb_sys_fail_path(orig->pathv);
+            rb_update_max_fd(fd);
 	}
 	else {
             fclose(fptr->stdio_file);
@@ -5801,6 +5806,7 @@ io_reopen(VALUE io, VALUE nfile)
             fptr->fd = -1;
             if (dup2(fd2, fd) < 0)
                 rb_sys_fail_path(orig->pathv);
+            rb_update_max_fd(fd);
             fptr->fd = fd;
 	}
 	rb_thread_fd_close(fd);
@@ -6384,6 +6390,7 @@ prep_io(int fd, int fmode, VALUE klass, const char *path)
     fp->mode = fmode;
     io_check_tty(fp);
     if (path) fp->pathv = rb_obj_freeze(rb_str_new_cstr(path));
+    rb_update_max_fd(fd);
 
     return io;
 }
