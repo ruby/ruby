@@ -1,3 +1,54 @@
+Thu Jul 21 07:07:57 2011  Tanaka Akira  <akr@fsij.org>
+
+	* backport r32579, r32581, r32587 by akr and r32588 by kazu.
+
+	r32579:
+
+	* io.c (rb_update_max_fd): new function.
+
+	* internal.h (rb_update_max_fd): declare rb_update_max_fd.
+
+	* thread_pthread.c (rb_thread_create_timer_thread): update max fd when
+	  timer thread pipe is created.
+
+	r32581:
+
+	* io.c (UPDATE_MAXFD): removed.
+
+	r32587:
+
+	* include/ruby/intern.h (rb_update_max_fd): declaration moved from
+	  internal.h.
+
+	* file.c: ditto.
+
+	* io.c: call rb_update_max_fd for each new fds.
+
+	* process.c: ditto.
+
+	* random.c: ditto.
+
+	* ruby.c: ditto.
+
+	* ext/io/console/console.c: ditto.
+
+	* ext/openssl/ossl_bio.c: ditto.
+
+	* ext/pty/pty.c: ditto.
+
+	* ext/socket/init.c: ditto.
+
+	* ext/socket/socket.c: ditto.
+
+	* ext/socket/ancdata.c: ditto.
+
+	* ext/socket/unixsocket.c: ditto.
+
+	r32588:
+
+	* io.c (rb_update_max_fd): remove parentheses. they are not in
+	  macro.
+
 Sun Jul 17 08:07:31 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* backport r32563 from trunk

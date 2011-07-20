@@ -512,6 +512,7 @@ fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
             |O_NOCTTY
 #endif
             )) >= 0) {
+        rb_update_max_fd(fd);
         if (fstat(fd, &statbuf) == 0 && S_ISCHR(statbuf.st_mode)) {
 	    if (read(fd, seed, DEFAULT_SEED_LEN) < DEFAULT_SEED_LEN) {
 		/* abandon */;

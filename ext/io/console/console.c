@@ -562,6 +562,7 @@ console_dev(VALUE klass)
 #ifdef CONSOLE_DEVICE_FOR_WRITING
 	fd = open(CONSOLE_DEVICE_FOR_WRITING, O_WRONLY);
 	if (fd < 0) return Qnil;
+        rb_update_max_fd(fd);
 	args[1] = INT2FIX(O_WRONLY);
 	args[0] = INT2NUM(fd);
 	out = rb_class_new_instance(2, args, klass);
@@ -573,6 +574,7 @@ console_dev(VALUE klass)
 #endif
 	    return Qnil;
 	}
+        rb_update_max_fd(fd);
 	args[1] = INT2FIX(O_RDWR);
 	args[0] = INT2NUM(fd);
 	con = rb_class_new_instance(2, args, klass);

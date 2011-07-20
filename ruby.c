@@ -1527,6 +1527,7 @@ load_file_internal(VALUE arg)
 	if ((fd = open(fname, mode)) < 0) {
 	    rb_load_fail(fname);
 	}
+        rb_update_max_fd(fd);
 
 	f = rb_io_fdopen(fd, mode, fname);
     }

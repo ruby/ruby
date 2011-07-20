@@ -177,6 +177,7 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     {
         int i = open("/dev/tty", O_RDONLY);
         if (i < 0) ERROR_EXIT("/dev/tty");
+        rb_update_max_fd(i);
         if (ioctl(i, TIOCNOTTY, (char *)0))
             ERROR_EXIT("ioctl(TIOCNOTTY)");
         close(i);
@@ -198,6 +199,7 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     if (slave < 0) {
         ERROR_EXIT("open: pty slave");
     }
+    rb_update_max_fd(slave);
     close(master);
 #endif
     dup2(slave,0);
@@ -289,6 +291,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     sigemptyset(&dfl.sa_mask);
 
     if ((masterfd = posix_openpt(O_RDWR|O_NOCTTY)) == -1) goto error;
+    rb_update_max_fd(masterfd);
     if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
     if (grantpt(masterfd) == -1) goto grantpt_error;
     if (sigaction(SIGCHLD, &old, NULL) == -1) goto error;
@@ -296,6 +299,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if ((slavedevice = ptsname(masterfd)) == NULL) goto error;
     if (no_mesg(slavedevice, nomesg) == -1) goto error;
     if ((slavefd = open(slavedevice, O_RDWR|O_NOCTTY, 0)) == -1) goto error;
+    rb_update_max_fd(slavefd);
 
 #if defined I_PUSH && !defined linux
     if (ioctl(slavefd, I_PUSH, "ptem") == -1) goto error;
@@ -327,6 +331,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 	if (!fail) return -1;
 	rb_raise(rb_eRuntimeError, "openpty() failed");
     }
+    rb_update_max_fd(*master);
+    rb_update_max_fd(*slave);
     if (no_mesg(SlaveName, nomesg) == -1) {
 	if (!fail) return -1;
 	rb_raise(rb_eRuntimeError, "can't chmod slave pty");
@@ -342,8 +348,11 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 	if (!fail) return -1;
 	rb_raise(rb_eRuntimeError, "_getpty() failed");
     }
+    rb_update_max_fd(*master);
 
     *slave = open(name, O_RDWR);
+    /* error check? */
+    rb_update_max_fd(*slave);
     strlcpy(SlaveName, name, DEVICELEN);
 
     return 0;
@@ -357,6 +366,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     extern int grantpt(int);
 
     if((masterfd = open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
+    rb_update_max_fd(masterfd);
     s = signal(SIGCHLD, SIG_DFL);
     if(grantpt(masterfd) == -1) goto error;
     signal(SIGCHLD, s);
@@ -364,6 +374,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if((slavedevice = ptsname(masterfd)) == NULL) goto error;
     if (no_mesg(slavedevice, nomesg) == -1) goto error;
     if((slavefd = open(slavedevice, O_RDWR, 0)) == -1) goto error;
+    rb_update_max_fd(slavefd);
 #if defined I_PUSH && !defined linux
     if(ioctl(slavefd, I_PUSH, "ptem") == -1) goto error;
     if(ioctl(slavefd, I_PUSH, "ldterm") == -1) goto error;
@@ -387,9 +398,11 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     for (p = deviceNo; *p != NULL; p++) {
 	snprintf(MasterName, sizeof MasterName, MasterDevice, *p);
 	if ((masterfd = open(MasterName,O_RDWR,0)) >= 0) {
+            rb_update_max_fd(masterfd);
 	    *master = masterfd;
 	    snprintf(SlaveName, DEVICELEN, SlaveDevice, *p);
 	    if ((slavefd = open(SlaveName,O_RDWR,0)) >= 0) {
+                rb_update_max_fd(slavefd);
 		*slave = slavefd;
 		if (chown(SlaveName, getuid(), getgid()) != 0) goto error;
 		if (chmod(SlaveName, nomesg ? 0600 : 0622) != 0) goto error;
@@ -577,6 +590,7 @@ pty_getpty(int argc, VALUE *argv, VALUE self)
     wfptr->fd = dup(info.fd);
     if (wfptr->fd == -1)
         rb_sys_fail("dup()");
+    rb_update_max_fd(wfptr->fd);
     wfptr->pathv = rfptr->pathv;
 
     res = rb_ary_new2(3);
