@@ -1,3 +1,8 @@
+Wed Jul 20 15:16:22 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/dl/handle.c (dlhandle_sym): clear previous error with dlerror()
+	  before calling dlsym(). [ruby-dev:44091] [Bug #5021]
+
 Wed Jul 20 07:16:26 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: mention Kernel#warn.  [ruby-core:38119] [Feature #5029]
