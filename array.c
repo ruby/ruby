@@ -2481,7 +2481,7 @@ rb_ary_delete_at(VALUE ary, long pos)
  *  or <code>nil</code> if the index is out of range. See also
  *  <code>Array#slice!</code>.
  *
- *     a = %w( ant bat cat dog )
+ *     a = ["ant", "bat", "cat", "dog"]
  *     a.delete_at(2)    #=> "cat"
  *     a                 #=> ["ant", "bat", "dog"]
  *     a.delete_at(99)   #=> nil
