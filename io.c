@@ -154,7 +154,7 @@ static int max_file_descriptor = NOFILE;
 void
 rb_update_max_fd(int fd)
 {
-    if (max_file_descriptor < (fd)) max_file_descriptor = (fd);
+    if (max_file_descriptor < fd) max_file_descriptor = fd;
 }
 
 #define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
