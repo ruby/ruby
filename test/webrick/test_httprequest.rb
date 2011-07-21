@@ -3,6 +3,15 @@ require "stringio"
 require "test/unit"
 
 class TestWEBrickHTTPRequest < Test::Unit::TestCase
+  def test_simple_request
+    msg = <<-_end_of_message_
+GET /
+    _end_of_message_
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert(req.meta_vars) # fails if @header was not initialized and iteration is attempted on the nil reference
+  end
+
   def test_parse_09
     msg = <<-_end_of_message_
       GET /

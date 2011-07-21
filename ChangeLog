@@ -1,3 +1,9 @@
+Thu Jul 21 17:14:21 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#each):
+	  Allow HTTP/0.9 request which doesn't has any header or body.
+	  patched by Felix Jodoin. [ruby-core:38040] [Bug #5022]
+
 Wed Jul 20 23:02:18 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* io.c (rb_update_max_fd): remove parentheses. they are not in
