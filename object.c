@@ -2556,7 +2556,23 @@ rb_f_array(VALUE obj, VALUE arg)
 /*  Document-class: BasicObject
  *
  *  BasicObject is the parent class of all classes in Ruby.  It's an explicit
- *  blank class.
+ *  blank class. This has two significant consequences.
+ *
+ *  First, BasicObject has only the bare minimum of methods necessary to be
+ *  functional. This makes BasicObject very useful as the base class for DSLs,
+ *  but likewise means there is essentially no supporting methods to work with
+ *  including any Kernel methods.
+ *
+ *  Secondly, BasicObject does not resolve constants beyond itself. This means
+ *  even core classes and modules, such as Regexp and Enumerable, cannot be accessed
+ *  in the normal manner. Rather, the toplevel prefix (<code>::</code>) must always
+ *  be used. In more complex cases, this limitation may prove more problematic
+ *  (e.g. code evaluated dynamically within the scope of a BasicObject subclass).
+ *  To work around use +const_missing+ and delegate constant lookup to Object.
+ * 
+ *      def self.const_missing(name)
+ *        ::Object.const_get(name)
+ *      end
  */
 
 /*  Document-class: Object
