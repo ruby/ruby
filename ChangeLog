@@ -1,3 +1,14 @@
+Thu Jul 21 19:27:19 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* node.c (dump_node): add today's knowledge.  "init arguments (m)" and
+	  "init arguments (p)" of compile.c indicates a Ruby code that
+	  evaluates multiple assignments that is in method or block
+	  parameters:  def foo((m1,m2), (m3,m4), *r, (p1,p2), (p3,p4)); end
+	  The former (init arguments (m)) evaluates the multiple assignments
+	  before rest argument, that are (m1,m2) and (m3,m4).  The letter
+	  (init arguments (p)) does ones after rest argument, that are
+	  (p1,p2) and (p3, p4).
+
 Thu Jul 21 18:11:07 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enum.c (enum_inject): remove empty line to notify rdoc
