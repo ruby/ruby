@@ -1,3 +1,8 @@
+Thu Jul 21 17:30:21 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* array.c (rb_ary_delete_at_m): use simple array literal in rdoc.
+	  patched by samuel tonini. [ruby-core:38310] [Bug #5066]
+
 Thu Jul 21 17:14:21 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#each):
