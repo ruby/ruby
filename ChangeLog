@@ -1,3 +1,9 @@
+Thu Jul 21 18:11:07 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enum.c (enum_inject): remove empty line to notify rdoc
+	  Enumerable#reduce is alias. patched by milki@github.
+	  https://github.com/ruby/ruby/pull/26
+
 Thu Jul 21 17:30:21 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* array.c (rb_ary_delete_at_m): use simple array literal in rdoc.
