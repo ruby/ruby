@@ -1,3 +1,7 @@
+Fri Jul 22 06:39:34 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/csv.rb: Do not modify CSV.generate's argument [ruby-core:38356]
+
 Thu Jul 21 20:02:11 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (set_trace_func, thread_set_trace_func_m): reset tracing
