@@ -1,3 +1,7 @@
+Thu Jul 21 20:59:59 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (discard_cmsg): workaround for MacOS X Lion.
+
 Thu Jul 21 20:02:11 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (set_trace_func, thread_set_trace_func_m): reset tracing
