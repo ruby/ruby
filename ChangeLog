@@ -1,3 +1,8 @@
+Thu Jul 21 20:59:59 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (discard_cmsg): workaround for MacOS X Lion.
+
+
 Thu Jul 21 07:07:57 2011  Tanaka Akira  <akr@fsij.org>
 
 	* backport r32579, r32581, r32587 by akr and r32588 by kazu.

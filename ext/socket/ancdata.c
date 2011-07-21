@@ -1384,8 +1384,16 @@ discard_cmsg(struct cmsghdr *cmh, char *msg_end)
         int *end = (int *)((char *)cmh + cmh->cmsg_len);
         while ((char *)fdp + sizeof(int) <= (char *)end &&
                (char *)fdp + sizeof(int) <= msg_end) {
-            rb_update_max_fd(*fdp);
-            close(*fdp);
+            /*
+             * xxx: nagachika said *fdp can be invalid fd on MacOS X Lion.
+             * This workaround using fstat is clearly wrong.
+             * we should investigate why *fdp contains invalid fd.
+             */
+            struct stat buf;
+            if (fstat(*fdp, &buf) == 0) {
+                rb_update_max_fd(*fdp);
+                close(*fdp);
+            }
             fdp++;
         }
     }
