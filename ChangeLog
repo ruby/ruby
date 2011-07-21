@@ -1,3 +1,7 @@
+Fri Jul 22 06:37:13 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/csv.rb: Do not modify CSV.generate's argument [ruby-core:38356]
+
 Thu Jul 21 20:59:59 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (discard_cmsg): workaround for MacOS X Lion.
