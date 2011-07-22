@@ -179,10 +179,12 @@ module WEBrick
     # Iterates over the request headers
 
     def each
-      @header.each{|k, v|
-        value = @header[k]
-        yield(k, value.empty? ? nil : value.join(", "))
-      }
+      if @header
+        @header.each{|k, v|
+          value = @header[k]
+          yield(k, value.empty? ? nil : value.join(", "))
+        }
+      end
     end
 
     ##
