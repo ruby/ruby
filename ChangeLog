@@ -1,3 +1,9 @@
+Fri Jul 22 21:49:48 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enum.c (enum_inject): remove empty line to notify rdoc
+	  Enumerable#reduce is alias. patched by milki@github.
+	  https://github.com/ruby/ruby/pull/26
+
 Fri Jul 22 21:49:28 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#each):
