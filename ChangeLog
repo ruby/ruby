@@ -1,3 +1,8 @@
+Fri Jul 22 13:03:12 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_hmac.c: Revert checking return type of
+	  HMAC_Init_ex as it is not compatible with OpenSSL < 1.0.0.
+
 Fri Jul 22 12:10:21 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* tool/rbinstall.rb (default gems):  Install executables into the fake
