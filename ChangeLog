@@ -1,3 +1,10 @@
+Fri Jul 22 13:03:12 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* backport r32609 from trunk.
+
+	* ext/openssl/ossl_hmac.c: Revert checking return type of
+	  HMAC_Init_ex as it is not compatible with OpenSSL < 1.0.0.
+
 Fri Jul 22 11:22:20 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* backport r32606 from trunk.
