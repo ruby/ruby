@@ -1,3 +1,8 @@
+Fri Jul 22 12:10:21 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* tool/rbinstall.rb (default gems):  Install executables into the fake
+	  gem dir for Gem.bin_path.  [#4485]
+
 Fri Jul 22 11:20:20 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_digest.c: Check return value of EVP_DigestInit_ex.

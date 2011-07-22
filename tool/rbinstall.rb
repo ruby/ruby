@@ -534,31 +534,46 @@ end
 install?(:ext, :comm, :gem) do
   $:.unshift(File.join(srcdir, "lib"))
   require("rubygems.rb")
-  gpath = Gem.default_dir
-  directories = Gem.ensure_gem_subdirectories(gpath)
-  prepare "default gems", gpath, directories
+  gem_dir = Gem.default_dir
+  directories = Gem.ensure_gem_subdirectories(gem_dir)
+  prepare "default gems", gem_dir, directories
 
-  destdir = File.join(gpath, directories.grep(/^spec/)[0])
+  spec_dir = File.join(gem_dir, directories.grep(/^spec/)[0])
   default_gems = [
-    ['rake', 'lib/rake/version.rb'],
-    ['rdoc', 'lib/rdoc.rb'],
+    ['rake', 'lib/rake/version.rb', ['rake']],
+    ['rdoc', 'lib/rdoc.rb', ['rdoc', 'ri']],
     ['minitest', 'lib/minitest/unit.rb'],
     ['json', 'ext/json/lib/json/version.rb'],
     ['io-console', 'ext/io/console/io-console.gemspec'],
   ]
-  default_gems.each do |name, src|
+
+  default_gems.each do |name, src, execs|
+    execs ||= []
     src = File.join(srcdir, src)
     version = open(src) {|f| f.find {|s| /^\s*\w*VERSION\s*=(?!=)/ =~ s}} or next
     version = version.split(%r"=\s*", 2)[1].strip[/\A([\'\"])(.*?)\1/, 2]
+    full_name = "#{name}-#{version}"
+
     puts "#{" "*30}#{name} #{version}"
-    open_for_install(File.join(destdir, "#{name}-#{version}.gemspec"), $data_mode) do
+    open_for_install(File.join(spec_dir, "#{full_name}.gemspec"), $data_mode) do
       <<-GEMSPEC
 Gem::Specification.new do |s|
   s.name = #{name.dump}
   s.version = #{version.dump}
   s.summary = "This #{name} is bundled with Ruby"
+  s.executables = #{execs.inspect}
 end
       GEMSPEC
+    end
+
+    unless execs.empty? then
+      bin_dir = File.join(gem_dir, 'gems', full_name, 'bin')
+      makedirs(bin_dir)
+
+      execs.each do |exec|
+        exec = File.join(srcdir, 'bin', exec)
+        install(exec, bin_dir, :mode => $prog_mode)
+      end
     end
   end
 end
