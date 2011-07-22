@@ -1,3 +1,8 @@
+Fri Jul 22 13:20:33 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* tool/rbinstall.rb (default gems):  Install executables into the fake
+	  gem dir for Gem.bin_path.  [Ruby 1.9 - Bug #4485]
+
 Fri Jul 22 13:03:12 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* backport r32609 from trunk.
