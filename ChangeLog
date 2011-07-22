@@ -1,3 +1,16 @@
+Fri Jul 22 21:06:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_mod_{const,cvar}_defined, rb_obj_ivar_defined):
+	  avoid inadvertent symbol creation in reflection methods.  based
+	  on a patch by Jeremy Evans at [ruby-core:38367].  [Feature #5072]
+
+	* vm_method.c (rb_mod_method_defined)
+	  (rb_mod_{public,private,protected}_method_defined)
+	  (obj_respond_to): ditto.
+
+	* parse.y (rb_check_id): new function returns already interned ID
+	  or 0.
+
 Fri Jul 22 20:44:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_is_global_id, rb_is_attrset_id): add missing

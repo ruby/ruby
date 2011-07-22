@@ -133,6 +133,14 @@ VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
 /* parse.y */
 VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
+int rb_is_const_name(VALUE name);
+int rb_is_class_name(VALUE name);
+int rb_is_global_name(VALUE name);
+int rb_is_instance_name(VALUE name);
+int rb_is_attrset_name(VALUE name);
+int rb_is_local_name(VALUE name);
+int rb_is_method_name(VALUE name);
+int rb_is_junk_name(VALUE name);
 
 /* proc.c */
 VALUE rb_proc_location(VALUE self);
