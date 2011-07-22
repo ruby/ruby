@@ -1,3 +1,12 @@
+Fri Jul 22 11:22:20 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* backport r32606 from trunk.
+
+	* ext/openssl/ossl_digest.c: Check return value of EVP_DigestInit_ex.
+	* ext/openssl/ossl_hmac.c: Check return value of HMAC_Init_ex.
+	  Thanks, Jared Jennings, for the patch.
+	  [ Ruby 1.9 - Bug #4944 ] [ruby-core:37670]
+
 Fri Jul 22 09:17:43 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* backport r32604 from trunk.
