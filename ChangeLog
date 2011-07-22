@@ -1,3 +1,8 @@
+Fri Jul 22 13:51:29 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/readline/readline.c:  Add examples for Readline.completion_proc=.
+	  [Ruby 1.9 - Bug #5057]
+
 Fri Jul 22 13:03:12 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_hmac.c: Revert checking return type of
