@@ -908,7 +908,7 @@ module URI
       rescue
       end
     end
-    raise ArgumentError, "invalid %-encoding (#{str})" unless /\A(?:%\h\h|[^%]+)*\z/ =~ str
+    raise ArgumentError, "invalid %-encoding (#{str})" unless /\A[^%]*(?:%\h\h[^%]*)*\z/ =~ str
     str.gsub(/\+|%\h\h/, TBLDECWWWCOMP_).force_encoding(enc)
   end
 
@@ -960,7 +960,7 @@ module URI
     end.join('&')
   end
 
-  WFKV_ = '(?:%\h\h|[^%#=;&])' # :nodoc:
+  WFKV_ = '(?:[^%#=;&]*(?:%\h\h[^%#=;&]*)*)' # :nodoc:
 
   # Decode URL-encoded form data from given +str+.
   #
