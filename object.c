@@ -2556,22 +2556,41 @@ rb_f_array(VALUE obj, VALUE arg)
 /*  Document-class: BasicObject
  *
  *  BasicObject is the parent class of all classes in Ruby.  It's an explicit
- *  blank class. This has two significant consequences.
+ *  blank class.
  *
- *  First, BasicObject has only the bare minimum of methods necessary to be
- *  functional. This makes BasicObject very useful as the base class for DSLs,
- *  but likewise means there is essentially no supporting methods to work with
- *  including any Kernel methods.
+ *  BasicObject is useful for creating object heirarchies independent of
+ *  Ruby's standard <code>Kernel<-Object</code> heirarchy. Consequently
+ *  BasicObject defines only the most essential methods necessary to be
+ *  functional --it does not provide even the most common Kernel methods
+ *  such as <code>#p</code> or <code>#puts</code>. Also, BasicObject does
+ *  not resolve constants beyond itself. This means even core classes and
+ *  modules, such as +Regexp+ and +Enumerable+, cannot be accessed simply
+ *  by name.
  *
- *  Secondly, BasicObject does not resolve constants beyond itself. This means
- *  even core classes and modules, such as Regexp and Enumerable, cannot be accessed
- *  in the normal manner. Rather, the toplevel prefix (<code>::</code>) must always
- *  be used. In more complex cases, this limitation may prove more problematic
- *  (e.g. code evaluated dynamically within the scope of a BasicObject subclass).
- *  To work around use +const_missing+ and delegate constant lookup to Object.
+ *  To work around these features/limitations, a variety of strategies
+ *  can be used. For example, +Kernel+ can be included into a subclass
+ *  of BasicObject and the sublcass would bahave almost entirely as if
+ *  is had subclassed +Object+. To more surgically select methods
+ *  delegation can be used, for example <code>#method_missing</code>:
+ *
+ *    class Foo < BasicObject
+ *      METHODS = [:puts, :p]
+ *      def method_missing(sym, *args, &blk)
+ *        super(sym *args, &blk) unless METHODS.include?(sym)
+ *        ::Kernel.send(sym, *args, &blk)
+ *      end
+ *     end
+ *
+ *  The simplists work around for constant lookup is to use the toplevel
+ *  prefix (<code>::</code>). In more complex cases, this may not be enough,
+ *  for example if code is evaluated dynamically within the scope of the
+ *  BasicObject subclass. To handle these cases use +const_missing+ and
+ *  delegate constant lookup to +Object+.
  * 
- *      def self.const_missing(name)
- *        ::Object.const_get(name)
+ *      class Foo < BasicObject
+ *        def self.const_missing(name)
+ *          ::Object.const_get(name)
+ *        end
  *      end
  */
 
