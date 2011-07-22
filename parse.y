@@ -9685,7 +9685,7 @@ rb_enc_symname2_p(const char *name, long len, rb_encoding *enc)
     const char *e = m + len;
     int localid = FALSE;
 
-    if (!m) return FALSE;
+    if (!m || len <= 0) return FALSE;
     switch (*m) {
       case '\0':
 	return FALSE;
@@ -9738,8 +9738,8 @@ rb_enc_symname2_p(const char *name, long len, rb_encoding *enc)
 	break;
 
       case '!':
+	if (len == 1) return FALSE;
 	switch (*++m) {
-	  case '\0': return TRUE;
 	  case '=': case '~': ++m; break;
 	  default: return FALSE;
 	}

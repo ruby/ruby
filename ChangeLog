@@ -1,3 +1,8 @@
+Fri Jul 22 19:05:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_enc_symname2_p): get rid of potential out-of-bound
+	  access.
+
 Fri Jul 22 13:55:59 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http.rb:  Net::HTTP#finish is used to manually close
