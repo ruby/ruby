@@ -1,3 +1,12 @@
+Fri Jul 22 09:17:43 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* backport r32604 from trunk.
+
+	* ext/openssl/ossl_engine.c: Avoid double free of ENGINE reference.
+	* test/openssl/test_engine.rb: Add a test for it.
+	  Thanks to Ippei Obayashi for providing the patch.
+	  [ Ruby 1.9 - Bug #5062 ] [ruby-dev:44173]
+
 Fri Jul 22 06:39:34 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/csv.rb: Do not modify CSV.generate's argument [ruby-core:38356]
