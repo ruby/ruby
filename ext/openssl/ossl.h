@@ -45,6 +45,7 @@ extern "C" {
 #endif
 
 #if defined(_WIN32)
+#  include <openssl/e_os2.h>
 #  define OSSL_NO_CONF_API 1
 #  if !defined(OPENSSL_SYS_WIN32)
 #    define OPENSSL_SYS_WIN32 1

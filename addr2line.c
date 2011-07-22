@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-#ifdef __ELF__
+#ifdef USE_ELF
 
 #ifdef __OpenBSD__
 #include <elf_abi.h>
@@ -605,6 +605,6 @@ rb_dump_backtrace_with_lines(int num_traces, void **trace, char **syms)
     free(lines);
 }
 
-#else /* defined(__ELF__) */
+#else /* defined(USE_ELF) */
 #error not supported
 #endif

@@ -980,10 +980,6 @@ static int forked_child = 0;
 static RETSIGTYPE (*saved_sigpipe_handler)(int) = 0;
 #endif
 
-#if defined(POSIX_SIGNAL)
-# define signal(a,b) posix_signal((a),(b))
-#endif
-
 #ifdef SIGPIPE
 static RETSIGTYPE sig_do_nothing(int sig)
 {
@@ -992,12 +988,6 @@ static RETSIGTYPE sig_do_nothing(int sig)
 
 static void before_exec(void)
 {
-    /*
-     * signalmask is inherited across exec() and almost system commands don't
-     * work if signalmask is blocked.
-     */
-    rb_enable_interrupt();
-
 #ifdef SIGPIPE
     /*
      * Some OS commands don't initialize signal handler properly. Thus we have
@@ -1010,9 +1000,9 @@ static void before_exec(void)
 
     if (!forked_child) {
 	/*
-	 * On old MacOS X, exec() may return ENOTSUPP if the process have
-	 * multiple threads. Therefore we have to kill internal threads at once.
-	 * [ruby-core: 10583]
+	 * On Mac OS X 10.5.x (Leopard) or earlier, exec() may return ENOTSUPP
+	 * if the process have multiple threads. Therefore we have to kill
+	 * internal threads temporary. [ruby-core: 10583]
 	 */
 	rb_thread_stop_timer_thread(0);
     }
@@ -1028,7 +1018,6 @@ static void after_exec(void)
 #endif
 
     forked_child = 0;
-    rb_disable_interrupt();
 }
 
 #define before_fork() before_exec()
@@ -1475,7 +1464,7 @@ rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
 {
     VALUE options = e->options;
     ID id;
-#ifdef RLIM2NUM
+#if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
     int rtype;
 #endif
 
@@ -1961,6 +1950,7 @@ save_redirect_fd(int fd, VALUE save, char *errmsg, size_t errmsg_buflen)
             ERRMSG("dup");
             return -1;
         }
+        rb_update_max_fd(save_fd);
         newary = rb_ary_entry(save, EXEC_OPTION_DUP2);
         if (NIL_P(newary)) {
             newary = hide_obj(rb_ary_new());
@@ -2077,6 +2067,7 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
                 ERRMSG("dup2");
                 goto fail;
             }
+            rb_update_max_fd(pairs[j].newfd);
             pairs[j].oldfd = -1;
             j = pairs[j].older_index;
             if (j != -1)
@@ -2115,6 +2106,7 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
                 ERRMSG("dup");
                 goto fail;
             }
+            rb_update_max_fd(extra_fd);
         }
         else {
             ret = redirect_dup2(pairs[i].oldfd, extra_fd);
@@ -2122,6 +2114,7 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
                 ERRMSG("dup2");
                 goto fail;
             }
+            rb_update_max_fd(extra_fd);
         }
         pairs[i].oldfd = extra_fd;
         j = pairs[i].older_index;
@@ -2132,6 +2125,7 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
                 ERRMSG("dup2");
                 goto fail;
             }
+            rb_update_max_fd(ret);
             pairs[j].oldfd = -1;
             j = pairs[j].older_index;
         }
@@ -2189,6 +2183,7 @@ run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
             ERRMSG("open");
             return -1;
         }
+        rb_update_max_fd(fd2);
         while (i < RARRAY_LEN(ary) &&
                (elt = RARRAY_PTR(ary)[i], RARRAY_PTR(elt)[1] == param)) {
             fd = FIX2INT(RARRAY_PTR(elt)[0]);
@@ -2203,6 +2198,7 @@ run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
                     ERRMSG("dup2");
                     return -1;
                 }
+                rb_update_max_fd(fd);
             }
             i++;
         }
@@ -2235,6 +2231,7 @@ run_exec_dup2_child(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
             ERRMSG("dup2");
             return -1;
         }
+        rb_update_max_fd(newfd);
     }
     return 0;
 }
@@ -2501,6 +2498,7 @@ move_fds_to_avoid_crash(int *fdp, int n, VALUE fds)
             ret = fcntl(fdp[i], F_DUPFD, min);
             if (ret == -1)
                 return -1;
+            rb_update_max_fd(ret);
             close(fdp[i]);
             fdp[i] = ret;
         }
@@ -2947,43 +2945,9 @@ rb_f_abort(int argc, VALUE *argv)
 void
 rb_syswait(rb_pid_t pid)
 {
-    static int overriding;
-#ifdef SIGHUP
-    RETSIGTYPE (*hfunc)(int) = 0;
-#endif
-#ifdef SIGQUIT
-    RETSIGTYPE (*qfunc)(int) = 0;
-#endif
-    RETSIGTYPE (*ifunc)(int) = 0;
     int status;
-    int i, hooked = FALSE;
 
-    if (!overriding) {
-#ifdef SIGHUP
-	hfunc = signal(SIGHUP, SIG_IGN);
-#endif
-#ifdef SIGQUIT
-	qfunc = signal(SIGQUIT, SIG_IGN);
-#endif
-	ifunc = signal(SIGINT, SIG_IGN);
-	overriding = TRUE;
-	hooked = TRUE;
-    }
-
-    do {
-	i = rb_waitpid(pid, &status, 0);
-    } while (i == -1 && errno == EINTR);
-
-    if (hooked) {
-#ifdef SIGHUP
-	signal(SIGHUP, hfunc);
-#endif
-#ifdef SIGQUIT
-	signal(SIGQUIT, qfunc);
-#endif
-	signal(SIGINT, ifunc);
-	overriding = FALSE;
-    }
+    rb_waitpid(pid, &status, 0);
 }
 
 static VALUE
@@ -3583,6 +3547,7 @@ ruby_setsid(void)
     if (ret == -1) return -1;
 
     if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
+        rb_update_max_fd(fd);
 	ioctl(fd, TIOCNOTTY, NULL);
 	close(fd);
     }
@@ -4873,6 +4838,7 @@ rb_daemon(int nochdir, int noclose)
 	err = chdir("/");
 
     if (!noclose && (n = open("/dev/null", O_RDWR, 0)) != -1) {
+        rb_update_max_fd(n);
 	(void)dup2(n, 0);
 	(void)dup2(n, 1);
 	(void)dup2(n, 2);

@@ -115,7 +115,11 @@ ossl_engine_s_engines(VALUE klass)
 
     ary = rb_ary_new();
     for(e = ENGINE_get_first(); e; e = ENGINE_get_next(e)){
-        WrapEngine(klass, obj, e);
+	/* Need a ref count of two here because of ENGINE_free being
+	 * called internally by OpenSSL when moving to the next ENGINE
+	 * and by us when releasing the ENGINE reference */
+	ENGINE_up_ref(e); 
+	WrapEngine(klass, obj, e);
         rb_ary_push(ary, obj);
     }
 

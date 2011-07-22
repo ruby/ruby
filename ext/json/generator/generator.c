@@ -62,7 +62,7 @@ static const char trailingBytesForUTF8[256] = {
  * in a UTF-8 sequence.
  */
 static const UTF32 offsetsFromUTF8[6] = { 0x00000000UL, 0x00003080UL, 0x000E2080UL,
-		     0x03C82080UL, 0xFA082080UL, 0x82082080UL };
+    0x03C82080UL, 0xFA082080UL, 0x82082080UL };
 
 /*
  * Utility routine to tell whether a sequence of bytes is legal UTF-8.
@@ -358,23 +358,23 @@ static void fbuffer_append_char(FBuffer *fb, char newchr)
 
 static void freverse(char *start, char *end)
 {
-	char c;
+    char c;
 
-	while (end > start) {
-		c = *end, *end-- = *start, *start++ = c;
+    while (end > start) {
+        c = *end, *end-- = *start, *start++ = c;
     }
 }
 
 static long fltoa(long number, char *buf)
 {
-	static char digits[] = "0123456789";
-	long sign = number;
-	char* tmp = buf;
+    static char digits[] = "0123456789";
+    long sign = number;
+    char* tmp = buf;
 
-	if (sign < 0) number = -number;
+    if (sign < 0) number = -number;
     do *tmp++ = digits[number % 10]; while (number /= 10);
-	if (sign < 0) *tmp++ = '-';
-	freverse(buf, tmp - 1);
+    if (sign < 0) *tmp++ = '-';
+    freverse(buf, tmp - 1);
     return tmp - buf;
 }
 
@@ -556,6 +556,7 @@ static VALUE mFalseClass_to_json(int argc, VALUE *argv, VALUE self)
 /*
  * call-seq: to_json(*)
  *
+ * Returns a JSON string for nil: 'null'.
  */
 static VALUE mNilClass_to_json(int argc, VALUE *argv, VALUE self)
 {
@@ -1347,6 +1348,7 @@ void Init_generator()
     rb_define_method(cState, "depth", cState_depth, 0);
     rb_define_method(cState, "depth=", cState_depth_set, 1);
     rb_define_method(cState, "configure", cState_configure, 1);
+    rb_define_alias(cState, "merge", "configure");
     rb_define_method(cState, "to_h", cState_to_h, 0);
     rb_define_method(cState, "[]", cState_aref, 1);
     rb_define_method(cState, "generate", cState_generate, 1);

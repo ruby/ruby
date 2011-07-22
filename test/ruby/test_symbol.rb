@@ -144,4 +144,19 @@ class TestSymbol < Test::Unit::TestCase
       assert_equal(':"\\u3042\\u3044\\u3046"', "\u3042\u3044\u3046".encode(e).to_sym.inspect)
     end
   end
+
+  def test_no_inadvertent_symbol_creation
+    feature5072 = '[ruby-core:38367]'
+    c = Class.new
+    s = "gadzooks"
+    {:respond_to? => "#{s}1", :method_defined? => "#{s}2",
+     :public_method_defined? => "#{s}3", :private_method_defined? => "#{s}4",
+     :protected_method_defined? => "#{s}5", :const_defined? => "A#{s}",
+     :instance_variable_defined? => "@#{s}", :class_variable_defined? => "@@#{s}"
+    }.each do |meth, str|
+      msg = "#{meth}(#{str}) #{feature5072}"
+      assert !c.send(meth, str), msg
+      assert !Symbol.all_symbols.any? {|sym| sym.to_s == str}, msg
+    end
+  end
 end

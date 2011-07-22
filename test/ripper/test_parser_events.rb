@@ -46,9 +46,13 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_var_ref
-    assert_equal '[ref(a)]', parse('a')
+    assert_equal '[assign(var_field(a),ref(a))]', parse('a=a')
     assert_equal '[ref(nil)]', parse('nil')
     assert_equal '[ref(true)]', parse('true')
+  end
+
+  def test_vcall
+    assert_equal '[vcall(a)]', parse('a')
   end
 
   def test_BEGIN
@@ -77,15 +81,15 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal '[fcall(m,[])]', parse('m()')
     assert_equal '[fcall(m,[1])]', parse('m(1)')
     assert_equal '[fcall(m,[1,2])]', parse('m(1,2)')
-    assert_equal '[fcall(m,[*ref(r)])]', parse('m(*r)')
-    assert_equal '[fcall(m,[1,*ref(r)])]', parse('m(1,*r)')
-    assert_equal '[fcall(m,[1,2,*ref(r)])]', parse('m(1,2,*r)')
-    assert_equal '[fcall(m,[&ref(r)])]', parse('m(&r)')
-    assert_equal '[fcall(m,[1,&ref(r)])]', parse('m(1,&r)')
-    assert_equal '[fcall(m,[1,2,&ref(r)])]', parse('m(1,2,&r)')
-    assert_equal '[fcall(m,[*ref(a),&ref(b)])]', parse('m(*a,&b)')
-    assert_equal '[fcall(m,[1,*ref(a),&ref(b)])]', parse('m(1,*a,&b)')
-    assert_equal '[fcall(m,[1,2,*ref(a),&ref(b)])]', parse('m(1,2,*a,&b)')
+    assert_equal '[fcall(m,[*vcall(r)])]', parse('m(*r)')
+    assert_equal '[fcall(m,[1,*vcall(r)])]', parse('m(1,*r)')
+    assert_equal '[fcall(m,[1,2,*vcall(r)])]', parse('m(1,2,*r)')
+    assert_equal '[fcall(m,[&vcall(r)])]', parse('m(&r)')
+    assert_equal '[fcall(m,[1,&vcall(r)])]', parse('m(1,&r)')
+    assert_equal '[fcall(m,[1,2,&vcall(r)])]', parse('m(1,2,&r)')
+    assert_equal '[fcall(m,[*vcall(a),&vcall(b)])]', parse('m(*a,&b)')
+    assert_equal '[fcall(m,[1,*vcall(a),&vcall(b)])]', parse('m(1,*a,&b)')
+    assert_equal '[fcall(m,[1,2,*vcall(a),&vcall(b)])]', parse('m(1,2,*a,&b)')
   end
 
   def test_args_add
@@ -120,8 +124,8 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_aref
-    assert_equal '[aref(ref(v),[1])]', parse('v[1]')
-    assert_equal '[aref(ref(v),[1,2])]', parse('v[1,2]')
+    assert_equal '[aref(vcall(v),[1])]', parse('v[1]')
+    assert_equal '[aref(vcall(v),[1,2])]', parse('v[1,2]')
   end
 
   def test_assoclist_from_args
@@ -143,7 +147,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_aref_field
-    assert_equal '[assign(aref_field(ref(a),[1]),2)]', parse('a[1]=2')
+    assert_equal '[assign(aref_field(vcall(a),[1]),2)]', parse('a[1]=2')
   end
 
   def test_arg_ambiguous
@@ -323,7 +327,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
       tree = parse("foo.()", :on_call) {thru_call = true}
     }
     assert_equal true, thru_call
-    assert_equal "[call(ref(foo),.,call,[])]", tree
+    assert_equal "[call(vcall(foo),.,call,[])]", tree
   end
 
   def test_excessed_comma

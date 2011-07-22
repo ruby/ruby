@@ -495,6 +495,9 @@ class TestModule < Test::Unit::TestCase
   def test_const_get_invalid_name
     c1 = Class.new
     assert_raise(NameError) { c1.const_defined?(:foo) }
+    name = "gadzooks"
+    assert !Symbol.all_symbols.any? {|sym| sym.to_s == name}
+    assert_raise(NameError) { c1.const_defined?(name) }
   end
 
   def test_const_get_no_inherited
@@ -864,6 +867,64 @@ class TestModule < Test::Unit::TestCase
     assert_equal :a=, memo.shift
     assert_equal [:f, :g, :a, :a=], memo.shift
     assert_equal mod.instance_method(:a=), memo.shift
+  end
+
+  def test_method_undefined
+    added = []
+    undefed = []
+    removed = []
+    mod = Module.new do
+      mod = self
+      def f
+      end
+      (class << self ; self ; end).class_eval do
+        define_method :method_added do |sym|
+          added << sym
+        end
+        define_method :method_undefined do |sym|
+          undefed << sym
+        end
+        define_method :method_removed do |sym|
+          removed << sym
+        end
+      end
+    end
+    assert_method_defined?(mod, :f)
+    mod.module_eval do
+      undef :f
+    end
+    assert_equal [], added
+    assert_equal [:f], undefed
+    assert_equal [], removed
+  end
+
+  def test_method_removed
+    added = []
+    undefed = []
+    removed = []
+    mod = Module.new do
+      mod = self
+      def f
+      end
+      (class << self ; self ; end).class_eval do
+        define_method :method_added do |sym|
+          added << sym
+        end
+        define_method :method_undefined do |sym|
+          undefed << sym
+        end
+        define_method :method_removed do |sym|
+          removed << sym
+        end
+      end
+    end
+    assert_method_defined?(mod, :f)
+    mod.module_eval do
+      remove_method :f
+    end
+    assert_equal [], added
+    assert_equal [], undefed
+    assert_equal [:f], removed
   end
 
   def test_method_redefinition

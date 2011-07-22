@@ -1541,6 +1541,7 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 		rb_control_frame_t *cfp = GET_CFP();
 		VALUE *dfp = GET_DFP();
 		VALUE *lfp = GET_LFP();
+		int in_class_frame = 0;
 
 		/* check orphan and get dfp */
 		while ((VALUE *) cfp < th->stack + th->stack_size) {
@@ -1548,12 +1549,19 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 			lfp = cfp->lfp;
 		    }
 		    if (cfp->dfp == lfp && cfp->iseq->type == ISEQ_TYPE_CLASS) {
+			in_class_frame = 1;
 			lfp = 0;
 		    }
 
 		    if (cfp->lfp == lfp) {
 			if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA) {
 			    VALUE *tdfp = dfp;
+
+			    if (in_class_frame) {
+				/* lambda {class A; ... return ...; end} */
+				dfp = cfp->dfp;
+				goto valid_return;
+			    }
 
 			    while (lfp != tdfp) {
 				if (cfp->dfp == tdfp) {

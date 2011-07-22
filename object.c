@@ -1833,7 +1833,8 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
     else {
 	rb_scan_args(argc, argv, "11", &name, &recur);
     }
-    id = rb_to_id(name);
+    if (!(id = rb_check_id(name)) && rb_is_const_name(name))
+	return Qfalse;
     if (!rb_is_const_id(id)) {
 	rb_name_error(id, "wrong constant name %s", rb_id2name(id));
     }
@@ -1923,8 +1924,9 @@ rb_obj_ivar_set(VALUE obj, VALUE iv, VALUE val)
 static VALUE
 rb_obj_ivar_defined(VALUE obj, VALUE iv)
 {
-    ID id = rb_to_id(iv);
+    ID id = rb_check_id(iv);
 
+    if (!id && rb_is_instance_name(iv)) return Qfalse;
     if (!rb_is_instance_id(id)) {
 	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
     }
@@ -2002,8 +2004,9 @@ rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
 static VALUE
 rb_mod_cvar_defined(VALUE obj, VALUE iv)
 {
-    ID id = rb_to_id(iv);
+    ID id = rb_check_id(iv);
 
+    if (!id && rb_is_class_name(iv)) return Qfalse;
     if (!rb_is_class_id(id)) {
 	rb_name_error(id, "`%s' is not allowed as a class variable name", rb_id2name(id));
     }

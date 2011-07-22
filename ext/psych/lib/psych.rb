@@ -98,6 +98,9 @@ module Psych
   class Exception < RuntimeError
   end
 
+  class BadAlias < Exception
+  end
+
   autoload :Stream, 'psych/stream'
 
   ###

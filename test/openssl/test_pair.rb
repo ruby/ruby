@@ -238,6 +238,8 @@ class OpenSSL::TestPair < Test::Unit::TestCase
     s1.print "a\ndef"
     assert_equal("a\n", s2.gets)
   ensure
+    s1.close if s1 && !s1.closed?
+    s2.close if s2 && !s2.closed?
     serv.close if serv && !serv.closed?
     sock1.close if sock1 && !sock1.closed?
     sock2.close if sock2 && !sock2.closed?

@@ -223,8 +223,11 @@ ossl_verify_cb(int ok, X509_STORE_CTX *ctx)
 	    args.proc = proc;
 	    args.preverify_ok = ok ? Qtrue : Qfalse;
 	    args.store_ctx = rctx;
-	    ret = rb_ensure(ossl_call_verify_cb_proc, (VALUE)&args,
-			    ossl_x509stctx_clear_ptr, rctx);
+	    ret = rb_protect((VALUE(*)(VALUE))ossl_call_verify_cb_proc, (VALUE)&args, &state);
+	    ossl_x509stctx_clear_ptr(rctx);
+	    if (state) {
+		rb_warn("exception in verify_callback is ignored");
+	    }
 	}
 	if (ret == Qtrue) {
 	    X509_STORE_CTX_set_error(ctx, X509_V_OK);

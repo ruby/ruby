@@ -797,7 +797,7 @@ rb_vm_bugreport(void)
 	char **syms = backtrace_symbols(trace, n);
 
 	if (syms) {
-#ifdef __ELF__
+#ifdef USE_ELF
 	    rb_dump_backtrace_with_lines(n, trace, syms);
 #else
 	    int i;

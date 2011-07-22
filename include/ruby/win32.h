@@ -234,7 +234,7 @@ struct msghdr {
 extern int    rb_w32_cmdvector(const char *, char ***);
 extern rb_pid_t  rb_w32_pipe_exec(const char *, const char *, int, int *, int *);
 extern int    flock(int fd, int oper);
-extern int    rb_w32_has_cancel_io(void);
+extern int    rb_w32_io_cancelable_p(int);
 extern int    rb_w32_is_socket(int);
 extern int    WSAAPI rb_w32_accept(int, struct sockaddr *, int *);
 extern int    WSAAPI rb_w32_bind(int, const struct sockaddr *, int);
@@ -693,8 +693,8 @@ int  rb_w32_wopen(const WCHAR *, int, ...);
 int  rb_w32_close(int);
 int  rb_w32_fclose(FILE*);
 int  rb_w32_pipe(int[2]);
-size_t rb_w32_read(int, void *, size_t);
-size_t rb_w32_write(int, const void *, size_t);
+ssize_t rb_w32_read(int, void *, size_t);
+ssize_t rb_w32_write(int, const void *, size_t);
 int  rb_w32_utime(const char *, const struct utimbuf *);
 int  rb_w32_uutime(const char *, const struct utimbuf *);
 long rb_w32_write_console(uintptr_t, int);	/* use uintptr_t instead of VALUE because it's not defined yet here */

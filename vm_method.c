@@ -304,7 +304,9 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
       default:
 	rb_bug("rb_add_method: unsupported method type (%d)\n", type);
     }
-    method_added(klass, mid);
+    if (type != VM_METHOD_TYPE_UNDEF) {
+	method_added(klass, mid);
+    }
     return me;
 }
 
@@ -711,7 +713,8 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
 static VALUE
 rb_mod_method_defined(VALUE mod, VALUE mid)
 {
-    if (!rb_method_boundp(mod, rb_to_id(mid), 1)) {
+    ID id = rb_check_id(mid);
+    if (!id || !rb_method_boundp(mod, id, 1)) {
 	return Qfalse;
     }
     return Qtrue;
@@ -761,7 +764,9 @@ check_definition(VALUE mod, ID mid, rb_method_flag_t noex)
 static VALUE
 rb_mod_public_method_defined(VALUE mod, VALUE mid)
 {
-    return check_definition(mod, rb_to_id(mid), NOEX_PUBLIC);
+    ID id = rb_check_id(mid);
+    if (!id) return Qfalse;
+    return check_definition(mod, id, NOEX_PUBLIC);
 }
 
 /*
@@ -793,7 +798,9 @@ rb_mod_public_method_defined(VALUE mod, VALUE mid)
 static VALUE
 rb_mod_private_method_defined(VALUE mod, VALUE mid)
 {
-    return check_definition(mod, rb_to_id(mid), NOEX_PRIVATE);
+    ID id = rb_check_id(mid);
+    if (!id) return Qfalse;
+    return check_definition(mod, id, NOEX_PRIVATE);
 }
 
 /*
@@ -825,7 +832,9 @@ rb_mod_private_method_defined(VALUE mod, VALUE mid)
 static VALUE
 rb_mod_protected_method_defined(VALUE mod, VALUE mid)
 {
-    return check_definition(mod, rb_to_id(mid), NOEX_PROTECTED);
+    ID id = rb_check_id(mid);
+    if (!id) return Qfalse;
+    return check_definition(mod, id, NOEX_PROTECTED);
 }
 
 int
@@ -1236,7 +1245,8 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
     ID id;
 
     rb_scan_args(argc, argv, "11", &mid, &priv);
-    id = rb_to_id(mid);
+    if (!(id = rb_check_id(mid)))
+	return Qfalse;
     if (basic_obj_respond_to(obj, id, !RTEST(priv)))
 	return Qtrue;
     return Qfalse;
@@ -1252,7 +1262,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
  *  See #respond_to?.
  */
 static VALUE
-obj_respond_to_missing(VALUE obj, VALUE priv)
+obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
 {
     return Qfalse;
 }

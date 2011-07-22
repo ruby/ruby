@@ -70,8 +70,8 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 
     StringValue(key);
     GetHMAC(self, ctx);
-    HMAC_Init_ex(ctx, RSTRING_PTR(key), RSTRING_LENINT(key),
-		 GetDigestPtr(digest), NULL);
+    HMAC_Init(ctx, RSTRING_PTR(key), RSTRING_LENINT(key),
+		 GetDigestPtr(digest));
 
     return self;
 }
@@ -180,7 +180,7 @@ ossl_hmac_reset(VALUE self)
     HMAC_CTX *ctx;
 
     GetHMAC(self, ctx);
-    HMAC_Init_ex(ctx, NULL, 0, NULL, NULL);
+    HMAC_Init(ctx, NULL, 0, NULL);
 
     return self;
 }

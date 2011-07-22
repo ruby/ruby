@@ -59,8 +59,31 @@ j+RBGfCFrrQbBdnkFI/ztgM=
 -----END SSL SESSION PARAMETERS-----
 __EOS__
 
+  DUMMY_SESSION_NO_EXT = <<-__EOS__
+-----BEGIN SSL SESSION PARAMETERS-----
+MIIDCAIBAQICAwAEAgA5BCDyAW7rcpzMjDSosH+Tv6sukymeqgq3xQVVMez628A+
+lAQw9TrKzrIqlHEh6ltuQaqv/Aq83AmaAlogYktZgXAjOGnhX7ifJDNLMuCfQq53
+hPAaoQYCBE4iDeeiBAICASyjggKOMIICijCCAXKgAwIBAgIBAjANBgkqhkiG9w0B
+AQUFADA9MRMwEQYKCZImiZPyLGQBGRYDb3JnMRkwFwYKCZImiZPyLGQBGRYJcnVi
+eS1sYW5nMQswCQYDVQQDDAJDQTAeFw0xMTA3MTYyMjE3MTFaFw0xMTA3MTYyMjQ3
+MTFaMEQxEzARBgoJkiaJk/IsZAEZFgNvcmcxGTAXBgoJkiaJk/IsZAEZFglydWJ5
+LWxhbmcxEjAQBgNVBAMMCWxvY2FsaG9zdDCBnzANBgkqhkiG9w0BAQEFAAOBjQAw
+gYkCgYEAy8LEsNRApz7U/j5DoB4XBgO9Z8Atv5y/OVQRp0ag8Tqo1YewsWijxEWB
+7JOATwpBN267U4T1nPZIxxEEO7n/WNa2ws9JWsjah8ssEBFSxZqdXKSLf0N4Hi7/
+GQ/aYoaMCiQ8jA4jegK2FJmXM71uPe+jFN/peeBOpRfyXxRFOYcCAwEAAaMSMBAw
+DgYDVR0PAQH/BAQDAgWgMA0GCSqGSIb3DQEBBQUAA4IBAQA3TRzABRG3kz8jEEYr
+tDQqXgsxwTsLhTT5d1yF0D8uFw+y15hJAJnh6GJHjqhWBrF4zNoTApFo+4iIL6g3
+q9C3mUsxIVAHx41DwZBh/FI7J4FqlAoGOguu7892CNVY3ZZjc3AXMTdKjcNoWPzz
+FCdj5fNT24JMMe+ZdGZK97ChahJsdn/6B3j6ze9NK9mfYEbiJhejGTPLOFVHJCGR
+KYYZ3ZcKhLDr9ql4d7cCo1gBtemrmFQGPui7GttNEqmXqUKvV8mYoa8farf5i7T4
+L6a/gp2cVZTaDIS1HjbJsA/Ag7AajZqiN6LfqShNUVsrMZ+5CoV8EkBDTZPJ9MSr
+a3EqpAIEAKUDAgET
+-----END SSL SESSION PARAMETERS-----
+__EOS__
+
+
   def test_session_time
-    sess = OpenSSL::SSL::Session.new(DUMMY_SESSION)
+    sess = OpenSSL::SSL::Session.new(DUMMY_SESSION_NO_EXT)
     sess.time = (now = Time.now)
     assert_equal(now.to_i, sess.time.to_i)
     sess.time = 1
@@ -73,7 +96,7 @@ __EOS__
   end
 
   def test_session_timeout
-    sess = OpenSSL::SSL::Session.new(DUMMY_SESSION)
+    sess = OpenSSL::SSL::Session.new(DUMMY_SESSION_NO_EXT)
     assert_raise(TypeError) do
       sess.timeout = (now = Time.now)
     end
@@ -84,6 +107,12 @@ __EOS__
     sess.timeout = 2**31 - 1
     assert_equal(2**31 - 1, sess.timeout.to_i)
   end
+
+if OpenSSL::OPENSSL_VERSION_NUMBER >= 0x00908000
+  def test_session_exts_read
+    assert(OpenSSL::SSL::Session.new(DUMMY_SESSION))
+  end
+end
 
   def test_client_session
     last_session = nil

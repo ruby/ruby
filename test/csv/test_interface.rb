@@ -316,4 +316,19 @@ class TestCSV::Interface < TestCSV
     assert_equal(STDOUT, CSV.instance.instance_eval { @io })
     assert_equal(STDOUT, CSV { |new_csv| new_csv.instance_eval { @io } })
   end
+
+  def test_options_are_not_modified
+    opt = {}.freeze
+    assert_nothing_raised {  CSV.foreach(@path, opt)       }
+    assert_nothing_raised {  CSV.open(@path, opt){}        }
+    assert_nothing_raised {  CSV.parse("", opt)            }
+    assert_nothing_raised {  CSV.parse_line("", opt)       }
+    assert_nothing_raised {  CSV.read(@path, opt)          }
+    assert_nothing_raised {  CSV.readlines(@path, opt)     }
+    assert_nothing_raised {  CSV.table(@path, opt)         }
+    assert_nothing_raised {  CSV.generate(opt){}           }
+    assert_nothing_raised {  CSV.generate_line([], opt)    }
+    assert_nothing_raised {  CSV.filter("", "", opt){}     }
+    assert_nothing_raised {  CSV.instance("", opt)         }
+  end
 end

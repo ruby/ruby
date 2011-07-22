@@ -108,7 +108,7 @@ module Net   #:nodoc:
   # If you wish to re-use a connection across multiple HTTP requests without
   # automatically closing it you can use ::new instead of ::start.  #request
   # will automatically open a connection to the server if one is not currently
-  # open.  You can manually close the connection with #close.
+  # open.  You can manually close the connection with #finish.
   #
   # === Response Data
   #

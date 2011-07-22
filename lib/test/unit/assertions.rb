@@ -6,12 +6,24 @@ module Test
     module Assertions
       include MiniTest::Assertions
 
-      def mu_pp(obj)
+      def mu_pp(obj) #:nodoc:
         obj.pretty_inspect.chomp
       end
 
       UNASSIGNED = Object.new # :nodoc:
 
+      # :call-seq:
+      #   assert( test, failure_message = UNASSIGNED )
+      #
+      #Tests if +test+ is true.
+      #
+      #+msg+ may be a String or a Proc. If +msg+ is a String, it will be used
+      #as the failure message. Otherwise, the result of calling +msg+ will be
+      #used as the message if the assertion fails.
+      #
+      #If no +msg+ is given, a default message will be used.
+      #
+      #    assert(false, "This was expected to be true")
       def assert(test, msg = UNASSIGNED)
         case msg
         when UNASSIGNED
@@ -24,14 +36,53 @@ module Test
         super
       end
 
+      # :call-seq:
+      #   assert_block( failure_message = nil )
+      #
+      #Tests the result of the given block. If the block does not return true,
+      #the assertion will fail. The optional +failure_message+ argument is the same as in
+      #Assertions#assert.
+      #
+      #    assert_block do
+      #      [1, 2, 3].any? { |num| num < 1 }
+      #    end
       def assert_block(*msgs)
         assert yield, *msgs
       end
 
+      # :call-seq:
+      #   assert_raise( *args, &block )
+      #
+      #Tests if the given block raises an exception. Acceptable exception
+      #types maye be given as optional arguments. If the last argument is a
+      #String, it will be used as the error message.
+      #
+      #    assert_raise do #Fails, no Exceptions are raised
+      #    end
+      #
+      #    assert_raise NameError do
+      #      puts x  #Raises NameError, so assertion succeeds
+      #    end
       def assert_raise(*args, &b)
         assert_raises(*args, &b)
       end
 
+      # :call-seq:
+      #   assert_nothing_raised( *args, &block )
+      #
+      #If any exceptions are given as arguments, the assertion will
+      #fail if one of those exceptions are raised. Otherwise, the test fails
+      #if any exceptions are raised.
+      #
+      #The final argument may be a failure message.
+      #
+      #    assert_nothing_raised RuntimeError do
+      #      raise Exception #Assertion passes, Exception is not a RuntimeError
+      #    end
+      #
+      #    assert_nothing_raised do
+      #      raise Exception #Assertion fails
+      #    end
       def assert_nothing_raised(*args)
         self._assertions += 1
         if Module === args.last
@@ -61,6 +112,16 @@ module Test
         nil
       end
 
+      # :call-seq:
+      #   assert_nothing_thrown( failure_message = nil, &block )
+      #
+      #Fails if the given block uses a call to Kernel#throw.
+      #
+      #An optional failure message may be provided as the final argument.
+      #
+      #    assert_nothing_thrown "Something was thrown!" do
+      #      throw :problem?
+      #    end
       def assert_nothing_thrown(msg=nil)
         begin
           yield
@@ -72,6 +133,12 @@ module Test
         assert(true, "Expected nothing to be thrown")
       end
 
+      # :call-seq:
+      #   assert_equal( expected, actual, failure_message = nil )
+      #
+      #Tests if +expected+ is equal to +actual+.
+      #
+      #An optional failure message may be provided as the final argument.
       def assert_equal(exp, act, msg = nil)
         msg = message(msg) {
           exp_str = mu_pp(exp)
@@ -118,16 +185,34 @@ module Test
         assert(exp == act, msg)
       end
 
+      # :call-seq:
+      #   assert_not_nil( expression, failure_message = nil )
+      #
+      #Tests if +expression+ is not nil.
+      #
+      #An optional failure message may be provided as the final argument.
       def assert_not_nil(exp, msg=nil)
         msg = message(msg) { "<#{mu_pp(exp)}> expected to not be nil" }
         assert(!exp.nil?, msg)
       end
 
+      # :call-seq:
+      #   assert_not_equal( expected, actual, failure_message = nil )
+      #
+      #Tests if +expected+ is not equal to +actual+.
+      #
+      #An optional failure message may be provided as the final argument.
       def assert_not_equal(exp, act, msg=nil)
         msg = message(msg) { "<#{mu_pp(exp)}> expected to be != to\n<#{mu_pp(act)}>" }
         assert(exp != act, msg)
       end
 
+      # :call-seq:
+      #   assert_no_match( regexp, string, failure_message = nil )
+      #
+      #Tests if the given Regexp does not match a given String.
+      #
+      #An optional failure message may be provided as the final argument.
       def assert_no_match(regexp, string, msg=nil)
         assert_instance_of(Regexp, regexp, "The first argument to assert_no_match should be a Regexp.")
         self._assertions -= 1
@@ -135,6 +220,15 @@ module Test
         assert(regexp !~ string, msg)
       end
 
+      # :call-seq:
+      #   assert_not_same( expected, actual, failure_message = nil )
+      #
+      #Tests if +expected+ is not the same object as +actual+.
+      #This test uses Object#equal? to test equality.
+      #
+      #An optional failure message may be provided as the final argument.
+      #
+      #    assert_not_same("x", "x") #Succeeds
       def assert_not_same(expected, actual, message="")
         msg = message(msg) { build_message(message, <<EOT, expected, expected.__id__, actual, actual.__id__) }
 <?>
@@ -145,8 +239,17 @@ EOT
         assert(!actual.equal?(expected), msg)
       end
 
-      # get rid of overcounting
+      # :call-seq:
+      #   assert_respond_to( object, method, failure_message = nil )
+      #
+      #Tests if the given Object responds to +method+.
+      #
+      #An optional failure message may be provided as the final argument.
+      #
+      #    assert_respond_to("hello", :reverse)  #Succeeds
+      #    assert_respond_to("hello", :does_not_exist)  #Fails
       def assert_respond_to obj, meth, msg = nil
+        #get rid of overcounting
         super if !caller[0].rindex(MiniTest::MINI_DIR, 0) || !obj.respond_to?(meth)
       end
 
@@ -158,7 +261,7 @@ EOT
       alias assert_include assert_includes
       alias assert_not_include assert_not_includes
 
-      def build_message(head, template=nil, *arguments)
+      def build_message(head, template=nil, *arguments) #:nodoc:
         template &&= template.chomp
         template.gsub(/\?/) { mu_pp(arguments.shift) }
       end

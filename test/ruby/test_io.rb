@@ -1975,4 +1975,21 @@ End
     write_file.close
     file.close!
   end
+
+  def test_warn
+    stderr = EnvUtil.verbose_warning do
+      warn "warning"
+    end
+    assert_equal("warning\n", stderr)
+
+    stderr = EnvUtil.verbose_warning do
+      warn
+    end
+    assert_equal("", stderr)
+
+    stderr = EnvUtil.verbose_warning do
+      warn "[Feature #5029]", "[ruby-core:38070]"
+    end
+    assert_equal("[Feature #5029]\n[ruby-core:38070]\n", stderr)
+  end
 end

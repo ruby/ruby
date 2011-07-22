@@ -47,7 +47,7 @@
 #define RB_PAGE_SIZE (pagesize)
 #define RB_PAGE_MASK (~(RB_PAGE_SIZE - 1))
 static long pagesize;
-#define FIBER_MACHINE_STACK_ALLOCATION_SIZE  (0x10000 / sizeof(VALUE))
+#define FIBER_MACHINE_STACK_ALLOCATION_SIZE  (0x10000)
 #endif
 
 #define CAPTURE_JUST_VALID_VM_STACK 1
@@ -382,8 +382,8 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
     cont->saved_thread.machine_stack_start = 0;
     cont->saved_thread.machine_stack_end = 0;
 #ifdef __ia64
-    cont->saved_thread.machine_register_stack_start = 0
-    cont->saved_thread.machine_register_stack_end = 0
+    cont->saved_thread.machine_register_stack_start = 0;
+    cont->saved_thread.machine_register_stack_end = 0;
 #endif
 }
 
@@ -517,6 +517,10 @@ fiber_entry(void *arg)
 }
 #else /* _WIN32 */
 
+/*
+ * FreeBSD require a first (i.e. addr) argument of mmap(2) is not NULL
+ * if MAP_STACK is passed.
+ */
 #if defined(MAP_STACK) && !defined(__FreeBSD__)
 #define FIBER_STACK_FLAGS (MAP_PRIVATE | MAP_ANON | MAP_STACK)
 #else
@@ -603,7 +607,7 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
     rb_thread_t *th = GET_THREAD(), *sth = &newfib->cont.saved_thread;
 
     if (newfib->status != RUNNING) {
-	fiber_initialize_machine_stack_context(newfib, FIBER_MACHINE_STACK_ALLOCATION_SIZE * sizeof(VALUE));
+	fiber_initialize_machine_stack_context(newfib, FIBER_MACHINE_STACK_ALLOCATION_SIZE);
     }
 
     /* restore thread context */

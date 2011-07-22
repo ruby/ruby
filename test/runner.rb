@@ -4,6 +4,8 @@ require 'test/unit'
 
 src_testdir = File.dirname(File.expand_path(__FILE__))
 $LOAD_PATH << src_testdir
+module Gem
+end
 class Gem::TestCase < MiniTest::Unit::TestCase
   @@project_dir = File.dirname($LOAD_PATH.last)
 end

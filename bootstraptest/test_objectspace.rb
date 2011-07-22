@@ -32,3 +32,15 @@ assert_normal_exit %q{
     end
   }
 }, '[ruby-dev:31985]'
+
+assert_normal_exit %q{
+  ObjectSpace.define_finalizer("") do
+    Mutex.new.lock
+  end
+}, '[ruby-dev:44049]'
+
+assert_normal_exit %q{
+  ObjectSpace.define_finalizer("") do
+    Thread.new {}
+  end
+}, '[ruby-core:37858]'

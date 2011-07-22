@@ -275,7 +275,7 @@ aPgwHyJBiK1/ebK3tYcrSKrOoRyrAgEC
           server_loop(ctx, ssls, server_proc)
         end
 
-        $stderr.printf("%s started: pid=%d port=%d\n", SSL_SERVER, pid, port) if $DEBUG
+        $stderr.printf("%s started: pid=%d port=%d\n", SSL_SERVER, $$, port) if $DEBUG
 
         block.call(server, port.to_i)
       ensure

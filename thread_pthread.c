@@ -148,6 +148,9 @@ gvl_init(rb_vm_t *vm)
 static void
 gvl_destroy(rb_vm_t *vm)
 {
+    native_cond_destroy(&vm->gvl.switch_wait_cond);
+    native_cond_destroy(&vm->gvl.switch_cond);
+    native_cond_destroy(&vm->gvl.cond);
     native_mutex_destroy(&vm->gvl.lock);
 }
 
@@ -167,9 +170,9 @@ mutex_debug(const char *msg, pthread_mutex_t *lock)
 	int r;
 	static pthread_mutex_t dbglock = PTHREAD_MUTEX_INITIALIZER;
 
-	if ((r = pthread_mutex_lock(&dbglock)) != 0) {exit(1);}
+	if ((r = pthread_mutex_lock(&dbglock)) != 0) {exit(EXIT_FAILURE);}
 	fprintf(stdout, "%s: %p\n", msg, (void *)lock);
-	if ((r = pthread_mutex_unlock(&dbglock)) != 0) {exit(1);}
+	if ((r = pthread_mutex_unlock(&dbglock)) != 0) {exit(EXIT_FAILURE);}
     }
 }
 
@@ -515,6 +518,7 @@ get_stack(void **addr, size_t *size)
 				   &reg, &regsiz));
     *addr = thinfo.__pi_stackaddr;
     *size = thinfo.__pi_stacksize;
+    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
 #else
 #error STACKADDR_AVAILABLE is defined but not implemented.
 #endif
@@ -943,7 +947,7 @@ add_signal_thread_list(rb_thread_t *th)
 
 	    if (list == 0) {
 		fprintf(stderr, "[FATAL] failed to allocate memory\n");
-		exit(1);
+		exit(EXIT_FAILURE);
 	    }
 
 	    list->th = th;
@@ -1156,8 +1160,6 @@ thread_timer(void *p)
 static void
 rb_thread_create_timer_thread(void)
 {
-    rb_enable_interrupt();
-
     if (!timer_thread_id) {
 	pthread_attr_t attr;
 	int err;
@@ -1189,6 +1191,8 @@ rb_thread_create_timer_thread(void)
 	    if (err != 0) {
 		rb_bug_errno("thread_timer: Failed to create communication pipe for timer thread", errno);
 	    }
+            rb_update_max_fd(timer_thread_pipe[0]);
+            rb_update_max_fd(timer_thread_pipe[1]);
 #if defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL)
 	    {
 		int oflags;
@@ -1220,8 +1224,6 @@ rb_thread_create_timer_thread(void)
 	    exit(EXIT_FAILURE);
 	}
     }
-
-    rb_disable_interrupt(); /* only timer thread recieve signal */
 }
 
 static int

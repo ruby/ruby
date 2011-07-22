@@ -331,8 +331,25 @@ typedef struct rb_mutex_struct
     struct rb_mutex_struct *next_mutex;
 } rb_mutex_t;
 
-static void rb_mutex_unlock_all(rb_mutex_t *mutex, rb_thread_t *th);
 static void rb_mutex_abandon_all(rb_mutex_t *mutexes);
+static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *th);
+
+void
+rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
+{
+    const char *err;
+    rb_mutex_t *mutex;
+    rb_mutex_t *mutexes = th->keeping_mutexes;
+
+    while (mutexes) {
+	mutex = mutexes;
+	/* rb_warn("mutex #<%p> remains to be locked by terminated thread",
+		mutexes); */
+	mutexes = mutex->next_mutex;
+	err = rb_mutex_unlock_th(mutex, th);
+	if (err) rb_bug("invalid keeping_mutexes: %s", err);
+    }
+}
 
 void
 rb_thread_terminate_all(void)
@@ -346,12 +363,11 @@ rb_thread_terminate_all(void)
     }
 
     /* unlock all locking mutexes */
-    if (th->keeping_mutexes) {
-	rb_mutex_unlock_all(th->keeping_mutexes, GET_THREAD());
-    }
+    rb_threadptr_unlock_all_locking_mutexes(th);
 
     thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
     st_foreach(vm->living_threads, terminate_i, (st_data_t)th);
+    vm->inhibit_thread_creation = 1;
 
     while (!rb_thread_alone()) {
 	PUSH_TAG();
@@ -362,15 +378,6 @@ rb_thread_terminate_all(void)
 	    /* ignore exception */
 	}
 	POP_TAG();
-    }
-}
-
-static void
-thread_unlock_all_locking_mutexes(rb_thread_t *th)
-{
-    if (th->keeping_mutexes) {
-	rb_mutex_unlock_all(th->keeping_mutexes, th);
-	th->keeping_mutexes = NULL;
     }
 }
 
@@ -517,7 +524,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    join_th = join_th->join_list_next;
 	}
 
-	thread_unlock_all_locking_mutexes(th);
+	rb_threadptr_unlock_all_locking_mutexes(th);
 	if (th != main_th) rb_check_deadlock(th->vm);
 
 	if (!th->root_fiber) {
@@ -577,6 +584,10 @@ thread_s_new(int argc, VALUE *argv, VALUE klass)
 {
     rb_thread_t *th;
     VALUE thread = rb_thread_alloc(klass);
+
+    if (GET_VM()->inhibit_thread_creation)
+	rb_raise(rb_eThreadError, "can't alloc thread");
+
     rb_obj_call_init(thread, argc, argv);
     GetThreadPtr(thread, th);
     if (!th->first_args) {
@@ -1199,7 +1210,7 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
 	 */
 
 	fprintf(stderr, "[BUG] rb_thread_call_with_gvl() is called by non-ruby thread\n");
-	exit(1);
+	exit(EXIT_FAILURE);
     }
 
     brb = (struct rb_blocking_region_buffer *)th->blocking_region_buffer;
@@ -2476,7 +2487,7 @@ rb_fd_set(int fd, rb_fdset_t *set)
 
 #endif
 
-#if defined(__CYGWIN__) || defined(_WIN32)
+#if defined(__CYGWIN__)
 static long
 cmp_tv(const struct timeval *a, const struct timeval *b)
 {
@@ -2513,7 +2524,7 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
     rb_fdset_t UNINITIALIZED_VAR(orig_except);
     double limit = 0;
     struct timeval wait_rest;
-# if defined(__CYGWIN__) || defined(_WIN32)
+# if defined(__CYGWIN__)
     struct timeval start_time;
 # endif
 
@@ -3607,22 +3618,6 @@ rb_mutex_unlock(VALUE self)
 }
 
 static void
-rb_mutex_unlock_all(rb_mutex_t *mutexes, rb_thread_t *th)
-{
-    const char *err;
-    rb_mutex_t *mutex;
-
-    while (mutexes) {
-	mutex = mutexes;
-	/* rb_warn("mutex #<%p> remains to be locked by terminated thread",
-		mutexes); */
-	mutexes = mutex->next_mutex;
-	err = rb_mutex_unlock_th(mutex, th);
-	if (err) rb_bug("invalid keeping_mutexes: %s", err);
-    }
-}
-
-static void
 rb_mutex_abandon_all(rb_mutex_t *mutexes)
 {
     rb_mutex_t *mutex;
@@ -4352,6 +4347,7 @@ set_trace_func(VALUE obj, VALUE trace)
     rb_remove_event_hook(call_trace_func);
 
     if (NIL_P(trace)) {
+	GET_THREAD()->tracing = EVENT_RUNNING_NOTHING;
 	return Qnil;
     }
 
@@ -4408,6 +4404,7 @@ thread_set_trace_func_m(VALUE obj, VALUE trace)
     rb_threadptr_remove_event_hook(th, call_trace_func);
 
     if (NIL_P(trace)) {
+	th->tracing = EVENT_RUNNING_NOTHING;
 	return Qnil;
     }
     thread_add_trace_func(th, trace);

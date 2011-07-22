@@ -145,6 +145,9 @@ ruby_cleanup(volatile int ex)
     th->errinfo = errs[1];
     ex = error_handle(ex);
     ruby_finalize_1();
+
+    /* unlock again if finalizer took mutexes. */
+    rb_threadptr_unlock_all_locking_mutexes(GET_THREAD());
     POP_TAG();
     rb_thread_stop_timer_thread(1);
 
@@ -426,8 +429,6 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
 	rb_threadptr_reset_raised(th);
 	JUMP_TAG(TAG_FATAL);
     }
-
-    rb_trap_restore_mask();
 
     if (tag != TAG_FATAL) {
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->cfp->self, 0, 0);

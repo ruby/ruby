@@ -213,7 +213,6 @@ void rb_vm_set_progname(VALUE filename);
 void rb_thread_terminate_all(void);
 VALUE rb_vm_top_self();
 VALUE rb_vm_cbase(void);
-void rb_trap_restore_mask(void);
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 #define CharNext(p) ((p) + mblen((p), RUBY_MBCHAR_MAXSIZE))

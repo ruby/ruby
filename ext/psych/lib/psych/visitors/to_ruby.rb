@@ -201,7 +201,7 @@ module Psych
       end
 
       def visit_Psych_Nodes_Alias o
-        @st[o.anchor]
+        @st.fetch(o.anchor) { raise BadAlias, "Unknown alias: #{o.anchor}" }
       end
 
       private

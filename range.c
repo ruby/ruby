@@ -665,6 +665,9 @@ range_max(VALUE range)
 		rb_raise(rb_eTypeError, "cannot exclude non Integer end value");
 	    }
 	    if (c == 0) return Qnil;
+	    if (!FIXNUM_P(b) && !rb_obj_is_kind_of(b,rb_cInteger)) {
+		rb_raise(rb_eTypeError, "cannot exclude end value with non Integer begin value");
+	    }
 	    if (FIXNUM_P(e)) {
 		return LONG2NUM(FIX2LONG(e) - 1);
 	    }

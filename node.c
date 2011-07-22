@@ -866,6 +866,9 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 		    else {
 			D_NODE_HEADER(node);
 			ANN("method parameters (cont'd)");
+			ANN("\"init arguments (m)\" evaluates multiple assignments before rest argument");
+			ANN("\"init arguments (p)\" evaluates multiple assignments after rest argument");
+			ANN("example: def foo((m1, m2), *r, (p1, p2))");
 			F_NODE(nd_1st, "init arguments (m)");
 			LAST_NODE;
 			F_NODE(nd_2nd, "init arguments (p)");
