@@ -336,14 +336,14 @@ class TestObject < Test::Unit::TestCase
 
   def test_respond_to_missing
     c = Class.new do
-      def respond_to_missing?(id, priv=false)
+      def respond_to_missing?(id, priv)
         if id == :foobar
           true
         else
           false
         end
       end
-      def method_missing(id,*args)
+      def method_missing(id, *args)
         if id == :foobar
           return [:foo, *args]
         else

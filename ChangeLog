@@ -1,3 +1,8 @@
+Fri Jul 22 20:24:38 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_object.rb (TestObject#test_respond_to_missing):
+	  2nd argument of respond_to_missing? is not optional.
+
 Fri Jul 22 19:05:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_enc_symname2_p): get rid of potential out-of-bound
