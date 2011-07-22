@@ -136,7 +136,7 @@ def install?(*types, &block)
   end
 end
 
-def strip_file(file)
+def strip_file(files)
   if !defined?($strip_command) and (cmd = CONFIG["STRIP"])
     case cmd
     when "", "true", ":" then return
@@ -145,7 +145,7 @@ def strip_file(file)
   elsif !$strip_command
     return
   end
-  system(*($strip_command + [file]))
+  system(*($strip_command + [files].flatten))
 end
 
 def install(src, dest, options = {})
@@ -154,12 +154,13 @@ def install(src, dest, options = {})
   options[:preserve] = true
   d = with_destdir(dest)
   super(src, d, options)
+  srcs = Array(src)
   if strip
-    d = File.join(d, File.basename(src)) if $made_dirs[dest]
+    d = srcs.map {|src| File.join(d, File.basename(src))} if $made_dirs[dest]
     strip_file(d)
   end
   if $installed_list
-    dest = File.join(dest, File.basename(src)) if $made_dirs[dest]
+    dest = srcs.map {|src| File.join(dest, File.basename(src))} if $made_dirs[dest]
     $installed_list.puts dest
   end
 end
@@ -570,10 +571,8 @@ end
       bin_dir = File.join(gem_dir, 'gems', full_name, 'bin')
       makedirs(bin_dir)
 
-      execs.each do |exec|
-        exec = File.join(srcdir, 'bin', exec)
-        install(exec, bin_dir, :mode => $prog_mode)
-      end
+      execs = execs.map {|exec| File.join(srcdir, 'bin', exec)}
+      install(execs, bin_dir, :mode => $prog_mode)
     end
   end
 end
