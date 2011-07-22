@@ -1254,7 +1254,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
  *  See #respond_to?.
  */
 static VALUE
-obj_respond_to_missing(VALUE obj, VALUE priv)
+obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
 {
     return Qfalse;
 }
