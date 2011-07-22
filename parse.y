@@ -10047,9 +10047,21 @@ rb_is_class_id(ID id)
 }
 
 int
+rb_is_global_id(ID id)
+{
+    return is_global_id(id);
+}
+
+int
 rb_is_instance_id(ID id)
 {
     return is_instance_id(id);
+}
+
+int
+rb_is_attrset_id(ID id)
+{
+    return is_attrset_id(id);
 }
 
 int
