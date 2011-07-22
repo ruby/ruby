@@ -1,3 +1,8 @@
+Fri Jul 22 21:45:21 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/dl/handle.c (dlhandle_sym): clear previous error with dlerror()
+	  before calling dlsym(). [ruby-dev:44091] [Bug #5021]
+
 Fri Jul 22 19:05:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_enc_symname2_p): get rid of potential out-of-bound
