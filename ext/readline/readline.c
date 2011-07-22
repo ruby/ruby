@@ -454,15 +454,71 @@ readline_s_set_output(VALUE self, VALUE output)
  * call-seq:
  *   Readline.completion_proc = proc
  *
- * Specifies a Proc object +proc+ to determine completion behavior. It
- * should take input-string, and return an array of completion
- * candidates.
+ * Specifies a Proc object +proc+ to determine completion behavior.  It
+ * should take input string and return an array of completion candidates.
  *
- * Set default if +proc+ is nil.
+ * The default completion is used if +proc+ is nil.
  *
- * Raises ArgumentError exception if +proc+ does not respond to call method.
+ * The String that is passed to the Proc depends on the
+ * Readline.completer_word_break_characters property.  By default the word
+ * under the cursor is passed to the Proc.  For example, if the input is "foo
+ * bar" then only "bar" would be passed to the completion Proc.
  *
- * Raises SecurityError exception if $SAFE is 4.
+ * Upon successful completion the Readline.completion_append_character will be
+ * appended to the input so the user can start working on their next argument.
+ *
+ * = Examples
+ *
+ * == Completion for a Static List
+ *
+ *   require 'readline'
+ *
+ *   LIST = [
+ *     'search', 'download', 'open',
+ *     'help', 'history', 'quit',
+ *     'url', 'next', 'clear',
+ *     'prev', 'past'
+ *   ].sort
+ *
+ *   comp = proc { |s| LIST.grep(/^#{Regexp.escape(s)}/) }
+ *
+ *   Readline.completion_append_character = " "
+ *   Readline.completion_proc = comp
+ *
+ *   while line = Readline.readline('> ', true)
+ *     p line
+ *   end
+ *
+ * == Completion For Directory Contents
+ *
+ *   require 'readline'
+ *
+ *   Readline.completion_append_character = " "
+ *   Readline.completion_proc = Proc.new do |str|
+ *     Dir[str+'*'].grep(/^#{Regexp.escape(str)}/)
+ *   end
+ *
+ *   while line = Readline.readline('> ', true)
+ *     p line
+ *   end
+ *
+ * = Autocomplete strategies
+ *
+ * When working with auto-complete there are some strategies that work well.
+ * To get some ideas you can take a look at the
+ * completion.rb[http://svn.ruby-lang.org/repos/ruby/trunk/lib/irb/completion.rb]
+ * file for irb.
+ *
+ * The common strategy is to take a list of possible completions and filter it
+ * down to those completions that start with the user input.  In the above
+ * examples Enumerator.grep is used.  The input is escaped to prevent Regexp
+ * special characters from interfering with the matching.
+ *
+ * It may also be helpful to use the Abbrev library to generate completions.
+ *
+ * Raises ArgumentError if +proc+ does not respond to the call method.
+ *
+ * Raises SecurityError if $SAFE is 4.
  */
 static VALUE
 readline_s_set_completion_proc(VALUE self, VALUE proc)
