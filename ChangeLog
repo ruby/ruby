@@ -1,3 +1,8 @@
+Sun Jul 24 00:42:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* configure.in: change the default compiler to gcc-4.2 if target os
+	  is OS X 10.7 (Lion).
+
 Sun Jul 24 00:19:13 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: changed default optflags to -O0 if the compiler is

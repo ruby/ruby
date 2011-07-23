@@ -86,6 +86,11 @@ AC_SUBST(RUBY_RELEASE_DATE)
 if test "$MAJOR" = "1"; then
   AC_DEFINE(CANONICALIZATION_FOR_MATHN)
 fi
+
+AC_CANONICAL_TARGET
+target_os=`echo $target_os | sed 's/linux-gnu$/linux/;s/linux-gnu/linux-/'`
+ac_install_sh='' # unusable for extension libraries.
+
 dnl checks for alternative programs
 AC_ARG_WITH(gcc,
 	AS_HELP_STRING([--without-gcc], [never use gcc]),
@@ -93,7 +98,18 @@ AC_ARG_WITH(gcc,
 	AS_CASE([$withval],
 	    [no],  [: ${CC=cc}],
 	    [yes], [: ${CC=gcc}],
-	           [CC=$withval])])
+	           [CC=$withval])
+	AS_CASE([$withval], [no|yes],
+		[with_gcc_specified=no],
+		[with_gcc_specified=yes])])
+AS_CASE(["$target_os"], [darwin11.*],
+	[if test -z "$CC"; then
+	   CC=gcc-4.2
+	 else
+	   if test "x$with_gcc_specified" = "xno" && $CC -v 2>&1 | grep -i LLVM > /dev/null; then
+	     CC=gcc-4.2
+	   fi
+	 fi])
 dnl If the user switches compilers, we can't believe the cache
 if test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"
 then
@@ -109,10 +125,6 @@ RUBY_BASE_NAME=`echo ruby | sed "$program_transform_name"`
 RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
 AC_SUBST(RUBY_BASE_NAME)
 AC_SUBST(RUBYW_BASE_NAME)
-
-AC_CANONICAL_TARGET
-target_os=`echo $target_os | sed 's/linux-gnu$/linux/;s/linux-gnu/linux-/'`
-ac_install_sh='' # unusable for extension libraries.
 
 AC_DEFUN([RUBY_APPEND_OPTION],
 	[# RUBY_APPEND_OPTION($1, $2)
