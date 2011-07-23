@@ -325,6 +325,16 @@ end
     assert_equal 'old_platform', same_spec.original_platform
   end
 
+  def test_activate
+    @a2.activate
+
+    assert @a2.activated?
+
+    Deprecate.skip_during do
+      assert @a2.loaded?
+    end
+  end
+
   def test_add_dependency_with_explicit_type
     gem = quick_spec "awesome", "1.0" do |awesome|
       awesome.add_development_dependency "monkey"
