@@ -1,4 +1,7 @@
-Sat Jul 23 12:12:25 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jul 23 12:19:04 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_check_id): take care of attrset ID created
+	  implicitly by local ID.  [Bug #5084]
 
 	* parse.y (rb_check_id): conversion condition was inverse.
 	  [Bug #5084]

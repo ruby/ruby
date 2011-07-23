@@ -10120,9 +10120,33 @@ rb_check_id(VALUE name)
 	}
 	name = tmp;
     }
-    if (!st_lookup(global_symbols.sym_id, (st_data_t)name, &id))
-	return (ID)0;
-    return (ID)id;
+
+    if (rb_enc_str_coderange(name) == ENC_CODERANGE_BROKEN) {
+	rb_raise(rb_eEncodingError, "invalid encoding symbol");
+    }
+
+    if (st_lookup(global_symbols.sym_id, (st_data_t)name, &id))
+	return (ID)id;
+
+    if (rb_is_attrset_name(name)) {
+	struct RString fake_str;
+	const VALUE localname = (VALUE)&fake_str;
+	/* make local name by chopping '=' */
+	fake_str.basic.flags = T_STRING|RSTRING_NOEMBED;
+	fake_str.basic.klass = rb_cString;
+	fake_str.as.heap.len = RSTRING_LEN(name) - 1;
+	fake_str.as.heap.ptr = RSTRING_PTR(name);
+	fake_str.as.heap.aux.capa = fake_str.as.heap.len;
+	rb_enc_copy(localname, name);
+	OBJ_FREEZE(localname);
+
+	if (st_lookup(global_symbols.sym_id, (st_data_t)localname, &id)) {
+	    return rb_id_attrset((ID)id);
+	}
+	RB_GC_GUARD(name);
+    }
+
+    return (ID)0;
 }
 
 int
