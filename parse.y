@@ -10111,7 +10111,7 @@ rb_check_id(VALUE name)
     if (SYMBOL_P(name)) {
 	return SYM2ID(name);
     }
-    else if (RB_TYPE_P(name, T_STRING)) {
+    else if (!RB_TYPE_P(name, T_STRING)) {
 	tmp = rb_check_string_type(name);
 	if (NIL_P(tmp)) {
 	    tmp = rb_inspect(name);

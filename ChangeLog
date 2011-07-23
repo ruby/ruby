@@ -1,3 +1,8 @@
+Sat Jul 23 12:12:25 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_check_id): conversion condition was inverse.
+	  [Bug #5084]
+
 Fri Jul 22 21:46:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm_insnhelper.c (vm_call_cfunc): added volatile for a workaround

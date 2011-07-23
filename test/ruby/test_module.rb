@@ -498,6 +498,8 @@ class TestModule < Test::Unit::TestCase
     name = "gadzooks"
     assert !Symbol.all_symbols.any? {|sym| sym.to_s == name}
     assert_raise(NameError) { c1.const_defined?(name) }
+    bug5084 = '[ruby-dev:44200]'
+    assert_raise(TypeError, bug5084) { c1.const_defined?(1) }
   end
 
   def test_const_get_no_inherited
