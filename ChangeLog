@@ -1,3 +1,8 @@
+Sat Jul 23 14:38:28 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* test/rake*: Remove dependencies on flexmock and session gems.
+	  [Ruby 1.9 - Bug #4987]
+
 Sat Jul 23 12:19:04 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_check_id): take care of attrset ID created

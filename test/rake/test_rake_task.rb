@@ -208,10 +208,7 @@ class TestRakeTask < Rake::TestCase
     b = task :b
     c = task :c
 
-    faux_stamp = 100
-    flexmock(Time, :now => faux_stamp)
-
-    assert_equal faux_stamp, a.timestamp
+    assert_in_delta Time.now, a.timestamp, 0.1, 'computer too slow?'
   end
 
   def test_timestamp_returns_latest_prereq_timestamp
@@ -219,12 +216,11 @@ class TestRakeTask < Rake::TestCase
     b = task :b
     c = task :c
 
-    faux_stamp = 100
-    flexmock(Time, :now => faux_stamp-10)
-    flexmock(b, :timestamp => faux_stamp - 1)
-    flexmock(c, :timestamp => faux_stamp)
+    now = Time.now
+    def b.timestamp() Time.now + 10 end
+    def c.timestamp() Time.now + 5 end
 
-    assert_equal faux_stamp, a.timestamp
+    assert_in_delta now + 10, a.timestamp, 0.1, 'computer too slow?'
   end
 
   def test_investigation_output

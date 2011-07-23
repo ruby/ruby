@@ -1,38 +1,6 @@
-begin
-  old_verbose = $VERBOSE
-  $VERBOSE = nil
-  require 'session'
-rescue LoadError
-  if File::ALT_SEPARATOR
-    puts "Unable to run functional tests on MS Windows. Skipping."
-  else
-    puts "Unable to run functional tests -- please run \"gem install session\""
-  end
-ensure
-  $VERBOSE = old_verbose
-end
-
-if defined?(Session)
-  if File::ALT_SEPARATOR
-    puts "Unable to run functional tests on MS Windows. Skipping."
-  end
-end
-
 require File.expand_path('../helper', __FILE__)
 require 'fileutils'
-
-# Version 2.1.9 of session has a bug where the @debug instance
-# variable is not initialized, causing warning messages.  This snippet
-# of code fixes that problem.
-module Session
-  class AbstractSession
-    alias old_initialize initialize
-    def initialize(*args)
-      @debug = nil
-      old_initialize(*args)
-    end
-  end
-end if defined? Session
+require 'open3'
 
 class TestRakeFunctional < Rake::TestCase
 
@@ -59,16 +27,14 @@ class TestRakeFunctional < Rake::TestCase
     rake
 
     assert_match(/^DEFAULT$/, @out)
-    assert_status
   end
 
   def test_rake_error_on_bad_task
     rakefile_default
 
-    rake "xyz"
+    rake '-t', 'xyz'
 
     assert_match(/rake aborted/, @err)
-    assert_status(1)
   end
 
   def test_env_available_at_top_scope
@@ -77,16 +43,14 @@ class TestRakeFunctional < Rake::TestCase
     rake "TESTTOPSCOPE=1"
 
     assert_match(/^TOPSCOPE$/, @out)
-    assert_status
   end
 
   def test_env_available_at_task_scope
     rakefile_default
 
-    rake "TESTTASKSCOPE=1 task_scope"
+    rake 'TESTTASKSCOPE=1', 'task_scope'
 
     assert_match(/^TASKSCOPE$/, @out)
-    assert_status
   end
 
   def test_multi_desc
@@ -283,8 +247,6 @@ class TestRakeFunctional < Rake::TestCase
     rake "--dry-run"
 
     refute_match(/No such file/, @out)
-
-    assert_status
   end
 
   # Test for the trace/dry_run bug found by Brian Chandler
@@ -298,7 +260,6 @@ class TestRakeFunctional < Rake::TestCase
     rake "--trace"
 
     refute_match(/No such file/, @out)
-    assert_status
   end
 
   def test_imports
@@ -309,7 +270,6 @@ class TestRakeFunctional < Rake::TestCase
     assert File.exist?(File.join(@tempdir, 'dynamic_deps')),
            "'dynamic_deps' file should exist"
     assert_match(/^FIRST$\s+^DYNAMIC$\s+^STATIC$\s+^OTHER$/, @out)
-    assert_status
   end
 
   def test_rules_chaining_to_file_task
@@ -319,7 +279,6 @@ class TestRakeFunctional < Rake::TestCase
 
     assert File.exist?(File.join(@tempdir, 'play.app')),
            "'play.app' file should exist"
-    assert_status
   end
 
   def test_file_creation_task
@@ -335,7 +294,7 @@ class TestRakeFunctional < Rake::TestCase
   def test_dash_f_with_no_arg_foils_rakefile_lookup
     rakefile_rakelib
 
-    rake "-I rakelib -rtest1 -f"
+    rake '-I', 'rakelib', '-rtest1', '-f'
 
     assert_match(/^TEST1$/, @out)
   end
@@ -343,8 +302,9 @@ class TestRakeFunctional < Rake::TestCase
   def test_dot_rake_files_can_be_loaded_with_dash_r
     rakefile_rakelib
 
-    rake "-I rakelib -rtest2 -f"
+    rake '-I', 'rakelib', '-rtest2', '-f'
 
+    assert_empty @err
     assert_match(/^TEST2$/, @out)
   end
 
@@ -412,22 +372,6 @@ class TestRakeFunctional < Rake::TestCase
     assert_match(/^PREPARE\nSCOPEDEP$/m, @out)
   end
 
-  def test_rake_returns_status_error_values
-    rakefile_statusreturn
-
-    rake "exit5"
-
-    assert_status 5
-  end
-
-  def test_rake_returns_no_status_error_on_normal_exit
-    rakefile_statusreturn
-
-    rake "normal"
-
-    assert_status 0
-  end
-
   def test_comment_before_task_acts_like_desc
     rakefile_comments
 
@@ -469,42 +413,38 @@ class TestRakeFunctional < Rake::TestCase
   end
 
   def test_file_list_is_requirable_separately
-    ruby "-rrake/file_list", "-e 'puts Rake::FileList[\"a\"].size'"
+    ruby '-rrake/file_list', '-e', 'puts Rake::FileList["a"].size'
     assert_equal "1\n", @out
-    assert_equal 0, @status
   end
 
   private
 
   # Run a shell Ruby command with command line options (using the
-  # default test options). Output is captured in @out, @err and
-  # @status.
+  # default test options). Output is captured in @out and @err
   def ruby(*option_list)
     run_ruby(@ruby_options + option_list)
   end
 
   # Run a command line rake with the give rake options.  Default
   # command line ruby options are included.  Output is captured in
-  # @out, @err and @status.
+  # @out and @err
   def rake(*rake_options)
     run_ruby @ruby_options + [@rake_path] + rake_options
   end
 
   # Low level ruby command runner ...
   def run_ruby(option_list)
-    shell = Session::Shell.new
-    command = "#{Gem.ruby} #{option_list.join ' '}"
-    puts "COMMAND: [#{command}]" if @verbose
-    @out, @err = shell.execute command
-    @status = shell.exit_status
-    puts "STATUS:  [#{@status}]" if @verbose
+    puts "COMMAND: [#{RUBY} #{option_list.join ' '}]" if @verbose
+
+    inn, out, err, wait = Open3.popen3(Gem.ruby, *option_list)
+    inn.close
+
+    @out = out.read
+    @err = err.read
+
     puts "OUTPUT:  [#{@out}]" if @verbose
     puts "ERROR:   [#{@err}]" if @verbose
     puts "PWD:     [#{Dir.pwd}]" if @verbose
-    shell.close
   end
 
-  def assert_status(expected_status=0)
-    assert_equal expected_status, @status
-  end
-end if defined?(Session)
+end

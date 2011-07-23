@@ -19,6 +19,14 @@ class TestRakeTaskManager < Rake::TestCase
     assert_equal @tm, t.application
   end
 
+  def test_index
+    e = assert_raises RuntimeError do
+      @tm['bad']
+    end
+
+    assert_equal "Don't know how to build task 'bad'", e.message
+  end
+
   def test_name_lookup
     t = @tm.define_task(Rake::Task, :t)
     assert_equal t, @tm[:t]

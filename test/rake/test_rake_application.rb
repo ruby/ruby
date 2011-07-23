@@ -232,7 +232,9 @@ class TestRakeApplication < Rake::TestCase
 
   def test_load_from_calculated_system_rakefile
     rakefile_default
-    flexmock(@app, :standard_system_dir => "__STD_SYS_DIR__")
+    def @app.standard_system_dir
+      "__STD_SYS_DIR__"
+    end
 
     ENV['RAKE_SYSTEM'] = nil
 
@@ -270,25 +272,28 @@ class TestRakeApplication < Rake::TestCase
   end
 
   def test_loading_imports
-    mock = flexmock("loader")
-    mock.should_receive(:load).with("x.dummy").once
+    loader = util_loader
+
     @app.instance_eval do
-      add_loader("dummy", mock)
+      add_loader("dummy", loader)
       add_import("x.dummy")
       load_imports
     end
+
+    # HACK no assertions
   end
 
   def test_building_imported_files_on_demand
-    mock = flexmock("loader")
-    mock.should_receive(:load).with("x.dummy").once
-    mock.should_receive(:make_dummy).with_no_args.once
+    loader = util_loader
+
     @app.instance_eval do
-      intern(Rake::Task, "x.dummy").enhance do mock.make_dummy end
-        add_loader("dummy", mock)
+      intern(Rake::Task, "x.dummy").enhance do loader.make_dummy end
+      add_loader("dummy", loader)
       add_import("x.dummy")
       load_imports
     end
+
+    # HACK no assertions
   end
 
   def test_handle_options_should_strip_options_from_ARGV
@@ -399,5 +404,86 @@ class TestRakeApplication < Rake::TestCase
     assert_match(/use 'b' instead/i, err)
     assert_match(/at c$/i, err)
   end
+
+  def test_standard_exception_handling_invalid_option
+    out, err = capture_io do
+      e = assert_raises SystemExit do
+        @app.standard_exception_handling do
+          raise OptionParser::InvalidOption, 'blah'
+        end
+      end
+
+      assert_equal 1, e.status
+    end
+
+    assert_empty out
+    assert_equal "invalid option: blah\n", err
+  end
+
+  def test_standard_exception_handling_other
+    out, err = capture_io do
+      e = assert_raises SystemExit do
+        @app.standard_exception_handling do
+          raise 'blah'
+        end
+      end
+
+      assert_equal 1, e.status
+    end
+
+    assert_empty out
+    assert_match "rake aborted!\n", err
+    assert_match "blah\n", err
+  end
+
+  def test_standard_exception_handling_system_exit
+    out, err = capture_io do
+      e = assert_raises SystemExit do
+        @app.standard_exception_handling do
+          exit 0
+        end
+      end
+
+      assert_equal 0, e.status
+    end
+
+    assert_empty out
+    assert_empty err
+  end
+
+  def test_standard_exception_handling_system_exit_nonzero
+    out, err = capture_io do
+      e = assert_raises SystemExit do
+        @app.standard_exception_handling do
+          exit 5
+        end
+      end
+
+      assert_equal 5, e.status
+    end
+
+    assert_empty out
+    assert_empty err
+  end
+
+  def util_loader
+    loader = Object.new
+
+    loader.instance_variable_set :@load_called, false
+    def loader.load arg
+      raise 'called more than once' if @load_called
+      raise ArgumentError, arg unless arg == 'x.dummy'
+      @load_called = true
+    end
+
+    loader.instance_variable_set :@make_dummy_called, false
+    def loader.make_dummy
+      raise 'called more than once' if @make_dummy_called
+      @make_dummy_called = true
+    end
+
+    loader
+  end
+
 end
 
