@@ -93,7 +93,7 @@ class TestRakeTestTask < Rake::TestCase
       t.loader = :testrb
     end
 
-    flexmock(test_task).should_receive(:ruby_version).and_return('1.8.2')
+    def test_task.ruby_version() '1.8.2' end
 
     assert_match(/^-S testrb +".*"$/, test_task.run_code)
   end
@@ -103,7 +103,7 @@ class TestRakeTestTask < Rake::TestCase
       t.loader = :testrb
     end
 
-    flexmock(test_task).should_receive(:ruby_version).and_return('1.8.6')
+    def test_task.ruby_version() '1.8.6' end
 
     assert_match(/^-S testrb +$/, test_task.run_code)
   end

@@ -119,25 +119,8 @@ class TestRakeFileUtils < Rake::TestCase
   def test_sh
     shellcommand
 
-    verbose(false) { sh %{#{FileUtils::RUBY} shellcommand.rb} }
+    verbose(false) { sh %{#{Rake::TestCase::RUBY} shellcommand.rb} }
     assert true, "should not fail"
-  end
-
-  # If the :sh method is invoked directly from a test unit instance
-  # (under mini/test), the mini/test version of fail is invoked rather
-  # than the kernel version of fail. So we run :sh from within a
-  # non-test class to avoid the problem.
-  class Sh
-    include FileUtils
-    def run(*args)
-      sh(*args)
-    end
-    def self.run(*args)
-      new.run(*args)
-    end
-    def self.ruby(*args)
-      Sh.run(RUBY, *args)
-    end
   end
 
   def test_sh_with_a_single_string_argument
@@ -145,7 +128,7 @@ class TestRakeFileUtils < Rake::TestCase
 
     ENV['RAKE_TEST_SH'] = 'someval'
     verbose(false) {
-      sh %{#{FileUtils::RUBY} check_expansion.rb #{env_var} someval}
+      sh %{#{RUBY} check_expansion.rb #{env_var} someval}
     }
   end
 
@@ -154,7 +137,7 @@ class TestRakeFileUtils < Rake::TestCase
     ENV['RAKE_TEST_SH'] = 'someval'
 
     verbose(false) {
-      Sh.ruby 'check_no_expansion.rb', env_var, 'someval'
+      sh RUBY, 'check_no_expansion.rb', env_var, 'someval'
     }
   end
 
@@ -162,7 +145,7 @@ class TestRakeFileUtils < Rake::TestCase
     shellcommand
 
     assert_raises(RuntimeError) {
-      verbose(false) { Sh.run %{#{FileUtils::RUBY} shellcommand.rb 1} }
+      verbose(false) { sh %{#{RUBY} shellcommand.rb 1} }
     }
   end
 
@@ -171,12 +154,12 @@ class TestRakeFileUtils < Rake::TestCase
 
     count = 0
     verbose(false) {
-      sh(%{#{FileUtils::RUBY} shellcommand.rb}) do |ok, res|
+      sh(%{#{RUBY} shellcommand.rb}) do |ok, res|
         assert(ok)
         assert_equal 0, res.exitstatus
         count += 1
       end
-      sh(%{#{FileUtils::RUBY} shellcommand.rb 1}) do |ok, res|
+      sh(%{#{RUBY} shellcommand.rb 1}) do |ok, res|
         assert(!ok)
         assert_equal 1, res.exitstatus
         count += 1
@@ -241,7 +224,9 @@ class TestRakeFileUtils < Rake::TestCase
     ENV['RAKE_TEST_SH'] = 'someval'
 
     verbose(false) {
-      ruby %{check_expansion.rb #{env_var} someval}
+      replace_ruby {
+        ruby %{check_expansion.rb #{env_var} someval}
+      }
     }
   end
 
@@ -250,7 +235,9 @@ class TestRakeFileUtils < Rake::TestCase
 
     ENV['RAKE_TEST_SH'] = 'someval'
     verbose(false) {
-      ruby 'check_no_expansion.rb', env_var, 'someval'
+      replace_ruby {
+        ruby 'check_no_expansion.rb', env_var, 'someval'
+      }
     }
   end
 
@@ -287,6 +274,16 @@ else
   exit 0
 end
     CHECK_EXPANSION
+  end
+
+  def replace_ruby
+    ruby = FileUtils::RUBY
+    FileUtils.send :remove_const, :RUBY
+    FileUtils.const_set :RUBY, RUBY
+    yield
+  ensure
+    FileUtils.send :remove_const, :RUBY
+    FileUtils.const_set:RUBY, ruby
   end
 
   def shellcommand

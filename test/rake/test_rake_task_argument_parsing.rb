@@ -51,38 +51,31 @@ class TestRakeTaskArgumentParsing < Rake::TestCase
   end
 
   def test_terminal_width_using_stty
-    app = Rake::Application.new
+    def @app.unix?() true end
+    def @app.dynamic_width_stty() 1235 end
+    def @app.dynamic_width_tput() 0 end
 
-    flexmock(app,
-      :unix? => true,
-      :dynamic_width_stty => 1235,
-      :dynamic_width_tput => 0)
-
-    assert_equal 1235, app.terminal_width
+    assert_equal 1235, @app.terminal_width
   end
 
   def test_terminal_width_using_tput
-    app = Rake::Application.new
-    flexmock(app,
-      :unix? => true,
-      :dynamic_width_stty => 0,
-      :dynamic_width_tput => 1236)
+    def @app.unix?() true end
+    def @app.dynamic_width_stty() 0 end
+    def @app.dynamic_width_tput() 1236 end
 
-    assert_equal 1236, app.terminal_width
+    assert_equal 1236, @app.terminal_width
   end
 
   def test_terminal_width_using_hardcoded_80
-    app = Rake::Application.new
-    flexmock(app, :unix? => false)
+    def @app.unix?() true end
 
-    assert_equal 80, app.terminal_width
+    assert_equal 80, @app.terminal_width
   end
 
   def test_terminal_width_with_failure
-    app = Rake::Application.new
-    flexmock(app).should_receive(:unix?).and_throw(RuntimeError)
+    def @app.unix?() raise end
 
-    assert_equal 80, app.terminal_width
+    assert_equal 80, @app.terminal_width
   end
 
   def test_no_rakeopt

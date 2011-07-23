@@ -1,15 +1,22 @@
 require 'rubygems'
-require 'minitest/unit'
-require 'flexmock/test_unit_integration'
+
+begin
+  gem 'minitest'
+rescue Gem::LoadError
+end
+
 require 'minitest/autorun'
 require 'rake'
 require 'tmpdir'
 require File.expand_path('../file_creation', __FILE__)
 
-class Rake::TestCase < MiniTest::Unit::TestCase
-  include FlexMock::ArgumentTypes
-  include FlexMock::MockContainer
+begin
+  require 'test/ruby/envutil'
+rescue LoadError
+  # for ruby trunk
+end
 
+class Rake::TestCase < MiniTest::Unit::TestCase
   include FileCreation
 
   include Rake::DSL
@@ -17,6 +24,8 @@ class Rake::TestCase < MiniTest::Unit::TestCase
   class TaskManager
     include Rake::TaskManager
   end
+
+  RUBY = defined?(EnvUtil) ? EnvUtil.rubybin : Gem.ruby
 
   def setup
     ARGV.clear
@@ -43,11 +52,10 @@ class Rake::TestCase < MiniTest::Unit::TestCase
 
     Rake.application = Rake::Application.new
     Rake::TaskManager.record_task_metadata = true
+    RakeFileUtils.verbose_flag = false
   end
 
   def teardown
-    flexmock_teardown
-
     Dir.chdir @orig_PWD
     FileUtils.rm_rf @tempdir
 
@@ -434,17 +442,6 @@ end
     end
   end
 
-  def rakefile_statusreturn
-    rakefile <<-STATUSRETURN
-task :exit5 do
-  exit(5)
-end
-
-task :normal do
-end
-    STATUSRETURN
-  end
-
   def rakefile_unittest
     rakefile '# Empty Rakefile for Unit Test'
 
@@ -493,8 +490,4 @@ end
   end
 
 end
-
-# workarounds for 1.8
-$" << 'test/helper.rb'
-Test::Unit.run = true if Test::Unit.respond_to? :run=
 
