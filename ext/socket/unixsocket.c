@@ -367,7 +367,7 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 		 (int)arg.msg.msg_controllen, (int)CMSG_SPACE(sizeof(int)));
     }
     if (cmsg.hdr.cmsg_len != CMSG_LEN(sizeof(int))) {
-	rsock_discard_cmsg_resource(&arg.msg);
+	rsock_discard_cmsg_resource(&arg.msg, 0);
 	rb_raise(rb_eSocket,
 		 "file descriptor was not passed (cmsg_len=%d, %d expected)",
 		 (int)cmsg.hdr.cmsg_len, (int)CMSG_LEN(sizeof(int)));
