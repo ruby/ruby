@@ -172,4 +172,29 @@ class TestSymbol < Test::Unit::TestCase
       assert !Symbol.all_symbols.any? {|sym| sym.to_s == str}, msg
     end
   end
+
+  def test_no_inadvertent_symbol_creation2
+    feature5079 = '[ruby-core:38404]'
+    c = Class.new
+    s = "gadzoooks"
+    {:instance_variable_get => ["@#{s}1", nil],
+     :class_variable_get => ["@@#{s}1", NameError],
+     :remove_instance_variable => ["@#{s}2", NameError],
+     :remove_class_variable => ["@@#{s}2", NameError],
+     :remove_const => ["A#{s}", NameError],
+     :method => ["#{s}1", NameError],
+     :public_method => ["#{s}2", NameError],
+     :instance_method => ["#{s}3", NameError],
+     :public_instance_method => ["#{s}4", NameError],
+    }.each do |meth, arr|
+      str, ret = arr
+      msg = "#{meth}(#{str}) #{feature5079}"
+      if ret.is_a?(Class) && (ret < Exception)
+        assert_raises(ret){c.send(meth, str)}
+      else
+        assert(c.send(meth, str) == ret, msg)
+      end
+      assert !Symbol.all_symbols.any? {|sym| sym.to_s == str}, msg
+    end
+  end
 end

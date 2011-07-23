@@ -1,3 +1,11 @@
+Sun Jul 24 00:05:00 2011  Jeremy Evans  <merch-redmine@jeremyevans.net>
+
+	* error.c (rb_name_error_str): new function to raise NameError
+	  with the name string but not ID.
+
+	* object.c, proc.c, variable.c: more removal of inadvertent symbol
+	  creation.  [Feature #5079]
+
 Sat Jul 23 21:14:00 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/cmath.rb (cbrt): should return a real number if possible.

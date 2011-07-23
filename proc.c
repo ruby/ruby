@@ -28,6 +28,7 @@ VALUE rb_cProc;
 
 static VALUE bmcall(VALUE, VALUE);
 static int method_arity(VALUE);
+static ID attached;
 
 /* Proc */
 
@@ -1139,6 +1140,29 @@ method_owner(VALUE obj)
     return data->me.klass;
 }
 
+static void
+rb_method_name_error(VALUE klass, VALUE str)
+{
+    const char *s0 = " class";
+    VALUE c = klass;
+
+    if (FL_TEST(c, FL_SINGLETON)) {
+	VALUE obj = rb_ivar_get(klass, attached);
+
+	switch (TYPE(obj)) {
+	  case T_MODULE:
+	  case T_CLASS:
+	    c = obj;
+	    s0 = "";
+	}
+    }
+    else if (RB_TYPE_P(c, T_MODULE)) {
+	s0 = " module";
+    }
+    rb_name_error_str(str, "undefined method `%s' for%s `%s'",
+		      RSTRING_PTR(str), s0, rb_class2name(c));
+}
+
 /*
  *  call-seq:
  *     obj.method(sym)    -> method
@@ -1170,7 +1194,11 @@ method_owner(VALUE obj)
 VALUE
 rb_obj_method(VALUE obj, VALUE vid)
 {
-    return mnew(CLASS_OF(obj), obj, rb_to_id(vid), rb_cMethod, FALSE);
+    ID id = rb_check_id(vid);
+    if (!id) {
+	rb_method_name_error(CLASS_OF(obj), vid);
+    }
+    return mnew(CLASS_OF(obj), obj, id, rb_cMethod, FALSE);
 }
 
 /*
@@ -1183,7 +1211,11 @@ rb_obj_method(VALUE obj, VALUE vid)
 VALUE
 rb_obj_public_method(VALUE obj, VALUE vid)
 {
-    return mnew(CLASS_OF(obj), obj, rb_to_id(vid), rb_cMethod, TRUE);
+    ID id = rb_check_id(vid);
+    if (!id) {
+	rb_method_name_error(CLASS_OF(obj), vid);
+    }
+    return mnew(CLASS_OF(obj), obj, id, rb_cMethod, TRUE);
 }
 
 /*
@@ -1220,7 +1252,11 @@ rb_obj_public_method(VALUE obj, VALUE vid)
 static VALUE
 rb_mod_instance_method(VALUE mod, VALUE vid)
 {
-    return mnew(mod, Qundef, rb_to_id(vid), rb_cUnboundMethod, FALSE);
+    ID id = rb_check_id(vid);
+    if (!id) {
+	rb_method_name_error(mod, vid);
+    }
+    return mnew(mod, Qundef, id, rb_cUnboundMethod, FALSE);
 }
 
 /*
@@ -1233,7 +1269,11 @@ rb_mod_instance_method(VALUE mod, VALUE vid)
 static VALUE
 rb_mod_public_instance_method(VALUE mod, VALUE vid)
 {
-    return mnew(mod, Qundef, rb_to_id(vid), rb_cUnboundMethod, TRUE);
+    ID id = rb_check_id(vid);
+    if (!id) {
+	rb_method_name_error(mod, vid);
+    }
+    return mnew(mod, Qundef, id, rb_cUnboundMethod, TRUE);
 }
 
 /*
@@ -1747,7 +1787,7 @@ method_inspect(VALUE method)
     rb_str_buf_cat2(str, ": ");
 
     if (FL_TEST(data->me.klass, FL_SINGLETON)) {
-	VALUE v = rb_iv_get(data->me.klass, "__attached__");
+	VALUE v = rb_ivar_get(data->me.klass, attached);
 
 	if (data->recv == Qundef) {
 	    rb_str_buf_append(str, rb_inspect(data->me.klass));
@@ -2234,5 +2274,6 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "dup", binding_dup, 0);
     rb_define_method(rb_cBinding, "eval", bind_eval, -1);
     rb_define_global_function("binding", rb_f_binding, 0);
+    attached = rb_intern("__attached__");
 }
 

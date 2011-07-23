@@ -1299,7 +1299,7 @@ VALUE
 rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 {
     VALUE val = Qnil;
-    const ID id = rb_to_id(name);
+    const ID id = rb_check_id(name);
     st_data_t n, v;
     struct st_table *iv_index_tbl;
     st_data_t index;
@@ -1307,6 +1307,14 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
     if (!OBJ_UNTRUSTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
     rb_check_frozen(obj);
+    if (!id) {
+	if (rb_is_instance_name(name)) {
+	    rb_name_error_str(name, "instance variable %s not defined", RSTRING_PTR(name));
+	}
+	else {
+	    rb_name_error_str(name, "`%s' is not allowed as an instance variable name", RSTRING_PTR(name));
+	}
+    }
     if (!rb_is_instance_id(id)) {
 	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
     }
@@ -1677,8 +1685,17 @@ rb_public_const_get_at(VALUE klass, ID id)
 VALUE
 rb_mod_remove_const(VALUE mod, VALUE name)
 {
-    const ID id = rb_to_id(name);
+    const ID id = rb_check_id(name);
 
+    if (!id) {
+	if (rb_is_const_name(name)) {
+	    rb_name_error_str(name, "constant %s::%s not defined",
+			      rb_class2name(mod), RSTRING_PTR(name));
+	}
+	else {
+	    rb_name_error_str(name, "`%s' is not allowed as a constant name", RSTRING_PTR(name));
+	}
+    }
     if (!rb_is_const_id(id)) {
 	rb_name_error(id, "`%s' is not allowed as a constant name", rb_id2name(id));
     }
@@ -2189,9 +2206,18 @@ rb_mod_class_variables(VALUE obj)
 VALUE
 rb_mod_remove_cvar(VALUE mod, VALUE name)
 {
-    const ID id = rb_to_id(name);
+    const ID id = rb_check_id(name);
     st_data_t val, n = id;
 
+    if (!id) {
+	if (rb_is_class_name(name)) {
+	    rb_name_error_str(name, "class variable %s not defined for %s",
+			      RSTRING_PTR(name), rb_class2name(mod));
+	}
+	else {
+	    rb_name_error_str(name, "wrong class variable name %s", RSTRING_PTR(name));
+	}
+    }
     if (!rb_is_class_id(id)) {
 	rb_name_error(id, "wrong class variable name %s", rb_id2name(id));
     }
