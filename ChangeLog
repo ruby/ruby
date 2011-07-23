@@ -1,3 +1,15 @@
+Sat Jul 23 20:12:52 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/rake/test_rake_functional.rb (setup): Use __FILE__ for the base
+	  directory. Current directory is not the top source directory when
+	  the building process runs on other than there.
+
+	* test/rake/test_rake_rake_test_loader.rb: ditto.
+
+	* test/rake/test_rake_task_argument_parsing.rb
+	  (test_terminal_width_using_hardcoded_80): hardcoded 80 is used
+	  when app.unix? is false.
+
 Sat Jul 23 20:11:50 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: an issue that is same as  [ruby-dev:44071].
