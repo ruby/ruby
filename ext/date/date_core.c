@@ -4609,7 +4609,7 @@ dup_obj(VALUE self)
     get_d1a(self);
 
     if (simple_dat_p(adat)) {
-	VALUE new = d_lite_s_alloc_simple(CLASS_OF(self));
+	VALUE new = d_lite_s_alloc_simple(rb_obj_class(self));
 	{
 	    get_d1b(new);
 	    bdat->s = adat->s;
@@ -4617,7 +4617,7 @@ dup_obj(VALUE self)
 	}
     }
     else {
-	VALUE new = d_lite_s_alloc_complex(CLASS_OF(self));
+	VALUE new = d_lite_s_alloc_complex(rb_obj_class(self));
 	{
 	    get_d1b(new);
 	    bdat->c = adat->c;
@@ -4632,7 +4632,7 @@ dup_obj_as_complex(VALUE self)
     get_d1a(self);
 
     if (simple_dat_p(adat)) {
-	VALUE new = d_lite_s_alloc_complex(CLASS_OF(self));
+	VALUE new = d_lite_s_alloc_complex(rb_obj_class(self));
 	{
 	    get_d1b(new);
 	    copy_simple_to_complex(&bdat->c, &adat->s);
@@ -4641,7 +4641,7 @@ dup_obj_as_complex(VALUE self)
 	}
     }
     else {
-	VALUE new = d_lite_s_alloc_complex(CLASS_OF(self));
+	VALUE new = d_lite_s_alloc_complex(rb_obj_class(self));
 	{
 	    get_d1b(new);
 	    bdat->c = adat->c;
@@ -5553,14 +5553,14 @@ d_lite_plus(VALUE self, VALUE other)
 	    }
 
 	    if (simple_dat_p(dat))
-		return d_simple_new_internal(CLASS_OF(self),
+		return d_simple_new_internal(rb_obj_class(self),
 					     nth, jd,
 					     dat->s.sg,
 					     0, 0, 0,
 					     (dat->s.flags | HAVE_JD) &
 					     ~HAVE_CIVIL);
 	    else
-		return d_complex_new_internal(CLASS_OF(self),
+		return d_complex_new_internal(rb_obj_class(self),
 					      nth, jd,
 					      dat->c.df, dat->c.sf,
 					      dat->c.of, dat->c.sg,
@@ -5618,14 +5618,14 @@ d_lite_plus(VALUE self, VALUE other)
 		nth = f_add(m_nth(dat), nth);
 
 	    if (simple_dat_p(dat))
-		return d_simple_new_internal(CLASS_OF(self),
+		return d_simple_new_internal(rb_obj_class(self),
 					     nth, jd,
 					     dat->s.sg,
 					     0, 0, 0,
 					     (dat->s.flags | HAVE_JD) &
 					     ~HAVE_CIVIL);
 	    else
-		return d_complex_new_internal(CLASS_OF(self),
+		return d_complex_new_internal(rb_obj_class(self),
 					      nth, jd,
 					      dat->c.df, dat->c.sf,
 					      dat->c.of, dat->c.sg,
@@ -5732,7 +5732,7 @@ d_lite_plus(VALUE self, VALUE other)
 		nth = f_add(m_nth(dat), nth);
 
 	    if (!df && f_zero_p(sf) && !m_of(dat))
-		return d_simple_new_internal(CLASS_OF(self),
+		return d_simple_new_internal(rb_obj_class(self),
 					     nth, (int)jd,
 					     m_sg(dat),
 					     0, 0, 0,
@@ -5740,7 +5740,7 @@ d_lite_plus(VALUE self, VALUE other)
 					     ~(HAVE_CIVIL | HAVE_TIME |
 					       COMPLEX_DAT));
 	    else
-		return d_complex_new_internal(CLASS_OF(self),
+		return d_complex_new_internal(rb_obj_class(self),
 					      nth, (int)jd,
 					      df, sf,
 					      m_of(dat), m_sg(dat),
@@ -5842,7 +5842,7 @@ d_lite_plus(VALUE self, VALUE other)
 		nth = f_add(m_nth(dat), nth);
 
 	    if (!df && f_zero_p(sf) && !m_of(dat))
-		return d_simple_new_internal(CLASS_OF(self),
+		return d_simple_new_internal(rb_obj_class(self),
 					     nth, jd,
 					     m_sg(dat),
 					     0, 0, 0,
@@ -5850,7 +5850,7 @@ d_lite_plus(VALUE self, VALUE other)
 					     ~(HAVE_CIVIL | HAVE_TIME |
 					       COMPLEX_DAT));
 	    else
-		return d_complex_new_internal(CLASS_OF(self),
+		return d_complex_new_internal(rb_obj_class(self),
 					      nth, jd,
 					      df, sf,
 					      m_of(dat), m_sg(dat),

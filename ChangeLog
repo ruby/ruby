@@ -1,3 +1,8 @@
+Sat Jul 23 20:11:50 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: an issue that is same as  [ruby-dev:44071].
+	* ext/date/date_strftime.c: identical to [ruby-dev:44112].
+
 Sat Jul 23 19:12:53 2011  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_err_in_callback.rb (test_err_in_callback): 
