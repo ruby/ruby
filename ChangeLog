@@ -1,3 +1,8 @@
+Sun Jul 24 00:16:13 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: changed default optflags to -O0 if the compiler is
+	  llvm-gcc. It prevent ruby crash on OS X 10.7 (Lion).
+
 Sun Jul 24 00:05:00 2011  Jeremy Evans  <merch-redmine@jeremyevans.net>
 
 	* error.c (rb_name_error_str): new function to raise NameError
