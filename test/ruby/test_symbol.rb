@@ -75,6 +75,19 @@ class TestSymbol < Test::Unit::TestCase
     assert_inspect_evaled(':$1')
   end
 
+  def test_inspect
+    valid = %w{$a @a @@a < << <= <=> > >> >= =~ == === * ** + +@ - -@
+    | ^ & / % ~ ` [] []= ! != !~ a a? a! a= A A? A! A=}
+    valid.each do |sym|
+      assert_equal(':' + sym, sym.intern.inspect)
+    end
+
+    invalid = %w{$a? $a! $a= @a? @a! @a= @@a? @@a! @@a= =}
+    invalid.each do |sym|
+      assert_equal(':"' + sym + '"', sym.intern.inspect)
+    end
+  end
+
   def test_to_proc
     assert_equal %w(1 2 3), (1..3).map(&:to_s)
     [

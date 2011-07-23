@@ -1,3 +1,8 @@
+Sat Jul 23 15:37:04 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* parse.y (rb_enc_symname_type): :$a!, @a! and so on are not
+	  valid symbols, so they should be inspected with quotes.
+
 Sat Jul 23 17:06:25 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_update_max_fd): validate fd.

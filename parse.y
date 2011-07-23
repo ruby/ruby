@@ -9758,10 +9758,12 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc)
 	while (m < e && is_identchar(m, e, enc)) m += rb_enc_mbclen(m, e, enc);
 	switch (*m) {
 	  case '!': case '?':
+	    if (type == ID_GLOBAL || type == ID_CLASS || type == ID_INSTANCE) return -1;
 	    type = ID_JUNK;
 	    ++m;
 	    break;
 	  case '=':
+	    if (type != ID_CONST && type != ID_LOCAL) return -1;
 	    type = ID_ATTRSET;
 	    ++m;
 	    break;
