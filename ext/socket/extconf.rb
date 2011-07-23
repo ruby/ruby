@@ -124,6 +124,93 @@ if have_func("sendmsg") | have_func("recvmsg")
   have_struct_member('struct msghdr', 'msg_accrights', ['sys/types.h', 'sys/socket.h'])
 end
 
+if checking_for("recvmsg() with MSG_PEEK allocate file descriptors") {try_run(<<EOF)}
+#{cpp_include(headers)}
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+
+int main(int argc, char *argv[])
+{
+    int sv[2];
+    int ret;
+    ssize_t ss;
+    int s_fd, r_fd;
+    struct msghdr s_msg, r_msg;
+    union {
+        struct cmsghdr hdr;
+        char dummy[CMSG_SPACE(sizeof(int))];
+    } s_cmsg, r_cmsg;
+    struct iovec s_iov, r_iov;
+    char s_buf[1], r_buf[1];
+    struct stat statbuf;
+
+    s_fd = 0; /* stdin */
+
+    ret = socketpair(AF_UNIX, SOCK_DGRAM, 0, sv);
+    if (ret == -1) { perror("socketpair"); exit(EXIT_FAILURE); }
+
+    s_msg.msg_name = NULL;
+    s_msg.msg_namelen = 0;
+    s_msg.msg_iov = &s_iov;
+    s_msg.msg_iovlen = 1;
+    s_msg.msg_control = &s_cmsg;
+    s_msg.msg_controllen = CMSG_SPACE(sizeof(int));;
+    s_msg.msg_flags = 0;
+
+    s_iov.iov_base = &s_buf;
+    s_iov.iov_len = sizeof(s_buf);
+
+    s_buf[0] = 'a';
+
+    s_cmsg.hdr.cmsg_len = CMSG_LEN(sizeof(int));
+    s_cmsg.hdr.cmsg_level = SOL_SOCKET;
+    s_cmsg.hdr.cmsg_type = SCM_RIGHTS;
+    memcpy(CMSG_DATA(&s_cmsg.hdr), (char *)&s_fd, sizeof(int));
+
+    ss = sendmsg(sv[0], &s_msg, 0);
+    if (ss == -1) { perror("sendmsg"); exit(EXIT_FAILURE); }
+
+    r_msg.msg_name = NULL;
+    r_msg.msg_namelen = 0;
+    r_msg.msg_iov = &r_iov;
+    r_msg.msg_iovlen = 1;
+    r_msg.msg_control = &r_cmsg;
+    r_msg.msg_controllen = CMSG_SPACE(sizeof(int));
+    r_msg.msg_flags = 0;
+
+    r_iov.iov_base = &r_buf;
+    r_iov.iov_len = sizeof(r_buf);
+
+    r_buf[0] = '0';
+
+    memset(&r_cmsg, 0xff, CMSG_SPACE(sizeof(int)));
+
+    ss = recvmsg(sv[1], &r_msg, MSG_PEEK);
+    if (ss == -1) { perror("recvmsg"); exit(EXIT_FAILURE); }
+
+    if (ss != 1) { exit(EXIT_FAILURE); }
+    if (r_buf[0] != 'a') { exit(EXIT_FAILURE); }
+
+    if (r_msg.msg_controllen < CMSG_LEN(sizeof(int))) exit(EXIT_FAILURE);
+    if (r_cmsg.hdr.cmsg_len < CMSG_LEN(sizeof(int))) exit(EXIT_FAILURE);
+    memcpy((char *)&r_fd, CMSG_DATA(&s_cmsg.hdr), sizeof(int));
+
+    if (r_fd < 0) exit(EXIT_FAILURE);
+
+    ret = fstat(r_fd, &statbuf);
+    if (ret == -1) { exit(EXIT_FAILURE); }
+
+    return EXIT_SUCCESS;
+}
+EOF
+  $defs << "-DFD_PASSING_WORK_WITH_RECVMSG_MSG_PEEK"
+end
+
 getaddr_info_ok = (enable_config("wide-getaddrinfo") && :wide) ||
   (checking_for("wide getaddrinfo") {try_run(<<EOF)} && :os)
 #{cpp_include(headers)}

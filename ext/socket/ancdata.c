@@ -1379,12 +1379,14 @@ rb_recvmsg(int fd, struct msghdr *msg, int flags)
 static void
 discard_cmsg(struct cmsghdr *cmh, char *msg_end, int msg_peek_p)
 {
-# if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__APPLE__)
+# if !defined(FD_PASSING_WORK_WITH_RECVMSG_MSG_PEEK)
     /* 
-     * nagachika finds recvmsg with MSG_PEEK doesn't return fds on MacOS X Snow Leopard. [ruby-dev:44209]
-     * naruse finds FreeBSD behaves as so too and comment in kernel of FreeBSD 8.2.0. [ruby-dev:44189]
-     * kosaki finds same comment in MacOS X Snow Leopard.  [ruby-dev:44192]
-     * Takahiro Kambe finds same comment since NetBSD 5. [ruby-dev:44205]
+     * FreeBSD 8.2.0, NetBSD 5 and MacOS X Snow Leopard doesn't
+     * allocate fds by recvmsg with MSG_PEEK.
+     * [ruby-dev:44189]
+     * http://redmine.ruby-lang.org/issues/5075
+     *
+     * Linux 2.6.38 allocate fds by recvmsg with MSG_PEEK.
      */
     if (msg_peek_p)
         return;
