@@ -277,7 +277,13 @@ AC_PROG_GCC_TRADITIONAL
 AC_SUBST(GCC)
 if test "$GCC" = yes; then
     linker_flag=-Wl,
-    : ${optflags=-O3}
+    if test "$CC -v 2>&1 | grep LLVM" ; then
+	# llvm-gcc's optimization strategy is far different from gcc.
+	# It makes confusing our gcc specific optimized code.
+	: ${optflags=-O0}
+    else
+	: ${optflags=-O3}
+    fi
     AS_CASE(["$target_os"], [linux*|darwin*], [: ${debugflags=-ggdb}])
     RUBY_APPEND_OPTIONS(XCFLAGS, ["-include ruby/config.h" "-include ruby/missing.h"])
 else
