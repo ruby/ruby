@@ -23,7 +23,17 @@ if defined?(WIN32OLE)
       end
     end
 
+    def available_adodb?
+      begin
+        db = WIN32OLE.new('ADODB.Connection')
+      rescue WIN32OLERuntimeError
+        return false
+      end
+      return true
+    end
+
     def test_err_in_callback
+      skip "'ADODB.Connection' is not available" unless available_adodb?
       if @ruby
         cmd = "#{@ruby} -v #{@iopt} #{@script} > test_err_in_callback.log 2>&1"
         system(cmd)

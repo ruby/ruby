@@ -1,3 +1,8 @@
+Sat Jul 23 19:12:53 2011  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_err_in_callback.rb (test_err_in_callback): 
+	  skip test if ADODB.connection is not available.
+
 Sat Jul 23 15:37:04 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* parse.y (rb_enc_symname_type): :$a!, @a! and so on are not
