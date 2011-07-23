@@ -67,7 +67,7 @@ class TestRakeTaskArgumentParsing < Rake::TestCase
   end
 
   def test_terminal_width_using_hardcoded_80
-    def @app.unix?() true end
+    def @app.unix?() false end
 
     assert_equal 80, @app.terminal_width
   end
