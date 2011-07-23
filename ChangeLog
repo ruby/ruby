@@ -1,3 +1,20 @@
+Sat Jul 23 17:06:25 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_update_max_fd): validate fd.
+
+	* ext/socket/rubysocket.h (rsock_discard_cmsg_resource): add
+	  msg_peek_p argument for the declaration.
+
+	* ext/socket/ancdata.c (discard_cmsg): add msg_peek_p argument.
+	  assume FreeBSD, NetBSD and MacOS X doesn't generate passed fd
+	  when MSG_PEEK. 
+	  (rsock_discard_cmsg_resource): add msg_peek_p argument.
+	  (bsock_recvmsg_internal): call rsock_discard_cmsg_resource with
+	  msg_peek_p argument.
+
+	* ext/socket/unixsocket.c (unix_recv_io): call
+	  rsock_discard_cmsg_resource with msg_peek_p argument.
+
 Sat Jul 23 14:38:28 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rake*: Remove dependencies on flexmock and session gems.

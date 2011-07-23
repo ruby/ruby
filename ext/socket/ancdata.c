@@ -1377,23 +1377,25 @@ rb_recvmsg(int fd, struct msghdr *msg, int flags)
 
 #if defined(HAVE_ST_MSG_CONTROL)
 static void
-discard_cmsg(struct cmsghdr *cmh, char *msg_end)
+discard_cmsg(struct cmsghdr *cmh, char *msg_end, int msg_peek_p)
 {
+# if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__APPLE__)
+    /* 
+     * nagachika finds recvmsg with MSG_PEEK doesn't return fds on MacOS X Snow Leopard. [ruby-dev:44209]
+     * naruse finds FreeBSD behaves as so too and comment in kernel of FreeBSD 8.2.0. [ruby-dev:44189]
+     * kosaki finds same comment in MacOS X Snow Leopard.  [ruby-dev:44192]
+     * Takahiro Kambe finds same comment since NetBSD 5. [ruby-dev:44205]
+     */
+    if (msg_peek_p)
+        return;
+# endif
     if (cmh->cmsg_level == SOL_SOCKET && cmh->cmsg_type == SCM_RIGHTS) {
         int *fdp = (int *)CMSG_DATA(cmh);
         int *end = (int *)((char *)cmh + cmh->cmsg_len);
         while ((char *)fdp + sizeof(int) <= (char *)end &&
                (char *)fdp + sizeof(int) <= msg_end) {
-            /*
-             * xxx: nagachika said *fdp can be invalid fd on MacOS X Lion.
-             * This workaround using fstat is clearly wrong.
-             * we should investigate why *fdp contains invalid fd.
-             */
-            struct stat buf;
-            if (fstat(*fdp, &buf) == 0) {
-                rb_update_max_fd(*fdp);
-                close(*fdp);
-            }
+            rb_update_max_fd(*fdp);
+            close(*fdp);
             fdp++;
         }
     }
@@ -1401,7 +1403,7 @@ discard_cmsg(struct cmsghdr *cmh, char *msg_end)
 #endif
 
 void
-rsock_discard_cmsg_resource(struct msghdr *mh)
+rsock_discard_cmsg_resource(struct msghdr *mh, int msg_peek_p)
 {
 #if defined(HAVE_ST_MSG_CONTROL)
     struct cmsghdr *cmh;
@@ -1413,7 +1415,7 @@ rsock_discard_cmsg_resource(struct msghdr *mh)
     msg_end = (char *)mh->msg_control + mh->msg_controllen;
 
     for (cmh = CMSG_FIRSTHDR(mh); cmh != NULL; cmh = CMSG_NXTHDR(mh, cmh)) {
-        discard_cmsg(cmh, msg_end);
+        discard_cmsg(cmh, msg_end, msg_peek_p);
     }
 #endif
 }
@@ -1612,7 +1614,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
                 /* there are big space bug truncated.
                  * file descriptors limit? */
                 if (!gc_done) {
-		    rsock_discard_cmsg_resource(&mh);
+		    rsock_discard_cmsg_resource(&mh, (flags & MSG_PEEK) != 0);
                     goto gc_and_retry;
 		}
             }
@@ -1633,14 +1635,14 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 	}
 #endif
 	if (grown) {
-            rsock_discard_cmsg_resource(&mh);
+            rsock_discard_cmsg_resource(&mh, (flags & MSG_PEEK) != 0);
 	    goto retry;
 	}
 	else {
             grow_buffer = 0;
             if (flags != orig_flags) {
+                rsock_discard_cmsg_resource(&mh, (flags & MSG_PEEK) != 0);
                 flags = orig_flags;
-                rsock_discard_cmsg_resource(&mh);
                 goto retry;
             }
         }
@@ -1680,7 +1682,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             if (request_scm_rights)
                 make_io_for_unix_rights(ctl, cmh, msg_end);
             else
-                discard_cmsg(cmh, msg_end);
+                discard_cmsg(cmh, msg_end, (flags & MSG_PEEK) != 0);
             rb_ary_push(ret, ctl);
         }
     }

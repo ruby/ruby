@@ -288,7 +288,7 @@ VALUE rsock_bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock);
 #endif
 
 #ifdef HAVE_ST_MSG_CONTROL
-void rsock_discard_cmsg_resource(struct msghdr *mh);
+void rsock_discard_cmsg_resource(struct msghdr *mh, int msg_peek_p);
 #endif
 
 void rsock_init_basicsocket(void);

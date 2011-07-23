@@ -154,6 +154,10 @@ static int max_file_descriptor = NOFILE;
 void
 rb_update_max_fd(int fd)
 {
+    struct stat buf;
+    if (fstat(fd, &buf) != 0) {
+        rb_bug("rb_update_max_fd: invalid fd (%d) given.", fd);
+    }
     if (max_file_descriptor < fd) max_file_descriptor = fd;
 }
 
