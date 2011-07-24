@@ -124,9 +124,9 @@ if have_func("sendmsg") | have_func("recvmsg")
   have_struct_member('struct msghdr', 'msg_accrights', ['sys/types.h', 'sys/socket.h'])
 end
 
-if checking_for("recvmsg() with MSG_PEEK allocate file descriptors") {try_run(<<EOF)}
-#{cpp_include(headers)}
+if checking_for("recvmsg() with MSG_PEEK allocate file descriptors") {try_run(cpp_include(headers) + <<'EOF')}
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -136,7 +136,7 @@ if checking_for("recvmsg() with MSG_PEEK allocate file descriptors") {try_run(<<
 
 int main(int argc, char *argv[])
 {
-    int sv[2];
+    int ps[2], sv[2];
     int ret;
     ssize_t ss;
     int s_fd, r_fd;
@@ -149,7 +149,10 @@ int main(int argc, char *argv[])
     char s_buf[1], r_buf[1];
     struct stat s_statbuf, r_statbuf;
 
-    s_fd = 0; /* stdin */
+    ret = pipe(ps);
+    if (ret == -1) { perror("pipe"); exit(EXIT_FAILURE); }
+
+    s_fd = ps[0];
 
     ret = socketpair(AF_UNIX, SOCK_DGRAM, 0, sv);
     if (ret == -1) { perror("socketpair"); exit(EXIT_FAILURE); }
@@ -193,25 +196,48 @@ int main(int argc, char *argv[])
     ss = recvmsg(sv[1], &r_msg, MSG_PEEK);
     if (ss == -1) { perror("recvmsg"); exit(EXIT_FAILURE); }
 
-    if (ss != 1) { exit(EXIT_FAILURE); }
-    if (r_buf[0] != 'a') { exit(EXIT_FAILURE); }
+    if (ss != 1) {
+        fprintf(stderr, "unexpected return value from recvmsg: %ld\n", (long)ss);
+        exit(EXIT_FAILURE);
+    }
+    if (r_buf[0] != 'a') {
+        fprintf(stderr, "unexpected return data from recvmsg: 0x%02x\n", r_buf[0]);
+        exit(EXIT_FAILURE);
+    }
 
-    if (r_msg.msg_controllen < CMSG_LEN(sizeof(int))) exit(EXIT_FAILURE);
-    if (r_cmsg.hdr.cmsg_len < CMSG_LEN(sizeof(int))) exit(EXIT_FAILURE);
+    if (r_msg.msg_controllen < CMSG_LEN(sizeof(int))) {
+        fprintf(stderr, "unexpected: r_msg.msg_controllen < CMSG_LEN(sizeof(int)) not hold: %ld\n",
+                (long)r_msg.msg_controllen);
+        exit(EXIT_FAILURE);
+    }
+    if (r_cmsg.hdr.cmsg_len < CMSG_LEN(sizeof(int))) {
+        fprintf(stderr, "unexpected: r_cmsg.hdr.cmsg_len < CMSG_LEN(sizeof(int)) not hold: %ld\n",
+                (long)r_cmsg.hdr.cmsg_len);
+        exit(EXIT_FAILURE);
+    }
     memcpy((char *)&r_fd, CMSG_DATA(&r_cmsg.hdr), sizeof(int));
 
-    if (r_fd < 0) exit(EXIT_FAILURE);
+    if (r_fd < 0) {
+        fprintf(stderr, "negative r_fd: %d\n", r_fd);
+        exit(EXIT_FAILURE);
+    }
 
-    if (r_fd == s_fd) exit(EXIT_FAILURE);
+    if (r_fd == s_fd) {
+        fprintf(stderr, "r_fd and s_fd is same: %d\n", r_fd);
+        exit(EXIT_FAILURE);
+    }
 
     ret = fstat(s_fd, &s_statbuf);
-    if (ret == -1) { exit(EXIT_FAILURE); }
+    if (ret == -1) { perror("fstat(s_fd)"); exit(EXIT_FAILURE); }
 
     ret = fstat(r_fd, &r_statbuf);
-    if (ret == -1) { exit(EXIT_FAILURE); }
+    if (ret == -1) { perror("fstat(r_fd)"); exit(EXIT_FAILURE); }
 
     if (s_statbuf.st_dev != r_statbuf.st_dev ||
         s_statbuf.st_ino != r_statbuf.st_ino) {
+        fprintf(stderr, "dev/ino doesn't match: s_fd:%ld/%ld r_fd:%ld/%ld\n",
+                (long)s_statbuf.st_dev, (long)s_statbuf.st_ino,
+                (long)r_statbuf.st_dev, (long)r_statbuf.st_ino);
         exit(EXIT_FAILURE);
     }
 
