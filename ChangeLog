@@ -1,3 +1,7 @@
+Sun Jul 24 20:02:31 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/extconf.rb: fix the recvmsg test.
+
 Sun Jul 24 08:42:51 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: test recvmsg allocates file descriptors for
