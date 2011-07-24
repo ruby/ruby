@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
     } s_cmsg, r_cmsg;
     struct iovec s_iov, r_iov;
     char s_buf[1], r_buf[1];
-    struct stat statbuf;
+    struct stat s_statbuf, r_statbuf;
 
     s_fd = 0; /* stdin */
 
@@ -198,12 +198,22 @@ int main(int argc, char *argv[])
 
     if (r_msg.msg_controllen < CMSG_LEN(sizeof(int))) exit(EXIT_FAILURE);
     if (r_cmsg.hdr.cmsg_len < CMSG_LEN(sizeof(int))) exit(EXIT_FAILURE);
-    memcpy((char *)&r_fd, CMSG_DATA(&s_cmsg.hdr), sizeof(int));
+    memcpy((char *)&r_fd, CMSG_DATA(&r_cmsg.hdr), sizeof(int));
 
     if (r_fd < 0) exit(EXIT_FAILURE);
 
-    ret = fstat(r_fd, &statbuf);
+    if (r_fd == s_fd) exit(EXIT_FAILURE);
+
+    ret = fstat(s_fd, &s_statbuf);
     if (ret == -1) { exit(EXIT_FAILURE); }
+
+    ret = fstat(r_fd, &r_statbuf);
+    if (ret == -1) { exit(EXIT_FAILURE); }
+
+    if (s_statbuf.st_dev != r_statbuf.st_dev ||
+        s_statbuf.st_ino != r_statbuf.st_ino) {
+        exit(EXIT_FAILURE);
+    }
 
     return EXIT_SUCCESS;
 }
