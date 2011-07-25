@@ -19,6 +19,7 @@ struct METHOD {
     VALUE rclass;
     ID id;
     rb_method_entry_t *me;
+    struct unlinked_method_entry_list_entry *ume;
 };
 
 VALUE rb_cUnboundMethod;
@@ -868,7 +869,10 @@ static void
 bm_free(void *ptr)
 {
     struct METHOD *data = ptr;
-    rb_unlink_method_entry(data->me);
+    struct unlinked_method_entry_list_entry *ume = data->ume;
+    ume->me = data->me;
+    ume->next = GET_VM()->unlinked_method_entry_list;
+    GET_VM()->unlinked_method_entry_list = ume;
     xfree(ptr);
 }
 
@@ -977,6 +981,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     data->me = ALLOC(rb_method_entry_t);
     *data->me = *me;
     data->me->def->alias_count++;
+    data->ume = ALLOC(struct unlinked_method_entry_list_entry);
 
     OBJ_INFECT(method, klass);
 
@@ -1085,6 +1090,7 @@ method_unbind(VALUE obj)
     *data->me = *orig->me;
     if (orig->me->def) orig->me->def->alias_count++;
     data->rclass = orig->rclass;
+    data->ume = ALLOC(struct unlinked_method_entry_list_entry);
     OBJ_INFECT(method, obj);
 
     return method;
@@ -1423,6 +1429,7 @@ method_clone(VALUE self)
     data->me = ALLOC(rb_method_entry_t);
     *data->me = *orig->me;
     if (data->me->def) data->me->def->alias_count++;
+    data->ume = ALLOC(struct unlinked_method_entry_list_entry);
 
     return clone;
 }
@@ -1589,6 +1596,7 @@ umethod_bind(VALUE method, VALUE recv)
     if (bound->me->def) bound->me->def->alias_count++;
     bound->recv = recv;
     bound->rclass = CLASS_OF(recv);
+    data->ume = ALLOC(struct unlinked_method_entry_list_entry);
 
     return method;
 }
