@@ -176,6 +176,24 @@ rb_method_definition_redefine_warnings(rb_method_definition_t *old_def, ID mid, 
 }
 
 static rb_method_entry_t *
+rb_method_entry_new(VALUE klass, ID mid, rb_method_type_t type,
+		     rb_method_definition_t *def, rb_method_flag_t noex)
+{
+/*  creates a new method_entry object (struct) */
+
+    rb_method_entry_t *me;
+    me = ALLOC(rb_method_entry_t);
+
+    me->flag = NOEX_WITH_SAFE(noex);
+    me->mark = 0;
+    me->called_id = mid;
+    me->klass = klass;
+    me->def = def;
+    if (def) def->alias_count++;
+    return me;
+}
+
+static rb_method_entry_t *
 rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 		     rb_method_definition_t *def, rb_method_flag_t noex)
 {
@@ -220,17 +238,11 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	rb_unlink_method_entry(old_me);
     }
 
-    me = ALLOC(rb_method_entry_t);
-
     rb_clear_cache_by_id(mid);
+    
+    me = rb_method_entry_new(klass, mid, type, def, noex);
 
-    me->flag = NOEX_WITH_SAFE(noex);
-    me->mark = 0;
-    me->called_id = mid;
-    me->klass = klass;
-    me->def = def;
-    if (def) def->alias_count++;
-
+    /* issue: warnings should be raised only if ruby_verbose */
     /* check mid */
     if (klass == rb_cObject && mid == idInitialize) {
 	rb_warn("redefining Object#initialize may cause infinite loop");
