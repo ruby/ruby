@@ -29,8 +29,9 @@ class TestRakeDirectoryTask < Rake::TestCase
     def test_directory_win32
       desc "WIN32 DESC"
       directory 'c:/a/b/c'
-      assert_equal FileCreationTask, Task['c:'].class
+      assert_equal FileTask, Task['c:'].class
       assert_equal FileCreationTask, Task['c:/a'].class
+      assert_equal FileCreationTask, Task['c:/a/b'].class
       assert_equal FileCreationTask, Task['c:/a/b/c'].class
       assert_nil             Task['c:/'].comment
       assert_equal "WIN32 DESC",   Task['c:/a/b/c'].comment

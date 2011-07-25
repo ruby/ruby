@@ -1,3 +1,8 @@
+Mon Jul 25 23:39:33 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/rake/test_rake_directory_task.rb (TestRakeDirectoryTask#
+	  test_directory_win32): fixed wrong test.
+
 Mon Jul 25 22:36:11 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* proc.c (struct METHOD), gc.c (gc_marks), vm_method.c
