@@ -143,6 +143,38 @@ rb_free_method_entry(rb_method_entry_t *me)
 
 static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 
+inline void
+rb_method_definition_redefine_warnings(rb_method_definition_t *old_def, ID mid, rb_method_type_t type)
+{
+/*  warning processing subjecting method redefinition */
+
+    if (RTEST(ruby_verbose) &&
+	type != VM_METHOD_TYPE_UNDEF &&
+	old_def->alias_count == 0 &&
+	old_def->type != VM_METHOD_TYPE_UNDEF &&
+	old_def->type != VM_METHOD_TYPE_ZSUPER) {
+	rb_iseq_t *iseq = 0;
+
+	rb_warning("method redefined; discarding old %s", rb_id2name(mid));
+	switch (old_def->type) {
+	  case VM_METHOD_TYPE_ISEQ:
+	    iseq = old_def->body.iseq;
+	    break;
+	  case VM_METHOD_TYPE_BMETHOD:
+	    iseq = rb_proc_get_iseq(old_def->body.proc, 0);
+	    break;
+	  default:
+	    break;
+	}
+	if (iseq && !NIL_P(iseq->filename)) {
+	    int line = iseq->insn_info_table ? rb_iseq_first_lineno(iseq) : 0;
+	    rb_compile_warning(RSTRING_PTR(iseq->filename), line,
+			       "previous definition of %s was here",
+			       rb_id2name(old_def->original_id));
+	}
+    }
+}
+
 static rb_method_entry_t *
 rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 		     rb_method_definition_t *def, rb_method_flag_t noex)
@@ -180,35 +212,11 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	rb_method_entry_t *old_me = (rb_method_entry_t *)data;
 	rb_method_definition_t *old_def = old_me->def;
 
-	if (rb_method_definition_eq(old_def, def)) return old_me;
+	if (rb_method_definition_eq(old_def, def))
+	    return old_me;
+
 	rb_vm_check_redefinition_opt_method(old_me);
-
-	if (RTEST(ruby_verbose) &&
-	    type != VM_METHOD_TYPE_UNDEF &&
-	    old_def->alias_count == 0 &&
-	    old_def->type != VM_METHOD_TYPE_UNDEF &&
-	    old_def->type != VM_METHOD_TYPE_ZSUPER) {
-	    rb_iseq_t *iseq = 0;
-
-	    rb_warning("method redefined; discarding old %s", rb_id2name(mid));
-	    switch (old_def->type) {
-	      case VM_METHOD_TYPE_ISEQ:
-		iseq = old_def->body.iseq;
-		break;
-	      case VM_METHOD_TYPE_BMETHOD:
-		iseq = rb_proc_get_iseq(old_def->body.proc, 0);
-		break;
-	      default:
-		break;
-	    }
-	    if (iseq && !NIL_P(iseq->filename)) {
-		int line = iseq->insn_info_table ? rb_iseq_first_lineno(iseq) : 0;
-		rb_compile_warning(RSTRING_PTR(iseq->filename), line,
-				   "previous definition of %s was here",
-				   rb_id2name(old_def->original_id));
-	    }
-	}
-
+	rb_method_definition_redefine_warnings(old_def, mid, type);
 	rb_unlink_method_entry(old_me);
     }
 
