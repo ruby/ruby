@@ -983,7 +983,8 @@ ossl_ssl_shutdown(SSL *ssl)
 	    if (rc = SSL_shutdown(ssl))
 		break;
 	}
-        SSL_clear(ssl);
+	ERR_clear_error();
+	SSL_clear(ssl);
     }
 }
 
