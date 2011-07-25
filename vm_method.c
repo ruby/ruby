@@ -258,15 +258,22 @@ method_added(VALUE klass, ID mid)
     }
 }
 
-rb_method_entry_t *
-rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_flag_t noex)
+rb_method_definition_t *
+rb_method_definition_new(/*VALUE klass*/ID mid, rb_method_type_t type, void *opts/*, rb_method_flag_t noex*/)
 {
+/*  constructs a new method_definition */
+/*  TD: rename "method_definition" to "mdef" */
+
     rb_thread_t *th;
     rb_control_frame_t *cfp;
     int line;
+/*
     rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, 0, noex);
+*/
     rb_method_definition_t *def = ALLOC(rb_method_definition_t);
+/*
     me->def = def;
+*/
     def->type = type;
     def->original_id = mid;
     def->alias_count = 0;
@@ -304,6 +311,25 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
       default:
 	rb_bug("rb_add_method: unsupported method type (%d)\n", type);
     }
+/*
+    if (type != VM_METHOD_TYPE_UNDEF) {
+	method_added(klass, mid);
+    }
+    return me;
+*/
+    return def;
+}
+
+rb_method_entry_t *
+rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_flag_t noex)
+{
+/*  constructs a method_entry (assigning method_definition) and adds it to a class */
+
+/*  TD: verify further merge with "rb_method_entry_make" */
+/*  TD: unify naming, "method_entry" becomes "me" */
+
+    rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, 0, noex);
+    me->def = rb_method_definition_new(mid, type, opts);
     if (type != VM_METHOD_TYPE_UNDEF) {
 	method_added(klass, mid);
     }
