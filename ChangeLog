@@ -1,3 +1,14 @@
+Mon Jul 25 13:09:42 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_shutdown): Avoid randomly generated
+	  SSLError from SSLSocket just after invoking SSLSocket#close.
+	  OpenSSL's SSL_shutdown could try to send alert packet and it might
+	  set SSLerr(global error stack) as the result. It causes the next
+	  SSL read/write operation to fail by unrelated reason.
+
+	  By design, we're ignoring any error at SSL_shutdown() so we clear
+	  global error stack after SSL_shutdown is called. See #5039.
+
 Sun Jul 24 20:29:53 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/extconf.rb: refine the recvmsg test.
