@@ -2461,6 +2461,8 @@ gc_marks(rb_objspace_t *objspace)
 
     rb_gc_mark_parser();
 
+    rb_gc_mark_unlinked_live_method_entries(th->vm);
+
     /* gc_mark objects whose marking are not completed*/
     while (!MARK_STACK_EMPTY) {
 	if (mark_stack_overflow) {

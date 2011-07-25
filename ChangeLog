@@ -1,3 +1,13 @@
+Mon Jul 25 22:36:11 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* proc.c (struct METHOD), gc.c (gc_marks), vm_method.c
+	  (rb_gc_mark_unlinked_live_method_entries): fix SEGV bug.
+	  rb_method_entry_t was free'd even when the method is still on the
+	  stack if it is BMETHOD (i.e., Method#call).  This is because
+	  rb_method_entry_t is embedded in struct METHOD.  This commit
+	  separates them and marks the live method entries.
+	  See [ruby-core:38449] in detail.  fix [Bug #5047] [ruby-core:38171]
+
 Mon Jul 25 22:14:37 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* lib/xmlrpc/client.rb: Fix possible HTTP header formatting failure by
