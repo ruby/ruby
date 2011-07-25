@@ -1,3 +1,13 @@
+Mon Jul 25 22:24:09 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* backport r32666 from trunk.
+
+	* lib/xmlrpc/client.rb: Fix possible HTTP header formatting failure by
+	  'Basic' header. Long username caused the base64 String truncation in
+	  HTTP header which is not allowed. See #5046.
+
+	* test/xmlrpc/test_webrick_server.rb: test it.
+
 Mon Jul 25 15:36:07 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/{x509.rb,ssl.rb}: Add deprecation warning
