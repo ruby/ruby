@@ -1,3 +1,13 @@
+Mon Jul 25 15:04:33 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* ext/openssl/lib/openssl.rb: End of transition period introduced by
+	  [ruby-dev:38018]. From the next version of 1.9.3, you should use
+	    require "openssl"
+	  instead of
+	    require "openssl/ssl"
+	  and
+	    require "openssl/x509"
+
 Mon Jul 25 13:46:38 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/x509.rb: Cosmetic change: move definition
