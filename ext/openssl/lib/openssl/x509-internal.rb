@@ -148,5 +148,11 @@ module OpenSSL
         alias parse parse_openssl
       end
     end
+
+    class StoreContext
+      def cleanup
+        warn "(#{caller.first}) OpenSSL::X509::StoreContext#cleanup is deprecated with no replacement" if $VERBOSE
+      end
+    end
   end
 end

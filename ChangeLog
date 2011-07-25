@@ -1,3 +1,10 @@
+Mon Jul 25 13:50:33 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* backport r32662 from trunk.
+
+	* ext/openssl/lib/openssl/x509.rb: Cosmetic change: move definition
+	  introduced in r30152 to x509-internal.rb.
+
 Mon Jul 25 13:35:20 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* backport r32658 from trunk.
