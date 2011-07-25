@@ -1,3 +1,11 @@
+Mon Jul 25 22:14:37 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* lib/xmlrpc/client.rb: Fix possible HTTP header formatting failure by
+	  'Basic' header. Long username caused the base64 String truncation in
+	  HTTP header which is not allowed. See #5046.
+
+	* test/xmlrpc/test_webrick_server.rb: test it.
+
 Mon Jul 25 15:04:33 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* ext/openssl/lib/openssl.rb: End of transition period introduced by
