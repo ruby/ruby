@@ -259,7 +259,7 @@ method_added(VALUE klass, ID mid)
 }
 
 rb_method_definition_t *
-rb_method_definition_new(/*VALUE klass*/ID mid, rb_method_type_t type, void *opts/*, rb_method_flag_t noex*/)
+rb_method_definition_new(ID mid, rb_method_type_t type, void *opts)
 {
 /*  constructs a new method_definition */
 /*  TD: rename "method_definition" to "mdef" */
@@ -267,13 +267,7 @@ rb_method_definition_new(/*VALUE klass*/ID mid, rb_method_type_t type, void *opt
     rb_thread_t *th;
     rb_control_frame_t *cfp;
     int line;
-/*
-    rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, 0, noex);
-*/
     rb_method_definition_t *def = ALLOC(rb_method_definition_t);
-/*
-    me->def = def;
-*/
     def->type = type;
     def->original_id = mid;
     def->alias_count = 0;
@@ -311,12 +305,6 @@ rb_method_definition_new(/*VALUE klass*/ID mid, rb_method_type_t type, void *opt
       default:
 	rb_bug("rb_add_method: unsupported method type (%d)\n", type);
     }
-/*
-    if (type != VM_METHOD_TYPE_UNDEF) {
-	method_added(klass, mid);
-    }
-    return me;
-*/
     return def;
 }
 
