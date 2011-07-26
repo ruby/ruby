@@ -102,15 +102,27 @@ with all sufficient information, see the ChangeLog file.
       the platform don't support supplementary groups concept.
 
 * bigdecimal
+
   * BigDecimal#power and BigDecimal#** support non-integral exponent.
 
   * Kernel.BigDecimal and BigDecimal.new now accept instances of Integer,
-    Rational, and Float.  If you pass a Rational or a Float to them, you must
-    specify the precision to produce the digits of a BigDecimal.
+    Rational, Float, and BigDecimal.  If you pass a Rational or a Float to
+    them, you must specify the precision to produce the digits of a BigDecimal.
 
   * The behavior of BigDecimal#coerce with a Rational is changed.  It uses
     the precision of the receiver BigDecimal to produce the digits of a
     BigDecimal from the given Rational.
+
+* bigdecimal/util
+
+  * BigDecimal#to_d and Integer#to_d are added.
+
+  * Float#to_d accepts a precision.
+
+  * Rational#to_d raises ArgumentError when passing zero or negative
+    precision.
+
+  * Rational#to_d requires a precision.  It is an incompatible change.
 
 * date
 
@@ -301,4 +313,6 @@ with all sufficient information, see the ChangeLog file.
 
 === Compatibility issues (excluding feature bug fixes)
 
-  None
+  * Rational#to_d
+
+    See above.
