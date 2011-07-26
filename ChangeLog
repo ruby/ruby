@@ -1,3 +1,7 @@
+Tue Jul 26 23:33:24 2011  Igor Zubkov  <igor.zubkov@gmail.com>
+
+	* array.c: Fix typo. https://github.com/ruby/ruby/pull/36
+
 Mon Jul 25 23:51:01 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* proc.c: pre-allocate the unlinked_method_entry_list_entry struct to
