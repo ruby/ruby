@@ -472,6 +472,9 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c2::Bar }
     assert_raise(NameError) { c2.const_get(:Bar) }
     assert_raise(NameError) { c2.const_get(:Bar, false) }
+    assert_raise(NameError) { c2.const_get("Bar", false) }
+    assert_raise(NameError) { c2.const_get("BaR11", false) }
+    assert_raise(NameError) { Object.const_get("BaR11", false) }
 
     c1.instance_eval do
       def const_missing(x)
@@ -483,6 +486,11 @@ class TestModule < Test::Unit::TestCase
     assert_equal(:Bar, c2::Bar)
     assert_equal(:Bar, c2.const_get(:Bar))
     assert_equal(:Bar, c2.const_get(:Bar, false))
+    assert_equal(:Bar, c2.const_get("Bar"))
+    assert_equal(:Bar, c2.const_get("Bar", false))
+
+    v = c2.const_get("Bar11", false)
+    assert_equal("Bar11".to_sym, v)
 
     assert_raise(NameError) { c1.const_get(:foo) }
   end

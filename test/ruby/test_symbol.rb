@@ -197,4 +197,37 @@ class TestSymbol < Test::Unit::TestCase
       assert !Symbol.all_symbols.any? {|sym| sym.to_s == str}, msg
     end
   end
+
+  def test_no_inadvertent_symbol_creation3
+    feature5089 = '[ruby-core:38447]'
+    c = Class.new do
+      def self.alias_method(str)
+        super(:puts, str)
+      end
+    end
+    s = "gadzoooks"
+    {:alias_method => ["#{s}1", NameError],
+     :autoload? => ["#{s}2", nil],
+     :const_get => ["A#{s}3", NameError],
+     :private_class_method => ["#{s}4", NameError],
+     :private_constant => ["#{s}5", NameError],
+     :private => ["#{s}6", NameError],
+     :protected => ["#{s}7", NameError],
+     :public => ["#{s}8", NameError],
+     :public_class_method => ["#{s}9", NameError],
+     :public_constant => ["#{s}10", NameError],
+     :remove_method => ["#{s}11", NameError],
+     :undef_method => ["#{s}12", NameError],
+     :untrace_var => ["#{s}13", NameError],
+    }.each do |meth, arr|
+      str, ret = arr
+      msg = "#{meth}(#{str}) #{feature5089}"
+      if ret.is_a?(Class) && (ret < Exception)
+        assert_raises(ret){c.send(meth, str)}
+      else
+        assert(c.send(meth, str) == ret, msg)
+      end
+      assert !Symbol.all_symbols.any? {|sym| sym.to_s == str}, msg
+    end
+  end
 end

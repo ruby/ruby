@@ -1,4 +1,13 @@
-Wed Jul 27 01:05:28 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jul 27 01:05:32 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_error.c (rb_print_undef_str): new function to raise
+	  NameError for undefined method.
+
+	* load.c (rb_mod_autoload_p), object.c (rb_mod_const_get),
+	  variable.c (rb_f_untrace_var, set_const_visibility), vm_method.c
+	  (rb_mod_{remove,undef,alias}_method, set_method_visibility):
+	  remove inadvertent symbol creation.  based on the first patch by
+	  Jeremy Evans at [ruby-core:38447].  [Feature #5089]
 
 	* vm_method.c (obj_respond_to): fix the respond_to_missing? override
 	  case.  based on the patch by Jeremy Evans at [ruby-core:38417].

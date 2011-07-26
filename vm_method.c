@@ -485,7 +485,13 @@ rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
     int i;
 
     for (i = 0; i < argc; i++) {
-	remove_method(mod, rb_to_id(argv[i]));
+	VALUE v = argv[i];
+	ID id = rb_check_id(&v);
+	if (!id) {
+	    rb_name_error_str(v, "method `%s' not defined in %s",
+			      RSTRING_PTR(v), rb_class2name(mod));
+	}
+	remove_method(mod, id);
     }
     return mod;
 }
@@ -693,7 +699,12 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
 {
     int i;
     for (i = 0; i < argc; i++) {
-	rb_undef(mod, rb_to_id(argv[i]));
+	VALUE v = argv[i];
+	ID id = rb_check_id(&v);
+	if (!id) {
+	    rb_method_name_error(mod, v);
+	}
+	rb_undef(mod, id);
     }
     return mod;
 }
@@ -952,7 +963,11 @@ rb_alias(VALUE klass, ID name, ID def)
 static VALUE
 rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
 {
-    rb_alias(mod, rb_to_id(newname), rb_to_id(oldname));
+    ID oldid = rb_check_id(&oldname);
+    if (!oldid) {
+	rb_print_undef_str(mod, oldname);
+    }
+    rb_alias(mod, rb_to_id(newname), oldid);
     return mod;
 }
 
@@ -971,7 +986,12 @@ set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
     int i;
     secure_visibility(self);
     for (i = 0; i < argc; i++) {
-	rb_export_method(self, rb_to_id(argv[i]), ex);
+	VALUE v = argv[i];
+	ID id = rb_check_id(&v);
+	if (!id) {
+	    rb_print_undef_str(self, v);
+	}
+	rb_export_method(self, id, ex);
     }
     rb_clear_cache_by_class(self);
 }

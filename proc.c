@@ -1144,7 +1144,7 @@ method_owner(VALUE obj)
     return data->me->klass;
 }
 
-static void
+void
 rb_method_name_error(VALUE klass, VALUE str)
 {
     const char *s0 = " class";

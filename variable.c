@@ -634,7 +634,10 @@ rb_f_untrace_var(int argc, VALUE *argv)
 
     rb_secure(4);
     rb_scan_args(argc, argv, "11", &var, &cmd);
-    id = rb_to_id(var);
+    id = rb_check_id(&var);
+    if (!id) {
+	rb_name_error_str(var, "undefined global variable %s", RSTRING_PTR(var));
+    }
     if (!st_lookup(rb_global_tbl, (st_data_t)id, &data)) {
 	rb_name_error(id, "undefined global variable %s", rb_id2name(id));
     }
@@ -1972,7 +1975,11 @@ set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
     }
 
     for (i = 0; i < argc; i++) {
-	id = rb_to_id(argv[i]);
+	VALUE val = argv[i];
+	id = rb_check_id(&val);
+	if (!id) {
+	    rb_name_error_str(val, "constant %s::%s not defined", rb_class2name(mod), RSTRING_PTR(val));
+	}
 	if (RCLASS_CONST_TBL(mod) && st_lookup(RCLASS_CONST_TBL(mod), (st_data_t)id, &v)) {
 	    ((rb_const_entry_t*)v)->flag = flag;
 	    return;

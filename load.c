@@ -705,7 +705,11 @@ rb_mod_autoload(VALUE mod, VALUE sym, VALUE file)
 static VALUE
 rb_mod_autoload_p(VALUE mod, VALUE sym)
 {
-    return rb_autoload_p(mod, rb_to_id(sym));
+    ID id = rb_check_id(&sym);
+    if (!id) {
+	return Qnil;
+    }
+    return rb_autoload_p(mod, id);
 }
 
 /*
