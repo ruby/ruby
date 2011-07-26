@@ -19,6 +19,11 @@
 #endif
 #include "bigdecimal.h"
 
+#ifndef BIGDECIMAL_DEBUG
+# define NDEBUG
+#endif
+#include <assert.h>
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -125,6 +130,7 @@ static unsigned short VpGetException(void);
 static void  VpSetException(unsigned short f);
 static void  VpInternalRound(Real *c, size_t ixDigit, BDIGIT vPrev, BDIGIT v);
 static int   VpLimitRound(Real *c, size_t ixDigit);
+static Real *VpDup(Real const* const x);
 
 /*
  *  **** BigDecimal part ****
@@ -527,6 +533,27 @@ VpCreateRbObject(size_t mx, const char *str)
 {
     Real *pv = VpAlloc(mx,str);
     pv->obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, pv);
+    return pv;
+}
+
+static Real *
+VpDup(Real const* const x)
+{
+    Real *pv;
+
+    assert(x != NULL);
+
+    pv = VpMemAlloc(sizeof(Real) + x->MaxPrec * sizeof(BDIGIT));
+    pv->MaxPrec = x->MaxPrec;
+    pv->Prec = x->Prec;
+    pv->exponent = x->exponent;
+    pv->sign = x->sign;
+    pv->flag = x->flag;
+    MEMCPY(pv->frac, x->frac, BDIGIT, pv->MaxPrec);
+
+    pv->obj = TypedData_Wrap_Struct(
+	rb_obj_class(x->obj), &BigDecimal_data_type, pv);
+
     return pv;
 }
 
@@ -2190,8 +2217,10 @@ BigDecimal_power_op(VALUE self, VALUE exp)
  *
  * Create a new BigDecimal object.
  *
- * initial:: The initial value, as a String. Spaces are ignored, unrecognized
- *           characters terminate the value.
+ * initial:: The initial value, as an Integer, a Float, a Rational,
+ *           a BigDecimal, or a String.
+ *           If it is a String, spaces are ignored and unrecognized characters
+ *           terminate the value.
  *
  * digits:: The number of significant digits, as a Fixnum. If omitted or 0,
  *          the number of significant digits is determined from the initial
@@ -2217,6 +2246,13 @@ BigDecimal_new(int argc, VALUE *argv, VALUE self)
     }
 
     switch (TYPE(iniValue)) {
+      case T_DATA:
+	if (is_kind_of_BigDecimal(iniValue)) {
+	    pv = VpDup(DATA_PTR(iniValue));
+	    return ToValue(pv);
+	}
+	break;
+
       case T_FIXNUM:
 	/* fall through */
       case T_BIGNUM:
