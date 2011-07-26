@@ -183,6 +183,14 @@ rb_method_entry_new(VALUE klass, ID mid, rb_method_type_t type,
 
     rb_method_entry_t *me;
     me = ALLOC(rb_method_entry_t);
+    
+    /* set initialize or initialize_copy to private */
+    if (!FL_TEST(klass, FL_SINGLETON) &&
+	type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
+	type != VM_METHOD_TYPE_ZSUPER &&
+	(mid == rb_intern("initialize") || mid == rb_intern("initialize_copy"))) {
+	noex = NOEX_PRIVATE | noex;
+    }
 
     me->flag = NOEX_WITH_SAFE(noex);
     me->mark = 0;
@@ -233,14 +241,6 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     }
 
     rb_clear_cache_by_id(mid);
-    
-    /* set initialize or initialize_copy to private */
-    if (!FL_TEST(klass, FL_SINGLETON) &&
-	type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
-	type != VM_METHOD_TYPE_ZSUPER &&
-	(mid == rb_intern("initialize") || mid == rb_intern("initialize_copy"))) {
-	noex = NOEX_PRIVATE | noex;
-    }
     
     me = rb_method_entry_new(klass, mid, type, def, noex);
 
