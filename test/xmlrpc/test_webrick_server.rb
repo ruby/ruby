@@ -3,12 +3,24 @@ require 'webrick'
 require_relative 'webrick_testing'
 require "xmlrpc/server"
 require 'xmlrpc/client'
+require 'logger'
 
 class Test_Webrick < Test::Unit::TestCase
   include WEBrick_Testing
 
+  @@basic_auth = WEBrick::HTTPAuth::BasicAuth.new(
+    :Realm => 'auth',
+    :UserDB => WEBrick::HTTPAuth::Htpasswd.new(File.expand_path('./htpasswd', File.dirname(__FILE__))),
+    :Logger => Logger.new(File::NULL),
+  )
+
   def create_servlet
     s = XMLRPC::WEBrickServlet.new
+
+    def s.service(req, res)
+      @@basic_auth.authenticate(req, res)
+      super(req, res)
+    end
 
     s.add_handler("test.add") do |a,b|
       a + b
@@ -46,8 +58,6 @@ class Test_Webrick < Test::Unit::TestCase
     end
 
     start_server(option) {|w| w.mount('/RPC2', create_servlet) }
-
-    @s = XMLRPC::Client.new3(:port => port, :use_ssl => use_ssl)
   end
 
   PORT = 8070
@@ -56,10 +66,30 @@ class Test_Webrick < Test::Unit::TestCase
     [false].each do |use_ssl|
       begin
         setup_http_server(PORT, use_ssl)
-        do_test
+        @s = XMLRPC::Client.new3(:port => PORT, :use_ssl => use_ssl)
+        @s.user = 'admin'
+        @s.password = 'admin'
+        silent do
+          do_test
+        end
+        @s = XMLRPC::Client.new3(:port => PORT, :use_ssl => use_ssl)
+        @s.user = '01234567890123456789012345678901234567890123456789012345678901234567890123456789'
+        @s.password = 'guest'
+        silent do
+          do_test
+        end
       ensure
         stop_server
       end
+    end
+  end
+
+  def silent
+    begin
+      back, $VERBOSE = $VERBOSE, nil
+      yield
+    ensure
+      $VERBOSE = back
     end
   end
 

@@ -86,13 +86,27 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_me
     }
 }
 
-static void
+void
 rb_unlink_method_entry(rb_method_entry_t *me)
 {
     struct unlinked_method_entry_list_entry *ume = ALLOC(struct unlinked_method_entry_list_entry);
     ume->me = me;
     ume->next = GET_VM()->unlinked_method_entry_list;
     GET_VM()->unlinked_method_entry_list = ume;
+}
+
+void
+rb_gc_mark_unlinked_live_method_entries(void *pvm)
+{
+    rb_vm_t *vm = pvm;
+    struct unlinked_method_entry_list_entry *ume = vm->unlinked_method_entry_list, *prev_ume = 0, *curr_ume;
+
+    while (ume) {
+	if (ume->me->mark) {
+	    rb_mark_method_entry(ume->me);
+	}
+	ume = ume->next;
+    }
 }
 
 void
