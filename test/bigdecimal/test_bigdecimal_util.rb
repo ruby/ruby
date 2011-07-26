@@ -25,4 +25,19 @@ class TestBigDecimalUtil < Test::Unit::TestCase
     assert_in_delta(BigDecimal(0.5, 5), 0.5.to_d(digits), delta)
     assert_in_delta(BigDecimal(355.0/113.0, 5), (355.0/113.0).to_d(digits), delta)
   end
+
+  def test_Rational_to_d
+    digits = 100
+    delta = 1.0/10**(digits)
+    assert_in_delta(BigDecimal(1.quo(2), digits), 1.quo(2).to_d(digits), delta)
+    assert_in_delta(BigDecimal(355.quo(113), digits), 355.quo(113).to_d(digits), delta)
+  end
+
+  def test_Rational_to_d_with_zero_precision
+    assert_raise(ArgumentError) { 355.quo(113).to_d(0) }
+  end
+
+  def test_Rational_to_d_with_negative_precision
+    assert_raise(ArgumentError) { 355.quo(113).to_d(-42) }
+  end
 end

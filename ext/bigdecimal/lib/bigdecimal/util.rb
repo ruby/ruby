@@ -95,11 +95,11 @@ class Rational < Numeric
   #   # => #<BigDecimal:1a52bd8,'0.3142857142 8571427937 0154144999 105E1',45(63)>
   #   r.to_d(3)
   #   # => #<BigDecimal:1a44d08,'0.314E1',18(36)>
-  def to_d(nFig=0)
-    num = self.numerator.to_s
-    if nFig<=0
-      nFig = BigDecimal.double_fig*2+1
+  def to_d(precision)
+    if precision <= 0
+      raise ArgumentError, "negative precision"
     end
-    BigDecimal.new(num).div(self.denominator,nFig)
+    num = self.numerator
+    BigDecimal(num).div(self.denominator, precision)
   end
 end
