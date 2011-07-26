@@ -1,3 +1,11 @@
+Wed Jul 27 00:48:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/lib/bigdecimal/util.rb (Float#to_d): modified for
+	  specifying precision.  fixes #5098.  [ruby-dev:44210]
+
+	* test/bigdecimal/test_bigdecimal_util.rb: add test for the above
+	  change.
+
 Wed Jul 27 00:45:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/lib/bigdecimal/util.rb (Integer#to_d): added
