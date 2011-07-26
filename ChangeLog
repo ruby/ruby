@@ -1,3 +1,12 @@
+Wed Jul 27 00:27:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bigdecimal/bigdecimal.c (VpDup) a new function for duplicating
+	  a BigDecimal.
+
+	* bigdecimal/bigdecimal.c (BigDecimal_new): support generating a new
+	  BigDecimal from another BigDecimal using BigDecimal global function
+	  or constructor.  [ruby-dev:44245]
+
 Tue Jul 26 23:33:24 2011  Igor Zubkov  <igor.zubkov@gmail.com>
 
 	* array.c: Fix typo. https://github.com/ruby/ruby/pull/36
