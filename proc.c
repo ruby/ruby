@@ -1198,7 +1198,7 @@ rb_method_name_error(VALUE klass, VALUE str)
 VALUE
 rb_obj_method(VALUE obj, VALUE vid)
 {
-    ID id = rb_check_id(vid);
+    ID id = rb_check_id(&vid);
     if (!id) {
 	rb_method_name_error(CLASS_OF(obj), vid);
     }
@@ -1215,7 +1215,7 @@ rb_obj_method(VALUE obj, VALUE vid)
 VALUE
 rb_obj_public_method(VALUE obj, VALUE vid)
 {
-    ID id = rb_check_id(vid);
+    ID id = rb_check_id(&vid);
     if (!id) {
 	rb_method_name_error(CLASS_OF(obj), vid);
     }
@@ -1256,7 +1256,7 @@ rb_obj_public_method(VALUE obj, VALUE vid)
 static VALUE
 rb_mod_instance_method(VALUE mod, VALUE vid)
 {
-    ID id = rb_check_id(vid);
+    ID id = rb_check_id(&vid);
     if (!id) {
 	rb_method_name_error(mod, vid);
     }
@@ -1273,7 +1273,7 @@ rb_mod_instance_method(VALUE mod, VALUE vid)
 static VALUE
 rb_mod_public_instance_method(VALUE mod, VALUE vid)
 {
-    ID id = rb_check_id(vid);
+    ID id = rb_check_id(&vid);
     if (!id) {
 	rb_method_name_error(mod, vid);
     }

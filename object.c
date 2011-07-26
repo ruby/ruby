@@ -1833,7 +1833,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
     else {
 	rb_scan_args(argc, argv, "11", &name, &recur);
     }
-    if (!(id = rb_check_id(name))) {
+    if (!(id = rb_check_id(&name))) {
 	if (rb_is_const_name(name)) {
 	    return Qfalse;
 	}
@@ -1870,7 +1870,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 static VALUE
 rb_obj_ivar_get(VALUE obj, VALUE iv)
 {
-    ID id = rb_check_id(iv);
+    ID id = rb_check_id(&iv);
 
     if (!id) {
 	if (rb_is_instance_name(iv)) {
@@ -1938,7 +1938,7 @@ rb_obj_ivar_set(VALUE obj, VALUE iv, VALUE val)
 static VALUE
 rb_obj_ivar_defined(VALUE obj, VALUE iv)
 {
-    ID id = rb_check_id(iv);
+    ID id = rb_check_id(&iv);
 
     if (!id) {
 	if (rb_is_instance_name(iv)) {
@@ -1971,7 +1971,7 @@ rb_obj_ivar_defined(VALUE obj, VALUE iv)
 static VALUE
 rb_mod_cvar_get(VALUE obj, VALUE iv)
 {
-    ID id = rb_check_id(iv);
+    ID id = rb_check_id(&iv);
 
     if (!id) {
 	if (rb_is_class_name(iv)) {
@@ -2034,7 +2034,7 @@ rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
 static VALUE
 rb_mod_cvar_defined(VALUE obj, VALUE iv)
 {
-    ID id = rb_check_id(iv);
+    ID id = rb_check_id(&iv);
 
     if (!id) {
 	if (rb_is_class_name(iv)) {

@@ -10105,10 +10105,11 @@ rb_is_junk_id(ID id)
 }
 
 ID
-rb_check_id(VALUE name)
+rb_check_id(volatile VALUE *namep)
 {
     st_data_t id;
     VALUE tmp;
+    VALUE name = *namep;
 
     if (SYMBOL_P(name)) {
 	return SYM2ID(name);
@@ -10121,6 +10122,7 @@ rb_check_id(VALUE name)
 		     RSTRING_PTR(tmp));
 	}
 	name = tmp;
+	*namep = name;
     }
 
     if (rb_enc_str_coderange(name) == ENC_CODERANGE_BROKEN) {

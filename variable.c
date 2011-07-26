@@ -1299,7 +1299,7 @@ VALUE
 rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 {
     VALUE val = Qnil;
-    const ID id = rb_check_id(name);
+    const ID id = rb_check_id(&name);
     st_data_t n, v;
     struct st_table *iv_index_tbl;
     st_data_t index;
@@ -1685,7 +1685,7 @@ rb_public_const_get_at(VALUE klass, ID id)
 VALUE
 rb_mod_remove_const(VALUE mod, VALUE name)
 {
-    const ID id = rb_check_id(name);
+    const ID id = rb_check_id(&name);
 
     if (!id) {
 	if (rb_is_const_name(name)) {
@@ -2206,7 +2206,7 @@ rb_mod_class_variables(VALUE obj)
 VALUE
 rb_mod_remove_cvar(VALUE mod, VALUE name)
 {
-    const ID id = rb_check_id(name);
+    const ID id = rb_check_id(&name);
     st_data_t val, n = id;
 
     if (!id) {

@@ -1,3 +1,8 @@
+Wed Jul 27 01:05:23 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_check_id): make the given name a symbol or a string.
+	  based on the second patch by Jeremy Evans at [ruby-core:38447]
+
 Wed Jul 27 00:50:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/lib/bigdecimal/util.rb (Rational#to_d):
