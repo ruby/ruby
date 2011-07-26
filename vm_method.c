@@ -358,6 +358,9 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 rb_method_entry_t *
 rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_flag_t noex)
 {
+/*  TD: document this function in comparison to rb_add_method */
+/*  TD: find alternate naming for normalize rb_method_entry_set / rb_add_method */
+/*  issue: normalize/unify rb_method_entry_set / rb_add_method */
 /*  issue: method_added should not be called for VM_METHOD_TYPE_UNDEF */
 
     rb_method_type_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
