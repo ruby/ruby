@@ -1,3 +1,10 @@
+Wed Jul 27 00:30:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/lib/bigdecimal/util.rb (BigDecimal#to_d): added
+	  for adapting other Numeric subclasses.  [ruby-dev:44245]
+
+	* test/bigdecimal/test_bigdecimal_util.rb: test for the above change.
+
 Wed Jul 27 00:27:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* bigdecimal/bigdecimal.c (VpDup) a new function for duplicating

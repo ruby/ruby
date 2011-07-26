@@ -54,6 +54,14 @@ class BigDecimal < Numeric
       i + "." + ("0"*(-z)) + f
     end
   end
+
+  # call-seq:
+  #     a.to_d -> bigdecimal
+  #
+  # Returns self.
+  def to_d
+    self
+  end
 end
 
 class Rational < Numeric
