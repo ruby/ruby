@@ -208,13 +208,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	(klass == rb_cObject || !OBJ_UNTRUSTED(klass))) {
 	rb_raise(rb_eSecurityError, "Insecure: can't define method");
     }
-    if (!FL_TEST(klass, FL_SINGLETON) &&
-	type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
-	type != VM_METHOD_TYPE_ZSUPER &&
-	(mid == rb_intern("initialize") || mid == rb_intern("initialize_copy"))) {
-	noex = NOEX_PRIVATE | noex;
-    }
-    else if (FL_TEST(klass, FL_SINGLETON) &&
+    if (FL_TEST(klass, FL_SINGLETON) &&
 	     type == VM_METHOD_TYPE_CFUNC &&
 	     mid == rb_intern("allocate")) {
 	rb_warn("defining %s.allocate is deprecated; use rb_define_alloc_func()",
@@ -239,6 +233,14 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     }
 
     rb_clear_cache_by_id(mid);
+    
+    /* set initialize or initialize_copy to private */
+    if (!FL_TEST(klass, FL_SINGLETON) &&
+	type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
+	type != VM_METHOD_TYPE_ZSUPER &&
+	(mid == rb_intern("initialize") || mid == rb_intern("initialize_copy"))) {
+	noex = NOEX_PRIVATE | noex;
+    }
     
     me = rb_method_entry_new(klass, mid, type, def, noex);
 
