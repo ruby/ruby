@@ -1,3 +1,12 @@
+Wed Jul 27 00:45:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/lib/bigdecimal/util.rb (Integer#to_d): added
+	  for symmetry to BigDecimal() function with an Integer.
+	  fixes #5098.  [ruby-dev:44210]
+
+	* test/bigdecimal/test_bigdecimal_util.rb: add test for the above
+	  change.
+
 Wed Jul 27 00:30:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/lib/bigdecimal/util.rb (BigDecimal#to_d): added

@@ -1,3 +1,20 @@
+class Integer < Numeric
+  # call-seq:
+  #     int.to_d  -> bigdecimal
+  #
+  # Convert +int+ to a BigDecimal and return it.
+  #
+  #     require 'bigdecimal'
+  #     require 'bigdecimal/util'
+  #
+  #     42.to_d
+  #     # => #<BigDecimal:1008ef070,'0.42E2',9(36)>
+  #
+  def to_d
+    BigDecimal(self)
+  end
+end
+
 class Float < Numeric
   # call-seq:
   #     flt.to_d  -> bigdecimal
