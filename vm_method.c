@@ -146,7 +146,7 @@ static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_me
 inline void
 rb_method_definition_redefine_warnings(rb_method_definition_t *old_def, ID mid, rb_method_type_t type)
 {
-/*  warning processing subjecting method redefinition */
+/*  warnings processing subjecting method redefinition */
 
     if (RTEST(ruby_verbose) &&
 	type != VM_METHOD_TYPE_UNDEF &&
@@ -200,6 +200,7 @@ rb_method_entry_new(VALUE klass, ID mid, rb_method_type_t type,
     if (def) def->alias_count++;
     
     /* issue: warnings should be raised only if ruby_verbose */
+    /* issue: warning belong *possibly* to rb_method_definition_redefine_warnings */
     /* check mid */
     if (klass == rb_cObject && mid == idInitialize) {
 	rb_warn("redefining Object#initialize may cause infinite loop");
@@ -218,6 +219,9 @@ static rb_method_entry_t *
 rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 		     rb_method_definition_t *def, rb_method_flag_t noex)
 {
+/*  returns a method_entry, either an existent one or a newly created one */
+/*  TD: possibly rename to rb_method_entry_retrieve / _get */
+
     rb_method_entry_t *me;
     st_table *mtbl;
     st_data_t data;
@@ -240,21 +244,23 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     rb_check_frozen(klass);
     mtbl = RCLASS_M_TBL(klass);
 
-    /* check re-definition */
+    /* if old method entry is available */
     if (st_lookup(mtbl, mid, &data)) {
 	rb_method_entry_t *old_me = (rb_method_entry_t *)data;
 	rb_method_definition_t *old_def = old_me->def;
 
+	/* if old method entry has already correct method def */ 
 	if (rb_method_definition_eq(old_def, def))
 	    return old_me;
 
+	/* redefinition */
 	rb_vm_check_redefinition_opt_method(old_me);
 	rb_method_definition_redefine_warnings(old_def, mid, type);
 	rb_unlink_method_entry(old_me);
     }
 
     rb_clear_cache_by_id(mid);
-    
+
     me = rb_method_entry_new(klass, mid, type, def, noex);
 
     st_insert(mtbl, mid, (st_data_t) me);
@@ -262,6 +268,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     return me;
 }
 
+/* issue: use inline-code, or state technical explanation for using a macro */
 #define CALL_METHOD_HOOK(klass, hook, mid) do {		\
 	const VALUE arg = ID2SYM(mid);			\
 	VALUE recv_class = (klass);			\
@@ -284,7 +291,7 @@ method_added(VALUE klass, ID mid)
 rb_method_definition_t *
 rb_method_definition_new(ID mid, rb_method_type_t type, void *opts)
 {
-/*  constructs a new method_definition */
+/*  creates a new method_definition object (struct)*/
 /*  TD: rename "method_definition" to "mdef" */
 
     rb_thread_t *th;
@@ -338,6 +345,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 
 /*  TD: verify further merge with "rb_method_entry_make" */
 /*  TD: unify naming, "method_entry" becomes "me" */
+/*  issue: verify logic, def could be passed to rb_method_entry_make */
 
     rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, 0, noex);
     me->def = rb_method_definition_new(mid, type, opts);
@@ -350,6 +358,8 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 rb_method_entry_t *
 rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_flag_t noex)
 {
+/*  issue: method_added should not be called for VM_METHOD_TYPE_UNDEF */
+
     rb_method_type_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
     rb_method_entry_t *newme = rb_method_entry_make(klass, mid, type, me->def, noex);
     method_added(klass, mid);
