@@ -1,4 +1,8 @@
-Wed Jul 27 01:05:23 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jul 27 01:05:28 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (obj_respond_to): fix the respond_to_missing? override
+	  case.  based on the patch by Jeremy Evans at [ruby-core:38417].
+	  [Feature #5072]
 
 	* parse.y (rb_check_id): make the given name a symbol or a string.
 	  based on the second patch by Jeremy Evans at [ruby-core:38447]

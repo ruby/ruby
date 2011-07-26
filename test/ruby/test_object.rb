@@ -334,6 +334,19 @@ class TestObject < Test::Unit::TestCase
     assert_nothing_raised(bug2494) {[b].flatten}
   end
 
+  def test_respond_to_missing_string
+    c = Class.new do
+      def respond_to_missing?(id, priv)
+        !(id !~ /\Agadzoks\d+\z/) ^ priv
+      end
+    end
+    foo = c.new
+    assert_equal(false, foo.respond_to?("gadzooks16"))
+    assert_equal(true, foo.respond_to?("gadzooks17", true))
+    assert_equal(true, foo.respond_to?("gadzoks16"))
+    assert_equal(false, foo.respond_to?("gadzoks17", true))
+  end
+
   def test_respond_to_missing
     c = Class.new do
       def respond_to_missing?(id, priv)

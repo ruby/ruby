@@ -1259,8 +1259,15 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
     ID id;
 
     rb_scan_args(argc, argv, "11", &mid, &priv);
-    if (!(id = rb_check_id(&mid)))
+    if (!(id = rb_check_id(&mid))) {
+	if (!rb_method_basic_definition_p(CLASS_OF(obj), respond_to_missing)) {
+	    VALUE args[2];
+	    args[0] = ID2SYM(rb_to_id(mid));
+	    args[1] = priv;
+	    return rb_funcall2(obj, respond_to_missing, 2, args);
+	}
 	return Qfalse;
+    }
     if (basic_obj_respond_to(obj, id, !RTEST(priv)))
 	return Qtrue;
     return Qfalse;
