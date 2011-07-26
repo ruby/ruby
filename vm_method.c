@@ -198,6 +198,19 @@ rb_method_entry_new(VALUE klass, ID mid, rb_method_type_t type,
     me->klass = klass;
     me->def = def;
     if (def) def->alias_count++;
+    
+    /* issue: warnings should be raised only if ruby_verbose */
+    /* check mid */
+    if (klass == rb_cObject && mid == idInitialize) {
+	rb_warn("redefining Object#initialize may cause infinite loop");
+    }
+    /* check mid */
+    if (mid == object_id || mid == id__send__) {
+	if (type == VM_METHOD_TYPE_ISEQ) {
+	    rb_warn("redefining `%s' may cause serious problems", rb_id2name(mid));
+	}
+    }
+
     return me;
 }
 
@@ -243,18 +256,6 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     rb_clear_cache_by_id(mid);
     
     me = rb_method_entry_new(klass, mid, type, def, noex);
-
-    /* issue: warnings should be raised only if ruby_verbose */
-    /* check mid */
-    if (klass == rb_cObject && mid == idInitialize) {
-	rb_warn("redefining Object#initialize may cause infinite loop");
-    }
-    /* check mid */
-    if (mid == object_id || mid == id__send__) {
-	if (type == VM_METHOD_TYPE_ISEQ) {
-	    rb_warn("redefining `%s' may cause serious problems", rb_id2name(mid));
-	}
-    }
 
     st_insert(mtbl, mid, (st_data_t) me);
 
