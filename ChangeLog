@@ -1,3 +1,8 @@
+Thu Jul 28 04:53:31 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/delegate.rb:  Move file-level documentation to the appropriate
+	  classes.
+
 Thu Jul 28 02:15:04 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/cfunc.c (dlcfunc_mark), ext/dl/cptr.c (dlptr_mark):
