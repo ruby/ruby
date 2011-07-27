@@ -539,9 +539,13 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
 
   def test_remote_array_and_hash
-    @ts.write(DRbObject.new([1, 2, 3]))
+    # Don't remove ary/hsh local variables.
+    # These are necessary to protect objects from GC.
+    ary = [1, 2, 3]
+    @ts.write(DRbObject.new(ary))
     assert_equal([1, 2, 3], @ts.take([1, 2, 3], 0))
-    @ts.write(DRbObject.new({'head' => 1, 'tail' => 2}))
+    hsh = {'head' => 1, 'tail' => 2}
+    @ts.write(DRbObject.new(hsh))
     assert_equal({'head' => 1, 'tail' => 2},
                  @ts.take({'head' => 1, 'tail' => 2}, 0))
   end

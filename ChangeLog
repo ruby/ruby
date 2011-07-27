@@ -1,3 +1,9 @@
+Wed Jul 27 22:46:59 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/rinda/test_rinda.rb (test_remote_array_and_hash):
+	  add local variables to protect objects from GC. [ruby-dev:44253]
+	  [Bug #5104]
+
 Wed Jul 27 17:55:54 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/missing.h: define __syscall if the platform has
