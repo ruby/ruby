@@ -21,7 +21,7 @@ module Psych
 
    def test_set_syck
      YAML::ENGINE.yamler = 'syck'
-     assert_equal Syck, YAML
+     assert_equal ::Syck, YAML
      assert_equal 'syck', YAML::ENGINE.yamler
    end
 
