@@ -215,6 +215,26 @@ rb_method_entry_new(VALUE klass, ID mid, rb_method_type_t type,
     return me;
 }
 
+/* issue: use inline-code, or state technical explanation for using a macro */
+#define CALL_METHOD_HOOK(klass, hook, mid) do {		\
+	const VALUE arg = ID2SYM(mid);			\
+	VALUE recv_class = (klass);			\
+	ID hook_id = (hook);				\
+	if (FL_TEST((klass), FL_SINGLETON)) {		\
+	    recv_class = rb_ivar_get((klass), attached);	\
+	    hook_id = singleton_##hook;			\
+	}						\
+	rb_funcall2(recv_class, hook_id, 1, &arg);	\
+    } while (0)
+
+static void
+method_added(VALUE klass, ID mid)
+{
+    if (mid != ID_ALLOCATOR && ruby_running) {
+	CALL_METHOD_HOOK(klass, added, mid);
+    }
+}
+
 static rb_method_entry_t *
 rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 		     rb_method_definition_t *def, rb_method_flag_t noex)
@@ -265,27 +285,11 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 
     st_insert(mtbl, mid, (st_data_t) me);
 
-    return me;
-}
-
-/* issue: use inline-code, or state technical explanation for using a macro */
-#define CALL_METHOD_HOOK(klass, hook, mid) do {		\
-	const VALUE arg = ID2SYM(mid);			\
-	VALUE recv_class = (klass);			\
-	ID hook_id = (hook);				\
-	if (FL_TEST((klass), FL_SINGLETON)) {		\
-	    recv_class = rb_ivar_get((klass), attached);	\
-	    hook_id = singleton_##hook;			\
-	}						\
-	rb_funcall2(recv_class, hook_id, 1, &arg);	\
-    } while (0)
-
-static void
-method_added(VALUE klass, ID mid)
-{
-    if (mid != ID_ALLOCATOR && ruby_running) {
-	CALL_METHOD_HOOK(klass, added, mid);
+    if (type != VM_METHOD_TYPE_UNDEF) {
+	method_added(klass, mid);
     }
+
+    return me;
 }
 
 rb_method_definition_t *
@@ -351,9 +355,6 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 
     rb_method_definition_t *def = rb_method_definition_new(mid, type, opts);
     rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, def, noex);
-    if (type != VM_METHOD_TYPE_UNDEF) {
-	method_added(klass, mid);
-    }
     return me;
 }
 
@@ -366,9 +367,7 @@ rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_
 /*  issue: method_added should not be called for VM_METHOD_TYPE_UNDEF */
 
     rb_method_type_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
-    rb_method_entry_t *newme = rb_method_entry_make(klass, mid, type, me->def, noex);
-    method_added(klass, mid);
-    
+    rb_method_entry_t *newme = rb_method_entry_make(klass, mid, type, me->def, noex);    
     return newme;
 }
 
