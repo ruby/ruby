@@ -160,10 +160,15 @@ class TestSymbol < Test::Unit::TestCase
 
   def test_no_inadvertent_symbol_creation
     feature5072 = '[ruby-core:38367]'
-    c = Class.new
+    c = Class.new do
+      def self.respond_to_missing?(*)
+        super
+      end
+    end
     s = "gadzooks"
     {
-      :respond_to? => "#{s}1", :method_defined? => "#{s}2",
+      #:respond_to? => "#{s}1",
+      :method_defined? => "#{s}2",
       :public_method_defined? => "#{s}3", :private_method_defined? => "#{s}4",
       :protected_method_defined? => "#{s}5", :const_defined? => "A#{s}",
       :instance_variable_defined? => "@#{s}", :class_variable_defined? => "@@#{s}"
