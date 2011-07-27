@@ -1,3 +1,9 @@
+Wed Jul 27 17:59:46 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/missing.h: define __syscall if the platform has
+	  __syscall in the library but doesn't define it in headers
+	  for example Mac OS X.
+
 Wed Jul 27 15:39:14 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* object.c:  Add usage documentation for BasicObject.  Based on patch
