@@ -1,3 +1,10 @@
+Wed Jul 27 10:04:06 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* backport r32690 from trunk.
+
+	* test/openssl/test_pkcs12.rb: Add test and intermediate certificates.
+	  [ Ruby 1.9 - Feature #3793 ] [ruby-core:32088]
+
 Sat Jul 27 01:26:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* NEWS: add changes of bigdecimal and bigdecimal/util.
