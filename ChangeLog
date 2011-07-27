@@ -1,3 +1,10 @@
+Thu Jul 28 00:33:47 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/fileutils/test_fileutils.rb: add OpenBSD case.
+	  patched by Jeremy Evans [ruby-core:38530] see #5097
+
+	* test/ruby/test_process.rb: ditto.
+
 Wed Jul 27 17:59:46 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/missing.h: define __syscall if the platform has

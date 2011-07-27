@@ -1191,8 +1191,10 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_wait_and_sigchild
-    if /freebsd/ =~ RUBY_PLATFORM
-      skip "this randomly fails on FreeBSD"
+    if /freebsd|openbsd/ =~ RUBY_PLATFORM
+      # this relates #4173
+      # When ruby can use 2 cores, signal and wait4 may miss the signal.
+      skip "this fails on FreeBSD and OpenBSD on multithreaded environment"
     end
     signal_received = []
     Signal.trap(:CHLD)  { signal_received << true }
