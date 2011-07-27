@@ -10,18 +10,35 @@
 VALUE rb_cDLCPtr;
 
 static inline freefunc_t
-get_freefunc(VALUE func)
+get_freefunc(VALUE func, volatile VALUE *wrap)
 {
+    VALUE addrnum;
     if (NIL_P(func)) {
+	*wrap = 0;
 	return NULL;
     }
     if (rb_dlcfunc_kind_p(func)) {
+	*wrap = func;
 	return (freefunc_t)(VALUE)RCFUNC_DATA(func)->ptr;
     }
-    return (freefunc_t)(VALUE)NUM2PTR(rb_Integer(func));
+    addrnum = rb_Integer(func);
+    *wrap = (addrnum != func) ? func : 0;
+    return (freefunc_t)(VALUE)NUM2PTR(addrnum);
 }
 
 static ID id_to_ptr;
+
+static void
+dlptr_mark(void *ptr)
+{
+    struct ptr_data *data = ptr;
+    if (data->wrap[0]) {
+	rb_gc_mark(data->wrap[0]);
+    }
+    if (data->wrap[1]) {
+	rb_gc_mark(data->wrap[1]);
+    }
+}
 
 static void
 dlptr_free(void *ptr)
@@ -43,7 +60,7 @@ dlptr_memsize(const void *ptr)
 
 static const rb_data_type_t dlptr_data_type = {
     "dl/ptr",
-    {0, dlptr_free, dlptr_memsize,},
+    {dlptr_mark, dlptr_free, dlptr_memsize,},
 };
 
 void
@@ -135,27 +152,22 @@ rb_dlptr_s_allocate(VALUE klass)
 static VALUE
 rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
 {
-    VALUE ptr, sym, size;
+    VALUE ptr, sym, size, wrap = 0, funcwrap = 0;
     struct ptr_data *data;
     void *p = NULL;
     freefunc_t f = NULL;
     long s = 0;
 
-    switch (rb_scan_args(argc, argv, "12", &ptr, &size, &sym)) {
-      case 1:
-	p = (void*)(NUM2PTR(rb_Integer(ptr)));
-	break;
-      case 2:
-	p = (void*)(NUM2PTR(rb_Integer(ptr)));
+    if (rb_scan_args(argc, argv, "12", &ptr, &size, &sym) >= 1) {
+	VALUE addrnum = rb_Integer(ptr);
+	if (addrnum != ptr) wrap = ptr;
+	p = NUM2PTR(addrnum);
+    }
+    if (argc >= 2) {
 	s = NUM2LONG(size);
-	break;
-      case 3:
-	p = (void*)(NUM2PTR(rb_Integer(ptr)));
-	s = NUM2LONG(size);
-	f = get_freefunc(sym);
-	break;
-      default:
-	rb_bug("rb_dlptr_initialize");
+    }
+    if (argc >= 3) {
+	f = get_freefunc(sym, &funcwrap);
     }
 
     if (p) {
@@ -164,6 +176,8 @@ rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
 	    /* Free previous memory. Use of inappropriate initialize may cause SEGV. */
 	    (*(data->free))(data->ptr);
 	}
+	data->wrap[0] = wrap;
+	data->wrap[1] = funcwrap;
 	data->ptr  = p;
 	data->size = s;
 	data->free = f;
@@ -185,7 +199,7 @@ rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
 static VALUE
 rb_dlptr_s_malloc(int argc, VALUE argv[], VALUE klass)
 {
-    VALUE size, sym, obj;
+    VALUE size, sym, obj, wrap = 0;
     long s;
     freefunc_t f;
 
@@ -196,13 +210,14 @@ rb_dlptr_s_malloc(int argc, VALUE argv[], VALUE klass)
 	break;
       case 2:
 	s = NUM2LONG(size);
-	f = get_freefunc(sym);
+	f = get_freefunc(sym, &wrap);
 	break;
       default:
 	rb_bug("rb_dlptr_s_malloc");
     }
 
     obj = rb_dlptr_malloc(s,f);
+    if (wrap) RPTR_DATA(obj)->wrap[1] = wrap;
 
     return obj;
 }
@@ -289,7 +304,7 @@ rb_dlptr_free_set(VALUE self, VALUE val)
     struct ptr_data *data;
 
     TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, data);
-    data->free = get_freefunc(val);
+    data->free = get_freefunc(val, &data->wrap[1]);
 
     return Qnil;
 }
@@ -582,7 +597,7 @@ rb_dlptr_size_get(VALUE self)
 static VALUE
 rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 {
-    VALUE ptr;
+    VALUE ptr, wrap = val;
 
     if (RTEST(rb_obj_is_kind_of(val, rb_cIO))){
 	rb_io_t *fptr;
@@ -599,16 +614,19 @@ rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 	VALUE vptr = rb_funcall(val, id_to_ptr, 0);
 	if (rb_obj_is_kind_of(vptr, rb_cDLCPtr)){
 	    ptr = vptr;
+	    wrap = 0;
 	}
 	else{
 	    rb_raise(rb_eDLError, "to_ptr should return a CPtr object");
 	}
     }
     else{
-	ptr = rb_dlptr_new(NUM2PTR(rb_Integer(val)), 0, NULL);
+	VALUE num = rb_Integer(val);
+	if (num != val) wrap = 0;
+	ptr = rb_dlptr_new(NUM2PTR(num), 0, NULL);
     }
     OBJ_INFECT(ptr, val);
-    rb_iv_set(ptr, "wrapping", val);
+    if (wrap) RPTR_DATA(ptr)->wrap[0] = wrap;
     return ptr;
 }
 
