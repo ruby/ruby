@@ -1,3 +1,9 @@
+Wed Jul 27 12:24:17 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/uninstaller.rb:  Add missing require and update
+	  messaging to avoid confusion with uninstall --format-executable.
+	  [Ruby 1.9 - Bug #4062]
+
 Wed Jul 27 10:47:57 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 1.8.6.1.
