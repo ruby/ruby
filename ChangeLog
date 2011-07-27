@@ -1,3 +1,10 @@
+Thu Jul 28 00:28:15 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/fileutils/test_fileutils.rb: add OpenBSD case.
+	  patched by Jeremy Evans [ruby-core:38530] see #5097
+
+	* test/ruby/test_process.rb: ditto.
+
 Wed Jul 27 22:46:59 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* test/rinda/test_rinda.rb (test_remote_array_and_hash):
