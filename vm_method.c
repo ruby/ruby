@@ -73,20 +73,6 @@ rb_define_notimplement_method_id(VALUE mod, ID id, rb_method_flag_t noex)
 }
 
 void
-rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex)
-{
-    if (func != rb_f_notimplement) {
-	rb_method_cfunc_t opt;
-	opt.func = func;
-	opt.argc = argc;
-	rb_add_method(klass, mid, VM_METHOD_TYPE_CFUNC, &opt, noex);
-    }
-    else {
-	rb_define_notimplement_method_id(klass, mid, noex);
-    }
-}
-
-void
 rb_unlink_method_entry(rb_method_entry_t *me)
 {
     struct unlinked_method_entry_list_entry *ume = ALLOC(struct unlinked_method_entry_list_entry);
@@ -381,6 +367,22 @@ rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_
     rb_method_entry_t *newme = rb_method_entry_make(klass, mid, type, me->def, noex);
     method_added(klass, mid);
     return newme;
+}
+
+void
+rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex)
+{
+/*  specialized version of rb_add_method - for C functions */
+
+    if (func != rb_f_notimplement) {
+	rb_method_cfunc_t opt;
+	opt.func = func;
+	opt.argc = argc;
+	rb_add_method(klass, mid, VM_METHOD_TYPE_CFUNC, &opt, noex);
+    }
+    else {
+	rb_define_notimplement_method_id(klass, mid, noex);
+    }
 }
 
 void
