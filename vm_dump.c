@@ -13,6 +13,11 @@
 #include "addr2line.h"
 #include "vm_core.h"
 
+/* see vm_insnhelper.h for the values */
+#ifndef VMDEBUG
+#define VMDEBUG 0
+#endif
+
 #define MAX_POSBUF 128
 
 #define VM_CFP_CNT(th, cfp) \
