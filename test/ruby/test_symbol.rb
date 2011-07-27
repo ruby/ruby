@@ -76,7 +76,7 @@ class TestSymbol < Test::Unit::TestCase
   end
 
   def test_inspect
-    valid = %w{$a @a @@a < << <= <=> > >> >= =~ == === * ** + +@ - -@
+    valid = %W{$a @a @@a < << <= <=> > >> >= =~ == === * ** + +@ - -@
     | ^ & / % ~ \` [] []= ! != !~ a a? a! a= A A? A! A=}
     valid.each do |sym|
       assert_equal(':' + sym, sym.intern.inspect)
