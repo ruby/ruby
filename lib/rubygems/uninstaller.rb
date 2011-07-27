@@ -70,7 +70,7 @@ class Gem::Uninstaller
     list = Gem::Specification.find_all_by_name(@gem, @version)
 
     if list.empty? then
-      raise Gem::InstallError, "cannot uninstall, check `gem list -d #{@gem}`"
+      raise Gem::InstallError, "gem #{@gem.inspect} is not installed"
 
     elsif list.size > 1 and @force_all then
       remove_all list
@@ -141,9 +141,11 @@ class Gem::Uninstaller
 
     return if executables.empty?
 
+    executables = executables.map { |exec| formatted_program_filename exec }
+
     remove = if @force_executables.nil? then
                ask_yes_no("Remove executables:\n" \
-                          "\t#{spec.executables.join ', '}\n\n" \
+                          "\t#{executables.join ', '}\n\n" \
                           "in addition to the gem?",
                           true)
              else
@@ -153,14 +155,17 @@ class Gem::Uninstaller
     unless remove then
       say "Executables and scripts will remain installed."
     else
-      bindir = @bin_dir || Gem.bindir(spec.base_dir)
+      bin_dir = @bin_dir || Gem.bindir(spec.base_dir)
 
-      raise Gem::FilePermissionError, bindir unless File.writable? bindir
+      raise Gem::FilePermissionError, bin_dir unless File.writable? bin_dir
 
-      spec.executables.each do |exe_name|
+      executables.each do |exe_name|
         say "Removing #{exe_name}"
-        FileUtils.rm_f File.join(bindir, formatted_program_filename(exe_name))
-        FileUtils.rm_f File.join(bindir, "#{formatted_program_filename(exe_name)}.bat")
+
+        exe_file = File.join bin_dir, exe_name
+
+        FileUtils.rm_f exe_file
+        FileUtils.rm_f "#{exe_file}.bat"
       end
     end
   end
@@ -257,6 +262,7 @@ class Gem::Uninstaller
 
   def formatted_program_filename(filename)
     if @format_executable then
+      require 'rubygems/installer'
       Gem::Installer.exec_format % File.basename(filename)
     else
       filename

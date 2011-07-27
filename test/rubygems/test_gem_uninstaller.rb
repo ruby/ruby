@@ -94,7 +94,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
     exec_path = File.join Gem.user_dir, 'bin', 'foo-executable-bar'
     assert_equal false, File.exist?(exec_path), 'removed exec from bin dir'
 
-    assert_equal "Removing executable\n", @ui.output
+    assert_equal "Removing foo-executable-bar\n", @ui.output
   ensure
     Gem::Installer.exec_format = nil
   end
@@ -156,6 +156,16 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
     assert_same uninstaller, @pre_uninstall_hook_arg
     assert_same uninstaller, @post_uninstall_hook_arg
+  end
+
+  def test_uninstall_nonexistent
+    uninstaller = Gem::Uninstaller.new 'bogus', :executables => true
+
+    e = assert_raises Gem::InstallError do
+      uninstaller.uninstall
+    end
+
+    assert_equal 'gem "bogus" is not installed', e.message
   end
 
   def test_uninstall_not_ok
