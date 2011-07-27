@@ -1,3 +1,8 @@
+Wed Jul 27 09:27:59 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_pkcs12.rb: Add test and intermediate certificates.
+	  [ Ruby 1.9 - Feature #3793 ] [ruby-core:32088]
+
 Wed Jul 27 01:05:32 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_error.c (rb_print_undef_str): new function to raise
