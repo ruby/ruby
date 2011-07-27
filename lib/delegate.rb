@@ -1,9 +1,8 @@
 # = delegate -- Support for the Delegation Pattern
 #
 # Documentation by James Edward Gray II and Gavin Sinclair
-#
-# == Introduction
-#
+
+##
 # This library provides three different ways to delegate method calls to an
 # object.  The easiest to use is SimpleDelegator.  Pass an object to the
 # constructor and all methods supported by the object will be delegated.  This
@@ -15,104 +14,31 @@
 #
 # Finally, if you need full control over the delegation scheme, you can inherit
 # from the abstract class Delegator and customize as needed.  (If you find
-# yourself needing this control, have a look at _forwardable_, also in the
-# standard library.  It may suit your needs better.)
+# yourself needing this control, have a look at Forwardable which is also in
+# the standard library.  It may suit your needs better.)
+#
+# SimpleDelegator's implementation serves as a nice example if the use of
+# Delegator:
+#
+#   class SimpleDelegator < Delegator
+#     def initialize(obj)
+#       super                  # pass obj to Delegator constructor, required
+#       @delegate_sd_obj = obj # store obj for future use
+#     end
+#
+#     def __getobj__
+#       @delegate_sd_obj # return object we are delegating to, required
+#     end
+#
+#     def __setobj__(obj)
+#       @delegate_sd_obj = obj # change delegation object,
+#                              # a feature we're providing
+#     end
+#   end
 #
 # == Notes
 #
 # Be advised, RDoc will not detect delegated methods.
-#
-# <b>delegate.rb provides full-class delegation via the
-# DelegateClass() method.  For single-method delegation via
-# def_delegator(), see forwardable.rb.</b>
-#
-# == Examples
-#
-# === SimpleDelegator
-#
-# Here's a simple example that takes advantage of the fact that
-# SimpleDelegator's delegation object can be changed at any time.
-#
-#   class Stats
-#     def initialize
-#       @source = SimpleDelegator.new([])
-#     end
-#
-#     def stats( records )
-#       @source.__setobj__(records)
-#
-#       "Elements:  #{@source.size}\n" +
-#       " Non-Nil:  #{@source.compact.size}\n" +
-#       "  Unique:  #{@source.uniq.size}\n"
-#     end
-#   end
-#
-#   s = Stats.new
-#   puts s.stats(%w{James Edward Gray II})
-#   puts
-#   puts s.stats([1, 2, 3, nil, 4, 5, 1, 2])
-#
-# <i>Prints:</i>
-#
-#   Elements:  4
-#    Non-Nil:  4
-#     Unique:  4
-#
-#   Elements:  8
-#    Non-Nil:  7
-#     Unique:  6
-#
-# === DelegateClass()
-#
-# Here's a sample of use from <i>tempfile.rb</i>.
-#
-# A _Tempfile_ object is really just a _File_ object with a few special rules
-# about storage location and/or when the File should be deleted.  That makes for
-# an almost textbook perfect example of how to use delegation.
-#
-#   class Tempfile < DelegateClass(File)
-#     # constant and class member data initialization...
-#
-#     def initialize(basename, tmpdir=Dir::tmpdir)
-#       # build up file path/name in var tmpname...
-#
-#       @tmpfile = File.open(tmpname, File::RDWR|File::CREAT|File::EXCL, 0600)
-#
-#       # ...
-#
-#       super(@tmpfile)
-#
-#       # below this point, all methods of File are supported...
-#     end
-#
-#     # ...
-#   end
-#
-# === Delegator
-#
-# SimpleDelegator's implementation serves as a nice example here.
-#
-#    class SimpleDelegator < Delegator
-#      def initialize(obj)
-#        super             # pass obj to Delegator constructor, required
-#        @delegate_sd_obj = obj    # store obj for future use
-#      end
-#
-#      def __getobj__
-#        @delegate_sd_obj          # return object we are delegating to, required
-#      end
-#
-#      def __setobj__(obj)
-#        @delegate_sd_obj = obj    # change delegation object, a feature we're providing
-#      end
-#
-#      # ...
-#    end
-
-#
-# Delegator is an abstract class used to build delegator pattern objects from
-# subclasses.  Subclasses should redefine \_\_getobj\_\_.  For a concrete
-# implementation, see SimpleDelegator.
 #
 class Delegator < BasicObject
   kernel = ::Kernel.dup
@@ -295,11 +221,43 @@ class Delegator < BasicObject
   end
 end
 
-#
+##
 # A concrete implementation of Delegator, this class provides the means to
 # delegate all supported method calls to the object passed into the constructor
 # and even to change the object being delegated to at a later time with
-# \_\_setobj\_\_ .
+# #__setobj__.
+#
+# Here's a simple example that takes advantage of the fact that
+# SimpleDelegator's delegation object can be changed at any time.
+#
+#   class Stats
+#     def initialize
+#       @source = SimpleDelegator.new([])
+#     end
+#
+#     def stats(records)
+#       @source.__setobj__(records)
+#
+#       "Elements:  #{@source.size}\n" +
+#       " Non-Nil:  #{@source.compact.size}\n" +
+#       "  Unique:  #{@source.uniq.size}\n"
+#     end
+#   end
+#
+#   s = Stats.new
+#   puts s.stats(%w{James Edward Gray II})
+#   puts
+#   puts s.stats([1, 2, 3, nil, 4, 5, 1, 2])
+#
+# Prints:
+#
+#   Elements:  4
+#    Non-Nil:  4
+#     Unique:  4
+#
+#   Elements:  8
+#    Non-Nil:  7
+#     Unique:  6
 #
 class SimpleDelegator<Delegator
   # Returns the current object method calls are being delegated to.
@@ -344,10 +302,33 @@ end
 # The primary interface to this library.  Use to setup delegation when defining
 # your class.
 #
-#   class MyClass < DelegateClass( ClassToDelegateTo )    # Step 1
+#   class MyClass < DelegateClass(ClassToDelegateTo) # Step 1
 #     def initialize
-#       super(obj_of_ClassToDelegateTo)                   # Step 2
+#       super(obj_of_ClassToDelegateTo)              # Step 2
 #     end
+#   end
+#
+# Here's a sample of use from Tempfile which is really a File object with a
+# few special rules about storage location and when the File should be
+# deleted.  That makes for an almost textbook perfect example of how to use
+# delegation.
+#
+#   class Tempfile < DelegateClass(File)
+#     # constant and class member data initialization...
+#
+#     def initialize(basename, tmpdir=Dir::tmpdir)
+#       # build up file path/name in var tmpname...
+#
+#       @tmpfile = File.open(tmpname, File::RDWR|File::CREAT|File::EXCL, 0600)
+#
+#       # ...
+#
+#       super(@tmpfile)
+#
+#       # below this point, all methods of File are supported...
+#     end
+#
+#     # ...
 #   end
 #
 def DelegateClass(superclass)
