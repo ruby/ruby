@@ -1,9 +1,3 @@
-######################################################################
-# This file is imported from the rubygems project.
-# DO NOT make modifications in this repo. They _will_ be reverted!
-# File a patch instead and assign it to Ryan Davis or Eric Hodel.
-######################################################################
-
 require 'rubygems/test_case'
 require 'rubygems'
 require 'fileutils'
@@ -32,6 +26,15 @@ class TestGemPathSupport < Gem::TestCase
 
     expected = util_path + [File.join(@tempdir, 'foo')]
     assert_equal expected, ps.path
+  end
+
+  if defined?(File::ALT_SEPARATOR) and File::ALT_SEPARATOR
+    def test_initialize_home_normalize
+      alternate = @tempdir.gsub(File::SEPARATOR, File::ALT_SEPARATOR)
+      ps = Gem::PathSupport.new "GEM_HOME" => alternate
+
+      assert_equal @tempdir, ps.home, "normalize values"
+    end
   end
 
   def test_initialize_path

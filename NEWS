@@ -259,7 +259,7 @@ with all sufficient information, see the ChangeLog file.
   * Support Ruby native encoding mechanism and iconv dependency is dropped.
 
 * RubyGems
-  * RubyGems has been upgraded to version 1.8.5.1. For full release notes see
+  * RubyGems has been upgraded to version 1.8.6.1. For full release notes see
     http://rubygems.rubyforge.org/rubygems-update/History_txt.html
 
 * stringio

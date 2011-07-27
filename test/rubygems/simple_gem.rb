@@ -1,9 +1,3 @@
-######################################################################
-# This file is imported from the rubygems project.
-# DO NOT make modifications in this repo. They _will_ be reverted!
-# File a patch instead and assign it to Ryan Davis or Eric Hodel.
-######################################################################
-
 SIMPLE_GEM = <<-GEMDATA
         MD5SUM = "989bf34a1cbecd52e0ea66b662b3a405"
         if $0 == __FILE__

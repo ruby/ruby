@@ -1,9 +1,3 @@
-######################################################################
-# This file is imported from the rubygems project.
-# DO NOT make modifications in this repo. They _will_ be reverted!
-# File a patch instead and assign it to Ryan Davis or Eric Hodel.
-######################################################################
-
 require 'rubygems/installer_test_case'
 require 'rubygems/uninstaller'
 
@@ -216,7 +210,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
   def test_uninstall_selection_greater_than_one
     util_make_gems
-
+    
     list = Gem::Specification.find_all_by_name('a')
 
     uninstaller = Gem::Uninstaller.new('a')

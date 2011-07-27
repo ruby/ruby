@@ -1,9 +1,3 @@
-######################################################################
-# This file is imported from the rubygems project.
-# DO NOT make modifications in this repo. They _will_ be reverted!
-# File a patch instead and assign it to Ryan Davis or Eric Hodel.
-######################################################################
-
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -199,8 +193,10 @@ class Gem::SourceIndex
   # Add gem specifications to the source index.
 
   def add_specs(*gem_specs)
-    gem_specs.each do |spec|
-      add_spec spec
+    Deprecate.skip_during do
+      gem_specs.each do |spec|
+        add_spec spec
+      end
     end
   end
 

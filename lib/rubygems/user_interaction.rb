@@ -1,9 +1,3 @@
-######################################################################
-# This file is imported from the rubygems project.
-# DO NOT make modifications in this repo. They _will_ be reverted!
-# File a patch instead and assign it to Ryan Davis or Eric Hodel.
-######################################################################
-
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -142,8 +136,12 @@ class Gem::StreamUI
   end
 
   def tty?
-    @usetty && @ins.tty?
- end
+    if RUBY_VERSION > '1.9.3' and RUBY_PLATFORM =~ /mingw|mswin/ then
+      @usetty
+    else
+      @usetty && @ins.tty?
+    end
+  end
 
   ##
   # Choose from a list of options.  +question+ is a prompt displayed above

@@ -1,9 +1,3 @@
-######################################################################
-# This file is imported from the rubygems project.
-# DO NOT make modifications in this repo. They _will_ be reverted!
-# File a patch instead and assign it to Ryan Davis or Eric Hodel.
-######################################################################
-
 ##
 #
 # Gem::PathSupport facilitates the GEM_HOME and GEM_PATH environment settings
@@ -28,6 +22,11 @@ class Gem::PathSupport
 
     # note 'env' vs 'ENV'...
     @home     = env["GEM_HOME"] || ENV["GEM_HOME"] || Gem.default_dir
+
+    if File::ALT_SEPARATOR then
+      @home   = @home.gsub(File::ALT_SEPARATOR, File::SEPARATOR)
+    end
+
     self.path = env["GEM_PATH"] || ENV["GEM_PATH"]
   end
 
@@ -68,8 +67,8 @@ class Gem::PathSupport
     else
       gem_path = Gem.default_path + [@home]
 
-      if defined?(Gem::APPLE_GEM_HOME)
-        gem_path << Gem::APPLE_GEM_HOME
+      if defined?(APPLE_GEM_HOME)
+        gem_path << APPLE_GEM_HOME
       end
     end
 
