@@ -331,10 +331,12 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 
 /*  TD: verify further merge with "rb_method_entry_make" */
 /*  TD: unify naming, "method_entry" becomes "me" */
-/*  issue: verify logic, def could be passed to rb_method_entry_make */
+/*  issue: verify logic, def could be passed to rb_method_entry_make
+    logic verified: rb_method_definition_eq(old_def, def) is never true
+    when def=0 (within rb_method_entry_make). */
 
-    rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, 0, noex);
-    me->def = rb_method_definition_new(mid, type, opts);
+    rb_method_definition_t *def = rb_method_definition_new(mid, type, opts);
+    rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, def, noex);
     if (type != VM_METHOD_TYPE_UNDEF) {
 	method_added(klass, mid);
     }
@@ -352,6 +354,7 @@ rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_
     rb_method_type_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
     rb_method_entry_t *newme = rb_method_entry_make(klass, mid, type, me->def, noex);
     method_added(klass, mid);
+    
     return newme;
 }
 
