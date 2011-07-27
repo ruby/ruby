@@ -1,9 +1,3 @@
-######################################################################
-# This file is imported from the rubygems project.
-# DO NOT make modifications in this repo. They _will_ be reverted!
-# File a patch instead and assign it to Ryan Davis or Eric Hodel.
-######################################################################
-
 require 'rubygems/test_case'
 require 'rubygems/user_interaction'
 require 'timeout'
@@ -55,7 +49,7 @@ class TestGemSilentUI < Gem::TestCase
 
     assert_empty out, 'No output'
     assert_empty err, 'No output'
-
+    
     out, err = capture_io do
       use_ui @sui do
         value = @sui.ask_yes_no 'Problem?', true
@@ -66,7 +60,7 @@ class TestGemSilentUI < Gem::TestCase
     assert_empty err, 'No output'
 
     assert value, 'Value is true'
-
+    
     out, err = capture_io do
       use_ui @sui do
         value = @sui.ask_yes_no 'Problem?', false

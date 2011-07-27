@@ -1,3 +1,7 @@
+Wed Jul 27 09:34:24 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 1.8.6.1.
+
 Wed Jul 27 09:27:59 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_pkcs12.rb: Add test and intermediate certificates.

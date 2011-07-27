@@ -1,9 +1,3 @@
-######################################################################
-# This file is imported from the rubygems project.
-# DO NOT make modifications in this repo. They _will_ be reverted!
-# File a patch instead and assign it to Ryan Davis or Eric Hodel.
-######################################################################
-
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -439,7 +433,7 @@ class Gem::Installer
   end
 
   def check_that_user_bin_dir_is_in_path
-    user_bin_dir = File.join gem_home, "bin"
+    user_bin_dir = @bin_dir || Gem.bindir(gem_home)
     unless ENV['PATH'].split(File::PATH_SEPARATOR).include? user_bin_dir then
       unless self.class.path_warning then
         alert_warning "You don't have #{user_bin_dir} in your PATH,\n\t  gem executables will not run."
