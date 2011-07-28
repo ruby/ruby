@@ -649,6 +649,8 @@ void rb_vm_inc_const_missing_count(void);
 void rb_vm_gvl_destroy(rb_vm_t *vm);
 VALUE rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc,
                  const VALUE *argv, const rb_method_entry_t *me);
+void rb_unlink_method_entry(rb_method_entry_t *me);
+void rb_gc_mark_unlinked_live_method_entries(void *pvm);
 
 void rb_thread_start_timer_thread(void);
 void rb_thread_stop_timer_thread(int);
