@@ -135,6 +135,8 @@ rb_method_redefinition(rb_method_entry_t *me, ID mid, rb_method_type_t type)
 /*  processing subjecting method redefinition */
 
     rb_method_definition_t *old_def = me->def;
+    
+    rb_vm_check_redefinition_opt_method(me);
 
     if (RTEST(ruby_verbose) &&
 	type != VM_METHOD_TYPE_UNDEF &&
@@ -161,6 +163,9 @@ rb_method_redefinition(rb_method_entry_t *me, ID mid, rb_method_type_t type)
 			       rb_id2name(old_def->original_id));
 	}
     }
+    
+    rb_unlink_method_entry(me);
+
 }
 
 static rb_method_entry_t *
@@ -254,9 +259,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	    return old_me;
 
 	/* redefinition */
-	rb_vm_check_redefinition_opt_method(old_me);
 	rb_method_redefinition(old_me, mid, type);
-	rb_unlink_method_entry(old_me);
     }
 
     rb_clear_cache_by_id(mid);
