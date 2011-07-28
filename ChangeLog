@@ -1,3 +1,18 @@
+Thu Jul 28 22:36:06 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* ext/openssl/ossl_cipher.c (ossl_cipher_initialize): Avoid possible
+	  SEGV from AES encryption/decryption. Processing data by
+	  Cipher#update without initializing key (meaningless usage of Cipher
+	  object since we don't offer a way to export a key) could cause SEGV.
+	  
+	  In OpenSSL, the EVP which has EVP_CIPH_RAND_KEY flag (such as DES3)
+	  allows uninitialized key, but other EVPs (such as AES) does not
+	  allow it. Calling EVP_CipherUpdate() without initializing key causes
+	  SEGV so we set the data filled with "\0" as the key by default. See
+	  #2768.
+
+	* test/openssl/test_cipher.rb: test it.
+
 Thu Jul 28 14:25:08 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rubygems/user_interaction.rb (Gem::StreamUI#tty?): typo.

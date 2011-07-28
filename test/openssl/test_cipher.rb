@@ -90,6 +90,15 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
         assert_equal(pt, c2.update(ct) + c2.final)
       }
     end
+
+    def test_AES_crush
+      500.times do
+        assert_nothing_raised("[Bug #2768]") do
+          # it caused OpenSSL SEGV by uninitialized key
+          OpenSSL::Cipher::AES128.new("ECB").update "." * 17
+        end
+      end
+    end
   end
 end
 
