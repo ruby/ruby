@@ -213,16 +213,6 @@ rb_method_entry_new(VALUE klass, ID mid, rb_method_type_t type,
 	rb_funcall2(recv_class, hook_id, 1, &arg);	\
     } while (0)
 
-/*
-static void
-method_added(VALUE klass, ID mid)
-{
-    if (mid != ID_ALLOCATOR && ruby_running) {
-	CALL_METHOD_HOOK(klass, added, mid);
-    }
-}
-*/
-
 static rb_method_entry_t *
 rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 		     rb_method_definition_t *def, rb_method_flag_t noex)
@@ -273,10 +263,8 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 
     st_insert(mtbl, mid, (st_data_t) me);
 
-    if (type != VM_METHOD_TYPE_UNDEF) {
-	if (mid != ID_ALLOCATOR && ruby_running) {
-	    CALL_METHOD_HOOK(klass, added, mid);
-	}
+    if (type != VM_METHOD_TYPE_UNDEF && mid != ID_ALLOCATOR && ruby_running) {
+	CALL_METHOD_HOOK(klass, added, mid);
     }
 
     return me;
