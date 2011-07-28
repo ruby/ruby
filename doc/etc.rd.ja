@@ -1,75 +1,75 @@
 # etc.rd.ja -  -*- mode: rd; coding: euc-jp; -*- created at: Fri Jul 14 00:47:15 JST 1995
 =begin
 
-= Etc(�⥸�塼��)
+= Etc(モジュール)
 
-�¹Ԥ��Ƥ���OS����ξ�������뤿��Υ⥸�塼�롥���饹�˥��󥯥롼��
-���ƻȤ����Ȥ�Ǥ��롥
+実行しているOSからの情報を得るためのモジュール．クラスにインクルード
+して使うこともできる．
 
 == Module Function
 
 --- getlogin
 
-	��ʬ��login̾���֤������줬���Ԥ�������getpwuid()���Ѥ����
-	�ɤ���
+	自分のlogin名を返す．これが失敗した場合はgetpwuid()を用いると
+	良い．
 
 --- getpwnam(name)
 
-	/etc/passwd�ե�����(���뤤��DBM�ե������NIS�ǡ����١���)��
-	������name��̾�������passwd����ȥ���֤�������ͤ�passwd��¤
-	�Τǰʲ��Υ��Ф���ġ�
+	/etc/passwdファイル(あるいはDBMファイルやNISデータベース)を検
+	索し，nameの名前を持つpasswdエントリを返す．戻り値はpasswd構造
+	体で以下のメンバを持つ．
 
 	  struct passwd
-	    name 	# �桼��̾(ʸ����)
-	    passwd	# �ѥ����(ʸ����)
-	    uid		# �桼��ID(����)
-	    gid		# ���롼��ID(����)
-	    gecos	# gecos�ե������(ʸ����)
-	    dir		# �ۡ���ǥ��쥯�ȥ�(ʸ����)
-	    shell	# �������󥷥���(ʸ����)
-	    # �ʹߤΥ��Фϥ����ƥ�ˤ�äƤ��󶡤���ʤ���
-	    change	# �ѥ�����ѹ�����(����)
-	    quota	# ��������(����)
-	    age		# ������(����)
-	    class	# �桼�������������饹(ʸ����)
-	    comment	# ������(ʸ����)
-	    expire	# ���������ͭ������(����)	    
+	    name 	# ユーザ名(文字列)
+	    passwd	# パスワード(文字列)
+	    uid		# ユーザID(整数)
+	    gid		# グループID(整数)
+	    gecos	# gecosフィールド(文字列)
+	    dir		# ホームディレクトリ(文字列)
+	    shell	# ログインシェル(文字列)
+	    # 以降のメンバはシステムによっては提供されない．
+	    change	# パスワード変更時間(整数)
+	    quota	# クォータ(整数)
+	    age		# エージ(整数)
+	    class	# ユーザアクセスクラス(文字列)
+	    comment	# コメント(文字列)
+	    expire	# アカウント有効期限(整数)	    
 	  end
 
-	�ܺ٤�getpwnam(3)�򻲾ȤΤ��ȡ�
+	詳細はgetpwnam(3)を参照のこと．
 
 --- getpwuid([uid])
 
-	uid��桼��ID�Ȥ���passwd����ȥ���֤�������ͤ�getpwnam()��
-	Ʊ�ͤǤ��롥�������ά�������ˤ�getuid()���ͤ��Ѥ��롥�ܺ٤�
-	getpwuid(3)�򻲾ȤΤ��ȡ�
+	uidをユーザIDとするpasswdエントリを返す．戻り値はgetpwnam()と
+	同様である．引数を省略した場合にはgetuid()の値を用いる．詳細は
+	getpwuid(3)を参照のこと．
 
 --- getgrgid(gid)
 
-	/etc/group�ե�����(���뤤�ϡ�getpwnam����)�򸡺�����gid�򥰥롼
-	��ID�Ȥ��륰�롼�ץ���ȥ���֤�������ͤ�group��¤�Τǰʲ���
-	���Ф���ġ�
+	/etc/groupファイル(あるいは…getpwnam参照)を検索し，gidをグルー
+	プIDとするグループエントリを返す．戻り値はgroup構造体で以下の
+	メンバを持つ．
 
 	  struct group
-	    name 	# ���롼��̾(ʸ����)
-	    passwd	# ���롼�פΥѥ����(ʸ����)
-	    gid		# ���롼��ID(����)
-	    mem		# ���롼�ץ���̾������
+	    name 	# グループ名(文字列)
+	    passwd	# グループのパスワード(文字列)
+	    gid		# グループID(整数)
+	    mem		# グループメンバ名の配列
 	  end
 
-	�ܺ٤�getgrgid(3)�򻲾ȤΤ��ȡ�
+	詳細はgetgrgid(3)を参照のこと．
 
 --- getgrnam(name)
 
-	name�Ȥ���̾���Υ��롼�ץ���ȥ���֤�������ͤ�getgrgid()��Ʊ
-	�ͤǤ��롥�ܺ٤�getgrnam(3)�򻲾ȡ�
+	nameという名前のグループエントリを返す．戻り値はgetgrgid()と同
+	様である．詳細はgetgrnam(3)を参照．
 
 --- group
 
-	���ƤΥ��롼�ץ���ȥ���˥����������뤿��Υ��ƥ졼����
+	全てのグループエントリを順にアクセスするためのイテレータ．
 
 --- passwd
 
-	���Ƥ�passwd����ȥ���˥����������뤿��Υ��ƥ졼����
+	全てのpasswdエントリを順にアクセスするためのイテレータ．
 
 =end
