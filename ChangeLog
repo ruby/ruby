@@ -1,3 +1,8 @@
+Thu Jul 28 12:21:15 2011  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/rinda/test_rinda.rb: decrease the code that depends on timing.
+	  [Bug #372] [Bug #4160]
+
 Thu Jul 28 04:53:31 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/delegate.rb:  Move file-level documentation to the appropriate
