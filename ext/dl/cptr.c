@@ -622,7 +622,7 @@ rb_dlptr_s_to_ptr(VALUE self, VALUE val)
     }
     else{
 	VALUE num = rb_Integer(val);
-	if (num != val) wrap = 0;
+	if (num == val) wrap = 0;
 	ptr = rb_dlptr_new(NUM2PTR(num), 0, NULL);
     }
     OBJ_INFECT(ptr, val);
