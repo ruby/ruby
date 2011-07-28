@@ -502,16 +502,19 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
     VALUE arg0, arg1;
     VALUE retval = Qnil;
     size_t offset, len;
+    struct ptr_data *data;
 
+    TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, data);
+    if (!data->ptr) rb_raise(rb_eDLError, "NULL pointer dereference");
     switch( rb_scan_args(argc, argv, "11", &arg0, &arg1) ){
       case 1:
 	offset = NUM2ULONG(arg0);
-	retval = INT2NUM(*((char*)RPTR_DATA(self)->ptr + offset));
+	retval = INT2NUM(*((char *)data->ptr + offset));
 	break;
       case 2:
 	offset = NUM2ULONG(arg0);
 	len    = NUM2ULONG(arg1);
-	retval = rb_tainted_str_new((char *)RPTR_DATA(self)->ptr + offset, len);
+	retval = rb_tainted_str_new((char *)data->ptr + offset, len);
 	break;
       default:
 	rb_bug("rb_dlptr_aref()");
@@ -535,17 +538,20 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
     VALUE retval = Qnil;
     size_t offset, len;
     void *mem;
+    struct ptr_data *data;
 
+    TypedData_Get_Struct(self, struct ptr_data, &dlptr_data_type, data);
+    if (!data->ptr) rb_raise(rb_eDLError, "NULL pointer dereference");
     switch( rb_scan_args(argc, argv, "21", &arg0, &arg1, &arg2) ){
       case 2:
 	offset = NUM2ULONG(arg0);
-	((char*)RPTR_DATA(self)->ptr)[offset] = NUM2UINT(arg1);
+	((char*)data->ptr)[offset] = NUM2UINT(arg1);
 	retval = arg1;
 	break;
       case 3:
 	offset = NUM2ULONG(arg0);
 	len    = NUM2ULONG(arg1);
-	if( TYPE(arg2) == T_STRING ){
+	if (RB_TYPE_P(arg2, T_STRING)) {
 	    mem = StringValuePtr(arg2);
 	}
 	else if( rb_obj_is_kind_of(arg2, rb_cDLCPtr) ){
@@ -554,7 +560,7 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	else{
 	    mem    = NUM2PTR(arg2);
 	}
-	memcpy((char *)RPTR_DATA(self)->ptr + offset, mem, len);
+	memcpy((char *)data->ptr + offset, mem, len);
 	retval = arg2;
 	break;
       default:

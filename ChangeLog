@@ -1,4 +1,7 @@
-Thu Jul 28 12:32:46 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jul 28 12:32:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/cptr.c (rb_dlptr_aref, rb_dlptr_aset): check NULL pointer
+	  dereference.
 
 	* ext/dl/cptr.c (rb_dlptr_s_to_ptr): use rb_check_funcall.
 
