@@ -1,4 +1,6 @@
-Thu Jul 28 12:32:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jul 28 12:32:53 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/callback/mkcallback.rb (gencallback): use PTR2NUM.
 
 	* ext/dl/cptr.c (rb_dlptr_aref, rb_dlptr_aset): check NULL pointer
 	  dereference.
