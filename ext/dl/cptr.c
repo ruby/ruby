@@ -597,7 +597,7 @@ rb_dlptr_size_get(VALUE self)
 static VALUE
 rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 {
-    VALUE ptr, wrap = val;
+    VALUE ptr, wrap = val, vptr;
 
     if (RTEST(rb_obj_is_kind_of(val, rb_cIO))){
 	rb_io_t *fptr;
@@ -610,8 +610,7 @@ rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 	char *str = StringValuePtr(val);
 	ptr = rb_dlptr_new(str, RSTRING_LEN(val), NULL);
     }
-    else if (rb_respond_to(val, id_to_ptr)){
-	VALUE vptr = rb_funcall(val, id_to_ptr, 0);
+    else if ((vptr = rb_check_funcall(val, id_to_ptr, 0, 0)) != Qundef){
 	if (rb_obj_is_kind_of(vptr, rb_cDLCPtr)){
 	    ptr = vptr;
 	    wrap = 0;
