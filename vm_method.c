@@ -227,6 +227,7 @@ rb_method_entry_new(VALUE klass, ID mid, rb_method_type_t type,
 	rb_funcall2(recv_class, hook_id, 1, &arg);	\
     } while (0)
 
+/*
 static void
 method_added(VALUE klass, ID mid)
 {
@@ -234,6 +235,7 @@ method_added(VALUE klass, ID mid)
 	CALL_METHOD_HOOK(klass, added, mid);
     }
 }
+*/
 
 static rb_method_entry_t *
 rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
@@ -286,7 +288,9 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     st_insert(mtbl, mid, (st_data_t) me);
 
     if (type != VM_METHOD_TYPE_UNDEF) {
-	method_added(klass, mid);
+	if (mid != ID_ALLOCATOR && ruby_running) {
+	    CALL_METHOD_HOOK(klass, added, mid);
+	}
     }
 
     return me;
@@ -296,7 +300,6 @@ rb_method_definition_t *
 rb_method_definition_new(ID mid, rb_method_type_t type, void *opts)
 {
 /*  creates a new method_definition object (struct)*/
-/*  TD: rename "method_definition" to "mdef" */
 
     rb_thread_t *th;
     rb_control_frame_t *cfp;
@@ -345,13 +348,7 @@ rb_method_definition_new(ID mid, rb_method_type_t type, void *opts)
 rb_method_entry_t *
 rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_flag_t noex)
 {
-/*  constructs a method_entry (assigning method_definition) and adds it to a class */
-
-/*  TD: verify further merge with "rb_method_entry_make" */
-/*  TD: unify naming, "method_entry" becomes "me" */
-/*  issue: verify logic, def could be passed to rb_method_entry_make
-    logic verified: rb_method_definition_eq(old_def, def) is never true
-    when def=0 (within rb_method_entry_make). */
+/*  adds a newly created mdef via newly created me to a class */
 
     rb_method_definition_t *def = rb_method_definition_new(mid, type, opts);
     rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, def, noex);
@@ -361,10 +358,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 rb_method_entry_t *
 rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_flag_t noex)
 {
-/*  TD: document this function in comparison to rb_add_method */
-/*  TD: find alternate naming for normalize rb_method_entry_set / rb_add_method */
-/*  issue: normalize/unify rb_method_entry_set / rb_add_method */
-/*  issue: method_added should not be called for VM_METHOD_TYPE_UNDEF */
+/*  adds the me->def via newly created newme to a class */
 
     rb_method_type_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
     rb_method_entry_t *newme = rb_method_entry_make(klass, mid, type, me->def, noex);    
@@ -375,6 +369,8 @@ void
 rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex)
 {
 /*  specialized version of rb_add_method - for C functions */
+
+/*  issue: should return me */
 
     if (func != rb_f_notimplement) {
 	rb_method_cfunc_t opt;
