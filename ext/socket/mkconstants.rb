@@ -40,7 +40,7 @@ h = {}
 COMMENTS = Hash.new { |h, name| h[name] = name }
 
 DATA.each_line {|s|
-  name, default_value, comment = s.chomp.split "\t"
+  name, default_value, comment = s.chomp.split(/\s+/, 3)
   next unless name && name[0] != ?#
 
   default_value = nil if default_value == 'nil'
