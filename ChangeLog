@@ -1,3 +1,8 @@
+Sat Jul 30 00:30:07 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RSHIFT): quote to get rid of argument expansion
+	  for autoconf 2.68.
+
 Fri Jul 29 23:56:32 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb: call OpenSSL::Random.seed at the
