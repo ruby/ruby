@@ -1,3 +1,9 @@
+Sat Jul 30 07:20:49 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (udp_server_sockets): unused variable
+	  removed.
+	  patch by Jeremy Evans.  [ruby-core:38600]
+
 Fri Jul 29 23:56:32 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb: call OpenSSL::Random.seed at the
