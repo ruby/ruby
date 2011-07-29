@@ -333,11 +333,11 @@ end
 
 __END__
 
-SOCK_STREAM	nil	A stream socket provides a sequenced, reliable two-way connection for a byte stream.
-SOCK_DGRAM	nil	A datagram socket provides connectionless, unreliable messaging3
-SOCK_RAW	nil	A raw socket provides low-level access for direct access or implementing network protocols.
-SOCK_RDM	nil	A reliable datagram socket provides reliable delivery of messages3
-SOCK_SEQPACKET	nil	A sequential packet socket provides sequenced, reliable two-way connection for datagrams3
+SOCK_STREAM	nil	A stream socket provides a sequenced, reliable two-way connection for a byte stream
+SOCK_DGRAM	nil	A datagram socket provides connectionless, unreliable messaging
+SOCK_RAW	nil	A raw socket provides low-level access for direct access or implementing network protocols
+SOCK_RDM	nil	A reliable datagram socket provides reliable delivery of messages
+SOCK_SEQPACKET	nil	A sequential packet socket provides sequenced, reliable two-way connection for datagrams
 SOCK_PACKET	nil	Device-level packet access
 
 AF_UNSPEC	nil	Unspecified protocol, any supported address family
@@ -398,8 +398,8 @@ AF_NDRV	nil	Network driver raw access
 PF_NDRV	nil	Network driver raw access
 AF_ISDN	nil	Integrated Services Digital Network
 PF_ISDN	nil	Integrated Services Digital Network
-AF_NATM	nil	Native ATM acces
-PF_NATM	nil	Native ATM acces
+AF_NATM	nil	Native ATM access
+PF_NATM	nil	Native ATM access
 AF_SYSTEM
 PF_SYSTEM
 AF_NETBIOS	nil	NetBIOS
@@ -416,12 +416,12 @@ AF_PACKET	nil	Direct link-layer access
 PF_PACKET	nil	Direct link-layer access
 
 AF_E164	nil	CCITT (ITU-T) E.164 recommendation
-PF_XTP	nil	eXpress Transfor Protocol
+PF_XTP	nil	eXpress Transfer Protocol
 PF_RTIP
 PF_PIP
 PF_KEY
 
-MSG_OOB	nil	Proces out-of-band data
+MSG_OOB	nil	Process out-of-band data
 MSG_PEEK	nil	Peek at incoming message
 MSG_DONTROUTE	nil	Send without using the routing tables
 MSG_EOR	nil	Data completes record
@@ -499,7 +499,7 @@ IP_OPTIONS	nil	IP options to be included in packets
 IP_HDRINCL	nil	Header is included with data
 IP_TOS	nil	IP type-of-service
 IP_TTL	nil	IP time-to-live
-IP_RECVOPTS	nil	Receive all IP options with datagrapm
+IP_RECVOPTS	nil	Receive all IP options with datagram
 IP_RECVRETOPTS	nil	Receive all IP options for response
 IP_RECVDSTADDR	nil	Receive IP destination address with datagram
 IP_RETOPTS	nil	IP options to be included in datagrams
@@ -523,11 +523,11 @@ IP_ROUTER_ALERT	nil	Notify transit routers to more closely examine the contents 
 IP_PKTINFO	nil	Receive packet information with datagrams
 IP_PKTOPTIONS	nil	Receive packet options with datagrams
 IP_MTU_DISCOVER	nil	Path MTU discovery
-IP_RECVERR	nil	Enable extended reliable error mesage passing
+IP_RECVERR	nil	Enable extended reliable error message passing
 IP_RECVTOS	nil	Receive TOS with incoming packets
 IP_MTU	nil	The Maximum Transmission Unit of the socket
 IP_FREEBIND	nil	Allow binding to nonexistent IP addresses
-IP_IPSEC_POLICY	nil	IPSec security policy
+IP_IPSEC_POLICY	nil	IPsec security policy
 IP_XFRM_POLICY
 IP_PASSSEC	nil	Retrieve security context with datagram
 IP_PMTUDISC_DONT	nil	Never send DF frames
@@ -589,7 +589,7 @@ SO_TIMESTAMP	nil	Receive timestamp with datagrams (timeval)
 SO_TIMESTAMPNS	nil	Receive nanosecond timestamp with datagrams (timespec)
 SO_BINTIME	nil	Receive timestamp with datagrams (bintime)
 SO_RECVUCRED	nil	Receive user credentials with datagram
-SO_MAC_EXEMPT	nil	Mandatory Access Control exemption for unlabled peers
+SO_MAC_EXEMPT	nil	Mandatory Access Control exemption for unlabeled peers
 SO_ALLZONES	nil	Bypass zone boundaries
 
 SOPRI_INTERACTIVE	nil	Interactive socket priority
@@ -602,8 +602,8 @@ TCP_NODELAY	nil	Don't delay sending to coalesce packets
 TCP_MAXSEG	nil	Set maximum segment size
 TCP_CORK	nil	Don't send partial frames
 TCP_DEFER_ACCEPT	nil	Don't notify a listening socket until data is ready
-TCP_INFO	nil	Retreive information about this socket
-TCP_KEEPCNT	nil	Makimum number of keepalive probes allowed before dropping a connection
+TCP_INFO	nil	Retrieve information about this socket
+TCP_KEEPCNT	nil	Maximum number of keepalive probes allowed before dropping a connection
 TCP_KEEPIDLE	nil	Idle time before keepalive probes are sent
 TCP_KEEPINTVL	nil	Time between keepalive probes
 TCP_LINGER2	nil	Lifetime of orphaned FIN_WAIT2 sockets
@@ -611,7 +611,7 @@ TCP_MD5SIG	nil	Use MD5 digests (RFC2385)
 TCP_NOOPT	nil	Don't use TCP options
 TCP_NOPUSH	nil	Don't push the last block of write
 TCP_QUICKACK	nil	Enable quickack mode
-TCP_SYNCNT	nil	Number of SYN retransmits before a connection i sdropped
+TCP_SYNCNT	nil	Number of SYN retransmits before a connection is dropped
 TCP_WINDOW_CLAMP	nil	Clamp the size of the advertised window
 
 UDP_CORK	nil	Don't send partial frames
@@ -649,7 +649,7 @@ NI_NOFQDN	nil	An FQDN is not required for local hosts, return only the local par
 NI_NUMERICHOST	nil	Return a numeric address
 NI_NAMEREQD	nil	A name is required
 NI_NUMERICSERV	nil	Return the service name as a digit string
-NI_DGRAM	nil	The service specified is a datagram service (looks up udp ports)
+NI_DGRAM	nil	The service specified is a datagram service (looks up UDP ports)
 
 SHUT_RD		0	Shut down the reading side of the socket
 SHUT_WR		1	Shut down the writing side of the socket
