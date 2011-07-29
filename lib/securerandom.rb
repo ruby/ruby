@@ -57,7 +57,7 @@ module SecureRandom
     n ||= 16
 
     if defined? OpenSSL::Random
-      @pid = $$ if !defined?(@pid)
+      @pid = 0 if !defined?(@pid)
       pid = $$
       if @pid != pid
         now = Time.now
