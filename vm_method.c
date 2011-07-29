@@ -1367,3 +1367,23 @@ Init_eval_method(void)
     respond_to_missing = rb_intern("respond_to_missing?");
 }
 
+/* TD: rename plan
+
+method_entry 		| mentry	| ment	| me
+method_definition	| mdefinition	| mdef	| md
+method_table		| mtable	| mtbl	| mt
+method_id		| midentifier	| mid	| mi
+
+The term "method" refers usually to:
+ * A mdef entered via a ment into the mtbl of a class
+ * class->mtbl[mid]->mdef
+
+Functions are grouped by the type (structure, object) they affect. Whenever
+possible, first parameter is a pointer to such type. Examples:
+
+rb_mtbl_ = functions affecting a method table
+rb_ment_ = functions affecting a method entry 
+rb_mtbl_<function> e.g. rb_mtbl_add(mtbl_t *mtbl, )
+rb_mdef_<function> e.g. rb_mdef_new
+
+*/
