@@ -1,3 +1,7 @@
+Fri Jul 29 23:53:44 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_apply): get rid of too large alloca.
+
 Fri Jul 29 20:48:39 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: fix typos.

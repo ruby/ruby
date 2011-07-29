@@ -597,9 +597,17 @@ VALUE
 rb_apply(VALUE recv, ID mid, VALUE args)
 {
     int argc;
-    VALUE *argv;
+    VALUE *argv, ret;
 
     argc = RARRAY_LENINT(args);
+    if (argc >= 0x100) {
+	args = rb_ary_subseq(args, 0, argc);
+	RBASIC(args)->klass = 0;
+	OBJ_FREEZE(args);
+	ret = rb_call(recv, mid, argc, RARRAY_PTR(args), CALL_FCALL);
+	RB_GC_GUARD(args);
+	return ret;
+    }
     argv = ALLOCA_N(VALUE, argc);
     MEMCPY(argv, RARRAY_PTR(args), VALUE, argc);
     return rb_call(recv, mid, argc, argv, CALL_FCALL);
