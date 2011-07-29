@@ -1,4 +1,9 @@
-Fri Jul 29 23:53:44 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jul 29 23:53:48 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_set_len): new function to set array length.
+
+	* vm_eval.c (method_missing): set the length of argv array, to mark
+	  arguments.
 
 	* vm_eval.c (rb_apply): get rid of too large alloca.
 

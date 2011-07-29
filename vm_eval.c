@@ -568,6 +568,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
     }
     nargv[0] = ID2SYM(id);
     MEMCPY(nargv + 1, argv, VALUE, argc);
+    if (argv_ary) rb_ary_set_len(argv_ary, argc + 1);
 
     if (rb_method_basic_definition_p(CLASS_OF(obj) , idMethodMissing)) {
 	raise_method_missing(th, argc+1, nargv, obj, call_status | NOEX_MISSING);

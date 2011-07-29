@@ -1310,6 +1310,21 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
     }
 }
 
+void
+rb_ary_set_len(VALUE ary, long len)
+{
+    long capa;
+
+    rb_ary_modify_check(ary);
+    if (ARY_SHARED_P(ary)) {
+	rb_raise(rb_eRuntimeError, "can't set length of shared ");
+    }
+    if (len > (capa = (long)ARY_CAPA(ary))) {
+	rb_bug("probable buffer overflow: %ld for %ld", len, capa);
+    }
+    ARY_SET_LEN(ary, len);
+}
+
 /*!
  * expands or shrinks \a ary to \a len elements.
  * expanded region will be filled with Qnil.
