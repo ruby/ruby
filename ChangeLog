@@ -52,7 +52,7 @@ Thu Jul 28 22:51:27 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 	  SEGV from AES encryption/decryption. Processing data by
 	  Cipher#update without initializing key (meaningless usage of Cipher
 	  object since we don't offer a way to export a key) could cause SEGV.
-	  
+
 	  In OpenSSL, the EVP which has EVP_CIPH_RAND_KEY flag (such as DES3)
 	  allows uninitialized key, but other EVPs (such as AES) does not
 	  allow it. Calling EVP_CipherUpdate() without initializing key causes
@@ -161,13 +161,13 @@ Mon Jul 25 13:35:20 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* backport r32658 from trunk.
 
-	* ext/openssl/ossl_ssl.c (ossl_ssl_shutdown): Avoid randomly generated 
-	  SSLError from SSLSocket just after invoking SSLSocket#close. 
-	  OpenSSL's SSL_shutdown could try to send alert packet and it might 
+	* ext/openssl/ossl_ssl.c (ossl_ssl_shutdown): Avoid randomly generated
+	  SSLError from SSLSocket just after invoking SSLSocket#close.
+	  OpenSSL's SSL_shutdown could try to send alert packet and it might
 	  set SSLerr(global error stack) as the result. It causes the next
 	  SSL read/write operation to fail by unrelated reason.
 
-	  By design, we're ignoring any error at SSL_shutdown() so we clear 
+	  By design, we're ignoring any error at SSL_shutdown() so we clear
 	  global error stack after SSL_shutdown is called. See #5039.
 
 Sun Jul 24 20:29:53 2011  Tanaka Akira  <akr@fsij.org>
@@ -216,7 +216,7 @@ Sat Jul 23 17:06:25 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (discard_cmsg): add msg_peek_p argument.
 	  assume FreeBSD, NetBSD and MacOS X doesn't generate passed fd
-	  when MSG_PEEK. 
+	  when MSG_PEEK.
 	  (rsock_discard_cmsg_resource): add msg_peek_p argument.
 	  (bsock_recvmsg_internal): call rsock_discard_cmsg_resource with
 	  msg_peek_p argument.
