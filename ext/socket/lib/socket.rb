@@ -541,12 +541,10 @@ class Socket < BasicSocket
       end
     end
 
-    pktinfo_sockets = {}
     sockets.each {|s|
       ai = s.local_address
       if ipv6_recvpktinfo && ai.ipv6? && ai.ip_address == "::"
         s.setsockopt(:IPV6, ipv6_recvpktinfo, 1)
-        pktinfo_sockets[s] = true
       end
     }
 
