@@ -1,3 +1,8 @@
+Fri Jul 29 16:00:43 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (enable_pthread): use -pthread on OpenBSD without
+	  explicit option. patched by Jeremy Evans. [ruby-core:38572]
+
 Thu Jul 28 23:36:28 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* ext/fiddle/closure.c (callback): use rb_ary_tmp_new() instead of
