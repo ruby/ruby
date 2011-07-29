@@ -1,3 +1,8 @@
+Fri Jul 29 18:59:07 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/mkconstants.rb: add documents for constants.
+	  patch by Eric Hodel.  [ruby-core:37853] [Bug #4989]
+
 Mon Jul 25 23:51:01 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* backport r32671 from trunk.
