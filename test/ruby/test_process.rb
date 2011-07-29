@@ -592,7 +592,6 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_popen_fork
-    return if /freebsd/ =~ RUBY_PLATFORM # this test freeze in FreeBSD
     IO.popen("-") {|io|
       if !io
         puts "fooo"
