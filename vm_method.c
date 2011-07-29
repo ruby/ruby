@@ -238,8 +238,8 @@ static rb_method_entry_t *
 rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 		     rb_method_definition_t *def, rb_method_flag_t noex)
 {
-/*  returns a method_entry, either an existent one or a newly created one */
-/*  TD: possibly rename to rb_method_entry_retrieve / _get */
+/*  enters (inserts) a method_definition to the class method-table and returns
+    it *or* returns existent method_entry */
 
     rb_method_entry_t *me;
     st_table *mtbl;
@@ -248,6 +248,8 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     if (NIL_P(klass)) {
 	klass = rb_cObject;
     }
+/*  issue: verify if those checks are necessary, if old method entry is
+    available. if not, move after block "if old method entry available" */
     if (rb_safe_level() >= 4 &&
 	(klass == rb_cObject || !OBJ_UNTRUSTED(klass))) {
 	rb_raise(rb_eSecurityError, "Insecure: can't define method");
@@ -276,6 +278,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	rb_method_redefinition(old_me, mid, type);
     }
 
+    /* create new method entry */
     rb_clear_cache_by_id(mid);
 
     me = rb_method_entry_new(klass, mid, type, def, noex);
@@ -297,10 +300,12 @@ rb_method_definition_new(ID mid, rb_method_type_t type, void *opts)
     rb_thread_t *th;
     rb_control_frame_t *cfp;
     int line;
+
     rb_method_definition_t *def = ALLOC(rb_method_definition_t);
     def->type = type;
     def->original_id = mid;
     def->alias_count = 0;
+
     switch (type) {
       case VM_METHOD_TYPE_ISEQ:
 	def->body.iseq = (rb_iseq_t *)opts;
@@ -341,7 +346,7 @@ rb_method_definition_new(ID mid, rb_method_type_t type, void *opts)
 rb_method_entry_t *
 rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_flag_t noex)
 {
-/*  adds a newly created mdef via newly created me to a class */
+/*  adds a newly created mdef via a newly created me to a class */
 
     rb_method_definition_t *def = rb_method_definition_new(mid, type, opts);
     rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, def, noex);
