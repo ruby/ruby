@@ -1,3 +1,9 @@
+Fri Jul 29 23:56:32 2011  Tanaka Akira  <akr@fsij.org>
+
+	* lib/securerandom.rb: call OpenSSL::Random.seed at the
+	  SecureRandom.random_bytes call.
+	  based on the patch by Masahiro Tomita.  [ruby-dev:44270]
+
 Fri Jul 29 20:48:39 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/mkconstants.rb: fix typos.
