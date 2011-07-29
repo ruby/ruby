@@ -57,11 +57,13 @@ class TestProcess < Test::Unit::TestCase
 
   def test_rlimit_nofile
     return unless rlimit_exist?
+    limit = /openbsd/ =~ RUBY_PLATFORM ? 1 : 0
+    # if limit=0, this test freeze pn OpenBSD
     with_tmpchdir {
       write_file 's', <<-"End"
 	result = 1
 	begin
-	  Process.setrlimit(Process::RLIMIT_NOFILE, 0)
+	  Process.setrlimit(Process::RLIMIT_NOFILE, limit)
 	rescue Errno::EINVAL
 	  result = 0
 	end
