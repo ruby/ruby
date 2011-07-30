@@ -423,29 +423,22 @@ typedef RETSIGTYPE ruby_sigaction_t(int);
 #ifdef POSIX_SIGNAL
 
 #ifdef USE_SIGALTSTACK
-#ifdef SIGSTKSZ
-#define ALT_STACK_SIZE (SIGSTKSZ*2)
-#else
-#define ALT_STACK_SIZE (4*1024)
-#endif
 /* alternate stack for SIGSEGV */
 void
 rb_register_sigaltstack(rb_thread_t *th)
 {
     stack_t newSS, oldSS;
 
-    if (th->altstack) return;
+    if (!th->altstack)
+	rb_bug("rb_register_sigaltstack: th->altstack not initialized\n");
 
-    newSS.ss_sp = th->altstack = malloc(ALT_STACK_SIZE);
-    if (newSS.ss_sp == NULL)
-	/* should handle error */
-	rb_bug("rb_register_sigaltstack. malloc error\n");
+    newSS.ss_sp = th->altstack;
     newSS.ss_size = ALT_STACK_SIZE;
     newSS.ss_flags = 0;
 
     sigaltstack(&newSS, &oldSS); /* ignore error. */
 }
-#endif
+#endif /* USE_SIGALTSTACK */
 
 static sighandler_t
 ruby_signal(int signum, sighandler_t handler)

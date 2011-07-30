@@ -1754,7 +1754,7 @@ thread_free(void *ptr)
 	else {
 #ifdef USE_SIGALTSTACK
 	    if (th->altstack) {
-		free(th->altstack);
+		xfree(th->altstack);
 	    }
 #endif
 	    ruby_xfree(ptr);
@@ -1826,6 +1826,9 @@ th_init(rb_thread_t *th, VALUE self)
     th->self = self;
 
     /* allocate thread stack */
+#ifdef USE_SIGALTSTACK
+    th->altstack = xmalloc(ALT_STACK_SIZE);
+#endif
     th->stack_size = RUBY_VM_THREAD_STACK_SIZE;
     th->stack = thread_recycle_stack(th->stack_size);
 
