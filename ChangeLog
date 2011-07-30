@@ -1,3 +1,8 @@
+Sat Jul 30 23:14:44 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_each_byte): rbuf can be refreshed during yield.
+	  [Bug #5119]
+
 Sat Jul 30 22:35:50 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* strftime.c (NEEDS): avoid SEGV due to integer overflow in

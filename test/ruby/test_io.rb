@@ -235,6 +235,16 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
+  def test_each_byte_with_seek
+    t = make_tempfile
+    bug5119 = '[ruby-core:38609]'
+    i = 0
+    open(t.path) do |f|
+      f.each_byte {i = f.pos}
+    end
+    assert_equal(12, i, bug5119)
+  end
+
   def test_each_codepoint
     t = make_tempfile
     bug2959 = '[ruby-core:28650]'
