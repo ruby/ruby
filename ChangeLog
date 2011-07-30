@@ -1,3 +1,9 @@
+Sat Jul 31 01:23:45 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* backport r32762 from trunk.
+
+	* test/bigdecimal/test_bigdecimal.rb (test_version): removed.
+
 Sat Jul 30 23:51:44 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/cmath.rb (cbrt): should return a real number if possible.
