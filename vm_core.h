@@ -383,6 +383,12 @@ struct rb_unblock_callback {
 
 struct rb_mutex_struct;
 
+#ifdef SIGSTKSZ
+#define ALT_STACK_SIZE (SIGSTKSZ*2)
+#else
+#define ALT_STACK_SIZE (4*1024)
+#endif
+
 typedef struct rb_thread_struct {
     VALUE self;
     rb_vm_t *vm;

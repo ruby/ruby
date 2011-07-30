@@ -1,3 +1,14 @@
+Sat Jul 30 10:58:10 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm.c (th_init): preallocate alternative stack.
+	  NoMemoryError is better than rb_bug, of course.
+	  Patch by Eric Wong. [ruby-core:38572][ruby-core:38594].
+
+	* signal.c (rb_register_sigaltstack): ditto.
+
+	* vm_core.h: moved ALT_STACK_SIZE definition from signal.c.
+	* vm.c (thread_free): use xfree() instead of free().
+
 Sat Jul 30 07:20:49 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (udp_server_sockets): unused variable
