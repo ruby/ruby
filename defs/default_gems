@@ -1,0 +1,7 @@
+# gem		versioning file			[executable files under bin]
+rake		lib/rake/version.rb		[rake]
+rdoc		lib/rdoc.rb			[rdoc ri]
+minitest	lib/minitest/unit.rb
+json		ext/json/lib/json/version.rb
+io-console	ext/io/console/io-console.gemspec
+bigdecimal	ext/bigdecimal/bigdecimal.gemspec

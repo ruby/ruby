@@ -1,3 +1,7 @@
+Sat Jul 30 23:19:09 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defs/default_gems: separate from tool/rbinstall.rb.
+
 Sat Jul 30 23:14:44 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_each_byte): rbuf can be refreshed during yield.
