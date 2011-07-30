@@ -1,3 +1,8 @@
+Sat Jul 30 22:35:50 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* strftime.c (NEEDS): avoid SEGV due to integer overflow in
+	  sparc-solaris2.10 and i686-linux.  fix [Bug #4456] [ruby-dev:43284]
+
 Sat Jul 30 14:27:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* backport r32754 from trunk.
