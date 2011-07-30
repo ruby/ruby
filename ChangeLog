@@ -1,3 +1,7 @@
+Sat Jul 30 11:21:55 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm_core.h (ALT_STACK_SIZE): use MINSIGSTKSZ*2 instead of SIGSTKSZ*2.
+
 Sat Jul 30 10:39:14 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm.c (th_init): preallocate alternative stack.
