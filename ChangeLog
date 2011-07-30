@@ -1,3 +1,13 @@
+Sat Jul 30 14:27:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* backport r32754 from trunk.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_version): version 1.1.0.
+
+	* ext/bigdecimal/bigdecimal.gemspec: turn into a default gem.
+
+	* tool/rbinstall.rb: ditto.
+
 Sat Jul 30 13:52:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/lib/bigdecimal/util.rb (Rational#to_d):

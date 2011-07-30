@@ -545,6 +545,7 @@ install?(:ext, :comm, :gem) do
     ['minitest', 'lib/minitest/unit.rb'],
     ['json', 'ext/json/lib/json/version.rb'],
     ['io-console', 'ext/io/console/io-console.gemspec'],
+    ['bigdecimal', 'ext/bigdecimal/bigdecimal.gemspec'],
   ]
 
   default_gems.each do |name, src, execs|
