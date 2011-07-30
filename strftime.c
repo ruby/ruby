@@ -210,7 +210,7 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, const str
 			if (precision > 0 || flags & (BIT_OF(LOCALE_E)|BIT_OF(LOCALE_O))) \
 				goto unknown; \
 		} while (0)
-#define NEEDS(n) do if (s + (n) >= endp - 1) goto err; while (0)
+#define NEEDS(n) do if (s >= endp || (n) >= endp - s - 1) goto err; while (0)
 #define FILL_PADDING(i) do { \
 	if (!(flags & BIT_OF(LEFT)) && precision > (i)) { \
 		NEEDS(precision); \

@@ -1,3 +1,8 @@
+Sat Jul 30 22:35:50 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* strftime.c (NEEDS): avoid SEGV due to integer overflow in
+	  sparc-solaris2.10 and i686-linux.  fix [Bug #4456] [ruby-dev:43284]
+
 Sat Jul 30 17:26:26 2011  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_variant.rb: use skip method to skip the test.
