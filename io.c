@@ -2823,15 +2823,14 @@ static VALUE
 rb_io_each_byte(VALUE io)
 {
     rb_io_t *fptr;
-    char *p, *e;
 
     RETURN_ENUMERATOR(io, 0, 0);
     GetOpenFile(io, fptr);
 
     for (;;) {
 	while (fptr->rbuf.len > 0) {
-	    p = fptr->rbuf.ptr + fptr->rbuf.off++;
-	    e = p + fptr->rbuf.len--;
+	    char *p = fptr->rbuf.ptr + fptr->rbuf.off++;
+	    fptr->rbuf.len--;
 	    rb_yield(INT2FIX(*p & 0xff));
 	    errno = 0;
 	}
