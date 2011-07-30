@@ -539,16 +539,16 @@ install?(:ext, :comm, :gem) do
   prepare "default gems", gem_dir, directories
 
   spec_dir = File.join(gem_dir, directories.grep(/^spec/)[0])
-  default_gems = [
-    ['rake', 'lib/rake/version.rb', ['rake']],
-    ['rdoc', 'lib/rdoc.rb', ['rdoc', 'ri']],
-    ['minitest', 'lib/minitest/unit.rb'],
-    ['json', 'ext/json/lib/json/version.rb'],
-    ['io-console', 'ext/io/console/io-console.gemspec'],
-    ['bigdecimal', 'ext/bigdecimal/bigdecimal.gemspec'],
-  ]
-
-  default_gems.each do |name, src, execs|
+  File.foreach(File.join(srcdir, "defs/default_gems")) do |line|
+    line.chomp!
+    line.sub!(/\s*#.*/, '')
+    next if line.empty?
+    words = []
+    line.scan(/\G\s*([^\[\]\s]+|\[([^\[\]]*)\])/) do
+      words << ($2 ? $2.split : $1)
+    end
+    name, src, execs = *words
+    next unless name and src
     execs ||= []
     src = File.join(srcdir, src)
     version = open(src) {|f| f.find {|s| /^\s*\w*VERSION\s*=(?!=)/ =~ s}} or next
