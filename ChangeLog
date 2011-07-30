@@ -1,3 +1,9 @@
+Sat Jul 30 17:26:26 2011  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_variant.rb: use skip method to skip the test.
+
+	* test/win32ole/test_win32ole_variant_outarg.rb: ditto.
+
 Sat Jul 30 14:27:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_version): version 1.1.0.
