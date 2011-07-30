@@ -1,3 +1,13 @@
+Sat Jul 30 13:52:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/lib/bigdecimal/util.rb (Rational#to_d):
+	  revive zero and implicit precision support as a deprecated feature.
+
+	* test/bigdecimal/test_bigdecimal_util.rb: modify a test for the above
+	  change.
+
+	* NEWS: describes the above change.
+
 Sat Jul 30 10:58:10 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm.c (th_init): preallocate alternative stack.

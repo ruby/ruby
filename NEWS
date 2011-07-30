@@ -122,7 +122,13 @@ with all sufficient information, see the ChangeLog file.
   * Rational#to_d raises ArgumentError when passing zero or negative
     precision.
 
-  * Rational#to_d requires a precision.  It is an incompatible change.
+  * Rational#to_d
+
+    * Zero and an implicit precision is deprecated.
+      This feature is removed at the next release of bigdecimal.
+
+    * A negative precision isn't supported.
+      Be careful it is an incompatible change.
 
 * date
 

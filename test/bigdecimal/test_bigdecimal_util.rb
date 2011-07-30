@@ -34,7 +34,7 @@ class TestBigDecimalUtil < Test::Unit::TestCase
   end
 
   def test_Rational_to_d_with_zero_precision
-    assert_raise(ArgumentError) { 355.quo(113).to_d(0) }
+    assert_equal(355.quo(113).to_d, 355.quo(113).to_d(BigDecimal.double_fig*2+1))
   end
 
   def test_Rational_to_d_with_negative_precision
