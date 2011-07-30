@@ -147,7 +147,7 @@ module CMath
   ##
   # returns the principal value of the cube root of +z+
   def cbrt(z)
-    Complex(z) ** (1.0/3)
+    z ** (1.0/3)
   end
 
   ##
