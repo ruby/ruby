@@ -2829,13 +2829,10 @@ rb_io_each_byte(VALUE io)
     GetOpenFile(io, fptr);
 
     for (;;) {
-	p = fptr->rbuf.ptr+fptr->rbuf.off;
-	e = p + fptr->rbuf.len;
-	while (p < e) {
-	    fptr->rbuf.off++;
-	    fptr->rbuf.len--;
+	while (fptr->rbuf.len > 0) {
+	    p = fptr->rbuf.ptr + fptr->rbuf.off++;
+	    e = p + fptr->rbuf.len--;
 	    rb_yield(INT2FIX(*p & 0xff));
-	    p++;
 	    errno = 0;
 	}
 	rb_io_check_byte_readable(fptr);
