@@ -43,10 +43,6 @@ class TestBigDecimal < Test::Unit::TestCase
                  "Expected #{x.inspect} to be negative zero")
   end
 
-  def test_version
-    assert_equal("1.0.1", BigDecimal.ver)
-  end
-
   def test_global_new
     assert_equal(1, BigDecimal("1"))
     assert_equal(1, BigDecimal("1", 1))

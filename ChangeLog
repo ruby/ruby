@@ -1,3 +1,7 @@
+Sat Jul 31 01:23:45 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* test/bigdecimal/test_bigdecimal.rb (test_version): removed.
+
 Sat Jul 30 23:19:09 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* defs/default_gems: separate from tool/rbinstall.rb.
