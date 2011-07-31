@@ -1,3 +1,8 @@
+Sun Jul 31 18:58:59 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_pipe): pipe on cygwin can succeed half but fail
+	  half.
+
 Sun Jul 31 11:31:07 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm.c: check if cfp is valid. [Bug #5083] [ruby-dev:44208]

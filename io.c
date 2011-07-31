@@ -4914,6 +4914,14 @@ rb_pipe(int *pipes)
             ret = pipe(pipes);
         }
     }
+#ifdef __CYGWIN__
+    if (ret == 0 && pipes[1] == -1) {
+	close(pipes[0]);
+	pipes[0] = -1;
+	errno = ENFILE;
+	return -1;
+    }
+#endif
     if (ret == 0) {
         rb_update_max_fd(pipes[0]);
         rb_update_max_fd(pipes[1]);
