@@ -1,3 +1,7 @@
+Sun Jul 31 22:44:08 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* configure.in: fix typos.
+
 Sun Jul 31 21:19:51 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/mkmf.rb (configuration:ECHO1): Same as the recent fix in
