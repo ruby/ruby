@@ -217,7 +217,6 @@ ruby_vm_run_at_exit_hooks(rb_vm_t *vm)
   env{
     env[0] // special (block or prev env)
     env[1] // env object
-    env[2] // prev env val
   };
  */
 
@@ -305,17 +304,13 @@ check_env(rb_env_t * const env)
 {
     printf("---\n");
     printf("envptr: %p\n", (void *)&env->block.dfp[0]);
-    printf("orphan: %p\n", (void *)env->block.dfp[1]);
-    printf("inheap: %p\n", (void *)env->block.dfp[2]);
-    printf("envval: %10p ", (void *)env->block.dfp[3]);
-    dp(env->block.dfp[3]);
-    printf("penvv : %10p ", (void *)env->block.dfp[4]);
-    dp(env->block.dfp[4]);
+    printf("envval: %10p ", (void *)env->block.dfp[1]);
+    dp(env->block.dfp[1]);
     printf("lfp:    %10p\n", (void *)env->block.lfp);
     printf("dfp:    %10p\n", (void *)env->block.dfp);
-    if (env->block.dfp[4]) {
+    if (env->prev_envval) {
 	printf(">>\n");
-	check_env_value(env->block.dfp[4]);
+	check_env_value(env->prev_envval);
 	printf("<<\n");
     }
     return 1;
@@ -379,7 +374,7 @@ vm_make_env_each(rb_thread_t * const th, rb_control_frame_t * const cfp,
 	local_size = cfp->iseq->local_size;
     }
 
-    env->env_size = local_size + 1 + 2;
+    env->env_size = local_size + 1 + 1;
     env->local_size = local_size;
     env->env = ALLOC_N(VALUE, env->env_size);
     env->prev_envval = penvval;
@@ -398,7 +393,6 @@ vm_make_env_each(rb_thread_t * const th, rb_control_frame_t * const cfp,
     *envptr = envval;		/* GC mark */
     nenvptr = &env->env[i - 1];
     nenvptr[1] = envval;	/* frame self */
-    nenvptr[2] = penvval;	/* frame prev env object */
 
     /* reset lfp/dfp in cfp */
     cfp->dfp = nenvptr;

@@ -1,3 +1,10 @@
+Sun Jul 31 22:50:23 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm.c (vm_make_env_each): don't save prev env value.
+	It is no longer used. [Feature #4871] [ruby-dev:43743]
+
+	* vm.c (check_env): changed accordingly.
+
 Sun Jul 31 20:21:36 2011  "Yuki Sonoda (Yugui)"  <yugui@yugui.jp>
 
 	* common.mk (ECHO1): ":" in a make variable replacement cause a syntax
