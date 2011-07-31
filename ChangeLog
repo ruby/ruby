@@ -1,3 +1,14 @@
+Sun Jul 31 20:21:36 2011  "Yuki Sonoda (Yugui)"  <yugui@yugui.jp>
+
+	* common.mk (ECHO1): ":" in a make variable replacement cause a syntax
+	  error with /usr/ccs/bin/make on Solaris.  Uses $(NULLCMD) instead.
+
+	* configure.in (NULLCMD): new check.
+
+	* Makefile.in (NULLCMD): Reflects checking in configure.
+
+	* win32/Makefile.sub (NULLCMD): new assignment.
+
 Sun Jul 31 11:31:07 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* backport r32768 from trunk.

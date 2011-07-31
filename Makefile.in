@@ -1,5 +1,5 @@
 SHELL = /bin/sh
-NULLCMD = :
+NULLCMD = @NULLCMD@
 RUNCMD = $(SHELL)
 CHDIR = @CHDIR@
 exec = exec
