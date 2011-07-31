@@ -1,3 +1,9 @@
+Sun Jul 31 21:09:04 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* common.mk (node_name.inc): Use $(Q) for consistency.
+
+	* Makefile.in (INSNS): ditto.
+
 Sun Jul 31 20:39:12 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* common.mk (ECHO1): nmake does not allow parenthesis in make variable
