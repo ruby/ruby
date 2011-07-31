@@ -146,7 +146,6 @@ main: showflags encs exts
 .PHONY: showflags
 exts enc trans: showflags
 showflags:
-	$(ECHO) test
 	$(MESSAGE_BEGIN) \
 	"	CC = $(CC)" \
 	"	LD = $(LD)" \
