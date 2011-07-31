@@ -1,7 +1,8 @@
 V = 0
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
-ECHO1 = $(V:1=@:)
+n=$(NULLCMD)
+ECHO1 = $(V:1=@$n)
 ECHO = $(ECHO1:0=@echo)
 
 encsrcdir = @srcdir@
@@ -53,6 +54,7 @@ RUBY     = $(MINIRUBY)
 
 WORKDIRS = @WORKDIRS@
 
+NULLCMD = @NULLCMD@
 RM = @RM@
 RMDIR = @RMDIR@
 RMDIRS = @RMDIRS@
