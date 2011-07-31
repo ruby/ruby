@@ -1,3 +1,7 @@
+Mon Aug  1 05:21:42 2011  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
+
+	* cont.c (cont_save_thread): fix missing semicolon.
+
 Sun Jul 31 22:57:16 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* enc/Makefile.in (ECHO1): Same as the recent fix in common.mk.
