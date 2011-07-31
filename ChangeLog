@@ -1,3 +1,10 @@
+Sun Jul 31 21:19:51 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/mkmf.rb (configuration:ECHO1): Same as the recent fix in
+	  common.mk.
+	  ":" in a make variable replacement cause a syntax error with
+	  /usr/ccs/bin/make on Solaris.  Uses $(NULLCMD) instead.
+
 Sun Jul 31 21:16:02 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* complex.c (f_signbit): gcc4 on Solaris DOES have signbit but does
