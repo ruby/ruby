@@ -1,3 +1,7 @@
+Sun Jul 31 11:31:07 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm.c: check if cfp is valid. [Bug #5083] [ruby-dev:44208]
+
 Sun Jul 31 09:18:28 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Update to RDoc 3.9.  Fixed `ri []`, stopdoc creating an
