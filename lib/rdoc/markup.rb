@@ -269,40 +269,43 @@ require 'rdoc'
 # preceding the first character with a backslash (see <i>Escaping
 # Text Markup</i>, below).
 #
-# === Hyperlinks
+# === Links
 #
-# Hyperlinks to the web starting with +http:+, +mailto:+, +ftp:+ or +www.+
+# Links to starting with +http:+, +https:+, +mailto:+, +ftp:+ or +www.+
 # are recognized.  An HTTP url that references an external image file is
-# converted into an inline <img...>.  Hyperlinks starting with +link:+ are
-# assumed to refer to local files whose path is relative to the <tt>--op</tt>
-# directory.
+# converted into an inline image element.
 #
-# Hyperlinks can also be of the form _label_[_url_], in which
-# case _label_ is used in the displayed text, and _url_ is
-# used as the target.  If _label_ contains multiple words,
-# put it in braces: {<em>multi word label</em>}[url].
+# Links starting with <tt>rdoc-ref:</tt> will link to the referenced class,
+# module, method, file, etc.  If the referenced item is not documented the
+# text will be and no link will be generated.
 #
-# Example hyperlinks:
+# Links starting with +link:+ refer to local files whose path is relative to
+# the <tt>--op</tt> directory.
 #
-#   link:RDoc.html
-#   http://rdoc.rubyforge.org
+# Links can also be of the form <tt>label[url]</tt>, in which case +label+ is
+# used in the displayed text, and +url+ is used as the target.  If +label+
+# contains multiple words, put it in braces: <tt>{multi word label}[url]<tt>.
+#
+# Example links:
+#
+#   https://github.com/rdoc/rdoc
 #   mailto:user@example.com
 #   {RDoc Documentation}[http://rdoc.rubyforge.org]
-#   {RDoc Markup}[link:RDoc/Markup.html]
+#   {RDoc Markup}[rdoc-ref:RDoc::Markup]
 #
 # === Escaping Text Markup
 #
 # Text markup can be escaped with a backslash, as in \<tt>, which was obtained
-# with "<tt>\\<tt></tt>". Except in verbatim sections and between \<tt> tags,
-# to produce a backslash, you have to double it unless it is followed by a
+# with <tt>\\<tt></tt>.  Except in verbatim sections and between \<tt> tags,
+# to produce a backslash you have to double it unless it is followed by a
 # space, tab or newline. Otherwise, the HTML formatter will discard it, as it
-# is used to escape potential hyperlinks:
+# is used to escape potential links:
 #
 #   * The \ must be doubled if not followed by white space: \\.
 #   * But not in \<tt> tags: in a Regexp, <tt>\S</tt> matches non-space.
 #   * This is a link to {ruby-lang}[www.ruby-lang.org].
 #   * This is not a link, however: \{ruby-lang.org}[www.ruby-lang.org].
-#   * This will not be hyperlinked to \RDoc::RDoc#document
+#   * This will not be linked to \RDoc::RDoc#document
 #
 # generates:
 #
@@ -310,16 +313,16 @@ require 'rdoc'
 # * But not in \<tt> tags: in a Regexp, <tt>\S</tt> matches non-space.
 # * This is a link to {ruby-lang}[www.ruby-lang.org]
 # * This is not a link, however: \{ruby-lang.org}[www.ruby-lang.org]
-# * This will not be hyperlinked to \RDoc::RDoc#document
+# * This will not be linked to \RDoc::RDoc#document
 #
-# Inside \<tt> tags, more precisely, leading backslashes are removed
-# only if followed by a markup character (<tt><*_+</tt>), a backslash,
-# or a known hyperlink reference (a known class or method). So in the
-# example above, the backslash of <tt>\S</tt> would be removed
-# if there was a class or module named +S+ in the current context.
+# Inside \<tt> tags, more precisely, leading backslashes are removed only if
+# followed by a markup character (<tt><*_+</tt>), a backslash, or a known link
+# reference (a known class or method). So in the example above, the backslash
+# of <tt>\S</tt> would be removed if there was a class or module named +S+ in
+# the current context.
 #
-# This behavior is inherited from RDoc version 1, and has been kept
-# for compatibility with existing RDoc documentation.
+# This behavior is inherited from RDoc version 1, and has been kept for
+# compatibility with existing RDoc documentation.
 #
 # === Conversion of characters
 #
@@ -378,11 +381,10 @@ require 'rdoc'
 #     # ...
 #   end
 #
-# Names of classes, files, and any method names containing an
-# underscore or preceded by a hash character are automatically hyperlinked
-# from comment text to their description. This hyperlinking works inside
-# the current class or module, and with ancestor methods (in included modules
-# or in the superclass).
+# Names of classes, files, and any method names containing an underscore or
+# preceded by a hash character are automatically linked from comment text to
+# their description. This linking works inside the current class or module,
+# and with ancestor methods (in included modules or in the superclass).
 #
 # Method parameter lists are extracted and displayed with the method
 # description.  If a method calls +yield+, then the parameters passed to yield

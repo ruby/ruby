@@ -8,6 +8,13 @@
 #
 #  $Revision$
 
+begin
+  gem 'rdoc'
+rescue NameError => e # --disable-gems
+  raise unless e.name == :gem
+rescue Gem::LoadError
+end
+
 require 'rdoc/rdoc'
 
 begin

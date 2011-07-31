@@ -387,6 +387,8 @@ Options may also be set in the 'RI' environment variable.
                   klass.superclass unless klass.module?
                 end.compact.shift || 'Object'
 
+                superclass = superclass.full_name unless String === superclass
+
                 "#{name} < #{superclass}"
               end
 
@@ -451,7 +453,7 @@ Options may also be set in the 'RI' environment variable.
   # Adds a list of +methods+ to +out+ with a heading of +name+
 
   def add_method_list out, methods, name
-    return unless methods
+    return if methods.empty?
 
     out << RDoc::Markup::Heading.new(1, "#{name}:")
     out << RDoc::Markup::BlankLine.new
@@ -518,11 +520,13 @@ Options may also be set in the 'RI' environment variable.
 
     found.each do |store, klass|
       comment = klass.comment
-      class_methods    = store.class_methods[klass.full_name]
-      instance_methods = store.instance_methods[klass.full_name]
-      attributes       = store.attributes[klass.full_name]
+      # TODO the store's cache should always return an empty Array
+      class_methods    = store.class_methods[klass.full_name]    || []
+      instance_methods = store.instance_methods[klass.full_name] || []
+      attributes       = store.attributes[klass.full_name]       || []
 
-      if comment.empty? and !(instance_methods or class_methods) then
+      if comment.empty? and
+         instance_methods.empty? and class_methods.empty? then
         also_in << store
         next
       end
@@ -531,7 +535,17 @@ Options may also be set in the 'RI' environment variable.
 
       unless comment.empty? then
         out << RDoc::Markup::Rule.new(1)
-        out << comment
+
+        if comment.merged? then
+          parts = comment.parts
+          parts = parts.zip [RDoc::Markup::BlankLine.new] * parts.length
+          parts.flatten!
+          parts.pop
+
+          out.push(*parts)
+        else
+          out << comment
+        end
       end
 
       if class_methods or instance_methods or not klass.constants.empty? then
@@ -554,13 +568,12 @@ Options may also be set in the 'RI' environment variable.
         end)
 
         out << list
+        out << RDoc::Markup::BlankLine.new
       end
 
       add_method_list out, class_methods,    'Class methods'
       add_method_list out, instance_methods, 'Instance methods'
       add_method_list out, attributes,       'Attributes'
-
-      out << RDoc::Markup::BlankLine.new
     end
 
     add_also_in out, also_in
@@ -1090,11 +1103,11 @@ Options may also be set in the 'RI' environment variable.
   # NOTE: Given Foo::Bar, Bar is considered a class even though it may be a
   #       method
 
-  def parse_name(name)
+  def parse_name name
     parts = name.split(/(::|#|\.)/)
 
     if parts.length == 1 then
-      if parts.first =~ /^[a-z]/ then
+      if parts.first =~ /^[a-z]|^([%&*+\/<>^`|~-]|\+@|-@|<<|<=>?|===?|=>|=~|>>|\[\]=?|~@)$/ then
         type = '.'
         meth = parts.pop
       else

@@ -70,7 +70,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     @list = nil
     @from_path = ''
 
-    # external hyperlinks
+    # external links
     @markup.add_special(/((link:|https?:|mailto:|ftp:|www\.)\S+\w)/, :HYPERLINK)
 
     # and links of the form  <text>[<url>]
@@ -84,7 +84,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   # These methods handle special markup added by RDoc::Markup#add_special.
 
   ##
-  # +special+ is a potential hyperlink.  The following schemes are handled:
+  # +special+ is a potential link.  The following schemes are handled:
   #
   # <tt>mailto:</tt>::
   #   Inserted as-is.
@@ -97,12 +97,13 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
 
   def handle_special_HYPERLINK(special)
     url = special.text
+
     gen_url url, url
   end
 
   ##
-  # This +special+ is a hyperlink where the label is different from the URL
-  # label[url] or {long label}[url]
+  # This +special+ is a link where the label is different from the URL
+  # <tt>label[url]</tt> or <tt>{long label}[url]</tt>
 
   def handle_special_TIDYLINK(special)
     text = special.text
@@ -232,8 +233,8 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   end
 
   ##
-  # Generate a hyperlink for +url+, labeled with +text+.  Handles the special
-  # cases for img: and link: described under handle_special_HYPERLINK
+  # Generate a link for +url+, labeled with +text+.  Handles the special cases
+  # for img: and link: described under handle_special_HYPERLINK
 
   def gen_url(url, text)
     if url =~ /([A-Za-z]+):(.*)/ then

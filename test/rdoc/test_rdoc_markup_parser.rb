@@ -1366,6 +1366,44 @@ Example heading:
     assert_equal expected, @RMP.tokenize(str)
   end
 
+  def test_tokenize_verbatim_rule
+    str = <<-STR
+  Verbatim section here that is double-underlined
+  ===============================================
+    STR
+
+    expected = [
+      [:TEXT,    'Verbatim section here that is double-underlined',  2, 0],
+      [:NEWLINE, "\n",                                              49, 0],
+      [:HEADER,  47,                                                 2, 1],
+      [:NEWLINE, "\n",                                              49, 1],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
+  def test_tokenize_verbatim_rule_fancy
+    str = <<-STR
+  A
+    b
+  ===============================================
+    c
+    STR
+
+    expected = [
+      [:TEXT,    'A',   2, 0],
+      [:NEWLINE, "\n",  3, 0],
+      [:TEXT,    'b',   4, 1],
+      [:NEWLINE, "\n",  5, 1],
+      [:HEADER,  47,    2, 2],
+      [:NEWLINE, "\n", 49, 2],
+      [:TEXT,    'c',   4, 3],
+      [:NEWLINE, "\n",  5, 3],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
   # HACK move to Verbatim test case
   def test_verbatim_normalize
     v = @RM::Verbatim.new "foo\n", "\n", "\n", "bar\n"

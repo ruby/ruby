@@ -1,3 +1,8 @@
+Sun Jul 31 09:18:28 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc:  Update to RDoc 3.9.  Fixed `ri []`, stopdoc creating an
+	  object reference, nodoc for class aliases, verbatim === lines.
+
 Sun Jul 31 01:29:08 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_io_each_byte): remove unused variable e.

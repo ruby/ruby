@@ -124,6 +124,24 @@ class TestRDocMarkupDocument < MiniTest::Unit::TestCase
     assert_equal expected, result
   end
 
+  def test_merge_empty
+    original = @RM::Document.new
+    root = @RM::Document.new original
+
+    replace = @RM::Document.new @RM::Paragraph.new 'replace'
+    replace.file = 'file.rb'
+
+    other = @RM::Document.new replace
+
+    result = root.merge other
+
+    inner = @RM::Document.new @RM::Paragraph.new 'replace'
+    inner.file = 'file.rb'
+    expected = @RM::Document.new inner
+
+    assert_equal expected, result
+  end
+
   def test_push
     @d.push @RM::BlankLine.new, @RM::BlankLine.new
 
