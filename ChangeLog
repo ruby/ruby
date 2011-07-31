@@ -1,3 +1,14 @@
+Sun Jul 31 20:21:36 2011  "Yuki Sonoda (Yugui)"  <yugui@yugui.jp>
+
+	* common.mk (ECHO1): ":" in a make variable replacement cause a syntax
+	  error with /usr/ccs/bin/make on Solaris.  Uses $(NULLCMD) instead.
+
+	* configure.in (NULLCMD): new check.
+
+	* Makefile.in (NULLCMD): Reflects checking in configure.
+
+	* win32/Makefile.sub (NULLCMD): new assignment.
+
 Sun Jul 31 18:58:59 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_pipe): pipe on cygwin can succeed half but fail

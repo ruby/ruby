@@ -8,7 +8,7 @@ dll: $(LIBRUBY_SO)
 V = 0
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
-ECHO1 = $(V:1=@:)
+ECHO1 = $(V:1=@$(NULLCMD))
 ECHO = $(ECHO1:0=@echo)
 
 RUBYLIB       = -

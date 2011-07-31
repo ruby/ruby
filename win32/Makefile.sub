@@ -1,6 +1,7 @@
 # -*- makefile -*-
 
 SHELL = $(COMSPEC)
+NULLCMD = :
 RUNCMD = $(COMSPEC) /c
 MKFILES = Makefile
 NULL = nul
