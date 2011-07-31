@@ -1,3 +1,9 @@
+Sun Jul 31 11:31:07 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* backport r32768 from trunk.
+
+	* vm.c: check if cfp is valid. [Bug #5083] [ruby-dev:44208]
+
 Sat Jul 31 01:23:45 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* backport r32762 from trunk.
