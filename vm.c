@@ -302,16 +302,16 @@ static VALUE check_env_value(VALUE envval);
 static int
 check_env(rb_env_t * const env)
 {
-    printf("---\n");
-    printf("envptr: %p\n", (void *)&env->block.dfp[0]);
-    printf("envval: %10p ", (void *)env->block.dfp[1]);
+    fprintf(stderr, "---\n");
+    fprintf(stderr, "envptr: %p\n", (void *)&env->block.dfp[0]);
+    fprintf(stderr, "envval: %10p ", (void *)env->block.dfp[1]);
     dp(env->block.dfp[1]);
-    printf("lfp:    %10p\n", (void *)env->block.lfp);
-    printf("dfp:    %10p\n", (void *)env->block.dfp);
+    fprintf(stderr, "lfp:    %10p\n", (void *)env->block.lfp);
+    fprintf(stderr, "dfp:    %10p\n", (void *)env->block.dfp);
     if (env->prev_envval) {
-	printf(">>\n");
+	fprintf(stderr, ">>\n");
 	check_env_value(env->prev_envval);
-	printf("<<\n");
+	fprintf(stderr, "<<\n");
     }
     return 1;
 }
