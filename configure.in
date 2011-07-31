@@ -2600,18 +2600,18 @@ AS_CASE(["$FIRSTMAKEFILE"], [*GNUmakefile:*], [gnumake=yes], [
     AC_MSG_RESULT($gnumake)
 ])
 AS_IF([test "$gnumake" = yes], [ NULLCMD=: ], [
-    AC_MSG_CHECKING([for safe null command for ${Make-make}])
+    AC_MSG_CHECKING([for safe null command for ${MAKE-make}])
     mkdir conftest.dir
     echo 'A=1' > conftest.dir/Makefile
     echo 'B=$(A:1=@:)' >> conftest.dir/Makefile
     echo 'all:; $B 1 2 3 4 5 6 7 8 9' >> conftest.dir/Makefile
-    if (cd conftest.dir; ${Make-make} >/dev/null 2>/dev/null); then
+    if (cd conftest.dir; ${MAKE-make} >/dev/null 2>/dev/null); then
 	NULLCMD=:
     else
 	echo 'A=1' > conftest.dir/Makefile
 	echo 'B=$(A:1=@true)' >> conftest.dir/Makefile
 	echo 'all:; $B 1 2 3 4 5 6 7 8 9' >> conftest.dir/Makefile
-	if (cd conftest.dir; ${Make-make} >/dev/null 2>/dev/null); then
+	if (cd conftest.dir; ${MAKE-make} >/dev/null 2>/dev/null); then
 	    NULLCMD=true
 	else
 	    AC_MSG_ERROR(no candidate for safe null command)
