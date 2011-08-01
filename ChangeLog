@@ -199,8 +199,6 @@ Thu Jul 28 12:32:53 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/cptr.c (rb_dlptr_s_to_ptr): fix wrapping condition.
 
-	* ext/dl/cptr.c (rb_dlptr_s_to_ptr): fix wrapping condition.
-
 Thu Jul 28 04:53:31 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/delegate.rb:  Move file-level documentation to the appropriate
