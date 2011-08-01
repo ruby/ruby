@@ -1,3 +1,8 @@
+Mon Aug  1 15:31:14 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/io/console/test_io_console.rb (TestIO_Console#test_sync):
+	  Skip when PTY allocation failed (that's not our failt).
+
 Mon Aug  1 15:04:12 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* test/xmlrpc/test_webrick_server.rb (Test_Webrick#setup_http_server):
