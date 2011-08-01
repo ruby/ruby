@@ -16,7 +16,7 @@ Mon Aug 01 15:45:23 2011  Eric Hodel  <drbrain@segment7.net>
 Mon Aug  1 15:31:14 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* test/io/console/test_io_console.rb (TestIO_Console#test_sync):
-	  Skip when PTY allocation failed (that's not our failt).
+	  Skip when PTY allocation failed (that's not our fault).
 
 Mon Aug  1 15:04:12 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
