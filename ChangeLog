@@ -1,3 +1,9 @@
+Tue Aug  2 06:18:15 2011  Luis Lavena  <luislavena@gmail.com>
+
+	* lib/rubygems/installer.rb (class Gem): Correct path check on Windows
+	  Possible fix for [Ruby 1.9 - Bug #5111]
+	* test/rubygems/test_gem_installer.rb (load Gem): ditto
+
 Mon Aug  1 20:12:03 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_process.rb (TestProcess#windows?): new method.
