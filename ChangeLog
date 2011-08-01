@@ -1,3 +1,8 @@
+Mon Aug  1 12:00:35 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* insns.def (concatstrings): don't use initial ASCII-8BIT string.
+	  [ruby-core:38635] [Bug #5126]
+
 Sun Jul 31 22:57:16 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* enc/Makefile.in (ECHO1): Same as the recent fix in common.mk.
