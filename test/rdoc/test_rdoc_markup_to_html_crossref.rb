@@ -25,6 +25,14 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
     assert_equal "\n<p><a href=\"C1.html\">C1</a></p>\n", result
   end
 
+  def test_gen_url
+    assert_equal '<a href="C1.html">Some class</a>',
+                 @to.gen_url('rdoc-ref:C1', 'Some class')
+
+    assert_equal '<a href="http://example">HTTP example</a>',
+                 @to.gen_url('http://example', 'HTTP example')
+  end
+
   def test_handle_special_CROSSREF
     assert_equal "<a href=\"C2/C3.html\">C2::C3</a>", SPECIAL('C2::C3')
   end

@@ -86,11 +86,18 @@ class RDoc::Markup::Parser
   # Builds a Heading of +level+
 
   def build_heading level
-    _, text, = get  # TEXT
-    heading = RDoc::Markup::Heading.new level, text
-    skip :NEWLINE
+    type, text, = get
 
-    heading
+    text = case type
+           when :TEXT then
+             skip :NEWLINE
+             text
+           else
+             unget
+             ''
+           end
+
+    RDoc::Markup::Heading.new level, text
   end
 
   ##

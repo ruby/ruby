@@ -248,6 +248,23 @@ the time
     assert_equal expected, @RMP.parse(str).parts
   end
 
+  def test_parse_heading_empty
+    str = <<-STR
+===
+* bullet
+    STR
+
+    expected = [
+      @RM::Heading.new(3, ''),
+      @RM::BlankLine.new,
+      @RM::List.new(:BULLET, *[
+        @RM::ListItem.new(nil,
+          @RM::Paragraph.new('bullet'))]),
+    ]
+
+    assert_equal expected, @RMP.parse(str).parts
+  end
+
   def test_parse_heading_heading
     str = '= ='
 
@@ -1080,6 +1097,23 @@ the time
       [:HEADER,  2,            0, 1],
       [:TEXT,    'Heading 2',  3, 1],
       [:NEWLINE, "\n",        12, 1],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
+  def test_tokenize_heading_empty
+    str = <<-STR
+===
+* bullet
+    STR
+
+    expected = [
+      [:HEADER,  3,        0, 0],
+      [:NEWLINE, "\n",     3, 0],
+      [:BULLET,  "*",      0, 1],
+      [:TEXT,    "bullet", 2, 1],
+      [:NEWLINE, "\n",     8, 1],
     ]
 
     assert_equal expected, @RMP.tokenize(str)

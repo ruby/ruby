@@ -97,7 +97,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # RDoc::Markup::ToHtml to handle other schemes.
 
   def gen_url url, text
-    super unless url =~ /\Ardoc-ref:/
+    return super unless url =~ /\Ardoc-ref:/
 
     cross_reference $', text
   end

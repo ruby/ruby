@@ -1,3 +1,8 @@
+Mon Aug 01 14:24:56 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc.rb:  Import RDoc 3.9.1.  Fixes bugs in the RDoc::Markup
+	  parser.
+
 Mon Aug  1 12:00:35 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* insns.def (concatstrings): don't use initial ASCII-8BIT string.
