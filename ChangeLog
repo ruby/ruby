@@ -1,3 +1,11 @@
+Tue Aug  2 07:33:29 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/net/http/test_http.rb (TestNetHTTP_version_1_1_methods#test_timeout_during_HTTP_session):
+	  If you connect to localhost, you should listen localhost.
+
+	* test/net/http/test_https.rb (TestNetHTTPS#test_timeout_during_SSL_handshake):
+	  ditto.
+
 Tue Aug  2 06:18:15 2011  Luis Lavena  <luislavena@gmail.com>
 
 	* lib/rubygems/installer.rb (class Gem): Correct path check on Windows

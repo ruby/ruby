@@ -110,7 +110,7 @@ class TestNetHTTPS < Test::Unit::TestCase
     bug4246 = "expected the SSL connection to have timed out but have not. [ruby-core:34203]"
 
     # listen for connections... but deliberately do not complete SSL handshake
-    TCPServer.open(0) {|server|
+    TCPServer.open('localhost', 0) {|server|
       port = server.addr[1]
 
       conn = Net::HTTP.new('localhost', port)

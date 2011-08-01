@@ -194,7 +194,7 @@ module TestNetHTTP_version_1_1_methods
     bug4246 = "expected the HTTP session to have timed out but have not. c.f. [ruby-core:34203]"
 
     # listen for connections... but deliberately do not complete SSL handshake
-    TCPServer.open(0) {|server|
+    TCPServer.open('localhost', 0) {|server|
       port = server.addr[1]
 
       conn = Net::HTTP.new('localhost', port)
