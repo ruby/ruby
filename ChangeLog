@@ -1,3 +1,15 @@
+Mon Aug  1 15:04:12 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/xmlrpc/test_webrick_server.rb (Test_Webrick#setup_http_server):
+	  XMLRPC::Client.new3(), when called without host: argument, tries
+	  to  connect to  a host  where "localhost"  resolves to.   On the
+	  other  hand  a  WEBrick::HTTPServer.new(), when  called  without
+	  BindAddress:  argument, tries  to listen  all the  address where
+	  getaddrinfo(AF_UNSPEC) resolves to.   This is a mismatch because
+	  "localhost" might not resolve to one of those listening sockets.
+	  We  would  better explicitly  specify  "localhost"  here and  if
+	  failed, just skip the whole test.
+
 Mon Aug 01 14:24:56 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc.rb:  Import RDoc 3.9.1.  Fixes bugs in the RDoc::Markup

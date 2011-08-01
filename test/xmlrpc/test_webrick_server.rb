@@ -46,6 +46,7 @@ class Test_Webrick < Test::Unit::TestCase
 
   def setup_http_server(port, use_ssl)
     option = {
+      BindAddress: "localhost",
       :Port => port,
       :SSLEnable => use_ssl,
     }
