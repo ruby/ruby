@@ -43,6 +43,11 @@ class XrefTestCase < MiniTest::Unit::TestCase
     @c2_b  = @c2.method_list.first
 
     @c2_c3 = @xref_data.find_module_named 'C2::C3'
+    @c2_c3_m = @c2_c3.method_list.first # C2::C3#m
+
+    @c2_c3_h1 = @xref_data.find_module_named 'C2::C3::H1'
+    @c2_c3_h1_meh = @c2_c3_h1.method_list.first # C2::C3::H1#m?
+
     @c3    = @xref_data.find_module_named 'C3'
     @c4    = @xref_data.find_module_named 'C4'
     @c4_c4 = @xref_data.find_module_named 'C4::C4'

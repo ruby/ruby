@@ -67,6 +67,30 @@ class TestRDocCodeObject < XrefTestCase
     assert_equal Encoding::UTF_8, @co.comment.encoding
   end
 
+  def test_display_eh_document_self
+    assert @co.display?
+
+    @co.document_self = false
+
+    refute @co.display?
+  end
+
+  def test_display_eh_ignore
+    assert @co.display?
+
+    @co.ignore
+
+    refute @co.display?
+
+    @co.stop_doc
+
+    refute @co.display?
+
+    @co.done_documenting = false
+
+    refute @co.display?
+  end
+
   def test_document_children_equals
     @co.document_children = false
     refute @co.document_children
@@ -156,6 +180,22 @@ class TestRDocCodeObject < XrefTestCase
     assert_nil @co.instance_variable_get(:@full_name)
   end
 
+  def test_ignore
+    @co.ignore
+
+    refute @co.document_self
+    refute @co.document_children
+    assert @co.ignored?
+  end
+
+  def test_ignore_eh
+    refute @co.ignored?
+
+    @co.ignore
+
+    assert @co.ignored?
+  end
+
   def test_line
     @c1_m.line = 5
 
@@ -202,10 +242,16 @@ class TestRDocCodeObject < XrefTestCase
   end
 
   def test_record_location
-    c = RDoc::CodeObject.new
-    c.record_location @xref_data
+    @co.record_location @xref_data
 
-    assert_equal 'xref_data.rb', c.file.relative_name
+    assert_equal 'xref_data.rb', @co.file.relative_name
+  end
+
+  def test_record_location_ignored
+    @co.ignore
+    @co.record_location @xref_data
+
+    refute @co.ignored?
   end
 
   def test_start_doc
@@ -216,6 +262,16 @@ class TestRDocCodeObject < XrefTestCase
 
     assert @co.document_self
     assert @co.document_children
+  end
+
+  def test_start_doc_ignored
+    @co.ignore
+
+    @co.start_doc
+
+    assert @co.document_self
+    assert @co.document_children
+    refute @co.ignored?
   end
 
   def test_stop_doc

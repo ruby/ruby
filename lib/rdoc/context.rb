@@ -423,6 +423,7 @@ class RDoc::Context < RDoc::CodeObject
     if klass then
       # if TopLevel, it may not be registered in the classes:
       enclosing.classes_hash[name] = klass
+
       # update the superclass if needed
       if superclass then
         existing = klass.superclass
@@ -623,8 +624,10 @@ class RDoc::Context < RDoc::CodeObject
 
   ##
   # Is there any content?
-  # This means any of: comment, aliases, methods, attributes,
-  # external aliases, require, constant.
+  #
+  # This means any of: comment, aliases, methods, attributes, external
+  # aliases, require, constant.
+  #
   # Includes are also checked unless <tt>includes == false</tt>.
 
   def any_content(includes = true)

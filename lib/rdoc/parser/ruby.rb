@@ -405,17 +405,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
   #
   # This routine modifies its +comment+ parameter.
 
-  def look_for_directives_in(context, comment)
-    preprocess = RDoc::Markup::PreProcess.new @file_name, @options.rdoc_include
-
-    preprocess.handle comment, context do |directive, param|
+  def look_for_directives_in context, comment
+    @preprocess.handle comment, context do |directive, param|
       case directive
-      when 'enddoc' then
-        context.done_documenting = true
-        ''
-      when 'main' then
-        @options.main_page = param if @options.respond_to? :main_page
-        ''
       when 'method', 'singleton-method',
            'attr', 'attr_accessor', 'attr_reader', 'attr_writer' then
         false # handled elsewhere
@@ -423,16 +415,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
         context.set_current_section param, comment
         comment.replace ''
         break
-      when 'startdoc' then
-        context.start_doc
-        context.force_documentation = true
-        ''
-      when 'stopdoc' then
-        context.stop_doc
-        ''
-      when 'title' then
-        @options.default_title = param if @options.respond_to? :default_title=
-        ''
       end
     end
 
@@ -629,6 +611,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
       cls_type = single == SINGLE ? RDoc::SingleClass : RDoc::NormalClass
       cls = declaration_context.add_class cls_type, given_name, superclass
+      cls.ignore unless container.document_children
 
       read_documentation_modifiers cls, RDoc::CLASS_MODIFIERS
       cls.record_location @top_level
@@ -679,7 +662,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   ##
   # Parses a constant in +context+ with +comment+
 
-  def parse_constant(container, tk, comment)
+  def parse_constant container, tk, comment
     offset  = tk.seek
     line_no = tk.line_no
 
@@ -718,7 +701,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
       when TkRPAREN, TkRBRACE, TkRBRACK, TkEND then
         nest -= 1
       when TkCOMMENT then
-        if nest <= 0 && @scanner.lex_state == EXPR_END
+        if nest <= 0 &&
+           (@scanner.lex_state == EXPR_END || !@scanner.continue) then
           unget_tk tk
           break
         end
@@ -733,7 +717,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
                 end
 
           container.add_module_alias mod, name, @top_level if mod
-          get_tk # TkNL
           break
         end
       when TkNL then
@@ -1327,11 +1310,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
         keep_comment = true
 
       when TkCLASS then
-        if container.document_children then
-          parse_class container, single, tk, comment
-        else
-          nest += 1
-        end
+        parse_class container, single, tk, comment
 
       when TkMODULE then
         if container.document_children then
@@ -1516,11 +1495,13 @@ class RDoc::Parser::Ruby < RDoc::Parser
   ##
   # Parses statements in the top-level +container+
 
-  def parse_top_level_statements(container)
+  def parse_top_level_statements container
     comment = collect_first_comment
-    look_for_directives_in(container, comment)
+    look_for_directives_in container, comment
+
     # HACK move if to RDoc::Context#comment=
     container.comment = comment if container.document_self unless comment.empty?
+
     parse_statements container, NORMAL, nil, comment
   end
 
@@ -1643,16 +1624,17 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # Handles the directive for +context+ if the directive is listed in +allow+.
   # This method is called for directives following a definition.
 
-  def read_documentation_modifiers(context, allow)
+  def read_documentation_modifiers context, allow
     directive, value = read_directive allow
 
     return unless directive
 
-    case directive
-    when 'notnew', 'not_new', 'not-new' then
-      context.dont_rename_initialize = true
-    else
-      RDoc::Parser.process_directive context, directive, value
+    @preprocess.handle_directive '', directive, value, context do |dir, param|
+      if %w[notnew not_new not-new].include? dir then
+        context.dont_rename_initialize = true
+
+        true
+      end
     end
   end
 

@@ -71,9 +71,7 @@ class RDoc::Markup::Document
   # Does this document have no parts?
 
   def empty?
-    @parts.empty? or
-      (@parts.length == 1 and RDoc::Markup::Document === @parts.first and
-       @parts.first.empty?)
+    @parts.empty? or (@parts.length == 1 and merged? and @parts.first.empty?)
   end
 
   ##
@@ -85,6 +83,11 @@ class RDoc::Markup::Document
   # The information in +other+ is preferred over the receiver
 
   def merge other
+    if empty? then
+      @parts = other.parts
+      return self
+    end
+
     other.parts.each do |other_part|
       self.parts.delete_if do |self_part|
         self_part.file and self_part.file == other_part.file
@@ -94,6 +97,13 @@ class RDoc::Markup::Document
     end
 
     self
+  end
+
+  ##
+  # Does this Document contain other Documents?
+
+  def merged?
+    RDoc::Markup::Document === @parts.first
   end
 
   def pretty_print q # :nodoc:

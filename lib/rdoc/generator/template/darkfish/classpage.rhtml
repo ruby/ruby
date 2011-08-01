@@ -176,6 +176,8 @@
     </div><!-- description -->
 
     <% klass.each_section do |section, constants, attributes| %>
+    <% constants = constants.select { |const| const.display? } %>
+    <% attributes = attributes.select { |attr| attr.display? } %>
     <div id="<%= section.aref %>" class="documentation-section">
       <% if section.title then %>
       <h2 class="section-header">

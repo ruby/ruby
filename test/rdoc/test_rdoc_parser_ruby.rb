@@ -313,22 +313,6 @@ class C; end
                  comment
   end
 
-  def test_look_for_directives_in_enddoc
-    util_parser ""
-
-    @parser.look_for_directives_in @top_level, "# :enddoc:\n"
-
-    assert @top_level.done_documenting
-  end
-
-  def test_look_for_directives_in_main
-    util_parser ""
-
-    @parser.look_for_directives_in @top_level, "# :main: new main page\n"
-
-    assert_equal 'new main page', @options.main_page
-  end
-
   def test_look_for_directives_in_method
     util_parser ""
 
@@ -345,31 +329,6 @@ class C; end
     assert_equal "# :singleton-method: my_method\n", comment
   end
 
-  def test_look_for_directives_in_startdoc
-    util_parser ""
-
-    @top_level.stop_doc
-    assert !@top_level.document_self
-    assert !@top_level.document_children
-
-    @parser.look_for_directives_in @top_level, "# :startdoc:\n"
-
-    assert @top_level.document_self
-    assert @top_level.document_children
-  end
-
-  def test_look_for_directives_in_stopdoc
-    util_parser ""
-
-    assert @top_level.document_self
-    assert @top_level.document_children
-
-    @parser.look_for_directives_in @top_level, "# :stopdoc:\n"
-
-    assert !@top_level.document_self
-    assert !@top_level.document_children
-  end
-
   def test_look_for_directives_in_section
     util_parser ""
 
@@ -382,14 +341,6 @@ class C; end
     assert_equal "# woo stuff\n", section.comment
 
     assert_equal '', comment
-  end
-
-  def test_look_for_directives_in_title
-    util_parser ""
-
-    @parser.look_for_directives_in @top_level, "# :title: new title\n"
-
-    assert_equal 'new title', @options.title
   end
 
   def test_look_for_directives_in_unhandled
@@ -797,12 +748,7 @@ end
 
     @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, comment
 
-    foo = @top_level.classes.first
-    assert_equal 'Foo', foo.full_name
-    assert_equal 'my class', foo.comment
-    assert_equal [@top_level], foo.in_files
-    assert_equal 0, foo.offset
-    assert_equal 1, foo.line
+    assert_empty @top_level.classes.first.comment
   end
 
   def test_parse_multi_ghost_methods
@@ -2225,6 +2171,45 @@ end
     @parser.parse_top_level_statements @top_level
 
     assert_empty @top_level.comment
+  end
+
+  def test_parse_top_level_statements_stopdoc_integration
+    content = <<-CONTENT
+# :stopdoc:
+
+class Example
+  def method_name
+  end
+end
+    CONTENT
+
+    util_parser content
+
+    @parser.parse_top_level_statements @top_level
+
+    assert_equal 1, @top_level.classes.length
+    assert_empty @top_level.modules
+
+    assert @top_level.find_module_named('Example').ignored?
+  end
+
+  # This tests parse_comment
+  def test_parse_top_level_statements_constant_nodoc_integration
+    content = <<-CONTENT
+class A
+  C = A # :nodoc:
+end
+    CONTENT
+
+    util_parser content
+
+    @parser.parse_top_level_statements @top_level
+
+    klass = @top_level.find_module_named('A')
+
+    c = klass.constants.first
+
+    assert_nil c.document_self, 'C should not be documented'
   end
 
   def test_parse_yield_in_braces_with_parens
