@@ -174,7 +174,7 @@ class TestRakeFunctional < Rake::TestCase
 
     rake "inline_verbose_default"
 
-    assert_match(/ruby -e/, @err)
+    assert_match(/#{Regexp.quote(RUBY)} -e/, @err)
   end
 
   def test_inline_verbose_true_should_show_command
@@ -182,7 +182,7 @@ class TestRakeFunctional < Rake::TestCase
 
     rake "inline_verbose_true"
 
-    assert_match(/ruby -e/, @err)
+    assert_match(/#{Regexp.quote(RUBY)} -e/, @err)
   end
 
   def test_inline_verbose_false_should_not_show_command
@@ -190,7 +190,7 @@ class TestRakeFunctional < Rake::TestCase
 
     rake "inline_verbose_false"
 
-    refute_match(/ruby -e/, @err)
+    refute_match(/#{Regexp.quote(RUBY)} -e/, @err)
   end
 
   def test_block_verbose_false_should_not_show_command
@@ -198,7 +198,7 @@ class TestRakeFunctional < Rake::TestCase
 
     rake "block_verbose_false"
 
-    refute_match(/ruby -e/, @err)
+    refute_match(/#{Regexp.quote(RUBY)} -e/, @err)
   end
 
   def test_block_verbose_true_should_show_command
@@ -206,7 +206,7 @@ class TestRakeFunctional < Rake::TestCase
 
     rake "block_verbose_true"
 
-    assert_match(/ruby -e/, @err)
+    assert_match(/#{Regexp.quote(RUBY)} -e/, @err)
   end
 
   def test_standalone_verbose_true_should_show_command
@@ -214,7 +214,7 @@ class TestRakeFunctional < Rake::TestCase
 
     rake "standalone_verbose_true"
 
-    assert_match(/ruby -e/, @err)
+    assert_match(/#{Regexp.quote(RUBY)} -e/, @err)
   end
 
   def test_standalone_verbose_false_should_not_show_command
@@ -222,7 +222,7 @@ class TestRakeFunctional < Rake::TestCase
 
     rake "standalone_verbose_false"
 
-    refute_match(/ruby -e/, @err)
+    refute_match(/#{Regexp.quote(RUBY)} -e/, @err)
   end
 
   def test_dry_run

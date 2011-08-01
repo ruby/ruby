@@ -1,3 +1,9 @@
+Mon Aug 01 15:45:23 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* test/rake/test_rake_functional.rb:  Don't assume the binary name of
+	  ruby is "ruby".  [Ruby 1.9 - Bug #5114]
+	* test/rake/helper.rb:  ditto
+
 Mon Aug  1 05:21:42 2011  TAKANO Mitsuhiro (takano32)  <tak@no32.tk>
 
 	* cont.c (cont_save_thread): fix missing semicolon.
