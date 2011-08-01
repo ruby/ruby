@@ -1,3 +1,12 @@
+Mon Aug  1 20:12:03 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_process.rb (TestProcess#windows?): new method.
+
+	* test/ruby/test_process.rb (TestProcess#*): use above method.
+
+	* test/ruby/test_process.rb (TestProcess#test_execopts_redirect):
+	  windows doesn't support FD_CLOEXEC.
+
 Mon Aug 01 15:45:23 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rake/test_rake_functional.rb:  Don't assume the binary name of
