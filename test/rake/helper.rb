@@ -455,35 +455,35 @@ end
     rakefile <<-VERBOSE
 task :standalone_verbose_true do
   verbose true
-  sh "ruby -e '0'"
+  sh "#{RUBY} -e '0'"
 end
 
 task :standalone_verbose_false do
   verbose false
-  sh "ruby -e '0'"
+  sh "#{RUBY} -e '0'"
 end
 
 task :inline_verbose_default do
-  sh "ruby -e '0'"
+  sh "#{RUBY} -e '0'"
 end
 
 task :inline_verbose_false do
-  sh "ruby -e '0'", :verbose => false
+  sh "#{RUBY} -e '0'", :verbose => false
 end
 
 task :inline_verbose_true do
-  sh "ruby -e '0'", :verbose => true
+  sh "#{RUBY} -e '0'", :verbose => true
 end
 
 task :block_verbose_true do
   verbose(true) do
-    sh "ruby -e '0'"
+    sh "#{RUBY} -e '0'"
   end
 end
 
 task :block_verbose_false do
   verbose(false) do
-    sh "ruby -e '0'"
+    sh "#{RUBY} -e '0'"
   end
 end
     VERBOSE
