@@ -73,20 +73,6 @@ rb_define_notimplement_method_id(VALUE mod, ID id, rb_method_flag_t noex)
 }
 
 void
-rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex)
-{
-    if (func != rb_f_notimplement) {
-	rb_method_cfunc_t opt;
-	opt.func = func;
-	opt.argc = argc;
-	rb_add_method(klass, mid, VM_METHOD_TYPE_CFUNC, &opt, noex);
-    }
-    else {
-	rb_define_notimplement_method_id(klass, mid, noex);
-    }
-}
-
-void
 rb_unlink_method_entry(rb_method_entry_t *me)
 {
     struct unlinked_method_entry_list_entry *ume = ALLOC(struct unlinked_method_entry_list_entry);
@@ -157,78 +143,61 @@ rb_free_method_entry(rb_method_entry_t *me)
 
 static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 
+inline void
+rb_method_redefinition(rb_method_entry_t *me, ID mid, rb_method_type_t type)
+{
+/*  processing subjecting method redefinition */
+
+    rb_method_definition_t *old_def = me->def;
+    
+    rb_vm_check_redefinition_opt_method(me);
+
+    if (RTEST(ruby_verbose) &&
+	type != VM_METHOD_TYPE_UNDEF &&
+	old_def->alias_count == 0 &&
+	old_def->type != VM_METHOD_TYPE_UNDEF &&
+	old_def->type != VM_METHOD_TYPE_ZSUPER) {
+	rb_iseq_t *iseq = 0;
+
+	rb_warning("method redefined; discarding old %s", rb_id2name(mid));
+	switch (old_def->type) {
+	  case VM_METHOD_TYPE_ISEQ:
+	    iseq = old_def->body.iseq;
+	    break;
+	  case VM_METHOD_TYPE_BMETHOD:
+	    iseq = rb_proc_get_iseq(old_def->body.proc, 0);
+	    break;
+	  default:
+	    break;
+	}
+	if (iseq && !NIL_P(iseq->filename)) {
+	    int line = iseq->insn_info_table ? rb_iseq_first_lineno(iseq) : 0;
+	    rb_compile_warning(RSTRING_PTR(iseq->filename), line,
+			       "previous definition of %s was here",
+			       rb_id2name(old_def->original_id));
+	}
+    }
+    
+    rb_unlink_method_entry(me);
+
+}
+
 static rb_method_entry_t *
-rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
+rb_method_entry_new(VALUE klass, ID mid, rb_method_type_t type,
 		     rb_method_definition_t *def, rb_method_flag_t noex)
 {
-    rb_method_entry_t *me;
-    st_table *mtbl;
-    st_data_t data;
+/*  creates a new method_entry object (struct) */
 
-    if (NIL_P(klass)) {
-	klass = rb_cObject;
-    }
-    if (rb_safe_level() >= 4 &&
-	(klass == rb_cObject || !OBJ_UNTRUSTED(klass))) {
-	rb_raise(rb_eSecurityError, "Insecure: can't define method");
-    }
+    rb_method_entry_t *me;
+    me = ALLOC(rb_method_entry_t);
+    
+    /* set initialize or initialize_copy to private */
     if (!FL_TEST(klass, FL_SINGLETON) &&
 	type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
 	type != VM_METHOD_TYPE_ZSUPER &&
 	(mid == rb_intern("initialize") || mid == rb_intern("initialize_copy"))) {
 	noex = NOEX_PRIVATE | noex;
     }
-    else if (FL_TEST(klass, FL_SINGLETON) &&
-	     type == VM_METHOD_TYPE_CFUNC &&
-	     mid == rb_intern("allocate")) {
-	rb_warn("defining %s.allocate is deprecated; use rb_define_alloc_func()",
-		rb_class2name(rb_ivar_get(klass, attached)));
-	mid = ID_ALLOCATOR;
-    }
-
-    rb_check_frozen(klass);
-    mtbl = RCLASS_M_TBL(klass);
-
-    /* check re-definition */
-    if (st_lookup(mtbl, mid, &data)) {
-	rb_method_entry_t *old_me = (rb_method_entry_t *)data;
-	rb_method_definition_t *old_def = old_me->def;
-
-	if (rb_method_definition_eq(old_def, def)) return old_me;
-	rb_vm_check_redefinition_opt_method(old_me);
-
-	if (RTEST(ruby_verbose) &&
-	    type != VM_METHOD_TYPE_UNDEF &&
-	    old_def->alias_count == 0 &&
-	    old_def->type != VM_METHOD_TYPE_UNDEF &&
-	    old_def->type != VM_METHOD_TYPE_ZSUPER) {
-	    rb_iseq_t *iseq = 0;
-
-	    rb_warning("method redefined; discarding old %s", rb_id2name(mid));
-	    switch (old_def->type) {
-	      case VM_METHOD_TYPE_ISEQ:
-		iseq = old_def->body.iseq;
-		break;
-	      case VM_METHOD_TYPE_BMETHOD:
-		iseq = rb_proc_get_iseq(old_def->body.proc, 0);
-		break;
-	      default:
-		break;
-	    }
-	    if (iseq && !NIL_P(iseq->filename)) {
-		int line = iseq->insn_info_table ? rb_iseq_first_lineno(iseq) : 0;
-		rb_compile_warning(RSTRING_PTR(iseq->filename), line,
-				   "previous definition of %s was here",
-				   rb_id2name(old_def->original_id));
-	    }
-	}
-
-	rb_unlink_method_entry(old_me);
-    }
-
-    me = ALLOC(rb_method_entry_t);
-
-    rb_clear_cache_by_id(mid);
 
     me->flag = NOEX_WITH_SAFE(noex);
     me->mark = 0;
@@ -236,7 +205,9 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     me->klass = klass;
     me->def = def;
     if (def) def->alias_count++;
-
+    
+    /* issue: warnings should be raised only if ruby_verbose */
+    /* issue: warning belong *possibly* to rb_method_definition_redefine_warnings */
     /* check mid */
     if (klass == rb_cObject && mid == idInitialize) {
 	rb_warn("redefining Object#initialize may cause infinite loop");
@@ -248,11 +219,10 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	}
     }
 
-    st_insert(mtbl, mid, (st_data_t) me);
-
     return me;
 }
 
+/* issue: use inline-code, or state technical explanation for using a macro */
 #define CALL_METHOD_HOOK(klass, hook, mid) do {		\
 	const VALUE arg = ID2SYM(mid);			\
 	VALUE recv_class = (klass);			\
@@ -264,26 +234,78 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	rb_funcall2(recv_class, hook_id, 1, &arg);	\
     } while (0)
 
-static void
-method_added(VALUE klass, ID mid)
+static rb_method_entry_t *
+rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
+		     rb_method_definition_t *def, rb_method_flag_t noex)
 {
-    if (mid != ID_ALLOCATOR && ruby_running) {
+/*  enters (inserts) a method_definition to the class method-table and returns
+    it *or* returns existent method_entry */
+
+    rb_method_entry_t *me;
+    st_table *mtbl;
+    st_data_t data;
+
+    if (NIL_P(klass)) {
+	klass = rb_cObject;
+    }
+/*  issue: verify if those checks are necessary, if old method entry is
+    available. if not, move after block "if old method entry available" */
+    if (rb_safe_level() >= 4 &&
+	(klass == rb_cObject || !OBJ_UNTRUSTED(klass))) {
+	rb_raise(rb_eSecurityError, "Insecure: can't define method");
+    }
+    if (FL_TEST(klass, FL_SINGLETON) &&
+	     type == VM_METHOD_TYPE_CFUNC &&
+	     mid == rb_intern("allocate")) {
+	rb_warn("defining %s.allocate is deprecated; use rb_define_alloc_func()",
+		rb_class2name(rb_ivar_get(klass, attached)));
+	mid = ID_ALLOCATOR;
+    }
+
+    rb_check_frozen(klass);
+    mtbl = RCLASS_M_TBL(klass);
+
+    /* if old method entry is available */
+    if (st_lookup(mtbl, mid, &data)) {
+	rb_method_entry_t *old_me = (rb_method_entry_t *)data;
+	rb_method_definition_t *old_def = old_me->def;
+
+	/* if old method entry has already correct method def */ 
+	if (rb_method_definition_eq(old_def, def))
+	    return old_me;
+
+	/* redefinition */
+	rb_method_redefinition(old_me, mid, type);
+    }
+
+    /* create new method entry */
+    rb_clear_cache_by_id(mid);
+
+    me = rb_method_entry_new(klass, mid, type, def, noex);
+
+    st_insert(mtbl, mid, (st_data_t) me);
+
+    if (type != VM_METHOD_TYPE_UNDEF && mid != ID_ALLOCATOR && ruby_running) {
 	CALL_METHOD_HOOK(klass, added, mid);
     }
+
+    return me;
 }
 
-rb_method_entry_t *
-rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_flag_t noex)
+rb_method_definition_t *
+rb_method_definition_new(ID mid, rb_method_type_t type, void *opts)
 {
+/*  creates a new method_definition object (struct)*/
+
     rb_thread_t *th;
     rb_control_frame_t *cfp;
     int line;
-    rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, 0, noex);
+
     rb_method_definition_t *def = ALLOC(rb_method_definition_t);
-    me->def = def;
     def->type = type;
     def->original_id = mid;
     def->alias_count = 0;
+
     switch (type) {
       case VM_METHOD_TYPE_ISEQ:
 	def->body.iseq = (rb_iseq_t *)opts;
@@ -318,19 +340,45 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
       default:
 	rb_bug("rb_add_method: unsupported method type (%d)\n", type);
     }
-    if (type != VM_METHOD_TYPE_UNDEF) {
-	method_added(klass, mid);
-    }
+    return def;
+}
+
+rb_method_entry_t *
+rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_flag_t noex)
+{
+/*  adds a newly created mdef via a newly created me to a class */
+
+    rb_method_definition_t *def = rb_method_definition_new(mid, type, opts);
+    rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, def, noex);
     return me;
 }
 
 rb_method_entry_t *
 rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_flag_t noex)
 {
+/*  adds the me->def via newly created newme to a class */
+
     rb_method_type_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
-    rb_method_entry_t *newme = rb_method_entry_make(klass, mid, type, me->def, noex);
-    method_added(klass, mid);
+    rb_method_entry_t *newme = rb_method_entry_make(klass, mid, type, me->def, noex);    
     return newme;
+}
+
+void
+rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex)
+{
+/*  specialized version of rb_add_method - for C functions */
+
+/*  issue: should return me */
+
+    if (func != rb_f_notimplement) {
+	rb_method_cfunc_t opt;
+	opt.func = func;
+	opt.argc = argc;
+	rb_add_method(klass, mid, VM_METHOD_TYPE_CFUNC, &opt, noex);
+    }
+    else {
+	rb_define_notimplement_method_id(klass, mid, noex);
+    }
 }
 
 void
@@ -1346,3 +1394,23 @@ Init_eval_method(void)
     respond_to_missing = rb_intern("respond_to_missing?");
 }
 
+/* TD: rename plan
+
+method_entry 		| mentry	| ment	| me
+method_definition	| mdefinition	| mdef	| md
+method_table		| mtable	| mtbl	| mt
+method_id		| midentifier	| mid	| mi
+
+The term "method" refers usually to:
+ * A mdef entered via a ment into the mtbl of a class
+ * class->mtbl[mid]->mdef
+
+Functions are grouped by the type (structure, object) they affect. Whenever
+possible, first parameter is a pointer to such type. Examples:
+
+rb_mtbl_ = functions affecting a method table
+rb_ment_ = functions affecting a method entry 
+rb_mtbl_<function> e.g. rb_mtbl_add(mtbl_t *mtbl, )
+rb_mdef_<function> e.g. rb_mdef_new
+
+*/
