@@ -159,6 +159,7 @@ rb_to_encoding_index(VALUE enc)
     return rb_enc_find_index(StringValueCStr(enc));
 }
 
+/* Returns encoding index or UNSPECIFIED_ENCODING */
 static int
 str_to_encindex(VALUE enc)
 {
@@ -596,6 +597,7 @@ enc_autoload(rb_encoding *enc)
     return i;
 }
 
+/* Return encoding index or UNSPECIFIED_ENCODING from encoding name */
 int
 rb_enc_find_index(const char *name)
 {
@@ -1051,9 +1053,12 @@ enc_list(VALUE klass)
 static VALUE
 enc_find(VALUE klass, VALUE enc)
 {
+    int idx;
     if (!SPECIAL_CONST_P(enc) && BUILTIN_TYPE(enc) == T_DATA && is_data_encoding(enc))
 	return enc;
-    return rb_enc_from_encoding_index(str_to_encindex(enc));
+    idx = str_to_encindex(enc);
+    if (idx == UNSPECIFIED_ENCODING) return Qnil;
+    return rb_enc_from_encoding_index(idx);
 }
 
 /*
