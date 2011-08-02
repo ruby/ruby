@@ -1,3 +1,7 @@
+Wed Aug  3 00:11:08 2011  Tanaka Akira  <akr@fsij.org>
+
+	* lib/prettyprint.rb: update document.  [ruby-core:36776]
+
 Tue Aug  2 22:04:46 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* gc.c (init_heap): allocate sigaltstack after heaps are allocated.
