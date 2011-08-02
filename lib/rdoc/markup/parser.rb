@@ -86,18 +86,11 @@ class RDoc::Markup::Parser
   # Builds a Heading of +level+
 
   def build_heading level
-    type, text, = get
+    _, text, = get  # TEXT
+    heading = RDoc::Markup::Heading.new level, text
+    skip :NEWLINE
 
-    text = case type
-           when :TEXT then
-             skip :NEWLINE
-             text
-           else
-             unget
-             ''
-           end
-
-    RDoc::Markup::Heading.new level, text
+    heading
   end
 
   ##
@@ -412,19 +405,13 @@ class RDoc::Markup::Parser
                    @line += 1
                    token
                  # === text => :HEADER then :TEXT
-                 when s.scan(/(=+)(\s*)/) then
+                 when s.scan(/(=+)\s*/) then
                    level = s[1].length
-                   header = [:HEADER, level, *token_pos(pos)]
-
-                   if s[2] =~ /^\r?\n/ then
-                     s.pos -= s[2].length
-                     header
-                   else
-                     pos = s.pos
-                     s.scan(/.*/)
-                     @tokens << header
-                     [:TEXT, s.matched.sub(/\r$/, ''), *token_pos(pos)]
-                   end
+                   level = 6 if level > 6
+                   @tokens << [:HEADER, level, *token_pos(pos)]
+                   pos = s.pos
+                   s.scan(/.*/)
+                   [:TEXT, s.matched.sub(/\r$/, ''), *token_pos(pos)]
                  # --- (at least 3) and nothing else on the line => :RULE
                  when s.scan(/(-{3,}) *$/) then
                    [:RULE, s[1].length - 2, *token_pos(pos)]

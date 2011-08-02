@@ -645,7 +645,9 @@ class RDoc::Parser::C < RDoc::Parser
       meth_obj.call_seq = $1.strip
     end
 
-    look_for_directives_in meth_obj, comment
+    if comment.sub!(/\s*:(nodoc|doc|yields?|args?):\s*(.*)/, '') then
+      RDoc::Parser.process_directive meth_obj, $1, $2
+    end
   end
 
   ##
@@ -911,10 +913,12 @@ class RDoc::Parser::C < RDoc::Parser
   #    * :title: My Awesome Project
   #    */
   #
-  # This method modifies the +comment+
+  # This routine modifies its parameter
 
-  def look_for_directives_in context, comment
-    @preprocess.handle comment, context do |directive, param|
+  def look_for_directives_in(context, comment)
+    preprocess = RDoc::Markup::PreProcess.new @file_name, @options.rdoc_include
+
+    preprocess.handle comment, context do |directive, param|
       case directive
       when 'main' then
         @options.main_page = param

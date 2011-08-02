@@ -153,8 +153,6 @@ module RDoc::Parser::RubyTools
     @token_listeners.each do |obj|
       obj.pop_token
     end if @token_listeners
-
-    nil
   end
 
 end

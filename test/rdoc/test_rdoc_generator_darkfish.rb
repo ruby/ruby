@@ -38,7 +38,6 @@ class TestRDocGeneratorDarkfish < MiniTest::Unit::TestCase
 
     @top_level = RDoc::TopLevel.new 'file.rb'
     @klass = @top_level.add_class RDoc::NormalClass, 'Object'
-
     @meth = RDoc::AnyMethod.new nil, 'method'
     @meth_bang = RDoc::AnyMethod.new nil, 'method!'
     @attr = RDoc::Attr.new nil, 'attr', 'RW', ''
@@ -46,9 +45,6 @@ class TestRDocGeneratorDarkfish < MiniTest::Unit::TestCase
     @klass.add_method @meth
     @klass.add_method @meth_bang
     @klass.add_attribute @attr
-
-    @ignored = @top_level.add_class RDoc::NormalClass, 'Ignored'
-    @ignored.ignore
   end
 
   def teardown
@@ -87,8 +83,6 @@ class TestRDocGeneratorDarkfish < MiniTest::Unit::TestCase
                  File.read('Object.html'))
     assert_match(/<meta content="text\/html; charset=#{encoding}"/,
                  File.read('file_rb.html'))
-
-    refute_match(/Ignored/, File.read('index.html'))
   end
 
   def test_generate_dry_run

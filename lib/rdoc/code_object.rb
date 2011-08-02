@@ -114,7 +114,6 @@ class RDoc::CodeObject
     @done_documenting    = false
     @force_documentation = false
     @received_nodoc      = false
-    @ignored             = false
   end
 
   ##
@@ -138,13 +137,6 @@ class RDoc::CodeObject
                    @comment
                  end
                end
-  end
-
-  ##
-  # Should this CodeObject be shown in documentation?
-
-  def display?
-    @document_self and not @ignored
   end
 
   ##
@@ -203,11 +195,6 @@ class RDoc::CodeObject
     self
   end
 
-  ##
-  # File name where this CodeObject was found.
-  #
-  # See also RDoc::Context#in_files
-
   def file_name
     return unless @file
 
@@ -234,34 +221,6 @@ class RDoc::CodeObject
   end
 
   ##
-  # Use this to ignore a CodeObject and all its children until found again
-  # (#record_location is called).  An ignored item will not be shown in
-  # documentation.
-  #
-  # See github issue #55
-  #
-  # The ignored status is temporary in order to allow implementation details
-  # to be hidden.  At the end of processing a file RDoc allows all classes
-  # and modules to add new documentation to previously created classes.
-  #
-  # If a class was ignored (via stopdoc) then reopened later with additional
-  # documentation it should be shown.  If a class was ignored and never
-  # reopened it should not be shown.  The ignore flag allows this to occur.
-
-  def ignore
-    @ignored = true
-
-    stop_doc
-  end
-
-  ##
-  # Has this class been ignored?
-
-  def ignored?
-    @ignored
-  end
-
-  ##
   # File name of our parent
 
   def parent_file_name
@@ -279,7 +238,6 @@ class RDoc::CodeObject
   # Records the RDoc::TopLevel (file) where this code object was defined
 
   def record_location top_level
-    @ignored = false
     @file = top_level
   end
 
@@ -292,7 +250,6 @@ class RDoc::CodeObject
 
     @document_self = true
     @document_children = true
-    @ignored = false
   end
 
   ##
