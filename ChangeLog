@@ -1,3 +1,19 @@
+Tue Aug  2 15:53:37 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (str_to_encoding): rename from to_encoding and
+	  use str_to_encindex.
+
+	* encoding.c (str_to_encindex): split from to_encoding.
+
+	* encoding.c (rb_to_encoding): use str_to_encoding.
+
+	* encoding.c (rb_obj_encoding): don't bypass rb_encoding*.
+	  If it uses rb_encoding*, it bypass encindex. If it uses encindex,
+	  it doesn't bypass.
+
+	* encoding.c (enc_find): add shortcut for encoding object, use
+	  str_to_encindex, and avoid bypass rb_encoding*.
+
 Tue Aug  2 12:03:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (recursive_hash): hash value of emptied hash should be

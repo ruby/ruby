@@ -159,8 +159,8 @@ rb_to_encoding_index(VALUE enc)
     return rb_enc_find_index(StringValueCStr(enc));
 }
 
-static rb_encoding *
-to_encoding(VALUE enc)
+static int
+str_to_encindex(VALUE enc)
 {
     int idx;
 
@@ -172,14 +172,20 @@ to_encoding(VALUE enc)
     if (idx < 0) {
 	rb_raise(rb_eArgError, "unknown encoding name - %s", RSTRING_PTR(enc));
     }
-    return rb_enc_from_index(idx);
+    return idx;
+}
+
+static rb_encoding *
+str_to_encoding(VALUE enc)
+{
+    return rb_enc_from_index(str_to_encindex(enc));
 }
 
 rb_encoding *
 rb_to_encoding(VALUE enc)
 {
     if (enc_check_encoding(enc) >= 0) return RDATA(enc)->data;
-    return to_encoding(enc);
+    return str_to_encoding(enc);
 }
 
 void
@@ -823,11 +829,11 @@ rb_enc_copy(VALUE obj1, VALUE obj2)
 VALUE
 rb_obj_encoding(VALUE obj)
 {
-    rb_encoding *enc = rb_enc_get(obj);
-    if (!enc) {
+    int idx = rb_enc_get_index(obj);
+    if (idx < 0) {
 	rb_raise(rb_eTypeError, "unknown encoding");
     }
-    return rb_enc_from_encoding(enc);
+    return rb_enc_from_encoding_index(idx);
 }
 
 int
@@ -1045,7 +1051,9 @@ enc_list(VALUE klass)
 static VALUE
 enc_find(VALUE klass, VALUE enc)
 {
-    return rb_enc_from_encoding(rb_to_encoding(enc));
+    if (!SPECIAL_CONST_P(enc) && BUILTIN_TYPE(enc) == T_DATA && is_data_encoding(enc))
+	return enc;
+    return rb_enc_from_encoding_index(str_to_encindex(enc));
 }
 
 /*
