@@ -1054,7 +1054,7 @@ static VALUE
 enc_find(VALUE klass, VALUE enc)
 {
     int idx;
-    if (!SPECIAL_CONST_P(enc) && BUILTIN_TYPE(enc) == T_DATA && is_data_encoding(enc))
+    if (!RB_TYPE_P(enc, T_DATA) && is_data_encoding(enc))
 	return enc;
     idx = str_to_encindex(enc);
     if (idx == UNSPECIFIED_ENCODING) return Qnil;
