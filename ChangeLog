@@ -1,3 +1,7 @@
+Wed Aug  3 07:46:30 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_find): mistakenly remained !.  [Bug #5150]
+
 Wed Aug  3 00:11:08 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/prettyprint.rb: update document.  [ruby-core:36776]
