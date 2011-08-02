@@ -11,6 +11,7 @@ module TestParallel
       i, @worker_in = IO.pipe
       @worker_out, o = IO.pipe
       @worker_pid = spawn(*@options[:ruby], PARALLEL_RB,
+                          "--ruby", @options[:ruby].join(" "),
                           "-j", "t1", "-v", out: o, in: i)
       [i,o].each(&:close)
     end
@@ -121,6 +122,7 @@ module TestParallel
     def spawn_runner(*opt_args)
       @test_out, o = IO.pipe
       @test_pid = spawn(*@options[:ruby], TESTS+"/runner.rb",
+                        "--ruby", @options[:ruby].join(" "),
                         "-j","t1",*opt_args, out: o, err: o)
       o.close
     end
@@ -142,6 +144,7 @@ module TestParallel
     def test_ignore_jzero
       @test_out, o = IO.pipe
       @test_pid = spawn(*@options[:ruby], TESTS+"/runner.rb",
+                        "--ruby", @options[:ruby].join(" "),
                         "-j","0", out: File::NULL, err: o)
       o.close
       timeout(10) {

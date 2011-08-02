@@ -1,3 +1,9 @@
+Tue Aug  2 20:10:16 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* test/testunit/test_parallel.rb: pass "--ruby" option to
+	  test/testunit/tests_for_parallel/runner.rb. [Bug #5132] [ruby-dev:44303]
+	  Backported from trunk r32812.
+
 Tue Aug  2 12:03:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (recursive_hash): hash value of emptied hash should be
