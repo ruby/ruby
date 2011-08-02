@@ -9738,7 +9738,7 @@ rb_enc_symname2_p(const char *name, long len, rb_encoding *enc)
 	break;
 
       case '!':
-	if (len == 1) return FALSE;
+	if (len == 1) return TRUE;
 	switch (*++m) {
 	  case '=': case '~': ++m; break;
 	  default: return FALSE;

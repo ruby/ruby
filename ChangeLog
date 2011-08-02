@@ -1,3 +1,7 @@
+Tue Aug  2 11:42:15 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_enc_symname2_p): :! is valid symbol.  [Bug #5136]
+
 Tue Aug  2 03:26:02 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/rake/test_rake_directory_task.rb (TestRakeDirectoryTask#
