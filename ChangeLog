@@ -1,3 +1,8 @@
+Wed Aug  3 00:11:08 2011  Tanaka Akira  <akr@fsij.org>
+
+	* lib/prettyprint.rb: update document.  [ruby-core:36776]
+
+
 Tue Aug  2 20:10:16 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* test/testunit/test_parallel.rb: pass "--ruby" option to
