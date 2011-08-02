@@ -1085,6 +1085,14 @@ static void
 init_heap(rb_objspace_t *objspace)
 {
     add_heap_slots(objspace, HEAP_MIN_SLOTS / HEAP_OBJ_LIMIT);
+#ifdef USE_SIGALTSTACK
+    {
+	/* altstack of another threads are allocated in another place */
+	rb_thread_t *th = GET_THREAD();
+	free(th->altstack); /* free previously allocated area */
+	th->altstack = xmalloc(ALT_STACK_SIZE);
+    }
+#endif
 
     heaps_inc = 0;
     objspace->profile.invoke_time = getrusage_time();

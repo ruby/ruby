@@ -1,3 +1,12 @@
+Tue Aug  2 22:04:46 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c (init_heap): allocate sigaltstack after heaps are allocated.
+	  [ruby-dev:44315] [Bug #5139]
+
+	* vm.c (thread_free): use free because objspace is not ready.
+
+	* vm.c (th_init): use malloc because objspace is not ready.
+
 Tue Aug  2 20:10:16 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* test/testunit/test_parallel.rb: pass "--ruby" option to
