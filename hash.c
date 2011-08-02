@@ -1685,6 +1685,7 @@ recursive_hash(VALUE hash, VALUE dummy, int recur)
     if (!RHASH(hash)->ntbl)
         return LONG2FIX(0);
     hval = RHASH(hash)->ntbl->num_entries;
+    if (!hval) return LONG2FIX(0);
     if (recur)
 	hval = rb_hash_uint(rb_hash_start(rb_hash(rb_cHash)), hval);
     else

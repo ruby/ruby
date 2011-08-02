@@ -1,3 +1,8 @@
+Tue Aug  2 12:03:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (recursive_hash): hash value of emptied hash should be
+	  equal to an empty hash.  [ruby-core:38650]
+
 Tue Aug  2 11:42:15 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_enc_symname2_p): :! is valid symbol.  [Bug #5136]
