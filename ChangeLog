@@ -1,3 +1,7 @@
+Tue Aug  2 11:42:15 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_enc_symname2_p): :! is valid symbol.  [Bug #5136]
+
 Tue Aug  2 07:33:29 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* test/net/http/test_http.rb (TestNetHTTP_version_1_1_methods#test_timeout_during_HTTP_session):
