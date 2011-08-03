@@ -35,10 +35,6 @@
 # define NO_SAFE_RENAME
 #endif
 
-#if defined(__CYGWIN__) || defined(_WIN32)
-# define NO_LONG_FNAME
-#endif
-
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(sun) || defined(_nec_ews)
 # define USE_SETVBUF
 #endif
@@ -6893,15 +6889,15 @@ argf_next_argv(VALUE argf)
 		    fstat(fr, &st);
 		    if (*ARGF.inplace) {
 			str = rb_str_new2(fn);
-#ifdef NO_LONG_FNAME
-                        ruby_add_suffix(str, ARGF.inplace);
-#else
 			rb_str_cat2(str, ARGF.inplace);
-#endif
 #ifdef NO_SAFE_RENAME
 			(void)close(fr);
 			(void)unlink(RSTRING_PTR(str));
-			(void)rename(fn, RSTRING_PTR(str));
+			if (rename(fn, RSTRING_PTR(str)) < 0) {
+			    rb_warn("Can't rename %s to %s: %s, skipping file",
+				    fn, RSTRING_PTR(str), strerror(errno));
+			    goto retry;
+			}
 			fr = rb_sysopen(str, O_RDONLY, 0);
 #else
 			if (rename(fn, RSTRING_PTR(str)) < 0) {
