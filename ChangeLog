@@ -1,3 +1,10 @@
+Wed Aug  4 02:35:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* configure.in: use build_os variable for checking C and C++ compilers
+	matching.
+
+	* configure.in: use clang++ if clang is used.
+
 Thu Aug  4 02:21:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (link_command): use static library only for bundled
