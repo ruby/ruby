@@ -6,14 +6,15 @@
 #define CACHE_MASK 0x7ff
 #define EXPR1(c,m) ((((c)>>3)^(m))&CACHE_MASK)
 
-static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me);
+/* change names initially only for this file */
+#define rb_mdef_t rb_method_definition_t
+#define rb_ment_t rb_method_entry_t
+
+static void rb_vm_check_redefinition_opt_method(const rb_ment_t *me);
 
 static ID object_id, respond_to_missing;
 static ID removed, singleton_removed, undefined, singleton_undefined;
 static ID added, singleton_added, attached;
-
-/* change names initially only for this file */
-#define rb_mdef_t rb_method_definition_t
 
 /*****************************************************************************/
 /*  METHOD ENTRY CACHE                                                       */
@@ -23,7 +24,7 @@ struct cache_entry {		/* method hash table. */
     VALUE filled_version;        /* filled state version */
     ID mid;			/* method's id */
     VALUE klass;		/* receiver's class */
-    rb_method_entry_t *me;
+    rb_ment_t *me;
 };
 
 static struct cache_entry cache[CACHE_SIZE];
@@ -102,7 +103,7 @@ rb_undef_alloc_func(VALUE klass)
 rb_alloc_func_t
 rb_get_alloc_func(VALUE klass)
 {
-    rb_method_entry_t *me;
+    rb_ment_t *me;
     Check_Type(klass, T_CLASS);
     me = rb_method_entry(CLASS_OF(klass), ID_ALLOCATOR);
 
@@ -119,7 +120,7 @@ rb_get_alloc_func(VALUE klass)
 /*****************************************************************************/
 
 void
-rb_unlink_method_entry(rb_method_entry_t *me)
+rb_unlink_method_entry(rb_ment_t *me)
 {
     struct unlinked_method_entry_list_entry *ume = ALLOC(struct unlinked_method_entry_list_entry);
     ume->me = me;
@@ -157,7 +158,7 @@ rb_sweep_method_entry(void *pvm)
 }
 
 void
-rb_free_method_entry(rb_method_entry_t *me)
+rb_free_method_entry(rb_ment_t *me)
 {
     rb_mdef_t *def = me->def;
 
@@ -180,7 +181,7 @@ rb_free_method_entry(rb_method_entry_t *me)
 static int rb_mdef_eq(const rb_mdef_t *d1, const rb_mdef_t *d2);
 
 inline void
-rb_method_redefinition(rb_method_entry_t *me, ID mid, rb_method_type_t type)
+rb_method_redefinition(rb_ment_t *me, ID mid, rb_method_type_t type)
 {
 /*  processing subjecting method redefinition */
 
@@ -218,14 +219,14 @@ rb_method_redefinition(rb_method_entry_t *me, ID mid, rb_method_type_t type)
 
 }
 
-static rb_method_entry_t *
-rb_method_entry_new(VALUE klass, ID mid, rb_method_type_t type,
+static rb_ment_t *
+rb_mentry_new(VALUE klass, ID mid, rb_method_type_t type,
 		     rb_mdef_t *def, rb_method_flag_t noex)
 {
-/*  creates a new method_entry object (struct) */
+/*  creates a new mentry object (struct) */
 
-    rb_method_entry_t *me;
-    me = ALLOC(rb_method_entry_t);
+    rb_ment_t *me;
+    me = ALLOC(rb_ment_t);
     
     /* set initialize or initialize_copy to private */
     if (!FL_TEST(klass, FL_SINGLETON) &&
@@ -270,14 +271,14 @@ rb_method_entry_new(VALUE klass, ID mid, rb_method_type_t type,
 	rb_funcall2(recv_class, hook_id, 1, &arg);	\
     } while (0)
 
-static rb_method_entry_t *
-rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
+static rb_ment_t *
+rb_mentry_make(VALUE klass, ID mid, rb_method_type_t type,
 		     rb_mdef_t *def, rb_method_flag_t noex)
 {
 /*  enters (inserts) a mdef to the class method-table and returns
-    it *or* returns existent method_entry */
+    it *or* returns existent mentry */
 
-    rb_method_entry_t *me;
+    rb_ment_t *me;
     st_table *mtbl;
     st_data_t data;
 
@@ -303,7 +304,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 
     /* if old method entry is available */
     if (st_lookup(mtbl, mid, &data)) {
-	rb_method_entry_t *old_me = (rb_method_entry_t *)data;
+	rb_ment_t *old_me = (rb_ment_t *)data;
 	rb_mdef_t *old_def = old_me->def;
 
 	/* if old method entry has already correct method def */ 
@@ -317,7 +318,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     /* create new method entry */
     rb_clear_cache_by_id(mid);
 
-    me = rb_method_entry_new(klass, mid, type, def, noex);
+    me = rb_mentry_new(klass, mid, type, def, noex);
 
     st_insert(mtbl, mid, (st_data_t) me);
 
@@ -379,23 +380,23 @@ rb_mdef_new(ID mid, rb_method_type_t type, void *opts)
     return def;
 }
 
-rb_method_entry_t *
+rb_ment_t *
 rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_flag_t noex)
 {
 /*  adds a newly created mdef via a newly created me to a class */
 
     rb_mdef_t *def = rb_mdef_new(mid, type, opts);
-    rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, def, noex);
+    rb_ment_t *me = rb_mentry_make(klass, mid, type, def, noex);
     return me;
 }
 
-rb_method_entry_t *
-rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_flag_t noex)
+rb_ment_t *
+rb_method_entry_set(VALUE klass, ID mid, const rb_ment_t *me, rb_method_flag_t noex)
 {
 /*  adds the me->def via newly created newme to a class */
 
     rb_method_type_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
-    rb_method_entry_t *newme = rb_method_entry_make(klass, mid, type, me->def, noex);    
+    rb_ment_t *newme = rb_mentry_make(klass, mid, type, me->def, noex);    
     return newme;
 }
 
@@ -417,7 +418,7 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_me
     }
 }
 
-static rb_method_entry_t*
+static rb_ment_t*
 search_method(VALUE klass, ID id)
 {
     st_data_t body;
@@ -432,7 +433,7 @@ search_method(VALUE klass, ID id)
 	}
     }
 
-    return (rb_method_entry_t *)body;
+    return (rb_ment_t *)body;
 }
 
 /*
@@ -441,10 +442,10 @@ search_method(VALUE klass, ID id)
  * if you need method entry with method cache (normal case), use
  * rb_method_entry() simply.
  */
-rb_method_entry_t *
+rb_ment_t *
 rb_method_entry_get_without_cache(VALUE klass, ID id)
 {
-    rb_method_entry_t *me = search_method(klass, id);
+    rb_ment_t *me = search_method(klass, id);
 
     if (ruby_running) {
 	struct cache_entry *ent;
@@ -466,7 +467,7 @@ rb_method_entry_get_without_cache(VALUE klass, ID id)
     return me;
 }
 
-rb_method_entry_t *
+rb_ment_t *
 rb_method_entry(VALUE klass, ID id)
 {
     struct cache_entry *ent;
@@ -498,7 +499,7 @@ remove_method(VALUE klass, ID mid)
     }
 
     if (!st_lookup(RCLASS_M_TBL(klass), mid, &data) ||
-	!(me = (rb_method_entry_t *)data) ||
+	!(me = (rb_ment_t *)data) ||
 	(!me->def || me->def->type == VM_METHOD_TYPE_UNDEF)) {
 	rb_name_error(mid, "method `%s' not defined in %s",
 		      rb_id2name(mid), rb_class2name(klass));
@@ -562,7 +563,7 @@ rb_enable_super(VALUE klass, const char *name)
 static void
 rb_export_method(VALUE klass, ID name, rb_method_flag_t noex)
 {
-    rb_method_entry_t *me;
+    rb_ment_t *me;
 
     if (klass == rb_cObject) {
 	rb_secure(4);
@@ -592,7 +593,7 @@ rb_export_method(VALUE klass, ID name, rb_method_flag_t noex)
 int
 rb_method_boundp(VALUE klass, ID id, int ex)
 {
-    rb_method_entry_t *me = rb_method_entry(klass, id);
+    rb_ment_t *me = rb_method_entry(klass, id);
 
     if (me != 0) {
 	if ((ex & ~NOEX_RESPONDS) && (me->flag & NOEX_PRIVATE)) {
@@ -655,7 +656,7 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
 void
 rb_undef(VALUE klass, ID id)
 {
-    rb_method_entry_t *me;
+    rb_ment_t *me;
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class to undef method");
@@ -798,7 +799,7 @@ rb_mod_method_defined(VALUE mod, VALUE mid)
 static VALUE
 check_definition(VALUE mod, ID mid, rb_method_flag_t noex)
 {
-    const rb_method_entry_t *me;
+    const rb_ment_t *me;
     me = rb_method_entry(mod, mid);
     if (me) {
 	if (VISI_CHECK(me->flag, noex))
@@ -910,7 +911,7 @@ rb_mod_protected_method_defined(VALUE mod, VALUE mid)
 }
 
 int
-rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2)
+rb_method_entry_eq(const rb_ment_t *m1, const rb_ment_t *m2)
 {
     return rb_mdef_eq(m1->def, m2->def);
 }
@@ -953,7 +954,7 @@ void
 rb_alias(VALUE klass, ID name, ID def)
 {
     VALUE target_klass = klass;
-    rb_method_entry_t *orig_me;
+    rb_ment_t *orig_me;
     rb_method_flag_t flag = NOEX_UNDEF;
 
     if (NIL_P(klass)) {
@@ -1212,7 +1213,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 {
     int i;
     ID id;
-    const rb_method_entry_t *me;
+    const rb_ment_t *me;
 
     if (TYPE(module) != T_MODULE) {
 	rb_raise(rb_eTypeError, "module_function must be called for modules");
@@ -1253,7 +1254,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 int
 rb_method_basic_definition_p(VALUE klass, ID id)
 {
-    const rb_method_entry_t *me = rb_method_entry(klass, id);
+    const rb_ment_t *me = rb_method_entry(klass, id);
     if (me && (me->flag & NOEX_BASIC))
 	return 1;
     return 0;
