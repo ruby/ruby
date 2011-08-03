@@ -1,3 +1,8 @@
+Thu Aug  4 02:45:10 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* configure.in: set CXX variable to the C++ compiler that matches the
+	  C compiler specified by CC variable (e.g. use g++-4.2 for gcc-4.2).
+
 Thu Aug  4 02:21:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (link_command): use static library only for bundled

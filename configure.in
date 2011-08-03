@@ -87,6 +87,7 @@ if test "$MAJOR" = "1"; then
   AC_DEFINE(CANONICALIZATION_FOR_MATHN)
 fi
 dnl checks for alternative programs
+AC_CANONICAL_BUILD
 AC_ARG_WITH(gcc,
 	AS_HELP_STRING([--without-gcc], [never use gcc]),
 	[
@@ -100,6 +101,14 @@ then
   AC_MSG_ERROR(cached CC is different -- throw away $cache_file
 (it is also a good idea to do 'make clean' before compiling))
 fi
+AS_CASE(["$build_os"],
+  [darwin11.*], [
+    AS_CASE(["x$CC"],
+      [xgcc-4.2|x/usr/bin/gcc-4.2], [: ${CXX=g++-4.2}],
+      [xgcc|x/usr/bin/gcc],         [: ${CXX=g++}],
+      [xcc|x/usr/bin/cc],           [: ${CXX=c++}],
+      [xclang|x/usr/bin/clang],     [: ${CXX=clang++}])
+  ])
 test -z "$CC" || ac_cv_prog_CC="$CC"
 
 if test "$program_prefix" = NONE; then
