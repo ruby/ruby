@@ -1,3 +1,8 @@
+Thu Aug  4 02:21:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (link_command): use static library only for bundled
+	  extensions.  [Bug #5147]
+
 Thu Aug  4 02:02:10 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/psych.gemspec: installing psych as a gem.

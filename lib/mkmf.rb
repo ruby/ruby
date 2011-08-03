@@ -390,6 +390,7 @@ MSG
 end
 
 def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
+  librubyarg = $extmk ? $LIBRUBYARG_STATIC : $LIBRUBYARG
   conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote,
                                 'src' => "#{CONFTEST_C}",
                                 'arch_hdrdir' => $arch_hdrdir.quote,
@@ -400,7 +401,7 @@ def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
                                 'ARCH_FLAG' => "#$ARCH_FLAG",
                                 'LDFLAGS' => "#$LDFLAGS #{ldflags}",
                                 'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
-                                'LIBS' => "#$LIBRUBYARG_STATIC #{opt} #$LIBS")
+                                'LIBS' => "#{librubyarg} #{opt} #$LIBS")
   conf['LIBPATH'] = libpathflag(libpath.map {|s| RbConfig::expand(s.dup, conf)})
   RbConfig::expand(TRY_LINK.dup, conf)
 end
