@@ -717,6 +717,7 @@ uintptr_t rb_w32_asynchronize(asynchronous_func_t func, uintptr_t self, int argc
 #endif
 
 #ifdef __MINGW_ATTRIB_PURE
+/* GPL */
 /* get rid of bugs in math.h of mingw */
 #define frexp(_X, _Y) __extension__ ({\
     int intpart_frexp_bug = intpart_frexp_bug;\
@@ -724,6 +725,7 @@ uintptr_t rb_w32_asynchronize(asynchronous_func_t func, uintptr_t self, int argc
     *(_Y) = intpart_frexp_bug;\
     result_frexp_bug;\
 })
+/* GPL */
 #define modf(_X, _Y) __extension__ ({\
     double intpart_modf_bug = intpart_modf_bug;\
     double result_modf_bug = modf((_X), &intpart_modf_bug);\
