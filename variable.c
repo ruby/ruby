@@ -1896,7 +1896,7 @@ rb_public_const_defined_at(VALUE klass, ID id)
     return rb_const_defined_0(klass, id, TRUE, FALSE, TRUE);
 }
 
-void
+static void
 check_before_mod_set(VALUE klass, ID id, VALUE val, const char *dest)
 {
     if (!OBJ_UNTRUSTED(klass) && rb_safe_level() >= 4)
