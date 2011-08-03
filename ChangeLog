@@ -1,3 +1,7 @@
+Thu Aug  4 02:02:10 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/psych.gemspec: installing psych as a gem.
+
 Wed Aug  3 16:01:35 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* util.c, include/ruby/util.h (ruby_add_suffix): remove the function.
