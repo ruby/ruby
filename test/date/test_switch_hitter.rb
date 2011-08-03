@@ -180,6 +180,21 @@ class TestSH < Test::Unit::TestCase
 		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])
   end
 
+  def test_canon24oc
+    d = DateTime.jd(2451943,24)
+    assert_equal([2001, 2, 3, 0, 0, 0, 0],
+		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])
+    d = DateTime.ordinal(2001,33,24)
+    assert_equal([2001, 2, 3, 0, 0, 0, 0],
+		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])
+    d = DateTime.new(2001,2,2,24)
+    assert_equal([2001, 2, 3, 0, 0, 0, 0],
+		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])
+    d = DateTime.commercial(2001,5,5,24)
+    assert_equal([2001, 2, 3, 0, 0, 0, 0],
+		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])
+  end
+
   def test_zone
     d = Date.new(2001, 2, 3)
     assert_equal(Encoding::US_ASCII, d.send(:zone).encoding)
@@ -343,6 +358,40 @@ class TestSH < Test::Unit::TestCase
     d2 = d.julian
     assert_equal([123454254, 1, 19, 4, 5, 6, 5],
 		 [d2.year, d2.mon, d2.mday, d2.hour, d2.min, d2.sec, d.wday])
+  end
+
+  def period2_iter2(from, to, sg)
+    (from..to).each do |j|
+      d = Date.jd(j, sg)
+      d2 = Date.new(d.year, d.mon, d.mday, sg)
+      assert_equal(d2.jd, j)
+      assert_equal(d2.ajd, d.ajd)
+      assert_equal(d2.year, d.year)
+
+      d = DateTime.jd(j, 12,0,0, '+12:00', sg)
+      d2 = DateTime.new(d.year, d.mon, d.mday,
+			d.hour, d.min, d.sec, d.offset, sg)
+      assert_equal(d2.jd, j)
+      assert_equal(d2.ajd, d.ajd)
+      assert_equal(d2.year, d.year)
+    end
+  end
+
+  def period2_iter(from, to)
+    period2_iter2(from, to, Date::GREGORIAN)
+    period2_iter2(from, to, Date::ITALY)
+    period2_iter2(from, to, Date::ENGLAND)
+    period2_iter2(from, to, Date::JULIAN)
+  end
+
+  def test_period2
+    cm_period0 = 71149239
+    cm_period = 0xfffffff.div(cm_period0) * cm_period0
+    period2_iter(-cm_period * (1 << 64) - 3, -cm_period * (1 << 64) + 3)
+    period2_iter(-cm_period - 3, -cm_period + 3)
+    period2_iter(0 - 3, 0 + 3)
+    period2_iter(+cm_period - 3, +cm_period + 3)
+    period2_iter(+cm_period * (1 << 64) - 3, +cm_period * (1 << 64) + 3)
   end
 
   def test_marshal

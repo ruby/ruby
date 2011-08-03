@@ -1,9 +1,3 @@
-######################################################################
-# This file is imported from the rubygems project.
-# DO NOT make modifications in this repo. They _will_ be reverted!
-# File a patch instead and assign it to Ryan Davis or Eric Hodel.
-######################################################################
-
 require 'rubygems/test_case'
 require 'stringio'
 require 'rubygems/specification'
@@ -323,6 +317,16 @@ end
     same_spec = Marshal.load data
 
     assert_equal 'old_platform', same_spec.original_platform
+  end
+
+  def test_activate
+    @a2.activate
+
+    assert @a2.activated?
+
+    Deprecate.skip_during do
+      assert @a2.loaded?
+    end
   end
 
   def test_add_dependency_with_explicit_type

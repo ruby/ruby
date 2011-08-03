@@ -14,6 +14,10 @@
 #include <math.h>
 #include <errno.h>
 
+#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun__)
+    extern int signbit(double x);
+#endif
+
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 
 VALUE rb_mMath;
@@ -760,6 +764,8 @@ exp1(sqrt)
  */
 
 /*
+ *  Document-class: Math
+ *
  *  The <code>Math</code> module contains module functions for basic
  *  trigonometric and transcendental functions. See class
  *  <code>Float</code> for a list of constants that

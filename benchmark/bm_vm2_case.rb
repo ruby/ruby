@@ -1,5 +1,5 @@
 i=0
-while i<6000000 # while loop 2
+while i<6_000_000 # while loop 2
   case :foo
   when :bar
     raise

@@ -441,6 +441,9 @@ ruby_init_loadpath_safe(int safe_level)
     load_path = GET_VM()->load_path;
 
     if (safe_level == 0) {
+#ifdef MANGLED_PATH
+	rubylib_mangled_path("", 0);
+#endif
 	ruby_push_include(getenv("RUBYLIB"), identical_path);
     }
 
@@ -1306,12 +1309,12 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 #if defined DOSISH || defined __CYGWIN__
     translit_char(RSTRING_PTR(opt->script_name), '\\', '/');
 #endif
-    rb_obj_freeze(opt->script_name);
 
     ruby_init_loadpath_safe(opt->safe_level);
     rb_enc_find_index("encdb");
     lenc = rb_locale_encoding();
     rb_enc_associate(rb_progname, lenc);
+    rb_obj_freeze(rb_progname);
     parser = rb_parser_new();
     if (opt->dump & DUMP_BIT(yydebug)) {
 	rb_parser_set_yydebug(parser, Qtrue);
@@ -1339,6 +1342,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	opt->intern.enc.index = -1;
     }
     rb_enc_associate(opt->script_name, lenc);
+    rb_obj_freeze(opt->script_name);
     {
 	long i;
 	VALUE load_path = GET_VM()->load_path;
@@ -1523,6 +1527,7 @@ load_file_internal(VALUE arg)
 	if ((fd = open(fname, mode)) < 0) {
 	    rb_load_fail(fname);
 	}
+        rb_update_max_fd(fd);
 
 	f = rb_io_fdopen(fd, mode, fname);
     }
@@ -1625,6 +1630,18 @@ load_file_internal(VALUE arg)
     tree = rb_parser_compile_file(parser, fname, f, line_start);
     rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
     if (script && tree && rb_parser_end_seen_p(parser)) {
+	/*
+	 * DATA is a File that contains the data section of the executed file.
+	 * To create a data section use <tt>__END__</tt>:
+	 *
+	 *   $ cat t.rb
+	 *   puts DATA.gets
+	 *   __END__
+	 *   hello world!
+	 *
+	 *   $ ruby t.rb
+	 *   hello world!
+	 */
 	rb_define_global_const("DATA", f);
     }
     else if (f != rb_stdin) {
@@ -1679,7 +1696,7 @@ void
 ruby_script(const char *name)
 {
     if (name) {
-	rb_progname = rb_obj_freeze(rb_external_str_new(name, strlen(name)));
+	rb_progname = rb_external_str_new(name, strlen(name));
 	rb_vm_set_progname(rb_progname);
     }
 }
@@ -1746,6 +1763,13 @@ ruby_prog_init(void)
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
 
+    /*
+     * ARGV contains the command line arguments used to run ruby with the
+     * first value containing the name of the executable.
+     *
+     * A library like OptionParser can be used to process command-line
+     * arguments.
+     */
     rb_define_global_const("ARGV", rb_argv);
 }
 

@@ -705,7 +705,11 @@ rb_mod_autoload(VALUE mod, VALUE sym, VALUE file)
 static VALUE
 rb_mod_autoload_p(VALUE mod, VALUE sym)
 {
-    return rb_autoload_p(mod, rb_to_id(sym));
+    ID id = rb_check_id(&sym);
+    if (!id) {
+	return Qnil;
+    }
+    return rb_autoload_p(mod, id);
 }
 
 /*
@@ -722,7 +726,7 @@ rb_mod_autoload_p(VALUE mod, VALUE sym)
 static VALUE
 rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
 {
-    VALUE klass = rb_vm_cbase();
+    VALUE klass = rb_class_real(rb_vm_cbase());
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "Can not set autoload on singleton class");
     }

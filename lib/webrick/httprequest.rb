@@ -179,10 +179,12 @@ module WEBrick
     # Iterates over the request headers
 
     def each
-      @header.each{|k, v|
-        value = @header[k]
-        yield(k, value.empty? ? nil : value.join(", "))
-      }
+      if @header
+        @header.each{|k, v|
+          value = @header[k]
+          yield(k, value.empty? ? nil : value.join(", "))
+        }
+      end
     end
 
     ##
@@ -434,10 +436,18 @@ module WEBrick
       ^(::ffff:)?(10|172\.(1[6-9]|2[0-9]|3[01])|192\.168)\.
     /ixo
 
+    # It's said that all X-Forwarded-* headers will contain more than one
+    # (comma-separated) value if the original request already contained one of
+    # these headers. Since we could use these values as Host header, we choose
+    # the initial(first) value. (apr_table_mergen() adds new value after the
+    # existing value with ", " prefix)
     def setup_forwarded_info
-      @forwarded_server = self["x-forwarded-server"]
+      if @forwarded_server = self["x-forwarded-server"]
+        @forwarded_server = @forwarded_server.split(",", 2).first
+      end
       @forwarded_proto = self["x-forwarded-proto"]
       if host_port = self["x-forwarded-host"]
+        host_port = host_port.split(",", 2).first
         @forwarded_host, tmp = host_port.split(":", 2)
         @forwarded_port = (tmp || (@forwarded_proto == "https" ? 443 : 80)).to_i
       end

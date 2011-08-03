@@ -15,9 +15,11 @@ struct tmx_funcs {
     int (*hour)(void *dat);
     int (*min)(void *dat);
     int (*sec)(void *dat);
+    VALUE (*sec_fraction)(void *dat);
+    VALUE (*secs)(void *dat);
+    VALUE (*msecs)(void *dat);
     VALUE (*offset)(void *dat);
     char *(*zone)(void *dat);
-    VALUE (*timev)(void *dat);
 };
 struct tmx {
     void *dat;
@@ -39,9 +41,11 @@ struct tmx {
 #define tmx_hour tmx_attr(hour)
 #define tmx_min tmx_attr(min)
 #define tmx_sec tmx_attr(sec)
+#define tmx_sec_fraction tmx_attr(sec_fraction)
+#define tmx_secs tmx_attr(secs)
+#define tmx_msecs tmx_attr(msecs)
 #define tmx_offset tmx_attr(offset)
 #define tmx_zone tmx_attr(zone)
-#define tmx_timev tmx_attr(timev)
 
 #endif
 

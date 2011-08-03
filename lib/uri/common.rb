@@ -233,7 +233,7 @@ module URI
     # Attempts to parse and merge a set of URIs
     #
     def join(*uris)
-      uris[0] = URI(uris[0], self)
+      uris[0] = convert_to_uri(uris[0])
       uris.inject :merge
     end
 
@@ -527,6 +527,18 @@ module URI
 
       ret
     end
+
+    def convert_to_uri(uri)
+      if uri.is_a?(URI::Generic)
+        uri
+      elsif uri = String.try_convert(uri)
+        parse(uri)
+      else
+        raise ArgumentError,
+          "bad argument (expected URI object or URI string)"
+      end
+    end
+
   end # class Parser
 
   # URI::Parser.new
@@ -896,7 +908,7 @@ module URI
       rescue
       end
     end
-    raise ArgumentError, "invalid %-encoding (#{str})" unless /\A(?:%\h\h|[^%]+)*\z/ =~ str
+    raise ArgumentError, "invalid %-encoding (#{str})" unless /\A[^%]*(?:%\h\h[^%]*)*\z/ =~ str
     str.gsub(/\+|%\h\h/, TBLDECWWWCOMP_).force_encoding(enc)
   end
 
@@ -948,7 +960,7 @@ module URI
     end.join('&')
   end
 
-  WFKV_ = '(?:%\h\h|[^%#=;&])' # :nodoc:
+  WFKV_ = '(?:[^%#=;&]*(?:%\h\h[^%#=;&]*)*)' # :nodoc:
 
   # Decode URL-encoded form data from given +str+.
   #
@@ -972,7 +984,7 @@ module URI
   # See URI.decode_www_form_component, URI.encode_www_form
   def self.decode_www_form(str, enc=Encoding::UTF_8)
     return [] if str.empty?
-    unless /\A#{WFKV_}*=#{WFKV_}*(?:[;&]#{WFKV_}*=#{WFKV_}*)*\z/o =~ str
+    unless /\A#{WFKV_}=#{WFKV_}(?:[;&]#{WFKV_}=#{WFKV_})*\z/o =~ str
       raise ArgumentError, "invalid data of application/x-www-form-urlencoded (#{str})"
     end
     ary = []
@@ -988,11 +1000,11 @@ module Kernel
   #
   # Returns +uri+ converted to a URI object.
   #
-  def URI(uri, parser = URI::DEFAULT_PARSER)
+  def URI(uri)
     if uri.is_a?(URI::Generic)
       uri
     elsif uri = String.try_convert(uri)
-      parser.parse(uri)
+      URI.parse(uri)
     else
       raise ArgumentError,
         "bad argument (expected URI object or URI string)"

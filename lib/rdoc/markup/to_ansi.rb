@@ -12,9 +12,9 @@ class RDoc::Markup::ToAnsi < RDoc::Markup::ToRdoc
     super
 
     @headings.clear
-    @headings[1] = ["\e[1;32m", "\e[m"]
-    @headings[2] = ["\e[4;32m", "\e[m"]
-    @headings[3] = ["\e[32m",   "\e[m"]
+    @headings[1] = ["\e[1;32m", "\e[m"] # bold
+    @headings[2] = ["\e[4;32m", "\e[m"] # underline
+    @headings[3] = ["\e[32m",   "\e[m"] # just green
   end
 
   ##

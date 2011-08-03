@@ -2,11 +2,13 @@ module Rake
 
   # Makefile loader to be used with the import file loader.
   class MakefileLoader
+    include Rake::DSL
+
     SPACE_MARK = "\0"
 
     # Load the makefile dependencies in +fn+.
     def load(fn)
-      lines = open(fn) {|mf| mf.read}
+      lines = File.read fn
       lines.gsub!(/\\ /, SPACE_MARK)
       lines.gsub!(/#[^\n]*\n/m, "")
       lines.gsub!(/\\\n/, ' ')
@@ -21,7 +23,7 @@ module Rake
     def process_line(line)
       file_tasks, args = line.split(':', 2)
       return if args.nil?
-      dependents = args.split.map {|arg| respace(arg)}
+      dependents = args.split.map { |d| respace(d) }
       file_tasks.scan(/\S+/) do |file_task|
         file_task = respace(file_task)
         file file_task => dependents
@@ -29,7 +31,7 @@ module Rake
     end
 
     def respace(str)
-      str.tr(SPACE_MARK, ' ')
+      str.tr SPACE_MARK, ' '
     end
   end
 

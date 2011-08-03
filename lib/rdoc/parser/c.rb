@@ -340,8 +340,6 @@ class RDoc::Parser::C < RDoc::Parser
       # Ignore top-object and weird struct.c dynamic stuff
       next if var_name == "ruby_top_self"
       next if var_name == "nstr"
-      next if var_name == "envtbl"
-      next if var_name == "argf"   # it'd be nice to handle this one
 
       var_name = "rb_cObject" if var_name == "rb_mKernel"
       handle_method(type, var_name, meth_name, function, param_count,
@@ -647,9 +645,7 @@ class RDoc::Parser::C < RDoc::Parser
       meth_obj.call_seq = $1.strip
     end
 
-    if comment.sub!(/\s*:(nodoc|doc|yields?|args?):\s*(.*)/, '') then
-      RDoc::Parser.process_directive meth_obj, $1, $2
-    end
+    look_for_directives_in meth_obj, comment
   end
 
   ##
@@ -915,12 +911,10 @@ class RDoc::Parser::C < RDoc::Parser
   #    * :title: My Awesome Project
   #    */
   #
-  # This routine modifies its parameter
+  # This method modifies the +comment+
 
-  def look_for_directives_in(context, comment)
-    preprocess = RDoc::Markup::PreProcess.new @file_name, @options.rdoc_include
-
-    preprocess.handle comment, context do |directive, param|
+  def look_for_directives_in context, comment
+    @preprocess.handle comment, context do |directive, param|
       case directive
       when 'main' then
         @options.main_page = param

@@ -35,10 +35,6 @@
 # define NO_SAFE_RENAME
 #endif
 
-#if defined(__CYGWIN__) || defined(_WIN32)
-# define NO_LONG_FNAME
-#endif
-
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(sun) || defined(_nec_ews)
 # define USE_SETVBUF
 #endif
@@ -151,10 +147,15 @@ struct argf {
 };
 
 static int max_file_descriptor = NOFILE;
-#define UPDATE_MAXFD(fd) \
-    do { \
-        if (max_file_descriptor < (fd)) max_file_descriptor = (fd); \
-    } while (0)
+void
+rb_update_max_fd(int fd)
+{
+    struct stat buf;
+    if (fstat(fd, &buf) != 0) {
+        rb_bug("rb_update_max_fd: invalid fd (%d) given.", fd);
+    }
+    if (max_file_descriptor < fd) max_file_descriptor = fd;
+}
 
 #define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
 #define ARGF argf_of(argf)
@@ -188,7 +189,7 @@ static int max_file_descriptor = NOFILE;
 
 #if defined(_WIN32)
 #define WAIT_FD_IN_WIN32(fptr) \
-    (rb_w32_has_cancel_io() ? 0 : rb_thread_wait_fd((fptr)->fd))
+    (rb_w32_io_cancelable_p((fptr)->fd) ? 0 : rb_thread_wait_fd((fptr)->fd))
 #else
 #define WAIT_FD_IN_WIN32(fptr)
 #endif
@@ -526,7 +527,7 @@ ruby_dup(int orig)
 	    rb_sys_fail(0);
 	}
     }
-    UPDATE_MAXFD(fd);
+    rb_update_max_fd(fd);
     return fd;
 }
 
@@ -2633,12 +2634,15 @@ rb_io_gets_m(int argc, VALUE *argv, VALUE io)
  *  call-seq:
  *     ios.lineno    -> integer
  *
- *  Returns the current line number in <em>ios</em>. The stream must be
+ *  Returns the current line number in <em>ios</em>.  The stream must be
  *  opened for reading. <code>lineno</code> counts the number of times
- *  <code>gets</code> is called, rather than the number of newlines
- *  encountered. The two values will differ if <code>gets</code> is
- *  called with a separator other than newline. See also the
- *  <code>$.</code> variable.
+ *  #gets is called rather than the number of newlines encountered.  The two
+ *  values will differ if #gets is called with a separator other than newline.
+ *
+ *  Methods that use <code>$/</code> like #each, #lines and #readline will
+ *  also increment <code>lineno</code>.
+ *
+ *  See also the <code>$.</code> variable.
  *
  *     f = File.new("testfile")
  *     f.lineno   #=> 0
@@ -2815,19 +2819,15 @@ static VALUE
 rb_io_each_byte(VALUE io)
 {
     rb_io_t *fptr;
-    char *p, *e;
 
     RETURN_ENUMERATOR(io, 0, 0);
     GetOpenFile(io, fptr);
 
     for (;;) {
-	p = fptr->rbuf.ptr+fptr->rbuf.off;
-	e = p + fptr->rbuf.len;
-	while (p < e) {
-	    fptr->rbuf.off++;
+	while (fptr->rbuf.len > 0) {
+	    char *p = fptr->rbuf.ptr + fptr->rbuf.off++;
 	    fptr->rbuf.len--;
 	    rb_yield(INT2FIX(*p & 0xff));
-	    p++;
 	    errno = 0;
 	}
 	rb_io_check_byte_readable(fptr);
@@ -3621,6 +3621,12 @@ rb_io_close(VALUE io)
     if (fptr->fd < 0) return Qnil;
 
     fd = fptr->fd;
+#if defined __APPLE__ && defined(__MACH__) && \
+    (!defined(MAC_OS_X_VERSION_MIN_ALLOWED) || MAC_OS_X_VERSION_MIN_ALLOWED <= 1050)
+    /* close(2) on a fd which is being read by another thread causes
+     * deadlock on Mac OS X 10.5 */
+    rb_thread_fd_close(fd);
+#endif
     rb_io_fptr_cleanup(fptr, FALSE);
     rb_thread_fd_close(fd);
 
@@ -4582,7 +4588,11 @@ sysopen_func(void *ptr)
 static inline int
 rb_sysopen_internal(struct sysopen_struct *data)
 {
-    return (int)rb_thread_blocking_region(sysopen_func, data, RUBY_UBF_IO, 0);
+    int fd;
+    fd = (int)rb_thread_blocking_region(sysopen_func, data, RUBY_UBF_IO, 0);
+    if (0 <= fd)
+        rb_update_max_fd(fd);
+    return fd;
 }
 
 static int
@@ -4608,7 +4618,7 @@ rb_sysopen(VALUE fname, int oflags, mode_t perm)
 	    rb_sys_fail(RSTRING_PTR(fname));
 	}
     }
-    UPDATE_MAXFD(fd);
+    rb_update_max_fd(fd);
     return fd;
 }
 
@@ -4900,9 +4910,17 @@ rb_pipe(int *pipes)
             ret = pipe(pipes);
         }
     }
+#ifdef __CYGWIN__
+    if (ret == 0 && pipes[1] == -1) {
+	close(pipes[0]);
+	pipes[0] = -1;
+	errno = ENFILE;
+	return -1;
+    }
+#endif
     if (ret == 0) {
-        UPDATE_MAXFD(pipes[0]);
-        UPDATE_MAXFD(pipes[1]);
+        rb_update_max_fd(pipes[0]);
+        rb_update_max_fd(pipes[1]);
     }
     return ret;
 }
@@ -5784,6 +5802,7 @@ io_reopen(VALUE io, VALUE nfile)
 	    /* need to keep FILE objects of stdin, stdout and stderr */
 	    if (dup2(fd2, fd) < 0)
 		rb_sys_fail_path(orig->pathv);
+            rb_update_max_fd(fd);
 	}
 	else {
             fclose(fptr->stdio_file);
@@ -5791,6 +5810,7 @@ io_reopen(VALUE io, VALUE nfile)
             fptr->fd = -1;
             if (dup2(fd2, fd) < 0)
                 rb_sys_fail_path(orig->pathv);
+            rb_update_max_fd(fd);
             fptr->fd = fd;
 	}
 	rb_thread_fd_close(fd);
@@ -6374,6 +6394,7 @@ prep_io(int fd, int fmode, VALUE klass, const char *path)
     fp->mode = fmode;
     io_check_tty(fp);
     if (path) fp->pathv = rb_obj_freeze(rb_str_new_cstr(path));
+    rb_update_max_fd(fd);
 
     return io;
 }
@@ -6517,13 +6538,16 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &fmode, &convconfig);
 
     fd = NUM2INT(fnum);
+    if (rb_reserved_fd_p(fd)) {
+	rb_raise(rb_eArgError, "The given fd is not accessible because RubyVM reserves it");
+    }
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
     oflags = fcntl(fd, F_GETFL);
     if (oflags == -1) rb_sys_fail(0);
 #else
     if (fstat(fd, &st) == -1) rb_sys_fail(0);
 #endif
-    UPDATE_MAXFD(fd);
+    rb_update_max_fd(fd);
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
     ofmode = rb_io_oflags_fmode(oflags);
     if (NIL_P(vmode)) {
@@ -6865,15 +6889,15 @@ argf_next_argv(VALUE argf)
 		    fstat(fr, &st);
 		    if (*ARGF.inplace) {
 			str = rb_str_new2(fn);
-#ifdef NO_LONG_FNAME
-                        ruby_add_suffix(str, ARGF.inplace);
-#else
 			rb_str_cat2(str, ARGF.inplace);
-#endif
 #ifdef NO_SAFE_RENAME
 			(void)close(fr);
 			(void)unlink(RSTRING_PTR(str));
-			(void)rename(fn, RSTRING_PTR(str));
+			if (rename(fn, RSTRING_PTR(str)) < 0) {
+			    rb_warn("Can't rename %s to %s: %s, skipping file",
+				    fn, RSTRING_PTR(str), strerror(errno));
+			    goto retry;
+			}
 			fr = rb_sysopen(str, O_RDONLY, 0);
 #else
 			if (rename(fn, RSTRING_PTR(str)) < 0) {
@@ -7678,7 +7702,7 @@ io_cntl(int fd, int cmd, long narg, int io_p)
     retval = (int)rb_thread_io_blocking_region(nogvl_io_cntl, &arg, fd);
 #if defined(F_DUPFD)
     if (!io_p && retval != -1 && cmd == F_DUPFD) {
-	UPDATE_MAXFD(retval);
+	rb_update_max_fd(retval);
     }
 #endif
 
@@ -10320,7 +10344,7 @@ argf_write(VALUE argf, VALUE str)
  * Document-class:  ARGF
  *
  * +ARGF+ is a stream designed for use in scripts that process files given as
- * command-line arguments, or passed in via STDIN.
+ * command-line arguments or passed in via STDIN.
  *
  * The arguments passed to your script are stored in the +ARGV+ Array, one
  * argument per element. +ARGF+ assumes that any arguments that aren't
@@ -10336,7 +10360,7 @@ argf_write(VALUE argf, VALUE str)
  * files. For instance, +ARGF.read+ will return the contents of _file1_
  * followed by the contents of _file2_.
  *
- * After a file in +ARGV+ has been read, +ARGF+ removes it from the Array.
+ * After a file in +ARGV+ has been read +ARGF+ removes it from the Array.
  * Thus, after all files have been read +ARGV+ will be empty.
  *
  * You can manipulate +ARGV+ yourself to control what +ARGF+ operates on. If
@@ -10628,9 +10652,11 @@ Init_IO(void)
     orig_stdout = rb_stdout;
     rb_deferr = orig_stderr = rb_stderr;
 
-    /* constants to hold original stdin/stdout/stderr */
+    /* Holds the original stdin */
     rb_define_global_const("STDIN", rb_stdin);
+    /* Holds the original stdout */
     rb_define_global_const("STDOUT", rb_stdout);
+    /* Holds the original stderr */
     rb_define_global_const("STDERR", rb_stderr);
 
     /*
@@ -10707,6 +10733,12 @@ Init_IO(void)
     argf = rb_class_new_instance(0, 0, rb_cARGF);
 
     rb_define_readonly_variable("$<", &argf);
+    /*
+     * ARGF is a stream designed for use in scripts that process files given
+     * as command-line arguments or passed in via STDIN.
+     *
+     * See ARGF (the class) for more details.
+     */
     rb_define_global_const("ARGF", argf);
 
     rb_define_hooked_variable("$.", &argf, argf_lineno_getter, argf_lineno_setter);

@@ -63,6 +63,7 @@
 static VALUE mCurses;
 static VALUE mKey;
 static VALUE cWindow;
+static VALUE cPad;
 #ifdef USE_MOUSE
 static VALUE cMouseEvent;
 #endif
@@ -2455,6 +2456,142 @@ window_timeout(VALUE obj, VALUE delay)
 #define window_timeout rb_f_notimplement
 #endif
 
+/*--------------------------- class Pad ----------------------------*/
+
+#ifdef HAVE_NEWPAD
+/* returns a Curses::Pad object */
+static VALUE
+pad_s_allocate(VALUE class)
+{
+    struct windata *padp;
+
+    return Data_Make_Struct(class, struct windata, 0, free_window, padp);
+}
+
+/*
+ * Document-method: Curses::Pad.new
+ *
+ * call-seq:
+ *   new(height, width)
+ *
+ * Contruct a new Curses::Pad with constraints of +height+ lines, +width+
+ * columns
+ *
+ */
+static VALUE
+pad_initialize(VALUE obj, VALUE h, VALUE w)
+{
+    struct windata *padp;
+    WINDOW *window;
+
+    rb_secure(4);
+    curses_init_screen();
+    Data_Get_Struct(obj, struct windata, padp);
+    if (padp->window) delwin(padp->window);
+    window = newpad(NUM2INT(h), NUM2INT(w));
+    wclear(window);
+    padp->window = window;
+
+    return obj;
+}
+
+/*
+ * Document-method: Curses::Pad.subwin
+ * call-seq:
+ *   subpad(height, width, begin_x, begin_y)
+ *
+ * Contruct a new subpad with constraints of +height+ lines, +width+ columns,
+ * begin at +begin_x+ line, and +begin_y+ columns on the pad.
+ *
+ */
+static VALUE
+pad_subpad(VALUE obj, VALUE height, VALUE width, VALUE begin_x, VALUE begin_y)
+{
+    struct windata *padp;
+    WINDOW *subpad;
+    VALUE pad;
+    int h, w, x, y;
+
+    h = NUM2INT(height);
+    w = NUM2INT(width);
+    x = NUM2INT(begin_x);
+    y = NUM2INT(begin_y);
+    GetWINDOW(obj, padp);
+    subpad = subwin(padp->window, h, w, x, y);
+    pad = prep_window(rb_obj_class(obj), subpad);
+
+    return pad;
+}
+
+/*
+ * Document-method: Curses::Pad.refresh
+ *
+ * call-seq:
+ *   pad.refresh(pad_minrow, pad_mincol, screen_minrow, screen_mincol, screen_maxrow, screen_maxcol)
+ *
+ * Refreshes the pad.  +pad_minrow+ and pad_mincol+ define the upper-left
+ * corner of the rectangle to be displayed.  +screen_minrow+, +screen_mincol+,
+ * +screen_maxrow+, +screen_maxcol+ define the edges of the rectangle to be
+ * displayed on the screen.
+ *
+ */
+static VALUE
+pad_refresh(VALUE obj, VALUE pminrow, VALUE pmincol, VALUE sminrow,
+	    VALUE smincol, VALUE smaxrow, VALUE smaxcol)
+{
+    struct windata *padp;
+    int pmr, pmc, smr, smc, sxr, sxc;
+
+    pmr = NUM2INT(pminrow);
+    pmc = NUM2INT(pmincol);
+    smr = NUM2INT(sminrow);
+    smc = NUM2INT(smincol);
+    sxr = NUM2INT(smaxrow);
+    sxc = NUM2INT(smaxcol);
+
+    GetWINDOW(obj, padp);
+    prefresh(padp->window, pmr, pmc, smr, smc, sxr, sxc);
+
+    return Qnil;
+}
+
+/*
+ * Document-method: Curses::Pad.noutrefresh
+ *
+ * call-seq:
+ *   pad.noutrefresh(pad_minrow, pad_mincol, screen_minrow, screen_mincol, screen_maxrow, screen_maxcol)
+ *
+ * Refreshes the pad.  +pad_minrow+ and pad_mincol+ define the upper-left
+ * corner of the rectangle to be displayed.  +screen_minrow+, +screen_mincol+,
+ * +screen_maxrow+, +screen_maxcol+ define the edges of the rectangle to be
+ * displayed on the screen.
+ *
+ */
+static VALUE
+pad_noutrefresh(VALUE obj, VALUE pminrow, VALUE pmincol, VALUE sminrow,
+		VALUE smincol, VALUE smaxrow, VALUE smaxcol)
+{
+    struct windata *padp;
+    int pmr, pmc, smr, smc, sxr, sxc;
+
+    pmr = NUM2INT(pminrow);
+    pmc = NUM2INT(pmincol);
+    smr = NUM2INT(sminrow);
+    smc = NUM2INT(smincol);
+    sxr = NUM2INT(smaxrow);
+    sxc = NUM2INT(smaxcol);
+
+    GetWINDOW(obj, padp);
+#ifdef HAVE_DOUPDATE
+    pnoutrefresh(padp->window, pmr, pmc, smr, smc, sxr, sxc);
+#else
+    prefresh(padp->window, pmr, pmc, smr, smc, sxr, sxc);
+#endif
+
+    return Qnil;
+}
+#endif /* HAVE_NEWPAD */
+
 /*------------------------- Initialization -------------------------*/
 
 /*
@@ -2685,6 +2822,26 @@ Init_curses(void)
 
     rb_define_method(cWindow, "nodelay=", window_nodelay, 1);
     rb_define_method(cWindow, "timeout=", window_timeout, 1);
+
+#ifdef HAVE_NEWPAD
+    /*
+     * Document-class: Curses::Pad
+     *
+     * == Description
+     *
+     * A Pad is like a Window but allows for scrolling of contents that cannot
+     * fit on the screen.  Pads do not refresh automatically, use Pad#refresh
+     * or Pad#noutrefresh instead.
+     *
+     */
+    cPad = rb_define_class_under(mCurses, "Pad", cWindow);
+    rb_define_alloc_func(cPad, pad_s_allocate);
+    rb_define_method(cPad, "initialize", pad_initialize, 2);
+    rb_define_method(cPad, "subpad", pad_subpad, 4);
+    rb_define_method(cPad, "refresh", pad_refresh, 6);
+    rb_define_method(cPad, "noutrefresh", pad_noutrefresh, 6);
+    rb_undef_method(cPad, "subwin");
+#endif
 
 #define rb_curses_define_const(c) rb_define_const(mCurses,#c,UINT2NUM(c))
 

@@ -154,7 +154,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	{
 	    char *buf;
 
-	    buf = ALLOC_N(char, ep - bp + 1);
+	    buf = ALLOCA_N(char, ep - bp + 1);
 	    memcpy(buf, bp, ep - bp);
 	    buf[ep - bp] = '\0';
 	    iy = cstr2num(buf);
@@ -178,7 +178,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	{
 	    char *buf;
 
-	    buf = ALLOC_N(char, ep - bp + 1);
+	    buf = ALLOCA_N(char, ep - bp + 1);
 	    memcpy(buf, bp, ep - bp);
 	    buf[ep - bp] = '\0';
 	    im = cstr2num(buf);
@@ -200,7 +200,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	{
 	    char *buf;
 
-	    buf = ALLOC_N(char, ep - bp + 1);
+	    buf = ALLOCA_N(char, ep - bp + 1);
 	    memcpy(buf, bp, ep - bp);
 	    buf[ep - bp] = '\0';
 	    id = cstr2num(buf);
@@ -358,7 +358,7 @@ date_zone_to_diff(VALUE str)
     l = RSTRING_LEN(str);
     s = RSTRING_PTR(str);
 
-    dest = d = ALLOC_N(char, l + 1);
+    dest = d = ALLOCA_N(char, l + 1);
 
     for (i = 0; i < l; i++) {
 	if (isspace(s[i]) || s[i] == '\0') {
@@ -472,7 +472,7 @@ date_zone_to_diff(VALUE str)
 		if (strpbrk(RSTRING_PTR(str), ",.")) {
 		    char *a, *b;
 
-		    a = ALLOC_N(char, RSTRING_LEN(str) + 1);
+		    a = ALLOCA_N(char, RSTRING_LEN(str) + 1);
 		    strcpy(a, RSTRING_PTR(str));
 		    b = strpbrk(a, ",.");
 		    *b = '\0';
@@ -1368,7 +1368,7 @@ parse_ddd_cb(VALUE m, VALUE hash)
 	set_hash("zone", s5);
 
 	if (*cs5 == '[') {
-	    char *buf = ALLOC_N(char, l5 + 1);
+	    char *buf = ALLOCA_N(char, l5 + 1);
 	    char *s1, *s2, *s3;
 	    VALUE zone;
 
@@ -1521,8 +1521,8 @@ date__parse(VALUE str, VALUE comp)
 	static const char pat_source[] = "[^-+',./:@[:alnum:]\\[\\]]+";
 	static VALUE pat = Qnil;
 
-	str = rb_str_dup(str);
 	REGCOMP_0(pat);
+	str = rb_str_dup(str);
 	f_gsub_bang(str, pat, asp_string());
     }
 

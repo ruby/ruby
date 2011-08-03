@@ -87,6 +87,7 @@ if test "$MAJOR" = "1"; then
   AC_DEFINE(CANONICALIZATION_FOR_MATHN)
 fi
 dnl checks for alternative programs
+AC_CANONICAL_BUILD
 AC_ARG_WITH(gcc,
 	AS_HELP_STRING([--without-gcc], [never use gcc]),
 	[
@@ -100,6 +101,14 @@ then
   AC_MSG_ERROR(cached CC is different -- throw away $cache_file
 (it is also a good idea to do 'make clean' before compiling))
 fi
+AS_CASE(["$build_os"],
+  [darwin11.*], [
+    AS_CASE(["x$CC"],
+      [xgcc-4.2|x/usr/bin/gcc-4.2], [: ${CXX=g++-4.2}],
+      [xgcc|x/usr/bin/gcc],         [: ${CXX=g++}],
+      [xcc|x/usr/bin/cc],           [: ${CXX=c++}],
+      [xclang|x/usr/bin/clang],     [: ${CXX=clang++}])
+  ])
 test -z "$CC" || ac_cv_prog_CC="$CC"
 
 if test "$program_prefix" = NONE; then
@@ -155,9 +164,10 @@ AC_MSG_RESULT([$ARCH_FLAG])
 
 AC_DEFUN([RUBY_UNIVERSAL_ARCH], [
 # RUBY_UNIVERSAL_ARCH begin
+ARCH_FLAG=`expr " $CFLAGS " : ['.* \(-m[0-9][0-9]*\) ']`
 test ${CFLAGS+set} && CFLAGS=`echo "$CFLAGS" | sed -e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g'`
 test ${LDFLAGS+set} && LDFLAGS=`echo "$LDFLAGS" | sed -e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g'`
-unset ARCH_FLAG universal_binary universal_archnames
+unset universal_binary universal_archnames
 if test ${target_archs+set}; then
     AC_MSG_CHECKING([target architectures])
     target_archs=`echo $target_archs | tr , ' '`
@@ -202,8 +212,6 @@ if test ${target_archs+set}; then
     fi
     AS_CASE(["$target"], [-*], [ target="$target_cpu${target}"])
     AS_CASE(["$target_alias"], [-*], [ target_alias="$target_cpu${target_alias}"])
-    CFLAGS="$CFLAGS ${ARCH_FLAG}"
-    LDFLAGS="${LDFLAGS+$LDFLAGS }${ARCH_FLAG}"
 else
     if test x"$target_alias" = x; then
 	AS_CASE(["$target_os"],
@@ -235,6 +243,10 @@ if test "${target_archs}" != "${rb_cv_target_archs-${target_archs}}"; then
     AC_MSG_ERROR([target arch(s) has changed from ${rb_cv_target_archs-nothing} to ${target_archs}])
 else
     rb_cv_target_archs=${target_archs}
+fi
+if test "x${ARCH_FLAG}" != x; then
+    CFLAGS="$CFLAGS ${ARCH_FLAG}"
+    LDFLAGS="${LDFLAGS+$LDFLAGS }${ARCH_FLAG}"
 fi
 # RUBY_UNIVERSAL_ARCH end
 ])
@@ -473,6 +485,9 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     # Disable warnflags while conftest. -Werror=* flags might make bad OS capability guess.
     rb_cv_warnflags="$warnflags"
     warnflags=
+fi
+if test "$GCC" = ""; then
+    AS_CASE(["$target_os"],[aix*],[warnflags="-qinfo=por"])
 fi
 if test "$GCC" = yes; then
     RUBY_TRY_CFLAGS(-fvisibility=hidden, [RUBY_APPEND_OPTION(XCFLAGS, -fvisibility=hidden)])
@@ -1227,6 +1242,63 @@ if test $rb_cv_stack_end_address != no; then
   AC_DEFINE_UNQUOTED(STACK_END_ADDRESS, $rb_cv_stack_end_address)
 fi
 
+AC_CACHE_CHECK(for gc_mark and gc_children stack frame approximate size(word), rb_cv_gc_mark_stackframe_word,
+[save_CFLAGS="$CFLAGS"
+CFLAGS="-O0"
+AC_TRY_RUN([
+int word;
+char *stack_start;
+
+void
+set_stackframe_word()
+{
+    int dumy = 42;
+    int diff;
+
+    if (stack_start < (char *)&dumy) {
+        diff = (int)((char *)&dumy - stack_start);
+    }
+    else {
+        diff = (int)(stack_start - (char *)&dumy);
+    }
+    word = (diff/sizeof(void *));
+    if ((diff % sizeof(void *)) != 0) {
+        word++;
+    }
+}
+
+void
+gc_mark_children(void *p1, void *p2, int lev)
+{
+    void *obj = p2;
+
+    set_stackframe_word(p1,p2,lev);
+}
+
+void
+gc_mark(void *p1, void *p2, int lev)
+{
+    void *obj = p2;
+
+    gc_mark_children(p1,p2,lev++);
+}
+
+int
+main() {
+  int dumy = 42;
+
+  stack_start = (char *)&dumy;
+  gc_mark(0, 0, 255);
+  return word;
+}
+],
+  [rb_cv_gc_mark_stackframe_word="$?"],
+  [rb_cv_gc_mark_stackframe_word="$?"],
+  [rb_cv_gc_mark_stackframe_word="30"])
+CFLAGS="$save_CFLAGS"])
+AC_DEFINE_UNQUOTED(GC_MARK_STACKFRAME_WORD, $rb_cv_gc_mark_stackframe_word)
+
+
 dnl Checks for library functions.
 AC_TYPE_GETGROUPS
 AC_TYPE_SIGNAL
@@ -1742,7 +1814,9 @@ if test x"$enable_pthread" = xyes; then
 	[c],    [],
 	[root], [],
 	[c_r],  [MAINLIBS="-pthread $MAINLIBS"],
-	        [LIBS="-l$pthread_lib $LIBS"])
+	        [AS_CASE(["$target_os"],
+		    [openbsd*], [LIBS="-pthread $LIBS"],
+		    [LIBS="-l$pthread_lib $LIBS"])])
     else
 	AC_MSG_WARN("Don't know how to find pthread library on your system -- thread support disabled")
     fi
@@ -1750,7 +1824,7 @@ if test x"$enable_pthread" = xyes; then
 	pthread_getattr_np pthread_attr_get_np pthread_attr_getstack\
 	pthread_get_stackaddr_np pthread_get_stacksize_np \
 	thr_stksegment pthread_stackseg_np pthread_getthrds_np \
-	pthread_condattr_setclock)
+	pthread_condattr_setclock pthread_sigmask)
 fi
 if test x"$ac_cv_header_ucontext_h" = xyes; then
     if test x"$rb_with_pthread" = xyes; then
@@ -2534,6 +2608,28 @@ AS_CASE(["$FIRSTMAKEFILE"], [*GNUmakefile:*], [gnumake=yes], [
 	gnumake=no])
     AC_MSG_RESULT($gnumake)
 ])
+AS_IF([test "$gnumake" = yes], [ NULLCMD=: ], [
+    AC_MSG_CHECKING([for safe null command for ${MAKE-make}])
+    mkdir conftest.dir
+    echo 'A=1' > conftest.dir/Makefile
+    echo 'B=$(A:1=@:)' >> conftest.dir/Makefile
+    echo 'all:; $B 1 2 3 4 5 6 7 8 9' >> conftest.dir/Makefile
+    if (cd conftest.dir; ${MAKE-make} >/dev/null 2>/dev/null); then
+	NULLCMD=:
+    else
+	echo 'A=1' > conftest.dir/Makefile
+	echo 'B=$(A:1=@true)' >> conftest.dir/Makefile
+	echo 'all:; $B 1 2 3 4 5 6 7 8 9' >> conftest.dir/Makefile
+	if (cd conftest.dir; ${MAKE-make} >/dev/null 2>/dev/null); then
+	    NULLCMD=true
+	else
+	    AC_MSG_ERROR(no candidate for safe null command)
+	fi
+    fi
+    rm -fr conftest.dir
+    AC_MSG_RESULT($NULLCMD)
+])
+AC_SUBST(NULLCMD)
 
 if test "${universal_binary-no}" = yes ; then
     AC_CACHE_CHECK([for architecture macros], rb_cv_architecture_macros, [

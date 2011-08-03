@@ -206,6 +206,15 @@ rb_print_undef(VALUE klass, ID id, int scope)
 		  rb_class2name(klass));
 }
 
+void
+rb_print_undef_str(VALUE klass, VALUE name)
+{
+    rb_name_error_str(name, "undefined method `%s' for %s `%s'",
+		      RSTRING_PTR(name),
+		      (TYPE(klass) == T_MODULE) ? "module" : "class",
+		      rb_class2name(klass));
+}
+
 static int
 sysexit_status(VALUE err)
 {

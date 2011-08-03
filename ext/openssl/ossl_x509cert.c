@@ -71,6 +71,7 @@ ossl_x509_new_from_file(VALUE filename)
      * prepare for DER...
 #if !defined(OPENSSL_NO_FP_API)
     if (!x509) {
+    	(void)ERR_get_error();
 	rewind(fp);
 
 	x509 = d2i_X509_fp(fp, NULL);
@@ -146,7 +147,7 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
     x509 = PEM_read_bio_X509(in, &x, NULL, NULL);
     DATA_PTR(self) = x;
     if (!x509) {
-	(void)BIO_reset(in);
+	OSSL_BIO_reset(in);
 	x509 = d2i_X509_bio(in, &x);
 	DATA_PTR(self) = x;
     }

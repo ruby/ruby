@@ -1,6 +1,12 @@
-# Weak Reference class that does not bother GCing.
+require "delegate"
+require 'thread'
+
+# Weak Reference class that does allows a referenced object to be
+# garbage-collected.  A WeakRef may be used exactly like the object it
+# references.
 #
 # Usage:
+#
 #   foo = Object.new
 #   foo = Object.new
 #   p foo.to_s                  # original's class
@@ -9,10 +15,11 @@
 #   ObjectSpace.garbage_collect
 #   p foo.to_s                  # should raise exception (recycled)
 
-require "delegate"
-require 'thread'
-
 class WeakRef < Delegator
+
+  ##
+  # RefError is raised when a referenced object has been recycled by the
+  # garbage collector
 
   class RefError < StandardError
   end
@@ -38,6 +45,9 @@ class WeakRef < Delegator
     }
   }
 
+  ##
+  # Creates a weak reference to +orig+
+
   def initialize(orig)
     @__id = orig.object_id
     ObjectSpace.define_finalizer orig, @@final
@@ -50,7 +60,7 @@ class WeakRef < Delegator
     super
   end
 
-  def __getobj__
+  def __getobj__ # :nodoc:
     unless @@id_rev_map[self.object_id] == @__id
       Kernel::raise RefError, "Invalid Reference - probably recycled", Kernel::caller(2)
     end
@@ -60,8 +70,12 @@ class WeakRef < Delegator
       Kernel::raise RefError, "Invalid Reference - probably recycled", Kernel::caller(2)
     end
   end
-  def __setobj__(obj)
+
+  def __setobj__(obj) # :nodoc:
   end
+
+  ##
+  # Returns true if the referenced object is still alive.
 
   def weakref_alive?
     @@id_rev_map[self.object_id] == @__id

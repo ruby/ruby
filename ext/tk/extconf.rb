@@ -2021,6 +2021,9 @@ if (TkLib_Config["tcltk-framework"] ||
   $defs << %[-DRUBY_VERSION=\\"#{RUBY_VERSION}\\"]
   $defs << %[-DRUBY_RELEASE_DATE=\\"#{RUBY_RELEASE_DATE}\\"]
 
+  # remove harmful definitions.
+  $defs.delete_if{|x|/^-Du?intptr_t=/ =~ x}
+
   create_makefile("tcltklib")
 
   puts "\nFind Tcl/Tk libraries. Make tcltklib.so which is required by Ruby/Tk."

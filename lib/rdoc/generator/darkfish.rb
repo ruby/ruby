@@ -192,7 +192,7 @@ class RDoc::Generator::Darkfish
       top_level = klass.full_name.gsub( /::.*/, '' )
       [nscounts[top_level] * -1, klass.full_name]
     end.select do |klass|
-      klass.document_self
+      klass.display?
     end
   end
 

@@ -2,11 +2,7 @@
 # -*- coding:utf-8 -*-
 
 require 'test/unit'
-case ENV['JSON']
-when 'pure' then require 'json/pure'
-when 'ext'  then require 'json/ext'
-else             require 'json'
-end
+require File.join(File.dirname(__FILE__), 'setup_variant')
 load 'json/add/core.rb'
 require 'date'
 
@@ -28,6 +24,15 @@ class TC_JSONAddition < Test::Unit::TestCase
       new(*object['args'])
     end
 
+    def to_json(*args)
+      {
+        'json_class'  => self.class.name,
+        'args'        => [ @a ],
+      }.to_json(*args)
+    end
+  end
+
+  class A2 < A
     def to_json(*args)
       {
         'json_class'  => self.class.name,

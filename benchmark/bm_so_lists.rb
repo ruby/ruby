@@ -1,6 +1,6 @@
 #from http://www.bagley.org/~doug/shootout/bench/lists/lists.ruby
 
-NUM = 100
+NUM = 300
 SIZE = 10000
 
 def test_lists()

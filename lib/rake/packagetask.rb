@@ -72,7 +72,10 @@ module Rake
     # Zip command for zipped archives.  The default is 'zip'.
     attr_accessor :zip_command
 
-    # Create a Package Task with the given name and version.
+    # Create a Package Task with the given name and version.  Use +:noversion+
+    # as the version to build a package without a version or to provide a
+    # fully-versioned package name.
+
     def initialize(name=nil, version=nil)
       init(name, version)
       yield self if block_given?

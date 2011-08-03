@@ -11,6 +11,7 @@ module TestParallel
       i, @worker_in = IO.pipe
       @worker_out, o = IO.pipe
       @worker_pid = spawn(*@options[:ruby], PARALLEL_RB,
+                          "--ruby", @options[:ruby].join(" "),
                           "-j", "t1", "-v", out: o, in: i)
       [i,o].each(&:close)
     end
@@ -18,11 +19,14 @@ module TestParallel
     def teardown
       if @worker_pid && @worker_in
         begin
-          @worker_in.puts "quit"
+          begin
+            @worker_in.puts "quit"
+          rescue IOError, Errno::EPIPE
+          end
           timeout(2) do
             Process.waitpid(@worker_pid)
           end
-        rescue IOError, Errno::EPIPE, Timeout::Error
+        rescue Timeout::Error
           begin
             Process.kill(:KILL, @worker_pid)
           rescue Errno::ESRCH
@@ -34,10 +38,9 @@ module TestParallel
     def test_run
       timeout(10) do
         assert_match(/^ready/,@worker_out.gets)
-        @worker_in.puts "run #{TESTS}/test_first.rb ptest"
+        @worker_in.puts "run #{TESTS}/ptest_first.rb test"
         assert_match(/^okay/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
-        assert_match(/^done/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
         assert_match(/^ready/,@worker_out.gets)
       end
@@ -46,12 +49,11 @@ module TestParallel
     def test_run_multiple_testcase_in_one_file
       timeout(10) do
         assert_match(/^ready/,@worker_out.gets)
-        @worker_in.puts "run #{TESTS}/test_second.rb ptest"
+        @worker_in.puts "run #{TESTS}/ptest_second.rb test"
         assert_match(/^okay/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
-        assert_match(/^done/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
         assert_match(/^ready/,@worker_out.gets)
       end
@@ -60,13 +62,12 @@ module TestParallel
     def test_accept_run_command_multiple_times
       timeout(10) do
         assert_match(/^ready/,@worker_out.gets)
-        @worker_in.puts "run #{TESTS}/test_first.rb ptest"
+        @worker_in.puts "run #{TESTS}/ptest_first.rb test"
         assert_match(/^okay/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
-        assert_match(/^done/,@worker_out.gets)
         assert_match(/^ready/,@worker_out.gets)
-        @worker_in.puts "run #{TESTS}/test_second.rb ptest"
+        @worker_in.puts "run #{TESTS}/ptest_second.rb test"
         assert_match(/^okay/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
@@ -78,24 +79,23 @@ module TestParallel
 
     def test_p
       timeout(10) do
-        @worker_in.puts "run #{TESTS}/test_first.rb ptest"
+        @worker_in.puts "run #{TESTS}/ptest_first.rb test"
         while buf = @worker_out.gets
           break if /^p (.+?)$/ =~ buf
         end
-        assert_match(/TestA#ptest_nothing_test = \d+\.\d+ s = \.\n/, $1.chomp.unpack("m")[0])
+        assert_match(/TestA#test_nothing_test = \d+\.\d+ s = \.\n/, $1.chomp.unpack("m")[0])
       end
     end
 
     def test_done
       timeout(10) do
-        @worker_in.puts "run #{TESTS}/test_forth.rb ptest"
+        @worker_in.puts "run #{TESTS}/ptest_forth.rb test"
         i = 0
-        while buf = @worker_out.gets
-          if /^done (.+?)$/ =~ buf
-            i += 1
-            break if i == 2 # Break at 2nd "done"
-          end
-        end
+        5.times { @worker_out.gets }
+        buf = @worker_out.gets
+        assert_match(/^done (.+?)$/, buf)
+
+        /^done (.+?)$/ =~ buf
 
         result = Marshal.load($1.chomp.unpack("m")[0])
 
@@ -104,8 +104,8 @@ module TestParallel
         assert_kind_of(Array,result[2])
         assert_kind_of(Array,result[3])
         assert_kind_of(Array,result[4])
-        assert_match(/Skipped:$/,result[2][0])
-        assert_match(/Failure:$/,result[2][1])
+        assert_match(/Skipped:$/,result[2][1])
+        assert_match(/Failure:$/,result[2][0])
         assert_equal(result[5], "TestE")
       end
     end
@@ -122,6 +122,7 @@ module TestParallel
     def spawn_runner(*opt_args)
       @test_out, o = IO.pipe
       @test_pid = spawn(*@options[:ruby], TESTS+"/runner.rb",
+                        "--ruby", @options[:ruby].join(" "),
                         "-j","t1",*opt_args, out: o, err: o)
       o.close
     end
@@ -143,6 +144,7 @@ module TestParallel
     def test_ignore_jzero
       @test_out, o = IO.pipe
       @test_pid = spawn(*@options[:ruby], TESTS+"/runner.rb",
+                        "--ruby", @options[:ruby].join(" "),
                         "-j","0", out: File::NULL, err: o)
       o.close
       timeout(10) {
@@ -166,13 +168,13 @@ module TestParallel
       spawn_runner "--no-retry"
       buf = timeout(10){@test_out.read}
       refute_match(/^Retrying\.+$/,buf)
-      assert_match(/^ +\d+\) Failure:\nptest_fail_at_worker\(TestD\)/,buf)
+      assert_match(/^ +\d+\) Failure:\ntest_fail_at_worker\(TestD\)/,buf)
     end
 
     def test_jobs_status
       spawn_runner "--jobs-status"
       buf = timeout(10){@test_out.read}
-      assert_match(/\d+=test_(first|second|third|forth) */,buf)
+      assert_match(/\d+=ptest_(first|second|third|forth) */,buf)
     end
 
   end

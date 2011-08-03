@@ -634,7 +634,10 @@ rb_f_untrace_var(int argc, VALUE *argv)
 
     rb_secure(4);
     rb_scan_args(argc, argv, "11", &var, &cmd);
-    id = rb_to_id(var);
+    id = rb_check_id(&var);
+    if (!id) {
+	rb_name_error_str(var, "undefined global variable %s", RSTRING_PTR(var));
+    }
     if (!st_lookup(rb_global_tbl, (st_data_t)id, &data)) {
 	rb_name_error(id, "undefined global variable %s", rb_id2name(id));
     }
@@ -1299,7 +1302,7 @@ VALUE
 rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 {
     VALUE val = Qnil;
-    const ID id = rb_to_id(name);
+    const ID id = rb_check_id(&name);
     st_data_t n, v;
     struct st_table *iv_index_tbl;
     st_data_t index;
@@ -1307,6 +1310,14 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
     if (!OBJ_UNTRUSTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
     rb_check_frozen(obj);
+    if (!id) {
+	if (rb_is_instance_name(name)) {
+	    rb_name_error_str(name, "instance variable %s not defined", RSTRING_PTR(name));
+	}
+	else {
+	    rb_name_error_str(name, "`%s' is not allowed as an instance variable name", RSTRING_PTR(name));
+	}
+    }
     if (!rb_is_instance_id(id)) {
 	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
     }
@@ -1613,7 +1624,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	    }
 	    return value;
 	}
-	if (!recurse && klass != rb_cObject) break;
+	if (!recurse) break;
 	tmp = RCLASS_SUPER(tmp);
     }
     if (!exclude && !mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {
@@ -1677,8 +1688,17 @@ rb_public_const_get_at(VALUE klass, ID id)
 VALUE
 rb_mod_remove_const(VALUE mod, VALUE name)
 {
-    const ID id = rb_to_id(name);
+    const ID id = rb_check_id(&name);
 
+    if (!id) {
+	if (rb_is_const_name(name)) {
+	    rb_name_error_str(name, "constant %s::%s not defined",
+			      rb_class2name(mod), RSTRING_PTR(name));
+	}
+	else {
+	    rb_name_error_str(name, "`%s' is not allowed as a constant name", RSTRING_PTR(name));
+	}
+    }
     if (!rb_is_const_id(id)) {
 	rb_name_error(id, "`%s' is not allowed as a constant name", rb_id2name(id));
     }
@@ -1829,7 +1849,7 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 		return (int)Qfalse;
 	    return (int)Qtrue;
 	}
-	if (!recurse && klass != rb_cObject) break;
+	if (!recurse) break;
 	tmp = RCLASS_SUPER(tmp);
     }
     if (!exclude && !mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {
@@ -1876,7 +1896,7 @@ rb_public_const_defined_at(VALUE klass, ID id)
     return rb_const_defined_0(klass, id, TRUE, FALSE, TRUE);
 }
 
-void
+static void
 check_before_mod_set(VALUE klass, ID id, VALUE val, const char *dest)
 {
     if (!OBJ_UNTRUSTED(klass) && rb_safe_level() >= 4)
@@ -1955,7 +1975,11 @@ set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
     }
 
     for (i = 0; i < argc; i++) {
-	id = rb_to_id(argv[i]);
+	VALUE val = argv[i];
+	id = rb_check_id(&val);
+	if (!id) {
+	    rb_name_error_str(val, "constant %s::%s not defined", rb_class2name(mod), RSTRING_PTR(val));
+	}
 	if (RCLASS_CONST_TBL(mod) && st_lookup(RCLASS_CONST_TBL(mod), (st_data_t)id, &v)) {
 	    ((rb_const_entry_t*)v)->flag = flag;
 	    return;
@@ -2189,9 +2213,18 @@ rb_mod_class_variables(VALUE obj)
 VALUE
 rb_mod_remove_cvar(VALUE mod, VALUE name)
 {
-    const ID id = rb_to_id(name);
+    const ID id = rb_check_id(&name);
     st_data_t val, n = id;
 
+    if (!id) {
+	if (rb_is_class_name(name)) {
+	    rb_name_error_str(name, "class variable %s not defined for %s",
+			      RSTRING_PTR(name), rb_class2name(mod));
+	}
+	else {
+	    rb_name_error_str(name, "wrong class variable name %s", RSTRING_PTR(name));
+	}
+    }
     if (!rb_is_class_id(id)) {
 	rb_name_error(id, "wrong class variable name %s", rb_id2name(id));
     }

@@ -306,6 +306,14 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
                  @to.gen_url('link:example', 'example')
   end
 
+  def test_handle_special_HYPERLINK_link
+    special = RDoc::Markup::Special.new 0, 'link:README.txt'
+
+    link = @to.handle_special_HYPERLINK special
+
+    assert_equal '<a href="README.txt">README.txt</a>', link
+  end
+
   def test_list_verbatim_2
     str = "* one\n    verb1\n    verb2\n* two\n"
 

@@ -318,7 +318,6 @@ class TestMatrix < Test::Unit::TestCase
   def test_exp
     assert_equal(Matrix[[67,96],[48,99]], Matrix[[7,6],[3,9]] ** 2)
     assert_equal(Matrix.I(5), Matrix.I(5) ** -1)
-    assert_raise(Matrix::ErrOperationNotImplemented) { Matrix.I(5) ** 1.0 }
     assert_raise(Matrix::ErrOperationNotDefined) { Matrix.I(5) ** Object.new }
   end
 

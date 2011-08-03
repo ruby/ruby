@@ -41,6 +41,14 @@ rb_dl_set_win32_last_error(VALUE self, VALUE val)
 }
 #endif
 
+static void
+dlcfunc_mark(void *ptr)
+{
+    struct cfunc_data *data = ptr;
+    if (data->wrap) {
+	rb_gc_mark(data->wrap);
+    }
+}
 
 static void
 dlcfunc_free(void *ptr)
@@ -68,7 +76,7 @@ dlcfunc_memsize(const void *ptr)
 
 const rb_data_type_t dlcfunc_data_type = {
     "dl/cfunc",
-    {0, dlcfunc_free, dlcfunc_memsize,},
+    {dlcfunc_mark, dlcfunc_free, dlcfunc_memsize,},
 };
 
 VALUE
@@ -143,14 +151,15 @@ rb_dlcfunc_kind_p(VALUE func)
 static VALUE
 rb_dlcfunc_initialize(int argc, VALUE argv[], VALUE self)
 {
-    VALUE addr, name, type, calltype;
+    VALUE addr, name, type, calltype, addrnum;
     struct cfunc_data *data;
     void *saddr;
     const char *sname;
 
     rb_scan_args(argc, argv, "13", &addr, &type, &name, &calltype);
 
-    saddr = (void*)(NUM2PTR(rb_Integer(addr)));
+    addrnum = rb_Integer(addr);
+    saddr = (void*)(NUM2PTR(addrnum));
     sname = NIL_P(name) ? NULL : StringValuePtr(name);
 
     TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, data);
@@ -159,6 +168,7 @@ rb_dlcfunc_initialize(int argc, VALUE argv[], VALUE self)
     data->name = sname ? strdup(sname) : 0;
     data->type = NIL_P(type) ? DLTYPE_VOID : NUM2INT(type);
     data->calltype = NIL_P(calltype) ? CFUNC_CDECL : SYM2ID(calltype);
+    data->wrap = (addrnum == addr) ? 0 : addr;
 
     return Qnil;
 }

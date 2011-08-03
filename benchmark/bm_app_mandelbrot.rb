@@ -12,8 +12,8 @@ end
 
 ary = []
 
-(0..100).each{|dx|
-  (0..100).each{|dy|
+(0..1000).each{|dx|
+  (0..1000).each{|dy|
     x = dx / 50.0
     y = dy / 50.0
     c = Complex(x, y)

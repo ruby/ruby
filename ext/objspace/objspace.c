@@ -547,14 +547,24 @@ cto_i(void *vstart, void *vend, size_t stride, void *data)
 
     for (; v != (VALUE)vend; v += stride) {
 	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_DATA) {
-	    VALUE counter = rb_hash_aref(hash, RBASIC(v)->klass);
+	    VALUE counter;
+	    VALUE key = RBASIC(v)->klass;
+
+	    if (key == 0) {
+		const char *name = rb_objspace_data_type_name(v);
+		if (name == 0) name = "unknown";
+		key = ID2SYM(rb_intern(name));
+	    }
+
+	    counter = rb_hash_aref(hash, key);
 	    if (NIL_P(counter)) {
 		counter = INT2FIX(1);
 	    }
 	    else {
 		counter = INT2FIX(FIX2INT(counter) + 1);
 	    }
-	    rb_hash_aset(hash, RBASIC(v)->klass, counter);
+
+	    rb_hash_aset(hash, key, counter);
 	}
     }
 
@@ -565,13 +575,17 @@ cto_i(void *vstart, void *vend, size_t stride, void *data)
  *  call-seq:
  *     ObjectSpace.count_tdata_objects([result_hash]) -> hash
  *
- *  Counts nodes for each node type.
+ *  Counts objects for each T_DATA type.
  *
  *  This method is not for ordinary Ruby programmers, but for MRI developers
  *  who interest on MRI performance.
  *
  *  It returns a hash as:
- *  {:NODE_METHOD=>2027, :NODE_FBODY=>1927, :NODE_CFUNC=>1798, ...}
+ *  {RubyVM::InstructionSequence=>504, :parser=>5, :barrier=>6,
+ *   :mutex=>6, Proc=>60, RubyVM::Env=>57, Mutex=>1, Encoding=>99,
+ *   ThreadGroup=>1, Binding=>1, Thread=>1, RubyVM=>1, :iseq=>1,
+ *   Random=>1, ARGF.class=>1, Data=>1, :autoload=>3, Time=>2}
+ *  # T_DATA objects existing at startup on r32276.
  *
  *  If the optional argument, result_hash, is given,
  *  it is overwritten and returned.
@@ -579,6 +593,11 @@ cto_i(void *vstart, void *vend, size_t stride, void *data)
  *
  *  The contents of the returned hash is implementation defined.
  *  It may be changed in future.
+ *
+ *  In this version, keys are Class object or Symbol object.
+ *  If object is kind of normal (accessible) object, the key is Class object.
+ *  If object is not a kind of normal (internal) object, the key is symbol
+ *  name, registered by rb_data_type_struct.
  *
  *  This method is not expected to work except C Ruby.
  *

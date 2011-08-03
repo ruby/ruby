@@ -725,6 +725,12 @@ timer_thread_func(void *dummy)
     return 0;
 }
 
+void
+rb_thread_wakeup_timer_thread(void)
+{
+    /* do nothing */
+}
+
 static void
 rb_thread_create_timer_thread(void)
 {
@@ -739,7 +745,7 @@ rb_thread_create_timer_thread(void)
 }
 
 static int
-native_stop_timer_thread(void)
+native_stop_timer_thread(int close_anyway)
 {
     int stopped = --system_working <= 0;
     if (stopped) {
@@ -773,4 +779,9 @@ ruby_alloca_chkstk(size_t len, void *sp)
     }
 }
 #endif
+int
+rb_reserved_fd_p(int fd)
+{
+    return 0;
+}
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

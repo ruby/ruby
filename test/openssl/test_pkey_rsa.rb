@@ -42,7 +42,6 @@ class OpenSSL::TestPKeyRSA < Test::Unit::TestCase
   end
 
   def test_new
-    OpenSSL.errors
     key = OpenSSL::PKey::RSA.new 512
     pem  = key.public_key.to_pem
     OpenSSL::PKey::RSA.new pem
@@ -92,6 +91,7 @@ class OpenSSL::TestPKeyRSA < Test::Unit::TestCase
     assert_equal(nil, key.d)
     assert_equal(nil, key.p)
     assert_equal(nil, key.q)
+    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_RSA_PUBKEY
@@ -110,6 +110,7 @@ class OpenSSL::TestPKeyRSA < Test::Unit::TestCase
     assert_equal(nil, key.d)
     assert_equal(nil, key.p)
     assert_equal(nil, key.q)
+    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_RSAPublicKey_pem
@@ -129,6 +130,7 @@ AudJR1JobbIbDJrQu6AXnWh5k/YtAgMBAAE=
     assert_equal(nil, key.d)
     assert_equal(nil, key.p)
     assert_equal(nil, key.q)
+    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_RSA_PUBKEY_pem
@@ -149,6 +151,7 @@ AwEAAQ==
     assert_equal(nil, key.d)
     assert_equal(nil, key.p)
     assert_equal(nil, key.q)
+    assert_equal([], OpenSSL.errors)
   end
 
   def test_export_format_is_RSA_PUBKEY
@@ -170,6 +173,7 @@ AwEAAQ==
     key = OpenSSL::PKey.read(der)
     assert(key.private?)
     assert_equal(der, key.to_der)
+    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_private_key_pem
@@ -177,6 +181,7 @@ AwEAAQ==
     key = OpenSSL::PKey.read(pem)
     assert(key.private?)
     assert_equal(pem, key.to_pem)
+    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_public_key_der
@@ -184,6 +189,7 @@ AwEAAQ==
     key = OpenSSL::PKey.read(der)
     assert(!key.private?)
     assert_equal(der, key.to_der)
+    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_public_key_pem
@@ -191,6 +197,7 @@ AwEAAQ==
     key = OpenSSL::PKey.read(pem)
     assert(!key.private?)
     assert_equal(pem, key.to_pem)
+    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_private_key_pem_pw
@@ -204,6 +211,7 @@ AwEAAQ==
     key = OpenSSL::PKey.read(pem, 'secret')
     assert(key.private?)
     #omit pem equality check, will be different due to cipher iv
+    assert_equal([], OpenSSL.errors)
   end
 
   private
@@ -228,6 +236,7 @@ AwEAAQ==
     assert_equal(key.n, pub_key.value[0].value)
     assert_equal(OpenSSL::ASN1::INTEGER, pub_key.value[1].tag)
     assert_equal(key.e, pub_key.value[1].value)
+    assert_equal([], OpenSSL.errors)
   end
 
 end

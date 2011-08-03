@@ -98,6 +98,87 @@ class TestRDocTopLevel < XrefTestCase
     assert_empty RDoc::TopLevel.files
   end
 
+  def test_add_alias
+    a = RDoc::Alias.new nil, 'old', 'new', nil
+    @top_level.add_alias a
+
+    object = RDoc::TopLevel.find_class_named 'Object'
+    expected = { '#old' => [a] }
+    assert_equal expected, object.unmatched_alias_lists
+    assert_includes object.in_files, @top_level
+  end
+
+  def test_add_alias_nodoc
+    @top_level.document_self = false
+
+    a = RDoc::Alias.new nil, 'old', 'new', nil
+    @top_level.add_alias a
+
+    object = RDoc::TopLevel.find_class_named('Object')
+    assert_empty object.unmatched_alias_lists
+    assert_includes object.in_files, @top_level
+  end
+
+  def test_add_constant
+    const = RDoc::Constant.new 'C', nil, nil
+    @top_level.add_constant const
+
+    object = RDoc::TopLevel.find_class_named 'Object'
+    assert_equal [const], object.constants
+    assert_includes object.in_files, @top_level
+  end
+
+  def test_add_constant_nodoc
+    @top_level.document_self = false
+
+    const = RDoc::Constant.new 'C', nil, nil
+    @top_level.add_constant const
+
+    object = RDoc::TopLevel.find_class_named 'Object'
+    assert_empty object.constants
+    assert_includes object.in_files, @top_level
+  end
+
+  def test_add_include
+    include = RDoc::Include.new 'C', nil
+    @top_level.add_include include
+
+    object = RDoc::TopLevel.find_class_named 'Object'
+    assert_equal [include], object.includes
+    assert_includes object.in_files, @top_level
+  end
+
+  def test_add_include_nodoc
+    @top_level.document_self = false
+
+    include = RDoc::Include.new 'C', nil
+    @top_level.add_include include
+
+    object = RDoc::TopLevel.find_class_named('Object')
+    assert_empty object.includes
+    assert_includes object.in_files, @top_level
+  end
+
+  def test_add_method
+    method = RDoc::AnyMethod.new nil, 'm'
+    @top_level.add_method method
+
+    object = RDoc::TopLevel.find_class_named 'Object'
+    assert_equal [method], object.method_list
+    assert_includes object.in_files, @top_level
+  end
+
+  def test_add_method_stopdoc
+    @top_level.document_self = false
+
+    method = RDoc::AnyMethod.new nil, 'm'
+    @top_level.add_method method
+
+    object = RDoc::TopLevel.find_class_named('Object')
+    assert_empty object.method_list
+    assert_includes object.in_files, @top_level
+  end
+
   def test_base_name
     assert_equal 'top_level.rb', @top_level.base_name
   end

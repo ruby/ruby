@@ -157,7 +157,14 @@ class PrettyPrint
     end
   end
 
-  # This is similar to #breakable, but is less-likely to insert a newline.
+  # This is similar to #breakable except
+  # the decision to break or not is determined individually.
+  #
+  # Two #fill_breakable under a group may cause 4 results:
+  # (break,break), (break,non-break), (non-break,break), (non-break,non-break).
+  # This is different to #breakable because two #breakable under a group
+  # may cause 2 results:
+  # (break,break), (non-break,non-break).
   #
   # The text sep+ is inserted if a line is not broken at this point.
   #

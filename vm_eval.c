@@ -568,6 +568,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
     }
     nargv[0] = ID2SYM(id);
     MEMCPY(nargv + 1, argv, VALUE, argc);
+    if (argv_ary) rb_ary_set_len(argv_ary, argc + 1);
 
     if (rb_method_basic_definition_p(CLASS_OF(obj) , idMethodMissing)) {
 	raise_method_missing(th, argc+1, nargv, obj, call_status | NOEX_MISSING);
@@ -597,9 +598,17 @@ VALUE
 rb_apply(VALUE recv, ID mid, VALUE args)
 {
     int argc;
-    VALUE *argv;
+    VALUE *argv, ret;
 
     argc = RARRAY_LENINT(args);
+    if (argc >= 0x100) {
+	args = rb_ary_subseq(args, 0, argc);
+	RBASIC(args)->klass = 0;
+	OBJ_FREEZE(args);
+	ret = rb_call(recv, mid, argc, RARRAY_PTR(args), CALL_FCALL);
+	RB_GC_GUARD(args);
+	return ret;
+    }
     argv = ALLOCA_N(VALUE, argc);
     MEMCPY(argv, RARRAY_PTR(args), VALUE, argc);
     return rb_call(recv, mid, argc, argv, CALL_FCALL);
@@ -1441,7 +1450,6 @@ rb_throw_obj(VALUE tag, VALUE value)
 	RB_GC_GUARD(desc);
 	rb_raise(rb_eArgError, "uncaught throw %s", RSTRING_PTR(desc));
     }
-    rb_trap_restore_mask();
     th->errinfo = NEW_THROW_OBJECT(tag, 0, TAG_THROW);
 
     JUMP_TAG(TAG_THROW);

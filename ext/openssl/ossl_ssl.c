@@ -140,12 +140,17 @@ static VALUE
 ossl_sslctx_s_alloc(VALUE klass)
 {
     SSL_CTX *ctx;
+    long mode = SSL_MODE_ENABLE_PARTIAL_WRITE;
+
+#ifdef SSL_MODE_RELEASE_BUFFERS
+    mode |= SSL_MODE_RELEASE_BUFFERS;
+#endif
 
     ctx = SSL_CTX_new(SSLv23_method());
     if (!ctx) {
         ossl_raise(eSSLError, "SSL_CTX_new:");
     }
-    SSL_CTX_set_mode(ctx, SSL_MODE_ENABLE_PARTIAL_WRITE);
+    SSL_CTX_set_mode(ctx, mode);
     SSL_CTX_set_options(ctx, SSL_OP_ALL);
     return Data_Wrap_Struct(klass, 0, ossl_sslctx_free, ctx);
 }
@@ -395,13 +400,18 @@ ossl_sslctx_session_new_cb(SSL *ssl, SSL_SESSION *sess)
     ret_obj = rb_protect((VALUE(*)_((VALUE)))ossl_call_session_new_cb, ary, &state);
     if (state) {
         rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(state));
-        return 0; /* what should be returned here??? */
     }
 
-    return RTEST(ret_obj) ? 1 : 0;
+    /*
+     * return 0 which means to OpenSSL that the the session is still
+     * valid (since we created Ruby Session object) and was not freed by us
+     * with SSL_SESSION_free(). Call SSLContext#remove_session(sess) in
+     * session_get_cb block if you don't want OpenSSL to cache the session
+     * internally.
+     */
+    return 0;
 }
 
-#if 0				/* unused */
 static VALUE
 ossl_call_session_remove_cb(VALUE ary)
 {
@@ -415,7 +425,6 @@ ossl_call_session_remove_cb(VALUE ary)
 
     return rb_funcall(cb, rb_intern("call"), 1, ary);
 }
-#endif
 
 static void
 ossl_sslctx_session_remove_cb(SSL_CTX *ctx, SSL_SESSION *sess)
@@ -437,7 +446,7 @@ ossl_sslctx_session_remove_cb(SSL_CTX *ctx, SSL_SESSION *sess)
     rb_ary_push(ary, sslctx_obj);
     rb_ary_push(ary, sess_obj);
 
-    ret_obj = rb_protect((VALUE(*)_((VALUE)))ossl_call_session_new_cb, ary, &state);
+    ret_obj = rb_protect((VALUE(*)_((VALUE)))ossl_call_session_remove_cb, ary, &state);
     if (state) {
 /*
   the SSL_CTX is frozen, nowhere to save state.
@@ -488,7 +497,7 @@ ossl_call_servername_cb(VALUE ary)
         Data_Get_Struct(ret_obj, SSL_CTX, ctx2);
         SSL_set_SSL_CTX(ssl, ctx2);
     } else if (!NIL_P(ret_obj)) {
-            rb_raise(rb_eArgError, "servername_cb must return an OpenSSL::SSL::SSLContext object or nil");
+            ossl_raise(rb_eArgError, "servername_cb must return an OpenSSL::SSL::SSLContext object or nil");
     }
 
     return ret_obj;
@@ -947,7 +956,7 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
     } else if (rb_obj_is_instance_of(arg1, rb_cTime)) {
         tm = NUM2LONG(rb_funcall(arg1, rb_intern("to_i"), 0));
     } else {
-        rb_raise(rb_eArgError, "arg must be Time or nil");
+        ossl_raise(rb_eArgError, "arg must be Time or nil");
     }
 
     SSL_CTX_flush_sessions(ctx, (long)tm);
@@ -961,9 +970,21 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
 static void
 ossl_ssl_shutdown(SSL *ssl)
 {
+    int i, rc;
+
     if (ssl) {
-	SSL_shutdown(ssl);
-        SSL_clear(ssl);
+	/* 4 is from SSL_smart_shutdown() of mod_ssl.c (v2.2.19) */
+	/* It says max 2x pending + 2x data = 4 */
+	for (i = 0; i < 4; ++i) {
+	    /*
+	     * Ignore the case SSL_shutdown returns -1. Empty handshake_func
+	     * must not happen.
+	     */
+	    if (rc = SSL_shutdown(ssl))
+		break;
+	}
+	ERR_clear_error();
+	SSL_clear(ssl);
     }
 }
 
@@ -1623,6 +1644,33 @@ ossl_ssl_get_verify_result(VALUE self)
     return INT2FIX(SSL_get_verify_result(ssl));
 }
 
+/*
+ * call-seq:
+ *    ssl.client_ca => [x509name, ...]
+ *
+ * Returns the list of client CAs. Please note that in contrast to
+ * SSLContext#client_ca= no array of X509::Certificate is returned but
+ * X509::Name instances of the CA's subject distinguished name.
+ *
+ * In server mode, returns the list set by SSLContext#client_ca=.
+ * In client mode, returns the list of client CAs sent from the server.
+ */
+static VALUE
+ossl_ssl_get_client_ca_list(VALUE self)
+{
+    SSL *ssl;
+    STACK_OF(X509_NAME) *ca;
+
+    Data_Get_Struct(self, SSL, ssl);
+    if (!ssl) {
+	rb_warning("SSL session is not started yet.");
+	return Qnil;
+    }
+
+    ca = SSL_get_client_CA_list(ssl);
+    return ossl_x509name_sk2ary(ca);
+}
+
 void
 Init_ossl_ssl()
 {
@@ -1910,6 +1958,7 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "session_reused?",    ossl_ssl_session_reused, 0);
     rb_define_method(cSSLSocket, "session=",    ossl_ssl_set_session, 1);
     rb_define_method(cSSLSocket, "verify_result", ossl_ssl_get_verify_result, 0);
+    rb_define_method(cSSLSocket, "client_ca", ossl_ssl_get_client_ca_list, 0);
 
 #define ossl_ssl_def_const(x) rb_define_const(mSSL, #x, INT2NUM(SSL_##x))
 

@@ -8,11 +8,13 @@ dll: $(LIBRUBY_SO)
 V = 0
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
-ECHO1 = $(V:1=@:)
+n=$(NULLCMD)
+ECHO1 = $(V:1=@$n)
 ECHO = $(ECHO1:0=@echo)
 
 RUBYLIB       = -
 RUBYOPT       = -
+RUN_OPTS      = --disable-gems
 
 SPEC_GIT_BASE = git://github.com/rubyspec
 MSPEC_GIT_URL = $(SPEC_GIT_BASE)/mspec.git
@@ -806,7 +808,8 @@ id.h: parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
 		$(srcdir)/template/id.h.tmpl --vpath=$(VPATH) parse.h
 
 node_name.inc: {$(VPATH)}node.h
-	$(BASERUBY) -n $(srcdir)/tool/node_name.rb < $? > $@
+	$(ECHO) generating $@
+	$(Q) $(BASERUBY) -n $(srcdir)/tool/node_name.rb < $? > $@
 
 encdb.h: $(PREP) $(srcdir)/tool/generic_erb.rb $(srcdir)/template/encdb.h.tmpl
 	$(ECHO) generating $@
@@ -846,12 +849,12 @@ $(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastr
 	@-$(BASERUBY) $(srcdir)/tool/file2lastrev.rb --revision.h "$(srcdir)" > "$(srcdir)/revision.tmp"
 	@$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" "$(srcdir)/revision.tmp"
 
-$(srcdir)/ext/ripper/ripper.c:
+$(srcdir)/ext/ripper/ripper.c: parse.y
 	$(ECHO) generating $@
 	$(Q) $(CHDIR) $(@D) && $(exec) $(MAKE) -f depend $(MFLAGS) \
 		Q=$(Q) ECHO=$(ECHO) top_srcdir=../.. srcdir=. RUBY=$(BASERUBY)
 
-$(srcdir)/ext/json/parser/parser.c:
+$(srcdir)/ext/json/parser/parser.c: $(srcdir)/ext/json/parser/parser.rl
 	$(ECHO) generating $@
 	$(Q) $(CHDIR) $(@D) && $(exec) $(MAKE) -f prereq.mk $(MFLAGS) \
 		Q=$(Q) ECHO=$(ECHO) top_srcdir=../../.. srcdir=.
@@ -929,7 +932,7 @@ love: sudo-precheck up all test install test-all
 	@echo love is all you need
 
 sudo-precheck:
-	@$(SUDO) true
+	@$(SUDO) echo > $(NULL)
 
 help: PHONY
 	$(MESSAGE_BEGIN) \

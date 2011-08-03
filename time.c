@@ -23,6 +23,10 @@
 #include <float.h>
 #include <math.h>
 
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
 #include "timev.h"
 
 static ID id_divmod, id_mul, id_submicro, id_nano_num, id_nano_den, id_offset;
@@ -1872,8 +1876,7 @@ static void
 time_modify(VALUE time)
 {
     rb_check_frozen(time);
-    if (!OBJ_UNTRUSTED(time) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't modify Time");
+    rb_check_trusted(time);
 }
 
 static wideval_t
@@ -3426,7 +3429,7 @@ time_init_copy(VALUE copy, VALUE time)
 static VALUE
 time_dup(VALUE time)
 {
-    VALUE dup = time_s_alloc(CLASS_OF(time));
+    VALUE dup = time_s_alloc(rb_obj_class(time));
     time_init_copy(dup, time);
     return dup;
 }

@@ -60,13 +60,4 @@ class TestBigMath < Test::Unit::TestCase
     assert_equal(BigDecimal("0.823840753418636291769355073102514088959345624027952954058347023122539489"),
                  atan(BigDecimal("1.08"), 72).round(72), '[ruby-dev:41257]')
   end
-
-  def test_log
-    assert_in_delta(0.0, log(BigDecimal("1"), N))
-    assert_in_delta(1.0, log(E(N), N))
-    assert_in_delta(Math.log(2.0), log(BigDecimal("2"), N))
-    assert_in_delta(2.0, log(E(N)*E(N), N))
-    assert_in_delta(Math.log(42.0), log(BigDecimal("42"), N))
-    assert_in_delta(Math.log(1e-42), log(BigDecimal("1e-42"), N))
-  end
 end

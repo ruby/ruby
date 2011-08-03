@@ -41,6 +41,7 @@ struct vtm; /* defined by timev.h */
 
 /* array.c */
 VALUE rb_ary_last(int, VALUE *, VALUE);
+void rb_ary_set_len(VALUE, long);
 
 /* bignum.c */
 VALUE rb_big_fdiv(VALUE x, VALUE y);
@@ -76,6 +77,7 @@ void rb_gc_mark_encodings(void);
 /* error.c */
 NORETURN(PRINTF_ARGS(void rb_compile_bug(const char*, int, const char*, ...), 3, 4));
 VALUE rb_check_backtrace(VALUE);
+NORETURN(void rb_async_bug_errno(const char *,int));
 
 /* eval_error.c */
 void ruby_error_print(void);
@@ -109,13 +111,20 @@ VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
 VALUE rb_get_load_path(void);
 
 /* math.c */
+VALUE rb_math_atan2(VALUE, VALUE);
+VALUE rb_math_cos(VALUE);
+VALUE rb_math_cosh(VALUE);
+VALUE rb_math_exp(VALUE);
+VALUE rb_math_hypot(VALUE, VALUE);
 VALUE rb_math_log(int argc, VALUE *argv);
+VALUE rb_math_sin(VALUE);
+VALUE rb_math_sinh(VALUE);
+VALUE rb_math_sqrt(VALUE);
 
 /* newline.c */
 void Init_newline(void);
 
 /* numeric.c */
-VALUE rb_rational_reciprocal(VALUE x);
 int rb_num_to_uint(VALUE val, unsigned int *ret);
 int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl);
 
@@ -125,12 +134,21 @@ VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
 /* parse.y */
 VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
+int rb_is_const_name(VALUE name);
+int rb_is_class_name(VALUE name);
+int rb_is_global_name(VALUE name);
+int rb_is_instance_name(VALUE name);
+int rb_is_attrset_name(VALUE name);
+int rb_is_local_name(VALUE name);
+int rb_is_method_name(VALUE name);
+int rb_is_junk_name(VALUE name);
 
 /* proc.c */
 VALUE rb_proc_location(VALUE self);
 
 /* rational.c */
 VALUE rb_lcm(VALUE x, VALUE y);
+VALUE rb_rational_reciprocal(VALUE x);
 
 /* re.c */
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
@@ -155,7 +173,6 @@ struct timeval rb_time_timeval(VALUE);
 VALUE rb_obj_is_mutex(VALUE obj);
 VALUE ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always);
 void rb_thread_execute_interrupts(VALUE th);
-void *rb_thread_call_with_gvl(void *(*func)(void *), void *data1);
 void rb_clear_trace_func(void);
 VALUE rb_thread_backtrace(VALUE thval);
 VALUE rb_get_coverages(void);
@@ -186,6 +203,28 @@ void Init_eval_method(void);
 
 /* miniprelude.c, prelude.c */
 void Init_prelude(void);
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility push(default)
+#endif
+const char *rb_objspace_data_type_name(VALUE obj);
+
+/* Temporary.  This API will be removed (renamed). */
+VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
+
+/* experimental.
+ * These APIs can be changed on Ruby 1.9.4 or later.
+ * We will change these APIs (spac, name and so on) if there are something wrong.
+ * If you use these APIs, catch up future changes.
+ */
+void *rb_thread_call_with_gvl(void *(*func)(void *), void *data1);
+VALUE rb_thread_call_without_gvl(
+    rb_blocking_function_t *func, void *data1,
+    rb_unblock_function_t *ubf, void *data2);
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #if defined(__cplusplus)
 #if 0

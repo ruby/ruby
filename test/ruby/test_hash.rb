@@ -809,6 +809,9 @@ class TestHash < Test::Unit::TestCase
 
   def test_hash2
     assert_kind_of(Integer, {}.hash)
+    h = {1=>2}
+    h.shift
+    assert_equal({}.hash, h.hash, '[ruby-core:38650]')
   end
 
   def test_update2

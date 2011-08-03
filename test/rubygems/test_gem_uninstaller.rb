@@ -1,9 +1,3 @@
-######################################################################
-# This file is imported from the rubygems project.
-# DO NOT make modifications in this repo. They _will_ be reverted!
-# File a patch instead and assign it to Ryan Davis or Eric Hodel.
-######################################################################
-
 require 'rubygems/installer_test_case'
 require 'rubygems/uninstaller'
 
@@ -100,7 +94,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
     exec_path = File.join Gem.user_dir, 'bin', 'foo-executable-bar'
     assert_equal false, File.exist?(exec_path), 'removed exec from bin dir'
 
-    assert_equal "Removing executable\n", @ui.output
+    assert_equal "Removing foo-executable-bar\n", @ui.output
   ensure
     Gem::Installer.exec_format = nil
   end
@@ -164,6 +158,16 @@ class TestGemUninstaller < Gem::InstallerTestCase
     assert_same uninstaller, @post_uninstall_hook_arg
   end
 
+  def test_uninstall_nonexistent
+    uninstaller = Gem::Uninstaller.new 'bogus', :executables => true
+
+    e = assert_raises Gem::InstallError do
+      uninstaller.uninstall
+    end
+
+    assert_equal 'gem "bogus" is not installed', e.message
+  end
+
   def test_uninstall_not_ok
     quick_gem 'z' do |s|
       s.add_runtime_dependency @spec.name
@@ -216,7 +220,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
   def test_uninstall_selection_greater_than_one
     util_make_gems
-
+    
     list = Gem::Specification.find_all_by_name('a')
 
     uninstaller = Gem::Uninstaller.new('a')

@@ -53,7 +53,7 @@ static VALUE ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 		ctx = PEM_read_bio_SSL_SESSION(in, NULL, NULL, NULL);
 
 		if (!ctx) {
-			(void)BIO_reset(in);
+		        OSSL_BIO_reset(in);
 			ctx = d2i_SSL_SESSION_bio(in, NULL);
 		}
 
@@ -104,6 +104,8 @@ static VALUE ossl_ssl_session_eq(VALUE val1, VALUE val2)
  * call-seq:
  *    session.time -> Time
  *
+ * Gets start time of the session.
+ *
 */
 static VALUE ossl_ssl_session_get_time(VALUE self)
 {
@@ -124,7 +126,7 @@ static VALUE ossl_ssl_session_get_time(VALUE self)
  * call-seq:
  *    session.timeout -> integer
  *
- * How long until the session expires in seconds.
+ * Gets how long until the session expires in seconds.
  *
 */
 static VALUE ossl_ssl_session_get_timeout(VALUE self)
@@ -139,31 +141,45 @@ static VALUE ossl_ssl_session_get_timeout(VALUE self)
 	return TIMET2NUM(t);
 }
 
-#define SSLSESSION_SET_TIME(func)						\
-	static VALUE ossl_ssl_session_set_##func(VALUE self, VALUE time_v)	\
-	{									\
-		SSL_SESSION *ctx;						\
-		unsigned long t;						\
-										\
-		GetSSLSession(self, ctx);					\
-										\
-		if (rb_obj_is_instance_of(time_v, rb_cTime)) {			\
-			time_v = rb_funcall(time_v, rb_intern("to_i"), 0);	\
-		} else if (FIXNUM_P(time_v)) {					\
-			;							\
-		} else {							\
-			rb_raise(rb_eArgError, "unknown type");			\
-		}								\
-										\
-		t = NUM2ULONG(time_v);						\
-										\
-		SSL_SESSION_set_##func(ctx, t);					\
-										\
-		return ossl_ssl_session_get_##func(self);			\
-	}
+/*
+ * call-seq:
+ *    session.time=(Time) -> Time
+ *    session.time=(integer) -> Time
+ *
+ * Sets start time of the session. Time resolution is in seconds.
+ *
+*/
+static VALUE ossl_ssl_session_set_time(VALUE self, VALUE time_v)
+{
+	SSL_SESSION *ctx;
+	long t;
 
-SSLSESSION_SET_TIME(time)
-SSLSESSION_SET_TIME(timeout)
+	GetSSLSession(self, ctx);
+	if (rb_obj_is_instance_of(time_v, rb_cTime)) {
+		time_v = rb_funcall(time_v, rb_intern("to_i"), 0);
+	}
+	t = NUM2LONG(time_v);
+	SSL_SESSION_set_time(ctx, t);
+	return ossl_ssl_session_get_time(self);
+}
+
+/*
+ * call-seq:
+ *    session.timeout=(integer) -> integer
+ *
+ * Sets how long until the session expires in seconds.
+ *
+*/
+static VALUE ossl_ssl_session_set_timeout(VALUE self, VALUE time_v)
+{
+	SSL_SESSION *ctx;
+	long t;
+
+	GetSSLSession(self, ctx);
+	t = NUM2LONG(time_v);
+	SSL_SESSION_set_timeout(ctx, t);
+	return ossl_ssl_session_get_timeout(self);
+}
 
 #ifdef HAVE_SSL_SESSION_GET_ID
 /*
@@ -195,20 +211,21 @@ static VALUE ossl_ssl_session_get_id(VALUE self)
 static VALUE ossl_ssl_session_to_der(VALUE self)
 {
 	SSL_SESSION *ctx;
-	unsigned char buf[1024*10], *p;
+	unsigned char *p;
 	int len;
+	VALUE str;
 
 	GetSSLSession(self, ctx);
-
-	p = buf;
-	len = i2d_SSL_SESSION(ctx, &p);
-
-	if (len <= 0)
+	len = i2d_SSL_SESSION(ctx, NULL);
+	if (len <= 0) {
 		ossl_raise(eSSLSession, "i2d_SSL_SESSION");
-	else if (len >= (int)sizeof(buf))
-		ossl_raise(eSSLSession, "i2d_SSL_SESSION too large");
+	}
 
-	return rb_str_new((const char *) p, len);
+	str = rb_str_new(0, len);
+	p = (unsigned char *)RSTRING_PTR(str);
+	i2d_SSL_SESSION(ctx, &p);
+	ossl_str_adjust(str, p);
+	return str;
 }
 
 /*

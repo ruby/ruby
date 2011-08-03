@@ -50,6 +50,9 @@ class TestEncoding < Test::Unit::TestCase
         exit Encoding.find("filesystem") == Encoding::EUC_JP
       EOS
     end
+
+    bug5150 = '[ruby-dev:44327]'
+    assert_raise(TypeError, bug5150) {Encoding.find(1)}
   end
 
   def test_replicate

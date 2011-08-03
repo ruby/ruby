@@ -194,6 +194,15 @@ class TestDateStrftime < Test::Unit::TestCase
     end
   end
 
+  def test_strftime_milli
+    s = '1970-01-01T00:00:00.123456789'
+    d = DateTime.parse(s)
+    assert_equal('123', d.strftime('%Q'))
+    s = '1970-01-02T02:03:04.123456789'
+    d = DateTime.parse(s)
+    assert_equal('93784123', d.strftime('%Q'))
+  end
+
   def test_strftime__minus
     d = DateTime.new(1969, 12, 31, 23, 59, 59)
     assert_equal('-1', d.strftime('%s'))

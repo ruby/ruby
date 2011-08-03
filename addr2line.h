@@ -11,11 +11,11 @@
 #ifndef RUBY_ADDR2LINE_H
 #define RUBY_ADDR2LINE_H
 
-#ifdef __ELF__
+#ifdef USE_ELF
 
 void
 rb_dump_backtrace_with_lines(int num_traces, void **traces, char **syms);
 
-#endif /* __ELF__ */
+#endif /* USE_ELF */
 
 #endif /* RUBY_ADDR2LINE_H */

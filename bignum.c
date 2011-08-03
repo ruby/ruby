@@ -1767,6 +1767,7 @@ bigsub_int(VALUE x, long y0)
     if (xn == 1 && num < 0) {
 	RBIGNUM_SET_SIGN(z, !RBIGNUM_SIGN(x));
 	zds[0] = (BDIGIT)-num;
+	RB_GC_GUARD(x);
 	return bignorm(z);
     }
     zds[0] = BIGLO(num);
@@ -1793,6 +1794,7 @@ bigsub_int(VALUE x, long y0)
     if (num < 0) {
 	z = bigsub(x, rb_int2big(y0));
     }
+    RB_GC_GUARD(x);
     return bignorm(z);
 }
 
@@ -1845,6 +1847,7 @@ bigadd_int(VALUE x, long y)
     while (i < zn) {
 	zds[i++] = 0;
     }
+    RB_GC_GUARD(x);
     return bignorm(z);
 }
 

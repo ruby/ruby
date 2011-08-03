@@ -108,7 +108,7 @@ module Net   #:nodoc:
   # If you wish to re-use a connection across multiple HTTP requests without
   # automatically closing it you can use ::new instead of ::start.  #request
   # will automatically open a connection to the server if one is not currently
-  # open.  You can manually close the connection with #close.
+  # open.  You can manually close the connection with #finish.
   #
   # === Response Data
   #
@@ -475,7 +475,7 @@ module Net   #:nodoc:
     #                  { "q" => "ruby", "max" => "50" }
     #
     def HTTP.post_form(url, params)
-      req = Post.new(url.path)
+      req = Post.new(url.request_uri)
       req.form_data = params
       req.basic_auth url.user, url.password if url.user
       new(url.hostname, url.port).start {|http|

@@ -91,7 +91,7 @@ module WEBrick
     # %U:: Unparsed URI
     # %%:: Literal %
 
-     def setup_params(config, req, res)
+    def setup_params(config, req, res)
       params = Hash.new("")
       params["a"] = req.peeraddr[3]
       params["b"] = res.sent_size

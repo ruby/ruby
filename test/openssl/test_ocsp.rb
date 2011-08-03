@@ -31,7 +31,7 @@ class OpenSSL::TestOCSP < Test::Unit::TestCase
     cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA256.new)
     assert_kind_of OpenSSL::OCSP::CertificateId, cid
     assert_equal @cert.serial, cid.serial
-  end
+  end if defined?(OpenSSL::Digest::SHA256)
 
   def test_new_ocsp_request
     request = OpenSSL::OCSP::Request.new

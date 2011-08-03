@@ -272,7 +272,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     ex = assert_raise(EOFError) do
       cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
     end
-    assert_equal("bad boundary end of body part", ex.message)
+    assert_equal("bad content body", ex.message)
     #
     _prepare(@data) do |input|
       input2 = input.sub(/--(\r\n)?\z/, "")
@@ -301,6 +301,19 @@ class CGIMultipartTest < Test::Unit::TestCase
     _prepare(@data)
     cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
     assert_equal('file1.html', cgi['file1'].original_filename)
+  end
+
+  def test_cgi_multipart_boundary_10240 # [Bug #3866]
+    @boundary = 'AaB03x'
+    @data = [
+      {:name=>'file',   :value=>"b"*10134,
+       :filename=>'file.txt', :content_type=>'text/plain'},
+      {:name=>'foo',  :value=>"bar"},
+    ]
+    _prepare(@data)
+    cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
+    assert_equal(cgi['foo'], 'bar')
+    assert_equal(cgi['file'].read, 'b'*10134)
   end
 
   ###

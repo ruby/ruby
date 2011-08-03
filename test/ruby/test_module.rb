@@ -457,7 +457,7 @@ class TestModule < Test::Unit::TestCase
     assert_equal(false, o.respond_to?(:bar=))
   end
 
-  def test_const_get2
+  def test_const_get_evaled
     c1 = Class.new
     c2 = Class.new(c1)
 
@@ -472,6 +472,9 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c2::Bar }
     assert_raise(NameError) { c2.const_get(:Bar) }
     assert_raise(NameError) { c2.const_get(:Bar, false) }
+    assert_raise(NameError) { c2.const_get("Bar", false) }
+    assert_raise(NameError) { c2.const_get("BaR11", false) }
+    assert_raise(NameError) { Object.const_get("BaR11", false) }
 
     c1.instance_eval do
       def const_missing(x)
@@ -483,18 +486,59 @@ class TestModule < Test::Unit::TestCase
     assert_equal(:Bar, c2::Bar)
     assert_equal(:Bar, c2.const_get(:Bar))
     assert_equal(:Bar, c2.const_get(:Bar, false))
+    assert_equal(:Bar, c2.const_get("Bar"))
+    assert_equal(:Bar, c2.const_get("Bar", false))
+
+    v = c2.const_get("Bar11", false)
+    assert_equal("Bar11".to_sym, v)
 
     assert_raise(NameError) { c1.const_get(:foo) }
   end
 
-  def test_const_set2
+  def test_const_set_invalid_name
     c1 = Class.new
     assert_raise(NameError) { c1.const_set(:foo, :foo) }
   end
 
-  def test_const_get3
+  def test_const_get_invalid_name
     c1 = Class.new
     assert_raise(NameError) { c1.const_defined?(:foo) }
+    name = "gadzooks"
+    assert !Symbol.all_symbols.any? {|sym| sym.to_s == name}
+    assert_raise(NameError) { c1.const_defined?(name) }
+    bug5084 = '[ruby-dev:44200]'
+    assert_raise(TypeError, bug5084) { c1.const_defined?(1) }
+  end
+
+  def test_const_get_no_inherited
+    bug3422 = '[ruby-core:30719]'
+    assert_in_out_err([], <<-INPUT, %w[1 NameError A], [], bug3422)
+    BasicObject::A = 1
+    puts [true, false].map {|inh|
+      begin
+        Object.const_get(:A, inh)
+      rescue NameError => e
+        [e.class, e.name]
+      end
+    }
+    INPUT
+  end
+
+  def test_const_get_inherited
+    bug3423 = '[ruby-core:30720]'
+    assert_in_out_err([], <<-INPUT, %w[NameError A NameError A], [], bug3423)
+    module Foo; A = 1; end
+    class Object; include Foo; end
+    class Bar; include Foo; end
+
+    puts [Object, Bar].map {|klass|
+      begin
+        klass.const_get(:A, false)
+      rescue NameError => e
+        [e.class, e.name]
+      end
+    }
+    INPUT
   end
 
   def test_class_variable_get
@@ -833,6 +877,64 @@ class TestModule < Test::Unit::TestCase
     assert_equal :a=, memo.shift
     assert_equal [:f, :g, :a, :a=], memo.shift
     assert_equal mod.instance_method(:a=), memo.shift
+  end
+
+  def test_method_undefined
+    added = []
+    undefed = []
+    removed = []
+    mod = Module.new do
+      mod = self
+      def f
+      end
+      (class << self ; self ; end).class_eval do
+        define_method :method_added do |sym|
+          added << sym
+        end
+        define_method :method_undefined do |sym|
+          undefed << sym
+        end
+        define_method :method_removed do |sym|
+          removed << sym
+        end
+      end
+    end
+    assert_method_defined?(mod, :f)
+    mod.module_eval do
+      undef :f
+    end
+    assert_equal [], added
+    assert_equal [:f], undefed
+    assert_equal [], removed
+  end
+
+  def test_method_removed
+    added = []
+    undefed = []
+    removed = []
+    mod = Module.new do
+      mod = self
+      def f
+      end
+      (class << self ; self ; end).class_eval do
+        define_method :method_added do |sym|
+          added << sym
+        end
+        define_method :method_undefined do |sym|
+          undefed << sym
+        end
+        define_method :method_removed do |sym|
+          removed << sym
+        end
+      end
+    end
+    assert_method_defined?(mod, :f)
+    mod.module_eval do
+      remove_method :f
+    end
+    assert_equal [], added
+    assert_equal [], undefed
+    assert_equal [:f], removed
   end
 
   def test_method_redefinition

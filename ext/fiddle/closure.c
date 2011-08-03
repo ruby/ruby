@@ -56,7 +56,7 @@ callback(ffi_cif *cif, void *resp, void **args, void *ctx)
     VALUE rbargs    = rb_iv_get(self, "@args");
     VALUE ctype     = rb_iv_get(self, "@ctype");
     int argc        = RARRAY_LENINT(rbargs);
-    VALUE *params   = xcalloc(argc, sizeof(VALUE *));
+    VALUE params    = rb_ary_tmp_new(argc);
     VALUE ret;
     VALUE cPointer;
     int i, type;
@@ -70,27 +70,28 @@ callback(ffi_cif *cif, void *resp, void **args, void *ctx)
 	    argc = 0;
 	    break;
 	  case TYPE_INT:
-	    params[i] = INT2NUM(*(int *)args[i]);
+	    rb_ary_push(params, INT2NUM(*(int *)args[i]));
 	    break;
 	  case TYPE_VOIDP:
-            params[i] = rb_funcall(cPointer, rb_intern("[]"), 1,
-              PTR2NUM(*(void **)args[i]));
+	    rb_ary_push(params,
+			rb_funcall(cPointer, rb_intern("[]"), 1,
+				   PTR2NUM(*(void **)args[i])));
 	    break;
 	  case TYPE_LONG:
-	    params[i] = LONG2NUM(*(long *)args[i]);
+	    rb_ary_push(params, LONG2NUM(*(long *)args[i]));
 	    break;
 	  case TYPE_CHAR:
-	    params[i] = INT2NUM(*(char *)args[i]);
+	    rb_ary_push(params, INT2NUM(*(char *)args[i]));
 	    break;
 	  case TYPE_DOUBLE:
-	    params[i] = rb_float_new(*(double *)args[i]);
+	    rb_ary_push(params, rb_float_new(*(double *)args[i]));
 	    break;
 	  case TYPE_FLOAT:
-	    params[i] = rb_float_new(*(float *)args[i]);
+	    rb_ary_push(params, rb_float_new(*(float *)args[i]));
 	    break;
 #if HAVE_LONG_LONG
 	  case TYPE_LONG_LONG:
-	    params[i] = rb_ull2inum(*(unsigned LONG_LONG *)args[i]);
+	    rb_ary_push(params, rb_ull2inum(*(unsigned LONG_LONG *)args[i]));
 	    break;
 #endif
 	  default:
@@ -98,7 +99,8 @@ callback(ffi_cif *cif, void *resp, void **args, void *ctx)
         }
     }
 
-    ret = rb_funcall2(self, rb_intern("call"), argc, params);
+    ret = rb_funcall2(self, rb_intern("call"), argc, RARRAY_PTR(params));
+    RB_GC_GUARD(params);
 
     type = NUM2INT(ctype);
     switch (type) {
@@ -130,7 +132,6 @@ callback(ffi_cif *cif, void *resp, void **args, void *ctx)
       default:
 	rb_raise(rb_eRuntimeError, "closure retval: %d", type);
     }
-    xfree(params);
 }
 
 static VALUE

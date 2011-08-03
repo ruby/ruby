@@ -45,6 +45,10 @@ def sysquote(x)
   @quote ? x.quote : x
 end
 
+def verbose?
+  $mflags.defined?("Q") != "@"
+end
+
 def extract_makefile(makefile, keep = true)
   m = File.read(makefile)
   if !(target = m[/^TARGET[ \t]*=[ \t]*(\S*)/, 1])
@@ -64,7 +68,7 @@ def extract_makefile(makefile, keep = true)
         config = CONFIG.dup
         install_dirs(target_prefix).each {|var, val| config[var] = val}
         FileUtils.rm_f(installrb.values.collect {|f| RbConfig.expand(f, config)},
-                       :verbose => $mflags.defined?("Q") != "@")
+                       :verbose => verbose?)
       end
     end
     return false
@@ -161,7 +165,16 @@ def extmake(target)
 	  Logging::logfile 'mkmf.log'
 	  rm_f makefile
 	  if conf
-	    load $0 = conf
+            unless verbose?
+              stdout, $stdout = $stdout, File.open(File::NULL, "a")
+            else
+              stdout = $stdout
+            end
+            begin
+              load $0 = conf
+            ensure
+              $stdout = stdout
+            end
 	  else
 	    create_makefile(target)
 	  end
@@ -181,6 +194,7 @@ def extmake(target)
       open(makefile, "w") do |f|
 	f.print(*dummy_makefile(CONFIG["srcdir"]))
       end
+      print "Failed to configure #{target}. It will not be installed.\n"
       return true
     end
     args = sysquote($mflags)

@@ -305,6 +305,9 @@ dlhandle_sym(void *handle, const char *name)
     void (*func)();
 
     rb_secure(2);
+#ifdef HAVE_DLERROR
+    dlerror();
+#endif
     func = (void (*)())(VALUE)dlsym(handle, name);
     CHECK_DLERROR;
 #if defined(FUNC_STDCALL)

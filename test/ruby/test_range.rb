@@ -68,6 +68,8 @@ class TestRange < Test::Unit::TestCase
     assert_equal(2.0, (1.0..2.0).max)
     assert_equal(nil, (2.0..1.0).max)
     assert_raise(TypeError) { (1.0...2.0).max }
+    assert_raise(TypeError) { (1...1.5).max }
+    assert_raise(TypeError) { (1.5...2).max }
 
     assert_equal(-0x80000002, ((-0x80000002)...(-0x80000001)).max)
 

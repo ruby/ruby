@@ -42,7 +42,7 @@ typedef struct {
 #define Require_EC_KEY(obj, key) do { \
     Get_EC_KEY((obj), (key)); \
     if ((key) == NULL) \
-        rb_raise(eECError, "EC_KEY is not initialized"); \
+        ossl_raise(eECError, "EC_KEY is not initialized"); \
 } while(0)
 
 #define SafeRequire_EC_KEY(obj, key) do { \
@@ -54,14 +54,14 @@ typedef struct {
     ossl_ec_group *ec_group; \
     Data_Get_Struct((obj), ossl_ec_group, ec_group); \
     if (ec_group == NULL) \
-        rb_raise(eEC_GROUP, "missing ossl_ec_group structure"); \
+        ossl_raise(eEC_GROUP, "missing ossl_ec_group structure"); \
     (g) = ec_group->group; \
 } while(0)
 
 #define Require_EC_GROUP(obj, group) do { \
     Get_EC_GROUP((obj), (group)); \
     if ((group) == NULL) \
-        rb_raise(eEC_GROUP, "EC_GROUP is not initialized"); \
+        ossl_raise(eEC_GROUP, "EC_GROUP is not initialized"); \
 } while(0)
 
 #define SafeRequire_EC_GROUP(obj, group) do { \
@@ -73,14 +73,14 @@ typedef struct {
     ossl_ec_point *ec_point; \
     Data_Get_Struct((obj), ossl_ec_point, ec_point); \
     if (ec_point == NULL) \
-        rb_raise(eEC_POINT, "missing ossl_ec_point structure"); \
+        ossl_raise(eEC_POINT, "missing ossl_ec_point structure"); \
     (p) = ec_point->point; \
 } while(0)
 
 #define Require_EC_POINT(obj, point) do { \
     Get_EC_POINT((obj), (point)); \
     if ((point) == NULL) \
-        rb_raise(eEC_POINT, "EC_POINT is not initialized"); \
+        ossl_raise(eEC_POINT, "EC_POINT is not initialized"); \
 } while(0)
 
 #define SafeRequire_EC_POINT(obj, point) do { \
@@ -168,7 +168,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
 
     GetPKey(self, pkey);
     if (pkey->pkey.ec)
-        rb_raise(eECError, "EC_KEY already initialized");
+        ossl_raise(eECError, "EC_KEY already initialized");
 
     rb_scan_args(argc, argv, "02", &arg, &pass);
 
@@ -191,18 +191,15 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
 	    }
 	    ec = PEM_read_bio_ECPrivateKey(in, NULL, ossl_pem_passwd_cb, passwd);
             if (!ec) {
-                (void)BIO_reset(in);
-                (void)ERR_get_error();
+		OSSL_BIO_reset(in);
 		ec = PEM_read_bio_EC_PUBKEY(in, NULL, ossl_pem_passwd_cb, passwd);
             }
             if (!ec) {
-                (void)BIO_reset(in);
-                (void)ERR_get_error();
+		OSSL_BIO_reset(in);
                 ec = d2i_ECPrivateKey_bio(in, NULL);
             }
             if (!ec) {
-                (void)BIO_reset(in);
-                (void)ERR_get_error();
+		OSSL_BIO_reset(in);
                 ec = d2i_EC_PUBKEY_bio(in, NULL);
             }
 
@@ -478,7 +475,7 @@ static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int forma
     Require_EC_KEY(self, ec);
 
     if (EC_KEY_get0_public_key(ec) == NULL)
-        rb_raise(eECError, "can't export - no public key set");
+        ossl_raise(eECError, "can't export - no public key set");
 
     if (EC_KEY_check_key(ec) != 1)
 	ossl_raise(eECError, "can't export - EC_KEY_check_key failed");
@@ -518,7 +515,7 @@ static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int forma
     	break;
     default:
         BIO_free(out);
-    	rb_raise(rb_eRuntimeError, "unknown format (internal error)");
+    	ossl_raise(rb_eRuntimeError, "unknown format (internal error)");
     }
 
     if (i != 1) {
@@ -746,7 +743,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
 
     Data_Get_Struct(self, ossl_ec_group, ec_group);
     if (ec_group->group != NULL)
-        rb_raise(rb_eRuntimeError, "EC_GROUP is already initialized");
+        ossl_raise(rb_eRuntimeError, "EC_GROUP is already initialized");
 
     switch (rb_scan_args(argc, argv, "13", &arg1, &arg2, &arg3, &arg4)) {
     case 1:
@@ -768,7 +765,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
                 if ((group = EC_GROUP_new(method)) == NULL)
                     ossl_raise(eEC_GROUP, "EC_GROUP_new");
             } else {
-                rb_raise(rb_eArgError, "unknown symbol, must be :GFp_simple, :GFp_mont, :GFp_nist or :GF2m_simple");
+                ossl_raise(rb_eArgError, "unknown symbol, must be :GFp_simple, :GFp_mont, :GFp_nist or :GF2m_simple");
             }
         } else if (rb_obj_is_kind_of(arg1, cEC_GROUP)) {
             const EC_GROUP *arg1_group;
@@ -781,7 +778,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
 
             group = PEM_read_bio_ECPKParameters(in, NULL, NULL, NULL);
             if (!group) {
-                (void)BIO_reset(in);
+		OSSL_BIO_reset(in);
                 group = d2i_ECPKParameters_bio(in, NULL);
             }
 
@@ -791,6 +788,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
                 const char *name = StringValueCStr(arg1);
                 int nid = OBJ_sn2nid(name);
 
+		(void)ERR_get_error();
                 if (nid == NID_undef)
                     ossl_raise(eEC_GROUP, "unknown curve name (%s)", name);
 
@@ -817,18 +815,18 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
             } else if (id == s_GF2m) {
                 new_curve = EC_GROUP_new_curve_GF2m;
             } else {
-                rb_raise(rb_eArgError, "unknown symbol, must be :GFp or :GF2m");
+                ossl_raise(rb_eArgError, "unknown symbol, must be :GFp or :GF2m");
             }
 
             if ((group = new_curve(p, a, b, ossl_bn_ctx)) == NULL)
                 ossl_raise(eEC_GROUP, "EC_GROUP_new_by_GF*");
         } else {
-             rb_raise(rb_eArgError, "unknown argument, must be :GFp or :GF2m");
+             ossl_raise(rb_eArgError, "unknown argument, must be :GFp or :GF2m");
         }
 
         break;
     default:
-        rb_raise(rb_eArgError, "wrong number of arguments");
+        ossl_raise(rb_eArgError, "wrong number of arguments");
     }
 
     if (group == NULL)
@@ -1044,7 +1042,7 @@ static VALUE ossl_ec_group_get_point_conversion_form(VALUE self)
     case POINT_CONVERSION_UNCOMPRESSED:	ret = ID_uncompressed; break;
     case POINT_CONVERSION_COMPRESSED:	ret = ID_compressed; break;
     case POINT_CONVERSION_HYBRID:	ret = ID_hybrid; break;
-    default:	rb_raise(eEC_GROUP, "unsupported point conversion form: %d, this module should be updated", form);
+    default:	ossl_raise(eEC_GROUP, "unsupported point conversion form: %d, this module should be updated", form);
     }
 
    return ID2SYM(ret);
@@ -1070,7 +1068,7 @@ static VALUE ossl_ec_group_set_point_conversion_form(VALUE self, VALUE form_v)
     } else if (form_id == ID_hybrid) {
         form = POINT_CONVERSION_HYBRID;
     } else {
-        rb_raise(rb_eArgError, "form must be :compressed, :uncompressed, or :hybrid");
+        ossl_raise(rb_eArgError, "form must be :compressed, :uncompressed, or :hybrid");
     }
 
     EC_GROUP_set_point_conversion_form(group, form);
@@ -1153,7 +1151,7 @@ static VALUE ossl_ec_group_to_string(VALUE self, int format)
     	break;
     default:
         BIO_free(out);
-    	rb_raise(rb_eRuntimeError, "unknown format (internal error)");
+    	ossl_raise(rb_eRuntimeError, "unknown format (internal error)");
     }
 
     if (i != 1) {
@@ -1246,7 +1244,7 @@ static VALUE ossl_ec_point_initialize(int argc, VALUE *argv, VALUE self)
 
     Data_Get_Struct(self, ossl_ec_point, ec_point);
     if (ec_point->point)
-        rb_raise(eEC_POINT, "EC_POINT already initialized");
+        ossl_raise(eEC_POINT, "EC_POINT already initialized");
 
     switch (rb_scan_args(argc, argv, "11", &arg1, &arg2)) {
     case 1:
@@ -1264,13 +1262,13 @@ static VALUE ossl_ec_point_initialize(int argc, VALUE *argv, VALUE self)
 
             point = EC_POINT_new(group);
         } else {
-            rb_raise(eEC_POINT, "wrong argument type: must be OpenSSL::PKey::EC::Point or OpenSSL::Pkey::EC::Group");
+            ossl_raise(eEC_POINT, "wrong argument type: must be OpenSSL::PKey::EC::Point or OpenSSL::Pkey::EC::Group");
         }
 
         break;
      case 2:
         if (!rb_obj_is_kind_of(arg1, cEC_GROUP))
-            rb_raise(rb_eArgError, "1st argument must be OpenSSL::PKey::EC::Group");
+            ossl_raise(rb_eArgError, "1st argument must be OpenSSL::PKey::EC::Group");
         group_v = arg1;
         SafeRequire_EC_GROUP(group_v, group);
 
@@ -1291,14 +1289,14 @@ static VALUE ossl_ec_point_initialize(int argc, VALUE *argv, VALUE self)
         }
         break;
     default:
-        rb_raise(rb_eArgError, "wrong number of arguments");
+        ossl_raise(rb_eArgError, "wrong number of arguments");
     }
 
     if (point == NULL)
         ossl_raise(eEC_POINT, NULL);
 
     if (NIL_P(group_v))
-        rb_raise(rb_eRuntimeError, "missing group (internal error)");
+        ossl_raise(rb_eRuntimeError, "missing group (internal error)");
 
     ec_point->point = point;
 

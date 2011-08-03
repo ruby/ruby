@@ -19,8 +19,28 @@ class TestBigDecimal < Test::Unit::TestCase
     [ BigDecimal::ROUND_FLOOR,     :floor],
   ]
 
-  def test_version
-    assert_equal("1.0.1", BigDecimal.ver)
+  def assert_nan(x)
+    assert(x.nan?, "Expected #{x.inspect} to be NaN")
+  end
+
+  def assert_positive_infinite(x)
+    assert(x.infinite?, "Expected #{x.inspect} to be positive infinite")
+    assert_operator(x, :>, 0)
+  end
+
+  def assert_negative_infinite(x)
+    assert(x.infinite?, "Expected #{x.inspect} to be negative infinite")
+    assert_operator(x, :<, 0)
+  end
+
+  def assert_positive_zero(x)
+    assert_equal(BigDecimal::SIGN_POSITIVE_ZERO, x.sign,
+                 "Expected #{x.inspect} to be positive zero")
+  end
+
+  def assert_negative_zero(x)
+    assert_equal(BigDecimal::SIGN_NEGATIVE_ZERO, x.sign,
+                 "Expected #{x.inspect} to be negative zero")
   end
 
   def test_global_new
@@ -48,6 +68,19 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_raise(ArgumentError) { BigDecimal(0.1) }
     assert_raise(ArgumentError) { BigDecimal(0.1, Float::DIG + 2) }
     assert_nothing_raised { BigDecimal(0.1, Float::DIG + 1) }
+  end
+
+  def test_global_new_with_big_decimal
+    assert_equal(BigDecimal(1), BigDecimal(BigDecimal(1)))
+    assert_equal(BigDecimal('+0'), BigDecimal(BigDecimal('+0')))
+    assert_equal(BigDecimal('-0'), BigDecimal(BigDecimal('-0')))
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+      assert_positive_infinite(BigDecimal(BigDecimal('Infinity')))
+      assert_negative_infinite(BigDecimal(BigDecimal('-Infinity')))
+      assert_nan(BigDecimal(BigDecimal('NaN')))
+    end
   end
 
   def test_new
@@ -85,6 +118,19 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_raise(ArgumentError) { BigDecimal.new(0.1) }
     assert_raise(ArgumentError) { BigDecimal.new(0.1, Float::DIG + 2) }
     assert_nothing_raised { BigDecimal.new(0.1, Float::DIG + 1) }
+  end
+
+  def test_new_with_big_decimal
+    assert_equal(BigDecimal(1), BigDecimal.new(BigDecimal(1)))
+    assert_equal(BigDecimal('+0'), BigDecimal.new(BigDecimal('+0')))
+    assert_equal(BigDecimal('-0'), BigDecimal.new(BigDecimal('-0')))
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+      assert_positive_infinite(BigDecimal.new(BigDecimal('Infinity')))
+      assert_negative_infinite(BigDecimal.new(BigDecimal('-Infinity')))
+      assert_nan(BigDecimal(BigDecimal.new('NaN')))
+    end
   end
 
   def _test_mode(type)
@@ -764,32 +810,194 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_match(/^#<BigDecimal:[0-9a-f]+,'0.12345678E4',#{prec}\(#{maxprec}\)>$/, x.inspect)
   end
 
-  def test_power
-    x = BigDecimal.new("3")
-    assert_equal(81, x ** 4)
-    assert_equal(1.0/81, (x ** -4).to_f)
-    assert_equal(1.quo(81), x ** -4)
+  def test_power_with_nil
+    assert_raise(TypeError) do
+      BigDecimal(3) ** nil
+    end
+  end
+
+  def test_power_of_nan
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+      assert_nan(BigDecimal::NAN ** 0)
+      assert_nan(BigDecimal::NAN ** 1)
+      assert_nan(BigDecimal::NAN ** 42)
+      assert_nan(BigDecimal::NAN ** -42)
+      assert_nan(BigDecimal::NAN ** 42.0)
+      assert_nan(BigDecimal::NAN ** -42.0)
+      assert_nan(BigDecimal::NAN ** BigDecimal(42))
+      assert_nan(BigDecimal::NAN ** BigDecimal(-42))
+      assert_nan(BigDecimal::NAN ** BigDecimal::INFINITY)
+      BigDecimal.save_exception_mode do
+        BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+        assert_nan(BigDecimal::NAN ** (-BigDecimal::INFINITY))
+      end
+    end
+  end
+
+  def test_power_with_Bignum
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+      assert_equal(0, BigDecimal(0) ** (2**100))
+
+      assert_positive_infinite(BigDecimal(0) ** -(2**100))
+      assert_positive_infinite((-BigDecimal(0)) ** -(2**100))
+      assert_negative_infinite((-BigDecimal(0)) ** -(2**100 + 1))
+
+      assert_equal(1, BigDecimal(1) ** (2**100))
+
+      assert_positive_infinite(BigDecimal(3) ** (2**100))
+      assert_positive_zero(BigDecimal(3) ** (-2**100))
+
+      assert_negative_infinite(BigDecimal(-3) ** (2**100))
+      assert_positive_infinite(BigDecimal(-3) ** (2**100 + 1))
+      assert_negative_zero(BigDecimal(-3) ** (-2**100))
+      assert_positive_zero(BigDecimal(-3) ** (-2**100 - 1))
+
+      assert_positive_zero(BigDecimal(0.5, Float::DIG) ** (2**100))
+      assert_positive_infinite(BigDecimal(0.5, Float::DIG) ** (-2**100))
+
+      assert_negative_zero(BigDecimal(-0.5, Float::DIG) ** (2**100))
+      assert_positive_zero(BigDecimal(-0.5, Float::DIG) ** (2**100 - 1))
+      assert_negative_infinite(BigDecimal(-0.5, Float::DIG) ** (-2**100))
+      assert_positive_infinite(BigDecimal(-0.5, Float::DIG) ** (-2**100 - 1))
+    end
+  end
+
+  def test_power_with_BigDecimal
+    assert_nothing_raised do
+      assert_in_delta(3 ** 3, BigDecimal(3) ** BigDecimal(3))
+    end
+  end
+
+  def test_power_of_finite_with_zero
+    x = BigDecimal(1)
     assert_equal(1, x ** 0)
-    assert_raise(TypeError) { x ** x }
-    assert_equal(0, BigDecimal.new("0") ** 4)
-    assert_equal(1, BigDecimal.new("0") ** 0)
-    BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
-    assert_equal(BigDecimal.new("Infinity"), BigDecimal.new("0") ** -1)
-    assert_equal(BigDecimal.new("-Infinity"), BigDecimal.new("-0") ** -1)
-    BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
-    assert_equal(true, (BigDecimal.new("NaN") ** 1).nan?)
+    assert_equal(1, x ** 0.quo(1))
+    assert_equal(1, x ** 0.0)
+    assert_equal(1, x ** BigDecimal(0))
 
-    assert_equal(BigDecimal::SIGN_POSITIVE_INFINITE, (BigDecimal.new("Infinity") ** 2).sign)
-    assert_equal(BigDecimal::SIGN_POSITIVE_INFINITE, (BigDecimal.new("Infinity") ** 1).sign)
-    assert_equal(1, BigDecimal.new("Infinity") ** 0)
-    assert_equal(BigDecimal::SIGN_POSITIVE_ZERO, (BigDecimal.new("Infinity") ** -1).sign)
-    assert_equal(BigDecimal::SIGN_POSITIVE_ZERO, (BigDecimal.new("Infinity") ** -2).sign)
+    x = BigDecimal(42)
+    assert_equal(1, x ** 0)
+    assert_equal(1, x ** 0.quo(1))
+    assert_equal(1, x ** 0.0)
+    assert_equal(1, x ** BigDecimal(0))
 
-    assert_equal(BigDecimal::SIGN_POSITIVE_INFINITE, (BigDecimal.new("-Infinity") ** 2).sign)
-    assert_equal(BigDecimal::SIGN_NEGATIVE_INFINITE, (BigDecimal.new("-Infinity") ** 1).sign)
-    assert_equal(1, BigDecimal.new("-Infinity") ** 0)
-    assert_equal(BigDecimal::SIGN_NEGATIVE_ZERO, (BigDecimal.new("-Infinity") ** -1).sign)
-    assert_equal(BigDecimal::SIGN_POSITIVE_ZERO, (BigDecimal.new("-Infinity") ** -2).sign)
+    x = BigDecimal(-42)
+    assert_equal(1, x ** 0)
+    assert_equal(1, x ** 0.quo(1))
+    assert_equal(1, x ** 0.0)
+    assert_equal(1, x ** BigDecimal(0))
+  end
+
+  def test_power_of_three
+    x = BigDecimal(3)
+    assert_equal(81, x ** 4)
+    assert_equal(1.quo(81), x ** -4)
+    assert_in_delta(1.0/81, x ** -4)
+  end
+
+  def test_power_of_zero
+    zero = BigDecimal(0)
+    assert_equal(0, zero ** 4)
+    assert_equal(0, zero ** 4.quo(1))
+    assert_equal(0, zero ** 4.0)
+    assert_equal(0, zero ** BigDecimal(4))
+    assert_equal(1, zero ** 0)
+    assert_equal(1, zero ** 0.quo(1))
+    assert_equal(1, zero ** 0.0)
+    assert_equal(1, zero ** BigDecimal(0))
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+      BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+      assert_positive_infinite(zero ** -1)
+      assert_positive_infinite(zero ** -1.quo(1))
+      assert_positive_infinite(zero ** -1.0)
+      assert_positive_infinite(zero ** BigDecimal(-1))
+
+      m_zero = BigDecimal("-0")
+      assert_negative_infinite(m_zero ** -1)
+      assert_negative_infinite(m_zero ** -1.quo(1))
+      assert_negative_infinite(m_zero ** -1.0)
+      assert_negative_infinite(m_zero ** BigDecimal(-1))
+      assert_positive_infinite(m_zero ** -2)
+      assert_positive_infinite(m_zero ** -2.quo(1))
+      assert_positive_infinite(m_zero ** -2.0)
+      assert_positive_infinite(m_zero ** BigDecimal(-2))
+    end
+  end
+
+  def test_power_of_positive_infinity
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+      assert_positive_infinite(BigDecimal::INFINITY ** 3)
+      assert_positive_infinite(BigDecimal::INFINITY ** 3.quo(1))
+      assert_positive_infinite(BigDecimal::INFINITY ** 3.0)
+      assert_positive_infinite(BigDecimal::INFINITY ** BigDecimal(3))
+      assert_positive_infinite(BigDecimal::INFINITY ** 2)
+      assert_positive_infinite(BigDecimal::INFINITY ** 2.quo(1))
+      assert_positive_infinite(BigDecimal::INFINITY ** 2.0)
+      assert_positive_infinite(BigDecimal::INFINITY ** BigDecimal(2))
+      assert_positive_infinite(BigDecimal::INFINITY ** 1)
+      assert_positive_infinite(BigDecimal::INFINITY ** 1.quo(1))
+      assert_positive_infinite(BigDecimal::INFINITY ** 1.0)
+      assert_positive_infinite(BigDecimal::INFINITY ** BigDecimal(1))
+      assert_equal(1, BigDecimal::INFINITY ** 0)
+      assert_equal(1, BigDecimal::INFINITY ** 0.quo(1))
+      assert_equal(1, BigDecimal::INFINITY ** 0.0)
+      assert_equal(1, BigDecimal::INFINITY ** BigDecimal(0))
+      assert_positive_zero(BigDecimal::INFINITY ** -1)
+      assert_positive_zero(BigDecimal::INFINITY ** -1.quo(1))
+      assert_positive_zero(BigDecimal::INFINITY ** -1.0)
+      assert_positive_zero(BigDecimal::INFINITY ** BigDecimal(-1))
+      assert_positive_zero(BigDecimal::INFINITY ** -2)
+      assert_positive_zero(BigDecimal::INFINITY ** -2.0)
+      assert_positive_zero(BigDecimal::INFINITY ** BigDecimal(-2))
+    end
+  end
+
+  def test_power_of_negative_infinity
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+      assert_negative_infinite((-BigDecimal::INFINITY) ** 3)
+      assert_negative_infinite((-BigDecimal::INFINITY) ** 3.quo(1))
+      assert_negative_infinite((-BigDecimal::INFINITY) ** 3.0)
+      assert_negative_infinite((-BigDecimal::INFINITY) ** BigDecimal(3))
+      assert_positive_infinite((-BigDecimal::INFINITY) ** 2)
+      assert_positive_infinite((-BigDecimal::INFINITY) ** 2.quo(1))
+      assert_positive_infinite((-BigDecimal::INFINITY) ** 2.0)
+      assert_positive_infinite((-BigDecimal::INFINITY) ** BigDecimal(2))
+      assert_negative_infinite((-BigDecimal::INFINITY) ** 1)
+      assert_negative_infinite((-BigDecimal::INFINITY) ** 1.quo(1))
+      assert_negative_infinite((-BigDecimal::INFINITY) ** 1.0)
+      assert_negative_infinite((-BigDecimal::INFINITY) ** BigDecimal(1))
+      assert_equal(1, (-BigDecimal::INFINITY) ** 0)
+      assert_equal(1, (-BigDecimal::INFINITY) ** 0.quo(1))
+      assert_equal(1, (-BigDecimal::INFINITY) ** 0.0)
+      assert_equal(1, (-BigDecimal::INFINITY) ** BigDecimal(0))
+      assert_negative_zero((-BigDecimal::INFINITY) ** -1)
+      assert_negative_zero((-BigDecimal::INFINITY) ** -1.quo(1))
+      assert_negative_zero((-BigDecimal::INFINITY) ** -1.0)
+      assert_negative_zero((-BigDecimal::INFINITY) ** BigDecimal(-1))
+      assert_positive_zero((-BigDecimal::INFINITY) ** -2)
+      assert_positive_zero((-BigDecimal::INFINITY) ** -2.quo(1))
+      assert_positive_zero((-BigDecimal::INFINITY) ** -2.0)
+      assert_positive_zero((-BigDecimal::INFINITY) ** BigDecimal(-2))
+    end
+  end
+
+  def test_power_without_prec
+    pi  = BigDecimal("3.14159265358979323846264338327950288419716939937511")
+    e   = BigDecimal("2.71828182845904523536028747135266249775724709369996")
+    pow = BigDecimal("22.4591577183610454734271522045437350275893151339967843873233068")
+    assert_equal(pow, pi.power(e))
+  end
+
+  def test_power_with_prec
+    pi  = BigDecimal("3.14159265358979323846264338327950288419716939937511")
+    e   = BigDecimal("2.71828182845904523536028747135266249775724709369996")
+    pow = BigDecimal("22.459157718361045473")
+    assert_equal(pow, pi.power(e, 20))
   end
 
   def test_limit
@@ -947,5 +1155,90 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_in_epsilon(Math.exp(40), BigMath.exp(BigDecimal("40"), n))
     assert_in_epsilon(Math.exp(-n), BigMath.exp(BigDecimal("-20"), n))
     assert_in_epsilon(Math.exp(-40), BigMath.exp(BigDecimal("-40"), n))
+  end
+
+  def test_BigMath_log_with_nil
+    assert_raise(ArgumentError) do
+      BigMath.log(nil, 20)
+    end
+  end
+
+  def test_BigMath_log_with_nil_precision
+    assert_raise(ArgumentError) do
+      BigMath.log(1, nil)
+    end
+  end
+
+  def test_BigMath_log_with_complex
+    assert_raise(Math::DomainError) do
+      BigMath.log(Complex(1, 2), 20)
+    end
+  end
+
+  def test_BigMath_log_with_zerp_precision
+    assert_raise(ArgumentError) do
+      BigMath.log(1, 0)
+    end
+  end
+
+  def test_BigMath_log_with_negative_precision
+    assert_raise(ArgumentError) do
+      BigMath.log(1, -42)
+    end
+  end
+
+  def test_BigMath_log_with_negative_infinite
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+      assert_raise(Math::DomainError) do
+        BigMath.log(-BigDecimal::INFINITY, 20)
+      end
+    end
+  end
+
+  def test_BigMath_log_with_positive_infinite
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+      assert(BigMath.log(BigDecimal::INFINITY, 20) > 0)
+      assert(BigMath.log(BigDecimal::INFINITY, 20).infinite?)
+    end
+  end
+
+  def test_BigMath_log_with_nan
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+      assert(BigMath.log(BigDecimal::NAN, 20).nan?)
+    end
+  end
+
+  def test_BigMath_log_with_1
+    assert_in_delta(0.0, BigMath.log(1, 20))
+    assert_in_delta(0.0, BigMath.log(1.0, 20))
+    assert_in_delta(0.0, BigMath.log(BigDecimal(1), 20))
+  end
+
+  def test_BigMath_log_with_exp_1
+    assert_in_delta(1.0, BigMath.log(BigMath.exp(1, 20), 20))
+  end
+
+  def test_BigMath_log_with_2
+    assert_in_delta(Math.log(2), BigMath.log(2, 20))
+    assert_in_delta(Math.log(2), BigMath.log(2.0, 20))
+    assert_in_delta(Math.log(2), BigMath.log(BigDecimal(2), 20))
+  end
+
+  def test_BigMath_log_with_square_of_exp_2
+    assert_in_delta(2, BigMath.log(BigMath.exp(1, 20)**2, 20))
+  end
+
+  def test_BigMath_log_with_42
+    assert_in_delta(Math.log(42), BigMath.log(42, 20))
+    assert_in_delta(Math.log(42), BigMath.log(42.0, 20))
+    assert_in_delta(Math.log(42), BigMath.log(BigDecimal(42), 20))
+  end
+
+  def test_BigMath_log_with_reciprocal_of_42
+    assert_in_delta(Math.log(1e-42), BigMath.log(1e-42, 20))
+    assert_in_delta(Math.log(1e-42), BigMath.log(BigDecimal("1e-42"), 20))
   end
 end

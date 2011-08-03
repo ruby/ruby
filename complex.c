@@ -486,7 +486,6 @@ nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
 }
 
 #define imp1(n) \
-extern VALUE rb_math_##n(VALUE x);\
 inline static VALUE \
 m_##n##_bang(VALUE x)\
 {\
@@ -494,7 +493,6 @@ m_##n##_bang(VALUE x)\
 }
 
 #define imp2(n) \
-extern VALUE rb_math_##n(VALUE x, VALUE y);\
 inline static VALUE \
 m_##n##_bang(VALUE x, VALUE y)\
 {\
@@ -1175,6 +1173,9 @@ nucomp_eql_p(VALUE self, VALUE other)
 inline static VALUE
 f_signbit(VALUE x)
 {
+#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun__)
+    extern int signbit(double x);
+#endif
     switch (TYPE(x)) {
       case T_FLOAT: {
 	double f = RFLOAT_VALUE(x);

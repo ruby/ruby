@@ -1,3 +1,20 @@
+class Integer < Numeric
+  # call-seq:
+  #     int.to_d  -> bigdecimal
+  #
+  # Convert +int+ to a BigDecimal and return it.
+  #
+  #     require 'bigdecimal'
+  #     require 'bigdecimal/util'
+  #
+  #     42.to_d
+  #     # => #<BigDecimal:1008ef070,'0.42E2',9(36)>
+  #
+  def to_d
+    BigDecimal(self)
+  end
+end
+
 class Float < Numeric
   # call-seq:
   #     flt.to_d  -> bigdecimal
@@ -10,8 +27,8 @@ class Float < Numeric
   #     0.5.to_d
   #     # => #<BigDecimal:1dc69e0,'0.5E0',9(18)>
   #
-  def to_d
-    BigDecimal(self.to_s)
+  def to_d(precision=nil)
+    BigDecimal(self, precision || Float::DIG+1)
   end
 end
 
@@ -54,6 +71,14 @@ class BigDecimal < Numeric
       i + "." + ("0"*(-z)) + f
     end
   end
+
+  # call-seq:
+  #     a.to_d -> bigdecimal
+  #
+  # Returns self.
+  def to_d
+    self
+  end
 end
 
 class Rational < Numeric
@@ -70,11 +95,11 @@ class Rational < Numeric
   #   # => #<BigDecimal:1a52bd8,'0.3142857142 8571427937 0154144999 105E1',45(63)>
   #   r.to_d(3)
   #   # => #<BigDecimal:1a44d08,'0.314E1',18(36)>
-  def to_d(nFig=0)
-    num = self.numerator.to_s
-    if nFig<=0
-      nFig = BigDecimal.double_fig*2+1
+  def to_d(precision)
+    if precision <= 0
+      raise ArgumentError, "negative precision"
     end
-    BigDecimal.new(num).div(self.denominator,nFig)
+    num = self.numerator
+    BigDecimal(num).div(self.denominator, precision)
   end
 end

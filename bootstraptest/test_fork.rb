@@ -47,3 +47,23 @@ assert_equal 'ok', %q{
     :ok
   end
 }, '[ruby-core:28924]'
+
+assert_equal '[1, 2]', %q{
+  a = []
+  trap(:INT) { a.push(1) }
+  trap(:TERM) { a.push(2) }
+  pid = $$
+  begin
+    fork do
+      sleep 0.5
+      Process.kill(:INT, pid)
+      Process.kill(:TERM, pid)
+    end
+
+    sleep 1
+    a.sort
+  rescue NotImplementedError
+    [1, 2]
+  end
+}, '[ruby-dev:44005] [Ruby 1.9 - Bug #4950]'
+

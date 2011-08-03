@@ -566,9 +566,9 @@ get_next_values(VALUE obj, struct enumerator *e)
  *   #  yield nil        [nil]            nil
  *   #  yield [1, 2]     [[1, 2]]         [1, 2]
  *
- * Note that enumeration sequenced by +next_values+ does not affect other
- * non-external enumeration methods, unless underlying iteration methods
- * itself has side-effect, e.g. IO#each_line.
+ * Note that +next_values+ does not affect other non-external enumeration
+ * methods unless underlying iteration method itself has side-effect, e.g.
+ * IO#each_line.
  *
  */
 

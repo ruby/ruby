@@ -197,7 +197,7 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
     cert = issue_cert(@ca, @dsa256, 1, Time.now, Time.now+3600, [],
                       nil, nil, OpenSSL::Digest::SHA1.new)
     assert_equal("dsaWithSHA1", cert.signature_algorithm)
-  end
+  end if defined?(OpenSSL::Digest::SHA256)
 
   def test_check_private_key
     cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],

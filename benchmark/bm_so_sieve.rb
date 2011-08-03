@@ -1,5 +1,5 @@
 # from http://www.bagley.org/~doug/shootout/bench/sieve/sieve.ruby
-num = 40
+num = 500
 count = i = j = 0
 flags0 = Array.new(8192,1)
 k = 0

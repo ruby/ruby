@@ -38,7 +38,9 @@ class TestEtc < Test::Unit::TestCase
 
   def test_getpwnam
     passwd = {}
-    Etc.passwd {|s| passwd[s.name] ||= s }
+    Etc.passwd do |s|
+      passwd[s.name] ||= s unless /\A\+/ =~ s.name
+    end
     passwd.each_value do |s|
       assert_equal(s, Etc.getpwnam(s.name))
     end
@@ -80,7 +82,7 @@ class TestEtc < Test::Unit::TestCase
   def test_getgrnam
     groups = {}
     Etc.group do |s|
-      groups[s.name] ||= s
+      groups[s.name] ||= s unless /\A\+/ =~ s.name
     end
     groups.each_value do |s|
       assert_equal(s, Etc.getgrnam(s.name))

@@ -386,11 +386,11 @@ call_cfunc(VALUE (*func)(), VALUE recv,
 }
 
 static inline VALUE
-vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
-	      int num, VALUE recv, const rb_block_t *blockptr,
+vm_call_cfunc(rb_thread_t *th, volatile rb_control_frame_t *reg_cfp,
+	      int num, volatile VALUE recv, const rb_block_t *blockptr,
 	      const rb_method_entry_t *me)
 {
-    VALUE val = 0;
+    volatile VALUE val = 0;
     const rb_method_definition_t *def = me->def;
     rb_control_frame_t *cfp;
 
@@ -421,11 +421,15 @@ vm_call_bmethod(rb_thread_t *th, VALUE recv, int argc, const VALUE *argv,
     rb_proc_t *proc;
     VALUE val;
 
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_CALL, recv, me->called_id, me->klass);
+
     /* control block frame */
     th->passed_me = me;
-
     GetProcPtr(me->def->body.proc, proc);
     val = rb_vm_invoke_proc(th, proc, recv, argc, argv, blockptr);
+
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, recv, me->called_id, me->klass);
+
     return val;
 }
 
@@ -1261,7 +1265,8 @@ vm_getivar(VALUE obj, ID id, IC ic)
 	VALUE val = Qundef;
 	VALUE klass = RBASIC(obj)->klass;
 
-	if (ic->ic_class == klass) {
+	if (LIKELY(ic->ic_class == klass &&
+		   ic->ic_vmstat == GET_VM_STATE_VERSION())) {
 	    long index = ic->ic_value.index;
 	    long len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
@@ -1283,6 +1288,7 @@ vm_getivar(VALUE obj, ID id, IC ic)
 		    }
 		    ic->ic_class = klass;
 		    ic->ic_value.index = index;
+		    ic->ic_vmstat = GET_VM_STATE_VERSION();
 		}
 	    }
 	}
@@ -1314,7 +1320,8 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
 	VALUE klass = RBASIC(obj)->klass;
 	st_data_t index;
 
-	if (ic->ic_class == klass) {
+	if (LIKELY(ic->ic_class == klass &&
+		   ic->ic_vmstat == GET_VM_STATE_VERSION())) {
 	    long index = ic->ic_value.index;
 	    long len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
@@ -1330,6 +1337,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
 	    if (iv_index_tbl && st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
 		ic->ic_class = klass;
 		ic->ic_value.index = index;
+		ic->ic_vmstat = GET_VM_STATE_VERSION();
 	    }
 	    /* fall through */
 	}
@@ -1410,9 +1418,14 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq,
 	}
 
 	while (lcfp->iseq != iseq) {
+	    rb_thread_t *th = GET_THREAD();
 	    VALUE *tdfp = GET_PREV_DFP(lcfp->dfp);
 	    while (1) {
 		lcfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(lcfp);
+		if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, lcfp)) {
+		    rb_raise(rb_eNoMethodError,
+			     "super called outside of method");
+		}
 		if (lcfp->dfp == tdfp) {
 		    break;
 		}
@@ -1528,6 +1541,7 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 		rb_control_frame_t *cfp = GET_CFP();
 		VALUE *dfp = GET_DFP();
 		VALUE *lfp = GET_LFP();
+		int in_class_frame = 0;
 
 		/* check orphan and get dfp */
 		while ((VALUE *) cfp < th->stack + th->stack_size) {
@@ -1535,12 +1549,19 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 			lfp = cfp->lfp;
 		    }
 		    if (cfp->dfp == lfp && cfp->iseq->type == ISEQ_TYPE_CLASS) {
+			in_class_frame = 1;
 			lfp = 0;
 		    }
 
 		    if (cfp->lfp == lfp) {
 			if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA) {
 			    VALUE *tdfp = dfp;
+
+			    if (in_class_frame) {
+				/* lambda {class A; ... return ...; end} */
+				dfp = cfp->dfp;
+				goto valid_return;
+			    }
 
 			    while (lfp != tdfp) {
 				if (cfp->dfp == tdfp) {

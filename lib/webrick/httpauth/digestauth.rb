@@ -83,7 +83,6 @@ module WEBrick
         @nonce_expire_period    = @config[:NonceExpirePeriod]
         @nonce_expire_delta     = @config[:NonceExpireDelta]
         @internet_explorer_hack = @config[:InternetExplorerHack]
-        @opera_hack             = @config[:OperaHack]
 
         case @algorithm
         when 'MD5','MD5-sess'
@@ -175,8 +174,7 @@ module WEBrick
         end
 
         auth_req['algorithm'] ||= 'MD5'
-        if auth_req['algorithm'] != @algorithm &&
-           (@opera_hack && auth_req['algorithm'] != @algorithm.upcase)
+        if auth_req['algorithm'].upcase != @algorithm.upcase
           error('%s: algorithm unmatch. "%s" for "%s"',
                 auth_req['username'], auth_req['algorithm'], @algorithm)
           return false
@@ -212,8 +210,7 @@ module WEBrick
           nonce_is_invalid = true
         end
 
-        if /-sess$/ =~ auth_req['algorithm'] ||
-           (@opera_hack && /-SESS$/ =~ auth_req['algorithm'])
+        if /-sess$/i =~ auth_req['algorithm']
           ha1 = hexdigest(password, auth_req['nonce'], auth_req['cnonce'])
         else
           ha1 = password

@@ -91,11 +91,11 @@ ossl_pkcs12_s_create(int argc, VALUE *argv, VALUE self)
 /* TODO: make a VALUE to nid function */
     if (!NIL_P(key_nid)) {
         if ((nkey = OBJ_txt2nid(StringValuePtr(key_nid))) == NID_undef)
-            rb_raise(rb_eArgError, "Unknown PBE algorithm %s", StringValuePtr(key_nid));
+            ossl_raise(rb_eArgError, "Unknown PBE algorithm %s", StringValuePtr(key_nid));
     }
     if (!NIL_P(cert_nid)) {
         if ((ncert = OBJ_txt2nid(StringValuePtr(cert_nid))) == NID_undef)
-            rb_raise(rb_eArgError, "Unknown PBE algorithm %s", StringValuePtr(cert_nid));
+            ossl_raise(rb_eArgError, "Unknown PBE algorithm %s", StringValuePtr(cert_nid));
     }
     if (!NIL_P(key_iter))
         kiter = NUM2INT(key_iter);

@@ -1,9 +1,3 @@
-######################################################################
-# This file is imported from the rubygems project.
-# DO NOT make modifications in this repo. They _will_ be reverted!
-# File a patch instead and assign it to Ryan Davis or Eric Hodel.
-######################################################################
-
 # -*- ruby -*-
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
@@ -32,8 +26,6 @@ if Gem::GEM_PRELUDE_SUCKAGE and defined?(Gem::QuickLoader) then
 end
 
 require 'rubygems/defaults'
-require "rubygems/dependency_list"
-require 'rubygems/path_support'
 require 'rbconfig'
 require "rubygems/deprecate"
 
@@ -126,7 +118,7 @@ require "rubygems/deprecate"
 # -The RubyGems Team
 
 module Gem
-  VERSION = '1.8.5'
+  VERSION = '1.8.6.1'
 
   ##
   # Raised when RubyGems is unable to load or activate a gem.  Contains the
@@ -428,15 +420,15 @@ module Gem
   def self.each_load_path(partials)
     partials.each do |gp|
       base = File.basename gp
-      specfn = dir.specifications.add(base + ".gemspec")
-      if specfn.exist?
-        spec = eval(specfn.read)
+      specfn = File.join(dir, "specifications", "#{base}.gemspec")
+      if File.exists? specfn
+        spec = eval(File.read(specfn))
         spec.require_paths.each do |rp|
-          yield(gp.add(rp))
+          yield File.join(gp,rp)
         end
       else
-        filename = dir.add(gp, 'lib')
-        yield(filename) if filename.exist?
+        filename = File.join(gp, 'lib')
+        yield(filename) if File.exists? filename
       end
     end
   end
@@ -591,7 +583,7 @@ module Gem
 
     Gem.path.each do |gemdir|
       each_load_path(latest_partials(gemdir)) do |load_path|
-        result << gemdir.add(load_path).expand_path
+        result << load_path
       end
     end
 
@@ -646,10 +638,23 @@ module Gem
   # Loads YAML, preferring Psych
 
   def self.load_yaml
-    require 'psych'
-  rescue ::LoadError
-  ensure
-    require 'yaml'
+    begin
+      require 'psych'
+    rescue ::LoadError
+    ensure
+      require 'yaml'
+    end
+
+    # Hack to handle syck's DefaultKey bug with psych.
+    # See the note at the top of lib/rubygems/requirement.rb for
+    # why we end up defining DefaultKey more than once.
+    if !defined? YAML::Syck
+      YAML.module_eval do
+          const_set 'Syck', Module.new {
+            const_set 'DefaultKey', Class.new
+          }
+        end
+    end
   end
 
   ##
@@ -1142,11 +1147,13 @@ module Gem
   autoload :Version,         'rubygems/version'
   autoload :Requirement,     'rubygems/requirement'
   autoload :Dependency,      'rubygems/dependency'
+  autoload :DependencyList,  'rubygems/dependency_list'
   autoload :GemPathSearcher, 'rubygems/gem_path_searcher'
   autoload :SpecFetcher,     'rubygems/spec_fetcher'
   autoload :Specification,   'rubygems/specification'
   autoload :Cache,           'rubygems/source_index'
   autoload :SourceIndex,     'rubygems/source_index'
+  autoload :PathSupport,     'rubygems/path_support'
   autoload :Platform,        'rubygems/platform'
   autoload :Builder,         'rubygems/builder'
   autoload :ConfigFile,      'rubygems/config_file'
@@ -1237,8 +1244,6 @@ end
 # Enables the require hook for RubyGems.
 
 require 'rubygems/custom_require'
-
-Gem.clear_paths
 
 module Gem
   class << self

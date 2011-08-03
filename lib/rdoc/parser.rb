@@ -106,6 +106,8 @@ class RDoc::Parser
   # Applies +directive+'s +value+ to +code_object+, if appropriate
 
   def self.process_directive code_object, directive, value
+    warn "RDoc::Parser::process_directive is deprecated and wil be removed in RDoc 4.  Use RDoc::Markup::PreProcess#handle_directive instead" if $-w
+
     case directive
     when 'nodoc' then
       code_object.document_self = nil # notify nodoc
@@ -196,6 +198,9 @@ class RDoc::Parser
     @content = content
     @options = options
     @stats = stats
+
+    @preprocess = RDoc::Markup::PreProcess.new @file_name, @options.rdoc_include
+    @preprocess.options = @options
   end
 
 end

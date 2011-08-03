@@ -155,6 +155,9 @@ class TestIO_Console < Test::Unit::TestCase
   else
     def test_sync
       r, w, pid = PTY.spawn(EnvUtil.rubybin, "-rio/console", "-e", "p IO.console.class")
+    rescue RuntimeError
+      skip $!
+    else
       con = r.gets.chomp
       Process.wait(pid)
       assert_match("File", con)

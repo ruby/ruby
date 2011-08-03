@@ -1750,7 +1750,8 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
  *  is not a regexp (it's closer to a shell glob). See
  *  <code>File::fnmatch</code> for the meaning of the <i>flags</i>
  *  parameter. Note that case sensitivity depends on your system (so
- *  <code>File::FNM_CASEFOLD</code> is ignored)
+ *  <code>File::FNM_CASEFOLD</code> is ignored), as does the order
+ *  in which the results are returned.
  *
  *  <code>*</code>::        Matches any file. Can be restricted by
  *                          other values in the glob. <code>*</code>

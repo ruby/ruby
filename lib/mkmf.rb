@@ -390,6 +390,7 @@ MSG
 end
 
 def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
+  librubyarg = $extmk ? $LIBRUBYARG_STATIC : $LIBRUBYARG
   conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote,
                                 'src' => "#{CONFTEST_C}",
                                 'arch_hdrdir' => $arch_hdrdir.quote,
@@ -400,7 +401,7 @@ def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
                                 'ARCH_FLAG' => "#$ARCH_FLAG",
                                 'LDFLAGS' => "#$LDFLAGS #{ldflags}",
                                 'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
-                                'LIBS' => "#$LIBRUBYARG_STATIC #{opt} #$LIBS")
+                                'LIBS' => "#{librubyarg} #{opt} #$LIBS")
   conf['LIBPATH'] = libpathflag(libpath.map {|s| RbConfig::expand(s.dup, conf)})
   RbConfig::expand(TRY_LINK.dup, conf)
 end
@@ -1640,7 +1641,8 @@ SHELL = /bin/sh
 V = 0
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
-ECHO1 = $(V:1=@:)
+n=$(NULLCMD)
+ECHO1 = $(V:1=@$n)
 ECHO = $(ECHO1:0=@echo)
 
 #### Start of system configuration section. ####
@@ -1676,6 +1678,8 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
   possible_command = (proc {|s| s if /top_srcdir/ !~ s} unless $extmk)
   extconf_h = $extconf_h ? "-DRUBY_EXTCONF_H=\\\"$(RUBY_EXTCONF_H)\\\" " : $defs.join(" ") << " "
   mk << %{
+NULLCMD = #{CONFIG['NULLCMD']}
+
 CC = #{CONFIG['CC']}
 CXX = #{CONFIG['CXX']}
 LIBRUBY = #{CONFIG['LIBRUBY']}

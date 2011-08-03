@@ -235,6 +235,16 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
+  def test_each_byte_with_seek
+    t = make_tempfile
+    bug5119 = '[ruby-core:38609]'
+    i = 0
+    open(t.path) do |f|
+      f.each_byte {i = f.pos}
+    end
+    assert_equal(12, i, bug5119)
+  end
+
   def test_each_codepoint
     t = make_tempfile
     bug2959 = '[ruby-core:28650]'
@@ -1974,5 +1984,22 @@ End
     read_file.close
     write_file.close
     file.close!
+  end
+
+  def test_warn
+    stderr = EnvUtil.verbose_warning do
+      warn "warning"
+    end
+    assert_equal("warning\n", stderr)
+
+    stderr = EnvUtil.verbose_warning do
+      warn
+    end
+    assert_equal("", stderr)
+
+    stderr = EnvUtil.verbose_warning do
+      warn "[Feature #5029]", "[ruby-core:38070]"
+    end
+    assert_equal("[Feature #5029]\n[ruby-core:38070]\n", stderr)
   end
 end

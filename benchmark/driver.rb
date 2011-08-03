@@ -90,6 +90,10 @@ class BenchmarkDriver
     end
   end
 
+  def average results
+    results.inject(:+) / results.length
+  end
+
   def show_results
     output
 
@@ -109,7 +113,10 @@ class BenchmarkDriver
       output "minimum results in each #{@repeat} measurements."
     end
 
-    output "name\t#{@execs.map{|(e, v)| v}.join("\t")}"
+    difference = "\taverage difference" if @execs.length == 2
+    total_difference = 0
+
+    output "name\t#{@execs.map{|(e, v)| v}.join("\t")}#{difference}"
     @results.each{|v, result|
       rets = []
       s = nil
@@ -129,8 +136,20 @@ class BenchmarkDriver
         end
         rets << sprintf("%.3f", r)
       }
+
+      if difference
+        diff = average(result.last) - average(result.first)
+        total_difference += diff
+        rets << sprintf("%.3f", diff)
+      end
+
       output "#{v}#{s}\t#{rets.join("\t")}"
     }
+
+    if difference and @verbose
+      output '-----------------------------------------------------------'
+      output "average total difference is #{total_difference}"
+    end
   end
 
   def files

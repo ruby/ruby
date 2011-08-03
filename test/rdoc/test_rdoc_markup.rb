@@ -56,5 +56,36 @@ the time
     assert_equal expected, out
   end
 
+  def test_convert_document
+    doc = RDoc::Markup::Parser.parse <<-STR
+now is
+the time
+
+  hello
+  dave
+
+1. l1
+2. l2
+    STR
+
+    m = RDoc::Markup.new
+
+    tt = RDoc::Markup::ToTest.new m
+
+    out = m.convert doc, tt
+
+    expected = [
+      "now is the time",
+      "\n",
+      "  hello\n  dave\n",
+      "1: ",
+      "l1",
+      "1: ",
+      "l2",
+    ]
+
+    assert_equal expected, out
+  end
+
 end
 

@@ -185,6 +185,10 @@ char *CONF_get1_default_config_file(void);
 int PEM_def_callback(char *buf, int num, int w, void *key);
 #endif
 
+#if !defined(HAVE_ASN1_PUT_EOC)
+int ASN1_put_eoc(unsigned char **pp);
+#endif
+
 #if defined(__cplusplus)
 }
 #endif

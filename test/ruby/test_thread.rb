@@ -243,7 +243,7 @@ class TestThread < Test::Unit::TestCase
     end
     t1.kill
     t2.kill
-    # assert_operator(c1, :>, c2, "[ruby-dev:33124]") # not guaranteed
+    assert_operator(c1, :>, c2, "[ruby-dev:33124]") # not guaranteed
   end
 
   def test_new
@@ -603,6 +603,18 @@ class TestThread < Test::Unit::TestCase
         @data = :data
       end
     INPUT
+  end
+
+  def test_no_valid_cfp
+    bug5083 = '[ruby-dev:44208]'
+    error = assert_raise(RuntimeError) do
+      Thread.new(&Module.method(:nesting)).join
+    end
+    assert_equal("Can't call on top of Fiber or Thread", error.message, bug5083)
+    error = assert_raise(RuntimeError) do
+      Thread.new(:to_s, &Module.method(:undef_method)).join
+    end
+    assert_equal("Can't call on top of Fiber or Thread", error.message, bug5083)
   end
 end
 

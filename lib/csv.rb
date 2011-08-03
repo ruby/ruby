@@ -1234,7 +1234,7 @@ class CSV
       io.seek(0, IO::SEEK_END)
       args.unshift(io)
     else
-      encoding = args.last.is_a?(Hash) ? args.last.delete(:encoding) : nil
+      encoding = (args[-1] = args[-1].dup).delete(:encoding) if args.last.is_a?(Hash)
       str      = ""
       str.encode!(encoding) if encoding
       args.unshift(str)

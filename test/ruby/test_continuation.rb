@@ -77,5 +77,48 @@ class TestContinuation < Test::Unit::TestCase
     }, '[ruby-dev:34802]'
   end
 
+  def tracing_with_set_trace_func
+    cont = nil
+    func = lambda do |*args|
+      @memo += 1
+      cont.call(nil)
+    end
+    cont = callcc { |cc| cc }
+    if cont
+      set_trace_func(func)
+    else
+      set_trace_func(nil)
+    end
+  end
+
+  def test_tracing_with_set_trace_func
+    @memo = 0
+    tracing_with_set_trace_func
+    tracing_with_set_trace_func
+    tracing_with_set_trace_func
+    assert_equal 3, @memo
+  end
+
+  def tracing_with_thread_set_trace_func
+    cont = nil
+    func = lambda do |*args|
+      @memo += 1
+      cont.call(nil)
+    end
+    cont = callcc { |cc| cc }
+    if cont
+      Thread.current.set_trace_func(func)
+    else
+      Thread.current.set_trace_func(nil)
+    end
+  end
+
+  def test_tracing_with_thread_set_trace_func
+    @memo = 0
+    tracing_with_thread_set_trace_func
+    tracing_with_thread_set_trace_func
+    tracing_with_thread_set_trace_func
+    assert_equal 3, @memo
+  end
 end
 

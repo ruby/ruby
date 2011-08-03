@@ -1,8 +1,7 @@
 require_relative 'utils'
 require 'stringio'
-require 'minitest/unit'
 
-class OpenSSL::TestBuffering < MiniTest::Unit::TestCase
+class OpenSSL::TestBuffering < Test::Unit::TestCase
 
   class IO
     include OpenSSL::Buffering

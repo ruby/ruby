@@ -40,6 +40,17 @@ class TestRDocClassModule < XrefTestCase
     assert_equal "comment 1\n---\ncomment 2\n---\n* comment 3", cm.comment
   end
 
+  def test_add_comment_stopdoc
+    tl = RDoc::TopLevel.new 'file.rb'
+
+    cm = RDoc::ClassModule.new 'Klass'
+    cm.stop_doc
+
+    cm.add_comment '# comment 1', tl
+
+    assert_empty cm.comment
+  end
+
   def test_ancestors
     assert_equal [@parent], @child.ancestors
   end
@@ -256,6 +267,33 @@ class TestRDocClassModule < XrefTestCase
 
     expected.each do |a| a.parent = cm1 end
     assert_equal expected, cm1.attributes.sort
+  end
+
+  def test_merge_collections_drop
+    tl = RDoc::TopLevel.new 'file'
+
+    cm1 = RDoc::ClassModule.new 'C'
+    cm1.record_location tl
+
+    const = cm1.add_constant RDoc::Constant.new('CONST', nil, nil)
+    const.record_location tl
+
+    cm2 = RDoc::ClassModule.new 'C'
+    cm2.record_location tl
+
+    added = []
+    removed = []
+
+    cm1.merge_collections cm1.constants, cm2.constants, cm2.in_files do |add, c|
+      if add then
+        added << c
+      else
+        removed << c
+      end
+    end
+
+    assert_empty added
+    assert_equal [const], removed
   end
 
   def test_merge_comment

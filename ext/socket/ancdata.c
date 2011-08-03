@@ -1377,13 +1377,26 @@ rb_recvmsg(int fd, struct msghdr *msg, int flags)
 
 #if defined(HAVE_ST_MSG_CONTROL)
 static void
-discard_cmsg(struct cmsghdr *cmh, char *msg_end)
+discard_cmsg(struct cmsghdr *cmh, char *msg_end, int msg_peek_p)
 {
+# if !defined(FD_PASSING_WORK_WITH_RECVMSG_MSG_PEEK)
+    /* 
+     * FreeBSD 8.2.0, NetBSD 5 and MacOS X Snow Leopard doesn't
+     * allocate fds by recvmsg with MSG_PEEK.
+     * [ruby-dev:44189]
+     * http://redmine.ruby-lang.org/issues/5075
+     *
+     * Linux 2.6.38 allocate fds by recvmsg with MSG_PEEK.
+     */
+    if (msg_peek_p)
+        return;
+# endif
     if (cmh->cmsg_level == SOL_SOCKET && cmh->cmsg_type == SCM_RIGHTS) {
         int *fdp = (int *)CMSG_DATA(cmh);
         int *end = (int *)((char *)cmh + cmh->cmsg_len);
         while ((char *)fdp + sizeof(int) <= (char *)end &&
                (char *)fdp + sizeof(int) <= msg_end) {
+            rb_update_max_fd(*fdp);
             close(*fdp);
             fdp++;
         }
@@ -1392,7 +1405,7 @@ discard_cmsg(struct cmsghdr *cmh, char *msg_end)
 #endif
 
 void
-rsock_discard_cmsg_resource(struct msghdr *mh)
+rsock_discard_cmsg_resource(struct msghdr *mh, int msg_peek_p)
 {
 #if defined(HAVE_ST_MSG_CONTROL)
     struct cmsghdr *cmh;
@@ -1404,7 +1417,7 @@ rsock_discard_cmsg_resource(struct msghdr *mh)
     msg_end = (char *)mh->msg_control + mh->msg_controllen;
 
     for (cmh = CMSG_FIRSTHDR(mh); cmh != NULL; cmh = CMSG_NXTHDR(mh, cmh)) {
-        discard_cmsg(cmh, msg_end);
+        discard_cmsg(cmh, msg_end, msg_peek_p);
     }
 #endif
 }
@@ -1426,6 +1439,7 @@ make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh, char *msg_end)
             VALUE io;
             if (fstat(fd, &stbuf) == -1)
                 rb_raise(rb_eSocket, "invalid fd in SCM_RIGHTS");
+            rb_update_max_fd(fd);
             if (S_ISSOCK(stbuf.st_mode))
                 io = rsock_init_sock(rb_obj_alloc(rb_cSocket), fd);
             else
@@ -1602,7 +1616,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
                 /* there are big space bug truncated.
                  * file descriptors limit? */
                 if (!gc_done) {
-		    rsock_discard_cmsg_resource(&mh);
+		    rsock_discard_cmsg_resource(&mh, (flags & MSG_PEEK) != 0);
                     goto gc_and_retry;
 		}
             }
@@ -1623,14 +1637,14 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 	}
 #endif
 	if (grown) {
-            rsock_discard_cmsg_resource(&mh);
+            rsock_discard_cmsg_resource(&mh, (flags & MSG_PEEK) != 0);
 	    goto retry;
 	}
 	else {
             grow_buffer = 0;
             if (flags != orig_flags) {
+                rsock_discard_cmsg_resource(&mh, (flags & MSG_PEEK) != 0);
                 flags = orig_flags;
-                rsock_discard_cmsg_resource(&mh);
                 goto retry;
             }
         }
@@ -1670,7 +1684,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             if (request_scm_rights)
                 make_io_for_unix_rights(ctl, cmh, msg_end);
             else
-                discard_cmsg(cmh, msg_end);
+                discard_cmsg(cmh, msg_end, (flags & MSG_PEEK) != 0);
             rb_ary_push(ret, ctl);
         }
     }

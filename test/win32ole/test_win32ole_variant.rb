@@ -4,11 +4,6 @@ rescue LoadError
 end
 require "test/unit"
 
-$MSGS = []
-def add_skip_message(msg)
-  $MSGS.push msg
-end
-
 if defined?(WIN32OLE_VARIANT)
 
   class TestWIN32OLE_VARIANT < Test::Unit::TestCase
@@ -260,7 +255,7 @@ if defined?(WIN32OLE_VARIANT)
         assert_equal(-123456789012345, obj.value)
         assert_equal(WIN32OLE::VARIANT::VT_I8|WIN32OLE::VARIANT::VT_BYREF, obj.vartype)
       else
-        STDERR.puts("\n#{__FILE__}:#{__LINE__}:#{self.class.name}.test_s_new_with_i8_byref is skipped")
+        skip("WIN32OLE::VARIANT::VT_I8 is not available")
       end
     end
 
@@ -272,7 +267,7 @@ if defined?(WIN32OLE_VARIANT)
         assert_equal(123456789012345, obj.value)
         assert_equal(WIN32OLE::VARIANT::VT_UI8|WIN32OLE::VARIANT::VT_BYREF, obj.vartype)
       else
-        STDERR.puts("\n#{__FILE__}:#{__LINE__}:#{self.class.name}.test_s_new_with_ui8_byref is skipped.")
+        skip("WIN32OLE::VARIANT::VT_UI8 is not available")
       end
     end
 
@@ -398,7 +393,7 @@ if defined?(WIN32OLE_VARIANT)
         begin
           WIN32OLE.locale = 0x0411 # set locale Japanese
         rescue WIN32OLERuntimeError
-          STDERR.puts("\n#{__FILE__}:#{__LINE__}:#{self.class.name}.test_conversion_str2cy is skipped(Japanese locale is not installed)")
+          skip("Japanese locale is not installed")
         end
         if WIN32OLE.locale == 0x0411
           obj = WIN32OLE_VARIANT.new("\\10,000", WIN32OLE::VARIANT::VT_CY)

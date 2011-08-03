@@ -1,4 +1,36 @@
 assert_equal 'ok', %q{
+  File.unlink('zzz.rb') if File.file?('zzz.rb')
+  instance_eval do
+    autoload :ZZZ, './zzz.rb'
+    begin
+      ZZZ
+    rescue LoadError
+      :ok
+    end
+  end
+}, '[ruby-dev:43816]'
+
+assert_equal 'ok', %q{
+  open('zzz.rb', 'w') {|f| f.puts '' }
+  instance_eval do
+    autoload :ZZZ, './zzz.rb'
+    begin
+      ZZZ
+    rescue NameError
+      :ok
+    end
+  end
+}, '[ruby-dev:43816]'
+
+assert_equal 'ok', %q{
+  open('zzz.rb', 'w') {|f| f.puts 'class ZZZ; def self.ok;:ok;end;end'}
+  instance_eval do
+    autoload :ZZZ, './zzz.rb'
+    ZZZ.ok
+  end
+}, '[ruby-dev:43816]'
+
+assert_equal 'ok', %q{
   open("zzz.rb", "w") {|f| f.puts "class ZZZ; def self.ok;:ok;end;end"}
   autoload :ZZZ, "./zzz.rb"
   ZZZ.ok

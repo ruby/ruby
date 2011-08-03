@@ -285,6 +285,7 @@ typedef struct rb_vm_struct {
     VALUE thgroup_default;
 
     int running;
+    int inhibit_thread_creation;
     int thread_abort_on_exception;
     unsigned long trace_flag;
     volatile int sleeper;
@@ -382,6 +383,12 @@ struct rb_unblock_callback {
 
 struct rb_mutex_struct;
 
+#ifdef MINSIGSTKSZ
+#define ALT_STACK_SIZE (MINSIGSTKSZ*2)
+#else
+#define ALT_STACK_SIZE (4*1024)
+#endif
+
 typedef struct rb_thread_struct {
     VALUE self;
     rb_vm_t *vm;
@@ -428,7 +435,6 @@ typedef struct rb_thread_struct {
 
     VALUE errinfo;
     VALUE thrown_errinfo;
-    int exec_signal;
 
     rb_atomic_t interrupt_flag;
     rb_thread_lock_t interrupt_lock;
@@ -634,8 +640,6 @@ void rb_vm_bugreport(void);
 #endif
 VALUE rb_iseq_eval(VALUE iseqval);
 VALUE rb_iseq_eval_main(VALUE iseqval);
-void rb_enable_interrupt(void);
-void rb_disable_interrupt(void);
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
 #endif
@@ -649,10 +653,14 @@ void rb_vm_inc_const_missing_count(void);
 void rb_vm_gvl_destroy(rb_vm_t *vm);
 VALUE rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc,
                  const VALUE *argv, const rb_method_entry_t *me);
+void rb_unlink_method_entry(rb_method_entry_t *me);
+void rb_gc_mark_unlinked_live_method_entries(void *pvm);
 
 void rb_thread_start_timer_thread(void);
-void rb_thread_stop_timer_thread(void);
+void rb_thread_stop_timer_thread(int);
 void rb_thread_reset_timer_thread(void);
+void rb_thread_wakeup_timer_thread(void);
+
 int ruby_thread_has_gvl_p(void);
 VALUE rb_make_backtrace(void);
 typedef int rb_backtrace_iter_func(void *, VALUE, int, VALUE);
@@ -701,6 +709,7 @@ void rb_threadptr_signal_raise(rb_thread_t *th, int sig);
 void rb_threadptr_signal_exit(rb_thread_t *th);
 void rb_threadptr_execute_interrupts(rb_thread_t *);
 void rb_threadptr_interrupt(rb_thread_t *th);
+void rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th);
 
 void rb_thread_lock_unlock(rb_thread_lock_t *);
 void rb_thread_lock_destroy(rb_thread_lock_t *);

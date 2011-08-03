@@ -493,7 +493,7 @@ module XMLRPC
       else
         a =  "#@user"
         a << ":#@password" if @password != nil
-        @auth = ("Basic " + [a].pack("m")).chomp
+        @auth = "Basic " + [a].pack("m0")
       end
     end
 

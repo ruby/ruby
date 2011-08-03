@@ -8,12 +8,13 @@
 
 **********************************************************************/
 
+#include "ruby/config.h"
 #include "addr2line.h"
 
 #include <stdio.h>
 #include <errno.h>
 
-#ifdef __ELF__
+#ifdef USE_ELF
 
 #ifdef __OpenBSD__
 #include <elf_abi.h>
@@ -29,6 +30,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#if defined(HAVE_ALLOCA_H)
+#include <alloca.h>
+#endif
 
 #ifdef HAVE_DL_ITERATE_PHDR
 # ifndef _GNU_SOURCE
@@ -600,6 +605,6 @@ rb_dump_backtrace_with_lines(int num_traces, void **trace, char **syms)
     free(lines);
 }
 
-#else /* defined(__ELF__) */
+#else /* defined(USE_ELF) */
 #error not supported
 #endif

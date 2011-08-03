@@ -70,6 +70,15 @@ module Open3
   #
   # Closing stdin, stdout and stderr does not wait the process.
   #
+  # You should be careful to avoid deadlocks.
+  # Since pipes are fixed length buffer,
+  # Open3.popen3("prog") {|i, o, e, t| o.read } deadlocks if
+  # the program generates many output on stderr.
+  # You should be read stdout and stderr simultaneously (using thread or IO.select).
+  # However if you don't need stderr output, Open3.popen2 can be used.
+  # If merged stdout and stderr output is not a problem, you can use Open3.popen2e.
+  # If you really needs stdout and stderr output as separate strings, you can consider Open3.capture3.
+  #
   def popen3(*cmd, &block)
     if Hash === cmd.last
       opts = cmd.pop.dup

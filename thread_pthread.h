@@ -38,7 +38,7 @@ typedef struct rb_global_vm_lock_struct {
     pthread_mutex_t lock;
 
     /* slow path */
-    unsigned long waiting;
+    volatile unsigned long waiting;
     rb_thread_cond_t cond;
 
     /* yield */

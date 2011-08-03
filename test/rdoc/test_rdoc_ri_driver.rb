@@ -5,6 +5,7 @@ require 'tmpdir'
 require 'fileutils'
 require 'stringio'
 require 'rdoc/ri/driver'
+require 'rdoc/rdoc'
 
 class TestRDocRIDriver < MiniTest::Unit::TestCase
 
@@ -223,7 +224,7 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
   def test_add_method_list_none
     out = @RM::Document.new
 
-    @driver.add_method_list out, nil, 'Class'
+    @driver.add_method_list out, [], 'Class'
 
     assert_equal @RM::Document.new, out
   end
@@ -247,6 +248,46 @@ class TestRDocRIDriver < MiniTest::Unit::TestCase
     }
 
     assert_equal expected, @driver.classes
+  end
+
+  def test_class_document
+    util_store
+
+    tl1 = RDoc::TopLevel.new 'one.rb'
+    tl2 = RDoc::TopLevel.new 'two.rb'
+
+    @cFoo.add_comment 'one', tl1
+    @cFoo.add_comment 'two', tl2
+    @store.save_class @cFoo
+
+    found = [
+      [@store, @store.load_class(@cFoo.full_name)]
+    ]
+
+    out = @driver.class_document @cFoo.full_name, found, [], []
+
+    expected = @RM::Document.new
+    @driver.add_class expected, 'Foo', []
+    @driver.add_includes expected, []
+    @driver.add_from expected, @store
+    expected << @RM::Rule.new(1)
+
+    doc = @RM::Document.new(@RM::Paragraph.new('one'))
+    doc.file = 'one.rb'
+    expected.push doc
+    expected << @RM::BlankLine.new
+    doc = @RM::Document.new(@RM::Paragraph.new('two'))
+    doc.file = 'two.rb'
+    expected.push doc
+
+    expected << @RM::Rule.new(1)
+    expected << @RM::Heading.new(1, 'Instance methods:')
+    expected << @RM::BlankLine.new
+    expected << @RM::Verbatim.new('inherit')
+    expected << @RM::Verbatim.new('override')
+    expected << @RM::BlankLine.new
+
+    assert_equal expected, out
   end
 
   def test_complete
@@ -633,8 +674,24 @@ Foo::Bar#bother
   def test_list_methods_matching
     util_store
 
-    assert_equal %w[Foo::Bar#attr Foo::Bar#blah Foo::Bar#bother Foo::Bar::new],
-                 @driver.list_methods_matching('Foo::Bar.')
+    assert_equal %w[
+        Foo::Bar#attr
+        Foo::Bar#blah
+        Foo::Bar#bother
+        Foo::Bar::new
+      ],
+      @driver.list_methods_matching('Foo::Bar.').sort
+  end
+
+  def test_list_methods_matching_inherit
+    util_multi_store
+
+    assert_equal %w[
+        Bar#baz
+        Bar#inherit
+        Bar#override
+      ],
+      @driver.list_methods_matching('Bar.').sort
   end
 
   def test_list_methods_matching_regexp
@@ -805,6 +862,42 @@ Foo::Bar#bother
     assert_equal 'baz',      meth,  'Foo::Bar#baz method'
   end
 
+  def test_parse_name_special
+    specials = %w[
+      %
+      &
+      *
+      +
+      +@
+      -
+      -@
+      /
+      <
+      <<
+      <=
+      <=>
+      ==
+      ===
+      =>
+      =~
+      >
+      >>
+      []
+      []=
+      ^
+      `
+      |
+      ~
+      ~@
+    ]
+
+    specials.each do |special|
+      parsed = @driver.parse_name special
+
+      assert_equal ['', '.', special], parsed
+    end
+  end
+
   def _test_setup_pager # this test doesn't do anything anymore :(
     @driver.use_stdout = false
 
@@ -864,29 +957,28 @@ Foo::Bar#bother
 
   def util_multi_store
     util_store
+
     @store1 = @store
+
+    @top_level = RDoc::TopLevel.new 'file.rb'
 
     @home_ri2 = "#{@home_ri}2"
     @store2 = RDoc::RI::Store.new @home_ri2
 
     # as if seen in a namespace like class Ambiguous::Other
-    @mAmbiguous = RDoc::NormalModule.new 'Ambiguous'
+    @mAmbiguous = @top_level.add_module RDoc::NormalModule, 'Ambiguous'
 
-    @cFoo = RDoc::NormalClass.new 'Foo'
+    @cFoo = @top_level.add_class RDoc::NormalClass, 'Foo'
 
-    @cBar = RDoc::NormalClass.new 'Bar'
-    @cBar.superclass = 'Foo'
-    @cFoo_Baz = RDoc::NormalClass.new 'Baz'
-    @cFoo_Baz.parent = @cFoo
+    @cBar = @top_level.add_class RDoc::NormalClass, 'Bar', 'Foo'
+    @cFoo_Baz = @cFoo.add_class RDoc::NormalClass, 'Baz'
 
-    @baz = RDoc::AnyMethod.new nil, 'baz'
+    @baz = @cBar.add_method RDoc::AnyMethod.new(nil, 'baz')
     @baz.record_location @top_level
-    @cBar.add_method @baz
 
-    @override = RDoc::AnyMethod.new nil, 'override'
+    @override = @cBar.add_method RDoc::AnyMethod.new(nil, 'override')
     @override.comment = 'must be displayed'
     @override.record_location @top_level
-    @cBar.add_method @override
 
     @store2.save_class @mAmbiguous
     @store2.save_class @cBar
@@ -898,6 +990,8 @@ Foo::Bar#bother
     @store2.save_cache
 
     @driver.stores = [@store1, @store2]
+
+    RDoc::RDoc.reset
   end
 
   def util_store
@@ -905,53 +999,42 @@ Foo::Bar#bother
 
     @top_level = RDoc::TopLevel.new 'file.rb'
 
-    @cFoo       = RDoc::NormalClass.new 'Foo'
-    @mInc       = RDoc::NormalModule.new 'Inc'
-    @cAmbiguous = RDoc::NormalClass.new 'Ambiguous'
+    @cFoo = @top_level.add_class RDoc::NormalClass, 'Foo'
+    @mInc = @top_level.add_module RDoc::NormalModule, 'Inc'
+    @cAmbiguous = @top_level.add_class RDoc::NormalClass, 'Ambiguous'
 
     doc = @RM::Document.new @RM::Paragraph.new('Include thingy')
-
-    @cFooInc = RDoc::Include.new 'Inc', doc
+    @cFooInc = @cFoo.add_include RDoc::Include.new('Inc', doc)
     @cFooInc.record_location @top_level
-    @cFoo.add_include @cFooInc
 
-    @cFoo_Bar = RDoc::NormalClass.new 'Bar'
-    @cFoo_Bar.parent = @cFoo
+    @cFoo_Bar = @cFoo.add_class RDoc::NormalClass, 'Bar'
 
-    @blah = RDoc::AnyMethod.new nil, 'blah'
+    @blah = @cFoo_Bar.add_method RDoc::AnyMethod.new(nil, 'blah')
     @blah.call_seq = "blah(5) => 5\nblah(6) => 6\n"
     @blah.record_location @top_level
 
-    @bother = RDoc::AnyMethod.new nil, 'bother'
+    @bother = @cFoo_Bar.add_method RDoc::AnyMethod.new(nil, 'bother')
     @bother.block_params = "stuff"
     @bother.params = "(things)"
     @bother.record_location @top_level
 
-    @new  = RDoc::AnyMethod.new nil, 'new'
+    @new = @cFoo_Bar.add_method RDoc::AnyMethod.new nil, 'new'
     @new.record_location @top_level
     @new.singleton = true
 
-    @cFoo_Bar.add_method @blah
-    @cFoo_Bar.add_method @bother
-    @cFoo_Bar.add_method @new
-
-    @attr = RDoc::Attr.new nil, 'attr', 'RW', ''
+    @attr = @cFoo_Bar.add_attribute RDoc::Attr.new nil, 'attr', 'RW', ''
     @attr.record_location @top_level
 
-    @cFoo_Bar.add_attribute @attr
+    @cFoo_Baz = @cFoo.add_class RDoc::NormalClass, 'Baz'
+    @cFoo_Baz.record_location @top_level
 
-    @cFoo_Baz = RDoc::NormalClass.new 'Baz'
-    @cFoo_Baz.parent = @cFoo
-
-    @inherit = RDoc::AnyMethod.new nil, 'inherit'
+    @inherit = @cFoo.add_method RDoc::AnyMethod.new(nil, 'inherit')
     @inherit.record_location @top_level
-    @cFoo.add_method @inherit
 
     # overriden by Bar in multi_store
-    @overriden = RDoc::AnyMethod.new nil, 'override'
+    @overriden = @cFoo.add_method RDoc::AnyMethod.new(nil, 'override')
     @overriden.comment = 'must not be displayed'
     @overriden.record_location @top_level
-    @cFoo.add_method @overriden
 
     @store.save_class @cFoo
     @store.save_class @cFoo_Bar
@@ -970,6 +1053,8 @@ Foo::Bar#bother
     @store.save_cache
 
     @driver.stores = [@store]
+
+    RDoc::RDoc.reset
   end
 
 end

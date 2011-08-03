@@ -198,9 +198,12 @@ int rb_threadptr_reset_raised(rb_thread_t *th);
 VALUE rb_f_eval(int argc, VALUE *argv, VALUE self);
 VALUE rb_make_exception(int argc, VALUE *argv);
 
+NORETURN(void rb_method_name_error(VALUE, VALUE));
+
 NORETURN(void rb_fiber_start(void));
 
 NORETURN(void rb_print_undef(VALUE, ID, int));
+NORETURN(void rb_print_undef_str(VALUE, VALUE));
 NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));
 NORETURN(void rb_vm_jump_tag_but_local_jump(int, VALUE));
 NORETURN(void rb_raise_method_missing(rb_thread_t *th, int argc, VALUE *argv,
@@ -213,7 +216,6 @@ void rb_vm_set_progname(VALUE filename);
 void rb_thread_terminate_all(void);
 VALUE rb_vm_top_self();
 VALUE rb_vm_cbase(void);
-void rb_trap_restore_mask(void);
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 #define CharNext(p) ((p) + mblen((p), RUBY_MBCHAR_MAXSIZE))

@@ -13,6 +13,11 @@
 #include "addr2line.h"
 #include "vm_core.h"
 
+/* see vm_insnhelper.h for the values */
+#ifndef VMDEBUG
+#define VMDEBUG 0
+#endif
+
 #define MAX_POSBUF 128
 
 #define VM_CFP_CNT(th, cfp) \
@@ -779,18 +784,17 @@ rb_vm_bugreport(void)
 	}
     }
 
-#if defined __MACH__ && defined __APPLE__
-    fprintf(stderr, "-- See Crash Report log file under "
-	    "~/Library/Logs/CrashReporter or ---------\n");
-    fprintf(stderr, "-- /Library/Logs/CrashReporter, for "
-	    "the more detail of ---------------------\n");
-#endif
 #if HAVE_BACKTRACE || defined(_WIN32)
     fprintf(stderr, "-- C level backtrace information "
 	    "-------------------------------------------\n");
 
     {
 #if defined __MACH__ && defined __APPLE__
+	fprintf(stderr, "\n");
+	fprintf(stderr, "   See Crash Report log file under "
+		"~/Library/Logs/CrashReporter or\n");
+	fprintf(stderr, "   /Library/Logs/CrashReporter, for "
+		"the more detail of.\n");
 #elif HAVE_BACKTRACE
 #define MAX_NATIVE_TRACE 1024
 	static void *trace[MAX_NATIVE_TRACE];
@@ -798,7 +802,7 @@ rb_vm_bugreport(void)
 	char **syms = backtrace_symbols(trace, n);
 
 	if (syms) {
-#ifdef __ELF__
+#ifdef USE_ELF
 	    rb_dump_backtrace_with_lines(n, trace, syms);
 #else
 	    int i;

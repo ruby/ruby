@@ -86,13 +86,27 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_me
     }
 }
 
-static void
+void
 rb_unlink_method_entry(rb_method_entry_t *me)
 {
     struct unlinked_method_entry_list_entry *ume = ALLOC(struct unlinked_method_entry_list_entry);
     ume->me = me;
     ume->next = GET_VM()->unlinked_method_entry_list;
     GET_VM()->unlinked_method_entry_list = ume;
+}
+
+void
+rb_gc_mark_unlinked_live_method_entries(void *pvm)
+{
+    rb_vm_t *vm = pvm;
+    struct unlinked_method_entry_list_entry *ume = vm->unlinked_method_entry_list;
+
+    while (ume) {
+	if (ume->me->mark) {
+	    rb_mark_method_entry(ume->me);
+	}
+	ume = ume->next;
+    }
 }
 
 void
@@ -304,7 +318,9 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
       default:
 	rb_bug("rb_add_method: unsupported method type (%d)\n", type);
     }
-    method_added(klass, mid);
+    if (type != VM_METHOD_TYPE_UNDEF) {
+	method_added(klass, mid);
+    }
     return me;
 }
 
@@ -469,7 +485,13 @@ rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
     int i;
 
     for (i = 0; i < argc; i++) {
-	remove_method(mod, rb_to_id(argv[i]));
+	VALUE v = argv[i];
+	ID id = rb_check_id(&v);
+	if (!id) {
+	    rb_name_error_str(v, "method `%s' not defined in %s",
+			      RSTRING_PTR(v), rb_class2name(mod));
+	}
+	remove_method(mod, id);
     }
     return mod;
 }
@@ -677,7 +699,12 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
 {
     int i;
     for (i = 0; i < argc; i++) {
-	rb_undef(mod, rb_to_id(argv[i]));
+	VALUE v = argv[i];
+	ID id = rb_check_id(&v);
+	if (!id) {
+	    rb_method_name_error(mod, v);
+	}
+	rb_undef(mod, id);
     }
     return mod;
 }
@@ -711,7 +738,8 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
 static VALUE
 rb_mod_method_defined(VALUE mod, VALUE mid)
 {
-    if (!rb_method_boundp(mod, rb_to_id(mid), 1)) {
+    ID id = rb_check_id(&mid);
+    if (!id || !rb_method_boundp(mod, id, 1)) {
 	return Qfalse;
     }
     return Qtrue;
@@ -761,7 +789,9 @@ check_definition(VALUE mod, ID mid, rb_method_flag_t noex)
 static VALUE
 rb_mod_public_method_defined(VALUE mod, VALUE mid)
 {
-    return check_definition(mod, rb_to_id(mid), NOEX_PUBLIC);
+    ID id = rb_check_id(&mid);
+    if (!id) return Qfalse;
+    return check_definition(mod, id, NOEX_PUBLIC);
 }
 
 /*
@@ -793,7 +823,9 @@ rb_mod_public_method_defined(VALUE mod, VALUE mid)
 static VALUE
 rb_mod_private_method_defined(VALUE mod, VALUE mid)
 {
-    return check_definition(mod, rb_to_id(mid), NOEX_PRIVATE);
+    ID id = rb_check_id(&mid);
+    if (!id) return Qfalse;
+    return check_definition(mod, id, NOEX_PRIVATE);
 }
 
 /*
@@ -825,7 +857,9 @@ rb_mod_private_method_defined(VALUE mod, VALUE mid)
 static VALUE
 rb_mod_protected_method_defined(VALUE mod, VALUE mid)
 {
-    return check_definition(mod, rb_to_id(mid), NOEX_PROTECTED);
+    ID id = rb_check_id(&mid);
+    if (!id) return Qfalse;
+    return check_definition(mod, id, NOEX_PROTECTED);
 }
 
 int
@@ -929,7 +963,11 @@ rb_alias(VALUE klass, ID name, ID def)
 static VALUE
 rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
 {
-    rb_alias(mod, rb_to_id(newname), rb_to_id(oldname));
+    ID oldid = rb_check_id(&oldname);
+    if (!oldid) {
+	rb_print_undef_str(mod, oldname);
+    }
+    rb_alias(mod, rb_to_id(newname), oldid);
     return mod;
 }
 
@@ -948,7 +986,12 @@ set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
     int i;
     secure_visibility(self);
     for (i = 0; i < argc; i++) {
-	rb_export_method(self, rb_to_id(argv[i]), ex);
+	VALUE v = argv[i];
+	ID id = rb_check_id(&v);
+	if (!id) {
+	    rb_print_undef_str(self, v);
+	}
+	rb_export_method(self, id, ex);
     }
     rb_clear_cache_by_class(self);
 }
@@ -1236,7 +1279,15 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
     ID id;
 
     rb_scan_args(argc, argv, "11", &mid, &priv);
-    id = rb_to_id(mid);
+    if (!(id = rb_check_id(&mid))) {
+	if (!rb_method_basic_definition_p(CLASS_OF(obj), respond_to_missing)) {
+	    VALUE args[2];
+	    args[0] = ID2SYM(rb_to_id(mid));
+	    args[1] = priv;
+	    return rb_funcall2(obj, respond_to_missing, 2, args);
+	}
+	return Qfalse;
+    }
     if (basic_obj_respond_to(obj, id, !RTEST(priv)))
 	return Qtrue;
     return Qfalse;
@@ -1252,7 +1303,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
  *  See #respond_to?.
  */
 static VALUE
-obj_respond_to_missing(VALUE obj, VALUE priv)
+obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
 {
     return Qfalse;
 }

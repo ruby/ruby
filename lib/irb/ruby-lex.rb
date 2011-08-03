@@ -677,7 +677,7 @@ class RubyLex
 	@continue = true
 	Token(TkSPACE)
       else
-	ungetc
+	read_escape
 	Token("\\")
       end
     end
@@ -1046,7 +1046,7 @@ class RubyLex
       while ch = getc
 	if @quoted == ch and nest == 0
 	  break
-	elsif ch == "#" and peek(0) == "{"
+	elsif @ltype != "'" && ch == "#" && peek(0) == "{"
 	  identify_string_dvar
 	elsif @ltype != "'" && @ltype != "]" && @ltype != ":" and ch == "#"
 	  subtype = true

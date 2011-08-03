@@ -1,9 +1,3 @@
-######################################################################
-# This file is imported from the rubygems project.
-# DO NOT make modifications in this repo. They _will_ be reverted!
-# File a patch instead and assign it to Ryan Davis or Eric Hodel.
-######################################################################
-
 require 'rubygems/test_case'
 require 'rubygems'
 require 'rubygems/gem_openssl'
@@ -718,7 +712,7 @@ class TestGem < Gem::TestCase
   def test_self_path_default
     util_path
 
-    if defined? APPLE_GEM_HOME
+    if defined?(APPLE_GEM_HOME)
       orig_APPLE_GEM_HOME = APPLE_GEM_HOME
       Object.send :remove_const, :APPLE_GEM_HOME
     end
@@ -727,7 +721,7 @@ class TestGem < Gem::TestCase
 
     assert_equal [Gem.default_path, Gem.dir].flatten.uniq, Gem.path
   ensure
-    Object.const_set :APPLE_GEM_HOME, orig_APPLE_GEM_HOME
+    Object.const_set :APPLE_GEM_HOME, orig_APPLE_GEM_HOME if orig_APPLE_GEM_HOME
   end
 
   unless win_platform?
@@ -736,11 +730,14 @@ class TestGem < Gem::TestCase
 
       Gem.clear_paths
       apple_gem_home = File.join @tempdir, 'apple_gem_home'
-      Gem.const_set :APPLE_GEM_HOME, apple_gem_home
+
+      old, $-w = $-w, nil
+      Object.const_set :APPLE_GEM_HOME, apple_gem_home
+      $-w = old
 
       assert_includes Gem.path, apple_gem_home
     ensure
-      Gem.send :remove_const, :APPLE_GEM_HOME
+      Object.send :remove_const, :APPLE_GEM_HOME
     end
 
     def test_self_path_APPLE_GEM_HOME_GEM_PATH
@@ -1072,6 +1069,23 @@ class TestGem < Gem::TestCase
     # Should attempt to cause an Exception
     with_plugin('exception') { Gem.load_env_plugins }
     assert_equal :loaded, TEST_PLUGIN_EXCEPTION rescue nil
+  end
+
+  def test_latest_load_paths
+    spec = quick_spec 'a', '4' do |s|
+      s.require_paths = ["lib"]
+    end
+
+    install_gem spec
+
+    # @exec_path = File.join spec.full_gem_path, spec.bindir, 'exec'
+    # @abin_path = File.join spec.full_gem_path, spec.bindir, 'abin'
+    # FileUtils.mkdir_p File.join(stem, "gems", "test-3")
+
+    Deprecate.skip_during do
+      expected = [File.join(@gemhome, "gems", "a-4", "lib")]
+      assert_equal expected, Gem.latest_load_paths
+    end
   end
 
   def with_plugin(path)

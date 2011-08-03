@@ -1,5 +1,6 @@
 require 'rubygems'
 require 'minitest/autorun'
+require 'rdoc/rdoc'
 require 'rdoc/ri'
 require 'rdoc/markup'
 require 'tmpdir'
@@ -390,6 +391,32 @@ class TestRDocRIStore < MiniTest::Unit::TestCase
     document = @RM::Document.new inner
 
     assert_equal document, s.load_class('Object').comment
+  end
+
+  # This is a functional test
+  def test_save_class_merge_constant
+    tl = RDoc::TopLevel.new 'file.rb'
+    klass = RDoc::NormalClass.new 'C'
+    klass.add_comment 'comment', tl
+
+    const = klass.add_constant RDoc::Constant.new('CONST', nil, nil)
+    const.record_location tl
+
+    @s.save_class klass
+
+    RDoc::RDoc.reset
+
+    klass2 = RDoc::NormalClass.new 'C'
+    klass2.record_location tl
+
+    s = RDoc::RI::Store.new @tmpdir
+    s.save_class klass2
+
+    s = RDoc::RI::Store.new @tmpdir
+
+    result = s.load_class 'C'
+
+    assert_empty result.constants
   end
 
   def test_save_class_methods

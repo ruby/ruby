@@ -10,7 +10,7 @@ def gen_random(max)
   (max * ($last = ($last * IA + IC) % IM)) / IM
 end
 
-N = 1000000
+N = 3_000_000
 
 i=0
 while i<N

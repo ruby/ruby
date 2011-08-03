@@ -23,16 +23,13 @@ def ado_csv_installed?
 end
 
 if defined?(WIN32OLE_VARIANT)
-  dotest = ado_csv_installed?
-  if !dotest
-    STDERR.puts("\n#{__FILE__} skipped(ActiveX Data Object Library not found.)")
-  end
-  if dotest
     class TestWIN32OLE_VARIANT_OUTARG < Test::Unit::TestCase
       module ADO
       end
       CONNSTR="Driver={Microsoft Text Driver (*.txt; *.csv)};DefaultDir=.;"
       def setup
+        return if !ado_csv_installed?
+
         FileUtils.cp(File.dirname(__FILE__) + '/orig_data.csv', './data.csv')
         @db = WIN32OLE.new('ADODB.Connection')
         if !defined?(ADO::AdStateOpen)
@@ -43,6 +40,9 @@ if defined?(WIN32OLE_VARIANT)
       end
 
       def test_variant_ref_and_argv
+        if !ado_csv_installed?
+          skip("ActiveX Data Object Library not found")
+        end
         sql = "INSERT INTO data.csv VALUES (5, 'E')"
         @db.execute(sql, -1)
         c = WIN32OLE::ARGV[1]
@@ -58,12 +58,11 @@ if defined?(WIN32OLE_VARIANT)
       end
 
       def teardown
+        return if !ado_csv_installed?
         if @db && @db.state == ADO::AdStateOpen
           @db.close
         end
         File.unlink("data.csv")
       end
-
     end
-  end
 end

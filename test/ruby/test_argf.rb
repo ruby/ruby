@@ -201,21 +201,14 @@ class TestArgf < Test::Unit::TestCase
     t = make_tempfile
 
     assert_in_out_err(["-", t.path], <<-INPUT) do |r, e|
-      ARGF.inplace_mode = '/\\\\'
+      ARGF.inplace_mode = '/\\\\:'
       while line = ARGF.gets
         puts line.chomp + '.new'
       end
     INPUT
-      if no_safe_rename
-        assert_equal([], e)
-        assert_equal([], r)
-        assert_equal("foo.new\nbar.new\nbaz.new\n", File.read(t.path))
-        File.unlink(t.path + ".~~~") rescue nil
-      else
-        assert_match(/Can't rename .* to .*: .*. skipping file/, e.first) #'
-        assert_equal([], r)
-        assert_equal("foo\nbar\nbaz\n", File.read(t.path))
-      end
+      assert_match(/Can't rename .* to .*: .*. skipping file/, e.first) #'
+      assert_equal([], r)
+      assert_equal("foo\nbar\nbaz\n", File.read(t.path))
     end
   end
 

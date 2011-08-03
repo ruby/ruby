@@ -55,6 +55,12 @@ class TestRDocMarkupDocument < MiniTest::Unit::TestCase
     refute_empty @d
   end
 
+  def test_empty_eh_document
+    d = @RM::Document.new @d
+
+    assert_empty d
+  end
+
   def test_equals2
     d2 = @RM::Document.new
 
@@ -114,6 +120,24 @@ class TestRDocMarkupDocument < MiniTest::Unit::TestCase
     result = root.merge other
 
     expected = @RM::Document.new original, addition
+
+    assert_equal expected, result
+  end
+
+  def test_merge_empty
+    original = @RM::Document.new
+    root = @RM::Document.new original
+
+    replace = @RM::Document.new @RM::Paragraph.new 'replace'
+    replace.file = 'file.rb'
+
+    other = @RM::Document.new replace
+
+    result = root.merge other
+
+    inner = @RM::Document.new @RM::Paragraph.new 'replace'
+    inner.file = 'file.rb'
+    expected = @RM::Document.new inner
 
     assert_equal expected, result
   end

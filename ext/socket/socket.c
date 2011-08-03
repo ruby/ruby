@@ -119,6 +119,8 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
     if (ret < 0) {
 	rb_sys_fail("socketpair(2)");
     }
+    rb_update_max_fd(sp[0]);
+    rb_update_max_fd(sp[1]);
 
     s1 = rsock_init_sock(rb_obj_alloc(klass), sp[0]);
     s2 = rsock_init_sock(rb_obj_alloc(klass), sp[1]);

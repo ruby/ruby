@@ -217,7 +217,6 @@ ruby_vm_run_at_exit_hooks(rb_vm_t *vm)
   env{
     env[0] // special (block or prev env)
     env[1] // env object
-    env[2] // prev env val
   };
  */
 
@@ -303,20 +302,16 @@ static VALUE check_env_value(VALUE envval);
 static int
 check_env(rb_env_t * const env)
 {
-    printf("---\n");
-    printf("envptr: %p\n", (void *)&env->block.dfp[0]);
-    printf("orphan: %p\n", (void *)env->block.dfp[1]);
-    printf("inheap: %p\n", (void *)env->block.dfp[2]);
-    printf("envval: %10p ", (void *)env->block.dfp[3]);
-    dp(env->block.dfp[3]);
-    printf("penvv : %10p ", (void *)env->block.dfp[4]);
-    dp(env->block.dfp[4]);
-    printf("lfp:    %10p\n", (void *)env->block.lfp);
-    printf("dfp:    %10p\n", (void *)env->block.dfp);
-    if (env->block.dfp[4]) {
-	printf(">>\n");
-	check_env_value(env->block.dfp[4]);
-	printf("<<\n");
+    fprintf(stderr, "---\n");
+    fprintf(stderr, "envptr: %p\n", (void *)&env->block.dfp[0]);
+    fprintf(stderr, "envval: %10p ", (void *)env->block.dfp[1]);
+    dp(env->block.dfp[1]);
+    fprintf(stderr, "lfp:    %10p\n", (void *)env->block.lfp);
+    fprintf(stderr, "dfp:    %10p\n", (void *)env->block.dfp);
+    if (env->prev_envval) {
+	fprintf(stderr, ">>\n");
+	check_env_value(env->prev_envval);
+	fprintf(stderr, "<<\n");
     }
     return 1;
 }
@@ -379,7 +374,7 @@ vm_make_env_each(rb_thread_t * const th, rb_control_frame_t * const cfp,
 	local_size = cfp->iseq->local_size;
     }
 
-    env->env_size = local_size + 1 + 2;
+    env->env_size = local_size + 1 + 1;
     env->local_size = local_size;
     env->env = ALLOC_N(VALUE, env->env_size);
     env->prev_envval = penvval;
@@ -398,7 +393,6 @@ vm_make_env_each(rb_thread_t * const th, rb_control_frame_t * const cfp,
     *envptr = envval;		/* GC mark */
     nenvptr = &env->env[i - 1];
     nenvptr[1] = envval;	/* frame self */
-    nenvptr[2] = penvval;	/* frame prev env object */
 
     /* reset lfp/dfp in cfp */
     cfp->dfp = nenvptr;
@@ -854,6 +848,10 @@ rb_vm_cref(void)
 {
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+
+    if (cfp == 0) {
+	rb_raise(rb_eRuntimeError, "Can't call on top of Fiber or Thread");
+    }
     return vm_get_cref(cfp->iseq, cfp->lfp, cfp->dfp);
 }
 
@@ -875,6 +873,9 @@ rb_vm_cbase(void)
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
+    if (cfp == 0) {
+	rb_raise(rb_eRuntimeError, "Can't call on top of Fiber or Thread");
+    }
     return vm_get_cbase(cfp->iseq, cfp->lfp, cfp->dfp);
 }
 
@@ -1826,6 +1827,10 @@ th_init(rb_thread_t *th, VALUE self)
     th->self = self;
 
     /* allocate thread stack */
+#ifdef USE_SIGALTSTACK
+    /* altstack of main thread is reallocated in another place */
+    th->altstack = malloc(ALT_STACK_SIZE);
+#endif
     th->stack_size = RUBY_VM_THREAD_STACK_SIZE;
     th->stack = thread_recycle_stack(th->stack_size);
 
@@ -1967,6 +1972,10 @@ m_core_set_postexe(VALUE self, VALUE iseqval)
 	rb_thread_t *th = GET_THREAD();
 	rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 	VALUE proc;
+
+	if (cfp == 0) {
+	    rb_bug("m_core_set_postexe: unreachable");
+	}
 
 	GetISeqPtr(iseqval, blockiseq);
 
@@ -2128,6 +2137,9 @@ Init_VM(void)
 	th->cfp->pc = iseq->iseq_encoded;
 	th->cfp->self = th->top_self;
 
+	/*
+	 * The Binding of the top level scope
+	 */
 	rb_define_global_const("TOPLEVEL_BINDING", rb_binding_new());
     }
     vm_init_redefined_flag();

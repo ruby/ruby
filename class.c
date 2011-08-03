@@ -366,6 +366,7 @@ Init_class_hierarchy(void)
     rb_cModule = boot_defclass("Module", rb_cObject);
     rb_cClass =  boot_defclass("Class",  rb_cModule);
 
+    rb_const_set(rb_cObject, rb_intern("BasicObject"), rb_cBasicObject);
     RBASIC(rb_cClass)->klass
 	= RBASIC(rb_cModule)->klass
 	= RBASIC(rb_cObject)->klass

@@ -9,7 +9,7 @@ i=0
 while i<10
   i+=1
   hello = ''
-  400000.times do |e|
+  4_000_000.times do |e|
     hello << STUFF
   end
 end
