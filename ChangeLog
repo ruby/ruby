@@ -1,3 +1,8 @@
+Wed Aug  3 09:18:08 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/xmlrpc/webrick_testing.rb (WEBrick_Testing#start_server):
+	  Like r32795, bind address should be specified.
+
 Wed Aug  3 07:46:30 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_find): mistakenly remained !.  [Bug #5150]

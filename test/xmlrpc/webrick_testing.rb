@@ -13,6 +13,7 @@ module WEBrick_Testing
     @__server_thread = Thread.new {
       @__server = WEBrick::HTTPServer.new(
         {
+          BindAddress: "localhost",
           :Logger => DummyLog.new,
           :AccessLog => [],
           :StartCallback => proc { @__started = true }
