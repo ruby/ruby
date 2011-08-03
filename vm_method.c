@@ -12,6 +12,10 @@ static ID object_id, respond_to_missing;
 static ID removed, singleton_removed, undefined, singleton_undefined;
 static ID added, singleton_added, attached;
 
+/*****************************************************************************/
+/*  METHOD ENTRY CACHE                                                       */
+/*****************************************************************************/
+
 struct cache_entry {		/* method hash table. */
     VALUE filled_version;        /* filled state version */
     ID mid;			/* method's id */
@@ -60,6 +64,10 @@ rb_clear_cache_by_class(VALUE klass)
     rb_vm_change_state();
 }
 
+/*****************************************************************************/
+/*  SPECIAL METHODS                                                          */
+/*****************************************************************************/
+
 VALUE
 rb_f_notimplement(int argc, VALUE *argv, VALUE obj)
 {
@@ -71,6 +79,10 @@ rb_define_notimplement_method_id(VALUE mod, ID id, rb_method_flag_t noex)
 {
     rb_add_method(mod, id, VM_METHOD_TYPE_NOTIMPLEMENTED, 0, noex);
 }
+
+/*****************************************************************************/
+/*  METHOD ENTRY PROCESSING                                                  */
+/*****************************************************************************/
 
 void
 rb_unlink_method_entry(rb_method_entry_t *me)
@@ -126,6 +138,10 @@ rb_free_method_entry(rb_method_entry_t *me)
     }
     xfree(me);
 }
+
+/*****************************************************************************/
+/*  METHOD DEFINITION AND ENTRY CREATION                                     */
+/*****************************************************************************/
 
 static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 
@@ -678,6 +694,10 @@ rb_undef(VALUE klass, ID id)
 
     CALL_METHOD_HOOK(klass, undefined, id);
 }
+
+/*****************************************************************************/
+/*  RUBY LEVEL METHODS                                                       */
+/*****************************************************************************/
 
 /*
  *  call-seq:
