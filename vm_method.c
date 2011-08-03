@@ -80,6 +80,37 @@ rb_define_notimplement_method_id(VALUE mod, ID id, rb_method_flag_t noex)
     rb_add_method(mod, id, VM_METHOD_TYPE_NOTIMPLEMENTED, 0, noex);
 }
 
+
+void
+rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
+{
+    Check_Type(klass, T_CLASS);
+    rb_add_method_cfunc(rb_singleton_class(klass), ID_ALLOCATOR,
+			func, 0, NOEX_PRIVATE);
+}
+
+void
+rb_undef_alloc_func(VALUE klass)
+{
+    Check_Type(klass, T_CLASS);
+    rb_add_method(rb_singleton_class(klass), ID_ALLOCATOR, VM_METHOD_TYPE_UNDEF, 0, NOEX_UNDEF);
+}
+
+rb_alloc_func_t
+rb_get_alloc_func(VALUE klass)
+{
+    rb_method_entry_t *me;
+    Check_Type(klass, T_CLASS);
+    me = rb_method_entry(CLASS_OF(klass), ID_ALLOCATOR);
+
+    if (me && me->def && me->def->type == VM_METHOD_TYPE_CFUNC) {
+	return (rb_alloc_func_t)me->def->body.cfunc.func;
+    }
+    else {
+	return 0;
+    }
+}
+
 /*****************************************************************************/
 /*  METHOD ENTRY PROCESSING                                                  */
 /*****************************************************************************/
@@ -380,36 +411,6 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_me
     }
     else {
 	rb_define_notimplement_method_id(klass, mid, noex);
-    }
-}
-
-void
-rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
-{
-    Check_Type(klass, T_CLASS);
-    rb_add_method_cfunc(rb_singleton_class(klass), ID_ALLOCATOR,
-			func, 0, NOEX_PRIVATE);
-}
-
-void
-rb_undef_alloc_func(VALUE klass)
-{
-    Check_Type(klass, T_CLASS);
-    rb_add_method(rb_singleton_class(klass), ID_ALLOCATOR, VM_METHOD_TYPE_UNDEF, 0, NOEX_UNDEF);
-}
-
-rb_alloc_func_t
-rb_get_alloc_func(VALUE klass)
-{
-    rb_method_entry_t *me;
-    Check_Type(klass, T_CLASS);
-    me = rb_method_entry(CLASS_OF(klass), ID_ALLOCATOR);
-
-    if (me && me->def && me->def->type == VM_METHOD_TYPE_CFUNC) {
-	return (rb_alloc_func_t)me->def->body.cfunc.func;
-    }
-    else {
-	return 0;
     }
 }
 
