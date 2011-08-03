@@ -12,6 +12,9 @@ static ID object_id, respond_to_missing;
 static ID removed, singleton_removed, undefined, singleton_undefined;
 static ID added, singleton_added, attached;
 
+/* change names initially only for this file */
+#define rb_mdef_t rb_method_definition_t
+
 /*****************************************************************************/
 /*  METHOD ENTRY CACHE                                                       */
 /*****************************************************************************/
@@ -156,7 +159,7 @@ rb_sweep_method_entry(void *pvm)
 void
 rb_free_method_entry(rb_method_entry_t *me)
 {
-    rb_method_definition_t *def = me->def;
+    rb_mdef_t *def = me->def;
 
     if (def) {
 	if (def->alias_count == 0) {
@@ -174,14 +177,14 @@ rb_free_method_entry(rb_method_entry_t *me)
 /*  METHOD DEFINITION AND ENTRY CREATION                                     */
 /*****************************************************************************/
 
-static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
+static int rb_mdef_eq(const rb_mdef_t *d1, const rb_mdef_t *d2);
 
 inline void
 rb_method_redefinition(rb_method_entry_t *me, ID mid, rb_method_type_t type)
 {
 /*  processing subjecting method redefinition */
 
-    rb_method_definition_t *old_def = me->def;
+    rb_mdef_t *old_def = me->def;
     
     rb_vm_check_redefinition_opt_method(me);
 
@@ -217,7 +220,7 @@ rb_method_redefinition(rb_method_entry_t *me, ID mid, rb_method_type_t type)
 
 static rb_method_entry_t *
 rb_method_entry_new(VALUE klass, ID mid, rb_method_type_t type,
-		     rb_method_definition_t *def, rb_method_flag_t noex)
+		     rb_mdef_t *def, rb_method_flag_t noex)
 {
 /*  creates a new method_entry object (struct) */
 
@@ -240,7 +243,7 @@ rb_method_entry_new(VALUE klass, ID mid, rb_method_type_t type,
     if (def) def->alias_count++;
     
     /* issue: warnings should be raised only if ruby_verbose */
-    /* issue: warning belong *possibly* to rb_method_definition_redefine_warnings */
+    /* issue: warning belong *possibly* to rb_mdef_redefine_warnings */
     /* check mid */
     if (klass == rb_cObject && mid == idInitialize) {
 	rb_warn("redefining Object#initialize may cause infinite loop");
@@ -269,9 +272,9 @@ rb_method_entry_new(VALUE klass, ID mid, rb_method_type_t type,
 
 static rb_method_entry_t *
 rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
-		     rb_method_definition_t *def, rb_method_flag_t noex)
+		     rb_mdef_t *def, rb_method_flag_t noex)
 {
-/*  enters (inserts) a method_definition to the class method-table and returns
+/*  enters (inserts) a mdef to the class method-table and returns
     it *or* returns existent method_entry */
 
     rb_method_entry_t *me;
@@ -301,10 +304,10 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     /* if old method entry is available */
     if (st_lookup(mtbl, mid, &data)) {
 	rb_method_entry_t *old_me = (rb_method_entry_t *)data;
-	rb_method_definition_t *old_def = old_me->def;
+	rb_mdef_t *old_def = old_me->def;
 
 	/* if old method entry has already correct method def */ 
-	if (rb_method_definition_eq(old_def, def))
+	if (rb_mdef_eq(old_def, def))
 	    return old_me;
 
 	/* redefinition */
@@ -325,16 +328,16 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     return me;
 }
 
-rb_method_definition_t *
-rb_method_definition_new(ID mid, rb_method_type_t type, void *opts)
+rb_mdef_t *
+rb_mdef_new(ID mid, rb_method_type_t type, void *opts)
 {
-/*  creates a new method_definition object (struct)*/
+/*  creates a new mdef object (struct)*/
 
     rb_thread_t *th;
     rb_control_frame_t *cfp;
     int line;
 
-    rb_method_definition_t *def = ALLOC(rb_method_definition_t);
+    rb_mdef_t *def = ALLOC(rb_mdef_t);
     def->type = type;
     def->original_id = mid;
     def->alias_count = 0;
@@ -381,7 +384,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 {
 /*  adds a newly created mdef via a newly created me to a class */
 
-    rb_method_definition_t *def = rb_method_definition_new(mid, type, opts);
+    rb_mdef_t *def = rb_mdef_new(mid, type, opts);
     rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, def, noex);
     return me;
 }
@@ -909,11 +912,11 @@ rb_mod_protected_method_defined(VALUE mod, VALUE mid)
 int
 rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2)
 {
-    return rb_method_definition_eq(m1->def, m2->def);
+    return rb_mdef_eq(m1->def, m2->def);
 }
 
 static int
-rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2)
+rb_mdef_eq(const rb_mdef_t *d1, const rb_mdef_t *d2)
 {
     if (d1 == d2) return 1;
     if (!d1 || !d2) return 0;
