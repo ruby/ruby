@@ -1,3 +1,8 @@
+Thu Aug  4 02:21:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (link_command): use static library only for bundled
+	  extensions.  [Bug #5147]
+
 Wed Aug  3 00:11:08 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/prettyprint.rb: update document.  [ruby-core:36776]
