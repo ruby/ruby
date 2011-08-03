@@ -220,10 +220,10 @@ rb_method_redefinition(rb_ment_t *me, ID mid, rb_method_type_t type)
 }
 
 static rb_ment_t *
-rb_mentry_new(VALUE klass, ID mid, rb_method_type_t type,
+rb_ment_new(VALUE klass, ID mid, rb_method_type_t type,
 		     rb_mdef_t *def, rb_method_flag_t noex)
 {
-/*  creates a new mentry object (struct) */
+/*  creates a new ment object (struct) */
 
     rb_ment_t *me;
     me = ALLOC(rb_ment_t);
@@ -272,11 +272,11 @@ rb_mentry_new(VALUE klass, ID mid, rb_method_type_t type,
     } while (0)
 
 static rb_ment_t *
-rb_mentry_make(VALUE klass, ID mid, rb_method_type_t type,
+rb_ment_make(VALUE klass, ID mid, rb_method_type_t type,
 		     rb_mdef_t *def, rb_method_flag_t noex)
 {
 /*  enters (inserts) a mdef to the class method-table and returns
-    it *or* returns existent mentry */
+    it *or* returns existent ment */
 
     rb_ment_t *me;
     st_table *mtbl;
@@ -318,7 +318,7 @@ rb_mentry_make(VALUE klass, ID mid, rb_method_type_t type,
     /* create new method entry */
     rb_clear_cache_by_id(mid);
 
-    me = rb_mentry_new(klass, mid, type, def, noex);
+    me = rb_ment_new(klass, mid, type, def, noex);
 
     st_insert(mtbl, mid, (st_data_t) me);
 
@@ -386,7 +386,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 /*  adds a newly created mdef via a newly created me to a class */
 
     rb_mdef_t *def = rb_mdef_new(mid, type, opts);
-    rb_ment_t *me = rb_mentry_make(klass, mid, type, def, noex);
+    rb_ment_t *me = rb_ment_make(klass, mid, type, def, noex);
     return me;
 }
 
@@ -396,7 +396,7 @@ rb_method_entry_set(VALUE klass, ID mid, const rb_ment_t *me, rb_method_flag_t n
 /*  adds the me->def via newly created newme to a class */
 
     rb_method_type_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
-    rb_ment_t *newme = rb_mentry_make(klass, mid, type, me->def, noex);    
+    rb_ment_t *newme = rb_ment_make(klass, mid, type, me->def, noex);    
     return newme;
 }
 
