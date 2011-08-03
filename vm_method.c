@@ -9,6 +9,8 @@
 /* change names initially only for this file */
 #define rb_mdef_t rb_method_definition_t
 #define rb_ment_t rb_method_entry_t
+#define rb_mtyp_t rb_method_type_t
+#define rb_mflg_t rb_method_flag_t
 
 static void rb_vm_check_redefinition_opt_method(const rb_ment_t *me);
 
@@ -79,7 +81,7 @@ rb_f_notimplement(int argc, VALUE *argv, VALUE obj)
 }
 
 static void
-rb_define_notimplement_method_id(VALUE mod, ID id, rb_method_flag_t noex)
+rb_define_notimplement_method_id(VALUE mod, ID id, rb_mflg_t noex)
 {
     rb_add_method(mod, id, VM_METHOD_TYPE_NOTIMPLEMENTED, 0, noex);
 }
@@ -181,7 +183,7 @@ rb_free_method_entry(rb_ment_t *me)
 static int rb_mdef_eq(const rb_mdef_t *d1, const rb_mdef_t *d2);
 
 inline void
-rb_method_redefinition(rb_ment_t *me, ID mid, rb_method_type_t type)
+rb_method_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
 {
 /*  processing subjecting method redefinition */
 
@@ -220,8 +222,8 @@ rb_method_redefinition(rb_ment_t *me, ID mid, rb_method_type_t type)
 }
 
 static rb_ment_t *
-rb_ment_new(VALUE klass, ID mid, rb_method_type_t type,
-		     rb_mdef_t *def, rb_method_flag_t noex)
+rb_ment_new(VALUE klass, ID mid, rb_mtyp_t type,
+		     rb_mdef_t *def, rb_mflg_t noex)
 {
 /*  creates a new ment object (struct) */
 
@@ -272,8 +274,8 @@ rb_ment_new(VALUE klass, ID mid, rb_method_type_t type,
     } while (0)
 
 static rb_ment_t *
-rb_ment_make(VALUE klass, ID mid, rb_method_type_t type,
-		     rb_mdef_t *def, rb_method_flag_t noex)
+rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
+		     rb_mdef_t *def, rb_mflg_t noex)
 {
 /*  enters (inserts) a mdef to the class method-table and returns
     it *or* returns existent ment */
@@ -330,7 +332,7 @@ rb_ment_make(VALUE klass, ID mid, rb_method_type_t type,
 }
 
 rb_mdef_t *
-rb_mdef_new(ID mid, rb_method_type_t type, void *opts)
+rb_mdef_new(ID mid, rb_mtyp_t type, void *opts)
 {
 /*  creates a new mdef object (struct)*/
 
@@ -381,7 +383,7 @@ rb_mdef_new(ID mid, rb_method_type_t type, void *opts)
 }
 
 rb_ment_t *
-rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_flag_t noex)
+rb_add_method(VALUE klass, ID mid, rb_mtyp_t type, void *opts, rb_mflg_t noex)
 {
 /*  adds a newly created mdef via a newly created me to a class */
 
@@ -391,17 +393,17 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 }
 
 rb_ment_t *
-rb_method_entry_set(VALUE klass, ID mid, const rb_ment_t *me, rb_method_flag_t noex)
+rb_method_entry_set(VALUE klass, ID mid, const rb_ment_t *me, rb_mflg_t noex)
 {
 /*  adds the me->def via newly created newme to a class */
 
-    rb_method_type_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
+    rb_mtyp_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
     rb_ment_t *newme = rb_ment_make(klass, mid, type, me->def, noex);    
     return newme;
 }
 
 void
-rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex)
+rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_mflg_t noex)
 {
 /*  specialized version of rb_add_method - for C functions */
 
@@ -561,7 +563,7 @@ rb_enable_super(VALUE klass, const char *name)
 }
 
 static void
-rb_export_method(VALUE klass, ID name, rb_method_flag_t noex)
+rb_export_method(VALUE klass, ID name, rb_mflg_t noex)
 {
     rb_ment_t *me;
 
@@ -615,7 +617,7 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
     const char *name;
     ID attriv;
     VALUE aname;
-    rb_method_flag_t noex;
+    rb_mflg_t noex;
 
     if (!ex) {
 	noex = NOEX_PUBLIC;
@@ -797,7 +799,7 @@ rb_mod_method_defined(VALUE mod, VALUE mid)
 #define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
 
 static VALUE
-check_definition(VALUE mod, ID mid, rb_method_flag_t noex)
+check_definition(VALUE mod, ID mid, rb_mflg_t noex)
 {
     const rb_ment_t *me;
     me = rb_method_entry(mod, mid);
@@ -955,7 +957,7 @@ rb_alias(VALUE klass, ID name, ID def)
 {
     VALUE target_klass = klass;
     rb_ment_t *orig_me;
-    rb_method_flag_t flag = NOEX_UNDEF;
+    rb_mflg_t flag = NOEX_UNDEF;
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class to make alias");
@@ -1025,7 +1027,7 @@ secure_visibility(VALUE self)
 }
 
 static void
-set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
+set_method_visibility(VALUE self, int argc, VALUE *argv, rb_mflg_t ex)
 {
     int i;
     secure_visibility(self);
