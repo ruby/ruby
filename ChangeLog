@@ -1,3 +1,8 @@
+Thu Aug  4 03:02:54 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* tool/rbinstall.rb: use rubygems to load gemspecs, copy actual
+	  gemspecs on install rather than generate fake ones for all gems.
+
 Thu Aug  4 02:45:10 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* configure.in: set CXX variable to the C++ compiler that matches the
