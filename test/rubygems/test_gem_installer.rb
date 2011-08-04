@@ -208,9 +208,10 @@ load Gem.bin_path('a', 'executable', version)
   end
 
   def test_generate_bin_bindir_with_user_install_warning
+    bin_dir = Gem.win_platform? ? File.expand_path(ENV["WINDIR"]) : "/usr/bin"
 
     options = {
-      :bin_dir => "/usr/bin",
+      :bin_dir => bin_dir,
       :install_dir => "/non/existant"
     }
 

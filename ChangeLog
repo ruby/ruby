@@ -1,3 +1,10 @@
+Fri Aug  5 07:35:00 2011  Luis Lavena  <luislavena@gmail.com>
+
+	* lib/rubygems/installer.rb (class Gem): Correct path check on Windows
+	  Possible fix for [Ruby 1.9 - Bug #5111]
+	* test/rubygems/test_gem_installer.rb (load Gem): ditto
+	  Backported from trunk r32804
+
 Fri Aug  5 07:00:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/io/console/test_io_console.rb (test_noctty): daemon() on
