@@ -1,3 +1,7 @@
+Thu Aug  4 20:29:41 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in: when Solaris cc, use $(CC) to link shared libs.
+
 Thu Aug  4 20:19:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* error.c (report_bug): use a small message buffer instead of BUFSIZ.
