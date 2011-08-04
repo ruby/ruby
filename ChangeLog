@@ -1,3 +1,11 @@
+Thu Aug  4 20:19:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* error.c (report_bug): use a small message buffer instead of BUFSIZ.
+	  It is needed for avoiding nested SIGSEGV on Linux.
+	  Note: BUFSIZ is not proper buffer size. It's unrelated with maximum
+	  filename length. :-/
+	  [Bug #5139] [ruby-dev:44315]
+
 Thu Aug  4 16:08:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (gem): install all gemspecs under lib and ext.
