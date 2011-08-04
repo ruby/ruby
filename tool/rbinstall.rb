@@ -17,6 +17,7 @@ require 'fileutils'
 require 'shellwords'
 require 'optparse'
 require 'optparse/shellwords'
+require 'ostruct'
 
 STDOUT.sync = true
 File.umask(0)
@@ -533,6 +534,26 @@ install?(:local, :comm, :man) do
 end
 
 # :stopdoc:
+module Gem
+  if defined?(Specification)
+    remove_const(:Specification)
+  end
+
+  class Specification < OpenStruct
+    def initialize(*)
+      super
+      yield(self) if defined?(yield)
+      self.executables ||= []
+    end
+
+    def self.load(path)
+      src = File.open(path, "rb") {|f| f.read}
+      src.sub!(/\A#.*/, '')
+      eval(src, nil, path)
+    end
+  end
+end
+
 module RbInstall
   module Specs
     class Reader < Struct.new(:name, :src, :execs)
