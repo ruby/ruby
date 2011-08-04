@@ -52,7 +52,7 @@ struct timezone {
 #endif
 
 #if defined(HAVE___SYSCALL) && (defined(__APPLE__) || defined(__OpenBSD__))
-/* Mac OS X and OpenBSD has __syscall but doen't defined in headers */
+/* Mac OS X and OpenBSD have __syscall but don't define it in headers */
 off_t __syscall(quad_t number, ...);
 #endif
 
