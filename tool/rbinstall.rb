@@ -556,7 +556,7 @@ end
 
 module RbInstall
   module Specs
-    class Reader < Struct.new(:name, :src, :execs)
+    class Reader < Struct.new(:src)
       def gemspec
         @gemspec ||= begin
           Gem::Specification.load(src) || raise("invalid spec in #{src}")
@@ -592,10 +592,6 @@ end
         version.split(%r"=\s*", 2)[1].strip[/\A([\'\"])(.*?)\1/, 2]
       end
     end
-
-    def self.generator_for(file)
-      File.extname(file) == '.gemspec' ? Reader : Generator
-    end
   end
 end
 # :startdoc:
@@ -608,6 +604,7 @@ install?(:ext, :comm, :gem) do
   prepare "default gems", gem_dir, directories
 
   spec_dir = File.join(gem_dir, directories.grep(/^spec/)[0])
+  gems = {}
   File.foreach(File.join(srcdir, "defs/default_gems")) do |line|
     line.chomp!
     line.sub!(/\s*#.*/, '')
@@ -620,7 +617,16 @@ install?(:ext, :comm, :gem) do
     next unless name and src
 
     src       = File.join(srcdir, src)
-    specgen   = RbInstall::Specs.generator_for(src).new(name, src, execs || [])
+    specgen   = RbInstall::Specs::Generator.new(name, src, execs || [])
+    gems[name] ||= specgen
+  end
+
+  Dir.glob(srcdir+"/{lib,ext}/**/*.gemspec").each do |src|
+    specgen   = RbInstall::Specs::Reader.new(src)
+    gems[specgen.gemspec.name] ||= specgen
+  end
+
+  gems.sort.each do |name, specgen|
     gemspec   = specgen.gemspec
     full_name = "#{gemspec.name}-#{gemspec.version}"
 

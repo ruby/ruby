@@ -1,4 +1,6 @@
-Thu Aug  4 15:44:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug  4 16:08:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (gem): install all gemspecs under lib and ext.
 
 	* tool/rbinstall.rb (Gem::Specification): may not be defined when
 	  cross-compiling and BASERUBY is 1.8.
