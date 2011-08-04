@@ -1,3 +1,20 @@
+Thu Aug  4 23:48:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* thread_pthread.c (native_cond_signal): retry to call pthread_cond_signal
+	  and pthread_cond_broadcast if they return EAGAIN in
+	  native_cond_signal and native_cond_broadcast, respectively.
+	  It is for the pthread implementation of Mac OS X 10.7 (Lion).
+	  fixes #5155.  [ruby-dev:44342].
+
+	* thread_pthread.c (native_cond_broadcast): ditto.
+
+	* thread_pthread.c (struct cached_thread_entry): stop using
+	  pthread_cond_t and its functions directly.
+
+	* thread_pthread.c (register_cached_thread_and_wait): ditto.
+
+	* thread_pthread.c (use_cached_thread): ditto.
+
 Thu Aug  4 20:29:41 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* configure.in: when Solaris cc, use $(CC) to link shared libs.

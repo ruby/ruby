@@ -267,10 +267,23 @@ native_cond_destroy(rb_thread_cond_t *cond)
     }
 }
 
+/*
+ * In OS X 10.7 (Lion), pthread_cond_signal and pthread_cond_broadcast return
+ * EAGAIN after retrying 8196 times.  You can see them in the following page:
+ *
+ * http://www.opensource.apple.com/source/Libc/Libc-763.11/pthreads/pthread_cond.c
+ *
+ * The following native_cond_signal and native_cond_broadcast functions
+ * need to retrying until pthread functions don't return EAGAIN.
+ */
+
 static void
 native_cond_signal(rb_thread_cond_t *cond)
 {
-    int r = pthread_cond_signal(&cond->cond);
+    int r;
+    do {
+	r = pthread_cond_signal(&cond->cond);
+    } while (r == EAGAIN);
     if (r != 0) {
 	rb_bug_errno("pthread_cond_signal", r);
     }
@@ -279,7 +292,10 @@ native_cond_signal(rb_thread_cond_t *cond)
 static void
 native_cond_broadcast(rb_thread_cond_t *cond)
 {
-    int r = pthread_cond_broadcast(&cond->cond);
+    int r;
+    do {
+	r = pthread_cond_broadcast(&cond->cond);
+    } while (r == EAGAIN);
     if (r != 0) {
 	rb_bug_errno("native_cond_broadcast", r);
     }
@@ -658,7 +674,7 @@ thread_start_func_1(void *th_ptr)
 
 struct cached_thread_entry {
     volatile rb_thread_t **th_area;
-    pthread_cond_t *cond;
+    rb_thread_cond_t *cond;
     struct cached_thread_entry *next;
 };
 
@@ -670,7 +686,7 @@ struct cached_thread_entry *cached_thread_root;
 static rb_thread_t *
 register_cached_thread_and_wait(void)
 {
-    pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+    rb_thread_cond_t cond = { PTHREAD_COND_INITIALIZER, };
     volatile rb_thread_t *th_area = 0;
     struct cached_thread_entry *entry =
       (struct cached_thread_entry *)malloc(sizeof(struct cached_thread_entry));
@@ -688,7 +704,7 @@ register_cached_thread_and_wait(void)
 	entry->next = cached_thread_root;
 	cached_thread_root = entry;
 
-	pthread_cond_timedwait(&cond, &thread_cache_lock, &ts);
+	native_cond_timedwait(&cond, &thread_cache_lock, &ts);
 
 	{
 	    struct cached_thread_entry *e = cached_thread_root;
@@ -710,7 +726,7 @@ register_cached_thread_and_wait(void)
 	}
 
 	free(entry); /* ok */
-	pthread_cond_destroy(&cond);
+	native_cond_destroy(&cond);
     }
     pthread_mutex_unlock(&thread_cache_lock);
 
@@ -736,7 +752,7 @@ use_cached_thread(rb_thread_t *th)
 	    }
 	}
 	if (result) {
-	    pthread_cond_signal(entry->cond);
+	    native_cond_signal(entry->cond);
 	}
 	pthread_mutex_unlock(&thread_cache_lock);
     }
