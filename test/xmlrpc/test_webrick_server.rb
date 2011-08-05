@@ -1,3 +1,5 @@
+# coding: utf-8
+
 require 'test/unit'
 require 'webrick'
 require_relative 'webrick_testing'
@@ -125,5 +127,8 @@ class Test_Webrick < Test::Unit::TestCase
     ok, param = @s.call2('test.add', 1, 2, 3)
     assert_equal false, ok
     assert_equal(-99, param.faultCode)
+
+    # multibyte characters
+    assert_equal "あいうえおかきくけこ", @s.call('test.add', "あいうえお", "かきくけこ")
   end
 end
