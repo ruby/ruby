@@ -269,7 +269,7 @@ native_cond_destroy(rb_thread_cond_t *cond)
 
 /*
  * In OS X 10.7 (Lion), pthread_cond_signal and pthread_cond_broadcast return
- * EAGAIN after retrying 8196 times.  You can see them in the following page:
+ * EAGAIN after retrying 8192 times.  You can see them in the following page:
  *
  * http://www.opensource.apple.com/source/Libc/Libc-763.11/pthreads/pthread_cond.c
  *
