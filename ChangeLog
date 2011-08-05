@@ -55,9 +55,6 @@ Thu Aug  5 10:09:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* thread_pthread.c (use_cached_thread): ditto.
 
-Fri Aug  5 09:48:00 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-
 Fri Aug  5 07:35:00 2011  Luis Lavena  <luislavena@gmail.com>
 
 	* lib/rubygems/installer.rb (class Gem): Correct path check on Windows
