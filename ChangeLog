@@ -1,8 +1,11 @@
+Fri Aug  5 09:48:00 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+
 Fri Aug  5 07:00:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/io/console/test_io_console.rb (test_noctty): daemon() on
-	  OpenBSD seems not to detach the controlling terminal, when the
-	  argument noclose is non-zero.  ref: [Bug #5135]
+	  Fedora Rawhide seems not to detach the controlling terminal,
+	  when the argument noclose is non-zero.  ref: [Bug #5135]
 
 Thu Aug  4 23:48:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
