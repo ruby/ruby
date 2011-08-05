@@ -288,6 +288,12 @@ class_ment_get(VALUE klass, ID mid)
     }
 }
 
+void
+class_ment_set(VALUE klass, ID mid, rb_ment_t *me)
+{
+    st_insert(RCLASS_M_TBL(klass), mid, (st_data_t) me);
+}
+
 static rb_ment_t *
 rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
 		     rb_mdef_t *def, rb_mflg_t noex)
@@ -296,8 +302,6 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
     it *or* returns existent ment */
 
     rb_ment_t *me;
-    st_table *mtbl;
-    st_data_t data;
     rb_ment_t *old_me;
 
     if (NIL_P(klass)) {
@@ -318,11 +322,8 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
     }
 
     rb_check_frozen(klass);
-    mtbl = RCLASS_M_TBL(klass);
 
-    /* if old method entry is available */
     old_me = class_ment_get(klass, mid);
-    
     if (old_me) {
 	/* if old method entry has already correct method def */ 
 	if (rb_mdef_eq(old_me->def, def)) {
@@ -336,8 +337,7 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
     rb_clear_cache_by_id(mid);
 
     me = rb_ment_new(klass, mid, type, def, noex);
-
-    st_insert(mtbl, mid, (st_data_t) me);
+    class_ment_set(klass, mid, me);
 
     if (type != VM_METHOD_TYPE_UNDEF && mid != ID_ALLOCATOR && ruby_running) {
 	CALL_METHOD_HOOK(klass, added, mid);
