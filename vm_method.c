@@ -289,9 +289,15 @@ class_ment_get(VALUE klass, ID mid)
 }
 
 void
-class_ment_set(VALUE klass, ID mid, rb_ment_t *me)
+class_ment_add(VALUE klass, ID mid, rb_ment_t *me, rb_mtyp_t type)
 {
+/* adds a new ment to a class */
+
+    rb_clear_cache_by_id(mid);
     st_insert(RCLASS_M_TBL(klass), mid, (st_data_t) me);
+    if (type != VM_METHOD_TYPE_UNDEF && mid != ID_ALLOCATOR && ruby_running) {
+	CALL_METHOD_HOOK(klass, added, mid);
+    }
 }
 
 static rb_ment_t *
@@ -333,15 +339,8 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
         rb_method_redefinition(old_me, mid, type);	    
     }
 
-    /* create new method entry */
-    rb_clear_cache_by_id(mid);
-
     me = rb_ment_new(klass, mid, type, def, noex);
-    class_ment_set(klass, mid, me);
-
-    if (type != VM_METHOD_TYPE_UNDEF && mid != ID_ALLOCATOR && ruby_running) {
-	CALL_METHOD_HOOK(klass, added, mid);
-    }
+    class_ment_add(klass, mid, me, type);
 
     return me;
 }
