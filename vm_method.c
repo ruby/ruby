@@ -274,6 +274,21 @@ rb_ment_new(VALUE klass, ID mid, rb_mtyp_t type,
     } while (0)
 
 static rb_ment_t *
+class_ment_get(VALUE klass, ID mid)
+{
+/*  gets the ment by mid. Does *not* do a lookup in the class hierarchy */
+
+    st_data_t data;
+    st_table *mtbl = RCLASS_M_TBL(klass);
+    
+    if (st_lookup(mtbl, mid, &data)) {
+	return (rb_ment_t *)data;
+    } else {
+	return 0;
+    }
+}
+
+static rb_ment_t *
 rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
 		     rb_mdef_t *def, rb_mflg_t noex)
 {
@@ -283,6 +298,7 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
     rb_ment_t *me;
     st_table *mtbl;
     st_data_t data;
+    rb_ment_t *old_me;
 
     if (NIL_P(klass)) {
 	klass = rb_cObject;
@@ -305,16 +321,15 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
     mtbl = RCLASS_M_TBL(klass);
 
     /* if old method entry is available */
-    if (st_lookup(mtbl, mid, &data)) {
-	rb_ment_t *old_me = (rb_ment_t *)data;
-	rb_mdef_t *old_def = old_me->def;
-
+    old_me = class_ment_get(klass, mid);
+    
+    if (old_me) {
 	/* if old method entry has already correct method def */ 
-	if (rb_mdef_eq(old_def, def))
+	if (rb_mdef_eq(old_me->def, def)) {
 	    return old_me;
-
+	}
 	/* redefinition */
-	rb_method_redefinition(old_me, mid, type);
+        rb_method_redefinition(old_me, mid, type);	    
     }
 
     /* create new method entry */
