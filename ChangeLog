@@ -1,3 +1,12 @@
+Sat Aug  6 06:14:20 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc:  Update to 3.9.1.  Fixes === lines in verbatim sections.
+	  Fixes :nodoc: on class aliases.  Fixes :stopdoc: creating references
+	  to Object.  Fixes spacing when class comments are merged in ri.
+	  Fixes `ri []` crash.  Fixes bug report URL when rdoc crashes.  Adds
+	  :doc: and :nodoc: to allow hiding of implementation details in ruby.
+	  Makes `rdoc` and `ri` gem-aware.
+
 Sat Aug  6 03:19:45 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Import RubyGems 1.8.7:

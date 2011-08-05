@@ -248,6 +248,23 @@ the time
     assert_equal expected, @RMP.parse(str).parts
   end
 
+  def test_parse_heading_empty
+    str = <<-STR
+===
+* bullet
+    STR
+
+    expected = [
+      @RM::Heading.new(3, ''),
+      @RM::BlankLine.new,
+      @RM::List.new(:BULLET, *[
+        @RM::ListItem.new(nil,
+          @RM::Paragraph.new('bullet'))]),
+    ]
+
+    assert_equal expected, @RMP.parse(str).parts
+  end
+
   def test_parse_heading_heading
     str = '= ='
 
@@ -1085,6 +1102,23 @@ the time
     assert_equal expected, @RMP.tokenize(str)
   end
 
+  def test_tokenize_heading_empty
+    str = <<-STR
+===
+* bullet
+    STR
+
+    expected = [
+      [:HEADER,  3,        0, 0],
+      [:NEWLINE, "\n",     3, 0],
+      [:BULLET,  "*",      0, 1],
+      [:TEXT,    "bullet", 2, 1],
+      [:NEWLINE, "\n",     8, 1],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
   def test_tokenize_heading_heading
     str = <<-STR
 = =
@@ -1361,6 +1395,44 @@ Example heading:
       [:HEADER,  3,                   3, 2],
       [:TEXT,    'heading three',     7, 2],
       [:NEWLINE, "\n",               20, 2],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
+  def test_tokenize_verbatim_rule
+    str = <<-STR
+  Verbatim section here that is double-underlined
+  ===============================================
+    STR
+
+    expected = [
+      [:TEXT,    'Verbatim section here that is double-underlined',  2, 0],
+      [:NEWLINE, "\n",                                              49, 0],
+      [:HEADER,  47,                                                 2, 1],
+      [:NEWLINE, "\n",                                              49, 1],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
+  def test_tokenize_verbatim_rule_fancy
+    str = <<-STR
+  A
+    b
+  ===============================================
+    c
+    STR
+
+    expected = [
+      [:TEXT,    'A',   2, 0],
+      [:NEWLINE, "\n",  3, 0],
+      [:TEXT,    'b',   4, 1],
+      [:NEWLINE, "\n",  5, 1],
+      [:HEADER,  47,    2, 2],
+      [:NEWLINE, "\n", 49, 2],
+      [:TEXT,    'c',   4, 3],
+      [:NEWLINE, "\n",  5, 3],
     ]
 
     assert_equal expected, @RMP.tokenize(str)

@@ -126,7 +126,7 @@ Ruby #{RUBY_VERSION}-p#{RUBY_PATCHLEVEL} #{RUBY_RELEASE_DATE}
 
 Please file a bug report with the above information at:
 
-http://rubyforge.org/tracker/?atid=2472&group_id=627&func=browse
+https://github.com/rdoc/rdoc/issues
 
     EOF
     raise

@@ -4,6 +4,10 @@ require 'rdoc/markup'
 # Base class for RDoc markup formatters
 #
 # Formatters use a visitor pattern to convert content into output.
+#
+# If you'd like to write your own Formatter use
+# RDoc::Markup::FormatterTestCase.  If you're writing a text-output formatter
+# use RDoc::Markup::TextFormatterTestCase which provides extra test cases.
 
 class RDoc::Markup::Formatter
 

@@ -222,6 +222,9 @@ class RDoc::ClassModule < RDoc::Context
                    end
   end
 
+  ##
+  # TODO: filter included items by #display?
+
   def marshal_dump # :nodoc:
     attrs = attributes.sort.map do |attr|
       [ attr.name, attr.rw,

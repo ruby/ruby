@@ -5,8 +5,13 @@
 #
 #  Copyright (c) 2003 Dave Thomas
 #  Released under the same terms as Ruby
-#
-#  $Revision$
+
+begin
+  gem 'rdoc'
+rescue NameError => e # --disable-gems
+  raise unless e.name == :gem
+rescue Gem::LoadError
+end
 
 require 'rdoc/rdoc'
 
