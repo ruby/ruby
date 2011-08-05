@@ -396,6 +396,31 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  def test_implicit_respond_to
+    bug5158 = '[ruby-core:38799]'
+
+    p = Object.new
+
+    called = []
+    p.singleton_class.class_eval do
+      define_method(:to_ary) do
+        called << [:to_ary, bug5158]
+      end
+    end
+    [[p]].flatten
+    assert_equal([[:to_ary, bug5158]], called, bug5158)
+
+    called = []
+    p.singleton_class.class_eval do
+      define_method(:respond_to?) do |*a|
+        called << [:respond_to?, *a]
+        false
+      end
+    end
+    [[p]].flatten
+    assert_equal([[:respond_to?, :to_ary, true]], called, bug5158)
+  end
+
   def test_send_with_no_arguments
     assert_raise(ArgumentError) { 1.send }
   end

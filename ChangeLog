@@ -1,3 +1,8 @@
+Fri Aug  5 12:18:20 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (check_funcall): try respond_to? first if redefined.
+	  [Bug #5158]
+
 Fri Aug 05 09:48:22 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Import RubyGems 1.8.7:
