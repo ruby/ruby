@@ -6,6 +6,8 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
   def setup
     super
 
+    util_setup_fake_fetcher
+
     @cmd = Gem::Commands::SourcesCommand.new
 
     @new_repo = "http://beta-gems.example.com"

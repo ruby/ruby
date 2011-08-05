@@ -346,6 +346,28 @@ gems:
     assert_equal 'unsupported URI scheme ftp', e.message
   end
 
+  def test_download_to_cache
+    @a2, @a2_gem = util_gem 'a', '2'
+
+    util_setup_spec_fetcher @a1, @a2
+    @fetcher.instance_variable_set :@a1, @a1
+    @fetcher.instance_variable_set :@a2, @a2
+    def @fetcher.fetch_path uri, mtime = nil, head = false
+      case uri.request_uri
+      when /#{@a1.spec_name}/ then
+        Gem.deflate Marshal.dump @a1
+      when /#{@a2.spec_name}/ then
+        Gem.deflate Marshal.dump @a2
+      else
+        uri.to_s
+      end
+    end
+
+    gem = Gem::RemoteFetcher.fetcher.download_to_cache dep 'a'
+
+    assert_equal @a2.file_name, File.basename(gem)
+  end
+
   def test_explicit_proxy
     use_ui @ui do
       fetcher = Gem::RemoteFetcher.new @proxy_uri

@@ -124,7 +124,7 @@ By default, this RubyGems will install gem as:
                       open release_notes do |io|
                         text = io.gets '==='
                         text << io.gets('===')
-                        text[0...-3]
+                        text[0...-3].sub(/^# coding:.*?^=/m, '')
                       end
                     else
                       "Oh-no! Unable to find release notes!"

@@ -136,7 +136,7 @@ class Gem::StreamUI
   end
 
   def tty?
-    if RUBY_VERSION > '1.9.3' and RUBY_PLATFORM =~ /mingw|mswin/ then
+    if RUBY_VERSION < '1.9.3' and RUBY_PLATFORM =~ /mingw|mswin/ then
       @usetty
     else
       @usetty && @ins.tty?

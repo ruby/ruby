@@ -36,6 +36,8 @@ module Gem
   end
 end
 
+# :stopdoc:
+
 begin
   require 'openssl'
 
@@ -44,7 +46,7 @@ begin
 
   Gem.ssl_available = !!OpenSSL::Digest::SHA1
 
-  class OpenSSL::X509::Certificate # :nodoc:
+  class OpenSSL::X509::Certificate
     # Check the validity of this certificate.
     def check_validity(issuer_cert = nil, time = Time.now)
       ret = if @not_before && @not_before > time
@@ -66,8 +68,6 @@ rescue LoadError, StandardError
   Gem.ssl_available = false
 end
 
-# :stopdoc:
-
 module Gem::SSL
 
   # We make our own versions of the constants here.  This allows us
@@ -87,6 +87,4 @@ module Gem::SSL
   end
 
 end
-
-# :startdoc:
 
