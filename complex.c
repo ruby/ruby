@@ -1173,8 +1173,9 @@ nucomp_eql_p(VALUE self, VALUE other)
 inline static VALUE
 f_signbit(VALUE x)
 {
-#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun__)
-    extern int signbit(double x);
+#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun__) && \
+    !defined(signbit)
+    extern int signbit(double);
 #endif
     switch (TYPE(x)) {
       case T_FLOAT: {

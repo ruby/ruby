@@ -1,3 +1,10 @@
+Fri Aug  5 15:57:10 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* complex.c (f_signbit): fix compile error in gcc4 on Solaris with
+	  CFLAGS="-std=gnu99".  [ruby-dev:44355] fix [Bug #5159]
+
+	* math.c: ditto.
+
 Fri Aug  5 15:55:33 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_object.rb: tests that respond_to? returns false.
