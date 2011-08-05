@@ -1,3 +1,8 @@
+Sat Aug  6 07:06:34 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* marshal.c (w_object):  Fix exception message when _dump_data is not
+	  defined on a T_DATA object.
+
 Fri Aug  5 22:16:20 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* numeric.c (rb_infinity, rb_nan): use WORDS_BIGENDIAN to get endian.
