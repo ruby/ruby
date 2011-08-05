@@ -227,6 +227,9 @@ rb_ment_new(VALUE klass, ID mid, rb_mtyp_t type,
 {
 /*  creates a new ment object (struct) */
 
+/*  TD: ment_new should not handle "klass". This should happen when ment is
+    added to the klass mtbl via class_ment_add */
+
     rb_ment_t *me;
     me = ALLOC(rb_ment_t);
     
@@ -291,13 +294,24 @@ class_ment_get(VALUE klass, ID mid)
 void
 class_ment_add(VALUE klass, ID mid, rb_ment_t *me, rb_mtyp_t type)
 {
-/* adds a new ment to a class */
+/*  adds a new ment to a class */
+/*  TD: use me->def->type and me->called_id */
 
     rb_clear_cache_by_id(mid);
     st_insert(RCLASS_M_TBL(klass), mid, (st_data_t) me);
     if (type != VM_METHOD_TYPE_UNDEF && mid != ID_ALLOCATOR && ruby_running) {
 	CALL_METHOD_HOOK(klass, added, mid);
     }
+}
+
+static int
+ment_has_mdef(rb_ment_t *me, rb_mdef_t *def)
+{
+/*  checks if ment has the given mdef */
+
+    if (!me) return FALSE;
+    
+    return rb_mdef_eq(me->def, def) ? TRUE : FALSE;
 }
 
 static rb_ment_t *
@@ -331,8 +345,7 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
 
     old_me = class_ment_get(klass, mid);
     if (old_me) {
-	/* if old method entry has already correct method def */ 
-	if (rb_mdef_eq(old_me->def, def)) {
+	if (ment_has_mdef(old_me, def)) {
 	    return old_me;
 	}
 	/* redefinition */
