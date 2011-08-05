@@ -1,3 +1,24 @@
+Fri Aug 05 09:48:22 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Import RubyGems 1.8.7:
+	  Added missing require for `gem uninstall --format-executable`.
+
+	  The correct name of the executable being uninstalled is now displayed
+	  with --format-executable.
+
+	  Fixed `gem unpack uninstalled_gem` default version picker.
+
+	  RubyGems no longer claims a nonexistent gem can be uninstalled.
+
+	  `gem which` no longer claims directories are requirable files.
+
+	  `gem cleanup` continues cleaning up gems if one can't be uninstalled
+	  due to permissions.  Issue #82.
+
+	  Gem repository directories are no longer created world-writable.
+	  Patch by Sakuro OZAWA.  [Ruby 1.9 - Bug #4930]
+
+
 Fri Aug  5 09:48:00 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 

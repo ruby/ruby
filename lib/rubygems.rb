@@ -118,7 +118,7 @@ require "rubygems/deprecate"
 # -The RubyGems Team
 
 module Gem
-  VERSION = '1.8.6.1'
+  VERSION = '1.8.7'
 
   ##
   # Raised when RubyGems is unable to load or activate a gem.  Contains the
@@ -444,11 +444,16 @@ module Gem
   def self.ensure_gem_subdirectories dir = Gem.dir
     require 'fileutils'
 
+    old_umask = File.umask
+    File.umask old_umask | 022
+
     %w[cache doc gems specifications].each do |name|
       subdir = File.join dir, name
       next if File.exist? subdir
       FileUtils.mkdir_p subdir rescue nil # in case of perms issues -- lame
     end
+  ensure
+    File.umask old_umask
   end
 
   ##
@@ -1206,7 +1211,7 @@ end
 # Otherwise return a path to the share area as define by
 # "#{ConfigMap[:datadir]}/#{package_name}".
 
-def RbConfig.datadir(package_name)
+def RbConfig.datadir(package_name) # :nodoc:
   warn "#{Gem.location_of_caller.join ':'}:Warning: " \
     "RbConfig.datadir is deprecated and will be removed on or after " \
     "August 2011.  " \

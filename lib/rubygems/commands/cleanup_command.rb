@@ -61,6 +61,8 @@ installed elsewhere in GEM_PATH the cleanup command won't touch it.
 
     deps = deplist.strongly_connected_components.flatten.reverse
 
+    original_path = Gem.path
+
     deps.each do |spec|
       if options[:dryrun] then
         say "Dry Run Mode: Would uninstall #{spec.full_name}"
@@ -74,20 +76,21 @@ installed elsewhere in GEM_PATH the cleanup command won't touch it.
           :version => "= #{spec.version}",
         }
 
-        if Gem.user_dir == spec.base_dir then
-          uninstall_options[:install_dir] = spec.base_dir
-        end
+        uninstall_options[:user_install] = Gem.user_dir == spec.base_dir
 
         uninstaller = Gem::Uninstaller.new spec.name, uninstall_options
 
         begin
           uninstaller.uninstall
         rescue Gem::DependencyRemovalException, Gem::InstallError,
-               Gem::GemNotInHomeException => e
+               Gem::GemNotInHomeException, Gem::FilePermissionError => e
           say "Unable to uninstall #{spec.full_name}:"
           say "\t#{e.class}: #{e.message}"
         end
       end
+
+      # Restore path Gem::Uninstaller may have change
+      Gem.use_paths(*original_path)
     end
 
     say "Clean Up Complete"
