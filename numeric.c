@@ -65,14 +65,14 @@
 #endif
 
 #ifdef HAVE_INFINITY
-#elif BYTE_ORDER == LITTLE_ENDIAN
+#elif !defined(WORDS_BIGENDIAN) /* BYTE_ORDER == LITTLE_ENDIAN */
 const unsigned char rb_infinity[] = "\x00\x00\x80\x7f";
 #else
 const unsigned char rb_infinity[] = "\x7f\x80\x00\x00";
 #endif
 
 #ifdef HAVE_NAN
-#elif BYTE_ORDER == LITTLE_ENDIAN
+#elif !defined(WORDS_BIGENDIAN) /* BYTE_ORDER == LITTLE_ENDIAN */
 const unsigned char rb_nan[] = "\x00\x00\xc0\x7f";
 #else
 const unsigned char rb_nan[] = "\x7f\xc0\x00\x00";
