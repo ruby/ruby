@@ -1,3 +1,22 @@
+Thu Aug  5 10:09:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* backport r32846 from trunk.
+
+	* thread_pthread.c (native_cond_signal): retry to call pthread_cond_signal
+	  and pthread_cond_broadcast if they return EAGAIN in
+	  native_cond_signal and native_cond_broadcast, respectively.
+	  It is for the pthread implementation of Mac OS X 10.7 (Lion).
+	  fixes #5155.  [ruby-dev:44342].
+
+	* thread_pthread.c (native_cond_broadcast): ditto.
+
+	* thread_pthread.c (struct cached_thread_entry): stop using
+	  pthread_cond_t and its functions directly.
+
+	* thread_pthread.c (register_cached_thread_and_wait): ditto.
+
+	* thread_pthread.c (use_cached_thread): ditto.
+
 Fri Aug  5 09:48:00 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 
