@@ -1,3 +1,9 @@
+Fri Aug  5 23:08:39 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* backport r32845 from trunk.
+
+	* configure.in: when Solaris cc, use $(CC) to link shared libs.
+
 Fri Aug  5 22:16:20 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* numeric.c (rb_infinity, rb_nan): use WORDS_BIGENDIAN to get endian.
