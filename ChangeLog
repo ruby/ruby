@@ -1,3 +1,7 @@
+Fri Aug  5 15:55:33 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_object.rb: tests that respond_to? returns false.
+
 Fri Aug  5 13:32:43 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/xmlrpc/client.rb, lib/xmlrpc/server.rb: should use

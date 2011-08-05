@@ -181,17 +181,29 @@ class TestObject < Test::Unit::TestCase
     o = Object.new
     def o.to_s; 1; end
     assert_raise(TypeError) { String(o) }
+    def o.to_s; "o"; end
+    assert_equal("o", String(o))
+    def o.respond_to?(*) false; end
+    assert_raise(TypeError) { String(o) }
   end
 
   def test_check_convert_type
     o = Object.new
     def o.to_a; 1; end
     assert_raise(TypeError) { Array(o) }
+    def o.to_a; [1]; end
+    assert_equal([1], Array(o))
+    def o.respond_to?(*) false; end
+    assert_equal([o], Array(o))
   end
 
   def test_to_integer
     o = Object.new
     def o.to_i; nil; end
+    assert_raise(TypeError) { Integer(o) }
+    def o.to_i; 42; end
+    assert_equal(42, Integer(o))
+    def o.respond_to?(*) false; end
     assert_raise(TypeError) { Integer(o) }
   end
 

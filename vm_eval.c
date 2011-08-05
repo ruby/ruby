@@ -265,10 +265,12 @@ check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
 static VALUE
 check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
 {
-    const rb_method_entry_t *me = rb_method_entry(CLASS_OF(recv), idRespond_to);
+    VALUE klass = CLASS_OF(recv);
+    const rb_method_entry_t *me;
     rb_thread_t *th = GET_THREAD();
     int call_status;
 
+    me = rb_method_entry(klass, idRespond_to);
     if (me && !(me->flag & NOEX_BASIC)) {
 	VALUE args[2] = {ID2SYM(mid), Qtrue};
 	if (!RTEST(vm_call0(th, recv, idRespond_to, 2, args, me))) {
@@ -279,7 +281,7 @@ check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
     me = rb_search_method_entry(recv, mid);
     call_status = rb_method_call_status(th, me, CALL_FCALL, Qundef);
     if (call_status != NOEX_OK) {
-	if (rb_method_basic_definition_p(CLASS_OF(recv), idMethodMissing)) {
+	if (rb_method_basic_definition_p(klass, idMethodMissing)) {
 	    return Qundef;
 	}
 	else {
