@@ -1,3 +1,8 @@
+Fri Aug  5 22:16:20 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* numeric.c (rb_infinity, rb_nan): use WORDS_BIGENDIAN to get endian.
+	  fix [Bug #5160] [ruby-dev:44356]
+
 Fri Aug  5 17:14:11 2011  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/test_syslog.rb (TestSyslog#test_log): Do not be too
