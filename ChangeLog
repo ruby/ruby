@@ -1,3 +1,9 @@
+Sun Aug  7 00:42:55 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/tk/lib/tk/wm.rb (Tk::Wm.command): Add the missing receiver
+	  before calling epath. patched by flori
+	  https://github.com/flori/ruby/commit/aa9474d32e5f2c57f8b0e2e0c528a03f06a4d433
+
 Sat Aug  6 07:06:34 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* marshal.c (w_object):  Fix exception message when _dump_data is not
