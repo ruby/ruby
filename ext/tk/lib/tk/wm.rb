@@ -83,11 +83,11 @@ module Tk
 
     def Wm.command(win, value=nil)
       if value
-        tk_call('wm', 'command', epath, value)
+        tk_call('wm', 'command', win.epath, value)
         win
       else
-        #procedure(tk_call('wm', 'command', epath))
-        tk_call('wm', 'command', epath)
+        #procedure(tk_call('wm', 'command', win.epath))
+        tk_call('wm', 'command', win.epath)
       end
     end
     def wm_command(value=nil)
