@@ -1,3 +1,8 @@
+Sun Aug  7 07:14:57 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* cont.c (HAVE_GETCONTEXT): see getcontext(3) because DragonFly BSD
+	  x64 port doesn't have it.
+
 Sun Aug  7 00:42:55 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/tk/lib/tk/wm.rb (Tk::Wm.command): Add the missing receiver
