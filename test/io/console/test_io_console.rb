@@ -182,25 +182,32 @@ class TestIO_Console < Test::Unit::TestCase
 
   case
   when Process.respond_to?(:daemon)
-    def test_noctty
-      assert_in_out_err(["-rio/console"],
-                        "Process.daemon(true, true); p IO.console",
-                        ["nil"])
-    end
+    noctty = [EnvUtil.rubybin, "-e", "Process.daemon(true)"]
   when !(rubyw = RbConfig::CONFIG["RUBYW_INSTALL_NAME"]).empty?
-    require 'tempfile'
     dir, base = File.split(EnvUtil.rubybin)
-    RUBYW = File.join(dir, base.sub(/ruby/, rubyw))
+    noctty = [File.join(dir, base.sub(/ruby/, rubyw))]
+  end
 
+  if noctty
+    require 'tempfile'
+    NOCTTY = noctty
     def test_noctty
       t = Tempfile.new("console")
       t.close
-      cmd = [RUBYW, '-rio/console', '-e', 'STDOUT.reopen(ARGV[0]); p IO.console', '--', t.path]
+      t2 = Tempfile.new("console")
+      t2.close
+      cmd = NOCTTY + [
+        '-rio/console',
+        '-e', 'open(ARGV[0], "w") {|f| f.puts IO.console.inspect}',
+        '-e', 'File.unlink(ARGV[1])',
+        '--', t.path, t2.path]
       system(*cmd)
+      sleep 0.1 while File.exist?(t2.path)
       t.open
       assert_equal("nil", t.gets.chomp)
     ensure
       t.close! if t and !t.closed?
+      t2.close!
     end
   end
 end if defined?(IO.console)

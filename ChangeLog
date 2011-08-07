@@ -1,3 +1,124 @@
+Sun Aug  7 15:37:35 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/digest/sha2/sha2ossl.c: use original SHA384_Final on DragonFly.
+
+Sun Aug  7 14:08:16 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* ext/objspace/objspace.c: fix typos in a document.
+
+Sun Aug  7 07:14:57 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* cont.c (HAVE_GETCONTEXT): see getcontext(3) because DragonFly BSD
+	  x64 port doesn't have it.
+
+Sun Aug  7 00:42:55 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/tk/lib/tk/wm.rb (Tk::Wm.command): Add the missing receiver
+	  before calling epath. patched by flori
+	  https://github.com/flori/ruby/commit/aa9474d32e5f2c57f8b0e2e0c528a03f06a4d433
+
+Sat Aug  6 07:06:34 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* marshal.c (w_object):  Fix exception message when _dump_data is not
+	  defined on a T_DATA object.
+
+Fri Aug  5 22:16:20 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* numeric.c (rb_infinity, rb_nan): use WORDS_BIGENDIAN to get endian.
+	  fix [Bug #5160] [ruby-dev:44356]
+
+Fri Aug  5 17:14:11 2011  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/test_syslog.rb (TestSyslog#test_log): Do not be too
+	  specific about the log line format.  Fixes #5081.
+
+Fri Aug  5 15:57:10 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* complex.c (f_signbit): fix compile error in gcc4 on Solaris with
+	  CFLAGS="-std=gnu99".  [ruby-dev:44355] fix [Bug #5159]
+
+	* math.c: ditto.
+
+Fri Aug  5 15:55:33 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_object.rb: tests that respond_to? returns false.
+
+Fri Aug  5 13:32:43 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/xmlrpc/client.rb, lib/xmlrpc/server.rb: should use
+	  String#bytesize instead of String#size.
+
+Fri Aug  5 12:18:20 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (check_funcall): try respond_to? first if redefined.
+	  [Bug #5158]
+
+Fri Aug 05 09:48:22 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Import RubyGems 1.8.7:
+	  Added missing require for `gem uninstall --format-executable`.
+
+	  The correct name of the executable being uninstalled is now displayed
+	  with --format-executable.
+
+	  Fixed `gem unpack uninstalled_gem` default version picker.
+
+	  RubyGems no longer claims a nonexistent gem can be uninstalled.
+
+	  `gem which` no longer claims directories are requirable files.
+
+	  `gem cleanup` continues cleaning up gems if one can't be uninstalled
+	  due to permissions.  Issue #82.
+
+	  Gem repository directories are no longer created world-writable.
+	  Patch by Sakuro OZAWA.  [Ruby 1.9 - Bug #4930]
+
+Fri Aug  5 07:00:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/io/console/test_io_console.rb (test_noctty): daemon() on
+	  Fedora Rawhide seems not to detach the controlling terminal,
+	  when the argument noclose is non-zero.  ref: [Bug #5135]
+
+Thu Aug  4 23:48:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* thread_pthread.c (native_cond_signal): retry to call pthread_cond_signal
+	  and pthread_cond_broadcast if they return EAGAIN in
+	  native_cond_signal and native_cond_broadcast, respectively.
+	  It is for the pthread implementation of Mac OS X 10.7 (Lion).
+	  fixes #5155.  [ruby-dev:44342].
+
+	* thread_pthread.c (native_cond_broadcast): ditto.
+
+	* thread_pthread.c (struct cached_thread_entry): stop using
+	  pthread_cond_t and its functions directly.
+
+	* thread_pthread.c (register_cached_thread_and_wait): ditto.
+
+	* thread_pthread.c (use_cached_thread): ditto.
+
+Thu Aug  4 20:29:41 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in: when Solaris cc, use $(CC) to link shared libs.
+
+Thu Aug  4 20:19:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* error.c (report_bug): use a small message buffer instead of BUFSIZ.
+	  It is needed for avoiding nested SIGSEGV on Linux.
+	  Note: BUFSIZ is not proper buffer size. It's unrelated with maximum
+	  filename length. :-/
+	  [Bug #5139] [ruby-dev:44315]
+
+Thu Aug  4 16:08:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (gem): install all gemspecs under lib and ext.
+
+	* tool/rbinstall.rb (Gem::Specification): may not be defined when
+	  cross-compiling and BASERUBY is 1.8.
+
+Thu Aug  4 11:30:36 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/missing.h: define __syscall on OpenBSD as r32702.
+
 Thu Aug  4 03:02:54 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* tool/rbinstall.rb: use rubygems to load gemspecs, copy actual

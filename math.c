@@ -14,8 +14,9 @@
 #include <math.h>
 #include <errno.h>
 
-#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun__)
-    extern int signbit(double x);
+#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun__) && \
+    !defined(signbit)
+    extern int signbit(double);
 #endif
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))

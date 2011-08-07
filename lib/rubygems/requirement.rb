@@ -1,5 +1,7 @@
 require "rubygems/version"
 
+# :stopdoc:
+
 # Hack to handle syck's DefaultKey bug with psych
 #
 # Quick note! If/when psych loads in 1.9, it will redefine
@@ -18,6 +20,8 @@ module YAML
     end
   end
 end
+
+# :startdoc:
 
 ##
 # A Requirement is a set of one or more version restrictions. It supports a

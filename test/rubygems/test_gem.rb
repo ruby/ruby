@@ -598,6 +598,20 @@ class TestGem < Gem::TestCase
     assert File.directory? File.join(@gemhome, "cache")
   end
 
+  def test_self_ensure_gem_directories_safe_permissions
+    FileUtils.rm_r @gemhome
+    Gem.use_paths @gemhome
+
+    old_umask = File.umask
+    File.umask 0
+    Gem.ensure_gem_subdirectories @gemhome
+
+    assert_equal 0, File::Stat.new(@gemhome).mode & 022
+    assert_equal 0, File::Stat.new(File.join(@gemhome, "cache")).mode & 022
+  ensure
+    File.umask old_umask
+  end unless win_platform?
+
   def test_self_ensure_gem_directories_missing_parents
     gemdir = File.join @tempdir, 'a/b/c/gemdir'
     FileUtils.rm_rf File.join(@tempdir, 'a') rescue nil

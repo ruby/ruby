@@ -251,9 +251,10 @@ rb_warn_m(int argc, VALUE *argv, VALUE exc)
 static void
 report_bug(const char *file, int line, const char *fmt, va_list args)
 {
-    char buf[BUFSIZ];
+    /* SIGSEGV handler might have a very small stack. Thus we need to use it carefully. */
+    char buf[256];
     FILE *out = stderr;
-    int len = err_position_0(buf, BUFSIZ, file, line);
+    int len = err_position_0(buf, 256, file, line);
 
     if ((ssize_t)fwrite(buf, 1, len, out) == (ssize_t)len ||
 	(ssize_t)fwrite(buf, 1, len, (out = stdout)) == (ssize_t)len) {

@@ -2016,7 +2016,7 @@ if test "$with_dln_a_out" != yes; then
 				LDFLAGS="$LDFLAGS -Wl,-E"
 			    fi
 			else
-			    : ${LDSHARED='ld -G'}
+			    : ${LDSHARED='$(CC) -G'}
 			fi
 			rb_cv_dlopen=yes],
 	[sunos*], [	: ${LDSHARED='ld -assert nodefinitions'}

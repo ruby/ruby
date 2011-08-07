@@ -160,7 +160,7 @@ memsize_of(VALUE obj)
  *  Return consuming memory size of obj.
  *
  *  Note that the return size is incomplete.  You need to deal with
- *  this information as only a *HINT*.  Especaially, the size of
+ *  this information as only a *HINT*.  Especially, the size of
  *  T_DATA may not be correct.
  *
  *  This method is not expected to work except C Ruby.
@@ -214,7 +214,7 @@ total_i(void *vstart, void *vend, size_t stride, void *ptr)
  *  memory size of instances of the given class.
  *
  *  Note that the returned size is incomplete.  You need to deal with
- *  this information as only a *HINT*.  Especaially, the size of
+ *  this information as only a *HINT*.  Especially, the size of
  *  T_DATA may not be correct.
  *
  *  Note that this method does *NOT* return total malloc'ed memory size.
@@ -275,7 +275,7 @@ cos_i(void *vstart, void *vend, size_t stride, void *data)
  *  Counts objects size (in bytes) for each type.
  *
  *  Note that this information is incomplete.  You need to deal with
- *  this information as only a *HINT*.  Especaially, total size of
+ *  this information as only a *HINT*.  Especially, total size of
  *  T_DATA may not right size.
  *
  *  It returns a hash as:
