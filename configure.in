@@ -458,6 +458,7 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     particular_werror_flags=yes
     for wflag in -Wno-unused-parameter -Wno-parentheses -Wno-long-long \
 		 -Wno-missing-field-initializers \
+		 -Wunused-variable \
 		 -Werror=pointer-arith \
 		 -Werror=write-strings \
 		 -Werror=declaration-after-statement \

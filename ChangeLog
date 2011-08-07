@@ -1,3 +1,8 @@
+Sun Aug  7 22:37:08 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: add -Wunused-variable to default CFLAGS.
+	  Patch by Eric Wong. [Feature #5157] [ruby-core:38798]
+
 Sun Aug  7 15:37:35 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/digest/sha2/sha2ossl.c: use original SHA384_Final on DragonFly.
