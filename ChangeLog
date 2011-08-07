@@ -1,3 +1,14 @@
+Fri Jun 24 19:57:30 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* lib/webrick/httprequest.rb (setup_forwarded_info): Parsing request
+	  header failed when the request is from 2 or more Apache reverse
+	  proxies. It's said that all X-Forwarded-* headers will contain more
+	  than one (comma-separated) value if the original request already
+	  contained one of these headers.  Since we could use these values as
+	  Host header, we choose the initial(first) value. See #4922.
+
+	* test/webrick/test_httprequest.rb (test_forwarded): Test it.
+
 Sat Jul  9 19:25:02 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* ext/tk/extconf.rb: I gave up to fix the build issue of ext/tk with Windows
