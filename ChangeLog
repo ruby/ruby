@@ -1,3 +1,10 @@
+Sun Aug  7 22:51:45 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/openssl/ossl_asn1.c (decode_eoc): remove unused variables.
+	  Patch by Eric Wong. [Feature #5157] [ruby-core:38798]
+	* ext/openssl/ossl_asn1.c (ossl_asn1_decode): ditto.
+	* ext/openssl/ossl_pkey.c (ossl_pkey_new_from_data): ditto.
+
 Sun Aug  7 22:37:08 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: add -Wunused-variable to default CFLAGS.

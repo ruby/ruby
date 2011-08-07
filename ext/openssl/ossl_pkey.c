@@ -101,7 +101,6 @@ ossl_pkey_new_from_file(VALUE filename)
 static VALUE
 ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
 {
-     FILE *fp;
      EVP_PKEY *pkey;
      BIO *bio;
      VALUE data, pass;
