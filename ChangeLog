@@ -1,3 +1,9 @@
+Sun Aug  7 14:15:10 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* backport r32876 from trunk.
+
+	* ext/objspace/objspace.c: fix typos in a document.
+
 Sun Aug  7 04:42:36 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* marshal.c (w_object):  Fix exception message when _dump_data
