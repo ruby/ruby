@@ -1,3 +1,11 @@
+Sun Aug  7 23:31:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* time.c (rb_strftime_alloc): raise ERANGE if width is too large.
+	  Patch by Nobuyoshi Nakada. [Bug #4457] [ruby-dev:43285]
+
+	* test/ruby/test_time.rb (class TestTime): add a test for the
+	  above change.
+
 Sun Aug  7 22:51:45 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/openssl/ossl_asn1.c (decode_eoc): remove unused variables.

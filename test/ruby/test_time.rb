@@ -650,6 +650,9 @@ class TestTime < Test::Unit::TestCase
 
     # [ruby-core:33985]
     assert_equal("3000000000", Time.at(3000000000).strftime('%s'))
+
+    bug4457 = '[ruby-dev:43285]'
+    assert_raise(Errno::ERANGE, bug4457) {Time.now.strftime('%8192z')}
   end
 
   def test_delegate
