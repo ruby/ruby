@@ -1,3 +1,7 @@
+Sun Aug  7 15:37:35 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/digest/sha2/sha2ossl.c: use original SHA384_Final on DragonFly.
+
 Sun Aug  7 14:08:16 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* ext/objspace/objspace.c: fix typos in a document.
