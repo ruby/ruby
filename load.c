@@ -73,16 +73,27 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
 		    int type, VALUE load_path)
 {
     long i;
+    long plen;
+    const char *e;
 
+    if(vlen < len) return 0;
+    if (!strncmp(name+(vlen-len),feature,len)){
+	plen = vlen - len - 1;
+    } else {
+	for (e = name + vlen; name != e && *e != '.' && *e != '/'; --e);
+	if (*e!='.' ||
+	    e-name < len ||
+	    strncmp(e-len,feature,len) )
+	    return 0;
+	plen = e - name - len - 1;
+    }
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 	VALUE p = RARRAY_PTR(load_path)[i];
 	const char *s = StringValuePtr(p);
 	long n = RSTRING_LEN(p);
 
-	if (vlen < n + len + 1) continue;
+	if (n != plen ) continue;
 	if (n && (strncmp(name, s, n) || name[n] != '/')) continue;
-	if (strncmp(name + n + 1, feature, len)) continue;
-	if (name[n+len+1] && name[n+len+1] != '.') continue;
 	switch (type) {
 	  case 's':
 	    if (IS_DLEXT(&name[n+len+1])) return p;

@@ -1,3 +1,8 @@
+Wed Jun  1 06:43:13 2011  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* load.c (loaded_feature_path): cut nonsence loop execution to fix
+	  performance bug.
+
 Sat Jun 25 23:45:30 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* vm_insnhelper.c (vm_search_superclass): avoid control frame
