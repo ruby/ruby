@@ -1,3 +1,11 @@
+Sun Aug  7 23:39:44 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* time.c (rb_strftime_alloc): raise ERANGE if width is too large.
+	  Patch by Nobuyoshi Nakada. [Bug #4457] [ruby-dev:43285]
+
+	* test/ruby/test_time.rb (class TestTime): add a test for the
+	  above change.
+
 Sun Aug  7 14:15:10 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* backport r32876 from trunk.
