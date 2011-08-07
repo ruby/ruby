@@ -1,3 +1,8 @@
+Mon Aug  8 00:10:45 2011  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/test_syslog.rb (TestSyslog#test_log): Do not be too
+	  specific about the log line format.  Fixes #5081.
+
 Sun Aug  7 23:39:44 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* time.c (rb_strftime_alloc): raise ERANGE if width is too large.
