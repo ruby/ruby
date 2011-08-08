@@ -247,16 +247,17 @@ rb_ment_new(VALUE klass, ID mid, rb_mtyp_t type,
     me->klass = klass;
     me->def = def;
     if (def) def->alias_count++;
-    
-    /* issue: warnings should be raised only if ruby_verbose */
+
     /* issue: warning belong *possibly* to rb_mdef_redefine_warnings */
     /* check mid */
     if (klass == rb_cObject && mid == idInitialize) {
+	/* issue: use rb_warning to honor -v */
 	rb_warn("redefining Object#initialize may cause infinite loop");
     }
     /* check mid */
     if (mid == object_id || mid == id__send__) {
 	if (type == VM_METHOD_TYPE_ISEQ) {
+	    /* issue: use rb_warning to honor -v */
 	    rb_warn("redefining `%s' may cause serious problems", rb_id2name(mid));
 	}
     }
@@ -336,6 +337,7 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
     if (FL_TEST(klass, FL_SINGLETON) &&
 	     type == VM_METHOD_TYPE_CFUNC &&
 	     mid == rb_intern("allocate")) {
+	/* issue: use rb_warning to honor -v */
 	rb_warn("defining %s.allocate is deprecated; use rb_define_alloc_func()",
 		rb_class2name(rb_ivar_get(klass, attached)));
 	mid = ID_ALLOCATOR;
@@ -351,6 +353,8 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
 	/* redefinition */
         rb_method_redefinition(old_me, mid, type);	    
     }
+    
+    /* definition of method */
 
     me = rb_ment_new(klass, mid, type, def, noex);
     class_ment_add(klass, mid, me, type);
@@ -524,6 +528,7 @@ remove_method(VALUE klass, ID mid)
     }
     rb_check_frozen(klass);
     if (mid == object_id || mid == id__send__ || mid == idInitialize) {
+	/* issue: use rb_warning to honor -v */
 	rb_warn("removing `%s' may cause serious problems", rb_id2name(mid));
     }
 
