@@ -1,3 +1,12 @@
+Tue Aug  9 11:21:08 2011  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (gc_lazy_sweep): if sweep target slots are not found, we
+	  try heap_increment() because it might be able to expand the
+	  heap. [Bug #5127] [ruby-dev:44285]
+
+	* gc.c (gc_clear_mark_on_sweep_slots): if a sweeping was
+	  interrupted, we expand the heap if at all possible.
+
 Tue Aug  9 12:20:33 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/fiddle/helper.rb (libc_so, libm_so): Solaris support added.
