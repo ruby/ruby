@@ -45,8 +45,8 @@ when /solaris/
     # 64-bit ruby
     libdir = '/lib/64' if File.directory? '/lib/64'
   end
-  libc_so = File.join(libdir, "libc.so.6")
-  libm_so = File.join(libdir, "libm.so.6")
+  libc_so = File.join(libdir, "libc.so")
+  libm_so = File.join(libdir, "libm.so")
 when /aix/
   pwd=Dir.pwd
   libc_so = libm_so = "#{pwd}/libaixdltest.so"
