@@ -1,3 +1,9 @@
+Tue Aug  9 09:18:04 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c (gzfile_wrap):  Document encoding options.
+	* ext/zlib/zlib.c (rb_gzwriter_s_open): ditto
+	* ext/zlib/zlib.c (rb_gzreader_s_open): ditto
+
 Sun Aug  7 23:31:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* time.c (rb_strftime_alloc): raise ERANGE if width is too large.
