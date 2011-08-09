@@ -1,3 +1,8 @@
+Wed Aug 10 02:53:27 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb: come back autoload. OpenSSL constant is used
+	  some places, so it leads mistakes like HTTP.start.
+
 Tue Aug  9 22:57:45 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* ext/date/date_parse.c (date_zone_to_diff): add RB_GC_GUARD.
