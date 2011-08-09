@@ -1,6 +1,7 @@
 Tue Aug  9 12:20:33 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/fiddle/helper.rb (libc_so, libm_so): Solaris support added.
+	  [ruby-core:38853] [Bug #5168]
 
 	* test/dl/test_base.rb (libc_so, libm_so): on Solaris, remove libc
 	  and libm version numbers for detecting default libc and libm.
