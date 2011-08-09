@@ -56,7 +56,11 @@ value_to_generic(int type, VALUE src, fiddle_generic * dst)
 	dst->pointer = NUM2PTR(rb_Integer(src));
 	break;
       case TYPE_CHAR:
+	dst->schar = NUM2INT(src);
+	break;
       case TYPE_SHORT:
+	dst->sshort = NUM2INT(src);
+	break;
       case TYPE_INT:
 	dst->sint = NUM2INT(src);
 	break;
@@ -103,9 +107,14 @@ generic_to_value(VALUE rettype, fiddle_generic retval)
         return rb_funcall(cPointer, rb_intern("[]"), 1,
           PTR2NUM((void *)retval.pointer));
       case TYPE_CHAR:
+	if (signed_p) return INT2NUM((char)retval.fffi_sarg);
+	return INT2NUM((unsigned char)retval.fffi_arg);
       case TYPE_SHORT:
+	if (signed_p) return INT2NUM((short)retval.fffi_sarg);
+	return INT2NUM((unsigned short)retval.fffi_arg);
       case TYPE_INT:
-	return INT2NUM(retval.sint);
+	if (signed_p) return INT2NUM((int)retval.fffi_sarg);
+	return UINT2NUM((unsigned int)retval.fffi_arg);
       case TYPE_LONG:
 	if (signed_p) return LONG2NUM(retval.slong);
 	return ULONG2NUM(retval.ulong);

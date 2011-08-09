@@ -1,3 +1,16 @@
+Tue Aug  9 14:25:47 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ext/fiddle/conversions.c (generic_to_value): ffi_arg and ffi_sarg
+	  should be used to handle shorter return value. fix [Bug #3861]
+	  [ruby-core:32504]
+
+	* ext/fiddle/closure.c (callback): ditto
+
+	* ext/fiddle/conversions.h (fiddle_generic): ditto
+
+	* ext/fiddle/conversions.c (value_to_generic): char, short and int
+	  are strictly distinguished on big-endian CPU, e.g. sparc64.
+
 Tue Aug  9 11:21:08 2011  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (gc_lazy_sweep): if sweep target slots are not found, we
