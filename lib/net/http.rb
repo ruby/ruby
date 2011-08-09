@@ -21,6 +21,7 @@
 
 require 'net/protocol'
 require 'uri'
+autoload :OpenSSL, 'openssl'
 
 module Net   #:nodoc:
 
@@ -666,12 +667,7 @@ module Net   #:nodoc:
     # If you change use_ssl value after session started,
     # a Net::HTTP object raises IOError.
     def use_ssl=(flag)
-      flag = if flag
-        require 'openssl' unless defined?(OpenSSL)
-        true
-      else
-        false
-      end
+      flag = flag ? true : false
       if started? and @use_ssl != flag
         raise IOError, "use_ssl value changed, but session already started"
       end
