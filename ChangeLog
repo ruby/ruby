@@ -1,3 +1,10 @@
+Tue Aug  9 22:57:45 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* ext/date/date_parse.c (date_zone_to_diff): add RB_GC_GUARD.
+	  [ruby-dev:44337] [Bug #5152]
+
+	* ext/date/data_parse.c (parse_ddd_cb): ditto.
+
 Tue Aug  9 14:25:47 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ext/fiddle/conversions.c (generic_to_value): ffi_arg and ffi_sarg

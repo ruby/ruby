@@ -530,6 +530,7 @@ date_zone_to_diff(VALUE str)
 	    }
 	}
     }
+    RB_GC_GUARD(str);
   ok:
     return offset;
 }
@@ -1322,6 +1323,7 @@ parse_ddd_cb(VALUE m, VALUE hash)
 	    set_hash("yday", INT2FIX(n2i(cs2,    4, 3)));
 	}
 	break;
+	RB_GC_GUARD(s2);
     }
     if (!NIL_P(s3)) {
 	cs3 = RSTRING_PTR(s3);
@@ -1353,6 +1355,7 @@ parse_ddd_cb(VALUE m, VALUE hash)
 		break;
 	    }
 	}
+	RB_GC_GUARD(s3);
     }
     if (!NIL_P(s4)) {
 	l4 = RSTRING_LEN(s4);
@@ -1391,6 +1394,7 @@ parse_ddd_cb(VALUE m, VALUE hash)
 		*--s1 = '+';
 	    set_hash("offset", date_zone_to_diff(rb_str_new2(s1)));
 	}
+	RB_GC_GUARD(s5);
     }
 
     return 1;
