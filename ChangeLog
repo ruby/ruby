@@ -1,3 +1,7 @@
+Tue Aug  9 10:49:52 2011  Igor Zubkov  <igor.zubkov@gmail.com>
+
+	* array.c: Fix typo. https://github.com/ruby/ruby/pull/36
+
 Mon Aug  8 00:10:45 2011  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/test_syslog.rb (TestSyslog#test_log): Do not be too

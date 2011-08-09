@@ -3591,7 +3591,7 @@ rb_ary_uniq(VALUE ary)
  *
  *  Removes +nil+ elements from the array.
  *  Returns +nil+ if no changes were made, otherwise returns
- *  </i>ary</i>.
+ *  <i>ary</i>.
  *
  *     [ "a", nil, "b", nil, "c" ].compact! #=> [ "a", "b", "c" ]
  *     [ "a", "b", "c" ].compact!           #=> nil
