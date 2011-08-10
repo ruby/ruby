@@ -13,6 +13,11 @@ class Complex_Test < Test::Unit::TestCase
     @unify = $".grep(/(?:^|#{seps})mathn(?:\.(?:rb|so))?/).size != 0
   end
 
+  def test_rationalize
+    assert_equal(1.quo(3), Complex(1/3.0, 0).rationalize, '[ruby-core:38885]')
+    assert_equal(1.quo(5), Complex(0.2, 0).rationalize, '[ruby-core:38885]')
+  end
+
   def test_compsub
     c = ComplexSub.__send__(:convert, 1)
 
