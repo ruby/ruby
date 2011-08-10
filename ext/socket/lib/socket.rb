@@ -31,16 +31,33 @@ class Addrinfo
 
   # creates a new Socket connected to the address of +local_addrinfo+.
   #
-  # If no arguments are given, the address of the socket is not bound.
+  # If _local_addrinfo_ is nil, the address of the socket is not bound.
+  #
+  # The _timeout_ specify the seconds for timeout.
+  # Errno::ETIMEDOUT is raised when timeout occur.
   #
   # If a block is given the created socket is yielded for each address.
   #
-  def connect_internal(local_addrinfo) # :yields: socket
+  def connect_internal(local_addrinfo, timeout=nil) # :yields: socket
     sock = Socket.new(self.pfamily, self.socktype, self.protocol)
     begin
       sock.ipv6only! if self.ipv6?
       sock.bind local_addrinfo if local_addrinfo
-      sock.connect(self)
+      if timeout
+        begin
+          sock.connect_nonblock(self)
+        rescue IO::WaitWritable
+          if !IO.select(nil, [sock], nil, timeout)
+            raise Errno::ETIMEDOUT, 'user specified timeout'
+          end
+          begin
+            sock.connect_nonblock(self) # check connection failure
+          rescue Errno::EISCONN
+          end
+        end
+      else
+        sock.connect(self)
+      end
       if block_given?
         yield sock
       else
@@ -52,13 +69,22 @@ class Addrinfo
   end
   private :connect_internal
 
+  # :call-seq:
+  #   addrinfo.connect_from([local_addr_args], [opts]) {|socket| ... }
+  #   addrinfo.connect_from([local_addr_args], [opts])
+  #
   # creates a socket connected to the address of self.
   #
   # If one or more arguments given as _local_addr_args_,
   # it is used as the local address of the socket.
   # _local_addr_args_ is given for family_addrinfo to obtain actual address.
   #
-  # If no arguments given, the local address of the socket is not bound.
+  # If _local_addr_args_ is not given, the local address of the socket is not bound.
+  #
+  # The optional last argument _opts_ is options represented by a hash.
+  # _opts_ may have following options:
+  #
+  # [:timeout] specify the timeout in seconds.
   #
   # If a block is given, it is called with the socket and the value of the block is returned.
   # The socket is returned otherwise.
@@ -74,11 +100,23 @@ class Addrinfo
   #     puts s.read
   #   }
   #
-  def connect_from(*local_addr_args, &block)
-    connect_internal(family_addrinfo(*local_addr_args), &block)
+  def connect_from(*args, &block)
+    opts = Hash === args.last ? args.pop : {}
+    raise ArgumentError, "wrong number of arguments (#{args.length} for 1)" if 1 < args.length
+    local_addr_args = args
+    connect_internal(family_addrinfo(*local_addr_args), opts[:timeout], &block)
   end
 
+  # :call-seq:
+  #   addrinfo.connect([opts]) {|socket| ... }
+  #   addrinfo.connect([opts])
+  #
   # creates a socket connected to the address of self.
+  #
+  # The optional argument _opts_ is options represented by a hash.
+  # _opts_ may have following options:
+  #
+  # [:timeout] specify the timeout in seconds.
   #
   # If a block is given, it is called with the socket and the value of the block is returned.
   # The socket is returned otherwise.
@@ -88,11 +126,20 @@ class Addrinfo
   #     puts s.read
   #   }
   #
-  def connect(&block)
-    connect_internal(nil, &block)
+  def connect(opts={}, &block)
+    connect_internal(nil, opts[:timeout], &block)
   end
 
+  # :call-seq:
+  #   addrinfo.connect_to([remote_addr_args], [opts]) {|socket| ... }
+  #   addrinfo.connect_to([remote_addr_args], [opts])
+  #
   # creates a socket connected to _remote_addr_args_ and bound to self.
+  #
+  # The optional last argument _opts_ is options represented by a hash.
+  # _opts_ may have following options:
+  #
+  # [:timeout] specify the timeout in seconds.
   #
   # If a block is given, it is called with the socket and the value of the block is returned.
   # The socket is returned otherwise.
@@ -102,9 +149,12 @@ class Addrinfo
   #     puts s.read
   #   }
   #
-  def connect_to(*remote_addr_args, &block)
+  def connect_to(*args, &block)
+    opts = Hash === args.last ? args.pop : {}
+    raise ArgumentError, "wrong number of arguments (#{args.length} for 1)" if 1 < args.length
+    remote_addr_args = args
     remote_addrinfo = family_addrinfo(*remote_addr_args)
-    remote_addrinfo.send(:connect_internal, self, &block)
+    remote_addrinfo.send(:connect_internal, self, opts[:timeout], &block)
   end
 
   # creates a socket bound to self.
@@ -216,14 +266,28 @@ class Socket < BasicSocket
     end
   end
 
+  # :call-seq:
+  #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts]) {|socket| ... }
+  #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts])
+  #
   # creates a new socket object connected to host:port using TCP/IP.
   #
   # If local_host:local_port is given,
   # the socket is bound to it.
   #
+  # The optional last argument _opts_ is options represented by a hash.
+  # _opts_ may have following options:
+  #
+  # [:connect_timeout] specify the timeout in seconds.
+  #
   # If a block is given, the block is called with the socket.
   # The value of the block is returned.
   # The socket is closed when this method returns.
+  #
+  # The optional last argument _opts_ is options represented by a hash.
+  # _opts_ may have following options:
+  #
+  # [:timeout] specify the timeout in seconds.
   #
   # If no block is given, the socket is returned.
   #
@@ -233,9 +297,14 @@ class Socket < BasicSocket
   #     puts sock.read
   #   }
   #
-  def self.tcp(host, port, local_host=nil, local_port=nil) # :yield: socket
+  def self.tcp(host, port, *rest) # :yield: socket
+    opts = Hash === rest.last ? rest.pop : {}
+    raise ArgumentError, "wrong number of arguments (#{args.length} for 2)" if 2 < args.length
+    local_host, local_port = rest
     last_error = nil
     ret = nil
+
+    connect_timeout = opts[:connect_timeout]
 
     local_addr_list = nil
     if local_host != nil || local_port != nil
@@ -250,7 +319,9 @@ class Socket < BasicSocket
         local_addr = nil
       end
       begin
-        sock = local_addr ? ai.connect_from(local_addr) : ai.connect
+        sock = local_addr ?
+          ai.connect_from(local_addr, :timeout => connect_timeout) :
+          ai.connect(:timeout => connect_timeout)
       rescue SystemCallError
         last_error = $!
         next
