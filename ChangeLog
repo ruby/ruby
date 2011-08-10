@@ -1,3 +1,8 @@
+Wed Aug 10 14:11:07 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (init_mkmf): set $LIBRUBYARG regardless of shared
+	  option.  [ruby-core:38802] [Bug #5147]
+
 Wed Aug 10 02:53:27 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb: come back autoload. OpenSSL constant is used
