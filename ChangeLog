@@ -4,6 +4,7 @@ Wed Aug 10 22:12:28 2011  Tanaka Akira  <akr@fsij.org>
 	  (Addrinfo#connect_from): add :timeout option.
 	  (Addrinfo#connect): ditto.
 	  (Addrinfo#connect_to): ditto.
+	  [ruby-core:38538]
 
 Wed Aug 10 21:27:19 2011  Tanaka Akira  <akr@fsij.org>
 
