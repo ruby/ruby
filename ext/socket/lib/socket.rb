@@ -102,7 +102,6 @@ class Addrinfo
   #
   def connect_from(*args, &block)
     opts = Hash === args.last ? args.pop : {}
-    raise ArgumentError, "wrong number of arguments (#{args.length} for 1)" if 1 < args.length
     local_addr_args = args
     connect_internal(family_addrinfo(*local_addr_args), opts[:timeout], &block)
   end
@@ -151,7 +150,6 @@ class Addrinfo
   #
   def connect_to(*args, &block)
     opts = Hash === args.last ? args.pop : {}
-    raise ArgumentError, "wrong number of arguments (#{args.length} for 1)" if 1 < args.length
     remote_addr_args = args
     remote_addrinfo = family_addrinfo(*remote_addr_args)
     remote_addrinfo.send(:connect_internal, self, opts[:timeout], &block)
@@ -299,7 +297,7 @@ class Socket < BasicSocket
   #
   def self.tcp(host, port, *rest) # :yield: socket
     opts = Hash === rest.last ? rest.pop : {}
-    raise ArgumentError, "wrong number of arguments (#{args.length} for 2)" if 2 < args.length
+    raise ArgumentError, "wrong number of arguments (#{rest.length} for 2)" if 2 < rest.length
     local_host, local_port = rest
     last_error = nil
     ret = nil

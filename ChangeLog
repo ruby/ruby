@@ -1,3 +1,7 @@
+Wed Aug 10 23:03:55 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb: fix argument check in the previous commit.
+
 Wed Aug 10 22:12:28 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (Socket.tcp): add :connect_timeout option.
