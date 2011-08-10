@@ -2157,7 +2157,7 @@ def init_mkmf(config = CONFIG, rbconfig = RbConfig::CONFIG)
   $LIBEXT = config['LIBEXT'].dup
   $OBJEXT = config["OBJEXT"].dup
   $LIBS = "#{config['LIBS']} #{config['DLDLIBS']}"
-  $LIBRUBYARG = ""
+  $LIBRUBYARG = config['LIBRUBYARG']
   $LIBRUBYARG_STATIC = config['LIBRUBYARG_STATIC']
   $LIBRUBYARG_SHARED = config['LIBRUBYARG_SHARED']
   $DEFLIBPATH = [$extmk ? "$(topdir)" : "$(libdir)"]
@@ -2170,9 +2170,6 @@ def init_mkmf(config = CONFIG, rbconfig = RbConfig::CONFIG)
   $objs = nil
   $srcs = nil
   $libs = ""
-  if $enable_shared or RbConfig.expand(config["LIBRUBY"].dup) != RbConfig.expand(config["LIBRUBY_A"].dup)
-    $LIBRUBYARG = config['LIBRUBYARG']
-  end
 
   $LOCAL_LIBS = ""
 
