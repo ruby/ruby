@@ -326,7 +326,7 @@ module Net
 
     @ssl_params = nil
 
-    # call-seq:
+    # :call-seq:
     #    Net::POP.enable_ssl(params = {})
     #
     # Enable SSL for all new instances.
@@ -444,7 +444,7 @@ module Net
       return !@ssl_params.nil?
     end
 
-    # call-seq:
+    # :call-seq:
     #    Net::POP#enable_ssl(params = {})
     #
     # Enables SSL for this instance.  Must be called before the connection is

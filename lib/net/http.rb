@@ -507,7 +507,7 @@ module Net   #:nodoc:
       BufferedIO
     end
 
-    # call-seq:
+    # :call-seq:
     #   HTTP.start(address, port, p_addr, p_port, p_user, p_pass, &block)
     #   HTTP.start(address, port=nil, p_addr=nil, p_port=nil, p_user=nil, p_pass=nil, opt, &block)
     #

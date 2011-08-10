@@ -980,7 +980,7 @@ module Net
     @@authenticators = {}
     @@max_flag_count = 10000
 
-    # call-seq:
+    # :call-seq:
     #    Net::IMAP.new(host, options = {})
     #
     # Creates a new Net::IMAP object and connects it to the specified

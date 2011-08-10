@@ -1,3 +1,11 @@
+Wed Aug 10 21:27:19 2011  Tanaka Akira  <akr@fsij.org>
+
+	* lib/net/pop.rb: fix typo in document.
+
+	* lib/net/http.rb: ditto.
+
+	* lib/net/imap.rb: ditto.
+
 Wed Aug 10 19:30:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* complex.c (nucomp_rationalize): calls rationalize of real part if
