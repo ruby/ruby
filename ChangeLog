@@ -1,3 +1,15 @@
+Wed Aug 10 19:30:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* complex.c (nucomp_rationalize): calls rationalize of real part if
+	  imaginary part is exactly zero.  The patch is made by Marc-Andre
+	  Lafortune.  fixes [Bug #5178] [ruby-core:38885]
+
+	* test/ruby/test_complex.rb (test_rationalize): add a test for the
+	  above change.
+
+	* complex.c (nucomp_to_r): fix RDoc comment.  The patch is made by
+	  Marc-Andre Lafortune.
+
 Wed Aug 10 14:11:07 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (init_mkmf): set $LIBRUBYARG regardless of shared

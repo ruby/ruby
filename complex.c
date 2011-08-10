@@ -1339,7 +1339,8 @@ nucomp_to_f(VALUE self)
  * call-seq:
  *    cmp.to_r  ->  rational
  *
- * Returns the value as a rational if possible.
+ * If the imaginary part is exactly 0, returns the real part as a Rational,
+ * otherwise a RangeError is raised.
  */
 static VALUE
 nucomp_to_r(VALUE self)
@@ -1358,14 +1359,22 @@ nucomp_to_r(VALUE self)
  * call-seq:
  *    cmp.rationalize([eps])  ->  rational
  *
- * Returns the value as a rational if possible.  An optional argument
- * eps is always ignored.
+ * If the imaginary part is exactly 0, returns the real part as a Rational,
+ * otherwise a RangeError is raised.
  */
 static VALUE
 nucomp_rationalize(int argc, VALUE *argv, VALUE self)
 {
+    get_dat1(self);
+
     rb_scan_args(argc, argv, "01", NULL);
-    return nucomp_to_r(self);
+
+    if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
+       VALUE s = f_to_s(self);
+       rb_raise(rb_eRangeError, "can't convert %s into Rational",
+                StringValuePtr(s));
+    }
+    return rb_funcall(dat->real, rb_intern("rationalize"), argc, argv);
 }
 
 /*
