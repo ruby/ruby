@@ -390,7 +390,7 @@ MSG
 end
 
 def link_command(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
-  librubyarg = $extmk ? $LIBRUBYARG_STATIC : $LIBRUBYARG
+  librubyarg = $extmk ? $LIBRUBYARG_STATIC : "$(LIBRUBYARG)"
   conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote,
                                 'src' => "#{CONFTEST_C}",
                                 'arch_hdrdir' => $arch_hdrdir.quote,
@@ -2157,7 +2157,7 @@ def init_mkmf(config = CONFIG, rbconfig = RbConfig::CONFIG)
   $LIBEXT = config['LIBEXT'].dup
   $OBJEXT = config["OBJEXT"].dup
   $LIBS = "#{config['LIBS']} #{config['DLDLIBS']}"
-  $LIBRUBYARG = config['LIBRUBYARG']
+  $LIBRUBYARG = ""
   $LIBRUBYARG_STATIC = config['LIBRUBYARG_STATIC']
   $LIBRUBYARG_SHARED = config['LIBRUBYARG_SHARED']
   $DEFLIBPATH = [$extmk ? "$(topdir)" : "$(libdir)"]
@@ -2170,6 +2170,9 @@ def init_mkmf(config = CONFIG, rbconfig = RbConfig::CONFIG)
   $objs = nil
   $srcs = nil
   $libs = ""
+  if $enable_shared or RbConfig.expand(config["LIBRUBY"].dup) != RbConfig.expand(config["LIBRUBY_A"].dup)
+    $LIBRUBYARG = config['LIBRUBYARG']
+  end
 
   $LOCAL_LIBS = ""
 

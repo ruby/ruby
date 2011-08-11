@@ -1,3 +1,10 @@
+Thu Aug 11 15:07:36 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (link_command): use LIBRUBYARG in rbconfig for
+	  unbundled extensions.  [ruby-core:38802] [Bug #5147]
+
+	* lib/mkmf.rb (init_mkmf): revert r32902.  [ruby-core:38903]
+
 Wed Aug 10 19:30:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* backport r32903 from trunk.
