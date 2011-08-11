@@ -1,3 +1,7 @@
+Wed Jun 29 23:17:57 2011  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/openssl/ossl.h (OPENSSL_SYS_WIN32): support for mingw(msys).
+
 Wed Jun 29 13:55:36 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_const_get_0): should not look for superclasses if
@@ -110,7 +114,7 @@ Sun Jul  3 21:02:05 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 Wed Jun 29 23:09:14 2011  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* ex/tk/extconf.rb: support for the latest ActiveTcl with mingw.
+	* ext/tk/extconf.rb (intptr_t, uintptr_t): support for the latest ActiveTcl with mingw.
 
 Sun Jun 12 16:19:48 2011  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
