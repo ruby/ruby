@@ -1234,20 +1234,8 @@ ruby_thread_has_gvl_p(void)
  *  call-seq:
  *     Thread.pass   -> nil
  *
- *  Invokes the thread scheduler to pass execution to another thread.
- *
- *     a = Thread.new { print "a"; Thread.pass;
- *                      print "b"; Thread.pass;
- *                      print "c" }
- *     b = Thread.new { print "x"; Thread.pass;
- *                      print "y"; Thread.pass;
- *                      print "z" }
- *     a.join
- *     b.join
- *
- *  <em>produces:</em>
- *
- *     axbycz
+ * Take the thrad scheduler a hint to pass execution to another thread.
+ * A running thread may or may not switch. It depend on OS and processor.
  */
 
 static VALUE
@@ -1552,7 +1540,9 @@ rb_thread_exit(void)
  *  I/O, however). Does not invoke the scheduler (see <code>Thread#run</code>).
  *
  *     c = Thread.new { Thread.stop; puts "hey!" }
+ *     sleep 0.1 while c.status!='sleep'
  *     c.wakeup
+ *     c.join
  *
  *  <em>produces:</em>
  *
@@ -1583,7 +1573,7 @@ rb_thread_wakeup(VALUE thread)
  *  Wakes up <i>thr</i>, making it eligible for scheduling.
  *
  *     a = Thread.new { puts "a"; Thread.stop; puts "c" }
- *     Thread.pass
+ *     sleep 0.1 while a.status!='sleep'
  *     puts "Got here"
  *     a.run
  *     a.join
@@ -1612,7 +1602,7 @@ rb_thread_run(VALUE thread)
  *  and schedules execution of another thread.
  *
  *     a = Thread.new { print "a"; Thread.stop; print "c" }
- *     Thread.pass
+ *     sleep 0.1 while a.status!='sleep'
  *     print "b"
  *     a.run
  *     a.join
