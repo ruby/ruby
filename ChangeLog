@@ -1,3 +1,10 @@
+Mon Jun 27 01:34:18 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/etc/test_etc.rb (TestEtc#test_get{pw,gr}nam): skip entries
+	  start with + sign, which means NIS.  these are returned in the
+	  case that passwd and group entries in /etc/nsswitch.conf are set
+	  to use "nis" explicitly on Debian.  fixed #3683
+
 Mon Jun 27 00:44:53 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* parse.y (rb_parser_end_seen_p): fix documentation about return
