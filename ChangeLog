@@ -1,3 +1,7 @@
+Tue Jun 28 01:19:52 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/ruby-lex.rb: fix [Bug #4232].
+
 Tue Jun 28 00:14:13 2011  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: fix [Bug #4409]. add DRbServer#here?.
