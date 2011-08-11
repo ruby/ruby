@@ -1,3 +1,14 @@
+Tue Aug  2 22:04:46 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* backport r32815 from trunk.
+
+	* gc.c (init_heap): allocate sigaltstack after heaps are allocated.
+	  [ruby-dev:44315] [Bug #5139]
+
+	* vm.c (thread_free): use free because objspace is not ready.
+
+	* vm.c (th_init): use malloc because objspace is not ready.
+
 Thu Aug 11 19:04:38 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* backport r32931 from trunk.
