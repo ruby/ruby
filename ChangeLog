@@ -1,3 +1,8 @@
+Thu Jun 30 00:03:20 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/completion.rb: complate correctry string literal. fix
+	  [Bug #1145].
+
 Wed Jun 29 23:17:57 2011  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/openssl/ossl.h (OPENSSL_SYS_WIN32): support for mingw(msys).
