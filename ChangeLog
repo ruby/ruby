@@ -1,3 +1,8 @@
+Tue Jun 28 07:50:32 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* object.c (Init_Object):  Teach RDoc what Init_class_hierarchy does to
+	  hook up ri for BasicObject, Object, Module and Class.
+
 Tue Jun 28 01:19:52 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb/ruby-lex.rb: fix [Bug #4232].
