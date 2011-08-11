@@ -299,3 +299,19 @@ class TestDRbLarge < Test::Unit::TestCase
     assert_kind_of(StandardError, exception)
   end
 end
+
+class TestBug4409 < Test::Unit::TestCase
+  def setup
+    @ext = DRbService.ext_service('ut_eq.rb')
+    @there = @ext.front
+  end
+
+  def teardown
+    @ext.stop_service if @ext
+  end
+  
+  def test_bug4409
+    foo = @there.foo
+    assert(@there.foo?(foo))
+  end
+end
