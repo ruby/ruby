@@ -420,7 +420,6 @@ typedef struct rb_thread_struct
 
     VALUE errinfo;
     VALUE thrown_errinfo;
-    int exec_signal;
 
     int interrupt_flag;
     rb_thread_lock_t interrupt_lock;

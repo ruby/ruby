@@ -1,3 +1,22 @@
+Fri Jul  1 06:41:36 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_threadptr_check_signal): only wake up main thread.
+
+	* thread.c (rb_threadptr_execute_interrupts_common): check signal
+	  deliverly if it is main thread.
+	  fixes [ruby-dev:44005] [Ruby 1.9 - Bug #4950]
+
+	* bootstraptest/test_fork.rb: add a test for above.
+
+	* signal.c (rb_get_next_signal): skip if signal_buff is empty.
+	 (check signal_buff.size first)
+
+	* vm_core.h: remove unused variable rb_thread_t::exec_signal.
+
+	* thread.c (rb_thread_check_trap_pending): check
+	  rb_signal_buff_size() because rb_thread_t::exec_signal
+	  is no longer available.
+
 Fri Jul  1 03:28:25 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (Init_class_hierarchy): should name BasicObject
