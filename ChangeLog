@@ -1,3 +1,8 @@
+Thu Jun 30 21:18:35 2011  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* configure.in: Add warnflags for XL/C on AIX during configure
+	  to avoid [Bug #3971]. See [ruby-core:32859]
+
 Thu Jun 30 20:12:36 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_module.rb: tests for [Bug #3422] and [Bug #3423].
