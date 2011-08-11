@@ -258,12 +258,12 @@ Wed Aug  3 16:01:35 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* io.c (argf_next_argv): remove the call of above function.
 
 	* ext/-test-/add_suffix, test/-ext-/test_add_suffix.rb: remove the test
-	  extension module because this is only for testsing ruby_add_suffix().
+	  extension module because this is only for testing ruby_add_suffix().
 
 	* LEGAL: remove the mention about a part of util.c, because now we
 	  removed the part.
 
-	* io.c (argf_next_argv): now the new filename is not guranteed to
+	* io.c (argf_next_argv): now the new filename is not guaranteed to
 	  use, so should check the return value of rename(2).
 
 	* test/ruby/test_argf.rb (TestArgf#test_inplace_rename_impossible):
