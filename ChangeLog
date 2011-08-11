@@ -1,3 +1,8 @@
+Mon Jun 27 00:44:53 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* parse.y (rb_parser_end_seen_p): fix documentation about return
+	  value. patched by Sho Hashimoto. [Bug #4511]
+
 Wed Jun  1 06:43:13 2011  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* load.c (loaded_feature_path): cut nonsence loop execution to fix
