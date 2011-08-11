@@ -66,7 +66,7 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
     }
 
     if (server) {
-	if (listen(fd, 5) < 0) {
+	if (listen(fd, SOMAXCONN) < 0) {
 	    close(fd);
 	    rb_sys_fail("listen(2)");
 	}

@@ -105,7 +105,7 @@ init_inetsock_internal(struct inetsock_arg *arg)
     arg->fd = -1;
 
     if (type == INET_SERVER) {
-	status = listen(fd, 5);
+	status = listen(fd, SOMAXCONN);
 	if (status < 0) {
 	    close(fd);
             rb_sys_fail("listen(2)");

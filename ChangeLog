@@ -1,3 +1,15 @@
+Fri Aug 12 08:17:46 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ipsocket.c (init_inetsock_internal): use SOMAXCONN for
+	  listen backlog.
+
+	* ext/socket/unixsocket.c (rsock_init_unixsock): ditto.
+
+	* ext/socket/lib/socket.rb (Addrinfo#listen): ditto.
+	  (Socket.tcp_server_sockets_port0): ditto.
+
+	* ext/socket/mkconstants.rb: define SOMAXCONN as 5 if not available.
+
 Fri Aug 12 03:24:35 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Import RDoc 3.9.2.  Fixes TIDYLINK for HTML output.

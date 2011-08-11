@@ -182,7 +182,7 @@ class Addrinfo
   end
 
   # creates a listening socket bound to self.
-  def listen(backlog=5)
+  def listen(backlog=Socket::SOMAXCONN)
     sock = Socket.new(self.pfamily, self.socktype, self.protocol)
     begin
       sock.ipv6only! if self.ipv6?
@@ -386,7 +386,7 @@ class Socket < BasicSocket
     ai_list = Addrinfo.getaddrinfo(host, 0, nil, :STREAM, nil, Socket::AI_PASSIVE)
     sockets = ip_sockets_port0(ai_list, true)
     sockets.each {|s|
-      s.listen(5)
+      s.listen(Socket::SOMAXCONN)
     }
     sockets
   ensure

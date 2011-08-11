@@ -688,7 +688,7 @@ INET6_ADDRSTRLEN	46	Maximum length of an IPv6 address string
 IFNAMSIZ	nil	Maximum interface name size
 IF_NAMESIZE	nil	Maximum interface name size
 
-SOMAXCONN	nil	Maximum connection requests that may be queued for a socket
+SOMAXCONN	5	Maximum connection requests that may be queued for a socket
 
 SCM_RIGHTS	nil	Access rights
 SCM_TIMESTAMP	nil	Timestamp (timeval)
