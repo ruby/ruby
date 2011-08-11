@@ -25,6 +25,12 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
     assert_equal "\n<p><a href=\"C1.html\">C1</a></p>\n", result
   end
 
+  def test_convert_TIDYLINK_rdoc_ref
+    result = @to.convert '{foo}[rdoc-ref:C1]'
+
+    assert_equal "\n<p><a href=\"C1.html\">foo</a></p>\n", result
+  end
+
   def test_gen_url
     assert_equal '<a href="C1.html">Some class</a>',
                  @to.gen_url('rdoc-ref:C1', 'Some class')

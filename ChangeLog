@@ -1,3 +1,9 @@
+Fri Aug 12 03:24:35 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* backport r32935 from trunk
+
+	* lib/rdoc:  Import RDoc 3.9.2.  Fixes TIDYLINK for HTML output.
+
 Tue Aug  2 22:04:46 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* backport r32815 from trunk.
