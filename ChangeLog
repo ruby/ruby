@@ -1,3 +1,7 @@
+Tue Jun 28 21:44:58 2011  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb/ruby-lex.rb: recognize '\char' in ruby statement.
+
 Tue Jun 28 20:39:29 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* lib/debug.rb (var_list): Command 'var *' did not work on 1.9(!).
