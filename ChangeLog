@@ -1,3 +1,14 @@
+Fri Aug 12 13:53:03 2011  Narihiro Nakamura  <narihiro@netlab.jp>
+
+	* backport r32894 from trunk.
+
+	* gc.c (gc_lazy_sweep): if sweep target slots are not found, we
+	  try heap_increment() because it might be able to expand the
+	  heap. [Bug #5127] [ruby-dev:44285]
+
+	* gc.c (gc_clear_mark_on_sweep_slots): if a sweeping was
+	  interrupted, we expand the heap if at all possible.
+
 Fri Aug 12 12:28:17 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rake:  Update to Rake 0.9.2.2.  Prevent pollution of toplevel
