@@ -1,3 +1,9 @@
+Sat Aug 13 01:56:11 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rake:  Update to Rake 0.9.2.2.  Prevent pollution of toplevel
+	  namespace by Commands.  Remove unused variable and debugging
+	  statement in tests.
+
 Fri Aug 12 11:39:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: Desbribe "no" configure option for site_ruby
