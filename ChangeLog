@@ -1,3 +1,10 @@
+Fri Aug 12 09:00:24 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* backport r32941 from trunk
+
+	* lib/rubygems:  Import RubyGems 1.8.8.  Fixes encoding of YAML gemspec
+	  from gems.  Github Issue #149
+
 Fri Aug 12 03:24:35 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* backport r32935 from trunk
