@@ -1,3 +1,9 @@
+Fri Aug 12 12:28:17 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rake:  Update to Rake 0.9.2.2.  Prevent pollution of toplevel
+	  namespace by Commands.  Remove unused variable and debugging
+	  statement in tests.
+
 Fri Aug 12 09:00:24 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* backport r32941 from trunk
