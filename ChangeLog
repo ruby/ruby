@@ -1,3 +1,8 @@
+Fri Aug 12 11:39:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: Desbribe "no" configure option for site_ruby
+	  and vendor_ruby. Patch by Vit Ondruch. [Bug #5187][ruby-core:38921]
+
 Fri Aug 12 09:00:24 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Import RubyGems 1.8.8.  Fixes encoding of YAML gemspec
