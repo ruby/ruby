@@ -1,3 +1,8 @@
+Fri Aug 12 09:00:24 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Import RubyGems 1.8.8.  Fixes encoding of YAML gemspec
+	  from gems.  Github Issue #149
+
 Fri Aug 12 08:17:46 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ipsocket.c (init_inetsock_internal): use SOMAXCONN for
