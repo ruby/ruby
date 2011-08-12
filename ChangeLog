@@ -1,3 +1,10 @@
+Fri Aug  5 13:32:43 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* backport r32856 from trunk.
+
+	* lib/xmlrpc/client.rb, lib/xmlrpc/server.rb: should use
+	  String#bytesize instead of String#size.
+
 Fri Aug 12 13:53:03 2011  Narihiro Nakamura  <narihiro@netlab.jp>
 
 	* backport r32894 from trunk.
