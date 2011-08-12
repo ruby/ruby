@@ -2776,7 +2776,7 @@ else
 fi
 
 AC_ARG_WITH(sitedir,
-	    AS_HELP_STRING([--with-sitedir=DIR], [site libraries in DIR [[RUBY_LIB_PREFIX/site_ruby]], "no" to disable site directory]]),
+	    AS_HELP_STRING([--with-sitedir=DIR], [site libraries in DIR [[RUBY_LIB_PREFIX/site_ruby]], "no" to disable site directory]),
             [sitedir=$withval],
             [sitedir='${rubylibprefix}/site_ruby'])
 dir="${sitedir}"
