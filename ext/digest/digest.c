@@ -29,6 +29,53 @@ RUBY_EXTERN void Init_digest_base(void);
  * Document-module: Digest
  *
  * This module provides a framework for message digest libraries.
+ *
+ * You may want to look at OpenSSL::Digest as it supports support more
+ * algorithms.
+ *
+ * A cryptographic hash function is a procedure that takes data and return a
+ * fixed bit string : the hash value, also known as _digest_. Hash functions
+ * are also called one-way functions, it is easy to compute a digest from
+ * a message, but it is infeasible to generate a message from a digest.
+ *
+ * == Example
+ *
+ *   require 'digest'
+ *
+ *   # Compute a complete digest
+ *   sha256 = Digest::SHA256.new
+ *   digest = sha256.digest message
+ *
+ *   # Compute digest by chunks
+ *   sha256 = Digest::SHA256.new
+ *   sha256.update message1
+ *   sha256 << message2 # << is an alias for update
+ *
+ *   digest = sha256.digest
+ *
+ * == Digest algorithms
+ *
+ * Different digest algorithms (or hash functions) are available :
+ *
+ * HMAC::
+ *   See FIPS PUB 198 The Keyed-Hash Message Authentication Code (HMAC)
+ * RIPEMD-160::
+ *   (as Digest::RMD160) see
+ *   http://homes.esat.kuleuven.be/~bosselae/ripemd160.html
+ * SHA1::
+ *   See FIPS 180 Secure Hash Standard
+ * SHA2 family::
+ *   See FIPS 180 Secure Hash Standard which defines the following algorithms:
+ *   * SHA512
+ *   * SHA384
+ *   * SHA256
+ *
+ * The latest versions of the FIPS publications can be found here:
+ * http://csrc.nist.gov/publications/PubsFIPS.html
+ *
+ * Additionally Digest::BubbleBabble encodes a digest as a sequence of
+ * consonants and vowels which is more recognizable and comparable than a
+ * hexadecimal digest.  See http://en.wikipedia.org/wiki/Bubblebabble
  */
 
 static VALUE

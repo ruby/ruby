@@ -1,3 +1,10 @@
+Sat Aug 13 02:19:57 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* backport r32950 from trunk.
+
+	* ext/digest/digest.c:  Add documentation for the Digest module.  Patch
+	  by Sylvain Daubert.  [Ruby 1.9 - Bug #5167]
+
 Fri Aug  5 13:32:43 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* backport r32856 from trunk.
