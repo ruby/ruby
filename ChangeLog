@@ -1,3 +1,8 @@
+Sat Aug 13 02:19:57 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/digest/digest.c:  Add documentation for the Digest module.  Patch
+	  by Sylvain Daubert.  [Ruby 1.9 - Bug #5167]
+
 Sat Aug 13 01:56:11 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rake:  Update to Rake 0.9.2.2.  Prevent pollution of toplevel
