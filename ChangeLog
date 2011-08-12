@@ -1,3 +1,8 @@
+Sat Aug 13 03:41:37 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/uri/common.rb:  Fix documentation of URI::Parser.new.  Patch by
+	  Steve Klabnik.  [Ruby 1.9 - Bug #5177]
+
 Sat Aug 13 02:19:57 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/digest/digest.c:  Add documentation for the Digest module.  Patch
