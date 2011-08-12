@@ -1,3 +1,10 @@
+Sat Aug 13 03:41:37 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* backport r32953 from trunk.
+
+	* lib/uri/common.rb:  Fix documentation of URI::Parser.new.  Patch by
+	  Steve Klabnik.  [Ruby 1.9 - Bug #5177]
+
 Sat Aug 13 02:19:57 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* backport r32950 from trunk.

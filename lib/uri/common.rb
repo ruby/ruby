@@ -78,15 +78,15 @@ module URI
     #
     # You can use the following keys:
     #
-    #   * <tt>:ESCAPED</tt> (URI::PATTERN::ESCAPED in default)
-    #   * <tt>:UNRESERVED</tt> (URI::PATTERN::UNRESERVED in default)
-    #   * <tt>:DOMLABEL</tt> (URI::PATTERN::DOMLABEL in default)
-    #   * <tt>:TOPLABEL</tt> (URI::PATTERN::TOPLABEL in default)
-    #   * <tt>:HOSTNAME</tt> (URI::PATTERN::HOSTNAME in default)
+    #   * :ESCAPED (URI::PATTERN::ESCAPED in default)
+    #   * :UNRESERVED (URI::PATTERN::UNRESERVED in default)
+    #   * :DOMLABEL (URI::PATTERN::DOMLABEL in default)
+    #   * :TOPLABEL (URI::PATTERN::TOPLABEL in default)
+    #   * :HOSTNAME (URI::PATTERN::HOSTNAME in default)
     #
     # == Examples
     #
-    #   p = URI::Parser.new(:ESCPAED => "(?:%[a-fA-F0-9]{2}|%u[a-fA-F0-9]{4})"
+    #   p = URI::Parser.new(:ESCAPED => "(?:%[a-fA-F0-9]{2}|%u[a-fA-F0-9]{4})"
     #   u = p.parse("http://example.jp/%uABCD") #=> #<URI::HTTP:0xb78cf4f8 URL:http://example.jp/%uABCD>
     #   URI.parse(u.to_s) #=> raises URI::InvalidURIError
     #
