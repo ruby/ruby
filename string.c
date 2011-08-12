@@ -2160,6 +2160,7 @@ rb_str_hash_cmp(VALUE str1, VALUE str2)
  *    str.hash   -> fixnum
  *
  * Return a hash based on the string's length and content.
+ * Note: hash is consistent only within the same process.
  */
 
 static VALUE
