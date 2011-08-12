@@ -4089,6 +4089,9 @@ d_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
 	rb_warning("invalid start is ignored");
     }
 
+    if (NIL_P(hash))
+	rb_raise(rb_eArgError, "invalid date");
+
     if (NIL_P(ref_hash("jd")) &&
 	NIL_P(ref_hash("yday")) &&
 	!NIL_P(ref_hash("year")) &&
@@ -7852,6 +7855,9 @@ dt_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
 	sg = INT2FIX(DEFAULT_SG);
 	rb_warning("invalid start is ignored");
     }
+
+    if (NIL_P(hash))
+	rb_raise(rb_eArgError, "invalid date");
 
     if (NIL_P(ref_hash("jd")) &&
 	NIL_P(ref_hash("yday")) &&

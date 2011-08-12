@@ -1,3 +1,7 @@
+Sat Aug 13 08:47:20 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: [ruby-core:38855].
+
 Sat Aug 13 03:41:37 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/uri/common.rb:  Fix documentation of URI::Parser.new.  Patch by
