@@ -68,8 +68,11 @@ module Psych
         end
         i
       else
-        return Integer(string.gsub(/[,_]/, '')) rescue ArgumentError
-        return Float(string.gsub(/[,_]/, '')) rescue ArgumentError
+        if string.count('.') < 2
+          return Integer(string.gsub(/[,_]/, '')) rescue ArgumentError
+          return Float(string.gsub(/[,_]/, '')) rescue ArgumentError
+        end
+
         @string_cache[string] = true
         string
       end

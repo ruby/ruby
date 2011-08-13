@@ -1,3 +1,8 @@
+Sat Aug 13 08:55:38 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: Only consider strings
+	  with fewer than 2 dots to be numbers. [ruby-core:38915]
+
 Sat Aug 13 08:47:20 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: [ruby-core:38855].
