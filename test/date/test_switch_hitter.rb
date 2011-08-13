@@ -218,6 +218,15 @@ class TestSH < Test::Unit::TestCase
     assert_equal(Encoding::US_ASCII, d.inspect.encoding)
   end
 
+  def test_strftime
+    assert_raise(Errno::ERANGE) do
+      Date.today.strftime('%100000z')
+    end
+    assert_raise(Errno::ERANGE) do
+      Date.new(1 << 10000).strftime('%Y') 
+    end
+  end
+
   def test_cmp
     assert_equal(-1, Date.new(2001,2,3) <=> Date.new(2001,2,4))
     assert_equal(0, Date.new(2001,2,3) <=> Date.new(2001,2,3))
