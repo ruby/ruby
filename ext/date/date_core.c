@@ -6721,8 +6721,12 @@ date_strftime_alloc(char **buf, const char *format,
 	 * if the buffer is 1024 times bigger than the length of the
 	 * format string, it's not failing for lack of room.
 	 */
-	if (len > 0 || size >= 1024 * flen) break;
+	if (len > 0) break;
 	xfree(*buf);
+	if (size >= 1024 * flen) {
+	    rb_sys_fail(format);
+	    break;
+	}
     }
     return len;
 }

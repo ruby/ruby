@@ -1,3 +1,9 @@
+Sat Aug 13 09:15:16 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (date_strftime_alloc): followed the change
+	  of r32885.
+	* NEWS: followed the above change.
+
 Sat Aug 13 08:49:05 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: [ruby-core:38855].
