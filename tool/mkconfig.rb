@@ -175,14 +175,22 @@ end
   print "  CONFIG[#{v.dump}] = #{versions[v].dump}\n"
 end
 
-dest = drive ? /= \"(?!\$[\(\{])(?:[a-z]:)?/i : /= \"(?!\$[\(\{])/
+dest = drive ? %r'= "(?!\$[\(\{])(?i:[a-z]:)' : %r'= "(?!\$[\(\{])'
+v_disabled = {}
 v_others.collect! do |x|
-  if /^\s*CONFIG\["(?!abs_|old)[a-z]+(?:_prefix|dir)"\]/ === x
+  if /^\s*CONFIG\["((?!abs_|old)[a-z]+(?:_prefix|dir))"\]/ === x
+    name = $1
+    if /= "no"$/ =~ x
+      v_disabled[name] = true
+      v_others.delete(name)
+      next
+    end
     x.sub(dest, '= "$(DESTDIR)')
   else
     x
   end
 end
+v_others.compact!
 
 if $install_name
   v_fast << "  CONFIG[\"ruby_install_name\"] = \"" + $install_name + "\"\n"
@@ -197,10 +205,16 @@ print(*v_others)
 print <<EOS
   CONFIG["rubylibdir"] = "$(rubylibprefix)/$(ruby_version)"
   CONFIG["archdir"] = "$(rubylibdir)/$(arch)"
+EOS
+print <<EOS unless v_disabled["sitedir"]
   CONFIG["sitelibdir"] = "$(sitedir)/$(ruby_version)"
   CONFIG["sitearchdir"] = "$(sitelibdir)/$(sitearch)"
+EOS
+print <<EOS unless v_disabled["vendordir"]
   CONFIG["vendorlibdir"] = "$(vendordir)/$(ruby_version)"
   CONFIG["vendorarchdir"] = "$(vendorlibdir)/$(sitearch)"
+EOS
+print <<EOS
   CONFIG["topdir"] = File.dirname(__FILE__)
   MAKEFILE_CONFIG = {}
   CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}

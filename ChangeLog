@@ -1,3 +1,9 @@
+Sat Aug 13 22:17:27 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/mkconfig.rb: do not make the entries related to sitedir and
+	  verdordir if disabled by --without options.  [ruby-core:38922]
+	  [Bug #5187]
+
 Sat Aug 13 17:03:22 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: [ruby-core:38861]
