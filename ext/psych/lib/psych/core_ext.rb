@@ -36,4 +36,5 @@ module Kernel
   end
   remove_method :y rescue nil
   alias y psych_y
+  private :y
 end

@@ -3,6 +3,7 @@
 # $Id$
 #
 require 'psych/helper'
+require 'ostruct'
 
 # [ruby-core:01946]
 module Psych_Tests
@@ -12,6 +13,12 @@ end
 class Psych_Unit_Tests < Psych::TestCase
     def teardown
         Psych.domain_types.clear
+    end
+
+    def test_y_method
+      assert_raises(NoMethodError) do
+        OpenStruct.new.y 1
+      end
     end
 
     def test_syck_compat
