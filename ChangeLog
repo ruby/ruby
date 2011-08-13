@@ -1,3 +1,8 @@
+Sun Aug 14 05:57:01 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/socket/test_socket.rb (test_connect_timeout): added a test
+	  based on a patch by Eric Wong.  [ruby-core:38910]
+
 Sat Aug 13 22:17:27 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/mkconfig.rb: do not make the entries related to sitedir and

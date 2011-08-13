@@ -430,4 +430,32 @@ class TestSocket < Test::Unit::TestCase
   ensure
     server.close
   end
+
+  def test_connect_timeout
+    host = "127.0.0.1"
+    server = TCPServer.new(host, 0)
+    port = server.addr[1]
+    serv_thread = Thread.new {server.accept}
+    sock = Socket.tcp(host, port, :connect_timeout => 30)
+    accepted = serv_thread.value
+    assert_kind_of TCPSocket, accepted
+    assert_equal sock, IO.select(nil, [ sock ])[1][0], "not writable"
+    sock.close
+
+    # some platforms may not timeout when the listener queue overflows,
+    # but we know Linux does with the default listen backlog of SOMAXCONN for
+    # TCPServer.
+    assert_raises(Errno::ETIMEDOUT) do
+      (Socket::SOMAXCONN*2).times do |i|
+        sock = Socket.tcp(host, port, :connect_timeout => 0)
+        assert_equal sock, IO.select(nil, [ sock ])[1][0],
+                     "not writable (#{i})"
+        sock.close
+      end
+    end if RUBY_PLATFORM =~ /linux/
+  ensure
+    server.close
+    accepted.close if accepted
+    sock.close if sock && ! sock.closed?
+  end
 end if defined?(Socket)
