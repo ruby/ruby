@@ -456,6 +456,12 @@ class TestDateStrptime < Test::Unit::TestCase
 
   def test_strptime__ex
     assert_raise(ArgumentError) do
+      Date.strptime('')
+    end
+    assert_raise(ArgumentError) do
+      DateTime.strptime('')
+    end
+    assert_raise(ArgumentError) do
       Date.strptime('2001-02-29', '%F')
     end
     assert_raise(ArgumentError) do
@@ -463,6 +469,9 @@ class TestDateStrptime < Test::Unit::TestCase
     end
     assert_raise(ArgumentError) do
       Date.strptime('23:55', '%H:%M')
+    end
+    assert_raise(ArgumentError) do
+      Date.strptime('01-31-2011', '%m/%d/%Y')
     end
   end
 

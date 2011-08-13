@@ -656,6 +656,9 @@ class TestDateParse < Test::Unit::TestCase
       Date.parse('')
     end
     assert_raise(ArgumentError) do
+      DateTime.parse('')
+    end
+    assert_raise(ArgumentError) do
       Date.parse('2001-02-29')
     end
     assert_raise(ArgumentError) do
