@@ -1,3 +1,9 @@
+Sat Aug 13 09:26:24 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/core_ext.rb: Make Kernel#y private.
+	  [ruby-core:38913]
+	* test/psych/test_yaml.rb: corresponding test.
+
 Sat Aug 13 09:05:16 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (date_strftime_alloc): followed the change
