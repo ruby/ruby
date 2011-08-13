@@ -145,10 +145,10 @@ with all sufficient information, see the ChangeLog file.
 
   * A method strftime cannot produce huge output (same as Time's one).
 
-    * Even though Date/DateTime can handle far dates, the following gives
-      an empty string:
+    * Even though Date/DateTime can handle far dates, the following causes
+      an exception.
 
-      DateTime.new(1<<10000).strftime('%Y')  #=> ""
+      DateTime.new(1<<10000).strftime('%Y')  # Errno::ERANGE
 
   * Changed the format of inspect.
   * Changed the format of marshal (but, can load old dumps).

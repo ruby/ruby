@@ -1,3 +1,9 @@
+Sat Aug 13 09:05:16 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (date_strftime_alloc): followed the change
+	  of r32885.
+	* doc/NEWS-1.9.3: followed the above change.
+
 Sat Aug 13 08:55:38 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: Only consider strings
