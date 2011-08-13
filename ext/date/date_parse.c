@@ -1323,8 +1323,8 @@ parse_ddd_cb(VALUE m, VALUE hash)
 	    set_hash("yday", INT2FIX(n2i(cs2,    4, 3)));
 	}
 	break;
-	RB_GC_GUARD(s2);
     }
+    RB_GC_GUARD(s2);
     if (!NIL_P(s3)) {
 	cs3 = RSTRING_PTR(s3);
 	l3 = RSTRING_LEN(s3);
