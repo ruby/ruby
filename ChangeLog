@@ -1,3 +1,8 @@
+Sat Aug 13 09:36:19 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* ext/date/date_parse.c parse_ddd_cb): fix r32896. RB_GC_GUARD
+	  insertion position was mistaken. [ruby-dev:44337] [Bug #5152]
+
 Sat Aug 13 09:26:24 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/core_ext.rb: Make Kernel#y private.
