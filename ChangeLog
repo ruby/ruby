@@ -1,3 +1,7 @@
+Sat Aug 13 17:03:22 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: [ruby-core:38861]
+
 Sat Aug 13 09:39:07 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/date/test_*.rb: added tests.
