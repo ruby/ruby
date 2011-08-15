@@ -1997,6 +1997,9 @@ Init_ossl_ssl()
 #if defined(SSL_OP_NO_TICKET)
     ossl_ssl_def_const(OP_NO_TICKET);
 #endif
+#if defined(SSL_OP_NO_COMPRESSION)
+    ossl_ssl_def_const(OP_NO_COMPRESSION);
+#endif
     ossl_ssl_def_const(OP_PKCS1_CHECK_1);
     ossl_ssl_def_const(OP_PKCS1_CHECK_2);
     ossl_ssl_def_const(OP_NETSCAPE_CA_DN_BUG);

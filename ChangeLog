@@ -1,3 +1,11 @@
+Mon Aug 15 10:16:55 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+	* backport r32973 from trunk.
+
+	* ext/openssl/ossl_ssl.c: Support disabling OpenSSL compression.
+	* test/openssl/test_ssl.rb: Add a test for it.
+	  Thanks to Eric Wong for the patch.
+	  [Ruby 1.9 - Feature #5183] [ruby-core:38911]
+
 Sat Aug 13 22:17:27 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/mkconfig.rb: do not make the entries related to sitedir and
