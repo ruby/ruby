@@ -314,6 +314,23 @@ ment_has_mdef(rb_ment_t *me, rb_mdef_t *def)
     return rb_mdef_eq(me->def, def) ? TRUE : FALSE;
 }
 
+static inline ID
+deprecated_allocate(VALUE klass, ID mid, rb_mtyp_t type)
+{
+/* checks for definition of allocate, returns altered mid after warning */
+
+    if (FL_TEST(klass, FL_SINGLETON) &&
+	     type == VM_METHOD_TYPE_CFUNC &&
+	     mid == rb_intern("allocate")) {
+	/* issue: use rb_warning to honor -v */
+	rb_warn("defining %s.allocate is deprecated; use rb_define_alloc_func()",
+		rb_class2name(rb_ivar_get(klass, attached)));
+	mid = ID_ALLOCATOR;
+    }
+
+    return mid;
+}
+
 static rb_ment_t *
 rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
 		     rb_mdef_t *def, rb_mflg_t noex)
@@ -327,17 +344,8 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
     if (NIL_P(klass)) {
 	klass = rb_cObject;
     }
-/*  issue: verify if those checks are necessary, if old method entry is
-    available. if not, move after block "if old method entry available" */
 
-    if (FL_TEST(klass, FL_SINGLETON) &&
-	     type == VM_METHOD_TYPE_CFUNC &&
-	     mid == rb_intern("allocate")) {
-	/* issue: use rb_warning to honor -v */
-	rb_warn("defining %s.allocate is deprecated; use rb_define_alloc_func()",
-		rb_class2name(rb_ivar_get(klass, attached)));
-	mid = ID_ALLOCATOR;
-    }
+    mid = deprecated_allocate(klass, mid, type);
 
     rb_check_frozen(klass);
 
