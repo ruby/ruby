@@ -235,7 +235,7 @@ ment_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
 }
 
 static rb_ment_t *
-ment_new(ID mid, rb_mtyp_t type, rb_mdef_t *def, rb_mflg_t noex)
+ment_new(ID mid, rb_mdef_t *def, rb_mflg_t noex)
 {
 /*  creates a new ment object (struct) */
 
@@ -365,7 +365,7 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
     
     /* definition of method */
 
-    me = ment_new(mid, type, def, noex);
+    me = ment_new(mid, def, noex);
     
     /* the actual method definition / redefinition happnes here */
     class_ment_add(klass, me);
