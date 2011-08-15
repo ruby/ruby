@@ -24,7 +24,6 @@ fcntl/fcntl.c
 fiddle/closure.c
 fiddle/conversions.c
 fiddle/fiddle.c
-fiddle/fiddle.c
 fiddle/function.c
 fiddle/lib
 gdbm/gdbm.c

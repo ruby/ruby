@@ -1,3 +1,9 @@
+Tue Aug 16 08:48:26 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/.document (fiddle):  Remove duplicate entry
+	* ext/fiddle:  Complete documentation of Fiddle.  Patch by Vincent
+	  Batts.  [#5192]
+
 Tue Aug 16 08:00:15 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/socket:  Make Socket documentation appear.  Add documentation for
