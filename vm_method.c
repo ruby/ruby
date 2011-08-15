@@ -190,7 +190,7 @@ rb_method_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
     VALUE klass = me->klass;
     rb_mdef_t *old_def = me->def;
     
-    //rb_vm_check_redefinition_opt_method(me);
+    rb_vm_check_redefinition_opt_method(me);
 
     if (RTEST(ruby_verbose) &&
 	type != VM_METHOD_TYPE_UNDEF &&
@@ -217,23 +217,19 @@ rb_method_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
 			       rb_id2name(old_def->original_id));
 	}
     }
-    
 
-    /* issue: warning belong *possibly* to rb_mdef_redefine_warnings */
-    /* check mid */
     if (klass == rb_cObject && mid == idInitialize) {
 	/* issue: use rb_warning to honor -v */
 	rb_warn("redefining Object#initialize may cause infinite loop");
     }
-    /* check mid */
+
     if (mid == object_id || mid == id__send__) {
 	if (type == VM_METHOD_TYPE_ISEQ) {
 	    /* issue: use rb_warning to honor -v */
 	    rb_warn("redefining `%s' may cause serious problems", rb_id2name(mid));
 	}
     }
-    
-    rb_vm_check_redefinition_opt_method(me);
+
     rb_unlink_method_entry(me);
 
 }
@@ -285,24 +281,24 @@ class_ment_get(VALUE klass, ID mid)
 static void
 class_ment_add(VALUE klass, rb_ment_t *me)
 {
-/*  adds a new ment to a class */
+/*  adds a ment to a class, without check if it's already exists */
 
-    rb_mflg_t noex = me->flag;
     rb_mtyp_t type = me->def->type;
     ID mid = me->called_id;
-    
+
     /* set initialize or initialize_copy to private */
     if (!FL_TEST(klass, FL_SINGLETON) &&
 	type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
 	type != VM_METHOD_TYPE_ZSUPER &&
 	(mid == rb_intern("initialize") || mid == rb_intern("initialize_copy"))) {
-	noex = NOEX_PRIVATE | noex;
+	me->flag = NOEX_PRIVATE | me->flag;
     }
-    me->flag = noex;
 
     rb_clear_cache_by_id(mid);
+
     me->klass = klass;
     st_insert(RCLASS_M_TBL(klass), mid, (st_data_t) me);
+
     if (type != VM_METHOD_TYPE_UNDEF && mid != ID_ALLOCATOR && ruby_running) {
 	CALL_METHOD_HOOK(klass, added, mid);
     }
