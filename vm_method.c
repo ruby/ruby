@@ -190,7 +190,7 @@ rb_method_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
     VALUE klass = me->klass;
     rb_mdef_t *old_def = me->def;
     
-    rb_vm_check_redefinition_opt_method(me);
+    //rb_vm_check_redefinition_opt_method(me);
 
     if (RTEST(ruby_verbose) &&
 	type != VM_METHOD_TYPE_UNDEF &&
@@ -233,6 +233,7 @@ rb_method_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
 	}
     }
     
+    rb_vm_check_redefinition_opt_method(me);
     rb_unlink_method_entry(me);
 
 }
@@ -248,14 +249,6 @@ rb_ment_new(VALUE klass, ID mid, rb_mtyp_t type,
 
     rb_ment_t *me;
     me = ALLOC(rb_ment_t);
-    
-    /* set initialize or initialize_copy to private */
-    if (!FL_TEST(klass, FL_SINGLETON) &&
-	type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
-	type != VM_METHOD_TYPE_ZSUPER &&
-	(mid == rb_intern("initialize") || mid == rb_intern("initialize_copy"))) {
-	noex = NOEX_PRIVATE | noex;
-    }
 
     me->flag = NOEX_WITH_SAFE(noex);
     me->mark = 0;
@@ -299,8 +292,18 @@ class_ment_add(VALUE klass, rb_ment_t *me)
 {
 /*  adds a new ment to a class */
 
+    rb_mflg_t noex = me->flag;
     rb_mtyp_t type = me->def->type;
     ID mid = me->called_id;
+    
+    /* set initialize or initialize_copy to private */
+    if (!FL_TEST(klass, FL_SINGLETON) &&
+	type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
+	type != VM_METHOD_TYPE_ZSUPER &&
+	(mid == rb_intern("initialize") || mid == rb_intern("initialize_copy"))) {
+	noex = NOEX_PRIVATE | noex;
+    }
+    me->flag = noex;
 
     rb_clear_cache_by_id(mid);
     st_insert(RCLASS_M_TBL(klass), mid, (st_data_t) me);
