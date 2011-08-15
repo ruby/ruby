@@ -292,11 +292,13 @@ class_ment_get(VALUE klass, ID mid)
     }
 }
 
-void
-class_ment_add(VALUE klass, ID mid, rb_ment_t *me, rb_mtyp_t type)
+static void
+class_ment_add(VALUE klass, rb_ment_t *me)
 {
 /*  adds a new ment to a class */
-/*  TD: use me->def->type and me->called_id */
+
+    rb_mtyp_t type = me->def->type;
+    ID mid = me->called_id;
 
     rb_clear_cache_by_id(mid);
     st_insert(RCLASS_M_TBL(klass), mid, (st_data_t) me);
@@ -357,7 +359,11 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
     /* definition of method */
 
     me = rb_ment_new(klass, mid, type, def, noex);
-    class_ment_add(klass, mid, me, type);
+    
+    /* the actual method definition / redefinition happnes here */
+    class_ment_add(klass, me);
+    
+    /* TD: possibly add class_mdef_add(klass, def) */
 
     return me;
 }
