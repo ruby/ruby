@@ -246,14 +246,15 @@ udp_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
     return rsock_s_recvfrom_nonblock(sock, argc, argv, RECV_IP);
 }
 
-/*
- * Document-class: ::UDPSocket < IPSocket
- *
- * UDPSocket represents a UDP/IP socket.
- */
 void
 rsock_init_udpsocket(void)
 {
+    /*
+     * Document-class: UDPSocket < IPSocket
+     *
+     * UDPSocket represents a UDP/IP socket.
+     *
+     */
     rb_cUDPSocket = rb_define_class("UDPSocket", rb_cIPSocket);
     rb_define_method(rb_cUDPSocket, "initialize", udp_init, -1);
     rb_define_method(rb_cUDPSocket, "connect", udp_connect, 2);

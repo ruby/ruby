@@ -288,14 +288,14 @@ ip_s_getaddress(VALUE obj, VALUE host)
     return rsock_make_ipaddr((struct sockaddr*)&addr);
 }
 
-/*
- * Document-class: ::IPSocket < BasicSocket
- *
- * IPSocket is the super class of TCPSocket and UDPSocket.
- */
 void
 rsock_init_ipsocket(void)
 {
+    /*
+     * Document-class: IPSocket < BasicSocket
+     *
+     * IPSocket is the super class of TCPSocket and UDPSocket.
+     */
     rb_cIPSocket = rb_define_class("IPSocket", rb_cBasicSocket);
     rb_define_method(rb_cIPSocket, "addr", ip_addr, -1);
     rb_define_method(rb_cIPSocket, "peeraddr", ip_peeraddr, -1);

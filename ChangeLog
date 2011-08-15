@@ -1,3 +1,9 @@
+Tue Aug 16 08:00:15 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/socket:  Make Socket documentation appear.  Add documentation for
+	  Socket, TCPServer, SOCKSSocket.  Patch by Sylvain Daubert.
+	  [Ruby 1.9 - Feature #5182]
+
 Mon Aug 15 09:58:55 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_ssl.c: Support disabling OpenSSL compression.

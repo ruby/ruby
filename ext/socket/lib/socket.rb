@@ -712,17 +712,28 @@ class Socket < BasicSocket
 
   # UDP/IP address information used by Socket.udp_server_loop.
   class UDPSource
+    # +remote_adress+ is an Addrinfo object.
+    #
+    # +local_adress+ is an Addrinfo object.
+    #
+    # +reply_proc+ is a Proc used to send reply back to the source.
     def initialize(remote_address, local_address, &reply_proc)
       @remote_address = remote_address
       @local_address = local_address
       @reply_proc = reply_proc
     end
-    attr_reader :remote_address, :local_address
 
-    def inspect
+    # Address of the source
+    attr_reader :remote_address
+
+    # Local address
+    attr_reader :local_address
+
+    def inspect # :nodoc:
       "\#<#{self.class}: #{@remote_address.inspect_sockaddr} to #{@local_address.inspect_sockaddr}>"
     end
 
+    # Sends the String +msg+ to the source
     def reply(msg)
       @reply_proc.call msg
     end

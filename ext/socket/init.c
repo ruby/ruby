@@ -531,12 +531,12 @@ rsock_getfamily(int sockfd)
     return ss.ss_family;
 }
 
-/*
- * SocketError is the error class for socket.
- */
 void
 rsock_init_socket_init()
 {
+    /*
+     * SocketError is the error class for socket.
+     */
     rb_eSocket = rb_define_class("SocketError", rb_eStandardError);
     rsock_init_ipsocket();
     rsock_init_tcpsocket();
