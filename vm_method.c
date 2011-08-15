@@ -329,10 +329,7 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
     }
 /*  issue: verify if those checks are necessary, if old method entry is
     available. if not, move after block "if old method entry available" */
-    if (rb_safe_level() >= 4 &&
-	(klass == rb_cObject || !OBJ_UNTRUSTED(klass))) {
-	rb_raise(rb_eSecurityError, "Insecure: can't define method");
-    }
+
     if (FL_TEST(klass, FL_SINGLETON) &&
 	     type == VM_METHOD_TYPE_CFUNC &&
 	     mid == rb_intern("allocate")) {
@@ -351,6 +348,11 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
 	}
 	/* redefinition */
         rb_method_redefinition(old_me, mid, type);	    
+    }
+    
+    if (rb_safe_level() >= 4 &&
+	(klass == rb_cObject || !OBJ_UNTRUSTED(klass))) {
+	rb_raise(rb_eSecurityError, "Insecure: can't define method");
     }
     
     /* definition of method */
