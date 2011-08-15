@@ -182,8 +182,8 @@ rb_free_method_entry(rb_ment_t *me)
 
 static int rb_mdef_eq(const rb_mdef_t *d1, const rb_mdef_t *d2);
 
-inline void
-method_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
+static void
+ment_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
 {
 /*  processing subjecting method redefinition */
 
@@ -355,7 +355,7 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
 	    return old_me;
 	}
 	/* redefinition */
-        method_redefinition(old_me, mid, type);	    
+        ment_redefinition(old_me, mid, type);	    
     }
     
     if (rb_safe_level() >= 4 &&
