@@ -239,21 +239,16 @@ rb_method_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
 }
 
 static rb_ment_t *
-rb_ment_new(VALUE klass, ID mid, rb_mtyp_t type,
-		     rb_mdef_t *def, rb_mflg_t noex)
+rb_ment_new(ID mid, rb_mtyp_t type, rb_mdef_t *def, rb_mflg_t noex)
 {
 /*  creates a new ment object (struct) */
 
-/*  TD: ment_new should not handle "klass". This should happen when ment is
-    added to the klass mtbl via class_ment_add */
-
-    rb_ment_t *me;
-    me = ALLOC(rb_ment_t);
+    rb_ment_t *me = ALLOC(rb_ment_t);
 
     me->flag = NOEX_WITH_SAFE(noex);
     me->mark = 0;
     me->called_id = mid;
-    me->klass = klass;
+    me->klass = 0; /* not yet assigned to a class */
     me->def = def;
     if (def) def->alias_count++;
 
@@ -306,6 +301,7 @@ class_ment_add(VALUE klass, rb_ment_t *me)
     me->flag = noex;
 
     rb_clear_cache_by_id(mid);
+    me->klass = klass;
     st_insert(RCLASS_M_TBL(klass), mid, (st_data_t) me);
     if (type != VM_METHOD_TYPE_UNDEF && mid != ID_ALLOCATOR && ruby_running) {
 	CALL_METHOD_HOOK(klass, added, mid);
@@ -363,7 +359,7 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
     
     /* definition of method */
 
-    me = rb_ment_new(klass, mid, type, def, noex);
+    me = rb_ment_new(mid, type, def, noex);
     
     /* the actual method definition / redefinition happnes here */
     class_ment_add(klass, me);
