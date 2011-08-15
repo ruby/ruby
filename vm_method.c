@@ -183,7 +183,7 @@ rb_free_method_entry(rb_ment_t *me)
 static int rb_mdef_eq(const rb_mdef_t *d1, const rb_mdef_t *d2);
 
 inline void
-rb_method_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
+method_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
 {
 /*  processing subjecting method redefinition */
 
@@ -235,7 +235,7 @@ rb_method_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
 }
 
 static rb_ment_t *
-rb_ment_new(ID mid, rb_mtyp_t type, rb_mdef_t *def, rb_mflg_t noex)
+ment_new(ID mid, rb_mtyp_t type, rb_mdef_t *def, rb_mflg_t noex)
 {
 /*  creates a new ment object (struct) */
 
@@ -355,7 +355,7 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
 	    return old_me;
 	}
 	/* redefinition */
-        rb_method_redefinition(old_me, mid, type);	    
+        method_redefinition(old_me, mid, type);	    
     }
     
     if (rb_safe_level() >= 4 &&
@@ -365,7 +365,7 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
     
     /* definition of method */
 
-    me = rb_ment_new(mid, type, def, noex);
+    me = ment_new(mid, type, def, noex);
     
     /* the actual method definition / redefinition happnes here */
     class_ment_add(klass, me);
@@ -376,7 +376,7 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
 }
 
 rb_mdef_t *
-rb_mdef_new(ID mid, rb_mtyp_t type, void *opts)
+mdef_new(ID mid, rb_mtyp_t type, void *opts)
 {
 /*  creates a new mdef object (struct)*/
 
@@ -431,7 +431,7 @@ rb_add_method(VALUE klass, ID mid, rb_mtyp_t type, void *opts, rb_mflg_t noex)
 {
 /*  adds a newly created mdef via a newly created me to a class */
 
-    rb_mdef_t *def = rb_mdef_new(mid, type, opts);
+    rb_mdef_t *def = mdef_new(mid, type, opts);
     rb_ment_t *me = rb_ment_make(klass, mid, type, def, noex);
     return me;
 }
