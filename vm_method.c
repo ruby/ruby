@@ -187,6 +187,7 @@ rb_method_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
 {
 /*  processing subjecting method redefinition */
 
+    VALUE klass = me->klass;
     rb_mdef_t *old_def = me->def;
     
     rb_vm_check_redefinition_opt_method(me);
@@ -214,6 +215,21 @@ rb_method_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
 	    rb_compile_warning(RSTRING_PTR(iseq->filename), line,
 			       "previous definition of %s was here",
 			       rb_id2name(old_def->original_id));
+	}
+    }
+    
+
+    /* issue: warning belong *possibly* to rb_mdef_redefine_warnings */
+    /* check mid */
+    if (klass == rb_cObject && mid == idInitialize) {
+	/* issue: use rb_warning to honor -v */
+	rb_warn("redefining Object#initialize may cause infinite loop");
+    }
+    /* check mid */
+    if (mid == object_id || mid == id__send__) {
+	if (type == VM_METHOD_TYPE_ISEQ) {
+	    /* issue: use rb_warning to honor -v */
+	    rb_warn("redefining `%s' may cause serious problems", rb_id2name(mid));
 	}
     }
     
@@ -247,20 +263,6 @@ rb_ment_new(VALUE klass, ID mid, rb_mtyp_t type,
     me->klass = klass;
     me->def = def;
     if (def) def->alias_count++;
-
-    /* issue: warning belong *possibly* to rb_mdef_redefine_warnings */
-    /* check mid */
-    if (klass == rb_cObject && mid == idInitialize) {
-	/* issue: use rb_warning to honor -v */
-	rb_warn("redefining Object#initialize may cause infinite loop");
-    }
-    /* check mid */
-    if (mid == object_id || mid == id__send__) {
-	if (type == VM_METHOD_TYPE_ISEQ) {
-	    /* issue: use rb_warning to honor -v */
-	    rb_warn("redefining `%s' may cause serious problems", rb_id2name(mid));
-	}
-    }
 
     return me;
 }
