@@ -2151,6 +2151,10 @@ rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len)
 void
 rsock_init_addrinfo(void)
 {
+    /*
+     * The Addrinfo class maps <tt>struct addrinfo</tt> to ruby.  This
+     * structure identifies an Internet host and a service.
+     */
     rb_cAddrinfo = rb_define_class("Addrinfo", rb_cData);
     rb_define_alloc_func(rb_cAddrinfo, addrinfo_s_allocate);
     rb_define_method(rb_cAddrinfo, "initialize", addrinfo_initialize, -1);

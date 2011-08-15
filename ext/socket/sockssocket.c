@@ -11,6 +11,13 @@
 #include "rubysocket.h"
 
 #ifdef SOCKS
+/*
+ * call-seq:
+ *   SOCKSSocket.new(host, serv) => socket
+ *
+ * Opens a SOCKS connection to +host+ via the SOCKS server +serv+.
+ *
+ */
 static VALUE
 socks_init(VALUE sock, VALUE host, VALUE serv)
 {
@@ -25,6 +32,10 @@ socks_init(VALUE sock, VALUE host, VALUE serv)
 }
 
 #ifdef SOCKS5
+/*
+ * Closes the SOCKS connection.
+ *
+ */
 static VALUE
 socks_s_close(VALUE sock)
 {
@@ -40,15 +51,17 @@ socks_s_close(VALUE sock)
 #endif
 #endif
 
-/*
- * Document-class: ::SOCKSSocket < TCPSocket
- *
- * SOCKSSocket class
- */
 void
 rsock_init_sockssocket(void)
 {
 #ifdef SOCKS
+    /*
+     * Document-class: SOCKSSocket < TCPSocket
+     *
+     * SOCKS is an Internet protocol that routes packets between a client and
+     * a server through a proxy server.  SOCKS5, if supported, additionally
+     * provides authentication so only authorized users may access a server.
+     */
     rb_cSOCKSSocket = rb_define_class("SOCKSSocket", rb_cTCPSocket);
     rb_define_method(rb_cSOCKSSocket, "initialize", socks_init, 2);
 #ifdef SOCKS5

@@ -284,18 +284,20 @@ result = ERB.new(<<'EOS', nil, '%').result(binding)
 
 <%= INTERN_DEFS.map {|vardef, gen_hash, decl, func| vardef }.join("\n") %>
 
-/*
- * Document-module: ::Socket::Constants
- *
- * Socket::Constants provides socket related constants.
- * Following lists possible constants.
- * If underlying platform doesn't define a constant,
- * the corresponding Ruby constant is not defined.
- *
- */
 static void
 init_constants(void)
 {
+    /*
+     * Document-module: Socket::Constants
+     *
+     * Socket::Constants provides socket-related constants.  All possible
+     * socket constants are listed in the documentation but they may not all
+     * be present on your platform.
+     *
+     * If the underlying platform doesn't define a constant the corresponding
+     * Ruby constant is not defined.
+     *
+     */
     rb_mSockConst = rb_define_module_under(rb_cSocket, "Constants");
 
 <%= gen_const_defs %>

@@ -55,14 +55,27 @@ tcp_s_gethostbyname(VALUE obj, VALUE host)
 			tcp_sockaddr);
 }
 
-/*
- * Document-class: ::TCPSocket < IPSocket
- *
- * TCPSocket represents a TCP/IP client socket.
- */
 void
 rsock_init_tcpsocket(void)
 {
+    /*
+     * Document-class: TCPSocket < IPSocket
+     *
+     * TCPSocket represents a TCP/IP client socket.
+     *
+     * A simple client may look like:
+     *
+     *   require 'socket'
+     *
+     *   s = TCPSocket.new 'localhost', 2000
+     *
+     *   while line = s.gets # Read lines from socket
+     *     puts line         # and print them
+     *   end
+     *
+     *   s.close             # close socket when done
+     *
+     */
     rb_cTCPSocket = rb_define_class("TCPSocket", rb_cIPSocket);
     rb_define_singleton_method(rb_cTCPSocket, "gethostbyname", tcp_s_gethostbyname, 1);
     rb_define_method(rb_cTCPSocket, "initialize", tcp_init, -1);

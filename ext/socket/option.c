@@ -888,16 +888,17 @@ sockopt_unpack(VALUE self, VALUE template)
     return rb_funcall(sockopt_data(self), rb_intern("unpack"), 1, template);
 }
 
-/*
- * Document-class: ::Socket::Option
- *
- * Socket::Option represents a socket option used by getsockopt and setsockopt
- * system call.
- * It contains socket family, protocol level, option name and option value.
- */
 void
 rsock_init_sockopt(void)
 {
+    /*
+     * Document-class: Socket::Option
+     *
+     * Socket::Option represents a socket option used by
+     * BasicSocket#getsockopt and BasicSocket#setsockopt.  A socket option
+     * contains the socket #family, protocol #level, option name #optname and
+     * option value #data.
+     */
     rb_cSockOpt = rb_define_class_under(rb_cSocket, "Option", rb_cObject);
     rb_define_method(rb_cSockOpt, "initialize", sockopt_initialize, 4);
     rb_define_method(rb_cSockOpt, "family", sockopt_family_m, 0);

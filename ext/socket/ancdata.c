@@ -1774,17 +1774,17 @@ rsock_bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock)
 }
 #endif
 
-/*
- * Document-class: ::Socket::AncillaryData
- *
- * Socket::AncillaryData represents the ancillary data (control information)
- * used by sendmsg and recvmsg system call.
- * It contains socket family, cmsg level, cmsg type and cmsg data.
- */
 void
 rsock_init_ancdata(void)
 {
 #if defined(HAVE_ST_MSG_CONTROL)
+    /*
+     * Document-class: Socket::AncillaryData
+     *
+     * Socket::AncillaryData represents the ancillary data (control information)
+     * used by sendmsg and recvmsg system call.  It contains socket #family,
+     * control message (cmsg) #level, cmsg #type and cmsg #data.
+     */
     rb_cAncillaryData = rb_define_class_under(rb_cSocket, "AncillaryData", rb_cObject);
     rb_define_method(rb_cAncillaryData, "initialize", ancillary_initialize, 4);
     rb_define_method(rb_cAncillaryData, "inspect", ancillary_inspect, 0);

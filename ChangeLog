@@ -1,3 +1,11 @@
+Tue Aug 16 08:00:15 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* backport r32977 from trunk
+
+	* ext/socket:  Make Socket documentation appear.  Add documentation for
+	  Socket, TCPServer, SOCKSSocket.  Patch by Sylvain Daubert.
+	  [Ruby 1.9 - Feature #5182]
+
 Mon Aug 15 10:16:55 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 	* backport r32973 from trunk.
 
