@@ -1,3 +1,10 @@
+Mon Aug 15 09:58:55 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_ssl.c: Support disabling OpenSSL compression.
+	* test/openssl/test_ssl.rb: Add a test for it.
+	  Thanks to Eric Wong for the patch.
+	  [Ruby 1.9 - Feature #5183] [ruby-core:38911]
+
 Sun Aug 14 05:57:01 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/socket/test_socket.rb (test_connect_timeout): added a test
