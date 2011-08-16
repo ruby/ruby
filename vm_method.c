@@ -6,16 +6,19 @@
 #define CACHE_MASK 0x7ff
 #define EXPR1(c,m) ((((c)>>3)^(m))&CACHE_MASK)
 
+/*****************************************************************************/
 /* RENAME SECTION: change names initially only for this file */
-/* TD: apply changes source-code wide, remove those defines */
+/* TD: apply renames within method.h, then remove those defines */
 #define rb_mdef_t rb_method_definition_t
 #define rb_ment_t rb_method_entry_t
 #define rb_mtyp_t rb_method_type_t
 #define rb_mflg_t rb_method_flag_t
 
-#define ment_sweep rb_sweep_method_entry
-#define ment_free rb_free_method_entry
+#define ment_sweep	rb_sweep_method_entry
+#define ment_free	rb_free_method_entry
+#define ment_eq		rb_method_entry_eq
 /* END RENAME SECTION */
+/*****************************************************************************/
 
 static void rb_vm_check_redefinition_opt_method(const rb_ment_t *me);
 
@@ -179,6 +182,12 @@ rb_free_method_entry(rb_ment_t *me)
 	me->def = 0;
     }
     xfree(me);
+}
+
+int
+rb_method_entry_eq(const rb_ment_t *m1, const rb_ment_t *m2)
+{
+    return rb_mdef_eq(m1->def, m2->def);
 }
 
 /*****************************************************************************/
@@ -960,12 +969,6 @@ rb_mod_protected_method_defined(VALUE mod, VALUE mid)
     ID id = rb_check_id(mid);
     if (!id) return Qfalse;
     return check_definition(mod, id, NOEX_PROTECTED);
-}
-
-int
-rb_method_entry_eq(const rb_ment_t *m1, const rb_ment_t *m2)
-{
-    return rb_mdef_eq(m1->def, m2->def);
 }
 
 static int
