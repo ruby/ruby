@@ -1,3 +1,8 @@
+Tue Aug 16 18:56:54 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (ruby_threadptr_data_type): rename to hide.
+	  [ruby-core:38972]
+
 Tue Aug 16 18:52:08 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/mkexports.rb (Exports::Mswin#each_export): exclude Init_

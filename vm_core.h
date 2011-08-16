@@ -350,10 +350,10 @@ typedef struct rb_block_struct {
     VALUE proc;
 } rb_block_t;
 
-extern const rb_data_type_t ruby_thread_data_type;
+extern const rb_data_type_t ruby_threadptr_data_type;
 
 #define GetThreadPtr(obj, ptr) \
-    TypedData_Get_Struct((obj), rb_thread_t, &ruby_thread_data_type, (ptr))
+    TypedData_Get_Struct((obj), rb_thread_t, &ruby_threadptr_data_type, (ptr))
 
 enum rb_thread_status {
     THREAD_TO_KILL,
