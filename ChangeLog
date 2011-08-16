@@ -1,3 +1,8 @@
+Wed Aug 17 06:33:19 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_x509cert.c: Add class documentation for
+	  OpenSSL::X509::Certificate.
+
 Wed Aug 17 04:54:25 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_pkey.c: corrected docs, OpenSSL::PKey::DH does
