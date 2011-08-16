@@ -1,3 +1,8 @@
+Tue Aug 16 18:52:08 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/mkexports.rb (Exports::Mswin#each_export): exclude Init_
+	  and _threadptr_ functions, as well as mingw.
+
 Tue Aug 16 09:31:44 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/dl:  Add documentation.  Patch by Vincent Batts.

@@ -111,7 +111,8 @@ class Exports::Mswin < Exports
           next unless l.sub!(/.*?\s(\(\)\s+)?External\s+\|\s+/, '')
           is_data = !$1
           if noprefix or /^[@_]/ =~ l
-            next if /(?!^)@.*@/ =~ l || /@[[:xdigit:]]{8,16}$/ =~ l || /^_DllMain@/ =~ l
+            next if /(?!^)@.*@/ =~ l || /@[[:xdigit:]]{8,16}$/ =~ l ||
+              /^_(?:Init_|.*_threadptr_|DllMain@)/ =~ l
             l.sub!(/^[@_]/, '') if /@\d+$/ !~ l
           elsif !l.sub!(/^(\S+) \([^@?\`\']*\)$/, '\1')
             next
