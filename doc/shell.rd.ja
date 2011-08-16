@@ -5,142 +5,142 @@
 
 =begin
 
-= ��Ū
+= 目的
 
-ruby���sh/csh�Τ褦�˥��ޥ�ɤμ¹Եڤӥե��륿��󥰤��ڤ˹Ԥ�.
-sh/csh������ʸ��ruby�ε�ǽ���Ѥ��Ƽ¸�����.
+ruby上でsh/cshのようにコマンドの実行及びフィルタリングを手軽に行う.
+sh/cshの制御文はrubyの機能を用いて実現する.
 
-= ��ʥ��饹����
+= 主なクラス一覧
 
 == Shell
 
-Shell���֥������Ȥϥ����ȥǥ��쥯�ȥ�����, ���ޥ�ɼ¹ԤϤ��������
-���Хѥ��ˤʤ�ޤ�.
+Shellオブジェクトはカレントディレクトリを持ち, コマンド実行はそこからの
+相対パスになります.
 
 --- Shell#cwd
 --- Shell#dir
 --- Shell#getwd
 --- Shell#pwd
 
-      �����ȥǥ��쥯�ȥ���֤���
+      カレントディレクトリを返す。
 
 --- Shell#system_path
 
-      ���ޥ�ɥ������ѥ���������֤���
+      コマンドサーチパスの配列を返す。
 
 --- Shell#umask
 
-      umask���֤���
+      umaskを返す。
 
 == Filter
 
-���ޥ�ɤμ¹Է�̤Ϥ��٤�Filter�Ȥ��Ƥ�����ޤ�. Enumerable��include��
-�Ƥ��ޤ�.
+コマンドの実行結果はすべてFilterとしてかえります. Enumerableをincludeし
+ています.
 
-= ��ʥ᥽�åɰ���
+= 主なメソッド一覧
 
-== ���ޥ�����
+== コマンド定義
 
-OS��Υ��ޥ�ɤ�¹Ԥ���ˤϤޤ�, Shell�Υ᥽�åɤȤ���������ޤ�.
+OS上のコマンドを実行するにはまず, Shellのメソッドとして定義します.
 
-��) ���ޥ�ɤ�������ʤ��Ȥ�ľ�ܼ¹ԤǤ���Shell#system���ޥ�ɤ⤢��ޤ�.
+注) コマンドを定義しなくとも直接実行できるShell#systemコマンドもあります.
 
 --- Shell.def_system_command(command, path = command)
 
-      Shell�Υ᥽�åɤȤ���command����Ͽ���ޤ�. 
+      Shellのメソッドとしてcommandを登録します. 
 
-      ��)
+      例)
       Shell.def_system_command "ls"
-        ls �����
+        ls を定義
 
       Shell.def_system_command "sys_sort", "sort"
-        sort���ޥ�ɤ�sys_sort�Ȥ������
+        sortコマンドをsys_sortとして定義
 
 --- Shell.undef_system_command(command)
 
-      command�������ޤ�.
+      commandを削除します.
 
 --- Shell.alias_command(ali, command, *opts) {...}
 
-      command��alias�򤷤ޤ�. 
+      commandのaliasをします. 
 
-      ��)
+      例)
         Shell.alias_command "lsC", "ls", "-CBF", "--show-control-chars"
         Shell.alias_command("lsC", "ls"){|*opts| ["-CBF", "--show-control-chars", *opts]}
 
 --- Shell.unalias_command(ali)
 
-      command��alias�������ޤ�.
+      commandのaliasを削除します.
 
 --- Shell.install_system_commands(pre = "sys_")
 
-      system_path��ˤ������Ƥμ¹Բ�ǽ�ե������Shell���������. �᥽��
-      ��̾�ϸ��Υե�����̾��Ƭ��pre��Ĥ�����ΤȤʤ�.
+      system_path上にある全ての実行可能ファイルをShellに定義する. メソッ
+      ド名は元のファイル名の頭にpreをつけたものとなる.
 
-== ����
+== 生成
 
 --- Shell.new
 
-      �ץ������Υ����ȥǥ��쥯�ȥ�򥫥��ȥǥ��쥯�ȥ�Ȥ���Shell��
-      �֥������Ȥ��������ޤ�.
+      プロセスのカレントディレクトリをカレントディレクトリとするShellオ
+      ブジェクトを生成します.
 
 --- Shell.cd(path)
 
-      path�򥫥��ȥǥ��쥯�ȥ�Ȥ���Shell���֥������Ȥ��������ޤ�.
+      pathをカレントディレクトリとするShellオブジェクトを生成します.
 
-== �ץ���������
+== プロセス管理
 
 --- Shell#jobs
 
-      �������塼��󥰤���Ƥ���job�ΰ������֤�.
+      スケジューリングされているjobの一覧を返す.
 
 --- Shell#kill sig, job
 
-      job�˥����ʥ�sig������
+      jobにシグナルsigを送る
 
-== �����ȥǥ��쥯�ȥ����
+== カレントディレクトリ操作
 
 --- Shell#cd(path, &block)
 --- Shell#chdir
 
-      �����ȥǥ��쥯�ȥ��path�ˤ���. ���ƥ졼���Ȥ��ƸƤФ줿�Ȥ��ˤ�
-      �֥��å��¹���Τߥ����ȥǥ��쥯�ȥ���ѹ�����.
+      カレントディレクトリをpathにする. イテレータとして呼ばれたときには
+      ブロック実行中のみカレントディレクトリを変更する.
 
 --- Shell#pushd(path = nil, &block)
 --- Shell#pushdir
 
-      �����ȥǥ��쥯�ȥ��ǥ��쥯�ȥꥹ���å��ˤĤ�, �����ȥǥ��쥯
-      �ȥ��path�ˤ���. path����ά���줿�Ȥ��ˤ�, �����ȥǥ��쥯�ȥ��
-      �ǥ��쥯�ȥꥹ���å��Υȥåפ�򴹤���. ���ƥ졼���Ȥ��ƸƤФ줿��
-      ���ˤ�, �֥��å��¹���Τ�pushd����.
+      カレントディレクトリをディレクトリスタックにつみ, カレントディレク
+      トリをpathにする. pathが省略されたときには, カレントディレクトリと
+      ディレクトリスタックのトップを交換する. イテレータとして呼ばれたと
+      きには, ブロック実行中のみpushdする.
 
 --- Shell#popd
 --- Shell#popdir
 
-      �ǥ��쥯�ȥꥹ���å�����ݥåפ�, ����򥫥��ȥǥ��쥯�ȥ�ˤ���.
+      ディレクトリスタックからポップし, それをカレントディレクトリにする.
 
-== �ե�����/�ǥ��쥯�ȥ����
+== ファイル/ディレクトリ操作
 
 --- Shell#foreach(path = nil, &block)
 
-      path���ե�����ʤ�, File#foreach
-      path���ǥ��쥯�ȥ�ʤ�, Dir#foreach
+      pathがファイルなら, File#foreach
+      pathがディレクトリなら, Dir#foreach
 
 --- Shell#open(path, mode)
 
-      path���ե�����ʤ�, File#open
-      path���ǥ��쥯�ȥ�ʤ�, Dir#open
+      pathがファイルなら, File#open
+      pathがディレクトリなら, Dir#open
 
 --- Shell#unlink(path)
 
-      path���ե�����ʤ�, File#unlink
-      path���ǥ��쥯�ȥ�ʤ�, Dir#unlink
+      pathがファイルなら, File#unlink
+      pathがディレクトリなら, Dir#unlink
 
 --- Shell#test(command, file1, file2)
 --- Shell#[command, file1, file2]
 
-      �ե�����ƥ��ȴؿ�test��Ʊ��. 
-      ��)
+      ファイルテスト関数testと同じ. 
+      例)
           sh[?e, "foo"]
           sh[:e, "foo"]
           sh["e", "foo"]
@@ -149,75 +149,75 @@ OS��Υ��ޥ�ɤ�¹Ԥ���ˤϤޤ�, Shell�Υ᥽�åɤȤ���������ޤ�.
 
 --- Shell#mkdir(*path)
 
-      Dir.mkdir��Ʊ��(ʣ����)
+      Dir.mkdirと同じ(複数可)
 
 --- Shell#rmdir(*path)
 
-      Dir.rmdir��Ʊ��(ʣ����)
+      Dir.rmdirと同じ(複数可)
 
-== ���ޥ�ɼ¹�
+== コマンド実行
 
 --- System#system(command, *opts)
 
-      command��¹Ԥ���.
-      ��)
+      commandを実行する.
+      例)
         print sh.system("ls", "-l")
         sh.system("ls", "-l") | sh.head > STDOUT
 
 --- System#rehash
 
-      ��ϥå��夹��
+      リハッシュする
 
 --- Shell#transact &block
 
-      �֥��å���Ǥ�shell��self�Ȥ��Ƽ¹Ԥ���.
-      ��)
+      ブロック中ではshellをselfとして実行する.
+      例)
         sh.transact{system("ls", "-l") | head > STDOUT}
 
 --- Shell#out(dev = STDOUT, &block)
 
-      transact��ƤӽФ����η�̤�dev�˽��Ϥ���.
+      transactを呼び出しその結果をdevに出力する.
 
-== �������ޥ��
+== 内部コマンド
 
 --- Shell#echo(*strings)
 --- Shell#cat(*files)
 --- Shell#glob(patten)
 --- Shell#tee(file)
 
-      �����ϼ¹Ԥ����, ���������ƤȤ���Filter���֥������Ȥ��֤��ޤ�. 
+      これらは実行すると, それらを内容とするFilterオブジェクトを返します. 
 
 --- Filter#each &block
 
-      �ե��륿�ΰ�Ԥ��Ĥ�block���Ϥ�.
+      フィルタの一行ずつをblockに渡す.
 
 --- Filter#<(src)
 
-      src��ե��륿�����ϤȤ���. src��, ʸ����ʤ�Хե������, IO�Ǥ���
-      �Ф���򤽤Τޤ����ϤȤ���.
+      srcをフィルタの入力とする. srcが, 文字列ならばファイルを, IOであれ
+      ばそれをそのまま入力とする.
 
 --- Filter#>(to)
 
-      src��ե��륿�ν��ϤȤ���. to��, ʸ����ʤ�Хե������, IO�Ǥ���
-      �Ф���򤽤Τޤ޽��ϤȤ���.
+      srcをフィルタの出力とする. toが, 文字列ならばファイルに, IOであれ
+      ばそれをそのまま出力とする.
 
 --- Filter#>>(to)
 
-      src��ե��륿���ɲä���. to��, ʸ����ʤ�Хե������, IO�Ǥ����
-      ����򤽤Τޤ޽��ϤȤ���.
+      srcをフィルタに追加する. toが, 文字列ならばファイルに, IOであれば
+      それをそのまま出力とする.
 
 --- Filter#|(filter)
 
-      �ѥ��׷��
+      パイプ結合
 
 --- Filter#+(filter)
 
-      filter1 + filter2 �� filter1�ν��Ϥθ�, filter2�ν��Ϥ�Ԥ�.
+      filter1 + filter2 は filter1の出力の後, filter2の出力を行う.
 
 --- Filter#to_a
 --- Filter#to_s
 
-== �ȹ��ߥ��ޥ��
+== 組込みコマンド
 
 --- Shell#atime(file)
 --- Shell#basename(file, *opt)
@@ -239,7 +239,7 @@ OS��Υ��ޥ�ɤ�¹Ԥ���ˤϤޤ�, Shell�Υ᥽�åɤȤ���������ޤ�.
 --- Shell#truncate(file, length)
 --- Shell#utime(atime, mtime, *file)
 
-      ������File���饹�ˤ���Ʊ̾�Υ��饹�᥽�åɤ�Ʊ���Ǥ�.
+      これらはFileクラスにある同名のクラスメソッドと同じです.
 
 --- Shell#blockdev?(file)
 --- Shell#chardev?(file)
@@ -263,7 +263,7 @@ OS��Υ��ޥ�ɤ�¹Ԥ���ˤϤޤ�, Shell�Υ᥽�åɤȤ���������ޤ�.
 --- Shell#writable_real?(file)
 --- Shell#zero?(file)
 
-      ������FileTest���饹�ˤ���Ʊ̾�Υ��饹�᥽�åɤ�Ʊ���Ǥ�.
+      これらはFileTestクラスにある同名のクラスメソッドと同じです.
 
 --- Shell#syscopy(filename_from, filename_to)
 --- Shell#copy(filename_from, filename_to)
@@ -273,9 +273,9 @@ OS��Υ��ޥ�ɤ�¹Ԥ���ˤϤޤ�, Shell�Υ᥽�åɤȤ���������ޤ�.
 --- Shell#makedirs(*filenames)
 --- Shell#install(filename_from, filename_to, mode)
 
-      ������FileTools���饹�ˤ���Ʊ̾�Υ��饹�᥽�åɤ�Ʊ���Ǥ�.
+      これらはFileToolsクラスにある同名のクラスメソッドと同じです.
 
-      ����¾, �ʲ��Τ�Τ������ꥢ������Ƥ��ޤ�.
+      その他, 以下のものがエイリアスされています.
 
 --- Shell#cmp	<- Shell#compare
 --- Shell#mv	<- Shell#move
@@ -283,7 +283,7 @@ OS��Υ��ޥ�ɤ�¹Ԥ���ˤϤޤ�, Shell�Υ᥽�åɤȤ���������ޤ�.
 --- Shell#rm_f	<- Shell#safe_unlink
 --- Shell#mkpath	<- Shell#makedirs
 
-= ����ץ�
+= サンプル
 
 == ex1
 
