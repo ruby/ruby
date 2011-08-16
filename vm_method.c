@@ -6,11 +6,16 @@
 #define CACHE_MASK 0x7ff
 #define EXPR1(c,m) ((((c)>>3)^(m))&CACHE_MASK)
 
-/* change names initially only for this file */
+/* RENAME SECTION: change names initially only for this file */
+/* TD: apply changes source-code wide, remove those defines */
 #define rb_mdef_t rb_method_definition_t
 #define rb_ment_t rb_method_entry_t
 #define rb_mtyp_t rb_method_type_t
 #define rb_mflg_t rb_method_flag_t
+
+#define ment_sweep rb_sweep_method_entry
+#define ment_free rb_free_method_entry
+/* END RENAME SECTION */
 
 static void rb_vm_check_redefinition_opt_method(const rb_ment_t *me);
 
@@ -121,8 +126,8 @@ rb_get_alloc_func(VALUE klass)
 /*  METHOD ENTRY PROCESSING                                                  */
 /*****************************************************************************/
 
-void
-rb_unlink_method_entry(rb_ment_t *me)
+static void
+ment_unlink(rb_ment_t *me)
 {
     struct unlinked_method_entry_list_entry *ume = ALLOC(struct unlinked_method_entry_list_entry);
     ume->me = me;
@@ -143,7 +148,7 @@ rb_sweep_method_entry(void *pvm)
 	    ume = ume->next;
 	}
 	else {
-	    rb_free_method_entry(ume->me);
+	    ment_free(ume->me);
 
 	    if (prev_ume == 0) {
 		vm->unlinked_method_entry_list = ume->next;
@@ -230,7 +235,7 @@ ment_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
 	}
     }
 
-    rb_unlink_method_entry(me);
+    ment_unlink(me);
 
 }
 
@@ -556,7 +561,7 @@ remove_method(VALUE klass, ID mid)
 
     rb_vm_check_redefinition_opt_method(me);
     rb_clear_cache_for_undef(klass, mid);
-    rb_unlink_method_entry(me);
+    ment_unlink(me);
 
     CALL_METHOD_HOOK(klass, removed, mid);
 }
