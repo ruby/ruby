@@ -86,7 +86,6 @@ class Time
     def zone_utc?(zone)
       # * +0000
       #   In RFC 2822, +0000 indicate a time zone at Universal Time.
-      #   Europe/London is "a time zone at Universal Time" in Winter.
       #   Europe/Lisbon is "a time zone at Universal Time" in Winter.
       #   Atlantic/Reykjavik is "a time zone at Universal Time".
       #   Africa/Dakar is "a time zone at Universal Time".
