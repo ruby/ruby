@@ -1,3 +1,10 @@
+Wed Aug 17 05:02:25 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* backport r32987 from trunk.
+
+	* ext/openssl/ossl_pkey.c: corrected docs, OpenSSL::PKey::DH does
+	  *not* support #sign/verify.
+
 Tue Aug 16 18:56:54 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (ruby_threadptr_data_type): rename to hide.
