@@ -765,13 +765,13 @@ Init_ossl_x509cert()
      *   File.open("cert.pem", "wb") { |f| f.print cert.to_pem }
      *
      * X.509 certificates are associated with a private/public key pair,
-     * typically a RSA, DSA or ECC key (see also OpenSSL::PKey::RSA, 
-     * OpenSSL::PKey::DSA and OpenSSL::PKey::EC), the public key itself is 
-     * stored within the certificate and can be accessed in form of an 
+     * typically a RSA, DSA or ECC key (see also OpenSSL::PKey::RSA,
+     * OpenSSL::PKey::DSA and OpenSSL::PKey::EC), the public key itself is
+     * stored within the certificate and can be accessed in form of an
      * OpenSSL::PKey. Certificates are typically used to be able to associate
      * some form of identity with a key pair, for example web servers serving
      * pages over HTTPs use certificates to authenticate themselves to the user.
-     * 
+     *
      * The public key infrastructure (PKI) model relies on trusted certificate
      * authorities ("root CAs") that issue these certificates, so that end
      * users need to base their trust just on a selected few authorities
@@ -787,7 +787,7 @@ Init_ossl_x509cert()
      * First, we need to create a "self-signed" root certificate. To do so,
      * we need to generate a key first. Please note that the choice of "1"
      * as a serial number is considered a security flaw for real certificates.
-     * Secure choices are integers in the two-digit byte range and ideally 
+     * Secure choices are integers in the two-digit byte range and ideally
      * not sequential but secure random numbers, steps omitted here to keep
      * the example concise.
      *
@@ -811,7 +811,7 @@ Init_ossl_x509cert()
      *
      * The next step is to create the end-entity certificate using the root CA
      * certificate.
-     * 
+     *
      *   key = OpenSSL::PKey::RSA.new 2048
      *   cert = OpenSSL::X509::Certificate.new
      *   cert.version = 2
@@ -827,7 +827,7 @@ Init_ossl_x509cert()
      *   cert.add_extension(ef.create_extension("keyUsage","digitalSignature", true))
      *   cert.add_extension(ef.create_extension("subjectKeyIdentifier","hash",false))
      *   cert.sign(root_key, OpenSSL::Digest::SHA256.new)
-     *   
+     *
      */
     cX509Cert = rb_define_class_under(mX509, "Certificate", rb_cObject);
 
