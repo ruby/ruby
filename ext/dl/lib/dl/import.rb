@@ -31,6 +31,22 @@ module DL
     end
   end
 
+  # DL::Importer includes the means to dynamically load libraries and build
+  # modules around them including calling extern functions within the C
+  # library that has been loaded.
+  #
+  # == Example
+  #
+  #   require 'dl'
+  #   require 'dl/import'
+  #
+  #   module LibSum
+  #   	extend DL::Importer
+  #   	dlload './libsum.so'
+  #   	extern 'double sum(double*, int)'
+  #   	extern 'double split(double)'
+  #   end
+	#
   module Importer
     include DL
     include CParser

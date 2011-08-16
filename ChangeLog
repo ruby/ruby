@@ -1,3 +1,8 @@
+Tue Aug 16 09:31:44 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/dl:  Add documentation.  Patch by Vincent Batts.
+	  [Ruby 1.9 - Bug #5192]
+
 Tue Aug 16 08:48:26 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/.document (fiddle):  Remove duplicate entry
