@@ -361,11 +361,59 @@ dlhandle_sym(void *handle, const char *name)
 void
 Init_dlhandle(void)
 {
+    /*
+     * Document-class: DL::Handle
+     *
+     * The DL::Handle is the manner to access the dynamic library
+     *
+     * == Example
+     *
+     * === Setup
+     *
+     *   libc_so = "/lib64/libc.so.6"
+     *   => "/lib64/libc.so.6"
+     *   @handle = DL::Handle.new(libc_so)
+     *   => #<DL::Handle:0x00000000d69ef8>
+     *
+     * === Setup, with flags
+     *
+     *   libc_so = "/lib64/libc.so.6"
+     *   => "/lib64/libc.so.6"
+     *   @handle = DL::Handle.new(libc_so, DL::RTLD_LAZY | DL::RTLD_GLOBAL)
+     *   => #<DL::Handle:0x00000000d69ef8>
+     *
+     * === Addresses to symbols
+     *
+     *   strcpy_addr = @handle['strcpy']
+     *   => 140062278451968
+     *
+     * or
+     *
+     *   strcpy_addr = @handle.sym('strcpy')
+     *   => 140062278451968
+     *
+     */
     rb_cDLHandle = rb_define_class_under(rb_mDL, "Handle", rb_cObject);
     rb_define_alloc_func(rb_cDLHandle, rb_dlhandle_s_allocate);
     rb_define_singleton_method(rb_cDLHandle, "sym", rb_dlhandle_s_sym, 1);
     rb_define_singleton_method(rb_cDLHandle, "[]", rb_dlhandle_s_sym,  1);
+
+    /* Document-const: NEXT
+     *
+     * A predefined pseudo-handle of RTLD_NEXT
+     *
+     * Which will find the next occurrence of a function in the search order
+     * after the current library.
+     */
     rb_define_const(rb_cDLHandle, "NEXT", predefined_dlhandle(RTLD_NEXT));
+
+    /* Document-const: DEFAULT
+     *
+     * A predefined pseudo-handle of RTLD_DEFAULT
+     *
+     * Which will find the first occurrence of the desired symbol using the
+     * default library search order
+     */
     rb_define_const(rb_cDLHandle, "DEFAULT", predefined_dlhandle(RTLD_DEFAULT));
     rb_define_method(rb_cDLHandle, "initialize", rb_dlhandle_initialize, -1);
     rb_define_method(rb_cDLHandle, "to_i", rb_dlhandle_to_i, 0);

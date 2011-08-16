@@ -1,6 +1,29 @@
 module DL
+  # Adds Windows type aliases to the including class for use with
+  # DL::Importer.
+  #
+  # The aliases added are:
+  # * ATOM
+  # * BOOL
+  # * BYTE
+  # * DWORD
+  # * HANDLE
+  # * HDC
+  # * HINSTANCE
+  # * HWND
+  # * LPCSTR
+  # * LPSTR
+  # * PBYTE
+  # * PDWORD
+  # * PHANDLE
+  # * PVOID
+  # * PWORD
+  # * UCHAR
+  # * UINT
+  # * ULONG
+  # * WORD
   module Win32Types
-    def included(m)
+    def included(m) # :nodoc:
       m.module_eval{
         typealias "DWORD", "unsigned long"
         typealias "PDWORD", "unsigned long *"
@@ -26,8 +49,12 @@ module DL
     module_function :included
   end
 
+  # Adds basic type aliases to the including class for use with DL::Importer.
+  #
+  # The aliases added are +uint+ and +u_int+ (<tt>unsigned int</tt>) and
+  # +ulong+ and +u_long+ (<tt>unsigned long</tt>)
   module BasicTypes
-    def included(m)
+    def included(m) # :nodoc:
       m.module_eval{
         typealias "uint", "unsigned int"
         typealias "u_int", "unsigned int"
