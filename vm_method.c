@@ -237,6 +237,16 @@ rb_mdef_eq(const rb_mdef_t *d1, const rb_mdef_t *d2)
     }
 }
 
+static int
+ment_has_mdef(rb_ment_t *me, rb_mdef_t *def)
+{
+/*  checks if ment has the given mdef */
+
+    if (!me) return FALSE;
+    
+    return rb_mdef_eq(me->def, def) ? TRUE : FALSE;
+}
+
 /*****************************************************************************/
 /*  METHOD DEFINITION AND ENTRY CREATION                                     */
 /*****************************************************************************/
@@ -361,16 +371,6 @@ class_ment_add(VALUE klass, rb_ment_t *me)
     if (type != VM_METHOD_TYPE_UNDEF && mid != ID_ALLOCATOR && ruby_running) {
 	CALL_METHOD_HOOK(klass, added, mid);
     }
-}
-
-static int
-ment_has_mdef(rb_ment_t *me, rb_mdef_t *def)
-{
-/*  checks if ment has the given mdef */
-
-    if (!me) return FALSE;
-    
-    return rb_mdef_eq(me->def, def) ? TRUE : FALSE;
 }
 
 static inline ID
