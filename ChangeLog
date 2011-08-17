@@ -1,3 +1,11 @@
+Wed Aug 17 10:16:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* rational.c (nurat_coerce): Rational#coerce should converts itself
+	  into Complex if the argument is a Complex with non-zero imaginary
+	  part.  [Bug #5020] [ruby-dev:44088]
+
+	* test/ruby/test_rational.rb (test_coerce): test for the above change.
+
 Wed Aug 17 06:33:19 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_x509cert.c: Add class documentation for
@@ -38,6 +46,7 @@ Tue Aug 16 08:00:15 2011  Eric Hodel  <drbrain@segment7.net>
 Mon Aug 15 09:58:55 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_ssl.c: Support disabling OpenSSL compression.
+
 	* test/openssl/test_ssl.rb: Add a test for it.
 	  Thanks to Eric Wong for the patch.
 	  [Ruby 1.9 - Feature #5183] [ruby-core:38911]
@@ -70,12 +79,14 @@ Sat Aug 13 09:26:24 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/core_ext.rb: Make Kernel#y private.
 	  [ruby-core:38913]
+
 	* test/psych/test_yaml.rb: corresponding test.
 
 Sat Aug 13 09:05:16 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (date_strftime_alloc): followed the change
 	  of r32885.
+
 	* doc/NEWS-1.9.3: followed the above change.
 
 Sat Aug 13 08:55:38 2011  Aaron Patterson <aaron@tenderlovemaking.com>
@@ -228,7 +239,9 @@ Tue Aug  9 12:20:33 2011  Naohisa Goto  <ngotogenome@gmail.com>
 Tue Aug  9 09:18:04 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/zlib/zlib.c (gzfile_wrap):  Document encoding options.
+
 	* ext/zlib/zlib.c (rb_gzwriter_s_open): ditto
+
 	* ext/zlib/zlib.c (rb_gzreader_s_open): ditto
 
 Sun Aug  7 23:31:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
@@ -243,7 +256,9 @@ Sun Aug  7 22:51:45 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/openssl/ossl_asn1.c (decode_eoc): remove unused variables.
 	  Patch by Eric Wong. [Feature #5157] [ruby-core:38798]
+
 	* ext/openssl/ossl_asn1.c (ossl_asn1_decode): ditto.
+
 	* ext/openssl/ossl_pkey.c (ossl_pkey_new_from_data): ditto.
 
 Sun Aug  7 22:37:08 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
