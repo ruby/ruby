@@ -174,6 +174,25 @@ ToValue(Real *p)
     return p->obj;
 }
 
+NORETURN(static void cannot_be_coerced_into_BigDecimal(VALUE, VALUE));
+
+static void
+cannot_be_coerced_into_BigDecimal(VALUE exc_class, VALUE v)
+{
+    VALUE str;
+
+    if (rb_special_const_p(v)) {
+	str = rb_str_cat2(rb_str_dup(rb_inspect(v)),
+			  " can't be coerced into BigDecimal");
+    }
+    else {
+	str = rb_str_cat2(rb_str_dup(rb_class_name(rb_obj_class(v))),
+			  " can't be coerced into BigDecimal");
+    }
+
+    rb_exc_raise(rb_exc_new3(exc_class, str));
+}
+
 static VALUE BigDecimal_div2(int, VALUE*, VALUE);
 
 static Real*
@@ -240,8 +259,7 @@ again:
 
 SomeOneMayDoIt:
     if (must) {
-	rb_raise(rb_eTypeError, "%s can't be coerced into BigDecimal",
-		 rb_special_const_p(v) ? RSTRING_PTR(rb_inspect(v)) : rb_obj_classname(v));
+	cannot_be_coerced_into_BigDecimal(rb_eTypeError, v);
     }
     return NULL; /* NULL means to coerce */
 
@@ -2463,8 +2481,7 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 	return ToValue(vy);
     }
     else if (vx == NULL) {
-	rb_raise(rb_eArgError, "%s can't be coerced into BigDecimal",
-		 rb_special_const_p(x) ? RSTRING_PTR(rb_inspect(x)) : rb_obj_classname(x));
+	cannot_be_coerced_into_BigDecimal(rb_eArgError, x);
     }
     RB_GC_GUARD(vx->obj);
 
@@ -2619,8 +2636,7 @@ get_vp_value:
 		 "Zero or negative argument for log");
     }
     else if (vx == NULL) {
-	rb_raise(rb_eArgError, "%s can't be coerced into BigDecimal",
-		 rb_special_const_p(x) ? RSTRING_PTR(rb_inspect(x)) : rb_obj_classname(x));
+	cannot_be_coerced_into_BigDecimal(rb_eArgError, x);
     }
     x = ToValue(vx);
 

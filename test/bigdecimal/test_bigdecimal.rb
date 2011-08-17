@@ -1086,7 +1086,7 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(BigDecimal::SIGN_NEGATIVE_ZERO, BigDecimal.new("-1E-1" + "0" * 10000).sign)
   end
 
-  def test_gc
+  def test_split_under_gc_stress
     bug3258 = '[ruby-dev:41213]'
     stress, GC.stress = GC.stress, true
     10.upto(20) do |i|
@@ -1095,6 +1095,21 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   ensure
     GC.stress = stress
+  end
+
+  def test_coerce_under_gc_stress
+    expect = ":too_long_to_embed_as_string can't be coerced into BigDecimal"
+    under_gc_stress do
+      b = BigDecimal.new("1")
+      10.times do
+        begin
+          b.coerce(:too_long_to_embed_as_string)
+        rescue => e
+          assert_instance_of TypeError, e
+          assert_equal expect, e.message
+        end
+      end
+    end
   end
 
   def test_INFINITY
@@ -1155,6 +1170,20 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_in_epsilon(Math.exp(40), BigMath.exp(BigDecimal("40"), n))
     assert_in_epsilon(Math.exp(-n), BigMath.exp(BigDecimal("-20"), n))
     assert_in_epsilon(Math.exp(-40), BigMath.exp(BigDecimal("-40"), n))
+  end
+
+  def test_BigMath_exp_under_gc_stress
+    expect = ":too_long_to_embed_as_string can't be coerced into BigDecimal"
+    under_gc_stress do
+      10.times do
+        begin
+          BigMath.exp(:too_long_to_embed_as_string, 6)
+        rescue => e
+          assert_instance_of ArgumentError, e
+          assert_equal expect, e.message
+        end
+      end
+    end
   end
 
   def test_BigMath_log_with_nil
@@ -1240,5 +1269,19 @@ class TestBigDecimal < Test::Unit::TestCase
   def test_BigMath_log_with_reciprocal_of_42
     assert_in_delta(Math.log(1e-42), BigMath.log(1e-42, 20))
     assert_in_delta(Math.log(1e-42), BigMath.log(BigDecimal("1e-42"), 20))
+  end
+
+  def test_BigMath_log_under_gc_stress
+    expect = ":too_long_to_embed_as_string can't be coerced into BigDecimal"
+    under_gc_stress do
+      10.times do
+        begin
+          BigMath.log(:too_long_to_embed_as_string, 6)
+        rescue => e
+          assert_instance_of ArgumentError, e
+          assert_equal expect, e.message
+        end
+      end
+    end
   end
 end
