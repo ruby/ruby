@@ -182,14 +182,13 @@ cannot_be_coerced_into_BigDecimal(VALUE exc_class, VALUE v)
     VALUE str;
 
     if (rb_special_const_p(v)) {
-	str = rb_str_cat2(rb_str_dup(rb_inspect(v)),
-			  " can't be coerced into BigDecimal");
+	str = rb_inspect(v);
     }
     else {
-	str = rb_str_cat2(rb_str_dup(rb_class_name(rb_obj_class(v))),
-			  " can't be coerced into BigDecimal");
+	str = rb_class_name(rb_obj_class(v));
     }
 
+    str = rb_str_cat2(rb_str_dup(str), " can't be coerced into BigDecimal");
     rb_exc_raise(rb_exc_new3(exc_class, str));
 }
 
