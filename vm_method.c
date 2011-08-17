@@ -190,6 +190,19 @@ rb_method_entry_eq(const rb_ment_t *m1, const rb_ment_t *m2)
     return rb_mdef_eq(m1->def, m2->def);
 }
 
+#define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
+/* TD: verify, macro seems redundant. code directly. */
+
+static VALUE
+mod_ment_flagtest(VALUE mod, ID mid, rb_mflg_t noex)
+{
+    const rb_ment_t *me = rb_method_entry(mod, mid);
+    if (me && VISI_CHECK(me->flag, noex)) {
+	return Qtrue;
+    }
+    return Qfalse;
+}
+
 /*****************************************************************************/
 /*  METHOD DEFINITION AND ENTRY CREATION                                     */
 /*****************************************************************************/
@@ -853,18 +866,6 @@ rb_mod_method_defined(VALUE mod, VALUE mid)
     }
     return Qtrue;
 
-}
-
-#define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
-
-static VALUE
-mod_ment_flagtest(VALUE mod, ID mid, rb_mflg_t noex)
-{
-    const rb_ment_t *me = rb_method_entry(mod, mid);
-    if (me && VISI_CHECK(me->flag, noex)) {
-	return Qtrue;
-    }
-    return Qfalse;
 }
 
 /*
