@@ -434,14 +434,27 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
     return me;
 }
 
+void
+mdef_attr(rb_mdef_t *def, void *opts)
+{
+    rb_thread_t *th;
+    rb_control_frame_t *cfp;
+    int line;
+    
+    def->body.attr.id = (ID)opts;
+    def->body.attr.location = Qfalse;
+    th = GET_THREAD();
+    cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+    if (cfp && (line = rb_vm_get_sourceline(cfp))) {
+	VALUE location = rb_ary_new3(2, cfp->iseq->filename, INT2FIX(line));
+	def->body.attr.location = rb_ary_freeze(location);
+    }
+}
+
 rb_mdef_t *
 mdef_new(ID mid, rb_mtyp_t type, void *opts)
 {
 /*  creates a new mdef object (struct)*/
-
-    rb_thread_t *th;
-    rb_control_frame_t *cfp;
-    int line;
 
     rb_mdef_t *def = ALLOC(rb_mdef_t);
     def->type = type;
@@ -457,14 +470,7 @@ mdef_new(ID mid, rb_mtyp_t type, void *opts)
 	break;
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
-	def->body.attr.id = (ID)opts;
-	def->body.attr.location = Qfalse;
-	th = GET_THREAD();
-	cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
-	if (cfp && (line = rb_vm_get_sourceline(cfp))) {
-	    VALUE location = rb_ary_new3(2, cfp->iseq->filename, INT2FIX(line));
-	    def->body.attr.location = rb_ary_freeze(location);
-	}
+        mdef_attr(def, opts);
 	break;
       case VM_METHOD_TYPE_BMETHOD:
 	def->body.proc = (VALUE)opts;
