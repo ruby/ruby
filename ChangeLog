@@ -1,3 +1,13 @@
+Wed Aug 17 10:16:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* backport r32994 from trunk.
+
+	* rational.c (nurat_coerce): Rational#coerce should converts itself
+	  into Complex if the argument is a Complex with non-zero imaginary
+	  part.  [Bug #5020] [ruby-dev:44088]
+
+	* test/ruby/test_rational.rb (test_coerce): test for the above change.
+
 Wed Aug 17 06:33:19 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* backport r32992 from trunk.
@@ -30,6 +40,7 @@ Tue Aug 16 09:38:37 2011  Eric Hodel  <drbrain@segment7.net>
 	  [Ruby 1.9 - Bug #5192]
 
 	* ext/.document (fiddle):  Remove duplicate entry
+
 	* ext/fiddle:  Complete documentation of Fiddle.  Patch by Vincent
 	  Batts.  [#5192]
 
@@ -45,6 +56,7 @@ Mon Aug 15 10:16:55 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 	* backport r32973 from trunk.
 
 	* ext/openssl/ossl_ssl.c: Support disabling OpenSSL compression.
+
 	* test/openssl/test_ssl.rb: Add a test for it.
 	  Thanks to Eric Wong for the patch.
 	  [Ruby 1.9 - Feature #5183] [ruby-core:38911]
@@ -72,12 +84,14 @@ Sat Aug 13 09:26:24 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/core_ext.rb: Make Kernel#y private.
 	  [ruby-core:38913]
+
 	* test/psych/test_yaml.rb: corresponding test.
 
 Sat Aug 13 09:15:16 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (date_strftime_alloc): followed the change
 	  of r32885.
+
 	* NEWS: followed the above change.
 
 Sat Aug 13 08:49:05 2011  Tadayoshi Funaba  <tadf@dotrb.org>
@@ -300,6 +314,7 @@ Fri Aug  5 07:35:00 2011  Luis Lavena  <luislavena@gmail.com>
 
 	* lib/rubygems/installer.rb (class Gem): Correct path check on Windows
 	  Possible fix for [Ruby 1.9 - Bug #5111]
+
 	* test/rubygems/test_gem_installer.rb (load Gem): ditto
 	  Backported from trunk r32804
 
@@ -312,7 +327,7 @@ Fri Aug  5 07:00:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Wed Aug  4 02:35:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* configure.in: use build_os variable for checking C and C++ compilers
-	matching.
+	  matching.
 
 	* configure.in: use clang++ if clang is used.
 
@@ -422,6 +437,7 @@ Sat Jul 30 23:51:44 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 Sat Jul 30 23:48:04 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: an issue that is same as  [ruby-dev:44071].
+
 	* ext/date/date_strftime.c: identical to [ruby-dev:44112].
 
 Sat Jul 30 23:19:09 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -467,6 +483,7 @@ Sat Jul 30 10:58:10 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	* signal.c (rb_register_sigaltstack): ditto.
 
 	* vm_core.h: moved ALT_STACK_SIZE definition from signal.c.
+
 	* vm.c (thread_free): use xfree() instead of free().
 
 Sat Jul 30 07:20:49 2011  Tanaka Akira  <akr@fsij.org>

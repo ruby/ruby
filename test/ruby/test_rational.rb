@@ -721,6 +721,10 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal([Rational(2),Rational(1)], Rational(1).coerce(2))
     assert_equal([Rational(2.2),Rational(1)], Rational(1).coerce(2.2))
     assert_equal([Rational(2),Rational(1)], Rational(1).coerce(Rational(2)))
+
+    assert_nothing_raised(TypeError, '[Bug #5020] [ruby-devl:44088]') do
+      Rational(1,2).coerce(Complex(1,1))
+    end
   end
 
   class ObjectX
