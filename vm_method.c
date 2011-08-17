@@ -126,7 +126,7 @@ rb_get_alloc_func(VALUE klass)
 }
 
 /*****************************************************************************/
-/*  METHOD ENTRY PROCESSING                                                  */
+/*  MENT / MDEF PROCESSING                                                   */
 /*****************************************************************************/
 
 static void
@@ -203,11 +203,43 @@ mod_ment_flagtest(VALUE mod, ID mid, rb_mflg_t noex)
     return Qfalse;
 }
 
+static int
+rb_mdef_eq(const rb_mdef_t *d1, const rb_mdef_t *d2)
+{
+    if (d1 == d2) return 1;
+    if (!d1 || !d2) return 0;
+    if (d1->type != d2->type) {
+	return 0;
+    }
+    switch (d1->type) {
+      case VM_METHOD_TYPE_ISEQ:
+	return d1->body.iseq == d2->body.iseq;
+      case VM_METHOD_TYPE_CFUNC:
+	return
+	  d1->body.cfunc.func == d2->body.cfunc.func &&
+	  d1->body.cfunc.argc == d2->body.cfunc.argc;
+      case VM_METHOD_TYPE_ATTRSET:
+      case VM_METHOD_TYPE_IVAR:
+	return d1->body.attr.id == d2->body.attr.id;
+      case VM_METHOD_TYPE_BMETHOD:
+	return RTEST(rb_equal(d1->body.proc, d2->body.proc));
+      case VM_METHOD_TYPE_MISSING:
+	return d1->original_id == d2->original_id;
+      case VM_METHOD_TYPE_ZSUPER:
+      case VM_METHOD_TYPE_NOTIMPLEMENTED:
+      case VM_METHOD_TYPE_UNDEF:
+	return 1;
+      case VM_METHOD_TYPE_OPTIMIZED:
+	return d1->body.optimize_type == d2->body.optimize_type;
+      default:
+	rb_bug("rb_method_entry_eq: unsupported method type (%d)\n", d1->type);
+	return 0;
+    }
+}
+
 /*****************************************************************************/
 /*  METHOD DEFINITION AND ENTRY CREATION                                     */
 /*****************************************************************************/
-
-static int rb_mdef_eq(const rb_mdef_t *d1, const rb_mdef_t *d2);
 
 static void
 ment_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
@@ -968,40 +1000,6 @@ rb_mod_protected_method_defined(VALUE mod, VALUE mid)
     ID id = rb_check_id(mid);
     if (!id) return Qfalse;
     return mod_ment_flagtest(mod, id, NOEX_PROTECTED);
-}
-
-static int
-rb_mdef_eq(const rb_mdef_t *d1, const rb_mdef_t *d2)
-{
-    if (d1 == d2) return 1;
-    if (!d1 || !d2) return 0;
-    if (d1->type != d2->type) {
-	return 0;
-    }
-    switch (d1->type) {
-      case VM_METHOD_TYPE_ISEQ:
-	return d1->body.iseq == d2->body.iseq;
-      case VM_METHOD_TYPE_CFUNC:
-	return
-	  d1->body.cfunc.func == d2->body.cfunc.func &&
-	  d1->body.cfunc.argc == d2->body.cfunc.argc;
-      case VM_METHOD_TYPE_ATTRSET:
-      case VM_METHOD_TYPE_IVAR:
-	return d1->body.attr.id == d2->body.attr.id;
-      case VM_METHOD_TYPE_BMETHOD:
-	return RTEST(rb_equal(d1->body.proc, d2->body.proc));
-      case VM_METHOD_TYPE_MISSING:
-	return d1->original_id == d2->original_id;
-      case VM_METHOD_TYPE_ZSUPER:
-      case VM_METHOD_TYPE_NOTIMPLEMENTED:
-      case VM_METHOD_TYPE_UNDEF:
-	return 1;
-      case VM_METHOD_TYPE_OPTIMIZED:
-	return d1->body.optimize_type == d2->body.optimize_type;
-      default:
-	rb_bug("rb_method_entry_eq: unsupported method type (%d)\n", d1->type);
-	return 0;
-    }
 }
 
 void
