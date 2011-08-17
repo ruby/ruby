@@ -17,4 +17,11 @@ module TestBigDecimalBase
       BigDecimal.mode(mode, !(@mode & mode).zero?)
     end
   end
+
+  def under_gc_stress
+    stress, GC.stress = GC.stress, true
+    yield
+  ensure
+    GC.stress = stress
+  end
 end

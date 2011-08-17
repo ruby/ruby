@@ -1,3 +1,21 @@
+Wed Aug 17 15:27:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (cannot_be_coerced_into_BigDecimal):
+	  add a new function for raising error when an object cannot coerce
+	  into BigDecimal.  [Bug #5172]
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimalValueWithPrec): use
+	  cannot_be_coerced_into_BigDecimal function.
+
+	* ext/bigdecimal/bigdecimal.c (BigMath_s_exp): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (BigMath_s_log): ditto.
+
+	* test/bigdecimal/test_bigdecimal.rb: test for the avobe changes.
+
+	* test/bigdecimal/testbase.rb (under_gc_stress): add a new utility
+	  method to run tests under the condition of GC.stress = true.
+
 Wed Aug 17 10:16:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* rational.c (nurat_coerce): Rational#coerce should converts itself
