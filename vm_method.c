@@ -435,6 +435,8 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type, rb_mdef_t *def, rb_mflg_t noex
 void
 mdef_attr(rb_mdef_t *def, void *opts)
 {
+/* processing for creation of mdef method type ATTRSET/IVAR */
+  
     rb_thread_t *th;
     rb_control_frame_t *cfp;
     int line;
@@ -590,71 +592,6 @@ rb_method_entry(VALUE klass, ID id)
     return rb_method_entry_get_without_cache(klass, id);
 }
 
-static void
-remove_method(VALUE klass, ID mid)
-{
-    st_data_t key, data;
-    rb_method_entry_t *me = 0;
-
-    if (klass == rb_cObject) {
-	rb_secure(4);
-    }
-    if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(klass)) {
-	rb_raise(rb_eSecurityError, "Insecure: can't remove method");
-    }
-    rb_check_frozen(klass);
-    if (mid == object_id || mid == id__send__ || mid == idInitialize) {
-	/* issue: use rb_warning to honor -v */
-	rb_warn("removing `%s' may cause serious problems", rb_id2name(mid));
-    }
-
-    if (!st_lookup(RCLASS_M_TBL(klass), mid, &data) ||
-	!(me = (rb_ment_t *)data) ||
-	(!me->def || me->def->type == VM_METHOD_TYPE_UNDEF)) {
-	rb_name_error(mid, "method `%s' not defined in %s",
-		      rb_id2name(mid), rb_class2name(klass));
-    }
-    key = (st_data_t)mid;
-    st_delete(RCLASS_M_TBL(klass), &key, &data);
-
-    rb_vm_check_redefinition_opt_method(me);
-    rb_clear_cache_for_undef(klass, mid);
-    ment_unlink(me);
-
-    CALL_METHOD_HOOK(klass, removed, mid);
-}
-
-void
-rb_remove_method_id(VALUE klass, ID mid)
-{
-    remove_method(klass, mid);
-}
-
-void
-rb_remove_method(VALUE klass, const char *name)
-{
-    remove_method(klass, rb_intern(name));
-}
-
-/*
- *  call-seq:
- *     remove_method(symbol)   -> self
- *
- *  Removes the method identified by _symbol_ from the current
- *  class. For an example, see <code>Module.undef_method</code>.
- */
-
-static VALUE
-rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
-{
-    int i;
-
-    for (i = 0; i < argc; i++) {
-	remove_method(mod, rb_to_id(argv[i]));
-    }
-    return mod;
-}
-
 #undef rb_disable_super
 #undef rb_enable_super
 
@@ -763,6 +700,75 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
     }
 }
 
+/*****************************************************************************/
+/*  RUBY LEVEL METHODS                                                       */
+/*****************************************************************************/
+
+static void
+remove_method(VALUE klass, ID mid)
+{
+    st_data_t key, data;
+    rb_method_entry_t *me = 0;
+
+    if (klass == rb_cObject) {
+	rb_secure(4);
+    }
+    if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(klass)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't remove method");
+    }
+    rb_check_frozen(klass);
+    if (mid == object_id || mid == id__send__ || mid == idInitialize) {
+	/* issue: use rb_warning to honor -v */
+	rb_warn("removing `%s' may cause serious problems", rb_id2name(mid));
+    }
+
+    if (!st_lookup(RCLASS_M_TBL(klass), mid, &data) ||
+	!(me = (rb_ment_t *)data) ||
+	(!me->def || me->def->type == VM_METHOD_TYPE_UNDEF)) {
+	rb_name_error(mid, "method `%s' not defined in %s",
+		      rb_id2name(mid), rb_class2name(klass));
+    }
+    key = (st_data_t)mid;
+    st_delete(RCLASS_M_TBL(klass), &key, &data);
+
+    rb_vm_check_redefinition_opt_method(me);
+    rb_clear_cache_for_undef(klass, mid);
+    ment_unlink(me);
+
+    CALL_METHOD_HOOK(klass, removed, mid);
+}
+
+void
+rb_remove_method_id(VALUE klass, ID mid)
+{
+    remove_method(klass, mid);
+}
+
+void
+rb_remove_method(VALUE klass, const char *name)
+{
+    remove_method(klass, rb_intern(name));
+}
+
+/*
+ *  call-seq:
+ *     remove_method(symbol)   -> self
+ *
+ *  Removes the method identified by _symbol_ from the current
+ *  class. For an example, see <code>Module.undef_method</code>.
+ */
+
+static VALUE
+rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
+{
+    int i;
+
+    for (i = 0; i < argc; i++) {
+	remove_method(mod, rb_to_id(argv[i]));
+    }
+    return mod;
+}
+
 void
 rb_undef(VALUE klass, ID id)
 {
@@ -809,10 +815,6 @@ rb_undef(VALUE klass, ID id)
 
     CALL_METHOD_HOOK(klass, undefined, id);
 }
-
-/*****************************************************************************/
-/*  RUBY LEVEL METHODS                                                       */
-/*****************************************************************************/
 
 /*
  *  call-seq:
