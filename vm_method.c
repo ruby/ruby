@@ -66,13 +66,13 @@ rb_clear_cache(void)
 }
 
 static void
-rb_clear_cache_for_undef(VALUE klass, ID id)
+rb_clear_cache_for_undef(VALUE klass, ID mid)
 {
     rb_vm_change_state();
 }
 
 static void
-rb_clear_cache_by_id(ID id)
+rb_clear_cache_by_id(ID mid)
 {
     rb_vm_change_state();
 }
@@ -94,9 +94,9 @@ rb_f_notimplement(int argc, VALUE *argv, VALUE obj)
 }
 
 static void
-rb_define_notimplement_method_id(VALUE mod, ID id, rb_mflg_t noex)
+rb_define_notimplement_method_id(VALUE mod, ID mid, rb_mflg_t noex)
 {
-    rb_add_method(mod, id, VM_METHOD_TYPE_NOTIMPLEMENTED, 0, noex);
+    rb_add_method(mod, mid, VM_METHOD_TYPE_NOTIMPLEMENTED, 0, noex);
 }
 
 /*****************************************************************************/
@@ -530,14 +530,14 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_mf
 }
 
 static rb_ment_t*
-search_method(VALUE klass, ID id)
+search_method(VALUE klass, ID mid)
 {
     st_data_t body;
     if (!klass) {
 	return 0;
     }
 
-    while (!st_lookup(RCLASS_M_TBL(klass), id, &body)) {
+    while (!st_lookup(RCLASS_M_TBL(klass), mid, &body)) {
 	klass = RCLASS_SUPER(klass);
 	if (!klass) {
 	    return 0;
@@ -554,23 +554,23 @@ search_method(VALUE klass, ID id)
  * rb_method_entry() simply.
  */
 rb_ment_t *
-rb_method_entry_get_without_cache(VALUE klass, ID id)
+rb_method_entry_get_without_cache(VALUE klass, ID mid)
 {
-    rb_ment_t *me = search_method(klass, id);
+    rb_ment_t *me = search_method(klass, mid);
 
     if (ruby_running) {
 	struct cache_entry *ent;
-	ent = cache + EXPR1(klass, id);
+	ent = cache + EXPR1(klass, mid);
 	ent->filled_version = GET_VM_STATE_VERSION();
 	ent->klass = klass;
 
 	if (UNDEFINED_METHOD_ENTRY_P(me)) {
-	    ent->mid = id;
+	    ent->mid = mid;
 	    ent->me = 0;
 	    me = 0;
 	}
 	else {
-	    ent->mid = id;
+	    ent->mid = mid;
 	    ent->me = me;
 	}
     }
@@ -579,17 +579,17 @@ rb_method_entry_get_without_cache(VALUE klass, ID id)
 }
 
 rb_ment_t *
-rb_method_entry(VALUE klass, ID id)
+rb_method_entry(VALUE klass, ID mid)
 {
     struct cache_entry *ent;
 
-    ent = cache + EXPR1(klass, id);
+    ent = cache + EXPR1(klass, mid);
     if (ent->filled_version == GET_VM_STATE_VERSION() &&
-	ent->mid == id && ent->klass == klass) {
+	ent->mid == mid && ent->klass == klass) {
 	return ent->me;
     }
 
-    return rb_method_entry_get_without_cache(klass, id);
+    return rb_method_entry_get_without_cache(klass, mid);
 }
 
 #undef rb_disable_super
@@ -638,9 +638,9 @@ rb_export_method(VALUE klass, ID name, rb_mflg_t noex)
 }
 
 int
-rb_method_boundp(VALUE klass, ID id, int ex)
+rb_method_boundp(VALUE klass, ID mid, int ex)
 {
-    rb_ment_t *me = rb_method_entry(klass, id);
+    rb_ment_t *me = rb_method_entry(klass, mid);
 
     if (me != 0) {
 	if ((ex & ~NOEX_RESPONDS) && (me->flag & NOEX_PRIVATE)) {
@@ -657,7 +657,7 @@ rb_method_boundp(VALUE klass, ID id, int ex)
 }
 
 void
-rb_attr(VALUE klass, ID id, int read, int write, int ex)
+rb_attr(VALUE klass, ID mid, int read, int write, int ex)
 {
     const char *name;
     ID attriv;
@@ -682,21 +682,21 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
 	}
     }
 
-    if (!rb_is_local_id(id) && !rb_is_const_id(id)) {
-	rb_name_error(id, "invalid attribute name `%s'", rb_id2name(id));
+    if (!rb_is_local_id(mid) && !rb_is_const_id(mid)) {
+	rb_name_error(mid, "invalid attribute name `%s'", rb_id2name(mid));
     }
-    name = rb_id2name(id);
+    name = rb_id2name(mid);
     if (!name) {
 	rb_raise(rb_eArgError, "argument needs to be symbol or string");
     }
     aname = rb_sprintf("@%s", name);
-    rb_enc_copy(aname, rb_id2str(id));
+    rb_enc_copy(aname, rb_id2str(mid));
     attriv = rb_intern_str(aname);
     if (read) {
-	rb_add_method(klass, id, VM_METHOD_TYPE_IVAR, (void *)attriv, noex);
+	rb_add_method(klass, mid, VM_METHOD_TYPE_IVAR, (void *)attriv, noex);
     }
     if (write) {
-	rb_add_method(klass, rb_id_attrset(id), VM_METHOD_TYPE_ATTRSET, (void *)attriv, noex);
+	rb_add_method(klass, rb_id_attrset(mid), VM_METHOD_TYPE_ATTRSET, (void *)attriv, noex);
     }
 }
 
@@ -770,7 +770,7 @@ rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
 }
 
 void
-rb_undef(VALUE klass, ID id)
+rb_undef(VALUE klass, ID mid)
 {
     rb_ment_t *me;
 
@@ -781,14 +781,14 @@ rb_undef(VALUE klass, ID id)
 	rb_secure(4);
     }
     if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(klass)) {
-	rb_raise(rb_eSecurityError, "Insecure: can't undef `%s'", rb_id2name(id));
+	rb_raise(rb_eSecurityError, "Insecure: can't undef `%s'", rb_id2name(mid));
     }
     rb_frozen_class_p(klass);
-    if (id == object_id || id == id__send__ || id == idInitialize) {
-	rb_warn("undefining `%s' may cause serious problems", rb_id2name(id));
+    if (mid == object_id || mid == id__send__ || mid == idInitialize) {
+	rb_warn("undefining `%s' may cause serious problems", rb_id2name(mid));
     }
 
-    me = search_method(klass, id);
+    me = search_method(klass, mid);
 
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	const char *s0 = " class";
@@ -807,13 +807,13 @@ rb_undef(VALUE klass, ID id)
 	else if (TYPE(c) == T_MODULE) {
 	    s0 = " module";
 	}
-	rb_name_error(id, "undefined method `%s' for%s `%s'",
-		      rb_id2name(id), s0, rb_class2name(c));
+	rb_name_error(mid, "undefined method `%s' for%s `%s'",
+		      rb_id2name(mid), s0, rb_class2name(c));
     }
 
-    rb_add_method(klass, id, VM_METHOD_TYPE_UNDEF, 0, NOEX_PUBLIC);
+    rb_add_method(klass, mid, VM_METHOD_TYPE_UNDEF, 0, NOEX_PUBLIC);
 
-    CALL_METHOD_HOOK(klass, undefined, id);
+    CALL_METHOD_HOOK(klass, undefined, mid);
 }
 
 /*
@@ -1270,7 +1270,7 @@ static VALUE
 rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 {
     int i;
-    ID id;
+    ID mid;
     const rb_ment_t *me;
 
     if (TYPE(module) != T_MODULE) {
@@ -1288,14 +1288,14 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
     for (i = 0; i < argc; i++) {
 	VALUE m = module;
 
-	id = rb_to_id(argv[i]);
+	mid = rb_to_id(argv[i]);
 	for (;;) {
-	    me = search_method(m, id);
+	    me = search_method(m, mid);
 	    if (me == 0) {
-		me = search_method(rb_cObject, id);
+		me = search_method(rb_cObject, mid);
 	    }
 	    if (UNDEFINED_METHOD_ENTRY_P(me)) {
-		rb_print_undef(module, id, 0);
+		rb_print_undef(module, mid, 0);
 	    }
 	    if (me->def->type != VM_METHOD_TYPE_ZSUPER) {
 		break; /* normal case: need not to follow 'super' link */
@@ -1304,52 +1304,52 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 	    if (!m)
 		break;
 	}
-	rb_method_entry_set(rb_singleton_class(module), id, me, NOEX_PUBLIC);
+	rb_method_entry_set(rb_singleton_class(module), mid, me, NOEX_PUBLIC);
     }
     return module;
 }
 
 int
-rb_method_basic_definition_p(VALUE klass, ID id)
+rb_method_basic_definition_p(VALUE klass, ID mid)
 {
-    const rb_ment_t *me = rb_method_entry(klass, id);
+    const rb_ment_t *me = rb_method_entry(klass, mid);
     if (me && (me->flag & NOEX_BASIC))
 	return 1;
     return 0;
 }
 
 static inline int
-basic_obj_respond_to(VALUE obj, ID id, int pub)
+basic_obj_respond_to(VALUE obj, ID mid, int pub)
 {
     VALUE klass = CLASS_OF(obj);
 
-    switch (rb_method_boundp(klass, id, pub|NOEX_RESPONDS)) {
+    switch (rb_method_boundp(klass, mid, pub|NOEX_RESPONDS)) {
       case 2:
 	return FALSE;
       case 0:
-	return RTEST(rb_funcall(obj, respond_to_missing, 2, ID2SYM(id), pub ? Qfalse : Qtrue));
+	return RTEST(rb_funcall(obj, respond_to_missing, 2, ID2SYM(mid), pub ? Qfalse : Qtrue));
       default:
 	return TRUE;
     }
 }
 
 int
-rb_obj_respond_to(VALUE obj, ID id, int priv)
+rb_obj_respond_to(VALUE obj, ID mid, int priv)
 {
     VALUE klass = CLASS_OF(obj);
 
     if (rb_method_basic_definition_p(klass, idRespond_to)) {
-	return basic_obj_respond_to(obj, id, !RTEST(priv));
+	return basic_obj_respond_to(obj, mid, !RTEST(priv));
     }
     else {
-	return RTEST(rb_funcall(obj, idRespond_to, priv ? 2 : 1, ID2SYM(id), Qtrue));
+	return RTEST(rb_funcall(obj, idRespond_to, priv ? 2 : 1, ID2SYM(mid), Qtrue));
     }
 }
 
 int
-rb_respond_to(VALUE obj, ID id)
+rb_respond_to(VALUE obj, ID mid)
 {
-    return rb_obj_respond_to(obj, id, FALSE);
+    return rb_obj_respond_to(obj, mid, FALSE);
 }
 
 
