@@ -17,6 +17,11 @@
 #define ment_sweep	rb_sweep_method_entry
 #define ment_free	rb_free_method_entry
 #define ment_eq		rb_method_entry_eq
+
+#define allocator_define	rb_define_alloc_func
+#define allocator_undef		rb_undef_alloc_func
+#define allocator_get		rb_get_alloc_func
+
 /* END RENAME SECTION */
 /*****************************************************************************/
 
@@ -96,7 +101,7 @@ rb_define_notimplement_method_id(VALUE mod, ID id, rb_mflg_t noex)
 
 
 void
-rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
+allocator_define(VALUE klass, VALUE (*func)(VALUE))
 {
     Check_Type(klass, T_CLASS);
     rb_add_method_cfunc(rb_singleton_class(klass), ID_ALLOCATOR,
@@ -104,14 +109,14 @@ rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
 }
 
 void
-rb_undef_alloc_func(VALUE klass)
+allocator_undef(VALUE klass)
 {
     Check_Type(klass, T_CLASS);
     rb_add_method(rb_singleton_class(klass), ID_ALLOCATOR, VM_METHOD_TYPE_UNDEF, 0, NOEX_UNDEF);
 }
 
 rb_alloc_func_t
-rb_get_alloc_func(VALUE klass)
+allocator_get(VALUE klass)
 {
     rb_ment_t *me;
     Check_Type(klass, T_CLASS);
@@ -139,7 +144,7 @@ ment_unlink(rb_ment_t *me)
 }
 
 void
-rb_sweep_method_entry(void *pvm)
+ment_sweep(void *pvm)
 {
     rb_vm_t *vm = pvm;
     struct unlinked_method_entry_list_entry *ume = vm->unlinked_method_entry_list, *prev_ume = 0, *curr_ume;
@@ -168,7 +173,7 @@ rb_sweep_method_entry(void *pvm)
 }
 
 void
-rb_free_method_entry(rb_ment_t *me)
+ment_free(rb_ment_t *me)
 {
     rb_mdef_t *def = me->def;
 
@@ -185,7 +190,7 @@ rb_free_method_entry(rb_ment_t *me)
 }
 
 int
-rb_method_entry_eq(const rb_ment_t *m1, const rb_ment_t *m2)
+ment_eq(const rb_ment_t *m1, const rb_ment_t *m2)
 {
     return rb_mdef_eq(m1->def, m2->def);
 }
@@ -385,7 +390,7 @@ deprecated_allocate(VALUE klass, ID mid, rb_mtyp_t type)
 	     type == VM_METHOD_TYPE_CFUNC &&
 	     mid == rb_intern("allocate")) {
 	/* issue: use rb_warning to honor -v */
-	rb_warn("defining %s.allocate is deprecated; use rb_define_alloc_func()",
+	rb_warn("defining %s.allocate is deprecated; use allocator_get()",
 		rb_class2name(rb_ivar_get(klass, attached)));
 	mid = ID_ALLOCATOR;
     }
