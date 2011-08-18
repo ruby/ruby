@@ -333,18 +333,13 @@ ment_new(ID mid, rb_mdef_t *def, rb_mflg_t noex)
     } while (0)
 
 static rb_ment_t *
-class_ment_get(VALUE klass, ID mid)
+class_ment_get(VALUE klass, ID mid, rb_ment_t * *me)
 {
 /*  gets the ment by mid. Does *not* do a lookup in the class hierarchy */
 
-    st_data_t data;
-    st_table *mtbl = RCLASS_M_TBL(klass);
-    
-    if (st_lookup(mtbl, mid, &data)) {
-	return (rb_ment_t *)data;
-    } else {
-	return 0;
-    }
+    *me = 0;
+    st_lookup(RCLASS_M_TBL(klass), mid, (st_data_t*)*me);
+    return *me;
 }
 
 static void
@@ -391,14 +386,12 @@ deprecated_allocate(VALUE klass, ID mid, rb_mtyp_t type)
 }
 
 static rb_ment_t *
-rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
-		     rb_mdef_t *def, rb_mflg_t noex)
+rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type, rb_mdef_t *def, rb_mflg_t noex)
 {
 /*  enters (inserts) a mdef to the class method-table and returns
     it *or* returns existent ment */
 
-    rb_ment_t *me;
-    rb_ment_t *old_me;
+    rb_ment_t *me, *old_me;
 
     if (NIL_P(klass)) {
 	klass = rb_cObject;
@@ -408,25 +401,19 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type,
 
     rb_check_frozen(klass);
 
-    old_me = class_ment_get(klass, mid);
-    if (old_me) {
-	if (ment_has_mdef(old_me, def)) {
+    if (class_ment_get(klass, mid, &old_me))
+	if (ment_has_mdef(old_me, def))
 	    return old_me;
-	}
-	/* redefinition */
-        ment_redefinition(old_me, mid, type);	    
-    }
+	else
+	    ment_redefinition(old_me, mid, type);	    
     
     if (rb_safe_level() >= 4 &&
 	(klass == rb_cObject || !OBJ_UNTRUSTED(klass))) {
 	rb_raise(rb_eSecurityError, "Insecure: can't define method");
     }
     
-    /* definition of method */
-
-    me = ment_new(mid, def, noex);
-    
     /* the actual method definition / redefinition happnes here */
+    me = ment_new(mid, def, noex);
     class_ment_add(klass, me);
     
     /* TD: possibly add class_mdef_add(klass, def) */
