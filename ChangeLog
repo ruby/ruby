@@ -16,7 +16,7 @@ Wed Aug 17 15:27:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigMath_s_log): ditto.
 
-	* test/bigdecimal/test_bigdecimal.rb: test for the avobe changes.
+	* test/bigdecimal/test_bigdecimal.rb: test for the above changes.
 
 	* test/bigdecimal/testbase.rb (under_gc_stress): add a new utility
 	  method to run tests under the condition of GC.stress = true.
@@ -139,7 +139,7 @@ Sat Aug 13 01:56:11 2011  Eric Hodel  <drbrain@segment7.net>
 
 Fri Aug 12 11:39:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* configure.in: Desbribe "no" configure option for site_ruby
+	* configure.in: Describe "no" configure option for site_ruby
 	  and vendor_ruby. Patch by Vit Ondruch. [Bug #5187][ruby-core:38921]
 
 Fri Aug 12 09:00:24 2011  Eric Hodel  <drbrain@segment7.net>
