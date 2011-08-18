@@ -99,6 +99,9 @@ rb_define_notimplement_method_id(VALUE mod, ID id, rb_mflg_t noex)
     rb_add_method(mod, id, VM_METHOD_TYPE_NOTIMPLEMENTED, 0, noex);
 }
 
+/*****************************************************************************/
+/*  ALLOCATOR FUNCTIONS                                                      */
+/*****************************************************************************/
 
 void
 allocator_define(VALUE klass, VALUE (*func)(VALUE))
@@ -128,6 +131,23 @@ allocator_get(VALUE klass)
     else {
 	return 0;
     }
+}
+
+static inline ID
+allocator_deprication(VALUE klass, ID mid, rb_mtyp_t type)
+{
+/* checks for definition of allocate, returns altered mid after warning */
+
+    if (FL_TEST(klass, FL_SINGLETON) &&
+	     type == VM_METHOD_TYPE_CFUNC &&
+	     mid == rb_intern("allocate")) {
+	/* issue: use rb_warning to honor -v */
+	rb_warn("defining %s.allocate is deprecated; use allocator_get()",
+		rb_class2name(rb_ivar_get(klass, attached)));
+	mid = ID_ALLOCATOR;
+    }
+
+    return mid;
 }
 
 /*****************************************************************************/
@@ -381,23 +401,6 @@ class_mdef_add(VALUE klass, ID mid, rb_mdef_t *def, rb_mflg_t noex )
     return me;
 }
 
-static inline ID
-deprecated_allocate(VALUE klass, ID mid, rb_mtyp_t type)
-{
-/* checks for definition of allocate, returns altered mid after warning */
-
-    if (FL_TEST(klass, FL_SINGLETON) &&
-	     type == VM_METHOD_TYPE_CFUNC &&
-	     mid == rb_intern("allocate")) {
-	/* issue: use rb_warning to honor -v */
-	rb_warn("defining %s.allocate is deprecated; use allocator_get()",
-		rb_class2name(rb_ivar_get(klass, attached)));
-	mid = ID_ALLOCATOR;
-    }
-
-    return mid;
-}
-
 static rb_ment_t *
 rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type, rb_mdef_t *def, rb_mflg_t noex)
 {
@@ -410,7 +413,7 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type, rb_mdef_t *def, rb_mflg_t noex
 	klass = rb_cObject;
     }
 
-    mid = deprecated_allocate(klass, mid, type);
+    mid = allocator_deprication(klass, mid, type);
 
     rb_check_frozen(klass);
 
