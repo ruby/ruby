@@ -212,7 +212,7 @@ ment_free(rb_ment_t *me)
 int
 ment_eq(const rb_ment_t *m1, const rb_ment_t *m2)
 {
-    return rb_mdef_eq(m1->def, m2->def);
+    return mdef_eq(m1->def, m2->def);
 }
 
 #define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
@@ -229,7 +229,7 @@ mod_ment_flagtest(VALUE mod, ID mid, rb_mflg_t noex)
 }
 
 static int
-rb_mdef_eq(const rb_mdef_t *d1, const rb_mdef_t *d2)
+mdef_eq(const rb_mdef_t *d1, const rb_mdef_t *d2)
 {
     if (d1 == d2) return 1;
     if (!d1 || !d2) return 0;
@@ -269,7 +269,7 @@ ment_has_mdef(rb_ment_t *me, rb_mdef_t *def)
 
     if (!me) return FALSE;
     
-    return rb_mdef_eq(me->def, def) ? TRUE : FALSE;
+    return mdef_eq(me->def, def) ? TRUE : FALSE;
 }
 
 /*****************************************************************************/
