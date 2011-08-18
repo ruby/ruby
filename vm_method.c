@@ -368,6 +368,14 @@ class_ment_add(VALUE klass, rb_ment_t *me)
     }
 }
 
+static rb_ment_t *
+class_mdef_add(VALUE klass, ID mid, rb_mdef_t *def, rb_mflg_t noex )
+{
+    rb_ment_t * me = ment_new(mid, def, noex);
+    class_ment_add(klass, me);
+    return me;
+}
+
 static inline ID
 deprecated_allocate(VALUE klass, ID mid, rb_mtyp_t type)
 {
@@ -413,12 +421,7 @@ rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type, rb_mdef_t *def, rb_mflg_t noex
     }
     
     /* the actual method definition / redefinition happnes here */
-    me = ment_new(mid, def, noex);
-    class_ment_add(klass, me);
-    
-    /* TD: possibly add class_mdef_add(klass, def) */
-
-    return me;
+    return class_mdef_add(klass, mid, def, noex);
 }
 
 void
