@@ -1,3 +1,10 @@
+Fri Aug 19 11:28:58 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* backport r33001 from trunk.
+
+	* lib/net/imap.rb (msg_att): accepts extra space before ')'.
+	  based on the patch by art lussos.  [Bug #5163] [ruby-core:38820]
+
 Wed Aug 17 15:27:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* backport r32996 from trunk.

@@ -99,4 +99,21 @@ EOF
 EOF
     assert_equal [1, 2, 3], response.data
   end
+
+  def test_msg_att_extra_space
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+* 1 FETCH (UID 92285)
+EOF
+    assert_equal 92285, response.data.attr["UID"]
+
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+* 1 FETCH (UID 92285 )
+EOF
+    assert_equal 92285, response.data.attr["UID"]
+
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+* 1 FETCH (UID 92285  )
+EOF
+  end
 end
