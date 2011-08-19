@@ -905,10 +905,15 @@ module Net
           @idle_done_cond = new_cond
           @idle_done_cond.wait
           @idle_done_cond = nil
+          if @receiver_thread_terminating
+            raise Net::IMAP::Error, "connection closed"
+          end
         ensure
-          remove_response_handler(response_handler)
-          put_string("DONE#{CRLF}")
-          response = get_tagged_response(tag, "IDLE")
+          unless @receiver_thread_terminating
+            remove_response_handler(response_handler)
+            put_string("DONE#{CRLF}")
+            response = get_tagged_response(tag, "IDLE")
+          end
         end
       end
 
@@ -1056,6 +1061,7 @@ module Net
         rescue Exception
         end
       }
+      @receiver_thread_terminating = false
     end
 
     def receive_responses
@@ -1115,8 +1121,12 @@ module Net
         end
       end
       synchronize do
+        @receiver_thread_terminating = true
         @tagged_response_arrival.broadcast
         @continuation_request_arrival.broadcast
+        if @idle_done_cond
+          @idle_done_cond.signal 
+        end
       end
     end
 
