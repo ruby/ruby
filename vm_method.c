@@ -22,7 +22,9 @@
 
 #define class_ment_make		rb_ment_make
 #define class_method_add	rb_add_method
+#define class_method_add_cfunc  rb_add_method_cfunc
 #define class_ment_set		rb_method_entry_set
+
 
 #define allocator_define	rb_define_alloc_func
 #define allocator_undef		rb_undef_alloc_func
@@ -113,7 +115,7 @@ void
 allocator_define(VALUE klass, VALUE (*func)(VALUE))
 {
     Check_Type(klass, T_CLASS);
-    rb_add_method_cfunc(rb_singleton_class(klass), ID_ALLOCATOR,
+    class_method_add_cfunc(rb_singleton_class(klass), ID_ALLOCATOR,
 			func, 0, NOEX_PRIVATE);
 }
 
@@ -518,7 +520,7 @@ class_ment_set(VALUE klass, ID mid, const ment_t *me, mflg_t noex)
 }
 
 void
-rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, mflg_t noex)
+class_method_add_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, mflg_t noex)
 {
 /*  specialized version of class_method_add - for C functions */
 
