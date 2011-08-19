@@ -22,6 +22,7 @@
 
 #define class_ment_make		rb_ment_make
 #define class_method_add	rb_add_method
+#define class_ment_set		rb_method_entry_set
 
 #define allocator_define	rb_define_alloc_func
 #define allocator_undef		rb_undef_alloc_func
@@ -507,7 +508,7 @@ class_method_add(VALUE klass, ID mid, mtyp_t type, void *opts, mflg_t noex)
 }
 
 ment_t *
-rb_method_entry_set(VALUE klass, ID mid, const ment_t *me, mflg_t noex)
+class_ment_set(VALUE klass, ID mid, const ment_t *me, mflg_t noex)
 {
 /*  adds the me->def via newly created newme to a class */
 
@@ -1046,7 +1047,7 @@ rb_alias(VALUE klass, ID name, ID def)
     }
 
     if (flag == NOEX_UNDEF) flag = orig_me->flag;
-    rb_method_entry_set(target_klass, name, orig_me, flag);
+    class_ment_set(target_klass, name, orig_me, flag);
 }
 
 /*
@@ -1309,7 +1310,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 	    if (!m)
 		break;
 	}
-	rb_method_entry_set(rb_singleton_class(module), mid, me, NOEX_PUBLIC);
+	class_ment_set(rb_singleton_class(module), mid, me, NOEX_PUBLIC);
     }
     return module;
 }
