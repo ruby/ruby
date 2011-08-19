@@ -773,11 +773,14 @@ defined
 	}
 	break;
       case DEFINED_CVAR:
-	klass = vm_get_cbase(GET_ISEQ(), GET_LFP(), GET_DFP());
+	{
+	NODE *cref = vm_get_cref(GET_ISEQ(), GET_LFP(), GET_DFP());
+	klass = vm_get_cvar_base(cref);
 	if (rb_cvar_defined(klass, SYM2ID(obj))) {
 	    expr_type = "class variable";
 	}
 	break;
+	}
       case DEFINED_CONST:
 	klass = v;
 	if (vm_get_ev_const(th, GET_ISEQ(), klass, SYM2ID(obj), 1)) {
