@@ -2296,6 +2296,10 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
  * - HP-UX documents how to allocate fd_set dynamically.
  *   http://docs.hp.com/en/B2355-60105/select.2.html
  * - Solaris 8 has select_large_fdset
+ * - Mac OS X 10.7 (Lion)
+ *   select(2) returns EINVAL if nfds is greater than FD_SET_SIZE and
+ *   _DARWIN_UNLIMITED_SELECT (or _DARWIN_C_SOURCE) isn't defined.
+ *   http://developer.apple.com/library/mac/#releasenotes/Darwin/SymbolVariantsRelNotes/_index.html
  *
  * When fd_set is not big enough to hold big file descriptors,
  * it should be allocated dynamically.

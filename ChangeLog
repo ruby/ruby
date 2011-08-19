@@ -1,3 +1,8 @@
+Fri Aug 19 13:14:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* thread.c: add a description for the behavior of select(2) on
+	  Mac OS X 10.7 (Lion).
+
 Fri Aug 19 11:28:58 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (msg_att): accepts extra space before ')'.
