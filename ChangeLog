@@ -1,3 +1,8 @@
+Fri Aug 19 13:18:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* configure.in: defines _DARWIN_UNLIMITED_SELECT if the target_os
+	  is darwin.
+
 Fri Aug 19 13:14:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* thread.c: add a description for the behavior of select(2) on
