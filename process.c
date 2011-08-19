@@ -29,6 +29,9 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+#ifdef HAVE_PROCESS_H
+#include <process.h>
+#endif
 
 #include <time.h>
 #include <ctype.h>
@@ -1205,6 +1208,15 @@ rb_proc_exec(const char *str)
 #endif
 
 #if !defined(HAVE_FORK) && defined(HAVE_SPAWNV)
+# define USE_SPAWNV 1
+#else
+# define USE_SPAWNV 0
+#endif
+#ifndef P_NOWAIT
+# define P_NOWAIT _P_NOWAIT
+#endif
+
+#if USE_SPAWNV
 #if defined(_WIN32)
 #define proc_spawn_v(argv, prog) rb_w32_aspawn(P_NOWAIT, (prog), (argv))
 #else
@@ -1222,14 +1234,15 @@ proc_spawn_v(char **argv, char *prog)
 	return -1;
 
     before_exec();
-    status = spawnv(P_WAIT, prog, argv);
-    preserving_errno({
-	rb_last_status_set(status == -1 ? 127 : status, 0);
+    status = spawnv(P_NOWAIT, prog, (const char **)argv);
+    if (status == -1 && errno == ENOEXEC) {
 	*argv = (char *)prog;
 	*--argv = (char *)"sh";
-	status = spawnv("/bin/sh", argv);
+	status = spawnv(P_NOWAIT, "/bin/sh", (const char **)argv);
 	after_exec();
-    });
+	if (status == -1) errno = ENOEXEC;
+    }
+    rb_last_status_set(status == -1 ? 127 : status, 0);
     return status;
 }
 #endif
@@ -1269,7 +1282,7 @@ proc_spawn(char *str)
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 	    char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
 	    before_exec();
-	    status = shell?spawnl(P_WAIT,shell,"sh","-c",str,(char*)NULL):system(str);
+	    status = spawnl(P_NOWAIT, (shell ? shell : "/bin/sh"), "sh", "-c", str, (char*)NULL);
 	    rb_last_status_set(status == -1 ? 127 : status, 0);
 	    after_exec();
 	    return status;
@@ -2966,16 +2979,16 @@ static rb_pid_t
 rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errmsg_buflen)
 {
     rb_pid_t pid;
-#if defined HAVE_FORK || !defined HAVE_SPAWNV
+#if !USE_SPAWNV
     int status;
 #endif
-#if !defined HAVE_FORK
+#if !defined HAVE_FORK || USE_SPAWNV
     struct rb_exec_arg sarg;
     int argc;
     VALUE *argv;
 #endif
 
-#if defined HAVE_FORK
+#if defined HAVE_FORK && !USE_SPAWNV
     pid = rb_fork_err(&status, rb_exec_atfork, earg, earg->redirect_fds, errmsg, errmsg_buflen);
 #else
     if (rb_run_exec_options_err(earg, &sarg, errmsg, errmsg_buflen) < 0) {

@@ -1,3 +1,11 @@
+Fri Aug 19 14:25:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (proc_spawn_v, proc_spawn): should not wait the
+	  spawned process.
+
+	* process.c (proc_spawn_v): fix missing argument, and try with
+	  /bin/sh only if failed with ENOEXEC.
+
 Fri Aug 19 14:12:57 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (idle): raises a Net::IMAP::Error when the
