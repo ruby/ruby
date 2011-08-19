@@ -363,6 +363,61 @@ class IMAPTest < Test::Unit::TestCase
     end
   end
 
+  def test_connection_closed_during_idle
+    server = create_tcp_server
+    port = server.addr[1]
+    requests = []
+    sock = nil
+    Thread.start do
+      begin
+        sock = server.accept
+        sock.print("* OK test server\r\n")
+        requests.push(sock.gets)
+        sock.print("+ idling\r\n")
+      rescue
+      end
+    end
+    begin
+      imap = Net::IMAP.new(SERVER_ADDR, :port => port)
+      begin
+        th = Thread.current
+        m = Monitor.new
+        in_idle = false
+        exception_raised = false
+        c = m.new_cond
+        Thread.start do
+          m.synchronize do
+            until in_idle
+              c.wait(0.1)
+            end
+          end
+          sock.close
+          exception_raised = true
+        end
+        assert_raise(Net::IMAP::Error) do
+          imap.idle do |res|
+            m.synchronize do
+              in_idle = true
+              c.signal
+              until exception_raised
+                c.wait(0.1)
+              end
+            end
+          end
+        end
+        assert_equal(1, requests.length)
+        assert_equal("RUBY0001 IDLE\r\n", requests[0])
+      ensure
+        imap.disconnect if imap
+      end
+    ensure
+      server.close
+      if sock && !sock.closed?
+        sock.close
+      end
+    end
+  end
+
   private
 
   def imaps_test

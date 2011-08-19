@@ -1,3 +1,11 @@
+Fri Aug 19 14:12:57 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* backport r33007 from trunk.
+
+	* lib/net/imap.rb (idle): raises a Net::IMAP::Error when the
+	  connection is closed.  based on the patch by Hugo Barauna.
+	  [Bug #5190] [ruby-core:38930]
+
 Fri Aug 19 11:28:58 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* backport r33001 from trunk.
