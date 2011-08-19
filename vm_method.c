@@ -18,6 +18,8 @@
 #define ment_free	rb_free_method_entry
 #define ment_eq		rb_method_entry_eq
 
+#define class_ment_make		rb_ment_make
+
 #define allocator_define	rb_define_alloc_func
 #define allocator_undef		rb_undef_alloc_func
 #define allocator_get		rb_get_alloc_func
@@ -402,7 +404,7 @@ class_mdef_add(VALUE klass, ID mid, rb_mdef_t *def, rb_mflg_t noex )
 }
 
 static rb_ment_t *
-rb_ment_make(VALUE klass, ID mid, rb_mtyp_t type, rb_mdef_t *def, rb_mflg_t noex)
+class_ment_make(VALUE klass, ID mid, rb_mtyp_t type, rb_mdef_t *def, rb_mflg_t noex)
 {
 /*  enters (inserts) a mdef to the class method-table and returns
     it *or* returns existent ment */
@@ -497,7 +499,7 @@ rb_add_method(VALUE klass, ID mid, rb_mtyp_t type, void *opts, rb_mflg_t noex)
 /*  adds a newly created mdef via a newly created me to a class */
 
     rb_mdef_t *def = mdef_new(mid, type, opts);
-    rb_ment_t *me = rb_ment_make(klass, mid, type, def, noex);
+    rb_ment_t *me = class_ment_make(klass, mid, type, def, noex);
     return me;
 }
 
@@ -507,7 +509,7 @@ rb_method_entry_set(VALUE klass, ID mid, const rb_ment_t *me, rb_mflg_t noex)
 /*  adds the me->def via newly created newme to a class */
 
     rb_mtyp_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
-    rb_ment_t *newme = rb_ment_make(klass, mid, type, me->def, noex);    
+    rb_ment_t *newme = class_ment_make(klass, mid, type, me->def, noex);    
     return newme;
 }
 
