@@ -9,10 +9,12 @@
 /*****************************************************************************/
 /* RENAME SECTION: change names initially only for this file */
 /* TD: apply renames within method.h, then remove those defines */
-#define rb_mdef_t rb_method_definition_t
-#define rb_ment_t rb_method_entry_t
-#define rb_mtyp_t rb_method_type_t
-#define rb_mflg_t rb_method_flag_t
+#define mdef_t rb_method_definition_t
+#define ment_t rb_method_entry_t
+#define mtyp_t rb_method_type_t
+#define mflg_t rb_method_flag_t
+
+
 
 #define ment_sweep	rb_sweep_method_entry
 #define ment_free	rb_free_method_entry
@@ -27,7 +29,7 @@
 /* END RENAME SECTION */
 /*****************************************************************************/
 
-static void rb_vm_check_redefinition_opt_method(const rb_ment_t *me);
+static void rb_vm_check_redefinition_opt_method(const ment_t *me);
 
 static ID object_id, respond_to_missing;
 static ID removed, singleton_removed, undefined, singleton_undefined;
@@ -41,7 +43,7 @@ struct cache_entry {		/* method hash table. */
     VALUE filled_version;        /* filled state version */
     ID mid;			/* method's id */
     VALUE klass;		/* receiver's class */
-    rb_ment_t *me;
+    ment_t *me;
 };
 
 static struct cache_entry cache[CACHE_SIZE];
@@ -96,7 +98,7 @@ rb_f_notimplement(int argc, VALUE *argv, VALUE obj)
 }
 
 static void
-rb_define_notimplement_method_id(VALUE mod, ID mid, rb_mflg_t noex)
+rb_define_notimplement_method_id(VALUE mod, ID mid, mflg_t noex)
 {
     rb_add_method(mod, mid, VM_METHOD_TYPE_NOTIMPLEMENTED, 0, noex);
 }
@@ -123,7 +125,7 @@ allocator_undef(VALUE klass)
 rb_alloc_func_t
 allocator_get(VALUE klass)
 {
-    rb_ment_t *me;
+    ment_t *me;
     Check_Type(klass, T_CLASS);
     me = rb_method_entry(CLASS_OF(klass), ID_ALLOCATOR);
 
@@ -136,7 +138,7 @@ allocator_get(VALUE klass)
 }
 
 static inline ID
-allocator_deprication(VALUE klass, ID mid, rb_mtyp_t type)
+allocator_deprication(VALUE klass, ID mid, mtyp_t type)
 {
 /* checks for definition of allocate, returns altered mid after warning */
 
@@ -157,7 +159,7 @@ allocator_deprication(VALUE klass, ID mid, rb_mtyp_t type)
 /*****************************************************************************/
 
 static void
-ment_unlink(rb_ment_t *me)
+ment_unlink(ment_t *me)
 {
     struct unlinked_method_entry_list_entry *ume = ALLOC(struct unlinked_method_entry_list_entry);
     ume->me = me;
@@ -195,9 +197,9 @@ ment_sweep(void *pvm)
 }
 
 void
-ment_free(rb_ment_t *me)
+ment_free(ment_t *me)
 {
-    rb_mdef_t *def = me->def;
+    mdef_t *def = me->def;
 
     if (def) {
 	if (def->alias_count == 0) {
@@ -212,7 +214,7 @@ ment_free(rb_ment_t *me)
 }
 
 int
-ment_eq(const rb_ment_t *m1, const rb_ment_t *m2)
+ment_eq(const ment_t *m1, const ment_t *m2)
 {
     return mdef_eq(m1->def, m2->def);
 }
@@ -221,9 +223,9 @@ ment_eq(const rb_ment_t *m1, const rb_ment_t *m2)
 /* TD: verify, macro seems redundant. code directly. */
 
 static VALUE
-mod_ment_flagtest(VALUE mod, ID mid, rb_mflg_t noex)
+mod_ment_flagtest(VALUE mod, ID mid, mflg_t noex)
 {
-    const rb_ment_t *me = rb_method_entry(mod, mid);
+    const ment_t *me = rb_method_entry(mod, mid);
     if (me && VISI_CHECK(me->flag, noex)) {
 	return Qtrue;
     }
@@ -231,7 +233,7 @@ mod_ment_flagtest(VALUE mod, ID mid, rb_mflg_t noex)
 }
 
 static int
-mdef_eq(const rb_mdef_t *d1, const rb_mdef_t *d2)
+mdef_eq(const mdef_t *d1, const mdef_t *d2)
 {
     if (d1 == d2) return 1;
     if (!d1 || !d2) return 0;
@@ -265,7 +267,7 @@ mdef_eq(const rb_mdef_t *d1, const rb_mdef_t *d2)
 }
 
 static int
-ment_has_mdef(rb_ment_t *me, rb_mdef_t *def)
+ment_has_mdef(ment_t *me, mdef_t *def)
 {
 /*  checks if ment has the given mdef */
 
@@ -279,12 +281,12 @@ ment_has_mdef(rb_ment_t *me, rb_mdef_t *def)
 /*****************************************************************************/
 
 static void
-ment_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
+ment_redefinition(ment_t *me, ID mid, mtyp_t type)
 {
 /*  processing subjecting method redefinition */
 
     VALUE klass = me->klass;
-    rb_mdef_t *old_def = me->def;
+    mdef_t *old_def = me->def;
     
     rb_vm_check_redefinition_opt_method(me);
 
@@ -330,12 +332,12 @@ ment_redefinition(rb_ment_t *me, ID mid, rb_mtyp_t type)
 
 }
 
-static rb_ment_t *
-ment_new(ID mid, rb_mdef_t *def, rb_mflg_t noex)
+static ment_t *
+ment_new(ID mid, mdef_t *def, mflg_t noex)
 {
 /*  creates a new ment object (struct) */
 
-    rb_ment_t *me = ALLOC(rb_ment_t);
+    ment_t *me = ALLOC(ment_t);
 
     me->flag = NOEX_WITH_SAFE(noex);
     me->mark = 0;
@@ -359,8 +361,8 @@ ment_new(ID mid, rb_mdef_t *def, rb_mflg_t noex)
 	rb_funcall2(recv_class, hook_id, 1, &arg);	\
     } while (0)
 
-static rb_ment_t *
-class_ment_get(VALUE klass, ID mid, rb_ment_t * *me)
+static ment_t *
+class_ment_get(VALUE klass, ID mid, ment_t * *me)
 {
 /*  gets the ment by mid. Does *not* do a lookup in the class hierarchy */
 
@@ -370,11 +372,11 @@ class_ment_get(VALUE klass, ID mid, rb_ment_t * *me)
 }
 
 static void
-class_ment_add(VALUE klass, rb_ment_t *me)
+class_ment_add(VALUE klass, ment_t *me)
 {
 /*  adds a ment to a class, without check if it's already exists */
 
-    rb_mtyp_t type = me->def->type;
+    mtyp_t type = me->def->type;
     ID mid = me->called_id;
 
     /* set initialize or initialize_copy to private */
@@ -395,21 +397,21 @@ class_ment_add(VALUE klass, rb_ment_t *me)
     }
 }
 
-static rb_ment_t *
-class_mdef_add(VALUE klass, ID mid, rb_mdef_t *def, rb_mflg_t noex )
+static ment_t *
+class_mdef_add(VALUE klass, ID mid, mdef_t *def, mflg_t noex )
 {
-    rb_ment_t * me = ment_new(mid, def, noex);
+    ment_t * me = ment_new(mid, def, noex);
     class_ment_add(klass, me);
     return me;
 }
 
-static rb_ment_t *
-class_ment_make(VALUE klass, ID mid, rb_mtyp_t type, rb_mdef_t *def, rb_mflg_t noex)
+static ment_t *
+class_ment_make(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
 {
 /*  enters (inserts) a mdef to the class method-table and returns
     it *or* returns existent ment */
 
-    rb_ment_t *me, *old_me;
+    ment_t *me, *old_me;
 
     if (NIL_P(klass)) {
 	klass = rb_cObject;
@@ -435,7 +437,7 @@ class_ment_make(VALUE klass, ID mid, rb_mtyp_t type, rb_mdef_t *def, rb_mflg_t n
 }
 
 void
-mdef_attr(rb_mdef_t *def, void *opts)
+mdef_attr(mdef_t *def, void *opts)
 {
 /* processing for creation of mdef method type ATTRSET/IVAR */
   
@@ -453,12 +455,12 @@ mdef_attr(rb_mdef_t *def, void *opts)
     }
 }
 
-rb_mdef_t *
-mdef_new(ID mid, rb_mtyp_t type, void *opts)
+mdef_t *
+mdef_new(ID mid, mtyp_t type, void *opts)
 {
 /*  creates a new mdef object (struct)*/
 
-    rb_mdef_t *def = ALLOC(rb_mdef_t);
+    mdef_t *def = ALLOC(mdef_t);
     def->type = type;
     def->original_id = mid;
     def->alias_count = 0;
@@ -493,28 +495,28 @@ mdef_new(ID mid, rb_mtyp_t type, void *opts)
     return def;
 }
 
-rb_ment_t *
-rb_add_method(VALUE klass, ID mid, rb_mtyp_t type, void *opts, rb_mflg_t noex)
+ment_t *
+rb_add_method(VALUE klass, ID mid, mtyp_t type, void *opts, mflg_t noex)
 {
 /*  adds a newly created mdef via a newly created me to a class */
 
-    rb_mdef_t *def = mdef_new(mid, type, opts);
-    rb_ment_t *me = class_ment_make(klass, mid, type, def, noex);
+    mdef_t *def = mdef_new(mid, type, opts);
+    ment_t *me = class_ment_make(klass, mid, type, def, noex);
     return me;
 }
 
-rb_ment_t *
-rb_method_entry_set(VALUE klass, ID mid, const rb_ment_t *me, rb_mflg_t noex)
+ment_t *
+rb_method_entry_set(VALUE klass, ID mid, const ment_t *me, mflg_t noex)
 {
 /*  adds the me->def via newly created newme to a class */
 
-    rb_mtyp_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
-    rb_ment_t *newme = class_ment_make(klass, mid, type, me->def, noex);    
+    mtyp_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
+    ment_t *newme = class_ment_make(klass, mid, type, me->def, noex);    
     return newme;
 }
 
 void
-rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_mflg_t noex)
+rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, mflg_t noex)
 {
 /*  specialized version of rb_add_method - for C functions */
 
@@ -531,7 +533,7 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_mf
     }
 }
 
-static rb_ment_t*
+static ment_t*
 search_method(VALUE klass, ID mid)
 {
     st_data_t body;
@@ -546,7 +548,7 @@ search_method(VALUE klass, ID mid)
 	}
     }
 
-    return (rb_ment_t *)body;
+    return (ment_t *)body;
 }
 
 /*
@@ -555,10 +557,10 @@ search_method(VALUE klass, ID mid)
  * if you need method entry with method cache (normal case), use
  * rb_method_entry() simply.
  */
-rb_ment_t *
+ment_t *
 rb_method_entry_get_without_cache(VALUE klass, ID mid)
 {
-    rb_ment_t *me = search_method(klass, mid);
+    ment_t *me = search_method(klass, mid);
 
     if (ruby_running) {
 	struct cache_entry *ent;
@@ -580,7 +582,7 @@ rb_method_entry_get_without_cache(VALUE klass, ID mid)
     return me;
 }
 
-rb_ment_t *
+ment_t *
 rb_method_entry(VALUE klass, ID mid)
 {
     struct cache_entry *ent;
@@ -610,9 +612,9 @@ rb_enable_super(VALUE klass, const char *name)
 }
 
 static void
-rb_export_method(VALUE klass, ID name, rb_mflg_t noex)
+rb_export_method(VALUE klass, ID name, mflg_t noex)
 {
-    rb_ment_t *me;
+    ment_t *me;
 
     if (klass == rb_cObject) {
 	rb_secure(4);
@@ -642,7 +644,7 @@ rb_export_method(VALUE klass, ID name, rb_mflg_t noex)
 int
 rb_method_boundp(VALUE klass, ID mid, int ex)
 {
-    rb_ment_t *me = rb_method_entry(klass, mid);
+    ment_t *me = rb_method_entry(klass, mid);
 
     if (me != 0) {
 	if ((ex & ~NOEX_RESPONDS) && (me->flag & NOEX_PRIVATE)) {
@@ -664,7 +666,7 @@ rb_attr(VALUE klass, ID mid, int read, int write, int ex)
     const char *name;
     ID attriv;
     VALUE aname;
-    rb_mflg_t noex;
+    mflg_t noex;
 
     if (!ex) {
 	noex = NOEX_PUBLIC;
@@ -725,7 +727,7 @@ remove_method(VALUE klass, ID mid)
     }
 
     if (!st_lookup(RCLASS_M_TBL(klass), mid, &data) ||
-	!(me = (rb_ment_t *)data) ||
+	!(me = (ment_t *)data) ||
 	(!me->def || me->def->type == VM_METHOD_TYPE_UNDEF)) {
 	rb_name_error(mid, "method `%s' not defined in %s",
 		      rb_id2name(mid), rb_class2name(klass));
@@ -774,7 +776,7 @@ rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
 void
 rb_undef(VALUE klass, ID mid)
 {
-    rb_ment_t *me;
+    ment_t *me;
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class to undef method");
@@ -1014,8 +1016,8 @@ void
 rb_alias(VALUE klass, ID name, ID def)
 {
     VALUE target_klass = klass;
-    rb_ment_t *orig_me;
-    rb_mflg_t flag = NOEX_UNDEF;
+    ment_t *orig_me;
+    mflg_t flag = NOEX_UNDEF;
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class to make alias");
@@ -1085,7 +1087,7 @@ secure_visibility(VALUE self)
 }
 
 static void
-set_method_visibility(VALUE self, int argc, VALUE *argv, rb_mflg_t ex)
+set_method_visibility(VALUE self, int argc, VALUE *argv, mflg_t ex)
 {
     int i;
     secure_visibility(self);
@@ -1273,7 +1275,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 {
     int i;
     ID mid;
-    const rb_ment_t *me;
+    const ment_t *me;
 
     if (TYPE(module) != T_MODULE) {
 	rb_raise(rb_eTypeError, "module_function must be called for modules");
@@ -1314,7 +1316,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 int
 rb_method_basic_definition_p(VALUE klass, ID mid)
 {
-    const rb_ment_t *me = rb_method_entry(klass, mid);
+    const ment_t *me = rb_method_entry(klass, mid);
     if (me && (me->flag & NOEX_BASIC))
 	return 1;
     return 0;
