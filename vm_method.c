@@ -21,6 +21,7 @@
 #define ment_eq		rb_method_entry_eq
 
 #define class_ment_make		rb_ment_make
+#define class_method_add	rb_add_method
 
 #define allocator_define	rb_define_alloc_func
 #define allocator_undef		rb_undef_alloc_func
@@ -100,7 +101,7 @@ rb_f_notimplement(int argc, VALUE *argv, VALUE obj)
 static void
 rb_define_notimplement_method_id(VALUE mod, ID mid, mflg_t noex)
 {
-    rb_add_method(mod, mid, VM_METHOD_TYPE_NOTIMPLEMENTED, 0, noex);
+    class_method_add(mod, mid, VM_METHOD_TYPE_NOTIMPLEMENTED, 0, noex);
 }
 
 /*****************************************************************************/
@@ -119,7 +120,7 @@ void
 allocator_undef(VALUE klass)
 {
     Check_Type(klass, T_CLASS);
-    rb_add_method(rb_singleton_class(klass), ID_ALLOCATOR, VM_METHOD_TYPE_UNDEF, 0, NOEX_UNDEF);
+    class_method_add(rb_singleton_class(klass), ID_ALLOCATOR, VM_METHOD_TYPE_UNDEF, 0, NOEX_UNDEF);
 }
 
 rb_alloc_func_t
@@ -490,13 +491,13 @@ mdef_new(ID mid, mtyp_t type, void *opts)
       case VM_METHOD_TYPE_UNDEF:
 	break;
       default:
-	rb_bug("rb_add_method: unsupported method type (%d)\n", type);
+	rb_bug("class_method_add: unsupported method type (%d)\n", type);
     }
     return def;
 }
 
 ment_t *
-rb_add_method(VALUE klass, ID mid, mtyp_t type, void *opts, mflg_t noex)
+class_method_add(VALUE klass, ID mid, mtyp_t type, void *opts, mflg_t noex)
 {
 /*  adds a newly created mdef via a newly created me to a class */
 
@@ -518,7 +519,7 @@ rb_method_entry_set(VALUE klass, ID mid, const ment_t *me, mflg_t noex)
 void
 rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, mflg_t noex)
 {
-/*  specialized version of rb_add_method - for C functions */
+/*  specialized version of class_method_add - for C functions */
 
 /*  issue: should return me */
 
@@ -526,7 +527,7 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, mflg_
 	rb_method_cfunc_t opt;
 	opt.func = func;
 	opt.argc = argc;
-	rb_add_method(klass, mid, VM_METHOD_TYPE_CFUNC, &opt, noex);
+	class_method_add(klass, mid, VM_METHOD_TYPE_CFUNC, &opt, noex);
     }
     else {
 	rb_define_notimplement_method_id(klass, mid, noex);
@@ -636,7 +637,7 @@ rb_export_method(VALUE klass, ID name, mflg_t noex)
 	    me->flag = noex;
 	}
 	else {
-	    rb_add_method(klass, name, VM_METHOD_TYPE_ZSUPER, 0, noex);
+	    class_method_add(klass, name, VM_METHOD_TYPE_ZSUPER, 0, noex);
 	}
     }
 }
@@ -697,10 +698,10 @@ rb_attr(VALUE klass, ID mid, int read, int write, int ex)
     rb_enc_copy(aname, rb_id2str(mid));
     attriv = rb_intern_str(aname);
     if (read) {
-	rb_add_method(klass, mid, VM_METHOD_TYPE_IVAR, (void *)attriv, noex);
+	class_method_add(klass, mid, VM_METHOD_TYPE_IVAR, (void *)attriv, noex);
     }
     if (write) {
-	rb_add_method(klass, rb_id_attrset(mid), VM_METHOD_TYPE_ATTRSET, (void *)attriv, noex);
+	class_method_add(klass, rb_id_attrset(mid), VM_METHOD_TYPE_ATTRSET, (void *)attriv, noex);
     }
 }
 
@@ -815,7 +816,7 @@ rb_undef(VALUE klass, ID mid)
 		      rb_id2name(mid), s0, rb_class2name(c));
     }
 
-    rb_add_method(klass, mid, VM_METHOD_TYPE_UNDEF, 0, NOEX_PUBLIC);
+    class_method_add(klass, mid, VM_METHOD_TYPE_UNDEF, 0, NOEX_PUBLIC);
 
     CALL_METHOD_HOOK(klass, undefined, mid);
 }
