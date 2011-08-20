@@ -25,6 +25,8 @@
 #define class_method_add_cfunc  rb_add_method_cfunc
 #define class_ment_set		rb_method_entry_set
 
+#define class_ment		rb_method_entry
+#define class_ment_uncached	rb_method_entry_get_without_cache
 
 #define allocator_define	rb_define_alloc_func
 #define allocator_undef		rb_undef_alloc_func
@@ -131,7 +133,7 @@ allocator_get(VALUE klass)
 {
     ment_t *me;
     Check_Type(klass, T_CLASS);
-    me = rb_method_entry(CLASS_OF(klass), ID_ALLOCATOR);
+    me = class_ment(CLASS_OF(klass), ID_ALLOCATOR);
 
     if (me && me->def && me->def->type == VM_METHOD_TYPE_CFUNC) {
 	return (rb_alloc_func_t)me->def->body.cfunc.func;
@@ -229,7 +231,7 @@ ment_eq(const ment_t *m1, const ment_t *m2)
 static VALUE
 mod_ment_flagtest(VALUE mod, ID mid, mflg_t noex)
 {
-    const ment_t *me = rb_method_entry(mod, mid);
+    const ment_t *me = class_ment(mod, mid);
     if (me && VISI_CHECK(me->flag, noex)) {
 	return Qtrue;
     }
@@ -540,6 +542,9 @@ class_method_add_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, mf
 static ment_t*
 search_method(VALUE klass, ID mid)
 {
+/* does a lookup within the class method table */
+/* issue: st_lookup does *not* a lookup, possibly rename to "get") */
+
     st_data_t body;
     if (!klass) {
 	return 0;
@@ -559,10 +564,10 @@ search_method(VALUE klass, ID mid)
  * search method entry without the method cache.
  *
  * if you need method entry with method cache (normal case), use
- * rb_method_entry() simply.
+ * class_ment() simply.
  */
 ment_t *
-rb_method_entry_get_without_cache(VALUE klass, ID mid)
+class_ment_uncached(VALUE klass, ID mid)
 {
     ment_t *me = search_method(klass, mid);
 
@@ -587,7 +592,7 @@ rb_method_entry_get_without_cache(VALUE klass, ID mid)
 }
 
 ment_t *
-rb_method_entry(VALUE klass, ID mid)
+class_ment(VALUE klass, ID mid)
 {
     struct cache_entry *ent;
 
@@ -597,7 +602,7 @@ rb_method_entry(VALUE klass, ID mid)
 	return ent->me;
     }
 
-    return rb_method_entry_get_without_cache(klass, mid);
+    return class_ment_uncached(klass, mid);
 }
 
 #undef rb_disable_super
@@ -648,7 +653,7 @@ rb_export_method(VALUE klass, ID name, mflg_t noex)
 int
 rb_method_boundp(VALUE klass, ID mid, int ex)
 {
-    ment_t *me = rb_method_entry(klass, mid);
+    ment_t *me = class_ment(klass, mid);
 
     if (me != 0) {
 	if ((ex & ~NOEX_RESPONDS) && (me->flag & NOEX_PRIVATE)) {
@@ -1320,7 +1325,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 int
 rb_method_basic_definition_p(VALUE klass, ID mid)
 {
-    const ment_t *me = rb_method_entry(klass, mid);
+    const ment_t *me = class_ment(klass, mid);
     if (me && (me->flag & NOEX_BASIC))
 	return 1;
     return 0;
