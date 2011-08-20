@@ -123,6 +123,7 @@ class TestMethod < Test::Unit::TestCase
     def o.foo; end
     assert_nothing_raised { RubyVM::InstructionSequence.disasm(o.method(:foo)) }
     assert_nothing_raised { RubyVM::InstructionSequence.disasm("x".method(:upcase)) }
+    assert_nothing_raised { RubyVM::InstructionSequence.disasm(method(:to_s).to_proc) }
   end
 
   def test_new
