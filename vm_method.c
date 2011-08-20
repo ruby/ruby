@@ -623,7 +623,7 @@ rb_enable_super(VALUE klass, const char *name)
 }
 
 static void
-rb_export_method(VALUE klass, ID name, mflg_t noex)
+rb_export_method(VALUE klass, ID mid, mflg_t noex)
 {
     ment_t *me;
 
@@ -631,13 +631,13 @@ rb_export_method(VALUE klass, ID name, mflg_t noex)
 	rb_secure(4);
     }
 
-    me = class_ment_search(klass, name);
+    me = class_ment_search(klass, mid);
     if (!me && TYPE(klass) == T_MODULE) {
-	me = class_ment_search(rb_cObject, name);
+	me = class_ment_search(rb_cObject, mid);
     }
 
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
-	rb_print_undef(klass, name, 0);
+	rb_print_undef(klass, mid, 0);
     }
 
     if (me->flag != noex) {
@@ -647,7 +647,7 @@ rb_export_method(VALUE klass, ID name, mflg_t noex)
 	    me->flag = noex;
 	}
 	else {
-	    class_method_add(klass, name, VM_METHOD_TYPE_ZSUPER, 0, noex);
+	    class_method_add(klass, mid, VM_METHOD_TYPE_ZSUPER, 0, noex);
 	}
     }
 }
@@ -1024,7 +1024,7 @@ rb_mod_protected_method_defined(VALUE mod, VALUE mid)
 }
 
 void
-rb_alias(VALUE klass, ID name, ID def)
+rb_alias(VALUE klass, ID mid_alias, ID mid)
 {
     VALUE target_klass = klass;
     ment_t *orig_me;
@@ -1040,23 +1040,23 @@ rb_alias(VALUE klass, ID name, ID def)
     }
 
   again:
-    orig_me = search_method(klass, def);
+    orig_me = search_method(klass, mid);
 
     if (UNDEFINED_METHOD_ENTRY_P(orig_me)) {
 	if ((TYPE(klass) != T_MODULE) ||
-	    (orig_me = class_ment_search(rb_cObject, def), UNDEFINED_METHOD_ENTRY_P(orig_me))) {
-	    rb_print_undef(klass, def, 0);
+	    (orig_me = class_ment_search(rb_cObject, mid), UNDEFINED_METHOD_ENTRY_P(orig_me))) {
+	    rb_print_undef(klass, mid, 0);
 	}
     }
     if (orig_me->def->type == VM_METHOD_TYPE_ZSUPER) {
 	klass = RCLASS_SUPER(klass);
-	def = orig_me->def->original_id;
+	mid = orig_me->def->original_id;
 	flag = orig_me->flag;
 	goto again;
     }
 
     if (flag == NOEX_UNDEF) flag = orig_me->flag;
-    class_ment_set(target_klass, name, orig_me, flag);
+    class_ment_set(target_klass, mid_alias, orig_me, flag);
 }
 
 /*
