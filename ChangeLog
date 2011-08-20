@@ -1,3 +1,9 @@
+Sat Aug 20 13:19:52 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* iseq.c (iseq_s_disasm): fix a bug that may cause SEGV.
+
+	* test/ruby/test_method.rb (test_body): add a test for the above change.
+
 Sat Aug 20 10:43:24 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_read): return new string if nil
