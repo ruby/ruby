@@ -27,6 +27,7 @@
 
 #define class_ment		rb_method_entry
 #define class_ment_uncached	rb_method_entry_get_without_cache
+#define class_ment_search	search_method
 
 #define allocator_define	rb_define_alloc_func
 #define allocator_undef		rb_undef_alloc_func
@@ -540,7 +541,7 @@ class_method_add_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, mf
 }
 
 static ment_t*
-search_method(VALUE klass, ID mid)
+class_ment_search(VALUE klass, ID mid)
 {
 /* does a lookup within the class method table */
 /* issue: st_lookup does *not* a lookup, possibly rename to "get") */
@@ -569,8 +570,9 @@ search_method(VALUE klass, ID mid)
 ment_t *
 class_ment_uncached(VALUE klass, ID mid)
 {
-    ment_t *me = search_method(klass, mid);
+    ment_t *me = class_ment_search(klass, mid);
 
+/*  TD: document this code */
     if (ruby_running) {
 	struct cache_entry *ent;
 	ent = cache + EXPR1(klass, mid);
@@ -629,9 +631,9 @@ rb_export_method(VALUE klass, ID name, mflg_t noex)
 	rb_secure(4);
     }
 
-    me = search_method(klass, name);
+    me = class_ment_search(klass, name);
     if (!me && TYPE(klass) == T_MODULE) {
-	me = search_method(rb_cObject, name);
+	me = class_ment_search(rb_cObject, name);
     }
 
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
@@ -801,7 +803,7 @@ rb_undef(VALUE klass, ID mid)
 	rb_warn("undefining `%s' may cause serious problems", rb_id2name(mid));
     }
 
-    me = search_method(klass, mid);
+    me = class_ment_search(klass, mid);
 
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	const char *s0 = " class";
@@ -1042,7 +1044,7 @@ rb_alias(VALUE klass, ID name, ID def)
 
     if (UNDEFINED_METHOD_ENTRY_P(orig_me)) {
 	if ((TYPE(klass) != T_MODULE) ||
-	    (orig_me = search_method(rb_cObject, def), UNDEFINED_METHOD_ENTRY_P(orig_me))) {
+	    (orig_me = class_ment_search(rb_cObject, def), UNDEFINED_METHOD_ENTRY_P(orig_me))) {
 	    rb_print_undef(klass, def, 0);
 	}
     }
@@ -1303,9 +1305,9 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 
 	mid = rb_to_id(argv[i]);
 	for (;;) {
-	    me = search_method(m, mid);
+	    me = class_ment_search(m, mid);
 	    if (me == 0) {
-		me = search_method(rb_cObject, mid);
+		me = class_ment_search(rb_cObject, mid);
 	    }
 	    if (UNDEFINED_METHOD_ENTRY_P(me)) {
 		rb_print_undef(module, mid, 0);
