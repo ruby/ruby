@@ -418,6 +418,14 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("\u3042\u3044", f.read)
     f.rewind
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read(f.size))
+
+    bug5207 = '[ruby-core:39026]'
+    f.rewind
+    assert_equal("\u3042\u3044", f.read(nil, nil), bug5207)
+    f.rewind
+    s = ""
+    f.read(nil, s)
+    assert_equal("\u3042\u3044", s, bug5207)
   end
 
   def test_readpartial

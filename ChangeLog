@@ -1,3 +1,9 @@
+Sat Aug 20 10:43:24 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_read): return new string if nil
+	  is explicitly given as a buffer ([Bug #5207]), otherwise set the
+	  encoding.  also removed dead code.
+
 Fri Aug 19 14:25:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (proc_spawn_v, proc_spawn): should not wait the

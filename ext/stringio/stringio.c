@@ -1219,12 +1219,15 @@ strio_read(int argc, VALUE *argv, VALUE self)
     struct StringIO *ptr = readable(StringIO(self));
     VALUE str = Qnil;
     long len;
+    int binary = 0;
 
     switch (argc) {
       case 2:
 	str = argv[1];
-	StringValue(str);
-	rb_str_modify(str);
+	if (!NIL_P(str)) {
+	    StringValue(str);
+	    rb_str_modify(str);
+	}
       case 1:
 	if (!NIL_P(argv[0])) {
 	    len = NUM2LONG(argv[0]);
@@ -1235,6 +1238,7 @@ strio_read(int argc, VALUE *argv, VALUE self)
 		if (!NIL_P(str)) rb_str_resize(str, 0);
 		return Qnil;
 	    }
+	    binary = 1;
 	    break;
 	}
 	/* fall through */
@@ -1258,21 +1262,19 @@ strio_read(int argc, VALUE *argv, VALUE self)
     }
     if (NIL_P(str)) {
 	str = strio_substr(ptr, ptr->pos, len);
-	if (argc > 0) rb_enc_associate(str, rb_ascii8bit_encoding());
+	if (binary) rb_enc_associate(str, rb_ascii8bit_encoding());
     }
     else {
 	long rest = RSTRING_LEN(ptr->string) - ptr->pos;
 	if (len > rest) len = rest;
 	rb_str_resize(str, len);
 	MEMCPY(RSTRING_PTR(str), RSTRING_PTR(ptr->string) + ptr->pos, char, len);
+	if (binary)
+	    rb_enc_associate(str, rb_ascii8bit_encoding());
+	else
+	    rb_enc_copy(str, ptr->string);
     }
-    if (NIL_P(str)) {
-	str = rb_str_new(0, 0);
-	len = 0;
-    }
-    else {
-	ptr->pos += len = RSTRING_LEN(str);
-    }
+    ptr->pos += RSTRING_LEN(str);
     return str;
 }
 
