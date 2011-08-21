@@ -9,16 +9,15 @@
 /*****************************************************************************/
 /* RENAME SECTION: change names initially only for this file */
 /* TD: apply renames within method.h, then remove those defines */
-#define mdef_t rb_method_definition_t
-#define ment_t rb_method_entry_t
-#define mtyp_t rb_method_type_t
-#define mflg_t rb_method_flag_t
 
+#define mdef_t			rb_method_definition_t
+#define ment_t			rb_method_entry_t
+#define mtyp_t			rb_method_type_t
+#define mflg_t			rb_method_flag_t
 
-
-#define ment_sweep	rb_sweep_method_entry
-#define ment_free	rb_free_method_entry
-#define ment_eq		rb_method_entry_eq
+#define ment_sweep		rb_sweep_method_entry
+#define ment_free		rb_free_method_entry
+#define ment_eq			rb_method_entry_eq
 
 #define class_ment_make		rb_ment_make
 #define class_method_add	rb_add_method
@@ -117,6 +116,8 @@ rb_define_notimplement_method_id(VALUE mod, ID mid, mflg_t noex)
 void
 allocator_define(VALUE klass, VALUE (*func)(VALUE))
 {
+/*  defines the allocation method for a class */
+
     Check_Type(klass, T_CLASS);
     class_method_add_cfunc(rb_singleton_class(klass), ID_ALLOCATOR,
 			func, 0, NOEX_PRIVATE);
@@ -125,6 +126,8 @@ allocator_define(VALUE klass, VALUE (*func)(VALUE))
 void
 allocator_undef(VALUE klass)
 {
+/*  un-defines the allocation method for a class */
+
     Check_Type(klass, T_CLASS);
     class_method_add(rb_singleton_class(klass), ID_ALLOCATOR, VM_METHOD_TYPE_UNDEF, 0, NOEX_UNDEF);
 }
@@ -132,6 +135,8 @@ allocator_undef(VALUE klass)
 rb_alloc_func_t
 allocator_get(VALUE klass)
 {
+/*  returns the allocation method for a class */
+
     ment_t *me;
     Check_Type(klass, T_CLASS);
     me = class_ment(CLASS_OF(klass), ID_ALLOCATOR);
@@ -153,7 +158,7 @@ allocator_deprication(VALUE klass, ID mid, mtyp_t type)
 	     type == VM_METHOD_TYPE_CFUNC &&
 	     mid == rb_intern("allocate")) {
 	/* issue: use rb_warning to honor -v */
-	rb_warn("defining %s.allocate is deprecated; use allocator_get()",
+	rb_warn("defining %s.allocate is deprecated; use allocator_define()",
 		rb_class2name(rb_ivar_get(klass, attached)));
 	mid = ID_ALLOCATOR;
     }
@@ -168,7 +173,11 @@ allocator_deprication(VALUE klass, ID mid, mtyp_t type)
 static void
 ment_unlink(ment_t *me)
 {
-    struct unlinked_method_entry_list_entry *ume = ALLOC(struct unlinked_method_entry_list_entry);
+/*  places an unused ment into the unlinked-list */
+/*  TD: verify, possibly rename to "unused_ment_list" */
+
+    struct unlinked_method_entry_list_entry *ume;
+    ume = ALLOC(struct unlinked_method_entry_list_entry);
     ume->me = me;
     ume->next = GET_VM()->unlinked_method_entry_list;
     GET_VM()->unlinked_method_entry_list = ume;
@@ -177,9 +186,12 @@ ment_unlink(ment_t *me)
 void
 ment_sweep(void *pvm)
 {
+/*  frees (deletes permanently) all unused(unlinked) ment */
+
     rb_vm_t *vm = pvm;
     struct unlinked_method_entry_list_entry *ume = vm->unlinked_method_entry_list, *prev_ume = 0, *curr_ume;
 
+    /* TD: document, possibly refactor */
     while (ume) {
 	if (ume->me->mark) {
 	    ume->me->mark = 0;
@@ -206,6 +218,8 @@ ment_sweep(void *pvm)
 void
 ment_free(ment_t *me)
 {
+/*  frees the memory of a method entry, deleting it permanently */
+
     mdef_t *def = me->def;
 
     if (def) {
@@ -223,6 +237,8 @@ ment_free(ment_t *me)
 int
 ment_eq(const ment_t *m1, const ment_t *m2)
 {
+/*  determine if two ment are equal */
+
     return mdef_eq(m1->def, m2->def);
 }
 
@@ -232,6 +248,8 @@ ment_eq(const ment_t *m1, const ment_t *m2)
 static VALUE
 mod_ment_flagtest(VALUE mod, ID mid, mflg_t noex)
 {
+/*  ??? tests the flag of a modules ment */
+
     const ment_t *me = class_ment(mod, mid);
     if (me && VISI_CHECK(me->flag, noex)) {
 	return Qtrue;
@@ -242,6 +260,8 @@ mod_ment_flagtest(VALUE mod, ID mid, mflg_t noex)
 static int
 mdef_eq(const mdef_t *d1, const mdef_t *d2)
 {
+/*  determines if two mdef are equal */
+
     if (d1 == d2) return 1;
     if (!d1 || !d2) return 0;
     if (d1->type != d2->type) {
@@ -276,7 +296,7 @@ mdef_eq(const mdef_t *d1, const mdef_t *d2)
 static int
 ment_has_mdef(ment_t *me, mdef_t *def)
 {
-/*  checks if ment has the given mdef */
+/*  tests if ment has the given mdef */
 
     if (!me) return FALSE;
     
@@ -291,6 +311,7 @@ static void
 ment_redefinition(ment_t *me, ID mid, mtyp_t type)
 {
 /*  processing subjecting method redefinition */
+/*  TD: refactor to "class_ment_redefine". contain all code, incl. definition */
 
     VALUE klass = me->klass;
     mdef_t *old_def = me->def;
@@ -356,7 +377,7 @@ ment_new(ID mid, mdef_t *def, mflg_t noex)
     return me;
 }
 
-/* issue: use inline-code, or state technical explanation for using a macro */
+/* TD: refactor to code, leave only "hook_id = singleton_##hook;" as a macro */
 #define CALL_METHOD_HOOK(klass, hook, mid) do {		\
 	const VALUE arg = ID2SYM(mid);			\
 	VALUE recv_class = (klass);			\
@@ -407,6 +428,8 @@ class_ment_add(VALUE klass, ment_t *me)
 static ment_t *
 class_mdef_add(VALUE klass, ID mid, mdef_t *def, mflg_t noex )
 {
+/*  adds a mdef to a class, without check if it's already exists */
+    
     ment_t * me = ment_new(mid, def, noex);
     class_ment_add(klass, me);
     return me;
@@ -415,8 +438,8 @@ class_mdef_add(VALUE klass, ID mid, mdef_t *def, mflg_t noex )
 static ment_t *
 class_ment_make(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
 {
-/*  enters (inserts) a mdef to the class method-table and returns
-    it *or* returns existent ment */
+/*  retrieves the ment for the given mdef from the klass
+    creates new ment if not available */
 
     ment_t *me, *old_me;
 
@@ -443,10 +466,10 @@ class_ment_make(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
     return class_mdef_add(klass, mid, def, noex);
 }
 
-void
+static void
 mdef_attr(mdef_t *def, void *opts)
 {
-/* processing for creation of mdef method type ATTRSET/IVAR */
+/* processing for mdef_new, method type ATTRSET/IVAR */
   
     rb_thread_t *th;
     rb_control_frame_t *cfp;
@@ -543,7 +566,7 @@ class_method_add_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, mf
 static ment_t*
 class_ment_search(VALUE klass, ID mid)
 {
-/* does a lookup within the class method table */
+/* searches for a ment in the class's inheritance chain */
 /* issue: st_lookup does *not* a lookup, possibly rename to "get") */
 
     st_data_t body;
@@ -596,6 +619,8 @@ class_ment_uncached(VALUE klass, ID mid)
 ment_t *
 class_ment(VALUE klass, ID mid)
 {
+/*  retrieves the ment from a given class. looks in mcache first */
+
     struct cache_entry *ent;
 
     ent = cache + EXPR1(klass, mid);
@@ -613,7 +638,7 @@ class_ment(VALUE klass, ID mid)
 void
 rb_disable_super(VALUE klass, const char *name)
 {
-    /* obsolete - no use */
+    rb_warning("rb_disable_super() is obsolete");
 }
 
 void
@@ -1023,6 +1048,8 @@ rb_mod_protected_method_defined(VALUE mod, VALUE mid)
     return mod_ment_flagtest(mod, id, NOEX_PROTECTED);
 }
 
+/*----------*/
+
 void
 rb_alias(VALUE klass, ID mid_alias, ID mid)
 {
@@ -1087,6 +1114,8 @@ rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
     rb_alias(mod, rb_to_id(newname), rb_to_id(oldname));
     return mod;
 }
+
+/*----------*/
 
 static void
 secure_visibility(VALUE self)
@@ -1323,6 +1352,8 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
     }
     return module;
 }
+
+/*----------*/
 
 int
 rb_method_basic_definition_p(VALUE klass, ID mid)
