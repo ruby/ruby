@@ -347,7 +347,7 @@ class_ment_get(VALUE klass, ID mid, ment_t * *me)
     return *me;
 }
 
-static void
+static ment_t *
 class_ment_add(VALUE klass, ment_t *me)
 {
 /*  adds a ment to a class, without check if it's already exists */
@@ -371,6 +371,7 @@ class_ment_add(VALUE klass, ment_t *me)
     if (type != VM_METHOD_TYPE_UNDEF && mid != ID_ALLOCATOR && ruby_running) {
 	CALL_METHOD_HOOK(klass, added, mid);
     }
+    return me;
 }
 
 static ment_t *
@@ -378,16 +379,13 @@ class_mdef_add(VALUE klass, ID mid, mdef_t *def, mflg_t noex )
 {
 /*  adds a mdef to a class, without check if it's already exists */
     
-    ment_t * me = ment_new(mid, def, noex);
-    class_ment_add(klass, me);
-    return me;
+    return class_ment_add(klass, ment_new(mid, def, noex));
 }
 
 static ment_t *
 class_ment_redefine(ment_t *old_me, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
 {
 /*  processing subjecting method redefinition */
-/*  TD: refactor to "class_ment_redefine". contain all code, incl. definition */
 
     VALUE klass = old_me->klass;
     mdef_t *old_def = old_me->def;
