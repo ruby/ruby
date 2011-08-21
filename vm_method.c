@@ -308,59 +308,6 @@ ment_has_mdef(ment_t *me, mdef_t *def)
 /*  METHOD DEFINITION AND ENTRY CREATION                                     */
 /*****************************************************************************/
 
-static void
-ment_redefinition(ment_t *me, ID mid, mtyp_t type)
-{
-/*  processing subjecting method redefinition */
-/*  TD: refactor to "class_ment_redefine". contain all code, incl. definition */
-
-    VALUE klass = me->klass;
-    mdef_t *old_def = me->def;
-    
-    rb_vm_check_redefinition_opt_method(me);
-
-    if (RTEST(ruby_verbose) &&
-	type != VM_METHOD_TYPE_UNDEF &&
-	old_def->alias_count == 0 &&
-	old_def->type != VM_METHOD_TYPE_UNDEF &&
-	old_def->type != VM_METHOD_TYPE_ZSUPER) {
-	rb_iseq_t *iseq = 0;
-
-	rb_warning("method redefined; discarding old %s", rb_id2name(mid));
-	switch (old_def->type) {
-	  case VM_METHOD_TYPE_ISEQ:
-	    iseq = old_def->body.iseq;
-	    break;
-	  case VM_METHOD_TYPE_BMETHOD:
-	    iseq = rb_proc_get_iseq(old_def->body.proc, 0);
-	    break;
-	  default:
-	    break;
-	}
-	if (iseq && !NIL_P(iseq->filename)) {
-	    int line = iseq->insn_info_table ? rb_iseq_first_lineno(iseq) : 0;
-	    rb_compile_warning(RSTRING_PTR(iseq->filename), line,
-			       "previous definition of %s was here",
-			       rb_id2name(old_def->original_id));
-	}
-    }
-
-    if (klass == rb_cObject && mid == idInitialize) {
-	/* issue: use rb_warning to honor -v */
-	rb_warn("redefining Object#initialize may cause infinite loop");
-    }
-
-    if (mid == object_id || mid == id__send__) {
-	if (type == VM_METHOD_TYPE_ISEQ) {
-	    /* issue: use rb_warning to honor -v */
-	    rb_warn("redefining `%s' may cause serious problems", rb_id2name(mid));
-	}
-    }
-
-    ment_unlink(me);
-
-}
-
 static ment_t *
 ment_new(ID mid, mdef_t *def, mflg_t noex)
 {
@@ -434,6 +381,59 @@ class_mdef_add(VALUE klass, ID mid, mdef_t *def, mflg_t noex )
     ment_t * me = ment_new(mid, def, noex);
     class_ment_add(klass, me);
     return me;
+}
+
+static void
+ment_redefinition(ment_t *me, ID mid, mtyp_t type)
+{
+/*  processing subjecting method redefinition */
+/*  TD: refactor to "class_ment_redefine". contain all code, incl. definition */
+
+    VALUE klass = me->klass;
+    mdef_t *old_def = me->def;
+    
+    rb_vm_check_redefinition_opt_method(me);
+
+    if (RTEST(ruby_verbose) &&
+	type != VM_METHOD_TYPE_UNDEF &&
+	old_def->alias_count == 0 &&
+	old_def->type != VM_METHOD_TYPE_UNDEF &&
+	old_def->type != VM_METHOD_TYPE_ZSUPER) {
+	rb_iseq_t *iseq = 0;
+
+	rb_warning("method redefined; discarding old %s", rb_id2name(mid));
+	switch (old_def->type) {
+	  case VM_METHOD_TYPE_ISEQ:
+	    iseq = old_def->body.iseq;
+	    break;
+	  case VM_METHOD_TYPE_BMETHOD:
+	    iseq = rb_proc_get_iseq(old_def->body.proc, 0);
+	    break;
+	  default:
+	    break;
+	}
+	if (iseq && !NIL_P(iseq->filename)) {
+	    int line = iseq->insn_info_table ? rb_iseq_first_lineno(iseq) : 0;
+	    rb_compile_warning(RSTRING_PTR(iseq->filename), line,
+			       "previous definition of %s was here",
+			       rb_id2name(old_def->original_id));
+	}
+    }
+
+    if (klass == rb_cObject && mid == idInitialize) {
+	/* issue: use rb_warning to honor -v */
+	rb_warn("redefining Object#initialize may cause infinite loop");
+    }
+
+    if (mid == object_id || mid == id__send__) {
+	if (type == VM_METHOD_TYPE_ISEQ) {
+	    /* issue: use rb_warning to honor -v */
+	    rb_warn("redefining `%s' may cause serious problems", rb_id2name(mid));
+	}
+    }
+
+    ment_unlink(me);
+
 }
 
 static ment_t *
