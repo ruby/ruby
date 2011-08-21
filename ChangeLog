@@ -1,3 +1,18 @@
+Sun Aug 21 11:13:54 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* backport r32895 from trunk.
+
+	* ext/fiddle/conversions.c (generic_to_value): ffi_arg and ffi_sarg
+	  should be used to handle shorter return value. fix [Bug #3861]
+	  [ruby-core:32504]
+
+	* ext/fiddle/closure.c (callback): ditto
+
+	* ext/fiddle/conversions.h (fiddle_generic): ditto
+
+	* ext/fiddle/conversions.c (value_to_generic): char, short and int
+	  are strictly distinguished on big-endian CPU, e.g. sparc64.
+
 Sat Aug 20 13:28:32 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* backport r33013 from trunk.

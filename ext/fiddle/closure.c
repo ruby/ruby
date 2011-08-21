@@ -110,13 +110,12 @@ callback(ffi_cif *cif, void *resp, void **args, void *ctx)
 	*(long *)resp = NUM2LONG(ret);
 	break;
       case TYPE_CHAR:
-	*(char *)resp = NUM2INT(ret);
+      case TYPE_SHORT:
+      case TYPE_INT:
+	*(ffi_sarg *)resp = NUM2INT(ret);
 	break;
       case TYPE_VOIDP:
 	*(void **)resp = NUM2PTR(ret);
-	break;
-      case TYPE_INT:
-	*(int *)resp = NUM2INT(ret);
 	break;
       case TYPE_DOUBLE:
 	*(double *)resp = NUM2DBL(ret);

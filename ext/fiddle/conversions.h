@@ -5,6 +5,8 @@
 
 typedef union
 {
+    ffi_arg  fffi_arg;     /* rvalue smaller than unsigned long */
+    ffi_sarg fffi_sarg;    /* rvalue smaller than signed long */
     unsigned char uchar;   /* ffi_type_uchar */
     signed char   schar;   /* ffi_type_schar */
     unsigned short ushort; /* ffi_type_sshort */
