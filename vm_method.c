@@ -8,7 +8,8 @@
 
 /*****************************************************************************/
 /* RENAME SECTION: change names initially only for this file */
-/* TD: apply renames within method.h, then remove those defines */
+/* TD: apply renames within method.h and source-code-wide, then remove those
+       defines (or keep as a rename-legend) */
 
 #define mdef_t			rb_method_definition_t
 #define ment_t			rb_method_entry_t
@@ -451,18 +452,20 @@ class_ment_make(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
 
     rb_check_frozen(klass);
 
-    if (class_ment_get(klass, mid, &old_me))
-	if (ment_has_mdef(old_me, def))
-	    return old_me;
-	else
-	    ment_redefinition(old_me, mid, type);	    
-    
+    old_me = class_ment_get(klass, mid, &old_me); 
+    if (old_me && ment_has_mdef(old_me, def))
+	return old_me;
+
+    /* definition or redefinition */
+
     if (rb_safe_level() >= 4 &&
 	(klass == rb_cObject || !OBJ_UNTRUSTED(klass))) {
 	rb_raise(rb_eSecurityError, "Insecure: can't define method");
     }
-    
-    /* the actual method definition / redefinition happnes here */
+
+    if (old_me)
+        ment_redefinition(old_me, mid, type);	    
+
     return class_mdef_add(klass, mid, def, noex);
 }
 
