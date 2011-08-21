@@ -383,16 +383,16 @@ class_mdef_add(VALUE klass, ID mid, mdef_t *def, mflg_t noex )
     return me;
 }
 
-static void
-ment_redefinition(ment_t *me, ID mid, mtyp_t type)
+static ment_t *
+class_ment_redefine(ment_t *old_me, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
 {
 /*  processing subjecting method redefinition */
 /*  TD: refactor to "class_ment_redefine". contain all code, incl. definition */
 
-    VALUE klass = me->klass;
-    mdef_t *old_def = me->def;
+    VALUE klass = old_me->klass;
+    mdef_t *old_def = old_me->def;
     
-    rb_vm_check_redefinition_opt_method(me);
+    rb_vm_check_redefinition_opt_method(old_me);
 
     if (RTEST(ruby_verbose) &&
 	type != VM_METHOD_TYPE_UNDEF &&
@@ -432,7 +432,9 @@ ment_redefinition(ment_t *me, ID mid, mtyp_t type)
 	}
     }
 
-    ment_unlink(me);
+    ment_unlink(old_me);
+    
+    return class_mdef_add(klass, mid, def, noex);
 
 }
 
@@ -464,7 +466,7 @@ class_ment_make(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
     }
 
     if (old_me)
-        ment_redefinition(old_me, mid, type);	    
+        return class_ment_redefine(old_me, mid, type, def, noex);	    
 
     return class_mdef_add(klass, mid, def, noex);
 }
