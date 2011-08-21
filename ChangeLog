@@ -1,3 +1,7 @@
+Sun Aug 21 14:20:58 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in: use LD_LIBRARY_PATH_64 on 64-bit Solaris.
+
 Sat Aug 20 13:19:52 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* iseq.c (iseq_s_disasm): fix a bug that may cause SEGV.

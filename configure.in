@@ -2019,6 +2019,9 @@ if test "$with_dln_a_out" != yes; then
 			else
 			    : ${LDSHARED='$(CC) -G'}
 			fi
+			if test "$ac_cv_sizeof_voidp" = 8; then
+			    : ${LIBPATHENV=LD_LIBRARY_PATH_64}
+			fi
 			rb_cv_dlopen=yes],
 	[sunos*], [	: ${LDSHARED='ld -assert nodefinitions'}
 			rb_cv_dlopen=yes],
