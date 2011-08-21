@@ -1028,7 +1028,6 @@ iseq_s_disasm(VALUE klass, VALUE body)
 
     if (rb_obj_is_proc(body)) {
 	rb_proc_t *proc;
-	VALUE iseqval;
 	GetProcPtr(body, proc);
 	iseq = proc->block.iseq;
 	if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
