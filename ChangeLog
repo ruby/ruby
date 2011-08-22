@@ -1,3 +1,8 @@
+Mon Aug 22 23:43:33 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* sprintf.c (rb_str_format): add RB_GC_GUARD to prevent temporary
+	  strings from GC.
+
 Sun Aug 21 17:49:53 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* iseq.c (iseq_s_disasm): remove variable which is no longer used
