@@ -152,7 +152,7 @@ module MiniTest
 
     def mu_pp obj
       s = obj.inspect
-      s = s.force_encoding Encoding.default_external if defined? Encoding
+      s = s.encode Encoding.default_external if defined? Encoding
       s
     end
 
@@ -491,7 +491,7 @@ module MiniTest
     # Fails if +obj+ is empty.
 
     def refute_empty obj, msg = nil
-      msg = message(msg) { "Expected #{obj.inspect} to not be empty" }
+      msg = message(msg) { "Expected #{mu_pp(obj)} to not be empty" }
       assert_respond_to obj, :empty?
       refute obj.empty?, msg
     end
@@ -577,7 +577,7 @@ module MiniTest
     end
 
     ##
-    # Fails if +o1+ is not +op+ +o2+ nil. eg:
+    # Fails if +o1+ is not +op+ +o2+. Eg:
     #
     #   refute_operator 1, :>, 2 #=> pass
     #   refute_operator 1, :<, 2 #=> fail
@@ -620,7 +620,7 @@ module MiniTest
   end
 
   class Unit
-    VERSION = "2.2.2" # :nodoc:
+    VERSION = "2.5.0" # :nodoc:
 
     attr_accessor :report, :failures, :errors, :skips # :nodoc:
     attr_accessor :test_count, :assertion_count       # :nodoc:
@@ -945,6 +945,7 @@ module MiniTest
         begin
           @passed = nil
           self.setup
+          self.run_setup_hooks
           self.__send__ self.__name__
           result = "." unless io?
           @passed = true
@@ -955,6 +956,7 @@ module MiniTest
           result = runner.puke self.class, self.__name__, e
         ensure
           begin
+            self.run_teardown_hooks
             self.teardown
           rescue *PASSTHROUGH_EXCEPTIONS
             raise
@@ -987,16 +989,24 @@ module MiniTest
 
       reset
 
-      def self.inherited klass # :nodoc:
-        @@test_suites[klass] = true
+      ##
+      # Call this at the top of your tests when you absolutely
+      # positively need to have ordered tests. In doing so, you're
+      # admitting that you suck and your tests are weak.
+
+      def self.i_suck_and_my_tests_are_order_dependent!
+        class << self
+          define_method :test_order do :alpha end
+        end
       end
 
-      ##
-      # Defines test order and is subclassable. Defaults to :random
-      # but can be overridden to return :alpha if your tests are order
-      # dependent (read: weak).
+      def self.inherited klass # :nodoc:
+        @@test_suites[klass] = true
+        klass.reset_setup_teardown_hooks
+        super
+      end
 
-      def self.test_order
+      def self.test_order # :nodoc:
         :random
       end
 
@@ -1034,6 +1044,111 @@ module MiniTest
       # Runs after every test. Use this to refactor test cleanup.
 
       def teardown; end
+
+      def self.reset_setup_teardown_hooks # :nodoc:
+        @setup_hooks = []
+        @teardown_hooks = []
+      end
+
+      reset_setup_teardown_hooks
+
+      ##
+      # Adds a block of code that will be executed before every TestCase is
+      # run. Equivalent to +setup+, but usable multiple times and without
+      # re-opening any classes.
+      #
+      # All of the setup hooks will run in order after the +setup+ method, if
+      # one is defined.
+      #
+      # The argument can be any object that responds to #call or a block.
+      # That means that this call,
+      #
+      #     MiniTest::TestCase.add_setup_hook { puts "foo" }
+      #
+      # ... is equivalent to:
+      #
+      #     module MyTestSetup
+      #       def call
+      #         puts "foo"
+      #       end
+      #     end
+      #
+      #     MiniTest::TestCase.add_setup_hook MyTestSetup
+      #
+      # The blocks passed to +add_setup_hook+ take an optional parameter that
+      # will be the TestCase instance that is executing the block.
+
+      def self.add_setup_hook arg=nil, &block
+        hook = arg || block
+        @setup_hooks << hook
+      end
+
+      def self.setup_hooks # :nodoc:
+        if superclass.respond_to? :setup_hooks then
+          superclass.setup_hooks
+        else
+          []
+        end + @setup_hooks
+      end
+
+      def run_setup_hooks # :nodoc:
+        self.class.setup_hooks.each do |hook|
+          if hook.respond_to?(:arity) && hook.arity == 1
+            hook.call(self)
+          else
+            hook.call
+          end
+        end
+      end
+
+      ##
+      # Adds a block of code that will be executed after every TestCase is
+      # run. Equivalent to +teardown+, but usable multiple times and without
+      # re-opening any classes.
+      #
+      # All of the teardown hooks will run in reverse order after the
+      # +teardown+ method, if one is defined.
+      #
+      # The argument can be any object that responds to #call or a block.
+      # That means that this call,
+      #
+      #     MiniTest::TestCase.add_teardown_hook { puts "foo" }
+      #
+      # ... is equivalent to:
+      #
+      #     module MyTestTeardown
+      #       def call
+      #         puts "foo"
+      #       end
+      #     end
+      #
+      #     MiniTest::TestCase.add_teardown_hook MyTestTeardown
+      #
+      # The blocks passed to +add_teardown_hook+ take an optional parameter
+      # that will be the TestCase instance that is executing the block.
+
+      def self.add_teardown_hook arg=nil, &block
+        hook = arg || block
+        @teardown_hooks << hook
+      end
+
+      def self.teardown_hooks # :nodoc:
+        if superclass.respond_to? :teardown_hooks then
+          superclass.teardown_hooks
+        else
+          []
+        end + @teardown_hooks
+      end
+
+      def run_teardown_hooks # :nodoc:
+        self.class.teardown_hooks.reverse.each do |hook|
+          if hook.respond_to?(:arity) && hook.arity == 1
+            hook.call(self)
+          else
+            hook.call
+          end
+        end
+      end
 
       include MiniTest::Assertions
     end # class TestCase

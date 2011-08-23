@@ -1,3 +1,8 @@
+Wed Aug 24 06:45:20 2011  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*: Imported minitest 2.5.0 (r6557)
+	* test/minitest/*: ditto
+
 Wed Aug 24 00:38:22 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (update_coverage): skip coverage count up if the current
