@@ -1,3 +1,11 @@
+Wed Aug 24 00:38:22 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (update_coverage): skip coverage count up if the current
+	  line is out of the way.  rb_sourceline() is unreliable when source
+	  code is big.  [ruby-dev:44413]
+
+	* test/coverage/test_coverage.rb: add a test for above.
+
 Tue Aug 23 15:23:56 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* load.c (rb_f_require):  Improve documentation of Kernel#require.
