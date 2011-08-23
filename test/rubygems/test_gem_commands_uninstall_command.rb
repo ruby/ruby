@@ -17,6 +17,34 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     @executable = File.join(@gemhome, 'bin', 'executable')
   end
 
+  def test_execute_mulitple
+    @other = quick_gem 'c'
+    util_make_exec @other
+    util_build_gem @other
+
+    @other_installer = util_installer @other, @gemhome
+
+    ui = Gem::MockGemUi.new
+    util_setup_gem ui
+
+    build_rake_in do
+      use_ui ui do
+        @other_installer.install
+      end
+    end
+
+    @cmd.options[:args] = [@spec.name, @other.name]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    output = @ui.output.split "\n"
+
+    assert_includes output, "Successfully uninstalled #{@spec.full_name}"
+    assert_includes output, "Successfully uninstalled #{@other.full_name}"
+  end
+
   def test_execute_removes_executable
     ui = Gem::MockGemUi.new
     util_setup_gem ui
@@ -91,5 +119,6 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     output = @ui.output
     assert_match(/Successfully uninstalled/, output)
   end
+
 end
 
