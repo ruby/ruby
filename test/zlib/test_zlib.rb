@@ -694,6 +694,20 @@ if defined? Zlib
       assert_equal("foo", Zlib::GzipReader.wrap(f) {|gz| gz.read })
       assert_raise(IOError) { f.close }
     end
+
+    def test_corrupted_header
+      gz = Zlib::GzipWriter.new(StringIO.new(s = ""))
+      gz.orig_name = "X"
+      gz.comment = "Y"
+      gz.print("foo")
+      gz.finish
+      # 14: magic(2) + method(1) + flag(1) + mtime(4) + exflag(1) + os(1) + orig_name(2) + comment(2)
+      1.upto(14) do |idx|
+        assert_raise(Zlib::GzipFile::Error, idx) do
+          Zlib::GzipReader.new(StringIO.new(s[0, idx])).read
+        end
+      end
+    end
   end
 
   class TestZlibGzipWriter < Test::Unit::TestCase

@@ -1,3 +1,12 @@
+Tue Aug 23 15:11:48 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* backport r33023 from trunk.
+
+	* ext/zlib/zlib.c (gzfile_read_header): Ensure that each section of
+	  gzip header is readable to avoid SEGV.
+
+	* test/zlib/test_zlib.rb (test_corrupted_header): Test it.
+
 Sun Aug 21 17:58:38 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* backport r33019 from trunk.
