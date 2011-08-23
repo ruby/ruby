@@ -8,7 +8,7 @@
 
 require 'minitest/unit'
 
-class Module
+class Module # :nodoc:
   def infect_an_assertion meth, new_name, dont_flip = false # :nodoc:
     # warn "%-22p -> %p %p" % [meth, new_name, dont_flip]
     self.class_eval <<-EOM
@@ -23,39 +23,18 @@ class Module
   end
 
   ##
-  # Create your own expectations from MiniTest::Assertions using a
-  # flexible set of rules. If you don't like must/wont, then this
-  # method is your friend. For an example of its usage see the bottom
-  # of minitest/spec.rb.
+  # infect_with_assertions has been removed due to excessive clever.
+  # Use infect_an_assertion directly instead.
 
   def infect_with_assertions(pos_prefix, neg_prefix,
                              skip_re,
                              dont_flip_re = /\c0/,
                              map = {})
-    MiniTest::Assertions.public_instance_methods(false).sort.each do |meth|
-      meth = meth.to_s
-
-      new_name = case meth
-                 when /^assert/ then
-                   meth.sub(/^assert/, pos_prefix.to_s)
-                 when /^refute/ then
-                   meth.sub(/^refute/, neg_prefix.to_s)
-                 end
-      next unless new_name
-      next if new_name =~ skip_re
-
-      regexp, replacement = map.find { |re, _| new_name =~ re }
-      new_name.sub! regexp, replacement if replacement
-
-      puts "\n##\n# :method: #{new_name}\n# See MiniTest::Assertions##{meth}" if
-        $0 == __FILE__
-
-      infect_an_assertion meth, new_name, new_name =~ dont_flip_re
-    end
+    abort "infect_with_assertions is dead. Use infect_an_assertion directly"
   end
 end
 
-module Kernel
+module Kernel # :nodoc:
   ##
   # Describe a series of expectations for a given target +desc+.
   #
@@ -80,25 +59,16 @@ module Kernel
   #       end
   #     end
 
-  def describe desc, &block # :doc:
+  def describe desc, additional_desc = nil, &block # :doc:
     stack = MiniTest::Spec.describe_stack
-    name  = [stack.last, desc].compact.join("::")
+    name  = [stack.last, desc, additional_desc].compact.join("::")
     sclas = stack.last || if Class === self && self < MiniTest::Spec then
                             self
                           else
                             MiniTest::Spec.spec_type desc
                           end
-    cls   = Class.new sclas
 
-    sclas.children << cls unless cls == MiniTest::Spec
-
-    # :stopdoc:
-    # omg this sucks
-    (class << cls; self; end).send(:define_method, :to_s) { name }
-    (class << cls; self; end).send(:define_method, :desc) { desc }
-    # :startdoc:
-
-    cls.nuke_test_methods!
+    cls = sclas.create name, desc
 
     stack.push cls
     cls.class_eval(&block)
@@ -111,7 +81,7 @@ end
 ##
 # MiniTest::Spec -- The faster, better, less-magical spec framework!
 #
-# For a list of expectations, see Object.
+# For a list of expectations, see MiniTest::Expectations.
 
 class MiniTest::Spec < MiniTest::Unit::TestCase
   ##
@@ -151,6 +121,9 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
     @@current_spec
   end
 
+  ##
+  # Returns the children of this spec.
+
   def self.children
     @children ||= []
   end
@@ -167,25 +140,6 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
   end
 
   ##
-  # Spec users want setup/teardown to be inherited and NOTHING ELSE.
-  # It is almost like method reuse is lost on them.
-
-  def self.define_inheritable_method name, &block # :nodoc:
-    # regular super() warns
-    super_method = self.superclass.instance_method name
-
-    teardown     = name.to_s == "teardown"
-    super_before = super_method && ! teardown
-    super_after  = super_method && teardown
-
-    define_method name do
-      super_method.bind(self).call if super_before
-      instance_eval(&block)
-      super_method.bind(self).call if super_after
-    end
-  end
-
-  ##
   # Define a 'before' action. Inherits the way normal methods should.
   #
   # NOTE: +type+ is ignored and is only there to make porting easier.
@@ -194,7 +148,8 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
 
   def self.before type = :each, &block
     raise "unsupported before type: #{type}" unless type == :each
-    define_inheritable_method :setup, &block
+
+    add_setup_hook {|tc| tc.instance_eval(&block) }
   end
 
   ##
@@ -206,7 +161,8 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
 
   def self.after type = :each, &block
     raise "unsupported after type: #{type}" unless type == :each
-    define_inheritable_method :teardown, &block
+
+    add_teardown_hook {|tc| tc.instance_eval(&block) }
   end
 
   ##
@@ -232,154 +188,311 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
       mod.send :undef_method, name if mod.public_method_defined? name
     end
   end
-end
 
-Object.infect_with_assertions(:must, :wont,
-                              /^(must|wont)$|wont_(throw)|
-                                 must_(block|not?_|nothing|raise$)/x,
-                              /(must|wont)_(include|respond_to)/,
-                              /(must_throw)s/                 => '\1',
-                              /(?!not)_same/                  => '_be_same_as',
-                              /_in_/                          => '_be_within_',
-                              /_operator/                     => '_be',
-                              /_includes/                     => '_include',
-                       /(must|wont)_(.*_of|nil|silent|empty)/ => '\1_be_\2',
-                              /must_raises/                   => 'must_raise')
-
-class Object
-  alias :must_be_close_to :must_be_within_delta
-  alias :wont_be_close_to :wont_be_within_delta
-
-  if $0 == __FILE__ then
-    { "must" => "assert", "wont" => "refute" }.each do |a, b|
-      puts "\n"
-      puts "##"
-      puts "# :method: #{a}_be_close_to"
-      puts "# See MiniTest::Assertions##{b}_in_delta"
+  def self.let name, &block
+    define_method name do
+      @_memoized ||= {}
+      @_memoized.fetch(name) { |k| @_memoized[k] = instance_eval(&block) }
     end
   end
 
-  ##
-  # :method: must_be
-  # See MiniTest::Assertions#assert_operator
+  def self.subject &block
+    let :subject, &block
+  end
 
-  ##
-  # :method: must_be_close_to
-  # See MiniTest::Assertions#assert_in_delta
+  def self.create name, desc # :nodoc:
+    cls = Class.new(self) do
+      @name = name
+      @desc = desc
 
+      nuke_test_methods!
+    end
+
+    children << cls
+
+    cls
+  end
+
+  def self.to_s # :nodoc:
+    defined?(@name) ? @name : super
+  end
+
+  # :stopdoc:
+  class << self
+    attr_reader :name, :desc
+  end
+  # :startdoc:
+end
+
+module MiniTest::Expectations
   ##
+  # See MiniTest::Assertions#assert_empty.
+  #
+  #    collection.must_be_empty
+  #
   # :method: must_be_empty
-  # See MiniTest::Assertions#assert_empty
+
+  infect_an_assertion :assert_empty, :must_be_empty
 
   ##
-  # :method: must_be_instance_of
-  # See MiniTest::Assertions#assert_instance_of
-
-  ##
-  # :method: must_be_kind_of
-  # See MiniTest::Assertions#assert_kind_of
-
-  ##
-  # :method: must_be_nil
-  # See MiniTest::Assertions#assert_nil
-
-  ##
-  # :method: must_be_same_as
-  # See MiniTest::Assertions#assert_same
-
-  ##
-  # :method: must_be_silent
-  # See MiniTest::Assertions#assert_silent
-
-  ##
-  # :method: must_be_within_delta
-  # See MiniTest::Assertions#assert_in_delta
-
-  ##
-  # :method: must_be_within_epsilon
-  # See MiniTest::Assertions#assert_in_epsilon
-
-  ##
-  # :method: must_equal
   # See MiniTest::Assertions#assert_equal
+  #
+  #    a.must_equal b
+  #
+  # :method: must_equal
+
+  infect_an_assertion :assert_equal, :must_equal
 
   ##
-  # :method: must_include
+  # See MiniTest::Assertions#assert_in_delta
+  #
+  #    n.must_be_close_to m [, delta]
+  #
+  # :method: must_be_within_delta
+
+  infect_an_assertion :assert_in_delta, :must_be_close_to
+
+  alias :must_be_within_delta :must_be_close_to
+
+  ##
+  # See MiniTest::Assertions#assert_in_epsilon
+  #
+  #    n.must_be_within_epsilon m [, epsilon]
+  #
+  # :method: must_be_within_epsilon
+
+  infect_an_assertion :assert_in_epsilon, :must_be_within_epsilon
+
+  ##
   # See MiniTest::Assertions#assert_includes
+  #
+  #    collection.must_include obj
+  #
+  # :method: must_include
+
+  infect_an_assertion :assert_includes, :must_include, :reverse
 
   ##
-  # :method: must_match
+  # See MiniTest::Assertions#assert_instance_of
+  #
+  #    obj.must_be_instance_of klass
+  #
+  # :method: must_be_instance_of
+
+  infect_an_assertion :assert_instance_of, :must_be_instance_of
+
+  ##
+  # See MiniTest::Assertions#assert_kind_of
+  #
+  #    obj.must_be_kind_of mod
+  #
+  # :method: must_be_kind_of
+
+  infect_an_assertion :assert_kind_of, :must_be_kind_of
+
+  ##
   # See MiniTest::Assertions#assert_match
+  #
+  #    a.must_match b
+  #
+  # :method: must_match
+
+  infect_an_assertion :assert_match, :must_match
 
   ##
-  # :method: must_output
+  # See MiniTest::Assertions#assert_nil
+  #
+  #    obj.must_be_nil
+  #
+  # :method: must_be_nil
+
+  infect_an_assertion :assert_nil, :must_be_nil
+
+  ##
+  # See MiniTest::Assertions#assert_operator
+  #
+  #    n.must_be :<=, 42
+  #
+  # :method: must_be
+
+  infect_an_assertion :assert_operator, :must_be
+
+  ##
   # See MiniTest::Assertions#assert_output
+  #
+  #    proc { ... }.must_output out_or_nil [, err]
+  #
+  # :method: must_output
+
+  infect_an_assertion :assert_output, :must_output
 
   ##
-  # :method: must_raise
   # See MiniTest::Assertions#assert_raises
+  #
+  #    proc { ... }.must_raise exception
+  #
+  # :method: must_raise
+
+  infect_an_assertion :assert_raises, :must_raise
 
   ##
-  # :method: must_respond_to
   # See MiniTest::Assertions#assert_respond_to
+  #
+  #    obj.must_respond_to msg
+  #
+  # :method: must_respond_to
+
+  infect_an_assertion :assert_respond_to, :must_respond_to, :reverse
 
   ##
-  # :method: must_send
+  # See MiniTest::Assertions#assert_same
+  #
+  #    a.must_be_same_as b
+  #
+  # :method: must_be_same_as
+
+  infect_an_assertion :assert_same, :must_be_same_as
+
+  ##
   # See MiniTest::Assertions#assert_send
+  # TODO: remove me
+  #
+  #    a.must_send
+  #
+  # :method: must_send
+
+  infect_an_assertion :assert_send, :must_send
 
   ##
-  # :method: must_throw
+  # See MiniTest::Assertions#assert_silent
+  #
+  #    proc { ... }.must_be_silent
+  #
+  # :method: must_be_silent
+
+  infect_an_assertion :assert_silent, :must_be_silent
+
+  ##
   # See MiniTest::Assertions#assert_throws
+  #
+  #    proc { ... }.must_throw sym
+  #
+  # :method: must_throw
+
+  infect_an_assertion :assert_throws, :must_throw
 
   ##
-  # :method: wont_be
-  # See MiniTest::Assertions#refute_operator
-
-  ##
-  # :method: wont_be_close_to
-  # See MiniTest::Assertions#refute_in_delta
-
-  ##
-  # :method: wont_be_empty
   # See MiniTest::Assertions#refute_empty
+  #
+  #    collection.wont_be_empty
+  #
+  # :method: wont_be_empty
+
+  infect_an_assertion :refute_empty, :wont_be_empty
 
   ##
-  # :method: wont_be_instance_of
-  # See MiniTest::Assertions#refute_instance_of
-
-  ##
-  # :method: wont_be_kind_of
-  # See MiniTest::Assertions#refute_kind_of
-
-  ##
-  # :method: wont_be_nil
-  # See MiniTest::Assertions#refute_nil
-
-  ##
-  # :method: wont_be_same_as
-  # See MiniTest::Assertions#refute_same
-
-  ##
-  # :method: wont_be_within_delta
-  # See MiniTest::Assertions#refute_in_delta
-
-  ##
-  # :method: wont_be_within_epsilon
-  # See MiniTest::Assertions#refute_in_epsilon
-
-  ##
-  # :method: wont_equal
   # See MiniTest::Assertions#refute_equal
+  #
+  #    a.wont_equal b
+  #
+  # :method: wont_equal
+
+  infect_an_assertion :refute_equal, :wont_equal
 
   ##
-  # :method: wont_include
+  # See MiniTest::Assertions#refute_in_delta
+  #
+  #    n.wont_be_close_to m [, delta]
+  #
+  # :method: wont_be_within_delta
+
+  infect_an_assertion :refute_in_delta, :wont_be_within_delta
+
+  alias :wont_be_close_to :wont_be_within_delta
+  # FIX: reverse aliases
+
+  ##
+  # See MiniTest::Assertions#refute_in_epsilon
+  #
+  #    n.wont_be_within_epsilon m [, epsilon]
+  #
+  # :method: wont_be_within_epsilon
+
+  infect_an_assertion :refute_in_epsilon, :wont_be_within_epsilon
+
+  ##
   # See MiniTest::Assertions#refute_includes
+  #
+  #    collection.wont_include obj
+  #
+  # :method: wont_include
+
+  infect_an_assertion :refute_includes, :wont_include, :reverse
 
   ##
-  # :method: wont_match
+  # See MiniTest::Assertions#refute_instance_of
+  #
+  #    obj.wont_be_instance_of klass
+  #
+  # :method: wont_be_instance_of
+
+  infect_an_assertion :refute_instance_of, :wont_be_instance_of
+
+  ##
+  # See MiniTest::Assertions#refute_kind_of
+  #
+  #    obj.wont_be_kind_of mod
+  #
+  # :method: wont_be_kind_of
+
+  infect_an_assertion :refute_kind_of, :wont_be_kind_of
+
+  ##
   # See MiniTest::Assertions#refute_match
+  #
+  #    a.wont_match b
+  #
+  # :method: wont_match
+
+  infect_an_assertion :refute_match, :wont_match
 
   ##
-  # :method: wont_respond_to
+  # See MiniTest::Assertions#refute_nil
+  #
+  #    obj.wont_be_nil
+  #
+  # :method: wont_be_nil
+
+  infect_an_assertion :refute_nil, :wont_be_nil
+
+  ##
+  # See MiniTest::Assertions#refute_operator
+  #
+  #    n.wont_be :<=, 42
+  #
+  # :method: wont_be
+
+  infect_an_assertion :refute_operator, :wont_be
+
+  ##
   # See MiniTest::Assertions#refute_respond_to
+  #
+  #    obj.wont_respond_to msg
+  #
+  # :method: wont_respond_to
+
+  infect_an_assertion :refute_respond_to, :wont_respond_to, :reverse
+
+  ##
+  # See MiniTest::Assertions#refute_same
+  #
+  #    a.wont_be_same_as b
+  #
+  # :method: wont_be_same_as
+
+  infect_an_assertion :refute_same, :wont_be_same_as
+end
+
+class Object
+  include MiniTest::Expectations
 end

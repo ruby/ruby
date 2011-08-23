@@ -1,3 +1,10 @@
+Wed Aug 24 06:45:20 2011  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* backport r33036 from trunk.
+
+	* lib/minitest/*: Imported minitest 2.5.0 (r6557)
+	* test/minitest/*: ditto
+
 Tue Aug 23 15:23:56 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* backport r33027 from trunk.

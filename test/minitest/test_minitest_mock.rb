@@ -49,20 +49,34 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
     util_verify_bad
   end
 
-  def test_not_verify_if_unexpected_method_is_called
-    assert_raises NoMethodError do
-      @mock.unexpected
-    end
-  end
-
   def test_blow_up_on_wrong_number_of_arguments
     @mock.foo
     @mock.meaning_of_life
     @mock.expect(:sum, 3, [1, 2])
 
-    assert_raises ArgumentError do
+    e = assert_raises ArgumentError do
       @mock.sum
     end
+
+    assert_equal "mocked method :sum expects 2 arguments, got 0", e.message
+  end
+
+  def test_return_mock_does_not_raise
+    retval = MiniTest::Mock.new
+    mock = MiniTest::Mock.new
+    mock.expect(:foo, retval)
+    mock.foo
+
+    assert mock.verify
+  end
+
+  def test_mock_args_does_not_raise
+    arg = MiniTest::Mock.new
+    mock = MiniTest::Mock.new
+    mock.expect(:foo, nil, [arg])
+    mock.foo(arg)
+
+    assert mock.verify
   end
 
   def test_blow_up_on_wrong_arguments
@@ -81,18 +95,22 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
   end
 
   def test_no_method_error_on_unexpected_methods
-    assert_raises NoMethodError do
+    e = assert_raises NoMethodError do
       @mock.bar
     end
+
+    expected = "unmocked method :bar, expected one of [:foo, :meaning_of_life]"
+
+    assert_equal expected, e.message
   end
 
   def test_assign_per_mock_return_values
     a = MiniTest::Mock.new
     b = MiniTest::Mock.new
-    
+
     a.expect(:foo, :a)
     b.expect(:foo, :b)
-    
+
     assert_equal :a, a.foo
     assert_equal :b, b.foo
   end
@@ -102,6 +120,30 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
     a.expect(:foo, :a)
 
     assert !MiniTest::Mock.new.respond_to?(:foo)
+  end
+
+  def test_mock_is_a_blank_slate
+    @mock.expect :kind_of?, true, [Fixnum]
+    @mock.expect :==, true, [1]
+
+    assert @mock.kind_of?(Fixnum), "didn't mock :kind_of\?"
+    assert @mock == 1, "didn't mock :=="
+  end
+
+  def test_verify_allows_called_args_to_be_loosely_specified
+    mock = MiniTest::Mock.new
+    mock.expect :loose_expectation, true, [Integer]
+    mock.loose_expectation 1
+
+    assert mock.verify
+  end
+
+  def test_verify_raises_with_strict_args
+    mock = MiniTest::Mock.new
+    mock.expect :strict_expectation, true, [2]
+    mock.strict_expectation 1
+
+    util_verify_bad
   end
 
   def util_verify_bad
