@@ -156,8 +156,8 @@ allocator_deprication(VALUE klass, ID mid, mtyp_t type)
 /* checks for definition of allocate, returns altered mid after warning */
 
     if (FL_TEST(klass, FL_SINGLETON) &&
-	     type == VM_METHOD_TYPE_CFUNC &&
-	     mid == rb_intern("allocate")) {
+	type == VM_METHOD_TYPE_CFUNC &&
+	mid == rb_intern("allocate")) {
 	/* issue: use rb_warning to honor -v */
 	rb_warn("defining %s.allocate is deprecated; use allocator_define()",
 		rb_class2name(rb_ivar_get(klass, attached)));
@@ -469,6 +469,8 @@ class_ment_make(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
     return class_mdef_add(klass, mid, def, noex);
 }
 
+/*----------*/
+
 static void
 mdef_attr(mdef_t *def, void *opts)
 {
@@ -553,7 +555,9 @@ class_method_add_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, mf
 {
 /*  specialized version of class_method_add - for C functions */
 
-/*  issue: should return me */
+/*  issue: should possibly return me */
+
+/*  TD: notimplemented logic belongs possibly in class_method_add or deeper */
 
     if (func != rb_f_notimplement) {
 	rb_method_cfunc_t opt;
@@ -576,7 +580,7 @@ class_ment_search(VALUE klass, ID mid)
     if (!klass) {
 	return 0;
     }
-
+    /* TD: refactor to while(klass), remove above if */
     while (!st_lookup(RCLASS_M_TBL(klass), mid, &body)) {
 	klass = RCLASS_SUPER(klass);
 	if (!klass) {
@@ -811,6 +815,8 @@ rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
     }
     return mod;
 }
+
+/*----------*/
 
 void
 rb_undef(VALUE klass, ID mid)
