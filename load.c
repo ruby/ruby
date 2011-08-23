@@ -430,24 +430,33 @@ load_unlock(const char *ftptr, int done)
 
 /*
  *  call-seq:
- *     require(string)    -> true or false
+ *     require(name)    -> true or false
  *
- *  Ruby tries to load the library named _string_, returning
- *  +true+ if successful. If the filename does not resolve to
- *  an absolute path, it will be searched for in the directories listed
- *  in <code>$:</code>. If the file has the extension ``.rb'', it is
- *  loaded as a source file; if the extension is ``.so'', ``.o'', or
- *  ``.dll'', or whatever the default shared library extension is on
- *  the current platform, Ruby loads the shared library as a Ruby
- *  extension. Otherwise, Ruby tries adding ``.rb'', ``.so'', and so on
- *  to the name. The name of the loaded feature is added to the array in
- *  <code>$"</code>. A feature will not be loaded if its name already
- *  appears in <code>$"</code>. The file name is converted to an absolute
- *  path, so ``<code>require 'a'; require './a'</code>'' will not load
- *  <code>a.rb</code> twice.
+ *  Loads the given +name+, returning +true+ if successful and +false+ if the
+ *  feature is already loaded.
  *
- *     require "my-library.rb"
- *     require "db-driver"
+ *  If the filename does not resolve to an absolute path, it will be searched
+ *  for in the directories listed in <code>$LOAD_PATH</code> (<code>$:</code>).
+ *
+ *  If the filename has the extension ".rb", it is loaded as a source file; if
+ *  the extension is ".so", ".o", or ".dll", or the default shared library
+ *  extension on the current platform, Ruby loads the shared library as a
+ *  Ruby extension.  Otherwise, Ruby tries adding ".rb", ".so", and so on
+ *  to the name until found.  If the file named cannot be found, a LoadError
+ *  will be raised.
+ *
+ *  For Ruby extensions the filename given may use any shared library
+ *  extension.  For example, on Linux the socket extension is "socket.so" and
+ *  <code>require 'socket.dll'</code> will load the socket extension.
+ *
+ *  The absolute path of the loaded file is added to
+ *  <code>$LOADED_FEATURES</code> (<code>$"</code>).  A file will not be
+ *  loaded again if its path already appears in <code>$"</code>.  For example,
+ *  <code>require 'a'; require './a'</code> will not load <code>a.rb</code>
+ *  again.
+ *
+ *    require "my-library.rb"
+ *    require "db-driver"
  */
 
 VALUE
