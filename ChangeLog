@@ -1,3 +1,10 @@
+Tue Aug 23 11:27:26 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* ext/zlib/zlib.c (gzfile_read_header): Ensure that each section of
+	  gzip header is readable to avoid SEGV.
+
+	* test/zlib/test_zlib.rb (test_corrupted_header): Test it.
+
 Mon Aug 22 23:43:33 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* sprintf.c (rb_str_format): add RB_GC_GUARD to prevent temporary
