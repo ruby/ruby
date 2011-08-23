@@ -1,3 +1,8 @@
+Wed Aug 24 07:57:43 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 1.8.9.  Fixes uninstalling multiple
+	  gems and gem cleanup.
+
 Wed Aug 24 06:45:20 2011  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*: Imported minitest 2.5.0 (r6557)

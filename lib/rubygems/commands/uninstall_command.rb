@@ -73,6 +73,8 @@ class Gem::Commands::UninstallCommand < Gem::Command
   end
 
   def execute
+    original_path = Gem.path
+
     get_all_gem_names.each do |gem_name|
       begin
         Gem::Uninstaller.new(gem_name, options).uninstall
@@ -80,6 +82,8 @@ class Gem::Commands::UninstallCommand < Gem::Command
         spec = e.spec
         alert("In order to remove #{spec.name}, please execute:\n" \
               "\tgem uninstall #{spec.name} --install-dir=#{spec.installation_path}")
+      ensure
+        Gem.use_paths(*original_path)
       end
     end
   end
