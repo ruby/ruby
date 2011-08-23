@@ -1,3 +1,5 @@
+# coding: US-ASCII
+
 require 'rubygems'
 require 'minitest/autorun'
 require 'rdoc'

@@ -1,3 +1,5 @@
+# coding: US-ASCII
+
 require 'rubygems'
 require 'minitest/autorun'
 require File.expand_path '../xref_test_case', __FILE__

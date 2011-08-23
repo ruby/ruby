@@ -254,7 +254,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
             end
     end
 
-    if (type == "http" or type == "link") and
+    if (type == "http" or type == "https" or type == "link") and
        url =~ /\.(gif|png|jpg|jpeg|bmp)$/ then
       "<img src=\"#{url}\" />"
     else

@@ -1,3 +1,9 @@
+Wed Aug 24 08:53:06 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc:  Update to RDoc 3.9.3.  Fixes RDoc with `ruby -Ku`.  Allows
+	  HTTPS image paths to be turned into <img> tags.  Prevents special
+	  markup inside <tt> from being processed.
+
 Wed Aug 24 07:57:43 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 1.8.9.  Fixes uninstalling multiple

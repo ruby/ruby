@@ -1,3 +1,5 @@
+# coding: US-ASCII
+
 require 'rdoc'
 
 ##
