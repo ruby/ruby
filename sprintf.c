@@ -641,6 +641,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			rb_raise(rb_eArgError, "%%c requires a character");
 		    }
 		    c = rb_enc_codepoint_len(RSTRING_PTR(tmp), RSTRING_END(tmp), &n, enc);
+		    RB_GC_GUARD(tmp);
 		}
 		else {
 		    c = NUM2INT(val);
@@ -711,6 +712,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			}
 			CHECK(len);
 			memcpy(&buf[blen], RSTRING_PTR(str), len);
+			RB_GC_GUARD(str);
 			blen += len;
 			if (flags&FMINUS) {
 			    CHECK(width);
@@ -723,6 +725,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    }
 		}
 		PUSH(RSTRING_PTR(str), len);
+		RB_GC_GUARD(str);
 		rb_enc_associate(result, enc);
 	    }
 	    break;
@@ -736,7 +739,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	  case 'B':
 	  case 'u':
 	    {
-		volatile VALUE tmp1;
 		volatile VALUE val = GETARG();
 		char fbuf[32], nbuf[64], *s;
 		const char *prefix = 0;
@@ -887,7 +889,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			    val = rb_big_clone(val);
 			    rb_big_2comp(val);
 			}
-			tmp1 = tmp = rb_big2str0(val, base, RBIGNUM_SIGN(val));
+			tmp = rb_big2str0(val, base, RBIGNUM_SIGN(val));
 			s = RSTRING_PTR(tmp);
 			if (*s == '-') {
 			    dots = 1;
@@ -981,6 +983,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    }
 		}
 		PUSH(s, len);
+		RB_GC_GUARD(tmp);
 		CHECK(width);
 		while (width-- > 0) {
 		    buf[blen++] = ' ';
@@ -1065,6 +1068,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     }
 
   sprint_exit:
+    RB_GC_GUARD(fmt);
     /* XXX - We cannot validate the number of arguments if (digit)$ style used.
      */
     if (posarg >= 0 && nextarg < argc) {
