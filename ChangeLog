@@ -1,3 +1,8 @@
+Thu Aug 25 06:51:08 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: Fixing psych version number.
+	* ext/psych/psych.gemspec: updating the gemspec.
+
 Thu Aug 25 06:11:35 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/nodes/node.rb: default `to_yaml` encoding to be
