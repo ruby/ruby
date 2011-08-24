@@ -336,6 +336,8 @@ See doc/NEWS-1.8.7 for changes between 1.8.6 and 1.8.7.
           o Numeric#round
     * Float
           o Float#round
+    * Integer
+          o Integer#round
     * Rational / Complex
           o They are in the core library now
     * Math
