@@ -249,11 +249,11 @@ ment_eq(const ment_t *m1, const ment_t *m2)
 /* TD: verify, macro seems redundant. code directly. */
 
 static VALUE
-mod_ment_flagtest(VALUE mod, ID mid, mflg_t noex)
+class_ment_flagtest(VALUE klass, ID mid, mflg_t noex)
 {
 /*  ??? tests the flag of a modules ment */
 
-    const ment_t *me = class_ment(mod, mid);
+    const ment_t *me = class_ment(klass, mid);
     if (me && VISI_CHECK(me->flag, noex)) {
 	return Qtrue;
     }
@@ -996,7 +996,7 @@ rb_mod_public_method_defined(VALUE mod, VALUE mid)
 {
     ID id = rb_check_id(mid);
     if (!id) return Qfalse;
-    return mod_ment_flagtest(mod, id, NOEX_PUBLIC);
+    return class_ment_flagtest(mod, id, NOEX_PUBLIC);
 }
 
 /*
@@ -1030,7 +1030,7 @@ rb_mod_private_method_defined(VALUE mod, VALUE mid)
 {
     ID id = rb_check_id(mid);
     if (!id) return Qfalse;
-    return mod_ment_flagtest(mod, id, NOEX_PRIVATE);
+    return class_ment_flagtest(mod, id, NOEX_PRIVATE);
 }
 
 /*
@@ -1064,7 +1064,7 @@ rb_mod_protected_method_defined(VALUE mod, VALUE mid)
 {
     ID id = rb_check_id(mid);
     if (!id) return Qfalse;
-    return mod_ment_flagtest(mod, id, NOEX_PROTECTED);
+    return class_ment_flagtest(mod, id, NOEX_PROTECTED);
 }
 
 /*----------*/
