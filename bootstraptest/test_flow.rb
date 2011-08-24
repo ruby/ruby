@@ -517,6 +517,19 @@ assert_equal %Q{ENSURE\n}, %q{
     end
   end
   e = Bug2728.new
+}],
+ ['[ruby-core:28132]', %q{
+  class Bug2729
+    include Enumerable
+    def each
+      begin
+        yield :foo
+      ensure
+        proc {}.call
+      end
+    end
+  end
+  e = Bug2729.new
 }]].each do |bug, src|
   assert_equal "foo", src + %q{e.detect {true}}, bug
   assert_equal "true", src + %q{e.any? {true}}, bug
