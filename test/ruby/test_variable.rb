@@ -55,6 +55,11 @@ class TestVariable < Test::Unit::TestCase
     assert_equal("Cronus", atlas.ruler0)
     assert_equal("Zeus", atlas.ruler3)
     assert_equal("Cronus", atlas.ruler4)
+    assert_nothing_raised do
+      class << Gods
+        defined?(@@rule) && @@rule
+      end
+    end
   end
 
   def test_local_variables

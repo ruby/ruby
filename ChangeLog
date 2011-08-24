@@ -1,3 +1,10 @@
+Wed Aug 24 09:49:10 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def (defined): fix to checking class variable.
+	  A patch by Magnus Holm <judofyr@gmail.com>.  Thanks!
+
+	* test/ruby/test_variable.rb: add a test for above.
+
 Wed Aug 24 08:53:06 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Update to RDoc 3.9.3.  Fixes RDoc with `ruby -Ku`.  Allows
