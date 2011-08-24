@@ -1602,7 +1602,7 @@ num_ceil(VALUE num)
  *     num.round([ndigits])  ->  integer or float
  *
  *  Rounds <i>num</i> to a given precision in decimal digits (default 0 digits).
- *  Precision may be negative.  Returns a floating point number when ndigits
+ *  Precision may be negative.  Returns a floating point number when <i>ndigits</i>
  *  is more than zero.  <code>Numeric</code> implements this by converting itself
  *  to a <code>Float</code> and invoking <code>Float#round</code>.
  */
@@ -2031,7 +2031,6 @@ rb_num2ull(VALUE val)
  *     int.to_int    ->  integer
  *     int.floor     ->  integer
  *     int.ceil      ->  integer
- *     int.round     ->  integer
  *     int.truncate  ->  integer
  *
  *  As <i>int</i> is already an <code>Integer</code>, all these
@@ -3283,7 +3282,7 @@ int_dotimes(VALUE num)
 
 /*
  *  call-seq:
- *     num.round([ndigits])  ->  integer or float
+ *     int.round([ndigits])  ->  integer or float
  *
  *  Rounds <i>flt</i> to a given precision in decimal digits (default 0 digits).
  *  Precision may be negative.  Returns a floating point number when +ndigits+
@@ -3299,6 +3298,7 @@ int_round(int argc, VALUE* argv, VALUE num)
 {
     VALUE n, f, h, r;
     int ndigits;
+    ID op;
 
     if (argc == 0) return num;
     rb_scan_args(argc, argv, "1", &n);
@@ -3325,7 +3325,8 @@ int_round(int argc, VALUE* argv, VALUE num)
     h = rb_funcall(f, '/', 1, INT2FIX(2));
     r = rb_funcall(num, '%', 1, f);
     n = rb_funcall(num, '-', 1, r);
-    if (!RTEST(rb_funcall(r, '<', 1, h))) {
+    op = RTEST(rb_funcall(num, '<', 1, INT2FIX(0))) ? rb_intern("<=") : '<';
+    if (!RTEST(rb_funcall(r, op, 1, h))) {
 	n = rb_funcall(n, '+', 1, f);
     }
     return n;

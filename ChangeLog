@@ -1,3 +1,7 @@
+Thu Aug 25 08:04:08 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* numeric.c (int_round): Fix Integer#round [ruby-core:39096]
+
 Thu Aug 25 06:51:08 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: Fixing psych version number.
