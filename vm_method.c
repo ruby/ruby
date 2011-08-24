@@ -450,6 +450,8 @@ class_ment_make(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
 
     mid = allocator_deprication(klass, mid, type);
 
+    /* issue: possibly after "return old_me", as frozen has no relevance if
+              existent ment is returned */
     rb_check_frozen(klass);
 
     old_me = class_ment_get(klass, mid, &old_me); 
@@ -475,6 +477,8 @@ static void
 mdef_attr(mdef_t *def, void *opts)
 {
 /* processing for mdef_new, method type ATTRSET/IVAR */
+
+/*  TD: rename to "mdef_init_setup" */
   
     rb_thread_t *th;
     rb_control_frame_t *cfp;
@@ -545,6 +549,9 @@ class_ment_set(VALUE klass, ID mid, const ment_t *me, mflg_t noex)
 {
 /*  adds the me->def via newly created newme to a class */
 
+/*  TD: possibly rename to "class_ment_copy" */
+/*  TD: possibly move setting of "VM_METHOD_TYPE_UNDEF" int _metn_make */
+
     mtyp_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
     ment_t *newme = class_ment_make(klass, mid, type, me->def, noex);    
     return newme;
@@ -557,7 +564,8 @@ class_method_add_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, mf
 
 /*  issue: should possibly return me */
 
-/*  TD: notimplemented logic belongs possibly in class_method_add or deeper */
+/*  TD: notimplemented logic belongs possibly in class_method_add or mdef_new,
+    new function "ment_init_notimplemented" */
 
     if (func != rb_f_notimplement) {
 	rb_method_cfunc_t opt;
