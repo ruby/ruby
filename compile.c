@@ -51,7 +51,7 @@ typedef struct iseq_label_data {
 typedef struct iseq_insn_data {
     LINK_ELEMENT link;
     enum ruby_vminsn_type insn_id;
-    int line_no;
+    unsigned int line_no;
     int operand_size;
     int sc_state;
     VALUE *operands;
@@ -1283,7 +1283,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
     LABEL *lobj;
     INSN *iobj;
-    struct iseq_insn_info_entry *insn_info_table;
+    struct iseq_line_info_entry *line_info_table;
+    unsigned int last_line = 0;
     LINK_ELEMENT *list;
     VALUE *generated_iseq;
 
@@ -1335,7 +1336,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 
     /* make instruction sequence */
     generated_iseq = ALLOC_N(VALUE, pos);
-    insn_info_table = ALLOC_N(struct iseq_insn_info_entry, k);
+    line_info_table = ALLOC_N(struct iseq_line_info_entry, k);
     iseq->ic_entries = ALLOC_N(struct iseq_inline_cache_entry, iseq->ic_size);
     MEMZERO(iseq->ic_entries, struct iseq_inline_cache_entry, iseq->ic_size);
 
@@ -1373,7 +1374,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 				     "operand size miss! (%d for %d)",
 				     iobj->operand_size, len - 1);
 		    xfree(generated_iseq);
-		    xfree(insn_info_table);
+		    xfree(line_info_table);
 		    return 0;
 		}
 
@@ -1476,15 +1477,16 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
 					 "unknown operand type: %c", type);
 			xfree(generated_iseq);
-			xfree(insn_info_table);
+			xfree(line_info_table);
 			return 0;
 		    }
 		}
-		insn_info_table[k].line_no = iobj->line_no;
-		insn_info_table[k].position = pos;
-		insn_info_table[k].sp = sp;
-		pos += len;
+		if (last_line != iobj->line_no) {
+		    line_info_table[k].line_no = last_line = iobj->line_no;
+		    line_info_table[k].position = pos;
 		k++;
+		}
+		pos += len;
 		break;
 	    }
 	  case ISEQ_ELEMENT_LABEL:
@@ -1512,19 +1514,21 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 
 		if (adjust->line_no != -1) {
 		    if (orig_sp - sp > 0) {
-			insn_info_table[k].line_no = adjust->line_no;
-			insn_info_table[k].position = pos;
-			insn_info_table[k].sp = sp;
+			if (last_line != (unsigned int)adjust->line_no) {
+			    line_info_table[k].line_no = last_line = adjust->line_no;
+			    line_info_table[k].position = pos;
 			k++;
+			}
 			generated_iseq[pos++] = BIN(adjuststack);
 			generated_iseq[pos++] = orig_sp - sp;
 		    }
 		    else if (orig_sp - sp == 0) {
 			/* jump to next insn */
-			insn_info_table[k].line_no = adjust->line_no;
-			insn_info_table[k].position = pos;
-			insn_info_table[k].sp = sp;
+			if (last_line != (unsigned int)adjust->line_no) {
+			    line_info_table[k].line_no = last_line = adjust->line_no;
+			    line_info_table[k].position = pos;
 			k++;
+			}
 			generated_iseq[pos++] = BIN(jump);
 			generated_iseq[pos++] = 0;
 		    }
@@ -1550,9 +1554,11 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 
     iseq->iseq = (void *)generated_iseq;
     iseq->iseq_size = pos;
-    iseq->insn_info_table = insn_info_table;
-    iseq->insn_info_size = k;
     iseq->stack_max = stack_max;
+
+    line_info_table = ruby_xrealloc(line_info_table, k * sizeof(struct iseq_line_info_entry));
+    iseq->line_info_table = line_info_table;
+    iseq->line_info_size = k;
 
     return COMPILE_OK;
 }
@@ -5288,6 +5294,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
     long i, len = RARRAY_LEN(body);
     int j;
     int line_no = 0;
+
     /*
      * index -> LABEL *label
      */

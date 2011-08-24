@@ -685,7 +685,7 @@ iseq_location(rb_iseq_t *iseq)
 
     if (!iseq) return Qnil;
     loc[0] = iseq->filename;
-    if (iseq->insn_info_table) {
+    if (iseq->line_info_table) {
 	loc[1] = INT2FIX(rb_iseq_first_lineno(iseq));
     }
     else {
@@ -823,7 +823,7 @@ proc_to_s(VALUE self)
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	int line_no = 0;
 
-	if (iseq->insn_info_table) {
+	if (iseq->line_info_table) {
 	    line_no = rb_iseq_first_lineno(iseq);
 	}
 	str = rb_sprintf("#<%s:%p@%s:%d%s>", cname, (void *)self,

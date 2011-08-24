@@ -118,8 +118,8 @@ argument_error(const rb_iseq_t *iseq, int miss_argc, int correct_argc)
     if (iseq) {
 	int line_no = 1;
 
-	if (iseq->insn_info_size) {
-	    line_no = iseq->insn_info_table[0].line_no;
+	if (iseq->line_info_size) {
+	    line_no = iseq->line_info_table[0].line_no;
 	}
 
 	err_line = rb_sprintf("%s:%d:in `%s'",

@@ -216,7 +216,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 		break;
 	    }
 	    if (iseq && !NIL_P(iseq->filename)) {
-		int line = iseq->insn_info_table ? rb_iseq_first_lineno(iseq) : 0;
+		int line = iseq->line_info_table ? rb_iseq_first_lineno(iseq) : 0;
 		rb_compile_warning(RSTRING_PTR(iseq->filename), line,
 				   "previous definition of %s was here",
 				   rb_id2name(old_def->original_id));

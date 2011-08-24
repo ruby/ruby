@@ -176,8 +176,8 @@ struct rb_iseq_struct {
     unsigned short line_no;
 
     /* insn info, must be freed */
-    struct iseq_insn_info_entry *insn_info_table;
-    size_t insn_info_size;
+    struct iseq_line_info_entry *line_info_table;
+    size_t line_info_size;
 
     ID *local_table;		/* must free */
     int local_table_size;

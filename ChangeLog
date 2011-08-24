@@ -1,3 +1,27 @@
+Wed Aug 24 15:13:56 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.h, iseq.c, compile.c: Change the line number data structure
+	  to solve an issue reported at [ruby-dev:44413] [Ruby 1.9 - Bug #5217].
+	  Before this fix, each instruction has an information including
+	  line number (iseq::iseq_insn_info_table).  Instead of this data
+	  structure, recording only line number changing places
+	  (iseq::iseq_line_info_table).
+	  The order of entries in iseq_line_info_table is ascending order of
+	  iseq_line_info_table_entry::position.  You can get a line number
+	  by an iseq and a program counter with this data structure.
+	  This fix reduces memory consumption of iseq (bytecode).
+	  On my measurement, a rails application consumes 21.8MB for
+	  iseq with this fix on the 32bit CPU.  Without this fix, it
+	  consumes 24.7MB for iseq [ruby-dev:44415].
+
+	* proc.c: ditto.
+
+	* vm_insnhelper.c: ditto.
+
+	* vm_method.c: ditto.
+
+	* vm.c (rb_vm_get_sourceline): change to use rb_iseq_line_no().
+
 Wed Aug 24 09:49:10 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (defined): fix to checking class variable.

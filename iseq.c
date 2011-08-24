@@ -78,7 +78,7 @@ iseq_free(void *ptr)
 	    }
 
 	    RUBY_FREE_UNLESS_NULL(iseq->iseq);
-	    RUBY_FREE_UNLESS_NULL(iseq->insn_info_table);
+	    RUBY_FREE_UNLESS_NULL(iseq->line_info_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->local_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->ic_entries);
 	    RUBY_FREE_UNLESS_NULL(iseq->catch_table);
@@ -136,7 +136,7 @@ iseq_memsize(const void *ptr)
 	    }
 
 	    size += iseq->iseq_size * sizeof(VALUE);
-	    size += iseq->insn_info_size * sizeof(struct iseq_insn_info_entry);
+	    size += iseq->line_info_size * sizeof(struct iseq_line_info_entry);
 	    size += iseq->local_table_size * sizeof(ID);
 	    size += iseq->catch_table_size * sizeof(struct iseq_catch_table_entry);
 	    size += iseq->arg_opts * sizeof(VALUE);
@@ -680,25 +680,45 @@ rb_iseq_first_lineno(rb_iseq_t *iseq)
 /* TODO: search algorithm is brute force.
          this should be binary search or so. */
 
-static struct iseq_insn_info_entry *
-get_insn_info(const rb_iseq_t *iseq, const unsigned long pos)
+static struct iseq_line_info_entry *
+get_line_info(const rb_iseq_t *iseq, size_t pos)
 {
-    unsigned long i, size = iseq->insn_info_size;
-    struct iseq_insn_info_entry *table = iseq->insn_info_table;
+    size_t i = 0, size = iseq->line_info_size;
+    struct iseq_line_info_entry *table = iseq->line_info_table;
+    const int debug = 0;
 
-    for (i = 0; i < size; i++) {
+    if (debug) {
+	printf("size: %d\n", size);
+	printf("table[%d]: position: %d, line: %d, pos: %d\n",
+	       i, table[i].position, table[i].line_no, pos);
+    }
+
+    if (size == 0) {
+	return 0;
+    }
+    else if (size == 1) {
+	return &table[0];
+    }
+    else {
+	for (i=1; i<size; i++) {
+	    if (debug) printf("table[%d]: position: %d, line: %d, pos: %d\n",
+			      i, table[i].position, table[i].line_no, pos);
+
 	if (table[i].position == pos) {
 	    return &table[i];
 	}
+	    if (table[i].position > pos) {
+		return &table[i-1];
     }
-
-    return 0;
+	}
+    }
+    return &table[i-1];
 }
 
-static unsigned short
-find_line_no(rb_iseq_t *iseq, unsigned long pos)
+static unsigned int
+find_line_no(const rb_iseq_t *iseq, size_t pos)
 {
-    struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);
+    struct iseq_line_info_entry *entry = get_line_info(iseq, pos);
     if (entry) {
 	return entry->line_no;
     }
@@ -707,25 +727,16 @@ find_line_no(rb_iseq_t *iseq, unsigned long pos)
     }
 }
 
-static unsigned short
-find_prev_line_no(rb_iseq_t *iseqdat, unsigned long pos)
+unsigned int
+rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
 {
-    unsigned long i, size = iseqdat->insn_info_size;
-    struct iseq_insn_info_entry *iiary = iseqdat->insn_info_table;
-
-    for (i = 0; i < size; i++) {
-	if (iiary[i].position == pos) {
-	    if (i > 0) {
-		return iiary[i - 1].line_no;
+    if (pos == 0) {
+	return find_line_no(iseq, pos);
 	    }
 	    else {
-		return 0;
-	    }
+	return find_line_no(iseq, pos - 1);
 	}
     }
-
-    return 0;
-}
 
 static VALUE
 insn_operand_intern(rb_iseq_t *iseq,
@@ -865,22 +876,14 @@ rb_iseq_disasm_insn(VALUE ret, VALUE *iseq, size_t pos,
 	}
     }
 
-    if (1) {
-	int line_no = find_line_no(iseqdat, pos);
-	int prev = find_prev_line_no(iseqdat, pos);
+    {
+	unsigned int line_no = find_line_no(iseqdat, pos);
+	unsigned int prev = pos == 0 ? 0 : find_line_no(iseqdat, pos - 1);
 	if (line_no && line_no != prev) {
 	    long slen = RSTRING_LEN(str);
 	    slen = (slen > 70) ? 0 : (70 - slen);
 	    str = rb_str_catf(str, "%*s(%4d)", (int)slen, "", line_no);
 	}
-    }
-    else {
-	/* for debug */
-	struct iseq_insn_info_entry *entry = get_insn_info(iseqdat, pos);
-	long slen = RSTRING_LEN(str);
-	slen = (slen > 60) ? 0 : (60 - slen);
-	str = rb_str_catf(str, "%*s(line: %d, sp: %d)",
-			  (int)slen, "", entry->line_no, entry->sp);
     }
 
     if (ret) {
@@ -1098,8 +1101,8 @@ cdhash_each(VALUE key, VALUE value, VALUE ary)
 static VALUE
 iseq_data_to_ary(rb_iseq_t *iseq)
 {
-    long i, pos;
-    int line = 0;
+    long i, pos, ti;
+    unsigned int line = 0;
     VALUE *seq;
 
     VALUE val = rb_ary_new();
@@ -1298,6 +1301,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 
     /* make body with labels and insert line number */
     body = rb_ary_new();
+    ti = 0;
 
     for (i=0, pos=0; i<RARRAY_LEN(nbody); i++) {
 	VALUE ary = RARRAY_PTR(nbody)[i];
@@ -1307,9 +1311,10 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 	    rb_ary_push(body, (VALUE)label);
 	}
 
-	if (iseq->insn_info_table[i].line_no != line) {
-	    line = iseq->insn_info_table[i].line_no;
+	if (iseq->line_info_table[ti].position == pos) {
+	    line = iseq->line_info_table[ti].line_no;
 	    rb_ary_push(body, INT2FIX(line));
+	    ti++;
 	}
 
 	rb_ary_push(body, ary);
@@ -1441,7 +1446,7 @@ VALUE
 rb_iseq_build_for_ruby2cext(
     const rb_iseq_t *iseq_template,
     const rb_insn_func_t *func,
-    const struct iseq_insn_info_entry *insn_info_table,
+    const struct iseq_line_info_entry *line_info_table,
     const char **local_table,
     const VALUE *arg_opt_table,
     const struct iseq_catch_table_entry *catch_table,
@@ -1479,8 +1484,8 @@ rb_iseq_build_for_ruby2cext(
   } \
 } while (0)
 
-    ALLOC_AND_COPY(iseq->insn_info_table, insn_info_table,
-		   struct iseq_insn_info_entry, iseq->insn_info_size);
+    ALLOC_AND_COPY(iseq->line_info_table, line_info_table,
+		   struct iseq_line_info_entry, iseq->line_info_size);
 
     ALLOC_AND_COPY(iseq->catch_table, catch_table,
 		   struct iseq_catch_table_entry, iseq->catch_table_size);

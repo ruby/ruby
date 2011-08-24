@@ -716,20 +716,10 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
     int line_no = 0;
     const rb_iseq_t *iseq = cfp->iseq;
 
-    if (RUBY_VM_NORMAL_ISEQ_P(iseq) && iseq->insn_info_size > 0) {
-	rb_num_t i;
+    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	size_t pos = cfp->pc - cfp->iseq->iseq_encoded;
-
-	if (iseq->insn_info_table[0].position == pos) goto found;
-	for (i = 1; i < iseq->insn_info_size; i++) {
-	    if (iseq->insn_info_table[i].position == pos) {
-		line_no = iseq->insn_info_table[i - 1].line_no;
-		goto found;
+	line_no = rb_iseq_line_no(iseq, pos);
 	    }
-	}
-	line_no = iseq->insn_info_table[i - 1].line_no;
-    }
-  found:
     return line_no;
 }
 
