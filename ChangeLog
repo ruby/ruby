@@ -1,3 +1,9 @@
+Thu Aug 25 01:11:36 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/ruby/test_rubyoptions.rb (test_script_from_stdin): slave pty
+	  should be manipulated because master pty may not be a tty on some
+	  environment (e.g. Solaris). [Bug:#5222] [ruby-dev:44420]
+
 Wed Aug 24 15:13:56 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.h, iseq.c, compile.c: Change the line number data structure
