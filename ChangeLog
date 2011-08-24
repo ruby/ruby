@@ -1,3 +1,8 @@
+Thu Aug 25 01:24:33 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/fileutils/test_fileutils.rb (test_chmod_symbol_mode): Solaris
+	  seems to behave the same as FreeBSD.
+
 Thu Aug 25 01:11:36 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/ruby/test_rubyoptions.rb (test_script_from_stdin): slave pty
