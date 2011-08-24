@@ -33,6 +33,8 @@
 #define allocator_undef		rb_undef_alloc_func
 #define allocator_get		rb_get_alloc_func
 
+#define unlinked_ment_entry	unlinked_method_entry_list_entry
+
 /* END RENAME SECTION */
 /*****************************************************************************/
 
@@ -177,8 +179,8 @@ ment_unlink(ment_t *me)
 /*  places an unused ment into the unlinked-list */
 /*  TD: verify, possibly rename to "unused_ment_list" */
 
-    struct unlinked_method_entry_list_entry *ume;
-    ume = ALLOC(struct unlinked_method_entry_list_entry);
+    struct unlinked_ment_entry *ume;
+    ume = ALLOC(struct unlinked_ment_entry);
     ume->me = me;
     ume->next = GET_VM()->unlinked_method_entry_list;
     GET_VM()->unlinked_method_entry_list = ume;
@@ -190,7 +192,7 @@ ment_sweep(void *pvm)
 /*  frees (deletes permanently) all unused(unlinked) ment */
 
     rb_vm_t *vm = pvm;
-    struct unlinked_method_entry_list_entry *ume = vm->unlinked_method_entry_list, *prev_ume = 0, *curr_ume;
+    struct unlinked_ment_entry *ume = vm->unlinked_method_entry_list, *prev_ume = 0, *curr_ume;
 
     /* TD: document, possibly refactor */
     while (ume) {
