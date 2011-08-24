@@ -3298,6 +3298,7 @@ int_round(int argc, VALUE* argv, VALUE num)
 {
     VALUE n, f, h, r;
     int ndigits;
+    ID op;
 
     if (argc == 0) return num;
     rb_scan_args(argc, argv, "1", &n);
@@ -3324,7 +3325,8 @@ int_round(int argc, VALUE* argv, VALUE num)
     h = rb_funcall(f, '/', 1, INT2FIX(2));
     r = rb_funcall(num, '%', 1, f);
     n = rb_funcall(num, '-', 1, r);
-    if (!RTEST(rb_funcall(r, '<', 1, h))) {
+    op = RTEST(rb_funcall(num, '<', 1, INT2FIX(0))) ? rb_intern("<=") : '<';
+    if (!RTEST(rb_funcall(r, op, 1, h))) {
 	n = rb_funcall(n, '+', 1, f);
     }
     return n;

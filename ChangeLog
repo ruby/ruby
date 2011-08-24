@@ -1,3 +1,7 @@
+Thu Aug 25 07:57:33 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* numeric.c (int_round): Fix Integer#round [ruby-core:39096]
+
 Thu Aug 25 07:00:00 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.h, vm_insnhelper.c, vm.c, vm_method.c, insns.def:
