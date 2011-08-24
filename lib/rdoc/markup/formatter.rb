@@ -88,7 +88,9 @@ class RDoc::Markup::Formatter
   ##
   # Converts added specials.  See RDoc::Markup#add_special
 
-  def convert_special(special)
+  def convert_special special
+    return special.text if in_tt?
+
     handled = false
 
     RDoc::Markup::Attribute.each_name_of special.type do |name|
