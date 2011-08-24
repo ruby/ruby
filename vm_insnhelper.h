@@ -184,8 +184,17 @@ extern VALUE ruby_vm_const_missing_count;
 /**********************************************************/
 
 /* optimize insn */
+#define FIXNUM_REDEFINED_OP_FLAG (1 << 0)
+#define FLOAT_REDEFINED_OP_FLAG  (1 << 1)
+#define STRING_REDEFINED_OP_FLAG (1 << 2)
+#define ARRAY_REDEFINED_OP_FLAG  (1 << 3)
+#define HASH_REDEFINED_OP_FLAG   (1 << 4)
+#define BIGNUM_REDEFINED_OP_FLAG (1 << 5)
+#define SYMBOL_REDEFINED_OP_FLAG (1 << 6)
+#define TIME_REDEFINED_OP_FLAG   (1 << 7)
+
 #define FIXNUM_2_P(a, b) ((a) & (b) & 1)
-#define BASIC_OP_UNREDEFINED_P(op) (LIKELY(ruby_vm_redefined_flag[(op)] == 0))
+#define BASIC_OP_UNREDEFINED_P(op, klass) (LIKELY((ruby_vm_redefined_flag[(op)]&(klass)) == 0))
 #define HEAP_CLASS_OF(obj) RBASIC(obj)->klass
 
 #ifndef USE_IC_FOR_SPECIALIZED_METHOD

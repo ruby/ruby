@@ -6,7 +6,7 @@
 #define CACHE_MASK 0x7ff
 #define EXPR1(c,m) ((((c)>>3)^(m))&CACHE_MASK)
 
-static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me);
+static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass);
 
 static ID object_id, respond_to_missing;
 static ID removed, singleton_removed, undefined, singleton_undefined;
@@ -195,7 +195,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	rb_method_definition_t *old_def = old_me->def;
 
 	if (rb_method_definition_eq(old_def, def)) return old_me;
-	rb_vm_check_redefinition_opt_method(old_me);
+	rb_vm_check_redefinition_opt_method(old_me, klass);
 
 	if (RTEST(ruby_verbose) &&
 	    type != VM_METHOD_TYPE_UNDEF &&
@@ -452,7 +452,7 @@ remove_method(VALUE klass, ID mid)
     key = (st_data_t)mid;
     st_delete(RCLASS_M_TBL(klass), &key, &data);
 
-    rb_vm_check_redefinition_opt_method(me);
+    rb_vm_check_redefinition_opt_method(me, klass);
     rb_clear_cache_for_undef(klass, mid);
     rb_unlink_method_entry(me);
 
@@ -530,7 +530,7 @@ rb_export_method(VALUE klass, ID name, rb_method_flag_t noex)
     }
 
     if (me->flag != noex) {
-	rb_vm_check_redefinition_opt_method(me);
+	rb_vm_check_redefinition_opt_method(me, klass);
 
 	if (klass == me->klass) {
 	    me->flag = noex;

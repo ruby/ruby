@@ -976,12 +976,23 @@ rb_iter_break(void)
 static st_table *vm_opt_method_table = 0;
 
 static void
-rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me)
+rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
 {
     st_data_t bop;
     if (!me->def || me->def->type == VM_METHOD_TYPE_CFUNC) {
 	if (st_lookup(vm_opt_method_table, (st_data_t)me, &bop)) {
-	    ruby_vm_redefined_flag[bop] = 1;
+	    int flag = 0;
+
+	    if      (klass == rb_cFixnum) flag = FIXNUM_REDEFINED_OP_FLAG;
+	    else if (klass == rb_cFloat)  flag = FLOAT_REDEFINED_OP_FLAG;
+	    else if (klass == rb_cString) flag = STRING_REDEFINED_OP_FLAG;
+	    else if (klass == rb_cArray)  flag = ARRAY_REDEFINED_OP_FLAG;
+	    else if (klass == rb_cHash)   flag = HASH_REDEFINED_OP_FLAG;
+	    else if (klass == rb_cBignum) flag = BIGNUM_REDEFINED_OP_FLAG;
+	    else if (klass == rb_cSymbol) flag = SYMBOL_REDEFINED_OP_FLAG;
+	    else if (klass == rb_cTime)   flag = TIME_REDEFINED_OP_FLAG;
+
+	    ruby_vm_redefined_flag[bop] |= flag;
 	}
     }
 }

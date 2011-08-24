@@ -1282,7 +1282,11 @@ opt_case_dispatch
       case T_FIXNUM:
       case T_BIGNUM:
       case T_STRING:
-	if (BASIC_OP_UNREDEFINED_P(BOP_EQQ)) {
+	if (BASIC_OP_UNREDEFINED_P(BOP_EQQ,
+				   SYMBOL_REDEFINED_OP_FLAG |
+				   FIXNUM_REDEFINED_OP_FLAG |
+				   BIGNUM_REDEFINED_OP_FLAG |
+				   STRING_REDEFINED_OP_FLAG)) {
 	    st_data_t val;
 	    if (st_lookup(RHASH_TBL(hash), key, &val)) {
 		JUMP(FIX2INT((VALUE)val));
@@ -1335,7 +1339,7 @@ opt_plus
     }
 #if 1
     else if (FIXNUM_2_P(recv, obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_PLUS)) {
+	     BASIC_OP_UNREDEFINED_P(BOP_PLUS,FIXNUM_REDEFINED_OP_FLAG)) {
 	/* fixnum + fixnum */
 #ifndef LONG_LONG_VALUE
 	val = (recv + (obj & (~1)));
@@ -1365,7 +1369,7 @@ opt_plus
 #if 1
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat &&
-		 BASIC_OP_UNREDEFINED_P(BOP_PLUS)) {
+		 BASIC_OP_UNREDEFINED_P(BOP_PLUS, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
 	}
 #endif
@@ -1373,13 +1377,13 @@ opt_plus
 #if 1
 	else if (HEAP_CLASS_OF(recv) == rb_cString &&
 		 HEAP_CLASS_OF(obj) == rb_cString &&
-		 BASIC_OP_UNREDEFINED_P(BOP_PLUS)) {
+		 BASIC_OP_UNREDEFINED_P(BOP_PLUS, STRING_REDEFINED_OP_FLAG)) {
 	    val = rb_str_plus(recv, obj);
 	}
 #endif
 #if 1
 	else if (HEAP_CLASS_OF(recv) == rb_cArray &&
-		 BASIC_OP_UNREDEFINED_P(BOP_PLUS)) {
+		 BASIC_OP_UNREDEFINED_P(BOP_PLUS, ARRAY_REDEFINED_OP_FLAG)) {
 	    val = rb_ary_plus(recv, obj);
 	}
 #endif
@@ -1407,7 +1411,7 @@ opt_minus
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_MINUS)) {
+	BASIC_OP_UNREDEFINED_P(BOP_MINUS, FIXNUM_REDEFINED_OP_FLAG)) {
 	long a, b, c;
 
 	a = FIX2LONG(recv);
@@ -1427,7 +1431,7 @@ opt_minus
 #if 1
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
-		 BASIC_OP_UNREDEFINED_P(BOP_MINUS)) {
+		 BASIC_OP_UNREDEFINED_P(BOP_MINUS, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = DBL2NUM(RFLOAT_VALUE(recv) - RFLOAT_VALUE(obj));
 	}
 #endif
@@ -1456,7 +1460,7 @@ opt_mult
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_MULT)) {
+	BASIC_OP_UNREDEFINED_P(BOP_MULT, FIXNUM_REDEFINED_OP_FLAG)) {
 	long a, b;
 
 	a = FIX2LONG(recv);
@@ -1482,7 +1486,7 @@ opt_mult
 #if 1
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
-		 BASIC_OP_UNREDEFINED_P(BOP_MULT)) {
+		 BASIC_OP_UNREDEFINED_P(BOP_MULT, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = DBL2NUM(RFLOAT_VALUE(recv) * RFLOAT_VALUE(obj));
 	}
 #endif
@@ -1510,7 +1514,7 @@ opt_div
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_DIV)) {
+	BASIC_OP_UNREDEFINED_P(BOP_DIV, FIXNUM_REDEFINED_OP_FLAG)) {
 	long x, y, div;
 
 	x = FIX2LONG(recv);
@@ -1546,7 +1550,7 @@ opt_div
 #if 1
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
-		 BASIC_OP_UNREDEFINED_P(BOP_DIV)) {
+		 BASIC_OP_UNREDEFINED_P(BOP_DIV, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = DBL2NUM(RFLOAT_VALUE(recv) / RFLOAT_VALUE(obj));
 	}
 #endif
@@ -1574,7 +1578,7 @@ opt_mod
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_MOD)) {
+	BASIC_OP_UNREDEFINED_P(BOP_MOD, FIXNUM_REDEFINED_OP_FLAG )) {
 	long x, y, mod;
 
 	x = FIX2LONG(recv);
@@ -1610,7 +1614,7 @@ opt_mod
 	}
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat &&
-		 BASIC_OP_UNREDEFINED_P(BOP_MOD)) {
+		 BASIC_OP_UNREDEFINED_P(BOP_MOD, FLOAT_REDEFINED_OP_FLAG)) {
 	    double x = RFLOAT_VALUE(recv);
 	    double y = RFLOAT_VALUE(obj);
 	    double div, mod;
@@ -1705,7 +1709,7 @@ opt_lt
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_LT)) {
+	BASIC_OP_UNREDEFINED_P(BOP_LT, FIXNUM_REDEFINED_OP_FLAG)) {
 	SIGNED_VALUE a = recv, b = obj;
 
 	if (a < b) {
@@ -1721,7 +1725,7 @@ opt_lt
 #if 1
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
-		 BASIC_OP_UNREDEFINED_P(BOP_LT)) {
+		 BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
 	    double a = RFLOAT_VALUE(recv);
 	    double b = RFLOAT_VALUE(obj);
 #if defined(_MSC_VER) && _MSC_VER < 1300
@@ -1755,7 +1759,7 @@ opt_le
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_LE)) {
+	BASIC_OP_UNREDEFINED_P(BOP_LE, FIXNUM_REDEFINED_OP_FLAG)) {
 	SIGNED_VALUE a = recv, b = obj;
 
 	if (a <= b) {
@@ -1785,7 +1789,7 @@ opt_gt
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_GT)) {
+	BASIC_OP_UNREDEFINED_P(BOP_GT, FIXNUM_REDEFINED_OP_FLAG)) {
 	SIGNED_VALUE a = recv, b = obj;
 
 	if (a > b) {
@@ -1801,7 +1805,7 @@ opt_gt
 #if 1
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
-		 BASIC_OP_UNREDEFINED_P(BOP_GT)) {
+		 BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
 	    double a = RFLOAT_VALUE(recv);
 	    double b = RFLOAT_VALUE(obj);
 #if defined(_MSC_VER) && _MSC_VER < 1300
@@ -1835,7 +1839,7 @@ opt_ge
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_GE)) {
+	BASIC_OP_UNREDEFINED_P(BOP_GE, FIXNUM_REDEFINED_OP_FLAG)) {
 	SIGNED_VALUE a = recv, b = obj;
 
 	if (a >= b) {
@@ -1867,11 +1871,11 @@ opt_ltlt
 	if (0) {
 	}
 	else if (HEAP_CLASS_OF(recv) == rb_cString &&
-		 BASIC_OP_UNREDEFINED_P(BOP_LTLT)) {
+		 BASIC_OP_UNREDEFINED_P(BOP_LTLT, STRING_REDEFINED_OP_FLAG)) {
 	    val = rb_str_concat(recv, obj);
 	}
 	else if (HEAP_CLASS_OF(recv) == rb_cArray &&
-		 BASIC_OP_UNREDEFINED_P(BOP_LTLT)) {
+		 BASIC_OP_UNREDEFINED_P(BOP_LTLT, ARRAY_REDEFINED_OP_FLAG)) {
 	    val = rb_ary_push(recv, obj);
 	}
 	else {
@@ -1897,11 +1901,11 @@ opt_aref
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    if (!SPECIAL_CONST_P(recv) && BASIC_OP_UNREDEFINED_P(BOP_AREF)) {
-	if (HEAP_CLASS_OF(recv) == rb_cArray && FIXNUM_P(obj)) {
+    if (!SPECIAL_CONST_P(recv)) {
+	if (HEAP_CLASS_OF(recv) == rb_cArray && BASIC_OP_UNREDEFINED_P(BOP_AREF, ARRAY_REDEFINED_OP_FLAG) && FIXNUM_P(obj)) {
 	    val = rb_ary_entry(recv, FIX2LONG(obj));
 	}
-	else if (HEAP_CLASS_OF(recv) == rb_cHash) {
+	else if (HEAP_CLASS_OF(recv) == rb_cHash && BASIC_OP_UNREDEFINED_P(BOP_AREF, HASH_REDEFINED_OP_FLAG)) {
 	    val = rb_hash_aref(recv, obj);
 	}
 	else {
@@ -1927,13 +1931,12 @@ opt_aset
 (VALUE recv, VALUE obj, VALUE set)
 (VALUE val)
 {
-    if (!SPECIAL_CONST_P(recv) &&
-	BASIC_OP_UNREDEFINED_P(BOP_ASET)) {
-	if (HEAP_CLASS_OF(recv) == rb_cArray && FIXNUM_P(obj)) {
+    if (!SPECIAL_CONST_P(recv)) {
+	if (HEAP_CLASS_OF(recv) == rb_cArray && BASIC_OP_UNREDEFINED_P(BOP_ASET, ARRAY_REDEFINED_OP_FLAG) && FIXNUM_P(obj)) {
 	    rb_ary_store(recv, FIX2LONG(obj), set);
 	    val = set;
 	}
-	else if (HEAP_CLASS_OF(recv) == rb_cHash) {
+	else if (HEAP_CLASS_OF(recv) == rb_cHash && BASIC_OP_UNREDEFINED_P(BOP_ASET, HASH_REDEFINED_OP_FLAG)) {
 	    rb_hash_aset(recv, obj, set);
 	    val = set;
 	}
@@ -1961,15 +1964,17 @@ opt_length
 (VALUE recv)
 (VALUE val)
 {
-    if (LIKELY(!SPECIAL_CONST_P(recv) &&
-	       BASIC_OP_UNREDEFINED_P(BOP_LENGTH))) {
-	if (HEAP_CLASS_OF(recv) == rb_cString) {
+    if (!SPECIAL_CONST_P(recv)) {
+	if (HEAP_CLASS_OF(recv) == rb_cString &&
+	    BASIC_OP_UNREDEFINED_P(BOP_LENGTH, STRING_REDEFINED_OP_FLAG)) {
 	    val = rb_str_length(recv);
 	}
-	else if (HEAP_CLASS_OF(recv) == rb_cArray) {
+	else if (HEAP_CLASS_OF(recv) == rb_cArray &&
+		 BASIC_OP_UNREDEFINED_P(BOP_LENGTH, ARRAY_REDEFINED_OP_FLAG)) {
 	    val = LONG2NUM(RARRAY_LEN(recv));
 	}
-	else if (HEAP_CLASS_OF(recv) == rb_cHash) {
+	else if (HEAP_CLASS_OF(recv) == rb_cHash &&
+		 BASIC_OP_UNREDEFINED_P(BOP_LENGTH, HASH_REDEFINED_OP_FLAG)) {
 	    val = INT2FIX(RHASH_SIZE(recv));
 	}
 	else {
@@ -1994,15 +1999,17 @@ opt_size
 (VALUE recv)
 (VALUE val)
 {
-    if (LIKELY(BASIC_OP_UNREDEFINED_P(BOP_SIZE) &&
-	       !SPECIAL_CONST_P(recv))) {
-	if (HEAP_CLASS_OF(recv) == rb_cString) {
+    if (!SPECIAL_CONST_P(recv)) {
+	if (HEAP_CLASS_OF(recv) == rb_cString &&
+	    BASIC_OP_UNREDEFINED_P(BOP_SIZE, STRING_REDEFINED_OP_FLAG)) {
 	    val = rb_str_length(recv);
 	}
-	else if (HEAP_CLASS_OF(recv) == rb_cArray) {
+	else if (HEAP_CLASS_OF(recv) == rb_cArray &&
+		 BASIC_OP_UNREDEFINED_P(BOP_SIZE, ARRAY_REDEFINED_OP_FLAG)) {
 	    val = LONG2NUM(RARRAY_LEN(recv));
 	}
-	else if (HEAP_CLASS_OF(recv) == rb_cHash) {
+	else if (HEAP_CLASS_OF(recv) == rb_cHash &&
+		 BASIC_OP_UNREDEFINED_P(BOP_SIZE, HASH_REDEFINED_OP_FLAG)) {
 	    val = INT2FIX(RHASH_SIZE(recv));
 	}
 	else {
@@ -2029,7 +2036,7 @@ opt_succ
 {
     if (SPECIAL_CONST_P(recv)) {
 	if (FIXNUM_P(recv) &&
-	    BASIC_OP_UNREDEFINED_P(BOP_SUCC)) {
+	    BASIC_OP_UNREDEFINED_P(BOP_SUCC, FIXNUM_REDEFINED_OP_FLAG)) {
 	    const VALUE obj = INT2FIX(1);
 	    /* fixnum + INT2FIX(1) */
 	    val = (recv + (obj & (~1)));
@@ -2044,11 +2051,11 @@ opt_succ
     }
     else {
 	if (HEAP_CLASS_OF(recv) == rb_cString &&
-	    BASIC_OP_UNREDEFINED_P(BOP_SUCC)) {
+	    BASIC_OP_UNREDEFINED_P(BOP_SUCC, STRING_REDEFINED_OP_FLAG)) {
 	    val = rb_str_succ(recv);
 	}
 	else if (HEAP_CLASS_OF(recv) == rb_cTime &&
-		 BASIC_OP_UNREDEFINED_P(BOP_SUCC)) {
+		 BASIC_OP_UNREDEFINED_P(BOP_SUCC, TIME_REDEFINED_OP_FLAG)) {
 	    val = rb_time_succ(recv);
 	}
 	else
