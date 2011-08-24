@@ -41,7 +41,7 @@ module Psych
       #
       # See also Psych::Visitors::Emitter
       def to_yaml io = nil, options = {}
-        real_io = io || StringIO.new
+        real_io = io || StringIO.new(''.encode('utf-8'))
 
         Visitors::Emitter.new(real_io, options).accept self
         return real_io.string unless io

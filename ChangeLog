@@ -1,3 +1,9 @@
+Thu Aug 25 06:11:35 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/nodes/node.rb: default `to_yaml` encoding to be
+	  UTF-8.
+	* test/psych/test_encoding.rb: test yaml dump encoding.
+
 Thu Aug 25 01:24:33 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/fileutils/test_fileutils.rb (test_chmod_symbol_mode): Solaris
