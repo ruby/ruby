@@ -1,3 +1,17 @@
+Thu Aug 25 08:19:43 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (vm_make_env_each): work around to solve Bug #2729.
+	  fixes: Bug #2729
+	  a patch from Kazuki Tsujimoto <kazuki@callcc.net>
+	  This problem is caused by changing dfp (dynamic env pointer)
+	  from saved dfp.  Saved dfp is pointed env in VM stack.  However,
+	  the dfp can be moved because VM copies env from VM stack to
+	  the heap.  At this copying, dfp was also changed.  To solve this
+	  problem, I'll try to change throw mechanism (not save target dfp,
+	  but save target cfp).
+
+	* bootstraptest/test_flow.rb: add a test for above.
+
 Thu Aug 25 07:57:33 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* numeric.c (int_round): Fix Integer#round [ruby-core:39096]
