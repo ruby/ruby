@@ -24,6 +24,11 @@ with all sufficient information, see the ChangeLog file.
       * Signal.trap raises ArgumentError when :SEGV, :BUS, :ILL, :FPE, :VTALRM
         are specified.
 
+  * Time
+    * change return value:
+      * Time#to_s returned encoding defaults to US-ASCII but automatically
+        transcodes to Encoding.default_internal if it is set.
+
 === Language changes
 === Compatibility issues (excluding feature bug fixes)
 

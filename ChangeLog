@@ -1,3 +1,9 @@
+Fri Aug 26 08:21:10 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* time.c (strftimev): Make Time#to_s default to US-ASCII encoding but
+	  respect Encoding.default_internal. [ruby-core:39092]
+	* test/ruby/test_time.rb (class TestTime): Corresponding test.
+
 Thu Aug 25 09:43:16 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/openssl/lib/openssl/bn.rb:  Hide copyright info from RDoc.

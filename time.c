@@ -4347,6 +4347,8 @@ strftimev(const char *fmt, VALUE time)
     MAKE_TM(time, tobj);
     len = rb_strftime_alloc(&buf, fmt, &tobj->vtm, tobj->timew, TIME_UTC_P(tobj));
     str = rb_str_new(buf, len);
+    rb_enc_associate_index(str, rb_usascii_encindex());
+    str = rb_str_export_to_enc(str, rb_default_internal_encoding());
     if (buf != buffer) xfree(buf);
     return str;
 }
