@@ -407,13 +407,13 @@ ment_has_mdef(ment_t *me, mdef_t *def)
     } while (0)
 
 static ment_t *
-class_ment_get(VALUE klass, ID mid, ment_t * *me)
+class_ment_get(VALUE klass, ID mid)
 {
 /*  gets the ment by mid. Does *not* do a lookup in the class hierarchy */
 
-    *me = 0;
-    st_lookup(RCLASS_M_TBL(klass), mid, (st_data_t*)*me);
-    return *me;
+    ment_t *me = 0;
+    st_lookup(RCLASS_M_TBL(klass), mid, (st_data_t*)me);
+    return me;
 }
 
 static ment_t *
