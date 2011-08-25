@@ -1,3 +1,12 @@
+Wed Aug 24 09:49:10 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* backport r33045 from trunk.
+
+	* insns.def (defined): fix to checking class variable.
+	  A patch by Magnus Holm <judofyr@gmail.com>.  Thanks!
+
+	* test/ruby/test_variable.rb: add a test for above.
+
 Thu Aug 25 09:43:16 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* backport r33066 from trunk.
