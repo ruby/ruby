@@ -456,7 +456,7 @@ class_ment_redefine(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
 {
 /*  processing subjecting method redefinition */
 
-    ment_t *old_me = class_ment_get(klass, mid, &old_me);
+    ment_t *old_me = class_ment_get(klass, mid);
     mdef_t *old_def = old_me->def;
 
     rb_vm_check_redefinition_opt_method(old_me);
@@ -523,7 +523,7 @@ class_ment_make(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
               existent ment is returned */
     rb_check_frozen(klass);
 
-    old_me = class_ment_get(klass, mid, &old_me); 
+    old_me = class_ment_get(klass, mid); 
     if (old_me && ment_has_mdef(old_me, def))
 	return old_me;
 
