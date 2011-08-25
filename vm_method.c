@@ -113,6 +113,25 @@ rb_define_notimplement_method_id(VALUE mod, ID mid, mflg_t noex)
 }
 
 /*****************************************************************************/
+/*  DIVERSE FUNCTIONS                                                        */
+/*****************************************************************************/
+
+#undef rb_disable_super
+#undef rb_enable_super
+
+void
+rb_disable_super(VALUE klass, const char *name)
+{
+    rb_warning("rb_disable_super() is obsolete");
+}
+
+void
+rb_enable_super(VALUE klass, const char *name)
+{
+    rb_warning("rb_enable_super() is obsolete");
+}
+
+/*****************************************************************************/
 /*  ALLOCATOR FUNCTIONS                                                      */
 /*****************************************************************************/
 
@@ -274,6 +293,23 @@ mdef_eq(const mdef_t *d1, const mdef_t *d2)
 /*  MENT - METHOD ENTRY                                                      */
 /*****************************************************************************/
 
+static ment_t *
+ment_new(ID mid, mdef_t *def, mflg_t noex)
+{
+/*  creates a new ment object (struct) */
+
+    ment_t *me = ALLOC(ment_t);
+
+    me->flag = NOEX_WITH_SAFE(noex);
+    me->mark = 0;
+    me->called_id = mid;
+    me->klass = 0; /* not yet assigned to a class */
+    me->def = def;
+    if (def) def->alias_count++;
+
+    return me;
+}
+
 static void
 ment_unlink(ment_t *me)
 {
@@ -346,21 +382,6 @@ ment_eq(const ment_t *m1, const ment_t *m2)
     return mdef_eq(m1->def, m2->def);
 }
 
-#define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
-/* TD: verify, macro seems redundant. code directly. */
-
-static VALUE
-class_ment_flagtest(VALUE klass, ID mid, mflg_t noex)
-{
-/*  ??? tests the flag of a modules ment */
-
-    const ment_t *me = class_ment(klass, mid);
-    if (me && VISI_CHECK(me->flag, noex)) {
-	return Qtrue;
-    }
-    return Qfalse;
-}
-
 static int
 ment_has_mdef(ment_t *me, mdef_t *def)
 {
@@ -374,23 +395,6 @@ ment_has_mdef(ment_t *me, mdef_t *def)
 /*****************************************************************************/
 /*  METHOD DEFINITION AND ENTRY CREATION                                     */
 /*****************************************************************************/
-
-static ment_t *
-ment_new(ID mid, mdef_t *def, mflg_t noex)
-{
-/*  creates a new ment object (struct) */
-
-    ment_t *me = ALLOC(ment_t);
-
-    me->flag = NOEX_WITH_SAFE(noex);
-    me->mark = 0;
-    me->called_id = mid;
-    me->klass = 0; /* not yet assigned to a class */
-    me->def = def;
-    if (def) def->alias_count++;
-
-    return me;
-}
 
 /* TD: refactor to code, leave only "hook_id = singleton_##hook;" as a macro */
 #define CALL_METHOD_HOOK(klass, hook, mid) do {		\
@@ -651,69 +655,24 @@ class_ment(VALUE klass, ID mid)
     return class_ment_uncached(klass, mid);
 }
 
-#undef rb_disable_super
-#undef rb_enable_super
+#define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
+/* TD: verify, macro seems redundant. code directly. */
 
-void
-rb_disable_super(VALUE klass, const char *name)
+static VALUE
+class_ment_flagtest(VALUE klass, ID mid, mflg_t noex)
 {
-    rb_warning("rb_disable_super() is obsolete");
+/*  ??? tests the flag of a modules ment */
+
+    const ment_t *me = class_ment(klass, mid);
+    if (me && VISI_CHECK(me->flag, noex)) {
+	return Qtrue;
+    }
+    return Qfalse;
 }
 
-void
-rb_enable_super(VALUE klass, const char *name)
-{
-    rb_warning("rb_enable_super() is obsolete");
-}
-
-static void
-rb_export_method(VALUE klass, ID mid, mflg_t noex)
-{
-    ment_t *me;
-
-    if (klass == rb_cObject) {
-	rb_secure(4);
-    }
-
-    me = class_ment_search(klass, mid);
-    if (!me && TYPE(klass) == T_MODULE) {
-	me = class_ment_search(rb_cObject, mid);
-    }
-
-    if (UNDEFINED_METHOD_ENTRY_P(me)) {
-	rb_print_undef(klass, mid, 0);
-    }
-
-    if (me->flag != noex) {
-	rb_vm_check_redefinition_opt_method(me);
-
-	if (klass == me->klass) {
-	    me->flag = noex;
-	}
-	else {
-	    class_method_add(klass, mid, VM_METHOD_TYPE_ZSUPER, 0, noex);
-	}
-    }
-}
-
-int
-rb_method_boundp(VALUE klass, ID mid, int ex)
-{
-    ment_t *me = class_ment(klass, mid);
-
-    if (me != 0) {
-	if ((ex & ~NOEX_RESPONDS) && (me->flag & NOEX_PRIVATE)) {
-	    return FALSE;
-	}
-	if (!me->def) return 0;
-	if (me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
-	    if (ex & NOEX_RESPONDS) return 2;
-	    return 0;
-	}
-	return 1;
-    }
-    return 0;
-}
+/*****************************************************************************/
+/*  RUBY LEVEL METHODS                                                       */
+/*****************************************************************************/
 
 void
 rb_attr(VALUE klass, ID mid, int read, int write, int ex)
@@ -759,9 +718,9 @@ rb_attr(VALUE klass, ID mid, int read, int write, int ex)
     }
 }
 
-/*****************************************************************************/
-/*  RUBY LEVEL METHODS                                                       */
-/*****************************************************************************/
+/* rb_attr called from class.c */
+
+/*----------*/
 
 static void
 remove_method(VALUE klass, ID mid)
@@ -928,6 +887,27 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
 	rb_undef(mod, rb_to_id(argv[i]));
     }
     return mod;
+}
+
+/*----------*/
+
+int
+rb_method_boundp(VALUE klass, ID mid, int ex)
+{
+    ment_t *me = class_ment(klass, mid);
+
+    if (me != 0) {
+	if ((ex & ~NOEX_RESPONDS) && (me->flag & NOEX_PRIVATE)) {
+	    return FALSE;
+	}
+	if (!me->def) return 0;
+	if (me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
+	    if (ex & NOEX_RESPONDS) return 2;
+	    return 0;
+	}
+	return 1;
+    }
+    return 0;
 }
 
 /*
@@ -1144,6 +1124,36 @@ secure_visibility(VALUE self)
     if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(self)) {
 	rb_raise(rb_eSecurityError,
 		 "Insecure: can't change method visibility");
+    }
+}
+
+static void
+rb_export_method(VALUE klass, ID mid, mflg_t noex)
+{
+    ment_t *me;
+
+    if (klass == rb_cObject) {
+	rb_secure(4);
+    }
+
+    me = class_ment_search(klass, mid);
+    if (!me && TYPE(klass) == T_MODULE) {
+	me = class_ment_search(rb_cObject, mid);
+    }
+
+    if (UNDEFINED_METHOD_ENTRY_P(me)) {
+	rb_print_undef(klass, mid, 0);
+    }
+
+    if (me->flag != noex) {
+	rb_vm_check_redefinition_opt_method(me);
+
+	if (klass == me->klass) {
+	    me->flag = noex;
+	}
+	else {
+	    class_method_add(klass, mid, VM_METHOD_TYPE_ZSUPER, 0, noex);
+	}
     }
 }
 
