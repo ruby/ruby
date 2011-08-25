@@ -115,9 +115,9 @@ FIXNUMとNILに関してはより高速な判別マクロが用意されています．
 (整数に変換できない場合には例外が発生する)．同様にチェック無
 で使える変換マクロはdoubleを取り出す「NUM2DBL()」があります．
 
-char* を取り出す場合， StringValue() と StringValuePtr() 
+char* を取り出す場合， StringValue() と StringValuePtr()
 を使います．
-StringValue(var) は var が String 
+StringValue(var) は var が String
 であれば何もせず，そうでなければ var を var.to_str() の結果
 に置き換えるマクロ，StringValuePtr(var) は同様に var を
 String に置き換えてから var のバイト列表現に対する char* を
@@ -242,9 +242,9 @@ Rubyが用意している関数を用いてください．
     rb_str_cat2(str, rb_vsprintf(format, ap)) と同等である．
 
   rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
-  
+
     指定されたエンコーディングでRubyの文字列を生成する.
-     
+
   rb_usascii_str_new(const char *ptr, long len)
   rb_usascii_str_new_cstr(const char *ptr)
 
@@ -352,10 +352,10 @@ Rubyで提供されている関数を使えばRubyインタプリタに新しい機能
 
 メソッドや特異メソッドを定義するには以下の関数を使います．
 
-  void rb_define_method(VALUE klass, const char *name, 
+  void rb_define_method(VALUE klass, const char *name,
 		        VALUE (*func)(), int argc)
 
-  void rb_define_singleton_method(VALUE object, const char *name, 
+  void rb_define_singleton_method(VALUE object, const char *name,
 			          VALUE (*func)(), int argc)
 
 
@@ -377,14 +377,14 @@ argcが-1の時は引数を配列に入れて渡されます．argcが-2の時は引
 メソッドを定義する関数はまだいくつかあります. ひとつはメソッド
 名としてIDを取ります. IDについては2.2.2を参照.
 
-  void rb_define_method_id(VALUE klass, ID name, 
+  void rb_define_method_id(VALUE klass, ID name,
                            VALUE (*func)(ANYARGS), int argc)
 
 private/protectedなメソッドを定義するふたつの関数があります.
 
-  void rb_define_private_method(VALUE klass, const char *name, 
+  void rb_define_private_method(VALUE klass, const char *name,
 				VALUE (*func)(), int argc)
-  void rb_define_protected_method(VALUE klass, const char *name, 
+  void rb_define_protected_method(VALUE klass, const char *name,
 			          VALUE (*func)(), int argc)
 
 privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
@@ -405,7 +405,7 @@ privateメソッドでもあるものです．例をあげるとMathモジュール
 という形式でも使えます．モジュール関数を定義する関数は以下の
 通りです．
 
-  void rb_define_module_function(VALUE module, const char *name, 
+  void rb_define_module_function(VALUE module, const char *name,
 		                 VALUE (*func)(), int argc)
 
 関数的メソッド(Kernelモジュールのprivate method)を定義するた
@@ -1005,7 +1005,7 @@ Rubyコマンドの実装
   rational.c    : Rational
   re.c          : Regexp, MatchData
   signal.c      : Signal
-  sprintf.c     : 
+  sprintf.c     :
   string.c      : String
   struct.c      : Struct
   time.c        : Time
@@ -1020,7 +1020,7 @@ Rubyコマンドの実装
   enc/trans/*   : コードポイント対応表
 
 gorubyコマンドの実装
-  
+
   goruby.c
   golf_prelude.rb      : goruby固有のライブラリ
     -> golf_prelude.c  : 自動生成
@@ -1180,12 +1180,12 @@ void rb_define_global_const(const char *name, VALUE val)
 
 rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc)
 
-  メソッドを定義する．argcはselfを除く引数の数．argcが-1の時, 
+  メソッドを定義する．argcはselfを除く引数の数．argcが-1の時,
   関数には引数の数(selfを含まない)を第1引数, 引数の配列を第2
-  引数とする形式で与えられる(第3引数はself)．argcが-2の時, 
+  引数とする形式で与えられる(第3引数はself)．argcが-2の時,
   第1引数がself, 第2引数がargs(argsは引数を含むRubyの配列)と
   いう形式で与えられる．
- 
+
 rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(), int argc)
 
   privateメソッドを定義する．引数はrb_define_method()と同じ．
@@ -1298,10 +1298,10 @@ VALUE rb_block_call(VALUE obj, ID mid, int argc, VALUE * argv,
 
 [OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
 
-  func2をブロックとして設定し, func1をイテレータとして呼ぶ． 
+  func2をブロックとして設定し, func1をイテレータとして呼ぶ．
   func1には arg1が引数として渡され, func2には第1引数にイテレー
   タから与えられた値, 第2引数にarg2が渡される．
- 
+
   1.9でrb_iterateを使う場合は, func1の中でRubyレベルのメソッド
   を呼び出さなければならない.
   1.9でobsoleteとなった. 代わりにrb_block_callが用意された.
@@ -1559,7 +1559,7 @@ dir_config(target[, default_include, default_lib])
 
 pkg_config(pkg)
 
-  pkg-configコマンドからパッケージpkgの情報を得る． 
+  pkg-configコマンドからパッケージpkgの情報を得る．
   pkg-configの実際のコマンド名は，--with-pkg-configコマンド
   ラインオプションで指定可能．
 

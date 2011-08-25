@@ -149,7 +149,7 @@ To convert C data to Ruby values:
 
     cast to VALUE.
 
-You can determine whether a VALUE is pointer or not by checking its LSB.  
+You can determine whether a VALUE is pointer or not by checking its LSB.
 
 Notice Ruby does not allow arbitrary pointer values to be a VALUE.  They
 should be pointers to the structures which Ruby knows about.  The known
@@ -215,9 +215,9 @@ listed below:
     rb_str_cat2(str, rb_vsprintf(format, ap)), respectively.
 
   rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
-  
+
     Creates a new Ruby string with the specified encoding.
-     
+
   rb_usascii_str_new(const char *ptr, long len)
   rb_usascii_str_new_cstr(const char *ptr)
 
@@ -315,17 +315,17 @@ To define nested classes or modules, use the functions below:
 
 To define methods or singleton methods, use these functions:
 
-  void rb_define_method(VALUE klass, const char *name, 
+  void rb_define_method(VALUE klass, const char *name,
 		        VALUE (*func)(), int argc)
 
-  void rb_define_singleton_method(VALUE object, const char *name, 
+  void rb_define_singleton_method(VALUE object, const char *name,
 			          VALUE (*func)(), int argc)
 
 The `argc' represents the number of the arguments to the C function,
 which must be less than 17.  But I doubt you'll need that many.
 
 If `argc' is negative, it specifies the calling sequence, not number of
-the arguments.  
+the arguments.
 
 If argc is -1, the function will be called as:
 
@@ -345,14 +345,14 @@ actual arguments.
 There are some more functions to define methods. One takes an ID
 as the name of method to be defined. See 2.2.2 for IDs.
 
-  void rb_define_method_id(VALUE klass, ID name, 
+  void rb_define_method_id(VALUE klass, ID name,
                            VALUE (*func)(ANYARGS), int argc)
 
 There are two functions to define private/protected methods:
 
-  void rb_define_private_method(VALUE klass, const char *name, 
+  void rb_define_private_method(VALUE klass, const char *name,
 			        VALUE (*func)(), int argc)
-  void rb_define_protected_method(VALUE klass, const char *name, 
+  void rb_define_protected_method(VALUE klass, const char *name,
 			          VALUE (*func)(), int argc)
 
 At last, rb_define_module_function defines a module functions,
@@ -369,7 +369,7 @@ or
 
 To define module functions, use:
 
-  void rb_define_module_function(VALUE module, const char *name, 
+  void rb_define_module_function(VALUE module, const char *name,
 				 VALUE (*func)(), int argc)
 
 In addition, function-like methods, which are private methods defined
@@ -418,7 +418,7 @@ evaluate the string as Ruby program.  This function will do the job:
 Evaluation is done under the current context, thus current local variables
 of the innermost method (which is defined by Ruby) can be accessed.
 
-Note that the evaluation can raise an exception. There is a safer 
+Note that the evaluation can raise an exception. There is a safer
 function:
 
   VALUE rb_eval_string_protect(const char *str, int *state)
@@ -582,7 +582,7 @@ Data_Get_Struct().
 
 A pointer to the structure will be assigned to the variable sval.
 
-See the example below for details. 
+See the example below for details.
 
 4. Example - Creating dbm extension
 
@@ -640,7 +640,7 @@ Init_dbm(void)
 }
 --
 
-The dbm extension wraps the dbm struct in the C environment using 
+The dbm extension wraps the dbm struct in the C environment using
 Data_Make_Struct.
 
 --
@@ -869,7 +869,7 @@ utility functions
 ruby interpreter implementation
 
   dmyext.c
-  dmydln.c 
+  dmydln.c
   dmyencoding.c
   id.c
   inits.c
@@ -905,7 +905,7 @@ class library
   rational.c    : Rational
   re.c          : Regexp, MatchData
   signal.c      : Signal
-  sprintf.c     : 
+  sprintf.c     :
   string.c      : String
   struct.c      : Struct
   time.c        : Time
@@ -920,7 +920,7 @@ multilingualization
   enc/trans/*   : codepoint mapping tables
 
 goruby interpreter implementation
-  
+
   goruby.c
   golf_prelude.rb     : goruby specific libraries.
     -> golf_prelude.c : automatically generated
@@ -968,7 +968,7 @@ sval, and returns the DATA encapsulating the pointer to memory region.
  Data_Get_Struct(data, type, sval)
 
 This macro retrieves the pointer value from DATA, and assigns it to
-the variable sval. 
+the variable sval.
 
 ** Checking data types
 
@@ -1055,7 +1055,7 @@ The getter function must return the value for the access.
  void rb_define_hooked_variable(const char *name, VALUE *var,
 				VALUE (*getter)(), VALUE (*setter)())
 
-Defines hooked variable.  It's a virtual variable with a C variable.  
+Defines hooked variable.  It's a virtual variable with a C variable.
 The getter is called as
 
 	VALUE getter(ID id, VALUE *var)
@@ -1213,7 +1213,7 @@ arguments.
 Calls the function func1, supplying func2 as the block.  func1 will be
 called with the argument arg1.  func2 receives the value from yield as
 the first argument, arg2 as the second argument.
- 
+
 When rb_iterate is used in 1.9, func1 has to call some Ruby-level method.
 This function is obsolete since 1.9; use rb_block_call instead.
 
