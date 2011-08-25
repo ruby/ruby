@@ -170,7 +170,108 @@ allocator_deprication(VALUE klass, ID mid, mtyp_t type)
 }
 
 /*****************************************************************************/
-/*  MENT / MDEF PROCESSING                                                   */
+/*  MDEF - METHOD DEFINITION                                                 */
+/*****************************************************************************/
+
+static void
+mdef_attr(mdef_t *def, void *opts)
+{
+/* processing for mdef_new, method type ATTRSET/IVAR */
+
+/*  TD: rename to "mdef_init_as_attr" */
+  
+    rb_thread_t *th;
+    rb_control_frame_t *cfp;
+    int line;
+    
+    def->body.attr.id = (ID)opts;
+    def->body.attr.location = Qfalse;
+    th = GET_THREAD();
+    cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+    if (cfp && (line = rb_vm_get_sourceline(cfp))) {
+	VALUE location = rb_ary_new3(2, cfp->iseq->filename, INT2FIX(line));
+	def->body.attr.location = rb_ary_freeze(location);
+    }
+}
+
+mdef_t *
+mdef_new(ID mid, mtyp_t type, void *opts)
+{
+/*  creates a new mdef object (struct)*/
+
+    mdef_t *def = ALLOC(mdef_t);
+    def->type = type;
+    def->original_id = mid;
+    def->alias_count = 0;
+
+    switch (type) {
+      case VM_METHOD_TYPE_ISEQ:
+	def->body.iseq = (rb_iseq_t *)opts;
+	break;
+      case VM_METHOD_TYPE_CFUNC:
+	def->body.cfunc = *(rb_method_cfunc_t *)opts;
+	break;
+      case VM_METHOD_TYPE_ATTRSET:
+      case VM_METHOD_TYPE_IVAR:
+        mdef_attr(def, opts);
+	break;
+      case VM_METHOD_TYPE_BMETHOD:
+	def->body.proc = (VALUE)opts;
+	break;
+      case VM_METHOD_TYPE_NOTIMPLEMENTED:
+	def->body.cfunc.func = rb_f_notimplement;
+	def->body.cfunc.argc = -1;
+	break;
+      case VM_METHOD_TYPE_OPTIMIZED:
+	def->body.optimize_type = (enum method_optimized_type)opts;
+	break;
+      case VM_METHOD_TYPE_ZSUPER:
+      case VM_METHOD_TYPE_UNDEF:
+	break;
+      default:
+	rb_bug("class_method_add: unsupported method type (%d)\n", type);
+    }
+    return def;
+}
+
+static int
+mdef_eq(const mdef_t *d1, const mdef_t *d2)
+{
+/*  determines if two mdef are equal */
+
+    if (d1 == d2) return 1;
+    if (!d1 || !d2) return 0;
+    if (d1->type != d2->type) {
+	return 0;
+    }
+    switch (d1->type) {
+      case VM_METHOD_TYPE_ISEQ:
+	return d1->body.iseq == d2->body.iseq;
+      case VM_METHOD_TYPE_CFUNC:
+	return
+	  d1->body.cfunc.func == d2->body.cfunc.func &&
+	  d1->body.cfunc.argc == d2->body.cfunc.argc;
+      case VM_METHOD_TYPE_ATTRSET:
+      case VM_METHOD_TYPE_IVAR:
+	return d1->body.attr.id == d2->body.attr.id;
+      case VM_METHOD_TYPE_BMETHOD:
+	return RTEST(rb_equal(d1->body.proc, d2->body.proc));
+      case VM_METHOD_TYPE_MISSING:
+	return d1->original_id == d2->original_id;
+      case VM_METHOD_TYPE_ZSUPER:
+      case VM_METHOD_TYPE_NOTIMPLEMENTED:
+      case VM_METHOD_TYPE_UNDEF:
+	return 1;
+      case VM_METHOD_TYPE_OPTIMIZED:
+	return d1->body.optimize_type == d2->body.optimize_type;
+      default:
+	rb_bug("rb_method_entry_eq: unsupported method type (%d)\n", d1->type);
+	return 0;
+    }
+}
+
+/*****************************************************************************/
+/*  MENT - METHOD ENTRY                                                      */
 /*****************************************************************************/
 
 static void
@@ -258,42 +359,6 @@ class_ment_flagtest(VALUE klass, ID mid, mflg_t noex)
 	return Qtrue;
     }
     return Qfalse;
-}
-
-static int
-mdef_eq(const mdef_t *d1, const mdef_t *d2)
-{
-/*  determines if two mdef are equal */
-
-    if (d1 == d2) return 1;
-    if (!d1 || !d2) return 0;
-    if (d1->type != d2->type) {
-	return 0;
-    }
-    switch (d1->type) {
-      case VM_METHOD_TYPE_ISEQ:
-	return d1->body.iseq == d2->body.iseq;
-      case VM_METHOD_TYPE_CFUNC:
-	return
-	  d1->body.cfunc.func == d2->body.cfunc.func &&
-	  d1->body.cfunc.argc == d2->body.cfunc.argc;
-      case VM_METHOD_TYPE_ATTRSET:
-      case VM_METHOD_TYPE_IVAR:
-	return d1->body.attr.id == d2->body.attr.id;
-      case VM_METHOD_TYPE_BMETHOD:
-	return RTEST(rb_equal(d1->body.proc, d2->body.proc));
-      case VM_METHOD_TYPE_MISSING:
-	return d1->original_id == d2->original_id;
-      case VM_METHOD_TYPE_ZSUPER:
-      case VM_METHOD_TYPE_NOTIMPLEMENTED:
-      case VM_METHOD_TYPE_UNDEF:
-	return 1;
-      case VM_METHOD_TYPE_OPTIMIZED:
-	return d1->body.optimize_type == d2->body.optimize_type;
-      default:
-	rb_bug("rb_method_entry_eq: unsupported method type (%d)\n", d1->type);
-	return 0;
-    }
 }
 
 static int
@@ -471,69 +536,6 @@ class_ment_make(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
         return class_ment_redefine(old_me, mid, type, def, noex);	    
 
     return class_mdef_add(klass, mid, def, noex);
-}
-
-/*----------*/
-
-static void
-mdef_attr(mdef_t *def, void *opts)
-{
-/* processing for mdef_new, method type ATTRSET/IVAR */
-
-/*  TD: rename to "mdef_init_setup" */
-  
-    rb_thread_t *th;
-    rb_control_frame_t *cfp;
-    int line;
-    
-    def->body.attr.id = (ID)opts;
-    def->body.attr.location = Qfalse;
-    th = GET_THREAD();
-    cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
-    if (cfp && (line = rb_vm_get_sourceline(cfp))) {
-	VALUE location = rb_ary_new3(2, cfp->iseq->filename, INT2FIX(line));
-	def->body.attr.location = rb_ary_freeze(location);
-    }
-}
-
-mdef_t *
-mdef_new(ID mid, mtyp_t type, void *opts)
-{
-/*  creates a new mdef object (struct)*/
-
-    mdef_t *def = ALLOC(mdef_t);
-    def->type = type;
-    def->original_id = mid;
-    def->alias_count = 0;
-
-    switch (type) {
-      case VM_METHOD_TYPE_ISEQ:
-	def->body.iseq = (rb_iseq_t *)opts;
-	break;
-      case VM_METHOD_TYPE_CFUNC:
-	def->body.cfunc = *(rb_method_cfunc_t *)opts;
-	break;
-      case VM_METHOD_TYPE_ATTRSET:
-      case VM_METHOD_TYPE_IVAR:
-        mdef_attr(def, opts);
-	break;
-      case VM_METHOD_TYPE_BMETHOD:
-	def->body.proc = (VALUE)opts;
-	break;
-      case VM_METHOD_TYPE_NOTIMPLEMENTED:
-	def->body.cfunc.func = rb_f_notimplement;
-	def->body.cfunc.argc = -1;
-	break;
-      case VM_METHOD_TYPE_OPTIMIZED:
-	def->body.optimize_type = (enum method_optimized_type)opts;
-	break;
-      case VM_METHOD_TYPE_ZSUPER:
-      case VM_METHOD_TYPE_UNDEF:
-	break;
-      default:
-	rb_bug("class_method_add: unsupported method type (%d)\n", type);
-    }
-    return def;
 }
 
 ment_t *
