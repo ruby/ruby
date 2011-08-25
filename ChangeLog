@@ -1,3 +1,10 @@
+Thu Aug 25 09:25:48 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl_digest.c:  Document OpenSSL::Digest::digest and add
+	  an example to OpenSSL::Digest.  Patch by Sylvain Daubert.
+	  [Ruby 1.9 - Bug #5166]
+	* ext/openssl/lib/openssl/digest.rb (module OpenSSL):  ditto
+
 Thu Aug 25 08:19:43 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (vm_make_env_each): work around to solve Bug #2729.
