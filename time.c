@@ -4473,11 +4473,22 @@ strftimev(const char *fmt, VALUE time)
  *  This method is similar to strftime() function defined in ISO C and POSIX.
  *  Several directives (%a, %A, %b, %B, %c, %p, %r, %x, %X, %E*, %O* and %Z)
  *  are locale dependent in the function.
- *  However this method is locale independent since Ruby 1.9.
+ *  However this method is almost locale independent since Ruby 1.9.
+ *  (%Z is only the locale dependent directive.)
  *  So, the result may differ even if a same format string is used in other
  *  systems such as C.
  *  It is good practice to avoid %x and %X because there are corresponding
  *  locale independent representations, %D and %T.
+ *
+ *  %z is recommended over %Z.
+ *  %Z doesn't identify the timezone.
+ *  For example, "CST" is used at America/Chicago (-06:00),
+ *  America/Havana (-05:00), Asia/Harbin (+08:00), Australia/Darwin (+09:30)
+ *  and Australia/Adelaide (+10:30).
+ *  Also, %Z is highly dependent for OS.
+ *  For example, it may generate a non ASCII string on Japanese Windows.
+ *  i.e. the result can be different to "JST".
+ *  So the numeric time zone offset, %z, is recommended.
  *
  *  Examples:
  *
