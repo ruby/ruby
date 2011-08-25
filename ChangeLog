@@ -1,3 +1,10 @@
+Thu Aug 25 09:43:16 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/lib/openssl/bn.rb:  Hide copyright info from RDoc.
+	* ext/openssl/lib/openssl/digest.rb:  ditto
+	* ext/openssl/lib/openssl/x509.rb:  ditto
+	* ext/openssl/lib/openssl/cipher.rb:  ditto
+
 Thu Aug 25 09:25:48 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/openssl/ossl_digest.c:  Document OpenSSL::Digest::digest and add
