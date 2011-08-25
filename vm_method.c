@@ -193,7 +193,7 @@ allocator_deprication(VALUE klass, ID mid, mtyp_t type)
 /*****************************************************************************/
 
 static void
-mdef_attr(mdef_t *def, void *opts)
+mdef_init_as_attr(mdef_t *def, void *opts)
 {
 /* processing for mdef_new, method type ATTRSET/IVAR */
 
@@ -232,7 +232,7 @@ mdef_new(ID mid, mtyp_t type, void *opts)
 	break;
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
-        mdef_attr(def, opts);
+        mdef_init_as_attr(def, opts);
 	break;
       case VM_METHOD_TYPE_BMETHOD:
 	def->body.proc = (VALUE)opts;
@@ -457,6 +457,8 @@ static ment_t *
 class_ment_redefine(ment_t *old_me, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
 {
 /*  processing subjecting method redefinition */
+
+/*  TD: pass "klass" instead of "old_me". use class_ment(mid) */
 
     VALUE klass = old_me->klass;
     mdef_t *old_def = old_me->def;
