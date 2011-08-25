@@ -196,8 +196,6 @@ static void
 mdef_init_as_attr(mdef_t *def, void *opts)
 {
 /* processing for mdef_new, method type ATTRSET/IVAR */
-
-/*  TD: rename to "mdef_init_as_attr" */
   
     rb_thread_t *th;
     rb_control_frame_t *cfp;
@@ -454,15 +452,13 @@ class_mdef_add(VALUE klass, ID mid, mdef_t *def, mflg_t noex )
 }
 
 static ment_t *
-class_ment_redefine(ment_t *old_me, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
+class_ment_redefine(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
 {
 /*  processing subjecting method redefinition */
 
-/*  TD: pass "klass" instead of "old_me". use class_ment(mid) */
-
-    VALUE klass = old_me->klass;
+    ment_t *old_me = class_ment_get(klass, mid, &old_me);
     mdef_t *old_def = old_me->def;
-    
+
     rb_vm_check_redefinition_opt_method(old_me);
 
     if (RTEST(ruby_verbose) &&
@@ -539,7 +535,7 @@ class_ment_make(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
     }
 
     if (old_me)
-        return class_ment_redefine(old_me, mid, type, def, noex);	    
+        return class_ment_redefine(klass, mid, type, def, noex);	    
 
     return class_mdef_add(klass, mid, def, noex);
 }
