@@ -9,21 +9,21 @@ module Kernel
     alias open_uri_original_open open # :nodoc:
   end
 
-  # makes possible to open various resources including URIs.
-  # If the first argument respond to `open' method,
-  # the method is called with the rest arguments.
+  # Allows the opening of various resources including URIs.
   #
-  # If the first argument is a string which begins with xxx://,
-  # it is parsed by URI.parse.  If the parsed object respond to `open' method,
-  # the method is called with the rest arguments.
+  # If the first argument responds to the 'open' method, 'open' is called on
+  # it with the rest of the arguments.
   #
-  # Otherwise original open is called.
+  # If the first argument is a string that begins with xxx://, it is parsed by
+  # URI.parse.  If the parsed object responds to the 'open' method,
+  # 'open' is called on it with the rest of the arguments.
+  #
+  # Otherwise, the original Kernel#open is called.
   #
   # Since open-uri.rb provides URI::HTTP#open, URI::HTTPS#open and
-  # URI::FTP#open,
-  # Kernel[#.]open can accepts such URIs and strings which begins with
-  # http://, https:// and ftp://.
-  # In these case, the opened file object is extended by OpenURI::Meta.
+  # URI::FTP#open, Kernel[#.]open can accept URIs and strings that begin with
+  # http://, https:// and ftp://.  In these cases, the opened file object is
+  # extended by OpenURI::Meta.
   def open(name, *rest, &block) # :doc:
     if name.respond_to?(:open)
       name.open(*rest, &block)
@@ -42,14 +42,14 @@ end
 #
 #== Example
 #
-# It is possible to open http/https/ftp URL as usual like opening a file:
+# It is possible to open an http, https or ftp URL as though it were a file:
 #
 #   open("http://www.ruby-lang.org/") {|f|
 #     f.each_line {|line| p line}
 #   }
 #
-# The opened file has several methods for meta information as follows since
-# it is extended by OpenURI::Meta.
+# The opened file has several getter methods for its meta-information, as
+# follows, since it is extended by OpenURI::Meta.
 #
 #   open("http://www.ruby-lang.org/en") {|f|
 #     f.each_line {|line| p line}
@@ -407,14 +407,14 @@ module OpenURI
       end
     end
 
-    # returns an Array which consists status code and message.
+    # returns an Array that consists of status code and message.
     attr_accessor :status
 
-    # returns a URI which is base of relative URIs in the data.
-    # It may differ from the URI supplied by a user because redirection.
+    # returns a URI that is the base of relative URIs in the data.
+    # It may differ from the URI supplied by a user due to redirection.
     attr_accessor :base_uri
 
-    # returns a Hash which represents header fields.
+    # returns a Hash that represents header fields.
     # The Hash keys are downcased for canonicalization.
     attr_reader :meta
 
@@ -443,7 +443,7 @@ module OpenURI
       meta_setup_encoding if name == 'content-type'
     end
 
-    # returns a Time which represents Last-Modified field.
+    # returns a Time that represents the Last-Modified field.
     def last_modified
       if v = @meta['last-modified']
         Time.httpdate(v)
@@ -537,11 +537,10 @@ module OpenURI
     #
     # `options' must be a hash.
     #
-    # Each pairs which key is a string in the hash specify a extra header
-    # field for HTTP.
-    # I.e. it is ignored for FTP without HTTP proxy.
+    # Each option pair with a string key specifies an extra header field for
+    # HTTP.  I.e., it is ignored for FTP without HTTP proxy.
     #
-    # The hash may include other options which key is a symbol:
+    # The hash may include other options, where keys are symbols:
     #
     # [:proxy]
     #  Synopsis:
@@ -590,14 +589,13 @@ module OpenURI
     #
     #  If :content_length_proc option is specified, the option value procedure
     #  is called before actual transfer is started.
-    #  It takes one argument which is expected content length in bytes.
+    #  It takes one argument, which is expected content length in bytes.
     #
     #  If two or more transfer is done by HTTP redirection, the procedure
     #  is called only one for a last transfer.
     #
     #  When expected content length is unknown, the procedure is called with
-    #  nil.
-    #  It is happen when HTTP response has no Content-Length header.
+    #  nil.  This happens when the HTTP response has no Content-Length header.
     #
     # [:progress_proc]
     #  Synopsis:
@@ -646,7 +644,7 @@ module OpenURI
     #
     #  :ssl_verify_mode is used to specify openssl verify mode.
     #
-    # OpenURI::OpenRead#open returns an IO like object if block is not given.
+    # OpenURI::OpenRead#open returns an IO-like object if block is not given.
     # Otherwise it yields the IO object and return the value of the block.
     # The IO object is extended with OpenURI::Meta.
     #
@@ -662,10 +660,10 @@ module OpenURI
     #  Synopsis:
     #    :redirect=>bool
     #
-    # :redirect=>false is used to disable HTTP redirects at all.
+    # :redirect=>false is used to disable all HTTP redirects.
     # OpenURI::HTTPRedirect exception raised on redirection.
     # It is true by default.
-    # The true means redirections between http and ftp is permitted.
+    # The true means redirections between http and ftp are permitted.
     #
     def open(*rest, &block)
       OpenURI.open_uri(self, *rest, &block)

@@ -11,7 +11,7 @@
 #
 # An OpenStruct is a data structure, similar to a Hash, that allows the
 # definition of arbitrary attributes with their accompanying values. This is
-# accomplished by using Ruby's metaporgramming to define methods on the class
+# accomplished by using Ruby's metaprogramming to define methods on the class
 # itself.
 #
 # == Examples:
@@ -72,8 +72,8 @@
 # method_missing and define_method.
 #
 # This should be a consideration if there is a concern about the performance of
-# the objects that are created. As there is much more overhead in the setting
-# of these properties compard to utilizing a Hash or a Struct.
+# the objects that are created, as there is much more overhead in the setting
+# of these properties compared to using a Hash or a Struct.
 #
 class OpenStruct
   #
