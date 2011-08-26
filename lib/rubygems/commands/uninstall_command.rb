@@ -78,6 +78,8 @@ class Gem::Commands::UninstallCommand < Gem::Command
     get_all_gem_names.each do |gem_name|
       begin
         Gem::Uninstaller.new(gem_name, options).uninstall
+      rescue Gem::InstallError => e
+        alert e.message
       rescue Gem::GemNotInHomeException => e
         spec = e.spec
         alert("In order to remove #{spec.name}, please execute:\n" \

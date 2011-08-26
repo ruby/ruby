@@ -733,7 +733,7 @@ class TestGem < Gem::TestCase
 
     Gem.instance_variable_set :@paths, nil
 
-    assert_equal [Gem.default_path, Gem.dir].flatten.uniq, Gem.path
+    assert_equal [Gem.dir, *Gem.default_path].uniq, Gem.path
   ensure
     Object.const_set :APPLE_GEM_HOME, orig_APPLE_GEM_HOME if orig_APPLE_GEM_HOME
   end
@@ -772,11 +772,10 @@ class TestGem < Gem::TestCase
 
     ENV['GEM_PATH'] = @additional.join(File::PATH_SEPARATOR)
 
-    assert_equal @additional, Gem.path[0,2]
+    assert_equal [Gem.dir, *@additional], Gem.path
 
     assert_equal path_count + @additional.size, Gem.path.size,
                  "extra path components: #{Gem.path[2..-1].inspect}"
-    assert_equal Gem.dir, Gem.path.last
   end
 
   def test_self_path_duplicate
@@ -789,8 +788,7 @@ class TestGem < Gem::TestCase
 
     assert_equal @gemhome, Gem.dir
 
-    paths = [Gem.dir]
-    assert_equal @additional + paths, Gem.path
+    assert_equal [Gem.dir, *@additional], Gem.path
   end
 
   def test_self_path_overlap
@@ -802,8 +800,7 @@ class TestGem < Gem::TestCase
 
     assert_equal @gemhome, Gem.dir
 
-    paths = [Gem.dir]
-    assert_equal @additional + paths, Gem.path
+    assert_equal [Gem.dir, *@additional], Gem.path
   end
 
   def test_self_platforms
@@ -923,7 +920,7 @@ class TestGem < Gem::TestCase
     ENV["GEM_HOME"] = @gemhome
     Gem.paths = { "GEM_PATH" => path }
 
-    assert_equal [@userhome, other, @gemhome], Gem.path
+    assert_equal [@gemhome, @userhome, other], Gem.path
   end
 
   def test_self_paths_eq_nonexistent_home
@@ -936,7 +933,7 @@ class TestGem < Gem::TestCase
 
     Gem.paths = { "GEM_PATH" => other }
 
-    assert_equal [other, @gemhome], Gem.path
+    assert_equal [@gemhome, other], Gem.path
   end
 
   def test_self_source_index
@@ -983,7 +980,7 @@ class TestGem < Gem::TestCase
     Gem.use_paths @gemhome, @additional
 
     assert_equal @gemhome, Gem.dir
-    assert_equal @additional + [Gem.dir], Gem.path
+    assert_equal [Gem.dir, *@additional], Gem.path
   end
 
   def test_self_user_dir
