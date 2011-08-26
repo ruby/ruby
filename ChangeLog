@@ -1,3 +1,7 @@
+Sat Aug 27 04:02:11 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: add a decl. of rb_autoloading_value().
+
 Fri Aug 26 19:12:08 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* variable.c: Make autoload thread-safe. See #921.

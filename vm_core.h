@@ -674,6 +674,8 @@ void ruby_thread_init_stack(rb_thread_t *th);
 NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
 void rb_gc_mark_machine_stack(rb_thread_t *th);
 
+int rb_autoloading_value(VALUE mod, ID id, VALUE* value);
+
 #define sysstack_error GET_VM()->special_exceptions[ruby_error_sysstack]
 
 /* for thread */
