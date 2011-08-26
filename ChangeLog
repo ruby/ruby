@@ -1,3 +1,7 @@
+Sat Aug 27 08:59:12 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* NEWS:  Update version of rake to 0.9.2.2.
+
 Sat Aug 27 08:44:58 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* backport r33087 from trunk
