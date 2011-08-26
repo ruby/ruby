@@ -1,3 +1,8 @@
+Sat Aug 27 07:53:34 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/open-uri.rb:  Fix indentation of OpenURI::OpenRead#open.  Use ++
+	  instead of `' for method arguments in open-uri.rb
+
 Sat Aug 27 07:22:07 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/pathname/lib/pathname.rb:  Fix typos and grammar mistakes.  Patch

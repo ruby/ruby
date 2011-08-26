@@ -526,19 +526,23 @@ module OpenURI
     # OpenURI::OpenRead#open provides `open' for URI::HTTP and URI::FTP.
     #
     # OpenURI::OpenRead#open takes optional 3 arguments as:
-    # OpenURI::OpenRead#open([mode [, perm]] [, options]) [{|io| ... }]
     #
-    # `mode', `perm' is same as Kernel#open.
+    #   OpenURI::OpenRead#open([mode [, perm]] [, options]) [{|io| ... }]
     #
-    # However, `mode' must be read mode because OpenURI::OpenRead#open doesn't
+    # OpenURI::OpenRead#open returns an IO-like object if block is not given.
+    # Otherwise it yields the IO object and return the value of the block.
+    # The IO object is extended with OpenURI::Meta.
+    #
+    # +mode+ and +perm+ are the same as Kernel#open.
+    #
+    # However, +mode+ must be read mode because OpenURI::OpenRead#open doesn't
     # support write mode (yet).
-    # Also `perm' is just ignored because it is meaningful only for file
-    # creation.
+    # Also +perm+ is ignored because it is meaningful only for file creation.
     #
-    # `options' must be a hash.
+    # +options+ must be a hash.
     #
-    # Each option pair with a string key specifies an extra header field for
-    # HTTP.  I.e., it is ignored for FTP without HTTP proxy.
+    # Each option with a string key specifies an extra header field for HTTP.
+    # I.e., it is ignored for FTP without HTTP proxy.
     #
     # The hash may include other options, where keys are symbols:
     #
@@ -552,22 +556,28 @@ module OpenURI
     #
     #  If :proxy option is specified, the value should be String, URI,
     #  boolean or nil.
+    #
     #  When String or URI is given, it is treated as proxy URI.
+    #
     #  When true is given or the option itself is not specified,
     #  environment variable `scheme_proxy' is examined.
     #  `scheme' is replaced by `http', `https' or `ftp'.
+    #
     #  When false or nil is given, the environment variables are ignored and
     #  connection will be made to a server directly.
     #
     # [:proxy_http_basic_authentication]
     #  Synopsis:
-    #    :proxy_http_basic_authentication => ["http://proxy.foo.com:8000/", "proxy-user", "proxy-password"]
-    #    :proxy_http_basic_authentication => [URI.parse("http://proxy.foo.com:8000/"), "proxy-user", "proxy-password"]
+    #    :proxy_http_basic_authentication =>
+    #      ["http://proxy.foo.com:8000/", "proxy-user", "proxy-password"]
+    #    :proxy_http_basic_authentication =>
+    #      [URI.parse("http://proxy.foo.com:8000/"),
+    #       "proxy-user", "proxy-password"]
     #
-    #  If :proxy option is specified, the value should be an Array with 3 elements.
-    #  It should contain a proxy URI, a proxy user name and a proxy password.
-    #  The proxy URI should be a String, an URI or nil.
-    #  The proxy user name and password should be a String.
+    #  If :proxy option is specified, the value should be an Array with 3
+    #  elements.  It should contain a proxy URI, a proxy user name and a proxy
+    #  password.  The proxy URI should be a String, an URI or nil.  The proxy
+    #  user name and password should be a String.
     #
     #  If nil is given for the proxy URI, this option is just ignored.
     #
@@ -603,7 +613,7 @@ module OpenURI
     #
     #  If :progress_proc option is specified, the proc is called with one
     #  argument each time when `open' gets content fragment from network.
-    #  The argument `size' `size' is a accumulated transferred size in bytes.
+    #  The argument +size+ is the accumulated transferred size in bytes.
     #
     #  If two or more transfer is done by HTTP redirection, the procedure
     #  is called only one for a last transfer.
@@ -644,26 +654,24 @@ module OpenURI
     #
     #  :ssl_verify_mode is used to specify openssl verify mode.
     #
-    # OpenURI::OpenRead#open returns an IO-like object if block is not given.
-    # Otherwise it yields the IO object and return the value of the block.
-    # The IO object is extended with OpenURI::Meta.
-    #
     # [:ftp_active_mode]
     #  Synopsis:
     #    :ftp_active_mode=>bool
     #
-    # :ftp_active_mode=>true is used to make ftp active mode.
-    # Note that the active mode is default in Ruby 1.8 or prior.
-    # Ruby 1.9 uses passive mode by default.
+    #  <tt>:ftp_active_mode => true</tt> is used to make ftp active mode.
+    #  Ruby 1.9 uses passive mode by default.
+    #  Note that the active mode is default in Ruby 1.8 or prior.
     #
     # [:redirect]
     #  Synopsis:
     #    :redirect=>bool
     #
-    # :redirect=>false is used to disable all HTTP redirects.
-    # OpenURI::HTTPRedirect exception raised on redirection.
-    # It is true by default.
-    # The true means redirections between http and ftp are permitted.
+    #  +:redirect+ is true by default.  <tt>:redirect => false</tt> is used to
+    #  disable all HTTP redirects.
+    #
+    #  OpenURI::HTTPRedirect exception raised on redirection.
+    #  Using +true+ also means that redirections between http and ftp are
+    #  permitted.
     #
     def open(*rest, &block)
       OpenURI.open_uri(self, *rest, &block)
@@ -672,7 +680,7 @@ module OpenURI
     # OpenURI::OpenRead#read([options]) reads a content referenced by self and
     # returns the content as string.
     # The string is extended with OpenURI::Meta.
-    # The argument `options' is same as OpenURI::OpenRead#open.
+    # The argument +options+ is same as OpenURI::OpenRead#open.
     def read(options={})
       self.open(options) {|f|
         str = f.read
