@@ -4,9 +4,9 @@ require 'rdoc/markup/pre_process'
 require 'rdoc/stats'
 
 ##
-# A parser is simple a class that implements
+# A parser is a class that subclasses RDoc::Parser and implements
 #
-#   #initialize(file_name, body, options)
+#   #initialize top_level, file_name, body, options, stats
 #
 # and
 #
@@ -16,17 +16,16 @@ require 'rdoc/stats'
 # and an RDoc::Options object. The scan method is then called to return an
 # appropriately parsed TopLevel code object.
 #
-# The ParseFactory is used to redirect to the correct parser given a
-# filename extension. This magic works because individual parsers have to
-# register themselves with us as they are loaded in. The do this using the
-# following incantation
+# RDoc::Parser::for is a factory that creates the correct parser for a
+# given filename extension.  Parsers have to register themselves RDoc::Parser
+# using parse_files_matching as when they are loaded:
 #
 #   require "rdoc/parser"
 #
 #   class RDoc::Parser::Xyz < RDoc::Parser
 #     parse_files_matching /\.xyz$/ # <<<<
 #
-#     def initialize(file_name, body, options)
+#     def initialize top_level, file_name, body, options, stats
 #       ...
 #     end
 #
@@ -35,8 +34,8 @@ require 'rdoc/stats'
 #     end
 #   end
 #
-# Just to make life interesting, if we suspect a plain text file, we also
-# look for a shebang line just in case it's a potential shell script
+# If a plain text file is detected, RDoc also looks for a shebang line in case
+# the file is a shell script.
 
 class RDoc::Parser
 
@@ -45,8 +44,8 @@ class RDoc::Parser
   class << self
 
     ##
-    # A Hash that maps file extensions regular expressions to parsers that
-    # will consume them.
+    # An Array of arrays that maps file extension (or name) regular
+    # expressions to parser classes that will parse matching filenames.
     #
     # Use parse_files_matching to register a parser's file extensions.
 

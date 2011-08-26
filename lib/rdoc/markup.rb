@@ -36,7 +36,7 @@ require 'rdoc'
 # sequences, and to add special processing for text that matches a
 # regular expression.  Here we make WikiWords significant to the parser,
 # and also make the sequences {word} and \<no>text...</no> signify
-# strike-through text.  When then subclass the HTML output class to deal
+# strike-through text.  We then subclass the HTML output class to deal
 # with these:
 #
 #   require 'rdoc/markup'
@@ -61,7 +61,7 @@ require 'rdoc'
 #
 # == Encoding
 #
-# Where Encoding support is available RDoc will automatically convert all
+# Where Encoding support is available, RDoc will automatically convert all
 # documents to the same output encoding.  The output encoding can be set via
 # RDoc::Options#encoding and defaults to Encoding.default_external.
 #
@@ -127,7 +127,7 @@ require 'rdoc'
 # === Simple Lists
 #
 # If a paragraph starts with a "*", "-", "<digit>." or "<letter>.",
-# then it is taken to be the start of a list.  The margin in increased to be
+# then it is taken to be the start of a list.  The margin is increased to be
 # the first non-space following the list start flag.  Subsequent lines
 # should be indented to this new margin until the list ends.  For example:
 #
@@ -444,10 +444,10 @@ require 'rdoc'
 #
 # [+:nodoc:+ / <tt>:nodoc: all</tt>]
 #   This directive prevents documentation for the element from
-#   being generated.  For classes and modules, the methods, aliases,
+#   being generated.  For classes and modules, methods, aliases,
 #   constants, and attributes directly within the affected class or
 #   module also will be omitted.  By default, though, modules and
-#   classes within that class of module _will_ be documented.  This is
+#   classes within that class or module _will_ be documented.  This is
 #   turned off by adding the +all+ modifier.
 #
 #     module MyModule # :nodoc:
@@ -591,7 +591,7 @@ class RDoc::Markup
   attr_reader :attribute_manager
 
   ##
-  # Take a block of text and use various heuristics to determine it's
+  # Take a block of text and use various heuristics to determine its
   # structure (paragraphs, lists, and so on).  Invoke an event handler as we
   # identify significant chunks.
 

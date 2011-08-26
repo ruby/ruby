@@ -1,3 +1,8 @@
+Sat Aug 27 08:44:58 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc:  Import RDoc 3.9.4.  Typo and grammar fixes by Luke Gruber.
+	  [Ruby 1.9 - Bug #5203]
+
 Sat Aug 27 07:53:34 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/open-uri.rb:  Fix indentation of OpenURI::OpenRead#open.  Use ++
