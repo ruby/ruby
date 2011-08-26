@@ -28,7 +28,7 @@
 #   20 / 9 * 3 * 14 / 7 * 3 / 2 # => 20
 #
 #
-# When you require 'mathn' the libraries for Prime, CMath, Matrix and Vector
+# When you require 'mathn', the libraries for Prime, CMath, Matrix and Vector
 # are also loaded.
 #
 # == Copyright
@@ -53,8 +53,8 @@ unless defined?(Math.exp!)
 end
 
 ##
-# When mathn is required Fixnum's division and exponentiation are enhanced to
-# return more precise values in mathematical formulas.
+# When mathn is required, Fixnum's division and exponentiation are enhanced to
+# return more precise values from mathematical expressions.
 #
 #   2/3*3  # => 0
 #   require 'mathn'
@@ -87,7 +87,7 @@ end
 
 ##
 # When mathn is required Bignum's division and exponentiation are enhanced to
-# return more precise values in mathematical formulas.
+# return more precise values from mathematical expressions.
 
 class Bignum
   remove_method :/
@@ -115,7 +115,7 @@ class Bignum
 end
 
 ##
-# When mathn is required Rational changes to simplfy the usage of Rational
+# When mathn is required Rational is changed to simplify the use of Rational
 # operations.
 #
 # Normal behaviour:
@@ -198,14 +198,14 @@ class Rational
 end
 
 ##
-# When mathn is requried the Math module changes as follows:
+# When mathn is required, the Math module changes as follows:
 #
 # Standard Math module behaviour:
 #   Math.sqrt(4/9)     # => 0.0
 #   Math.sqrt(4.0/9.0) # => 0.666666666666667
 #   Math.sqrt(- 4/9)   # => Errno::EDOM: Numerical argument out of domain - sqrt
 #
-# After require 'mathn' this is changed to:
+# After require 'mathn', this is changed to:
 #
 #   require 'mathn'
 #   Math.sqrt(4/9)      # => 2/3
@@ -305,7 +305,7 @@ module Math
 end
 
 ##
-# When mathn is required Float is changed to handle Complex numbers.
+# When mathn is required, Float is changed to handle Complex numbers.
 
 class Float
   alias power! **

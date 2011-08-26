@@ -1,12 +1,14 @@
 $expect_verbose = false
 
 class IO
-  # Reads ios until pattern matches or the timeout is over. It returns
-  # an array with the read buffer, followed by the matches. If a block is given,
-  # the result is yielded to the block and returns nil. The optional timeout parameter defines,
-  # in seconds, the total time to wait for pattern. If it is over of eof is found, it
-  # returns/yields nil. However, the buffer in a timeout session is kept for the next expect call.
-  # The default timeout is 9999999 seconds.
+  # Reads from the IO until pattern +pat+ matches or the +timeout+ is over.
+  # It returns an array with the read buffer, followed by the matches.
+  # If a block is given, the result is yielded to the block and returns nil.
+  #
+  # The optional timeout parameter defines, in seconds, the total time to wait
+  # for the pattern.  If the timeout expires or eof is found, nil is returned
+  # or yielded.  However, the buffer in a timeout session is kept for the next
+  # expect call.  The default timeout is 9999999 seconds.
   def expect(pat,timeout=9999999)
     buf = ''
     case pat

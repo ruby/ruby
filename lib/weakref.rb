@@ -1,7 +1,7 @@
 require "delegate"
 require 'thread'
 
-# Weak Reference class that does allows a referenced object to be
+# Weak Reference class that allows a referenced object to be
 # garbage-collected.  A WeakRef may be used exactly like the object it
 # references.
 #

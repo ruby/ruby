@@ -94,7 +94,7 @@ class ConditionVariable
   # Wakes up all threads waiting for this lock.
   #
   def broadcast
-    # TODO: imcomplete
+    # TODO: incomplete
     waiters0 = nil
     @waiters_mutex.synchronize do
       waiters0 = @waiters.dup
@@ -144,7 +144,7 @@ class Queue
   def initialize
     @que = []
     @waiting = []
-    @que.taint          # enable tainted comunication
+    @que.taint          # enable tainted communication
     @waiting.taint
     self.taint
     @mutex = Mutex.new

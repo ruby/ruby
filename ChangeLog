@@ -1,3 +1,19 @@
+Sat Aug 27 07:22:07 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* backport r33086 from trunk.
+
+	* ext/pathname/lib/pathname.rb:  Fix typos and grammar mistakes.  Patch
+	  by Luke Gruber.  [#5203]
+	* ext/pty/lib/expect.rb:  ditto
+	* lib/mathn.rb:  ditto
+	* lib/net/http.rb:  ditto
+	* lib/open-uri.rb:  ditto
+	* lib/ostruct.rb:  ditto
+	* lib/tempfile.rb:  ditto
+	* lib/thread.rb:  ditto
+	* lib/weakref.rb:  ditto
+	* sample/webrick/httpproxy.rb:  ditto
+
 Fri Aug 26 10:10:37 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* backport r33074 from trunk.
