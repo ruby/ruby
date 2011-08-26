@@ -5,6 +5,7 @@
 ######################################################################
 
 begin
+  require 'rubygems'
   gem 'minitest'
 rescue Gem::LoadError
   # do nothing
