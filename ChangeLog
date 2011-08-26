@@ -1,3 +1,59 @@
+Fri Aug 26 19:12:08 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* variable.c: Make autoload thread-safe. See #921.
+
+	  What's the problem?
+	    autoload is thread unsafe. When we define a constant to be
+	    autoloaded, we expect the constant construction is invariant. But
+	    current autoload implementation allows other threads to access the
+	    constant while the first thread is loading a file.
+
+	  What's happening inside?
+	    The current implementation uses Qundef as a marker of autoload in
+	    Constant table. Once the first thread find Qundef as a value at
+	    constant lookup, it starts loading a defined feature. Generally a
+	    loaded file overrides the Qundef in Constant table by module/class
+	    declaration at very beginning lines of the file, so other threads
+	    can see the new Module/Class object before feature loading is
+	    finished. It breaks invariant construction.
+
+	  How to solve?
+	    To ensure invariant constant construction, we need to override
+	    Qundef with defined Object after the feature loading. For keeping
+	    Qundef in Constant table, I expanded autoload_data struct in
+	    Module to have a slot for keeping the defined object while feature
+	    loading. And changed Module's constant lookup/update logic a
+	    little so that the slot is only visible from the thread which
+	    invokes feature loading. (== the first thread which accessed the
+	    autoload constant)
+
+	  Evaluation?
+	    All test passes (bootstrap test, test-all and RubySpec) and added
+	    8 tests for threading behavior. Extra logics are executed only
+	    when Qundef is found, so no perf drop should happen except
+	    autoloading.
+
+	* variable.c (rb_autoload): Prepare new autoload_data struct.
+
+	* variable.c (rb_autoload_load): Load feature and update Constant
+	  table after feature loading is finished.
+
+	* variable.c (rb_const_get_0): When the fetched constant is under
+	  autoloading, it returns the object only for the thread which starts
+	  autoloading.
+
+	* variable.c (rb_const_defined_0): Ditto.
+
+	* variable.c (rb_const_set): When the specified constant is under
+	  autoloading, it sets the object only for the thread which starts
+	  autoloading. Otherwise, simply overrides Qundef with constant
+	  override warning.
+
+	* vm_insnhelper.c (vm_get_ev_const): Apply same change as
+	  rb_const_get_0 in variable.c.
+
+	* test/ruby/test_autoload.rb: Added tests for threading behavior.
+
 Fri Aug 26 10:10:37 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 1.8.10.  Fixes security issue in
