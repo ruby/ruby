@@ -4,6 +4,13 @@
 # File a patch instead and assign it to Ryan Davis.
 ######################################################################
 
+begin
+  require 'rubygems'
+  gem 'minitest'
+rescue Gem::LoadError
+  # do nothing
+end
+
 require 'minitest/unit'
 require 'minitest/spec'
 require 'minitest/mock'
