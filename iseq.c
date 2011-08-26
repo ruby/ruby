@@ -1101,7 +1101,8 @@ cdhash_each(VALUE key, VALUE value, VALUE ary)
 static VALUE
 iseq_data_to_ary(rb_iseq_t *iseq)
 {
-    long i, pos, ti;
+    long i, ti;
+    unsigned int pos;
     unsigned int line = 0;
     VALUE *seq;
 
