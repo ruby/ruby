@@ -45,6 +45,19 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     assert_includes output, "Successfully uninstalled #{@other.full_name}"
   end
 
+  def test_execute_mulitple_nonexistent
+    @cmd.options[:args] = %w[x y]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    output = @ui.output.split "\n"
+
+    assert_includes output, 'INFO:  gem "x" is not installed'
+    assert_includes output, 'INFO:  gem "y" is not installed'
+  end
+
   def test_execute_removes_executable
     ui = Gem::MockGemUi.new
     util_setup_gem ui

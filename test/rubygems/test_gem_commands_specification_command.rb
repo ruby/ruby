@@ -135,7 +135,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
     end
 
     assert_match %r|Gem::Specification.new|, @ui.output
-    assert_match %r|s.name = %q\{foo\}|, @ui.output
+    assert_match %r|s.name = "foo"|, @ui.output
     assert_equal '', @ui.error
   end
 

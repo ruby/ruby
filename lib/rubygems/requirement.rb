@@ -16,6 +16,9 @@ module YAML
   if !defined? Syck
     module Syck
       class DefaultKey
+        def to_s
+          '='
+        end
       end
     end
   end

@@ -1,3 +1,10 @@
+Fri Aug 26 10:10:37 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 1.8.10.  Fixes security issue in
+	  creating ruby-format gemspecs.  Fixes Gem.dir not being at the front
+	  of Gem.path to fix uninstall and cleanup commands.  Fixes gem
+	  uninstall stopping on the first missing gem.
+
 Fri Aug 26 08:21:10 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* time.c (strftimev): Make Time#to_s default to US-ASCII encoding but
