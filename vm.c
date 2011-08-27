@@ -473,7 +473,7 @@ rb_vm_make_env_object(rb_thread_t * th, rb_control_frame_t *cfp)
     return envval;
 }
 
-VALUE
+void
 rb_vm_rewrite_dfp_in_errinfo(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     /* rewrite dfp in errinfo to point to heap */

@@ -1,3 +1,10 @@
+Sat Aug 27 20:46:05 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm.c (rb_vm_rewrite_dfp_in_errinfo): change return type
+	  to suppress a warning.
+
+	* vm_core.h: ditto.
+
 Sat Aug 27 19:04:06 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* internal.h (rb_strftime_timespec): moved from time.c and define only
