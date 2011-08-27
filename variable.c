@@ -1445,63 +1445,12 @@ static const rb_data_type_t autoload_data_type = {
 #define check_autoload_table(av) \
     (struct st_table *)rb_check_typeddata((av), &autoload_data_type)
 
-static VALUE
-autoload_data(VALUE mod, ID id)
-{
-    struct st_table *tbl;
-    st_data_t val;
-
-    if (!st_lookup(RCLASS_IV_TBL(mod), autoload, &val) ||
-	    !(tbl = check_autoload_table((VALUE)val)) || !st_lookup(tbl, (st_data_t)id, &val)) {
-	return 0;
-    }
-    return (VALUE)val;
-}
-
-struct autoload_data_i {
-    VALUE feature;
-    int safe_level;
-    VALUE thread;
-    VALUE value;
-};
-
-static void
-autoload_i_mark(void *ptr)
-{
-    struct autoload_data_i *p = ptr;
-    rb_gc_mark(p->feature);
-    rb_gc_mark(p->thread);
-    rb_gc_mark(p->value);
-}
-
-static void
-autoload_i_free(void *ptr)
-{
-    struct autoload_data_i *p = ptr;
-    xfree(p);
-}
-
-static size_t
-autoload_i_memsize(const void *ptr)
-{
-    return sizeof(struct autoload_data_i);
-}
-
-static const rb_data_type_t autoload_data_i_type = {
-    "autoload_i",
-    {autoload_i_mark, autoload_i_free, autoload_i_memsize,},
-};
-
-#define check_autoload_data(av) \
-    (struct autoload_data_i *)rb_check_typeddata((av), &autoload_data_i_type)
-
 void
 rb_autoload(VALUE mod, ID id, const char *file)
 {
     st_data_t av;
-    VALUE ad, fn;
+    VALUE fn;
     struct st_table *tbl;
-    struct autoload_data_i *ele;
 
     if (!rb_is_const_id(id)) {
 	rb_raise(rb_eNameError, "autoload must be constant name: %s", rb_id2name(id));
@@ -1524,20 +1473,13 @@ rb_autoload(VALUE mod, ID id, const char *file)
 	st_add_direct(tbl, (st_data_t)autoload, av);
 	DATA_PTR(av) = tbl = st_init_numtable();
     }
-    ad = TypedData_Wrap_Struct(0, &autoload_data_i_type, 0);
-    st_insert(tbl, (st_data_t)id, (st_data_t)ad);
-    DATA_PTR(ad) = ele = ALLOC(struct autoload_data_i);
-
     fn = rb_str_new2(file);
     FL_UNSET(fn, FL_TAINT);
     OBJ_FREEZE(fn);
-    ele->feature = fn;
-    ele->safe_level = rb_safe_level();
-    ele->thread = Qnil;
-    ele->value = Qundef;
+    st_insert(tbl, (st_data_t)id, (st_data_t)rb_node_newnode(NODE_MEMO, fn, rb_safe_level(), 0));
 }
 
-static void
+static NODE*
 autoload_delete(VALUE mod, ID id)
 {
     st_data_t val, load = 0, n = id;
@@ -1556,6 +1498,8 @@ autoload_delete(VALUE mod, ID id)
 	    st_delete(RCLASS_IV_TBL(mod), &n, &val);
 	}
     }
+
+    return (NODE *)load;
 }
 
 static VALUE
@@ -1572,18 +1516,22 @@ reset_safe(VALUE safe)
     return safe;
 }
 
-static VALUE
-check_autoload_required(VALUE mod, ID id, const char **loadingpath)
+static NODE *
+autoload_node(VALUE mod, ID id, const char **loadingpath)
 {
-    VALUE file, load;
-    struct autoload_data_i *ele;
+    VALUE file;
+    struct st_table *tbl;
+    st_data_t val;
+    NODE *load;
     const char *loading;
     int safe;
 
-    if (!(load = autoload_data(mod, id)) || !(ele = check_autoload_data(load))) {
+    if (!st_lookup(RCLASS_IV_TBL(mod), autoload, &val) ||
+	!(tbl = check_autoload_table((VALUE)val)) || !st_lookup(tbl, (st_data_t)id, &val)) {
 	return 0;
     }
-    file = ele->feature;
+    load = (NODE *)val;
+    file = load->nd_lit;
     Check_Type(file, T_STRING);
     if (!RSTRING_PTR(file) || !*RSTRING_PTR(file)) {
 	rb_raise(rb_eArgError, "empty file name");
@@ -1602,7 +1550,7 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
 }
 
 static int
-autoload_defined_p(VALUE mod, ID id)
+autoload_node_id(VALUE mod, ID id)
 {
     struct st_table *tbl = RCLASS_CONST_TBL(mod);
     st_data_t val;
@@ -1613,109 +1561,42 @@ autoload_defined_p(VALUE mod, ID id)
     return 1;
 }
 
-int
-rb_autoloading_value(VALUE mod, ID id, VALUE* value)
-{
-    VALUE load;
-    struct autoload_data_i *ele;
-
-    if (!(load = autoload_data(mod, id)) || !(ele = check_autoload_data(load))) {
-	return 0;
-    }
-    if (ele->thread == rb_thread_current()) {
-	if (ele->value != Qundef) {
-    	    if (value) {
-    		*value = ele->value;
-    	    }
-	    return 1;
-	}
-    }
-    return 0;
-}
-
-struct autoload_const_set_args {
-    VALUE mod;
-    ID id;
-    VALUE value;
-};
-
-static void
-autoload_const_set(struct autoload_const_set_args* args)
-{
-    autoload_delete(args->mod, args->id);
-    rb_const_set(args->mod, args->id, args->value);
-}
-
-static VALUE
-autoload_require(struct autoload_data_i *ele)
-{
-    return rb_require_safe(ele->feature, ele->safe_level);
-}
-
 VALUE
 rb_autoload_load(VALUE mod, ID id)
 {
-    VALUE load, result;
+    VALUE file;
+    NODE *load;
     const char *loading = 0, *src;
-    struct autoload_data_i *ele;
-    int state = 0;
 
-    if (!autoload_defined_p(mod, id)) return Qfalse;
-    load = check_autoload_required(mod, id, &loading);
+    if (!autoload_node_id(mod, id)) return Qfalse;
+    load = autoload_node(mod, id, &loading);
     if (!load) return Qfalse;
     src = rb_sourcefile();
     if (src && loading && strcmp(src, loading) == 0) return Qfalse;
-
-    /* set ele->thread for a marker of autoloading thread */
-    if (!(ele = check_autoload_data(load))) {
-	return Qfalse;
-    }
-    if (ele->thread == Qnil) {
-	ele->thread = rb_thread_current();
-    }
-    /* autoload_data_i can be deleted by another thread while require */
-    RB_GC_GUARD(load);
-    result = rb_protect((VALUE(*)(VALUE))autoload_require, (VALUE)ele, &state);
-    if (ele->thread == rb_thread_current()) {
-	ele->thread = Qnil;
-    }
-    if (state) rb_jump_tag(state);
-
-    if (RTEST(result)) {
-	/* At the last, move a value defined in autoload to constant table */
-	if (ele->value != Qundef) {
-	    int safe_backup;
-	    struct autoload_const_set_args args;
-	    args.mod = mod;
-	    args.id = id;
-	    args.value = ele->value;
-	    safe_backup = rb_safe_level();
-	    rb_set_safe_level_force(ele->safe_level);
-	    rb_ensure((VALUE(*)(VALUE))autoload_const_set, (VALUE)&args, reset_safe, (VALUE)safe_backup);
-	}
-    }
-    return result;
+    file = load->nd_lit;
+    return rb_require_safe(file, (int)load->nd_nth);
 }
 
 VALUE
 rb_autoload_p(VALUE mod, ID id)
 {
-    VALUE load;
-    struct autoload_data_i *ele;
+    VALUE file;
+    NODE *load;
+    const char *loading = 0;
 
-    while (!autoload_defined_p(mod, id)) {
+    while (!autoload_node_id(mod, id)) {
 	mod = RCLASS_SUPER(mod);
 	if (!mod) return Qnil;
     }
-    load = check_autoload_required(mod, id, 0);
+    load = autoload_node(mod, id, &loading);
     if (!load) return Qnil;
-    return (ele = check_autoload_data(load)) ? ele->feature : Qnil;
+    return load && (file = load->nd_lit) ? file : Qnil;
 }
 
 static VALUE
 rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
-    VALUE value, tmp, av;
+    VALUE value, tmp;
     int mod_retry = 0;
 
     tmp = klass;
@@ -1732,7 +1613,6 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	    if (value == Qundef) {
 		if (am == tmp) break;
 		am = tmp;
-		if (rb_autoloading_value(tmp, id, &av)) return av;
 		rb_autoload_load(tmp, id);
 		continue;
 	    }
@@ -1963,7 +1843,7 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	    if (visibility && ce->flag == CONST_PRIVATE) {
 		return (int)Qfalse;
 	    }
-	    if (ce->value == Qundef && !check_autoload_required(tmp, id, 0) && !rb_autoloading_value(tmp, id, 0))
+	    if (ce->value == Qundef && !autoload_node(tmp, id, 0))
 		return (int)Qfalse;
 	    return (int)Qtrue;
 	}
@@ -2042,20 +1922,8 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 
 	if (st_lookup(RCLASS_CONST_TBL(klass), (st_data_t)id, &value)) {
 	    rb_const_entry_t *ce = (rb_const_entry_t*)value;
-	    if (ce->value == Qundef) {
-		VALUE load;
-		struct autoload_data_i *ele;
-
-		load = autoload_data(klass, id);
-		/* for autoloading thread, keep the defined value to autoloading storage */
-		if (load && (ele = check_autoload_data(load)) && (ele->thread == rb_thread_current())) {
-		    rb_vm_change_state();
-		    ele->value = val;
-		    return;
-		}
-		/* otherwise, allow to override */
+	    if (ce->value == Qundef)
 		autoload_delete(klass, id);
-	    }
 	    else {
 		visibility = ce->flag;
 		rb_warn("already initialized constant %s", rb_id2name(id));
