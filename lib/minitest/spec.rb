@@ -94,11 +94,27 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
   TYPES = [[//, MiniTest::Spec]]
 
   ##
-  # Register a new type of spec that matches the spec's description. Eg:
+  # Register a new type of spec that matches the spec's description.
+  # This method can take either a Regexp and a spec class or a spec
+  # class and a block that takes the description and returns true if
+  # it matches.
   #
-  #     register_spec_plugin(/Controller$/, MiniTest::Spec::Rails)
+  # Eg:
+  #
+  #     register_spec_type(/Controller$/, MiniTest::Spec::Rails)
+  #
+  # or:
+  #
+  #     register_spec_type(MiniTest::Spec::RailsModel) do |desc|
+  #       desc.superclass == ActiveRecord::Base
+  #     end
 
-  def self.register_spec_type matcher, klass
+  def self.register_spec_type(*args, &block)
+    if block then
+      matcher, klass = block, args.first
+    else
+      matcher, klass = *args
+    end
     TYPES.unshift [matcher, klass]
   end
 
@@ -108,8 +124,13 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
   #     spec_type("BlahController") # => MiniTest::Spec::Rails
 
   def self.spec_type desc
-    desc = desc.to_s
-    TYPES.find { |re, klass| re === desc }.last
+    TYPES.find { |matcher, klass|
+      if matcher.respond_to? :call then
+        matcher.call desc
+      else
+        matcher === desc.to_s
+      end
+    }.last
   end
 
   @@describe_stack = []
