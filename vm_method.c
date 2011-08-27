@@ -394,6 +394,21 @@ ment_has_mdef(ment_t *me, mdef_t *def)
 /*  METHOD DEFINITION AND ENTRY CREATION                                     */
 /*****************************************************************************/
 
+#define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
+/* TD: verify, macro seems redundant. code directly. */
+
+static VALUE
+class_ment_flagtest(VALUE klass, ID mid, mflg_t noex)
+{
+/*  ??? tests the flag of a modules ment */
+
+    const ment_t *me = class_ment(klass, mid);
+    if (me && VISI_CHECK(me->flag, noex)) {
+	return Qtrue;
+    }
+    return Qfalse;
+}
+
 /* TD: refactor to code, leave only "hook_id = singleton_##hook;" as a macro */
 #define CALL_METHOD_HOOK(klass, hook, mid) do {		\
 	const VALUE arg = ID2SYM(mid);			\
@@ -414,6 +429,75 @@ class_ment_get(VALUE klass, ID mid)
     ment_t *me = 0;
     st_lookup(RCLASS_M_TBL(klass), mid, (st_data_t*)me);
     return me;
+}
+
+static ment_t*
+class_ment_search(VALUE klass, ID mid)
+{
+/* searches for a ment in the class's inheritance chain */
+/* issue: st_lookup does *not* a lookup, possibly rename to "get") */
+
+    st_data_t body;
+    if (!klass) {
+	return 0;
+    }
+    /* TD: refactor to while(klass), remove above if */
+    while (!st_lookup(RCLASS_M_TBL(klass), mid, &body)) {
+	klass = RCLASS_SUPER(klass);
+	if (!klass) {
+	    return 0;
+	}
+    }
+
+    return (ment_t *)body;
+}
+
+/*
+ * search method entry without the method cache.
+ *
+ * if you need method entry with method cache (normal case), use
+ * class_ment() simply.
+ */
+ment_t *
+class_ment_uncached(VALUE klass, ID mid)
+{
+    ment_t *me = class_ment_search(klass, mid);
+
+/*  TD: document this code */
+    if (ruby_running) {
+	struct cache_entry *ent;
+	ent = cache + EXPR1(klass, mid);
+	ent->filled_version = GET_VM_STATE_VERSION();
+	ent->klass = klass;
+
+	if (UNDEFINED_METHOD_ENTRY_P(me)) {
+	    ent->mid = mid;
+	    ent->me = 0;
+	    me = 0;
+	}
+	else {
+	    ent->mid = mid;
+	    ent->me = me;
+	}
+    }
+
+    return me;
+}
+
+ment_t *
+class_ment(VALUE klass, ID mid)
+{
+/*  retrieves the ment from a given class. looks in mcache first */
+
+    struct cache_entry *ent;
+
+    ent = cache + EXPR1(klass, mid);
+    if (ent->filled_version == GET_VM_STATE_VERSION() &&
+	ent->mid == mid && ent->klass == klass) {
+	return ent->me;
+    }
+
+    return class_ment_uncached(klass, mid);
 }
 
 static ment_t *
@@ -442,6 +526,8 @@ class_ment_add(VALUE klass, ment_t *me)
     }
     return me;
 }
+
+/* TD: possibly rename following functions to class_method_ */
 
 static ment_t *
 class_ment_add_by_mdef(VALUE klass, ID mid, mdef_t *def, mflg_t noex )
@@ -581,90 +667,6 @@ class_ment_add_by_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, m
     else {
 	rb_define_notimplement_method_id(klass, mid, noex);
     }
-}
-
-static ment_t*
-class_ment_search(VALUE klass, ID mid)
-{
-/* searches for a ment in the class's inheritance chain */
-/* issue: st_lookup does *not* a lookup, possibly rename to "get") */
-
-    st_data_t body;
-    if (!klass) {
-	return 0;
-    }
-    /* TD: refactor to while(klass), remove above if */
-    while (!st_lookup(RCLASS_M_TBL(klass), mid, &body)) {
-	klass = RCLASS_SUPER(klass);
-	if (!klass) {
-	    return 0;
-	}
-    }
-
-    return (ment_t *)body;
-}
-
-/*
- * search method entry without the method cache.
- *
- * if you need method entry with method cache (normal case), use
- * class_ment() simply.
- */
-ment_t *
-class_ment_uncached(VALUE klass, ID mid)
-{
-    ment_t *me = class_ment_search(klass, mid);
-
-/*  TD: document this code */
-    if (ruby_running) {
-	struct cache_entry *ent;
-	ent = cache + EXPR1(klass, mid);
-	ent->filled_version = GET_VM_STATE_VERSION();
-	ent->klass = klass;
-
-	if (UNDEFINED_METHOD_ENTRY_P(me)) {
-	    ent->mid = mid;
-	    ent->me = 0;
-	    me = 0;
-	}
-	else {
-	    ent->mid = mid;
-	    ent->me = me;
-	}
-    }
-
-    return me;
-}
-
-ment_t *
-class_ment(VALUE klass, ID mid)
-{
-/*  retrieves the ment from a given class. looks in mcache first */
-
-    struct cache_entry *ent;
-
-    ent = cache + EXPR1(klass, mid);
-    if (ent->filled_version == GET_VM_STATE_VERSION() &&
-	ent->mid == mid && ent->klass == klass) {
-	return ent->me;
-    }
-
-    return class_ment_uncached(klass, mid);
-}
-
-#define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
-/* TD: verify, macro seems redundant. code directly. */
-
-static VALUE
-class_ment_flagtest(VALUE klass, ID mid, mflg_t noex)
-{
-/*  ??? tests the flag of a modules ment */
-
-    const ment_t *me = class_ment(klass, mid);
-    if (me && VISI_CHECK(me->flag, noex)) {
-	return Qtrue;
-    }
-    return Qfalse;
 }
 
 /*****************************************************************************/
