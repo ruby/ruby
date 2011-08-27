@@ -1,3 +1,17 @@
+Sat Aug 27 18:53:51 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* proc.c (proc_new): force to rewrite errinfo when calling Proc.new in ensure.
+	  [Bug #5234] [ruby-core:39125]
+	  This code will be removed after changing throw mechanism (see r33064).
+
+	* vm.c (rb_vm_rewrite_dfp_in_errinfo): new function.
+
+	* vm.c (vm_make_env_each): changed accordingly.
+
+	* vm_core.h: ditto.
+
+	* bootstraptest/test_flow.rb: add tests for above.
+
 Sat Aug 27 18:44:06 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* internal.h (rb_strftime_timespec): move to time.c because it depends

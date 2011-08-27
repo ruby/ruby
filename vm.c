@@ -410,22 +410,7 @@ vm_make_env_each(rb_thread_t * const th, rb_control_frame_t * const cfp,
 	/* TODO */
 	env->block.iseq = 0;
     } else {
-	/* rewrite dfp in errinfo to point to heap */
-	if (cfp->iseq->type == ISEQ_TYPE_RESCUE ||
-	    cfp->iseq->type == ISEQ_TYPE_ENSURE) {
-	    VALUE errinfo = env->env[0]; /* #$! */
-	    if (RB_TYPE_P(errinfo, T_NODE)) {
-		VALUE *escape_dfp = GET_THROWOBJ_CATCH_POINT(errinfo);
-		if (! ENV_IN_HEAP_P(th, escape_dfp)) {
-		    VALUE dfpval = *escape_dfp;
-		    if (CLASS_OF(dfpval) == rb_cEnv) {
-			rb_env_t *dfpenv;
-			GetEnvPtr(dfpval, dfpenv);
-			SET_THROWOBJ_CATCH_POINT(errinfo, (VALUE)(dfpenv->env + dfpenv->local_size));
-		    }
-		}
-	    }
-	}
+	rb_vm_rewrite_dfp_in_errinfo(th, cfp);
     }
     return envval;
 }
@@ -486,6 +471,28 @@ rb_vm_make_env_object(rb_thread_t * th, rb_control_frame_t *cfp)
     }
 
     return envval;
+}
+
+VALUE
+rb_vm_rewrite_dfp_in_errinfo(rb_thread_t *th, rb_control_frame_t *cfp)
+{
+    /* rewrite dfp in errinfo to point to heap */
+    if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq) &&
+	(cfp->iseq->type == ISEQ_TYPE_RESCUE ||
+	 cfp->iseq->type == ISEQ_TYPE_ENSURE)) {
+	VALUE errinfo = cfp->dfp[-2]; /* #$! */
+	if (RB_TYPE_P(errinfo, T_NODE)) {
+	    VALUE *escape_dfp = GET_THROWOBJ_CATCH_POINT(errinfo);
+	    if (! ENV_IN_HEAP_P(th, escape_dfp)) {
+		VALUE dfpval = *escape_dfp;
+		if (CLASS_OF(dfpval) == rb_cEnv) {
+		    rb_env_t *dfpenv;
+		    GetEnvPtr(dfpval, dfpenv);
+		    SET_THROWOBJ_CATCH_POINT(errinfo, (VALUE)(dfpenv->env + dfpenv->local_size));
+		}
+	    }
+	}
+    }
 }
 
 void
