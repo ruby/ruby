@@ -29,8 +29,6 @@ struct rb_classext_struct {
     struct st_table *const_tbl;
 };
 
-typedef struct OnigEncodingTypeST rb_encoding;
-
 #undef RCLASS_SUPER
 #define RCLASS_EXT(c) (RCLASS(c)->ptr)
 #define RCLASS_SUPER(c) (RCLASS_EXT(c)->super)
@@ -158,9 +156,6 @@ VALUE rb_reg_check_preprocess(VALUE);
 
 /* signal.c */
 int rb_get_next_signal(void);
-
-/* strftime.c */
-size_t rb_strftime_timespec(char *s, size_t maxsize, const char *format, rb_encoding *enc, const struct vtm *vtm, struct timespec *ts, int gmt);
 
 /* string.c */
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);

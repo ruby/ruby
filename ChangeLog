@@ -1,3 +1,8 @@
+Sat Aug 27 18:44:06 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* internal.h (rb_strftime_timespec): move to time.c because it depends
+	  encoding.h.
+
 Sat Aug 27 18:17:58 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* strftime.c (rb_strftime_with_timespec): get enc argument to specify

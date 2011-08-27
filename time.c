@@ -16,6 +16,9 @@
 #include "ruby/encoding.h"
 #include "internal.h"
 
+/* strftime.c */
+size_t rb_strftime_timespec(char *s, size_t maxsize, const char *format, rb_encoding *enc, const struct vtm *vtm, struct timespec *ts, int gmt);
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
