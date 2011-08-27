@@ -29,9 +29,9 @@
 #define class_ment_uncached	rb_method_entry_get_without_cache
 #define class_ment_search	search_method
 
-#define allocator_define	rb_define_alloc_func
-#define allocator_undef		rb_undef_alloc_func
-#define allocator_get		rb_get_alloc_func
+#define class_allocator_define	rb_define_alloc_func
+#define class_allocator_undef	rb_undef_alloc_func
+#define class_allocator_get	rb_get_alloc_func
 
 #define unlinked_ment_entry	unlinked_method_entry_list_entry
 
@@ -136,7 +136,7 @@ rb_enable_super(VALUE klass, const char *name)
 /*****************************************************************************/
 
 void
-allocator_define(VALUE klass, VALUE (*func)(VALUE))
+class_allocator_define(VALUE klass, VALUE (*func)(VALUE))
 {
 /*  defines the allocation method for a class */
 
@@ -146,7 +146,7 @@ allocator_define(VALUE klass, VALUE (*func)(VALUE))
 }
 
 void
-allocator_undef(VALUE klass)
+class_allocator_undef(VALUE klass)
 {
 /*  un-defines the allocation method for a class */
 
@@ -155,7 +155,7 @@ allocator_undef(VALUE klass)
 }
 
 rb_alloc_func_t
-allocator_get(VALUE klass)
+class_allocator_get(VALUE klass)
 {
 /*  returns the allocation method for a class */
 
@@ -172,7 +172,7 @@ allocator_get(VALUE klass)
 }
 
 static inline ID
-allocator_deprication(VALUE klass, ID mid, mtyp_t type)
+class_allocator_deprication(VALUE klass, ID mid, mtyp_t type)
 {
 /* checks for definition of allocate, returns altered mid after warning */
 
@@ -180,7 +180,7 @@ allocator_deprication(VALUE klass, ID mid, mtyp_t type)
 	type == VM_METHOD_TYPE_CFUNC &&
 	mid == rb_intern("allocate")) {
 	/* issue: use rb_warning to honor -v */
-	rb_warn("defining %s.allocate is deprecated; use allocator_define()",
+	rb_warn("defining %s.allocate is deprecated; use class_allocator_define()",
 		rb_class2name(rb_ivar_get(klass, attached)));
 	mid = ID_ALLOCATOR;
     }
@@ -603,7 +603,7 @@ class_ment_make(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
 	klass = rb_cObject;
     }
 
-    mid = allocator_deprication(klass, mid, type);
+    mid = class_allocator_deprication(klass, mid, type);
 
     /* issue: possibly after "return old_me", as frozen has no relevance if
               existent ment is returned */
