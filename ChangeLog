@@ -1,3 +1,27 @@
+Sat Aug 27 18:17:58 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* strftime.c (rb_strftime_with_timespec): get enc argument to specify
+	  the encoding of the format. On Windows (at least Japanese Windows),
+	  Time#strftime("%Z") includes non ASCII in locale encoding (CP932).
+	  So convert locale to default internal. [ruby-core:39092] [Bug #5226]
+
+	* strftime.c (rb_strftime): ditto.
+
+	* strftime.c (rb_strftime_timespec): ditto.
+
+	* internal.h (rb_strftime_timespec): follow above.
+
+	* time.c (rb_strftime_alloc): ditto.
+
+	* time.c (strftimev): ditto.
+
+	* time.c (time_strftime): ditto.
+
+	* time.c (time_to_s): the resulted string of Time#to_s is always
+	  ascii only, so this should be US-ASCII.
+
+	* time.c (time_asctime): ditto.
+
 Sat Aug 27 11:18:12 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* Revert r33078. It caused a Rails application NoMethodError.

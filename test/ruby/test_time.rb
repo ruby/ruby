@@ -15,22 +15,6 @@ class TestTime < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
-  def test_to_s_default_encoding
-    before = Encoding.default_internal
-    Encoding.default_internal = nil
-    assert_equal Encoding::US_ASCII, Time.now.to_s.encoding
-  ensure
-    Encoding.default_internal = before
-  end
-
-  def test_to_s_transcoding
-    before = Encoding.default_internal
-    Encoding.default_internal = Encoding::UTF_8
-    assert_equal Encoding::UTF_8, Time.now.to_s.encoding
-  ensure
-    Encoding.default_internal = before
-  end
-
   def test_new
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,10, 11,0,0, 3600*11))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,9, 13,0,0, -3600*11))
@@ -433,13 +417,19 @@ class TestTime < Test::Unit::TestCase
 
   def test_asctime
     assert_equal("Sat Jan  1 00:00:00 2000", T2000.asctime)
+    assert_equal(Encoding::US_ASCII, T2000.asctime.encoding)
     assert_kind_of(String, Time.at(0).asctime)
   end
 
   def test_to_s
     assert_equal("2000-01-01 00:00:00 UTC", T2000.to_s)
+    assert_equal(Encoding::US_ASCII, T2000.to_s.encoding)
     assert_kind_of(String, Time.at(946684800).getlocal.to_s)
     assert_equal(Time.at(946684800).getlocal.to_s, Time.at(946684800).to_s)
+  end
+
+  def test_zone
+    assert_equal(Encoding.find('locale'), Time.now.zone.encoding)
   end
 
   def test_plus_minus_succ
@@ -565,6 +555,8 @@ class TestTime < Test::Unit::TestCase
 
     t = Time.mktime(2001, 10, 1)
     assert_equal("2001-10-01", t.strftime("%F"))
+    assert_equal(Encoding::UTF_8, t.strftime("\u3042%Z").encoding)
+    assert_equal(true, t.strftime("\u3042%Z").valid_encoding?)
 
     t = Time.mktime(2001, 10, 1, 2, 0, 0)
     assert_equal("01", t.strftime("%d"))
