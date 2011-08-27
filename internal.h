@@ -157,6 +157,14 @@ VALUE rb_reg_check_preprocess(VALUE);
 /* signal.c */
 int rb_get_next_signal(void);
 
+/* strftime.c */
+#ifdef RUBY_ENCODING_H
+size_t rb_strftime_timespec(char *s, size_t maxsize, const char *format, rb_encoding *enc,
+	const struct vtm *vtm, struct timespec *ts, int gmt);
+size_t rb_strftime(char *s, size_t maxsize, const char *format, rb_encoding *enc,
+            const struct vtm *vtm, VALUE timev, int gmt);
+#endif
+
 /* string.c */
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 

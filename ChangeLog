@@ -1,3 +1,10 @@
+Sat Aug 27 19:04:06 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* internal.h (rb_strftime_timespec): moved from time.c and define only
+	  if ruby/encoding.h is included.
+
+	* internal.h (rb_strftime): ditto.
+
 Sat Aug 27 18:53:51 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* proc.c (proc_new): force to rewrite errinfo when calling Proc.new in ensure.
