@@ -1,3 +1,12 @@
+Sat Aug 27 20:54:54 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* backport r33099 from trunk.
+
+	* vm.c (rb_vm_rewrite_dfp_in_errinfo): change return type
+	  to suppress a warning.
+
+	* vm_core.h: ditto.
+
 Sat Aug 27 19:03:44 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* backport r33096 from trunk.
