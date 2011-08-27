@@ -7,6 +7,11 @@
 require 'minitest/autorun'
 require 'stringio'
 
+class MiniSpecA < MiniTest::Spec; end
+class MiniSpecB < MiniTest::Spec; end
+class ExampleA; end
+class ExampleB < ExampleA; end
+
 describe MiniTest::Spec do
   before do
     @assertion_count = 4
@@ -277,6 +282,38 @@ class TestMeta < MiniTest::Unit::TestCase
     end
 
     return x, y, z, before_list, after_list
+  end
+
+  def test_register_spec_type
+    original_types = MiniTest::Spec::TYPES.dup
+
+    assert_equal [[//, MiniTest::Spec]], MiniTest::Spec::TYPES
+
+    MiniTest::Spec.register_spec_type(/woot/, TestMeta)
+
+    p = lambda do |x| true end
+    MiniTest::Spec.register_spec_type TestMeta, &p
+
+    keys = MiniTest::Spec::TYPES.map(&:first)
+
+    assert_includes keys, /woot/
+    assert_includes keys, p
+  ensure
+    MiniTest::Spec::TYPES.replace original_types
+  end
+
+  def test_spec_type
+    original_types = MiniTest::Spec::TYPES.dup
+
+    MiniTest::Spec.register_spec_type(/A$/, MiniSpecA)
+    MiniTest::Spec.register_spec_type MiniSpecB do |desc|
+      desc.superclass == ExampleA
+    end
+
+    assert_equal MiniSpecA, MiniTest::Spec.spec_type(ExampleA)
+    assert_equal MiniSpecB, MiniTest::Spec.spec_type(ExampleB)
+  ensure
+    MiniTest::Spec::TYPES.replace original_types
   end
 
   def test_structure

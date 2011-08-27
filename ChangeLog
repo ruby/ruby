@@ -1,3 +1,8 @@
+Sun Aug 28 05:29:50 2011  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*: Imported minitest 2.5.1 (r6596)
+	* test/minitest/*: ditto
+
 Sat Aug 27 20:46:05 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm.c (rb_vm_rewrite_dfp_in_errinfo): change return type
