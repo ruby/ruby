@@ -1,3 +1,11 @@
+Sun Aug 28 15:38:17 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* ext/date/date_parse.c (date_zone_to_diff): keep a temporary string
+	  stored in variable while the contents buffer is beeing used.
+
+	* ext/date/date_parse.c (date_zone_to_diff): get rid of out of bounds
+	  memory read. [ruby-dev:44409] [Bug #5213]
+
 Sun Aug 28 05:29:50 2011  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*: Imported minitest 2.5.1 (r6596)
