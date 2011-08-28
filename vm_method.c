@@ -296,6 +296,9 @@ ment_new(ID mid, mdef_t *def, mflg_t noex)
 {
 /*  creates a new ment object (struct) */
 
+/*  issue: avoid passing "mid", as it exists already within mdef */
+/*  issue: clarify usage of "mid", always me->called_id == mdef->original_id? */
+
     ment_t *me = ALLOC(ment_t);
 
     me->flag = NOEX_WITH_SAFE(noex);
@@ -528,7 +531,7 @@ class_ment_add(VALUE klass, ment_t *me)
 }
 
 static ment_t *
-class_ment_add_by_mdef(VALUE klass, ID mid, mdef_t *def, mflg_t noex )
+class_mdef_add(VALUE klass, ID mid, mdef_t *def, mflg_t noex )
 {
 /*  adds a mdef to a class, without check if it's already exists */
     
@@ -585,7 +588,7 @@ class_method_redefine(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex
 
     ment_unlink(old_me);
     
-    return class_ment_add_by_mdef(klass, mid, def, noex);
+    return class_mdef_add(klass, mid, def, noex);
 
 }
 
@@ -621,7 +624,7 @@ class_method_make(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
     if (old_me)
         return class_method_redefine(klass, mid, type, def, noex);	    
 
-    return class_ment_add_by_mdef(klass, mid, def, noex);
+    return class_mdef_add(klass, mid, def, noex);
 }
 
 ment_t *
