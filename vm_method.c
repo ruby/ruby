@@ -20,10 +20,10 @@
 #define ment_free		rb_free_method_entry
 #define ment_eq			rb_method_entry_eq
 
-#define class_ment_make		rb_ment_make
-#define class_ment_add_by_opts	rb_add_method
-#define class_ment_add_by_cfunc  rb_add_method_cfunc
-#define class_ment_add_by_copy		rb_method_entry_set
+#define class_method_make	rb_ment_make
+#define class_method_add	rb_add_method
+#define class_method_add_cfunc  rb_add_method_cfunc
+#define class_method_copy	rb_method_entry_set
 
 #define class_ment		rb_method_entry
 #define class_ment_uncached	rb_method_entry_get_without_cache
@@ -109,7 +109,7 @@ rb_f_notimplement(int argc, VALUE *argv, VALUE obj)
 static void
 rb_define_notimplement_method_id(VALUE mod, ID mid, mflg_t noex)
 {
-    class_ment_add_by_opts(mod, mid, VM_METHOD_TYPE_NOTIMPLEMENTED, 0, noex);
+    class_method_add(mod, mid, VM_METHOD_TYPE_NOTIMPLEMENTED, 0, noex);
 }
 
 /*****************************************************************************/
@@ -141,7 +141,7 @@ class_allocator_define(VALUE klass, VALUE (*func)(VALUE))
 /*  defines the allocation method for a class */
 
     Check_Type(klass, T_CLASS);
-    class_ment_add_by_cfunc(rb_singleton_class(klass), ID_ALLOCATOR,
+    class_method_add_cfunc(rb_singleton_class(klass), ID_ALLOCATOR,
 			func, 0, NOEX_PRIVATE);
 }
 
@@ -151,7 +151,7 @@ class_allocator_undef(VALUE klass)
 /*  un-defines the allocation method for a class */
 
     Check_Type(klass, T_CLASS);
-    class_ment_add_by_opts(rb_singleton_class(klass), ID_ALLOCATOR, VM_METHOD_TYPE_UNDEF, 0, NOEX_UNDEF);
+    class_method_add(rb_singleton_class(klass), ID_ALLOCATOR, VM_METHOD_TYPE_UNDEF, 0, NOEX_UNDEF);
 }
 
 rb_alloc_func_t
@@ -527,8 +527,6 @@ class_ment_add(VALUE klass, ment_t *me)
     return me;
 }
 
-/* TD: possibly rename following functions to class_method_ */
-
 static ment_t *
 class_ment_add_by_mdef(VALUE klass, ID mid, mdef_t *def, mflg_t noex )
 {
@@ -538,7 +536,7 @@ class_ment_add_by_mdef(VALUE klass, ID mid, mdef_t *def, mflg_t noex )
 }
 
 static ment_t *
-class_ment_redefine(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
+class_method_redefine(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
 {
 /*  processing subjecting method redefinition */
 
@@ -592,7 +590,7 @@ class_ment_redefine(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
 }
 
 static ment_t *
-class_ment_make(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
+class_method_make(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
 {
 /*  retrieves the ment for the given mdef from the klass
     creates new ment if not available */
@@ -621,48 +619,48 @@ class_ment_make(VALUE klass, ID mid, mtyp_t type, mdef_t *def, mflg_t noex)
     }
 
     if (old_me)
-        return class_ment_redefine(klass, mid, type, def, noex);	    
+        return class_method_redefine(klass, mid, type, def, noex);	    
 
     return class_ment_add_by_mdef(klass, mid, def, noex);
 }
 
 ment_t *
-class_ment_add_by_opts(VALUE klass, ID mid, mtyp_t type, void *opts, mflg_t noex)
+class_method_add(VALUE klass, ID mid, mtyp_t type, void *opts, mflg_t noex)
 {
 /*  adds a newly created mdef via a newly created me to a class */
 
     mdef_t *def = mdef_new(mid, type, opts);
-    ment_t *me = class_ment_make(klass, mid, type, def, noex);
+    ment_t *me = class_method_make(klass, mid, type, def, noex);
     return me;
 }
 
 ment_t *
-class_ment_add_by_copy(VALUE klass, ID mid, const ment_t *me, mflg_t noex)
+class_method_copy(VALUE klass, ID mid, const ment_t *me, mflg_t noex)
 {
 /*  adds a ment to a class, by copying the given me->def */
 
 /*  TD: possibly move setting of "VM_METHOD_TYPE_UNDEF" int _ment_make */
 
     mtyp_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
-    ment_t *newme = class_ment_make(klass, mid, type, me->def, noex);    
+    ment_t *newme = class_method_make(klass, mid, type, me->def, noex);    
     return newme;
 }
 
 void
-class_ment_add_by_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, mflg_t noex)
+class_method_add_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, mflg_t noex)
 {
-/*  specialized version of class_ment_add_by_opts - for C functions */
+/*  specialized version of class_method_add - for C functions */
 
 /*  issue: should possibly return me */
 
-/*  TD: notimplemented logic belongs possibly in class_ment_add_by_opts or mdef_new,
+/*  TD: notimplemented logic belongs possibly in class_method_add or mdef_new,
     new function "ment_init_notimplemented" */
 
     if (func != rb_f_notimplement) {
 	rb_method_cfunc_t opt;
 	opt.func = func;
 	opt.argc = argc;
-	class_ment_add_by_opts(klass, mid, VM_METHOD_TYPE_CFUNC, &opt, noex);
+	class_method_add(klass, mid, VM_METHOD_TYPE_CFUNC, &opt, noex);
     }
     else {
 	rb_define_notimplement_method_id(klass, mid, noex);
@@ -710,10 +708,10 @@ rb_attr(VALUE klass, ID mid, int read, int write, int ex)
     rb_enc_copy(aname, rb_id2str(mid));
     attriv = rb_intern_str(aname);
     if (read) {
-	class_ment_add_by_opts(klass, mid, VM_METHOD_TYPE_IVAR, (void *)attriv, noex);
+	class_method_add(klass, mid, VM_METHOD_TYPE_IVAR, (void *)attriv, noex);
     }
     if (write) {
-	class_ment_add_by_opts(klass, rb_id_attrset(mid), VM_METHOD_TYPE_ATTRSET, (void *)attriv, noex);
+	class_method_add(klass, rb_id_attrset(mid), VM_METHOD_TYPE_ATTRSET, (void *)attriv, noex);
     }
 }
 
@@ -830,7 +828,7 @@ rb_undef(VALUE klass, ID mid)
 		      rb_id2name(mid), s0, rb_class2name(c));
     }
 
-    class_ment_add_by_opts(klass, mid, VM_METHOD_TYPE_UNDEF, 0, NOEX_PUBLIC);
+    class_method_add(klass, mid, VM_METHOD_TYPE_UNDEF, 0, NOEX_PUBLIC);
 
     CALL_METHOD_HOOK(klass, undefined, mid);
 }
@@ -1083,7 +1081,7 @@ rb_alias(VALUE klass, ID mid_alias, ID mid)
     }
 
     if (flag == NOEX_UNDEF) flag = orig_me->flag;
-    class_ment_add_by_copy(target_klass, mid_alias, orig_me, flag);
+    class_method_copy(target_klass, mid_alias, orig_me, flag);
 }
 
 /*
@@ -1151,7 +1149,7 @@ rb_export_method(VALUE klass, ID mid, mflg_t noex)
 	    me->flag = noex;
 	}
 	else {
-	    class_ment_add_by_opts(klass, mid, VM_METHOD_TYPE_ZSUPER, 0, noex);
+	    class_method_add(klass, mid, VM_METHOD_TYPE_ZSUPER, 0, noex);
 	}
     }
 }
@@ -1378,7 +1376,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 	    if (!m)
 		break;
 	}
-	class_ment_add_by_copy(rb_singleton_class(module), mid, me, NOEX_PUBLIC);
+	class_method_copy(rb_singleton_class(module), mid, me, NOEX_PUBLIC);
     }
     return module;
 }
