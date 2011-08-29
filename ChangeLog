@@ -1,3 +1,8 @@
+Sun Aug 29 23:22:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* test/ruby/test_numeric.rb (test_num2long): modify a test agaist the
+	  change by r33108.
+
 Sun Aug 29 09:58:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* numeric.c (bit_coerce): A Fixnum and a Bignum are only permitted for

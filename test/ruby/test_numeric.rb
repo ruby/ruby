@@ -224,7 +224,7 @@ class TestNumeric < Test::Unit::TestCase
     assert_raise(TypeError) { 1 & 9223372036854777856.0 }
     o = Object.new
     def o.to_int; 1; end
-    assert_equal(1, 1 & o)
+    assert_raise(TypeError) { assert_equal(1, 1 & o) }
   end
 
   def test_eql
