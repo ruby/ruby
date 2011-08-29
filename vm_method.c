@@ -25,9 +25,9 @@
 #define class_method_add_cfunc  rb_add_method_cfunc
 #define class_method_copy	rb_method_entry_set
 
-#define class_ment		rb_method_entry
-#define class_ment_uncached	rb_method_entry_get_without_cache
-#define class_ment_search	search_method
+#define class_method_lookup	rb_method_entry
+#define class_method_lookup_uncached	rb_method_entry_get_without_cache
+#define class_ment_lookup	search_method
 
 #define class_allocator_define	rb_define_alloc_func
 #define class_allocator_undef	rb_undef_alloc_func
@@ -161,7 +161,7 @@ class_allocator_get(VALUE klass)
 
     ment_t *me;
     Check_Type(klass, T_CLASS);
-    me = class_ment(CLASS_OF(klass), ID_ALLOCATOR);
+    me = class_method_lookup(CLASS_OF(klass), ID_ALLOCATOR);
 
     if (me && me->def && me->def->type == VM_METHOD_TYPE_CFUNC) {
 	return (rb_alloc_func_t)me->def->body.cfunc.func;
@@ -405,7 +405,7 @@ class_ment_flagtest(VALUE klass, ID mid, mflg_t noex)
 {
 /*  ??? tests the flag of a modules ment */
 
-    const ment_t *me = class_ment(klass, mid);
+    const ment_t *me = class_method_lookup(klass, mid);
     if (me && VISI_CHECK(me->flag, noex)) {
 	return Qtrue;
     }
@@ -435,9 +435,9 @@ class_ment_get(VALUE klass, ID mid)
 }
 
 static ment_t*
-class_ment_search(VALUE klass, ID mid)
+class_ment_lookup(VALUE klass, ID mid)
 {
-/* searches for a ment in the class's inheritance chain */
+/* low level function, does a method lookup within the class's inheritance chain */
 /* issue: st_lookup does *not* a lookup, possibly rename to "get") */
 
     st_data_t body;
@@ -459,12 +459,12 @@ class_ment_search(VALUE klass, ID mid)
  * search method entry without the method cache.
  *
  * if you need method entry with method cache (normal case), use
- * class_ment() simply.
+ * class_method_lookup() simply.
  */
 ment_t *
-class_ment_uncached(VALUE klass, ID mid)
+class_method_lookup_uncached(VALUE klass, ID mid)
 {
-    ment_t *me = class_ment_search(klass, mid);
+    ment_t *me = class_ment_lookup(klass, mid);
 
 /*  TD: document this code */
     if (ruby_running) {
@@ -488,9 +488,10 @@ class_ment_uncached(VALUE klass, ID mid)
 }
 
 ment_t *
-class_ment(VALUE klass, ID mid)
+class_method_lookup(VALUE klass, ID mid)
 {
-/*  retrieves the ment from a given class. looks in mcache first */
+/*  the high level method lookup function, uses method lookup cache to retrieve
+    the ment from a given class. */
 
     struct cache_entry *ent;
 
@@ -500,7 +501,7 @@ class_ment(VALUE klass, ID mid)
 	return ent->me;
     }
 
-    return class_ment_uncached(klass, mid);
+    return class_method_lookup_uncached(klass, mid);
 }
 
 static ment_t *
@@ -808,7 +809,7 @@ rb_undef(VALUE klass, ID mid)
 	rb_warn("undefining `%s' may cause serious problems", rb_id2name(mid));
     }
 
-    me = class_ment_search(klass, mid);
+    me = class_ment_lookup(klass, mid);
 
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	const char *s0 = " class";
@@ -894,7 +895,7 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
 int
 rb_method_boundp(VALUE klass, ID mid, int ex)
 {
-    ment_t *me = class_ment(klass, mid);
+    ment_t *me = class_method_lookup(klass, mid);
 
     if (me != 0) {
 	if ((ex & ~NOEX_RESPONDS) && (me->flag & NOEX_PRIVATE)) {
@@ -1068,11 +1069,11 @@ rb_alias(VALUE klass, ID mid_alias, ID mid)
     }
 
   again:
-    orig_me = search_method(klass, mid);
+    orig_me = class_ment_lookup(klass, mid);
 
     if (UNDEFINED_METHOD_ENTRY_P(orig_me)) {
 	if ((TYPE(klass) != T_MODULE) ||
-	    (orig_me = class_ment_search(rb_cObject, mid), UNDEFINED_METHOD_ENTRY_P(orig_me))) {
+	    (orig_me = class_ment_lookup(rb_cObject, mid), UNDEFINED_METHOD_ENTRY_P(orig_me))) {
 	    rb_print_undef(klass, mid, 0);
 	}
     }
@@ -1136,9 +1137,9 @@ rb_export_method(VALUE klass, ID mid, mflg_t noex)
 	rb_secure(4);
     }
 
-    me = class_ment_search(klass, mid);
+    me = class_ment_lookup(klass, mid);
     if (!me && TYPE(klass) == T_MODULE) {
-	me = class_ment_search(rb_cObject, mid);
+	me = class_ment_lookup(rb_cObject, mid);
     }
 
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
@@ -1365,9 +1366,9 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 
 	mid = rb_to_id(argv[i]);
 	for (;;) {
-	    me = class_ment_search(m, mid);
+	    me = class_ment_lookup(m, mid);
 	    if (me == 0) {
-		me = class_ment_search(rb_cObject, mid);
+		me = class_ment_lookup(rb_cObject, mid);
 	    }
 	    if (UNDEFINED_METHOD_ENTRY_P(me)) {
 		rb_print_undef(module, mid, 0);
@@ -1389,7 +1390,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 int
 rb_method_basic_definition_p(VALUE klass, ID mid)
 {
-    const ment_t *me = class_ment(klass, mid);
+    const ment_t *me = class_method_lookup(klass, mid);
     if (me && (me->flag & NOEX_BASIC))
 	return 1;
     return 0;
