@@ -145,7 +145,7 @@ module Psych
     end
 
     class YamlAs
-      yaml_as 'helloworld'
+      psych_yaml_as 'helloworld' # this should be yaml_as but to avoid syck
     end
 
     def test_yaml_as
