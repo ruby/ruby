@@ -229,4 +229,46 @@ class TestFixnum < Test::Unit::TestCase
     assert(!(1.send(:<=, 0.0)))
     assert_raise(ArgumentError) { 1.send(:<=, nil) }
   end
+
+  class DummyNumeric < Numeric
+    def to_int
+      1
+    end
+  end
+
+  def test_and_with_float
+    assert_raise(TypeError) { 1 & 1.5 }
+  end
+
+  def test_and_with_rational
+    assert_raise(TypeError, "#1792") { 1 & Rational(3, 2) }
+  end
+
+  def test_and_with_nonintegral_numeric
+    assert_raise(TypeError, "#1792") { 1 & DummyNumeric.new }
+  end
+
+  def test_or_with_float
+    assert_raise(TypeError) { 1 | 1.5 }
+  end
+
+  def test_or_with_rational
+    assert_raise(TypeError, "#1792") { 1 | Rational(3, 2) }
+  end
+
+  def test_or_with_nonintegral_numeric
+    assert_raise(TypeError, "#1792") { 1 | DummyNumeric.new }
+  end
+
+  def test_xor_with_float
+    assert_raise(TypeError) { 1 ^ 1.5 }
+  end
+
+  def test_xor_with_rational
+    assert_raise(TypeError, "#1792") { 1 ^ Rational(3, 2) }
+  end
+
+  def test_xor_with_nonintegral_numeric
+    assert_raise(TypeError, "#1792") { 1 ^ DummyNumeric.new }
+  end
 end

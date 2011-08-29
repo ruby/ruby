@@ -118,6 +118,8 @@ class TestBignum < Test::Unit::TestCase
   T32P = T32 - 1 # 4294967295
   T64  = 2**64   # 18446744073709551616
   T64P = T64 - 1 # 18446744073709551615
+  T1024  = 2**1024
+  T1024P = T1024 - 1
 
   def test_big_2comp
     assert_equal("-4294967296", (~T32P).to_s)
@@ -319,6 +321,48 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(T32 + T31, T32 ^ T31)
     assert_equal(T31, (-T32) ^ (-T31))
     assert_equal(T64 + T32, T32 ^ T64)
+  end
+
+  class DummyNumeric < Numeric
+    def to_int
+      1
+    end
+  end
+
+  def test_and_with_float
+    assert_raise(TypeError) { T1024 & 1.5 }
+  end
+
+  def test_and_with_rational
+    assert_raise(TypeError, "#1792") { T1024 & Rational(3, 2) }
+  end
+
+  def test_and_with_nonintegral_numeric
+    assert_raise(TypeError, "#1792") { T1024 & DummyNumeric.new }
+  end
+
+  def test_or_with_float
+    assert_raise(TypeError) { T1024 | 1.5 }
+  end
+
+  def test_or_with_rational
+    assert_raise(TypeError, "#1792") { T1024 | Rational(3, 2) }
+  end
+
+  def test_or_with_nonintegral_numeric
+    assert_raise(TypeError, "#1792") { T1024 | DummyNumeric.new }
+  end
+
+  def test_xor_with_float
+    assert_raise(TypeError) { T1024 ^ 1.5 }
+  end
+
+  def test_xor_with_rational
+    assert_raise(TypeError, "#1792") { T1024 ^ Rational(3, 2) }
+  end
+
+  def test_xor_with_nonintegral_numeric
+    assert_raise(TypeError, "#1792") { T1024 ^ DummyNumeric.new }
   end
 
   def test_shift2

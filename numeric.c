@@ -2917,10 +2917,9 @@ static VALUE
 bit_coerce(VALUE x)
 {
     while (!FIXNUM_P(x) && TYPE(x) != T_BIGNUM) {
-	if (TYPE(x) == T_FLOAT) {
-	    rb_raise(rb_eTypeError, "can't convert Float into Integer");
-	}
-	x = rb_to_int(x);
+	rb_raise(rb_eTypeError,
+		 "can't convert %s into Integer for bitwise arithmetic",
+		 rb_obj_classname(x));
     }
     return x;
 }

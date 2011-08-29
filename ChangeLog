@@ -1,3 +1,15 @@
+Sun Aug 29 09:58:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* numeric.c (bit_coerce): A Fixnum and a Bignum are only permitted for
+	 bitwise arithmetic with a Fixnum.  #1792
+
+	* test/ruby/test_fixnum.rb: add tests for the above change.
+
+	* bignum.c (bit_coerce): A Fixnum and a Bignum are only permitted for
+	 bitwise arithmetic with a Bignum.  #1792
+
+	* test/ruby/test_bignum.rb: add tests for the above change.
+
 Sun Aug 28 15:38:17 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* ext/date/date_parse.c (date_zone_to_diff): keep a temporary string
