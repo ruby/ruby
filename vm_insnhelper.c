@@ -386,7 +386,7 @@ call_cfunc(VALUE (*func)(), VALUE recv,
 }
 
 static inline VALUE
-vm_call_cfunc(rb_thread_t *th, volatile rb_control_frame_t *reg_cfp,
+vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	      int num, volatile VALUE recv, const rb_block_t *blockptr,
 	      const rb_method_entry_t *me)
 {
@@ -406,6 +406,7 @@ vm_call_cfunc(rb_thread_t *th, volatile rb_control_frame_t *reg_cfp,
     if (reg_cfp != th->cfp + 1) {
 	rb_bug("cfp consistency error - send");
     }
+    RB_GC_GUARD(reg_cfp);
 
     vm_pop_frame(th);
 
