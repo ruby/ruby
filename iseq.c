@@ -688,8 +688,8 @@ get_line_info(const rb_iseq_t *iseq, size_t pos)
     const int debug = 0;
 
     if (debug) {
-	printf("size: %d\n", size);
-	printf("table[%d]: position: %d, line: %d, pos: %d\n",
+	printf("size: %"PRIdSIZE"\n", size);
+	printf("table[%"PRIdSIZE"]: position: %d, line: %d, pos: %"PRIdSIZE"\n",
 	       i, table[i].position, table[i].line_no, pos);
     }
 
@@ -701,7 +701,7 @@ get_line_info(const rb_iseq_t *iseq, size_t pos)
     }
     else {
 	for (i=1; i<size; i++) {
-	    if (debug) printf("table[%d]: position: %d, line: %d, pos: %d\n",
+	    if (debug) printf("table[%"PRIdSIZE"]: position: %d, line: %d, pos: %"PRIdSIZE"\n",
 			      i, table[i].position, table[i].line_no, pos);
 
 	if (table[i].position == pos) {
