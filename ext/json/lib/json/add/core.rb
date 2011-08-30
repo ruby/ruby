@@ -5,8 +5,6 @@ unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
 require 'date'
-require 'complex'
-require 'rational'
 
 # Symbol serialization/deserialization
 class Symbol
