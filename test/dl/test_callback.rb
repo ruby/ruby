@@ -48,8 +48,11 @@ module DL
       func = CFunc.new(addr, TYPE_VOID, 'test')
       f = Function.new(func, [TYPE_VOIDP])
 
-      f.call(dlwrap('foo'))
-      assert_equal 'foo', called_with
+      # Don't remove local variable arg.
+      # This necessary to protect objects from GC.
+      arg = 'foo'
+      f.call(dlwrap(arg))
+      assert_equal arg, called_with
     end
 
     def test_call_callback
