@@ -185,7 +185,9 @@ class Queue
       while true
         if @que.empty?
           raise ThreadError, "queue empty" if non_block
-          @waiting.push Thread.current
+          # @waiting.include? check is necessary for avoiding a race against
+          # Thread.wakeup [Bug 5195]
+          @waiting.push Thread.current unless @waiting.include?(Thread.current)
           @mutex.sleep
         else
           return @que.shift

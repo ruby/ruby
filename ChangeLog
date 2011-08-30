@@ -1,3 +1,9 @@
+Tue Aug 30 09:57:50 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/thread.rb (Queue#pop): fix a race against Thread.wakeup.
+	  Patch by Masaki Matsushita <glass.saga at gmail dot com>
+	  [Bug #5195] [ruby-dev:44400]
+
 Tue Aug 30 09:48:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* cont.c (fiber_entry): fix stack allocation failure on Debian
