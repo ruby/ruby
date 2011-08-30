@@ -1,3 +1,10 @@
+Tue Aug 30 09:48:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* cont.c (fiber_entry): fix stack allocation failure on Debian
+	  GNU/kFreeBSD.
+	  Patch by Lucas Nussbaum <lucas at lucas-nussbaum dot net>.
+	  [Bug #5241] [ruby-core:39147]
+
 Tue Aug 30 09:28:01 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_thread_select): rewrite by using
