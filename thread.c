@@ -2708,7 +2708,7 @@ rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
 	rb_fd_copy(efds, except, max);
     }
 
-    retval = rb_thread_fd_select(max, rfds, efds, wfds, timeout);
+    retval = rb_thread_fd_select(max, rfds, wfds, efds, timeout);
 
     if (rfds)
 	rb_fd_term(rfds);
