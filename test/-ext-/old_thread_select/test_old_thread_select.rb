@@ -19,7 +19,7 @@ class TestOldThreadSelect < Test::Unit::TestCase
       rc = IO.old_thread_select([r.fileno], nil, nil, 0.001)
       diff = Time.now - t0
       assert_equal 0, rc
-      assert diff > 0.001, "returned too early"
+      assert diff >= 0.001, "returned too early"
     end
   end
 
