@@ -41,12 +41,12 @@ class TestOldThreadSelect < Test::Unit::TestCase
 
   def test_old_select_signal_safe
     return unless Process.respond_to?(:kill)
-    usr1 = false
-    trap(:USR1) { usr1 = true }
+    received = false
+    trap(:INT) { received = true }
     main = Thread.current
     thr = Thread.new do
       Thread.pass until main.stop?
-      Process.kill(:USR1, $$)
+      Process.kill(:INT, $$)
       true
     end
 
@@ -62,8 +62,8 @@ class TestOldThreadSelect < Test::Unit::TestCase
     assert diff >= 1.0, "interrupted or short wait"
     assert_equal 0, rc
     assert_equal true, thr.value
-    assert usr1, "USR1 not received"
+    assert received, "SIGINT not received"
     ensure
-      trap(:USR1, "DEFAULT")
+      trap(:INT, "DEFAULT")
   end
 end

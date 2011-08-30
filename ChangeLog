@@ -1,3 +1,13 @@
+Wed Aug 31 00:04:38 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/-test-/old_thread_select/old_thread_select.c (old_thread_select):
+	  typo.
+
+	* test/-ext-/old_thread_select/test_old_thread_select.rb
+	  (TestOldThreadSelect#test_old_select_signal_safe): use SIGINT instead
+	  of SIGUSR1 because the former is general and the latter is platform
+	  dependent.
+
 Tue Aug 30 23:59:36 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c, include/ruby/intern.h (rb_w32_fd_copy): implement
