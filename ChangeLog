@@ -1,3 +1,7 @@
+Wed Aug 31 05:28:45 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread.c (rb_thread_select): critical typo in r33117.
+
 Wed Aug 31 05:28:26 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/-ext-/old_thread_select/test_old_thread_select.rb
