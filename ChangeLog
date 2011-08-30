@@ -1,3 +1,9 @@
+Tue Aug 30 09:16:17 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: fix a build failure on GNU Hurd.
+	  Patch by Samuel Thibault <sthibault at debian dot org>. Thank you!
+	  [Bug #5250] [ruby-core:39185]
+
 Sun Aug 28 15:38:17 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* backport r33106 from trunk.
