@@ -41,7 +41,7 @@ old_thread_select(VALUE klass, VALUE r, VALUE w, VALUE e, VALUE timeout)
     }
     rp = array2fdset(&rfds, r, &max);
     wp = array2fdset(&wfds, w, &max);
-    ep = array2fdset(&efds, w, &max);
+    ep = array2fdset(&efds, e, &max);
     rc = rb_thread_select(max, rp, wp, ep, tvp);
     if (rc == -1)
 	rb_sys_fail("rb_wait_for_single_fd");
