@@ -1,3 +1,10 @@
+Tue Aug 30 09:53:59 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* cont.c (fiber_entry): fix stack allocation failure on Debian
+	  GNU/kFreeBSD.
+	  Patch by Lucas Nussbaum <lucas at lucas-nussbaum dot net>.
+	  [Bug #5241] [ruby-core:39147]
+
 Tue Aug 30 09:52:29 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* backport r33117 from trunk.
