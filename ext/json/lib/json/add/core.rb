@@ -5,6 +5,8 @@ unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
 require 'date'
+require 'complex'
+require 'rational'
 
 # Symbol serialization/deserialization
 class Symbol
@@ -230,13 +232,49 @@ class Regexp
   def as_json(*)
     {
       JSON.create_id => self.class.name,
-      'o' => options,
-      's' => source,
+      'o'            => options,
+      's'            => source,
     }
   end
 
   # Stores class name (Regexp) with options <tt>o</tt> and source <tt>s</tt>
   # (Regexp or String) as JSON string
+  def to_json(*)
+    as_json.to_json
+  end
+end
+
+class Rational
+  def self.json_create(object)
+    Rational(object['n'], object['d'])
+  end
+
+  def as_json(*)
+    {
+      JSON.create_id => self.class.name,
+      'n'            => numerator,
+      'd'            => denominator,
+    }
+  end
+
+  def to_json(*)
+    as_json.to_json
+  end
+end
+
+class Complex
+  def self.json_create(object)
+    Complex(object['r'], object['i'])
+  end
+
+  def as_json(*)
+    {
+      JSON.create_id => self.class.name,
+      'r'            => real,
+      'i'            => imag,
+    }
+  end
+
   def to_json(*)
     as_json.to_json
   end

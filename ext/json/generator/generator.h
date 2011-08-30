@@ -45,7 +45,10 @@
 #define RSTRING_LEN(string) RSTRING(string)->len
 #endif
 
-#define RSTRING_PAIR(string) RSTRING_PTR(string), RSTRING_LEN(string)
+/* We don't need to guard objects for rbx, so let's do nothing at all. */
+#ifndef RB_GC_GUARD
+#define RB_GC_GUARD(object)
+#endif
 
 /* fbuffer implementation */
 
@@ -123,6 +126,7 @@ typedef struct JSON_Generator_StateStruct {
     long max_nesting;
     char allow_nan;
     char ascii_only;
+    char quirks_mode;
     long depth;
 } JSON_Generator_State;
 
