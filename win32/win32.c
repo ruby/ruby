@@ -2468,6 +2468,21 @@ rb_w32_fdisset(int fd, fd_set *set)
 
 /* License: Ruby's */
 void
+rb_w32_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
+{
+    max = min(src->fd_count, max);
+    if ((UINT)dst->capa < max) {
+	dst->capa = (src->fd_count / FD_SETSIZE + 1) * FD_SETSIZE;
+	dst->fdset = xrealloc(dst->fdset, sizeof(unsigned int) + sizeof(SOCKET) * dst->capa);
+    }
+
+    memcpy(dst->fdset->fd_array, src->fd_array,
+	   max * sizeof(src->fd_array[0]));
+    dst->fdset->fd_count = src->fd_count;
+}
+
+/* License: Ruby's */
+void
 rb_w32_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src)
 {
     if ((UINT)dst->capa < src->fdset->fd_count) {
@@ -2477,6 +2492,7 @@ rb_w32_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src)
 
     memcpy(dst->fdset->fd_array, src->fdset->fd_array,
 	   src->fdset->fd_count * sizeof(src->fdset->fd_array[0]));
+    dst->fdset->fd_count = src->fdset->fd_count;
 }
 
 //

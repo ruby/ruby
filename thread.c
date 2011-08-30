@@ -2686,7 +2686,7 @@ int
 rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
 		 struct timeval *timeout)
 {
-    rb_fdset_t fdsets[3] = { 0 };
+    rb_fdset_t fdsets[3];
     rb_fdset_t *rfds = NULL;
     rb_fdset_t *wfds = NULL;
     rb_fdset_t *efds = NULL;
@@ -2694,14 +2694,17 @@ rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
 
     if (read) {
 	rfds = &fdsets[0];
+	rb_fd_init(rfds);
 	rb_fd_copy(rfds, read, max);
     }
     if (write) {
 	wfds = &fdsets[1];
+	rb_fd_init(wfds);
 	rb_fd_copy(wfds, write, max);
     }
     if (except) {
 	efds = &fdsets[2];
+	rb_fd_init(wfds);
 	rb_fd_copy(efds, except, max);
     }
 

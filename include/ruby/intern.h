@@ -286,6 +286,8 @@ void rb_fd_term(rb_fdset_t *);
 void rb_fd_set(int, rb_fdset_t *);
 #define rb_fd_clr(n, f)		rb_w32_fdclr((n), (f)->fdset)
 #define rb_fd_isset(n, f)	rb_w32_fdisset((n), (f)->fdset)
+#define rb_fd_copy(d, s, n)	rb_w32_fd_copy((d), (s), (n))
+void rb_w32_fd_copy(rb_fdset_t *, const fd_set *, int);
 #define rb_fd_dup(d, s)	rb_w32_fd_dup((d), (s))
 void rb_w32_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src);
 #define rb_fd_select(n, rfds, wfds, efds, timeout)	rb_w32_select((n), (rfds) ? ((rb_fdset_t*)(rfds))->fdset : NULL, (wfds) ? ((rb_fdset_t*)(wfds))->fdset : NULL, (efds) ? ((rb_fdset_t*)(efds))->fdset: NULL, (timeout))
