@@ -1,3 +1,8 @@
+Wed Aug 31 00:50:01 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_select_with_thread): and my typo. we all must
+	  be more careful.
+
 Wed Aug 31 00:48:38 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread.c (rb_thread_select): critical typo in r33117.

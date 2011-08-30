@@ -2818,7 +2818,7 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	    if (else_rd.fdset->fd_count || else_wr.fdset->fd_count) {
 		r = do_select(nfds, rd, wr, ex, &zero); // polling
 		if (r < 0) break; // XXX: should I ignore error and return signaled handles?
-		r = copy_fd(rd, else_rd.fdset);
+		r += copy_fd(rd, else_rd.fdset);
 		r += copy_fd(wr, else_wr.fdset);
 		if (ex)
 		    r += ex->fd_count;
