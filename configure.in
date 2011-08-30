@@ -934,6 +934,11 @@ AS_CASE(["$target_os"],
 		AC_DEFINE(SIZEOF_STRUCT_DIRENT_TOO_SMALL, 1)
 		LIBS="-lm $LIBS"
 		],
+# GNU Hurd
+[gnu*], [
+		AC_DEFINE(SIZEOF_STRUCT_DIRENT_TOO_SMALL, 1)
+		LIBS="-lm $LIBS"
+		],
 [nextstep*], [	],
 [openstep*], [	],
 [rhapsody*], [	],

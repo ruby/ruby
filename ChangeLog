@@ -1,3 +1,9 @@
+Tue Aug 30 09:08:22 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: fix a build failure on GNU Hurd.
+	  Patch by Samuel Thibault <sthibault at debian dot org>. Thank you!
+	  [Bug #5250] [ruby-core:39185]
+
 Sun Aug 29 23:22:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* test/ruby/test_numeric.rb (test_num2long): modify a test agaist the
