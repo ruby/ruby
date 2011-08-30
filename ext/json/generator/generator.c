@@ -13,8 +13,8 @@ static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,
 
 static ID i_to_s, i_to_json, i_new, i_indent, i_space, i_space_before,
           i_object_nl, i_array_nl, i_max_nesting, i_allow_nan, i_ascii_only,
-          i_pack, i_unpack, i_create_id, i_extend, i_key_p, i_aref, i_send,
-          i_respond_to_p, i_match, i_keys, i_depth, i_dup;
+          i_quirks_mode, i_pack, i_unpack, i_create_id, i_extend, i_key_p,
+          i_aref, i_send, i_respond_to_p, i_match, i_keys, i_depth, i_dup;
 
 /*
  * Copyright 2001-2004 Unicode, Inc.
@@ -347,6 +347,16 @@ static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
         MEMCPY(fb->ptr + fb->len, newstr, char, len);
         fb->len += len;
     }
+}
+
+static void fbuffer_append_str(FBuffer *fb, VALUE str)
+{
+    const char *newstr = StringValuePtr(str);
+    unsigned long len = RSTRING_LEN(str);
+
+    RB_GC_GUARD(str);
+
+    fbuffer_append(fb, newstr, len);
 }
 
 static void fbuffer_append_char(FBuffer *fb, char newchr)
@@ -688,6 +698,8 @@ static VALUE cState_configure(VALUE self, VALUE opts)
     state->allow_nan = RTEST(tmp);
     tmp = rb_hash_aref(opts, ID2SYM(i_ascii_only));
     state->ascii_only = RTEST(tmp);
+    tmp = rb_hash_aref(opts, ID2SYM(i_quirks_mode));
+    state->quirks_mode = RTEST(tmp);
     return self;
 }
 
@@ -708,6 +720,7 @@ static VALUE cState_to_h(VALUE self)
     rb_hash_aset(result, ID2SYM(i_array_nl), rb_str_new(state->array_nl, state->array_nl_len));
     rb_hash_aset(result, ID2SYM(i_allow_nan), state->allow_nan ? Qtrue : Qfalse);
     rb_hash_aset(result, ID2SYM(i_ascii_only), state->ascii_only ? Qtrue : Qfalse);
+    rb_hash_aset(result, ID2SYM(i_quirks_mode), state->quirks_mode ? Qtrue : Qfalse);
     rb_hash_aset(result, ID2SYM(i_max_nesting), LONG2FIX(state->max_nesting));
     rb_hash_aset(result, ID2SYM(i_depth), LONG2FIX(state->depth));
     return result;
@@ -852,7 +865,7 @@ static void generate_json_fixnum(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
 static void generate_json_bignum(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     VALUE tmp = rb_funcall(obj, i_to_s, 0);
-    fbuffer_append(buffer, RSTRING_PAIR(tmp));
+    fbuffer_append_str(buffer, tmp);
 }
 
 static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
@@ -869,7 +882,7 @@ static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
             rb_raise(eGeneratorError, "%u: %s not allowed in JSON", __LINE__, StringValueCStr(tmp));
         }
     }
-    fbuffer_append(buffer, RSTRING_PAIR(tmp));
+    fbuffer_append_str(buffer, tmp);
 }
 
 static void generate_json(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
@@ -897,7 +910,7 @@ static void generate_json(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *s
     } else if (rb_respond_to(obj, i_to_json)) {
         tmp = rb_funcall(obj, i_to_json, 1, Vstate);
         Check_Type(tmp, T_STRING);
-        fbuffer_append(buffer, RSTRING_PAIR(tmp));
+        fbuffer_append_str(buffer, tmp);
     } else {
         tmp = rb_funcall(obj, i_to_s, 0);
         Check_Type(tmp, T_STRING);
@@ -961,11 +974,14 @@ static VALUE cState_generate(VALUE self, VALUE obj)
 {
     VALUE result = cState_partial_generate(self, obj);
     VALUE re, args[2];
-    args[0] = rb_str_new2("\\A\\s*(?:\\[.*\\]|\\{.*\\})\\s*\\Z");
-    args[1] = CRegexp_MULTILINE;
-    re = rb_class_new_instance(2, args, rb_cRegexp);
-    if (NIL_P(rb_funcall(re, i_match, 1, result))) {
-        rb_raise(eGeneratorError, "only generation of JSON objects or arrays allowed");
+    GET_STATE(self);
+    if (!state->quirks_mode) {
+        args[0] = rb_str_new2("\\A\\s*(?:\\[.*\\]|\\{.*\\})\\s*\\Z");
+        args[1] = CRegexp_MULTILINE;
+        re = rb_class_new_instance(2, args, rb_cRegexp);
+        if (NIL_P(rb_funcall(re, i_match, 1, result))) {
+            rb_raise(eGeneratorError, "only generation of JSON objects or arrays allowed");
+        }
     }
     return result;
 }
@@ -1288,6 +1304,29 @@ static VALUE cState_ascii_only_p(VALUE self)
 }
 
 /*
+ * call-seq: quirks_mode?
+ *
+ * Returns true, if quirks mode is enabled. Otherwise returns false.
+ */
+static VALUE cState_quirks_mode_p(VALUE self)
+{
+    GET_STATE(self);
+    return state->quirks_mode ? Qtrue : Qfalse;
+}
+
+/*
+ * call-seq: quirks_mode=(enable)
+ *
+ * If set to true, enables the quirks_mode mode.
+ */
+static VALUE cState_quirks_mode_set(VALUE self, VALUE enable)
+{
+    GET_STATE(self);
+    state->quirks_mode = RTEST(enable);
+    return Qnil;
+}
+
+/*
  * call-seq: depth
  *
  * This integer returns the current depth of data structure nesting.
@@ -1345,6 +1384,9 @@ void Init_generator()
     rb_define_method(cState, "check_circular?", cState_check_circular_p, 0);
     rb_define_method(cState, "allow_nan?", cState_allow_nan_p, 0);
     rb_define_method(cState, "ascii_only?", cState_ascii_only_p, 0);
+    rb_define_method(cState, "quirks_mode?", cState_quirks_mode_p, 0);
+    rb_define_method(cState, "quirks_mode", cState_quirks_mode_p, 0);
+    rb_define_method(cState, "quirks_mode=", cState_quirks_mode_set, 1);
     rb_define_method(cState, "depth", cState_depth, 0);
     rb_define_method(cState, "depth=", cState_depth_set, 1);
     rb_define_method(cState, "configure", cState_configure, 1);
@@ -1392,6 +1434,7 @@ void Init_generator()
     i_max_nesting = rb_intern("max_nesting");
     i_allow_nan = rb_intern("allow_nan");
     i_ascii_only = rb_intern("ascii_only");
+    i_quirks_mode = rb_intern("quirks_mode");
     i_depth = rb_intern("depth");
     i_pack = rb_intern("pack");
     i_unpack = rb_intern("unpack");

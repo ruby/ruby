@@ -104,6 +104,42 @@ class TC_JSON < Test::Unit::TestCase
     assert_equal({ "a" => 0.23 }, parse('  {  "a"  :  0.23  }  '))
   end
 
+  def test_parse_json_primitive_values
+    assert_raise(JSON::ParserError) { JSON.parse('') }
+    assert_raise(JSON::ParserError) { JSON.parse('', :quirks_mode => true) }
+    assert_raise(JSON::ParserError) { JSON.parse('  /* foo */ ') }
+    assert_raise(JSON::ParserError) { JSON.parse('  /* foo */ ', :quirks_mode => true) }
+    parser = JSON::Parser.new('null')
+    assert_equal false, parser.quirks_mode?
+    assert_raise(JSON::ParserError) { parser.parse }
+    assert_raise(JSON::ParserError) { JSON.parse('null') }
+    assert_equal nil, JSON.parse('null', :quirks_mode => true)
+    parser = JSON::Parser.new('null', :quirks_mode => true)
+    assert_equal true, parser.quirks_mode?
+    assert_equal nil, parser.parse
+    assert_raise(JSON::ParserError) { JSON.parse('false') }
+    assert_equal false, JSON.parse('false', :quirks_mode => true)
+    assert_raise(JSON::ParserError) { JSON.parse('true') }
+    assert_equal true, JSON.parse('true', :quirks_mode => true)
+    assert_raise(JSON::ParserError) { JSON.parse('23') }
+    assert_equal 23, JSON.parse('23', :quirks_mode => true)
+    assert_raise(JSON::ParserError) { JSON.parse('1') }
+    assert_equal 1, JSON.parse('1', :quirks_mode => true)
+    assert_raise(JSON::ParserError) { JSON.parse('3.141') }
+    assert_in_delta 3.141, JSON.parse('3.141', :quirks_mode => true), 1E-3
+    assert_raise(JSON::ParserError) { JSON.parse('18446744073709551616') }
+    assert_equal 2 ** 64, JSON.parse('18446744073709551616', :quirks_mode => true)
+    assert_raise(JSON::ParserError) { JSON.parse('"foo"') }
+    assert_equal 'foo', JSON.parse('"foo"', :quirks_mode => true)
+    assert_raise(JSON::ParserError) { JSON.parse('NaN', :allow_nan => true) }
+    assert JSON.parse('NaN', :quirks_mode => true, :allow_nan => true).nan?
+    assert_raise(JSON::ParserError) { JSON.parse('Infinity', :allow_nan => true) }
+    assert JSON.parse('Infinity', :quirks_mode => true, :allow_nan => true).infinite?
+    assert_raise(JSON::ParserError) { JSON.parse('-Infinity', :allow_nan => true) }
+    assert JSON.parse('-Infinity', :quirks_mode => true, :allow_nan => true).infinite?
+    assert_raise(JSON::ParserError) { JSON.parse('[ 1, ]', :quirks_mode => true) }
+  end
+
   if Array.method_defined?(:permutation)
     def test_parse_more_complex_arrays
       a = [ nil, false, true, "foßbar", [ "n€st€d", true ], { "nested" => true, "n€ßt€ð2" => {} }]
