@@ -2686,29 +2686,36 @@ int
 rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
 		 struct timeval *timeout)
 {
-    if (!read && !write && !except) {
-	if (!timeout) {
-	    rb_thread_sleep_forever();
-	    return 0;
-	}
-	rb_thread_wait_for(*timeout);
-	return 0;
-    }
-    else {
-	int lerrno = errno;
-	int result;
+    rb_fdset_t fdsets[3] = { 0 };
+    rb_fdset_t *rfds = NULL;
+    rb_fdset_t *wfds = NULL;
+    rb_fdset_t *efds = NULL;
+    int retval;
 
-	BLOCKING_REGION({
-		result = select(max, read, write, except, timeout);
-		if (result < 0)
-		    lerrno = errno;
-	    }, ubf_select, GET_THREAD());
-	errno = lerrno;
-
-	return result;
+    if (read) {
+	rfds = &fdsets[0];
+	rb_fd_copy(rfds, read, max);
     }
+    if (write) {
+	wfds = &fdsets[1];
+	rb_fd_copy(wfds, write, max);
+    }
+    if (except) {
+	efds = &fdsets[2];
+	rb_fd_copy(efds, except, max);
+    }
+
+    retval = rb_thread_fd_select(max, rfds, efds, wfds, timeout);
+
+    if (rfds)
+	rb_fd_term(rfds);
+    if (wfds)
+	rb_fd_term(wfds);
+    if (efds)
+	rb_fd_term(efds);
+
+    return retval;
 }
-
 
 int
 rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t * except,

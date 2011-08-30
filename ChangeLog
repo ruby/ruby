@@ -1,3 +1,15 @@
+Tue Aug 30 09:28:01 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_select): rewrite by using
+	  rb_thread_fd_select(). old one is EINTR unsafe.
+	  Patch by Eric Wong. [Bug #5229] [ruby-core:39102]
+	
+	* test/-ext-/old_thread_select/test_old_thread_select.rb:
+	  a testcase for rb_thread_select().
+	* ext/-test-/old_thread_select/old_thread_select.c: ditto.
+	* ext/-test-/old_thread_select/depend: ditto.
+	* ext/-test-/old_thread_select/extconf.rb: ditto.
+
 Tue Aug 30 09:08:22 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: fix a build failure on GNU Hurd.
