@@ -43,7 +43,7 @@ Tue Aug 30 23:59:36 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/win32.c, include/ruby/intern.h (rb_w32_fd_copy): implement
 	  for rb_thread_select() in thread.c.  the use of rb_fd_copy() is
 	  introduced in r33117.
-	  [Bug #5229] [ruby-core:39102]
+	  [Bug #5251] [ruby-core:39195]
 
 	* thread.c (rb_thread_select): must call rb_fd_init() before using
 	  rb_fdset_t.  see the implementations of rb_fd_init()s if you want to
