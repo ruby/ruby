@@ -3,7 +3,7 @@
 
 require 'test/unit'
 require File.join(File.dirname(__FILE__), 'setup_variant')
-load 'json/add/core.rb'
+require 'json/add/core.rb'
 require 'date'
 
 class TC_JSONAddition < Test::Unit::TestCase

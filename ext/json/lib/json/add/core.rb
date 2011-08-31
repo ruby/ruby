@@ -241,39 +241,3 @@ class Regexp
     as_json.to_json
   end
 end
-
-class Rational
-  def self.json_create(object)
-    Rational(object['n'], object['d'])
-  end
-
-  def as_json(*)
-    {
-      JSON.create_id => self.class.name,
-      'n'            => numerator,
-      'd'            => denominator,
-    }
-  end
-
-  def to_json(*)
-    as_json.to_json
-  end
-end
-
-class Complex
-  def self.json_create(object)
-    Complex(object['r'], object['i'])
-  end
-
-  def as_json(*)
-    {
-      JSON.create_id => self.class.name,
-      'r'            => real,
-      'i'            => imag,
-    }
-  end
-
-  def to_json(*)
-    as_json.to_json
-  end
-end

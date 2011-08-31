@@ -1,3 +1,7 @@
+Wed Aug 31 15:54:11 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json: Merge json gem v1.5.4 (3dab4c5a6a97fac03dac).
+
 Wed Aug 31 13:09:41 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* numeric.c (flo_round): Avoid overflow by optimizing for trivial
