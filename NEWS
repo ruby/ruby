@@ -182,6 +182,9 @@ with all sufficient information, see the ChangeLog file.
     * IO#winsize
     * IO.console
 
+* json
+  * updated to v1.5.4.
+
 * matrix
   * new classes:
     * Matrix::EigenvalueDecomposition
