@@ -2069,5 +2069,32 @@ EOT
     }
     assert(c.ascii_only?, "should be ascii_only #{bug4557}")
   end
-end
 
+  def test_default_mode_on_dosish
+    with_tmpdir {
+      open("a", "w") {|f| f.puts}
+      assert_equal("\r\n", IO.binread("a"))
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_default_mode_on_unix
+    with_tmpdir {
+      open("a", "w") {|f| f.puts}
+      assert_equal("\n", IO.binread("a"))
+    }
+  end unless /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_text_mode
+    with_tmpdir {
+      open("a", "wt") {|f| f.puts}
+      assert_equal("\r\n", IO.binread("a"))
+    }
+  end
+
+  def test_binary_mode
+    with_tmpdir {
+      open("a", "wb") {|f| f.puts}
+      assert_equal("\n", IO.binread("a"))
+    }
+  end
+end
