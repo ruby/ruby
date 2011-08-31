@@ -1,3 +1,7 @@
+Wed Aug 31 17:20:56 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* Re-apply r33078, thread-safe autoload which is reverted at r33093.
+
 Wed Aug 31 16:28:04 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io_m17n.rb (TestIO_M17N#test_{default_mode_on_dosish,

@@ -1178,7 +1178,7 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 	    cref = cref->nd_next;
 
 	    if (!NIL_P(klass)) {
-		VALUE am = 0;
+		VALUE av, am = 0;
 		st_data_t data;
 	      search_continue:
 		if (RCLASS_CONST_TBL(klass) &&
@@ -1188,6 +1188,7 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 			if (am == klass) break;
 			am = klass;
 			if (is_defined) return 1;
+			if (rb_autoloading_value(klass, id, &av)) return av;
 			rb_autoload_load(klass, id);
 			goto search_continue;
 		    }
