@@ -1,3 +1,8 @@
+Wed Aug 31 13:09:41 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* numeric.c (flo_round): Avoid overflow by optimizing for trivial
+	  cases [Bug #5227]
+
 Wed Aug 31 00:50:01 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_select_with_thread): and my typo. we all must
