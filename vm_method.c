@@ -6,6 +6,8 @@
 #define CACHE_MASK 0x7ff
 #define EXPR1(c,m) ((((c)>>3)^(m))&CACHE_MASK)
 
+#define ruby_running (GET_VM()->running)
+
 /*****************************************************************************/
 /* RENAME SECTION: change names initially only for this file */
 /* TD: apply renames within method.h and source-code-wide, then remove those
@@ -56,8 +58,6 @@ struct cache_entry {		/* method hash table. */
 };
 
 static struct cache_entry cache[CACHE_SIZE];
-#define ruby_running (GET_VM()->running)
-/* int ruby_running = 0; */
 
 static void
 vm_clear_global_method_cache(void)
@@ -110,25 +110,6 @@ static void
 rb_define_notimplement_method_id(VALUE mod, ID mid, mflg_t noex)
 {
     class_method_add(mod, mid, VM_METHOD_TYPE_NOTIMPLEMENTED, 0, noex);
-}
-
-/*****************************************************************************/
-/*  DIVERSE FUNCTIONS                                                        */
-/*****************************************************************************/
-
-#undef rb_disable_super
-#undef rb_enable_super
-
-void
-rb_disable_super(VALUE klass, const char *name)
-{
-    rb_warning("rb_disable_super() is obsolete");
-}
-
-void
-rb_enable_super(VALUE klass, const char *name)
-{
-    rb_warning("rb_enable_super() is obsolete");
 }
 
 /*****************************************************************************/
@@ -437,7 +418,8 @@ class_ment_get(VALUE klass, ID mid)
 static ment_t*
 class_ment_lookup(VALUE klass, ID mid)
 {
-/* low level function, does a method lookup within the class's inheritance chain */
+/* low level internal function, does a method lookup within the class's
+   inheritance chain */
 /* issue: st_lookup does *not* a lookup, possibly rename to "get") */
 
     st_data_t body;
@@ -1474,6 +1456,25 @@ static VALUE
 obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
 {
     return Qfalse;
+}
+
+/*****************************************************************************/
+/*  DIVERSE FUNCTIONS                                                        */
+/*****************************************************************************/
+
+#undef rb_disable_super
+#undef rb_enable_super
+
+void
+rb_disable_super(VALUE klass, const char *name)
+{
+    rb_warning("rb_disable_super() is obsolete");
+}
+
+void
+rb_enable_super(VALUE klass, const char *name)
+{
+    rb_warning("rb_enable_super() is obsolete");
 }
 
 void
