@@ -1,3 +1,9 @@
+Wed Aug 31 13:19:31 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* numeric.c (flo_round): Avoid overflow by optimizing for trivial
+	  cases
+	  [Bug #5227]
+
 Wed Aug 31 06:45:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: fix r32835. $withval can't be used outer AC_ARG_WITH().
