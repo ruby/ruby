@@ -1,3 +1,21 @@
+Wed Aug 31 17:28:23 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* variable.c (rb_autoload): There was a chance to run GC (from
+	  rb_str_new2()) before finishing autoload_data_i construction. It
+	  caused SEGV at rb_gc_mark() at autoload_i_mark.
+
+	* variable.c (rb_autoload_load): Move RB_GC_GUARD() to proper
+	  position based on suggestion by CHIKANAGA Tomoyuki at
+	  http://d.hatena.ne.jp/nagachika/20110826/ruby_trunk_changes_33070_33078
+
+	* variable.c (autoload_defined_p): Fix incompatible autoload behavior
+	  that causes Rails crash. Class deifnition instruction defined in
+	  'defineclass' in insns.def always invokes rb_autoload_load for a
+	  constant. It's invoked for every class definition regardless of
+	  existence of autoload definition. rb_autoload_load checkes if a
+	  constant is defined as autoloaded, but new thread-safe autoload
+	  returned different value if the constant is under autoloading.
+
 Wed Aug 31 17:20:56 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* Re-apply r33078, thread-safe autoload which is reverted at r33093.

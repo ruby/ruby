@@ -1524,17 +1524,17 @@ rb_autoload(VALUE mod, ID id, const char *file)
 	st_add_direct(tbl, (st_data_t)autoload, av);
 	DATA_PTR(av) = tbl = st_init_numtable();
     }
-    ad = TypedData_Wrap_Struct(0, &autoload_data_i_type, 0);
-    st_insert(tbl, (st_data_t)id, (st_data_t)ad);
-    DATA_PTR(ad) = ele = ALLOC(struct autoload_data_i);
-
     fn = rb_str_new2(file);
     FL_UNSET(fn, FL_TAINT);
     OBJ_FREEZE(fn);
+
+    ele = ALLOC(struct autoload_data_i);
     ele->feature = fn;
     ele->safe_level = rb_safe_level();
     ele->thread = Qnil;
     ele->value = Qundef;
+    ad = TypedData_Wrap_Struct(0, &autoload_data_i_type, ele);
+    st_insert(tbl, (st_data_t)id, (st_data_t)ad);
 }
 
 static void
@@ -1610,7 +1610,7 @@ autoload_defined_p(VALUE mod, ID id)
     if (!tbl || !st_lookup(tbl, (st_data_t)id, &val) || ((rb_const_entry_t*)val)->value != Qundef) {
 	return 0;
     }
-    return 1;
+    return !rb_autoloading_value(mod, id, NULL);
 }
 
 int
@@ -1674,7 +1674,6 @@ rb_autoload_load(VALUE mod, ID id)
 	ele->thread = rb_thread_current();
     }
     /* autoload_data_i can be deleted by another thread while require */
-    RB_GC_GUARD(load);
     result = rb_protect((VALUE(*)(VALUE))autoload_require, (VALUE)ele, &state);
     if (ele->thread == rb_thread_current()) {
 	ele->thread = Qnil;
@@ -1694,6 +1693,7 @@ rb_autoload_load(VALUE mod, ID id)
 	    rb_ensure((VALUE(*)(VALUE))autoload_const_set, (VALUE)&args, reset_safe, (VALUE)safe_backup);
 	}
     }
+    RB_GC_GUARD(load);
     return result;
 }
 
