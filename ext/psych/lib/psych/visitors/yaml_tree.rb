@@ -214,12 +214,19 @@ module Psych
         end
       end
 
+      def binary? string
+        string.encoding == Encoding::ASCII_8BIT ||
+          string.index("\x00") ||
+          string.count("\x00-\x7F", "^ -~\t\r\n").fdiv(string.length) > 0.3
+      end
+      private :binary?
+
       def visit_String o
         plain = false
         quote = false
         style = Nodes::Scalar::ANY
 
-        if o.index("\x00") || o.count("\x00-\x7F", "^ -~\t\r\n").fdiv(o.length) > 0.3
+        if binary?(o)
           str   = [o].pack('m').chomp
           tag   = '!binary' # FIXME: change to below when syck is removed
           #tag   = 'tag:yaml.org,2002:binary'

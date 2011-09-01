@@ -2,6 +2,14 @@ require 'psych/helper'
 
 module Psych
   class TestString < TestCase
+    def test_tagged_binary_should_be_dumped_as_binary
+      string = "hello world!"
+      string.force_encoding 'ascii-8bit'
+      yml = Psych.dump string
+      assert_match(/binary/, yml)
+      assert_equal string, Psych.load(yml)
+    end
+
     def test_binary_string_null
       string = "\x00"
       yml = Psych.dump string

@@ -1,3 +1,9 @@
+Fri Sep  2 04:05:25 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: emit strings tagged as
+	  ascii-8bit as binary in YAML.
+	* test/psych/test_string.rb: corresponding test.
+
 Fri Sep  2 01:07:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_round): substitute machine dependent magic number.
