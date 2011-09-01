@@ -895,6 +895,7 @@ defineclass
 (VALUE val)
 {
     VALUE klass;
+    int newclass = 1;
 
     switch ((int)define_type) {
       case 0: /* scoped:   class Foo::Bar */
@@ -903,15 +904,16 @@ defineclass
 
 	if (super == Qnil) {
 	    super = rb_cObject;
+	    newclass = 0;
 	}
 
 	vm_check_if_namespace(cbase);
 
 	/* find klass */
 	rb_autoload_load(cbase, id);
-	if (rb_const_defined_at(cbase, id)) {
+	if (vm_const_defined_at(cbase, id, newclass)) {
 	    /* already exist */
-	    klass = define_type == 0 ? rb_public_const_get(cbase, id) : rb_const_get_at(cbase, id);
+	    klass = define_type == 0 ? rb_public_const_get(cbase, id) : rb_const_get_from(cbase, id);
 	    if (TYPE(klass) != T_CLASS) {
 		rb_raise(rb_eTypeError, "%s is not a class", rb_id2name(id));
 	    }
@@ -947,8 +949,8 @@ defineclass
 	vm_check_if_namespace(cbase);
 
 	/* find klass */
-	if (rb_const_defined_at(cbase, id)) {
-	    klass = define_type == 2 ? rb_public_const_get(cbase, id) : rb_const_get_at(cbase, id);
+	if (vm_const_defined_at(cbase, id, 0)) {
+	    klass = define_type == 2 ? rb_public_const_get(cbase, id) : rb_const_get_from(cbase, id);
 	    /* already exist */
 	    if (TYPE(klass) != T_MODULE) {
 		rb_raise(rb_eTypeError, "%s is not a module", rb_id2name(id));

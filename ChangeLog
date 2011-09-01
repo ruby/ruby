@@ -1,3 +1,9 @@
+Thu Sep  1 17:31:22 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (defineclass), vm_insnhelper.c (vm_get_cvar_base): see
+	  also inherited constants for classes without superclass and
+	  modules.  [ruby-core:37698] [Bug #3423]
+
 Thu Sep  1 14:11:16 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_thread.rb (TestThread#test_no_valid_cfp): skip when
