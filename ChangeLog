@@ -1,3 +1,38 @@
+Thu Sep  1 16:18:44 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* Release GVL while OpenSSL's public key generation.
+
+	    t = Thread.new { print "."; sleep 0.1 }
+	    key = OpenSSL::PKey::RSA.new(2048)
+	    #=> Thread t works in parallel with public key generation if
+		OS/machine allows it.
+
+	  This works with OpenSSL >= 0.9.8. From this version, it has new
+	  public key generation function which allows us to interrupt the
+	  execution while pkey generation iterations.
+
+	* ext/openssl/extconf.rb: Check existence of OpenSSL's new public key
+	  generation function. (DH_generate_parameters_ex,
+	  DSA_generate_parameters_ex and RSA_generate_key_ex.
+
+	* ext/openssl/ossl_pkey.{h,c} (ossl_generate_cb_2,
+	  ossl_generate_cb_stop): Added new callback function for OpenSSL pkey
+	  generation which handles Thread interruption by Ruby.
+	  ossl_generate_cb_stop is the unblock function(ubf) for Ruby which
+	  sets a stop flag. New pkey generation callback ossl_generate_cb_2
+	  checks the stop flag at each iterations of OpenSSL and interrupts
+	  pkey generation when the flag is set.
+
+	* ext/openssl/ossl_pkey_dsa.c (dsa_generate): Call
+	  rb_thread_blocking_region with the above unblock function to release
+	  GVL while pkey generation.
+
+	* ext/openssl/ossl_pkey_rsa.c (rsa_generate): ditto.
+
+	* ext/openssl/ossl_pkey_dh.c (dh_generate): ditto.
+
+	* test/openssl/test_pkey_{dh,dsa,rsa}.rb: Test it.
+
 Thu Sep  1 14:06:54 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_thread.rb (TestThread#test_no_valid_cfp): skip when

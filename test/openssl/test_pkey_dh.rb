@@ -8,6 +8,13 @@ class OpenSSL::TestPKeyDH < Test::Unit::TestCase
     assert_key(dh)
   end
 
+  def test_new_break
+    assert_nil(OpenSSL::PKey::DH.new(256) { break })
+    assert_raises(RuntimeError) do
+      OpenSSL::PKey::DH.new(256) { raise }
+    end
+  end
+
   def test_to_der
     dh = OpenSSL::PKey::DH.new(256)
     der = dh.to_der

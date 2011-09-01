@@ -76,12 +76,76 @@ ossl_rsa_new(EVP_PKEY *pkey)
 /*
  * Private
  */
+#if defined(HAVE_RSA_GENERATE_KEY_EX) && HAVE_BN_GENCB
+struct rsa_blocking_gen_arg {
+    RSA *rsa;
+    BIGNUM *e;
+    int size;
+    BN_GENCB *cb;
+    int result;
+};
+
+static void
+rsa_blocking_gen(void *arg)
+{
+    struct rsa_blocking_gen_arg *gen = (struct rsa_blocking_gen_arg *)arg;
+    gen->result = RSA_generate_key_ex(gen->rsa, gen->size, gen->e, gen->cb);
+}
+#endif
+
 static RSA *
 rsa_generate(int size, int exp)
 {
-    return RSA_generate_key(size, exp,
-	    rb_block_given_p() ? ossl_generate_cb : NULL,
-	    NULL);
+#if defined(HAVE_RSA_GENERATE_KEY_EX) && HAVE_BN_GENCB
+    int i;
+    BN_GENCB cb;
+    struct ossl_generate_cb_arg cb_arg;
+    struct rsa_blocking_gen_arg gen_arg;
+    RSA *rsa = RSA_new();
+    BIGNUM *e = BN_new();
+
+    if (!rsa || !e) {
+	if (e) BN_free(e);
+	if (rsa) RSA_free(rsa);
+	return 0;
+    }
+    for (i = 0; i < (int)sizeof(exp); ++i) {
+	if (exp & (1 << i)) {
+	    if (BN_set_bit(e, i) == 0) {
+		BN_free(e);
+		RSA_free(rsa);
+		return 0;
+	    }
+	}
+    }
+
+    memset(&cb_arg, 0, sizeof(struct ossl_generate_cb_arg));
+    if (rb_block_given_p())
+	cb_arg.yield = 1;
+    BN_GENCB_set(&cb, ossl_generate_cb_2, &cb_arg);
+    gen_arg.rsa = rsa;
+    gen_arg.e = e;
+    gen_arg.size = size;
+    gen_arg.cb = &cb;
+    if (cb_arg.yield == 1) {
+	/* we cannot release GVL when callback proc is supplied */
+	rsa_blocking_gen(&gen_arg);
+    } else {
+	/* there's a chance to unblock */
+	rb_thread_blocking_region(rsa_blocking_gen, &gen_arg, ossl_generate_cb_stop, &cb_arg);
+    }
+    if (!gen_arg.result) {
+	BN_free(e);
+	RSA_free(rsa);
+	if (cb_arg.state) rb_jump_tag(cb_arg.state);
+	return 0;
+    }
+
+    BN_free(e);
+    return rsa;
+#else
+    return RSA_generate_key(size, exp, rb_block_given_p() ? ossl_generate_cb : NULL, NULL);
+#endif
 }
 
 /*
