@@ -1253,6 +1253,16 @@ vm_get_cvar_base(NODE *cref)
     return klass;
 }
 
+static int
+vm_const_defined_at(VALUE cbase, ID id, int newclass)
+{
+    int ret = rb_const_defined_at(cbase, id);
+    if (!ret && !newclass) {
+	while ((cbase = RCLASS_SUPER(cbase)) != 0 && cbase != rb_cObject &&
+	       !(ret = rb_const_defined_at(cbase, id)));
+    }
+    return ret;
+}
 
 #ifndef USE_IC_FOR_IVAR
 #define USE_IC_FOR_IVAR 1

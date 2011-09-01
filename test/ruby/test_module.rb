@@ -545,6 +545,20 @@ class TestModule < Test::Unit::TestCase
     INPUT
   end
 
+  def test_const_in_module
+    bug3423 = '[ruby-core:37698]'
+    assert_in_out_err([], <<-INPUT, %w[ok], [], bug3423)
+module LangModuleSpecInObject
+  module LangModuleTop
+  end
+end
+include LangModuleSpecInObject
+module LangModuleTop
+end
+puts "ok" if LangModuleSpecInObject::LangModuleTop == LangModuleTop
+INPUT
+  end
+
   def test_class_variable_get
     c = Class.new
     c.class_eval('@@foo = :foo')

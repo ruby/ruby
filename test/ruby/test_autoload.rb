@@ -140,7 +140,9 @@ p Foo::Bar
       t = Thread.new { AutoloadTest }
       sleep 0.1
       # override it
-      eval %q(AutoloadTest = 1)
+      EnvUtil.suppress_warning {
+        eval %q(AutoloadTest = 1)
+      }
       t.join
       assert_equal(1, AutoloadTest)
     ensure
