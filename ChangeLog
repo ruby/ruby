@@ -1,3 +1,10 @@
+Thu Sep  1 14:06:54 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_thread.rb (TestThread#test_no_valid_cfp): skip when
+	  win32ole is required.  in such case, win32ole redefines
+	  Thread#initialize, and the block argument becomes to be not the top
+	  of the thread, then this testcase always fails.
+
 Thu Sep  1 10:20:50 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io_m17n.rb (TestIO_M17N#test_{default_mode_on_dosish,
