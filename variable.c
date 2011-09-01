@@ -1601,18 +1601,6 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
     return 0;
 }
 
-static int
-autoload_defined_p(VALUE mod, ID id)
-{
-    struct st_table *tbl = RCLASS_CONST_TBL(mod);
-    st_data_t val;
-
-    if (!tbl || !st_lookup(tbl, (st_data_t)id, &val) || ((rb_const_entry_t*)val)->value != Qundef) {
-	return 0;
-    }
-    return !rb_autoloading_value(mod, id, NULL);
-}
-
 int
 rb_autoloading_value(VALUE mod, ID id, VALUE* value)
 {
@@ -1631,6 +1619,18 @@ rb_autoloading_value(VALUE mod, ID id, VALUE* value)
 	}
     }
     return 0;
+}
+
+static int
+autoload_defined_p(VALUE mod, ID id)
+{
+    struct st_table *tbl = RCLASS_CONST_TBL(mod);
+    st_data_t val;
+
+    if (!tbl || !st_lookup(tbl, (st_data_t)id, &val) || ((rb_const_entry_t*)val)->value != Qundef) {
+	return 0;
+    }
+    return !rb_autoloading_value(mod, id, NULL);
 }
 
 struct autoload_const_set_args {
