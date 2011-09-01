@@ -1,3 +1,10 @@
+Thu Sep  1 14:11:16 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_thread.rb (TestThread#test_no_valid_cfp): skip when
+	  win32ole is required.  in such case, win32ole redefines
+	  Thread#initialize, and the block argument becomes to be not the top
+	  of the thread, then this testcase always fails.
+
 Wed Aug 31 16:02:45 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json: Merge json gem v1.5.4 (3dab4c5a6a97fac03dac).

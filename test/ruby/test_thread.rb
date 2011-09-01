@@ -606,6 +606,7 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_no_valid_cfp
+    skip 'with win32ole, cannot run this testcase because win32ole redefines Thread#intialize' if defined?(WIN32OLE)
     bug5083 = '[ruby-dev:44208]'
     error = assert_raise(RuntimeError) do
       Thread.new(&Module.method(:nesting)).join
