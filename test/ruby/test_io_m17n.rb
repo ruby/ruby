@@ -2072,29 +2072,29 @@ EOT
 
   def test_default_mode_on_dosish
     with_tmpdir {
-      open("a", "w") {|f| f.puts}
+      open("a", "w") {|f| f.write "\n"}
       assert_equal("\r\n", IO.binread("a"))
     }
   end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_default_mode_on_unix
     with_tmpdir {
-      open("a", "w") {|f| f.puts}
+      open("a", "w") {|f| f.write "\n"}
       assert_equal("\n", IO.binread("a"))
     }
   end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_text_mode
     with_tmpdir {
-      open("a", "wt") {|f| f.puts}
-      assert_equal("\r\n", IO.binread("a"))
+      open("a", "wb") {|f| f.write "\r\n"}
+      assert_equal("\n", open("a", "rt"){|f| f.read})
     }
   end
 
   def test_binary_mode
     with_tmpdir {
-      open("a", "wb") {|f| f.puts}
-      assert_equal("\n", IO.binread("a"))
+      open("a", "wb") {|f| f.write "\r\n"}
+      assert_equal("\r\n", open("a", "rb"){|f| f.read})
     }
   end
 end
