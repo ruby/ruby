@@ -1,3 +1,7 @@
+Fri Sep  2 01:07:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_round): substitute machine dependent magic number.
+
 Thu Sep  1 17:31:22 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (defineclass), vm_insnhelper.c (vm_get_cvar_base): see
