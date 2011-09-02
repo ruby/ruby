@@ -5411,6 +5411,7 @@ parser_str_new(const char *p, long n, rb_encoding *enc, int func, rb_encoding *e
 }
 
 #define lex_goto_eol(parser) ((parser)->parser_lex_p = (parser)->parser_lex_pend)
+#define lex_eol_p() (lex_p >= lex_pend)
 #define peek(c) peek_n((c), 0)
 #define peek_n(c,n) (lex_p+(n) < lex_pend && (c) == (unsigned char)lex_p[n])
 
@@ -5920,6 +5921,8 @@ parser_tokadd_string(struct parser_params *parser,
 		continue;
 
 	      default:
+		if (c == -1) return -1;
+		if (!ISASCII(c)) goto non_ascii;
 		if (func & STR_FUNC_REGEXP) {
 		    pushback(c);
 		    if ((c = tokadd_escape(&enc)) < 0)
@@ -5945,6 +5948,7 @@ parser_tokadd_string(struct parser_params *parser,
 	    }
 	}
 	else if (!parser_isascii()) {
+	  non_ascii:
 	    has_nonascii = 1;
 	    if (enc != *encp) {
 		mixed_error(enc, *encp);
@@ -7002,6 +7006,10 @@ parser_yylex(struct parser_params *parser)
                 else {
                     tokadd(c);
                 }
+            }
+            else if (!lex_eol_p() && !(c = *lex_p, ISASCII(c))) {
+                nextc();
+                if (tokadd_mbchar(c) == -1) return 0;
             }
             else {
                 c = read_escape(0, &enc);
