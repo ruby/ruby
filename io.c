@@ -4435,7 +4435,7 @@ validate_enc_binmode(int *fmode_p, int ecflags, rb_encoding *enc, rb_encoding *e
         rb_raise(rb_eArgError, "ASCII incompatible encoding needs binmode");
 
     if (!(fmode & FMODE_BINMODE) &&
-	(ecflags & ECONV_NEWLINE_DECORATOR_MASK)) {
+	(DEFAULT_TEXTMODE || (ecflags & ECONV_NEWLINE_DECORATOR_MASK))) {
 	fmode |= DEFAULT_TEXTMODE;
 	*fmode_p = fmode;
     }
@@ -6412,9 +6412,10 @@ static VALUE
 prep_stdio(FILE *f, int fmode, VALUE klass, const char *path)
 {
     rb_io_t *fptr;
-    VALUE io = prep_io(fileno(f), fmode|FMODE_PREP, klass, path);
+    VALUE io = prep_io(fileno(f), fmode|FMODE_PREP|DEFAULT_TEXTMODE, klass, path);
 
     GetOpenFile(io, fptr);
+    fptr->encs.ecflags |= ECONV_DEFAULT_NEWLINE_DECORATOR;
     fptr->stdio_file = f;
 
     return io;
