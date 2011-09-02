@@ -1253,15 +1253,18 @@ vm_get_cvar_base(NODE *cref)
     return klass;
 }
 
-static int
-vm_const_defined_at(VALUE cbase, ID id, int newclass)
+static VALUE
+vm_search_const_defined_class(const VALUE cbase, ID id)
 {
-    int ret = rb_const_defined_at(cbase, id);
-    if (!ret && !newclass) {
-	while ((cbase = RCLASS_SUPER(cbase)) != 0 && cbase != rb_cObject &&
-	       !(ret = rb_const_defined_at(cbase, id)));
+    if (rb_const_defined_at(cbase, id)) return cbase;
+    if (cbase == rb_cObject) {
+	VALUE tmp = RCLASS_SUPER(cbase);
+	while (tmp) {
+	    if (rb_const_defined_at(tmp, id)) return tmp;
+	    tmp = RCLASS_SUPER(tmp);
+	}
     }
-    return ret;
+    return 0;
 }
 
 #ifndef USE_IC_FOR_IVAR

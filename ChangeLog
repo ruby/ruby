@@ -1,3 +1,8 @@
+Fri Sep  2 14:36:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_search_const_defined_class): search
+	  ancestors only when global scope.  [ruby-core:39227] [Bug #5264]
+
 Fri Sep  2 09:58:08 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_tokadd_string, parser_yylex): ignore a backslash

@@ -548,15 +548,25 @@ class TestModule < Test::Unit::TestCase
   def test_const_in_module
     bug3423 = '[ruby-core:37698]'
     assert_in_out_err([], <<-INPUT, %w[ok], [], bug3423)
-module LangModuleSpecInObject
-  module LangModuleTop
-  end
-end
-include LangModuleSpecInObject
-module LangModuleTop
-end
-puts "ok" if LangModuleSpecInObject::LangModuleTop == LangModuleTop
-INPUT
+    module LangModuleSpecInObject
+      module LangModuleTop
+      end
+    end
+    include LangModuleSpecInObject
+    module LangModuleTop
+    end
+    puts "ok" if LangModuleSpecInObject::LangModuleTop == LangModuleTop
+    INPUT
+
+    bug5264 = '[ruby-core:39227]'
+    assert_in_out_err([], <<-'INPUT', [], [], bug5264)
+    class A
+      class X; end
+    end
+    class B < A
+      module X; end
+    end
+    INPUT
   end
 
   def test_class_variable_get
