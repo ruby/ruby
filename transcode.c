@@ -2533,7 +2533,7 @@ rb_econv_prepare_options(VALUE opthash, VALUE *opts, int ecflags)
 
     if (NIL_P(opthash)) {
         *opts = Qnil;
-        return 0;
+        return ecflags;
     }
     ecflags = econv_opts(opthash, ecflags);
 

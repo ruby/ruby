@@ -1,3 +1,11 @@
+Fri Sep  2 21:11:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (validate_enc_binmode, prep_stdio): default to text mode on
+	  dosish platforms.  [ruby-core:38822] [Bug #5164]
+
+	* transcode.c (rb_econv_prepare_options): keep default ecflags
+	  unchanged if no options.
+
 Fri Sep  2 14:36:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_search_const_defined_class): search
