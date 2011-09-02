@@ -2470,8 +2470,8 @@ rb_w32_fdisset(int fd, fd_set *set)
 void
 rb_w32_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
 {
-    max = min(src->fd_count, max);
-    if ((UINT)dst->capa < max) {
+    max = min(src->fd_count, (UINT)max);
+    if ((UINT)dst->capa < (UINT)max) {
 	dst->capa = (src->fd_count / FD_SETSIZE + 1) * FD_SETSIZE;
 	dst->fdset = xrealloc(dst->fdset, sizeof(unsigned int) + sizeof(SOCKET) * dst->capa);
     }
