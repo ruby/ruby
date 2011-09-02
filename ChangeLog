@@ -90,10 +90,10 @@ Wed Aug 31 17:28:23 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 	  http://d.hatena.ne.jp/nagachika/20110826/ruby_trunk_changes_33070_33078
 
 	* variable.c (autoload_defined_p): Fix incompatible autoload behavior
-	  that causes Rails crash. Class deifnition instruction defined in
+	  that causes Rails crash. Class definition instruction defined in
 	  'defineclass' in insns.def always invokes rb_autoload_load for a
 	  constant. It's invoked for every class definition regardless of
-	  existence of autoload definition. rb_autoload_load checkes if a
+	  existence of autoload definition. rb_autoload_load checks if a
 	  constant is defined as autoloaded, but new thread-safe autoload
 	  returned different value if the constant is under autoloading.
 
@@ -186,7 +186,7 @@ Tue Aug 30 09:28:01 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	* thread.c (rb_thread_select): rewrite by using
 	  rb_thread_fd_select(). old one is EINTR unsafe.
 	  Patch by Eric Wong. [Bug #5229] [ruby-core:39102]
-	
+
 	* test/-ext-/old_thread_select/test_old_thread_select.rb:
 	  a testcase for rb_thread_select().
 	* ext/-test-/old_thread_select/old_thread_select.c: ditto.
@@ -201,7 +201,7 @@ Tue Aug 30 09:08:22 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Sun Aug 29 23:22:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
-	* test/ruby/test_numeric.rb (test_num2long): modify a test agaist the
+	* test/ruby/test_numeric.rb (test_num2long): modify a test against the
 	  change by r33108.
 
 Sun Aug 29 09:58:00 2011  Kenta Murata  <mrkn@mrkn.jp>
@@ -219,7 +219,7 @@ Sun Aug 29 09:58:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 Sun Aug 28 15:38:17 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* ext/date/date_parse.c (date_zone_to_diff): keep a temporary string
-	  stored in variable while the contents buffer is beeing used.
+	  stored in variable while the contents buffer is being used.
 
 	* ext/date/date_parse.c (date_zone_to_diff): get rid of out of bounds
 	  memory read. [ruby-dev:44409] [Bug #5213]
