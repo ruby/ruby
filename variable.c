@@ -2057,8 +2057,13 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 		autoload_delete(klass, id);
 	    }
 	    else {
+		const char *name = rb_id2name(id);
 		visibility = ce->flag;
-		rb_warn("already initialized constant %s", rb_id2name(id));
+		rb_warn("already initialized constant %s", name);
+		if (!NIL_P(ce->file) && ce->line) {
+		    rb_compile_warn(RSTRING_PTR(ce->file), ce->line,
+				    "previous definition of %s was here", name);
+		}
 	    }
 	}
     }
@@ -2068,6 +2073,8 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     ce = ALLOC(rb_const_entry_t);
     ce->flag = (rb_const_flag_t)visibility;
     ce->value = val;
+    ce->file = rb_sourcefilename();
+    ce->line = rb_sourceline();
 
     st_insert(RCLASS_CONST_TBL(klass), (st_data_t)id, (st_data_t)ce);
 }

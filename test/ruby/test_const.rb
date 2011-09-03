@@ -45,4 +45,13 @@ class TestConst < Test::Unit::TestCase
     assert defined?(TEST4)
     assert_equal 8, TEST4
   end
+
+  def test_redefinition
+    c = Class.new
+    c.const_set(:X, 1)
+    assert_output(nil, <<-WARNING) {c.const_set(:X, 2)}
+#{__FILE__}:#{__LINE__-1}: warning: already initialized constant X
+#{__FILE__}:#{__LINE__-3}: warning: previous definition of X was here
+WARNING
+  end
 end

@@ -829,6 +829,20 @@ vm_backtrace(rb_thread_t *th, int lev)
     return rb_ary_reverse(ary);
 }
 
+VALUE
+rb_sourcefilename(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+
+    if (cfp) {
+	return cfp->iseq->filename;
+    }
+    else {
+	return Qnil;
+    }
+}
+
 const char *
 rb_sourcefile(void)
 {

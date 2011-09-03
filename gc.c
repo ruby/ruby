@@ -1569,6 +1569,7 @@ mark_const_entry_i(ID key, const rb_const_entry_t *ce, st_data_t data)
 {
     struct mark_tbl_arg *arg = (void*)data;
     gc_mark(arg->objspace, ce->value, arg->lev);
+    gc_mark(arg->objspace, ce->file, arg->lev);
     return ST_CONTINUE;
 }
 
