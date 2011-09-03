@@ -1,3 +1,11 @@
+Sun Sep  4 00:56:58 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* backport r33177 from trunk.
+
+	* test/ruby/test_fiber.rb (TestFiber#test_no_valid_cfp):
+	  add a test. Unlike TestThread#test_no_valid_cfp,
+	  this test succeeds even if win32ole is required (see r33153).
+
 Fri Sep  2 21:11:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (validate_enc_binmode, prep_stdio): default to text mode on
