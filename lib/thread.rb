@@ -269,6 +269,7 @@ class SizedQueue < Queue
   # Sets the maximum size of the queue.
   #
   def max=(max)
+    raise ArgumentError, "queue size must be positive" unless max > 0
     diff = nil
     @mutex.synchronize {
       if max <= @max

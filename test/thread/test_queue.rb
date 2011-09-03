@@ -35,4 +35,22 @@ class TestQueue < Test::Unit::TestCase
     assert_equal 0, from_workers.size
     assert_equal 0, to_workers.size
   end
+
+  def test_sized_queue_initialize
+    q = SizedQueue.new(1)
+    assert_equal 1, q.max
+    assert_raise(ArgumentError) { SizedQueue.new(0) }
+    assert_raise(ArgumentError) { SizedQueue.new(-1) }
+  end
+
+  def test_sized_queue_assign_max
+    q = SizedQueue.new(2)
+    assert_equal(2, q.max)
+    q.max = 1
+    assert_equal(1, q.max)
+    assert_raise(ArgumentError) { q.max = 0 }
+    assert_equal(1, q.max)
+    assert_raise(ArgumentError) { q.max = -1 }
+    assert_equal(1, q.max)
+  end
 end

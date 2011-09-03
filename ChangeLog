@@ -1,3 +1,12 @@
+Sat Sep  3 18:40:57 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* lib/thread.rb (SizedQueue#max=) raise ArgumentError if max is not
+	  positive number. patch by Masaki Matsushita.
+	  [ruby-dev:44449] [Bug #5259]
+
+	* test/thread/test_queue.rb (test_sized_queue_initialize,
+	  test_sized_queue_assign_max): add tests for it.
+
 Fri Sep  2 21:11:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (validate_enc_binmode, prep_stdio): default to text mode on
