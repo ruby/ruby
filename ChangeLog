@@ -1,3 +1,8 @@
+Sat Sep  3 23:52:08 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_next_argv): open in default text mode.
+	  [ruby-core:39234] [Bug #5268]
+
 Sat Sep  3 18:40:57 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* lib/thread.rb (SizedQueue#max=) raise ArgumentError if max is not

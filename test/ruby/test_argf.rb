@@ -641,11 +641,22 @@ class TestArgf < Test::Unit::TestCase
   end
 
   def test_binmode
+    bug5268 = '[ruby-core:39234]'
+    open(@t3.path, "wb") {|f| f.write "5\r\n6\r\n"}
     ruby('-e', "ARGF.binmode; STDOUT.binmode; puts ARGF.read", @t1.path, @t2.path, @t3.path) do |f|
       f.binmode
-      assert_equal("1\n2\n3\n4\n5\n6\n", f.read)
+      assert_equal("1\n2\n3\n4\n5\r\n6\r\n", f.read, bug5268)
     end
   end
+
+  def test_textmode
+    bug5268 = '[ruby-core:39234]'
+    open(@t3.path, "wb") {|f| f.write "5\r\n6\r\n"}
+    ruby('-e', "STDOUT.binmode; puts ARGF.read", @t1.path, @t2.path, @t3.path) do |f|
+      f.binmode
+      assert_equal("1\n2\n3\n4\n5\n6\n", f.read, bug5268)
+    end
+  end unless IO::BINARY.zero?
 
   def test_skip
     ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|

@@ -6843,6 +6843,7 @@ argf_next_argv(VALUE argf)
     char *fn;
     rb_io_t *fptr;
     int stdout_binmode = 0;
+    int fmode;
 
     if (TYPE(rb_stdout) == T_FILE) {
         GetOpenFile(rb_stdout, fptr);
@@ -6951,18 +6952,24 @@ argf_next_argv(VALUE argf)
 		    rb_stdout = write_io;
 		    if (stdout_binmode) rb_io_binmode(rb_stdout);
 		}
-		ARGF.current_file = prep_io(fr, FMODE_READABLE, rb_cFile, fn);
+		fmode = FMODE_READABLE;
+		if (!ARGF.binmode) fmode |= DEFAULT_TEXTMODE;
+		ARGF.current_file = prep_io(fr, fmode, rb_cFile, fn);
 		if (!NIL_P(write_io)) {
 		    rb_io_set_write_io(ARGF.current_file, write_io);
 		}
 	    }
 	    if (ARGF.binmode) rb_io_ascii8bit_binmode(ARGF.current_file);
+	    GetOpenFile(ARGF.current_file, fptr);
 	    if (ARGF.encs.enc) {
-		rb_io_t *fptr;
-
-		GetOpenFile(ARGF.current_file, fptr);
 		fptr->encs = ARGF.encs;
                 clear_codeconv(fptr);
+	    }
+	    else {
+		fptr->encs.ecflags &= ~ECONV_NEWLINE_DECORATOR_MASK;
+		if (!ARGF.binmode) {
+		    fptr->encs.ecflags |= ECONV_DEFAULT_NEWLINE_DECORATOR;
+		}
 	    }
 	    ARGF.next_p = 0;
 	}
