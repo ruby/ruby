@@ -410,7 +410,9 @@ console_set_winsize(VALUE io, VALUE size)
     int newrow, newcol;
 #endif
     VALUE row, col, xpixel, ypixel;
+#if defined TIOCSWINSZ
     int fd;
+#endif
 
     GetOpenFile(io, fptr);
     size = rb_Array(size);
