@@ -33,7 +33,10 @@ AC_CACHE_CHECK(for mingw32 environment, rb_cv_mingw32,
 #endif
 ], rb_cv_mingw32=yes,rb_cv_mingw32=no)
 rm -f conftest*])
-test "$rb_cv_mingw32" = yes && target_os="mingw32"
+if test "$rb_cv_mingw32" = yes; then
+    target_os="mingw32"
+    : ${ac_tool_prefix:="`expr "$CC" : ['\(.*-\)g\?cc[^/]*$']`"}
+fi
 ])
 AS_CASE(["$target_os"], [mingw*msvc], [
 target_os="`echo ${target_os} | sed 's/msvc$//'`"
@@ -280,6 +283,7 @@ fi
 if test x"${build}" != x"${host}"; then
   AC_CHECK_TOOL(CC, gcc)
 fi
+RUBY_MINGW32
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_GCC_TRADITIONAL
@@ -302,7 +306,6 @@ RUBY_CPPOUTFILE
 AC_SUBST(OUTFLAG)
 AC_SUBST(COUTFLAG)
 
-RUBY_MINGW32
 RUBY_UNIVERSAL_ARCH
 if test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "$universal_binary" = no; then
     RUBY_DEFAULT_ARCH("$target_cpu")
