@@ -208,5 +208,17 @@ class TestFiber < Test::Unit::TestCase
       GC.start
     }, bug4612
   end
+
+  def test_no_valid_cfp
+    bug5083 = '[ruby-dev:44208]'
+    error = assert_raise(RuntimeError) do
+      Fiber.new(&Module.method(:nesting)).resume
+    end
+    assert_equal("Can't call on top of Fiber or Thread", error.message, bug5083)
+    error = assert_raise(RuntimeError) do
+      Fiber.new(&Module.method(:undef_method)).resume(:to_s)
+    end
+    assert_equal("Can't call on top of Fiber or Thread", error.message, bug5083)
+  end
 end
 
