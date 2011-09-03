@@ -42,7 +42,7 @@ class TestEncoding < Test::Unit::TestCase
     assert_nothing_raised{Encoding.find("locale")}
     assert_nothing_raised{Encoding.find("filesystem")}
 
-    if /(?:ms|dar)win/ !~ RUBY_PLATFORM
+    if /(?:ms|dar)win|mingw/ !~ RUBY_PLATFORM
       # Unix's filesystem encoding is default_external
       assert_ruby_status(%w[-EUTF-8:EUC-JP], <<-'EOS')
         exit Encoding.find("filesystem") == Encoding::UTF_8
