@@ -418,6 +418,14 @@ class IMAPTest < Test::Unit::TestCase
     end
   end
 
+  def test_default_port
+    assert_equal(143, Net::IMAP.default_port)
+    assert_equal(143, Net::IMAP.default_imap_port)
+    assert_equal(993, Net::IMAP.default_tls_port)
+    assert_equal(993, Net::IMAP.default_ssl_port)
+    assert_equal(993, Net::IMAP.default_imaps_port)
+  end
+
   private
 
   def imaps_test

@@ -1,3 +1,10 @@
+Sun Sep  4 22:28:50 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (default_port, default_imap_port,
+	  default_tls_port, default_ssl_port, default_imaps_port):
+	  added methods for consistency with Net::POP.
+	  based on the patch by art lussos.  [ruby-core:38997] [Bug #5198]
+
 Sun Sep  4 21:19:19 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* Change encoding from EUC-JP to UTF-8. [Feature #5128]

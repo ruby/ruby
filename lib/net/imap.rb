@@ -295,6 +295,22 @@ module Net
       @@authenticators[auth_type] = authenticator
     end
 
+    # The default port for IMAP connections, port 143
+    def self.default_port
+      return PORT
+    end
+    
+    # The default port for IMAPS connections, port 993
+    def self.default_tls_port
+      return SSL_PORT
+    end
+
+    class << self
+      alias default_imap_port default_port
+      alias default_imaps_port default_tls_port
+      alias default_ssl_port default_tls_port
+    end
+
     # Disconnects from the server.
     def disconnect
       begin
