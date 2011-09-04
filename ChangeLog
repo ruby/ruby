@@ -1,3 +1,8 @@
+Mon Sep  5 04:28:25 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* numeric.c (int_round): Integer#round always returns an Integer [Bug
+	  #5271]
+
 Sun Sep  4 22:28:50 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (default_port, default_imap_port,

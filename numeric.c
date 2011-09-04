@@ -3320,6 +3320,7 @@ int_round(int argc, VALUE* argv, VALUE num)
 {
     VALUE n, f, h, r;
     int ndigits;
+    long bytes;
     ID op;
 
     if (argc == 0) return num;
@@ -3331,11 +3332,15 @@ int_round(int argc, VALUE* argv, VALUE num)
     if (ndigits == 0) {
 	return num;
     }
-    ndigits = -ndigits;
-    if (ndigits < 0) {
-	rb_raise(rb_eArgError, "ndigits out of range");
+
+    /* If 10**N / 2 > num, then return 0 */
+    /* We have log_256(10) > 0.415241 and log_256(1/2) = -0.125, so */
+    bytes = FIXNUM_P(num) ? sizeof(long) : rb_funcall(num, rb_intern("size"), 0);
+    if (-0.415241 * ndigits - 0.125 > bytes ) {
+	return INT2FIX(0);
     }
-    f = int_pow(10, ndigits);
+
+    f = int_pow(10, -ndigits);
     if (FIXNUM_P(num) && FIXNUM_P(f)) {
 	SIGNED_VALUE x = FIX2LONG(num), y = FIX2LONG(f);
 	int neg = x < 0;
@@ -3343,6 +3348,10 @@ int_round(int argc, VALUE* argv, VALUE num)
 	x = (x + y / 2) / y * y;
 	if (neg) x = -x;
 	return LONG2NUM(x);
+    }
+    if (TYPE(f) == T_FLOAT) {
+	/* then int_pow overflow */
+	return INT2FIX(0);
     }
     h = rb_funcall(f, '/', 1, INT2FIX(2));
     r = rb_funcall(num, '%', 1, f);
