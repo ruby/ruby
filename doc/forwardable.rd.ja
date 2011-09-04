@@ -5,11 +5,11 @@
 =begin
 = Forwardable
 
-¥¯¥é¥¹¤ËÂĞ¤·¥á¥½¥Ã¥É¤Î°Ñ¾ùµ¡Ç½¤òÄêµÁ¤·¤Ş¤¹.
+ã‚¯ãƒ©ã‚¹ã«å¯¾ã—ãƒ¡ã‚½ãƒƒãƒ‰ã®å§”è­²æ©Ÿèƒ½ã‚’å®šç¾©ã—ã¾ã™.
 
-== »È¤¤Êı
+== ä½¿ã„æ–¹
 
-¥¯¥é¥¹¤ËÂĞ¤·¤Æextend¤·¤Æ»È¤¤¤Ş¤¹. 
+ã‚¯ãƒ©ã‚¹ã«å¯¾ã—ã¦extendã—ã¦ä½¿ã„ã¾ã™. 
   
   class Foo
     extend Forwardable
@@ -23,58 +23,58 @@
   f.gets
   f.content_at(1)
 
-== ¥á¥½¥Ã¥É
+== ãƒ¡ã‚½ãƒƒãƒ‰
 
 --- Forwardable#def_instance_delegators(accessor, *methods)
 
-      ((|methods|))¤ÇÅÏ¤µ¤ì¤¿¥á¥½¥Ã¥É¤Î¥ê¥¹¥È¤ò((|accessor¤Ë|))°Ñ¾ù¤¹¤ë
-      ¤è¤¦¤Ë¤·¤Ş¤¹.
+      ((|methods|))ã§æ¸¡ã•ã‚ŒãŸãƒ¡ã‚½ãƒƒãƒ‰ã®ãƒªã‚¹ãƒˆã‚’((|accessorã«|))å§”è­²ã™ã‚‹
+      ã‚ˆã†ã«ã—ã¾ã™.
 
 --- Forwardable#def_instance_delegator(accessor, method, ali = method)
 
-      ((||method|))¤ÇÅÏ¤µ¤ì¤¿¥á¥½¥Ã¥É¤ò((|accessor|))¤Ë°Ñ¾ù¤¹¤ë¤è¤¦¤Ë¤·
-      ¤Ş¤¹. ((|ali|))¤¬°ú¿ô¤È¤·¤ÆÅÏ¤µ¤ì¤¿¤È¤­¤Ï, ¥á¥½¥Ã¥É((|ali|))¤¬¸Æ¤Ğ
-      ¤ì¤¿¤È¤­¤Ë¤Ï, ((|accessor|))¤ËÂĞ¤·((|method|))¤ò¸Æ¤Ó½Ğ¤·¤Ş¤¹.
+      ((||method|))ã§æ¸¡ã•ã‚ŒãŸãƒ¡ã‚½ãƒƒãƒ‰ã‚’((|accessor|))ã«å§”è­²ã™ã‚‹ã‚ˆã†ã«ã—
+      ã¾ã™. ((|ali|))ãŒå¼•æ•°ã¨ã—ã¦æ¸¡ã•ã‚ŒãŸã¨ãã¯, ãƒ¡ã‚½ãƒƒãƒ‰((|ali|))ãŒå‘¼ã°
+      ã‚ŒãŸã¨ãã«ã¯, ((|accessor|))ã«å¯¾ã—((|method|))ã‚’å‘¼ã³å‡ºã—ã¾ã™.
 
 --- Forwardable#def_delegators(accessor, *methods)
 
-      ((|Forwardable#def_instance_delegators|))¤ÎÊÌÌ¾¤Ç¤¹.
+      ((|Forwardable#def_instance_delegators|))ã®åˆ¥åã§ã™.
 
 --- Forwardable#def_delegator(accessor, method, ali = method)
 
-      ((|Forwardable#def_instance_delegator|))¤ÎÊÌÌ¾¤Ç¤¹.
+      ((|Forwardable#def_instance_delegator|))ã®åˆ¥åã§ã™.
 
 = SingleForwardable
 
-¥ª¥Ö¥¸¥§¥¯¥È¤ËÂĞ¤·, ¥á¥½¥Ã¥É¤Î°Ñ¾ùµ¡Ç½¤òÄêµÁ¤·¤Ş¤¹.
+ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã«å¯¾ã—, ãƒ¡ã‚½ãƒƒãƒ‰ã®å§”è­²æ©Ÿèƒ½ã‚’å®šç¾©ã—ã¾ã™.
 
-== »È¤¤Êı
+== ä½¿ã„æ–¹
 
-¥ª¥Ö¥¸¥§¥¯¥È¤ËÂĞ¤·¤Æ((|extend|))¤·¤Æ»È¤¤¤Ş¤¹. 
+ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã«å¯¾ã—ã¦((|extend|))ã—ã¦ä½¿ã„ã¾ã™. 
 
   g = Goo.new
   g.extend SingleForwardable
   g.def_delegator("@out", :puts)
   g.puts ...
 
-== ¥á¥½¥Ã¥É
+== ãƒ¡ã‚½ãƒƒãƒ‰
 
 --- SingleForwardable#def_singleton_delegators(accessor, *methods)
 
-      ((|methods|))¤ÇÅÏ¤µ¤ì¤¿¥á¥½¥Ã¥É¤Î¥ê¥¹¥È¤ò((|accessor|))¤Ë°Ñ¾ù¤¹¤ë
-      ¤è¤¦¤Ë¤·¤Ş¤¹.
+      ((|methods|))ã§æ¸¡ã•ã‚ŒãŸãƒ¡ã‚½ãƒƒãƒ‰ã®ãƒªã‚¹ãƒˆã‚’((|accessor|))ã«å§”è­²ã™ã‚‹
+      ã‚ˆã†ã«ã—ã¾ã™.
 
 --- SingleForwardable#def_singleton_delegator(accessor, method, ali = method)
 
-      ((|method|))¤ÇÅÏ¤µ¤ì¤¿¥á¥½¥Ã¥É¤ò((|accessor|))¤Ë°Ñ¾ù¤¹¤ë¤è¤¦¤Ë¤·¤Ş
-      ¤¹. ((|ali|))¤¬°ú¿ô¤È¤·¤ÆÅÏ¤µ¤ì¤¿¤È¤­¤Ï, ¥á¥½¥Ã¥É((|ali|))¤¬¸Æ¤Ğ¤ì
-      ¤¿¤È¤­¤Ë¤Ï, ((|accessor|))¤ËÂĞ¤·((|method|))¤ò¸Æ¤Ó½Ğ¤·¤Ş¤¹.
+      ((|method|))ã§æ¸¡ã•ã‚ŒãŸãƒ¡ã‚½ãƒƒãƒ‰ã‚’((|accessor|))ã«å§”è­²ã™ã‚‹ã‚ˆã†ã«ã—ã¾
+      ã™. ((|ali|))ãŒå¼•æ•°ã¨ã—ã¦æ¸¡ã•ã‚ŒãŸã¨ãã¯, ãƒ¡ã‚½ãƒƒãƒ‰((|ali|))ãŒå‘¼ã°ã‚Œ
+      ãŸã¨ãã«ã¯, ((|accessor|))ã«å¯¾ã—((|method|))ã‚’å‘¼ã³å‡ºã—ã¾ã™.
 
 --- SingleForwardable#def_delegators(accessor, *methods)
 
-      ((|SingleForwardable#def_singleton_delegators|))¤ÎÊÌÌ¾¤Ç¤¹.
+      ((|SingleForwardable#def_singleton_delegators|))ã®åˆ¥åã§ã™.
 
 --- SingleForwardable#def_delegator(accessor, method, ali = method)
 
-      ((|SingleForwardable#def_singleton_delegator|))¤ÎÊÌÌ¾¤Ç¤¹.
+      ((|SingleForwardable#def_singleton_delegator|))ã®åˆ¥åã§ã™.
 =end

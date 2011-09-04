@@ -66,7 +66,7 @@
   symbol/string differences. (Patch supplied by Edwin Pratomo)
 
 * Fixed bug with rules involving multiple source (Patch supplied by
-  Emanuel Indermühle)
+  Emanuel Indermle)
 
 * Switched from getoptlong to optparse (patches supplied by Edwin
   Pratomo)
