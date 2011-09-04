@@ -1,3 +1,8 @@
+Mon Sep  5 05:13:22 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* numeric.c (flo_round): Make Float#round round big values [bug
+	  #5272]
+
 Mon Sep  5 04:28:25 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* numeric.c (int_round): Integer#round always returns an Integer [Bug
