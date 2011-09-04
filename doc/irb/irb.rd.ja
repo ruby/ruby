@@ -3,23 +3,23 @@ irb -- interactive ruby
 			   	$Revision$
 			   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 =begin
-= irb�Ȥ�?
+= irbとは?
 
-irb��interactive ruby��ά�Ǥ�. ruby�μ���ɸ�����Ϥ����ñ������/�¹Ԥ���
-����Υġ���Ǥ�.
+irbはinteractive rubyの略です. rubyの式を標準入力から簡単に入力/実行する
+ためのツールです.
 
-= ��ư
+= 起動
 
   % irb
 
-�ǹԤʤ��ޤ�. 
+で行ないます. 
 
-= �Ȥ���
+= 使い方
 
-irb�λȤ�����, Ruby�����ΤäƤ���Ф����äƴ�ñ�Ǥ�. ����Ū�ˤ� irb ��
-�������ޥ�ɤ�¹Ԥ�������Ǥ�. irb��¹Ԥ����, �ʲ��Τ褦�ʥץ����
-�Ȥ�ɽ��Ƥ��ޤ�. ���, ruby�μ�������Ʋ�����. �������뤷�������Ǽ¹�
-����ޤ�.
+irbの使い方は, Rubyさえ知っていればいたって簡単です. 基本的には irb と
+いうコマンドを実行するだけです. irbを実行すると, 以下のようなプロンプ
+トが表れてきます. 後は, rubyの式を入れて下さい. 式が完結した時点で実行
+されます.
 
   dim% irb
   irb(main):001:0> 1+2
@@ -32,55 +32,55 @@ irb�λȤ�����, Ruby�����ΤäƤ���Ф����äƴ�ñ�Ǥ�. ����Ū�ˤ� irb ��
   nil
   irb(main):007:0> 
 
-�ޤ�, irb��Readline�⥸�塼��ˤ��б����Ƥ��ޤ�. Readline�⥸�塼�뤬
-���󥹥ȡ��뤵��Ƥ�����ˤ�, �����Ȥ��Τ�ɸ���ư��ˤʤ�ޤ�.
+また, irbはReadlineモジュールにも対応しています. Readlineモジュールが
+インストールされている時には, それを使うのが標準の動作になります.
 
-= ���ޥ�ɥ��ץ����
+= コマンドオプション
 
   irb.rb [options] file_name opts
   options:
-  -f		    ~/.irbrc ���ɤ߹��ޤʤ�.
-  -m		    bc�⡼��(ʬ��, ����η׻����Ǥ���)
-  -d                $DEBUG ��true�ˤ���(ruby -d ��Ʊ��)
-  -Kc		    ruby -Kc��Ʊ��
-  -r load-module    ruby -r ��Ʊ��.
-  --verbose	    ���줫��¹Ԥ���Ԥ�ɽ������(�ǥե����)
-  --noverbose	    ���줫��¹Ԥ���Ԥ�ɽ�����ʤ�
-  --echo	    �¹Է�̤�ɽ������(�ǥե����)
-  --noecho	    �¹Է�̤�ɽ�����ʤ�
-  --inspect	    ��̽��Ϥ�inspect���Ѥ���(bc�⡼�ɰʳ��ϥǥե����). 
-  --noinspect	    ��̽��Ϥ�inspect���Ѥ��ʤ�.
-  --readline	    readline�饤�֥������Ѥ���.
-  --noreadline	    readline�饤�֥������Ѥ��ʤ�. �ǥե���Ȥ�ư���,
-		    inf-ruby-mode�ʳ���readline�饤�֥������Ѥ��褦
-		    �Ȥ���. 
+  -f		    ~/.irbrc を読み込まない.
+  -m		    bcモード(分数, 行列の計算ができる)
+  -d                $DEBUG をtrueにする(ruby -d と同じ)
+  -Kc		    ruby -Kcと同じ
+  -r load-module    ruby -r と同じ.
+  --verbose	    これから実行する行を表示する(デフォルト)
+  --noverbose	    これから実行する行を表示しない
+  --echo	    実行結果を表示する(デフォルト)
+  --noecho	    実行結果を表示しない
+  --inspect	    結果出力にinspectを用いる(bcモード以外はデフォルト). 
+  --noinspect	    結果出力にinspectを用いない.
+  --readline	    readlineライブラリを利用する.
+  --noreadline	    readlineライブラリを利用しない. デフォルトの動作は,
+		    inf-ruby-mode以外でreadlineライブラリを利用しよう
+		    とする. 
   --prompt prompt-mode
   --prompt-mode prompt-mode
-		    �ץ���ץȥ⡼�ɤ����ؤ��ޤ�. �����������Ƥ����
-		    ����ץȥ⡼�ɤ�, default, simple, xmp, inf-ruby��
-		    �Ѱդ���Ƥ��ޤ�. �ǥե���Ȥ�default�ץ���ץȥ⡼
-		    �ɤˤʤäƤ��ޤ�.
+		    プロンプトモードを切替えます. 現在定義されているプ
+		    ロンプトモードは, default, simple, xmp, inf-rubyが
+		    用意されています. デフォルトはdefaultプロンプトモー
+		    ドになっています.
 			    
-  --inf-ruby-mode   emacs��inf-ruby-mode�ѤΥץ���ץ�ɽ����Ԥʤ�. ��
-		    �˻��꤬�ʤ��¤�, readline�饤�֥��ϻȤ�ʤ��ʤ�.
+  --inf-ruby-mode   emacsのinf-ruby-mode用のプロンプト表示を行なう. 特
+		    に指定がない限り, readlineライブラリは使わなくなる.
   --simple-prompt
-		    ���˥���ץ�ʥץ���ץȤ��Ѥ���⡼�ɤǤ�.
-  --noprompt	    �ץ���ץ�ɽ����Ԥʤ�ʤ�.
-  --tracer	    ���ޥ�ɼ¹Ի��˥ȥ졼����Ԥʤ�.
+		    非常にシンプルなプロンプトを用いるモードです.
+  --noprompt	    プロンプト表示を行なわない.
+  --tracer	    コマンド実行時にトレースを行なう.
   --back-trace-limit n
-		    �Хå��ȥ졼��ɽ����Хå��ȥ졼����Ƭ���� n, ���
-		    ����n�����Ԥʤ�. �ǥե���Ȥ�16 
-  --irb_debug n	    irb�ΥǥХå��ǥХå���٥��n�����ꤹ��(���Ѥ���
-		    ������̵��Ǥ��礦).
-  -v, --version	    irb�ΥС�������ɽ������
+		    バックトレース表示をバックトレースの頭から n, 後ろ
+		    からnだけ行なう. デフォルトは16 
+  --irb_debug n	    irbのデバッグデバッグレベルをnに設定する(利用しな
+		    い方が無難でしょう).
+  -v, --version	    irbのバージョンを表示する
 
-= ����ե�����졼�����
+= コンフィギュレーション
 
-irb��ư����``~/.irbrc''���ɤ߹��ߤޤ�. �⤷¸�ߤ��ʤ�����,
-``.irbrc'', ``irb.rc'', ``_irbrc'', ``$irbrc''�ν��load���ߤޤ�.
+irb起動時に``~/.irbrc''を読み込みます. もし存在しない場合は,
+``.irbrc'', ``irb.rc'', ``_irbrc'', ``$irbrc''の順にloadを試みます.
 
-���ץ��������ꤹ�������, �ʲ��Υ��ޥ�ɤǤ�ǥե���Ȥ�ư�������
-�Ǥ��ޤ�.
+オプションを設定する代わりに, 以下のコマンドでもデフォルトの動作を設定
+できます.
 
   IRB.conf[:IRB_NAME]="irb"
   IRB.conf[:MATH_MODE]=false
@@ -101,43 +101,43 @@ irb��ư����``~/.irbrc''���ɤ߹��ߤޤ�. �⤷¸�ߤ��ʤ�����,
   IRB.conf[:DEBUG_LEVEL]=0
   IRB.conf[:VERBOSE]=true
 
-== �ץ���ץȤ�����
+== プロンプトの設定
 
-�ץ���ץȤ򥫥����ޥ������������ˤ�, 
+プロンプトをカスタマイズしたい時には, 
 
    IRB.conf[:PROMPT]
 
-���Ѥ��ޤ�. �㤨��, .irbrc����ǲ��Τ褦�ʼ��򵭽Ҥ��ޤ�:
+を用います. 例えば, .irbrcの中で下のような式を記述します:
 
-   IRB.conf[:PROMPT][:MY_PROMPT] = { # �ץ���ץȥ⡼�ɤ�̾��
-     :PROMPT_I => nil,		  # �̾�Υץ���ץ�
-     :PROMPT_N => nil,		  # ��³�ԤΥץ���ץ�
-     :PROMPT_S => nil,		  # ʸ����ʤɤη�³�ԤΥץ���ץ�
-     :PROMPT_C => nil,		  # ������³���Ƥ�����Υץ���ץ�
-     :RETURN => "    ==>%s\n"	  # �꥿������Υץ���ץ�
+   IRB.conf[:PROMPT][:MY_PROMPT] = { # プロンプトモードの名前
+     :PROMPT_I => nil,		  # 通常のプロンプト
+     :PROMPT_N => nil,		  # 継続行のプロンプト
+     :PROMPT_S => nil,		  # 文字列などの継続行のプロンプト
+     :PROMPT_C => nil,		  # 式が継続している時のプロンプト
+     :RETURN => "    ==>%s\n"	  # リターン時のプロンプト
    }
 
-�ץ���ץȥ⡼�ɤ���ꤷ�������ˤ�,
+プロンプトモードを指定したい時には,
 
   irb --prompt my-prompt
 
-�Ǥ��Υץ���ץȥ⡼�ɤǵ�ư����ޤ�. �ޤ���, .irbrc�˲����򵭽Ҥ��Ƥ�
-OK�Ǥ�.
+でそのプロンプトモードで起動されます. または, .irbrcに下式を記述しても
+OKです.
 
   IRB.conf[:PROMPT_MODE] = :MY_PROMPT
 
-PROMPT_I, PROMPT_N, PROMPT_S, PROMPT_C��, �ե����ޥåȤ���ꤷ�ޤ�.
+PROMPT_I, PROMPT_N, PROMPT_S, PROMPT_Cは, フォーマットを指定します.
 
-  %N	��ư���Ƥ��륳�ޥ��̾�����Ϥ����.
-  %m	main���֥�������(self)��to_s�ǽ��Ϥ����.
-  %M	main���֥�������(self)��inspect����ƽ��Ϥ����.
-  %l	ʸ������Υ����פ�ɽ��(", ', /, ], `]'��%w����λ�)
-  %NNi	����ǥ�ȤΥ�٥��ɽ��. NN�Ͽ���������printf��%NNd��Ʊ��. ��
-	ά��ǽ
-  %NNn	���ֹ��ɽ���ޤ�.
+  %N	起動しているコマンド名が出力される.
+  %m	mainオブジェクト(self)がto_sで出力される.
+  %M	mainオブジェクト(self)がinspectされて出力される.
+  %l	文字列中のタイプを表す(", ', /, ], `]'は%wの中の時)
+  %NNi	インデントのレベルを表す. NNは数字が入りprintfの%NNdと同じ. 省
+	略可能
+  %NNn	行番号を表します.
   %%    %
 
-�㤨��, �ǥե���ȤΥץ���ץȥ⡼�ɤ�:
+例えば, デフォルトのプロンプトモードは:
 
   IRB.conf[:PROMPT_MODE][:DEFAULT] = {
       :PROMPT_I => "%N(%m):%03n:%i> ",
@@ -147,175 +147,175 @@ PROMPT_I, PROMPT_N, PROMPT_S, PROMPT_C��, �ե����ޥåȤ���ꤷ�ޤ�.
       :RETURN => "%s\n"
   } 
 
-�ȤʤäƤ��ޤ�.
+となっています.
 
-RETURN��, ���ߤΤȤ���printf�����Ǥ�. ������ͤ��Ѥ�뤫���Τ�ޤ���.
+RETURNは, 現在のところprintf形式です. 将来仕様が変わるかも知れません.
 
-== ����irb������
+== サブirbの設定
 
-���ޥ�ɥ饤�󥪥ץ���󤪤��IRB.conf��(����)irb��ư���Υǥե���Ȥ�
-���������Τ�, `5. ���ޥ��'�ˤ���conf�Ǹ��̤�(����)irb�����꤬��
-����褦�ˤʤäƤ��ޤ�.
+コマンドラインオプションおよびIRB.confは(サブ)irb起動時のデフォルトの
+設定を決めるもので, `5. コマンド'にあるconfで個別の(サブ)irbの設定がで
+きるようになっています.
 
-IRB.conf[:IRB_RC]��proc�����ꤵ��Ƥ����, ����irb��ư������ˤ���
-proc��irb�Υ���ƥ����Ȥ�����Ȥ��ƸƤӽФ��ޤ�. ����ˤ�äƸ��̤Υ�
-��irb���Ȥ�������Ѥ��뤳�Ȥ��Ǥ���褦�ˤʤ�ޤ�.
+IRB.conf[:IRB_RC]にprocが設定されていると, サブirbを起動する時にその
+procをirbのコンテキストを引数として呼び出します. これによって個別のサ
+ブirbごとに設定を変えることができるようになります.
 
 
-= ���ޥ��
+= コマンド
 
-irb��ĥ���ޥ�ɤ�, ��ñ��̾����Ƭ��`irb_'��Ĥ���̾����ξ����������
-���ޤ�. �����, ��ñ��̾����override���줿���Τ���Ǥ�.
+irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両方定義されて
+います. これは, 簡単な名前がoverrideされた時のためです.
 
 --- exit, quit, irb_exit	
-    ��λ����. 
-    ����irb�ξ��, ���Υ���irb��λ����.
+    終了する. 
+    サブirbの場合, そのサブirbを終了する.
 
 --- conf, irb_context
-    irb�θ��ߤ������ɽ������. ������ѹ���, conf�˥�å����������뤳
-    �Ȥˤ�äƹԤʤ���. 
+    irbの現在の設定を表示する. 設定の変更は, confにメッセージを送るこ
+    とによって行なえる. 
 
 --- conf.eval_history = N
-    �¹Է�̤Υҥ��ȥ굡ǽ������.
-    nn��������nil�� nn>0 �Ǥ���Ф��ο������ҥ��ȥ�ˤ���롣nn==0�λ���
-    ̵���¤˵������롢nil���ȥҥ��ȥ굡ǽ�Ϥ���(�ǥե����). 
+    実行結果のヒストリ機能の設定.
+    nnは整数かnilで nn>0 であればその数だけヒストリにためる。nn==0の時は
+    無制限に記憶する、nilだとヒストリ機能はやめる(デフォルト). 
 
 --- Conf.back_trace_limit
-    �Хå��ȥ졼��ɽ����Хå��ȥ졼����Ƭ����n, �������n�����Ԥʤ�.
-    �ǥե���Ȥ�16
+    バックトレース表示をバックトレースの頭からn, 後ろからnだけ行なう.
+    デフォルトは16
     
 --- conf.debug_level = N
-    irb�ѤΥǥХå���٥������
+    irb用のデバッグレベルの設定
 
 --- conf.ignore_eof = true/false
-    ^D�����Ϥ��줿����ư������ꤹ��. true�λ���^D��̵�뤹��, false��
-    ����irb��λ����. 
+    ^Dが入力された時の動作を設定する. trueの時は^Dを無視する, falseの
+    時はirbを終了する. 
 
 --- conf.ignore_sigint= true/false
-    ^C�����Ϥ��줿����ư������ꤹ��. false����, irb��λ����. true��
-    ����ư��ϰʲ��Τ褦�ˤʤ�:
-      ������: ����ޤ����Ϥ�����Τ򥭥�󥻥뤷�ȥåץ�٥�����. 
-      �¹���: �¹Ԥ���ߤ���.
+    ^Cが入力された時の動作を設定する. false時は, irbを終了する. trueの
+    時の動作は以下のようになる:
+      入力中: これまで入力したものをキャンセルしトップレベルに戻る. 
+      実行中: 実行を中止する.
 
 --- conf.inf_ruby_mode = true/false
-    inf-ruby-mode�ѤΥץ���ץ�ɽ����Ԥʤ�. �ǥե���Ȥ�false.
+    inf-ruby-mode用のプロンプト表示を行なう. デフォルトはfalse.
 
 --- conf.inspect_mode = true/false/nil
-    ���󥹥ڥ��ȥ⡼�ɤ����ꤹ��.
-    true: ���󥹥ڥ��Ȥ���ɽ������.
-    false: �̾��print��ɽ������.
-    nil: �̾�⡼�ɤǤ����, inspect mode�Ȥʤ�, math�⡼�ɤλ���, non
-	 inspect mode�Ȥʤ�.   
+    インスペクトモードを設定する.
+    true: インスペクトして表示する.
+    false: 通常のprintで表示する.
+    nil: 通常モードであれば, inspect modeとなり, mathモードの時は, non
+	 inspect modeとなる.   
 
 --- conf.math_mode
-    ���ȤΤ�. bc�⡼��(ʬ��, ����η׻����Ǥ��ޤ�)���ɤ���?
+    参照のみ. bcモード(分数, 行列の計算ができます)かどうか?
 
 --- conf.use_loader = true/false
-    load/require����irb��file�ɤ߹��ߵ�ǽ���Ѥ���⡼�ɤΥ����å�(�ǥե�
-    ��Ȥ��Ѥ��ʤ�). ���Υ⡼�ɤ�IRB���Τ�ȿ�Ǥ����.
+    load/require時にirbのfile読み込み機能を用いるモードのスイッチ(デフォ
+    ルトは用いない). このモードはIRB全体に反映される.
 
 --- conf.prompt_c
-    if��ľ��ʤ�, �Ԥ���³���Ƥ�����Υץ���ץ�.
+    ifの直後など, 行が継続している時のプロンプト.
 
 --- conf.prompt_i
-    �̾�Υץ���ץ�.
+    通常のプロンプト.
 
 --- conf.prompt_s
-    ʸ������ʤɤ�ɽ���ץ���ץ�.
+    文字列中などを表すプロンプト.
 
 --- conf.rc
-    ~/.irbrc���ɤ߹�������ɤ���?
+    ~/.irbrcを読み込んだかどうか?
 
 --- conf.use_prompt = true/false
-    �ץ���ץ�ɽ�����뤫�ɤ���? �ǥե���ȤǤϥץ���ץȤ�ɽ������.
+    プロンプト表示するかどうか? デフォルトではプロンプトを表示する.
 
 --- conf.use_readline = true/false/nil
-    readline��Ȥ����ɤ���?
-    true: readline��Ȥ�.
-    false: readline��Ȥ�ʤ�.
-    nil: (�ǥե����)inf-ruby-mode�ʳ���readline�饤�֥������Ѥ���
-         ���Ȥ���.  
+    readlineを使うかどうか?
+    true: readlineを使う.
+    false: readlineを使わない.
+    nil: (デフォルト)inf-ruby-mode以外でreadlineライブラリを利用しよ
+         うとする.  
 #
 #--- conf.verbose=T/F
-#    irb���餤�������ʥ�å���������Ϥ��뤫?
+#    irbからいろいろなメッセージを出力するか?
 
 --- cws, chws, irb_cws, irb_chws, irb_change_workspace [obj]
-    obj��self�Ȥ���. obj����ά���줿�Ȥ���, home workspace, ���ʤ��
-    irb��ư�����Ȥ���main object��self�Ȥ���.
+    objをselfとする. objが省略されたときは, home workspace, すなわち
+    irbを起動したときのmain objectをselfとする.
 
 --- pushws, irb_pushws, irb_push_workspace [obj]
-    UNIX�����륳�ޥ�ɤ�pushd��Ʊ��.
+    UNIXシェルコマンドのpushdと同様.
 
 --- popws, irb_popws, irb_pop_workspace
-    UNIX�����륳�ޥ�ɤ�popd��Ʊ��.
+    UNIXシェルコマンドのpopdと同様.
 
 --- irb [obj]
-    ����irb��Ω��������. obj�����ꤵ�줿����, ����obj��self�Ȥ���.
+    サブirbを立ちあげる. objが指定された時は, そのobjをselfとする.
 
 --- jobs, irb_jobs
-    ����irb�Υꥹ��
+    サブirbのリスト
 
 --- fg n, irb_fg n
-    ���ꤷ������irb�˥����å�����. n��, ���Τ�Τ���ꤹ��.
+    指定したサブirbにスイッチする. nは, 次のものを指定する.
 
-      irb�ֹ�
-      ����å�
-      irb���֥�������
-      self(irb obj�ǵ�ư��������obj)
+      irb番号
+      スレッド
+      irbオブジェクト
+      self(irb objで起動した時のobj)
 
 --- kill n, irb_kill n
-      ����irb��kill����. n��fg��Ʊ��.
+      サブirbをkillする. nはfgと同じ.
 
 --- source, irb_source  path
-    UNIX�����륳�ޥ�ɤ�source�Ȼ��Ƥ���. ���ߤδĶ����path��Υ�����
-    �ץȤ�ɾ������.
+    UNIXシェルコマンドのsourceと似ている. 現在の環境上でpath内のスクリ
+    プトを評価する.
 
 --- irb_load path, prev
 
-    Ruby��load��irb��.
+    Rubyのloadのirb版.
 
-= �����ƥ��ѿ�
+= システム変数
 
 --- _  
-    ���η׻��μ¹Է�̤�Ф��Ƥ���(���������ѿ�).
+    前の計算の実行結果を覚えている(ローカル変数).
 --- __ 
-    �¹Է�̤������Ф��Ƥ���.
-    __[line_no]�ǡ����ιԤǼ¹Ԥ�����̤����뤳�Ȥ��Ǥ���. line_no�����
-    ���ˤϡ��ǿ��η�̤���-line_no���η�̤����뤳�Ȥ��Ǥ���.
+    実行結果の履歴を覚えている.
+    __[line_no]で、その行で実行した結果を得ることができる. line_noが負の
+    時には、最新の結果から-line_no前の結果を得ることができる.
 
-=  ������
+=  使用例
 
-�ʲ��Τ褦�ʴ����Ǥ�.
+以下のような感じです.
 
   dim% ruby irb.rb
-  irb(main):001:0> irb                        # ����irb��Ω������
-  irb#1(main):001:0> jobs                     # ����irb�Υꥹ��
+  irb(main):001:0> irb                        # サブirbの立ちあげ
+  irb#1(main):001:0> jobs                     # サブirbのリスト
   #0->irb on main (#<Thread:0x400fb7e4> : stop)
   #1->irb#1 on main (#<Thread:0x40125d64> : running)
   nil
-  irb#1(main):002:0> fg 0                     # job�Υ����å�
+  irb#1(main):002:0> fg 0                     # jobのスイッチ
   nil
   irb(main):002:0> class Foo;end
   nil
-  irb(main):003:0> irb Foo                    # Foo�򥳥�ƥ����Ȥ���irb
-					      # Ω������
-  irb#2(Foo):001:0> def foo                   # Foo#foo�����
+  irb(main):003:0> irb Foo                    # Fooをコンテキストしてirb
+					      # 立ちあげ
+  irb#2(Foo):001:0> def foo                   # Foo#fooの定義
   irb#2(Foo):002:1>   print 1
   irb#2(Foo):003:1> end
   nil
-  irb#2(Foo):004:0> fg 0                      # job�򥹥��å�
+  irb#2(Foo):004:0> fg 0                      # jobをスイッチ
   nil
-  irb(main):004:0> jobs                       # job�Υꥹ��
+  irb(main):004:0> jobs                       # jobのリスト
   #0->irb on main (#<Thread:0x400fb7e4> : running)
   #1->irb#1 on main (#<Thread:0x40125d64> : stop)
   #2->irb#2 on Foo (#<Thread:0x4011d54c> : stop)
   nil
-  irb(main):005:0> Foo.instance_methods       # Foo#foo�������������
-					      # ��Ƥ���
+  irb(main):005:0> Foo.instance_methods       # Foo#fooがちゃんと定義さ
+					      # れている
   ["foo"]
-  irb(main):006:0> fg 2                       # job�򥹥��å�
+  irb(main):006:0> fg 2                       # jobをスイッチ
   nil
-  irb#2(Foo):005:0> def bar                   # Foo#bar�����
+  irb#2(Foo):005:0> def bar                   # Foo#barを定義
   irb#2(Foo):006:1>  print "bar"
   irb#2(Foo):007:1> end
   nil
@@ -325,36 +325,36 @@ irb��ĥ���ޥ�ɤ�, ��ñ��̾����Ƭ��`irb_'��Ĥ���̾����ξ����������
   nil
   irb(main):007:0> f = Foo.new
   #<Foo:0x4010af3c>
-  irb(main):008:0> irb f                      # Foo�Υ��󥹥��󥹤�irb��
-					      # Ω��������.
+  irb(main):008:0> irb f                      # Fooのインスタンスでirbを
+					      # 立ちあげる.
   irb#3(#<Foo:0x4010af3c>):001:0> jobs
   #0->irb on main (#<Thread:0x400fb7e4> : stop)
   #1->irb#1 on main (#<Thread:0x40125d64> : stop)
   #2->irb#2 on Foo (#<Thread:0x4011d54c> : stop)
   #3->irb#3 on #<Foo:0x4010af3c> (#<Thread:0x4010a1e0> : running)
   nil
-  irb#3(#<Foo:0x4010af3c>):002:0> foo         # f.foo�μ¹�
+  irb#3(#<Foo:0x4010af3c>):002:0> foo         # f.fooの実行
   nil
-  irb#3(#<Foo:0x4010af3c>):003:0> bar         # f.bar�μ¹�
+  irb#3(#<Foo:0x4010af3c>):003:0> bar         # f.barの実行
   barnil
-  irb#3(#<Foo:0x4010af3c>):004:0> kill 1, 2, 3# job��kill
+  irb#3(#<Foo:0x4010af3c>):004:0> kill 1, 2, 3# jobのkill
   nil
   irb(main):009:0> jobs
   #0->irb on main (#<Thread:0x400fb7e4> : running)
   nil
-  irb(main):010:0> exit                       # ��λ
+  irb(main):010:0> exit                       # 終了
   dim% 
 
-= ���Ѿ������
+= 使用上の制限
 
-irb��, ɾ���Ǥ������(�����Ĥ�������)�Ǥ��༡�¹Ԥ�Ԥʤ��ޤ�. ��������
-��, ruby��ľ�ܻȤä�����, �㴳�ۤʤ�ư���Ԥʤ���礬����ޤ�.
+irbは, 評価できる時点(式が閉じた時点)での逐次実行を行ないます. したがっ
+て, rubyを直接使った時と, 若干異なる動作を行なう場合があります.
 
-�������餫�ˤʤäƤ������������������ޤ�.
+現在明らかになっている問題点を説明します.
 
-== ���������ѿ������
+== ローカル変数の宣言
 
-ruby�Ǥ�, �ʲ��Υץ������ϥ��顼�ˤʤ�ޤ�.
+rubyでは, 以下のプログラムはエラーになります.
 
   eval "foo = 0"
   foo
@@ -363,24 +363,24 @@ ruby�Ǥ�, �ʲ��Υץ������ϥ��顼�ˤʤ�ޤ�.
   ---
   NameError
 
-�Ȥ�����, irb���Ѥ����
+ところが, irbを用いると
 
   >> eval "foo = 0"
   => 0
   >> foo
   => 0
 
-�Ȥʤ�, ���顼�򵯤����ޤ���. �����, ruby���ǽ�˥�����ץ����Τ򥳥�
-�ѥ��뤷�ƥ��������ѿ�����ꤹ�뤫��Ǥ�. ������Ф�, irb�ϼ¹Բ�ǽ��
-�ʤ�(�����Ĥ���)�ȼ�ưŪ��ɾ�����Ƥ��뤫��Ǥ�. �嵭����Ǥ�, 
+となり, エラーを起こしません. これは, rubyが最初にスクリプト全体をコン
+パイルしてローカル変数を決定するからです. それに対し, irbは実行可能に
+なる(式が閉じる)と自動的に評価しているからです. 上記の例では, 
 
   evel "foo = 0" 
 
-��Ԥʤä�������ɾ����Ԥʤ�, ���λ������ѿ����������뤿��, ������ 
-�ѿ�foo���������Ƥ��뤫��Ǥ�.
+を行なった時点で評価を行ない, その時点で変数が定義されるため, 次式で 
+変数fooは定義されているからです.
 
-���Τ褦��ruby��irb��ư��ΰ㤤���褷��������, begin...end�ǳ�ä�
-�Хå�Ū�˼¹Ԥ��Ʋ�����:
+このようなrubyとirbの動作の違いを解決したい場合は, begin...endで括って
+バッチ的に実行して下さい:
 
   >> begin
   ?>   eval "foo = 0"
@@ -390,14 +390,14 @@ ruby�Ǥ�, �ʲ��Υץ������ϥ��顼�ˤʤ�ޤ�.
   (irb):3
   (irb_local_binding):1:in `eval'
 
-== �ҥ��ɥ������
+== ヒアドキュメント
 
-���ߤΤȤ����ҥ��ɥ�����Ȥμ������Դ����Ǥ�. 
+現在のところヒアドキュメントの実装は不完全です. 
 
-== ����ܥ�
+== シンボル
 
-����ܥ�Ǥ��뤫�ɤ�����Ƚ�Ǥ�ְ㤨�뤳�Ȥ�����ޤ�. ����Ū�ˤϼ�����λ
-���Ƥ���Τ˷�³�Ԥȸ��ʤ����Ȥ�����ޤ�.
+シンボルであるかどうかの判断を間違えることがあります. 具体的には式が完了
+しているのに継続行と見なすことがあります.
 
 =end
 

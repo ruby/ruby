@@ -1,53 +1,53 @@
 .\" README.EXT.ja -  -*- Text -*- created at: Mon Aug  7 16:45:54 JST 1995
 
-Ruby�γ�ĥ�饤�֥��κ�������������ޤ���
+Rubyの拡張ライブラリの作り方を説明します．
 
-1�������μ�
+1．基礎知識
 
-C���ѿ��ˤϷ������ꡤ�ǡ����ˤϷ�������ޤ��󡥤Ǥ����顤��
-�Ȥ��Хݥ��󥿤�int���ѿ�����������ȡ������ͤ������Ȥ��Ƽ�
-�갷���ޤ����դ�Ruby���ѿ��ˤϷ����ʤ����ǡ����˷��������
-�������ΰ㤤�Τ��ᡤC��Ruby����ߤ��Ѵ����ʤ���С����ߤ���
-�ǡ����򥢥������Ǥ��ޤ���
+Cの変数には型があり，データには型がありません．ですから，た
+とえばポインタをintの変数に代入すると，その値は整数として取
+り扱われます．逆にRubyの変数には型がなく，データに型がありま
+す．この違いのため，CとRubyは相互に変換しなければ，お互いの
+データをアクセスできません．
 
-Ruby�Υǡ�����VALUE�Ȥ���C�η���ɽ������ޤ���VALUE���Υǡ�
-���Ϥ��Υǡ��������פ�ʬ���ΤäƤ��ޤ������Υǡ��������פ�
-�����Τϥǡ���(���֥�������)�μºݤι�¤���̣���Ƥ��ơ�Ruby
-�Υ��饹�ȤϤޤ���ä���ΤǤ���
+RubyのデータはVALUEというCの型で表現されます．VALUE型のデー
+タはそのデータタイプを自分で知っています．このデータタイプと
+いうのはデータ(オブジェクト)の実際の構造を意味していて，Ruby
+のクラスとはまた違ったものです．
 
-VALUE����C�ˤȤäư�̣�Τ���ǡ�������Ф�����ˤ�
+VALUEからCにとって意味のあるデータを取り出すためには
 
- (1) VALUE�Υǡ��������פ��Τ�
- (2) VALUE��C�Υǡ������Ѵ�����
+ (1) VALUEのデータタイプを知る
+ (2) VALUEをCのデータに変換する
 
-��ξ����ɬ�פǤ���(1)��˺���ȴְ�ä��ǡ������Ѵ����Ԥ��
-�ơ��ǰ��ץ�����बcore dump���ޤ���
+の両方が必要です．(1)を忘れると間違ったデータの変換が行われ
+て，最悪プログラムがcore dumpします．
 
-1.1 �ǡ���������
+1.1 データタイプ
 
-Ruby�ˤϥ桼�����Ȥ���ǽ���Τ���ʲ��Υ����פ�����ޤ���
+Rubyにはユーザが使う可能性のある以下のタイプがあります．
 
 	T_NIL		nil
-	T_OBJECT	�̾�Υ��֥�������
-	T_CLASS		���饹
-	T_MODULE	�⥸�塼��
-	T_FLOAT		��ư��������
-	T_STRING	ʸ����
-	T_REGEXP	����ɽ��
-	T_ARRAY		����
-	T_HASH		Ϣ������
-	T_STRUCT	(Ruby��)��¤��
-	T_BIGNUM	¿��Ĺ����
-	T_FIXNUM	Fixnum(31bit�ޤ���63bitĹ����)
-	T_COMPLEX	ʣ�ǿ�
-	T_RATIONAL	ͭ����
-	T_FILE		������
-	T_TRUE		��
-	T_FALSE		��
-	T_DATA		�ǡ���
-	T_SYMBOL	����ܥ�
+	T_OBJECT	通常のオブジェクト
+	T_CLASS		クラス
+	T_MODULE	モジュール
+	T_FLOAT		浮動小数点数
+	T_STRING	文字列
+	T_REGEXP	正規表現
+	T_ARRAY		配列
+	T_HASH		連想配列
+	T_STRUCT	(Rubyの)構造体
+	T_BIGNUM	多倍長整数
+	T_FIXNUM	Fixnum(31bitまたは63bit長整数)
+	T_COMPLEX	複素数
+	T_RATIONAL	有理数
+	T_FILE		入出力
+	T_TRUE		真
+	T_FALSE		偽
+	T_DATA		データ
+	T_SYMBOL	シンボル
 
-����¾�����������Ѥ���Ƥ���ʲ��Υ����פ�����ޤ���
+その他に内部で利用されている以下のタイプがあります．
 
 	T_ICLASS
 	T_MATCH
@@ -55,249 +55,360 @@ Ruby�ˤϥ桼�����Ȥ���ǽ���Τ���ʲ��Υ����פ�����ޤ���
 	T_NODE
 	T_ZOMBIE
 
-�ۤȤ�ɤΥ����פ�C�ι�¤�ΤǼ�������Ƥ��ޤ���
+ほとんどのタイプはCの構造体で実装されています．
 
-1.2 VALUE�Υǡ��������פ�����å�����
+1.2 VALUEのデータタイプをチェックする
 
-ruby.h�Ǥ�TYPE()�Ȥ����ޥ������������Ƥ��ơ�VALUE�Υǡ���
-�����פ��Τ뤳�Ȥ�����ޤ���TYPE()�ޥ����Ͼ�ǾҲ𤷤�T_XXXX
-�η�����������֤��ޤ���VALUE�Υǡ��������פ˱����ƽ�������
-���ˤϡ�TYPE()���ͤ�ʬ�����뤳�Ȥˤʤ�ޤ���
+ruby.hではTYPE()というマクロが定義されていて，VALUEのデータ
+タイプを知ることが出来ます．TYPE()マクロは上で紹介したT_XXXX
+の形式の定数を返します．VALUEのデータタイプに応じて処理する
+場合には，TYPE()の値で分岐することになります．
 
   switch (TYPE(obj)) {
     case T_FIXNUM:
-      /* FIXNUM�ν��� */
+      /* FIXNUMの処理 */
       break;
     case T_STRING:
-      /* ʸ����ν��� */
+      /* 文字列の処理 */
       break;
     case T_ARRAY:
-      /* ����ν��� */
+      /* 配列の処理 */
       break;
     default:
-      /* �㳰��ȯ�������� */
+      /* 例外を発生させる */
       rb_raise(rb_eTypeError, "not valid value");
       break;
   }
 
-����ȥǡ��������פ�����å����ơ��������ʤ�����㳰��ȯ����
-��ؿ����Ѱդ���Ƥ��ޤ���
+それとデータタイプをチェックして，正しくなければ例外を発生す
+る関数が用意されています．
 
   void Check_Type(VALUE value, int type)
 
-���δؿ���value��type��̵����С��㳰��ȯ�������ޤ���������
-����Ϳ����줿VALUE�Υǡ��������פ����������ɤ��������å���
-�뤿��ˤϡ����δؿ���Ȥ��ޤ���
+この関数はvalueがtypeで無ければ，例外を発生させます．引数と
+して与えられたVALUEのデータタイプが正しいかどうかチェックす
+るためには，この関数を使います．
 
-FIXNUM��NIL�˴ؤ��ƤϤ���®��Ƚ�̥ޥ������Ѱդ���Ƥ��ޤ���
+FIXNUMとNILに関してはより高速な判別マクロが用意されています．
 
   FIXNUM_P(obj)
   NIL_P(obj)
 
-1.3 VALUE��C�Υǡ������Ѵ�����
+<<<<<<< HEAD
+1.3 VALUEをCのデータに変換する
 
-�ǡ��������פ�T_NIL��T_FALSE��T_TRUE�Ǥ�������ǡ����Ϥ��줾
-��nil��false��true�Ǥ������Υǡ��������פΥ��֥������ȤϤҤ�
-�Ĥ��Ĥ���¸�ߤ��ޤ���
+データタイプがT_NIL，T_FALSE，T_TRUEである時，データはそれぞ
+れnil，false，trueです．このデータタイプのオブジェクトはひと
+つずつしか存在しません．
 
-�ǡ��������פ�T_FIXNUM�λ��������31bit�ޤ���63bit�Υ�������
-���������Ǥ���long�Υ�������32bit�Υץ�åȥե�����Ǥ����
-31bit�ˡ�long�Υ�������64bit�Υץ�åȥե�����Ǥ����63bit
-�ˤʤ�ޤ�. FIXNUM �� C ���������Ѵ����뤿��ˤϥޥ���
-��FIX2INT()�פޤ��ϡ�FIX2LONG()�פ�Ȥ��ޤ��������Υޥ���
-����Ѥ���ݤˤϻ����˥ǡ��������פ�FIXNUM�Ǥ��뤳�Ȥ��ǧ��
-��ɬ�פ�����ޤ��������Ū��®���Ѵ���Ԥ����Ȥ��Ǥ��ޤ�����
-������FIX2LONG()�פ��㳰��ȯ�����ޤ��󤬡���FIX2INT()�פ���
-����̤�int�Υ������˼��ޤ�ʤ����ˤ��㳰��ȯ�����ޤ���
-���줫�顤FIXNUM�˸¤餺Ruby�Υǡ������������Ѵ�����
-��NUM2INT()�פ���ӡ�NUM2LONG()�פȤ����ޥ���������ޤ�����
-���Υޥ����ϥޥ����ϥǡ��������פΥ����å�̵���ǻȤ��ޤ�
-(�������Ѵ��Ǥ��ʤ����ˤ��㳰��ȯ������)��Ʊ�ͤ˥����å�̵
-�ǻȤ����Ѵ��ޥ�����double����Ф���NUM2DBL()�פ�����ޤ���
+データタイプがT_FIXNUMの時，これは31bitまたは63bitのサイズを
+持つ整数です．longのサイズが32bitのプラットフォームであれば
+31bitに，longのサイズが64bitのプラットフォームであれば63bit
+になります. FIXNUM を C の整数に変換するためにはマクロ
+「FIX2INT()」または「FIX2LONG()」を使います．これらのマクロ
+を使用する際には事前にデータタイプがFIXNUMであることを確認す
+る必要がありますが，比較的高速に変換を行うことができます．ま
+た，「FIX2LONG()」は例外を発生しませんが，「FIX2INT()」は変
+換結果がintのサイズに収まらない場合には例外を発生します．
+それから，FIXNUMに限らずRubyのデータを整数に変換する
+「NUM2INT()」および「NUM2LONG()」というマクロがあります．こ
+れらのマクロはマクロはデータタイプのチェック無しで使えます
+(整数に変換できない場合には例外が発生する)．同様にチェック無
+で使える変換マクロはdoubleを取り出す「NUM2DBL()」があります．
 
-char* ����Ф���硤 StringValue() �� StringValuePtr()
-��Ȥ��ޤ���
-StringValue(var) �� var �� String
-�Ǥ���в��⤻���������Ǥʤ���� var �� var.to_str() �η��
-���֤�������ޥ�����StringValuePtr(var) ��Ʊ�ͤ� var ��
-String ���֤������Ƥ��� var �ΥХ�����ɽ�����Ф��� char* ��
-�֤��ޥ����Ǥ���var �����Ƥ�ľ���֤����������������Τǡ�
-var �� lvalue �Ǥ���ɬ�פ�����ޤ���
-�ޤ���StringValuePtr() ��������� StringValueCStr() �Ȥ�����
-�����⤢��ޤ���StringValueCStr(var) �� var �� String ���֤�
-�����Ƥ��� var ��ʸ����ɽ�����Ф��� char* ���֤��ޤ����֤���
-��ʸ����������ˤ� nul ʸ�����ղä���ޤ����ʤ�������� nul
-ʸ�����ޤޤ����� ArgumentError ��ȯ�����ޤ���
-������StringValuePtr() �Ǥϡ������� nul ʸ���������ݾڤϤʤ���
-����� nul ʸ�����ޤޤ�Ƥ����ǽ���⤢��ޤ���
+char* を取り出す場合， StringValue() と StringValuePtr()
+を使います．
+StringValue(var) は var が String
+であれば何もせず，そうでなければ var を var.to_str() の結果
+に置き換えるマクロ，StringValuePtr(var) は同様に var を
+String に置き換えてから var のバイト列表現に対する char* を
+返すマクロです．var の内容を直接置き換える処理が入るので，
+var は lvalue である必要があります．
+また，StringValuePtr() に類似した StringValueCStr() というマ
+クロもあります．StringValueCStr(var) は var を String に置き
+換えてから var の文字列表現に対する char* を返します．返され
+る文字列の末尾には nul 文字が付加されます．なお，途中に nul
+文字が含まれる場合は ArgumentError が発生します．
+一方，StringValuePtr() では，末尾に nul 文字がある保証はなく，
+途中に nul 文字が含まれている可能性もあります．
 
-����ʳ��Υǡ��������פ��б�����C�ι�¤�Τ�����ޤ����б���
-�빽¤�ΤΤ���VALUE�Ϥ��Τޤޥ��㥹��(���Ѵ�)����й�¤�Τ�
-�ݥ��󥿤��Ѵ��Ǥ��ޤ���
+それ以外のデータタイプは対応するCの構造体があります．対応す
+る構造体のあるVALUEはそのままキャスト(型変換)すれば構造体の
+ポインタに変換できます．
 
-��¤�Τϡ�struct RXxxxx�פȤ���̾����ruby.h���������Ƥ���
-�����㤨��ʸ����ϡ�struct RString�פǤ����ºݤ˻Ȥ���ǽ����
-����Τ�ʸ��������󤯤餤���Ȼפ��ޤ���
+構造体は「struct RXxxxx」という名前でruby.hで定義されていま
+す．例えば文字列は「struct RString」です．実際に使う可能性が
+あるのは文字列と配列くらいだと思います．
 
-ruby.h�ǤϹ�¤�Τإ��㥹�Ȥ���ޥ������RXXXXX()��(������ʸ
-���ˤ������)�Ȥ���̾�����󶡤���Ƥ��ޤ�(��: RSTRING())��
+ruby.hでは構造体へキャストするマクロも「RXXXXX()」(全部大文
+字にしたもの)という名前で提供されています(例: RSTRING())．
 
-��¤�Τ���ǡ�������Ф��ޥ������󶡤���Ƥ��ޤ���ʸ����
-str��Ĺ�������뤿��ˤϡ�RSTRING_LEN(str)�פȤ���ʸ����str��
-char*�Ȥ������뤿��ˤϡ�RSTRING_PTR(str)�פȤ��ޤ��������
-���ˤϡ����줾���RARRAY_LEN(ary)�ס���RARRAY_PTR(ary)�פ�
-�ʤ�ޤ���
+構造体からデータを取り出すマクロが提供されています．文字列
+strの長さを得るためには「RSTRING_LEN(str)」とし，文字列strを
+char*として得るためには「RSTRING_PTR(str)」とします．配列の
+場合には，それぞれ「RARRAY_LEN(ary)」，「RARRAY_PTR(ary)」と
+なります．
 
-Ruby�ι�¤�Τ�ľ�ܥ�������������˵���Ĥ��ʤ���Фʤ�ʤ���
-�Ȥϡ������ʸ����ι�¤�Τ���Ȥϻ��Ȥ�������ǡ�ľ���ѹ���
-�ʤ����ȤǤ���ľ���ѹ�������硤���֥������Ȥ����Ƥ���������
-�Ȥ�ʤ��ʤäơ��פ�̥Х��θ����ˤʤ�ޤ���
+Rubyの構造体を直接アクセスする時に気をつけなければならないこ
+とは，配列や文字列の構造体の中身は参照するだけで，直接変更し
+ないことです．直接変更した場合，オブジェクトの内容の整合性が
+とれなくなって，思わぬバグの原因になります．
 
-1.4 C�Υǡ�����VALUE���Ѵ�����
+1.4 CのデータをVALUEに変換する
 
-VALUE�μºݤι�¤��
+VALUEの実際の構造は
 
-  * FIXNUM�ξ��
+  * FIXNUMの場合
 
-    1bit�����եȤ��ơ�LSB��Ω�Ƥ롥
+    1bit左シフトして，LSBを立てる．
 
-  * ����¾�Υݥ��󥿤ξ��
+  * その他のポインタの場合
 
-    ���Τޤ�VALUE�˥��㥹�Ȥ��롥
+    そのままVALUEにキャストする．
 
-�ȤʤäƤ��ޤ�����äơ�LSB������å������VALUE��FIXNUM����
-�����狼��櫓�Ǥ�(�ݥ��󥿤�LSB��Ω�äƤ��ʤ����Ȥ��ꤷ��
-����)��
+となっています．よって，LSBをチェックすればVALUEがFIXNUMかど
+うかわかるわけです(ポインタのLSBが立っていないことを仮定して
+いる)．
 
-�Ǥ����顤FIXNUM�ʳ���Ruby�Υ��֥������Ȥι�¤�Τ�ñ��VALUE
-�˥��㥹�Ȥ��������VALUE���Ѵ�����ޤ�����������Ǥ�դι�¤
-�Τ�VALUE�˥��㥹�Ƚ����櫓�ǤϤ���ޤ��󡥥��㥹�Ȥ����
-��Ruby���ΤäƤ��빽¤��(ruby.h���������Ƥ���struct RXxxx
-�Τ��)�����Ǥ���
+ですから，FIXNUM以外のRubyのオブジェクトの構造体は単にVALUE
+にキャストするだけでVALUEに変換出来ます．ただし，任意の構造
+体がVALUEにキャスト出来るわけではありません．キャストするの
+はRubyの知っている構造体(ruby.hで定義されているstruct RXxxx
+のもの)だけです．
 
-FIXNUM�˴ؤ��Ƥ��Ѵ��ޥ������ͳ����ɬ�פ�����ޤ���C������
-����VALUE���Ѵ�����ޥ����ϰʲ��Τ�Τ�����ޤ���ɬ�פ˱���
-�ƻȤ�ʬ���Ƥ���������
+FIXNUMに関しては変換マクロを経由する必要があります．Cの整数
+からVALUEに変換するマクロは以下のものがあります．必要に応じ
+て使い分けてください．
 
-  INT2FIX()	��Ȥ�������31bit�ޤ���63bit����˼��ޤ뼫��
-		�������
-  INT2NUM()	Ǥ�դ���������VALUE��
+  INT2FIX()	もとの整数が31bitまたは63bit以内に収まる自信
+		がある時
+  INT2NUM()	任意の整数からVALUEへ
 
-INT2NUM()��������FIXNUM���ϰϤ˼��ޤ�ʤ���硤Bignum���Ѵ�
-���Ƥ���ޤ�(���������٤�)��
+INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
+してくれます(が，少し遅い)．
 
-1.5 Ruby�Υǡ���������
+1.5 Rubyのデータを操作する
 
-������Ҥ٤��̤ꡤRuby�ι�¤�Τ򥢥���������������Ƥι�����
-�Ԥ����Ȥϴ�����ޤ��󡥤ǡ�Ruby�Υǡ�����������ˤ�
-Ruby���Ѱդ��Ƥ���ؿ����Ѥ��Ƥ���������
+先程も述べた通り，Rubyの構造体をアクセスする時に内容の更新を
+行うことは勧められません．で，Rubyのデータを操作する時には
+Rubyが用意している関数を用いてください．
 
-�����ǤϤ�äȤ�Ȥ���Ǥ�����ʸ��������������/�����
-���ؿ��򤢤��ޤ�(�����ǤϤʤ��Ǥ�)��
+ここではもっとも使われるであろう文字列と配列の生成/操作を行
+い関数をあげます(全部ではないです)．
 
- ʸ������Ф���ؿ�
+ 文字列に対する関数
+=======
+1.3 VALUEをCのデータに変換する
+
+データタイプがT_NIL，T_FALSE，T_TRUEである時，データはそれぞ
+れnil，false，trueです．このデータタイプのオブジェクトはひと
+つずつしか存在しません．
+
+データタイプがT_FIXNUMの時，これは31bitまたは63bitのサイズを
+持つ整数です．longのサイズが32bitのプラットフォームであれば
+31bitに，longのサイズが64bitのプラットフォームであれば63bit
+になります. FIXNUM を C の整数に変換するためにはマクロ
+「FIX2INT()」または「FIX2LONG()」を使います．これらのマクロ
+を使用する際には事前にデータタイプがFIXNUMであることを確認す
+る必要がありますが，比較的高速に変換を行うことができます．ま
+た，「FIX2LONG()」は例外を発生しませんが，「FIX2INT()」は変
+換結果がintのサイズに収まらない場合には例外を発生します．
+それから，FIXNUMに限らずRubyのデータを整数に変換する
+「NUM2INT()」および「NUM2LONG()」というマクロがあります．こ
+れらのマクロはマクロはデータタイプのチェック無しで使えます
+(整数に変換できない場合には例外が発生する)．同様にチェック無
+で使える変換マクロはdoubleを取り出す「NUM2DBL()」があります．
+
+char* を取り出す場合， StringValue() と StringValuePtr() 
+を使います．
+StringValue(var) は var が String 
+であれば何もせず，そうでなければ var を var.to_str() の結果
+に置き換えるマクロ，StringValuePtr(var) は同様に var を
+String に置き換えてから var のバイト列表現に対する char* を
+返すマクロです．var の内容を直接置き換える処理が入るので，
+var は lvalue である必要があります．
+また，StringValuePtr() に類似した StringValueCStr() というマ
+クロもあります．StringValueCStr(var) は var を String に置き
+換えてから var の文字列表現に対する char* を返します．返され
+る文字列の末尾には nul 文字が付加されます．なお，途中に nul
+文字が含まれる場合は ArgumentError が発生します．
+一方，StringValuePtr() では，末尾に nul 文字がある保証はなく，
+途中に nul 文字が含まれている可能性もあります．
+
+それ以外のデータタイプは対応するCの構造体があります．対応す
+る構造体のあるVALUEはそのままキャスト(型変換)すれば構造体の
+ポインタに変換できます．
+
+構造体は「struct RXxxxx」という名前でruby.hで定義されていま
+す．例えば文字列は「struct RString」です．実際に使う可能性が
+あるのは文字列と配列くらいだと思います．
+
+ruby.hでは構造体へキャストするマクロも「RXXXXX()」(全部大文
+字にしたもの)という名前で提供されています(例: RSTRING())．
+
+構造体からデータを取り出すマクロが提供されています．文字列
+strの長さを得るためには「RSTRING_LEN(str)」とし，文字列strを
+char*として得るためには「RSTRING_PTR(str)」とします．配列の
+場合には，それぞれ「RARRAY_LEN(ary)」，「RARRAY_PTR(ary)」と
+なります．
+
+Rubyの構造体を直接アクセスする時に気をつけなければならないこ
+とは，配列や文字列の構造体の中身は参照するだけで，直接変更し
+ないことです．直接変更した場合，オブジェクトの内容の整合性が
+とれなくなって，思わぬバグの原因になります．
+
+1.4 CのデータをVALUEに変換する
+
+VALUEの実際の構造は
+
+  * FIXNUMの場合
+
+    1bit左シフトして，LSBを立てる．
+
+  * その他のポインタの場合
+
+    そのままVALUEにキャストする．
+
+となっています．よって，LSBをチェックすればVALUEがFIXNUMかど
+うかわかるわけです(ポインタのLSBが立っていないことを仮定して
+いる)．
+
+ですから，FIXNUM以外のRubyのオブジェクトの構造体は単にVALUE
+にキャストするだけでVALUEに変換出来ます．ただし，任意の構造
+体がVALUEにキャスト出来るわけではありません．キャストするの
+はRubyの知っている構造体(ruby.hで定義されているstruct RXxxx
+のもの)だけです．
+
+FIXNUMに関しては変換マクロを経由する必要があります．Cの整数
+からVALUEに変換するマクロは以下のものがあります．必要に応じ
+て使い分けてください．
+
+  INT2FIX()	もとの整数が31bitまたは63bit以内に収まる自信
+		がある時
+  INT2NUM()	任意の整数からVALUEへ
+
+INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
+してくれます(が，少し遅い)．
+
+1.5 Rubyのデータを操作する
+
+先程も述べた通り，Rubyの構造体をアクセスする時に内容の更新を
+行うことは勧められません．で，Rubyのデータを操作する時には
+Rubyが用意している関数を用いてください．
+
+ここではもっとも使われるであろう文字列と配列の生成/操作を行
+い関数をあげます(全部ではないです)．
+
+ 文字列に対する関数
+>>>>>>> Change encoding from EUC-JP to UTF-8. [Feature #5128]
 
   rb_str_new(const char *ptr, long len)
 
-    ������Ruby��ʸ������������롥
+    新しいRubyの文字列を生成する．
 
   rb_str_new2(const char *ptr)
   rb_str_new_cstr(const char *ptr)
 
-    C��ʸ���󤫤�Ruby��ʸ������������롥���δؿ��ε�ǽ��
-    rb_str_new(ptr, strlen(ptr))��Ʊ���Ǥ��롥
+    Cの文字列からRubyの文字列を生成する．この関数の機能は
+    rb_str_new(ptr, strlen(ptr))と同等である．
 
   rb_tainted_str_new(const char *ptr, long len)
 
-    �����ޡ������ղä��줿������Ruby��ʸ������������롥����
-    ����Υǡ����˴�Ť�ʸ����ˤϱ����ޡ������ղä����٤�
-    �Ǥ��롥
+    汚染マークが付加された新しいRubyの文字列を生成する．外部
+    からのデータに基づく文字列には汚染マークが付加されるべき
+    である．
 
   rb_tainted_str_new2(const char *ptr)
   rb_tainted_str_new_cstr(const char *ptr)
 
-    C��ʸ���󤫤�����ޡ������ղä��줿Ruby��ʸ������������롥
+    Cの文字列から汚染マークが付加されたRubyの文字列を生成する．
 
   rb_sprintf(const char *format, ...)
   rb_vsprintf(const char *format, va_list ap)
 
-    C��ʸ����format��³��������printf(3)�Υե����ޥåȤˤ������ä�
-    ��������Ruby��ʸ������������롥
+    Cの文字列formatと続く引数をprintf(3)のフォーマットにしたがって
+    整形し，Rubyの文字列を生成する．
 
   rb_str_cat(VALUE str, const char *ptr, long len)
 
-    Ruby��ʸ����str��len�Х��Ȥ�ʸ����ptr���ɲä��롥
+    Rubyの文字列strにlenバイトの文字列ptrを追加する．
 
   rb_str_cat2(VALUE str, const char* ptr)
 
-    Ruby��ʸ����str��C��ʸ����ptr���ɲä��롥���δؿ��ε�ǽ��
-    rb_str_cat(str, ptr, strlen(ptr))��Ʊ���Ǥ��롥
+    Rubyの文字列strにCの文字列ptrを追加する．この関数の機能は
+    rb_str_cat(str, ptr, strlen(ptr))と同等である．
 
   rb_str_catf(VALUE str, const char* format, ...)
   rb_str_vcatf(VALUE str, const char* format, va_list ap)
 
-    C��ʸ����format��³��������printf(3)�Υե����ޥåȤˤ������ä�
-    ��������Ruby��ʸ����str���ɲä��롥���δؿ��ε�ǽ�ϡ����줾��
-    rb_str_cat2(str, rb_sprintf(format, ...)) ��
-    rb_str_cat2(str, rb_vsprintf(format, ap)) ��Ʊ���Ǥ��롥
+    Cの文字列formatと続く引数をprintf(3)のフォーマットにしたがって
+    整形し，Rubyの文字列strに追加する．この関数の機能は，それぞれ
+    rb_str_cat2(str, rb_sprintf(format, ...)) や
+    rb_str_cat2(str, rb_vsprintf(format, ap)) と同等である．
 
   rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
+<<<<<<< HEAD
 
-    ���ꤵ�줿���󥳡��ǥ��󥰤�Ruby��ʸ�������������.
+    指定されたエンコーディングでRubyの文字列を生成する.
 
+=======
+  
+    指定されたエンコーディングでRubyの文字列を生成する.
+     
+>>>>>>> Change encoding from EUC-JP to UTF-8. [Feature #5128]
   rb_usascii_str_new(const char *ptr, long len)
   rb_usascii_str_new_cstr(const char *ptr)
 
-    ���󥳡��ǥ��󥰤�US-ASCII��Ruby��ʸ�������������.
+    エンコーディングがUS-ASCIIのRubyの文字列を生成する.
 
   rb_str_resize(VALUE str, long len)
 
-    Ruby��ʸ����Υ�������len�Х��Ȥ��ѹ����롥str��Ĺ������
-    �ʤƥ��åȤ���Ƥ��ʤ���Фʤ�ʤ���len������Ĺ������û
-    �����ϡ�len�Х��Ȥ�ۤ�����ʬ�����ƤϼΤƤ��롥len����
-    ��Ĺ������Ĺ�����ϡ�����Ĺ����ۤ�����ʬ�����Ƥ���¸��
-    ��ʤ��ǥ��ߤˤʤ�����������δؿ��θƤӽФ��ˤ�ä�
-    RSTRING_PTR(str)���ѹ�����뤫�⤷��ʤ����Ȥ����ա�
+    Rubyの文字列のサイズをlenバイトに変更する．strの長さは前
+    以てセットされていなければならない．lenが元の長さよりも短
+    い時は，lenバイトを越えた部分の内容は捨てられる．lenが元
+    の長さよりも長い時は，元の長さを越えた部分の内容は保存さ
+    れないでゴミになるだろう．この関数の呼び出しによって
+    RSTRING_PTR(str)が変更されるかもしれないことに注意．
 
   rb_str_set_len(VALUE str, long len)
 
-    Ruby��ʸ����Υ�������len�Х��Ȥ˥��åȤ��롥str���ѹ���
-    ǽ�Ǥʤ�����㳰��ȯ�����롥RSTRING_LEN(str)�Ȥ�̵�ط��ˡ�
-    len�Х��ȤޤǤ����Ƥ���¸����롥len��str�����̤�ۤ��Ƥ�
-    �ƤϤʤ�ʤ���
+    Rubyの文字列のサイズをlenバイトにセットする．strが変更可
+    能でなければ例外が発生する．RSTRING_LEN(str)とは無関係に，
+    lenバイトまでの内容は保存される．lenはstrの容量を越えてい
+    てはならない．
 
 
- ������Ф���ؿ�
+ 配列に対する関数
 
   rb_ary_new()
 
-    ���Ǥ�0��������������롥
+    要素が0の配列を生成する．
 
   rb_ary_new2(long len)
 
-    ���Ǥ�0��������������롥len����ʬ���ΰ�򤢤餫������
-    ���ƤƤ�����
+    要素が0の配列を生成する．len要素分の領域をあらかじめ割り
+    当てておく．
 
   rb_ary_new3(long n, ...)
 
-    �����ǻ��ꤷ��n���Ǥ�ޤ�������������롥
+    引数で指定したn要素を含む配列を生成する．
 
   rb_ary_new4(long n, VALUE *elts)
 
-    �����Ϳ����n���Ǥ�������������롥
+    配列で与えたn要素の配列を生成する．
 
   rb_ary_to_ary(VALUE obj)
 
-    ���֥������Ȥ�������Ѵ�����.
-    Object#to_ary��Ʊ���Ǥ���.
+    オブジェクトを配列に変換する.
+    Object#to_aryと同等である.
 
- ¾�ˤ����������ؿ���¿������. ������
- ����ary��������Ϥ��ʤ���Фʤ�ʤ�. ����ʤ���
- �������Ǥ�.
+ 他にも配列を操作する関数が多数ある. これらは
+ 引数aryに配列を渡さなければならない. さもないと
+ コアを吐く.
 
   rb_ary_aref(argc, VALUE *argv, VALUE ary)
 
-    Array#[]��Ʊ��.
+    Array#[]と同等.
 
   rb_ary_entry(VALUE ary, long offset)
 
@@ -312,45 +423,45 @@ Ruby���Ѱդ��Ƥ���ؿ����Ѥ��Ƥ���������
   rb_ary_shift(VALUE ary)
   rb_ary_unshift(VALUE ary, VALUE val)
 
-2��Ruby�ε�ǽ��Ȥ�
+2．Rubyの機能を使う
 
-����Ū��Ruby�ǽ񤱤뤳�Ȥ�C�Ǥ�񤱤ޤ���Ruby���Τ�Τ�C�ǵ�
-�Ҥ���Ƥ����Ǥ����顤�����Ȥ����������ʤ�Ǥ����ɡ�������
-��Ruby�γ�ĥ�˻Ȥ����Ȥ�¿����������ͽ¬����뵡ǽ���濴�˾�
-�𤷤ޤ���
+原理的にRubyで書けることはCでも書けます．RubyそのものがCで記
+述されているんですから，当然といえば当然なんですけど．ここで
+はRubyの拡張に使うことが多いだろうと予測される機能を中心に紹
+介します．
 
-2.1 Ruby�˵�ǽ���ɲä���
+2.1 Rubyに機能を追加する
 
-Ruby���󶡤���Ƥ���ؿ���Ȥ���Ruby���󥿥ץ꥿�˿�������ǽ
-���ɲä��뤳�Ȥ��Ǥ��ޤ���Ruby�Ǥϰʲ��ε�ǽ���ɲä���ؿ���
-�󶡤���Ƥ��ޤ���
+Rubyで提供されている関数を使えばRubyインタプリタに新しい機能
+を追加することができます．Rubyでは以下の機能を追加する関数が
+提供されています．
 
- * ���饹���⥸�塼��
- * �᥽�åɡ��ðۥ᥽�åɤʤ�
- * ���
+ * クラス，モジュール
+ * メソッド，特異メソッドなど
+ * 定数
 
-�ǤϽ�˾Ҳ𤷤ޤ���
+では順に紹介します．
 
-2.1.1 ���饹/�⥸�塼�����
+2.1.1 クラス/モジュール定義
 
-���饹��⥸�塼���������뤿��ˤϡ��ʲ��δؿ���Ȥ��ޤ���
+クラスやモジュールを定義するためには，以下の関数を使います．
 
   VALUE rb_define_class(const char *name, VALUE super)
   VALUE rb_define_module(const char *name)
 
-�����δؿ��Ͽ�����������줿���饹��⥸�塼����֤��ޤ���
-�᥽�åɤ����������ˤ������ͤ�ɬ�פʤΤǡ��ۤȤ�ɤξ��
-������ͤ��ѿ��˳�Ǽ���Ƥ���ɬ�פ�����Ǥ��礦��
+これらの関数は新しく定義されたクラスやモジュールを返します．
+メソッドや定数の定義にこれらの値が必要なので，ほとんどの場合
+は戻り値を変数に格納しておく必要があるでしょう．
 
-���饹��⥸�塼���¾�Υ��饹�������˥ͥ��Ȥ�������������
-�ϰʲ��δؿ���Ȥ��ޤ���
+クラスやモジュールを他のクラスの内部にネストして定義する時に
+は以下の関数を使います．
 
   VALUE rb_define_class_under(VALUE outer, const char *name, VALUE super)
   VALUE rb_define_module_under(VALUE outer, const char *name)
 
-2.1.2 �᥽�å�/�ðۥ᥽�å����
+2.1.2 メソッド/特異メソッド定義
 
-�᥽�åɤ��ðۥ᥽�åɤ��������ˤϰʲ��δؿ���Ȥ��ޤ���
+メソッドや特異メソッドを定義するには以下の関数を使います．
 
   void rb_define_method(VALUE klass, const char *name,
 		        VALUE (*func)(), int argc)
@@ -359,365 +470,365 @@ Ruby���󶡤���Ƥ���ؿ���Ȥ���Ruby���󥿥ץ꥿�˿�������ǽ
 			          VALUE (*func)(), int argc)
 
 
-ǰ�Τ�����������ȡ��ðۥ᥽�åɡפȤϡ���������Υ��֥�����
-�Ȥ��Ф��Ƥ���ͭ���ʥ᥽�åɤǤ���Ruby�ǤϤ褯Smalltalk�ˤ�
-���륯�饹�᥽�åɤȤ��ơ����饹���Ф����ðۥ᥽�åɤ��Ȥ��
-�ޤ���
+念のため説明すると「特異メソッド」とは，その特定のオブジェク
+トに対してだけ有効なメソッドです．RubyではよくSmalltalkにお
+けるクラスメソッドとして，クラスに対する特異メソッドが使われ
+ます．
 
-�����δؿ��� argc�Ȥ���������C�δؿ����Ϥ��������ο�(��
-����)����ޤ���argc��0�ʾ�λ��ϴؿ��˰����Ϥ������ο����
-̣���ޤ���16�İʾ�ΰ����ϻȤ��ޤ���(�����פ�ޤ����͡���
-��ʤ�)���ºݤδؿ��ˤ���Ƭ�ΰ����Ȥ���self��Ϳ�����ޤ���
-�ǡ����ꤷ�������1¿����������Ĥ��Ȥˤʤ�ޤ���
+これらの関数の argcという引数はCの関数へ渡される引数の数(と
+形式)を決めます．argcが0以上の時は関数に引き渡す引数の数を意
+味します．16個以上の引数は使えません(が，要りませんよね，そ
+んなに)．実際の関数には先頭の引数としてselfが与えられますの
+で，指定した数より1多い引数を持つことになります．
 
-argc����λ��ϰ����ο��ǤϤʤ�����������ꤷ�����Ȥˤʤ�ޤ���
-argc��-1�λ��ϰ����������������Ϥ���ޤ���argc��-2�λ��ϰ�
-����Ruby������Ȥ����Ϥ���ޤ���
+argcが負の時は引数の数ではなく，形式を指定したことになります．
+argcが-1の時は引数を配列に入れて渡されます．argcが-2の時は引
+数はRubyの配列として渡されます．
 
-�᥽�åɤ��������ؿ��Ϥޤ������Ĥ�����ޤ�. �ҤȤĤϥ᥽�å�
-̾�Ȥ���ID����ޤ�. ID�ˤĤ��Ƥ�2.2.2�򻲾�.
+メソッドを定義する関数はまだいくつかあります. ひとつはメソッド
+名としてIDを取ります. IDについては2.2.2を参照.
 
   void rb_define_method_id(VALUE klass, ID name,
                            VALUE (*func)(ANYARGS), int argc)
 
-private/protected�ʥ᥽�åɤ��������դ��Ĥδؿ�������ޤ�.
+private/protectedなメソッドを定義するふたつの関数があります.
 
   void rb_define_private_method(VALUE klass, const char *name,
 				VALUE (*func)(), int argc)
   void rb_define_protected_method(VALUE klass, const char *name,
 			          VALUE (*func)(), int argc)
 
-private�᥽�åɤȤϴؿ������Ǥ����ƤӽФ����Ȥν���ʤ��᥽��
-�ɤǤ���
+privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
+ドです．
 
-�Ǹ�ˡ� rb_define_module�ؿ��ϥ⥸�塼��ؿ���������ޤ���
-�⥸�塼��ؿ��Ȥϥ⥸�塼����ðۥ᥽�åɤǤ��ꡤƱ����
-private�᥽�åɤǤ⤢���ΤǤ�����򤢤����Math�⥸�塼��
-��sqrt()�ʤɤ��������ޤ������Υ᥽�åɤ�
+最後に， rb_define_module関数はモジュール関数を定義します．
+モジュール関数とはモジュールの特異メソッドであり，同時に
+privateメソッドでもあるものです．例をあげるとMathモジュール
+のsqrt()などがあげられます．このメソッドは
 
   Math.sqrt(4)
 
-�Ȥ��������Ǥ�
+という形式でも
 
   include Math
   sqrt(4)
 
-�Ȥ��������Ǥ�Ȥ��ޤ����⥸�塼��ؿ����������ؿ��ϰʲ���
-�̤�Ǥ���
+という形式でも使えます．モジュール関数を定義する関数は以下の
+通りです．
 
   void rb_define_module_function(VALUE module, const char *name,
 		                 VALUE (*func)(), int argc)
 
-�ؿ�Ū�᥽�å�(Kernel�⥸�塼���private method)��������뤿
-��δؿ��ϰʲ����̤�Ǥ���
+関数的メソッド(Kernelモジュールのprivate method)を定義するた
+めの関数は以下の通りです．
 
   void rb_define_global_function(const char *name, VALUE (*func)(), int argc)
 
 
-�᥽�åɤ���̾��������뤿��δؿ��ϰʲ����̤�Ǥ���
+メソッドの別名を定義するための関数は以下の通りです．
 
   void rb_define_alias(VALUE module, const char* new, const char* old);
 
-°���μ���������᥽�åɤ��������ˤ�
+属性の取得・設定メソッドを定義するには
 
   void rb_define_attr(VALUE klass, const char *name, int read, int write)
 
-���饹�᥽�å�allocate������������������ꤹ�뤿��δؿ���
-�ʲ����̤�Ǥ���
+クラスメソッドallocateを定義したり削除したりするための関数は
+以下の通りです．
 
   void rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE klass));
   void rb_undef_alloc_func(VALUE klass);
 
-func�ϥ��饹������Ȥ��Ƽ�����äơ�������������Ƥ�줿����
-�����󥹤��֤��ʤ��ƤϤʤ�ޤ��󡥤��Υ��󥹥��󥹤ϡ�������
-�������ʤɤ�ޤޤʤ����Ǥ�������ֶ��פΤޤޤˤ��Ƥ������ۤ�
-���褤�Ǥ��礦��
+funcはクラスを引数として受け取って，新しく割り当てられたイン
+スタンスを返さなくてはなりません．このインスタンスは，外部リ
+ソースなどを含まない，できるだけ「空」のままにしておいたほう
+がよいでしょう．
 
-2.1.3 ������
+2.1.3 定数定義
 
-��ĥ�饤�֥�꤬ɬ�פ�����Ϥ��餫����������Ƥ����������ɤ�
-�Ǥ��礦��������������ؿ�����Ĥ���ޤ���
+拡張ライブラリが必要な定数はあらかじめ定義しておいた方が良い
+でしょう．定数を定義する関数は二つあります．
 
   void rb_define_const(VALUE klass, const char *name, VALUE val)
   void rb_define_global_const(const char *name, VALUE val)
 
-���Ԥ�����Υ��饹/�⥸�塼���°�����������������Ρ���
-�Ԥϥ������Х���������������ΤǤ���
+前者は特定のクラス/モジュールに属する定数を定義するもの，後
+者はグローバルな定数を定義するものです．
 
-2.2 Ruby�ε�ǽ��C����ƤӽФ�
+2.2 Rubyの機能をCから呼び出す
 
-���ˡ�1.5 Ruby�Υǡ���������٤ǰ����Ҳ𤷤��褦�ʴؿ���
-�Ȥ��С�Ruby�ε�ǽ��¸����Ƥ���ؿ���ľ�ܸƤӽФ����Ȥ�����
-�ޤ���
+既に『1.5 Rubyのデータを操作する』で一部紹介したような関数を
+使えば，Rubyの機能を実現している関数を直接呼び出すことが出来
+ます．
 
-# ���Τ褦�ʴؿ��ΰ���ɽ�Ϥ��ޤΤȤ�������ޤ��󡥥�������
-# �뤷���ʤ��Ǥ��͡�
+# このような関数の一覧表はいまのところありません．ソースを見
+# るしかないですね．
 
-����ʳ��ˤ�Ruby�ε�ǽ��ƤӽФ���ˡ�Ϥ����Ĥ�����ޤ���
+それ以外にもRubyの機能を呼び出す方法はいくつかあります．
 
-2.2.1 Ruby�Υץ�������eval����
+2.2.1 Rubyのプログラムをevalする
 
-C����Ruby�ε�ǽ��ƤӽФ���äȤ��ñ����ˡ�Ȥ��ơ�ʸ�����
-Ϳ����줿Ruby�Υץ�������ɾ������ʲ��δؿ�������ޤ���
+CからRubyの機能を呼び出すもっとも簡単な方法として，文字列で
+与えられたRubyのプログラムを評価する以下の関数があります．
 
   VALUE rb_eval_string(const char *str)
 
-����ɾ���ϸ��ߤδĶ��ǹԤ��ޤ����Ĥޤꡤ���ߤΥ��������ѿ�
-�ʤɤ�����Ѥ��ޤ���
+この評価は現在の環境で行われます．つまり，現在のローカル変数
+などを受け継ぎます．
 
-ɾ�����㳰��ȯ�����뤫�⤷��ʤ����Ȥ����դ��ޤ��礦. ������
-�ʴؿ��⤢��ޤ�.
+評価は例外を発生するかもしれないことに注意しましょう. より安全
+な関数もあります.
 
   VALUE rb_eval_string_protect(const char *str, int *state)
 
-���δؿ��ϥ��顼��ȯ�������nil���֤��ޤ��������ơ��������ˤ�
-*state�ϥ����ˡ�����ʤ����󥼥��ˤʤ�ޤ���
+この関数はエラーが発生するとnilを返します．そして，成功時には
+*stateはゼロに，さもなくば非ゼロになります．
 
 
-2.2.2 ID�ޤ��ϥ���ܥ�
+2.2.2 IDまたはシンボル
 
-C����ʸ������ͳ������Ruby�Υ᥽�åɤ�ƤӽФ����Ȥ�Ǥ���
-�����������ˡ�Ruby���󥿥ץ꥿��ǥ᥽�åɤ��ѿ�̾����ꤹ��
-���˻Ȥ��Ƥ���ID�ˤĤ����������Ƥ����ޤ��礦��
+Cから文字列を経由せずにRubyのメソッドを呼び出すこともできま
+す．その前に，Rubyインタプリタ内でメソッドや変数名を指定する
+時に使われているIDについて説明しておきましょう．
 
-ID�Ȥ��ѿ�̾���᥽�å�̾��ɽ�������Ǥ���Ruby����Ǥ�
+IDとは変数名，メソッド名を表す整数です．Rubyの中では
 
- :���̻�
-�ޤ���
- :"Ǥ�դ�ʸ����"
+ :識別子
+または
+ :"任意の文字列"
 
-�ǥ��������Ǥ��ޤ���C���餳�����������뤿��ˤϴؿ�
+でアクセスできます．Cからこの整数を得るためには関数
 
   rb_intern(const char *name)
 
-��Ȥ��ޤ���Ruby��������Ȥ���Ϳ����줿����ܥ�(�ޤ���ʸ��
-��)��ID���Ѵ�����ˤϰʲ��δؿ���Ȥ��ޤ���
+を使います．Rubyから引数として与えられたシンボル(または文字
+列)をIDに変換するには以下の関数を使います．
 
   rb_to_id(VALUE symbol)
 
-2.2.3 C����Ruby�Υ᥽�åɤ�ƤӽФ�
+2.2.3 CからRubyのメソッドを呼び出す
 
-C����ʸ������ͳ������Ruby�Υ᥽�åɤ�ƤӽФ�����ˤϰʲ�
-�δؿ���Ȥ��ޤ���
+Cから文字列を経由せずにRubyのメソッドを呼び出すためには以下
+の関数を使います．
 
   VALUE rb_funcall(VALUE recv, ID mid, int argc, ...)
 
-���δؿ��ϥ��֥�������recv��mid�ǻ��ꤵ���᥽�åɤ�Ƥӽ�
-���ޤ�������¾�˰����λ���λ������㤦�ʲ��δؿ��⤢��ޤ���
+この関数はオブジェクトrecvのmidで指定されるメソッドを呼び出
+します．その他に引数の指定の仕方が違う以下の関数もあります．
 
   VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
   VALUE rb_apply(VALUE recv, ID mid, VALUE args)
 
-apply�ˤϰ����Ȥ���Ruby�������Ϳ���ޤ���
+applyには引数としてRubyの配列を与えます．
 
-2.2.4 �ѿ�/����򻲾�/��������
+2.2.4 変数/定数を参照/更新する
 
-C����ؿ���Ȥäƻ��ȡ������Ǥ���Τϡ���������󥹥�����
-���Ǥ�������ѿ��ϰ����Τ�Τ�C������ѿ��Ȥ��ƥ��������Ǥ�
-�ޤ������������ѿ��򻲾Ȥ�����ˡ�ϸ������Ƥ��ޤ���
+Cから関数を使って参照・更新できるのは，定数，インスタンス変
+数です．大域変数は一部のものはCの大域変数としてアクセスでき
+ます．ローカル変数を参照する方法は公開していません．
 
-���֥������ȤΥ��󥹥����ѿ��򻲾ȡ���������ؿ��ϰʲ�����
-��Ǥ���
+オブジェクトのインスタンス変数を参照・更新する関数は以下の通
+りです．
 
   VALUE rb_ivar_get(VALUE obj, ID id)
   VALUE rb_ivar_set(VALUE obj, ID id, VALUE val)
 
-id��rb_intern()���������Τ�ȤäƤ���������
+idはrb_intern()で得られるものを使ってください．
 
-����򻲾Ȥ���ˤϰʲ��δؿ���ȤäƤ���������
+定数を参照するには以下の関数を使ってください．
 
   VALUE rb_const_get(VALUE obj, ID id)
 
-����򿷤���������뤿��ˤϡ�2.1.3 �������٤ǾҲ�
-��Ƥ���ؿ���ȤäƤ���������
+定数を新しく定義するためには『2.1.3 定数定義』で紹介さ
+れている関数を使ってください．
 
-3��Ruby��C�Ȥξ���ͭ
+3．RubyとCとの情報共有
 
-C�����Ruby�δ֤Ǿ����ͭ������ˡ�ˤĤ��Ʋ��⤷�ޤ���
+C言語とRubyの間で情報を共有する方法について解説します．
 
-3.1 C���黲�ȤǤ���Ruby�����
+3.1 Cから参照できるRubyの定数
 
-�ʲ���Ruby�������C�Υ�٥뤫�黲�ȤǤ��ޤ���
+以下のRubyの定数はCのレベルから参照できます．
 
   Qtrue
   Qfalse
 
-    �����͡�Qfalse��C����Ǥ⵶�Ȥߤʤ���ޤ�(�Ĥޤ�0)��
+    真偽値．QfalseはC言語でも偽とみなされます(つまり0)．
 
   Qnil
 
-    C���줫�鸫����nil�ס�
+    C言語から見た「nil」．
 
-3.2 C��Ruby�Ƕ�ͭ���������ѿ�
+3.2 CとRubyで共有される大域変数
 
-C��Ruby������ѿ���Ȥäƾ����ͭ�Ǥ��ޤ�����ͭ�Ǥ������
-�ѿ��ˤϤ����Ĥ��μ��ब����ޤ������Τʤ��Ǥ�äȤ��ɤ��Ȥ�
-���Ȼפ���Τ�rb_define_variable()�Ǥ���
+CとRubyで大域変数を使って情報を共有できます．共有できる大域
+変数にはいくつかの種類があります．そのなかでもっとも良く使わ
+れると思われるのはrb_define_variable()です．
 
   void rb_define_variable(const char *name, VALUE *var)
 
-���δؿ���Ruby��C�ȤǶ�ͭ��������ѿ���������ޤ����ѿ�̾��
-`$'�ǻϤޤ�ʤ����ˤϼ�ưŪ���ɲä���ޤ��������ѿ����ͤ���
-������ȼ�ưŪ��Ruby���б������ѿ����ͤ��Ѥ��ޤ���
+この関数はRubyとCとで共有する大域変数を定義します．変数名が
+`$'で始まらない時には自動的に追加されます．この変数の値を変
+更すると自動的にRubyの対応する変数の値も変わります．
 
-�ޤ�Ruby¦����Ϲ����Ǥ��ʤ��ѿ��⤢��ޤ�������read only��
-�ѿ��ϰʲ��δؿ���������ޤ���
+またRuby側からは更新できない変数もあります．このread onlyの
+変数は以下の関数で定義します．
 
   void rb_define_readonly_variable(const char *name, VALUE *var)
 
-������ѿ���¾��hook��Ĥ�������ѿ�������Ǥ��ޤ���hook�դ�
-������ѿ��ϰʲ��δؿ����Ѥ���������ޤ���hook�դ�����ѿ���
-�ͤλ��Ȥ������hook�ǹԤ�ɬ�פ�����ޤ���
+これら変数の他にhookをつけた大域変数を定義できます．hook付き
+の大域変数は以下の関数を用いて定義します．hook付き大域変数の
+値の参照や設定はhookで行う必要があります．
 
   void rb_define_hooked_variable(const char *name, VALUE *var,
 				 VALUE (*getter)(), void (*setter)())
 
-���δؿ���C�δؿ��ˤ�ä�hook�ΤĤ���줿����ѿ����������
-�����ѿ������Ȥ��줿���ˤϴؿ�getter�����ѿ����ͤ����åȤ���
-�����ˤϴؿ�setter���ƤФ�롥hook����ꤷ�ʤ�����getter��
-setter��0����ꤷ�ޤ���
-# getter��setter��0�ʤ��rb_define_variable()��Ʊ���ˤʤ롥
+この関数はCの関数によってhookのつけられた大域変数を定義しま
+す．変数が参照された時には関数getterが，変数に値がセットされ
+た時には関数setterが呼ばれる．hookを指定しない場合はgetterや
+setterに0を指定します．
+# getterもsetterも0ならばrb_define_variable()と同じになる．
 
-getter��setter�λ��ͤϼ����̤�Ǥ���
+getterとsetterの仕様は次の通りです．
 
   VALUE (*getter)(ID id, VALUE *var);
   void (*setter)(VALUE val, ID id, VALUE *var);
 
 
-���줫�顤�б�����C���ѿ�������ʤ�Ruby������ѿ����������
-���Ȥ�Ǥ��ޤ�. �����ѿ����ͤϥեå��ؿ��Τߤˤ�äƼ���������
-����ޤ�.
+それから，対応するCの変数を持たないRubyの大域変数を定義する
+こともできます. その変数の値はフック関数のみによって取得・設定
+されます.
 
   void rb_define_virtual_variable(const char *name,
 				  VALUE (*getter)(), void (*setter)())
 
-���δؿ��ˤ�ä�������줿Ruby������ѿ������Ȥ��줿���ˤ�
-getter�����ѿ����ͤ����åȤ��줿���ˤ�setter���ƤФ�ޤ���
+この関数によって定義されたRubyの大域変数が参照された時には
+getterが，変数に値がセットされた時にはsetterが呼ばれます．
 
-getter��setter�λ��ͤϰʲ����̤�Ǥ���
+getterとsetterの仕様は以下の通りです．
 
   (*getter)(ID id);
   (*setter)(VALUE val, ID id);
 
-3.3 C�Υǡ�����Ruby���֥������Ȥˤ���
+3.3 CのデータをRubyオブジェクトにする
 
-C��������������줿�ǡ���(��¤��)��Ruby�Υ��֥������ȤȤ���
-��갷��������礬���ꤨ�ޤ������Τ褦�ʾ��ˤϡ�Data�Ȥ���
-Ruby���֥������Ȥ�C�ι�¤��(�ؤΥݥ���)�򤯤�ळ�Ȥ�Ruby
-���֥������ȤȤ��Ƽ�갷����褦�ˤʤ�ޤ���
+Cの世界で定義されたデータ(構造体)をRubyのオブジェクトとして
+取り扱いたい場合がありえます．このような場合には，Dataという
+RubyオブジェクトにCの構造体(へのポインタ)をくるむことでRuby
+オブジェクトとして取り扱えるようになります．
 
-Data���֥������Ȥ��������ƹ�¤�Τ�Ruby���֥������Ȥ˥��ץ���
-�����뤿��ˤϡ��ʲ��Υޥ�����Ȥ��ޤ���
+Dataオブジェクトを生成して構造体をRubyオブジェクトにカプセル
+化するためには，以下のマクロを使います．
 
   Data_Wrap_Struct(klass, mark, free, ptr)
 
-���Υޥ���������ͤ��������줿Data���֥������ȤǤ���
+このマクロの戻り値は生成されたDataオブジェクトです．
 
-klass�Ϥ���Data���֥������ȤΥ��饹�Ǥ���ptr�ϥ��ץ��벽����
-C�ι�¤�ΤؤΥݥ��󥿤Ǥ���mark�Ϥ��ι�¤�Τ�Ruby�Υ��֥���
-���Ȥؤλ��Ȥ�������˻Ȥ��ؿ��Ǥ������Τ褦�ʻ��Ȥ�ޤޤʤ�
-���ˤ�0����ꤷ�ޤ���
+klassはこのDataオブジェクトのクラスです．ptrはカプセル化する
+Cの構造体へのポインタです．markはこの構造体がRubyのオブジェ
+クトへの参照がある時に使う関数です．そのような参照を含まない
+時には0を指定します．
 
-# ���Τ褦�ʻ��Ȥϴ�����ޤ���
+# そのような参照は勧められません．
 
-free�Ϥ��ι�¤�Τ��⤦���פˤʤä����˸ƤФ��ؿ��Ǥ�������
-�ؿ��������١������쥯������ƤФ�ޤ������줬-1�ξ��ϡ�ñ
-��˳�������ޤ���
+freeはこの構造体がもう不要になった時に呼ばれる関数です．この
+関数がガーベージコレクタから呼ばれます．これが-1の場合は，単
+純に開放されます．
 
-mark�����free�ؿ���GC�¹���˸ƤӽФ���ޤ�.
-�ʤ�, GC�¹����Ruby���֥������ȤΥ������������϶ػߤ����
-��. ��ä�, mark�����free�ؿ���Ruby���֥������ȤΥ���������
-���ϹԤ�ʤ��Ǥ�������.
+markおよびfree関数はGC実行中に呼び出されます.
+なお, GC実行中はRubyオブジェクトのアロケーションは禁止されま
+す. よって, markおよびfree関数でRubyオブジェクトのアロケーシ
+ョンは行わないでください.
 
-C�ι�¤�Τγ�����Data���֥������Ȥ�������Ʊ���˹Ԥ��ޥ�����
-���ưʲ��Τ�Τ��󶡤���Ƥ��ޤ���
+Cの構造体の割当とDataオブジェクトの生成を同時に行うマクロと
+して以下のものが提供されています．
 
   Data_Make_Struct(klass, type, mark, free, sval)
 
-���Υޥ���������ͤ��������줿Data���֥������ȤǤ���
+このマクロの戻り値は生成されたDataオブジェクトです．
 
-klass, mark, free��Data_Wrap_Struct��Ʊ��Ư���򤷤ޤ���type
-�ϳ�����Ƥ�C��¤�Τη��Ǥ���������Ƥ�줿��¤�Τ��ѿ�sval
-����������ޤ��������ѿ��η��� (type*) �Ǥ���ɬ�פ�����ޤ���
+klass, mark, freeはData_Wrap_Structと同じ働きをします．type
+は割り当てるC構造体の型です．割り当てられた構造体は変数sval
+に代入されます．この変数の型は (type*) である必要があります．
 
-Data���֥������Ȥ���ݥ��󥿤���Ф��Τϰʲ��Υޥ������Ѥ�
-�ޤ���
+Dataオブジェクトからポインタを取り出すのは以下のマクロを用い
+ます．
 
   Data_Get_Struct(obj, type, sval)
 
-C�ι�¤�ΤؤΥݥ��󥿤��ѿ�sval����������ޤ���
+Cの構造体へのポインタは変数svalに代入されます．
 
-������Data�λȤ����Ϥ���ä�ʬ����ˤ����Τǡ������������
-����򻲾Ȥ��Ƥ���������
+これらのDataの使い方はちょっと分かりにくいので，後で説明する
+例題を参照してください．
 
-4������ - dbm�ѥå���������
+4．例題 - dbmパッケージを作る
 
-�����ޤǤ������ǤȤꤢ������ĥ�饤�֥��Ϻ���Ϥ��Ǥ���
-Ruby��ext�ǥ��쥯�ȥ�ˤ��Ǥ˴ޤޤ�Ƥ���dbm�饤�֥������
-�����ʳ�Ū���������ޤ���
+ここまでの説明でとりあえず拡張ライブラリは作れるはずです．
+Rubyのextディレクトリにすでに含まれているdbmライブラリを例に
+して段階的に説明します．
 
-(1) �ǥ��쥯�ȥ����
+(1) ディレクトリを作る
 
   % mkdir ext/dbm
 
-Ruby 1.1�����Ǥ�դΥǥ��쥯�ȥ�ǥ����ʥߥå��饤�֥����
-�뤳�Ȥ��Ǥ���褦�ˤʤ�ޤ�����Ruby����Ū�˥�󥯤������
-��Ruby��Ÿ�������ǥ��쥯�ȥ�β���ext�ǥ��쥯�ȥ����˳�ĥ
-�饤�֥���ѤΥǥ��쥯�ȥ����ɬ�פ�����ޤ���̾����Ŭ����
-����ǹ����ޤ���
+Ruby 1.1からは任意のディレクトリでダイナミックライブラリを作
+ることができるようになりました．Rubyに静的にリンクする場合に
+はRubyを展開したディレクトリの下，extディレクトリの中に拡張
+ライブラリ用のディレクトリを作る必要があります．名前は適当に
+選んで構いません．
 
-(2) �߷פ���
+(2) 設計する
 
-�ޤ��������ʤ�Ǥ����ɡ��ɤ�������ǽ��¸����뤫�ɤ����ޤ���
-�פ���ɬ�פ�����ޤ����ɤ�ʥ��饹��Ĥ��뤫�����Υ��饹�ˤ�
-�ɤ�ʥ᥽�åɤ����뤫�����饹���󶡤�������ʤɤˤĤ����߷�
-���ޤ���
+まあ，当然なんですけど，どういう機能を実現するかどうかまず設
+計する必要があります．どんなクラスをつくるか，そのクラスには
+どんなメソッドがあるか，クラスが提供する定数などについて設計
+します．
 
-(3) C�����ɤ��
+(3) Cコードを書く
 
-��ĥ�饤�֥�����ΤȤʤ�C����Υ�������񤭤ޤ���C����Υ���
-�����ҤȤĤλ��ˤϡ֥饤�֥��̾.c�פ����֤��ɤ��Ǥ��礦��C
-����Υ�������ʣ���ξ��ˤϵդˡ֥饤�֥��̾.c�פȤ����ե�
-����̾���򤱤�ɬ�פ�����ޤ������֥������ȥե�����ȥ⥸�塼
-�������������Ū�����������֥饤�֥��̾.o�פȤ����ե�����
-�Ȥ����ͤ��뤫��Ǥ����ޤ�����Ҥ��� mkmf �饤�֥��Τ�����
-���δؿ�������ѥ�����פ���ƥ��ȤΤ���ˡ�conftest.c�פȤ�
-���ե�����̾����Ѥ��뤳�Ȥ����դ��Ƥ����������������ե�����
-̾�Ȥ��ơ�conftest.c�פ���Ѥ��ƤϤʤ�ޤ���
+拡張ライブラリ本体となるC言語のソースを書きます．C言語のソー
+スがひとつの時には「ライブラリ名.c」を選ぶと良いでしょう．C
+言語のソースが複数の場合には逆に「ライブラリ名.c」というファ
+イル名は避ける必要があります．オブジェクトファイルとモジュー
+ル生成時に中間的に生成される「ライブラリ名.o」というファイル
+とが衝突するからです．また，後述する mkmf ライブラリのいくつ
+かの関数がコンパイルを要するテストのために「conftest.c」とい
+うファイル名を使用することに注意してください．ソースファイル
+名として「conftest.c」を使用してはなりません．
 
-Ruby�ϳ�ĥ�饤�֥�������ɤ�����ˡ�Init_�饤�֥��̾�פ�
-�����ؿ���ưŪ�˼¹Ԥ��ޤ���dbm�饤�֥��ξ���Init_dbm��
-�Ǥ������δؿ�����ǥ��饹���⥸�塼�롤�᥽�åɡ�����ʤɤ�
-�����Ԥ��ޤ���dbm.c����������Ѥ��ޤ���
+Rubyは拡張ライブラリをロードする時に「Init_ライブラリ名」と
+いう関数を自動的に実行します．dbmライブラリの場合「Init_dbm」
+です．この関数の中でクラス，モジュール，メソッド，定数などの
+定義を行います．dbm.cから一部引用します．
 
 --
 void
 Init_dbm(void)
 {
-    /* DBM���饹��������� */
+    /* DBMクラスを定義する */
     cDBM = rb_define_class("DBM", rb_cObject);
-    /* DBM��Enumerate�⥸�塼��򥤥󥯥롼�ɤ��� */
+    /* DBMはEnumerateモジュールをインクルードする */
     rb_include_module(cDBM, rb_mEnumerable);
 
-    /* DBM���饹�Υ��饹�᥽�å�open(): ������C������Ǽ����� */
+    /* DBMクラスのクラスメソッドopen(): 引数はCの配列で受ける */
     rb_define_singleton_method(cDBM, "open", fdbm_s_open, -1);
 
-    /* DBM���饹�Υ᥽�å�close(): �����Ϥʤ� */
+    /* DBMクラスのメソッドclose(): 引数はなし */
     rb_define_method(cDBM, "close", fdbm_close, 0);
-    /* DBM���饹�Υ᥽�å�[]: ������1�� */
+    /* DBMクラスのメソッド[]: 引数は1個 */
     rb_define_method(cDBM, "[]", fdbm_fetch, 1);
 		:
 
-    /* DBM�ǡ������Ǽ���륤�󥹥����ѿ�̾�Τ����ID */
+    /* DBMデータを格納するインスタンス変数名のためのID */
     id_dbm = rb_intern("dbm");
 }
 --
 
-DBM�饤�֥���dbm�Υǡ������б����륪�֥������Ȥˤʤ�Ϥ���
-�����顤C��������dbm��Ruby�������˼�����ɬ�פ�����ޤ���
+DBMライブラリはdbmのデータと対応するオブジェクトになるはずで
+すから，Cの世界のdbmをRubyの世界に取り込む必要があります．
 
 
-dbm.c�Ǥ�Data_Make_Struct��ʲ��Τ褦�˻ȤäƤ��ޤ���
+dbm.cではData_Make_Structを以下のように使っています．
 
 --
 struct dbmdata {
@@ -729,12 +840,12 @@ struct dbmdata {
 obj = Data_Make_Struct(klass, struct dbmdata, 0, free_dbm, dbmp);
 --
 
-�����Ǥ�dbmstruct��¤�ΤؤΥݥ��󥿤�Data�˥��ץ��벽���Ƥ�
-�ޤ���DBM*��ľ�ܥ��ץ��벽���ʤ��Τ�close()�������ν������
-���ƤΤ��ȤǤ���
+ここではdbmstruct構造体へのポインタをDataにカプセル化してい
+ます．DBM*を直接カプセル化しないのはclose()した時の処理を考
+えてのことです．
 
-Data���֥������Ȥ���dbmstruct��¤�ΤΥݥ��󥿤���Ф�����
-�˰ʲ��Υޥ�����ȤäƤ��ޤ���
+Dataオブジェクトからdbmstruct構造体のポインタを取り出すため
+に以下のマクロを使っています．
 
 --
 #define GetDBM(obj, dbmp) {\
@@ -743,14 +854,14 @@ Data���֥������Ȥ���dbmstruct��¤�ΤΥݥ��󥿤���Ф�����
 }
 --
 
-����ä�ʣ���ʥޥ����Ǥ������פ����dbmdata��¤�ΤΥݥ���
-�μ��Ф��ȡ�close����Ƥ��뤫�ɤ����Υ����å���ޤȤ�Ƥ�
-������Ǥ���
+ちょっと複雑なマクロですが，要するにdbmdata構造体のポインタ
+の取り出しと，closeされているかどうかのチェックをまとめてい
+るだけです．
 
-DBM���饹�ˤϤ�������᥽�åɤ�����ޤ�����ʬ�ह���3�����
-�����μ�����������ޤ����ҤȤĤϰ����ο�������Τ�Τǡ����
-���Ƥ�delete�᥽�åɤ�����ޤ���delete�᥽�åɤ�������Ƥ���
-fdbm_delete()�Ϥ��Τ褦�ˤʤäƤ��ޤ���
+DBMクラスにはたくさんメソッドがありますが，分類すると3種類の
+引数の受け方があります．ひとつは引数の数が固定のもので，例と
+してはdeleteメソッドがあります．deleteメソッドを実装している
+fdbm_delete()はこのようになっています．
 
 --
 static VALUE
@@ -760,13 +871,13 @@ fdbm_delete(VALUE obj, VALUE keystr)
 }
 --
 
-�����ο�������Υ����פ���1������self����2�����ʹߤ��᥽�å�
-�ΰ����Ȥʤ�ޤ���
+引数の数が固定のタイプは第1引数がself，第2引数以降がメソッド
+の引数となります．
 
-�����ο�������Τ�Τ�C������Ǽ������Τ�Ruby������Ǽ���
-���ΤȤ�����ޤ���dbm�饤�֥�����ǡ�C������Ǽ�������
-��DBM�Υ��饹�᥽�åɤǤ���open()�Ǥ��������������Ƥ����
-��fdbm_s_open()�Ϥ����ʤäƤ��ޤ���
+引数の数が不定のものはCの配列で受けるものとRubyの配列で受け
+るものとがあります．dbmライブラリの中で，Cの配列で受けるもの
+はDBMのクラスメソッドであるopen()です．これを実装している関
+数fdbm_s_open()はこうなっています．
 
 --
 static VALUE
@@ -780,18 +891,18 @@ fdbm_s_open(int argc, VALUE *argv, VALUE klass)
 }
 --
 
-���Υ����פδؿ�����1������Ϳ����줿�����ο�����2������Ϳ��
-��줿���������äƤ�������ˤʤ�ޤ���self����3�����Ȥ���Ϳ
-�����ޤ���
+このタイプの関数は第1引数が与えられた引数の数，第2引数が与え
+られた引数の入っている配列になります．selfは第3引数として与
+えられます．
 
-���������Ϳ����줿��������Ϥ��뤿��δؿ���open()�Ǥ�Ȥ�
-��Ƥ���rb_scan_args()�Ǥ�����3�����˻��ꤷ���ե����ޥåȤ˽�
-������4�ѿ��ʹߤ˻��ꤷ��VALUE�ؤλ��Ȥ��ͤ��������Ƥ����
-����
+この配列で与えられた引数を解析するための関数がopen()でも使わ
+れているrb_scan_args()です．第3引数に指定したフォーマットに従
+い，第4変数以降に指定したVALUEへの参照に値を代入してくれま
+す．
 
 
-������Ruby������Ȥ��Ƽ������᥽�åɤ���ˤ�
-Thread#initialize������ޤ��������Ϥ����Ǥ���
+引数をRubyの配列として受け取るメソッドの例には
+Thread#initializeがあります．実装はこうです．
 
 --
 static VALUE
@@ -801,141 +912,141 @@ thread_initialize(VALUE thread, VALUE args)
 }
 --
 
-��1������self����2������Ruby������Ǥ���
+第1引数はself，第2引数はRubyの配列です．
 
-** ���ջ���
+** 注意事項
 
-Ruby�ȶ�ͭ�Ϥ��ʤ���Ruby�Υ��֥������Ȥ��Ǽ�����ǽ���Τ���
-C������ѿ��ϰʲ��δؿ���Ȥä�Ruby���󥿥ץ꥿���ѿ���¸��
-�򶵤��Ƥ����Ƥ����������Ǥʤ���GC�ǥȥ�֥�򵯤����ޤ���
+Rubyと共有はしないがRubyのオブジェクトを格納する可能性のある
+Cの大域変数は以下の関数を使ってRubyインタプリタに変数の存在
+を教えてあげてください．でないとGCでトラブルを起こします．
 
   void rb_global_variable(VALUE *var)
 
-(4) extconf.rb���Ѱդ���
+(4) extconf.rbを用意する
 
-Makefile������ο����ˤʤ�extconf.rb�Ȥ����ե��������
-�ޤ���extconf.rb�ϥ饤�֥��Υ���ѥ����ɬ�פʾ��Υ�����
-���ʤɤ�Ԥ����Ȥ���Ū�Ǥ����ޤ���
+Makefileを作る場合の雛型になるextconf.rbというファイルを作り
+ます．extconf.rbはライブラリのコンパイルに必要な条件のチェッ
+クなどを行うことが目的です．まず，
 
   require 'mkmf'
 
-��extconf.rb����Ƭ���֤��ޤ���extconf.rb����Ǥϰʲ���Ruby��
-����Ȥ����Ȥ�����ޤ���
+をextconf.rbの先頭に置きます．extconf.rbの中では以下のRuby関
+数を使うことが出来ます．
 
-  have_library(lib, func): �饤�֥���¸�ߥ����å�
-  have_func(func, header): �ؿ���¸�ߥ����å�
-  have_header(header): �إå��ե������¸�ߥ����å�
-  create_makefile(target): Makefile������
+  have_library(lib, func): ライブラリの存在チェック
+  have_func(func, header): 関数の存在チェック
+  have_header(header): ヘッダファイルの存在チェック
+  create_makefile(target): Makefileの生成
 
-�ʲ����ѿ���Ȥ����Ȥ��Ǥ��ޤ���
+以下の変数を使うことができます．
 
-  $CFLAGS: ����ѥ�������ɲ�Ū�˻��ꤹ��ե饰(-O�ʤ�)
-  $CPPFLAGS: �ץ�ץ����å����ɲ�Ū�˻��ꤹ��ե饰(-I��-D�ʤ�)
-  $LDFLAGS: ��󥯻����ɲ�Ū�˻��ꤹ��ե饰(-L�ʤ�)
-  $objs: ��󥯤���륪�֥������ȥե�����̾�Υꥹ��
+  $CFLAGS: コンパイル時に追加的に指定するフラグ(-Oなど)
+  $CPPFLAGS: プリプロセッサに追加的に指定するフラグ(-Iや-Dなど)
+  $LDFLAGS: リンク時に追加的に指定するフラグ(-Lなど)
+  $objs: リンクされるオブジェクトファイル名のリスト
 
-���֥������ȥե�����Υꥹ�Ȥϡ��̾�ϥ������ե�����򸡺���
-�Ƽ�ưŪ����������ޤ�����make������ǥ���������������褦��
-��������Ū�˻��ꤹ��ɬ�פ�����ޤ���
+オブジェクトファイルのリストは，通常はソースファイルを検索し
+て自動的に生成されますが，makeの途中でソースを生成するような
+場合は明示的に指定する必要があります．
 
-�饤�֥��򥳥�ѥ��뤹���郎·�鷺�����Υ饤�֥��򥳥�
-�ѥ��뤷�ʤ����ˤ�create_makefile��ƤФʤ����Makefile����
-�����줺������ѥ����Ԥ��ޤ���
+ライブラリをコンパイルする条件が揃わず，そのライブラリをコン
+パイルしない時にはcreate_makefileを呼ばなければMakefileは生
+成されず，コンパイルも行われません．
 
-(5) depend���Ѱդ���
+(5) dependを用意する
 
-�⤷���ǥ��쥯�ȥ��depend�Ȥ����ե����뤬¸�ߤ���С�
-Makefile����¸�ط�������å����Ƥ���ޤ���
+もし，ディレクトリにdependというファイルが存在すれば，
+Makefileが依存関係をチェックしてくれます．
 
   % gcc -MM *.c > depend
 
-�ʤɤǺ�뤳�Ȥ�����ޤ������ä�»��̵���Ǥ��礦��
+などで作ることが出来ます．あって損は無いでしょう．
 
-(6) Makefile����������
+(6) Makefileを生成する
 
-Makefile��ºݤ��������뤿��ˤ�
+Makefileを実際に生成するためには
 
   ruby extconf.rb
 
-�Ȥ��ޤ���extconf.rb�� require 'mkmf' �ιԤ��ʤ����ˤϥ��顼
-�ˤʤ�ޤ��Τǡ��������ɲä���
+とします．extconf.rbに require 'mkmf' の行がない場合にはエラー
+になりますので，引数を追加して
 
   ruby -r mkmf extconf.rb
 
-�Ȥ��Ƥ���������
+としてください．
 
-site_ruby �ǥ��쥯�ȥ�Ǥʤ���
-vendor_ruby �ǥ��쥯�ȥ�˥��󥹥ȡ��뤹����ˤ�
-�ʲ��Τ褦�� --vendor ���ץ�����ä��Ƥ���������
+site_ruby ディレクトリでなく，
+vendor_ruby ディレクトリにインストールする場合には
+以下のように --vendor オプションを加えてください．
 
   ruby extconf.rb --vendor
 
-�ǥ��쥯�ȥ��ext�ʲ����Ѱդ������ˤ�Ruby���Τ�make�λ���
-��ưŪ��Makefile����������ޤ��Τǡ����Υ��ƥåפ����פǤ���
+ディレクトリをext以下に用意した場合にはRuby全体のmakeの時に
+自動的にMakefileが生成されますので，このステップは不要です．
 
-(7) make����
+(7) makeする
 
-ưŪ��󥯥饤�֥�������������ˤϤ��ξ��make���Ƥ�����
-����ɬ�פǤ���� make install �ǥ��󥹥ȡ��뤵��ޤ���
+動的リンクライブラリを生成する場合にはその場でmakeしてくださ
+い．必要であれば make install でインストールされます．
 
-ext�ʲ��˥ǥ��쥯�ȥ���Ѱդ������ϡ�Ruby�Υǥ��쥯�ȥ��
-make��¹Ԥ����Makefile����������make��ɬ�פˤ�äƤϤ��Υ�
-���塼���Ruby�ؤΥ�󥯤ޤǼ�ưŪ�˼¹Ԥ��Ƥ���ޤ���
-extconf.rb��񤭴�����ʤɤ���Makefile�κ�������ɬ�פʻ��Ϥ�
-��Ruby�ǥ��쥯�ȥ��make���Ƥ���������
+ext以下にディレクトリを用意した場合は，Rubyのディレクトリで
+makeを実行するとMakefileを生成からmake，必要によってはそのモ
+ジュールのRubyへのリンクまで自動的に実行してくれます．
+extconf.rbを書き換えるなどしてMakefileの再生成が必要な時はま
+たRubyディレクトリでmakeしてください．
 
-��ĥ�饤�֥���make install��Ruby�饤�֥��Υǥ��쥯�ȥ��
-���˥��ԡ�����ޤ����⤷��ĥ�饤�֥��ȶ�Ĵ���ƻȤ�Ruby�ǵ�
-�Ҥ��줿�ץ�����ब���ꡤRuby�饤�֥����֤��������ˤϡ�
-��ĥ�饤�֥���ѤΥǥ��쥯�ȥ�β��� lib �Ȥ����ǥ��쥯�ȥ�
-���ꡤ������ ��ĥ�� .rb �Υե�������֤��Ƥ�����Ʊ���˥���
-���ȡ��뤵��ޤ���
+拡張ライブラリはmake installでRubyライブラリのディレクトリの
+下にコピーされます．もし拡張ライブラリと協調して使うRubyで記
+述されたプログラムがあり，Rubyライブラリに置きたい場合には，
+拡張ライブラリ用のディレクトリの下に lib というディレクトリ
+を作り，そこに 拡張子 .rb のファイルを置いておけば同時にイン
+ストールされます．
 
-(8) �ǥХå�
+(8) デバッグ
 
-�ޤ����ǥХå����ʤ���ư���ʤ��Ǥ��礦�͡�ext/Setup�˥ǥ���
-���ȥ�̾��񤯤���Ū�˥�󥯤���ΤǥǥХå����Ȥ���褦�ˤ�
-��ޤ�������ʬ����ѥ��뤬�٤��ʤ�ޤ����ɡ�
+まあ，デバッグしないと動かないでしょうね．ext/Setupにディレ
+クトリ名を書くと静的にリンクするのでデバッガが使えるようにな
+ります．その分コンパイルが遅くなりますけど．
 
-(9) �Ǥ�������
+(9) できあがり
 
-��Ϥ��ä���Ȥ��ʤꡤ������������ʤꡤ���ʤꡤ����ͳ�ˤ�
-�Ȥ�����������Ruby�κ�Ԥϳ�ĥ�饤�֥��˴ؤ��ư��ڤθ�����
-��ĥ���ޤ���
+後はこっそり使うなり，広く公開するなり，売るなり，ご自由にお
+使いください．Rubyの作者は拡張ライブラリに関して一切の権利を
+主張しません．
 
-Appendix A. Ruby�Υ����������ɤ�ʬ��
+Appendix A. Rubyのソースコードの分類
 
-Ruby�Υ������Ϥ����Ĥ���ʬ�ह�뤳�Ȥ�����ޤ������Τ�������
-���饤�֥�����ʬ�ϴ���Ū�˳�ĥ�饤�֥���Ʊ��������ˤʤ�
-�Ƥ��ޤ��������Υ������Ϻ��ޤǤ������ǤۤȤ������Ǥ����
-�פ��ޤ���
+Rubyのソースはいくつかに分類することが出来ます．このうちクラ
+スライブラリの部分は基本的に拡張ライブラリと同じ作り方になっ
+ています．これらのソースは今までの説明でほとんど理解できると
+思います．
 
-Ruby����Υ���
+Ruby言語のコア
 
-  class.c         : ���饹�ȥ⥸�塼��
-  error.c         : �㳰���饹���㳰����
-  gc.c            : �����ΰ����
-  load.c          : �饤�֥��Υ�����
-  object.c        : ���֥�������
-  variable.c      : �ѿ������
+  class.c         : クラスとモジュール
+  error.c         : 例外クラスと例外機構
+  gc.c            : 記憶領域管理
+  load.c          : ライブラリのロード
+  object.c        : オブジェクト
+  variable.c      : 変数と定数
 
-Ruby�ι�ʸ���ϴ�
-  parse.y         : ������ϴ�ȹ�ʸ���
-    -> parse.c    : ��ư����
-  keywords        : ͽ���
-    -> lex.c      : ��ư����
+Rubyの構文解析器
+  parse.y         : 字句解析器と構文定義
+    -> parse.c    : 自動生成
+  keywords        : 予約語
+    -> lex.c      : 自動生成
 
-Ruby��ɾ���� (�̾�YARV)
+Rubyの評価器 (通称YARV)
   compile.c
   eval.c
   eval_error.c
   eval_jump.c
   eval_safe.c
-  insns.def           : ���۵���������
-  iseq.c              : VM::ISeq�μ���
-  thread.c            : ����åɴ����ȥ���ƥ������ڤ��ؤ�
-  thread_win32.c      : ����åɼ���
-  thread_pthread.c    : Ʊ��
+  insns.def           : 仮想機械語の定義
+  iseq.c              : VM::ISeqの実装
+  thread.c            : スレッド管理とコンテキスト切り替え
+  thread_win32.c      : スレッド実装
+  thread_pthread.c    : 同上
   vm.c
   vm_dump.c
   vm_eval.c
@@ -943,14 +1054,14 @@ Ruby��ɾ���� (�̾�YARV)
   vm_insnhelper.c
   vm_method.c
 
-  opt_insns_unif.def  : ̿��ͻ��
-  opt_operand.def     : ��Ŭ���Τ�������
+  opt_insns_unif.def  : 命令融合
+  opt_operand.def     : 最適化のための定義
 
-    -> insn*.inc      : ��ư����
-    -> opt*.inc       : ��ư����
-    -> vm.inc         : ��ư����
+    -> insn*.inc      : 自動生成
+    -> opt*.inc       : 自動生成
+    -> vm.inc         : 自動生成
 
-����ɽ�����󥸥� (����)
+正規表現エンジン (鬼車)
   regex.c
   regcomp.c
   regenc.c
@@ -959,15 +1070,15 @@ Ruby��ɾ���� (�̾�YARV)
   regparse.c
   regsyntax.c
 
-�桼�ƥ���ƥ��ؿ�
+ユーティリティ関数
 
-  debug.c       : C�ǥХå��ѤΥǥХå�����ܥ�
-  dln.c         : ưŪ�����ǥ���
-  st.c          : ���ѥϥå���ɽ
-  strftime.c    : ��������
-  util.c        : ����¾�Υ桼�ƥ���ƥ�
+  debug.c       : Cデバッガ用のデバッグシンボル
+  dln.c         : 動的ローディング
+  st.c          : 汎用ハッシュ表
+  strftime.c    : 時刻整形
+  util.c        : その他のユーティリティ
 
-Ruby���ޥ�ɤμ���
+Rubyコマンドの実装
 
   dmyext.c
   dmydln.c
@@ -981,7 +1092,7 @@ Ruby���ޥ�ɤμ���
   gem_prelude.rb
   prelude.rb
 
-���饹�饤�֥��
+クラスライブラリ
 
   array.c       : Array
   bignum.c      : Bignum
@@ -1000,7 +1111,7 @@ Ruby���ޥ�ɤμ���
   pack.c        : Array#pack, String#unpack
   proc.c        : Binding, Proc
   process.c     : Process
-  random.c      : ���
+  random.c      : 乱数
   range.c       : Range
   rational.c    : Rational
   re.c          : Regexp, MatchData
@@ -1010,69 +1121,74 @@ Ruby���ޥ�ɤμ���
   struct.c      : Struct
   time.c        : Time
 
-  defs/known_errors.def  : �㳰���饹 Errno::*
-    -> known_errors.inc  : ��ư����
+  defs/known_errors.def  : 例外クラス Errno::*
+    -> known_errors.inc  : 自動生成
 
-¿���첽
+多言語化
   encoding.c    : Encoding
   transcode.c   : Encoding::Converter
-  enc/*.c       : ���󥳡��ǥ��󥰥��饹��
-  enc/trans/*   : �����ɥݥ�����б�ɽ
+  enc/*.c       : エンコーディングクラス群
+  enc/trans/*   : コードポイント対応表
 
-goruby���ޥ�ɤμ���
+<<<<<<< HEAD
+gorubyコマンドの実装
 
+=======
+gorubyコマンドの実装
+  
+>>>>>>> Change encoding from EUC-JP to UTF-8. [Feature #5128]
   goruby.c
-  golf_prelude.rb      : goruby��ͭ�Υ饤�֥��
-    -> golf_prelude.c  : ��ư����
+  golf_prelude.rb      : goruby固有のライブラリ
+    -> golf_prelude.c  : 自動生成
 
 
-Appendix B. ��ĥ�Ѵؿ���ե����
+Appendix B. 拡張用関数リファレンス
 
-C���줫��Ruby�ε�ǽ�����Ѥ���API�ϰʲ����̤�Ǥ��롥
+C言語からRubyの機能を利用するAPIは以下の通りである．
 
-** ��
+** 型
 
 VALUE
 
-  Ruby���֥������Ȥ�ɽ�����뷿��ɬ�פ˱����ƥ��㥹�Ȥ����Ѥ��롥
-  �Ȥ߹��߷���ɽ������C�η���ruby.h�˵��Ҥ��Ƥ���R�ǻϤޤ빽¤
-  �ΤǤ��롥VALUE���򤳤��˥��㥹�Ȥ��뤿���R�ǻϤޤ빽¤��
-  ̾��������ʸ���ˤ���̾���Υޥ������Ѱդ���Ƥ��롥
+  Rubyオブジェクトを表現する型．必要に応じてキャストして用いる．
+  組み込み型を表現するCの型はruby.hに記述してあるRで始まる構造
+  体である．VALUE型をこれらにキャストするためにRで始まる構造体
+  名を全て大文字にした名前のマクロが用意されている．
 
-** �ѿ������
+** 変数・定数
 
 Qnil
 
-  ���: nil���֥�������
+  定数: nilオブジェクト
 
 Qtrue
 
-  ���: true���֥�������(���Υǥե������)
+  定数: trueオブジェクト(真のデフォルト値)
 
 Qfalse
 
-  ���: false���֥�������
+  定数: falseオブジェクト
 
-** C�ǡ����Υ��ץ��벽
+** Cデータのカプセル化
 
 Data_Wrap_Struct(VALUE klass, void (*mark)(), void (*free)(), void *sval)
 
-  C��Ǥ�դΥݥ��󥿤򥫥ץ��벽����Ruby���֥������Ȥ��֤�����
-  �Υݥ��󥿤�Ruby���饢����������ʤ��ʤä�����free�ǻ��ꤷ��
-  �ؿ����ƤФ�롥�ޤ������Υݥ��󥿤λؤ��ǡ�����¾��Ruby����
-  �������Ȥ�ؤ��Ƥ����硤mark�˻��ꤹ��ؿ��ǥޡ�������ɬ��
-  �����롥
+  Cの任意のポインタをカプセル化したRubyオブジェクトを返す．こ
+  のポインタがRubyからアクセスされなくなった時，freeで指定した
+  関数が呼ばれる．また，このポインタの指すデータが他のRubyオブ
+  ジェクトを指している場合，markに指定する関数でマークする必要
+  がある．
 
 Data_Make_Struct(klass, type, mark, free, sval)
 
-  type���Υ����malloc�����ѿ�sval�����������塤����򥫥ץ�
-  �벽�����ǡ������֤��ޥ�����
+  type型のメモリをmallocし，変数svalに代入した後，それをカプセ
+  ル化したデータを返すマクロ．
 
 Data_Get_Struct(data, type, sval)
 
-  data����type���Υݥ��󥿤���Ф��ѿ�sval����������ޥ�����
+  dataからtype型のポインタを取り出し変数svalに代入するマクロ．
 
-** �������å�
+** 型チェック
 
 TYPE(value)
 FIXNUM_P(value)
@@ -1080,7 +1196,7 @@ NIL_P(value)
 void Check_Type(VALUE value, int type)
 void Check_SafeStr(VALUE value)
 
-** ���Ѵ�
+** 型変換
 
 FIX2INT(value), INT2FIX(i)
 FIX2LONG(value), LONG2FIX(l)
@@ -1100,105 +1216,114 @@ StringValuePtr(value)
 StringValueCStr(value)
 rb_str_new2(s)
 
-** ���饹/�⥸�塼�����
+** クラス/モジュール定義
 
 VALUE rb_define_class(const char *name, VALUE super)
 
-  super�Υ��֥��饹�Ȥ��ƿ�����Ruby���饹��������롥
+  superのサブクラスとして新しいRubyクラスを定義する．
 
 VALUE rb_define_class_under(VALUE module, const char *name, VALUE super)
 
-  super�Υ��֥��饹�Ȥ��ƿ�����Ruby���饹���������module��
-  ����Ȥ���������롥
+  superのサブクラスとして新しいRubyクラスを定義し，moduleの
+  定数として定義する．
 
 VALUE rb_define_module(const char *name)
 
-  ������Ruby�⥸�塼���������롥
+  新しいRubyモジュールを定義する．
 
 VALUE rb_define_module_under(VALUE module, const char *name)
 
-  ������Ruby�⥸�塼����������module������Ȥ���������롥
+  新しいRubyモジュールを定義し，moduleの定数として定義する．
 
 void rb_include_module(VALUE klass, VALUE module)
 
-  �⥸�塼��򥤥󥯥롼�ɤ��롥class�����Ǥ�module�򥤥�
-  �롼�ɤ��Ƥ�����ˤϲ��⤷�ʤ�(¿�ť��󥯥롼�ɤζػ�)��
+  モジュールをインクルードする．classがすでにmoduleをインク
+  ルードしている時には何もしない(多重インクルードの禁止)．
 
 void rb_extend_object(VALUE object, VALUE module)
 
-  ���֥������Ȥ�⥸�塼��(���������Ƥ���᥽�å�)�ǳ�ĥ���롥
+  オブジェクトをモジュール(で定義されているメソッド)で拡張する．
 
-** ����ѿ����
+** 大域変数定義
 
 void rb_define_variable(const char *name, VALUE *var)
 
-  Ruby��C�ȤǶ�ͭ���륰�����Х��ѿ���������롥�ѿ�̾��`$'��
-  �Ϥޤ�ʤ����ˤϼ�ưŪ���ɲä���롥name�Ȥ���Ruby�μ��̻�
-  �Ȥ��Ƶ�����ʤ�ʸ��(�㤨��` ')��ޤ���ˤ�Ruby�ץ�����
-  �फ��ϸ����ʤ��ʤ롥
+  RubyとCとで共有するグローバル変数を定義する．変数名が`$'で
+  始まらない時には自動的に追加される．nameとしてRubyの識別子
+  として許されない文字(例えば` ')を含む場合にはRubyプログラ
+  ムからは見えなくなる．
 
 void rb_define_readonly_variable(const char *name, VALUE *var)
 
-  Ruby��C�ȤǶ�ͭ����read only�Υ������Х��ѿ���������롥
-  read only�Ǥ��뤳�Ȱʳ���rb_define_variable()��Ʊ����
+  RubyとCとで共有するread onlyのグローバル変数を定義する．
+  read onlyであること以外はrb_define_variable()と同じ．
 
 void rb_define_virtual_variable(const char *name,
 				VALUE (*getter)(), void (*setter)())
 
-  �ؿ��ˤ�äƼ¸������Ruby�ѿ���������롥�ѿ������Ȥ��줿
-  ���ˤ�getter�����ѿ����ͤ����åȤ��줿���ˤ�setter���ƤФ�
-  �롥
+  関数によって実現されるRuby変数を定義する．変数が参照された
+  時にはgetterが，変数に値がセットされた時にはsetterが呼ばれ
+  る．
 
 void rb_define_hooked_variable(const char *name, VALUE *var,
 			       VALUE (*getter)(), void (*setter)())
 
-  �ؿ��ˤ�ä�hook�ΤĤ���줿�������Х��ѿ���������롥�ѿ�
-  �����Ȥ��줿���ˤ�getter�����ؿ����ͤ����åȤ��줿���ˤ�
-  setter���ƤФ�롥getter��setter��0����ꤷ�����ˤ�hook��
-  ���ꤷ�ʤ��Τ�Ʊ�����ˤʤ롥
+  関数によってhookのつけられたグローバル変数を定義する．変数
+  が参照された時にはgetterが，関数に値がセットされた時には
+  setterが呼ばれる．getterやsetterに0を指定した時にはhookを
+  指定しないのと同じ事になる．
 
 void rb_global_variable(VALUE *var)
 
-  GC�Τ��ᡤRuby�ץ�����फ��ϥ�����������ʤ���, Ruby����
-  �������Ȥ�ޤ�����ѿ���ޡ������롥
+  GCのため，Rubyプログラムからはアクセスされないが, Rubyオブ
+  ジェクトを含む大域変数をマークする．
 
-** ���
+** 定数
 
 void rb_define_const(VALUE klass, const char *name, VALUE val)
 
-  �����������롥
+  定数を定義する．
 
 void rb_define_global_const(const char *name, VALUE val)
 
-  ��������������롥
+  大域定数を定義する．
 
      rb_define_const(rb_cObject, name, val)
 
-  ��Ʊ����̣��
+  と同じ意味．
 
-** �᥽�å����
+** メソッド定義
 
 rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc)
 
-  �᥽�åɤ�������롥argc��self����������ο���argc��-1�λ�,
-  �ؿ��ˤϰ����ο�(self��ޤޤʤ�)����1����, �������������2
-  �����Ȥ��������Ϳ������(��3������self)��argc��-2�λ�,
-  ��1������self, ��2������args(args�ϰ�����ޤ�Ruby������)��
-  ����������Ϳ�����롥
+<<<<<<< HEAD
+  メソッドを定義する．argcはselfを除く引数の数．argcが-1の時,
+  関数には引数の数(selfを含まない)を第1引数, 引数の配列を第2
+  引数とする形式で与えられる(第3引数はself)．argcが-2の時,
+  第1引数がself, 第2引数がargs(argsは引数を含むRubyの配列)と
+  いう形式で与えられる．
 
+=======
+  メソッドを定義する．argcはselfを除く引数の数．argcが-1の時, 
+  関数には引数の数(selfを含まない)を第1引数, 引数の配列を第2
+  引数とする形式で与えられる(第3引数はself)．argcが-2の時, 
+  第1引数がself, 第2引数がargs(argsは引数を含むRubyの配列)と
+  いう形式で与えられる．
+ 
+>>>>>>> Change encoding from EUC-JP to UTF-8. [Feature #5128]
 rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(), int argc)
 
-  private�᥽�åɤ�������롥������rb_define_method()��Ʊ����
+  privateメソッドを定義する．引数はrb_define_method()と同じ．
 
 rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(), int argc)
 
-  �ðۥ᥽�åɤ�������롥������rb_define_method()��Ʊ����
+  特異メソッドを定義する．引数はrb_define_method()と同じ．
 
 rb_scan_args(int argc, VALUE *argv, const char *fmt, ...)
 
-  argc, argv������Ϳ����줿���ꤵ�줿�ե����ޥåȤ˽��äư�
-  ����ʬ�򤷡�³��VALUE�ؤλ��Ȥ˥��åȤ��ޤ������Υե����ޥ�
-  �Ȥϡ�ABNF�ǵ��Ҥ���Ȱʲ����̤�Ǥ���
+  argc, argv形式で与えられた指定されたフォーマットに従って引
+  数を分解し，続くVALUEへの参照にセットします．このフォーマッ
+  トは，ABNFで記述すると以下の通りです．
 
 --
 scan-arg-spec  := param-arg-spec [option-hash-arg-spec] [block-arg-spec]
@@ -1210,186 +1335,196 @@ pre-opt-post-arg-spec := num-of-leading-mandatory-args num-of-optional-args num-
 option-hash-arg-spec := sym-for-option-hash-arg
 block-arg-spec := sym-for-block-arg
 
-num-of-leading-mandatory-args  := DIGIT ; ��Ƭ���֤�����ά��ǽ�ʰ����ο�
-num-of-optional-args           := DIGIT ; ³�����֤�����ά��ǽ�ʰ����ο�
-sym-for-variable-length-args   := "*"   ; ³�����֤�������Ĺ������
-                                        ; Ruby������Ǽ������뤿��λ���
-num-of-trailing-mandatory-args := DIGIT ; ��ü���֤�����ά��ǽ�ʰ����ο�
-sym-for-option-hash-arg        := ":"   ; ���ץ����ϥå�����������
-                                        ; ����λ���; ��ά��ǽ�ʰ�����
-                                        ; ������¿���ΰ��������ꤵ�졤
-                                        ; �Ǹ�ΰ������ϥå���ʤޤ���
-                                        ; #to_hash���Ѵ���ǽ�ˤξ���
-                                        ; ��������롥�Ǹ�ΰ�����nil��
-                                        ; ��硤����Ĺ�������꤬�ʤ���
-                                        ; ��ά��ǽ�����ο�����¿����
-                                        ; ���������ꤵ�줿���˼��������
-sym-for-block-arg              := "&"   ; ���ƥ졼���֥��å���������뤿���
-                                        ; ����
+num-of-leading-mandatory-args  := DIGIT ; 先頭に置かれる省略不能な引数の数
+num-of-optional-args           := DIGIT ; 続いて置かれる省略可能な引数の数
+sym-for-variable-length-args   := "*"   ; 続いて置かれる可変長引数を
+                                        ; Rubyの配列で取得するための指定
+num-of-trailing-mandatory-args := DIGIT ; 終端に置かれる省略不能な引数の数
+sym-for-option-hash-arg        := ":"   ; オプションハッシュを取得する
+                                        ; ための指定; 省略不能な引数の
+                                        ; 数よりも多くの引数が指定され，
+                                        ; 最後の引数がハッシュ（または
+                                        ; #to_hashで変換可能）の場合に
+                                        ; 取得される．最後の引数がnilの
+                                        ; 場合，可変長引数指定がなく，
+                                        ; 省略不能引数の数よりも多くの
+                                        ; 引数が指定された場合に取得される
+sym-for-block-arg              := "&"   ; イテレータブロックを取得するための
+                                        ; 指定
 --
 
-  �ե����ޥåȤ�"12"�ξ�硤�����Ϻ���1�Ĥǡ�3��(1+2)�ޤǵ���
-  ���Ȥ�����̣�ˤʤ�ޤ������äơ��ե����ޥå�ʸ�����³��
-  ��3�Ĥ�VALUE�ؤλ��Ȥ��֤�ɬ�פ�����ޤ��������ˤϼ�������
-  �ѿ������åȤ���ޤ����ѿ��ؤλ��Ȥ������NULL����ꤹ��
-  ���Ȥ�Ǥ������ξ��ϼ��������������ͤϼΤƤ��ޤ����ʤ���
-  ��ά��ǽ��������ά���줿�����ѿ����ͤ�nil(C����Υ�٥�Ǥ�
-  Qnil)�ˤʤ�ޤ���
+  フォーマットが"12"の場合，引数は最低1つで，3つ(1+2)まで許さ
+  れるという意味になります．従って，フォーマット文字列に続い
+  て3つのVALUEへの参照を置く必要があります．それらには取得した
+  変数がセットされます．変数への参照の代わりにNULLを指定する
+  こともでき，その場合は取得した引数の値は捨てられます．なお，
+  省略可能引数が省略された時の変数の値はnil(C言語のレベルでは
+  Qnil)になります．
 
-  �֤��ͤ�Ϳ����줿�����ο��Ǥ������ץ����ϥå��太��ӥ�
-  �ƥ졼���֥��å��Ͽ����ޤ���
+  返り値は与えられた引数の数です．オプションハッシュおよびイ
+  テレータブロックは数えません．
 
-** Ruby�᥽�åɸƤӽФ�
+** Rubyメソッド呼び出し
 
 VALUE rb_funcall(VALUE recv, ID mid, int narg, ...)
 
-  �᥽�åɸƤӽФ���ʸ���󤫤�mid�����뤿��ˤ�rb_intern()��
-  �Ȥ���
+  メソッド呼び出し．文字列からmidを得るためにはrb_intern()を
+  使う．
 
 VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
 
-  �᥽�åɸƤӽФ���������argc, argv�������Ϥ���
+  メソッド呼び出し．引数をargc, argv形式で渡す．
 
 VALUE rb_eval_string(const char *str)
 
-  ʸ�����Ruby������ץȤȤ��ƥ���ѥ��롦�¹Ԥ��롥
+  文字列をRubyスクリプトとしてコンパイル・実行する．
 
 ID rb_intern(const char *name)
 
-  ʸ������б�����ID���֤���
+  文字列に対応するIDを返す．
 
 char *rb_id2name(ID id)
 
-  ID���б�����ʸ������֤�(�ǥХå���)��
+  IDに対応する文字列を返す(デバッグ用)．
 
 char *rb_class2name(VALUE klass)
 
-  ���饹��̾�����֤�(�ǥХå���)�����饹��̾��������ʤ�����
-  ��, ������̤ä�̾������ĥ��饹��̾�����֤���
+  クラスの名前を返す(デバッグ用)．クラスが名前を持たない時に
+  は, 祖先を遡って名前を持つクラスの名前を返す．
 
 int rb_respond_to(VALUE obj, ID id)
 
-  obj��id�Ǽ������᥽�åɤ���Ĥ��ɤ������֤���
+  objがidで示されるメソッドを持つかどうかを返す．
 
-** ���󥹥����ѿ�
+** インスタンス変数
 
 VALUE rb_iv_get(VALUE obj, const char *name)
 
-  obj�Υ��󥹥����ѿ����ͤ����롥`@'�ǻϤޤ�ʤ����󥹥���
-  ���ѿ��� Ruby�ץ�����फ�饢�������Ǥ��ʤ��ֱ��줿�ץ���
-  �������ѿ��ˤʤ롥�������ʸ����̾������ĥ��饹(�ޤ���
-  �⥸�塼��)�Υ��󥹥����ѿ��Ȥ��Ƽ�������Ƥ��롥
+  objのインスタンス変数の値を得る．`@'で始まらないインスタン
+  ス変数は Rubyプログラムからアクセスできない「隠れた」イン
+  スタンス変数になる．定数は大文字の名前を持つクラス(または
+  モジュール)のインスタンス変数として実装されている．
 
 VALUE rb_iv_set(VALUE obj, const char *name, VALUE val)
 
-  obj�Υ��󥹥����ѿ���val�˥��åȤ��롥
+  objのインスタンス変数をvalにセットする．
 
-** ���湽¤
+** 制御構造
 
 VALUE rb_block_call(VALUE obj, ID mid, int argc, VALUE * argv,
 		    VALUE (*func) (ANYARGS), VALUE data2)
 
-  func��֥��å��Ȥ������ꤷ��obj��쥷���С�argc��argv�����
-  �Ȥ���mid�᥽�åɤ�ƤӽФ���func����������yield���줿�͡�
-  ���������data2�������롥ʣ�����ͤ�yield���줿���(C�Ǥ�
-  rb_yield_values()��rb_yield_values2(), rb_yield_splat())��
-  data2��Array�Ȥ��ƥѥå�����Ƥ��롥�軰, ��Ͱ�����argc��
-  argv�ˤ�ä�yield���줿�ͤ���Ф����Ȥ��Ǥ��롥
+  funcをブロックとして設定し，objをレシーバ，argcとargvを引数
+  としてmidメソッドを呼び出す．funcは第一引数にyieldされた値，
+  第二引数にdata2を受け取る．複数の値がyieldされた場合(Cでは
+  rb_yield_values()とrb_yield_values2(), rb_yield_splat())，
+  data2はArrayとしてパックされている．第三, 第四引数のargcと
+  argvによってyieldされた値を取り出すことができる．
 
 [OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
 
-  func2��֥��å��Ȥ������ꤷ, func1�򥤥ƥ졼���Ȥ��ƸƤ֡�
-  func1�ˤ� arg1�������Ȥ����Ϥ���, func2�ˤ���1�����˥��ƥ졼
-  ������Ϳ����줿��, ��2������arg2���Ϥ���롥
+<<<<<<< HEAD
+  func2をブロックとして設定し, func1をイテレータとして呼ぶ．
+  func1には arg1が引数として渡され, func2には第1引数にイテレー
+  タから与えられた値, 第2引数にarg2が渡される．
 
-  1.9��rb_iterate��Ȥ�����, func1�����Ruby��٥�Υ᥽�å�
-  ��ƤӽФ��ʤ���Фʤ�ʤ�.
-  1.9��obsolete�Ȥʤä�. �����rb_block_call���Ѱդ��줿.
+  1.9でrb_iterateを使う場合は, func1の中でRubyレベルのメソッド
+  を呼び出さなければならない.
+  1.9でobsoleteとなった. 代わりにrb_block_callが用意された.
+=======
+  func2をブロックとして設定し, func1をイテレータとして呼ぶ． 
+  func1には arg1が引数として渡され, func2には第1引数にイテレー
+  タから与えられた値, 第2引数にarg2が渡される．
+ 
+  1.9でrb_iterateを使う場合は, func1の中でRubyレベルのメソッド
+  を呼び出さなければならない.
+  1.9でobsoleteとなった. 代わりにrb_block_callが用意された.
+>>>>>>> Change encoding from EUC-JP to UTF-8. [Feature #5128]
 
 VALUE rb_yield(VALUE val)
 
-  val���ͤȤ��ƥ��ƥ졼���֥��å���ƤӽФ���
+  valを値としてイテレータブロックを呼び出す．
 
 VALUE rb_rescue(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
 
-  �ؿ�func1��arg1������˸ƤӽФ���func1�μ¹�����㳰��ȯ��
-  �������ˤ� func2��arg2������Ȥ��ƸƤ֡�����ͤ��㳰��ȯ��
-  ���ʤ��ä�����func1�������, �㳰��ȯ���������ˤ�func2����
-  ���ͤǤ��롥
+  関数func1をarg1を引数に呼び出す．func1の実行中に例外が発生
+  した時には func2をarg2を引数として呼ぶ．戻り値は例外が発生
+  しなかった時はfunc1の戻り値, 例外が発生した時にはfunc2の戻
+  り値である．
 
 VALUE rb_ensure(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
 
-  �ؿ�func1��arg1������Ȥ��Ƽ¹Ԥ�, �¹Խ�λ��(���Ȥ��㳰��
-  ȯ�����Ƥ�) func2��arg2������Ȥ��Ƽ¹Ԥ��롥����ͤ�func1
-  ������ͤǤ���(�㳰��ȯ�������������ʤ�)��
+  関数func1をarg1を引数として実行し, 実行終了後(たとえ例外が
+  発生しても) func2をarg2を引数として実行する．戻り値はfunc1
+  の戻り値である(例外が発生した時は戻らない)．
 
 VALUE rb_protect(VALUE (*func) (VALUE), VALUE arg, int *state)
 
-  �ؿ�func��arg������Ȥ��Ƽ¹Ԥ�, �㳰��ȯ�����ʤ���Ф�����
-  ���ͤ��֤����㳰��ȯ����������, *state����0�򥻥åȤ���
-  Qnil���֤���
+  関数funcをargを引数として実行し, 例外が発生しなければその戻
+  り値を返す．例外が発生した場合は, *stateに非0をセットして
+  Qnilを返す．
 
 void rb_jump_tag(int state)
 
-  rb_protect()��rb_eval_string_protect()����ª���줿�㳰���
-  �����롥state�Ϥ����δؿ������֤��줿�ͤǤʤ���Фʤ�ʤ���
-  ���δؿ���ľ�ܤθƤӽФ��������ʤ���
+  rb_protect()やrb_eval_string_protect()で捕捉された例外を再
+  送する．stateはそれらの関数から返された値でなければならない．
+  この関数は直接の呼び出し元に戻らない．
 
-** �㳰�����顼
+** 例外・エラー
 
 void rb_warning(const char *fmt, ...)
 
-  rb_verbose����ɸ�२�顼���Ϥ˷ٹ�����ɽ�����롥������
-  printf()��Ʊ����
+  rb_verbose時に標準エラー出力に警告情報を表示する．引数は
+  printf()と同じ．
 
 void rb_raise(rb_eRuntimeError, const char *fmt, ...)
 
-  RuntimeError�㳰��ȯ�������롥������printf()��Ʊ����
+  RuntimeError例外を発生させる．引数はprintf()と同じ．
 
 void rb_raise(VALUE exception, const char *fmt, ...)
 
-  exception�ǻ��ꤷ���㳰��ȯ�������롥fmt�ʲ��ΰ�����
-  printf()��Ʊ����
+  exceptionで指定した例外を発生させる．fmt以下の引数は
+  printf()と同じ．
 
 void rb_fatal(const char *fmt, ...)
 
-  ��̿Ū�㳰��ȯ�������롥�̾���㳰�����ϹԤʤ�줺, ���󥿡�
-  �ץ꥿����λ����(������ensure�ǻ��ꤵ�줿�����ɤϽ�λ����
-  �¹Ԥ����)��
+  致命的例外を発生させる．通常の例外処理は行なわれず, インター
+  プリタが終了する(ただしensureで指定されたコードは終了前に
+  実行される)．
 
 void rb_bug(const char *fmt, ...)
 
-  ���󥿡��ץ꥿�ʤɥץ������ΥХ��Ǥ���ȯ������Ϥ��Τʤ�
-  �����λ��Ƥ֡����󥿡��ץ꥿�ϥ�������פ�ľ���˽�λ���롥
-  �㳰�����ϰ��ڹԤʤ��ʤ���
+  インタープリタなどプログラムのバグでしか発生するはずのない
+  状況の時呼ぶ．インタープリタはコアダンプし直ちに終了する．
+  例外処理は一切行なわれない．
 
-** Ruby�ν�������¹�
+** Rubyの初期化・実行
 
-Ruby�򥢥ץꥱ����������������ˤϰʲ��Υ��󥿥ե�����
-��Ȥ����̾�γ�ĥ�饤�֥��ˤ�ɬ�פʤ���
+Rubyをアプリケーションに埋め込む場合には以下のインタフェース
+を使う．通常の拡張ライブラリには必要ない．
 
 void ruby_init()
 
-  Ruby���󥿥ץ꥿�ν������Ԥʤ���
+  Rubyインタプリタの初期化を行なう．
 
 void ruby_options(int argc, char **argv)
 
-  Ruby���󥿥ץ꥿�Υ��ޥ�ɥ饤������ν�����Ԥʤ���
+  Rubyインタプリタのコマンドライン引数の処理を行なう．
 
 void ruby_run()
 
-  Ruby���󥿥ץ꥿��¹Ԥ��롥
+  Rubyインタプリタを実行する．
 
 void ruby_script(char *name)
 
-  Ruby�Υ�����ץ�̾($0)�����ꤹ�롥
+  Rubyのスクリプト名($0)を設定する．
 
-** ���󥿥ץ꥿�Υ��٥�ȤΥեå�
+** インタプリタのイベントのフック
 
  void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 
-���ꤵ�줿���󥿥ץ꥿�Υ��٥�Ȥ��Ф���եå��ؿ����ɲä��ޤ���
-events�ϰʲ����ͤ�or�Ǥʤ���Фʤ�ޤ���:
+指定されたインタプリタのイベントに対するフック関数を追加します．
+eventsは以下の値のorでなければなりません:
 
 	RUBY_EVENT_LINE
 	RUBY_EVENT_CLASS
@@ -1401,167 +1536,173 @@ events�ϰʲ����ͤ�or�Ǥʤ���Фʤ�ޤ���:
 	RUBY_EVENT_RAISE
 	RUBY_EVENT_ALL
 
-rb_event_hook_func_t������ϰʲ����̤�Ǥ�:
+rb_event_hook_func_tの定義は以下の通りです:
 
  typedef void (*rb_event_hook_func_t)(rb_event_t event, VALUE data,
  				      VALUE self, ID id, VALUE klass)
 
-rb_add_event_hook() ����3���� data �ϡ��եå��ؿ�����2������
-�����Ϥ���ޤ��������1.8�Ǥϸ��ߤ�NODE�ؤΥݥ��󥿤Ǥ�������
-���� RB_EVENT_HOOKS_HAVE_CALLBACK_DATA �⻲�Ȥ��Ƥ���������
+rb_add_event_hook() の第3引数 data は，フック関数の第2引数と
+して渡されます．これは1.8では現在のNODEへのポインタでした．以
+下の RB_EVENT_HOOKS_HAVE_CALLBACK_DATA も参照してください．
 
  int rb_remove_event_hook(rb_event_hook_func_t func)
 
-���ꤵ�줿�եå��ؿ��������ޤ���
+指定されたフック関数を削除します．
 
-** �ߴ����Τ���Υޥ���
+** 互換性のためのマクロ
 
-API�θߴ���������å����뤿��˰ʲ��Υޥ������ǥե���Ȥ��������Ƥ��ޤ���
+APIの互換性をチェックするために以下のマクロがデフォルトで定義されています．
 
 NORETURN_STYLE_NEW
 
-  NORETURN �ޥ������ؿ����ޥ����Ȥ����������Ƥ��뤳�Ȥ��̣���롥
+  NORETURN マクロが関数型マクロとして定義されていることを意味する．
 
 HAVE_RB_DEFINE_ALLOC_FUNC
 
-  rb_define_alloc_func() �ؿ����󶡤���Ƥ��뤳�ȡ��Ĥޤ�
-  allocation framework ���Ȥ��뤳�Ȥ��̣���롥
+  rb_define_alloc_func() 関数が提供されていること，つまり
+  allocation framework が使われることを意味する．
   have_func("rb_define_alloc_func", "ruby.h")
-  �η�̤�Ʊ����
+  の結果と同じ．
 
 HAVE_RB_REG_NEW_STR
 
-  String���֥������Ȥ���Regexp���֥������Ȥ���
-  rb_reg_new_str() �ؿ����󶡤���Ƥ��뤳�Ȥ��̣���롥
+  StringオブジェクトからRegexpオブジェクトを作る
+  rb_reg_new_str() 関数が提供されていることを意味する．
   have_func("rb_reg_new_str", "ruby.h").
-  �η�̤�Ʊ����
+  の結果と同じ．
 
 HAVE_RB_IO_T
 
-  rb_io_t �����󶡤���Ƥ��뤳�Ȥ��̣���롥
+  rb_io_t 型が提供されていることを意味する．
 
 USE_SYMBOL_AS_METHOD_NAME
 
-  �᥽�å�̾���֤��᥽�åɡ�Module#methods, #singleton_methods
-  �ʤɤ�Symbol���֤����Ȥ��̣���롥
+  メソッド名を返すメソッド，Module#methods, #singleton_methods
+  などがSymbolを返すことを意味する．
 
 HAVE_RUBY_*_H
 
-  ruby.h ���������Ƥ��롥�б�����إå����󶡤���Ƥ��뤳��
-  ���̣���롥���Ȥ��С�HAVE_RUBY_ST_H ���������Ƥ������
-  ñ�ʤ� st.h �ǤϤʤ� ruby/st.h ����Ѥ��롥
+  ruby.h で定義されている．対応するヘッダが提供されていること
+  を意味する．たとえば，HAVE_RUBY_ST_H が定義されている場合は
+  単なる st.h ではなく ruby/st.h を使用する．
 
 RB_EVENT_HOOKS_HAVE_CALLBACK_DATA
 
-  rb_add_event_hook() ���եå��ؿ����Ϥ� data ����3�����Ȥ���
-  ������뤳�Ȥ��̣���롥
+  rb_add_event_hook() がフック関数に渡す data を第3引数として
+  受け取ることを意味する．
 
-Appendix C. extconf.rb�ǻȤ���ؿ�����
+Appendix C. extconf.rbで使える関数たち
 
-extconf.rb����Ǥ����Ѳ�ǽ�ʥ���ѥ���������å��δؿ��ϰ�
-�����̤�Ǥ��롥
+extconf.rbの中では利用可能なコンパイル条件チェックの関数は以
+下の通りである．
 
 have_macro(macro, headers)
 
-  �إå��ե�����header�򥤥󥯥롼�ɤ��ƥޥ���macro�������
-  ��Ƥ��뤫�ɤ��������å����롥�ޥ������������Ƥ����true
-  ���֤���
+  ヘッダファイルheaderをインクルードしてマクロmacroが定義さ
+  れているかどうかチェックする．マクロが定義されている時true
+  を返す．
 
 have_library(lib, func)
 
-  �ؿ�func��������Ƥ���饤�֥��lib��¸�ߤ�����å����롥
-  �饤�֥�꤬¸�ߤ������true���֤���
+  関数funcを定義しているライブラリlibの存在をチェックする．
+  ライブラリが存在する時，trueを返す．
 
 find_library(lib, func, path...)
 
-  �ؿ�func��������Ƥ���饤�֥��lib��¸�ߤ� -Lpath ���ɲ�
-  ���ʤ�������å����롥�饤�֥�꤬���դ��ä�����true���֤���
+  関数funcを定義しているライブラリlibの存在を -Lpath を追加
+  しながらチェックする．ライブラリが見付かった時，trueを返す．
 
 have_func(func, header)
 
-  �إå��ե�����header�򥤥󥯥롼�ɤ��ƴؿ�func��¸�ߤ����
-  �å����롥func��ɸ��Ǥϥ�󥯤���ʤ��饤�֥����Τ�Τ�
-  ������ˤ����have_library�Ǥ��Υ饤�֥�������å����Ƥ�
-  �������ؿ���¸�ߤ����true���֤���
+  ヘッダファイルheaderをインクルードして関数funcの存在をチェ
+  ックする．funcが標準ではリンクされないライブラリ内のもので
+  ある時には先にhave_libraryでそのライブラリをチェックしてお
+  く事．関数が存在する時trueを返す．
 
 have_var(var, header)
 
-  �إå��ե�����header�򥤥󥯥롼�ɤ����ѿ�var��¸�ߤ������
-  �����롥var��ɸ��Ǥϥ�󥯤���ʤ��饤�֥����Τ�ΤǤ�
-  ����ˤ����have_library�Ǥ��Υ饤�֥�������å����Ƥ���
-  �����ѿ���¸�ߤ����true���֤���
+  ヘッダファイルheaderをインクルードして変数varの存在をチェッ
+  クする．varが標準ではリンクされないライブラリ内のものであ
+  る時には先にhave_libraryでそのライブラリをチェックしておく
+  事．変数が存在する時trueを返す．
 
 have_header(header)
 
-  �إå��ե������¸�ߤ�����å����롥�إå��ե����뤬¸�ߤ�
-  ���true���֤���
+  ヘッダファイルの存在をチェックする．ヘッダファイルが存在す
+  る時trueを返す．
 
 find_header(header, path...)
 
-  �إå��ե�����header��¸�ߤ� -Ipath ���ɲä��ʤ�������å�
-  ���롥�إå��ե����뤬���դ��ä�����true���֤���
+  ヘッダファイルheaderの存在を -Ipath を追加しながらチェック
+  する．ヘッダファイルが見付かった時，trueを返す．
 
 have_struct_member(type, member, header)
 
-  �إå��ե�����header�򥤥󥯥롼�ɤ��Ʒ�type�˥���member
-  ��¸�ߤ��뤫������å����롥type���������Ƥ��ơ�member��
-  ���Ĥ����true���֤���
+  ヘッダファイルheaderをインクルードして型typeにメンバmember
+  が存在するかをチェックする．typeが定義されていて，memberを
+  持つする時trueを返す．
 
 have_type(type, header, opt)
 
-  �إå��ե�����header�򥤥󥯥롼�ɤ��Ʒ�type��¸�ߤ��뤫��
-  �����å����롥type���������Ƥ����true���֤���
+  ヘッダファイルheaderをインクルードして型typeが存在するかを
+  チェックする．typeが定義されている時trueを返す．
 
 check_sizeof(type, header)
 
-  �إå��ե�����header�򥤥󥯥롼�ɤ��Ʒ�type��charñ�̥���
-  ����Ĵ�٤롥type���������Ƥ�������Υ��������֤��������
-  ��Ƥ��ʤ��Ȥ���nil���֤���
+  ヘッダファイルheaderをインクルードして型typeのchar単位サイ
+  ズを調べる．typeが定義されている時そのサイズを返す．定義さ
+  れていないときはnilを返す．
 
 create_makefile(target)
 
-  ��ĥ�饤�֥���Ѥ�Makefile���������롥���δؿ���ƤФʤ���
-  �Ф��Υ饤�֥��ϥ���ѥ��뤵��ʤ���target�ϥ⥸�塼��̾
-  ��ɽ����
+  拡張ライブラリ用のMakefileを生成する．この関数を呼ばなけれ
+  ばそのライブラリはコンパイルされない．targetはモジュール名
+  を表す．
 
 find_executable(command, path)
 
-  ���ޥ��command��File::PATH_SEPARATOR�Ƕ��ڤ�줿�ѥ�̾��
-  �ꥹ��path����õ����path��nil�ޤ��Ͼ�ά���줿���ϡ��Ķ�
-  �ѿ�PATH���ͤ���Ѥ��롥�¹Բ�ǽ�ʥ��ޥ�ɤ����Ĥ��ä����
-  �ϥѥ���ޤ�ե�����̾�����Ĥ���ʤ��ä�����nil���֤���
+  コマンドcommandをFile::PATH_SEPARATORで区切られたパス名の
+  リストpathから探す．pathがnilまたは省略された場合は，環境
+  変数PATHの値を使用する．実行可能なコマンドが見つかった場合
+  はパスを含むファイル名，見つからなかった場合はnilを返す．
 
 with_config(withval[, default=nil])
 
-  ���ޥ�ɥ饤����--with-<withval>�ǻ��ꤵ�줿���ץ������
-  �����롥
+  コマンドライン上の--with-<withval>で指定されたオプション値
+  を得る．
 
 enable_config(config, *defaults)
 disable_config(config, *defaults)
 
-  ���ޥ�ɥ饤����--enable-<config>�ޤ���
-  --disable-<config>�ǻ��ꤵ�줿�����ͤ����롥
-  --enable-<config>�����ꤵ��Ƥ�������true��
-  --disable-<config>�����ꤵ��Ƥ�������false���֤���
-  �ɤ������ꤵ��Ƥ��ʤ����ϡ��֥��å��Ĥ��ǸƤӽФ����
-  �������*defaults��yield������̡��֥��å��ʤ��ʤ�
-  *defaults���֤���
+  コマンドライン上の--enable-<config>または
+  --disable-<config>で指定された真偽値を得る．
+  --enable-<config>が指定されていた場合はtrue，
+  --disable-<config>が指定されていた場合はfalseを返す．
+  どちらも指定されていない場合は，ブロックつきで呼び出されて
+  いる場合は*defaultsをyieldした結果，ブロックなしなら
+  *defaultsを返す．
 
 dir_config(target[, default_dir])
 dir_config(target[, default_include, default_lib])
 
-  ���ޥ�ɥ饤����--with-<target>-dir, --with-<target>-include,
-  --with-<target>-lib�Τ����줫�ǻ��ꤵ���ǥ��쥯�ȥ��
-  $CFLAGS �� $LDFLAGS ���ɲä��롥--with-<target>-dir=/path��
+  コマンドライン上の--with-<target>-dir, --with-<target>-include,
+  --with-<target>-libのいずれかで指定されるディレクトリを
+  $CFLAGS や $LDFLAGS に追加する．--with-<target>-dir=/pathは
   --with-<target>-include=/path/include --with-<target>-lib=/path/lib
-  �������Ǥ��롥�ɲä��줿 include �ǥ��쥯�ȥ�� lib �ǥ���
-  ���ȥ��������֤��� ([include_dir, lib_dir])
+  と等価である．追加された include ディレクトリと lib ディレ
+  クトリの配列を返す． ([include_dir, lib_dir])
 
 pkg_config(pkg)
 
-  pkg-config���ޥ�ɤ���ѥå�����pkg�ξ�������롥
-  pkg-config�μºݤΥ��ޥ��̾�ϡ�--with-pkg-config���ޥ��
-  �饤�󥪥ץ����ǻ����ǽ��
+<<<<<<< HEAD
+  pkg-configコマンドからパッケージpkgの情報を得る．
+  pkg-configの実際のコマンド名は，--with-pkg-configコマンド
+  ラインオプションで指定可能．
+=======
+  pkg-configコマンドからパッケージpkgの情報を得る． 
+  pkg-configの実際のコマンド名は，--with-pkg-configコマンド
+  ラインオプションで指定可能．
+>>>>>>> Change encoding from EUC-JP to UTF-8. [Feature #5128]
 
 /*
  * Local variables:
