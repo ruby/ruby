@@ -1456,6 +1456,45 @@ flo_ceil(VALUE num)
 }
 
 /*
+ * Assumes num is an Integer, ndigits <= 0
+ */
+static VALUE
+int_round_0(VALUE num, int ndigits)
+{
+    VALUE n, f, h, r;
+    long bytes;
+    ID op;
+    /* If 10**N / 2 > num, then return 0 */
+    /* We have log_256(10) > 0.415241 and log_256(1/2) = -0.125, so */
+    bytes = FIXNUM_P(num) ? sizeof(long) : rb_funcall(num, rb_intern("size"), 0);
+    if (-0.415241 * ndigits - 0.125 > bytes ) {
+	return INT2FIX(0);
+    }
+
+    f = int_pow(10, -ndigits);
+    if (FIXNUM_P(num) && FIXNUM_P(f)) {
+	SIGNED_VALUE x = FIX2LONG(num), y = FIX2LONG(f);
+	int neg = x < 0;
+	if (neg) x = -x;
+	x = (x + y / 2) / y * y;
+	if (neg) x = -x;
+	return LONG2NUM(x);
+    }
+    if (TYPE(f) == T_FLOAT) {
+	/* then int_pow overflow */
+	return INT2FIX(0);
+    }
+    h = rb_funcall(f, '/', 1, INT2FIX(2));
+    r = rb_funcall(num, '%', 1, f);
+    n = rb_funcall(num, '-', 1, r);
+    op = RTEST(rb_funcall(num, '<', 1, INT2FIX(0))) ? rb_intern("<=") : '<';
+    if (!RTEST(rb_funcall(r, op, 1, h))) {
+	n = rb_funcall(n, '+', 1, f);
+    }
+    return n;
+}
+
+/*
  *  call-seq:
  *     flt.round([ndigits])  ->  integer or float
  *
@@ -3318,10 +3357,8 @@ int_dotimes(VALUE num)
 static VALUE
 int_round(int argc, VALUE* argv, VALUE num)
 {
-    VALUE n, f, h, r;
+    VALUE n;
     int ndigits;
-    long bytes;
-    ID op;
 
     if (argc == 0) return num;
     rb_scan_args(argc, argv, "1", &n);
@@ -3332,35 +3369,7 @@ int_round(int argc, VALUE* argv, VALUE num)
     if (ndigits == 0) {
 	return num;
     }
-
-    /* If 10**N / 2 > num, then return 0 */
-    /* We have log_256(10) > 0.415241 and log_256(1/2) = -0.125, so */
-    bytes = FIXNUM_P(num) ? sizeof(long) : rb_funcall(num, rb_intern("size"), 0);
-    if (-0.415241 * ndigits - 0.125 > bytes ) {
-	return INT2FIX(0);
-    }
-
-    f = int_pow(10, -ndigits);
-    if (FIXNUM_P(num) && FIXNUM_P(f)) {
-	SIGNED_VALUE x = FIX2LONG(num), y = FIX2LONG(f);
-	int neg = x < 0;
-	if (neg) x = -x;
-	x = (x + y / 2) / y * y;
-	if (neg) x = -x;
-	return LONG2NUM(x);
-    }
-    if (TYPE(f) == T_FLOAT) {
-	/* then int_pow overflow */
-	return INT2FIX(0);
-    }
-    h = rb_funcall(f, '/', 1, INT2FIX(2));
-    r = rb_funcall(num, '%', 1, f);
-    n = rb_funcall(num, '-', 1, r);
-    op = RTEST(rb_funcall(num, '<', 1, INT2FIX(0))) ? rb_intern("<=") : '<';
-    if (!RTEST(rb_funcall(r, op, 1, h))) {
-	n = rb_funcall(n, '+', 1, f);
-    }
-    return n;
+    return int_round_0(num, ndigits);
 }
 
 /*
