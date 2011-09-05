@@ -1,3 +1,8 @@
+Tue Sep  6 06:44:57 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* numeric.c (dbl2ival): Fix Float#divmod and #round for 32 bit
+	  platform. part 1 of [bug #5276]
+
 Tue Sep  6 06:44:25 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* numeric.c (flo_round): Fix criteria for 32 bits platform

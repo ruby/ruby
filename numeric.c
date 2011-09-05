@@ -873,8 +873,8 @@ flo_mod(VALUE x, VALUE y)
 static VALUE
 dbl2ival(double d)
 {
+    d = round(d);
     if (FIXABLE(d)) {
-	d = round(d);
 	return LONG2FIX((long)d);
     }
     return rb_dbl2big(d);
