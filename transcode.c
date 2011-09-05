@@ -1935,20 +1935,22 @@ rb_econv_binmode(rb_econv_t *ec)
     int n, i, j;
     transcoder_entry_t *entry;
     int num_trans;
+    const char *dname = 0;
 
     n = 0;
-    if (ec->flags & ECONV_UNIVERSAL_NEWLINE_DECORATOR) {
-        entry = get_transcoder_entry("", "universal_newline");
-        if (entry->transcoder)
-            trs[n++] = entry->transcoder;
+    switch (ec->flags & ECONV_NEWLINE_DECORATOR_MASK) {
+      case ECONV_UNIVERSAL_NEWLINE_DECORATOR:
+	dname = "universal_newline";
+	break;
+      case ECONV_CRLF_NEWLINE_DECORATOR:
+	dname = "crlf_newline";
+	break;
+      case ECONV_CR_NEWLINE_DECORATOR:
+	dname = "cr_newline";
+	break;
     }
-    if (ec->flags & ECONV_CRLF_NEWLINE_DECORATOR) {
-        entry = get_transcoder_entry("", "crlf_newline");
-        if (entry->transcoder)
-            trs[n++] = entry->transcoder;
-    }
-    if (ec->flags & ECONV_CR_NEWLINE_DECORATOR) {
-        entry = get_transcoder_entry("", "cr_newline");
+    if (dname) {
+        entry = get_transcoder_entry("", dname);
         if (entry->transcoder)
             trs[n++] = entry->transcoder;
     }
