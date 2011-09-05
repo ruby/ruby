@@ -1,3 +1,9 @@
+Mon Sep  5 15:03:37 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/rubygems/test_gem_security.rb
+	  (test_class_build_self_signed_cert): reset opt[:trust_dir] to apply
+	  temporary Gem.user_home.
+
 Mon Sep  5 10:04:35 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* README.ja, README.EXT.ja: resolve conflicts. [ruby-dev:44459]
