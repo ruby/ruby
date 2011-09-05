@@ -1,3 +1,8 @@
+Tue Sep  6 06:44:25 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* numeric.c (flo_round): Fix criteria for 32 bits platform
+	  part 2 of [bug #5276]
+
 Tue Sep  6 05:37:11 2011  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.rb (test_core_03_notify): Fixed test failures

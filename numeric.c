@@ -1560,16 +1560,16 @@ flo_round(int argc, VALUE *argv, VALUE num)
 	10 ** ((binexp-1)/log_2(10)) <= |number| < 10 ** (binexp/log_2(10))
 	If binexp >= 0, and since log_2(10) = 3.322259:
 	   10 ** (binexp/4 - 1) < |number| < 10 ** (binexp/3)
-	   binexp/4 <= exp <= binexp/3
+	   floor(binexp/4) <= exp <= ceil(binexp/3)
 	If binexp <= 0, swap the /4 and the /3
-	So if ndigits + binexp/(4 or 3) >= float_dig, the result is number
-	If ndigits + binexp/(3 or 4) < 0 the result is 0
+	So if ndigits + floor(binexp/(4 or 3)) >= float_dig, the result is number
+	If ndigits + ceil(binexp/(3 or 4)) < 0 the result is 0
 */
     if (isinf(number) || isnan(number) ||
-	(((long)ndigits - float_dig) * (3 + (binexp > 0)) + binexp >= 0)) {
+	(ndigits >= float_dig - (binexp > 0 ? binexp / 4 : binexp / 3 - 1))) {
 	return num;
     }
-    if ((long)ndigits * (4 - (binexp > 0)) + binexp < 0) {
+    if (ndigits < - (binexp > 0 ? binexp / 3 + 1 : binexp / 4)) {
 	return DBL2NUM(0);
     }
     f = pow(10, ndigits);
