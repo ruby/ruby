@@ -1,3 +1,7 @@
+Mon Sep  5 10:04:35 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* README.ja, README.EXT.ja: resolve conflicts. [ruby-dev:44459]
+
 Mon Sep  5 05:13:22 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* numeric.c (flo_round): Make Float#round round big values [bug

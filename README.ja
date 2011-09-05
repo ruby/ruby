@@ -61,13 +61,8 @@ Rubyのメーリングリストがあります。参加希望の方は
 まで本文に
 
    subscribe YourFirstName YourFamilyName
-<<<<<<< HEAD
-
-と書いて送って下さい。
-=======
    
 と書いて送って下さい。 
->>>>>>> Change encoding from EUC-JP to UTF-8. [Feature #5128]
 
 Ruby開発者向けメーリングリストもあります。こちらではrubyのバ
 グ、将来の仕様拡張など実装上の問題について議論されています。
@@ -75,21 +70,12 @@ Ruby開発者向けメーリングリストもあります。こちらではruby
 
    ruby-dev-ctl@ruby-lang.org
 
-<<<<<<< HEAD
-までruby-listと同様の方法でメールしてください。
-
-Ruby拡張モジュールについて話し合うruby-extメーリングリストと
-数学関係の話題について話し合うruby-mathメーリングリストと
-英語で話し合うruby-talkメーリングリストもあります。参加方法
-はどれも同じです。
-=======
 までruby-listと同様の方法でメールしてください。 
 
 Ruby拡張モジュールについて話し合うruby-extメーリングリストと
 数学関係の話題について話し合うruby-mathメーリングリストと
 英語で話し合うruby-talkメーリングリストもあります。参加方法
 はどれも同じです。 
->>>>>>> Change encoding from EUC-JP to UTF-8. [Feature #5128]
 
 
 * コンパイル・インストール
