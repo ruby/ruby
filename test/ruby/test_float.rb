@@ -452,15 +452,16 @@ class TestFloat < Test::Unit::TestCase
 
   def test_round
     VS.each {|f|
+      msg = "round(#{f})"
       i = f.round
       if f < 0
-        assert_operator(i, :<, 0)
+        assert_operator(i, :<, 0, msg)
       else
-        assert_operator(i, :>, 0)
+        assert_operator(i, :>, 0, msg)
       end
       d = f - i
-      assert_operator(-0.5, :<=, d)
-      assert_operator(d, :<=, 0.5)
+      assert_operator(-0.5, :<=, d, msg)
+      assert_operator(d, :<=, 0.5, msg)
     }
   end
 
