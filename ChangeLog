@@ -1,3 +1,8 @@
+Tue Sep  6 05:37:11 2011  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/rinda/test_rinda.rb (test_core_03_notify): Fixed test failures
+	  [ruby-dev:44430] [Ruby 1.9 - Bug #372]
+
 Mon Sep  5 20:59:30 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* insns.def: change encoding pragma for emacs (shift_jis to utf-8).
