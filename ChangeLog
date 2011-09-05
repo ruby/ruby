@@ -1,3 +1,7 @@
+Mon Sep  5 20:59:30 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* insns.def: change encoding pragma for emacs (shift_jis to utf-8).
+
 Mon Sep  5 19:32:15 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* Makefile.in (INSNS): change command line option -Ks to -Ku for

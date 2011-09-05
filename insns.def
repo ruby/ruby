@@ -1,4 +1,4 @@
-/** ##skip -*- mode:c; style:ruby; coding: shift_jis -*-
+/** ##skip -*- mode:c; style:ruby; coding: utf-8 -*-
   insns.def - YARV instruction definitions
 
   $Author: $
