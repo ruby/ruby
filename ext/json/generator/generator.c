@@ -112,7 +112,7 @@ static void unicode_escape(char *buf, UTF16 character)
 }
 
 /* Escapes the UTF16 character and stores the result in the buffer buf, then
- * the buffer buf іs appended to the FBuffer buffer. */
+ * the buffer buf is appended to the FBuffer buffer. */
 static void unicode_escape_to_buffer(FBuffer *buffer, char buf[6], UTF16
         character)
 {
