@@ -1,3 +1,9 @@
+Mon Sep  5 19:32:15 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* Makefile.in (INSNS): change command line option -Ks to -Ku for
+	  generate *.inc. because insns.def encoding has been changed SJIS to
+	  UTF-8. if $BASERUBY is 1.9, -Ks cause an error. [Feature #5128]
+
 Mon Sep  5 18:10:56 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (rb_econv_binmode): newline decorators are
