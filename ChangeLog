@@ -1,3 +1,10 @@
+Tue Sep  6 13:15:44 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (load_encoding): predefined encoding names are safe.
+	  [ruby-dev:44469] [Bug #5279]
+
+	* transcode.c (load_transcoder_entry): ditto.
+
 Tue Sep  6 12:07:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c: enabled econv newline option.
