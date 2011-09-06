@@ -902,4 +902,10 @@ class TestEncodingConverter < Test::Unit::TestCase
       "".encode("euc-jp", :undef => :replace, :replace => broken)
     }
   end
+
+  def test_newline_option
+    ec1 = Encoding::Converter.new("", "", universal_newline: true)
+    ec2 = Encoding::Converter.new("", "", newline: :universal)
+    assert_equal(ec1, ec2)
+  end
 end
