@@ -19,7 +19,7 @@ class TestOldThreadSelect < Test::Unit::TestCase
       rc = IO.old_thread_select([r.fileno], nil, nil, 0.001)
       diff = Time.now - t0
       assert_equal 0, rc
-      assert diff >= 0.001, "returned too early"
+      assert_operator diff, :>=, 0.001, "returned too early"
     end
   end
 
@@ -59,10 +59,10 @@ class TestOldThreadSelect < Test::Unit::TestCase
     end
 
     diff = Time.now - t0
-    assert diff >= 1.0, "interrupted or short wait"
+    assert_operator diff, :>=, 1.0, "interrupted or short wait"
     assert_equal 0, rc
     assert_equal true, thr.value
-    assert received, "SIGINT not received"
+    assert_not_equal false, received, "SIGINT not received"
     ensure
       trap(:INT, "DEFAULT")
   end
