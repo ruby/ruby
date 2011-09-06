@@ -570,6 +570,8 @@ module Test
           }
         end
         report.reject!{|r| r.start_with? "Skipped:" } if @options[:hide_skip]
+        report.sort_by!{|r| r.start_with?("Skipped:") ? 0 : \
+                           (r.start_with?("Failure:") ? 1 : 2) }
         result
       end
 
@@ -597,6 +599,12 @@ module Test
       def status(*args)
         result = super
         raise @interrupt if @interrupt
+        result
+      end
+
+      def run(*args)
+        result = super
+        puts "\nruby -v: #{RUBY_DESCRIPTION}"
         result
       end
     end

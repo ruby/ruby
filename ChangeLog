@@ -1,3 +1,15 @@
+Tue Sep  6 21:06:49 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb (_run_suites): Now reports are written the
+	  following order: Skip, Failure, Error. [Feature #5282]
+
+	* test_sorting.rb: test for above.
+
+	* test4test_sorting.rb: Ditto.
+
+	* lib/test/unit.rb (run): Put RUBY_DESCIPTION before quitting.
+	  [Feature #5282]
+
 Tue Sep  6 21:13:47 2011  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* win32/Makefile.sub (INSNS): change command line option -Ks to -Ku
