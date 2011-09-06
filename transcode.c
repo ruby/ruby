@@ -369,16 +369,19 @@ load_transcoder_entry(transcoder_entry_t *entry)
     if (entry->lib) {
         const char *lib = entry->lib;
         size_t len = strlen(lib);
-        char path[sizeof(transcoder_lib_prefix) + MAX_TRANSCODER_LIBNAME_LEN];
+        size_t total_len = sizeof(transcoder_lib_prefix) - 1 + len;
+        char *path;
         VALUE fn;
 
         entry->lib = NULL;
 
         if (len > MAX_TRANSCODER_LIBNAME_LEN)
             return NULL;
+        fn = rb_str_new(0, total_len);
+        path = RSTRING_PTR(fn);
         memcpy(path, transcoder_lib_prefix, sizeof(transcoder_lib_prefix) - 1);
-        memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len + 1);
-        fn = rb_str_new2(path);
+        memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len);
+        rb_str_set_len(fn, total_len);
         FL_UNSET(fn, FL_TAINT|FL_UNTRUSTED);
         OBJ_FREEZE(fn);
         if (!rb_require_safe(fn, rb_safe_level()))
