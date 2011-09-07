@@ -1,7 +1,7 @@
 Wed Sep  7 23:41:24 2011  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/baseparser.rb, test/rexml/test_comment.rb:
-	  allow a single hyphen in comment. [Bug 5278]
+	  allow a single hyphen in comment. [Bug #5278] [ruby-core:39289]
 	  Reported by Thomas Fritzsche. Thanks!!!
 
 Wed Sep  7 17:27:18 2011  NARUSE, Yui  <naruse@ruby-lang.org>
