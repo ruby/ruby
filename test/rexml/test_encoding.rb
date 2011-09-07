@@ -3,6 +3,7 @@
 require "rexml_test_utils"
 
 require 'rexml/source'
+require 'rexml/document'
 
 class EncodingTester < Test::Unit::TestCase
   include REXMLTestUtils
