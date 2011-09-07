@@ -45,7 +45,7 @@ module Syck
     class Object
         def self.tag_subclasses?; false; end
         def to_yaml( opts = {} )
-            Syck.quick_emit( self, opts ) do |out|
+            ::Syck.quick_emit( self, opts ) do |out|
                 out.map( "tag:ruby.yaml.org,2002:object:#{ @class }", to_yaml_style ) do |map|
                     @ivars.each do |k,v|
                         map.add( k, v )
@@ -67,7 +67,7 @@ module Syck
             self.default.to_s
         end
         def update( h )
-            if Syck::SpecialHash === h
+            if ::Syck::SpecialHash === h
                 @default = h.default if h.default
             end
             super( h )
@@ -89,11 +89,11 @@ module Syck
                     if Hash === v
                         concat( v.to_a )		# Convert the map to a sequence
                     else
-                        raise Syck::Error, "Invalid !omap entry: " + val.inspect
+                        raise ::Syck::Error, "Invalid !omap entry: " + val.inspect
                     end
                 end
             else
-                raise Syck::Error, "Invalid !omap: " + val.inspect
+                raise ::Syck::Error, "Invalid !omap: " + val.inspect
             end
             self
         end
@@ -123,7 +123,7 @@ module Syck
             true
         end
         def to_yaml( opts = {} )
-            Syck.quick_emit( self, opts ) do |out|
+            ::Syck.quick_emit( self, opts ) do |out|
                 out.seq( taguri, to_yaml_style ) do |seq|
                     self.each do |v|
                         seq.add( Hash[ *v ] )
@@ -144,11 +144,11 @@ module Syck
                     if Hash === v
                         concat( v.to_a )		# Convert the map to a sequence
                     else
-                        raise Syck::Error, "Invalid !pairs entry: " + val.inspect
+                        raise ::Syck::Error, "Invalid !pairs entry: " + val.inspect
                     end
                 end
             else
-                raise Syck::Error, "Invalid !pairs: " + val.inspect
+                raise ::Syck::Error, "Invalid !pairs: " + val.inspect
             end
             self
         end
@@ -173,7 +173,7 @@ module Syck
             true
         end
         def to_yaml( opts = {} )
-            Syck.quick_emit( self, opts ) do |out|
+            ::Syck.quick_emit( self, opts ) do |out|
                 out.seq( taguri, to_yaml_style ) do |seq|
                     self.each do |v|
                         seq.add( Hash[ *v ] )
