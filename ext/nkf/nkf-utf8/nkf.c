@@ -3503,11 +3503,11 @@ fold_conv(nkf_char c2, nkf_char c1)
 		fold_state =  LF;       /* We can't wait, do fold now */
 	    } else if (c2 == JIS_X_0201_1976_K) {
 		/* simple kinsoku rules  return 1 means no folding  */
-		if (c1==(0xde&0x7f)) fold_state = 1; /* ゛*/
-		else if (c1==(0xdf&0x7f)) fold_state = 1; /* ゜*/
-		else if (c1==(0xa4&0x7f)) fold_state = 1; /* 。*/
-		else if (c1==(0xa3&0x7f)) fold_state = 1; /* ，*/
-		else if (c1==(0xa1&0x7f)) fold_state = 1; /* 」*/
+		if (c1==(0xde&0x7f)) fold_state = 1; /* $B!+(B*/
+		else if (c1==(0xdf&0x7f)) fold_state = 1; /* $B!,(B*/
+		else if (c1==(0xa4&0x7f)) fold_state = 1; /* $B!#(B*/
+		else if (c1==(0xa3&0x7f)) fold_state = 1; /* $B!$(B*/
+		else if (c1==(0xa1&0x7f)) fold_state = 1; /* $B!W(B*/
 		else if (c1==(0xb0&0x7f)) fold_state = 1; /* - */
 		else if (SP<=c1 && c1<=(0xdf&0x7f)) {      /* X0201 */
 		    f_line = 1;
@@ -3543,18 +3543,18 @@ fold_conv(nkf_char c2, nkf_char c1)
 		}
 	    } else {
 		if (c2=='!') {
-		    if (c1=='"')  fold_state = 1; /* 、 */
-		    else if (c1=='#')  fold_state = 1; /* 。 */
-		    else if (c1=='W')  fold_state = 1; /* 」 */
-		    else if (c1=='K')  fold_state = 1; /* ） */
-		    else if (c1=='$')  fold_state = 1; /* ， */
-		    else if (c1=='%')  fold_state = 1; /* ． */
-		    else if (c1=='\'') fold_state = 1; /* ＋ */
-		    else if (c1=='(')  fold_state = 1; /* ； */
-		    else if (c1==')')  fold_state = 1; /* ？ */
-		    else if (c1=='*')  fold_state = 1; /* ！ */
-		    else if (c1=='+')  fold_state = 1; /* ゛ */
-		    else if (c1==',')  fold_state = 1; /* ゜ */
+		    if (c1=='"')  fold_state = 1; /* $B!"(B */
+		    else if (c1=='#')  fold_state = 1; /* $B!#(B */
+		    else if (c1=='W')  fold_state = 1; /* $B!W(B */
+		    else if (c1=='K')  fold_state = 1; /* $B!K(B */
+		    else if (c1=='$')  fold_state = 1; /* $B!$(B */
+		    else if (c1=='%')  fold_state = 1; /* $B!%(B */
+		    else if (c1=='\'') fold_state = 1; /* $B!\(B */
+		    else if (c1=='(')  fold_state = 1; /* $B!((B */
+		    else if (c1==')')  fold_state = 1; /* $B!)(B */
+		    else if (c1=='*')  fold_state = 1; /* $B!*(B */
+		    else if (c1=='+')  fold_state = 1; /* $B!+(B */
+		    else if (c1==',')  fold_state = 1; /* $B!,(B */
 		    /* default no fold in kinsoku */
 		    else {
 			fold_state = LF;
@@ -3605,11 +3605,11 @@ z_conv(nkf_char c2, nkf_char c1)
     if (x0201_f) {
 	if (z_prev2 == JIS_X_0201_1976_K) {
 	    if (c2 == JIS_X_0201_1976_K) {
-		if (c1 == (0xde&0x7f)) { /* 濁点 */
+		if (c1 == (0xde&0x7f)) { /* $BByE@(B */
 		    z_prev2 = 0;
 		    (*o_zconv)(dv[(z_prev1-SP)*2], dv[(z_prev1-SP)*2+1]);
 		    return;
-		} else if (c1 == (0xdf&0x7f) && ev[(z_prev1-SP)*2]) {  /* 半濁点 */
+		} else if (c1 == (0xdf&0x7f) && ev[(z_prev1-SP)*2]) {  /* $BH>ByE@(B */
 		    z_prev2 = 0;
 		    (*o_zconv)(ev[(z_prev1-SP)*2], ev[(z_prev1-SP)*2+1]);
 		    return;
@@ -3620,7 +3620,7 @@ z_conv(nkf_char c2, nkf_char c1)
 	}
 	if (c2 == JIS_X_0201_1976_K) {
 	    if (dv[(c1-SP)*2] || ev[(c1-SP)*2]) {
-		/* wait for 濁点 or 半濁点 */
+		/* wait for $BByE@(B or $BH>ByE@(B */
 		z_prev1 = c1;
 		z_prev2 = c2;
 		return;
@@ -3876,7 +3876,7 @@ static const unsigned char *mime_pattern[] = {
 };
 
 
-/* 該当するコードの優先度を上げるための目印 */
+/* $B3:Ev$9$k%3!<%I$NM%@hEY$r>e$2$k$?$a$NL\0u(B */
 nkf_char (*mime_priority_func[])(nkf_char c2, nkf_char c1, nkf_char c0) = {
     e_iconv, s_iconv, 0, 0, 0, 0, 0,
 #if defined(UTF8_INPUT_ENABLE)
@@ -6652,12 +6652,12 @@ main(int argc, char **argv)
 		    if (stat(origfname, &sb)) {
 			fprintf(stderr, "Can't stat %s\n", origfname);
 		    }
-		    /* パーミッションを復元 */
+		    /* $B%Q!<%_%C%7%g%s$rI|85(B */
 		    if (chmod(outfname, sb.st_mode)) {
 			fprintf(stderr, "Can't set permission %s\n", outfname);
 		    }
 
-		    /* タイムスタンプを復元 */
+		    /* $B%?%$%`%9%?%s%W$rI|85(B */
 		    if(preserve_time_f){
 #if defined(MSDOS) && !defined(__MINGW32__) && !defined(__WIN32__) && !defined(__WATCOMC__) && !defined(__EMX__) && !defined(__OS2__) && !defined(__DJGPP__)
 			tb[0] = tb[1] = sb.st_mtime;
