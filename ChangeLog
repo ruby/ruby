@@ -1,3 +1,8 @@
+Wed Sep  7 17:27:18 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/yaml.rb: explicitly specify ::Object to avoid the collision with
+	  Syck::Object.
+
 Tue Sep  6 21:06:49 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb (_run_suites): Now reports are written the

@@ -3,6 +3,7 @@
 # $Id$
 #
 require 'test/unit'
+require 'syck'
 require 'yaml'
 require 'syck/ypath'
 

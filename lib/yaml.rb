@@ -30,7 +30,7 @@ module YAML
 
       require engine unless (engine == 'syck' ? Syck : Psych).const_defined?(:VERSION)
 
-      Object.class_eval <<-eorb, __FILE__, __LINE__ + 1
+      ::Object.class_eval <<-eorb, __FILE__, __LINE__ + 1
         remove_const 'YAML'
         YAML = #{engine.capitalize}
         remove_method :to_yaml
