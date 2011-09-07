@@ -1,3 +1,8 @@
+Wed Sep  8 03:48:00 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* ext/readline/README.ja:
+	  Change encoding from EUC-JP to UTF-8
+
 Wed Sep  8 02:59:00 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/rexml/test_encoding.rb:
