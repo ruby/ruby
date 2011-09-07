@@ -1,3 +1,8 @@
+Wed Sep  8 02:53:00 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/rexml/parsers/baseparser.rb, test/rexml/test_comment.rb:
+	  Change encoding from ISO-2022 to UTF-8
+
 Wed Sep  7 23:41:24 2011  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/baseparser.rb, test/rexml/test_comment.rb:
