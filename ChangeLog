@@ -1,3 +1,8 @@
+Thu Sep  8 07:44:25 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (rb_declare_transcoder, load_transcoder_entry): no
+	  longer need to limit the length of transcoder library name.
+
 Thu Sep  8 07:36:36 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/syck/lib/syck/types.rb: use toplevel Syck.

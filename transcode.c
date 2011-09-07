@@ -227,15 +227,13 @@ declare_transcoder(const char *sname, const char *dname, const char *lib)
     entry->lib = lib;
 }
 
-#define MAX_TRANSCODER_LIBNAME_LEN 64
 static const char transcoder_lib_prefix[] = "enc/trans/";
 
 void
 rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib)
 {
-    if (!lib || strlen(lib) > MAX_TRANSCODER_LIBNAME_LEN) {
-	rb_raise(rb_eArgError, "invalid library name - %s",
-		 lib ? lib : "(null)");
+    if (!lib) {
+	rb_raise(rb_eArgError, "invalid library name - (null)");
     }
     declare_transcoder(enc1, enc2, lib);
 }
@@ -367,18 +365,14 @@ load_transcoder_entry(transcoder_entry_t *entry)
         return entry->transcoder;
 
     if (entry->lib) {
-        const char *lib = entry->lib;
-        size_t len = strlen(lib);
-        size_t total_len = sizeof(transcoder_lib_prefix) - 1 + len;
-        char *path;
-        VALUE fn;
+        const char *const lib = entry->lib;
+        const size_t len = strlen(lib);
+        const size_t total_len = sizeof(transcoder_lib_prefix) - 1 + len;
+        const VALUE fn = rb_str_new(0, total_len);
+        char *const path = RSTRING_PTR(fn);
 
         entry->lib = NULL;
 
-        if (len > MAX_TRANSCODER_LIBNAME_LEN)
-            return NULL;
-        fn = rb_str_new(0, total_len);
-        path = RSTRING_PTR(fn);
         memcpy(path, transcoder_lib_prefix, sizeof(transcoder_lib_prefix) - 1);
         memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len);
         rb_str_set_len(fn, total_len);
