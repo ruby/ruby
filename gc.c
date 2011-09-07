@@ -390,6 +390,8 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define global_List		objspace->global_list
 #define ruby_gc_stress		objspace->gc_stress
 
+#define is_lazy_sweeping(objspace) ((objspace)->heap.sweep_slots != 0)
+
 static void rb_objspace_call_finalizer(rb_objspace_t *objspace);
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
@@ -3130,7 +3132,8 @@ id2ref(VALUE obj, VALUE objid)
 	BUILTIN_TYPE(ptr) > T_FIXNUM || BUILTIN_TYPE(ptr) == T_ICLASS) {
 	rb_raise(rb_eRangeError, "%p is not id value", p0);
     }
-    if (BUILTIN_TYPE(ptr) == 0 || RBASIC(ptr)->klass == 0) {
+    if (BUILTIN_TYPE(ptr) == 0 || RBASIC(ptr)->klass == 0 ||
+	(is_lazy_sweeping(objspace) && !(RBASIC(ptr)->flags & FL_MARK))) {
 	rb_raise(rb_eRangeError, "%p is recycled object", p0);
     }
     return (VALUE)ptr;

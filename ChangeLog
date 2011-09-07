@@ -1,3 +1,9 @@
+Thu Sep  8 07:33:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (id2ref): unmarked object is already dead while lazy
+	  sweeping, and to it cannot come back since other objects
+	  referred from it might have been freed already.
+
 Wed Sep  8 03:48:00 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* ext/readline/README.ja:
