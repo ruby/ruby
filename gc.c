@@ -2140,10 +2140,10 @@ static void
 rest_sweep(rb_objspace_t *objspace)
 {
     if (objspace->heap.sweep_slots) {
-       while (objspace->heap.sweep_slots) {
-           lazy_sweep(objspace);
-       }
-       after_gc_sweep(objspace);
+	while (objspace->heap.sweep_slots) {
+	    lazy_sweep(objspace);
+	}
+	after_gc_sweep(objspace);
     }
 }
 
@@ -3086,6 +3086,20 @@ rb_gc(void)
     free_unused_heaps(objspace);
 }
 
+static inline int
+is_dead_object(rb_objspace_t *objspace, VALUE ptr)
+{
+    struct heaps_slot *slot = objspace->heap.sweep_slots;
+    if (!is_lazy_sweeping(objspace) || (RBASIC(ptr)->flags & FL_MARK))
+	return FALSE;
+    while (slot) {
+	if ((VALUE)slot->slot <= ptr && ptr < (VALUE)(slot->slot + slot->limit))
+	    return TRUE;
+	slot = slot->next;
+    }
+    return FALSE;
+}
+
 /*
  *  call-seq:
  *     ObjectSpace._id2ref(object_id) -> an_object
@@ -3133,7 +3147,7 @@ id2ref(VALUE obj, VALUE objid)
 	rb_raise(rb_eRangeError, "%p is not id value", p0);
     }
     if (BUILTIN_TYPE(ptr) == 0 || RBASIC(ptr)->klass == 0 ||
-	(is_lazy_sweeping(objspace) && !(RBASIC(ptr)->flags & FL_MARK))) {
+	is_dead_object(objspace, ptr)) {
 	rb_raise(rb_eRangeError, "%p is recycled object", p0);
     }
     return (VALUE)ptr;

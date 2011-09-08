@@ -1,3 +1,8 @@
+Thu Sep  8 09:02:53 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (id2ref): objects which are unmarked but not in sweep_slots
+	  are not dead.
+
 Thu Sep  8 07:44:25 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (rb_declare_transcoder, load_transcoder_entry): no
