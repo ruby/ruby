@@ -1,4 +1,9 @@
-Thu Sep  9 01:14:00 2011  Ayumu, AIZAWA  <ayumu.aizawa@gmail.com>
+Fri Sep  9 02:02:09 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* template/yarvarch.ja:
+	  Change encoding from Shift-JIS to UTF-8
+
+Thu Sep  9 01:14:00 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* sample/drb/README.rd.ja:
 	* sample/drb/dhasenc.rb:

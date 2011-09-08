@@ -1,17 +1,17 @@
-#title  YARV�A�[�L�e�N�`��
-#set author ���{ Ruby �̉� ��������������
+#title  YARVアーキテクチャ
+#set author 日本 Ruby の会 ささだこういち
 
 
-- 2005-03-03(Thu) 00:31:12 +0900 ���낢��Ə�������
+- 2005-03-03(Thu) 00:31:12 +0900 いろいろと書き直し
 
 ----
 
-* ����́H
+* これは？
 
-[[YARV: Yet Another RubyVM|http://www.atdot.net/yarv]] �� �݌v�����ł��B
+[[YARV: Yet Another RubyVM|http://www.atdot.net/yarv]] の 設計メモです。
 
 
-YARV �́ARuby �v���O�����̂��߂̎��̋@�\��񋟂��܂��B
+YARV は、Ruby プログラムのための次の機能を提供します。
 
 - Compiler
 - VM Generator
@@ -22,72 +22,72 @@ YARV �́ARuby �v���O�����̂��߂̎��̋@�\��񋟂��܂��B
 - (experimental) AOT Compiler
 
 
-���݂� YARV �� Ruby �C���^�v���^�̊g�����C�u�����Ƃ��Ď������Ă��܂��B��
-��ɂ��ARuby �C���^�v���^�̕K�v�ȋ@�\�i�p�[�T�A�I�u�W�F�N�g�Ǘ��A����
-�̊g�����C�u�����j�Ȃǂ��قڂ��̂܂ܗ��p�ł��܂��B
+現在の YARV は Ruby インタプリタの拡張ライブラリとして実装しています。こ
+れにより、Ruby インタプリタの必要な機能（パーサ、オブジェクト管理、既存
+の拡張ライブラリ）などがほぼそのまま利用できます。
 
-�������A�������̃p�b�`�� Ruby �C���^�v���^�ɓ��ĂȂ���΂Ȃ�܂���B
+ただし、いくつかのパッチを Ruby インタプリタに当てなければなりません。
 
-����́ARuby �{�̂̃C���^�v���^�����ieval.c�j��u�������邱�Ƃ�ڎw����
-�J�����p������\��ł��B
+今後は、Ruby 本体のインタプリタ部分（eval.c）を置き換えることを目指して
+開発を継続する予定です。
 
 
 * Compiler (compile.h, compile.c)
 
-�R���p�C���́ARuby �C���^�v���^�̃p�[�T�ɂ���Đ������ꂽ�\���؁iRNode 
-�f�[�^�ɂ��؁j�� YARV ���ߗ�ɕϊ����܂��BYARV ���߂ɂ��Ă͌�q����
-���B
+コンパイラは、Ruby インタプリタのパーサによって生成された構文木（RNode 
+データによる木）を YARV 命令列に変換します。YARV 命令については後述しま
+す。
 
-�Ƃ��ɓ�����Ƃ͂��Ă��܂��񂪁A�X�R�[�v�Ȃǂ̊J�n���Ƀ��[�J���ϐ��̏�
-�����Ȃǂ��s���A���Ƃ͍\���؂�H��ϊ����Ă����܂��B
+とくに難しいことはしていませんが、スコープなどの開始時にローカル変数の初
+期化などを行い、あとは構文木を辿り変換していきます。
 
-�ϊ����� Ruby �� Array �I�u�W�F�N�g�� YARV ���߃I�u�W�F�N�g�A����уI�y
-�����h���i�[���Ă����A�Ō�Ɏ��s�ł���`�ɕϊ����܂��B�R���p�C���ł́A�R
-���p�C�����ɐ������郁�����̈�̊Ǘ������ɂȂ邱�Ƃ�����܂����AYARV 
-�̏ꍇ�ARuby �C���^�v���^�����ׂĖʓ|���݂Ă����̂ł��̕����͔��Ɋy
-�ɍ�邱�Ƃ��ł��܂����i�K�[�x�[�W�R���N�^�ɂ���Ď����I�Ƀ������Ǘ�����
-�Ă���邽�߁j�B
+変換中は Ruby の Array オブジェクトに YARV 命令オブジェクト、およびオペ
+ランドを格納していき、最後に実行できる形に変換します。コンパイラでは、コ
+ンパイル中に生成するメモリ領域の管理が問題になることがありますが、YARV 
+の場合、Ruby インタプリタがすべて面倒をみてくれるのでこの部分は非常に楽
+に作ることができました（ガーベージコレクタによって自動的にメモリ管理をし
+てくれるため）。
 
-YARV ���߂́A���߂��������ʎq�A�I�y�����h�ȂǁA���ׂ� 1 word �i�}�V����
-�\���ł��鎩�R�Ȓl�BC ����ł̓|�C���^�̃T�C�Y�BRuby �C���^�v���^�p���
-�� VALUE �̃T�C�Y�j�ŕ\������܂��B���̂��߁AYARV ���߂͂�����u�o�C�g
-�R�[�h�v�ł͂���܂���B���̂��߁AYARV �̐����Ȃǂł́u���ߗ�v�Ƃ����p
-����g���Ă��܂��B
+YARV 命令は、命令を示す識別子、オペランドなど、すべて 1 word （マシンで
+表現できる自然な値。C 言語ではポインタのサイズ。Ruby インタプリタ用語で
+は VALUE のサイズ）で表現されます。そのため、YARV 命令はいわゆる「バイト
+コード」ではありません。そのため、YARV の説明などでは「命令列」という用
+語を使っています。
 
-1 word �ł��邽�߁A�������̗��p�����͑��������Ȃ�܂����A�A�N�Z�X���x��
-�ǂ��l������ƁA�{��������Ԃ����ƍl���Ă���܂��B���Ƃ��΃I�y�����h���R
-���X�^���g�v�[���Ɋi�[���A�C���f�b�N�X�݂̂��I�y�����h�Ŏ������Ƃ��\��
-�����A�ԐڃA�N�Z�X�ɂȂ��Ă��܂��̂Ő��\�ɉe�����o�邽�߁A�p�����܂����B
+1 word であるため、メモリの利用効率は多少悪くなりますが、アクセス速度な
+どを考慮すると、本方式が一番いいと考えております。たとえばオペランドをコ
+ンスタントプールに格納し、インデックスのみをオペランドで示すことも可能で
+すが、間接アクセスになってしまうので性能に影響が出るため、却下しました。
 
 
 * VM Generator (rb/insns2vm.rb, insns.def)
 
-rb/insns2vm.rb �Ƃ����X�N���v�g�́Ainsns.def �Ƃ����t�@�C����ǂݍ��݁A
-VM �̂��߂ɕK�v�ȃt�@�C���𐶐����܂��B��̓I�ɂ́A���߂����s���镔����
-�������܂����A�ق��ɂ��R���p�C���ɕK�v�ȏ��A�œK���ɕK�v�ȏ��A��A�Z
-���u���A�t�A�Z���u���ɕK�v�ȏ��������t�@�C�����������܂��B
+rb/insns2vm.rb というスクリプトは、insns.def というファイルを読み込み、
+VM のために必要なファイルを生成します。具体的には、命令を実行する部分を
+生成しますが、ほかにもコンパイルに必要な情報、最適化に必要な情報、やアセ
+ンブラ、逆アセンブラに必要な情報を示すファイルも生成します。
 
 
-** ���ߋL�q
+** 命令記述
 
-insns.def �ɂ́A�e���߂��ǂ̂悤�Ȗ��߂ł��邩���L�q���܂��B��̓I�ɂ͎�
-�̏����L�q���܂��B
+insns.def には、各命令がどのような命令であるかを記述します。具体的には次
+の情報を記述します。
 
-- ���߂̖��O
-- ���̖��߂̃J�e�S���A�R�����g�i�p��A���{��j
-- �I�y�����h�̖��O
-- ���̖��ߎ��s�O�ɃX�^�b�N����|�b�v����l
-- ���̖��ߎ��s��ɃX�^�b�N�Ƀv�b�V������l
-- ���̖��߂̃��W�b�N�iC ����ŋL�q�j
+- 命令の名前
+- その命令のカテゴリ、コメント（英語、日本語）
+- オペランドの名前
+- その命令実行前にスタックからポップする値
+- その命令実行後にスタックにプッシュする値
+- その命令のロジック（C 言語で記述）
 
-���Ƃ��΁A�X�^�b�N�� self ������ putself �Ƃ������߂͎��̂悤�ɋL�q����
-���B
+たとえば、スタックに self をおく putself という命令は次のように記述しま
+す。
 
 #code
 /**
   @c put
   @e put self.
-  @j self ��u���B
+  @j self を置く。
  */
 DEFINE_INSN
 putself
@@ -99,36 +99,36 @@ putself
 }
 #end
 
-���̏ꍇ�A�I�y�����h�ƁA�X�^�b�N����|�b�v����l�͖������ƂɂȂ�܂��B��
-�ߏI����Aself ���X�^�b�N�g�b�v�ɒu�������킯�ł����A����� val �Ƃ����A
-�X�^�b�N�Ƀv�b�V������l�Ƃ��Đ錾���Ă������ϐ��ɑ�����Ă������ƂŁA��
-���ϊ�����ƃX�^�b�N�g�b�v�ɒu�� C �v���O��������������܂��B
+この場合、オペランドと、スタックからポップする値は無いことになります。命
+令終了後、self をスタックトップに置きたいわけですが、それは val という、
+スタックにプッシュする値として宣言しておいた変数に代入しておくことで、こ
+れを変換するとスタックトップに置く C プログラムが生成されます。
 
-�ׂ����t�H�[�}�b�g�� insns.def �̖`�����Q�Ƃ��Ă��������B����Ȃɓ��
-�Ȃ��Ǝv���܂��B
+細かいフォーマットは insns.def の冒頭を参照してください。そんなに難しく
+ないと思います。
 
-insnhelper.h �Ƃ����t�@�C���ɁA���߃��W�b�N���L�q���邽�߂ɕK�v�ȃ}�N��
-����`����Ă��܂��B�܂��AVM �̓����\���Ɋւ����`�� vm.h �Ƃ����t�@�C
-���ɂ���܂��B
+insnhelper.h というファイルに、命令ロジックを記述するために必要なマクロ
+が定義されています。また、VM の内部構造に関する定義は vm.h というファイ
+ルにあります。
 
 
 * VM (Virtual Machine, vm.h, vm.c)
 
-VM �́A���ۂɃR���p�C���������ʐ�������� YARV ���ߗ�����s���܂��B�܂�
-�ɁA���̕����� YARV �̃L���ɂȂ�A�����I�ɂ� eval.c ������ VM �Œu������
-�����ƍl���Ă��܂��B
+VM は、実際にコンパイルした結果生成される YARV 命令列を実行します。まさ
+に、この部分が YARV のキモになり、将来的には eval.c をこの VM で置き換え
+たいと考えています。
 
-���݂� Ruby �C���^�v���^�Ŏ��s�ł��邷�ׂĂ̂��Ƃ��A���� VM �Ŏ����ł���
-�悤�ɍ���Ă��܂��i���i�K�ł͂܂����S�ł͂���܂��񂪁A�����Ȃ�ׂ��ł��j�B
+現在の Ruby インタプリタで実行できるすべてのことが、この VM で実現できる
+ように作っています（現段階ではまだ完全ではありませんが、そうなるべきです）。
 
-VM �́A�P���ȃX�^�b�N�}�V���Ƃ��Ď������Ă��܂��B�X���b�h�ЂƂɃX�^�b
-�N�ЂƂ�ێ����܂��B�X�^�b�N�̗̈�̓q�[�v����擾����̂ŁA�_��ȗ̈�
-�ݒ肪�\�ł��B
+VM は、単純なスタックマシンとして実装しています。スレッドひとつにスタッ
+クひとつを保持します。スタックの領域はヒープから取得するので、柔軟な領域
+設定が可能です。
 
 
-** ���W�X�^
+** レジスタ
 
-VM �� 5 �̉��z�I�ȃ��W�X�^�ɂ���Đ��䂳��܂��B
+VM は 5 つの仮想的なレジスタによって制御されます。
 
 - PC (Program Counter)
 - SP (Stack Pointer)
@@ -136,77 +136,77 @@ VM �� 5 �̉��z�I�ȃ��W�X�^�ɂ���Đ��䂳��܂��B
 - LFP (Local Frame Pointer)
 - DFP (Dynamic Frame Pointer)
 
-PC �͌��ݎ��s���̖��ߗ�̈ʒu�������܂��BSP �̓X�^�b�N�g�b�v�̈ʒu������
-�܂��BCFP�ALFP�ADFP �͂��ꂼ��t���[���̏��������܂��B�ڍׂ͌�q���܂��B
+PC は現在実行中の命令列の位置を示します。SP はスタックトップの位置を示し
+ます。CFP、LFP、DFP はそれぞれフレームの情報を示します。詳細は後述します。
 
 
-** �X�^�b�N�t���[��
+** スタックフレーム
 
 obsolete (update soon)
 
 
-** �t���[���f�U�C���ɂ��Ă̕⑫
+** フレームデザインについての補足
 
-Lisp �̏����n�Ȃǂ����񂪂���ƁA�킴�킴�u���b�N���[�J���t���[���ƃ��\
-�b�h���[�J���t���[���̂悤�Ȃ��̂�p�ӂ���̂͊�قɌ����邩������܂���B
-����t���[�����A����q�\���ɂ��āA���[�J���ϐ��̃A�N�Z�X�͂��̓���q���O
-���ɒH��ΕK�����ǂ蒅�����Ƃ��ł��邩��ł��i�܂�Alfp �͕K�v�Ȃ��j�B
+Lisp の処理系などをかんがえると、わざわざブロックローカルフレームとメソ
+ッドローカルフレームのようなものを用意するのは奇異に見えるかもしれません。
+あるフレームを、入れ子構造にして、ローカル変数のアクセスはその入れ子を外
+側に辿れば必ずたどり着くことができるからです（つまり、lfp は必要ない）。
 
-�������ARuby �ł͂������󋵂��Ⴂ�܂��B�܂��A���\�b�h���[�J���ȏ��
-���邱�ƁA��̓I�ɂ̓u���b�N��self�icallee ����݂�� reciever�j�ł��B��
-�̏������ꂼ��̃t���[���ɂ�������͖̂��ʂł��B
+しかし、Ruby ではいくつか状況が違います。まず、メソッドローカルな情報が
+あること、具体的にはブロックとself（callee からみると reciever）です。こ
+の情報をそれぞれのフレームにもたせるのは無駄です。
 
-�܂��ARuby2.0 ����̓u���b�N���[�J���ϐ��͂Ȃ��Ȃ�܂��i�u���b�N���[�J��
-�����͎c��̂ŁA�\�����̂͂��܂�ς��܂���j�B���̂��߁A���\�b�h���[�J
-���ϐ��ւ̃A�N�Z�X���p�����邱�Ƃ��\�z����܂��B
+また、Ruby2.0 からはブロックローカル変数はなくなります（ブロックローカル
+引数は残るので、構造自体はあまり変わりません）。そのため、メソッドローカ
+ル変数へのアクセスが頻発することが予想されます。
 
-���̂Ƃ��A���\�b�h���[�J���ϐ��ւ̃A�N�Z�X�̂��тɃt���[���i�X�R�[�v�j��
-���X�g�����ǂ�͖̂��ʂł���Ɣ��f���A�����I�Ƀ��\�b�h���[�J���X�R�[�v��
-�u���b�N�t���[���𕪗����A�u���b�N�t���[������̓��\�b�h���[�J���t���[��
-�� lfp���W�X�^�ɂ���ėe�ՂɃA�N�Z�X�ł���悤�ɂ��܂����B
-
-
-** ���\�b�h�Ăяo���ɂ���
-
-���\�b�h�Ăяo���́AYARV ���ߗ�ŋL�q���ꂽ���\�b�h���AC �ŋL�q���ꂽ��
-�\�b�h���ɂ���ăf�B�X�p�b�`��@���ς��܂��B
-
-YARV ���ߗ�ł������ꍇ�A��q�����X�^�b�N�t���[�����쐬���Ė��߂��p����
-�܂��B�Ƃ��� VM �̊֐����ċA�Ăяo�����邱�Ƃ͍s�Ȃ��܂���B
-
-C �ŋL�q���ꂽ���\�b�h�������ꍇ�A�P���ɂ��̊֐����Ăяo���܂��i�������A
-�o�b�N�g���[�X�𐳂����������邽�߂Ƀ��\�b�h�Ăяo���̏���t�����Ă���
-�s�Ȃ��܂��j�B
-
-���̂��߁AVM �p�X�^�b�N��ʓr�p�ӂ������̂́A�v���O�����ɂ���Ă̓}�V��
-�X�^�b�N���g���؂��Ă��܂��\��������܂��iC -> Ruby -> C -> ... �Ƃ���
-�Ăяo�����������ꍇ�j�B����́A���݂ł͔������Ȃ��d�l�ƂȂ��Ă��܂��B
+このとき、メソッドローカル変数へのアクセスのたびにフレーム（スコープ）の
+リストをたどるのは無駄であると判断し、明示的にメソッドローカルスコープと
+ブロックフレームを分離し、ブロックフレームからはメソッドローカルフレーム
+が lfpレジスタによって容易にアクセスできるようにしました。
 
 
-** ��O
+** メソッド呼び出しについて
 
-��O�́AJava �� JVM �Ɠ��l�ɗ�O�e�[�u����p�ӂ��邱�ƂŎ������܂��B��O
-������������A���Y�t���[�����A��O�e�[�u�����������܂��B�����ŁA��O����
-�������Ƃ��� PC �̒l�ɍ��v����G���g�����������ꍇ�A���̃G���g���ɏ]����
-���삵�܂��B�����G���g����������Ȃ������ꍇ�A�X�^�b�N���T���߂��Ă܂�
-���l�ɂ��̃X�R�[�v�̗�O�e�[�u�����������܂��B
+メソッド呼び出しは、YARV 命令列で記述されたメソッドか、C で記述されたメ
+ソッドかによってディスパッチ手法が変わります。
 
-�܂��Abreak�Areturn�i�u���b�N���j�Aretry �Ȃǂ����l�̎d�g�݂Ŏ������܂��B
+YARV 命令列であった場合、上述したスタックフレームを作成して命令を継続し
+ます。とくに VM の関数を再帰呼び出すすることは行ないません。
 
-*** ��O�e�[�u��
+C で記述されたメソッドだった場合、単純にその関数を呼び出します（ただし、
+バックトレースを正しく生成するためにメソッド呼び出しの情報を付加してから
+行ないます）。
 
-��O�e�[�u���G���g���͋�̓I�ɂ͎��̏�񂪊i�[����Ă��܂��B
+このため、VM 用スタックを別途用意したものの、プログラムによってはマシン
+スタックを使い切ってしまう可能性があります（C -> Ruby -> C -> ... という
+呼び出しが続いた場合）。これは、現在では避けられない仕様となっています。
 
-- �ΏۂƂ��� PC �͈̔�
-- �ΏۂƂ����O�̎��
-- �����ΏۂƂȂ����Ƃ��ɃW�����v�����i��ނɂ��j
-- �����ΏۂƂȂ����Ƃ��ɋN������u���b�N�� iseq
+
+** 例外
+
+例外は、Java の JVM と同様に例外テーブルを用意することで実現します。例外
+が発生したら、当該フレームを、例外テーブルを検査します。そこで、例外が発
+生したときの PC の値に合致するエントリがあった場合、そのエントリに従って
+動作します。もしエントリが見つからなかった場合、スタックを撒き戻してまた
+同様にそのスコープの例外テーブルを検査します。
+
+また、break、return（ブロック中）、retry なども同様の仕組みで実現します。
+
+*** 例外テーブル
+
+例外テーブルエントリは具体的には次の情報が格納されています。
+
+- 対象とする PC の範囲
+- 対象とする例外の種類
+- もし対象となったときにジャンプする先（種類による）
+- もし対象となったときに起動するブロックの iseq
 
 
 *** rescue
 
-rescue �߂̓u���b�N�Ƃ��Ď������Ă��܂��B$! �̒l��B��̈����Ƃ��Ď�����
-���B
+rescue 節はブロックとして実現しています。$! の値を唯一の引数として持ちま
+す。
 
 #code
 begin
@@ -216,7 +216,7 @@ rescue C
 end
 #end
 
-�́A���̂悤�� Ruby �X�N���v�g�ɕϊ�����܂��B
+は、次のような Ruby スクリプトに変換されます。
 
 #code
 {|err|
@@ -225,7 +225,7 @@ end
   when B === err
   when C === err
   else
-    raise # yarv �̖��߂ł� throw
+    raise # yarv の命令では throw
   end
 }
 #end
@@ -233,32 +233,32 @@ end
 
 *** ensure
 
-����n�i��O���������Ȃ������ꍇ�j�ƈُ�n�i��O�����������Ƃ��Ȃǁj��2
-��ނ̖��ߗ񂪐�������܂��B����n�ł́A�����̘A�������R�[�h�̈�Ƃ��ăR
-���p�C������܂��B�܂��A�ُ�n�ł̓u���b�N�Ƃ��Ď������܂��B�Ō�͕K�� 
-throw ���߂Œ��߂邱�ƂɂȂ�܂��B
+正常系（例外が発生しなかった場合）と異常系（例外が発生したときなど）の2
+種類の命令列が生成されます。正常系では、ただの連続したコード領域としてコ
+ンパイルされます。また、異常系ではブロックとして実装します。最後は必ず 
+throw 命令で締めることになります。
 
 
-*** break, return�i�u���b�N���j�Aretry
+*** break, return（ブロック中）、retry
 
-break ���A�u���b�N���� return ���Aretry ���� throw ���߂Ƃ��ăR���p�C��
-����܂��B�ǂ��܂Ŗ߂邩�́Abreak ���t�b�N�����O�e�[�u���̃G���g������
-�f���܂��B
+break 文、ブロック中の return 文、retry 文は throw 命令としてコンパイル
+されます。どこまで戻るかは、break をフックする例外テーブルのエントリが判
+断します。
 
 
-** �萔�̌���
+** 定数の検索
 
-�萔�Ƃ������O�Ȃ̂ɁARuby �ł̓R���p�C�����Ɍ��肵�܂���B�Ƃ������A��
-�܂ł��Ē�`�\�ɂȂ��Ă��܂��B
+定数という名前なのに、Ruby ではコンパイル時に決定しません。というか、い
+つまでも再定義可能になっています。
 
-�萔�A�N�Z�X�̂��߂�Ruby�L�q�͎��̂悤�ɂȂ�܂��B
+定数アクセスのためのRuby記述は次のようになります。
 
 #code
-Ruby�\��:
+Ruby表現:
 expr::ID::...::ID
 #end
 
-����́Ayarv���߃Z�b�g�ł͎��̂悤�ɂȂ�܂��B
+これは、yarv命令セットでは次のようになります。
 
 #code
 (expr)
@@ -268,161 +268,161 @@ getconstant ID
 #end
 
 
-*** �萔�����p�X
+*** 定数検索パス
 
-���� expr �� nil �������ꍇ�A�萔�����p�X�ɏ]���Ē萔���������܂��B����
-�����͍��� Ruby 2.0 �Ɍ����ĕύX�����ꍇ������܂��B
+もし expr が nil だった場合、定数検索パスに従って定数を検索します。この
+挙動は今後 Ruby 2.0 に向けて変更される場合があります。
 
-+ �N���X�A���W���[���̓��I�l�X�g�֌W�i�v���O�����̎��ʏ�j�����[�g�܂ŒH��
-+ �p���֌W�����[�g�iObject�j�܂ŒH��
++ クラス、モジュールの動的ネスト関係（プログラムの字面上）をルートまで辿る
++ 継承関係をルート（Object）まで辿る
 
-���̂��߁A�N���X�A���W���[���̓��I�l�X�g�֌W��ۑ����Ȃ���΂Ȃ�܂���B
-���̂��߂ɁAthread_object �ɂ� klass_nest_stack �Ƃ������̂�p�ӂ��܂����B
-����́A���݂̃l�X�g�̏���ۑ����܂��B
+このため、クラス、モジュールの動的ネスト関係を保存しなければなりません。
+このために、thread_object には klass_nest_stack というものを用意しました。
+これは、現在のネストの情報を保存します。
 
-���\�b�h��`���A���̌��݂̃l�X�g�������\�b�h��`���Ɂidup���āj������
-���ƂŁA���̃��\�b�h�̎��s���A���̃l�X�g�����Q�Ƃ��邱�Ƃ��\�ɂȂ��
-���B
+メソッド定義時、その現在のネスト情報をメソッド定義時に（dupして）加える
+ことで、そのメソッドの実行時、そのネスト情報を参照することが可能になりま
+す。
 
-�g�b�v���x���ł́A���̏��͂Ȃ����ƂɂȂ�܂��B
+トップレベルでは、その情報はないことになります。
 
-�N���X/���W���[����`�����s���́A���݂̏�񂻂̂��̂��Q�Ƃ��邱�ƂɂȂ�
-�܂��B����́A�N���X�X�R�[�v�˓����A���̏����N���X��`���ɃR�s�[���܂�
-�i���łɃR�s�[����Ă���΁A������s���܂���j�B
+クラス/モジュール定義文実行時は、現在の情報そのものを参照することになり
+ます。これは、クラススコープ突入時、その情報をクラス定義文にコピーします
+（すでにコピーされていれば、これを行いません）。
 
-����ɂ��A���I�ȃl�X�g���𓝈�I�Ɉ������Ƃ��ł��܂��B
+これにより、動的なネスト情報を統一的に扱うことができます。
 
 
-** �œK����@
+** 最適化手法
 
-YARV �ł͍�������ړI�Ƃ��Ă���̂ŁA���܂��܂ȍœK����@�𗘗p���Ă���
-���B�ڍׂ͊������܂����A�ȉ��ɏq�ׂ�œK���Ȃǂ��s�Ȃ��Ă���܂��B
+YARV では高速化を目的としているので、さまざまな最適化手法を利用していま
+す。詳細は割愛しますが、以下に述べる最適化などを行なっております。
 
 
 *** threaded code
 
-GCC �� C ����g���ł���l�Ƃ��Ẵ��x���𗘗p���� direct threaded code 
-���������Ă��܂��B
+GCC の C 言語拡張である値としてのラベルを利用して direct threaded code 
+を実現しています。
 
 
 *** Peephole optimization
 
-�������̊ȒP�ȍœK�������Ă��܂��B
+いくつかの簡単な最適化をしています。
 
 
 *** inline method cache
 
-���ߗ�̒��Ƀ��\�b�h�������ʂ𖄂ߍ��݂܂��B
+命令列の中にメソッド検索結果を埋め込みます。
 
 
 *** inline constant cache
 
-���ߗ�̒��ɒ萔�������ʂ𖄂ߍ��݂܂��B
+命令列の中に定数検索結果を埋め込みます。
 
 
-*** �u���b�N�� Proc �I�u�W�F�N�g�̕���
+*** ブロックと Proc オブジェクトの分離
 
-�u���b�N�t�����\�b�h�Ăяo�����s�Ȃ�ꂽ�Ƃ��ɂ͂����ɂ̓u���b�N�� Proc 
-�I�u�W�F�N�g�Ƃ��Đ������܂���B����ɂ��A�K�v�Ȃ� Proc �I�u�W�F�N�g��
-������}���Ă��܂��B
+ブロック付きメソッド呼び出しが行なわれたときにはすぐにはブロックを Proc 
+オブジェクトとして生成しません。これにより、必要ない Proc オブジェクトの
+生成を抑えています。
 
-Proc ���\�b�h�́A���ۂɕK�v�ɂȂ������_�ō���A���̂Ƃ��Ɋ��i�X�R�[
-�v��Ɋm�ۂ��ꂽ�ϐ��Ȃǁj���q�[�v�ɕۑ����܂��B
-
-
-*** ��������
-
-Fixnum ���m�̉��Z�Ȃǂ𐳒��Ɋ֐��Ăяo���ɂ���čs�Ȃ��ƁA�R�X�g������
-��̂ŁA�����̃v���~�e�B�u�ȑ�����s�Ȃ����߂̃��\�b�h�Ăяo���͐�p��
-�߂�p�ӂ��܂����B
+Proc メソッドは、実際に必要になった時点で作られ、そのときに環境（スコー
+プ上に確保された変数など）をヒープに保存します。
 
 
-*** ���ߗZ��
+*** 特化命令
 
-�����̖��߂� 1 ���߂ɕϊ����܂��B�Z�����߂� opt_insn_unif.def �̋L�q�ɂ�
-�莩���I�ɐ�������܂��B
+Fixnum 同士の加算などを正直に関数呼び出しによって行なうと、コストがかか
+るので、これらのプリミティブな操作を行なうためのメソッド呼び出しは専用命
+令を用意しました。
 
 
-*** �I�y�����h�Z��
+*** 命令融合
 
-�����̃I�y�����h���܂߂����߂𐶐����܂��B�Z�����߂� opt_operand.def ��
-�L�q�ɂ���Ď����I�ɐ�������܂��B
+複数の命令を 1 命令に変換します。融合命令は opt_insn_unif.def の記述によ
+り自動的に生成されます。
+
+
+*** オペランド融合
+
+複数のオペランドを含めた命令を生成します。融合命令は opt_operand.def の
+記述によって自動的に生成されます。
 
 
 *** stack caching
 
-�X�^�b�N�g�b�v�����z���W�X�^�ɕێ�����悤�ɂ��܂��B���݂� 2 �̉��z��
-�W�X�^��z�肵�A5��Ԃ̃X�^�b�N�L���b�V���O���s�Ȃ��܂��B�X�^�b�N�L���b
-�V���O���閽�߂͎����I�ɐ�������܂��B
+スタックトップを仮想レジスタに保持するようにします。現在は 2 個の仮想レ
+ジスタを想定し、5状態のスタックキャッシングを行ないます。スタックキャッ
+シングする命令は自動的に生成されます。
 
 
 *** JIT Compile
 
-�@�B���؂�\�肵�܂��B���Ɏ����I�ȃR�[�h���̂�������Ă���܂���B��
-�Ƃ�ǂ̃v���O�����͓����܂���B
+機械語を切り貼りします。非常に実験的なコードものしか作っておりません。ほ
+とんどのプログラムは動きません。
 
 
 *** AOT Compile
 
-YARV ���ߗ�� C ����ɕϊ����܂��B�܂��\���ȍœK�����s�Ȃ��Ă���܂��񂪁A
-����Ȃ�ɓ����܂��Brb/aotc.rb ���R���p�C���ł��B
+YARV 命令列を C 言語に変換します。まだ十分な最適化を行なえておりませんが、
+それなりに動きます。rb/aotc.rb がコンパイラです。
 
 
 * Assembler (rb/yasm.rb)
 
-YARV ���ߗ�̃A�Z���u����p�ӂ��܂����B�g������ rb/yasm.rb ���Q�Ƃ��Ă�
-�������i�܂��A�Ꭶ���Ă��鐶����@�̂��ׂĂ��T�|�[�g���Ă���킯�ł͂���
-�܂���j�B
+YARV 命令列のアセンブラを用意しました。使い方は rb/yasm.rb を参照してく
+ださい（まだ、例示してある生成手法のすべてをサポートしているわけではあり
+ません）。
 
 
 * Dis-Assembler (disasm.c)
 
-YARV ���ߗ�������I�u�W�F�N�g YARVCore::InstructionSequence �ɂ� disasm 
-���\�b�h������܂��B����́A���ߗ���t�A�Z���u�������������Ԃ��܂��B
+YARV 命令列を示すオブジェクト YARVCore::InstructionSequence には disasm 
+メソッドがあります。これは、命令列を逆アセンブルした文字列を返します。
 
 
-* YARV ���߃Z�b�g
+* YARV 命令セット
 
 <%= d %>
 
-* ���̑�
+* その他
 
-** �e�X�g
+** テスト
 
-test/test_* ���e�X�g�P�[�X�ł��B�ꉞ�A�~�X�Ȃ������͂��ł��B�t�ɂ����ƁA
-���̃e�X�g�ɋL�q����Ă����ł͂�����Ɠ��삷��Ƃ������Ƃł��B
-
-
-** �x���`�}�[�N
-
-benchmark/bm_* �Ƀx���`�}�[�N�v���O�����������Ă���܂��B
+test/test_* がテストケースです。一応、ミスなく動くはずです。逆にいうと、
+このテストに記述されている例ではきちんと動作するということです。
 
 
-** ����̗\��
+** ベンチマーク
 
-�܂��܂����Ȃ���΂����Ȃ����ƁA�������������������񂠂�܂���ł����
-�����Ȃ���΂Ȃ�܂���B��ԑ傫�ȖڕW�� eval.c ��u�������邱�Ƃł��傤
-���B
+benchmark/bm_* にベンチマークプログラムがおいてあります。
+
+
+** 今後の予定
+
+まだまだやらなければいけないこと、未実装部分がたくさんありますんでやって
+いかなければなりません。一番大きな目標は eval.c を置き換えることでしょう
+か。
 
 
 *** Verifier
 
-YARV ���ߗ�́A�~�X�������Ă��������Ă��܂����ߊ댯�ł���\���������
-���B���̂��߁A�X�^�b�N�̗��p��Ԃ�������Ǝ��O�Ɍ��؂���悤�ȃx���t�@�C
-�A��p�ӂ��Ȃ���΂Ȃ�Ȃ��ƍl���Ă��܂��B
+YARV 命令列は、ミスがあっても動かしてしまうため危険である可能性がありま
+す。そのため、スタックの利用状態をきちんと事前に検証するようなベリファイ
+アを用意しなければならないと考えています。
 
 
-*** Compiled File �̍\�z
+*** Compiled File の構想
 
-Ruby �v���O���������̖��߃Z�b�g�ɃV���A���C�Y�����f�[�^�\�����t�@�C����
-�o�͂ł���悤�ɂ������ƍl���Ă��܂��B����𗘗p���Ĉ�x�R���p�C��������
-�ߗ���t�@�C���ɕۑ����Ă����΁A���񃍁[�h���ɂ̓R���p�C���̎�ԁA�R�X�g
-���Ȃ����Ƃ��ł��܂��B
+Ruby プログラムをこの命令セットにシリアライズしたデータ構造をファイルに
+出力できるようにしたいと考えています。これを利用して一度コンパイルした命
+令列をファイルに保存しておけば、次回ロード時にはコンパイルの手間、コスト
+を省くことができます。
 
 
-**** �S�̍\��
+**** 全体構成
 
-���̂悤�ȃt�@�C���\�����l���Ă��܂����A�܂�����ł��B
+次のようなファイル構成を考えていますが、まだ未定です。
 
 #code
 u4 : 4 byte unsigned storage
@@ -450,5 +450,5 @@ CompiledFile{
 }
 #end
 
-Java classfile �̃p�N���B
+Java classfile のパクリ。
 
