@@ -1,3 +1,8 @@
+Thu Sep  8 12:43:18 2011  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (Init_GC): defined GC::Profiler.raw_data. based on the
+	  patch by Eric Hodel. [ruby-core:37857] [Bug #4991]
+
 Thu Sep  8 09:02:53 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (id2ref): objects which are unmarked but not in sweep_slots

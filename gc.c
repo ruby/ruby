@@ -3434,6 +3434,33 @@ gc_malloc_allocations(VALUE self)
 }
 #endif
 
+/*
+ *  call-seq:
+ *     GC::Profiler.raw_data -> [Hash, ...]
+ *
+ *  Returns an Array of individual raw profile data Hashes ordered
+ *  from earliest to latest by <tt>:GC_INVOKE_TIME</tt>.  For example:
+ *
+ *    [{:GC_TIME=>1.3000000000000858e-05,
+ *      :GC_INVOKE_TIME=>0.010634999999999999,
+ *      :HEAP_USE_SIZE=>289640,
+ *      :HEAP_TOTAL_SIZE=>588960,
+ *      :HEAP_TOTAL_OBJECTS=>14724,
+ *      :GC_IS_MARKED=>false},
+ *      ...
+ *    ]
+ *
+ *  The keys mean:
+ *
+ *  +:GC_TIME+:: Time taken for this run in milliseconds
+ *  +:GC_INVOKE_TIME+:: Time the GC was invoked since startup in seconds
+ *  +:HEAP_USE_SIZE+:: Bytes of heap used
+ *  +:HEAP_TOTAL_SIZE+:: Size of heap in bytes
+ *  +:HEAP_TOTAL_OBJECTS+:: Number of objects
+ *  +:GC_IS_MARKED+:: Is the GC in the mark phase
+ *
+ */
+
 static VALUE
 gc_profile_record_get(void)
 {
@@ -3626,6 +3653,7 @@ Init_GC(void)
     rb_mProfiler = rb_define_module_under(rb_mGC, "Profiler");
     rb_define_singleton_method(rb_mProfiler, "enabled?", gc_profile_enable_get, 0);
     rb_define_singleton_method(rb_mProfiler, "enable", gc_profile_enable, 0);
+    rb_define_singleton_method(rb_mProfiler, "raw_data", gc_profile_record_get, 0);
     rb_define_singleton_method(rb_mProfiler, "disable", gc_profile_disable, 0);
     rb_define_singleton_method(rb_mProfiler, "clear", gc_profile_clear, 0);
     rb_define_singleton_method(rb_mProfiler, "result", gc_profile_result, 0);
