@@ -1,3 +1,10 @@
+Thu Sep  9 01:14:00 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* sample/drb/README.rd.ja:
+	* sample/drb/dhasenc.rb:
+	* sample/mine.rb:
+	  Change encoding from EUC-JP to UTF-8
+
 Thu Sep  8 21:03:22 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: import nkf 2.1.2 (be9c280)

@@ -1,59 +1,59 @@
-= ¥µ¥ó¥×¥ë¥¹¥¯¥ê¥×¥È
+= ã‚µãƒ³ãƒ—ãƒ«ã‚¹ã‚¯ãƒªãƒ—ãƒˆ
 
-* Array¤ò¥ê¥â¡¼¥È¤«¤éÍøÍÑ¤·¤Æ¥¤¥Æ¥ì¡¼¥¿¤ò»î¤¹¡£
+* Arrayã‚’ãƒªãƒ¢ãƒ¼ãƒˆã‹ã‚‰åˆ©ç”¨ã—ã¦ã‚¤ãƒ†ãƒ¬ãƒ¼ã‚¿ã‚’è©¦ã™ã€‚
   * darray.rb --- server
   * darrayc.rb --- client
 
-* ´Ê°×¥Á¥ã¥Ã¥È
+* ç°¡æ˜“ãƒãƒ£ãƒƒãƒˆ
   * dchats.rb --- server
   * dchatc.rb --- client
 
-* Ê¬»¶chasen
+* åˆ†æ•£chasen
   * dhasen.rb --- server
   * dhasenc.rb --- client
 
-* ´Ê°×¥í¥°¥µ¡¼¥Ğ
+* ç°¡æ˜“ãƒ­ã‚°ã‚µãƒ¼ãƒ
   * dlogd.rb --- server
   * dlogc.rb --- client
 
-* Queue¥µ¡¼¥Ğ¡£
-  ¥¯¥é¥¤¥¢¥ó¥Èdqin.rb¤ÏQueue¥µ¡¼¥Ğ¤ÎÃÎ¤é¤Ê¤¤¥ª¥Ö¥¸¥§¥¯¥È(DQEntry)¤ò
-  push¤¹¤ë¤¬DRbUnknown¤Ë¤è¤ê¥¯¥é¥¤¥¢¥ó¥Èdqout.rb¤¬pop¤Ç¤­¤ë¡£
+* Queueã‚µãƒ¼ãƒã€‚
+  ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆdqin.rbã¯Queueã‚µãƒ¼ãƒã®çŸ¥ã‚‰ãªã„ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ(DQEntry)ã‚’
+  pushã™ã‚‹ãŒDRbUnknownã«ã‚ˆã‚Šã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆdqout.rbãŒpopã§ãã‚‹ã€‚
   * dqueue.rb --- server
-  * dqin.rb --- client¡£DQEntry¥ª¥Ö¥¸¥§¥¯¥È¤òpush¤¹¤ë
-  * dqout.rb --- client¡£DQEntry¥ª¥Ö¥¸¥§¥¯¥È¤òpop¤¹¤ë
-  * dqlib.rb --- DQEntry¤òÄêµÁ¤·¤¿¥é¥¤¥Ö¥é¥ê
+  * dqin.rb --- clientã€‚DQEntryã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’pushã™ã‚‹
+  * dqout.rb --- clientã€‚DQEntryã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’popã™ã‚‹
+  * dqlib.rb --- DQEntryã‚’å®šç¾©ã—ãŸãƒ©ã‚¤ãƒ–ãƒ©ãƒª
 
-* Ì¾Á°¤Ë¤è¤ë»²¾È
-  IdConv¤ò¥«¥¹¥¿¥Ş¥¤¥º¤·¤Æid¤Ç¤Ê¤¯Ì¾Á°¤Ç»²¾È¤¹¤ëÎã
+* åå‰ã«ã‚ˆã‚‹å‚ç…§
+  IdConvã‚’ã‚«ã‚¹ã‚¿ãƒã‚¤ã‚ºã—ã¦idã§ãªãåå‰ã§å‚ç…§ã™ã‚‹ä¾‹
   * name.rb --- server
   * namec.rb --- client
 
-* extserv¤Î¥µ¥ó¥×¥ë
+* extservã®ã‚µãƒ³ãƒ—ãƒ«
   * extserv_test.rb
 
-* TimerIdConv¤Î»ÈÍÑÎã
-  * holders.rb --- server¡£ruby -d hodlers.rb¤È¤¹¤ë¤ÈTimerIdConv¤ò»ÈÍÑ¤¹¤ë¡£
+* TimerIdConvã®ä½¿ç”¨ä¾‹
+  * holders.rb --- serverã€‚ruby -d hodlers.rbã¨ã™ã‚‹ã¨TimerIdConvã‚’ä½¿ç”¨ã™ã‚‹ã€‚
   * holderc.rb --- client
 
-* rinda.rb¤Î»ÈÍÑÎã
-  * rinda_ts.rb --- TupleSpace¥µ¡¼¥Ğ¡£
-  * rindac.rb --- TupleSpace¤Îclient¤Ç¥¢¥×¥ê¥±¡¼¥·¥ç¥ó¤Îclient
-  * rindas.rb --- TupleSpace¤Îclient¤Ç¥¢¥×¥ê¥±¡¼¥·¥ç¥ó¤Îserver
+* rinda.rbã®ä½¿ç”¨ä¾‹
+  * rinda_ts.rb --- TupleSpaceã‚µãƒ¼ãƒã€‚
+  * rindac.rb --- TupleSpaceã®clientã§ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã®client
+  * rindas.rb --- TupleSpaceã®clientã§ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã®server
 
-* observer¤Î»ÈÍÑÎã
+* observerã®ä½¿ç”¨ä¾‹
   cdbiff - ((<URI:http://namazu.org/~satoru/cdbiff/>))
   * dbiff.rb --- dcdbiff server
   * dcdbiff.rb --- dcdbiff client
 
-* drbssl¤Î»ÈÍÑÎã
+* drbsslã®ä½¿ç”¨ä¾‹
   * drbssl_s.rb
   * drbssl_c.rb
 
-* DRbProtocl¤ÎÄÉ²ÃÎã
+* DRbProtoclã®è¿½åŠ ä¾‹
   * http0.rb
   * http0serv.rb
 
-* ring¤Î»ÈÍÑÎã
+* ringã®ä½¿ç”¨ä¾‹
   * ring_place.rb
   * ring_echo.rb
