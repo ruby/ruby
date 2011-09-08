@@ -20,11 +20,11 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  */
-#define NKF_VERSION "2.1.1"
-#define NKF_RELEASE_DATE "2011-03-25"
+#define NKF_VERSION "2.1.2"
+#define NKF_RELEASE_DATE "2011-09-08"
 #define COPY_RIGHT \
     "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa).\n" \
-    "Copyright (C) 1996-2010, The nkf Project."
+    "Copyright (C) 1996-2011, The nkf Project."
 
 #include "config.h"
 #include "nkf.h"

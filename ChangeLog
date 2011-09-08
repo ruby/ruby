@@ -1,3 +1,8 @@
+Thu Sep  8 21:03:22 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: import nkf 2.1.2 (be9c280)
+	  Bump version number/release date only.
+
 Thu Sep  8 12:43:18 2011  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (Init_GC): defined GC::Profiler.raw_data. based on the
@@ -66,7 +71,7 @@ Tue Sep  6 21:13:47 2011  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* win32/Makefile.sub (INSNS): change command line option -Ks to -Ku
 	  for generate *.inc. because insns.def encoding has been changed SJIS
-	  to UTF-8. if $BASERUBY is 1.9, -Ks cause an error. [Feature #5128] 
+	  to UTF-8. if $BASERUBY is 1.9, -Ks cause an error. [Feature #5128]
 	  (same as r33194)
 
 Tue Sep  6 15:55:24 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
