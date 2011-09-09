@@ -3498,7 +3498,7 @@ bv_decls	: bvar
 		    /*%c%*/
 		    /*%c
 		    {
-			rb_ary_push($$, $3);
+			rb_ary_push($1, $3);
 		    }
 		    %*/
 		;

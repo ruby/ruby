@@ -1,3 +1,9 @@
+Sat Sep 10 08:25:47 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (bv_decls): parse.y relies on $$ = $1 before action
+	  routines.  a patch from Michael Edgar.  [Bug #5303]
+	  [ruby-core:39429]
+
 Sat Sep 10 01:37:55 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* sample/drb/dhasenc.rb: coding cookie of Emacs is coding,
