@@ -29,6 +29,14 @@ with all sufficient information, see the ChangeLog file.
       * Time#to_s returned encoding defaults to US-ASCII but automatically
         transcodes to Encoding.default_internal if it is set.
 
+* net/imap
+  * new methods:
+    * Net::IMAP.default_port
+    * Net::IMAP.default_imap_port
+    * Net::IMAP.default_tls_port
+    * Net::IMAP.default_ssl_port
+    * Net::IMAP.default_imaps_port
+
 === Language changes
 === Compatibility issues (excluding feature bug fixes)
 
