@@ -23,6 +23,17 @@ class TestOldThreadSelect < Test::Unit::TestCase
     end
   end
 
+  def test_old_select_error_timeout
+    bug5299 = '[ruby-core:39380]'
+    with_pipe do |r, w|
+      t0 = Time.now
+      rc = IO.old_thread_select(nil, nil, [r.fileno], 0.001)
+      diff = Time.now - t0
+      assert_equal 0, rc, bug5299
+      assert_operator diff, :>=, 0.001, "returned too early"
+    end
+  end
+
   def test_old_select_read_write_check
     with_pipe do |r, w|
       w.syswrite('.')
@@ -63,7 +74,7 @@ class TestOldThreadSelect < Test::Unit::TestCase
     assert_equal 0, rc
     assert_equal true, thr.value
     assert_not_equal false, received, "SIGINT not received"
-    ensure
-      trap(:INT, "DEFAULT")
+  ensure
+    trap(:INT, "DEFAULT")
   end
 end

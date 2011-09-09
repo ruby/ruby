@@ -1,3 +1,8 @@
+Fri Sep  9 10:22:03 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_select): fix a typo to initialize efds
+	  properly.  [Bug #5299] [ruby-core:39380]
+
 Fri Sep  9 02:02:09 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* template/yarvarch.ja:

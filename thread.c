@@ -2704,7 +2704,7 @@ rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
     }
     if (except) {
 	efds = &fdsets[2];
-	rb_fd_init(wfds);
+	rb_fd_init(efds);
 	rb_fd_copy(efds, except, max);
     }
 
