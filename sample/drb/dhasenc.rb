@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
 =begin
  distributed Ruby --- dRuby Sample Client -- chasen client
  	Copyright (c) 1999-2001 Masatoshi SEKI

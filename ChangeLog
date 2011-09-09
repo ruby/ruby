@@ -1,3 +1,10 @@
+Sat Sep 10 01:37:55 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* sample/drb/dhasenc.rb: coding cookie of Emacs is coding,
+	  not encoding.
+
+	* sample/mine.rb: ditto.
+
 Fri Sep  9 21:56:40 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_abs): Fix comment.
