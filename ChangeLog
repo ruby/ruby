@@ -1,3 +1,8 @@
+Fri Sep  9 16:02:04 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* insns.def (concatstrings): don't use initial ASCII-8BIT string.
+	  [ruby-core:38635] [Bug #5126]
+
 Thu Sep  8 21:17:36 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: import nkf 2.1.2 (be9c280)

@@ -392,9 +392,9 @@ concatstrings
 (...)
 (VALUE val) // inc += 1 - num;
 {
-    rb_num_t i = num;
+    rb_num_t i = num - 1;
 
-    val = rb_str_new(0, 0);
+    val = rb_str_resurrect(TOPN(i));
     while (i-- > 0) {
 	const VALUE v = TOPN(i);
 	rb_str_append(val, v);
