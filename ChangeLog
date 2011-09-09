@@ -1,3 +1,9 @@
+Sat Sep 10 08:30:03 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (GC_PROFILE_MORE_DETAIL, CALC_EXACT_MALLOC_SIZE):
+	  define macros only if they are not defined.
+	  fixes: [Ruby 1.9 - Feature #5291]
+
 Sat Sep 10 08:25:47 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (bv_decls): parse.y relies on $$ = $1 before action

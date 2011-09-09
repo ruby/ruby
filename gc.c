@@ -93,7 +93,10 @@ static unsigned int initial_free_min       = FREE_MIN;
 int ruby_gc_debug_indent = 0;
 
 /* for GC profile */
+#ifndef GC_PROFILE_MORE_DETAIL
 #define GC_PROFILE_MORE_DETAIL 0
+#endif
+
 typedef struct gc_profile_record {
     double gc_time;
     double gc_mark_time;
@@ -309,7 +312,9 @@ struct gc_list {
     struct gc_list *next;
 };
 
+#ifndef CALC_EXACT_MALLOC_SIZE
 #define CALC_EXACT_MALLOC_SIZE 0
+#endif
 
 typedef struct rb_objspace {
     struct {
