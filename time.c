@@ -4468,8 +4468,8 @@ strftimev(const char *fmt, VALUE time, rb_encoding *enc)
  *  This method is similar to strftime() function defined in ISO C and POSIX.
  *  Several directives (%a, %A, %b, %B, %c, %p, %r, %x, %X, %E*, %O* and %Z)
  *  are locale dependent in the function.
- *  However this method is almost locale independent since Ruby 1.9.
- *  (%Z is only the locale dependent directive.)
+ *  However this method is locale independent since Ruby 1.9.
+ *  (%Z is platform dependent, though.)
  *  So, the result may differ even if a same format string is used in other
  *  systems such as C.
  *  It is good practice to avoid %x and %X because there are corresponding
