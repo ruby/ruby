@@ -1,3 +1,9 @@
+Fri Sep  9 21:56:40 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_abs): Fix comment.
+	  BigDecimal#sqrt requires argument. Reported by Makoto Kishimoto.
+	  Thanks for your contribution. [Bug #5267] [ruby-dev:44452]
+
 Fri Sep  9 11:00:55 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* test/rubygems/test_gem_commands_help_command.rb: Add one

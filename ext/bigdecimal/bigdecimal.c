@@ -1439,7 +1439,7 @@ BigDecimal_abs(VALUE self)
  *
  * Returns the square root of the value.
  *
- * If n is specified, returns at least that many significant digits.
+ * Result has at least n significant digits.
  */
 static VALUE
 BigDecimal_sqrt(VALUE self, VALUE nFig)
