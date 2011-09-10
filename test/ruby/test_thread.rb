@@ -237,16 +237,13 @@ class TestThread < Test::Unit::TestCase
     assert_equal(-1, t1.priority)
     assert_equal(-3, t2.priority)
     sleep 0.5
-
-    r1 = r2 = 0
     5.times do
-      c1 > c2 ? r1+=1 : r2+=1
-      c1 = c2 = 0
+      break if c1 > c2
       sleep 0.1
     end
     t1.kill
     t2.kill
-    assert_operator(r1, :>, r2, "[ruby-dev:33124]") # not guaranteed
+    assert_operator(c1, :>, c2, "[ruby-dev:33124]") # not guaranteed
   end
 
   def test_new

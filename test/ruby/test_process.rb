@@ -1236,7 +1236,6 @@ class TestProcess < Test::Unit::TestCase
   end if File.executable?("/bin/sh")
 
   def test_too_long_path
-    GC.start
     bug4314 = '[ruby-core:34842]'
     exs = [Errno::ENOENT]
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
@@ -1244,7 +1243,6 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_too_long_path2
-    GC.start
     bug4315 = '[ruby-core:34833]'
     exs = [Errno::ENOENT]
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
