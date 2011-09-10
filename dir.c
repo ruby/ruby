@@ -1779,7 +1779,7 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
  *                          More than two literals may be specified.
  *                          Equivalent to pattern alternation in
  *                          regexp.
- *  <code>\</code>::        Escapes the next metacharacter.
+ *  <code> \ </code>::      Escapes the next metacharacter.
  *                          Note that this means you cannot use backslash in windows
  *                          as part of a glob, i.e. Dir["c:\\foo*"] will not work
  *                          use Dir["c:/foo*"] instead
@@ -1923,7 +1923,7 @@ dir_entries(int argc, VALUE *argv, VALUE io)
  *                          Behaves exactly like character sets in
  *                          Regexp, including set negation
  *                          (<code>[^a-z]</code>).
- *  <code>\</code>::        Escapes the next metacharacter.
+ *  <code> \ </code>::      Escapes the next metacharacter.
  *
  *  <i>flags</i> is a bitwise OR of the <code>FNM_xxx</code>
  *  parameters. The same glob pattern and flags are used by

@@ -1,3 +1,9 @@
+Sat Sep 10 13:38:20 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* dir.c (dir_s_aref):
+	* dir.c (dir_entries): Two small documentation fixes.
+	  A patch from Aaron Lerch. [Bug #5302] [ruby-core:39404]
+
 Sat Sep 10 08:30:03 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (GC_PROFILE_MORE_DETAIL, CALC_EXACT_MALLOC_SIZE):
