@@ -138,7 +138,7 @@ class Matrix
   #          -1 66
   #
   def Matrix.[](*rows)
-    Matrix.rows(rows, false)
+    rows(rows, false)
   end
 
   #
@@ -168,7 +168,7 @@ class Matrix
   #          93 66
   #
   def Matrix.columns(columns)
-    Matrix.rows(columns, false).transpose
+    rows(columns, false).transpose
   end
 
   #
@@ -220,7 +220,7 @@ class Matrix
   #        0 5
   #
   def Matrix.scalar(n, value)
-    Matrix.diagonal(*Array.new(n, value))
+    diagonal(*Array.new(n, value))
   end
 
   #
@@ -230,7 +230,7 @@ class Matrix
   #        0 1
   #
   def Matrix.identity(n)
-    Matrix.scalar(n, 1)
+    scalar(n, 1)
   end
   class << Matrix
     alias unit identity
@@ -304,7 +304,7 @@ class Matrix
   end
 
   def new_matrix(rows, column_size = rows[0].size) # :nodoc:
-    Matrix.send(:new, rows, column_size) # bypass privacy of Matrix.new
+    self.class.send(:new, rows, column_size) # bypass privacy of Matrix.new
   end
   private :new_matrix
 
@@ -808,7 +808,7 @@ class Matrix
       }
       return new_matrix rows, column_size
     when Vector
-      m = Matrix.column_vector(m)
+      m = self.class.column_vector(m)
       r = self * m
       return r.column(0)
     when Matrix
@@ -838,7 +838,7 @@ class Matrix
     when Numeric
       Matrix.Raise ErrOperationNotDefined, "+", self.class, m.class
     when Vector
-      m = Matrix.column_vector(m)
+      m = self.class.column_vector(m)
     when Matrix
     else
       return apply_through_coercion(m, __method__)
@@ -865,7 +865,7 @@ class Matrix
     when Numeric
       Matrix.Raise ErrOperationNotDefined, "-", self.class, m.class
     when Vector
-      m = Matrix.column_vector(m)
+      m = self.class.column_vector(m)
     when Matrix
     else
       return apply_through_coercion(m, __method__)
@@ -909,7 +909,7 @@ class Matrix
   #
   def inverse
     Matrix.Raise ErrDimensionMismatch unless square?
-    Matrix.I(row_size).send(:inverse_from, self)
+    self.class.I(row_size).send(:inverse_from, self)
   end
   alias inv inverse
 
@@ -973,7 +973,7 @@ class Matrix
       x = self
       if other <= 0
         x = self.inverse
-        return Matrix.identity(self.column_size) if other == 0
+        return self.class.identity(self.column_size) if other == 0
         other = -other
       end
       z = nil
@@ -984,7 +984,7 @@ class Matrix
       end
     when Numeric
       v, d, v_inv = eigensystem
-      v * Matrix.diagonal(*d.each(:diagonal).map{|e| e ** other}) * v_inv
+      v * self.class.diagonal(*d.each(:diagonal).map{|e| e ** other}) * v_inv
     else
       Matrix.Raise ErrOperationNotDefined, "**", self.class, other.class
     end
@@ -1168,7 +1168,7 @@ class Matrix
   #        2 4 6
   #
   def transpose
-    return Matrix.empty(column_size, 0) if row_size.zero?
+    return self.class.empty(column_size, 0) if row_size.zero?
     new_matrix @rows.transpose, row_size
   end
   alias t transpose
@@ -1330,9 +1330,9 @@ class Matrix
   #
   def to_s
     if empty?
-      "Matrix.empty(#{row_size}, #{column_size})"
+      "#{self.class}.empty(#{row_size}, #{column_size})"
     else
-      "Matrix[" + @rows.collect{|row|
+      "#{self.class}[" + @rows.collect{|row|
         "[" + row.collect{|e| e.to_s}.join(", ") + "]"
       }.join(", ")+"]"
     end
@@ -1343,9 +1343,9 @@ class Matrix
   #
   def inspect
     if empty?
-      "Matrix.empty(#{row_size}, #{column_size})"
+      "#{self.class}.empty(#{row_size}, #{column_size})"
     else
-      "Matrix#{@rows.inspect}"
+      "#{self.class}#{@rows.inspect}"
     end
   end
 
@@ -1654,7 +1654,7 @@ class Vector
   # Return a copy of the vector.
   #
   def clone
-    Vector.elements(@elements)
+    self.class.elements(@elements)
   end
 
   #
@@ -1675,7 +1675,7 @@ class Vector
     case x
     when Numeric
       els = @elements.collect{|e| e * x}
-      Vector.elements(els, false)
+      self.class.elements(els, false)
     when Matrix
       Matrix.column_vector(self) * x
     when Vector
@@ -1695,7 +1695,7 @@ class Vector
       els = collect2(v) {|v1, v2|
         v1 + v2
       }
-      Vector.elements(els, false)
+      self.class.elements(els, false)
     when Matrix
       Matrix.column_vector(self) + v
     else
@@ -1713,7 +1713,7 @@ class Vector
       els = collect2(v) {|v1, v2|
         v1 - v2
       }
-      Vector.elements(els, false)
+      self.class.elements(els, false)
     when Matrix
       Matrix.column_vector(self) - v
     else
@@ -1728,7 +1728,7 @@ class Vector
     case x
     when Numeric
       els = @elements.collect{|e| e / x}
-      Vector.elements(els, false)
+      self.class.elements(els, false)
     when Matrix, Vector
       Vector.Raise ErrOperationNotDefined, "/", self.class, x.class
     else
@@ -1760,7 +1760,7 @@ class Vector
   def collect(&block) # :yield: e
     return to_enum(:collect) unless block_given?
     els = @elements.collect(&block)
-    Vector.elements(els, false)
+    self.class.elements(els, false)
   end
   alias map collect
 
@@ -1780,7 +1780,7 @@ class Vector
   def map2(v, &block) # :yield: e1, e2
     return to_enum(:map2, v) unless block_given?
     els = collect2(v, &block)
-    Vector.elements(els, false)
+    self.class.elements(els, false)
   end
 
   class ZeroVectorError < StandardError
