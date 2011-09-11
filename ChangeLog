@@ -1,3 +1,10 @@
+Tue Sep  6 13:15:44 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (load_encoding): predefined encoding names are safe.
+	  [ruby-dev:44469] [Bug #5279]
+
+	* transcode.c (load_transcoder_entry): ditto.
+
 Fri Sep  9 16:02:04 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* insns.def (concatstrings): don't use initial ASCII-8BIT string.
