@@ -1,3 +1,8 @@
+Mon Sep 12 20:47:52 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_select): fix a typo to initialize efds
+	  properly.  [Bug #5299] [ruby-core:39380]
+
 Mon Sep 12 20:41:20 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_thread_select): fix to ignore an argument
