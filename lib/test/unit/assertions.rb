@@ -274,7 +274,7 @@ EOT
           else
             (argsstr = mu_pp(args)).sub!(/\A\[(.*)\]\z/m, '\1')
           end
-          "Expected #{mu_pp(recv)}.#{msg}#{argsstr} to return false"
+          "Expected #{mu_pp(recv)}.#{msg}#{argsstr} to return true"
         }
         assert recv.__send__(msg, *args), m
       end
