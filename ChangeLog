@@ -1,3 +1,8 @@
+Tue Sep 13 05:37:15 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (Init_IO): update BINARY comment.  it should not change the
+	  encoding of the result to ASCII-8BIT.  [ruby-talk:387719]
+
 Mon Sep 12 19:55:00 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_thread_select): fix to ignore an argument

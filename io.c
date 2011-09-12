@@ -10792,7 +10792,7 @@ Init_IO(void)
 #ifndef O_BINARY
 # define  O_BINARY 0
 #endif
-    /* disable line code conversion and make ASCII-8BIT */
+    /* disable line code conversion */
     rb_file_const("BINARY", INT2FIX(O_BINARY));
 #ifdef O_SYNC
     rb_file_const("SYNC", INT2FIX(O_SYNC));
