@@ -1,3 +1,8 @@
+Mon Sep 12 12:40:44 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (assert_send): make arguments in
+	  the default message clearer.
+
 Sun Sep 11 05:23:14 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Deal with subclasses of Matrix [redmine #5307]

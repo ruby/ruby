@@ -253,6 +253,58 @@ EOT
         super if !caller[0].rindex(MiniTest::MINI_DIR, 0) || !obj.respond_to?(meth)
       end
 
+      # :call-seq:
+      #   assert_send( +send_array+, failure_message = nil )
+      #
+      # Passes if the method send returns a true value.
+      #
+      # +send_array+ is composed of:
+      # * A receiver
+      # * A method
+      # * Arguments to the method
+      #
+      # Example:
+      #   assert_send([[1, 2], :member?, 1]) # -> pass
+      #   assert_send([[1, 2], :member?, 4]) # -> fail
+      def assert_send send_ary, m = nil
+        recv, msg, *args = send_ary
+        m = message(m) {
+          if args.empty?
+            argsstr = ""
+          else
+            (argsstr = mu_pp(args)).sub!(/\A\[(.*)\]\z/m, '\1')
+          end
+          "Expected #{mu_pp(recv)}.#{msg}#{argsstr} to return false"
+        }
+        assert recv.__send__(msg, *args), m
+      end
+
+      # :call-seq:
+      #   assert_not_send( +send_array+, failure_message = nil )
+      #
+      # Passes if the method send doesn't return a true value.
+      #
+      # +send_array+ is composed of:
+      # * A receiver
+      # * A method
+      # * Arguments to the method
+      #
+      # Example:
+      #   assert_not_send([[1, 2], :member?, 1]) # -> fail
+      #   assert_not_send([[1, 2], :member?, 4]) # -> pass
+      def assert_not_send send_ary, m = nil
+        recv, msg, *args = send_ary
+        m = message(m) {
+          if args.empty?
+            argsstr = ""
+          else
+            (argsstr = mu_pp(args)).sub!(/\A\[(.*)\]\z/m, '\1')
+          end
+          "Expected #{mu_pp(recv)}.#{msg}#{argsstr} to return false"
+        }
+        assert !recv.__send__(msg, *args), m
+      end
+
       ms = instance_methods(true).map {|sym| sym.to_s }
       ms.grep(/\Arefute_/) do |m|
         mname = ('assert_not_' << m.to_s[/.*?_(.*)/, 1])
