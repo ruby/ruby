@@ -25,6 +25,18 @@ static fd_set * array2fdset(fd_set *fds, VALUE ary, int *max)
     return fds;
 }
 
+static void fdset2array(VALUE dst, fd_set *fds, int max)
+{
+    int i;
+
+    rb_ary_clear(dst);
+
+    for (i = 0; i < max; i++) {
+	if (FD_ISSET(i, fds))
+	    rb_ary_push(dst, INT2NUM(i));
+    }
+}
+
 static VALUE
 old_thread_select(VALUE klass, VALUE r, VALUE w, VALUE e, VALUE timeout)
 {
@@ -45,6 +57,13 @@ old_thread_select(VALUE klass, VALUE r, VALUE w, VALUE e, VALUE timeout)
     rc = rb_thread_select(max, rp, wp, ep, tvp);
     if (rc == -1)
 	rb_sys_fail("rb_wait_for_single_fd");
+
+    if (rp)
+	fdset2array(r, &rfds, max);
+    if (wp)
+	fdset2array(w, &wfds, max);
+    if (ep)
+	fdset2array(e, &efds, max);
     return INT2NUM(rc);
 }
 
