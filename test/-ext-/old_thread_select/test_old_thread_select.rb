@@ -34,6 +34,20 @@ class TestOldThreadSelect < Test::Unit::TestCase
     end
   end
 
+  def test_old_select_false_positive
+    bug5306 = '[ruby-core:39435]'
+    with_pipe do |r2, w2|
+      with_pipe do |r, w|
+        t0 = Time.now
+        w.syswrite '.'
+        rfds = [ r.fileno, r2.fileno ]
+        rc = IO.old_thread_select(rfds, nil, nil, nil)
+        assert_equal [ r.fileno ], rfds, bug5306
+        assert_equal 1, rc, bug5306
+      end
+    end
+  end
+
   def test_old_select_read_write_check
     with_pipe do |r, w|
       w.syswrite('.')

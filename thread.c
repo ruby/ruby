@@ -2395,6 +2395,17 @@ rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
     memcpy(dst->fdset, src, size);
 }
 
+static void
+rb_fd_rcopy(fd_set *dst, rb_fdset_t *src)
+{
+    size_t size = howmany(rb_fd_max(src), NFDBITS) * sizeof(fd_mask);
+
+    if (size > sizeof(fd_set)) {
+	rb_raise(rb_eArgError, "too large fdsets");
+    }
+    memcpy(dst, rb_fd_ptr(src), sizeof(fd_set));
+}
+
 void
 rb_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src)
 {
@@ -2453,6 +2464,19 @@ rb_fd_init_copy(rb_fdset_t *dst, rb_fdset_t *src)
     rb_fd_dup(dst, src);
 }
 
+static void
+rb_fd_rcopy(fd_set *dst, rb_fdset_t *src)
+{
+    int max = rb_fd_max(src);
+
+    if (max > FD_SETSIZE) {
+	rb_raise(rb_eArgError, "too large fdsets");
+    }
+
+    memcpy(dst->fd_array, src->fdset->fd_array, max);
+    dst->fd_count = max;
+}
+
 void
 rb_fd_term(rb_fdset_t *set)
 {
@@ -2489,6 +2513,8 @@ rb_fd_set(int fd, rb_fdset_t *set)
 #define FD_CLR(i, f)	rb_fd_clr((i), (f))
 #define FD_ISSET(i, f)	rb_fd_isset((i), (f))
 
+#else
+#define rb_fd_rcopy(d, s) (*(d) = *(s))
 #endif
 
 #if defined(__CYGWIN__)
@@ -2710,12 +2736,18 @@ rb_thread_select(int max, fd_set * read, fd_set * write, fd_set * except,
 
     retval = rb_thread_fd_select(max, rfds, wfds, efds, timeout);
 
-    if (rfds)
+    if (rfds) {
+	rb_fd_rcopy(read, rfds);
 	rb_fd_term(rfds);
-    if (wfds)
+    }
+    if (wfds) {
+	rb_fd_rcopy(write, wfds);
 	rb_fd_term(wfds);
-    if (efds)
+    }
+    if (efds) {
+	rb_fd_rcopy(except, efds);
 	rb_fd_term(efds);
+    }
 
     return retval;
 }

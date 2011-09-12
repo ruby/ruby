@@ -1,3 +1,19 @@
+Mon Sep 12 19:55:00 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_select): fix to ignore an argument
+	  modification of rb_thread_fd_select().
+	  based on a patch by Eric Wong. [Bug #5306] [ruby-core:39435]
+	* thread.c (rb_fd_rcopy): New. for reverse fd copy.
+
+	* test/-ext-/old_thread_select/test_old_thread_select.rb
+	(test_old_select_false_positive): test for bug5306.
+
+	* ext/-test-/old_thread_select/old_thread_select.c (fdset2array):
+	  New. convert fdsets to array.
+	* ext/-test-/old_thread_select/old_thread_select.c (old_thread_select):
+	  return 'read', 'write', 'except' argument of rb_thread_select()
+	  to ruby script.
+
 Mon Sep 12 13:38:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README.EXT, README.EXT.ja (2.2.2), parse.y (rb_check_id): add
