@@ -10112,6 +10112,17 @@ rb_is_junk_id(ID id)
     return is_junk_id(id);
 }
 
+/**
+ * Returns ID for the given name if it is interned already, or 0.
+ *
+ * \param namep   the pointer to the name object
+ * \return        the ID for *namep
+ * \pre           the object referred by \p namep must be a Symbol or
+ *                a String, or possible to convert with to_str method.
+ * \post          the object referred by \p namep is a Symbol or a
+ *                String if non-zero value is returned, or is a String
+ *                if 0 is returned.
+ */
 ID
 rb_check_id(volatile VALUE *namep)
 {

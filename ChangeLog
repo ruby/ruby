@@ -1,3 +1,8 @@
+Mon Sep 12 13:38:12 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README.EXT, README.EXT.ja (2.2.2), parse.y (rb_check_id): add
+	  documents for rb_check_id().
+
 Mon Sep 12 12:53:39 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rake/file_list.rb (Rake::FileList#egrep): there is no need to

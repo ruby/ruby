@@ -442,11 +442,19 @@ or
 You can get the ID value from a string within C code by using
 
   rb_intern(const char *name)
+  rb_intern_str(VALUE name)
 
 You can retrieve ID from Ruby object (Symbol or String) given as an
 argument by using
 
   rb_to_id(VALUE symbol)
+  rb_check_id(volatile VALUE *name)
+
+These functions try to convert the argument to a String if it was not
+a Symbol nor a String.  The latter function stores the converted
+result into *name, and returns 0 if the string is not a known symbol.
+After this function returned a non-zero value, *name is always a
+Symbol or a String, otherwise it is a String if the result is 0.
 
 You can convert C ID to Ruby Symbol by using
 
