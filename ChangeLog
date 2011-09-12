@@ -1,3 +1,9 @@
+Mon Sep 12 12:53:39 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/rake/file_list.rb (Rake::FileList#egrep): there is no need to
+	  open files in binary mode.
+	  see more details in https://github.com/jimweirich/rake/issues/74
+
 Mon Sep 12 12:42:36 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_exception.rb (TestException#test_exit_success_p):
