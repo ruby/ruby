@@ -296,13 +296,25 @@ end.join
       exit
     rescue SystemExit => e
     end
-    assert(e.success?)
+    assert_send([e, :success?], "success by default")
+
+    begin
+      exit(true)
+    rescue SystemExit => e
+    end
+    assert_send([e, :success?], "true means success")
+
+    begin
+      exit(false)
+    rescue SystemExit => e
+    end
+    assert_not_send([e, :success?], "false means failure")
 
     begin
       abort
     rescue SystemExit => e
     end
-    assert(!e.success?)
+    assert_not_send([e, :success?], "abort means failure")
   end
 
   def test_nomethoderror

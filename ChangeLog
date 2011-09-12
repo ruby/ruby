@@ -1,4 +1,7 @@
-Mon Sep 12 12:40:44 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Sep 12 12:42:36 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_exception.rb (TestException#test_exit_success_p):
+	  assert also the cases when exiting with true and false.
 
 	* lib/test/unit/assertions.rb (assert_send): make arguments in
 	  the default message clearer.
