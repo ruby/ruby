@@ -116,10 +116,8 @@ class PStoreTest < Test::Unit::TestCase
   def test_pstore_files_are_accessed_as_binary_files
     bug5311 = '[ruby-core:39503]'
     n = 128
-    assert_in_out_err(["-rpstore", "-", @pstore_file], <<-SRC, [bug5311], [], bug5311)
+    assert_in_out_err(["-Eutf-8:utf-8", "-rpstore", "-", @pstore_file], <<-SRC, [bug5311], [], bug5311)
       @pstore = PStore.new(ARGV[0])
-      Encoding.default_internal = 'utf-8'
-      Encoding.default_external = 'utf-8'
       (1..#{n}).each do |i|
         @pstore.transaction {@pstore["Key\#{i}"] = "value \#{i}"}
       end

@@ -1,4 +1,6 @@
-Tue Sep 13 15:02:48 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Sep 13 20:21:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pstore.rb, test/test_pstore.rb: suppress warnings with -v.
 
 	* lib/pstore.rb (PStore): always open in binary mode even if
 	  default encodings are set.  [Bug #5311] [ruby-core:39503]
