@@ -1,3 +1,7 @@
+Tue Sep 13 09:28:58 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* NEWS: wrote about rb_reserved_fd_p() and objspace.
+
 Mon Sep 12 20:47:52 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_select): fix a typo to initialize efds
