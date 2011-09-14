@@ -25,6 +25,12 @@ with all sufficient information, see the ChangeLog file.
 * rb_reserved_fd_p() added.  If you want to close all file descriptors,
   check using this API.  [ruby-core:37759]
 
+== Known platform dependent issues
+=== OS X Lion
+
+* You have to configure ruby with '--with-gcc=gcc-4.2' if you're using Xcode 4.1,
+  or, if you're using Xcode 4.2, you have to configure ruby with '--with-gcc=clang'.
+
 === Library updates (outstanding ones only)
 
 * builtin classes

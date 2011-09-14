@@ -89,21 +89,12 @@ fi
 
 dnl checks for alternative programs
 AC_CANONICAL_BUILD
-AS_CASE(["$build_os"],
-  [darwin11.*], [
-    default_cc=cc-4.2
-    default_gcc=gcc-4.2
-  ], [
-    default_cc=cc
-    default_gcc=gcc
-  ])
-
 AC_ARG_WITH(gcc,
 	AS_HELP_STRING([--without-gcc], [never use gcc]),
 	[
 	AS_CASE([$withval],
-	    [no],  [: ${CC=$default_cc}],
-	    [yes], [: ${CC=$default_gcc}],
+	    [no],  [: ${CC=cc],
+	    [yes], [: ${CC=gcc],
 	           [CC=$withval])])
 dnl If the user switches compilers, we can't believe the cache
 if test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"

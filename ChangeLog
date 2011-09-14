@@ -1,3 +1,9 @@
+Wed Sep 14 12:39:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* configure.in: do not use gcc-4.2 as the default compiler.
+
+	* NEWS: describe the issue about Xcode.
+
 Wed Sep 14 11:46:30 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_fd_rcopy): added an argument guard.
