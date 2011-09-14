@@ -1,15 +1,15 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # widget demo 'load image' (called by 'widget')
 #
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ðºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($image2_demo) && $image2_demo
   $image2_demo.destroy
   $image2_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $image2_demo = TkToplevel.new {|w|
   title('Image Demonstration #2')
   iconname("Image2")
@@ -18,20 +18,20 @@ $image2_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($image2_demo).pack(:fill=>:both, :expand=>true)
 
-# label À¸À®
+# label ç”Ÿæˆ
 msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
-  text "¤³¤Î¥Ç¥â¤Ç¤ÏTk¤Î photo image ¤ò»ÈÍÑ¤·¤Æ²èÁü¤ò¸«¤ë¤³¤È¤¬¤Ç¤­¤Þ¤¹¡£ºÇ½é¤Ë¥¨¥ó¥È¥êÆâ¤Ë¤Ë¥Ç¥£¥ì¥¯¥È¥êÌ¾¤òÆþ¤ì¤Æ²¼¤µ¤¤¡£¼¡¤Ë²¼¤Î¥ê¥¹¥È¥Ü¥Ã¥¯¥¹¤Ë¤³¤Î¥Ç¥£¥ì¥¯¥È¥ê¤ò¥í¡¼¥É¤¹¤ë¤¿¤á¡¢¥ê¥¿¡¼¥ó¤ò²¡¤·¤Æ¤¯¤À¤µ¤¤¡£¤½¤Î¸å¡¢²èÁü¤òÁªÂò¤¹¤ë¤¿¤á¤Ë¥ê¥¹¥È¥Ü¥Ã¥¯¥¹¤ÎÃæ¤Î¥Õ¥¡¥¤¥ëÌ¾¤ò¥À¥Ö¥ë¥¯¥ê¥Ã¥¯¤·¤Æ²¼¤µ¤¤¡£"
+  text "ã“ã®ãƒ‡ãƒ¢ã§ã¯Tkã® photo image ã‚’ä½¿ç”¨ã—ã¦ç”»åƒã‚’è¦‹ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚æœ€åˆã«ã‚¨ãƒ³ãƒˆãƒªå†…ã«ã«ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªåã‚’å…¥ã‚Œã¦ä¸‹ã•ã„ã€‚æ¬¡ã«ä¸‹ã®ãƒªã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹ã«ã“ã®ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’ãƒ­ãƒ¼ãƒ‰ã™ã‚‹ãŸã‚ã€ãƒªã‚¿ãƒ¼ãƒ³ã‚’æŠ¼ã—ã¦ãã ã•ã„ã€‚ãã®å¾Œã€ç”»åƒã‚’é¸æŠžã™ã‚‹ãŸã‚ã«ãƒªã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹ã®ä¸­ã®ãƒ•ã‚¡ã‚¤ãƒ«åã‚’ãƒ€ãƒ–ãƒ«ã‚¯ãƒªãƒƒã‚¯ã—ã¦ä¸‹ã•ã„ã€‚"
 }
 msg.pack('side'=>'top')
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $image2_demo
       $image2_demo = nil
@@ -40,20 +40,20 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'image2'}
   }.pack('side'=>'left', 'expand'=>'yes')
 
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# ÊÑ¿ôÀ¸À®
+# å¤‰æ•°ç”Ÿæˆ
 $dirName = TkVariable.new([$demo_dir,'..','images'].join(File::Separator))
 
-# image À¸À®
+# image ç”Ÿæˆ
 $image2a = TkPhotoImage.new
 
-# ¥Õ¥¡¥¤¥ëÌ¾ÆþÎÏÉô
-TkLabel.new(base_frame, 'text'=>'¥Ç¥£¥ì¥¯¥È¥ê:')\
+# ãƒ•ã‚¡ã‚¤ãƒ«åå…¥åŠ›éƒ¨
+TkLabel.new(base_frame, 'text'=>'ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒª:')\
 .pack('side'=>'top', 'anchor'=>'w')
 
 image2_e = TkEntry.new(base_frame) {
@@ -64,7 +64,7 @@ image2_e = TkEntry.new(base_frame) {
 TkFrame.new(base_frame, 'height'=>'3m', 'width'=>20)\
 .pack('side'=>'top', 'anchor'=>'w')
 
-TkLabel.new(base_frame, 'text'=>'¥Õ¥¡¥¤¥ë:')\
+TkLabel.new(base_frame, 'text'=>'ãƒ•ã‚¡ã‚¤ãƒ«:')\
 .pack('side'=>'top', 'anchor'=>'w')
 
 TkFrame.new(base_frame){|w|
@@ -85,14 +85,14 @@ TkFrame.new(base_frame){|w|
 
 }.pack('side'=>'top', 'anchor'=>'w')
 
-# image ÇÛÃÖ
+# image é…ç½®
 [ TkFrame.new(base_frame, 'height'=>'3m', 'width'=>20),
-  TkLabel.new(base_frame, 'text'=>'²èÁü:'),
+  TkLabel.new(base_frame, 'text'=>'ç”»åƒ:'),
   # TkLabel.new(base_frame, 'image'=>$image2a)
   Tk::Label.new(base_frame, 'image'=>$image2a)
 ].each{|w| w.pack('side'=>'top', 'anchor'=>'w')}
 
-# ¥á¥½¥Ã¥ÉÄêµÁ
+# ãƒ¡ã‚½ãƒƒãƒ‰å®šç¾©
 def loadDir(w)
   w.delete(0,'end')
   Dir.glob([$dirName,'*'].join(File::Separator)).sort.each{|f|

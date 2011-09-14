@@ -1,525 +1,525 @@
 (tof)
                                     2005/07/05  Hidetoshi NAGAI
 
-�ܥɥ�����ȤˤϸŤ� tcltk �饤�֥�ꡤtcltklib �饤�֥�������
-���ޤޤ�Ƥ��ޤ��������ε������ƤϸŤ���ΤȤʤäƤ��ޤ���
+本ドキュメントには古い tcltk ライブラリ，tcltklib ライブラリの説明
+が含まれていますが，その記述内容は古いものとなっています．
 
-tcltk �饤�֥���tcltk.rb�ˤϸ��ߤǤϥ��ƥʥ󥹤����¾�Ԥ���
-���ʤ����ᡤ�Ť��ɥ�����Ȥ����������Τޤ�ͭ���Ǥ���������Ф���
-tcltklib �饤�֥��ˤĤ��Ƥϡ����ߤ� Ruby/Tk��tk.rb �ʲ��Υ饤�֥�
-�귲�ˤ��Ư�����뤿����濴�Ȥ��ƥ��ƥʥ󥹤���Ƥ��뤿�ᡤ����
-�㤤�������Ƥ��ޤ���
+tcltk ライブラリ（tcltk.rb）は現在ではメンテナンスが事実上行われて
+いないため，古いドキュメントの説明がそのまま有効です．それに対し，
+tcltklib ライブラリについては，現在の Ruby/Tk（tk.rb 以下のライブラ
+リ群）を稼働させるための中心としてメンテナンスされているため，少々
+違いが生じています．
 
-�����ǡ��ޤ��Ť�����ʸ��򼨤����塤���ߤ� tcltklib �饤�֥��ˤ�
-���Ƥ�������ä��ޤ���
+そこで，まず古い説明文書を示した後，現在の tcltklib ライブラリにつ
+いての説明を加えます．
 
-�ʲ����饤�֥��θŤ�����ʸ��Ǥ���
+以下がライブラリの古い説明文書です．
 ==============================================================
 	MANUAL.euc
 		Sep. 19, 1997	Y. Shigehiro
 
-�ʲ�, ��tcl/tk�פȤ���ɽ����, tclsh �� wish ��¸����Ƥ���, ���̤Ǥ���
-�Ȥ����� tcl/tk ��ؤ��ޤ�. ��tcltk �饤�֥���, ��tcltklib �饤�֥�
-��פȤ���ɽ����, �ܥѥå������˴ޤޤ�� ruby �ѤΥ饤�֥���ؤ��ޤ�.
+以下, 「tcl/tk」という表記は, tclsh や wish を実現している, 一般でいう
+ところの tcl/tk を指します. 「tcltk ライブラリ」, 「tcltklib ライブラ
+リ」という表記は, 本パッケージに含まれる ruby 用のライブラリを指します.
 
-<< tcltk �饤�֥�� >>
+<< tcltk ライブラリ >>
 
-tcl/tk �� C �饤�֥������Ѥ��뤿��ι�(��?)��।�󥿡��ե���������
-�����ޤ�.
+tcl/tk の C ライブラリを利用するための高(中?)水準インターフェースを提
+供します.
 
-���Υ饤�֥��� ruby ���� tcl/tk �饤�֥������Ѥ��뤿��Τ�Τ�, ��
-���� tcltklib �饤�֥������Ѥ��Ƥ��ޤ�.
+このライブラリは ruby から tcl/tk ライブラリを利用するためのもので, 内
+部で tcltklib ライブラリを利用しています.
 
-[����]
+[説明]
 
-tcl/tk ���󥿥ץ꥿�Ǥ�, ���������åȤ˲����ؼ�������ˤ�, ����������
-��̾��³���ƥѥ�᡼����񤭤ޤ�. �������ä�, ���������åȤ����֥�����
-�ȤǤ���, ������Ф��ƥ᥽�åɤ����äƤ���, �Ȥߤʤ����Ȥ��Ǥ��ޤ�. ��
-��, tcl/tk ���󥿥ץ꥿�Ǥ�, �Ȥ߹��ߥ��ޥ�ɤ�, ���ҤΥ��������åȤ�
-Ʊ���褦�ʽ񼰤�̿��Ǽ¹Ԥ���ޤ�. ���ʤ��, ���ޥ�ɤ⥪�֥������Ȥ�
-����ȹͤ��뤳�Ȥ��Ǥ��ޤ�.
+tcl/tk インタプリタでは, ウィジェットに何か指示を送るには, ウィジェッ
+ト名に続いてパラメータを書きます. したがって, ウィジェットがオブジェク
+トであり, それに対してメソッドを送っている, とみなすことができます. さ
+て, tcl/tk インタプリタでは, 組み込みコマンドも, 前述のウィジェットと
+同じような書式の命令で実行されます. すなわち, コマンドもオブジェクトで
+あると考えることができます.
 
-���Τ褦�ʹͤ��˴�Ť�, tcltk �饤�֥��Ǥ�, tcl/tk �Υ��ޥ�ɤ䥦��
-�����åȤ��б����륪�֥������Ȥ��������ޤ�. ���֥������Ȥ��Ф���᥽��
-�ɸƤӽФ���, e() �᥽�åɤˤ��¹Ԥ���ޤ�. �㤨��, tcl/tk �� info
-���ޥ�ɤ��б����� ruby �Υ��֥������Ȥ� info �Ȥ���̾���Ǥ���Ȥ����,
-tcl/tk ��
+このような考えに基づき, tcltk ライブラリでは, tcl/tk のコマンドやウィ
+ジェットに対応するオブジェクトを生成します. オブジェクトに対するメソッ
+ド呼び出しは, e() メソッドにより実行されます. 例えば, tcl/tk の info
+コマンドに対応する ruby のオブジェクトが info という名前であるとすると,
+tcl/tk の
 	info commands
-�Ȥ���̿��� tcltk �饤�֥��Ǥ�
+という命令は tcltk ライブラリでは
 	info.e("commands")
-�ȵ��Ҥ���ޤ�. �ޤ�, ��.�פȤ������������å� (wish �¹Ի��˼�ưŪ����
-�������롼�ȥ��������å�) ���б����� ruby �Υ��֥������Ȥ� root �Ȥ�
-��̾���Ǥ���Ȥ����,
+と記述されます. また, 「.」というウィジェット (wish 実行時に自動的に生
+成されるルートウィジェット) に対応する ruby のオブジェクトが root とい
+う名前であるとすると,
 	. configure -height 300 -width 300
-�Ȥ��� tcl/tk ��̿���
+という tcl/tk の命令は
 	root.e("configure -height 300 -width 300")
-�ȵ��Ҥ���ޤ�. ���Τ褦�ʵ��Ҥ�, ������ˤ�����������ޤ���, ������,
-������ץȤ��ɤ�ͤˤϸ��Ť餤�����Τ�ޤ���, �ºݤ˥�����ץȤ��
-�Ƥߤ��ͽ�۳��˼�ڤǤ�.
+と記述されます. このような記述は, 見ためには美しくありませんが, そして,
+スクリプトを読む人には見づらいかも知れませんが, 実際にスクリプトを書い
+てみると予想外に手軽です.
 
-[����ˡ]
+[使用法]
 
-1. �饤�֥����ɤ߹���.
+1. ライブラリを読み込む.
      require "tcltk"
 
-2. tcl/tk ���󥿥ץ꥿����������.
+2. tcl/tk インタプリタを生成する.
      ip = TclTkInterpreter.new()
 
-3. tcl/tk �Υ��ޥ�ɤ��б����륪�֥������Ȥ��ѿ����������Ƥ���.
-     # ���ޥ�ɤ��б����륪�֥������Ȥ����ä� Hash ����Ф�.
+3. tcl/tk のコマンドに対応するオブジェクトを変数に代入しておく.
+     # コマンドに対応するオブジェクトが入った Hash を取り出す.
      c = ip.commands()
-     # �Ȥ��������ޥ�ɤ��б����륪�֥������Ȥ���̤��ѿ�����������.
+     # 使いたいコマンドに対応するオブジェクトを個別の変数に代入する.
      bind, button, info, wm = c.indexes("bind", "button", "info", "wm")
 
-4. ɬ�פʽ�����Ԥ�.
-     �ܤ�����, ����ץ�򻲾ȤΤ���.
+4. 必要な処理を行う.
+     詳しくは, サンプルを参照のこと.
 
-5. �������Ǥ�����, ���٥�ȥ롼�פ�����.
+5. 準備ができたら, イベントループに入る.
      TclTk.mainloop()
 
-(( �ʲ�, �⥸�塼��, ���饹�����������ͽ��.))
+(( 以下, モジュール, クラス等の説明を書く予定.))
 
 
 
-<< tcltklib �饤�֥�� >>
+<< tcltklib ライブラリ >>
 
-tcl/tk �� C �饤�֥������Ѥ��뤿������।�󥿡��ե��������󶡤���
-��.
+tcl/tk の C ライブラリを利用するための低水準インターフェースを提供しま
+す.
 
-����ѥ���/�¹Ԥˤ�, tcl/tk �� C �饤�֥�꤬ɬ�פǤ�.
+コンパイル/実行には, tcl/tk の C ライブラリが必要です.
 
-[����]
+[説明]
 
-���Υ饤�֥����Ѥ����, ruby ���� tcl/tk �� C �饤�֥������ѤǤ���
-��. ����Ū�ˤ�, ruby ���󥿥ץ꥿���� tcl/tk ���󥿥ץ꥿��ƤӽФ���
-�Ȥ��Ǥ��ޤ�. �����, ����(ruby ���󥿥ץ꥿����ƤӽФ���) tcl/tk ��
-�󥿥ץ꥿����, �դ� ruby ���󥿥ץ꥿��ƤӽФ����Ȥ�Ǥ��ޤ�.
+このライブラリを用いると, ruby から tcl/tk の C ライブラリを利用できま
+す. 具体的には, ruby インタプリタから tcl/tk インタプリタを呼び出すこ
+とができます. さらに, その(ruby インタプリタから呼び出した) tcl/tk イ
+ンタプリタから, 逆に ruby インタプリタを呼び出すこともできます.
 
-[����ˡ]
+[使用法]
 
-require "tcltklib" �����, �ʲ��Υ⥸�塼��, ���饹�����Ѳ�ǽ�Ǥ�.
+require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
 
-�⥸�塼�� TclTkLib
-    tcl/tk �饤�֥���ƤӽФ��᥽�åɤ򽸤᤿�⥸�塼��Ǥ�. ������,
-    tcl/tk ���󥿥ץ꥿�ط��Υ᥽�åɤϥ��饹 TclTkIp �ˤ���ޤ�.
+モジュール TclTkLib
+    tcl/tk ライブラリを呼び出すメソッドを集めたモジュールです. ただし,
+    tcl/tk インタプリタ関係のメソッドはクラス TclTkIp にあります.
 
-  �⥸�塼��᥽�å� mainloop()
-      Tk_MainLoop ��¹Ԥ��ޤ�. ���Ƥ� tk �Υ�����ɥ���̵���ʤ�Ƚ�λ
-      ���ޤ�(�㤨��, tcl/tk �ǽ񤯤Ȥ����� "destroy ." �򤷤������).
-    ����: ̵��
-    �����: nil
+  モジュールメソッド mainloop()
+      Tk_MainLoop を実行します. 全ての tk のウインドウが無くなると終了
+      します(例えば, tcl/tk で書くところの "destroy ." をした場合等).
+    引数: 無し
+    戻り値: nil
 
-���饹 TclTkIp
-    ���󥹥��󥹤� tcl/tk �Υ��󥿥ץ꥿���б����ޤ�. tcl/tk �Υ饤��
-    ���λ����̤�, ���󥹥��󥹤�ʣ�����������Ƥ�������ư��ޤ�(��
-    ��ʤ��Ȥ򤹤�ɬ�פϤ��ޤ�̵���Ϥ��Ǥ���). ���󥿥ץ꥿�� wish ��
-    tcl/tk ���ޥ�ɤ�¹ԤǤ��ޤ�. �����, �ʲ��Υ��ޥ�ɤ�¹ԤǤ���
-    ��.
-      ���ޥ�� ruby
-	������ ruby �Ǽ¹Ԥ��ޤ�(ruby_eval_string ��¹Ԥ��ޤ�). ����
-	�� 1 �ĤǤʤ���Фʤ�ޤ���. ����ͤ� ruby �μ¹Է�̤Ǥ�.
-	ruby �μ¹Է�̤� nil �� String �Ǥʤ���Фʤ�ޤ���.
+クラス TclTkIp
+    インスタンスが tcl/tk のインタプリタに対応します. tcl/tk のライブ
+    ラリの仕様通り, インスタンスを複数個生成しても正しく動作します(そ
+    んなことをする必要はあまり無いはずですが). インタプリタは wish の
+    tcl/tk コマンドを実行できます. さらに, 以下のコマンドを実行できま
+    す.
+      コマンド ruby
+	引数を ruby で実行します(ruby_eval_string を実行します). 引数
+	は 1 つでなければなりません. 戻り値は ruby の実行結果です.
+	ruby の実行結果は nil か String でなければなりません.
 
-  ���饹�᥽�å� new()
-      TclTkIp ���饹�Υ��󥹥��󥹤��������ޤ�
-    ����: ̵��
-    ����� (TclTkIp): �������줿���󥹥���
+  クラスメソッド new()
+      TclTkIp クラスのインスタンスを生成します
+    引数: 無し
+    戻り値 (TclTkIp): 生成されたインスタンス
 
-  �᥽�å� _eval(script)
-      ���󥿥ץ꥿�� script ��ɾ�����ޤ�(Tcl_Eval ��¹Ԥ��ޤ�). ����
-      �Τ褦��, ruby ���ޥ�ɤˤ�� script �⤫�� ruby ������ץȤ��
-      �ԤǤ��ޤ�.
-    ����: script (String) - ���󥿥ץ꥿��ɾ�����륹����ץ�ʸ����
-    ����� (String): ɾ����� ((Tcl_Interp *)->result)
+  メソッド _eval(script)
+      インタプリタで script を評価します(Tcl_Eval を実行します). 前述
+      のように, ruby コマンドにより script 内から ruby スクリプトを実
+      行できます.
+    引数: script (String) - インタプリタで評価するスクリプト文字列
+    戻り値 (String): 評価結果 ((Tcl_Interp *)->result)
 
-  �᥽�å� _return_value()
-      ľ���� Tcl_Eval ������ͤ��֤��ޤ�. 0(TCL_OK) �����ｪλ�Ǥ�.
-    ����: ̵��
-    ����� (Fixnum): ľ���� Tcl_Eval() ���֤�����.
+  メソッド _return_value()
+      直前の Tcl_Eval の戻り値を返します. 0(TCL_OK) で正常終了です.
+    引数: 無し
+    戻り値 (Fixnum): 直前の Tcl_Eval() が返した値.
 
 ==============================================================
 
-�ʲ����ܥɥ�����Ⱥ��������Ǥ� tcltklib �饤�֥��������Ǥ���
+以下が本ドキュメント作成時点での tcltklib ライブラリの説明です．
 ==============================================================
-�⥸�塼�� TclTkLib
-   : �ġ��� Tcl/Tk ���󥿡��ץ꥿�˰�¸���ʤ����� ( == ���٥�ȥ롼
-   : �פ˴ؤ������ ) ��ƤӽФ��᥽�åɤ���������⥸�塼�롥
+モジュール TclTkLib
+   : 個々の Tcl/Tk インタープリタに依存しない処理 ( == イベントルー
+   : プに関する処理 ) を呼び出すメソッドを定義したモジュール．
 
-   �⥸�塼�� TclTkLib::EventFlag
-      : do_one_event ��ƤӽФ��ݤν����оݥ��٥�Ȥ���ꤹ�뤿���
-      : �ե饰 ( WINDOW|DONT_WAIT �Ȥ����褦�˥ӥåȱ黻�Ҥ�Ϣ�뤷��
-      : ���� ) ������Ȥ�����������⥸�塼�롥�ʲ���������ޤޤ�롥
+   モジュール TclTkLib::EventFlag
+      : do_one_event を呼び出す際の処理対象イベントを指定するための
+      : フラグ ( WINDOW|DONT_WAIT というようにビット演算子で連結して
+      : 指定 ) を定数として定義したモジュール．以下の定数が含まれる．
 
-      ���  NONE
-         : �ͤ� 0 �ǡ��ͤȤ��ƤϤ����ʤ����Υ��٥�Ȥ���ꤷ�Ƥ��ʤ�
-         : ���Ȥˤʤ뤬���ºݤν������ ALL ��Ʊ���Ȥ��ư����롥
+      定数  NONE
+         : 値は 0 で，値としてはいかなる種類のイベントも指定していない
+         : ことになるが，実際の処理上は ALL と同じとして扱われる．
 
-      ���  WINDOW
-         : window ���٥�Ȥ�����оݤȤ���
+      定数  WINDOW
+         : window イベントを処理対象とする
 
-      ���  FILE
-         : file ���٥�Ȥ�����оݤȤ���
+      定数  FILE
+         : file イベントを処理対象とする
 
-      ���  TIMER
-         : timer ���٥�Ȥ�����оݤȤ���
+      定数  TIMER
+         : timer イベントを処理対象とする
 
-      ���  IDLE
-         : �����ɥ�롼�׽��� ( ������ʤɡ�¾�μ���Υ��٥�Ȥ�ȯ��
-         : ���Ƥ��ʤ��Ȥ��˹Ԥ������ ) ������оݤȤ���
+      定数  IDLE
+         : アイドルループ処理 ( 再描画など，他の種類のイベントが発生
+         : していないときに行われる処理 ) を処理対象とする
 
-      ���  ALL
-         : ���٤Ƥμ���Υ��٥�Ȥ�����оݤȤ���
-         : WINDOW|FILE|TIMER|IDLE ��Ʊ��
+      定数  ALL
+         : すべての種類のイベントを処理対象とする
+         : WINDOW|FILE|TIMER|IDLE と同じ
 
-      ���  DONT_WAIT
-         : �����оݥ��٥�Ȥ�¸�ߤ��ʤ����ˡ����٥��ȯ�����Ԥ���
-         : �� do_one_event ��λ ( false ���֤� ) ����
+      定数  DONT_WAIT
+         : 処理対象イベントが存在しない場合に，イベント発生を待たず
+         : に do_one_event を終了 ( false を返す ) する
 
-   �⥸�塼�� TclTkLib::VarAccessFlag
-      : _get_variable �ʤɤǤΥե饰����ꤹ�뤿��Τ�Ρ��ե饰��
-      : �ϰʲ�������� OR ��Ϣ�뤷��Ϳ���롥
+   モジュール TclTkLib::VarAccessFlag
+      : _get_variable などでのフラグを指定するためのもの．フラグに
+      : は以下の定数を OR で連結して与える．
 
-      ���  NONE
-         : �ͤ� 0 �ǡ�����ե饰����ꤷ�Ƥ��ʤ��Τ���������
+      定数  NONE
+         : 値は 0 で，何もフラグを指定していないのに等しい．
 
-      ���  GLOBAL_ONLY
-         : �̾�ѿ��θ����Ϥޤ���³���ƤӽФ���Ԥä���٥�Ǹ�
-         : ���������˸��ߤ�̾�����֤Ǹ������Ǹ�˥������Х���֤�
-         : ������Ԥ��������������Υե饰�����ꤵ�줿���ˤϡ���
-         : �����Х���֤ǤΤ߸������롥
-         : �⤷ GLOBAL_ONLY �� NAMESPACE_ONLY �Ȥ�ξ�����ꤵ�줿��
-         : ��ˤϡ�GLOBAL_ONLY �λ����̵�뤵��롥
+      定数  GLOBAL_ONLY
+         : 通常，変数の検索はまず手続き呼び出しを行ったレベルで検
+         : 索し，次に現在の名前空間で検索，最後にグローバル空間で
+         : 検索を行う．しかし，このフラグが指定された場合には，グ
+         : ローバル空間でのみ検索する．
+         : もし GLOBAL_ONLY と NAMESPACE_ONLY とが両方指定された場
+         : 合には，GLOBAL_ONLY の指定は無視される．
 
-      ���  NAMESPACE_ONLY
-         : ���Υե饰�����ꤵ�줿���ˤϡ����ߤ�̾�����֤ǤΤ���
-         : ���θ�����Ԥ���GLOBAL_ONLY �������⻲�Ȥ��뤳�ȡ�
+      定数  NAMESPACE_ONLY
+         : このフラグが指定された場合には，現在の名前空間でのみ変
+         : 数の検索を行う．GLOBAL_ONLY の説明も参照すること．
 
-      ���  LEAVE_ERR_MSG
-         : �ѿ����������ˤ����ƥ��顼��ȯ��������硤���Υե饰��
-         : ���ꤵ��Ƥ���С��¹Է�̤Ȥ��� Tcl ���󥿡��ץ꥿�˥�
-         : �顼��å��������Ĥ���롥���Υե饰�����ꤵ��Ƥ��ʤ�
-         : ��С����顼��å������ϰ��ڻĤ���ʤ���
+      定数  LEAVE_ERR_MSG
+         : 変数アクセスにおいてエラーが発生した場合，このフラグが
+         : 指定されていれば，実行結果として Tcl インタープリタにエ
+         : ラーメッセージが残される．このフラグが指定されていなけ
+         : れば，エラーメッセージは一切残されない．
 
-      ���  APPEND_VALUE
-         : ���Υե饰�����ꤵ��Ƥ�����硤�ѿ����ͤ��֤������Τ�
-         : �Ϥʤ������ߤ��ͤ������ͤ��ɲ� (append; ʸ����Ϣ��) ��
-         : ��롥�ѿ���̤������ä���硤���Υե饰��̵�뤵��롥
+      定数  APPEND_VALUE
+         : このフラグが指定されていた場合，変数の値を置き換えので
+         : はなく，現在の値に代入値が追加 (append; 文字列連結) さ
+         : れる．変数が未定義あった場合，このフラグは無視される．
 
-      ���  LIST_ELEMENT
-         : ���Υե饰�����ꤵ��Ƥ�����硤�����ͤϤޤ� Tcl �Υꥹ
-         : �����ǤȤ���Ŭ�ڤȤʤ�褦���Ѵ�����롥�����ͤ��ꥹ��
-         : (�ޤ��ϥ��֥ꥹ��) �κǽ�����ǤȤʤ�ΤǤʤ��¤ꡤ����
-         : �ͤ�ľ���ˤ϶���ʸ�����ɲä���롥
+      定数  LIST_ELEMENT
+         : このフラグが指定されていた場合，代入値はまず Tcl のリス
+         : ト要素として適切となるように変換される．代入値がリスト
+         : (またはサブリスト) の最初の要素となるのでない限り，代入
+         : 値の直前には空白文字が追加される．
 
-      ���  PARSE_VARNAME
-         : _set_variable �ʤɤθƤӽФ��ˤ����Ƥ��Υե饰�����ꤵ
-         : ��Ƥ�����硤var_name ������Ϣ������̾������̾�Ȥ�ξ��
-         : �ޤ��ǽ�������� (������̤�ޤߡ��Ĥ���̤ǽ����) ��
-         : �Ȥ򼨤������ξ�硤��̤δ֤�����̾���ꡤ�ǽ�γ�����
-         : �̤ޤǤ�Ϣ������̾�Ȥ��ư����롥_set_variable2 �ʤɤ�
-         : ���Υե饰����ꤹ���硤Ϣ������̾������̾�� var_name
-         : ������Ф����Ϥ��Ǥ��뤫�顤index_name ������ nil ��
-         : ���ͤФʤ�ʤ���
+      定数  PARSE_VARNAME
+         : _set_variable などの呼び出しにおいてこのフラグが指定さ
+         : れていた場合，var_name 引数が連想配列名と要素名とを両方
+         : 含む可能性がある (開き括弧を含み，閉じ括弧で終わる) こ
+         : とを示す．その場合，括弧の間が要素名指定，最初の開き括
+         : 弧までが連想配列名として扱われる．_set_variable2 などで
+         : このフラグを指定する場合，連想配列名と要素名は var_name
+         : から抽出されるはずであるから，index_name 引数は nil と
+         : せねばならない．
 
-   �⥸�塼�� TclTkLib::RELEASE_TYPE
-      : Tcl/Tk �Υ�꡼���������ֹ�����
+   モジュール TclTkLib::RELEASE_TYPE
+      : Tcl/Tk のリリースタイプ番号の定義
 
-      ���  ALPHA
-         : ALPHA ��꡼��
+      定数  ALPHA
+         : ALPHA リリース
 
-      ���  BETA
-         : BETA ��꡼��
+      定数  BETA
+         : BETA リリース
 
-      ���  FINAL
-         : FINAL ��꡼��
+      定数  FINAL
+         : FINAL リリース
 
-   �⥸�塼��᥽�å�
+   モジュールメソッド
       get_version()
-         : Tcl/Tk �� major, minor, release-type �ֹ�, patchlevel ��
-         : ����ˤ����֤���
+         : Tcl/Tk の major, minor, release-type 番号, patchlevel を
+         : 配列にして返す．
 
       mainloop(check_root = true)
-         : ���٥�ȥ롼�פ�ư���롥check_root �� true �Ǥ���С�
-         : root widget ��¸�ߤ���¤ꡤ���Υ᥽�åɤϽ�λ���ʤ���
-         : check_root �� false �ξ��ϡ�root widget �����Ǥ��Ƥ�
-         : ���Υ᥽�åɤϽ�λ���ʤ� ( root widget �����Ǥ��Ƥ⡤
-         : WINDOW �ʳ��Υ��٥�Ȥ�ȯ�������뤿�� )����λ�ˤϡ�����
-         : �����Ư���ݤ� ( ����åɤ���Ѥ���ʤ� ) ��ɬ�ס�
+         : イベントループを起動する．check_root が true であれば，
+         : root widget が存在する限り，このメソッドは終了しない．
+         : check_root が false の場合は，root widget が消滅しても
+         : このメソッドは終了しない ( root widget が消滅しても，
+         : WINDOW 以外のイベントは発生しうるため )．終了には，外部
+         : からの働き掛け ( スレッドを活用するなど ) が必要．
 
       mainloop_thread?
-         : �����ȥ���åɤ����٥�ȥ롼�פ�¹Ԥ��Ƥ��륹��å�
-         : ���ɤ������֤���
-         : ���٥�ȥ롼�פ�¹Ԥ��Ƥ��륹��åɤǤ���� true ��
-         : �ɤΥ���åɤǤ⥤�٥�ȥ롼�פ��¹Ԥ���Ƥ��ʤ�����
-         : nil ��¾�Υ���åɤǥ��٥�ȥ롼�פ��¹Ԥ���Ƥ����
-         : ��� false ���֤���
-         : false �κݤ� Tk ���󥿡��ץ꥿��ľ�ܸƤ֤Τϴ����Ǥ��롥
+         : カレントスレッドがイベントループを実行しているスレッド
+         : かどうかを返す．
+         : イベントループを実行しているスレッドであれば true を，
+         : どのスレッドでもイベントループが実行されていない場合は
+         : nil を，他のスレッドでイベントループが実行されている場
+         : 合は false を返す．
+         : false の際に Tk インタープリタを直接呼ぶのは危険である．
 
       mainloop_watchdog(check_root = true)
-         : �̾�Υ��٥�ȥ롼�פǤϡ����٥�Ƚ��������Ƥˤ�äƤ�
-         : �ǥåɥ��å��������������ǽ�������� (�㤨�Х��٥�Ȥ�
-         : �Ф��륳����Хå�������� widget ���򤷡����ν�λ��
-         : �ԤĤʤ�)�����Υ᥽�åɤϡ����������ǥåɥ��å������
-         : �뤿��δƻ륹��å��դ��ǥ��٥�ȥ롼�פ�ư����
-         : ( �ƻ륹��åɤ�����������˥��٥�ȥ롼�פ�¹Ԥ��� )��
-         : �����ΰ�̣�� mainloop ��Ʊ���Ǥ��롥
+         : 通常のイベントループでは，イベント処理の内容によっては
+         : デッドロックを引き起こす可能性がある (例えばイベントに
+         : 対するコールバック処理中で widget 操作をし，その終了を
+         : 待つなど)．このメソッドは，そうしたデッドロックを回避す
+         : るための監視スレッド付きでイベントループを起動する
+         : ( 監視スレッドを生成した後にイベントループを実行する )．
+         : 引数の意味は mainloop と同じである．
 
       do_one_event(flag = TclTkLib::EventFlag::ALL |
                             TclTkLib::EventFlag::DONT_WAIT)
-         : �����Ԥ��Υ��٥�� 1 �Ĥ�¹Ԥ��롥
-         : ���٥�Ȥ������������ true ���֤���
-         : �ե饰�� DONT_WAIT ����ꤷ�Ƥ��ʤ���硤�ե饰�ǽ�����
-         : �ݤȤʤäƤ������Υ��٥�Ȥ�ȯ������ޤ��Ԥ�³���롥
-         : DONT_WAIT ����ꤷ�Ƥ�����硤�����оݥ��٥�Ȥ��ʤ��Ƥ�
-         : �����˽�λ�� false ���֤���
-         : $SAFE >= 4 ����$SAFE >= 1 ���� flag ����������Ƥ���ʤ��
-         : flag �ˤ� DONT_WAIT ������Ū���դ����롥
+         : 処理待ちのイベント 1 個を実行する．
+         : イベントを処理した場合は true を返す．
+         : フラグで DONT_WAIT を指定していない場合，フラグで処理対
+         : 象となっている種類のイベントが発生するまで待ち続ける．
+         : DONT_WAIT を指定していた場合，処理対象イベントがなくても
+         : すぐに終了し false を返す．
+         : $SAFE >= 4 か，$SAFE >= 1 かつ flag が汚染されているならば
+         : flag には DONT_WAIT が強制的に付けられる．
 
       set_eventloop_tick(timer_tick)
-         : ���٥�ȥ롼�פ�Ʊ�����̥���åɤ���Ư���Ƥ�����ˡ���
-         : �֤˴�Ť�������Ū�ʥ���åɥ����å��󥰤�ɤ����٤�����
-         : ( ���ֳִ� ) ��ȯ�������뤫��ߥ���ñ�̤������ͤǻ��ꤹ�롥
-         : 0 ����ꤹ��ȡ����ζ���Ū�ʥ����å��󥰤ϹԤ��ʤ���
-         : ɸ��Ǥ� 0 �����ꤵ��Ƥ��ꡤ���٥�Ƚ������˴�Ť�������
-         : ���󥰤������Ԥ��� ( see set_eventloop_weight )��
-         : ����������Ư���Ƥ��륹��åɤ����٥�ȥ롼�פ����ξ�硤
-         : timer_tick �� 0 �����ꤹ�뤳�ȤϤǤ��ʤ����⤷���ꤵ���
-         : �����顤100 ms ( see NO_THREAD_INTERRUPT_TIME ) �˼�ư��
-         : �ꤵ��롥
-         : �ܺ٤�������ά����������� CPU �ѥ�����󤷤Ĥİ�����
-         : ���ꤷ��ư���¸����뤿��˼����������ͤǤ��롥
-         : $SAFE >= 4 �Ǥϼ¹Ԥ��ػߤ���롥
+         : イベントループと同時に別スレッドが稼働している場合に，時
+         : 間に基づいた強制的なスレッドスイッチングをどの程度の頻度
+         : ( 時間間隔 ) で発生させるかをミリ秒単位の整数値で指定する．
+         : 0 を指定すると，この強制的なスイッチングは行われない．
+         : 標準では 0 に設定されており，イベント処理数に基づくスイッ
+         : チングだけが行われる ( see set_eventloop_weight )．
+         : ただし，稼働しているスレッドがイベントループだけの場合，
+         : timer_tick を 0 に設定することはできない．もし設定されて
+         : いたら，100 ms ( see NO_THREAD_INTERRUPT_TIME ) に自動設
+         : 定される．
+         : 詳細な説明は略すが，これは CPU パワーを節約しつつ安全で
+         : 安定した動作を実現するために実装した仕様である．
+         : $SAFE >= 4 では実行が禁止される．
 
       get_eventloop_tick
-         : timer_tick �θ����ͤ��֤���
+         : timer_tick の現在値を返す．
 
       set_no_event_wait(no_event_wait)
-         : ʣ���Υ���åɤ���Ư���Ƥ�����ǡ������Ԥ����٥�Ȥ���
-         : ��¸�ߤ��ʤ��ä��ݤ� sleep ���֤��������Ĺ����ꤹ�롥
-         : ��Ư����åɤ����٥�ȥ롼�פ����ξ��ˤϰ�̣��ʤ��ʤ���
-         : �ǥե���Ȥ��ͤ� 20 (ms)
-         : $SAFE >= 4 �Ǥϼ¹Ԥ��ػߤ���롥
+         : 複数のスレッドが稼働している場合で，処理待ちイベントが全
+         : く存在しなかった際に sleep 状態に入る時間長を指定する．
+         : 稼働スレッドがイベントループだけの場合には意味をなさない．
+         : デフォルトの値は 20 (ms)
+         : $SAFE >= 4 では実行が禁止される．
 
       get_no_event_wait
-         : no_event_wait �θ����ͤ��֤���
+         : no_event_wait の現在値を返す．
 
       set_eventloop_weight(loop_max, no_event_tick)
-         : ʣ���Υ���åɤ���Ư���Ƥ���ݤ� Ruby/Tk �Υ��٥�ȥ롼
-         : �פ˳�����Ƥ���Ť����뤿��Υѥ�᡼�������ꤹ�롥
-         : ��Ư����åɤ����٥�ȥ롼�פ����ξ��ˤϰ�̣��ʤ��ʤ���
-         : ���٤Υ���å��ڤ��ؤ��δ֤˽������륤�٥�Ȥκ�����ȡ�
-         : �����Ԥ��Υ��٥�Ȥ�¸�ߤ��ʤ��ݤβû����Ȥ����ꤹ�롥
-         : �����Ԥ����٥�Ȥ�¸�ߤ��ʤ����� no_event_wait ( see
-         : set_no_event_wait ) �����δ� sleep ���֤����롥
-         : �ǥե���ȤǤϤ��줾�� 800 ��� 10 �󡤤Ĥޤꡤ800 �ĤΥ�
-         : �٥�� (�����ɥ륤�٥�Ȥ�ޤ�) ���������Ȥ������٥��
-         : ������ȯ�����ʤ��ޤޤ� 80 ��ν����Ԥ����٥�ȸ�������λ
-	 : ����Ȥ��ǥ�����Ȥ� 800 �ʾ�ˤʤ�ȥ���åɥ����å���
-         : ��ȯ�����뤳�Ȥˤʤ롥
-         : $SAFE >= 4 �Ǥϼ¹Ԥ��ػߤ���롥
+         : 複数のスレッドが稼働している際に Ruby/Tk のイベントルー
+         : プに割り当てる比重を定めるためのパラメータを設定する．
+         : 稼働スレッドがイベントループだけの場合には意味をなさない．
+         : 一度のスレッド切り替えの間に処理するイベントの最大数と，
+         : 処理待ちのイベントが存在しない際の加算数とを設定する．
+         : 処理待ちイベントが存在しない場合は no_event_wait ( see
+         : set_no_event_wait ) だけの間 sleep 状態に入る．
+         : デフォルトではそれぞれ 800 回と 10 回，つまり，800 個のイ
+         : ベント (アイドルイベントを含む) を処理するとか，イベント
+         : が全く発生しないままに 80 回の処理待ちイベント検査が完了
+	 : するとかでカウントが 800 以上になるとスレッドスイッチング
+         : が発生することになる．
+         : $SAFE >= 4 では実行が禁止される．
 
       get_eventloop_weight
-         : ���ߤ� loop_max �� no_event_tick �Ȥ��ͤ��֤���
+         : 現在の loop_max と no_event_tick との値を返す．
          : ( see set_eventloop_wait )
 
       mainloop_abort_on_exception=(bool)
-         : Tk ���󥿡��ץ꥿����㳰��ȯ�������ݤˡ����٥�ȥ롼�פ�
-         : ���顼��ߤ����뤫�ɤ�������ꤹ�롥true ����ꤷ������
-         : ���顼��ߤ��뤬��false �ξ����㳰��̵�뤷�ƥ��٥�ȥ롼
-         : �פ��³���롥����� nil �ξ��Ϸٹ�⡼�ɤǤʤ��¤�ϥ�
-         : �顼��å������ν��Ϥ����ά���ơ��㳰��̵�뤹�롥
-	 : �ǥե���ȤǤ� true �����ꤵ��Ƥ��롥
-         : ���ĤΥ��󥿡��ץ꥿������ȤäƤ�����ˤϥ��顼���ˤ���
-         : �ޤ���ߤ��Ƥ��̾������ʤ�����ʣ���Υ��󥿡��ץ꥿��Ʊ��
-         : ��ư��Ƥ�����ˤϡ�������������륤�٥�ȥ롼�פϣ�
-         : �Ĥ����Ǥ��뤿�ᡤ�����줫�Υ��󥿡��ץ꥿�Υ��顼�������ǡ�
-         : ¾�Υ��󥿡��ץ꥿�ν�����³���Բ�ǽ�ˤʤ뤳�Ȥ����롥����
-         : �褦�ʾ��Ǥ⥨�顼��̵�뤷�ƥ��٥�ȥ롼�פ���Ư��³����
-         : ���Ȥǡ�¾�Υ��󥿡��ץ꥿�������ư�³���뤳�Ȥ��Ǥ��롥
-         : $SAFE >= 4 �Ǥϼ¹Ԥ��ػߤ���롥
+         : Tk インタープリタ上で例外を発生した際に，イベントループを
+         : エラー停止させるかどうかを指定する．true を指定した場合は
+         : エラー停止するが，false の場合は例外を無視してイベントルー
+         : プを継続する．さらに nil の場合は警告モードでない限りはエ
+         : ラーメッセージの出力すら省略して，例外を無視する．
+	 : デフォルトでは true に設定されている．
+         : １個のインタープリタだけを使っている場合にはエラー時にその
+         : まま停止しても通常は問題ないが，複数のインタープリタが同時
+         : に動作している場合には，それらを管理するイベントループは１
+         : 個だけであるため，いずれかのインタープリタのエラーが原因で，
+         : 他のインタープリタの処理継続が不可能になることがある．その
+         : ような場合でもエラーを無視してイベントループが稼働を続ける
+         : ことで，他のインタープリタが正常に動作し続けることができる．
+         : $SAFE >= 4 では実行が禁止される．
 
       mainloop_abort_on_exception
-         : Tk ���󥿡��ץ꥿����㳰��ȯ�������ݤˡ����٥�ȥ롼�פ�
-         : �顼��ߤ����뤫�ɤ�����������֤� true/false �����롥
+         : Tk インタープリタ上で例外を発生した際に，イベントループをエ
+         : ラー停止させるかどうかの設定状態を true/false で得る．
 
       num_of_mainwindows
-         : ���ߤΥᥤ�󥦥���ɥ� (�롼�ȥ��������å�) �ο����֤���
-         : �ᥤ�󥦥���ɥ��ϰ�ĤΥ��󥿡��ץ꥿���դ������ĤǤ���
-         : �Τǡ������ͤϸ��� Tk �ε�ǽ��ͭ���Ǥ��륤�󥿡��ץ꥿����
-         : ������������
+         : 現在のメインウィンドウ (ルートウィジェット) の数を返す．
+         : メインウィンドウは一つのインタープリタに付き最大一つである
+         : ので，この値は現在 Tk の機能が有効であるインタープリタの総
+         : 数に等しい．
 
       _merge_tklist(str, str, ... )
-         : Tcl/Tk �Υ饤�֥��ؿ���Ȥäơ�������ʸ���󤬤��줾��
-         : ��������ĤΥꥹ�����ǤȤʤ�褦��Ϣ�뤷��ʸ������֤���
+         : Tcl/Tk のライブラリ関数を使って，引数の文字列がそれぞれ
+         : 正しく一つのリスト要素となるように連結した文字列を返す．
 
       _conv_listelement(str)
-         : Tcl/Tk �Υ饤�֥��ؿ���Ȥäơ�������ʸ���� Tcl ��
-         : ��ĤΥꥹ�����ǤȤ���Ŭ�ڤ�ɽ���ˤʤ�褦���Ѵ�����ʸ
-         : ������֤���
+         : Tcl/Tk のライブラリ関数を使って，引数の文字列が Tcl の
+         : 一つのリスト要素として適切な表現になるように変換した文
+         : 字列を返す．
 
       _toUTF8(str, encoding=nil)
       _fromUTF8(str, encoding=nil)
-         : Tcl/Tk ����¢���Ƥ��� UTF8 �Ѵ�������ƤӽФ���
+         : Tcl/Tk が内蔵している UTF8 変換処理を呼び出す．
 
       _subst_UTF_backslash(str)
       _subst_Tcl_backslash(str)
-         : Tcl �Υ롼��ǥХå�����å��嵭ˡ ( \uhhhh �ˤ��
-         : Unicode ʸ��ɽ����ޤ� ) ����Ϥ��롥
-         : _subst_Tcl_backslash �Ϥ��٤ƤΥХå�����å��嵭ˡ��
-         : �֤�������Τ��Ф���_subst_UTF_backslash �� \uhhhh
-         : �ˤ�� Unicode ʸ��ɽ���������֤������롥
+         : Tcl のルールでバックスラッシュ記法 ( \uhhhh による
+         : Unicode 文字表現を含む ) を解析する．
+         : _subst_Tcl_backslash はすべてのバックスラッシュ記法を
+         : 置き換えるのに対し，_subst_UTF_backslash は \uhhhh
+         : による Unicode 文字表現だけを置き換える．
 
       encoding_system
       encoding_system=(encoding)
-         : Tcl �� system encoding �γ������������
+         : Tcl の system encoding の獲得および設定
 
       encoding
       encoding=(encoding)
-         : encoding_system / encoding_system= �� alias
-         : ( Ruby/Tk �� tk.rb �Ǥ��֤���������ͽ��Τ�Ρ�)
+         : encoding_system / encoding_system= の alias
+         : ( Ruby/Tk の tk.rb では置き換えられる予定のもの．)
 
 
-���饹 TclTkIp
-   ���饹�᥽�å�
+クラス TclTkIp
+   クラスメソッド
       new(ip_name=nil, options='')
-         : TclTkIp ���饹�Υ��󥹥��󥹤��������롥
-         : ip_name ��ʸ�����Ϳ�������ϡ����줬 winfo interps �ʤɤ�
-         : ɽ�������̾���ˤʤ롥
-         : options �ˤϡ�-geometry �� -use �ʤɡ�wish �Υ��ޥ�ɥ饤��
-         : �����Ȥ���Ϳ���륪�ץ�����Ʊ�ͤξ����ʸ����Ȥ���Ϳ���롥
-         : Ϳ����줿����ϡ�root widget �����κݤ��Ѥ����롥
+         : TclTkIp クラスのインスタンスを生成する．
+         : ip_name に文字列を与えた場合は，それが winfo interps などで
+         : 表示される名前になる．
+         : options には，-geometry や -use など，wish のコマンドライン
+         : 引数として与えるオプションと同様の情報を文字列として与える．
+         : 与えられた情報は，root widget 生成の際に用いられる．
          : ( e.g. TclTkIp.new('FOO', '-geometry 500x200 -use 0x2200009') )
-         : �⤷ options �˴����� nil �ޤ��� false ��Ϳ������硤Tk �饤
-         : �֥�꤬Ƴ������Ƥ��ʤ� (�Ĥޤ�� Tcl �Τߤ�) ���󥿡��ץ�
-         : �����������롥���ξ��� GUI �Ķ���ɬ�פʤ����ᡤ������ɥ�
-         : �����ƥब¸�ߤ��ʤ����ޤ��ϻ��ѤǤ��ʤ��Ķ��Ǥ� Tcl ���󥿡�
-         : �ץ꥿����������Tcl �䤽�γ�ĥ�饤�֥�����Ѥ��뤳�Ȥ��Ǥ��롥
+         : もし options に敢えて nil または false を与えた場合，Tk ライ
+         : ブラリが導入されていない (つまりは Tcl のみの) インタープリ
+         : タを生成する．この場合は GUI 環境は必要ないため，ウインドウ
+         : システムが存在しない，または使用できない環境でも Tcl インター
+         : プリタを生成し，Tcl やその拡張ライブラリを活用することができる．
 
-   ���󥹥��󥹥᥽�å�
+   インスタンスメソッド
       create_slave(name, safe=false)
-         : �쥷���Ф�ƤȤ��� name �Ȥ���̾���Υ��졼�֥��󥿡��ץ꥿��
-	 : �������롥
-	 : safe �ˤ��������륤�󥿡��ץ꥿�� safe ���󥿡��ץ꥿�Ȥ���
-         : ������ꤹ�롥�ǥե���Ȥ� false �Ȥ������ȤˤʤäƤ��뤬��
-         : ���Ȥ����Τ� false ����ꤷ�Ƥ����Ȥ��Ƥ⡤�ƤȤʤ륤�󥿡�
-         : �ץ꥿�� safe ���󥿡��ץ꥿�Ǥ���С��������������Ѥ���
-         : safe ���󥿡��ץ꥿�Ȥ�����������롥
-         : $SAFE >= 4 �Ǥϡ�safe ���󥿡��ץ꥿�ʳ����������ػߤ���롥
+         : レシーバを親とする name という名前のスレーブインタープリタを
+	 : 生成する．
+	 : safe には生成するインタープリタを safe インタープリタとする
+         : かを指定する．デフォルトは false ということになっているが，
+         : たとえ明確に false を指定していたとしても，親となるインター
+         : プリタが safe インタープリタであれば，その設定を引き継いで
+         : safe インタープリタとして生成される．
+         : $SAFE >= 4 では，safe インタープリタ以外の生成が禁止される．
 
       make_safe
-         : Tcl/Tk ���󥿡��ץ꥿�� safe ���󥿡��ץ꥿���ѹ����롥
-         : ����ͤϥ쥷���ФǤ��륤�󥿡��ץ꥿���ȤǤ��롥
-         : ���Ԥ������� RuntimeError ���㳰��ȯ�����롥
+         : Tcl/Tk インタープリタを safe インタープリタに変更する．
+         : 戻り値はレシーバであるインタープリタ自身である．
+         : 失敗した場合は RuntimeError の例外を発生する．
 
       safe?
-         : Tcl/Tk ���󥿡��ץ꥿�� safe ���󥿡��ץ꥿�Ǥ��뤫��Ĵ�٤롥
-         : safe ���󥿡��ץ꥿�Ǥ���� true ���֤���
+         : Tcl/Tk インタープリタが safe インタープリタであるかを調べる．
+         : safe インタープリタであれば true を返す．
 
       allow_ruby_exit?
-         : �оݤȤʤ륤�󥿡��ץ꥿���ɾ���ǡ�ruby �� exit �ؿ��ޤ���
-         : Tcl/Tk ��� exit ���ޥ�ɤˤ�ä� ruby ���Τ�λ�����뤳��
-         : ��������ɤ������֤���
-	 : �����ʤ������оݤΥ��󥿡��ץ꥿��������λ���롥
-         : �ޥ��������󥿡��ץ꥿�Υǥե�����ͤ� true�����졼�֥��󥿡�
-         : �ץ꥿�Υǥե�����ͤ� false �Ǥ��롥
+         : 対象となるインタープリタ上の評価で，ruby の exit 関数または
+         : Tcl/Tk 上の exit コマンドによって ruby 自体を終了させること
+         : を許すかどうかを返す．
+	 : 許さない場合は対象のインタープリタだけが終了する．
+         : マスターインタープリタのデフォルト値は true，スレーブインター
+         : プリタのデフォルト値は false である．
 
       allow_ruby_exit=(mode)
-         : �оݤȤʤ륤�󥿡��ץ꥿�� allow_ruby_exit? �ξ��֤��ѹ����롥
-	 : $SAFE >= 4 �ޤ��ϥ��󥿡��ץ꥿�� safe ���󥿡��ץ꥿�ξ���
-	 : �ѹ���������ʤ� (�㳰��ȯ��)��
+         : 対象となるインタープリタの allow_ruby_exit? の状態を変更する．
+	 : $SAFE >= 4 またはインタープリタが safe インタープリタの場合は
+	 : 変更が許されない (例外を発生)．
 
       delete
-         : Tcl/Tk ���󥿡��ץ꥿�� delete ���롥
-         : delete ���줿���󥿡��ץ꥿�ϡ��ʸ���ڤ����Ǥ��ʤ��ʤꡤ
-         : ���ޥ�ɤ����äƤ��㳰��ȯ������褦�ˤʤ롥
+         : Tcl/Tk インタープリタを delete する．
+         : delete されたインタープリタは，以後一切の操作ができなくなり，
+         : コマンドを送っても例外を発生するようになる．
 
       deleted?
-         : Tcl/Tk ���󥿡��ץ꥿�����Ǥ� delete ����Ƥ��뤫��Ĵ�٤롥
-         : delete �Ѥߤǥ��ޥ�ɤ�����դ��ʤ����֤ˤʤäƤ���ʤ��
-         : true ���֤���
+         : Tcl/Tk インタープリタがすでに delete されているかを調べる．
+         : delete 済みでコマンドを受け付けない状態になっているならば
+         : true を返す．
 
       has_mainwindow?
-         : Tcl/Tk ���󥿡��ץ꥿�˥ᥤ�󥦥���ɥ� (root widget) ��
-         : ¸�ߤ���� true ��¸�ߤ��ʤ���� false ���֤���
-         : ���󥿡��ץ꥿������ delete �ѤߤǤ���� nil ���֤���
+         : Tcl/Tk インタープリタにメインウィンドウ (root widget) が
+         : 存在すれば true を，存在しなければ false を返す．
+         : インタープリタが既に delete 済みであれば nil を返す．
 
       restart
-         : Tcl/Tk ���󥿡��ץ꥿�� Tk ��ʬ�ν�������Ƶ�ư��Ԥ���
-         : ��ö root widget ���˲�������˺��� Tk �ε�ǽ��ɬ�פ�
-         : �ʤä������Ѥ��롥
-         : $SAFE >= 4 �Ǥϼ¹Ԥ��ػߤ���롥
+         : Tcl/Tk インタープリタの Tk 部分の初期化，再起動を行う．
+         : 一旦 root widget を破壊した後に再度 Tk の機能が必要と
+         : なった場合に用いる．
+         : $SAFE >= 4 では実行が禁止される．
 
       _eval(str)
       _invoke(*args)
-         : Tcl/Tk ���󥿡��ץ꥿���ɾ����Ԥ���
-         : _eval ��ɾ��������ץȤ���Ĥ�ʸ����Ǥ��뤳�Ȥ��Ф���
-         : _invoke ��ɾ��������ץȤ� token ���Ȥ˰�Ĥΰ����Ȥ�
-         : ��褦��Ϳ���롥
-         : _invoke ������ Tcl/Tk ���󥿡��ץ꥿�λ�����ϴ���Ѥ�
-         : �ʤ����ᡤɾ������٤���꾯�ʤ��Ƥ��ࡥ��������������
-         : ���� auto_load �Τ褦�ʵ�����Ư������load ���ˤ�ä�
-         : Tcl/Tk ���󥿡��ץ꥿��˴�����Ͽ�ѤߤΥ��ޥ�ɤ�����
-         : �ӽФ����Ȥ��Ǥ��ʤ���
-         : _eval �Ǥ� auto_load ������Ư�����ᡤ���� _eval ��¹�
-         : ������Ͽ����������������С��ʹߤ� _invoke �Ǥ����Ѥ�
-         : ����褦�ˤʤ롥
+         : Tcl/Tk インタープリタ上で評価を行う．
+         : _eval は評価スクリプトが一つの文字列であることに対し，
+         : _invoke は評価スクリプトの token ごとに一つの引数とな
+         : るように与える．
+         : _invoke の方は Tcl/Tk インタープリタの字句解析器を用い
+         : ないため，評価の負荷がより少なくてすむ．ただし，その代
+         : わりに auto_load のような機構は働かず，load 等によって
+         : Tcl/Tk インタープリタ上に既に登録済みのコマンドしか呼
+         : び出すことができない．
+         : _eval では auto_load 機構が働くため，一度 _eval を実行
+         : して登録に成功しさえすれば，以降は _invoke でも利用で
+         : きるようになる．
 
       _cancel_eval(str)
       _cancel_eval_unwind(str)
          : (Tcl/Tk8.6 or later)
-         : Tcl_CancelEval() �ؿ���ƤӽФ���eval �μ¹Ԥ��Ǥ��ڤ롥
+         : Tcl_CancelEval() 関数を呼び出し，eval の実行を打ち切る．
 
       _toUTF8(str, encoding=nil)
       _fromUTF8(str, encoding=nil)
-         : Tcl/Tk ����¢���Ƥ��� UTF8 �Ѵ�������ƤӽФ���
+         : Tcl/Tk が内蔵している UTF8 変換処理を呼び出す．
 
       _thread_vwait(var_name)
       _thread_tkwait(mode, target)
-         : ����å��б��� vwait ���뤤�� tkwait �����Υ᥽�åɡ�
-         : �̾�� vwait ���뤤�� tkwait ���ޥ�ɤȰۤʤ�Τϡ����٥�
-         : �ȥ롼�פȤϰۤʤ륹��åɤ���ƤӽФ������� vwait ����
-         : �����å��Ȥ���Ω�˾�����Ω�Ԥ����ʤ���뤳�ȤǤ��롥
-         : �̾�� vwait / tkwait �Ǥϡ�vwait / tkwait (1) ���Ԥ�����
-         : ��Ǥ���� vwait / tkwait (2) ���ƤФ줿��硤�Ԥ����о�
-         : �ȤʤäƤ��������Ω������ɤ����졤(2)->(1) �ν���Ԥ�
-         : ��λ������äƤ��롥
-         : _thread_vwait / _thread_tkwait �ϡ����٥�ȥ롼�פΥ����
-         : �ɤǸƤФ줿�����̾�� vwait / tkwait ��Ʊ�ͤ�ư���
-         : �������٥�ȥ롼�װʳ��Υ���åɤǸƤФ줿���ˤϤ��Υ�
-         : ��åɤ���ߤ������Ԥ������ꡤ��郎��Ω�������˥���å�
-         : �μ¹Ԥ�Ƴ����롥��vwait �����Ԥ������å��Ȥ���Ω�פȤ�
-         : ����̣�ϡ����κƳ��Υ����ߥ󥰤�¾�Υ���åɤǤ��Ԥ�����
-         : �Ȥ�̵�ط��Ȥ������ȤǤ��롥�Ĥޤꡤ���٥�ȥ롼������¾
-         : �Υ���åɤ� vwait �����Ԥ��ξ��֤ˤ��ä��Ȥ��Ƥ⤽�δ�λ
-         : ���ԤĤ��Ȥʤ���������Ԥ���郎��Ω���衤�������³����
-         : ���Ȥˤʤ롥
+         : スレッド対応の vwait あるいは tkwait 相当のメソッド．
+         : 通常の vwait あるいは tkwait コマンドと異なるのは，イベン
+         : トループとは異なるスレッドから呼び出した場合に vwait 等の
+         : スタックとは独立に条件の成立待ちがなされることである．
+         : 通常の vwait / tkwait では，vwait / tkwait (1) の待ちの途
+         : 中でさらに vwait / tkwait (2) が呼ばれた場合，待ちの対象
+         : となっている条件の成立順序がどうあれ，(2)->(1) の順で待ち
+         : を終了して戻ってくる．
+         : _thread_vwait / _thread_tkwait は，イベントループのスレッ
+         : ドで呼ばれた場合は通常の vwait / tkwait と同様に動作する
+         : が，イベントループ以外のスレッドで呼ばれた場合にはそのス
+         : レッドを停止させて待ちに入り，条件が成立した時にスレッド
+         : の実行を再開する．「vwait 等の待ちスタックとは独立」とい
+         : う意味は，この再開のタイミングが他のスレッドでの待ち状況
+         : とは無関係ということである．つまり，イベントループ等の他
+         : のスレッドで vwait 等で待ちの状態にあったとしてもその完了
+         : を待つことなく，自らの待ち条件が成立次第，処理を継続する
+         : ことになる．
 
       _return_value
-         : ľ���� Tcl/Tk ��Ǥ�ɾ���μ¹Է�̤Ȥ��Ƥ�����ͤ��֤���
+         : 直前の Tcl/Tk 上での評価の実行結果としての戻り値を返す．
 
       _get_variable(var_name, flag)
       _get_variable2(var_name, index_name, flag)
-         : Tcl/Tk ��� var �Ȥ����ѿ�̾���ѿ����ͤ��֤���
-         : �⤷ index_name ������ (PARSE_VARNAME �ե饰�������⻲��)
-         : ���줿����Ϣ������ var_name �� index_name �����Ǥ��֤���
-         : flag �ˤ��ѿ��򸡺�����ݤξ�����ꤹ�롥flag ��Ϳ����
-         : �ͤϥ⥸�塼�� TclTkLib::VarAccessFlag �򻲾Ȥ��뤳�ȡ�
+         : Tcl/Tk 上の var という変数名の変数の値を返す．
+         : もし index_name が指定 (PARSE_VARNAME フラグの説明も参照)
+         : された場合は連想配列 var_name の index_name の要素を返す．
+         : flag には変数を検索する際の条件を指定する．flag に与える
+         : 値はモジュール TclTkLib::VarAccessFlag を参照すること．
 
       _set_variable(var_name, value, flag)
       _set_variable2(var_name, index_name, value, flag)
-         : Tcl/Tk ��� var �Ȥ����ѿ�̾���ѿ����ͤ����ꤹ�롥
-         : �⤷ index_name ������ (PARSE_VARNAME �ե饰�������⻲��)
-         : ���줿����Ϣ������ var_name �� index_name �����Ǥ�����
-         : ���롥
-         : flag �ˤ��ѿ��򸡺�����ݤξ�����ꤹ�롥flag ��Ϳ����
-         : �ͤϥ⥸�塼�� TclTkLib::VarAccessFlag �򻲾Ȥ��뤳�ȡ�
+         : Tcl/Tk 上の var という変数名の変数に値を設定する．
+         : もし index_name が指定 (PARSE_VARNAME フラグの説明も参照)
+         : された場合は連想配列 var_name の index_name の要素を設定
+         : する．
+         : flag には変数を検索する際の条件を指定する．flag に与える
+         : 値はモジュール TclTkLib::VarAccessFlag を参照すること．
 
       _unset_variable(var_name)
       _unset_variable2(var_name, index_name)
-         : Tcl/Tk ��� var_name �Ȥ����ѿ�̾���ѿ���õ�롥
-         : �⤷ index_name ������ (PARSE_VARNAME �ե饰�������⻲��)
-         : ���줿����Ϣ������ var_name ���� index_name �����Ǥ���
-         : ��õ�롥
+         : Tcl/Tk 上の var_name という変数名の変数を消去する．
+         : もし index_name が指定 (PARSE_VARNAME フラグの説明も参照)
+         : された場合は連想配列 var_name から index_name の要素だけ
+         : を消去する．
 
       _get_global_var(var_name)
       _get_global_var2(var_name, index_name)
@@ -527,31 +527,31 @@ require "tcltklib" �����, �ʲ��Υ⥸�塼��, ���饹�����Ѳ�ǽ�Ǥ�.
       _set_global_var2(var_name, index_name, value)
       _unset_global_var(var_name)
       _unset_global_var2(var_name, index_name)
-         : ���줾�졤�б������ѿ����������᥽�åɤ� flag ���Ф���
-         : (GLOBAL_ONLY | LEAVE_ERR_MSG) ��Ϳ������Ρ�
+         : それぞれ，対応する変数アクセスメソッドの flag に対して
+         : (GLOBAL_ONLY | LEAVE_ERR_MSG) を与えたもの．
 
       _split_tklist(str)
-         : Tcl/Tk �Υ饤�֥��ؿ���Ȥäơ�ʸ���� str ��ꥹ�Ȥ�
-         : ʬ�䤹�� (ʸ���������Ȥ����֤�)��
+         : Tcl/Tk のライブラリ関数を使って，文字列 str をリストに
+         : 分割する (文字列の配列として返す)．
 
       _merge_tklist(str, str, ... )
-         : Tcl/Tk �Υ饤�֥��ؿ���Ȥäơ�������ʸ���󤬤��줾��
-         : ��������ĤΥꥹ�����ǤȤʤ�褦��Ϣ�뤷��ʸ������֤���
+         : Tcl/Tk のライブラリ関数を使って，引数の文字列がそれぞれ
+         : 正しく一つのリスト要素となるように連結した文字列を返す．
 
       _conv_listelement(str)
-         : Tcl/Tk �Υ饤�֥��ؿ���Ȥäơ�������ʸ���� Tcl ��
-         : ��ĤΥꥹ�����ǤȤ���Ŭ�ڤ�ɽ���ˤʤ�褦���Ѵ�����ʸ
-         : ������֤���
+         : Tcl/Tk のライブラリ関数を使って，引数の文字列が Tcl の
+         : 一つのリスト要素として適切な表現になるように変換した文
+         : 字列を返す．
 
       mainloop
       mainloop_watchdog
-         : ���졼�� IP �ξ��ˤϥ��٥�ȥ롼�פ�ư������ nil ���֤���
-         : ����ʳ������Ǥϰ�����ޤ�� TclTkLib ��Ʊ̾�᥽�åɤ�Ʊ����
+         : スレーブ IP の場合にはイベントループを起動せずに nil を返す．
+         : それ以外の点では引数を含めて TclTkLib の同名メソッドに同じ．
 
       do_one_event
-         : ���졼�� IP �ξ��ˤϰ����Υ��٥�ȥե饰�� DONT_WAIT ��
-         : ����Ū���ɲä���� (���٥���Ԥ��ǥ��꡼�פ��뤳�Ȥ϶ػ�)��
-         : ����ʳ������Ǥϰ�����ޤ�� TclTkLib ��Ʊ̾�᥽�åɤ�Ʊ����
+         : スレーブ IP の場合には引数のイベントフラグに DONT_WAIT が
+         : 強制的に追加される (イベント待ちでスリープすることは禁止)．
+         : それ以外の点では引数を含めて TclTkLib の同名メソッドに同じ．
 
       set_eventloop_tick
       get_eventloop_tick
@@ -561,24 +561,24 @@ require "tcltklib" �����, �ʲ��Υ⥸�塼��, ���饹�����Ѳ�ǽ�Ǥ�.
       get_eventloop_weight
       mainloop_abort_on_exception
       mainloop_abort_on_exception=
-         : ���졼�� IP �ξ��ˤ��ͤ����꤬������ʤ� (̵�뤵���)��
-         : ����ʳ������Ǥϰ�����ޤ�� TclTkLib ��Ʊ̾�᥽�åɤ�Ʊ����
+         : スレーブ IP の場合には値の設定が許されない (無視される)．
+         : それ以外の点では引数を含めて TclTkLib の同名メソッドに同じ．
 
       encoding_table
-         : Ruby m17n �Ѥ� Ruby �� Tk �Ȥδ֤� encoding �б�ɽ���֤���
+         : Ruby m17n 用に Ruby と Tk との間の encoding 対応表を返す．
 
-���饹 TkCallbackBreak < StandardError
-���饹 TkCallbackContinue < StandardError
-   : �����ϥ��٥�ȥ�����Хå��ˤ����ơ�������Хå�������Ŭ�ڤ���
-   : �Ǥ����ꡤ���ΥХ���ɥ����ΥХ���ǥ��󥰽����˿ʤ᤿�ꤹ�뤳��
-   : ���ǽ�ˤ��뤿����㳰���饹�Ǥ��롥
-   : ������Хå��� break �� continue ��¸����뤿��ˤϡ�������Хå�
-   : �Ǥ��� Ruby ��³���� Tcl/Tk ���󥿡��ץ꥿¦��Ŭ�ڤʥ꥿���󥳡�
-   : �ɤ��֤�ɬ�פ����롥Ruby �μ�³�������̤��ͤ��֤��ΤǤϡ����줬��
-   : �̤�����ͤǤ���Τ��ݤ�����̤��Ǥ��ʤ����ᡤ�㳰ȯ�������Ѥ���
-   : ������ԤäƤ��롥
-   : ���������ߤǤϡ�������Хå���³���� Ruby �� break, next �ǽ�λ��
-   : �뤳�Ȥ�Ʊ���η�̤����뤳�Ȥ��Ǥ���褦�ˤʤäƤ��롥����椨��
-   : ������ɬ�פʤ���ΤǤϤ��뤬���ߴ����Τ���˻Ĥ��Ƥ��롥
+クラス TkCallbackBreak < StandardError
+クラス TkCallbackContinue < StandardError
+   : これらはイベントコールバックにおいて，コールバック処理を適切に中
+   : 断したり，次のバインドタグのバインディング処理に進めたりすること
+   : を可能にするための例外クラスである．
+   : コールバックで break や continue を実現するためには，コールバック
+   : である Ruby 手続きが Tcl/Tk インタープリタ側に適切なリターンコー
+   : ドを返す必要がある．Ruby の手続きが普通に値を返すのでは，それが普
+   : 通の戻り値であるのか否かを区別ができないため，例外発生を利用した
+   : 実装を行っている．
+   : ただし現在では，コールバック手続きを Ruby の break, next で終了す
+   : ることで同等の結果を得ることができるようになっている．それゆえ，
+   : これらは必要ないものではあるが，互換性のために残してある．
 
 (eof)

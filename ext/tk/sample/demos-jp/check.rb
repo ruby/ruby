@@ -1,15 +1,15 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # checkbutton widget demo (called by 'widget')
 #
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ðºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($check_demo) && $check_demo
   $check_demo.destroy
   $check_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $check_demo = TkToplevel.new {|w|
   title("Checkbutton Demonstration")
   iconname("check")
@@ -18,25 +18,25 @@ $check_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($check_demo).pack(:fill=>:both, :expand=>true)
 
-# label À¸À®
+# label ç”Ÿæˆ
 msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
-  text "²¼¤Ë¤Ï 3 ¤Ä¤Î¥Á¥§¥Ã¥¯¥Ü¥¿¥ó¤¬É½¼¨¤µ¤ì¤Æ¤¤¤Þ¤¹¡£¥¯¥ê¥Ã¥¯¤¹¤ë¤È¥Ü¥¿¥ó¤ÎÁªÂò¾õÂÖ¤¬ÊÑ¤ï¤ê¡¢Tcl ÊÑ¿ô ( TkVariable ¥ª¥Ö¥¸¥§¥¯¥È¤Ç¥¢¥¯¥»¥¹¤Ç¤­¤Þ¤¹ ) ¤Ë¤½¤Î¥Ü¥¿¥ó¤Î¾õÂÖ¤ò¼¨¤¹ÃÍ¤òÀßÄê¤·¤Þ¤¹¡£¸½ºß¤ÎÊÑ¿ô¤ÎÃÍ¤ò¸«¤ë¤Ë¤Ï¡ÖÊÑ¿ô»²¾È¡×¥Ü¥¿¥ó¤ò¥¯¥ê¥Ã¥¯¤·¤Æ¤¯¤À¤µ¤¤¡£"
+  text "ä¸‹ã«ã¯ 3 ã¤ã®ãƒã‚§ãƒƒã‚¯ãƒœã‚¿ãƒ³ãŒè¡¨ç¤ºã•ã‚Œã¦ã„ã¾ã™ã€‚ã‚¯ãƒªãƒƒã‚¯ã™ã‚‹ã¨ãƒœã‚¿ãƒ³ã®é¸æŠžçŠ¶æ…‹ãŒå¤‰ã‚ã‚Šã€Tcl å¤‰æ•° ( TkVariable ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã§ã‚¢ã‚¯ã‚»ã‚¹ã§ãã¾ã™ ) ã«ãã®ãƒœã‚¿ãƒ³ã®çŠ¶æ…‹ã‚’ç¤ºã™å€¤ã‚’è¨­å®šã—ã¾ã™ã€‚ç¾åœ¨ã®å¤‰æ•°ã®å€¤ã‚’è¦‹ã‚‹ã«ã¯ã€Œå¤‰æ•°å‚ç…§ã€ãƒœã‚¿ãƒ³ã‚’ã‚¯ãƒªãƒƒã‚¯ã—ã¦ãã ã•ã„ã€‚"
 }
 msg.pack('side'=>'top')
 
-# ÊÑ¿ôÀ¸À®
+# å¤‰æ•°ç”Ÿæˆ
 wipers = TkVariable.new(0)
 brakes = TkVariable.new(0)
 sober  = TkVariable.new(0)
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $check_demo
       $check_demo = nil
@@ -46,13 +46,13 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'check'}
   }.pack('side'=>'left', 'expand'=>'yes')
 
 
   TkButton.new(frame) {
-    text 'ÊÑ¿ô»²¾È'
+    text 'å¤‰æ•°å‚ç…§'
     command proc{
       showVars(base_frame,
                ['wipers', wipers], ['brakes', brakes], ['sober', sober])
@@ -62,9 +62,9 @@ TkFrame.new(base_frame) {|frame|
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 
-# checkbutton À¸À®
-[ TkCheckButton.new(base_frame, 'text'=>'¥ï¥¤¥Ñ¡¼ OK', 'variable'=>wipers),
-  TkCheckButton.new(base_frame, 'text'=>'¥Ö¥ì¡¼¥­ OK', 'variable'=>brakes),
-  TkCheckButton.new(base_frame, 'text'=>'±¿Å¾¼ê ÁÇÌÌ', 'variable'=>sober)
+# checkbutton ç”Ÿæˆ
+[ TkCheckButton.new(base_frame, 'text'=>'ãƒ¯ã‚¤ãƒ‘ãƒ¼ OK', 'variable'=>wipers),
+  TkCheckButton.new(base_frame, 'text'=>'ãƒ–ãƒ¬ãƒ¼ã‚­ OK', 'variable'=>brakes),
+  TkCheckButton.new(base_frame, 'text'=>'é‹è»¢æ‰‹ ç´ é¢', 'variable'=>sober)
 ].each{|w| w.relief('flat'); w.pack('side'=>'top', 'pady'=>2, 'anchor'=>'w')}
 

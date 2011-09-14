@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # ttkpane.rb --
 #
@@ -21,9 +21,9 @@ base_frame = TkFrame.new($ttkpane_demo).pack(:fill=>:both, :expand=>true)
 
 Ttk::Label.new(base_frame, :font=>$font, :wraplength=>'4i', :justify=>:left,
                :text=><<EOL).pack(:side=>:top, :fill=>:x)
-¤³¤Î¥Ç¥â¤Ï¡¤Ëä¤á¹þ¤ß´Ø·¸¤Ë¤¢¤ë¥Æ¡¼¥ÞÉÕ¤­¥Ú¥¤¥ó¥É¥¦¥£¥ó¥É¥¦¤ò¼¨¤·¤Æ¤¤¤Þ¤¹¡¥\
-¤½¤ì¤¾¤ì¤ÎÂç¤­¤µ¤Ï¡¤´Þ¤Þ¤ì¤Æ¤¤¤ë¥Ú¥¤¥ó¤Î´Ö¤Ë¤¢¤ë¥¨¥ê¥¢¤ò¤Ä¤«¤ó¤Ç\
-¶­³¦¤ò¥É¥é¥Ã¥°¤¹¤ë¤³¤È¤ÇÊÑ¹¹¤Ç¤­¤Þ¤¹¡¥
+ã“ã®ãƒ‡ãƒ¢ã¯ï¼ŒåŸ‹ã‚è¾¼ã¿é–¢ä¿‚ã«ã‚ã‚‹ãƒ†ãƒ¼ãƒžä»˜ããƒšã‚¤ãƒ³ãƒ‰ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ç¤ºã—ã¦ã„ã¾ã™ï¼Ž\
+ãã‚Œãžã‚Œã®å¤§ãã•ã¯ï¼Œå«ã¾ã‚Œã¦ã„ã‚‹ãƒšã‚¤ãƒ³ã®é–“ã«ã‚ã‚‹ã‚¨ãƒªã‚¢ã‚’ã¤ã‹ã‚“ã§\
+å¢ƒç•Œã‚’ãƒ‰ãƒ©ãƒƒã‚°ã™ã‚‹ã“ã¨ã§å¤‰æ›´ã§ãã¾ã™ï¼Ž
 EOL
 
 Ttk::Separator.new(base_frame).pack(:side=>:top, :fill=>:x)
@@ -33,10 +33,10 @@ Ttk::Frame.new(base_frame) {|frame|
   sep = Ttk::Separator.new(frame)
   Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
   TkGrid('x',
-         Ttk::Button.new(frame, :text=>'¥³¡¼¥É»²¾È',
+         Ttk::Button.new(frame, :text=>'ã‚³ãƒ¼ãƒ‰å‚ç…§',
                          :image=>$image['view'], :compound=>:left,
                          :command=>proc{showCode 'ttkpane'}),
-         Ttk::Button.new(frame, :text=>'ÊÄ¤¸¤ë',
+         Ttk::Button.new(frame, :text=>'é–‰ã˜ã‚‹',
                          :image=>$image['delete'], :compound=>:left,
                          :command=>proc{
                            $ttkpane_demo.destroy
@@ -52,19 +52,19 @@ frame = Ttk::Frame.new(base_frame).pack(:fill=>:both, :expand=>true)
 outer = Ttk::Panedwindow.new(frame, :orient=>:horizontal)
 outer.add(in_left = Ttk::Panedwindow.new(outer, :orient=>:vertical))
 outer.add(in_right = Ttk::Panedwindow.new(outer, :orient=>:vertical))
-in_left.add(left_top = Ttk::Labelframe.new(in_left, :text=>'¥Ü¥¿¥ó'))
-in_left.add(left_bot = Ttk::Labelframe.new(in_left, :text=>'»þ·×'))
-in_right.add(right_top = Ttk::Labelframe.new(in_right, :text=>'¥×¥í¥°¥ì¥¹'))
-in_right.add(right_bot = Ttk::Labelframe.new(in_right, :text=>'¥Æ¥­¥¹¥È'))
+in_left.add(left_top = Ttk::Labelframe.new(in_left, :text=>'ãƒœã‚¿ãƒ³'))
+in_left.add(left_bot = Ttk::Labelframe.new(in_left, :text=>'æ™‚è¨ˆ'))
+in_right.add(right_top = Ttk::Labelframe.new(in_right, :text=>'ãƒ—ãƒ­ã‚°ãƒ¬ã‚¹'))
+in_right.add(right_bot = Ttk::Labelframe.new(in_right, :text=>'ãƒ†ã‚­ã‚¹ãƒˆ'))
 if Tk.windowingsystem == 'aqua'
   [left_top, left_bot, right_top, right_bot].each{|w| w.padding(3) }
 end
 
 # Fill the button pane
-Ttk::Button.new(left_top, :text=>'²¡¤·¤Æ¤Í',
+Ttk::Button.new(left_top, :text=>'æŠ¼ã—ã¦ã­',
                 :command=>proc{
                   Tk.messageBox(:type=>'ok', :icon=>'info',
-                                :message=>'¤¤¤Æ¤Æ¡ª',
+                                :message=>'ã„ã¦ã¦ï¼',
                                 :detail=>'That hurt...', :parent=>base_frame,
                                 :title=>'Button Pressed')
                 }).pack(:padx=>2, :pady=>5)

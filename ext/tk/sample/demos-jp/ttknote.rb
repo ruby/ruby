@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # ttknote.rb --
 #
@@ -23,10 +23,10 @@ Ttk::Frame.new($ttknote_demo) {|frame|
   sep = Ttk::Separator.new(frame)
   Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
   TkGrid('x',
-         Ttk::Button.new(frame, :text=>'¥³¡¼¥É»²¾È',
+         Ttk::Button.new(frame, :text=>'ã‚³ãƒ¼ãƒ‰å‚ç…§',
                          :image=>$image['view'], :compound=>:left,
                          :command=>proc{showCode 'ttknote'}),
-         Ttk::Button.new(frame, :text=>'ÊÄ¤¸¤ë',
+         Ttk::Button.new(frame, :text=>'é–‰ã˜ã‚‹',
                          :image=>$image['delete'], :compound=>:left,
                          :command=>proc{
                            $ttknote_demo.destroy
@@ -48,31 +48,31 @@ notebook.enable_traversal
 f_msg = Ttk::Frame.new(notebook)
 msg_m = Ttk::Label.new(f_msg, :font=>$font, :wraplength=>'5i',
                        :justify=>:left, :anchor=>'n', :text=><<EOL)
-Ttk¤È¤Ï¡¤¥Æ¡¼¥Þ»ØÄê²ÄÇ½¤Ê¿·¤·¤¤¥¦¥£¥¸¥§¥Ã¥È½¸¹ç¤Ç¤¹¡¥\
-¤½¤ÎÃæ¤Ë´Þ¤Þ¤ì¤ë¥¦¥£¥¸¥§¥Ã¥È¤Î¤Ò¤È¤Ä¤Ë¥Î¡¼¥È¥Ö¥Ã¥¯¥¦¥£¥¸¥§¥Ã¥È¤¬¤¢¤ê¤Þ¤¹¡¥\
-¥Î¡¼¥È¥Ö¥Ã¥¯¥¦¥£¥¸¥§¥Ã¥È¤Ï¡¤\
-¸ÄÊÌ¤ÎÆâÍÆ¤ò»ý¤Ã¤¿¥Ñ¥Í¥ë¤«¤é¤ÎÁªÂò¤ò²ÄÇ½¤Ë¤¹¤ë¤è¤¦¤Ê\
-¥¿¥Ö¤Î½¸¹ç¡Ê¥¿¥Ö¥»¥Ã¥È¡Ë¤òÄê¤á¤Þ¤¹¡¥\
-¥¿¥Ö¥»¥Ã¥È¤ÏºÇ¶á¤ÎÂ¿¤¯¤Î¥æ¡¼¥¶¥¤¥ó¥¿¡¼¥Õ¥§¡¼¥¹¤Ç¸«¤é¤ì¤ëµ¡Ç½¤Ç¤¹¡¥\
-¥¿¥Ö¤ÎÁªÂò¤Ï¡¤¥Þ¥¦¥¹¤Ë¤è¤ë¤À¤±¤Ç¤Ê¤¯¡¤\
-¥Î¡¼¥È¥Ö¥Ã¥¯¥¦¥£¥¸¥§¥Ã¥È¤Î¥Ú¡¼¥¸¤Î¸«½Ð¤·¤¬ÁªÂò¤µ¤ì¤Æ¤¤¤ë»þ¤Ç¤¢¤ì¤Ð\
-Ctrl+Tab¥­¡¼¤ÎÆþÎÏ¤Ë¤è¤Ã¤Æ¤â¹Ô¤¦¤³¤È¤¬¤Ç¤­¤Þ¤¹¡¥\
-¤³¤Î¥Ç¥â¤Ç¤Ï¡¤¸«½Ð¤·¤Ç²¼ÀþÉÕ¤­¤ÎÊ¸»ú¤Î¥­¡¼¤ÈAlt¥­¡¼¤È¤òÁÈ¤ß¹ç¤ï¤»¤ë¤³¤È¤Ç\
-¥Ú¡¼¥¸¤òÁªÂò¤¹¤ë¤³¤È¤¬¤Ç¤­¤ë¤è¤¦¤Ë¤âÀßÄê¤·¤Æ¤¤¤Þ¤¹¡¥\
-¤¿¤À¤·¡¤£²ÈÖÌÜ¤Î¥¿¥Ö¤ÏÌµ¸ú²½¤µ¤ì¤ÆÁªÂò¤Ç¤­¤Ê¤¤¤è¤¦¤Ë¤Ê¤Ã¤Æ¤¤¤ë¤³¤È¤Ë¤Ï\
-Ãí°Õ¤·¤Æ¤¯¤À¤µ¤¤¡¥
+Ttkã¨ã¯ï¼Œãƒ†ãƒ¼ãƒžæŒ‡å®šå¯èƒ½ãªæ–°ã—ã„ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆé›†åˆã§ã™ï¼Ž\
+ãã®ä¸­ã«å«ã¾ã‚Œã‚‹ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã®ã²ã¨ã¤ã«ãƒŽãƒ¼ãƒˆãƒ–ãƒƒã‚¯ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆãŒã‚ã‚Šã¾ã™ï¼Ž\
+ãƒŽãƒ¼ãƒˆãƒ–ãƒƒã‚¯ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã¯ï¼Œ\
+å€‹åˆ¥ã®å†…å®¹ã‚’æŒã£ãŸãƒ‘ãƒãƒ«ã‹ã‚‰ã®é¸æŠžã‚’å¯èƒ½ã«ã™ã‚‹ã‚ˆã†ãª\
+ã‚¿ãƒ–ã®é›†åˆï¼ˆã‚¿ãƒ–ã‚»ãƒƒãƒˆï¼‰ã‚’å®šã‚ã¾ã™ï¼Ž\
+ã‚¿ãƒ–ã‚»ãƒƒãƒˆã¯æœ€è¿‘ã®å¤šãã®ãƒ¦ãƒ¼ã‚¶ã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ãƒ¼ã‚¹ã§è¦‹ã‚‰ã‚Œã‚‹æ©Ÿèƒ½ã§ã™ï¼Ž\
+ã‚¿ãƒ–ã®é¸æŠžã¯ï¼Œãƒžã‚¦ã‚¹ã«ã‚ˆã‚‹ã ã‘ã§ãªãï¼Œ\
+ãƒŽãƒ¼ãƒˆãƒ–ãƒƒã‚¯ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã®ãƒšãƒ¼ã‚¸ã®è¦‹å‡ºã—ãŒé¸æŠžã•ã‚Œã¦ã„ã‚‹æ™‚ã§ã‚ã‚Œã°\
+Ctrl+Tabã‚­ãƒ¼ã®å…¥åŠ›ã«ã‚ˆã£ã¦ã‚‚è¡Œã†ã“ã¨ãŒã§ãã¾ã™ï¼Ž\
+ã“ã®ãƒ‡ãƒ¢ã§ã¯ï¼Œè¦‹å‡ºã—ã§ä¸‹ç·šä»˜ãã®æ–‡å­—ã®ã‚­ãƒ¼ã¨Altã‚­ãƒ¼ã¨ã‚’çµ„ã¿åˆã‚ã›ã‚‹ã“ã¨ã§\
+ãƒšãƒ¼ã‚¸ã‚’é¸æŠžã™ã‚‹ã“ã¨ãŒã§ãã‚‹ã‚ˆã†ã«ã‚‚è¨­å®šã—ã¦ã„ã¾ã™ï¼Ž\
+ãŸã ã—ï¼Œï¼’ç•ªç›®ã®ã‚¿ãƒ–ã¯ç„¡åŠ¹åŒ–ã•ã‚Œã¦é¸æŠžã§ããªã„ã‚ˆã†ã«ãªã£ã¦ã„ã‚‹ã“ã¨ã«ã¯\
+æ³¨æ„ã—ã¦ãã ã•ã„ï¼Ž
 EOL
 neat = TkVariable.new
 after_id = nil
-msg_b = Ttk::Button.new(f_msg, :text=>'¤¹¤Æ¤­¤À¡ª(Neat!)', :underline=>6,
+msg_b = Ttk::Button.new(f_msg, :text=>'ã™ã¦ãã ï¼(Neat!)', :underline=>6,
                         :command=>proc{
-                          neat.value = '¤¢¤¡¡¤¤½¤Î¤È¤ª¤ê¤µ¡¥¡¥¡¥'
+                          neat.value = 'ã‚ãï¼Œãã®ã¨ãŠã‚Šã•ï¼Žï¼Žï¼Ž'
                           Tk.after_cancel(after_id) if after_id
                           after_id = Tk.after(500){neat.value = ''}
                         })
 msg_b.winfo_toplevel.bind('Alt-n'){ msg_b.focus; msg_b.invoke }
 msg_l = Ttk::Label.new(f_msg, :textvariable=>neat)
-notebook.add(f_msg, :text=>'ÀâÌÀ(Description)', :underline=>3, :padding=>2)
+notebook.add(f_msg, :text=>'èª¬æ˜Ž(Description)', :underline=>3, :padding=>2)
 Tk.grid(msg_m, '-', :sticky=>'new', :pady=>2)
 Tk.grid(msg_b, msg_l, :pady=>[2, 4], :padx=>20)
 msg_b.grid_configure(:sticky=>'e')
@@ -82,11 +82,11 @@ f_msg.grid_columnconfigure([0, 1], :weight=>1, :uniform=>1)
 
 ## Populate the second pane. Note that the content doesn't really matter
 f_disabled = Ttk::Frame.new(notebook)
-notebook.add(f_disabled, :text=>'Ìµ¸ú²½¤µ¤ì¤¿¥¿¥Ö', :state=>:disabled)
+notebook.add(f_disabled, :text=>'ç„¡åŠ¹åŒ–ã•ã‚ŒãŸã‚¿ãƒ–', :state=>:disabled)
 
 ## Popuplate the third pane
 f_editor = Ttk::Frame.new(notebook)
-notebook.add(f_editor, :text=>'¥Æ¥­¥¹¥È¥¨¥Ç¥£¥¿(Text Editor)', :underline=>9)
+notebook.add(f_editor, :text=>'ãƒ†ã‚­ã‚¹ãƒˆã‚¨ãƒ‡ã‚£ã‚¿(Text Editor)', :underline=>9)
 editor_t = Tk::Text.new(f_editor, :width=>40, :height=>10, :wrap=>:char)
 if Tk.windowingsystem != 'aqua'
   editor_s = editor_t.yscrollbar(Ttk::Scrollbar.new(f_editor))

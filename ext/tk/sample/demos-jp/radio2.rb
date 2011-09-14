@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # radio2.rb
 #
@@ -28,7 +28,7 @@ msg = TkLabel.new(base_frame) {
   font $font
   wraplength '5i'
   justify 'left'
-  text "²¼¤Ë¤Ï3¤Ä¤Î¥é¥¸¥ª¥Ü¥¿¥ó¥°¥ë¡¼¥×¤¬É½¼¨¤µ¤ì¤Æ¤¤¤Þ¤¹¡£¥Ü¥¿¥ó¤ò¥¯¥ê¥Ã¥¯¤¹¤ë¤È¡¢¤½¤Î¥Ü¥¿¥ó¤À¤±¤¬¤½¤Î¥°¥ë¡¼¥×¤ÎÃæ¤ÇÁªÂò¤µ¤ì¤Þ¤¹¡£³Æ¥°¥ë¡¼¥×¤ËÂÐ¤·¤Æ¤½¤Î¥°¥ë¡¼¥×¤ÎÃæ¤Î¤É¤Î¥Ü¥¿¥ó¤¬ÁªÂò¤µ¤ì¤Æ¤¤¤ë¤«¤ò¼¨¤¹ÊÑ¿ô¤¬³ä¤êÅö¤Æ¤é¤ì¤Æ¤¤¤Þ¤¹¡£¸½ºß¤ÎÊÑ¿ô¤ÎÃÍ¤ò¸«¤ë¤Ë¤Ï¡ÖÊÑ¿ô»²¾È¡×¥Ü¥¿¥ó¤ò¥¯¥ê¥Ã¥¯¤·¤Æ¤¯¤À¤µ¤¤¡£"
+  text "ä¸‹ã«ã¯3ã¤ã®ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³ã‚°ãƒ«ãƒ¼ãƒ—ãŒè¡¨ç¤ºã•ã‚Œã¦ã„ã¾ã™ã€‚ãƒœã‚¿ãƒ³ã‚’ã‚¯ãƒªãƒƒã‚¯ã™ã‚‹ã¨ã€ãã®ãƒœã‚¿ãƒ³ã ã‘ãŒãã®ã‚°ãƒ«ãƒ¼ãƒ—ã®ä¸­ã§é¸æŠžã•ã‚Œã¾ã™ã€‚å„ã‚°ãƒ«ãƒ¼ãƒ—ã«å¯¾ã—ã¦ãã®ã‚°ãƒ«ãƒ¼ãƒ—ã®ä¸­ã®ã©ã®ãƒœã‚¿ãƒ³ãŒé¸æŠžã•ã‚Œã¦ã„ã‚‹ã‹ã‚’ç¤ºã™å¤‰æ•°ãŒå‰²ã‚Šå½“ã¦ã‚‰ã‚Œã¦ã„ã¾ã™ã€‚ç¾åœ¨ã®å¤‰æ•°ã®å€¤ã‚’è¦‹ã‚‹ã«ã¯ã€Œå¤‰æ•°å‚ç…§ã€ãƒœã‚¿ãƒ³ã‚’ã‚¯ãƒªãƒƒã‚¯ã—ã¦ãã ã•ã„ã€‚"
 }
 msg.pack('side'=>'top')
 
@@ -40,8 +40,8 @@ align = TkVariable.new
 # frame
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $radio2_demo
       $radio2_demo = nil
@@ -51,12 +51,12 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'radio2'}
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text 'ÊÑ¿ô»²¾È'
+    text 'å¤‰æ•°å‚ç…§'
     command proc{
       showVars(base_frame,
                ['size', size], ['color', color], ['compound', align])
@@ -65,11 +65,11 @@ TkFrame.new(base_frame) {|frame|
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame
-f_left  = TkLabelFrame.new(base_frame, 'text'=>'Ê¸»ú¥µ¥¤¥º',
+f_left  = TkLabelFrame.new(base_frame, 'text'=>'æ–‡å­—ã‚µã‚¤ã‚º',
                            'pady'=>2, 'padx'=>2)
-f_mid   = TkLabelFrame.new(base_frame, 'text'=>'¿§',
+f_mid   = TkLabelFrame.new(base_frame, 'text'=>'è‰²',
                            'pady'=>2, 'padx'=>2)
-f_right = TkLabelFrame.new(base_frame, 'text'=>'¥Ó¥Ã¥È¥Þ¥Ã¥×ÇÛÃÖ',
+f_right = TkLabelFrame.new(base_frame, 'text'=>'ãƒ“ãƒƒãƒˆãƒžãƒƒãƒ—é…ç½®',
                            'pady'=>2, 'padx'=>2)
 f_left.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 f_mid.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
@@ -78,14 +78,14 @@ f_right.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 # radiobutton
 [10, 12, 18, 24].each {|sz|
   TkRadioButton.new(f_left) {
-    text "¥Ý¥¤¥ó¥È¥µ¥¤¥º #{sz}"
+    text "ãƒã‚¤ãƒ³ãƒˆã‚µã‚¤ã‚º #{sz}"
     variable size
     relief 'flat'
     value sz
   }.pack('side'=>'top', 'pady'=>2, 'anchor'=>'w', 'fill'=>'x')
 }
 
-['ÀÖ', 'ÎÐ', 'ÀÄ', '²«', 'Üô', '»ç'].each {|col|
+['èµ¤', 'ç·‘', 'é’', 'é»„', 'æ©™', 'ç´«'].each {|col|
   TkRadioButton.new(f_mid) {
     text col
     variable color
@@ -95,8 +95,8 @@ f_right.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
   }.pack('side'=>'top', 'pady'=>2, 'fill'=>'x')
 }
 
-# label = TkLabel.new(f_right, 'text'=>'¥é¥Ù¥ë', 'bitmap'=>'questhead',
-label = Tk::Label.new(f_right, 'text'=>'¥é¥Ù¥ë', 'bitmap'=>'questhead',
+# label = TkLabel.new(f_right, 'text'=>'ãƒ©ãƒ™ãƒ«', 'bitmap'=>'questhead',
+label = Tk::Label.new(f_right, 'text'=>'ãƒ©ãƒ™ãƒ«', 'bitmap'=>'questhead',
                     'compound'=>'left')
 label.configure('width'=>TkWinfo.reqwidth(label), 'compound'=>'top')
 label.height(TkWinfo.reqheight(label))

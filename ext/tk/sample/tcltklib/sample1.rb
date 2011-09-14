@@ -1,131 +1,131 @@
 #! /usr/local/bin/ruby -d
-# -*- encoding: euc-jp -*-
-# -d ���ץ������դ����, �ǥХå������ɽ������.
+# -*- encoding: utf-8 -*-
+# -d オプションを付けると, デバッグ情報を表示する.
 
-# tcltk �饤�֥��Υ���ץ�
+# tcltk ライブラリのサンプル
 
-# �ޤ�, �饤�֥��� require ����.
+# まず, ライブラリを require する.
 require "tcltk"
 
-# �ʲ���, Test1 �Υ��󥹥��󥹤� initialize() ��,
-# tcl/tk �˴ؤ��������Ԥ���Ǥ���.
-# ɬ�����⤽�Τ褦�ˤ���ɬ�פ�̵��,
-# (�⤷, �������������) class �γ��� tcl/tk �˴ؤ��������ԤäƤ��ɤ�.
+# 以下は, Test1 のインスタンスの initialize() で,
+# tcl/tk に関する処理を行う例である.
+# 必ずしもそのようにする必要は無く,
+# (もし, そうしたければ) class の外で tcl/tk に関する処理を行っても良い.
 
 class Test1
-  # �����(���󥿥ץ꥿���������ƥ��������åȤ���������).
+  # 初期化(インタプリタを生成してウィジェットを生成する).
   def initialize()
 
-    #### �Ȥ����Τ��ޤ��ʤ�
+    #### 使う前のおまじない
 
-    # ���󥿥ץ꥿������.
+    # インタプリタの生成.
     ip = TclTkInterpreter.new()
-    # ���ޥ�ɤ��б����륪�֥������Ȥ� c �����ꤷ�Ƥ���.
+    # コマンドに対応するオブジェクトを c に設定しておく.
     c = ip.commands()
-    # ���Ѥ��륳�ޥ�ɤ��б����륪�֥������Ȥ��ѿ�������Ƥ���.
+    # 使用するコマンドに対応するオブジェクトは変数に入れておく.
     append, bind, button, destroy, incr, info, label, place, set, wm =
       c.values_at(
       "append", "bind", "button", "destroy", "incr", "info", "label", "place",
       "set", "wm")
 
-    #### tcl/tk �Υ��ޥ�ɤ��б����륪�֥�������(TclTkCommand)�����
+    #### tcl/tk のコマンドに対応するオブジェクト(TclTkCommand)の操作
 
-    # �¹Ԥ������, e() �᥽�åɤ�Ȥ�.
-    # (�ʲ���, tcl/tk �ˤ����� info command r* ��¹�.)
+    # 実行する時は, e() メソッドを使う.
+    # (以下は, tcl/tk における info command r* を実行.)
     print info.e("command", "r*"), "\n"
-    # ������, �ޤȤ᤿ʸ����ˤ��Ƥ�Ʊ��.
+    # 引数は, まとめた文字列にしても同じ.
     print info.e("command r*"), "\n"
-    # �ѿ����Ѥ��ʤ��Ȥ�¹ԤǤ��뤬, �����᤬����.
+    # 変数を用いなくとも実行できるが, 見ためが悪い.
     print c["info"].e("command", "r*"), "\n"
-    # ���󥿥ץ꥿�Υ᥽�åɤȤ��Ƥ�¹ԤǤ��뤬, ��Ψ������.
+    # インタプリタのメソッドとしても実行できるが, 効率が悪い.
     print ip.info("command", "r*"), "\n"
 
     ####
 
-    # �ʲ�, �����������֥������Ȥ��ѿ����������Ƥ����ʤ���
-    # GC ���оݤˤʤäƤ��ޤ�.
+    # 以下, 生成したオブジェクトは変数に代入しておかないと
+    # GC の対象になってしまう.
 
-    #### tcl/tk ���ѿ����б����륪�֥�������(TclTkVariable)�����
+    #### tcl/tk の変数に対応するオブジェクト(TclTkVariable)の操作
 
-    # ������Ʊ�����ͤ����ꤹ��.
+    # 生成と同時に値を設定する.
     v1 = TclTkVariable.new(ip, "20")
-    # �ɤ߽Ф��� get �᥽�åɤ�Ȥ�.
+    # 読み出しは get メソッドを使う.
     print v1.get(), "\n"
-    # ����� set �᥽�åɤ�Ȥ�.
+    # 設定は set メソッドを使う.
     v1.set(40)
     print v1.get(), "\n"
-    # set ���ޥ�ɤ�Ȥä��ɤ߽Ф�, ����ϲ�ǽ���������᤬����.
-    # e() �᥽�å����ΰ�����ľ�� TclTkObject ����ͤ�񤤤Ƥ��ɤ�.
+    # set コマンドを使って読み出し, 設定は可能だが見ためが悪い.
+    # e() メソッド等の引数に直接 TclTkObject や数値を書いても良い.
     set.e(v1, 30)
     print set.e(v1), "\n"
-    # tcl/tk �Υ��ޥ�ɤ��ѿ������Ǥ���.
+    # tcl/tk のコマンドで変数を操作できる.
     incr.e(v1)
     print v1.get(), "\n"
     append.e(v1, 10)
     print v1.get(), "\n"
 
-    #### tcl/tk �Υ��������åȤ��б����륪�֥�������(TclTkWidget)�����
+    #### tcl/tk のウィジェットに対応するオブジェクト(TclTkWidget)の操作
 
-    # �롼�ȥ��������åȤ���Ф�.
+    # ルートウィジェットを取り出す.
     root = ip.rootwidget()
-    # ���������åȤ����.
+    # ウィジェットの操作.
     root.e("configure -height 300 -width 300")
-    # �����ȥ���դ���Ȥ��� wm ��Ȥ�.
+    # タイトルを付けるときは wm を使う.
     wm.e("title", root, $0)
-    # �ƥ��������åȤȥ��ޥ�ɤ���ꤷ��, ���������åȤ���.
+    # 親ウィジェットとコマンドを指定して, ウィジェットを作る.
     l1 = TclTkWidget.new(ip, root, label, "-text {type `x' to print}")
-    # place �����ɽ�������.
+    # place すると表示される.
     place.e(l1, "-x 0 -rely 0.0 -relwidth 1 -relheight 0.1")
-    # ���ޥ��̾��ʸ����ǻ��ꤷ�Ƥ��ɤ���, �����᤬����.
-    # (���ޥ��̾����Ω���������Ǥʤ���Фʤ�ʤ�.)
+    # コマンド名は文字列で指定しても良いが, 見ためが悪い.
+    # (コマンド名は独立した引数でなければならない.)
     l2 = TclTkWidget.new(ip, root, "label")
-    # ���������åȤ����.
+    # ウィジェットの操作.
     l2.e("configure -text {type `q' to exit}")
     place.e(l2, "-x 0 -rely 0.1 -relwidth 1 -relheight 0.1")
 
-    #### tcl/tk �Υ�����Хå����б����륪�֥�������(TclTkCallback)�����
+    #### tcl/tk のコールバックに対応するオブジェクト(TclTkCallback)の操作
 
-    # ������Хå�����������.
+    # コールバックを生成する.
     c1 = TclTkCallback.new(ip, proc{sample(ip, root)})
-    # ������Хå�����ĥ��������åȤ���������.
+    # コールバックを持つウィジェットを生成する.
     b1 = TclTkWidget.new(ip, root, button, "-text sample -command", c1)
     place.e(b1, "-x 0 -rely 0.2 -relwidth 1 -relheight 0.1")
-    # ���٥�ȥ롼�פ�ȴ����ˤ� destroy.e(root) ����.
+    # イベントループを抜けるには destroy.e(root) する.
     c2 = TclTkCallback.new(ip, proc{destroy.e(root)})
     b2 = TclTkWidget.new(ip, root, button, "-text exit -command", c2)
     place.e(b2, "-x 0 -rely 0.3 -relwidth 1 -relheight 0.1")
 
-    #### ���٥�ȤΥХ����
-    # script ���ɲ� (bind tag sequence +script) �Ϻ��ΤȤ����Ǥ��ʤ�.
-    # (���ƥ졼���ѿ������꤬���ޤ������ʤ�.)
+    #### イベントのバインド
+    # script の追加 (bind tag sequence +script) は今のところできない.
+    # (イテレータ変数の設定がうまくいかない.)
 
-    # ����Ū�ˤϥ��������åȤ��Ф��륳����Хå���Ʊ��.
+    # 基本的にはウィジェットに対するコールバックと同じ.
     c3 = TclTkCallback.new(ip, proc{print("q pressed\n"); destroy.e(root)})
     bind.e(root, "q", c3)
-    # bind ���ޥ�ɤ� % �ִ��ˤ��ѥ�᡼���������ꤿ���Ȥ���,
-    # proc{} �θ����ʸ����ǻ��ꤹ���,
-    # �ִ���̤򥤥ƥ졼���ѿ����̤��Ƽ�����뤳�Ȥ��Ǥ���.
-    # ������ proc{} �θ����ʸ�����,
-    # bind ���ޥ�ɤ�Ϳ���륳����Хå��ʳ��ǻ��ꤷ�ƤϤ����ʤ�.
+    # bind コマンドで % 置換によりパラメータを受け取りたいときは,
+    # proc{} の後ろに文字列で指定すると,
+    # 置換結果をイテレータ変数を通して受け取ることができる.
+    # ただし proc{} の後ろの文字列は,
+    # bind コマンドに与えるコールバック以外で指定してはいけない.
     c4 = TclTkCallback.new(ip, proc{|i| print("#{i} pressed\n")}, "%A")
     bind.e(root, "x", c4)
-    # TclTkCallback �� GC ���оݤˤ��������,
-    # dcb() (�ޤ��� deletecallbackkeys()) ����ɬ�פ�����.
+    # TclTkCallback を GC の対象にしたければ,
+    # dcb() (または deletecallbackkeys()) する必要がある.
     cb = [c1, c2, c3, c4]
     c5 = TclTkCallback.new(ip, proc{|w| TclTk.dcb(cb, root, w)}, "%W")
     bind.e(root, "<Destroy>", c5)
     cb.push(c5)
 
-    #### tcl/tk �Υ��᡼�����б����륪�֥�������(TclTkImage)�����
+    #### tcl/tk のイメージに対応するオブジェクト(TclTkImage)の操作
 
-    # �ǡ�������ꤷ����������.
+    # データを指定して生成する.
     i1 = TclTkImage.new(ip, "photo", "-file maru.gif")
-    # ��٥��ĥ���դ��Ƥߤ�.
+    # ラベルに張り付けてみる.
     l3 = TclTkWidget.new(ip, root, label, "-relief raised -image", i1)
     place.e(l3, "-x 0 -rely 0.4 -relwidth 0.2 -relheight 0.2")
-    # ���Υ��᡼�����������Ƹ������.
+    # 空のイメージを生成して後で操作する.
     i2 = TclTkImage.new(ip, "photo")
-    # ���᡼��������.
+    # イメージを操作する.
     i2.e("copy", i1)
     i2.e("configure -gamma 0.5")
     l4 = TclTkWidget.new(ip, root, label, "-relief raised -image", i2)
@@ -134,26 +134,26 @@ class Test1
     ####
   end
 
-  # ����ץ�Τ���Υ��������åȤ���������.
+  # サンプルのためのウィジェットを生成する.
   def sample(ip, parent)
     bind, button, destroy, grid, toplevel, wm = ip.commands().values_at(
       "bind", "button", "destroy", "grid", "toplevel", "wm")
 
     ## toplevel
 
-    # ������������ɥ��򳫤��ˤ�, toplevel ��Ȥ�.
+    # 新しいウインドウを開くには, toplevel を使う.
     t1 = TclTkWidget.new(ip, parent, toplevel)
-    # �����ȥ���դ��Ƥ���
+    # タイトルを付けておく
     wm.e("title", t1, "sample")
 
-    # ���������åȤ��˲����줿�Ȥ�, ������Хå��� GC ���оݤˤʤ�褦�ˤ���.
+    # ウィジェットが破壊されたとき, コールバックが GC の対象になるようにする.
     cb = []
     cb.push(c = TclTkCallback.new(ip, proc{|w| TclTk.dcb(cb, t1, w)}, "%W"))
     bind.e(t1, "<Destroy>", c)
 
-    # �ܥ��������.
+    # ボタンの生成.
     wid = []
-    # toplevel ���������åȤ��˲�����ˤ� destroy ����.
+    # toplevel ウィジェットを破壊するには destroy する.
     cb.push(c = TclTkCallback.new(ip, proc{destroy.e(t1)}))
     wid.push(TclTkWidget.new(ip, t1, button, "-text close -command", c))
     cb.push(c = TclTkCallback.new(ip, proc{test_label(ip, t1)}))
@@ -183,7 +183,7 @@ class Test1
     cb.push(c = TclTkCallback.new(ip, proc{test_canvas(ip, t1)}))
     wid.push(TclTkWidget.new(ip, t1, button, "-text canvas -command", c))
 
-    # grid ��ɽ������.
+    # grid で表示する.
     ro = co = 0
     wid.each{|w|
       grid.e(w, "-row", ro, "-column", co, "-sticky news")
@@ -196,38 +196,38 @@ class Test1
   end
 
   # inittoplevel(ip, parent, title)
-  #   �ʲ��ν�����ޤȤ�ƹԤ�.
-  #       1. toplevel ���������åȤ��������.
-  #       2. ������Хå�����Ͽ����������Ѱդ�, toplevel ���������åȤ�
-  #         <Destroy> ���٥�Ȥ˥�����Хå����������³������Ͽ����.
-  #       3. ���������ܥ������.
-  #     �������� toplevel ���������å�, ���������ܥ���, ������Хå���Ͽ���ѿ�
-  #     ���֤�.
-  #   ip: ���󥿥ץ꥿
-  #   parent: �ƥ��������å�
-  #   title: toplevel ���������åȤΥ�����ɥ��Υ����ȥ�
+  #   以下の処理をまとめて行う.
+  #       1. toplevel ウィジェットを作成する.
+  #       2. コールバックを登録する配列を用意し, toplevel ウィジェットの
+  #         <Destroy> イベントにコールバックを削除する手続きを登録する.
+  #       3. クローズボタンを作る.
+  #     作成した toplevel ウィジェット, クローズボタン, コールバック登録用変数
+  #     を返す.
+  #   ip: インタプリタ
+  #   parent: 親ウィジェット
+  #   title: toplevel ウィジェットのウインドウのタイトル
   def inittoplevel(ip, parent, title)
     bind, button, destroy, toplevel, wm = ip.commands().values_at(
       "bind", "button", "destroy", "toplevel", "wm")
 
-    # ������������ɥ��򳫤��ˤ�, toplevel ��Ȥ�.
+    # 新しいウインドウを開くには, toplevel を使う.
     t1 = TclTkWidget.new(ip, parent, toplevel)
-    # �����ȥ���դ��Ƥ���
+    # タイトルを付けておく
     wm.e("title", t1, title)
 
-    # ���������åȤ��˲����줿�Ȥ�, ������Хå��� GC ���оݤˤʤ�褦�ˤ���.
+    # ウィジェットが破壊されたとき, コールバックが GC の対象になるようにする.
     cb = []
     cb.push(c = TclTkCallback.new(ip, proc{|w| TclTk.dcb(cb, t1, w)}, "%W"))
     bind.e(t1, "<Destroy>", c)
-    # close �ܥ�����äƤ���.
-    # toplevel ���������åȤ��˲�����ˤ� destroy ����.
+    # close ボタンを作っておく.
+    # toplevel ウィジェットを破壊するには destroy する.
     cb.push(c = TclTkCallback.new(ip, proc{destroy.e(t1)}))
     b1 = TclTkWidget.new(ip, t1, button, "-text close -command", c)
 
     return t1, b1, cb
   end
 
-  # label �Υ���ץ�.
+  # label のサンプル.
   def test_label(ip, parent)
     button, global, label, pack = ip.commands().values_at(
       "button", "global", "label", "pack")
@@ -235,7 +235,7 @@ class Test1
 
     ## label
 
-    # ���������ʷ��Υ�٥�.
+    # いろいろな形のラベル.
     l1 = TclTkWidget.new(ip, t1, label, "-text {default(flat)}")
     l2 = TclTkWidget.new(ip, t1, label, "-text raised -relief raised")
     l3 = TclTkWidget.new(ip, t1, label, "-text sunken -relief sunken")
@@ -244,23 +244,23 @@ class Test1
     l6 = TclTkWidget.new(ip, t1, label, "-bitmap error")
     l7 = TclTkWidget.new(ip, t1, label, "-bitmap questhead")
 
-    # pack ���Ƥ�ɽ�������.
+    # pack しても表示される.
     pack.e(b1, l1, l2, l3, l4, l5, l6, l7, "-pady 3")
 
     ## -textvariable
 
-    # tcltk �饤�֥��μ����Ǥ�, ������Хå��� tcl/tk ��``��³��''���̤���
-    # �ƤФ��. �������ä�, ������Хå������(���)�ѿ��˥�����������Ȥ���,
-    # global ����ɬ�פ�����.
-    # global ���������ѿ����ͤ����ꤷ�Ƥ��ޤ��ȥ��顼�ˤʤ�Τ�,
-    # tcl/tk �ˤ�����ɽ����������������, �ºݤ��ͤ����ꤷ�ʤ��褦��,
-    # 2 ���ܤΰ����ˤ� nil ��Ϳ����.
+    # tcltk ライブラリの実装では, コールバックは tcl/tk の``手続き''を通して
+    # 呼ばれる. したがって, コールバックの中で(大域)変数にアクセスするときは,
+    # global する必要がある.
+    # global する前に変数に値を設定してしまうとエラーになるので,
+    # tcl/tk における表現形だけ生成して, 実際に値を設定しないように,
+    # 2 番目の引数には nil を与える.
     v1 = TclTkVariable.new(ip, nil)
     global.e(v1)
     v1.set(100)
-    # -textvariable ���ѿ������ꤹ��.
+    # -textvariable で変数を設定する.
     l6 = TclTkWidget.new(ip, t1, label, "-textvariable", v1)
-    # ������Хå����椫���ѿ�������.
+    # コールバックの中から変数を操作する.
     cb.push(c = TclTkCallback.new(ip, proc{
       global.e(v1); v1.set(v1.get().to_i + 10)}))
     b2 = TclTkWidget.new(ip, t1, button, "-text +10 -command", c)
@@ -270,14 +270,14 @@ class Test1
     pack.e(l6, b2, b3)
   end
 
-  # button �Υ���ץ�.
+  # button のサンプル.
   def test_button(ip, parent)
     button, pack = ip.commands().values_at("button", "pack")
     t1, b1, cb = inittoplevel(ip, parent, "button")
 
     ## button
 
-    # ������Хå���ǻ��Ȥ����ѿ������������Ƥ����ʤ���Фʤ�ʤ�.
+    # コールバック内で参照する変数は先に宣言しておかなければならない.
     b3 = b4 = nil
     cb.push(c = TclTkCallback.new(ip, proc{b3.e("flash"); b4.e("flash")}))
     b2 = TclTkWidget.new(ip, t1, button, "-text flash -command", c)
@@ -288,7 +288,7 @@ class Test1
     pack.e(b1, b2, b3, b4)
   end
 
-  # checkbutton �Υ���ץ�.
+  # checkbutton のサンプル.
   def test_checkbutton(ip, parent)
     checkbutton, global, pack = ip.commands().values_at(
       "checkbutton", "global", "pack")
@@ -298,13 +298,13 @@ class Test1
 
     v1 = TclTkVariable.new(ip, nil)
     global.e(v1)
-    # -variable ���ѿ������ꤹ��.
+    # -variable で変数を設定する.
     ch1 = TclTkWidget.new(ip, t1, checkbutton, "-onvalue on -offvalue off",
       "-textvariable", v1, "-variable", v1)
     pack.e(b1, ch1)
   end
 
-  # radiobutton �Υ���ץ�.
+  # radiobutton のサンプル.
   def test_radiobutton(ip, parent)
     global, label, pack, radiobutton = ip.commands().values_at(
       "global", "label", "pack", "radiobutton")
@@ -314,10 +314,10 @@ class Test1
 
     v1 = TclTkVariable.new(ip, nil)
     global.e(v1)
-    # �̥륹�ȥ�󥰤� "{}" �ǻ��ꤹ��.
+    # ヌルストリングは "{}" で指定する.
     v1.set("{}")
     l1 = TclTkWidget.new(ip, t1, label, "-textvariable", v1)
-    # -variable ��Ʊ���ѿ�����ꤹ���Ʊ�����롼�פˤʤ�.
+    # -variable で同じ変数を指定すると同じグループになる.
     ra1 = TclTkWidget.new(ip, t1, radiobutton,
       "-text radio1 -value r1 -variable", v1)
     ra2 = TclTkWidget.new(ip, t1, radiobutton,
@@ -328,7 +328,7 @@ class Test1
     pack.e(b1, l1, ra1, ra2, ra3)
   end
 
-  # scale �Υ���ץ�.
+  # scale のサンプル.
   def test_scale(ip, parent)
     global, pack, scale = ip.commands().values_at(
       "global", "pack", "scale")
@@ -339,7 +339,7 @@ class Test1
     v1 = TclTkVariable.new(ip, nil)
     global.e(v1)
     v1.set(219)
-    # ������Хå���ǻ��Ȥ����ѿ������������Ƥ����ʤ���Фʤ�ʤ�.
+    # コールバック内で参照する変数は先に宣言しておかなければならない.
     sca1 = nil
     cb.push(c = TclTkCallback.new(ip, proc{global.e(v1); v = v1.get();
       sca1.e("configure -background", format("#%02x%02x%02x", v, v, v))}))
@@ -348,7 +348,7 @@ class Test1
     pack.e(b1, sca1)
   end
 
-  # entry �Υ���ץ�.
+  # entry のサンプル.
   def test_entry(ip, parent)
     button, entry, global, pack = ip.commands().values_at(
       "button", "entry", "global", "pack")
@@ -358,7 +358,7 @@ class Test1
 
     v1 = TclTkVariable.new(ip, nil)
     global.e(v1)
-    # �̥륹�ȥ�󥰤� "{}" �ǻ��ꤹ��.
+    # ヌルストリングは "{}" で指定する.
     v1.set("{}")
     en1 = TclTkWidget.new(ip, t1, entry, "-textvariable", v1)
     cb.push(c = TclTkCallback.new(ip, proc{
@@ -367,7 +367,7 @@ class Test1
     pack.e(b1, en1, b2)
   end
 
-  # text �Υ���ץ�.
+  # text のサンプル.
   def test_text(ip, parent)
     button, pack, text = ip.commands().values_at(
       "button", "pack", "text")
@@ -377,13 +377,13 @@ class Test1
 
     te1 = TclTkWidget.new(ip, t1, text)
     cb.push(c = TclTkCallback.new(ip, proc{
-      # 1 ���ܤ� 0 ʸ���ܤ���Ǹ�ޤǤ�ɽ����, �������.
+      # 1 行目の 0 文字目から最後までを表示し, 削除する.
       print(te1.e("get 1.0 end")); te1.e("delete 1.0 end")}))
     b2 = TclTkWidget.new(ip, t1, button, "-text print -command", c)
     pack.e(b1, te1, b2)
   end
 
-  # raise/lower �Υ���ץ�.
+  # raise/lower のサンプル.
   def test_raise(ip, parent)
     button, frame, lower, pack, raise = ip.commands().values_at(
       "button", "frame", "lower", "pack", "raise")
@@ -391,9 +391,9 @@ class Test1
 
     ## raise/lower
 
-    # button �򱣤��ƥ��ȤΤ����, frame ��Ȥ�.
+    # button を隠すテストのために, frame を使う.
     f1 = TclTkWidget.new(ip, t1, frame)
-    # ������Хå���ǻ��Ȥ����ѿ������������Ƥ����ʤ���Фʤ�ʤ�.
+    # コールバック内で参照する変数は先に宣言しておかなければならない.
     b2 = nil
     cb.push(c = TclTkCallback.new(ip, proc{raise.e(f1, b2)}))
     b2 = TclTkWidget.new(ip, t1, button, "-text raise -command", c)
@@ -405,21 +405,21 @@ class Test1
     pack.e(b1, f1)
   end
 
-  # modal �ʥ��������åȤΥ���ץ�.
+  # modal なウィジェットのサンプル.
   def test_modal(ip, parent)
     button, frame, message, pack, tk_chooseColor, tk_getOpenFile,
       tk_messageBox = ip.commands().values_at(
       "button", "frame", "message", "pack", "tk_chooseColor",
       "tk_getOpenFile", "tk_messageBox")
-    # �ǽ�� load ����Ƥ��ʤ��饤�֥��� ip.commands() ��¸�ߤ��ʤ��Τ�,
-    # TclTkLibCommand ����������ɬ�פ�����.
+    # 最初に load されていないライブラリは ip.commands() に存在しないので,
+    # TclTkLibCommand を生成する必要がある.
     tk_dialog = TclTkLibCommand.new(ip, "tk_dialog")
     t1, b1, cb = inittoplevel(ip, parent, "message/modal")
 
     ## message
 
-    mes = "����� message ���������åȤΥƥ��ȤǤ�."
-    mes += "�ʲ��� modal �ʥ��������åȤΥƥ��ȤǤ�."
+    mes = "これは message ウィジェットのテストです."
+    mes += "以下は modal なウィジェットのテストです."
     me1 = TclTkWidget.new(ip, t1, message, "-text {#{mes}}")
 
     ## modal
@@ -431,7 +431,7 @@ class Test1
     b2 = TclTkWidget.new(ip, t1, button, "-text messageBox -command", c)
     # tk_dialog
     cb.push(c = TclTkCallback.new(ip, proc{
-      # ���������å�̾���������뤿��˥��ߡ��� frame ������.
+      # ウィジェット名を生成するためにダミーの frame を生成.
       print tk_dialog.e(TclTkWidget.new(ip, t1, frame),
       "dialog dialog error 2 yes no cancel"), "\n"}))
     b3 = TclTkWidget.new(ip, t1, button, "-text dialog -command", c)
@@ -449,7 +449,7 @@ class Test1
     pack.e(b1, me1, b2, b3, b4, b5)
   end
 
-  # menu �Υ���ץ�.
+  # menu のサンプル.
   def test_menu(ip, parent)
     global, menu, menubutton, pack = ip.commands().values_at(
       "global", "menu", "menubutton", "pack")
@@ -458,29 +458,29 @@ class Test1
 
     ## menu
 
-    # menubutton ����������.
+    # menubutton を生成する.
     mb1 = TclTkWidget.new(ip, t1, menubutton, "-text menu")
-    # menu ����������.
+    # menu を生成する.
     me1 = TclTkWidget.new(ip, mb1, menu)
-    # mb1 ���� me1 ����ư�����褦�ˤ���.
+    # mb1 から me1 が起動されるようにする.
     mb1.e("configure -menu", me1)
 
-    # cascade �ǵ�ư����� menu ����������.
+    # cascade で起動される menu を生成する.
     me11 = TclTkWidget.new(ip, me1, menu)
-    # radiobutton �Υ���ץ�.
+    # radiobutton のサンプル.
     v1 = TclTkVariable.new(ip, nil); global.e(v1); v1.set("r1")
     me11.e("add radiobutton -label radio1 -value r1 -variable", v1)
     me11.e("add radiobutton -label radio2 -value r2 -variable", v1)
     me11.e("add radiobutton -label radio3 -value r3 -variable", v1)
-    # cascade �ˤ�� mb11 ����ư�����褦�ˤ���.
+    # cascade により mb11 が起動されるようにする.
     me1.e("add cascade -label cascade -menu", me11)
 
-    # checkbutton �Υ���ץ�.
+    # checkbutton のサンプル.
     v2 = TclTkVariable.new(ip, nil); global.e(v2); v2.set("none")
     me1.e("add checkbutton -label check -variable", v2)
-    # separator �Υ���ץ�.
+    # separator のサンプル.
     me1.e("add separator")
-    # command �Υ���ץ�.
+    # command のサンプル.
     v3 = nil
     cb.push(c = TclTkCallback.new(ip, proc{
       global.e(v1, v2, v3); print "v1: ", v1.get(), ", v2: ", v2.get(),
@@ -495,7 +495,7 @@ class Test1
     pack.e(b1, mb1, om1, "-side left")
   end
 
-  # listbox �Υ���ץ�.
+  # listbox のサンプル.
   def test_listbox(ip, parent)
     clipboard, frame, grid, listbox, lower, menu, menubutton, pack, scrollbar,
       selection = ip.commands().values_at(
@@ -506,11 +506,11 @@ class Test1
     ## listbox/scrollbar
 
     f1 = TclTkWidget.new(ip, t1, frame)
-    # ������Хå���ǻ��Ȥ����ѿ������������Ƥ����ʤ���Фʤ�ʤ�.
+    # コールバック内で参照する変数は先に宣言しておかなければならない.
     li1 = sc1 = sc2 = nil
-    # �¹Ի���, ����˥ѥ�᡼�����Ĥ�������Хå���,
-    # ���ƥ졼���ѿ��Ǥ��Υѥ�᡼���������뤳�Ȥ��Ǥ���.
-    # (ʣ���Υѥ�᡼���ϤҤȤĤ�ʸ����ˤޤȤ����.)
+    # 実行時に, 後ろにパラメータがつくコールバックは,
+    # イテレータ変数でそのパラメータを受け取ることができる.
+    # (複数のパラメータはひとつの文字列にまとめられる.)
     cb.push(c1 = TclTkCallback.new(ip, proc{|i| li1.e("xview", i)}))
     cb.push(c2 = TclTkCallback.new(ip, proc{|i| li1.e("yview", i)}))
     cb.push(c3 = TclTkCallback.new(ip, proc{|i| sc1.e("set", i)}))
@@ -532,17 +532,17 @@ class Test1
     me1 = TclTkWidget.new(ip, mb1, menu)
     mb1.e("configure -menu", me1)
     cb.push(c = TclTkCallback.new(ip, proc{
-      # clipboard �򥯥ꥢ.
+      # clipboard をクリア.
       clipboard.e("clear")
-      # selection ����ʸ������ɤ߹��� clipboard ���ɲä���.
+      # selection から文字列を読み込み clipboard に追加する.
       clipboard.e("append {#{selection.e('get')}}")}))
     me1.e("add command -label {selection -> clipboard} -command",c)
     cb.push(c = TclTkCallback.new(ip, proc{
-      # li1 �򥯥ꥢ.
+      # li1 をクリア.
       li1.e("delete 0 end")
-      # clipboard ����ʸ�������Ф�, 1 �Ԥ���
+      # clipboard から文字列を取り出し, 1 行ずつ
       selection.e("get -selection CLIPBOARD").split(/\n/).each{|line|
-        # li1 ����������.
+        # li1 に挿入する.
         li1.e("insert end {#{line}}")}}))
     me1.e("add command -label {clipboard -> listbox} -command",c)
 
@@ -557,7 +557,7 @@ class Test1
     pack.e(f2, f1)
   end
 
-  # canvas �Υ���ץ�.
+  # canvas のサンプル.
   def test_canvas(ip, parent)
     canvas, lower, pack = ip.commands().values_at("canvas", "lower", "pack")
     t1, b1, cb = inittoplevel(ip, parent, "canvas")
@@ -566,36 +566,36 @@ class Test1
 
     ca1 = TclTkWidget.new(ip, t1, canvas, "-width 400 -height 300")
     lower.e(ca1, b1)
-    # rectangle ����.
+    # rectangle を作る.
     idr = ca1.e("create rectangle 10 10 20 20")
-    # oval ����.
+    # oval を作る.
     ca1.e("create oval 60 10 100 50")
-    # polygon ����.
+    # polygon を作る.
     ca1.e("create polygon 110 10 110 30 140 10")
-    # line ����.
+    # line を作る.
     ca1.e("create line 150 10 150 30 190 10")
-    # arc ����.
+    # arc を作る.
     ca1.e("create arc 200 10 250 50 -start 0 -extent 90 -style pieslice")
-    # i1 ��������, �ɤ������˲����ʤ���Фʤ�ʤ���, ���ݤʤΤ����äƤ���.
+    # i1 は本当は, どこかで破壊しなければならないが, 面倒なので放ってある.
     i1 = TclTkImage.new(ip, "photo", "-file maru.gif")
-    # image ����.
+    # image を作る.
     ca1.e("create image 100 100 -image", i1)
-    # bitmap ����.
+    # bitmap を作る.
     ca1.e("create bitmap 260 50 -bitmap questhead")
-    # text ����.
+    # text を作る.
     ca1.e("create text 320 50 -text {drag rectangle}")
-    # window ����(���������ܥ���).
+    # window を作る(クローズボタン).
     ca1.e("create window 200 200 -window", b1)
 
-    # bind �ˤ�� rectangle �� drag �Ǥ���褦�ˤ���.
+    # bind により rectangle を drag できるようにする.
     cb.push(c = TclTkCallback.new(ip, proc{|i|
-      # i �� x �� y ��������Τ�, ���Ф�.
+      # i に x と y を受け取るので, 取り出す.
       x, y = i.split(/ /); x = x.to_f; y = y.to_f
-      # ��ɸ���ѹ�����.
+      # 座標を変更する.
       ca1.e("coords current #{x - 5} #{y - 5} #{x + 5} #{y + 5}")},
-      # x, y ��ɸ�����Ƕ��ڤä���Τ򥤥ƥ졼���ѿ����Ϥ��褦�˻���.
+      # x, y 座標を空白で区切ったものをイテレータ変数へ渡すように指定.
       "%x %y"))
-    # rectangle �� bind ����.
+    # rectangle に bind する.
     ca1.e("bind", idr, "<B1-Motion>", c)
 
     pack.e(ca1)
@@ -605,7 +605,7 @@ end
 # test driver
 
 if ARGV.size == 0
-  print "#{$0} n ��, n �ĤΥ��󥿥ץ꥿��ư���ޤ�.\n"
+  print "#{$0} n で, n 個のインタプリタを起動します.\n"
   n = 1
 else
   n = ARGV[0].to_i
@@ -614,16 +614,16 @@ end
 print "start\n"
 ip = []
 
-# ���󥿥ץ꥿, ���������å���������.
+# インタプリタ, ウィジェット等の生成.
 for i in 1 .. n
   ip.push(Test1.new())
 end
 
-# �Ѱդ��Ǥ����饤�٥�ȥ롼�פ�����.
+# 用意ができたらイベントループに入る.
 TclTk.mainloop()
 print "exit from mainloop\n"
 
-# ���󥿥ץ꥿�� GC ����뤫�Υƥ���.
+# インタプリタが GC されるかのテスト.
 ip = []
 print "GC.start\n" if $DEBUG
 GC.start() if $DEBUG

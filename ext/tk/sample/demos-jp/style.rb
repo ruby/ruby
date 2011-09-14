@@ -1,16 +1,16 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # text (display styles) widget demo (called by 'widget')
 #
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ğºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($style_demo) && $style_demo
   $style_demo.destroy
   $style_demo = nil
 end
 
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $style_demo = TkToplevel.new {|w|
   title("Text Demonstration - Display Styles")
   iconname("style")
@@ -19,11 +19,11 @@ $style_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($style_demo).pack(:fill=>:both, :expand=>true)
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $style_demo
       $style_demo = nil
@@ -32,15 +32,15 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'style'}
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 
-# text À¸À®
+# text ç”Ÿæˆ
 txt = TkText.new(base_frame){|t|
-  # À¸À®
+  # ç”Ÿæˆ
   setgrid 'true'
   #width  70
   #height 32
@@ -53,7 +53,7 @@ txt = TkText.new(base_frame){|t|
   }
   pack('expand'=>'yes', 'fill'=>'both')
 
-  # ¥Æ¥­¥¹¥È¥¿¥°ÀßÄê (¥Õ¥©¥ó¥È´ØÏ¢)
+  # ãƒ†ã‚­ã‚¹ãƒˆã‚¿ã‚°è¨­å®š (ãƒ•ã‚©ãƒ³ãƒˆé–¢é€£)
   family = 'Courier'
 
   if $tk_version =~ /^4.*/
@@ -89,7 +89,7 @@ txt = TkText.new(base_frame){|t|
 #    style_tag_small = TkTextTag.new(t, 'font'=>'@cSmallFont')
 #  end
 
-  # ¥Æ¥­¥¹¥È¥¿¥°ÀßÄê (¿§¡¤¥ì¥ê¡¼¥Õ´ØÏ¢)
+  # ãƒ†ã‚­ã‚¹ãƒˆã‚¿ã‚°è¨­å®š (è‰²ï¼Œãƒ¬ãƒªãƒ¼ãƒ•é–¢é€£)
   if TkWinfo.depth($root).to_i > 1
     style_tag_color1 = TkTextTag.new(t, 'background'=>'#a0b7ce')
     style_tag_color2 = TkTextTag.new(t, 'foreground'=>'red')
@@ -106,7 +106,7 @@ txt = TkText.new(base_frame){|t|
                                      'relief'=>'sunken', 'borderwidth'=>1)
   end
 
-  # ¥Æ¥­¥¹¥È¥¿¥°ÀßÄê (¤½¤ÎÂ¾)
+  # ãƒ†ã‚­ã‚¹ãƒˆã‚¿ã‚°è¨­å®š (ãã®ä»–)
   if $tk_version =~ /^4\.[01]/
     style_tag_bgstipple = TkTextTag.new(t, 'background'=>'black',
                                         'borderwidth'=>0,
@@ -134,134 +134,134 @@ txt = TkText.new(base_frame){|t|
                                     'lmargin1'=>'12m', 'lmargin2'=>'6m',
                                     'rmargin'=>'10m')
 
-  # ¥Æ¥­¥¹¥ÈÁŞÆş
-  insert('end', '¤³¤Î¤è¤¦¤Ë¥Æ¥­¥¹¥È widget ¤Ï¾ğÊó¤òÍÍ¡¹¤Ê¥¹¥¿¥¤¥ë¤ÇÉ½¼¨¤¹¤ë¤³¤È
-¤¬¤Ç¤­¤Ş¤¹¡£')
-  insert('end', '¥¿¥°', style_tag_big)
-  insert('end', '¤È¤¤¤¦¥á¥«¥Ë¥º¥à¤Ç¥³¥ó¥È¥í¡¼¥ë¤µ¤ì¤Ş¤¹¡£
-¥¿¥°¤È¤Ï¥Æ¥­¥¹¥È widget Æâ¤Î¤¢¤ëÊ¸»ú (¤ÎÈÏ°Ï)¤ËÂĞ¤·¤ÆÅ¬ÍÑ¤Ç¤­¤ë
-Ã±¤Ê¤ëÌ¾Á°¤Î¤³¤È¤Ç¤¹¡£¥¿¥°¤ÏÍÍ¡¹¤ÊÉ½¼¨¥¹¥¿¥¤¥ë¤ËÀßÄê¤Ç¤­¤Ş¤¹¡£
-ÀßÄê¤¹¤ë¤È¡¢¤½¤Î¥¿¥°¤Î¤Ä¤¤¤¿Ê¸»ú¤Ï»ØÄê¤·¤¿¥¹¥¿¥¤¥ë¤ÇÉ½¼¨¤µ¤ì¤ë
-¤è¤¦¤Ë¤Ê¤ê¤Ş¤¹¡£»ÈÍÑ¤Ç¤­¤ëÉ½¼¨¥¹¥¿¥¤¥ë¤Ï¼¡¤ÎÄÌ¤ê¤Ç¤¹¡£
+  # ãƒ†ã‚­ã‚¹ãƒˆæŒ¿å…¥
+  insert('end', 'ã“ã®ã‚ˆã†ã«ãƒ†ã‚­ã‚¹ãƒˆ widget ã¯æƒ…å ±ã‚’æ§˜ã€…ãªã‚¹ã‚¿ã‚¤ãƒ«ã§è¡¨ç¤ºã™ã‚‹ã“ã¨
+ãŒã§ãã¾ã™ã€‚')
+  insert('end', 'ã‚¿ã‚°', style_tag_big)
+  insert('end', 'ã¨ã„ã†ãƒ¡ã‚«ãƒ‹ã‚ºãƒ ã§ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ã•ã‚Œã¾ã™ã€‚
+ã‚¿ã‚°ã¨ã¯ãƒ†ã‚­ã‚¹ãƒˆ widget å†…ã®ã‚ã‚‹æ–‡å­— (ã®ç¯„å›²)ã«å¯¾ã—ã¦é©ç”¨ã§ãã‚‹
+å˜ãªã‚‹åå‰ã®ã“ã¨ã§ã™ã€‚ã‚¿ã‚°ã¯æ§˜ã€…ãªè¡¨ç¤ºã‚¹ã‚¿ã‚¤ãƒ«ã«è¨­å®šã§ãã¾ã™ã€‚
+è¨­å®šã™ã‚‹ã¨ã€ãã®ã‚¿ã‚°ã®ã¤ã„ãŸæ–‡å­—ã¯æŒ‡å®šã—ãŸã‚¹ã‚¿ã‚¤ãƒ«ã§è¡¨ç¤ºã•ã‚Œã‚‹
+ã‚ˆã†ã«ãªã‚Šã¾ã™ã€‚ä½¿ç”¨ã§ãã‚‹è¡¨ç¤ºã‚¹ã‚¿ã‚¤ãƒ«ã¯æ¬¡ã®é€šã‚Šã§ã™ã€‚
 ')
   insert('end', '
-1. ¥Õ¥©¥ó¥È', style_tag_big)
-  insert('end', '    ¤É¤ó¤Ê X ¤Î¥Õ¥©¥ó¥È¤Ç¤â»È¤¨¤Ş¤¹¡£')
+1. ãƒ•ã‚©ãƒ³ãƒˆ', style_tag_big)
+  insert('end', '    ã©ã‚“ãª X ã®ãƒ•ã‚©ãƒ³ãƒˆã§ã‚‚ä½¿ãˆã¾ã™ã€‚')
   insert('end', 'large', style_tag_verybig)
   insert('end', '
-¤È¤«')
-#  insert('end', '¾®¤µ¤¤', style_tag_small)
+ã¨ã‹')
+#  insert('end', 'å°ã•ã„', style_tag_small)
   insert('end', 'small', style_tag_small)
-  insert('end', '¤È¤«¡£
+  insert('end', 'ã¨ã‹ã€‚
 ')
   insert('end', '
-2. ¿§', style_tag_big)
+2. è‰²', style_tag_big)
   insert('end', '  ')
-  insert('end', 'ÇØ·Ê¿§', style_tag_color1)
-  insert('end', '¤â')
-  insert('end', 'Á°·Ê¿§', style_tag_color2)
-  insert('end', '¤â')
-  insert('end', 'Î¾Êı', style_tag_color1, style_tag_color2)
-  insert('end', '¤È¤âÊÑ¤¨¤ë¤³¤È¤¬¤Ç¤­¤Ş¤¹¡£
+  insert('end', 'èƒŒæ™¯è‰²', style_tag_color1)
+  insert('end', 'ã‚‚')
+  insert('end', 'å‰æ™¯è‰²', style_tag_color2)
+  insert('end', 'ã‚‚')
+  insert('end', 'ä¸¡æ–¹', style_tag_color1, style_tag_color2)
+  insert('end', 'ã¨ã‚‚å¤‰ãˆã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚
 ')
   insert('end', '
-3. ÌÖ¤«¤±', style_tag_big)
-  insert('end', '  ¤³¤Î¤è¤¦¤ËÉÁ²è¤Îºİ¤Ë')
-  insert('end', 'ÇØ·Ê¤â', style_tag_bgstipple)
-  insert('end', 'Ê¸»ú¤â', style_tag_fgstipple)
-  insert('end', 'Ã±¤Ê¤ëÅÉ¤ê¤Ä¤Ö¤·
-¤Ç¤Ê¤¯¡¢ÌÖ¤«¤±¤ò»È¤¦¤³¤È¤¬¤Ç¤­¤Ş¤¹¡£
+3. ç¶²ã‹ã‘', style_tag_big)
+  insert('end', '  ã“ã®ã‚ˆã†ã«æç”»ã®éš›ã«')
+  insert('end', 'èƒŒæ™¯ã‚‚', style_tag_bgstipple)
+  insert('end', 'æ–‡å­—ã‚‚', style_tag_fgstipple)
+  insert('end', 'å˜ãªã‚‹å¡—ã‚Šã¤ã¶ã—
+ã§ãªãã€ç¶²ã‹ã‘ã‚’ä½¿ã†ã“ã¨ãŒã§ãã¾ã™ã€‚
 ')
   insert('end', '
-4. ²¼Àş', style_tag_big)
-  insert('end', '  ¤³¤Î¤è¤¦¤Ë')
-  insert('end', 'Ê¸»ú¤Ë²¼Àş¤ò°ú¤¯', style_tag_underline)
-  insert('end', '¤³¤È¤¬¤Ç¤­¤Ş¤¹¡£
+4. ä¸‹ç·š', style_tag_big)
+  insert('end', '  ã“ã®ã‚ˆã†ã«')
+  insert('end', 'æ–‡å­—ã«ä¸‹ç·šã‚’å¼•ã', style_tag_underline)
+  insert('end', 'ã“ã¨ãŒã§ãã¾ã™ã€‚
 ')
   insert('end', '
-5. ÂÇ¤Á¾Ã¤·Àş', style_tag_big)
-  insert('end', '  ¤³¤Î¤è¤¦¤Ë')
-  insert('end', 'Ê¸»ú¤Ë½Å¤Í¤ÆÀş¤ò°ú¤¯', style_tag_overstrike)
-  insert('end', '¤³¤È¤¬¤Ç¤­¤Ş¤¹¡£
+5. æ‰“ã¡æ¶ˆã—ç·š', style_tag_big)
+  insert('end', '  ã“ã®ã‚ˆã†ã«')
+  insert('end', 'æ–‡å­—ã«é‡ã­ã¦ç·šã‚’å¼•ã', style_tag_overstrike)
+  insert('end', 'ã“ã¨ãŒã§ãã¾ã™ã€‚
 ')
   insert('end', '
-6. 3D ¸ú²Ì', style_tag_big)
-  insert('end', '  ÇØ·Ê¤ËÏÈ¤ò¤Ä¤±¤Æ¡¢Ê¸»ú¤ò')
-  insert('end', 'Èô¤Ó½Ğ¤¹', style_tag_raised)
-  insert('end', '¤è¤¦¤Ë¤·¤¿¤ê')
-  insert('end', 'ÄÀ¤à', style_tag_sunken)
+6. 3D åŠ¹æœ', style_tag_big)
+  insert('end', '  èƒŒæ™¯ã«æ ã‚’ã¤ã‘ã¦ã€æ–‡å­—ã‚’')
+  insert('end', 'é£›ã³å‡ºã™', style_tag_raised)
+  insert('end', 'ã‚ˆã†ã«ã—ãŸã‚Š')
+  insert('end', 'æ²ˆã‚€', style_tag_sunken)
   insert('end', '
-¤è¤¦¤Ë¤Ç¤­¤Ş¤¹¡£
+ã‚ˆã†ã«ã§ãã¾ã™ã€‚
 ')
   insert('end', '
-7. ¹ÔÂ·¤¨', style_tag_big)
-  insert('end', ' ¤³¤Î¤è¤¦¤Ë¹Ô¤ò
+7. è¡Œæƒãˆ', style_tag_big)
+  insert('end', ' ã“ã®ã‚ˆã†ã«è¡Œã‚’
 ')
-  insert('end', 'º¸¤ËÂ·¤¨¤¿¤ê
+  insert('end', 'å·¦ã«æƒãˆãŸã‚Š
 ')
-  insert('end', '±¦¤ËÂ·¤¨¤¿¤ê
+  insert('end', 'å³ã«æƒãˆãŸã‚Š
 ', style_tag_right)
-  insert('end', '¿¿Ãæ¤ËÂ·¤¨¤¿¤ê¤Ç¤­¤Ş¤¹¡£
+  insert('end', 'çœŸä¸­ã«æƒãˆãŸã‚Šã§ãã¾ã™ã€‚
 ', style_tag_center)
   insert('end', '
-8. ¸ªÉÕ¤­Ê¸»ú¤ÈÅº»ú', style_tag_big)
+8. è‚©ä»˜ãæ–‡å­—ã¨æ·»å­—', style_tag_big)
   insert('end', '  10')
   insert('end', 'n', style_tag_super)
-  insert('end', ' ¤Î¤è¤¦¤Ë¸ªÉÕ¤­Ê¸»ú¤Î¸ú²Ì¤ä¡¢')
+  insert('end', ' ã®ã‚ˆã†ã«è‚©ä»˜ãæ–‡å­—ã®åŠ¹æœã‚„ã€')
   insert('end', '
 X')
   insert('end', 'i', style_tag_sub)
-  insert('end', '¤Î¤è¤¦¤ËÅº»ú¤Î¸ú²Ì¤ò½Ğ¤¹¤³¤È¤¬¤Ç¤­¤Ş¤¹¡£
+  insert('end', 'ã®ã‚ˆã†ã«æ·»å­—ã®åŠ¹æœã‚’å‡ºã™ã“ã¨ãŒã§ãã¾ã™ã€‚
 ')
   insert('end', '
-9. ¥Ş¡¼¥¸¥ó', style_tag_big)
-  insert('end', '¥Æ¥­¥¹¥È¤Îº¸Â¦¤ËÍ¾Ê¬¤Ê¶õÇò¤òÃÖ¤¯¤³¤È¤¬¤Ç¤­¤Ş¤¹:
+9. ãƒãƒ¼ã‚¸ãƒ³', style_tag_big)
+  insert('end', 'ãƒ†ã‚­ã‚¹ãƒˆã®å·¦å´ã«ä½™åˆ†ãªç©ºç™½ã‚’ç½®ãã“ã¨ãŒã§ãã¾ã™:
 ')
-  insert('end', '¤³¤ÎÃÊÍî¤Ï¥Ş¡¼¥¸¥ó¤Î»ÈÍÑÎã¤Ç¤¹¡£¥¹¥¯¥ê¡¼¥ó',
+  insert('end', 'ã“ã®æ®µè½ã¯ãƒãƒ¼ã‚¸ãƒ³ã®ä½¿ç”¨ä¾‹ã§ã™ã€‚ã‚¹ã‚¯ãƒªãƒ¼ãƒ³',
          style_tag_margins)
-  insert('end', '¾å¤ÇÀŞ¤êÊÖ¤µ¤ì¤ÆÉ½¼¨¤µ¤ì¤Æ¤¤¤ë1¹Ô¤Î¥Æ¥­¥¹¥È¤Ç¤¹¡£',
+  insert('end', 'ä¸Šã§æŠ˜ã‚Šè¿”ã•ã‚Œã¦è¡¨ç¤ºã•ã‚Œã¦ã„ã‚‹1è¡Œã®ãƒ†ã‚­ã‚¹ãƒˆã§ã™ã€‚',
          style_tag_margins)
-  insert('end', 'º¸Â¦¤Ë¤Ï2¼ïÎà¤Î¥Ş¡¼¥¸¥ó¤ò»ı¤Á¤Ş¤¹¡£', style_tag_margins)
-  insert('end', '1¹ÔÌÜ¤ËÂĞ¤¹¤ë¤â¤Î¤È¡¢', style_tag_margins)
-  insert('end', '2¹ÔÌÜ°Ê¹ß¤ÎÏ¢Â³¤·¤¿¥Ş¡¼¥¸¥ó', style_tag_margins)
-  insert('end', '¤Ç¤¹¡£¤Ş¤¿±¦Â¦¤Ë¤â¥Ş¡¼¥¸¥ó¤¬¤¢¤ê¤Ş¤¹¡£', style_tag_margins)
-  insert('end', '¹Ô¤ÎÀŞ¤êÊÖ¤·°ÌÃÖ¤ò·è¤á¤ë¤¿¤á¤Ë»ÈÍÑ¤¹¤ë¤³¤È¤¬¤Ç¤­¤Ş¤¹¡£
+  insert('end', 'å·¦å´ã«ã¯2ç¨®é¡ã®ãƒãƒ¼ã‚¸ãƒ³ã‚’æŒã¡ã¾ã™ã€‚', style_tag_margins)
+  insert('end', '1è¡Œç›®ã«å¯¾ã™ã‚‹ã‚‚ã®ã¨ã€', style_tag_margins)
+  insert('end', '2è¡Œç›®ä»¥é™ã®é€£ç¶šã—ãŸãƒãƒ¼ã‚¸ãƒ³', style_tag_margins)
+  insert('end', 'ã§ã™ã€‚ã¾ãŸå³å´ã«ã‚‚ãƒãƒ¼ã‚¸ãƒ³ãŒã‚ã‚Šã¾ã™ã€‚', style_tag_margins)
+  insert('end', 'è¡Œã®æŠ˜ã‚Šè¿”ã—ä½ç½®ã‚’æ±ºã‚ã‚‹ãŸã‚ã«ä½¿ç”¨ã™ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚
 ', style_tag_margins)
   insert('end', '
-10. ¥¹¥Ú¡¼¥·¥ó¥°', style_tag_big)
-  insert('end', '3¤Ä¤Î¥Ñ¥é¥á¡¼¥¿¤Ç¹Ô¤Î¥¹¥Ú¡¼¥·¥ó¥°¤ò')
-  insert('end', 'À©¸æ¤¹
-¤ë¤³¤È¤¬¤Ç¤­¤Ş¤¹¡£Spacing1¤Ç¡¢¹Ô¤Î')
-  insert('end', '¾å¤Ë¤É¤Î¤¯¤é¤¤¤Î¶õ´Ö¤òÃÖ¤¯¤«¡¢
+10. ã‚¹ãƒšãƒ¼ã‚·ãƒ³ã‚°', style_tag_big)
+  insert('end', '3ã¤ã®ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿ã§è¡Œã®ã‚¹ãƒšãƒ¼ã‚·ãƒ³ã‚°ã‚’')
+  insert('end', 'åˆ¶å¾¡ã™
+ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚Spacing1ã§ã€è¡Œã®')
+  insert('end', 'ä¸Šã«ã©ã®ãã‚‰ã„ã®ç©ºé–“ã‚’ç½®ãã‹ã€
 spacing3')
-  insert('end', '¤Ç¹Ô¤Î²¼¤Ë¤É¤Î¤¯¤é¤¤¤Î¶õ´Ö¤òÃÖ¤¯¤«¡¢')
-  insert('end', '¹Ô¤¬ÀŞ¤êÊÖ¤µ¤ì¤Æ¤¤¤ë¤Ê¤é
-¤Ğ¡¢spacing2¤Ç¡¢')
-  insert('end', '¥Æ¥­¥¹¥È¹Ô¤òÀ¸À®¤·¤Æ¤¤¤ë¹Ô¤Î´Ö¤Ë¤É¤Î¤¯¤é¤¤')
-  insert('end', '¤Î¶õ´Ö¤òÃÖ
-¤¯¤«¤ò¼¨¤·¤Ş¤¹¡£
+  insert('end', 'ã§è¡Œã®ä¸‹ã«ã©ã®ãã‚‰ã„ã®ç©ºé–“ã‚’ç½®ãã‹ã€')
+  insert('end', 'è¡ŒãŒæŠ˜ã‚Šè¿”ã•ã‚Œã¦ã„ã‚‹ãªã‚‰
+ã°ã€spacing2ã§ã€')
+  insert('end', 'ãƒ†ã‚­ã‚¹ãƒˆè¡Œã‚’ç”Ÿæˆã—ã¦ã„ã‚‹è¡Œã®é–“ã«ã©ã®ãã‚‰ã„')
+  insert('end', 'ã®ç©ºé–“ã‚’ç½®
+ãã‹ã‚’ç¤ºã—ã¾ã™ã€‚
 ')
-  insert('end', '¤³¤ì¤é¤Î¥¤¥ó¥Ç¥ó¥È¤µ¤ì¤¿ÃÊÍî¤Ï¤É¤Î¤è¤¦¤Ë',
+  insert('end', 'ã“ã‚Œã‚‰ã®ã‚¤ãƒ³ãƒ‡ãƒ³ãƒˆã•ã‚ŒãŸæ®µè½ã¯ã©ã®ã‚ˆã†ã«',
          style_tag_spacing)
-  insert('end', '¥¹¥Ú¡¼¥·¥ó¥°¤¬¤¬¹Ô¤ï¤ì¤ë¤Î¤«¤ò¼¨¤·¤Ş¤¹¡£',
+  insert('end', 'ã‚¹ãƒšãƒ¼ã‚·ãƒ³ã‚°ãŒãŒè¡Œã‚ã‚Œã‚‹ã®ã‹ã‚’ç¤ºã—ã¾ã™ã€‚',
          style_tag_spacing)
-  insert('end', '³ÆÃÊÍî¤Ï¼Âºİ¤Ï¥Æ¥­¥¹¥Èwidget', style_tag_spacing)
-  insert('end', '¤Î1¹Ô¤Ç¡¢widget¤Ë¤è¤Ã¤ÆÀŞ¤ê¾ö¤Ş¤ì¤Æ¤¤¤Ş¤¹¡£
+  insert('end', 'å„æ®µè½ã¯å®Ÿéš›ã¯ãƒ†ã‚­ã‚¹ãƒˆwidget', style_tag_spacing)
+  insert('end', 'ã®1è¡Œã§ã€widgetã«ã‚ˆã£ã¦æŠ˜ã‚Šç•³ã¾ã‚Œã¦ã„ã¾ã™ã€‚
 ', style_tag_spacing)
-  insert('end', 'Spacing1¤Ï¤³¤Î¥Æ¥­¥¹¥È¤Ç¤Ï10point¤Ë', style_tag_spacing)
-  insert('end', 'ÀßÄê¤µ¤ì¤Æ¤¤¤Ş¤¹¡£', style_tag_spacing)
-  insert('end', '¤³¤ì¤Ë¤è¤ê¡¢ÃÊÍî¤Î´Ö¤ËÂç¤­¤Ê´Ö³Ö¤¬', style_tag_spacing)
-  insert('end', 'Â¸ºß¤·¤Æ¤¤¤Ş¤¹¡£', style_tag_spacing)
-  insert('end', 'Spacing2¤Ï2point¤ËÀßÄê¤µ¤ì¤Æ¤¤¤Ş¤¹¡£', style_tag_spacing)
-  insert('end', '¤³¤ì¤ÇÃÊÍî¤ÎÃæ¤Ë¤Û¤ó¤Î¾¯¤·´Ö³Ö¤¬Â¸ºß¤·¤Æ¤¤¤Ş¤¹¡£',
+  insert('end', 'Spacing1ã¯ã“ã®ãƒ†ã‚­ã‚¹ãƒˆã§ã¯10pointã«', style_tag_spacing)
+  insert('end', 'è¨­å®šã•ã‚Œã¦ã„ã¾ã™ã€‚', style_tag_spacing)
+  insert('end', 'ã“ã‚Œã«ã‚ˆã‚Šã€æ®µè½ã®é–“ã«å¤§ããªé–“éš”ãŒ', style_tag_spacing)
+  insert('end', 'å­˜åœ¨ã—ã¦ã„ã¾ã™ã€‚', style_tag_spacing)
+  insert('end', 'Spacing2ã¯2pointã«è¨­å®šã•ã‚Œã¦ã„ã¾ã™ã€‚', style_tag_spacing)
+  insert('end', 'ã“ã‚Œã§æ®µè½ã®ä¸­ã«ã»ã‚“ã®å°‘ã—é–“éš”ãŒå­˜åœ¨ã—ã¦ã„ã¾ã™ã€‚',
          style_tag_spacing)
-  insert('end', 'Spacing3¤Ï¤³¤ÎÎã¤Ç¤Ï»ÈÍÑ¤µ¤ì¤Æ¤¤¤Ş¤»¤ó¡£
+  insert('end', 'Spacing3ã¯ã“ã®ä¾‹ã§ã¯ä½¿ç”¨ã•ã‚Œã¦ã„ã¾ã›ã‚“ã€‚
 ', style_tag_spacing)
-  insert('end', '´Ö³Ö¤¬¤É¤³¤Ë¤¢¤ë¤«¤ò¸«¤¿¤±¤ì¤Ğ¡¢¤³¤ì¤é¤ÎÃÊÍî¤Î',
+  insert('end', 'é–“éš”ãŒã©ã“ã«ã‚ã‚‹ã‹ã‚’è¦‹ãŸã‘ã‚Œã°ã€ã“ã‚Œã‚‰ã®æ®µè½ã®',
          style_tag_spacing)
-  insert('end', '¤Ê¤«¤Ç¥Æ¥­¥¹¥È¤òÁªÂò¤·¤Æ¤¯¤À¤µ¤¤¡£ÁªÂò¤Î', style_tag_spacing)
-  insert('end', 'È¿Å¾¤·¤¿ÉôÊ¬¤Ë¤ÏÍ¾Ê¬¤Ë¤È¤é¤ì¤¿´Ö³Ö¤¬', style_tag_spacing)
-  insert('end', '´Ş¤Ş¤ì¤Æ¤¤¤Ş¤¹¡£
+  insert('end', 'ãªã‹ã§ãƒ†ã‚­ã‚¹ãƒˆã‚’é¸æŠã—ã¦ãã ã•ã„ã€‚é¸æŠã®', style_tag_spacing)
+  insert('end', 'åè»¢ã—ãŸéƒ¨åˆ†ã«ã¯ä½™åˆ†ã«ã¨ã‚‰ã‚ŒãŸé–“éš”ãŒ', style_tag_spacing)
+  insert('end', 'å«ã¾ã‚Œã¦ã„ã¾ã™ã€‚
 ', style_tag_spacing)
 
 }

@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # toolbar.rb --
 #
@@ -21,32 +21,32 @@ base_frame = Ttk::Frame.new($toolbar_demo).pack(:fill=>:both, :expand=>true)
 
 if Tk.windowingsystem != 'aqua'
   msg = Ttk::Label.new(base_frame, :wraplength=>'4i', :text=><<EOL)
-¤³¤Î¥Ç¥â¤Ç¤Ï¡¤¥Ä¡¼¥ë¥Ð¡¼¤ò¤É¤Î¤è¤¦¤Ë¤·¤ÆÅ¬ÀÚ¤Ë¥Æ¡¼¥ÞÂÐ±þ¤µ¤»¤ë¤«¡¤\
-¤Þ¤¿¡¤¤É¤Î¤è¤¦¤Ë¤·¤ÆÀÚ¤êÎ¥¤·²ÄÇ½¤Ë¤¹¤ë¤«¤ò¼¨¤·¤Æ¤¤¤Þ¤¹\
-¡Ê¤¿¤À¤·¡¤¥Ä¡¼¥ë¥Ð¡¼¤ÎÀÚ¤êÎ¥¤·¤Ë¤ÏTcl/Tk8.5°Ê¾å¤Îµ¡Ç½¤¬É¬Í×¤Ç¤¹¡Ë¡¥\
-¥Ä¡¼¥ë¥Ð¡¼¤Î¥Ü¥¿¥ó¤Ï¡¤'Toolbutton'¥¹¥¿¥¤¥ë¤ò»ÈÍÑ¤¹¤ë¤è¤¦¤ËÌÀ¼¨¤¹¤ë¤³¤È¤Ç¡¤\
-"toolbar style"¥Ü¥¿¥ó¤È¤Ê¤ë¤è¤¦¤ËÂ°À­ÀßÄê¤µ¤ì¤Æ¤¤¤Þ¤¹¡¥\
-¥Ä¡¼¥ë¥Ð¡¼¤Îº¸Ã¼¤Ë¤Ï´ÊÃ±¤Ê¥Þ¡¼¥«¡¼¤¬ÃÖ¤«¤ì¤Æ¤¤¤Þ¤¹¡¥\
-¥Þ¡¼¥«¡¼¾å¤Ë¥Þ¥¦¥¹¥«¡¼¥½¥ë¤¬Íè¤ë¤È°ÜÆ°¥¢¥¤¥³¥ó¤Ë¥«¡¼¥½¥ë¤¬ÊÑ²½¤·¤Þ¤¹¡¥\
-¤½¤³¤Ç¥Ä¡¼¥ë¥Ð¡¼¤òÆ°¤«¤¹¤è¤¦¤Ë¥É¥é¥Ã¥°¤¹¤ë¤È¡¤\
-¥Ä¡¼¥ë¥Ð¡¼Á´ÂÎ¤òÀÚ¤êÎ¥¤·¤ÆÆÈÎ©¤·¤¿¥È¥Ã¥×¥ì¥Ù¥ë¥¦¥£¥¸¥§¥Ã¥È¤Ë\
-¤¹¤ë¤³¤È¤¬¤Ç¤­¤Þ¤¹¡¥\
-ÀÚ¤êÎ¥¤·¤¿¥Ä¡¼¥ë¥Ð¡¼¤¬ÉÔÍ×¤È¤Ê¤Ã¤¿»þ¤Ë¤Ï¡¤\
-°ìÈÌÅª¤Ê¥È¥Ã¥×¥ì¥Ù¥ë¥¦¥£¥¸¥§¥Ã¥È¤ÈÆ±ÍÍ¤ËÃ±½ã¤ËÊÄ¤¸¤ë¤³¤È¤Ç¡¤
-ºÆ¤Ó¸µ¤Î¥¦¥£¥ó¥É¥¦¤ËÄ¥¤êÉÕ¤±¤é¤ì¤ë¤Ç¤·¤ç¤¦¡¥
+ã“ã®ãƒ‡ãƒ¢ã§ã¯ï¼Œãƒ„ãƒ¼ãƒ«ãƒãƒ¼ã‚’ã©ã®ã‚ˆã†ã«ã—ã¦é©åˆ‡ã«ãƒ†ãƒ¼ãƒžå¯¾å¿œã•ã›ã‚‹ã‹ï¼Œ\
+ã¾ãŸï¼Œã©ã®ã‚ˆã†ã«ã—ã¦åˆ‡ã‚Šé›¢ã—å¯èƒ½ã«ã™ã‚‹ã‹ã‚’ç¤ºã—ã¦ã„ã¾ã™\
+ï¼ˆãŸã ã—ï¼Œãƒ„ãƒ¼ãƒ«ãƒãƒ¼ã®åˆ‡ã‚Šé›¢ã—ã«ã¯Tcl/Tk8.5ä»¥ä¸Šã®æ©Ÿèƒ½ãŒå¿…è¦ã§ã™ï¼‰ï¼Ž\
+ãƒ„ãƒ¼ãƒ«ãƒãƒ¼ã®ãƒœã‚¿ãƒ³ã¯ï¼Œ'Toolbutton'ã‚¹ã‚¿ã‚¤ãƒ«ã‚’ä½¿ç”¨ã™ã‚‹ã‚ˆã†ã«æ˜Žç¤ºã™ã‚‹ã“ã¨ã§ï¼Œ\
+"toolbar style"ãƒœã‚¿ãƒ³ã¨ãªã‚‹ã‚ˆã†ã«å±žæ€§è¨­å®šã•ã‚Œã¦ã„ã¾ã™ï¼Ž\
+ãƒ„ãƒ¼ãƒ«ãƒãƒ¼ã®å·¦ç«¯ã«ã¯ç°¡å˜ãªãƒžãƒ¼ã‚«ãƒ¼ãŒç½®ã‹ã‚Œã¦ã„ã¾ã™ï¼Ž\
+ãƒžãƒ¼ã‚«ãƒ¼ä¸Šã«ãƒžã‚¦ã‚¹ã‚«ãƒ¼ã‚½ãƒ«ãŒæ¥ã‚‹ã¨ç§»å‹•ã‚¢ã‚¤ã‚³ãƒ³ã«ã‚«ãƒ¼ã‚½ãƒ«ãŒå¤‰åŒ–ã—ã¾ã™ï¼Ž\
+ãã“ã§ãƒ„ãƒ¼ãƒ«ãƒãƒ¼ã‚’å‹•ã‹ã™ã‚ˆã†ã«ãƒ‰ãƒ©ãƒƒã‚°ã™ã‚‹ã¨ï¼Œ\
+ãƒ„ãƒ¼ãƒ«ãƒãƒ¼å…¨ä½“ã‚’åˆ‡ã‚Šé›¢ã—ã¦ç‹¬ç«‹ã—ãŸãƒˆãƒƒãƒ—ãƒ¬ãƒ™ãƒ«ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã«\
+ã™ã‚‹ã“ã¨ãŒã§ãã¾ã™ï¼Ž\
+åˆ‡ã‚Šé›¢ã—ãŸãƒ„ãƒ¼ãƒ«ãƒãƒ¼ãŒä¸è¦ã¨ãªã£ãŸæ™‚ã«ã¯ï¼Œ\
+ä¸€èˆ¬çš„ãªãƒˆãƒƒãƒ—ãƒ¬ãƒ™ãƒ«ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã¨åŒæ§˜ã«å˜ç´”ã«é–‰ã˜ã‚‹ã“ã¨ã§ï¼Œ
+å†ã³å…ƒã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã«å¼µã‚Šä»˜ã‘ã‚‰ã‚Œã‚‹ã§ã—ã‚‡ã†ï¼Ž
 EOL
 else
   msg = Ttk::Label.new(base_frame, :wraplength=>'4i', :text=><<EOL)
-¤³¤Î¥Ç¥â¤Ç¤Ï¡¤¥Ä¡¼¥ë¥Ð¡¼¤ò¤É¤Î¤è¤¦¤Ë¤·¤ÆÅ¬ÀÚ¤Ë¥Æ¡¼¥ÞÂÐ±þ¤µ¤»¤ë¤«¤ò\
-¼¨¤·¤Æ¤¤¤Þ¤¹¡¥\
-¥Ä¡¼¥ë¥Ð¡¼¤Î¥Ü¥¿¥ó¤Ï¡¤'Toolbutton'¥¹¥¿¥¤¥ë¤ò»ÈÍÑ¤¹¤ë¤è¤¦¤ËÌÀ¼¨¤¹¤ë¤³¤È¤Ç¡¤\
-"toolbar style"¥Ü¥¿¥ó¤È¤Ê¤ë¤è¤¦¤ËÂ°À­ÀßÄê¤µ¤ì¤Æ¤¤¤Þ¤¹¡¥
+ã“ã®ãƒ‡ãƒ¢ã§ã¯ï¼Œãƒ„ãƒ¼ãƒ«ãƒãƒ¼ã‚’ã©ã®ã‚ˆã†ã«ã—ã¦é©åˆ‡ã«ãƒ†ãƒ¼ãƒžå¯¾å¿œã•ã›ã‚‹ã‹ã‚’\
+ç¤ºã—ã¦ã„ã¾ã™ï¼Ž\
+ãƒ„ãƒ¼ãƒ«ãƒãƒ¼ã®ãƒœã‚¿ãƒ³ã¯ï¼Œ'Toolbutton'ã‚¹ã‚¿ã‚¤ãƒ«ã‚’ä½¿ç”¨ã™ã‚‹ã‚ˆã†ã«æ˜Žç¤ºã™ã‚‹ã“ã¨ã§ï¼Œ\
+"toolbar style"ãƒœã‚¿ãƒ³ã¨ãªã‚‹ã‚ˆã†ã«å±žæ€§è¨­å®šã•ã‚Œã¦ã„ã¾ã™ï¼Ž
 EOL
 end
 
 ## Set up the toolbar hull
-tbar_base = Tk::Frame.new(base_frame,  # Tk É¸½à¤Î frame ¤Ç¤Ê¤±¤ì¤Ð¤Ê¤ê¤Þ¤»¤ó¡¥
-                          :widgetname=>'toolbar') # ¥¦¥£¥ó¥É¥¦¥¿¥¤¥È¥ëÊ¸»úÎó¤È¤¹¤ë¤¿¤á¤Ë¡¤¥¦¥£¥¸¥§¥Ã¥ÈÌ¾¤òÌÀ¼¨¤·¤Æ¤¤¤Þ¤¹¡¥
+tbar_base = Tk::Frame.new(base_frame,  # Tk æ¨™æº–ã® frame ã§ãªã‘ã‚Œã°ãªã‚Šã¾ã›ã‚“ï¼Ž
+                          :widgetname=>'toolbar') # ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¿ã‚¤ãƒˆãƒ«æ–‡å­—åˆ—ã¨ã™ã‚‹ãŸã‚ã«ï¼Œã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆåã‚’æ˜Žç¤ºã—ã¦ã„ã¾ã™ï¼Ž
 sep = Ttk::Separator.new(base_frame)
 to_base = Ttk::Frame.new(tbar_base, :cursor=>'fleur')
 if Tk.windowingsystem != 'aqua'
@@ -72,7 +72,7 @@ if Tk.windowingsystem != 'aqua'
     self.grid_remove
     w.grid_remove
     self.wm_manage
-    # self.wm_title('Toolbar') # ¤â¤·¥¦¥£¥¸¥§¥Ã¥ÈÌ¾¤ò¥¦¥£¥ó¥É¥¦¥¿¥¤¥È¥ë¤Ë¤·¤¿¤¯¤Ê¤¤¤Ê¤é¡¤¤³¤³¤ÇÀßÄê¤·¤Æ¤¯¤À¤µ¤¤
+    # self.wm_title('Toolbar') # ã‚‚ã—ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆåã‚’ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¿ã‚¤ãƒˆãƒ«ã«ã—ãŸããªã„ãªã‚‰ï¼Œã“ã“ã§è¨­å®šã—ã¦ãã ã•ã„
     self.wm_protocol('WM_DELETE_WINDOW'){ self.untearoff(w) }
   end
   def tbar_base.untearoff(w)
@@ -86,17 +86,17 @@ end
 text = TkText.new(base_frame, :width=>40, :height=>10)
 
 ## Toolbar contents
-tb_btn = Ttk::Button.new(tbar_base, :text=>'¥Ü¥¿¥ó', :style=>'Toolbutton',
+tb_btn = Ttk::Button.new(tbar_base, :text=>'ãƒœã‚¿ãƒ³', :style=>'Toolbutton',
                          :command=>proc{
-                           text.insert(:end, "¥Ü¥¿¥ó¤¬²¡¤µ¤ì¤Þ¤·¤¿¡¥\n")
+                           text.insert(:end, "ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚Œã¾ã—ãŸï¼Ž\n")
                          })
-tb_chk = Ttk::Checkbutton.new(tbar_base, :text=>'¥Á¥§¥Ã¥¯¥Ü¥¿¥ó',
+tb_chk = Ttk::Checkbutton.new(tbar_base, :text=>'ãƒã‚§ãƒƒã‚¯ãƒœã‚¿ãƒ³',
                               :style=>'Toolbutton',
                               :variable=>(check = TkVariable.new),
                               :command=>proc{
-                                text.insert(:end, "¥Á¥§¥Ã¥¯¥Ü¥¿¥ó¤ÎÃÍ¤Ï#{check.value}¤Ç¤¹¡¥\n")
+                                text.insert(:end, "ãƒã‚§ãƒƒã‚¯ãƒœã‚¿ãƒ³ã®å€¤ã¯#{check.value}ã§ã™ï¼Ž\n")
                               })
-tb_mbtn = Ttk::Menubutton.new(tbar_base, :text=>'¥á¥Ë¥å¡¼')
+tb_mbtn = Ttk::Menubutton.new(tbar_base, :text=>'ãƒ¡ãƒ‹ãƒ¥ãƒ¼')
 tb_combo = Ttk::Combobox.new(tbar_base, :value=>TkFont.families,
                              :state=>:readonly)
 tb_mbtn.menu(menu = Tk::Menu.new(tb_mbtn))
@@ -121,10 +121,10 @@ Ttk::Frame.new(base_frame) {|frame|
   sep = Ttk::Separator.new(frame)
   Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
   TkGrid('x',
-         Ttk::Button.new(frame, :text=>'¥³¡¼¥É»²¾È',
+         Ttk::Button.new(frame, :text=>'ã‚³ãƒ¼ãƒ‰å‚ç…§',
                          :image=>$image['view'], :compound=>:left,
                          :command=>proc{showCode 'toolbar'}),
-         Ttk::Button.new(frame, :text=>'ÊÄ¤¸¤ë',
+         Ttk::Button.new(frame, :text=>'é–‰ã˜ã‚‹',
                          :image=>$image['delete'], :compound=>:left,
                          :command=>proc{
                            $toolbar_demo.destroy

@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # arrowhead widget demo (called by 'widget')
 #
@@ -91,13 +91,13 @@ def arrowSetup(c)
   v.count += 1
 end
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ðºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($arrow_demo) && $arrow_demo
   $arrow_demo.destroy
   $arrow_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $arrow_demo = TkToplevel.new {|w|
   title("Arrowhead Editor Demonstration")
   iconname("arrow")
@@ -106,17 +106,17 @@ $arrow_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($arrow_demo).pack(:fill=>:both, :expand=>true)
 
-# label À¸À®
+# label ç”Ÿæˆ
 TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left',
-            'text'=>"¤³¤Î widget ¤Ç¡¢¥­¥ã¥ó¥Ð¥¹¤Ç»È¤ï¤ì¤ë¥é¥¤¥ó¤Ë¤Ä¤¤¤ÆÍÍ¡¹¤ÊÉý¤äÌð°õ¤ÎÆ¬¤Î·Á¤ò»î¤·¤Æ¤ß¤ë¤³¤È¤¬¤Ç¤­¤Þ¤¹¡£Àþ¤ÎÉý¤äÌð°õ¤Î·Á¤òÊÑ¤¨¤ë¤Ë¤Ï¡¢³ÈÂç¤µ¤ì¤¿Ìð°õ¤Ë¤Ä¤¤¤Æ¤¤¤ë 3¤Ä¤Î»Í³Ñ¤ò¥É¥é¥Ã¥°¤·¤Æ¤¯¤À¤µ¤¤¡£±¦Â¦¤ÎÌð°õ¤ÏÉáÄÌ¤ÎÂç¤­¤µ¤Ç¤Î¥µ¥ó¥×¥ë¤ò¼¨¤·¤Æ¤¤¤Þ¤¹¡£²¼¤Î¥Æ¥­¥¹¥È¤Ï¥é¥¤¥ó¥¢¥¤¥Æ¥à¤ËÂÐ¤¹¤ëÀßÄê¥ª¥×¥·¥ç¥ó¤Ç¤¹¡£"){
+            'text'=>"ã“ã® widget ã§ã€ã‚­ãƒ£ãƒ³ãƒã‚¹ã§ä½¿ã‚ã‚Œã‚‹ãƒ©ã‚¤ãƒ³ã«ã¤ã„ã¦æ§˜ã€…ãªå¹…ã‚„çŸ¢å°ã®é ­ã®å½¢ã‚’è©¦ã—ã¦ã¿ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚ç·šã®å¹…ã‚„çŸ¢å°ã®å½¢ã‚’å¤‰ãˆã‚‹ã«ã¯ã€æ‹¡å¤§ã•ã‚ŒãŸçŸ¢å°ã«ã¤ã„ã¦ã„ã‚‹ 3ã¤ã®å››è§’ã‚’ãƒ‰ãƒ©ãƒƒã‚°ã—ã¦ãã ã•ã„ã€‚å³å´ã®çŸ¢å°ã¯æ™®é€šã®å¤§ãã•ã§ã®ã‚µãƒ³ãƒ—ãƒ«ã‚’ç¤ºã—ã¦ã„ã¾ã™ã€‚ä¸‹ã®ãƒ†ã‚­ã‚¹ãƒˆã¯ãƒ©ã‚¤ãƒ³ã‚¢ã‚¤ãƒ†ãƒ ã«å¯¾ã™ã‚‹è¨­å®šã‚ªãƒ—ã‚·ãƒ§ãƒ³ã§ã™ã€‚"){
   pack('side'=>'top')
 }
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 $arrow_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $arrow_demo
       $arrow_demo = nil
@@ -125,18 +125,18 @@ $arrow_buttons = TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'arrow'}
   }.pack('side'=>'left', 'expand'=>'yes')
 }
 $arrow_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# canvas ÀßÄê
+# canvas è¨­å®š
 $arrow_canvas = TkCanvas.new(base_frame, 'width'=>500, 'height'=>350,
                              'relief'=>'sunken', 'borderwidth'=>2)
 $arrow_canvas.pack('expand'=>'yes', 'fill'=>'both')
 
-# ÃÍÀßÄê
+# å€¤è¨­å®š
 unless Struct.const_defined?("ArrowInfo")
   $demo_arrowInfo = Struct.new("ArrowInfo", :a, :b, :c, :width, :motionProc,
                                :x1, :x2, :y, :smallTips, :count,

@@ -3,27 +3,27 @@ The library 'tkencoding.rb' is obsolete.
 Functions of tkencoding.rb is already included into Ruby/Tk.
 
 -------------------------------------------------
-tkencoding.rb¤òÍÑ¤¤¤¿ÆüËÜ¸ì¤ÎÉ½¼¨¤Ë¤Ä¤¤¤Æ
+tkencoding.rbã‚’ç”¨ã„ãŸæ—¥æœ¬èªã®è¡¨ç¤ºã«ã¤ã„ã¦
 
 Copyright (C) 1999/07, Takaaki Tateishi <ttate@jaist.ac.jp>
 
 
-1. tkencoding.rb¤È¤Ï¡©
+1. tkencoding.rbã¨ã¯ï¼Ÿ
 
-tkencoding.rb¤ÏTcl/Tk8.1¤òÍøÍÑ¤·¤¿Ruby/Tk¤Î¤¿¤á¤Î¥é¥¤¥Ö¥é¥ê
-¤Ç¤¹¡£tkencoding.rb¤òrequire¤¹¤ë¤³¤È¤Ë¤è¤Ã¤ÆWedget¤ËÉ½¼¨¤µ
-¤ì¤ë¥Æ¥­¥¹¥È¤ÏÁ´¤Æunicode(UTF8)¤ØÊÑ´¹¤µ¤ì¤Ş¤¹¡£
+tkencoding.rbã¯Tcl/Tk8.1ã‚’åˆ©ç”¨ã—ãŸRuby/Tkã®ãŸã‚ã®ãƒ©ã‚¤ãƒ–ãƒ©ãƒª
+ã§ã™ã€‚tkencoding.rbã‚’requireã™ã‚‹ã“ã¨ã«ã‚ˆã£ã¦Wedgetã«è¡¨ç¤ºã•
+ã‚Œã‚‹ãƒ†ã‚­ã‚¹ãƒˆã¯å…¨ã¦unicode(UTF8)ã¸å¤‰æ›ã•ã‚Œã¾ã™ã€‚
 
 
-2. »È¤¤Êı
+2. ä½¿ã„æ–¹
 
-tkencoding.rb¤òrequire¤·¤ÆTk.encoding¤Ç»ÈÍÑ¤·¤Æ¤¤¤ëÊ¸»ú¥³¡¼¥É
-¤ò»ØÄê¤·¤Æ²¼¤µ¤¤¡£Îã¤¨¤Ğ°Ê²¼¤Î¤è¤¦¤Ê´¶¤¸¤Ë¤Ê¤ê¤Ş¤¹¡£
+tkencoding.rbã‚’requireã—ã¦Tk.encodingã§ä½¿ç”¨ã—ã¦ã„ã‚‹æ–‡å­—ã‚³ãƒ¼ãƒ‰
+ã‚’æŒ‡å®šã—ã¦ä¸‹ã•ã„ã€‚ä¾‹ãˆã°ä»¥ä¸‹ã®ã‚ˆã†ãªæ„Ÿã˜ã«ãªã‚Šã¾ã™ã€‚
 
 ----
 require 'tk'
 require 'tkencoding'
 
-Tk.encoding = "euc-jp"
+Tk.encoding = "utf-8"
 # Tk.encoding = "shiftjis"
 ---

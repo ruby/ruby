@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 
-# ´Á»ú¥³¡¼¥ÉÀßÄê ( tk.rb ¤Î¥í¡¼¥É»ş¤Î encoding ¿äÄê/ÀßÄê¤Ë»È¤ï¤ì¤ë )
+# æ¼¢å­—ã‚³ãƒ¼ãƒ‰è¨­å®š ( tk.rb ã®ãƒ­ãƒ¼ãƒ‰æ™‚ã® encoding æ¨å®š/è¨­å®šã«ä½¿ã‚ã‚Œã‚‹ )
 #if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!!!!
 unless defined?(::Encoding.default_external)
   $KCODE = 'euc'
@@ -9,28 +9,28 @@ else
   DEFAULT_TK_ENCODING = 'EUC-JP'
 end
 
-# tk ´Ø·¸¥é¥¤¥Ö¥é¥ê¤ÎÆÉ¤ß¹ş¤ß
+# tk é–¢ä¿‚ãƒ©ã‚¤ãƒ–ãƒ©ãƒªã®èª­ã¿è¾¼ã¿
 require 'tk'
 # require 'tkafter'
 
 $RubyTk_WidgetDemo = true
 
-# widget demo directory °ÌÃÖ¤Î³ÍÆÀ
+# widget demo directory ä½ç½®ã®ç²å¾—
 # $demo_dir = File.dirname($0)
 $demo_dir = File.dirname(__FILE__)
 
-# root ¤ÎÀ¸À®
+# root ã®ç”Ÿæˆ
 $root = TkRoot.new{title "Ruby/Tk Widget Demonstration"}
 
-# tk ¥Ğ¡¼¥¸¥ç¥ó¤Î¼èÆÀ
+# tk ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®å–å¾—
 $tk_version = Tk::TK_VERSION
 $tk_major_ver, $tk_minor_ver = $tk_version.split('.').map{|n| n.to_i}
 $tk_patchlevel = Tk::TK_PATCHLEVEL
 
-# tcl_platform ¾ğÊó¤Ø¤Î¥¢¥¯¥»¥¹¥ª¥Ö¥¸¥§¥¯¥È
+# tcl_platform æƒ…å ±ã¸ã®ã‚¢ã‚¯ã‚»ã‚¹ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
 $tk_platform = TkVarAccess.new('tcl_platform')
 
-# ¥Õ¥©¥ó¥ÈÀßÄê
+# ãƒ•ã‚©ãƒ³ãƒˆè¨­å®š
 #######
 case($tk_version)
 when /^4.*/
@@ -64,7 +64,7 @@ else
 end
 #######
 
-# ¥¤¥á¡¼¥¸ÀßÄê
+# ã‚¤ãƒ¡ãƒ¼ã‚¸è¨­å®š
 $image = {}
 
 if $tk_major_ver >= 8
@@ -123,7 +123,7 @@ $image['print'] = TkPhotoImage.new(:height=>19, :format=>'GIF', :data=><<EOD)
 EOD
 end
 
-# ¥á¥Ë¥å¡¼ÀßÄê
+# ãƒ¡ãƒ‹ãƒ¥ãƒ¼è¨­å®š
 if $tk_major_ver >= 8
   $root.add_menubar([[['File', 0],
                         ['About ... ', proc{aboutBox}, 0, '<F1>'],
@@ -154,7 +154,7 @@ TkFrame.new($root){|frame|
 }.pack('side'=>'top', 'fill'=>'x')
 =end
 
-# ¥Æ¥­¥¹¥È¥Ü¥Ã¥¯¥¹¤ÎÀ¸À®
+# ãƒ†ã‚­ã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹ã®ç”Ÿæˆ
 if $tk_version =~ /^4\.[01]/
   scr = TkScrollbar.new($root, 'orient'=>'vertical')
   txt = TkText.new($root) {
@@ -215,7 +215,7 @@ else
   }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>2)
 end
 
-# ¥Æ¥­¥¹¥È¥¿¥°ÀßÄê
+# ãƒ†ã‚­ã‚¹ãƒˆã‚¿ã‚°è¨­å®š
 if $tk_version =~ /^4.*/
   tag_title = TkTextTag.new(txt, 'font'=>'-*-Helvetica-Bold-R-Normal--*-180-*-*-*-*-*-*')
 else
@@ -277,267 +277,267 @@ tag_demo.bind('Motion', proc{|x, y|
               },
               '%x %y')
 
-# ¥Æ¥­¥¹¥ÈÀ¸À®
+# ãƒ†ã‚­ã‚¹ãƒˆç”Ÿæˆ
 txt.insert('end', 'Ruby/Tk : Widget', tag_title)
-#txt.insert('end', "  ¥Ç¥â¥ó¥¹¥È¥ì¡¼¥·¥ç¥ó\n", tag_middle)
-txt.insert('end', "  ¥Ç¥â¥ó¥¹¥È¥ì¡¼¥·¥ç¥ó\n", tag_kanji_title)
+#txt.insert('end', "  ãƒ‡ãƒ¢ãƒ³ã‚¹ãƒˆãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³\n", tag_middle)
+txt.insert('end', "  ãƒ‡ãƒ¢ãƒ³ã‚¹ãƒˆãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³\n", tag_kanji_title)
 txt.insert('end', <<"EOT")
 
-¤³¤Î¥¢¥×¥ê¥±¡¼¥·¥ç¥ó¤Ï¡¢Tk Widget ¤òÍÑ¤¤¤Æ¤É¤Î¤è¤¦¤Ê¤³¤È¤¬¤Ç¤­¤ë¤«\
-¤ò¼¨¤¹¤¿¤á¤Î¡¢¤¤¤¯¤Ä¤«¤Î¾®¤µ¤Ê¥¹¥¯¥ê¥×¥È¤ËÂĞ¤¹¤ë¥Õ¥í¥ó¥È¥¨¥ó¥É¤òÄó\
-¶¡¤·¤Æ¤¤¤Ş¤¹¡£°Ê²¼¤Ë½çÈÖ¤Ëµó¤²¤é¤ì¤Æ¤¤¤ë¥Ç¥â¥ó¥¹¥È¥ì¡¼¥·¥ç¥ó¤ò¼Â¹Ô\
-¤¹¤ë¤Ë¤Ï¥Ş¥¦¥¹¤Ç¥¯¥ê¥Ã¥¯¤·¤Æ¤¯¤À¤µ¤¤¡£¥Ç¥â¥ó¥¹¥È¥ì¡¼¥·¥ç¥ó¤Î¥¦¥£¥ó\
-¥É¥¦¤¬¸½¤ì¤ë¤È¡¢¥Ç¥â¥ó¥¹¥È¥ì¡¼¥·¥ç¥ó¤òÀ¸À®¤·¤¿ Ruby/Tk ¤Î¥³¡¼¥É¤ò¸«\
-¤ë¤¿¤á¤Ë¡¢"¥³¡¼¥É»²¾È"¥Ü¥¿¥ó¤ò¥¯¥ê¥Ã¥¯¤¹¤ë¤³¤È¤¬¤Ç¤­¤Ş¤¹¡£¤¢¤Ê¤¿¤¬\
-Ë¾¤à¤Ê¤é¡¢¤½¤Î¥³¡¼¥É¤ò½¤Àµ¤¹¤ë¤³¤È¤¬¤Ç¤­¤Ş¤¹¡£½¤Àµ¤·¤¿¥³¡¼¥É¤Ç¥Ç¥â\
-¥ó¥¹¥È¥ì¡¼¥·¥ç¥ó¤òºÆ¼Â¹Ô¤¹¤ë¤¿¤á¤Ë¤Ï¡¢¥³¡¼¥É¤¬½ñ¤«¤ì¤¿¥¦¥£¥ó¥É¥¦¤Ë\
-¤¢¤ë"¥Ç¥âºÆ¼Â¹Ô" ¥Ü¥¿¥ó¤ò¥¯¥ê¥Ã¥¯¤·¤Æ¤¯¤À¤µ¤¤¡£\
-¥³¡¼¥É¤ò½¤Àµ¤·¤Æ¤â¥ª¥ê¥¸¥Ê¥ë¤Î¥Õ¥¡¥¤¥ë¤¬½ñ¤­´¹¤¨¤é¤ì¤ë¤³¤È¤Ï\
-¤¢¤ê¤Ş¤»¤ó¤«¤é¡¢¿´ÇÛ¤»¤º¤Ë¿§¡¹¤ÊÊÑ¹¹¤ò»î¤·¤Æ¤ß¤Æ¤¯¤À¤µ¤¤¡£
+ã“ã®ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã¯ã€Tk Widget ã‚’ç”¨ã„ã¦ã©ã®ã‚ˆã†ãªã“ã¨ãŒã§ãã‚‹ã‹\
+ã‚’ç¤ºã™ãŸã‚ã®ã€ã„ãã¤ã‹ã®å°ã•ãªã‚¹ã‚¯ãƒªãƒ—ãƒˆã«å¯¾ã™ã‚‹ãƒ•ãƒ­ãƒ³ãƒˆã‚¨ãƒ³ãƒ‰ã‚’æ\
+ä¾›ã—ã¦ã„ã¾ã™ã€‚ä»¥ä¸‹ã«é †ç•ªã«æŒ™ã’ã‚‰ã‚Œã¦ã„ã‚‹ãƒ‡ãƒ¢ãƒ³ã‚¹ãƒˆãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã‚’å®Ÿè¡Œ\
+ã™ã‚‹ã«ã¯ãƒã‚¦ã‚¹ã§ã‚¯ãƒªãƒƒã‚¯ã—ã¦ãã ã•ã„ã€‚ãƒ‡ãƒ¢ãƒ³ã‚¹ãƒˆãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã®ã‚¦ã‚£ãƒ³\
+ãƒ‰ã‚¦ãŒç¾ã‚Œã‚‹ã¨ã€ãƒ‡ãƒ¢ãƒ³ã‚¹ãƒˆãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã‚’ç”Ÿæˆã—ãŸ Ruby/Tk ã®ã‚³ãƒ¼ãƒ‰ã‚’è¦‹\
+ã‚‹ãŸã‚ã«ã€"ã‚³ãƒ¼ãƒ‰å‚ç…§"ãƒœã‚¿ãƒ³ã‚’ã‚¯ãƒªãƒƒã‚¯ã™ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚ã‚ãªãŸãŒ\
+æœ›ã‚€ãªã‚‰ã€ãã®ã‚³ãƒ¼ãƒ‰ã‚’ä¿®æ­£ã™ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚ä¿®æ­£ã—ãŸã‚³ãƒ¼ãƒ‰ã§ãƒ‡ãƒ¢\
+ãƒ³ã‚¹ãƒˆãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã‚’å†å®Ÿè¡Œã™ã‚‹ãŸã‚ã«ã¯ã€ã‚³ãƒ¼ãƒ‰ãŒæ›¸ã‹ã‚ŒãŸã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã«\
+ã‚ã‚‹"ãƒ‡ãƒ¢å†å®Ÿè¡Œ" ãƒœã‚¿ãƒ³ã‚’ã‚¯ãƒªãƒƒã‚¯ã—ã¦ãã ã•ã„ã€‚\
+ã‚³ãƒ¼ãƒ‰ã‚’ä¿®æ­£ã—ã¦ã‚‚ã‚ªãƒªã‚¸ãƒŠãƒ«ã®ãƒ•ã‚¡ã‚¤ãƒ«ãŒæ›¸ãæ›ãˆã‚‰ã‚Œã‚‹ã“ã¨ã¯\
+ã‚ã‚Šã¾ã›ã‚“ã‹ã‚‰ã€å¿ƒé…ã›ãšã«è‰²ã€…ãªå¤‰æ›´ã‚’è©¦ã—ã¦ã¿ã¦ãã ã•ã„ã€‚
 
-°ìÉô¤Î¥Ç¥â¤Ç¤Ï¡¢Èæ³ÓÅªºÇ¶á¤Î¥Ğ¡¼¥¸¥ç¥ó¤Î Tk ¤Ç¤Ê¤±¤ì¤Ğ¥µ¥İ¡¼¥È¤·¤Æ\
-¤¤¤Ê¤¤µ¡Ç½¤ò»È¤Ã¤Æ¼ÂÁõ¤·¤Æ¤¤¤Ş¤¹(Îã¤¨¤Ğ Tk8.4 °Ê¾å¤Ê¤É)¡£¤½¤Î¤¿¤á¡¢\
-¤½¤¦¤·¤¿µ¡Ç½¤ò»ı¤¿¤Ê¤¤ Tk ¥é¥¤¥Ö¥é¥ê¤ò»È¤Ã¤Æ¤¤¤ë¾ì¹ç¤Ë¤Ï¡¢¤½¤¦¤·¤¿\
-¥Ç¥â¤ÏÀµ¤·¤¯Æ°¤­¤Ş¤»¤ó¡£¤½¤Î¤è¤¦¤Êµ¡Ç½¤¬É¬Í×¤Ç¤¢¤ì¤Ğ¡¢¤½¤ì¤ò¥µ¥İ¡¼¥È\
-¤·¤Æ¤¤¤ë Tk ¥é¥¤¥Ö¥é¥ê¤ò»È¤¦¤è¤¦¤Ë tcltklib ¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤Ê¤ª¤·¤Æ\
-¤¯¤À¤µ¤¤¡£
+ä¸€éƒ¨ã®ãƒ‡ãƒ¢ã§ã¯ã€æ¯”è¼ƒçš„æœ€è¿‘ã®ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã® Tk ã§ãªã‘ã‚Œã°ã‚µãƒãƒ¼ãƒˆã—ã¦\
+ã„ãªã„æ©Ÿèƒ½ã‚’ä½¿ã£ã¦å®Ÿè£…ã—ã¦ã„ã¾ã™(ä¾‹ãˆã° Tk8.4 ä»¥ä¸Šãªã©)ã€‚ãã®ãŸã‚ã€\
+ãã†ã—ãŸæ©Ÿèƒ½ã‚’æŒãŸãªã„ Tk ãƒ©ã‚¤ãƒ–ãƒ©ãƒªã‚’ä½¿ã£ã¦ã„ã‚‹å ´åˆã«ã¯ã€ãã†ã—ãŸ\
+ãƒ‡ãƒ¢ã¯æ­£ã—ãå‹•ãã¾ã›ã‚“ã€‚ãã®ã‚ˆã†ãªæ©Ÿèƒ½ãŒå¿…è¦ã§ã‚ã‚Œã°ã€ãã‚Œã‚’ã‚µãƒãƒ¼ãƒˆ\
+ã—ã¦ã„ã‚‹ Tk ãƒ©ã‚¤ãƒ–ãƒ©ãƒªã‚’ä½¿ã†ã‚ˆã†ã« tcltklib ã‚’ã‚³ãƒ³ãƒ‘ã‚¤ãƒ«ã—ãªãŠã—ã¦\
+ãã ã•ã„ã€‚
 
-¤â¤·¤¢¤Ê¤¿¤Î Tk ¤¬ (ºÇ½é¤«¤é´Ş¤à¤«¥¤¥ó¥¹¥È¡¼¥ë¤·¤¿¤«¤Ë¤è¤ê) \
-Ttk (Tile) ³ÈÄ¥¤òÍøÍÑ¤Ç¤­¤ë¾õÂÖ¤Ç¤¢¤ë¤Ê¤é¡¢\
-Ttk ³ÈÄ¥¤Î¥Ç¥â (sample/tkextlib/tile/demo.rb) ¤â¤¼¤Ò»î¤·¤Æ¤ß¤Æ¤¯¤À¤µ¤¤¡£
-( Â¿Ê¬¡¤¸½ºß¤Î¤¢¤Ê¤¿¤Î´Ä¶­¤Ë¤Ï Ttk ³ÈÄ¥¤Ï\
+ã‚‚ã—ã‚ãªãŸã® Tk ãŒ (æœ€åˆã‹ã‚‰å«ã‚€ã‹ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã—ãŸã‹ã«ã‚ˆã‚Š) \
+Ttk (Tile) æ‹¡å¼µã‚’åˆ©ç”¨ã§ãã‚‹çŠ¶æ…‹ã§ã‚ã‚‹ãªã‚‰ã€\
+Ttk æ‹¡å¼µã®ãƒ‡ãƒ¢ (sample/tkextlib/tile/demo.rb) ã‚‚ãœã²è©¦ã—ã¦ã¿ã¦ãã ã•ã„ã€‚
+( å¤šåˆ†ï¼Œç¾åœ¨ã®ã‚ãªãŸã®ç’°å¢ƒã«ã¯ Ttk æ‹¡å¼µã¯\
 #{
 begin
   require 'tkextlib/tile'
-  "¤¹¤Ç¤ËÆ³Æş¤µ¤ì¤Æ¤¤¤Ş¤¹"
+  "ã™ã§ã«å°å…¥ã•ã‚Œã¦ã„ã¾ã™"
 rescue
-  "¤Ş¤À¥¤¥ó¥¹¥È¡¼¥ë¤µ¤ì¤Æ¤¤¤Ş¤»¤ó"
+  "ã¾ã ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã•ã‚Œã¦ã„ã¾ã›ã‚“"
 end
 }\
-¡£)
-Ttk ³ÈÄ¥¤Ï¡¢Tk8.5 °Ê¾å¤Ç¤ÏÉ¸½à¤Îµ¡Ç½¤È¤·¤ÆÁÈ¤ß¹ş¤Ş¤ì¤Æ¤¤¤Ş¤¹¡£
+ã€‚)
+Ttk æ‹¡å¼µã¯ã€Tk8.5 ä»¥ä¸Šã§ã¯æ¨™æº–ã®æ©Ÿèƒ½ã¨ã—ã¦çµ„ã¿è¾¼ã¾ã‚Œã¦ã„ã¾ã™ã€‚
 
 
 EOT
 
-#txt.insert('end',"¥é¥Ù¥ë, ¥Ü¥¿¥ó, ¥Á¥§¥Ã¥¯¥Ü¥¿¥ó, ¥é¥¸¥ª¥Ü¥¿¥ó\n",tag_middle)
-txt.insert('end', "¥é¥Ù¥ë, ¥Ü¥¿¥ó, ¥Á¥§¥Ã¥¯¥Ü¥¿¥ó, ¥é¥¸¥ª¥Ü¥¿¥ó\n",
+#txt.insert('end',"ãƒ©ãƒ™ãƒ«, ãƒœã‚¿ãƒ³, ãƒã‚§ãƒƒã‚¯ãƒœã‚¿ãƒ³, ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³\n",tag_middle)
+txt.insert('end', "ãƒ©ãƒ™ãƒ«, ãƒœã‚¿ãƒ³, ãƒã‚§ãƒƒã‚¯ãƒœã‚¿ãƒ³, ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³\n",
            tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "1. ¥é¥Ù¥ë (¥Æ¥­¥¹¥È, ¥Ó¥Ã¥È¥Ş¥Ã¥×)\n",
+txt.insert('end', "1. ãƒ©ãƒ™ãƒ« (ãƒ†ã‚­ã‚¹ãƒˆ, ãƒ“ãƒƒãƒˆãƒãƒƒãƒ—)\n",
            tag_demo, "demo-label")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. ¥é¥Ù¥ë¤ÈUNICODE¥Æ¥­¥¹¥È (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n", tag_demo, "demo-unicodeout")
+txt.insert('end', "2. ãƒ©ãƒ™ãƒ«ã¨UNICODEãƒ†ã‚­ã‚¹ãƒˆ (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n", tag_demo, "demo-unicodeout")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. ¥Ü¥¿¥ó \n", tag_demo, "demo-button")
+txt.insert('end', "3. ãƒœã‚¿ãƒ³ \n", tag_demo, "demo-button")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. ¥Á¥§¥Ã¥¯¥Ü¥¿¥ó (Ê£¿ô¤òÁªÂò²ÄÇ½)\n",
+txt.insert('end', "4. ãƒã‚§ãƒƒã‚¯ãƒœã‚¿ãƒ³ (è¤‡æ•°ã‚’é¸æŠå¯èƒ½)\n",
            tag_demo, "demo-check")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "5. £³¾õÂÖ¥Á¥§¥Ã¥¯¥Ü¥¿¥ó (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n",
+txt.insert('end', "5. ï¼“çŠ¶æ…‹ãƒã‚§ãƒƒã‚¯ãƒœã‚¿ãƒ³ (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n",
            tag_demo, "demo-check2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "6. ¥é¥¸¥ª¥Ü¥¿¥ó (Ç¤°Õ¤Î°ì¤Ä¤òÁªÂò²ÄÇ½)\n",
+txt.insert('end', "6. ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³ (ä»»æ„ã®ä¸€ã¤ã‚’é¸æŠå¯èƒ½)\n",
            tag_demo, "demo-radio")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "7. ¥é¥¸¥ª¥Ü¥¿¥ó (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n",
+txt.insert('end', "7. ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³ (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n",
            tag_demo, "demo-radio2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "8. £³¾õÂÖ¥é¥¸¥ª¥Ü¥¿¥ó (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n",
+txt.insert('end', "8. ï¼“çŠ¶æ…‹ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³ (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n",
            tag_demo, "demo-radio3")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "9. ¥Ü¥¿¥ó¤Çºî¤é¤ì¤¿15-¥Ñ¥º¥ë¥²¡¼¥à\n",
+txt.insert('end', "9. ãƒœã‚¿ãƒ³ã§ä½œã‚‰ã‚ŒãŸ15-ãƒ‘ã‚ºãƒ«ã‚²ãƒ¼ãƒ \n",
            tag_demo, "demo-puzzle")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "10. ¥Ó¥Ã¥È¥Ş¥Ã¥×¤ò»ÈÍÑ¤·¤¿¥¢¥¤¥³¥ó¥Ü¥¿¥ó\n",
+txt.insert('end', "10. ãƒ“ãƒƒãƒˆãƒãƒƒãƒ—ã‚’ä½¿ç”¨ã—ãŸã‚¢ã‚¤ã‚³ãƒ³ãƒœã‚¿ãƒ³\n",
            tag_demo, "demo-icon")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "11. ²èÁü¤òÉ½¼¨¤¹¤ëÆó¤Ä¤Î¥é¥Ù¥ë\n",
+txt.insert('end', "11. ç”»åƒã‚’è¡¨ç¤ºã™ã‚‹äºŒã¤ã®ãƒ©ãƒ™ãƒ«\n",
            tag_demo, "demo-image1")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "12. ²èÁü¤ò¸«¤ë¤¿¤á¤Î´ÊÃ±¤Ê¥æ¡¼¥¶¥¤¥ó¥¿¡¼¥Õ¥§¡¼¥¹\n",
+txt.insert('end', "12. ç”»åƒã‚’è¦‹ã‚‹ãŸã‚ã®ç°¡å˜ãªãƒ¦ãƒ¼ã‚¶ã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ãƒ¼ã‚¹\n",
            tag_demo, "demo-image2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "13. ²èÁü¤ò¸«¤ë¤¿¤á¤Î´ÊÃ±¤Ê¥æ¡¼¥¶¥¤¥ó¥¿¡¼¥Õ¥§¡¼¥¹ (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n",
+txt.insert('end', "13. ç”»åƒã‚’è¦‹ã‚‹ãŸã‚ã®ç°¡å˜ãªãƒ¦ãƒ¼ã‚¶ã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ãƒ¼ã‚¹ (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n",
            tag_demo, "demo-image3")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "14. ¥é¥Ù¥ëÉÕ¤­¥Õ¥ì¡¼¥à (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n",
+txt.insert('end', "14. ãƒ©ãƒ™ãƒ«ä»˜ããƒ•ãƒ¬ãƒ¼ãƒ  (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n",
            tag_demo, "demo-labelframe")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "15. ¥Æ¡¼¥Ş¤ËÂĞ±ş¤·¤¿¥¦¥£¥¸¥§¥Ã¥È¤Î´ÊÃ±¤ÊÎã (Tile/Ttk³ÈÄ¥¤Ø¤ÎÂĞ±ş¤¬É¬Í×)\n",
+txt.insert('end', "15. ãƒ†ãƒ¼ãƒã«å¯¾å¿œã—ãŸã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã®ç°¡å˜ãªä¾‹ (Tile/Ttkæ‹¡å¼µã¸ã®å¯¾å¿œãŒå¿…è¦)\n",
            tag_demo, "demo-ttkbut")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
-#txt.insert('end', "¥ê¥¹¥È¥Ü¥Ã¥¯¥¹\n", tag_middle)
-txt.insert('end', "¥ê¥¹¥È¥Ü¥Ã¥¯¥¹\n", tag_kanji_title)
+#txt.insert('end', "ãƒªã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹\n", tag_middle)
+txt.insert('end', "ãƒªã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "1. ÅÔÆ»ÉÜ¸©.\n", tag_demo, "demo-states")
+txt.insert('end', "1. éƒ½é“åºœçœŒ.\n", tag_demo, "demo-states")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. ¿§: ¥¢¥×¥ê¥±¡¼¥·¥ç¥ó¤Î¤¿¤á¤ÎÇÛ¿§¤òÊÑ¤¨¤ë\n",
+txt.insert('end', "2. è‰²: ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã®ãŸã‚ã®é…è‰²ã‚’å¤‰ãˆã‚‹\n",
            "#{tag_demo.id} demo-colors")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. ³Ê¸À½¸\n", tag_demo, "demo-sayings")
+txt.insert('end', "3. æ ¼è¨€é›†\n", tag_demo, "demo-sayings")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. ¹ñ¤Ë¤Ä¤¤¤Æ¤Î¥Ş¥ë¥Á¥«¥é¥à¥ê¥¹¥È (Tile/Ttk³ÈÄ¥¤Ø¤ÎÂĞ±ş¤¬É¬Í×)\n",
+txt.insert('end', "4. å›½ã«ã¤ã„ã¦ã®ãƒãƒ«ãƒã‚«ãƒ©ãƒ ãƒªã‚¹ãƒˆ (Tile/Ttkæ‹¡å¼µã¸ã®å¯¾å¿œãŒå¿…è¦)\n",
            tag_demo, "demo-mclist")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "5. ¥Ç¥£¥ì¥¯¥È¥ê¥Ö¥é¥¦¥¶ (Tile/Ttk³ÈÄ¥¤Ø¤ÎÂĞ±ş¤¬É¬Í×)\n",
+txt.insert('end', "5. ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªãƒ–ãƒ©ã‚¦ã‚¶ (Tile/Ttkæ‹¡å¼µã¸ã®å¯¾å¿œãŒå¿…è¦)\n",
            tag_demo, "demo-tree")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
-#txt.insert('end', "¥¨¥ó¥È¥ê¤È¥¹¥Ô¥ó¥Ü¥Ã¥¯¥¹\n", tag_middle)
-txt.insert('end', "¥¨¥ó¥È¥ê\n", tag_kanji_title)
+#txt.insert('end', "ã‚¨ãƒ³ãƒˆãƒªã¨ã‚¹ãƒ”ãƒ³ãƒœãƒƒã‚¯ã‚¹\n", tag_middle)
+txt.insert('end', "ã‚¨ãƒ³ãƒˆãƒª\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "1. ¥¹¥¯¥í¡¼¥ë¥Ğ¡¼¤Ê¤·\n", tag_demo, "demo-entry1")
+txt.insert('end', "1. ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ãƒãƒ¼ãªã—\n", tag_demo, "demo-entry1")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. ¥¹¥¯¥í¡¼¥ë¥Ğ¡¼¤¢¤ê\n", tag_demo, "demo-entry2")
+txt.insert('end', "2. ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ãƒãƒ¼ã‚ã‚Š\n", tag_demo, "demo-entry2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. Ç§¾Ú½èÍıÉÕ¤­¤Î¥¨¥ó¥È¥ê¥Ü¥Ã¥¯¥¹¤È¥Ñ¥¹¥ï¡¼¥É¥Õ¥£¡¼¥ë¥É (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n",
+txt.insert('end', "3. èªè¨¼å‡¦ç†ä»˜ãã®ã‚¨ãƒ³ãƒˆãƒªãƒœãƒƒã‚¯ã‚¹ã¨ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰ãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰ (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n",
            tag_demo, "demo-entry3")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. ¥¹¥Ô¥ó¥Ü¥Ã¥¯¥¹ (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n",
+txt.insert('end', "4. ã‚¹ãƒ”ãƒ³ãƒœãƒƒã‚¯ã‚¹ (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n",
            tag_demo, "demo-spin")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "5. ¥³¥ó¥Ü¥Ü¥Ã¥¯¥¹ (Tile/Ttk³ÈÄ¥¤Ø¤ÎÂĞ±ş¤¬É¬Í×)\n",
+txt.insert('end', "5. ã‚³ãƒ³ãƒœãƒœãƒƒã‚¯ã‚¹ (Tile/Ttkæ‹¡å¼µã¸ã®å¯¾å¿œãŒå¿…è¦)\n",
            tag_demo, "demo-combo")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "6. ´ÊÃ±¤Ê¥Õ¥©¡¼¥à\n", tag_demo, "demo-form")
+txt.insert('end', "6. ç°¡å˜ãªãƒ•ã‚©ãƒ¼ãƒ \n", tag_demo, "demo-form")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
-#txt.insert('end', "¥Æ¥­¥¹¥È\n", tag_middle)
-txt.insert('end', "¥Æ¥­¥¹¥È\n", tag_kanji_title)
+#txt.insert('end', "ãƒ†ã‚­ã‚¹ãƒˆ\n", tag_middle)
+txt.insert('end', "ãƒ†ã‚­ã‚¹ãƒˆ\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "1. ´ğËÜÅª¤Ê¥Æ¥­¥¹¥È\n", tag_demo, "demo-text")
+txt.insert('end', "1. åŸºæœ¬çš„ãªãƒ†ã‚­ã‚¹ãƒˆ\n", tag_demo, "demo-text")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. É½¼¨¥¹¥¿¥¤¥ë.\n", tag_demo, "demo-style")
+txt.insert('end', "2. è¡¨ç¤ºã‚¹ã‚¿ã‚¤ãƒ«.\n", tag_demo, "demo-style")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. ¥Ï¥¤¥Ñ¡¼¥Æ¥­¥¹¥È(¥¿¥°¥Ğ¥¤¥ó¥É).\n",
+txt.insert('end', "3. ãƒã‚¤ãƒ‘ãƒ¼ãƒ†ã‚­ã‚¹ãƒˆ(ã‚¿ã‚°ãƒã‚¤ãƒ³ãƒ‰).\n",
            tag_demo, "demo-bind")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. ¥¦¥£¥ó¥É¥¦¤òËä¤á¹ş¤ó¤À¥Æ¥­¥¹¥È\n",
+txt.insert('end', "4. ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’åŸ‹ã‚è¾¼ã‚“ã ãƒ†ã‚­ã‚¹ãƒˆ\n",
            tag_demo, "demo-twind")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "5. ¥¦¥£¥ó¥É¥¦¤òËä¤á¹ş¤ó¤À¥Æ¥­¥¹¥È (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n",
+txt.insert('end', "5. ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’åŸ‹ã‚è¾¼ã‚“ã ãƒ†ã‚­ã‚¹ãƒˆ (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n",
            tag_demo, "demo-twind2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "6. ¸¡º÷\n", tag_demo, "demo-search")
+txt.insert('end', "6. æ¤œç´¢\n", tag_demo, "demo-search")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "7. ¥Æ¥­¥¹¥È¥¦¥£¥¸¥§¥Ã¥È¤ÎÂĞÅù²½(peering) (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n", tag_demo, "demo-textpeer")
+txt.insert('end', "7. ãƒ†ã‚­ã‚¹ãƒˆã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã®å¯¾ç­‰åŒ–(peering) (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n", tag_demo, "demo-textpeer")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
-#txt.insert('end', "¥­¥ã¥ó¥Ğ¥¹\n", tag_middle)
-txt.insert('end', "¥­¥ã¥ó¥Ğ¥¹\n", tag_kanji_title)
+#txt.insert('end', "ã‚­ãƒ£ãƒ³ãƒã‚¹\n", tag_middle)
+txt.insert('end', "ã‚­ãƒ£ãƒ³ãƒã‚¹\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "1. ¥¢¥¤¥Æ¥à¤Î·¿\n", tag_demo, "demo-items")
+txt.insert('end', "1. ã‚¢ã‚¤ãƒ†ãƒ ã®å‹\n", tag_demo, "demo-items")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. 2 ¼¡¸µ¤Î¥×¥í¥Ã¥È\n", tag_demo, "demo-plot")
+txt.insert('end', "2. 2 æ¬¡å…ƒã®ãƒ—ãƒ­ãƒƒãƒˆ\n", tag_demo, "demo-plot")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. ¥Æ¥­¥¹¥È\n", tag_demo, "demo-ctext")
+txt.insert('end', "3. ãƒ†ã‚­ã‚¹ãƒˆ\n", tag_demo, "demo-ctext")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. Ìğ°õ¤Î·Á\n", tag_demo, "demo-arrow")
+txt.insert('end', "4. çŸ¢å°ã®å½¢\n", tag_demo, "demo-arrow")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "5. ¥ë¡¼¥é¡¼\n", tag_demo, "demo-ruler")
+txt.insert('end', "5. ãƒ«ãƒ¼ãƒ©ãƒ¼\n", tag_demo, "demo-ruler")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "6. ¥Õ¥í¥¢¥×¥é¥ó\n", tag_demo, "demo-floor")
+txt.insert('end', "6. ãƒ•ãƒ­ã‚¢ãƒ—ãƒ©ãƒ³\n", tag_demo, "demo-floor")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "7. ¥Õ¥í¥¢¥×¥é¥ó (°Û¤Ê¤ë¥­¥ã¥ó¥Ğ¥¹¥¢¥¤¥Æ¥àºîÀ®ÊıË¡¤ò»ÈÍÑ)\n", tag_demo, "demo-floor2")
+txt.insert('end', "7. ãƒ•ãƒ­ã‚¢ãƒ—ãƒ©ãƒ³ (ç•°ãªã‚‹ã‚­ãƒ£ãƒ³ãƒã‚¹ã‚¢ã‚¤ãƒ†ãƒ ä½œæˆæ–¹æ³•ã‚’ä½¿ç”¨)\n", tag_demo, "demo-floor2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "8. ¥¹¥¯¥í¡¼¥ë²ÄÇ½¤Ê¥­¥ã¥ó¥Ğ¥¹\n",
+txt.insert('end', "8. ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«å¯èƒ½ãªã‚­ãƒ£ãƒ³ãƒã‚¹\n",
            tag_demo, "demo-cscroll")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "9. ¥Á¥§¥¹¥Ü¡¼¥É¾å¤Îµ³»Î¤Î½ä²ó (Tile/Ttk³ÈÄ¥¤Ø¤ÎÂĞ±ş¤¬É¬Í×)\n",
+txt.insert('end', "9. ãƒã‚§ã‚¹ãƒœãƒ¼ãƒ‰ä¸Šã®é¨å£«ã®å·¡å› (Tile/Ttkæ‹¡å¼µã¸ã®å¯¾å¿œãŒå¿…è¦)\n",
            tag_demo, "demo-knightstour")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
-#txt.insert('end', "¥¹¥±¡¼¥ë¤È¥×¥í¥°¥ì¥¹¥Ğ¡¼\n", tag_middle)
-txt.insert('end', "¥¹¥±¡¼¥ë¤È¥×¥í¥°¥ì¥¹¥Ğ¡¼\n", tag_kanji_title)
+#txt.insert('end', "ã‚¹ã‚±ãƒ¼ãƒ«ã¨ãƒ—ãƒ­ã‚°ãƒ¬ã‚¹ãƒãƒ¼\n", tag_middle)
+txt.insert('end', "ã‚¹ã‚±ãƒ¼ãƒ«ã¨ãƒ—ãƒ­ã‚°ãƒ¬ã‚¹ãƒãƒ¼\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "1. ¿âÄ¾¥¹¥±¡¼¥ë\n", tag_demo.id, "demo-vscale")
+txt.insert('end', "1. å‚ç›´ã‚¹ã‚±ãƒ¼ãƒ«\n", tag_demo.id, "demo-vscale")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. ¿åÊ¿¥¹¥±¡¼¥ë\n", tag_demo.id, "demo-hscale")
+txt.insert('end', "2. æ°´å¹³ã‚¹ã‚±ãƒ¼ãƒ«\n", tag_demo.id, "demo-hscale")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. ¥×¥í¥°¥ì¥¹¥Ğ¡¼ (Tile/Ttk³ÈÄ¥¤Ø¤ÎÂĞ±ş¤¬É¬Í×)\n", tag_demo.id, "demo-ttkprogress")
+txt.insert('end', "3. ãƒ—ãƒ­ã‚°ãƒ¬ã‚¹ãƒãƒ¼ (Tile/Ttkæ‹¡å¼µã¸ã®å¯¾å¿œãŒå¿…è¦)\n", tag_demo.id, "demo-ttkprogress")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
-txt.insert('end', "¥Ú¥¤¥ó¥É¥¦¥£¥ó¥É¥¦¤È¥Î¡¼¥È¥Ö¥Ã¥¯\n", tag_kanji_title)
+txt.insert('end', "ãƒšã‚¤ãƒ³ãƒ‰ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã¨ãƒãƒ¼ãƒˆãƒ–ãƒƒã‚¯\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "1. ¿åÊ¿Êı¸ş (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n",
+txt.insert('end', "1. æ°´å¹³æ–¹å‘ (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n",
            tag_demo.id, "demo-paned1")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. ¿âÄ¾Êı¸ş (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n",
+txt.insert('end', "2. å‚ç›´æ–¹å‘ (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n",
            tag_demo.id, "demo-paned2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. ¥Æ¡¼¥Ş¤ËÂĞ±ş¤·¤¿Ëä¤á¹ş¤ß¥Ú¥¤¥ó (Tile/Ttk³ÈÄ¥¤Ø¤ÎÂĞ±ş¤¬É¬Í×)\n",
+txt.insert('end', "3. ãƒ†ãƒ¼ãƒã«å¯¾å¿œã—ãŸåŸ‹ã‚è¾¼ã¿ãƒšã‚¤ãƒ³ (Tile/Ttkæ‹¡å¼µã¸ã®å¯¾å¿œãŒå¿…è¦)\n",
            tag_demo.id, "demo-ttkpane")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. ¥Î¡¼¥È¥Ö¥Ã¥¯¥¦¥£¥¸¥§¥Ã¥È (Tile/Ttk³ÈÄ¥¤Ø¤ÎÂĞ±ş¤¬É¬Í×)\n",
+txt.insert('end', "4. ãƒãƒ¼ãƒˆãƒ–ãƒƒã‚¯ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆ (Tile/Ttkæ‹¡å¼µã¸ã®å¯¾å¿œãŒå¿…è¦)\n",
            tag_demo.id, "demo-ttknote")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
-#txt.insert('end', "¥á¥Ë¥å¡¼¤È¥Ä¡¼¥ë¥Ğ¡¼\n", tag_middle)
-txt.insert('end', "¥á¥Ë¥å¡¼¤È¥Ä¡¼¥ë¥Ğ¡¼\n", tag_kanji_title)
+#txt.insert('end', "ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã¨ãƒ„ãƒ¼ãƒ«ãƒãƒ¼\n", tag_middle)
+txt.insert('end', "ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã¨ãƒ„ãƒ¼ãƒ«ãƒãƒ¼\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "1. ¥á¥Ë¥å¡¼¤È¥«¥¹¥±¡¼¥É¤ò´Ş¤ó¤À¥¦¥£¥ó¥É¥¦\n",
+txt.insert('end', "1. ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã¨ã‚«ã‚¹ã‚±ãƒ¼ãƒ‰ã‚’å«ã‚“ã ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦\n",
            tag_demo, "demo-menu")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. ¥á¥Ë¥å¡¼¤È¥«¥¹¥±¡¼¥É¤ò´Ş¤ó¤À¥¦¥£¥ó¥É¥¦ (Tk8.x ÀìÍÑ)\n",
+txt.insert('end', "2. ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã¨ã‚«ã‚¹ã‚±ãƒ¼ãƒ‰ã‚’å«ã‚“ã ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ (Tk8.x å°‚ç”¨)\n",
            tag_demo, "demo-menu8x")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3.                 ¡·                (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n",
+txt.insert('end', "3.                 ã€ƒ                (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n",
            tag_demo, "demo-menu84")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. ¥á¥Ë¥å¡¼¥Ü¥¿¥ó (Tk8.x ÀìÍÑ)\n",
+txt.insert('end', "4. ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãƒœã‚¿ãƒ³ (Tk8.x å°‚ç”¨)\n",
            tag_demo, "demo-menubu")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "5. ¥Æ¡¼¥Ş¤ËÂĞ±ş¤·¤¿¥á¥Ë¥å¡¼¥Ü¥¿¥ó (Tile/Ttk³ÈÄ¥¤Ø¤ÎÂĞ±ş¤¬É¬Í×)\n",
+txt.insert('end', "5. ãƒ†ãƒ¼ãƒã«å¯¾å¿œã—ãŸãƒ¡ãƒ‹ãƒ¥ãƒ¼ãƒœã‚¿ãƒ³ (Tile/Ttkæ‹¡å¼µã¸ã®å¯¾å¿œãŒå¿…è¦)\n",
            tag_demo.id, "demo-ttkmenu")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "6. ¥Æ¡¼¥Ş¤ËÂĞ±ş¤·¤¿¥Ä¡¼¥ë¥Ğ¡¼ (Tile/Ttk³ÈÄ¥¤Ø¤ÎÂĞ±ş¤¬É¬Í×)\n",
+txt.insert('end', "6. ãƒ†ãƒ¼ãƒã«å¯¾å¿œã—ãŸãƒ„ãƒ¼ãƒ«ãƒãƒ¼ (Tile/Ttkæ‹¡å¼µã¸ã®å¯¾å¿œãŒå¿…è¦)\n",
            tag_demo.id, "demo-toolbar")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
-#txt.insert('end', "¥À¥¤¥¢¥í¥°¥¦¥£¥ó¥É¥¦\n", tag_middle)
-txt.insert('end', "¥À¥¤¥¢¥í¥°¥¦¥£¥ó¥É¥¦\n", tag_kanji_title)
+#txt.insert('end', "ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦\n", tag_middle)
+txt.insert('end', "ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "1. ¥á¥Ã¥»¡¼¥¸¥Ü¥Ã¥¯¥¹\n", tag_demo, "demo-msgbox")
+txt.insert('end', "1. ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒœãƒƒã‚¯ã‚¹\n", tag_demo, "demo-msgbox")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. ¾ÜºÙ¥Æ¥­¥¹¥ÈÉÕ¤­¤Î¥á¥Ã¥»¡¼¥¸¥Ü¥Ã¥¯¥¹ (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n", tag_demo, "demo-msgbox2")
+txt.insert('end', "2. è©³ç´°ãƒ†ã‚­ã‚¹ãƒˆä»˜ãã®ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒœãƒƒã‚¯ã‚¹ (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n", tag_demo, "demo-msgbox2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. ¥Õ¥¡¥¤¥ëÁªÂò¥À¥¤¥¢¥í¥°\n", tag_demo, "demo-filebox")
+txt.insert('end', "3. ãƒ•ã‚¡ã‚¤ãƒ«é¸æŠãƒ€ã‚¤ã‚¢ãƒ­ã‚°\n", tag_demo, "demo-filebox")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. ¿§ÁªÂò¥À¥¤¥¢¥í¥°\n", tag_demo, "demo-clrpick")
+txt.insert('end', "4. è‰²é¸æŠãƒ€ã‚¤ã‚¢ãƒ­ã‚°\n", tag_demo, "demo-clrpick")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
-#txt.insert('end', "¥¢¥Ë¥á¡¼¥·¥ç¥ó\n", tag_middle)
-txt.insert('end', "¥¢¥Ë¥á¡¼¥·¥ç¥ó\n", tag_kanji_title)
+#txt.insert('end', "ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³\n", tag_middle)
+txt.insert('end', "ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "1. ¥¢¥Ë¥á¡¼¥·¥ç¥ó¥é¥Ù¥ë (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n", tag_demo, "demo-anilabel")
+txt.insert('end', "1. ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ãƒ©ãƒ™ãƒ« (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n", tag_demo, "demo-anilabel")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. ÇÈ·Á¤Î¥¢¥Ë¥á¡¼¥·¥ç¥ó (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n", tag_demo, "demo-aniwave")
+txt.insert('end', "2. æ³¢å½¢ã®ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n", tag_demo, "demo-aniwave")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. ¿¶¤ê»Ò¤Î¥·¥ß¥å¥ì¡¼¥·¥ç¥ó (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n", tag_demo, "demo-pendulum")
+txt.insert('end', "3. æŒ¯ã‚Šå­ã®ã‚·ãƒŸãƒ¥ãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n", tag_demo, "demo-pendulum")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. A celebration of Rube Goldberg (µ¡Ç½¤ËÂĞ±ş¤·¤¿¥Ğ¡¼¥¸¥ç¥ó¤ÎTk¤¬É¬Í×)\n", tag_demo, "demo-goldberg")
+txt.insert('end', "4. A celebration of Rube Goldberg (æ©Ÿèƒ½ã«å¯¾å¿œã—ãŸãƒãƒ¼ã‚¸ãƒ§ãƒ³ã®TkãŒå¿…è¦)\n", tag_demo, "demo-goldberg")
 
 txt.insert('end', "\n")
-#txt.insert('end', "¤½¤ÎÂ¾\n", tag_middle)
-txt.insert('end', "¤½¤ÎÂ¾\n", tag_kanji_title)
+#txt.insert('end', "ãã®ä»–\n", tag_middle)
+txt.insert('end', "ãã®ä»–\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "1. ÁÈ¤ß¹ş¤ß¤Î¥Ó¥Ã¥È¥Ş¥Ã¥×\n", tag_demo, "demo-bitmap")
+txt.insert('end', "1. çµ„ã¿è¾¼ã¿ã®ãƒ“ãƒƒãƒˆãƒãƒƒãƒ—\n", tag_demo, "demo-bitmap")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. ¥â¡¼¥À¥ë¥À¥¤¥¢¥í¥°(¥í¡¼¥«¥ë¥°¥é¥Ö)\n",
+txt.insert('end', "2. ãƒ¢ãƒ¼ãƒ€ãƒ«ãƒ€ã‚¤ã‚¢ãƒ­ã‚°(ãƒ­ãƒ¼ã‚«ãƒ«ã‚°ãƒ©ãƒ–)\n",
            tag_demo, "demo-dialog1")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. ¥â¡¼¥À¥ë¥À¥¤¥¢¥í¥°(¥°¥í¡¼¥Ğ¥ë¥°¥é¥Ö)\n",
+txt.insert('end', "3. ãƒ¢ãƒ¼ãƒ€ãƒ«ãƒ€ã‚¤ã‚¢ãƒ­ã‚°(ã‚°ãƒ­ãƒ¼ãƒãƒ«ã‚°ãƒ©ãƒ–)\n",
            tag_demo, "demo-dialog2")
 txt.insert('end', " \n ", tag_demospace)
 
@@ -545,13 +545,13 @@ txt.state('disabled')
 scr.focus
 
 ################################
-# method ÄêµÁ
+# method å®šç¾©
 ################################
 def positionWindow(w)
   w.geometry('+300+300')
 end
 
-# ¿Æ¥¦¥£¥¸¥§¥Ã¥È¤È¡¤ÊÑ¿ôÌ¾¤È TkVariable ¤È¤ÎÁÈ(ÇÛÎó)¤ÎÊÂ¤Ó¤òÅÏ¤¹
+# è¦ªã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã¨ï¼Œå¤‰æ•°åã¨ TkVariable ã¨ã®çµ„(é…åˆ—)ã®ä¸¦ã³ã‚’æ¸¡ã™
 $showVarsWin = {}
 def showVars1(parent, *args)
   if $showVarsWin[parent.path]
@@ -564,7 +564,7 @@ def showVars1(parent, *args)
     title "Variable values"
     base = TkFrame.new(w).pack(:fill=>:both, :expand=>true)
     TkLabel.new(base) {
-      text "ÊÑ¿ôÃÍ:"
+      text "å¤‰æ•°å€¤:"
       width 20
       anchor 'center'
       if $tk_version =~ /^4.*/
@@ -586,7 +586,7 @@ def showVars1(parent, *args)
       }.pack('side'=>'top', 'anchor'=>'w', 'fill'=>'x')
     }
     TkButton.new(base) {
-      text "Î»²ò"
+      text "äº†è§£"
       command proc{w.destroy}
     }.pack('side'=>'bottom', 'pady'=>2)
   }
@@ -605,7 +605,7 @@ def showVars2(parent, *args)
 
     base = TkFrame.new(top).pack(:fill=>:both, :expand=>true)
 
-    TkLabelFrame.new(base, :text=>"ÊÑ¿ôÃÍ:",
+    TkLabelFrame.new(base, :text=>"å¤‰æ•°å€¤:",
                      :font=>{:family=>'Helvetica', :size=>14}){|f|
       args.each{|vnam,vbody|
         TkGrid(TkLabel.new(f, :text=>"#{vnam}: ", :anchor=>'w'),
@@ -617,7 +617,7 @@ def showVars2(parent, *args)
       f.grid_columnconfig(1, :weight=>1)
       f.grid_rowconfig(100, :weight=>1)
     }
-    TkButton.new(base, :text=>"Î»²ò", :width=>8, :default=>:active,
+    TkButton.new(base, :text=>"äº†è§£", :width=>8, :default=>:active,
                  :command=>proc{top.destroy}){|b|
       top.bind('Return', proc{b.invoke})
       top.bind('Escape', proc{b.invoke})
@@ -637,7 +637,7 @@ else # ver >= 8.4
   alias showVars showVars2
 end
 
-# µ¿»÷¥È¥Ã¥×¥ì¥Ù¥ë¥µ¥İ¡¼¥È
+# ç–‘ä¼¼ãƒˆãƒƒãƒ—ãƒ¬ãƒ™ãƒ«ã‚µãƒãƒ¼ãƒˆ
 module PseudoToplevel_Evaluable
   def pseudo_toplevel_eval(body = Proc.new)
     Thread.current[:TOPLEVEL] = self
@@ -743,7 +743,7 @@ def eval_samplecode(code, file=nil)
   Tk.update
 end
 
-# ¥Æ¥­¥¹¥È¾å¤Ç¤Î click ¤ËÂĞ¤¹¤ëÆ°ºî
+# ãƒ†ã‚­ã‚¹ãƒˆä¸Šã§ã® click ã«å¯¾ã™ã‚‹å‹•ä½œ
 def invoke(txt, idx)
   tag = txt.tag_names(idx).find{|t| t.kind_of?(String) && t =~ /^demo-/}
   return unless tag
@@ -776,7 +776,7 @@ def invoke (txt, idx)
 end
 =end
 
-# ¾õÂÖÉ½¼¨
+# çŠ¶æ…‹è¡¨ç¤º
 def showStatus (txt, index)
   tag = txt.tag_names(index).find{|t| t.kind_of?(String) && t =~ /^demo-/}
   cursor = txt.cget('cursor')
@@ -786,13 +786,13 @@ def showStatus (txt, index)
   else
     demoname = tag[5..-1]
     $statusBarLabel.configure('text',
-                             "¥µ¥ó¥×¥ë¥×¥í¥°¥é¥à \"#{demoname}\" ¤Î¼Â¹Ô ")
+                             "ã‚µãƒ³ãƒ—ãƒ«ãƒ—ãƒ­ã‚°ãƒ©ãƒ  \"#{demoname}\" ã®å®Ÿè¡Œ ")
     newcursor = 'hand2'
   end
   txt.configure('cursor'=>newcursor) if cursor != newcursor
 end
 
-# ¥½¡¼¥¹¥³¡¼¥É¤ÎÉ½¼¨
+# ã‚½ãƒ¼ã‚¹ã‚³ãƒ¼ãƒ‰ã®è¡¨ç¤º
 def showCode1(demo)
   file = "#{demo}.rb"
   $code_window = nil unless defined? $code_window
@@ -801,15 +801,15 @@ def showCode1(demo)
     f = TkFrame.new($code_window)
 
     TkButton.new(f) {
-      #text "Î»²ò"
-      text "ÊÄ¤¸¤ë"
+      #text "äº†è§£"
+      text "é–‰ã˜ã‚‹"
       command proc{
         $code_window.destroy
         $code_window = nil
       }
     }.pack('side'=>'right', 'expand'=>'false', 'pady'=>2)
     TkButton.new(f) {
-      text "ºÆ¼Â¹Ô"
+      text "å†å®Ÿè¡Œ"
       # command proc{eval($code_text.get('1.0','end'), _null_binding)}
       command proc{eval_samplecode($code_text.get('1.0','end'), '<viewer>')}
     }.pack('side'=>'right', 'expand'=>'false', 'pady'=>2)
@@ -924,17 +924,17 @@ def showCode2(demo)
       posnum.text  = pos
     }
 
-    #b_dis = TkButton.new(bf, :text=>'Î»²ò', :default=>:active,
-    b_dis = TkButton.new(bf, :text=>'ÊÄ¤¸¤ë', :default=>:active,
+    #b_dis = TkButton.new(bf, :text=>'äº†è§£', :default=>:active,
+    b_dis = TkButton.new(bf, :text=>'é–‰ã˜ã‚‹', :default=>:active,
                          :command=>proc{
                            $code_window.destroy
                            $code_window = nil
                          },
                          :image=>$image['delete'], :compound=>:left)
-    b_prn = TkButton.new(bf, :text=>'°õºş',
+    b_prn = TkButton.new(bf, :text=>'å°åˆ·',
                          :command=>proc{printCode($code_text, file)},
                          :image=>$image['print'], :compound=>:left)
-    b_run = TkButton.new(bf, :text=>'ºÆ¼Â¹Ô',
+    b_run = TkButton.new(bf, :text=>'å†å®Ÿè¡Œ',
                          :command=>proc{
                            # eval($code_text.get('1.0','end'), _null_binding)
                            eval_samplecode($code_text.get('1.0','end'), '<viewer>')
@@ -1012,27 +1012,27 @@ def printCode(txt, file)
       msg = `lp -c #{fname}`
       unless $?.exitstatus == 0
         Tk.messageBox(:title=>'Print spooling failure',
-                      :message=>'¥¨¥é¡¼¤¬È¯À¸¤·¤Ş¤·¤¿¡¥' +
-                                '°õºş¤Ë¼ºÇÔ¤·¤¿¤â¤Î¤È»×¤ï¤ì¤Ş¤¹ : ' + msg)
+                      :message=>'ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸï¼' +
+                                'å°åˆ·ã«å¤±æ•—ã—ãŸã‚‚ã®ã¨æ€ã‚ã‚Œã¾ã™ : ' + msg)
       end
     when 'windows'
       begin
         printTextWin32(fname)
       rescue => e
         Tk.messageBox(:title=>'Print spooling failure',
-                      :message=>'¥¨¥é¡¼¤¬È¯À¸¤·¤Ş¤·¤¿¡¥' +
-                                '°õºş¤Ë¼ºÇÔ¤·¤¿¤â¤Î¤È»×¤ï¤ì¤Ş¤¹ : ' +
+                      :message=>'ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸï¼' +
+                                'å°åˆ·ã«å¤±æ•—ã—ãŸã‚‚ã®ã¨æ€ã‚ã‚Œã¾ã™ : ' +
                                 e.message)
       end
     when 'macintosh'
       Tk.messageBox(:title=>'Operation not Implemented',
-                    :message=>'°õºşµ¡Ç½¤Ï¤Ş¤À¼ÂÁõ¤µ¤ì¤Æ¤¤¤Ş¤»¤ó')
+                    :message=>'å°åˆ·æ©Ÿèƒ½ã¯ã¾ã å®Ÿè£…ã•ã‚Œã¦ã„ã¾ã›ã‚“')
     else
       Tk.messageBox(:title=>'Operation not Implemented',
-                    :message=>'¸¡½Ğ¤µ¤ì¤¿´Ä¶­ ' +
+                    :message=>'æ¤œå‡ºã•ã‚ŒãŸç’°å¢ƒ ' +
                               Tk::TCL_PLATFORM('platform') +
-                              ' ¤ÏÌ¤ÃÎ¤Î´Ä¶­¤Ç¤¢¤ë¤¿¤á¡¤' +
-                              '°õºşµ¡Ç½¤Ï¼ÂÁõ¤µ¤ì¤Æ¤¤¤Ş¤»¤ó: ')
+                              ' ã¯æœªçŸ¥ã®ç’°å¢ƒã§ã‚ã‚‹ãŸã‚ï¼Œ' +
+                              'å°åˆ·æ©Ÿèƒ½ã¯å®Ÿè£…ã•ã‚Œã¦ã„ã¾ã›ã‚“: ')
     end
   ensure
     File.delete(fname)
@@ -1074,7 +1074,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo',
-                'message'=>"Ruby/Tk ¥¦¥£¥¸¥§¥Ã¥È¥Ç¥â Ver.1.7.1-jp\n\n" +
+                'message'=>"Ruby/Tk ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆãƒ‡ãƒ¢ Ver.1.7.1-jp\n\n" +
                            "based on demos of Tk8.1 -- 8.5  " +
                            "( Copyright of Tcl/Tk demos:: " +
                            "(c) 1996-1997 Sun Microsystems, Inc. / " +
@@ -1087,7 +1087,7 @@ def aboutBox
 end
 
 ####################################
-# °ú¿ô¤Ç»ØÄê¤µ¤ì¤¿¥Ç¥â¤òµ¯Æ°¤¹¤ë
+# å¼•æ•°ã§æŒ‡å®šã•ã‚ŒãŸãƒ‡ãƒ¢ã‚’èµ·å‹•ã™ã‚‹
 no_launcher = false
 if ARGV[0] == '-n'
   ARGV.shift
@@ -1118,5 +1118,5 @@ if no_launcher
 end
 
 ################################
-# ¥¤¥Ù¥ó¥ÈÂÔ¤Á¤ËÆş¤ë
+# ã‚¤ãƒ™ãƒ³ãƒˆå¾…ã¡ã«å…¥ã‚‹
 Tk.mainloop

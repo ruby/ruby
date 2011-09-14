@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # ttkbut.rb
 #
@@ -23,22 +23,22 @@ base_frame = TkFrame.new($ttkbut_demo).pack(:fill=>:both, :expand=>true)
 
 Ttk::Label.new(base_frame, :font=>$font, :wraplength=>'4i', :justify=>:left,
                :text=><<EOL).pack(:side=>:top, :fill=>:x)
-Ttk¤È¤Ï¡¤¥Æ¡¼¥Þ»ØÄê²ÄÇ½¤Ê¿·¤·¤¤¥¦¥£¥¸¥§¥Ã¥È½¸¹ç¤Ç¤¹¡¥\
-º£¡¤¤¢¤Ê¤¿¤¬ÌÜ¤Ë¤·¤Æ¤¤¤ë¤Î¤ÏTtk¤Î¥Æ¡¼¥Þ²½¥é¥Ù¥ë¤Ç¡¤\
-²¼¤Ë¤ÏTtk¤Î¥é¥Ù¥ë¥Õ¥ì¡¼¥à¤ÎÃæ¤Ë»°¤Ä¤Î¥°¥ë¡¼¥×¤ÎTtk¥¦¥£¥¸¥§¥Ã¥È¤¬\
-É½¼¨¤µ¤ì¤Æ¤¤¤Þ¤¹¡¥
-ºÇ½é¤Î¥°¥ë¡¼¥×¤ÏÁ´¤Æ¥Ü¥¿¥ó¤Ç¤¢¤ê¡¤\
-¤½¤ì¤¾¤ì¥¯¥ê¥Ã¥¯¤¹¤ì¤Ð¸½ºß¤Î¥¢¥×¥ê¥±¡¼¥·¥ç¥ó¤Î¥Æ¡¼¥Þ¤¬ÀßÄê¤µ¤ì¤Þ¤¹¡¥
-£²ÈÖÌÜ¤Î¥°¥ë¡¼¥×¤Ï»°¤Ä¤Î¥Á¥§¥Ã¥¯¥Ü¥¿¥ó½¸¹ç¤Ç¤¹¡¥\
-³Æ½¸¹ç¤Î´Ö¤Ë¤Ï¡¤¥»¥Ñ¥ì¡¼¥¿¥¦¥£¥¸¥§¥Ã¥È¤¬ÃÖ¤«¤ì¤Æ¤¤¤Þ¤¹¡¥\
-¤Ê¤ª¡ÖÍ­¸ú²½¡×¥Ü¥¿¥ó¤Ï¡¤¤³¤Î¥È¥Ã¥×¥ì¥Ù¥ë¥¦¥£¥¸¥§¥Ã¥ÈÆâ¤Î\
-Â¾¤Î¤¹¤Ù¤Æ¤Î¥Æ¡¼¥Þ²½¥¦¥£¥¸¥§¥Ã¥È¤Î¾õÂÖ(state)¤¬"disabled"¤«¤É¤¦¤«¤ò\
-¥³¥ó¥È¥í¡¼¥ë¤¹¤ë¤³¤È¤ËÃí°Õ¤·¤Æ¤¯¤À¤µ¤¤¡¥
-£³ÈÖÌÜ¤Î¥°¥ë¡¼¥×¤Ï´ØÏ¢ÉÕ¤±¤é¤ì¤¿¥é¥¸¥ª¥Ü¥¿¥ó½¸¹ç¤È¤Ê¤Ã¤Æ¤¤¤Þ¤¹¡¥
+Ttkã¨ã¯ï¼Œãƒ†ãƒ¼ãƒžæŒ‡å®šå¯èƒ½ãªæ–°ã—ã„ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆé›†åˆã§ã™ï¼Ž\
+ä»Šï¼Œã‚ãªãŸãŒç›®ã«ã—ã¦ã„ã‚‹ã®ã¯Ttkã®ãƒ†ãƒ¼ãƒžåŒ–ãƒ©ãƒ™ãƒ«ã§ï¼Œ\
+ä¸‹ã«ã¯Ttkã®ãƒ©ãƒ™ãƒ«ãƒ•ãƒ¬ãƒ¼ãƒ ã®ä¸­ã«ä¸‰ã¤ã®ã‚°ãƒ«ãƒ¼ãƒ—ã®Ttkã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆãŒ\
+è¡¨ç¤ºã•ã‚Œã¦ã„ã¾ã™ï¼Ž
+æœ€åˆã®ã‚°ãƒ«ãƒ¼ãƒ—ã¯å…¨ã¦ãƒœã‚¿ãƒ³ã§ã‚ã‚Šï¼Œ\
+ãã‚Œãžã‚Œã‚¯ãƒªãƒƒã‚¯ã™ã‚Œã°ç¾åœ¨ã®ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã®ãƒ†ãƒ¼ãƒžãŒè¨­å®šã•ã‚Œã¾ã™ï¼Ž
+ï¼’ç•ªç›®ã®ã‚°ãƒ«ãƒ¼ãƒ—ã¯ä¸‰ã¤ã®ãƒã‚§ãƒƒã‚¯ãƒœã‚¿ãƒ³é›†åˆã§ã™ï¼Ž\
+å„é›†åˆã®é–“ã«ã¯ï¼Œã‚»ãƒ‘ãƒ¬ãƒ¼ã‚¿ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆãŒç½®ã‹ã‚Œã¦ã„ã¾ã™ï¼Ž\
+ãªãŠã€Œæœ‰åŠ¹åŒ–ã€ãƒœã‚¿ãƒ³ã¯ï¼Œã“ã®ãƒˆãƒƒãƒ—ãƒ¬ãƒ™ãƒ«ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆå†…ã®\
+ä»–ã®ã™ã¹ã¦ã®ãƒ†ãƒ¼ãƒžåŒ–ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã®çŠ¶æ…‹(state)ãŒ"disabled"ã‹ã©ã†ã‹ã‚’\
+ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ã™ã‚‹ã“ã¨ã«æ³¨æ„ã—ã¦ãã ã•ã„ï¼Ž
+ï¼“ç•ªç›®ã®ã‚°ãƒ«ãƒ¼ãƒ—ã¯é–¢é€£ä»˜ã‘ã‚‰ã‚ŒãŸãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³é›†åˆã¨ãªã£ã¦ã„ã¾ã™ï¼Ž
 EOL
 
 ## Add buttons for setting the theme
-buttons = Ttk::Labelframe.new(base_frame, :text=>'¥Ü¥¿¥ó')
+buttons = Ttk::Labelframe.new(base_frame, :text=>'ãƒœã‚¿ãƒ³')
 # Ttk::Style.theme_names.each{|theme|
 #   Ttk::Button.new(buttons, :text=>theme,
 #                   :command=>proc{Ttk::Style.theme_use theme}).pack(:pady=>2)
@@ -66,9 +66,9 @@ def setState(root, value, *excepts)
 end
 
 ## Set up the checkbutton group
-checks = Ttk::Labelframe.new(base_frame, :text=>'¥Á¥§¥Ã¥¯¥Ü¥¿¥ó')
+checks = Ttk::Labelframe.new(base_frame, :text=>'ãƒã‚§ãƒƒã‚¯ãƒœã‚¿ãƒ³')
 enabled = TkVariable.new(true)
-e = Ttk::Checkbutton.new(checks, :text=>'Í­¸ú²½', :variable=>enabled,
+e = Ttk::Checkbutton.new(checks, :text=>'æœ‰åŠ¹åŒ–', :variable=>enabled,
                          :command=>proc{
                            setState($ttkbut_demo,
                                     ((enabled.bool)? "!disabled" : "disabled"),
@@ -84,15 +84,15 @@ tomato  = TkVariable.new
 basil   = TkVariable.new
 oregano = TkVariable.new
 
-c1 = Ttk::Checkbutton.new(checks, :text=>'¥Á¡¼¥º',   :variable=>cheese)
-c2 = Ttk::Checkbutton.new(checks, :text=>'¥È¥Þ¥È',   :variable=>tomato)
-c3 = Ttk::Checkbutton.new(checks, :text=>'¥Ð¥¸¥ë',   :variable=>basil)
-c4 = Ttk::Checkbutton.new(checks, :text=>'¥ª¥ì¥¬¥Î', :variable=>oregano)
+c1 = Ttk::Checkbutton.new(checks, :text=>'ãƒãƒ¼ã‚º',   :variable=>cheese)
+c2 = Ttk::Checkbutton.new(checks, :text=>'ãƒˆãƒžãƒˆ',   :variable=>tomato)
+c3 = Ttk::Checkbutton.new(checks, :text=>'ãƒã‚¸ãƒ«',   :variable=>basil)
+c4 = Ttk::Checkbutton.new(checks, :text=>'ã‚ªãƒ¬ã‚¬ãƒŽ', :variable=>oregano)
 
 Tk.pack(e, sep1, c1, c2, sep2, c3, c4, :fill=>:x, :pady=>2)
 
 ## Set up the radiobutton group
-radios = Ttk::Labelframe.new(base_frame, :text=>'¥é¥¸¥ª¥Ü¥¿¥ó')
+radios = Ttk::Labelframe.new(base_frame, :text=>'ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³')
 
 happyness = TkVariable.new
 
@@ -114,18 +114,18 @@ Ttk::Frame.new(base_frame) {|frame|
   sep = Ttk::Separator.new(frame)
   Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
   TkGrid('x',
-         Ttk::Button.new(frame, :text=>'ÊÑ¿ô»²¾È',
+         Ttk::Button.new(frame, :text=>'å¤‰æ•°å‚ç…§',
                          :image=>$image['view'], :compound=>:left,
                          :command=>proc{
-                           showVars(base_frame, ['Í­¸ú²½', enabled],
-                                    ['¥Á¡¼¥º', cheese], ['¥È¥Þ¥È', tomato],
-                                    ['¥Ð¥¸¥ë', basil], ['¥ª¥ì¥¬¥Î', oregano],
-                                    ['¹¬Ê¡ÅÙ', happyness])
+                           showVars(base_frame, ['æœ‰åŠ¹åŒ–', enabled],
+                                    ['ãƒãƒ¼ã‚º', cheese], ['ãƒˆãƒžãƒˆ', tomato],
+                                    ['ãƒã‚¸ãƒ«', basil], ['ã‚ªãƒ¬ã‚¬ãƒŽ', oregano],
+                                    ['å¹¸ç¦åº¦', happyness])
                          }),
-         Ttk::Button.new(frame, :text=>'¥³¡¼¥É»²¾È',
+         Ttk::Button.new(frame, :text=>'ã‚³ãƒ¼ãƒ‰å‚ç…§',
                          :image=>$image['view'], :compound=>:left,
                          :command=>proc{showCode 'ttkbut'}),
-         Ttk::Button.new(frame, :text=>'ÊÄ¤¸¤ë',
+         Ttk::Button.new(frame, :text=>'é–‰ã˜ã‚‹',
                          :image=>$image['delete'], :compound=>:left,
                          :command=>proc{
                            tmppath = $ttkbut_demo

@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # text widget peering demo (called by 'widget')
 #
@@ -22,17 +22,17 @@ count = [0]
 
 ## Define a widget that we peer from; it won't ever actually be shown though
 first = TkText.new(base_frame, :widgetname=>"text#{count[0] += 1}")
-first.insert :end,"¤³¤Î¥Ç¥â¤Ï°ì¤Ä¤ÎÁÈ¤òÀ®¤·¤¿¥Æ¥­¥¹¥È¥¦¥£¥¸¥§¥Ã¥È¤ò¼¨¤·¤Ş¤¹¡£"
-first.insert :end,"¤½¤ì¤é¤Î¥Æ¥­¥¹¥È¥¦¥£¥¸¥§¥Ã¥È¤ÏÂĞÅù(¥Ô¥¢;peer)¤Î´Ø·¸¤Ë"
-first.insert :end,"¤Ê¤Ã¤Æ¤¤¤Ş¤¹¡£"
-first.insert :end,"¤½¤ì¤é¤Ï¡¢´ğÈ×¤È¤Ê¤ë¥Ç¡¼¥¿¥â¥Ç¥ë¤Ï¶¦ÄÌ¤Î¤â¤Î¤ò»ı¤Á¤Ş¤¹¤¬¡¢"
-first.insert :end,"²èÌÌÉ½¼¨°ÌÃÖ¡¢ÊÔ½¸°ÌÃÖ¡¢ÁªÂòÈÏ°Ï(selection)¤Ë¤Ä¤¤¤Æ¤Ï"
-first.insert :end,"ÆÈÎ©¤Ë»ı¤Ä¤³¤È¤¬¤Ç¤­¤Ş¤¹¡£"
-first.insert :end,"³Æ¥Æ¥­¥¹¥È¥¦¥£¥¸¥§¥Ã¥È¤ÎÏÆ¤Ë¤¢¤ë"
-first.insert :end,"¡Ö¥Ô¥¢(peer)¤ÎºîÀ®¡×¥Ü¥¿¥ó¤ò»È¤¨¤Ğ¡¢"
-first.insert :end,"¿·¤¿¤Ê¥Ô¥¢¤òÄÉ²Ã¤¹¤ë¤³¤È¤¬²ÄÇ½¤Ç¤¹¡£"
-first.insert :end,"¤Ş¤¿¡Ö¥Ô¥¢(peer)¤Î¾Ãµî¡×¥Ü¥¿¥ó¤ò»È¤¨¤Ğ¡¢"
-first.insert :end,"ÆÃÄê¤Î¥Ô¥¢¥¦¥£¥¸¥§¥Ã¥È¤ò¾Ãµî¤¹¤ë¤³¤È¤â¤Ç¤­¤Ş¤¹¡£"
+first.insert :end,"ã“ã®ãƒ‡ãƒ¢ã¯ä¸€ã¤ã®çµ„ã‚’æˆã—ãŸãƒ†ã‚­ã‚¹ãƒˆã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã‚’ç¤ºã—ã¾ã™ã€‚"
+first.insert :end,"ãã‚Œã‚‰ã®ãƒ†ã‚­ã‚¹ãƒˆã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã¯å¯¾ç­‰(ãƒ”ã‚¢;peer)ã®é–¢ä¿‚ã«"
+first.insert :end,"ãªã£ã¦ã„ã¾ã™ã€‚"
+first.insert :end,"ãã‚Œã‚‰ã¯ã€åŸºç›¤ã¨ãªã‚‹ãƒ‡ãƒ¼ã‚¿ãƒ¢ãƒ‡ãƒ«ã¯å…±é€šã®ã‚‚ã®ã‚’æŒã¡ã¾ã™ãŒã€"
+first.insert :end,"ç”»é¢è¡¨ç¤ºä½ç½®ã€ç·¨é›†ä½ç½®ã€é¸æŠç¯„å›²(selection)ã«ã¤ã„ã¦ã¯"
+first.insert :end,"ç‹¬ç«‹ã«æŒã¤ã“ã¨ãŒã§ãã¾ã™ã€‚"
+first.insert :end,"å„ãƒ†ã‚­ã‚¹ãƒˆã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã®è„‡ã«ã‚ã‚‹"
+first.insert :end,"ã€Œãƒ”ã‚¢(peer)ã®ä½œæˆã€ãƒœã‚¿ãƒ³ã‚’ä½¿ãˆã°ã€"
+first.insert :end,"æ–°ãŸãªãƒ”ã‚¢ã‚’è¿½åŠ ã™ã‚‹ã“ã¨ãŒå¯èƒ½ã§ã™ã€‚"
+first.insert :end,"ã¾ãŸã€Œãƒ”ã‚¢(peer)ã®æ¶ˆå»ã€ãƒœã‚¿ãƒ³ã‚’ä½¿ãˆã°ã€"
+first.insert :end,"ç‰¹å®šã®ãƒ”ã‚¢ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã‚’æ¶ˆå»ã™ã‚‹ã“ã¨ã‚‚ã§ãã¾ã™ã€‚"
 
 Tk.update_idletasks  ## for 'first' widget
 
@@ -44,10 +44,10 @@ def makeClone(count, win, txt)
   sbar = TkScrollbar.new(win, :widgetname=>"sb#{cnt}")
   peer.yscrollbar sbar
   b1 = TkButton.new(win, :widgetname=>"clone#{cnt}",
-                    :text=>'¥Ô¥¢(peer)¤ÎºîÀ®',
+                    :text=>'ãƒ”ã‚¢(peer)ã®ä½œæˆ',
                     :command=>proc{makeClone(count, win, peer)})
   b2 = TkButton.new(win, :widgetname=>"kill#{cnt}",
-                    :text=>'¥Ô¥¢(peer)¤Î¾Ãµî',
+                    :text=>'ãƒ”ã‚¢(peer)ã®æ¶ˆå»',
                     :command=>proc{killClone(win, cnt)})
   row = cnt * 2
   TkGrid.configure(peer, sbar, b1, :sticky=>'nsew', :row=>row)
@@ -68,12 +68,12 @@ first.destroy
 
 ## See Code / Dismiss buttons
 TkFrame.new(base_frame){|f|
-  TkButton.new(f, :text=>'ÊÄ¤¸¤ë', :width=>15, :command=>proc{
+  TkButton.new(f, :text=>'é–‰ã˜ã‚‹', :width=>15, :command=>proc{
                  $textpeer_demo.destroy
                  $textpeer_demo = nil
                }).pack(:side=>:left, :expand=>true)
 
-  TkButton.new(f, :text=>'¥³¡¼¥É»²¾È', :width=>15, :command=>proc{
+  TkButton.new(f, :text=>'ã‚³ãƒ¼ãƒ‰å‚ç…§', :width=>15, :command=>proc{
                  showCode 'textpeer'
                }).pack(:side=>:left, :expand=>true)
 

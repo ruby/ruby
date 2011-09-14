@@ -1,3 +1,7 @@
+Thu Sep 15 01:44:10 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* ext/tk/*: Change encoding from EUC-JP to UTF-8
+
 Wed Sep 14 11:43:37 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_fd_rcopy): added an argument guard.

@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # floorDisplay widget demo (called by 'widget')
 #
@@ -50,7 +50,7 @@ def floorDisplay(w,active)
 
   # Create items for the room entry and its label.
   TkcWindow.new(w, 600, 100, 'anchor'=>'w', 'window'=>$floor_entry)
-  TkcText.new(w, 600, 100, 'anchor'=>'e', 'text'=>"Éô²°ÈÖ¹æ: ")
+  TkcText.new(w, 600, 100, 'anchor'=>'e', 'text'=>"éƒ¨å±‹ç•ªå·: ")
   w['scrollregion'] = w.bbox('all')
 end
 
@@ -1572,13 +1572,13 @@ end
 
 # Below is the "main program" that creates the floorplan demonstration.
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ðºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($floor_demo) && $floor_demo
   $floor_demo.destroy
   $floor_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $floor_demo = TkToplevel.new {|w|
   title("Floorplan Canvas Demonstration")
   iconname("Floorplan")
@@ -1589,17 +1589,17 @@ $floor_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($floor_demo).pack(:fill=>:both, :expand=>true)
 
-# label À¸À®
+# label ç”Ÿæˆ
 TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'8i', 'justify'=>'left',
-            'text'=>"¤³¤Î¥¦¥£¥ó¥É¥¦¤Ë¤Ï¥Ç¥£¥¸¥¿¥ë¥¨¥¯¥¤¥Ã¥×¥á¥ó¥È¼Ò¤Î¥¦¥§¥¹¥¿¥ó¥ê¥µ¡¼¥Á¥é¥Ü¥é¥È¥ê (DECWRL) ¤Î´Ö¼è¤ê¤¬½ñ¤«¤ì¤¿¥­¥ã¥ó¥Ð¥¹ widget ¤¬Æþ¤Ã¤Æ¤¤¤Þ¤¹¡£¤³¤ì¤Ï 3³¬·ú¤Æ¤Ç¡¢¾ï¤Ë¤½¤Î¤¦¤Á¤Î1³¬Ê¬¤¬ÁªÂò¡¢¤Ä¤Þ¤ê¤½¤Î´Ö¼è¤ê¤¬É½¼¨¤µ¤ì¤ë¤è¤¦¤Ë¤Ê¤Ã¤Æ¤¤¤Þ¤¹¡£¤¢¤ë³¬¤òÁªÂò¤¹¤ë¤Ë¤Ï¡¢¤½¤Î¾å¤Ç¥Þ¥¦¥¹¤Îº¸¥Ü¥¿¥ó¤ò¥¯¥ê¥Ã¥¯¤·¤Æ¤¯¤À¤µ¤¤¡£¥Þ¥¦¥¹¤¬ÁªÂò¤µ¤ì¤Æ¤¤¤ë³¬¤Î¾å¤òÆ°¤¯¤È¡¢¤½¤Î²¼¤Ë¤¢¤ëÉô²°¤Î¿§¤¬ÊÑ¤ï¤ê¡¢Éô²°ÈÖ¹æ¤¬¡ÖÉô²°ÈÖ¹æ:¡×¥¨¥ó¥È¥ê¤ËÉ½¼¨¤µ¤ì¤Þ¤¹¡£¤Þ¤¿¡¢¥¨¥ó¥È¥ê¤ËÉô²°ÈÖ¹æ¤ò½ñ¤¯¤È¤½¤ÎÉô²°¤Î¿§¤¬ÊÑ¤ï¤ê¤Þ¤¹¡£"){
+            'text'=>"ã“ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã«ã¯ãƒ‡ã‚£ã‚¸ã‚¿ãƒ«ã‚¨ã‚¯ã‚¤ãƒƒãƒ—ãƒ¡ãƒ³ãƒˆç¤¾ã®ã‚¦ã‚§ã‚¹ã‚¿ãƒ³ãƒªã‚µãƒ¼ãƒãƒ©ãƒœãƒ©ãƒˆãƒª (DECWRL) ã®é–“å–ã‚ŠãŒæ›¸ã‹ã‚ŒãŸã‚­ãƒ£ãƒ³ãƒã‚¹ widget ãŒå…¥ã£ã¦ã„ã¾ã™ã€‚ã“ã‚Œã¯ 3éšŽå»ºã¦ã§ã€å¸¸ã«ãã®ã†ã¡ã®1éšŽåˆ†ãŒé¸æŠžã€ã¤ã¾ã‚Šãã®é–“å–ã‚ŠãŒè¡¨ç¤ºã•ã‚Œã‚‹ã‚ˆã†ã«ãªã£ã¦ã„ã¾ã™ã€‚ã‚ã‚‹éšŽã‚’é¸æŠžã™ã‚‹ã«ã¯ã€ãã®ä¸Šã§ãƒžã‚¦ã‚¹ã®å·¦ãƒœã‚¿ãƒ³ã‚’ã‚¯ãƒªãƒƒã‚¯ã—ã¦ãã ã•ã„ã€‚ãƒžã‚¦ã‚¹ãŒé¸æŠžã•ã‚Œã¦ã„ã‚‹éšŽã®ä¸Šã‚’å‹•ãã¨ã€ãã®ä¸‹ã«ã‚ã‚‹éƒ¨å±‹ã®è‰²ãŒå¤‰ã‚ã‚Šã€éƒ¨å±‹ç•ªå·ãŒã€Œéƒ¨å±‹ç•ªå·:ã€ã‚¨ãƒ³ãƒˆãƒªã«è¡¨ç¤ºã•ã‚Œã¾ã™ã€‚ã¾ãŸã€ã‚¨ãƒ³ãƒˆãƒªã«éƒ¨å±‹ç•ªå·ã‚’æ›¸ãã¨ãã®éƒ¨å±‹ã®è‰²ãŒå¤‰ã‚ã‚Šã¾ã™ã€‚"){
   pack('side'=>'top')
 }
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 $floor_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $floor_demo
       $floor_demo = nil
@@ -1608,17 +1608,17 @@ $floor_buttons = TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'floor'}
   }.pack('side'=>'left', 'expand'=>'yes')
 }
 $floor_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# ÊÑ¿ôÀßÄê
+# å¤‰æ•°è¨­å®š
 $floorLabels = {}
 $floorItems = {}
 
-# canvas ÀßÄê
+# canvas è¨­å®š
 if $tk_version =~ /^4\.[01]/
   $floor_canvas_frame = TkFrame.new(base_frame,'bd'=>2,'relief'=>'sunken',
                                     'highlightthickness'=>2)

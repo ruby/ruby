@@ -280,7 +280,7 @@ class TclTkWidget < TclTkCommand
 
       # interp: interpreter(TclTkInterpreter)
       # parent: parent widget
-      # command: widget generating tk command(label Åù)
+      # command: widget generating tk command(label ç­‰)
       # *args: argument to the command
       interp, parent, command, *args = args
 

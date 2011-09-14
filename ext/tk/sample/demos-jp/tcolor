@@ -1,20 +1,20 @@
 #!/usr/bin/env ruby
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # tcolor --
-# ¤³¤Î¥¹¥¯¥ê¥×¥È¤ÏRGB,HSB,CYM·Á¼°¤ò¥µ¥İ¡¼¥È¤¹¤ë
-# ´Ê°×¥«¥é¡¼¥¨¥Ç¥£¥¿¤Ç¤¹¡£
+# ã“ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆã¯RGB,HSB,CYMå½¢å¼ã‚’ã‚µãƒãƒ¼ãƒˆã™ã‚‹
+# ç°¡æ˜“ã‚«ãƒ©ãƒ¼ã‚¨ãƒ‡ã‚£ã‚¿ã§ã™ã€‚
 #
 # Copyright (C) 1998 Takaaki Tateishi(ttate@jaist.ac.jp)
 # last update: Thu Jun 18 06:32:35 JST 1998
 #
 
-# ¤Ş¤º¤Ïtk.rb¤òÆÉ¤ß¹ş¤à¡£
+# ã¾ãšã¯tk.rbã‚’èª­ã¿è¾¼ã‚€ã€‚
 
 require "tk"
 
 
-# Tk¤Ë¤è¤Ã¤ÆÊÑ¹¹¤µ¤ì¤ëÊÑ¿ô¤ÏTkVariable¤Î¥¤¥ó¥¹¥¿¥ó¥¹¤ò»È¤¦¡£
+# Tkã«ã‚ˆã£ã¦å¤‰æ›´ã•ã‚Œã‚‹å¤‰æ•°ã¯TkVariableã®ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ã‚’ä½¿ã†ã€‚
 
 $colorSpace = TkVariable.new(:rgb)
 $master = nil
@@ -32,13 +32,13 @@ $label2 = TkVariable.new("label2")
 $label3 = TkVariable.new("label3")
 
 
-# ¥ê¥½¡¼¥¹¥Ç¡¼¥¿¥Ù¡¼¥¹¤ÎÀßÄê
+# ãƒªã‚½ãƒ¼ã‚¹ãƒ‡ãƒ¼ã‚¿ãƒ™ãƒ¼ã‚¹ã®è¨­å®š
 if (TkVarAccess.new('tcl_platform')['platform'] == 'unix')
   TkOptionDB.add('*Entry.background', 'white')
 end
 
 
-# ³Æ¥¤¥Ù¥ó¥ÈÍÑ¤Î¥á¥½¥Ã¥É
+# å„ã‚¤ãƒ™ãƒ³ãƒˆç”¨ã®ãƒ¡ã‚½ãƒƒãƒ‰
 
 def rgbToHsv(red,green,blue)
 
@@ -277,7 +277,7 @@ end
 
 
 
-# tcolorÍÑ¤Î¥á¥Ë¥å¡¼
+# tcolorç”¨ã®ãƒ¡ãƒ‹ãƒ¥ãƒ¼
 
 class TkColorMenuFrame<TkFrame
   def initialize(parent)
@@ -285,10 +285,10 @@ class TkColorMenuFrame<TkFrame
 	  "relief"=>"raised",
 	  "borderwidth"=>"2")
 
-    # File¥á¥Ë¥å¡¼¥Ü¥¿¥ó¤ÎÀ¸À®
+    # Fileãƒ¡ãƒ‹ãƒ¥ãƒ¼ãƒœã‚¿ãƒ³ã®ç”Ÿæˆ
     @file = TkMenubutton.new(self){|button|
 
-      # File¥á¥Ë¥å¡¼¤ÎºîÀ®
+      # Fileãƒ¡ãƒ‹ãƒ¥ãƒ¼ã®ä½œæˆ
       @file_menu = TkMenu.new(button){
 	add "radio",
 	  "label" => "RGB color space",
@@ -326,7 +326,7 @@ class TkColorMenuFrame<TkFrame
 	  "command" => proc{exit}
       }
 
-      # File¥á¥Ë¥å¡¼¤ÈFile¥Ü¥¿¥ó¤ò´ØÏ¢ÉÕ¤±¤ë
+      # Fileãƒ¡ãƒ‹ãƒ¥ãƒ¼ã¨Fileãƒœã‚¿ãƒ³ã‚’é–¢é€£ä»˜ã‘ã‚‹
       menu @file_menu
 
       text "File"
@@ -338,7 +338,7 @@ class TkColorMenuFrame<TkFrame
 end
 
 
-# ²¼Éô¤Î¥Õ¥ì¡¼¥à¤Î¤¿¤á¤Î¥¯¥é¥¹
+# ä¸‹éƒ¨ã®ãƒ•ãƒ¬ãƒ¼ãƒ ã®ãŸã‚ã®ã‚¯ãƒ©ã‚¹
 class TkColorBotFrame<TkFrame
   def initialize(parent)
     super(parent,
@@ -364,7 +364,7 @@ class TkColorBotFrame<TkFrame
 end
 
 
-# ÃæÃÊº¸¤Î¥Õ¥ì¡¼¥à
+# ä¸­æ®µå·¦ã®ãƒ•ãƒ¬ãƒ¼ãƒ 
 class TkColorMiddleLeftFrame<TkFrame
   def initialize(parent)
     super(parent)
@@ -408,9 +408,9 @@ class TkColorMiddleLeftFrame<TkFrame
 end
 
 
-# ÃæÃÊÃæ±û¤Î¥Õ¥ì¡¼¥à
+# ä¸­æ®µä¸­å¤®ã®ãƒ•ãƒ¬ãƒ¼ãƒ 
 class TkColorMiddleMiddleFrame<TkFrame
-  # @scale1,@scale2,@scale3¤ò³°Éô¤«¤é»²¾È¤Î¤ßµö²Ä¤¹¤ë¡£(ÊÑ¹¹ÉÔ²Ä)
+  # @scale1,@scale2,@scale3ã‚’å¤–éƒ¨ã‹ã‚‰å‚ç…§ã®ã¿è¨±å¯ã™ã‚‹ã€‚(å¤‰æ›´ä¸å¯)
   attr_reader :scale1, :scale2, :scale3
 
   def initialize(parent)
@@ -485,7 +485,7 @@ end
 
 
 
-# ÃæÃÊ¤Î¥Õ¥ì¡¼¥à
+# ä¸­æ®µã®ãƒ•ãƒ¬ãƒ¼ãƒ 
 class TkColorMiddleFrame<TkFrame
   attr_reader :left, :middle, :right
 
@@ -529,6 +529,6 @@ end
 
 $root = TkColor.new
 
-# ¥¤¥Ù¥ó¥È¤òÂÔ¤Ä°Ù¤Ë¥ë¡¼¥×¤ËÆş¤ë¡£
+# ã‚¤ãƒ™ãƒ³ãƒˆã‚’å¾…ã¤ç‚ºã«ãƒ«ãƒ¼ãƒ—ã«å…¥ã‚‹ã€‚
 changeColorSpace :rgb
 Tk.mainloop

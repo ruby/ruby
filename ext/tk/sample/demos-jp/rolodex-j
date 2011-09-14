@@ -1,15 +1,15 @@
 #!/usr/bin/env ruby
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # rolodex --
-# ¤³¤Î¥¹¥¯¥ê¥×¥È¤Ï Tom LaStrange ¤Î rolodex ¤Î°ìÉô¤Ç¤¹¡£
+# ã“ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆã¯ Tom LaStrange ã® rolodex ã®ä¸€éƒ¨ã§ã™ã€‚
 #
 # Copyright (C) 1998 by Takaaki Tateishi <ttate@jaist.ac.jp>
 # Time-stamp: "04/04/09 00:32:12 nagai"
 #
 
 require "tk"
-Tk.encoding = "euc-jp"
+Tk.encoding = "utf-8"
 
 def show_help(topic,x=0,y=0)
   if( topic.is_a?(TkWindow) )
@@ -24,20 +24,20 @@ def show_help(topic,x=0,y=0)
   if( $helpTopics.include?(topic) )
     msg = $helpTopics[topic]
   else
-    msg = "¤³¤Î¥È¥Ô¥Ã¥¯¤Ë¤Ä¤¤¤Æ¤Î¥Ø¥ë¥×¤Ï¤Ş¤À»ÈÍÑ¤Ç¤­¤Ş¤»¤ó"
+    msg = "ã“ã®ãƒˆãƒ”ãƒƒã‚¯ã«ã¤ã„ã¦ã®ãƒ˜ãƒ«ãƒ—ã¯ã¾ã ä½¿ç”¨ã§ãã¾ã›ã‚“"
   end
   TkDialog.new("title"=>"Rolodex Help",
-	       "message"=>"¡Ö#{topic}¡×\n\n#{msg}",
+	       "message"=>"ã€Œ#{topic}ã€\n\n#{msg}",
 	       "default_button"=>0,
 	       "buttons"=>["OK"])
 end
 
 def fillCard
   clearAction
-  $root.frame.entry[1].insert(0, "Î©ÀĞ ¹§¾´")
-  $root.frame.entry[2].insert(0, "923-1292 ÀĞÀî¸©")
-  $root.frame.entry[3].insert(0, "Ã¤¸ıÄ® °°Âæ 1-1")
-  $root.frame.entry[4].insert(0, "ËÌÎ¦ÀèÃ¼²Ê³Øµ»½ÑÂç³Ø±¡Âç³Ø")
+  $root.frame.entry[1].insert(0, "ç«‹çŸ³ å­å½°")
+  $root.frame.entry[2].insert(0, "923-1292 çŸ³å·çœŒ")
+  $root.frame.entry[3].insert(0, "è¾°å£ç”º æ—­å° 1-1")
+  $root.frame.entry[4].insert(0, "åŒ—é™¸å…ˆç«¯ç§‘å­¦æŠ€è¡“å¤§å­¦é™¢å¤§å­¦")
   $root.frame.entry[5].insert(0,"private")
   $root.frame.entry[6].insert(0,"***-***-****")
   $root.frame.entry[7].insert(0,"***-***-****")
@@ -59,7 +59,7 @@ end
 
 def fileAction
   TkDialog.new("title"=>"File Selection",
-	       "message"=>"¤³¤ì¤Ï¥Õ¥¡¥¤¥ëÁªÂò¥À¥¤¥¢¥í¥°¤Î¥À¥ß¡¼¤Ç¤¹¡£\n",
+	       "message"=>"ã“ã‚Œã¯ãƒ•ã‚¡ã‚¤ãƒ«é¸æŠãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã®ãƒ€ãƒŸãƒ¼ã§ã™ã€‚\n",
 	       "default_button"=>0,
 	       "buttons"=>["OK"])
   STDERR.print "dummy file name\n"
@@ -67,9 +67,9 @@ end
 
 def deleteAction
   result = TkDialog.new("title"=>"Confirm Action",
-			"message"=>"¤è¤í¤·¤¤¤Ç¤¹¤«¡©",
+			"message"=>"ã‚ˆã‚ã—ã„ã§ã™ã‹ï¼Ÿ",
 			"default_button"=>0,
-			"buttons"=>["¥­¥ã¥ó¥»¥ë"])
+			"buttons"=>["ã‚­ãƒ£ãƒ³ã‚»ãƒ«"])
   if( result.value == 0 )
     clearAction
   end
@@ -79,7 +79,7 @@ end
 class RolodexFrame < TkFrame
   attr_reader :entry, :label
 
-  LABEL = ["","Ì¾Á°:","½»½ê","","","ÅÅÏÃ(¼«Âğ):","ÅÅÏÃ(²ñ¼Ò):","Fax:"]
+  LABEL = ["","åå‰:","ä½æ‰€","","","é›»è©±(è‡ªå®…):","é›»è©±(ä¼šç¤¾):","Fax:"]
 
   def initialize(parent=nil,keys=nil)
     super(parent,keys)
@@ -109,10 +109,10 @@ class RolodexButtons < TkFrame
 
   def initialize(parent,keys=nil)
     super(parent,keys)
-    @clear = TkButton.new(self,"text" => "¥¯¥ê¥¢¡¼")
-    @add = TkButton.new(self,  "text" => "ÄÉ²Ã")
-    @search = TkButton.new(self, "text" => "¸¡º÷")
-    @delete = TkButton.new(self,  "text" => "¾Ãµî")
+    @clear = TkButton.new(self,"text" => "ã‚¯ãƒªã‚¢ãƒ¼")
+    @add = TkButton.new(self,  "text" => "è¿½åŠ ")
+    @search = TkButton.new(self, "text" => "æ¤œç´¢")
+    @delete = TkButton.new(self,  "text" => "æ¶ˆå»")
     for w in [@clear,@add,@search,@delete]
       w.pack("side"=>"left", "padx"=>2)
     end
@@ -128,43 +128,43 @@ class RolodexMenuFrame < TkFrame
 	      "borderwidth"=>1)
 
     @file = TkMenubutton.new(self,
-			     "text"=> "¥Õ¥¡¥¤¥ë",
+			     "text"=> "ãƒ•ã‚¡ã‚¤ãƒ«",
 			     "underline"=>0)
     @file_menu = TkMenu.new(@file)
     @file_menu.add("command",
-		   "label" => "ÆÉ¤ß¹ş¤ß ...",
+		   "label" => "èª­ã¿è¾¼ã¿ ...",
 		   "command" => proc{fileAction},
 		   "underline" => 0)
     @file_menu.add("command",
-		   "label" => "½ªÎ»",
+		   "label" => "çµ‚äº†",
 		   "command" => proc{$root.destroy},
 		   "underline" => 0)
     @file.menu(@file_menu)
     @file.pack("side"=>"left")
 
     @help = TkMenubutton.new(self,
-			     "text"=> "¥Ø¥ë¥×",
+			     "text"=> "ãƒ˜ãƒ«ãƒ—",
 			     "underline"=>0)
     @help_menu = TkMenu.new(@help)
     @help_menu.add("command",
-		   "label"=> "¥³¥ó¥Æ¥­¥¹¥È¤Ë¤Ä¤¤¤Æ",
-		   "command"=>proc{show_help("¥³¥ó¥Æ¥­¥¹¥È")},
+		   "label"=> "ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆã«ã¤ã„ã¦",
+		   "command"=>proc{show_help("ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆ")},
 		   "underline"=>3)
     @help_menu.add("command",
-		   "label"=> "¥Ø¥ë¥×¤Ë¤Ä¤¤¤Æ",
-		   "command"=>proc{show_help("¥Ø¥ë¥×")},
+		   "label"=> "ãƒ˜ãƒ«ãƒ—ã«ã¤ã„ã¦",
+		   "command"=>proc{show_help("ãƒ˜ãƒ«ãƒ—")},
 		   "underline"=>3)
     @help_menu.add("command",
-		   "label"=> "¥¦¥£¥ó¥É¥¦¤Ë¤Ä¤¤¤Æ",
-		   "command"=>proc{show_help("¥¦¥£¥ó¥É¥¦")},
+		   "label"=> "ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã«ã¤ã„ã¦",
+		   "command"=>proc{show_help("ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦")},
 		   "underline"=>3)
     @help_menu.add("command",
-		   "label"=> "¥­¡¼Áàºî¤Ë¤Ä¤¤¤Æ",
-		   "command"=>proc{show_help("¥­¡¼Áàºî")},
+		   "label"=> "ã‚­ãƒ¼æ“ä½œã«ã¤ã„ã¦",
+		   "command"=>proc{show_help("ã‚­ãƒ¼æ“ä½œ")},
 		   "underline"=>3)
     @help_menu.add("command",
-		   "label"=> "¥Ğ¡¼¥¸¥ç¥ó¾ğÊó",
-		   "command"=>proc{show_help("¥Ğ¡¼¥¸¥ç¥ó¾ğÊó")},
+		   "label"=> "ãƒãƒ¼ã‚¸ãƒ§ãƒ³æƒ…å ±",
+		   "command"=>proc{show_help("ãƒãƒ¼ã‚¸ãƒ§ãƒ³æƒ…å ±")},
 		   "underline"=>3)
     @help.menu(@help_menu)
     @help.pack("side"=>"right")
@@ -198,16 +198,16 @@ $root.buttons.add.configure("command"=>proc{addAction})
 $root.buttons.clear.configure("command"=>proc{clearAction})
 $root.buttons.search.configure("command"=>proc{addAction; fillCard})
 
-$root.buttons.clear.configure("text"=> "¥¯¥ê¥¢¡¼   Ctrl+C")
+$root.buttons.clear.configure("text"=> "ã‚¯ãƒªã‚¢ãƒ¼   Ctrl+C")
 $root.bind("Control-c",proc{clearAction})
 
-$root.buttons.add.configure("text"=> "ÄÉ²Ã   Ctrl+A")
+$root.buttons.add.configure("text"=> "è¿½åŠ    Ctrl+A")
 $root.bind("Control-a",proc{addAction})
 
-$root.buttons.search.configure("text"=> "¸¡º÷   Ctrl+S")
+$root.buttons.search.configure("text"=> "æ¤œç´¢   Ctrl+S")
 $root.bind("Control-s",proc{addAction; fillCard})
 
-$root.buttons.delete.configure("text"=> "¾Ãµî   Ctrl+D")
+$root.buttons.delete.configure("text"=> "æ¶ˆå»   Ctrl+D")
 $root.bind("Control-d",proc{deleteAction})
 
 $root.menu.file_menu.entryconfigure(1, "accel"=>"Ctrl+F")
@@ -227,74 +227,74 @@ $root.bind("Any-Help",
 $helpTopics = {}
 
 $helpTopics[$root.menu.file] = <<EOF
-¤³¤ì¤Ï¡Ö¥Õ¥¡¥¤¥ë¡×¥á¥Ë¥å¡¼¤Ç¤¹¡£¡ÖÆÉ¤ß¹ş¤ß¡×¤ä¡Ö½ªÎ»¡×¤Ê¤É¤ò
-¹Ô¤Ê¤¦¤³¤È¤¬¤Ç¤­¤Ş¤¹¡£
+ã“ã‚Œã¯ã€Œãƒ•ã‚¡ã‚¤ãƒ«ã€ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã§ã™ã€‚ã€Œèª­ã¿è¾¼ã¿ã€ã‚„ã€Œçµ‚äº†ã€ãªã©ã‚’
+è¡Œãªã†ã“ã¨ãŒã§ãã¾ã™ã€‚
 EOF
 
 $helpTopics[$root.menu.file_menu.index(0)] = <<EOF
-¥Õ¥¡¥¤¥ë¤ÎÆÉ¤ß¹ş¤ß¤ò¹Ô¤Ê¤¦¤È¤­¤Ë»È¤¤¤Ş¤¹¡£
+ãƒ•ã‚¡ã‚¤ãƒ«ã®èª­ã¿è¾¼ã¿ã‚’è¡Œãªã†ã¨ãã«ä½¿ã„ã¾ã™ã€‚
 EOF
 
 $helpTopics[$root.menu.file_menu.index(1)] = <<EOF
-¥¢¥×¥ê¥±¡¼¥·¥ç¥ó¤ò½ªÎ»¤¹¤ë¤È¤­¤Ë»È¤¤¤Ş¤¹¡£
+ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã‚’çµ‚äº†ã™ã‚‹ã¨ãã«ä½¿ã„ã¾ã™ã€‚
 EOF
 
 $helpTopics[$root.frame.entry[1]] = <<EOF
-Ì¾Á°¤òµ­Æş¤¹¤ë¥¨¥ó¥È¥ê¤Ç¤¹¡£
+åå‰ã‚’è¨˜å…¥ã™ã‚‹ã‚¨ãƒ³ãƒˆãƒªã§ã™ã€‚
 EOF
 
 $helpTopics[$root.frame.entry[2]] = <<EOF
-½»½ê¤òµ­Æş¤¹¤ë¥¨¥ó¥È¥ê¤Ç¤¹¡£
+ä½æ‰€ã‚’è¨˜å…¥ã™ã‚‹ã‚¨ãƒ³ãƒˆãƒªã§ã™ã€‚
 EOF
 
 $helpTopics[$root.frame.entry[3]] = <<EOF
-½»½ê¤òµ­Æş¤¹¤ë¥¨¥ó¥È¥ê¤Ç¤¹¡£
+ä½æ‰€ã‚’è¨˜å…¥ã™ã‚‹ã‚¨ãƒ³ãƒˆãƒªã§ã™ã€‚
 EOF
 
 $helpTopics[$root.frame.entry[4]] = <<EOF
-½»½ê¤òµ­Æş¤¹¤ë¥¨¥ó¥È¥ê¤Ç¤¹¡£
+ä½æ‰€ã‚’è¨˜å…¥ã™ã‚‹ã‚¨ãƒ³ãƒˆãƒªã§ã™ã€‚
 EOF
 
 $helpTopics[$root.frame.entry[5]] = <<EOF
-¼«Âğ¤ÎÅÅÏÃÈÖ¹æ¤òµ­Æş¤¹¤ë¥¨¥ó¥È¥ê¤Ç¤¹¡£¸ø³«\
-¤·¤¿¤¯¤Ê¤¤¤È¤­¤Ï private ¤Èµ­Æş¤·¤Ş¤¹¡£
+è‡ªå®…ã®é›»è©±ç•ªå·ã‚’è¨˜å…¥ã™ã‚‹ã‚¨ãƒ³ãƒˆãƒªã§ã™ã€‚å…¬é–‹\
+ã—ãŸããªã„ã¨ãã¯ private ã¨è¨˜å…¥ã—ã¾ã™ã€‚
 EOF
 
 $helpTopics[$root.frame.entry[6]] = <<EOF
-²ñ¼Ò¤ÎÅÅÏÃÈÖ¹æ¤òµ­Æş¤¹¤ë¥¨¥ó¥È¥ê¤Ç¤¹¡£
+ä¼šç¤¾ã®é›»è©±ç•ªå·ã‚’è¨˜å…¥ã™ã‚‹ã‚¨ãƒ³ãƒˆãƒªã§ã™ã€‚
 EOF
 
 $helpTopics[$root.frame.entry[7]] = <<EOF
-FAXÈÖ¹æ¤òµ­Æş¤¹¤ë¥¨¥ó¥È¥ê¤Ç¤¹¡£
+FAXç•ªå·ã‚’è¨˜å…¥ã™ã‚‹ã‚¨ãƒ³ãƒˆãƒªã§ã™ã€‚
 EOF
 
-$helpTopics["¥³¥ó¥Æ¥­¥¹¥È"] = <<EOF
-Ruby/Tk¤Ç¤Ïgrab¤Îµ¡¹½¤¬¤Ê¤¤¤¿¤á¤³¤Î¥¢¥×¥ê¥±¡¼¥·¥ç¥ó¤Ç¤Ï\
-¥³¥ó¥Æ¥­¥¹¥È¥Ø¥ë¥×¤Ï¥µ¥İ¡¼¥È¤µ¤ì¤Æ¤¤¤Ş¤»¤ó¡£
-¤·¤«¤·Æ±¤¸¤è¤¦¤Ê¸ú²Ì¤òbind¤È¥Ş¥¦¥¹¤Î°ÌÃÖ¤ÎWedget¤òÃÎ¤ë\
-¤³¤È¤ÇÆÀ¤ë¤³¤È¤¬¤Ç¤­¤Ş¤¹¡£
+$helpTopics["ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆ"] = <<EOF
+Ruby/Tkã§ã¯grabã®æ©Ÿæ§‹ãŒãªã„ãŸã‚ã“ã®ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã§ã¯\
+ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆãƒ˜ãƒ«ãƒ—ã¯ã‚µãƒãƒ¼ãƒˆã•ã‚Œã¦ã„ã¾ã›ã‚“ã€‚
+ã—ã‹ã—åŒã˜ã‚ˆã†ãªåŠ¹æœã‚’bindã¨ãƒã‚¦ã‚¹ã®ä½ç½®ã®Wedgetã‚’çŸ¥ã‚‹\
+ã“ã¨ã§å¾—ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚
 EOF
 
-$helpTopics["¥Ø¥ë¥×"] = <<EOF
-¥Ş¥¦¥¹¤ò¥¦¥£¥ó¥É¥¦¤Ë¤¢¤ï¤»¤ÆF1¥­¡¼¤ò²¡¤¹¤³¤È¤Ë¤è¤Ã¤Æ\
-¤½¤Î¥Ø¥ë¥×¤ò¸«¤ë¤³¤È¤¬¤Ç¤­¤Ş¤¹¡£
+$helpTopics["ãƒ˜ãƒ«ãƒ—"] = <<EOF
+ãƒã‚¦ã‚¹ã‚’ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã«ã‚ã‚ã›ã¦F1ã‚­ãƒ¼ã‚’æŠ¼ã™ã“ã¨ã«ã‚ˆã£ã¦\
+ãã®ãƒ˜ãƒ«ãƒ—ã‚’è¦‹ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚
 EOF
 
-$helpTopics["¥¦¥£¥ó¥É¥¦"] = <<EOF
-¤³¤Î¥¦¥£¥ó¥É¥¦¤Ï¥À¥ß¡¼¤Ç¤¹¡£
+$helpTopics["ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦"] = <<EOF
+ã“ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã¯ãƒ€ãƒŸãƒ¼ã§ã™ã€‚
 EOF
 
-$helpTopics["¥­¡¼Áàºî"] = <<EOF
-Ctrl+A:		ÄÉ²Ã
-Ctrl+C:		¥¯¥ê¥¢¡¼
-Ctrl+D:		¾Ãµî
-Ctrl+F:		¥Õ¥¡¥¤¥ëÁªÂò
-Ctrl+Q:		½ªÎ»
-Ctrl+S:		¸¡º÷
+$helpTopics["ã‚­ãƒ¼æ“ä½œ"] = <<EOF
+Ctrl+A:		è¿½åŠ 
+Ctrl+C:		ã‚¯ãƒªã‚¢ãƒ¼
+Ctrl+D:		æ¶ˆå»
+Ctrl+F:		ãƒ•ã‚¡ã‚¤ãƒ«é¸æŠ
+Ctrl+Q:		çµ‚äº†
+Ctrl+S:		æ¤œç´¢
 EOF
 
-$helpTopics["¥Ğ¡¼¥¸¥ç¥ó¾ğÊó"] = <<EOF
-¥Ğ¡¼¥¸¥ç¥ó¤Ï 1.0.1j ¤Ç¤¹¡£
+$helpTopics["ãƒãƒ¼ã‚¸ãƒ§ãƒ³æƒ…å ±"] = <<EOF
+ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã¯ 1.0.1j ã§ã™ã€‚
 EOF
 
 Tk.mainloop

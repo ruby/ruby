@@ -1,15 +1,15 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # widget demo prompts the user to select a file (called by 'widget')
 #
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ðºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($filebox_demo) && $entry2_demo
   $filebox_demo.destroy
   $filebox_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $filebox_demo = TkToplevel.new {|w|
   title("File Selection Dialogs")
   iconname("filebox")
@@ -18,15 +18,15 @@ $filebox_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($filebox_demo).pack(:fill=>:both, :expand=>true)
 
-# label À¸À®
+# label ç”Ÿæˆ
 TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left',
-            'text'=>"¥¨¥ó¥È¥ê¤Ë¥Õ¥¡¥¤¥ëÌ¾¤òÄ¾ÀÜÆþÎÏ¤¹¤ë¤«¡¢\"Browse\" ¥Ü¥¿¥ó¤ò²¡¤·¤Æ¥Õ¥¡¥¤¥ëÁªÂò¥À¥¤¥¢¥í¥°¤«¤é¥Õ¥¡¥¤¥ëÌ¾¤òÁª¤ó¤Ç²¼¤µ¤¤¡£").pack('side'=>'top')
+            'text'=>"ã‚¨ãƒ³ãƒˆãƒªã«ãƒ•ã‚¡ã‚¤ãƒ«åã‚’ç›´æŽ¥å…¥åŠ›ã™ã‚‹ã‹ã€\"Browse\" ãƒœã‚¿ãƒ³ã‚’æŠ¼ã—ã¦ãƒ•ã‚¡ã‚¤ãƒ«é¸æŠžãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‹ã‚‰ãƒ•ã‚¡ã‚¤ãƒ«åã‚’é¸ã‚“ã§ä¸‹ã•ã„ã€‚").pack('side'=>'top')
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $filebox_demo
       $filebox_demo = nil
@@ -35,15 +35,15 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'filebox'}
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# frame À¸À®
-['³«¤¯', 'ÊÝÂ¸'].each{|type|
+# frame ç”Ÿæˆ
+['é–‹ã', 'ä¿å­˜'].each{|type|
   TkFrame.new(base_frame) {|f|
-    TkLabel.new(f, 'text'=>"¥Õ¥¡¥¤¥ë¤ò#{type}: ", 'anchor'=>'e')\
+    TkLabel.new(f, 'text'=>"ãƒ•ã‚¡ã‚¤ãƒ«ã‚’#{type}: ", 'anchor'=>'e')\
     .pack('side'=>'left')
 
     TkEntry.new(f, 'width'=>20) {|e|
@@ -61,7 +61,7 @@ TkFrame.new(base_frame) {|frame|
 $tk_strictMotif = TkVarAccess.new('tk_strictMotif')
 if ($tk_platform['platform'] == 'unix')
   TkCheckButton.new(base_frame,
-                    'text'=>'Motif¥¹¥¿¥¤¥ë¤Î¥À¥¤¥¢¥í¥°¤òÍÑ¤¤¤ë',
+                    'text'=>'Motifã‚¹ã‚¿ã‚¤ãƒ«ã®ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’ç”¨ã„ã‚‹',
                     'variable'=>$tk_strictMotif,
                     'onvalue'=>1, 'offvalue'=>0 ).pack('anchor'=>'c')
 end
@@ -83,7 +83,7 @@ def fileDialog(w,ent,operation)
     ['All files',        '*'                      ]
   ]
 
-  if operation == '³«¤¯'
+  if operation == 'é–‹ã'
     file = Tk.getOpenFile('filetypes'=>types, 'parent'=>w)
   else
     file = Tk.getSaveFile('filetypes'=>types, 'parent'=>w,

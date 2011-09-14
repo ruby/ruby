@@ -1,15 +1,15 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # checkbutton widget demo2 (called by 'widget')
 #
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ðºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($check2_demo) && $check2_demo
   $check2_demo.destroy
   $check2_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $check2_demo = TkToplevel.new {|w|
   title("Checkbutton Demonstration 2")
   iconname("check2")
@@ -18,37 +18,37 @@ $check2_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($check2_demo).pack(:fill=>:both, :expand=>true)
 
-# label À¸À®
+# label ç”Ÿæˆ
 msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
-  text "²¼¤Ë¤Ï£´¤Ä¤Î¥Á¥§¥Ã¥¯¥Ü¥¿¥ó¤¬É½¼¨¤µ¤ì¤Æ¤¤¤Þ¤¹¡£¥¯¥ê¥Ã¥¯¤¹¤ë¤È¥Ü¥¿¥ó¤ÎÁªÂò¾õÂÖ¤¬ÊÑ¤ï¤ê¡¢TclÊÑ¿ô¡ÊTkVariable¥ª¥Ö¥¸¥§¥¯¥È¤Ç¥¢¥¯¥»¥¹¤Ç¤­¤Þ¤¹¡Ë¤Ë¤½¤Î¥Ü¥¿¥ó¤Î¾õÂÖ¤ò¼¨¤¹ÃÍ¤òÀßÄê¤·¤Þ¤¹¡£ºÇ½é¤Î¥Ü¥¿¥ó¤Î¾õÂÖ¤ÏÂ¾¤Î£³¤Ä¤Î¥Ü¥¿¥ó¤Î¾õÂÖ¤Ë¤â°ÍÂ¸¤·¤ÆÊÑ²½¤·¤Þ¤¹¡£¤â¤·£³¤Ä¤Î¥Ü¥¿¥ó¤Î°ìÉô¤À¤±¤Ë¥Á¥§¥Ã¥¯¤¬ÉÕ¤±¤é¤ì¤Æ¤¤¤ë¾ì¹ç¡¢ºÇ½é¤Î¥Ü¥¿¥ó¤Ï¥È¥é¥¤¥¹¥Æ¡¼¥È¡Ê£³¾õÂÖ¡Ë¥â¡¼¥É¤Ç¤ÎÉ½¼¨¤ò¹Ô¤¤¤Þ¤¹¡£¸½ºß¤ÎÊÑ¿ô¤ÎÃÍ¤ò¸«¤ë¤Ë¤Ï¡ÖÊÑ¿ô»²¾È¡×¥Ü¥¿¥ó¤ò¥¯¥ê¥Ã¥¯¤·¤Æ¤¯¤À¤µ¤¤¡£"
+  text "ä¸‹ã«ã¯ï¼”ã¤ã®ãƒã‚§ãƒƒã‚¯ãƒœã‚¿ãƒ³ãŒè¡¨ç¤ºã•ã‚Œã¦ã„ã¾ã™ã€‚ã‚¯ãƒªãƒƒã‚¯ã™ã‚‹ã¨ãƒœã‚¿ãƒ³ã®é¸æŠžçŠ¶æ…‹ãŒå¤‰ã‚ã‚Šã€Tclå¤‰æ•°ï¼ˆTkVariableã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã§ã‚¢ã‚¯ã‚»ã‚¹ã§ãã¾ã™ï¼‰ã«ãã®ãƒœã‚¿ãƒ³ã®çŠ¶æ…‹ã‚’ç¤ºã™å€¤ã‚’è¨­å®šã—ã¾ã™ã€‚æœ€åˆã®ãƒœã‚¿ãƒ³ã®çŠ¶æ…‹ã¯ä»–ã®ï¼“ã¤ã®ãƒœã‚¿ãƒ³ã®çŠ¶æ…‹ã«ã‚‚ä¾å­˜ã—ã¦å¤‰åŒ–ã—ã¾ã™ã€‚ã‚‚ã—ï¼“ã¤ã®ãƒœã‚¿ãƒ³ã®ä¸€éƒ¨ã ã‘ã«ãƒã‚§ãƒƒã‚¯ãŒä»˜ã‘ã‚‰ã‚Œã¦ã„ã‚‹å ´åˆã€æœ€åˆã®ãƒœã‚¿ãƒ³ã¯ãƒˆãƒ©ã‚¤ã‚¹ãƒ†ãƒ¼ãƒˆï¼ˆï¼“çŠ¶æ…‹ï¼‰ãƒ¢ãƒ¼ãƒ‰ã§ã®è¡¨ç¤ºã‚’è¡Œã„ã¾ã™ã€‚ç¾åœ¨ã®å¤‰æ•°ã®å€¤ã‚’è¦‹ã‚‹ã«ã¯ã€Œå¤‰æ•°å‚ç…§ã€ãƒœã‚¿ãƒ³ã‚’ã‚¯ãƒªãƒƒã‚¯ã—ã¦ãã ã•ã„ã€‚"
 }
 msg.pack('side'=>'top')
 
-# ÊÑ¿ôÀ¸À®
+# å¤‰æ•°ç”Ÿæˆ
 safety = TkVariable.new(0)
 wipers = TkVariable.new(0)
 brakes = TkVariable.new(0)
 sober  = TkVariable.new(0)
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 TkFrame.new(base_frame) {|frame|
   TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2),
          :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
   TkGrid('x',
-         TkButton.new(frame, :text=>'ÊÑ¿ô»²¾È',
+         TkButton.new(frame, :text=>'å¤‰æ•°å‚ç…§',
                       :image=>$image['view'], :compound=>:left,
                       :command=>proc{
                         showVars($check2_demo,
                                  ['safety', safety], ['wipers', wipers],
                                  ['brakes', brakes], ['sober', sober])
                       }),
-         TkButton.new(frame, :text=>'¥³¡¼¥É»²¾È',
+         TkButton.new(frame, :text=>'ã‚³ãƒ¼ãƒ‰å‚ç…§',
                       :image=>$image['view'], :compound=>:left,
                       :command=>proc{showCode 'check2'}),
-         TkButton.new(frame, :text=>'ÊÄ¤¸¤ë',
+         TkButton.new(frame, :text=>'é–‰ã˜ã‚‹',
                       :image=>$image['delete'], :compound=>:left,
                       :command=>proc{
                         tmppath = $check2_demo
@@ -61,16 +61,16 @@ TkFrame.new(base_frame) {|frame|
 }.pack('side'=>'bottom', 'fill'=>'x')
 
 
-# checkbutton À¸À®
-TkCheckButton.new(base_frame, :text=>'°ÂÁ´À­¸¡ºº', :variable=>safety,
+# checkbutton ç”Ÿæˆ
+TkCheckButton.new(base_frame, :text=>'å®‰å…¨æ€§æ¤œæŸ»', :variable=>safety,
                   :relief=>:flat, :onvalue=>'all', :offvalue=>'none',
                   :tristatevalue=>'partial'){
   pack('side'=>'top', 'pady'=>2, 'anchor'=>'w')
 }
 
-[ TkCheckButton.new(base_frame, 'text'=>'¥ï¥¤¥Ñ¡¼ OK', 'variable'=>wipers),
-  TkCheckButton.new(base_frame, 'text'=>'¥Ö¥ì¡¼¥­ OK', 'variable'=>brakes),
-  TkCheckButton.new(base_frame, 'text'=>'±¿Å¾¼ê ÁÇÌÌ', 'variable'=>sober)
+[ TkCheckButton.new(base_frame, 'text'=>'ãƒ¯ã‚¤ãƒ‘ãƒ¼ OK', 'variable'=>wipers),
+  TkCheckButton.new(base_frame, 'text'=>'ãƒ–ãƒ¬ãƒ¼ã‚­ OK', 'variable'=>brakes),
+  TkCheckButton.new(base_frame, 'text'=>'é‹è»¢æ‰‹ ç´ é¢', 'variable'=>sober)
 ].each{|w|
   w.relief('flat')
   w.pack('side'=>'top', 'padx'=>15, 'pady'=>2, 'anchor'=>'w')

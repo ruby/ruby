@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # paned2.rb --
 #
@@ -23,30 +23,30 @@ base_frame = TkFrame.new($paned2_demo).pack(:fill=>:both, :expand=>true)
 TkLabel.new(base_frame,
             :font=>$font, :wraplength=>'4i', :justify=>:left,
             :text=><<EOL).pack(:side=>:top)
-���Υ���������С��դ��Υ��������åȤ��֤��줿��ĤΥ�����ɥ��δ֤λ��ڤ��Ȥϡ���Ĥ��ΰ�򤽤줾��Υ�����ɥ��Τ����ʬ�䤹�뤿��Τ�ΤǤ������ܥ���ǻ��ڤ������ȡ�ʬ�䥵�����ѹ����������ǤϺ�ɽ���Ϥʤ��줺�����ꤵ�����Ȥ���ɽ������������ޤ����ޥ����ˤ����ڤ�������ɿ路�ƥ��������ѹ�����ɽ�����ʤ���褦�ˤ��������ϡ��ޥ���������ܥ����ȤäƤ���������
-�⤷���ʤ����ȤäƤ��� Ruby �˥�󥯤���Ƥ��� Tk �饤�֥�꤬ panedwindow ��������Ƥ��ʤ�
-��硢���Υǥ�Ϥ��ޤ�ư���ʤ��Ϥ��Ǥ������ξ��ˤ� panedwindow ����������Ƥ���褦��
-��꿷�����С������� Tk ���Ȥ߹�碌�ƻ
-�褦�ˤ��Ƥ���������
+下のスクロールバー付きのウィジェットが置かれた二つのウィンドウの間の仕切り枠は、一つの領域をそれぞれのウィンドウのために分割するためのものです。左ボタンで仕切りを操作すると、分割サイズ変更の操作途中では再表示はなされず、確定させたときに表示が更新されます。マウスによる仕切りの操作に追随してサイズを変更した表示がなわれるようにしたい場合は、マウスの中央ボタンを使ってください。
+もしあなたが使っている Ruby にリンクされている Tk ライブラリが panedwindow を実装していない
+場合、このデモはうまく動かないはずです。その場合には panedwindow が実装されているような
+より新しいバージョンの Tk を組み合わせて試す
+ようにしてください。
 EOL
 
 # The bottom buttons
 TkFrame.new(base_frame){|f|
   pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
 
-  TkButton.new(f, :text=>'�Ĥ���', :width=>15, :command=>proc{
+  TkButton.new(f, :text=>'閉じる', :width=>15, :command=>proc{
                  $paned2_demo.destroy
                  $paned2_demo = nil
                }).pack(:side=>:left, :expand=>true)
 
-  TkButton.new(f, :text=>'�����ɻ���', :width=>15, :command=>proc{
+  TkButton.new(f, :text=>'コード参照', :width=>15, :command=>proc{
                  showCode 'paned2'
                }).pack(:side=>:left, :expand=>true)
 }
 
 paneList = TkVariable.new  # define as normal variable (not array)
 paneList.value = [         # ruby's array --> tcl's list
-    'Ruby/Tk �Υ��������åȰ���',
+    'Ruby/Tk のウィジェット一覧',
     'TkButton',
     'TkCanvas',
     'TkCheckbutton',
@@ -87,8 +87,8 @@ TkPanedwindow.new(base_frame, :orient=>:vertical){|f|
         paned2_xscr = TkScrollbar.new(paned2_bottom)
         paned2_yscr = TkScrollbar.new(paned2_bottom)
         paned2_text = TkText.new(paned2_bottom, :width=>30, :wrap=>:non) {
-          insert('1.0', '���������֤���Ƥ���Τϡ�' +
-                        '�������̤Υƥ����ȥ��������åȤǤ���')
+          insert('1.0', 'ここに配置されているのは、' +
+                        'ごく普通のテキストウィジェットです。')
           xscrollbar(paned2_xscr)
           yscrollbar(paned2_yscr)
         }
