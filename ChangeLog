@@ -1,3 +1,8 @@
+Wed Sep 14 11:43:37 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_fd_rcopy): added an argument guard.
+	  Patch by NAKAMURA Usaku. [Bug #5306] [ruby-core:39435]
+
 Tue Sep 13 20:21:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/pstore.rb, test/test_pstore.rb: suppress warnings with -v.
