@@ -704,12 +704,12 @@ get_line_info(const rb_iseq_t *iseq, size_t pos)
 	    if (debug) printf("table[%"PRIdSIZE"]: position: %d, line: %d, pos: %"PRIdSIZE"\n",
 			      i, table[i].position, table[i].line_no, pos);
 
-	if (table[i].position == pos) {
-	    return &table[i];
-	}
+	    if (table[i].position == pos) {
+		return &table[i];
+	    }
 	    if (table[i].position > pos) {
 		return &table[i-1];
-    }
+	    }
 	}
     }
     return &table[i-1];
@@ -732,11 +732,11 @@ rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
 {
     if (pos == 0) {
 	return find_line_no(iseq, pos);
-	    }
-	    else {
-	return find_line_no(iseq, pos - 1);
-	}
     }
+    else {
+	return find_line_no(iseq, pos - 1);
+    }
+}
 
 static VALUE
 insn_operand_intern(rb_iseq_t *iseq,
