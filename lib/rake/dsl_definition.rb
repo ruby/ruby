@@ -144,12 +144,10 @@ module Rake
         Rake.application.add_import(fn)
       end
     end
-
   end
 
-  DeprecatedCommands = Object.new.extend(DSL)
-
   module DeprecatedObjectDSL # :nodoc:
+    Commands = Object.new.extend DSL
     DSL.private_instance_methods(false).each do |name|
       line = __LINE__+1
       class_eval %{
@@ -162,8 +160,8 @@ module Rake
             end
             $stderr.puts "WARNING: DSL method \#{self.class}##{name} called at \#{caller.first}"
           end
-          Rake::DeprecatedCommands.send(:#{name}, *args, &block)
-        end
+          Rake::DeprecatedObjectDSL::Commands.send(:#{name}, *args, &block)
+          end
         private :#{name}
       }, __FILE__, line
     end

@@ -282,6 +282,7 @@ end
 task :prep => :clean do
   mkdir_p 'src'
   N.times do |n|
+    puts "DBG: Touching src/foo#{n}"
     touch "src/foo#{n}"
   end
 end
