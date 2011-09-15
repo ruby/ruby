@@ -1,3 +1,7 @@
+Fri Sep 16 01:08:19 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* NEWS: cosmetic changes.
+
 Wed Sep 14 12:39:00 2011  Kenta Murata  <mrkn@mrkn.jp>
 
 	* configure.in: do not use gcc-4.2 as the default compiler.
