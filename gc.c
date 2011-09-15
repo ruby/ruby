@@ -1444,10 +1444,10 @@ struct mark_tbl_arg {
 };
 
 static int
-mark_entry(ID key, VALUE value, st_data_t data)
+mark_entry(st_data_t key, st_data_t value, st_data_t data)
 {
     struct mark_tbl_arg *arg = (void*)data;
-    gc_mark(arg->objspace, value, arg->lev);
+    gc_mark(arg->objspace, (VALUE)value, arg->lev);
     return ST_CONTINUE;
 }
 
@@ -1462,10 +1462,10 @@ mark_tbl(rb_objspace_t *objspace, st_table *tbl, int lev)
 }
 
 static int
-mark_key(VALUE key, VALUE value, st_data_t data)
+mark_key(st_data_t key, st_data_t value, st_data_t data)
 {
     struct mark_tbl_arg *arg = (void*)data;
-    gc_mark(arg->objspace, key, arg->lev);
+    gc_mark(arg->objspace, (VALUE)key, arg->lev);
     return ST_CONTINUE;
 }
 
@@ -1486,11 +1486,11 @@ rb_mark_set(st_table *tbl)
 }
 
 static int
-mark_keyvalue(VALUE key, VALUE value, st_data_t data)
+mark_keyvalue(st_data_t key, st_data_t value, st_data_t data)
 {
     struct mark_tbl_arg *arg = (void*)data;
-    gc_mark(arg->objspace, key, arg->lev);
-    gc_mark(arg->objspace, value, arg->lev);
+    gc_mark(arg->objspace, (VALUE)key, arg->lev);
+    gc_mark(arg->objspace, (VALUE)value, arg->lev);
     return ST_CONTINUE;
 }
 

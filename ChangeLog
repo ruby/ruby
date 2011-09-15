@@ -1,3 +1,8 @@
+Thu Sep 15 11:39:43 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (mark_entry, mark_key, mark_keyvalue): adjust callback
+	  argument types.
+
 Thu Sep 15 01:44:10 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* ext/tk/*: Change encoding from EUC-JP to UTF-8
