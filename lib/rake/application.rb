@@ -348,6 +348,7 @@ module Rake
         ],
         ['--rakelibdir', '--rakelib', '-R RAKELIBDIR',
           "Auto-import any .rake files in RAKELIBDIR. (default is 'rakelib')",
+          # HACK Use File::PATH_SEPARATOR
           lambda { |value| options.rakelib = value.split(':') }
         ],
         ['--require', '-r MODULE', "Require MODULE before executing rakefile.",

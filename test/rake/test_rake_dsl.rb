@@ -56,6 +56,10 @@ class TestRakeDsl < Rake::TestCase
     assert_match(/test_rake_dsl\.rb:\d+/, err)
   end
 
+  def test_no_commands_constant
+    assert ! defined?(Commands), "should not define Commands"
+  end
+
   def test_deprecated_object_dsl_with_suppressed_warnings
     Rake.application.options.ignore_deprecate = true
     out, err = capture_io do
