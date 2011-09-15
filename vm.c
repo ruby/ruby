@@ -743,7 +743,7 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	size_t pos = cfp->pc - cfp->iseq->iseq_encoded;
 	line_no = rb_iseq_line_no(iseq, pos);
-	    }
+    }
     return line_no;
 }
 
