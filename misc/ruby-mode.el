@@ -459,12 +459,8 @@ Also ignores spaces after parenthesis when 'space."
           (no-error nil)
           ((error "unterminated string")))))
 
-(defun ruby-deep-indent-paren-p (c &optional pos)
-  (cond ((save-excursion
-	   (if pos (goto-char pos))
-	   (ruby-expr-beg))
-	 nil)
-	((listp ruby-deep-indent-paren)
+(defun ruby-deep-indent-paren-p (c)
+  (cond ((listp ruby-deep-indent-paren)
          (let ((deep (assoc c ruby-deep-indent-paren)))
            (cond (deep
                   (or (cdr deep) ruby-deep-indent-paren-style))
@@ -556,7 +552,7 @@ Also ignores spaces after parenthesis when 'space."
               (progn
                 (and (eq deep 'space) (looking-at ".\\s +[^# \t\n]")
                      (setq pnt (1- (match-end 0))))
-                (setq nest (cons (cons (char-after (point)) (point)) nest))
+                (setq nest (cons (cons (char-after (point)) pnt) nest))
                 (setq pcol (cons (cons pnt depth) pcol))
                 (setq depth 0))
             (setq nest (cons (cons (char-after (point)) pnt) nest))
@@ -564,13 +560,7 @@ Also ignores spaces after parenthesis when 'space."
         (goto-char pnt)
         )
        ((looking-at "[])}]")
-        (if (ruby-deep-indent-paren-p (matching-paren (char-after))
-				      (if nest
-					  (cdr (nth 0 nest))
-					(save-excursion
-					  (forward-char)
-					  (ruby-backward-sexp)
-					  (point))))
+        (if (ruby-deep-indent-paren-p (matching-paren (char-after)))
             (setq depth (cdr (car pcol)) pcol (cdr pcol))
           (setq depth (1- depth)))
         (setq nest (cdr nest))
@@ -725,8 +715,7 @@ Also ignores spaces after parenthesis when 'space."
         (setq indent nil))              ;  do nothing
        ((car (nth 1 state))             ; in paren
         (goto-char (setq begin (cdr (nth 1 state))))
-        (let ((deep (ruby-deep-indent-paren-p (car (nth 1 state))
-					      (1- (cdr (nth 1 state))))))
+        (let ((deep (ruby-deep-indent-paren-p (car (nth 1 state)))))
           (if deep
               (cond ((and (eq deep t) (eq (car (nth 1 state)) paren))
                      (skip-syntax-backward " ")
@@ -745,8 +734,7 @@ Also ignores spaces after parenthesis when 'space."
               (goto-char parse-start) (back-to-indentation))
             (setq indent (ruby-indent-size (current-column) (nth 2 state))))
           (and (eq (car (nth 1 state)) paren)
-               (ruby-deep-indent-paren-p (matching-paren paren)
-					 (1- (cdr (nth 1 state))))
+               (ruby-deep-indent-paren-p (matching-paren paren))
                (search-backward (char-to-string paren))
                (setq indent (current-column)))))
        ((and (nth 2 state) (> (nth 2 state) 0)) ; in nest
@@ -771,9 +759,7 @@ Also ignores spaces after parenthesis when 'space."
         (setq eol (point))
         (beginning-of-line)
         (cond
-         ((and (not (ruby-deep-indent-paren-p paren
-					      (and (cdr (nth 1 state))
-						   (1- (cdr (nth 1 state))))))
+         ((and (not (ruby-deep-indent-paren-p paren))
                (re-search-forward ruby-negative eol t))
           (and (not (eq ?_ (char-after (match-end 0))))
                (setq indent (- indent ruby-indent-level))))
