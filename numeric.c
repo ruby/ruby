@@ -1683,7 +1683,6 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
 	double unit = NUM2DBL(step);
 	double n = (end - beg)/unit;
 	double err = (fabs(beg) + fabs(end) + fabs(end-beg)) / fabs(unit) * epsilon;
-	double im = 0.0;
 	long i;
 
 	if (isinf(unit)) {
@@ -1692,8 +1691,7 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
 	else {
 	    if (err>0.5) err=0.5;
 	    n = floor(n + err);
-	    im = ((long)n)*unit+beg;
-	    if (!excl || im < end) n++;
+	    if (!excl || ((long)n)*unit+beg < end) n++;
 	    for (i=0; i<n; i++) {
 		rb_yield(DBL2NUM(i*unit+beg));
 	    }
