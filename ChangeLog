@@ -1,3 +1,9 @@
+Sat Sep 17 22:21:26 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (rb_vm_make_env_object, rb_vm_get_sourceline): export as a
+	  workaround for ruby-debug19 for the time being.
+	  [ruby-core:38972] [Bug #5193]
+
 Fri Sep 16 01:08:19 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* NEWS: cosmetic changes.
