@@ -30,6 +30,8 @@ module Find
   # Calls the associated block with the name of every file and directory listed
   # as arguments, then recursively on their subdirectories, and so on.
   #
+  # Returns an enumerator if no block is given.
+  #
   # See the +Find+ module documentation for an example.
   #
   def find(*paths) # :yield: path

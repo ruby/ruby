@@ -1,3 +1,8 @@
+Sat Sep 17 12:44:04 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* lib/find.rb (Find.find): add documentation that Find.find
+	  without block returns an enumerator.
+
 Thu Sep 15 11:39:43 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (mark_entry, mark_key, mark_keyvalue): adjust callback
