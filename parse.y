@@ -5290,9 +5290,11 @@ lex_getline(struct parser_params *parser)
     return line;
 }
 
+#ifdef RIPPER
+static rb_data_type_t parser_data_type;
+#else
 static const rb_data_type_t parser_data_type;
 
-#ifndef RIPPER
 static NODE*
 parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int line)
 {
@@ -10345,7 +10347,11 @@ parser_memsize(const void *ptr)
     return size;
 }
 
-static const rb_data_type_t parser_data_type = {
+static
+#ifndef RIPPER
+const
+#endif
+rb_data_type_t parser_data_type = {
     "parser",
     {
 	parser_mark,
@@ -10961,11 +10967,19 @@ ripper_value(VALUE self, VALUE obj)
 }
 #endif
 
+
+void
+InitVM_ripper(void)
+{
+    parser_data_type.parent = RTYPEDDATA_TYPE(rb_parser_new());
+}
+
 void
 Init_ripper(void)
 {
     VALUE Ripper;
 
+    InitVM(ripper);
     Ripper = rb_define_class("Ripper", rb_cObject);
     rb_define_const(Ripper, "Version", rb_usascii_str_new2(RIPPER_VERSION));
     rb_define_alloc_func(Ripper, ripper_s_allocate);

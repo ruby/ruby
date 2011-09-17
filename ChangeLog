@@ -1,3 +1,8 @@
+Sat Sep 17 23:34:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_data_type): inherit the core type in ripper so
+	  that checks in core would work.  [ruby-core:39591] [Bug #5331]
+
 Sat Sep 17 12:44:04 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* lib/find.rb (Find.find): add documentation that Find.find
