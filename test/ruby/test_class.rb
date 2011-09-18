@@ -258,4 +258,12 @@ class TestClass < Test::Unit::TestCase
     END
     assert_equal(42, PrivateClass.new.foo)
   end
+
+  StrClone = String.clone
+  Class.new(StrClone)
+
+  def test_cloned_class
+    bug5274 = StrClone.new("[ruby-dev:44460]")
+    assert_equal(bug5274, Marshal.load(Marshal.dump(bug5274)))
+  end
 end

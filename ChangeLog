@@ -1,3 +1,9 @@
+Mon Sep 19 07:54:17 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_obj_clone): singleton class should be attached
+	  singleton object to.  a patch by Satoshi Shiba <shiba AT rvm.jp>
+	  at [ruby-dev:44460].  [Bug #5274]
+
 Sat Sep 17 23:34:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_data_type): inherit the core type in ripper so

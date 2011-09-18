@@ -273,12 +273,17 @@ VALUE
 rb_obj_clone(VALUE obj)
 {
     VALUE clone;
+    VALUE singleton;
 
     if (rb_special_const_p(obj)) {
         rb_raise(rb_eTypeError, "can't clone %s", rb_obj_classname(obj));
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
-    RBASIC(clone)->klass = rb_singleton_class_clone(obj);
+    singleton = rb_singleton_class_clone(obj);
+    RBASIC(clone)->klass = singleton;
+    if (FL_TEST(singleton, FL_SINGLETON)) {
+	rb_singleton_class_attached(singleton, clone);
+    }
     RBASIC(clone)->flags = (RBASIC(obj)->flags | FL_TEST(clone, FL_TAINT) | FL_TEST(clone, FL_UNTRUSTED)) & ~(FL_FREEZE|FL_FINALIZE|FL_MARK);
     init_copy(clone, obj);
     rb_funcall(clone, id_init_clone, 1, obj);
