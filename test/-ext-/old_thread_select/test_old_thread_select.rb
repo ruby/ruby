@@ -3,6 +3,8 @@ require 'test/unit'
 class TestOldThreadSelect < Test::Unit::TestCase
   require '-test-/old_thread_select/old_thread_select'
 
+  ANCIENT_LINUX = RUBY_PLATFORM =~ /linux/ && `uname -r`.chomp < '2.6.32'
+
   def with_pipe
     r, w = IO.pipe
     begin
@@ -19,9 +21,9 @@ class TestOldThreadSelect < Test::Unit::TestCase
       rc = IO.old_thread_select([r.fileno], nil, nil, 0.001)
       diff = Time.now - t0
       assert_equal 0, rc
-      assert_operator diff, :>=, 0.001, "returned too early"
+      assert_operator diff, :>=, 0.001, "returned too early: diff=#{diff}"
     end
-  end
+  end unless ANCIENT_LINUX
 
   def test_old_select_error_timeout
     bug5299 = '[ruby-core:39380]'
@@ -30,9 +32,9 @@ class TestOldThreadSelect < Test::Unit::TestCase
       rc = IO.old_thread_select(nil, nil, [r.fileno], 0.001)
       diff = Time.now - t0
       assert_equal 0, rc, bug5299
-      assert_operator diff, :>=, 0.001, "returned too early"
+      assert_operator diff, :>=, 0.001, "returned too early: diff=#{diff}"
     end
-  end
+  end unless ANCIENT_LINUX
 
   def test_old_select_false_positive
     bug5306 = '[ruby-core:39435]'
@@ -76,15 +78,18 @@ class TestOldThreadSelect < Test::Unit::TestCase
     end
 
     rc = nil
-    t0 = Time.now
+    diff = nil
     with_pipe do |r,w|
       assert_nothing_raised do
+        t0 = Time.now
         rc = IO.old_thread_select([r.fileno], nil, nil, 1)
+        diff = Time.now - t0
       end
     end
 
-    diff = Time.now - t0
-    assert_operator diff, :>=, 1.0, "interrupted or short wait"
+    unless ANCIENT_LINUX
+      assert_operator diff, :>=, 1, "interrupted or short wait: diff=#{diff}"
+    end
     assert_equal 0, rc
     assert_equal true, thr.value
     assert_not_equal false, received, "SIGINT not received"
