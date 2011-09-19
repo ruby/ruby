@@ -1,3 +1,9 @@
+Mon Sep 19 18:55:51 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/fileutils.rb (module FileUtils): improve performance of
+	  FileUtils.compare_stream. a patch by Masaki Matsushita.
+	  [Feature #5337] [ruby-core:39622]
+
 Mon Sep 19 18:42:58 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/-ext-/old_thread_select/test_old_thread_select.rb:

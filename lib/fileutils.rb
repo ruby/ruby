@@ -823,16 +823,13 @@ module FileUtils
   #
   def compare_stream(a, b)
     bsize = fu_stream_blksize(a, b)
-    sa = sb = nil
-    while sa == sb
-      sa = a.read(bsize)
-      sb = b.read(bsize)
-      unless sa and sb
-        if sa.nil? and sb.nil?
-          return true
-        end
-      end
-    end
+    sa = ""
+    sb = ""
+    begin
+      a.read(bsize, sa)
+      b.read(bsize, sb)
+      return true if sa.empty? && sb.empty?
+    end while sa == sb
     false
   end
   module_function :compare_stream
