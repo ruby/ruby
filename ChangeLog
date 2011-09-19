@@ -1,3 +1,8 @@
+Mon Sep 19 09:28:06 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* test/openssl/test_ssl.rb (class OpenSSL):  Test
+	  OpenSSL::SSL::SSLSocket#session and #session=.
+
 Mon Sep 19 07:54:17 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_obj_clone): singleton class should be attached
