@@ -1235,14 +1235,17 @@ vm_get_cvar_base(NODE *cref)
 {
     VALUE klass;
 
-    while (cref && cref->nd_next &&
+    if (!cref) {
+	rb_bug("vm_get_cvar_base: no cref");
+    }
+
+    while (cref->nd_next &&
 	   (NIL_P(cref->nd_clss) || FL_TEST(cref->nd_clss, FL_SINGLETON) ||
 	    (cref->flags & NODE_FL_CREF_PUSHED_BY_EVAL))) {
 	cref = cref->nd_next;
-
-	if (!cref->nd_next) {
-	    rb_warn("class variable access from toplevel");
-	}
+    }
+    if (!cref->nd_next) {
+	rb_warn("class variable access from toplevel");
     }
 
     klass = cref->nd_clss;

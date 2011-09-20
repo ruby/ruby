@@ -1,3 +1,8 @@
+Tue Sep 20 18:08:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_get_cvar_base): reduce duplicated checks and
+	  move a warning outside the loop.
+
 Mon Sep 19 18:55:51 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* lib/fileutils.rb (module FileUtils): improve performance of
