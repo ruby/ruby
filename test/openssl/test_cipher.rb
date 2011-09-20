@@ -72,6 +72,7 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
   if OpenSSL::OPENSSL_VERSION_NUMBER > 0x00907000
     def test_ciphers
       OpenSSL::Cipher.ciphers.each{|name|
+        next if /netbsd/ =~ RUBY_PLATFORM && /idea|rc5/i =~ name
         assert(OpenSSL::Cipher::Cipher.new(name).is_a?(OpenSSL::Cipher::Cipher))
       }
     end
