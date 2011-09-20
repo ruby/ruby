@@ -212,6 +212,7 @@ tddwpBAEDjcwMzA5NTYzMTU1MzAwpQMCARM=
       ssl.session = session
 
       assert_equal session, ssl.session
+      sock.close
     }
   end
 
