@@ -1,3 +1,8 @@
+Thu Sep 22 02:53:19 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_cfunc): suppress a warning.  note that
+	  `volatile type *var' doesn't make var itself volatile.
+
 Thu Sep 22 01:52:48 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* thread_pthread.c (ubf_select): activate timer thread when interrupt

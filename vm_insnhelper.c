@@ -407,7 +407,7 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	rb_bug("cfp consistency error - send");
     }
 #ifdef __llvm__
-#define RB_LLVM_GUARD(v) RB_GC_GUARD(v)
+#define RB_LLVM_GUARD(v) (*RB_GC_GUARD_PTR((volatile VALUE *)&(v)))
     RB_LLVM_GUARD(reg_cfp);
 #endif
 
