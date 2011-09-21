@@ -9,7 +9,7 @@ end
 class TestIOWait < Test::Unit::TestCase
 
   def setup
-    if /mswin/ =~ RUBY_PLATFORM
+    if /mswin|mingw/ =~ RUBY_PLATFORM
       @r, @w = Socket.pair(Socket::AF_INET, Socket::SOCK_STREAM, 0)
     else
       @r, @w = IO.pipe
