@@ -1,3 +1,12 @@
+Thu Sep 22 01:52:48 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* thread_pthread.c (ubf_select): activate timer thread when interrupt
+	  blocking thread.
+	  A patch created by Koichi Sasada. [ruby-core:39634] [Bug #5343]
+	  to cover race condition, timer thread periodically send SIGVTARLM to
+	  threads in signal thread list. so you should activate timer thread
+	  when interrupt a thread.
+
 Wed Sep 21 16:55:26 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/io/wait/test_io_wait.rb (TestIOWait#setup): of course, the
