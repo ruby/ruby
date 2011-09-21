@@ -1,3 +1,8 @@
+Wed Sep 21 16:57:03 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/io/wait/test_io_wait.rb (TestIOWait#setup): of course, the
+	  behavior of mingw is just same with mswin.
+
 Sat Sep 17 22:21:26 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (rb_vm_make_env_object, rb_vm_get_sourceline): export as a
