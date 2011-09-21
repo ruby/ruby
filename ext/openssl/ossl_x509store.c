@@ -131,6 +131,7 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 
 /* BUG: This method takes any number of arguments but appears to ignore them. */
     GetX509Store(self, store);
+    store->ex_data.sk = NULL;
     X509_STORE_set_verify_cb_func(store, ossl_verify_cb);
     ossl_x509store_set_vfy_cb(self, Qnil);
 
