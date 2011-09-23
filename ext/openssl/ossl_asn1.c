@@ -467,7 +467,6 @@ decode_time(unsigned char* der, int length)
 static VALUE
 decode_eoc(unsigned char *der, int length)
 {
-    VALUE ret;
     if (length != 2 || !(der[0] == 0x00 && der[1] == 0x00))
 	ossl_raise(eASN1Error, NULL);
 
@@ -894,10 +893,6 @@ int_ossl_asn1_decode0_cons(unsigned char **pp, long max_len, long length,
 	ossl_asn1_initialize(4, args, asn1data);
     }
     else {
-	VALUE args[3];
-	args[0] = ary;
-	args[1] = INT2NUM(tag);
-	args[2] = ID2SYM(tc);
 	asn1data = rb_obj_alloc(cASN1Data);
 	ossl_asn1data_initialize(asn1data, ary, INT2NUM(tag), ID2SYM(tc));
     }
@@ -1036,7 +1031,7 @@ ossl_asn1_traverse(VALUE self, VALUE obj)
 static VALUE
 ossl_asn1_decode(VALUE self, VALUE obj)
 {
-    VALUE ret, ary;
+    VALUE ret;
     unsigned char *p;
     volatile VALUE tmp;
     long len, read = 0, offset = 0;

@@ -1,3 +1,8 @@
+Fri Sep 23 14:15:01 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c
+	  ext/openssl/ossl_pkey.c: Remove unused variables.
+
 Fri Sep 23 06:54:44 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* backport r33315 from trunk.
