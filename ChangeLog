@@ -1,3 +1,9 @@
+Fri Sep 23 11:59:08 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_ssl_session.rb: ensure server calls callbacks in
+	  test_ctx_server_session_cb. Thanks to Eric Wong for the patch.
+	  [Bug #5336] [ruby-core:39619]
+
 Thu Sep 22 02:53:19 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_call_cfunc): suppress a warning.  note that
