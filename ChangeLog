@@ -1,3 +1,12 @@
+Fri Sep 23 06:54:44 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* backport r33315 from trunk.
+
+	* test/openssl/test_ssl_session.rb: execute test_session_exts_read
+	  only for OpenSSL versions >= 0.9.8k. Thanks, Eric Wong, for
+	  reporting this.
+	  [Bug #4961] [ruby-core:37726]
+
 Fri Sep 23 12:18:52 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* backport r33311 from trunk.
