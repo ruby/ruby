@@ -316,6 +316,7 @@ end
         ssl.connect
         last_client_session = ssl.session
         ssl.close
+        Thread.pass # try to ensure server calls callbacks
         assert(called.delete(:new))
         assert(called.delete(:remove))
       end

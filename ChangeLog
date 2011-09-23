@@ -1,3 +1,11 @@
+Fri Sep 23 12:18:52 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* backport r33311 from trunk.
+
+	* test/openssl/test_ssl_session.rb: ensure server calls callbacks in
+	  test_ctx_server_session_cb. Thanks to Eric Wong for the patch.
+	  [Bug #5336] [ruby-core:39619]
+
 Thu Sep 22 19:45:22 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* thread_pthread.c (ubf_select): activate timer thread when interrupt
