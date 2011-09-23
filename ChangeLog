@@ -1,3 +1,7 @@
+Fri Sep 23 14:20:14 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: remove unused variable.
+
 Fri Sep 23 13:46:59 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_ssl_session.rb: execute test_session_exts_read

@@ -893,10 +893,6 @@ int_ossl_asn1_decode0_cons(unsigned char **pp, long max_len, long length,
 	ossl_asn1_initialize(4, args, asn1data);
     }
     else {
-	VALUE args[3];
-	args[0] = ary;
-	args[1] = INT2NUM(tag);
-	args[2] = ID2SYM(tc);
 	asn1data = rb_obj_alloc(cASN1Data);
 	ossl_asn1data_initialize(asn1data, ary, INT2NUM(tag), ID2SYM(tc));
     }
