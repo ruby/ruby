@@ -1,3 +1,10 @@
+Fri Sep 23 13:46:59 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_ssl_session.rb: execute test_session_exts_read
+	  only for OpenSSL versions >= 0.9.8k. Thanks, Eric Wong, for
+	  reporting this.
+	  [Bug #4961] [ruby-core:37726]
+
 Fri Sep 23 11:59:08 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_ssl_session.rb: ensure server calls callbacks in

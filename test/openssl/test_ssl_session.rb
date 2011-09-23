@@ -108,11 +108,9 @@ __EOS__
     assert_equal(2**31 - 1, sess.timeout.to_i)
   end
 
-if OpenSSL::OPENSSL_VERSION_NUMBER >= 0x0090806f
   def test_session_exts_read
     assert(OpenSSL::SSL::Session.new(DUMMY_SESSION))
-  end
-end
+  end if OpenSSL::OPENSSL_VERSION_NUMBER >= 0x009080bf
 
   def test_client_session
     last_session = nil
