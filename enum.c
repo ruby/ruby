@@ -2469,7 +2469,7 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
     enumerable = rb_ivar_get(enumerator, rb_intern("slicebefore_enumerable"));
     arg.sep_pred = rb_attr_get(enumerator, rb_intern("slicebefore_sep_pred"));
     arg.sep_pat = NIL_P(arg.sep_pred) ? rb_ivar_get(enumerator, rb_intern("slicebefore_sep_pat")) : Qnil;
-    arg.state = rb_ivar_get(enumerator, rb_intern("slicebefore_initial_state"));
+    arg.state = rb_attr_get(enumerator, rb_intern("slicebefore_initial_state"));
     arg.prev_elts = Qnil;
     arg.yielder = yielder;
 
