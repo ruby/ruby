@@ -188,7 +188,7 @@ Fri Sep  9 10:22:03 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri Sep  9 02:02:09 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* template/yarvarch.ja:
-	  Change encoding from Shift-JIS to UTF-8
+	  Change encoding from Shift_JIS to UTF-8
 
 Thu Sep  9 01:14:00 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
@@ -263,7 +263,7 @@ Tue Sep  6 21:06:49 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* test4test_sorting.rb: Ditto.
 
-	* lib/test/unit.rb (run): Put RUBY_DESCIPTION before quitting.
+	* lib/test/unit.rb (run): Put RUBY_DESCRIPTION before quitting.
 	  [Feature #5282]
 
 Tue Sep  6 21:13:47 2011  Masaya Tarui  <tarui@ruby-lang.org>
