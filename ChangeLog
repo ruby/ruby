@@ -1,3 +1,10 @@
+Sun Sep 25 16:54:33 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (require_enc): reject only loading from untrusted
+	  load paths.  [ruby-dev:44541] [Bug #5279]
+
+	* transcode.c (load_transcoder_entry): ditto.
+
 Sun Sep 25 16:45:05 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: ignore all warnings from an arbitrary

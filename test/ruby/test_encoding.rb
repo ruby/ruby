@@ -102,6 +102,6 @@ class TestEncoding < Test::Unit::TestCase
 
   def test_unsafe
     bug5279 = '[ruby-dev:44469]'
-    assert_ruby_status([], '$SAFE=3; "a".encode("utf-16be")', bug5279)
+    assert_ruby_status([], '$SAFE=4; "a".encode("utf-16be")', bug5279)
   end
 end
