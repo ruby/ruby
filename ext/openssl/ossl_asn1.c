@@ -877,13 +877,23 @@ int_ossl_asn1_decode0_cons(unsigned char **pp, long max_len, long length,
 	}
     }
 
-    if (tc == sUNIVERSAL && (tag == V_ASN1_SEQUENCE || V_ASN1_SET)) {
+    if (tc == sUNIVERSAL) {
 	VALUE args[4];
-	VALUE klass = *ossl_asn1_info[tag].klass;
-	if (infinite && tag != V_ASN1_SEQUENCE && tag != V_ASN1_SET) {
-	    asn1data = rb_obj_alloc(cASN1Constructive);
+	int not_sequence_or_set;
+
+	not_sequence_or_set = tag != V_ASN1_SEQUENCE && tag != V_ASN1_SET;
+
+	if (not_sequence_or_set) {
+	    if (infinite) {
+		asn1data = rb_obj_alloc(cASN1Constructive);
+	    }
+	    else {
+		ossl_raise(eASN1Error, "invalid non-infinite tag");
+		return Qnil;
+	    }
 	}
 	else {
+	    VALUE klass = *ossl_asn1_info[tag].klass;
 	    asn1data = rb_obj_alloc(klass);
 	}
 	args[0] = ary;
