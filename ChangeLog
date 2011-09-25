@@ -1,3 +1,8 @@
+Sun Sep 25 20:54:10 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/yaml/dbm/dbm.rb: fix #update, add #key for using istead #index.
+	  [Bug #5305][ruby-dev:44485]
+
 Sun Sep 25 16:54:33 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (require_enc): reject only loading from untrusted

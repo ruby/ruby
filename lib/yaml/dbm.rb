@@ -57,8 +57,18 @@ class DBM < ::DBM
     end
 
     # Deprecated, used YAML::DBM#key instead.
+    # ----
+    # Note:
+    # YAML::DBM#index makes warning from internal of ::DBM#index.
+    # It says 'DBM#index is deprecated; use DBM#key', but DBM#key
+    # behaves not same as DBM#index.
+    #
     def index( keystr )
         super( keystr.to_yaml )
+    end
+
+    def key( keystr )
+        invert[keystr]
     end
 
     # Returns an array containing the values associated with the given keys.
@@ -185,8 +195,8 @@ class DBM < ::DBM
     #
     # Returns +self+.
     def update( hsh )
-        hsh.keys.each do |k|
-            self.store( k, hsh.fetch( k ) )
+        hsh.each_pair do |k,v|
+            self.store( k, v )
         end
         self
     end
