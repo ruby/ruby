@@ -1,3 +1,9 @@
+Sun Sep 25 20:57:18 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/syck/test/yamldbm.rb: add test for Syck::DBM.
+	* test/psych/test_yamldbm.rb: add test for Psych::DBM.
+	* test/psych/test_yamlstore.rb: add test for Psych::PStore.
+
 Sun Sep 25 20:54:10 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* lib/yaml/dbm/dbm.rb: fix #update, add #key for using istead #index.
