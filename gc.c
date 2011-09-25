@@ -504,7 +504,7 @@ rb_gc_set_params(void)
 /* 2KB */
 /*#define HEAP_SIZE 0x800 */
 
-#define HEAP_OBJ_LIMIT (HEAP_SIZE / sizeof(struct RVALUE))
+#define HEAP_OBJ_LIMIT (HEAP_SIZE / (unsigned int)sizeof(struct RVALUE))
 
 extern st_table *rb_class_tbl;
 
