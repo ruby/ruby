@@ -1965,7 +1965,7 @@ if test "$with_dln_a_out" != yes; then
   AC_MSG_CHECKING(whether OS depend dynamic link works)
   if test "$GCC" = yes; then
     AS_CASE(["$target_os"],
-    [nextstep*|openstep*|rhapsody*|darwin*], [
+    [darwin*], [
       # The -fno-common is needed if we wish to embed the Ruby interpreter
       # into a plugin module of some project (as opposed to embedding it
       # within the project's application).  The -I/usr/local/include is
@@ -2053,15 +2053,6 @@ if test "$with_dln_a_out" != yes; then
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="$LDFLAGS -Wl,-E"
 			fi
-			rb_cv_dlopen=yes],
-	[nextstep*], [	: ${LDSHARED='$(CC) -r -nostdlib'}
-			LDFLAGS="$LDFLAGS -u libsys_s"
-			rb_cv_dlopen=yes],
-	[openstep*], [	: ${LDSHARED='$(CC) -dynamic -bundle -undefined suppress'}
-			: ${LDFLAGS=""}
-			rb_cv_dlopen=yes],
-	[rhapsody*], [	: ${LDSHARED='$(CC) -dynamic -bundle -undefined suppress'}
-			: ${LDFLAGS=""}
 			rb_cv_dlopen=yes],
 	[darwin*], [	: ${LDSHARED='$(CC) -dynamic -bundle'}
 			: ${DLDFLAGS="${linker_flag}-undefined${linker_flag:+,}dynamic_lookup ${linker_flag}-multiply_defined${linker_flag:+,}suppress ${linker_flag}-flat_namespace"}
@@ -2182,7 +2173,7 @@ else
   AS_CASE(["$target_os"],
     [hpux*], [
 	DLEXT=sl],
-    [nextstep*|openstep*|rhapsody*|darwin*], [
+    [darwin*], [
 	RUBY_APPEND_OPTION(XLDFLAGS, [-Wl,-u,_objc_msgSend])
 	DLEXT=bundle],
     [os2-emx*], [
@@ -2220,7 +2211,7 @@ fi
 AS_CASE(["$target_os"],
   [linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu], [
 	STRIP="$STRIP -S -x"],
-  [nextstep* | openstep* | rhapsody* | darwin*], [
+  [darwin*], [
 	STRIP="$STRIP -A -n"])
 
 AC_ARG_WITH(ext,
@@ -2288,7 +2279,7 @@ LIBRUBYARG='$(LIBRUBYARG_STATIC)'
 SOLIBS=
 
 AS_CASE(["$target_os"],
-  [cygwin*|mingw*|beos*|haiku*|openstep*|nextstep*|rhapsody*|darwin*|os2-emx*], [
+  [cygwin*|mingw*|beos*|haiku*|darwin*|os2-emx*], [
     : ${DLDLIBS=""}
     ],
   [
@@ -2479,12 +2470,6 @@ AS_CASE(["$target_os"],
 	],
     [netbsd*], [
 	RUBY_APPEND_OPTION(CFLAGS, -pipe)
-	],
-    [nextstep*|openstep*], [
-	RUBY_APPEND_OPTION(CPPFLAGS, -I/usr/local/include)
-	],
-    [rhapsody*], [
-	RUBY_APPEND_OPTIONS(CFLAGS, -pipe -no-precomp)
 	],
     [darwin*], [
 	RUBY_APPEND_OPTION(CFLAGS, -pipe)

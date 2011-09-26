@@ -541,7 +541,7 @@ end
 def get_ext_list()
   exts = [CONFIG['DLEXT']]
   exts.concat %w(dll lib) if is_win32?
-  exts.concat %w(bundle dylib) if is_macosx? || /nextstep|openstep|rhapsody/ =~ RUBY_PLATFORM
+  exts.concat %w(bundle dylib) if is_macosx?
 
   if enable_config("shared") == false
     [CONFIG['LIBEXT'], "a"].concat exts

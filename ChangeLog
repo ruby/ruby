@@ -1,3 +1,11 @@
+Mon Sep 26 09:07:46 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/defines.h: remove NextStep, OpenStep, Rhapsody
+	  support. Last activity of their OSs are 7 years ago.
+	* configure.in: ditto.
+	* dir.c: ditto.
+	* ext/tk/extconf.rb: ditto.
+
 Mon Sep 26 09:02:49 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: remove a code for human68k. it's no longer

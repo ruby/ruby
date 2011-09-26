@@ -1383,7 +1383,7 @@ dln_load(const char *file)
     }
 #endif /* _AIX */
 
-#if defined(NeXT) || defined(MACOSX_DYLD)
+#if defined(MACOSX_DYLD)
 #define DLN_DEFINED
 /*----------------------------------------------------
    By SHIROYAMA Takayuki Psi@fortune.nest.or.jp
@@ -1394,43 +1394,6 @@ dln_load(const char *file)
     sunshine@sunshineco.com,
     and... Miss ARAI Akino(^^;)
  ----------------------------------------------------*/
-#if defined(NeXT) && (NS_TARGET_MAJOR < 4)/* NeXTSTEP rld functions */
-
-    {
-        NXStream* s;
-	unsigned long init_address;
-	char *object_files[2] = {NULL, NULL};
-
-	void (*init_fct)();
-
-	object_files[0] = (char*)file;
-
-	s = NXOpenFile(2,NX_WRITEONLY);
-
-	/* Load object file, if return value ==0 ,  load failed*/
-	if(rld_load(s, NULL, object_files, NULL) == 0) {
-	    NXFlush(s);
-	    NXClose(s);
-	    dln_loaderror("Failed to load %.200s", file);
-	}
-
-	/* lookup the initial function */
-	if(rld_lookup(s, buf, &init_address) == 0) {
-	    NXFlush(s);
-	    NXClose(s);
-	    dln_loaderror("Failed to lookup Init function %.200s", file);
-	}
-
-	NXFlush(s);
-	NXClose(s);
-
-	/* Cannot call *init_address directory, so copy this value to
-	   function pointer */
-	init_fct = (void(*)())init_address;
-	(*init_fct)();
-	return (void*)init_address;
-    }
-#else/* OPENSTEP dyld functions */
     {
 	int dyld_result;
 	NSObjectFileImage obj_file; /* handle, but not use it */
@@ -1457,7 +1420,6 @@ dln_load(const char *file)
 
 	return (void*)init_fct;
     }
-#endif /* rld or dyld */
 #endif
 
 #if defined(__BEOS__) || defined(__HAIKU__)
