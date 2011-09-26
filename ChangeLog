@@ -1,8 +1,8 @@
 Tue Sep 27 03:32:27 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
-	* test/psych/test_yamldbm.rb (require): fix #setup and #terdown.
+	* test/psych/test_yamldbm.rb: fix #setup and #terdown.
 	  [Bug #5370] [ruby-core:39730]
-	* test/syck/test_yamldbm.rb (require): ditto.
+	* test/syck/test_yamldbm.rb: ditto.
 
 Mon Sep 26 11:27:38 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
