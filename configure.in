@@ -991,45 +991,6 @@ main()
 		],
 [hpux*], [	LIBS="-lm $LIBS"
 		ac_cv_c_inline=no],
-[human*], [	ac_cv_func_getpgrp_void=yes
-		ac_cv_func_setitimer=no
-		AC_CHECK_LIB(signal, _harderr)
-		AC_CHECK_LIB(hmem, hmemset)
-		AC_CHECK_FUNCS(select)
-		AC_CACHE_CHECK(whether PD libc _dtos18 fail to convert big number,
-		   rb_cv_missing__dtos18,
-		[AC_TRY_RUN([
-#include <stdio.h>
-int
-main()
-{
-   char buf[256];
-   sprintf(buf, "%g", 1e+300);
-   return (strcmp (buf, "1e+300") ? 0 : 1);
-}
-],
-		rb_cv_missing__dtos18=yes, rb_cv_missing__dtos18=no, rb_cv_missing__dtos18=no)])
-		if test "$rb_cv_missing__dtos18" = yes; then
-		    AC_DEFINE(MISSING__DTOS18)
-		fi
-		AC_CACHE_CHECK(whether PD libc fconvert fail to round,
-			       rb_cv_missing_fconvert,
-		[AC_TRY_RUN([
-#include <stdio.h>
-#include <math.h>
-int
-main()
-{
-  char buf[256];
-  sprintf(buf, "%f", log(exp(1.0)));
-  return (strcmp (buf, "1.000000") ? 0 : 1);
-}
-],
-		rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no, rb_cv_missing_fconvert=no)])
-		if test "$rb_cv_missing_fconvert" = yes; then
-		    AC_DEFINE(MISSING_FCONVERT)
-		fi
-		],
 [beos*|haiku*], [
 		ac_cv_func_link=no
 		ac_cv_func_sched_yield=no
@@ -2013,7 +1974,7 @@ if test "$with_dln_a_out" != yes; then
       # mkmf.rb's have_header() to fail if the desired resource happens to be
       # installed in the /usr/local tree.
       RUBY_APPEND_OPTION(CCDLFLAGS, -fno-common)],
-    [human*|bsdi*|beos*|haiku*|cygwin*|mingw*|aix*|interix*], [ ],
+    [bsdi*|beos*|haiku*|cygwin*|mingw*|aix*|interix*], [ ],
     [
       RUBY_APPEND_OPTION(CCDLFLAGS, -fPIC)])
   else
@@ -2125,11 +2086,6 @@ if test "$with_dln_a_out" != yes; then
                         TRY_LINK="$TRY_LINK"' $(CFLAGS) $(src) $(LIBPATH) $(LOCAL_LIBS) $(LIBS)'
 			: ${LIBPATHENV=SHLIB_PATH}
 			RPATHFLAG=" ${linker_flag}-blibpath:%1\$-s:${prefix}/lib:${LIBPATH:-/usr/lib:/lib}"
-			rb_cv_dlopen=yes],
-	[human*], [	: ${DLDFLAGS=''}
-			: ${LDSHARED=''}
-			: ${LDFLAGS=''}
-			: ${LINK_SO='ar cru $@ $(OBJS)'}
 			rb_cv_dlopen=yes],
 	[beos*], [	AS_CASE(["$target_cpu"],
 			  [powerpc*], [
@@ -2280,9 +2236,6 @@ AC_ARG_WITH(static-linked-ext,
             [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static])])
 
 AS_CASE(["$target_os"],
-  [human*], [
-    setup=Setup.x68
-    ],
   dnl OS/2 environment w/ Autoconf 2.1x for EMX
   [os2-emx], [
     setup=Setup.emx
@@ -2535,13 +2488,6 @@ AS_CASE(["$target_os"],
 	],
     [darwin*], [
 	RUBY_APPEND_OPTION(CFLAGS, -pipe)
-	],
-    [human*], [
-	AC_LIBOBJ([x68.o])
-	CFLAGS="$CFLAGS -fansi-only"
-	XCFLAGS="$XCFLAGS -cc1-stack=262144 -cpp-stack=2694144"
-	EXEEXT=.x
-	OBJEXT=o
 	],
     [os2-emx], [
 	AC_LIBOBJ([os2])

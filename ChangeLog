@@ -1,3 +1,8 @@
+Mon Sep 26 09:02:49 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: remove a code for human68k. it's no longer
+	  supported since r19677.
+
 Sun Sep 25 23:43:32 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: fix int_ossl_asn1_decode0_cons when being
