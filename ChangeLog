@@ -1,3 +1,8 @@
+Mon Sep 26 09:20:44 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: remove DJGPP support. It's not longer supported
+	  since ruby 1.9.0.
+
 Mon Sep 26 09:07:46 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/defines.h: remove NextStep, OpenStep, Rhapsody

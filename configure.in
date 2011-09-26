@@ -1039,15 +1039,6 @@ main()
 		],
 [os2-emx*], [	LIBS="-lm $LIBS"
 		ac_cv_lib_dir_opendir=no],
-[msdosdjgpp*], [
-		LIBS="-lm $LIBS"
-		ac_cv_func_getpgrp_void=yes
-		ac_cv_func_setitimer=no
-		ac_cv_sizeof_rlim_t=4
-		ac_cv_func_fork=no
-		ac_cv_func_setrlimit=no
-		ac_cv_header_sys_socket_h=no
-		],
 [bsdi*], [	LIBS="-lm $LIBS"
 		AC_DEFINE(BROKEN_SETREUID, 1)
 		AC_DEFINE(BROKEN_SETREGID, 1)
@@ -2542,10 +2533,7 @@ AS_CASE(["$target_os"],
 	AS_CASE(["$YACC"],[*yacc*], [
 	    XCFLAGS="$XCFLAGS -DYYMAXDEPTH=300"
 	    YACC="$YACC -Nl40000 -Nm40000"
-	])],
-    [*msdosdjgpp*], [
-	FIRSTMAKEFILE=GNUmakefile:djgpp/GNUmakefile.in
-	])
+	])])
 MINIOBJS="$MINIDLNOBJ"
 
 AS_CASE(["$THREAD_MODEL"],
