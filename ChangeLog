@@ -1,3 +1,8 @@
+Mon Sep 26 11:27:38 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/httputils.rb: Add MIME Type definition of .js and .svg.
+	  patched by Hal Brodigan. [ruby-core:39704] [Bug #5365]
+
 Mon Sep 26 09:20:44 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: remove DJGPP support. It's not longer supported
