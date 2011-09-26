@@ -1,6 +1,7 @@
 require "rexml_test_utils"
 require 'rexml/sax2listener'
 require 'rexml/parsers/sax2parser'
+require 'rexml/document'
 
 class SAX2Tester < Test::Unit::TestCase
   include REXMLTestUtils
