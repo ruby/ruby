@@ -7,7 +7,7 @@ Syck::DBM = YAML::DBM unless defined?(Syck::DBM)
 module Syck
   class YAMLDBMTest < Test::Unit::TestCase
     def setup
-      @engine, YAML::ENGINE.yamler = YAML::ENGINE.yamler, 'psych'
+      @engine, YAML::ENGINE.yamler = YAML::ENGINE.yamler, 'syck'
       @dir = Dir.mktmpdir("rubytest-file")
       File.chown(-1, Process.gid, @dir)
       @yamldbm_file = make_tmp_filename("yamldbm")
