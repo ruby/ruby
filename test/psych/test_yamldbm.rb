@@ -1,19 +1,28 @@
 # -*- coding: UTF-8 -*-
 require 'test/unit'
 require 'yaml/dbm'
+require 'tmpdir'
 Psych::DBM = YAML::DBM unless defined?(Psych::DBM)
 
 module Psych
   class YAMLDBMTest < Test::Unit::TestCase
     def setup
       @engine, YAML::ENGINE.yamler = YAML::ENGINE.yamler, 'psych'
-      @yamldbm_file = "yamldbm.tmp.#{Process.pid}"
+      @dir = Dir.mktmpdir("rubytest-file")
+      File.chown(-1, Process.gid, @dir)
+      @yamldbm_file = make_tmp_filename("yamldbm")
       @yamldbm = YAML::DBM.new(@yamldbm_file)
     end
 
     def teardown
       YAML::ENGINE.yamler = @engine
-      File.unlink(@yamldbm_file + '.db') rescue nil
+      @yamldbm.clear
+      @yamldbm.close
+      FileUtils.remove_entry_secure @dir
+    end
+
+    def make_tmp_filename(prefix)
+      @dir + "/" + prefix + File.basename(__FILE__) + ".#{$$}.test"
     end
 
     def test_store
