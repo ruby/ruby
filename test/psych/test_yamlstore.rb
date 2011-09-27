@@ -1,18 +1,26 @@
 require 'test/unit'
 require 'yaml/store'
+require 'tmpdir'
+
 Psych::Store = YAML::Store unless defined?(Psych::Store)
 
 module Psych
   class YAMLStoreTest < Test::Unit::TestCase
     def setup
       @engine, YAML::ENGINE.yamler = YAML::ENGINE.yamler, 'psych'
-      @yamlstore_file = "yamlstore.tmp.#{Process.pid}"
+      @dir = Dir.mktmpdir("rubytest-file")
+      File.chown(-1, Process.gid, @dir)
+      @yamlstore_file = make_tmp_filename("yamlstore")
       @yamlstore = YAML::Store.new(@yamlstore_file)
     end
 
     def teardown
       YAML::ENGINE.yamler = @engine
-      File.unlink(@yamlstore_file) rescue nil
+      FileUtils.remove_entry_secure @dir
+    end
+
+    def make_tmp_filename(prefix)
+      @dir + "/" + prefix + File.basename(__FILE__) + ".#{$$}.test"
     end
 
     def test_opening_new_file_in_readonly_mode_should_result_in_empty_values

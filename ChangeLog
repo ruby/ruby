@@ -1,3 +1,8 @@
+Wed Sep 28 04:41:35 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/psych/test_yamlstore.rb: use tmpdir for tmpfile.
+	* test/syck/test_yamlstore.rb: ditto.
+
 Wed Sep 28 04:10:46 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* ext/bigdecimal/README: update report to.
