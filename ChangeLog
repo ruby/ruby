@@ -1,3 +1,10 @@
+Tue Sep 28 04:05:00 2011  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal_en.html: removed because this file isn't
+	  maintained now.
+
+	* ext/bigdecimal/bigdecimal_ja.html: ditto.
+
 Tue Sep 27 09:55:40 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c: make native_fd_select().
