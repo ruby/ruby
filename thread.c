@@ -2519,33 +2519,6 @@ rb_fd_set(int fd, rb_fdset_t *set)
 #define rb_fd_rcopy(d, s) (*(d) = *(s))
 #endif
 
-#if defined(__CYGWIN__)
-static long
-cmp_tv(const struct timeval *a, const struct timeval *b)
-{
-    long d = (a->tv_sec - b->tv_sec);
-    return (d != 0) ? d : (a->tv_usec - b->tv_usec);
-}
-
-static int
-subtract_tv(struct timeval *rest, const struct timeval *wait)
-{
-    if (rest->tv_sec < wait->tv_sec) {
-	return 0;
-    }
-    while (rest->tv_usec < wait->tv_usec) {
-	if (rest->tv_sec <= wait->tv_sec) {
-	    return 0;
-	}
-	rest->tv_sec -= 1;
-	rest->tv_usec += 1000 * 1000;
-    }
-    rest->tv_sec -= wait->tv_sec;
-    rest->tv_usec -= wait->tv_usec;
-    return rest->tv_sec != 0 || rest->tv_usec != 0;
-}
-#endif
-
 static int
 do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
 	  struct timeval *timeout)
@@ -2556,17 +2529,9 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
     rb_fdset_t UNINITIALIZED_VAR(orig_except);
     double limit = 0;
     struct timeval wait_rest;
-# if defined(__CYGWIN__)
-    struct timeval start_time;
-# endif
 
     if (timeout) {
-# if defined(__CYGWIN__)
-	gettimeofday(&start_time, NULL);
-	limit = (double)start_time.tv_sec + (double)start_time.tv_usec*1e-6;
-# else
 	limit = timeofday();
-# endif
 	limit += (double)timeout->tv_sec+(double)timeout->tv_usec*1e-6;
 	wait_rest = *timeout;
 	timeout = &wait_rest;
@@ -2582,44 +2547,7 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
   retry:
     lerrno = 0;
 
-#if defined(__CYGWIN__)
-    {
-	int finish = 0;
-	/* polling duration: 100ms */
-	struct timeval wait_100ms, *wait;
-	wait_100ms.tv_sec = 0;
-	wait_100ms.tv_usec = 100 * 1000; /* 100 ms */
-
-	do {
-	    wait = (timeout == 0 || cmp_tv(&wait_100ms, timeout) < 0) ? &wait_100ms : timeout;
-	    BLOCKING_REGION({
-		do {
-		    result = rb_fd_select(n, read, write, except, wait);
-		    if (result < 0) lerrno = errno;
-		    if (result != 0) break;
-
-		    if (read)
-			rb_fd_dup(read, &orig_read);
-		    if (write)
-			rb_fd_dup(write, &orig_write);
-		    if (except)
-			rb_fd_dup(except, &orig_except);
-		    if (timeout) {
-			struct timeval elapsed;
-			gettimeofday(&elapsed, NULL);
-			subtract_tv(&elapsed, &start_time);
-			gettimeofday(&start_time, NULL);
-			if (!subtract_tv(timeout, &elapsed)) {
-			    finish = 1;
-			    break;
-			}
-			if (cmp_tv(&wait_100ms, timeout) > 0) wait = timeout;
-		    }
-		} while (__th->interrupt_flag == 0);
-	    }, 0, 0);
-	} while (result == 0 && !finish);
-    }
-#elif defined(_WIN32)
+#if defined(_WIN32)
     {
 	rb_thread_t *th = GET_THREAD();
 	BLOCKING_REGION({

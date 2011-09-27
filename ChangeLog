@@ -1,3 +1,9 @@
+Tue Sep 27 09:44:59 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (do_select): remove cygwin specific hack. It's layer
+	  violation and too large hack.
+	* thread.c (cmp_tv, subtract_tv): removed.
+
 Tue Sep 27 03:50:19 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/rexml/test_sax.rb: add require 'rexml/document'.
