@@ -1437,8 +1437,12 @@ module DRb
     ]
 
     # Has a method been included in the list of insecure methods?
+    # Or, if a list of drb-safe methods has been defined for the
+    # front object, is this method not included in that list?
     def insecure_method?(msg_id)
-      INSECURE_METHOD.include?(msg_id)
+      INSECURE_METHOD.include?(msg_id) ||
+        (@front.respond_to?(:drb_safe_methods_list) &&
+         !@front.drb_safe_methods_list.include?(msg_id))
     end
 
     # Coerce an object to a string, providing our own representation if
@@ -1766,6 +1770,31 @@ module DRb
     @server[uri]
   end
   module_function :fetch_server
+end
+
+
+# Declare a list of methods to expose to DRb
+#
+# Allows the optional declaration of a whitelist of methods to expose
+# through DRb for any class DRb will be sharing an instance of. If
+# drb_safe_methods is used, then any attempt to call a non-whitelisted
+# method on that class through DRb will fail.
+#
+# EXAMPLE USAGE:
+# def MyClass
+#   drb_safe_methods :method1, :method2
+# end
+#
+# NOTE: if you are using irb as the client and :to_s isn't in the list,
+# you will get a DRb::DRbConnError when you create the DRbObject, but only
+# because irb calls to_s to display the result; the DRbObject is still
+# usable.
+class Class
+  def drb_safe_methods(*symbols)
+    define_method(:drb_safe_methods_list) do
+      symbols
+    end
+  end
 end
 
 # :stopdoc:
