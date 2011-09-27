@@ -1,3 +1,9 @@
+Tue Sep 27 09:55:40 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c: make native_fd_select().
+	* thread.c (do_select): remove #ifdef _WIN32. Instead, use
+	  native_fd_select() always.
+
 Tue Sep 27 09:44:59 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (do_select): remove cygwin specific hack. It's layer

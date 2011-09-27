@@ -2529,6 +2529,7 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
     rb_fdset_t UNINITIALIZED_VAR(orig_except);
     double limit = 0;
     struct timeval wait_rest;
+    rb_thread_t *th = GET_THREAD();
 
     if (timeout) {
 	limit = timeofday();
@@ -2547,21 +2548,10 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
   retry:
     lerrno = 0;
 
-#if defined(_WIN32)
-    {
-	rb_thread_t *th = GET_THREAD();
-	BLOCKING_REGION({
+    BLOCKING_REGION({
 	    result = native_fd_select(n, read, write, except, timeout, th);
 	    if (result < 0) lerrno = errno;
 	}, ubf_select, th);
-    }
-#else
-    BLOCKING_REGION({
-	result = rb_fd_select(n, read, write, except, timeout);
-	if (result < 0) lerrno = errno;
-    }, ubf_select, GET_THREAD());
-#endif
-
     errno = lerrno;
 
     if (result < 0) {
