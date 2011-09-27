@@ -1,3 +1,15 @@
+Tue Sep 27 13:05:39 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: fix int_ossl_asn1_decode0_cons when being
+	  fed arbitrary string values.
+	  Clearly distinguish between the cases "universal, infinite and
+	  not a SEQUENCE or SET" and "universal SEQUENCE or SET, possibly
+	  infinite". Raise error for universal tags that are not infinite.
+	* test/openssl/test_asn1.rb: add a test for this.
+
+	  Thanks to Hiroshi Yoshida for reporting this bug.
+	  [Bug #5363] [ruby-dev:44542]
+
 Sat Sep 17 23:34:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_data_type): inherit the core type in ripper so
