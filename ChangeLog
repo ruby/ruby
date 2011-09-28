@@ -1,4 +1,4 @@
-Wed Sep 28 09:14:16 2011  Nobuyoshi Nakada  <>
+Wed Sep 28 09:20:37 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (pthread_np.h): needs pthread.h to be included
 	  previously on OpenBSD.  a patch by George Koehler <xkernigh AT
