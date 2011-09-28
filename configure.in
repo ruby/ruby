@@ -1793,7 +1793,7 @@ if test x"$enable_pthread" = xyes; then
 	AC_DEFINE(_REENTRANT)
 	AC_DEFINE(_THREAD_SAFE)
 	AC_DEFINE(HAVE_LIBPTHREAD)
-	AC_CHECK_HEADERS(pthread_np.h)
+	AC_CHECK_HEADERS(pthread_np.h, [], [], [@%:@include <pthread.h>])
 	AS_CASE([$pthread_lib],
 	[c],    [],
 	[root], [],
