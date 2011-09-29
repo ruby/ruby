@@ -1201,7 +1201,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 	rb_set_safe_level_force(safe);
 
 	if (state)
-	  JUMP_TAG(state);
+	    JUMP_TAG(state);
 	return val;
     }
 
