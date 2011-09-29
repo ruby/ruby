@@ -3094,6 +3094,15 @@ rb_gc(void)
 }
 
 static inline int
+is_id_value(rb_objspace_t *objspace, VALUE ptr)
+{
+    if (!is_pointer_to_heap(objspace, (void *)ptr)) return FALSE;
+    if (BUILTIN_TYPE(ptr) > T_FIXNUM) return FALSE;
+    if (BUILTIN_TYPE(ptr) == T_ICLASS) return FALSE;
+    return TRUE;
+}
+
+static inline int
 is_dead_object(rb_objspace_t *objspace, VALUE ptr)
 {
     struct heaps_slot *slot = objspace->heap.sweep_slots;
@@ -3105,6 +3114,15 @@ is_dead_object(rb_objspace_t *objspace, VALUE ptr)
 	slot = slot->next;
     }
     return FALSE;
+}
+
+static inline int
+is_live_object(rb_objspace_t *objspace, VALUE ptr)
+{
+    if (BUILTIN_TYPE(ptr) == 0) return FALSE;
+    if (RBASIC(ptr)->klass == 0) return FALSE;
+    if (is_dead_object(objspace, ptr)) return FALSE;
+    return TRUE;
 }
 
 /*
@@ -3149,12 +3167,10 @@ id2ref(VALUE obj, VALUE objid)
 	return ID2SYM(symid);
     }
 
-    if (!is_pointer_to_heap(objspace, (void *)ptr) ||
-	BUILTIN_TYPE(ptr) > T_FIXNUM || BUILTIN_TYPE(ptr) == T_ICLASS) {
+    if (!is_id_value(objspace, ptr)) {
 	rb_raise(rb_eRangeError, "%p is not id value", p0);
     }
-    if (BUILTIN_TYPE(ptr) == 0 || RBASIC(ptr)->klass == 0 ||
-	is_dead_object(objspace, ptr)) {
+    if (!is_live_object(objspace, ptr)) {
 	rb_raise(rb_eRangeError, "%p is recycled object", p0);
     }
     return (VALUE)ptr;
