@@ -397,6 +397,8 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 
 #define is_lazy_sweeping(objspace) ((objspace)->heap.sweep_slots != 0)
 
+#define nonspecial_obj_id(obj) (VALUE)((SIGNED_VALUE)(obj)|FIXNUM_FLAG)
+
 static void rb_objspace_call_finalizer(rb_objspace_t *objspace);
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
@@ -2903,11 +2905,12 @@ run_single_final(VALUE arg)
 }
 
 static void
-run_finalizer(rb_objspace_t *objspace, VALUE objid, VALUE table)
+run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 {
     long i;
     int status;
     VALUE args[3];
+    VALUE objid = nonspecial_obj_id(obj);
 
     if (RARRAY_LEN(table) > 0) {
 	args[1] = rb_obj_freeze(rb_ary_new3(1, objid));
@@ -2928,13 +2931,11 @@ run_finalizer(rb_objspace_t *objspace, VALUE objid, VALUE table)
 static void
 run_final(rb_objspace_t *objspace, VALUE obj)
 {
-    VALUE objid;
     RUBY_DATA_FUNC free_func = 0;
     st_data_t key, table;
 
     objspace->heap.final_num--;
 
-    objid = rb_obj_id(obj);	/* make obj into id */
     RBASIC(obj)->klass = 0;
 
     if (RTYPEDDATA_P(obj)) {
@@ -2949,7 +2950,7 @@ run_final(rb_objspace_t *objspace, VALUE obj)
 
     key = (st_data_t)obj;
     if (st_delete(finalizer_table, &key, &table)) {
-	run_finalizer(objspace, objid, (VALUE)table);
+	run_finalizer(objspace, obj, (VALUE)table);
     }
 }
 
@@ -3033,8 +3034,9 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 	st_foreach(finalizer_table, force_chain_object, (st_data_t)&list);
 	while (list) {
 	    struct force_finalize_list *curr = list;
-	    run_finalizer(objspace, rb_obj_id(curr->obj), curr->table);
-	    st_delete(finalizer_table, (st_data_t*)&curr->obj, 0);
+	    st_data_t obj = (st_data_t)curr->obj;
+	    run_finalizer(objspace, curr->obj, curr->table);
+	    st_delete(finalizer_table, &obj, 0);
 	    list = curr->next;
 	    xfree(curr);
 	}
@@ -3222,7 +3224,7 @@ rb_obj_id(VALUE obj)
     if (SPECIAL_CONST_P(obj)) {
         return LONG2NUM((SIGNED_VALUE)obj);
     }
-    return (VALUE)((SIGNED_VALUE)obj|FIXNUM_FLAG);
+    return nonspecial_obj_id(obj);
 }
 
 static int
