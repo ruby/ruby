@@ -1439,11 +1439,12 @@ module DRb
     # Has a method been included in the list of insecure methods?
     # Or, if a list of drb-safe methods has been defined for the
     # front object, is this method not included in that list?
-    def insecure_method?(msg_id)
+    def insecure_method?(obj, msg_id)
       INSECURE_METHOD.include?(msg_id) ||
-        (@front.respond_to?(:drb_safe_methods_list) &&
-         !@front.drb_safe_methods_list.include?(msg_id))
+        (obj.respond_to?(:drb_safe_methods_list) &&
+         !obj.drb_safe_methods_list.include?(msg_id))
     end
+
 
     # Coerce an object to a string, providing our own representation if
     # to_s is not defined for the object.
@@ -1464,7 +1465,7 @@ module DRb
     def check_insecure_method(obj, msg_id)
       return true if Proc === obj && msg_id == :__drb_yield
       raise(ArgumentError, "#{any_to_s(msg_id)} is not a symbol") unless Symbol == msg_id.class
-      raise(SecurityError, "insecure method `#{msg_id}'") if insecure_method?(msg_id)
+      raise(SecurityError, "insecure method `#{msg_id}'") if insecure_method?(obj, msg_id)
 
       if obj.private_methods.include?(msg_id)
         desc = any_to_s(obj)
