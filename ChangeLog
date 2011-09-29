@@ -1,3 +1,8 @@
+Thu Sep 29 13:17:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (ary_join_1): should not copy the encoding of non-string
+	  element after string element.  [ruby-core:39776] [Bug #5379]
+
 Thu Sep 29 11:53:56 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (slot_sweep, rb_gc_finalize_deferred)

@@ -1659,6 +1659,7 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 	  case T_STRING:
 	  str_join:
 	    rb_str_buf_append(result, val);
+	    *first = FALSE;
 	    break;
 	  case T_ARRAY:
 	    obj = val;
