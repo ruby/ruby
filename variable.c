@@ -161,7 +161,7 @@ classname(VALUE klass)
 	else {
 	    path = (VALUE)n;
 	}
-	if (TYPE(path) != T_STRING) {
+	if (!RB_TYPE_P(path, T_STRING)) {
 	    rb_bug("class path is not set properly");
 	}
 	return path;
@@ -199,7 +199,7 @@ rb_class_path(VALUE klass)
     else {
 	const char *s = "Class";
 
-	if (TYPE(klass) == T_MODULE) {
+	if (RB_TYPE_P(klass, T_MODULE)) {
 	    if (rb_obj_class(klass) == rb_cModule) {
 		s = "Module";
 	    }
@@ -2157,7 +2157,7 @@ rb_mod_public_constant(int argc, VALUE *argv, VALUE obj)
 static VALUE
 original_module(VALUE c)
 {
-    if (TYPE(c) == T_ICLASS)
+    if (RB_TYPE_P(c, T_ICLASS))
 	return RBASIC(c)->klass;
     return c;
 }

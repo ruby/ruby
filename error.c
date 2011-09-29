@@ -1134,7 +1134,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 	if (!NIL_P(error) && st_lookup(syserr_tbl, NUM2LONG(error), &data)) {
 	    klass = (VALUE)data;
 	    /* change class */
-	    if (TYPE(self) != T_OBJECT) { /* insurance to avoid type crash */
+	    if (!RB_TYPE_P(self, T_OBJECT)) { /* insurance to avoid type crash */
 		rb_raise(rb_eTypeError, "invalid instance type");
 	    }
 	    RBASIC(self)->klass = klass;

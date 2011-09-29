@@ -410,7 +410,7 @@ rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type sc
 	    if (((noex & NOEX_MASK) & NOEX_PROTECTED) && scope == CALL_PUBLIC) {
 		VALUE defined_class = klass;
 
-		if (TYPE(defined_class) == T_ICLASS) {
+		if (RB_TYPE_P(defined_class, T_ICLASS)) {
 		    defined_class = RBASIC(defined_class)->klass;
 		}
 
@@ -1063,9 +1063,9 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 		CONST_ID(id_mesg, "mesg");
 		errat = rb_get_backtrace(errinfo);
 		mesg = rb_attr_get(errinfo, id_mesg);
-		if (!NIL_P(errat) && TYPE(errat) == T_ARRAY &&
+		if (!NIL_P(errat) && RB_TYPE_P(errat, T_ARRAY) &&
 		    (bt2 = vm_backtrace(th, -2), RARRAY_LEN(bt2) > 0)) {
-		    if (!NIL_P(mesg) && TYPE(mesg) == T_STRING && !RSTRING_LEN(mesg)) {
+		    if (!NIL_P(mesg) && RB_TYPE_P(mesg, T_STRING) && !RSTRING_LEN(mesg)) {
 			if (OBJ_FROZEN(mesg)) {
 			    VALUE m = rb_str_cat(rb_str_dup(RARRAY_PTR(errat)[0]), ": ", 2);
 			    rb_ivar_set(errinfo, id_mesg, rb_str_append(m, mesg));
@@ -1189,7 +1189,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 	level = 4;
     }
 
-    if (TYPE(cmd) != T_STRING) {
+    if (!RB_TYPE_P(cmd, T_STRING)) {
 	PUSH_TAG();
 	rb_set_safe_level_force(level);
 	if ((state = EXEC_TAG()) == 0) {

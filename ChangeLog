@@ -1,3 +1,8 @@
+Thu Sep 29 20:07:36 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* use RB_TYPE_P which is optimized for constant types, instead of
+	  comparison with TYPE.
+
 Wed Sep 28 09:20:37 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (pthread_np.h): needs pthread.h to be included

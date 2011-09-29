@@ -590,7 +590,7 @@ enumerator_next_values(VALUE obj)
 static VALUE
 ary2sv(VALUE args, int dup)
 {
-    if (TYPE(args) != T_ARRAY)
+    if (!RB_TYPE_P(args, T_ARRAY))
         return args;
 
     switch (RARRAY_LEN(args)) {

@@ -101,7 +101,7 @@ rb_cmpint(VALUE val, VALUE a, VALUE b)
         if (l < 0) return -1;
         return 0;
     }
-    if (TYPE(val) == T_BIGNUM) {
+    if (RB_TYPE_P(val, T_BIGNUM)) {
 	if (BIGZEROP(val)) return 0;
 	if (RBIGNUM_SIGN(val)) return 1;
 	return -1;
@@ -269,7 +269,7 @@ bigfixize(VALUE x)
 static VALUE
 bignorm(VALUE x)
 {
-    if (!FIXNUM_P(x) && TYPE(x) == T_BIGNUM) {
+    if (RB_TYPE_P(x, T_BIGNUM)) {
 	x = bigfixize(bigtrunc(x));
     }
     return x;
@@ -1628,7 +1628,7 @@ rb_big_eq(VALUE x, VALUE y)
 static VALUE
 rb_big_eql(VALUE x, VALUE y)
 {
-    if (TYPE(y) != T_BIGNUM) return Qfalse;
+    if (!RB_TYPE_P(y, T_BIGNUM)) return Qfalse;
     if (RBIGNUM_SIGN(x) != RBIGNUM_SIGN(y)) return Qfalse;
     if (RBIGNUM_LEN(x) != RBIGNUM_LEN(y)) return Qfalse;
     if (MEMCMP(BDIGITS(x),BDIGITS(y),BDIGIT,RBIGNUM_LEN(y)) != 0) return Qfalse;
@@ -3107,7 +3107,7 @@ rb_big_pow(VALUE x, VALUE y)
 static inline VALUE
 bit_coerce(VALUE x)
 {
-    while (!FIXNUM_P(x) && TYPE(x) != T_BIGNUM) {
+    while (!FIXNUM_P(x) && !RB_TYPE_P(x, T_BIGNUM)) {
 	rb_raise(rb_eTypeError,
 		 "can't convert %s into Integer for bitwise arithmetic",
 		 rb_obj_classname(x));
@@ -3434,7 +3434,7 @@ rb_big_lshift(VALUE x, VALUE y)
 	    }
 	    break;
 	}
-	else if (TYPE(y) == T_BIGNUM) {
+	else if (RB_TYPE_P(y, T_BIGNUM)) {
 	    if (!RBIGNUM_SIGN(y)) {
 		VALUE t = check_shiftdown(y, x);
 		if (!NIL_P(t)) return t;
@@ -3498,7 +3498,7 @@ rb_big_rshift(VALUE x, VALUE y)
 	    }
 	    break;
 	}
-	else if (TYPE(y) == T_BIGNUM) {
+	else if (RB_TYPE_P(y, T_BIGNUM)) {
 	    if (RBIGNUM_SIGN(y)) {
 		VALUE t = check_shiftdown(y, x);
 		if (!NIL_P(t)) return t;
@@ -3586,7 +3586,7 @@ rb_big_aref(VALUE x, VALUE y)
     VALUE shift;
     long i, s1, s2;
 
-    if (TYPE(y) == T_BIGNUM) {
+    if (RB_TYPE_P(y, T_BIGNUM)) {
 	if (!RBIGNUM_SIGN(y))
 	    return INT2FIX(0);
 	bigtrunc(y);
@@ -3646,7 +3646,7 @@ rb_big_coerce(VALUE x, VALUE y)
     if (FIXNUM_P(y)) {
 	return rb_assoc_new(rb_int2big(FIX2LONG(y)), x);
     }
-    else if (TYPE(y) == T_BIGNUM) {
+    else if (RB_TYPE_P(y, T_BIGNUM)) {
        return rb_assoc_new(y, x);
     }
     else {

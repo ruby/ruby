@@ -1418,7 +1418,7 @@ check_exec_redirect(VALUE key, VALUE val, VALUE options)
             flags = rb_ary_entry(val, 1);
             if (NIL_P(flags))
                 flags = INT2NUM(O_RDONLY);
-            else if (TYPE(flags) == T_STRING)
+            else if (RB_TYPE_P(flags, T_STRING))
                 flags = INT2NUM(rb_io_modestr_oflags(StringValueCStr(flags)));
             else
                 flags = rb_to_int(flags);
@@ -1433,7 +1433,7 @@ check_exec_redirect(VALUE key, VALUE val, VALUE options)
         index = EXEC_OPTION_OPEN;
         path = val;
         FilePathValue(path);
-        if (TYPE(key) == T_FILE)
+        if (RB_TYPE_P(key, T_FILE))
             key = check_exec_redirect_fd(key, 1);
         if (FIXNUM_P(key) && (FIX2INT(key) == 1 || FIX2INT(key) == 2))
             flags = INT2NUM(O_WRONLY|O_CREAT|O_TRUNC);
@@ -1453,7 +1453,7 @@ check_exec_redirect(VALUE key, VALUE val, VALUE options)
         ary = hide_obj(rb_ary_new());
         rb_ary_store(options, index, ary);
     }
-    if (TYPE(key) != T_ARRAY) {
+    if (!RB_TYPE_P(key, T_ARRAY)) {
         VALUE fd = check_exec_redirect_fd(key, !NIL_P(param));
         rb_ary_push(ary, hide_obj(rb_assoc_new(fd, param)));
     }

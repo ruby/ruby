@@ -1282,7 +1282,7 @@ static VALUE
 vm_getivar(VALUE obj, ID id, IC ic)
 {
 #if USE_IC_FOR_IVAR
-    if (TYPE(obj) ==  T_OBJECT) {
+    if (RB_TYPE_P(obj, T_OBJECT)) {
 	VALUE val = Qundef;
 	VALUE klass = RBASIC(obj)->klass;
 
@@ -1337,7 +1337,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
 
     rb_check_frozen(obj);
 
-    if (TYPE(obj) == T_OBJECT) {
+    if (RB_TYPE_P(obj, T_OBJECT)) {
 	VALUE klass = RBASIC(obj)->klass;
 	st_data_t index;
 
@@ -1645,7 +1645,7 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, rb_num_t num, int flag)
     volatile VALUE tmp_ary;
     rb_num_t len;
 
-    if (TYPE(ary) != T_ARRAY) {
+    if (!RB_TYPE_P(ary, T_ARRAY)) {
 	ary = rb_ary_to_ary(ary);
     }
 

@@ -73,7 +73,7 @@ add(VALUE x, VALUE y)
         if (FIXABLE(l)) return LONG2FIX(l);
         return LONG2NUM(l);
     }
-    if (TYPE(x) == T_BIGNUM) return rb_big_plus(x, y);
+    if (RB_TYPE_P(x, T_BIGNUM)) return rb_big_plus(x, y);
     return rb_funcall(x, '+', 1, y);
 }
 
@@ -85,7 +85,7 @@ sub(VALUE x, VALUE y)
         if (FIXABLE(l)) return LONG2FIX(l);
         return LONG2NUM(l);
     }
-    if (TYPE(x) == T_BIGNUM) return rb_big_minus(x, y);
+    if (RB_TYPE_P(x, T_BIGNUM)) return rb_big_minus(x, y);
     return rb_funcall(x, '-', 1, y);
 }
 
@@ -148,7 +148,7 @@ mul(VALUE x, VALUE y)
 	    return LONG2NUM(z);
 #endif
     }
-    if (TYPE(x) == T_BIGNUM)
+    if (RB_TYPE_P(x, T_BIGNUM))
         return rb_big_mul(x, y);
     return rb_funcall(x, '*', 1, y);
 }
@@ -182,7 +182,7 @@ quo(VALUE x, VALUE y)
         }
     }
     ret = rb_funcall(x, id_quo, 1, y);
-    if (TYPE(ret) == T_RATIONAL &&
+    if (RB_TYPE_P(ret, T_RATIONAL) &&
         RRATIONAL(ret)->den == INT2FIX(1)) {
         ret = RRATIONAL(ret)->num;
     }
@@ -391,7 +391,7 @@ v2w(VALUE v)
     if (FIXNUM_P(v)) {
         return WIDEVAL_WRAP((WIDEVALUE)(SIGNED_WIDEVALUE)(long)v);
     }
-    else if (TYPE(v) == T_BIGNUM &&
+    else if (RB_TYPE_P(v, T_BIGNUM) &&
         RBIGNUM_LEN(v) * sizeof(BDIGIT) <= sizeof(WIDEVALUE)) {
         return v2w_bignum(v);
     }
@@ -451,7 +451,7 @@ wadd(wideval_t wx, wideval_t wy)
     else
 #endif
     x = w2v(wx);
-    if (TYPE(x) == T_BIGNUM) return v2w(rb_big_plus(x, w2v(wy)));
+    if (RB_TYPE_P(x, T_BIGNUM)) return v2w(rb_big_plus(x, w2v(wy)));
     return v2w(rb_funcall(x, '+', 1, w2v(wy)));
 }
 
@@ -467,7 +467,7 @@ wsub(wideval_t wx, wideval_t wy)
     else
 #endif
     x = w2v(wx);
-    if (TYPE(x) == T_BIGNUM) return v2w(rb_big_minus(x, w2v(wy)));
+    if (RB_TYPE_P(x, T_BIGNUM)) return v2w(rb_big_minus(x, w2v(wy)));
     return v2w(rb_funcall(x, '-', 1, w2v(wy)));
 }
 
@@ -525,9 +525,9 @@ wmul(wideval_t wx, wideval_t wy)
     }
 #endif
     x = w2v(wx);
-    if (TYPE(x) == T_BIGNUM) return v2w(rb_big_mul(x, w2v(wy)));
+    if (RB_TYPE_P(x, T_BIGNUM)) return v2w(rb_big_mul(x, w2v(wy)));
     z = rb_funcall(x, '*', 1, w2v(wy));
-    if (TYPE(z) == T_RATIONAL && RRATIONAL(z)->den == INT2FIX(1)) {
+    if (RB_TYPE_P(z, T_RATIONAL) && RRATIONAL(z)->den == INT2FIX(1)) {
         z = RRATIONAL(z)->num;
     }
     return v2w(z);
@@ -552,7 +552,7 @@ wquo(wideval_t wx, wideval_t wy)
     x = w2v(wx);
     y = w2v(wy);
     ret = rb_funcall(x, id_quo, 1, y);
-    if (TYPE(ret) == T_RATIONAL &&
+    if (RB_TYPE_P(ret, T_RATIONAL) &&
         RRATIONAL(ret)->den == INT2FIX(1)) {
         ret = RRATIONAL(ret)->num;
     }
@@ -2536,7 +2536,7 @@ static const char months[][4] = {
 static int
 obj2int(VALUE obj)
 {
-    if (TYPE(obj) == T_STRING) {
+    if (RB_TYPE_P(obj, T_STRING)) {
 	obj = rb_str_to_inum(obj, 10, FALSE);
     }
 
@@ -2546,7 +2546,7 @@ obj2int(VALUE obj)
 static VALUE
 obj2vint(VALUE obj)
 {
-    if (TYPE(obj) == T_STRING) {
+    if (RB_TYPE_P(obj, T_STRING)) {
 	obj = rb_str_to_inum(obj, 10, FALSE);
     }
     else {
@@ -2561,7 +2561,7 @@ obj2subsecx(VALUE obj, VALUE *subsecx)
 {
     VALUE subsec;
 
-    if (TYPE(obj) == T_STRING) {
+    if (RB_TYPE_P(obj, T_STRING)) {
 	obj = rb_str_to_inum(obj, 10, FALSE);
         *subsecx = INT2FIX(0);
         return NUM2INT(obj);
@@ -2575,7 +2575,7 @@ obj2subsecx(VALUE obj, VALUE *subsecx)
 static long
 usec2subsecx(VALUE obj)
 {
-    if (TYPE(obj) == T_STRING) {
+    if (RB_TYPE_P(obj, T_STRING)) {
 	obj = rb_str_to_inum(obj, 10, FALSE);
     }
 
@@ -3216,7 +3216,7 @@ time_to_r(VALUE time)
 
     GetTimeval(time, tobj);
     v = w2v(rb_time_unmagnify(tobj->timew));
-    if (TYPE(v) != T_RATIONAL) {
+    if (!RB_TYPE_P(v, T_RATIONAL)) {
         v = rb_Rational1(v);
     }
     return v;
@@ -4642,7 +4642,7 @@ time_mdump(VALUE time)
     str = rb_str_new(buf, 8);
     rb_copy_generic_ivar(str, time);
     if (!rb_equal(nano, INT2FIX(0))) {
-        if (TYPE(nano) == T_RATIONAL) {
+        if (RB_TYPE_P(nano, T_RATIONAL)) {
             rb_ivar_set(str, id_nano_num, RRATIONAL(nano)->num);
             rb_ivar_set(str, id_nano_den, RRATIONAL(nano)->den);
         }

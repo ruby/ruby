@@ -43,7 +43,7 @@ rb_struct_s_members(VALUE klass)
     if (NIL_P(members)) {
 	rb_raise(rb_eTypeError, "uninitialized struct");
     }
-    if (TYPE(members) != T_ARRAY) {
+    if (!RB_TYPE_P(members, T_ARRAY)) {
 	rb_raise(rb_eTypeError, "corrupted struct");
     }
     return members;
@@ -354,7 +354,7 @@ num_members(VALUE klass)
 {
     VALUE members;
     members = struct_ivar_get(klass, id_members);
-    if (TYPE(members) != T_ARRAY) {
+    if (!RB_TYPE_P(members, T_ARRAY)) {
 	rb_raise(rb_eTypeError, "broken members");
     }
     return RARRAY_LEN(members);
@@ -644,7 +644,7 @@ rb_struct_aref(VALUE s, VALUE idx)
 {
     long i;
 
-    if (TYPE(idx) == T_STRING || TYPE(idx) == T_SYMBOL) {
+    if (RB_TYPE_P(idx, T_STRING) || RB_TYPE_P(idx, T_SYMBOL)) {
 	return rb_struct_aref_id(s, rb_to_id(idx));
     }
 
@@ -709,7 +709,7 @@ rb_struct_aset(VALUE s, VALUE idx, VALUE val)
 {
     long i;
 
-    if (TYPE(idx) == T_STRING || TYPE(idx) == T_SYMBOL) {
+    if (RB_TYPE_P(idx, T_STRING) || RB_TYPE_P(idx, T_SYMBOL)) {
 	return rb_struct_aset_id(s, rb_to_id(idx), val);
     }
 
@@ -827,7 +827,7 @@ static VALUE
 rb_struct_equal(VALUE s, VALUE s2)
 {
     if (s == s2) return Qtrue;
-    if (TYPE(s2) != T_STRUCT) return Qfalse;
+    if (!RB_TYPE_P(s2, T_STRUCT)) return Qfalse;
     if (rb_obj_class(s) != rb_obj_class(s2)) return Qfalse;
     if (RSTRUCT_LEN(s) != RSTRUCT_LEN(s2)) {
 	rb_bug("inconsistent struct"); /* should never happen */
@@ -897,7 +897,7 @@ static VALUE
 rb_struct_eql(VALUE s, VALUE s2)
 {
     if (s == s2) return Qtrue;
-    if (TYPE(s2) != T_STRUCT) return Qfalse;
+    if (!RB_TYPE_P(s2, T_STRUCT)) return Qfalse;
     if (rb_obj_class(s) != rb_obj_class(s2)) return Qfalse;
     if (RSTRUCT_LEN(s) != RSTRUCT_LEN(s2)) {
 	rb_bug("inconsistent struct"); /* should never happen */

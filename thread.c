@@ -493,7 +493,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 
 	main_th = th->vm->main_thread;
 	if (th != main_th) {
-	    if (TYPE(errinfo) == T_OBJECT) {
+	    if (RB_TYPE_P(errinfo, T_OBJECT)) {
 		/* treat with normal error object */
 		rb_threadptr_raise(main_th, 1, &errinfo);
 	    }
@@ -3738,7 +3738,7 @@ recursive_list_access(void)
     volatile VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
     VALUE sym = ID2SYM(rb_frame_this_func());
     VALUE list;
-    if (NIL_P(hash) || TYPE(hash) != T_HASH) {
+    if (NIL_P(hash) || !RB_TYPE_P(hash, T_HASH)) {
 	hash = rb_hash_new();
 	OBJ_UNTRUST(hash);
 	rb_thread_local_aset(rb_thread_current(), recursive_key, hash);
@@ -3747,7 +3747,7 @@ recursive_list_access(void)
     else {
 	list = rb_hash_aref(hash, sym);
     }
-    if (NIL_P(list) || TYPE(list) != T_HASH) {
+    if (NIL_P(list) || !RB_TYPE_P(list, T_HASH)) {
 	list = rb_hash_new();
 	OBJ_UNTRUST(list);
 	rb_hash_aset(hash, sym, list);
@@ -3768,7 +3768,7 @@ recursive_check(VALUE list, VALUE obj_id, VALUE paired_obj_id)
     if (pair_list == Qundef)
 	return Qfalse;
     if (paired_obj_id) {
-	if (TYPE(pair_list) != T_HASH) {
+	if (!RB_TYPE_P(pair_list, T_HASH)) {
 	if (pair_list != paired_obj_id)
 	    return Qfalse;
 	}
@@ -3801,7 +3801,7 @@ recursive_push(VALUE list, VALUE obj, VALUE paired_obj)
 	rb_hash_aset(list, obj, paired_obj);
     }
     else {
-	if (TYPE(pair_list) != T_HASH){
+	if (!RB_TYPE_P(pair_list, T_HASH)){
 	    VALUE other_paired_obj = pair_list;
 	    pair_list = rb_hash_new();
 	    OBJ_UNTRUST(pair_list);
@@ -3831,7 +3831,7 @@ recursive_pop(VALUE list, VALUE obj, VALUE paired_obj)
 	    rb_raise(rb_eTypeError, "invalid inspect_tbl pair_list for %s in %s",
 		     StringValuePtr(symname), StringValuePtr(thrname));
 	}
-	if (TYPE(pair_list) == T_HASH) {
+	if (RB_TYPE_P(pair_list, T_HASH)) {
 	    rb_hash_delete(pair_list, paired_obj);
 	    if (!RHASH_EMPTY_P(pair_list)) {
 		return; /* keep hash until is empty */
@@ -4424,7 +4424,7 @@ call_trace_proc(VALUE args, int tracing)
     if (id == ID_ALLOCATOR)
       return Qnil;
     if (klass) {
-	if (TYPE(klass) == T_ICLASS) {
+	if (RB_TYPE_P(klass, T_ICLASS)) {
 	    klass = RBASIC(klass)->klass;
 	}
 	else if (FL_TEST(klass, FL_SINGLETON)) {

@@ -122,7 +122,7 @@ void
 rb_check_safe_str(VALUE x)
 {
     rb_check_safe_obj(x);
-    if (TYPE(x) != T_STRING) {
+    if (!RB_TYPE_P(x, T_STRING)) {
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected String)",
 		 rb_obj_classname(x));
     }

@@ -951,7 +951,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 	    }
 	    rb_name_error(id, "method `%s' for %s `%s' is %s",
 			  rb_id2name(id),
-			  (TYPE(klass) == T_MODULE) ? "module" : "class",
+			  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
 			  rb_class2name(klass),
 			  v);
 	}
@@ -965,11 +965,11 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     klass = me->klass;
 
     while (rclass != klass &&
-	   (FL_TEST(rclass, FL_SINGLETON) || TYPE(rclass) == T_ICLASS)) {
+	   (FL_TEST(rclass, FL_SINGLETON) || RB_TYPE_P(rclass, T_ICLASS))) {
 	rclass = RCLASS_SUPER(rclass);
     }
 
-    if (TYPE(klass) == T_ICLASS) {
+    if (RB_TYPE_P(klass, T_ICLASS)) {
 	klass = RBASIC(klass)->klass;
     }
 

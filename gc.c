@@ -3265,7 +3265,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
     VALUE hash;
 
     if (rb_scan_args(argc, argv, "01", &hash) == 1) {
-        if (TYPE(hash) != T_HASH)
+        if (!RB_TYPE_P(hash, T_HASH))
             rb_raise(rb_eTypeError, "non-hash given");
     }
 
@@ -3384,7 +3384,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
     VALUE hash;
 
     if (rb_scan_args(argc, argv, "01", &hash) == 1) {
-        if (TYPE(hash) != T_HASH)
+        if (!RB_TYPE_P(hash, T_HASH))
             rb_raise(rb_eTypeError, "non-hash given");
     }
 

@@ -169,7 +169,7 @@ ruby_cleanup(volatile int ex)
 	if (!RTEST(err)) continue;
 
 	/* th->errinfo contains a NODE while break'ing */
-	if (TYPE(err) == T_NODE) continue;
+	if (RB_TYPE_P(err, T_NODE)) continue;
 
 	if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
 	    ex = sysexit_status(err);

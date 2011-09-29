@@ -210,7 +210,7 @@ class2path(VALUE klass)
     VALUE path = rb_class_path(klass);
     const char *n;
 
-    n = must_not_be_anonymous((TYPE(klass) == T_CLASS ? "class" : "module"), path);
+    n = must_not_be_anonymous((RB_TYPE_P(klass, T_CLASS) ? "class" : "module"), path);
     if (rb_path_to_class(path) != rb_class_real(klass)) {
 	rb_raise(rb_eTypeError, "%s can't be referred to", n);
     }
@@ -656,7 +656,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 	    v = rb_funcall(obj, s_dump, 1, INT2NUM(limit));
 	    check_dump_arg(arg, s_dump);
-	    if (TYPE(v) != T_STRING) {
+	    if (!RB_TYPE_P(v, T_STRING)) {
 		rb_raise(rb_eTypeError, "_dump() must return string");
 	    }
 	    hasiv = has_ivars(obj, ivtbl);
@@ -1271,7 +1271,7 @@ path2class(VALUE path)
 {
     VALUE v = rb_path_to_class(path);
 
-    if (TYPE(v) != T_CLASS) {
+    if (!RB_TYPE_P(v, T_CLASS)) {
 	rb_raise(rb_eArgError, "%.*s does not refer to class",
 		 (int)RSTRING_LEN(path), RSTRING_PTR(path));
     }
@@ -1283,7 +1283,7 @@ path2module(VALUE path)
 {
     VALUE v = rb_path_to_class(path);
 
-    if (TYPE(v) != T_MODULE) {
+    if (!RB_TYPE_P(v, T_MODULE)) {
 	rb_raise(rb_eArgError, "%.*s does not refer to module",
 		 (int)RSTRING_LEN(path), RSTRING_PTR(path));
     }
@@ -1364,11 +1364,11 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		rb_raise(rb_eTypeError, "singleton can't be loaded");
 	    }
 	    v = r_object0(arg, 0, extmod);
-	    if (rb_special_const_p(v) || TYPE(v) == T_OBJECT || TYPE(v) == T_CLASS) {
+	    if (rb_special_const_p(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
 	      format_error:
 		rb_raise(rb_eArgError, "dump format error (user class)");
 	    }
-	    if (TYPE(v) == T_MODULE || !RTEST(rb_class_inherited_p(c, RBASIC(v)->klass))) {
+	    if (RB_TYPE_P(v, T_MODULE) || !RTEST(rb_class_inherited_p(c, RBASIC(v)->klass))) {
 		VALUE tmp = rb_obj_alloc(c);
 
 		if (TYPE(v) != TYPE(tmp)) goto format_error;
@@ -1554,7 +1554,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    long len = r_long(arg);
 
             v = rb_obj_alloc(klass);
-	    if (TYPE(v) != T_STRUCT) {
+	    if (!RB_TYPE_P(v, T_STRUCT)) {
 		rb_raise(rb_eTypeError, "class %s not a struct", rb_class2name(klass));
 	    }
 	    mem = rb_struct_s_members(klass);
@@ -1630,7 +1630,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	{
 	    st_index_t idx = r_prepare(arg);
             v = obj_alloc_by_path(r_unique(arg), arg);
-	    if (TYPE(v) != T_OBJECT) {
+	    if (!RB_TYPE_P(v, T_OBJECT)) {
 		rb_raise(rb_eArgError, "dump format error");
 	    }
 	    v = r_entry0(v, idx, arg);
@@ -1654,7 +1654,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	   else {
 	       v = rb_obj_alloc(klass);
 	   }
-           if (TYPE(v) != T_DATA) {
+           if (!RB_TYPE_P(v, T_DATA)) {
                rb_raise(rb_eArgError, "dump format error");
            }
            v = r_entry(v, arg);

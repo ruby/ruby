@@ -121,7 +121,7 @@ f_mul(VALUE x, VALUE y)
     if (FIXNUM_P(y)) {
 	long iy = FIX2LONG(y);
 	if (iy == 0) {
-	    if (FIXNUM_P(x) || TYPE(x) == T_BIGNUM)
+	    if (FIXNUM_P(x) || RB_TYPE_P(x, T_BIGNUM))
 		return ZERO;
 	}
 	else if (iy == 1)
@@ -130,7 +130,7 @@ f_mul(VALUE x, VALUE y)
     else if (FIXNUM_P(x)) {
 	long ix = FIX2LONG(x);
 	if (ix == 0) {
-	    if (FIXNUM_P(y) || TYPE(y) == T_BIGNUM)
+	    if (FIXNUM_P(y) || RB_TYPE_P(y, T_BIGNUM))
 		return ZERO;
 	}
 	else if (ix == 1)
@@ -166,14 +166,14 @@ fun1(real_p)
 inline static VALUE
 f_to_i(VALUE x)
 {
-    if (TYPE(x) == T_STRING)
+    if (RB_TYPE_P(x, T_STRING))
 	return rb_str_to_inum(x, 10, 0);
     return rb_funcall(x, id_to_i, 0);
 }
 inline static VALUE
 f_to_f(VALUE x)
 {
-    if (TYPE(x) == T_STRING)
+    if (RB_TYPE_P(x, T_STRING))
 	return DBL2NUM(rb_str_to_dbl(x, 0));
     return rb_funcall(x, id_to_f, 0);
 }
@@ -944,7 +944,7 @@ nucomp_coerce(VALUE self, VALUE other)
 {
     if (k_numeric_p(other) && f_real_p(other))
 	return rb_assoc_new(f_complex_new_bang1(CLASS_OF(self), other), self);
-    if (TYPE(other) == T_COMPLEX)
+    if (RB_TYPE_P(other, T_COMPLEX))
 	return rb_assoc_new(other, self);
 
     rb_raise(rb_eTypeError, "%s can't be coerced into %s",

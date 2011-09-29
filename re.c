@@ -2587,7 +2587,7 @@ static VALUE
 rb_reg_equal(VALUE re1, VALUE re2)
 {
     if (re1 == re2) return Qtrue;
-    if (TYPE(re2) != T_REGEXP) return Qfalse;
+    if (!RB_TYPE_P(re2, T_REGEXP)) return Qfalse;
     rb_reg_check(re1); rb_reg_check(re2);
     if (FL_TEST(re1, KCODE_FIXED) != FL_TEST(re2, KCODE_FIXED)) return Qfalse;
     if (RREGEXP(re1)->ptr->options != RREGEXP(re2)->ptr->options) return Qfalse;
@@ -2635,7 +2635,7 @@ match_equal(VALUE match1, VALUE match2)
 {
     const struct re_registers *regs1, *regs2;
     if (match1 == match2) return Qtrue;
-    if (TYPE(match2) != T_MATCH) return Qfalse;
+    if (!RB_TYPE_P(match2, T_MATCH)) return Qfalse;
     if (!rb_str_equal(RMATCH(match1)->str, RMATCH(match2)->str)) return Qfalse;
     if (!rb_reg_equal(RMATCH(match1)->regexp, RMATCH(match2)->regexp)) return Qfalse;
     regs1 = RMATCH_REGS(match1);
@@ -2795,7 +2795,7 @@ rb_reg_match2(VALUE re)
     long start;
     VALUE line = rb_lastline_get();
 
-    if (TYPE(line) != T_STRING) {
+    if (!RB_TYPE_P(line, T_STRING)) {
 	rb_backref_set(Qnil);
 	return Qnil;
     }

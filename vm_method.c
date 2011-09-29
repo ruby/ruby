@@ -521,7 +521,7 @@ rb_export_method(VALUE klass, ID name, rb_method_flag_t noex)
     }
 
     me = search_method(klass, name);
-    if (!me && TYPE(klass) == T_MODULE) {
+    if (!me && RB_TYPE_P(klass, T_MODULE)) {
 	me = search_method(rb_cObject, name);
     }
 
@@ -639,7 +639,7 @@ rb_undef(VALUE klass, ID id)
 		s0 = "";
 	    }
 	}
-	else if (TYPE(c) == T_MODULE) {
+	else if (RB_TYPE_P(c, T_MODULE)) {
 	    s0 = " module";
 	}
 	rb_name_error(id, "undefined method `%s' for%s `%s'",
@@ -922,7 +922,7 @@ rb_alias(VALUE klass, ID name, ID def)
     orig_me = search_method(klass, def);
 
     if (UNDEFINED_METHOD_ENTRY_P(orig_me)) {
-	if ((TYPE(klass) != T_MODULE) ||
+	if ((!RB_TYPE_P(klass, T_MODULE)) ||
 	    (orig_me = search_method(rb_cObject, def), UNDEFINED_METHOD_ENTRY_P(orig_me))) {
 	    rb_print_undef(klass, def, 0);
 	}
@@ -1176,7 +1176,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
     ID id;
     const rb_method_entry_t *me;
 
-    if (TYPE(module) != T_MODULE) {
+    if (!RB_TYPE_P(module, T_MODULE)) {
 	rb_raise(rb_eTypeError, "module_function must be called for modules");
     }
 

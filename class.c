@@ -93,7 +93,7 @@ rb_class_boot(VALUE super)
 void
 rb_check_inheritable(VALUE super)
 {
-    if (TYPE(super) != T_CLASS) {
+    if (!RB_TYPE_P(super, T_CLASS)) {
 	rb_raise(rb_eTypeError, "superclass must be a Class (%s given)",
 		 rb_obj_classname(super));
     }
@@ -463,7 +463,7 @@ rb_define_class(const char *name, VALUE super)
     id = rb_intern(name);
     if (rb_const_defined(rb_cObject, id)) {
 	klass = rb_const_get(rb_cObject, id);
-	if (TYPE(klass) != T_CLASS) {
+	if (!RB_TYPE_P(klass, T_CLASS)) {
 	    rb_raise(rb_eTypeError, "%s is not a class", name);
 	}
 	if (rb_class_real(RCLASS_SUPER(klass)) != super) {
@@ -530,7 +530,7 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
 
     if (rb_const_defined_at(outer, id)) {
 	klass = rb_const_get_at(outer, id);
-	if (TYPE(klass) != T_CLASS) {
+	if (!RB_TYPE_P(klass, T_CLASS)) {
 	    rb_raise(rb_eTypeError, "%s is not a class", rb_id2name(id));
 	}
 	if (rb_class_real(RCLASS_SUPER(klass)) != super) {
@@ -581,7 +581,7 @@ rb_define_module(const char *name)
     id = rb_intern(name);
     if (rb_const_defined(rb_cObject, id)) {
 	module = rb_const_get(rb_cObject, id);
-	if (TYPE(module) == T_MODULE)
+	if (RB_TYPE_P(module, T_MODULE))
 	    return module;
 	rb_raise(rb_eTypeError, "%s is not a module", rb_obj_classname(module));
     }
@@ -605,7 +605,7 @@ rb_define_module_id_under(VALUE outer, ID id)
 
     if (rb_const_defined_at(outer, id)) {
 	module = rb_const_get_at(outer, id);
-	if (TYPE(module) == T_MODULE)
+	if (RB_TYPE_P(module, T_MODULE))
 	    return module;
 	rb_raise(rb_eTypeError, "%s::%s is not a module",
 		 rb_class2name(outer), rb_obj_classname(module));
@@ -636,7 +636,7 @@ include_class_new(VALUE module, VALUE super)
     RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
     RCLASS_M_TBL(klass) = RCLASS_M_TBL(module);
     RCLASS_SUPER(klass) = super;
-    if (TYPE(module) == T_ICLASS) {
+    if (RB_TYPE_P(module, T_ICLASS)) {
 	RBASIC(klass)->klass = RBASIC(module)->klass;
     }
     else {
@@ -659,7 +659,7 @@ rb_include_module(VALUE klass, VALUE module)
 	rb_secure(4);
     }
 
-    if (TYPE(module) != T_MODULE) {
+    if (!RB_TYPE_P(module, T_MODULE)) {
 	Check_Type(module, T_MODULE);
     }
 
@@ -791,7 +791,7 @@ rb_mix_module(VALUE klass, VALUE module, st_table *constants, st_table *methods)
 	rb_secure(4);
     }
 
-    if (TYPE(module) != T_MODULE) {
+    if (!RB_TYPE_P(module, T_MODULE)) {
 	Check_Type(module, T_MODULE);
     }
 
@@ -1248,7 +1248,7 @@ rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
 	klass = RCLASS_SUPER(klass);
     }
     if (RTEST(recur)) {
-	while (klass && (FL_TEST(klass, FL_SINGLETON) || TYPE(klass) == T_ICLASS)) {
+	while (klass && (FL_TEST(klass, FL_SINGLETON) || RB_TYPE_P(klass, T_ICLASS))) {
 	    st_foreach(RCLASS_M_TBL(klass), method_entry_i, (st_data_t)list);
 	    klass = RCLASS_SUPER(klass);
 	}
@@ -1435,7 +1435,7 @@ rb_singleton_class(VALUE obj)
     VALUE klass = singleton_class_of(obj);
 
     /* ensures an exposed class belongs to its own eigenclass */
-    if (TYPE(obj) == T_CLASS) (void)ENSURE_EIGENCLASS(klass);
+    if (RB_TYPE_P(obj, T_CLASS)) (void)ENSURE_EIGENCLASS(klass);
 
     return klass;
 }

@@ -854,11 +854,11 @@ rb_obj_as_string(VALUE obj)
 {
     VALUE str;
 
-    if (TYPE(obj) == T_STRING) {
+    if (RB_TYPE_P(obj, T_STRING)) {
 	return obj;
     }
     str = rb_funcall(obj, id_to_s, 0);
-    if (TYPE(str) != T_STRING)
+    if (!RB_TYPE_P(str, T_STRING))
 	return rb_any_to_s(obj);
     if (OBJ_TAINTED(obj)) OBJ_TAINT(str);
     return str;
@@ -1404,7 +1404,7 @@ VALUE
 rb_string_value(volatile VALUE *ptr)
 {
     VALUE s = *ptr;
-    if (TYPE(s) != T_STRING) {
+    if (!RB_TYPE_P(s, T_STRING)) {
 	s = rb_str_to_str(s);
 	*ptr = s;
     }
@@ -2075,7 +2075,7 @@ rb_str_concat(VALUE str1, VALUE str2)
 {
     unsigned int lc;
 
-    if (FIXNUM_P(str2) || TYPE(str2) == T_BIGNUM) {
+    if (FIXNUM_P(str2) || RB_TYPE_P(str2, T_BIGNUM)) {
 	if (rb_num_to_uint(str2, &lc) == 0) {
 	}
 	else if (FIXNUM_P(str2)) {
@@ -2250,7 +2250,7 @@ VALUE
 rb_str_equal(VALUE str1, VALUE str2)
 {
     if (str1 == str2) return Qtrue;
-    if (TYPE(str2) != T_STRING) {
+    if (!RB_TYPE_P(str2, T_STRING)) {
 	if (!rb_respond_to(str2, rb_intern("to_str"))) {
 	    return Qfalse;
 	}
@@ -2270,7 +2270,7 @@ static VALUE
 rb_str_eql(VALUE str1, VALUE str2)
 {
     if (str1 == str2) return Qtrue;
-    if (TYPE(str2) != T_STRING) return Qfalse;
+    if (!RB_TYPE_P(str2, T_STRING)) return Qfalse;
     return str_eql(str1, str2);
 }
 
@@ -2302,7 +2302,7 @@ rb_str_cmp_m(VALUE str1, VALUE str2)
 {
     long result;
 
-    if (TYPE(str2) != T_STRING) {
+    if (!RB_TYPE_P(str2, T_STRING)) {
 	if (!rb_respond_to(str2, rb_intern("to_str"))) {
 	    return Qnil;
 	}
@@ -2472,7 +2472,7 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
     if (pos < 0) {
 	pos += str_strlen(str, STR_ENC_GET(str));
 	if (pos < 0) {
-	    if (TYPE(sub) == T_REGEXP) {
+	    if (RB_TYPE_P(sub, T_REGEXP)) {
 		rb_backref_set(Qnil);
 	    }
 	    return Qnil;
@@ -2581,7 +2581,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 	if (pos < 0) {
 	    pos += len;
 	    if (pos < 0) {
-		if (TYPE(sub) == T_REGEXP) {
+		if (RB_TYPE_P(sub, T_REGEXP)) {
 		    rb_backref_set(Qnil);
 		}
 		return Qnil;
@@ -5751,7 +5751,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     }
     else {
       fs_set:
-	if (TYPE(spat) == T_STRING) {
+	if (RB_TYPE_P(spat, T_STRING)) {
 	    rb_encoding *enc2 = STR_ENC_GET(spat);
 
 	    split_type = string;
@@ -7064,7 +7064,7 @@ rb_str_partition(VALUE str, VALUE sep)
     long pos;
     int regex = FALSE;
 
-    if (TYPE(sep) == T_REGEXP) {
+    if (RB_TYPE_P(sep, T_REGEXP)) {
 	pos = rb_reg_search(sep, str, 0, 0);
 	regex = TRUE;
     }
@@ -7114,7 +7114,7 @@ rb_str_rpartition(VALUE str, VALUE sep)
     long pos = RSTRING_LEN(str);
     int regex = FALSE;
 
-    if (TYPE(sep) == T_REGEXP) {
+    if (RB_TYPE_P(sep, T_REGEXP)) {
 	pos = rb_reg_search(sep, str, pos, 1);
 	regex = TRUE;
     }
@@ -7206,7 +7206,7 @@ rb_str_end_with(int argc, VALUE *argv, VALUE str)
 void
 rb_str_setter(VALUE val, ID id, VALUE *var)
 {
-    if (!NIL_P(val) && TYPE(val) != T_STRING) {
+    if (!NIL_P(val) && !RB_TYPE_P(val, T_STRING)) {
 	rb_raise(rb_eTypeError, "value of %s must be String", rb_id2name(id));
     }
     *var = val;

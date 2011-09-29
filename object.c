@@ -432,7 +432,7 @@ inspect_obj(VALUE obj, VALUE str, int recur)
 static VALUE
 rb_obj_inspect(VALUE obj)
 {
-    if (TYPE(obj) == T_OBJECT && rb_obj_basic_to_s_p(obj)) {
+    if (RB_TYPE_P(obj, T_OBJECT) && rb_obj_basic_to_s_p(obj)) {
         int has_ivar = 0;
         VALUE *ptr = ROBJECT_IVPTR(obj);
         long len = ROBJECT_NUMIV(obj);
@@ -1661,7 +1661,7 @@ rb_class_superclass(VALUE klass)
 	if (klass == rb_cBasicObject) return Qnil;
 	rb_raise(rb_eTypeError, "uninitialized class");
     }
-    while (TYPE(super) == T_ICLASS) {
+    while (RB_TYPE_P(super, T_ICLASS)) {
 	super = RCLASS_SUPER(super);
     }
     if (!super) {
@@ -2157,7 +2157,7 @@ rb_to_integer(VALUE val, const char *method)
     VALUE v;
 
     if (FIXNUM_P(val)) return val;
-    if (TYPE(val) == T_BIGNUM) return val;
+    if (RB_TYPE_P(val, T_BIGNUM)) return val;
     v = convert_type(val, "Integer", method, TRUE);
     if (!rb_obj_is_kind_of(v, rb_cInteger)) {
 	const char *cname = rb_obj_classname(val);
@@ -2173,7 +2173,7 @@ rb_check_to_integer(VALUE val, const char *method)
     VALUE v;
 
     if (FIXNUM_P(val)) return val;
-    if (TYPE(val) == T_BIGNUM) return val;
+    if (RB_TYPE_P(val, T_BIGNUM)) return val;
     v = convert_type(val, "Integer", method, FALSE);
     if (!rb_obj_is_kind_of(v, rb_cInteger)) {
 	return Qnil;
@@ -2437,7 +2437,7 @@ rb_f_float(VALUE obj, VALUE arg)
 VALUE
 rb_to_float(VALUE val)
 {
-    if (TYPE(val) == T_FLOAT) return val;
+    if (RB_TYPE_P(val, T_FLOAT)) return val;
     if (!rb_obj_is_kind_of(val, rb_cNumeric)) {
 	rb_raise(rb_eTypeError, "can't convert %s into Float",
 		 NIL_P(val) ? "nil" :
@@ -2451,7 +2451,7 @@ rb_to_float(VALUE val)
 VALUE
 rb_check_to_float(VALUE val)
 {
-    if (TYPE(val) == T_FLOAT) return val;
+    if (RB_TYPE_P(val, T_FLOAT)) return val;
     if (!rb_obj_is_kind_of(val, rb_cNumeric)) {
 	return Qnil;
     }

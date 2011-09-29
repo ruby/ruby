@@ -2294,7 +2294,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     if (!ec)
         rb_exc_raise(rb_econv_open_exc(src_encoding, dst_encoding, ecflags));
 
-    if (!NIL_P(ecopts) && TYPE(ecopts) == T_HASH) {
+    if (!NIL_P(ecopts) && RB_TYPE_P(ecopts, T_HASH)) {
 	fallback = rb_hash_aref(ecopts, sym_fallback);
 	if (RB_TYPE_P(fallback, T_HASH)) {
 	    fallback_func = hash_fallback;
@@ -2471,7 +2471,7 @@ econv_opts(VALUE opt, int ecflags)
         else if (v==sym_attr) {
             ecflags |= ECONV_XML_ATTR_CONTENT_DECORATOR|ECONV_XML_ATTR_QUOTE_DECORATOR|ECONV_UNDEF_HEX_CHARREF;
         }
-        else if (TYPE(v) == T_SYMBOL) {
+        else if (RB_TYPE_P(v, T_SYMBOL)) {
             rb_raise(rb_eArgError, "unexpected value for xml option: %s", rb_id2name(SYM2ID(v)));
         }
         else {
@@ -2593,7 +2593,7 @@ rb_econv_open_opts(const char *source_encoding, const char *destination_encoding
         replacement = Qnil;
     }
     else {
-        if (TYPE(opthash) != T_HASH || !OBJ_FROZEN(opthash))
+        if (!RB_TYPE_P(opthash, T_HASH) || !OBJ_FROZEN(opthash))
             rb_bug("rb_econv_open_opts called with invalid opthash");
         replacement = rb_hash_aref(opthash, sym_replace);
     }
@@ -3057,7 +3057,7 @@ decorate_convpath(VALUE convpath, int ecflags)
     len = n = RARRAY_LENINT(convpath);
     if (n != 0) {
         VALUE pair = RARRAY_PTR(convpath)[n-1];
-	if (TYPE(pair) == T_ARRAY) {
+	if (RB_TYPE_P(pair, T_ARRAY)) {
 	    const char *sname = rb_enc_name(rb_to_encoding(RARRAY_PTR(pair)[0]));
 	    const char *dname = rb_enc_name(rb_to_encoding(RARRAY_PTR(pair)[1]));
 	    transcoder_entry_t *entry = get_transcoder_entry(sname, dname);

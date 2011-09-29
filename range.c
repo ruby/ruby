@@ -865,10 +865,10 @@ range_include(VALUE range, VALUE val)
 	}
 	return Qfalse;
     }
-    else if (TYPE(beg) == T_STRING && TYPE(end) == T_STRING &&
+    else if (RB_TYPE_P(beg, T_STRING) && RB_TYPE_P(end, T_STRING) &&
 	     RSTRING_LEN(beg) == 1 && RSTRING_LEN(end) == 1) {
 	if (NIL_P(val)) return Qfalse;
-	if (TYPE(val) == T_STRING) {
+	if (RB_TYPE_P(val, T_STRING)) {
 	    if (RSTRING_LEN(val) == 0 || RSTRING_LEN(val) > 1)
 		return Qfalse;
 	    else {
@@ -939,7 +939,7 @@ range_dumper(VALUE range)
 static VALUE
 range_loader(VALUE range, VALUE obj)
 {
-    if (TYPE(obj) != T_OBJECT || RBASIC(obj)->klass != rb_cObject) {
+    if (!RB_TYPE_P(obj, T_OBJECT) || RBASIC(obj)->klass != rb_cObject) {
         rb_raise(rb_eTypeError, "not a dumped range object");
     }
 

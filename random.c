@@ -1035,7 +1035,7 @@ rand_range(struct MT* mt, VALUE range)
 
     if ((v = vmax = range_values(range, &beg, &end, &excl)) == Qfalse)
 	return Qfalse;
-    if (TYPE(vmax) != T_FLOAT && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
+    if (!RB_TYPE_P(vmax, T_FLOAT) && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
 	long max;
 	vmax = v;
 	v = Qnil;
@@ -1149,7 +1149,7 @@ random_rand(int argc, VALUE *argv, VALUE obj)
     if (NIL_P(vmax)) {
 	v = Qnil;
     }
-    else if (TYPE(vmax) != T_FLOAT && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
+    else if (!RB_TYPE_P(vmax, T_FLOAT) && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
 	v = rand_int(&rnd->mt, v, 1);
     }
     else if (v = rb_check_to_float(vmax), !NIL_P(v)) {

@@ -1053,7 +1053,7 @@ rb_io_flush(VALUE io)
 {
     rb_io_t *fptr;
 
-    if (TYPE(io) != T_FILE) {
+    if (!RB_TYPE_P(io, T_FILE)) {
         return rb_funcall(io, id_flush, 0);
     }
 
@@ -2117,7 +2117,7 @@ rb_io_write_nonblock(VALUE io, VALUE str)
     long n;
 
     rb_secure(4);
-    if (TYPE(str) != T_STRING)
+    if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
 
     io = GetWriteIO(io);
@@ -3144,7 +3144,7 @@ rb_io_getbyte(VALUE io)
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
     READ_CHECK(fptr);
-    if (fptr->fd == 0 && (fptr->mode & FMODE_TTY) && TYPE(rb_stdout) == T_FILE) {
+    if (fptr->fd == 0 && (fptr->mode & FMODE_TTY) && RB_TYPE_P(rb_stdout, T_FILE)) {
         rb_io_t *ofp;
         GetOpenFile(rb_stdout, ofp);
         if (ofp->mode & FMODE_TTY) {
@@ -3243,7 +3243,7 @@ rb_io_ungetc(VALUE io, VALUE c)
     if (FIXNUM_P(c)) {
 	c = rb_enc_uint_chr(FIX2UINT(c), io_read_encoding(fptr));
     }
-    else if (TYPE(c) == T_BIGNUM) {
+    else if (RB_TYPE_P(c, T_BIGNUM)) {
 	c = rb_enc_uint_chr(NUM2UINT(c), io_read_encoding(fptr));
     }
     else {
@@ -3886,7 +3886,7 @@ rb_io_syswrite(VALUE io, VALUE str)
     long n;
 
     rb_secure(4);
-    if (TYPE(str) != T_STRING)
+    if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
 
     io = GetWriteIO(io);
@@ -6113,7 +6113,7 @@ static VALUE
 rb_io_putc(VALUE io, VALUE ch)
 {
     VALUE str;
-    if (TYPE(ch) == T_STRING) {
+    if (RB_TYPE_P(ch, T_STRING)) {
 	str = rb_str_substr(ch, 0, 1);
     }
     else {
@@ -6254,7 +6254,7 @@ void
 rb_p(VALUE obj) /* for debug print within C code */
 {
     VALUE str = rb_obj_as_string(rb_inspect(obj));
-    if (TYPE(rb_stdout) == T_FILE &&
+    if (RB_TYPE_P(rb_stdout, T_FILE) &&
         rb_method_basic_definition_p(CLASS_OF(rb_stdout), id_write)) {
         io_write(rb_stdout, str, 1);
         io_write(rb_stdout, rb_default_rs, 0);
@@ -6298,7 +6298,7 @@ rb_f_p(int argc, VALUE *argv, VALUE self)
     else if (argc > 1) {
 	ret = rb_ary_new4(argc, argv);
     }
-    if (TYPE(rb_stdout) == T_FILE) {
+    if (RB_TYPE_P(rb_stdout, T_FILE)) {
 	rb_io_flush(rb_stdout);
     }
     return ret;
@@ -6845,7 +6845,7 @@ argf_next_argv(VALUE argf)
     int stdout_binmode = 0;
     int fmode;
 
-    if (TYPE(rb_stdout) == T_FILE) {
+    if (RB_TYPE_P(rb_stdout, T_FILE)) {
         GetOpenFile(rb_stdout, fptr);
         if (fptr->mode & FMODE_BINMODE)
             stdout_binmode = 1;
@@ -6885,7 +6885,7 @@ argf_next_argv(VALUE argf)
 		    VALUE str;
 		    int fw;
 
-		    if (TYPE(rb_stdout) == T_FILE && rb_stdout != orig_stdout) {
+		    if (RB_TYPE_P(rb_stdout, T_FILE) && rb_stdout != orig_stdout) {
 			rb_io_close(rb_stdout);
 		    }
 		    fstat(fr, &st);
@@ -7770,7 +7770,7 @@ rb_io_ctl(VALUE io, VALUE req, VALUE arg, int io_p)
     GetOpenFile(io, fptr);
     retval = io_cntl(fptr->fd, cmd, narg, io_p);
     if (retval < 0) rb_sys_fail_path(fptr->pathv);
-    if (TYPE(arg) == T_STRING && RSTRING_PTR(arg)[len] != 17) {
+    if (RB_TYPE_P(arg, T_STRING) && RSTRING_PTR(arg)[len] != 17) {
 	rb_raise(rb_eArgError, "return value overflowed string");
     }
 
@@ -9269,7 +9269,7 @@ rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr;
     VALUE v1, v2, opt;
 
-    if (TYPE(io) != T_FILE) {
+    if (!RB_TYPE_P(io, T_FILE)) {
         return rb_funcall2(io, id_set_encoding, argc, argv);
     }
 

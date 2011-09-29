@@ -24,7 +24,7 @@
 VALUE rb_mMath;
 VALUE rb_eMathDomainError;
 
-#define Need_Float(x) do {if (TYPE(x) != T_FLOAT) {(x) = rb_to_float(x);}} while(0)
+#define Need_Float(x) do {if (!RB_TYPE_P(x, T_FLOAT)) {(x) = rb_to_float(x);}} while(0)
 #define Need_Float2(x,y) do {\
     Need_Float(x);\
     Need_Float(y);\

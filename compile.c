@@ -1263,7 +1263,7 @@ static st_index_t
 cdhash_hash(VALUE a)
 {
     if (SPECIAL_CONST_P(a)) return (st_index_t)a;
-    if (TYPE(a) == T_STRING) return rb_str_hash(a);
+    if (RB_TYPE_P(a, T_STRING)) return rb_str_hash(a);
     {
 	VALUE hval = rb_hash(a);
 	return (st_index_t)FIX2LONG(hval);
@@ -2335,7 +2335,7 @@ case_when_optimizable_literal(NODE * node)
       case NODE_LIT: {
 	VALUE v = node->nd_lit;
 	double ival;
-	if (TYPE(v) == T_FLOAT &&
+	if (RB_TYPE_P(v, T_FLOAT) &&
 	    modf(RFLOAT_VALUE(v), &ival) == 0.0) {
 	    return FIXABLE(ival) ? LONG2FIX((long)ival) : rb_dbl2big(ival);
 	}
@@ -5314,7 +5314,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 	else if (FIXNUM_P(obj)) {
 	    line_no = NUM2INT(obj);
 	}
-	else if (TYPE(obj) == T_ARRAY) {
+	else if (RB_TYPE_P(obj, T_ARRAY)) {
 	    VALUE *argv = 0;
 	    int argc = RARRAY_LENINT(obj) - 1;
 	    st_data_t insn_id;
@@ -5356,7 +5356,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 		      case TS_ISEQ:
 			{
 			    if (op != Qnil) {
-				if (TYPE(op) == T_ARRAY) {
+				if (RB_TYPE_P(op, T_ARRAY)) {
 				    argv[j] = rb_iseq_load(op, iseq->self, Qnil);
 				}
 				else if (CLASS_OF(op) == rb_cISeq) {

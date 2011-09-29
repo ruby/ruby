@@ -2016,7 +2016,7 @@ enum {
     sort_optimizable_count
 };
 
-#define STRING_P(s) (TYPE(s) == T_STRING && CLASS_OF(s) == rb_cString)
+#define STRING_P(s) (RB_TYPE_P((s), T_STRING) && CLASS_OF(s) == rb_cString)
 
 #define SORT_OPTIMIZABLE_BIT(type) (1U << TOKEN_PASTE(sort_opt_,type))
 #define SORT_OPTIMIZABLE(data, type) \
@@ -3137,7 +3137,7 @@ rb_ary_rassoc(VALUE ary, VALUE value)
 
     for (i = 0; i < RARRAY_LEN(ary); ++i) {
 	v = RARRAY_PTR(ary)[i];
-	if (TYPE(v) == T_ARRAY &&
+	if (RB_TYPE_P(v, T_ARRAY) &&
 	    RARRAY_LEN(v) > 1 &&
 	    rb_equal(RARRAY_PTR(v)[1], value))
 	    return v;
@@ -3176,7 +3176,7 @@ static VALUE
 rb_ary_equal(VALUE ary1, VALUE ary2)
 {
     if (ary1 == ary2) return Qtrue;
-    if (TYPE(ary2) != T_ARRAY) {
+    if (!RB_TYPE_P(ary2, T_ARRAY)) {
 	if (!rb_respond_to(ary2, rb_intern("to_ary"))) {
 	    return Qfalse;
 	}
@@ -3211,7 +3211,7 @@ static VALUE
 rb_ary_eql(VALUE ary1, VALUE ary2)
 {
     if (ary1 == ary2) return Qtrue;
-    if (TYPE(ary2) != T_ARRAY) return Qfalse;
+    if (!RB_TYPE_P(ary2, T_ARRAY)) return Qfalse;
     if (RARRAY_LEN(ary1) != RARRAY_LEN(ary2)) return Qfalse;
     return rb_exec_recursive_paired(recursive_eql, ary1, ary2, ary2);
 }

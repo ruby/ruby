@@ -243,7 +243,7 @@ num2i32(VALUE x)
     x = rb_to_int(x); /* is nil OK? (should not) */
 
     if (FIXNUM_P(x)) return FIX2LONG(x);
-    if (TYPE(x) == T_BIGNUM) {
+    if (RB_TYPE_P(x, T_BIGNUM)) {
 	return rb_big2ulong_pack(x);
     }
     rb_raise(rb_eTypeError, "can't convert %s to `integer'", rb_obj_classname(x));
@@ -995,9 +995,9 @@ pack_pack(VALUE ary, VALUE fmt)
 		char c, *bufs, *bufe;
 
 		from = NEXTFROM;
-		if (TYPE(from) == T_BIGNUM) {
+		if (RB_TYPE_P(from, T_BIGNUM)) {
 		    VALUE big128 = rb_uint2big(128);
-		    while (TYPE(from) == T_BIGNUM) {
+		    while (RB_TYPE_P(from, T_BIGNUM)) {
 			from = rb_big_divmod(from, big128);
 			c = NUM2INT(RARRAY_PTR(from)[1]) | 0x80; /* mod */
 			rb_str_buf_cat(buf, &c, sizeof(char));

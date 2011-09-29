@@ -44,7 +44,7 @@ rb_any_cmp(VALUE a, VALUE b)
     if (FIXNUM_P(a) && FIXNUM_P(b)) {
 	return a != b;
     }
-    if (TYPE(a) == T_STRING && RBASIC(a)->klass == rb_cString &&
+    if (RB_TYPE_P(a, T_STRING) && RBASIC(a)->klass == rb_cString &&
 	TYPE(b) == T_STRING && RBASIC(b)->klass == rb_cString) {
 	return rb_str_hash_cmp(a, b);
     }
@@ -1599,7 +1599,7 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
     struct equal_data data;
 
     if (hash1 == hash2) return Qtrue;
-    if (TYPE(hash2) != T_HASH) {
+    if (!RB_TYPE_P(hash2, T_HASH)) {
 	if (!rb_respond_to(hash2, rb_intern("to_hash"))) {
 	    return Qfalse;
 	}
