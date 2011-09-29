@@ -78,7 +78,7 @@ static VALUE rb_cGDBM, rb_eGDBMError, rb_eGDBMFatalError;
 #define MY_BLOCK_SIZE (2048)
 #define MY_FATAL_FUNC rb_gdbm_fatal
 static void
-rb_gdbm_fatal(char *msg)
+rb_gdbm_fatal(const char *msg)
 {
     rb_raise(rb_eGDBMFatalError, "%s", msg);
 }
