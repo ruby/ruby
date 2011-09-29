@@ -345,6 +345,7 @@ typedef struct rb_objspace {
 	int dont_gc;
 	int dont_lazy_sweep;
 	int during_gc;
+	rb_atomic_t finalizing;
     } flags;
     struct {
 	st_table *table;
@@ -387,6 +388,7 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define heaps_freed		objspace->heap.freed
 #define dont_gc 		objspace->flags.dont_gc
 #define during_gc		objspace->flags.during_gc
+#define finalizing		objspace->flags.finalizing
 #define finalizer_table 	objspace->final.table
 #define deferred_final_list	objspace->final.deferred
 #define mark_stack		objspace->markstack.buffer
@@ -2064,7 +2066,7 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
     }
     objspace->heap.final_num += final_num;
 
-    if (deferred_final_list) {
+    if (deferred_final_list && !finalizing) {
         rb_thread_t *th = GET_THREAD();
         if (th) {
             RUBY_VM_SET_FINALIZER_INTERRUPT(th);
@@ -2968,7 +2970,10 @@ finalize_deferred(rb_objspace_t *objspace)
 void
 rb_gc_finalize_deferred(void)
 {
-    finalize_deferred(&rb_objspace);
+    rb_objspace_t *objspace = &rb_objspace;
+    if (ATOMIC_SET(finalizing, 1)) return;
+    finalize_deferred(objspace);
+    ATOMIC_SET(finalizing, 0);
 }
 
 static int
@@ -3019,6 +3024,8 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
     /* run finalizers */
     gc_clear_mark_on_sweep_slots(objspace);
+
+    if (ATOMIC_SET(finalizing, 1)) return;
 
     do {
 	/* XXX: this loop will make no sense */
@@ -3082,6 +3089,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
     st_free_table(finalizer_table);
     finalizer_table = 0;
+    ATOMIC_SET(finalizing, 0);
 }
 
 void
@@ -3089,7 +3097,7 @@ rb_gc(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
     garbage_collect(objspace);
-    finalize_deferred(objspace);
+    if (!finalizing) finalize_deferred(objspace);
     free_unused_heaps(objspace);
 }
 
