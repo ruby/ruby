@@ -27,8 +27,8 @@ class TestBignum < Test::Unit::TestCase
     $x = fact(40)
     assert_equal($x, $x)
     assert_equal($x, fact(40))
-    assert($x < $x+2)
-    assert($x > $x-2)
+    assert_operator($x, :<, $x+2)
+    assert_operator($x, :>, $x-2)
     assert_equal(815915283247897734345611269596115894272000000000, $x)
     assert_not_equal(815915283247897734345611269596115894272000000001, $x)
     assert_equal(815915283247897734345611269596115894272000000001, $x+1)
@@ -182,24 +182,24 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_cmp
-    assert(T31P > 1)
-    assert(T31P < 2147483648.0)
-    assert(T31P < T64P)
-    assert(T64P > T31P)
+    assert_operator(T31P, :>, 1)
+    assert_operator(T31P, :<, 2147483648.0)
+    assert_operator(T31P, :<, T64P)
+    assert_operator(T64P, :>, T31P)
     assert_raise(ArgumentError) { T31P < "foo" }
-    assert(T64 < (1.0/0.0))
-    assert(!(T64 > (1.0/0.0)))
+    assert_operator(T64, :<, (1.0/0.0))
+    assert_not_operator(T64, :>, (1.0/0.0))
   end
 
   def test_eq
-    assert(T31P != 1)
-    assert(T31P == 2147483647.0)
-    assert(T31P != "foo")
-    assert(2**77889 != (1.0/0.0), '[ruby-core:31603]')
+    assert_not_equal(T31P, 1)
+    assert_equal(T31P, 2147483647.0)
+    assert_not_equal(T31P, "foo")
+    assert_not_equal(2**77889, (1.0/0.0), '[ruby-core:31603]')
   end
 
   def test_eql
-    assert(T31P.eql?(T31P))
+    assert_send([T31P, :eql?, T31P])
   end
 
   def test_convert
@@ -289,7 +289,7 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(1024**1024*2, (1024**1024*2).quo(1))
     inf = 1 / 0.0; nan = inf / inf
 
-    assert((1024**1024*2).quo(nan).nan?)
+    assert_send([(1024**1024*2).quo(nan), :nan?])
   end
 
   def test_pow
@@ -409,7 +409,7 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_size
-    assert(T31P.size.is_a?(Integer))
+    assert_kind_of(Integer, T31P.size)
   end
 
   def test_odd
@@ -468,7 +468,7 @@ class TestBignum < Test::Unit::TestCase
   def test_float_fdiv
     b = 1E+300.to_i
     assert_equal(b, (b ** 2).fdiv(b))
-    assert(@big.fdiv(0.0 / 0.0).nan?)
+    assert_send([@big.fdiv(0.0 / 0.0), :nan?])
     assert_in_delta(1E+300, (10**500).fdiv(1E+200), 1E+285)
   end
 
