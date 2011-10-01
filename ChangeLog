@@ -1,3 +1,8 @@
+Sun Oct  2 00:42:14 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm.c (rb_thread_mark): rb_thread_t needs self to be marked.
+	  [ruby-dev:44566] [Bug #5386]
+
 Sat Oct  1 09:48:53 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* gc.c (add_heap_slots, init_heap): reset heaps_inc zero when

@@ -1735,6 +1735,7 @@ rb_thread_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(th->first_proc);
 	if (th->first_proc) RUBY_MARK_UNLESS_NULL(th->first_args);
 
+	RUBY_MARK_UNLESS_NULL(th->self);
 	RUBY_MARK_UNLESS_NULL(th->thgroup);
 	RUBY_MARK_UNLESS_NULL(th->value);
 	RUBY_MARK_UNLESS_NULL(th->errinfo);
