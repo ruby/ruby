@@ -1,3 +1,9 @@
+Sun Oct  2 08:43:25 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm.c (rb_thread_mark), cont.c (cont_mark): self pointer should not
+	  be marked by itself. Patch by Koichi Sasada.
+	  [ruby-dev:44567] [Bug #5386]
+
 Sun Oct  2 00:42:14 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm.c (rb_thread_mark): rb_thread_t needs self to be marked.
