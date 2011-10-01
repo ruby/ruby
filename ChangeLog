@@ -1,3 +1,14 @@
+Sat Oct  1 09:48:53 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* gc.c (add_heap_slots, init_heap): reset heaps_inc zero when
+	  heap slots are expanded by environment variable RUBY_HEAP_MIN_SLOTS.
+	  [ruby-core:39777] [Bug #5380]
+
+	* test/ruby/test_gc.rb (test_gc_parameter): add test for it.
+
+	* test/ruby/envutil.rb (assert_normal_exit): add :child_env option to
+	  enable pass environemnt variables to child process.
+
 Thu Sep 29 13:17:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (ary_join_1): should not copy the encoding of non-string

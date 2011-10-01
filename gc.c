@@ -1090,6 +1090,7 @@ add_heap_slots(rb_objspace_t *objspace, size_t add)
     for (i = 0; i < add; i++) {
         assign_heap_slot(objspace);
     }
+    heaps_inc = 0;
 }
 
 static void
@@ -1106,7 +1107,6 @@ init_heap(rb_objspace_t *objspace)
     }
 #endif
 
-    heaps_inc = 0;
     objspace->profile.invoke_time = getrusage_time();
     finalizer_table = st_init_numtable();
 }

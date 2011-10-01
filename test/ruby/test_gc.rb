@@ -1,5 +1,7 @@
 require 'test/unit'
 
+require_relative "envutil"
+
 class TestGc < Test::Unit::TestCase
   class S
     def initialize(a)
@@ -77,5 +79,13 @@ class TestGc < Test::Unit::TestCase
     end
   ensure
     GC.stress = prev_stress
+  end
+
+  def test_gc_parameter
+    env = {
+      "RUBY_GC_MALLOC_LIMIT" => "60000000",
+      "RUBY_HEAP_MIN_SLOTS" => "100000"
+    }
+    assert_normal_exit("1", "[ruby-core:39777]", :child_env => env)
   end
 end
