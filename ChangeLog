@@ -1,3 +1,7 @@
+Sun Oct  2 10:44:01 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* io.c: fix documentation of ARGF.lineno=.
+
 Sat Oct  1 20:03:19 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (have_framework): try as Objective-C.

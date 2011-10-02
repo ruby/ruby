@@ -6767,7 +6767,7 @@ argf_initialize_copy(VALUE argf, VALUE orig)
 
 /*
  *  call-seq:
- *     ARGF.lineno = number  -> nil
+ *     ARGF.lineno = integer  -> integer
  *
  *  Sets the line number of +ARGF+ as a whole to the given +Integer+.
  *
@@ -6780,7 +6780,7 @@ argf_initialize_copy(VALUE argf, VALUE orig)
  *      ARGF.lineno      #=> 0
  *      ARGF.readline    #=> "This is line 1\n"
  *      ARGF.lineno      #=> 1
- *      ARGF.lineno = 0  #=> nil
+ *      ARGF.lineno = 0  #=> 0
  *      ARGF.lineno      #=> 0
  */
 static VALUE
