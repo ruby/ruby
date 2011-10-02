@@ -1,3 +1,8 @@
+Sun Oct 02 12:14:06 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/psych/test_yamldbm.rb: add test case.
+	* test/syck/test_yamldbm.rb: ditto.
+
 Sun Oct  2 11:28:09 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/yaml/store.rb: make initialize method signature match the

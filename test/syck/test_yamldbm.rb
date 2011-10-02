@@ -157,5 +157,34 @@ module Syck
       assert_equal({'a'=>'b','e'=>'f'}, @yamldbm.reject {|k,v| v == 'd'})
       assert_equal({'a'=>'b','c'=>'d','e'=>'f'}, @yamldbm.reject {false})
     end
+
+    def test_values
+      assert_equal [], @yamldbm.values
+      @yamldbm['a'] = 'b'
+      @yamldbm['c'] = 'd'
+      assert_equal ['b','d'], @yamldbm.values
+    end
+
+    def test_values_at
+      @yamldbm['a'] = 'b'
+      @yamldbm['c'] = 'd'
+      assert_equal ['b','d'], @yamldbm.values_at('a','c')
+    end
+
+    def test_selsct
+      @yamldbm['a'] = 'b'
+      @yamldbm['c'] = 'd'
+      @yamldbm['e'] = 'f'
+      assert_equal(['b','d'], @yamldbm.select('a','c'))
+    end
+
+    def test_selsct_with_block
+      @yamldbm['a'] = 'b'
+      @yamldbm['c'] = 'd'
+      @yamldbm['e'] = 'f'
+      assert_equal([['a','b']], @yamldbm.select {|k,v| k == 'a'})
+      assert_equal([['c','d']], @yamldbm.select {|k,v| v == 'd'})
+      assert_equal([], @yamldbm.select {false})
+    end
   end
 end
