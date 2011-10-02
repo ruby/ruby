@@ -947,7 +947,7 @@ end
 def have_framework(fw, &b)
   checking_for fw do
     src = cpp_include("#{fw}/#{fw}.h") << "\n" "int main(void){return 0;}"
-    if try_link(src, opt = "-framework #{fw}", &b)
+    if try_link(src, opt = "-ObjC -framework #{fw}", &b)
       $defs.push(format("-DHAVE_FRAMEWORK_%s", fw.tr_cpp))
       $LDFLAGS << " " << opt
       true

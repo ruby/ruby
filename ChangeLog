@@ -1,3 +1,8 @@
+Sat Oct  1 20:03:19 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (have_framework): try as Objective-C.
+	  https://twitter.com/nagachika/status/120294447660539904
+
 Sun Oct  2 08:43:25 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm.c (rb_thread_mark), cont.c (cont_mark): self pointer should not
