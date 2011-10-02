@@ -46,20 +46,15 @@ class YAML::Store < PStore
   #
   # Options passed in through +yaml_opts+ will be used when converting the
   # store to YAML via Hash#to_yaml().
-  def initialize( *o )
-    @opt = {}
-    if String === o.first
-      super(o.shift)
-    end
-    if o.last.is_a? Hash
-      @opt.update(o.pop)
-    end
+  def initialize file_name, yaml_opts = {}
+    @opt = yaml_opts
+    super
   end
 
   # :stopdoc:
 
   def dump(table)
-    @table.to_yaml(@opt)
+    YAML.dump @table
   end
 
   def load(content)
@@ -75,7 +70,7 @@ class YAML::Store < PStore
     false
   end
 
-  EMPTY_MARSHAL_DATA = {}.to_yaml
+  EMPTY_MARSHAL_DATA = YAML.dump({})
   EMPTY_MARSHAL_CHECKSUM = Digest::MD5.digest(EMPTY_MARSHAL_DATA)
   def empty_marshal_data
     EMPTY_MARSHAL_DATA
