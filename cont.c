@@ -138,7 +138,7 @@ cont_mark(void *ptr)
     if (ptr) {
 	rb_context_t *cont = ptr;
 	rb_gc_mark(cont->value);
-	rb_gc_mark(cont->saved_thread.self);
+	rb_thread_mark(&cont->saved_thread);
 
 	if (cont->vm_stack) {
 #ifdef CAPTURE_JUST_VALID_VM_STACK
