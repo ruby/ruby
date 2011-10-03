@@ -160,7 +160,7 @@ class Gem::GemPathSearcher
       spec.require_paths
   end
 
-  extend Deprecate
+  extend Gem::Deprecate
 
   deprecate :initialize,              :none,  2011, 10
   deprecate :find,                    :none,  2011, 10

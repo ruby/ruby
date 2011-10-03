@@ -35,7 +35,7 @@ class Gem::Dependency
     if Regexp === name then
       msg = ["NOTE: Dependency.new w/ a regexp is deprecated.",
              "Dependency.new called from #{Gem.location_of_caller.join(":")}"]
-      warn msg.join("\n") unless Deprecate.skip
+      warn msg.join("\n") unless Gem::Deprecate.skip
     end
 
     type         = Symbol === requirements.last ? requirements.pop : :runtime

@@ -435,7 +435,7 @@ class TestGem < Gem::TestCase
 
   def test_self_available?
     util_make_gems
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       assert(Gem.available?("a"))
       assert(Gem.available?("a", "1"))
       assert(Gem.available?("a", ">1"))
@@ -937,7 +937,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_source_index
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       assert_kind_of Gem::SourceIndex, Gem.source_index
     end
   end
@@ -1093,7 +1093,7 @@ class TestGem < Gem::TestCase
     # @abin_path = File.join spec.full_gem_path, spec.bindir, 'abin'
     # FileUtils.mkdir_p File.join(stem, "gems", "test-3")
 
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       expected = [File.join(@gemhome, "gems", "a-4", "lib")]
       assert_equal expected, Gem.latest_load_paths
     end

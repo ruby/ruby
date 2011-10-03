@@ -462,7 +462,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
     add_date res
 
-    index = Deprecate.skip_during { Marshal.dump Gem.source_index }
+    index = Gem::Deprecate.skip_during { Marshal.dump Gem.source_index }
 
     if req.request_method == 'HEAD' then
       res['content-length'] = index.length

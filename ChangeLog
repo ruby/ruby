@@ -1,3 +1,8 @@
+Tue Oct  4 07:15:17 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 1.8.11.  Move Deprecate into the
+	  Gem namespace.
+
 Tue Oct  4 06:43:47 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: update psych version.

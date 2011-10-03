@@ -246,7 +246,7 @@ end
 
 class Gem::DependencyList
   class << self
-    extend Deprecate
+    extend Gem::Deprecate
     deprecate :from_source_index, "from_specs", 2011, 11
   end
 end
