@@ -1,3 +1,8 @@
+Tue Oct  4 08:15:50 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* proc.c (proc_call):  Update documentation to match argument handling
+	  of proc/Proc.new/lambda/->()
+
 Tue Oct  4 07:59:16 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* proc.c (proc_call):  Fix documentation of Proc#call vs Proc#===.
