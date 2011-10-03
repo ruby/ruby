@@ -1,3 +1,8 @@
+Tue Oct  4 08:33:41 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/etc/etc.c:  Document Etc, Etc.sysconfdir, Etc.systmpdir.  Patch
+	  by mathew murphy.  [Ruby 1.9 - Bug #5396]
+
 Tue Oct  4 08:21:51 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/shellwords.rb:  Update toplevel comment with an example.  Patch
