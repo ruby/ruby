@@ -516,26 +516,27 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *  calculated by passing the element's index to the given block and
  *  storing the return value.
  *
- *     Array.new
- *     Array.new(2)
- *     Array.new(5, "A")
+ *     Array.new                     # => [] (empty array)
+ *     Array.new(2)                  # => [nil,nil]
+ *     Array.new(5, "A")             # => ["A", "A", "A", "A", "A"]
+ *     Array.new(5) {|i| i.to_s }    # => ["0", "1", "2", "3", "4"]
  *
  *     # only one copy of the object is created
- *     a = Array.new(2, Hash.new)
+ *     a = Array.new(2, Hash.new) #=> [{}, {}]
  *     a[0]['cat'] = 'feline'
- *     a
+ *     a                             # => [{"cat"=>"feline"}, {"cat"=>"feline"}]
  *     a[1]['cat'] = 'Felix'
- *     a
+ *     a                             # => [{"cat"=>"Felix"}, {"cat"=>"Felix"}]
  *
  *     # here multiple copies are created
- *     a = Array.new(2) { Hash.new }
+ *     a = Array.new(2) { Hash.new } # => [{}, {}]
  *     a[0]['cat'] = 'feline'
- *     a
+ *     a                             # => [{"cat"=>"feline"}, {}]
  *
  *     squares = Array.new(5) {|i| i*i}
- *     squares
+ *     squares                       # => [0, 1, 4, 9, 16]
  *
- *     copy = Array.new(squares)
+ *     copy = Array.new(squares)     # => [0, 1, 4, 9, 16]
  */
 
 static VALUE
