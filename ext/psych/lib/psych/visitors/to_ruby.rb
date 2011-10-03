@@ -9,10 +9,10 @@ module Psych
     ###
     # This class walks a YAML AST, converting each node to ruby
     class ToRuby < Psych::Visitors::Visitor
-      def initialize
-        super
+      def initialize ss = ScalarScanner.new
+        super()
         @st = {}
-        @ss = ScalarScanner.new
+        @ss = ss
         @domain_types = Psych.domain_types
       end
 

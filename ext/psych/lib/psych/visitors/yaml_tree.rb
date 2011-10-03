@@ -12,13 +12,13 @@ module Psych
       alias :finished? :finished
       alias :started? :started
 
-      def initialize options = {}, emitter = Psych::TreeBuilder.new
+      def initialize options = {}, emitter = TreeBuilder.new, ss = ScalarScanner.new
         super()
         @started  = false
         @finished = false
         @emitter  = emitter
         @st       = {}
-        @ss       = ScalarScanner.new
+        @ss       = ss
         @options  = options
 
         @dispatch_cache = Hash.new do |h,klass|

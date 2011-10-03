@@ -1,3 +1,10 @@
+Tue Oct  4 05:59:24 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: ToRuby visitor can be
+	  constructed with a ScalarScanner.
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: ScalarScanner can be
+	  passed to the YAMLTree visitor.
+
 Tue Oct  4 05:47:23 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: Define Regexp::NOENCODING
