@@ -1,3 +1,8 @@
+Tue Oct  4 06:43:47 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: update psych version.
+	* ext/psych/psych.gemspec: generate new gemspec for new version.
+
 Tue Oct  4 06:29:55 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: calling `yaml` rather than `to_yaml`.
