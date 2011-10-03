@@ -494,6 +494,16 @@ proc_lambda(void)
     return rb_block_lambda();
 }
 
+/*  Document-method: ===
+ *
+ *  call-seq:
+ *     proc === obj   -> result_of_proc
+ *
+ *  Invokes the block with +obj+ as the proc's parameter like Proc#call.  It
+ *  is to allow a proc object to be a target of +when+ clause in a case
+ *  statement.
+ */
+
 /* CHECKME: are the argument checking semantics correct? */
 
 /*
@@ -509,10 +519,10 @@ proc_lambda(void)
  *  to an array).  Note that prc.() invokes prc.call() with the parameters
  *  given.  It's a syntax sugar to hide "call".
  *
- *  For procs created using <code>Kernel.proc</code>, generates an
- *  error if the wrong number of parameters
- *  are passed to a proc with multiple parameters. For procs created using
- *  <code>Proc.new</code>, extra parameters are silently discarded.
+ *  For procs created using <code>Kernel.proc</code> an error is generated
+ *  if the wrong number of parameters are passed to a proc with multiple
+ *  parameters. For procs created using <code>Proc.new</code>, extra
+ *  parameters are silently discarded.
  *
  *  Returns the value of the last expression evaluated in the block. See
  *  also <code>Proc#yield</code>.
@@ -528,14 +538,6 @@ proc_lambda(void)
  *     prog.rb:5: wrong number of arguments (3 for 2) (ArgumentError)
  *     	from prog.rb:4:in `call'
  *     	from prog.rb:5
- */
-
-/*
- *  call-seq:
- *     prc === obj   -> result_of_proc
- *
- *  Invokes the block, with <i>obj</i> as the block's parameter.  It is
- *  to allow a proc object to be a target of +when+ clause in the case statement.
  */
 
 static VALUE
