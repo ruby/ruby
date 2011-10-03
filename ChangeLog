@@ -1,3 +1,10 @@
+Tue Oct  4 05:47:23 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: Define Regexp::NOENCODING
+	  for 1.9.2 backwards compatibility.
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: Fix Date string
+	  generation for 1.9.2 backwards compatibility.
+
 Mon Oct  3 23:56:39 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* gc.c (rb_gc_set_params): output GC parameter change messages only

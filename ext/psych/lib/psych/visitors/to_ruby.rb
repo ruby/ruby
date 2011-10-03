@@ -1,5 +1,9 @@
 require 'psych/scalar_scanner'
 
+unless defined?(Regexp::NOENCODING)
+  Regexp::NOENCODING = 32
+end
+
 module Psych
   module Visitors
     ###
