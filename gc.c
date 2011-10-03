@@ -427,7 +427,9 @@ rb_gc_set_params(void)
     malloc_limit_ptr = getenv("RUBY_GC_MALLOC_LIMIT");
     if (malloc_limit_ptr != NULL) {
 	int malloc_limit_i = atoi(malloc_limit_ptr);
-	printf("malloc_limit=%d (%d)\n", malloc_limit_i, initial_malloc_limit);
+	if (ruby_verbose)
+	    fprintf(stderr, "malloc_limit=%d (%d)\n",
+		    malloc_limit_i, initial_malloc_limit);
 	if (malloc_limit_i > 0) {
 	    initial_malloc_limit = malloc_limit_i;
 	}
@@ -436,7 +438,9 @@ rb_gc_set_params(void)
     heap_min_slots_ptr = getenv("RUBY_HEAP_MIN_SLOTS");
     if (heap_min_slots_ptr != NULL) {
 	int heap_min_slots_i = atoi(heap_min_slots_ptr);
-	printf("heap_min_slots=%d (%d)\n", heap_min_slots_i, initial_heap_min_slots);
+	if (ruby_verbose)
+	    fprintf(stderr, "heap_min_slots=%d (%d)\n",
+		    heap_min_slots_i, initial_heap_min_slots);
 	if (heap_min_slots_i > 0) {
 	    initial_heap_min_slots = heap_min_slots_i;
             initial_expand_heap(&rb_objspace);
@@ -446,7 +450,8 @@ rb_gc_set_params(void)
     free_min_ptr = getenv("RUBY_FREE_MIN");
     if (free_min_ptr != NULL) {
 	int free_min_i = atoi(free_min_ptr);
-	printf("free_min=%d (%d)\n", free_min_i, initial_free_min);
+	if (ruby_verbose)
+	    fprintf(stderr, "free_min=%d (%d)\n", free_min_i, initial_free_min);
 	if (free_min_i > 0) {
 	    initial_free_min = free_min_i;
 	}

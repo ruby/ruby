@@ -1,3 +1,11 @@
+Mon Oct  3 23:56:39 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* gc.c (rb_gc_set_params): output GC parameter change messages only
+	  if -w/-v options are specified. these messages are output to stderr,
+	  not to stdout. [ruby-core:39795] [Bug #5380]
+
+	* test/ruby/test_gc.rb (test_gc_parameter): add test for it.
+
 Sun Oct  2 20:05:32 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm.c (rb_thread_mark), cont.c (cont_mark): revert r33369 and r33371
