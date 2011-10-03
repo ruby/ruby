@@ -18,12 +18,12 @@ module Psych
     end
 
     def test_emit_tag
-      assert_match('%TAG ! tag:tenderlovemaking.com,2009:', @stream.to_yaml)
+      assert_match('%TAG ! tag:tenderlovemaking.com,2009:', @stream.yaml)
     end
 
     def test_emit_multitag
       @doc.tag_directives << ['!!', 'foo.com,2009:']
-      yaml = @stream.to_yaml
+      yaml = @stream.yaml
       assert_match('%TAG ! tag:tenderlovemaking.com,2009:', yaml)
       assert_match('%TAG !! foo.com,2009:', yaml)
     end
@@ -31,7 +31,7 @@ module Psych
     def test_emit_bad_tag
       assert_raises(RuntimeError) do
         @doc.tag_directives = [['!']]
-        @stream.to_yaml
+        @stream.yaml
       end
     end
 
@@ -40,7 +40,7 @@ module Psych
     end
 
     def test_emit_version
-      assert_match('%YAML 1.1', @stream.to_yaml)
+      assert_match('%YAML 1.1', @stream.yaml)
     end
   end
 end
