@@ -1,3 +1,8 @@
+Tue Oct  4 07:30:50 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* array.c (rb_ary_s_create):  Add example results for Array::[].  Patch
+	  by Jonathan Mukai.  [Ruby 1.9 - Bug #5215]
+
 Tue Oct  4 07:15:17 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 1.8.11.  Move Deprecate into the

@@ -593,14 +593,13 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     return ary;
 }
 
-
 /*
-* Returns a new array populated with the given objects.
-*
-*   Array.[]( 1, 'a', /^A/ )
-*   Array[ 1, 'a', /^A/ ]
-*   [ 1, 'a', /^A/ ]
-*/
+ * Returns a new array populated with the given objects.
+ *
+ *   Array.[]( 1, 'a', /^A/ ) # => [1, "a", /^A/]
+ *   Array[ 1, 'a', /^A/ ]    # => [1, "a", /^A/]
+ *   [ 1, 'a', /^A/ ]         # => [1, "a", /^A/]
+ */
 
 static VALUE
 rb_ary_s_create(int argc, VALUE *argv, VALUE klass)
