@@ -1,7 +1,5 @@
-#
-# shellwords.rb: Manipulates strings a la UNIX Bourne shell
-#
-
+##
+# = Manipulates strings like the UNIX Bourne shell
 #
 # This module manipulates strings according to the word parsing rules
 # of the UNIX Bourne shell.
@@ -9,13 +7,21 @@
 # The shellwords() function was originally a port of shellwords.pl,
 # but modified to conform to POSIX / SUSv3 (IEEE Std 1003.1-2001).
 #
-# Authors:
-#   - Wakou Aoyama
-#   - Akinori MUSHA <knu@iDaemons.org>
+# == Example
 #
-# Contact:
-#   - Akinori MUSHA <knu@iDaemons.org> (current maintainer)
+#   argv = Shellwords.split('here are "two words"') # or String#shellsplit
+#   argv #=> ["here", "are", "two words"]
 #
+#   argv = Shellwords.escape("special's.txt") # or String#shellescape
+#   system("cat " + argv)
+#
+# == Authors:
+# * Wakou Aoyama
+# * Akinori MUSHA <knu@iDaemons.org>
+#
+# == Contact:
+# * Akinori MUSHA <knu@iDaemons.org> (current maintainer)
+
 module Shellwords
   #
   # Splits a string into an array of tokens in the same way the UNIX
