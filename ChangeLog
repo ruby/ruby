@@ -59,7 +59,7 @@ Tue Oct  4 06:29:55 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 Tue Oct  4 06:20:19 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: Match values against the
-	  floating point spec defined in YAML to avoid erronious parses.
+	  floating point spec defined in YAML to avoid erroneous parses.
 	* test/psych/test_numeric.rb: corresponding test.
 
 Tue Oct  4 05:59:24 2011  Aaron Patterson <aaron@tenderlovemaking.com>
@@ -128,7 +128,7 @@ Sat Oct  1 09:48:53 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 	* test/ruby/test_gc.rb (test_gc_parameter): add test for it.
 
 	* test/ruby/envutil.rb (assert_normal_exit): add :child_env option to
-	  enable pass environemnt variables to child process.
+	  enable pass environment variables to child process.
 
 Thu Sep 29 13:17:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -139,7 +139,7 @@ Thu Sep 29 11:53:56 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (slot_sweep, rb_gc_finalize_deferred)
 	  (rb_objspace_call_finalizer, rb_gc): run finalizers
-	  sequencially.  [ruby-dev:44562]
+	  sequentially.  [ruby-dev:44562]
 
 Thu Sep 29 20:37:38 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -196,7 +196,7 @@ Tue Sep 27 03:50:19 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 Tue Sep 27 03:32:27 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
-	* test/psych/test_yamldbm.rb: fix #setup and #terdown.
+	* test/psych/test_yamldbm.rb: fix #setup and #teardown.
 	  [Bug #5370] [ruby-core:39730]
 	* test/syck/test_yamldbm.rb: ditto.
 
