@@ -1321,6 +1321,13 @@ rb_reset_random_seed(void)
     r->seed = INT2FIX(0);
 }
 
+/*
+ *  Document-class: Random
+ *
+ *  The Random module contains module functions for producing pseudo-random
+ *  numbers that meet certain requirements for randomness.
+ */
+
 void
 Init_Random(void)
 {
