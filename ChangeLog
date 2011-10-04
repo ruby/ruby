@@ -1,3 +1,11 @@
+Wed Oct  5 02:50:27 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/syntax_error.rb: Add file, line, offset, and
+	  message attributes during parse failure.
+	* ext/psych/parser.c: Update parser to raise exception with correct
+	  values.
+	* test/psych/test_exception.rb: corresponding tests.
+
 Wed Oct  5 01:52:16 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/parser.c (parse): Use context_mark for indicating error

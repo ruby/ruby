@@ -16,6 +16,21 @@ module Psych
       @wups = Wups.new
     end
 
+    def test_attributes
+      e = assert_raises(Psych::SyntaxError) {
+        Psych.load '--- `foo'
+      }
+
+      assert_equal '<unknown>', e.file
+      assert_equal 1, e.line
+      assert_equal 5, e.column
+      # FIXME: offset isn't being set correctly by libyaml
+      # assert_equal 5, e.offset
+
+      assert e.problem
+      assert e.context
+    end
+
     def test_convert
       w = Psych.load(Psych.dump(@wups))
       assert_equal @wups, w

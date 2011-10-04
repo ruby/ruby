@@ -59,6 +59,23 @@ static VALUE allocate(VALUE klass)
     return Data_Wrap_Struct(klass, 0, dealloc, parser);
 }
 
+static VALUE make_exception(yaml_parser_t * parser, VALUE path)
+{
+    VALUE exception;
+    size_t line, column;
+
+    line = parser->context_mark.line + 1;
+    column = parser->context_mark.column + 1;
+
+    return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6,
+	    path,
+	    INT2NUM(line),
+	    INT2NUM(column),
+	    INT2NUM(parser->problem_offset),
+	    parser->problem ? rb_usascii_str_new2(parser->problem) : Qnil,
+	    parser->context ? rb_usascii_str_new2(parser->context) : Qnil);
+}
+
 /*
  * call-seq:
  *    parser.parse(yaml)
@@ -98,21 +115,18 @@ static VALUE parse(VALUE self, VALUE yaml)
 
     while(!done) {
 	if(!yaml_parser_parse(parser, &event)) {
-	    VALUE path;
-	    size_t line   = parser->context_mark.line + 1;
-	    size_t column = parser->context_mark.column + 1;
+	    VALUE path, exception;
 
 	    if(rb_respond_to(yaml, id_path))
 		path = rb_funcall(yaml, id_path, 0);
 	    else
 		path = rb_str_new2("<unknown>");
 
+	    exception = make_exception(parser, path);
 	    yaml_parser_delete(parser);
 	    yaml_parser_initialize(parser);
 
-	    rb_raise(ePsychSyntaxError, "(%s): couldn't parse YAML at line %d column %d",
-		    StringValuePtr(path),
-		    (int)line, (int)column);
+	    rb_exc_raise(exception);
 	}
 
 	switch(event.type) {
@@ -376,6 +390,7 @@ void Init_psych_parser()
     /* UTF-16-BE Encoding with BOM */
     rb_define_const(cPsychParser, "UTF16BE", INT2NUM(YAML_UTF16BE_ENCODING));
 
+    rb_require("psych/syntax_error");
     ePsychSyntaxError = rb_define_class_under(mPsych, "SyntaxError", rb_eSyntaxError);
 
     rb_define_method(cPsychParser, "parse", parse, 1);
