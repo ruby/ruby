@@ -1,3 +1,7 @@
+Tue Oct  4 11:44:10 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c (rb_gc_set_params): ruby_verbose can be Qnil, so use RTEST.
+
 Tue Oct  4 08:33:41 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/etc/etc.c:  Document Etc, Etc.sysconfdir, Etc.systmpdir.  Patch

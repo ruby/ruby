@@ -93,6 +93,8 @@ class TestGc < Test::Unit::TestCase
       "RUBY_HEAP_MIN_SLOTS" => "100000"
     }
     assert_in_out_err([env, "-e", "exit"], "", [], [], "[ruby-core:39795]")
+    assert_in_out_err([env, "-W0", "-e", "exit"], "", [], [], "[ruby-core:39795]")
+    assert_in_out_err([env, "-W1", "-e", "exit"], "", [], [], "[ruby-core:39795]")
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /heap_min_slots=100000/, "[ruby-core:39795]")
   end
 end
