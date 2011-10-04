@@ -1,3 +1,11 @@
+Tue Oct  4 21:10:08 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (class_alloc): allocate extra memory after containing
+	  object setup to get rid of rare-but-potential memory leak.
+
+	* gc.c (gc_mark_children): skip marking extended members if ptr is
+	  NULL.
+
 Tue Oct  4 16:17:50 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/time.rb (Time.strptime): use Time.at if d[:seconds] is set.
