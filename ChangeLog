@@ -3,11 +3,6 @@ Tue Oct  4 16:17:50 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 	* lib/time.rb (Time.strptime): use Time.at if d[:seconds] is set.
 	  Reported by Christopher Eberz. [ruby-core:39903] Bug #5399
 
-Tue Oct  4 15:04:43 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* class.c (class_alloc): allocate extra memory after containing
-	  object setup to get rid of rare-but-potential memory leak.
-
 Tue Oct  4 11:44:10 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* gc.c (rb_gc_set_params): ruby_verbose can be Qnil, so use RTEST.
