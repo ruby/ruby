@@ -1,3 +1,8 @@
+Wed Oct  5 05:56:39 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* hash.c (Init_Hash):  Improve Hash documentation.  Patch by Alvaro
+	  Pereyra Rabanal.  [Ruby 1.9 - Bug #5405]
+
 Wed Oct  5 05:47:59 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* random.c (Init_Random):  Add a top-level comment for Random.  Patch
