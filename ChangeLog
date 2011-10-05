@@ -1,7 +1,7 @@
 Thu Oct  6 01:44:51 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* cont.c (cont_mark): mark original Thread object from saved_thread.
-	  [ruby-dev:44567] [Bug #5386]
+	  [ruby-dev:44571] [Bug #5386]
 
 Wed Oct  5 16:33:04 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
