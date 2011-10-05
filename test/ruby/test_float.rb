@@ -508,35 +508,4 @@ class TestFloat < Test::Unit::TestCase
       sleep(0.1+0.1+0.1+0.1+0.1+0.1+0.1+0.1+0.1+0.1)
     end
   end
-
-  def test_step
-    1000.times do
-      a = rand
-      b = a+rand*1000
-      s = (b - a) / 10
-      assert_equal(11, (a..b).step(s).to_a.length)
-    end
-
-    assert_equal(11, (1.0..(1.0+1E-15)).step(1E-16).to_a.length)
-
-    (1.0..12.7).step(1.3).each do |n|
-      assert_operator(n, :<=, 12.7)
-    end
-  end
-
-  def test_step_excl
-    1000.times do
-      a = rand
-      b = a+rand*1000
-      s = (b - a) / 10
-      assert_equal(10, (a...b).step(s).to_a.length)
-    end
-
-    assert_equal([1.0, 2.9, 4.8, 6.699999999999999], (1.0...6.8).step(1.9).to_a)
-
-    e = 1+1E-12
-    (1.0 ... e).step(1E-16) do |n|
-      assert_operator(n, :<, e)
-    end
-  end
 end
