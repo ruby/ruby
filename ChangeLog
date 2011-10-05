@@ -1,3 +1,16 @@
+Wed Sep 21 11:17:22 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (ruby_float_step): improve floating point calculations.
+	  [ruby-core:35753] [Bug #4576]
+
+	* numeric.c (ruby_float_step): correct the error of floating point
+	  numbers on the excluding case.
+	  patched by Masahiro Tanaka [ruby-core:39608]
+
+	* numeric.c (ruby_float_step): use the end value when the current
+	  value is greater than or equal to the end value.
+	  patched by Akira Tanaka [ruby-core:39612]
+
 Wed Oct  5 05:56:39 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* hash.c (Init_Hash):  Improve Hash documentation.  Patch by Alvaro

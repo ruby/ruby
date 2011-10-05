@@ -1690,10 +1690,25 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
 	}
 	else {
 	    if (err>0.5) err=0.5;
-	    n = floor(n + err);
-	    if (!excl || ((long)n)*unit+beg < end) n++;
-	    for (i=0; i<n; i++) {
-		rb_yield(DBL2NUM(i*unit+beg));
+	    if (excl) {
+		if (n>0) {
+		    if (n<err)
+			n = 1;
+		    else
+			n = floor(n - err) + 1;
+		}
+	    } else {
+		n = floor(n + err) + 1;
+	    }
+	    if (end < (n-1)*unit+beg) {
+		for (i=0; i<n; i++) {
+		    rb_yield(DBL2NUM((n-1-i)/(n-1)*beg+i/(n-1)*end));
+		}
+	    }
+	    else {
+		for (i=0; i<n; i++) {
+		    rb_yield(DBL2NUM(i*unit+beg));
+		}
 	    }
 	}
 	return TRUE;
