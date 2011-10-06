@@ -1,3 +1,15 @@
+Thu Oct  6 16:29:30 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (make_no_method_execption): extract from
+	  raise_method_missing().
+
+	* vm_eval.c (send_internal): remove inadvertent symbol creation
+	  from public_send.  based on a patch by Jeremy Evans <code AT
+	  jeremyevans.net> in [ruby-core:38576]. [Feature #5112]
+
+	* vm_insnhelper.c (vm_call_method): remove inadvertent symbol
+	  creation from send and __send__, too.
+
 Thu Oct  6 14:59:11 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/time.rb:  Clean up Time documentation.  Patch by Jake Goulding.

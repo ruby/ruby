@@ -584,7 +584,17 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		    }
 
 		    sym = TOPN(i);
-		    id = SYMBOL_P(sym) ? SYM2ID(sym) : rb_to_id(sym);
+		    if (SYMBOL_P(sym)) {
+			id = SYM2ID(sym);
+		    }
+		    else if (!(id = rb_check_id(&sym))) {
+			if (rb_method_basic_definition_p(CLASS_OF(recv), idMethodMissing)) {
+			    VALUE exc = make_no_method_execption(rb_eNoMethodError, NULL, recv,
+								 rb_long2int(num), &TOPN(i));
+			    rb_exc_raise(exc);
+			}
+			id = rb_to_id(sym);
+		    }
 		    /* shift arguments */
 		    if (i > 0) {
 			MEMMOVE(&TOPN(i), &TOPN(i-1), VALUE, i);

@@ -495,6 +495,30 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 
 #define NOEX_MISSING   0x80
 
+static VALUE
+make_no_method_execption(VALUE exc, const char *format, VALUE obj, int argc, const VALUE *argv)
+{
+    int n = 0;
+    VALUE mesg;
+    VALUE args[3];
+
+    if (!format) {
+	format = "undefined method `%s' for %s";
+    }
+    mesg = rb_const_get(exc, rb_intern("message"));
+    if (rb_method_basic_definition_p(CLASS_OF(mesg), '!')) {
+	args[n++] = rb_name_err_mesg_new(mesg, rb_str_new2(format), obj, argv[0]);
+    }
+    else {
+	args[n++] = rb_funcall(mesg, '!', 3, rb_str_new2(format), obj, argv[0]);
+    }
+    args[n++] = argv[0];
+    if (exc == rb_eNoMethodError) {
+	args[n++] = rb_ary_new4(argc - 1, argv + 1);
+    }
+    return rb_class_new_instance(n, args, exc);
+}
+
 static void
 raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
 		     int last_call_status)
@@ -524,28 +548,9 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
     else if (last_call_status & NOEX_SUPER) {
 	format = "super: no superclass method `%s' for %s";
     }
-    if (!format) {
-	format = "undefined method `%s' for %s";
-    }
 
     {
-	int n = 0;
-	VALUE mesg;
-	VALUE args[3];
-
-	mesg = rb_const_get(exc, rb_intern("message"));
-	if (rb_method_basic_definition_p(CLASS_OF(mesg), '!')) {
-	    args[n++] = rb_name_err_mesg_new(mesg, rb_str_new2(format), obj, argv[0]);
-	}
-	else {
-	    args[n++] = rb_funcall(mesg, '!', 3, rb_str_new2(format), obj, argv[0]);
-	}
-	args[n++] = argv[0];
-	if (exc == rb_eNoMethodError) {
-	    args[n++] = rb_ary_new4(argc - 1, argv + 1);
-	}
-	exc = rb_class_new_instance(n, args, exc);
-
+	exc = make_no_method_execption(exc, format, obj, argc, argv);
 	if (!(last_call_status & NOEX_MISSING)) {
 	    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
 	}
@@ -697,6 +702,7 @@ rb_funcall_passing_block(VALUE recv, ID mid, int argc, const VALUE *argv)
 static VALUE
 send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 {
+    ID id;
     VALUE vid;
     VALUE self = RUBY_VM_PREVIOUS_CONTROL_FRAME(GET_THREAD()->cfp)->self;
     rb_thread_t *th = GET_THREAD();
@@ -708,7 +714,16 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
     vid = *argv++; argc--;
     PASS_PASSED_BLOCK_TH(th);
 
-    return rb_call0(recv, rb_to_id(vid), argc, argv, scope, self);
+    id = rb_check_id(&vid);
+    if (!id) {
+	if (rb_method_basic_definition_p(CLASS_OF(recv), idMethodMissing)) {
+	    VALUE exc = make_no_method_execption(rb_eNoMethodError, NULL,
+						 recv, ++argc, --argv);
+	    rb_exc_raise(exc);
+	}
+	id = rb_to_id(vid);
+    }
+    return rb_call0(recv, id, argc, argv, scope, self);
 }
 
 /*
