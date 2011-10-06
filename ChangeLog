@@ -1,3 +1,8 @@
+Thu Oct  6 09:17:18 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* time.c (Init_Time):  Remove editorial comments from Time
+	  documentation, fix link.
+
 Thu Oct  6 09:14:20 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* time.c (Init_Time):  Improve Time documentation.  Patch by Shane

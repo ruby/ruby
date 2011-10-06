@@ -4837,14 +4837,13 @@ time_load(VALUE klass, VALUE str)
 /*
  *  Time is an abstraction of dates and times. Time is stored internally as
  *  the number of seconds with fraction since the _Epoch_, January 1, 1970
- *  00:00 UTC. Also see the library modules Date. The Time class
- *  treats GMT (Greenwich Mean Time) and UTC (Coordinated Universal Time)_[Yes,
- *  UTC really does stand for Coordinated Universal Time. There was a committee
- *  involved.]_ as equivalent.  GMT is the older way of referring to these
- *  baseline times but persists in the names of calls on POSIX systems.
+ *  00:00 UTC. Also see the library modules Date. The Time class treats GMT
+ *  (Greenwich Mean Time) and UTC (Coordinated Universal Time) as equivalent.
+ *  GMT is the older way of referring to these baseline times but persists in
+ *  the names of calls on POSIX systems.
  *
  *  All times may have fraction. Be aware of this fact when comparing times
- *  with each other--times that are apparently equal when displayed may be
+ *  with each other -- times that are apparently equal when displayed may be
  *  different when compared.
  *
  *  = Examples
@@ -4869,8 +4868,8 @@ time_load(VALUE klass, VALUE str)
  *  timezones instead of using the current system setting.
  *
  *  You can also create a new time using Time.at which takes the number of
- *  seconds (or fraction of seconds) since the Unix
- *  Epoch[http://en.wikipedia.org/wiki/Unix_time].
+ *  seconds (or fraction of seconds) since the {Unix
+ *  Epoch}[http://en.wikipedia.org/wiki/Unix_time].
  *
  *    Time.at(628232400) #=> 1989-11-28 00:00:00 -0500
  *
