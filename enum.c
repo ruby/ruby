@@ -657,11 +657,11 @@ group_by_i(VALUE i, VALUE hash, int argc, VALUE *argv)
  *     enum.group_by {| obj | block }  -> a_hash
  *     enum.group_by                   -> an_enumerator
  *
- *  Returns a hash, which keys are evaluated result from the
- *  block, and values are arrays of elements in <i>enum</i>
- *  corresponding to the key.
+ *  Groups the collection by result of the block.  Returns a hash where the
+ *  keys are the evaluated result from the block and values the values are
+ *  arrays of elements in the collection that corresponding to the key.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If no block is given an enumerator is returned.
  *
  *     (1..6).group_by {|i| i%3}   #=> {0=>[3, 6], 1=>[1, 4], 2=>[2, 5]}
  *
