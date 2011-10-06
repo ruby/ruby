@@ -589,7 +589,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		    }
 		    else if (!(id = rb_check_id(&sym))) {
 			if (rb_method_basic_definition_p(CLASS_OF(recv), idMethodMissing)) {
-			    VALUE exc = make_no_method_execption(rb_eNoMethodError, NULL, recv,
+			    VALUE exc = make_no_method_exception(rb_eNoMethodError, NULL, recv,
 								 rb_long2int(num), &TOPN(i));
 			    rb_exc_raise(exc);
 			}

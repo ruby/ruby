@@ -1,3 +1,9 @@
+Thu Oct  6 18:46:23 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* vm_eval.c (make_no_method_exception): fix typo.
+
+	* vm_insnhelper.c, vm_insnhelper.h: ditto.
+
 Thu Oct  6 16:29:30 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (make_no_method_execption): extract from
@@ -118,7 +124,7 @@ Tue Oct  4 07:59:16 2011  Eric Hodel  <drbrain@segment7.net>
 
 Tue Oct  4 07:43:18 2011  Eric Hodel  <drbrain@segment7.net>
 
-	* array.c (rb_ary_initalize):  Make Array.new description match
+	* array.c (rb_ary_initialize):  Make Array.new description match
 	  call-seq.  Patch by Henry Maddocks.  [Ruby 1.9 - Bug #5344]
 
 Tue Oct  4 07:35:23 2011  Eric Hodel  <drbrain@segment7.net>

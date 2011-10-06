@@ -496,7 +496,7 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 #define NOEX_MISSING   0x80
 
 static VALUE
-make_no_method_execption(VALUE exc, const char *format, VALUE obj, int argc, const VALUE *argv)
+make_no_method_exception(VALUE exc, const char *format, VALUE obj, int argc, const VALUE *argv)
 {
     int n = 0;
     VALUE mesg;
@@ -550,7 +550,7 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
     }
 
     {
-	exc = make_no_method_execption(exc, format, obj, argc, argv);
+	exc = make_no_method_exception(exc, format, obj, argc, argv);
 	if (!(last_call_status & NOEX_MISSING)) {
 	    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
 	}
@@ -717,7 +717,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
     id = rb_check_id(&vid);
     if (!id) {
 	if (rb_method_basic_definition_p(CLASS_OF(recv), idMethodMissing)) {
-	    VALUE exc = make_no_method_execption(rb_eNoMethodError, NULL,
+	    VALUE exc = make_no_method_exception(rb_eNoMethodError, NULL,
 						 recv, ++argc, --argv);
 	    rb_exc_raise(exc);
 	}

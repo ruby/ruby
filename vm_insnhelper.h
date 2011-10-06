@@ -226,7 +226,7 @@ static VALUE ruby_vm_global_state_version = 1;
 } while (0)
 static void vm_clear_all_cache(void);
 
-static VALUE make_no_method_execption(VALUE exc, const char *format,
+static VALUE make_no_method_exception(VALUE exc, const char *format,
 				      VALUE obj, int argc, const VALUE *argv);
 
 
