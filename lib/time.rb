@@ -10,11 +10,12 @@ require 'date'
 # This library extends the Time class with the following conversions between
 # date strings and Time objects:
 #
-# * date-time defined by RFC 2822
-# * HTTP-date defined by RFC 2616
-# * datetime defined by XML Schema Part 2: Datatypes (ISO 8601)
+# * date-time defined by {RFC 2822}[http://www.ietf.org/rfc/rfc2822.txt]
+# * HTTP-date defined by {RFC 2616}[http://www.ietf.org/rfc/rfc2616.txt]
+# * dateTime defined by XML Schema Part 2: Datatypes ({ISO
+#   8601}[http://www.iso.org/iso/date_and_time_format])
 # * various formats handled by Date._parse
-# * various formats handled by Date._strptime
+# * custom formats handled by Date._strptime
 #
 # == Examples
 #
@@ -24,11 +25,12 @@ require 'date'
 #
 # All of these examples were done using the EST timezone which is GMT-5.
 #
-# === Creating a new Time instance
+# === Converting to a String
 #
-# The easiest way to create a new time object is to use either #parse or
-# #strptime. Each uses Date.__parse and Date.__strptime to create a new
-# instance of Time.
+#   t = Time.now
+#   t.iso8601  # => "2011-10-05T22:26:12-04:00"
+#   t.rfc2822  # => "Wed, 05 Oct 2011 22:26:12 -0400"
+#   t.httpdate # => "Thu, 06 Oct 2011 02:26:12 GMT"
 #
 # === Time.parse
 #
@@ -59,10 +61,10 @@ require 'date'
 #   dt = DateTime.parse("2010-10-30")
 #   md = MyDate.new(10,31,2010)
 #
-#   Time.parse("12:00" d)  #=> 2010-10-28 12:00:00 -0500
-#   Time.parse("12:00" t)  #=> 2010-10-29 12:00:00 -0500
-#   Time.parse("12:00" dt) #=> 2010-10-30 12:00:00 -0500
-#   Time.parse("12:00" md) #=> 2010-10-31 12:00:00 -0500
+#   Time.parse("12:00", d)  #=> 2010-10-28 12:00:00 -0500
+#   Time.parse("12:00", t)  #=> 2010-10-29 12:00:00 -0500
+#   Time.parse("12:00", dt) #=> 2010-10-30 12:00:00 -0500
+#   Time.parse("12:00", md) #=> 2010-10-31 12:00:00 -0500
 #
 # #parse also accepts an optional block. You can use this block to specify how
 # to handle the year component of the date. This is specifically designed for
@@ -85,7 +87,12 @@ require 'date'
 class Time
   class << Time
 
-    ZoneOffset = {
+    #
+    # A hash of timezones mapped to hour differences from UTC. The
+    # set of time zones corresponds to the ones specified by RFC 2822
+    # and ISO 8601.
+    #
+    ZoneOffset = { # :nodoc:
       'UTC' => 0,
       # ISO 8601
       'Z' => 0,
@@ -102,6 +109,26 @@ class Time
       'N' => -1, 'O' => -2, 'P' => -3, 'Q' => -4,  'R' => -5,  'S' => -6,
       'T' => -7, 'U' => -8, 'V' => -9, 'W' => -10, 'X' => -11, 'Y' => -12,
     }
+
+    #
+    # Return the number of seconds the specified time zone differs
+    # from UTC.
+    #
+    # Numeric time zones that include minutes, such as
+    # <code>-10:00</code> or <code>+1330</code> will work, as will
+    # simpler hour-only time zones like <code>-10</code> or
+    # <code>+13</code>.
+    #
+    # Textual time zones listed in ZoneOffset are also supported.
+    #
+    # If the time zone does not match any of the above, +zone_offset+
+    # will check if the local time zone (both with and without
+    # potential Daylight Saving \Time changes being in effect) matches
+    # +zone+. Specifying a value for +year+ will change the year used
+    # to find the local time zone.
+    #
+    # If +zone_offset+ is unable to determine the offset, nil will be
+    # returned.
     def zone_offset(zone, year=self.now.year)
       off = nil
       zone = zone.upcase
@@ -252,15 +279,15 @@ class Time
     # values (1 or 0) are assumed if broken or missing.  For example:
     #
     #     # Suppose it is "Thu Nov 29 14:33:20 GMT 2001" now and
-    #     # your timezone is GMT:
+    #     # your time zone is GMT:
     #     now = Time.parse("Thu Nov 29 14:33:20 GMT 2001")
     #     Time.parse("16:30", now)     #=> 2001-11-29 16:30:00 +0900
     #     Time.parse("7/23", now)      #=> 2001-07-23 00:00:00 +0900
     #     Time.parse("Aug 31", now)    #=> 2001-08-31 00:00:00 +0900
     #     Time.parse("Aug 2000", now)  #=> 2000-08-01 00:00:00 +0900
     #
-    # Since there are numerous conflicts among locally defined timezone
-    # abbreviations all over the world, this method is not made to
+    # Since there are numerous conflicts among locally defined time zone
+    # abbreviations all over the world, this method is not intended to
     # understand all of them.  For example, the abbreviation "CST" is
     # used variously as:
     #
@@ -271,29 +298,27 @@ class Time
     #     +10:30 in Australia/Adelaide,
     #     etc.
     #
-    # Based on the fact, this method only understands the timezone
-    # abbreviations described in RFC 822 and the system timezone, in the
+    # Based on this fact, this method only understands the time zone
+    # abbreviations described in RFC 822 and the system time zone, in the
     # order named. (i.e. a definition in RFC 822 overrides the system
-    # timezone definition.)  The system timezone is taken from
+    # time zone definition.)  The system time zone is taken from
     # <tt>Time.local(year, 1, 1).zone</tt> and
     # <tt>Time.local(year, 7, 1).zone</tt>.
-    # If the extracted timezone abbreviation does not match any of them,
+    # If the extracted time zone abbreviation does not match any of them,
     # it is ignored and the given time is regarded as a local time.
     #
     # ArgumentError is raised if Date._parse cannot extract information from
-    # +date+ or Time class cannot represent specified date.
+    # +date+ or if the Time class cannot represent specified date.
     #
-    # This method can be used as fail-safe for other parsing methods as:
+    # This method can be used as a fail-safe for other parsing methods as:
     #
     #   Time.rfc2822(date) rescue Time.parse(date)
     #   Time.httpdate(date) rescue Time.parse(date)
     #   Time.xmlschema(date) rescue Time.parse(date)
     #
-    # A failure for Time.parse should be checked, though.
+    # A failure of Time.parse should be checked, though.
     #
-    # time library should be required to use this method as follows.
-    #
-    #     require 'time'
+    # You must require 'time' to use this method.
     #
     def parse(date, now=self.now)
       comp = !block_given?
@@ -387,13 +412,11 @@ class Time
     # updated by RFC 1123.
     #
     # ArgumentError is raised if +date+ is not compliant with RFC 2822
-    # or Time class cannot represent specified date.
+    # or if the Time class cannot represent specified date.
     #
     # See #rfc2822 for more information on this format.
     #
-    # time library should be required to use this method as follows.
-    #
-    #   require 'time'
+    # You must require 'time' to use this method.
     #
     def rfc2822(date)
       if /\A\s*
@@ -436,17 +459,15 @@ class Time
     alias rfc822 rfc2822
 
     #
-    # Parses +date+ as HTTP-date defined by RFC 2616 and converts it to a Time
-    # object.
+    # Parses +date+ as an HTTP-date defined by RFC 2616 and converts it to a
+    # Time object.
     #
-    # ArgumentError is raised if +date+ is not compliant with RFC 2616 or Time
-    # class cannot represent specified date.
+    # ArgumentError is raised if +date+ is not compliant with RFC 2616 or if
+    # the Time class cannot represent specified date.
     #
     # See #httpdate for more information on this format.
     #
-    # time library should be required to use this method as follows.
-    #
-    #     require 'time'
+    # You must require 'time' to use this method.
     #
     def httpdate(date)
       if /\A\s*
@@ -486,18 +507,16 @@ class Time
     end
 
     #
-    # Parses +date+ as dateTime defined by XML Schema and converts it to a Time
-    # object.  The format is restricted version of the format defined by ISO
-    # 8601.
+    # Parses +date+ as a dateTime defined by the XML Schema and converts it to
+    # a Time object.  The format is a restricted version of the format defined
+    # by ISO 8601.
     #
-    # ArgumentError is raised if +date+ is not compliant with the format or Time
-    # class cannot represent specified date.
+    # ArgumentError is raised if +date+ is not compliant with the format or if
+    # the Time class cannot represent specified date.
     #
     # See #xmlschema for more information on this format.
     #
-    # time library should be required to use this method as follows.
-    #
-    #     require 'time'
+    # You must require 'time' to use this method.
     #
     def xmlschema(date)
       if /\A\s*
@@ -541,9 +560,7 @@ class Time
   #
   # If +self+ is a UTC time, -0000 is used as zone.
   #
-  # time library should be required to use this method as follows.
-  #
-  #     require 'time'
+  # You must require 'time' to use this method.
   #
   def rfc2822
     sprintf('%s, %02d %s %0*d %02d:%02d:%02d ',
@@ -569,16 +586,14 @@ class Time
   ]
 
   #
-  # Returns a string which represents the time as rfc1123-date of HTTP-date
+  # Returns a string which represents the time as RFC 1123 date of HTTP-date
   # defined by RFC 2616:
   #
   #   day-of-week, DD month-name CCYY hh:mm:ss GMT
   #
   # Note that the result is always UTC (GMT).
   #
-  # time library should be required to use this method as follows.
-  #
-  #     require 'time'
+  # You must require 'time' to use this method.
   #
   def httpdate
     t = dup.utc
@@ -589,7 +604,7 @@ class Time
   end
 
   #
-  # Returns a string which represents the time as dateTime defined by XML
+  # Returns a string which represents the time as a dateTime defined by XML
   # Schema:
   #
   #   CCYY-MM-DDThh:mm:ssTZD
@@ -599,12 +614,10 @@ class Time
   #
   # If self is a UTC time, Z is used as TZD.  [+-]hh:mm is used otherwise.
   #
-  # +fractional_seconds+ specifies a number of digits of fractional seconds.
-  # Its default value is 0.
+  # +fractional_digits+ specifies a number of digits to use for fractional
+  # seconds.  Its default value is 0.
   #
-  # time library should be required to use this method as follows.
-  #
-  #     require 'time'
+  # You must require 'time' to use this method.
   #
   def xmlschema(fraction_digits=0)
     sprintf('%0*d-%02d-%02dT%02d:%02d:%02d',
