@@ -1,3 +1,8 @@
+Thu Oct  6 09:56:30 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* enum.c:  Clean up wording in Enumerable documentation.  Patch by b t.
+	  [Ruby 1.9 - Bug #5411
+
 Thu Oct  6 09:17:18 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* time.c (Init_Time):  Remove editorial comments from Time
