@@ -1,3 +1,10 @@
+Thu Oct  6 09:14:20 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* time.c (Init_Time):  Improve Time documentation.  Patch by Shane
+	  Emmons.  [Ruby 1.9 - Bug #5404]
+	* lib/time.rb:  Improve time.rb documentation including Time.strptime.
+	  Patch by Shane Emmons.  [Ruby 1.9 - Bug #5402]
+
 Thu Oct  6 08:54:05 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* random.c:  Improve documentation of Random.  Patch by Gregory
