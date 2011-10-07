@@ -1,3 +1,8 @@
+Sat Oct  8 03:17:51 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/shell.rb:  Document some methods of Shell.  Patch by Carol
+	  Nichols.  [Ruby 1.9 - Bug #5417]
+
 Fri Oct  7 17:54:28 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (assert_send, assert_not_send):

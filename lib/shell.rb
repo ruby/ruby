@@ -19,6 +19,7 @@ require "shell/error"
 require "shell/command-processor"
 require "shell/process-controller"
 
+# Shell implements an idiomatic Ruby interface for common UNIX shell commands.
 class Shell
   @RCS_ID='-$Id: shell.rb,v 1.9 2002/03/04 12:01:10 keiju Exp keiju $-'
 
@@ -51,10 +52,25 @@ class Shell
       @verbose = val if val
     end
 
+    # Creates a new Shell instance with the current working directory
+    # set to +path+.
     def cd(path)
       new(path)
     end
 
+    # Returns the directories in the current shell's PATH environment variable
+    # as an array of directory names. This sets the system_path for all
+    # instances of Shell.
+    #
+    # Example: If in your current shell, you did:
+    #
+    #   $ echo $PATH
+    #   /usr/bin:/bin:/usr/local/bin
+    #
+    # Running this method in the above shell would then return:
+    #
+    #   ["/usr/bin", "/bin", "/usr/local/bin"]
+    #
     def default_system_path
       if @default_system_path
         @default_system_path
@@ -63,6 +79,10 @@ class Shell
       end
     end
 
+    # Sets the system_path that new instances of Shell should have as their
+    # initial system_path.
+    #
+    # +path+ should be an array of directory name strings.
     def default_system_path=(path)
       @default_system_path = path
     end
@@ -104,6 +124,9 @@ class Shell
 
   attr_reader :system_path
 
+  # Sets the system path (the Shell instance's PATH environment variable).
+  #
+  # +path+ should be an array of directory name strings.
   def system_path=(path)
     @system_path = path
     rehash
@@ -139,6 +162,7 @@ class Shell
   # Shell#mkdir
   # Shell#rmdir
 
+  # Returns the current working directory.
   attr_reader :cwd
   alias dir cwd
   alias getwd cwd
