@@ -1,3 +1,8 @@
+Fri Oct  7 17:54:28 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (assert_send, assert_not_send):
+	  parenthesize non-empty arguments.
+
 Fri Oct  7 06:35:50 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* array.c:  Use + for arguments described in documentation to allow
