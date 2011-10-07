@@ -3,8 +3,8 @@ require "-test-/symbol/symbol"
 
 module Test_Symbol
   class TestInadvertent < Test::Unit::TestCase
-    def noninterned_name(prefix = "_")
-      prefix += Thread.current.object_id.to_s(36)
+    def noninterned_name(prefix = "")
+      prefix += "_#{Thread.current.object_id.to_s(36)}"
       begin
         name = "#{prefix}_#{rand(0x1000).to_s(16)}_#{Time.now.usec}"
       end while Bug::Symbol.interned?(name)
