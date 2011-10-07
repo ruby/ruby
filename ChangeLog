@@ -1,3 +1,8 @@
+Sat Oct  8 08:54:56 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* enum.c (group_by):  Improve group_by description.  Patch by b t.
+	  [#5411]
+
 Sat Oct  8 03:17:51 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/shell.rb:  Document some methods of Shell.  Patch by Carol
