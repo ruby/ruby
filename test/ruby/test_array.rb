@@ -927,7 +927,8 @@ class TestArray < Test::Unit::TestCase
     assert_equal(Encoding::UTF_8, [u, [e]].join.encoding)
     assert_equal(Encoding::UTF_8, [u, [1]].join.encoding)
     bug5379 = '[ruby-core:39776]'
-    assert_equal(Encoding::UTF_8, [[], u, nil].join.encoding, bug5379)
+    assert_equal(Encoding::US_ASCII, [[], u, nil].join.encoding, bug5379)
+    assert_equal(Encoding::UTF_8, [[], "\u3042", nil].join.encoding, bug5379)
   ensure
     $, = nil
   end
