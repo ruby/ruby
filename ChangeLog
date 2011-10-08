@@ -1,3 +1,14 @@
+Sat Oct  8 06:26:24 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* gc.c (add_heap_slots, init_heap): reset heaps_inc zero when
+	  heap slots are expanded by environment variable RUBY_HEAP_MIN_SLOTS.
+	  [ruby-core:39777] [Bug #5380]
+
+	* test/ruby/test_gc.rb (test_gc_parameter): add test for it.
+
+	* test/ruby/envutil.rb (assert_normal_exit): add :child_env option to
+	  enable pass environemnt variables to child process.
+
 Sat Oct  8 05:45:28 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* proc.c (proc_call):  Update documentation to match argument handling

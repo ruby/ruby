@@ -122,7 +122,13 @@ module Test
     module Assertions
       public
       def assert_normal_exit(testsrc, message = '', opt = {})
-        out, _, status = EnvUtil.invoke_ruby(%W'-W0', testsrc, true, :merge_to_stdout, opt)
+        if opt.include?(:child_env)
+          opt = opt.dup
+          child_env = [opt.delete(:child_env)] || []
+        else
+          child_env = []
+        end
+        out, _, status = EnvUtil.invoke_ruby(child_env + %W'-W0', testsrc, true, :merge_to_stdout, opt)
         pid = status.pid
         faildesc = proc do
           signo = status.termsig
