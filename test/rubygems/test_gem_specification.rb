@@ -222,7 +222,7 @@ bindir:
   end
 
   def test_self_load_legacy_ruby
-    spec = Deprecate.skip_during do
+    spec = Gem::Deprecate.skip_during do
       eval LEGACY_RUBY_SPEC
     end
     assert_equal 'keyedlist', spec.name
@@ -404,7 +404,7 @@ bindir:
 
     assert @a2.activated?
 
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       assert @a2.loaded?
     end
   end
@@ -677,7 +677,7 @@ bindir:
   end
 
   def test_installation_path
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       assert_equal @gemhome, @a1.installation_path
 
       @a1.instance_variable_set :@loaded_from, nil
@@ -977,7 +977,7 @@ end
   end
 
   def test_to_ruby_legacy
-    gemspec1 = Deprecate.skip_during do
+    gemspec1 = Gem::Deprecate.skip_during do
       eval LEGACY_RUBY_SPEC
     end
     ruby_code = gemspec1.to_ruby

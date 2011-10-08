@@ -1,3 +1,8 @@
+Sat Oct  8 06:51:46 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 1.8.11.  Move Deprecate into the
+	  Gem namespace.
+
 Sat Oct  8 06:37:08 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* gc.c (rb_gc_set_params): output GC parameter change messages only

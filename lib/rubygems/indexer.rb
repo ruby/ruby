@@ -377,7 +377,7 @@ class Gem::Indexer
   # Collect specifications from .gem files from the gem directory.
 
   def collect_specs(gems = gem_file_list)
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       index = Gem::SourceIndex.new
 
       map_gems_to_specs(gems).each do |spec|

@@ -63,7 +63,7 @@ class TestGemDependency < Gem::TestCase
     assert_match dep("a", ">= 0"),   dep("a", "1"), "match version"
     refute_match dep("a"), Object.new
 
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       assert_match dep(/a/, ">= 0"),   d,             "match simple regexp"
       assert_match dep(/a|b/, ">= 0"), d,             "match scary regexp"
       refute_match dep(/a/), dep("b")
@@ -72,7 +72,7 @@ class TestGemDependency < Gem::TestCase
 
   def test_equals_tilde_escape
     refute_match dep("a|b"), dep("a", "1")
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       assert_match dep(/a|b/), dep("a", "1")
     end
   end
@@ -88,7 +88,7 @@ class TestGemDependency < Gem::TestCase
   def test_equals_tilde_spec
     assert_match dep("a", ">= 0"),   spec("a", "0")
     assert_match dep("a", "1"),      spec("a", "1")
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       assert_match dep(/a/, ">= 0"),   spec("a", "0")
       assert_match dep(/a|b/, ">= 0"), spec("b", "0")
       refute_match dep(/a/, ">= 0"),   spec("b", "0")

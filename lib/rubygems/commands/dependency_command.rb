@@ -59,7 +59,7 @@ class Gem::Commands::DependencyCommand < Gem::Command
               end
 
     # TODO: deprecate for real damnit
-    dependency = Deprecate.skip_during {
+    dependency = Gem::Deprecate.skip_during {
       Gem::Dependency.new pattern, options[:version]
     }
     dependency.prerelease = options[:prerelease]

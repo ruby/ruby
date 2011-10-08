@@ -28,7 +28,7 @@ class TestGemDependencyList < Gem::TestCase
     util_clear_gems
     install_specs @a1, @b2
 
-    deps = Deprecate.skip_during { Gem::DependencyList.from_source_index }
+    deps = Gem::Deprecate.skip_during { Gem::DependencyList.from_source_index }
 
     assert_equal %w[b-2 a-1], deps.dependency_order.map { |s| s.full_name }
   end

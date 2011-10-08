@@ -79,7 +79,7 @@ class Gem::Commands::QueryCommand < Gem::Command
 
     req = Gem::Requirement.default
     # TODO: deprecate for real
-    dep = Deprecate.skip_during { Gem::Dependency.new name, req }
+    dep = Gem::Deprecate.skip_during { Gem::Dependency.new name, req }
 
     if local? then
       if prerelease and not both? then

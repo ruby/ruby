@@ -29,23 +29,23 @@ class TestGemGemPathSearcher < Gem::TestCase
     @fetcher = Gem::FakeFetcher.new
     Gem::RemoteFetcher.fetcher = @fetcher
 
-    @gps = Deprecate.skip_during { Gem::GemPathSearcher.new }
+    @gps = Gem::Deprecate.skip_during { Gem::GemPathSearcher.new }
   end
 
   def test_find
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       assert_equal @foo1, @gps.find('foo')
     end
   end
 
   def test_find_all
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       assert_equal [@foo1], @gps.find_all('foo')
     end
   end
 
   def test_init_gemspecs
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       util_clear_gems
       util_setup_spec_fetcher @foo1, @foo2, @bar1, @bar2
       expected = [@bar2, @bar1, @foo2, @foo1].map(&:full_name)
@@ -55,7 +55,7 @@ class TestGemGemPathSearcher < Gem::TestCase
   end
 
   def test_lib_dirs_for
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       lib_dirs = @gps.lib_dirs_for(@foo1)
       expected = File.join @gemhome, 'gems', @foo1.full_name, '{lib,lib2}'
 
@@ -64,20 +64,20 @@ class TestGemGemPathSearcher < Gem::TestCase
   end
 
   def test_lib_dirs_for_nil_require_paths
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       assert_nil @gps.lib_dirs_for(@nrp)
     end
   end
 
   def test_matching_file_eh
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       refute @gps.matching_file?(@foo1, 'bar')
       assert @gps.matching_file?(@foo1, 'foo')
     end
   end
 
   def test_matching_files
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       assert_equal [], @gps.matching_files(@foo1, 'bar')
 
       expected = File.join @foo1.full_gem_path, 'lib', 'foo.rb'
@@ -87,7 +87,7 @@ class TestGemGemPathSearcher < Gem::TestCase
   end
 
   def test_matching_files_nil_require_paths
-    Deprecate.skip_during do
+    Gem::Deprecate.skip_during do
       assert_empty @gps.matching_files(@nrp, 'foo')
     end
   end
