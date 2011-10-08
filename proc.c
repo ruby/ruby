@@ -518,10 +518,10 @@ proc_lambda(void)
  *  to an array).  Note that prc.() invokes prc.call() with the parameters
  *  given.  It's a syntax sugar to hide "call".
  *
- *  For procs created using <code>Kernel.proc</code> an error is generated
- *  if the wrong number of parameters are passed to a proc with multiple
- *  parameters. For procs created using <code>Proc.new</code>, extra
- *  parameters are silently discarded.
+ *  For procs created using <code>lambda</code> or <code>->()</code> an error
+ *  is generated if the wrong number of parameters are passed to a Proc with
+ *  multiple parameters.  For procs created using <code>Proc.new</code> or
+ *  <code>Kernel.proc</code>, extra parameters are silently discarded.
  *
  *  Returns the value of the last expression evaluated in the block. See
  *  also <code>Proc#yield</code>.
@@ -529,14 +529,15 @@ proc_lambda(void)
  *     a_proc = Proc.new {|a, *b| b.collect {|i| i*a }}
  *     a_proc.call(9, 1, 2, 3)   #=> [9, 18, 27]
  *     a_proc[9, 1, 2, 3]        #=> [9, 18, 27]
- *     a_proc = Proc.new {|a,b| a}
+ *     a_proc = lambda {|a,b| a}
  *     a_proc.call(1,2,3)
  *
  *  <em>produces:</em>
  *
- *     prog.rb:5: wrong number of arguments (3 for 2) (ArgumentError)
- *     	from prog.rb:4:in `call'
- *     	from prog.rb:5
+ *     prog.rb:4:in `block in <main>': wrong number of arguments (3 for 2) (ArgumentError)
+ *     	from prog.rb:5:in `call'
+ *     	from prog.rb:5:in `<main>'
+ *
  */
 
 static VALUE
