@@ -89,6 +89,7 @@ class TestGc < Test::Unit::TestCase
     assert_normal_exit("exit", "[ruby-core:39777]", :child_env => env)
 
     env = {
+      "RUBYOPT" => "",
       "RUBY_HEAP_MIN_SLOTS" => "100000"
     }
     assert_in_out_err([env, "-e", "exit"], "", [], [], "[ruby-core:39795]")
