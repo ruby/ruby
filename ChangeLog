@@ -1,3 +1,11 @@
+Sat Oct  8 06:37:08 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* gc.c (rb_gc_set_params): output GC parameter change messages only
+	  if -w/-v options are specified. these messages are output to stderr,
+	  not to stdout. [ruby-core:39795] [Bug #5380]
+
+	* test/ruby/test_gc.rb (test_gc_parameter): add test for it.
+
 Sat Oct  8 06:26:24 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* gc.c (add_heap_slots, init_heap): reset heaps_inc zero when

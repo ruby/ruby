@@ -86,6 +86,12 @@ class TestGc < Test::Unit::TestCase
       "RUBY_GC_MALLOC_LIMIT" => "60000000",
       "RUBY_HEAP_MIN_SLOTS" => "100000"
     }
-    assert_normal_exit("1", "[ruby-core:39777]", :child_env => env)
+    assert_normal_exit("exit", "[ruby-core:39777]", :child_env => env)
+
+    env = {
+      "RUBY_HEAP_MIN_SLOTS" => "100000"
+    }
+    assert_in_out_err([env, "-e", "exit"], "", [], [], "[ruby-core:39795]")
+    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /heap_min_slots=100000/, "[ruby-core:39795]")
   end
 end
