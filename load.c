@@ -130,11 +130,18 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
 }
 
 static int
+rb_find_feature_left_place(VALUE features, const char *feature, long flen);
+static int
+rb_compare_feature_name(VALUE loaded, const char *feature, long flen);
+static long
+feature_name_length_without_ext(const char *feature);
+
+static int
 rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const char **fn)
 {
     VALUE v, features, p, load_path = 0;
     const char *f, *e;
-    long i, len, elen, n;
+    long i, len, elen, n, flen;
     st_table *loading_tbl;
     st_data_t data;
     int type;
@@ -143,16 +150,20 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
     if (ext) {
 	elen = strlen(ext);
 	len = strlen(feature) - elen;
+	flen = len;
 	type = rb ? 'r' : 's';
     }
     else {
 	len = strlen(feature);
+	flen = feature_name_length_without_ext(feature);
 	elen = 0;
 	type = 0;
     }
     features = get_loaded_features();
-    for (i = 0; i < RARRAY_LEN(features); ++i) {
+    i = rb_find_feature_left_place(features, feature, len);
+    for (; i < RARRAY_LEN(features); ++i) {
 	v = RARRAY_PTR(features)[i];
+	if (rb_compare_feature_name(v, feature, len) > 0) break;
 	f = StringValuePtr(v);
 	if ((n = RSTRING_LEN(v)) < len) continue;
 	if (strncmp(f, feature, len) != 0) {
@@ -251,6 +262,73 @@ rb_feature_provided(const char *feature, const char **loading)
     return FALSE;
 }
 
+static long
+feature_name_length_without_ext(const char *feature)
+{
+    const char *ext = strrchr(feature, '.');
+    if (ext && !strchr(ext, '/')) {
+	return ext - feature;
+    }
+    return strlen(feature);
+}
+
+static int
+compare_feature_name(const char *left, long llen, const char *right, long rlen)
+{
+    while (llen-- && rlen--) {
+	int diff = left[llen] - right[rlen];
+	if (diff) return diff;
+	if (left[llen] == '/') return 0;
+    }
+    return 0;
+}
+
+static int
+rb_compare_feature_name(VALUE loaded, const char *feature, long flen)
+{
+    const char *loaded_name = StringValuePtr(loaded);
+    long loaded_len = feature_name_length_without_ext(loaded_name);
+    return compare_feature_name(loaded_name, loaded_len, feature, flen);
+}
+
+static int
+rb_find_feature_left_place(VALUE features, const char *feature, long flen)
+{
+    int left = 0, right = RARRAY_LEN(features);
+    VALUE *values = RARRAY_PTR(features);
+    if (right == 0)
+	return 0;
+    if (rb_compare_feature_name(values[0], feature, flen) >= 0)
+	return 0;
+    if (rb_compare_feature_name(values[right-1], feature, flen) < 0)
+	return right;
+
+    while (right - left > 1) {
+	int mid = (right + left) / 2;
+	int cmp = rb_compare_feature_name(values[mid], feature, flen);
+	if (cmp >= 0)
+	    right = mid;
+	else
+	    left = mid;
+    }
+    return right;
+}
+
+static VALUE
+rb_push_feature(VALUE features, VALUE feature)
+{
+    const char *fname = StringValuePtr(feature);
+    long flen = feature_name_length_without_ext(fname);
+    int i = rb_find_feature_left_place(features, fname, flen);
+    rb_ary_push(features, Qnil);
+    if ( i < RARRAY_LEN(features) - 1 ) {
+	MEMMOVE(RARRAY_PTR(features) + i + 1, RARRAY_PTR(features) + i,
+		VALUE, RARRAY_LEN(features) - i - 1);
+    }
+    RARRAY_PTR(features)[i] = feature;
+    return features;
+}
+
 static void
 rb_provide_feature(VALUE feature)
 {
@@ -258,7 +336,7 @@ rb_provide_feature(VALUE feature)
 	rb_raise(rb_eRuntimeError,
 		 "$LOADED_FEATURES is frozen; cannot append feature");
     }
-    rb_ary_push(get_loaded_features(), feature);
+    rb_push_feature(get_loaded_features(), feature);
 }
 
 void
@@ -777,6 +855,8 @@ Init_load()
     rb_define_virtual_variable("$\"", get_loaded_features, 0);
     rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);
     vm->loaded_features = rb_ary_new();
+    rb_define_singleton_method(vm->loaded_features, "push", rb_push_feature, 1);
+    rb_define_singleton_method(vm->loaded_features, "<<", rb_push_feature, 1);
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);
