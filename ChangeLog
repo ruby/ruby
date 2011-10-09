@@ -1,3 +1,9 @@
+Wed Sep 28 09:14:16 2011  Nobuyoshi Nakada  <>
+
+	* configure.in (pthread_np.h): needs pthread.h to be included
+	  previously on OpenBSD.  a patch by George Koehler <xkernigh AT
+	  netscape.net> at [ruby-core:39752].  [Bug #5376]
+
 Tue Sep 13 15:02:48 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/pstore.rb (PStore): always open in binary mode even if
