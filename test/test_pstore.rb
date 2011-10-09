@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'pstore'
+require_relative 'ruby/envutil'
 
 class PStoreTest < Test::Unit::TestCase
   def setup
@@ -109,5 +110,22 @@ class PStoreTest < Test::Unit::TestCase
     assert_raise(PStore::Error) do
       pstore.transaction { pstore.transaction { } }
     end
+  end
+
+  # Test that PStore's file operations do not blow up when default encodings are set
+  def test_pstore_files_are_accessed_as_binary_files
+    bug5311 = '[ruby-core:39503]'
+    n = 128
+    assert_in_out_err(["-rpstore", "-", @pstore_file], <<-SRC, [bug5311], [], bug5311)
+      @pstore = PStore.new(ARGV[0])
+      Encoding.default_internal = 'utf-8'
+      Encoding.default_external = 'utf-8'
+      (1..#{n}).each do |i|
+        @pstore.transaction {@pstore["Key\#{i}"] = "value \#{i}"}
+      end
+      @pstore.transaction {@pstore["Bug5311"] = '#{bug5311}'}
+      puts @pstore.transaction {@pstore["Bug5311"]}
+    SRC
+    assert_equal(bug5311, @pstore.transaction {@pstore["Bug5311"]}, bug5311)
   end
 end

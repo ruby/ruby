@@ -94,10 +94,9 @@ require "thread"
 # Needless to say, if you're storing valuable data with PStore, then you should
 # backup the PStore files from time to time.
 class PStore
-  binmode = defined?(File::BINARY) ? File::BINARY : 0
-  RDWR_ACCESS = File::RDWR | File::CREAT | binmode
-  RD_ACCESS = File::RDONLY | binmode
-  WR_ACCESS = File::WRONLY | File::CREAT | File::TRUNC | binmode
+  RDWR_ACCESS = {mode: IO::RDWR | IO::CREAT | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
+  RD_ACCESS = {mode: IO::RDONLY | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
+  WR_ACCESS = {mode: IO::WRONLY | IO::CREAT | IO::TRUNC | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
 
   # The error type thrown by all PStore methods.
   class Error < StandardError
