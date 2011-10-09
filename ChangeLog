@@ -1,3 +1,10 @@
+Sun Oct  9 11:06:52 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* test/psych/test_yamldbm.rb: don't run test if the system
+	  don't support yaml/dbm.
+
+	* test/syck/test_yamldbm.rb: ditto.
+
 Sat Oct  8 08:54:56 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* enum.c (group_by):  Improve group_by description.  Patch by b t.

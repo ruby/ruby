@@ -1,10 +1,14 @@
 # -*- coding: UTF-8 -*-
-require 'test/unit'
-require 'yaml/dbm'
-require 'tmpdir'
-Syck::DBM = YAML::DBM unless defined?(Syck::DBM)
+begin
+  require 'test/unit'
+  require 'yaml/dbm'
+  require 'tmpdir'
+rescue LoadError
+end
 
 module Syck
+  ::Syck::DBM = ::YAML::DBM unless defined?(::Syck::DBM)
+
   class YAMLDBMTest < Test::Unit::TestCase
     def setup
       @engine, YAML::ENGINE.yamler = YAML::ENGINE.yamler, 'syck'
@@ -187,4 +191,4 @@ module Syck
       assert_equal([], @yamldbm.select {false})
     end
   end
-end
+end if defined?(YAML::DBM)
