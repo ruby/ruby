@@ -437,6 +437,7 @@ class PStore
     rescue
       result = false
     end
+    self.class.instance_method(:marshal_dump_supports_canonical_option?)
     self.class.__send__(:define_method, :marshal_dump_supports_canonical_option?) do
       result
     end
