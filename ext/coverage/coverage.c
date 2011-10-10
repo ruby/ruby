@@ -71,11 +71,13 @@ rb_coverage_result(VALUE klass)
  *
  * = Usage
  *
- * (1) require "coverage.so"
- * (2) do Coverage.start
- * (3) require or load Ruby source file
- * (4) Coverage.result will return a hash that contains filename as key and
- *     coverage array as value.
+ * 1. require "coverage.so"
+ * 2. do Coverage.start
+ * 3. require or load Ruby source file
+ * 4. Coverage.result will return a hash that contains filename as key and
+ *    coverage array as value. A coverage array gives, for each line, the
+ *    number of line execution by the interpreter. A +nil+ value means
+ *    coverage is disabled for this line (lines like +else+ and +end+).
  *
  * = Example
  *
