@@ -1,3 +1,10 @@
+Tue Oct 11 05:53:23 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* object.c (Init_Object):  Add reference to BasicObject, brief
+	  explanation of constant lookup.  Based on patch by Alvaro Pereyra
+	  Rabanal.
+	  [Ruby 1.9 - Bug #5426]
+
 Sun Oct  9 11:06:52 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* test/psych/test_yamldbm.rb: don't run test if the system

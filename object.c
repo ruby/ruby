@@ -2544,10 +2544,16 @@ rb_f_array(VALUE obj, VALUE arg)
  *  Classes in Ruby are first-class objects---each is an instance of
  *  class <code>Class</code>.
  *
- *  When a new class is created (typically using <code>class Name ...
- *  end</code>), an object of type <code>Class</code> is created and
- *  assigned to a global constant (<code>Name</code> in this case). When
- *  <code>Name.new</code> is called to create a new object, the
+ *  Typically, you create a new class by using:
+ *
+ *    class Name
+ *     # some class describing the class behavior
+ *    end
+ *
+ *  When a new class is created, an object of type Class is initialized and
+ *  assigned to a global constant (<code>Name</code> in this case).
+ *
+ *  When <code>Name.new</code> is called to create a new object, the
  *  <code>new</code> method in <code>Class</code> is run by default.
  *  This can be demonstrated by overriding <code>new</code> in
  *  <code>Class</code>:
@@ -2670,12 +2676,17 @@ rb_f_array(VALUE obj, VALUE arg)
 
 /*  Document-class: Object
  *
- *  Object is the root of Ruby's class hierarchy.  Its methods are available
- *  to all classes unless explicitly overridden.
+ *  Object is the default root of all Ruby objects.  Object inherits from
+ *  BasicObject which allows creating alternate object hierarchies.  Methods
+ *  on object are available to all classes unless explicitly overridden.
  *
  *  Object mixes in the Kernel module, making the built-in kernel functions
- *  globally accessible. Although the instance methods of Object are defined
+ *  globally accessible.  Although the instance methods of Object are defined
  *  by the Kernel module, we have chosen to document them here for clarity.
+ *
+ *  When referencing constants in classes inheriting from Object you do not
+ *  need to use the full namespace.  For example, referencing +File+ inside
+ *  +YourClass+ will find the top-level File class.
  *
  *  In the descriptions of Object's methods, the parameter <i>symbol</i> refers
  *  to a symbol, which is either a quoted string or a Symbol (such as
