@@ -130,7 +130,7 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
 }
 
 static int
-rb_find_feature_left_place(VALUE features, const char *feature, long flen);
+rb_find_feature_first_position(VALUE features, const char *feature, long flen);
 static int
 rb_compare_feature_name(VALUE loaded, const char *feature, long flen);
 static long
@@ -160,7 +160,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	type = 0;
     }
     features = get_loaded_features();
-    i = rb_find_feature_left_place(features, feature, len);
+    i = rb_find_feature_first_position(features, feature, len);
     for (; i < RARRAY_LEN(features); ++i) {
 	v = RARRAY_PTR(features)[i];
 	if (rb_compare_feature_name(v, feature, len) > 0) break;
@@ -292,7 +292,7 @@ rb_compare_feature_name(VALUE loaded, const char *feature, long flen)
 }
 
 static int
-rb_find_feature_left_place(VALUE features, const char *feature, long flen)
+rb_find_feature_first_position(VALUE features, const char *feature, long flen)
 {
     int left = 0, right = RARRAY_LEN(features);
     VALUE *values = RARRAY_PTR(features);
@@ -319,7 +319,7 @@ rb_push_feature(VALUE features, VALUE feature)
 {
     const char *fname = StringValuePtr(feature);
     long flen = feature_name_length_without_ext(fname);
-    int i = rb_find_feature_left_place(features, fname, flen);
+    int i = rb_find_feature_first_position(features, fname, flen);
     rb_ary_push(features, Qnil);
     if ( i < RARRAY_LEN(features) - 1 ) {
 	MEMMOVE(RARRAY_PTR(features) + i + 1, RARRAY_PTR(features) + i,
