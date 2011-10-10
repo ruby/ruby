@@ -1,3 +1,8 @@
+Tue Oct 11 07:55:38 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* array.c:  Add a description to Array, minor cleanups.  Patch by
+	  Andrea Singh.  [Ruby 1.9 - Bug #5412]
+
 Tue Oct 11 06:09:52 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/pp.rb:  Move PP documentation to top of class PP.  Patch by
