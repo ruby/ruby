@@ -1,3 +1,13 @@
+Mon Oct 10 22:33:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/-ext-/old_thread_select/test_old_thread_select.rb:
+	  select() with timeout may return early in old Linux kernels
+	  with 250 Hz tickrate and no dynticks, so skip everything older
+	  than 2.6.32 (which has long term support).
+	  And, Make the timing assertions consistently use assert_operator with
+	  timing difference in error message
+	  Patch by Eric Wong. [Bug #5335] [ruby-core:39618]
+
 Tue Oct  4 16:17:50 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/time.rb (Time.strptime): use Time.at if d[:seconds] is set.
