@@ -1248,6 +1248,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_too_long_path2
+    skip
     bug4315 = '[ruby-core:34833]'
     exs = [Errno::ENOENT]
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
