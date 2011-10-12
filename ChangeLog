@@ -1,3 +1,8 @@
+Wed Oct 12 23:39:58 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* test/openssl/test_ssl.rb: Move duplicated tests for SSL::Session to
+	  test_ssl_session.rb
+
 Tue Oct 11 08:49:40 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* array.c (rb_ary_initialize):  Improve explanation of Array.new
