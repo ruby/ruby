@@ -1,3 +1,11 @@
+Fri Oct 14 05:58:05 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* atomic.h (ATOMIC_INC, ATOMIC_DEC): return old values.
+	  [ruby-dev:44596] [Bug #5439]
+
+	* signal.c (ruby_atomic_exchange): no needs to define on the
+	  platforms where atomic.h is available.
+
 Thu Oct 13 19:29:40 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* atomic.h (ATOMIC_*): use atomic_ops(3C) when SunStudio on Solaris.

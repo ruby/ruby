@@ -54,11 +54,12 @@ typedef unsigned int rb_atomic_t;
 
 #else
 typedef int rb_atomic_t;
+#define NEED_RUBY_ATOMIC_EXCHANGE
 extern rb_atomic_t ruby_atomic_exchange(rb_atomic_t *ptr, rb_atomic_t val);
 
 # define ATOMIC_SET(var, val) (void)((var) = (val))
-# define ATOMIC_INC(var) (++(var))
-# define ATOMIC_DEC(var) (--(var))
+# define ATOMIC_INC(var) ((var)++)
+# define ATOMIC_DEC(var) ((var)--)
 # define ATOMIC_OR(var, val) ((var) |= (val))
 # define ATOMIC_EXCHANGE(var, val) ruby_atomic_exchange(&(var), (val))
 #endif
