@@ -42,6 +42,16 @@ typedef unsigned int rb_atomic_t; /* Anything OK */
 # define ATOMIC_OR(var, val) __sync_or_and_fetch(&(var), (val))
 # define ATOMIC_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
 
+#elif defined(__SUNPRO_C)
+#include <atomic.h>
+typedef unsigned int rb_atomic_t;
+
+# define ATOMIC_SET(var, val) (void)atomic_swap_uint(&(var), (val))
+# define ATOMIC_INC(var) atomic_inc_uint(&(var))
+# define ATOMIC_DEC(var) atomic_dec_uint(&(var))
+# define ATOMIC_OR(var, val) atomic_or_uint(&(var), (val))
+# define ATOMIC_EXCHANGE(var, val) atomic_swap_uint(&(var), (val))
+
 #else
 typedef int rb_atomic_t;
 extern rb_atomic_t ruby_atomic_exchange(rb_atomic_t *ptr, rb_atomic_t val);

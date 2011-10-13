@@ -1,3 +1,8 @@
+Thu Oct 13 19:29:40 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* atomic.h (ATOMIC_*): use atomic_ops(3C) when SunStudio on Solaris.
+	  [ruby-dev:44596] [Bug #5439]
+
 Thu Oct 13 18:13:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* atomic.h(ATOMIC_SET): add cast to void to prevent misuse.
