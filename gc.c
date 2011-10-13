@@ -2977,7 +2977,7 @@ void
 rb_gc_finalize_deferred(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    if (ATOMIC_SET(finalizing, 1)) return;
+    if (ATOMIC_EXCHANGE(finalizing, 1)) return;
     finalize_deferred(objspace);
     ATOMIC_SET(finalizing, 0);
 }
@@ -3031,7 +3031,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     /* run finalizers */
     gc_clear_mark_on_sweep_slots(objspace);
 
-    if (ATOMIC_SET(finalizing, 1)) return;
+    if (ATOMIC_EXCHANGE(finalizing, 1)) return;
 
     do {
 	/* XXX: this loop will make no sense */

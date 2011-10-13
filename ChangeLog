@@ -1,3 +1,9 @@
+Thu Oct 13 18:04:27 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_gc_finalize_deferred, rb_objspace_call_finalizer):
+	  should use ATOMIC_EXCHANGE() to check the previous value.
+	  [ruby-dev:44596] [Bug #5439]
+
 Wed Oct 12 23:39:58 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* test/openssl/test_ssl.rb: Move duplicated tests for SSL::Session to
