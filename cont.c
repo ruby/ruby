@@ -1206,10 +1206,10 @@ fiber_store(rb_fiber_t *next_fib)
 
 #if !FIBER_USE_NATIVE
     cont_save_machine_stack(th, &fib->cont);
+#endif
 
-    if (ruby_setjmp(fib->cont.jmpbuf)) {
-#else /* FIBER_USE_NATIVE */
-    {
+    if (FIBER_USE_NATIVE || ruby_setjmp(fib->cont.jmpbuf)) {
+#if FIBER_USE_NATIVE
 	fiber_setcontext(next_fib, fib);
 #ifndef _WIN32
 	if (terminated_machine_stack.ptr) {
