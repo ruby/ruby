@@ -1,3 +1,8 @@
+Thu Oct 13 18:13:04 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* atomic.h(ATOMIC_SET): add cast to void to prevent misuse.
+	  [ruby-dev:44596] [Bug #5439]
+
 Thu Oct 13 18:04:27 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_gc_finalize_deferred, rb_objspace_call_finalizer):
