@@ -71,6 +71,7 @@ VALUE rb_ary_entry(VALUE, long);
 VALUE rb_ary_each(VALUE);
 VALUE rb_ary_join(VALUE, VALUE);
 VALUE rb_ary_reverse(VALUE);
+VALUE rb_ary_rotate(VALUE, long);
 VALUE rb_ary_sort(VALUE);
 VALUE rb_ary_sort_bang(VALUE);
 VALUE rb_ary_delete(VALUE, VALUE);
