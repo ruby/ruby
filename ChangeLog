@@ -5,7 +5,7 @@ Fri Oct 14 12:13:57 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Oct 14 11:19:37 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* include/ruby/intern.h (rb_ary_reverse): export.
+	* include/ruby/intern.h (rb_ary_rotate): export.
 
 Fri Oct 14 05:58:05 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
