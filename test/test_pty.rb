@@ -163,5 +163,37 @@ class TestPTY < Test::Unit::TestCase
       }
     end
   end
+
+  def test_pty_check_default
+    st1 = st2 = pid = nil
+    `echo` # preset $?
+    PTY.spawn("cat") do |r,w,id|
+      pid = id
+      st1 = PTY.check(pid)
+      w.close
+      r.close
+      sleep(0.1)
+      st2 = PTY.check(pid)
+    end
+    assert_equal(pid, st1.pid) if st1
+    assert_nil(st1)
+    assert_equal(pid, st2.pid)
+  end
+
+  def test_pty_check_raise
+    bug2642 = '[ruby-dev:44600]'
+    st1 = st2 = pid = nil
+    PTY.spawn("cat") do |r,w,id|
+      pid = id
+      assert_nothing_raised(PTY::ChildExited, bug2642) {st1 = PTY.check(pid, true)}
+      w.close
+      r.close
+      sleep(0.1)
+      st2 = assert_raise(PTY::ChildExited, bug2642) {PTY.check(pid, true)}.status
+    end
+    assert_equal(pid, st1.pid) if st1
+    assert_nil(st1)
+    assert_equal(pid, st2.pid)
+  end
 end if defined? PTY
 
