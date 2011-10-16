@@ -1,3 +1,12 @@
+Sun Oct 16 19:46:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.gemspec (files): fixed typo, and
+	  removed nonexistent file.
+
+	* ext/bigdecimal/bigdecimal.gemspec (homepage): added.
+
+	* ext/io/console/io-console.gemspec (homepage): ditto.
+
 Fri Oct 14 12:13:57 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pty/pty.c (pty_check): should return nil until the child
