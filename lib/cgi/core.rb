@@ -462,7 +462,7 @@ class CGI
     #
     def read_multipart(boundary, content_length)
       ## read first boundary
-      stdin = $stdin
+      stdin = stdinput
       first_line = "--#{boundary}#{EOL}"
       content_length -= first_line.bytesize
       status = stdin.read(first_line.bytesize)
