@@ -1,3 +1,9 @@
+Tue Oct 18 23:28:53 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (identhash): share with type_numhash.
+
+	* st.c (st_hashtype_num): rename from type_numhash.
+
 Tue Oct 18 23:07:30 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (ruby_current_thread): probeprofiler has been removed

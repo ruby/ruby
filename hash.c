@@ -106,10 +106,8 @@ static const struct st_hash_type objhash = {
     rb_any_hash,
 };
 
-static const struct st_hash_type identhash = {
-    st_numcmp,
-    st_numhash,
-};
+extern const struct st_hash_type st_hashtype_num;
+#define identhash st_hashtype_num
 
 typedef int st_foreach_func(st_data_t, st_data_t, st_data_t);
 

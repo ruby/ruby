@@ -38,7 +38,8 @@ struct st_table_entry {
      *
      */
 
-static const struct st_hash_type type_numhash = {
+#define type_numhash st_hashtype_num
+const struct st_hash_type st_hashtype_num = {
     st_numcmp,
     st_numhash,
 };
