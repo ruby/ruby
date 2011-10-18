@@ -682,7 +682,7 @@ int rb_autoloading_value(VALUE mod, ID id, VALUE* value);
 /* for thread */
 
 #if RUBY_VM_THREAD_MODEL == 2
-RUBY_EXTERN rb_thread_t *ruby_current_thread;
+extern rb_thread_t *ruby_current_thread;
 extern rb_vm_t *ruby_current_vm;
 
 #define GET_VM() ruby_current_vm

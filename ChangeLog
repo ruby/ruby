@@ -1,3 +1,8 @@
+Tue Oct 18 23:07:30 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (ruby_current_thread): probeprofiler has been removed
+	  long ago.
+
 Tue Oct 18 23:05:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/ripper/eventids2.c (ripper_init_eventids2): separate
