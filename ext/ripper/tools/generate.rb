@@ -74,15 +74,18 @@ def generate_eventids1(ids)
   end
   buf << %Q[\n]
   buf << %Q[static void\n]
-  buf << %Q[ripper_init_eventids1(VALUE self)\n]
+  buf << %Q[ripper_init_eventids1(void)\n]
   buf << %Q[{\n]
-  buf << %Q[    VALUE h;\n]
-  buf << %Q[    ID id;\n]
   ids.each do |id, arity|
     buf << %Q[    ripper_id_#{id} = rb_intern_const("on_#{id}");\n]
   end
+  buf << %Q[}\n]
   buf << %Q[\n]
-  buf << %Q[    h = rb_hash_new();\n]
+  buf << %Q[static void\n]
+  buf << %Q[ripper_init_eventids1_table(VALUE self)\n]
+  buf << %Q[{\n]
+  buf << %Q[    VALUE h = rb_hash_new();\n]
+  buf << %Q[    ID id;\n]
   buf << %Q[    rb_define_const(self, "PARSER_EVENT_TABLE", h);\n]
   ids.each do |id, arity|
     buf << %Q[    id = rb_intern_const("#{id}");\n]

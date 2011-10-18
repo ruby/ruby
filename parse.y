@@ -10969,17 +10969,25 @@ ripper_value(VALUE self, VALUE obj)
 
 
 void
-InitVM_ripper(void)
+Init_ripper(void)
 {
     parser_data_type.parent = RTYPEDDATA_TYPE(rb_parser_new());
+
+    ripper_id_gets = rb_intern("gets");
+    ripper_init_eventids1();
+    ripper_init_eventids2();
+    /* ensure existing in symbol table */
+    (void)rb_intern("||");
+    (void)rb_intern("&&");
+
+    InitVM(ripper);
 }
 
 void
-Init_ripper(void)
+InitVM_ripper(void)
 {
     VALUE Ripper;
 
-    InitVM(ripper);
     Ripper = rb_define_class("Ripper", rb_cObject);
     rb_define_const(Ripper, "Version", rb_usascii_str_new2(RIPPER_VERSION));
     rb_define_alloc_func(Ripper, ripper_s_allocate);
@@ -10998,12 +11006,8 @@ Init_ripper(void)
     rb_define_method(rb_mKernel, "validate_object", ripper_validate_object, 1);
 #endif
 
-    ripper_id_gets = rb_intern("gets");
-    ripper_init_eventids1(Ripper);
-    ripper_init_eventids2(Ripper);
-    /* ensure existing in symbol table */
-    (void)rb_intern("||");
-    (void)rb_intern("&&");
+    ripper_init_eventids1_table(Ripper);
+    ripper_init_eventids2_table(Ripper);
 
 # if 0
     /* Hack to let RDoc document SCRIPT_LINES__ */

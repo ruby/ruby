@@ -1,3 +1,12 @@
+Tue Oct 18 23:05:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/ripper/eventids2.c (ripper_init_eventids2): separate
+	  initializations of IDs and objects.
+
+	* ext/ripper/tools/generate.rb (generate_eventids1): ditto.
+
+	* parse.y (Init_ripper, InitVM_ripper): fix inversed roles.
+
 Sun Oct 16 19:46:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.gemspec (files): fixed typo, and
