@@ -1,3 +1,8 @@
+Wed Oct 19 11:48:44 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* error.c (Init_Exception):  Document $! and $@.  Provide
+	  recommendations for creating exceptions for a library.
+
 Wed Oct 19 11:25:46 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* error.c (Init_Exception):  Add hierarchy of Exception subclasses.
