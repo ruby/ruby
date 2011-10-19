@@ -307,6 +307,7 @@ module OpenSSL::Buffering
   def do_write(s)
     @wbuffer = "" unless defined? @wbuffer
     @wbuffer << s
+    @wbuffer.force_encoding(Encoding::BINARY)
     @sync ||= false
     if @sync or @wbuffer.size > BLOCK_SIZE or idx = @wbuffer.rindex($/)
       remain = idx ? idx + $/.size : @wbuffer.length
@@ -333,7 +334,7 @@ module OpenSSL::Buffering
 
   def write(s)
     do_write(s)
-    s.length
+    s.bytesize
   end
 
   ##

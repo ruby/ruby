@@ -1,3 +1,13 @@
+Thu Oct 20 06:55:32 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* lib/openssl/buffering.rb: Force multi-byte strings to be treated as
+	  binary data.
+	* test/openssl/test_ssl.rb: Add test for it.
+
+	Thanks to Niklas Baumstark for reporting the issue!
+
+	[Ruby 1.9 - Bug #5233] [ruby-core:39120]
+
 Wed Oct 19 17:06:54 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* version.h (RUBY_VERSION): finally declare start of 2.0 work!

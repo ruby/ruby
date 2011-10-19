@@ -394,6 +394,36 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       end
     end
   end
+
+  def test_multibyte_read_write
+    #German a umlaut
+    auml = [%w{ C3 A4 }.join('')].pack('H*')
+    auml.force_encoding(Encoding::UTF_8)
+
+    str = nil
+    num_written = nil
+
+    server_proc = Proc.new {|ctx, ssl|
+      cmp = ssl.read
+      raw_size = cmp.size
+      cmp.force_encoding(Encoding::UTF_8)
+      assert_equal(str, cmp)
+      assert_equal(num_written, raw_size)
+      ssl.close
+    }
+
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, :server_proc => server_proc){|server, port|
+      [10, 1000, 100000].each {|i|
+        sock = TCPSocket.new("127.0.0.1", port)
+        ssl = OpenSSL::SSL::SSLSocket.new(sock)
+        ssl.sync_close = true
+        ssl.connect
+        str = auml * i
+        num_written = ssl.write(str)
+        ssl.close
+      }
+    }
+  end
 end
 
 end
