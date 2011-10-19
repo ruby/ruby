@@ -1,6 +1,6 @@
 Wed Oct 19 17:06:54 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* version.h (RUBY_RELEASE_DATE): finally declare start of 2.0 work!
+	* version.h (RUBY_VERSION): finally declare start of 2.0 work!
 
 Wed Oct 19 11:48:44 2011  Eric Hodel  <drbrain@segment7.net>
 
@@ -23,7 +23,7 @@ Wed Oct 19 12:11:26 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 	  ext/openssl/ossl_pkey.c: ditto
 
 	* ext/openssl/ossl_pkey_dh.c: Make functions passed to
-	  rb_thread_blocking_region return VALUE instead of void. 
+	  rb_thread_blocking_region return VALUE instead of void.
 	  ext/openssl/ossl_pkey_dsa.c: ditto
 	  ext/openssl/ossl_pkey_rsa.c: ditto
 
