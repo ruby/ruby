@@ -1,3 +1,8 @@
+Wed Oct 19 11:04:47 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* enum.c: Reformat block args to a single standard, { |args| ... }.
+	  Patch by b t.  [Ruby 1.9 - Bug #5393]
+
 Wed Oct 19 12:11:26 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_ssl.c: Remove set, but unused variables.
