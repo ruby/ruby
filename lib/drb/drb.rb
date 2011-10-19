@@ -1441,7 +1441,8 @@ module DRb
     # front object, is this method not included in that list?
     def insecure_method?(obj, msg_id)
       INSECURE_METHOD.include?(msg_id) ||
-        (obj.respond_to?(:drb_safe_methods_list) &&
+        (obj.public_methods.include?(:drb_safe_methods_list)  &&
+         obj.public_methods.include?(msg_id) &&
          !obj.drb_safe_methods_list.include?(msg_id))
     end
 
