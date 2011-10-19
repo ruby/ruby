@@ -228,12 +228,25 @@ ossl_spki_verify(VALUE self, VALUE key)
     return Qnil; /* dummy */
 }
 
-/*
- * NETSCAPE_SPKI init
+/* Document-class: OpenSSL::Netscape::SPKI
+ *
+ * A Simple Public Key Infrastructure implementation (pronounced "spookey").
+ * See {RFC 2692}[http://tools.ietf.org/html/rfc2692] and {RFC
+ * 2693}[http://tools.ietf.org/html/rfc2692] for details.
+ */
+
+/* Document-module: OpenSSL::Netscape
+ *
+ * OpenSSL::Netscape is a namespace for SPKI (Simple Public Key
+ * Infrastructure) which implements Signed Public Key and Challenge.
  */
 void
 Init_ossl_ns_spki()
 {
+#if 0
+    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
+#endif
+
     mNetscape = rb_define_module_under(mOSSL, "Netscape");
 
     eSPKIError = rb_define_class_under(mNetscape, "SPKIError", eOSSLError);

@@ -1,3 +1,8 @@
+Thu Oct 20 05:58:02 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl_ns_spki.c (Init_ossl_ns_spki):  Stub documentation
+	  for Netscape SPKI.
+
 Thu Oct 20 05:13:39 2011  Ryan Davis  <ryan@lust.zenspider.com>
 
 	* lib/minitest/*: Imported minitest 2.6.2 (r6712)
