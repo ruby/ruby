@@ -1,3 +1,8 @@
+Wed Oct 19 11:25:46 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* error.c (Init_Exception):  Add hierarchy of Exception subclasses.
+	  Based on patch by Sylvain Daubert.  [Ruby 1.9 - Bug #5438]
+
 Wed Oct 19 11:04:47 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* enum.c: Reformat block args to a single standard, { |args| ... }.

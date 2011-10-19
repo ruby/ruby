@@ -1530,6 +1530,38 @@ syserr_eqq(VALUE self, VALUE exc)
  *  optional traceback information. Programs may subclass
  *  <code>Exception</code>, or more typically <code>StandardError</code>
  *  to provide custom classes and add additional information.
+ *
+ *  The built-in subclasses of Exception are:
+ *
+ *  * NoMemoryError
+ *  * ScriptError
+ *    * LoadError
+ *    * NotImplementedError
+ *    * SyntaxError
+ *  * SignalException
+ *    * Interrupt
+ *  * StandardError -- default for +rescue+
+ *    * ArgumentError
+ *    * IndexError
+ *      * StopIteration
+ *    * IOError
+ *      * EOFError
+ *    * LocalJumpError
+ *    * NameError
+ *      * NoMethodError
+ *    * RangeError
+ *      * FloatDomainError
+ *    * RegexpError
+ *    * RuntimeError -- default for +raise+
+ *    * SecurityError
+ *    * SystemCallError
+ *      * Errno::*
+ *    * SystemStackError
+ *    * ThreadError
+ *    * TypeError
+ *    * ZeroDivisionError
+ *  * SystemExit
+ *  * fatal -- impossible to rescue
  */
 
 void
