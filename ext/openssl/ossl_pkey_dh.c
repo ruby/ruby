@@ -90,11 +90,12 @@ struct dh_blocking_gen_arg {
     int result;
 };
 
-static void
+static VALUE
 dh_blocking_gen(void *arg)
 {
     struct dh_blocking_gen_arg *gen = (struct dh_blocking_gen_arg *)arg;
     gen->result = DH_generate_parameters_ex(gen->dh, gen->size, gen->gen, gen->cb);
+    return Qnil;
 }
 #endif
 

@@ -38,7 +38,7 @@ ossl_generate_cb(int p, int n, void *arg)
 int
 ossl_generate_cb_2(int p, int n, BN_GENCB *cb)
 {
-    VALUE ary, ret;
+    VALUE ary;
     struct ossl_generate_cb_arg *arg;
     int state;
 
@@ -51,7 +51,7 @@ ossl_generate_cb_2(int p, int n, BN_GENCB *cb)
 	/*
 	* can be break by raising exception or 'break'
 	*/
-	ret = rb_protect(rb_yield, ary, &state);
+	rb_protect(rb_yield, ary, &state);
 	if (state) {
 	    arg->stop = 1;
 	    arg->state = state;

@@ -1,3 +1,13 @@
+Wed Oct 19 12:11:26 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_ssl.c: Remove set, but unused variables.
+	  ext/openssl/ossl_pkey.c: ditto
+
+	* ext/openssl/ossl_pkey_dh.c: Make functions passed to
+	  rb_thread_blocking_region return VALUE instead of void. 
+	  ext/openssl/ossl_pkey_dsa.c: ditto
+	  ext/openssl/ossl_pkey_rsa.c: ditto
+
 Tue Oct 18 23:28:53 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (identhash): share with type_numhash.

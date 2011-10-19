@@ -85,11 +85,12 @@ struct rsa_blocking_gen_arg {
     int result;
 };
 
-static void
+static VALUE
 rsa_blocking_gen(void *arg)
 {
     struct rsa_blocking_gen_arg *gen = (struct rsa_blocking_gen_arg *)arg;
     gen->result = RSA_generate_key_ex(gen->rsa, gen->size, gen->e, gen->cb);
+    return Qnil;
 }
 #endif
 

@@ -87,11 +87,12 @@ struct dsa_blocking_gen_arg {
     int result;
 };
 
-static void
+static VALUE
 dsa_blocking_gen(void *arg)
 {
     struct dsa_blocking_gen_arg *gen = (struct dsa_blocking_gen_arg *)arg;
     gen->result = DSA_generate_parameters_ex(gen->dsa, gen->size, gen->seed, gen->seed_len, gen->counter, gen->h, gen->cb);
+    return Qnil;
 }
 #endif
 
