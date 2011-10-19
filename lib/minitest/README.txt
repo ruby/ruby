@@ -1,12 +1,24 @@
 = minitest/{unit,spec,mock,benchmark}
 
 home :: https://github.com/seattlerb/minitest
-rdoc :: http://bfts.rubyforge.org/minitest
+rdoc :: http://docs.seattlerb.org/minitest
+vim  :: https://github.com/sunaku/vim-ruby-minitest
 
 == DESCRIPTION:
 
 minitest provides a complete suite of testing facilities supporting
 TDD, BDD, mocking, and benchmarking.
+
+    "I had a class with Jim Weirich on testing last week and we were
+     allowed to choose our testing frameworks. Kirk Haines and I were
+     paired up and we cracked open the code for a few test
+     frameworks...
+
+     I MUST say that mintiest is *very* readable / understandable
+     compared to the 'other two' options we looked at. Nicely done and
+     thank you for helping us keep our mental sanity."
+
+    -- Wayne E. Seguin
 
 minitest/unit is a small and incredibly fast unit testing framework.
 It provides a rich set of assertions to make your tests clean and
@@ -31,6 +43,11 @@ minitest/unit is meant to have a clean implementation for language
 implementors that need a minimal set of methods to bootstrap a working
 test suite. For example, there is no magic involved for test-case
 discovery.
+
+    "Again, I can’t praise enough the idea of a testing/specing
+     framework that I can actually read in full in one sitting!"
+
+    -- Piotr Szotkowski
 
 == FEATURES/PROBLEMS:
 

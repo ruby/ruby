@@ -95,9 +95,14 @@ describe MiniTest::Spec do
     proc { 42.must_be_nil }.must_raise MiniTest::Assertion
   end
 
-  it "needs to verify using any operator" do
+  it "needs to verify using any binary operator" do
     41.must_be(:<, 42).must_equal true
     proc { 42.must_be(:<, 41) }.must_raise MiniTest::Assertion
+  end
+
+  it "needs to verify using any predicate" do
+    "".must_be(:empty?).must_equal true
+    proc { "blah".must_be(:empty?) }.must_raise MiniTest::Assertion
   end
 
   it "needs to catch an expected exception" do
@@ -154,6 +159,11 @@ describe MiniTest::Spec do
     @assertion_count = 6
     "blah".wont_match(/\d+/).must_equal false
     proc { "blah".wont_match(/\w+/) }.must_raise MiniTest::Assertion
+  end
+
+  it "needs to verify using any (negative) predicate" do
+    "blah".wont_be(:empty?).must_equal false
+    proc { "".wont_be(:empty?) }.must_raise MiniTest::Assertion
   end
 
   it "needs to verify non-nil" do
@@ -277,6 +287,9 @@ class TestMeta < MiniTest::Unit::TestCase
           before { before_list << 3 }
           after  { after_list  << 3 }
           it "inner-it" do end
+
+          it      {} # ignore me
+          specify {} # anonymous it
         end
       end
     end
@@ -328,11 +341,13 @@ class TestMeta < MiniTest::Unit::TestCase
     assert_equal "very inner thingy", z.desc
 
     top_methods = %w(test_0001_top_level_it)
-    inner_methods = %w(test_0001_inner_it)
+    inner_methods1 = %w(test_0001_inner_it)
+    inner_methods2 = inner_methods1 +
+      %w(test_0002_anonymous test_0003_anonymous)
 
-    assert_equal top_methods,   x.instance_methods(false).sort.map {|o| o.to_s }
-    assert_equal inner_methods, y.instance_methods(false).sort.map {|o| o.to_s }
-    assert_equal inner_methods, z.instance_methods(false).sort.map {|o| o.to_s }
+    assert_equal top_methods,   x.instance_methods(false).sort.map(&:to_s)
+    assert_equal inner_methods1, y.instance_methods(false).sort.map(&:to_s)
+    assert_equal inner_methods2, z.instance_methods(false).sort.map(&:to_s)
   end
 
   def test_setup_teardown_behavior

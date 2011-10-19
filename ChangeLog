@@ -1,3 +1,8 @@
+Thu Oct 20 05:13:39 2011  Ryan Davis  <ryan@lust.zenspider.com>
+
+	* lib/minitest/*: Imported minitest 2.6.2 (r6712)
+	* test/minitest/*: ditto
+
 Thu Oct 20 06:55:32 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* lib/openssl/buffering.rb: Force multi-byte strings to be treated as

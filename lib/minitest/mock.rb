@@ -99,7 +99,7 @@ module MiniTest
     end
 
     def respond_to?(sym) # :nodoc:
-      return true if @expected_calls.has_key?(sym)
+      return true if @expected_calls.has_key?(sym.to_sym)
       return __respond_to?(sym)
     end
   end

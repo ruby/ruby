@@ -91,6 +91,7 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
 
   def test_respond_appropriately
     assert @mock.respond_to?(:foo)
+    assert @mock.respond_to?('foo')
     assert !@mock.respond_to?(:bar)
   end
 

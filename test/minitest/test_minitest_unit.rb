@@ -587,7 +587,7 @@ Finished tests in 0.00
   end
 
   def util_expand_bt bt
-    if RUBY_VERSION =~ /^1\.9/ then
+    if RUBY_VERSION >= '1.9.0' then
       bt.map { |f| (f =~ /^\./) ? File.expand_path(f) : f }
     else
       bt
@@ -883,6 +883,13 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
     @tc.assert_operator 2, :>, 1
   end
 
+  def test_assert_operator_bad_object
+    bad = Object.new
+    def bad.==(other) true end
+
+    @tc.assert_operator bad, :equal?, bad
+  end
+
   def test_assert_operator_triggered
     util_assert_triggered "Expected 2 to be < 1." do
       @tc.assert_operator 2, :<, 1
@@ -990,7 +997,7 @@ FILE:LINE:in `test_assert_raises_triggered_different'
 ---------------"
 
     actual = e.message.gsub(/^.+:\d+/, 'FILE:LINE')
-    actual.gsub!(/block \(\d+ levels\) in /, '') if RUBY_VERSION =~ /^1\.9/
+    actual.gsub!(/block \(\d+ levels\) in /, '') if RUBY_VERSION >= '1.9.0'
 
     assert_equal expected, actual
   end
@@ -1011,7 +1018,7 @@ FILE:LINE:in `test_assert_raises_triggered_different_msg'
 ---------------"
 
     actual = e.message.gsub(/^.+:\d+/, 'FILE:LINE')
-    actual.gsub!(/block \(\d+ levels\) in /, '') if RUBY_VERSION =~ /^1\.9/
+    actual.gsub!(/block \(\d+ levels\) in /, '') if RUBY_VERSION >= '1.9.0'
 
     assert_equal expected, actual
   end
@@ -1055,7 +1062,7 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
 ---------------"
 
     actual = e.message.gsub(/^.+:\d+/, 'FILE:LINE')
-    actual.gsub!(/block \(\d+ levels\) in /, '') if RUBY_VERSION =~ /^1\.9/
+    actual.gsub!(/block \(\d+ levels\) in /, '') if RUBY_VERSION >= '1.9.0'
 
     assert_equal expected, actual
   end
@@ -1362,6 +1369,13 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
 
   def test_refute_operator
     @tc.refute_operator 2, :<, 1
+  end
+
+  def test_refute_operator_bad_object
+    bad = Object.new
+    def bad.==(other) true end
+
+    @tc.refute_operator true, :equal?, bad
   end
 
   def test_refute_operator_triggered
