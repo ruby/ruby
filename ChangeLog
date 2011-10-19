@@ -1,3 +1,7 @@
+Wed Oct 19 17:06:54 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* version.h (RUBY_RELEASE_DATE): finally declare start of 2.0 work!
+
 Wed Oct 19 11:48:44 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* error.c (Init_Exception):  Document $! and $@.  Provide
