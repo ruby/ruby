@@ -654,15 +654,17 @@ exit_handler(void)
 {
     if (NtSocketsInitialized) {
 	WSACleanup();
-	st_free_table(socklist);
-	socklist = NULL;
+	if (socklist) {
+	    st_free_table(socklist);
+	    socklist = NULL;
+	}
+	DeleteCriticalSection(&select_mutex);
 	NtSocketsInitialized = 0;
     }
     if (envarea) {
 	FreeEnvironmentStrings(envarea);
 	envarea = NULL;
     }
-    DeleteCriticalSection(&select_mutex);
 }
 
 /* License: Artistic or GPL */
@@ -682,9 +684,57 @@ StartSockets(void)
     if (LOBYTE(retdata.wVersion) != 2)
 	rb_fatal("could not find version 2 of winsock dll\n");
 
-    socklist = st_init_numtable();
+    InitializeCriticalSection(&select_mutex);
 
     NtSocketsInitialized = 1;
+}
+
+/* License: Ruby's */
+static inline int
+socklist_insert(SOCKET sock, int flag)
+{
+    if (!socklist)
+	socklist = st_init_numtable();
+    return st_insert(socklist, (st_data_t)sock, (st_data_t)flag);
+}
+
+/* License: Ruby's */
+static inline int
+socklist_lookup(SOCKET sock, int *flagp)
+{
+    st_data_t data;
+    int ret;
+
+    if (!socklist)
+	return 0;
+    ret = st_lookup(socklist, (st_data_t)sock, (st_data_t *)&data);
+    if (ret && flagp)
+	*flagp = (int)data;
+
+    return ret;
+}
+
+/* License: Ruby's */
+static inline int
+socklist_delete(SOCKET *sockp, int *flagp)
+{
+    st_data_t key;
+    st_data_t data;
+    int ret;
+
+    if (!socklist)
+	return 0;
+    key = (st_data_t)*sockp;
+    if (flagp)
+	data = (st_data_t)*flagp;
+    ret = st_delete(socklist, &key, &data);
+    if (ret) {
+	*sockp = (SOCKET)key;
+	if (flagp)
+	    *flagp = (int)data;
+    }
+
+    return ret;
 }
 
 //
@@ -721,8 +771,6 @@ rb_w32_sysinit(int *argc, char ***argv)
     init_func();
 
     init_stdhandle();
-
-    InitializeCriticalSection(&select_mutex);
 
     atexit(exit_handler);
 
@@ -2270,7 +2318,7 @@ rb_w32_open_osfhandle(intptr_t osfhandle, int flags)
 static int
 is_socket(SOCKET sock)
 {
-    if (st_lookup(socklist, (st_data_t)sock, NULL))
+    if (socklist_lookup(sock, NULL))
 	return TRUE;
     else
 	return FALSE;
@@ -2665,6 +2713,9 @@ do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	    rb_w32_sleep(INFINITE);
     }
     else {
+	if (!NtSocketsInitialized)
+	    StartSockets();
+
 	RUBY_CRITICAL(
 	    EnterCriticalSection(&select_mutex);
 	    r = select(nfds, rd, wr, ex, timeout);
@@ -2755,10 +2806,6 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	    limit.tv_usec -= 1000000;
 	    limit.tv_sec++;
 	}
-    }
-
-    if (!NtSocketsInitialized) {
-	StartSockets();
     }
 
     // assume else_{rd,wr} (other than socket, pipe reader, console reader)
@@ -2904,7 +2951,7 @@ rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
 		_set_osfhnd(fd, r);
 		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
 		CloseHandle(h);
-		st_insert(socklist, (st_data_t)r, (st_data_t)0);
+		socklist_insert(r, 0);
 	    }
 	    else {
 		errno = map_errno(WSAGetLastError());
@@ -3101,7 +3148,6 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
     int r;
     int ret;
     int mode;
-    st_data_t data;
     DWORD flg;
     WSAOVERLAPPED wol;
     WSABUF wbuf;
@@ -3111,8 +3157,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 	StartSockets();
 
     s = TO_SOCKET(fd);
-    st_lookup(socklist, (st_data_t)s, &data);
-    mode = (int)data;
+    socklist_lookup(s, &mode);
     if (!cancel_io || (mode & O_NONBLOCK)) {
 	RUBY_CRITICAL({
 	    if (input) {
@@ -3237,7 +3282,6 @@ recvmsg(int fd, struct msghdr *msg, int flags)
     static WSARecvMsg_t pWSARecvMsg = NULL;
     WSAMSG wsamsg;
     SOCKET s;
-    st_data_t data;
     int mode;
     DWORD len;
     int ret;
@@ -3257,8 +3301,7 @@ recvmsg(int fd, struct msghdr *msg, int flags)
     msghdr_to_wsamsg(msg, &wsamsg);
     wsamsg.dwFlags |= flags;
 
-    st_lookup(socklist, (st_data_t)s, &data);
-    mode = (int)data;
+    socklist_lookup(s, &mode);
     if (!cancel_io || (mode & O_NONBLOCK)) {
 	RUBY_CRITICAL({
 	    if ((ret = pWSARecvMsg(s, &wsamsg, &len, NULL, NULL)) == SOCKET_ERROR) {
@@ -3297,7 +3340,6 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
     static WSASendMsg_t pWSASendMsg = NULL;
     WSAMSG wsamsg;
     SOCKET s;
-    st_data_t data;
     int mode;
     DWORD len;
     int ret;
@@ -3316,8 +3358,7 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
 
     msghdr_to_wsamsg(msg, &wsamsg);
 
-    st_lookup(socklist, (st_data_t)s, &data);
-    mode = (int)data;
+    socklist_lookup(s, &mode);
     if (!cancel_io || (mode & O_NONBLOCK)) {
 	RUBY_CRITICAL({
 	    if ((ret = pWSASendMsg(s, &wsamsg, flags, &len, NULL, NULL)) == SOCKET_ERROR) {
@@ -3446,7 +3487,7 @@ rb_w32_socket(int af, int type, int protocol)
 	else {
 	    fd = rb_w32_open_osfhandle(s, O_RDWR|O_BINARY|O_NOINHERIT);
 	    if (fd != -1)
-		st_insert(socklist, (st_data_t)s, (st_data_t)0);
+		socklist_insert(s, 0);
 	    else
 		closesocket(s);
 	}
@@ -3691,8 +3732,8 @@ rb_w32_socketpair(int af, int type, int protocol, int *sv)
 	closesocket(pair[1]);
 	return -1;
     }
-    st_insert(socklist, (st_data_t)pair[0], (st_data_t)0);
-    st_insert(socklist, (st_data_t)pair[1], (st_data_t)0);
+    socklist_insert(pair[0], 0);
+    socklist_insert(pair[1], 0);
 
     return 0;
 }
@@ -3733,7 +3774,6 @@ fcntl(int fd, int cmd, ...)
     int arg;
     int ret;
     int flag = 0;
-    st_data_t data;
     u_long ioctlArg;
 
     if (!is_socket(sock)) {
@@ -3748,8 +3788,7 @@ fcntl(int fd, int cmd, ...)
     va_start(va, cmd);
     arg = va_arg(va, int);
     va_end(va);
-    st_lookup(socklist, (st_data_t)sock, &data);
-    flag = (int)data;
+    socklist_lookup(sock, &flag);
     if (arg & O_NONBLOCK) {
 	flag |= O_NONBLOCK;
 	ioctlArg = 1;
@@ -3761,7 +3800,7 @@ fcntl(int fd, int cmd, ...)
     RUBY_CRITICAL({
 	ret = ioctlsocket(sock, FIONBIO, &ioctlArg);
 	if (ret == 0)
-	    st_insert(socklist, (st_data_t)sock, (st_data_t)flag);
+	    socklist_insert(sock, flag);
 	else
 	    errno = map_errno(WSAGetLastError());
     });
@@ -5323,16 +5362,13 @@ rb_w32_close(int fd)
 {
     SOCKET sock = TO_SOCKET(fd);
     int save_errno = errno;
-    st_data_t key;
 
     if (!is_socket(sock)) {
 	UnlockFile((HANDLE)sock, 0, 0, LK_LEN, LK_LEN);
 	return _close(fd);
     }
     _set_osfhnd(fd, (SOCKET)INVALID_HANDLE_VALUE);
-    key = (st_data_t)sock;
-    st_delete(socklist, &key, NULL);
-    sock = (SOCKET)key;
+    socklist_delete(&sock, NULL);
     _close(fd);
     errno = save_errno;
     if (closesocket(sock) == SOCKET_ERROR) {

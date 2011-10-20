@@ -1,3 +1,19 @@
+Thu Oct 20 22:47:28 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (socklist_insert, socklist_lookup, socklist_delete):
+	  new functions to wrap of st_insert(), st_lookup() and st_delete() to
+	  socklist.
+	  allocating socklist is deferred until it is really needed.
+
+	* win32/win32.c (exit_handler): delete socklist only if it is
+	  initialized.
+
+	* win32/win32.c (rb_w32_sysinit, StartSockets): refactoring: move
+	  initialization of select_mutex to StartSockets().
+
+	* win32/win32.c (exit_handler): refactoring: delete select_mutex only
+	  if winsock is used.
+
 Thu Oct 20 22:38:53 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_pkcs5.c: add note on timing attacks and general
