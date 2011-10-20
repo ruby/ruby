@@ -30,6 +30,7 @@ class OpenSSL::TestNSSPI < Test::Unit::TestCase
     assert_equal("RandomString", spki.challenge)
     assert_equal(key1.public_key.to_der, spki.public_key.to_der)
     assert(spki.verify(spki.public_key))
+    assert_not_nil(spki.to_text)
   end
 
   def test_decode_data

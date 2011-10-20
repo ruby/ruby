@@ -1,3 +1,8 @@
+Fri Oct 21 02:11:00 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_ns_spki.c: Complete documentation.
+	* test/openssl/test_ns_spki.rb: Integrate SPKI#to_text.
+
 Thu Oct 20 22:47:28 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (socklist_insert, socklist_lookup, socklist_delete):
