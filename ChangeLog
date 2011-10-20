@@ -1,3 +1,8 @@
+Thu Oct 20 14:28:22 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_pkcs5.rb: add RFC 6070 tests for PBKDF2 with
+	  HMAC-SHA1
+
 Thu Oct 20 11:42:23 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (mmprepare): fix for fragmental size.
