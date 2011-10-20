@@ -1,3 +1,9 @@
+Thu Oct 20 11:42:23 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (mmprepare): fix for fragmental size.
+
+	* util.c (mmswap_, mmrot3_): portability improvement.
+
 Thu Oct 20 05:58:02 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/openssl/ossl_ns_spki.c (Init_ossl_ns_spki):  Stub documentation

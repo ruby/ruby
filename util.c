@@ -187,66 +187,97 @@ ruby_strtoul(const char *str, char **endptr, int base)
 
 /* mm.c */
 
-#define A ((int*)a)
-#define B ((int*)b)
-#define C ((int*)c)
-#define D ((int*)d)
+#define mmtype long
+#define mmcount (16 / SIZEOF_LONG)
+#define A ((mmtype*)a)
+#define B ((mmtype*)b)
+#define C ((mmtype*)c)
+#define D ((mmtype*)d)
 
+#define mmstep (sizeof(mmtype) * mmcount)
 #define mmprepare(base, size) do {\
- if (((VALUE)(base) & (0x3)) == 0)\
-   if ((size) >= 16) mmkind = 1;\
+ if (((VALUE)(base) % sizeof(mmtype)) == 0 && ((size) % sizeof(mmtype)) == 0) \
+   if ((size) >= mmstep) mmkind = 1;\
    else              mmkind = 0;\
  else                mmkind = -1;\
- high = ((size) & (~0xf));\
- low  = ((size) &  0x0c);\
+ high = ((size) / mmstep) * mmstep;\
+ low  = ((size) % mmstep);\
 } while (0)\
 
 #define mmarg mmkind, size, high, low
+#define mmargdecl int mmkind, size_t size, size_t high, size_t low
 
-static void mmswap_(register char *a, register char *b, int mmkind, size_t size, size_t high, size_t low)
+static void mmswap_(register char *a, register char *b, mmargdecl)
 {
- register int s;
  if (a == b) return;
  if (mmkind >= 0) {
+   register mmtype s;
+#if mmcount > 1
    if (mmkind > 0) {
      register char *t = a + high;
      do {
        s = A[0]; A[0] = B[0]; B[0] = s;
        s = A[1]; A[1] = B[1]; B[1] = s;
+#if mmcount > 2
        s = A[2]; A[2] = B[2]; B[2] = s;
-       s = A[3]; A[3] = B[3]; B[3] = s;  a += 16; b += 16;
+#if mmcount > 3
+       s = A[3]; A[3] = B[3]; B[3] = s;
+#endif
+#endif
+       a += mmstep; b += mmstep;
      } while (a < t);
    }
+#endif
    if (low != 0) { s = A[0]; A[0] = B[0]; B[0] = s;
-     if (low >= 8) { s = A[1]; A[1] = B[1]; B[1] = s;
-       if (low == 12) {s = A[2]; A[2] = B[2]; B[2] = s;}}}
+#if mmcount > 2
+     if (low >= 2 * sizeof(mmtype)) { s = A[1]; A[1] = B[1]; B[1] = s;
+#if mmcount > 3
+       if (low >= 3 * sizeof(mmtype)) {s = A[2]; A[2] = B[2]; B[2] = s;}
+#endif
+     }
+#endif
+   }
  }
  else {
-   register char *t = a + size;
+   register char *t = a + size, s;
    do {s = *a; *a++ = *b; *b++ = s;} while (a < t);
  }
 }
 #define mmswap(a,b) mmswap_((a),(b),mmarg)
 
-static void mmrot3_(register char *a, register char *b, register char *c, int mmkind, size_t size, size_t high, size_t low)
+/* a, b, c = b, c, a */
+static void mmrot3_(register char *a, register char *b, register char *c, mmargdecl)
 {
- register int s;
  if (mmkind >= 0) {
+   register mmtype s;
+#if mmcount > 1
    if (mmkind > 0) {
      register char *t = a + high;
      do {
        s = A[0]; A[0] = B[0]; B[0] = C[0]; C[0] = s;
        s = A[1]; A[1] = B[1]; B[1] = C[1]; C[1] = s;
+#if mmcount > 2
        s = A[2]; A[2] = B[2]; B[2] = C[2]; C[2] = s;
-       s = A[3]; A[3] = B[3]; B[3] = C[3]; C[3] = s; a += 16; b += 16; c += 16;
+#if mmcount > 3
+       s = A[3]; A[3] = B[3]; B[3] = C[3]; C[3] = s;
+#endif
+#endif
+       a += mmstep; b += mmstep; c += mmstep;
      } while (a < t);
    }
+#endif
    if (low != 0) { s = A[0]; A[0] = B[0]; B[0] = C[0]; C[0] = s;
-     if (low >= 8) { s = A[1]; A[1] = B[1]; B[1] = C[1]; C[1] = s;
-       if (low == 12) {s = A[2]; A[2] = B[2]; B[2] = C[2]; C[2] = s;}}}
+#if mmcount > 2
+     if (low >= 2 * sizeof(mmtype)) { s = A[1]; A[1] = B[1]; B[1] = C[1]; C[1] = s;
+#if mmcount > 3
+       if (low == 3 * sizeof(mmtype)) {s = A[2]; A[2] = B[2]; B[2] = C[2]; C[2] = s;}
+#endif
+     }
+#endif
+   }
  }
  else {
-   register char *t = a + size;
+   register char *t = a + size, s;
    do {s = *a; *a++ = *b; *b++ = *c; *c++ = s;} while (a < t);
  }
 }
@@ -269,9 +300,9 @@ typedef struct { char *LL, *RR; } stack_node; /* Stack structure for L,l,R,r */
                        ((*cmp)((b),(c),d)<0 ? (b) : ((*cmp)((a),(c),d)<0 ? (c) : (a))) : \
                        ((*cmp)((b),(c),d)>0 ? (b) : ((*cmp)((a),(c),d)<0 ? (a) : (c))))
 
+typedef int (cmpfunc_t)(const void*, const void*, void*);
 void
-ruby_qsort(void* base, const size_t nel, const size_t size,
-	   int (*cmp)(const void*, const void*, void*), void *d)
+ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void *d)
 {
   register char *l, *r, *m;          	/* l,r:left,right group   m:median point */
   register int t, eq_l, eq_r;       	/* eq_l: all items in left group are equal to S */
