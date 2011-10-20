@@ -2,6 +2,7 @@ Thu Oct 20 21:19:15 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* vm_eval.c (check_funcall): set array elements one-by-one to fix
 	  compile error with Fujitsu C Compiler 5.6 on Solaris 10 on Sparc.
+	  [Bug #5464] [ruby-dev:44632]
 
 Thu Oct 20 13:09:35 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
