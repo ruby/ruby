@@ -1,3 +1,8 @@
+Thu Oct 20 13:09:35 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/defines.h (flush_register_windows): use software
+	  trap on Debian Sparc 32-bit userspace.  [Bug #5244]
+
 Thu Oct 20 14:28:22 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_pkcs5.rb: add RFC 6070 tests for PBKDF2 with
