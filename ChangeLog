@@ -1,4 +1,6 @@
-Fri Oct 21 22:01:35 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Oct 21 22:02:17 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (initial_params): pack in a struct.
 
 	* gc.c (rb_gc_set_params): set parameters always.
 	  [ruby-dev:44648] [Bug #5467]
