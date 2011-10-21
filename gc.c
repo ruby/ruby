@@ -414,6 +414,7 @@ rb_objspace_alloc(void)
 
     return objspace;
 }
+#endif
 
 static void initial_expand_heap(rb_objspace_t *objspace);
 
@@ -458,6 +459,7 @@ rb_gc_set_params(void)
     }
 }
 
+#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 static void gc_sweep(rb_objspace_t *);
 static void slot_sweep(rb_objspace_t *, struct heaps_slot *);
 static void gc_clear_mark_on_sweep_slots(rb_objspace_t *);
@@ -489,11 +491,6 @@ rb_objspace_free(rb_objspace_t *objspace)
 	heaps = 0;
     }
     free(objspace);
-}
-#else
-void
-rb_gc_set_params(void)
-{
 }
 #endif
 
@@ -1116,7 +1113,6 @@ init_heap(rb_objspace_t *objspace)
     finalizer_table = st_init_numtable();
 }
 
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 static void
 initial_expand_heap(rb_objspace_t *objspace)
 {
@@ -1126,7 +1122,6 @@ initial_expand_heap(rb_objspace_t *objspace)
         add_heap_slots(objspace, min_size - heaps_used);
     }
 }
-#endif
 
 static void
 set_heaps_increment(rb_objspace_t *objspace)
