@@ -1,3 +1,10 @@
+Sat Oct 22 02:07:48 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* numeric.c (rb_infinity, rb_nan): use union to prevent bus error
+	  caused by misalignment.  [Bug #5469] [ruby-dev:44657]
+
+	* include/ruby/missing.h (INFINITY, NAN): ditto
+
 Fri Oct 21 22:02:17 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (initial_params): pack in a struct.
