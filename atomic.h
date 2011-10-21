@@ -42,7 +42,7 @@ typedef unsigned int rb_atomic_t; /* Anything OK */
 # define ATOMIC_OR(var, val) __sync_or_and_fetch(&(var), (val))
 # define ATOMIC_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
 
-#elif defined(__SUNPRO_C)
+#elif defined(__sun) || defined(__sun__)
 #include <atomic.h>
 typedef unsigned int rb_atomic_t;
 

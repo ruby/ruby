@@ -1,3 +1,8 @@
+Fri Oct 21 12:10:20 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* atomic.h: change Solaris checking macro because atomic_ops can work
+	  not only with Sun Studio but also with Fujitsu C Compiler.
+
 Fri Oct 21 02:11:00 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_ns_spki.c: Complete documentation.
