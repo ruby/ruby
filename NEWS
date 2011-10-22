@@ -37,6 +37,11 @@ with all sufficient information, see the ChangeLog file.
     * Net::IMAP.default_ssl_port
     * Net::IMAP.default_imaps_port
 
+* resolv
+  * new methods:
+    * Resolv::DNS#timeouts=
+    * Resolv::DNS::Config#timeouts=
+
 === Language changes
 === Compatibility issues (excluding feature bug fixes)
 
