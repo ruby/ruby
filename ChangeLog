@@ -1,3 +1,7 @@
+Sat Oct 22 17:46:27 2011  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb: fix a exception name in previous patch.
+
 Sat Oct 22 17:43:33 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb: make timeout configurable for DNS query.

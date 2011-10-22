@@ -874,7 +874,7 @@ class Resolv
           values = Array(values)
           values.each do |t|
             Numeric === t or raise ArgumentError, "#{t.inspect} is not numeric"
-            t > 0.0 or raise Argument, "timeout=#{t} must be postive"
+            t > 0.0 or raise ArgumentError, "timeout=#{t} must be postive"
           end
           @timeouts = values
         else
