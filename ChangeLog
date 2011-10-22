@@ -1,3 +1,8 @@
+Sun Oct 23 08:01:29 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_fd_set_cloexec): set close-on-exec flag only if F_GETFD is
+	  defined.  reported by Luis Lavena.  [ruby-core:40281] [Bug #5470]
+
 Sat Oct 22 19:48:50 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/openssl/test_ssl.rb (test_multibyte_read_write): start server

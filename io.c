@@ -159,6 +159,8 @@ rb_update_max_fd(int fd)
 
 void rb_fd_set_cloexec(int fd)
 {
+  /* MinGW don't have F_GETFD and FD_CLOEXEC.  [ruby-core:40281] */
+#ifdef F_GETFD
     int flags, ret;
     flags = fcntl(fd, F_GETFD); /* should not fail except EBADF. */
     if (flags == -1) {
@@ -173,6 +175,7 @@ void rb_fd_set_cloexec(int fd)
             }
         }
     }
+#endif
     if (max_file_descriptor < fd) max_file_descriptor = fd;
 }
 
