@@ -252,7 +252,7 @@ rsock_socket(int domain, int type, int proto)
 	}
     }
     if (0 <= fd)
-        rb_update_max_fd(fd);
+        rb_fd_set_cloexec(fd);
     return fd;
 }
 
@@ -466,7 +466,7 @@ rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, s
 	}
         rb_sys_fail("accept(2)");
     }
-    rb_update_max_fd(fd2);
+    rb_fd_set_cloexec(fd2);
     make_fd_nonblock(fd2);
     return rsock_init_sock(rb_obj_alloc(klass), fd2);
 }
@@ -513,7 +513,7 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 	}
 	rb_sys_fail(0);
     }
-    rb_update_max_fd(fd2);
+    rb_fd_set_cloexec(fd2);
     if (!klass) return INT2NUM(fd2);
     return rsock_init_sock(rb_obj_alloc(klass), fd2);
 }

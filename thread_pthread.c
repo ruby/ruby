@@ -1214,8 +1214,8 @@ rb_thread_create_timer_thread(void)
 	    if (err != 0) {
 		rb_bug_errno("thread_timer: Failed to create communication pipe for timer thread", errno);
 	    }
-            rb_update_max_fd(timer_thread_pipe[0]);
-            rb_update_max_fd(timer_thread_pipe[1]);
+            rb_fd_set_cloexec(timer_thread_pipe[0]);
+            rb_fd_set_cloexec(timer_thread_pipe[1]);
 #if defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL)
 	    {
 		int oflags;

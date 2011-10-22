@@ -1870,7 +1870,7 @@ rb_f_exec(int argc, VALUE *argv)
 
     rb_exec_arg_init(argc, argv, TRUE, &earg);
     if (NIL_P(rb_ary_entry(earg.options, EXEC_OPTION_CLOSE_OTHERS)))
-        rb_exec_arg_addopt(&earg, ID2SYM(rb_intern("close_others")), Qfalse);
+        rb_exec_arg_addopt(&earg, ID2SYM(rb_intern("close_others")), Qtrue);
     rb_exec_arg_fixup(&earg);
 
     rb_exec_err(&earg, errmsg, sizeof(errmsg));
@@ -2511,7 +2511,7 @@ move_fds_to_avoid_crash(int *fdp, int n, VALUE fds)
             ret = fcntl(fdp[i], F_DUPFD, min);
             if (ret == -1)
                 return -1;
-            rb_update_max_fd(ret);
+            rb_fd_set_cloexec(ret);
             close(fdp[i]);
             fdp[i] = ret;
         }
@@ -3089,7 +3089,7 @@ rb_f_system(int argc, VALUE *argv)
 
     chfunc = signal(SIGCHLD, SIG_DFL);
 #endif
-    pid = rb_spawn_internal(argc, argv, FALSE, NULL, 0);
+    pid = rb_spawn_internal(argc, argv, TRUE, NULL, 0);
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
     if (pid > 0) {
 	rb_syswait(pid);
@@ -3164,8 +3164,7 @@ rb_f_system(int argc, VALUE *argv)
  *          integer : the file descriptor of specified the integer
  *          io      : the file descriptor specified as io.fileno
  *      file descriptor inheritance: close non-redirected non-standard fds (3, 4, 5, ...) or not
- *        :close_others => false : inherit fds (default for system and exec)
- *        :close_others => true  : don't inherit (default for spawn and IO.popen)
+ *        :close_others => true  : don't inherit
  *
  *  If a hash is given as +env+, the environment is
  *  updated by +env+ before <code>exec(2)</code> in the child process.
@@ -3560,7 +3559,7 @@ ruby_setsid(void)
     if (ret == -1) return -1;
 
     if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
-        rb_update_max_fd(fd);
+        rb_fd_set_cloexec(fd);
 	ioctl(fd, TIOCNOTTY, NULL);
 	close(fd);
     }
@@ -4851,7 +4850,7 @@ rb_daemon(int nochdir, int noclose)
 	err = chdir("/");
 
     if (!noclose && (n = open("/dev/null", O_RDWR, 0)) != -1) {
-        rb_update_max_fd(n);
+        rb_fd_set_cloexec(n);
 	(void)dup2(n, 0);
 	(void)dup2(n, 1);
 	(void)dup2(n, 2);

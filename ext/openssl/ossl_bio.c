@@ -28,7 +28,7 @@ ossl_obj2bio(VALUE obj)
 	if ((fd = dup(FPTR_TO_FD(fptr))) < 0){
 	    rb_sys_fail(0);
 	}
-        rb_update_max_fd(fd);
+        rb_fd_set_cloexec(fd);
 	if (!(fp = fdopen(fd, "r"))){
 	    close(fd);
 	    rb_sys_fail(0);

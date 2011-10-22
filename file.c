@@ -3914,7 +3914,7 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
 	if ((tmpfd = open(StringValueCStr(path), 0)) < 0) {
 	    rb_sys_fail(RSTRING_PTR(path));
 	}
-        rb_update_max_fd(tmpfd);
+        rb_fd_set_cloexec(tmpfd);
 	if (chsize(tmpfd, pos) < 0) {
 	    close(tmpfd);
 	    rb_sys_fail(RSTRING_PTR(path));
@@ -5062,7 +5062,7 @@ file_load_ok(const char *path)
     int ret = 1;
     int fd = open(path, O_RDONLY);
     if (fd == -1) return 0;
-    rb_update_max_fd(fd);
+    rb_fd_set_cloexec(fd);
 #if !defined DOSISH
     {
 	struct stat st;

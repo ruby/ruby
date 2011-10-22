@@ -157,6 +157,25 @@ rb_update_max_fd(int fd)
     if (max_file_descriptor < fd) max_file_descriptor = fd;
 }
 
+void rb_fd_set_cloexec(int fd)
+{
+    int flags, ret;
+    flags = fcntl(fd, F_GETFD); /* should not fail except EBADF. */
+    if (flags == -1) {
+        rb_bug("rb_fd_set_cloexec: fcntl(%d, F_GETFD) failed: %s", fd, strerror(errno));
+    }
+    if (2 < fd) {
+        if (!(flags & FD_CLOEXEC)) {
+            flags |= FD_CLOEXEC;
+            ret = fcntl(fd, F_SETFD, flags);
+            if (ret == -1) {
+                rb_bug("rb_fd_set_cloexec: fcntl(%d, F_SETFD, %d) failed: %s", fd, flags, strerror(errno));
+            }
+        }
+    }
+    if (max_file_descriptor < fd) max_file_descriptor = fd;
+}
+
 #define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
 #define ARGF argf_of(argf)
 
@@ -527,7 +546,7 @@ ruby_dup(int orig)
 	    rb_sys_fail(0);
 	}
     }
-    rb_update_max_fd(fd);
+    rb_fd_set_cloexec(fd);
     return fd;
 }
 
@@ -4591,7 +4610,7 @@ rb_sysopen_internal(struct sysopen_struct *data)
     int fd;
     fd = (int)rb_thread_blocking_region(sysopen_func, data, RUBY_UBF_IO, 0);
     if (0 <= fd)
-        rb_update_max_fd(fd);
+        rb_fd_set_cloexec(fd);
     return fd;
 }
 
@@ -4919,8 +4938,8 @@ rb_pipe(int *pipes)
     }
 #endif
     if (ret == 0) {
-        rb_update_max_fd(pipes[0]);
-        rb_update_max_fd(pipes[1]);
+        rb_fd_set_cloexec(pipes[0]);
+        rb_fd_set_cloexec(pipes[1]);
     }
     return ret;
 }
@@ -5802,7 +5821,7 @@ io_reopen(VALUE io, VALUE nfile)
 	    /* need to keep FILE objects of stdin, stdout and stderr */
 	    if (dup2(fd2, fd) < 0)
 		rb_sys_fail_path(orig->pathv);
-            rb_update_max_fd(fd);
+            rb_fd_set_cloexec(fd);
 	}
 	else {
             fclose(fptr->stdio_file);
@@ -5810,7 +5829,7 @@ io_reopen(VALUE io, VALUE nfile)
             fptr->fd = -1;
             if (dup2(fd2, fd) < 0)
                 rb_sys_fail_path(orig->pathv);
-            rb_update_max_fd(fd);
+            rb_fd_set_cloexec(fd);
             fptr->fd = fd;
 	}
 	rb_thread_fd_close(fd);
@@ -7710,7 +7729,7 @@ io_cntl(int fd, int cmd, long narg, int io_p)
     retval = (int)rb_thread_io_blocking_region(nogvl_io_cntl, &arg, fd);
 #if defined(F_DUPFD)
     if (!io_p && retval != -1 && cmd == F_DUPFD) {
-	rb_update_max_fd(retval);
+	rb_fd_set_cloexec(retval);
     }
 #endif
 

@@ -1,3 +1,52 @@
+Sat Oct 22 18:49:24 2011  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_fd_set_cloexec): declared.
+
+	* io.c (rb_fd_set_cloexec): new function.
+	  (ruby_dup): call rb_fd_set_cloexec to set close-on-exec flag.
+	  (rb_sysopen_internal): ditto.
+	  (rb_pipe): ditto.
+	  (io_reopen): ditto.
+	  (io_cntl): ditto.
+
+	* process.c (rb_f_exec): change the default :close_others option to
+	  true.
+	  (rb_f_system): ditto.
+	  (move_fds_to_avoid_crash): call rb_fd_set_cloexec to set
+	  close-on-exec flag.
+	  (ruby_setsid): ditto.
+	  (rb_daemon): ditto.
+
+	* thread_pthread.c (rb_thread_create_timer_thread): call
+	  rb_fd_set_cloexec to set close-on-exec flag.
+
+	* ruby.c (load_file_internal): ditto.
+
+	* file.c (rb_file_s_truncate): ditto.
+	  (file_load_ok): ditto.
+
+	* random.c (fill_random_seed): ditto.
+
+	* ext/pty/pty.c (chfunc): ditto.
+	  (get_device_once): ditto.
+
+	* ext/openssl/ossl_bio.c (ossl_obj2bio): ditto.
+
+	* ext/socket/init.c (rsock_socket): ditto.
+	  (rsock_s_accept_nonblock): ditto.
+	  (rsock_s_accept): ditto.
+
+	* ext/socket/socket.c (rsock_sock_s_socketpair): ditto.
+
+	* ext/socket/ancdata.c (discard_cmsg): ditto.
+	  (make_io_for_unix_rights): ditto.
+
+	* ext/socket/unixsocket.c (unix_recv_io): ditto.
+
+	* ext/io/console/console.c (console_dev): ditto.
+
+	[ruby-core:38140] [Feature #5041]
+
 Sat Oct 22 17:46:27 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb: fix a exception name in previous patch.

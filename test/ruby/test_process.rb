@@ -603,7 +603,7 @@ class TestProcess < Test::Unit::TestCase
   def test_fd_inheritance
     skip "inheritance of fd other than stdin,stdout and stderr is not supported" if windows?
     with_pipe {|r, w|
-      system(RUBY, '-e', 'IO.new(ARGV[0].to_i, "w").puts(:ba)', w.fileno.to_s)
+      system(RUBY, '-e', 'IO.new(ARGV[0].to_i, "w").puts(:ba)', w.fileno.to_s, w=>w)
       w.close
       assert_equal("ba\n", r.read)
     }
@@ -619,8 +619,9 @@ class TestProcess < Test::Unit::TestCase
 	write_file("s", <<-"End")
 	  exec(#{RUBY.dump}, '-e',
 	       'IO.new(ARGV[0].to_i, "w").puts("bu") rescue nil',
-	       #{w.fileno.to_s.dump})
+	       #{w.fileno.to_s.dump}, :close_others=>false)
 	End
+        w.close_on_exec = false
 	Process.wait spawn(RUBY, "s", :close_others=>false)
 	w.close
 	assert_equal("bu\n", r.read)
@@ -660,6 +661,7 @@ class TestProcess < Test::Unit::TestCase
         File.unlink("err")
       }
       with_pipe {|r, w|
+        w.close_on_exec = false
         Process.wait spawn(RUBY, '-e', 'IO.new(ARGV[0].to_i, "w").puts("bi")', w.fileno.to_s, :close_others=>false)
         w.close
         assert_equal("bi\n", r.read)
@@ -686,6 +688,7 @@ class TestProcess < Test::Unit::TestCase
         Process.wait
       }
       with_pipe {|r, w|
+        w.close_on_exec = false
         io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}, 'w').puts('mo')", :close_others=>false])
         w.close
         errmsg = io.read
@@ -694,6 +697,7 @@ class TestProcess < Test::Unit::TestCase
         Process.wait
       }
       with_pipe {|r, w|
+        w.close_on_exec = false
         io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}, 'w').puts('mo')", :close_others=>nil])
         w.close
         errmsg = io.read
