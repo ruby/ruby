@@ -105,6 +105,30 @@ class TestResolvDNS < Test::Unit::TestCase
     }
   end
 
+  def test_query_ipv4_address_timeout
+    with_udp('127.0.0.1', 0) {|u|
+      _, port , _, host = u.addr
+      start = nil
+      rv = Resolv::DNS.open(:nameserver_port => [[host, port]]) {|dns|
+        dns.timeouts = 0.1
+        start = Time.now
+        dns.getresources("foo.example.org", Resolv::DNS::Resource::IN::A)
+      }
+      diff = Time.now - start
+      assert rv.empty?, "unexpected: #{rv.inspect} (expected empty)"
+      assert_in_delta 0.1, diff, 0.05
+
+      rv = Resolv::DNS.open(:nameserver_port => [[host, port]]) {|dns|
+        dns.timeouts = [ 0.1, 0.2 ]
+        start = Time.now
+        dns.getresources("foo.example.org", Resolv::DNS::Resource::IN::A)
+      }
+      diff = Time.now - start
+      assert rv.empty?, "unexpected: #{rv.inspect} (expected empty)"
+      assert_in_delta 0.3, diff, 0.05
+    }
+  end
+
   def test_no_server
     u = UDPSocket.new
     u.bind("127.0.0.1", 0)

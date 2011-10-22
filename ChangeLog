@@ -1,3 +1,8 @@
+Sat Oct 22 17:43:33 2011  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb: make timeout configurable for DNS query.
+	  patch by Eric Wong.  [ruby-core:38533] [Feature #5100]
+
 Sat Oct 22 02:07:48 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* numeric.c (rb_infinity, rb_nan): use union to prevent bus error
