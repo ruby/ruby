@@ -1,3 +1,8 @@
+Sat Oct 22 19:48:50 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/openssl/test_ssl.rb (test_multibyte_read_write): start server
+	  for each length to avoid race condition.
+
 Sat Oct 22 18:49:24 2011  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_fd_set_cloexec): declared.
