@@ -1,3 +1,7 @@
+Sun Oct 23 18:21:23 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* ext/tk/MANUAL_tcltklib.eng: fix typo.
+
 Sun Oct 23 18:03:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (rb_infinity, rb_nan): aggregated member initializers
