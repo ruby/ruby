@@ -8998,7 +8998,10 @@ copy_stream_fallback_body(VALUE arg)
             l = buflen < rest ? buflen : (long)rest;
         }
         if (stp->src_fd == -1) {
-            rb_funcall(stp->src, read_method, 2, INT2FIX(l), buf);
+            VALUE rc = rb_funcall(stp->src, read_method, 2, INT2FIX(l), buf);
+
+            if (read_method == id_read && NIL_P(rc))
+                break;
         }
         else {
             ssize_t ss;

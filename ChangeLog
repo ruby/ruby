@@ -1,3 +1,8 @@
+Mon Oct 24 08:18:14 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (copy_stream_fallback_body): check nil for EOF of read method.
+	  patch by Eric Wong.  [ruby-core:39134] [Bug #5237]
+
 Sun Oct 23 18:21:23 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* ext/tk/MANUAL_tcltklib.eng: fix typo.

@@ -826,6 +826,28 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  class Bug5237
+    attr_reader :count
+    def initialize
+      @count = 0
+    end
+
+    def read(bytes, buffer)
+      @count += 1
+      buffer.replace "this is a test"
+      nil
+    end
+  end
+
+  def test_copy_stream_broken_src_read_eof
+    src = Bug5237.new
+    dst = StringIO.new
+    assert_equal 0, src.count
+    th = Thread.new { IO.copy_stream(src, dst) }
+    flunk("timeout") unless th.join(10)
+    assert_equal 1, src.count
+  end
+
   def test_copy_stream_dst_rbuf
     mkcdtmpdir {
       pipe(proc do |w|
