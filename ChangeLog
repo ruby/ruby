@@ -1,3 +1,8 @@
+Sun Oct 23 18:03:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (rb_infinity, rb_nan): aggregated member initializers
+	  need braces.
+
 Sun Oct 23 16:43:43 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ext/io/wait/wait.c: ioctl(2) is declared in unistd.h on Solaris.

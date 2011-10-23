@@ -66,16 +66,16 @@
 
 #ifdef HAVE_INFINITY
 #elif !defined(WORDS_BIGENDIAN) /* BYTE_ORDER == LITTLE_ENDIAN */
-const union bytesequence4_or_float rb_infinity = { 0x00, 0x00, 0x80, 0x7f };
+const union bytesequence4_or_float rb_infinity = {{0x00, 0x00, 0x80, 0x7f}};
 #else
-const union bytesequence4_or_float rb_infinity = { 0x7f, 0x80, 0x00, 0x00 };
+const union bytesequence4_or_float rb_infinity = {{0x7f, 0x80, 0x00, 0x00}};
 #endif
 
 #ifdef HAVE_NAN
 #elif !defined(WORDS_BIGENDIAN) /* BYTE_ORDER == LITTLE_ENDIAN */
-const union bytesequence4_or_float rb_nan = { 0x00, 0x00, 0xc0, 0x7f };
+const union bytesequence4_or_float rb_nan = {{0x00, 0x00, 0xc0, 0x7f}};
 #else
-const union bytesequence4_or_float rb_nan = { 0x7f, 0xc0, 0x00, 0x00 };
+const union bytesequence4_or_float rb_nan = {{0x7f, 0xc0, 0x00, 0x00}};
 #endif
 
 #ifndef HAVE_ROUND
