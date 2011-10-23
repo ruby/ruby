@@ -1,3 +1,7 @@
+Sun Oct 23 16:43:43 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ext/io/wait/wait.c: ioctl(2) is declared in unistd.h on Solaris.
+
 Sun Oct 23 16:33:35 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* ext/tk/MANUAL_tcltklib.eng: fix typo. reported by Mimura-san.
