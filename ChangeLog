@@ -1,3 +1,8 @@
+Sun Oct 23 16:33:35 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* ext/tk/MANUAL_tcltklib.eng: fix typo. reported by Mimura-san.
+	  [ruby-dev:44683] [Bug #5471]
+
 Sun Oct 23 08:01:29 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_fd_set_cloexec): set close-on-exec flag only if F_GETFD is

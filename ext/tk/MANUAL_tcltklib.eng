@@ -11,7 +11,7 @@ module TclTklib
   : Tcl/Tk interpreters
 
   module TclTkLib::EventFlag
-    : Defines flags to define taget events on 'do_one_event' methos.
+    : Defines flags to define taget events on 'do_one_event' methods.
     : When to give, please use bit-operator (e.g. WINDOW | DONT_WAIT).
 
     [constants]
