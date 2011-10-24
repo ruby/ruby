@@ -1,3 +1,17 @@
+Mon Oct 24 23:55:31 2011  Tanaka Akira  <akr@fsij.org>
+
+	* complex.c: use "__sun" instead of "__sun__" to detect SunOS.
+
+	* math.c: ditto.
+
+	* hash.c: ditto.
+
+	* atomic.h: ditto.
+
+	* ext/io/wait/wait.c: ditto.
+
+	[ruby-dev:44693]
+
 Mon Oct 24 22:45:37 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c: use "__sun" instead of "sun" to detect SunOS.

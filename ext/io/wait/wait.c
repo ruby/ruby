@@ -14,7 +14,7 @@
 #include "ruby/io.h"
 
 #include <sys/types.h>
-#if defined(HAVE_UNISTD_H) && (defined(__sun) || defined(__sun__))
+#if defined(HAVE_UNISTD_H) && (defined(__sun))
 #include <unistd.h>
 #endif
 #if defined(HAVE_SYS_IOCTL_H)

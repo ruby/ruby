@@ -14,7 +14,7 @@
 #include <math.h>
 #include <errno.h>
 
-#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun__) && \
+#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun) && \
     !defined(signbit)
     extern int signbit(double);
 #endif

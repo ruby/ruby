@@ -2196,7 +2196,7 @@ rb_env_path_tainted(void)
 }
 
 #if defined(_WIN32) || (defined(HAVE_SETENV) && defined(HAVE_UNSETENV))
-#elif defined __sun__
+#elif defined __sun
 static int
 in_origenv(const char *str)
 {
@@ -2284,7 +2284,7 @@ ruby_setenv(const char *name, const char *value)
 	    rb_sys_fail("unsetenv");
 #endif
     }
-#elif defined __sun__
+#elif defined __sun
     size_t len;
     char **env_ptr, *str;
     if (strchr(name, '=')) {
