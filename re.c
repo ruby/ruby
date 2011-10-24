@@ -1674,11 +1674,12 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  *     mtch[range]           -> array
  *     mtch[name]            -> str or nil
  *
- *  Match Reference---<code>MatchData</code> acts as an array, and may be
- *  accessed using the normal array indexing techniques.  <i>mtch</i>[0] is
- *  equivalent to the special variable <code>$&</code>, and returns the entire
- *  matched string.  <i>mtch</i>[1], <i>mtch</i>[2], and so on return the values
- *  of the matched backreferences (portions of the pattern between parentheses).
+ *  Match Reference -- <code>MatchData</code> acts as an array, and may be
+ *  accessed using the normal array indexing techniques.  <code>mtch[0]</code>
+ *  is equivalent to the special variable <code>$&</code>, and returns the
+ *  entire matched string.  <code>mtch[1]</code>, <code>mtch[2]</code>, and so
+ *  on return the values of the matched backreferences (portions of the
+ *  pattern between parentheses).
  *
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m          #=> #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">

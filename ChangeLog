@@ -1,3 +1,8 @@
+Tue Oct 25 06:34:39 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* re.c (match_aref):  Use <code> around indexing examples to prevent
+	  hyperlinks.  [ruby-talk:389396]
+
 Mon Oct 24 23:55:31 2011  Tanaka Akira  <akr@fsij.org>
 
 	* complex.c: use "__sun" instead of "__sun__" to detect SunOS.
