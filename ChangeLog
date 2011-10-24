@@ -1,3 +1,15 @@
+Mon Oct 24 22:45:37 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c: use "__sun" instead of "sun" to detect SunOS.
+
+	* dln.c: ditto.
+
+	* cont.c: ditto.
+
+	* ext/sdbm/_sdbm.c: ditto.
+
+	[ruby-dev:44693]
+
 Mon Oct 24 22:38:08 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pty/pty.c (get_device_once): delay rb_fd_set_cloexec() until

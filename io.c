@@ -35,7 +35,7 @@
 # define NO_SAFE_RENAME
 #endif
 
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(sun) || defined(_nec_ews)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(__sun) || defined(_nec_ews)
 # define USE_SETVBUF
 #endif
 
@@ -4649,18 +4649,18 @@ rb_fdopen(int fd, const char *modestr)
 {
     FILE *file;
 
-#if defined(sun)
+#if defined(__sun)
     errno = 0;
 #endif
     file = fdopen(fd, modestr);
     if (!file) {
 	if (
-#if defined(sun)
+#if defined(__sun)
 	    errno == 0 ||
 #endif
 	    errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
-#if defined(sun)
+#if defined(__sun)
 	    errno = 0;
 #endif
 	    file = fdopen(fd, modestr);
@@ -4668,7 +4668,7 @@ rb_fdopen(int fd, const char *modestr)
 	if (!file) {
 #ifdef _WIN32
 	    if (errno == 0) errno = EINVAL;
-#elif defined(sun)
+#elif defined(__sun)
 	    if (errno == 0) errno = EMFILE;
 #endif
 	    rb_sys_fail(0);
