@@ -928,7 +928,7 @@ class ERB
     #   Programming%20Ruby%3A%20%20The%20Pragmatic%20Programmer%27s%20Guide
     #
     def url_encode(s)
-      s.to_s.dup.force_encoding("ASCII-8BIT").gsub(/[^a-zA-Z0-9_\-.]/n) {
+      s.to_s.dup.force_encoding("ASCII-8BIT").gsub(/[^a-zA-Z0-9_\-.~]/n) {
         sprintf("%%%02X", $&.unpack("C")[0])
       }
     end
