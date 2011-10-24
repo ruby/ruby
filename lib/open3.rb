@@ -23,7 +23,7 @@
 # - Open3.pipeline_rw : pipes for first stdin and last stdout of a pipeline
 # - Open3.pipeline_r : pipe for last stdout of a pipeline
 # - Open3.pipeline_w : pipe for first stdin of a pipeline
-# - Open3.pipeline_start : a pipeline
+# - Open3.pipeline_start : run a pipeline and don't wait
 # - Open3.pipeline : run a pipline and wait
 #
 
