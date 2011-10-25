@@ -197,7 +197,7 @@ void xfree(void*);
         /* MB_CUR_MAX will not work well in C locale */
 #endif
 
-#if defined(sparc) || defined(__sparc__)
+#if defined(__sparc)
 static inline void
 flush_register_windows(void)
 {

@@ -228,7 +228,7 @@ load_header(int fd, struct exec *hdrp, long disp)
 #define RELOC_TARGET_SIZE(r)		((r)->r_length)
 #endif
 
-#if defined(__sun) && defined(sparc)
+#if defined(__sun) && defined(__sparc)
 /* Sparc (Sun 4) macros */
 #  undef relocation_info
 #  define relocation_info reloc_info_sparc
@@ -530,7 +530,7 @@ reloc_undef(int no, struct undef *undef, struct reloc_arg *arg)
 {
     int datum;
     char *address;
-#if defined(__sun) && defined(sparc)
+#if defined(__sun) && defined(__sparc)
     unsigned int mask = 0;
 #endif
 
@@ -539,7 +539,7 @@ reloc_undef(int no, struct undef *undef, struct reloc_arg *arg)
     datum = arg->value;
 
     if (R_PCREL(&(undef->reloc))) datum -= undef->base;
-#if defined(__sun) && defined(sparc)
+#if defined(__sun) && defined(__sparc)
     datum += undef->reloc.r_addend;
     datum >>= R_RIGHTSHIFT(&(undef->reloc));
     mask = (1 << R_BITSIZE(&(undef->reloc))) - 1;
@@ -763,7 +763,7 @@ load_1(int fd, long disp, const char *need_init)
 	while (rel < rel_end) {
 	    char *address = (char*)(rel->r_address + block);
 	    long datum = 0;
-#if defined(__sun) && defined(sparc)
+#if defined(__sun) && defined(__sparc)
 	    unsigned int mask = 0;
 #endif
 
@@ -798,7 +798,7 @@ load_1(int fd, long disp, const char *need_init)
 	    } /* end .. is static */
 	    if (R_PCREL(rel)) datum -= block;
 
-#if defined(__sun) && defined(sparc)
+#if defined(__sun) && defined(__sparc)
 	    datum += rel->r_addend;
 	    datum >>= R_RIGHTSHIFT(rel);
 	    mask = (1 << R_BITSIZE(rel)) - 1;
