@@ -1,3 +1,7 @@
+Thu Oct 27 08:47:38 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/psych/parser.c: remove unused variable.
+
 Thu Oct 27 08:38:41 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/extconf.rb: add -Wall flag by default when compiler is

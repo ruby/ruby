@@ -61,7 +61,6 @@ static VALUE allocate(VALUE klass)
 
 static VALUE make_exception(yaml_parser_t * parser, VALUE path)
 {
-    VALUE exception;
     size_t line, column;
 
     line = parser->context_mark.line + 1;
