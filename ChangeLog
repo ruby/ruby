@@ -1,3 +1,8 @@
+Thu Oct 27 08:38:41 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/extconf.rb: add -Wall flag by default when compiler is
+	  GCC.
+
 Wed Oct 26 15:24:25 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_join): honor input encodings than ASCII-8BIT.

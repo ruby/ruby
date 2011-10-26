@@ -22,15 +22,18 @@ dir_config("kerberos")
 message "=== OpenSSL for Ruby configurator ===\n"
 
 ##
-# Adds -Wall -DOSSL_DEBUG for compilation and some more targets when GCC is used
+# Adds -DOSSL_DEBUG for compilation and some more targets when GCC is used
 # To turn it on, use: --with-debug or --enable-debug
 #
 if with_config("debug") or enable_config("debug")
   $defs.push("-DOSSL_DEBUG") unless $defs.include? "-DOSSL_DEBUG"
+end
 
-  if CONFIG['GCC'] == 'yes'
-    $CPPFLAGS += " -Wall" unless $CPPFLAGS.split.include? "-Wall"
-  end
+##
+# Automatically adds -Wall flag for compilation when GCC is used
+#
+if CONFIG['GCC'] == 'yes'
+  $CPPFLAGS += " -Wall" unless $CPPFLAGS.split.include? "-Wall"
 end
 
 message "=== Checking for system dependent stuff... ===\n"
