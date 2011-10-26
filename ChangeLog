@@ -1,3 +1,9 @@
+Wed Oct 26 16:05:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_partition, rb_str_rpartition)
+	  (rb_str_start_with, rb_str_end_with): preserve the last match
+	  data.  [ruby-core:39671] [Bug #5351]
+
 Sat Jul 30 00:30:07 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RSHIFT): quote to get rid of argument expansion

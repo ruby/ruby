@@ -2036,9 +2036,15 @@ regcomp_failed(str)
 }
 
 static VALUE
-get_arg_pat(pat)
+get_arg_pat(pat, reg)
      VALUE pat;
+     int *reg;
 {
+    if (TYPE(pat) == T_REGEXP) {
+	*reg = 1;
+	return pat;
+    }
+    *reg = 0;
     return rb_rescue2(get_pat_quoted, pat,
                       regcomp_failed, pat,
                       rb_eRegexpError, (VALUE)0);
@@ -4903,6 +4909,8 @@ rb_str_partition(argc, argv, str)
 {
     VALUE sep;
     long pos;
+    int reg = 1;
+    VALUE match = Qundef;
 
     if (argc == 0) return rb_call_super(argc, argv);
     rb_scan_args(argc, argv, "1", &sep);
@@ -4914,9 +4922,11 @@ rb_str_partition(argc, argv, str)
 	    rb_raise(rb_eTypeError, "type mismatch: %s given",
 		     rb_obj_classname(sep));
 	}
-        sep = get_arg_pat(tmp);
+        sep = get_arg_pat(tmp, &reg);
     }
+    if (!reg) rb_match_busy(match = rb_backref_get());
     pos = rb_reg_search(sep, str, 0, 0);
+    if (!reg) rb_backref_set(match);
     if (pos < 0) {
       failed:
 	return rb_ary_new3(3, str, rb_str_new(0,0),rb_str_new(0,0));
@@ -4948,6 +4958,8 @@ rb_str_rpartition(str, sep)
     VALUE sep;
 {
     long pos = RSTRING(str)->len;
+    int reg = 1;
+    VALUE match = Qundef;
 
     if (TYPE(sep) != T_REGEXP) {
 	VALUE tmp;
@@ -4957,9 +4969,11 @@ rb_str_rpartition(str, sep)
 	    rb_raise(rb_eTypeError, "type mismatch: %s given",
 		     rb_obj_classname(sep));
 	}
-        sep = get_arg_pat(tmp);
+        sep = get_arg_pat(tmp, &reg);
     }
+    if (!reg) rb_match_busy(match = rb_backref_get());
     pos = rb_reg_search(sep, str, pos, 1);
+    if (!reg) rb_backref_set(match);
     if (pos < 0) {
 	return rb_ary_new3(3, rb_str_new(0,0),rb_str_new(0,0), str);
     }
@@ -4984,14 +4998,20 @@ rb_str_start_with(argc, argv, str)
     VALUE str;
 {
     int i;
+    int reg = 1;
+    long pos;
     VALUE pat;
+    VALUE match = Qundef;
 
     for (i=0; i<argc; i++) {
 	VALUE prefix = rb_check_string_type(argv[i]);
 	if (NIL_P(prefix)) continue;
 	if (RSTRING(str)->len < RSTRING(prefix)->len) continue;
-        pat = get_arg_pat(prefix);
-        if (rb_reg_search(pat, str, 0, 1) >= 0)
+        pat = get_arg_pat(prefix, &reg);
+	if (!reg) rb_match_busy(match = rb_backref_get());
+	pos = rb_reg_search(pat, str, 0, 1);
+	if (!reg) rb_backref_set(match);
+        if (pos >= 0)
 	    return Qtrue;
     }
     return Qfalse;
@@ -5011,16 +5031,21 @@ rb_str_end_with(argc, argv, str)
     VALUE str;
 {
     int i;
+    int reg = 1;
     long pos;
     VALUE pat;
+    VALUE match = Qundef;
 
     for (i=0; i<argc; i++) {
 	VALUE suffix = rb_check_string_type(argv[i]);
 	if (NIL_P(suffix)) continue;
 	if (RSTRING(str)->len < RSTRING(suffix)->len) continue;
-        pat = get_arg_pat(suffix);
+        pat = get_arg_pat(suffix, &reg);
+	if (!reg) rb_match_busy(match = rb_backref_get());
         pos = rb_reg_adjust_startpos(pat, str, RSTRING(str)->len - RSTRING(suffix)->len, 0);
-        if (rb_reg_search(pat, str, pos, 0) >= 0)
+	pos = rb_reg_search(pat, str, pos, 0);
+	if (!reg) rb_backref_set(match);
+        if (pos >= 0)
             return Qtrue;
     }
     return Qfalse;

@@ -237,4 +237,26 @@ class TestString < Test::Unit::TestCase
     assert_equal("", result[5])
     assert_equal("", result[6])
   end
+
+  def test_start_with
+    assert_equal(true, "abc".start_with?("a"))
+    assert_equal(false, "abc".start_with?("A"))
+    /\w/ =~ "xyz"
+    "abc".start_with?("a")
+    assert_equal("x", $&)
+    /\w/ =~ ""
+    "abc".start_with?("a")
+    assert_nil($&)
+  end
+
+  def test_end_with
+    assert_equal(true, "abc".end_with?("c"))
+    assert_equal(false, "abc".end_with?("C"))
+    /\w/ =~ "xyz"
+    "abc".end_with?("c")
+    assert_equal("x", $&)
+    /\w/ =~ ""
+    "abc".end_with?("c")
+    assert_nil($&)
+  end
 end
