@@ -1,3 +1,8 @@
+Wed Oct 26 15:24:25 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_join): honor input encodings than ASCII-8BIT.
+	  [ruby-core:40338] [Bug #5483]
+
 Tue Oct 25 21:52:31 2011  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/defines.h: use "__sparc" instead of "sparc" and
