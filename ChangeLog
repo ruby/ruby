@@ -1,3 +1,8 @@
+Thu Oct 27 16:10:46 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_divide): raise ZeroDivisionError if divisor is
+	  zero, as well as Fixnum.  [ruby-core:40429] [Bug #5490]
+
 Thu Oct 27 14:56:22 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_FUNC_ATTRIBUTE): unset temporary variable.

@@ -2774,7 +2774,9 @@ rb_big_divide(VALUE x, VALUE y, ID op)
 
       case T_FLOAT:
 	{
-	    double div = rb_big2dbl(x) / RFLOAT_VALUE(y);
+	    double div, dy = RFLOAT_VALUE(y);
+	    if (dy == 0.0) rb_num_zerodiv();
+	    div = rb_big2dbl(x) / dy;
 	    if (op == '/') {
 		return DBL2NUM(div);
 	    }
