@@ -178,6 +178,29 @@ sdbm_open(register char *file, register int flags, register int mode)
 	return db;
 }
 
+static int
+fd_set_cloexec(int fd)
+{
+  /* MinGW don't have F_GETFD and FD_CLOEXEC.  [ruby-core:40281] */
+#ifdef F_GETFD
+    int flags, ret;
+    flags = fcntl(fd, F_GETFD); /* should not fail except EBADF. */
+    if (flags == -1) {
+        return -1;
+    }
+    if (2 < fd) {
+        if (!(flags & FD_CLOEXEC)) {
+            flags |= FD_CLOEXEC;
+            ret = fcntl(fd, F_SETFD, flags);
+            if (ret == -1) {
+                return -1;
+            }
+        }
+    }
+#endif
+    return 0;
+}
+
 DBM *
 sdbm_prep(char *dirname, char *pagname, int flags, int mode)
 {
@@ -209,7 +232,9 @@ sdbm_prep(char *dirname, char *pagname, int flags, int mode)
 	flags |= O_BINARY;
 
 	if ((db->pagf = open(pagname, flags, mode)) == -1) goto err;
+        if (fd_set_cloexec(db->pagf) == -1) goto err;
         if ((db->dirf = open(dirname, flags, mode)) == -1) goto err;
+        if (fd_set_cloexec(db->dirf) == -1) goto err;
 /*
  * need the dirfile size to establish max bit number.
  */
