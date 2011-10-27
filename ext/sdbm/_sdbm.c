@@ -187,6 +187,8 @@ sdbm_prep(char *dirname, char *pagname, int flags, int mode)
 	if ((db = (DBM *) malloc(sizeof(DBM))) == NULL)
 		return errno = ENOMEM, (DBM *) NULL;
 
+        db->pagf = -1;
+        db->dirf = -1;
         db->flags = 0;
         db->hmask = 0;
         db->blkptr = 0;
@@ -205,31 +207,33 @@ sdbm_prep(char *dirname, char *pagname, int flags, int mode)
  * If we fail anywhere, undo everything, return NULL.
  */
 	flags |= O_BINARY;
-	if ((db->pagf = open(pagname, flags, mode)) > -1) {
-		if ((db->dirf = open(dirname, flags, mode)) > -1) {
+
+	if ((db->pagf = open(pagname, flags, mode)) == -1) goto err;
+        if ((db->dirf = open(dirname, flags, mode)) == -1) goto err;
 /*
  * need the dirfile size to establish max bit number.
  */
-			if (fstat(db->dirf, &dstat) == 0) {
+        if (fstat(db->dirf, &dstat) == -1) goto err;
 /*
  * zero size: either a fresh database, or one with a single,
  * unsplit data page: dirpage is all zeros.
  */
-				db->dirbno = (!dstat.st_size) ? 0 : -1;
-				db->pagbno = -1;
-				db->maxbno = dstat.st_size * (long) BYTESIZ;
+        db->dirbno = (!dstat.st_size) ? 0 : -1;
+        db->pagbno = -1;
+        db->maxbno = dstat.st_size * (long) BYTESIZ;
 
-				(void) memset(db->pagbuf, 0, PBLKSIZ);
-				(void) memset(db->dirbuf, 0, DBLKSIZ);
-			/*
-			 * success
-			 */
-				return db;
-			}
-			(void) close(db->dirf);
-		}
-		(void) close(db->pagf);
-	}
+        (void) memset(db->pagbuf, 0, PBLKSIZ);
+        (void) memset(db->dirbuf, 0, DBLKSIZ);
+/*
+ * success
+ */
+        return db;
+
+    err:
+        if (db->pagf != -1)
+                (void) close(db->pagf);
+        if (db->dirf != -1)
+                (void) close(db->dirf);
 	free((char *) db);
 	return (DBM *) NULL;
 }

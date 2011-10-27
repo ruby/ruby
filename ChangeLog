@@ -1,3 +1,7 @@
+Fri Oct 28 00:09:31 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/sdbm/_sdbm.c (sdbm_prep): refactored for less nesting.
+
 Thu Oct 27 18:28:18 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_DEFINE_IF): revert r33534 partially to get
