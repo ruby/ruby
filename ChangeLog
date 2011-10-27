@@ -1,3 +1,9 @@
+Thu Oct 27 14:55:27 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_STACK_GROW_DIRECTION): substitute CPU name as
+	  shell variable name.  based on the patch by The Written Word Inc. at
+	  [ruby-core:40421].  [Bug #5488]
+
 Thu Oct 27 09:57:56 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/ruby.h (SIZE_MAX): define SIZE_MAX if not defined.
