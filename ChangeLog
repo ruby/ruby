@@ -1,3 +1,9 @@
+Thu Oct 27 18:28:18 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_DEFINE_IF): revert r33534 partially to get
+	  rid of AS_ECHO which is not available in autoconf 2.61.
+	  [ruby-dev:44702]
+
 Thu Oct 27 16:10:46 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_divide): raise ZeroDivisionError if divisor is
