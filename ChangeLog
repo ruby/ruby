@@ -1,4 +1,6 @@
-Thu Oct 27 14:55:27 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Oct 27 14:56:22 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_FUNC_ATTRIBUTE): unset temporary variable.
 
 	* configure.in (RUBY_STACK_GROW_DIRECTION): substitute CPU name as
 	  shell variable name.  based on the patch by The Written Word Inc. at

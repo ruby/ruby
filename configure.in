@@ -797,15 +797,9 @@ if test "$rb_cv_va_args_macro" = yes; then
 fi
 
 AC_DEFUN([RUBY_DEFINE_IF], [dnl
-    m4_ifval([$1],[test "$1" && cat <<EOH >> confdefs.h
-@%:@if $1
-EOH
-])dnl
-AC_DEFINE_UNQUOTED($2, $3)
-    m4_ifval([$1],[test "$1" && cat <<EOH >> confdefs.h
-@%:@endif /* $1 */
-EOH
-])dnl
+    m4_ifval([$1],[test "$1" && AS_ECHO("@%:@if $1") >> confdefs.h])
+AC_DEFINE_UNQUOTED($2, $3)dnl
+    m4_ifval([$1],[test "$1" && AS_ECHO("@%:@endif /* $1 */") >> confdefs.h])
 ])dnl
 
 dnl RUBY_FUNC_ATTRIBUTE(attrib, macroname, cachevar, condition)
@@ -818,7 +812,7 @@ m4_ifval([$3], dnl
   [AS_VAR_PUSHDEF([rbcv],[$3])], dnl
   [AS_VAR_PUSHDEF([rbcv],[rb_cv_func_][$1])]dnl
 )dnl
-m4_ifval([$4], [rbcv_cond=[$4]; test "$rbcv_cond" || unset rbcv_cond])
+m4_ifval([$4], [rbcv_cond=["$4"]; test "$rbcv_cond" || unset rbcv_cond])
 AC_CACHE_CHECK(for [$1] function attribute, rbcv,
 [rbcv=x
 RUBY_WERROR_FLAG([
@@ -835,10 +829,11 @@ ${rbcv_cond+[@%:@endif]})
 done
 ])])
 if test "$rbcv" != x; then
-    RUBY_DEFINE_IF([${rbcv_cond}], attrib[(x)], $rbcv)
+    RUBY_DEFINE_IF(m4_ifval([$4],[${rbcv_cond}]), attrib[(x)], $rbcv)
 fi
-AS_VAR_POPDEF([attrib])
-AS_VAR_POPDEF([rbcv])
+m4_ifval([$4], [unset rbcv_cond])dnl
+AS_VAR_POPDEF([attrib])dnl
+AS_VAR_POPDEF([rbcv])dnl
 ])
 
 RUBY_FUNC_ATTRIBUTE(noreturn, NORETURN)
