@@ -108,18 +108,34 @@ class TestBignum < Test::Unit::TestCase
     assert_equal("-1777777777777777777777" ,-18446744073709551615.to_s(8))
   end
 
+  b = 2**64
+  b *= b until Bignum === b
 
-  T_ZERO = (2**32).coerce(0).first
-  T_ONE  = (2**32).coerce(1).first
-  T_MONE = (2**32).coerce(-1).first
-  T31  = 2**31   # 2147483648
-  T31P = T31 - 1 # 2147483647
-  T32  = 2**32   # 4294967296
-  T32P = T32 - 1 # 4294967295
-  T64  = 2**64   # 18446744073709551616
-  T64P = T64 - 1 # 18446744073709551615
-  T1024  = 2**1024
-  T1024P = T1024 - 1
+  T_ZERO = b.coerce(0).first
+  T_ONE  = b.coerce(1).first
+  T_MONE = b.coerce(-1).first
+  T31  = b.coerce(2**31).first   # 2147483648
+  T31P = b.coerce(T31 - 1).first # 2147483647
+  T32  = b.coerce(2**32).first   # 4294967296
+  T32P = b.coerce(T32 - 1).first # 4294967295
+  T64  = b.coerce(2**64).first   # 18446744073709551616
+  T64P = b.coerce(T64 - 1).first # 18446744073709551615
+  T1024  = b.coerce(2**1024).first
+  T1024P = b.coerce(T1024 - 1).first
+
+  def test_prepare
+    assert_instance_of(Bignum, T_ZERO)
+    assert_instance_of(Bignum, T_ONE)
+    assert_instance_of(Bignum, T_MONE)
+    assert_instance_of(Bignum, T31)
+    assert_instance_of(Bignum, T31P)
+    assert_instance_of(Bignum, T32)
+    assert_instance_of(Bignum, T32P)
+    assert_instance_of(Bignum, T64)
+    assert_instance_of(Bignum, T64P)
+    assert_instance_of(Bignum, T1024)
+    assert_instance_of(Bignum, T1024P)
+  end
 
   def test_big_2comp
     assert_equal("-4294967296", (~T32P).to_s)
