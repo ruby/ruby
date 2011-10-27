@@ -1,3 +1,8 @@
+Fri Oct 28 03:01:27 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* vm_insnhelper.c (vm_call_cfunc): adding back useless hack.  For some
+	  reason, this fixes CFP errors on OS X 10.7.
+
 Fri Oct 28 00:09:31 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/sdbm/_sdbm.c (sdbm_prep): refactored for less nesting.
