@@ -83,6 +83,10 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                   [[1, 1], :on_tstring_content, "foo\n\xe3\x80\xa0"],
                   [[2, 3], :on_tstring_end, "'"]],
                  Ripper.lex("'foo\n\xe3\x80\xa0'")
+    assert_equal [[[1, 0], :on_tstring_beg, "'"],
+                  [[1, 1], :on_tstring_content, "\u3042\n\u3044"],
+                  [[2, 3], :on_tstring_end, "'"]],
+                 Ripper.lex("'\u3042\n\u3044'")
   end
 
   def test_location
