@@ -15,7 +15,7 @@ class TestRipper::Generic < Test::Unit::TestCase
     SCANNER_EVENTS.each {|n| eval "def on_#{n}(*args) r = [:#{n}, *args]; r.inspect; Object.new end" }
   end
 
-  TEST_RATIO = 0.05
+  TEST_RATIO = 0.05 # testing all files needs too long time... 
 
   def test_parse_files
     Find.find("#{SRCDIR}/lib", "#{SRCDIR}/ext", "#{SRCDIR}/sample", "#{SRCDIR}/test") {|n|
