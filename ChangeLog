@@ -1,3 +1,7 @@
+Thu Oct 27 18:58:00 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* parse.y (parser_nextc): set encoding for the buffer of ripper.
+
 Fri Oct 28 06:06:08 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/sdbm/_sdbm.c (sdbm_prep): set FD_CLOEXEC flags for file
