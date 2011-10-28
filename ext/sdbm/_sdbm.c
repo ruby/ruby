@@ -7,10 +7,6 @@
  * core routines
  */
 
-#ifndef lint
-/*char sdbm_rcsid[] = "$Id$";*/
-#endif
-
 #include "ruby/config.h"
 #include "ruby/defines.h"
 
@@ -632,10 +628,6 @@ getnext(register DBM *db)
  *
  * page-level routines
  */
-
-#ifndef lint
-/*char pair_rcsid[] = "$Id$";*/
-#endif
 
 #ifndef BSD42
 /*#include <memory.h>*/
