@@ -1,3 +1,7 @@
+Sat Oct 29 14:26:56 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_cloexec_open): use O_CLOEXEC if available.
+
 Sat Oct 29 12:57:15 2011  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (ruby_setsid): use rb_cloexec_open.

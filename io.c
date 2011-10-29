@@ -191,6 +191,9 @@ int
 rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 {
     int ret;
+#ifdef O_CLOEXEC
+    flags |= O_CLOEXEC;
+#endif
     ret = open(pathname, flags, mode);
     if (ret == -1) return -1;
     fd_set_cloexec(ret);
