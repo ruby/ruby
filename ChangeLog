@@ -1,4 +1,4 @@
-Sat Oct 29 09:05:07 2011  Nobuyoshi Nakada  <>
+Sat Oct 29 09:05:07 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.h: no Structured Exception Handling like macros.
 	  [ruby-core:40432] [Bug #5491]
