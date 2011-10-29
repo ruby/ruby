@@ -32,6 +32,11 @@ typedef struct native_thread_data_struct {
 
 #include <semaphore.h>
 
+#undef except
+#undef try
+#undef leave
+#undef finally
+
 typedef struct rb_global_vm_lock_struct {
     /* fast path */
     unsigned long acquired;

@@ -1,3 +1,8 @@
+Sat Oct 29 09:05:07 2011  Nobuyoshi Nakada  <>
+
+	* thread_pthread.h: no Structured Exception Handling like macros.
+	  [ruby-core:40432] [Bug #5491]
+
 Fri Oct 28 22:05:34 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/sdbm/_sdbm.c: RCS $Id$ removed.
