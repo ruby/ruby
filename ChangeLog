@@ -1,3 +1,13 @@
+Sat Oct 29 10:40:19 2011  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_cloexec_open): declared.
+
+	* io.c (fd_set_cloexec): extracted from rb_fd_set_cloexec.
+	  (rb_cloexec_open): new function.
+	  (sysopen_func): use rb_cloexec_open.
+	  (rb_sysopen_internal): use rb_update_max_fd instead of
+	  rb_fd_set_cloexec.
+
 Sat Oct 29 09:05:07 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.h: no Structured Exception Handling like macros.

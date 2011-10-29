@@ -157,7 +157,8 @@ rb_update_max_fd(int fd)
     if (max_file_descriptor < fd) max_file_descriptor = fd;
 }
 
-void rb_fd_set_cloexec(int fd)
+static void
+fd_set_cloexec(int fd)
 {
   /* MinGW don't have F_GETFD and FD_CLOEXEC.  [ruby-core:40281] */
 #ifdef F_GETFD
@@ -176,8 +177,26 @@ void rb_fd_set_cloexec(int fd)
         }
     }
 #endif
+}
+
+void
+rb_fd_set_cloexec(int fd)
+{
+    fd_set_cloexec(fd);
     if (max_file_descriptor < fd) max_file_descriptor = fd;
 }
+
+
+int
+rb_cloexec_open(const char *pathname, int flags, mode_t mode)
+{
+    int ret;
+    ret = open(pathname, flags, mode);
+    if (ret == -1) return -1;
+    fd_set_cloexec(ret);
+    return ret;
+}
+
 
 #define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
 #define ARGF argf_of(argf)
@@ -4604,7 +4623,7 @@ sysopen_func(void *ptr)
 {
     const struct sysopen_struct *data = ptr;
     const char *fname = RSTRING_PTR(data->fname);
-    return (VALUE)open(fname, data->oflags, data->perm);
+    return (VALUE)rb_cloexec_open(fname, data->oflags, data->perm);
 }
 
 static inline int
@@ -4613,7 +4632,7 @@ rb_sysopen_internal(struct sysopen_struct *data)
     int fd;
     fd = (int)rb_thread_blocking_region(sysopen_func, data, RUBY_UBF_IO, 0);
     if (0 <= fd)
-        rb_fd_set_cloexec(fd);
+        rb_update_max_fd(fd);
     return fd;
 }
 
