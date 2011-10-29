@@ -1,3 +1,7 @@
+Sat Oct 29 16:11:34 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/sdbm/_sdbm.c (sdbm_prep): use O_CLOEXEC if available.
+
 Sat Oct 29 14:26:56 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_cloexec_open): use O_CLOEXEC if available.

@@ -226,6 +226,9 @@ sdbm_prep(char *dirname, char *pagname, int flags, int mode)
  * If we fail anywhere, undo everything, return NULL.
  */
 	flags |= O_BINARY;
+#ifdef O_CLOEXEC
+        flags |= O_CLOEXEC;
+#endif
 
 	if ((db->pagf = open(pagname, flags, mode)) == -1) goto err;
         if (fd_set_cloexec(db->pagf) == -1) goto err;
