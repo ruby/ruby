@@ -1,3 +1,7 @@
+Sat Oct 29 20:59:08 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_cloexec_dup): use F_DUPFD_CLOEXEC if available.
+
 Sat Oct 29 20:00:26 2011  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_cloexec_dup): declared.

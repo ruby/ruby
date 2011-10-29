@@ -205,7 +205,23 @@ int
 rb_cloexec_dup(int oldfd)
 {
     int ret;
+
+#ifdef F_DUPFD_CLOEXEC
+    static int try_fcntl = 1;
+    if (try_fcntl) {
+        ret = fcntl(oldfd, F_DUPFD_CLOEXEC, 0);
+        /* F_DUPFD_CLOEXEC is available since Linux 2.6.24.  Linux 2.6.18 fails with EINVAL */
+        if (ret == -1 && errno == EINVAL) {
+            try_fcntl = 0;
+            ret = dup(oldfd);
+        }
+    }
+    else {
+        ret = dup(oldfd);
+    }
+#else
     ret = dup(oldfd);
+#endif
     if (ret == -1) return -1;
     fd_set_cloexec(ret);
     return ret;
