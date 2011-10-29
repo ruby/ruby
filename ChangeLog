@@ -22,7 +22,7 @@ Sat Oct 29 20:00:26 2011  Tanaka Akira  <akr@fsij.org>
 	  (ruby_dup): use rb_cloexec_dup.
 
 	* ext/pty/pty.c (pty_getpty): use rb_cloexec_dup.
-	  
+
 	* ext/openssl/ossl_bio.c (ossl_obj2bio): ditto.
 
 Sat Oct 29 16:11:34 2011  Tanaka Akira  <akr@fsij.org>
