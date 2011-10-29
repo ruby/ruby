@@ -3914,10 +3914,10 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
     {
 	int tmpfd;
 
-	if ((tmpfd = open(StringValueCStr(path), 0)) < 0) {
+	if ((tmpfd = rb_cloexec_open(StringValueCStr(path), 0, 0)) < 0) {
 	    rb_sys_fail(RSTRING_PTR(path));
 	}
-        rb_fd_set_cloexec(tmpfd);
+        rb_update_max_fd(tmpfd);
 	if (chsize(tmpfd, pos) < 0) {
 	    close(tmpfd);
 	    rb_sys_fail(RSTRING_PTR(path));
@@ -5063,9 +5063,9 @@ static int
 file_load_ok(const char *path)
 {
     int ret = 1;
-    int fd = open(path, O_RDONLY);
+    int fd = rb_cloexec_open(path, O_RDONLY, 0);
     if (fd == -1) return 0;
-    rb_fd_set_cloexec(fd);
+    rb_update_max_fd(fd);
 #if !defined DOSISH
     {
 	struct stat st;

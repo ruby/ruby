@@ -1524,10 +1524,10 @@ load_file_internal(VALUE arg)
 	    }
 	}
 #endif
-	if ((fd = open(fname, mode)) < 0) {
+	if ((fd = rb_cloexec_open(fname, mode, 0)) < 0) {
 	    rb_load_fail(fname);
 	}
-        rb_fd_set_cloexec(fd);
+        rb_update_max_fd(fd);
 
 	f = rb_io_fdopen(fd, mode, fname);
     }

@@ -175,9 +175,9 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     if (setpgrp(0, getpid()) == -1)
         ERROR_EXIT("setpgrp()");
     {
-        int i = open("/dev/tty", O_RDONLY);
+        int i = rb_cloexec_open("/dev/tty", O_RDONLY, 0);
         if (i < 0) ERROR_EXIT("/dev/tty");
-        rb_fd_set_cloexec(i);
+        rb_update_max_fd(i);
         if (ioctl(i, TIOCNOTTY, (char *)0))
             ERROR_EXIT("ioctl(TIOCNOTTY)");
         close(i);
@@ -195,11 +195,11 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     /* errors ignored for sun */
 #else
     close(slave);
-    slave = open(carg->slavename, O_RDWR);
+    slave = rb_cloexec_open(carg->slavename, O_RDWR, 0);
     if (slave < 0) {
         ERROR_EXIT("open: pty slave");
     }
-    rb_fd_set_cloexec(slave);
+    rb_update_max_fd(slave);
     close(master);
 #endif
     dup2(slave,0);
@@ -306,8 +306,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if (unlockpt(masterfd) == -1) goto error;
     if ((slavedevice = ptsname(masterfd)) == NULL) goto error;
     if (no_mesg(slavedevice, nomesg) == -1) goto error;
-    if ((slavefd = open(slavedevice, O_RDWR|O_NOCTTY, 0)) == -1) goto error;
-    rb_fd_set_cloexec(slavefd);
+    if ((slavefd = rb_cloexec_open(slavedevice, O_RDWR|O_NOCTTY, 0)) == -1) goto error;
+    rb_update_max_fd(slavefd);
 
 #if defined I_PUSH && !defined linux
     if (ioctl(slavefd, I_PUSH, "ptem") == -1) goto error;
@@ -358,9 +358,9 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     }
     rb_fd_set_cloexec(*master);
 
-    *slave = open(name, O_RDWR);
+    *slave = rb_cloexec_open(name, O_RDWR, 0);
     /* error check? */
-    rb_fd_set_cloexec(*slave);
+    rb_update_max_fd(*slave);
     strlcpy(SlaveName, name, DEVICELEN);
 
     return 0;
@@ -380,8 +380,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if(grantpt(masterfd) == -1) goto error;
     rb_fd_set_cloexec(masterfd);
 #else
-    if((masterfd = open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
-    rb_fd_set_cloexec(masterfd);
+    if((masterfd = rb_cloexec_open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
+    rb_update_max_fd(masterfd);
     s = signal(SIGCHLD, SIG_DFL);
     if(grantpt(masterfd) == -1) goto error;
 #endif
@@ -389,8 +389,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if(unlockpt(masterfd) == -1) goto error;
     if((slavedevice = ptsname(masterfd)) == NULL) goto error;
     if (no_mesg(slavedevice, nomesg) == -1) goto error;
-    if((slavefd = open(slavedevice, O_RDWR, 0)) == -1) goto error;
-    rb_fd_set_cloexec(slavefd);
+    if((slavefd = rb_cloexec_open(slavedevice, O_RDWR, 0)) == -1) goto error;
+    rb_update_max_fd(slavefd);
 #if defined I_PUSH && !defined linux
     if(ioctl(slavefd, I_PUSH, "ptem") == -1) goto error;
     if(ioctl(slavefd, I_PUSH, "ldterm") == -1) goto error;
@@ -413,12 +413,12 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 
     for (p = deviceNo; *p != NULL; p++) {
 	snprintf(MasterName, sizeof MasterName, MasterDevice, *p);
-	if ((masterfd = open(MasterName,O_RDWR,0)) >= 0) {
-            rb_fd_set_cloexec(masterfd);
+	if ((masterfd = rb_cloexec_open(MasterName,O_RDWR,0)) >= 0) {
+            rb_update_max_fd(masterfd);
 	    *master = masterfd;
 	    snprintf(SlaveName, DEVICELEN, SlaveDevice, *p);
-	    if ((slavefd = open(SlaveName,O_RDWR,0)) >= 0) {
-                rb_fd_set_cloexec(slavefd);
+	    if ((slavefd = rb_cloexec_open(SlaveName,O_RDWR,0)) >= 0) {
+                rb_update_max_fd(slavefd);
 		*slave = slavefd;
 		if (chown(SlaveName, getuid(), getgid()) != 0) goto error;
 		if (chmod(SlaveName, nomesg ? 0600 : 0622) != 0) goto error;

@@ -498,15 +498,15 @@ fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
     memset(seed, 0, DEFAULT_SEED_LEN);
 
 #if USE_DEV_URANDOM
-    if ((fd = open("/dev/urandom", O_RDONLY
+    if ((fd = rb_cloexec_open("/dev/urandom", O_RDONLY
 #ifdef O_NONBLOCK
             |O_NONBLOCK
 #endif
 #ifdef O_NOCTTY
             |O_NOCTTY
 #endif
-            )) >= 0) {
-        rb_fd_set_cloexec(fd);
+            , 0)) >= 0) {
+        rb_update_max_fd(fd);
         if (fstat(fd, &statbuf) == 0 && S_ISCHR(statbuf.st_mode)) {
 	    if (read(fd, seed, DEFAULT_SEED_LEN) < DEFAULT_SEED_LEN) {
 		/* abandon */;

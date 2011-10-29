@@ -3558,8 +3558,8 @@ ruby_setsid(void)
 #endif
     if (ret == -1) return -1;
 
-    if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
-        rb_fd_set_cloexec(fd);
+    if ((fd = rb_cloexec_open("/dev/tty", O_RDWR, 0)) >= 0) {
+        rb_update_max_fd(fd);
 	ioctl(fd, TIOCNOTTY, NULL);
 	close(fd);
     }
@@ -4849,8 +4849,8 @@ rb_daemon(int nochdir, int noclose)
     if (!nochdir)
 	err = chdir("/");
 
-    if (!noclose && (n = open("/dev/null", O_RDWR, 0)) != -1) {
-        rb_fd_set_cloexec(n);
+    if (!noclose && (n = rb_cloexec_open("/dev/null", O_RDWR, 0)) != -1) {
+        rb_update_max_fd(n);
 	(void)dup2(n, 0);
 	(void)dup2(n, 1);
 	(void)dup2(n, 2);

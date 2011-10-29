@@ -562,21 +562,21 @@ console_dev(VALUE klass)
 	int fd;
 
 #ifdef CONSOLE_DEVICE_FOR_WRITING
-	fd = open(CONSOLE_DEVICE_FOR_WRITING, O_WRONLY);
+	fd = rb_cloexec_open(CONSOLE_DEVICE_FOR_WRITING, O_WRONLY, 0);
 	if (fd < 0) return Qnil;
-        rb_fd_set_cloexec(fd);
+        rb_update_max_fd(fd);
 	args[1] = INT2FIX(O_WRONLY);
 	args[0] = INT2NUM(fd);
 	out = rb_class_new_instance(2, args, klass);
 #endif
-	fd = open(CONSOLE_DEVICE_FOR_READING, O_RDWR);
+	fd = rb_cloexec_open(CONSOLE_DEVICE_FOR_READING, O_RDWR, 0);
 	if (fd < 0) {
 #ifdef CONSOLE_DEVICE_FOR_WRITING
 	    rb_io_close(out);
 #endif
 	    return Qnil;
 	}
-        rb_fd_set_cloexec(fd);
+        rb_update_max_fd(fd);
 	args[1] = INT2FIX(O_RDWR);
 	args[0] = INT2NUM(fd);
 	con = rb_class_new_instance(2, args, klass);

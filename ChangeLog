@@ -1,3 +1,20 @@
+Sat Oct 29 12:57:15 2011  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (ruby_setsid): use rb_cloexec_open.
+	  (rb_daemon): ditto.
+
+	* ruby.c (load_file_internal): ditto.
+
+	* file.c (rb_file_s_truncate): ditto.
+	  (file_load_ok): ditto.
+
+	* random.c (fill_random_seed): ditto.
+
+	* ext/pty/pty.c (chfunc): ditto.
+	  (get_device_once): ditto.
+
+	* ext/io/console/console.c (console_dev): ditto.
+
 Sat Oct 29 10:40:19 2011  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_cloexec_open): declared.
