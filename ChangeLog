@@ -1,3 +1,9 @@
+Sun Oct 30 07:47:10 2011  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: check dup3.
+
+	* io.c (rb_cloexec_dup2): use dup3 if available.
+
 Sat Oct 29 22:06:37 2011  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_cloexec_dup2): declared.
