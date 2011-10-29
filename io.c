@@ -227,6 +227,17 @@ rb_cloexec_dup(int oldfd)
     return ret;
 }
 
+int
+rb_cloexec_dup2(int oldfd, int newfd)
+{
+    int ret;
+
+    ret = dup2(oldfd, newfd);
+    if (ret == -1) return -1;
+    fd_set_cloexec(ret);
+    return ret;
+}
+
 #define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
 #define ARGF argf_of(argf)
 
@@ -5870,17 +5881,17 @@ io_reopen(VALUE io, VALUE nfile)
     if (fd != fd2) {
 	if (IS_PREP_STDIO(fptr) || fd <= 2 || !fptr->stdio_file) {
 	    /* need to keep FILE objects of stdin, stdout and stderr */
-	    if (dup2(fd2, fd) < 0)
+	    if (rb_cloexec_dup2(fd2, fd) < 0)
 		rb_sys_fail_path(orig->pathv);
-            rb_fd_set_cloexec(fd);
+            rb_update_max_fd(fd);
 	}
 	else {
             fclose(fptr->stdio_file);
             fptr->stdio_file = 0;
             fptr->fd = -1;
-            if (dup2(fd2, fd) < 0)
+            if (rb_cloexec_dup2(fd2, fd) < 0)
                 rb_sys_fail_path(orig->pathv);
-            rb_fd_set_cloexec(fd);
+            rb_update_max_fd(fd);
             fptr->fd = fd;
 	}
 	rb_thread_fd_close(fd);
