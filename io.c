@@ -234,7 +234,7 @@ rb_cloexec_dup2(int oldfd, int newfd)
 
 #if defined(HAVE_DUP3) && defined(O_CLOEXEC)
     static int try_dup3 = 1;
-    if (try_dup3) {
+    if (2 < newfd && try_dup3) {
         ret = dup3(oldfd, newfd, O_CLOEXEC);
         /* dup3 is available since Linux 2.6.27. */
         if (ret == -1 && errno == ENOSYS) {
