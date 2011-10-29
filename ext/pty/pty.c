@@ -603,10 +603,10 @@ pty_getpty(int argc, VALUE *argv, VALUE self)
     rfptr->pathv = rb_obj_freeze(rb_str_new_cstr(SlaveName));
 
     wfptr->mode = rb_io_mode_flags("w") | FMODE_SYNC;
-    wfptr->fd = dup(info.fd);
+    wfptr->fd = rb_cloexec_dup(info.fd);
     if (wfptr->fd == -1)
         rb_sys_fail("dup()");
-    rb_fd_set_cloexec(wfptr->fd);
+    rb_update_max_fd(wfptr->fd);
     wfptr->pathv = rfptr->pathv;
 
     res = rb_ary_new2(3);

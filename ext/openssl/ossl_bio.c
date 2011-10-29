@@ -25,10 +25,10 @@ ossl_obj2bio(VALUE obj)
 
 	GetOpenFile(obj, fptr);
 	rb_io_check_readable(fptr);
-	if ((fd = dup(FPTR_TO_FD(fptr))) < 0){
+	if ((fd = rb_cloexec_dup(FPTR_TO_FD(fptr))) < 0){
 	    rb_sys_fail(0);
 	}
-        rb_fd_set_cloexec(fd);
+        rb_update_max_fd(fd);
 	if (!(fp = fdopen(fd, "r"))){
 	    close(fd);
 	    rb_sys_fail(0);

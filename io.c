@@ -200,6 +200,15 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
     return ret;
 }
 
+int
+rb_cloexec_dup(int oldfd)
+{
+    int ret;
+    ret = dup(oldfd);
+    if (ret == -1) return -1;
+    fd_set_cloexec(ret);
+    return ret;
+}
 
 #define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
 #define ARGF argf_of(argf)
@@ -561,17 +570,17 @@ ruby_dup(int orig)
 {
     int fd;
 
-    fd = dup(orig);
+    fd = rb_cloexec_dup(orig);
     if (fd < 0) {
 	if (errno == EMFILE || errno == ENFILE || errno == ENOMEM) {
 	    rb_gc();
-	    fd = dup(orig);
+	    fd = rb_cloexec_dup(orig);
 	}
 	if (fd < 0) {
 	    rb_sys_fail(0);
 	}
     }
-    rb_fd_set_cloexec(fd);
+    rb_update_max_fd(fd);
     return fd;
 }
 
