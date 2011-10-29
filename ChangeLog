@@ -1,3 +1,8 @@
+Sat Oct 20 21:08:18 2011  Tajima Akil <artonx@yahoo.co.jp>
+
+	* win32/Makefile.sub (CONFIG_H): have stdint.h if VC2010.
+	  [Bug #5243]
+
 Sat Oct 29 20:59:08 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_cloexec_dup): use F_DUPFD_CLOEXEC if available.
