@@ -266,7 +266,25 @@ int
 rb_cloexec_pipe(int fildes[2])
 {
     int ret;
+
+#if defined(HAVE_PIPE2)
+    static int try_pipe2 = 1;
+    if (try_pipe2) {
+        ret = pipe2(fildes, O_CLOEXEC);
+        if (ret != -1)
+            return ret;
+        /* pipe2 is available since Linux 2.6.27. */
+        if (errno == ENOSYS) {
+            try_pipe2 = 0;
+            ret = pipe(fildes);
+        }
+    }
+    else {
+        ret = pipe(fildes);
+    }
+#else
     ret = pipe(fildes);
+#endif
     if (ret == -1) return -1;
 #ifdef __CYGWIN__
     if (ret == 0 && fildes[1] == -1) {

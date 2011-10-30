@@ -1,3 +1,9 @@
+Sun Oct 30 22:46:46 2011  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in: check pipe2.
+
+	* io.c (rb_cloexec_pipe): use pipe2 if available.
+
 Sun Oct 30 22:32:44 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ruby.c (fill_standard_fds): use fstat() instead of fcntl(F_GETFD)
