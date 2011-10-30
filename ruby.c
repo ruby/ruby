@@ -1819,9 +1819,10 @@ static void
 fill_standard_fds(void)
 {
     int f0, f1, f2, fds[2];
-    f0 = fcntl(0, F_GETFD) == -1 && errno == EBADF;
-    f1 = fcntl(1, F_GETFD) == -1 && errno == EBADF;
-    f2 = fcntl(2, F_GETFD) == -1 && errno == EBADF;
+    struct stat buf;
+    f0 = fstat(0, &buf) == -1 && errno == EBADF;
+    f1 = fstat(1, &buf) == -1 && errno == EBADF;
+    f2 = fstat(2, &buf) == -1 && errno == EBADF;
     if (f0) {
         if (pipe(fds) == 0) {
             close(fds[1]);
