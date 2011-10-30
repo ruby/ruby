@@ -1,3 +1,9 @@
+Sun Oct 30 18:45:50 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ruby.c (fill_standard_fds): new function to open closed standard
+	  file descriptors.
+	  (ruby_sysinit): call fill_standard_fds.
+
 Sun Oct 30 10:50:36 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (install_recursive, bin-comm): split mere
