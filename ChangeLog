@@ -1,3 +1,8 @@
+Sun Oct 30 10:50:36 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (install_recursive, bin-comm): split mere
+	  string not path name.  [ruby-core:40462] [Bug #5492]
+
 Sun Oct 30 10:47:20 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_cloexec_dup, rb_cloexec_dup2): CLOEXEC has been set if
