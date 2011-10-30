@@ -212,13 +212,12 @@ rb_cloexec_dup(int oldfd)
     if (try_fcntl) {
         /* don't allocate standard file descriptors: 0, 1, 2 */
         ret = fcntl(oldfd, F_DUPFD_CLOEXEC, 3);
+        if (ret != -1)
+            return ret;
         /* F_DUPFD_CLOEXEC is available since Linux 2.6.24.  Linux 2.6.18 fails with EINVAL */
-        if (ret == -1 && errno == EINVAL) {
+        if (errno == EINVAL) {
             try_fcntl = 0;
             ret = dup(oldfd);
-        }
-        else {
-            return ret;
         }
     }
     else {
@@ -244,13 +243,12 @@ rb_cloexec_dup2(int oldfd, int newfd)
     static int try_dup3 = 1;
     if (2 < newfd && try_dup3) {
         ret = dup3(oldfd, newfd, O_CLOEXEC);
+        if (ret != -1)
+            return ret;
         /* dup3 is available since Linux 2.6.27. */
-        if (ret == -1 && errno == ENOSYS) {
+        if (errno == ENOSYS) {
             try_dup3 = 0;
             ret = dup2(oldfd, newfd);
-        }
-        else {
-            return ret;
         }
     }
     else {

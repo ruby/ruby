@@ -1,3 +1,8 @@
+Sun Oct 30 20:06:07 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_cloexec_dup): refine control flow.
+	  (rb_cloexec_dup2): ditto.
+
 Sun Oct 30 18:45:50 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ruby.c (fill_standard_fds): new function to open closed standard
