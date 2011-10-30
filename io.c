@@ -167,6 +167,7 @@ fd_set_cloexec(int fd)
     if (flags == -1) {
         rb_bug("rb_fd_set_cloexec: fcntl(%d, F_GETFD) failed: %s", fd, strerror(errno));
     }
+    /* Don't set CLOEXEC for standard file descriptors: 0, 1, 2. */
     if (2 < fd) {
         if (!(flags & FD_CLOEXEC)) {
             flags |= FD_CLOEXEC;
@@ -206,10 +207,11 @@ rb_cloexec_dup(int oldfd)
 {
     int ret;
 
-#ifdef F_DUPFD_CLOEXEC
+#if defined(HAVE_FCNTL) && defined(F_DUPFD_CLOEXEC)
     static int try_fcntl = 1;
     if (try_fcntl) {
-        ret = fcntl(oldfd, F_DUPFD_CLOEXEC, 0);
+        /* don't allocate standard file descriptors: 0, 1, 2 */
+        ret = fcntl(oldfd, F_DUPFD_CLOEXEC, 3);
         /* F_DUPFD_CLOEXEC is available since Linux 2.6.24.  Linux 2.6.18 fails with EINVAL */
         if (ret == -1 && errno == EINVAL) {
             try_fcntl = 0;
@@ -219,6 +221,9 @@ rb_cloexec_dup(int oldfd)
     else {
         ret = dup(oldfd);
     }
+#elif defined(HAVE_FCNTL) && defined(F_DUPFD)
+    /* don't allocate standard file descriptors: 0, 1, 2 */
+    ret = fcntl(oldfd, F_DUPFD, 3);
 #else
     ret = dup(oldfd);
 #endif

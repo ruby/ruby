@@ -1,3 +1,7 @@
+Sun Oct 30 09:58:48 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_cloexec_dup): don't allocate standard file descriptors.
+
 Sun Oct 30 08:29:51 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_cloexec_dup2): don't set CLOEXEC for standard file
