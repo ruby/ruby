@@ -262,6 +262,25 @@ rb_cloexec_dup2(int oldfd, int newfd)
     return ret;
 }
 
+int
+rb_cloexec_pipe(int fildes[2])
+{
+    int ret;
+    ret = pipe(fildes);
+    if (ret == -1) return -1;
+#ifdef __CYGWIN__
+    if (ret == 0 && fildes[1] == -1) {
+	close(fildes[0]);
+	fildes[0] = -1;
+	errno = ENFILE;
+	return -1;
+    }
+#endif
+    fd_set_cloexec(fildes[0]);
+    fd_set_cloexec(fildes[1]);
+    return ret;
+}
+
 #define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
 #define ARGF argf_of(argf)
 
@@ -5008,24 +5027,16 @@ int
 rb_pipe(int *pipes)
 {
     int ret;
-    ret = pipe(pipes);
+    ret = rb_cloexec_pipe(pipes);
     if (ret == -1) {
         if (errno == EMFILE || errno == ENFILE) {
             rb_gc();
-            ret = pipe(pipes);
+            ret = rb_cloexec_pipe(pipes);
         }
     }
-#ifdef __CYGWIN__
-    if (ret == 0 && pipes[1] == -1) {
-	close(pipes[0]);
-	pipes[0] = -1;
-	errno = ENFILE;
-	return -1;
-    }
-#endif
     if (ret == 0) {
-        rb_fd_set_cloexec(pipes[0]);
-        rb_fd_set_cloexec(pipes[1]);
+        rb_update_max_fd(pipes[0]);
+        rb_update_max_fd(pipes[1]);
     }
     return ret;
 }

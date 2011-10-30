@@ -1210,12 +1210,12 @@ rb_thread_create_timer_thread(void)
 		close_communication_pipe();
 	    }
 
-	    err = pipe(timer_thread_pipe);
+	    err = rb_cloexec_pipe(timer_thread_pipe);
 	    if (err != 0) {
 		rb_bug_errno("thread_timer: Failed to create communication pipe for timer thread", errno);
 	    }
-            rb_fd_set_cloexec(timer_thread_pipe[0]);
-            rb_fd_set_cloexec(timer_thread_pipe[1]);
+            rb_update_max_fd(timer_thread_pipe[0]);
+            rb_update_max_fd(timer_thread_pipe[1]);
 #if defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL)
 	    {
 		int oflags;
@@ -1224,12 +1224,6 @@ rb_thread_create_timer_thread(void)
 		oflags |= O_NONBLOCK;
 		fcntl(timer_thread_pipe[1], F_SETFL, oflags);
 #endif /* defined(O_NONBLOCK) */
-#if defined(FD_CLOEXEC)
-		oflags = fcntl(timer_thread_pipe[0], F_GETFD);
-		fcntl(timer_thread_pipe[0], F_SETFD, oflags | FD_CLOEXEC);
-		oflags = fcntl(timer_thread_pipe[1], F_GETFD);
-		fcntl(timer_thread_pipe[1], F_SETFD, oflags | FD_CLOEXEC);
-#endif /* defined(FD_CLOEXEC) */
 	    }
 #endif /* defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) */
 

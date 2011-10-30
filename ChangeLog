@@ -1,3 +1,13 @@
+Sun Oct 30 21:12:47 2011  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_cloexec_pipe): declared.
+
+	* io.c (rb_cloexec_pipe): new function.
+	  (rb_pipe): use rb_cloexec_pipe.
+
+	* thread_pthread.c (rb_thread_create_timer_thread): use
+	  rb_cloexec_pipe.
+
 Sun Oct 30 20:06:07 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_cloexec_dup): refine control flow.
