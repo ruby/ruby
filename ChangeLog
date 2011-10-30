@@ -1,3 +1,12 @@
+Mon Oct 31 00:16:11 2011  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_cloexec_fcntl_dupfd): declared.
+
+	* io.c (rb_cloexec_fcntl_dupfd): new function.
+	  (nogvl_io_cntl): use rb_cloexec_fcntl_dupfd.
+
+	* process.c (move_fds_to_avoid_crash): use rb_cloexec_fcntl_dupfd.
+
 Sun Oct 30 22:46:46 2011  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: check pipe2.

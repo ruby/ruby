@@ -506,6 +506,7 @@ int rb_cloexec_open(const char *pathname, int flags, mode_t mode);
 int rb_cloexec_dup(int oldfd);
 int rb_cloexec_dup2(int oldfd, int newfd);
 int rb_cloexec_pipe(int fildes[2]);
+int rb_cloexec_fcntl_dupfd(int fd, int minfd);
 #define RB_RESERVED_FD_P(fd) rb_reserved_fd_p(fd)
 void rb_update_max_fd(int fd);
 void rb_fd_set_cloexec(int fd);

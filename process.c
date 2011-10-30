@@ -2508,10 +2508,10 @@ move_fds_to_avoid_crash(int *fdp, int n, VALUE fds)
                 min = fdp[i]+1;
             while (RTEST(rb_hash_lookup(fds, INT2FIX(min))))
                 min++;
-            ret = fcntl(fdp[i], F_DUPFD, min);
+            ret = rb_cloexec_fcntl_dupfd(fdp[i], min);
             if (ret == -1)
                 return -1;
-            rb_fd_set_cloexec(ret);
+            rb_update_max_fd(ret);
             close(fdp[i]);
             fdp[i] = ret;
         }
