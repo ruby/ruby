@@ -217,6 +217,9 @@ rb_cloexec_dup(int oldfd)
             try_fcntl = 0;
             ret = dup(oldfd);
         }
+        else {
+            return ret;
+        }
     }
     else {
         ret = dup(oldfd);
@@ -245,6 +248,9 @@ rb_cloexec_dup2(int oldfd, int newfd)
         if (ret == -1 && errno == ENOSYS) {
             try_dup3 = 0;
             ret = dup2(oldfd, newfd);
+        }
+        else {
+            return ret;
         }
     }
     else {
