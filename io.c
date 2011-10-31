@@ -302,11 +302,15 @@ rb_cloexec_pipe(int fildes[2])
 int
 rb_cloexec_fcntl_dupfd(int fd, int minfd)
 {
+#if defined(F_DUPFD)
     int ret;
     ret = fcntl(fd, F_DUPFD, minfd);
     if (ret == -1) return -1;
     fd_set_cloexec(ret);
     return ret;
+#else
+    return -1;
+#endif
 }
 
 #define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
@@ -7831,9 +7835,11 @@ static VALUE nogvl_io_cntl(void *ptr)
     if (arg->io_p)
 	return (VALUE)ioctl(arg->fd, arg->cmd, arg->narg);
     else
+#if defined(F_DUPFD)
         if (arg->cmd == F_DUPFD)
             return (VALUE)rb_cloexec_fcntl_dupfd(arg->fd, arg->narg);
         else
+#endif
             return (VALUE)fcntl(arg->fd, arg->cmd, arg->narg);
 }
 

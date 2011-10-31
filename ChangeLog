@@ -1,3 +1,10 @@
+Mon Oct 31 10:50:26 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_cloexec_fcntl_dupfd): this function needs F_DUPFD.
+
+	* io.c (nogvl_io_cntl): use rb_cloexec_fcntl_dupfd() only if the
+	  platform has F_DUPFD.
+
 Mon Oct 31 00:50:00 2011  Luis Lavena  <luislavena@gmail.com>
 
 	* configure.in: check -fno-omit-frame-pointer acceptance and usage
