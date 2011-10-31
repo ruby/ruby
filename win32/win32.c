@@ -3766,28 +3766,13 @@ void setprotoent (int stayopen) {}
 void setservent (int stayopen) {}
 
 /* License: Ruby's */
-int
-fcntl(int fd, int cmd, ...)
+static int
+setfl(SOCKET sock, int arg)
 {
-    SOCKET sock = TO_SOCKET(fd);
-    va_list va;
-    int arg;
     int ret;
     int flag = 0;
     u_long ioctlArg;
 
-    if (!is_socket(sock)) {
-	errno = EBADF;
-	return -1;
-    }
-    if (cmd != F_SETFL) {
-	errno = EINVAL;
-	return -1;
-    }
-
-    va_start(va, cmd);
-    arg = va_arg(va, int);
-    va_end(va);
     socklist_lookup(sock, &flag);
     if (arg & O_NONBLOCK) {
 	flag |= O_NONBLOCK;
@@ -3806,6 +3791,82 @@ fcntl(int fd, int cmd, ...)
     });
 
     return ret;
+}
+
+/* License: Ruby's */
+static int
+dupfd(HANDLE hDup, char flags, int minfd)
+{
+    int save_errno;
+    int ret;
+    int fds[32];
+    int filled = 0;
+
+    do {
+	ret = _open_osfhandle((intptr_t)hDup, flags | FOPEN);
+	if (ret == -1) {
+	    goto close_fds_and_return;
+	}
+	if (ret >= minfd) {
+	    goto close_fds_and_return;
+	}
+	fds[filled++] = ret;
+    } while (filled < (sizeof(fds)/sizeof(fds[0])));
+
+    ret = dupfd(hDup, flags, minfd);
+
+  close_fds_and_return:
+    save_errno = errno;
+    while (filled > 0) {
+	_osfhnd(fds[--filled]) = (intptr_t)INVALID_HANDLE_VALUE;
+	close(fds[filled]);
+    }
+    errno = save_errno;
+
+    return ret;
+}
+
+/* License: Ruby's */
+int
+fcntl(int fd, int cmd, ...)
+{
+    va_list va;
+    int arg;
+
+    if (cmd == F_SETFL) {
+	SOCKET sock = TO_SOCKET(fd);
+	if (!is_socket(sock)) {
+	    errno = EBADF;
+	    return -1;
+	}
+
+	va_start(va, cmd);
+	arg = va_arg(va, int);
+	va_end(va);
+	return setfl(sock, arg);
+    }
+    else if (cmd == F_DUPFD) {
+	int ret;
+	HANDLE hDup;
+	if (!(DuplicateHandle(GetCurrentProcess(), (HANDLE)_get_osfhandle(fd),
+			      GetCurrentProcess(), &hDup, 0L, TRUE,
+			      DUPLICATE_SAME_ACCESS))) {
+	    errno = map_errno(GetLastError());
+	    return -1;
+	}
+
+	va_start(va, cmd);
+	arg = va_arg(va, int);
+	va_end(va);
+
+	if ((ret = dupfd(hDup, _osfile(fd), arg)) == -1)
+	    CloseHandle(hDup);
+	return ret;
+    }
+    else {
+	errno = EINVAL;
+	return -1;
+    }
 }
 
 #ifndef WNOHANG

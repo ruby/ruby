@@ -1,3 +1,17 @@
+Mon Oct 31 13:10:06 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (setfl): extract from fcntl().
+
+	* win32/win32.c (dupfd): new function to support F_DUPFD. base on a
+	  patch written by akr.
+
+	* win32/win32.c (fcntl): use above functions.
+
+	* include/ruby/win32.h (F_DUPFD): define. [experimental]
+
+	* include/ruby/win32.h (F_SETFL): change the value to correspond with
+	  other platforms.
+
 Mon Oct 31 12:37:50 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pty/pty.c (get_device_once): use O_CLOEXEC for posix_openpt if
