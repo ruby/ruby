@@ -226,7 +226,7 @@ rb_cloexec_dup2(int oldfd, int newfd)
             ret = dup3(oldfd, newfd, O_CLOEXEC);
             if (ret != -1)
                 return ret;
-            /* dup3 is available since Linux 2.6.27. */
+            /* dup3 is available since Linux 2.6.27, glibc 2.9. */
             if (errno == ENOSYS) {
                 try_dup3 = 0;
                 ret = dup2(oldfd, newfd);
@@ -261,7 +261,7 @@ rb_cloexec_pipe(int fildes[2])
         if (ret != -1)
             return ret;
 #endif
-        /* pipe2 is available since Linux 2.6.27. */
+        /* pipe2 is available since Linux 2.6.27, glibc 2.9. */
         if (errno == ENOSYS) {
             try_pipe2 = 0;
             ret = pipe(fildes);
