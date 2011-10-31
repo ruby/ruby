@@ -397,6 +397,8 @@ EOF
   end
 end
 
+have_func("accept4")
+
 $objs = [
   "init.#{$OBJEXT}",
   "constants.#{$OBJEXT}",

@@ -463,6 +463,30 @@ make_fd_nonblock(int fd)
     }
 }
 
+static int
+cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
+{
+    int ret;
+#ifdef HAVE_ACCEPT4
+    static int try_accept4 = 1;
+    if (try_accept4) {
+        ret = accept4(socket, address, address_len, SOCK_CLOEXEC);
+        /* accept4 is available since Linux 2.6.28, glibc 2.10. */
+        if (ret == -1 && errno == ENOSYS) {
+            try_accept4 = 0;
+            ret = accept(socket, address, address_len);
+        }
+    }
+    else {
+        ret = accept(socket, address, address_len);
+    }
+#else
+    ret = accept(socket, address, address_len);
+#endif
+    return ret;
+}
+
+
 VALUE
 rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len)
 {
@@ -470,7 +494,7 @@ rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, s
 
     rb_secure(3);
     rb_io_set_nonblock(fptr);
-    fd2 = accept(fptr->fd, (struct sockaddr*)sockaddr, len);
+    fd2 = cloexec_accept(fptr->fd, (struct sockaddr*)sockaddr, len);
     if (fd2 < 0) {
 	switch (errno) {
 	  case EAGAIN:
@@ -500,7 +524,7 @@ static VALUE
 accept_blocking(void *data)
 {
     struct accept_arg *arg = data;
-    return (VALUE)accept(arg->fd, arg->sockaddr, arg->len);
+    return (VALUE)cloexec_accept(arg->fd, arg->sockaddr, arg->len);
 }
 
 VALUE

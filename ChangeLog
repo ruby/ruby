@@ -1,3 +1,12 @@
+Tue Nov  1 08:24:40 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/init.c (cloexec_accept): new function to use accept4 if
+	  available.
+	  (rsock_s_accept_nonblock): use cloexec_accept.
+	  (accept_blocking): ditto.
+
+	* ext/socket/extconf.rb: check accept4.
+
 Tue Nov  1 07:31:55 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/ancdata.c (nogvl_recvmsg_func): use MSG_CMSG_CLOEXEC if
