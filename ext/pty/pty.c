@@ -296,7 +296,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if ((masterfd = posix_openpt(O_RDWR|O_NOCTTY)) == -1) goto error;
     if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
     if (grantpt(masterfd) == -1) goto grantpt_error;
-    rb_fd_set_cloexec(masterfd);
+    rb_fd_fix_cloexec(masterfd);
 #else
     flags = O_RDWR|O_NOCTTY;
 # ifdef O_CLOEXEC
@@ -306,7 +306,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     flags |= O_CLOEXEC;
 # endif
     if ((masterfd = posix_openpt(flags)) == -1) goto error;
-    rb_fd_set_cloexec(masterfd);
+    rb_fd_fix_cloexec(masterfd);
     if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
     if (grantpt(masterfd) == -1) goto grantpt_error;
 #endif
@@ -347,8 +347,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 	if (!fail) return -1;
 	rb_raise(rb_eRuntimeError, "openpty() failed");
     }
-    rb_fd_set_cloexec(*master);
-    rb_fd_set_cloexec(*slave);
+    rb_fd_fix_cloexec(*master);
+    rb_fd_fix_cloexec(*slave);
     if (no_mesg(SlaveName, nomesg) == -1) {
 	if (!fail) return -1;
 	rb_raise(rb_eRuntimeError, "can't chmod slave pty");
@@ -365,7 +365,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 	if (!fail) return -1;
 	rb_raise(rb_eRuntimeError, "_getpty() failed");
     }
-    rb_fd_set_cloexec(*master);
+    rb_fd_fix_cloexec(*master);
 
     *slave = rb_cloexec_open(name, O_RDWR, 0);
     /* error check? */
@@ -387,7 +387,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if((masterfd = open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
     s = signal(SIGCHLD, SIG_DFL);
     if(grantpt(masterfd) == -1) goto error;
-    rb_fd_set_cloexec(masterfd);
+    rb_fd_fix_cloexec(masterfd);
 #else
     if((masterfd = rb_cloexec_open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
     rb_update_max_fd(masterfd);

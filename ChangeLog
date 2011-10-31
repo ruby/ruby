@@ -1,3 +1,20 @@
+Mon Oct 31 21:47:48 2011  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_fd_fix_cloexec): renamed from
+	  rb_fd_set_cloexec.
+
+	* io.c: follow the above renaming.
+
+	* ext/pty/pty.c: ditto.
+
+	* ext/socket/init.c: ditto.
+
+	* ext/socket/socket.c: ditto.
+
+	* ext/socket/ancdata.c: ditto.
+
+	* ext/socket/unixsocket.c: ditto.
+
 Mon Oct 31 21:02:43 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS): retry IO.select for premature wakeup.

@@ -165,7 +165,7 @@ fd_set_cloexec(int fd)
     int flags, flags2, ret;
     flags = fcntl(fd, F_GETFD); /* should not fail except EBADF. */
     if (flags == -1) {
-        rb_bug("rb_fd_set_cloexec: fcntl(%d, F_GETFD) failed: %s", fd, strerror(errno));
+        rb_bug("fd_set_cloexec: fcntl(%d, F_GETFD) failed: %s", fd, strerror(errno));
     }
     if (fd <= 2)
         flags2 = flags & ~FD_CLOEXEC; /* Clear CLOEXEC for standard file descriptors: 0, 1, 2. */
@@ -174,14 +174,14 @@ fd_set_cloexec(int fd)
     if (flags != flags2) {
         ret = fcntl(fd, F_SETFD, flags2);
         if (ret == -1) {
-            rb_bug("rb_fd_set_cloexec: fcntl(%d, F_SETFD, %d) failed: %s", fd, flags2, strerror(errno));
+            rb_bug("fd_set_cloexec: fcntl(%d, F_SETFD, %d) failed: %s", fd, flags2, strerror(errno));
         }
     }
 #endif
 }
 
 void
-rb_fd_set_cloexec(int fd)
+rb_fd_fix_cloexec(int fd)
 {
     fd_set_cloexec(fd);
     if (max_file_descriptor < fd) max_file_descriptor = fd;
