@@ -657,16 +657,19 @@ class Resolv
       end
 
       def request(sender, tout)
-        timelimit = Time.now + tout
+        start = Time.now
+        timelimit = start + tout
         sender.send
         while true
-          now = Time.now
-          timeout = timelimit - now
+          before_select = Time.now
+          timeout = timelimit - before_select
           if timeout <= 0
             raise ResolvTimeout
           end
           select_result = IO.select(@socks, nil, nil, timeout)
           if !select_result
+            after_select = Time.now
+            next if after_select < timelimit
             raise ResolvTimeout
           end
           begin
