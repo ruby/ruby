@@ -239,25 +239,32 @@ rb_cloexec_dup2(int oldfd, int newfd)
 {
     int ret;
 
-#if defined(HAVE_DUP3) && defined(O_CLOEXEC)
-    static int try_dup3 = 1;
-    if (2 < newfd && try_dup3) {
-        ret = dup3(oldfd, newfd, O_CLOEXEC);
-        if (ret != -1)
-            return ret;
-        /* dup3 is available since Linux 2.6.27. */
-        if (errno == ENOSYS) {
-            try_dup3 = 0;
-            ret = dup2(oldfd, newfd);
-        }
+    /* When oldfd == newfd, dup2 succeeds but dup3 fails with EINVAL.
+     * rb_cloexec_dup2 succeeds as dup2.  */
+    if (oldfd == newfd) {
+        ret = newfd;
     }
     else {
-        ret = dup2(oldfd, newfd);
-    }
+#if defined(HAVE_DUP3) && defined(O_CLOEXEC)
+        static int try_dup3 = 1;
+        if (2 < newfd && try_dup3) {
+            ret = dup3(oldfd, newfd, O_CLOEXEC);
+            if (ret != -1)
+                return ret;
+            /* dup3 is available since Linux 2.6.27. */
+            if (errno == ENOSYS) {
+                try_dup3 = 0;
+                ret = dup2(oldfd, newfd);
+            }
+        }
+        else {
+            ret = dup2(oldfd, newfd);
+        }
 #else
-    ret = dup2(oldfd, newfd);
+        ret = dup2(oldfd, newfd);
 #endif
-    if (ret == -1) return -1;
+        if (ret == -1) return -1;
+    }
     fd_set_cloexec(ret);
     return ret;
 }
