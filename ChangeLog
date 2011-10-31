@@ -1,3 +1,10 @@
+Mon Oct 31 20:14:22 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (fd_set_cloexec): clear CLOEXEC flag for standard file
+	  descriptors.
+	  (rb_cloexec_dup): use rb_cloexec_fcntl_dupfd.
+	  (rb_cloexec_fcntl_dupfd): use F_DUPFD_CLOEXEC if available.
+
 Mon Oct 31 19:14:11 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/resolv/test_dns.rb: don't check maximum sleeped time.

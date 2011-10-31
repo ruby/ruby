@@ -162,19 +162,19 @@ fd_set_cloexec(int fd)
 {
   /* MinGW don't have F_GETFD and FD_CLOEXEC.  [ruby-core:40281] */
 #ifdef F_GETFD
-    int flags, ret;
+    int flags, flags2, ret;
     flags = fcntl(fd, F_GETFD); /* should not fail except EBADF. */
     if (flags == -1) {
         rb_bug("rb_fd_set_cloexec: fcntl(%d, F_GETFD) failed: %s", fd, strerror(errno));
     }
-    /* Don't set CLOEXEC for standard file descriptors: 0, 1, 2. */
-    if (2 < fd) {
-        if (!(flags & FD_CLOEXEC)) {
-            flags |= FD_CLOEXEC;
-            ret = fcntl(fd, F_SETFD, flags);
-            if (ret == -1) {
-                rb_bug("rb_fd_set_cloexec: fcntl(%d, F_SETFD, %d) failed: %s", fd, flags, strerror(errno));
-            }
+    if (fd <= 2)
+        flags2 = flags & ~FD_CLOEXEC; /* Clear CLOEXEC for standard file descriptors: 0, 1, 2. */
+    else
+        flags2 = flags | FD_CLOEXEC; /* Set CLOEXEC for non-standard file descriptors: 3, 4, 5, ... */
+    if (flags != flags2) {
+        ret = fcntl(fd, F_SETFD, flags2);
+        if (ret == -1) {
+            rb_bug("rb_fd_set_cloexec: fcntl(%d, F_SETFD, %d) failed: %s", fd, flags2, strerror(errno));
         }
     }
 #endif
@@ -205,33 +205,8 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 int
 rb_cloexec_dup(int oldfd)
 {
-    int ret;
-
-#if defined(HAVE_FCNTL) && defined(F_DUPFD_CLOEXEC)
-    static int try_fcntl = 1;
-    if (try_fcntl) {
-        /* don't allocate standard file descriptors: 0, 1, 2 */
-        ret = fcntl(oldfd, F_DUPFD_CLOEXEC, 3);
-        if (ret != -1)
-            return ret;
-        /* F_DUPFD_CLOEXEC is available since Linux 2.6.24.  Linux 2.6.18 fails with EINVAL */
-        if (errno == EINVAL) {
-            try_fcntl = 0;
-            ret = dup(oldfd);
-        }
-    }
-    else {
-        ret = dup(oldfd);
-    }
-#elif defined(HAVE_FCNTL) && defined(F_DUPFD)
-    /* don't allocate standard file descriptors: 0, 1, 2 */
-    ret = fcntl(oldfd, F_DUPFD, 3);
-#else
-    ret = dup(oldfd);
-#endif
-    if (ret == -1) return -1;
-    fd_set_cloexec(ret);
-    return ret;
+    /* Don't allocate standard file descriptors: 0, 1, 2 */
+    return rb_cloexec_fcntl_dupfd(oldfd, 3);
 }
 
 int
@@ -309,15 +284,32 @@ rb_cloexec_pipe(int fildes[2])
 int
 rb_cloexec_fcntl_dupfd(int fd, int minfd)
 {
-#if defined(F_DUPFD)
     int ret;
+
+#if defined(HAVE_FCNTL) && defined(F_DUPFD_CLOEXEC)
+    static int try_dupfd_cloexec = 1;
+    if (try_dupfd_cloexec) {
+        ret = fcntl(fd, F_DUPFD_CLOEXEC, minfd);
+        if (ret != -1) {
+            if (ret <= 2)
+                fd_set_cloexec(ret);
+            return ret;
+        }
+        /* F_DUPFD_CLOEXEC is available since Linux 2.6.24.  Linux 2.6.18 fails with EINVAL */
+        if (errno == EINVAL) {
+            try_dupfd_cloexec = 0;
+            ret = fcntl(fd, F_DUPFD, minfd);
+        }
+    }
+    else {
+        ret = fcntl(fd, F_DUPFD, minfd);
+    }
+#else
     ret = fcntl(fd, F_DUPFD, minfd);
+#endif
     if (ret == -1) return -1;
     fd_set_cloexec(ret);
     return ret;
-#else
-    return -1;
-#endif
 }
 
 #define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
