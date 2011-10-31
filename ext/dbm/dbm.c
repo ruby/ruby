@@ -137,20 +137,23 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 
     FilePathValue(file);
 
+#ifndef O_CLOEXEC
+#   define O_CLOEXEC 0
+#endif
     if (flags & RUBY_DBM_RW_BIT) {
         flags &= ~RUBY_DBM_RW_BIT;
-        dbm = dbm_open(RSTRING_PTR(file), flags, mode);
+        dbm = dbm_open(RSTRING_PTR(file), flags|O_CLOEXEC, mode);
     }
     else {
         dbm = 0;
         if (mode >= 0) {
-            dbm = dbm_open(RSTRING_PTR(file), O_RDWR|O_CREAT, mode);
+            dbm = dbm_open(RSTRING_PTR(file), O_RDWR|O_CREAT|O_CLOEXEC, mode);
         }
         if (!dbm) {
-            dbm = dbm_open(RSTRING_PTR(file), O_RDWR, 0);
+            dbm = dbm_open(RSTRING_PTR(file), O_RDWR|O_CLOEXEC, 0);
         }
         if (!dbm) {
-            dbm = dbm_open(RSTRING_PTR(file), O_RDONLY, 0);
+            dbm = dbm_open(RSTRING_PTR(file), O_RDONLY|O_CLOEXEC, 0);
         }
     }
 

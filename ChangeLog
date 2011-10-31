@@ -1,3 +1,7 @@
+Mon Oct 31 22:04:54 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/dbm.c (fdbm_initialize): use O_CLOEXEC if available.
+
 Mon Oct 31 21:47:48 2011  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_fd_fix_cloexec): renamed from
