@@ -1,3 +1,8 @@
+Mon Oct 31 12:37:50 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pty/pty.c (get_device_once): use O_CLOEXEC for posix_openpt if
+	  available.
+
 Mon Oct 31 12:05:24 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_cloexec_dup2): check oldfd == newfd at first.

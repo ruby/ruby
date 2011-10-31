@@ -285,6 +285,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     int masterfd = -1, slavefd = -1;
     char *slavedevice;
     struct sigaction dfl, old;
+    int flags;
 
     dfl.sa_handler = SIG_DFL;
     dfl.sa_flags = 0;
@@ -297,7 +298,14 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if (grantpt(masterfd) == -1) goto grantpt_error;
     rb_fd_set_cloexec(masterfd);
 #else
-    if ((masterfd = posix_openpt(O_RDWR|O_NOCTTY)) == -1) goto error;
+    flags = O_RDWR|O_NOCTTY;
+# ifdef O_CLOEXEC
+    /* glibc posix_openpt() in GNU/Linux calls open("/dev/ptmx", flags) internally.
+     * So version dependency on GNU/Linux is same as O_CLOEXEC with open().
+     * O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
+    flags |= O_CLOEXEC;
+# endif
+    if ((masterfd = posix_openpt(flags)) == -1) goto error;
     rb_fd_set_cloexec(masterfd);
     if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
     if (grantpt(masterfd) == -1) goto grantpt_error;
@@ -349,6 +357,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     return 0;
 
 #elif defined HAVE__GETPTY
+    /* SGI IRIX */
     char *name;
     mode_t mode = nomesg ? 0600 : 0622;
 
