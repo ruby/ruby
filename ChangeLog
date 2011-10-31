@@ -1,3 +1,17 @@
+Tue Nov  1 02:56:17 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby.c (load_file_internal): convert the encoding of load path if
+	  needed by platform.  calling open() was replaced by rb_cloexec_open()
+	  at r33549, but the function expected UTF-8 pathname on Windows.
+	  (open() expected "locale" pathname.)
+	  reported by taco via IRC.
+
+	* ruby.c (load_file): change the type of the 2nd parameter to pass its
+	  encoding to load_file_internal().
+
+	* ruby.c (process_options, rb_load_file): follow above change.
+	  NOTE: we should pass encoding information to rb_load_file().
+
 Mon Oct 31 23:49:38 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (rsock_socketpair): extracted from
@@ -54,7 +68,7 @@ Mon Oct 31 13:10:06 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (setfl): extract from fcntl().
 
-	* win32/win32.c (dupfd): new function to support F_DUPFD. base on a
+	* win32/win32.c (dupfd): new function to support F_DUPFD. based on a
 	  patch written by akr.
 
 	* win32/win32.c (fcntl): use above functions.

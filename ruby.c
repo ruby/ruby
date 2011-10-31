@@ -112,7 +112,7 @@ cmdline_options_init(struct cmdline_options *opt)
     return opt;
 }
 
-static NODE *load_file(VALUE, const char *, int, struct cmdline_options *);
+static NODE *load_file(VALUE, VALUE, int, struct cmdline_options *);
 static void forbid_setid(const char *, struct cmdline_options *);
 #define forbid_setid(s) forbid_setid((s), opt)
 
@@ -1402,7 +1402,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	}
 
 	PREPARE_PARSE_MAIN({
-	    tree = load_file(parser, opt->script, 1, opt);
+	    tree = load_file(parser, opt->script_name, 1, opt);
 	});
     }
     rb_progname = opt->script_name;
@@ -1487,7 +1487,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 
 struct load_file_arg {
     VALUE parser;
-    const char *fname;
+    VALUE fname;
     int script;
     struct cmdline_options *opt;
 };
@@ -1498,7 +1498,8 @@ load_file_internal(VALUE arg)
     extern VALUE rb_stdin;
     struct load_file_arg *argp = (struct load_file_arg *)arg;
     VALUE parser = argp->parser;
-    const char *fname = argp->fname;
+    VALUE fname_v = rb_str_encode_ospath(argp->fname);
+    const char *fname = StringValueCStr(fname_v);
     int script = argp->script;
     struct cmdline_options *opt = argp->opt;
     VALUE f;
@@ -1657,7 +1658,7 @@ restore_lineno(VALUE lineno)
 }
 
 static NODE *
-load_file(VALUE parser, const char *fname, int script, struct cmdline_options *opt)
+load_file(VALUE parser, VALUE fname, int script, struct cmdline_options *opt)
 {
     struct load_file_arg arg;
     arg.parser = parser;
@@ -1671,8 +1672,9 @@ void *
 rb_load_file(const char *fname)
 {
     struct cmdline_options opt;
+    VALUE fname_v = rb_str_new_cstr(fname);
 
-    return load_file(rb_parser_new(), fname, 0, cmdline_options_init(&opt));
+    return load_file(rb_parser_new(), fname_v, 0, cmdline_options_init(&opt));
 }
 
 static void
