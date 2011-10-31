@@ -1,3 +1,9 @@
+Mon Oct 31 19:14:11 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/resolv/test_dns.rb: don't check maximum sleeped time.
+	  ruby doesn't guarantee the maximum time because it is not a
+	  realtime application.
+
 Mon Oct 31 13:10:06 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (setfl): extract from fcntl().

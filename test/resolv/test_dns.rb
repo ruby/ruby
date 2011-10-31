@@ -116,7 +116,7 @@ class TestResolvDNS < Test::Unit::TestCase
       }
       diff = Time.now - start
       assert rv.empty?, "unexpected: #{rv.inspect} (expected empty)"
-      assert_in_delta 0.1, diff, 0.05
+      assert_operator 0.1, :<=, diff
 
       rv = Resolv::DNS.open(:nameserver_port => [[host, port]]) {|dns|
         dns.timeouts = [ 0.1, 0.2 ]
@@ -125,7 +125,7 @@ class TestResolvDNS < Test::Unit::TestCase
       }
       diff = Time.now - start
       assert rv.empty?, "unexpected: #{rv.inspect} (expected empty)"
-      assert_in_delta 0.3, diff, 0.05
+      assert_operator 0.3, :<=, diff
     }
   end
 
