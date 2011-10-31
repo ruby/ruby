@@ -264,7 +264,12 @@ static VALUE
 recvmsg_blocking(void *data)
 {
     struct iomsg_arg *arg = data;
-    return recvmsg(arg->fd, &arg->msg, 0);
+    int flags = 0;
+#ifdef MSG_CMSG_CLOEXEC
+    /* MSG_CMSG_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
+    flags |= MSG_CMSG_CLOEXEC;
+#endif
+    return recvmsg(arg->fd, &arg->msg, flags);
 }
 
 /*

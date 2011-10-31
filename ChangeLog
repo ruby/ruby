@@ -1,3 +1,10 @@
+Tue Nov  1 07:31:55 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c (nogvl_recvmsg_func): use MSG_CMSG_CLOEXEC if
+	  available.
+
+	* ext/socket/unixsocket.c (recvmsg_blocking): ditto.
+
 Tue Nov  1 05:59:41 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (rsock_socketpair): use SOCK_CLOEXEC if

@@ -1362,7 +1362,12 @@ static VALUE
 nogvl_recvmsg_func(void *ptr)
 {
     struct recvmsg_args_struct *args = ptr;
-    return recvmsg(args->fd, args->msg, args->flags);
+    int flags = args->flags;
+#ifdef MSG_CMSG_CLOEXEC
+    /* MSG_CMSG_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
+    flags |= MSG_CMSG_CLOEXEC;
+#endif
+    return recvmsg(args->fd, args->msg, flags);
 }
 
 static ssize_t
