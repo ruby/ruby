@@ -1,3 +1,8 @@
+Mon Oct 31 21:47:44 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (rb_cloexec_pipe): NetBSD 6.0 will support pipe2(2),
+	  but its return value is -1 or larger than 0.
+
 Mon Oct 31 22:04:54 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/dbm.c (fdbm_initialize): use O_CLOEXEC if available.

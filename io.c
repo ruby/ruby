@@ -253,8 +253,14 @@ rb_cloexec_pipe(int fildes[2])
     static int try_pipe2 = 1;
     if (try_pipe2) {
         ret = pipe2(fildes, O_CLOEXEC);
+#ifdef defined(__NetBSD__)
+        /* pipe2 is available since NetBSD 6.0. */
+	if (ret > 0)
+	    return 0;
+#else
         if (ret != -1)
             return ret;
+#endif
         /* pipe2 is available since Linux 2.6.27. */
         if (errno == ENOSYS) {
             try_pipe2 = 0;
