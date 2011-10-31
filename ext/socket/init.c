@@ -240,19 +240,38 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
 }
 
 int
-rsock_socket(int domain, int type, int proto)
+rsock_socket(int domain, int type0, int proto)
 {
-    int fd;
+    int fd, type;
+
+#ifdef SOCK_CLOEXEC
+    static int try_sock_cloexec = 1;
+    if (try_sock_cloexec)
+        type = type0|SOCK_CLOEXEC;
+    else
+        type = type0;
+  retry_without_sock_cloexec:;
+#else
+    type = type0;
+#endif
 
     fd = socket(domain, type, proto);
     if (fd < 0) {
+#ifdef SOCK_CLOEXEC
+        /* SOCK_CLOEXEC is available since Linux 2.6.27.  Linux 2.6.18 fails with EINVAL */
+        if (try_sock_cloexec && errno == EINVAL) {
+            try_sock_cloexec = 0;
+            type = type0;
+            goto retry_without_sock_cloexec;
+        }
+#endif
 	if (errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
 	    fd = socket(domain, type, proto);
 	}
     }
     if (0 <= fd)
-        rb_fd_fix_cloexec(fd);
+        rb_update_max_fd(fd);
     return fd;
 }
 
