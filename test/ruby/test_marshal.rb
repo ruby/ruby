@@ -263,7 +263,7 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(true, y.first.first.untrusted?)
   end
 
-  def test_symbol
+  def test_symbol2
     [:ruby, :"\u{7d05}\u{7389}"].each do |sym|
       assert_equal(sym, Marshal.load(Marshal.dump(sym)), '[ruby-core:24788]')
     end
@@ -321,7 +321,7 @@ class TestMarshal < Test::Unit::TestCase
     end
   end
 
-  def test_regexp
+  def test_regexp2
     assert_equal(/\\u/, Marshal.load("\004\b/\b\\\\u\000"))
     assert_equal(/u/, Marshal.load("\004\b/\a\\u\000"))
     assert_equal(/u/, Marshal.load("\004\bI/\a\\u\000\006:\016@encoding\"\vEUC-JP"))
