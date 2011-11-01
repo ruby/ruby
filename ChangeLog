@@ -1,3 +1,9 @@
+Tue Nov  1 21:39:00 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (rb_cloexec_pipe): remove workaround of r33587.
+	  The bug of NetBSD is fixed on Mon Oct 31 21:31:29 UTC 2011.
+	  http://gnats.netbsd.org/cgi-bin/query-pr-single.pl?number=45545
+
 Tue Nov  1 19:49:08 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_reopen): call rb_fd_fix_cloexec instead of
