@@ -1,3 +1,7 @@
+Tue Nov  1 19:00:30 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_reopen): call rb_maygvl_fd_fix_cloexec after freopen().
+
 Tue Nov  1 17:17:26 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (file_expand_path): reset coderange after expanding path.

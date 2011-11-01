@@ -6059,6 +6059,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
             rb_sys_fail_path(fptr->pathv);
         }
         fptr->fd = fileno(fptr->stdio_file);
+        rb_maygvl_fd_fix_cloexec(fptr->fd);
 #ifdef USE_SETVBUF
         if (setvbuf(fptr->stdio_file, NULL, _IOFBF, 0) != 0)
             rb_warn("setvbuf() can't be honoured for %s", RSTRING_PTR(fptr->pathv));
