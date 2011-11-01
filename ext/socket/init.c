@@ -472,7 +472,12 @@ cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
     if (try_accept4) {
         ret = accept4(socket, address, address_len, SOCK_CLOEXEC);
         /* accept4 is available since Linux 2.6.28, glibc 2.10. */
-        if (ret == -1 && errno == ENOSYS) {
+        if (ret != -1) {
+            if (ret <= 2)
+                rb_maygvl_fd_fix_cloexec(ret);
+            return ret;
+        }
+        if (errno == ENOSYS) {
             try_accept4 = 0;
             ret = accept(socket, address, address_len);
         }
@@ -483,6 +488,8 @@ cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
 #else
     ret = accept(socket, address, address_len);
 #endif
+    if (ret == -1) return -1;
+    rb_maygvl_fd_fix_cloexec(ret);
     return ret;
 }
 
@@ -509,7 +516,7 @@ rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, s
 	}
         rb_sys_fail("accept(2)");
     }
-    rb_fd_fix_cloexec(fd2);
+    rb_update_max_fd(fd2);
     make_fd_nonblock(fd2);
     return rsock_init_sock(rb_obj_alloc(klass), fd2);
 }
@@ -556,7 +563,7 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 	}
 	rb_sys_fail(0);
     }
-    rb_fd_fix_cloexec(fd2);
+    rb_update_max_fd(fd2);
     if (!klass) return INT2NUM(fd2);
     return rsock_init_sock(rb_obj_alloc(klass), fd2);
 }

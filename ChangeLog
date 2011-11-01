@@ -1,3 +1,13 @@
+Tue Nov  1 12:00:53 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_maygvl_fd_fix_cloexec): renamed from fd_set_cloexec.
+
+	* internal.h (rb_maygvl_fd_fix_cloexec): declared.
+
+	* ext/socket/init.c (cloexec_accept): use rb_maygvl_fd_fix_cloexec.
+	  (rsock_s_accept_nonblock): use rb_update_max_fd.
+	  (rsock_s_accept): use rb_update_max_fd.
+
 Tue Nov  1 08:24:40 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/init.c (cloexec_accept): new function to use accept4 if

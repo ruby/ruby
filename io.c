@@ -157,15 +157,15 @@ rb_update_max_fd(int fd)
     if (max_file_descriptor < fd) max_file_descriptor = fd;
 }
 
-static void
-fd_set_cloexec(int fd)
+void
+rb_maygvl_fd_fix_cloexec(int fd)
 {
   /* MinGW don't have F_GETFD and FD_CLOEXEC.  [ruby-core:40281] */
 #ifdef F_GETFD
     int flags, flags2, ret;
     flags = fcntl(fd, F_GETFD); /* should not fail except EBADF. */
     if (flags == -1) {
-        rb_bug("fd_set_cloexec: fcntl(%d, F_GETFD) failed: %s", fd, strerror(errno));
+        rb_bug("rb_maygvl_fd_fix_cloexec: fcntl(%d, F_GETFD) failed: %s", fd, strerror(errno));
     }
     if (fd <= 2)
         flags2 = flags & ~FD_CLOEXEC; /* Clear CLOEXEC for standard file descriptors: 0, 1, 2. */
@@ -174,7 +174,7 @@ fd_set_cloexec(int fd)
     if (flags != flags2) {
         ret = fcntl(fd, F_SETFD, flags2);
         if (ret == -1) {
-            rb_bug("fd_set_cloexec: fcntl(%d, F_SETFD, %d) failed: %s", fd, flags2, strerror(errno));
+            rb_bug("rb_maygvl_fd_fix_cloexec: fcntl(%d, F_SETFD, %d) failed: %s", fd, flags2, strerror(errno));
         }
     }
 #endif
@@ -183,7 +183,7 @@ fd_set_cloexec(int fd)
 void
 rb_fd_fix_cloexec(int fd)
 {
-    fd_set_cloexec(fd);
+    rb_maygvl_fd_fix_cloexec(fd);
     if (max_file_descriptor < fd) max_file_descriptor = fd;
 }
 
@@ -198,7 +198,7 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 #endif
     ret = open(pathname, flags, mode);
     if (ret == -1) return -1;
-    fd_set_cloexec(ret);
+    rb_maygvl_fd_fix_cloexec(ret);
     return ret;
 }
 
@@ -240,7 +240,7 @@ rb_cloexec_dup2(int oldfd, int newfd)
 #endif
         if (ret == -1) return -1;
     }
-    fd_set_cloexec(ret);
+    rb_maygvl_fd_fix_cloexec(ret);
     return ret;
 }
 
@@ -282,8 +282,8 @@ rb_cloexec_pipe(int fildes[2])
 	return -1;
     }
 #endif
-    fd_set_cloexec(fildes[0]);
-    fd_set_cloexec(fildes[1]);
+    rb_maygvl_fd_fix_cloexec(fildes[0]);
+    rb_maygvl_fd_fix_cloexec(fildes[1]);
     return ret;
 }
 
@@ -298,7 +298,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
         ret = fcntl(fd, F_DUPFD_CLOEXEC, minfd);
         if (ret != -1) {
             if (ret <= 2)
-                fd_set_cloexec(ret);
+                rb_maygvl_fd_fix_cloexec(ret);
             return ret;
         }
         /* F_DUPFD_CLOEXEC is available since Linux 2.6.24.  Linux 2.6.18 fails with EINVAL */
@@ -314,7 +314,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
     ret = fcntl(fd, F_DUPFD, minfd);
 #endif
     if (ret == -1) return -1;
-    fd_set_cloexec(ret);
+    rb_maygvl_fd_fix_cloexec(ret);
     return ret;
 }
 
