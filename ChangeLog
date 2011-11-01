@@ -1,3 +1,8 @@
+Tue Nov  1 12:36:16 2011  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_maygvl_fd_fix_cloexec): change the visibility for
+	  ext/socket.
+
 Tue Nov  1 12:00:53 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_maygvl_fd_fix_cloexec): renamed from fd_set_cloexec.
