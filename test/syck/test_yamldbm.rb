@@ -48,7 +48,7 @@ module Syck
     def test_to_a
       @yamldbm['a'] = 'b'
       @yamldbm['c'] = 'd'
-      assert_equal([['a','b'],['c','d']], @yamldbm.to_a)
+      assert_equal([['a','b'],['c','d']], @yamldbm.to_a.sort)
     end
 
     def test_to_hash
@@ -97,8 +97,8 @@ module Syck
     def test_shift
       @yamldbm['a'] = 'b'
       @yamldbm['c'] = 'd'
-      assert_equal(['a','b'], @yamldbm.shift)
-      assert_equal(['c','d'], @yamldbm.shift)
+      assert_equal([['a','b'], ['c','d']],
+                   [@yamldbm.shift, @yamldbm.shift].sort)
       assert_nil @yamldbm.shift
     end
 
@@ -166,7 +166,7 @@ module Syck
       assert_equal [], @yamldbm.values
       @yamldbm['a'] = 'b'
       @yamldbm['c'] = 'd'
-      assert_equal ['b','d'], @yamldbm.values
+      assert_equal ['b','d'], @yamldbm.values.sort
     end
 
     def test_values_at

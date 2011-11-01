@@ -1,3 +1,9 @@
+Wed Nov 02 00:43:59 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/psych/test_yamldbm.rb: avoid platform dependency.
+	  patch by Naohisa Goto. [ruby-dev:44763] [Bug #5535]
+	* test/syck/test_yamldbm.rb: ditto.
+
 Wed Nov  2 00:14:15 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/ruby/test_marshal.rb: renamed methods duplicated with those
