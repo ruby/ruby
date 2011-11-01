@@ -1,3 +1,9 @@
+Wed Nov  2 08:16:45 2011  Tanaka Akira  <akr@fsij.org>
+
+	* lib/webrick/utils.rb: fix fcntl call.
+
+	* lib/drb/unix.rb: ditto.
+
 Sun Oct 30 00:48:57 2011  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in (CXX): Set CXX when mkconfig.rb wants it defined.
