@@ -7842,7 +7842,7 @@ static VALUE nogvl_io_cntl(void *ptr)
     else
 #if defined(F_DUPFD)
         if (arg->cmd == F_DUPFD)
-            return (VALUE)rb_cloexec_fcntl_dupfd(arg->fd, arg->narg);
+            return (VALUE)rb_cloexec_fcntl_dupfd(arg->fd, (int)arg->narg);
         else
 #endif
             return (VALUE)fcntl(arg->fd, arg->cmd, arg->narg);

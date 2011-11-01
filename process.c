@@ -2499,7 +2499,7 @@ proc_syswait(VALUE pid)
 static int
 move_fds_to_avoid_crash(int *fdp, int n, VALUE fds)
 {
-    long min = 0;
+    int min = 0;
     int i;
     for (i = 0; i < n; i++) {
         int ret;
