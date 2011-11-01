@@ -1,3 +1,9 @@
+Wed Nov  2 08:16:45 2011  Tanaka Akira  <akr@fsij.org>
+
+	* lib/webrick/utils.rb: fix fcntl call.
+
+	* lib/drb/unix.rb: ditto.
+
 Wed Nov 02 00:43:59 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/psych/test_yamldbm.rb: avoid platform dependency.
