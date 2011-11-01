@@ -1,3 +1,16 @@
+Tue Nov  1 13:14:33 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vsnprintf.c (BSD_vfprintf): support 'll' prefix.
+
+	* vsnprintf.c (__sfeof): rename to avoid the collision with NetBSD's
+	  one.
+
+	* vsnprintf.c (__sferror): ditto.
+
+	* vsnprintf.c (__sclearerr): ditto.
+
+	* vsnprintf.c (__sfileno): ditto.
+
 Tue Nov  1 12:36:16 2011  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_maygvl_fd_fix_cloexec): change the visibility for

@@ -206,20 +206,20 @@ typedef	struct __sFILE {
 #define	EOF	(-1)
 
 
-#define	__sfeof(p)	(((p)->_flags & __SEOF) != 0)
-#define	__sferror(p)	(((p)->_flags & __SERR) != 0)
-#define	__sclearerr(p)	((void)((p)->_flags &= ~(__SERR|__SEOF)))
-#define	__sfileno(p)	((p)->_file)
+#define	BSD__sfeof(p)	(((p)->_flags & __SEOF) != 0)
+#define	BSD__sferror(p)	(((p)->_flags & __SERR) != 0)
+#define	BSD__sclearerr(p)	((void)((p)->_flags &= ~(__SERR|__SEOF)))
+#define	BSD__sfileno(p)	((p)->_file)
 
 #undef feof
 #undef ferror
 #undef clearerr
-#define	feof(p)		__sfeof(p)
-#define	ferror(p)	__sferror(p)
-#define	clearerr(p)	__sclearerr(p)
+#define	feof(p)		BSD__sfeof(p)
+#define	ferror(p)	BSD__sferror(p)
+#define	clearerr(p)	BSD__sclearerr(p)
 
 #ifndef _ANSI_SOURCE
-#define	fileno(p)	__sfileno(p)
+#define	fileno(p)	BSD__sfileno(p)
 #endif
 
 
@@ -745,7 +745,16 @@ reswitch:	switch (ch) {
 		case 'z':
 #endif
 		case 'l':
+#ifdef _HAVE_SANE_QUAD_
+			if (*fmt == 'l') {
+				fmt++;
+				flags |= QUADINT;
+			} else {
+				flags |= LONGINT;
+			}
+#else
 			flags |= LONGINT;
+#endif
 			goto rflag;
 #ifdef _HAVE_SANE_QUAD_
 #if SIZEOF_PTRDIFF_T == SIZEOF_LONG_LONG
@@ -1158,7 +1167,7 @@ long_len:
 done:
 	FLUSH();
 error:
-	return (__sferror(fp) ? EOF : ret);
+	return (BSD__sferror(fp) ? EOF : ret);
 	/* NOTREACHED */
 }
 
