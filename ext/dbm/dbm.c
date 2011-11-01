@@ -137,9 +137,14 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 
     FilePathValue(file);
 
+    /* 
+     * Note:
+     * The dbm compatibility layer of gdbm 1.9 doesn't respect O_CLOEXEC.
+     */
 #ifndef O_CLOEXEC
 #   define O_CLOEXEC 0
 #endif
+
     if (flags & RUBY_DBM_RW_BIT) {
         flags &= ~RUBY_DBM_RW_BIT;
         dbm = dbm_open(RSTRING_PTR(file), flags|O_CLOEXEC, mode);
