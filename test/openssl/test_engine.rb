@@ -8,6 +8,7 @@ class OpenSSL::TestEngine < Test::Unit::TestCase
     OpenSSL::Engine.load
     OpenSSL::Engine.engines
     OpenSSL::Engine.engines
+    OpenSSL::Engine.cleanup # [ruby-core:40669]
   end
 
 end

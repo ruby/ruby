@@ -1,3 +1,9 @@
+Thu Nov 03 08:36:00 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_engine.rb: call Engine::cleanup on exit.
+	  Patch provided by Yui Naruse, thanks!
+	  [Bug #5547] [ruby-core:40669]
+
 Wed Nov  2 21:36:00 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* complex.c (nucomp_rationalize): fix function.  [ruby-core:40667]
