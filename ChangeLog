@@ -1,3 +1,8 @@
+Wed Nov  2 21:36:00 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c (nucomp_rationalize): fix function.  [ruby-core:40667]
+	  [Bug #5546]
+
 Wed Nov  2 08:16:45 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/webrick/utils.rb: fix fcntl call.
