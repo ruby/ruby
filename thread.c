@@ -2471,7 +2471,7 @@ rb_fd_rcopy(fd_set *dst, rb_fdset_t *src)
 
     /* we assume src is the result of select() with dst, so dst should be
      * larger or equal than src. */
-    if (max > FD_SETSIZE || max > dst->fd_count) {
+    if (max > FD_SETSIZE || (UINT)max > dst->fd_count) {
 	rb_raise(rb_eArgError, "too large fdsets");
     }
 

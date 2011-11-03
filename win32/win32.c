@@ -3147,7 +3147,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 {
     int r;
     int ret;
-    int mode;
+    int mode = 0;
     DWORD flg;
     WSAOVERLAPPED wol;
     WSABUF wbuf;
@@ -3282,7 +3282,7 @@ recvmsg(int fd, struct msghdr *msg, int flags)
     static WSARecvMsg_t pWSARecvMsg = NULL;
     WSAMSG wsamsg;
     SOCKET s;
-    int mode;
+    int mode = 0;
     DWORD len;
     int ret;
 
@@ -3340,7 +3340,7 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
     static WSASendMsg_t pWSASendMsg = NULL;
     WSAMSG wsamsg;
     SOCKET s;
-    int mode;
+    int mode = 0;
     DWORD len;
     int ret;
 
@@ -3811,7 +3811,7 @@ dupfd(HANDLE hDup, char flags, int minfd)
 	    goto close_fds_and_return;
 	}
 	fds[filled++] = ret;
-    } while (filled < (sizeof(fds)/sizeof(fds[0])));
+    } while (filled < (int)numberof(fds));
 
     ret = dupfd(hDup, flags, minfd);
 
