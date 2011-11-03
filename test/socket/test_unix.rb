@@ -22,6 +22,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       r2 = s2.recv_io
       assert_equal(r1.stat.ino, r2.stat.ino)
       assert_not_equal(r1.fileno, r2.fileno)
+      assert(r2.close_on_exec?)
       w.syswrite "a"
       assert_equal("a", r2.sysread(10))
     ensure
@@ -61,6 +62,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
         send_io_ary.length.times {|i|
           assert_not_equal(send_io_ary[i].fileno, recv_io_ary[i].fileno)
           assert(File.identical?(send_io_ary[i], recv_io_ary[i]))
+          assert(recv_io_ary[i].close_on_exec?)
         }
       }
     }
@@ -97,6 +99,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
         send_io_ary.length.times {|i|
           assert_not_equal(send_io_ary[i].fileno, recv_io_ary[i].fileno)
           assert(File.identical?(send_io_ary[i], recv_io_ary[i]))
+          assert(recv_io_ary[i].close_on_exec?)
         }
       }
     }
@@ -150,6 +153,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
         r2 = s2.recv_io
         begin
           assert(File.identical?(r1, r2))
+          assert(r2.close_on_exec?)
         ensure
           r2.close
         end
@@ -230,6 +234,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
 	  r2 = ios[0]
 	  begin
 	    assert(File.identical?(r1, r2))
+            assert(r2.close_on_exec?)
 	  ensure
 	    r2.close
 	  end
@@ -257,6 +262,16 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       assert_equal(["AF_UNIX", path], s.addr)
       assert_equal(path, s.path)
       assert_equal("", c.path)
+    }
+  end
+
+  def test_cloexec
+    bound_unix_socket(UNIXServer) {|serv, path|
+      c = UNIXSocket.new(path)
+      s = serv.accept
+      assert(serv.close_on_exec?)
+      assert(c.close_on_exec?)
+      assert(s.close_on_exec?)
     }
   end
 
@@ -372,6 +387,14 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     }
     assert_kind_of(UNIXSocket, pair[0])
     assert_kind_of(UNIXSocket, pair[1])
+  end
+
+  def test_unix_socket_pair_close_on_exec
+    pair = nil
+    UNIXSocket.pair {|s1, s2|
+      assert(s1.close_on_exec?)
+      assert(s2.close_on_exec?)
+    }
   end
 
   def test_initialize

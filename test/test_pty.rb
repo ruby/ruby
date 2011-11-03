@@ -195,5 +195,16 @@ class TestPTY < Test::Unit::TestCase
     assert_nil(st1)
     assert_equal(pid, st2.pid)
   end
+
+  def test_cloexec
+    PTY.open {|m, s|
+      assert(m.close_on_exec?)
+      assert(s.close_on_exec?)
+    }
+    PTY.spawn(RUBY, '-e', '') {|r, w, pid|
+      assert(r.close_on_exec?)
+      assert(w.close_on_exec?)
+    }
+  end
 end if defined? PTY
 

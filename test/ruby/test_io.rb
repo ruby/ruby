@@ -2030,4 +2030,29 @@ End
     end
     assert_equal("[Feature #5029]\n[ruby-core:38070]\n", stderr)
   end
+
+  def test_cloexec
+    return unless defined? Fcntl::FD_CLOEXEC
+    open(__FILE__) {|f|
+      assert(f.close_on_exec?)
+      g = f.dup
+      begin
+        assert(g.close_on_exec?)
+        f.reopen(g)
+        assert(f.close_on_exec?)
+      ensure
+        g.close
+      end
+      g = IO.new(f.fcntl(Fcntl::F_DUPFD))
+      begin
+        assert(g.close_on_exec?)
+      ensure
+        g.close
+      end
+    }
+    IO.pipe {|r,w|
+      assert(r.close_on_exec?) 
+      assert(w.close_on_exec?) 
+    }
+  end
 end
