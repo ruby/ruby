@@ -69,6 +69,7 @@ static ID id_orig_prompt, id_last_prompt;
 #endif
 
 static int (*history_get_offset_func)(int);
+static int (*history_replace_offset_func)(int);
 
 static char **readline_attempted_completion_function(const char *text,
                                                      int start, int end);
@@ -1299,7 +1300,7 @@ hist_set(VALUE self, VALUE index, VALUE str)
         i += history_length;
     }
     if (i >= 0) {
-	entry = replace_history_entry(i, RSTRING_PTR(str), NULL);
+	entry = replace_history_entry(history_replace_offset_func(i), RSTRING_PTR(str), NULL);
     }
     if (entry == NULL) {
 	rb_raise(rb_eIndexError, "invalid index");
@@ -1604,6 +1605,7 @@ Init_readline()
      */
     rb_define_const(mReadline, "USERNAME_COMPLETION_PROC", ucomp);
     history_get_offset_func = history_get_offset_history_base;
+    history_replace_offset_func = history_get_offset_0;
 #if defined HAVE_RL_LIBRARY_VERSION
     version = rb_str_new_cstr(rl_library_version);
 #if defined HAVE_CLEAR_HISTORY || defined HAVE_REMOVE_HISTORY
@@ -1613,7 +1615,12 @@ Init_readline()
 	if (history_get(history_get_offset_func(0)) == NULL) {
 	    history_get_offset_func = history_get_offset_0;
 	}
-#if defined HAVE_CLEAR_HISTORY
+#ifdef HAVE_REPLACE_HISTORY_ENTRY
+	if (replace_history_entry(0, "a", NULL) == NULL) {
+	    history_replace_offset_func = history_get_offset_history_base;
+	}
+#endif
+#ifdef HAVE_CLEAR_HISTORY
 	clear_history();
 #else
 	{
