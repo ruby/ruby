@@ -7,8 +7,12 @@ end
 
 class TestSocket < Test::Unit::TestCase
   def test_socket_new
-    s = Socket.new(:INET, :STREAM)
-    assert_kind_of(Socket, s)
+    begin
+      s = Socket.new(:INET, :STREAM)
+      assert_kind_of(Socket, s)
+    ensure
+      s.close
+    end
   end
 
   def test_unpack_sockaddr
