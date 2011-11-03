@@ -1,3 +1,11 @@
+Fri Nov  4 01:56:30 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (make_writeconv): unversal_newline converter is for reading.
+	  so, if the io is text mode and has ECONV_UNIVERSAL_NEWLINE_DECORATOR
+	  flag, use crlf_newline converter for writing.
+	  this change fixes the problem about the luck of CR up Kernel.p and
+	  Kernel.puts to stdout/stderr on Windows.
+
 Fri Nov  4 01:04:48 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/readline.c (Init_readline): like r18313, libedit's
