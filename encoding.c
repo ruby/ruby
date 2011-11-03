@@ -1446,9 +1446,12 @@ rb_locale_charmap(VALUE klass)
 #if defined NO_LOCALE_CHARMAP
     return rb_usascii_str_new2("ASCII-8BIT");
 #elif defined _WIN32 || defined __CYGWIN__
-    const char *nl_langinfo_codeset(void);
-    const char *codeset = nl_langinfo_codeset();
+    const char *codeset = 0;
     char cp[sizeof(int) * 3 + 4];
+# ifdef __CYGWIN__
+    const char *nl_langinfo_codeset(void);
+    codeset = nl_langinfo_codeset();
+# endif
     if (!codeset) {
 	UINT codepage = GetConsoleCP();
 	if(!codepage) codepage = GetACP();

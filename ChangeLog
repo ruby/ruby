@@ -1,3 +1,8 @@
+Thu Nov  3 23:53:04 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* encoding.c (rb_locale_charmap): ignore calling nl_langinfo_codeset()
+	  on Windows except cygwin. [experimental]
+
 Thu Nov  3 22:45:09 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (rsock_socketpair0): extracted from
