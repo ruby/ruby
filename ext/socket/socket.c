@@ -78,7 +78,7 @@ pair_yield(VALUE pair)
 #if defined HAVE_SOCKETPAIR
 
 static int
-rsock_socketpair(int domain, int type0, int protocol, int sv[2])
+rsock_socketpair0(int domain, int type0, int protocol, int sv[2])
 {
     int ret, type;
 
@@ -94,7 +94,8 @@ rsock_socketpair(int domain, int type0, int protocol, int sv[2])
 #endif
 
     ret = socketpair(domain, type, protocol, sv);
-    if (ret < 0) {
+
+    if (ret == -1) {
 #ifdef SOCK_CLOEXEC
         /* SOCK_CLOEXEC is available since Linux 2.6.27.  Linux 2.6.18 fails with EINVAL */
         if (try_sock_cloexec && errno == EINVAL) {
@@ -103,10 +104,24 @@ rsock_socketpair(int domain, int type0, int protocol, int sv[2])
             goto retry_without_sock_cloexec;
         }
 #endif
-        if (errno == EMFILE || errno == ENFILE) {
-            rb_gc();
-            ret = socketpair(domain, type, protocol, sv);
-        }
+        return -1;
+    }
+
+    rb_fd_fix_cloexec(sv[0]);
+    rb_fd_fix_cloexec(sv[1]);
+
+    return ret;
+}
+
+static int
+rsock_socketpair(int domain, int type, int protocol, int sv[2])
+{
+    int ret;
+
+    ret = rsock_socketpair0(domain, type, protocol, sv);
+    if (ret < 0 && (errno == EMFILE || errno == ENFILE)) {
+        rb_gc();
+        ret = rsock_socketpair0(domain, type, protocol, sv);
     }
 
     return ret;

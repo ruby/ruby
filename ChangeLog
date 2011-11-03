@@ -1,3 +1,9 @@
+Thu Nov  3 22:45:09 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (rsock_socketpair0): extracted from
+	  rsock_socketpair to set close-on-exec flag for each socketpair()
+	  call.
+
 Thu Nov  3 22:12:41 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* ext/socket/init.c (rsock_socket): set close-on-exec flag when
