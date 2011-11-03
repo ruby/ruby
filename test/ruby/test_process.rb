@@ -1326,7 +1326,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_popen_cloexec
     return unless defined? Fcntl::FD_CLOEXEC
-    IO.popen([RUBY, "-e", ""]) {|io|
+    IO.popen([RUBY, "-e", ""]) {|io|
       assert(io.close_on_exec?)
     }
   end
