@@ -911,9 +911,10 @@ make_writeconv(rb_io_t *fptr)
 #ifdef TEXTMODE_NEWLINE_DECORATOR_ON_WRITE
 	if (NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) &&
 	    (!(ecflags & ECONV_NEWLINE_DECORATOR_MASK) ||
-	     (ecflags & ECONV_UNIVERSAL_NEWLINE_DECORATOR)))
+	     (ecflags & ECONV_UNIVERSAL_NEWLINE_DECORATOR))) {
             ecflags &= ~ECONV_UNIVERSAL_NEWLINE_DECORATOR;
             ecflags |= TEXTMODE_NEWLINE_DECORATOR_ON_WRITE;
+	}
 #endif
 
         if (!fptr->encs.enc || (fptr->encs.enc == rb_ascii8bit_encoding() && !fptr->encs.enc2)) {
