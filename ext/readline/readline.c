@@ -1613,7 +1613,7 @@ Init_readline()
 	if (history_get(history_get_offset_func(0)) == NULL) {
 	    history_get_offset_func = history_get_offset_0;
 	}
-#if !defined HAVE_CLEAR_HISTORY
+#if defined HAVE_CLEAR_HISTORY
 	clear_history();
 #else
 	{
