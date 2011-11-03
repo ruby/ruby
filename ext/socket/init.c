@@ -270,8 +270,16 @@ rsock_socket(int domain, int type0, int proto)
 	    fd = socket(domain, type, proto);
 	}
     }
+#ifdef SOCK_CLOEXEC
     if (0 <= fd)
-        rb_update_max_fd(fd);
+	if (try_sock_cloexec)
+	    rb_update_max_fd(fd);
+	else
+	    rb_fd_fix_cloexec(fd);
+#else
+    if (0 <= fd)
+	rb_fd_fix_cloexec(fd);
+#endif
     return fd;
 }
 

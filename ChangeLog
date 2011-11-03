@@ -1,3 +1,8 @@
+Thu Nov  3 22:12:41 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* ext/socket/init.c (rsock_socket): set close-on-exec flag when
+	  SOCK_CLOEXEC is not available.
+
 Thu Nov 03 08:36:00 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_engine.rb: call Engine::cleanup on exit.
