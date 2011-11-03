@@ -1,3 +1,7 @@
+Fri Nov  4 03:45:22 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (make_writeconv): fixed typo of previous commit.
+
 Fri Nov  4 01:56:30 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (make_writeconv): unversal_newline converter is for reading.
