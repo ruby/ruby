@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 begin
   require 'test/unit'
+  require 'psych'
   require 'yaml/dbm'
   require 'tmpdir'
 rescue LoadError
@@ -191,4 +192,4 @@ module Psych
       assert_equal([], @yamldbm.select {false})
     end
   end
-end if defined?(YAML::DBM)
+end if defined?(YAML::DBM) && defined?(Psych)

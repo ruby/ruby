@@ -1,10 +1,11 @@
 require 'test/unit'
+require 'psych'
 require 'yaml/store'
 require 'tmpdir'
 
-Psych::Store = YAML::Store unless defined?(Psych::Store)
-
 module Psych
+  Psych::Store = YAML::Store unless defined?(Psych::Store)
+
   class YAMLStoreTest < Test::Unit::TestCase
     def setup
       @engine, YAML::ENGINE.yamler = YAML::ENGINE.yamler, 'psych'
@@ -84,4 +85,4 @@ module Psych
       end
     end
   end
-end
+end if defined?(Psych)
