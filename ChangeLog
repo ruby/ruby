@@ -1,3 +1,10 @@
+Fri Nov 04 08:41:26 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/extconf.rb:
+	* ext/openssl/ossl_engine.c: add some missing OpenSSL engines.
+	  Thanks, Yui Naruse, for providing the patch!
+	  [Bug #5548] [ruby-core:40670]
+
 Fri Nov  4 04:54:10 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/configure.bat: disable delayed expansion of enironment variable.
