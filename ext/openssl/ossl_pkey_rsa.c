@@ -110,7 +110,7 @@ rsa_generate(int size, int exp)
 	if (rsa) RSA_free(rsa);
 	return 0;
     }
-    for (i = 0; i < (int)sizeof(exp); ++i) {
+    for (i = 0; i < (int)sizeof(exp) * 8; ++i) {
 	if (exp & (1 << i)) {
 	    if (BN_set_bit(e, i) == 0) {
 		BN_free(e);

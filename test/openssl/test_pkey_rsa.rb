@@ -48,6 +48,18 @@ class OpenSSL::TestPKeyRSA < Test::Unit::TestCase
     assert_equal([], OpenSSL.errors)
   end
 
+  def test_new_exponent_default
+    assert_equal(65537, OpenSSL::PKey::RSA.new(512).e)
+  end
+
+  def test_new_with_exponent
+    1.upto(30) do |idx|
+      e = (2 ** idx) + 1
+      key = OpenSSL::PKey::RSA.new(512, e)
+      assert_equal(e, key.e)
+    end
+  end
+
   def test_new_break
     assert_nil(OpenSSL::PKey::RSA.new(1024) { break })
     assert_raise(RuntimeError) do
