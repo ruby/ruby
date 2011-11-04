@@ -1091,7 +1091,7 @@ consume_communication_pipe(void)
 {
 #define CCP_READ_BUFF_SIZE 1024
     /* buffer can be shared because no one refers to them. */
-    static char buff[CCP_READ_BUFF_SIZE]; 
+    static char buff[CCP_READ_BUFF_SIZE];
     ssize_t result;
 
   retry:
@@ -1150,11 +1150,11 @@ thread_timer(void *p)
 	    timeout.tv_usec = TIME_QUANTUM_USEC;
 
 	    /* polling (TIME_QUANTUM_USEC usec) */
-	    result = select(timer_thread_pipe[0] + 1, &rfds, 0, 0, &timeout); 
+	    result = select(timer_thread_pipe[0] + 1, &rfds, 0, 0, &timeout);
 	}
 	else {
 	    /* wait (infinite) */
-	    result = select(timer_thread_pipe[0] + 1, &rfds, 0, 0, 0); 
+	    result = select(timer_thread_pipe[0] + 1, &rfds, 0, 0, 0);
 	}
 
 	if (result == 0) {

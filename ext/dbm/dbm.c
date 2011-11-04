@@ -137,7 +137,7 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 
     FilePathValue(file);
 
-    /* 
+    /*
      * Note:
      * The dbm compatibility layer of gdbm 1.9 doesn't respect O_CLOEXEC.
      */

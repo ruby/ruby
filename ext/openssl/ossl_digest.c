@@ -409,7 +409,7 @@ Init_ossl_digest()
      *   data1 = File.read('file1')
      *   sha256 = OpenSSL::Digest::SHA256.new
      *   digest1 = sha256.digest(data1)
-     *   
+     *
      *   data2 = File.read('file2')
      *   sha256.reset
      *   digest2 = sha256.digest(data2)

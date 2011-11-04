@@ -611,13 +611,13 @@ etc_systmpdir(void)
  * the logged in user than environment variables such as $USER. For example:
  *
  *     require 'etc'
- *     
+ *
  *     login = Etc.getlogin
  *     info = Etc.getpwnam(login)
  *     username = info.gecos.split(/,/).first
  *     puts "Hello #{username}, I see your login name is #{login}"
  *
- * Note that the methods provided by this module are not always secure. 
+ * Note that the methods provided by this module are not always secure.
  * It should be used for informational purposes, and not for security.
  */
 void

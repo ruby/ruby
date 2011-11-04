@@ -159,7 +159,7 @@ readline_getc(FILE *input)
             }
         }
     }
-#endif    
+#endif
     c = rb_funcall(readline_instream, id_getbyte, 0, 0);
     if (NIL_P(c)) return EOF;
     return NUM2CHR(c);

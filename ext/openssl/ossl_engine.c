@@ -82,10 +82,10 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
 #if HAVE_ENGINE_LOAD_NURON
     OSSL_ENGINE_LOAD_IF_MATCH(nuron);
 #endif
-#if HAVE_ENGINE_LOAD_SUREWARE 
+#if HAVE_ENGINE_LOAD_SUREWARE
     OSSL_ENGINE_LOAD_IF_MATCH(sureware);
 #endif
-#if HAVE_ENGINE_LOAD_UBSEC 
+#if HAVE_ENGINE_LOAD_UBSEC
     OSSL_ENGINE_LOAD_IF_MATCH(ubsec);
 #endif
 #if HAVE_ENGINE_LOAD_PADLOCK
@@ -136,7 +136,7 @@ ossl_engine_s_engines(VALUE klass)
 	/* Need a ref count of two here because of ENGINE_free being
 	 * called internally by OpenSSL when moving to the next ENGINE
 	 * and by us when releasing the ENGINE reference */
-	ENGINE_up_ref(e); 
+	ENGINE_up_ref(e);
 	WrapEngine(klass, obj, e);
         rb_ary_push(ary, obj);
     }

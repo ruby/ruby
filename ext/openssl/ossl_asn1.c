@@ -869,7 +869,7 @@ int_ossl_asn1_decode0_cons(unsigned char **pp, long max_len, long length,
 	rb_ary_push(ary, value);
 	if (length > 0)
 	    length -= inner_read;
-	
+
 	if (infinite &&
 	    NUM2INT(ossl_asn1_get_tag(value)) == V_ASN1_EOC &&
 	    SYM2ID(ossl_asn1_get_tag_class(value)) == sUNIVERSAL) {

@@ -3151,24 +3151,24 @@ env_update(VALUE env, VALUE hash)
  *  A Hash is a dictionary-like collection of unique keys and their values.
  *  Also called associative arrays, they are similar to Arrays, but where an
  *  Array uses integers as its index, a Hash allows you to use any object
- *  type. 
+ *  type.
  *
  *  Hashes enumerate their values in the order that the corresponding keys
- *  were inserted. 
+ *  were inserted.
  *
  *  A Hash can be easily created by using its implicit form:
  *
  *    grades = { "Jane Doe" => 10, "Jim Doe" => 6 }
- *  
+ *
  *  Hashes allow an alternate syntax form when your keys are always symbols.
- *  Instead of 
+ *  Instead of
  *
  *    options = { :font_size => 10, :font_family => "Arial" }
- * 
- *  You could write it as: 
+ *
+ *  You could write it as:
  *
  *    options = { font_size: 10, font_family: "Arial" }
- * 
+ *
  *  Each named key is a symbol you can access in hash:
  *
  *    options[:font_size]  # => 10
@@ -3180,7 +3180,7 @@ env_update(VALUE env, VALUE hash)
  *
  *  Hashes have a <em>default value</em> that is returned when accessing
  *  keys that do not exist in the hash. If no default is set +nil+ is used.
- *  You can set the default value by sending it as an argument to Hash.new: 
+ *  You can set the default value by sending it as an argument to Hash.new:
  *
  *    grades = Hash.new(0)
  *
@@ -3188,11 +3188,11 @@ env_update(VALUE env, VALUE hash)
  *
  *    grades = {"Timmy Doe" => 8}
  *    grades.default = 0
- *     
+ *
  *  Accessing a value in a Hash requires using its key:
  *
  *    puts grades["Jane Doe"] # => 10
- *   
+ *
  *  === Common Uses
  *
  *  Hashes are an easy way to represent data structures, such as
@@ -3200,12 +3200,12 @@ env_update(VALUE env, VALUE hash)
  *    books         = {}
  *    books[:matz]  = "The Ruby Language"
  *    books[:black] = "The Well-Grounded Rubyist"
- * 
+ *
  *  Hashes are also commonly used as a way to have named parameters in
  *  functions. Note that no brackets are used below. If a hash is the last
  *  argument on a method call, no braces are needed, thus creating a really
- *  clean interface: 
- *  
+ *  clean interface:
+ *
  *    Person.create(name: "John Doe", age: 27)
  *
  *    def self.create(params)

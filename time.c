@@ -4882,7 +4882,7 @@ time_load(VALUE klass, VALUE str)
  *    t = Time.new(1993, 02, 24, 12, 0, 0, "+09:00")
  *
  *  Was that a monday?
- *  
+ *
  *    t.monday? #=> false
  *
  *  What year was that again?
@@ -4905,7 +4905,7 @@ time_load(VALUE klass, VALUE str)
  *
  *    t1 = Time.new(2010)
  *    t2 = Time.new(2011)
- *    
+ *
  *    t1 == t2 #=> false
  *    t1 == t1 #=> true
  *    t1 <  t2 #=> true
