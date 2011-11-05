@@ -1,3 +1,8 @@
+Sat Nov  5 19:11:50 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_cloexec_fcntl_dupfd): don't clear try_dupfd_cloexec if
+	  fcntl(F_DUPFD) failed as fcntl(F_DUPFD_CLOEXEC).
+
 Sat Nov  5 18:05:12 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (rsock_socketpair0): refactored.

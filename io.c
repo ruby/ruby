@@ -297,8 +297,10 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
         }
         /* F_DUPFD_CLOEXEC is available since Linux 2.6.24.  Linux 2.6.18 fails with EINVAL */
         if (errno == EINVAL) {
-            try_dupfd_cloexec = 0;
             ret = fcntl(fd, F_DUPFD, minfd);
+            if (ret != -1) {
+                try_dupfd_cloexec = 0;
+            }
         }
     }
     else {
