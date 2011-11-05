@@ -86,17 +86,15 @@ rsock_socketpair0(int domain, int type, int protocol, int sv[2])
     static int try_sock_cloexec = 1;
     if (try_sock_cloexec) {
         ret = socketpair(domain, type|SOCK_CLOEXEC, protocol, sv);
-        if (ret == -1) {
+        if (ret == -1 && errno == EINVAL) {
             /* SOCK_CLOEXEC is available since Linux 2.6.27.  Linux 2.6.18 fails with EINVAL */
-            if (try_sock_cloexec && errno == EINVAL) {
-                ret = socketpair(domain, type, protocol, sv);
-                if (ret != -1) {
-                    /* The reason of EINVAL may be other than SOCK_CLOEXEC.
-                     * So disable SOCK_CLOEXEC only if socketpair() succeeds without SOCK_CLOEXEC.
-                     * Ex. Socket.pair(:UNIX, 0xff) fails with EINVAL.
-                     */
-                    try_sock_cloexec = 0;
-                }
+            ret = socketpair(domain, type, protocol, sv);
+            if (ret != -1) {
+                /* The reason of EINVAL may be other than SOCK_CLOEXEC.
+                 * So disable SOCK_CLOEXEC only if socketpair() succeeds without SOCK_CLOEXEC.
+                 * Ex. Socket.pair(:UNIX, 0xff) fails with EINVAL.
+                 */
+                try_sock_cloexec = 0;
             }
         }
     }
