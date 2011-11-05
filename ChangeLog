@@ -1,3 +1,7 @@
+Sat Nov  5 20:30:30 2011  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* insns.def: Some fixes and tweaks to English explanations
+
 Sat Nov  5 19:11:50 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_cloexec_fcntl_dupfd): don't clear try_dupfd_cloexec if

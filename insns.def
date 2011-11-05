@@ -46,7 +46,7 @@ nop
 
 /**
   @c variable
-  @e get local variable value (which is pointed by idx).
+  @e Get value of local variable (pointed to by idx).
   @j idx で指定されたローカル変数をスタックに置く。
  */
 DEFINE_INSN
@@ -60,7 +60,7 @@ getlocal
 
 /**
   @c variable
-  @e set local variable value (which is pointed by idx) as val.
+  @e Set value of local variable (pointed to by idx) to val.
   @j idx で指定されたローカル変数を val に設定する。
  */
 DEFINE_INSN
@@ -74,7 +74,7 @@ setlocal
 
 /**
   @c variable
-  @e get special local variable ($~, $_, ..) value.
+  @e Get value of special local variable ($~, $_, ..).
   @j 特殊なローカル変数（$~, $_, ...）の値を得る。
  */
 DEFINE_INSN
@@ -88,7 +88,7 @@ getspecial
 
 /**
   @c variable
-  @e set special local variable ($~, $_, ...) value as obj.
+  @e Set value of special local variable ($~, $_, ...) to obj.
   @j 特別なローカル変数（$~, $_, ...）の値を設定する。
  */
 DEFINE_INSN
@@ -102,8 +102,8 @@ setspecial
 
 /**
   @c variable
-  @e get block local variable(which is pointed by idx and level).
-     level means nest level of block, and specify how above this variable.
+  @e Get value of block local variable (pointed to by idx and level).
+     'level' indicates the nesting depth from the current block.
   @j level, idx で指定されたブロックローカル変数の値をスタックに置く。
      level はブロックのネストレベルで、何段上かを示す。
  */
@@ -123,8 +123,8 @@ getdynamic
 
 /**
   @c variable
-  @e set block local variable(which is pointed by 'idx') as val.
-     level means nest level of block, and specify how above this variable.
+  @e Set block local variable (pointed to by 'idx') as val.
+     'level' indicates the nesting depth from the current block.
   @j level, idx で指定されたブロックローカル変数の値を val にする。
      level はブロックのネストレベルで、何段上かを示す。
  */
@@ -144,8 +144,8 @@ setdynamic
 
 /**
   @c variable
-  @e get instance variable id of obj.
-     if is_local is not 0, search as class local variable.
+  @e Get value of instance variable id of self.
+     If is_local is not 0, get value of class local variable.
   @j self のインスタンス変数 id の値を得る。
  */
 DEFINE_INSN
@@ -159,8 +159,8 @@ getinstancevariable
 
 /**
   @c variable
-  @e set instance variable id of obj as val.
-     if is_local is not 0, search as class local variable.
+  @e Set value of instance variable id of self to val.
+     If is_local is not 0, set value of class local variable.
   @j self のインスタンス変数 id を val にする。
  */
 DEFINE_INSN
@@ -174,7 +174,7 @@ setinstancevariable
 
 /**
   @c variable
-  @e get class variable id of klass as val.
+  @e Get value of class variable id of klass as val.
   @j 現在のスコープのクラス変数 id の値を得る。
  */
 DEFINE_INSN
@@ -189,7 +189,7 @@ getclassvariable
 
 /**
   @c variable
-  @e set class variable id of klass as val.
+  @e Set value of class variable id of klass as val.
   @j klass のクラス変数 id を val にする。
  */
 DEFINE_INSN
@@ -205,9 +205,9 @@ setclassvariable
 /**
   @c variable
   @e
-   get constant variable id. if klass is Qnil, constant
-   are searched in current scope. if klass is Qfalse, constant as
-   top level constant. otherwise, get constant under klass
+   Get constant variable id. If klass is Qnil, constants
+   are searched in the current scope. If klass is Qfalse, constants
+   are searched as top level constants. Otherwise, get constant under klass
    class or module.
   @j 定数 id の値を得る。
    klass が Qnil なら、そのスコープで得られる定数の値を得る。
@@ -226,7 +226,7 @@ getconstant
 /**
   @c variable
   @e
-   set constant variable id. if klass is Qfalse, constant
+   Set constant variable id. If klass is Qfalse, constant
    is able to access in this scope. if klass is Qnil, set
    top level constant. otherwise, set constant under klass
    class or module.
