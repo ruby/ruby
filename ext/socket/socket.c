@@ -78,32 +78,36 @@ pair_yield(VALUE pair)
 #if defined HAVE_SOCKETPAIR
 
 static int
-rsock_socketpair0(int domain, int type0, int protocol, int sv[2])
+rsock_socketpair0(int domain, int type, int protocol, int sv[2])
 {
-    int ret, type;
+    int ret;
 
 #ifdef SOCK_CLOEXEC
     static int try_sock_cloexec = 1;
-    if (try_sock_cloexec)
-        type = type0|SOCK_CLOEXEC;
-    else
-        type = type0;
-  retry_without_sock_cloexec:;
+    if (try_sock_cloexec) {
+        ret = socketpair(domain, type|SOCK_CLOEXEC, protocol, sv);
+        if (ret == -1) {
+            /* SOCK_CLOEXEC is available since Linux 2.6.27.  Linux 2.6.18 fails with EINVAL */
+            if (try_sock_cloexec && errno == EINVAL) {
+                ret = socketpair(domain, type, protocol, sv);
+                if (ret != -1) {
+                    /* The reason of EINVAL may be other than SOCK_CLOEXEC.
+                     * So disable SOCK_CLOEXEC only if socketpair() succeeds without SOCK_CLOEXEC.
+                     * Ex. Socket.pair(:UNIX, 0xff) fails with EINVAL.
+                     */
+                    try_sock_cloexec = 0;
+                }
+            }
+        }
+    }
+    else {
+        ret = socketpair(domain, type, protocol, sv);
+    }
 #else
-    type = type0;
-#endif
-
     ret = socketpair(domain, type, protocol, sv);
+#endif
 
     if (ret == -1) {
-#ifdef SOCK_CLOEXEC
-        /* SOCK_CLOEXEC is available since Linux 2.6.27.  Linux 2.6.18 fails with EINVAL */
-        if (try_sock_cloexec && errno == EINVAL) {
-            try_sock_cloexec = 0;
-            type = type0;
-            goto retry_without_sock_cloexec;
-        }
-#endif
         return -1;
     }
 

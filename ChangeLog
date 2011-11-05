@@ -1,3 +1,8 @@
+Sat Nov  5 11:18:12 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (rsock_socketpair0): don't clear
+	  try_sock_cloexec if SOCK_CLOEXEC is not a reason for EINVAL.
+
 Fri Nov  4 14:08:19 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_pkey_rsa.c (rsa_generate): [SECURITY] Set RSA
