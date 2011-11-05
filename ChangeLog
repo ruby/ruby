@@ -1,3 +1,8 @@
+Sat Nov  5 17:55:52 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/init.c (rsock_socket0): don't clear try_sock_cloexec if
+	  SOCK_CLOEXEC is not a reason for EINVAL.
+
 Sat Nov  5 16:27:52 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* ext/pathname/lib/pathname.rb, ext/tk/lib/multi-tk.rb,
