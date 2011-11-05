@@ -1,3 +1,10 @@
+Sun Nov  6 00:11:52 2011  Tanaka Akira  <akr@fsij.org>
+
+	* lib/test/unit.rb (Test::Unit::Options#non_options): options[:ruby]
+	  should be an array.  This fixes
+	  "./ruby test/runner.rb test/testunit/test_parallel.rb"
+	  [ruby-dev:44782]
+
 Sat Nov  5 20:30:30 2011  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* insns.def: Some fixes and tweaks to English explanations

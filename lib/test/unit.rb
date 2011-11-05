@@ -116,7 +116,7 @@ module Test
           warn "#{caller(1)[0]}: warning: Parallel running disabled because can't get path to ruby; run specify with --ruby argument"
           options[:parallel] = nil
         else
-          options[:ruby] ||= RbConfig.ruby
+          options[:ruby] ||= [RbConfig.ruby]
         end
 
         true
