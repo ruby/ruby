@@ -40,7 +40,7 @@ module REXML
         end
       end
 
-      def each( &block )
+      def each
         size.times { |x| yield( at(x+4) ) }
       end
 

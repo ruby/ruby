@@ -234,7 +234,7 @@ class Shell
     end
 
     # simple fork
-    def sfork(command, &block)
+    def sfork(command)
       pipe_me_in, pipe_peer_out = IO.pipe
       pipe_peer_in, pipe_me_out = IO.pipe
 

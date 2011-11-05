@@ -266,7 +266,7 @@ module Open3
   #     STDOUT.binmode; print thumnail
   #   end
   #
-  def capture3(*cmd, &block)
+  def capture3(*cmd)
     if Hash === cmd.last
       opts = cmd.pop.dup
     else
@@ -320,7 +320,7 @@ module Open3
   #   End
   #   image, s = Open3.capture2("gnuplot", :stdin_data=>gnuplot_commands, :binmode=>true)
   #
-  def capture2(*cmd, &block)
+  def capture2(*cmd)
     if Hash === cmd.last
       opts = cmd.pop.dup
     else
@@ -359,7 +359,7 @@ module Open3
   #   # capture make log
   #   make_log, s = Open3.capture2e("make")
   #
-  def capture2e(*cmd, &block)
+  def capture2e(*cmd)
     if Hash === cmd.last
       opts = cmd.pop.dup
     else
@@ -662,7 +662,7 @@ module Open3
   end
   module_function :pipeline
 
-  def pipeline_run(cmds, pipeline_opts, child_io, parent_io, &block) # :nodoc:
+  def pipeline_run(cmds, pipeline_opts, child_io, parent_io) # :nodoc:
     if cmds.empty?
       raise ArgumentError, "no commands"
     end

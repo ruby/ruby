@@ -1,3 +1,15 @@
+Sat Nov  5 16:27:52 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* ext/pathname/lib/pathname.rb, ext/tk/lib/multi-tk.rb,
+	  ext/tk/sample/demos-en/widget, lib/benchmark.rb, lib/irb/cmd/fork.rb,
+	  lib/mkmf.rb, lib/net/ftp.rb, lib/net/smtp.rb, lib/open3.rb,
+	  lib/pstore.rb, lib/rexml/element.rb, lib/rexml/light/node.rb,
+	  lib/rinda/tuplespace.rb, lib/rss/maker/base.rb,
+	  lib/rss/maker/entry.rb, lib/scanf.rb, lib/set.rb, lib/shell.rb,
+	  lib/shell/command-processor.rb, lib/shell/process-controller.rb,
+	  lib/shell/system-command.rb, lib/uri/common.rb: remove unused block
+	  arguments to avoid creating Proc objects.
+
 Sat Nov  5 15:45:04 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/init.c (rsock_socket0): extract single socket() call with

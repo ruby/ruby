@@ -495,7 +495,7 @@ class Pathname    # * Find *
   # If +self+ is <tt>.</tt>, yielded pathnames begin with a filename in the
   # current directory, not <tt>./</tt>.
   #
-  def find(&block) # :yield: pathname
+  def find # :yield: pathname
     require 'find'
     if @path == '.'
       Find.find(@path) {|f| yield self.class.new(f.sub(%r{\A\./}, '')) }

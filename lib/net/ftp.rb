@@ -493,7 +493,7 @@ module Net
     # +file+ to the server. If the optional block is given, it also passes it
     # the data, in chunks of +blocksize+ characters.
     #
-    def storbinary(cmd, file, blocksize, rest_offset = nil, &block) # :yield: data
+    def storbinary(cmd, file, blocksize, rest_offset = nil) # :yield: data
       if rest_offset
         file.seek(rest_offset, IO::SEEK_SET)
       end
@@ -504,7 +504,7 @@ module Net
             buf = file.read(blocksize)
             break if buf == nil
             conn.write(buf)
-            yield(buf) if block
+            yield(buf) if block_given?
           end
           conn.close
           voidresp
@@ -525,7 +525,7 @@ module Net
     # named +file+ to the server, one line at a time. If the optional block is
     # given, it also passes it the lines.
     #
-    def storlines(cmd, file, &block) # :yield: line
+    def storlines(cmd, file) # :yield: line
       synchronize do
         with_binary(false) do
           conn = transfercmd(cmd)
@@ -536,7 +536,7 @@ module Net
               buf = buf.chomp + CRLF
             end
             conn.write(buf)
-            yield(buf) if block
+            yield(buf) if block_given?
           end
           conn.close
           voidresp

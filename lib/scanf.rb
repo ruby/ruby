@@ -745,7 +745,7 @@ class String
   # See Scanf for details on creating a format string.
   #
   # You will need to require 'scanf' to use String#block_scanf
-  def block_scanf(fstr,&b) #:yield: current_match
+  def block_scanf(fstr) #:yield: current_match
     fs = Scanf::FormatString.new(fstr)
     str = self.dup
     final = []

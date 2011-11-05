@@ -15,7 +15,7 @@
 module IRB
   module ExtendCommand
     class Fork<Nop
-      def execute(&block)
+      def execute
 	pid = send ExtendCommand.irb_original_method_name("fork")
 	unless pid
 	  class << self

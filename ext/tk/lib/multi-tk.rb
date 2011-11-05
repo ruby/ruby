@@ -2103,7 +2103,7 @@ end
 # evaluate a procedure on the proper interpreter
 class MultiTkIp
   # instance & class method
-  def _proc_on_safelevel(cmd=nil, &blk) # require a block for eval
+  def _proc_on_safelevel(cmd=nil) # require a block for eval
     if cmd
       if cmd.kind_of?(Method)
         _proc_on_safelevel{|*args| cmd.call(*args)}

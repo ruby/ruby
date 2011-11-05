@@ -145,7 +145,7 @@ class Shell
     #    then
     #       mes: "job(%id) close pipe-out."
     #    yorn: Boolean(@shell.debug? or @shell.verbose?)
-    def notify(*opts, &block)
+    def notify(*opts)
       @shell.notify(*opts) do |mes|
         yield mes if iterator?
 

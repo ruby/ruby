@@ -627,7 +627,7 @@ class Object
 end
 
 class Proc
-  def initialize(*args, &b)
+  def initialize(*args)
     super
     @__pseudo_toplevel__ = Thread.current[:TOPLEVEL]
   end

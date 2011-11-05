@@ -353,7 +353,7 @@ module RSS
 
     module SetupDefaultDate
       private
-      def _set_default_values(&block)
+      def _set_default_values
         keep = {
           :date => date,
           :dc_dates => dc_dates.to_a.dup,
@@ -365,7 +365,7 @@ module RSS
           dc_dates.unshift(dc_date)
         end
         self.date ||= self.dc_date
-        super(&block)
+        super
       ensure
         date = keep[:date]
         dc_dates.replace(keep[:dc_dates])
@@ -379,7 +379,7 @@ module RSS
 
     module SetupDefaultLanguage
       private
-      def _set_default_values(&block)
+      def _set_default_values
         keep = {
           :dc_languages => dc_languages.to_a.dup,
         }
@@ -390,7 +390,7 @@ module RSS
           dc_language.value = _language.dup
           dc_languages.unshift(dc_language)
         end
-        super(&block)
+        super
       ensure
         dc_languages.replace(keep[:dc_languages])
       end

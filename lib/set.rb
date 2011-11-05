@@ -531,7 +531,7 @@ class SortedSet < Set
         require 'rbtree'
 
         module_eval %{
-          def initialize(*args, &block)
+          def initialize(*args)
             @hash = RBTree.new
             super
           end
@@ -544,7 +544,7 @@ class SortedSet < Set
         }
       rescue LoadError
         module_eval %{
-          def initialize(*args, &block)
+          def initialize(*args)
             @keys = nil
             super
           end

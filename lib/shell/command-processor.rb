@@ -335,7 +335,7 @@ class Shell
     end
 
     # %pwd, %cwd -> @pwd
-    def notify(*opts, &block)
+    def notify(*opts)
       Shell.notify(*opts) {|mes|
         yield mes if iterator?
 
@@ -407,7 +407,7 @@ class Shell
     def self.alias_map
       @alias_map
     end
-    def self.alias_command(ali, command, *opts, &block)
+    def self.alias_command(ali, command, *opts)
       ali = ali.id2name if ali.kind_of?(Symbol)
       command = command.id2name if command.kind_of?(Symbol)
       begin

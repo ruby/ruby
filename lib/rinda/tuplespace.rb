@@ -305,7 +305,7 @@ module Rinda
         @bin.delete_at(idx) if idx
       end
 
-      def find(&blk)
+      def find
         @bin.reverse_each do |x|
           return x if yield(x)
         end

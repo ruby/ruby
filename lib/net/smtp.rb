@@ -933,7 +933,7 @@ module Net
       Response.parse(buf)
     end
 
-    def critical(&block)
+    def critical
       return '200 dummy reply code' if @error_occured
       begin
         return yield()

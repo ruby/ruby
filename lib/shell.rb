@@ -286,7 +286,7 @@ class Shell
     end
   end
 
-  def self.notify(*opts, &block)
+  def self.notify(*opts)
     Shell::debug_output_synchronize do
       if opts[-1].kind_of?(String)
         yorn = verbose?

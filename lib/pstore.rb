@@ -310,7 +310,7 @@ class PStore
   #
   # Note that PStore does not support nested transactions.
   #
-  def transaction(read_only = false, &block)  # :yields:  pstore
+  def transaction(read_only = false)  # :yields:  pstore
     value = nil
     raise PStore::Error, "nested transaction" if !@thread_safe && @lock.locked?
     @lock.synchronize do

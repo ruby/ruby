@@ -243,7 +243,7 @@ module Benchmark
   # #bmbm yields a Benchmark::Job object and returns an array of
   # Benchmark::Tms objects.
   #
-  def bmbm(width = 0, &blk) # :yield: job
+  def bmbm(width = 0) # :yield: job
     job = Job.new(width)
     yield(job)
     width = job.width + 1

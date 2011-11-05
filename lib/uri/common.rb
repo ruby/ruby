@@ -258,7 +258,7 @@ module URI
     #
     # see also URI::Parser.make_regexp
     #
-    def extract(str, schemes = nil, &block)
+    def extract(str, schemes = nil)
       if block_given?
         str.scan(make_regexp(schemes)) { yield $& }
         nil

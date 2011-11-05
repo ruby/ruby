@@ -1125,7 +1125,7 @@ def typedef_expr(type, headers)
   return "rbcv_typedef_", member, prelude
 end
 
-def try_signedness(type, member, headers = nil, opts = nil, &b)
+def try_signedness(type, member, headers = nil, opts = nil)
   raise ArgumentError, "don't know how to tell signedness of members" if member
   if try_static_assert("(#{type})-1 < 0", headers, opts)
     return -1
