@@ -37,6 +37,28 @@ class OpenSSL::TestEngine < Test::Unit::TestCase
     assert_not_nil(digest)
     data = "test"
     assert_equal(OpenSSL::Digest::SHA1.digest(data), digest.digest(data))
+    cleanup
+  end
+
+  def test_openssl_engine_cipher_rc4
+    engine = OpenSSL::Engine.by_id("openssl")
+    algo = "RC4" #AES is not supported by openssl Engine (<=1.0.0e)
+    data = "a" * 1000
+    key = OpenSSL::Random.random_bytes(16)
+
+    encipher = engine.cipher(algo)
+    encipher.encrypt
+    encipher.key = key
+
+    decipher = OpenSSL::Cipher.new(algo)
+    decipher.decrypt
+    decipher.key = key
+
+    encrypted = encipher.update(data) + encipher.final
+    decrypted = decipher.update(encrypted) + decipher.final
+
+    assert_equal(data, decrypted)
+    cleanup
   end
 
   private

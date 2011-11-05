@@ -1,3 +1,8 @@
+Sun Nov 06 03:22:36 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_engine.rb: add test for engine cipher. RC4 is used
+	  because AES is not supported by the "openssl" engine currently.
+
 Sun Nov  6 00:11:52 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit.rb (Test::Unit::Options#non_options): options[:ruby]
