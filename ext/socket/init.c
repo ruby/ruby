@@ -239,10 +239,10 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
     return rb_assoc_new(str, addr);
 }
 
-int
-rsock_socket(int domain, int type0, int proto)
+static int
+rsock_socket0(int domain, int type0, int proto)
 {
-    int fd, type;
+    int ret, type;
 
 #ifdef SOCK_CLOEXEC
     static int try_sock_cloexec = 1;
@@ -255,8 +255,9 @@ rsock_socket(int domain, int type0, int proto)
     type = type0;
 #endif
 
-    fd = socket(domain, type, proto);
-    if (fd < 0) {
+    ret = socket(domain, type, proto);
+
+    if (ret == -1) {
 #ifdef SOCK_CLOEXEC
         /* SOCK_CLOEXEC is available since Linux 2.6.27.  Linux 2.6.18 fails with EINVAL */
         if (try_sock_cloexec && errno == EINVAL) {
@@ -265,21 +266,29 @@ rsock_socket(int domain, int type0, int proto)
             goto retry_without_sock_cloexec;
         }
 #endif
-	if (errno == EMFILE || errno == ENFILE) {
-	    rb_gc();
-	    fd = socket(domain, type, proto);
-	}
+        return -1;
     }
-#ifdef SOCK_CLOEXEC
+
+    rb_fd_fix_cloexec(ret);
+
+    return ret;
+
+}
+
+int
+rsock_socket(int domain, int type, int proto)
+{
+    int fd;
+
+    fd = rsock_socket0(domain, type, proto);
+    if (fd < 0) {
+       if (errno == EMFILE || errno == ENFILE) {
+           rb_gc();
+           fd = rsock_socket0(domain, type, proto);
+       }
+    }
     if (0 <= fd)
-	if (try_sock_cloexec)
-	    rb_update_max_fd(fd);
-	else
-	    rb_fd_fix_cloexec(fd);
-#else
-    if (0 <= fd)
-	rb_fd_fix_cloexec(fd);
-#endif
+        rb_update_max_fd(fd);
     return fd;
 }
 
