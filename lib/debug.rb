@@ -545,7 +545,9 @@ Commands
   th[read] [sw[itch]] <nnn>  switch thread context to nnn
   th[read] stop <nnn>        stop thread nnn
   th[read] resume <nnn>      resume thread nnn
+  pp expression              evaluate expression and pretty_print its value
   p expression               evaluate expression and print its value
+  r[estart]                  restart program
   h[elp]                     print this help
   <everything else>          evaluate
 EOHELP

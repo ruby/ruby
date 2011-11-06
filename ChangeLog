@@ -1,3 +1,8 @@
+Mon Nov 07 01:14:22 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/debug.rb: add help for 'pp' and 'r[estart]'. patch
+	  from Sho Hashimoto. [Bug #5093] [ruby-dev:44222]
+
 Sun Nov  6 14:49:58 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/rubysocket.h (rsock_recvmsg): declared.
