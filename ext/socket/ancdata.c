@@ -1358,16 +1358,22 @@ struct recvmsg_args_struct {
     int flags;
 };
 
+ssize_t
+rsock_recvmsg(int socket, struct msghdr *message, int flags)
+{
+#ifdef MSG_CMSG_CLOEXEC
+    /* MSG_CMSG_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
+    flags |= MSG_CMSG_CLOEXEC;
+#endif
+    return recvmsg(socket, message, flags);
+}
+
 static VALUE
 nogvl_recvmsg_func(void *ptr)
 {
     struct recvmsg_args_struct *args = ptr;
     int flags = args->flags;
-#ifdef MSG_CMSG_CLOEXEC
-    /* MSG_CMSG_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
-    flags |= MSG_CMSG_CLOEXEC;
-#endif
-    return recvmsg(args->fd, args->msg, flags);
+    return rsock_recvmsg(args->fd, args->msg, flags);
 }
 
 static ssize_t

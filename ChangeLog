@@ -1,3 +1,13 @@
+Sun Nov  6 14:49:58 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/rubysocket.h (rsock_recvmsg): declared.
+
+	* ext/socket/ancdata.c (rsock_recvmsg): extracted from
+	  nogvl_recvmsg_func.
+	  (nogvl_recvmsg_func): use rsock_recvmsg.
+
+	* ext/socket/unixsocket.c (recvmsg_blocking): use rsock_recvmsg.
+
 Sun Nov 06 03:22:36 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_engine.rb: add test for engine cipher. RC4 is used

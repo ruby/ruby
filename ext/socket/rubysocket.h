@@ -282,6 +282,7 @@ VALUE rsock_bsock_sendmsg_nonblock(int argc, VALUE *argv, VALUE sock);
 #if defined(HAVE_RECVMSG)
 VALUE rsock_bsock_recvmsg(int argc, VALUE *argv, VALUE sock);
 VALUE rsock_bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock);
+ssize_t rsock_recvmsg(int socket, struct msghdr *message, int flags);
 #else
 #define rsock_bsock_recvmsg rb_f_notimplement
 #define rsock_bsock_recvmsg_nonblock rb_f_notimplement
