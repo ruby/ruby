@@ -222,6 +222,10 @@ fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
                             GDBM_READER|flags, 0, MY_FATAL_FUNC);
     }
 
+    if (dbm) {
+        rb_fd_fix_cloexec(gdbm_fdesc(dbm));
+    }
+
     if (!dbm) {
         if (mode == -1) return Qnil;
 
