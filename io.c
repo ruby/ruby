@@ -2357,7 +2357,10 @@ rb_io_write_nonblock(VALUE io, VALUE str)
  *     }
  *
  *  Note that this method behaves like fread() function in C.
- *  If you need the behavior like read(2) system call,
+ *  This means it retry to invoke read(2) system call to read data with the specified length (or until EOF).
+ *  This behavior is preserved even if <i>ios</i> is non-blocking mode.
+ *  (This method is non-blocking flag insensitive as other methods.)
+ *  If you need the behavior like single read(2) system call,
  *  consider readpartial, read_nonblock and sysread.
  */
 
