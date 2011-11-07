@@ -1,3 +1,13 @@
+Mon Nov  7 20:05:16 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (io_fflush): remove fsync().
+
+	* io.c (rb_io_flush, rb_io_rewind): fsync() here.
+
+	these changes reduces fsync() calls to improve performance.
+	first reported at [ruby-list:48515] by ak7 at mail.goo.ne.jp .
+	[Bug #5585]
+
 Mon Nov  7 19:43:10 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_close_before_exec): use F_MAXFD if available.

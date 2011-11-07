@@ -837,11 +837,6 @@ io_fflush(rb_io_t *fptr)
 	    return -1;
         rb_io_check_closed(fptr);
     }
-#ifdef _WIN32
-    if (GetFileType((HANDLE)rb_w32_get_osfhandle(fptr->fd)) == FILE_TYPE_DISK) {
-	fsync(fptr->fd);
-    }
-#endif
     return 0;
 }
 
@@ -1223,6 +1218,11 @@ rb_io_flush(VALUE io)
     if (fptr->mode & FMODE_WRITABLE) {
         if (io_fflush(fptr) < 0)
             rb_sys_fail(0);
+#ifdef _WIN32
+	if (GetFileType((HANDLE)rb_w32_get_osfhandle(fptr->fd)) == FILE_TYPE_DISK) {
+	    fsync(fptr->fd);
+	}
+#endif
     }
     if (fptr->mode & FMODE_READABLE) {
         io_unread(fptr);
@@ -1355,6 +1355,11 @@ rb_io_rewind(VALUE io)
 
     GetOpenFile(io, fptr);
     if (io_seek(fptr, 0L, 0) < 0 && errno) rb_sys_fail_path(fptr->pathv);
+#ifdef _WIN32
+    if (GetFileType((HANDLE)rb_w32_get_osfhandle(fptr->fd)) == FILE_TYPE_DISK) {
+	fsync(fptr->fd);
+    }
+#endif
     if (io == ARGF.current_file) {
 	ARGF.lineno -= fptr->lineno;
     }
