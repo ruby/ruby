@@ -1,12 +1,11 @@
-require 'test/unit'
-require 'psych'
+require 'psych/helper'
 require 'yaml/store'
 require 'tmpdir'
 
 module Psych
   Psych::Store = YAML::Store unless defined?(Psych::Store)
 
-  class YAMLStoreTest < Test::Unit::TestCase
+  class YAMLStoreTest < TestCase
     def setup
       @engine, YAML::ENGINE.yamler = YAML::ENGINE.yamler, 'psych'
       @dir = Dir.mktmpdir("rubytest-file")
@@ -78,7 +77,7 @@ module Psych
     end
 
     def test_writing_inside_readonly_transaction_raises_error
-      assert_raise(PStore::Error) do
+      assert_raises(PStore::Error) do
         @yamlstore.transaction(true) do
           @yamlstore[:foo] = "bar"
         end
