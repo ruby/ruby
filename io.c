@@ -5123,6 +5123,13 @@ rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
     int max = max_file_descriptor;
     if (max < maxhint)
         max = maxhint;
+#ifdef F_MAXFD
+    /* F_MAXFD is available since NetBSD 2.0. */
+    ret = fcntl(0, F_MAXFD);
+    if (ret != -1) {
+        max = ret;
+    }
+#endif
     for (fd = lowfd; fd <= max; fd++) {
         if (!NIL_P(noclose_fds) &&
             RTEST(rb_hash_lookup(noclose_fds, INT2FIX(fd))))

@@ -1,3 +1,8 @@
+Mon Nov  7 19:43:10 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_close_before_exec): use F_MAXFD if available.
+	  F_MAXFD is available on NetBSD since NetBSD 2.0.
+
 Mon Nov  7 19:25:16 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io_m17n.rb
