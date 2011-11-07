@@ -165,6 +165,7 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
     if (dbm) {
     /*
      * History of dbm_pagfno() and dbm_dirfno() in ndbm and its compatibles.
+     * (dbm_pagfno() and dbm_dirfno() is not standardized.)
      *
      * 1986: 4.3BSD provides ndbm.
      *       It provides dbm_pagfno() and dbm_dirfno() as macros.
