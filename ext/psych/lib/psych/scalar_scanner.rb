@@ -61,7 +61,7 @@ module Psych
         else
           string.sub(/^:/, '').to_sym
         end
-      when /^[-+]?[1-9][0-9_]*(:[0-5]?[0-9])+$/
+      when /^[-+]?[0-9][0-9_]*(:[0-5]?[0-9])+$/
         i = 0
         string.split(':').each_with_index do |n,e|
           i += (n.to_i * 60 ** (e - 2).abs)
