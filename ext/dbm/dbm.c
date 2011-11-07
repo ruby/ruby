@@ -162,6 +162,30 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
         }
     }
 
+    if (dbm) {
+    /*
+     * History of dbm_pagfno() and dbm_dirfno() in ndbm and its compatibles.
+     *
+     * 1986: 4.3BSD provides ndbm.
+     *       It provides dbm_pagfno() and dbm_dirfno() as macros.
+     * 1991: gdbm-1.5 provides them as functions.
+     *       They returns a same descriptor.
+     *       (Earlier releases may have the functions too.)
+     * 1991: Net/2 provides Berkeley DB.
+     *       It doesn't provide dbm_pagfno() and dbm_dirfno().
+     * 1992: 4.4BSD Alpha provides Berkeley DB with dbm_dirfno() as a function.
+     *       dbm_pagfno() is a macro as DBM_PAGFNO_NOT_AVAILABLE.
+     * 2011: gdbm-1.9 creates a separate dir file.
+     *       dbm_pagfno() and dbm_dirfno() returns different descriptors.
+     */
+#if defined(HAVE_DBM_PAGFNO)
+        rb_fd_fix_cloexec(dbm_pagfno(dbm));
+#endif
+#if defined(HAVE_DBM_DIRFNO)
+        rb_fd_fix_cloexec(dbm_dirfno(dbm));
+#endif
+    }
+
     if (!dbm) {
 	if (mode == -1) return Qnil;
 	rb_sys_fail(RSTRING_PTR(file));

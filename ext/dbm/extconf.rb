@@ -21,6 +21,8 @@ headers = {
   "qdbm" => ["relic.h", "qdbm/relic.h"],
 }
 
+$dbm_headers = []
+
 def headers.db_check(db)
   db_prefix = nil
   have_gdbm = false
@@ -44,6 +46,7 @@ def headers.db_check(db)
     have_func(db_prefix+"dbm_clearerr") unless have_gdbm
     $defs << hsearch if hsearch
     $defs << '-DDBM_HDR="<'+hdr+'>"'
+    $dbm_headers << hdr
     true
   else
     false
@@ -53,5 +56,7 @@ end
 if dblib.any? {|db| headers.db_check(db)}
   have_header("cdefs.h")
   have_header("sys/cdefs.h")
+  have_func("dbm_pagfno", $dbm_headers)
+  have_func("dbm_dirfno", $dbm_headers)
   create_makefile("dbm")
 end
