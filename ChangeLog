@@ -1,3 +1,8 @@
+Mon Nov  7 20:18:29 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* test/psych/test_yamldbm.rb: Test case should inherit from MiniTest,
+	  load psych/helper so that psych and friends are loaded.
+
 Mon Nov  7 20:15:44 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: check dbm_pagfno() and dbm_dirfno().
