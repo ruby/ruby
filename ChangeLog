@@ -1,3 +1,9 @@
+Mon Nov  7 23:39:23 2011  Tajima Akio <artonx@yahoo.co.jp>
+
+       	* io.c (io_fflush): remove fsync().
+	* io.c (rb_io_flush, rb_io_rewind): fsync() here.
+	  These pathces are backports of trunk r33651 for [Bug #5585]
+
 Mon Oct 10 22:33:12 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/-ext-/old_thread_select/test_old_thread_select.rb:
