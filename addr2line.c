@@ -68,6 +68,9 @@
 #  define ElfW(x) Elf32##_##x
 # endif
 #endif
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 typedef struct {
     const char *dirname;
