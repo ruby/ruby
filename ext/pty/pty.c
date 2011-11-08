@@ -291,19 +291,19 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     dfl.sa_flags = 0;
     sigemptyset(&dfl.sa_mask);
 
-#if defined(__sun)
+#if defined(__sun) || defined(__FreeBSD__)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
+    /* FreeBSD 8 supported O_CLOEXEC for posix_openpt, but FreeBSD 9 removed it */
     if ((masterfd = posix_openpt(O_RDWR|O_NOCTTY)) == -1) goto error;
     if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
     if (grantpt(masterfd) == -1) goto grantpt_error;
     rb_fd_fix_cloexec(masterfd);
 #else
     flags = O_RDWR|O_NOCTTY;
-# if defined(O_CLOEXEC) && !defined(__FreeBSD__)
+# if defined(O_CLOEXEC)
     /* glibc posix_openpt() in GNU/Linux calls open("/dev/ptmx", flags) internally.
      * So version dependency on GNU/Linux is same as O_CLOEXEC with open().
-     * O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it.
-     * FreeBSD's posix_openpt doesn't support O_CLOEXEC and fails if specified*/
+     * O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
     flags |= O_CLOEXEC;
 # endif
     if ((masterfd = posix_openpt(flags)) == -1) goto error;
