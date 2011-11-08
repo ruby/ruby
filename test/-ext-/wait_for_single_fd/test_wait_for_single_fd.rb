@@ -21,6 +21,9 @@ class TestWaitForSingleFD < Test::Unit::TestCase
   end
 
   def test_wait_for_invalid_fd
+    # FreeBSD 8.2 sticks this
+    # http://redmine.ruby-lang.org/issues/5524
+    skip if /freebsd/ =~ RUBY_PLATFORM
     with_pipe do |r,w|
       wfd = w.fileno
       w.close
