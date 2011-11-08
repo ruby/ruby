@@ -31,9 +31,7 @@ module Psych
         result
       end
 
-      def visit_Psych_Nodes_Scalar o
-        @st[o.anchor] = o.value if o.anchor
-
+      def deserialize o
         if klass = Psych.load_tags[o.tag]
           instance = klass.allocate
 
@@ -92,6 +90,11 @@ module Psych
           @ss.tokenize o.value
         end
       end
+      private :deserialize
+
+      def visit_Psych_Nodes_Scalar o
+        register o, deserialize(o)
+      end
 
       def visit_Psych_Nodes_Sequence o
         if klass = Psych.load_tags[o.tag]
@@ -108,15 +111,13 @@ module Psych
 
         case o.tag
         when '!omap', 'tag:yaml.org,2002:omap'
-          map = Psych::Omap.new
-          @st[o.anchor] = map if o.anchor
+          map = register(o, Psych::Omap.new)
           o.children.each { |a|
             map[accept(a.children.first)] = accept a.children.last
           }
           map
         else
-          list = []
-          @st[o.anchor] = list if o.anchor
+          list = register(o, [])
           o.children.each { |c| list.push accept c }
           list
         end
@@ -135,8 +136,7 @@ module Psych
           klass = resolve_class($1)
 
           if klass
-            s = klass.allocate
-            @st[o.anchor] = s if o.anchor
+            s = register(o, klass.allocate)
 
             members = {}
             struct_members = s.members.map { |x| x.to_sym }
@@ -158,7 +158,7 @@ module Psych
 
         when '!ruby/range'
           h = Hash[*o.children.map { |c| accept c }]
-          Range.new(h['begin'], h['end'], h['excl'])
+          register o, Range.new(h['begin'], h['end'], h['excl'])
 
         when /^!ruby\/exception:?(.*)?$/
           h = Hash[*o.children.map { |c| accept c }]
@@ -177,11 +177,11 @@ module Psych
 
         when '!ruby/object:Complex'
           h = Hash[*o.children.map { |c| accept c }]
-          Complex(h['real'], h['image'])
+          register o, Complex(h['real'], h['image'])
 
         when '!ruby/object:Rational'
           h = Hash[*o.children.map { |c| accept c }]
-          Rational(h['numerator'], h['denominator'])
+          register o, Rational(h['numerator'], h['denominator'])
 
         when /^!ruby\/object:?(.*)?$/
           name = $1 || 'Object'
@@ -209,6 +209,11 @@ module Psych
       end
 
       private
+      def register node, object
+        @st[node.anchor] = object if node.anchor
+        object
+      end
+
       def revive_hash hash, o
         @st[o.anchor] = hash if o.anchor
 

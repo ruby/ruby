@@ -1,3 +1,12 @@
+Wed Nov  9 04:52:16 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/tree_builder.rb: dump complex numbers,
+	  rationals, etc with reference ids.
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: ditto
+	* ext/psych/lib/psych/visitors/to_ruby.rb: loading complex numbers,
+	  rationals, etc with reference ids.
+	* test/psych/test_object_references.rb: corresponding tests
+
 Tue Nov  8 23:34:37 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dbm/dbm.c (fdbm_fetch, fdbm_key, fdbm_delete, fdbm_store)

@@ -159,13 +159,13 @@ module Psych
       end
 
       def visit_Regexp o
-        @emitter.scalar o.inspect, nil, '!ruby/regexp', false, false, Nodes::Scalar::ANY
+        register o, @emitter.scalar(o.inspect, nil, '!ruby/regexp', false, false, Nodes::Scalar::ANY)
       end
 
       def visit_DateTime o
         formatted = format_time o.to_time
         tag = '!ruby/object:DateTime'
-        @emitter.scalar formatted, nil, tag, false, false, Nodes::Scalar::ANY
+        register o, @emitter.scalar(formatted, nil, tag, false, false, Nodes::Scalar::ANY)
       end
 
       def visit_Time o
@@ -174,7 +174,7 @@ module Psych
       end
 
       def visit_Rational o
-        @emitter.start_mapping(nil, '!ruby/object:Rational', false, Nodes::Mapping::BLOCK)
+        register o, @emitter.start_mapping(nil, '!ruby/object:Rational', false, Nodes::Mapping::BLOCK)
 
         [
           'denominator', o.denominator.to_s,
@@ -187,7 +187,7 @@ module Psych
       end
 
       def visit_Complex o
-        @emitter.start_mapping(nil, '!ruby/object:Complex', false, Nodes::Mapping::BLOCK)
+        register o, @emitter.start_mapping(nil, '!ruby/object:Complex', false, Nodes::Mapping::BLOCK)
 
         ['real', o.real.to_s, 'image', o.imag.to_s].each do |m|
           @emitter.scalar m, nil, nil, true, false, Nodes::Scalar::ANY
@@ -255,16 +255,16 @@ module Psych
 
       def visit_Module o
         raise TypeError, "can't dump anonymous module: #{o}" unless o.name
-        @emitter.scalar o.name, nil, '!ruby/module', false, false, Nodes::Scalar::SINGLE_QUOTED
+        register o, @emitter.scalar(o.name, nil, '!ruby/module', false, false, Nodes::Scalar::SINGLE_QUOTED)
       end
 
       def visit_Class o
         raise TypeError, "can't dump anonymous class: #{o}" unless o.name
-        @emitter.scalar o.name, nil, '!ruby/class', false, false, Nodes::Scalar::SINGLE_QUOTED
+        register o, @emitter.scalar(o.name, nil, '!ruby/class', false, false, Nodes::Scalar::SINGLE_QUOTED)
       end
 
       def visit_Range o
-        @emitter.start_mapping nil, '!ruby/range', false, Nodes::Mapping::BLOCK
+        register o, @emitter.start_mapping(nil, '!ruby/range', false, Nodes::Mapping::BLOCK)
         ['begin', o.begin, 'end', o.end, 'excl', o.exclude_end?].each do |m|
           accept m
         end
