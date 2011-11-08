@@ -1,3 +1,8 @@
+Tue Nov  8 11:01:04 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/pty/pty.c (get_device_once): FreeBSD's posix_openpt doesn't
+	  support O_CLOEXEC and fails if specified.
+
 Mon Nov  7 22:03:47 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/gdbm/gdbm.c (fgdbm_initialize): set close-on-exec flag.
