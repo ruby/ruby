@@ -1,3 +1,18 @@
+Tue Nov  8 23:34:37 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dbm/dbm.c (fdbm_fetch, fdbm_key, fdbm_delete, fdbm_store)
+	  (fdbm_has_key, fdbm_has_value): get rid of overflow.
+
+	* ext/gdbm/gdbm.c (rb_gdbm_fetch2, rb_gdbm_nextkey)
+	  (rb_gdbm_delete, fgdbm_store, fgdbm_has_key): ditto.
+
+	* ext/dbm/dbm.c (fdbm_delete_if): hide intermediate objects.
+
+	* ext/gdbm/gdbm.c (fgdbm_delete_if): ditto.
+
+	* ext/dbm/extconf.rb: check size of datum.dsize to get rid of
+	  overflow.
+
 Tue Nov  8 23:30:21 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c (PATH_MAX): define if not defined. [ruby-core:40840]

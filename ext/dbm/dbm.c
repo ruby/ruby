@@ -21,6 +21,16 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#if SIZEOF_DSIZE > SIZEOF_INT
+# define DSIZE_TYPE long
+# define RSTRING_DSIZE(s) RSTRING_LEN(s)
+# define TOO_LONG(n) 0
+#else
+# define DSIZE_TYPE int
+# define RSTRING_DSIZE(s) RSTRING_LENINT(s)
+# define TOO_LONG(n) ((long)(+(DSIZE_TYPE)(n)) != (n))
+#endif
+
 static VALUE rb_cDBM, rb_eDBMError;
 
 #define RUBY_DBM_RW_BIT 0x20000000
@@ -230,14 +240,18 @@ fdbm_fetch(VALUE obj, VALUE keystr, VALUE ifnone)
     datum key, value;
     struct dbmdata *dbmp;
     DBM *dbm;
+    long len;
 
     ExportStringValue(keystr);
+    len = RSTRING_LEN(keystr);
+    if (TOO_LONG(len)) goto not_found;
     key.dptr = RSTRING_PTR(keystr);
-    key.dsize = (int)RSTRING_LEN(keystr);
+    key.dsize = (DSIZE_TYPE)len;
 
     GetDBM2(obj, dbmp, dbm);
     value = dbm_fetch(dbm, key);
     if (value.dptr == 0) {
+      not_found:
 	if (ifnone == Qnil && rb_block_given_p())
 	    return rb_yield(rb_tainted_str_new(key.dptr, key.dsize));
 	return ifnone;
@@ -291,15 +305,18 @@ fdbm_key(VALUE obj, VALUE valstr)
     datum key, val;
     struct dbmdata *dbmp;
     DBM *dbm;
+    long len;
 
     ExportStringValue(valstr);
+    len = RSTRING_LEN(valstr);
+    if (TOO_LONG(len)) return Qnil;
     val.dptr = RSTRING_PTR(valstr);
-    val.dsize = (int)RSTRING_LEN(valstr);
+    val.dsize = (DSIZE_TYPE)len;
 
     GetDBM2(obj, dbmp, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	if ((long)val.dsize == (int)RSTRING_LEN(valstr) &&
+	if ((long)val.dsize == RSTRING_LEN(valstr) &&
 	    memcmp(val.dptr, RSTRING_PTR(valstr), val.dsize) == 0) {
 	    return rb_tainted_str_new(key.dptr, key.dsize);
 	}
@@ -385,16 +402,20 @@ fdbm_delete(VALUE obj, VALUE keystr)
     struct dbmdata *dbmp;
     DBM *dbm;
     VALUE valstr;
+    long len;
 
     fdbm_modify(obj);
     ExportStringValue(keystr);
+    len = RSTRING_LEN(keystr);
+    if (TOO_LONG(len)) goto not_found;
     key.dptr = RSTRING_PTR(keystr);
-    key.dsize = (int)RSTRING_LEN(keystr);
+    key.dsize = (DSIZE_TYPE)len;
 
     GetDBM2(obj, dbmp, dbm);
 
     value = dbm_fetch(dbm, key);
     if (value.dptr == 0) {
+      not_found:
 	if (rb_block_given_p()) return rb_yield(keystr);
 	return Qnil;
     }
@@ -457,7 +478,7 @@ fdbm_delete_if(VALUE obj)
     struct dbmdata *dbmp;
     DBM *dbm;
     VALUE keystr, valstr;
-    VALUE ret, ary = rb_ary_new();
+    VALUE ret, ary = rb_ary_tmp_new(0);
     int i, status = 0;
     long n;
 
@@ -469,6 +490,7 @@ fdbm_delete_if(VALUE obj)
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
 	keystr = rb_tainted_str_new(key.dptr, key.dsize);
+	OBJ_FREEZE(keystr);
 	valstr = rb_tainted_str_new(val.dptr, val.dsize);
         ret = rb_protect(rb_yield, rb_assoc_new(rb_str_dup(keystr), valstr), &status);
         if (status != 0) break;
@@ -478,15 +500,15 @@ fdbm_delete_if(VALUE obj)
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
 	keystr = RARRAY_PTR(ary)[i];
-	ExportStringValue(keystr);
 	key.dptr = RSTRING_PTR(keystr);
-	key.dsize = (int)RSTRING_LEN(keystr);
+	key.dsize = (DSIZE_TYPE)RSTRING_LEN(keystr);
 	if (dbm_delete(dbm, key)) {
 	    rb_raise(rb_eDBMError, "dbm_delete failed");
 	}
     }
     if (status) rb_jump_tag(status);
     if (n > 0) dbmp->di_size = n - RARRAY_LEN(ary);
+    rb_ary_clear(ary);
 
     return obj;
 }
@@ -607,10 +629,10 @@ fdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
     valstr = rb_obj_as_string(valstr);
 
     key.dptr = RSTRING_PTR(keystr);
-    key.dsize = (int)RSTRING_LEN(keystr);
+    key.dsize = RSTRING_DSIZE(keystr);
 
     val.dptr = RSTRING_PTR(valstr);
-    val.dsize = (int)RSTRING_LEN(valstr);
+    val.dsize = RSTRING_DSIZE(valstr);
 
     GetDBM2(obj, dbmp, dbm);
     dbmp->di_size = -1;
@@ -816,10 +838,13 @@ fdbm_has_key(VALUE obj, VALUE keystr)
     datum key, val;
     struct dbmdata *dbmp;
     DBM *dbm;
+    long len;
 
     ExportStringValue(keystr);
+    len = RSTRING_LEN(keystr);
+    if (TOO_LONG(len)) return Qfalse;
     key.dptr = RSTRING_PTR(keystr);
-    key.dsize = (int)RSTRING_LEN(keystr);
+    key.dsize = (DSIZE_TYPE)len;
 
     GetDBM2(obj, dbmp, dbm);
     val = dbm_fetch(dbm, key);
@@ -840,15 +865,18 @@ fdbm_has_value(VALUE obj, VALUE valstr)
     datum key, val;
     struct dbmdata *dbmp;
     DBM *dbm;
+    long len;
 
     ExportStringValue(valstr);
+    len = RSTRING_LEN(valstr);
+    if (TOO_LONG(len)) return Qfalse;
     val.dptr = RSTRING_PTR(valstr);
-    val.dsize = (int)RSTRING_LEN(valstr);
+    val.dsize = (DSIZE_TYPE)len;
 
     GetDBM2(obj, dbmp, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	if (val.dsize == (int)RSTRING_LEN(valstr) &&
+	if ((DSIZE_TYPE)val.dsize == (DSIZE_TYPE)RSTRING_LEN(valstr) &&
 	    memcmp(val.dptr, RSTRING_PTR(valstr), val.dsize) == 0)
 	    return Qtrue;
     }

@@ -73,6 +73,12 @@
  */
 static VALUE rb_cGDBM, rb_eGDBMError, rb_eGDBMFatalError;
 
+#if SIZEOF_LONG > SIZEOF_INT
+#define TOO_LONG(n) ((long)(+(int)(n)) != (long)(n))
+#else
+#define TOO_LONG(n) 0
+#endif
+
 #define RUBY_GDBM_RW_BIT 0x20000000
 
 #define MY_BLOCK_SIZE (2048)
@@ -301,10 +307,13 @@ static VALUE
 rb_gdbm_fetch2(GDBM_FILE dbm, VALUE keystr)
 {
     datum key;
+    long len;
 
     StringValue(keystr);
+    len = RSTRING_LEN(keystr);
+    if (TOO_LONG(len)) return Qnil;
     key.dptr = RSTRING_PTR(keystr);
-    key.dsize = (int)RSTRING_LEN(keystr);
+    key.dsize = (int)len;
 
     return rb_gdbm_fetch(dbm, key);
 }
@@ -340,9 +349,12 @@ rb_gdbm_nextkey(GDBM_FILE dbm, VALUE keystr)
 {
     datum key, key2;
     VALUE str;
+    long len;
 
+    len = RSTRING_LEN(keystr);
+    if (TOO_LONG(len)) return Qnil;
     key.dptr = RSTRING_PTR(keystr);
-    key.dsize = (int)RSTRING_LEN(keystr);
+    key.dsize = (int)len;
     key2 = gdbm_nextkey(dbm, key);
     if (key2.dptr == 0)
         return Qnil;
@@ -499,11 +511,14 @@ rb_gdbm_delete(VALUE obj, VALUE keystr)
     datum key;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
+    long len;
 
     rb_gdbm_modify(obj);
     StringValue(keystr);
+    len = RSTRING_LEN(keystr);
+    if (TOO_LONG(len)) return Qnil;
     key.dptr = RSTRING_PTR(keystr);
-    key.dsize = (int)RSTRING_LEN(keystr);
+    key.dsize = (int)len;
 
     GetDBM2(obj, dbmp, dbm);
     if (!gdbm_exists(dbm, key)) {
@@ -574,7 +589,7 @@ fgdbm_delete_if(VALUE obj)
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
     VALUE keystr, valstr;
-    VALUE ret, ary = rb_ary_new();
+    VALUE ret, ary = rb_ary_tmp_new(0);
     int i, status = 0, n;
 
     rb_gdbm_modify(obj);
@@ -585,8 +600,9 @@ fgdbm_delete_if(VALUE obj)
     for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
          keystr = rb_gdbm_nextkey(dbm, keystr)) {
 
+	OBJ_FREEZE(keystr);
         valstr = rb_gdbm_fetch2(dbm, keystr);
-        ret = rb_protect(rb_yield, rb_assoc_new(keystr, valstr), &status);
+        ret = rb_protect(rb_yield, rb_assoc_new(rb_str_dup(keystr), valstr), &status);
         if (status != 0) break;
         if (RTEST(ret)) rb_ary_push(ary, keystr);
         GetDBM2(obj, dbmp, dbm);
@@ -596,6 +612,7 @@ fgdbm_delete_if(VALUE obj)
         rb_gdbm_delete(obj, RARRAY_PTR(ary)[i]);
     if (status) rb_jump_tag(status);
     if (n > 0) dbmp->di_size = n - (int)RARRAY_LEN(ary);
+    rb_ary_clear(ary);
 
     return obj;
 }
@@ -687,10 +704,10 @@ fgdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
     StringValue(valstr);
 
     key.dptr = RSTRING_PTR(keystr);
-    key.dsize = (int)RSTRING_LEN(keystr);
+    key.dsize = RSTRING_LENINT(keystr);
 
     val.dptr = RSTRING_PTR(valstr);
-    val.dsize = (int)RSTRING_LEN(valstr);
+    val.dsize = RSTRING_LENINT(valstr);
 
     GetDBM2(obj, dbmp, dbm);
     dbmp->di_size = -1;
@@ -943,10 +960,13 @@ fgdbm_has_key(VALUE obj, VALUE keystr)
     datum key;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
+    long len;
 
     StringValue(keystr);
+    len = RSTRING_LENINT(keystr);
+    if (TOO_LONG(len)) return Qfalse;
     key.dptr = RSTRING_PTR(keystr);
-    key.dsize = (int)RSTRING_LEN(keystr);
+    key.dsize = (int)len;
 
     GetDBM2(obj, dbmp, dbm);
     if (gdbm_exists(dbm, key))

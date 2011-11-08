@@ -21,7 +21,10 @@ headers = {
   "qdbm" => ["relic.h", "qdbm/relic.h"],
 }
 
-$dbm_headers = []
+class << headers
+  attr_accessor :found
+end
+headers.found = []
 
 def headers.db_check(db)
   db_prefix = nil
@@ -46,7 +49,7 @@ def headers.db_check(db)
     have_func(db_prefix+"dbm_clearerr") unless have_gdbm
     $defs << hsearch if hsearch
     $defs << '-DDBM_HDR="<'+hdr+'>"'
-    $dbm_headers << hdr
+    @found << hdr
     true
   else
     false
@@ -56,7 +59,12 @@ end
 if dblib.any? {|db| headers.db_check(db)}
   have_header("cdefs.h")
   have_header("sys/cdefs.h")
-  have_func("dbm_pagfno", $dbm_headers)
-  have_func("dbm_dirfno", $dbm_headers)
+  have_func("dbm_pagfno", headers.found)
+  have_func("dbm_dirfno", headers.found)
+  if try_static_assert("sizeof(conftest_key.dsize) <= sizeof(int)", [[cpp_include(headers.found), "static datum conftest_key;"]])
+    $defs << "-DSIZEOF_DSIZE=SIZEOF_INT"
+  else
+    $defs << "-DSIZEOF_DSIZE=SIZEOF_LONG"
+  end
   create_makefile("dbm")
 end
