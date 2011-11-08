@@ -1,3 +1,9 @@
+Tue Nov  8 20:50:45 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/dbm/test_dbm.rb: split tests for read only database.
+
+	* test/gdbm/test_gdbm.rb: ditto.
+
 Tue Nov  8 18:59:07 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pty/pty.c (MasterDevice): define only when used.
