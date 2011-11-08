@@ -302,7 +302,8 @@ NORETURN(void rb_out_of_int(SIGNED_VALUE num));
 #define rb_long2int(n) __extension__ ({long i2l_n = (n); rb_long2int_internal(i2l_n, i2l_i); i2l_i;})
 #else
 static inline int
-rb_long2int(long n) {rb_long2int_internal(n, i); return i;}
+rb_long2int_inline(long n) {rb_long2int_internal(n, i); return i;}
+#define rb_long2int(n) rb_long2int_inline(n)
 #endif
 #else
 #define rb_long2int(n) ((int)(n))
