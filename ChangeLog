@@ -1,3 +1,21 @@
+Tue Nov  8 23:26:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tcltklib.c (rb_thread_critical): fix type.
+
+	* ext/tk/tcltklib.c (eventloop_sleep, lib_eventloop_core): int is
+	  enough for micro seconds.  may need to check overflow in the
+	  setter though.
+
+	* ext/tk/tcltklib.c (RSTRING_LENINT): check overflow if necessary.
+
+	* ext/tk/tcltklib.c (RbTk_ALLOC_N): wrapper for ckalloc() which
+	  takes an int.
+
+	* ext/tk/tcltklib.c (ip_ruby_cmd_receiver_get, tcltklib_compile_info):
+	  get rid overflow.
+
+	* ext/tk/tcltklib.c (tcltklib_compile_info): constified.
+
 Tue Nov  8 20:50:45 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/dbm/test_dbm.rb: split tests for read only database.
