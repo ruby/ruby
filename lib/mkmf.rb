@@ -418,6 +418,9 @@ def cpp_command(outfile, opt="")
   conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote, 'srcdir' => $srcdir.quote,
                                 'arch_hdrdir' => $arch_hdrdir.quote,
                                 'top_srcdir' => $top_srcdir.quote)
+  if $universal and (arch_flag = conf['ARCH_FLAG']) and !arch_flag.empty?
+    conf['ARCH_FLAG'] = arch_flag.gsub(/(?:\G|\s)-arch\s+\S+/, '')
+  end
   RbConfig::expand("$(CPP) #$INCFLAGS #$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}",
                    conf)
 end
