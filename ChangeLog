@@ -1,3 +1,7 @@
+Wed Nov  9 11:02:54 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread.c (do_select): fix cast, tv_sec is time_t.
+
 Wed Nov  9 10:32:20 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: should not use test -e for portability.

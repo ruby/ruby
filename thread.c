@@ -2570,7 +2570,7 @@ do_select(int n, rb_fdset_t *read, rb_fdset_t *write, rb_fdset_t *except,
 	    if (timeout) {
 		double d = limit - timeofday();
 
-		wait_rest.tv_sec = (unsigned int)d;
+		wait_rest.tv_sec = (time_t)d;
 		wait_rest.tv_usec = (int)((d-(double)wait_rest.tv_sec)*1e6);
 		if (wait_rest.tv_sec < 0)  wait_rest.tv_sec = 0;
 		if (wait_rest.tv_usec < 0) wait_rest.tv_usec = 0;
