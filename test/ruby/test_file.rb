@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'tempfile'
+require_relative 'envutil'
 require_relative 'ut_eof'
 
 class TestFile < Test::Unit::TestCase
@@ -181,4 +182,16 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
+  def test_utime_with_minus_time_segv
+    bug5596 = '[ruby-dev:44838]'
+    assert_in_out_err([], <<-EOS, [bug5596], [])
+      t = Time.at(-1)
+      begin
+        f = Tempfile.new
+        File.utime(t, t, f)
+      rescue
+      end
+      puts '#{bug5596}'
+    EOS
+  end
 end

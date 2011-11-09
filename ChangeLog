@@ -1,3 +1,8 @@
+Wed Nov  9 19:53:45 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_file.rb (TestFile#test_utime_with_minus_time_segv):
+	  add test for r33685.
+
 Wed Nov  9 19:00:44 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_fiber.rb: add tests for r33684 (Fiber#resume).
