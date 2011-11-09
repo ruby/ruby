@@ -112,7 +112,7 @@ EXCLUDE_SYMBOLS        =
 EXAMPLE_PATH           = 
 EXAMPLE_PATTERNS       = 
 EXAMPLE_RECURSIVE      = NO
-IMAGE_PATH             = <%= "#{srcdir}/doc/images" %>
+IMAGE_PATH             = <%=srcdir%>/doc/images
 FILTER_PATTERNS        = 
 FILTER_SOURCE_FILES    = YES
 #---------------------------------------------------------------------------
@@ -213,19 +213,19 @@ PERLMOD_LATEX          = NO
 PERLMOD_PRETTY         = YES
 PERLMOD_MAKEVAR_PREFIX = 
 #---------------------------------------------------------------------------
-# Configuration options related to the preprocessor   
+# Configuration options related to the preprocessor
 #---------------------------------------------------------------------------
 ENABLE_PREPROCESSING   = YES
 MACRO_EXPANSION        = NO
 EXPAND_ONLY_PREDEF     = NO
 SEARCH_INCLUDES        = YES
-INCLUDE_PATH           = 
+INCLUDE_PATH           = <%=srcdir%> <%=srcdir%>/include
 INCLUDE_FILE_PATTERNS  = 
 PREDEFINED             = 
 EXPAND_AS_DEFINED      = 
 SKIP_FUNCTION_MACROS   = YES
 #---------------------------------------------------------------------------
-# Configuration::additions related to external references   
+# Configuration::additions related to external references
 #---------------------------------------------------------------------------
 TAGFILES               = 
 GENERATE_TAGFILE       = 
@@ -233,7 +233,7 @@ ALLEXTERNALS           = NO
 EXTERNAL_GROUPS        = YES
 PERL_PATH              = /usr/bin/perl
 #---------------------------------------------------------------------------
-# Configuration options related to the dot tool   
+# Configuration options related to the dot tool
 #---------------------------------------------------------------------------
 CLASS_DIAGRAMS         = NO
 MSCGEN_PATH            = 
@@ -262,6 +262,6 @@ DOT_MULTI_TARGETS      = NO
 GENERATE_LEGEND        = YES
 DOT_CLEANUP            = YES
 #---------------------------------------------------------------------------
-# Configuration::additions related to the search engine   
+# Configuration::additions related to the search engine
 #---------------------------------------------------------------------------
 SEARCHENGINE           = NO
