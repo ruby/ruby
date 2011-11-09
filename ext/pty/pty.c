@@ -230,7 +230,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 
 #if defined(__sun) || defined(__FreeBSD__)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
-    /* FreeBSD 8 supported O_CLOEXEC for posix_openpt, but FreeBSD 9 removed it */
+    /* FreeBSD 8 supported O_CLOEXEC for posix_openpt, but FreeBSD 9 removed it.
+     * http://www.freebsd.org/cgi/query-pr.cgi?pr=162374 */
     if ((masterfd = posix_openpt(O_RDWR|O_NOCTTY)) == -1) goto error;
     if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
     if (grantpt(masterfd) == -1) goto grantpt_error;
