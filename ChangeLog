@@ -1,3 +1,12 @@
+Thu Nov 10 05:17:25 2011  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (rb_fiber_m_transfer, rb_fiber_resume): prohibit using
+	  "resume" after "transfer" method are used.  You should not mix
+	  "resume" fiber and "transfer" fiber.
+	  [Bug #5526]
+
+	* NEWS: add information about this change.
+
 Wed Nov  9 11:40:37 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/Doxyfile.tmpl (INCLUDE_PATH): add srcdir and include.

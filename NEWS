@@ -32,6 +32,10 @@ with all sufficient information, see the ChangeLog file.
       * Time#to_s returned encoding defaults to US-ASCII but automatically
         transcodes to Encoding.default_internal if it is set.
 
+  * Fiber
+    * incompatible changes:
+      * Fiber#resume cannot resume a fiber which invokes "Fiber#transfer".
+
 * net/imap
   * new methods:
     * Net::IMAP.default_port
