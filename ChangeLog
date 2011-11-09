@@ -1,3 +1,8 @@
+Wed Nov  9 11:36:53 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (gvl_yield): don't prevent concurrent sched_yield().
+	  [Bug #5130] [ruby-core:38647]
+
 Wed Nov  9 23:20:22 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_update_max_fd): fstat(2) can fail with other than
