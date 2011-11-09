@@ -405,7 +405,7 @@ $as_ln_s ../build . > /dev/null 2>&1 && cd build &&
 for chdir in 'cd -P' 'PWD= cd'; do
     /bin/sh -c "$chdir ../src && echo '$chdir' > cdcmd" 2> /dev/null && break
 done)
-if test -e conf$$.dir/src/cdcmd; then
+if test -f conf$$.dir/src/cdcmd; then
     read CHDIR < conf$$.dir/src/cdcmd 2> /dev/null
 else
     CHDIR=cd

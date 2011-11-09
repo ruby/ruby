@@ -1,3 +1,8 @@
+Wed Nov  9 10:32:20 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: should not use test -e for portability.
+	  [ruby-core:40841] [Bug #5594]
+
 Wed Nov  9 04:52:16 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/tree_builder.rb: dump complex numbers,
