@@ -1,3 +1,8 @@
+Wed Nov  9 22:13:38 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_file.rb (TestFile#test_utime_with_minus_time_segv):
+	  fixed previous commit.
+
 Wed Nov  9 19:53:45 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_file.rb (TestFile#test_utime_with_minus_time_segv):

@@ -185,9 +185,10 @@ class TestFile < Test::Unit::TestCase
   def test_utime_with_minus_time_segv
     bug5596 = '[ruby-dev:44838]'
     assert_in_out_err([], <<-EOS, [bug5596], [])
+      require "tempfile"
       t = Time.at(-1)
       begin
-        f = Tempfile.new
+        f = Tempfile.new('test_utime_with_minus_time_segv')
         File.utime(t, t, f)
       rescue
       end
