@@ -1,3 +1,8 @@
+Wed Nov  9 22:54:30 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_sysopen): max fd is updated in rb_sysopen_internal()
+	  already.
+
 Wed Nov  9 22:13:38 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_file.rb (TestFile#test_utime_with_minus_time_segv):

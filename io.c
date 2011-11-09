@@ -4792,7 +4792,6 @@ rb_sysopen(VALUE fname, int oflags, mode_t perm)
 	    rb_sys_fail(RSTRING_PTR(fname));
 	}
     }
-    rb_update_max_fd(fd);
     return fd;
 }
 
