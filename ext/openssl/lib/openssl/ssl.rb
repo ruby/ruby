@@ -33,6 +33,14 @@ module OpenSSL
         DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
       end
 
+      ##
+      # Sets the parameters for this SSL context to the values in +params+.
+      # The keys in +params+ must be assignment methods on SSLContext.
+      #
+      # If the verify_mode is not VERIFY_NONE and ca_file, ca_path and
+      # cert_store are not set then the system default certificate store is
+      # used.
+
       def set_params(params={})
         params = DEFAULT_PARAMS.merge(params)
         params.each{|name, value| self.__send__("#{name}=", value) }
