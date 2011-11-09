@@ -1,4 +1,8 @@
-Wed Nov  9 22:54:30 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Nov  9 23:20:22 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_update_max_fd): fstat(2) can fail with other than
+	  EBADF.  [ruby-dev:44837] [Backport #4339].  Cf.
+	  http://pubs.opengroup.org/onlinepubs/9699919799/functions/fstat.html
 
 	* io.c (rb_sysopen): max fd is updated in rb_sysopen_internal()
 	  already.
