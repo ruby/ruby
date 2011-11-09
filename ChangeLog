@@ -1,3 +1,9 @@
+Wed Nov  9 16:40:49 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (unixtime_to_filetime): should check the return value
+	  of localtime().  reported by snowjail at gmail.com.
+	  [ruby-dev:44838] [Bug #5596]
+
 Thu Nov 10 05:17:25 2011  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c (rb_fiber_m_transfer, rb_fiber_resume): prohibit using
