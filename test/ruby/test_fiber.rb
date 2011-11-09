@@ -220,5 +220,28 @@ class TestFiber < Test::Unit::TestCase
     end
     assert_equal("Can't call on top of Fiber or Thread", error.message, bug5083)
   end
+
+  def test_prohibit_resume_transfered_fiber
+    assert_raise(FiberError){
+      root_fiber = Fiber.current
+      f = Fiber.new{
+        root_fiber.transfer
+      }
+      f.transfer
+      f.resume
+    }
+    assert_raise(FiberError){
+      g=nil
+      f=Fiber.new{
+        g.resume
+        g.resume
+      }
+      g=Fiber.new{
+        f.resume
+        f.resume
+      }
+      f.transfer
+    }
+  end
 end
 
