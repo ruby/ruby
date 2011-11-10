@@ -674,10 +674,19 @@ module Net   #:nodoc:
       @use_ssl = flag
     end
 
-    SSL_ATTRIBUTES = %w(
-      ssl_version key cert ca_file ca_path cert_store ciphers
-      verify_mode verify_callback verify_depth ssl_timeout
-    )
+    SSL_ATTRIBUTES = [
+      :ca_file,
+      :ca_path,
+      :cert,
+      :cert_store,
+      :ciphers,
+      :key,
+      :ssl_timeout,
+      :ssl_version,
+      :verify_callback,
+      :verify_depth,
+      :verify_mode,
+    ]
 
     # Sets path of a CA certification file in PEM format.
     #

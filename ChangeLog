@@ -1,3 +1,9 @@
+Fri Nov 11 07:33:30 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb (Net::HTTP::SSL_ATTRIBUTES):  Use symbol keys instead
+	  of string keys to avoid duplicating parameters in
+          OpenSSL::SSL:SSLContext#set_params.
+
 Thu Nov 10 15:02:37 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (have_library, have_func, have_var, have_header):
