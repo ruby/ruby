@@ -625,14 +625,17 @@ def try_func(func, libs, headers = nil, opt = "", &b)
 	break opt = opt.send(meth, *args)
       end
     end
+    opt = "#{opt} #{libs}"
+  else
+    opt = libs
   end
-  try_link(<<"SRC", "#{opt} #{libs}", &b) or
+  try_link(<<"SRC", opt, &b) or
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
 int t() { #{decltype["volatile p"]}; p = (#{decltype[]})#{func}; return 0; }
 SRC
-  call && try_link(<<"SRC", "#{opt} #{libs}", &b)
+  call && try_link(<<"SRC", opt, &b)
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
