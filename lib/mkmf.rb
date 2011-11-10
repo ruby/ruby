@@ -610,7 +610,7 @@ end
 # [+libs+] a String which contains library names.
 # [+headers+] a String or an Array of strings which contains
 #             names of header files.
-def try_func(func, libs, headers = nil, &b)
+def try_func(func, libs, headers = nil, opt = "", &b)
   headers = cpp_include(headers)
   case func
   when /^&/
@@ -619,13 +619,20 @@ def try_func(func, libs, headers = nil, &b)
     call = true
     decltype = proc {|x| "void ((*#{x})())"}
   end
-  try_link(<<"SRC", libs, &b) or
+  if opt and !opt.empty?
+    [[:to_str], [:join, " "], [:to_s]].each do |meth, *args|
+      if opt.respond_to?(meth)
+	break opt = opt.send(meth, *args)
+      end
+    end
+  end
+  try_link(<<"SRC", "#{opt} #{libs}", &b) or
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
 int t() { #{decltype["volatile p"]}; p = (#{decltype[]})#{func}; return 0; }
 SRC
-  call && try_link(<<"SRC", libs, &b)
+  call && try_link(<<"SRC", "#{opt} #{libs}", &b)
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
@@ -634,9 +641,9 @@ SRC
 end
 
 # You should use +have_var+ rather than +try_var+.
-def try_var(var, headers = nil, &b)
+def try_var(var, headers = nil, opt = "", &b)
   headers = cpp_include(headers)
-  try_compile(<<"SRC", &b)
+  try_compile(<<"SRC", opt, &b)
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
@@ -837,15 +844,15 @@ end
 # The real name of the library to be linked can be altered by
 # '--with-FOOlib' configuration option.
 #
-def have_library(lib, func = nil, headers = nil, &b)
+def have_library(lib, func = nil, headers = nil, opt = "", &b)
   func = "main" if !func or func.empty?
   lib = with_config(lib+'lib', lib)
-  checking_for checking_message("#{func}()", LIBARG%lib) do
+  checking_for checking_message("#{func}()", LIBARG%lib, opt) do
     if COMMON_LIBS.include?(lib)
       true
     else
       libs = append_library($libs, lib)
-      if try_func(func, libs, headers, &b)
+      if try_func(func, libs, headers, opt, &b)
         $libs = libs
         true
       else
@@ -892,9 +899,9 @@ end
 # For example, if have_func('foo') returned true, then the HAVE_FOO
 # preprocessor macro would be passed to the compiler.
 #
-def have_func(func, headers = nil, &b)
-  checking_for checking_message("#{func}()", headers) do
-    if try_func(func, $libs, headers, &b)
+def have_func(func, headers = nil, opt = "", &b)
+  checking_for checking_message("#{func}()", headers, opt) do
+    if try_func(func, $libs, headers, opt, &b)
       $defs.push(format("-DHAVE_%s", func.tr_cpp))
       true
     else
@@ -911,9 +918,9 @@ end
 # For example, if have_var('foo') returned true, then the HAVE_FOO
 # preprocessor macro would be passed to the compiler.
 #
-def have_var(var, headers = nil, &b)
-  checking_for checking_message(var, headers) do
-    if try_var(var, headers, &b)
+def have_var(var, headers = nil, opt = "", &b)
+  checking_for checking_message(var, headers, opt) do
+    if try_var(var, headers, opt, &b)
       $defs.push(format("-DHAVE_%s", var.tr_cpp))
       true
     else
@@ -929,9 +936,9 @@ end
 # For example, if have_header('foo.h') returned true, then the HAVE_FOO_H
 # preprocessor macro would be passed to the compiler.
 #
-def have_header(header, preheaders = nil, &b)
+def have_header(header, preheaders = nil, opt = "", &b)
   checking_for header do
-    if try_header(cpp_include(preheaders)+cpp_include(header), &b)
+    if try_header(cpp_include(preheaders)+cpp_include(header), opt, &b)
       $defs.push(format("-DHAVE_%s", header.tr_cpp))
       true
     else

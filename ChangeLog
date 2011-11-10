@@ -1,3 +1,8 @@
+Thu Nov 10 15:02:37 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (have_library, have_func, have_var, have_header):
+	  add compiler option parameter.
+
 Thu Nov 10 07:45:16 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/openssl/lib/openssl/ssl.rb (class OpenSSL::SSL::SSLContext):
