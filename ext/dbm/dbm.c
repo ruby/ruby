@@ -186,6 +186,8 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
      *       It doesn't provide dbm_pagfno() and dbm_dirfno().
      * 1992: 4.4BSD Alpha provides Berkeley DB with dbm_dirfno() as a function.
      *       dbm_pagfno() is a macro as DBM_PAGFNO_NOT_AVAILABLE.
+     * 1997: Berkeley DB 2.0 is released by Sleepycat Software, Inc.
+     *       It defines dbm_pagfno() and dbm_dirfno() as macros.
      * 2011: gdbm-1.9 creates a separate dir file.
      *       dbm_pagfno() and dbm_dirfno() returns different descriptors.
      */
