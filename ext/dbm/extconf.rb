@@ -23,8 +23,10 @@ headers = {
 
 class << headers
   attr_accessor :found
+  attr_accessor :defs
 end
 headers.found = []
+headers.defs = nil
 
 def headers.db_check(db)
   db_prefix = nil
@@ -34,7 +36,7 @@ def headers.db_check(db)
   case db
   when /^db[2-5]?$/
     db_prefix = "__db_n"
-    hsearch = "-DDB_DBM_HSEARCH "
+    hsearch = "-DDB_DBM_HSEARCH"
   when "gdbm"
     have_gdbm = true
   when "gdbm_compat"
@@ -47,7 +49,10 @@ def headers.db_check(db)
       hdr = self.fetch(db, ["ndbm.h"]).find {|h| have_type("DBM", h, hsearch)} or
       hdr = self.fetch(db, ["ndbm.h"]).find {|h| have_type("DBM", ["db.h", h], hsearch)}
     have_func(db_prefix+"dbm_clearerr") unless have_gdbm
-    $defs << hsearch if hsearch
+    if hsearch
+      $defs << hsearch
+      @defs = hsearch
+    end
     $defs << '-DDBM_HDR="<'+hdr+'>"'
     @found << hdr
     true
@@ -59,8 +64,8 @@ end
 if dblib.any? {|db| headers.db_check(db)}
   have_header("cdefs.h")
   have_header("sys/cdefs.h")
-  have_func("dbm_pagfno", headers.found)
-  have_func("dbm_dirfno", headers.found)
+  have_func("dbm_pagfno", headers.found, headers.defs)
+  have_func("dbm_dirfno", headers.found, headers.defs)
   type = checking_for "sizeof(datum.dsize)", STRING_OR_FAILED_FORMAT do
     pre = headers.found + [["static datum conftest_key;"]]
     %w[int long LONG_LONG].find do |t|
