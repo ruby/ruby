@@ -1,3 +1,9 @@
+Fri Nov 11 12:36:37 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (pipe_open): Remove fflush(stdin). it's no effect.
+	  Pointed out by Ikegami Daisuke <ikegami.da@gmail.com>.
+	  Thank you.
+
 Fri Nov 11 07:33:30 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http.rb (Net::HTTP::SSL_ATTRIBUTES):  Use symbol keys instead
