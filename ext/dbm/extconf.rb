@@ -64,12 +64,12 @@ end
 if dblib.any? {|db| headers.db_check(db)}
   have_header("cdefs.h")
   have_header("sys/cdefs.h")
-  have_func("dbm_pagfno", headers.found, headers.defs)
-  have_func("dbm_dirfno", headers.found, headers.defs)
+  have_func("dbm_pagfno((DBM *)0)", headers.found, headers.defs)
+  have_func("dbm_dirfno((DBM *)0)", headers.found, headers.defs)
   type = checking_for "sizeof(datum.dsize)", STRING_OR_FAILED_FORMAT do
     pre = headers.found + [["static datum conftest_key;"]]
     %w[int long LONG_LONG].find do |t|
-      try_static_assert("sizeof(conftest_key.dsize) <= sizeof(#{t})", pre)
+      try_static_assert("sizeof(conftest_key.dsize) <= sizeof(#{t})", pre, headers.defs)
     end
   end
   $defs << "-DSIZEOF_DSIZE=SIZEOF_"+type.tr_cpp if type

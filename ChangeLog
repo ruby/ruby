@@ -1,3 +1,10 @@
+Fri Nov 11 21:00:05 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: fix dbm_pagfno and dbm_dirfno detection with
+	  Berkeley DB.  Macro definitions needs arguments to detect correctly.
+	  SIZEOF_DSIZE needs -DDB_DBM_HSEARCH because db.h defines datum type
+	  only if DB_DBM_HSEARCH is defined. 
+
 Fri Nov 11 18:41:57 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (proc_seteuid): separate an internal wrapper function
