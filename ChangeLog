@@ -1,3 +1,8 @@
+Fri Nov 11 18:41:57 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (proc_seteuid): separate an internal wrapper function
+	  from the method implementation.
+
 Fri Nov 11 17:21:15 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (have_library, find_library, have_func): allow

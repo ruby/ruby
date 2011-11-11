@@ -5065,22 +5065,9 @@ proc_geteuid(VALUE obj)
 }
 
 #if defined(HAVE_SETRESUID) || defined(HAVE_SETREUID) || defined(HAVE_SETEUID) || defined(HAVE_SETUID) || defined(_POSIX_SAVED_IDS)
-/*
- *  call-seq:
- *     Process.euid= integer
- *
- *  Sets the effective user ID for this process. Not available on all
- *  platforms.
- */
-
-static VALUE
-proc_seteuid(VALUE obj, VALUE euid)
+static void
+proc_seteuid(rb_uid_t uid)
 {
-    rb_uid_t uid;
-
-    check_uid_switch();
-
-    uid = NUM2UIDT(euid);
 #if defined(HAVE_SETRESUID)
     if (setresuid(-1, uid, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREUID
@@ -5097,12 +5084,25 @@ proc_seteuid(VALUE obj, VALUE euid)
 #else
     rb_notimplement();
 #endif
-    return euid;
 }
 #endif
 
 #if defined(HAVE_SETRESUID) || defined(HAVE_SETREUID) || defined(HAVE_SETEUID) || defined(HAVE_SETUID)
-#define proc_seteuid_m proc_seteuid
+/*
+ *  call-seq:
+ *     Process.euid= integer
+ *
+ *  Sets the effective user ID for this process. Not available on all
+ *  platforms.
+ */
+
+static VALUE
+proc_seteuid_m(VALUE euid)
+{
+    check_uid_switch();
+    proc_seteuid(NUM2UIDT(euid));
+    return euid;
+}
 #else
 #define proc_seteuid_m rb_f_notimplement
 #endif
@@ -5453,7 +5453,7 @@ p_uid_switch(VALUE obj)
     euid = geteuid();
 
     if (uid != euid) {
-	proc_seteuid(obj, UIDT2NUM(uid));
+	proc_seteuid(uid);
 	if (rb_block_given_p()) {
 	    under_uid_switch = 1;
 	    return rb_ensure(rb_yield, Qnil, p_uid_sw_ensure, SAVED_USER_ID);
@@ -5461,7 +5461,7 @@ p_uid_switch(VALUE obj)
 	    return UIDT2NUM(euid);
 	}
     } else if (euid != SAVED_USER_ID) {
-	proc_seteuid(obj, UIDT2NUM(SAVED_USER_ID));
+	proc_seteuid(SAVED_USER_ID);
 	if (rb_block_given_p()) {
 	    under_uid_switch = 1;
 	    return rb_ensure(rb_yield, Qnil, p_uid_sw_ensure, euid);
