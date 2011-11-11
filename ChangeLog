@@ -1,3 +1,7 @@
+Fri Nov 11 23:00:46 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: db_prefix is not required now.
+
 Fri Nov 11 21:13:30 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/gdbm/gdbm.c (fgdbm_initialize): use GDBM_CLOEXEC if available.

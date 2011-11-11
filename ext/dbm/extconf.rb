@@ -29,13 +29,11 @@ headers.found = []
 headers.defs = nil
 
 def headers.db_check(db)
-  db_prefix = nil
   have_gdbm = false
   hsearch = nil
 
   case db
   when /^db[2-5]?$/
-    db_prefix = "__db_n"
     hsearch = "-DDB_DBM_HSEARCH"
   when "gdbm"
     have_gdbm = true
@@ -43,12 +41,11 @@ def headers.db_check(db)
     have_gdbm = true
     have_library("gdbm") or return false
   end
-  db_prefix ||= ""
 
-  if (have_library(db, db_prefix+"dbm_open") || have_func(db_prefix+"dbm_open")) and
-      hdr = self.fetch(db, ["ndbm.h"]).find {|h| have_type("DBM", h, hsearch)} or
-      hdr = self.fetch(db, ["ndbm.h"]).find {|h| have_type("DBM", ["db.h", h], hsearch)}
-    have_func(db_prefix+"dbm_clearerr") unless have_gdbm
+  if (hdr = self.fetch(db, ["ndbm.h"]).find {|h| have_type("DBM", h, hsearch)} or
+      hdr = self.fetch(db, ["ndbm.h"]).find {|h| have_type("DBM", ["db.h", h], hsearch)}) and
+     (have_library(db, 'dbm_open("", 0, 0)', hdr, hsearch) || have_func('dbm_open("", 0, 0)', hdr, hsearch))
+    have_func('dbm_clearerr((DBM *)0)', hdr, hsearch) unless have_gdbm
     if hsearch
       $defs << hsearch
       @defs = hsearch
