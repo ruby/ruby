@@ -593,6 +593,9 @@ bugreport_backtrace(void *arg, VALUE file, int line, VALUE method)
 #if defined(__FreeBSD__) && defined(__OPTIMIZE__)
 #undef HAVE_BACKTRACE
 #endif
+#ifndef HAVE_BACKTRACE
+#define HAVE_BACKTRACE 0
+#endif
 #if HAVE_BACKTRACE
 # include <execinfo.h>
 #elif defined(_WIN32)
@@ -774,7 +777,15 @@ dump_thread(void *arg)
 void
 rb_vm_bugreport(void)
 {
-    rb_vm_t *vm = GET_VM();
+#ifdef __linux__
+# define PROC_MAPS_NAME "/proc/self/maps"
+#endif
+#ifdef PROC_MAPS_NAME
+    enum {other_runtime_info = 1};
+#else
+    enum {other_runtime_info = 0};
+#endif
+    const rb_vm_t *const vm = GET_VM();
     if (vm) {
 	int i = 0;
 	SDR();
@@ -823,22 +834,29 @@ rb_vm_bugreport(void)
     fprintf(stderr, "\n");
 #endif /* HAVE_BACKTRACE */
 
-    fprintf(stderr, "-- Other runtime information "
-	    "-----------------------------------------------\n\n");
-    {
+    if (other_runtime_info || vm) {
+	fprintf(stderr, "-- Other runtime information "
+		"-----------------------------------------------\n\n");
+    }
+    if (vm) {
 	int i;
+	VALUE name;
 
-	fprintf(stderr, "* Loaded script: %s\n", StringValueCStr(vm->progname));
+	name = vm->progname;
+	fprintf(stderr, "* Loaded script: %s\n", StringValueCStr(name));
 	fprintf(stderr, "\n");
 	fprintf(stderr, "* Loaded features:\n\n");
 	for (i=0; i<RARRAY_LEN(vm->loaded_features); i++) {
-	    fprintf(stderr, " %4d %s\n", i, StringValueCStr(RARRAY_PTR(vm->loaded_features)[i]));
+	    name = RARRAY_PTR(vm->loaded_features)[i];
+	    fprintf(stderr, " %4d %s\n", i, StringValueCStr(name));
 	}
 	fprintf(stderr, "\n");
+    }
 
-#if __linux__
+    {
+#ifdef PROC_MAPS_NAME
 	{
-	    FILE *fp = fopen("/proc/self/maps", "r");
+	    FILE *fp = fopen(PROC_MAPS_NAME, "r");
 	    if (fp) {
 		fprintf(stderr, "* Process memory map:\n\n");
 
