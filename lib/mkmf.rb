@@ -186,6 +186,14 @@ class String
   def tr_cpp
     strip.upcase.tr_s("^A-Z0-9_*", "_").tr_s("*", "P")
   end
+
+  def funcall_style
+    /\)\z/ =~ self ? dup : "#{self}()"
+  end
+
+  def sans_arguments
+    self[/\A[^()]+/]
+  end
 end
 class Array
   # Wraps all strings in escaped quotes if they contain whitespace.
@@ -615,8 +623,10 @@ def try_func(func, libs, headers = nil, opt = "", &b)
   case func
   when /^&/
     decltype = proc {|x|"const volatile void *#{x}"}
+  when /\)$/
+    call = func
   else
-    call = true
+    call = "#{func}()"
     decltype = proc {|x| "void ((*#{x})())"}
   end
   if opt and !opt.empty?
@@ -629,7 +639,7 @@ def try_func(func, libs, headers = nil, opt = "", &b)
   else
     opt = libs
   end
-  try_link(<<"SRC", opt, &b) or
+  decltype && try_link(<<"SRC", opt, &b) or
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
@@ -639,7 +649,7 @@ SRC
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
-int t() { #{func}(); return 0; }
+int t() { #{call}; return 0; }
 SRC
 end
 
@@ -850,7 +860,7 @@ end
 def have_library(lib, func = nil, headers = nil, opt = "", &b)
   func = "main" if !func or func.empty?
   lib = with_config(lib+'lib', lib)
-  checking_for checking_message("#{func}()", LIBARG%lib, opt) do
+  checking_for checking_message(func.funcall_style, LIBARG%lib, opt) do
     if COMMON_LIBS.include?(lib)
       true
     else
@@ -876,7 +886,7 @@ def find_library(lib, func, *paths, &b)
   func = "main" if !func or func.empty?
   lib = with_config(lib+'lib', lib)
   paths = paths.collect {|path| path.split(File::PATH_SEPARATOR)}.flatten
-  checking_for "#{func}() in #{LIBARG%lib}" do
+  checking_for(func.funcall_style, LIBARG%lib) do
     libpath = $LIBPATH
     libs = append_library($libs, lib)
     begin
@@ -903,9 +913,9 @@ end
 # preprocessor macro would be passed to the compiler.
 #
 def have_func(func, headers = nil, opt = "", &b)
-  checking_for checking_message("#{func}()", headers, opt) do
+  checking_for checking_message(func.funcall_style, headers, opt) do
     if try_func(func, $libs, headers, opt, &b)
-      $defs.push(format("-DHAVE_%s", func.tr_cpp))
+      $defs << "-DHAVE_#{func.sans_arguments.tr_cpp}"
       true
     else
       false

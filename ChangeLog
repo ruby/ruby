@@ -1,3 +1,8 @@
+Fri Nov 11 17:21:15 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (have_library, find_library, have_func): allow
+	  arguments of function to be checked.
+
 Fri Nov 11 17:09:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_dump.c (HAVE_BACKTRACE): fallback to 0.
