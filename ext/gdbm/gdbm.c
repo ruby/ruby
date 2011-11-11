@@ -210,6 +210,11 @@ fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
 
     SafeStringValue(file);
 
+#ifdef GDBM_CLOEXEC
+    /* GDBM_CLOEXEC is implemented in gdbm 1.9.90 (development version after gdbm-1.9.1). */
+    flags |= GDBM_CLOEXEC;
+#endif
+
     if (flags & RUBY_GDBM_RW_BIT) {
         flags &= ~RUBY_GDBM_RW_BIT;
         dbm = gdbm_open(RSTRING_PTR(file), MY_BLOCK_SIZE,
