@@ -17,7 +17,7 @@ headers = {
   "db5" => ["db5/db.h", "db5.h", "db.h"],
   "dbm" => ["ndbm.h"],
   "gdbm" => ["gdbm-ndbm.h", "ndbm.h", "gdbm/ndbm.h"],
-  "gdbm_compat" => ["gdbm-ndbm.h", "ndbm.h", "gdbm/ndbm.h"],
+  "gdbm_compat" => ["gdbm-ndbm.h", "ndbm.h", "gdbm/ndbm.h"], # ndbm compatibility routines are extracted to libgdbm_compat since gdbm-1.8.1.
   "qdbm" => ["relic.h", "qdbm/relic.h"],
 }
 
