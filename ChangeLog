@@ -1,3 +1,8 @@
+Sat Nov 12 11:18:17 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_io.rb (test_fcntl_lock_freebsd): add a testcase
+	  of fcntl lock for freebsd.
+
 Sat Nov 12 11:16:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (ioctl_narg_len): Linux doesn't have IOCPARM_LEN macro, but
