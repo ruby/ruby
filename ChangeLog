@@ -1,3 +1,8 @@
+Sat Nov 12 17:26:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (do_ioctl, ioctl_narg_len, setup_narg, rb_ioctl): use
+	  ioctl_req_t.
+
 Sat Nov 12 17:01:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dbm/extconf.rb (headers.db_check): reduce duplicated code.

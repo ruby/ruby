@@ -7882,7 +7882,7 @@ static VALUE nogvl_ioctl(void *ptr)
 }
 
 static int
-do_ioctl(int fd, int cmd, long narg)
+do_ioctl(int fd, ioctl_req_t cmd, long narg)
 {
     int retval;
     struct ioctl_arg arg;
@@ -7897,7 +7897,7 @@ do_ioctl(int fd, int cmd, long narg)
 }
 
 static long
-ioctl_narg_len(int cmd)
+ioctl_narg_len(ioctl_req_t cmd)
 {
     long len;
 
@@ -8053,7 +8053,7 @@ fcntl_narg_len(int cmd)
 #endif /* HAVE_FCNTL */
 
 static long
-setup_narg(int cmd, VALUE *argp, int io_p)
+setup_narg(ioctl_req_t cmd, VALUE *argp, int io_p)
 {
     long narg = 0;
     VALUE arg = *argp;
@@ -8080,7 +8080,7 @@ setup_narg(int cmd, VALUE *argp, int io_p)
 	    if (io_p)
 		len = ioctl_narg_len(cmd);
 	    else
-		len = fcntl_narg_len(cmd);
+		len = fcntl_narg_len((int)cmd);
 	    rb_str_modify(arg);
 
 	    /* expand for data + sentinel. */
@@ -8099,7 +8099,7 @@ setup_narg(int cmd, VALUE *argp, int io_p)
 static VALUE
 rb_ioctl(VALUE io, VALUE req, VALUE arg)
 {
-    int cmd = NUM2IOCTLREQ(req);
+    ioctl_req_t cmd = NUM2IOCTLREQ(req);
     rb_io_t *fptr;
     long narg;
     int retval;
