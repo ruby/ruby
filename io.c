@@ -7959,13 +7959,12 @@ setup_narg(int cmd, VALUE *argp, int io_p)
 		len = 256;
 	    rb_str_modify(arg);
 
-	    if (len <= RSTRING_LEN(arg)) {
-		len = RSTRING_LEN(arg);
-	    }
-	    if (RSTRING_LEN(arg) < len) {
+	    /* expand for data + sentinel. */
+	    if (RSTRING_LEN(arg) < len+1) {
 		rb_str_resize(arg, len+1);
 	    }
-	    RSTRING_PTR(arg)[len] = 17;	/* a little sanity check here */
+	    /* a little sanity check here */
+	    RSTRING_PTR(arg)[RSTRING_LEN(arg) - 1] = 17;
 	    narg = (long)(SIGNED_VALUE)RSTRING_PTR(arg);
 	}
     }
