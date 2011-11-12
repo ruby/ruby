@@ -7925,7 +7925,7 @@ typedef long fcntl_arg_t;
 typedef int fcntl_arg_t;
 #endif
 
-static long 
+static long
 fcntl_narg_len(int cmd)
 {
     long len;
@@ -7974,7 +7974,7 @@ fcntl_narg_len(int cmd)
 #ifdef F_SETOWN
       case F_SETOWN:
 	len = sizeof(fcntl_arg_t);
-	break;	
+	break;
 #endif
 #ifdef F_GETOWN_EX /* linux specific */
       case F_GETOWN_EX:
@@ -8045,7 +8045,7 @@ fcntl_narg_len(int cmd)
     return len;
 }
 #else /* HAVE_FCNTL */
-static long 
+static long
 fcntl_narg_len(int cmd)
 {
     return 0;
