@@ -1,8 +1,13 @@
+Sat Nov 12 13:35:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* bootstraptest/runner.rb: don't suppress SIGINT.
+	  [Feature #5612] [ruby-dev:44856]
+
 Sat Nov 12 11:20:36 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (fcntl_narg_len): introduce narg calculation for fcntl instead
 	  of hard coded 256.
-	* io.c (setup_narg): ditto.
+	* io.c (setup_narg): ditto.	
 
 Sat Nov 12 11:19:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 

@@ -169,6 +169,8 @@ def show_progress(message = '')
     $stderr.puts if @verbose
     error faildesc, message
   end
+rescue Interrupt
+  raise Interrupt
 rescue Exception => err
   $stderr.print 'E'
   $stderr.puts if @verbose
@@ -342,6 +344,7 @@ def get_result_string(src, opt = '')
     begin
       `#{@ruby} -W0 #{opt} #{filename}`
     ensure
+      raise Interrupt if $?.signaled? && $?.termsig == Signal.list["INT"]
       raise CoreDumpError, "core dumped" if $? and $?.coredump?
     end
   else
