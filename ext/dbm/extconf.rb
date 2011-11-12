@@ -29,23 +29,20 @@ headers.found = []
 headers.defs = nil
 
 def headers.db_check(db)
-  have_gdbm = false
   hsearch = nil
 
   case db
   when /^db[2-5]?$/
     hsearch = "-DDB_DBM_HSEARCH"
   when "gdbm"
-    have_gdbm = true
   when "gdbm_compat"
-    have_gdbm = true
     have_library("gdbm") or return false
   end
 
   if (hdr = self.fetch(db, ["ndbm.h"]).find {|h| have_type("DBM", h, hsearch)} or
       hdr = self.fetch(db, ["ndbm.h"]).find {|h| have_type("DBM", ["db.h", h], hsearch)}) and
-     (have_library(db, 'dbm_open("", 0, 0)', hdr, hsearch) || have_func('dbm_open("", 0, 0)', hdr, hsearch))
-    have_func('dbm_clearerr((DBM *)0)', hdr, hsearch) unless have_gdbm
+     (have_library(db, 'dbm_open("", 0, 0)', hdr, hsearch) || have_func('dbm_open("", 0, 0)', hdr, hsearch)) and
+     have_func('dbm_clearerr((DBM *)0)', hdr, hsearch)
     if hsearch
       $defs << hsearch
       @defs = hsearch

@@ -639,9 +639,7 @@ fdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
     GetDBM2(obj, dbmp, dbm);
     dbmp->di_size = -1;
     if (dbm_store(dbm, key, val, DBM_REPLACE)) {
-#ifdef HAVE_DBM_CLEARERR
 	dbm_clearerr(dbm);
-#endif
 	if (errno == EPERM) rb_sys_fail(0);
 	rb_raise(rb_eDBMError, "dbm_store failed");
     }

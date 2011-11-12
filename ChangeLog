@@ -1,3 +1,12 @@
+Sat Nov 12 15:59:42 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: dbm_clearerr should be available in all ndbm
+	  implementation.  If it is not available, it is caused by
+	  header/library mismatch such that Berkeley DB header & gdbm library.
+
+	* ext/dbm/dbm.c (fdbm_store): use dbm_clearerr() unconditionally.
+	  gdbm 1.9 provides it as a real function instead of a empty macro.
+
 Sat Nov 12 13:35:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* bootstraptest/runner.rb: don't suppress SIGINT.
