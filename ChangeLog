@@ -1,3 +1,8 @@
+Sat Nov 12 10:56:43 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (+setup_narg): factor out length calculation logic.
+	* io.c (rb_io_ctl): ditto.
+
 Sat Nov 12 10:52:17 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (+ioctl_narg_len) new helper function.
