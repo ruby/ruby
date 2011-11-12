@@ -7917,6 +7917,141 @@ ioctl_narg_len(int cmd)
     return len;
 }
 
+#ifdef HAVE_FCNTL
+#ifdef __linux__
+typedef long fcntl_arg_t;
+#else
+/* posix */
+typedef int fcntl_arg_t;
+#endif
+
+static long 
+fcntl_narg_len(int cmd)
+{
+    long len;
+
+    switch (cmd) {
+#ifdef F_DUPFD
+      case F_DUPFD:
+	len = sizeof(fcntl_arg_t);
+	break;
+#endif
+#ifdef F_DUP2FD /* bsd specific */
+      case F_DUP2FD:
+	len = sizeof(int);
+	break;
+#endif
+#ifdef F_DUPFD_CLOEXEC /* linux specific */
+      case F_DUPFD_CLOEXEC:
+	len = sizeof(fcntl_arg_t);
+	break;
+#endif
+#ifdef F_GETFD
+      case F_GETFD:
+	len = 1;
+	break;
+#endif
+#ifdef F_SETFD
+      case F_SETFD:
+	len = sizeof(fcntl_arg_t);
+	break;
+#endif
+#ifdef F_GETFL
+      case F_GETFL:
+	len = 1;
+	break;
+#endif
+#ifdef F_SETFL
+      case F_SETFL:
+	len = sizeof(fcntl_arg_t);
+	break;
+#endif
+#ifdef F_GETOWN
+      case F_GETOWN:
+	len = 1;
+	break;
+#endif
+#ifdef F_SETOWN
+      case F_SETOWN:
+	len = sizeof(fcntl_arg_t);
+	break;	
+#endif
+#ifdef F_GETOWN_EX /* linux specific */
+      case F_GETOWN_EX:
+	len = sizeof(struct f_owner_ex);
+	break;
+#endif
+#ifdef F_SETOWN_EX /* linux specific */
+      case F_SETOWN_EX:
+	len = sizeof(struct f_owner_ex);
+	break;
+#endif
+#ifdef F_GETLK
+      case F_GETLK:
+	len = sizeof(struct flock);
+	break;
+#endif
+#ifdef F_SETLK
+      case F_SETLK:
+	len = sizeof(struct flock);
+	break;
+#endif
+#ifdef F_SETLKW
+      case F_SETLKW:
+	len = sizeof(struct flock);
+	break;
+#endif
+#ifdef F_READAHEAD /* bsd specific */
+      case F_READAHEAD:
+	len = sizeof(int);
+	break;
+#endif
+#ifdef F_RDAHEAD /* Darwin specific */
+      case F_RDAHEAD:
+	len = sizeof(int);
+	break;
+#endif
+#ifdef F_GETSIG /* linux specific */
+      case F_GETSIG:
+	len = 1;
+	break;
+#endif
+#ifdef F_SETSIG /* linux specific */
+      case F_SETSIG:
+	len = sizeof(fcntl_arg_t);
+	break;
+#endif
+#ifdef F_GETLEASE /* linux specific */
+      case F_GETLEASE:
+	len = 1;
+	break;
+#endif
+#ifdef F_SETLEASE /* linux specific */
+      case F_SETLEASE:
+	len = sizeof(fcntl_arg_t);
+	break;
+#endif
+#ifdef F_NOTIFY /* linux specific */
+      case F_NOTIFY:
+	len = sizeof(fcntl_arg_t);
+	break;
+#endif
+
+      default:
+	len = 256;
+	break;
+    }
+
+    return len;
+}
+#else /* HAVE_FCNTL */
+static long 
+fcntl_narg_len(int cmd)
+{
+    return 0;
+}
+#endif /* HAVE_FCNTL */
+
 static long
 setup_narg(int cmd, VALUE *argp, int io_p)
 {
@@ -7945,7 +8080,7 @@ setup_narg(int cmd, VALUE *argp, int io_p)
 	    if (io_p)
 		len = ioctl_narg_len(cmd);
 	    else
-		len = 256;
+		len = fcntl_narg_len(cmd);
 	    rb_str_modify(arg);
 
 	    /* expand for data + sentinel. */

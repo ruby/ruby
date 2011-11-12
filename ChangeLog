@@ -1,3 +1,9 @@
+Sat Nov 12 11:20:36 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (fcntl_narg_len): introduce narg calculation for fcntl instead
+	  of hard coded 256.
+	* io.c (setup_narg): ditto.
+
 Sat Nov 12 11:19:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_io.rb (test_fcntl_dupfd): add another fcntl test.
