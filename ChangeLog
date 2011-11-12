@@ -1,3 +1,13 @@
+Sat Nov 12 11:06:02 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (ioctl_req_t): Type of req argument of ioctl() depend on platform.
+	  Moreover almost all linux ioctl can't be represented by 32bit integer
+	  (i.e. MSB is 1). We need wrap ioctl argument type.
+	[Bug #5429] [ruby-dev:44589]
+	* io.c (struct ioctl_arg): ditto.
+	* io.c (rb_ioctl): ditto.
+	* test/ruby/test_io.rb (test_ioctl_linux): add a testcase for ioctl
+
 Sat Nov 12 11:00:42 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (struct io_cntl_arg): remove io_p member.

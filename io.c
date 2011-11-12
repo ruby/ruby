@@ -7860,9 +7860,17 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
     return rb_ensure(select_call, (VALUE)&args, select_end, (VALUE)&args);
 }
 
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
+ typedef unsigned long ioctl_req_t;
+ #define NUM2IOCTLREQ(num) NUM2ULONG(num)
+#else
+ typedef int ioctl_req_t;
+ #define NUM2IOCTLREQ(num) NUM2INT(num)
+#endif
+
 struct ioctl_arg {
     int		fd;
-    int		cmd;
+    ioctl_req_t	cmd;
     long	narg;
 };
 
@@ -7954,7 +7962,7 @@ setup_narg(int cmd, VALUE *argp, int io_p)
 static VALUE
 rb_ioctl(VALUE io, VALUE req, VALUE arg)
 {
-    int cmd = NUM2INT(req);
+    int cmd = NUM2IOCTLREQ(req);
     rb_io_t *fptr;
     long narg;
     int retval;

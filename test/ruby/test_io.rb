@@ -2055,4 +2055,16 @@ End
       assert(w.close_on_exec?) 
     }
   end
+
+  def test_ioctl_linux
+    return if /linux/ !~ RUBY_PLATFORM
+
+    assert_nothing_raised do
+      File.open('/dev/urandom'){|f1|
+        entropy_count = ""
+        # get entropy count
+        f1.ioctl(0x80045200, entropy_count)
+      }
+    end
+  end
 end
