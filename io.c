@@ -7973,8 +7973,10 @@ rb_ioctl(VALUE io, VALUE req, VALUE arg)
     GetOpenFile(io, fptr);
     retval = do_ioctl(fptr->fd, cmd, narg);
     if (retval < 0) rb_sys_fail_path(fptr->pathv);
-    if (RB_TYPE_P(arg, T_STRING) && RSTRING_PTR(arg)[RSTRING_LEN(arg)-1] != 17) {
-	rb_raise(rb_eArgError, "return value overflowed string");
+    if (RB_TYPE_P(arg, T_STRING)) {
+	if (RSTRING_PTR(arg)[RSTRING_LEN(arg)-1] != 17)
+	    rb_raise(rb_eArgError, "return value overflowed string");
+	RSTRING_PTR(arg)[RSTRING_LEN(arg)-1] = '\0';
     }
 
     return INT2NUM(retval);
@@ -8053,8 +8055,10 @@ rb_fcntl(VALUE io, VALUE req, VALUE arg)
     GetOpenFile(io, fptr);
     retval = do_fcntl(fptr->fd, cmd, narg);
     if (retval < 0) rb_sys_fail_path(fptr->pathv);
-    if (RB_TYPE_P(arg, T_STRING) && RSTRING_PTR(arg)[RSTRING_LEN(arg)-1] != 17) {
-	rb_raise(rb_eArgError, "return value overflowed string");
+    if (RB_TYPE_P(arg, T_STRING)) {
+	if (RSTRING_PTR(arg)[RSTRING_LEN(arg)-1] != 17)
+	    rb_raise(rb_eArgError, "return value overflowed string");
+	RSTRING_PTR(arg)[RSTRING_LEN(arg)-1] = '\0';
     }
 
     if (cmd == F_SETFL) {

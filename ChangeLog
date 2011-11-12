@@ -1,3 +1,10 @@
+Sat Nov 12 11:13:18 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_ioctl): don't expose our sanity check value to ruby script.
+	  It may change string value meaning if the value is string.
+	  (e.g. MacOS X has  F_GETPATH ioctl)
+	* io.c (rb_fcntl): ditto.
+
 Sat Nov 12 11:06:02 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (ioctl_req_t): Type of req argument of ioctl() depend on platform.
