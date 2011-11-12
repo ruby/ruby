@@ -7909,6 +7909,25 @@ io_cntl(int fd, int cmd, long narg, int io_p)
     return retval;
 }
 
+static long
+ioctl_narg_len(int cmd)
+{
+    long len;
+
+#ifdef IOCPARM_MASK
+#ifndef IOCPARM_LEN
+#define IOCPARM_LEN(x)  (((x) >> 16) & IOCPARM_MASK)
+#endif
+#endif
+#ifdef IOCPARM_LEN
+    len = IOCPARM_LEN(cmd);	/* on BSDish systems we're safe */
+#else
+    len = 256;		/* otherwise guess at what's safe */
+#endif
+
+    return len;
+}
+
 static VALUE
 rb_io_ctl(VALUE io, VALUE req, VALUE arg, int io_p)
 {
@@ -7937,16 +7956,11 @@ rb_io_ctl(VALUE io, VALUE req, VALUE arg, int io_p)
 	}
 	else {
 	    arg = tmp;
-#ifdef IOCPARM_MASK
-#ifndef IOCPARM_LEN
-#define IOCPARM_LEN(x)  (((x) >> 16) & IOCPARM_MASK)
-#endif
-#endif
-#ifdef IOCPARM_LEN
-	    len = IOCPARM_LEN(cmd);	/* on BSDish systems we're safe */
-#else
-	    len = 256;		/* otherwise guess at what's safe */
-#endif
+
+	    if (io_p)
+		ioctl_narg_len(cmd);
+	    else
+		len = 256;
 	    rb_str_modify(arg);
 
 	    if (len <= RSTRING_LEN(arg)) {
