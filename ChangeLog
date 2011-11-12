@@ -1,3 +1,7 @@
+Sat Nov 12 11:19:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_io.rb (test_fcntl_dupfd): add another fcntl test.
+
 Sat Nov 12 11:18:17 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_io.rb (test_fcntl_lock_freebsd): add a testcase

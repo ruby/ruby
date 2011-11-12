@@ -1918,6 +1918,17 @@ End
     end
   end
 
+  def test_fcntl_dupfd
+    Tempfile.open(self.class.name) do |f|
+      fd = f.fcntl(Fcntl::F_DUPFD, 500)
+      begin
+        assert_equal(fd, 500)
+      ensure
+        IO.for_fd(fd).close
+      end
+    end
+  end
+
   def test_cross_thread_close_fd
     skip "cross thread close causes hung-up if pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     with_pipe do |r,w|
