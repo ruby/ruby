@@ -7908,6 +7908,8 @@ ioctl_narg_len(int cmd)
 #endif
 #ifdef IOCPARM_LEN
     len = IOCPARM_LEN(cmd);	/* on BSDish systems we're safe */
+#elif defined(_IOC_SIZE)
+    len = _IOC_SIZE(cmd);
 #else
     len = 256;		/* otherwise guess at what's safe */
 #endif

@@ -1,3 +1,8 @@
+Sat Nov 12 11:16:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (ioctl_narg_len): Linux doesn't have IOCPARM_LEN macro, but
+	  has _IOC_SIZE. support it.
+
 Sat Nov 12 11:13:18 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_ioctl): don't expose our sanity check value to ruby script.
