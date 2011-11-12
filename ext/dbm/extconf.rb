@@ -39,8 +39,8 @@ def headers.db_check(db)
     have_library("gdbm") or return false
   end
 
-  if (hdr = self.fetch(db, ["ndbm.h"]).find {|h| have_type("DBM", h, hsearch)} or
-      hdr = self.fetch(db, ["ndbm.h"]).find {|h| have_type("DBM", ["db.h", h], hsearch)}) and
+  hdrs = self.fetch(db, ["ndbm.h"])
+  if (hdr = hdrs.find {|h| have_type("DBM", h, hsearch)} || hdrs.find {|h| have_type("DBM", ["db.h", h], hsearch)}) and
      (have_library(db, 'dbm_open("", 0, 0)', hdr, hsearch) || have_func('dbm_open("", 0, 0)', hdr, hsearch)) and
      have_func('dbm_clearerr((DBM *)0)', hdr, hsearch)
     if hsearch
