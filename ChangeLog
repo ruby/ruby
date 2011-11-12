@@ -1,3 +1,12 @@
+Sat Nov 12 11:00:42 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (struct io_cntl_arg): remove io_p member.
+	* io.c (nogvl_fcntl, do_fcntl, rb_fcntl): separated from ioctl functions.
+	* io.c (nogvl_io_cntl): remove fcntl depended logic.
+	* io.c (io_cntl): ditto.
+	* io.c (rb_io_ctl): ditto.
+	* io.c (rb_io_ioctl): ditto.
+
 Sat Nov 12 10:59:49 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (setup_narg): fix off by one bug.

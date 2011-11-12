@@ -7860,51 +7860,30 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
     return rb_ensure(select_call, (VALUE)&args, select_end, (VALUE)&args);
 }
 
-struct io_cntl_arg {
+struct ioctl_arg {
     int		fd;
     int		cmd;
     long	narg;
-    int		io_p;
 };
 
-static VALUE nogvl_io_cntl(void *ptr)
+static VALUE nogvl_ioctl(void *ptr)
 {
-    struct io_cntl_arg *arg = ptr;
+    struct ioctl_arg *arg = ptr;
 
-    if (arg->io_p)
-	return (VALUE)ioctl(arg->fd, arg->cmd, arg->narg);
-    else
-#if defined(F_DUPFD)
-        if (arg->cmd == F_DUPFD)
-            return (VALUE)rb_cloexec_fcntl_dupfd(arg->fd, (int)arg->narg);
-        else
-#endif
-            return (VALUE)fcntl(arg->fd, arg->cmd, arg->narg);
+    return (VALUE)ioctl(arg->fd, arg->cmd, arg->narg);
 }
 
 static int
-io_cntl(int fd, int cmd, long narg, int io_p)
+do_ioctl(int fd, int cmd, long narg)
 {
     int retval;
-    struct io_cntl_arg arg;
-
-#ifndef HAVE_FCNTL
-    if (!io_p) {
-	rb_notimplement();
-    }
-#endif
+    struct ioctl_arg arg;
 
     arg.fd = fd;
     arg.cmd = cmd;
     arg.narg = narg;
-    arg.io_p = io_p;
 
-    retval = (int)rb_thread_io_blocking_region(nogvl_io_cntl, &arg, fd);
-#if defined(F_DUPFD)
-    if (!io_p && retval != -1 && cmd == F_DUPFD) {
-	rb_update_max_fd(retval);
-    }
-#endif
+    retval = (int)rb_thread_io_blocking_region(nogvl_ioctl, &arg, fd);
 
     return retval;
 }
@@ -7973,7 +7952,7 @@ setup_narg(int cmd, VALUE *argp, int io_p)
 }
 
 static VALUE
-rb_io_ctl(VALUE io, VALUE req, VALUE arg, int io_p)
+rb_ioctl(VALUE io, VALUE req, VALUE arg)
 {
     int cmd = NUM2INT(req);
     rb_io_t *fptr;
@@ -7982,27 +7961,16 @@ rb_io_ctl(VALUE io, VALUE req, VALUE arg, int io_p)
 
     rb_secure(2);
 
-    narg = setup_narg(cmd, &arg, io_p);
+    narg = setup_narg(cmd, &arg, 1);
     GetOpenFile(io, fptr);
-    retval = io_cntl(fptr->fd, cmd, narg, io_p);
+    retval = do_ioctl(fptr->fd, cmd, narg);
     if (retval < 0) rb_sys_fail_path(fptr->pathv);
     if (RB_TYPE_P(arg, T_STRING) && RSTRING_PTR(arg)[RSTRING_LEN(arg)-1] != 17) {
 	rb_raise(rb_eArgError, "return value overflowed string");
     }
 
-    if (!io_p && cmd == F_SETFL) {
-	if (narg & O_NONBLOCK) {
-	    fptr->mode |= FMODE_WSPLIT_INITIALIZED;
-	    fptr->mode &= ~FMODE_WSPLIT;
-	}
-	else {
-	    fptr->mode &= ~(FMODE_WSPLIT_INITIALIZED|FMODE_WSPLIT);
-	}
-    }
-
     return INT2NUM(retval);
 }
-
 
 /*
  *  call-seq:
@@ -8022,10 +7990,78 @@ rb_io_ioctl(int argc, VALUE *argv, VALUE io)
     VALUE req, arg;
 
     rb_scan_args(argc, argv, "11", &req, &arg);
-    return rb_io_ctl(io, req, arg, 1);
+    return rb_ioctl(io, req, arg);
 }
 
 #ifdef HAVE_FCNTL
+struct fcntl_arg {
+    int		fd;
+    int 	cmd;
+    long	narg;
+};
+
+static VALUE nogvl_fcntl(void *ptr)
+{
+    struct fcntl_arg *arg = ptr;
+
+#if defined(F_DUPFD)
+    if (arg->cmd == F_DUPFD)
+	return (VALUE)rb_cloexec_fcntl_dupfd(arg->fd, (int)arg->narg);
+#endif
+    return (VALUE)fcntl(arg->fd, arg->cmd, arg->narg);
+}
+
+static int
+do_fcntl(int fd, int cmd, long narg)
+{
+    int retval;
+    struct fcntl_arg arg;
+
+    arg.fd = fd;
+    arg.cmd = cmd;
+    arg.narg = narg;
+
+    retval = (int)rb_thread_io_blocking_region(nogvl_fcntl, &arg, fd);
+#if defined(F_DUPFD)
+    if (retval != -1 && cmd == F_DUPFD) {
+	rb_update_max_fd(retval);
+    }
+#endif
+
+    return retval;
+}
+
+static VALUE
+rb_fcntl(VALUE io, VALUE req, VALUE arg)
+{
+    int cmd = NUM2INT(req);
+    rb_io_t *fptr;
+    long narg;
+    int retval;
+
+    rb_secure(2);
+
+    narg = setup_narg(cmd, &arg, 0);
+    GetOpenFile(io, fptr);
+    retval = do_fcntl(fptr->fd, cmd, narg);
+    if (retval < 0) rb_sys_fail_path(fptr->pathv);
+    if (RB_TYPE_P(arg, T_STRING) && RSTRING_PTR(arg)[RSTRING_LEN(arg)-1] != 17) {
+	rb_raise(rb_eArgError, "return value overflowed string");
+    }
+
+    if (cmd == F_SETFL) {
+	if (narg & O_NONBLOCK) {
+	    fptr->mode |= FMODE_WSPLIT_INITIALIZED;
+	    fptr->mode &= ~FMODE_WSPLIT;
+	}
+	else {
+	    fptr->mode &= ~(FMODE_WSPLIT_INITIALIZED|FMODE_WSPLIT);
+	}
+    }
+
+    return INT2NUM(retval);
+}
+
 /*
  *  call-seq:
  *     ios.fcntl(integer_cmd, arg)    -> integer
@@ -8045,7 +8081,7 @@ rb_io_fcntl(int argc, VALUE *argv, VALUE io)
     VALUE req, arg;
 
     rb_scan_args(argc, argv, "11", &req, &arg);
-    return rb_io_ctl(io, req, arg, 0);
+    return rb_fcntl(io, req, arg);
 }
 #else
 #define rb_io_fcntl rb_f_notimplement
