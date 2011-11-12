@@ -1,3 +1,9 @@
+Sat Nov 12 21:14:51 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/webrick/test_cgi.rb (class TestWEBrickCGI): respect
+	  RbConfig::CONFIG["LIBPATHENV"]. [Bug #5135] [ruby-core:38653]
+	* test/webrick/test_filehandler.rb (class WEBrick): ditto.
+
 Sat Nov 12 20:57:29 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_io.rb (test_fcntl_dupfd): skip if Fcntl::DUPFD
