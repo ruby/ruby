@@ -1,3 +1,9 @@
+Sun Nov 13 12:43:48 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: rollback $libs and $defs when db detection is
+	  failed.  It fixes -lgdbm -lqdbm when the system has qdbm and gdbm
+	  without gdbm_compat.
+
 Sat Nov 12 21:14:51 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/webrick/test_cgi.rb (class TestWEBrickCGI): respect

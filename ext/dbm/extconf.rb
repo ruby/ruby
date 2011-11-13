@@ -29,6 +29,17 @@ headers.found = []
 headers.defs = nil
 
 def headers.db_check(db)
+  old_libs = $libs
+  old_defs = $defs
+  result = db_check2(db)
+  if !result
+    $libs = old_libs
+    $defs = old_defs
+  end
+  result
+end
+
+def headers.db_check2(db)
   hsearch = nil
 
   case db
