@@ -1052,6 +1052,7 @@ fgdbm_reorganize(VALUE obj)
     rb_gdbm_modify(obj);
     GetDBM2(obj, dbmp, dbm);
     gdbm_reorganize(dbm);
+    rb_fd_fix_cloexec(gdbm_fdesc(dbm));
     return obj;
 }
 
