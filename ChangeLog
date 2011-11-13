@@ -1,3 +1,7 @@
+Sun Nov 13 23:47:29 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dbm/extconf.rb: use convertible_int.
+
 Sun Nov 13 23:45:57 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (checking_for): should not modify the result.

@@ -21,12 +21,11 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#if SIZEOF_DSIZE > SIZEOF_INT
-# define DSIZE_TYPE long
+#define DSIZE_TYPE TYPEOF_DATUM_DSIZE
+#if SIZEOF_DATUM_DSIZE > SIZEOF_INT
 # define RSTRING_DSIZE(s) RSTRING_LEN(s)
 # define TOO_LONG(n) 0
 #else
-# define DSIZE_TYPE int
 # define RSTRING_DSIZE(s) RSTRING_LENINT(s)
 # define TOO_LONG(n) ((long)(+(DSIZE_TYPE)(n)) != (n))
 #endif

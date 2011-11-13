@@ -71,12 +71,6 @@ if dblib.any? {|db| headers.fetch(db, ["ndbm.h"]).any? {|hdr| headers.db_check(d
   have_header("sys/cdefs.h")
   have_func("dbm_pagfno((DBM *)0)", headers.found, headers.defs)
   have_func("dbm_dirfno((DBM *)0)", headers.found, headers.defs)
-  type = checking_for "sizeof(datum.dsize)", STRING_OR_FAILED_FORMAT do
-    pre = headers.found + [["static datum conftest_key;"]]
-    %w[int long LONG_LONG].find do |t|
-      try_static_assert("sizeof(conftest_key.dsize) <= sizeof(#{t})", pre, headers.defs)
-    end
-  end
-  $defs << "-DSIZEOF_DSIZE=SIZEOF_"+type.tr_cpp if type
+  convertible_int("datum.dsize", headers.found, headers.defs)
   create_makefile("dbm")
 end
