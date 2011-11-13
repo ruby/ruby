@@ -29,10 +29,10 @@ end
 headers.found = []
 headers.defs = nil
 
-def headers.db_check(db)
+def headers.db_check(db, hdr)
   old_libs = $libs.dup
   old_defs = $defs.dup
-  result = db_check2(db)
+  result = db_check2(db, hdr)
   if !result
     $libs = old_libs
     $defs = old_defs
@@ -40,19 +40,17 @@ def headers.db_check(db)
   result
 end
 
-def headers.db_check2(db)
+def headers.db_check2(db, hdr)
   hsearch = nil
 
   case db
   when /^db[2-5]?$/
     hsearch = "-DDB_DBM_HSEARCH"
-  when "gdbm"
   when "gdbm_compat"
     have_library("gdbm") or return false
   end
 
-  hdrs = self.fetch(db, ["ndbm.h"])
-  if (hdr = hdrs.find {|h| have_type("DBM", h, hsearch)} || hdrs.find {|h| have_type("DBM", ["db.h", h], hsearch)}) and
+  if (have_type("DBM", hdr, hsearch) || have_type("DBM", ["db.h", hdr], hsearch)) and
      (db == 'libc' ? have_func('dbm_open("", 0, 0)', hdr, hsearch) :
                      have_library(db, 'dbm_open("", 0, 0)', hdr, hsearch)) and
      have_func('dbm_clearerr((DBM *)0)', hdr, hsearch)
@@ -68,7 +66,7 @@ def headers.db_check2(db)
   end
 end
 
-if dblib.any? {|db| headers.db_check(db)}
+if dblib.any? {|db| headers.fetch(db, ["ndbm.h"]).any? {|hdr| headers.db_check(db, hdr) } }
   have_header("cdefs.h")
   have_header("sys/cdefs.h")
   have_func("dbm_pagfno((DBM *)0)", headers.found, headers.defs)

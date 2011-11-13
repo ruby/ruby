@@ -1,3 +1,7 @@
+Sun Nov 13 19:57:18 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: rollback for each headers for each libraries.
+
 Sun Nov 13 16:24:48 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: treat libc as a choice for a library which
