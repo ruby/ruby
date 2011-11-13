@@ -1,3 +1,7 @@
+Sun Nov 13 15:40:43 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: duplicate $libs and $defs when save them.
+
 Sun Nov 13 12:43:48 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: rollback $libs and $defs when db detection is

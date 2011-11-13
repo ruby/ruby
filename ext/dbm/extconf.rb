@@ -29,8 +29,8 @@ headers.found = []
 headers.defs = nil
 
 def headers.db_check(db)
-  old_libs = $libs
-  old_defs = $defs
+  old_libs = $libs.dup
+  old_defs = $defs.dup
   result = db_check2(db)
   if !result
     $libs = old_libs
