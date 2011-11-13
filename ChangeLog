@@ -1,3 +1,12 @@
+Sun Nov 13 23:45:57 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (checking_for): should not modify the result.
+
+	* lib/mkmf.rb (have_struct_member): accept compiler opttions.
+
+	* lib/mkmf.rb (convertible_int): add restricted support of struct
+	  member, and TYPEOF_ macro.
+
 Sun Nov 13 23:21:24 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/gdbm/gdbm.c (fgdbm_reorganize): set close-on-exec flag after

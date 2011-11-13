@@ -811,7 +811,7 @@ def checking_for(m, fmt = nil)
   a = r = nil
   Logging::postpone do
     r = yield
-    a = (fmt ? fmt % r : r ? "yes" : "no") << "\n"
+    a = (fmt ? "#{fmt % r}" : r ? "yes" : "no") << "\n"
     "#{f}#{m}-------------------- #{a}\n"
   end
   message(a)
@@ -1020,9 +1020,9 @@ end
 #
 # HAVE_ST_BAR is also defined for backward compatibility.
 #
-def have_struct_member(type, member, headers = nil, &b)
+def have_struct_member(type, member, headers = nil, opt = "", &b)
   checking_for checking_message("#{type}.#{member}", headers) do
-    if try_compile(<<"SRC", &b)
+    if try_compile(<<"SRC", opt, &b)
 #{cpp_include(headers)}
 /*top*/
 #{MAIN_DOES_NOTHING}
@@ -1237,17 +1237,26 @@ def convertible_int(type, headers = nil, opts = nil, &b)
       type
     else
       typedef, member, prelude = typedef_expr(type, headers, &b)
-      next unless signed = try_signedness(typedef, member, [prelude])
-      u = "unsigned " if signed > 0
-      prelude << "extern rbcv_typedef_ foo();"
-      compat = UNIVERSAL_INTS.find {|t|
-        try_compile([prelude, "extern #{u}#{t} foo();"].join("\n"), opts, :werror=>true, &b)
-      }
+      if member
+	prelude << "static rbcv_typedef_ rbcv_var;"
+	compat = UNIVERSAL_INTS.find {|t|
+	  try_static_assert("sizeof(rbcv_var.#{member}) == sizeof(#{t})", [prelude], opts, &b)
+	}
+      else
+	next unless signed = try_signedness(typedef, member, [prelude])
+	u = "unsigned " if signed > 0
+	prelude << "extern rbcv_typedef_ foo();"
+	compat = UNIVERSAL_INTS.find {|t|
+	  try_compile([prelude, "extern #{u}#{t} foo();"].join("\n"), opts, :werror=>true, &b)
+	}
+      end
       if compat
         macname ||= type.sub(/_(?=t\z)/, '').tr_cpp
         conv = (compat == "long long" ? "LL" : compat.upcase)
         compat = "#{u}#{compat}"
-        $defs.push(format("-DTYPEOF_%s=%s", type.tr_cpp, compat.quote))
+        typename = type.tr_cpp
+        $defs.push(format("-DSIZEOF_%s=SIZEOF_%s", typename, compat.tr_cpp))
+        $defs.push(format("-DTYPEOF_%s=%s", typename, compat.quote))
         $defs.push(format("-DPRI_%s_PREFIX=PRI_%s_PREFIX", macname, conv))
         conv = (u ? "U" : "") + conv
         $defs.push(format("-D%s2NUM=%s2NUM", macname, conv))
