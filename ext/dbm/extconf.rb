@@ -5,10 +5,11 @@ dir_config("dbm")
 if dblib = with_config("dbm-type", nil)
   dblib = dblib.split(/[ ,]+/)
 else
-  dblib = %w(db db2 db1 db5 db4 db3 dbm gdbm gdbm_compat qdbm)
+  dblib = %w(libc db db2 db1 db5 db4 db3 dbm gdbm gdbm_compat qdbm)
 end
 
 headers = {
+  "libc" => ["ndbm.h"],
   "db" => ["db.h"],
   "db1" => ["db1/ndbm.h", "db1.h", "ndbm.h"],
   "db2" => ["db2/db.h", "db2.h", "db.h"],
@@ -52,7 +53,8 @@ def headers.db_check2(db)
 
   hdrs = self.fetch(db, ["ndbm.h"])
   if (hdr = hdrs.find {|h| have_type("DBM", h, hsearch)} || hdrs.find {|h| have_type("DBM", ["db.h", h], hsearch)}) and
-     (have_library(db, 'dbm_open("", 0, 0)', hdr, hsearch) || have_func('dbm_open("", 0, 0)', hdr, hsearch)) and
+     (db == 'libc' ? have_func('dbm_open("", 0, 0)', hdr, hsearch) :
+                     have_library(db, 'dbm_open("", 0, 0)', hdr, hsearch)) and
      have_func('dbm_clearerr((DBM *)0)', hdr, hsearch)
     if hsearch
       $defs << hsearch
