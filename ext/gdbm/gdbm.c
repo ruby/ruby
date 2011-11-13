@@ -211,7 +211,7 @@ fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
     SafeStringValue(file);
 
 #ifdef GDBM_CLOEXEC
-    /* GDBM_CLOEXEC is implemented in gdbm 1.9.90 (development version after gdbm-1.9.1). */
+    /* GDBM_CLOEXEC is available since gdbm 1.10. */
     flags |= GDBM_CLOEXEC;
 #endif
 

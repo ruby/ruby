@@ -149,7 +149,7 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 
     /*
      * Note:
-     * The dbm compatibility layer of gdbm 1.9 doesn't respect O_CLOEXEC.
+     * gdbm 1.10 works with O_CLOEXEC.  gdbm 1.9.1 silently ignore it.
      */
 #ifndef O_CLOEXEC
 #   define O_CLOEXEC 0
