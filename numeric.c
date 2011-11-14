@@ -1888,7 +1888,7 @@ check_uint(VALUE num, VALUE sign)
 
     if (RTEST(sign)) {
 	/* minus */
-	if ((num & mask) != mask || (num & ~mask) <= INT_MAX + 1UL)
+	if ((num & mask) != mask || (num & ~mask) <= INT_MAX)
 #define VALUE_MSBMASK   ((VALUE)1 << ((sizeof(VALUE) * CHAR_BIT) - 1))
 	    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too small to convert to `unsigned int'", num|VALUE_MSBMASK);
     }

@@ -1,3 +1,14 @@
+Sun Nov 13 09:57:29 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* numeric.c (check_uint): fix off-by-one bug of NUM2UINT.
+	* bignum.c (rb_big2ulong): fix off-by-one bug of NUM2ULONG.
+
+	* test/-ext-/num2int/test_num2int.rb: add a testcase for NUM2INT()
+	  NUM2UINT(), NUM2LONG(), NUM2ULONG(), NUM2LL and NUM2ULL().
+	* ext/-test-/num2int/depend: ditto.
+	* ext/-test-/num2int/extconf.rb: ditto.
+	* ext/-test-/num2int/num2int.c: ditto.
+
 Sun Nov 13 23:47:29 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dbm/extconf.rb: use convertible_int.
