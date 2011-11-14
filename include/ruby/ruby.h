@@ -533,12 +533,12 @@ unsigned long rb_num2uint(VALUE);
 #define NUM2UINT(x) ((unsigned int)rb_num2uint(x))
 unsigned long rb_fix2uint(VALUE);
 #define FIX2UINT(x) ((unsigned int)rb_fix2uint(x))
-#else
+#else /* SIZEOF_INT < SIZEOF_LONG */
 #define NUM2INT(x) ((int)NUM2LONG(x))
 #define NUM2UINT(x) ((unsigned int)NUM2ULONG(x))
 #define FIX2INT(x) ((int)FIX2LONG(x))
 #define FIX2UINT(x) ((unsigned int)FIX2ULONG(x))
-#endif
+#endif /* SIZEOF_INT < SIZEOF_LONG */
 
 short rb_num2short(VALUE);
 unsigned short rb_num2ushort(VALUE);
