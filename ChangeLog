@@ -1,3 +1,8 @@
+Sun Nov 13 10:22:44 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/-ext-/num2int/test_num2int.rb (class TestNum2int):
+	  add FIXNUM tests.
+
 Sun Nov 13 09:57:29 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* numeric.c (check_uint): fix off-by-one bug of NUM2UINT.
