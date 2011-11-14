@@ -11,6 +11,7 @@ print_num2short(VALUE obj, VALUE num)
     sprintf(buf, "%d", NUM2SHORT(num));
     str = rb_str_new_cstr(buf);
     rb_io_write(rb_stdout, str);
+    return Qnil;
 }
 
 static VALUE
@@ -22,6 +23,7 @@ print_num2ushort(VALUE obj, VALUE num)
     sprintf(buf, "%u", NUM2USHORT(num));
     str = rb_str_new_cstr(buf);
     rb_io_write(rb_stdout, str);
+    return Qnil;
 }
 
 static VALUE
@@ -33,6 +35,7 @@ print_num2int(VALUE obj, VALUE num)
     sprintf(buf, "%d", NUM2INT(num));
     str = rb_str_new_cstr(buf);
     rb_io_write(rb_stdout, str);
+    return Qnil;
 }
 
 static VALUE
@@ -44,6 +47,7 @@ print_num2uint(VALUE obj, VALUE num)
     sprintf(buf, "%u", NUM2UINT(num));
     str = rb_str_new_cstr(buf);
     rb_io_write(rb_stdout, str);
+    return Qnil;
 }
 
 static VALUE
@@ -55,6 +59,7 @@ print_num2long(VALUE obj, VALUE num)
     sprintf(buf, "%ld", NUM2LONG(num));
     str = rb_str_new_cstr(buf);
     rb_io_write(rb_stdout, str);
+    return Qnil;
 }
 
 static VALUE
@@ -66,6 +71,7 @@ print_num2ulong(VALUE obj, VALUE num)
     sprintf(buf, "%lu", NUM2ULONG(num));
     str = rb_str_new_cstr(buf);
     rb_io_write(rb_stdout, str);
+    return Qnil;
 }
 
 static VALUE
@@ -77,6 +83,7 @@ print_num2ll(VALUE obj, VALUE num)
     sprintf(buf, "%lld", NUM2LL(num));
     str = rb_str_new_cstr(buf);
     rb_io_write(rb_stdout, str);
+    return Qnil;
 }
 
 static VALUE
@@ -88,6 +95,7 @@ print_num2ull(VALUE obj, VALUE num)
     sprintf(buf, "%llu", NUM2ULL(num));
     str = rb_str_new_cstr(buf);
     rb_io_write(rb_stdout, str);
+    return Qnil;
 }
 
 
