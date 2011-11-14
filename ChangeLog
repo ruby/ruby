@@ -1,3 +1,11 @@
+Sun Nov 13 10:28:18 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/ruby.h: add NUM2SHORT(), NUM2USHORT() macros.
+	* numeric.c: ditto.
+
+	* test/-ext-/num2int/test_num2int.rb: add testcases for NUM2SHORT().
+	* ext/-test-/num2int/num2int.c: ditto.
+
 Sun Nov 13 10:23:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* bignum.c (rb_big2ull): fix off-by-twice bug of NUM2ULL.

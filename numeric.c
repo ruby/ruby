@@ -1953,6 +1953,80 @@ rb_fix2int(VALUE val)
 }
 #endif
 
+void
+rb_out_of_short(SIGNED_VALUE num)
+{
+    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to `short'",
+	     num, num < 0 ? "small" : "big");
+}
+
+static void
+check_short(SIGNED_VALUE num)
+{
+    if ((SIGNED_VALUE)(short)num != num) {
+	rb_out_of_short(num);
+    }
+}
+
+static void
+check_ushort(VALUE num, VALUE sign)
+{
+    static const VALUE mask = ~(VALUE)USHRT_MAX;
+
+    if (RTEST(sign)) {
+	/* minus */
+	if ((num & mask) != mask || (num & ~mask) <= SHRT_MAX)
+#define VALUE_MSBMASK   ((VALUE)1 << ((sizeof(VALUE) * CHAR_BIT) - 1))
+	    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too small to convert to `unsigned short'", num|VALUE_MSBMASK);
+    }
+    else {
+	/* plus */
+	if ((num & mask) != 0)
+	    rb_raise(rb_eRangeError, "integer %"PRIuVALUE " too big to convert to `unsigned short'", num);
+    }
+}
+
+short
+rb_num2short(VALUE val)
+{
+    long num = rb_num2long(val);
+
+    check_short(num);
+    return num;
+}
+
+short
+rb_fix2short(VALUE val)
+{
+    long num = FIXNUM_P(val)?FIX2LONG(val):rb_num2long(val);
+
+    check_short(num);
+    return num;
+}
+
+unsigned short
+rb_num2ushort(VALUE val)
+{
+    VALUE num = rb_num2ulong(val);
+
+    check_ushort(num, rb_funcall(val, '<', 1, INT2FIX(0)));
+    return (unsigned long)num;
+}
+
+unsigned short
+rb_fix2ushort(VALUE val)
+{
+    unsigned long num;
+
+    if (!FIXNUM_P(val)) {
+	return rb_num2uint(val);
+    }
+    num = FIX2ULONG(val);
+
+    check_ushort(num, rb_funcall(val, '<', 1, INT2FIX(0)));
+    return num;
+}
+
 VALUE
 rb_num2fix(VALUE val)
 {

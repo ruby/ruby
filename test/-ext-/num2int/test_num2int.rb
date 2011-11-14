@@ -5,6 +5,10 @@ class TestNum2int < Test::Unit::TestCase
   end
   require '-test-/num2int/num2int'
 
+  SHRT_MIN = -32768
+  SHRT_MAX = 32767
+  USHRT_MAX = 65535
+
   INT_MIN = -2147483648
   INT_MAX = 2147483647
   UINT_MAX = 4294967295
@@ -28,6 +32,42 @@ class TestNum2int < Test::Unit::TestCase
 
   FIXNUM_MAX = LONG_MAX/2
   FIXNUM_MIN = LONG_MIN/2
+
+  def test_num2short
+    assert_output(SHRT_MIN.to_s) do
+      Num2int.print_num2short(SHRT_MIN)
+    end
+    assert_output(SHRT_MAX.to_s) do
+      Num2int.print_num2short(SHRT_MAX)
+    end
+    assert_raise(RangeError) do
+      Num2int.print_num2short(SHRT_MIN-1)
+    end
+    assert_raise(RangeError) do
+      Num2int.print_num2short(SHRT_MAX+1)
+    end
+  end
+
+  def test_num2ushort
+    assert_output("0") do
+      Num2int.print_num2ushort(0)
+    end
+    assert_output(USHRT_MAX.to_s) do
+      Num2int.print_num2ushort(USHRT_MAX)
+    end
+    assert_output(USHRT_MAX.to_s) do
+      Num2int.print_num2ushort(-1)
+    end
+    assert_output((SHRT_MAX+1).to_s) do
+      Num2int.print_num2ushort(SHRT_MIN)
+    end
+    assert_raise(RangeError) do
+      Num2int.print_num2ushort(SHRT_MIN-1)
+    end
+    assert_raise(RangeError) do
+      Num2int.print_num2ushort(USHRT_MAX+1)
+    end
+  end
 
   def test_num2int
     assert_output(INT_MIN.to_s) do

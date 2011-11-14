@@ -540,6 +540,25 @@ unsigned long rb_fix2uint(VALUE);
 #define FIX2UINT(x) ((unsigned int)FIX2ULONG(x))
 #endif
 
+short rb_num2short(VALUE);
+unsigned short rb_num2ushort(VALUE);
+short rb_fix2short(VALUE);
+unsigned short rb_fix2ushort(VALUE);
+#define FIX2SHORT(x) (rb_fix2short((VALUE)(x)))
+#define NUM2SHORT_internal(x) (FIXNUM_P(x) ? FIX2SHORT(x) : rb_num2short(x))
+#ifdef __GNUC__
+# define NUM2SHORT(x) \
+    __extension__ ({VALUE num2short_x = (x); NUM2SHORT_internal(num2short_x);})
+#else /* __GNUC__ */
+static inline short
+NUM2SHORT(VALUE x)
+{
+    return NUM2SHORT_internal(x);
+}
+#endif /* __GNUC__ */
+#define NUM2USHORT(x) rb_num2ushort((VALUE)(x))
+
+
 #ifdef HAVE_LONG_LONG
 LONG_LONG rb_num2ll(VALUE);
 unsigned LONG_LONG rb_num2ull(VALUE);

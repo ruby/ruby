@@ -3,6 +3,28 @@
 extern VALUE rb_stdout;
 
 static VALUE
+print_num2short(VALUE obj, VALUE num)
+{
+    char buf[128];
+    VALUE str;
+
+    sprintf(buf, "%d", NUM2SHORT(num));
+    str = rb_str_new_cstr(buf);
+    rb_io_write(rb_stdout, str);
+}
+
+static VALUE
+print_num2ushort(VALUE obj, VALUE num)
+{
+    char buf[128];
+    VALUE str;
+
+    sprintf(buf, "%u", NUM2USHORT(num));
+    str = rb_str_new_cstr(buf);
+    rb_io_write(rb_stdout, str);
+}
+
+static VALUE
 print_num2int(VALUE obj, VALUE num)
 {
     char buf[128];
@@ -73,6 +95,9 @@ void
 Init_num2int(void)
 {
     VALUE cNum2int = rb_path2class("TestNum2int::Num2int");
+
+    rb_define_singleton_method(cNum2int, "print_num2short", print_num2short, 1);
+    rb_define_singleton_method(cNum2int, "print_num2ushort", print_num2ushort, 1);
 
     rb_define_singleton_method(cNum2int, "print_num2int", print_num2int, 1);
     rb_define_singleton_method(cNum2int, "print_num2uint", print_num2uint, 1);
