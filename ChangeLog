@@ -1,3 +1,8 @@
+Mon Nov 14 14:52:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* numeric.c (rb_fix2ushort): fix typo. use num rb_num2ushort()
+	  instead of num2uint().
+
 Sun Nov 13 10:31:03 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/ruby.h: add #ifdef comment.

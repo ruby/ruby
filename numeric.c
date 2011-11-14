@@ -2019,7 +2019,7 @@ rb_fix2ushort(VALUE val)
     unsigned long num;
 
     if (!FIXNUM_P(val)) {
-	return rb_num2uint(val);
+	return rb_num2ushort(val);
     }
     num = FIX2ULONG(val);
 
