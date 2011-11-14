@@ -1,7 +1,7 @@
-Tue Nov 15 01:03:32 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+Tue Nov 15 01:53:48 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/ruby/test_io.rb (test_fcntl_dupfd): fix test error on
-	  SnowLeopard.
+	  SnowLeopard. Pointed out by CHIKANAGA Tomoyuki. [ruby-dev:44866]
 
 Mon Nov 14 22:06:02 2011  Tanaka Akira  <akr@fsij.org>
 
