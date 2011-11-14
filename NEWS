@@ -11,6 +11,8 @@ with all sufficient information, see the ChangeLog file.
 == Changes since the 1.9.3 release
 
 === C API updates
+* NUM2SHORT() and NUM2USHORT() added. They are similar to NUM2INT, but short.
+
 === Library updates (outstanding ones only)
 
 * builtin classes
