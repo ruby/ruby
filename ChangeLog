@@ -1,3 +1,10 @@
+Mon Nov 14 14:54:17 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* bignum.c (rb_big2ull): fix 32bit platform breakage. we must
+	  not assume sizeof(VALUE) == sizeof(LONG_LONG).
+	* test/-ext-/num2int/test_num2int.rb (class TestNum2int):
+	  fix false assumption on 32bit platform.
+
 Mon Nov 14 14:52:54 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* numeric.c (rb_fix2ushort): fix typo. use num rb_num2ushort()

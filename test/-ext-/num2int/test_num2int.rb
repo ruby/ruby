@@ -23,12 +23,10 @@ class TestNum2int < Test::Unit::TestCase
     LONG_MIN = -9223372036854775808
     ULONG_MAX = 18446744073709551615
   end
-  ULONG_HALF = ULONG_MAX - LONG_MAX
 
   LLONG_MAX = 9223372036854775807
   LLONG_MIN = -9223372036854775808
   ULLONG_MAX = 18446744073709551615
-  ULLONG_HALF = ULLONG_MAX - LLONG_MAX # 0x8000000000000000
 
   FIXNUM_MAX = LONG_MAX/2
   FIXNUM_MIN = LONG_MIN/2
@@ -151,10 +149,10 @@ class TestNum2int < Test::Unit::TestCase
     assert_raise(RangeError) do
       Num2int.print_num2ulong(ULONG_MAX+1)
     end
-    assert_output((ULONG_HALF+FIXNUM_MAX+1).to_s) do
+    assert_output((ULONG_MAX-FIXNUM_MAX).to_s) do
       Num2int.print_num2ulong(FIXNUM_MIN)
     end
-    assert_output((ULONG_HALF+FIXNUM_MAX).to_s) do
+    assert_output((ULONG_MAX-FIXNUM_MAX-1).to_s) do
       Num2int.print_num2ulong(FIXNUM_MIN-1)
     end
     assert_output(FIXNUM_MAX.to_s) do
@@ -211,10 +209,10 @@ class TestNum2int < Test::Unit::TestCase
     assert_raise(RangeError) do
       Num2int.print_num2ull(ULLONG_MAX+1)
     end
-    assert_output((ULLONG_HALF+FIXNUM_MAX+1).to_s) do
+    assert_output((ULLONG_MAX-FIXNUM_MAX).to_s) do
       Num2int.print_num2ull(FIXNUM_MIN)
     end
-    assert_output((ULLONG_HALF+FIXNUM_MAX).to_s) do
+    assert_output((ULLONG_MAX-FIXNUM_MAX-1).to_s) do
       Num2int.print_num2ull(FIXNUM_MIN-1)
     end
     assert_output(FIXNUM_MAX.to_s) do

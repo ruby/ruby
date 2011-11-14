@@ -1258,10 +1258,10 @@ rb_big2ull(VALUE x)
     unsigned LONG_LONG num = big2ull(x, "unsigned long long");
 
     if (!RBIGNUM_SIGN(x)) {
-	VALUE v = (VALUE)(-(SIGNED_VALUE)num);
+	LONG_LONG v = -num;
 
 	/* FIXNUM_MIN-1 .. LLONG_MIN mapped into 0xbfffffffffffffff .. LONG_MAX+1 */
-	if (v <= LLONG_MAX)
+	if ((unsigned LONG_LONG)v <= LLONG_MAX)
 	    rb_raise(rb_eRangeError, "bignum out of range of unsigned long long");
 	return v;
     }
