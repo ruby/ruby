@@ -1919,7 +1919,8 @@ End
   end
 
   def test_fcntl_dupfd
-    Tempfile.open(self.class.name) do |f|
+    Tempfile.new(self.class.name) do |f|
+      f.open
       fd = f.fcntl(Fcntl::F_DUPFD, 500)
       begin
         assert_equal(fd, 500)

@@ -1,3 +1,8 @@
+Tue Nov 15 01:03:32 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/ruby/test_io.rb (test_fcntl_dupfd): fix test error on
+	  SnowLeopard.
+
 Mon Nov 14 22:06:02 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/openssl/ossl_pkey.c (ossl_pkey_new_from_file): set close-on-exec
