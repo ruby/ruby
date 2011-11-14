@@ -1,3 +1,10 @@
+Mon Nov 14 22:06:02 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_pkey.c (ossl_pkey_new_from_file): set close-on-exec
+	  flag.
+
+	* ext/openssl/ossl_x509cert.c (rb_fd_fix_cloexec): ditto.
+
 Mon Nov 14 14:54:17 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* bignum.c (rb_big2ull): fix 32bit platform breakage. we must

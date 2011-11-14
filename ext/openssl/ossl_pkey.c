@@ -111,6 +111,7 @@ ossl_pkey_new_from_file(VALUE filename)
     if (!(fp = fopen(RSTRING_PTR(filename), "r"))) {
 	ossl_raise(ePKeyError, "%s", strerror(errno));
     }
+    rb_fd_fix_cloexec(fileno(fp));
 
     pkey = PEM_read_PrivateKey(fp, NULL, ossl_pem_passwd_cb, NULL);
     fclose(fp);

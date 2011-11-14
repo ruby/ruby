@@ -66,6 +66,7 @@ ossl_x509_new_from_file(VALUE filename)
     if (!(fp = fopen(RSTRING_PTR(filename), "r"))) {
 	ossl_raise(eX509CertError, "%s", strerror(errno));
     }
+    rb_fd_fix_cloexec(fileno(fp));
     x509 = PEM_read_X509(fp, NULL, NULL, NULL);
     /*
      * prepare for DER...
