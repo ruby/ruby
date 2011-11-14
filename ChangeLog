@@ -1,3 +1,9 @@
+Sun Nov 13 10:23:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* bignum.c (rb_big2ull): fix off-by-twice bug of NUM2ULL.
+	* test/-ext-/num2int/test_num2int.rb (class TestNum2int):
+	  fix a testcase too.
+
 Sun Nov 13 10:22:44 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/-ext-/num2int/test_num2int.rb (class TestNum2int):

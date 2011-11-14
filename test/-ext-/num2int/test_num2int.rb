@@ -162,20 +162,11 @@ class TestNum2int < Test::Unit::TestCase
     assert_output(ULLONG_MAX.to_s) do
       Num2int.print_num2ull(-1)
     end
-    assert_output((LLONG_MAX+2).to_s) do
-      Num2int.print_num2ull(LLONG_MIN+1)
-    end
-
-    # maybe bug
-    assert_output((LLONG_MAX).to_s) do
-      Num2int.print_num2ull(LLONG_MIN-1)
-    end
-    # maybe bug
-    assert_output(1.to_s) do
-      Num2int.print_num2ull(LLONG_MIN*2+1)
+    assert_output((LLONG_MAX+1).to_s) do
+      Num2int.print_num2ull(LLONG_MIN)
     end
     assert_raise(RangeError) do
-      Num2int.print_num2ull(LLONG_MIN*2)
+      Num2int.print_num2ull(LLONG_MIN-1)
     end
     assert_raise(RangeError) do
       Num2int.print_num2ull(ULLONG_MAX+1)
