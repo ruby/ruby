@@ -331,7 +331,7 @@ obj_to_asn1derstr(VALUE obj)
  * DER to Ruby converters
  */
 static VALUE
-decode_bool(unsigned char* der, int length)
+decode_bool(unsigned char* der, long length)
 {
     int val;
     const unsigned char *p;
@@ -344,7 +344,7 @@ decode_bool(unsigned char* der, int length)
 }
 
 static VALUE
-decode_int(unsigned char* der, int length)
+decode_int(unsigned char* der, long length)
 {
     ASN1_INTEGER *ai;
     const unsigned char *p;
@@ -363,7 +363,7 @@ decode_int(unsigned char* der, int length)
 }
 
 static VALUE
-decode_bstr(unsigned char* der, int length, long *unused_bits)
+decode_bstr(unsigned char* der, long length, long *unused_bits)
 {
     ASN1_BIT_STRING *bstr;
     const unsigned char *p;
@@ -384,7 +384,7 @@ decode_bstr(unsigned char* der, int length, long *unused_bits)
 }
 
 static VALUE
-decode_enum(unsigned char* der, int length)
+decode_enum(unsigned char* der, long length)
 {
     ASN1_ENUMERATED *ai;
     const unsigned char *p;
@@ -403,7 +403,7 @@ decode_enum(unsigned char* der, int length)
 }
 
 static VALUE
-decode_null(unsigned char* der, int length)
+decode_null(unsigned char* der, long length)
 {
     ASN1_NULL *null;
     const unsigned char *p;
@@ -417,7 +417,7 @@ decode_null(unsigned char* der, int length)
 }
 
 static VALUE
-decode_obj(unsigned char* der, int length)
+decode_obj(unsigned char* der, long length)
 {
     ASN1_OBJECT *obj;
     const unsigned char *p;
@@ -446,7 +446,7 @@ decode_obj(unsigned char* der, int length)
 }
 
 static VALUE
-decode_time(unsigned char* der, int length)
+decode_time(unsigned char* der, long length)
 {
     ASN1_TIME *time;
     const unsigned char *p;
@@ -465,7 +465,7 @@ decode_time(unsigned char* der, int length)
 }
 
 static VALUE
-decode_eoc(unsigned char *der, int length)
+decode_eoc(unsigned char *der, long length)
 {
     if (length != 2 || !(der[0] == 0x00 && der[1] == 0x00))
 	ossl_raise(eASN1Error, NULL);
@@ -777,7 +777,7 @@ ossl_asn1data_to_der(VALUE self)
 }
 
 static VALUE
-int_ossl_asn1_decode0_prim(unsigned char **pp, long length, int hlen, int tag,
+int_ossl_asn1_decode0_prim(unsigned char **pp, long length, long hlen, int tag,
 			   VALUE tc, long *num_read)
 {
     VALUE value, asn1data;
@@ -922,8 +922,8 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, int depth,
 {
     unsigned char *start, *p;
     const unsigned char *p0;
-    long len = 0, inner_read = 0, off = *offset;
-    int hlen, tag, tc, j;
+    long len = 0, inner_read = 0, off = *offset, hlen;
+    int tag, tc, j;
     VALUE asn1data, tag_class;
 
     p = *pp;
