@@ -503,27 +503,30 @@ void rb_set_errinfo(VALUE);
 SIGNED_VALUE rb_num2long(VALUE);
 VALUE rb_num2ulong(VALUE);
 static inline long
-NUM2LONG(VALUE x)
+rb_num2long_inline(VALUE x)
 {
     if (FIXNUM_P(x))
 	return FIX2LONG(x);
     else
 	return (long)rb_num2long(x);
 }
-#define NUM2ULONG(x) rb_num2ulong((VALUE)(x))
+#define NUM2LONG(x) rb_num2long_inline(x)
+#define NUM2ULONG(x) rb_num2ulong(x)
 #if SIZEOF_INT < SIZEOF_LONG
 long rb_num2int(VALUE);
 long rb_fix2int(VALUE);
 #define FIX2INT(x) ((int)rb_fix2int((VALUE)(x)))
 
 static inline int
-NUM2INT(VALUE x)
+rb_num2int_inline(VALUE x)
 {
     if (FIXNUM_P(x))
 	return FIX2INT(x);
     else
 	return (int)rb_num2int(x);
 }
+#define NUM2INT(x) rb_num2int_inline(x)
+
 unsigned long rb_num2uint(VALUE);
 #define NUM2UINT(x) ((unsigned int)rb_num2uint(x))
 unsigned long rb_fix2uint(VALUE);
@@ -541,27 +544,30 @@ short rb_fix2short(VALUE);
 unsigned short rb_fix2ushort(VALUE);
 #define FIX2SHORT(x) (rb_fix2short((VALUE)(x)))
 static inline short
-NUM2SHORT(VALUE x)
+rb_num2short_inline(VALUE x)
 {
     if (FIXNUM_P(x))
 	return FIX2SHORT(x);
     else
 	return rb_num2short(x);
 }
-#define NUM2USHORT(x) rb_num2ushort((VALUE)(x))
+
+#define NUM2SHORT(x) rb_num2short_inline(x)
+#define NUM2USHORT(x) rb_num2ushort(x)
 
 #ifdef HAVE_LONG_LONG
 LONG_LONG rb_num2ll(VALUE);
 unsigned LONG_LONG rb_num2ull(VALUE);
 static inline LONG_LONG
-NUM2LL(VALUE x)
+rb_num2ll_inline(VALUE x)
 {
     if (FIXNUM_P(x))
 	return FIX2LONG(x);
     else
 	return rb_num2ll(x);
 }
-# define NUM2ULL(x) rb_num2ull((VALUE)(x))
+# define NUM2LL(x) rb_num2ll_inline(x)
+# define NUM2ULL(x) rb_num2ull(x)
 #endif
 
 #if defined(HAVE_LONG_LONG) && SIZEOF_OFF_T > SIZEOF_LONG
@@ -982,50 +988,56 @@ struct RBignum {
 # define UINT2NUM(v) LONG2FIX((unsigned int)(v))
 #else
 static inline VALUE
-INT2NUM(int v)
+rb_int2num_inline(int v)
 {
     if (FIXABLE(v))
 	return INT2FIX(v);
     else
 	return rb_int2big(v);
 }
+#define INT2NUM(x) rb_int2num_inline(x)
 
 static inline VALUE
-UINT2NUM(unsigned int v)
+rb_uint2num_inline(unsigned int v)
 {
     if (POSFIXABLE(v))
 	return LONG2FIX(v);
     else
 	return rb_uint2big(v);
 }
+#define UINT2NUM(x) rb_uint2num_inline(x)
 #endif
 
 static inline VALUE
-LONG2NUM(long v)
+rb_long2num_inline(long v)
 {
     if (FIXABLE(v))
 	return LONG2FIX(v);
     else
 	return rb_int2big(v);
 }
+#define LONG2NUM(x) rb_long2num_inline(x)
 
 static inline VALUE
-ULONG2NUM(unsigned long v)
+rb_ulong2num_inline(unsigned long v)
 {
     if (POSFIXABLE(v))
 	return LONG2FIX(v);
     else
 	return rb_uint2big(v);
 }
+#define ULONG2NUM(x) rb_ulong2num_inline(x)
 
 static inline char
-NUM2CHR(VALUE x)
+rb_num2char_inline(VALUE x)
 {
     if ((TYPE(x) == T_STRING) && (RSTRING_LEN(x)>=1))
 	return RSTRING_PTR(x)[0];
     else
 	return (char)(NUM2INT(x) & 0xff);
 }
+#define NUM2CHR(x) rb_num2char_inline(x)
+
 #define CHR2FIX(x) INT2FIX((long)((x)&0xff))
 
 #define ALLOC_N(type,n) ((type*)xmalloc2((n),sizeof(type)))

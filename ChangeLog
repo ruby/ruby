@@ -1,3 +1,9 @@
+Tue Nov 15 14:45:15 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/ruby.h(NUM2LONG, NUM2INT, NUM2SHORT, NUM2LL,
+	  INT2NUM, UINT2NUM, LONG2NUM, ULONG2NUM, NUM2CHR): wrap by
+	  macros.
+
 Tue Nov 15 13:38:14 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* include/ruby/defines.h (FLUSH_REGISTER_WINDOWS): move sparc asm code
@@ -13,8 +19,6 @@ Tue Nov 15 13:11:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	  UINT2NUM(), LONG2NUM(), ULONG2NUM() and NUM2CHR()
 	  implementation. Because 1) They don't make any better code
 	  at all. 2) Inline function have a better debugger supoort.
-	  3) If they become to make better code in the future, they
-	  might make cross compiler ABI compatibility issue.
 
 Tue Nov 15 09:58:25 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
