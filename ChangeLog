@@ -1,3 +1,11 @@
+Tue Nov 15 13:38:14 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* include/ruby/defines.h (FLUSH_REGISTER_WINDOWS): move sparc asm code
+	  to a separete file sparc.c for preventing inlining optimization.
+	  Patched by Jurij Smakov. [Bug #5244] [ruby-core:40685]
+	* sparc.c (rb_sparc_flush_register_windows): ditto.
+	* configure.in: ditto.
+
 Tue Nov 15 13:11:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/ruby.h: get rid of gcc specific rb_long2int(),

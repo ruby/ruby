@@ -198,21 +198,8 @@ void xfree(void*);
 #endif
 
 #if defined(__sparc)
-static inline void
-flush_register_windows(void)
-{
-    asm
-#ifdef __GNUC__
-	volatile
-#endif
-# if SIZEOF_VOIDP > 4		/* workaround for Debian Sparc quirk */
-	("flushw")
-# else
-	("ta 0x03")
-# endif /* trap always to flush register windows if we are on a Sparc system */
-	;
-}
-#  define FLUSH_REGISTER_WINDOWS flush_register_windows()
+void rb_sparc_flush_register_windows();
+#  define FLUSH_REGISTER_WINDOWS rb_sparc_flush_register_windows()
 #elif defined(__ia64)
 void *rb_ia64_bsp(void);
 void rb_ia64_flushrs(void);
