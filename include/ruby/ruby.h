@@ -295,16 +295,16 @@ NORETURN(void rb_out_of_int(SIGNED_VALUE num));
 #endif
 
 #if SIZEOF_INT < SIZEOF_LONG
-#define rb_long2int_internal(n, i) \
-    int (i) = (int)(n); \
-    if ((long)(i) != (n)) rb_out_of_int(n)
-#ifdef __GNUC__
-#define rb_long2int(n) __extension__ ({long i2l_n = (n); rb_long2int_internal(i2l_n, i2l_i); i2l_i;})
-#else
 static inline int
-rb_long2int_inline(long n) {rb_long2int_internal(n, i); return i;}
+rb_long2int_inline(long n)
+{
+    int i = (int)n;
+    if ((long)i != n)
+	rb_out_of_int(n);
+
+    return i;
+}
 #define rb_long2int(n) rb_long2int_inline(n)
-#endif
 #else
 #define rb_long2int(n) ((int)(n))
 #endif
@@ -502,33 +502,28 @@ void rb_set_errinfo(VALUE);
 
 SIGNED_VALUE rb_num2long(VALUE);
 VALUE rb_num2ulong(VALUE);
-#define NUM2LONG_internal(x) ((long)(FIXNUM_P(x) ? FIX2LONG(x) : rb_num2long(x)))
-#ifdef __GNUC__
-#define NUM2LONG(x) \
-    __extension__ ({VALUE num2long_x = (x); NUM2LONG_internal(num2long_x);})
-#else
 static inline long
 NUM2LONG(VALUE x)
 {
-    return NUM2LONG_internal(x);
+    if (FIXNUM_P(x))
+	return FIX2LONG(x);
+    else
+	return (long)rb_num2long(x);
 }
-#endif
 #define NUM2ULONG(x) rb_num2ulong((VALUE)(x))
 #if SIZEOF_INT < SIZEOF_LONG
 long rb_num2int(VALUE);
 long rb_fix2int(VALUE);
 #define FIX2INT(x) ((int)rb_fix2int((VALUE)(x)))
-#define NUM2INT_internal(x) (FIXNUM_P(x) ? FIX2INT(x) : (int)rb_num2int(x))
-#ifdef __GNUC__
-#define NUM2INT(x) \
-    __extension__ ({VALUE num2int_x = (x); NUM2INT_internal(num2int_x);})
-#else
+
 static inline int
 NUM2INT(VALUE x)
 {
-    return NUM2INT_internal(x);
+    if (FIXNUM_P(x))
+	return FIX2INT(x);
+    else
+	return (int)rb_num2int(x);
 }
-#endif
 unsigned long rb_num2uint(VALUE);
 #define NUM2UINT(x) ((unsigned int)rb_num2uint(x))
 unsigned long rb_fix2uint(VALUE);
@@ -545,34 +540,27 @@ unsigned short rb_num2ushort(VALUE);
 short rb_fix2short(VALUE);
 unsigned short rb_fix2ushort(VALUE);
 #define FIX2SHORT(x) (rb_fix2short((VALUE)(x)))
-#define NUM2SHORT_internal(x) (FIXNUM_P(x) ? FIX2SHORT(x) : rb_num2short(x))
-#ifdef __GNUC__
-# define NUM2SHORT(x) \
-    __extension__ ({VALUE num2short_x = (x); NUM2SHORT_internal(num2short_x);})
-#else /* __GNUC__ */
 static inline short
 NUM2SHORT(VALUE x)
 {
-    return NUM2SHORT_internal(x);
+    if (FIXNUM_P(x))
+	return FIX2SHORT(x);
+    else
+	return rb_num2short(x);
 }
-#endif /* __GNUC__ */
 #define NUM2USHORT(x) rb_num2ushort((VALUE)(x))
-
 
 #ifdef HAVE_LONG_LONG
 LONG_LONG rb_num2ll(VALUE);
 unsigned LONG_LONG rb_num2ull(VALUE);
-# define NUM2LL_internal(x) (FIXNUM_P(x) ? FIX2LONG(x) : rb_num2ll(x))
-# ifdef __GNUC__
-#   define NUM2LL(x) \
-    __extension__ ({VALUE num2ll_x = (x); NUM2LL_internal(num2ll_x);})
-# else
 static inline LONG_LONG
 NUM2LL(VALUE x)
 {
-    return NUM2LL_internal(x);
+    if (FIXNUM_P(x))
+	return FIX2LONG(x);
+    else
+	return rb_num2ll(x);
 }
-# endif
 # define NUM2ULL(x) rb_num2ull((VALUE)(x))
 #endif
 
@@ -993,62 +981,51 @@ struct RBignum {
 # define INT2NUM(v) INT2FIX((int)(v))
 # define UINT2NUM(v) LONG2FIX((unsigned int)(v))
 #else
-# define INT2NUM_internal(v) (FIXABLE(v) ? INT2FIX(v) : rb_int2big(v))
-# ifdef __GNUC__
-#   define INT2NUM(v) __extension__ ({int int2num_v = (v); INT2NUM_internal(int2num_v);})
-# else
 static inline VALUE
 INT2NUM(int v)
 {
-    return INT2NUM_internal(v);
+    if (FIXABLE(v))
+	return INT2FIX(v);
+    else
+	return rb_int2big(v);
 }
-# endif
 
-# define UINT2NUM_internal(v) (POSFIXABLE(v) ? LONG2FIX(v) : rb_uint2big(v))
-# ifdef __GNUC__
-#   define UINT2NUM(v) __extension__ ({unsigned int uint2num_v = (v); UINT2NUM_internal(uint2num_v);})
-# else
 static inline VALUE
 UINT2NUM(unsigned int v)
 {
-    return UINT2NUM_internal(v);
+    if (POSFIXABLE(v))
+	return LONG2FIX(v);
+    else
+	return rb_uint2big(v);
 }
-# endif
 #endif
 
-#define LONG2NUM_internal(v) (FIXABLE(v) ? LONG2FIX(v) : rb_int2big(v))
-#ifdef __GNUC__
-# define LONG2NUM(v) __extension__ ({long long2num_v = (v); LONG2NUM_internal(long2num_v);})
-#else
 static inline VALUE
 LONG2NUM(long v)
 {
-    return LONG2NUM_internal(v);
+    if (FIXABLE(v))
+	return LONG2FIX(v);
+    else
+	return rb_int2big(v);
 }
-#endif
 
-#define ULONG2NUM_internal(v) (POSFIXABLE(v) ? LONG2FIX(v) : rb_uint2big(v))
-#ifdef __GNUC__
-# define ULONG2NUM(v) __extension__ ({unsigned long ulong2num_v = (v); ULONG2NUM_internal(ulong2num_v);})
-#else
 static inline VALUE
 ULONG2NUM(unsigned long v)
 {
-    return ULONG2NUM_internal(v);
+    if (POSFIXABLE(v))
+	return LONG2FIX(v);
+    else
+	return rb_uint2big(v);
 }
-#endif
 
-#define NUM2CHR_internal(x) (((TYPE(x) == T_STRING)&&(RSTRING_LEN(x)>=1))?\
-                     RSTRING_PTR(x)[0]:(char)(NUM2INT(x)&0xff))
-#ifdef __GNUC__
-# define NUM2CHR(x) __extension__ ({VALUE num2chr_x = (x); NUM2CHR_internal(num2chr_x);})
-#else
 static inline char
 NUM2CHR(VALUE x)
 {
-    return NUM2CHR_internal(x);
+    if ((TYPE(x) == T_STRING) && (RSTRING_LEN(x)>=1))
+	return RSTRING_PTR(x)[0];
+    else
+	return (char)(NUM2INT(x) & 0xff);
 }
-#endif
 #define CHR2FIX(x) INT2FIX((long)((x)&0xff))
 
 #define ALLOC_N(type,n) ((type*)xmalloc2((n),sizeof(type)))
