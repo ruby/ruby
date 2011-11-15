@@ -198,7 +198,7 @@ void xfree(void*);
 #endif
 
 #if defined(__sparc)
-void rb_sparc_flush_register_windows();
+void rb_sparc_flush_register_windows(void);
 #  define FLUSH_REGISTER_WINDOWS rb_sparc_flush_register_windows()
 #elif defined(__ia64)
 void *rb_ia64_bsp(void);
