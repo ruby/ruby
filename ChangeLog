@@ -1,3 +1,8 @@
+Tue Nov 15 21:56:25 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_sleep.rb (test_sleep_5sec): 0.1sec tolerance is too
+	  small for busy environment.
+
 Tue Nov 15 20:08:55 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c, thread.c, ext/pty/pty.c, ext/fiddle/closure.c: use
