@@ -1920,9 +1920,9 @@ End
 
   def test_fcntl_dupfd
     Tempfile.open(self.class.name) do |f|
-      fd = f.fcntl(Fcntl::F_DUPFD, 255)
+      fd = f.fcntl(Fcntl::F_DUPFD, 63)
       begin
-        assert_equal(fd, 255)
+        assert_equal(fd, 63)
       ensure
         IO.for_fd(fd).close
       end

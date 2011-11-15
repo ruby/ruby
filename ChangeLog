@@ -1,3 +1,8 @@
+Tue Nov 15 09:58:25 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_io.rb (TestIO#test_fcntl_dupfd): fix OpenBSD test
+	  failure. [ruby-dev:44872]
+
 Tue Nov 15 09:50:21 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c (print_indent_tree): fix double printing of ENCLOSE_OPTION
