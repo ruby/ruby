@@ -1,3 +1,8 @@
+Tue Nov 15 09:50:21 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c (print_indent_tree): fix double printing of ENCLOSE_OPTION
+	  children bug. patched by Suraj Kurapati. [ruby-core:40964]
+
 Tue Nov 15 01:53:48 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/ruby/test_io.rb (test_fcntl_dupfd): fix test error on
