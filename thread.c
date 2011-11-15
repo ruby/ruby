@@ -2702,7 +2702,7 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
  * one we know of that supports using poll() in all places select()
  * would work.
  */
-#if defined(HAVE_POLL) && defined(linux)
+#if defined(HAVE_POLL) && defined(__linux__)
 #  define USE_POLL
 #endif
 

@@ -8289,7 +8289,7 @@ rb_f_syscall(int argc, VALUE *argv)
 # else
 #  error ---->> it is asserted that __syscall takes the first argument and returns retval in 64bit signed integer. <<----
 # endif
-#elif defined linux
+#elif defined(__linux__)
 # define SYSCALL syscall
 # define NUM2SYSCALLID(x) NUM2LONG(x)
 # define RETVAL2NUM(x) LONG2NUM(x)
@@ -9168,7 +9168,7 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
-#ifndef linux
+#ifndef __linux__
            /*
             * Linux requires stp->src_fd to be a mmap-able (regular) file,
             * select() reports regular files to always be "ready", so
