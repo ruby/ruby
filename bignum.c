@@ -1258,7 +1258,7 @@ rb_big2ull(VALUE x)
     unsigned LONG_LONG num = big2ull(x, "unsigned long long");
 
     if (!RBIGNUM_SIGN(x)) {
-	LONG_LONG v = -num;
+	LONG_LONG v = -(LONG_LONG)num;
 
 	/* FIXNUM_MIN-1 .. LLONG_MIN mapped into 0xbfffffffffffffff .. LONG_MAX+1 */
 	if ((unsigned LONG_LONG)v <= LLONG_MAX)
