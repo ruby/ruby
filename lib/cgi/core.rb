@@ -367,12 +367,13 @@ class CGI
     params = {}
     query.split(/[&;]/).each do |pairs|
       key, value = pairs.split('=',2).collect{|v| CGI::unescape(v) }
-      if key && value
-        params.has_key?(key) ? params[key].push(value) : params[key] = [value]
-      elsif key
-        params[key]=[]
-      end
+
+      next unless key
+
+      params[key] ||= []
+      params[key].push(value) if value
     end
+
     params.default=[].freeze
     params
   end
