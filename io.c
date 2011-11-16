@@ -7137,9 +7137,6 @@ argf_next_argv(VALUE argf)
 		fmode = FMODE_READABLE;
 		if (!ARGF.binmode) {
 		    fmode |= DEFAULT_TEXTMODE;
-#ifdef TEXTMODE_NEWLINE_DECORATOR_ON_WRITE
-		    fptr->encs.ecflags |= TEXTMODE_NEWLINE_DECORATOR_ON_WRITE;
-#endif
 		}
 		ARGF.current_file = prep_io(fr, fmode, rb_cFile, fn);
 		if (!NIL_P(write_io)) {
@@ -7156,6 +7153,9 @@ argf_next_argv(VALUE argf)
 		fptr->encs.ecflags &= ~ECONV_NEWLINE_DECORATOR_MASK;
 		if (!ARGF.binmode) {
 		    fptr->encs.ecflags |= ECONV_DEFAULT_NEWLINE_DECORATOR;
+#ifdef TEXTMODE_NEWLINE_DECORATOR_ON_WRITE
+		    fptr->encs.ecflags |= TEXTMODE_NEWLINE_DECORATOR_ON_WRITE;
+#endif
 		}
 	    }
 	    ARGF.next_p = 0;

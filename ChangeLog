@@ -1,3 +1,8 @@
+Wed Nov 16 11:34:20 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (argf_next_argv): wrong timing of setting ecflags.
+	  fixed the failure of TestArgf#test_textmode introduced at r33662.
+
 Wed Nov 16 10:45:00 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/-test-/num2int/num2int.c: remove an unnecessary and wrong decl
