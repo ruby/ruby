@@ -1,3 +1,9 @@
+Wed Nov 16 13:51:40 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* bignum.c (rb_big2ulong): need to calc in unsigned long, because
+	  the range of VALUE is larger than it on LLP64 platform, such as Win64.
+	  this change fixes the failures of test/-ext-/num2int.
+
 Wed Nov 16 12:02:47 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/webrick/test_cgi.rb (TestWEBrickCGI#start_cgi_server): there are

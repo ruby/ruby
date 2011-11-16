@@ -1210,11 +1210,11 @@ rb_big2ulong(VALUE x)
     VALUE num = big2ulong(x, "unsigned long", TRUE);
 
     if (!RBIGNUM_SIGN(x)) {
-	VALUE v = (VALUE)(-(SIGNED_VALUE)num);
+	unsigned long v = (unsigned long)(-(long)num);
 
 	if (v <= LONG_MAX)
 	    rb_raise(rb_eRangeError, "bignum out of range of unsigned long");
-	return v;
+	return (VALUE)v;
     }
     return num;
 }
