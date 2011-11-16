@@ -360,7 +360,7 @@ module MiniTest
         bool = exp.any? { |ex|
           ex.instance_of?(Module) ? e.kind_of?(ex) : ex == e.class
         }
-        assert(bool, exception_details(e, details)) unless bool
+        assert(bool, bool || exception_details(e, details))
 
         return e
       end
