@@ -1,7 +1,5 @@
 #include <ruby.h>
 
-extern VALUE rb_stdout;
-
 static VALUE
 print_num2short(VALUE obj, VALUE num)
 {

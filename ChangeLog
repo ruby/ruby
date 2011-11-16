@@ -1,3 +1,8 @@
+Wed Nov 16 10:45:00 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/-test-/num2int/num2int.c: remove an unnecessary and wrong decl
+	  of rb_stdout.  it's declared in ruby.h correctly.
+
 Wed Nov 16 10:26:41 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bignum.c (rb_big2ull): add a cast to get rid of a VC++ warning.
