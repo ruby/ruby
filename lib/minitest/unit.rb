@@ -357,9 +357,10 @@ module MiniTest
         end
       rescue Exception => e
         details = "#{msg}#{mu_pp(exp)} exception expected, not"
-        assert(exp.any? { |ex|
-                 ex.instance_of?(Module) ? e.kind_of?(ex) : ex == e.class
-               }, exception_details(e, details))
+        bool = exp.any? { |ex|
+          ex.instance_of?(Module) ? e.kind_of?(ex) : ex == e.class
+        }
+        assert(bool, exception_details(e, details)) unless bool
 
         return e
       end

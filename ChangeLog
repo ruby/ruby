@@ -1,3 +1,10 @@
+Wed Nov 16 09:39:27 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/minitest/unit.rb (assert_raises): experimental fix to run
+	  correctly on chkbuild over 64bit linux. call exception_details only
+	  when the detail is really needed to avoid create needless inspect
+	  under ulimit-ed environment.
+
 Wed Nov 16 06:34:30 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_thread.rb (test_condvar_timed_wait): use
