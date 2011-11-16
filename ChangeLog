@@ -1,3 +1,8 @@
+Wed Nov 16 18:13:52 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (LIBRUBY_A): check if generated linked library is
+	  valid for extconf.
+
 Wed Nov 16 13:51:40 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bignum.c (rb_big2ulong): need to calc in unsigned long, because
