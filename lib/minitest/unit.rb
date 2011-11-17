@@ -14,6 +14,18 @@ require 'rbconfig'
 
 module MiniTest
 
+  def self.const_missing name # :nodoc:
+    case name
+    when :MINI_DIR then
+      msg = "MiniTest::MINI_DIR was removed. Don't violate other's internals."
+      warn "WAR\NING: #{msg}"
+      warn "WAR\NING: Used by #{caller.first}."
+      const_set :MINI_DIR, "bad value"
+    else
+      super
+    end
+  end
+
   ##
   # Assertion base class
 
@@ -24,22 +36,6 @@ module MiniTest
 
   class Skip < Assertion; end
 
-  file = if RUBY_VERSION >= '1.9.0' then  # bt's expanded, but __FILE__ isn't :(
-           File.expand_path __FILE__
-         elsif  __FILE__ =~ /^[^\.]/ then # assume both relative
-           require 'pathname'
-           pwd = Pathname.new Dir.pwd
-           pn = Pathname.new File.expand_path(__FILE__)
-           relpath = pn.relative_path_from(pwd) rescue pn
-           pn = File.join ".", relpath unless pn.relative?
-           pn.to_s
-         else                             # assume both are expanded
-           __FILE__
-         end
-
-  # './lib' in project dir, or '/usr/local/blahblah' if installed
-  MINI_DIR = File.dirname(File.dirname(file)) # :nodoc:
-
   def self.filter_backtrace bt # :nodoc:
     return ["No backtrace"] unless bt
 
@@ -47,11 +43,11 @@ module MiniTest
 
     unless $DEBUG then
       bt.each do |line|
-        break if line.rindex MINI_DIR, 0
+        break if line =~ /lib\/minitest/
         new_bt << line
       end
 
-      new_bt = bt.reject { |line| line.rindex MINI_DIR, 0 } if new_bt.empty?
+      new_bt = bt.reject { |line| line =~ /lib\/minitest/ } if new_bt.empty?
       new_bt = bt.dup if new_bt.empty?
     else
       new_bt = bt.dup
@@ -357,10 +353,9 @@ module MiniTest
         end
       rescue Exception => e
         details = "#{msg}#{mu_pp(exp)} exception expected, not"
-        bool = exp.any? { |ex|
-          ex.instance_of?(Module) ? e.kind_of?(ex) : ex == e.class
-        }
-        assert(bool, bool ? '' : exception_details(e, details))
+        assert(exp.any? { |ex|
+                 ex.instance_of?(Module) ? e.kind_of?(ex) : ex == e.class
+               }, exception_details(e, details))
 
         return e
       end
@@ -652,7 +647,7 @@ module MiniTest
   end
 
   class Unit
-    VERSION = "2.6.1" # :nodoc:
+    VERSION = "2.8.1" # :nodoc:
 
     attr_accessor :report, :failures, :errors, :skips # :nodoc:
     attr_accessor :test_count, :assertion_count       # :nodoc:
@@ -978,7 +973,7 @@ module MiniTest
           @passed = nil
           self.setup
           self.run_setup_hooks
-          self.__send__ self.__name__
+          self.run_test self.__name__
           result = "." unless io?
           @passed = true
         rescue *PASSTHROUGH_EXCEPTIONS
@@ -1000,10 +995,17 @@ module MiniTest
         result
       end
 
+      alias :run_test :__send__
+
       def initialize name # :nodoc:
         @__name__ = name
         @__io__ = nil
         @passed = nil
+        @@current = self
+      end
+
+      def self.current # :nodoc:
+        @@current
       end
 
       def io
@@ -1095,17 +1097,17 @@ module MiniTest
       # The argument can be any object that responds to #call or a block.
       # That means that this call,
       #
-      #     MiniTest::TestCase.add_setup_hook { puts "foo" }
+      #     MiniTest::Unit::TestCase.add_setup_hook { puts "foo" }
       #
       # ... is equivalent to:
       #
       #     module MyTestSetup
-      #       def call
+      #       def self.call
       #         puts "foo"
       #       end
       #     end
       #
-      #     MiniTest::TestCase.add_setup_hook MyTestSetup
+      #     MiniTest::Unit::TestCase.add_setup_hook MyTestSetup
       #
       # The blocks passed to +add_setup_hook+ take an optional parameter that
       # will be the TestCase instance that is executing the block.
@@ -1144,17 +1146,17 @@ module MiniTest
       # The argument can be any object that responds to #call or a block.
       # That means that this call,
       #
-      #     MiniTest::TestCase.add_teardown_hook { puts "foo" }
+      #     MiniTest::Unit::TestCase.add_teardown_hook { puts "foo" }
       #
       # ... is equivalent to:
       #
       #     module MyTestTeardown
-      #       def call
+      #       def self.call
       #         puts "foo"
       #       end
       #     end
       #
-      #     MiniTest::TestCase.add_teardown_hook MyTestTeardown
+      #     MiniTest::Unit::TestCase.add_teardown_hook MyTestTeardown
       #
       # The blocks passed to +add_teardown_hook+ take an optional parameter
       # that will be the TestCase instance that is executing the block.

@@ -95,5 +95,5 @@ class PrideLOL < PrideIO # inspired by lolcat, but massively cleaned up
   end
 end
 
-klass = ENV['TERM'] =~ /^xterm(-256color)?$/ ? PrideLOL : PrideIO
+klass = ENV['TERM'] =~ /^xterm|-256color$/ ? PrideLOL : PrideIO
 MiniTest::Unit.output = klass.new(MiniTest::Unit.output)

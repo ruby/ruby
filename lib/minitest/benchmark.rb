@@ -83,8 +83,8 @@ class MiniTest::Unit
     #
     #   def bench_algorithm
     #     validation = proc { |x, y| ... }
-    #     assert_performance validation do |x|
-    #       @obj.algorithm
+    #     assert_performance validation do |n|
+    #       @obj.algorithm(n)
     #     end
     #   end
 
@@ -127,8 +127,8 @@ class MiniTest::Unit
     # Eg:
     #
     #   def bench_algorithm
-    #     assert_performance_constant 0.9999 do |x|
-    #       @obj.algorithm
+    #     assert_performance_constant 0.9999 do |n|
+    #       @obj.algorithm(n)
     #     end
     #   end
 
@@ -153,8 +153,8 @@ class MiniTest::Unit
     # Eg:
     #
     #   def bench_algorithm
-    #     assert_performance_exponential 0.9999 do |x|
-    #       @obj.algorithm
+    #     assert_performance_exponential 0.9999 do |n|
+    #       @obj.algorithm(n)
     #     end
     #   end
 
@@ -173,8 +173,8 @@ class MiniTest::Unit
     # Eg:
     #
     #   def bench_algorithm
-    #     assert_performance_linear 0.9999 do |x|
-    #       @obj.algorithm
+    #     assert_performance_linear 0.9999 do |n|
+    #       @obj.algorithm(n)
     #     end
     #   end
 
@@ -329,8 +329,8 @@ class MiniTest::Spec
   # Create a benchmark that verifies that the performance is linear.
   #
   #   describe "my class" do
-  #     bench_performance_linear "fast_algorithm", 0.9999 do
-  #       @obj.fast_algorithm
+  #     bench_performance_linear "fast_algorithm", 0.9999 do |n|
+  #       @obj.fast_algorithm(n)
   #     end
   #   end
 
@@ -344,8 +344,8 @@ class MiniTest::Spec
   # Create a benchmark that verifies that the performance is constant.
   #
   #   describe "my class" do
-  #     bench_performance_constant "zoom_algorithm!" do
-  #       @obj.zoom_algorithm!
+  #     bench_performance_constant "zoom_algorithm!" do |n|
+  #       @obj.zoom_algorithm!(n)
   #     end
   #   end
 
@@ -359,8 +359,8 @@ class MiniTest::Spec
   # Create a benchmark that verifies that the performance is exponential.
   #
   #   describe "my class" do
-  #     bench_performance_exponential "algorithm" do
-  #       @obj.algorithm
+  #     bench_performance_exponential "algorithm" do |n|
+  #       @obj.algorithm(n)
   #     end
   #   end
 

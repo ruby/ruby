@@ -12,7 +12,7 @@ class Module # :nodoc:
   def infect_an_assertion meth, new_name, dont_flip = false # :nodoc:
     # warn "%-22p -> %p %p" % [meth, new_name, dont_flip]
     self.class_eval <<-EOM
-      def #{new_name} *args, &block
+      def #{new_name} *args
         return MiniTest::Spec.current.#{meth}(*args, &self) if
           Proc === self
         return MiniTest::Spec.current.#{meth}(args.first, self) if
@@ -138,20 +138,11 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
     @@describe_stack
   end
 
-  def self.current # :nodoc:
-    @@current_spec
-  end
-
   ##
   # Returns the children of this spec.
 
   def self.children
     @children ||= []
-  end
-
-  def initialize name # :nodoc:
-    super
-    @@current_spec = self
   end
 
   def self.nuke_test_methods! # :nodoc:
