@@ -978,7 +978,7 @@ path_unlink(VALUE self)
 static VALUE
 path_f_pathname(VALUE self, VALUE str)
 {
-    rb_warn("Kernel#Pathname is deprecated; use Pathname.[]");
+    rb_warn("Kernel#Pathname is deprecated; use Pathname.[] instead");
     return rb_class_new_instance(1, &str, rb_cPathname);
 }
 
