@@ -1,3 +1,8 @@
+Thu Nov 17 10:36:46 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb (load_file): make sure opened yaml files are
+	  also closed. [ruby-core:41088]
+
 Wed Nov 16 18:13:52 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (LIBRUBY_A): check if generated linked library is
