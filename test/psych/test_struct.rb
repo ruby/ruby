@@ -24,9 +24,7 @@ module Psych
       loaded = Psych.load(Psych.dump(ss))
       assert_instance_of(StructSubclass, loaded.foo)
 
-      # FIXME: This seems to cause an infinite loop.  wtf.  Must report a bug
-      # in ruby.
-      # assert_equal(ss, loaded)
+      assert_equal(ss, loaded)
     end
 
     def test_roundtrip
