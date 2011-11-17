@@ -74,6 +74,11 @@ class Pathname
   end
   private :prepend_prefix
 
+  # See <tt>Dir.glob</tt>.  Returns or yields Pathname objects.
+  def glob(*args)
+    self.class.glob(self + args.shift, *args)
+  end
+
   # Returns clean pathname of +self+ with consecutive slashes and useless dots
   # removed.  The filesystem is not accessed.
   #
