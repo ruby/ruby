@@ -858,6 +858,15 @@ path_s_getwd(VALUE klass)
 }
 
 /*
+ * Returns a new instance of Pathname initialized with string
+ */
+static VALUE
+path_s_square_brackets(VALUE self, VALUE string)
+{
+    return rb_class_new_instance(1, &string, rb_cPathname);
+}
+
+/*
  * Return the entries (files and subdirectories) in the directory, each as a
  * Pathname object.
  *
@@ -969,6 +978,7 @@ path_unlink(VALUE self)
 static VALUE
 path_f_pathname(VALUE self, VALUE str)
 {
+    rb_warn("Kernel#Pathname is deprecated; use Pathname.[]");
     return rb_class_new_instance(1, &str, rb_cPathname);
 }
 
@@ -1225,6 +1235,7 @@ Init_pathname()
     rb_define_method(rb_cPathname, "world_writable?", path_world_writable_p, 0);
     rb_define_method(rb_cPathname, "writable_real?", path_writable_real_p, 0);
     rb_define_method(rb_cPathname, "zero?", path_zero_p, 0);
+    rb_define_singleton_method(rb_cPathname, "[]", path_s_square_brackets, 1);
     rb_define_singleton_method(rb_cPathname, "glob", path_s_glob, -1);
     rb_define_singleton_method(rb_cPathname, "getwd", path_s_getwd, 0);
     rb_define_singleton_method(rb_cPathname, "pwd", path_s_getwd, 0);
