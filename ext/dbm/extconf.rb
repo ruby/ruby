@@ -50,7 +50,7 @@ def headers.db_check2(db, hdr)
     have_library("gdbm") or return false
   end
 
-  if (have_type("DBM", hdr, hsearch) || have_type("DBM", ["db.h", hdr], hsearch)) and
+  if have_type("DBM", hdr, hsearch) and
      (db == 'libc' ? have_func('dbm_open("", 0, 0)', hdr, hsearch) :
                      have_library(db, 'dbm_open("", 0, 0)', hdr, hsearch)) and
      have_func('dbm_clearerr((DBM *)0)', hdr, hsearch)
