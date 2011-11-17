@@ -36,6 +36,15 @@
 # Enumerable objects besides sets and arrays.  An Enumerable object
 # can be converted to Set using the +to_set+ method.
 #
+# == Comparison
+#
+# Although <, >, <= and >= are implemented as alternative for the
+# superset? and subset? method family neither the Comparable mixin
+# nor <=> is implemented by intention, because a comparison with a
+# completely disjunct other set would result in an undefined
+# result, which then would cause exceptions when sorting an array of
+# sets for example.
+#
 # == Example
 #
 #   require 'set'
@@ -192,6 +201,7 @@ class Set
     return false if size < set.size
     set.all? { |o| include?(o) }
   end
+  alias >= superset?
 
   # Returns true if the set is a proper superset of the given set.
   def proper_superset?(set)
@@ -199,6 +209,7 @@ class Set
     return false if size <= set.size
     set.all? { |o| include?(o) }
   end
+  alias > proper_superset?
 
   # Returns true if the set is a subset of the given set.
   def subset?(set)
@@ -206,6 +217,7 @@ class Set
     return false if set.size < size
     all? { |o| set.include?(o) }
   end
+  alias <= subset?
 
   # Returns true if the set is a proper subset of the given set.
   def proper_subset?(set)
@@ -213,6 +225,7 @@ class Set
     return false if set.size <= size
     all? { |o| set.include?(o) }
   end
+  alias < proper_subset?
 
   # Calls the given block once for each element in the set, passing
   # the element as parameter.  Returns an enumerator if no block is
