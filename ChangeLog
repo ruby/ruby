@@ -1,3 +1,8 @@
+Fri Nov 18 17:18:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (console_raw, console_set_raw)
+	  (console_getch): optional parameters.  [EXPERIMENTAL]
+
 Fri Nov 18 16:12:11 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/console.c (console_cooked, console_set_cooked):
