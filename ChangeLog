@@ -1,3 +1,8 @@
+Fri Nov 18 13:20:26 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/unit/assertions.rb (MINI_DIR): quick dirty hack to get rid of
+	  warnings when using assert/assert_respond_to.
+
 Fri Nov 18 13:03:38 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_cloexec_open): set O_NOINHERIT instead of O_CLOEXEC if it is
