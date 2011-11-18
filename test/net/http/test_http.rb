@@ -360,6 +360,7 @@ __EOM__
       _test_set_form_multipart(http, false, data, expected)
       _test_set_form_multipart(http, true, data, expected)
     }
+    file.close(true)
   end
 
   def _test_set_form_urlencoded(http, data)
@@ -420,6 +421,7 @@ __EOM__
       res = http.request req
       #assert_equal(expected, res.body)
     }
+    file.close(true)
   end
 end
 

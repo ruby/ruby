@@ -1,3 +1,7 @@
+Sat Nov 19 08:18:41 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/net/http/test_http.rb: remove temporally files.
+
 Fri Nov 18 17:18:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/console.c (console_raw, console_set_raw)
