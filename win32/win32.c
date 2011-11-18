@@ -3849,7 +3849,8 @@ fcntl(int fd, int cmd, ...)
 	int ret;
 	HANDLE hDup;
 	if (!(DuplicateHandle(GetCurrentProcess(), (HANDLE)_get_osfhandle(fd),
-			      GetCurrentProcess(), &hDup, 0L, TRUE,
+			      GetCurrentProcess(), &hDup, 0L,
+			      !(_osfile(fd) & FNOINHERIT),
 			      DUPLICATE_SAME_ACCESS))) {
 	    errno = map_errno(GetLastError());
 	    return -1;

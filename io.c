@@ -195,6 +195,8 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 #ifdef O_CLOEXEC
     /* O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
     flags |= O_CLOEXEC;
+#elif defined O_NOINHERIT
+    flags |= O_NOINHERIT;
 #endif
     ret = open(pathname, flags, mode);
     if (ret == -1) return -1;
