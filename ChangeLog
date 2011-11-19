@@ -1,3 +1,9 @@
+Sat Nov 19 19:31:47 2011  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (TIME_COPY_GMT): copy vtm.utc_offset and vtm.zone too.
+	  patch by Tomoyuki Chikanaga.
+	  [ruby-dev:44827] [Bug #5586]
+
 Sat Nov 19 16:36:57 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/net/http/test_http.rb: remove temporally files in ensure clause.

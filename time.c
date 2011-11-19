@@ -1820,7 +1820,10 @@ struct time_object {
      (tobj)->vtm.utc_offset = (off), \
      (tobj)->vtm.zone = NULL)
 
-#define TIME_COPY_GMT(tobj1, tobj2) ((tobj1)->gmt = (tobj2)->gmt)
+#define TIME_COPY_GMT(tobj1, tobj2) \
+    ((tobj1)->gmt = (tobj2)->gmt, \
+     (tobj1)->vtm.utc_offset = (tobj2)->vtm.utc_offset, \
+     (tobj1)->vtm.zone = (tobj2)->vtm.zone)
 
 static VALUE time_get_tm(VALUE, struct time_object *);
 #define MAKE_TM(time, tobj) \
