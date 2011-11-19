@@ -1799,7 +1799,7 @@ localtimew(wideval_t timew, struct vtm *result)
 struct time_object {
     wideval_t timew; /* time_t value * TIME_SCALE.  possibly Rational. */
     struct vtm vtm;
-    int gmt;
+    int gmt; /* 0:utc 1:localtime 2:fixoff */
     int tm_got;
 };
 
@@ -2495,6 +2495,8 @@ time_s_now(VALUE klass)
  *  <i>seconds_with_frac</i> and <i>microseconds_with_frac</i>
  *  can be Integer, Float, Rational, or other Numeric.
  *  non-portable feature allows the offset to be negative on some systems.
+ *
+ *  If a numeric argument is given, the result is in local time.
  *
  *     Time.at(0)            #=> 1969-12-31 18:00:00 -0600
  *     Time.at(Time.at(0))   #=> 1969-12-31 18:00:00 -0600
