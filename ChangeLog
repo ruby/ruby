@@ -661,6 +661,15 @@ Sat Nov  5 15:45:04 2011  Tanaka Akira  <akr@fsij.org>
 	* ext/socket/init.c (rsock_socket0): extract single socket() call with
 	  CLOEXEC handling from rsock_socket.
 
+Sat Nov  5 13:49:40 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* lib/pathname.rb (Pathname#find): return an enumerator if
+	  no block is given.
+
+	* test/pathname/test_pathname.rb: add tests for above.
+
+	[ruby-dev:44797] [Feature #5572]
+
 Sat Nov  5 11:18:12 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (rsock_socketpair0): don't clear

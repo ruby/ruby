@@ -1235,6 +1235,10 @@ class TestPathname < Test::Unit::TestCase
       assert_equal([Pathname("."), Pathname("a"), Pathname("b"), Pathname("d"), Pathname("d/x"), Pathname("d/y")], a)
       a = []; Pathname("d").find {|v| a << v }; a.sort!
       assert_equal([Pathname("d"), Pathname("d/x"), Pathname("d/y")], a)
+      a = Pathname(".").find.sort
+      assert_equal([Pathname("."), Pathname("a"), Pathname("b"), Pathname("d"), Pathname("d/x"), Pathname("d/y")], a)
+      a = Pathname("d").find.sort
+      assert_equal([Pathname("d"), Pathname("d/x"), Pathname("d/y")], a)
     }
   end
 
