@@ -1,3 +1,7 @@
+Sat Nov 19 16:36:57 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/net/http/test_http.rb: remove temporally files in ensure clause.
+
 Sat Nov 19 08:18:41 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/net/http/test_http.rb: remove temporally files.
