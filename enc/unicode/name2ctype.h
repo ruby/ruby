@@ -37,7 +37,6 @@ error "gperf generated tables don't work with this execution character set. Plea
 #define long size_t
 
 #ifdef USE_UNICODE_PROPERTIES
-#ifdef USE_UNICODE_PROPERTIES
 /* 'Any': - */
 static const OnigCodePoint CR_Any[] = {
 	1,
@@ -14969,7 +14968,6 @@ static const OnigCodePoint CR_Unknown[] = {
 	0xe01f0, 0x10ffff,
 }; /* CR_Unknown */
 #endif /* USE_UNICODE_PROPERTIES */
-#endif /* USE_UNICODE_PROPERTIES */
 
 /* 'Age_1_1': Derived Age 1.1 */
 static const OnigCodePoint CR_Age_1_1[] = {
@@ -21973,7 +21971,6 @@ static const OnigCodePoint* const CodeRanges[] = {
   CR_Alnum,
   CR_ASCII,
 #ifdef USE_UNICODE_PROPERTIES
-#ifdef USE_UNICODE_PROPERTIES
   CR_Any,
   CR_Assigned,
   CR_C,
@@ -22172,7 +22169,6 @@ static const OnigCodePoint* const CodeRanges[] = {
   CR_Age_5_1,
   CR_Age_5_2,
   CR_Age_6_0,
-#endif /* USE_UNICODE_PROPERTIES */
 #endif /* USE_UNICODE_PROPERTIES */
 };
 struct uniname2ctype_struct {

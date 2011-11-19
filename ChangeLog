@@ -1,3 +1,8 @@
+Sun Nov 20 04:01:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (enc/unicode/name2ctype.h): remove duplicated
+	  ifdefs.
+
 Sat Nov 19 19:31:47 2011  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (TIME_COPY_GMT): copy vtm.utc_offset and vtm.zone too.
