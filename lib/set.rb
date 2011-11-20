@@ -525,7 +525,6 @@ class SortedSet < Set
       module_eval {
         # a hack to shut up warning
         alias old_init initialize
-        remove_method :old_init
       }
       begin
         require 'rbtree'
