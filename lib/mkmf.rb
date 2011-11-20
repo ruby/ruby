@@ -1924,8 +1924,9 @@ def create_makefile(target, srcprefix = nil)
   RbConfig.expand(srcdir = srcprefix.dup)
 
   ext = ".#{$OBJEXT}"
+  orig_srcs = Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
   if not $objs
-    srcs = $srcs || Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
+    srcs = $srcs || orig_srcs
     objs = srcs.inject(Hash.new {[]}) {|h, f| h[File.basename(f, ".*") << ext] <<= f; h}
     $objs = objs.keys
     unless objs.delete_if {|b, f| f.size == 1}.empty?
@@ -1990,7 +1991,8 @@ extout_prefix = #{$extout_prefix}
 target_prefix = #{target_prefix}
 LOCAL_LIBS = #{$LOCAL_LIBS}
 LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
-SRCS = #{srcs.collect(&File.method(:basename)).join(' ')}
+ORIG_SRCS = #{orig_srcs.collect(&File.method(:basename)).join(' ')}
+SRCS = $(ORIG_SRCS) #{(srcs - orig_srcs).collect(&File.method(:basename)).join(' ')}
 OBJS = #{$objs.join(" ")}
 TARGET = #{target}
 DLLIB = #{dllib}

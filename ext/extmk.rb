@@ -73,6 +73,11 @@ def extract_makefile(makefile, keep = true)
     end
     return false
   end
+  srcs = Dir[File.join($srcdir, "*.{#{SRC_EXT.join(%q{,})}}")].map {|fn| File.basename(fn)}
+  if !srcs.empty?
+    old_srcs = m[/^ORIG_SRCS[ \t]*=[ \t](.*)/, 1] or return false
+    old_srcs.split.sort == srcs or return false
+  end
   $target = target
   $extconf_h = m[/^RUBY_EXTCONF_H[ \t]*=[ \t]*(\S+)/, 1]
   if $static.nil?
@@ -152,7 +157,7 @@ def extmake(target)
 	old_objs = $objs
 	old_cleanfiles = $distcleanfiles
 	conf = ["#{$srcdir}/makefile.rb", "#{$srcdir}/extconf.rb"].find {|f| File.exist?(f)}
-	if (($extconf_h && !File.exist?($extconf_h)) ||
+	if (!ok || ($extconf_h && !File.exist?($extconf_h)) ||
 	    !(t = modified?(makefile, MTIMES)) ||
 	    [conf, "#{$srcdir}/depend"].any? {|f| modified?(f, [t])})
         then
