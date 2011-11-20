@@ -2387,8 +2387,8 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
     re->ptr = 0;
 
     if (rb_enc_dummy_p(enc)) {
-	    errcpy(err, "can't make regexp with dummy encoding");
-	    return -1;
+	errcpy(err, "can't make regexp with dummy encoding");
+	return -1;
     }
 
     unescaped = rb_reg_preprocess(s, s+len, enc, &fixed_enc, err);
