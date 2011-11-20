@@ -1,3 +1,8 @@
+Sun Nov 20 22:43:03 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/unicode.c (PROPERTY_NAME_MAX_SIZE): +1.
+	  reported by Ken Takata. [ruby-dev:44894][Bug #5652]
+
 Sun Nov 20 11:01:28 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/set.rb (SortedSet.setup): remove old_init after initialize
