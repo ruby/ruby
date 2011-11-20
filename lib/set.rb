@@ -604,6 +604,10 @@ class SortedSet < Set
           end
         }
       end
+      module_eval {
+        # a hack to shut up warning
+        remove_method :old_init
+      }
 
       @@setup = true
     end
