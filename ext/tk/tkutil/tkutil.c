@@ -1135,7 +1135,7 @@ tcl2rb_num_or_nil(self, value)
 
 #define CBSUBST_TBL_MAX (256)
 struct cbsubst_info {
-    int   full_subst_length;
+    long  full_subst_length;
     long  keylen[CBSUBST_TBL_MAX];
     char  *key[CBSUBST_TBL_MAX];
     char  type[CBSUBST_TBL_MAX];
