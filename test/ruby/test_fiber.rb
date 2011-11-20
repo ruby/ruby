@@ -188,6 +188,11 @@ class TestFiber < Test::Unit::TestCase
       f2 = Fiber.new{ f1.resume }
       f1.transfer
     }, '[ruby-dev:40833]'
+    assert_normal_exit %q{
+      require 'fiber'
+      Fiber.new{}.resume
+      1.times{Fiber.current.transfer}'
+    }
   end
 
   def test_resume_root_fiber

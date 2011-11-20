@@ -1260,6 +1260,13 @@ fiber_switch(VALUE fibval, int argc, VALUE *argv, int is_resume)
     GetFiberPtr(fibval, fib);
     cont = &fib->cont;
 
+    if (th->fiber == fibval) {
+	/* ignore fiber context switch
+         * because destination fiber is same as current fiber
+	 */
+	return make_passing_arg(argc, argv);
+    }
+
     if (cont->saved_thread.self != th->self) {
 	rb_raise(rb_eFiberError, "fiber called across threads");
     }
