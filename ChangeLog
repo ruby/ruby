@@ -1,3 +1,8 @@
+Mon Nov 21 23:39:14 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (linux_get_maxfd): new function to find maximum fd on Linux.
+	  (rb_close_before_exec): use linux_get_maxfd.
+
 Mon Nov 21 06:16:24 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* cont.c (fiber_switch): ignore fiber context switch

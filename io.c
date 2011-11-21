@@ -5131,20 +5131,66 @@ popen_redirect(struct popen_arg *p)
     }
 }
 
+#if defined(__linux__)
+/* Linux /proc/self/status contains a line: "FDSize:\t<nnn>\n"
+ * Since /proc may not be available, linux_get_maxfd is just a hint.
+ * This function, linux_get_maxfd, must be async-signal-safe.
+ * I.e. opendir() is not usable.
+ *
+ * Note that memchr() and memcmp is *not* async-signal-safe in POSIX.
+ * However they are easy to re-implement in async-signal-safe manner.
+ * (Also note that there is missing/memcmp.c.)
+ */
+static int
+linux_get_maxfd(void)
+{
+    int fd;
+    char buf[4096], *p, *n, *e;
+    ssize_t ss;
+    fd = rb_cloexec_open("/proc/self/status", O_RDONLY|O_NOCTTY, 0);
+    if (fd == -1) return -1;
+    ss = read(fd, buf, sizeof(buf));
+    if (ss == -1) goto err;
+    p = buf;
+    e = buf + ss;
+    while (sizeof("FDSize:\t0\n")-1 <= e-p &&
+           (n = memchr(p, '\n', e-p)) != NULL) {
+        if (memcmp(p, "FDSize:", sizeof("FDSize:")-1) == 0) {
+            int fdsize;
+            p += sizeof("FDSize:")-1;
+            *n = '\0';
+            fdsize = (int)ruby_strtoul(p, (char **)NULL, 10);
+            close(fd);
+            return fdsize;
+        }
+        p = n+1;
+    }
+    /* fall through */
+
+  err:
+    close(fd);
+    return -1;
+}
+#endif
+
 void
 rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
 {
     int fd, ret;
     int max = max_file_descriptor;
-    if (max < maxhint)
-        max = maxhint;
 #ifdef F_MAXFD
     /* F_MAXFD is available since NetBSD 2.0. */
     ret = fcntl(0, F_MAXFD);
-    if (ret != -1) {
-        max = ret;
-    }
+    if (ret != -1)
+        maxhint = max = ret;
+#elif defined(__linux__)
+    ret = linux_get_maxfd();
+    if (maxhint < ret)
+        maxhint = ret;
+    /* maxhint = max = ret; if (ret == -1) abort(); // test */
 #endif
+    if (max < maxhint)
+        max = maxhint;
     for (fd = lowfd; fd <= max; fd++) {
         if (!NIL_P(noclose_fds) &&
             RTEST(rb_hash_lookup(noclose_fds, INT2FIX(fd))))
