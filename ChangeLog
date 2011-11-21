@@ -1,3 +1,8 @@
+Tue Nov 22 00:44:59 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_io.rb (test_fcntl_dupfd): the argument of F_DUPFD is
+	  minimum file descriptor.
+
 Tue Nov 22 00:25:17 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (linux_get_maxfd): get rid of a warning.
