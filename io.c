@@ -5153,7 +5153,7 @@ linux_get_maxfd(void)
     if (ss == -1) goto err;
     p = buf;
     e = buf + ss;
-    while (sizeof("FDSize:\t0\n")-1 <= e-p &&
+    while ((int)sizeof("FDSize:\t0\n")-1 <= e-p &&
            (n = memchr(p, '\n', e-p)) != NULL) {
         if (memcmp(p, "FDSize:", sizeof("FDSize:")-1) == 0) {
             int fdsize;

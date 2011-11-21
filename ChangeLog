@@ -1,3 +1,7 @@
+Tue Nov 22 00:25:17 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (linux_get_maxfd): get rid of a warning.
+
 Mon Nov 21 23:39:14 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (linux_get_maxfd): new function to find maximum fd on Linux.
