@@ -1,3 +1,8 @@
+Tue Nov 22 06:59:21 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_io.rb (test_fcntl_dupfd): there is no known platform
+	  which don't have F_DUPFD.  [ruby-dev:44874]
+
 Tue Nov 22 04:46:22 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: remove autoload from psych
