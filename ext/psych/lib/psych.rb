@@ -10,7 +10,9 @@ require 'psych/set'
 require 'psych/coder'
 require 'psych/core_ext'
 require 'psych/deprecated'
-require 'psych/json'
+require 'psych/stream'
+require 'psych/json/tree_builder'
+require 'psych/json/stream'
 
 ###
 # = Overview
@@ -100,8 +102,6 @@ module Psych
 
   class BadAlias < Exception
   end
-
-  autoload :Stream, 'psych/stream'
 
   ###
   # Load +yaml+ in to a Ruby data structure.  If multiple documents are

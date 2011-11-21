@@ -1,3 +1,8 @@
+Tue Nov 22 04:46:22 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: remove autoload from psych
+	* ext/psych/lib/psych/json.rb: ditto
+
 Tue Nov 22 00:44:59 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_io.rb (test_fcntl_dupfd): the argument of F_DUPFD is
