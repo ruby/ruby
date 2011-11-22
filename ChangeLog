@@ -1,3 +1,16 @@
+Tue Nov 22 10:46:57 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (ruby_float_step): improve floating point calculations.
+	  [ruby-core:35753] [Bug #4576]
+
+	* numeric.c (ruby_float_step): correct the error of floating point
+	  numbers on the excluding case.
+	  patched by Masahiro Tanaka [ruby-core:39608]
+
+	* numeric.c (ruby_float_step): use the end value when the current
+	  value is greater than or equal to the end value.
+	  patched by Akira Tanaka [ruby-core:39612]
+
 Tue Nov 22 06:59:21 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_io.rb (test_fcntl_dupfd): there is no known platform
