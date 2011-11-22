@@ -355,7 +355,7 @@ module MiniTest
         details = "#{msg}#{mu_pp(exp)} exception expected, not"
         assert(exp.any? { |ex|
                  ex.instance_of?(Module) ? e.kind_of?(ex) : ex == e.class
-               }, exception_details(e, details))
+               }, proc{exception_details(e, details)})
 
         return e
       end
