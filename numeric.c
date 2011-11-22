@@ -1703,7 +1703,7 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
 	    }
 	    for (i=0; i<=n; i++) {
 		double d = i*unit+beg;
-		if (end < d) d = end;
+		if (unit >= 0 ? end < d : d < end) d = end;
 		rb_yield(DBL2NUM(d));
 	    }
 	}

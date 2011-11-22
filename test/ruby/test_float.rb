@@ -520,6 +520,8 @@ class TestFloat < Test::Unit::TestCase
     (1.0..12.7).step(1.3).each do |n|
       assert_operator(n, :<=, 12.7)
     end
+
+    assert_equal([5.0, 4.0, 3.0, 2.0], 5.0.step(1.5, -1).to_a)
   end
 
   def test_step_excl

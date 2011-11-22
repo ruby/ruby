@@ -1,3 +1,5 @@
+Tue Nov 22 11:26:08 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
 Tue Nov 22 11:33:58 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (dupfd): argument of _osfhnd and so on should not
@@ -5,7 +7,7 @@ Tue Nov 22 11:33:58 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Nov 22 11:26:08 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* bignum.c (): refix of r33536. Don't change behavior of Bignum#/.
+	* bignum.c (rb_big_divide): refix of r33536. Don't change behavior of Bignum#/.
 	  [ruby-core:40429] [Bug #5490]
 
 Tue Nov 22 10:46:57 2011  NARUSE, Yui  <naruse@ruby-lang.org>
