@@ -3818,8 +3818,9 @@ dupfd(HANDLE hDup, char flags, int minfd)
   close_fds_and_return:
     save_errno = errno;
     while (filled > 0) {
-	_osfhnd(fds[--filled]) = (intptr_t)INVALID_HANDLE_VALUE;
-	close(fds[filled]);
+	int fd = fds[--filled];
+	_osfhnd(fd) = (intptr_t)INVALID_HANDLE_VALUE;
+	close(fd);
     }
     errno = save_errno;
 
