@@ -2781,14 +2781,13 @@ rb_big_divide(VALUE x, VALUE y, ID op)
 
       case T_FLOAT:
 	{
-	    double div, dy = RFLOAT_VALUE(y);
-	    if (dy == 0.0) rb_num_zerodiv();
-	    div = rb_big2dbl(x) / dy;
 	    if (op == '/') {
-		return DBL2NUM(div);
+		return DBL2NUM(rb_big2dbl(x) / RFLOAT_VALUE(y));
 	    }
 	    else {
-		return rb_dbl2big(div);
+		double dy = RFLOAT_VALUE(y);
+		if (dy == 0.0) rb_num_zerodiv();
+		return rb_dbl2big(rb_big2dbl(x) / dy);
 	    }
 	}
 

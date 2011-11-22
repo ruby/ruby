@@ -1,3 +1,8 @@
+Tue Nov 22 11:26:08 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* bignum.c (): refix of r33536. Don't change behavior of Bignum#/.
+	  [ruby-core:40429] [Bug #5490]
+
 Tue Nov 22 10:46:57 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric.c (ruby_float_step): improve floating point calculations.

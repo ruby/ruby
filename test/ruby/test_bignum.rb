@@ -268,6 +268,12 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(0, T32 / T64)
   end
 
+  def test_divide
+    bug5490 = '[ruby-core:40429]'
+    assert_raise(ZeroDivisionError, bug5490) {T1024./(0)}
+    assert_equal(Float::INFINITY, T1024./(0.0), bug5490)
+  end
+
   def test_div
     assert_equal(T32.to_f, T32 / 1.0)
     assert_raise(TypeError) { T32 / "foo" }
