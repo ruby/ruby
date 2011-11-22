@@ -2159,7 +2159,6 @@ EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 
 #define IOINFO_L2E			5
 #define IOINFO_ARRAY_ELTS	(1 << IOINFO_L2E)
-#define _pioinfo(i)	((ioinfo*)((char*)(__pioinfo[i >> IOINFO_L2E]) + (i & (IOINFO_ARRAY_ELTS - 1)) * (sizeof(ioinfo) + pioinfo_extra)))
 #define _osfhnd(i)  (_pioinfo(i)->osfhnd)
 #define _osfile(i)  (_pioinfo(i)->osfile)
 #define _pipech(i)  (_pioinfo(i)->pipech)
@@ -2189,6 +2188,14 @@ set_pioinfo_extra(void)
 #else
 #define pioinfo_extra 0
 #endif
+
+static inline ioinfo*
+_pioinfo(int fd)
+{
+    const size_t sizeof_ioinfo = sizeof(ioinfo) + pioinfo_extra;
+    return (ioinfo*)((char*)__pioinfo[fd >> IOINFO_L2E] +
+		     (fd & (IOINFO_ARRAY_ELTS - 1)) * sizeof_ioinfo);
+}
 
 #define _set_osfhnd(fh, osfh) (void)(_osfhnd(fh) = osfh)
 #define _set_osflags(fh, flags) (_osfile(fh) = (flags))
