@@ -2156,6 +2156,7 @@ typedef struct	{
 
 #if !defined(__BORLANDC__)
 EXTERN_C _CRTIMP ioinfo * __pioinfo[];
+static inline ioinfo* _pioinfo(int);
 
 #define IOINFO_L2E			5
 #define IOINFO_ARRAY_ELTS	(1 << IOINFO_L2E)

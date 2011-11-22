@@ -1,3 +1,8 @@
+Tue Nov 22 18:07:32 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (_pioinfo): need to declare _pioinfo() before using
+	  _osfhnd and other macros which uses _pioinfo() internally.
+
 Tue Nov 22 17:49:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (_pioinfo): make an inline function.
