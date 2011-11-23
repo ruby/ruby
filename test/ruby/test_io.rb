@@ -2112,5 +2112,14 @@ End
         f1.ioctl(0x80045200, entropy_count)
       }
     end
+
+    buf = ''
+    assert_nothing_raised do
+      fionread = 0x541B
+      File.open(__FILE__){|f1|
+        f1.ioctl(fionread, buf)
+      }
+    end
+    assert_equal(File.size(__FILE__), buf.unpack('i!')[0])
   end
 end
