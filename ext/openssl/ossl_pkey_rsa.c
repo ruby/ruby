@@ -243,7 +243,7 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 	}
 	BIO_free(in);
 	if (!rsa) {
-	    ossl_raise(eRSAError, "Neither PUB key nor PRIV key:");
+	    ossl_raise(eRSAError, "Neither PUB key nor PRIV key");
 	}
     }
     if (!EVP_PKEY_assign_RSA(pkey, rsa)) {

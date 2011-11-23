@@ -148,7 +148,7 @@ ossl_sslctx_s_alloc(VALUE klass)
 
     ctx = SSL_CTX_new(SSLv23_method());
     if (!ctx) {
-        ossl_raise(eSSLError, "SSL_CTX_new:");
+        ossl_raise(eSSLError, "SSL_CTX_new");
     }
     SSL_CTX_set_mode(ctx, mode);
     SSL_CTX_set_options(ctx, SSL_OP_ALL);
@@ -185,7 +185,7 @@ ossl_sslctx_set_ssl_version(VALUE self, VALUE ssl_method)
     }
     Data_Get_Struct(self, SSL_CTX, ctx);
     if (SSL_CTX_set_ssl_version(ctx, method) != 1) {
-        ossl_raise(eSSLError, "SSL_CTX_set_ssl_version:");
+        ossl_raise(eSSLError, "SSL_CTX_set_ssl_version");
     }
 
     return ssl_method;
@@ -590,14 +590,14 @@ ossl_sslctx_setup(VALUE self)
     if (cert && key) {
         if (!SSL_CTX_use_certificate(ctx, cert)) {
             /* Adds a ref => Safe to FREE */
-            ossl_raise(eSSLError, "SSL_CTX_use_certificate:");
+            ossl_raise(eSSLError, "SSL_CTX_use_certificate");
         }
         if (!SSL_CTX_use_PrivateKey(ctx, key)) {
             /* Adds a ref => Safe to FREE */
-            ossl_raise(eSSLError, "SSL_CTX_use_PrivateKey:");
+            ossl_raise(eSSLError, "SSL_CTX_use_PrivateKey");
         }
         if (!SSL_CTX_check_private_key(ctx)) {
-            ossl_raise(eSSLError, "SSL_CTX_check_private_key:");
+            ossl_raise(eSSLError, "SSL_CTX_check_private_key");
         }
     }
 
@@ -651,7 +651,7 @@ ossl_sslctx_setup(VALUE self)
 	StringValue(val);
 	if (!SSL_CTX_set_session_id_context(ctx, (unsigned char *)RSTRING_PTR(val),
 					    RSTRING_LENINT(val))){
-	    ossl_raise(eSSLError, "SSL_CTX_set_session_id_context:");
+	    ossl_raise(eSSLError, "SSL_CTX_set_session_id_context");
 	}
     }
 
@@ -771,7 +771,7 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
         return Qnil;
     }
     if (!SSL_CTX_set_cipher_list(ctx, RSTRING_PTR(str))) {
-        ossl_raise(eSSLError, "SSL_CTX_set_cipher_list:");
+        ossl_raise(eSSLError, "SSL_CTX_set_cipher_list");
     }
 
     return v;
@@ -1058,14 +1058,14 @@ ossl_ssl_setup(VALUE self)
 
         ssl = SSL_new(ctx);
         if (!ssl) {
-            ossl_raise(eSSLError, "SSL_new:");
+            ossl_raise(eSSLError, "SSL_new");
         }
         DATA_PTR(self) = ssl;
 
 #ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
         if (!NIL_P(hostname)) {
            if (SSL_set_tlsext_host_name(ssl, StringValuePtr(hostname)) != 1)
-               ossl_raise(eSSLError, "SSL_set_tlsext_host_name:");
+               ossl_raise(eSSLError, "SSL_set_tlsext_host_name");
         }
 #endif
         io = ossl_ssl_get_io(self);
@@ -1273,7 +1273,7 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 		if(ERR_peek_error() == 0 && nread == 0) rb_eof_error();
 		rb_sys_fail(0);
 	    default:
-		ossl_raise(eSSLError, "SSL_read:");
+		ossl_raise(eSSLError, "SSL_read");
 	    }
         }
     }
@@ -1350,7 +1350,7 @@ ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock)
 	    case SSL_ERROR_SYSCALL:
 		if (errno) rb_sys_fail(0);
 	    default:
-		ossl_raise(eSSLError, "SSL_write:");
+		ossl_raise(eSSLError, "SSL_write");
 	    }
         }
     }
