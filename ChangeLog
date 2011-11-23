@@ -4,7 +4,7 @@ Thu Nov 24 08:05:02 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 	  message.
 	* ext/openssl/ossl_ssl.c: ditto.
 	* ext/openssl/ossl_pkey_rsa: ditto.
-	[Bug #5604] [ruby-core:40896]
+	patched by Eric Hodel [Bug #5604] [ruby-core:40896]
 
 Wed Nov 23 20:03:43 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
