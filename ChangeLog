@@ -1,3 +1,7 @@
+Fri Nov 25 07:46:09 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: add -Wall always.
+
 Thu Nov 24 20:02:40 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/openssl/test_engine.rb: use IO#reopen to restore stderr.
