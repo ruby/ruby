@@ -45,27 +45,29 @@ class OpenSSL::TestEngine < Test::Unit::TestCase
     algo = "RC4" #AES is not supported by openssl Engine (<=1.0.0e)
     data = "a" * 1000
     key = OpenSSL::Random.random_bytes(16)
-
-    encipher = engine.cipher(algo)
-    encipher.encrypt
-    encipher.key = key
-
-    decipher = OpenSSL::Cipher.new(algo)
-    decipher.decrypt
-    decipher.key = key
-
-    encrypted = encipher.update(data) + encipher.final
-    decrypted = decipher.update(encrypted) + decipher.final
-
+    # suppress message from openssl Engine's RC4 cipher [ruby-core:41026]
+    err_back = $stderr.dup
+    $stderr.reopen(IO::NULL)
+    encrypted = crypt_data(data, key, :encrypt) { engine.cipher(algo) }
+    decrypted = crypt_data(encrypted, key, :decrypt) { OpenSSL::Cipher.new(algo) }
     assert_equal(data, decrypted)
     cleanup
-  end
+  ensure
+    $stderr = err_back if err_back
+  end 
 
   private
 
+  def crypt_data(data, key, mode)
+    cipher = yield
+    cipher.send mode
+    cipher.key = key
+    cipher.update(data) + cipher.final
+  end
+
   def cleanup
     OpenSSL::Engine.cleanup
-    assert_equal(0, OpenSSL::Engine::engines.size)
+    assert_equal(0, OpenSSL::Engine.engines.size)
   end
 
 end if defined?(OpenSSL)
