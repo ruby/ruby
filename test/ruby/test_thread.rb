@@ -232,10 +232,10 @@ class TestThread < Test::Unit::TestCase
   def test_priority
     c1 = c2 = 0
     t1 = Thread.new { loop { c1 += 1 } }
-    t1.priority = -1
+    t1.priority = 3
     t2 = Thread.new { loop { c2 += 1 } }
     t2.priority = -3
-    assert_equal(-1, t1.priority)
+    assert_equal(3, t1.priority)
     assert_equal(-3, t2.priority)
     sleep 0.5
     5.times do
