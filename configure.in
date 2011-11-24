@@ -1633,43 +1633,6 @@ else
   AC_DEFINE(RSHIFT(x,y), (((x)<0) ? ~((~(x))>>(int)(y)) : (x)>>(int)(y)))
 fi
 
-AC_CACHE_CHECK([read buffer ptr field in FILE structures], rb_cv_frptr,
-[for frptr in	dnl
-     _IO_read_ptr dnl
-     _ptr	dnl
-     __ptr	dnl
-     bufpos	dnl
-     _p	dnl
-     __bufpos	dnl
-; do
-    AC_TRY_COMPILE([#include <stdio.h>
-],
-	[FILE *f = stdin; char buf[256]; f->$frptr = buf;],
-	rb_cv_frptr="$frptr"; break,
-	rb_cv_frptr="not found")
-done])
-if test "$rb_cv_frptr" != "not found"; then
-  AC_DEFINE_UNQUOTED(FILE_READPTR, $rb_cv_frptr)
-
-  if test "$rb_cv_fcnt" = "not found"; then
-    AC_CACHE_CHECK([read buffer end field in FILE structures], rb_cv_frend,
-    [for frend in	dnl
-         _IO_read_end	dnl
-         bufread 	dnl
-         __bufread 	dnl
-    ; do
-        AC_TRY_COMPILE([#include <stdio.h>
-    ],
-	[FILE *f = stdin; char buf[256]; f->$frend = buf;],
-	rb_cv_frend="$frend"; break,
-	rb_cv_frend="not found")
-    done])
-    if test "$rb_cv_frend" != "not found"; then
-      AC_DEFINE_UNQUOTED(FILE_READEND, $rb_cv_frend)
-    fi
-  fi
-fi
-
 RUBY_CHECK_SIZEOF([struct stat.st_ino], [long "long long"], [], [@%:@include <sys/stat.h>])
 
 AC_CACHE_CHECK([whether struct dirent.d_name is too small], rb_cv_sizeof_struct_dirent_too_small,
