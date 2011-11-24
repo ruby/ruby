@@ -643,13 +643,15 @@ def try_func(func, libs, headers = nil, opt = "", &b)
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
-int t() { #{decltype["volatile p"]}; p = (#{decltype[]})#{func}; return 0; }
+extern int t(void);
+int t(void) { #{decltype["volatile p"]}; p = (#{decltype[]})#{func}; return 0; }
 SRC
   call && try_link(<<"SRC", opt, &b)
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
-int t() { #{call}; return 0; }
+extern int t(void);
+int t(void) { #{func}(); return 0; }
 SRC
 end
 
@@ -660,7 +662,8 @@ def try_var(var, headers = nil, opt = "", &b)
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
-int t() { const volatile void *volatile p; p = &(&#{var})[0]; return 0; }
+extern int t(void);
+int t(void) { const volatile void *volatile p; p = &(&#{var})[0]; return 0; }
 SRC
 end
 
@@ -1276,7 +1279,8 @@ def scalar_ptr_type?(type, member = nil, headers = nil, &b)
 /*top*/
 volatile #{type} conftestval;
 #{MAIN_DOES_NOTHING}
-int t() {return (int)(1-*(conftestval#{member ? ".#{member}" : ""}));}
+extern int t(void);
+int t(void) {return (int)(1-*(conftestval#{member ? ".#{member}" : ""}));}
 SRC
 end
 
@@ -1288,7 +1292,8 @@ def scalar_type?(type, member = nil, headers = nil, &b)
 /*top*/
 volatile #{type} conftestval;
 #{MAIN_DOES_NOTHING}
-int t() {return (int)(1-(conftestval#{member ? ".#{member}" : ""}));}
+extern int t(void);
+int t(void) {return (int)(1-(conftestval#{member ? ".#{member}" : ""}));}
 SRC
 end
 
@@ -2308,7 +2313,7 @@ LINK_SO = config_string('LINK_SO') ||
 LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L"%s"'
 RPATHFLAG = config_string('RPATHFLAG') || ''
 LIBARG = config_string('LIBARG') || '-l%s'
-MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main() {return 0;}'
+MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main(void) {return 0;}'
 UNIVERSAL_INTS = config_string('UNIVERSAL_INTS') {|s| Shellwords.shellwords(s)} ||
   %w[int short long long\ long]
 

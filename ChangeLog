@@ -1,3 +1,9 @@
+Fri Nov 25 08:00:23 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/mkmf.rb: get rid of warnings of mkmf.rb if -Wmissing-declarations
+	  and/or -Wold-style-definition warnings if specified.
+	  Patch by Nikolai Weibull. Thank you! [Bug #5459] [ruby-core:40200]
+
 Fri Nov 25 07:56:49 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: remove [read buffer ptr field in FILE structures] check.
