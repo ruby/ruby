@@ -1,3 +1,8 @@
+Fri Nov 25 08:05:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: add -fstack-protector. It help to protect us from
+	  stack smashing attack.
+
 Fri Nov 25 08:03:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: add -D_FORTIFY_SOURCE=2. It provide some compile
