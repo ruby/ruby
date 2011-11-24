@@ -2122,4 +2122,39 @@ End
     end
     assert_equal(File.size(__FILE__), buf.unpack('i!')[0])
   end
+
+  def test_setpos
+    mkcdtmpdir {
+      File.open("tmp.txt", "w") {|f|
+        f.puts "a"
+        f.puts "bc"
+        f.puts "def"
+      }
+      pos1 = pos2 = pos3 = nil
+      File.open("tmp.txt") {|f|
+        assert_equal("a\n", f.gets)
+        pos1 = f.pos
+        assert_equal("bc\n", f.gets)
+        pos2 = f.pos
+        assert_equal("def\n", f.gets)
+        pos3 = f.pos
+        assert_equal(nil, f.gets)
+      }
+      File.open("tmp.txt") {|f|
+        f.pos = pos1
+        assert_equal("bc\n", f.gets)
+        assert_equal("def\n", f.gets)
+        assert_equal(nil, f.gets)
+      }
+      File.open("tmp.txt") {|f|
+        f.pos = pos2
+        assert_equal("def\n", f.gets)
+        assert_equal(nil, f.gets)
+      }
+      File.open("tmp.txt") {|f|
+        f.pos = pos3
+        assert_equal(nil, f.gets)
+      }
+    }
+  end
 end
