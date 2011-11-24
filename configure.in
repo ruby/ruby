@@ -1633,25 +1633,6 @@ else
   AC_DEFINE(RSHIFT(x,y), (((x)<0) ? ~((~(x))>>(int)(y)) : (x)>>(int)(y)))
 fi
 
-test "$rb_cv_fcnt" = "not found" && rb_cv_fcnt="not found (OK if using GNU libc)"
-AC_CACHE_CHECK([read count field in FILE structures], rb_cv_fcnt,
-[rb_cv_fcnt="not found (OK if using GNU libc)"
-for fcnt in	dnl
-     _cnt	dnl
-     __cnt	dnl
-     _r		dnl
-     readCount	dnl
-     _rcount	dnl for emx0.9c
-; do
-    AC_TRY_COMPILE([#include <stdio.h>
-],
-	[FILE *f = stdin; f->$fcnt = 0;],
-	[rb_cv_fcnt="$fcnt"; break])
-done])
-AS_CASE("$rb_cv_fcnt",
-	["not found"*], [rb_cv_fcnt="not found"],
- 	[AC_DEFINE_UNQUOTED(FILE_COUNT, $rb_cv_fcnt)])
-
 AC_CACHE_CHECK([read buffer ptr field in FILE structures], rb_cv_frptr,
 [for frptr in	dnl
      _IO_read_ptr dnl
