@@ -1,3 +1,8 @@
+Fri Nov 25 08:03:28 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: add -D_FORTIFY_SOURCE=2. It provide some compile
+	  time and runtime check for security.
+
 Fri Nov 25 08:00:23 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/mkmf.rb: get rid of warnings of mkmf.rb if -Wmissing-declarations
