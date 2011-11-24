@@ -53,7 +53,10 @@ class OpenSSL::TestEngine < Test::Unit::TestCase
     assert_equal(data, decrypted)
     cleanup
   ensure
-    $stderr = err_back if err_back
+    if err_back
+      $stderr.reopen(err_back)
+      err_back.close
+    end
   end 
 
   private
