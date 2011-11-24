@@ -1,3 +1,7 @@
+Fri Nov 25 08:48:35 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: turn on PIE if --enable-shared is not specified.
+
 Fri Nov 25 08:05:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: add -fstack-protector. It help to protect us from

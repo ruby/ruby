@@ -2350,6 +2350,12 @@ AS_CASE("$enable_shared", [yes], [
 	])
 ], [
   LIBRUBYARG_SHARED=
+
+  # enable PIE if possible
+  if test "$GCC" = yes; then
+    RUBY_TRY_CFLAGS(-fPIE, [RUBY_APPEND_OPTION(XCFLAGS, -fPIE)
+    			    RUBY_APPEND_OPTION(XLDFLAGS, -pie)])
+  fi
 ])
 if test "$enable_rpath" = yes; then
     test -z "$LIBRUBY_RPATHFLAGS" || LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS "
