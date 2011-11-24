@@ -1,3 +1,8 @@
+Thu Nov 24 19:59:56 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_reopen): re-initialize buffereing mode for stdout and
+	  stderr.
+
 Thu Nov 24 11:12:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_io_fsync,rb_io_fdatasync): release GVL during fsync().
