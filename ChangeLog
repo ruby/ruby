@@ -1,3 +1,10 @@
+Thu Nov 24 11:12:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_io_fsync,rb_io_fdatasync): release GVL during fsync().
+	  fsync() and fdatasync() may take a long time on slow disks and/or
+	  if there is much dirty data.
+	  Patch by Eric Wong. [Feature #5665] [ruby-core:41247]
+
 Thu Nov 24 10:05:02 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_engine.rb: Suppress output from 'openssl'
