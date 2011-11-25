@@ -2123,6 +2123,19 @@ End
     assert_equal(File.size(__FILE__), buf.unpack('i!')[0])
   end
 
+  def test_ioctl_linux2
+    return if /linux/ !~ RUBY_PLATFORM
+    return if /^i?86|^x86_64/ !~ RUBY_PLATFORM
+
+    File.open('/dev/tty') { |f|
+      tiocgwinsz=0x5413
+      winsize=""
+      assert_nothing_raised {
+        f.ioctl(tiocgwinsz, winsize)
+      }
+    }
+  end
+
   def test_setpos
     mkcdtmpdir {
       File.open("tmp.txt", "w") {|f|

@@ -1,3 +1,10 @@
+Fri Nov 25 11:37:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (ioctl_narg_len, linux_iocparm_len): reinstantiate linux
+	  specific narg length calculation.
+	* test/ruby/test_io.rb (test_ioctl_linux2): add new test for old and
+	  unstructured ioctl.
+
 Fri Nov 25 10:39:14 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* Makefile.in (EXTLDFLAGS): export it.
