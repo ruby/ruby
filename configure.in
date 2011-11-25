@@ -2266,6 +2266,11 @@ AS_CASE("$enable_shared", [yes], [
   if test "$rb_cv_binary_elf" = yes; then
     SOLIBS='$(LIBS)'
   fi
+
+  if test "$GCC" = yes; then
+    RUBY_TRY_CFLAGS(-Xlinker --no-undefined, RUBY_APPEND_OPTION(EXTLDFLAGS, -Xlinker --no-undefined))
+  fi
+
   AS_CASE(["$target_os"],
     [sunos4*], [
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
@@ -2613,6 +2618,7 @@ AC_SUBST(debugflags)dnl
 AC_SUBST(warnflags)dnl
 AC_SUBST(XCFLAGS)dnl
 AC_SUBST(XLDFLAGS)dnl
+AC_SUBST(EXTLDFLAGS)dnl
 AC_SUBST(LIBRUBY_LDSHARED)
 AC_SUBST(LIBRUBY_DLDFLAGS)
 AC_SUBST(RUBY_INSTALL_NAME)
