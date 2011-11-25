@@ -1,3 +1,8 @@
+Sat Nov 26 05:00:25 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (--no-undefined): RUBY_TRY_CFLAGS does nothing for
+	  linker flags.  use RUBY_TRY_LDFLAGS.
+
 Fri Nov 25 11:37:07 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (ioctl_narg_len, linux_iocparm_len): reinstantiate linux
