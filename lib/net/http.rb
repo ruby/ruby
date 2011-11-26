@@ -451,7 +451,8 @@ module Net   #:nodoc:
         }
       else
         uri = uri_or_host
-        new(uri.hostname, uri.port).start {|http|
+        start(uri.hostname, uri.port,
+              :use_ssl => uri.scheme == 'https') {|http|
           return http.request_get(uri.request_uri, &block)
         }
       end
@@ -479,7 +480,8 @@ module Net   #:nodoc:
       req = Post.new(url.request_uri)
       req.form_data = params
       req.basic_auth url.user, url.password if url.user
-      new(url.hostname, url.port).start {|http|
+      start(url.hostname, url.port,
+            :use_ssl => uri.scheme == 'https' ) {|http|
         http.request(req)
       }
     end

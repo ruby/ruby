@@ -1,3 +1,11 @@
+Sat Nov 26 20:41:48 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP.get_response): enable use_ssl
+	  if given URI object is https.
+	  patched by Mark Ferlatte [ruby-core:40665] [Bug #5545]
+
+	* lib/net/http.rb (Net::HTTP.post_form): ditto.
+
 Sat Nov 26 20:01:18 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP::SSL_ATTRIBUTES): refix 33701.
