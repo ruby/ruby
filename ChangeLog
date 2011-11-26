@@ -1,3 +1,7 @@
+Sat Nov 26 15:40:25 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* .travis.yml (script): should be ./configure
+
 Sat Nov 26 15:39:18 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* .travis.yml (before_script): wrong name, sorry.

@@ -1,6 +1,6 @@
 # no installation...
 before_script: autoconf
-script: "configure && make all test"
+script: "./configure && make all test"
 
 branches:
   only:
