@@ -1,3 +1,7 @@
+Sat Nov 26 15:24:05 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* .travis.yml: Travis enable.
+
 Sat Nov 26 10:47:50 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/extconf.rb: remove checks for available functions.

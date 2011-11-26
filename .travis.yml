@@ -1,0 +1,6 @@
+# no installation...
+script: "configure && make all test"
+
+branches:
+  only:
+    - trunk
