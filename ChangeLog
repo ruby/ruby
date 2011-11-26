@@ -1,3 +1,10 @@
+Sat Nov 26 10:47:50 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/extconf.rb: remove checks for available functions.
+	* ext/openssl/missing.h: ditto.
+	  Thanks, Tim Mooney for reporting this!
+	  [Bug #5432] [ruby-core:40088]
+
 Sat Nov 26 10:22:28 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_ssl.c: add comment on where to find implementation
