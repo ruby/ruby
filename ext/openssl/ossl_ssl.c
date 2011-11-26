@@ -1956,6 +1956,7 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "state",      ossl_ssl_get_state, 0);
     rb_define_method(cSSLSocket, "pending",    ossl_ssl_pending, 0);
     rb_define_method(cSSLSocket, "session_reused?",    ossl_ssl_session_reused, 0);
+    /* implementation of OpenSSL::SSL::SSLSocket#session is in lib/openssl/ssl.rb */
     rb_define_method(cSSLSocket, "session=",    ossl_ssl_set_session, 1);
     rb_define_method(cSSLSocket, "verify_result", ossl_ssl_get_verify_result, 0);
     rb_define_method(cSSLSocket, "client_ca", ossl_ssl_get_client_ca_list, 0);

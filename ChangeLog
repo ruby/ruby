@@ -1,3 +1,8 @@
+Sat Nov 26 10:22:28 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_ssl.c: add comment on where to find implementation
+	  of OpenSSL::SSL::SSLSocket#session.
+
 Sat Nov 26 05:00:25 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (--no-undefined): RUBY_TRY_CFLAGS does nothing for
