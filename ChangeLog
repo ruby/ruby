@@ -1,3 +1,9 @@
+Sat Nov 26 23:01:38 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_engine.rb: remove side effect of generic engine
+	  load by explicitly loading software-based "openssl" engine for
+	  all tests.
+
 Sat Nov 26 20:41:48 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP.get_response): enable use_ssl
