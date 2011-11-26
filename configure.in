@@ -2267,9 +2267,13 @@ AS_CASE("$enable_shared", [yes], [
     SOLIBS='$(LIBS)'
   fi
 
-  if test "$GCC" = yes; then
-    RUBY_TRY_LDFLAGS([-Xlinker --no-undefined], RUBY_APPEND_OPTION(EXTLDFLAGS, [-Xlinker --no-undefined]))
-  fi
+  AS_CASE(["$target_os"],
+    [freebsd*], ,
+    [
+     if test "$GCC" = yes; then
+       RUBY_TRY_LDFLAGS([-Xlinker --no-undefined], RUBY_APPEND_OPTION(EXTLDFLAGS, [-Xlinker --no-undefined]))
+     fi
+    ])
 
   AS_CASE(["$target_os"],
     [sunos4*], [
