@@ -1,8 +1,8 @@
 Sun Nov 27 04:57:11 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* configure.in (--no-undefined): r33840 breaks FreeBSD with gcc47.
-	  FreeBSD's environ is in /usr/libexec/ld-elf.so.1, so it will be
-	  false negative.
+	* configure.in (--no-undefined): r33840 breaks FreeBSD and DragonFly
+	  with gcc 4.4 or later. Their environ is in /usr/libexec/ld-elf.so.1,
+	  so it will be false negative.
 
 Sun Nov 27 04:55:45 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
