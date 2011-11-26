@@ -1,5 +1,5 @@
 # no installation...
-before-script: autoconf
+before_script: autoconf
 script: "configure && make all test"
 
 branches:
