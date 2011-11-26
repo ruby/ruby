@@ -481,7 +481,7 @@ module Net   #:nodoc:
       req.form_data = params
       req.basic_auth url.user, url.password if url.user
       start(url.hostname, url.port,
-            :use_ssl => uri.scheme == 'https' ) {|http|
+            :use_ssl => url.scheme == 'https' ) {|http|
         http.request(req)
       }
     end
