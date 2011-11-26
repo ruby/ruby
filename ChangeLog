@@ -1,3 +1,9 @@
+Sun Nov 27 04:55:45 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP::SSL_IVNAMES): rerefix 33701.
+	  SSL_ATTRIBUTES stores names for set_params, they are symbol.
+	  SSL_IVNAMES stores instance variable names.
+
 Sun Nov 27 00:16:07 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (copy_stream_body): use 0666 for permission argument for open.

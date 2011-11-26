@@ -591,10 +591,8 @@ module Net   #:nodoc:
       @enable_post_connection_check = true
       @compression = nil
       @sspi_enabled = false
-      if defined?(SSL_ATTRIBUTES)
-        SSL_ATTRIBUTES.each do |name|
-          instance_variable_set name, nil
-        end
+      SSL_IVNAMES.each do |ivname|
+        instance_variable_set ivname, nil
       end
     end
 
@@ -676,7 +674,7 @@ module Net   #:nodoc:
       @use_ssl = flag
     end
 
-    SSL_ATTRIBUTES = [
+    SSL_IVNAMES = [
       :@ca_file,
       :@ca_path,
       :@cert,
@@ -688,6 +686,19 @@ module Net   #:nodoc:
       :@verify_callback,
       :@verify_depth,
       :@verify_mode,
+    ]
+    SSL_ATTRIBUTES = [
+      :ca_file,
+      :ca_path,
+      :cert,
+      :cert_store,
+      :ciphers,
+      :key,
+      :ssl_timeout,
+      :ssl_version,
+      :verify_callback,
+      :verify_depth,
+      :verify_mode,
     ]
 
     # Sets path of a CA certification file in PEM format.
@@ -775,10 +786,10 @@ module Net   #:nodoc:
       if use_ssl?
         ssl_parameters = Hash.new
         iv_list = instance_variables
-        SSL_ATTRIBUTES.each do |ivname|
+        SSL_IVNAMES.each_with_index do |ivname, i|
           if iv_list.include?(ivname) and
-             value = instance_variable_get(ivname)
-            ssl_parameters[name] = value
+            value = instance_variable_get(ivname)
+            ssl_parameters[SSL_ATTRIBUTES[i]] = value if value
           end
         end
         @ssl_context = OpenSSL::SSL::SSLContext.new
