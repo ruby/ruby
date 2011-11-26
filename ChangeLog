@@ -1,3 +1,7 @@
+Sat Nov 26 15:31:34 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* .travis.yml (before-script): autoconf required.
+
 Sat Nov 26 15:24:05 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* .travis.yml: Travis enable.
