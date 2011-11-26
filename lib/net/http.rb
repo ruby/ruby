@@ -591,7 +591,7 @@ module Net   #:nodoc:
       @sspi_enabled = false
       if defined?(SSL_ATTRIBUTES)
         SSL_ATTRIBUTES.each do |name|
-          instance_variable_set "@#{name}", nil
+          instance_variable_set name, nil
         end
       end
     end
@@ -675,17 +675,17 @@ module Net   #:nodoc:
     end
 
     SSL_ATTRIBUTES = [
-      :ca_file,
-      :ca_path,
-      :cert,
-      :cert_store,
-      :ciphers,
-      :key,
-      :ssl_timeout,
-      :ssl_version,
-      :verify_callback,
-      :verify_depth,
-      :verify_mode,
+      :@ca_file,
+      :@ca_path,
+      :@cert,
+      :@cert_store,
+      :@ciphers,
+      :@key,
+      :@ssl_timeout,
+      :@ssl_version,
+      :@verify_callback,
+      :@verify_depth,
+      :@verify_mode,
     ]
 
     # Sets path of a CA certification file in PEM format.
@@ -773,8 +773,7 @@ module Net   #:nodoc:
       if use_ssl?
         ssl_parameters = Hash.new
         iv_list = instance_variables
-        SSL_ATTRIBUTES.each do |name|
-          ivname = "@#{name}".intern
+        SSL_ATTRIBUTES.each do |ivname|
           if iv_list.include?(ivname) and
              value = instance_variable_get(ivname)
             ssl_parameters[name] = value

@@ -1,3 +1,8 @@
+Sat Nov 26 20:01:18 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP::SSL_ATTRIBUTES): refix 33701.
+	  store instance variable symbol names.
+
 Sat Nov 26 15:40:25 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* .travis.yml (script): should be ./configure
