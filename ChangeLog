@@ -1,3 +1,8 @@
+Sun Nov 27 00:16:07 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (copy_stream_body): use 0666 for permission argument for open.
+	  [ruby-core:40865]
+
 Sat Nov 26 23:01:38 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_engine.rb: remove side effect of generic engine
