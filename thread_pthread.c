@@ -1038,8 +1038,8 @@ ping_signal_thread_list(void) {
     }
 }
 #else /* USE_SIGNAL_THREAD_LIST */
-static void add_signal_thread_list(rb_thread_t *th) { }
-static void remove_signal_thread_list(rb_thread_t *th) { }
+#define add_signal_thread_list(th) (void)(th)
+#define remove_signal_thread_list(th) (void)(th)
 #define ubf_select 0
 static int ping_signal_thread_list(void) { return 0; }
 #endif /* USE_SIGNAL_THREAD_LIST */
