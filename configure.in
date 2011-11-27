@@ -147,7 +147,7 @@ AC_DEFUN([RUBY_PREPEND_OPTIONS],
 	$1="[$]{rb_opts}[$]$1"; }])
 
 AC_ARG_WITH(arch,
- 	AS_HELP_STRING([--with-arch=ARCHS],
+	AS_HELP_STRING([--with-arch=ARCHS],
 		       [build an Apple/NeXT Multi Architecture Binary (MAB);
                           ARCHS is a comma-delimited list of architectures for
                           which to build; if this option is disabled or omitted
@@ -498,7 +498,7 @@ fi
 if test "$GCC" = yes; then
     RUBY_TRY_CFLAGS(-D_FORTIFY_SOURCE=2, [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)])
     RUBY_TRY_CFLAGS(-fstack-protector, [RUBY_APPEND_OPTION(XCFLAGS, -fstack-protector)
-    				        RUBY_APPEND_OPTION(XLDFLAGS, -fstack-protector)])
+				        RUBY_APPEND_OPTION(XLDFLAGS, -fstack-protector)])
 fi
 
 if test "$GCC" = ""; then
@@ -2425,7 +2425,7 @@ AS_CASE("$enable_shared", [yes], [
   # enable PIE if possible
   if test "$GCC" = yes; then
     RUBY_TRY_CFLAGS(-fPIE, [RUBY_APPEND_OPTION(XCFLAGS, -fPIE)
-    			    RUBY_APPEND_OPTION(XLDFLAGS, -pie)])
+			    RUBY_APPEND_OPTION(XLDFLAGS, -pie)])
   fi
 ])
 if test "$enable_rpath" = yes; then
@@ -2509,7 +2509,7 @@ AS_CASE(["$target_os"],
 	],
     [os2-emx], [
 	AC_LIBOBJ([os2])
-    	CFLAGS="$CFLAGS -DOS2"
+	CFLAGS="$CFLAGS -DOS2"
 	LIBRUBY_A=`echo $LIBRUBY_A | sed 's/^lib//'`
 	LIBRUBY_SO=`echo $LIBRUBY_SO | sed 's/^lib//'`
 	LIBRUBY_ALIASES=`for i in $LIBRUBY_ALIASES; do echo "$i"; done | sed 's/^lib//'`
