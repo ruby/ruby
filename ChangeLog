@@ -105,16 +105,6 @@ Fri Nov 25 08:00:23 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	  and/or -Wold-style-definition warnings if specified.
 	  Patch by Nikolai Weibull. Thank you! [Bug #5459] [ruby-core:40200]
 
-Fri Nov 25 07:56:49 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
-
-	* configure.in: remove [read buffer ptr field in FILE structures] check.
-	  ruby 1.9 or later doesn't use stdio at all.
-
-Fri Nov 25 07:52:46 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
-
-	* configure.in: remove [read count field in FILE] check.
-	  ruby 1.9 or later doesn't use stdio at all.
-
 Fri Nov 25 07:46:09 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: add -Wall always.
