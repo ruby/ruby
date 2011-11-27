@@ -1,3 +1,8 @@
+Sun Nov 27 21:25:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: added -fno-strict-overflow. it suppress annoying
+	  -Wstrict-overflow warning.
+
 Sun Nov 27 20:58:02 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_write_error2): get rid of warning on linux. fwrite

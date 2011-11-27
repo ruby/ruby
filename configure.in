@@ -496,7 +496,10 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     warnflags=
 fi
 if test "$GCC" = yes; then
+    # -D_FORTIFY_SOURCE
     RUBY_TRY_CFLAGS(-D_FORTIFY_SOURCE=2, [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)])
+
+    # -fstack-protector
     AS_CASE(["$target_os"],
     [mingw*], [
 	stack_protector=no
@@ -508,6 +511,9 @@ if test "$GCC" = yes; then
 	RUBY_APPEND_OPTION(XCFLAGS, -fstack-protector)
 	RUBY_APPEND_OPTION(XLDFLAGS, -fstack-protector)
     fi
+
+    # suppress annoying -Wstrict-overflow warnings
+    RUBY_TRY_CFLAGS(-fno-strict-overflow, [RUBY_APPEND_OPTION(XCFLAGS, -fno-strict-overflow)])
 fi
 
 if test "$GCC" = ""; then
