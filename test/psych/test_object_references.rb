@@ -28,7 +28,7 @@ module Psych
 
     def assert_reference_trip obj
       yml = Psych.dump([obj, obj])
-      assert_match(/\*\d+/, yml)
+      assert_match(/\*-?\d+/, yml)
       data = Psych.load yml
       assert_equal data.first.object_id, data.last.object_id
     end
