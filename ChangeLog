@@ -1,4 +1,6 @@
-Sun Nov 27 18:54:05 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Nov 27 19:09:02 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (stack_protector): disable on mingw.  [Bug#5676]
 
 	* Makefile.in (DLDFLAGS): also needs -fstack-protector.
 	  [Bug#5676]
