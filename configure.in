@@ -497,7 +497,8 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 fi
 if test "$GCC" = yes; then
     RUBY_TRY_CFLAGS(-D_FORTIFY_SOURCE=2, [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)])
-    RUBY_TRY_CFLAGS(-fstack-protector, [RUBY_APPEND_OPTION(XCFLAGS, -fstack-protector)])
+    RUBY_TRY_CFLAGS(-fstack-protector, [RUBY_APPEND_OPTION(XCFLAGS, -fstack-protector)
+    				        RUBY_APPEND_OPTION(XLDFLAGS, -fstack-protector)])
 fi
 
 if test "$GCC" = ""; then
