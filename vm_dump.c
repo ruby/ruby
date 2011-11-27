@@ -863,7 +863,8 @@ rb_vm_bugreport(void)
 		while (!feof(fp)) {
 		    char buff[0x100];
 		    size_t rn = fread(buff, 1, 0x100, fp);
-		    fwrite(buff, 1, rn, stderr);
+		    if (fwrite(buff, 1, rn, stderr) != rn)
+			break;
 		}
 
 		fclose(fp);

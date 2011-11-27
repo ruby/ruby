@@ -6596,7 +6596,8 @@ void
 rb_write_error2(const char *mesg, long len)
 {
     if (rb_stderr == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0) {
-	(void)fwrite(mesg, sizeof(char), len, stderr);
+	int unused;
+	unused = fwrite(mesg, sizeof(char), len, stderr);
     }
     else {
 	rb_io_write(rb_stderr, rb_str_new(mesg, len));
