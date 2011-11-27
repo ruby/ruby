@@ -1657,7 +1657,7 @@ for fcnt in	dnl
 done])
 AS_CASE("$rb_cv_fcnt",
 	["not found"*], [rb_cv_fcnt="not found"],
- 	[AC_DEFINE_UNQUOTED(FILE_COUNT, $rb_cv_fcnt)])
+	[AC_DEFINE_UNQUOTED(FILE_COUNT, $rb_cv_fcnt)])
 
 # win32.c still use this. Don't remove it.
 AC_CACHE_CHECK([read buffer ptr field in FILE structures], rb_cv_frptr,
@@ -2332,7 +2332,7 @@ AS_CASE("$enable_shared", [yes], [
      if test "$GCC" = yes; then
        RUBY_TRY_LDFLAGS([-Wl,--no-undefined], [no_undefined=yes], [no_undefined=no])
        if test "no_undefined" = yes; then
-       	  RUBY_APPEND_OPTION(EXTLDFLAGS, [-Wl,--no-undefined])
+	  RUBY_APPEND_OPTION(EXTLDFLAGS, [-Wl,--no-undefined])
        fi
      fi
     ])
