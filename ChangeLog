@@ -1,6 +1,6 @@
-Sun Nov 27 18:25:30 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Nov 27 18:54:05 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* configure.in (-fstack-protector): also needed in DLDFLAGS.
+	* Makefile.in (DLDFLAGS): also needs -fstack-protector.
 	  [Bug#5676]
 
 Sun Nov 27 14:13:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>

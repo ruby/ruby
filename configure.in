@@ -501,7 +501,6 @@ if test "$GCC" = yes; then
     if test "x$stack_protector" = xyes; then
 	RUBY_APPEND_OPTION(XCFLAGS, -fstack-protector)
 	RUBY_APPEND_OPTION(XLDFLAGS, -fstack-protector)
-	RUBY_APPEND_OPTION(DLDFLAGS, -fstack-protector)
     fi
 fi
 
