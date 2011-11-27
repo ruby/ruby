@@ -115,7 +115,7 @@ Thu Nov 24 20:02:40 2011  Tanaka Akira  <akr@fsij.org>
 
 Thu Nov 24 19:59:56 2011  Tanaka Akira  <akr@fsij.org>
 
-	* io.c (rb_io_reopen): re-initialize buffereing mode for stdout and
+	* io.c (rb_io_reopen): re-initialize buffering mode for stdout and
 	  stderr.
 
 Thu Nov 24 11:12:48 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
@@ -310,7 +310,7 @@ Wed Nov 16 13:51:40 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 Wed Nov 16 12:02:47 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/webrick/test_cgi.rb (TestWEBrickCGI#start_cgi_server): there are
-	  no guarantee of existance of RbConfig::CONFIG['LIBPATHENV'].
+	  no guarantee of existence of RbConfig::CONFIG['LIBPATHENV'].
 	  it only exists in Unix-like environments.
 
 	* test/webrick/test_filehandler.rb
@@ -361,7 +361,7 @@ Tue Nov 15 14:45:15 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Tue Nov 15 13:38:14 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* include/ruby/defines.h (FLUSH_REGISTER_WINDOWS): move sparc asm code
-	  to a separete file sparc.c for preventing inlining optimization.
+	  to a separate file sparc.c for preventing inlining optimization.
 	  Patched by Jurij Smakov. [Bug #5244] [ruby-core:40685]
 	* sparc.c (rb_sparc_flush_register_windows): ditto.
 	* configure.in: ditto.
@@ -450,7 +450,7 @@ Sun Nov 13 23:45:57 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (checking_for): should not modify the result.
 
-	* lib/mkmf.rb (have_struct_member): accept compiler opttions.
+	* lib/mkmf.rb (have_struct_member): accept compiler options.
 
 	* lib/mkmf.rb (convertible_int): add restricted support of struct
 	  member, and TYPEOF_ macro.
@@ -537,7 +537,7 @@ Sat Nov 12 11:13:18 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_ioctl): don't expose our sanity check value to ruby script.
 	  It may change string value meaning if the value is string.
-	  (e.g. MacOS X has  F_GETPATH ioctl)
+	  (e.g. MacOS X has F_GETPATH ioctl)
 	* io.c (rb_fcntl): ditto.
 
 Sat Nov 12 11:06:02 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
@@ -1153,7 +1153,7 @@ Mon Oct 31 20:14:22 2011  Tanaka Akira  <akr@fsij.org>
 
 Mon Oct 31 19:14:11 2011  Tanaka Akira  <akr@fsij.org>
 
-	* test/resolv/test_dns.rb: don't check maximum sleeped time.
+	* test/resolv/test_dns.rb: don't check maximum slept time.
 	  ruby doesn't guarantee the maximum time because it is not a
 	  realtime application.
 
@@ -2083,7 +2083,7 @@ Mon Sep 26 09:20:44 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Mon Sep 26 09:07:46 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/defines.h: remove NextStep, OpenStep, Rhapsody
-	  support. Last activity of their OSs are 7 years ago.
+	  support. Last activity of their OSes are 7 years ago.
 	* configure.in: ditto.
 	* dir.c: ditto.
 	* ext/tk/extconf.rb: ditto.
