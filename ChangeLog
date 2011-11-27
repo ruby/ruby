@@ -1,3 +1,8 @@
+Sun Nov 27 13:09:25 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: workaround to avoid MacOS X build error.
+	  Maybe autoconf 2.61 is slightly buggy. [ruby-core:41316]
+
 Sun Nov 27 04:57:11 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (--no-undefined): r33840 breaks FreeBSD and DragonFly

@@ -2271,7 +2271,10 @@ AS_CASE("$enable_shared", [yes], [
     [freebsd*|dragonfly*], [],
     [
      if test "$GCC" = yes; then
-       RUBY_TRY_LDFLAGS([-Xlinker --no-undefined], RUBY_APPEND_OPTION(EXTLDFLAGS, [-Xlinker --no-undefined]))
+       RUBY_TRY_LDFLAGS([-Wl,--no-undefined], [no_undefined=yes], [no_undefined=no])
+       if test "no_undefined" = yes; then
+       	  RUBY_APPEND_OPTION(EXTLDFLAGS, [-Wl,--no-undefined])
+       fi
      fi
     ])
 
