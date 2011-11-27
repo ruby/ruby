@@ -628,7 +628,7 @@ pop
 (VALUE val)
 ()
 {
-    val = val;
+    (void)val;
     /* none */
 }
 
