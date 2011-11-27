@@ -2051,6 +2051,7 @@ call_DoOneEvent(flag_val)
 #endif
 
 
+#if 0
 static VALUE
 #ifdef HAVE_PROTOTYPES
 eventloop_sleep(VALUE dummy)
@@ -2090,6 +2091,7 @@ eventloop_sleep(dummy)
 
     return Qnil;
 }
+#endif
 
 #define USE_EVLOOP_THREAD_ALONE_CHECK_FLAG 0
 
