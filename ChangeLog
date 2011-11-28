@@ -1,3 +1,9 @@
+Mon Nov 28 09:28:30 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_uchmod): typo.  [Bug#5671] [ruby-dev:44898]
+
+	* test/ruby/test_file.rb (TestFile#test_chmod_m17n): test of above bug.
+
 Sun Nov 27 21:25:33 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: added -fno-strict-overflow. it suppress annoying
