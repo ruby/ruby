@@ -78,7 +78,7 @@ class TestMkmf < Test::Unit::TestCase
       remove_const(:MAKEFILE_CONFIG)
       const_set(:MAKEFILE_CONFIG, mkconfig)
     }
-    Object.class_eval {
+    MakeMakefile.class_eval {
       remove_const(:CONFIG)
       const_set(:CONFIG, mkconfig)
     }
@@ -101,7 +101,7 @@ class TestMkmf < Test::Unit::TestCase
       remove_const(:MAKEFILE_CONFIG)
       const_set(:MAKEFILE_CONFIG, mkconfig0)
     }
-    Object.class_eval {
+    MakeMakefile.class_eval {
       remove_const(:CONFIG)
       const_set(:CONFIG, mkconfig0)
     }

@@ -147,7 +147,7 @@ def extmake(target)
 	remove_const(:MAKEFILE_CONFIG)
 	const_set(:MAKEFILE_CONFIG, mkconfig)
       }
-      Object.class_eval {
+      MakeMakefile.class_eval {
 	remove_const(:CONFIG)
 	const_set(:CONFIG, mkconfig)
       }
@@ -240,7 +240,7 @@ def extmake(target)
 	remove_const(:MAKEFILE_CONFIG)
 	const_set(:MAKEFILE_CONFIG, mkconfig0)
       }
-      Object.class_eval {
+      MakeMakefile.class_eval {
 	remove_const(:CONFIG)
 	const_set(:CONFIG, mkconfig0)
       }

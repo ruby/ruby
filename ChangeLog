@@ -1,3 +1,10 @@
+Tue Nov 29 05:54:18 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/mkmf.rb:  Wrap mkmf.rb in module MakeMakefile to clean up Object
+	  documentation.  [Ruby 1.9 - Feature #5658]
+	* ext/extmk.rb:  Use MakeMakefile::CONFIG instead of Object::CONFIG
+	* test/mkmf/base.rb:  ditto
+
 Tue Nov 29 00:08:57 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* common.mk (INSTRUBY_ARGS): added --mantype to apply mdoc2man.rb
