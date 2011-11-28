@@ -27,7 +27,7 @@ Mon Nov 28 12:47:19 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Mon Nov 28 12:37:54 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* gc.c (initial_params): static.  it seems to be forgetten at r33501.
+	* gc.c (initial_params): static.  it seems to be forgotten at r33501.
 
 Mon Nov 28 12:32:24 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -53,7 +53,7 @@ Mon Nov 28 11:00:25 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Mon Nov 28 10:36:00 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* include/ruby/subst.h: moved Windows specific substitions from
+	* include/ruby/subst.h: moved Windows specific substitutions from
 	  win32.h.
 
 	* ext/socket/rubysocket.h: include ruby/subst.h.  [Bug #5675]
