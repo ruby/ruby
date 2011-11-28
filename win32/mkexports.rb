@@ -41,8 +41,17 @@ class Exports
       syms[internal] = export
       winapis[$1] = internal if /^_?(rb_w32_\w+)(?:@\d+)?$/ =~ internal
     end
-    win32h = File.join(File.dirname(File.dirname(__FILE__)), "include/ruby/win32.h")
-    IO.foreach(win32h) do |line|
+    incdir = File.join(File.dirname(File.dirname(__FILE__)), "include/ruby")
+    read_substitution(incdir+"/win32.h", syms, winapis)
+    read_substitution(incdir+"/subst.h", syms, winapis)
+    syms["NtInitialize"] ||= "ruby_sysinit" if syms["ruby_sysinit"]
+    syms["rb_w32_vsnprintf"] ||= "ruby_vsnprintf"
+    syms["rb_w32_snprintf"] ||= "ruby_snprintf"
+    @syms = syms
+  end
+
+  def read_substitution(header, syms, winapis)
+    IO.foreach(header) do |line|
       if /^#define (\w+)\((.*?)\)\s+(?:\(void\))?(rb_w32_\w+)\((.*?)\)\s*$/ =~ line and
           $2.delete(" ") == $4.delete(" ")
         export, internal = $1, $3
@@ -51,10 +60,6 @@ class Exports
         end
       end
     end
-    syms["NtInitialize"] ||= "ruby_sysinit" if syms["ruby_sysinit"]
-    syms["rb_w32_vsnprintf"] ||= "ruby_vsnprintf"
-    syms["rb_w32_snprintf"] ||= "ruby_snprintf"
-    @syms = syms
   end
 
   def exports(name = $name, library = $library, description = $description)
