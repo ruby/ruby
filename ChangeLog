@@ -1,3 +1,7 @@
+Mon Nov 28 12:57:29 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_write_error2): fwrite() returns ssize_t.
+
 Mon Nov 28 12:47:19 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* parse.y (nodetype, nodeline): static.  these functions are for

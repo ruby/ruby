@@ -6599,7 +6599,7 @@ void
 rb_write_error2(const char *mesg, long len)
 {
     if (rb_stderr == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0) {
-	int unused;
+	ssize_t unused;
 	unused = fwrite(mesg, sizeof(char), len, stderr);
     }
     else {
