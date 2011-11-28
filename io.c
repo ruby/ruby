@@ -1187,6 +1187,15 @@ rb_io_addstr(VALUE io, VALUE str)
     return io;
 }
 
+#ifdef HAVE_FSYNC
+static VALUE nogvl_fsync(void *ptr)
+{
+    rb_io_t *fptr = ptr;
+
+    return (VALUE)fsync(fptr->fd);
+}
+#endif
+
 /*
  *  call-seq:
  *     ios.flush    -> ios
@@ -1220,7 +1229,7 @@ rb_io_flush(VALUE io)
             rb_sys_fail(0);
 #ifdef _WIN32
 	if (GetFileType((HANDLE)rb_w32_get_osfhandle(fptr->fd)) == FILE_TYPE_DISK) {
-	    fsync(fptr->fd);
+	    rb_thread_io_blocking_region(nogvl_fsync, fptr, fptr->fd);
 	}
 #endif
     }
@@ -1331,6 +1340,8 @@ rb_io_set_pos(VALUE io, VALUE offset)
 }
 
 static void clear_readconv(rb_io_t *fptr);
+
+#ifdef HAVE_FSYNC
 
 /*
  *  call-seq:
@@ -1506,14 +1517,6 @@ rb_io_set_sync(VALUE io, VALUE sync)
 	fptr->mode &= ~FMODE_SYNC;
     }
     return sync;
-}
-
-#ifdef HAVE_FSYNC
-static VALUE nogvl_fsync(void *ptr)
-{
-    rb_io_t *fptr = ptr;
-
-    return (VALUE)fsync(fptr->fd);
 }
 
 /*

@@ -1,3 +1,7 @@
+Mon Nov 28 11:46:35 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_io_flush): release GVL during fsync() on Windows.
+
 Mon Nov 28 11:00:25 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/subst.h: typo of r33876.
