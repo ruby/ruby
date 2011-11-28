@@ -44,7 +44,6 @@ class Exports
     incdir = File.join(File.dirname(File.dirname(__FILE__)), "include/ruby")
     read_substitution(incdir+"/win32.h", syms, winapis)
     read_substitution(incdir+"/subst.h", syms, winapis)
-    syms["NtInitialize"] ||= "ruby_sysinit" if syms["ruby_sysinit"]
     syms["rb_w32_vsnprintf"] ||= "ruby_vsnprintf"
     syms["rb_w32_snprintf"] ||= "ruby_snprintf"
     @syms = syms

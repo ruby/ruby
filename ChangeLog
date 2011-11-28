@@ -1,3 +1,7 @@
+Mon Nov 28 12:29:20 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/mkexports.rb (Exports#initialize): remove old symbol name.
+
 Mon Nov 28 12:15:28 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/mkexports.rb (Exports#read_substitution): need to read
