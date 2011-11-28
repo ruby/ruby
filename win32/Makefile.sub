@@ -637,8 +637,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_DAYLIGHT 1
 #define SETPGRP_VOID 1
 #define RSHIFT(x,y) ((x)>>(int)y)
-#define FILE_COUNT _cnt
-#define FILE_READPTR _ptr
 #define HAVE_RB_FD_INIT 1
 #define RUBY_SETJMP(env) _setjmp(env)
 #define RUBY_LONGJMP(env,val) longjmp(env,val)

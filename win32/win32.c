@@ -4886,6 +4886,10 @@ read(int fd, void *buf, size_t size)
 }
 #endif
 
+
+#define FILE_COUNT _cnt
+#define FILE_READPTR _ptr
+
 #undef fgetc
 /* License: Ruby's */
 int
