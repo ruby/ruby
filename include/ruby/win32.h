@@ -596,7 +596,6 @@ struct tms {
 int rb_w32_times(struct tms *);
 
 /* thread stuff */
-HANDLE GetCurrentThreadHandle(void);
 int  rb_w32_sleep(unsigned long msec);
 int  rb_w32_putc(int, FILE*);
 int  rb_w32_getc(FILE*);
