@@ -1,3 +1,7 @@
+Mon Nov 28 11:00:25 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/subst.h: typo of r33876.
+
 Mon Nov 28 10:36:00 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/subst.h: moved Windows specific substitions from

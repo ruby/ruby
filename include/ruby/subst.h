@@ -17,7 +17,7 @@
 #define close ruby_close
 #endif
 
-#ifdef __WIN32__
+#ifdef _WIN32
 #undef inet_ntop
 #define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
 
