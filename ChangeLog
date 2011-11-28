@@ -1,3 +1,7 @@
+Mon Nov 28 12:37:54 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* gc.c (initial_params): static.  it seems to be forgetten at r33501.
+
 Mon Nov 28 12:32:24 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/win32.h, win32/win32.c (GetCurrentThreadHandle): remove

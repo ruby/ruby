@@ -89,7 +89,7 @@ typedef struct {
 #endif
 } ruby_gc_params_t;
 
-ruby_gc_params_t initial_params = {
+static ruby_gc_params_t initial_params = {
     GC_MALLOC_LIMIT,
     HEAP_MIN_SLOTS,
     FREE_MIN,
