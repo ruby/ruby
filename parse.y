@@ -7952,13 +7952,13 @@ node_newnode(struct parser_params *parser, enum node_type type, VALUE a0, VALUE 
     return n;
 }
 
-enum node_type
+static enum node_type
 nodetype(NODE *node)			/* for debug */
 {
     return (enum node_type)nd_type(node);
 }
 
-int
+static int
 nodeline(NODE *node)
 {
     return nd_line(node);

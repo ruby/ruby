@@ -1,3 +1,8 @@
+Mon Nov 28 12:47:19 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* parse.y (nodetype, nodeline): static.  these functions are for
+	  debugging, and not intend to be public.
+
 Mon Nov 28 12:37:54 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* gc.c (initial_params): static.  it seems to be forgetten at r33501.
