@@ -279,24 +279,7 @@ rb_w32_osver(void)
 #define IfWin95(win95, winnt) (winnt)
 #endif
 
-/* License: Ruby's */
-HANDLE
-GetCurrentThreadHandle(void)
-{
-    static HANDLE current_process_handle = NULL;
-    HANDLE h;
-
-    if (!current_process_handle)
-	current_process_handle = GetCurrentProcess();
-    if (!DuplicateHandle(current_process_handle, GetCurrentThread(),
-			 current_process_handle, &h,
-			 0, FALSE, DUPLICATE_SAME_ACCESS))
-	return NULL;
-    return h;
-}
-
 /* simulate flock by locking a range on the file */
-
 
 /* License: Artistic or GPL */
 #define LK_ERR(f,i) \
