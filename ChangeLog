@@ -1,3 +1,7 @@
+Tue Nov 29 07:45:26 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/mkmf.rb:  Wrap comments to 78 columns and clean up formatting.
+
 Tue Nov 29 05:54:18 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/mkmf.rb:  Wrap mkmf.rb in module MakeMakefile to clean up Object
