@@ -1,3 +1,8 @@
+Tue Nov 29 09:07:59 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/mkmf.rb:  Fix indentations of constants at end of module.
+	  Document some constants.
+
 Tue Nov 29 09:58:23 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_write_error2): suppress unused variable warning.

@@ -41,15 +41,23 @@ end
 # library.
 module MakeMakefile
 
+  # Makefile configuration options
   CONFIG = RbConfig::MAKEFILE_CONFIG
   ORIG_LIBPATH = ENV['LIB']
 
+  # Filename extensions for C files
   C_EXT = %w[c m]
+
+  # Filename extensions for C++ files
+
   CXX_EXT = %w[cc mm cxx cpp]
   if File::FNM_SYSCASE.zero?
     CXX_EXT.concat(%w[C])
   end
+
+  # Filename extensions for compiled source files
   SRC_EXT = C_EXT + CXX_EXT
+
   $static = nil
   $config_h = '$(arch_hdrdir)/ruby/config.h'
   $default_static = $static
@@ -126,6 +134,7 @@ module MakeMakefile
     end
   end
 
+  # Directories for installing various types of files
   INSTALL_DIRS = [
     [dir_re('commondir'), "$(RUBYCOMMONDIR)"],
     [dir_re('sitedir'), "$(RUBYCOMMONDIR)"],
@@ -2307,48 +2316,66 @@ MESSAGE
 
   # :startdoc:
 
-split = Shellwords.method(:shellwords).to_proc
+  split = Shellwords.method(:shellwords).to_proc
 
-EXPORT_PREFIX = config_string('EXPORT_PREFIX') {|s| s.strip}
+  EXPORT_PREFIX = config_string('EXPORT_PREFIX') {|s| s.strip}
 
-hdr = ['#include "ruby.h"' "\n"]
-config_string('COMMON_MACROS') do |s|
-  Shellwords.shellwords(s).each do |w|
-    w, v = w.split(/=/, 2)
-    hdr << "#ifndef #{w}"
-    hdr << "#define #{[w, v].compact.join(" ")}"
-    hdr << "#endif /* #{w} */"
+  hdr = ['#include "ruby.h"' "\n"]
+  config_string('COMMON_MACROS') do |s|
+    Shellwords.shellwords(s).each do |w|
+      w, v = w.split(/=/, 2)
+      hdr << "#ifndef #{w}"
+      hdr << "#define #{[w, v].compact.join(" ")}"
+      hdr << "#endif /* #{w} */"
+    end
   end
-end
-config_string('COMMON_HEADERS') do |s|
-  Shellwords.shellwords(s).each {|w| hdr << "#include <#{w}>"}
-end
-COMMON_HEADERS = hdr.join("\n")
-COMMON_LIBS = config_string('COMMON_LIBS', &split) || []
-
-COMPILE_RULES = config_string('COMPILE_RULES', &split) || %w[.%s.%s:]
-RULE_SUBST = config_string('RULE_SUBST')
-COMPILE_C = config_string('COMPILE_C') || '$(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) $(COUTFLAG)$@ -c $<'
-COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $<'
-TRY_LINK = config_string('TRY_LINK') ||
-  "$(CC) #{OUTFLAG}conftest $(INCFLAGS) $(CPPFLAGS) " \
-  "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
-LINK_SO = config_string('LINK_SO') ||
-  if CONFIG["DLEXT"] == $OBJEXT
-    "ld $(DLDFLAGS) -r -o $@ $(OBJS)\n"
-  else
-    "$(LDSHARED) #{OUTFLAG}$@ $(OBJS) " \
-    "$(LIBPATH) $(DLDFLAGS) $(LOCAL_LIBS) $(LIBS)"
+  config_string('COMMON_HEADERS') do |s|
+    Shellwords.shellwords(s).each {|w| hdr << "#include <#{w}>"}
   end
-LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L"%s"'
-RPATHFLAG = config_string('RPATHFLAG') || ''
-LIBARG = config_string('LIBARG') || '-l%s'
-MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main(void) {return 0;}'
-UNIVERSAL_INTS = config_string('UNIVERSAL_INTS') {|s| Shellwords.shellwords(s)} ||
-  %w[int short long long\ long]
+  COMMON_HEADERS = hdr.join("\n")
+  COMMON_LIBS = config_string('COMMON_LIBS', &split) || []
 
-sep = config_string('BUILD_FILE_SEPARATOR') {|s| ":/=#{s}" if s != "/"} || ""
-CLEANINGS = "
+  # Default Makefile compile rules
+  COMPILE_RULES = config_string('COMPILE_RULES', &split) || %w[.%s.%s:]
+  RULE_SUBST = config_string('RULE_SUBST')
+
+  # Make command to compile a C file
+  COMPILE_C = config_string('COMPILE_C') || '$(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) $(COUTFLAG)$@ -c $<'
+
+  # Make command to compile a C++ file
+  COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $<'
+
+  # Command for attempting to link libraries and frameworks specified in
+  # extconf.rb
+  TRY_LINK = config_string('TRY_LINK') ||
+    "$(CC) #{OUTFLAG}conftest $(INCFLAGS) $(CPPFLAGS) " \
+    "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
+
+  # Makefile command for linking a library
+  LINK_SO = config_string('LINK_SO') ||
+    if CONFIG["DLEXT"] == $OBJEXT
+      "ld $(DLDFLAGS) -r -o $@ $(OBJS)\n"
+    else
+      "$(LDSHARED) #{OUTFLAG}$@ $(OBJS) " \
+        "$(LIBPATH) $(DLDFLAGS) $(LOCAL_LIBS) $(LIBS)"
+    end
+
+  # Linker flag that adds a new library search path
+  LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L"%s"'
+  RPATHFLAG = config_string('RPATHFLAG') || ''
+
+  # Linker flag that specifies a library in the library search path
+  LIBARG = config_string('LIBARG') || '-l%s'
+
+  # A definition of <code>main()</code> that does nothing.  Used in extconf.rb
+  # to check for libraries, headers, etc.
+  MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main(void) {return 0;}'
+  UNIVERSAL_INTS = config_string('UNIVERSAL_INTS') {|s| Shellwords.shellwords(s)} ||
+    %w[int short long long\ long]
+
+  sep = config_string('BUILD_FILE_SEPARATOR') {|s| ":/=#{s}" if s != "/"} || ""
+  # Default Makefile clean targets
+  CLEANINGS = "
 clean-rb-default::
 clean-rb::
 clean-so::
