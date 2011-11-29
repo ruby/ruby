@@ -1,3 +1,12 @@
+Wed Nov 30 02:37:32 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* numeric.c (flo_round): Make Float#round round big values [bug
+	  #5272]
+
+Wed Nov 30 02:37:32 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_round): substitute machine dependent magic number.
+
 Wed Nov 30 02:28:22 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* numeric.c (int_round): Integer#round always returns an Integer [Bug

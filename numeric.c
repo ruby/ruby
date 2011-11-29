@@ -1494,6 +1494,9 @@ int_round_0(VALUE num, int ndigits)
     return n;
 }
 
+static VALUE
+flo_truncate(VALUE num);
+
 /*
  *  call-seq:
  *     flt.round([ndigits])  ->  integer or float
@@ -1531,18 +1534,24 @@ flo_round(int argc, VALUE *argv, VALUE num)
     double number, f;
     int ndigits = 0;
     int binexp;
-    long val;
+    enum {float_dig = DBL_DIG+2};
 
     if (argc > 0 && rb_scan_args(argc, argv, "01", &nd) == 1) {
 	ndigits = NUM2INT(nd);
     }
+    if (ndigits < 0) {
+	return int_round_0(flo_truncate(num), ndigits);
+    }
     number  = RFLOAT_VALUE(num);
-    frexp (number , &binexp);
+    if (ndigits == 0) {
+	return dbl2ival(number);
+    }
+    frexp(number, &binexp);
 
 /* Let `exp` be such that `number` is written as:"0.#{digits}e#{exp}",
    i.e. such that  10 ** (exp - 1) <= |number| < 10 ** exp
-   Recall that up to 17 digits can be needed to represent a double,
-   so if ndigits + exp >= 17, the intermediate value (number * 10 ** ndigits)
+   Recall that up to float_dig digits can be needed to represent a double,
+   so if ndigits + exp >= float_dig, the intermediate value (number * 10 ** ndigits)
    will be an integer and thus the result is the original number.
    If ndigits + exp <= 0, the result is 0 or "1e#{exp}", so
    if ndigits + exp < 0, the result is 0.
@@ -1553,44 +1562,18 @@ flo_round(int argc, VALUE *argv, VALUE num)
 	   10 ** (binexp/4 - 1) < |number| < 10 ** (binexp/3)
 	   binexp/4 <= exp <= binexp/3
 	If binexp <= 0, swap the /4 and the /3
-	So if ndigits + binexp/(4 or 3) >= 17, the result is number
+	So if ndigits + binexp/(4 or 3) >= float_dig, the result is number
 	If ndigits + binexp/(3 or 4) < 0 the result is 0
 */
-    if (isinf(number) || isnan(number)) {
-	/* Do nothing */
+    if (isinf(number) || isnan(number) ||
+	(((long)ndigits - float_dig) * (3 + (binexp > 0)) + binexp >= 0)) {
+	return num;
     }
-    else if ((long)ndigits * (4 - (binexp > 0)) + binexp < 0) {
-	number = 0;
+    if ((long)ndigits * (4 - (binexp > 0)) + binexp < 0) {
+	return DBL2NUM(0);
     }
-    else if (((long)ndigits - 17) * (3 + (binexp > 0)) + binexp < 0) {
-	f = pow(10, abs(ndigits));
-	if (ndigits < 0) {
-	    double absnum = fabs(number);
-	    if (absnum < f) return INT2FIX(0);
-	    if (!FIXABLE(number)) {
-		VALUE f10 = int_pow(10, -ndigits);
-		VALUE n10 = f10;
-		if (number < 0) {
-		    f10 = FIXNUM_P(f10) ? fix_uminus(f10) : rb_big_uminus(f10);
-		}
-		num = rb_big_idiv(rb_dbl2big(absnum), n10);
-		return FIXNUM_P(num) ? fix_mul(num, f10) : rb_big_mul(num, f10);
-	    }
-	    number /= f;
-	}
-	else number *= f;
-	number = round(number);
-	if (ndigits < 0) number *= f;
-	else number /= f;
-    }
-
-    if (ndigits > 0) return DBL2NUM(number);
-
-    if (!FIXABLE(number)) {
-	return rb_dbl2big(number);
-    }
-    val = (long)number;
-    return LONG2FIX(val);
+    f = pow(10, ndigits);
+    return DBL2NUM(round(number * f) / f);
 }
 
 /*
