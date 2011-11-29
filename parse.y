@@ -9625,6 +9625,9 @@ Init_sym(void)
     global_symbols.id_ivar2 = st_init_numtable_with_size(1000);
 #endif
 
+    (void)nodetype;
+    (void)nodeline;
+
     Init_id();
 }
 
