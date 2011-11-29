@@ -1,3 +1,7 @@
+Tue Nov 29 09:58:23 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_write_error2): suppress unused variable warning.
+
 Tue Nov 29 07:45:26 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/mkmf.rb:  Wrap comments to 78 columns and clean up formatting.
@@ -12,11 +16,11 @@ Tue Nov 29 05:54:18 2011  Eric Hodel  <drbrain@segment7.net>
 Tue Nov 29 00:08:57 2011  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* common.mk (INSTRUBY_ARGS): added --mantype to apply mdoc2man.rb
-	  to man pages.  Fixes #5598. 
+	  to man pages.  Fixes #5598.
 	  (do-install-nodoc, do-install-local, do-install-man,
 	  dont-install-nodoc, dont-install-local, dont-install-man):
 	  No longer needs --mantype.
-	
+
 	  Reported by Rainer Orth <ro AT cebitec.uni-bielefeld.de>,
 	  patch by George Koehler <xkernigh AT netscape.net>.
 

@@ -6599,8 +6599,10 @@ void
 rb_write_error2(const char *mesg, long len)
 {
     if (rb_stderr == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0) {
-	ssize_t unused;
-	unused = fwrite(mesg, sizeof(char), len, stderr);
+	if (fwrite(mesg, sizeof(char), (size_t)len, stderr) < (size_t)len) {
+	    /* failed to write to stderr, what can we do? */
+	    return;
+	}
     }
     else {
 	rb_io_write(rb_stderr, rb_str_new(mesg, len));
