@@ -1,3 +1,8 @@
+Wed Nov 30 02:28:22 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* numeric.c (int_round): Integer#round always returns an Integer [Bug
+	  #5271]
+
 Fri Nov  4 01:56:30 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (make_writeconv): unversal_newline converter is for reading.
