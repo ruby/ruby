@@ -203,6 +203,7 @@ class TestModule < Test::Unit::TestCase
 
     ancestors = Object.ancestors
     mixins = ancestors - [Object, Kernel, BasicObject]
+    mixins << JSON::Ext::Generator::GeneratorMethods::String if defined?(JSON::Ext::Generator::GeneratorMethods::String)
     assert_equal([Object, Kernel, BasicObject], ancestors - mixins)
     assert_equal([String, Comparable, Object, Kernel, BasicObject], String.ancestors - mixins)
   end
@@ -263,6 +264,7 @@ class TestModule < Test::Unit::TestCase
     assert_equal([Mixin], User.included_modules)
 
     mixins = Object.included_modules - [Kernel]
+    mixins << JSON::Ext::Generator::GeneratorMethods::String if defined?(JSON::Ext::Generator::GeneratorMethods::String)
     assert_equal([Kernel], Object.included_modules - mixins)
     assert_equal([Comparable, Kernel], String.included_modules - mixins)
   end
