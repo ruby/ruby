@@ -64,29 +64,6 @@ class TestModule < Test::Unit::TestCase
 
   # Support stuff
 
-  def remove_pp_mixins(list)
-    list.reject {|c| c == PP::ObjectMixin }
-  end
-
-  def remove_json_mixins(list)
-    list.reject {|c| c.to_s.start_with?("JSON") }
-  end
-
-  def remove_rake_mixins(list)
-    list.reject {|c|
-      name = c.name
-      name.start_with?("Rake") or name.start_with?("FileUtils")
-    }
-  end
-
-  def remove_minitest_mixins(list)
-    list.reject {|c| c.to_s.start_with?("MiniTest") }
-  end
-
-  def remove_mkmf_mixins(list)
-    list.reject {|c| c.to_s.start_with?("MakeMakefile") }
-  end
-
   module Mixin
     MIXIN = 1
     def mixin
@@ -224,10 +201,10 @@ class TestModule < Test::Unit::TestCase
     assert_equal([User, Mixin],      User.ancestors)
     assert_equal([Mixin],            Mixin.ancestors)
 
-    assert_equal([Object, Kernel, BasicObject],
-                 remove_mkmf_mixins(remove_minitest_mixins(remove_rake_mixins(remove_json_mixins(remove_pp_mixins(Object.ancestors))))))
-    assert_equal([String, Comparable, Object, Kernel, BasicObject],
-                 remove_mkmf_mixins(remove_minitest_mixins(remove_rake_mixins(remove_json_mixins(remove_pp_mixins(String.ancestors))))))
+    ancestors = Object.ancestors
+    mixins = ancestors - [Object, Kernel, BasicObject]
+    assert_equal([Object, Kernel, BasicObject], ancestors - mixins)
+    assert_equal([String, Comparable, Object, Kernel, BasicObject], String.ancestors - mixins)
   end
 
   CLASS_EVAL = 2
@@ -284,10 +261,10 @@ class TestModule < Test::Unit::TestCase
   def test_included_modules
     assert_equal([], Mixin.included_modules)
     assert_equal([Mixin], User.included_modules)
-    assert_equal([Kernel],
-                 remove_mkmf_mixins(remove_minitest_mixins(remove_rake_mixins(remove_json_mixins(remove_pp_mixins(Object.included_modules))))))
-    assert_equal([Comparable, Kernel],
-                 remove_mkmf_mixins(remove_minitest_mixins(remove_rake_mixins(remove_json_mixins(remove_pp_mixins(String.included_modules))))))
+
+    mixins = Object.included_modules - [Kernel]
+    assert_equal([Kernel], Object.included_modules - mixins)
+    assert_equal([Comparable, Kernel], String.included_modules - mixins)
   end
 
   def test_instance_methods
