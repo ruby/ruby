@@ -1,3 +1,8 @@
+Wed Nov 30 18:22:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c (nucomp_rationalize): fix function.  [ruby-core:40667]
+	  [Bug #5546]
+
 Thu Nov 17 10:36:46 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb (load_file): make sure opened yaml files are

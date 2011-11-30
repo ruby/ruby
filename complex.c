@@ -1374,7 +1374,7 @@ nucomp_rationalize(int argc, VALUE *argv, VALUE self)
        rb_raise(rb_eRangeError, "can't convert %s into Rational",
                 StringValuePtr(s));
     }
-    return rb_funcall(dat->real, rb_intern("rationalize"), argc, argv);
+    return rb_funcall2(dat->real, rb_intern("rationalize"), argc, argv);
 }
 
 /*
