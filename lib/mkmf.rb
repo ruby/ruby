@@ -53,6 +53,8 @@ module MakeMakefile
   $static = nil
   $config_h = '$(arch_hdrdir)/ruby/config.h'
   $default_static = $static
+  $OBJEXT = nil
+  $ignore_error = ''
 
   unless defined? $configure_args
     $configure_args = {}
