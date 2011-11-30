@@ -1,3 +1,9 @@
+Wed Nov 30 08:57:07 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/mkmf.rb:  Use MakeMakefile's rm_f to avoid conflict with Rake or
+	  FileUtils.
+	* test/ruby/test_module.rb:  Hide MakeMakefile's inclusion in Object
+
 Wed Nov 30 09:12:43 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rdoc/encoding.rb (RDoc::Encoding.read_file): fixup newline chars
