@@ -1936,13 +1936,8 @@ rb_econv_decorate_at_last(rb_econv_t *ec, const char *decorator_name)
 void
 rb_econv_binmode(rb_econv_t *ec)
 {
-    const rb_transcoder *trs[3];
-    int n, i, j;
-    transcoder_entry_t *entry;
-    int num_trans;
     const char *dname = 0;
 
-    n = 0;
     switch (ec->flags & ECONV_NEWLINE_DECORATOR_MASK) {
       case ECONV_UNIVERSAL_NEWLINE_DECORATOR:
 	dname = "universal_newline";
@@ -1954,32 +1949,24 @@ rb_econv_binmode(rb_econv_t *ec)
 	dname = "cr_newline";
 	break;
     }
-    if (dname) {
-        entry = get_transcoder_entry("", dname);
-        if (entry->transcoder)
-            trs[n++] = entry->transcoder;
-    }
 
-    num_trans = ec->num_trans;
-    j = 0;
-    for (i = 0; i < num_trans; i++) {
-        int k;
-        for (k = 0; k < n; k++)
-            if (trs[k] == ec->elems[i].tc->transcoder)
-                break;
-        if (k == n) {
-            ec->elems[j] = ec->elems[i];
-            j++;
-        }
-        else {
-            rb_transcoding_close(ec->elems[i].tc);
-            xfree(ec->elems[i].out_buf_start);
-            ec->num_trans--;
-        }
+    if (dname) {
+        const rb_transcoder *transcoder = get_transcoder_entry("", dname)->transcoder;
+        int num_trans = ec->num_trans;
+	int i, j = 0;
+
+	for (i=0; i < num_trans; i++) {
+	    if (transcoder == ec->elems[i].tc->transcoder) {
+		rb_transcoding_close(ec->elems[i].tc);
+		xfree(ec->elems[i].out_buf_start);
+		ec->num_trans--;
+	    }
+	    else
+		ec->elems[j++] = ec->elems[i];
+	}
     }
 
     ec->flags &= ~ECONV_NEWLINE_DECORATOR_MASK;
-
 }
 
 static VALUE

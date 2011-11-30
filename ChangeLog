@@ -1,3 +1,7 @@
+Wed Nov 30 20:02:02 2011  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode.c: Simplified rb_econv_binmode, avoided a warning on cygwin.
+
 Wed Nov 30 08:57:07 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/mkmf.rb:  Use MakeMakefile's rm_f to avoid conflict with Rake or
