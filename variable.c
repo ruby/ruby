@@ -272,7 +272,7 @@ rb_path_to_class(VALUE pathname)
 	    p += 2;
 	    pbeg = p;
 	}
-	if (!rb_const_defined(c, id)) {
+	if (!rb_const_defined_at(c, id)) {
 	  undefined_class:
 	    rb_raise(rb_eArgError, "undefined class/module %.*s", (int)(p-path), path);
 	}

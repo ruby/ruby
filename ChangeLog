@@ -1,3 +1,9 @@
+Wed Nov 30 23:35:45 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* variable.c (rb_path2class): don't raise NameError when the middle
+	  constant of the path is not defined but defined on toplevel.
+	  [ruby-core:41410] [Bug #5691]
+
 Wed Nov 30 20:02:02 2011  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* transcode.c: Simplified rb_econv_binmode, avoided a warning on cygwin.
