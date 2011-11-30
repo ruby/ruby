@@ -24,6 +24,9 @@
 #elif HAVE_SYS_FCNTL_H
 #include <sys/fcntl.h>
 #endif
+#if HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
 
 static void native_mutex_lock(pthread_mutex_t *lock);
 static void native_mutex_unlock(pthread_mutex_t *lock);
@@ -1126,6 +1129,10 @@ thread_timer(void *p)
     struct timeval timeout;
 
     if (TT_DEBUG) WRITE_CONST(2, "start timer thread\n");
+
+#ifdef __linux__
+    prctl(PR_SET_NAME, "ruby-timer-thr");
+#endif
 
     while (system_working > 0) {
 	fd_set rfds;

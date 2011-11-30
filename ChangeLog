@@ -1,3 +1,9 @@
+Thu Dec  1 07:03:51 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: add sys/prctl.h test.
+	* thread_pthread.c (thread_timer): call prctl(PR_SET_NAME) to change
+	  thread name. It may help to debug.
+
 Wed Nov 30 23:35:45 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* variable.c (rb_path2class): don't raise NameError when the middle
