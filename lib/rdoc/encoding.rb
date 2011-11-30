@@ -20,6 +20,7 @@ module RDoc::Encoding
 
   def self.read_file filename, encoding, force_transcode = false
     content = open filename, "rb" do |f| f.read end
+    content.gsub!("\r\n", "\n") if RUBY_PLATFORM =~ /mswin|mingw/
 
     utf8 = content.sub!(/\A\xef\xbb\xbf/, '')
 

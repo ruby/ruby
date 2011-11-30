@@ -1,3 +1,14 @@
+Wed Nov 30 09:12:43 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/rdoc/encoding.rb (RDoc::Encoding.read_file): fixup newline chars
+	  on Windows.
+	  see https://github.com/rdoc/rdoc/issues/87
+
+	* test/rdoc/test_rdoc_markup_pre_process.rb
+	  (TestRDocMarkupPreProcess#test_include_file, 
+	  TestRDocMarkupPreProcess#test_include_file_encoding_incompatible):
+	  follow above change.
+
 Wed Nov 30 09:09:37 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/parser.c (parse): parse method can take an option file
