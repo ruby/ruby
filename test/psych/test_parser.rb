@@ -32,6 +32,13 @@ module Psych
       @handler.parser = @parser
     end
 
+    def test_filename
+      ex = assert_raises(Psych::SyntaxError) do
+        @parser.parse '--- `', 'omg!'
+      end
+      assert_match 'omg!', ex.message
+    end
+
     def test_line_numbers
       assert_equal 0, @parser.mark.line
       @parser.parse "---\n- hello\n- world"

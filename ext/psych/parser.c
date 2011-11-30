@@ -84,8 +84,9 @@ static VALUE make_exception(yaml_parser_t * parser, VALUE path)
  *
  * See Psych::Parser and Psych::Parser#handler
  */
-static VALUE parse(VALUE self, VALUE yaml)
+static VALUE parse(int argc, VALUE *argv, VALUE self)
 {
+    VALUE yaml, path;
     yaml_parser_t * parser;
     yaml_event_t event;
     int done = 0;
@@ -95,6 +96,13 @@ static VALUE parse(VALUE self, VALUE yaml)
     rb_encoding * internal_enc = rb_default_internal_encoding();
 #endif
     VALUE handler = rb_iv_get(self, "@handler");
+
+    if (rb_scan_args(argc, argv, "11", &yaml, &path) == 1) {
+	if(rb_respond_to(yaml, id_path))
+	    path = rb_funcall(yaml, id_path, 0);
+	else
+	    path = rb_str_new2("<unknown>");
+    }
 
     Data_Get_Struct(self, yaml_parser_t, parser);
 
@@ -114,12 +122,7 @@ static VALUE parse(VALUE self, VALUE yaml)
 
     while(!done) {
 	if(!yaml_parser_parse(parser, &event)) {
-	    VALUE path, exception;
-
-	    if(rb_respond_to(yaml, id_path))
-		path = rb_funcall(yaml, id_path, 0);
-	    else
-		path = rb_str_new2("<unknown>");
+	    VALUE exception;
 
 	    exception = make_exception(parser, path);
 	    yaml_parser_delete(parser);
@@ -392,7 +395,7 @@ void Init_psych_parser()
     rb_require("psych/syntax_error");
     ePsychSyntaxError = rb_define_class_under(mPsych, "SyntaxError", rb_eSyntaxError);
 
-    rb_define_method(cPsychParser, "parse", parse, 1);
+    rb_define_method(cPsychParser, "parse", parse, -1);
     rb_define_method(cPsychParser, "mark", mark, 0);
     rb_define_method(cPsychParser, "external_encoding=", set_external_encoding, 1);
 

@@ -1,3 +1,9 @@
+Wed Nov 30 09:09:37 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c (parse): parse method can take an option file
+	  name for use in exception messages.
+	* test/psych/test_parser.rb: corresponding tests.
+
 Tue Nov 29 09:07:59 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/mkmf.rb:  Fix indentations of constants at end of module.
