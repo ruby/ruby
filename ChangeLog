@@ -1,3 +1,8 @@
+Thu Nov 17 10:36:46 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb (load_file): make sure opened yaml files are
+	  also closed. [ruby-core:41088]
+
 Wed Nov 30 02:58:46 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* numeric.c (dbl2ival): Fix Float#divmod and #round for 32 bit
