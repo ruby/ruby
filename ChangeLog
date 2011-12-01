@@ -1,3 +1,8 @@
+Thu Dec  1 16:59:24 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/extconf.rb: add arguments for macro calls.
+	  [ruby-core:41370] [Bug#5681]
+
 Thu Dec  1 16:20:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#try_func): fix broken patch at r33834.

@@ -6,7 +6,6 @@ case RUBY_PLATFORM
 when /(ms|bcc)win(32|64)|mingw/
   test_func = "WSACleanup"
   have_library("ws2_32", "WSACleanup")
-  $defs << "-DHAVE_SOCKETPAIR"
 when /cygwin/
   test_func = "socket"
 when /beos/
@@ -430,9 +429,10 @@ if getaddr_info_ok == :wide or
   $defs << "-DGETADDRINFO_EMU"
 end
 
-have_func("inet_ntop") or have_func("inet_ntoa")
-have_func("inet_pton") or have_func("inet_aton")
-have_func("getservbyport")
+have_func('inet_ntop(0, (const void *)0, (char *)0, 0)') or
+  have_func("inet_ntoa(*(struct in_addr *)NULL)")
+have_func('inet_pton(0, "", (void *)0)') or have_func('inet_aton("", (struct in_addr *)0)')
+have_func('getservbyport(0, "")')
 have_header("arpa/nameser.h")
 have_header("resolv.h")
 
@@ -482,8 +482,8 @@ $distcleanfiles << "constants.h" << "constdefs.*"
 if have_func(test_func)
   have_func("hsterror")
   have_func("getipnodebyname") or have_func("gethostbyname2")
-  have_func("socketpair") unless $defs.include?("-DHAVE_SOCKETPAIR")
-  unless have_func("gethostname")
+  have_func("socketpair(0, 0, 0, 0)")
+  unless have_func("gethostname((char *)0, 0)")
     have_func("uname")
   end
   if enable_config("socks", ENV["SOCKS_SERVER"])
