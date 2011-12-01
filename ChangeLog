@@ -1,3 +1,8 @@
+Thu Dec  1 20:33:22 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* proc.c (rb_proc_arity): Fix Proc#arity in case of optional
+	  arguments. [bug #5694] [rubyspec:b8b259]
+
 Thu Dec  1 16:59:24 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/extconf.rb: add arguments for macro calls.
