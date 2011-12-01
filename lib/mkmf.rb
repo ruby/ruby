@@ -663,7 +663,7 @@ SRC
 /*top*/
 #{MAIN_DOES_NOTHING}
 extern int t(void);
-int t(void) { #{func}(); return 0; }
+int t(void) { #{call}; return 0; }
 SRC
   end
 

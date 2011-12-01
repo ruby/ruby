@@ -1,3 +1,7 @@
+Thu Dec  1 16:20:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#try_func): fix broken patch at r33834.
+
 Thu Dec  1 14:43:17 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.h (Real): suppress false warning from
