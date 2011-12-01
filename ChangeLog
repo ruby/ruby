@@ -1,3 +1,8 @@
+Thu Dec  1 23:21:58 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* thread_pthread.c (thread_timer): call prctl(PR_SET_NAME) only if
+	  PR_SET_NAME is available.
+
 Thu Dec  1 22:31:16 2011  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (linux_get_maxfd): change local variable name.

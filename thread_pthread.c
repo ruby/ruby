@@ -1130,7 +1130,7 @@ thread_timer(void *p)
 
     if (TT_DEBUG) WRITE_CONST(2, "start timer thread\n");
 
-#ifdef __linux__
+#if defined(__linux__) && defined(PR_SET_NAME)
     prctl(PR_SET_NAME, "ruby-timer-thr");
 #endif
 
