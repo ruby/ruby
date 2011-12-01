@@ -5162,7 +5162,7 @@ static int
 linux_get_maxfd(void)
 {
     int fd;
-    char buf[4096], *p, *n, *e;
+    char buf[4096], *p, *np, *e;
     ssize_t ss;
     fd = rb_cloexec_open("/proc/self/status", O_RDONLY|O_NOCTTY, 0);
     if (fd == -1) return -1;
@@ -5171,16 +5171,16 @@ linux_get_maxfd(void)
     p = buf;
     e = buf + ss;
     while ((int)sizeof("FDSize:\t0\n")-1 <= e-p &&
-           (n = memchr(p, '\n', e-p)) != NULL) {
+           (np = memchr(p, '\n', e-p)) != NULL) {
         if (memcmp(p, "FDSize:", sizeof("FDSize:")-1) == 0) {
             int fdsize;
             p += sizeof("FDSize:")-1;
-            *n = '\0';
+            *np = '\0';
             fdsize = (int)ruby_strtoul(p, (char **)NULL, 10);
             close(fd);
             return fdsize;
         }
-        p = n+1;
+        p = np+1;
     }
     /* fall through */
 

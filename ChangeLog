@@ -1,3 +1,7 @@
+Thu Dec  1 22:31:16 2011  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (linux_get_maxfd): change local variable name.
+
 Thu Dec  1 20:33:22 2011  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* proc.c (rb_proc_arity): Fix Proc#arity in case of optional
