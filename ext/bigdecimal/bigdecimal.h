@@ -120,6 +120,12 @@ extern VALUE rb_cBigDecimal;
 #define VP_SIGN_POSITIVE_INFINITE  3 /* Positive infinite number */
 #define VP_SIGN_NEGATIVE_INFINITE -3 /* Negative infinite number */
 
+#ifdef __GNUC__
+#define	FLEXIBLE_ARRAY_SIZE 0
+#else
+#define	FLEXIBLE_ARRAY_SIZE 1
+#endif
+
 /*
  * VP representation
  *  r = 0.xxxxxxxxx *BASE**exponent
@@ -144,7 +150,7 @@ typedef struct {
                      *         -3 : Negative infinite number
                      */
     short  flag;    /* Not used in vp_routines,space for user.  */
-    BDIGIT frac[1]; /* Pointer to array of fraction part.       */
+    BDIGIT frac[FLEXIBLE_ARRAY_SIZE]; /* Array of fraction part. */
 } Real;
 
 /*

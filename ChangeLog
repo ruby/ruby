@@ -1,3 +1,8 @@
+Thu Dec  1 14:43:17 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.h (Real): suppress false warning from
+	  clang.  [ruby-core:41418] [Bug#5693]
+
 Thu Dec  1 10:31:55 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LDFLAGS): -fstack-protector is always needed to
