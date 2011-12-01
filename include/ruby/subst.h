@@ -19,94 +19,94 @@
 
 #ifdef _WIN32
 #undef inet_ntop
-#define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
+#define inet_ntop	 rb_w32_inet_ntop
 
 #undef accept
-#define accept(s, a, l)		rb_w32_accept(s, a, l)
+#define accept		 rb_w32_accept
 
 #undef bind
-#define bind(s, a, l)		rb_w32_bind(s, a, l)
+#define bind		 rb_w32_bind
 
 #undef connect
-#define connect(s, a, l)	rb_w32_connect(s, a, l)
+#define connect		 rb_w32_connect
 
 #undef select
-#define select(n, r, w, e, t)	rb_w32_select(n, r, w, e, t)
+#define select		 rb_w32_select
 
 #undef getpeername
-#define getpeername(s, a, l)	rb_w32_getpeername(s, a, l)
+#define getpeername	 rb_w32_getpeername
 
 #undef getsockname
-#define getsockname(s, a, l)	rb_w32_getsockname(s, a, l)
+#define getsockname	 rb_w32_getsockname
 
 #undef getsockopt
-#define getsockopt(s, v, n, o, l) rb_w32_getsockopt(s, v, n, o, l)
+#define getsockopt	 rb_w32_getsockopt
 
 #undef ioctlsocket
-#define ioctlsocket(s, c, a)	rb_w32_ioctlsocket(s, c, a)
+#define ioctlsocket	 rb_w32_ioctlsocket
 
 #undef listen
-#define listen(s, b)		rb_w32_listen(s, b)
+#define listen		 rb_w32_listen
 
 #undef recv
-#define recv(s, b, l, f)	rb_w32_recv(s, b, l, f)
+#define recv		 rb_w32_recv
 
 #undef recvfrom
-#define recvfrom(s, b, l, f, fr, frl) rb_w32_recvfrom(s, b, l, f, fr, frl)
+#define recvfrom	 rb_w32_recvfrom
 
 #undef send
-#define send(s, b, l, f)	rb_w32_send(s, b, l, f)
+#define send		 rb_w32_send
 
 #undef sendto
-#define sendto(s, b, l, f, t, tl) rb_w32_sendto(s, b, l, f, t, tl)
+#define sendto		 rb_w32_sendto
 
 #undef setsockopt
-#define setsockopt(s, v, n, o, l) rb_w32_setsockopt(s, v, n, o, l)
+#define setsockopt	 rb_w32_setsockopt
 
 #undef shutdown
-#define shutdown(s, h)		rb_w32_shutdown(s, h)
+#define shutdown	 rb_w32_shutdown
 
 #undef socket
-#define socket(s, t, p)		rb_w32_socket(s, t, p)
+#define socket		 rb_w32_socket
 
 #undef gethostbyaddr
-#define gethostbyaddr(a, l, t)	rb_w32_gethostbyaddr(a, l, t)
+#define gethostbyaddr	 rb_w32_gethostbyaddr
 
 #undef gethostbyname
-#define gethostbyname(n)	rb_w32_gethostbyname(n)
+#define gethostbyname	 rb_w32_gethostbyname
 
 #undef gethostname
-#define gethostname(n, l)	rb_w32_gethostname(n, l)
+#define gethostname	 rb_w32_gethostname
 
 #undef getprotobyname
-#define getprotobyname(n)	rb_w32_getprotobyname(n)
+#define getprotobyname	 rb_w32_getprotobyname
 
 #undef getprotobynumber
-#define getprotobynumber(n)	rb_w32_getprotobynumber(n)
+#define getprotobynumber rb_w32_getprotobynumber
 
 #undef getservbyname
-#define getservbyname(n, p)	rb_w32_getservbyname(n, p)
+#define getservbyname	 rb_w32_getservbyname
 
 #undef getservbyport
-#define getservbyport(p, pr)	rb_w32_getservbyport(p, pr)
+#define getservbyport	 rb_w32_getservbyport
 
 #undef socketpair
-#define socketpair(a, t, p, s)	rb_w32_socketpair(a, t, p, s)
+#define socketpair	 rb_w32_socketpair
 
 #undef get_osfhandle
-#define get_osfhandle(h)	rb_w32_get_osfhandle(h)
+#define get_osfhandle	 rb_w32_get_osfhandle
 
 #undef getcwd
-#define getcwd(b, s)		rb_w32_getcwd(b, s)
+#define getcwd		 rb_w32_getcwd
 
 #undef getenv
-#define getenv(n)		rb_w32_getenv(n)
+#define getenv		 rb_w32_getenv
 
 #undef rename
-#define rename(o, n)		rb_w32_rename(o, n)
+#define rename		 rb_w32_rename
 
 #undef times
-#define times(t)		rb_w32_times(t)
+#define times		 rb_w32_times
 #endif
 
 #endif
