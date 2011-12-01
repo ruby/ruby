@@ -43,9 +43,10 @@ if enable_config("ipv6", default_ipv6)
 #include <sys/socket.h>
 #endif
 int
-main()
+main(void)
 {
   socket(AF_INET6, SOCK_STREAM, 0);
+  return 0;
 }
 EOF
     $defs << "-DENABLE_IPV6" << "-DINET6"
@@ -263,7 +264,7 @@ getaddr_info_ok = (enable_config("wide-getaddrinfo") && :wide) ||
 #endif
 
 int
-main()
+main(void)
 {
   int passive, gaierr, inet4 = 0, inet6 = 0;
   struct addrinfo hints, *ai, *aitop;
@@ -347,12 +348,12 @@ main()
 
   if (aitop)
     freeaddrinfo(aitop);
-  exit(EXIT_SUCCESS);
+  return EXIT_SUCCESS;
 
  bad:
   if (aitop)
     freeaddrinfo(aitop);
-  exit(EXIT_FAILURE);
+  return EXIT_FAILURE;
 }
 EOF
 if ipv6 and not getaddr_info_ok
