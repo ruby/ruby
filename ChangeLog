@@ -1,4 +1,7 @@
-Fri Dec  2 15:18:18 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec  2 15:41:24 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check whether -pie or -Wl,-pie is valid as
+	  LDFLAGS.  [ruby-core:41438] [Bug#5697]
 
 	* configure.in: use $linker_flag for LDFLAGS option which is not
 	  limited to particular platforms.
