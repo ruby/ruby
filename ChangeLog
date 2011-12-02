@@ -1,3 +1,8 @@
+Fri Dec  2 11:30:34 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: use $linker_flag for LDFLAGS option which is not
+	  limited to particular platforms.  [ruby-core:41438] [Bug#5697]
+
 Thu Dec  1 23:21:58 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* thread_pthread.c (thread_timer): call prctl(PR_SET_NAME) only if
