@@ -1,4 +1,8 @@
-Sat Dec  3 07:14:23 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Dec  3 07:17:29 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (CFLAGS): append ARCH_FLAG.
+
+	* configure.in (ARCH_FLAG): exclude from CFLAGS.
 
 	* configure.in (UNIVERSAL_INTS): include short int.  fix for
 	  test/mkmf.
