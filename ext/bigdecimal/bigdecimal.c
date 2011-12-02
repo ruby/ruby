@@ -554,6 +554,8 @@ VpCreateRbObject(size_t mx, const char *str)
     return pv;
 }
 
+#define VpAllocReal(prec) (Real *)VpMemAlloc(offsetof(Real, frac) + (prec) * sizeof(BDIGIT))
+
 static Real *
 VpDup(Real const* const x)
 {
@@ -561,7 +563,7 @@ VpDup(Real const* const x)
 
     assert(x != NULL);
 
-    pv = VpMemAlloc(sizeof(Real) + x->MaxPrec * sizeof(BDIGIT));
+    pv = VpAllocReal(x->MaxPrec);
     pv->MaxPrec = x->MaxPrec;
     pv->Prec = x->Prec;
     pv->exponent = x->exponent;
@@ -3576,7 +3578,7 @@ VpAlloc(size_t mx, const char *szVal)
        /* necessary to be able to store */
        /* at least mx digits. */
        /* szVal==NULL ==> allocate zero value. */
-       vp = (Real *) VpMemAlloc(sizeof(Real) + mx * sizeof(BDIGIT));
+       vp = VpAllocReal(mx);
        /* xmalloc() alway returns(or throw interruption) */
        vp->MaxPrec = mx;    /* set max precision */
        VpSetZero(vp,1);    /* initialize vp to zero. */
@@ -3609,19 +3611,19 @@ VpAlloc(size_t mx, const char *szVal)
     /* Check on Inf & NaN */
     if (StrCmp(szVal, SZ_PINF) == 0 ||
         StrCmp(szVal, SZ_INF)  == 0 ) {
-        vp = (Real *) VpMemAlloc(sizeof(Real) + sizeof(BDIGIT));
+        vp = VpAllocReal(1);
         vp->MaxPrec = 1;    /* set max precision */
         VpSetPosInf(vp);
         return vp;
     }
     if (StrCmp(szVal, SZ_NINF) == 0) {
-        vp = (Real *) VpMemAlloc(sizeof(Real) + sizeof(BDIGIT));
+        vp = VpAllocReal(1);
         vp->MaxPrec = 1;    /* set max precision */
         VpSetNegInf(vp);
         return vp;
     }
     if (StrCmp(szVal, SZ_NaN) == 0) {
-        vp = (Real *) VpMemAlloc(sizeof(Real) + sizeof(BDIGIT));
+        vp = VpAllocReal(1);
         vp->MaxPrec = 1;    /* set max precision */
         VpSetNaN(vp);
         return vp;
@@ -3679,7 +3681,7 @@ VpAlloc(size_t mx, const char *szVal)
     if (mx <= 0) mx = 1;
     nalloc = Max(nalloc, mx);
     mx = nalloc;
-    vp = (Real *) VpMemAlloc(sizeof(Real) + mx * sizeof(BDIGIT));
+    vp = VpAllocReal(mx);
     /* xmalloc() alway returns(or throw interruption) */
     vp->MaxPrec = mx;        /* set max precision */
     VpSetZero(vp, sign);
