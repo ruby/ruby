@@ -2346,9 +2346,9 @@ AS_CASE("$enable_shared", [yes], [
     [freebsd*|dragonfly*], [],
     [
      if test "$GCC" = yes; then
-       RUBY_TRY_LDFLAGS([${linker_flag}--no-undefined], [no_undefined=yes], [no_undefined=no])
+       RUBY_TRY_LDFLAGS([-Wl,--no-undefined], [no_undefined=yes], [no_undefined=no])
        if test "no_undefined" = yes; then
-	  RUBY_APPEND_OPTION(EXTLDFLAGS, [${linker_flag}--no-undefined])
+	  RUBY_APPEND_OPTION(EXTLDFLAGS, [-Wl,--no-undefined])
        fi
      fi
     ])
@@ -2441,7 +2441,7 @@ AS_CASE("$enable_shared", [yes], [
   # enable PIE if possible
   if test "$GCC" = yes; then
     RUBY_TRY_CFLAGS(-fPIE, [RUBY_APPEND_OPTION(XCFLAGS, -fPIE)
-			    RUBY_APPEND_OPTION(XLDFLAGS, ${linker_flag}-pie)])
+			    RUBY_APPEND_OPTION(XLDFLAGS, -pie)])
   fi
 ])
 if test "$enable_rpath" = yes; then
