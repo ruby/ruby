@@ -2892,7 +2892,7 @@ if test "${universal_binary-no}" = yes ; then
 	    RUBY_DEFINE_IF([defined __${archs}__], RUBY_PLATFORM_CPU, ["${cpu}"])
 	done
     fi
-    ints='long int'
+    ints='long int short'
     test "$ac_cv_type_long_long" = yes && ints="'long long' $ints"
     AC_SUBST(UNIVERSAL_ARCHNAMES, "${universal_archnames}")
     AC_SUBST(UNIVERSAL_INTS, "${ints}")
