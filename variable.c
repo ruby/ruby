@@ -2111,6 +2111,10 @@ set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
 		 "Insecure: can't change constant visibility");
     }
 
+    if (argc == 0) {
+	rb_warning("%s with no argument is just ignored", rb_id2name(rb_frame_callee()));
+    }
+
     for (i = 0; i < argc; i++) {
 	VALUE val = argv[i];
 	id = rb_check_id(&val);

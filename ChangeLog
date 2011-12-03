@@ -1,3 +1,11 @@
+Sat Dec  3 20:49:16 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* variable.c (set_const_visibility): print a warning when no argument
+	  is passwd to Module#private_constant.  [ruby-list:48558]
+
+	* vm_method.c (set_method_visibility): ditto for
+	  Module#private_class_method.
+
 Sat Dec  3 20:43:14 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* variable.c (set_const_visibility): Module#private_constant has
