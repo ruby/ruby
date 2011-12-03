@@ -1070,6 +1070,19 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c::FOO }
   end
 
+  def test_private_constant2
+    c = Class.new
+    c.const_set(:FOO, "foo")
+    c.const_set(:BAR, "bar")
+    assert_equal("foo", c::FOO)
+    assert_equal("bar", c::BAR)
+    c.private_constant(:FOO, :BAR)
+    assert_raise(NameError) { c::FOO }
+    assert_raise(NameError) { c::BAR }
+    assert_equal("foo", c.class_eval("FOO"))
+    assert_equal("bar", c.class_eval("BAR"))
+  end
+
   class PrivateClass
   end
   private_constant :PrivateClass
