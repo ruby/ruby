@@ -79,7 +79,6 @@ require 'thread'
 # same Tempfile object from multiple threads then you should protect it with a
 # mutex.
 class Tempfile < DelegateClass(File)
-  MAX_TRY = 10  # :nodoc:
   include Dir::Tmpname
 
   # call-seq:

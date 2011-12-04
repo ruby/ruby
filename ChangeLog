@@ -1,3 +1,7 @@
+Sun Dec  4 22:34:43 2011  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tempfile.rb (Tempfile::MAX_TRY): remove unused constant.
+
 Sun Dec  4 12:11:28 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* lib/pp.rb: fix rdoc.
