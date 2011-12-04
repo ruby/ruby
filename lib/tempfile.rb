@@ -291,7 +291,7 @@ class Tempfile < DelegateClass(File)
     #
     # If a block is given, then a Tempfile object will be constructed,
     # and the block is run with said object as argument. The Tempfile
-    # oject will be automatically closed after the block terminates.
+    # object will be automatically closed after the block terminates.
     # The call returns the value of the block.
     #
     # In any case, all arguments (+*args+) will be passed to Tempfile.new.
