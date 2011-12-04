@@ -48,11 +48,13 @@ end
 #
 # = Usage
 #
-#   pp(obj)
+#   pp(obj)             #=> obj
+#   pp(obj1, obj2, ...) #=> [obj1, obj2, ...]
+#   pp()                #=> nil
 #
-# output +obj+ to +$>+ in pretty printed format.
+# output +obj(s)+ to +$>+ in pretty printed format.
 #
-# It returns +nil+.
+# It returns +obj(s)+.
 #
 # = Output Customization
 # To define your customized pretty printing function for your classes,
