@@ -1,3 +1,7 @@
+Sun Dec  4 22:53:12 2011  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tempfile.rb: don't use lock directory.  [ruby-dev:39197]
+
 Sun Dec  4 22:34:43 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tempfile.rb (Tempfile::MAX_TRY): remove unused constant.
