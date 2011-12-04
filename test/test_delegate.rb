@@ -111,6 +111,13 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_raise(NoMethodError, '[ruby-dev:40314]#3') {m.call}
   end
 
+  def test_methods
+    s = SimpleDelegator.new("foo")
+    assert_equal([], s.methods(false))
+    def s.bar; end
+    assert_equal([:bar], s.methods(false))
+  end
+
   class Foo
     private
     def delegate_test_private

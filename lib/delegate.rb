@@ -92,8 +92,8 @@ class Delegator < BasicObject
   # Returns the methods available to this delegate object as the union
   # of this object's and \_\_getobj\_\_ methods.
   #
-  def methods
-    __getobj__.methods | super
+  def methods(all=true)
+    __getobj__.methods(all) | super
   end
 
   #

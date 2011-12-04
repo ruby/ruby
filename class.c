@@ -1111,11 +1111,13 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
 
 /*
  *  call-seq:
- *     obj.methods    -> array
+ *     obj.methods(all=true)    -> array
  *
  *  Returns a list of the names of public and protected methods of
  *  <i>obj</i>. This will include all the methods accessible in
  *  <i>obj</i>'s ancestors.
+ *  If the <i>all</i> parameter is set to <code>false</code>, only those methods
+ *  in the receiver will be listed.
  *
  *     class Klass
  *       def klass_method()

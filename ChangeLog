@@ -1,3 +1,8 @@
+Sun Dec  4 12:03:16 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator#methods): Kernel#methods receives
+	  zero or one argument. [ruby-core:37118] [Bug #4882]
+
 Sun Dec  4 10:15:00 2011  Luis Lavena  <luislavena@gmail.com>
 
 	* ext/zlib/zlib.c (rb_gzreader_initialize): use binary mode by default
