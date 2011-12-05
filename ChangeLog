@@ -17,14 +17,6 @@ Mon Dec  5 18:56:55 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  transcode.c (rb_econv_open0, make_replacement),
 	  vm_eval.c (raise_method_missing): remove unused variable.
 
-Mon Dec  5 18:49:52 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* class.c (rb_obj_methods), compile.c (iseq_compile_each),
-	  iseq.c(iseq_load, rb_iseq_parameters), pack.c (pack_pack),
-	  regcomp.c (is_not_included, update_string_node_case_fold),
-	  transcode.c (rb_econv_open0, make_replacement),
-	  vm_eval.c (raise_method_missing): remove unused variable.
-
 	* signal.c (reserved_signal_p): static.
 
 Mon Dec  5 14:27:23 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
