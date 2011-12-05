@@ -10,7 +10,6 @@
 #include <zlib.h>
 #include <time.h>
 #include <ruby/io.h>
-#include <fcntl.h>
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 # include <valgrind/memcheck.h>
@@ -3426,13 +3425,6 @@ rb_gzreader_initialize(int argc, VALUE *argv, VALUE obj)
 
     Data_Get_Struct(obj, struct gzfile, gz);
     rb_scan_args(argc, argv, "1:", &io, &opt);
-#ifdef O_BINARY
-    if (BUILTIN_TYPE(io) == T_FILE) {
-        rb_io_t *fptr;
-        GetOpenFile(io, fptr);
-        setmode(fptr->fd, O_BINARY);
-    }
-#endif
 
     /* this is undocumented feature of zlib */
     err = inflateInit2(&gz->z.stream, -MAX_WBITS);
