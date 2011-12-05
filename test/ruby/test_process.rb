@@ -1162,7 +1162,19 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_geteuid
+    assert_kind_of(Integer, Process.euid)
+  end
+
+  def test_seteuid
+    assert_nothing_raised(TypeError) {Process.euid += 0}
+  end
+
+  def test_getegid
     assert_kind_of(Integer, Process.egid)
+  end
+
+  def test_setegid
+    assert_nothing_raised(TypeError) {Process.egid += 0}
   end
 
   def test_uid_re_exchangeable_p

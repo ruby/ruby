@@ -1,3 +1,11 @@
+Mon Dec  5 19:01:59 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (proc_seteuid_m): fix argument.
+
+	* test/ruby/test_process.rb (test_geteuid): fix typo.
+
+	* test/ruby/test_process.rb (test_getegid, test_set[eg]uid): add.
+
 Mon Dec  5 18:56:55 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (big_rshift), compile.c (validate_label,

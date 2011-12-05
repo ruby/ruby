@@ -5097,7 +5097,7 @@ proc_seteuid(rb_uid_t uid)
  */
 
 static VALUE
-proc_seteuid_m(VALUE euid)
+proc_seteuid_m(VALUE mod, VALUE euid)
 {
     check_uid_switch();
     proc_seteuid(NUM2UIDT(euid));
