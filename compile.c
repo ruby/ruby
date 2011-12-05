@@ -3293,7 +3293,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	VALUE prevblock = iseq->compile_data->current_block;
 	LABEL *retry_label = NEW_LABEL(nd_line(node));
 	LABEL *retry_end_l = NEW_LABEL(nd_line(node));
-	ID mid = 0;
 
 	ADD_LABEL(ret, retry_label);
 	if (nd_type(node) == NODE_FOR) {
@@ -3303,7 +3302,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq),
 				  ISEQ_TYPE_BLOCK, nd_line(node));
 
-	    mid = idEach;
 	    ADD_SEND_R(ret, nd_line(node), ID2SYM(idEach), INT2FIX(0),
 		       iseq->compile_data->current_block, INT2FIX(0));
 	}

@@ -378,7 +378,7 @@ pack_pack(VALUE ary, VALUE fmt)
 #ifdef NATINT_PACK
     int natint;		/* native integer */
 #endif
-    int signed_p, integer_size, bigendian_p;
+    int integer_size, bigendian_p;
 
     StringValue(fmt);
     p = RSTRING_PTR(fmt);
@@ -648,73 +648,61 @@ pack_pack(VALUE ary, VALUE fmt)
 	    break;
 
 	  case 's':		/* signed short */
-            signed_p = 1;
             integer_size = NATINT_LEN(short, 2);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
 	  case 'S':		/* unsigned short */
-            signed_p = 0;
             integer_size = NATINT_LEN(short, 2);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
 	  case 'i':		/* signed int */
-            signed_p = 1;
             integer_size = (int)sizeof(int);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
 	  case 'I':		/* unsigned int */
-            signed_p = 0;
             integer_size = (int)sizeof(int);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
 	  case 'l':		/* signed long */
-            signed_p = 1;
             integer_size = NATINT_LEN(long, 4);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
 	  case 'L':		/* unsigned long */
-            signed_p = 0;
             integer_size = NATINT_LEN(long, 4);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
 	  case 'q':		/* signed quad (64bit) int */
-            signed_p = 1;
 	    integer_size = 8;
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
 	  case 'Q':		/* unsigned quad (64bit) int */
-            signed_p = 0;
 	    integer_size = 8;
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
 	  case 'n':		/* unsigned short (network byte-order)  */
-            signed_p = 0;
             integer_size = 2;
             bigendian_p = 1;
             goto pack_integer;
 
 	  case 'N':		/* unsigned long (network byte-order) */
-            signed_p = 0;
             integer_size = 4;
             bigendian_p = 1;
             goto pack_integer;
 
 	  case 'v':		/* unsigned short (VAX byte-order) */
-            signed_p = 0;
             integer_size = 2;
             bigendian_p = 0;
             goto pack_integer;
 
 	  case 'V':		/* unsigned long (VAX byte-order) */
-            signed_p = 0;
             integer_size = 4;
             bigendian_p = 0;
             goto pack_integer;

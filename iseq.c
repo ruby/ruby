@@ -463,6 +463,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     version2    = CHECK_INTEGER(rb_ary_entry(data, i++));
     format_type = CHECK_INTEGER(rb_ary_entry(data, i++));
     misc        = rb_ary_entry(data, i++); /* TODO */
+    ((void)magic, (void)version1, (void)version2, (void)format_type, (void)misc);
 
     name        = CHECK_STRING(rb_ary_entry(data, i++));
     filename    = CHECK_STRING(rb_ary_entry(data, i++));
@@ -1381,7 +1382,7 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
 VALUE
 rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 {
-    int i, r, s;
+    int i, r;
     VALUE a, args = rb_ary_new2(iseq->arg_size);
     ID req, opt, rest, block;
 #define PARAM_TYPE(type) rb_ary_push(a = rb_ary_new2(2), ID2SYM(type))
@@ -1410,7 +1411,7 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 	iseq->arg_post_len > 0 ? iseq->arg_post_start :
 	iseq->arg_block != -1 ? iseq->arg_block :
 	iseq->arg_size;
-    for (s = i; i < r; i++) {
+    for (; i < r; i++) {
 	PARAM_TYPE(opt);
 	if (rb_id2name(PARAM_ID(i))) {
 	    rb_ary_push(a, ID2SYM(PARAM_ID(i)));

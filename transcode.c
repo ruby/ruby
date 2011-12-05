@@ -979,22 +979,19 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
     int num_trans;
     rb_econv_t *ec;
 
-    rb_encoding *senc, *denc;
     int sidx, didx;
 
-    senc = NULL;
     if (*sname) {
         sidx = rb_enc_find_index(sname);
         if (0 <= sidx) {
-            senc = rb_enc_from_index(sidx);
+            rb_enc_from_index(sidx);
         }
     }
 
-    denc = NULL;
     if (*dname) {
         didx = rb_enc_find_index(dname);
         if (0 <= didx) {
-            denc = rb_enc_from_index(didx);
+            rb_enc_from_index(didx);
         }
     }
 
@@ -2160,7 +2157,6 @@ make_replacement(rb_econv_t *ec)
 {
     rb_transcoding *tc;
     const rb_transcoder *tr;
-    rb_encoding *enc;
     const unsigned char *replacement;
     const char *repl_enc;
     const char *ins_enc;
@@ -2174,7 +2170,7 @@ make_replacement(rb_econv_t *ec)
     tc = ec->last_tc;
     if (*ins_enc) {
         tr = tc->transcoder;
-        enc = rb_enc_find(tr->dst_encoding);
+        rb_enc_find(tr->dst_encoding);
         replacement = (const unsigned char *)get_replacement_character(ins_enc, &len, &repl_enc);
     }
     else {

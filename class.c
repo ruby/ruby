@@ -1135,9 +1135,6 @@ rb_obj_methods(int argc, VALUE *argv, VALUE obj)
 {
   retry:
     if (argc == 0) {
-	VALUE args[1];
-
-	args[0] = Qtrue;
 	return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_i);
     }
     else {

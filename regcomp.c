@@ -2433,7 +2433,7 @@ is_not_included(Node* x, Node* y, regex_t* reg)
   int i;
   OnigDistance len;
   OnigCodePoint code;
-  UChar *p, c;
+  UChar *p;
   int ytype;
 
  retry:
@@ -2547,7 +2547,6 @@ is_not_included(Node* x, Node* y, regex_t* reg)
       if (NSTRING_LEN(x) == 0)
 	break;
 
-      c = *(xs->s);
       switch (ytype) {
       case NT_CTYPE:
 	switch (NCTYPE(y)->ctype) {
@@ -3223,7 +3222,7 @@ next_setup(Node* node, Node* next_node, regex_t* reg)
 static int
 update_string_node_case_fold(regex_t* reg, Node *node)
 {
-  UChar *p, *q, *end, buf[ONIGENC_MBC_CASE_FOLD_MAXLEN];
+  UChar *p, *end, buf[ONIGENC_MBC_CASE_FOLD_MAXLEN];
   UChar *sbuf, *ebuf, *sp;
   int r, i, len;
   OnigDistance sbuf_size;
@@ -3239,7 +3238,6 @@ update_string_node_case_fold(regex_t* reg, Node *node)
   p = sn->s;
   while (p < end) {
     len = ONIGENC_MBC_CASE_FOLD(reg->enc, reg->case_fold_flag, &p, end, buf);
-    q = buf;
     for (i = 0; i < len; i++) {
       if (sp >= ebuf) {
 	sbuf = (UChar* )xrealloc(sbuf, sbuf_size * 2);

@@ -526,7 +526,6 @@ static void
 raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
 		     int last_call_status)
 {
-    ID id;
     VALUE exc = rb_eNoMethodError;
     const char *format = 0;
 
@@ -535,8 +534,6 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
     }
 
     stack_check();
-
-    id = SYM2ID(argv[0]);
 
     if (last_call_status & NOEX_PRIVATE) {
 	format = "private method `%s' called for %s";
