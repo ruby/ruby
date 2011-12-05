@@ -1,3 +1,7 @@
+Mon Dec  5 19:08:04 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regparse.c (PFETCH_READY): separate gcc specific trick.
+
 Mon Dec  5 19:01:59 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (proc_seteuid_m): fix argument.
