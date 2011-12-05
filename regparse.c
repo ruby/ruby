@@ -258,7 +258,7 @@ strdup_with_null(OnigEncoding enc, UChar* s, UChar* end)
 /* scan pattern methods */
 #define PEND_VALUE   0
 
-#ifderf __GNUC__
+#ifdef __GNUC__
 /* get rid of Wunused-but-set-variable */
 #define PFETCH_READY  UChar* pfetch_prev = pfetch_prev
 #else
