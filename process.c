@@ -1130,7 +1130,7 @@ rb_proc_exec_n(int argc, VALUE *argv, const char *prog)
 	ret = proc_exec_v(args, prog);
     }
     ALLOCV_END(v);
-    return -1;
+    return ret;
 }
 
 int
@@ -5110,11 +5110,15 @@ proc_seteuid_m(VALUE euid)
 static rb_uid_t
 rb_seteuid_core(rb_uid_t euid)
 {
+#if defined(HAVE_SETRESUID) || (defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID))
     rb_uid_t uid;
+#endif
 
     check_uid_switch();
 
+#if defined(HAVE_SETRESUID) || (defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID))
     uid = getuid();
+#endif
 
 #if defined(HAVE_SETRESUID)
     if (uid != euid) {
@@ -5196,11 +5200,16 @@ proc_getegid(VALUE obj)
 static VALUE
 proc_setegid(VALUE obj, VALUE egid)
 {
+#if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETEGID) || defined(HAVE_SETGID)
     rb_gid_t gid;
+#endif
 
     check_gid_switch();
 
+#if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETEGID) || defined(HAVE_SETGID)
     gid = NUM2GIDT(egid);
+#endif
+
 #if defined(HAVE_SETRESGID)
     if (setresgid(-1, gid, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREGID
@@ -5230,11 +5239,15 @@ proc_setegid(VALUE obj, VALUE egid)
 static rb_gid_t
 rb_setegid_core(rb_gid_t egid)
 {
+#if defined(HAVE_SETRESGID) || (defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID))
     rb_gid_t gid;
+#endif
 
     check_gid_switch();
 
+#if defined(HAVE_SETRESGID) || (defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID))
     gid = getgid();
+#endif
 
 #if defined(HAVE_SETRESGID)
     if (gid != egid) {
@@ -5321,12 +5334,17 @@ p_uid_exchangeable(void)
 static VALUE
 p_uid_exchange(VALUE obj)
 {
-    rb_uid_t uid, euid;
+    rb_uid_t uid;
+#if defined(HAVE_SETRESUID) || (defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID))
+    rb_uid_t euid;
+#endif
 
     check_uid_switch();
 
     uid = getuid();
+#if defined(HAVE_SETRESUID) || (defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID))
     euid = geteuid();
+#endif
 
 #if defined(HAVE_SETRESUID)
     if (setresuid(euid, uid, uid) < 0) rb_sys_fail(0);
@@ -5378,12 +5396,17 @@ p_gid_exchangeable(void)
 static VALUE
 p_gid_exchange(VALUE obj)
 {
-    rb_gid_t gid, egid;
+    rb_gid_t gid;
+#if defined(HAVE_SETRESGID) || (defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID))
+    rb_gid_t egid;
+#endif
 
     check_gid_switch();
 
     gid = getgid();
+#if defined(HAVE_SETRESGID) || (defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID))
     egid = getegid();
+#endif
 
 #if defined(HAVE_SETRESGID)
     if (setresgid(egid, gid, gid) < 0) rb_sys_fail(0);

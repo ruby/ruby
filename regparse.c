@@ -258,7 +258,7 @@ strdup_with_null(OnigEncoding enc, UChar* s, UChar* end)
 /* scan pattern methods */
 #define PEND_VALUE   0
 
-#define PFETCH_READY  UChar* pfetch_prev
+#define PFETCH_READY  UChar* pfetch_prev = pfetch_prev
 #define PEND         (p < end ?  0 : 1)
 #define PUNFETCH     p = pfetch_prev
 #define PINC       do { \

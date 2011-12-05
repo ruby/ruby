@@ -1652,7 +1652,6 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, rb_num_t num, int flag)
     int is_splat = flag & 0x01;
     rb_num_t space_size = num + is_splat;
     VALUE *base = cfp->sp, *ptr;
-    volatile VALUE tmp_ary;
     rb_num_t len;
 
     if (!RB_TYPE_P(ary, T_ARRAY)) {
@@ -1661,7 +1660,6 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, rb_num_t num, int flag)
 
     cfp->sp += space_size;
 
-    tmp_ary = ary;
     ptr = RARRAY_PTR(ary);
     len = (rb_num_t)RARRAY_LEN(ary);
 
@@ -1705,6 +1703,7 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, rb_num_t num, int flag)
 	    }
 	}
     }
+    RB_GC_GUARD(ary);
 }
 
 static inline int

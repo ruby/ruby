@@ -3542,9 +3542,10 @@ big_rshift(VALUE x, unsigned long shift)
 	    return INT2FIX(-1);
     }
     if (!RBIGNUM_SIGN(x)) {
-	save_x = x = rb_big_clone(x);
+	x = rb_big_clone(x);
 	get2comp(x);
     }
+    save_x = x;
     xds = BDIGITS(x);
     i = RBIGNUM_LEN(x); j = i - s1;
     if (j == 0) {
@@ -3564,6 +3565,7 @@ big_rshift(VALUE x, unsigned long shift)
     if (!RBIGNUM_SIGN(x)) {
 	get2comp(z);
     }
+    RB_GC_GUARD(save_x);
     return z;
 }
 

@@ -5353,12 +5353,15 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     int fd = -1;
     int write_fd = -1;
     const char *cmd = 0;
+#if !defined(HAVE_FORK)
     int argc;
     VALUE *argv;
+#endif
 
     if (prog)
         cmd = StringValueCStr(prog);
 
+#if !defined(HAVE_FORK)
     if (!eargp) {
         /* fork : IO.popen("-") */
         argc = 0;
@@ -5374,6 +5377,7 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
         argc = 0;
         argv = 0;
     }
+#endif
 
 #if defined(HAVE_FORK)
     arg.execp = eargp;
@@ -7859,7 +7863,7 @@ do_io_advise(rb_io_t *fptr, VALUE advice, off_t offset, off_t len)
      * The platform doesn't support this hint. We don't raise exception, instead
      * silently ignore it. Because IO::advise is only hint.
      */
-    if (num_adv == Qnil)
+    if (NIL_P(num_adv))
 	return Qnil;
 
     ias.fd     = fptr->fd;
@@ -7868,10 +7872,11 @@ do_io_advise(rb_io_t *fptr, VALUE advice, off_t offset, off_t len)
     ias.len    = len;
 
     rv = (int)rb_thread_io_blocking_region(io_advise_internal, &ias, fptr->fd);
-    if (rv)
+    if (rv) {
 	/* posix_fadvise(2) doesn't set errno. On success it returns 0; otherwise
 	   it returns the error code. */
 	rb_syserr_fail(rv, RSTRING_PTR(fptr->pathv));
+    }
 
     return Qnil;
 }
@@ -7956,7 +7961,7 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
 #ifdef HAVE_POSIX_FADVISE
     return do_io_advise(fptr, advice, off, l);
 #else
-    /* Ignore all hint */
+    ((void)off, (void)l);	/* Ignore all hint */
     return Qnil;
 #endif
 }

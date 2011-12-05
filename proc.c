@@ -243,7 +243,7 @@ binding_free(void *ptr)
     RUBY_FREE_ENTER("binding");
     if (ptr) {
 	bind = ptr;
-	ruby_xfree(ptr);
+	ruby_xfree(bind);
     }
     RUBY_FREE_LEAVE("binding");
 }

@@ -5300,7 +5300,6 @@ parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int line)
 {
     struct parser_params *parser;
     NODE *node;
-    volatile VALUE tmp;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
     lex_gets = lex_get_str;
@@ -5310,7 +5309,7 @@ parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int line)
     compile_for_eval = rb_parse_in_eval();
 
     node = yycompile(parser, f, line);
-    tmp = vparser; /* prohibit tail call optimization */
+    RB_GC_GUARD(vparser); /* prohibit tail call optimization */
 
     return node;
 }
@@ -5361,7 +5360,6 @@ NODE*
 rb_parser_compile_file(volatile VALUE vparser, const char *f, VALUE file, int start)
 {
     struct parser_params *parser;
-    volatile VALUE tmp;
     NODE *node;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
@@ -5371,7 +5369,7 @@ rb_parser_compile_file(volatile VALUE vparser, const char *f, VALUE file, int st
     compile_for_eval = rb_parse_in_eval();
 
     node = yycompile(parser, f, start);
-    tmp = vparser; /* prohibit tail call optimization */
+    RB_GC_GUARD(vparser); /* prohibit tail call optimization */
 
     return node;
 }

@@ -1440,12 +1440,11 @@ rb_iseq_eval(VALUE iseqval)
 {
     rb_thread_t *th = GET_THREAD();
     VALUE val;
-    volatile VALUE tmp;
 
     vm_set_top_stack(th, iseqval);
 
     val = vm_exec(th);
-    tmp = iseqval; /* prohibit tail call optimization */
+    RB_GC_GUARD(iseqval); /* prohibit tail call optimization */
     return val;
 }
 
@@ -1454,12 +1453,11 @@ rb_iseq_eval_main(VALUE iseqval)
 {
     rb_thread_t *th = GET_THREAD();
     VALUE val;
-    volatile VALUE tmp;
 
     vm_set_main_stack(th, iseqval);
 
     val = vm_exec(th);
-    tmp = iseqval; /* prohibit tail call optimization */
+    RB_GC_GUARD(iseqval); /* prohibit tail call optimization */
     return val;
 }
 

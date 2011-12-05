@@ -1,4 +1,15 @@
-Mon Dec  5 18:50:08 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Dec  5 18:56:55 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (big_rshift), compile.c (validate_label,
+	  iseq_build_from_ary_exception), cont.c (cont_capture), dir.c
+	  (dir_open_dir), gc.c (objspace_each_objects), io.c (pipe_open)
+	  (rb_io_advise), parse.y (parser_compile_string)
+	  (rb_parser_compile_file), proc.c (binding_free), process.c
+	  (rb_proc_exec_n, rb_seteuid_core, proc_setegid, rb_setegid_core)
+	  (p_uid_exchange, p_gid_exchange), regparse.c (strdup_with_null),
+	  signal.c (sig_dfl), vm.c (rb_iseq_eval, rb_iseq_eval_main),
+	  vm_insnhelper.c (vm_expandarray): suppress
+	  unused-but-set-variable warnings.
 
 	* class.c (rb_obj_methods), compile.c (iseq_compile_each),
 	  iseq.c(iseq_load, rb_iseq_parameters), pack.c (pack_pack),

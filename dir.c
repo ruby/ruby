@@ -1832,9 +1832,8 @@ static VALUE
 dir_open_dir(int argc, VALUE *argv)
 {
     VALUE dir = rb_funcall2(rb_cDir, rb_intern("open"), argc, argv);
-    struct dir_data *dirp;
 
-    TypedData_Get_Struct(dir, struct dir_data, &dir_data_type, dirp);
+    rb_check_typeddata(dir, &dir_data_type);
     return dir;
 }
 

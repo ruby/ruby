@@ -2680,6 +2680,7 @@ objspace_each_objects(VALUE arg)
 	    }
 	}
     }
+    RB_GC_GUARD(v);
 
     return Qnil;
 }

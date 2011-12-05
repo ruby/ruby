@@ -426,6 +426,7 @@ validate_label(st_data_t name, st_data_t label, st_data_t arg)
 	    int ret;
 	    COMPILE_ERROR((ruby_sourcefile, lobj->position,
 			   "%s: undefined label", rb_id2name((ID)name)));
+	    if (ret) break;
 	} while (0);
     }
     return ST_CONTINUE;
@@ -5263,6 +5264,8 @@ iseq_build_from_ary_exception(rb_iseq_t *iseq, struct st_table *labels_table,
 	lend   = register_label(iseq, labels_table, ptr[3]);
 	lcont  = register_label(iseq, labels_table, ptr[4]);
 	sp     = NUM2INT(ptr[5]);
+
+	(void)sp;
 
 	ADD_CATCH_ENTRY(type, lstart, lend, eiseqval, lcont);
     }

@@ -785,6 +785,7 @@ sig_dfl:
 	else {
 	    rb_proc_t *proc;
 	    GetProcPtr(*cmd, proc);
+	    (void)proc;
 	}
     }
 

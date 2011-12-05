@@ -454,7 +454,7 @@ cont_capture(volatile int *stat)
     }
     else {
 	*stat = 0;
-	return cont->self;
+	return contval;
     }
 }
 
