@@ -1045,9 +1045,9 @@ Init_dbm(void)
     rb_define_method(rb_cDBM, "reject!", fdbm_delete_if, 0);
     rb_define_method(rb_cDBM, "reject", fdbm_reject, 0);
     rb_define_method(rb_cDBM, "clear", fdbm_clear, 0);
-    rb_define_method(rb_cDBM,"invert", fdbm_invert, 0);
-    rb_define_method(rb_cDBM,"update", fdbm_update, 1);
-    rb_define_method(rb_cDBM,"replace", fdbm_replace, 1);
+    rb_define_method(rb_cDBM, "invert", fdbm_invert, 0);
+    rb_define_method(rb_cDBM, "update", fdbm_update, 1);
+    rb_define_method(rb_cDBM, "replace", fdbm_replace, 1);
 
     rb_define_method(rb_cDBM, "include?", fdbm_has_key, 1);
     rb_define_method(rb_cDBM, "has_key?", fdbm_has_key, 1);
