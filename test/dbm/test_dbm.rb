@@ -105,7 +105,7 @@ if defined? DBM
     end
 
     def test_s_open_no_create
-      skip "gdbm_open(GDBM_WRITER) is broken on libgdbm 1.8.0" if /1\.8\.0/ =~ GDBM::VERSION
+      skip "dbm_open() is broken on libgdbm 1.8.0" if /1\.8\.0/ =~ DBM::VERSION
       assert_nil(dbm = DBM.open("#{@tmpdir}/#{@prefix}", nil))
     ensure
       dbm.close if dbm
@@ -529,7 +529,7 @@ if defined? DBM
     end
 
     def test_writer_open_notexist
-      skip "gdbm_open(GDBM_WRITER) is broken on libgdbm 1.8.0" if /1\.8\.0/ =~ GDBM::VERSION
+      skip "dbm_open() is broken on libgdbm 1.8.0" if /1\.8\.0/ =~ DBM::VERSION
       assert_raise(Errno::ENOENT) {
         DBM.open("#{@tmproot}/a", 0666, DBM::WRITER)
       }
