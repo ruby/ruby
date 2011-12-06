@@ -1,3 +1,10 @@
+Tue Dec  6 12:30:41 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: detect gdbm_version in libgdbm.
+
+	* ext/dbm/dbm.c: make DBM::VERSION more informative for gdbm, qdbm and
+	  Berkeley DB 1.x.  [ruby-dev:44944]
+
 Tue Dec  6 07:26:37 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* range.c:  Improve documentation for Range.  Patch by Chris Zetter.
