@@ -1076,21 +1076,21 @@ Init_dbm(void)
      */
     rb_define_const(rb_cDBM, "NEWDB",   INT2FIX(O_RDWR|O_CREAT|O_TRUNC|RUBY_DBM_RW_BIT));
 
-#if defined(DB_VERSION_STRING)
+#if defined(HAVE_DB_VERSION)
     /* The version of the dbm library, if using Berkeley DB */
-    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(DB_VERSION_STRING));
+    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(db_version(NULL, NULL, NULL)));
 #elif defined(HAVE_GDBM_VERSION)
     /* since gdbm 1.9 */
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(gdbm_version));
 #elif defined(HAVE_LIBVAR_GDBM_VERSION)
+    /* ndbm.h doesn't declare gdbm_version until gdbm 1.8.3.
+     * See extconf.rb for more information. */
     {
-        /* ndbm.h doesn't declare gdbm_version until gdbm 1.8.3.
-         * See extconf.rb for more information. */
         extern char *gdbm_version;
         rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(gdbm_version));
     }
-#elif defined(_QDBM_VERSION)
-    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("QDBM " _QDBM_VERSION));
+#elif defined(HAVE_DPVERSION)
+    rb_define_const(rb_cDBM, "VERSION",  rb_sprintf("QDBM %s", dpversion));
 #elif defined(_DB_H_)
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("Berkeley DB (unknown)"));
 #else

@@ -80,12 +80,17 @@ def headers.db_check2(db, hdr)
      (db == 'libc' ? have_func('dbm_open("", 0, 0)', hdr, hsearch) :
                      have_library(db, 'dbm_open("", 0, 0)', hdr, hsearch)) and
      have_func('dbm_clearerr((DBM *)0)', hdr, hsearch)
-    if /gdbm/ =~ db
+    case db
+    when /\Adb\d?\z/
+      have_func('db_version((int *)0, (int *)0, (int *)0)', hdr, hsearch)
+    when /\Agdbm/
       have_var("gdbm_version", hdr, hsearch)
       # gdbm_version is not declared by ndbm.h until gdbm 1.8.3.
       # We can't include ndbm.h and gdbm.h because they both define datum type.
       # ndbm.h includes gdbm.h and gdbm_version is declared since gdbm 1.9.
       have_libvar(["gdbm_version", "char *"], hdr, hsearch)
+    when /\Aqdbm\z/
+      have_var("dpversion", hdr, hsearch)
     end
     if hsearch
       $defs << hsearch

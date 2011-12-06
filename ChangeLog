@@ -1,3 +1,11 @@
+Tue Dec  6 18:26:33 2011  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/dbm.c: use db_version() instead of DB_VERSION_STRING to
+	  detect runtime Berkeley DB version.
+	  use dpversion instead of _QDBM_VERSION to detect runtime QDBM
+	  version.
+	  [ruby-dev:44948]
+
 Tue Dec  6 12:30:41 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: detect gdbm_version in libgdbm.
