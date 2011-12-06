@@ -104,13 +104,12 @@ if defined? DBM
       assert_nil(dbm.close)
     end
 
-=begin GDBM returns nil
     def test_s_open_no_create
+      skip "gdbm_open(GDBM_WRITER) is broken on libgdbm 1.8.0" if /1\.8\.0/ =~ GDBM::VERSION
       assert_nil(dbm = DBM.open("#{@tmpdir}/#{@prefix}", nil))
     ensure
       dbm.close if dbm
     end
-=end
 
     def test_s_open_with_block
       assert_equal(DBM.open("#{@tmpdir}/#{@prefix}") { :foo }, :foo)
@@ -529,13 +528,12 @@ if defined? DBM
       }
     end
 
-=begin GDBM succeeds this
     def test_writer_open_notexist
+      skip "gdbm_open(GDBM_WRITER) is broken on libgdbm 1.8.0" if /1\.8\.0/ =~ GDBM::VERSION
       assert_raise(Errno::ENOENT) {
         DBM.open("#{@tmproot}/a", 0666, DBM::WRITER)
       }
     end
-=end
 
     def test_wrcreat_open_notexist
       v = DBM.open("#{@tmproot}/a", 0666, DBM::WRCREAT)
