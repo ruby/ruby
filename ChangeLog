@@ -1,3 +1,12 @@
+Wed Dec  7 08:04:31 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb (module Psych): parse and load methods take
+	  an optional file name that is used when raising Psych::SyntaxError
+	  exceptions
+	* ext/psych/lib/psych/syntax_error.rb (module Psych): allow nil file
+	  names and handle nil file names in the exception message
+	* test/psych/test_exception.rb (module Psych): Tests for changes.
+
 Tue Dec  6 18:26:33 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/dbm.c: use db_version() instead of DB_VERSION_STRING to
