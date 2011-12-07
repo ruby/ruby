@@ -328,4 +328,10 @@ end.join
   def test_errno
     assert_equal(Encoding.find("locale"), Errno::EINVAL.new.message.encoding)
   end
+
+  def test_too_many_args_in_eval
+    bug5720 = '[ruby-core:41520]'
+    arg_string = (0...140000).to_a.join(", ")
+    assert_raise(SystemStackError, bug5720) {eval "raise(#{arg_string})"}
+  end
 end

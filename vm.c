@@ -106,11 +106,10 @@ vm_set_top_stack(rb_thread_t * th, VALUE iseqval)
     /* for return */
     rb_vm_set_finish_env(th);
 
+    CHECK_STACK_OVERFLOW(th->cfp, iseq->local_size + iseq->stack_max);
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_TOP,
 		  th->top_self, 0, iseq->iseq_encoded,
 		  th->cfp->sp, 0, iseq->local_size);
-
-    CHECK_STACK_OVERFLOW(th->cfp, iseq->stack_max);
 }
 
 static void
@@ -122,6 +121,8 @@ vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref)
 
     /* for return */
     rb_vm_set_finish_env(th);
+
+    CHECK_STACK_OVERFLOW(th->cfp, iseq->local_size + iseq->stack_max);
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_EVAL, block->self,
 		  GC_GUARDED_PTR(block->dfp), iseq->iseq_encoded,
 		  th->cfp->sp, block->lfp, iseq->local_size);
@@ -129,8 +130,6 @@ vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref)
     if (cref) {
 	th->cfp->dfp[-1] = (VALUE)cref;
     }
-
-    CHECK_STACK_OVERFLOW(th->cfp, iseq->stack_max);
 }
 
 static void
@@ -152,8 +151,6 @@ vm_set_main_stack(rb_thread_t *th, VALUE iseqval)
     if (bind && iseq->local_size > 0) {
 	bind->env = rb_vm_make_env_object(th, th->cfp);
     }
-
-    CHECK_STACK_OVERFLOW(th->cfp, iseq->stack_max);
 }
 
 rb_control_frame_t *

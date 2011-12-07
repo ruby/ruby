@@ -1,3 +1,12 @@
+Wed Dec  7 18:55:56 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (vm_set_top_stack, vm_set_eval_stack): check for stack
+	  overflow with stack_max before push new frame. [ruby-core:41520]
+	  [Bug #5720]
+
+	* vm.c (vm_set_main_stack): no stack overflow chances after
+	  vm_set_eval_stack().
+
 Wed Dec  7 09:58:15 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/bigdecimal/bigdecimal.c:  Document +@, -@, hash, INFINITY, Nan.
