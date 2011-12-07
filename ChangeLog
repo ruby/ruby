@@ -1,3 +1,8 @@
+Wed Dec  7 19:04:22 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rpath): fix typo in the help string.  a patch from
+	  Yuji Yamano <yyamano AT kt.rim.or.jp> in [ruby-list:48568].
+
 Wed Nov 30 18:22:10 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* complex.c (nucomp_rationalize): fix function.  [ruby-core:40667]

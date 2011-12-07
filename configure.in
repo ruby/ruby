@@ -2001,7 +2001,8 @@ if test "$with_dln_a_out" != yes; then
 
 
   AC_ARG_ENABLE(rpath,
-       AS_HELP_STRING([--disable-rpath], [embed run path into extension libraries]),
+       AS_HELP_STRING([--enable-rpath], [embed run path into extension libraries.
+       enabled by default on ELF platforms]),
        [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
   if test "$enable_rpath" = yes; then
     RPATHFLAG=" ${linker_flag}-R%1\$-s"
