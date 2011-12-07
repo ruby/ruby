@@ -533,8 +533,8 @@ performance.
 Consider a string of 25 <i>a</i>s, a <i>d</i>, 4 <i>a</i>s, and a
 <i>c</i>.
 
-    s = 'a' * 25 + 'd' 'a' * 4 + 'c'
-        #=> "aaaaaaaaaaaaaaaaaaaaaaaaadadadadac"
+    s = 'a' * 25 + 'd' + 'a' * 4 + 'c'
+        #=> "aaaaaaaaaaaaaaaaaaaaaaaaadaaaac"
 
 The following patterns match instantly as you would expect:
 
@@ -544,7 +544,7 @@ The following patterns match instantly as you would expect:
 
 However, the following pattern takes appreciably longer:
 
-    /(b|a+)*c/ =~ s #=> 32
+    /(b|a+)*c/ =~ s #=> 26
 
 This happens because an atom in the regexp is quantified by both an
 immediate <tt>+</tt> and an enclosing <tt>*</tt> with nothing to
