@@ -24,6 +24,32 @@ string matches itself.
 Specifically, <tt>/st/</tt> requires that the string contains the letter
 _s_ followed by the letter _t_, so it matches _haystack_, also.
 
+== <tt>=~</tt> and Regexp#match
+
+Pattern matching may be achieved by using <tt>=~</tt> operator or Regexp#match
+method.
+
+=== <tt>=~</tt> operator
+
+<tt>=~</tt> is Ruby's basic pattern-matching operator.  When one operand is a
+regular expression and is a string (this operator is equivalently defined by
+Regexp and String). If a match is found, the operator returns index of first
+match in string, otherwise it returns +nil+.
+
+    /hay/ =~ 'haystack'   #=> 0
+    /a/   =~ 'haystack'   #=> 1
+    /u/   =~ 'haystack'   #=> nil
+
+Using <tt>=~</tt> operator with a String and Regexp the <tt>$~</tt> global
+variable is set after a successful match.  <tt>$~</tt> holds a MatchData
+object. Regexp.last_match is equivalent to <tt>$~</tt>.
+
+=== Regexp#match method
+
+#match method return a MatchData object :
+
+    /st/.match('haystack')   #=> #<MatchData "st">
+
 == Metacharacters and Escapes
 
 The following are <i>metacharacters</i> <tt>(</tt>, <tt>)</tt>,
@@ -111,7 +137,7 @@ matches any character in the Unicode _Nd_ category.
 * <tt>/[[:print:]]/</tt> - Like [:graph:], but includes the space character
 * <tt>/[[:punct:]]/</tt> - Punctuation character
 * <tt>/[[:space:]]/</tt> - Whitespace character (<tt>[:blank:]</tt>, newline,
-   carriage return, etc.)
+  carriage return, etc.)
 * <tt>/[[:upper:]]/</tt> - Uppercase alphabetical
 * <tt>/[[:xdigit:]]/</tt> - Digit allowed in a hexadecimal number (i.e.,
   0-9a-fA-F)
@@ -169,7 +195,7 @@ jeopardises the overall match.
 Parentheses can be used for <i>capturing</i>. The text enclosed by the
 <i>n</i><sup>th</sup> group of parentheses can be subsequently referred to
 with <i>n</i>. Within a pattern use the <i>backreference</i>
-<tt>\</tt><i>n</i>; outside of the pattern use
+<tt>\n</tt>; outside of the pattern use
 <tt>MatchData[</tt><i>n</i><tt>]</tt>.
 
     # 'at' is captured by the first group of parentheses, then referred to
@@ -473,6 +499,13 @@ expression enclosed by the parentheses.
     /a(?i:b)c/.match('aBc') #=> #<MatchData "aBc">
     /a(?i:b)c/.match('abc') #=> #<MatchData "abc">
 
+Options may also be used with <tt>Regexp.new</tt>:
+
+    Regexp.new("abc", Regexp::IGNORECASE)                     #=> /abc/i
+    Regexp.new("abc", Regexp::MULTILINE)                      #=> /abc/m
+    Regexp.new("abc # Comment", Regexp::EXTENDED)             #=> /abc # Comment/x
+    Regexp.new("abc", Regexp::IGNORECASE | Regexp::MULTILINE) #=> /abc/mi
+
 == Free-Spacing Mode and Comments
 
 As mentioned above, the <tt>x</tt> option enables <i>free-spacing</i>
@@ -524,6 +557,40 @@ regexp's encoding can be explicitly fixed by supplying
     r =~"a\u3042"
        #=> Encoding::CompatibilityError: incompatible encoding regexp match
             (ISO-8859-1 regexp with UTF-8 string)
+
+== Special global variables
+
+Pattern matching sets some global variables :
+* <tt>$~</tt> is equivalent to Regexp.last_match;
+* <tt>$&</tt> contains the complete matched text;
+* <tt>$`</tt> contains string before match;
+* <tt>$'</tt> contains string after match;
+* <tt>$1</tt>, <tt>$2</tt> and so on contain text matching first, second, etc
+  capture group;
+* <tt>$+</tt> contains last capture group.
+
+Example:
+
+    m = /s(\w{2}).*(c)/.match('haystack') #=> #<MatchData "stac" 1:"ta" 2:"c">
+    $~                                    #=> #<MatchData "stac" 1:"ta" 2:"c">
+    Regexp.latch_match                    #=> #<MatchData "stac" 1:"ta" 2:"c">
+
+    $&      #=> "stac"
+            # same as m[0]
+    $`      #=> "hay"
+            # same as m.pre_match
+    $'      #=> "k"
+            # same as m.post_match
+    $1      #=> "ta"
+            # same as m[1]
+    $2      #=> "c"
+            # same as m[2]
+    $3      #=> nil
+            # no third group in pattern
+    $+      #=> "c"
+            # same as m[-1]
+
+These global variables are thread-local and method-local varaibles.
 
 == Performance
 
