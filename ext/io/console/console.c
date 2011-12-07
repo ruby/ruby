@@ -296,6 +296,8 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *, void *), void 
  *   STDIN.raw(&:gets)
  *
  * will read and return a line with echo back and line editing.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_raw(int argc, VALUE *argv, VALUE io)
@@ -311,6 +313,8 @@ console_raw(int argc, VALUE *argv, VALUE io)
  * Enables raw mode.
  *
  * If the terminal mode needs to be back, use io.raw { ... }.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_set_raw(int argc, VALUE *argv, VALUE io)
@@ -337,6 +341,8 @@ console_set_raw(int argc, VALUE *argv, VALUE io)
  *   STDIN.cooked(&:gets)
  *
  * will read and return a line with echo back and line editing.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_cooked(VALUE io)
@@ -351,6 +357,8 @@ console_cooked(VALUE io)
  * Enables cooked mode.
  *
  * If the terminal mode needs to be back, use io.cooked { ... }.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_set_cooked(VALUE io)
@@ -378,6 +386,8 @@ getc_call(VALUE io)
  *   io.getch(min: nil, time: nil)       -> char
  *
  * Reads and returns a character in raw mode.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_getch(int argc, VALUE *argv, VALUE io)
@@ -395,6 +405,8 @@ console_getch(int argc, VALUE *argv, VALUE io)
  *   STDIN.noecho(&:gets)
  *
  * will read and return a line without echo back.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_noecho(VALUE io)
@@ -407,6 +419,8 @@ console_noecho(VALUE io)
  *   io.echo = flag
  *
  * Enables/disables echo back.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_set_echo(VALUE io, VALUE f)
@@ -431,6 +445,8 @@ console_set_echo(VALUE io, VALUE f)
  *   io.echo?       -> true or false
  *
  * Returns +true+ if echo back is enabled.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_echo_p(VALUE io)
@@ -470,6 +486,8 @@ typedef CONSOLE_SCREEN_BUFFER_INFO rb_console_size_t;
  *   io.winsize     -> [rows, columns]
  *
  * Returns console size.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_winsize(VALUE io)
@@ -490,6 +508,8 @@ console_winsize(VALUE io)
  *
  * Tries to set console size.  The effect depends on the platform and
  * the running environment.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_set_winsize(VALUE io, VALUE size)
@@ -549,6 +569,8 @@ console_set_winsize(VALUE io, VALUE size)
  *   io.iflush
  *
  * Flushes input buffer in kernel.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_iflush(VALUE io)
@@ -569,6 +591,8 @@ console_iflush(VALUE io)
  *   io.oflush
  *
  * Flushes output buffer in kernel.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_oflush(VALUE io)
@@ -589,6 +613,8 @@ console_oflush(VALUE io)
  *   io.ioflush
  *
  * Flushes input and output buffers in kernel.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_ioflush(VALUE io)
@@ -618,6 +644,8 @@ console_ioflush(VALUE io)
  *   IO.console      -> #<File:/dev/tty>
  *
  * Returns an File instance opened console.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_dev(VALUE klass)
