@@ -312,6 +312,12 @@ BigDecimal_prec(VALUE self)
     return obj;
 }
 
+/*
+ * call-seq: hash
+ *
+ * Creates a hash for this BigDecimal.  Two BigDecimals with equal sign,
+ * fractional part and exponent have the same hash.
+ */
 static VALUE
 BigDecimal_hash(VALUE self)
 {
@@ -786,6 +792,14 @@ BigDecimal_coerce(VALUE self, VALUE other)
     return obj;
 }
 
+/*
+ * call-seq: +@
+ *
+ * Return self.
+ *
+ * e.g.
+ *   b = +a  # b == a
+ */
 static VALUE
 BigDecimal_uplus(VALUE self)
 {
@@ -1052,6 +1066,14 @@ BigDecimal_ge(VALUE self, VALUE r)
     return BigDecimalCmp(self, r, 'G');
 }
 
+/*
+ * call-seq: -@
+ *
+ * Return the negation of self.
+ *
+ * e.g.
+ *   b = -a # b == a * -1
+ */
 static VALUE
 BigDecimal_neg(VALUE self)
 {
@@ -2929,8 +2951,10 @@ Init_bigdecimal(void)
     rb_define_const(rb_cBigDecimal, "SIGN_NEGATIVE_INFINITE",INT2FIX(VP_SIGN_NEGATIVE_INFINITE));
 
     arg = rb_str_new2("+Infinity");
+    /* Positive infinity value. */
     rb_define_const(rb_cBigDecimal, "INFINITY", BigDecimal_global_new(1, &arg, rb_cBigDecimal));
     arg = rb_str_new2("NaN");
+    /* 'Not a Number' value. */
     rb_define_const(rb_cBigDecimal, "NAN", BigDecimal_global_new(1, &arg, rb_cBigDecimal));
 
 
