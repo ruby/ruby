@@ -73,7 +73,7 @@ def extract_makefile(makefile, keep = true)
     end
     return false
   end
-  srcs = Dir[File.join($srcdir, "*.{#{SRC_EXT.join(%q{,})}}")].map {|fn| File.basename(fn)}
+  srcs = Dir[File.join($srcdir, "*.{#{SRC_EXT.join(%q{,})}}")].sort.map {|fn| File.basename(fn)}
   if !srcs.empty?
     old_srcs = m[/^ORIG_SRCS[ \t]*=[ \t](.*)/, 1] or return false
     old_srcs.split.sort == srcs or return false

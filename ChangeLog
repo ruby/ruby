@@ -1,3 +1,10 @@
+Thu Dec  8 22:31:13 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/extmk.rb (extract_makefile): need to sort the array of current
+	  srcs before comparing to the sorted old srcs.
+	  fixed the problem that the configuring stage of exts were always
+	  run, introduced at r33801.
+
 Thu Dec  8 13:26:24 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/rexml/test_order.rb (OrderTester#test_more_ordering): use
