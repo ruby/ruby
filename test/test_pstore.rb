@@ -1,10 +1,11 @@
 require 'test/unit'
 require 'pstore'
+require 'tmpdir'
 require_relative 'ruby/envutil'
 
 class PStoreTest < Test::Unit::TestCase
   def setup
-    @pstore_file = "pstore.tmp.#{Process.pid}"
+    @pstore_file = File.join(Dir.tmpdir, "pstore.tmp.#{Process.pid}")
     @pstore = PStore.new(@pstore_file)
   end
 
@@ -87,7 +88,7 @@ class PStoreTest < Test::Unit::TestCase
       @pstore.transaction {}
     end
     assert_block do
-      pstore = PStore.new("pstore.tmp2.#{Process.pid}",true)
+      pstore = PStore.new(second_file, true)
       flag = false
       Thread.new do
         pstore.transaction do
@@ -98,18 +99,21 @@ class PStoreTest < Test::Unit::TestCase
       end
       until flag; end
       pstore.transaction { pstore[:foo] == "bar" }
-      File.unlink("pstore.tmp2.#{Process.pid}") rescue nil
     end
+  ensure
+    File.unlink(second_file) rescue nil
   end
 
   def test_nested_transaction_raises_error
     assert_raise(PStore::Error) do
       @pstore.transaction { @pstore.transaction { } }
     end
-    pstore = PStore.new("pstore.tmp2.#{Process.pid}", true)
+    pstore = PStore.new(second_file, true)
     assert_raise(PStore::Error) do
       pstore.transaction { pstore.transaction { } }
     end
+  ensure
+    File.unlink(second_file) rescue nil
   end
 
   # Test that PStore's file operations do not blow up when default encodings are set
@@ -125,5 +129,9 @@ class PStoreTest < Test::Unit::TestCase
       puts @pstore.transaction {@pstore["Bug5311"]}
     SRC
     assert_equal(bug5311, @pstore.transaction {@pstore["Bug5311"]}, bug5311)
+  end
+
+  def second_file
+    File.join(Dir.tmpdir, "pstore.tmp2.#{Process.pid}")
   end
 end
