@@ -485,6 +485,7 @@ if have_func(test_func)
   have_func("getipnodebyname") or have_func("gethostbyname2")
   if !have_func("socketpair(0, 0, 0, 0)") and have_func("rb_w32_socketpair(0, 0, 0, 0)")
     $defs << "-Dsocketpair(a,b,c,d)=rb_w32_socketpair((a),(b),(c),(d))"
+    $defs << "-DHAVE_SOCKETPAIR"
   end
   unless have_func("gethostname((char *)0, 0)")
     have_func("uname")
