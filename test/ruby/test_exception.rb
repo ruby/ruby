@@ -334,4 +334,19 @@ end.join
     arg_string = (0...140000).to_a.join(", ")
     assert_raise(SystemStackError, bug5720) {eval "raise(#{arg_string})"}
   end
+
+  def test_systemexit_new
+    e0 = SystemExit.new
+    assert_equal(0, e0.status)
+    assert_equal("SystemExit", e0.message)
+    ei = SystemExit.new(3)
+    assert_equal(3, ei.status)
+    assert_equal("SystemExit", ei.message)
+    es = SystemExit.new("msg")
+    assert_equal(0, es.status)
+    assert_equal("msg", es.message)
+    eis = SystemExit.new(7, "msg")
+    assert_equal(7, eis.status)
+    assert_equal("msg", eis.message)
+  end
 end

@@ -743,9 +743,13 @@ exc_equal(VALUE exc, VALUE obj)
 
 /*
  * call-seq:
- *   SystemExit.new(status=0)   -> system_exit
+ *   SystemExit.new              -> system_exit
+ *   SystemExit.new(status)      -> system_exit
+ *   SystemExit.new(status, msg) -> system_exit
+ *   SystemExit.new(msg)         -> system_exit
  *
- * Create a new +SystemExit+ exception with the given status.
+ * Create a new +SystemExit+ exception with the given status and message.
+ * If status is not given, EXIT_SUCCESS is used.
  */
 
 static VALUE
