@@ -2119,13 +2119,19 @@ set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
 	VALUE val = argv[i];
 	id = rb_check_id(&val);
 	if (!id) {
+	    if ( i > 0 )
+		rb_clear_cache_by_class(mod);
 	    rb_name_error_str(val, "constant %s::%s not defined", rb_class2name(mod), RSTRING_PTR(val));
 	}
-	if (RCLASS_CONST_TBL(mod) && st_lookup(RCLASS_CONST_TBL(mod), (st_data_t)id, &v)) {
+	if (RCLASS_CONST_TBL(mod) &&
+	    st_lookup(RCLASS_CONST_TBL(mod), (st_data_t)id, &v)) {
 	    ((rb_const_entry_t*)v)->flag = flag;
-	    continue;
 	}
-	rb_name_error(id, "constant %s::%s not defined", rb_class2name(mod), rb_id2name(id));
+	else {
+	    if ( i > 0 )
+		rb_clear_cache_by_class(mod);
+	    rb_name_error(id, "constant %s::%s not defined", rb_class2name(mod), rb_id2name(id));
+	}
     }
     rb_clear_cache_by_class(mod);
 }
