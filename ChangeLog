@@ -1,3 +1,9 @@
+Thu Dec  8 23:26:11 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/extmk.rb (extract_makefile): should sort after map, not before
+	  it.  in this case there is no difference, but we should write better
+	  code.  this bad smell was caught by nagachika.
+
 Thu Dec  8 22:31:13 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/extmk.rb (extract_makefile): need to sort the array of current
