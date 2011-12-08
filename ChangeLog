@@ -1,3 +1,8 @@
+Thu Dec  8 13:11:26 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_process.rb (TestProcess#test_sete[gu]id): silently
+	  skip if not implemented such functions (such as, on Windows).
+
 Thu Dec  8 12:57:50 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/extconf.rb: forgotten to define HAVE_SOCKETPAIR for

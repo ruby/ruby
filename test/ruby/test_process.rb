@@ -1167,6 +1167,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_seteuid
     assert_nothing_raised(TypeError) {Process.euid += 0}
+  rescue NotImplementedError
   end
 
   def test_getegid
@@ -1175,6 +1176,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_setegid
     assert_nothing_raised(TypeError) {Process.egid += 0}
+  rescue NotImplementedError
   end
 
   def test_uid_re_exchangeable_p
