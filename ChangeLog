@@ -1,3 +1,9 @@
+Thu Dec  8 12:11:06 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_WERROR_FLAG): append all warning flags which
+	  are enabled to compile, so that printf format modifiers properly
+	  fail.  [ruby-core:41351] [Bug #5679]
+
 Thu Dec  8 07:20:15 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/re.rdoc:  Document difference between match and =~, options with
