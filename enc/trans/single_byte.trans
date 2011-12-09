@@ -43,6 +43,7 @@
   transcode_tblgen_singlebyte "ISO-8859-13"
   transcode_tblgen_singlebyte "ISO-8859-14"
   transcode_tblgen_singlebyte "ISO-8859-15"
+  transcode_tblgen_singlebyte "ISO-8859-16"
   transcode_tblgen_singlebyte "WINDOWS-874"
   transcode_tblgen_singlebyte "WINDOWS-1250"
   transcode_tblgen_singlebyte "WINDOWS-1251"

@@ -1,3 +1,9 @@
+Fri Dec  9 19:24:31 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/iso-8859-16-tbl.rb: add ISO-8859-16 converter.
+
+	* enc/trans/single_byte.trans: ditto.
+
 Fri Dec  9 14:28:40 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (file_path_convert): don't convert it when the path string is
