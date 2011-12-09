@@ -17,7 +17,7 @@ Fri Dec  9 08:00:15 2011  Luis Lavena  <luislavena@gmail.com>
 
 Thu Dec  8 23:38:24 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
-	* variable.c (set_const_visibility): clear inine-cache when constant's
+	* variable.c (set_const_visibility): clear inline-cache when constant's
 	  visibility is modified. [ruby-dev:44929]
 
 	* test/ruby/test_module.rb (test_private_constants_clear_inlinecache):
