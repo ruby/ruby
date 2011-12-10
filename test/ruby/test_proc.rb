@@ -382,7 +382,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [[1,2,3]], r
   end
 
-  def test_proc_args_rest_and_post
+  def test_proc_args_pos_rest_post
     pr = proc {|a,b,*c,d,e|
       [a,b,c,d,e]
     }
@@ -405,7 +405,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, [3, 4, 5], 6,7], pr.call([1,2,3,4,5,6,7])
   end
 
-  def test_proc_args_opt
+  def test_proc_args_pos_opt
     pr = proc {|a,b,c=:c|
       [a,b,c]
     }
@@ -426,7 +426,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, 3], pr.call([1,2,3,4,5,6])
   end
 
-  def test_proc_args_opt_and_post
+  def test_proc_args_pos_opt_post
     pr = proc {|a,b,c=:c,d,e|
       [a,b,c,d,e]
     }
@@ -447,7 +447,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, 3, 4, 5], pr.call([1,2,3,4,5,6])
   end
 
-  def test_proc_args_opt_and_rest
+  def test_proc_args_pos_opt_rest
     pr = proc {|a,b,c=:c,*d|
       [a,b,c,d]
     }
@@ -466,7 +466,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, 3, [4, 5]], pr.call([1,2,3,4,5])
   end
 
-  def test_proc_args_opt_and_rest_and_post
+  def test_proc_args_pos_opt_rest_post
     pr = proc {|a,b,c=:c,*d,e|
       [a,b,c,d,e]
     }
@@ -487,7 +487,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, 3, [4,5], 6], pr.call([1,2,3,4,5,6])
   end
 
-  def test_proc_args_block
+  def test_proc_args_pos_block
     pr = proc {|a,b,&c|
       [a, b, c.class, c&&c.call(:x)]
     }
@@ -510,7 +510,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, Proc, :x], (pr.call(1, 2, 3, 4){|x| x})
   end
 
-  def test_proc_args_rest_and_block
+  def test_proc_args_pos_rest_block
     pr = proc {|a,b,*c,&d|
       [a, b, c, d.class, d&&d.call(:x)]
     }
@@ -533,7 +533,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, [3,4], Proc, :x], (pr.call(1, 2, 3, 4){|x| x})
   end
 
-  def test_proc_args_rest_and_post_and_block
+  def test_proc_args_pos_rest_post_block
     pr = proc {|a,b,*c,d,e,&f|
       [a, b, c, d, e, f.class, f&&f.call(:x)]
     }
@@ -562,7 +562,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, [3,4], 5, 6, Proc, :x], (pr.call(1, 2, 3, 4, 5, 6){|x| x})
   end
 
-  def test_proc_args_opt_and_block
+  def test_proc_args_pos_opt_block
     pr = proc {|a,b,c=:c,d=:d,&e|
       [a, b, c, d, e.class, e&&e.call(:x)]
     }
@@ -588,7 +588,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, 3, 4, Proc, :x], (pr.call(1, 2, 3, 4, 5){|x| x})
   end
 
-  def test_proc_args_opt_and_post_and_block
+  def test_proc_args_pos_opt_post_block
     pr = proc {|a,b,c=:c,d=:d,e,f,&g|
       [a, b, c, d, e, f, g.class, g&&g.call(:x)]
     }
@@ -620,7 +620,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, 3, 4, 5, 6, Proc, :x], (pr.call(1, 2, 3, 4, 5, 6, 7){|x| x})
   end
 
-  def test_proc_args_opt_and_block2
+  def test_proc_args_pos_opt_rest_block
     pr = proc {|a,b,c=:c,d=:d,*e,&f|
       [a, b, c, d, e, f.class, f&&f.call(:x)]
     }
@@ -649,7 +649,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, 3, 4, [5,6], Proc, :x], (pr.call(1, 2, 3, 4, 5, 6){|x| x})
   end
 
-  def test_proc_args_opt_and_rest_and_post_and_block
+  def test_proc_args_pos_opt_rest_post_block
     pr = proc {|a,b,c=:c,d=:d,*e,f,g,&h|
       [a, b, c, d, e, f, g, h.class, h&&h.call(:x)]
     }
@@ -684,7 +684,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, 3, 4, [5,6], 7, 8, Proc, :x], (pr.call(1, 2, 3, 4, 5, 6, 7, 8){|x| x})
   end
 
-  def test_proc_args_unleashed
+  def test_proc_args_pos_unleashed
     r = proc {|a,b=1,*c,d,e|
       [a,b,c,d,e]
     }.call(1,2,3,4,5)
