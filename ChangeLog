@@ -1,3 +1,9 @@
+Mon Oct 17 03:56:12 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/openssl/ossl_x509store.c (ossl_x509store_initialize): initialize
+	  store->ex_data.sk.  [ruby-core:28907] [ruby-core:23971]
+	  [ruby-core:18121]
+
 Thu Jun 30 12:52:56 2011  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/tk/extconf.rb (intptr_t, uintptr_t): support for the latest ActiveTcl with mingw.
