@@ -1,3 +1,10 @@
+Mon Oct 17 04:19:39 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (flo_cmp): Infinity is greater than any bignum
+	  number.  [ruby-dev:38672]
+
+	* bignum.c (rb_big_cmp): ditto.
+
 Mon Oct 17 03:56:12 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/openssl/ossl_x509store.c (ossl_x509store_initialize): initialize
