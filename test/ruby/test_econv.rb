@@ -921,8 +921,8 @@ class TestEncodingConverter < Test::Unit::TestCase
       STDOUT.flush
     end
 EOS
-    Encoding.list.grep(->(enc) {/^ISO-8859-\d+\z/i =~ enc.name}) do |enc|
-      error = IO.popen([EnvUtil.rubybin, "-e", cmd, enc.name]) do |child|
+    Encoding.list.grep(->(enc) {/\AISO-8859-\d+\z/i =~ enc.name}) do |enc|
+      error = IO.popen([EnvUtil.rubybin, "-e", cmd, enc.name, err: File::NULL]) do |child|
         Marshal.load(child)
       end
       assert_nil(error)
