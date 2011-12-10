@@ -1,3 +1,8 @@
+Mon Oct 17 04:20:22 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb: fix for continued lines.  based on a patch from
+	  Marcus Rueckert <darix AT opensu.se> at [ruby-core:20420].
+
 Mon Oct 17 04:19:39 2011  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (flo_cmp): Infinity is greater than any bignum
