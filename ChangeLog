@@ -1,3 +1,7 @@
+Sun Dec 11 11:42:10 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* ext/syslog/syslog.c: fix a typo. [ruby-core:41585] [Bug #5740]
+
 Sun Dec 11 10:48:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (exit_initialize): deal with true and false as well as

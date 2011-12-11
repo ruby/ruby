@@ -111,7 +111,7 @@ static VALUE mSyslog_close(VALUE self)
  * LOG_KERN:: A kernel message (not sendable by user processes, so not of
  *            much use to Ruby, but listed here for completeness).
  *
- * LOG_LRP:: Line printer subsystem.
+ * LOG_LPR:: Line printer subsystem.
  *
  * LOG_MAIL:: Mail delivery or transport subsystem.
  *
