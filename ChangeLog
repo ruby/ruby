@@ -1,3 +1,8 @@
+Sun Dec 11 10:34:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_exit_status_code): extract from rb_f_exit_bang and
+	  rb_f_exit.  assume 0 to be success in Kernel#exit! too.
+
 Fri Dec  9 19:24:31 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/iso-8859-16-tbl.rb: add ISO-8859-16 converter.

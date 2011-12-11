@@ -2795,6 +2795,29 @@ rb_f_fork(VALUE obj)
 #define rb_f_fork rb_f_notimplement
 #endif
 
+static int
+exit_status_code(VALUE status)
+{
+    int istatus;
+
+    switch (status) {
+      case Qtrue:
+	istatus = EXIT_SUCCESS;
+	break;
+      case Qfalse:
+	istatus = EXIT_FAILURE;
+	break;
+      default:
+	istatus = NUM2INT(status);
+#if EXIT_SUCCESS != 0
+	if (istatus == 0)
+	    istatus = EXIT_SUCCESS;
+#endif
+	break;
+    }
+    return istatus;
+}
+
 /*
  *  call-seq:
  *     Process.exit!(status=false)
@@ -2814,17 +2837,7 @@ rb_f_exit_bang(int argc, VALUE *argv, VALUE obj)
 
     rb_secure(4);
     if (argc > 0 && rb_scan_args(argc, argv, "01", &status) == 1) {
-	switch (status) {
-	  case Qtrue:
-	    istatus = EXIT_SUCCESS;
-	    break;
-	  case Qfalse:
-	    istatus = EXIT_FAILURE;
-	    break;
-	  default:
-	    istatus = NUM2INT(status);
-	    break;
-	}
+	istatus = exit_status_code(status);
     }
     else {
 	istatus = EXIT_FAILURE;
@@ -2898,21 +2911,7 @@ rb_f_exit(int argc, VALUE *argv)
 
     rb_secure(4);
     if (argc > 0 && rb_scan_args(argc, argv, "01", &status) == 1) {
-	switch (status) {
-	  case Qtrue:
-	    istatus = EXIT_SUCCESS;
-	    break;
-	  case Qfalse:
-	    istatus = EXIT_FAILURE;
-	    break;
-	  default:
-	    istatus = NUM2INT(status);
-#if EXIT_SUCCESS != 0
-	    if (istatus == 0)
-		istatus = EXIT_SUCCESS;
-#endif
-	    break;
-	}
+	istatus = exit_status_code(status);
     }
     else {
 	istatus = EXIT_SUCCESS;
