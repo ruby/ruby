@@ -348,5 +348,19 @@ end.join
     eis = SystemExit.new(7, "msg")
     assert_equal(7, eis.status)
     assert_equal("msg", eis.message)
+
+    bug5728 = '[ruby-dev:44951]'
+    et = SystemExit.new(true)
+    assert_equal(true, et.success?, bug5728)
+    assert_equal("SystemExit", et.message, bug5728)
+    ef = SystemExit.new(false)
+    assert_equal(false, ef.success?, bug5728)
+    assert_equal("SystemExit", ef.message, bug5728)
+    ets = SystemExit.new(true, "msg")
+    assert_equal(true, ets.success?, bug5728)
+    assert_equal("msg", ets.message, bug5728)
+    efs = SystemExit.new(false, "msg")
+    assert_equal(false, efs.success?, bug5728)
+    assert_equal("msg", efs.message, bug5728)
   end
 end

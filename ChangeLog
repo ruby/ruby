@@ -1,3 +1,8 @@
+Sun Dec 11 10:48:16 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (exit_initialize): deal with true and false as well as
+	  Kernel#exit.  [ruby-dev:44951] [Bug #5728]
+
 Sun Dec 11 10:37:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_check_to_int): new function to convert a VALUE to

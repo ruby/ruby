@@ -749,16 +749,46 @@ exc_equal(VALUE exc, VALUE obj)
  *   SystemExit.new(msg)         -> system_exit
  *
  * Create a new +SystemExit+ exception with the given status and message.
- * If status is not given, EXIT_SUCCESS is used.
+ * Status is true, false, or an integer.
+ * If status is not given, true is used.
  */
 
 static VALUE
 exit_initialize(int argc, VALUE *argv, VALUE exc)
 {
-    VALUE status = INT2FIX(EXIT_SUCCESS);
-    if (argc > 0 && FIXNUM_P(argv[0])) {
-	status = *argv++;
-	--argc;
+    VALUE status;
+    if (argc > 0) {
+	status = *argv;
+
+	switch (status) {
+	  case Qtrue:
+	    status = INT2FIX(EXIT_SUCCESS);
+	    ++argv;
+	    --argc;
+	    break;
+	  case Qfalse:
+	    status = INT2FIX(EXIT_FAILURE);
+	    ++argv;
+	    --argc;
+	    break;
+	  default:
+	    status = rb_check_to_int(status);
+	    if (NIL_P(status)) {
+		status = INT2FIX(EXIT_SUCCESS);
+	    }
+	    else {
+#if EXIT_SUCCESS != 0
+		if (status == INT2FIX(0))
+		    status = INT2FIX(EXIT_SUCCESS);
+#endif
+		++argv;
+		--argc;
+	    }
+	    break;
+	}
+    }
+    else {
+	status = INT2FIX(EXIT_SUCCESS);
     }
     rb_call_super(argc, argv);
     rb_iv_set(exc, "status", status);
