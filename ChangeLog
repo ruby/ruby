@@ -1,3 +1,9 @@
+Sun Dec 11 10:37:47 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_check_to_int): new function to convert a VALUE to
+	  an Integer if possible, but returns nil instead of raising an
+	  exception otherwise.
+
 Sun Dec 11 10:34:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_exit_status_code): extract from rb_f_exit_bang and

@@ -2187,6 +2187,12 @@ rb_to_int(VALUE val)
     return rb_to_integer(val, "to_int");
 }
 
+VALUE
+rb_check_to_int(VALUE val)
+{
+    return rb_check_to_integer(val, "to_int");
+}
+
 static VALUE
 rb_convert_to_integer(VALUE val, int base)
 {

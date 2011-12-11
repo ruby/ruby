@@ -553,6 +553,7 @@ VALUE rb_check_convert_type(VALUE,int,const char*,const char*);
 VALUE rb_check_to_integer(VALUE, const char *);
 VALUE rb_check_to_float(VALUE);
 VALUE rb_to_int(VALUE);
+VALUE rb_check_to_int(VALUE);
 VALUE rb_Integer(VALUE);
 VALUE rb_to_float(VALUE);
 VALUE rb_Float(VALUE);
