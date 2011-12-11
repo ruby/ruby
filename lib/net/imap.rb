@@ -2180,12 +2180,12 @@ module Net
         when "FETCH"
           shift_token
           match(T_SPACE)
-          data = FetchData.new(n, msg_att)
+          data = FetchData.new(n, msg_att(n))
           return UntaggedResponse.new(name, data, @str)
         end
       end
 
-      def msg_att
+      def msg_att(n)
         match(T_LPAR)
         attr = {}
         while true
@@ -2214,7 +2214,7 @@ module Net
           when /\A(?:UID)\z/ni
             name, val = uid_data
           else
-            parse_error("unknown attribute `%s'", token.value)
+            parse_error("unknown attribute `%s' for {%d}", token.value, n)
           end
           attr[name] = val
         end

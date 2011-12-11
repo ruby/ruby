@@ -1,3 +1,9 @@
+Sun Dec 11 12:19:17 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: includes the sequence number of UID in a error
+	  message.  suggested by art lussos.
+	  [ruby-core:41413] [Feature #5692]
+
 Sun Dec 11 11:42:10 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* ext/syslog/syslog.c: fix a typo. [ruby-core:41585] [Bug #5740]
