@@ -1341,7 +1341,7 @@ strio_truncate(VALUE self, VALUE len)
     long l = NUM2LONG(len);
     long plen = RSTRING_LEN(string);
     if (l < 0) {
-	error_inval("negative legnth");
+	error_inval("negative length");
     }
     rb_str_resize(string, l);
     if (plen < l) {

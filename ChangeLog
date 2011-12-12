@@ -1,3 +1,9 @@
+Mon Dec 12 15:41:03 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_truncate): fix typo.  patched by
+	  Nick Howard <ndh AT baroquebobcat.com>.
+	  https://github.com/ruby/ruby/pull/65
+
 Sun Dec 11 12:19:17 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: includes the sequence number of UID in a error
