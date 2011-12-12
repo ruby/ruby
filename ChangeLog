@@ -1,3 +1,8 @@
+Mon Dec 12 17:29:01 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* README: Fixed SupportedPlatforms URL in the README.
+	  patched by eMxyzptlk. https://github.com/ruby/ruby/pull/62
+
 Mon Dec 12 17:26:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_feature_p): lazy assigned load_path searched in
