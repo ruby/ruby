@@ -1,3 +1,10 @@
+Mon Dec 12 17:26:51 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_feature_p): lazy assigned load_path searched in
+	  loading_table were not expanded, but all features, pushed to
+	  loading table, are expanded.  a patch by Yura Sokolov
+	  <funny.falcon AT gmail.com> in [ruby-core:41545]. [Bug #5727]
+
 Mon Dec 12 15:41:03 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_truncate): fix typo.  patched by
