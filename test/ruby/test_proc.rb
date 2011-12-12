@@ -405,6 +405,29 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, [3, 4, 5], 6,7], pr.call([1,2,3,4,5,6,7])
   end
 
+  def test_proc_args_rest_post
+    pr = proc {|*a,b,c|
+      [a,b,c]
+    }
+    assert_equal [[], nil, nil], pr.call()
+    assert_equal [[], 1, nil], pr.call(1)
+    assert_equal [[], 1, 2], pr.call(1,2)
+    assert_equal [[1], 2, 3], pr.call(1,2,3)
+    assert_equal [[1, 2], 3, 4], pr.call(1,2,3,4)
+    assert_equal [[1, 2, 3], 4, 5], pr.call(1,2,3,4,5)
+    assert_equal [[1, 2, 3, 4], 5, 6], pr.call(1,2,3,4,5,6)
+    assert_equal [[1, 2, 3, 4, 5], 6,7], pr.call(1,2,3,4,5,6,7)
+
+    assert_equal [[], nil, nil], pr.call([])
+    assert_equal [[], 1, nil], pr.call([1])
+    assert_equal [[], 1, 2], pr.call([1,2])
+    assert_equal [[1], 2, 3], pr.call([1,2,3])
+    assert_equal [[1, 2], 3, 4], pr.call([1,2,3,4])
+    assert_equal [[1, 2, 3], 4, 5], pr.call([1,2,3,4,5])
+    assert_equal [[1, 2, 3, 4], 5, 6], pr.call([1,2,3,4,5,6])
+    assert_equal [[1, 2, 3, 4, 5], 6,7], pr.call([1,2,3,4,5,6,7])
+  end
+
   def test_proc_args_pos_opt
     pr = proc {|a,b,c=:c|
       [a,b,c]
@@ -419,6 +442,27 @@ class TestProc < Test::Unit::TestCase
 
     assert_equal [nil, nil, :c], pr.call([])
     assert_equal [1, nil, :c], pr.call([1])
+    assert_equal [1, 2, :c], pr.call([1,2])
+    assert_equal [1, 2, 3], pr.call([1,2,3])
+    assert_equal [1, 2, 3], pr.call([1,2,3,4])
+    assert_equal [1, 2, 3], pr.call([1,2,3,4,5])
+    assert_equal [1, 2, 3], pr.call([1,2,3,4,5,6])
+  end
+
+  def test_proc_args_opt
+    pr = proc {|a=:a,b=:b,c=:c|
+      [a,b,c]
+    }
+    assert_equal [:a, :b, :c], pr.call()
+    assert_equal [1, :b, :c], pr.call(1)
+    assert_equal [1, 2, :c], pr.call(1,2)
+    assert_equal [1, 2, 3], pr.call(1,2,3)
+    assert_equal [1, 2, 3], pr.call(1,2,3,4)
+    assert_equal [1, 2, 3], pr.call(1,2,3,4,5)
+    assert_equal [1, 2, 3], pr.call(1,2,3,4,5,6)
+
+    assert_equal [:a, :b, :c], pr.call([])
+    assert_equal [1, :b, :c], pr.call([1])
     assert_equal [1, 2, :c], pr.call([1,2])
     assert_equal [1, 2, 3], pr.call([1,2,3])
     assert_equal [1, 2, 3], pr.call([1,2,3,4])
@@ -447,6 +491,27 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, 3, 4, 5], pr.call([1,2,3,4,5,6])
   end
 
+  def test_proc_args_opt_post
+    pr = proc {|a=:a,b=:b,c=:c,d,e|
+      [a,b,c,d,e]
+    }
+    assert_equal [:a, :b, :c, nil, nil], pr.call()
+    assert_equal [:a, :b, :c, 1, nil], pr.call(1)
+    assert_equal [:a, :b, :c, 1, 2], pr.call(1,2)
+    assert_equal [1, :b, :c, 2, 3], pr.call(1,2,3)
+    assert_equal [1, 2, :c, 3, 4], pr.call(1,2,3,4)
+    assert_equal [1, 2, 3, 4, 5], pr.call(1,2,3,4,5)
+    assert_equal [1, 2, 3, 4, 5], pr.call(1,2,3,4,5,6)
+
+    assert_equal [:a, :b, :c, nil, nil], pr.call([])
+    assert_equal [:a, :b, :c, 1, nil], pr.call([1])
+    assert_equal [:a, :b, :c, 1, 2], pr.call([1,2])
+    assert_equal [1, :b, :c, 2, 3], pr.call([1,2,3])
+    assert_equal [1, 2, :c, 3, 4], pr.call([1,2,3,4])
+    assert_equal [1, 2, 3, 4, 5], pr.call([1,2,3,4,5])
+    assert_equal [1, 2, 3, 4, 5], pr.call([1,2,3,4,5,6])
+  end
+
   def test_proc_args_pos_opt_rest
     pr = proc {|a,b,c=:c,*d|
       [a,b,c,d]
@@ -460,6 +525,25 @@ class TestProc < Test::Unit::TestCase
 
     assert_equal [nil, nil, :c, []], pr.call([])
     assert_equal [1, nil, :c, []], pr.call([1])
+    assert_equal [1, 2, :c, []], pr.call([1,2])
+    assert_equal [1, 2, 3, []], pr.call([1,2,3])
+    assert_equal [1, 2, 3, [4]], pr.call([1,2,3,4])
+    assert_equal [1, 2, 3, [4, 5]], pr.call([1,2,3,4,5])
+  end
+
+  def test_proc_args_opt_rest
+    pr = proc {|a=:a,b=:b,c=:c,*d|
+      [a,b,c,d]
+    }
+    assert_equal [:a, :b, :c, []], pr.call()
+    assert_equal [1, :b, :c, []], pr.call(1)
+    assert_equal [1, 2, :c, []], pr.call(1,2)
+    assert_equal [1, 2, 3, []], pr.call(1,2,3)
+    assert_equal [1, 2, 3, [4]], pr.call(1,2,3,4)
+    assert_equal [1, 2, 3, [4, 5]], pr.call(1,2,3,4,5)
+
+    assert_equal [:a, :b, :c, []], pr.call([])
+    assert_equal [1, :b, :c, []], pr.call([1])
     assert_equal [1, 2, :c, []], pr.call([1,2])
     assert_equal [1, 2, 3, []], pr.call([1,2,3])
     assert_equal [1, 2, 3, [4]], pr.call([1,2,3,4])
@@ -487,6 +571,27 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, 3, [4,5], 6], pr.call([1,2,3,4,5,6])
   end
 
+  def test_proc_args_opt_rest_post
+    pr = proc {|a=:a,b=:b,c=:c,*d,e|
+      [a,b,c,d,e]
+    }
+    assert_equal [:a, :b, :c, [], nil], pr.call()
+    assert_equal [:a, :b, :c, [], 1], pr.call(1)
+    assert_equal [1, :b, :c, [], 2], pr.call(1,2)
+    assert_equal [1, 2, :c, [], 3], pr.call(1,2,3)
+    assert_equal [1, 2, 3, [], 4], pr.call(1,2,3,4)
+    assert_equal [1, 2, 3, [4], 5], pr.call(1,2,3,4,5)
+    assert_equal [1, 2, 3, [4,5], 6], pr.call(1,2,3,4,5,6)
+
+    assert_equal [:a, :b, :c, [], nil], pr.call([])
+    assert_equal [:a, :b, :c, [], 1], pr.call([1])
+    assert_equal [1, :b, :c, [], 2], pr.call([1,2])
+    assert_equal [1, 2, :c, [], 3], pr.call([1,2,3])
+    assert_equal [1, 2, 3, [], 4], pr.call([1,2,3,4])
+    assert_equal [1, 2, 3, [4], 5], pr.call([1,2,3,4,5])
+    assert_equal [1, 2, 3, [4,5], 6], pr.call([1,2,3,4,5,6])
+  end
+
   def test_proc_args_pos_block
     pr = proc {|a,b,&c|
       [a, b, c.class, c&&c.call(:x)]
@@ -496,6 +601,12 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, NilClass, nil], pr.call(1,2)
     assert_equal [1, 2, NilClass, nil], pr.call(1,2,3)
     assert_equal [1, 2, NilClass, nil], pr.call(1,2,3,4)
+
+    assert_equal [nil, nil, NilClass, nil], pr.call([])
+    assert_equal [1, nil, NilClass, nil], pr.call([1])
+    assert_equal [1, 2, NilClass, nil], pr.call([1,2])
+    assert_equal [1, 2, NilClass, nil], pr.call([1,2,3])
+    assert_equal [1, 2, NilClass, nil], pr.call([1,2,3,4])
 
     assert_equal [nil, nil, Proc, :proc], (pr.call(){ :proc })
     assert_equal [1, nil, Proc, :proc], (pr.call(1){ :proc })
@@ -533,6 +644,23 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, [3,4], Proc, :x], (pr.call(1, 2, 3, 4){|x| x})
   end
 
+  def test_proc_args_rest_block
+    pr = proc {|*c,&d|
+      [c, d.class, d&&d.call(:x)]
+    }
+    assert_equal [[], NilClass, nil], pr.call()
+    assert_equal [[1], NilClass, nil], pr.call(1)
+    assert_equal [[1, 2], NilClass, nil], pr.call(1,2)
+
+    assert_equal [[], Proc, :proc], (pr.call(){ :proc })
+    assert_equal [[1], Proc, :proc], (pr.call(1){ :proc })
+    assert_equal [[1, 2], Proc, :proc], (pr.call(1, 2){ :proc })
+
+    assert_equal [[], Proc, :x], (pr.call(){|x| x})
+    assert_equal [[1], Proc, :x], (pr.call(1){|x| x})
+    assert_equal [[1, 2], Proc, :x], (pr.call(1, 2){|x| x})
+  end
+
   def test_proc_args_pos_rest_post_block
     pr = proc {|a,b,*c,d,e,&f|
       [a, b, c, d, e, f.class, f&&f.call(:x)]
@@ -562,6 +690,29 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, [3,4], 5, 6, Proc, :x], (pr.call(1, 2, 3, 4, 5, 6){|x| x})
   end
 
+  def test_proc_args_rest_post_block
+    pr = proc {|*c,d,e,&f|
+      [c, d, e, f.class, f&&f.call(:x)]
+    }
+    assert_equal [[], nil, nil, NilClass, nil], pr.call()
+    assert_equal [[], 1, nil, NilClass, nil], pr.call(1)
+    assert_equal [[], 1, 2, NilClass, nil], pr.call(1,2)
+    assert_equal [[1], 2, 3, NilClass, nil], pr.call(1,2,3)
+    assert_equal [[1, 2], 3, 4, NilClass, nil], pr.call(1,2,3,4)
+
+    assert_equal [[], nil, nil, Proc, :proc], (pr.call(){ :proc })
+    assert_equal [[], 1, nil, Proc, :proc], (pr.call(1){ :proc })
+    assert_equal [[], 1, 2, Proc, :proc], (pr.call(1, 2){ :proc })
+    assert_equal [[1], 2, 3, Proc, :proc], (pr.call(1, 2, 3){ :proc })
+    assert_equal [[1, 2], 3, 4, Proc, :proc], (pr.call(1, 2, 3, 4){ :proc })
+
+    assert_equal [[], nil, nil, Proc, :x], (pr.call(){|x| x})
+    assert_equal [[], 1, nil, Proc, :x], (pr.call(1){|x| x})
+    assert_equal [[], 1, 2, Proc, :x], (pr.call(1, 2){|x| x})
+    assert_equal [[1], 2, 3, Proc, :x], (pr.call(1, 2, 3){|x| x})
+    assert_equal [[1, 2], 3, 4, Proc, :x], (pr.call(1, 2, 3, 4){|x| x})
+  end
+
   def test_proc_args_pos_opt_block
     pr = proc {|a,b,c=:c,d=:d,&e|
       [a, b, c, d, e.class, e&&e.call(:x)]
@@ -582,6 +733,32 @@ class TestProc < Test::Unit::TestCase
 
     assert_equal [nil, nil, :c, :d, Proc, :x], (pr.call(){|x| x})
     assert_equal [1, nil, :c, :d, Proc, :x], (pr.call(1){|x| x})
+    assert_equal [1, 2, :c, :d, Proc, :x], (pr.call(1, 2){|x| x})
+    assert_equal [1, 2, 3, :d, Proc, :x], (pr.call(1, 2, 3){|x| x})
+    assert_equal [1, 2, 3, 4, Proc, :x], (pr.call(1, 2, 3, 4){|x| x})
+    assert_equal [1, 2, 3, 4, Proc, :x], (pr.call(1, 2, 3, 4, 5){|x| x})
+  end
+
+  def test_proc_args_opt_block
+    pr = proc {|a=:a,b=:b,c=:c,d=:d,&e|
+      [a, b, c, d, e.class, e&&e.call(:x)]
+    }
+    assert_equal [:a, :b, :c, :d, NilClass, nil], pr.call()
+    assert_equal [1, :b, :c, :d, NilClass, nil], pr.call(1)
+    assert_equal [1, 2, :c, :d, NilClass, nil], pr.call(1,2)
+    assert_equal [1, 2, 3, :d, NilClass, nil], pr.call(1,2,3)
+    assert_equal [1, 2, 3, 4, NilClass, nil], pr.call(1,2,3,4)
+    assert_equal [1, 2, 3, 4, NilClass, nil], pr.call(1,2,3,4,5)
+
+    assert_equal [:a, :b, :c, :d, Proc, :proc], (pr.call(){ :proc })
+    assert_equal [1, :b, :c, :d, Proc, :proc], (pr.call(1){ :proc })
+    assert_equal [1, 2, :c, :d, Proc, :proc], (pr.call(1, 2){ :proc })
+    assert_equal [1, 2, 3, :d, Proc, :proc], (pr.call(1, 2, 3){ :proc })
+    assert_equal [1, 2, 3, 4, Proc, :proc], (pr.call(1, 2, 3, 4){ :proc })
+    assert_equal [1, 2, 3, 4, Proc, :proc], (pr.call(1, 2, 3, 4, 5){ :proc })
+
+    assert_equal [:a, :b, :c, :d, Proc, :x], (pr.call(){|x| x})
+    assert_equal [1, :b, :c, :d, Proc, :x], (pr.call(1){|x| x})
     assert_equal [1, 2, :c, :d, Proc, :x], (pr.call(1, 2){|x| x})
     assert_equal [1, 2, 3, :d, Proc, :x], (pr.call(1, 2, 3){|x| x})
     assert_equal [1, 2, 3, 4, Proc, :x], (pr.call(1, 2, 3, 4){|x| x})
@@ -620,6 +797,38 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, 3, 4, 5, 6, Proc, :x], (pr.call(1, 2, 3, 4, 5, 6, 7){|x| x})
   end
 
+  def test_proc_args_opt_post_block
+    pr = proc {|a=:a,b=:b,c=:c,d=:d,e,f,&g|
+      [a, b, c, d, e, f, g.class, g&&g.call(:x)]
+    }
+    assert_equal [:a, :b, :c, :d, nil, nil, NilClass, nil], pr.call()
+    assert_equal [:a, :b, :c, :d, 1, nil, NilClass, nil], pr.call(1)
+    assert_equal [:a, :b, :c, :d, 1, 2, NilClass, nil], pr.call(1,2)
+    assert_equal [1, :b, :c, :d, 2, 3, NilClass, nil], pr.call(1,2,3)
+    assert_equal [1, 2, :c, :d, 3, 4, NilClass, nil], pr.call(1,2,3,4)
+    assert_equal [1, 2, 3, :d, 4, 5, NilClass, nil], pr.call(1,2,3,4,5)
+    assert_equal [1, 2, 3, 4, 5, 6, NilClass, nil], pr.call(1,2,3,4,5,6)
+    assert_equal [1, 2, 3, 4, 5, 6, NilClass, nil], pr.call(1,2,3,4,5,6,7)
+
+    assert_equal [:a, :b, :c, :d, nil, nil, Proc, :proc], (pr.call(){ :proc })
+    assert_equal [:a, :b, :c, :d, 1, nil, Proc, :proc], (pr.call(1){ :proc })
+    assert_equal [:a, :b, :c, :d, 1, 2, Proc, :proc], (pr.call(1, 2){ :proc })
+    assert_equal [1, :b, :c, :d, 2, 3, Proc, :proc], (pr.call(1, 2, 3){ :proc })
+    assert_equal [1, 2, :c, :d, 3, 4, Proc, :proc], (pr.call(1, 2, 3, 4){ :proc })
+    assert_equal [1, 2, 3, :d, 4, 5, Proc, :proc], (pr.call(1, 2, 3, 4, 5){ :proc })
+    assert_equal [1, 2, 3, 4, 5, 6, Proc, :proc], (pr.call(1, 2, 3, 4, 5, 6){ :proc })
+    assert_equal [1, 2, 3, 4, 5, 6, Proc, :proc], (pr.call(1, 2, 3, 4, 5, 6, 7){ :proc })
+
+    assert_equal [:a, :b, :c, :d, nil, nil, Proc, :x], (pr.call(){|x| x})
+    assert_equal [:a, :b, :c, :d, 1, nil, Proc, :x], (pr.call(1){|x| x})
+    assert_equal [:a, :b, :c, :d, 1, 2, Proc, :x], (pr.call(1, 2){|x| x})
+    assert_equal [1, :b, :c, :d, 2, 3, Proc, :x], (pr.call(1, 2, 3){|x| x})
+    assert_equal [1, 2, :c, :d, 3, 4, Proc, :x], (pr.call(1, 2, 3, 4){|x| x})
+    assert_equal [1, 2, 3, :d, 4, 5, Proc, :x], (pr.call(1, 2, 3, 4, 5){|x| x})
+    assert_equal [1, 2, 3, 4, 5, 6, Proc, :x], (pr.call(1, 2, 3, 4, 5, 6){|x| x})
+    assert_equal [1, 2, 3, 4, 5, 6, Proc, :x], (pr.call(1, 2, 3, 4, 5, 6, 7){|x| x})
+  end
+
   def test_proc_args_pos_opt_rest_block
     pr = proc {|a,b,c=:c,d=:d,*e,&f|
       [a, b, c, d, e, f.class, f&&f.call(:x)]
@@ -642,6 +851,35 @@ class TestProc < Test::Unit::TestCase
 
     assert_equal [nil, nil, :c, :d, [], Proc, :x], (pr.call(){|x| x})
     assert_equal [1, nil, :c, :d, [], Proc, :x], (pr.call(1){|x| x})
+    assert_equal [1, 2, :c, :d, [], Proc, :x], (pr.call(1, 2){|x| x})
+    assert_equal [1, 2, 3, :d, [], Proc, :x], (pr.call(1, 2, 3){|x| x})
+    assert_equal [1, 2, 3, 4, [], Proc, :x], (pr.call(1, 2, 3, 4){|x| x})
+    assert_equal [1, 2, 3, 4, [5], Proc, :x], (pr.call(1, 2, 3, 4, 5){|x| x})
+    assert_equal [1, 2, 3, 4, [5,6], Proc, :x], (pr.call(1, 2, 3, 4, 5, 6){|x| x})
+  end
+
+  def test_proc_args_opt_rest_block
+    pr = proc {|a=:a,b=:b,c=:c,d=:d,*e,&f|
+      [a, b, c, d, e, f.class, f&&f.call(:x)]
+    }
+    assert_equal [:a, :b, :c, :d, [], NilClass, nil], pr.call()
+    assert_equal [1, :b, :c, :d, [], NilClass, nil], pr.call(1)
+    assert_equal [1, 2, :c, :d, [], NilClass, nil], pr.call(1,2)
+    assert_equal [1, 2, 3, :d, [], NilClass, nil], pr.call(1,2,3)
+    assert_equal [1, 2, 3, 4, [], NilClass, nil], pr.call(1,2,3,4)
+    assert_equal [1, 2, 3, 4, [5], NilClass, nil], pr.call(1,2,3,4,5)
+    assert_equal [1, 2, 3, 4, [5,6], NilClass, nil], pr.call(1,2,3,4,5,6)
+
+    assert_equal [:a, :b, :c, :d, [], Proc, :proc], (pr.call(){ :proc })
+    assert_equal [1, :b, :c, :d, [], Proc, :proc], (pr.call(1){ :proc })
+    assert_equal [1, 2, :c, :d, [], Proc, :proc], (pr.call(1, 2){ :proc })
+    assert_equal [1, 2, 3, :d, [], Proc, :proc], (pr.call(1, 2, 3){ :proc })
+    assert_equal [1, 2, 3, 4, [], Proc, :proc], (pr.call(1, 2, 3, 4){ :proc })
+    assert_equal [1, 2, 3, 4, [5], Proc, :proc], (pr.call(1, 2, 3, 4, 5){ :proc })
+    assert_equal [1, 2, 3, 4, [5,6], Proc, :proc], (pr.call(1, 2, 3, 4, 5, 6){ :proc })
+
+    assert_equal [:a, :b, :c, :d, [], Proc, :x], (pr.call(){|x| x})
+    assert_equal [1, :b, :c, :d, [], Proc, :x], (pr.call(1){|x| x})
     assert_equal [1, 2, :c, :d, [], Proc, :x], (pr.call(1, 2){|x| x})
     assert_equal [1, 2, 3, :d, [], Proc, :x], (pr.call(1, 2, 3){|x| x})
     assert_equal [1, 2, 3, 4, [], Proc, :x], (pr.call(1, 2, 3, 4){|x| x})
@@ -677,6 +915,41 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, nil, :c, :d, [], nil, nil, Proc, :x], (pr.call(1){|x| x})
     assert_equal [1, 2, :c, :d, [], nil, nil, Proc, :x], (pr.call(1, 2){|x| x})
     assert_equal [1, 2, :c, :d, [], 3, nil, Proc, :x], (pr.call(1, 2, 3){|x| x})
+    assert_equal [1, 2, :c, :d, [], 3, 4, Proc, :x], (pr.call(1, 2, 3, 4){|x| x})
+    assert_equal [1, 2, 3, :d, [], 4, 5, Proc, :x], (pr.call(1, 2, 3, 4, 5){|x| x})
+    assert_equal [1, 2, 3, 4, [], 5, 6, Proc, :x], (pr.call(1, 2, 3, 4, 5, 6){|x| x})
+    assert_equal [1, 2, 3, 4, [5], 6, 7, Proc, :x], (pr.call(1, 2, 3, 4, 5, 6, 7){|x| x})
+    assert_equal [1, 2, 3, 4, [5,6], 7, 8, Proc, :x], (pr.call(1, 2, 3, 4, 5, 6, 7, 8){|x| x})
+  end
+
+  def test_proc_args_opt_rest_post_block
+    pr = proc {|a=:a,b=:b,c=:c,d=:d,*e,f,g,&h|
+      [a, b, c, d, e, f, g, h.class, h&&h.call(:x)]
+    }
+    assert_equal [:a, :b, :c, :d, [], nil, nil, NilClass, nil], pr.call()
+    assert_equal [:a, :b, :c, :d, [], 1, nil, NilClass, nil], pr.call(1)
+    assert_equal [:a, :b, :c, :d, [], 1, 2, NilClass, nil], pr.call(1,2)
+    assert_equal [1, :b, :c, :d, [], 2, 3, NilClass, nil], pr.call(1,2,3)
+    assert_equal [1, 2, :c, :d, [], 3, 4, NilClass, nil], pr.call(1,2,3,4)
+    assert_equal [1, 2, 3, :d, [], 4, 5, NilClass, nil], pr.call(1,2,3,4,5)
+    assert_equal [1, 2, 3, 4, [], 5, 6, NilClass, nil], pr.call(1,2,3,4,5,6)
+    assert_equal [1, 2, 3, 4, [5], 6, 7, NilClass, nil], pr.call(1,2,3,4,5,6,7)
+    assert_equal [1, 2, 3, 4, [5,6], 7, 8, NilClass, nil], pr.call(1,2,3,4,5,6,7,8)
+
+    assert_equal [:a, :b, :c, :d, [], nil, nil, Proc, :proc], (pr.call(){ :proc })
+    assert_equal [:a, :b, :c, :d, [], 1, nil, Proc, :proc], (pr.call(1){ :proc })
+    assert_equal [:a, :b, :c, :d, [], 1, 2, Proc, :proc], (pr.call(1, 2){ :proc })
+    assert_equal [1, :b, :c, :d, [], 2, 3, Proc, :proc], (pr.call(1, 2, 3){ :proc })
+    assert_equal [1, 2, :c, :d, [], 3, 4, Proc, :proc], (pr.call(1, 2, 3, 4){ :proc })
+    assert_equal [1, 2, 3, :d, [], 4, 5, Proc, :proc], (pr.call(1, 2, 3, 4, 5){ :proc })
+    assert_equal [1, 2, 3, 4, [], 5, 6, Proc, :proc], (pr.call(1, 2, 3, 4, 5, 6){ :proc })
+    assert_equal [1, 2, 3, 4, [5], 6, 7, Proc, :proc], (pr.call(1, 2, 3, 4, 5, 6, 7){ :proc })
+    assert_equal [1, 2, 3, 4, [5,6], 7, 8, Proc, :proc], (pr.call(1, 2, 3, 4, 5, 6, 7, 8){ :proc })
+
+    assert_equal [:a, :b, :c, :d, [], nil, nil, Proc, :x], (pr.call(){|x| x})
+    assert_equal [:a, :b, :c, :d, [], 1, nil, Proc, :x], (pr.call(1){|x| x})
+    assert_equal [:a, :b, :c, :d, [], 1, 2, Proc, :x], (pr.call(1, 2){|x| x})
+    assert_equal [1, :b, :c, :d, [], 2, 3, Proc, :x], (pr.call(1, 2, 3){|x| x})
     assert_equal [1, 2, :c, :d, [], 3, 4, Proc, :x], (pr.call(1, 2, 3, 4){|x| x})
     assert_equal [1, 2, 3, :d, [], 4, 5, Proc, :x], (pr.call(1, 2, 3, 4, 5){|x| x})
     assert_equal [1, 2, 3, 4, [], 5, 6, Proc, :x], (pr.call(1, 2, 3, 4, 5, 6){|x| x})

@@ -1,3 +1,9 @@
+Tue Dec 13 05:50:07 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_yield_setup_block_args): splat single
+	  argument if optinal arguments are defined not only mandatory or
+	  post arguments.  [ruby-core:41557] [Bug #5730]
+
 Mon Dec 12 22:35:39 2011  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* parse.y (stmt_or_begin): changed the error message for BEGIN not
