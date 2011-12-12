@@ -1,3 +1,43 @@
+Tue Oct  4 06:43:47 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: update psych version.
+	* ext/psych/psych.gemspec: generate new gemspec for new version.
+
+Tue Oct  4 06:29:55 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: calling `yaml` rather than `to_yaml`.
+	* ext/psych/lib/psych/nodes/node.rb: Rename `to_yaml` to just `yaml`
+	  in order to avoid YAML::ENGINE switching from replacing this method.
+	* test/psych/helper.rb: fix tests for method name change.
+	* test/psych/test_document.rb: ditto
+	* test/psych/visitors/test_emitter.rb: ditto
+
+Tue Oct  4 06:20:19 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: Match values against the
+	  floating point spec defined in YAML to avoid erronious parses.
+	* test/psych/test_numeric.rb: corresponding test.
+
+Tue Oct  4 05:59:24 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: ToRuby visitor can be
+	  constructed with a ScalarScanner.
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: ScalarScanner can be
+	  passed to the YAMLTree visitor.
+
+Tue Oct  4 05:47:23 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: Define Regexp::NOENCODING
+	  for 1.9.2 backwards compatibility.
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: Fix Date string
+	  generation for 1.9.2 backwards compatibility.
+
+Fri Sep  2 04:05:25 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: emit strings tagged as
+	  ascii-8bit as binary in YAML.
+	* test/psych/test_string.rb: corresponding test.
+
 Wed Dec  7 19:04:22 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rpath): fix typo in the help string.  a patch from

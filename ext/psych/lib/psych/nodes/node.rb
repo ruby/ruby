@@ -40,13 +40,14 @@ module Psych
       # Convert this node to YAML.
       #
       # See also Psych::Visitors::Emitter
-      def to_yaml io = nil, options = {}
+      def yaml io = nil, options = {}
         real_io = io || StringIO.new(''.encode('utf-8'))
 
         Visitors::Emitter.new(real_io, options).accept self
         return real_io.string unless io
         io
       end
+      alias :to_yaml :yaml
     end
   end
 end
