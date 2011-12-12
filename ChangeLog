@@ -1,3 +1,8 @@
+Tue Dec 13 06:29:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_magic_comment): should pass the proper value.
+	  [ruby-dev:44984][Bug #5753]
+
 Tue Dec 13 05:50:07 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_yield_setup_block_args): splat single

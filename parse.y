@@ -6550,6 +6550,7 @@ parser_magic_comment(struct parser_params *parser, const char *str, long len)
 	    }
 	} while (++p < magic_comments + numberof(magic_comments));
 #else
+	str_copy(val, vbeg, vend - vbeg);
 	dispatch2(magic_comment, name, val);
 #endif
     }

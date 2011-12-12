@@ -592,8 +592,8 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_magic_comment
     thru_magic_comment = false
-    parse('# -*- foo:bar -*-', :on_magic_comment) {thru_magic_comment = true}
-    assert_equal true, thru_magic_comment
+    parse('# -*- bug-5753: ruby-dev:44984 -*-', :on_magic_comment) {|*x|thru_magic_comment = x}
+    assert_equal [:on_magic_comment, "bug_5753", "ruby-dev:44984"], thru_magic_comment
   end
 
   def test_method_add_block
