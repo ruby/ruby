@@ -15,29 +15,32 @@ module WEBrick
       end
     end
 
+    attr_reader :config, :logger, :res
+
+    def setup
+      super
+      @logger          = FakeLogger.new
+      @config          = Config::HTTP
+      @config[:Logger] = logger
+      @res             = HTTPResponse.new config
+      @res.keep_alive  = true
+    end
+
     def test_304_does_not_log_warning
-      logger          = FakeLogger.new
-      config          = Config::HTTP
-      config[:Logger] = logger
-
-      res             = HTTPResponse.new config
       res.status      = 304
-      res.keep_alive  = true
+      res.setup_header
+      assert_equal 0, logger.messages.length
+    end
 
+    def test_204_does_not_log_warning
+      res.status      = 204
       res.setup_header
 
       assert_equal 0, logger.messages.length
     end
 
-    def test_204_does_not_log_warning
-      logger          = FakeLogger.new
-      config          = Config::HTTP
-      config[:Logger] = logger
-
-      res             = HTTPResponse.new config
-      res.status      = 204
-      res.keep_alive  = true
-
+    def test_1xx_does_not_log_warnings
+      res.status      = 105
       res.setup_header
 
       assert_equal 0, logger.messages.length

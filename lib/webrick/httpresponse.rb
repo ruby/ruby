@@ -202,7 +202,7 @@ module WEBrick
       if @header['connection'] == "close"
          @keep_alive = false
       elsif keep_alive?
-        if chunked? || @header['content-length'] || @status == 304 || @status == 204
+        if chunked? || @header['content-length'] || @status == 304 || @status == 204 || HTTPStatus.info?(@status)
           @header['connection'] = "Keep-Alive"
         else
           msg = "Could not determine content-length of response body. Set content-length of the response or set Response#chunked = true"
