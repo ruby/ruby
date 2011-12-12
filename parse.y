@@ -686,7 +686,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 %type <node> words qwords word_list qword_list word
 %type <node> literal numeric dsym cpath
 %type <node> top_compstmt top_stmts top_stmt
-%type <node> bodystmt compstmt stmts stmt expr arg primary command command_call method_call
+%type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value arg_value primary_value
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
 %type <node> args call_args opt_call_args
@@ -855,9 +855,6 @@ top_stmts	: none
 top_stmt	: stmt
 		| keyword_BEGIN
 		    {
-			if (in_def || in_single) {
-			    yyerror("BEGIN in method");
-			}
 		    /*%%%*/
 			/* local_push(0); */
 		    /*%
@@ -930,7 +927,7 @@ stmts		: none
 						  dispatch0(void_stmt));
 		    %*/
 		    }
-		| stmt
+		| stmt_or_begin
 		    {
 		    /*%%%*/
 			$$ = newline_node($1);
@@ -938,7 +935,7 @@ stmts		: none
 			$$ = dispatch2(stmts_add, dispatch0(stmts_new), $1);
 		    %*/
 		    }
-		| stmts terms stmt
+		| stmts terms stmt_or_begin
 		    {
 		    /*%%%*/
 			$$ = block_append($1, newline_node($3));
@@ -951,6 +948,31 @@ stmts		: none
 			$$ = remove_begin($2);
 		    }
 		;
+
+stmt_or_begin	: stmt
+                    {
+			$$ = $1;
+		    }
+                | keyword_BEGIN
+		    {
+			yyerror("BEGIN is permitted only at toplevel");
+		    /*%%%*/
+			/* local_push(0); */
+		    /*%
+		    %*/
+		    }
+		  '{' top_compstmt '}'
+		    {
+		    /*%%%*/
+			ruby_eval_tree_begin = block_append(ruby_eval_tree_begin,
+							    $4);
+			/* NEW_PREEXE($4)); */
+			/* local_pop(); */
+			$$ = NEW_BEGIN(0);
+		    /*%
+			$$ = dispatch1(BEGIN, $4);
+		    %*/
+		    }
 
 stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    {

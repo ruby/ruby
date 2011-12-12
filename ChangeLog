@@ -1,3 +1,8 @@
+Mon Dec 12 22:35:39 2011  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* parse.y (stmt_or_begin): changed the error message for BEGIN not
+	  at toplevel.  [ruby-dev:44963] [Bug #5738]
+
 Mon Dec 12 17:29:01 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* README: Fixed SupportedPlatforms URL in the README.

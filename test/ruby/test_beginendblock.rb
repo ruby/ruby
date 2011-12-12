@@ -33,19 +33,22 @@ class TestBeginEndBlock < Test::Unit::TestCase
   end
 
   def test_begininmethod
-    assert_raise(SyntaxError) do
+    e = assert_raise(SyntaxError) do
       eval("def foo; BEGIN {}; end")
     end
+    assert_match(/BEGIN is permitted only at toplevel/, e.message)
 
-    assert_raise(SyntaxError) do
+    e = assert_raise(SyntaxError) do
       eval('eval("def foo; BEGIN {}; end")')
     end
+    assert_match(/BEGIN is permitted only at toplevel/, e.message)
   end
 
   def test_begininclass
-    assert_raise(SyntaxError) do
+    e = assert_raise(SyntaxError) do
       eval("class TestBeginEndBlock; BEGIN {}; end")
     end
+    assert_match(/BEGIN is permitted only at toplevel/, e.message)
   end
 
   def test_endblockwarn
