@@ -1243,6 +1243,7 @@ rb_thread_create_timer_thread(void)
 	    fprintf(stderr, "[FATAL] Failed to create timer thread (errno: %d)\n", err);
 	    exit(EXIT_FAILURE);
 	}
+	pthread_attr_destroy(&attr);
     }
 }
 
