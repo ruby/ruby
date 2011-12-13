@@ -339,4 +339,60 @@ class TestRequire < Test::Unit::TestCase
                       [], /\$LOADED_FEATURES is frozen; cannot append feature \(RuntimeError\)$/,
                       bug3756)
   end
+
+  class << self
+    attr_accessor :scratch
+  end
+
+  def test_race_excption
+    bug5754 = '[ruby-core:41618]'
+    tmp = Tempfile.new(%w"bug5754 .rb")
+    path = tmp.path
+    tmp.print <<-EOS
+TestRequire.scratch << :pre
+Thread.pass until t2 = TestRequire.scratch[1]
+Thread.pass until t2.stop?
+open(__FILE__, "w") {|f| f.puts "TestRequire.scratch << :post"}
+raise "con1"
+    EOS
+    tmp.close
+
+    start = false
+    fin = false
+
+    TestRequire.scratch = scratch = []
+    t1_res = nil
+    t2_res = nil
+
+    t1 = Thread.new do
+      begin
+        require(path)
+      rescue RuntimeError
+      end
+
+      t1_res = require(path)
+
+      Thread.pass until fin
+      scratch << :t1
+    end
+
+    t2 = Thread.new do
+      Thread.pass until scratch[0]
+      begin
+        scratch << t2
+        t2_res = require(path)
+        scratch << :t2
+      ensure
+        fin = true
+      end
+    end
+
+    assert_nothing_raised(ThreadError, bug5754) {t1.join}
+    assert_nothing_raised(ThreadError, bug5754) {t2.join}
+
+    assert_equal([false, true], [t1_res, t2_res], bug5754)
+    assert_equal([:pre, t2, :post, :t2, :t1], scratch, bug5754)
+
+    tmp.close(true)
+  end
 end

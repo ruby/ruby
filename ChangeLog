@@ -1,3 +1,9 @@
+Tue Dec 13 16:13:29 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (load_unlock): all threads requiring one file should
+	  share same loading barrier, so it must be kept alive while those
+	  are waiting on it.  [ruby-core:41618] [Bug #5754]
+
 Tue Dec 13 07:30:14 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/webrick/httpresponse.rb (setup_header): 1xx responses

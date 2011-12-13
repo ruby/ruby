@@ -415,10 +415,12 @@ load_unlock(const char *ftptr, int done)
 	st_data_t key = (st_data_t)ftptr;
 	st_data_t data;
 	st_table *loading_tbl = get_loading_table();
+	VALUE barrier;
 
-	if (st_delete(loading_tbl, &key, &data)) {
-	    VALUE barrier = (VALUE)data;
-	    xfree((char *)key);
+	if (!st_lookup(loading_tbl, key, &data)) return;
+	barrier = (VALUE)data;
+	if (rb_barrier_waiting(barrier) ||
+	    (st_delete(loading_tbl, &key, &data) && (xfree((char *)key), 1))) {
 	    if (done)
 		rb_barrier_destroy(barrier);
 	    else

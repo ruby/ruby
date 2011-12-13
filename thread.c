@@ -3723,6 +3723,17 @@ rb_barrier_destroy(VALUE self)
     return rb_mutex_unlock(mutex);
 }
 
+int
+rb_barrier_waiting(VALUE self)
+{
+    VALUE mutex = GetBarrierPtr(self);
+    rb_mutex_t *m;
+
+    if (!mutex) return 0;
+    GetMutexPtr(mutex, m);
+    return m->cond_waiting;
+}
+
 /* variables for recursive traversals */
 static ID recursive_key;
 
