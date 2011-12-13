@@ -3645,33 +3645,51 @@ block_call	: command do_block
 		    }
 		;
 
-method_call	: operation paren_args
+method_call	: operation
 		    {
 		    /*%%%*/
-			$$ = NEW_FCALL($1, $2);
-			fixpos($$, $2);
+			$<num>$ = ruby_sourceline;
+		    /*% %*/
+		    }
+		  paren_args
+		    {
+		    /*%%%*/
+			$$ = NEW_FCALL($1, $3);
+			nd_set_line($$, $<num>2);
 		    /*%
-			$$ = method_arg(dispatch1(fcall, $1), $2);
+			$$ = method_arg(dispatch1(fcall, $1), $3);
 		    %*/
 		    }
-		| primary_value '.' operation2 opt_paren_args
+		| primary_value '.' operation2
 		    {
 		    /*%%%*/
-			$$ = NEW_CALL($1, $3, $4);
-			fixpos($$, $1);
+			$<num>$ = ruby_sourceline;
+		    /*% %*/
+		    }
+		  opt_paren_args
+		    {
+		    /*%%%*/
+			$$ = NEW_CALL($1, $3, $5);
+			nd_set_line($$, $<num>4);
 		    /*%
 			$$ = dispatch3(call, $1, ripper_id2sym('.'), $3);
-			$$ = method_optarg($$, $4);
+			$$ = method_optarg($$, $5);
 		    %*/
 		    }
-		| primary_value tCOLON2 operation2 paren_args
+		| primary_value tCOLON2 operation2
 		    {
 		    /*%%%*/
-			$$ = NEW_CALL($1, $3, $4);
-			fixpos($$, $1);
+			$<num>$ = ruby_sourceline;
+		    /*% %*/
+		    }
+		  paren_args
+		    {
+		    /*%%%*/
+			$$ = NEW_CALL($1, $3, $5);
+			nd_set_line($$, $<num>4);
 		    /*%
 			$$ = dispatch3(call, $1, ripper_id2sym('.'), $3);
-			$$ = method_optarg($$, $4);
+			$$ = method_optarg($$, $5);
 		    %*/
 		    }
 		| primary_value tCOLON2 operation3
@@ -3682,26 +3700,38 @@ method_call	: operation paren_args
 			$$ = dispatch3(call, $1, ripper_intern("::"), $3);
 		    %*/
 		    }
-		| primary_value '.' paren_args
+		| primary_value '.'
 		    {
 		    /*%%%*/
-			$$ = NEW_CALL($1, rb_intern("call"), $3);
-			fixpos($$, $1);
+			$<num>$ = ruby_sourceline;
+		    /*% %*/
+		    }
+		  paren_args
+		    {
+		    /*%%%*/
+			$$ = NEW_CALL($1, rb_intern("call"), $4);
+			nd_set_line($$, $<num>3);
 		    /*%
 			$$ = dispatch3(call, $1, ripper_id2sym('.'),
 				       ripper_intern("call"));
-			$$ = method_optarg($$, $3);
+			$$ = method_optarg($$, $4);
 		    %*/
 		    }
-		| primary_value tCOLON2 paren_args
+		| primary_value tCOLON2
 		    {
 		    /*%%%*/
-			$$ = NEW_CALL($1, rb_intern("call"), $3);
-			fixpos($$, $1);
+			$<num>$ = ruby_sourceline;
+		    /*% %*/
+		    }
+		  paren_args
+		    {
+		    /*%%%*/
+			$$ = NEW_CALL($1, rb_intern("call"), $4);
+			nd_set_line($$, $<num>3);
 		    /*%
 			$$ = dispatch3(call, $1, ripper_intern("::"),
 				       ripper_intern("call"));
-			$$ = method_optarg($$, $3);
+			$$ = method_optarg($$, $4);
 		    %*/
 		    }
 		| keyword_super paren_args

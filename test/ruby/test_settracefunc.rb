@@ -23,7 +23,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
      4: x = 1 + 1
      5: set_trace_func(nil)
     EOF
-    assert_equal(["c-return", 3, :set_trace_func, Kernel],
+    assert_equal(["c-return", 1, :set_trace_func, Kernel],
                  events.shift)
     assert_equal(["line", 4, __method__, self.class],
                  events.shift)
@@ -50,7 +50,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
      7: x = add(1, 1)
      8: set_trace_func(nil)
     EOF
-    assert_equal(["c-return", 3, :set_trace_func, Kernel],
+    assert_equal(["c-return", 1, :set_trace_func, Kernel],
                  events.shift)
     assert_equal(["line", 4, __method__, self.class],
                  events.shift)
@@ -90,7 +90,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
      8: x = Foo.new.bar
      9: set_trace_func(nil)
     EOF
-    assert_equal(["c-return", 3, :set_trace_func, Kernel],
+    assert_equal(["c-return", 1, :set_trace_func, Kernel],
                  events.shift)
     assert_equal(["line", 4, __method__, self.class],
                  events.shift)
@@ -143,7 +143,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
      9: foo(false)
     10: set_trace_func(nil)
     EOF
-    assert_equal(["c-return", 3, :set_trace_func, Kernel],
+    assert_equal(["c-return", 1, :set_trace_func, Kernel],
                  events.shift)
     assert_equal(["line", 4, __method__, self.class],
                  events.shift)
@@ -187,7 +187,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
      8: foo
      9: set_trace_func(nil)
     EOF
-    assert_equal(["c-return", 3, :set_trace_func, Kernel],
+    assert_equal(["c-return", 1, :set_trace_func, Kernel],
                  events.shift)
     assert_equal(["line", 4, __method__, self.class],
                  events.shift)
@@ -224,7 +224,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
      7: end
      8: set_trace_func(nil)
     EOF
-    assert_equal(["c-return", 3, :set_trace_func, Kernel],
+    assert_equal(["c-return", 1, :set_trace_func, Kernel],
                  events.shift)
     assert_equal(["line", 4, __method__, self.class],
                  events.shift)
@@ -273,7 +273,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
      8: set_trace_func(nil)
     EOF
 
-    [["c-return", 3, :set_trace_func, Kernel],
+    [["c-return", 1, :set_trace_func, Kernel],
      ["line", 4, __method__, self.class],
      ["c-call", 4, :any?, Enumerable],
      ["c-call", 4, :each, Array],
@@ -367,7 +367,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
      7: set_trace_func(nil)
     EOF
 
-    [["c-return", 5, :set_trace_func, Kernel],
+    [["c-return", 3, :set_trace_func, Kernel],
      ["line", 6, __method__, self.class],
      ["call", 6, :foobar, FooBar],
      ["return", 6, :foobar, FooBar],

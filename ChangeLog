@@ -1,3 +1,8 @@
+Wed Dec 14 00:01:15 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (primary): point method name line.  [ruby-core:40936]
+	  [Bug #5614]
+
 Tue Dec 13 23:43:48 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* error.c (name_err_mesg_to_str): clear rb_thread_t::errinfo when
