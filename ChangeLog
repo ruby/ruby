@@ -2,14 +2,14 @@ Tue Dec 13 07:30:14 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/webrick/httpresponse.rb (setup_header): 1xx responses
 	  are allowed to have Keep-Alive connections.
-	
+
 	* test/webrick/test_httpresponse.rb: corresponding test.
 
 Tue Dec 13 07:13:28 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/webrick/httpresponse.rb (setup_header): 204 and 304 responses
 	  are allowed to have a Keep-Alive connection. [ruby-core:41581]
-	
+
 	* test/webrick/test_httpresponse.rb: corresponding test.
 
 Tue Dec 13 06:29:39 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
