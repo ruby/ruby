@@ -1,3 +1,11 @@
+Tue Dec 13 23:43:48 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* error.c (name_err_mesg_to_str): clear rb_thread_t::errinfo when
+	  ignore exception under rb_protect().
+
+	* test/ruby/test_exception.rb (test_exception_in_name_error_to_str):
+	  add a corresponding test.
+
 Tue Dec 13 16:13:29 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (load_unlock): all threads requiring one file should

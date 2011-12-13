@@ -1012,6 +1012,7 @@ name_err_mesg_to_str(VALUE obj)
     else {
 	const char *desc = 0;
 	VALUE d = 0, args[NAME_ERR_MESG_COUNT];
+	int state = 0;
 
 	obj = ptr[1];
 	switch (TYPE(obj)) {
@@ -1025,7 +1026,9 @@ name_err_mesg_to_str(VALUE obj)
 	    desc = "false";
 	    break;
 	  default:
-	    d = rb_protect(rb_inspect, obj, 0);
+	    d = rb_protect(rb_inspect, obj, &state);
+	    if (state)
+		rb_set_errinfo(Qnil);
 	    if (NIL_P(d) || RSTRING_LEN(d) > 65) {
 		d = rb_any_to_s(obj);
 	    }

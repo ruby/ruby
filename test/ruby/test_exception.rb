@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'tempfile'
 require_relative 'envutil'
 
 class TestException < Test::Unit::TestCase
@@ -362,5 +363,21 @@ end.join
     efs = SystemExit.new(false, "msg")
     assert_equal(false, efs.success?, bug5728)
     assert_equal("msg", efs.message, bug5728)
+  end
+
+  def test_exception_in_name_error_to_str
+    bug5575 = '[ruby-core:41612]'
+    t = Tempfile.new(["test_exception_in_name_error_to_str", ".rb"])
+    t.puts <<-EOC
+      begin
+        BasicObject.new.inspect
+      rescue
+        $!.inspect
+      end
+    EOC
+    t.close
+    assert_nothing_raised(NameError, bug5575) do
+      load(t.path)
+    end
   end
 end
