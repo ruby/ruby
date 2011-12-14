@@ -690,7 +690,7 @@ class TestThreadGroup < Test::Unit::TestCase
   def test_thread_timer_and_interrupt
     bug5757 = '[ruby-dev:44985]'
     t0 = Time.now.to_f
-    pid = spawn(EnvUtil.rubybin, '-e', '$stdin.read')
+    pid = spawn(EnvUtil.rubybin, '-e', 'r,=IO.pipe;r.read')
     sleep 1;
     Process.kill(:SIGQUIT, pid)
     Process.wait(pid)
