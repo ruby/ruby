@@ -405,7 +405,15 @@ load_lock(const char *ftptr)
 	rb_warning("loading in progress, circular require considered harmful - %s", ftptr);
 	rb_backtrace();
     }
-    return RTEST(rb_barrier_wait((VALUE)data)) ? (char *)ftptr : 0;
+    switch (rb_barrier_wait((VALUE)data)) {
+      case Qfalse:
+	data = (st_data_t)ftptr;
+	st_delete(loading_tbl, &data, 0);
+	return 0;
+      case Qnil:
+	return 0;
+    }
+    return (char *)ftptr;
 }
 
 static void

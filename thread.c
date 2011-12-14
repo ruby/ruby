@@ -3694,19 +3694,29 @@ rb_barrier_new(void)
     return barrier;
 }
 
+/*
+ * Wait a barrier.
+ *
+ * Returns
+ *  true:  acquired the barrier
+ *  false: the barrier was destroyed and no other threads waiting
+ *  nil:   the barrier was destroyed but still in use
+ */
 VALUE
 rb_barrier_wait(VALUE self)
 {
     VALUE mutex = GetBarrierPtr(self);
     rb_mutex_t *m;
+    int waiting;
 
     if (!mutex) return Qfalse;
     GetMutexPtr(mutex, m);
-    if (m->th == GET_THREAD()) return Qfalse;
+    if (m->th == GET_THREAD()) return Qnil;
     rb_mutex_lock(mutex);
     if (DATA_PTR(self)) return Qtrue;
+    waiting = m->cond_waiting;
     rb_mutex_unlock(mutex);
-    return Qfalse;
+    return waiting ? Qnil : Qfalse;
 }
 
 VALUE
