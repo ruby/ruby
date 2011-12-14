@@ -38,6 +38,7 @@ static void native_cond_broadcast(rb_thread_cond_t *cond);
 static void native_cond_wait(rb_thread_cond_t *cond, pthread_mutex_t *mutex);
 static void native_cond_initialize(rb_thread_cond_t *cond, int flags);
 static void native_cond_destroy(rb_thread_cond_t *cond);
+static pthread_t timer_thread_id;
 
 #define RB_CONDATTR_CLOCK_MONOTONIC 1
 
@@ -1018,7 +1019,8 @@ ubf_select(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
     add_signal_thread_list(th);
-    rb_thread_wakeup_timer_thread(); /* activate timer thread */
+    if (pthread_self() != timer_thread_id)
+	rb_thread_wakeup_timer_thread(); /* activate timer thread */
     ubf_select_each(th);
 }
 
@@ -1047,7 +1049,6 @@ ping_signal_thread_list(void) {
 static int ping_signal_thread_list(void) { return 0; }
 #endif /* USE_SIGNAL_THREAD_LIST */
 
-static pthread_t timer_thread_id;
 static int timer_thread_pipe[2] = {-1, -1};
 static int timer_thread_pipe_owner_process;
 
