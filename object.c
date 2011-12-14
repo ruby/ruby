@@ -555,6 +555,26 @@ rb_obj_tap(VALUE obj)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     obj.embed{|x|...}    -> obj
+ *
+ *  Yields <code>x</code> to the block, and then returns the return value
+ *  of the block. The primary purpose of this method is to modify the object
+ *  in place in a method chain. 
+ *
+ *  (1..10).embed {|x| {:numbers => x}}
+ *
+ */
+VALUE
+rb_obj_embed(VALUE obj)
+{
+    VALUE retval;
+
+    retval = rb_yield(obj);
+    return retval;
+}
+
 
 /*
  * Document-method: inherited
@@ -2780,6 +2800,7 @@ Init_Object(void)
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "tap", rb_obj_tap, 0);
+    rb_define_method(rb_mKernel, "embed", rb_obj_embed, 0);
 
     rb_define_global_function("sprintf", rb_f_sprintf, -1); /* in sprintf.c */
     rb_define_global_function("format", rb_f_sprintf, -1);  /* in sprintf.c */

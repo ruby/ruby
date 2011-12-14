@@ -1,3 +1,8 @@
+Wed Dec 14 22:23:14 2011    <pyr@omega>
+
+	* object.c: Add Object#embed which works like tap but returns the block's
+	  value. Useful in method chains.
+
 Wed Dec 14 21:58:42 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io_m17n.rb
