@@ -2259,6 +2259,9 @@ init_stdhandle(void)
     if (fileno(stdin) < 0) {
 	stdin->_file = open_null(0);
     }
+    else {
+	setmode(fileno(stdin), O_BINARY);
+    }
     if (fileno(stdout) < 0) {
 	stdout->_file = open_null(1);
     }
@@ -6136,4 +6139,9 @@ rb_w32_inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 	snprintf(numaddr, numaddr_len, "%s", inet_ntoa(in));
     }
     return numaddr;
+}
+
+char
+rb_w32_fd_is_text(int fd) {
+    return _osfile(fd) & FTEXT;
 }

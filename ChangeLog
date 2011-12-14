@@ -1,3 +1,27 @@
+Wed Dec 14 19:22:33 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c, include/ruby/win32.h (rb_w32_fd_is_text): new function.
+
+	* win32/win32.c (init_stdhandle): set default mode of stdin as binmode.
+
+	* io.c (set_binary_mode_with_seek_cur): new function to replace
+	  SET_BINARY_MODE_WITH_SEEK_CUR macro.  now returns previous mode of the
+	  fd and take care of LF in rbuf.
+
+	* io.c (do_writeconv): set text mode when needed.
+
+	* io.c (io_read): need to change the mode of the IO to binmode
+	  temporally when the length for IO#read, because IO#read with length
+	  must behave so.
+
+	* test/ruby/test_io_m17n.rb (TestIO_M17N#est_{read_with_length,
+	  read_with_length_binmode,get[cs]_and_read_with_binmode,
+	  read_with_binmode_and_get[cs],read_write_with_binmode}): tests for
+	  above changes.
+
+	all patches are written by Hiroshi Shirosaki. [ruby-core:41496]
+	[Feature #5714]
+
 Wed Dec 14 15:28:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (str_encode): about the extension of :fallback
