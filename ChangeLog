@@ -1,3 +1,8 @@
+Wed Dec 14 15:28:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (str_encode): about the extension of :fallback
+	  option since 1.9.3.
+
 Wed Dec 14 12:19:59 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (load_unlock): release loading barrier and then remove it
