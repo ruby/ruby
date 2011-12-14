@@ -1705,8 +1705,7 @@ SHELL = /bin/sh
 V = 0
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
-n=$(NULLCMD)
-ECHO1 = $(V:1=@$n)
+ECHO1 = $(V:1=@#{CONFIG['NULLCMD']})
 ECHO = $(ECHO1:0=@echo)
 
 #### Start of system configuration section. ####
@@ -1742,7 +1741,6 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
     possible_command = (proc {|s| s if /top_srcdir/ !~ s} unless $extmk)
     extconf_h = $extconf_h ? "-DRUBY_EXTCONF_H=\\\"$(RUBY_EXTCONF_H)\\\" " : $defs.join(" ") << " "
     mk << %{
-NULLCMD = #{CONFIG['NULLCMD']}
 
 CC = #{CONFIG['CC']}
 CXX = #{CONFIG['CXX']}

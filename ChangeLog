@@ -1,3 +1,11 @@
+Wed Dec 14 19:57:23 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk,Makefile.in,win32/Makefile.sub (ECHO1): move platform
+	  specific hack from common.mk to Makefile.in (and win32/Makefile.sub).
+	  [Bug #5711]
+
+	* lib/mkmf.rb: we can generate Makefile as we like.
+
 Wed Dec 14 19:22:33 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c, include/ruby/win32.h (rb_w32_fd_is_text): new function.

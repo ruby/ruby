@@ -1,7 +1,7 @@
 # -*- makefile -*-
 
 SHELL = $(COMSPEC)
-NULLCMD = :
+ECHO1 = $(V:1=@:)
 RUNCMD = $(COMSPEC) /c
 MKFILES = Makefile
 NULL = nul
@@ -733,6 +733,7 @@ s,@target_alias@,$(ARCH)-$(PLATFORM),;t t
 s,@target_cpu@,$(ARCH),;t t
 s,@target_vendor@,pc,;t t
 s,@target_os@,$(PLATFORM),;t t
+s,@NULLCMD@,:,;t t
 s,@CC@,$(CC),;t t
 s,@CPP@,$(CPP),;t t
 s,@CXX@,$$(CC),;t t
