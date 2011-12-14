@@ -58,16 +58,17 @@ class TestQueue < Test::Unit::TestCase
   def test_thr_kill
     bug5343 = '[ruby-core:39634]'
     assert_normal_exit(<<-'_eom', bug5343)
-      require "thread"
-      queue = Queue.new
-      r, w = IO.pipe
-      th = Thread.start {
-        queue.push(nil)
-        r.read 1
-      }
-      queue.pop
-      th.kill.join
+      2000.times do
+        require "thread"
+        queue = Queue.new
+        r, w = IO.pipe
+        th = Thread.start {
+          queue.push(nil)
+          r.read 1
+        }
+        queue.pop
+        th.kill.join
+      end
     _eom
   end
-
 end
