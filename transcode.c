@@ -2842,7 +2842,9 @@ static VALUE encoded_dup(VALUE newstr, VALUE str, int encidx);
  *    Sets the replacement string to the given value. The default replacement
  *    string is "\uFFFD" for Unicode encoding forms, and "?" otherwise.
  *  :fallback ::
- *    Sets the replacement string by the given hash for undefined character.
+ *    Sets the replacement string by the given object for undefined
+ *    character.  The object should be a Hash, a Proc, a Method, or an
+ *    object which has [] method.
  *    Its key is an undefined character encoded in the source encoding
  *    of current transcoder. Its value can be any encoding until it
  *    can be converted into the destination encoding of the transcoder.

@@ -1,3 +1,8 @@
+Wed Dec 14 15:28:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (str_encode): about the extension of :fallback
+	  option since 1.9.3.
+
 Tue Oct  4 06:43:47 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: update psych version.
