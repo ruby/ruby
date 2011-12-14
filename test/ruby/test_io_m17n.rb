@@ -2283,7 +2283,7 @@ EOT
         assert_equal("\n", f.gets)        # text
       end
     }
-  end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_read_with_binmode_and_getc
     with_tmpdir {
@@ -2298,7 +2298,7 @@ EOT
         assert_equal("\n", f.getc)        # text
       end
     }
-  end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_read_write_with_binmode
     with_tmpdir {
