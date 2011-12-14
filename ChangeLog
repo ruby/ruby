@@ -1,3 +1,11 @@
+Wed Dec 14 12:19:59 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (load_unlock): release loading barrier and then remove it
+	  from loading_table if it is not in-use.  [Bug #5754]
+
+	* thread.c (rb_barrier_release, rb_barrier_destroy): return
+	  whether any other threads are waiting on it.
+
 Wed Dec 14 11:23:45 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread_pthread.c (ubf_select): call rb_thread_wakeup_timer_thread()

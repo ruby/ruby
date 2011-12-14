@@ -3719,18 +3719,31 @@ rb_barrier_wait(VALUE self)
     return waiting ? Qnil : Qfalse;
 }
 
+/*
+ * Release a barrrier, and return true if it has waiting threads.
+ */
 VALUE
 rb_barrier_release(VALUE self)
 {
-    return rb_mutex_unlock(GetBarrierPtr(self));
+    VALUE mutex = GetBarrierPtr(self);
+    rb_mutex_t *m;
+    rb_mutex_unlock(mutex);
+    GetMutexPtr(mutex, m);
+    return m->cond_waiting > 0 ? Qtrue : Qfalse;
 }
 
+/*
+ * Release and destroy a barrrier, and return true if it has waiting threads.
+ */
 VALUE
 rb_barrier_destroy(VALUE self)
 {
     VALUE mutex = GetBarrierPtr(self);
+    rb_mutex_t *m;
     DATA_PTR(self) = 0;
-    return rb_mutex_unlock(mutex);
+    rb_mutex_unlock(mutex);
+    GetMutexPtr(mutex, m);
+    return m->cond_waiting > 0 ? Qtrue : Qfalse;
 }
 
 int

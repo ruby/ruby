@@ -427,12 +427,10 @@ load_unlock(const char *ftptr, int done)
 
 	if (!st_lookup(loading_tbl, key, &data)) return;
 	barrier = (VALUE)data;
-	if (rb_barrier_waiting(barrier) ||
-	    (st_delete(loading_tbl, &key, &data) && (xfree((char *)key), 1))) {
-	    if (done)
-		rb_barrier_destroy(barrier);
-	    else
-		rb_barrier_release(barrier);
+	if (!(done ? rb_barrier_destroy(barrier) : rb_barrier_release(barrier))) {
+	    if (st_delete(loading_tbl, &key, &data)) {
+		xfree((char *)key);
+	    }
 	}
     }
 }
