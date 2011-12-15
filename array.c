@@ -2643,6 +2643,8 @@ ary_reject_bang(VALUE ary)
  *  Equivalent to Array#delete_if, deleting elements from
  *  +self+ for which the block evaluates to true, but returns
  *  <code>nil</code> if no changes were made.
+ *  The array is changed instantly every time the block is called and
+ *  not after the iteration is over.
  *  See also Enumerable#reject and Array#delete_if.
  *
  *  If no block is given, an enumerator is returned instead.
@@ -2687,6 +2689,8 @@ rb_ary_reject(VALUE ary)
  *
  *  Deletes every element of +self+ for which +block+ evaluates
  *  to true.
+ *  The array is changed instantly every time the block is called and
+ *  not after the iteration is over.
  *  See also Array#reject!
  *
  *  If no block is given, an enumerator is returned instead.

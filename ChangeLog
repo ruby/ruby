@@ -1,3 +1,9 @@
+Thu Dec 15 10:44:54 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_reject_bang, rb_ary_delete_if): update rdoc.
+	  documentation from Thomas Leitner <t_leitner AT gmx.at> in
+	  [ruby-core:41616].  [Bug #5752]
+
 Thu Dec 15 10:10:43 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_require.rb (test_race_exception): get rid of
