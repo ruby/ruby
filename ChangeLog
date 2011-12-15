@@ -1,3 +1,9 @@
+Thu Dec 15 10:44:54 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_reject_bang, rb_ary_delete_if): update rdoc.
+	  documentation from Thomas Leitner <t_leitner AT gmx.at> in
+	  [ruby-core:41616].  [Bug #5752]
+
 Wed Dec 14 15:28:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (str_encode): about the extension of :fallback
