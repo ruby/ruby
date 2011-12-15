@@ -392,9 +392,11 @@ builtin_type_name(VALUE x)
     else if (SYMBOL_P(x)) {
 	etype = "Symbol";
     }
-    else if (rb_special_const_p(x)) {
-	x = rb_obj_as_string(x);
-	etype = StringValuePtr(x);
+    else if (RB_TYPE_P(x, T_TRUE)) {
+	etype = "true";
+    }
+    else if (RB_TYPE_P(x, T_FALSE)) {
+	etype = "false";
     }
     else {
 	etype = rb_obj_classname(x);
