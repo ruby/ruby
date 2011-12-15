@@ -420,7 +420,7 @@ rb_check_type(VALUE x, int t)
 	    if (type->type == t) {
 		const char *etype;
 
-		etype = builtin_type_name(xt);
+		etype = builtin_type_name(x);
 		rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
 			 etype, type->name);
 	    }

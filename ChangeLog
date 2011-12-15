@@ -1,3 +1,7 @@
+Thu Dec 15 17:40:28 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_check_type): fix typo.
+
 Thu Dec 15 14:48:35 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/strscan/strscan.c: use typed data with
