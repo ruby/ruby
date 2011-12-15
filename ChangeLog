@@ -1,3 +1,8 @@
+Thu Dec 15 14:48:35 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/strscan/strscan.c: use typed data with
+	  onig_region_memsize().
+
 Thu Dec 15 14:33:33 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_check_typeddata): refine error message with

@@ -11,6 +11,7 @@
 #include "ruby/ruby.h"
 #include "ruby/re.h"
 #include "ruby/encoding.h"
+#include "regint.h"
 
 #define STRSCAN_VERSION "0.7.0"
 
@@ -51,7 +52,7 @@ struct strscanner
 #define EOS_P(s) ((s)->curr >= RSTRING_LEN(p->str))
 
 #define GET_SCANNER(obj,var) do {\
-    Data_Get_Struct((obj), struct strscanner, (var));\
+    (var) = check_strscan(obj);\
     if (NIL_P((var)->str)) rb_raise(rb_eArgError, "uninitialized StringScanner object");\
 } while (0)
 
@@ -63,9 +64,10 @@ static VALUE infect _((VALUE str, struct strscanner *p));
 static VALUE extract_range _((struct strscanner *p, long beg_i, long end_i));
 static VALUE extract_beg_len _((struct strscanner *p, long beg_i, long len));
 
-void check_strscan _((VALUE obj));
-static void strscan_mark _((struct strscanner *p));
-static void strscan_free _((struct strscanner *p));
+static struct strscanner *check_strscan _((VALUE obj));
+static void strscan_mark _((void *p));
+static void strscan_free _((void *p));
+static size_t strscan_memsize _((const void *p));
 static VALUE strscan_s_allocate _((VALUE klass));
 static VALUE strscan_initialize _((int argc, VALUE *argv, VALUE self));
 static VALUE strscan_init_copy _((VALUE vself, VALUE vorig));
@@ -157,17 +159,35 @@ extract_beg_len(struct strscanner *p, long beg_i, long len)
    ======================================================================= */
 
 static void
-strscan_mark(struct strscanner *p)
+strscan_mark(void *ptr)
 {
+    struct strscanner *p = ptr;
     rb_gc_mark(p->str);
 }
 
 static void
-strscan_free(struct strscanner *p)
+strscan_free(void *ptr)
 {
+    struct strscanner *p = ptr;
     onig_region_free(&(p->regs), 0);
     ruby_xfree(p);
 }
+
+static size_t
+strscan_memsize(const void *ptr)
+{
+    const struct strscanner *p = ptr;
+    size_t size = 0;
+    if (p) {
+	size = sizeof(*p) - sizeof(p->regs) + onig_region_memsize(&p->regs);
+    }
+    return size;
+}
+
+static const rb_data_type_t strscanner_type = {
+    "StringScanner",
+    {strscan_mark, strscan_free, strscan_memsize}
+};
 
 static VALUE
 strscan_s_allocate(VALUE klass)
@@ -179,7 +199,7 @@ strscan_s_allocate(VALUE klass)
     CLEAR_MATCH_STATUS(p);
     onig_region_init(&(p->regs));
     p->str = Qnil;
-    return Data_Wrap_Struct(klass, strscan_mark, strscan_free, p);
+    return TypedData_Wrap_Struct(klass, &strscanner_type, p);
 }
 
 /*
@@ -194,7 +214,7 @@ strscan_initialize(int argc, VALUE *argv, VALUE self)
     struct strscanner *p;
     VALUE str, need_dup;
 
-    Data_Get_Struct(self, struct strscanner, p);
+    p = check_strscan(self);
     rb_scan_args(argc, argv, "11", &str, &need_dup);
     StringValue(str);
     p->str = str;
@@ -202,14 +222,10 @@ strscan_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-void
+static struct strscanner *
 check_strscan(VALUE obj)
 {
-    if (TYPE(obj) != T_DATA || RDATA(obj)->dmark != (RUBY_DATA_FUNC)strscan_mark) {
-        rb_raise(rb_eTypeError,
-                 "wrong argument type %s (expected StringScanner)",
-                 rb_obj_classname(obj));
-    }
+    return rb_check_typeddata(obj, &strscanner_type);
 }
 
 /*
@@ -224,9 +240,8 @@ strscan_init_copy(VALUE vself, VALUE vorig)
 {
     struct strscanner *self, *orig;
 
-    Data_Get_Struct(vself, struct strscanner, self);
-    check_strscan(vorig);
-    Data_Get_Struct(vorig, struct strscanner, orig);
+    self = check_strscan(vself);
+    orig = check_strscan(vorig);
     if (self != orig) {
 	self->flags = orig->flags;
 	self->str = orig->str;
@@ -317,9 +332,8 @@ strscan_get_string(VALUE self)
 static VALUE
 strscan_set_string(VALUE self, VALUE str)
 {
-    struct strscanner *p;
+    struct strscanner *p = check_strscan(self);
 
-    Data_Get_Struct(self, struct strscanner, p);
     StringValue(str);
     p->str = str;
     p->curr = 0;
@@ -1067,7 +1081,7 @@ strscan_inspect(VALUE self)
     long len;
     VALUE a, b;
 
-    Data_Get_Struct(self, struct strscanner, p);
+    p = check_strscan(self);
     if (NIL_P(p->str)) {
         len = snprintf(buf, BUFSIZE, "#<%s (uninitialized)>",
                        rb_class2name(CLASS_OF(self)));
