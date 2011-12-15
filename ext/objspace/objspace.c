@@ -97,7 +97,7 @@ memsize_of(VALUE obj)
       case T_MATCH:
 	if (RMATCH(obj)->rmatch) {
             struct rmatch *rm = RMATCH(obj)->rmatch;
-	    size += sizeof(struct re_registers); /* TODO: onig_region_memsize(&rm->regs); */
+	    size += onig_region_memsize(&rm->regs);
 	    size += sizeof(struct rmatch_offset) * rm->char_offset_num_allocated;
 	    size += sizeof(struct rmatch);
 	}

@@ -17,6 +17,10 @@ class TestObjSpace < Test::Unit::TestCase
     f.close
     assert_kind_of(Integer, ObjectSpace.memsize_of(/a/.match("a")))
     assert_kind_of(Integer, ObjectSpace.memsize_of(Struct.new(:a)))
+
+    assert_operator(ObjectSpace.memsize_of(Regexp.new("(a)"*1000).match("a"*1000)),
+                    :>,
+                    ObjectSpace.memsize_of(//.match("")))
   end
 
   def test_memsize_of_all
