@@ -1,5 +1,6 @@
 require "test/unit"
 require "objspace"
+require_relative "../ruby/envutil"
 
 class TestObjSpace < Test::Unit::TestCase
   def test_memsize_of
@@ -21,6 +22,17 @@ class TestObjSpace < Test::Unit::TestCase
     assert_operator(ObjectSpace.memsize_of(Regexp.new("(a)"*1000).match("a"*1000)),
                     :>,
                     ObjectSpace.memsize_of(//.match("")))
+  end
+
+  def test_argf_memsize
+    size = ObjectSpace.memsize_of(ARGF)
+    assert_kind_of(Integer, size)
+    assert_operator(size, :>, 0)
+    argf = ARGF.dup
+    argf.inplace_mode = nil
+    size = ObjectSpace.memsize_of(argf)
+    argf.inplace_mode = "inplace_mode_suffix"
+    assert_equal(size + 20, ObjectSpace.memsize_of(argf))
   end
 
   def test_memsize_of_all

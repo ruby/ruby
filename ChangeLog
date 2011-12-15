@@ -1,3 +1,7 @@
+Thu Dec 15 17:56:58 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_type): make typed data.
+
 Thu Dec 15 17:40:28 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_check_type): fix typo.

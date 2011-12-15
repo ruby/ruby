@@ -7133,6 +7133,21 @@ argf_free(void *ptr)
     xfree(p);
 }
 
+static size_t
+argf_memsize(const void *ptr)
+{
+    const struct argf *p = ptr;
+    size_t size = sizeof(*p);
+    if (!ptr) return 0;
+    if (p->inplace) size += strlen(p->inplace) + 1;
+    return size;
+}
+
+static const rb_data_type_t argf_type = {
+    "ARGF",
+    {argf_mark, argf_free, argf_memsize},
+};
+
 static inline void
 argf_init(struct argf *p, VALUE v)
 {
@@ -7146,7 +7161,7 @@ static VALUE
 argf_alloc(VALUE klass)
 {
     struct argf *p;
-    VALUE argf = Data_Make_Struct(klass, struct argf, argf_mark, argf_free, p);
+    VALUE argf = TypedData_Make_Struct(klass, struct argf, &argf_type, p);
 
     argf_init(p, Qnil);
     return argf;
