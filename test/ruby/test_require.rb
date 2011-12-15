@@ -344,7 +344,7 @@ class TestRequire < Test::Unit::TestCase
     attr_accessor :scratch
   end
 
-  def test_race_excption
+  def test_race_exception
     bug5754 = '[ruby-core:41618]'
     tmp = Tempfile.new(%w"bug5754 .rb")
     path = tmp.path
@@ -357,7 +357,6 @@ raise "con1"
     EOS
     tmp.close
 
-    start = false
     fin = false
 
     TestRequire.scratch = scratch = []
@@ -390,9 +389,9 @@ raise "con1"
     assert_nothing_raised(ThreadError, bug5754) {t1.join}
     assert_nothing_raised(ThreadError, bug5754) {t2.join}
 
-    assert_equal([false, true], [t1_res, t2_res], bug5754)
+    assert_equal(true, (t1_res ^ t2_res), bug5754)
     assert_equal([:pre, t2, :post, :t2, :t1], scratch, bug5754)
-
-    tmp.close(true)
+  ensure
+    tmp.close(true) if tmp
   end
 end
