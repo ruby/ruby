@@ -692,7 +692,7 @@ class TestThreadGroup < Test::Unit::TestCase
     t0 = Time.now.to_f
     pid = spawn(EnvUtil.rubybin, '-e', 'r,=IO.pipe;r.read')
     sleep 1;
-    Process.kill(:SIGQUIT, pid)
+    Process.kill(:SIGINT, pid)
     Process.wait(pid)
     s = $?
     assert_equal([false, true, false],
