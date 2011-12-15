@@ -378,6 +378,30 @@ static const struct types {
     {T_UNDEF,	"undef"},	/* internal use: #undef; should not happen */
 };
 
+static const char *
+builtin_type_name(VALUE x)
+{
+    const char *etype;
+
+    if (NIL_P(x)) {
+	etype = "nil";
+    }
+    else if (FIXNUM_P(x)) {
+	etype = "Fixnum";
+    }
+    else if (SYMBOL_P(x)) {
+	etype = "Symbol";
+    }
+    else if (rb_special_const_p(x)) {
+	x = rb_obj_as_string(x);
+	etype = StringValuePtr(x);
+    }
+    else {
+	etype = rb_obj_classname(x);
+    }
+    return etype;
+}
+
 void
 rb_check_type(VALUE x, int t)
 {
@@ -396,22 +420,7 @@ rb_check_type(VALUE x, int t)
 	    if (type->type == t) {
 		const char *etype;
 
-		if (NIL_P(x)) {
-		    etype = "nil";
-		}
-		else if (FIXNUM_P(x)) {
-		    etype = "Fixnum";
-		}
-		else if (SYMBOL_P(x)) {
-		    etype = "Symbol";
-		}
-		else if (rb_special_const_p(x)) {
-		    x = rb_obj_as_string(x);
-		    etype = StringValuePtr(x);
-		}
-		else {
-		    etype = rb_obj_classname(x);
-		}
+		etype = builtin_type_name(xt);
 		rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
 			 etype, type->name);
 	    }
@@ -451,7 +460,8 @@ rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
     static const char mesg[] = "wrong argument type %s (expected %s)";
 
     if (SPECIAL_CONST_P(obj) || BUILTIN_TYPE(obj) != T_DATA) {
-	Check_Type(obj, T_DATA);
+	etype = builtin_type_name(obj);
+	rb_raise(rb_eTypeError, mesg, etype, data_type->wrap_struct_name);
     }
     if (!RTYPEDDATA_P(obj)) {
 	etype = rb_obj_classname(obj);
