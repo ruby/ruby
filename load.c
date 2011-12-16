@@ -132,7 +132,6 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
 
 static int rb_feature_first_equal_or_greater(VALUE, const char *, long);
 static int rb_stop_search_feature(VALUE, const char *, long);
-static int feature_basename_length(const char *, long);
 
 static int
 rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const char **fn)
@@ -262,12 +261,8 @@ static int
 feature_basename_length(const char *feature, long flen)
 {
     if (sorted_loaded_features) {
-	const char *ext;
-	for (ext = feature + (flen - 1); ext >= feature; ext--) {
-	    if (*ext == '.') return ext - feature;
-	    if (*ext == '/') return flen;
-	}
-	return flen;
+	const char *ext = strrchr(feature, '.');
+	return ext && !strchr(ext, '/') ? ext - feature : flen;
     } else {
 	return 0;
     }
