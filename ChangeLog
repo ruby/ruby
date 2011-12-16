@@ -1,3 +1,7 @@
+Fri Dec 16 17:18:38 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README, README.ja: 'make check' is preferable to 'make test'.
+
 Thu Dec 15 23:16:13 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* error.c (builtin_type_name): don't return pointer to the buffer of
