@@ -55,9 +55,9 @@ module Open3
   # The parameters +cmd...+ is passed to Process.spawn.
   # So a commandline string and list of argument strings can be accepted as follows.
   #
-  #   Open3.popen3("echo a") {|i, o, e, t| ... }
-  #   Open3.popen3("echo", "a") {|i, o, e, t| ... }
-  #   Open3.popen3(["echo", "argv0"], "a") {|i, o, e, t| ... }
+  #   Open3.popen3("echo abc") {|i, o, e, t| ... }
+  #   Open3.popen3("echo", "abc") {|i, o, e, t| ... }
+  #   Open3.popen3(["echo", "argv0"], "abc") {|i, o, e, t| ... }
   #
   # If the last parameter, opts, is a Hash, it is recognized as an option for Process.spawn.
   #
@@ -248,8 +248,8 @@ module Open3
   #   End
   #   layouted_graph, dot_log = Open3.capture3("dot -v", :stdin_data=>graph)
   #
-  #   o, e, s = Open3.capture3("echo a; sort >&2", :stdin_data=>"foo\nbar\nbaz\n")
-  #   p o #=> "a\n"
+  #   o, e, s = Open3.capture3("echo abc; sort >&2", :stdin_data=>"foo\nbar\nbaz\n")
+  #   p o #=> "abc\n"
   #   p e #=> "bar\nbaz\nfoo\n"
   #   p s #=> #<Process::Status: pid 32682 exit 0>
   #
