@@ -14,7 +14,7 @@ with all sufficient information, see the ChangeLog file.
 * builtin classes
 
   * Array
-    * new method:
+    * new methods:
       * Array#keep_if
       * Array#repeated_combination
       * Array#repeated_permutation
@@ -23,11 +23,11 @@ with all sufficient information, see the ChangeLog file.
       * Array#select!
       * Array#sort_by!
 
-    * extended methods:
+    * extended method:
       * Array#{uniq,uniq!,product} can take a block.
 
   * Complex
-    * new methods:
+    * new method:
       * Complex#rationalize
 
   * Dir
@@ -50,7 +50,7 @@ with all sufficient information, see the ChangeLog file.
       * ascii_compatible?
 
   * Enumerable
-    * New methods:
+    * new methods:
       * Enumerable#chunk
       * Enumerable#collect_concat
       * Enumerable#each_entry
@@ -65,7 +65,7 @@ with all sufficient information, see the ChangeLog file.
       * Enumerator#feed
       * StopIteration#result
 
-    * extended methods:
+    * extended method:
       * #with_index accepts an optional argument that specifies the
         index number to start with, defaulted to 0.
 
@@ -85,7 +85,7 @@ with all sufficient information, see the ChangeLog file.
     * new constants:
       * Float::INFINITY
       * Float::NAN
-    * new methods:
+    * new method:
       * Float#rationalize
 
   * File
@@ -103,14 +103,14 @@ with all sufficient information, see the ChangeLog file.
       * Hash#select!
 
   * IO
-    * new method:
+    * new methods:
       * IO#autoclose=
       * IO#autoclose?
       * IO#fdatasync
       * IO#codepoints
       * IO#each_codepoint
 
-    * extended methods:
+    * extended method:
       * IO.pipe can take a block.
 
     * new modules:
@@ -119,7 +119,7 @@ with all sufficient information, see the ChangeLog file.
         They are used to extend non-blocking exceptions.
 
   * Integer
-    * new methods:
+    * new method:
       * Integer#rationalize
 
   * Kernel
@@ -128,7 +128,7 @@ with all sufficient information, see the ChangeLog file.
       * Kernel#singleton_class
       * Kernel#require_relative
 
-    * extended methods:
+    * extended method:
       * Kernel#respond_to? can be used to detect methods not implemented.
         For example, Process.respond_to?(:fork) returns false on Windows.
 
@@ -146,11 +146,15 @@ with all sufficient information, see the ChangeLog file.
         platforms.
 
   * MatchData
-    * New method:
+    * new method:
       * MatchData#==
 
+  * Method
+    * new method:
+      * Method#parameters
+
   * NilClass
-    * new methods:
+    * new method:
       * NilClass#rationalize
 
   * Object
@@ -159,18 +163,20 @@ with all sufficient information, see the ChangeLog file.
       * printf() supports %a/%A format.
 
   * Proc
+    * new method:
+      * Proc#parameters
     * extended method:
       * Proc#source_location returns location even if receiver is a method
         defined by attr_reader / attr_writer / attr_accessor.
 
   * Process
-    * extended methods:
+    * extended method:
       * Process.spawn accepts [:child, FD] for a redirect target.
 
   * Random (new class to generate pseudo-random numbers)
 
   * Rational
-    * new methods:
+    * new method:
       * Rational#rationalize
 
   * String
@@ -183,21 +189,26 @@ with all sufficient information, see the ChangeLog file.
       * Thread#set_trace_func
 
   * Time
-    * extended feature:
+    * extended features:
       * time_t restriction is removed to represent before 1901 and after 2038.
         Proleptic Gregorian calendar is used for old dates.
       * Time.new have optional arguments to specify date with time offset.
       * Time#getlocal, Time#localtime have optional time offset argument.
 
-    * new method:
+    * new methods:
       * Time#to_r
       * Time#subsec
       * Time#round
 
-    * incompatible changes:
+    * incompatible change:
       * The year argument of Time.{utc,gm,local,mktime} is now interpreted as
         the value itself.  For example, Time.utc(99) means the year 99 AD,
         not 1999 AD.
+
+  * UnboundMethod
+    * new method:
+      * UnboundMethod#parameters
+
 
 * digest
   * new methods:
