@@ -2830,12 +2830,16 @@ Init_bigdecimal(void)
 
     /* Class and method registration */
     rb_cBigDecimal = rb_define_class("BigDecimal",rb_cNumeric);
+    rb_undef_alloc_func(rb_cBigDecimal); /* TODO: define alloc func */
 
     /* Global function */
     rb_define_global_function("BigDecimal", BigDecimal_global_new, -1);
 
     /* Class methods */
+#if 1
+    /* TODO: follow allocation framework */
     rb_define_singleton_method(rb_cBigDecimal, "new", BigDecimal_new, -1);
+#endif
     rb_define_singleton_method(rb_cBigDecimal, "mode", BigDecimal_mode, -1);
     rb_define_singleton_method(rb_cBigDecimal, "limit", BigDecimal_limit, -1);
     rb_define_singleton_method(rb_cBigDecimal, "double_fig", BigDecimal_double_fig, 0);

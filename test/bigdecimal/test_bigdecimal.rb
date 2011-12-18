@@ -19,6 +19,10 @@ class TestBigDecimal < Test::Unit::TestCase
     [ BigDecimal::ROUND_FLOOR,     :floor],
   ]
 
+  def assert_allocate
+    assert_raise(TypeError) {BigDecimal.allocate}
+  end
+
   def assert_nan(x)
     assert(x.nan?, "Expected #{x.inspect} to be NaN")
   end

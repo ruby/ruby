@@ -1,3 +1,8 @@
+Sun Dec 18 14:34:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (Init_bigdecimal): does not follow
+	  allocation framework right now.  [ruby-core:41710] [Bug #5773]
+
 Sun Dec 18 12:42:48 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: BigDecimals can be restored
