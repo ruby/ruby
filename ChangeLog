@@ -1,3 +1,8 @@
+Sun Dec 18 09:36:51 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/ruby/envutil.rb (invoke_ruby): remove :timeout option before
+	  pass it to Kernel#spawn.
+
 Fri Dec 16 17:18:38 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README, README.ja: 'make check' is preferable to 'make test'.
