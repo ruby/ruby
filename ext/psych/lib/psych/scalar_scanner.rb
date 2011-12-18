@@ -46,9 +46,13 @@ module Psych
         end
       when TIME
         parse_time string
-      when /^\d{4}-\d{1,2}-\d{1,2}$/
+      when /^\d{4}-(?:1[012]|0\d|\d)-(?:[12]\d|3[01]|0\d|\d)$/
         require 'date'
-        Date.strptime(string, '%Y-%m-%d')
+        begin
+          Date.strptime(string, '%Y-%m-%d')
+        rescue ArgumentError
+          string
+        end
       when /^\.inf$/i
         1 / 0.0
       when /^-\.inf$/i

@@ -1,3 +1,10 @@
+Sun Dec 18 12:03:13 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: Strings that look like dates
+	  should be treated as strings and not dates.
+
+	* test/psych/test_scalar_scanner.rb: corresponding tests.
+
 Sun Dec 18 09:43:21 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* test/thread/test_queue.rb (test_thr_kill): extend timeout.

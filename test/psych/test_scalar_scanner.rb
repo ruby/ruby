@@ -1,4 +1,5 @@
 require 'psych/helper'
+require 'date'
 
 module Psych
   class TestScalarScanner < TestCase
@@ -18,6 +19,27 @@ module Psych
       }.each do |time_str, time|
         assert_equal time, @ss.tokenize(time_str)
       end
+    end
+
+    def test_scan_bad_dates
+      x = '2000-15-01'
+      assert_equal x, @ss.tokenize(x)
+
+      x = '2000-10-51'
+      assert_equal x, @ss.tokenize(x)
+
+      x = '2000-10-32'
+      assert_equal x, @ss.tokenize(x)
+    end
+
+    def test_scan_good_edge_date
+      x = '2000-1-31'
+      assert_equal Date.strptime(x, '%Y-%m-%d'), @ss.tokenize(x)
+    end
+
+    def test_scan_bad_edge_date
+      x = '2000-11-31'
+      assert_equal x, @ss.tokenize(x)
     end
 
     def test_scan_date
