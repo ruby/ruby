@@ -214,6 +214,10 @@ module Psych
         end
       end
 
+      def visit_BigDecimal o
+        @emitter.scalar o._dump, nil, '!ruby/object:BigDecimal', false, false, Nodes::Scalar::ANY
+      end
+
       def binary? string
         string.encoding == Encoding::ASCII_8BIT ||
           string.index("\x00") ||
