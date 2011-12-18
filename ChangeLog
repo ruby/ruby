@@ -1,3 +1,10 @@
+Sun Dec 18 18:52:37 2011  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* vm.c (vm_define_method): improve guard of iseq from GC.  Fix
+	  failure or segmentation fault in test_singleton_method(TestGc)
+	  on sparc Solaris10 compiled with Oracle Solaris Studio 12.2.
+	  [Bug #5762] [ruby-dev:45000] [Bug #4178]
+
 Sun Dec 18 14:34:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (Init_bigdecimal): does not follow
