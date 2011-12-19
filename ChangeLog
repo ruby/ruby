@@ -1,3 +1,7 @@
+Tue Dec 20 02:15:18 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c:  [ruby-dev:45008].
+
 Sun Dec 18 18:52:37 2011  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* vm.c (vm_define_method): improve guard of iseq from GC.  Fix

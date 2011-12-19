@@ -39,6 +39,7 @@ static double positive_inf, negative_inf;
 #define f_truncate(x) rb_funcall(x, rb_intern("truncate"), 0)
 #define f_round(x) rb_funcall(x, rb_intern("round"), 0)
 
+#define f_to_i(x) rb_funcall(x, rb_intern("to_i"), 0)
 #define f_to_r(x) rb_funcall(x, rb_intern("to_r"), 0)
 #define f_to_s(x) rb_funcall(x, rb_intern("to_s"), 0)
 #define f_inspect(x) rb_funcall(x, rb_intern("inspect"), 0)
@@ -3094,13 +3095,25 @@ wholenum_p(VALUE x)
     return 0;
 }
 
+inline static int
+wholenum(VALUE x)
+{
+    if (FIXNUM_P(x))
+	return x;
+    switch (TYPE(x)) {
+      case T_BIGNUM:
+	return x;
+    }
+    return f_to_i(x);
+}
+
 inline static VALUE
 d_trunc(VALUE d, VALUE *fr)
 {
     VALUE rd;
 
     if (wholenum_p(d)) {
-	rd = d;
+	rd = wholenum(d);
 	*fr = INT2FIX(0);
     } else {
 	rd = f_idiv(d, INT2FIX(1));
@@ -3118,7 +3131,7 @@ h_trunc(VALUE h, VALUE *fr)
     VALUE rh;
 
     if (wholenum_p(h)) {
-	rh = h;
+	rh = wholenum(h);
 	*fr = INT2FIX(0);
     } else {
 	rh = f_idiv(h, INT2FIX(1));
@@ -3134,7 +3147,7 @@ min_trunc(VALUE min, VALUE *fr)
     VALUE rmin;
 
     if (wholenum_p(min)) {
-	rmin = min;
+	rmin = wholenum(min);
 	*fr = INT2FIX(0);
     } else {
 	rmin = f_idiv(min, INT2FIX(1));
@@ -3150,7 +3163,7 @@ s_trunc(VALUE s, VALUE *fr)
     VALUE rs;
 
     if (wholenum_p(s)) {
-	rs = s;
+	rs = wholenum(s);
 	*fr = INT2FIX(0);
     } else {
 	rs = f_idiv(s, INT2FIX(1));
