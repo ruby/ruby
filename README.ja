@@ -22,7 +22,7 @@ Rubyはテキスト処理関係の能力などに優れ，Perlと同じくらい
   + ダイナミックローディング (アーキテクチャによる)
   + 移植性が高い．多くのUnix-like/POSIX互換プラットフォーム上で
     動くだけでなく，Windows， Mac OS X，BeOSなどの上でも動く
-    cf. http://redmine.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatformsJa
+    cf. http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatformsJa
 
 * 入手法
 

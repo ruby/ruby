@@ -1,3 +1,17 @@
+Tue Dec 20 05:03:24 2011  Eric Hodel  <drbrain@segment7.net>
+
+	* README.ja:  Update redmine.ruby-lang.org to bugs.ruby-lang.org
+	* README:  ditto
+	* common.mk:  ditto
+	* ext/bigdecimal/README:  ditto
+	* man/erb.1:  ditto
+	* man/irb.1:  ditto
+	* man/ri.1:  ditto
+	* man/ruby.1:  ditto
+	* man/ruby.1:  ditto
+	* sparc.c:  ditto
+	* tool/install-sh:  ditto
+
 Tue Dec 20 02:15:18 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c:  [ruby-dev:45008].

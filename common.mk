@@ -963,5 +963,5 @@ help: PHONY
 	"  golf:            for golfers" \
 	"" \
 	"see DeveloperHowto for more detail: " \
-	"  http://redmine.ruby-lang.org/wiki/ruby/DeveloperHowto" \
+	"  http://bugs.ruby-lang.org/wiki/ruby/DeveloperHowto" \
 	$(MESSAGE_END)

@@ -7,7 +7,7 @@
  window of the process executing the instruction will not be flushed
  correctly.
 
- See http://redmine.ruby-lang.org/issues/5244 for discussion.
+ See http://bugs.ruby-lang.org/issues/5244 for discussion.
 *********************************************************************/
 void rb_sparc_flush_register_windows(void)
 {

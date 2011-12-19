@@ -18,7 +18,7 @@ Perl).  It is simple, straight-forward, and extensible.
   + Dynamic Loading of Object files(on some architecture)
   + Highly Portable (works on many Unix-like/POSIX compatible platforms
     as well as Windows, Mac OS X, BeOS etc.)
-    cf. http://redmine.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatforms
+    cf. http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatforms
 
 
 * How to get Ruby

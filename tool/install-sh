@@ -9,7 +9,7 @@ provides its own install(1) alternative.
 
 This script a place holder for AC_PROG_INSTALL in configure.in.
 
-Please report a bug in Ruby to http://redmine.ruby-lang.org if you see
+Please report a bug in Ruby to http://bugs.ruby-lang.org if you see
 this message.
 
 Thank you.
