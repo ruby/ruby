@@ -340,57 +340,57 @@ class TestRequire < Test::Unit::TestCase
                       bug3756)
   end
 
-  class << self
-    attr_accessor :scratch
-  end
-
   def test_race_exception
     bug5754 = '[ruby-core:41618]'
     tmp = Tempfile.new(%w"bug5754 .rb")
     path = tmp.path
-    tmp.print <<-EOS
-TestRequire.scratch << :pre
-Thread.pass until t2 = TestRequire.scratch[1]
-Thread.pass until t2.stop?
-open(__FILE__, "w") {|f| f.puts "TestRequire.scratch << :post"}
-raise "con1"
-    EOS
+    tmp.print %{\
+      th = Thread.current
+      t = th[:t]
+      scratch = th[:scratch]
+
+      if scratch.empty?
+        scratch << :pre
+        Thread.pass until t.stop?
+        raise RuntimeError
+      else
+        scratch << :post
+      end
+    }
     tmp.close
 
-    fin = false
+    start = false
 
-    TestRequire.scratch = scratch = []
+    scratch = []
     t1_res = nil
     t2_res = nil
 
     t1 = Thread.new do
+      Thread.pass until start
       begin
         require(path)
       rescue RuntimeError
       end
 
       t1_res = require(path)
-
-      Thread.pass until fin
-      scratch << :t1
     end
 
     t2 = Thread.new do
       Thread.pass until scratch[0]
-      begin
-        scratch << t2
-        t2_res = require(path)
-        scratch << :t2
-      ensure
-        fin = true
-      end
+      t2_res = require(path)
     end
+
+    t1[:scratch] = t2[:scratch] = scratch
+    t1[:t] = t2
+    t2[:t] = t1
+
+    start = true
 
     assert_nothing_raised(ThreadError, bug5754) {t1.join}
     assert_nothing_raised(ThreadError, bug5754) {t2.join}
 
-    assert_equal(true, (t1_res ^ t2_res), bug5754)
-    assert_equal([:pre, t2, :post, :t2, :t1], scratch, bug5754)
+    assert_equal(true, (t1_res ^ t2_res), bug5754 + " t1:#{t1_res} t2:#{t2_res}")
+    assert_equal([:pre, :post], scratch, bug5754)
   ensure
     tmp.close(true) if tmp
   end
