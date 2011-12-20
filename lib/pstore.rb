@@ -7,10 +7,7 @@
 #
 # See PStore for documentation.
 
-
-require "fileutils"
 require "digest/md5"
-require "thread"
 
 #
 # PStore implements a file based persistence mechanism based on a Hash.  User
@@ -141,8 +138,8 @@ class PStore
   # Raises PStore::Error if the calling code is not in a PStore#transaction or
   # if the code is in a read-only PStore#transaction.
   #
-  def in_transaction_wr()
-    in_transaction()
+  def in_transaction_wr
+    in_transaction
     raise PStore::Error, "in read-only transaction" if @rdonly
   end
   private :in_transaction, :in_transaction_wr
@@ -200,7 +197,7 @@ class PStore
   # be read-only.  It will raise PStore::Error if called at any other time.
   #
   def []=(name, value)
-    in_transaction_wr()
+    in_transaction_wr
     @table[name] = value
   end
   #
@@ -210,7 +207,7 @@ class PStore
   # be read-only.  It will raise PStore::Error if called at any other time.
   #
   def delete(name)
-    in_transaction_wr()
+    in_transaction_wr
     @table.delete name
   end
 
@@ -388,9 +385,7 @@ class PStore
     if read_only
       begin
         table = load(file)
-        if !table.is_a?(Hash)
-          raise Error, "PStore file seems to be corrupted."
-        end
+        raise Error, "PStore file seems to be corrupted." unless table.is_a?(Hash)
       rescue EOFError
         # This seems to be a newly-created file.
         table = {}
@@ -407,9 +402,7 @@ class PStore
         table = load(data)
         checksum = Digest::MD5.digest(data)
         size = data.bytesize
-        if !table.is_a?(Hash)
-          raise Error, "PStore file seems to be corrupted."
-        end
+        raise Error, "PStore file seems to be corrupted." unless table.is_a?(Hash)
       end
       data.replace(EMPTY_STRING)
       [table, checksum, size]
@@ -417,10 +410,7 @@ class PStore
   end
 
   def on_windows?
-    is_windows = RUBY_PLATFORM =~ /mswin/  ||
-                 RUBY_PLATFORM =~ /mingw/  ||
-                 RUBY_PLATFORM =~ /bccwin/ ||
-                 RUBY_PLATFORM =~ /wince/
+    is_windows = RUBY_PLATFORM =~ /mswin|mingw|bccwin|wince/
     self.class.__send__(:define_method, :on_windows?) do
       is_windows
     end
