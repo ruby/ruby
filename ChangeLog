@@ -1,3 +1,8 @@
+Tue Dec 20 21:00:30 2011  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: uses to_integer instead.
+	* test/date/test_switch_hitter.rb: added a test.
+
 Tue Dec 20 15:04:18 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* Make sure to clear $! when ignoring an exception

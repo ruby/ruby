@@ -1325,8 +1325,10 @@ encode_year(VALUE nth, int y, double style,
 static void
 decode_jd(VALUE jd, VALUE *nth, int *rjd)
 {
+    assert(FIXNUM_P(jd) || RB_TYPE_P(jd, T_BIGNUM));
     *nth = f_idiv(jd, INT2FIX(CM_PERIOD));
     if (f_zero_p(*nth)) {
+	assert(FIXNUM_P(jd));
 	*rjd = FIX2INT(jd);
 	return;
     }
@@ -3096,14 +3098,10 @@ wholenum_p(VALUE x)
 }
 
 inline static VALUE
-wholenum(VALUE x)
+to_integer(VALUE x)
 {
-    if (FIXNUM_P(x))
+    if (FIXNUM_P(x) || RB_TYPE_P(x, T_BIGNUM))
 	return x;
-    switch (TYPE(x)) {
-      case T_BIGNUM:
-	return x;
-    }
     return f_to_i(x);
 }
 
@@ -3113,9 +3111,10 @@ d_trunc(VALUE d, VALUE *fr)
     VALUE rd;
 
     if (wholenum_p(d)) {
-	rd = wholenum(d);
+	rd = to_integer(d);
 	*fr = INT2FIX(0);
-    } else {
+    }
+    else {
 	rd = f_idiv(d, INT2FIX(1));
 	*fr = f_mod(d, INT2FIX(1));
     }
@@ -3131,9 +3130,10 @@ h_trunc(VALUE h, VALUE *fr)
     VALUE rh;
 
     if (wholenum_p(h)) {
-	rh = wholenum(h);
+	rh = to_integer(h);
 	*fr = INT2FIX(0);
-    } else {
+    }
+    else {
 	rh = f_idiv(h, INT2FIX(1));
 	*fr = f_mod(h, INT2FIX(1));
 	*fr = f_quo(*fr, INT2FIX(24));
@@ -3147,9 +3147,10 @@ min_trunc(VALUE min, VALUE *fr)
     VALUE rmin;
 
     if (wholenum_p(min)) {
-	rmin = wholenum(min);
+	rmin = to_integer(min);
 	*fr = INT2FIX(0);
-    } else {
+    }
+    else {
 	rmin = f_idiv(min, INT2FIX(1));
 	*fr = f_mod(min, INT2FIX(1));
 	*fr = f_quo(*fr, INT2FIX(1440));
@@ -3163,9 +3164,10 @@ s_trunc(VALUE s, VALUE *fr)
     VALUE rs;
 
     if (wholenum_p(s)) {
-	rs = wholenum(s);
+	rs = to_integer(s);
 	*fr = INT2FIX(0);
-    } else {
+    }
+    else {
 	rs = f_idiv(s, INT2FIX(1));
 	*fr = f_mod(s, INT2FIX(1));
 	*fr = f_quo(*fr, INT2FIX(86400));
