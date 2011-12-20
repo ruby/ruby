@@ -175,7 +175,11 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd)
 	 */
 	rflag = flag ? Qtrue : Qfalse;
 	pass  = rb_protect(ossl_pem_passwd_cb0, rflag, &status);
-	if (status) return -1; /* exception was raised. */
+	if (status) {
+	    /* ignore an exception raised. */
+	    rb_set_errinfo(Qnil);
+	    return -1;
+	}
 	len = RSTRING_LENINT(pass);
 	if (len < 4) { /* 4 is OpenSSL hardcoded limit */
 	    rb_warning("password must be longer than 4 bytes");
@@ -216,18 +220,23 @@ ossl_verify_cb(int ok, X509_STORE_CTX *ctx)
     if ((void*)proc == 0)
 	return ok;
     if (!NIL_P(proc)) {
+	ret = Qfalse;
 	rctx = rb_protect((VALUE(*)(VALUE))ossl_x509stctx_new,
 			  (VALUE)ctx, &state);
-	ret = Qfalse;
-	if (!state) {
+	if (state) {
+	    rb_set_errinfo(Qnil);
+	    rb_warn("StoreContext initialization failure");
+	}
+	else {
 	    args.proc = proc;
 	    args.preverify_ok = ok ? Qtrue : Qfalse;
 	    args.store_ctx = rctx;
 	    ret = rb_protect((VALUE(*)(VALUE))ossl_call_verify_cb_proc, (VALUE)&args, &state);
-	    ossl_x509stctx_clear_ptr(rctx);
 	    if (state) {
+		rb_set_errinfo(Qnil);
 		rb_warn("exception in verify_callback is ignored");
 	    }
+	    ossl_x509stctx_clear_ptr(rctx);
 	}
 	if (ret == Qtrue) {
 	    X509_STORE_CTX_set_error(ctx, X509_V_OK);

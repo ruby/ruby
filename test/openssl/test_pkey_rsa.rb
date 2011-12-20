@@ -233,6 +233,17 @@ AwEAAQ==
     assert_equal([], OpenSSL.errors)
   end
 
+  def test_read_private_key_pem_pw_exception
+    pem = OpenSSL::TestUtils::TEST_KEY_RSA1024.to_pem(OpenSSL::Cipher.new('AES-128-CBC'), 'secret')
+    # it raises an ArgumentError from PEM reading. The exception raised inside are ignored for now.
+    assert_raise(ArgumentError) do
+      OpenSSL::PKey.read(pem) do
+        raise RuntimeError
+      end
+    end
+    assert_equal([], OpenSSL.errors)
+  end
+
   private
 
   def check_PUBKEY(asn1, key)

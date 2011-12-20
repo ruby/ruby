@@ -1,3 +1,19 @@
+Tue Dec 20 15:04:18 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* Make sure to clear $! when ignoring an exception
+
+	* ext/openssl/ossl.c (ossl_pem_passwd_cb0, ossl_verify_cb):
+	  pem_passwd_cb and verify_cb ignores the exception raised in a
+	  callback proc so it should clear $! for subsequent execution.
+
+	  That's said, both subsequent processes for pem_passwd_cb and
+	  verify_cb raises another exception before leaking $! to Ruby world.
+	  We cannot test this fix in Ruby land.
+
+	* test/openssl/test_pkey_rsa.rb
+	  (test_read_private_key_pem_pw_exception): Test for pem_passwd_cb +
+	  exception.
+
 Tue Dec 20 11:49:13 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/date/test_date_base.rb (test_jd): tests for
