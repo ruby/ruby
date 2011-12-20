@@ -446,7 +446,7 @@ EOY
 
 	#
 	# Reports from N.Easterly & J.Trupiano : Tests with patch from daz
-	# [ruby-core:23006] [Bug #1311] http://redmine.ruby-lang.org/issues/show/1311
+	# [ruby-core:23006] [Bug #1311] http://bugs.ruby-lang.org/issues/show/1311
 	#
 	def test_scan_scalar_nl
 		bug1311 = '[ruby-core:23006]'

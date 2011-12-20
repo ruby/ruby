@@ -1,3 +1,11 @@
+Wed Dec 21 01:06:00 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/bigdecimal/README: Update redmine.ruby-lang.org to bugs.ruby-lang.org
+	* ext/socket/ancdata.c: ditto
+	* test/-ext-/wait_for_single_fd/test_wait_for_single_fd.rb: ditto
+	* test/syck/test_yaml.rb: ditto
+	* doc/ChangeLog-1.9.3: ditto
+
 Tue Dec 20 23:50:12 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* PStore content update perf optimization. Patch by Masaki Matsushita.
@@ -52,11 +60,9 @@ Tue Dec 20 05:03:24 2011  Eric Hodel  <drbrain@segment7.net>
 	* README.ja:  Update redmine.ruby-lang.org to bugs.ruby-lang.org
 	* README:  ditto
 	* common.mk:  ditto
-	* ext/bigdecimal/README:  ditto
 	* man/erb.1:  ditto
 	* man/irb.1:  ditto
 	* man/ri.1:  ditto
-	* man/ruby.1:  ditto
 	* man/ruby.1:  ditto
 	* sparc.c:  ditto
 	* tool/install-sh:  ditto
