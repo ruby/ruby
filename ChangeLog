@@ -1,3 +1,7 @@
+Wed Dec 21 02:25:36 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/emitter.c: fixing clang warnings. Thanks Joey!
+
 Wed Dec 21 01:06:00 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/bigdecimal/README: Update redmine.ruby-lang.org to bugs.ruby-lang.org
