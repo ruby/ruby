@@ -8506,12 +8506,14 @@ io_s_write(int argc, VALUE *argv, int binary)
  *
  *    specifies perm argument for open().
  *
- *   open_args: array of strings
+ *   open_args: array
  *
  *    specifies arguments for open() as an array.
  *
- *     IO.write("testfile", "0123456789")      #=> "0123456789"
- *     IO.write("testfile", "0123456789", 20)  #=> "This is line one\nThi0123456789two\nThis is line three\nAnd so on...\n"
+ *     IO.write("testfile", "0123456789", 20) # => 10
+ *     # File could contain:  "This is line one\nThi0123456789two\nThis is line three\nAnd so on...\n"
+ *     IO.write("testfile", "0123456789")      #=> 10
+ *     # File would now read: "0123456789"
  */
 
 static VALUE
@@ -8524,15 +8526,17 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
  *  call-seq:
  *     IO.binwrite(name, string, [offset] )   => fixnum
  *
- *  Opens the file, optionally seeks to the given <i>offset</i>, write
+ *  Opens the file, optionally seeks to the given <i>offset</i>, writes
  *  <i>string</i> then returns the length written.
  *  <code>binwrite</code> ensures the file is closed before returning.
  *  The open mode would be "wb:ASCII-8BIT".
  *  If <i>offset</i> is not given, the file is truncated.  Otherwise,
  *  it is not truncated.
  *
- *     IO.binwrite("testfile", "0123456789")      #=> "0123456789"
- *     IO.binwrite("testfile", "0123456789", 20)  #=> "This is line one\nThi0123456789two\nThis is line three\nAnd so on...\n"
+ *     IO.binwrite("testfile", "0123456789", 20) # => 10
+ *     # File could contain:  "This is line one\nThi0123456789two\nThis is line three\nAnd so on...\n"
+ *     IO.binwrite("testfile", "0123456789")      #=> 10
+ *     # File would now read: "0123456789"
  */
 
 static VALUE
