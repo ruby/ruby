@@ -181,6 +181,13 @@ class TestDateBase < Test::Unit::TestCase
 
   def test_jd
     assert_equal(1 << 33, Date.jd(1 << 33).jd)
+
+    bug = '[ruby-dev:45008]'
+    d = Date.new(2011,12,20)
+    jd = d.jd
+    assert_equal(d, Date.jd(jd))
+    assert_equal(d, Date.jd(jd.to_f), bug)
+    assert_equal(d, Date.jd(Rational(jd)), bug)
   end
 
   def test_mjd

@@ -1,3 +1,8 @@
+Tue Dec 20 11:49:13 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/date/test_date_base.rb (test_jd): tests for
+	  [ruby-dev:45008].
+
 Tue Dec 20 10:20:48 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/date/date_core.c (wholenum): fix the type of the return value.
