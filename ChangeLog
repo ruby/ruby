@@ -1,3 +1,7 @@
+Tue Dec 20 10:20:48 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/date/date_core.c (wholenum): fix the type of the return value.
+
 Tue Dec 20 05:03:24 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* README.ja:  Update redmine.ruby-lang.org to bugs.ruby-lang.org

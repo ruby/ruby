@@ -3095,7 +3095,7 @@ wholenum_p(VALUE x)
     return 0;
 }
 
-inline static int
+inline static VALUE
 wholenum(VALUE x)
 {
     if (FIXNUM_P(x))
