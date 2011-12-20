@@ -402,11 +402,11 @@ class PStore
         # This seems to be a newly-created file.
         table = {}
         checksum = empty_marshal_checksum
-        size = empty_marshal_data.size
+        size = empty_marshal_data.bytesize
       else
         table = load(data)
         checksum = Digest::MD5.digest(data)
-        size = data.size
+        size = data.bytesize
         if !table.is_a?(Hash)
           raise Error, "PStore file seems to be corrupted."
         end
@@ -427,34 +427,10 @@ class PStore
     is_windows
   end
 
-  # Check whether Marshal.dump supports the 'canonical' option. This option
-  # makes sure that Marshal.dump always dumps data structures in the same order.
-  # This is important because otherwise, the checksums that we generate may differ.
-  def marshal_dump_supports_canonical_option?
-    begin
-      Marshal.dump(nil, -1, true)
-      result = true
-    rescue
-      result = false
-    end
-    self.class.instance_method(:marshal_dump_supports_canonical_option?)
-    self.class.__send__(:define_method, :marshal_dump_supports_canonical_option?) do
-      result
-    end
-    result
-  end
-
   def save_data(original_checksum, original_file_size, file)
-    # We only want to save the new data if the size or checksum has changed.
-    # This results in less filesystem calls, which is good for performance.
-    if marshal_dump_supports_canonical_option?
-      new_data = Marshal.dump(@table, -1, true)
-    else
-      new_data = dump(@table)
-    end
-    new_checksum = Digest::MD5.digest(new_data)
+    new_data = dump(@table)
 
-    if new_data.size != original_file_size || new_checksum != original_checksum
+    if new_data.bytesize != original_file_size || Digest::MD5.digest(new_data) != original_checksum
       if @ultra_safe && !on_windows?
         # Windows doesn't support atomic file renames.
         save_data_with_atomic_file_rename_strategy(new_data, file)
@@ -484,8 +460,8 @@ class PStore
 
   def save_data_with_fast_strategy(data, file)
     file.rewind
-    file.truncate(0)
     file.write(data)
+    file.truncate(data.bytesize)
   end
 
 

@@ -1,3 +1,22 @@
+Tue Dec 20 23:50:12 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* PStore content update perf optimization. Patch by Masaki Matsushita.
+	  See #5248.
+
+	* lib/pstore.rb (save_data):
+
+	  * Delete inadequate Marshal check.
+
+	  * Deferred file truncation: when writing the new content, truncate
+	    the saved file to the data size after writing the data, instead of
+	    truncating whole bytes before writing data.
+
+	  * Deferred MD5 calculation: when comparing MD5 hash to check the
+	    content modification, calculate MD5 hash of new data iif the
+	    content length is differ from the old one.
+
+	  * Compare content size with String#bytesize instead of String#size.
+
 Tue Dec 20 21:00:30 2011  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: uses to_integer instead.
