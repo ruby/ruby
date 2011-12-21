@@ -1,6 +1,6 @@
 Thu Dec 22 00:40:24 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
-	* ext/bigdecimal/bigdecimal.c (VpMult, VpCtoV, VpSqrt): remove assined
+	* ext/bigdecimal/bigdecimal.c (VpMult, VpCtoV, VpSqrt): remove assigned
 	  but unused variables.
 
 Wed Dec 21 18:28:22 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
