@@ -760,7 +760,7 @@ unicode.$(OBJEXT): {$(VPATH)}unicode.c {$(VPATH)}regint.h \
 utf_8.$(OBJEXT): {$(VPATH)}utf_8.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}missing.h
 
-{$(VPATH)}newline.c: $(srcdir)/enc/trans/newline.trans $(srcdir)/tool/transcode-tblgen.rb
+newline.c: $(srcdir)/enc/trans/newline.trans $(srcdir)/tool/transcode-tblgen.rb
 	$(Q) $(BASERUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo newline.c $(srcdir)/enc/trans/newline.trans
 newline.$(OBJEXT): {$(VPATH)}newline.c {$(VPATH)}defines.h \
   {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}st.h \
@@ -822,7 +822,7 @@ known_errors.inc: $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def
 
-{$(VPATH)}miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
+miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
