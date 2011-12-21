@@ -1,3 +1,8 @@
+Wed Dec 21 12:35:24 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_s_allocate): follow
+	  Allocation Framework.  [Bug #5775]
+
 Wed Dec 21 02:25:36 2011  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/emitter.c: fixing clang warnings. Thanks Joey!

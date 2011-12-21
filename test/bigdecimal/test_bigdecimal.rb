@@ -19,10 +19,6 @@ class TestBigDecimal < Test::Unit::TestCase
     [ BigDecimal::ROUND_FLOOR,     :floor],
   ]
 
-  def assert_allocate
-    assert_raise(TypeError) {BigDecimal.allocate}
-  end
-
   def assert_nan(x)
     assert(x.nan?, "Expected #{x.inspect} to be NaN")
   end
@@ -45,6 +41,10 @@ class TestBigDecimal < Test::Unit::TestCase
   def assert_negative_zero(x)
     assert_equal(BigDecimal::SIGN_NEGATIVE_ZERO, x.sign,
                  "Expected #{x.inspect} to be negative zero")
+  end
+
+  def test_not_equal
+    assert_not_equal BigDecimal("1"), BigDecimal.allocate
   end
 
   def test_global_new
@@ -1287,5 +1287,20 @@ class TestBigDecimal < Test::Unit::TestCase
         end
       end
     end
+  end
+
+  def test_dup
+    [1, -1, 2**100, -2**100].each do |i|
+      x = BigDecimal(i)
+      assert_equal(x, x.dup)
+    end
+  end
+
+  def test_dup_subclass
+    c = Class.new(BigDecimal)
+    x = c.new(1)
+    y = x.dup
+    assert_equal(1, y)
+    assert_kind_of(c, y)
   end
 end

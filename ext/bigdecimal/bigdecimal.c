@@ -131,7 +131,7 @@ static unsigned short VpGetException(void);
 static void  VpSetException(unsigned short f);
 static void  VpInternalRound(Real *c, size_t ixDigit, BDIGIT vPrev, BDIGIT v);
 static int   VpLimitRound(Real *c, size_t ixDigit);
-static Real *VpDup(Real const* const x);
+static Real *VpCopy(Real *pv, Real const* const x);
 
 /*
  *  **** BigDecimal part ****
@@ -561,24 +561,20 @@ VpCreateRbObject(size_t mx, const char *str)
 }
 
 #define VpAllocReal(prec) (Real *)VpMemAlloc(offsetof(Real, frac) + (prec) * sizeof(BDIGIT))
+#define VpReallocReal(ptr, prec) (Real *)VpMemRealloc((ptr), offsetof(Real, frac) + (prec) * sizeof(BDIGIT))
 
 static Real *
-VpDup(Real const* const x)
+VpCopy(Real *pv, Real const* const x)
 {
-    Real *pv;
-
     assert(x != NULL);
 
-    pv = VpAllocReal(x->MaxPrec);
+    pv = VpReallocReal(pv, x->MaxPrec);
     pv->MaxPrec = x->MaxPrec;
     pv->Prec = x->Prec;
     pv->exponent = x->exponent;
     pv->sign = x->sign;
     pv->flag = x->flag;
     MEMCPY(pv->frac, x->frac, BDIGIT, pv->MaxPrec);
-
-    pv->obj = TypedData_Wrap_Struct(
-	rb_obj_class(x->obj), &BigDecimal_data_type, pv);
 
     return pv;
 }
@@ -2254,6 +2250,14 @@ BigDecimal_power_op(VALUE self, VALUE exp)
     return BigDecimal_power(1, &exp, self);
 }
 
+static VALUE
+BigDecimal_s_allocate(VALUE klass)
+{
+    return VpNewRbClass(0, NULL, klass)->obj;
+}
+
+static Real *BigDecimal_new(int argc, VALUE *argv);
+
 /* call-seq:
  *   new(initial, digits)
  *
@@ -2272,10 +2276,36 @@ BigDecimal_power_op(VALUE self, VALUE exp)
  * larger than the specified number.
  */
 static VALUE
-BigDecimal_new(int argc, VALUE *argv, VALUE self)
+BigDecimal_initialize(int argc, VALUE *argv, VALUE self)
 {
-    ENTER(5);
-    Real *pv;
+    Real *pv = rb_check_typeddata(self, &BigDecimal_data_type);
+    Real *x = BigDecimal_new(argc, argv);
+
+    if (ToValue(x)) {
+	pv = VpCopy(pv, x);
+    }
+    else {
+	VpFree(pv);
+	pv = x;
+    }
+    DATA_PTR(self) = pv;
+    pv->obj = self;
+    return self;
+}
+
+static VALUE
+BigDecimal_initialize_copy(VALUE self, VALUE other)
+{
+    Real *pv = rb_check_typeddata(self, &BigDecimal_data_type);
+    Real *x = rb_check_typeddata(other, &BigDecimal_data_type);
+
+    DATA_PTR(self) = VpCopy(pv, x);
+    return self;
+}
+
+static Real *
+BigDecimal_new(int argc, VALUE *argv)
+{
     size_t mf;
     VALUE  nFig;
     VALUE  iniValue;
@@ -2290,15 +2320,14 @@ BigDecimal_new(int argc, VALUE *argv, VALUE self)
     switch (TYPE(iniValue)) {
       case T_DATA:
 	if (is_kind_of_BigDecimal(iniValue)) {
-	    pv = VpDup(DATA_PTR(iniValue));
-	    return ToValue(pv);
+	    return DATA_PTR(iniValue);
 	}
 	break;
 
       case T_FIXNUM:
 	/* fall through */
       case T_BIGNUM:
-	return ToValue(GetVpValue(iniValue, 1));
+	return GetVpValue(iniValue, 1);
 
       case T_FLOAT:
 	if (mf > DBL_DIG+1) {
@@ -2309,23 +2338,25 @@ BigDecimal_new(int argc, VALUE *argv, VALUE self)
 	if (NIL_P(nFig)) {
 	    rb_raise(rb_eArgError, "can't omit precision for a Rational.");
 	}
-	return ToValue(GetVpValueWithPrec(iniValue, mf, 1));
+	return GetVpValueWithPrec(iniValue, mf, 1);
 
       case T_STRING:
 	/* fall through */
       default:
 	break;
     }
-    SafeStringValue(iniValue);
-    GUARD_OBJ(pv, VpNewRbClass(mf, RSTRING_PTR(iniValue),self));
-
-    return ToValue(pv);
+    StringValueCStr(iniValue);
+    rb_check_safe_obj(iniValue);
+    return VpAlloc(mf, RSTRING_PTR(iniValue));
 }
 
 static VALUE
 BigDecimal_global_new(int argc, VALUE *argv, VALUE self)
 {
-    return BigDecimal_new(argc, argv, rb_cBigDecimal);
+    Real *pv = BigDecimal_new(argc, argv);
+    if (ToValue(pv)) pv = VpCopy(NULL, pv);
+    pv->obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, pv);
+    return pv->obj;
 }
 
  /* call-seq:
@@ -2830,16 +2861,12 @@ Init_bigdecimal(void)
 
     /* Class and method registration */
     rb_cBigDecimal = rb_define_class("BigDecimal",rb_cNumeric);
-    rb_undef_alloc_func(rb_cBigDecimal); /* TODO: define alloc func */
+    rb_define_alloc_func(rb_cBigDecimal, BigDecimal_s_allocate);
 
     /* Global function */
     rb_define_global_function("BigDecimal", BigDecimal_global_new, -1);
 
     /* Class methods */
-#if 1
-    /* TODO: follow allocation framework */
-    rb_define_singleton_method(rb_cBigDecimal, "new", BigDecimal_new, -1);
-#endif
     rb_define_singleton_method(rb_cBigDecimal, "mode", BigDecimal_mode, -1);
     rb_define_singleton_method(rb_cBigDecimal, "limit", BigDecimal_limit, -1);
     rb_define_singleton_method(rb_cBigDecimal, "double_fig", BigDecimal_double_fig, 0);
@@ -2963,6 +2990,8 @@ Init_bigdecimal(void)
 
 
     /* instance methods */
+    rb_define_method(rb_cBigDecimal, "initialize", BigDecimal_initialize, -1);
+    rb_define_method(rb_cBigDecimal, "initialize_copy", BigDecimal_initialize_copy, 1);
     rb_define_method(rb_cBigDecimal, "precs", BigDecimal_prec, 0);
 
     rb_define_method(rb_cBigDecimal, "add", BigDecimal_add2, 2);
@@ -3090,6 +3119,16 @@ VpMemAlloc(size_t mb)
 #ifdef BIGDECIMAL_DEBUG
     gnAlloc++; /* Count allocation call */
 #endif /* BIGDECIMAL_DEBUG */
+    return p;
+}
+
+VP_EXPORT void *
+VpMemRealloc(void *ptr, size_t mb)
+{
+    void *p = xrealloc(ptr, mb);
+    if (!p) {
+        VpException(VP_EXCEPTION_MEMORY, "failed to allocate memory", 1);
+    }
     return p;
 }
 

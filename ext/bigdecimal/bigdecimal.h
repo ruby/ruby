@@ -21,6 +21,9 @@
 
 #if defined(__cplusplus)
 extern "C" {
+#if 0
+}
+#endif
 #endif
 
 #ifndef HAVE_LABS
@@ -197,6 +200,7 @@ VP_EXPORT int VpIsNegDoubleZero(double v);
 VP_EXPORT size_t VpNumOfChars(Real *vp,const char *pszFmt);
 VP_EXPORT size_t VpInit(BDIGIT BaseVal);
 VP_EXPORT void *VpMemAlloc(size_t mb);
+VP_EXPORT void *VpMemRealloc(void *ptr, size_t mb);
 VP_EXPORT void VpFree(Real *pv);
 VP_EXPORT Real *VpAlloc(size_t mx, const char *szVal);
 VP_EXPORT size_t VpAsgn(Real *c, Real *a, int isw);
@@ -279,6 +283,9 @@ VP_EXPORT int VPrint(FILE *fp,const char *cntl_chr,Real *a);
 #endif /* BIGDECIMAL_DEBUG */
 
 #if defined(__cplusplus)
+#if 0
+{
+#endif
 }  /* extern "C" { */
 #endif
 #endif /* RUBY_BIG_DECIMAL_H */
