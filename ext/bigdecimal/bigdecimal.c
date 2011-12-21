@@ -4242,7 +4242,7 @@ VpMult(Real *c, Real *a, Real *b)
 {
     size_t MxIndA, MxIndB, MxIndAB, MxIndC;
     size_t ind_c, i, ii, nc;
-    size_t ind_as, ind_ae, ind_bs, ind_be;
+    size_t ind_as, ind_ae, ind_bs;
     BDIGIT carry;
     BDIGIT_DBL s;
     Real *w;
@@ -4305,17 +4305,14 @@ VpMult(Real *c, Real *a, Real *b)
             ind_as = MxIndA - nc;
             ind_ae = MxIndA;
             ind_bs = MxIndB;
-            ind_be = MxIndB - nc;
         } else if(nc <= MxIndA) {    /* The middle rectangular of the Fig. */
             ind_as = MxIndA - nc;
             ind_ae = MxIndA -(nc - MxIndB);
             ind_bs = MxIndB;
-            ind_be = 0;
         } else if(nc > MxIndA) {    /*  The right triangle of the Fig. */
             ind_as = 0;
             ind_ae = MxIndAB - nc - 1;
             ind_bs = MxIndB -(nc - MxIndA);
-            ind_be = 0;
         }
 
         for(i = ind_as; i <= ind_ae; ++i) {
@@ -5039,7 +5036,6 @@ VP_EXPORT int
 VpCtoV(Real *a, const char *int_chr, size_t ni, const char *frac, size_t nf, const char *exp_chr, size_t ne)
 {
     size_t i, j, ind_a, ma, mi, me;
-    size_t loc;
     SIGNED_VALUE e, es, eb, ef;
     int  sign, signe, exponent_overflow;
 
@@ -5136,7 +5132,6 @@ VpCtoV(Real *a, const char *int_chr, size_t ni, const char *frac, size_t nf, con
             j = 0;
         }
     }
-    loc = 1;
 
     /* get fraction part */
 
@@ -5385,7 +5380,7 @@ VpSqrt(Real *y, Real *x)
 {
     Real *f = NULL;
     Real *r = NULL;
-    size_t y_prec, f_prec;
+    size_t y_prec;
     SIGNED_VALUE n, e;
     SIGNED_VALUE prec;
     ssize_t nr;
@@ -5422,7 +5417,6 @@ VpSqrt(Real *y, Real *x)
 
     nr = 0;
     y_prec = y->MaxPrec;
-    f_prec = f->MaxPrec;
 
     prec = x->exponent - (ssize_t)y_prec;
     if (x->exponent > 0)
