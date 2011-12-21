@@ -21,6 +21,9 @@
 
 #if defined(__cplusplus)
 extern "C" {
+#if 0
+}
+#endif
 #endif
 
 #ifndef HAVE_LABS
@@ -280,6 +283,9 @@ VP_EXPORT int VPrint(FILE *fp,const char *cntl_chr,Real *a);
 #endif /* BIGDECIMAL_DEBUG */
 
 #if defined(__cplusplus)
+#if 0
+{
+#endif
 }  /* extern "C" { */
 #endif
 #endif /* RUBY_BIG_DECIMAL_H */
