@@ -1,11 +1,17 @@
-#include <unistd.h>
-
 void Init_golf(void);
 #define ruby_options goruby_options
 #define ruby_run_node goruby_run_node
 #include "main.c"
 #undef ruby_options
 #undef ruby_run_node
+
+#if defined _WIN32
+#include <io.h>
+#include <fcntl.h>
+#define pipe(p) _pipe(p, 32L, _O_NOINHERIT)
+#elif defined HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 RUBY_EXTERN void *ruby_options(int argc, char **argv);
 RUBY_EXTERN int ruby_run_node(void*);
