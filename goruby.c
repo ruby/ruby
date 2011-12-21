@@ -1,8 +1,13 @@
+#include <unistd.h>
+
 void Init_golf(void);
+#define ruby_options goruby_options
 #define ruby_run_node goruby_run_node
 #include "main.c"
+#undef ruby_options
 #undef ruby_run_node
 
+RUBY_EXTERN void *ruby_options(int argc, char **argv);
 RUBY_EXTERN int ruby_run_node(void*);
 RUBY_EXTERN void ruby_init_ext(const char *name, void (*init)(void));
 
@@ -11,6 +16,29 @@ init_golf(VALUE arg)
 {
     ruby_init_ext("golf", Init_golf);
     return arg;
+}
+
+void *
+goruby_options(int argc, char **argv)
+{
+    static const char cmd[] = "require 'irb'\nIRB.start";
+    int rw[2], infd;
+    void *ret;
+
+    if ((isatty(0) && isatty(1) && isatty(2)) && (pipe(rw) == 0)) {
+	infd = dup(0);
+	dup2(rw[0], 0);
+	close(rw[0]);
+	write(rw[1], cmd, sizeof(cmd) - 1);
+	close(rw[1]);
+	ret = ruby_options(argc, argv);
+	dup2(infd, 0);
+	close(infd);
+	return ret;
+    }
+    else {
+	return ruby_options(argc, argv);
+    }
 }
 
 int
