@@ -1024,7 +1024,7 @@ ubf_select(void *ptr)
     ubf_select_each(th);
 }
 
-static int
+static void
 ping_signal_thread_list(void) {
     if (signal_thread_list_anchor.next) {
 	FGLOCK(&signal_thread_list_lock, {
@@ -1036,17 +1036,23 @@ ping_signal_thread_list(void) {
 		list = list->next;
 	    }
 	});
+    }
+}
+
+static int
+check_signal_thread_list(void)
+{
+    if (signal_thread_list_anchor.next)
 	return 1;
-    }
-    else {
+    else
 	return 0;
-    }
 }
 #else /* USE_SIGNAL_THREAD_LIST */
 #define add_signal_thread_list(th) (void)(th)
 #define remove_signal_thread_list(th) (void)(th)
 #define ubf_select 0
-static int ping_signal_thread_list(void) { return 0; }
+static void ping_signal_thread_list(void) { return; }
+static int check_signal_thread_list(void) { return 0; }
 #endif /* USE_SIGNAL_THREAD_LIST */
 
 static int timer_thread_pipe[2] = {-1, -1};
@@ -1140,8 +1146,9 @@ thread_timer(void *p)
 	int need_polling;
 
 	/* timer function */
-	need_polling = ping_signal_thread_list();
+	ping_signal_thread_list();
 	timer_thread_function(0);
+	need_polling = check_signal_thread_list();
 
 	if (TT_DEBUG) WRITE_CONST(2, "tick\n");
 

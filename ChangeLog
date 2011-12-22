@@ -1,3 +1,12 @@
+Thu Dec 22 22:37:45 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* thread_pthread.c (ping_signal_thread_list): remove return value.
+	* thread_pthread.c (check_signal_thread_list): add a new function to
+	  check if signal thread list is empty.
+	* thread_pthread.c (thread_timer): check signal thread list after
+	  timer_thread_function(). main thread might be added into signal thread
+	  list during timer_thread_function().
+
 Thu Dec 22 00:40:24 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* ext/bigdecimal/bigdecimal.c (VpMult, VpCtoV, VpSqrt): remove assigned
