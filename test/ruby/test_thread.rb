@@ -187,7 +187,6 @@ class TestThread < Test::Unit::TestCase
     t = t1-t0
 
     assert_operator(timeout*0.9, :<, t)
-    assert_operator(t, :<, timeout*1.1)
     assert(locked)
   end
 

@@ -1,3 +1,8 @@
+Thu Dec 22 23:37:25 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_thread.rb: don't test the maximum sleep time.  Ruby
+	  is not a real-time system.
+
 Thu Dec 22 22:37:45 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* thread_pthread.c (ping_signal_thread_list): remove return value.
