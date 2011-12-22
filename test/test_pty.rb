@@ -177,7 +177,7 @@ class TestPTY < Test::Unit::TestCase
     end
     assert_equal(pid, st1.pid) if st1
     assert_nil(st1)
-    assert_equal(pid, st2.pid)
+    assert_equal(pid, st2.pid) if st2
   end
 
   def test_pty_check_raise
