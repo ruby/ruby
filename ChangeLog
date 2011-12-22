@@ -1,3 +1,9 @@
+Fri Dec 23 06:03:00 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* common.mk: add "check succeeded" message.
+
+	* README, README.ja: follow above change.
+
 Fri Dec 23 06:00:39 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/bigdecimal/bigdecimal.h: add satisfy cc-mode comment.

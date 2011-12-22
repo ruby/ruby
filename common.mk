@@ -460,6 +460,7 @@ realclean-extout: distclean-extout
 clean-enc distclean-enc realclean-enc: PHONY
 
 check: test test-all
+	$(ECHO) check succeeded
 check-ruby: test test-ruby
 
 btest: miniruby$(EXEEXT) $(TEST_RUNNABLE)-btest

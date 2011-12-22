@@ -84,7 +84,7 @@ This is what you need to do to compile and install Ruby:
   5. Run make.
 
   6. Optionally, run 'make check' to check whether the compiled Ruby
-     interpreter works well.  If you see the message "test succeeded",
+     interpreter works well.  If you see the message "check succeeded",
      your ruby works as it should (hopefully).
 
   7. Run 'make install'
