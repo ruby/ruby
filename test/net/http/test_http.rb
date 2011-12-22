@@ -44,7 +44,7 @@ module TestNetHTTP_version_1_1_methods
     assert_equal $test_net_http_data, res.body
 
     assert_nothing_raised {
-      res, body = http.get('/', { 'User-Agent' => 'test' }.freeze)
+      http.get('/', { 'User-Agent' => 'test' }.freeze)
     }
   end
 
@@ -131,8 +131,9 @@ module TestNetHTTP_version_1_1_methods
   def _test_post__base(http)
     uheader = {}
     uheader['Accept'] = 'application/octet-stream'
+    uheader['Content-Type'] = 'application/x-www-form-urlencoded'
     data = 'post data'
-    res = http.post('/', data)
+    res = http.post('/', data, uheader)
     assert_kind_of Net::HTTPResponse, res
     assert_kind_of String, res.body
     assert_equal data, res.body
@@ -142,7 +143,7 @@ module TestNetHTTP_version_1_1_methods
   def _test_post__file(http)
     data = 'post data'
     f = StringIO.new
-    http.post('/', data, nil, f)
+    http.post('/', data, {'content-type' => 'application/x-www-form-urlencoded'}, f)
     assert_equal data, f.string
   end
 
@@ -182,8 +183,9 @@ module TestNetHTTP_version_1_1_methods
   def _test_patch__base(http)
     uheader = {}
     uheader['Accept'] = 'application/octet-stream'
+    uheader['Content-Type'] = 'application/x-www-form-urlencoded'
     data = 'patch data'
-    res = http.patch('/', data)
+    res = http.patch('/', data, uheader)
     assert_kind_of Net::HTTPResponse, res
     assert_kind_of String, res.body
     assert_equal data, res.body
@@ -277,6 +279,7 @@ module TestNetHTTP_version_1_2_methods
     data = 'post data'
     req = Net::HTTP::Post.new('/')
     req['Accept'] = $test_net_http_data_type
+    req['Content-Type'] = 'application/x-www-form-urlencoded'
     http.request(req, data) {|res|
       assert_kind_of Net::HTTPResponse, res
       unless self.is_a?(TestNetHTTP_v1_2_chunked)
@@ -291,6 +294,7 @@ module TestNetHTTP_version_1_2_methods
     req = Net::HTTP::Post.new('/')
     data = $test_net_http_data
     req.content_length = data.size
+    req['Content-Type'] = 'application/x-www-form-urlencoded'
     req.body_stream = StringIO.new(data)
     res = http.request(req)
     assert_kind_of Net::HTTPResponse, res
@@ -318,7 +322,7 @@ module TestNetHTTP_version_1_2_methods
 
   def _test_send_request__POST(http)
     data = 'aaabbb cc ddddddddddd lkjoiu4j3qlkuoa'
-    res = http.send_request('POST', '/', data)
+    res = http.send_request('POST', '/', data, 'content-type' => 'application/x-www-form-urlencoded')
     assert_kind_of Net::HTTPResponse, res
     assert_kind_of String, res.body
     assert_equal data.size, res.body.size
@@ -464,7 +468,6 @@ class TestNetHTTP_v1_2_chunked < Test::Unit::TestCase
   end
 
   def test_chunked_break
-    i = 0
     assert_nothing_raised("[ruby-core:29229]") {
       start {|http|
         http.request_get('/') {|res|
@@ -502,8 +505,9 @@ class TestNetHTTPContinue < Test::Unit::TestCase
       res.body = req.query['body']
     }
     start {|http|
+      uheader = {'content-type' => 'application/x-www-form-urlencoded', 'expect' => '100-continue'}
       http.continue_timeout = 0.2
-      http.request_post('/continue', 'body=BODY', 'expect' => '100-continue') {|res|
+      http.request_post('/continue', 'body=BODY', uheader) {|res|
         assert_equal('BODY', res.read_body)
       }
     }
@@ -518,8 +522,9 @@ class TestNetHTTPContinue < Test::Unit::TestCase
       res.body = req.query['body']
     }
     start {|http|
+      uheader = {'content-type' => 'application/x-www-form-urlencoded', 'expect' => '100-continue'}
       http.continue_timeout = 0
-      http.request_post('/continue', 'body=BODY', 'expect' => '100-continue') {|res|
+      http.request_post('/continue', 'body=BODY', uheader) {|res|
         assert_equal('BODY', res.read_body)
       }
     }
@@ -533,8 +538,9 @@ class TestNetHTTPContinue < Test::Unit::TestCase
       res.body = req.query['body']
     }
     start {|http|
+      uheader = {'content-type' => 'application/x-www-form-urlencoded', 'expect' => '100-continue'}
       http.continue_timeout = 0
-      http.request_post('/continue', 'body=ERROR', 'expect' => '100-continue') {|res|
+      http.request_post('/continue', 'body=ERROR', uheader) {|res|
         assert_equal('ERROR', res.read_body)
       }
     }
@@ -548,8 +554,9 @@ class TestNetHTTPContinue < Test::Unit::TestCase
       res.body = req.query['body']
     }
     start {|http|
+      uheader = {'content-type' => 'application/x-www-form-urlencoded', 'expect' => '100-continue'}
       http.continue_timeout = 0.5
-      http.request_post('/continue', 'body=ERROR', 'expect' => '100-continue') {|res|
+      http.request_post('/continue', 'body=ERROR', uheader) {|res|
         assert_equal('ERROR', res.read_body)
       }
     }
