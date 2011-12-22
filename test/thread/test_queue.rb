@@ -57,7 +57,7 @@ class TestQueue < Test::Unit::TestCase
 
   def test_thr_kill
     bug5343 = '[ruby-core:39634]'
-    assert_normal_exit(<<-'_eom', bug5343, {:timeout => 250})
+    assert_normal_exit(<<-'_eom', bug5343, {:timeout => 20})
       require "thread"
       2000.times do
         queue = Queue.new
