@@ -27,6 +27,7 @@ struct st_table_entry {
 
 #define ST_DEFAULT_MAX_DENSITY 3
 #define ST_DEFAULT_INIT_TABLE_SIZE 9
+#define ST_DEFAULT_MAX_PACK_TABLE_SIZE 37
 
     /*
      * DEFAULT_MAX_DENSITY is the default for the largest we allow the
@@ -95,7 +96,7 @@ Table of prime numbers 2^n+a, 2<=n<=30.
 */
 static const unsigned int primes[] = {
 	ST_DEFAULT_INIT_TABLE_SIZE,
-	16 + 1,
+	16 + 3,
 	32 + 5,
 	64 + 3,
 	128 + 3,
@@ -170,7 +171,7 @@ stat_col(void)
 }
 #endif
 
-#define MAX_PACKED_HASH (ST_DEFAULT_INIT_TABLE_SIZE/3) 
+#define MAX_PACKED_HASH (ST_DEFAULT_MAX_PACK_TABLE_SIZE/3) 
 
 st_table*
 st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
@@ -190,12 +191,12 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
     }
 #endif
 
-    size = new_size(size);	/* round up to prime number */
 
     tbl = alloc(st_table);
     tbl->type = type;
     tbl->num_entries = 0;
-    tbl->entries_packed = size == ST_DEFAULT_INIT_TABLE_SIZE;
+    tbl->entries_packed = size <= MAX_PACKED_HASH;
+    size = new_size(size);	/* round up to prime number */
     tbl->num_bins = size;
     tbl->bins = (st_table_entry **)Calloc(size, sizeof(st_table_entry*));
     tbl->head = 0;
@@ -435,7 +436,7 @@ static void
 unpack_entries(register st_table *table)
 {
     st_index_t i;
-    struct st_table_entry *packed_bins[ST_DEFAULT_INIT_TABLE_SIZE];
+    struct st_table_entry *packed_bins[ST_DEFAULT_MAX_PACK_TABLE_SIZE];
     st_table tmp_table = *table;
 
     memcpy(packed_bins, table->bins, sizeof(struct st_table_entry *) * table->num_entries*3);
@@ -458,6 +459,12 @@ add_packed_direct(st_table *table, st_data_t key, st_data_t value, st_index_t ha
     int res = 1;
     if (table->num_entries < MAX_PACKED_HASH ) {
 	st_index_t i = table->num_entries++;
+	if ( table->num_entries*3 > table->num_bins ) {
+	    st_index_t new_num_bins = new_size(table->num_bins);
+	    table->bins = (st_table_entry**)
+		xrealloc(table->bins, new_num_bins * sizeof(st_table_entry*));
+	    table->num_bins = new_num_bins;
+	}
 	PKEY_SET(table, i, key);
 	PVAL_SET(table, i, value);
 	PHASH_SET(table, i, hash_val);
