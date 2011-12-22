@@ -1,3 +1,8 @@
+Fri Dec 23 06:00:39 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/bigdecimal/bigdecimal.h: add satisfy cc-mode comment.
+	* util.c: ditto.
+
 Fri Dec 23 00:08:25 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/test_pty.rb (test_pty_check_default): "cat" may not terminateed
