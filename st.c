@@ -748,7 +748,7 @@ st_delete_safe(register st_table *table, register st_data_t *key, st_data_t *val
     ptr = table->bins[hash_val % table->num_bins];
 
     for (; ptr != 0; ptr = ptr->next) {
-	if ((ptr->key != never) && ptr->hash == hash_val && EQUAL(table, ptr->key, *key)) {
+	if ((ptr->key != never) && EQUAL(table, ptr->key, *key)) {
 	    remove_entry(table, ptr);
 	    *key = ptr->key;
 	    if (value != 0) *value = ptr->record;
@@ -875,8 +875,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 		/* work around uncomforming befaviour of hash */
 		if (PKEY(table, i) == Qundef && PHASH(table, i) == 0)
 		    break;
-		else if (i < table->num_entries &&
-			PHASH(table, i) == hash && EQUAL(table, key, PKEY(table, i)))
+		else if (i < table->num_entries && EQUAL(table, key, PKEY(table, i)))
 		    break;
                 if (find_packed_index(table, hash, key) == table->num_entries) {
                     /* call func with error notice */
