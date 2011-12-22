@@ -490,7 +490,7 @@ unpack_entries(register st_table *table)
     st_index_t i;
     st_table tmp_table = {table->type, 0, 0, 0, 0, 0, 0};
 
-    tmp_table.bins = (st_table_entry **) 
+    tmp_table.bins = (st_table_entry **)
 	calloc(ST_DEFAULT_INIT_TABLE_SIZE, sizeof(st_table_entry *));
     tmp_table.num_bins = ST_DEFAULT_INIT_TABLE_SIZE;
     for (i = 0; i < table->num_entries; i++) {
