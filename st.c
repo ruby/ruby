@@ -875,6 +875,9 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 		/* work around uncomforming befaviour of hash */
 		if (PKEY(table, i) == Qundef && PHASH(table, i) == 0)
 		    break;
+		else if (i < table->num_entries &&
+			PHASH(table, i) == hash && EQUAL(table, key, PKEY(table, i)))
+		    break;
                 if (find_packed_index(table, hash, key) == table->num_entries) {
                     /* call func with error notice */
                     retval = (*func)(0, 0, arg, 1);
