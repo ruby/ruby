@@ -552,7 +552,7 @@ end
 assert_equal %q{ok}, %q{
   $x = :ok
   o = Object.new
-  def o.inspect(*args)
+  def o.inspect
     yield if block_given?
     super
   end
