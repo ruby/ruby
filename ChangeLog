@@ -1,3 +1,7 @@
+Sat Dec 24 00:55:16 2011  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tempfile.rb (Tempfile#initialize): warn if a block is given.
+
 Fri Dec 23 16:14:30 2011  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/readline.c (readline_attempted_completion_function):
