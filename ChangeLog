@@ -1,3 +1,8 @@
+Fri Dec 23 10:14:47 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/thread/test_queue.rb (test_thr_kill): show the number of loop
+	  run when the test failed.
+
 Fri Dec 23 09:23:48 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/test_pty.rb (test_pty_check_default): call PTY.check until
