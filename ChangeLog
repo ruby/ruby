@@ -1,3 +1,8 @@
+Fri Dec 23 09:23:48 2011  Tanaka Akira  <akr@fsij.org>
+
+	* test/test_pty.rb (test_pty_check_default): call PTY.check until
+	  "cat" command is finished.
+
 Fri Dec 23 06:03:00 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* common.mk: add "check succeeded" message.
