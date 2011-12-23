@@ -60,11 +60,11 @@ class TestQueue < Test::Unit::TestCase
     bug5343 = '[ruby-core:39634]'
     Dir.mktmpdir {|d|
       timeout = 20
-      total_loop = 2000
+      total_count = 2000
       begin
         assert_normal_exit(<<-"_eom", bug5343, {:timeout => timeout, :chdir=>d})
           require "thread"
-          #{total_loop}.times do |i|
+          #{total_count}.times do |i|
             open("test_thr_kill_count", "w") {|f| f.puts i }
             queue = Queue.new
             r, w = IO.pipe
@@ -78,7 +78,7 @@ class TestQueue < Test::Unit::TestCase
         _eom
       rescue Timeout::Error
         count = File.read("#{d}/test_thr_kill_count").to_i
-        flunk "only #{count} times looped in #{timeout} seconds.  (should run #{total_loop} times)"
+        flunk "only #{count}/#{total_count} done in #{timeout} seconds."
       end
     }
   end
