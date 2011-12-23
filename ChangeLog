@@ -1,3 +1,13 @@
+Fri Dec 23 16:14:30 2011  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/readline.c (readline_attempted_completion_function):
+	  in Readline module with GNU Readline 6 case, Readline module
+	  resets completion_append_character to " ", after it executes
+	  completion. So, Readline module stores
+	  completion_append_character, and Readline module always sets it
+	  after Readline module executes completion. [ruby-dev:43456]
+	  [Feature #4635]
+
 Fri Dec 23 15:59:05 2011  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/readline.c (Init_readline): libedit check

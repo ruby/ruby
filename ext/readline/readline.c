@@ -70,6 +70,9 @@ static ID id_orig_prompt, id_last_prompt;
 
 static int (*history_get_offset_func)(int);
 static int (*history_replace_offset_func)(int);
+#ifdef HAVE_RL_COMPLETION_APPEND_CHARACTER
+static int readline_completion_append_character;
+#endif
 
 static char **readline_attempted_completion_function(const char *text,
                                                      int start, int end);
@@ -258,6 +261,9 @@ insert_ignore_escape(VALUE self, VALUE prompt)
 static VALUE
 readline_get(VALUE prompt)
 {
+#ifdef HAVE_RL_COMPLETION_APPEND_CHARACTER
+    readline_completion_append_character = rl_completion_append_character;
+#endif
     return (VALUE)readline((char *)prompt);
 }
 
@@ -642,6 +648,9 @@ readline_attempted_completion_function(const char *text, int start, int end)
     proc = rb_attr_get(mReadline, completion_proc);
     if (NIL_P(proc))
 	return NULL;
+#ifdef HAVE_RL_COMPLETION_APPEND_CHARACTER
+    rl_completion_append_character = readline_completion_append_character;
+#endif
 #ifdef HAVE_RL_ATTEMPTED_COMPLETION_OVER
     rl_attempted_completion_over = 1;
 #endif
