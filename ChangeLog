@@ -1,3 +1,10 @@
+Fri Dec 23 15:59:05 2011  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/readline.c (Init_readline): libedit check
+	  rl_getc_function only when rl_initialize() is called, and
+	  using_history() call rl_initialize(). This assignment should be
+	  placed before using_history(). [ruby-core:40641] [Bug #5539]
+
 Fri Dec 23 10:14:47 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/thread/test_queue.rb (test_thr_kill): show the number of loop
