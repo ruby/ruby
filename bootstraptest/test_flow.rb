@@ -549,3 +549,16 @@ assert_equal %Q{ENSURE\n}, %q{
   assert_equal "false", src + %q{e.all? {false}}, bug
   assert_equal "true", src + %q{e.include?(:foo)}, bug
 end
+assert_equal %q{ok}, %q{
+  $x = :ok
+  o = Object.new
+  def o.inspect(*args)
+    yield if block_given?
+    super
+  end
+  begin
+    nil.public_send(o) {$x = :ng}
+  rescue
+  end
+  $x
+}

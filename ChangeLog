@@ -1,3 +1,10 @@
+Sat Dec 24 01:20:39 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_eval.c (send_internal): PASS_PASSED_BLOCK_TH must be placed
+	  just before calling rb_call0.
+
+	* bootstraptest/test_flow.rb: add a test for above.
+
 Sat Dec 24 00:55:16 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tempfile.rb (Tempfile#initialize): warn if a block is given.

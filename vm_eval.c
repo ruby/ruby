@@ -712,7 +712,6 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
     }
 
     vid = *argv++; argc--;
-    PASS_PASSED_BLOCK_TH(th);
 
     id = rb_check_id(&vid);
     if (!id) {
@@ -723,6 +722,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 	}
 	id = rb_to_id(vid);
     }
+    PASS_PASSED_BLOCK_TH(th);
     return rb_call0(recv, id, argc, argv, scope, self);
 }
 
