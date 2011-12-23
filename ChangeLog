@@ -1,3 +1,9 @@
+Sat Dec 24 06:59:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/readline/test_readline.rb (test_line_buffer__point): use
+	  lambda not to exit entire method by "return".  or "next" for
+	  proc.  [ruby-dev:45042] [Bug #5802]
+
 Sat Dec 24 01:20:39 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_eval.c (send_internal): PASS_PASSED_BLOCK_TH must be placed
