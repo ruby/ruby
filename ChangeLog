@@ -1,3 +1,9 @@
+Sat Dec 24 12:38:53 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (proc_call): get rid of optimazation-out by clang.
+
+	* proc.c (rb_proc_call, rb_proc_call_with_block): ditto.
+
 Sat Dec 24 10:56:32 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_readline): check if outstream

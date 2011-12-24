@@ -544,6 +544,7 @@ proc_lambda(void)
 static VALUE
 proc_call(int argc, VALUE *argv, VALUE procval)
 {
+    VALUE vret;
     rb_proc_t *proc;
     rb_block_t *blockptr = 0;
     rb_iseq_t *iseq;
@@ -560,8 +561,10 @@ proc_call(int argc, VALUE *argv, VALUE procval)
 	}
     }
 
-    return rb_vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
+    vret = rb_vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
 			     argc, argv, blockptr);
+    RB_GC_GUARD(procval);
+    return vret;
 }
 
 #if SIZEOF_LONG > SIZEOF_INT
@@ -581,15 +584,20 @@ check_argc(long argc)
 VALUE
 rb_proc_call(VALUE self, VALUE args)
 {
+    VALUE vret;
     rb_proc_t *proc;
     GetProcPtr(self, proc);
-    return rb_vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
+    vret = rb_vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
 			     check_argc(RARRAY_LEN(args)), RARRAY_PTR(args), 0);
+    RB_GC_GUARD(self);
+    RB_GC_GUARD(args);
+    return vret;
 }
 
 VALUE
 rb_proc_call_with_block(VALUE self, int argc, VALUE *argv, VALUE pass_procval)
 {
+    VALUE vret;
     rb_proc_t *proc;
     rb_block_t *block = 0;
     GetProcPtr(self, proc);
@@ -600,8 +608,11 @@ rb_proc_call_with_block(VALUE self, int argc, VALUE *argv, VALUE pass_procval)
 	block = &pass_proc->block;
     }
 
-    return rb_vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
+    vret = rb_vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
 			     argc, argv, block);
+    RB_GC_GUARD(self);
+    RB_GC_GUARD(pass_procval);
+    return vret;
 }
 
 /*
