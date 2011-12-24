@@ -1,3 +1,9 @@
+Sat Dec 24 23:25:15 2011  Luis Lavena  <luislavena@gmail.com>
+
+	* configure.in: add --with-ntver option to match win32/configure.bat
+	  functionality. Set 0x0501 as default. [ruby-core:35010]
+	  [ruby-core:35035]
+
 Sat Dec 24 12:38:53 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (proc_call): get rid of optimazation-out by clang.
