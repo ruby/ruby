@@ -1,3 +1,8 @@
+Sun Dec 25 00:02:15 2011  Luis Lavena  <luislavena@gmail.com>
+
+	* configure.in: change --with-ntver to --with-winnt-ver to be more
+	  descriptive in the context. [ruby-core:41794]
+
 Sat Dec 24 23:25:15 2011  Luis Lavena  <luislavena@gmail.com>
 
 	* configure.in: add --with-ntver option to match win32/configure.bat

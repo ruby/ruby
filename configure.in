@@ -940,12 +940,12 @@ AC_ARG_ENABLE(win95,
 	AS_HELP_STRING([--enable-win95], [enable Windows 95 series support]),
   [AS_CASE(["$enableval"],[yes|no],[enable_win95=$enableval],[unset enable_win95])])
 
-AC_ARG_WITH(ntver,
-  AS_HELP_STRING([--with-ntver=0xXXXX], [target NT version (default to 0x0501)]),
-  [with_ntver="$withval"], [with_ntver="0x0501"])
+AC_ARG_WITH(winnt-ver,
+  AS_HELP_STRING([--with-winnt-ver=0xXXXX], [target Windows NT version (default to 0x0501)]),
+  [with_winnt_ver="$withval"], [with_winnt_ver="0x0501"])
 AS_CASE(["$target_os"],
 [mingw*], [
-  RUBY_APPEND_OPTION(CPPFLAGS, -D_WIN32_WINNT=$with_ntver)
+  RUBY_APPEND_OPTION(CPPFLAGS, -D_WIN32_WINNT=$with_winnt_ver)
 ])
 
 AS_CASE(["$target_os"],
