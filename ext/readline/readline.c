@@ -40,6 +40,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
 static VALUE mReadline;
 
 #define EDIT_LINE_LIBRARY_VERSION "EditLine wrapper"
@@ -372,6 +376,13 @@ readline_readline(int argc, VALUE *argv, VALUE self)
     }
 
     if (!isatty(fileno(rl_instream)) && errno == EBADF) rb_raise(rb_eIOError, "closed stdin");
+    if (rl_outstream) {
+	struct stat stbuf;
+	int fd = fileno(rl_outstream);
+	if (fd < 0 || fstat(fd, &stbuf) != 0) {
+	    rb_raise(rb_eIOError, "closed stdout");
+	}
+    }
 
 #ifdef _WIN32
     rl_prep_terminal(1);

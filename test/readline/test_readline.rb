@@ -303,6 +303,16 @@ class TestReadline < Test::Unit::TestCase
     end
   end
 
+  def test_closed_outstream
+    bug5803 = '[ruby-dev:45043]'
+    IO.pipe do |r, w|
+      Readline.input = r
+      Readline.output = w
+      (w << "##\t").close
+      assert_raise(IOError, bug5803) {Readline.readline}
+    end
+  end
+
   private
 
   def replace_stdio(stdin_path, stdout_path)

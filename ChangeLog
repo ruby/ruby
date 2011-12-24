@@ -1,3 +1,9 @@
+Sat Dec 24 10:56:32 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_readline): check if outstream
+	  is closed to get rid of a bug of readline 6.  [ruby-dev:45043]
+	  [Bug #5803]
+
 Sat Dec 24 06:59:49 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/readline/test_readline.rb (test_line_buffer__point): use
