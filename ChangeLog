@@ -1,3 +1,7 @@
+Mon Dec 26 03:35:23 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_cipher.c: Update and complete documentation.
+
 Sun Dec 25 23:16:11 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* test/testunit/test_parallel.rb (test_separate): Test for "--separate"
