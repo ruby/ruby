@@ -593,7 +593,7 @@ Init_ossl_cipher(void)
      *   cipher = OpenSSL::Cipher.new('<name>-<key length>-<mode>')
      *
      * That is, a string consisting of the hyphenated concatenation of the
-     * individual components name, key length and mode. Either all-uppercase
+     * individual components name, key length and mode. Either all uppercase
      * or all lowercase strings may be used, for example:
      *
      *  cipher = OpenSSL::Cipher.new('AES-128-CBC')
@@ -689,15 +689,15 @@ Init_ossl_cipher(void)
      * === Calling Cipher#final
      *
      * ECB (which should not be used) and CBC are both block-based modes.
-     * This means that unlike for the other stream-based modes, they operate
-     * on fixed-size blocks of data, and therefore they require a
+     * This means that unlike for the other streaming-based modes, they
+     * operate on fixed-size blocks of data, and therefore they require a
      * "finalization" step to produce or correctly decrypt the last block of
      * data by appropriately handling some form of padding. Therefore it is
      * essential to add the output of OpenSSL::Cipher#final to your
      * encryption/decryption buffer or you will end up with decryption errors
      * or truncated data.
      *
-     * Although this is not really necessary for stream-based ciphers, it is
+     * Although this is not really necessary for streaming-mode ciphers, it is
      * still recommended to apply the same pattern of adding the output of
      * Cipher#final there as well - it also enables you to switch between
      * modes more easily in the future.
