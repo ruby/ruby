@@ -91,7 +91,7 @@ module Test
           @stdout = increment_io(STDOUT)
           @stdin = increment_io(STDIN)
           @stdout.sync = true
-          @stdout.puts "ready"
+          @stdout.puts "ready!"
           while buf = @stdin.gets
             case buf.chomp
             when /^loadpath (.+?)$/

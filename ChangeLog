@@ -1,3 +1,13 @@
+Sun Dec 25 22:39:49 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb (_run_parallel):
+	  New option "--separate" for test/unit; when running tests with this
+	  option, a job process will be restarted after one testcase has done.
+	  This means all testcases will run with separated process.
+
+	* lib/test/unit/parallel.rb: Fix for above. Now parallel.rb puts
+	  "ready!" for first ready, "ready" for afters.
+
 Sun Dec 25 00:02:15 2011  Luis Lavena  <luislavena@gmail.com>
 
 	* configure.in: change --with-ntver to --with-winnt-ver to be more
