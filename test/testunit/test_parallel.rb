@@ -177,5 +177,11 @@ module TestParallel
       assert_match(/\d+=ptest_(first|second|third|forth) */,buf)
     end
 
+    def test_separate
+      # this test depends to --jobs-status
+      spawn_runner "--jobs-status", "--separate"
+      buf = timeout(10){@test_out.read}
+      assert(buf.scan(/(\d+?)[:=]/).flatten.uniq.size > 1)
+    end
   end
 end

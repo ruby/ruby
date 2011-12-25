@@ -1,3 +1,8 @@
+Sun Dec 25 23:16:11 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* test/testunit/test_parallel.rb (test_separate): Test for "--separate"
+	  option (r34121)
+
 Sun Dec 25 22:39:49 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb (_run_parallel):
