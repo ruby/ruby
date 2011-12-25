@@ -649,7 +649,7 @@ Init_ossl_cipher(void)
      * If you absolutely need to use passwords as encryption keys, you
      * should use Password-Based Key Derivation Function 2 (PBKDF2) by
      * generating the key with the help of the functionality provided by
-     * OpenSSL::PKCS5.pbkdf2_hmac or OpenSSL::PKCS5.pbkdf2_hmac.
+     * OpenSSL::PKCS5.pbkdf2_hmac_sha1 or OpenSSL::PKCS5.pbkdf2_hmac.
      *
      * Although there is Cipher#pkcs5_keyivgen, its use is deprecated and
      * it should only be used in legacy applications because it does not use
