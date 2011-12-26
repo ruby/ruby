@@ -1,3 +1,8 @@
+Mon Dec 26 13:07:08 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_io.rb (TestIO#test_autoclose): Tempfile.new doesn't
+	  accept the block argument.
+
 Mon Dec 26 13:06:52 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb: Avoid zombie processes on "--separate" option
