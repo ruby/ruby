@@ -1,3 +1,8 @@
+Mon Dec 26 17:01:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (LIBRUBY_A): depends on main.o since r33774.
+	  [ruby-core:41786] [Bug #5796]
+
 Mon Dec 26 13:07:08 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io.rb (TestIO#test_autoclose): Tempfile.new doesn't
