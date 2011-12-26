@@ -293,7 +293,9 @@ module Test
         end
 
         def close
-          @io.close
+          begin
+            @io.close if @io.closed?
+          rescue IOError; end
           self
         end
 
@@ -301,6 +303,7 @@ module Test
           return if @io.closed?
           @quit_called = true
           @io.puts "quit"
+          @io.close
         end
 
         def died(*additional)

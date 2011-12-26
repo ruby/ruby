@@ -1,3 +1,8 @@
+Mon Dec 26 13:06:52 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb: Avoid zombie processes on "--separate" option
+	  added at r34121.
+
 Mon Dec 26 04:01:23 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_cipher.c: Update and complete documentation.
