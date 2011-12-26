@@ -1,3 +1,21 @@
+Mon Dec 26 22:01:19 2011  Hiroshi Shirosaki <h.shirosaki@gmail.com>
+
+	* io.c (rb_sys_fail_path): move the definition.
+	  Move above for using it in set_binary_mode_with_seek_cur().
+
+	* io.c (set_binary_mode_with_seek_cur): fix improper seek cursor.
+	  Seeking file cursor with setting binary mode has possibility to
+	  cause infinite loop. Fixed the bug and refined error handling.
+	  Introduced at r34043.
+
+	  And cleanups as below.
+	  Remove unnecessary parentheses of `fptr`.
+	  Use return value of setmode().
+
+	* test/ruby/test_io_m17n.rb
+	  (TestIO_M17N#test_seek_with_setting_binmode): add a test for abobe.
+	  [ruby-core:41671] [Bug #5714]
+
 Mon Dec 26 17:01:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (LIBRUBY_A): depends on main.o since r33774.

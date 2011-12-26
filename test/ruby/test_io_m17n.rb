@@ -2314,4 +2314,15 @@ EOT
       end
     }
   end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_seek_with_setting_binmode
+    with_tmpdir {
+      str = "a\r\nb\r\nc\r\n\r\n\n\n\n\n\n\n\n"
+      generate_file("tmp", str)
+      open("tmp", "r") do |f|
+        assert_equal("a\n", f.gets)      # text
+        assert_equal("b\r\n", f.read(3)) # binary
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 end

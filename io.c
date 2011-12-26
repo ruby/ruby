@@ -374,6 +374,8 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 #  endif
 #endif
 
+#define rb_sys_fail_path(path) rb_sys_fail(NIL_P(path) ? 0 : RSTRING_PTR(path))
+
 static int io_fflush(rb_io_t *);
 
 #define NEED_NEWLINE_DECORATOR_ON_READ(fptr) ((fptr)->mode & FMODE_TEXTMODE)
@@ -423,49 +425,55 @@ inline static int set_binary_mode_with_seek_cur(rb_io_t *fptr) {
     ssize_t read_size;
     long i;
     long newlines = 0;
+    long extra_max;
     char *p;
 
-    if (!rb_w32_fd_is_text((fptr)->fd)) return O_BINARY;
+    if (!rb_w32_fd_is_text(fptr->fd)) return O_BINARY;
 
-    if ((fptr)->rbuf.len == 0 || (fptr)->mode & FMODE_DUPLEX) {
-	setmode((fptr)->fd, O_BINARY);
-	return O_TEXT;
+    if (fptr->rbuf.len == 0 || fptr->mode & FMODE_DUPLEX) {
+	return setmode(fptr->fd, O_BINARY);
     }
 
     if (io_fflush(fptr) < 0) {
 	rb_sys_fail(0);
     }
     errno = 0;
-    pos = lseek((fptr)->fd, 0, SEEK_CUR);
+    pos = lseek(fptr->fd, 0, SEEK_CUR);
     if (pos < 0 && errno) {
 	if (errno == ESPIPE)
-	    (fptr)->mode |= FMODE_DUPLEX;
-	setmode((fptr)->fd, O_BINARY);
-	return O_TEXT;
+	    fptr->mode |= FMODE_DUPLEX;
+	return setmode(fptr->fd, O_BINARY);
     }
-    /* add extra offset for '\r' */
-    p = (fptr)->rbuf.ptr+(fptr)->rbuf.off;
-    for (i = 0; i < (fptr)->rbuf.len; i++) {
+    /* add extra offset for removed '\r' in rbuf */
+    extra_max = pos - fptr->rbuf.len;
+    p = fptr->rbuf.ptr + fptr->rbuf.off;
+    for (i = 0; i < fptr->rbuf.len; i++) {
 	if (*p == '\n') newlines++;
+	if (extra_max == newlines) break;
 	p++;
     }
     while (newlines >= 0) {
-	r = lseek((fptr)->fd, pos - (fptr)->rbuf.len - newlines, SEEK_SET);
+	r = lseek(fptr->fd, pos - fptr->rbuf.len - newlines, SEEK_SET);
 	if (newlines == 0) break;
-	if (read_size = _read((fptr)->fd, (fptr)->rbuf.ptr, (fptr)->rbuf.len + newlines)) {
-	    if (read_size == (fptr)->rbuf.len) {
-		lseek((fptr)->fd, r, SEEK_SET);
-		break;
-	    }
-	    else {
-		newlines--;
-	    }
+	if (r < 0) {
+	    newlines--;
+	    continue;
+	}
+	read_size = _read(fptr->fd, fptr->rbuf.ptr, fptr->rbuf.len + newlines);
+	if (read_size < 0) {
+	    rb_sys_fail_path(fptr->pathv);
+	}
+	if (read_size == fptr->rbuf.len) {
+	    lseek(fptr->fd, r, SEEK_SET);
+	    break;
+	}
+	else {
+	    newlines--;
 	}
     }
-    (fptr)->rbuf.off = 0;
-    (fptr)->rbuf.len = 0;
-    setmode((fptr)->fd, O_BINARY);
-    return O_TEXT;
+    fptr->rbuf.off = 0;
+    fptr->rbuf.len = 0;
+    return setmode(fptr->fd, O_BINARY);
 }
 #define SET_BINARY_MODE_WITH_SEEK_CUR(fptr) set_binary_mode_with_seek_cur(fptr)
 
@@ -483,8 +491,6 @@ inline static int set_binary_mode_with_seek_cur(rb_io_t *fptr) {
 #if !defined HAVE_SHUTDOWN && !defined shutdown
 #define shutdown(a,b)	0
 #endif
-
-#define rb_sys_fail_path(path) rb_sys_fail(NIL_P(path) ? 0 : RSTRING_PTR(path))
 
 #if defined(_WIN32)
 #define is_socket(fd, path)	rb_w32_is_socket(fd)
