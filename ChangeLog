@@ -1,3 +1,11 @@
+Mon Dec 26 21:03:18 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* node.h, parse.y (new_args_gen), compile.c (iseq_set_arguments): use
+	  struct rb_args_info instead of NODEs.
+	  This is a preparation for keyword argument (see [ruby-core:40290]).
+
+	* node.c (dump_node), gc.c (gc_mark_children, obj_free): bookkeeping.
+
 Mon Dec 26 20:59:51 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* node.h, parse.y (lambda, f_larglist): remove NEW_LAMBDA hack.

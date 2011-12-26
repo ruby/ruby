@@ -1068,52 +1068,34 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
     debugs("iseq_set_arguments: %s\n", node_args ? "" : "0");
 
     if (node_args) {
-	NODE *node_aux = node_args->nd_next;
-	NODE *node_opt = node_args->nd_opt;
+	struct rb_args_info *args = node_args->nd_ainfo;
 	ID rest_id = 0;
 	int last_comma = 0;
 	ID block_id = 0;
-	NODE *node_init = 0;
 
 	if (nd_type(node_args) != NODE_ARGS) {
 	    rb_bug("iseq_set_arguments: NODE_ARGS is expected, but %s",
 		   ruby_node_name(nd_type(node_args)));
 	}
 
-	/*
-         * new argument information:
-         *   NODE_ARGS     [m: int,  o: NODE_OPT_ARG, ->]
-         *   NODE_ARGS_AUX [r: ID,   b: ID,           ->]
-         *   NODE_ARGS_AUX [Pst: id, Plen: int,       init: NODE*]
-         *  optarg information:
-         *   NODE_OPT_ARGS [idx,     expr,            next ->]
-	 *  init arg:
-	 *   NODE_AND(m_init, p_init)
-	 *  if "r" is 1, it's means "{|x,|}" type block parameter.
-	 */
 
-	iseq->argc = (int)node_args->nd_frml;
+	iseq->argc = (int)args->pre_args_num;
 	debugs("  - argc: %d\n", iseq->argc);
 
-	if (node_aux) {
-	    rest_id = node_aux->nd_rest;
-	    if (rest_id == 1) {
-		last_comma = 1;
-		rest_id = 0;
-	    }
-	    block_id = (ID)node_aux->nd_body;
-	    node_aux = node_aux->nd_next;
+	rest_id = args->rest_arg;
+	if (rest_id == 1) {
+	    last_comma = 1;
+	    rest_id = 0;
+	}
+	block_id = args->block_arg;
 
-	    if (node_aux) {
-		ID post_start_id = node_aux->nd_pid;
-		iseq->arg_post_start = get_dyna_var_idx_at_raw(iseq, post_start_id);
-		iseq->arg_post_len = (int)node_aux->nd_plen;
-		node_init = node_aux->nd_next;
-	    }
+	if (args->first_post_arg) {
+	    iseq->arg_post_start = get_dyna_var_idx_at_raw(iseq, args->first_post_arg);
+	    iseq->arg_post_len = args->post_args_num;
 	}
 
-	if (node_opt) {
-	    NODE *node = node_opt;
+	if (args->opt_args) {
+	    NODE *node = args->opt_args;
 	    LABEL *label;
 	    VALUE labels = rb_ary_tmp_new(1);
 	    int i = 0, j;
@@ -1145,13 +1127,11 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    iseq->arg_opts = 0;
 	}
 
-	if (node_init) {
-	    if (node_init->nd_1st) { /* m_init */
-		COMPILE_POPED(optargs, "init arguments (m)", node_init->nd_1st);
-	    }
-	    if (node_init->nd_2nd) { /* p_init */
-		COMPILE_POPED(optargs, "init arguments (p)", node_init->nd_2nd);
-	    }
+	if (args->pre_init) { /* m_init */
+	    COMPILE_POPED(optargs, "init arguments (m)", args->pre_init);
+	}
+	if (args->post_init) { /* p_init */
+	    COMPILE_POPED(optargs, "init arguments (p)", args->post_init);
 	}
 
 	if (rest_id) {

@@ -837,55 +837,18 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_NODE(nd_2nd, "post arguments");
 	break;
 
-      case NODE_ARGS_AUX:
-	ANN("method parameters (cont'd)");
-	F_CUSTOM1(nd_rest, "rest argument", {
-	    if (node->nd_rest == 1) A("nil (with last comma)");
-	    else A_ID(node->nd_rest);
-	});
-	F_CUSTOM1(nd_body, "block argument", { A_ID((ID)node->nd_body); });
-	LAST_NODE;
-	F_CUSTOM2(nd_next, "aux info 2", {
-	    node = node->nd_next;
-	    next_indent = "|    ";
-	    if (!node) {
-		D_NULL_NODE;
-	    }
-	    else {
-		D_NODE_HEADER(node);
-		ANN("method parameters (cont'd)");
-		F_ID(nd_pid, "first post argument");
-		F_LONG(nd_plen, "post argument length");
-		LAST_NODE;
-		F_CUSTOM2(nd_next, "aux info 3", {
-		    node = node->nd_next;
-		    next_indent = "|   ";
-		    if (!node) {
-			D_NULL_NODE;
-		    }
-		    else {
-			D_NODE_HEADER(node);
-			ANN("method parameters (cont'd)");
-			ANN("\"init arguments (m)\" evaluates multiple assignments before rest argument");
-			ANN("\"init arguments (p)\" evaluates multiple assignments after rest argument");
-			ANN("example: def foo((m1, m2), *r, (p1, p2))");
-			F_NODE(nd_1st, "init arguments (m)");
-			LAST_NODE;
-			F_NODE(nd_2nd, "init arguments (p)");
-		    }
-		});
-	    }
-	});
-	break;
-
       case NODE_ARGS:
 	ANN("method parameters");
 	ANN("format: def method_name(.., [nd_opt=some], *[nd_rest], [nd_pid], .., &[nd_body])");
 	ANN("example: def foo(a, b, opt1=1, opt2=2, *rest, y, z, &blk); end");
-	F_LONG(nd_frml, "argc");
-	F_NODE(nd_next, "aux info 1");
-	LAST_NODE;
-	F_NODE(nd_opt, "optional arguments");
+	F_LONG(nd_ainfo->pre_args_num, "count of mandatory (pre-)arguments");
+	F_NODE(nd_ainfo->pre_init, "initialization of (pre-)arguments");
+	F_LONG(nd_ainfo->post_args_num, "count of mandatory post-arguments");
+	F_NODE(nd_ainfo->post_init, "initialization of post-arguments");
+	F_ID(nd_ainfo->first_post_arg, "first post argument");
+	F_ID(nd_ainfo->rest_arg, "rest argument");
+	F_ID(nd_ainfo->block_arg, "block argument");
+	F_NODE(nd_ainfo->opt_args, "optional arguments");
 	break;
 
       case NODE_SCOPE:

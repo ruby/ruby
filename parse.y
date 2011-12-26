@@ -9121,25 +9121,24 @@ static NODE*
 new_args_gen(struct parser_params *parser, NODE *m, NODE *o, ID r, NODE *p, ID b)
 {
     int saved_line = ruby_sourceline;
-    NODE *node;
-    NODE *i1, *i2 = 0;
+    struct rb_args_info *args;
 
-    node = NEW_ARGS(m ? m->nd_plen : 0, o);
-    i1 = m ? m->nd_next : 0;
-    node->nd_next = NEW_ARGS_AUX(r, b);
+    args = ALLOC(struct rb_args_info);
 
-    if (p) {
-	i2 = p->nd_next;
-	node->nd_next->nd_next = NEW_ARGS_AUX(p->nd_pid, p->nd_plen);
-    }
-    else if (i1) {
-	node->nd_next->nd_next = NEW_ARGS_AUX(0, 0);
-    }
-    if (i1 || i2) {
-	node->nd_next->nd_next->nd_next = NEW_NODE(NODE_AND, i1, i2, 0);
-    }
+    args->pre_args_num   = m ? m->nd_plen : 0;
+    args->pre_init       = m ? m->nd_next : 0;
+
+    args->post_args_num  = p ? p->nd_plen : 0;
+    args->post_init      = p ? p->nd_next : 0;
+    args->first_post_arg = p ? p->nd_pid : 0;
+
+    args->rest_arg       = r;
+    args->block_arg      = b;
+
+    args->opt_args       = o;
+
     ruby_sourceline = saved_line;
-    return node;
+    return NEW_NODE(NODE_ARGS, 0, 0, args);
 }
 #endif /* !RIPPER */
 

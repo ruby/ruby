@@ -1720,7 +1720,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	  case NODE_CALL:
 	  case NODE_DEFS:
 	  case NODE_OP_ASGN1:
-	  case NODE_ARGS:
 	    gc_mark(objspace, (VALUE)obj->as.node.u1.node, lev);
 	    /* fall through */
 	  case NODE_SUPER:	/* 3 */
@@ -1785,6 +1784,18 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	  case NODE_CDECL:
 	  case NODE_OPT_ARG:
 	    gc_mark(objspace, (VALUE)obj->as.node.u3.node, lev);
+	    ptr = (VALUE)obj->as.node.u2.node;
+	    goto again;
+
+	  case NODE_ARGS:	/* custom */
+	    {
+		struct rb_args_info *args = obj->as.node.u3.args;
+		if (args) {
+		    if (args->pre_init)  gc_mark(objspace, (VALUE)args->pre_init, lev);
+		    if (args->post_init) gc_mark(objspace, (VALUE)args->post_init, lev);
+		    if (args->opt_args)  gc_mark(objspace, (VALUE)args->opt_args, lev);
+		}
+	    }
 	    ptr = (VALUE)obj->as.node.u2.node;
 	    goto again;
 
@@ -2379,6 +2390,11 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	  case NODE_SCOPE:
 	    if (RANY(obj)->as.node.u1.tbl) {
 		xfree(RANY(obj)->as.node.u1.tbl);
+	    }
+	    break;
+	  case NODE_ARGS:
+	    if (RANY(obj)->as.node.u3.args) {
+		xfree(RANY(obj)->as.node.u3.args);
 	    }
 	    break;
 	  case NODE_ALLOCA:

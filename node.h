@@ -253,6 +253,7 @@ typedef struct RNode {
 	ID id;
 	long state;
 	struct rb_global_entry *entry;
+	struct rb_args_info *args;
 	long cnt;
 	VALUE value;
     } u3;
@@ -321,6 +322,7 @@ typedef struct RNode {
 #define nd_recv  u1.node
 #define nd_mid   u2.id
 #define nd_args  u3.node
+#define nd_ainfo u3.args
 
 #define nd_noex  u3.id
 #define nd_defn  u3.node
@@ -415,7 +417,6 @@ typedef struct RNode {
 #define NEW_VCALL(m) NEW_NODE(NODE_VCALL,0,m,0)
 #define NEW_SUPER(a) NEW_NODE(NODE_SUPER,0,0,a)
 #define NEW_ZSUPER() NEW_NODE(NODE_ZSUPER,0,0,0)
-#define NEW_ARGS(m,o) NEW_NODE(NODE_ARGS,o,m,0)
 #define NEW_ARGS_AUX(r,b) NEW_NODE(NODE_ARGS_AUX,r,b,0)
 #define NEW_OPT_ARG(i,v) NEW_NODE(NODE_OPT_ARG,i,v,0)
 #define NEW_POSTARG(i,v) NEW_NODE(NODE_POSTARG,i,v,0)
@@ -482,6 +483,20 @@ VALUE rb_gvar_get(struct rb_global_entry *);
 VALUE rb_gvar_set(struct rb_global_entry *, VALUE);
 VALUE rb_gvar_defined(struct rb_global_entry *);
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
+
+struct rb_args_info {
+    long pre_args_num;  /* count of mandatory pre-arguments */
+    NODE *pre_init;
+
+    long post_args_num; /* count of mandatory post-arguments */
+    NODE *post_init;
+    ID first_post_arg;
+
+    ID rest_arg;
+    ID block_arg;
+
+    NODE *opt_args;
+};
 
 struct parser_params;
 void *rb_parser_malloc(struct parser_params *, size_t);
