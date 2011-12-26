@@ -1,10 +1,16 @@
+Mon Dec 26 22:38:35 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_insnhelper.c (unknown_keyword_error): make it kind a error
+	  message when unknown keyword is given.  It require more work.
+	  See [ruby-core:40518] and [ruby-core:40541] in detail.
+
 Mon Dec 26 22:31:07 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_core.h (struct rb_iseq_struct), compile.c (iseq_set_arguments),
 	  iseq.c (rb_iseq_parameters), vm_insnhelper.c
 	  (vm_callee_setup_arg_complex): support Method#parameters for keyword
 	  arguments.  The provisional spec is what Benoit Daloze proposed.
-	  [ruby-core:40518]
+	  [ruby-core:40541]
 
 	* test/ruby/test_keyword.rb: add a test for above.
 

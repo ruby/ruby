@@ -136,9 +136,17 @@ NORETURN(static void unknown_keyword_error(const rb_iseq_t *iseq, VALUE hash));
 static void
 unknown_keyword_error(const rb_iseq_t *iseq, VALUE hash)
 {
-    (void) iseq;
-    (void) hash;
-    rb_raise(rb_eArgError, "unknown keyword");
+    VALUE sep = rb_usascii_str_new2(", "), keys;
+    const char *msg;
+    int i;
+    for (i = 0; i < iseq->arg_keywords; i++) {
+	rb_hash_delete(hash, ID2SYM(iseq->arg_keyword_table[i]));
+    }
+    keys = rb_funcall(hash, rb_intern("keys"), 0, 0);
+    if (TYPE(keys) != T_ARRAY) rb_raise(rb_eArgError, "unknown keyword");
+    msg = RARRAY_LEN(keys) == 1 ? "unknown keyword: %s" : "unknown keywords: %s";
+    keys = rb_funcall(keys, rb_intern("join"), 1, sep);
+    rb_raise(rb_eArgError, msg, RSTRING_PTR(keys));
 }
 
 #define VM_CALLEE_SETUP_ARG(ret, th, iseq, orig_argc, orig_argv, block) \
