@@ -220,6 +220,9 @@ struct rb_iseq_struct {
     int arg_post_start;
     int arg_size;
     VALUE *arg_opt_table;
+    int arg_keyword;
+    int arg_keywords;
+    ID *arg_keyword_table;
 
     size_t stack_max; /* for stack overflow check */
 

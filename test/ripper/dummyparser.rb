@@ -151,7 +151,7 @@ class DummyParser < Ripper
     "&#{var}"
   end
 
-  def on_params(required, optional, rest, more, block)
+  def on_params(required, optional, rest, more, keyword, keyword_rest, block)
     args = NodeList.new
 
     required.each do |req|

@@ -1,3 +1,23 @@
+Mon Dec 26 22:15:27 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_core.h (struct rb_iseq_struct), compile.c (iseq_set_arguments,
+	  iseq_compile_each), vm_insnhelper.c (vm_callee_setup_arg_complex):
+	  implement keyword arguments.  See [ruby-core:40290]
+	  The feature is promised to be included in 2.0, but the detail spec
+	  is still under discussion; this commit is a springboard for further
+	  discussion.  Please try it and give us feedback.
+	  This commit includes fixes for some problems reported by Benoit
+	  Daloze <eregontp AT gmail.com> [ruby-core:40518] and Marc-Andre
+	  Lafortune <ruby-core-mailing-list AT marc-andre.ca>
+	  [ruby-core:41772].
+
+	* iseq.c (iseq_free, prepare_iseq_build): bookkeeping.
+
+	* test/ruby/test_keyword.rb: add tests for keyword arguments.
+
+	* test/ripper/dummyparser.rb (class DummyParser): temporal fix for
+	  ripper test.
+
 Mon Dec 26 22:00:17 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* node.h, node.c, parse.y: implement a parser part for keyword

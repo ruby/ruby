@@ -132,6 +132,15 @@ argument_error(const rb_iseq_t *iseq, int miss_argc, int correct_argc)
     rb_exc_raise(exc);
 }
 
+NORETURN(static void unknown_keyword_error(const rb_iseq_t *iseq, VALUE hash));
+static void
+unknown_keyword_error(const rb_iseq_t *iseq, VALUE hash)
+{
+    (void) iseq;
+    (void) hash;
+    rb_raise(rb_eArgError, "unknown keyword");
+}
+
 #define VM_CALLEE_SETUP_ARG(ret, th, iseq, orig_argc, orig_argv, block) \
     if (LIKELY((iseq)->arg_simple & 0x01)) { \
 	/* simple check */ \
@@ -153,8 +162,29 @@ vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
     int argc = orig_argc;
     VALUE *argv = orig_argv;
     rb_num_t opt_pc = 0;
+    VALUE keyword_hash = Qnil;
 
     th->mark_stack_len = argc + iseq->arg_size;
+
+    if (iseq->arg_keyword != -1) {
+	int i, j;
+	if (argc > 0) keyword_hash = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
+	if (!NIL_P(keyword_hash)) {
+	    argc--;
+	    keyword_hash = rb_hash_dup(keyword_hash);
+	    if (iseq->arg_keywords) {
+		for (i = j = 0; i < iseq->arg_keywords; i++) {
+		    if (st_lookup(RHASH_TBL(keyword_hash), ID2SYM(iseq->arg_keyword_table[i]), 0)) j++;
+		}
+		if (RHASH_TBL(keyword_hash)->num_entries > (unsigned int) j) {
+		    unknown_keyword_error(iseq, keyword_hash);
+		}
+	    }
+	}
+	else {
+	    keyword_hash = rb_hash_new();
+	}
+    }
 
     /* mandatory */
     if (argc < (m + iseq->arg_post_len)) { /* check with post arg */
@@ -205,6 +235,11 @@ vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
 	argc = 0;
     }
 
+    /* keyword argument */
+    if (iseq->arg_keyword != -1) {
+	orig_argv[iseq->arg_keyword] = keyword_hash;
+    }
+
     /* block arguments */
     if (block && iseq->arg_block != -1) {
 	VALUE blockval = Qnil;
@@ -228,6 +263,10 @@ vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
 	}
 
 	orig_argv[iseq->arg_block] = blockval; /* Proc or nil */
+    }
+
+    if (iseq->arg_keyword && argc != 0) {
+	argument_error(iseq, orig_argc, m + iseq->arg_post_len);
     }
 
     th->mark_stack_len = 0;

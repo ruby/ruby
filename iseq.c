@@ -83,6 +83,7 @@ iseq_free(void *ptr)
 	    RUBY_FREE_UNLESS_NULL(iseq->ic_entries);
 	    RUBY_FREE_UNLESS_NULL(iseq->catch_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->arg_opt_table);
+	    RUBY_FREE_UNLESS_NULL(iseq->arg_keyword_table);
 	    compile_data_free(iseq->compile_data);
 	}
 	ruby_xfree(ptr);
@@ -239,6 +240,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->type = type;
     iseq->arg_rest = -1;
     iseq->arg_block = -1;
+    iseq->arg_keyword = -1;
     iseq->klass = 0;
 
     /*
