@@ -3551,8 +3551,7 @@ lambda		:   {
 		    {
 			lpar_beg = $<num>2;
 		    /*%%%*/
-			$$ = $3;
-			$$->nd_body = NEW_SCOPE($3->nd_head, $4);
+			$$ = NEW_LAMBDA($3, $4);
 		    /*%
 			$$ = dispatch2(lambda, $3, $4);
 		    %*/
@@ -3563,7 +3562,7 @@ lambda		:   {
 f_larglist	: '(' f_args opt_bv_decl rparen
 		    {
 		    /*%%%*/
-			$$ = NEW_LAMBDA($2);
+			$$ = $2;
 		    /*%
 			$$ = dispatch1(paren, $2);
 		    %*/
@@ -3571,7 +3570,7 @@ f_larglist	: '(' f_args opt_bv_decl rparen
 		| f_args
 		    {
 		    /*%%%*/
-			$$ = NEW_LAMBDA($1);
+			$$ = $1;
 		    /*%
 			$$ = $1;
 		    %*/

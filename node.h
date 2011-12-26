@@ -362,7 +362,7 @@ typedef struct RNode {
 #define NEW_UNTIL(c,b,n) NEW_NODE(NODE_UNTIL,c,b,n)
 #define NEW_FOR(v,i,b) NEW_NODE(NODE_FOR,v,b,i)
 #define NEW_ITER(a,b) NEW_NODE(NODE_ITER,0,NEW_SCOPE(a,b),0)
-#define NEW_LAMBDA(a) NEW_NODE(NODE_LAMBDA,a,0,0)
+#define NEW_LAMBDA(a,b) NEW_NODE(NODE_LAMBDA,0,NEW_SCOPE(a,b),0)
 #define NEW_BREAK(s) NEW_NODE(NODE_BREAK,s,0,0)
 #define NEW_NEXT(s) NEW_NODE(NODE_NEXT,s,0,0)
 #define NEW_REDO() NEW_NODE(NODE_REDO,0,0,0)
