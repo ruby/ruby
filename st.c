@@ -178,7 +178,7 @@ static const unsigned int primes[] = {
 };
 
 static st_index_t
-new_size(st_index_t size)
+new_big_size(st_index_t size)
 {
     int i;
 
@@ -190,7 +190,7 @@ new_size(st_index_t size)
 #else
     st_index_t newsize;
 
-    for (i = 0, newsize = MINSIZE; i < numberof(primes); i++, newsize <<= 1) {
+    for (i = 3, newsize = MINSIZE << 3; i < numberof(primes); i++, newsize <<= 1) {
 	if (newsize > size) return primes[i];
     }
     /* Ran out of polynomials */
@@ -199,6 +199,15 @@ new_size(st_index_t size)
 #endif
     return -1;			/* should raise exception */
 #endif
+}
+
+static inline st_index_t
+new_size(st_index_t size)
+{
+    return size <= MINSIZE ? 8 + 1 :
+	    size <= MINSIZE << 1 ? 16 + 3 :
+	    size <= MINSIZE << 2 ? 32 + 5 :
+	    new_big_size(size);
 }
 
 #ifdef HASH_LOG
