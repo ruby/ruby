@@ -172,7 +172,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
 	if (!NIL_P(keyword_hash)) {
 	    argc--;
 	    keyword_hash = rb_hash_dup(keyword_hash);
-	    if (iseq->arg_keywords) {
+	    if (iseq->arg_keyword_check) {
 		for (i = j = 0; i < iseq->arg_keywords; i++) {
 		    if (st_lookup(RHASH_TBL(keyword_hash), ID2SYM(iseq->arg_keyword_table[i]), 0)) j++;
 		}

@@ -1140,16 +1140,11 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 		node = node->nd_next;
 		i += 1;
 	    }
-	    if ((args->kw_rest_arg->nd_vid & ID_SCOPE_MASK) == ID_JUNK) {
-		iseq->arg_keywords = i;
-		iseq->arg_keyword_table = ALLOC_N(ID, i);
-		for (j = 0; j < i; j++) {
-		    iseq->arg_keyword_table[j] = FIX2INT(RARRAY_PTR(keywords)[j]);
-		}
-	    }
-	    else {
-		iseq->arg_keywords = 0;
-		iseq->arg_keyword_table = 0;
+	    iseq->arg_keyword_check = (args->kw_rest_arg->nd_vid & ID_SCOPE_MASK) == ID_JUNK;
+	    iseq->arg_keywords = i;
+	    iseq->arg_keyword_table = ALLOC_N(ID, i);
+	    for (j = 0; j < i; j++) {
+		iseq->arg_keyword_table[j] = FIX2INT(RARRAY_PTR(keywords)[j]);
 	    }
 	    ADD_INSN(optargs, nd_line(args->kw_args), pop);
 	}

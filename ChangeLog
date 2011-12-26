@@ -1,3 +1,13 @@
+Mon Dec 26 22:31:07 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_core.h (struct rb_iseq_struct), compile.c (iseq_set_arguments),
+	  iseq.c (rb_iseq_parameters), vm_insnhelper.c
+	  (vm_callee_setup_arg_complex): support Method#parameters for keyword
+	  arguments.  The provisional spec is what Benoit Daloze proposed.
+	  [ruby-core:40518]
+
+	* test/ruby/test_keyword.rb: add a test for above.
+
 Mon Dec 26 22:15:27 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_core.h (struct rb_iseq_struct), compile.c (iseq_set_arguments,

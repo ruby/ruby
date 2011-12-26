@@ -94,6 +94,15 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[1, 2, 3], "bar", 424242, {}], f7(1, 2, 3, str: "bar"))
   end
 
+  def test_method_parameters
+    assert_equal([[:key, :str], [:key, :num]], method(:f1).parameters);
+    assert_equal([[:req, :x], [:key, :str], [:key, :num]], method(:f2).parameters);
+    assert_equal([[:key, :str], [:key, :num], [:keyrest, :h]], method(:f3).parameters);
+    assert_equal([[:key, :str], [:key, :num]], method(:f4).parameters);
+    assert_equal([[:key, :str], [:key, :num], [:keyrest, :h]], method(:f5).parameters);
+    assert_equal([[:key, :str], [:key, :num], [:keyrest, :h], [:block, :blk]], method(:f6).parameters);
+    assert_equal([[:rest, :r], [:key, :str], [:key, :num], [:keyrest, :h]], method(:f7).parameters);
+  end
 
   def test_lambda
     f = ->(str: "foo", num: 424242) { [str, num] }
