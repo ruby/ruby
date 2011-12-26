@@ -27,7 +27,7 @@ struct st_table_entry {
 
 #define ST_DEFAULT_MAX_DENSITY 3
 #define ST_DEFAULT_INIT_TABLE_SIZE 9
-#define MAX_PACKED_HASH 12
+st_index_t MAX_PACKED_HASH = 12; /* hash lookup do not suffer up to size==6, but average rails app would prefer 12 */
 
     /*
      * DEFAULT_MAX_DENSITY is the default for the largest we allow the
