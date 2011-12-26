@@ -823,6 +823,15 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_NODE(nd_next, "next");
 	break;
 
+      case NODE_KW_ARG:
+	ANN("keyword arguments");
+	ANN("format: def method_name([nd_body=some], [nd_next..])");
+	ANN("example: def foo(a:1, b:2); end");
+	F_NODE(nd_body, "body");
+	LAST_NODE;
+	F_NODE(nd_next, "next");
+	break;
+
       case NODE_POSTARG:
 	ANN("post arguments");
 	ANN("format: *[nd_1st], [nd_2nd..] = ..");
@@ -849,6 +858,8 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_ID(nd_ainfo->rest_arg, "rest argument");
 	F_ID(nd_ainfo->block_arg, "block argument");
 	F_NODE(nd_ainfo->opt_args, "optional arguments");
+	LAST_NODE;
+	F_NODE(nd_ainfo->kw_args, "keyword arguments");
 	break;
 
       case NODE_SCOPE:

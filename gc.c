@@ -1791,9 +1791,11 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	    {
 		struct rb_args_info *args = obj->as.node.u3.args;
 		if (args) {
-		    if (args->pre_init)  gc_mark(objspace, (VALUE)args->pre_init, lev);
-		    if (args->post_init) gc_mark(objspace, (VALUE)args->post_init, lev);
-		    if (args->opt_args)  gc_mark(objspace, (VALUE)args->opt_args, lev);
+		    if (args->pre_init)    gc_mark(objspace, (VALUE)args->pre_init, lev);
+		    if (args->post_init)   gc_mark(objspace, (VALUE)args->post_init, lev);
+		    if (args->opt_args)    gc_mark(objspace, (VALUE)args->opt_args, lev);
+		    if (args->kw_args)     gc_mark(objspace, (VALUE)args->kw_args, lev);
+		    if (args->kw_rest_arg) gc_mark(objspace, (VALUE)args->kw_rest_arg, lev);
 		}
 	    }
 	    ptr = (VALUE)obj->as.node.u2.node;

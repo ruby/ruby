@@ -154,6 +154,8 @@ enum node_type {
 #define NODE_ARGS_AUX    NODE_ARGS_AUX
     NODE_OPT_ARG,
 #define NODE_OPT_ARG     NODE_OPT_ARG
+    NODE_KW_ARG,
+#define NODE_KW_ARG	 NODE_KW_ARG
     NODE_POSTARG,
 #define NODE_POSTARG     NODE_POSTARG
     NODE_ARGSCAT,
@@ -419,6 +421,7 @@ typedef struct RNode {
 #define NEW_ZSUPER() NEW_NODE(NODE_ZSUPER,0,0,0)
 #define NEW_ARGS_AUX(r,b) NEW_NODE(NODE_ARGS_AUX,r,b,0)
 #define NEW_OPT_ARG(i,v) NEW_NODE(NODE_OPT_ARG,i,v,0)
+#define NEW_KW_ARG(i,v) NEW_NODE(NODE_KW_ARG,i,v,0)
 #define NEW_POSTARG(i,v) NEW_NODE(NODE_POSTARG,i,v,0)
 #define NEW_ARGSCAT(a,b) NEW_NODE(NODE_ARGSCAT,a,b,0)
 #define NEW_ARGSPUSH(a,b) NEW_NODE(NODE_ARGSPUSH,a,b,0)
@@ -494,6 +497,9 @@ struct rb_args_info {
 
     ID rest_arg;
     ID block_arg;
+
+    NODE *kw_args;
+    NODE *kw_rest_arg;
 
     NODE *opt_args;
 };

@@ -1,3 +1,11 @@
+Mon Dec 26 22:00:17 2011  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* node.h, node.c, parse.y: implement a parser part for keyword
+	  arguments.
+	  This is a preparation for keyword argument (see [ruby-core:40290]).
+
+	* gc.c (gc_mark_children): bookkeeping.
+
 Mon Dec 26 21:03:18 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* node.h, parse.y (new_args_gen), compile.c (iseq_set_arguments): use
