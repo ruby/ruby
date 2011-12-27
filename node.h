@@ -488,11 +488,12 @@ VALUE rb_gvar_defined(struct rb_global_entry *);
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 
 struct rb_args_info {
-    long pre_args_num;  /* count of mandatory pre-arguments */
     NODE *pre_init;
-
-    long post_args_num; /* count of mandatory post-arguments */
     NODE *post_init;
+
+    int pre_args_num;  /* count of mandatory pre-arguments */
+    int post_args_num; /* count of mandatory post-arguments */
+
     ID first_post_arg;
 
     ID rest_arg;

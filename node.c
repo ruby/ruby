@@ -850,9 +850,9 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("method parameters");
 	ANN("format: def method_name(.., [nd_opt=some], *[nd_rest], [nd_pid], .., &[nd_body])");
 	ANN("example: def foo(a, b, opt1=1, opt2=2, *rest, y, z, &blk); end");
-	F_LONG(nd_ainfo->pre_args_num, "count of mandatory (pre-)arguments");
+	F_INT(nd_ainfo->pre_args_num, "count of mandatory (pre-)arguments");
 	F_NODE(nd_ainfo->pre_init, "initialization of (pre-)arguments");
-	F_LONG(nd_ainfo->post_args_num, "count of mandatory post-arguments");
+	F_INT(nd_ainfo->post_args_num, "count of mandatory post-arguments");
 	F_NODE(nd_ainfo->post_init, "initialization of post-arguments");
 	F_ID(nd_ainfo->first_post_arg, "first post argument");
 	F_ID(nd_ainfo->rest_arg, "rest argument");

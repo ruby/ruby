@@ -1,3 +1,10 @@
+Tue Dec 27 21:17:33 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* node.h (rb_args_info): change pre_args_num and post_args_num as
+	  int, to match with rb_iseq_t.
+
+	* parse.y (new_args_gen): check overflow.
+
 Mon Dec 26 22:38:35 2011  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_insnhelper.c (unknown_keyword_error): make it kind a error

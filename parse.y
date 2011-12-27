@@ -9656,10 +9656,10 @@ new_args_gen(struct parser_params *parser, NODE *m, NODE *o, ID r, NODE *p, NODE
 
     args = ALLOC(struct rb_args_info);
 
-    args->pre_args_num   = m ? m->nd_plen : 0;
+    args->pre_args_num   = m ? rb_long2int(m->nd_plen) : 0;
     args->pre_init       = m ? m->nd_next : 0;
 
-    args->post_args_num  = p ? p->nd_plen : 0;
+    args->post_args_num  = p ? rb_long2int(p->nd_plen) : 0;
     args->post_init      = p ? p->nd_next : 0;
     args->first_post_arg = p ? p->nd_pid : 0;
 
