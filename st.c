@@ -733,6 +733,62 @@ st_cleanup_safe(st_table *table, st_data_t never)
 }
 
 int
+st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *value, st_data_t arg), st_data_t arg)
+{
+    st_index_t hash_val, bin_pos;
+    register st_table_entry *ptr, **last, *tmp;
+    st_data_t value;
+
+    if (table->entries_packed) {
+	st_index_t i;
+	for (i = 0; i < table->num_entries; i++) {
+	    if ((st_data_t)table->bins[i*2] == key) {
+		value = (st_data_t)table->bins[i*2+1];
+		switch ((*func)(key, &value, arg)) {
+		  case ST_CONTINUE:
+		    table->bins[i*2+1] = (struct st_table_entry*)value;
+		    break;
+		  case ST_DELETE:
+		    table->num_entries--;
+		    memmove(&table->bins[i*2], &table->bins[(i+1)*2],
+			    sizeof(struct st_table_entry*) * 2 * (table->num_entries-i));
+		}
+		return 1;
+	    }
+	}
+	return 0;
+    }
+
+    hash_val = do_hash(key, table);
+    FIND_ENTRY(table, ptr, hash_val, bin_pos);
+
+    if (ptr == 0) {
+	return 0;
+    }
+    else {
+	value = ptr->record;
+	switch ((*func)(ptr->key, &value, arg)) {
+	  case ST_CONTINUE:
+	    ptr->record = value;
+	    break;
+	  case ST_DELETE:
+	    last = &table->bins[bin_pos];
+	    for (; (tmp = *last) != 0; last = &tmp->next) {
+		if (ptr == tmp) {
+		    tmp = ptr->fore;
+		    *last = ptr->next;
+		    REMOVE_ENTRY(table, ptr);
+		    free(ptr);
+		    break;
+		}
+	    }
+	    break;
+	}
+	return 1;
+    }
+}
+
+int
 st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 {
     st_table_entry *ptr, **last, *tmp;

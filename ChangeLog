@@ -1,3 +1,8 @@
+Tue Dec 27 22:04:27 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c (st_update): new function to lookup the given key and
+	  update the value.  [ruby-dev:44998]
+
 Tue Dec 27 21:17:33 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* node.h (rb_args_info): change pre_args_num and post_args_num as
