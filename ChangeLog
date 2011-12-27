@@ -92,7 +92,7 @@ Mon Dec 26 22:01:19 2011  Hiroshi Shirosaki <h.shirosaki@gmail.com>
 	  Use return value of setmode().
 
 	* test/ruby/test_io_m17n.rb
-	  (TestIO_M17N#test_seek_with_setting_binmode): add a test for abobe.
+	  (TestIO_M17N#test_seek_with_setting_binmode): add a test for above.
 	  [ruby-core:41671] [Bug #5714]
 
 Mon Dec 26 17:01:14 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -142,7 +142,7 @@ Sat Dec 24 23:25:15 2011  Luis Lavena  <luislavena@gmail.com>
 
 Sat Dec 24 12:38:53 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* proc.c (proc_call): get rid of optimazation-out by clang.
+	* proc.c (proc_call): get rid of optimization-out by clang.
 
 	* proc.c (rb_proc_call, rb_proc_call_with_block): ditto.
 
@@ -209,7 +209,7 @@ Fri Dec 23 06:00:39 2011  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 Fri Dec 23 00:08:25 2011  Tanaka Akira  <akr@fsij.org>
 
-	* test/test_pty.rb (test_pty_check_default): "cat" may not terminateed
+	* test/test_pty.rb (test_pty_check_default): "cat" may not terminated
 	  in the 0.1 second.
 
 Thu Dec 22 23:37:25 2011  Tanaka Akira  <akr@fsij.org>
