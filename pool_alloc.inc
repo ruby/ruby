@@ -66,12 +66,18 @@ static void
 holder_alloc()
 {
     holder_typename *holder = alloc(holder_typename);
-    unsigned int i;
+    unsigned int i = HOLDER_SIZE - 1;
+    register entry_typename *ptr = holder->items;
     holder->free = HOLDER_SIZE;
-    for(i = 0; i < HOLDER_SIZE; i++) {
-	holder->items[i].holder = holder;
-	entry_chain(&holder->items[i]);
+    for(; i; ptr++, i-- ) {
+        ptr->holder = holder;
+        ptr->fore = ptr + 1;
+        (ptr + 1)->back = ptr;
     }
+    holder->items[0].back = NULL;
+    holder->items[HOLDER_SIZE - 1].holder = holder;
+    holder->items[HOLDER_SIZE - 1].fore = free_entry_p;
+    free_entry_p = &holder->items[0];
     free_entry_count+= HOLDER_SIZE;
 }
 
