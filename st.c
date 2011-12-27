@@ -17,22 +17,12 @@
 
 typedef struct st_table_entry st_table_entry;
 
-typedef struct st_entry_holder st_entry_holder;
-
 struct st_table_entry {
     st_index_t hash;
     st_data_t key;
     st_data_t record;
     st_table_entry *next;
     st_table_entry *fore, *back;
-    st_entry_holder *holder;
-};
-
-#define ST_HOLDER_SIZE (4096 / sizeof(st_table_entry) - 1)
-typedef unsigned short st_entry_count;
-struct st_entry_holder {
-    st_entry_count total, free;
-    st_table_entry entries[ST_HOLDER_SIZE];
 };
 
 #define ST_DEFAULT_MAX_DENSITY 5
@@ -86,78 +76,61 @@ static void rehash(st_table *);
 #define do_hash(key,table) (unsigned int)(st_index_t)(*(table)->type->hash)((key))
 #define do_hash_bin(key,table) (do_hash((key), (table))%(table)->num_bins)
 
-static st_table_entry *free_entry = NULL;
-static st_index_t free_entry_count = 0;
+#define ITEM_NAME entry
+#define ITEM_TYPEDEF(name) st_table_entry name
+#define free_entry st_free_entry
+#define alloc_entry st_alloc_entry
+#include "pool_alloc.inc"
+#undef ITEM_NAME
+#undef ITEM_TYPEDEF
+#undef free_entry
+#undef alloc_entry
 
-static inline void
-st_chain_entry(st_table_entry *entry)
-{
-    entry->fore = free_entry;
-    entry->back = NULL;
-    if (free_entry) {
-	free_entry->back = entry;
-    }
-    free_entry = entry;
-}
+#define ITEM_NAME bins11
+typedef st_table_entry *st_table_entry_p;
+#define ITEM_TYPEDEF(name) st_table_entry_p name[ST_DEFAULT_INIT_TABLE_SIZE]
+#define free_entry st_free_bins11
+#define alloc_entry st_alloc_bins11
+#include "pool_alloc.inc"
+#undef ITEM_NAME
+#undef ITEM_TYPEDEF
+#undef free_entry
+#undef alloc_entry
 
-static void
-st_entry_holder_alloc()
-{
-    st_entry_holder *holder = alloc(st_entry_holder);
-    unsigned int i;
-    holder->total = ST_HOLDER_SIZE;
-    holder->free = holder->total;
-    for(i = 0; i < holder->total; i++) {
-	holder->entries[i].holder = holder;
-	st_chain_entry(&holder->entries[i]);
-    }
-    free_entry_count+= holder->total;
-}
+#define ITEM_NAME table
+#define ITEM_TYPEDEF(name) st_table name
+#define free_entry st_dealloc_table
+#define alloc_entry st_alloc_table
+#include "pool_alloc.inc"
+#undef ITEM_NAME
+#undef ITEM_TYPEDEF
+#undef free_entry
+#undef alloc_entry
 
-static void
-st_entry_holder_free(st_entry_holder *holder)
-{
-    unsigned int i;
-    st_table_entry *ptr;
-    for(i = 0; i < holder->total; i++) {
-	ptr = &holder->entries[i];
-	if (ptr->fore) {
-	    ptr->fore->back = ptr->back;
-	}
-	if (ptr->back) {
-	    ptr->back->fore = ptr->fore;
-	} else {
-	    free_entry = ptr->fore;
-	}
-    }
-    free_entry_count-= holder->total;
-    free(holder);
-}
 
-static void
-st_free_entry(st_table_entry *entry)
+static st_table_entry **
+st_alloc_bins(st_index_t num_bins)
 {
-    st_entry_holder *holder = entry->holder;
-    st_chain_entry(entry);
-    holder->free++;
-    free_entry_count++;
-    if (holder->free == holder->total && free_entry_count > holder->total) {
-	st_entry_holder_free(holder);
+    st_table_entry **result;
+    if (num_bins == ST_DEFAULT_INIT_TABLE_SIZE) {
+	result = (st_table_entry **) st_alloc_bins11();
     }
-}
-
-static st_table_entry *
-st_alloc_entry()
-{
-    st_table_entry *result;
-    if (!free_entry) {
-	st_entry_holder_alloc();
+    else {
+	result = (st_table_entry **) malloc(num_bins * sizeof(st_table_entry *));
     }
-    result = free_entry;
-    free_entry = result->fore;
-    result->holder->free--;
-    free_entry_count--;
+    memset(result, 0, num_bins * sizeof(st_table_entry *));
     return result;
+}
+
+static void
+st_free_bins(st_table_entry **bins, st_index_t num_bins)
+{
+    if (num_bins == ST_DEFAULT_INIT_TABLE_SIZE) {
+	st_free_bins11(
+		(st_table_entry_p (*)[ST_DEFAULT_INIT_TABLE_SIZE]) bins);
+    } else {
+	free(bins);
+    }
 }
 
 /*
@@ -268,12 +241,12 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
 
     size = new_size(size);	/* round up to prime number */
 
-    tbl = alloc(st_table);
+    tbl = st_alloc_table();
     tbl->type = type;
     tbl->num_entries = 0;
     tbl->entries_packed = type == &type_numhash && size/2 <= MAX_PACKED_NUMHASH;
     tbl->num_bins = size;
-    tbl->bins = (st_table_entry **)Calloc(size, sizeof(st_table_entry*));
+    tbl->bins = st_alloc_bins(size);
     tbl->head = 0;
     tbl->tail = 0;
 
@@ -351,8 +324,8 @@ void
 st_free_table(st_table *table)
 {
     st_clear(table);
-    free(table->bins);
-    free(table);
+    st_free_bins(table->bins, table->num_bins);
+    st_dealloc_table(table);
 }
 
 size_t
@@ -625,9 +598,8 @@ rehash(register st_table *table)
     st_index_t i, new_num_bins, hash_val;
 
     new_num_bins = new_size(table->num_bins+1);
-    new_bins = (st_table_entry**)
-	xrealloc(table->bins, new_num_bins * sizeof(st_table_entry*));
-    for (i = 0; i < new_num_bins; ++i) new_bins[i] = 0;
+    st_free_bins(table->bins, table->num_bins);
+    new_bins = st_alloc_bins(new_num_bins);
     table->num_bins = new_num_bins;
     table->bins = new_bins;
 
@@ -648,17 +620,16 @@ st_copy(st_table *old_table)
     st_index_t num_bins = old_table->num_bins;
     st_index_t hash_val;
 
-    new_table = alloc(st_table);
+    new_table = st_alloc_table();
     if (new_table == 0) {
 	return 0;
     }
 
     *new_table = *old_table;
-    new_table->bins = (st_table_entry**)
-	Calloc((unsigned)num_bins, sizeof(st_table_entry*));
+    new_table->bins = st_alloc_bins(num_bins);
 
     if (new_table->bins == 0) {
-	free(new_table);
+	st_dealloc_table(new_table);
 	return 0;
     }
 
@@ -673,7 +644,7 @@ st_copy(st_table *old_table)
 	do {
 	    entry = st_alloc_entry();
 	    if (entry == 0) {
-		st_free_table(new_table);
+		st_dealloc_table(new_table);
 		return 0;
 	    }
 	    *entry = *ptr;
