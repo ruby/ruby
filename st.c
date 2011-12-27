@@ -17,12 +17,22 @@
 
 typedef struct st_table_entry st_table_entry;
 
+typedef struct st_entry_holder st_entry_holder;
+
 struct st_table_entry {
     st_index_t hash;
     st_data_t key;
     st_data_t record;
     st_table_entry *next;
     st_table_entry *fore, *back;
+    st_entry_holder *holder;
+};
+
+#define ST_HOLDER_SIZE (4096 / sizeof(st_table_entry) - 1)
+typedef unsigned short st_entry_count;
+struct st_entry_holder {
+    st_entry_count total, free;
+    st_table_entry entries[ST_HOLDER_SIZE];
 };
 
 #define ST_DEFAULT_MAX_DENSITY 5
@@ -75,6 +85,80 @@ static void rehash(st_table *);
 /* remove cast to unsigned int in the future */
 #define do_hash(key,table) (unsigned int)(st_index_t)(*(table)->type->hash)((key))
 #define do_hash_bin(key,table) (do_hash((key), (table))%(table)->num_bins)
+
+static st_table_entry *free_entry = NULL;
+static st_index_t free_entry_count = 0;
+
+static inline void
+st_chain_entry(st_table_entry *entry)
+{
+    entry->fore = free_entry;
+    entry->back = NULL;
+    if (free_entry) {
+	free_entry->back = entry;
+    }
+    free_entry = entry;
+}
+
+static void
+st_entry_holder_alloc()
+{
+    st_entry_holder *holder = alloc(st_entry_holder);
+    unsigned int i;
+    holder->total = ST_HOLDER_SIZE;
+    holder->free = holder->total;
+    for(i = 0; i < holder->total; i++) {
+	holder->entries[i].holder = holder;
+	st_chain_entry(&holder->entries[i]);
+    }
+    free_entry_count+= holder->total;
+}
+
+static void
+st_entry_holder_free(st_entry_holder *holder)
+{
+    unsigned int i;
+    st_table_entry *ptr;
+    for(i = 0; i < holder->total; i++) {
+	ptr = &holder->entries[i];
+	if (ptr->fore) {
+	    ptr->fore->back = ptr->back;
+	}
+	if (ptr->back) {
+	    ptr->back->fore = ptr->fore;
+	} else {
+	    free_entry = ptr->fore;
+	}
+    }
+    free_entry_count-= holder->total;
+    free(holder);
+}
+
+static void
+st_free_entry(st_table_entry *entry)
+{
+    st_entry_holder *holder = entry->holder;
+    st_chain_entry(entry);
+    holder->free++;
+    free_entry_count++;
+    if (holder->free == holder->total && free_entry_count > holder->total) {
+	st_entry_holder_free(holder);
+    }
+}
+
+static st_table_entry *
+st_alloc_entry()
+{
+    st_table_entry *result;
+    if (!free_entry) {
+	st_entry_holder_alloc();
+    }
+    result = free_entry;
+    free_entry = result->fore;
+    result->holder->free--;
+    free_entry_count--;
+    return result;
+}
 
 /*
  * MINSIZE is the minimum size of a dictionary.
@@ -254,7 +338,7 @@ st_clear(st_table *table)
 	table->bins[i] = 0;
 	while (ptr != 0) {
 	    next = ptr->next;
-	    free(ptr);
+	    st_free_entry(ptr);
 	    ptr = next;
 	}
     }
@@ -402,7 +486,7 @@ add_direct(st_table * table, st_data_t key, st_data_t value,
         bin_pos = hash_val % table->num_bins;
     }
 
-    entry = alloc(st_table_entry);
+    entry = st_alloc_entry();
 
     entry->hash = hash_val;
     entry->key = key;
@@ -587,7 +671,7 @@ st_copy(st_table *old_table)
 	prev = 0;
 	tail = &new_table->head;
 	do {
-	    entry = alloc(st_table_entry);
+	    entry = st_alloc_entry();
 	    if (entry == 0) {
 		st_free_table(new_table);
 		return 0;
@@ -651,7 +735,7 @@ st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
 	    remove_entry(table, ptr);
 	    if (value != 0) *value = ptr->record;
 	    *key = ptr->key;
-	    free(ptr);
+	    st_free_entry(ptr);
 	    return 1;
 	}
     }
@@ -721,7 +805,7 @@ st_cleanup_safe(st_table *table, st_data_t never)
 	    if (ptr->key == never) {
 		tmp = ptr;
 		*last = ptr = ptr->next;
-		free(tmp);
+		st_free_entry(tmp);
 	    }
 	    else {
 		ptr = *(last = &ptr->next);
@@ -862,7 +946,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 			tmp = ptr->fore;
 			*last = ptr->next;
 			remove_entry(table, ptr);
-			free(ptr);
+			st_free_entry(ptr);
 			if (ptr == tmp) return 0;
 			ptr = tmp;
 			break;
