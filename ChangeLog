@@ -1,3 +1,8 @@
+Wed Dec 28 02:08:04 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* vm_insnhelper.c (unknown_keyword_error): add GC guard to prevent
+	  intermediate object from GC.
+
 Tue Dec 27 22:34:54 2011  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb (Worker#close): "closing IO if IO is closed"
