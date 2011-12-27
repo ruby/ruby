@@ -1,3 +1,8 @@
+Tue Dec 27 22:34:54 2011  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb (Worker#close): "closing IO if IO is closed"
+	  should be "closing IO if IO isn't closed"
+
 Tue Dec 27 22:04:27 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c (st_update): new function to lookup the given key and

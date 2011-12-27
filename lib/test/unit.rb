@@ -294,7 +294,7 @@ module Test
 
         def close
           begin
-            @io.close if @io.closed?
+            @io.close unless @io.closed?
           rescue IOError; end
           self
         end
