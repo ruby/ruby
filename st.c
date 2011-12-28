@@ -76,11 +76,14 @@ static void rehash(st_table *);
 #define do_hash(key,table) (unsigned int)(st_index_t)(*(table)->type->hash)((key))
 #define do_hash_bin(key,table) (do_hash((key), (table))%(table)->num_bins)
 
+#define ST_USE_POOLED_ALLOCATOR
+#ifdef ST_USE_POOLED_ALLOCATOR
+
 #define ITEM_NAME entry
 #define ITEM_TYPEDEF(name) st_table_entry name
 #define free_entry st_free_entry
 #define alloc_entry st_alloc_entry
-#include "pool_alloc.inc"
+#include "pool_alloc.inc.h"
 #undef ITEM_NAME
 #undef ITEM_TYPEDEF
 #undef free_entry
@@ -91,7 +94,7 @@ typedef st_table_entry *st_table_entry_p;
 #define ITEM_TYPEDEF(name) st_table_entry_p name[ST_DEFAULT_INIT_TABLE_SIZE]
 #define free_entry st_free_bins11
 #define alloc_entry st_alloc_bins11
-#include "pool_alloc.inc"
+#include "pool_alloc.inc.h"
 #undef ITEM_NAME
 #undef ITEM_TYPEDEF
 #undef free_entry
@@ -101,12 +104,11 @@ typedef st_table_entry *st_table_entry_p;
 #define ITEM_TYPEDEF(name) st_table name
 #define free_entry st_dealloc_table
 #define alloc_entry st_alloc_table
-#include "pool_alloc.inc"
+#include "pool_alloc.inc.h"
 #undef ITEM_NAME
 #undef ITEM_TYPEDEF
 #undef free_entry
 #undef alloc_entry
-
 
 static st_table_entry **
 st_alloc_bins(st_index_t num_bins)
@@ -132,6 +134,17 @@ st_free_bins(st_table_entry **bins, st_index_t num_bins)
 	free(bins);
     }
 }
+
+#else
+
+#define st_alloc_entry() alloc(st_table_entry)
+#define st_free_entry(entry) free(entry)
+#define st_alloc_table() alloc(st_table)
+#define st_dealloc_table(table) free(table)
+#define st_alloc_bins(size) (st_table_entry **)Calloc(size, sizeof(st_table_entry *))
+#define st_free_bins(bins, size) free(bins)
+
+#endif
 
 /*
  * MINSIZE is the minimum size of a dictionary.
