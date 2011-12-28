@@ -38,6 +38,7 @@ void Init_Precision _((void));
 void Init_sym _((void));
 void Init_process _((void));
 void Init_Random _((void));
+void Init_RandomSeed _((void));
 void Init_Range _((void));
 void Init_Regexp _((void));
 void Init_signal _((void));
@@ -46,10 +47,13 @@ void Init_Struct _((void));
 void Init_Time _((void));
 void Init_var_tables _((void));
 void Init_version _((void));
+void Init_st _((void));
 
 void
 rb_call_inits()
 {
+    Init_RandomSeed();
+    Init_st();
     Init_sym();
     Init_var_tables();
     Init_Object();

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #endif
 #include <string.h>
+#include <limits.h>
 #include "st.h"
 
 typedef struct st_table_entry st_table_entry;
@@ -521,6 +522,8 @@ st_foreach(table, func, arg)
     return 0;
 }
 
+static unsigned long hash_seed = 0;
+
 static int
 strhash(string)
     register const char *string;
@@ -550,10 +553,11 @@ strhash(string)
 
     return val + (val << 15);
 #else
-    register int val = 0;
+    register unsigned long val = hash_seed;
 
     while ((c = *string++) != '\0') {
 	val = val*997 + c;
+	val = (val << 13) | (val >> (sizeof(st_data_t) * CHAR_BIT - 13));
     }
 
     return val + (val>>5);
@@ -572,4 +576,12 @@ numhash(n)
     long n;
 {
     return n;
+}
+
+extern unsigned long rb_genrand_int32(void);
+
+void
+Init_st(void)
+{
+    hash_seed = rb_genrand_int32();
 }

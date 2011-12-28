@@ -875,13 +875,15 @@ rb_str_concat(str1, str2)
     return str1;
 }
 
+static unsigned long hash_seed;
+
 int
 rb_str_hash(str)
     VALUE str;
 {
     register long len = RSTRING(str)->len;
     register char *p = RSTRING(str)->ptr;
-    register int key = 0;
+    register unsigned long key = hash_seed;
 
 #if defined(HASH_ELFHASH)
     register unsigned int g;
@@ -905,6 +907,7 @@ rb_str_hash(str)
     while (len--) {
 	key = key*65599 + *p;
 	p++;
+	key = (key << 13) | (key >> ((sizeof(unsigned long) * CHAR_BIT) - 13));
     }
     key = key + (key>>5);
 #endif
@@ -5062,4 +5065,6 @@ Init_String()
     rb_fs = Qnil;
     rb_define_variable("$;", &rb_fs);
     rb_define_variable("$-F", &rb_fs);
+
+    hash_seed = rb_genrand_int32();
 }
