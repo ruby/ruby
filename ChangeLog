@@ -220,7 +220,7 @@ Fri Dec 23 00:08:25 2011  Tanaka Akira  <akr@fsij.org>
 Thu Dec 22 23:37:25 2011  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_thread.rb (test_condvar_timed_wait): don't test the
-	maximum sleep time.  Ruby is not a real-time system.
+	  maximum sleep time.  Ruby is not a real-time system.
 
 Thu Dec 22 22:37:45 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
