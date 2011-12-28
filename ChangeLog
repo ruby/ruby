@@ -1,3 +1,8 @@
+Wed Dec 28 11:22:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::Entry_#entries): use utility method
+	  instead of typoed regexp.  [ruby-core:41829] [Bug #5817]
+
 Wed Dec 28 02:08:04 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* vm_insnhelper.c (unknown_keyword_error): add GC guard to prevent
