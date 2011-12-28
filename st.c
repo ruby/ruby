@@ -25,7 +25,7 @@ struct st_table_entry {
     st_table_entry *fore, *back;
 };
 
-#define ST_DEFAULT_MAX_DENSITY 5
+#define ST_DEFAULT_MAX_DENSITY 3
 #define ST_DEFAULT_INIT_TABLE_SIZE 11
 
     /*
