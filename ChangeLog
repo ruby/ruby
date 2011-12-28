@@ -69647,7 +69647,7 @@ Mon Nov  8 22:20:19 2004  Dave Thomas  <dave@pragprog.com>
 
 Mon Nov  8 00:14:13 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* configure.in: add setup for mignw32 cross compiling.
+	* configure.in: add setup for mingw32 cross compiling.
 	  [ruby-talk:119413]
 
 Sun Nov  7 23:49:26 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
