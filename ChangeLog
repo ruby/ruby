@@ -1,3 +1,8 @@
+Wed Dec 28 11:22:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::Entry_#entries): use utility method
+	  instead of typoed regexp.  [ruby-core:41829] [Bug #5817]
+
 Thu Dec 15 10:44:54 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_reject_bang, rb_ary_delete_if): update rdoc.
