@@ -98,7 +98,7 @@ typedef unsigned LONG_LONG ID;
 # define SIZEOF_VALUE SIZEOF_LONG_LONG
 # define PRI_VALUE_PREFIX PRI_LL_PREFIX
 #else
-# error ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
+# error ---->> ruby requires sizeof(void*) == sizeof(long) or sizeof(LONG_LONG) to be compiled. <<----
 #endif
 
 typedef char ruby_check_sizeof_int[SIZEOF_INT == sizeof(int) ? 1 : -1];

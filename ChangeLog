@@ -1,3 +1,9 @@
+Thu Dec 29 01:51:13 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* include/ruby/ruby.h: fix #error pragma. LLP64 platform is supported.
+
+	* include/ruby/st.h: ditto.
+
 Wed Dec 28 11:22:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::Entry_#entries): use utility method
