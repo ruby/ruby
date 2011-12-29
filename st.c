@@ -378,9 +378,8 @@ count_collision(const struct st_hash_type *type)
 #endif
 
 static st_table_entry *
-find_entry(st_table *table, st_data_t key, st_index_t hash_val, st_index_t *bin_posp)
+find_entry(st_table *table, st_data_t key, st_index_t hash_val, st_index_t bin_pos)
 {
-    st_index_t bin_pos = hash_val % table->num_bins;
     register st_table_entry *ptr = table->bins[bin_pos];
     FOUND_ENTRY;
     if (PTR_NOT_EQUAL(table, ptr, hash_val, key)) {
@@ -390,8 +389,6 @@ find_entry(st_table *table, st_data_t key, st_index_t hash_val, st_index_t *bin_
 	}
 	ptr = ptr->next;
     }
-    if (bin_posp != NULL)
-	*bin_posp = bin_pos;
     return ptr;
 }
 
@@ -408,6 +405,7 @@ find_packed_index(st_table *table, st_data_t key)
 int
 st_lookup(st_table *table, register st_data_t key, st_data_t *value)
 {
+    st_index_t hash_val;
     register st_table_entry *ptr;
 
     if (table->entries_packed) {
@@ -419,7 +417,8 @@ st_lookup(st_table *table, register st_data_t key, st_data_t *value)
         return 0;
     }
 
-    ptr = find_entry(table, key, do_hash(key, table), NULL);
+    hash_val = do_hash(key, table);
+    ptr = find_entry(table, key, hash_val, hash_val % table->num_bins);
 
     if (ptr == 0) {
 	return 0;
@@ -433,6 +432,7 @@ st_lookup(st_table *table, register st_data_t key, st_data_t *value)
 int
 st_get_key(st_table *table, register st_data_t key, st_data_t *result)
 {
+    st_index_t hash_val;
     register st_table_entry *ptr;
 
     if (table->entries_packed) {
@@ -444,7 +444,8 @@ st_get_key(st_table *table, register st_data_t key, st_data_t *result)
         return 0;
     }
 
-    ptr = find_entry(table, key, do_hash(key, table), NULL);
+    hash_val = do_hash(key, table);
+    ptr = find_entry(table, key, hash_val, hash_val % table->num_bins);
 
     if (ptr == 0) {
 	return 0;
@@ -544,7 +545,8 @@ st_insert(register st_table *table, register st_data_t key, st_data_t value)
     }
 
     hash_val = do_hash(key, table);
-    ptr = find_entry(table, key, hash_val, &bin_pos);
+    bin_pos = hash_val % table->num_bins;
+    ptr = find_entry(table, key, hash_val, bin_pos);
 
     if (ptr == 0) {
 	add_direct(table, key, value, hash_val, bin_pos);
@@ -575,7 +577,8 @@ st_insert2(register st_table *table, register st_data_t key, st_data_t value,
     }
 
     hash_val = do_hash(key, table);
-    ptr = find_entry(table, key, hash_val, &bin_pos);
+    bin_pos = hash_val % table->num_bins;
+    ptr = find_entry(table, key, hash_val, bin_pos);
 
     if (ptr == 0) {
 	key = (*func)(key);
