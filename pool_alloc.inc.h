@@ -85,9 +85,8 @@ static void
 holder_free(holder_typename *holder)
 {
     unsigned int i;
-    entry_typename *ptr;
-    for(i = 0; i < HOLDER_SIZE; i++) {
-	ptr = &holder->items[i];
+    entry_typename *ptr = holder->items;
+    for(i = HOLDER_SIZE; i; i--, ptr++) {
 	if (ptr->fore) {
 	    ptr->fore->back = ptr->back;
 	}
