@@ -34,7 +34,7 @@ struct entry_typename {
     holder_typename *holder;
 };
 
-#define HOLDER_SIZE (4096 / sizeof(entry_typename) - 1)
+#define HOLDER_SIZE (256 / sizeof(entry_typename) - 1)
 struct holder_typename {
     unsigned int free;
     entry_typename items[HOLDER_SIZE];
@@ -107,7 +107,7 @@ free_entry(item_type *entry)
     entry_chain((entry_typename *)entry);
     holder->free++;
     free_entry_count++;
-    if (holder->free == HOLDER_SIZE && free_entry_count > HOLDER_SIZE) {
+    if (holder->free == HOLDER_SIZE && free_entry_count > HOLDER_SIZE * 16) {
 	holder_free(holder);
     }
 }
