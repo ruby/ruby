@@ -1,3 +1,9 @@
+Thu Dec 29 22:36:16 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* lib/test/unit.rb (Test::Unit::Runner::Worker#_run_parallels): fix
+	  premature exit when all workers' status are :ready or :prepare.
+	  [ruby-dev:45061] [Bug #5822]
+
 Thu Dec 29 01:51:13 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* include/ruby/ruby.h: fix #error pragma. LLP64 platform is supported.

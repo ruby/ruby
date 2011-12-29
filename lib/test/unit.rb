@@ -457,7 +457,9 @@ module Test
                 bang = $1
                 worker.status = :ready
                 if @tasks.empty?
-                  break unless @workers.find{|x| x.status == :running }
+                  unless @workers.find{|x| [:running, :prepare].include? x.status}
+                    break
+                  end
                 else
                   if @options[:separate] && bang.empty?
                     @workers_hash.delete worker.io
