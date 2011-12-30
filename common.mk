@@ -692,7 +692,8 @@ signal.$(OBJEXT): {$(VPATH)}signal.c $(RUBY_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h
 sprintf.$(OBJEXT): {$(VPATH)}sprintf.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h \
   {$(VPATH)}regex.h {$(VPATH)}vsnprintf.c $(ENCODING_H_INCLUDES)
-st.$(OBJEXT): {$(VPATH)}st.c $(RUBY_H_INCLUDES) {$(VPATH)}pool_alloc.inc.h
+st.$(OBJEXT): {$(VPATH)}st.c $(RUBY_H_INCLUDES) {$(VPATH)}pool_alloc.inc.h \
+  {$(VPATH)}internal.h
 strftime.$(OBJEXT): {$(VPATH)}strftime.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}timev.h
 string.$(OBJEXT): {$(VPATH)}string.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h \
