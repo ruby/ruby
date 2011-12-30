@@ -1,3 +1,7 @@
+Mon Dec 26 17:20:10 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm.c (vm_exec): add guard to prevent optimization for LLVM clang.
+
 Fri Dec 30 17:01:12 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* vm_eval.c (rb_f_send): fix iobj.send() documentation issue.
