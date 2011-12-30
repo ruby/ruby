@@ -718,9 +718,10 @@ class Matrix
   #
   def symmetric?
     Matrix.Raise ErrDimensionMismatch unless square?
-    each_with_index(:strict_upper).all? do |e, row, col|
-      e == rows[col][row]
+    each_with_index(:strict_upper) do |e, row, col|
+      return false if e != rows[col][row]
     end
+    true
   end
 
   #
