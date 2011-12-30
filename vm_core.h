@@ -200,14 +200,14 @@ struct rb_iseq_struct {
      *
      *  argc           = M
      *  arg_rest       = M+N+1 // or -1 if no rest arg
-     *  arg_opts       = N
-     *  arg_opts_tbl   = [ (N entries) ]
+     *  arg_opts       = N+1   // or 0  if no optional arg
+     *  arg_opt_table  = [ (arg_opts entries) ]
      *  arg_post_len   = O // 0 if no post arguments
      *  arg_post_start = M+N+2
      *  arg_block      = M+N + 1 + O + 1 // -1 if no block arg
      *  arg_simple     = 0 if not simple arguments.
      *                 = 1 if no opt, rest, post, block.
-     *                 = 2 if ambiguos block parameter ({|a|}).
+     *                 = 2 if ambiguous block parameter ({|a|}).
      *  arg_size       = argument size.
      */
 
