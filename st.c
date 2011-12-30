@@ -7,6 +7,7 @@
 #include "st.h"
 #else
 #include "ruby/ruby.h"
+#include "internal.h"
 #endif
 
 #include <stdio.h>

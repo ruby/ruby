@@ -34,7 +34,7 @@ struct entry_typename {
     holder_typename *holder;
 };
 
-#define HOLDER_SIZE (256 / sizeof(entry_typename) - 1)
+#define HOLDER_SIZE ((4096 - sizeof(void*) * 3 - sizeof(int)) / sizeof(entry_typename) )
 struct holder_typename {
     unsigned int free;
     entry_typename items[HOLDER_SIZE];
@@ -65,11 +65,19 @@ entry_chain(entry_typename *entry)
 static void
 holder_alloc()
 {
-    holder_typename *holder = alloc(holder_typename);
-    unsigned int i = HOLDER_SIZE - 1;
-    register entry_typename *ptr = holder->items;
+    holder_typename *holder;
+    unsigned int i;
+    register entry_typename *ptr;
+#ifdef xgc_prepare
+    size_t sz = xgc_prepare(sizeof(holder_typename));
+    if (free_entry_p) return;
+    holder = (holder_typename*)xmalloc_prepared(sz);
+#else
+    holder = alloc(holder_typename);
+#endif 
+    ptr = holder->items;
     holder->free = HOLDER_SIZE;
-    for(; i; ptr++, i-- ) {
+    for(i = HOLDER_SIZE - 1; i; ptr++, i-- ) {
         ptr->holder = holder;
         ptr->fore = ptr + 1;
         (ptr + 1)->back = ptr;
