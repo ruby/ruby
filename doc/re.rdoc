@@ -120,7 +120,7 @@ Ruby also supports the following non-POSIX character classes:
 
 * <tt>/[[:word:]]/</tt> - A character in one of the following Unicode
   general categories _Letter_, _Mark_, _Number_,
-  <i>Connector_Punctuation<i/i>
+  <i>Connector_Punctuation</i>
 * <tt>/[[:ascii:]]/</tt> - A character in the ASCII character set
 
     # U+06F2 is "EXTENDED ARABIC-INDIC DIGIT TWO"
@@ -419,8 +419,8 @@ characters, <i>anchoring</i> the match to a specific position.
   it matches just before newline
 * <tt>\z</tt> - Matches end of string
 * <tt>\G</tt> - Matches point where last match finished
-* <tt>\b</tt> - Matches word boundaries when outside brackets; backspace
-   (0x08) inside brackets
+* <tt>\b</tt> - Matches word boundaries when outside brackets;
+  backspace (0x08) when inside brackets
 * <tt>\B</tt> - Matches non-word boundaries
 * <tt>(?=</tt><i>pat</i><tt>)</tt> - <i>Positive lookahead</i> assertion:
   ensures that the following characters match <i>pat</i>, but doesn't
