@@ -804,15 +804,15 @@ module Net   #:nodoc:
       if use_ssl?
         begin
           if proxy?
-            @socket.writeline sprintf('CONNECT %s:%s HTTP/%s',
-                                      @address, @port, HTTPVersion)
-            @socket.writeline "Host: #{@address}:#{@port}"
+            buf = "CONNECT #{@address}:#{@port} HTTP/#{HTTPVersion}\r\n"
+            buf << "Host: #{@address}:#{@port}\r\n"
             if proxy_user
               credential = ["#{proxy_user}:#{proxy_pass}"].pack('m')
               credential.delete!("\r\n")
-              @socket.writeline "Proxy-Authorization: Basic #{credential}"
+              buf << "Proxy-Authorization: Basic #{credential}\r\n"
             end
-            @socket.writeline ''
+            buf << "\r\n"
+            @socket.write(buf)
             HTTPResponse.read_new(@socket).value
           end
           # Server Name Indication (SNI) RFC 3546
