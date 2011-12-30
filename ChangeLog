@@ -1,3 +1,15 @@
+Sat Dec 31 06:28:37 2011  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread.c (rb_barrier_waiting): save the number of waiting threads
+	  in RBASIC()->flags. [ruby-dev:45002] [Bug #5768]
+
+	* thread.c (rb_barrier_wait): increment and decrement around
+	  rb_mutex_lock, and use rb_barrier_waiting().
+
+	* thread.c (rb_barrier_release): use rb_barrier_waiting().
+
+	* thread.c (rb_barrier_destroy): ditto.
+
 Mon Dec 26 17:20:10 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm.c (vm_exec): add guard to prevent optimization for LLVM clang.

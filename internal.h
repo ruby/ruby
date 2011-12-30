@@ -181,7 +181,6 @@ void rb_thread_execute_interrupts(VALUE th);
 void rb_clear_trace_func(void);
 VALUE rb_thread_backtrace(VALUE thval);
 VALUE rb_get_coverages(void);
-int rb_barrier_waiting(VALUE barrier);
 
 /* thread_pthread.c, thread_win32.c */
 void Init_native_thread(void);
