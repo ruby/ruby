@@ -832,7 +832,8 @@ st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *
 	return 0;
     }
 
-    FIND_ENTRY(table, ptr, hash_val, bin_pos);
+    bin_pos = hash_val % table->num_bins;
+    ptr = find_entry(table, key, hash_val, bin_pos);
 
     if (ptr == 0) {
 	return 0;
