@@ -810,21 +810,19 @@ st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *
     st_data_t value;
 
     if (table->entries_packed) {
-	st_index_t i;
-	for (i = 0; i < table->num_entries; i++) {
-	    if ((st_data_t)table->bins[i*2] == key) {
-		value = (st_data_t)table->bins[i*2+1];
-		switch ((*func)(key, &value, arg)) {
-		  case ST_CONTINUE:
-		    table->bins[i*2+1] = (struct st_table_entry*)value;
-		    break;
-		  case ST_DELETE:
-		    table->num_entries--;
-		    memmove(&table->bins[i*2], &table->bins[(i+1)*2],
-			    sizeof(struct st_table_entry*) * 2 * (table->num_entries-i));
-		}
-		return 1;
-	    }
+	st_index_t i = find_packed_index(table, key);
+        if (i < table->num_entries) {
+            value = (st_data_t)table->bins[i*2+1];
+            switch ((*func)(key, &value, arg)) {
+              case ST_CONTINUE:
+                table->bins[i*2+1] = (struct st_table_entry*)value;
+                break;
+              case ST_DELETE:
+                table->num_entries--;
+                memmove(&table->bins[i*2], &table->bins[(i+1)*2],
+                        sizeof(struct st_table_entry*) * 2 * (table->num_entries-i));
+            }
+            return 1;
 	}
 	return 0;
     }
@@ -847,8 +845,8 @@ st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *
 		if (ptr == tmp) {
 		    tmp = ptr->fore;
 		    *last = ptr->next;
-		    REMOVE_ENTRY(table, ptr);
-		    free(ptr);
+		    remove_entry(table, ptr);
+		    st_free_entry(ptr);
 		    break;
 		}
 	    }
