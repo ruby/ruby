@@ -7,12 +7,74 @@
  * alloc_entry - defired name of function for allocate entry
  */
 
+#ifndef COMMON_POOL_TYPES
+#define COMMON_POOL_TYPES 1
+
+typedef unsigned int pool_free_counter;
+typedef unsigned int pool_holder_counter;
+
+typedef struct pool_entry_list pool_entry_list;
+typedef struct pool_holder_header pool_holder_header;
+
+typedef void pool_holder_alloc_f();
+typedef void pool_holder_free_f(pool_holder_header *);
+typedef struct pool_free_pointer {
+    pool_entry_list     *free;
+    pool_free_counter    count;
+    pool_holder_alloc_f *alloc_holder;
+    pool_holder_free_f  *free_holder;
+} pool_free_pointer;
+
+struct pool_holder_header {
+    pool_holder_counter free, total;
+    pool_holder_counter size;
+    pool_free_pointer  *free_pointer;
+};
+
+struct pool_entry_list {
+    pool_holder_header *holder;
+    pool_entry_list *fore, *back;
+};
+
+static inline void
+pool_free_entry(pool_entry_list *entry)
+{
+    pool_holder_header *holder = entry->holder;
+    pool_free_pointer *pointer = holder->free_pointer;
+    entry->fore = pointer->free;
+    entry->back = NULL;
+    if (pointer->free) {
+	pointer->free->back = entry;
+    }
+    pointer->free = entry;
+    pointer->count++;
+    holder->free++;
+    if (holder->free == holder->total && pointer->count > holder->total * 16) {
+        pointer->free_holder(holder);
+    }
+}
+
+static inline pool_entry_list *
+pool_alloc_entry(pool_free_pointer *pointer)
+{
+    pool_entry_list *result;
+    if (pointer->free == NULL) {
+        pointer->alloc_holder();
+    }
+    result = pointer->free;
+    pointer->free = result->fore;
+    pointer->count--;
+    result->holder->free--;
+    return result;
+}
+
+#endif
+
 #define NAME_(prefix, kind) sta_##prefix##_##kind
 #define NAME(prefix, kind) NAME_(prefix, kind)
 
 #define holder_typename NAME(holder, ITEM_NAME)
 #define entry_typename NAME(entry, ITEM_NAME)
-#define list_typename NAME(list, ITEM_NAME)
 #define union_typename NAME(union, ITEM_NAME)
 #define item_type NAME(item, ITEM_NAME)
 
@@ -20,118 +82,91 @@ typedef ITEM_TYPEDEF(item_type);
 typedef struct holder_typename holder_typename;
 typedef struct entry_typename entry_typename;
 
-typedef struct list_typename {
-    entry_typename *fore, *back;
-} list_typename;
+struct entry_typename {
+    pool_holder_header  *holder;
+    item_type item;
+};
 
 typedef union union_typename {
-    list_typename l;
-    item_type item;
+    entry_typename  entry;
+    pool_entry_list list;
 } union_typename;
 
-struct entry_typename {
-    union_typename p;
-    holder_typename *holder;
-};
-
-#define HOLDER_SIZE ((4096 - sizeof(void*) * 3 - sizeof(int)) / sizeof(entry_typename) )
+#define HOLDER_SIZE ((4096 - sizeof(void*) * 2 - sizeof(pool_holder_header)) / sizeof(union_typename) )
 struct holder_typename {
-    unsigned int free;
-    entry_typename items[HOLDER_SIZE];
+    pool_holder_header  header;
+    union_typename items[HOLDER_SIZE];
 };
 
-#define free_entry_p NAME(free_pointer, ITEM_NAME)
-#define free_entry_count NAME(count, ITEM_NAME)
-static entry_typename *free_entry_p = NULL;
-static unsigned long free_entry_count = 0;
-
-#define entry_chain NAME(chain, ITEM_NAME)
+#define pool_pointer NAME(pool_pointer, ITEM_NAME)
 #define holder_alloc NAME(holder_alloc, ITEM_NAME)
 #define holder_free NAME(holder_free, ITEM_NAME)
-#define fore p.l.fore
-#define back p.l.back
 
-static inline void
-entry_chain(entry_typename *entry)
-{
-    entry->fore = free_entry_p;
-    entry->back = NULL;
-    if (free_entry_p) {
-	free_entry_p->back = entry;
-    }
-    free_entry_p = entry;
-}
+static pool_holder_alloc_f holder_alloc;
+static pool_holder_free_f  holder_free;
+static pool_free_pointer pool_pointer = {NULL, 0, holder_alloc, holder_free};
 
 static void
 holder_alloc()
 {
     holder_typename *holder;
     unsigned int i;
-    register entry_typename *ptr;
+    register union_typename *ptr;
 #ifdef xgc_prepare
     size_t sz = xgc_prepare(sizeof(holder_typename));
-    if (free_entry_p) return;
+    if (pool_pointer.free != NULL) return;
     holder = (holder_typename*)xmalloc_prepared(sz);
 #else
     holder = alloc(holder_typename);
 #endif 
     ptr = holder->items;
-    holder->free = HOLDER_SIZE;
+    holder->header.free = HOLDER_SIZE;
+    holder->header.total = HOLDER_SIZE;
+    holder->header.size = sizeof(union_typename);
+    holder->header.free_pointer = &pool_pointer;
     for(i = HOLDER_SIZE - 1; i; ptr++, i-- ) {
-        ptr->holder = holder;
-        ptr->fore = ptr + 1;
-        (ptr + 1)->back = ptr;
+        ptr->list.holder = &holder->header;
+        ptr->list.fore = &(ptr + 1)->list;
+        (ptr + 1)->list.back = &ptr->list;
     }
-    holder->items[0].back = NULL;
-    holder->items[HOLDER_SIZE - 1].holder = holder;
-    holder->items[HOLDER_SIZE - 1].fore = free_entry_p;
-    free_entry_p = &holder->items[0];
-    free_entry_count+= HOLDER_SIZE;
+    holder->items[0].list.back = NULL;
+    holder->items[HOLDER_SIZE - 1].list.holder = &holder->header;
+    holder->items[HOLDER_SIZE - 1].list.fore = pool_pointer.free;
+    pool_pointer.free = &holder->items[0].list;
+    pool_pointer.count += HOLDER_SIZE;
 }
 
 static void
-holder_free(holder_typename *holder)
+holder_free(pool_holder_header *holder)
 {
     unsigned int i;
-    entry_typename *ptr = holder->items;
+    union_typename *ptr = ((holder_typename *)holder)->items;
     for(i = HOLDER_SIZE; i; i--, ptr++) {
-	if (ptr->fore) {
-	    ptr->fore->back = ptr->back;
+	if (ptr->list.fore) {
+	    ptr->list.fore->back = ptr->list.back;
 	}
-	if (ptr->back) {
-	    ptr->back->fore = ptr->fore;
+	if (ptr->list.back) {
+	    ptr->list.back->fore = ptr->list.fore;
 	} else {
-	    free_entry_p = ptr->fore;
+	    pool_pointer.free = ptr->list.fore;
 	}
     }
-    free_entry_count-= HOLDER_SIZE;
+    pool_pointer.count-= HOLDER_SIZE;
     free(holder);
 }
 
 static void
-free_entry(item_type *entry)
+free_entry(item_type *item)
 {
-    holder_typename *holder = ((entry_typename *)entry)->holder;
-    entry_chain((entry_typename *)entry);
-    holder->free++;
-    free_entry_count++;
-    if (holder->free == HOLDER_SIZE && free_entry_count > HOLDER_SIZE * 16) {
-	holder_free(holder);
-    }
+    pool_entry_list *entry = (pool_entry_list *)(((char *)item) - offsetof(entry_typename, item));
+    pool_free_entry(entry);
 }
 
 static item_type *
 alloc_entry()
 {
-    entry_typename *result;
-    if (!free_entry_p) {
-	holder_alloc();
-    }
-    result = free_entry_p;
-    free_entry_p = result->fore;
-    result->holder->free--;
-    free_entry_count--;
-    return (item_type *)result;
+    pool_entry_list *result = pool_alloc_entry(&pool_pointer);
+    return &((entry_typename *)result)->item;
 }
 
 
@@ -140,14 +175,9 @@ alloc_entry()
 #undef NAME
 #undef holder_typename
 #undef entry_typename
-#undef list_typename
 #undef union_typename
 #undef item_type
-#undef free_entry_p
-#undef free_entry_count
+#undef pool_pointer
 #undef HOLDER_SIZE
-#undef entry_chain
 #undef holder_alloc
 #undef holdef_free
-#undef fore
-#undef back
