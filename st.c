@@ -814,27 +814,24 @@ st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *
     register st_table_entry *ptr, **last, *tmp;
     st_data_t value;
 
+    hash_val = do_hash(key, table);
+
     if (table->entries_packed) {
-	st_index_t i;
-	for (i = 0; i < table->num_entries; i++) {
-	    if ((st_data_t)table->bins[i*2] == key) {
-		value = (st_data_t)table->bins[i*2+1];
+	st_index_t i = find_packed_index(table, hash_val, key);
+	    if (i < table->num_entries) {
+		value = PVAL(table, i);
 		switch ((*func)(key, &value, arg)) {
 		  case ST_CONTINUE:
-		    table->bins[i*2+1] = (struct st_table_entry*)value;
+		    PVAL_SET(table, i, value);
 		    break;
 		  case ST_DELETE:
-		    table->num_entries--;
-		    memmove(&table->bins[i*2], &table->bins[(i+1)*2],
-			    sizeof(struct st_table_entry*) * 2 * (table->num_entries-i));
+                    remove_packed_entry(table, i);
 		}
 		return 1;
 	    }
-	}
 	return 0;
     }
 
-    hash_val = do_hash(key, table);
     FIND_ENTRY(table, ptr, hash_val, bin_pos);
 
     if (ptr == 0) {
@@ -852,7 +849,7 @@ st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *
 		if (ptr == tmp) {
 		    tmp = ptr->fore;
 		    *last = ptr->next;
-		    REMOVE_ENTRY(table, ptr);
+		    remove_entry(table, ptr);
 		    free(ptr);
 		    break;
 		}
