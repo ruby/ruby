@@ -115,46 +115,23 @@ remove_packed_entry(st_table *table, st_index_t i)
 #define ST_USE_POOLED_ALLOCATOR
 #ifdef ST_USE_POOLED_ALLOCATOR
 
-#define ITEM_NAME entry
-#define ITEM_TYPEDEF(name) st_table_entry name
-#define free_entry st_free_entry
-#define alloc_entry st_alloc_entry
 #include "pool_alloc.inc.h"
-#undef ITEM_NAME
-#undef ITEM_TYPEDEF
-#undef free_entry
-#undef alloc_entry
-
+static pool_free_pointer entry_pool = INIT_POOL(st_table_entry);
 typedef st_table_entry *st_table_entry_p;
-#define ITEM_NAME bins11
-#define ITEM_TYPEDEF(name) st_table_entry_p name[ST_DEFAULT_INIT_TABLE_SIZE]
-#define free_entry st_free_bins11
-#define alloc_entry st_alloc_bins11
-#include "pool_alloc.inc.h"
-#undef ITEM_NAME
-#undef ITEM_TYPEDEF
-#undef free_entry
-#undef alloc_entry
+typedef st_table_entry_p bins11[11];
+typedef st_table_entry_p bins19[19];
+static pool_free_pointer bins11_pool = INIT_POOL(bins11);
+static pool_free_pointer bins19_pool = INIT_POOL(bins19);
+static pool_free_pointer table_pool = INIT_POOL(st_table);
 
-#define ITEM_NAME bins19
-#define ITEM_TYPEDEF(name) st_table_entry_p name[ST_DEFAULT_PACKED_TABLE_SIZE]
-#define free_entry st_free_bins19
-#define alloc_entry st_alloc_bins19
-#include "pool_alloc.inc.h"
-#undef ITEM_NAME
-#undef ITEM_TYPEDEF
-#undef free_entry
-#undef alloc_entry
-
-#define ITEM_NAME table
-#define ITEM_TYPEDEF(name) st_table name
-#define free_entry st_dealloc_table
-#define alloc_entry st_alloc_table
-#include "pool_alloc.inc.h"
-#undef ITEM_NAME
-#undef ITEM_TYPEDEF
-#undef free_entry
-#undef alloc_entry
+#define st_free_entry(ptr)    pool_free(ptr)
+#define st_alloc_entry()  (st_table_entry*)pool_alloc(&entry_pool)
+#define st_free_bins11(ptr)   pool_free(ptr)
+#define st_alloc_bins11() (st_table_entry**)pool_alloc(&bins11_pool)
+#define st_free_bins19(ptr)   pool_free(ptr)
+#define st_alloc_bins19() (st_table_entry**)pool_alloc(&bins19_pool)
+#define st_dealloc_table(ptr) pool_free(ptr)
+#define st_alloc_table()  (st_table*)       pool_alloc(&table_pool)
 
 static st_table_entry **
 st_alloc_bins(st_index_t num_bins)

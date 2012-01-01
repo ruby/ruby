@@ -45,6 +45,9 @@ struct pool_holder {
 };
 #define POOL_DATA_SIZE ((4096 - sizeof(void*) * 3 - offsetof(pool_holder, data))/sizeof(void*))
 #define POOL_HOLDER_SIZE (offsetof(pool_holder, data) + pointer->size*pointer->total*sizeof(void*)) 
+#define POOL_ENTRY_SIZE(item_type) (((sizeof(item_type)+ENTRY_DATA_OFFSET-1)/sizeof(void*)+1))
+#define POOL_HOLDER_COUNT(item_type) (POOL_DATA_SIZE/POOL_ENTRY_SIZE(item_type))
+#define INIT_POOL(item_type) {NULL, 0, POOL_ENTRY_SIZE(item_type), POOL_HOLDER_COUNT(item_type)}
 
 static void
 pool_holder_alloc(pool_free_pointer *pointer)
@@ -150,30 +153,3 @@ pool_alloc(pool_free_pointer *pointer)
 #undef ENTRY2VOID
 #undef VOID2ENTRY
 #endif
-
-#define NAME_(prefix, kind) sta_##prefix##_##kind
-#define NAME(prefix, kind) NAME_(prefix, kind)
-
-#define item_type NAME(item, ITEM_NAME)
-typedef ITEM_TYPEDEF(item_type);
-
-#define pool_pointer NAME(pool_pointer, ITEM_NAME)
-#define size_in_void (((sizeof(item_type)+ENTRY_DATA_OFFSET-1)/sizeof(void*)+1))
-static pool_free_pointer pool_pointer = {NULL, 0, size_in_void, POOL_DATA_SIZE/size_in_void};
-
-static inline void
-free_entry(item_type *item)
-{
-    pool_free(item);
-}
-
-static inline item_type *
-alloc_entry()
-{
-    return (item_type*)pool_alloc(&pool_pointer);
-}
-
-#undef NAME_
-#undef NAME
-#undef item_type
-#undef pool_pointer
