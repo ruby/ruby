@@ -75,15 +75,21 @@ module Shellwords
   #     # ...
   #   }
   #
+  # It is caller's responsibility to encode the string in the right
+  # encoding for the shell environment where this string is used.
+  # Multibyte characters are treated as multibyte characters, not
+  # bytes.
+  #
   def shellescape(str)
     # An empty argument will be skipped, so return empty quotes.
     return "''" if str.empty?
 
     str = str.dup
 
-    # Process as a single byte sequence because not all shell
-    # implementations are multibyte aware.
-    str.gsub!(/([^A-Za-z0-9_\-.,:\/@\n])/n, "\\\\\\1")
+    # Treat multibyte characters as is.  It is caller's responsibility
+    # to encode the string in the right encoding for the shell
+    # environment.
+    str.gsub!(/([^A-Za-z0-9_\-.,:\/@\n])/, "\\\\\\1")
 
     # A LF cannot be escaped with a backslash because a backslash + LF
     # combo is regarded as line continuation and simply ignored.
