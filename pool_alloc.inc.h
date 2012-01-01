@@ -15,14 +15,13 @@ typedef unsigned int pool_holder_counter;
 
 typedef struct pool_entry_list pool_entry_list;
 typedef struct pool_holder_header pool_holder_header;
+typedef struct pool_holder pool_holder;
 
-typedef void pool_holder_alloc_f();
-typedef void pool_holder_free_f(pool_holder_header *);
 typedef struct pool_free_pointer {
     pool_entry_list     *free;
     pool_free_counter    count;
-    pool_holder_alloc_f *alloc_holder;
-    pool_holder_free_f  *free_holder;
+    pool_holder_counter  size; // size of entry in sizeof(void*) items
+    pool_holder_counter  total; // size of entry in sizeof(void*) items
 } pool_free_pointer;
 
 struct pool_holder_header {
@@ -32,14 +31,81 @@ struct pool_holder_header {
 };
 
 struct pool_entry_list {
-    pool_holder_header *holder;
+    pool_holder *holder;
     pool_entry_list *fore, *back;
 };
+#define ENTRY(ptr) ((pool_entry_list*)(ptr))
+#define ENTRY_DATA_OFFSET offsetof(pool_entry_list, fore)
+#define VOID2ENTRY(ptr) ENTRY((char*)(ptr) - ENTRY_DATA_OFFSET)
+#define ENTRY2VOID(ptr) ((void*)((char*)(ptr) + ENTRY_DATA_OFFSET))
+
+struct pool_holder {
+    pool_holder_header header;
+    void *data[1];
+};
+#define POOL_DATA_SIZE ((4096 - sizeof(void*) * 3 - offsetof(pool_holder, data))/sizeof(void*))
+#define POOL_HOLDER_SIZE (offsetof(pool_holder, data) + pointer->size*pointer->total*sizeof(void*)) 
+
+static void
+pool_holder_alloc(pool_free_pointer *pointer)
+{
+    pool_holder *holder;
+    pool_holder_counter i, size, count;
+    register void **ptr;
+#ifdef xgc_prepare
+    size_t sz = xgc_prepare(POOL_HOLDER_SIZE);
+    if (pointer->free != NULL) return;
+    holder = (pool_holder*)xmalloc_prepared(sz);
+#else
+    holder = (pool_holder*)malloc(POOL_HOLDER_SIZE);
+#endif 
+    size = pointer->size;
+    count = pointer->total;
+    holder->header.free = count;
+    holder->header.total = count;
+    holder->header.size = size;
+    holder->header.free_pointer = pointer;
+    ptr = holder->data;
+    ENTRY(ptr)->back = NULL;
+    for(i = count - 1; i; i-- ) {
+        ENTRY(ptr)->holder = holder;
+        ENTRY(ptr)->fore = ENTRY(ptr + size);
+        ENTRY(ptr + size)->back = ENTRY(ptr);
+	ptr += size;
+    }
+    ENTRY(ptr)->holder = holder;
+    ENTRY(ptr)->fore = pointer->free;
+    pointer->free = ENTRY(holder->data);
+    pointer->count += count;
+}
+
+static void
+pool_holder_free(pool_holder *holder)
+{
+    pool_holder_counter i, size;
+    void **ptr = holder->data;
+    pool_free_pointer *pointer = holder->header.free_pointer;
+    size = holder->header.size;
+    
+    for(i = holder->header.total; i; i--) {
+	if (ENTRY(ptr)->fore) {
+	    ENTRY(ptr)->fore->back = ENTRY(ptr)->back;
+	}
+	if (ENTRY(ptr)->back) {
+	    ENTRY(ptr)->back->fore = ENTRY(ptr)->fore;
+	} else {
+	    pointer->free = ENTRY(ptr)->fore;
+	}
+	ptr += size;
+    }
+    pointer->count-= holder->header.total;
+    free(holder);
+}
 
 static inline void
 pool_free_entry(pool_entry_list *entry)
 {
-    pool_holder_header *holder = entry->holder;
+    pool_holder_header *holder = &entry->holder->header;
     pool_free_pointer *pointer = holder->free_pointer;
     entry->fore = pointer->free;
     entry->back = NULL;
@@ -50,7 +116,7 @@ pool_free_entry(pool_entry_list *entry)
     pointer->count++;
     holder->free++;
     if (holder->free == holder->total && pointer->count > holder->total * 16) {
-        pointer->free_holder(holder);
+        pool_holder_free(entry->holder);
     }
 }
 
@@ -59,125 +125,55 @@ pool_alloc_entry(pool_free_pointer *pointer)
 {
     pool_entry_list *result;
     if (pointer->free == NULL) {
-        pointer->alloc_holder();
+        pool_holder_alloc(pointer);
     }
     result = pointer->free;
     pointer->free = result->fore;
     pointer->count--;
-    result->holder->free--;
+    result->holder->header.free--;
     return result;
 }
 
+static inline void
+pool_free(void *p)
+{
+    pool_free_entry(VOID2ENTRY(p));
+}
+
+static inline void*
+pool_alloc(pool_free_pointer *pointer)
+{
+    return ENTRY2VOID(pool_alloc_entry(pointer));
+}
+
+#undef ENTRY
+#undef ENTRY2VOID
+#undef VOID2ENTRY
 #endif
 
 #define NAME_(prefix, kind) sta_##prefix##_##kind
 #define NAME(prefix, kind) NAME_(prefix, kind)
 
-#define holder_typename NAME(holder, ITEM_NAME)
-#define entry_typename NAME(entry, ITEM_NAME)
-#define union_typename NAME(union, ITEM_NAME)
 #define item_type NAME(item, ITEM_NAME)
-
 typedef ITEM_TYPEDEF(item_type);
-typedef struct holder_typename holder_typename;
-typedef struct entry_typename entry_typename;
-
-struct entry_typename {
-    pool_holder_header  *holder;
-    item_type item;
-};
-
-typedef union union_typename {
-    entry_typename  entry;
-    pool_entry_list list;
-} union_typename;
-
-#define HOLDER_SIZE ((4096 - sizeof(void*) * 2 - sizeof(pool_holder_header)) / sizeof(union_typename) )
-struct holder_typename {
-    pool_holder_header  header;
-    union_typename items[HOLDER_SIZE];
-};
 
 #define pool_pointer NAME(pool_pointer, ITEM_NAME)
-#define holder_alloc NAME(holder_alloc, ITEM_NAME)
-#define holder_free NAME(holder_free, ITEM_NAME)
+#define size_in_void (((sizeof(item_type)+ENTRY_DATA_OFFSET-1)/sizeof(void*)+1))
+static pool_free_pointer pool_pointer = {NULL, 0, size_in_void, POOL_DATA_SIZE/size_in_void};
 
-static pool_holder_alloc_f holder_alloc;
-static pool_holder_free_f  holder_free;
-static pool_free_pointer pool_pointer = {NULL, 0, holder_alloc, holder_free};
-
-static void
-holder_alloc()
-{
-    holder_typename *holder;
-    unsigned int i;
-    register union_typename *ptr;
-#ifdef xgc_prepare
-    size_t sz = xgc_prepare(sizeof(holder_typename));
-    if (pool_pointer.free != NULL) return;
-    holder = (holder_typename*)xmalloc_prepared(sz);
-#else
-    holder = alloc(holder_typename);
-#endif 
-    ptr = holder->items;
-    holder->header.free = HOLDER_SIZE;
-    holder->header.total = HOLDER_SIZE;
-    holder->header.size = sizeof(union_typename);
-    holder->header.free_pointer = &pool_pointer;
-    for(i = HOLDER_SIZE - 1; i; ptr++, i-- ) {
-        ptr->list.holder = &holder->header;
-        ptr->list.fore = &(ptr + 1)->list;
-        (ptr + 1)->list.back = &ptr->list;
-    }
-    holder->items[0].list.back = NULL;
-    holder->items[HOLDER_SIZE - 1].list.holder = &holder->header;
-    holder->items[HOLDER_SIZE - 1].list.fore = pool_pointer.free;
-    pool_pointer.free = &holder->items[0].list;
-    pool_pointer.count += HOLDER_SIZE;
-}
-
-static void
-holder_free(pool_holder_header *holder)
-{
-    unsigned int i;
-    union_typename *ptr = ((holder_typename *)holder)->items;
-    for(i = HOLDER_SIZE; i; i--, ptr++) {
-	if (ptr->list.fore) {
-	    ptr->list.fore->back = ptr->list.back;
-	}
-	if (ptr->list.back) {
-	    ptr->list.back->fore = ptr->list.fore;
-	} else {
-	    pool_pointer.free = ptr->list.fore;
-	}
-    }
-    pool_pointer.count-= HOLDER_SIZE;
-    free(holder);
-}
-
-static void
+static inline void
 free_entry(item_type *item)
 {
-    pool_entry_list *entry = (pool_entry_list *)(((char *)item) - offsetof(entry_typename, item));
-    pool_free_entry(entry);
+    pool_free(item);
 }
 
-static item_type *
+static inline item_type *
 alloc_entry()
 {
-    pool_entry_list *result = pool_alloc_entry(&pool_pointer);
-    return &((entry_typename *)result)->item;
+    return (item_type*)pool_alloc(&pool_pointer);
 }
-
-
 
 #undef NAME_
 #undef NAME
-#undef holder_typename
-#undef entry_typename
-#undef union_typename
 #undef item_type
 #undef pool_pointer
-#undef HOLDER_SIZE
-#undef holder_alloc
-#undef holdef_free
