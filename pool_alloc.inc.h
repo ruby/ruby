@@ -14,7 +14,6 @@ typedef unsigned int pool_free_counter;
 typedef unsigned int pool_holder_counter;
 
 typedef struct pool_entry_list pool_entry_list;
-typedef struct pool_holder_header pool_holder_header;
 typedef struct pool_holder pool_holder;
 
 typedef struct pool_free_pointer {
@@ -23,12 +22,6 @@ typedef struct pool_free_pointer {
     pool_holder_counter  size; // size of entry in sizeof(void*) items
     pool_holder_counter  total; // size of entry in sizeof(void*) items
 } pool_free_pointer;
-
-struct pool_holder_header {
-    pool_holder_counter free, total;
-    pool_holder_counter size;
-    pool_free_pointer  *free_pointer;
-};
 
 struct pool_entry_list {
     pool_holder *holder;
@@ -40,7 +33,9 @@ struct pool_entry_list {
 #define ENTRY2VOID(ptr) ((void*)((char*)(ptr) + ENTRY_DATA_OFFSET))
 
 struct pool_holder {
-    pool_holder_header header;
+    pool_holder_counter free, total;
+    pool_holder_counter size;
+    pool_free_pointer  *free_pointer;
     void *data[1];
 };
 #define POOL_DATA_SIZE ((4096 - sizeof(void*) * 3 - offsetof(pool_holder, data))/sizeof(void*))
@@ -64,10 +59,10 @@ pool_holder_alloc(pool_free_pointer *pointer)
 #endif 
     size = pointer->size;
     count = pointer->total;
-    holder->header.free = count;
-    holder->header.total = count;
-    holder->header.size = size;
-    holder->header.free_pointer = pointer;
+    holder->free = count;
+    holder->total = count;
+    holder->size = size;
+    holder->free_pointer = pointer;
     ptr = holder->data;
     ENTRY(ptr)->back = NULL;
     for(i = count - 1; i; i-- ) {
@@ -87,10 +82,10 @@ pool_holder_free(pool_holder *holder)
 {
     pool_holder_counter i, size;
     void **ptr = holder->data;
-    pool_free_pointer *pointer = holder->header.free_pointer;
-    size = holder->header.size;
+    pool_free_pointer *pointer = holder->free_pointer;
+    size = holder->size;
     
-    for(i = holder->header.total; i; i--) {
+    for(i = holder->total; i; i--) {
 	if (ENTRY(ptr)->fore) {
 	    ENTRY(ptr)->fore->back = ENTRY(ptr)->back;
 	}
@@ -101,14 +96,14 @@ pool_holder_free(pool_holder *holder)
 	}
 	ptr += size;
     }
-    pointer->count-= holder->header.total;
+    pointer->count-= holder->total;
     free(holder);
 }
 
 static inline void
 pool_free_entry(pool_entry_list *entry)
 {
-    pool_holder_header *holder = &entry->holder->header;
+    pool_holder *holder = entry->holder;
     pool_free_pointer *pointer = holder->free_pointer;
     entry->fore = pointer->free;
     entry->back = NULL;
@@ -133,7 +128,7 @@ pool_alloc_entry(pool_free_pointer *pointer)
     result = pointer->free;
     pointer->free = result->fore;
     pointer->count--;
-    result->holder->header.free--;
+    result->holder->free--;
     return result;
 }
 
