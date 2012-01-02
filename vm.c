@@ -2073,12 +2073,12 @@ Init_VM(void)
     VALUE klass;
     VALUE fcore;
 
-    /* ::VM */
+    /* ::RubyVM */
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
     rb_undef_alloc_func(rb_cRubyVM);
     rb_undef_method(CLASS_OF(rb_cRubyVM), "new");
 
-    /* ::VM::FrozenCore */
+    /* FrozenCore (hidden) */
     fcore = rb_class_new(rb_cBasicObject);
     RBASIC(fcore)->flags = T_ICLASS;
     klass = rb_singleton_class(fcore);
@@ -2092,7 +2092,7 @@ Init_VM(void)
     rb_gc_register_mark_object(fcore);
     rb_mRubyVMFrozenCore = fcore;
 
-    /* ::VM::Env */
+    /* ::RubyVM::Env */
     rb_cEnv = rb_define_class_under(rb_cRubyVM, "Env", rb_cObject);
     rb_undef_alloc_func(rb_cEnv);
     rb_undef_method(CLASS_OF(rb_cEnv), "new");
@@ -2101,7 +2101,7 @@ Init_VM(void)
     rb_cThread = rb_define_class("Thread", rb_cObject);
     rb_undef_alloc_func(rb_cThread);
 
-    /* ::VM::USAGE_ANALYSIS_* */
+    /* ::RubyVM::USAGE_ANALYSIS_* */
     rb_define_const(rb_cRubyVM, "USAGE_ANALYSIS_INSN", rb_hash_new());
     rb_define_const(rb_cRubyVM, "USAGE_ANALYSIS_REGS", rb_hash_new());
     rb_define_const(rb_cRubyVM, "USAGE_ANALYSIS_INSN_BIGRAM", rb_hash_new());
@@ -2131,10 +2131,10 @@ Init_VM(void)
     rb_ary_push(opts, rb_str_new2("block inlining"));
 #endif
 
-    /* ::VM::InsnNameArray */
+    /* ::RubyVM::INSTRUCTION_NAMES */
     rb_define_const(rb_cRubyVM, "INSTRUCTION_NAMES", rb_insns_name_array());
 
-    /* debug functions ::VM::SDR(), ::VM::NSDR() */
+    /* debug functions ::RubyVM::SDR(), ::RubyVM::NSDR() */
 #if VMDEBUG
     rb_define_singleton_method(rb_cRubyVM, "SDR", sdr, 0);
     rb_define_singleton_method(rb_cRubyVM, "NSDR", nsdr, 0);
