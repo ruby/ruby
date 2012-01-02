@@ -35,7 +35,7 @@ module Test
         th = Thread.new do
           begin
             while buf = (self.verbose ? i.gets : i.read(5))
-              @stdout.puts "p #{[buf].pack("m").gsub("\n","")}"
+              @stdout.puts "p #{[buf].pack("m0")}"
             end
           rescue IOError
           rescue Errno::EPIPE
@@ -69,7 +69,7 @@ module Test
         result << suite.name
 
         begin
-          @stdout.puts "done #{[Marshal.dump(result)].pack("m").gsub("\n","")}"
+          @stdout.puts "done #{[Marshal.dump(result)].pack("m0")}"
         rescue Errno::EPIPE; end
         return result
       ensure
@@ -106,7 +106,7 @@ module Test
               begin
                 require $1
               rescue LoadError
-                @stdout.puts "after #{[Marshal.dump([$1, $!])].pack("m").gsub("\n","")}"
+                @stdout.puts "after #{[Marshal.dump([$1, $!])].pack("m0")}"
                 @stdout.puts "ready"
                 next
               end
@@ -130,7 +130,7 @@ module Test
         rescue Errno::EPIPE
         rescue Exception => e
           begin
-            @stdout.puts "bye #{[Marshal.dump(e)].pack("m").gsub("\n","")}"
+            @stdout.puts "bye #{[Marshal.dump(e)].pack("m0")}"
           rescue Errno::EPIPE;end
           exit
         ensure

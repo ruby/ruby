@@ -269,7 +269,7 @@ module Test
           @file = File.basename(task, ".rb")
           @real_file = task
           begin
-            puts "loadpath #{[Marshal.dump($:-@loadpath)].pack("m").gsub("\n","")}"
+            puts "loadpath #{[Marshal.dump($:-@loadpath)].pack("m0")}"
             @loadpath = $:.dup
             puts "run #{task} #{type}"
             @status = :prepare

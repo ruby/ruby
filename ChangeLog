@@ -1,3 +1,9 @@
+Mon Jan  2 15:10:11 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/test/unit/parallel.rb: use pack("m0") instead of
+	  pack("m").gsub("\n","").
+	* lib/test/unit.rb (Test::Unit::Runner::Worker#run): ditto.
+
 Mon Jan  2 15:05:09 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/test/unit.rb (Test::Unit::Runner::Worker#run): use
