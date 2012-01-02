@@ -22,8 +22,15 @@ class VCS
   end
 
   def self.detect(path)
-    @@dirs.sort.reverse_each do |dir, klass|
-      return klass.new(path) if File.directory?("#{path}/#{dir}")
+    @@dirs.each do |dir, klass|
+      return klass.new(path) if File.directory?(File.join(path, dir))
+      prev = path
+      loop {
+        curr = File.realpath(File.join(prev, '..'))
+        break if curr == prev	# stop at the root directory
+        return klass.new(path) if File.directory?(File.join(curr, dir))
+        prev = curr
+      }
     end
     raise VCS::NotFoundError, "does not seem to be under a vcs: #{path}"
   end
@@ -127,7 +134,7 @@ parser = OptionParser.new {|opts|
 }
 parser.parse! rescue abort "#{File.basename(Program)}: #{$!}\n#{parser}"
 
-srcdir = srcdir ? srcdir : File.dirname(File.dirname(Program))
+srcdir ||= File.dirname(File.dirname(Program))
 begin
   vcs = VCS.detect(srcdir)
 rescue VCS::NotFoundError => e
