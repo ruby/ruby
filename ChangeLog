@@ -1,3 +1,8 @@
+Mon Jan  2 14:55:28 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/test/unit.rb (Test::Unit::Runner#_run_parallel): find may
+	  return nil and nil can not dup.
+
 Sun Jan  1 12:23:10 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/shellwords.rb (Shellwords#shellescape): Drop the //n flag

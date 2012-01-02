@@ -433,8 +433,9 @@ module Test
             while stat = Process.wait2
               break if @interrupt # Break when interrupt
               pid, stat = stat
-              w = (@workers + @dead_workers).find{|x| pid == x.pid }.dup
+              w = (@workers + @dead_workers).find{|x| pid == x.pid }
               next unless w
+              w = w.dup
               if w.status != :quit && !w.quit_called?
                 # Worker down
                 w.died(nil, !stat.signaled? && stat.exitstatus)
