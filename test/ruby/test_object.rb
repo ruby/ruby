@@ -437,6 +437,20 @@ class TestObject < Test::Unit::TestCase
     assert_raise(ArgumentError) { 1.send }
   end
 
+  def test_send_with_block
+    x = :ok
+    o = Object.new
+    def o.inspect
+      yield if block_given?
+      super
+    end
+    begin
+      nil.public_send(o) { x = :ng }
+    rescue
+    end
+    assert_equal(:ok, x)
+  end
+
   def test_no_superclass_method
     bug2312 = '[ruby-dev:39581]'
 
