@@ -438,6 +438,10 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_send_with_block
+    x = :ng
+    1.send(:times) { x = :ok }
+    assert_equal(:ok, x)
+
     x = :ok
     o = Object.new
     def o.inspect

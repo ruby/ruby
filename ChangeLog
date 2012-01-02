@@ -1,3 +1,7 @@
+Mon Jan  2 15:26:39 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* test/ruby/test_object.rb (test_send_with_block): add a normal case.
+
 Mon Jan  2 15:18:54 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* test/ruby/test_object.rb (test_send_with_block): moved from
