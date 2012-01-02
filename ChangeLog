@@ -1,3 +1,8 @@
+Mon Jan  2 20:53:36 2012  Tanaka Akira  <akr@fsij.org>
+
+	* lib/securerandom.rb (random_bytes): use IO#read instead of
+	  IO#readpartial to make the intent more clear.
+
 Mon Jan  2 15:26:39 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* test/ruby/test_object.rb (test_send_with_block): add a normal case.

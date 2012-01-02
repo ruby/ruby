@@ -78,7 +78,7 @@ module SecureRandom
             raise Errno::ENOENT
           end
           @has_urandom = true
-          ret = f.readpartial(n)
+          ret = f.read(n)
           if ret.length != n
             raise NotImplementedError, "Unexpected partial read from random device"
           end
