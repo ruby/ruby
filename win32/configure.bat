@@ -1,4 +1,5 @@
 @echo off
+@setlocal disabledelayedexpansion
 
 echo> ~tmp~.mak ####
 echo>> ~tmp~.mak conf = %0
@@ -206,3 +207,4 @@ echo>>~setup~.mak 	@if exist Makefile ren Makefile Makefile.old
 echo>>~setup~.mak 	@ren Makefile.new Makefile
 nmake -alf ~setup~.mak MAKEFILE=Makefile.new
 :exit
+@endlocal
