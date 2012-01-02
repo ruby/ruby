@@ -266,7 +266,7 @@ module Test
         end
 
         def run(task,type)
-          @file = File.basename(task).gsub(/\.rb/,"")
+          @file = File.basename(task, ".rb")
           @real_file = task
           begin
             puts "loadpath #{[Marshal.dump($:-@loadpath)].pack("m").gsub("\n","")}"
