@@ -1,3 +1,7 @@
+Tue Jan 03 15:50:12 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* process.c: Fix typo. patch from Aviv Ben-Yosef.
+
 Tue Jan  3 13:43:37 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* tool/merger.rb: allow r0123 style revision number.

@@ -3277,7 +3277,7 @@ rb_f_system(int argc, VALUE *argv)
  *  This is different from fd.
  *  For example, :err=>:out means redirecting child stderr to parent stdout.
  *  But :err=>[:child, :out] means redirecting child stderr to child stdout.
- *  They differs if stdout is redirected in the child process as follows.
+ *  They differ if stdout is redirected in the child process as follows.
  *
  *    # stdout and stderr is redirected to log file.
  *    # The file "log" is opened just once.
