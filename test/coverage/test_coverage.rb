@@ -31,10 +31,31 @@ class TestCoverage < Test::Unit::TestCase
 
         Coverage.start
         require tmp + '/test.rb'
-        Coverage.result
+        assert_equal 3, Coverage.result[tmp + '/test.rb'].size
         Coverage.start
         coverage_test_method
-        assert_equal 1, Coverage.result.size
+        assert_equal 0, Coverage.result[tmp + '/test.rb'].size
+      }
+    }
+  ensure
+    $".replace loaded_features
+  end
+
+  def test_big_code
+    loaded_features = $".dup
+
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts "p\n" * 10000
+          f.puts "def ignore(x); end"
+          f.puts "ignore([1"
+          f.puts "])"
+        end
+
+        Coverage.start
+        require tmp + '/test.rb'
+        assert_equal 10003, Coverage.result[tmp + '/test.rb'].size
       }
     }
   ensure

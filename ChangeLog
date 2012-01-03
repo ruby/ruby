@@ -1,3 +1,11 @@
+Mon Jan  2 19:27:18 2012  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (update_coverage): skip coverage count up if the current
+	  line is out of the way.  rb_sourceline() is unreliable when source
+	  code is big.  [ruby-dev:44413]
+
+	* test/coverage/test_coverage.rb: add a test for above.
+
 Mon Jan  2 19:08:54 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (gvl_yield): don't prevent concurrent sched_yield().
