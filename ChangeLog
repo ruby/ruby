@@ -1,3 +1,8 @@
+Mon Jan  2 20:05:10 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/ruby.h (SIZE_MAX): define SIZE_MAX if not defined.
+	  patched by The Written Word Inc. [ruby-core:40422] [Bug #5489]
+
 Mon Jan  2 20:00:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pty/pty.c (pty_check): should return nil until the child
