@@ -1,3 +1,8 @@
+Tue Jan 03 19:13:05 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/rexml/test_sax.rb: add require 'rexml/document'.
+	  [Backport #5834] [ruby-dev:45079]
+
 Tue Jan  3 19:05:42 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* include/ruby/defines.h (FLUSH_REGISTER_WINDOWS): move sparc asm code
