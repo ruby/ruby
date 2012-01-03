@@ -19,8 +19,8 @@ typedef struct pool_holder pool_holder;
 typedef struct pool_free_pointer {
     pool_entry_list     *free;
     pool_free_counter    count;
-    pool_holder_counter  size; // size of entry in sizeof(void*) items
-    pool_holder_counter  total; // size of entry in sizeof(void*) items
+    pool_holder_counter  size; /* size of entry in sizeof(void*) items */
+    pool_holder_counter  total; /* size of entry in sizeof(void*) items */
 } pool_free_pointer;
 
 struct pool_entry_list {

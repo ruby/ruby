@@ -77,16 +77,16 @@ static void rehash(st_table *);
 
 /* remove cast to unsigned int in the future */
 #define do_hash(key,table) (unsigned int)(st_index_t)(*(table)->type->hash)((key))
-#define PKEY_POS(i, num_bins) ((num_bins)-(i)*2-2) //((num_bins)/3 + (i)*2)
-#define PVAL_POS(i, num_bins) ((num_bins)-(i)*2-1) //((num_bins)/3 + (i)*2 + 1)
-#define PHASH_POS(i, num_bins) (i) //((num_bins)-(i)*3-1) //(i)
+#define PKEY_POS(i, num_bins) ((num_bins)-(i)*2-2)
+#define PVAL_POS(i, num_bins) ((num_bins)-(i)*2-1)
+#define PHASH_POS(i, num_bins) (i)
 #define PKEY(table, i) (st_data_t)(table)->bins[PKEY_POS(i, (table)->num_bins)]
 #define PVAL(table, i) (st_data_t)(table)->bins[PVAL_POS(i, (table)->num_bins)]
 #define PHASH(table, i) (st_data_t)(table)->bins[PHASH_POS(i, (table)->num_bins)]
 #define PKEY_SET(table, i, v) do{ (table)->bins[PKEY_POS(i, (table)->num_bins)] = (st_table_entry *)(v); } while(0)
 #define PVAL_SET(table, i, v) do{ (table)->bins[PVAL_POS(i, (table)->num_bins)] = (st_table_entry *)(v); } while(0)
 #define PHASH_SET(table, i, v) do{ (table)->bins[PHASH_POS(i, (table)->num_bins)] = (st_table_entry *)(v); } while(0)
-//#define ST_PACKED_REFERENCE
+/*#define ST_PACKED_REFERENCE*/
 #ifdef ST_PACKED_REFERENCE
 static inline void
 remove_packed_entry(st_table *table, st_index_t i)
