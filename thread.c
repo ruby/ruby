@@ -2058,9 +2058,9 @@ rb_thread_local_aref(VALUE thread, ID id)
  *  call-seq:
  *      thr[sym]   -> obj or nil
  *
- *  Attribute Reference---Returns the value of a thread-local variable, using
- *  either a symbol or a string name. If the specified variable does not exist,
- *  returns <code>nil</code>.
+ *  Attribute Reference---Returns the value of a fiber-local variable (current thread's root fiber
+ *  if not explicitely inside a Fiber), using either a symbol or a string name.
+ *  If the specified variable does not exist, returns <code>nil</code>.
  *
  *     [
  *       Thread.new { Thread.current["name"] = "A" },
@@ -2111,7 +2111,7 @@ rb_thread_local_aset(VALUE thread, ID id, VALUE val)
  *  call-seq:
  *      thr[sym] = obj   -> obj
  *
- *  Attribute Assignment---Sets or creates the value of a thread-local variable,
+ *  Attribute Assignment---Sets or creates the value of a fiber-local variable,
  *  using either a symbol or a string. See also <code>Thread#[]</code>.
  */
 
@@ -2126,7 +2126,7 @@ rb_thread_aset(VALUE self, VALUE id, VALUE val)
  *     thr.key?(sym)   -> true or false
  *
  *  Returns <code>true</code> if the given string (or symbol) exists as a
- *  thread-local variable.
+ *  fiber-local variable.
  *
  *     me = Thread.current
  *     me[:oliver] = "a"
@@ -2179,7 +2179,7 @@ rb_thread_alone(void)
  *  call-seq:
  *     thr.keys   -> array
  *
- *  Returns an an array of the names of the thread-local variables (as Symbols).
+ *  Returns an an array of the names of the fiber-local variables (as Symbols).
  *
  *     thr = Thread.new do
  *       Thread.current[:cat] = 'meow'
