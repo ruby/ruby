@@ -132,9 +132,9 @@ else
 
   revs.each do |rev|
     case rev
-    when /\A\d+:\d+\z/
+    when /\Ar?\d+:r?\d+\z/
       r = ['-r', rev]
-    when /\A\d+\z/
+    when /\Ar?\d+\z/
       r = ['-c', rev]
     when nil then
       puts "#$0 revision"

@@ -1,3 +1,7 @@
+Tue Jan  3 13:43:37 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* tool/merger.rb: allow r0123 style revision number.
+
 Tue Jan  3 11:17:55 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* tool/merger.rb (#version_up): version.h date should be Japanese
