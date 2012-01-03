@@ -1,3 +1,8 @@
+Mon Jan  2 19:08:54 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (gvl_yield): don't prevent concurrent sched_yield().
+	  [Bug #5130] [ruby-core:38647]
+
 Mon Jan  2 18:54:52 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/configure.bat: disable delayed expansion of enironment variable.

@@ -109,16 +109,13 @@ gvl_yield(rb_vm_t *vm, rb_thread_t *th)
 	goto acquire;
     }
 
-    vm->gvl.wait_yield = 1;
-
-    if (vm->gvl.waiting > 0)
-	vm->gvl.need_yield = 1;
-
-    if (vm->gvl.need_yield) {
+    if (vm->gvl.waiting > 0) {
 	/* Wait until another thread task take GVL. */
-	while (vm->gvl.need_yield) {
+	vm->gvl.need_yield = 1;
+	vm->gvl.wait_yield = 1;
+	while (vm->gvl.need_yield)
 	    native_cond_wait(&vm->gvl.switch_cond, &vm->gvl.lock);
-	}
+	vm->gvl.wait_yield = 0;
     }
     else {
 	native_mutex_unlock(&vm->gvl.lock);
@@ -126,7 +123,6 @@ gvl_yield(rb_vm_t *vm, rb_thread_t *th)
 	native_mutex_lock(&vm->gvl.lock);
     }
 
-    vm->gvl.wait_yield = 0;
     native_cond_broadcast(&vm->gvl.switch_wait_cond);
   acquire:
     gvl_acquire_common(vm);
