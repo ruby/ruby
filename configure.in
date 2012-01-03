@@ -503,6 +503,12 @@ if test "$GCC" = yes; then
     test "$visibility_option" = no || OBJCOPY=:
 fi
 
+if test "$GCC" = yes; then
+    AS_CASE(["$target_os"], [mingw*], [
+	RUBY_TRY_CFLAGS(-fno-omit-frame-pointer, [optflags="${optflags+$optflags }-fno-omit-frame-pointer"])
+    ])
+fi
+
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
 
