@@ -1,3 +1,8 @@
+Mon Jan  2 23:47:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (install_recursive, bin-comm): split mere
+	  string not path name.  [ruby-core:40462] [Bug #5492]
+
 Mon Jan  2 23:41:57 2012  Tajima Akil <artonx@yahoo.co.jp>
 
 	* win32/Makefile.sub (CONFIG_H): have stdint.h if VC2010.

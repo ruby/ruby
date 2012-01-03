@@ -239,7 +239,7 @@ def install_recursive(srcdir, dest, options = {})
     if dir
       makedirs(d)
     else
-      makedirs(File.dirname(d))
+      makedirs(d[/.*(?=\/)/m])
       if block_given?
         yield src, d, opts
       else
@@ -441,7 +441,7 @@ install?(:local, :comm, :bin, :'bin-comm') do
     trans = proc {|base| base}
   end
   install_recursive(File.join(srcdir, "bin"), bindir) do |src, cmd|
-    cmd = File.join(File.dirname(cmd), RbConfig.expand(trans[File.basename(cmd)]))
+    cmd = cmd.sub(/[^\/]*\z/m) {|n| RbConfig.expand(trans[n])}
 
     shebang = ''
     body = ''
