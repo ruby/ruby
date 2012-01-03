@@ -1,3 +1,8 @@
+Mon Jan  2 23:41:57 2012  Tajima Akil <artonx@yahoo.co.jp>
+
+	* win32/Makefile.sub (CONFIG_H): have stdint.h if VC2010.
+	  [Bug #5243]
+
 Mon Jan  2 21:40:45 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* tool/merger.rb (#version_up): version.h date should be Japanese
