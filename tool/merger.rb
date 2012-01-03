@@ -58,7 +58,8 @@ def interactive str
 end
 
 def version_up
-  d = Date.today
+  d = DateTime.now
+  d = d.new_offset(Rational(9,24)) # we need server locale (i.e. japanese) time
   system *%w'svn revert version.h'
   v, p = version
 

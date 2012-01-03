@@ -1,3 +1,8 @@
+Tue Jan  3 11:17:55 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* tool/merger.rb (#version_up): version.h date should be Japanese
+	  locale date.
+
 Mon Jan  2 22:08:00 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* tool/file2lastrev.rb (VCS::detect): Add support for Subversion
