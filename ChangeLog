@@ -1,3 +1,11 @@
+Tue Jan  3 19:05:42 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* include/ruby/defines.h (FLUSH_REGISTER_WINDOWS): move sparc asm code
+	  to a separete file sparc.c for preventing inlining optimization.
+	  Patched by Jurij Smakov. [Bug #5244] [ruby-core:40685]
+	* sparc.c (rb_sparc_flush_register_windows): ditto.
+	* configure.in: ditto.
+
 Mon Jan  2 23:52:20 2012  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/readline.c (Init_readline): libedit check

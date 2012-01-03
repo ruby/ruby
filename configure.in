@@ -1137,7 +1137,8 @@ AS_CASE(["$target_cpu"],
 			[CFLAGS="-mieee $CFLAGS"],
 		[osf*],    # ccc
 			[CFLAGS="-ieee $CFLAGS"],
-		)])
+		)],
+[sparc*], [AC_LIBOBJ([sparc])])
 
 ac_cv_header_net_socket_h=${ac_cv_header_net_socket_h=no}
 if test "$ac_cv_header_net_socket_h" = yes; then
