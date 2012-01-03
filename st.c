@@ -375,9 +375,8 @@ count_collision(const struct st_hash_type *type)
 #endif
 
 static st_table_entry *
-find_entry(st_table *table, st_data_t key, st_index_t hash_val)
+find_entry(st_table *table, st_data_t key, st_index_t hash_val, st_index_t bin_pos)
 {
-    st_index_t bin_pos = hash_val % table->num_bins;
     register st_table_entry *ptr = table->bins[bin_pos];
     FOUND_ENTRY;
     if (PTR_NOT_EQUAL(table, ptr, hash_val, key)) {
@@ -422,7 +421,7 @@ st_lookup(st_table *table, register st_data_t key, st_data_t *value)
         return 0;
     }
 
-    ptr = find_entry(table, key, hash_val);
+    ptr = find_entry(table, key, hash_val, hash_val % table->num_bins);
 
     if (ptr == 0) {
 	return 0;
@@ -450,7 +449,7 @@ st_get_key(st_table *table, register st_data_t key, st_data_t *result)
         return 0;
     }
 
-    ptr = find_entry(table, key, hash_val);
+    ptr = find_entry(table, key, hash_val, hash_val % table->num_bins);
 
     if (ptr == 0) {
 	return 0;
@@ -466,12 +465,12 @@ st_get_key(st_table *table, register st_data_t key, st_data_t *result)
 
 static void
 add_direct(st_table * table, st_data_t key, st_data_t value,
-	st_index_t hash_val)
+	st_index_t hash_val, st_index_t bin_pos)
 {
     st_table_entry *entry;
-    register st_index_t bin_pos;
     if (table->num_entries > ST_DEFAULT_MAX_DENSITY * table->num_bins) {
 	rehash(table);
+	bin_pos = hash_val % table->num_bins;
     }
     entry = alloc(st_table_entry);
 
@@ -487,7 +486,6 @@ add_direct(st_table * table, st_data_t key, st_data_t value,
 	table->head = table->tail = entry;
 	entry->back = 0;
     }
-    bin_pos = hash_val % table->num_bins;
     entry->next = table->bins[bin_pos];
     table->bins[bin_pos] = entry;
     table->num_entries++;
@@ -503,7 +501,8 @@ unpack_entries(register st_table *table)
 	calloc(ST_DEFAULT_INIT_TABLE_SIZE, sizeof(st_table_entry *));
     tmp_table.num_bins = ST_DEFAULT_INIT_TABLE_SIZE;
     for (i = 0; i < table->num_entries; i++) {
-	add_direct(&tmp_table, PKEY(table, i), PVAL(table, i), PHASH(table, i));
+	add_direct(&tmp_table, PKEY(table, i), PVAL(table, i),
+		PHASH(table, i), PHASH(table, i) % tmp_table.num_bins);
     }
     xfree(table->bins);
     *table = tmp_table;
@@ -534,7 +533,7 @@ add_packed_direct(st_table *table, st_data_t key, st_data_t value, st_index_t ha
 int
 st_insert(register st_table *table, register st_data_t key, st_data_t value)
 {
-    st_index_t hash_val;
+    st_index_t hash_val, bin_pos;
     register st_table_entry *ptr;
 
     hash_val = do_hash(key, table);
@@ -550,10 +549,11 @@ st_insert(register st_table *table, register st_data_t key, st_data_t value)
 	}
     }
 
-    ptr = find_entry(table, key, hash_val);
+    bin_pos = hash_val % table->num_bins;
+    ptr = find_entry(table, key, hash_val, bin_pos);
 
     if (ptr == 0) {
-	add_direct(table, key, value, hash_val);
+	add_direct(table, key, value, hash_val, bin_pos);
 	return 0;
     }
     else {
@@ -566,7 +566,7 @@ int
 st_insert2(register st_table *table, register st_data_t key, st_data_t value,
 	   st_data_t (*func)(st_data_t))
 {
-    st_index_t hash_val;
+    st_index_t hash_val, bin_pos;
     register st_table_entry *ptr;
 
     hash_val = do_hash(key, table);
@@ -582,11 +582,12 @@ st_insert2(register st_table *table, register st_data_t key, st_data_t value,
 	}
     }
 
-    ptr = find_entry(table, key, hash_val);
+    bin_pos = hash_val % table->num_bins;
+    ptr = find_entry(table, key, hash_val, bin_pos);
 
     if (ptr == 0) {
 	key = (*func)(key);
-	add_direct(table, key, value, hash_val);
+	add_direct(table, key, value, hash_val, bin_pos);
 	return 0;
     }
     else {
@@ -607,7 +608,7 @@ st_add_direct(st_table *table, st_data_t key, st_data_t value)
 	}
     }
 
-    add_direct(table, key, value, hash_val);
+    add_direct(table, key, value, hash_val, hash_val % table->num_bins);
 }
 
 static void
