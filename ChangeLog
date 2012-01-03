@@ -1,3 +1,10 @@
+Mon Jan  2 23:52:20 2012  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/readline.c (Init_readline): libedit check
+	  rl_getc_function only when rl_initialize() is called, and
+	  using_history() call rl_initialize(). This assignment should be
+	  placed before using_history(). [ruby-core:40641] [Bug #5539]
+
 Mon Jan  2 23:47:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (install_recursive, bin-comm): split mere
