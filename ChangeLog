@@ -1,3 +1,8 @@
+Mon Jan  2 20:00:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/pty/pty.c (pty_check): should return nil until the child
+	  terminates or stops.  [ruby-dev:44600] [Bug #2642]
+
 Mon Jan  2 19:27:18 2012  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (update_coverage): skip coverage count up if the current
