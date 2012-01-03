@@ -32,11 +32,18 @@ following command:
 
   $ svn co http://svn.ruby-lang.org/repos/ruby/trunk/ ruby
 
+Or if you are using git then use following command:
+
+  $ git clone git://github.com/ruby/ruby.git
+
 There are some other branches under development.  Try the following
 command and see the list of branches:
 
   $ svn ls http://svn.ruby-lang.org/repos/ruby/branches/
 
+Or if you are using git then use following command:
+
+  $ git ls-remote git://github.com/ruby/ruby.git
 
 * Ruby home-page
 

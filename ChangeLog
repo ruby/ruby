@@ -1,3 +1,8 @@
+Tue Jan 03 20:44:13 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* README: add comment for Git user. patch from Arun Agrawal.
+	* README.ja: ditto.
+
 Tue Jan 03 15:58:22 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* thread.c: changed documentation for "thread-local" variables.

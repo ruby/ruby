@@ -42,6 +42,12 @@ Rubyはテキスト処理関係の能力などに優れ，Perlと同じくらい
 
   $ svn ls http://svn.ruby-lang.org/repos/ruby/branches/
 
+** Gitで
+
+SubversionのミラーをGitHubに公開しています．
+以下のコマンドでリポジトリを取得できます．
+
+  $ git clone git://github.com/ruby/ruby.git
 
 * ホームページ
 
