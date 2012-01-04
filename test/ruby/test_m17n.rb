@@ -930,6 +930,15 @@ class TestM17N < Test::Unit::TestCase
     assert_equal("\u{439}", "a\u{439}bcdefghijklmnop"[1, 1][0, 1], bug2379)
   end
 
+  def test_str_aref_force_encoding
+    bug5836 = '[ruby-core:41896]'
+    Encoding.list.each do |enc|
+      next unless enc.ascii_compatible?
+      s = "abc".force_encoding(enc)
+      assert_equal("", s[3, 1], bug5836)
+    end
+  end
+
   def test_aset
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
     assert_raise(Encoding::CompatibilityError){s["\xb0\xa3"] = "foo"}

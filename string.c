@@ -1483,6 +1483,7 @@ str_nth_len(const char *p, const char *e, long *nthp, rb_encoding *enc)
             if (ISASCII(*p)) {
                 p2 = search_nonascii(p, e2);
                 if (!p2) {
+		    nth -= e2 - p;
 		    *nthp = nth;
                     return (char *)e2;
                 }

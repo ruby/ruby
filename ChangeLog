@@ -1,3 +1,9 @@
+Wed Jan  4 14:24:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_nth_len): count ascii-only run at the end.  this
+	  bug appears only when single-byte-optimization is disabled due
+	  to unknown coderange.  [ruby-core:41896] [Bug #5836]
+
 Wed Jan  4 11:32:07 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (check_valid_dir): special case for a root directory.
