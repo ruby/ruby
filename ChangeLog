@@ -1,4 +1,4 @@
-Wed Jan 04 17:55:53 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+Wed Jan  4 17:55:53 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* array.c (rb_ary_sample): add example for Array#sample
 	  based on patch from https://github.com/ruby/ruby/pull/74
@@ -20,23 +20,23 @@ Wed Jan  4 00:19:54 2012  Kouhei Sutou  <kou@cozmixng.org>
 	  method name. This is Ruby code not Python code.
 	  refs #5696
 
-Tue Jan 03 23:57:37 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+Tue Jan  3 23:57:37 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* lib/rexml/parsers/baseparser.rb: rexml BaseParser uses
 	  instance_eval unnecessarily on listener add.
 	  patch from Charles Nutter. [Bug #5696] [ruby-core:41437]
 
-Tue Jan 03 20:44:13 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+Tue Jan  3 20:44:13 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* README: add comment for Git user. patch from Arun Agrawal.
 	* README.ja: ditto.
 
-Tue Jan 03 15:58:22 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+Tue Jan  3 15:58:22 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* thread.c: changed documentation for "thread-local" variables.
 	  patch from Julien Ammous.
 
-Tue Jan 03 15:50:12 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+Tue Jan  3 15:50:12 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* process.c: Fix typo. patch from Aviv Ben-Yosef.
 
@@ -1980,7 +1980,7 @@ Mon Nov  7 19:25:16 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 	  (TestIO_M17N#test_default_stdout_stderr_mode): new test for
 	  r33627-33629.  see [backport #5565]
 
-Mon Nov 07 01:14:22 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+Mon Nov  7 01:14:22 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* lib/debug.rb: add help for 'pp' and 'r[estart]'. patch
 	  from Sho Hashimoto. [Bug #5093] [ruby-dev:44222]
@@ -1995,7 +1995,7 @@ Sun Nov  6 14:49:58 2011  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/unixsocket.c (recvmsg_blocking): use rsock_recvmsg.
 
-Sun Nov 06 03:22:36 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+Sun Nov  6 03:22:36 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_engine.rb: add test for engine cipher. RC4 is used
 	  because AES is not supported by the "openssl" engine currently.
@@ -2069,12 +2069,12 @@ Fri Nov  4 14:08:19 2011  Hiroshi Nakamura  <nahi@ruby-lang.org>
 	* test/openssl/test_pkey_rsa.rb: Add tests for default exponent and
 	  specifying exponent by a parameter.
 
-Fri Nov 04 01:31:25 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+Fri Nov  4 01:31:25 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_engine.rb: add first tests for builtin "openssl"
 	  engine.
 
-Fri Nov 04 08:41:26 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+Fri Nov  4 08:41:26 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/extconf.rb:
 	* ext/openssl/ossl_engine.c: add some missing OpenSSL engines.
@@ -2126,7 +2126,7 @@ Thu Nov  3 22:12:41 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 	* ext/socket/init.c (rsock_socket): set close-on-exec flag when
 	  SOCK_CLOEXEC is not available.
 
-Thu Nov 03 08:36:00 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+Thu Nov  3 08:36:00 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_engine.rb: call Engine::cleanup on exit.
 	  Patch provided by Yui Naruse, thanks!
@@ -2143,7 +2143,7 @@ Wed Nov  2 08:16:45 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/drb/unix.rb: ditto.
 
-Wed Nov 02 00:43:59 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+Wed Nov  2 00:43:59 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/psych/test_yamldbm.rb: avoid platform dependency.
 	  patch by Naohisa Goto. [ruby-dev:44763] [Bug #5535]
@@ -3100,7 +3100,7 @@ Sun Oct  2 20:05:32 2011  Kazuki Tsujimoto  <kazuki@callcc.net>
 	* vm.c (rb_thread_mark), cont.c (cont_mark): revert r33369 and r33371
 	  that may cause SEGV in certain environments.
 
-Sun Oct 02 12:14:06 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+Sun Oct  2 12:14:06 2011  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/psych/test_yamldbm.rb: add test case.
 	* test/syck/test_yamldbm.rb: ditto.
@@ -4588,7 +4588,7 @@ Fri Aug  5 12:18:20 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* vm_eval.c (check_funcall): try respond_to? first if redefined.
 	  [Bug #5158]
 
-Fri Aug 05 09:48:22 2011  Eric Hodel  <drbrain@segment7.net>
+Fri Aug  5 09:48:22 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Import RubyGems 1.8.7:
 	  Added missing require for `gem uninstall --format-executable`.
@@ -4768,7 +4768,7 @@ Mon Aug  1 20:12:03 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* test/ruby/test_process.rb (TestProcess#test_execopts_redirect):
 	  windows doesn't support FD_CLOEXEC.
 
-Mon Aug 01 15:45:23 2011  Eric Hodel  <drbrain@segment7.net>
+Mon Aug  1 15:45:23 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rake/test_rake_functional.rb:  Don't assume the binary name of
 	  ruby is "ruby".  [Ruby 1.9 - Bug #5114]
@@ -4791,7 +4791,7 @@ Mon Aug  1 15:04:12 2011  URABE Shyouhei  <shyouhei@ruby-lang.org>
 	  We  would  better explicitly  specify  "localhost"  here and  if
 	  failed, just skip the whole test.
 
-Mon Aug 01 14:24:56 2011  Eric Hodel  <drbrain@segment7.net>
+Mon Aug  1 14:24:56 2011  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc.rb:  Import RDoc 3.9.1.  Fixes bugs in the RDoc::Markup
 	  parser.
