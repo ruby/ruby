@@ -4475,7 +4475,20 @@ static int
 check_valid_dir(const WCHAR *path)
 {
     WIN32_FIND_DATAW fd;
-    HANDLE fh = open_dir_handle(path, &fd);
+    HANDLE fh;
+    WCHAR full[MAX_PATH];
+    WCHAR *dmy;
+
+    /* if the specified path is the root of a drive and the drive is empty, */
+    /* FindFirstFile() returns INVALID_HANDLE_VALUE. */
+    if (!GetFullPathNameW(path, sizeof(full) / sizeof(WCHAR), full, &dmy)) {
+	errno = map_errno(GetLastError());
+	return -1;
+    }
+    if (GetDriveTypeW(full) != DRIVE_NO_ROOT_DIR)
+	return 0;
+
+    fh = open_dir_handle(path, &fd);
     if (fh == INVALID_HANDLE_VALUE)
 	return -1;
     FindClose(fh);
