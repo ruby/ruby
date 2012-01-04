@@ -3954,7 +3954,7 @@ rb_ary_shuffle(int argc, VALUE *argv, VALUE ary)
  *
  *  
  *     a = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
- *     a.sample         #=> [7]
+ *     a.sample         #=> 7
  *     a.sample(4)      #=> [6, 4, 2, 5]
  */
 
