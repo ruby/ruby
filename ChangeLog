@@ -1,3 +1,8 @@
+Wed Jan 04 17:55:53 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* array.c (rb_ary_sample): add example for Array#sample
+	  based on patch from https://github.com/ruby/ruby/pull/74
+
 Wed Jan  4 14:24:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_nth_len): count ascii-only run at the end.  this
