@@ -1,3 +1,8 @@
+Thu Jan  5 12:15:55 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (rb_file_join): separator is appended by array length - 1
+	  times. patched by Benoit Daloze [ruby-core:41901] [Bug #5841]
+
 Thu Jan  5 11:47:54 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb (URI::Parser#initialize_regexp):

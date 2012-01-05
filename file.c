@@ -3825,7 +3825,7 @@ rb_file_join(VALUE ary, VALUE sep)
     }
     if (!NIL_P(sep)) {
 	StringValue(sep);
-	len += RSTRING_LEN(sep) * RARRAY_LEN(ary) - 1;
+	len += RSTRING_LEN(sep) * (RARRAY_LEN(ary) - 1);
     }
     result = rb_str_buf_new(len);
     OBJ_INFECT(result, ary);
