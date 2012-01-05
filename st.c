@@ -64,19 +64,32 @@ static void rehash(st_table *);
 #ifdef RUBY
 #define malloc xmalloc
 #define calloc xcalloc
+#define realloc xrealloc
 #define free(x) xfree(x)
 #endif
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
-
-#define alloc(type) (type*)malloc((size_t)sizeof(type))
-#define Calloc(n,s) (char*)calloc((n),(s))
 
 #define EQUAL(table,x,y) ((x)==(y) || (*(table)->type->compare)((x),(y)) == 0)
 
 /* remove cast to unsigned int in the future */
 #define do_hash(key,table) (unsigned int)(st_index_t)(*(table)->type->hash)((key))
 #define do_hash_bin(key,table) (do_hash((key), (table))%(table)->num_bins)
+
+/* preparation for possible allocation improvements */
+#define st_alloc_entry() (st_table_entry *)malloc(sizeof(st_table_entry))
+#define st_free_entry(entry) free(entry)
+#define st_alloc_table() (st_table *)malloc(sizeof(st_table))
+#define st_dealloc_table(table) free(table)
+#define st_alloc_bins(size) (st_table_entry **)calloc(size, sizeof(st_table_entry *))
+#define st_free_bins(bins, size) free(bins)
+static inline st_table_entry**
+st_realloc_bins(st_table_entry **bins, st_index_t newsize, st_index_t oldsize)
+{
+    bins = (st_table_entry **) realloc(bins, newsize * sizeof(st_table_entry *));
+    memset(bins, 0, newsize * sizeof(st_table_entry *));
+    return bins;
+}
 
 /* preparation for possible packing improvements */
 #define PKEY_POS(i, num_bins) ((i)*2)
@@ -202,12 +215,12 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
 
     size = new_size(size);	/* round up to prime number */
 
-    tbl = alloc(st_table);
+    tbl = st_alloc_table();
     tbl->type = type;
     tbl->num_entries = 0;
     tbl->entries_packed = type == &type_numhash && size/2 <= MAX_PACKED_NUMHASH;
     tbl->num_bins = size;
-    tbl->bins = (st_table_entry **)Calloc(size, sizeof(st_table_entry*));
+    tbl->bins = st_alloc_bins(size);
     tbl->head = 0;
     tbl->tail = 0;
 
@@ -272,7 +285,7 @@ st_clear(st_table *table)
 	table->bins[i] = 0;
 	while (ptr != 0) {
 	    next = ptr->next;
-	    free(ptr);
+	    st_free_entry(ptr);
 	    ptr = next;
 	}
     }
@@ -285,8 +298,8 @@ void
 st_free_table(st_table *table)
 {
     st_clear(table);
-    free(table->bins);
-    free(table);
+    st_free_bins(table->bins, table->num_bins);
+    st_dealloc_table(table);
 }
 
 size_t
@@ -417,7 +430,7 @@ add_direct(st_table * table, st_data_t key, st_data_t value,
         bin_pos = hash_val % table->num_bins;
     }
 
-    entry = alloc(st_table_entry);
+    entry = st_alloc_entry();
 
     entry->hash = hash_val;
     entry->key = key;
@@ -557,12 +570,10 @@ static void
 rehash(register st_table *table)
 {
     register st_table_entry *ptr, **new_bins;
-    st_index_t i, new_num_bins, hash_val;
+    st_index_t new_num_bins, hash_val;
 
     new_num_bins = new_size(table->num_bins+1);
-    new_bins = (st_table_entry**)
-	xrealloc(table->bins, new_num_bins * sizeof(st_table_entry*));
-    for (i = 0; i < new_num_bins; ++i) new_bins[i] = 0;
+    new_bins = st_realloc_bins(table->bins, new_num_bins, table->num_bins);
     table->num_bins = new_num_bins;
     table->bins = new_bins;
 
@@ -583,17 +594,16 @@ st_copy(st_table *old_table)
     st_index_t num_bins = old_table->num_bins;
     st_index_t hash_val;
 
-    new_table = alloc(st_table);
+    new_table = st_alloc_table();
     if (new_table == 0) {
 	return 0;
     }
 
     *new_table = *old_table;
-    new_table->bins = (st_table_entry**)
-	Calloc((unsigned)num_bins, sizeof(st_table_entry*));
+    new_table->bins = st_alloc_bins(num_bins);
 
     if (new_table->bins == 0) {
-	free(new_table);
+	st_dealloc_table(new_table);
 	return 0;
     }
 
@@ -606,7 +616,7 @@ st_copy(st_table *old_table)
 	prev = 0;
 	tail = &new_table->head;
 	do {
-	    entry = alloc(st_table_entry);
+	    entry = st_alloc_entry();
 	    if (entry == 0) {
 		st_free_table(new_table);
 		return 0;
@@ -668,7 +678,7 @@ st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
 	    remove_entry(table, ptr);
 	    if (value != 0) *value = ptr->record;
 	    *key = ptr->key;
-	    free(ptr);
+	    st_free_entry(ptr);
 	    return 1;
 	}
     }
@@ -738,7 +748,7 @@ st_cleanup_safe(st_table *table, st_data_t never)
 	    if (ptr->key == never) {
 		tmp = ptr;
 		*last = ptr = ptr->next;
-		free(tmp);
+		st_free_entry(tmp);
 	    }
 	    else {
 		ptr = *(last = &ptr->next);
@@ -790,7 +800,7 @@ st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *
 		    tmp = ptr->fore;
 		    *last = ptr->next;
 		    remove_entry(table, ptr);
-		    free(ptr);
+		    st_free_entry(ptr);
 		    break;
 		}
 	    }
@@ -874,7 +884,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 			tmp = ptr->fore;
 			*last = ptr->next;
 			remove_entry(table, ptr);
-			free(ptr);
+			st_free_entry(ptr);
 			if (ptr == tmp) return 0;
 			ptr = tmp;
 			break;
@@ -952,7 +962,7 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 			tmp = ptr->back;
 			*last = ptr->next;
 			remove_entry(table, ptr);
-			free(ptr);
+			st_free_entry(ptr);
 			ptr = tmp;
 			break;
 		    }
