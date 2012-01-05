@@ -1,3 +1,8 @@
+Thu Jan  5 11:47:54 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/common.rb (URI::Parser#initialize_regexp):
+	  use \A \z instead of ^ $. [Bug #5843]
+
 Wed Jan  4 17:55:53 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* array.c (rb_ary_sample): add example for Array#sample

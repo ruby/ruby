@@ -514,16 +514,16 @@ module URI
       ret[:UNSAFE]  = Regexp.new("[^#{pattern[:UNRESERVED]}#{pattern[:RESERVED]}]")
 
       # for Generic#initialize
-      ret[:SCHEME]   = Regexp.new("^#{pattern[:SCHEME]}$")
-      ret[:USERINFO] = Regexp.new("^#{pattern[:USERINFO]}$")
-      ret[:HOST]     = Regexp.new("^#{pattern[:HOST]}$")
-      ret[:PORT]     = Regexp.new("^#{pattern[:PORT]}$")
-      ret[:OPAQUE]   = Regexp.new("^#{pattern[:OPAQUE_PART]}$")
-      ret[:REGISTRY] = Regexp.new("^#{pattern[:REG_NAME]}$")
-      ret[:ABS_PATH] = Regexp.new("^#{pattern[:ABS_PATH]}$")
-      ret[:REL_PATH] = Regexp.new("^#{pattern[:REL_PATH]}$")
-      ret[:QUERY]    = Regexp.new("^#{pattern[:QUERY]}$")
-      ret[:FRAGMENT] = Regexp.new("^#{pattern[:FRAGMENT]}$")
+      ret[:SCHEME]   = Regexp.new("\\A#{pattern[:SCHEME]}\\z")
+      ret[:USERINFO] = Regexp.new("\\A#{pattern[:USERINFO]}\\z")
+      ret[:HOST]     = Regexp.new("\\A#{pattern[:HOST]}\\z")
+      ret[:PORT]     = Regexp.new("\\A#{pattern[:PORT]}\\z")
+      ret[:OPAQUE]   = Regexp.new("\\A#{pattern[:OPAQUE_PART]}\\z")
+      ret[:REGISTRY] = Regexp.new("\\A#{pattern[:REG_NAME]}\\z")
+      ret[:ABS_PATH] = Regexp.new("\\A#{pattern[:ABS_PATH]}\\z")
+      ret[:REL_PATH] = Regexp.new("\\A#{pattern[:REL_PATH]}\\z")
+      ret[:QUERY]    = Regexp.new("\\A#{pattern[:QUERY]}\\z")
+      ret[:FRAGMENT] = Regexp.new("\\A#{pattern[:FRAGMENT]}\\z")
 
       ret
     end
