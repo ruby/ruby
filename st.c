@@ -469,10 +469,9 @@ unpack_entries(register st_table *table)
     *table = tmp_table;
 }
 
-static int
+static void
 add_packed_direct(st_table *table, st_data_t key, st_data_t value)
 {
-    int res = 1;
     if (table->num_entries < MAX_PACKED_NUMHASH) {
 	st_index_t i = table->num_entries++;
 	PKEY_SET(table, i, key);
@@ -480,9 +479,8 @@ add_packed_direct(st_table *table, st_data_t key, st_data_t value)
     }
     else {
 	unpack_entries(table);
-	res = 0;
+	add_direct(table, key, value, key, key % table->num_bins);
     }
-    return res;
 }
 
 
@@ -498,9 +496,8 @@ st_insert(register st_table *table, register st_data_t key, st_data_t value)
 	    PVAL_SET(table, i, value);
 	    return 1;
         }
-	if (add_packed_direct(table, key, value)) {
-	    return 0;
-	}
+	add_packed_direct(table, key, value);
+	return 0;
     }
 
     hash_val = do_hash(key, table);
@@ -530,9 +527,8 @@ st_insert2(register st_table *table, register st_data_t key, st_data_t value,
 	    PVAL_SET(table, i, value);
 	    return 1;
         }
-	if (add_packed_direct(table, key, value)) {
-	    return 0;
-	}
+	add_packed_direct(table, key, value);
+	return 0;
     }
 
     hash_val = do_hash(key, table);
@@ -556,9 +552,8 @@ st_add_direct(st_table *table, st_data_t key, st_data_t value)
     st_index_t hash_val, bin_pos;
 
     if (table->entries_packed) {
-	if (add_packed_direct(table, key, value)) {
-	    return;
-	}
+	add_packed_direct(table, key, value);
+	return;
     }
 
     hash_val = do_hash(key, table);
