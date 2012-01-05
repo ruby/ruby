@@ -789,6 +789,15 @@ vm_xmalloc(rb_objspace_t *objspace, size_t size)
 }
 
 static void *
+vm_xmalloc_only(rb_objspace_t *objspace, size_t size)
+{
+    void *mem;
+
+    TRY_WITH_GC(mem = malloc(size));
+    return vm_malloc_fixup(objspace, mem, size);
+}
+
+static void *
 vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
 {
     void *mem;
@@ -848,6 +857,18 @@ void *
 ruby_xmalloc(size_t size)
 {
     return vm_xmalloc(&rb_objspace, size);
+}
+
+size_t
+ruby_gcprepare(size_t size)
+{
+    return vm_malloc_prepare(&rb_objspace, size);
+}
+
+void *
+ruby_xmalloc_prepared(size_t size)
+{
+    return vm_xmalloc_only(&rb_objspace, size);
 }
 
 static inline size_t

@@ -93,6 +93,10 @@ void Init_File(void);
 
 /* gc.c */
 void Init_heap(void);
+#define xgc_prepare ruby_gcprepare
+#define xmalloc_prepared ruby_xmalloc_prepared
+size_t xgc_prepare(size_t);
+void *xmalloc_prepared(size_t);
 
 /* inits.c */
 void rb_call_inits(void);
