@@ -2424,7 +2424,7 @@ Sat Oct 29 22:06:37 2011  Tanaka Akira  <akr@fsij.org>
 	* io.c (rb_cloexec_dup2): new function.
 	  (io_reopen): use rb_cloexec_dup2.
 
-Sat Oct 20 21:08:18 2011  Tajima Akil <artonx@yahoo.co.jp>
+Sat Oct 20 21:08:18 2011  Tajima Akio <artonx@yahoo.co.jp>
 
 	* win32/Makefile.sub (CONFIG_H): have stdint.h if VC2010.
 	  [Bug #5243]
