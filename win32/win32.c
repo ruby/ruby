@@ -4485,7 +4485,7 @@ check_valid_dir(const WCHAR *path)
 	errno = map_errno(GetLastError());
 	return -1;
     }
-    if (GetDriveTypeW(full) != DRIVE_NO_ROOT_DIR)
+    if (full[1] == L':' && !full[3] && GetDriveTypeW(full) != DRIVE_NO_ROOT_DIR)
 	return 0;
 
     fh = open_dir_handle(path, &fd);

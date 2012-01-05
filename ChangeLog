@@ -1,3 +1,10 @@
+Thu Jan  5 15:26:15 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (check_valid_dir): strict checking of root.
+	  GetDriveType() succeeds with non root directory as the argument,
+	  even if MSDN says that the API needs the root directory.
+	  this patch fixes a failure of test/ruby/test_file_exhaustive.rb.
+
 Thu Jan  5 12:15:55 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (rb_file_join): separator is appended by array length - 1
