@@ -93,6 +93,7 @@ void Init_File(void);
 
 /* gc.c */
 void Init_heap(void);
+void *ruby_mimmalloc(size_t size);
 
 /* inits.c */
 void rb_call_inits(void);

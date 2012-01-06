@@ -2198,8 +2198,8 @@ void
 Init_BareVM(void)
 {
     /* VM bootstrap: phase 1 */
-    rb_vm_t * vm = malloc(sizeof(*vm));
-    rb_thread_t * th = malloc(sizeof(*th));
+    rb_vm_t * vm = ruby_mimmalloc(sizeof(*vm));
+    rb_thread_t * th = ruby_mimmalloc(sizeof(*th));
     if (!vm || !th) {
 	fprintf(stderr, "[FATAL] failed to allocate memory\n");
 	exit(EXIT_FAILURE);
