@@ -49,7 +49,7 @@ static VALUE mSyslog_close(VALUE self)
 
     closelog();
 
-    free((void *)syslog_ident);
+    xfree((void *)syslog_ident);
     syslog_ident = NULL;
     syslog_options = syslog_facility = syslog_mask = -1;
     syslog_opened = 0;
