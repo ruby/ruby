@@ -1,3 +1,8 @@
+Sat Jan  7 00:47:07 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* configure.in: always define CANONICALIZATION_FOR_MATHN.
+	  [ruby-dev:45100] [Bug #5852]
+
 Fri Jan  6 23:11:20 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* include/ruby/version.h: RUBY_API_VERSION 2.0.0
