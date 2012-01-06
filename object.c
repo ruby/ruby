@@ -14,6 +14,7 @@
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "ruby/encoding.h"
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
@@ -370,7 +371,9 @@ rb_any_to_s(VALUE obj)
 VALUE
 rb_inspect(VALUE obj)
 {
-    return rb_obj_as_string(rb_funcall(obj, id_inspect, 0, 0));
+    VALUE s = rb_obj_as_string(rb_funcall(obj, id_inspect, 0, 0));
+    rb_enc_check(rb_enc_default_external(), s);
+    return s;
 }
 
 static int
@@ -419,14 +422,37 @@ inspect_obj(VALUE obj, VALUE str, int recur)
  *  call-seq:
  *     obj.inspect   -> string
  *
- *  Returns a string containing a human-readable representation of
- *  <i>obj</i>. If not overridden and no instance variables, uses the
- *  <code>to_s</code> method to generate the string.
- *  <i>obj</i>.  If not overridden, uses the <code>to_s</code> method to
- *  generate the string.
+ * Returns a string containing a human-readable representation of <i>obj</i>.
+ * By default, if the <i>obj</i> has instance variables, show the class name
+ * and instance variable details which is the list of the name and the result
+ * of <i>inspect</i> method for each instance variables.
+ * Otherwise uses the <i>to_s</i> method to generate the string.
+ * If the <i>to_s</i> mthoed is overridden, uses it.
+ * User defined classes should override this method to make better
+ * representation of <i>obj</i>.  When overriding this method, it should
+ * return a string whose encoding is compatible with the default external
+ * encoding.
  *
  *     [ 1, 2, 3..4, 'five' ].inspect   #=> "[1, 2, 3..4, \"five\"]"
  *     Time.new.inspect                 #=> "2008-03-08 19:43:39 +0900"
+ *
+ *     class Foo
+ *     end
+ *     Foo.new.inspect                  #=> "#<Foo:0x0300c868>"
+ *
+ *     class Bar
+ *       def initialize
+ *         @bar = 1
+ *       end
+ *     end
+ *     Bar.new.inspect                  #=> "#<Bar:0x0300c868 @bar=1>"
+ *
+ *     class Baz
+ *       def to_s
+ *         "baz"
+ *       end
+ *     end
+ *     Baz.new.inspect                  #=> "baz"
  */
 
 static VALUE
