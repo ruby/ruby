@@ -2031,7 +2031,7 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
     } *pairs = 0;
 
     n = RARRAY_LEN(ary);
-    pairs = (struct fd_pair *)malloc(sizeof(struct fd_pair) * n);
+    pairs = (struct fd_pair *)xmalloc(sizeof(struct fd_pair) * n);
     if (pairs == NULL) {
         ERRMSG("malloc");
         return -1;
