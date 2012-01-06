@@ -55,7 +55,7 @@ dlcfunc_free(void *ptr)
 {
     struct cfunc_data *data = ptr;
     if( data->name ){
-	xfree(data->name);
+	free(data->name);
     }
     xfree(data);
 }
@@ -163,7 +163,7 @@ rb_dlcfunc_initialize(int argc, VALUE argv[], VALUE self)
     sname = NIL_P(name) ? NULL : StringValuePtr(name);
 
     TypedData_Get_Struct(self, struct cfunc_data, &dlcfunc_data_type, data);
-    if( data->name ) xfree(data->name);
+    if( data->name ) free(data->name);
     data->ptr  = saddr;
     data->name = sname ? strdup(sname) : 0;
     data->type = NIL_P(type) ? DLTYPE_VOID : NUM2INT(type);
