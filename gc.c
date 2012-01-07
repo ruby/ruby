@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <sys/types.h>
-#include <malloc.h>
 #include <assert.h>
 
 #ifdef HAVE_SYS_TIME_H
@@ -37,6 +36,10 @@
 
 #if defined _WIN32 || defined __CYGWIN__
 #include <windows.h>
+#endif
+
+#if !defined(__MINGW32__) && !defined(_WIN32) && !defined(__CYGWIN__) &&!defined(HAVE_POSIX_MEMALIGN) &&defined(HAVE_MEMALIGN)
+#include <malloc.h>
 #endif
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
@@ -1061,16 +1064,16 @@ aligned_malloc(size_t aligned_size)
     res = __mingw_aligned_malloc(aligned_size, aligned_size);
 #elif _WIN32 || defined __CYGWIN__
     res = _aligned_malloc(aligned_size, aligned_size);
-#else
-# if _POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600
+#elif defined(HAVE_POSIX_MEMALIGN)
     if (posix_memalign(&res, aligned_size, aligned_size) == 0) {
         return res;
     } else {
         return NULL;
     }
-# else
+#elif defined(HAVE_MEMALIGN)
     res = memalign(aligned_size, aligned_size);
-# endif
+#else
+#error no memalign function
 #endif
     return res;
 }

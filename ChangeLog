@@ -1,3 +1,11 @@
+Sun Jan  8 00:10:10 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: check posix_memalign(3) and menalign(3).
+
+	* gc.c (aligned_malloc): use configure's result instead of
+	  _POSIX_C_SOURCE and _XOPEN_SOURCE because they can't be used
+	  to check availability at least on FreeBSD.
+
 Sat Jan  7 22:25:50 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: use Bitmap Marking algorithm to avoid copy-on-write of
