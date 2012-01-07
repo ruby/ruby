@@ -77,6 +77,11 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_word_boundary
+    assert_match(/\u3042\b /, "\u3042 ")
+    assert_not_match(/\u3042\ba/, "\u3042a")
+  end
+
   def test_named_capture
     m = /&(?<foo>.*?);/.match("aaa &amp; yyy")
     assert_equal("amp", m["foo"])
