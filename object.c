@@ -425,9 +425,9 @@ inspect_obj(VALUE obj, VALUE str, int recur)
  * Returns a string containing a human-readable representation of <i>obj</i>.
  * By default, if the <i>obj</i> has instance variables, show the class name
  * and instance variable details which is the list of the name and the result
- * of <i>inspect</i> method for each instance variables.
+ * of <i>inspect</i> method for each instance variable.
  * Otherwise uses the <i>to_s</i> method to generate the string.
- * If the <i>to_s</i> mthoed is overridden, uses it.
+ * If the <i>to_s</i> method is overridden, uses it.
  * User defined classes should override this method to make better
  * representation of <i>obj</i>.  When overriding this method, it should
  * return a string whose encoding is compatible with the default external
