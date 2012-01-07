@@ -1,3 +1,9 @@
+Tue Jan 03 23:57:37 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/rexml/parsers/baseparser.rb: rexml BaseParser uses
+	  instance_eval unnecessarily on listener add.
+	  patch from Charles Nutter. [Bug #5696] [ruby-core:41437]
+
 Tue Jan 03 19:13:05 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/rexml/test_sax.rb: add require 'rexml/document'.
