@@ -1,3 +1,8 @@
+Sun Jan  8 01:18:19 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/-ext-/old_thread_select/test_old_thread_select.rb:
+	  avoid platform bug. [Bug #5858] [ruby-dev:45108]
+
 Sun Jan  8 00:46:34 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* gc.c: get rid of implicit narrowing conversion.
