@@ -222,7 +222,7 @@ rb_singleton_class_clone(VALUE obj)
 	return klass;
     else {
 	/* copy singleton(unnamed) class */
-	VALUE clone = class_alloc((RBASIC(klass)->flags & ~(FL_MARK)), 0);
+	VALUE clone = class_alloc(RBASIC(klass)->flags, 0);
 
 	if (BUILTIN_TYPE(obj) == T_CLASS) {
 	    RBASIC(clone)->klass = clone;

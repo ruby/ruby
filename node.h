@@ -263,7 +263,7 @@ typedef struct RNode {
 
 #define RNODE(obj)  (R_CAST(RNode)(obj))
 
-/* 0..4:T_TYPES, 5:FL_MARK, 6:reserved, 7:NODE_FL_NEWLINE */
+/* 0..4:T_TYPES, 5:reserved, 6:reserved, 7:NODE_FL_NEWLINE */
 #define NODE_FL_NEWLINE (((VALUE)1)<<7)
 #define NODE_FL_CREF_PUSHED_BY_EVAL NODE_FL_NEWLINE
 

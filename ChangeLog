@@ -1,3 +1,19 @@
+Sat Jan  7 22:25:50 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: use Bitmap Marking algorithm to avoid copy-on-write of
+	  memory pages. See [ruby-dev:45085] [Feature #5839]
+	  [ruby-core:41916].
+
+	* include/ruby/ruby.h : FL_MARK rename to FL_RESERVED1.
+
+	* node.h : ditto.
+
+	* debug.c : ditto.
+
+	* object.c (rb_obj_clone): FL_MARK move to a bitmap.
+
+	* class.c (rb_singleton_class_clone): ditto.
+
 Sat Jan  7 00:47:07 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* configure.in: always define CANONICALIZATION_FOR_MATHN.
