@@ -537,7 +537,7 @@ rb_objspace_free(rb_objspace_t *objspace)
 #define HEAP_ALIGN_MASK 0x3fff
 #define HEAP_SIZE HEAP_ALIGN
 
-#define HEAP_OBJ_LIMIT (HEAP_SIZE/(unsigned int)sizeof(struct RVALUE) - (sizeof(struct heaps_slot)/(unsigned int)sizeof(struct RVALUE)+1))
+#define HEAP_OBJ_LIMIT (HEAP_SIZE/(unsigned int)sizeof(struct RVALUE) - (unsigned int)(sizeof(struct heaps_slot)/sizeof(struct RVALUE)+1))
 #define HEAP_BITMAP_LIMIT (HEAP_OBJ_LIMIT/sizeof(uintptr_t)+1)
 
 #define GET_HEAP_SLOT(x) (HEAP_SLOT(((uintptr_t)x) & ~(HEAP_ALIGN_MASK)))

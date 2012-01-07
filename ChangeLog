@@ -1,3 +1,7 @@
+Sun Jan  8 00:46:34 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* gc.c: get rid of implicit narrowing conversion.
+
 Sun Jan  8 00:10:10 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: check posix_memalign(3) and menalign(3).
