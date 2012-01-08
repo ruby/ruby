@@ -4,6 +4,7 @@
 
 #include <ruby.h>
 #include <errno.h>
+#include <ruby/util.h>
 #include "dl.h"
 
 VALUE rb_cDLCFunc;
@@ -55,7 +56,7 @@ dlcfunc_free(void *ptr)
 {
     struct cfunc_data *data = ptr;
     if( data->name ){
-	free(data->name);
+	xfree(data->name);
     }
     xfree(data);
 }
