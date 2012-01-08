@@ -135,13 +135,13 @@ code_to_mbclen(OnigCodePoint code, OnigEncoding enc ARG_UNUSED)
     if (EncLen_SJIS[(int )code] == 1)
       return 1;
     else
-      return 0;
+      return ONIGERR_INVALID_CODE_POINT_VALUE;
   }
   else if (code <= 0xffff) {
     return 2;
   }
   else
-    return ONIGERR_INVALID_CODE_POINT_VALUE;
+    return ONIGERR_TOO_BIG_WIDE_CHAR_VALUE;
 }
 
 static OnigCodePoint

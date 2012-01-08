@@ -808,8 +808,6 @@ class TestRegexp < Test::Unit::TestCase
     #assert_match(/^(\ufb05)\1\1$/i, "\ufb05\ufb06st") # this must be bug...
     assert_match(/^\ufb05{3}$/i, "\ufb05\ufb06st")
     assert_match(/^\u03b9\u0308\u0301$/i, "\u0390")
-    assert_nothing_raised { 0x03ffffff.chr("utf-8").size }
-    assert_nothing_raised { 0x7fffffff.chr("utf-8").size }
   end
 
   def test_unicode_age

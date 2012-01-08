@@ -1161,6 +1161,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_str_concat
     assert_equal(1, "".concat(0xA2).size)
+    assert_equal(Encoding::ASCII_8BIT, "".force_encoding("US-ASCII").concat(0xA2).encoding)
     assert_equal("A\x84\x31\xA4\x39".force_encoding("GB18030"),
                  "A".force_encoding("GB18030") << 0x8431A439)
   end
@@ -1220,6 +1221,14 @@ class TestM17N < Test::Unit::TestCase
       2206368128.chr(Encoding::UTF_8)
     }
     assert_not_match(/-\d+ out of char range/, e.message)
+
+    assert_raise(RangeError){ 0x80.chr("US-ASCII") }
+    assert_raise(RangeError){ 0x80.chr("SHIFT_JIS") }
+    assert_raise(RangeError){ 0xE0.chr("SHIFT_JIS") }
+    assert_raise(RangeError){ 0x100.chr("SHIFT_JIS") }
+    assert_raise(RangeError){ 0xA0.chr("EUC-JP") }
+    assert_raise(RangeError){ 0x100.chr("EUC-JP") }
+    assert_raise(RangeError){ 0xA1A0.chr("EUC-JP") }
   end
 
   def test_marshal

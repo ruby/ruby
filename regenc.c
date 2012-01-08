@@ -732,8 +732,9 @@ onigenc_mbn_is_mbc_ambiguous(OnigEncoding enc, OnigCaseFoldType flag,
 extern int
 onigenc_mb2_code_to_mbclen(OnigCodePoint code, OnigEncoding enc ARG_UNUSED)
 {
-  if ((code & 0xff00) != 0) return 2;
-  else return 1;
+  if (code <= 0xff) return 1;
+  if (code <= 0xffff) return 2;
+  return ONIGERR_TOO_BIG_WIDE_CHAR_VALUE;
 }
 
 extern int
