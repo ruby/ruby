@@ -45,14 +45,6 @@ char *dln_argv0;
 # include <strings.h>
 #endif
 
-#ifndef xmalloc
-void *xmalloc();
-void *xcalloc();
-void *xrealloc();
-#endif
-
-#define free(x) xfree(x)
-
 #include <stdio.h>
 #if defined(_WIN32)
 #include "missing/file.h"

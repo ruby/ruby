@@ -507,7 +507,7 @@ rb_objspace_free(rb_objspace_t *objspace)
 	struct gc_list *list, *next;
 	for (list = global_List; list; list = next) {
 	    next = list->next;
-	    free(list);
+	    xfree(list);
 	}
     }
     if (objspace->heap.free_bitmap) {

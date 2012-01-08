@@ -1,3 +1,30 @@
+Mon Jan  9 04:24:59 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c (rb_objspace_free): global_List is allocated with xmalloc.
+	  patched by Sokolov Yura.  https://github.com/ruby/ruby/pull/78
+
+	* dln_find.c: remove useless replacement of free.
+
+	* ext/readline/readline.c (readline_attempted_completion_function):
+	  strings for readline must allocated with malloc.
+
+	* process.c (run_exec_dup2): use free; see also r20950.
+
+	* re.c (onig_new_with_source): use malloc for oniguruma.
+
+	* vm.c (ruby_vm_destruct): use free for VMs.
+
+	* vm.c (thread_free): use free for threads.
+
+Mon Jan  9 04:24:59 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* dln_find.c: remove useless replacement of free.
+
+	* ext/readline/readline.c (filename_completion_proc_call):
+	  matches should use xfree.
+
+	* ext/readline/readline.c (username_completion_proc_call): ditto.
+
 Mon Jan  9 01:12:35 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric.c (rb_enc_uint_char): raise RangeError when added codepoint

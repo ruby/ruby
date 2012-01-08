@@ -1620,7 +1620,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 #endif
 	ruby_vm_run_at_exit_hooks(vm);
 	rb_vm_gvl_destroy(vm);
-	ruby_xfree(vm);
+	free(vm);
 	ruby_current_vm = 0;
     }
     RUBY_FREE_LEAVE("vm");
@@ -1795,7 +1795,7 @@ thread_free(void *ptr)
 		free(th->altstack);
 	    }
 #endif
-	    ruby_xfree(ptr);
+	    free(ptr);
 	}
         if (ruby_current_thread == th)
             ruby_current_thread = NULL;

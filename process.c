@@ -2151,11 +2151,11 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
         }
     }
 
-    xfree(pairs);
+    free(pairs);
     return 0;
 
   fail:
-    xfree(pairs);
+    free(pairs);
     return -1;
 }
 
