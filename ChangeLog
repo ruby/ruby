@@ -1,3 +1,7 @@
+Sun Jan  8 11:43:05 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (slot_sweep): add a assertion instead of a debug print.
+
 Sun Jan  8 01:18:19 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/-ext-/old_thread_select/test_old_thread_select.rb:

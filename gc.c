@@ -2176,9 +2176,7 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
                     }
                     p->as.free.next = deferred_final_list;
                     deferred_final_list = p;
-                    if (BUILTIN_TYPE(p) != T_ZOMBIE) {
-                        fprintf(stderr, "NOT T_ZOMBIE!!\n");
-                    }
+                    assert(BUILTIN_TYPE(p) == T_ZOMBIE);
                     final_num++;
                 }
                 else {
