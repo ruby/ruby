@@ -1,3 +1,7 @@
+Mon Jan  9 07:46:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c: i686-linux needs to define _XOPEN_SOURCE 600 for posix_memalign.
+
 Mon Jan  9 04:24:59 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* gc.c (rb_objspace_free): global_List is allocated with xmalloc.

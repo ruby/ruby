@@ -36,9 +36,11 @@
 
 #if defined _WIN32 || defined __CYGWIN__
 #include <windows.h>
-#endif
-
-#if !defined(__MINGW32__) && !defined(_WIN32) && !defined(__CYGWIN__) &&!defined(HAVE_POSIX_MEMALIGN) &&defined(HAVE_MEMALIGN)
+#elif defined(HAVE_POSIX_MEMALIGN)
+# ifdef __linux__ /* i386 linux needs #define _XOPEN_SOURCE 600 to use posix_memalign */
+#  define _XOPEN_SOURCE 600
+# endif
+#elif defined(HAVE_MEMALIGN)
 #include <malloc.h>
 #endif
 
