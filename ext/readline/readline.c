@@ -672,10 +672,10 @@ readline_attempted_completion_function(const char *text, int start, int end)
     matches = RARRAY_LEN(ary);
     if (matches == 0)
 	return NULL;
-    result = ALLOC_N(char *, matches + 2);
+    result = (char**)malloc((matches + 2)*sizeof(char*));
     for (i = 0; i < matches; i++) {
 	temp = rb_obj_as_string(RARRAY_PTR(ary)[i]);
-	result[i + 1] = ALLOC_N(char, RSTRING_LEN(temp) + 1);
+	result[i + 1] = (char*)malloc(RSTRING_LEN(temp) + 1);
 	strcpy(result[i + 1], RSTRING_PTR(temp));
     }
     result[matches + 1] = NULL;
@@ -707,7 +707,7 @@ readline_attempted_completion_function(const char *text, int start, int end)
 	    if (low > si) low = si;
 	    i++;
 	}
-	result[0] = ALLOC_N(char, low + 1);
+	result[0] = (char*)malloc(low + 1);
 	strncpy(result[0], result[1], low);
 	result[0][low] = '\0';
     }
