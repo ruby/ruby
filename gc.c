@@ -535,7 +535,8 @@ rb_objspace_free(rb_objspace_t *objspace)
 #define HEAP_ALIGN_LOG 14
 #define HEAP_ALIGN 0x4000
 #define HEAP_ALIGN_MASK 0x3fff
-#define HEAP_SIZE HEAP_ALIGN
+#define REQUIRED_SIZE_BY_MALLOC (sizeof(size_t) * 5)
+#define HEAP_SIZE (HEAP_ALIGN - REQUIRED_SIZE_BY_MALLOC)
 
 #define HEAP_OBJ_LIMIT (HEAP_SIZE/(unsigned int)sizeof(struct RVALUE) - (unsigned int)(sizeof(struct heaps_slot)/sizeof(struct RVALUE)+1))
 #define HEAP_BITMAP_LIMIT (HEAP_OBJ_LIMIT/sizeof(uintptr_t)+1)
@@ -1056,22 +1057,22 @@ allocate_sorted_heaps(rb_objspace_t *objspace, size_t next_heaps_length)
 }
 
 static void *
-aligned_malloc(size_t aligned_size)
+aligned_malloc(size_t alignment, size_t size)
 {
     void *res;
 
 #if __MINGW32__
-    res = __mingw_aligned_malloc(aligned_size, aligned_size);
+    res = __mingw_aligned_malloc(size, alignment);
 #elif _WIN32 || defined __CYGWIN__
-    res = _aligned_malloc(aligned_size, aligned_size);
+    res = _aligned_malloc(size, alignment);
 #elif defined(HAVE_POSIX_MEMALIGN)
-    if (posix_memalign(&res, aligned_size, aligned_size) == 0) {
+    if (posix_memalign(&res, alignment, size) == 0) {
         return res;
     } else {
         return NULL;
     }
 #elif defined(HAVE_MEMALIGN)
-    res = memalign(aligned_size, aligned_size);
+    res = memalign(alignment, size);
 #else
 #error no memalign function
 #endif
@@ -1122,7 +1123,7 @@ assign_heap_slot(rb_objspace_t *objspace)
     size_t objs;
 
     objs = HEAP_OBJ_LIMIT;
-    p = (RVALUE*)aligned_malloc(HEAP_SIZE);
+    p = (RVALUE*)aligned_malloc(HEAP_ALIGN, HEAP_SIZE);
     if (p == 0) {
 	during_gc = 0;
 	rb_memerror();

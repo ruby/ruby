@@ -1,3 +1,7 @@
+Sun Jan  8 20:31:45 2012  Narihiro Nakamura  <narihiro@netlab.jp>
+
+	* gc.c : consider header bytes which are used by malloc.
+
 Sun Jan  8 11:54:43 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (aligned_free): support MinGW. Patch by Hiroshi Shirosaki.
