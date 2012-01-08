@@ -1081,7 +1081,9 @@ aligned_malloc(size_t aligned_size)
 static void
 aligned_free(void *ptr)
 {
-#if _WIN32 || defined __CYGWIN__
+#if __MINGW32__
+    __mingw_aligned_free(ptr);
+#elif _WIN32 || defined __CYGWIN__
     _aligned_free(ptr);
 #else
     free(ptr);

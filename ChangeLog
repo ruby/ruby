@@ -1,3 +1,7 @@
+Sun Jan  8 11:54:43 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (aligned_free): support MinGW. Patch by Hiroshi Shirosaki.
+
 Sun Jan  8 11:43:05 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (slot_sweep): add a assertion instead of a debug print.
