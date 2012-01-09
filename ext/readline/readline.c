@@ -670,13 +670,13 @@ readline_attempted_completion_function(const char *text, int start, int end)
     if (TYPE(ary) != T_ARRAY)
 	ary = rb_Array(ary);
     matches = RARRAY_LEN(ary);
-    if (matches == NULL) rb_mem_error();
+    if (matches == NULL) rb_memerror();
     result = (char**)malloc((matches + 2)*sizeof(char*));
-    if (result == NULL) rb_raise(rb_eNoMemError, "%s");
+    if (result == NULL) rb_raise(rb_eNoMemError, "failed to allocate memory");
     for (i = 0; i < matches; i++) {
 	temp = rb_obj_as_string(RARRAY_PTR(ary)[i]);
 	result[i + 1] = (char*)malloc(RSTRING_LEN(temp) + 1);
-	if (result[i + 1]  == NULL) rb_mem_error();
+	if (result[i + 1]  == NULL) rb_memerror();
 	strcpy(result[i + 1], RSTRING_PTR(temp));
     }
     result[matches + 1] = NULL;
@@ -709,7 +709,7 @@ readline_attempted_completion_function(const char *text, int start, int end)
 	    i++;
 	}
 	result[0] = (char*)malloc(low + 1);
-	if (result[0]  == NULL) rb_mem_error();
+	if (result[0]  == NULL) rb_memerror();
 	strncpy(result[0], result[1], low);
 	result[0][low] = '\0';
     }
