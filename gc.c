@@ -320,7 +320,6 @@ struct heaps_slot {
     struct heaps_slot *next;
     struct heaps_slot *prev;
     struct heaps_slot *free_next;
-    struct heaps_slot *free_prev;
 };
 
 struct sorted_heaps_slot {
@@ -1097,22 +1096,13 @@ static void
 link_free_heap_slot(rb_objspace_t *objspace, struct heaps_slot *slot)
 {
     slot->free_next = objspace->heap.free_slots;
-    if (objspace->heap.free_slots) {
-        objspace->heap.free_slots->free_prev = slot;
-    }
     objspace->heap.free_slots = slot;
 }
 
 static void
 unlink_free_heap_slot(rb_objspace_t *objspace, struct heaps_slot *slot)
 {
-    if (slot->free_prev)
-        slot->free_prev->free_next = slot->free_next;
-    if (slot->free_next)
-        slot->free_next->free_prev = slot->free_prev;
-    if (objspace->heap.free_slots == slot)
-        objspace->heap.free_slots = slot->free_next;
-    slot->free_prev = NULL;
+    objspace->heap.free_slots = slot->free_next;
     slot->free_next = NULL;
 }
 
@@ -2209,12 +2199,13 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
         }
         sweep_slot->limit = final_num;
         unlink_heap_slot(objspace, sweep_slot);
-        unlink_free_heap_slot(objspace, sweep_slot);
     }
     else {
-        if (free_num > 0 && sweep_slot->free_next == NULL &&
-            sweep_slot->free_prev == NULL) {
+        if (free_num > 0) {
             link_free_heap_slot(objspace, sweep_slot);
+        }
+        else if (sweep_slot->free_next != NULL) {
+            sweep_slot->free_next = NULL;
         }
         objspace->heap.free_num += free_num;
     }
@@ -2254,6 +2245,7 @@ before_gc_sweep(rb_objspace_t *objspace)
     }
     objspace->heap.sweep_slots = heaps;
     objspace->heap.free_num = 0;
+    objspace->heap.free_slots = NULL;
 
     /* sweep unlinked method entries */
     if (GET_VM()->unlinked_method_entry_list) {
@@ -2395,7 +2387,7 @@ rb_gc_force_recycle(VALUE p)
     else {
         GC_PROF_DEC_LIVE_NUM;
         slot = add_slot_local_freelist(objspace, (RVALUE *)p);
-        if (slot->free_next == NULL && slot->free_prev == NULL) {
+        if (slot->free_next == NULL) {
             link_free_heap_slot(objspace, slot);
         }
     }

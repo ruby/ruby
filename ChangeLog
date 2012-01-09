@@ -1,3 +1,8 @@
+Mon Jan  9 14:42:41 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: free_slots is changed Singly linked list. clear
+	  free_slots before sweep.
+
 Mon Jan  9 07:46:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* gc.c: i686-linux needs to define _XOPEN_SOURCE 600 for posix_memalign.
