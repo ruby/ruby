@@ -3,6 +3,7 @@
  */
 
 #include <ruby.h>
+#include <ruby/util.h>
 #include <errno.h>
 #include "dl.h"
 
