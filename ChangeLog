@@ -1,3 +1,9 @@
+Mon Jan  9 20:55:34 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c : don't embed struct heaps_slot to a heap block because it
+	  can causes copy-on-write of memory page on heap block when its
+	  free_next is rewirted.
+
 Mon Jan  9 20:26:33 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (path_entries): add document suggested by
