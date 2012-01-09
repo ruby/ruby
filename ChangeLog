@@ -1,3 +1,9 @@
+Mon Jan  9 20:14:13 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (family_addrinfo): don't require protocol
+	  equality.  For example, protocol 0 and IPPROTO_TCP is not problem
+	  for TCP.
+
 Mon Jan  9 20:08:52 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (family_addrinfo): return the given
