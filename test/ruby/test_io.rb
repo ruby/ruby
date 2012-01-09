@@ -6,6 +6,7 @@ require 'socket'
 require 'stringio'
 require 'timeout'
 require 'tempfile'
+require 'weakref'
 require_relative 'envutil'
 
 class TestIO < Test::Unit::TestCase
@@ -1410,12 +1411,11 @@ class TestIO < Test::Unit::TestCase
 
   def try_fdopen(fd, autoclose = true, level = 100)
     if level > 0
-      try_fdopen(fd, autoclose, level - 1)
+      f = try_fdopen(fd, autoclose, level - 1)
       GC.start
-      level
+      f
     else
-      IO.for_fd(fd, autoclose: autoclose)
-      nil
+      WeakRef.new(IO.for_fd(fd, autoclose: autoclose))
     end
   end
 
@@ -1429,7 +1429,7 @@ class TestIO < Test::Unit::TestCase
     f.autoclose = false
     assert_equal(false, f.autoclose?)
     f.close
-    assert_nothing_raised(Errno::EBADF) {t.close}
+    assert_nothing_raised(Errno::EBADF, feature2250) {t.close}
 
     t.open
     f = IO.for_fd(t.fileno, autoclose: false)
@@ -1437,15 +1437,38 @@ class TestIO < Test::Unit::TestCase
     f.autoclose = true
     assert_equal(true, f.autoclose?)
     f.close
-    assert_raise(Errno::EBADF) {t.close}
+    assert_raise(Errno::EBADF, feature2250) {t.close}
+  end
 
+  def test_autoclose_true_closed_by_finalizer
+    feature2250 = '[ruby-core:26222]'
+    pre = 'ft2250'
     t = Tempfile.new(pre)
-    try_fdopen(t.fileno)
-    assert_raise(Errno::EBADF) {t.close}
+    w = try_fdopen(t.fileno)
+    begin
+      w.close
+      begin
+        t.close
+      rescue Errno::EBADF
+      end
+      skip "expect IO object was GC'ed but not recycled yet"
+    rescue WeakRef::RefError
+      assert_raise(Errno::EBADF, feature2250) {t.close}
+    end
+  end
 
+  def test_autoclose_false_closed_by_finalizer
+    feature2250 = '[ruby-core:26222]'
+    pre = 'ft2250'
     t = Tempfile.new(pre)
-    try_fdopen(t.fileno, false)
-    assert_nothing_raised(Errno::EBADF) {t.close}
+    w = try_fdopen(t.fileno, false)
+    begin
+      w.close
+      t.close
+      skip "expect IO object was GC'ed but not recycled yet"
+    rescue WeakRef::RefError
+      assert_nothing_raised(Errno::EBADF, feature2250) {t.close}
+    end
   end
 
   def test_open_redirect
