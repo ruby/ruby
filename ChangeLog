@@ -1,3 +1,9 @@
+Mon Jan  9 20:08:52 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb (family_addrinfo): return the given
+	  addrinfo object.
+	  Patch by Ippei Obayashi.  [ruby-dev:45095] [Bug #5845]
+
 Mon Jan  9 19:40:20 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/zlib/test_zlib.rb (TestZlibGzipWriter#test_writer_wrap): set
