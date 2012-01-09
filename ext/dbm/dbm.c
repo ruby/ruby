@@ -961,8 +961,9 @@ fdbm_reject(VALUE obj)
  * The exact library used depends on how Ruby was compiled. It could be any
  * of the following:
  *
- * - The original ndbm is released in 4.3BSD.
- *   It is based on dbm in Unix Version 7 but has different API.
+ * - The original ndbm library is released in 4.3BSD.
+ *   It is based on dbm library in Unix Version 7 but has different API to
+ *   support multiple databases in a process.
  * - {Berkeley DB}[http://en.wikipedia.org/wiki/Berkeley_DB] versions
  *   1 thru 5, also known as BDB and Sleepycat DB, now owned by Oracle
  *   Corporation.
