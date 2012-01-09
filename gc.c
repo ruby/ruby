@@ -3092,7 +3092,10 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 	VALUE final = RARRAY_PTR(table)[i];
 	args[0] = RARRAY_PTR(final)[1];
 	args[2] = FIX2INT(RARRAY_PTR(final)[0]);
+	status = 0;
 	rb_protect(run_single_final, (VALUE)args, &status);
+	if (status)
+	    rb_set_errinfo(Qnil);
     }
 }
 
