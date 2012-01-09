@@ -1,3 +1,8 @@
+Mon Jan  9 20:26:33 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (path_entries): add document suggested by
+	  the thread [ruby-core:41959] [Bug #5859].
+
 Mon Jan  9 20:14:13 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb (family_addrinfo): don't require protocol

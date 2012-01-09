@@ -861,8 +861,27 @@ path_s_getwd(VALUE klass)
  * Return the entries (files and subdirectories) in the directory, each as a
  * Pathname object.
  *
+ * The result contains just a filename which has no directory.
+ *
  * The result may contain the current directory #<Pathname:.> and the parent
  * directory #<Pathname:..>.
+ *
+ * If you don't want #<Pathname:.> and #<Pathname:..> and
+ * want directory, consider Pathname#children.
+ *
+ *   pp Pathname.new('/usr/local').entries
+ *   #=> [#<Pathname:share>,
+ *   #    #<Pathname:lib>,
+ *   #    #<Pathname:..>,
+ *   #    #<Pathname:include>,
+ *   #    #<Pathname:etc>,
+ *   #    #<Pathname:bin>,
+ *   #    #<Pathname:man>,
+ *   #    #<Pathname:games>,
+ *   #    #<Pathname:.>,
+ *   #    #<Pathname:sbin>,
+ *   #    #<Pathname:src>]
+ *
  */
 static VALUE
 path_entries(VALUE self)
