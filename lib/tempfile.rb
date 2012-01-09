@@ -162,9 +162,12 @@ class Tempfile < DelegateClass(File)
   end
 
   def _close    # :nodoc:
-    @tmpfile.close if @tmpfile
-    @tmpfile = nil
-    @data[1] = nil if @data
+    begin
+      @tmpfile.close if @tmpfile
+    ensure
+      @tmpfile = nil
+      @data[1] = nil if @data
+    end
   end
   protected :_close
 
@@ -231,7 +234,7 @@ class Tempfile < DelegateClass(File)
         File.unlink(@tmpname)
       end
       # remove tmpname from remover
-      @data[0] = @data[2] = nil
+      @data[0] = @data[1] = nil
       @tmpname = nil
     rescue Errno::EACCES
       # may not be able to unlink on Windows; just ignore
