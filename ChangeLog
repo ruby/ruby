@@ -1,3 +1,8 @@
+Mon Jan  9 19:40:20 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/zlib/test_zlib.rb (TestZlibGzipWriter#test_writer_wrap): set
+	  binmode explicitly.
+
 Mon Jan  9 14:42:41 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: free_slots is changed Singly linked list. clear

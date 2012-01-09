@@ -760,6 +760,7 @@ if defined? Zlib
 
     def test_writer_wrap
       t = Tempfile.new("test_zlib_gzip_writer_wrap")
+      t.binmode
       Zlib::GzipWriter.wrap(t) {|gz| gz.print("foo") }
       t.close
       assert_equal("foo", Zlib::GzipReader.open(t.path) {|gz| gz.read })
