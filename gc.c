@@ -932,6 +932,23 @@ ruby_xfree(void *x)
 	vm_xfree(&rb_objspace, x);
 }
 
+/* Mimic ruby_xmalloc, but need not rb_objspace.
+ * should return pointer suitable for ruby_xfree
+ */
+void *
+ruby_mimmalloc(size_t size)
+{
+    void *mem;
+#if CALC_EXACT_MALLOC_SIZE
+    size += sizeof(size_t);
+#endif
+    mem = malloc(size);
+#if CALC_EXACT_MALLOC_SIZE
+    ((size_t *)mem)[0] = size;
+    mem = (size_t *)mem + 1;
+#endif
+    return mem;
+}
 
 /*
  *  call-seq:
