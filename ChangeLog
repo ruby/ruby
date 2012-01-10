@@ -1,3 +1,7 @@
+Tue Jan 10 15:31:55 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm.c (vm_exec): refix r34162; suppress warning and add description.
+
 Tue Jan 10 15:13:58 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_attempted_completion_function):
