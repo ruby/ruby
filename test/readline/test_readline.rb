@@ -207,10 +207,10 @@ class TestReadline < Test::Unit::TestCase
     with_temp_stdio do |stdin, stdout|
       stdin.write("first\t")
       stdin.flush
-      actual_text = nil
       Readline.completion_proc = ->(text) {[]}
-      line = replace_stdio(stdin.path, stdout.path) {
-        Readline.readline("> ")
+      line = nil
+      replace_stdio(stdin.path, stdout.path) {
+        assert_nothing_raised(NoMemoryError) {line = Readline.readline("> ")}
       }
       assert_equal("first", line)
     end
