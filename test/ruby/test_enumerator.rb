@@ -43,7 +43,7 @@ class TestEnumerator < Test::Unit::TestCase
     }
   end
 
-  def test_nested_itaration
+  def test_nested_iteration
     def (o = Object.new).each
       yield :ok1
       yield [:ok2, :x].each.next
