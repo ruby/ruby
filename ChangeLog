@@ -1,3 +1,9 @@
+Tue Jan 10 21:57:38 2012  Hiroshi Shirosaki <h.shirosaki@gmail.com>
+
+	* ext/dbm/dbm.c (Init_dbm): fix a build error on mswin32.
+	  use `extern __declspec(dllimport)` for dll link with VC.
+	  [ruby-core:41996] [Bug #5869]
+
 Tue Jan 10 15:31:55 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm.c (vm_exec): refix r34162; suppress warning and add description.

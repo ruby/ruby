@@ -1089,8 +1089,8 @@ Init_dbm(void)
     /* ndbm.h doesn't declare gdbm_version until gdbm 1.8.3.
      * See extconf.rb for more information. */
     {
-        extern char *gdbm_version;
-        rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(gdbm_version));
+	RUBY_EXTERN char *gdbm_version;
+	rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(gdbm_version));
     }
 #elif defined(HAVE_DPVERSION)
     rb_define_const(rb_cDBM, "VERSION",  rb_sprintf("QDBM %s", dpversion));
