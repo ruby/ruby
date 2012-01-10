@@ -1,3 +1,19 @@
+Tue Jan 10 12:44:11 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c (ruby_mimmalloc): defined for objects need not rb_objspace,
+	  but should return pointer suitable for ruby_xfree;
+	  main vm and main thread.
+	  patched by Sokolov Yura. https://github.com/ruby/ruby/pull/79
+
+	* internal.h: ditto.
+
+	* vm.c (Init_BareVM): use ruby_mimmalloc.
+
+	* ext/dl/cfunc.c: #include <ruby/util.h>.
+
+	* ext/syslog/syslog.c: use xfree because it is allocated by
+	  ruby_strdup.
+
 Tue Jan 10 12:13:56 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/readline/readline.c (readline_attempted_completion_function):

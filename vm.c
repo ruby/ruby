@@ -1620,7 +1620,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 #endif
 	ruby_vm_run_at_exit_hooks(vm);
 	rb_vm_gvl_destroy(vm);
-	free(vm);
+	ruby_xfree(vm);
 	ruby_current_vm = 0;
     }
     RUBY_FREE_LEAVE("vm");
@@ -1795,7 +1795,7 @@ thread_free(void *ptr)
 		free(th->altstack);
 	    }
 #endif
-	    free(ptr);
+	    ruby_xfree(ptr);
 	}
         if (ruby_current_thread == th)
             ruby_current_thread = NULL;
@@ -2198,8 +2198,8 @@ void
 Init_BareVM(void)
 {
     /* VM bootstrap: phase 1 */
-    rb_vm_t * vm = malloc(sizeof(*vm));
-    rb_thread_t * th = malloc(sizeof(*th));
+    rb_vm_t * vm = ruby_mimmalloc(sizeof(*vm));
+    rb_thread_t * th = ruby_mimmalloc(sizeof(*th));
     if (!vm || !th) {
 	fprintf(stderr, "[FATAL] failed to allocate memory\n");
 	exit(EXIT_FAILURE);
