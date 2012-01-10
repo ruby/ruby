@@ -667,10 +667,10 @@ readline_attempted_completion_function(const char *text, int start, int end)
 #endif
     case_fold = RTEST(rb_attr_get(mReadline, completion_case_fold));
     ary = rb_funcall(proc, rb_intern("call"), 1, rb_locale_str_new_cstr(text));
-    if (TYPE(ary) != T_ARRAY)
+    if (!RB_TYPE_P(ary, T_ARRAY)) {
 	ary = rb_Array(ary);
     matches = RARRAY_LEN(ary);
-    if (matches == NULL) rb_memerror();
+    if (matches == 0) return NULL;
     result = (char**)malloc((matches + 2)*sizeof(char*));
     if (result == NULL) rb_raise(rb_eNoMemError, "failed to allocate memory");
     for (i = 0; i < matches; i++) {

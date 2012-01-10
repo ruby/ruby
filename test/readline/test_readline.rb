@@ -85,9 +85,7 @@ class TestReadline < Test::Unit::TestCase
 
   if !/EditLine/n.match(Readline::VERSION)
     def test_readline
-      stdin = Tempfile.new("test_readline_stdin")
-      stdout = Tempfile.new("test_readline_stdout")
-      begin
+      with_temp_stdio do |stdin, stdout|
         stdin.write("hello\n")
         stdin.close
         stdout.close
@@ -114,9 +112,6 @@ class TestReadline < Test::Unit::TestCase
             replace_stdio(stdin.path, stdout.path) { Readline.readline("> ") }
           }.join
         end
-      ensure
-        stdin.close(true)
-        stdout.close(true)
       end
     end
 
@@ -130,9 +125,7 @@ class TestReadline < Test::Unit::TestCase
         return
       end
 
-      stdin = Tempfile.new("test_readline_stdin")
-      stdout = Tempfile.new("test_readline_stdout")
-      begin
+      with_temp_stdio do |stdin, stdout|
         actual_text = nil
         actual_line_buffer = nil
         actual_point = nil
@@ -176,9 +169,6 @@ class TestReadline < Test::Unit::TestCase
         assert_equal(Encoding.find("locale"), Readline.line_buffer.encoding)
         assert_equal(true, Readline.line_buffer.tainted?)
         assert_equal(21, Readline.point)
-      ensure
-        stdin.close(true)
-        stdout.close(true)
       end
     end
   end
@@ -210,6 +200,19 @@ class TestReadline < Test::Unit::TestCase
     expected.each do |e|
       Readline.completion_case_fold = e
       assert_equal(e, Readline.completion_case_fold)
+    end
+  end
+
+  def test_completion_proc_empty_result
+    with_temp_stdio do |stdin, stdout|
+      stdin.write("first\t")
+      stdin.flush
+      actual_text = nil
+      Readline.completion_proc = ->(text) {[]}
+      line = replace_stdio(stdin.path, stdout.path) {
+        Readline.readline("> ")
+      }
+      assert_equal("first", line)
     end
   end
 
@@ -334,6 +337,15 @@ class TestReadline < Test::Unit::TestCase
         end
       }
     }
+  end
+
+  def with_temp_stdio
+    stdin = Tempfile.new("test_readline_stdin")
+    stdout = Tempfile.new("test_readline_stdout")
+    yield stdin, stdout
+  ensure
+    stdin.close(true) if stdin
+    stdout.close(true) if stdout
   end
 
   def get_default_internal_encoding

@@ -1,3 +1,8 @@
+Tue Jan 10 10:41:11 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_attempted_completion_function):
+	  empty completion result does not mean memory error.
+
 Tue Jan 10 02:19:22 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* test/ruby/test_io.rb (test_autoclose_true_closed_by_finalizer,
