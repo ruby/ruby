@@ -729,7 +729,7 @@ str_new_empty(VALUE str)
     return v;
 }
 
-#define STR_BUF_MIN_SIZE 128
+#define STR_BUF_MIN_SIZE 127
 
 VALUE
 rb_str_buf_new(long capa)
@@ -1807,6 +1807,7 @@ rb_str_resize(VALUE str, long len)
     return str;
 }
 
+#define STR_MIN_NOEMBED (sizeof(void*) * 8 - 1)
 static VALUE
 str_buf_cat(VALUE str, const char *ptr, long len)
 {
@@ -1832,12 +1833,14 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     }
     total = RSTRING_LEN(str)+len;
     if (capa <= total) {
+	if (capa < STR_MIN_NOEMBED)
+	    capa = STR_MIN_NOEMBED;
 	while (total > capa) {
 	    if (capa + 1 >= LONG_MAX / 2) {
 		capa = (total + 4095) / 4096;
 		break;
 	    }
-	    capa = (capa + 1) * 2;
+	    capa = capa * 2 + 1;
 	}
 	RESIZE_CAPA(str, capa);
     }
