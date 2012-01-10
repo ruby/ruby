@@ -672,7 +672,7 @@ readline_attempted_completion_function(const char *text, int start, int end)
     matches = RARRAY_LEN(ary);
     if (matches == 0) return NULL;
     result = (char**)malloc((matches + 2)*sizeof(char*));
-    if (result == NULL) rb_raise(rb_eNoMemError, "failed to allocate memory");
+    if (result == NULL) rb_memerror();
     for (i = 0; i < matches; i++) {
 	temp = rb_obj_as_string(RARRAY_PTR(ary)[i]);
 	result[i + 1] = (char*)malloc(RSTRING_LEN(temp) + 1);

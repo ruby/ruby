@@ -1,3 +1,8 @@
+Tue Jan 10 15:13:58 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_attempted_completion_function):
+	  use rb_memerror().
+
 Tue Jan 10 12:49:42 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* gc.c: in fact, i686-linux doesn't need to define _XOPEN_SOURCE 600.
