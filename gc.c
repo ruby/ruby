@@ -904,7 +904,12 @@ vm_xcalloc(rb_objspace_t *objspace, size_t count, size_t elsize)
     size = xmalloc2_size(count, elsize);
     size = vm_malloc_prepare(objspace, size);
 
-    TRY_WITH_GC(mem = calloc(1, size));
+    if (size < 256) {
+	TRY_WITH_GC(mem = malloc(size));
+	memset(mem, 0, size);
+    }
+    else
+	TRY_WITH_GC(mem = calloc(1, size));
     return vm_malloc_fixup(objspace, mem, size);
 }
 
