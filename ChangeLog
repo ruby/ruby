@@ -1,3 +1,8 @@
+Thu Jan 12 01:41:13 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* gc.c (run_finalizer): clear rb_thread_t::errinfo when ignore
+	  an exception under rb_protect(). [ruby-dev:45113]
+
 Thu Jan 12 01:40:33 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io.rb (TestIO#test_autoclose): Tempfile.new doesn't
