@@ -1,3 +1,10 @@
+Thu Jan 12 01:41:34 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* lib/tempfile.rb (Tempfile#_close): clear @tempfile and @data[1] even
+	  when exception is raised at @tempfile.close. [ruby-dev:45113]
+
+	* lib/tempfile.rb (Tempfile#unlink): fix a typo.
+
 Thu Jan 12 01:41:13 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* gc.c (run_finalizer): clear rb_thread_t::errinfo when ignore
