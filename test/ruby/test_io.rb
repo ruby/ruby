@@ -1395,32 +1395,29 @@ class TestIO < Test::Unit::TestCase
     feature2250 = '[ruby-core:26222]'
     pre = 'ft2250'
 
-    Tempfile.new(pre) do |t|
-      f = IO.for_fd(t.fileno)
-      assert_equal(true, f.autoclose?)
-      f.autoclose = false
-      assert_equal(false, f.autoclose?)
-      f.close
-      assert_nothing_raised(Errno::EBADF) {t.close}
+    t = Tempfile.new(pre)
+    f = IO.for_fd(t.fileno)
+    assert_equal(true, f.autoclose?)
+    f.autoclose = false
+    assert_equal(false, f.autoclose?)
+    f.close
+    assert_nothing_raised(Errno::EBADF) {t.close}
 
-      t.open
-      f = IO.for_fd(t.fileno, autoclose: false)
-      assert_equal(false, f.autoclose?)
-      f.autoclose = true
-      assert_equal(true, f.autoclose?)
-      f.close
-      assert_raise(Errno::EBADF) {t.close}
-    end
+    t.open
+    f = IO.for_fd(t.fileno, autoclose: false)
+    assert_equal(false, f.autoclose?)
+    f.autoclose = true
+    assert_equal(true, f.autoclose?)
+    f.close
+    assert_raise(Errno::EBADF) {t.close}
 
-    Tempfile.new(pre) do |t|
-      try_fdopen(t.fileno)
-      assert_raise(Errno::EBADF) {t.close}
-    end
+    t = Tempfile.new(pre)
+    try_fdopen(t.fileno)
+    assert_raise(Errno::EBADF) {t.close}
 
-    Tempfile.new(pre) do |t|
-      try_fdopen(f.fileno, false)
-      assert_nothing_raised(Errno::EBADF) {t.close}
-    end
+    t = Tempfile.new(pre)
+    try_fdopen(t.fileno, false)
+    assert_nothing_raised(Errno::EBADF) {t.close}
   end
 
   def test_open_redirect
