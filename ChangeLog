@@ -1,3 +1,9 @@
+Thu Jan 12 02:14:43 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* object.c: Added examples for Object#is_a? and
+	  Object#instance_of? patcheed from Manoj Kumar.
+	  [Bug #5880] [ruby-core:42057]
+
 Thu Jan 12 00:57:48 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/mkmf.rb: verbose-mode can use by RM, RMDIRS, etc.
