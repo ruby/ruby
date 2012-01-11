@@ -1,3 +1,9 @@
+Thu Jan 12 01:42:08 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/ruby/test_io.rb (test_autoclose_true_closed_by_finalizer,
+	  test_autoclose_true_closed_by_finalizer): skip if IO objects are
+	  not recycled yet. [ruby-dev:45098] [Bug #5850]
+
 Thu Jan 12 01:41:34 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* lib/tempfile.rb (Tempfile#_close): clear @tempfile and @data[1] even
