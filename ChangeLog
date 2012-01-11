@@ -1,3 +1,8 @@
+Thu Jan 12 00:57:48 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/mkmf.rb: verbose-mode can use by RM, RMDIRS, etc.
+	  (e.g. make V=1 realclean)
+
 Wed Jan 11 23:40:21 2012  Naohisa Goto  <ngoto@gen-info.osaka-u.ac.jp>
 
 	* string.c (rb_str_concat): set array element after definition

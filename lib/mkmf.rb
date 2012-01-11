@@ -2069,10 +2069,10 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       mfile.puts dir, "install-so: #{dest}"
       if $extout
         mfile.print "clean-so::\n"
-        mfile.print "\t@-$(RM) #{fseprepl[dest]}\n"
-        mfile.print "\t@-$(RMDIRS) #{fseprepl[dir]}#{$ignore_error}\n"
+        mfile.print "\t-$(Q)$(RM) #{fseprepl[dest]}\n"
+        mfile.print "\t-$(Q)$(RMDIRS) #{fseprepl[dir]}#{$ignore_error}\n"
       else
-        mfile.print "#{dest}: #{f}\n\t@-$(MAKEDIRS) $(@D#{sep})\n"
+        mfile.print "#{dest}: #{f}\n\t-$(Q)$(MAKEDIRS) $(@D#{sep})\n"
         mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} $(@D#{sep})\n"
         if defined?($installed_list)
           mfile.print "\t@echo #{dir}/#{File.basename(f)}>>$(INSTALLED_LIST)\n"
@@ -2102,7 +2102,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
           end
           if $extout
             mfile.print("clean-rb#{sfx}::\n")
-            mfile.print("\t@-$(RM) #{fseprepl[dest]}\n")
+            mfile.print("\t-$(Q)$(RM) #{fseprepl[dest]}\n")
           end
         end
       end
@@ -2113,7 +2113,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
         unless dirs.empty?
           mfile.print("clean-rb#{sfx}::\n")
           for dir in dirs.sort_by {|d| -d.count('/')}
-            mfile.print("\t@-$(RMDIRS) #{fseprepl[dir]}#{$ignore_error}\n")
+            mfile.print("\t-$(Q)$(RMDIRS) #{fseprepl[dir]}#{$ignore_error}\n")
           end
         end
       end
@@ -2154,19 +2154,19 @@ site-install-rb: install-rb
     mfile.print "$(DEFFILE) " if makedef
     mfile.print "$(OBJS) Makefile\n"
     mfile.print "\t$(ECHO) linking shared-object #{target_prefix.sub(/\A\/(.*)/, '\1/')}$(DLLIB)\n"
-    mfile.print "\t@-$(RM) $(@#{sep})\n"
-    mfile.print "\t@-$(MAKEDIRS) $(@D)\n" if $extout
+    mfile.print "\t-$(Q)$(RM) $(@#{sep})\n"
+    mfile.print "\t-$(Q)$(MAKEDIRS) $(@D)\n" if $extout
     link_so = LINK_SO.gsub(/^/, "\t$(Q) ")
     if srcs.any?(&%r"\.(?:#{CXX_EXT.join('|')})\z".method(:===))
       link_so = link_so.sub(/\bLDSHARED\b/, '\&XX')
     end
     mfile.print link_so, "\n\n"
     unless $static.nil?
-      mfile.print "$(STATIC_LIB): $(OBJS)\n\t@-$(RM) $(@#{sep})\n\t"
+      mfile.print "$(STATIC_LIB): $(OBJS)\n\t-$(Q)$(RM) $(@#{sep})\n\t"
       mfile.print "$(ECHO) linking static-library $(@#{rsep})\n\t$(Q) "
       mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS)"
       config_string('RANLIB') do |ranlib|
-        mfile.print "\n\t@-#{ranlib} $(DLLIB) 2> /dev/null || true"
+        mfile.print "\n\t-$(Q)#{ranlib} $(DLLIB) 2> /dev/null || true"
       end
     end
     mfile.print "\n\n"
@@ -2355,15 +2355,15 @@ clean-rb-default::
 clean-rb::
 clean-so::
 clean: clean-so clean-rb-default clean-rb
-\t\t@-$(RM) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep})
+\t\t-$(Q)$(RM) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep})
 
 distclean-rb-default::
 distclean-rb::
 distclean-so::
 distclean: clean distclean-so distclean-rb-default distclean-rb
-\t\t@-$(RM) Makefile $(RUBY_EXTCONF_H) conftest.* mkmf.log
-\t\t@-$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES#{sep})
-\t\t@-$(RMDIRS) $(DISTCLEANDIRS#{sep})#{$ignore_error}
+\t\t-$(Q)$(RM) Makefile $(RUBY_EXTCONF_H) conftest.* mkmf.log
+\t\t-$(Q)$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES#{sep})
+\t\t-$(Q)$(RMDIRS) $(DISTCLEANDIRS#{sep})#{$ignore_error}
 
 realclean: distclean
 "
