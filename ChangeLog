@@ -1,3 +1,8 @@
+Wed Jan 11 22:36:43 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/readline/test_readline.rb (test_completion_proc_empty_result):
+	  ensure clearance of Readline's line_buffer after the test.
+
 Tue Jan 10 21:57:38 2012  Hiroshi Shirosaki <h.shirosaki@gmail.com>
 
 	* ext/dbm/dbm.c (Init_dbm): fix a build error on mswin32.
