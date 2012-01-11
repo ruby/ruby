@@ -2093,7 +2093,8 @@ rb_str_concat(VALUE str1, VALUE str2)
 
     if (enc == rb_usascii_encoding()) {
 	/* US-ASCII automatically extended to ASCII-8BIT */
-	char buf[1] = {(char)code};
+	char buf[1];
+	buf[0] = (char)code;
 	if (code > 0xFF) {
 	    rb_raise(rb_eRangeError, "%u out of char range", code);
 	}

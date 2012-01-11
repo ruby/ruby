@@ -1,3 +1,9 @@
+Wed Jan 11 23:40:21 2012  Naohisa Goto  <ngoto@gen-info.osaka-u.ac.jp>
+
+	* string.c (rb_str_concat): set array element after definition
+	  to fix compile error with Fujitsu C Compiler 5.6 on Solaris 10
+	  on Sparc.  [Bug #5878] [ruby-dev:45123]
+
 Wed Jan 11 22:52:51 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* gc.c (ruby_mimmalloc): don't set allocated size to header.
