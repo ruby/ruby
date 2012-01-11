@@ -1,3 +1,12 @@
+Wed Jan 11 22:52:51 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* gc.c (ruby_mimmalloc): don't set allocated size to header.
+	  ruby_mimmalloc() doesn't increment allocated_size/allocations and
+	  decrement them in ruby_xfree() cause inconsistency.
+
+	* gc.c (ruby_xfree): don't decrement allocated_size/allocations if
+	  allocated size record is 0.
+
 Wed Jan 11 22:36:43 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* test/readline/test_readline.rb (test_completion_proc_empty_result):
