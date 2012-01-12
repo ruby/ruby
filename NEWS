@@ -55,6 +55,11 @@ with all sufficient information, see the ChangeLog file.
     * Resolv::DNS#timeouts=
     * Resolv::DNS::Config#timeouts=
 
+* shellwords
+    * Shellwords#shellescape() now stringifies the given object using to_s.
+    * Shellwords#shelljoin() accepts non-string objects in the given
+      array, each of which is stringified using to_s.
+
 === Language changes
 === Compatibility issues (excluding feature bug fixes)
 

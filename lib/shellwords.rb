@@ -57,7 +57,8 @@ module Shellwords
   end
 
   # Escapes a string so that it can be safely used in a Bourne shell
-  # command line.
+  # command line.  +str+ can be a non-string object that responds to
+  # +to_s+.
   #
   # Note that a resulted string should be used unquoted and is not
   # intended for use in double quotes nor in single quotes.
@@ -77,6 +78,8 @@ module Shellwords
   # Multibyte characters are treated as multibyte characters, not
   # bytes.
   def shellescape(str)
+    str = str.to_s
+
     # An empty argument will be skipped, so return empty quotes.
     return "''" if str.empty?
 
@@ -101,7 +104,9 @@ module Shellwords
   end
 
   # Builds a command line string from an argument list +array+ joining
-  # all elements escaped for Bourne shell and separated by a space.
+  # all elements escaped for Bourne shell into a single string with
+  # fields separated by a space, where each element is stringified
+  # using +to_s+.
   #
   #   open('|' + Shellwords.join(['grep', pattern, *files])) { |pipe|
   #     # ...
@@ -112,6 +117,11 @@ module Shellwords
   #   open('|' + ['grep', pattern, *files].shelljoin) { |pipe|
   #     # ...
   #   }
+  #
+  # It is allowed to mix non-string objects in the elements as allowed
+  # in Array#join.
+  #
+  #   output = `#{['ps', '-p', $$].shelljoin}`
   #
   def shelljoin(array)
     array.map { |arg| shellescape(arg) }.join(' ')
