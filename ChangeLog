@@ -1,3 +1,9 @@
+Thu Jan 12 18:44:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: fix r33904 and revert r33905.  initialize global
+	  variables with init_mkmf before initializing constants.
+	  [ruby-dev:45124] [Bug #5879]
+
 Thu Jan 12 13:51:00 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* cont.c (cont_restore_0): prevent optimizing out `sp'. sp is used for

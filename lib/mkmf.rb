@@ -53,8 +53,6 @@ module MakeMakefile
   $static = nil
   $config_h = '$(arch_hdrdir)/ruby/config.h'
   $default_static = $static
-  $OBJEXT = nil
-  $ignore_error = ''
 
   unless defined? $configure_args
     $configure_args = {}
@@ -2273,84 +2271,79 @@ MESSAGE
     end
   end
 
-  # Initializes mkmf for creating a makefile.
-  #
-  # Internal use only.
-  #
-  def make_makefile
-    init_mkmf
+  extend self
+  init_mkmf
 
-    $make = with_config("make-prog", ENV["MAKE"] || "make")
-    make, = Shellwords.shellwords($make)
-    $nmake = nil
-    case
-    when $mswin
-      $nmake = ?m if /nmake/i =~ make
-    when $bccwin
-      $nmake = ?b if /Borland/i =~ `#{make} -h`
-    end
-    $ignore_error = $nmake ? '' : ' 2> /dev/null || true'
-
-    RbConfig::CONFIG["srcdir"] = CONFIG["srcdir"] =
-      $srcdir = arg_config("--srcdir", File.dirname($0))
-    $configure_args["--topsrcdir"] ||= $srcdir
-    if $curdir = arg_config("--curdir")
-      RbConfig.expand(curdir = $curdir.dup)
-    else
-      curdir = $curdir = "."
-    end
-    unless File.expand_path(RbConfig::CONFIG["topdir"]) == File.expand_path(curdir)
-      CONFIG["topdir"] = $curdir
-      RbConfig::CONFIG["topdir"] = curdir
-    end
-    $configure_args["--topdir"] ||= $curdir
-    $ruby = arg_config("--ruby", File.join(RbConfig::CONFIG["bindir"], CONFIG["ruby_install_name"]))
+  $make = with_config("make-prog", ENV["MAKE"] || "make")
+  make, = Shellwords.shellwords($make)
+  $nmake = nil
+  case
+  when $mswin
+    $nmake = ?m if /nmake/i =~ make
+  when $bccwin
+    $nmake = ?b if /Borland/i =~ `#{make} -h`
   end
+  $ignore_error = $nmake ? '' : ' 2> /dev/null || true'
+
+  RbConfig::CONFIG["srcdir"] = CONFIG["srcdir"] =
+    $srcdir = arg_config("--srcdir", File.dirname($0))
+  $configure_args["--topsrcdir"] ||= $srcdir
+  if $curdir = arg_config("--curdir")
+    RbConfig.expand(curdir = $curdir.dup)
+  else
+    curdir = $curdir = "."
+  end
+  unless File.expand_path(RbConfig::CONFIG["topdir"]) == File.expand_path(curdir)
+    CONFIG["topdir"] = $curdir
+    RbConfig::CONFIG["topdir"] = curdir
+  end
+  $configure_args["--topdir"] ||= $curdir
+  $ruby = arg_config("--ruby", File.join(RbConfig::CONFIG["bindir"], CONFIG["ruby_install_name"]))
 
   # :startdoc:
 
-split = Shellwords.method(:shellwords).to_proc
+  split = Shellwords.method(:shellwords).to_proc
 
-EXPORT_PREFIX = config_string('EXPORT_PREFIX') {|s| s.strip}
+  EXPORT_PREFIX = config_string('EXPORT_PREFIX') {|s| s.strip}
 
-hdr = ['#include "ruby.h"' "\n"]
-config_string('COMMON_MACROS') do |s|
-  Shellwords.shellwords(s).each do |w|
-    w, v = w.split(/=/, 2)
-    hdr << "#ifndef #{w}"
-    hdr << "#define #{[w, v].compact.join(" ")}"
-    hdr << "#endif /* #{w} */"
+  hdr = ['#include "ruby.h"' "\n"]
+  config_string('COMMON_MACROS') do |s|
+    Shellwords.shellwords(s).each do |w|
+      w, v = w.split(/=/, 2)
+      hdr << "#ifndef #{w}"
+      hdr << "#define #{[w, v].compact.join(" ")}"
+      hdr << "#endif /* #{w} */"
+    end
   end
-end
-config_string('COMMON_HEADERS') do |s|
-  Shellwords.shellwords(s).each {|w| hdr << "#include <#{w}>"}
-end
-COMMON_HEADERS = hdr.join("\n")
-COMMON_LIBS = config_string('COMMON_LIBS', &split) || []
-
-COMPILE_RULES = config_string('COMPILE_RULES', &split) || %w[.%s.%s:]
-RULE_SUBST = config_string('RULE_SUBST')
-COMPILE_C = config_string('COMPILE_C') || '$(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) $(COUTFLAG)$@ -c $<'
-COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $<'
-TRY_LINK = config_string('TRY_LINK') ||
-  "$(CC) #{OUTFLAG}conftest $(INCFLAGS) $(CPPFLAGS) " \
-  "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
-LINK_SO = config_string('LINK_SO') ||
-  if CONFIG["DLEXT"] == $OBJEXT
-    "ld $(DLDFLAGS) -r -o $@ $(OBJS)\n"
-  else
-    "$(LDSHARED) #{OUTFLAG}$@ $(OBJS) " \
-    "$(LIBPATH) $(DLDFLAGS) $(LOCAL_LIBS) $(LIBS)"
+  config_string('COMMON_HEADERS') do |s|
+    Shellwords.shellwords(s).each {|w| hdr << "#include <#{w}>"}
   end
-LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L"%s"'
-RPATHFLAG = config_string('RPATHFLAG') || ''
-LIBARG = config_string('LIBARG') || '-l%s'
-MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main(void) {return 0;}'
-UNIVERSAL_INTS = config_string('UNIVERSAL_INTS') {|s| Shellwords.shellwords(s)} ||
-  %w[int short long long\ long]
+  COMMON_HEADERS = hdr.join("\n")
+  COMMON_LIBS = config_string('COMMON_LIBS', &split) || []
 
-sep = config_string('BUILD_FILE_SEPARATOR') {|s| ":/=#{s}" if s != "/"} || ""
-CLEANINGS = "
+  COMPILE_RULES = config_string('COMPILE_RULES', &split) || %w[.%s.%s:]
+  RULE_SUBST = config_string('RULE_SUBST')
+  COMPILE_C = config_string('COMPILE_C') || '$(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) $(COUTFLAG)$@ -c $<'
+  COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $<'
+  TRY_LINK = config_string('TRY_LINK') ||
+    "$(CC) #{OUTFLAG}conftest $(INCFLAGS) $(CPPFLAGS) " \
+    "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
+  LINK_SO = config_string('LINK_SO') ||
+    if CONFIG["DLEXT"] == $OBJEXT
+      "ld $(DLDFLAGS) -r -o $@ $(OBJS)\n"
+    else
+      "$(LDSHARED) #{OUTFLAG}$@ $(OBJS) " \
+      "$(LIBPATH) $(DLDFLAGS) $(LOCAL_LIBS) $(LIBS)"
+    end
+  LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L"%s"'
+  RPATHFLAG = config_string('RPATHFLAG') || ''
+  LIBARG = config_string('LIBARG') || '-l%s'
+  MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main(void) {return 0;}'
+  UNIVERSAL_INTS = config_string('UNIVERSAL_INTS') {|s| Shellwords.shellwords(s)} ||
+    %w[int short long long\ long]
+
+  sep = config_string('BUILD_FILE_SEPARATOR') {|s| ":/=#{s}" if s != "/"} || ""
+  CLEANINGS = "
 clean-rb-default::
 clean-rb::
 clean-so::
@@ -2374,6 +2367,3 @@ include MakeMakefile
 if not $extmk and /\A(extconf|makefile).rb\z/ =~ File.basename($0)
   END {mkmf_failed($0)}
 end
-
-make_makefile
-
