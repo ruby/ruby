@@ -1,3 +1,13 @@
+Thu Jan 12 13:51:00 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* cont.c (cont_restore_0): prevent optimizing out `sp'. sp is used for
+	  reserving a memory space with ALLOCA_N for restoring machine stack
+	  stored in cont->machine_stack, but clang optimized out it (and
+	  maybe #5851 is also caused by this).
+	  This affected TestContinuation#test_check_localvars.
+
+	* cont.c (cont_restore_1): revert workaround introduced in r32201.
+
 Thu Jan 12 02:14:43 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* object.c: Added examples for Object#is_a? and
