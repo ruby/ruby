@@ -286,15 +286,23 @@ rb_mod_nesting(void)
 /*
  *  call-seq:
  *     Module.constants   -> array
+ *     Module.constants(inherited)   -> array
  *
- *  Returns an array of the names of all constants defined in the
- *  system. This list includes the names of all modules and classes.
+ *  In the first form, returns an array of the names of all
+ *  constants accessible from the point of call.
+ *  This list includes the names of all modules and classes
+ *  defined in the global scope.
  *
- *     p Module.constants.sort[1..5]
+ *     Module.constants.first(4)
+ *        # => [:ARGF, :ARGV, :ArgumentError, :Array]
  *
- *  <em>produces:</em>
+ *     Module.constants.include?(:SEEK_SET)   # => false
  *
- *     ["ARGV", "ArgumentError", "Array", "Bignum", "Binding"]
+ *     class IO
+ *       Module.constants.include?(:SEEK_SET) # => true
+ *     end
+ *
+ *  The second form calls the instance method +constants+.
  */
 
 static VALUE
