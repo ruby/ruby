@@ -56,7 +56,7 @@ end
 
 if ipv6
   if $mingw
-    $CPPFLAGS << " -D_WIN32_WINNT=0x501"
+    $CPPFLAGS << " -D_WIN32_WINNT=0x501" unless $CPPFLAGS.include?("_WIN32_WINNT")
   end
   ipv6lib = nil
   class << (fmt = "unknown")

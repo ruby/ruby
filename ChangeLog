@@ -1,3 +1,9 @@
+Fri Jan 13 03:28:00 2012  Luis Lavena  <luislavena@gmail.com>
+
+	* ext/socket/extconf.rb (if ipv6): only define _WIN32_WINNT if was not
+	  previously defined. This solve warnings with multiple defines in
+	  command line with GCC 4.6.1
+
 Thu Jan 12 18:44:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb: fix r33904 and revert r33905.  initialize global
