@@ -1,3 +1,9 @@
+Fri Jan 13 03:38:36 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/shellwords.rb (Shellwords#shellsplit): Fix a bug where
+	  consecutive backslashes in double quotes are all removed except
+	  the one at the tail.
+
 Fri Jan 13 03:28:00 2012  Luis Lavena  <luislavena@gmail.com>
 
 	* ext/socket/extconf.rb (if ipv6): only define _WIN32_WINNT if was not
