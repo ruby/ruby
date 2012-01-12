@@ -669,10 +669,9 @@ cont_restore_1(rb_context_t *cont)
     }
 #endif
     if (cont->machine_stack_src) {
-	size_t i;
 	FLUSH_REGISTER_WINDOWS;
-	for (i = 0; i < cont->machine_stack_size; i++)
-	    cont->machine_stack_src[i] = cont->machine_stack[i];
+	MEMCPY(cont->machine_stack_src, cont->machine_stack,
+		VALUE, cont->machine_stack_size);
     }
 
 #ifdef __ia64
@@ -742,7 +741,7 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 	    if (&space[0] > end) {
 # ifdef HAVE_ALLOCA
 		volatile VALUE *sp = ALLOCA_N(VALUE, &space[0] - end);
-		(void)sp;
+		space[0] = *sp;
 # else
 		cont_restore_0(cont, &space[0]);
 # endif
@@ -758,7 +757,7 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 	    if (&space[STACK_PAD_SIZE] < end) {
 # ifdef HAVE_ALLOCA
 		volatile VALUE *sp = ALLOCA_N(VALUE, end - &space[STACK_PAD_SIZE]);
-		(void)sp;
+		space[0] = *sp;
 # else
 		cont_restore_0(cont, &space[STACK_PAD_SIZE-1]);
 # endif
