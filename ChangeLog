@@ -1,4 +1,6 @@
-Fri Jan 13 18:25:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jan 13 18:29:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_mutex_unlock_th): simplified.
 
 	* thread.c (rb_barrier_waiting): fix potential overflows.
 

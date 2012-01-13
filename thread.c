@@ -3523,7 +3523,6 @@ static const char *
 rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *th)
 {
     const char *err = NULL;
-    rb_mutex_t *th_mutex;
 
     native_mutex_lock(&mutex->lock);
 
@@ -3542,21 +3541,11 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *th)
     native_mutex_unlock(&mutex->lock);
 
     if (!err) {
-	th_mutex = th->keeping_mutexes;
-	if (th_mutex == mutex) {
-	    th->keeping_mutexes = mutex->next_mutex;
+	rb_mutex_t *volatile *th_mutex = &th->keeping_mutexes;
+	while (*th_mutex != mutex) {
+	    th_mutex = &(*th_mutex)->next_mutex;
 	}
-	else {
-	    while (1) {
-		rb_mutex_t *tmp_mutex;
-		tmp_mutex = th_mutex->next_mutex;
-		if (tmp_mutex == mutex) {
-		    th_mutex->next_mutex = tmp_mutex->next_mutex;
-		    break;
-		}
-		th_mutex = tmp_mutex;
-	    }
-	}
+	*th_mutex = mutex->next_mutex;
 	mutex->next_mutex = NULL;
     }
 
