@@ -1,3 +1,7 @@
+Fri Jan 13 17:23:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (load_unlock): update loading table at once.
+
 Fri Jan 13 16:44:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (exc_equal): try implicit conversion for delegator.

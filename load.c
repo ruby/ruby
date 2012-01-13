@@ -416,22 +416,26 @@ load_lock(const char *ftptr)
     return (char *)ftptr;
 }
 
+static int
+release_barrier(st_data_t key, st_data_t *value, st_data_t done)
+{
+    VALUE barrier = (VALUE)*value;
+    if (done ? rb_barrier_destroy(barrier) : rb_barrier_release(barrier)) {
+	/* still in-use */
+	return ST_CONTINUE;
+    }
+    xfree((char *)key);
+    return ST_DELETE;
+}
+
 static void
 load_unlock(const char *ftptr, int done)
 {
     if (ftptr) {
 	st_data_t key = (st_data_t)ftptr;
-	st_data_t data;
 	st_table *loading_tbl = get_loading_table();
-	VALUE barrier;
 
-	if (!st_lookup(loading_tbl, key, &data)) return;
-	barrier = (VALUE)data;
-	if (!(done ? rb_barrier_destroy(barrier) : rb_barrier_release(barrier))) {
-	    if (st_delete(loading_tbl, &key, &data)) {
-		xfree((char *)key);
-	    }
-	}
+	st_update(loading_tbl, key, release_barrier, done);
     }
 }
 
