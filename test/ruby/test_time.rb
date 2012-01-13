@@ -277,6 +277,13 @@ class TestTime < Test::Unit::TestCase
     assert_equal(29700, t2.utc_offset, bug)
   end
 
+  def test_marshal_to_s
+    t1 = Time.new(2011,11,8, 0,42,25, 9*3600)
+    t2 = Time.at(Marshal.load(Marshal.dump(t1)))
+    assert_equal("2011-11-08 00:42:25 +0900", t2.to_s,
+      "[ruby-dev:44827] [Bug #5586]")
+  end
+
   # Sat Jan 01 00:00:00 UTC 2000
   T2000 = Time.at(946684800).gmtime
 
