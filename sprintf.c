@@ -1168,7 +1168,13 @@ rb_enc_vsprintf(rb_encoding *enc, const char *fmt, va_list ap)
     f._bf._size = 0;
     f._w = 120;
     result = rb_str_buf_new(f._w);
-    if (enc) rb_enc_associate(result, enc);
+    if (enc) {
+	if (!rb_enc_asciicompat(enc)) {
+	    rb_raise(rb_eArgError, "cannot construct ASCII-incompatible encoding string: %s",
+		     rb_enc_name(enc));
+	}
+	rb_enc_associate(result, enc);
+    }
     f._bf._base = (unsigned char *)result;
     f._p = (unsigned char *)RSTRING_PTR(result);
     RBASIC(result)->klass = 0;

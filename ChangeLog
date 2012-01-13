@@ -1,3 +1,8 @@
+Fri Jan 13 18:41:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_enc_vsprintf): can be used for ASCII compatible
+	  encodings only.
+
 Fri Jan 13 18:29:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_mutex_unlock_th): simplified.
