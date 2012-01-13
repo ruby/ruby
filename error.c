@@ -732,14 +732,10 @@ exc_equal(VALUE exc, VALUE obj)
     CONST_ID(id_mesg, "mesg");
 
     if (rb_obj_class(exc) != rb_obj_class(obj)) {
-	ID id_exception, id_message, id_backtrace;
-	CONST_ID(id_exception, "exception");
+	ID id_message, id_backtrace;
 	CONST_ID(id_message, "message");
 	CONST_ID(id_backtrace, "backtrace");
 
-	obj = rb_check_funcall(obj, id_exception, 0, 0);
-	if (obj == Qundef) return Qfalse;
-	if (rb_obj_class(exc) != rb_obj_class(obj)) return Qfalse;
 	mesg = rb_check_funcall(obj, id_message, 0, 0);
 	if (mesg == Qundef) return Qfalse;
 	backtrace = rb_check_funcall(obj, id_backtrace, 0, 0);
