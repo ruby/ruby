@@ -9025,31 +9025,35 @@ seek_before_access(VALUE argp)
  *     IO.read(name, [length [, offset]] )   -> string
  *     IO.read(name, [length [, offset]], open_args)   -> string
  *
- *  Opens the file, optionally seeks to the given <i>offset</i>, then returns
- *  <i>length</i> bytes (defaulting to the rest of the file).
- *  <code>read</code> ensures the file is closed before returning.
+ *  Opens the file, optionally seeks to the given +offset+, then returns
+ *  +length+ bytes (defaulting to the rest of the file).  <code>read</code>
+ *  ensures the file is closed before returning.
  *
  *  If the last argument is a hash, it specifies option for internal
  *  open().  The key would be the following.  open_args: is exclusive
  *  to others.
  *
- *   encoding: string or encoding
+ *  encoding::
+ *    string or encoding
  *
- *    specifies encoding of the read string.  encoding will be ignored
+ *    specifies encoding of the read string.  +encoding+ will be ignored
  *    if length is specified.
  *
- *   mode: string
+ *  mode::
+ *    string
  *
- *    specifies mode argument for open().  it should start with "r"
- *    otherwise it would cause error.
+ *    specifies mode argument for open().  It should start with "r"
+ *    otherwise it will cause an error.
  *
- *   open_args: array of strings
+ *  open_args:: array of strings
  *
  *    specifies arguments for open() as an array.
  *
- *     IO.read("testfile")           #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
- *     IO.read("testfile", 20)       #=> "This is line one\nThi"
- *     IO.read("testfile", 20, 10)   #=> "ne one\nThis is line "
+ *  Examples:
+ *
+ *    IO.read("testfile")           #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
+ *    IO.read("testfile", 20)       #=> "This is line one\nThi"
+ *    IO.read("testfile", 20, 10)   #=> "ne one\nThis is line "
  */
 
 static VALUE

@@ -1,3 +1,8 @@
+Sat Jan 14 05:58:54 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* io.c (rb_io_s_read):  Fix formatting of open_args comment.  Reported
+	  by Adam Prescott.
+
 Fri Jan 13 18:41:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_enc_vsprintf): can be used for ASCII compatible
