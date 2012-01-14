@@ -1,3 +1,9 @@
+Sat Jan 14 21:56:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (iseq_data_to_ary): check line info table boundary.  line
+	  number 0 means no line number info is needed.  [ruby-dev:45130]
+	  [Bug #5894]
+
 Sat Jan 14 18:24:13 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* error.c (exc_equal): clear rb_thread_t::errinfo when ignore
