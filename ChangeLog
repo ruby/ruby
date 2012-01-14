@@ -1,3 +1,8 @@
+Sat Jan 14 18:24:13 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* error.c (exc_equal): clear rb_thread_t::errinfo when ignore
+	  an exception under rb_protect(). [ruby-core:41979] [Bug #5865]
+
 Sat Jan 14 12:02:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_enc_vsprintf): relaxed the restriction.  since the

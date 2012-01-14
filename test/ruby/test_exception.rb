@@ -379,11 +379,30 @@ end.join
     assert_nothing_raised(NameError, bug5575) do
       load(t.path)
     end
+  ensure
+    t.close(true) if t
   end
 
   def test_equal
     bug5865 = '[ruby-core:41979]'
     assert_equal(RuntimeError.new("a"), RuntimeError.new("a"), bug5865)
     assert_not_equal(RuntimeError.new("a"), StandardError.new("a"), bug5865)
+  end
+
+  def test_exception_in_exception_equal
+    bug5865 = '[ruby-core:41979]'
+    t = Tempfile.new(["test_exception_in_exception_equal", ".rb"])
+    t.puts <<-EOC
+      o = Object.new
+      def o.exception(arg)
+      end
+      RuntimeError.new("a") == o
+    EOC
+    t.close
+    assert_nothing_raised(ArgumentError, bug5865) do
+      load(t.path)
+    end
+  ensure
+    t.close(true) if t
   end
 end
