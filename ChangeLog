@@ -1,3 +1,8 @@
+Sat Jan 14 22:24:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/callback/mkcallback.rb (gencallback): suppress unused
+	  variables.
+
 Sat Jan 14 21:56:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (iseq_data_to_ary): check line info table boundary.  line
