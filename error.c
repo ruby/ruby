@@ -713,6 +713,14 @@ exc_set_backtrace(VALUE exc, VALUE bt)
     return rb_iv_set(exc, "bt", rb_check_backtrace(bt));
 }
 
+static VALUE
+try_convert_to_exception(VALUE obj)
+{
+    ID id_exception;
+    CONST_ID(id_exception, "exception");
+    return rb_check_funcall(obj, id_exception, 0, 0);
+}
+
 /*
  *  call-seq:
  *     exc == obj   -> true or false
@@ -732,10 +740,14 @@ exc_equal(VALUE exc, VALUE obj)
     CONST_ID(id_mesg, "mesg");
 
     if (rb_obj_class(exc) != rb_obj_class(obj)) {
+	int status = 0;
 	ID id_message, id_backtrace;
 	CONST_ID(id_message, "message");
 	CONST_ID(id_backtrace, "backtrace");
 
+	obj = rb_protect(try_convert_to_exception, obj, &status);
+	if (status || obj == Qundef) return Qfalse;
+	if (rb_obj_class(exc) != rb_obj_class(obj)) return Qfalse;
 	mesg = rb_check_funcall(obj, id_message, 0, 0);
 	if (mesg == Qundef) return Qfalse;
 	backtrace = rb_check_funcall(obj, id_backtrace, 0, 0);

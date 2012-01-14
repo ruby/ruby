@@ -1,3 +1,8 @@
+Sat Jan 14 12:00:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (exc_equal): ignore exceptions during implicit
+	  conversion.  [ruby-core:41979] [Bug #5865]
+
 Sat Jan 14 05:58:54 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* io.c (rb_io_s_read):  Fix formatting of open_args comment.  Reported
@@ -17,6 +22,11 @@ Fri Jan 13 18:29:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri Jan 13 17:23:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (load_unlock): update loading table at once.
+
+Fri Jan 13 16:44:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (exc_equal): try implicit conversion for delegator.
+	  [ruby-core:41979] [Bug #5865]
 
 Fri Jan 13 03:46:53 2012  Akinori MUSHA  <knu@iDaemons.org>
 

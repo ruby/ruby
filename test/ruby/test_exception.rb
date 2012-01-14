@@ -380,4 +380,10 @@ end.join
       load(t.path)
     end
   end
+
+  def test_equal
+    bug5865 = '[ruby-core:41979]'
+    assert_equal(RuntimeError.new("a"), RuntimeError.new("a"), bug5865)
+    assert_not_equal(RuntimeError.new("a"), StandardError.new("a"), bug5865)
+  end
 end
