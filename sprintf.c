@@ -1169,8 +1169,9 @@ rb_enc_vsprintf(rb_encoding *enc, const char *fmt, va_list ap)
     f._w = 120;
     result = rb_str_buf_new(f._w);
     if (enc) {
-	if (!rb_enc_asciicompat(enc)) {
-	    rb_raise(rb_eArgError, "cannot construct ASCII-incompatible encoding string: %s",
+	if (rb_enc_mbminlen(enc) > 1) {
+	    /* the implementation deeply depends on plain char */
+	    rb_raise(rb_eArgError, "cannot construct wchar_t based encoding string: %s",
 		     rb_enc_name(enc));
 	}
 	rb_enc_associate(result, enc);

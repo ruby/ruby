@@ -1,3 +1,9 @@
+Sat Jan 14 12:02:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_enc_vsprintf): relaxed the restriction.  since the
+	  implementation deeply depends on plain char, so wchar_t based
+	  encodings are not supported.
+
 Sat Jan 14 12:00:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (exc_equal): ignore exceptions during implicit
