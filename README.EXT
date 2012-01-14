@@ -1262,6 +1262,8 @@ Calls the function func with arg as the argument.  If no exception
 occured during func, it returns the result of func and *state is zero.
 Otherwise, it returns Qnil and sets *state to nonzero.  If state is
 NULL, it is not set in both cases.
+You have to clear the error info with rb_set_errinfo(Qnil) when
+ignoring the caught exception.
 
  void rb_jump_tag(int state)
 

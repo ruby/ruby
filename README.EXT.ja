@@ -1336,6 +1336,8 @@ VALUE rb_protect(VALUE (*func) (VALUE), VALUE arg, int *state)
   関数funcをargを引数として実行し, 例外が発生しなければその戻
   り値を返す．例外が発生した場合は, *stateに非0をセットして
   Qnilを返す．
+  rb_jump_tag()を呼ばずに捕捉した例外を無視する場合には，
+  rb_set_errinfo(Qnil)でエラー情報をクリアしなければならない．
 
 void rb_jump_tag(int state)
 
