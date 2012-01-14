@@ -1494,7 +1494,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		if (last_line != iobj->line_no) {
 		    line_info_table[k].line_no = last_line = iobj->line_no;
 		    line_info_table[k].position = pos;
-		k++;
+		    k++;
 		}
 		pos += len;
 		break;
@@ -1527,7 +1527,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			if (last_line != (unsigned int)adjust->line_no) {
 			    line_info_table[k].line_no = last_line = adjust->line_no;
 			    line_info_table[k].position = pos;
-			k++;
+			    k++;
 			}
 			generated_iseq[pos++] = BIN(adjuststack);
 			generated_iseq[pos++] = orig_sp - sp;
@@ -1537,7 +1537,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			if (last_line != (unsigned int)adjust->line_no) {
 			    line_info_table[k].line_no = last_line = adjust->line_no;
 			    line_info_table[k].position = pos;
-			k++;
+			    k++;
 			}
 			generated_iseq[pos++] = BIN(jump);
 			generated_iseq[pos++] = 0;
