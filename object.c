@@ -368,12 +368,25 @@ rb_any_to_s(VALUE obj)
     return str;
 }
 
+/*
+ * If the default external encoding is ASCII compatible, the encoding of
+ * inspected result must be compatible with it.
+ * If the default external encoding is ASCII incomapatible,
+ * the result must be ASCII only.
+ */
 VALUE
 rb_inspect(VALUE obj)
 {
-    VALUE s = rb_obj_as_string(rb_funcall(obj, id_inspect, 0, 0));
-    rb_enc_check(rb_enc_default_external(), s);
-    return s;
+    VALUE str = rb_obj_as_string(rb_funcall(obj, id_inspect, 0, 0));
+    rb_encoding *ext = rb_default_external_encoding();
+    if (!rb_enc_asciicompat(ext)) {
+	if (!rb_enc_str_asciionly_p(str))
+	    rb_raise(rb_eEncCompatError, "inspected result must be ASCII only if default external encoding is ASCII incompatible");
+	return str;
+    }
+    if (rb_enc_get(str) != ext && !rb_enc_str_asciionly_p(str))
+	rb_raise(rb_eEncCompatError, "inspected result must be ASCII only or use the same encoding with default external");
+    return str;
 }
 
 static int

@@ -271,6 +271,34 @@ class TestM17N < Test::Unit::TestCase
     Encoding.default_external = orig_ext
   end
 
+  def test_object_inspect_external
+    orig_v, $VERBOSE = $VERBOSE, false
+    orig_int, Encoding.default_internal = Encoding.default_internal, nil
+    orig_ext = Encoding.default_external
+    o = Object.new
+
+    Encoding.default_external = Encoding::UTF_16BE
+    def o.inspect
+      "abc"
+    end
+    assert_nothing_raised(Encoding::CompatibilityError) { [o].inspect }
+
+    def o.inspect
+      "abc".encode(Encoding.default_external)
+    end
+    assert_raise(Encoding::CompatibilityError) { [o].inspect }
+
+    Encoding.default_external = Encoding::US_ASCII
+    def o.inspect
+      "\u3042"
+    end
+    assert_raise(Encoding::CompatibilityError) { [o].inspect }
+  ensure
+    Encoding.default_internal = orig_int
+    Encoding.default_external = orig_ext
+    $VERBOSE = orig_v
+  end
+
   def test_str_dump
     [
       e("\xfe"),

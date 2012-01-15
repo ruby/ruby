@@ -1,3 +1,12 @@
+Sun Jan 15 14:09:48 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* object.c (rb_inspect): raise the result is not compatible with
+	  the default external encoding. [ruby-core:42095] [Bug #5848]
+	  If the default external encoding is ASCII compatible, the encoding of
+	  inspected result must be compatible with it.
+	  If the default external encoding is ASCII incomapatible,
+	  the result must be ASCII only.
+
 Sun Jan 15 13:21:50 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/parser/parser.rl (json_string_unescape): workaround fix
