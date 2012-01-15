@@ -3146,6 +3146,8 @@ env_update(VALUE env, VALUE hash)
     rb_hash_foreach(hash, env_update_i, 0);
     return env;
 }
+/* defined in st.c */
+extern st_index_t MAX_PACKED_HASH;
 
 /*
  *  A Hash is a dictionary-like collection of unique keys and their values.
@@ -3220,6 +3222,10 @@ Init_Hash(void)
 {
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
+    const char *p = getenv("RUBY_MAX_PACKED_HASH");
+    if (p && *p) {
+	MAX_PACKED_HASH = atoi(p);
+    }
 
     id_hash = rb_intern("hash");
     id_yield = rb_intern("yield");
