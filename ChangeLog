@@ -1,3 +1,11 @@
+Mon Jan 16 00:41:33 2012  Sokolov Yura  <funny.falcon@gmail.com>
+
+	* st.c: st use function instead of macro.  In my current
+	  environment (Ubunu 11.04 32bit gcc-4.5.2) it gives 4%
+	  performance improvement.
+
+	  https://github.com/ruby/ruby/pull/77
+
 Sun Jan 15 14:09:48 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* object.c (rb_inspect): raise the result is not compatible with
