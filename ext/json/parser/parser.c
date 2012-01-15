@@ -1293,6 +1293,7 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
 {
     char *p = string, *pe = string, *unescape;
     int unescape_len;
+    char buf[4];
 
     while (pe < stringEnd) {
         if (*pe == '\\') {
@@ -1325,7 +1326,6 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
                     if (pe > stringEnd - 4) {
                         return Qnil;
                     } else {
-                        char buf[4];
                         UTF32 ch = unescape_unicode((unsigned char *) ++pe);
                         pe += 3;
                         if (UNI_SUR_HIGH_START == (ch & 0xFC00)) {
