@@ -4676,18 +4676,15 @@ rb_w32_uaccess(const char *path, int mode)
 static int
 rb_chsize(HANDLE h, off_t size)
 {
-    long upos, lpos, usize, lsize, uend, lend;
-    off_t end;
+    long upos, lpos, usize, lsize;
     int ret = -1;
     DWORD e;
 
-    if (((lpos = SetFilePointer(h, 0, (upos = 0, &upos), SEEK_CUR)) == -1L &&
-	 (e = GetLastError())) ||
-	((lend = GetFileSize(h, (DWORD *)&uend)) == -1L && (e = GetLastError()))) {
+    if ((lpos = SetFilePointer(h, 0, (upos = 0, &upos), SEEK_CUR)) == -1L &&
+	(e = GetLastError())) {
 	errno = map_errno(e);
 	return -1;
     }
-    end = ((off_t)uend << 32) | (unsigned long)lend;
     usize = (long)(size >> 32);
     lsize = (long)size;
     if (SetFilePointer(h, lsize, &usize, SEEK_SET) == (DWORD)-1L &&

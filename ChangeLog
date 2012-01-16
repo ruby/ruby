@@ -1,3 +1,7 @@
+Mon Jan 16 11:22:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_chsize): no need to get the current file size.
+
 Mon Jan 16 00:41:33 2012  Sokolov Yura  <funny.falcon@gmail.com>
 
 	* st.c: st use function instead of macro.  In my current
