@@ -1,3 +1,9 @@
+Mon Jan 16 16:41:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (Regexp): fix incorrect options when casting to
+	  a Regexp, and suppress encoding option warnings.
+	  https://github.com/ruby/ruby/pull/82
+
 Fri Jan 13 15:22:43 2012  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (TIME_COPY_GMT): copy vtm.utc_offset and vtm.zone too.

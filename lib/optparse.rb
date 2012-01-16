@@ -1709,7 +1709,8 @@ XXX
       f |= Regexp::IGNORECASE if /i/ =~ o
       f |= Regexp::MULTILINE if /m/ =~ o
       f |= Regexp::EXTENDED if /x/ =~ o
-      k = o.delete("^imx")
+      k = o.delete("imx")
+      k = nil if k.empty?
     end
     Regexp.new(s || all, f, k)
   end
