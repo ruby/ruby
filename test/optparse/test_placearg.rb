@@ -6,7 +6,10 @@ class TestOptionParser::PlaceArg < TestOptionParser
     @opt.def_option("-x [VAL]") {|x| @flag = x}
     @opt.def_option("--option [VAL]") {|x| @flag = x}
     @opt.def_option("-T [level]", /^[0-4]$/, Integer) {|x| @topt = x}
+    @topt = nil
     @opt.def_option("-n") {}
+    @opt.def_option("--regexp [REGEXP]", Regexp) {|x| @reopt = x}
+    @reopt = nil
   end
 
   def test_short
