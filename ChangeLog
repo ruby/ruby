@@ -1,3 +1,10 @@
+Tue Jan 17 07:30:12 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* st.c (unpack_entries): Fix r34310: on unpacking, the position of
+	  a hash must be do_hash-ed value.
+
+	* st.c (add_packed_direct): ditto.
+
 Mon Jan 16 16:41:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (Regexp): fix incorrect options when casting to

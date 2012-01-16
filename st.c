@@ -462,7 +462,7 @@ unpack_entries(register st_table *table)
     tmp_table.num_entries = 0;
     memset(tmp_table.bins, 0, sizeof(struct st_table_entry *) * tmp_table.num_bins);
     for (i = 0; i < table->num_entries; i++) {
-	st_index_t hash_val = PKEY(table, i); /* do_hash(PKEY(table, i), &tmp_table); */
+	st_index_t hash_val = do_hash(PKEY(table, i), &tmp_table);
 	add_direct(&tmp_table, PKEY(table, i), PVAL(table, i),
 		hash_val, hash_val % tmp_table.num_bins);
     }
@@ -478,8 +478,9 @@ add_packed_direct(st_table *table, st_data_t key, st_data_t value)
 	PVAL_SET(table, i, value);
     }
     else {
+	st_index_t hash_val = do_hash(key, table);
 	unpack_entries(table);
-	add_direct(table, key, value, key, key % table->num_bins);
+	add_direct(table, key, value, hash_val, hash_val % table->num_bins);
     }
 }
 
