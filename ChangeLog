@@ -1,3 +1,9 @@
+Mon Jan 16 16:41:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (Regexp): fix incorrect options when casting to
+	  a Regexp, and suppress encoding option warnings.
+	  https://github.com/ruby/ruby/pull/82
+
 Wed Dec 28 11:22:45 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::Entry_#entries): use utility method
