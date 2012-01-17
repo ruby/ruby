@@ -72,8 +72,7 @@ static void rehash(st_table *);
 
 #define EQUAL(table,x,y) ((x)==(y) || (*(table)->type->compare)((x),(y)) == 0)
 
-/* remove cast to unsigned int in the future */
-#define do_hash(key,table) (unsigned int)(st_index_t)(*(table)->type->hash)((key))
+#define do_hash(key,table) (st_index_t)(*(table)->type->hash)((key))
 #define do_hash_bin(key,table) (do_hash((key), (table))%(table)->num_bins)
 
 /* preparation for possible allocation improvements */
@@ -462,9 +461,9 @@ unpack_entries(register st_table *table)
     tmp_table.num_entries = 0;
     memset(tmp_table.bins, 0, sizeof(struct st_table_entry *) * tmp_table.num_bins);
     for (i = 0; i < table->num_entries; i++) {
-	st_index_t hash_val = do_hash(PKEY(table, i), &tmp_table);
-	add_direct(&tmp_table, PKEY(table, i), PVAL(table, i),
-		hash_val, hash_val % tmp_table.num_bins);
+	/* packed table should be numhash */
+	st_index_t key = PKEY(table, i), value = PVAL(table, i);
+	add_direct(&tmp_table, key, value, key, key % tmp_table.num_bins);
     }
     *table = tmp_table;
 }

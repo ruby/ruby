@@ -1,3 +1,7 @@
+Tue Jan 17 10:54:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c (do_hash): it's the time to remove cast to unsigned int.
+
 Tue Jan 17 07:30:12 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* st.c (unpack_entries): Fix r34310: on unpacking, the position of
