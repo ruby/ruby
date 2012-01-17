@@ -1384,7 +1384,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall __syscall chroot ge
 	      truncate ftruncate ftello chsize times utimes utimensat fcntl lockf lstat\
 	      truncate64 ftruncate64 ftello64 fseeko fseeko64 \
 	      link symlink readlink readdir_r fsync fdatasync fchown posix_fadvise\
-	      setitimer setruid seteuid setreuid setresuid setproctitle socketpair\
+	      setitimer setruid seteuid setreuid setresuid socketpair\
 	      setrgid setegid setregid setresgid issetugid pause lchown lchmod\
 	      getpgrp setpgrp getpgid setpgid initgroups getgroups setgroups\
 	      getpriority getrlimit setrlimit sysconf close getgrnam_r\
