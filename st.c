@@ -477,9 +477,8 @@ add_packed_direct(st_table *table, st_data_t key, st_data_t value)
 	PVAL_SET(table, i, value);
     }
     else {
-	st_index_t hash_val = do_hash(key, table);
 	unpack_entries(table);
-	add_direct(table, key, value, hash_val, hash_val % table->num_bins);
+	add_direct(table, key, value, key, key % table->num_bins);
     }
 }
 
