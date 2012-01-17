@@ -1,4 +1,6 @@
-Tue Jan 17 17:13:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jan 17 17:18:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (SPT_TYPE): enable as SPT_REUSEARGV on Darwin.
 
 	* missing/setproctitle.c (ruby_init_setproctitle): changed prefix.
 
