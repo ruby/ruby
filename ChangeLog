@@ -1,3 +1,7 @@
+Tue Jan 17 17:13:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/setproctitle.c (ruby_init_setproctitle): changed prefix.
+
 Tue Jan 17 12:32:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (aligned_malloc, aligned_free): covered missing defined
