@@ -1364,7 +1364,7 @@ AC_REPLACE_FUNCS(dup2 memmove strerror\
 
 # for missing/setproctitle.c
 AS_CASE(["$target_os"],
-[aix* | k*bsd*-gnu | kopensolaris*-gnu | linux*], [AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)],
+[aix* | k*bsd*-gnu | kopensolaris*-gnu | linux* | darwin*], [AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)],
 [hpux*], [AC_DEFINE(SPT_TYPE,SPT_PSTAT) ],
 [])
 
