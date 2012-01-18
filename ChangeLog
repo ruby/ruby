@@ -1,3 +1,7 @@
+Thu Jan 19 07:10:47 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_parse.c: [ruby-core:42173].
+
 Wed Jan 18 18:11:02 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/rdoc-mode.el (rdoc-mode): Add provide so that requiring

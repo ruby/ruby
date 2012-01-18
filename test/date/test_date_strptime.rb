@@ -475,4 +475,12 @@ class TestDateStrptime < Test::Unit::TestCase
     end
   end
 
+  def test_given_string
+    s = '2001-02-03T04:05:06Z'
+    s0 = s.dup
+
+    assert_not_equal({}, Date._strptime(s, '%FT%T%Z'))
+    assert_equal(s0, s)
+  end
+
 end
