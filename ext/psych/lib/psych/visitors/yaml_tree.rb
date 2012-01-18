@@ -301,9 +301,13 @@ module Psych
       end
 
       def visit_Array o
-        register o, @emitter.start_sequence(nil, nil, true, Nodes::Sequence::BLOCK)
-        o.each { |c| accept c }
-        @emitter.end_sequence
+        if o.class == ::Array
+          register o, @emitter.start_sequence(nil, nil, true, Nodes::Sequence::BLOCK)
+          o.each { |c| accept c }
+          @emitter.end_sequence
+        else
+          visit_array_subclass o
+        end
       end
 
       def visit_NilClass o
@@ -315,6 +319,39 @@ module Psych
       end
 
       private
+      def visit_array_subclass o
+        tag = "!ruby/array:#{o.class}"
+        if o.instance_variables.empty?
+          node = @emitter.start_sequence(nil, tag, false, Nodes::Sequence::BLOCK)
+          register o, node
+          o.each { |c| accept c }
+          @emitter.end_sequence
+        else
+          node = @emitter.start_mapping(nil, tag, false, Nodes::Sequence::BLOCK)
+          register o, node
+
+          # Dump the internal list
+          accept 'internal'
+          @emitter.start_sequence(nil, nil, true, Nodes::Sequence::BLOCK)
+          o.each { |c| accept c }
+          @emitter.end_sequence
+
+          # Dump the ivars
+          accept 'ivars'
+          @emitter.start_mapping(nil, nil, true, Nodes::Sequence::BLOCK)
+          o.instance_variables.each do |ivar|
+            accept ivar
+            accept o.instance_variable_get ivar
+          end
+          @emitter.end_mapping
+
+          @emitter.end_mapping
+        end
+      end
+
+      def dump_list o
+      end
+
       # '%:z' was no defined until 1.9.3
       if RUBY_VERSION < '1.9.3'
         def format_time time

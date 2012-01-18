@@ -1,3 +1,11 @@
+Wed Jan 18 10:39:47 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: Added ability to load array
+	  subclasses with ivars.
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: Added ability to dump
+	  array subclasses with ivars.
+	* test/psych/test_array.rb: corresponding tests
+
 Tue Jan 17 17:18:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (SPT_TYPE): enable as SPT_REUSEARGV on Darwin.
