@@ -50,8 +50,13 @@ module Psych
         case o.tag
         when '!binary', 'tag:yaml.org,2002:binary'
           o.value.unpack('m').first
-        when '!str', 'tag:yaml.org,2002:str'
-          o.value
+        when /^!(?:str|ruby\/string)(?::(.*))?/, 'tag:yaml.org,2002:str'
+          klass = resolve_class($1)
+          if klass
+            klass.allocate.replace o.value
+          else
+            o.value
+          end
         when '!ruby/object:BigDecimal'
           require 'bigdecimal'
           BigDecimal._load o.value
@@ -136,9 +141,16 @@ module Psych
         return revive_hash({}, o) unless o.tag
 
         case o.tag
-        when '!str', 'tag:yaml.org,2002:str'
+        when /^!(?:str|ruby\/string)(?::(.*))?/, 'tag:yaml.org,2002:str'
+          klass = resolve_class($1)
           members = Hash[*o.children.map { |c| accept c }]
           string = members.delete 'str'
+
+          if klass
+            string = klass.allocate
+            string.replace string
+          end
+
           init_with(string, members.map { |k,v| [k.to_s.sub(/^@/, ''),v] }, o)
         when /^!ruby\/array:(.*)$/
           klass = resolve_class($1)
