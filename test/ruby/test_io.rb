@@ -1057,7 +1057,7 @@ class TestIO < Test::Unit::TestCase
       w.close
     end, proc do |r|
       assert_equal("", r.gets(0))
-      assert_equal("foobarbaz", s = r.gets(9))
+      assert_equal("foobarbaz", r.gets(9))
     end)
   end
 
@@ -1772,7 +1772,7 @@ End
     10.times.map do
       Thread.start do
         assert_in_out_err([], src) {|stdout, stderr|
-          assert_no_match(/hi.*hi/, stderr.join)
+          assert_no_match(/hi.*hi/, stderr.join, bug3585)
         }
       end
     end.each {|th| th.join}
@@ -1832,11 +1832,11 @@ End
   end
 
   def test_advise
-    t = make_tempfile
-    assert_raise(ArgumentError, "no arguments") { t.advise }
+    tf = make_tempfile
+    assert_raise(ArgumentError, "no arguments") { tf.advise }
     %w{normal random sequential willneed dontneed noreuse}.map(&:to_sym).each do |adv|
       [[0,0], [0, 20], [400, 2]].each do |offset, len|
-        open(make_tempfile.path) do |t|
+        open(tf.path) do |t|
           assert_equal(t.advise(adv, offset, len), nil)
           assert_raise(ArgumentError, "superfluous arguments") do
             t.advise(adv, offset, len, offset)
@@ -1860,10 +1860,10 @@ End
 
   def test_invalid_advise
     feature4204 = '[ruby-dev:42887]'
-    t = make_tempfile
+    tf = make_tempfile
     %w{Normal rand glark will_need zzzzzzzzzzzz \u2609}.map(&:to_sym).each do |adv|
       [[0,0], [0, 20], [400, 2]].each do |offset, len|
-        open(make_tempfile.path) do |t|
+        open(tf.path) do |t|
           assert_raise(NotImplementedError, feature4204) { t.advise(adv, offset, len) }
         end
       end
