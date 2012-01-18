@@ -1,3 +1,7 @@
+Wed Jan 18 18:06:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/curses/curses.c (cWindow, cMouseEvent): made typed data.
+
 Wed Jan 18 12:49:15 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: Added support for loading

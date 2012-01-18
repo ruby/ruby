@@ -87,17 +87,33 @@ no_window(void)
 #define GetWINDOW(obj, winp) do {\
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)\
 	rb_raise(rb_eSecurityError, "Insecure: operation on untainted window");\
-    Data_Get_Struct((obj), struct windata, (winp));\
+    TypedData_Get_Struct((obj), struct windata, &windata_type, (winp));\
     if ((winp)->window == 0) no_window();\
 } while (0)
 
 static void
-free_window(struct windata *winp)
+window_free(void *p)
 {
+    struct windata *winp = p;
     if (winp->window && winp->window != stdscr) delwin(winp->window);
     winp->window = 0;
     xfree(winp);
 }
+
+static size_t
+window_memsize(const void *p)
+{
+    const struct windata *winp = p;
+    size_t size = sizeof(*winp);
+    if (!winp) return 0;
+    if (winp->window && winp->window != stdscr) size += sizeof(winp->window);
+    return size;
+}
+
+static const rb_data_type_t windata_type = {
+    "windata",
+    {0, window_free, window_memsize,}
+};
 
 static VALUE
 prep_window(VALUE class, WINDOW *window)
@@ -110,7 +126,7 @@ prep_window(VALUE class, WINDOW *window)
     }
 
     obj = rb_obj_alloc(class);
-    Data_Get_Struct(obj, struct windata, winp);
+    TypedData_Get_Struct(obj, struct windata, &windata_type, winp);
     winp->window = window;
 
     return obj;
@@ -1241,16 +1257,32 @@ no_mevent(void)
 #define GetMOUSE(obj, data) do {\
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)\
 	rb_raise(rb_eSecurityError, "Insecure: operation on untainted mouse");\
-    Data_Get_Struct((obj), struct mousedata, (data));\
+    TypedData_Get_Struct((obj), struct mousedata, &mousedata_type, (data));\
     if ((data)->mevent == 0) no_mevent();\
 } while (0)
 
 static void
-curses_mousedata_free(struct mousedata *mdata)
+curses_mousedata_free(void *p)
 {
+    struct mousedata *mdata = p;
     if (mdata->mevent)
 	xfree(mdata->mevent);
 }
+
+static size_t
+curses_mousedata_memsize(const void *p)
+{
+    const struct mousedata *mdata = p;
+    size_t size = sizeof(*mdata);
+    if (!mdata) return 0;
+    if (mdata->mevent) size += sizeof(mdata->mevent);
+    return size;
+}
+
+static const rb_data_type_t mousedata_type = {
+    "mousedata",
+    {0, curses_mousedata_free, curses_mousedata_memsize,}
+};
 
 /*
  * Document-method: Curses.getmouse
@@ -1268,8 +1300,8 @@ curses_getmouse(VALUE obj)
     VALUE val;
 
     curses_stdscr();
-    val = Data_Make_Struct(cMouseEvent,struct mousedata,
-			   0,curses_mousedata_free,mdata);
+    val = TypedData_Make_Struct(cMouseEvent,struct mousedata,
+				&mousedata_type,mdata);
     mdata->mevent = (MEVENT*)xmalloc(sizeof(MEVENT));
     return (getmouse(mdata->mevent) == OK) ? val : Qnil;
 }
@@ -1438,7 +1470,7 @@ window_s_allocate(VALUE class)
 {
     struct windata *winp;
 
-    return Data_Make_Struct(class, struct windata, 0, free_window, winp);
+    return TypedData_Make_Struct(class, struct windata, &windata_type, winp);
 }
 
 /*
@@ -1460,7 +1492,7 @@ window_initialize(VALUE obj, VALUE h, VALUE w, VALUE top, VALUE left)
 
     rb_secure(4);
     curses_init_screen();
-    Data_Get_Struct(obj, struct windata, winp);
+    TypedData_Get_Struct(obj, struct windata, &windata_type, winp);
     if (winp->window) delwin(winp->window);
     window = newwin(NUM2INT(h), NUM2INT(w), NUM2INT(top), NUM2INT(left));
     wclear(window);
@@ -2459,15 +2491,6 @@ window_timeout(VALUE obj, VALUE delay)
 /*--------------------------- class Pad ----------------------------*/
 
 #ifdef HAVE_NEWPAD
-/* returns a Curses::Pad object */
-static VALUE
-pad_s_allocate(VALUE class)
-{
-    struct windata *padp;
-
-    return Data_Make_Struct(class, struct windata, 0, free_window, padp);
-}
-
 /*
  * Document-method: Curses::Pad.new
  *
@@ -2486,7 +2509,7 @@ pad_initialize(VALUE obj, VALUE h, VALUE w)
 
     rb_secure(4);
     curses_init_screen();
-    Data_Get_Struct(obj, struct windata, padp);
+    TypedData_Get_Struct(obj, struct windata, &windata_type, padp);
     if (padp->window) delwin(padp->window);
     window = newpad(NUM2INT(h), NUM2INT(w));
     wclear(window);
@@ -2495,8 +2518,11 @@ pad_initialize(VALUE obj, VALUE h, VALUE w)
     return obj;
 }
 
+#if 1
+#define pad_subpad window_subwin
+#else
 /*
- * Document-method: Curses::Pad.subwin
+ * Document-method: Curses::Pad.subpad
  * call-seq:
  *   subpad(height, width, begin_x, begin_y)
  *
@@ -2522,6 +2548,7 @@ pad_subpad(VALUE obj, VALUE height, VALUE width, VALUE begin_x, VALUE begin_y)
 
     return pad;
 }
+#endif
 
 /*
  * Document-method: Curses::Pad.refresh
@@ -2835,7 +2862,7 @@ Init_curses(void)
      *
      */
     cPad = rb_define_class_under(mCurses, "Pad", cWindow);
-    rb_define_alloc_func(cPad, pad_s_allocate);
+    /* inherits alloc_func from cWindow */
     rb_define_method(cPad, "initialize", pad_initialize, 2);
     rb_define_method(cPad, "subpad", pad_subpad, 4);
     rb_define_method(cPad, "refresh", pad_refresh, 6);
