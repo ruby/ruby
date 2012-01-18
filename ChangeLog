@@ -58,7 +58,7 @@ Mon Jan 16 11:22:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Jan 16 00:41:33 2012  Sokolov Yura  <funny.falcon@gmail.com>
 
 	* st.c: st use function instead of macro.  In my current
-	  environment (Ubunu 11.04 32bit gcc-4.5.2) it gives 4%
+	  environment (Ubuntu 11.04 32bit gcc-4.5.2) it gives 4%
 	  performance improvement.
 
 	  https://github.com/ruby/ruby/pull/77
@@ -69,7 +69,7 @@ Sun Jan 15 14:09:48 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 	  the default external encoding. [ruby-core:42095] [Bug #5848]
 	  If the default external encoding is ASCII compatible, the encoding of
 	  inspected result must be compatible with it.
-	  If the default external encoding is ASCII incomapatible,
+	  If the default external encoding is ASCII incompatible,
 	  the result must be ASCII only.
 
 Sun Jan 15 13:21:50 2012  NARUSE, Yui  <naruse@ruby-lang.org>
@@ -172,7 +172,7 @@ Thu Jan 12 13:51:00 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 Thu Jan 12 02:14:43 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* object.c: Added examples for Object#is_a? and
-	  Object#instance_of? patcheed from Manoj Kumar.
+	  Object#instance_of? patched from Manoj Kumar.
 	  [Bug #5880] [ruby-core:42057]
 
 Thu Jan 12 00:57:48 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
