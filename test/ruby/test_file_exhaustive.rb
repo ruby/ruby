@@ -402,7 +402,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
     if drive = Dir.pwd[%r'\A(?:[a-z]:|//[^/]+/[^/]+)'i]
       assert_match(%r"\Az:/foo\z"i, File.expand_path('/foo', "z:/bar"))
-      assert_match(%r"\A//host/share/foo\z"i, File.expand_path('/foo', "//host/share/bar").downcase)
+      assert_match(%r"\A//host/share/foo\z"i, File.expand_path('/foo', "//host/share/bar"))
       assert_match(%r"\A#{drive}/foo\z"i, File.expand_path('/foo'))
     else
       assert_equal("/foo", File.expand_path('/foo'))
