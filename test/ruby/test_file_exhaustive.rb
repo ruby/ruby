@@ -397,7 +397,15 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(@file, File.expand_path(@file + "."))
       assert_equal(@file, File.expand_path(@file + "::$DATA"))
       assert_match(/\Ac:\//i, File.expand_path('c:'), '[ruby-core:31591]')
+      assert_match(/\Ac:\//i, File.expand_path('c:foo', 'd:/bar'))
+      assert_equal('c:/bar/foo', File.expand_path('c:foo', 'c:/bar'))
+      assert_equal('C:/bar/foo', File.expand_path('c:foo', 'C:/bar'))
     end
+    if drive = Dir.pwd[%r'\A(?:[a-z]:|//[^/]+/[^/]+)'i]
+      assert_equal("z:/foo", File.expand_path('/foo', "z:/bar"))
+      assert_equal("//host/share/foo", File.expand_path('/foo', "//host/share/bar"))
+    end
+    assert_equal("#{drive}/foo", File.expand_path('/foo'))
     assert_kind_of(String, File.expand_path("~")) if ENV["HOME"]
     assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha") }
     assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha", "/") }
