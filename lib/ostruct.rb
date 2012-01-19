@@ -235,6 +235,23 @@ class OpenStruct
 
   attr_reader :table # :nodoc:
   protected :table
+  
+  #
+  # Returns a nested hash of all open structs. This enables all hash methods to be easily accessed.
+  #
+  def to_hash
+    outputHash = Hash.new
+
+    @table.each do | k, v |
+      if v.is_a? OpenStruct
+        outputHash[k] = v.to_hash
+      else
+        outputHash[k] = v
+      end
+    end
+
+    outputHash
+  end
 
   #
   # Compares this object and +other+ for equality.  An OpenStruct is equal to
