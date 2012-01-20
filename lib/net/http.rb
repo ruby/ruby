@@ -578,7 +578,8 @@ module Net   #:nodoc:
       @address = address
       @port    = (port || HTTP.default_port)
       @curr_http_version = HTTPVersion
-      @no_keepalive_server = false
+      @keep_alive_timeout = 2
+      @last_communicated = nil
       @close_on_empty_response = false
       @socket  = nil
       @started = false
@@ -647,6 +648,12 @@ module Net   #:nodoc:
       @socket.continue_timeout = sec if @socket
       @continue_timeout = sec
     end
+
+    # Seconds to reuse the connection of the previous request.
+    # If the idle time is less than this Keep-Alive Timeout,
+    # Net::HTTP reuses the TCP/IP socket used by the previous communication.
+    # The default value is 2 seconds.
+    attr_accessor :keep_alive_timeout
 
     # Returns true if the HTTP session has been started.
     def started?
@@ -1332,7 +1339,10 @@ module Net   #:nodoc:
       res
     end
 
+    IDEMPOTENT_METHODS_ = %w/GET HEAD PUT DELETE OPTIONS TRACE/ # :nodoc:
+
     def transport_request(req)
+      count = 0
       begin_transport req
       res = catch(:response) {
         req.exec @socket, @curr_http_version, edit_path(req.path)
@@ -1346,6 +1356,16 @@ module Net   #:nodoc:
       }
       end_transport req, res
       res
+    rescue EOFError, Errno::ECONNRESET => exception
+      if count == 0 && IDEMPOTENT_METHODS_.include?(req.method)
+        count += 1
+        @socket.close if @socket and not @socket.closed?
+        D "Conn close because of error #{exception}, and retry"
+        retry
+      end
+      D "Conn close because of error #{exception}"
+      @socket.close if @socket and not @socket.closed?
+      raise
     rescue => exception
       D "Conn close because of error #{exception}"
       @socket.close if @socket and not @socket.closed?
@@ -1353,7 +1373,14 @@ module Net   #:nodoc:
     end
 
     def begin_transport(req)
-      connect if @socket.closed?
+      if @socket.closed?
+        connect
+      elsif @last_communicated && @last_communicated + @keep_alive_timeout < Time.now
+        D 'Conn close because of keep_alive_timeout'
+        @socket.close
+        connect
+      end
+
       if not req.response_body_permitted? and @close_on_empty_response
         req['connection'] ||= 'close'
       end
@@ -1362,6 +1389,7 @@ module Net   #:nodoc:
 
     def end_transport(req, res)
       @curr_http_version = res.http_version
+      @last_communicated = nil
       if @socket.closed?
         D 'Conn socket closed'
       elsif not res.body and @close_on_empty_response
@@ -1369,6 +1397,7 @@ module Net   #:nodoc:
         @socket.close
       elsif keep_alive?(req, res)
         D 'Conn keep-alive'
+        @last_communicated = Time.now
       else
         D 'Conn close'
         @socket.close

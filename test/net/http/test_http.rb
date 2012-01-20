@@ -564,3 +564,47 @@ class TestNetHTTPContinue < Test::Unit::TestCase
     assert_not_match(/HTTP\/1.1 100 continue/, @debug.string)
   end
 end
+
+class TestNetHTTPKeepAlive < Test::Unit::TestCase
+  CONFIG = {
+    'host' => '127.0.0.1',
+    'port' => 10081,
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+    'RequestTimeout' => 1,
+  }
+
+  include TestNetHTTPUtils
+
+  def test_keep_alive_get_auto_reconnect
+    start {|http|
+      http.set_debug_output($stderr)
+      res = http.get('/')
+      http.keep_alive_timeout = 1
+      assert_kind_of Net::HTTPResponse, res
+      assert_kind_of String, res.body
+      sleep 1.5
+      assert_nothing_raised {
+        res = http.get('/')
+      }
+      assert_kind_of Net::HTTPResponse, res
+      assert_kind_of String, res.body
+    }
+  end
+
+  def test_keep_alive_get_auto_retry
+    start {|http|
+      http.set_debug_output($stderr)
+      res = http.get('/')
+      http.keep_alive_timeout = 5
+      assert_kind_of Net::HTTPResponse, res
+      assert_kind_of String, res.body
+      sleep 1.5
+      assert_nothing_raised {
+        res = http.get('/')
+      }
+      assert_kind_of Net::HTTPResponse, res
+      assert_kind_of String, res.body
+    }
+  end
+end

@@ -51,6 +51,7 @@ module TestNetHTTPUtils
       :ServerType => Thread,
     }
     server_config[:OutputBufferSize] = 4 if config('chunked')
+    server_config[:RequestTimeout] = config('RequestTimeout') if config('RequestTimeout')
     if defined?(OpenSSL) and config('ssl_enable')
       server_config.update({
         :SSLEnable      => true,

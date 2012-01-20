@@ -1,3 +1,17 @@
+Fri Jan 20 14:31:43 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP#transport_request): retry a idempotent
+	  request automatically. [ruby-dev:45030] [Bug #5790]
+	  [ruby-core:41821] [Bug #5813]
+
+	* lib/net/http.rb (Net::HTTP#keep_alive_timeout=): added to specify
+	  the second to reconnect the TCP connection on Keep-Alive.
+	  The default value is 2 second because current servers uses 2 sec.
+	  http://ftp-admin.blogspot.com/2009/09/keepalivetimeout2.html
+
+	* lib/net/http.rb (Net::HTTP#begin_transport): reconnect TCP
+	  connection on keep-alive timeout.
+
 Thu Jan 19 07:53:09 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_strptime.c: moved detector of leftover.
