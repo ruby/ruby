@@ -1,7 +1,7 @@
 Fri Jan 20 20:47:37 2012  Kenta Murata  <mrkn@cookpad.com>
 
 	* lib/cgi/util.rb (CGI.escape): support a string with invalid byte
-	  sequence.
+	  sequence.  [Bug #5913]
 
 	* test/cgi/test_cgi_util.rb
 	  (test_cgi_escape_with_invalid_byte_sequence): test for the above
