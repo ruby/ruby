@@ -1216,9 +1216,6 @@ vm_exec(rb_thread_t *th)
       vm_loop_start:
 	result = vm_exec_core(th, initial);
 	if ((state = th->state) != 0) {
-#ifdef __llvm__ /* LLVM optimization guard for TestEnumerator#test_nested_iteration */
-	    (void)__extension__({rb_thread_t t = *th; t;});
-#endif
 	    err = result;
 	    th->state = 0;
 	    goto exception_handler;
