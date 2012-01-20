@@ -4,9 +4,10 @@ class CGI
   #   url_encoded_string = CGI::escape("'Stop!' said Fred")
   #      # => "%27Stop%21%27+said+Fred"
   def CGI::escape(string)
-    string.gsub(/([^ a-zA-Z0-9_.-]+)/) do
+    encoding = string.encoding
+    string.dup.force_encoding('ASCII-8BIT').gsub(/([^ a-zA-Z0-9_.-]+)/) do
       '%' + $1.unpack('H2' * $1.bytesize).join('%').upcase
-    end.tr(' ', '+')
+    end.tr(' ', '+').force_encoding(encoding)
   end
 
   # URL-decode a string with encoding(optional).

@@ -1,3 +1,12 @@
+Fri Jan 20 20:47:37 2012  Kenta Murata  <mrkn@cookpad.com>
+
+	* lib/cgi/util.rb (CGI.escape): support a string with invalid byte
+	  sequence.
+
+	* test/cgi/test_cgi_util.rb
+	  (test_cgi_escape_with_invalid_byte_sequence): test for the above
+	  change.
+
 Fri Jan 20 17:37:37 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm.c (vm_exec): remove workaround for LLVM because r34278 fixes it.
