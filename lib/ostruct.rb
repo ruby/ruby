@@ -96,13 +96,11 @@ class OpenStruct
   #   p australia   # -> <OpenStruct country="Australia" population=20000000>
   #
   def initialize(hash=nil)
-    @table = {}
-    if hash
-      for k,v in hash
-        @table[k.to_sym] = v
-        new_ostruct_member(k)
-      end
-    end
+    @table ||= {}
+    hash.each do |key, value|
+      @table[key.to_sym] = value
+      new_ostruct_member key
+    end if hash
   end
 
   # Duplicate an OpenStruct object members.
