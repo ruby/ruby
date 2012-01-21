@@ -759,6 +759,7 @@ rb_enc_compatible(VALUE str1, VALUE str2)
 {
     int idx1, idx2;
     rb_encoding *enc1, *enc2;
+    int isstr1, isstr2;
 
     idx1 = rb_enc_get_index(str1);
     idx2 = rb_enc_get_index(str2);
@@ -772,33 +773,38 @@ rb_enc_compatible(VALUE str1, VALUE str2)
     enc1 = rb_enc_from_index(idx1);
     enc2 = rb_enc_from_index(idx2);
 
-    if (BUILTIN_TYPE(str2) == T_STRING && RSTRING_LEN(str2) == 0)
+    isstr2 = RB_TYPE_P(str2, T_STRING);
+    if (isstr2 && RSTRING_LEN(str2) == 0)
 	return enc1;
-    if (BUILTIN_TYPE(str1) == T_STRING && RSTRING_LEN(str1) == 0)
+    isstr1 = RB_TYPE_P(str1, T_STRING);
+    if (isstr1 && RSTRING_LEN(str1) == 0)
 	return (rb_enc_asciicompat(enc1) && rb_enc_str_asciionly_p(str2)) ? enc1 : enc2;
     if (!rb_enc_asciicompat(enc1) || !rb_enc_asciicompat(enc2)) {
 	return 0;
     }
 
     /* objects whose encoding is the same of contents */
-    if (BUILTIN_TYPE(str2) != T_STRING && idx2 == ENCINDEX_US_ASCII)
+    if (!isstr2 && idx2 == ENCINDEX_US_ASCII)
 	return enc1;
-    if (BUILTIN_TYPE(str1) != T_STRING && idx1 == ENCINDEX_US_ASCII)
+    if (!isstr1 && idx1 == ENCINDEX_US_ASCII)
 	return enc2;
 
-    if (BUILTIN_TYPE(str1) != T_STRING) {
+    if (!isstr1) {
 	VALUE tmp = str1;
 	int idx0 = idx1;
 	str1 = str2;
 	str2 = tmp;
 	idx1 = idx2;
 	idx2 = idx0;
+	idx0 = isstr1;
+	isstr1 = isstr2;
+	isstr2 = idx0;
     }
-    if (BUILTIN_TYPE(str1) == T_STRING) {
+    if (isstr1) {
 	int cr1, cr2;
 
 	cr1 = rb_enc_str_coderange(str1);
-	if (BUILTIN_TYPE(str2) == T_STRING) {
+	if (isstr2) {
 	    cr2 = rb_enc_str_coderange(str2);
 	    if (cr1 != cr2) {
 		/* may need to handle ENC_CODERANGE_BROKEN */
@@ -1083,7 +1089,7 @@ enc_find(VALUE klass, VALUE enc)
  *
  * If the objects are non-strings their encodings are compatible when they
  * have an encoding and:
- * * Either encoding is US ASCII compatible
+ * * Either encoding is US-ASCII compatible
  * * One of the encodings is a 7-bit encoding
  *
  */

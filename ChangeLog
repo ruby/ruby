@@ -1,3 +1,8 @@
+Sat Jan 21 21:51:19 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_enc_compatible): fix segv on symbols.
+	  [ruby-core:42204] [Bug #5921]
+
 Sat Jan 21 11:43:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_chdir, check_dirname): get rid of optimization-out.
