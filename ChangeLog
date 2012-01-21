@@ -1,3 +1,7 @@
+Sat Jan 21 11:43:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_chdir, check_dirname): get rid of optimization-out.
+
 Fri Jan 20 20:47:37 2012  Kenta Murata  <mrkn@cookpad.com>
 
 	* lib/cgi/util.rb (CGI.escape): support a string with invalid byte
