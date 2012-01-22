@@ -1,3 +1,11 @@
+Mon Jan 23 00:45:34 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/rdoc-mode.el (rdoc-imenu-create-index): Add imenu support
+	  to rdoc-mode.
+
+	* misc/rdoc-mode.el (rdoc-mode): Fix regexp patterns containing
+	  "\s " where CR/LF is not supposed to match.
+
 Sun Jan 22 15:41:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_intern3): split to registration check and new
