@@ -1,4 +1,10 @@
-Sun Jan 22 15:23:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jan 22 15:41:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_intern3): split to registration check and new
+	  registration.
+
+	* parse.y (rb_intern_str): make interned string shared with the
+	  given string.
 
 	* parse.y (rb_intern3, rb_intern_str): check the coderange first.
 
