@@ -1,3 +1,7 @@
+Sun Jan 22 15:23:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_intern3, rb_intern_str): check the coderange first.
+
 Sat Jan 21 22:21:07 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (FIXNUM_P): simple flag should be int.

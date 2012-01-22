@@ -10397,6 +10397,16 @@ register_symid(ID id, const char *name, long len, rb_encoding *enc)
     return id;
 }
 
+static int
+sym_check_asciionly(VALUE str)
+{
+    int cr = rb_enc_str_coderange(str);
+    if (cr == ENC_CODERANGE_BROKEN) {
+    	rb_raise(rb_eEncodingError, "invalid encoding symbol");
+    }
+    return cr == ENC_CODERANGE_7BIT;
+}
+
 ID
 rb_intern3(const char *name, long len, rb_encoding *enc)
 {
@@ -10418,9 +10428,7 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     rb_enc_associate(str, enc);
     OBJ_FREEZE(str);
 
-    if (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN) {
-    	rb_raise(rb_eEncodingError, "invalid encoding symbol");
-    }
+    if (sym_check_asciionly(str)) enc = rb_usascii_encoding();
 
     if (st_lookup(global_symbols.sym_id, str, &data))
 	return (ID)data;
@@ -10486,32 +10494,17 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
 	}
 	break;
     }
-    mb = 0;
     if (!rb_enc_isdigit(*m, enc)) {
 	while (m <= name + last && is_identchar(m, e, enc)) {
 	    if (ISASCII(*m)) {
 		m++;
 	    }
 	    else {
-		mb = 1;
 		m += rb_enc_mbclen(m, e, enc);
 	    }
 	}
     }
     if (m - name < len) id = ID_JUNK;
-    if (enc != rb_usascii_encoding()) {
-	/*
-	 * this clause makes sense only when called from other than
-	 * rb_intern_str() taking care of code-range.
-	 */
-	if (!mb) {
-	    for (; m <= name + len; ++m) {
-		if (!ISASCII(*m)) goto mbstr;
-	    }
-	    enc = rb_usascii_encoding();
-	}
-      mbstr:;
-    }
   new_id:
     if (global_symbols.last_id >= ~(ID)0 >> (ID_SCOPE_SHIFT+RUBY_SPECIAL_SHIFT)) {
 	if (len > 20) {
@@ -10547,7 +10540,7 @@ rb_intern_str(VALUE str)
     rb_encoding *enc;
     ID id;
 
-    if (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
+    if (sym_check_asciionly(str)) {
 	enc = rb_usascii_encoding();
     }
     else {
@@ -10734,9 +10727,7 @@ rb_check_id(volatile VALUE *namep)
 	*namep = name;
     }
 
-    if (rb_enc_str_coderange(name) == ENC_CODERANGE_BROKEN) {
-	rb_raise(rb_eEncodingError, "invalid encoding symbol");
-    }
+    sym_check_asciionly(name);
 
     if (st_lookup(global_symbols.sym_id, (st_data_t)name, &id))
 	return (ID)id;
