@@ -1,3 +1,9 @@
+Mon Jan 23 16:42:28 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (extract_binmode): raise an exception if binmode/textmode
+	  is specified with both vmode and opthash.
+	  [ruby-core:42199] [Bug #5918]
+
 Mon Jan 23 16:35:27 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_io_extract_modeenc): set ASCII-8BIT if binmode is specified

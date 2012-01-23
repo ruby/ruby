@@ -1047,6 +1047,29 @@ EOT
         f.set_encoding("iso-2022-jp")
       }
     }
+    assert_raise(ArgumentError) {
+      open(__FILE__, "rb", binmode: true) {|f|
+        f.set_encoding("iso-2022-jp")
+      }
+    }
+    assert_raise(ArgumentError) {
+      open(__FILE__, "rb", binmode: false) {|f|
+        f.set_encoding("iso-2022-jp")
+      }
+    }
+  end
+
+  def test_textmode_twice
+    assert_raise(ArgumentError) {
+      open(__FILE__, "rt", textmode: true) {|f|
+        f.set_encoding("iso-2022-jp")
+      }
+    }
+    assert_raise(ArgumentError) {
+      open(__FILE__, "rt", textmode: false) {|f|
+        f.set_encoding("iso-2022-jp")
+      }
+    }
   end
 
   def test_write_conversion_fixenc
@@ -1344,6 +1367,8 @@ EOT
 
   def test_both_textmode_binmode
     assert_raise(ArgumentError) { open("not-exist", "r", :textmode=>true, :binmode=>true) }
+    assert_raise(ArgumentError) { open("not-exist", "rt", :binmode=>true) }
+    assert_raise(ArgumentError) { open("not-exist", "rb", :textmode=>true) }
   end
 
   def test_textmode_decode_universal_newline_read
