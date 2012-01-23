@@ -4859,10 +4859,13 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
     else {
 	VALUE v;
 	extract_binmode(opthash, &fmode);
+	if (fmode & FMODE_BINMODE) {
 #ifdef O_BINARY
-	if (fmode & FMODE_BINMODE)
             oflags |= O_BINARY;
 #endif
+	    if (!has_enc)
+		rb_io_ext_int_to_encs(rb_ascii8bit_encoding(), NULL, &enc, &enc2);
+	}
 	if (!has_vmode) {
 	    v = rb_hash_aref(opthash, sym_mode);
 	    if (!NIL_P(v)) {

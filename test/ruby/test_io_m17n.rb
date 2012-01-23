@@ -1042,6 +1042,11 @@ EOT
         f.set_encoding("iso-2022-jp")
       }
     }
+    assert_nothing_raised {
+      open(__FILE__, "r", binmode: true) {|f|
+        f.set_encoding("iso-2022-jp")
+      }
+    }
   end
 
   def test_write_conversion_fixenc
