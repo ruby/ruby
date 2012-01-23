@@ -82,6 +82,16 @@ class TestMailTo < Test::Unit::TestCase
     ok[-1] << {:to => "unlikely%3Faddress@example.com",
       :headers => ["blat=foop"]}
 
+    # mailto:john@example.com?Subject=Ruby&Cc=jack@example.com
+    ok << ["mailto:john@example.com?Subject=Ruby&Cc=jack@example.com"]
+    ok[-1] << ['john@example.com', [['Subject', 'Ruby'], ['Cc', 'jack@example.com']]]
+    ok[-1] << {:to=>"john@example.com", :headers=>[["Subject", "Ruby"], ["Cc", "jack@example.com"]]}
+
+    # mailto:listman@example.com?subject=subscribe
+    ok << ["mailto:listman@example.com?subject=subscribe"]
+    ok[-1] << {:to => 'listman@example.com', :headers => [['subject', 'subscribe']]}
+    ok[-1] << {:to => 'listman@example.com', :headers => [['subject', 'subscribe']]}
+
     ok_all = ok.flatten.join("\0")
 
     # mailto:joe@example.com?cc=bob@example.com?body=hello   ; WRONG!

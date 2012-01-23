@@ -103,7 +103,7 @@ module URI
         if tmp[:headers].kind_of?(Array)
           tmp[:opaque] << tmp[:headers].collect { |x|
             if x.kind_of?(Array)
-              x[0] + '=' + x[1..-1].to_s
+              x[0] + '=' + x[1..-1].join
             else
               x.to_s
             end
