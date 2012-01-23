@@ -6409,9 +6409,7 @@ parser_regx_options(struct parser_params *parser)
 static void
 dispose_string(VALUE str)
 {
-    /* TODO: should use another API? */
-    if (RBASIC(str)->flags & RSTRING_NOEMBED)
-	xfree(RSTRING_PTR(str));
+    rb_str_free(str);
     rb_gc_force_recycle(str);
 }
 
