@@ -1,3 +1,16 @@
+Mon Jan 23 20:33:11 2012  Jason Kay  <geniture@me.com>
+
+	* lib/net/http.rb (Net::HTTP#connect): Writing entire packet at
+	  once to avoid incomplete transmission.  Current code using
+	  writeline was causing sub-optimal conversing with a proxy due to
+	  the connect tunnel request headers being split over multiple
+	  packets. The modification I made allows the connect request to
+	  be written as one packet, avoiding problems and optimizing the
+	  conversation.
+
+	  https://github.com/ruby/ruby/pull/72
+	  [Feature #5460]
+
 Mon Jan 23 17:06:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/mailto.rb (URI::MailTo.build): follow Array#to_s change of
