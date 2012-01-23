@@ -1,3 +1,8 @@
+Mon Jan 23 18:18:58 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_enc_compatible): fix segv on symbols.
+	  [ruby-core:42204] [Bug #5921]
+
 Tue Jan 17 17:18:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (SPT_TYPE): enable as SPT_REUSEARGV on Darwin.
