@@ -1,3 +1,11 @@
+Mon Jan 23 10:08:00 2012  Kenta Murata  <mrkn@cookpad.com>
+
+	* test/cgi/test_cgi_util.rb (test_cgi_escape_preserve_encoding):
+	  add a test for CGI::escape to preserve encoding.
+
+	* test/cgi/test_cgi_util.rb (test_cgi_unescape_preserve_encoding):
+	  add a test for CGI::unescape to preserve encoding.
+
 Mon Jan 23 00:45:34 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/rdoc-mode.el (rdoc-imenu-create-index): Add imenu support
