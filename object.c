@@ -2600,7 +2600,7 @@ rb_Hash(VALUE val)
     if (NIL_P(val)) return rb_hash_new();
     VALUE tmp = rb_check_hash_type(val);
     if (NIL_P(tmp)) {
-	if (TYPE(val) == T_ARRAY && RARRAY_LEN(val) == 0) 
+	if (RB_TYPE_P(val, T_ARRAY) && RARRAY_LEN(val) == 0)
 	    return rb_hash_new();
 	rb_raise(rb_eTypeError, "can't convert %s into Hash", rb_obj_classname(val));
     }

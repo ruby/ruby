@@ -198,14 +198,14 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_convert_hash
-    assert_equal(Hash(nil), {})
-    assert_equal(Hash([]), {})
-    assert_equal(Hash(key: :value), {key: :value})
+    assert_equal({}, Hash(nil))
+    assert_equal({}, Hash([]))
+    assert_equal({key: :value}, Hash(key: :value))
     assert_raise(TypeError) { Hash([1,2]) }
     assert_raise(TypeError) { Hash(Object.new) }
     o = Object.new
     def o.to_hash; {a: 1, b: 2}; end
-    assert_equal(Hash(o), {a: 1, b: 2})
+    assert_equal({a: 1, b: 2}, Hash(o))
     def o.to_hash; 9; end
     assert_raise(TypeError) { Hash(o) }
   end
