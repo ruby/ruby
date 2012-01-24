@@ -1345,6 +1345,16 @@ void rb_jump_tag(int state)
   送する．stateはそれらの関数から返された値でなければならない．
   この関数は直接の呼び出し元に戻らない．
 
+void rb_iter_break()
+
+  現在の最も内側のブロックを終了する．この関数は直接の呼び出
+  し元に戻らない．
+
+void rb_iter_break_value(VALUE value)
+
+  現在の最も内側のブロックをvalueで終了する．ブロックは引数で
+  与えられたvalueを返す．この関数は直接の呼び出し元に戻らない．
+
 ** 例外・エラー
 
 void rb_warning(const char *fmt, ...)

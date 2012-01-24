@@ -1271,6 +1271,17 @@ Continues the exception caught by rb_protect() and rb_eval_string_protect().
 state must be the returned value from those functions.  This function
 never return to the caller.
 
+ void rb_iter_break()
+
+Exits from the current innermost block.  This function never return to
+the caller.
+
+ void rb_iter_break_value(VALUE value)
+
+Exits from the current innermost block with the value.  The block will
+return the given argument value.  This function never return to the
+caller.
+
 ** Exceptions and Errors
 
  void rb_warn(const char *fmt, ...)
