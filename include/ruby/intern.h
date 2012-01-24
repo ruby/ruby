@@ -559,6 +559,7 @@ VALUE rb_to_float(VALUE);
 VALUE rb_Float(VALUE);
 VALUE rb_String(VALUE);
 VALUE rb_Array(VALUE);
+VALUE rb_Hash(VALUE);
 double rb_cstr_to_dbl(const char*, int);
 double rb_str_to_dbl(VALUE, int);
 /* parse.y */

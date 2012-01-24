@@ -2594,6 +2594,39 @@ rb_f_array(VALUE obj, VALUE arg)
     return rb_Array(arg);
 }
 
+VALUE
+rb_Hash(VALUE val)
+{
+    if (NIL_P(val)) return rb_hash_new();
+    VALUE tmp = rb_check_hash_type(val);
+    if (NIL_P(tmp)) {
+	if (TYPE(val) == T_ARRAY && RARRAY_LEN(val) == 0) 
+	    return rb_hash_new();
+	rb_raise(rb_eTypeError, "can't convert %s into Hash", rb_obj_classname(val));
+    }
+    return tmp;
+}
+
+/*
+ *  call-seq:
+ *     Hash(arg)    -> hash
+ *
+ *  Converts <i>arg</i> to a <code>Hash</code> by calling
+ *  <i>arg</i><code>.to_hash</code>. Returns an empty <code>Hash</code> when
+ *  <i>arg</i> is <tt>nil</tt> or <tt>[]</tt>.
+ *
+ *     Hash([])          #=> {}
+ *     Hash(nil)         #=> nil
+ *     Hash(key: :value) #=> {:key => :value}
+ *     Hash([1, 2, 3])   #=> TypeError
+ */
+
+static VALUE
+rb_f_hash(VALUE obj, VALUE arg)
+{
+    return rb_Hash(arg);
+}
+
 /*
  *  Document-class: Class
  *
@@ -2839,6 +2872,7 @@ Init_Object(void)
 
     rb_define_global_function("String", rb_f_string, 1);
     rb_define_global_function("Array", rb_f_array, 1);
+    rb_define_global_function("Hash", rb_f_hash, 1);
 
     rb_cNilClass = rb_define_class("NilClass", rb_cObject);
     rb_define_method(rb_cNilClass, "to_i", nil_to_i, 0);
