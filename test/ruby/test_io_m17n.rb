@@ -1044,6 +1044,7 @@ EOT
     }
     assert_nothing_raised {
       open(__FILE__, "r", binmode: true) {|f|
+        assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
         f.set_encoding("iso-2022-jp")
       }
     }
