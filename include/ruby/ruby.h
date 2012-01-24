@@ -1185,6 +1185,7 @@ NORETURN(void rb_bug_errno(const char*, int));
 NORETURN(void rb_sys_fail(const char*));
 NORETURN(void rb_mod_sys_fail(VALUE, const char*));
 NORETURN(void rb_iter_break(void));
+NORETURN(void rb_iter_break_value(VALUE));
 NORETURN(void rb_exit(int));
 NORETURN(void rb_notimplement(void));
 VALUE rb_syserr_new(int, const char *);

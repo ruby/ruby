@@ -1,3 +1,8 @@
+Tue Jan 24 14:20:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (rb_iter_break_value): new function to break a block with
+	  the value.  [ruby-dev:45132] [Feature #5895]
+
 Tue Jan 24 12:58:41 2012  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_Hash): add Kernel#Hash conversion method like

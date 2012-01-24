@@ -987,23 +987,29 @@ rb_vm_jump_tag_but_local_jump(int state, VALUE val)
     JUMP_TAG(state);
 }
 
-NORETURN(static void vm_iter_break(rb_thread_t *th));
+NORETURN(static void vm_iter_break(rb_thread_t *th, VALUE val));
 
 static void
-vm_iter_break(rb_thread_t *th)
+vm_iter_break(rb_thread_t *th, VALUE val)
 {
     rb_control_frame_t *cfp = th->cfp;
     VALUE *dfp = GC_GUARDED_PTR_REF(*cfp->dfp);
 
     th->state = TAG_BREAK;
-    th->errinfo = (VALUE)NEW_THROW_OBJECT(Qnil, (VALUE)dfp, TAG_BREAK);
+    th->errinfo = (VALUE)NEW_THROW_OBJECT(val, (VALUE)dfp, TAG_BREAK);
     TH_JUMP_TAG(th, TAG_BREAK);
 }
 
 void
 rb_iter_break(void)
 {
-    vm_iter_break(GET_THREAD());
+    vm_iter_break(GET_THREAD(), Qnil);
+}
+
+void
+rb_iter_break_value(VALUE val)
+{
+    vm_iter_break(GET_THREAD(), val);
 }
 
 /* optimization: redefine management */
@@ -1352,6 +1358,7 @@ vm_exec(rb_thread_t *th)
 #endif
 			}
 			th->errinfo = Qnil;
+			th->state = 0;
 			goto vm_loop_start;
 		    }
 		}

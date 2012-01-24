@@ -906,6 +906,7 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 		state = 0;
 		th->state = 0;
 		th->errinfo = Qnil;
+		retval = GET_THROWOBJ_VAL(err);
 
 		/* check skipped frame */
 		while (th->cfp != cfp) {
