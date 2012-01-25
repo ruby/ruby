@@ -1,4 +1,6 @@
-Wed Jan 25 11:32:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jan 25 11:40:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rmext): no extension to strip if empty string.
 
 	* file.c (rb_enc_path_next, rb_enc_path_skip_prefix)
 	  (rb_enc_path_last_separator, rb_enc_path_end)
