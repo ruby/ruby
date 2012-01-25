@@ -1,3 +1,10 @@
+Thu Jan 26 03:24:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (io_getch): default delegating method
+	  for StringIO.  https://github.com/nobu/io-console/issues/4
+
+	* ext/stringio/stringio.c: moved some methods to hidden modules.
+
 Wed Jan 25 13:27:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_basename): ignore non-ascii extension in

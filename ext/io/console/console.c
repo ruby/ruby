@@ -718,6 +718,12 @@ console_dev(VALUE klass)
     return con;
 }
 
+static VALUE
+io_getch(int argc, VALUE *argv, VALUE io)
+{
+    return rb_funcall2(io, rb_intern("getc"), argc, argv);
+}
+
 /*
  * IO console methods
  */
@@ -746,4 +752,8 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "oflush", console_oflush, 0);
     rb_define_method(rb_cIO, "ioflush", console_ioflush, 0);
     rb_define_singleton_method(rb_cIO, "console", console_dev, 0);
+    {
+	VALUE mReadable = rb_define_module_under(rb_cIO, "readable");
+	rb_define_method(mReadable, "getch", io_getch, -1);
+    }
 }
