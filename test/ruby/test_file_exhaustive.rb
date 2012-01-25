@@ -3,6 +3,8 @@ require "fileutils"
 require "tmpdir"
 
 class TestFileExhaustive < Test::Unit::TestCase
+  DRIVE = Dir.pwd[%r'\A(?:[a-z]:|//[^/]+/[^/]+)'i]
+
   def assert_incompatible_encoding
     d = "\u{3042}\u{3044}".encode("utf-16le")
     assert_raise(Encoding::CompatibilityError) {yield d}
@@ -400,13 +402,29 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_match(/\Ac:\//i, File.expand_path('c:foo', 'd:/bar'))
       assert_match(%r'\Ac:/bar/foo\z'i, File.expand_path('c:foo', 'c:/bar'))
     end
-    if drive = Dir.pwd[%r'\A(?:[a-z]:|//[^/]+/[^/]+)'i]
+    if DRIVE
       assert_match(%r"\Az:/foo\z"i, File.expand_path('/foo', "z:/bar"))
       assert_match(%r"\A//host/share/foo\z"i, File.expand_path('/foo', "//host/share/bar"))
-      assert_match(%r"\A#{drive}/foo\z"i, File.expand_path('/foo'))
+      assert_match(%r"\A#{DRIVE}/foo\z"i, File.expand_path('/foo'))
     else
       assert_equal("/foo", File.expand_path('/foo'))
     end
+    drive = (DRIVE ? 'C:' : '')
+    if Encoding.find("filesystem") == Encoding::CP1251
+      a = "#{drive}/\u3042\u3044\u3046\u3048\u304a".encode("cp932")
+    else
+      a = "#{drive}/\u043f\u0440\u0438\u0432\u0435\u0442".encode("cp1251")
+    end
+    assert_equal(a, File.expand_path(a))
+    a = "#{drive}/\225\\\\"
+    if File::ALT_SEPARATOR == '\\'
+      [%W"cp437 #{drive}/\225", %W"cp932 #{drive}/\225\\"]
+    else
+      [["cp437", a], ["cp932", a]]
+    end.each do |cp, expected|
+      assert_equal(expected.force_encoding(cp), File.expand_path(a.dup.force_encoding(cp)), cp)
+    end
+
     assert_kind_of(String, File.expand_path("~")) if ENV["HOME"]
     assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha") }
     assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha", "/") }
@@ -447,16 +465,31 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(basename, File.basename(@file + ".", ".*"))
       assert_equal(basename, File.basename(@file + "::$DATA", ".*"))
     end
+    if File::ALT_SEPARATOR == '\\'
+      a = "foo/\225\\\\"
+      [%W"cp437 \225", %W"cp932 \225\\"].each do |cp, expected|
+        assert_equal(expected.force_encoding(cp), File.basename(a.dup.force_encoding(cp)), cp)
+      end
+    end
 
     assert_incompatible_encoding {|d| File.basename(d)}
     assert_incompatible_encoding {|d| File.basename(d, ".*")}
     assert_raise(Encoding::CompatibilityError) {File.basename("foo.ext", ".*".encode("utf-16le"))}
+
+    s = "foo\x93_a".force_encoding("cp932")
+    assert_equal(s, File.basename(s, "_a"))
   end
 
   def test_dirname
     assert(@file.start_with?(File.dirname(@file)))
     assert_equal(".", File.dirname(""))
     assert_incompatible_encoding {|d| File.dirname(d)}
+    if File::ALT_SEPARATOR == '\\'
+      a = "\225\\\\foo"
+      [%W"cp437 \225", %W"cp932 \225\\"].each do |cp, expected|
+        assert_equal(expected.force_encoding(cp), File.dirname(a.dup.force_encoding(cp)), cp)
+      end
+    end
   end
 
   def test_extname
@@ -500,6 +533,13 @@ class TestFileExhaustive < Test::Unit::TestCase
     def o.to_path; "foo"; end
     assert_equal(s, File.join(o, "bar", "baz"))
     assert_equal(s, File.join("foo" + File::SEPARATOR, "bar", File::SEPARATOR + "baz"))
+    if File::ALT_SEPARATOR == '\\'
+      a = "\225\\"
+      b = "foo"
+      [%W"cp437 \225\\foo", %W"cp932 \225\\/foo"].each do |cp, expected|
+        assert_equal(expected.force_encoding(cp), File.join(a.dup.force_encoding(cp), b.dup.force_encoding(cp)), cp)
+      end
+    end
   end
 
   def test_truncate
