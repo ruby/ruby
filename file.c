@@ -3658,8 +3658,10 @@ rb_file_s_basename(int argc, VALUE *argv)
 	}
     }
     FilePathStringValue(fname);
-    if (!NIL_P(fext)) enc = rb_enc_check(fname, fext);
-    else enc = rb_enc_get(fname);
+    if (NIL_P(fext) || !(enc = rb_enc_compatible(fname, fext))) {
+	enc = rb_enc_get(fname);
+	fext = Qnil;
+    }
     if ((n = RSTRING_LEN(fname)) == 0 || !*(name = RSTRING_PTR(fname)))
 	return rb_str_new_shared(fname);
 
@@ -3669,12 +3671,7 @@ rb_file_s_basename(int argc, VALUE *argv)
 	    f = n;
 	}
 	else {
-	    rb_encoding *fenc = rb_enc_get(fext);
 	    const char *fp;
-	    if (enc != fenc &&
-		rb_enc_str_coderange(fext) != ENC_CODERANGE_7BIT) {
-		fext = rb_str_conv_enc(fext, fenc, enc);
-	    }
 	    fp = StringValueCStr(fext);
 	    if (!(f = rmext(p, f, n, fp, RSTRING_LEN(fext), enc))) {
 		f = n;

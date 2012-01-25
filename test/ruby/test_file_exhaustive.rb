@@ -478,6 +478,9 @@ class TestFileExhaustive < Test::Unit::TestCase
 
     s = "foo\x93_a".force_encoding("cp932")
     assert_equal(s, File.basename(s, "_a"))
+
+    s = "\u4032.\u3024"
+    assert_equal(s, File.basename(s, ".\x95\\".force_encoding("cp932")))
   end
 
   def test_dirname

@@ -1,4 +1,7 @@
-Wed Jan 25 11:40:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jan 25 13:27:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_basename): ignore non-ascii extension in
+	  different encoding, which cannot match.
 
 	* file.c (rmext): no extension to strip if empty string.
 
