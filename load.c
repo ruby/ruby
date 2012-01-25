@@ -130,8 +130,8 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
     return ST_STOP;
 }
 
-static int rb_feature_first_equal_or_greater(VALUE, const char *, long);
-static int rb_stop_search_feature(VALUE, const char *, long);
+static long rb_feature_first_equal_or_greater(VALUE, const char *, long);
+static int  rb_stop_search_feature(VALUE, const char *, long);
 
 static int
 rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const char **fn)
@@ -257,7 +257,7 @@ rb_feature_provided(const char *feature, const char **loading)
     return FALSE;
 }
 
-static int
+static long
 feature_basename_length(const char *feature, long flen)
 {
     if (sorted_loaded_features) {
@@ -299,11 +299,11 @@ rb_stop_search_feature(VALUE loaded, const char *feature, long flen)
 }
 
 /* returns first position to search feature from */
-static int
+static long
 rb_feature_first_equal_or_greater(VALUE features, const char *feature, long flen)
 {
     if (sorted_loaded_features) {
-	int before = 0, first = RARRAY_LEN(features);
+	long before = 0, first = RARRAY_LEN(features);
 	VALUE *values = RARRAY_PTR(features);
 	if (first == 0)
 	    return 0;
@@ -311,8 +311,8 @@ rb_feature_first_equal_or_greater(VALUE features, const char *feature, long flen
 	    return 0;
 
 	while (first - before > 1) {
-	    int mid = (first + before) / 2;
-	    int cmp = rb_compare_feature_name(values[mid], feature, flen);
+	    long mid = (first + before) / 2;
+	    long cmp = rb_compare_feature_name(values[mid], feature, flen);
 	    if (cmp >= 0)
 		first = mid;
 	    else
@@ -325,11 +325,11 @@ rb_feature_first_equal_or_greater(VALUE features, const char *feature, long flen
 }
 
 /* returns position to insert new feature in */
-static int
+static long
 rb_feature_first_greater(VALUE features, const char *feature, long flen)
 {
     if (sorted_loaded_features) {
-	int before = 0, first = RARRAY_LEN(features);
+	long before = 0, first = RARRAY_LEN(features);
 	VALUE *values = RARRAY_PTR(features);
 	if (first == 0)
 	    return 0;
@@ -339,8 +339,8 @@ rb_feature_first_greater(VALUE features, const char *feature, long flen)
 	    return first;
 
 	while (first - before > 1) {
-	    int mid = (first + before) / 2;
-	    int cmp = rb_compare_feature_name(values[mid], feature, flen);
+	    long mid = (first + before) / 2;
+	    long cmp = rb_compare_feature_name(values[mid], feature, flen);
 	    if (cmp > 0)
 		first = mid;
 	    else
@@ -358,7 +358,7 @@ rb_push_feature_1(VALUE features, VALUE feature)
 {
     const char *fname = StringValuePtr(feature);
     long flen = feature_basename_length(fname, RSTRING_LEN(feature));
-    int i = rb_feature_first_greater(features, fname, flen);
+    long i = rb_feature_first_greater(features, fname, flen);
     rb_ary_push(features, feature);
     if ( i < RARRAY_LEN(features) - 1 ) {
 	MEMMOVE(RARRAY_PTR(features) + i + 1, RARRAY_PTR(features) + i,
@@ -369,7 +369,7 @@ rb_push_feature_1(VALUE features, VALUE feature)
 }
 
 static VALUE
-rb_push_feature_m(int argc, VALUE *argv, VALUE features)
+rb_push_feature_m(long argc, VALUE *argv, VALUE features)
 {
     while (argc--) {
 	rb_push_feature_1(features, *argv++);
