@@ -1,4 +1,5 @@
 require 'test/unit'
+require File.expand_path('envutil', File.dirname(__FILE__))
 
 class TestString < Test::Unit::TestCase
   def check_sum(str, bits=16)
@@ -258,5 +259,17 @@ class TestString < Test::Unit::TestCase
     /\w/ =~ ""
     "abc".end_with?("c")
     assert_nil($&)
+  end
+
+  def test_hash_random
+    str = 'abc'
+    a = [str.hash.to_s]
+    cmd = sprintf("%s -e 'print %s.hash'", EnvUtil.rubybin, str.dump)
+    3.times {
+      IO.popen(cmd, "rb") {|o|
+        a << o.read
+      }
+    }
+    assert_not_equal([str.hash.to_s], a.uniq)
   end
 end

@@ -1,3 +1,29 @@
+Thu Jan 26 16:08:43 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* string.c (rb_str_hash): randomize hash to avoid algorithmic
+	  complexity attacks. CVE-2011-4815
+
+	* st.c (strhash): ditto.
+
+	* string.c (Init_String): initialization of hash_seed to be at the
+	  beginning of the process.
+
+	* st.c (Init_st): ditto.
+
+Thu Jan 26 16:08:43 2012  Tanaka Akira  <akr@fsij.org>
+
+	* inits.c (rb_call_inits): call Init_RandomSeed at first.
+
+	* random.c (seed_initialized): defined.
+	  (fill_random_seed): extracted from random_seed.
+	  (make_seed_value): extracted from random_seed.
+	  (rb_f_rand): initialize random seed at first.
+	  (initial_seed): defined.
+	  (Init_RandomSeed): defined.
+	  (Init_RandomSeed2): defined.
+	  (rb_reset_random_seed): defined.
+	  (Init_Random): call Init_RandomSeed2.
+
 Wed Nov  2 08:16:45 2011  Tanaka Akira  <akr@fsij.org>
 
 	* lib/webrick/utils.rb: fix fcntl call.
