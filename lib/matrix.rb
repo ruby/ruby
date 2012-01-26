@@ -32,93 +32,93 @@ end
 # == Method Catalogue
 #
 # To create a matrix:
-# * <tt> Matrix[*rows]                  </tt>
-# * <tt> Matrix.[](*rows)               </tt>
-# * <tt> Matrix.rows(rows, copy = true) </tt>
-# * <tt> Matrix.columns(columns)        </tt>
-# * <tt> Matrix.build(row_size, column_size, &block) </tt>
-# * <tt> Matrix.diagonal(*values)       </tt>
-# * <tt> Matrix.scalar(n, value)        </tt>
-# * <tt> Matrix.identity(n)             </tt>
-# * <tt> Matrix.unit(n)                 </tt>
-# * <tt> Matrix.I(n)                    </tt>
-# * <tt> Matrix.zero(n)                 </tt>
-# * <tt> Matrix.row_vector(row)         </tt>
-# * <tt> Matrix.column_vector(column)   </tt>
+# * Matrix[*rows]
+# * Matrix.[](*rows)
+# * Matrix.rows(rows, copy = true)
+# * Matrix.columns(columns)
+# * Matrix.build(row_size, column_size, &block)
+# * Matrix.diagonal(*values)
+# * Matrix.scalar(n, value)
+# * Matrix.identity(n)
+# * Matrix.unit(n)
+# * Matrix.I(n)
+# * Matrix.zero(n)
+# * Matrix.row_vector(row)
+# * Matrix.column_vector(column)
 #
 # To access Matrix elements/columns/rows/submatrices/properties:
-# * <tt>  [](i, j)                      </tt>
-# * <tt> #row_size                      </tt>
-# * <tt> #column_size                   </tt>
-# * <tt> #row(i)                        </tt>
-# * <tt> #column(j)                     </tt>
-# * <tt> #collect                       </tt>
-# * <tt> #map                           </tt>
-# * <tt> #each                          </tt>
-# * <tt> #each_with_index               </tt>
-# * <tt> #find_index                    </tt>
-# * <tt> #minor(*param)                 </tt>
+# * #[](i, j)
+# * #row_size
+# * #column_size
+# * #row(i)
+# * #column(j)
+# * #collect
+# * #map
+# * #each
+# * #each_with_index
+# * #find_index
+# * #minor(*param)
 #
 # Properties of a matrix:
-# * <tt> #diagonal?                     </tt>
-# * <tt> #empty?                        </tt>
-# * <tt> #hermitian?                    </tt>
-# * <tt> #lower_triangular?             </tt>
-# * <tt> #normal?                       </tt>
-# * <tt> #orthogonal?                   </tt>
-# * <tt> #permutation?                  </tt>
-# * <tt> #real?                         </tt>
-# * <tt> #regular?                      </tt>
-# * <tt> #singular?                     </tt>
-# * <tt> #square?                       </tt>
-# * <tt> #symmetric?                    </tt>
-# * <tt> #unitary?                      </tt>
-# * <tt> #upper_triangular?             </tt>
-# * <tt> #zero?                         </tt>
+# * #diagonal?
+# * #empty?
+# * #hermitian?
+# * #lower_triangular?
+# * #normal?
+# * #orthogonal?
+# * #permutation?
+# * #real?
+# * #regular?
+# * #singular?
+# * #square?
+# * #symmetric?
+# * #unitary?
+# * #upper_triangular?
+# * #zero?
 #
 # Matrix arithmetic:
-# * <tt>  *(m)                          </tt>
-# * <tt>  +(m)                          </tt>
-# * <tt>  -(m)                          </tt>
-# * <tt> #/(m)                          </tt>
-# * <tt> #inverse                       </tt>
-# * <tt> #inv                           </tt>
-# * <tt>  **                            </tt>
+# * #*(m)
+# * #+(m)
+# * #-(m)
+# * #/(m)
+# * #inverse
+# * #inv
+# * #**
 #
 # Matrix functions:
-# * <tt> #determinant                   </tt>
-# * <tt> #det                           </tt>
-# * <tt> #rank                          </tt>
-# * <tt> #round                         </tt>
-# * <tt> #trace                         </tt>
-# * <tt> #tr                            </tt>
-# * <tt> #transpose                     </tt>
-# * <tt> #t                             </tt>
+# * #determinant
+# * #det
+# * #rank
+# * #round
+# * #trace
+# * #tr
+# * #transpose
+# * #t
 #
 # Matrix decompositions:
-# * <tt> #eigen                         </tt>
-# * <tt> #eigensystem                   </tt>
-# * <tt> #lup                           </tt>
-# * <tt> #lup_decomposition             </tt>
+# * #eigen
+# * #eigensystem
+# * #lup
+# * #lup_decomposition
 #
 # Complex arithmetic:
-# * <tt> conj                           </tt>
-# * <tt> conjugate                      </tt>
-# * <tt> imag                           </tt>
-# * <tt> imaginary                      </tt>
-# * <tt> real                           </tt>
-# * <tt> rect                           </tt>
-# * <tt> rectangular                    </tt>
+# * conj
+# * conjugate
+# * imag
+# * imaginary
+# * real
+# * rect
+# * rectangular
 #
 # Conversion to other data types:
-# * <tt> #coerce(other)                 </tt>
-# * <tt> #row_vectors                   </tt>
-# * <tt> #column_vectors                </tt>
-# * <tt> #to_a                          </tt>
+# * #coerce(other)
+# * #row_vectors
+# * #column_vectors
+# * #to_a
 #
 # String representations:
-# * <tt> #to_s                          </tt>
-# * <tt> #inspect                       </tt>
+# * #to_s
+# * #inspect
 #
 class Matrix
   include Enumerable
@@ -1500,40 +1500,40 @@ end
 # == Method Catalogue
 #
 # To create a Vector:
-# * <tt>  Vector.[](*array)                   </tt>
-# * <tt>  Vector.elements(array, copy = true) </tt>
+# * Vector.[](*array)
+# * Vector.elements(array, copy = true)
 #
 # To access elements:
-# * <tt>  [](i)                               </tt>
+# * #[](i)
 #
 # To enumerate the elements:
-# * <tt> #each2(v)                            </tt>
-# * <tt> #collect2(v)                         </tt>
+# * #each2(v)
+# * #collect2(v)
 #
 # Vector arithmetic:
-# * <tt>  *(x) "is matrix or number"          </tt>
-# * <tt>  +(v)                                </tt>
-# * <tt>  -(v)                                </tt>
+# * #*(x) "is matrix or number"
+# * #+(v)
+# * #-(v)
 #
 # Vector functions:
-# * <tt> #inner_product(v)                    </tt>
-# * <tt> #collect                             </tt>
-# * <tt> #magnitude                           </tt>
-# * <tt> #map                                 </tt>
-# * <tt> #map2(v)                             </tt>
-# * <tt> #norm                                </tt>
-# * <tt> #normalize                           </tt>
-# * <tt> #r                                   </tt>
-# * <tt> #size                                </tt>
+# * #inner_product(v)
+# * #collect
+# * #magnitude
+# * #map
+# * #map2(v)
+# * #norm
+# * #normalize
+# * #r
+# * #size
 #
 # Conversion to other data types:
-# * <tt> #covector                            </tt>
-# * <tt> #to_a                                </tt>
-# * <tt> #coerce(other)                       </tt>
+# * #covector
+# * #to_a
+# * #coerce(other)
 #
 # String representations:
-# * <tt> #to_s                                </tt>
-# * <tt> #inspect                             </tt>
+# * #to_s
+# * #inspect
 #
 class Vector
   include ExceptionForMatrix

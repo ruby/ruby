@@ -1,3 +1,7 @@
+Thu Jan 26 11:03:37 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/matrix.rb:  Clean up extra whitespace in output documentation.
+
 Thu Jan 26 03:24:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/console.c (io_getch): default delegating method
