@@ -358,7 +358,7 @@ typedef struct rb_objspace {
 	size_t length;
 	size_t used;
 	RVALUE *range[2];
-	RVALUE *freed;
+	struct heaps_slot *reserve_slots;
 	size_t live_num;
 	size_t free_num;
 	size_t free_min;
@@ -508,6 +508,13 @@ rb_objspace_free(rb_objspace_t *objspace)
 	    xfree(list);
 	}
     }
+    if (objspace->heap.reserve_slots) {
+	struct heaps_slot *list, *next;
+	for (list = objspace->heap.reserve_slots; list; list = next) {
+	    next = list->free_next;
+	    free(list);
+	}
+    }
     if (objspace->heap.sorted) {
 	size_t i;
 	for (i = 0; i < heaps_used; ++i) {
@@ -531,6 +538,7 @@ rb_objspace_free(rb_objspace_t *objspace)
 
 #define HEAP_OBJ_LIMIT (unsigned int)(HEAP_SIZE/sizeof(struct RVALUE) - (sizeof(struct heaps_slot)/sizeof(struct RVALUE)+1))
 #define HEAP_BITMAP_LIMIT (HEAP_OBJ_LIMIT/sizeof(uintptr_t)+1)
+#define SIZEOF_HEAPS_SLOT (sizeof(struct heaps_slot) + HEAP_BITMAP_LIMIT * sizeof(uintptr_t))
 
 #define GET_HEAP_HEADER(x) (HEAP_HEADER(((uintptr_t)x) & ~(HEAP_ALIGN_MASK)))
 #define GET_HEAP_SLOT(x) (GET_HEAP_HEADER(x)->base)
@@ -1120,13 +1128,20 @@ assign_heap_slot(rb_objspace_t *objspace)
 	during_gc = 0;
 	rb_memerror();
     }
-    slot = (struct heaps_slot *)malloc(sizeof(struct heaps_slot) + HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
-    if (slot == 0) {
-       aligned_free(p);
-       during_gc = 0;
-       rb_memerror();
+
+    if (objspace->heap.reserve_slots != NULL) {
+	slot = objspace->heap.reserve_slots;
+	objspace->heap.reserve_slots = slot->free_next;
     }
-    MEMZERO((void*)slot, struct heaps_slot, 1);
+    else {
+	slot = (struct heaps_slot *)malloc(SIZEOF_HEAPS_SLOT);
+	if (slot == 0) {
+	   aligned_free(p);
+	   during_gc = 0;
+	   rb_memerror();
+	}
+    }
+    memset((void*)slot, 0, SIZEOF_HEAPS_SLOT);
 
     slot->next = heaps;
     if (heaps) heaps->prev = slot;
@@ -1168,7 +1183,6 @@ assign_heap_slot(rb_objspace_t *objspace)
     heaps->limit = objs;
     HEAP_HEADER(membase)->base = heaps;
     HEAP_HEADER(membase)->bits = heaps->bits;
-    memset(heaps->bits, 0, HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
     objspace->heap.free_num += objs;
     pend = p + objs;
     if (lomem == 0 || lomem > p) lomem = p;
@@ -2118,8 +2132,9 @@ free_unused_heaps(rb_objspace_t *objspace)
     for (i = j = 1; j < heaps_used; i++, ptr++) {
 	if (ptr->slot->limit == 0) {
             struct heaps_slot* h = ptr->slot;
+	    h->free_next = objspace->heap.reserve_slots;
+	    objspace->heap.reserve_slots = h;
             aligned_free(h->membase);
-            free(h);
 	    heaps_used--;
 	}
 	else {
