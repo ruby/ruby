@@ -178,8 +178,12 @@ module IRB
 	    rescue Exception
 	      name = ""
 	    end
-	    next if name != "IRB::Context" and
-	      /^(IRB|SLex|RubyLex|RubyToken)/ =~ name
+            begin
+              next if name != "IRB::Context" and
+                /^(IRB|SLex|RubyLex|RubyToken)/ =~ name
+            rescue Exception
+              next
+            end
 	    candidates.concat m.instance_methods(false).collect{|x| x.to_s}
 	  }
 	  candidates.sort!

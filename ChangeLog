@@ -1,3 +1,8 @@
+Sat Jan 28 05:53:34 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/irb/completion.rb (IRB::InputCompletor::CompletionProc):
+	  ignore non-string name modules.  [ruby-core:42244][Bug #5938]
+
 Fri Jan 27 16:31:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (HEAP_ALIGN, HEAP_ALIGN_MASK): DRY, let compiler calculate
