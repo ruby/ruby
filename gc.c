@@ -538,8 +538,8 @@ rb_objspace_free(rb_objspace_t *objspace)
 
 /* tiny heap size: 16KB */
 #define HEAP_ALIGN_LOG 14
-#define HEAP_ALIGN 0x4000
-#define HEAP_ALIGN_MASK 0x3fff
+#define HEAP_ALIGN (1UL << HEAP_ALIGN_LOG)
+#define HEAP_ALIGN_MASK (~(~0UL << HEAP_ALIGN_LOG))
 #define REQUIRED_SIZE_BY_MALLOC (sizeof(size_t) * 5)
 #define HEAP_SIZE (HEAP_ALIGN - REQUIRED_SIZE_BY_MALLOC)
 
