@@ -1,3 +1,9 @@
+Sat Jan 28 09:33:33 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* win32/win32.c (rb_w32_read): fix an issue that $stdin.read doesn't
+	  terminate by CTRL-C on Windows.
+	  [ruby-dev:45149] [Bug #5812]
+
 Sat Jan 28 08:18:11 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/ruby/test_thread.rb

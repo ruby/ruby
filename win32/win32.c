@@ -5575,6 +5575,10 @@ rb_w32_read(int fd, void *buf, size_t size)
 	    }
 	}
     }
+    else {
+	err = GetLastError();
+	errno = map_errno(err);
+    }
 
     if (pol) {
 	CloseHandle(ol.hEvent);
@@ -5591,7 +5595,8 @@ rb_w32_read(int fd, void *buf, size_t size)
     ret += read;
     if (read >= len) {
 	buf = (char *)buf + read;
-	if (!(isconsole && len == 1 && (!islineinput || *((char *)buf - 1) == '\n')) && size > 0)
+	if (err != ERROR_OPERATION_ABORTED &&
+	    !(isconsole && len == 1 && (!islineinput || *((char *)buf - 1) == '\n')) && size > 0)
 	    goto retry;
     }
     if (read == 0)
