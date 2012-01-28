@@ -694,9 +694,14 @@ class TestThreadGroup < Test::Unit::TestCase
     Process.kill(:SIGINT, pid)
     Process.wait(pid)
     s = $?
-    assert_equal([false, true, false],
-                 [s.exited?, s.signaled?, s.stopped?],
-                 "[s.exited?, s.signaled?, s.stopped?]")
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      # status of signal is not supported on Windows
+      assert_equal(pid, s.pid)
+    else
+      assert_equal([false, true, false],
+                   [s.exited?, s.signaled?, s.stopped?],
+                   "[s.exited?, s.signaled?, s.stopped?]")
+    end
     t1 = Time.now.to_f
     assert_in_delta(t1 - t0, 1, 1)
   end

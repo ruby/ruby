@@ -1132,7 +1132,7 @@ CreateChild(const WCHAR *cmd, const WCHAR *prog, SECURITY_ATTRIBUTES *psa,
 	aStartupInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
     }
 
-    dwCreationFlags = (NORMAL_PRIORITY_CLASS);
+    dwCreationFlags = (CREATE_NEW_PROCESS_GROUP | NORMAL_PRIORITY_CLASS);
 
     if (lstrlenW(cmd) > 32767) {
 	child->pid = 0;		/* release the slot */
@@ -4094,7 +4094,13 @@ kill(int pid, int sig)
 
       case SIGINT:
 	RUBY_CRITICAL({
-	    if (!GenerateConsoleCtrlEvent(CTRL_C_EVENT, (DWORD)pid)) {
+	    DWORD ctrlEvent = CTRL_C_EVENT;
+	    if (pid != 0) {
+	        /* CTRL+C signal cannot be generated for process groups.
+		 * Instead, we use CTRL+BREAK signal. */
+	        ctrlEvent = CTRL_BREAK_EVENT;
+	    }
+	    if (!GenerateConsoleCtrlEvent(ctrlEvent, (DWORD)pid)) {
 		if ((err = GetLastError()) == 0)
 		    errno = EPERM;
 		else

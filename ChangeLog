@@ -1,3 +1,17 @@
+Sat Jan 28 08:18:11 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_thread.rb
+	  (TestThreadGroup#test_thread_timer_and_interrupt): skip exit status
+	  assertion because we cannot get signal status on Windows.
+
+	* win32/win32.c (CreateChild): create process group to receive the
+	  signal by GenerateConsoleCtrlEvent().
+
+	* win32/win32.c (kill): use CTRL_BREAK_EVENT instead of CTRL_C_EVENT
+	  if a process group is specified. CTRL_C_EVENT signal cannot be
+	  generated for process groups for the specification.
+	  [ruby-dev:45149] [Bug #5812]
+
 Sat Jan 28 07:46:03 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* thread_win32.c (rb_w32_wait_events_blocking): use
