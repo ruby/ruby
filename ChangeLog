@@ -1,3 +1,20 @@
+Sat Jan 28 07:46:03 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* thread_win32.c (rb_w32_wait_events_blocking): use
+	  ruby_thread_from_native() instead of GET_THREAD() because
+	  GET_THREAD() doesn't always return the current thread and
+	  WaitForMultipleObjects() at rb_w32_read() doesn't return by
+	  Thread#kill. This fixes TestQueue#test_thr_kill failure on
+	  Windows.
+
+	* thread_win32.c (rb_w32_wait_events): use ruby_thread_from_native()
+	  instead of GET_THREAD() for consistency with the above change.
+
+	* thread_win32.c (rb_w32_sleep): ditto.
+
+	* thread_win32.c (rb_w32_Sleep): ditto.
+	  [ruby-dev:45149] [Bug #5812]
+
 Sat Jan 28 07:28:48 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/zlib/test_zlib.rb (TestZlibGzipReader#test_reader_wrap): set

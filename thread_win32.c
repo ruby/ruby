@@ -231,7 +231,7 @@ static void ubf_handle(void *ptr);
 int
 rb_w32_wait_events_blocking(HANDLE *events, int num, DWORD timeout)
 {
-    return w32_wait_events(events, num, timeout, GET_THREAD());
+    return w32_wait_events(events, num, timeout, ruby_thread_from_native());
 }
 
 int
@@ -240,7 +240,7 @@ rb_w32_wait_events(HANDLE *events, int num, DWORD timeout)
     int ret;
 
     BLOCKING_REGION(ret = rb_w32_wait_events_blocking(events, num, timeout),
-		    ubf_handle, GET_THREAD());
+		    ubf_handle, ruby_thread_from_native());
     return ret;
 }
 
@@ -285,7 +285,7 @@ w32_create_thread(DWORD stack_size, w32_thread_start_func func, void *val)
 int
 rb_w32_sleep(unsigned long msec)
 {
-    return w32_wait_events(0, 0, msec, GET_THREAD());
+    return w32_wait_events(0, 0, msec, ruby_thread_from_native());
 }
 
 int WINAPI
@@ -294,7 +294,7 @@ rb_w32_Sleep(unsigned long msec)
     int ret;
 
     BLOCKING_REGION(ret = rb_w32_sleep(msec),
-		    ubf_handle, GET_THREAD());
+		    ubf_handle, ruby_thread_from_native());
     return ret;
 }
 
