@@ -1,3 +1,10 @@
+Sat Jan 28 07:28:48 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/zlib/test_zlib.rb (TestZlibGzipReader#test_reader_wrap): set
+	  binmode explicitly for fixing test error on Windows. This is consistent
+	  with r34243.
+	  [ruby-dev:45149] [Bug #5812]
+
 Sat Jan 28 05:53:34 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/irb/completion.rb (IRB::InputCompletor::CompletionProc):

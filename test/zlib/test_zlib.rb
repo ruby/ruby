@@ -691,6 +691,7 @@ if defined? Zlib
       t.close
       Zlib::GzipWriter.open(t.path) {|gz| gz.print("foo") }
       f = open(t.path)
+      f.binmode
       assert_equal("foo", Zlib::GzipReader.wrap(f) {|gz| gz.read })
       assert_raise(IOError) { f.close }
     end
