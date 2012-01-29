@@ -285,11 +285,13 @@ class TestReadline < Test::Unit::TestCase
     bug5941 = '[Bug #5941]'
     completion_case_fold = Readline.completion_case_fold
     Readline.completion_case_fold = false
-    locale = Encoding.find("locale")
-    if locale == Encoding::UTF_8
+    case locale = Encoding.find("locale")
+    when Encoding::UTF_8
       enc1 = Encoding::EUC_JP
-    else
+    when Encoding::EUC_JP, Encoding::Windows_31J
       enc1 = Encoding::UTF_8
+    else
+      skip
     end
     results = nil
     Readline.completion_proc = ->(text) {results}
