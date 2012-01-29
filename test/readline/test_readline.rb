@@ -281,6 +281,29 @@ class TestReadline < Test::Unit::TestCase
     end
   end
 
+  def test_completion_encoding
+    bug5941 = '[Bug #5941]'
+    completion_case_fold = Readline.completion_case_fold
+    Readline.completion_case_fold = false
+    locale = Encoding.find("locale")
+    if locale == Encoding::UTF_8
+      enc1 = Encoding::EUC_JP
+    else
+      enc1 = Encoding::UTF_8
+    end
+    results = nil
+    Readline.completion_proc = ->(text) {results}
+
+    results = ["\u{3042 3042}", "\u{3042 3044}"].map {|s| s.encode(locale)}
+    assert_equal("\u{3042}", with_pipe {|r, w| w << "\t"}, bug5941)
+    Readline.completion_case_fold = false
+    assert_equal("\u{3042}", with_pipe {|r, w| w << "\t"}, bug5941)
+    results = ["\u{3042 3042}", "\u{3042 3044}"].map {|s| s.encode(enc1)}
+    assert_raise(Encoding::CompatibilityError, bug5941) {with_pipe {|r, w| w << "\t"}}
+  ensure
+    Readline.completion_case_fold = completion_case_fold
+  end
+
   # basic_word_break_characters
   # completer_word_break_characters
   # basic_quote_characters
@@ -354,6 +377,18 @@ class TestReadline < Test::Unit::TestCase
   ensure
     stdin.close(true) if stdin
     stdout.close(true) if stdout
+  end
+
+  def with_pipe
+    IO.pipe do |r, w|
+      yield(r, w)
+      Readline.input = r
+      Readline.output = w.reopen(IO::NULL)
+      Readline.readline
+    end
+  ensure
+    Readline.input = STDIN
+    Readline.output = STDOUT
   end
 
   def get_default_internal_encoding

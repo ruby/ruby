@@ -655,6 +655,8 @@ readline_attempted_completion_function(const char *text, int start, int end)
     char **result;
     int case_fold;
     long i, matches;
+    rb_encoding *enc;
+    VALUE encobj;
 
     proc = rb_attr_get(mReadline, completion_proc);
     if (NIL_P(proc))
@@ -673,8 +675,12 @@ readline_attempted_completion_function(const char *text, int start, int end)
     if (matches == 0) return NULL;
     result = (char**)malloc((matches + 2)*sizeof(char*));
     if (result == NULL) rb_memerror();
+    enc = rb_locale_encoding();
+    encobj = rb_enc_from_encoding(enc);
     for (i = 0; i < matches; i++) {
 	temp = rb_obj_as_string(RARRAY_PTR(ary)[i]);
+	StringValueCStr(temp);	/* must be NUL-terminated */
+	rb_enc_check(encobj, temp);
 	result[i + 1] = (char*)malloc(RSTRING_LEN(temp) + 1);
 	if (result[i + 1]  == NULL) rb_memerror();
 	strcpy(result[i + 1], RSTRING_PTR(temp));
@@ -685,28 +691,27 @@ readline_attempted_completion_function(const char *text, int start, int end)
         result[0] = strdup(result[1]);
     }
     else {
-	register int i = 1;
-	int low = 100000;
+	const char *result1 = result[1];
+	long low = strlen(result1);
 
-	while (i < matches) {
-	    register int c1, c2, si;
+	for (i = 1; i < matches; ++i) {
+	    register int c1, c2;
+	    long i1, i2, l2;
+	    int n1, n2;
+	    const char *p2 = result[i + 1];
 
-	    if (case_fold) {
-		for (si = 0;
-		     (c1 = TOLOWER(result[i][si])) &&
-			 (c2 = TOLOWER(result[i + 1][si]));
-		     si++)
-		    if (c1 != c2) break;
-	    } else {
-		for (si = 0;
-		     (c1 = result[i][si]) &&
-			 (c2 = result[i + 1][si]);
-		     si++)
-		    if (c1 != c2) break;
+	    l2 = strlen(p2);
+	    for (i1 = i2 = 0; i1 < low && i2 < l2; i1 += n1, i2 += n2) {
+		c1 = rb_enc_codepoint_len(result1 + i1, result1 + low, &n1, enc);
+		c2 = rb_enc_codepoint_len(p2 + i2, p2 + l2, &n2, enc);
+		if (case_fold) {
+		    c1 = rb_tolower(c1);
+		    c2 = rb_tolower(c2);
+		}
+		if (c1 != c2) break;
 	    }
 
-	    if (low > si) low = si;
-	    i++;
+	    low = i1;
 	}
 	result[0] = (char*)malloc(low + 1);
 	if (result[0]  == NULL) rb_memerror();

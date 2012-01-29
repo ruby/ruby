@@ -1,3 +1,8 @@
+Sun Jan 29 12:17:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_attempted_completion_function):
+	  respect encodings.  [Bug #5941]
+
 Sat Jan 28 09:33:33 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* win32/win32.c (rb_w32_read): fix an issue that $stdin.read doesn't
