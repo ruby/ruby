@@ -1,3 +1,7 @@
+Sun Jan 29 22:47:19 2012  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
+
+	* tool/config.{guess,sub}: updated to automake-1.11.2.
+
 Sun Jan 29 12:17:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_attempted_completion_function):
