@@ -446,6 +446,57 @@ class TestObject < Test::Unit::TestCase
     assert_equal([[:respond_to?, :to_ary, true]], called, bug5158)
   end
 
+  def test_method_missing_passed_block
+    bug5731 = '[ruby-dev:44961]'
+
+    c = Class.new do
+      def method_missing(meth, *args) yield(meth, *args) end
+    end
+    a = c.new
+    result = nil
+    assert_nothing_raised(LocalJumpError, bug5731) do
+      a.foo {|x| result = x}
+    end
+    assert_equal(:foo, result, bug5731)
+    result = nil
+    e = a.enum_for(:foo)
+    assert_nothing_raised(LocalJumpError, bug5731) do
+      e.each {|x| result = x}
+    end
+    assert_equal(:foo, result, bug5731)
+
+    c = Class.new do
+      def respond_to_missing?(id, priv)
+        true
+      end
+      def method_missing(id, *args, &block)
+        return block.call(:foo, *args)
+      end
+    end
+    foo = c.new
+
+    result = nil
+    assert_nothing_raised(LocalJumpError, bug5731) do
+      foo.foobar {|x| result = x}
+    end
+    assert_equal(:foo, result, bug5731)
+    result = nil
+    assert_nothing_raised(LocalJumpError, bug5731) do
+      foo.enum_for(:foobar).each {|x| result = x}
+    end
+    assert_equal(:foo, result, bug5731)
+
+    result = nil
+    foobar = foo.method(:foobar)
+    foobar.call {|x| result = x}
+    assert_equal(:foo, result, bug5731)
+
+    result = nil
+    foobar = foo.method(:foobar)
+    foobar.enum_for(:call).each {|x| result = x}
+    assert_equal(:foo, result, bug5731)
+  end
+
   def test_send_with_no_arguments
     assert_raise(ArgumentError) { 1.send }
   end
