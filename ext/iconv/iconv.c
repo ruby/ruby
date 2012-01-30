@@ -563,13 +563,17 @@ iconv_s_allocate(VALUE klass)
 static VALUE
 get_iconv_opt_i(VALUE i, VALUE arg)
 {
+    VALUE name;
+#if defined ICONV_SET_TRANSLITERATE || defined ICONV_SET_DISCARD_ILSEQ
+    VALUE val;
     struct rb_iconv_opt_t *opt = (struct rb_iconv_opt_t *)arg;
-    VALUE name, val;
+#endif
 
-    (void)opt;
     i = rb_Array(i);
     name = rb_ary_entry(i, 0);
+#if defined ICONV_SET_TRANSLITERATE || defined ICONV_SET_DISCARD_ILSEQ
     val = rb_ary_entry(i, 1);
+#endif
     do {
 	if (SYMBOL_P(name)) {
 	    ID id = SYM2ID(name);

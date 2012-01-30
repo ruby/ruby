@@ -63,15 +63,6 @@ static const rb_data_type_t dlptr_data_type = {
     {dlptr_mark, dlptr_free, dlptr_memsize,},
 };
 
-void
-dlptr_init(VALUE val)
-{
-    struct ptr_data *data;
-
-    TypedData_Get_Struct(val, struct ptr_data, &dlptr_data_type, data);
-    OBJ_TAINT(val);
-}
-
 VALUE
 rb_dlptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
 {
@@ -83,7 +74,7 @@ rb_dlptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
     data->ptr = ptr;
     data->free = func;
     data->size = size;
-    dlptr_init(val);
+    OBJ_TAINT(val);
 
     return val;
 }

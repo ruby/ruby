@@ -1489,8 +1489,8 @@ yy109:
 
 Plain:
     {
-        int qidx = 0;
-        int qcapa = 100;
+        ptrdiff_t qidx = 0;
+        ptrdiff_t qcapa = 100;
         char *qstr = S_ALLOC_N( char, qcapa );
         SyckLevel *plvl;
         int parentIndent;
