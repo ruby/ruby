@@ -1,3 +1,8 @@
+Mon Jan 30 10:38:37 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/irb/test_completion.rb: skip if cannot load irb/completion
+	  (maybe readline does not exist).
+
 Sun Jan 29 22:47:19 2012  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* tool/config.{guess,sub}: updated to automake-1.11.2.
