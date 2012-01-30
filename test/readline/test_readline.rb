@@ -283,27 +283,43 @@ class TestReadline < Test::Unit::TestCase
 
   def test_completion_encoding
     bug5941 = '[Bug #5941]'
+    append_character = Readline.completion_append_character
+    Readline.completion_append_character = ""
     completion_case_fold = Readline.completion_case_fold
-    Readline.completion_case_fold = false
-    case locale = Encoding.find("locale")
-    when Encoding::UTF_8
+    locale = Encoding.find("locale")
+    if locale == Encoding::UTF_8
       enc1 = Encoding::EUC_JP
-    when Encoding::EUC_JP, Encoding::Windows_31J
-      enc1 = Encoding::UTF_8
     else
-      skip
+      enc1 = Encoding::UTF_8
     end
     results = nil
     Readline.completion_proc = ->(text) {results}
 
-    results = ["\u{3042 3042}", "\u{3042 3044}"].map {|s| s.encode(locale)}
-    assert_equal("\u{3042}", with_pipe {|r, w| w << "\t"}, bug5941)
+    [%W"\u{3042 3042} \u{3042 3044}", %W"\u{fe5b fe5b} \u{fe5b fe5c}"].any? do |w|
+      begin
+        results = w.map {|s| s.encode(locale)}
+      rescue Encoding::UndefinedConversionError
+      end
+    end or
+    begin
+      "\xa1\xa2".encode(Encoding::UTF_8, locale)
+    rescue
+    else
+      results = %W"\xa1\xa1 \xa1\xa2".map {|s| s.force_encoding(locale)}
+    end or
+      skip("missing test for locale #{locale.name}")
+    expected = results[0][0...1]
     Readline.completion_case_fold = false
-    assert_equal("\u{3042}", with_pipe {|r, w| w << "\t"}, bug5941)
-    results = ["\u{3042 3042}", "\u{3042 3044}"].map {|s| s.encode(enc1)}
-    assert_raise(Encoding::CompatibilityError, bug5941) {with_pipe {|r, w| w << "\t"}}
+    assert_equal(expected, with_pipe {|r, w| w << "\t"}, bug5941)
+    Readline.completion_case_fold = true
+    assert_equal(expected, with_pipe {|r, w| w << "\t"}, bug5941)
+    results.map! {|s| s.encode(enc1)}
+    assert_raise(Encoding::CompatibilityError, bug5941) do
+      with_pipe {|r, w| w << "\t"}
+    end
   ensure
     Readline.completion_case_fold = completion_case_fold
+    Readline.completion_append_character = append_character
   end
 
   # basic_word_break_characters
