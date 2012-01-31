@@ -1,3 +1,8 @@
+Tue Jan 31 14:27:22 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (EnvUtil.invoke_ruby): yield also child pid
+	  in block form.
+
 Mon Jan 30 19:08:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (vm_call0): should pass block to enumerators.  patched
