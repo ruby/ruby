@@ -5,9 +5,9 @@
 #define RUBY_VERSION_TEENY 1
 
 #define RUBY_RELEASE_YEAR 2012
-#define RUBY_RELEASE_MONTH 1
-#define RUBY_RELEASE_DAY 16
-#define RUBY_RELEASE_DATE "2012-01-16"
+#define RUBY_RELEASE_MONTH 2
+#define RUBY_RELEASE_DAY 1
+#define RUBY_RELEASE_DATE "2012-02-01"
 
 #include "ruby/version.h"
 
