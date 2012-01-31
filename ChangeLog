@@ -1,3 +1,11 @@
+Tue Jan 24 11:38:05 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/common.rb (URI.encode_www_form_component): initialize on
+	  requiring to support JRuby, which runs parallel multithreads.
+	  [ruby-core:42222] [Bug #5925]
+
+	* lib/uri/common.rb (URI.decode_www_form_component): initialize on
+
 Mon Jan 16 16:41:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (Regexp): fix incorrect options when casting to
