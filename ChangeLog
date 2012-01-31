@@ -1,3 +1,10 @@
+Tue Jan 31 21:27:43 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* configure.in (HEAP_ALIGN_LOG): HEAP_ALIGN_LOG should be page
+	  size in OpenBSD. [ruby-core:42158][Bug #5901]
+
+	* gc.c : avoid to redefine.
+
 Tue Jan 31 14:27:22 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (EnvUtil.invoke_ruby): yield also child pid
