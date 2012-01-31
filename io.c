@@ -7276,6 +7276,7 @@ argf_forward(int argc, VALUE *argv, VALUE argf)
 static void
 argf_close(VALUE file)
 {
+    if (file == rb_stdin) return;
     if (RB_TYPE_P(file, T_FILE)) {
 	rb_io_set_write_io(file, Qnil);
     }
@@ -7691,6 +7692,7 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
 	ARGF.lineno = lineno + RARRAY_LEN(ary);
 	ARGF.last_lineno = ARGF.lineno;
     }
+    ARGF.init_p = 0;
     return ary;
 }
 

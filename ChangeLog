@@ -1,3 +1,11 @@
+Wed Feb  1 06:38:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_close): skip stdin, which should be readable again.
+	  [ruby-dev:45160] [Bug #5952]
+
+	* io.c (argf_readlines): reinitialize after all read to be
+	  readable again.
+
 Tue Jan 31 21:27:43 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* configure.in (HEAP_ALIGN_LOG): HEAP_ALIGN_LOG should be page
