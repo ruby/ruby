@@ -1,3 +1,8 @@
+Wed Feb  1 09:50:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* doc/re.rdoc (Repetition): fix typo.  reported by Ori Avtalion
+	  and patched by Zachary Scott.  [Bug #5947]
+
 Tue Jan 24 11:38:05 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb (URI.encode_www_form_component): initialize on
