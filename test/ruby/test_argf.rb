@@ -746,19 +746,4 @@ class TestArgf < Test::Unit::TestCase
     bug5952 = '[ruby-dev:45160]'
     assert_ruby_status(["-e", "2.times {STDIN.tty?; readlines}"], "", bug5952)
   end
-
-  def test_readlines_twice_tty
-    bug5952 = '[ruby-dev:45160]'
-    require 'io/console'
-    require 'pty'
-  rescue LoadError
-    skip $!
-  else
-    lines = nil
-    PTY.spawn(EnvUtil.rubybin, "-e", "2.times{STDIN.tty?; p readlines}") do |slave, master, pid|
-      master.write("foo\n\C-d""bar\n\C-d")
-      lines = slave.readlines
-    end
-    assert_equal('["bar\n"]', lines.last.chomp, bug5952)
-  end
 end
