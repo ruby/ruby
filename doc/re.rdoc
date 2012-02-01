@@ -179,7 +179,7 @@ contrast, <i>lazy</i> matching makes the minimal amount of matches
 necessary for overall success. A greedy metacharacter can be made lazy by
 following it with <tt>?</tt>.
 
-    # Both patterns below match the string. The fist uses a greedy
+    # Both patterns below match the string. The first uses a greedy
     # quantifier so '.+' matches '<a><b>'; the second uses a lazy
     # quantifier so '.+?' matches '<a>'.
     /<.+>/.match("<a><b>")  #=> #<MatchData "<a><b>">
