@@ -129,9 +129,8 @@
 #
 #   trap 'INT' do proxy.shutdown end
 #
-# Proxies may modifier the content of the response through the
-# +:ProxyContentHandler+ callback which will be invoked with the request and
-# respone after the remote content has been fetched.
+# See WEBrick::HTTPProxy for further details including modifying proxied
+# responses.
 #
 # == Basic and Digest authentication
 #

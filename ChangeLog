@@ -1,3 +1,9 @@
+Fri Feb  3 07:16:47 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/webrick.rb:  Moved proxy rewriting to WEBrick::HTTPProxy.
+	* lib/webrick/httpproxy.rb:  Add examples of creating a proxy server
+	  and response rewriting using HTTPProxy.
+
 Fri Feb  3 06:53:22 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/openssl/ossl_x509store.c:  Add class documentation for

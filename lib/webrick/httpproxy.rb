@@ -35,6 +35,34 @@ module WEBrick
 
   ##
   # An HTTP Proxy server which proxies GET, HEAD and POST requests.
+  #
+  # To create a simple proxy server:
+  #
+  #   require 'webrick'
+  #   require 'webrick/httpproxy'
+  #
+  #   proxy = WEBrick::HTTPProxyServer.new Port: 8000
+  #
+  #   trap 'INT'  do p.shutdown end
+  #   trap 'TERM' do p.shutdown end
+  #
+  #   p.start
+  #
+  # See ::new for proxy-specific configuration items.
+  #
+  # == Modifying proxied responses
+  #
+  # To modify content the proxy server returns use the +:ProxyContentHandler+
+  # option:
+  #
+  #   handler = proc do |req, res|
+  #     if res['content-type'] == 'text/plain' then
+  #       res.body << "\nThis content was proxied!\n"
+  #     end
+  #   end
+  #
+  #   proxy =
+  #     WEBrick::HTTPProxyServer.new Port: 8000, ProxyContentHandler: handler
 
   class HTTPProxyServer < HTTPServer
 
@@ -46,7 +74,7 @@ module WEBrick
     #                  request
     # :ProxyVia:: Appended to the via header
     # :ProxyURI:: The proxy server's URI
-    # :ProxyContentHandler:: Called with a request and resopnse and allows
+    # :ProxyContentHandler:: Called with a request and response and allows
     #                        modification of the response
     # :ProxyTimeout:: Sets the proxy timeouts to 30 seconds for open and 60
     #                 seconds for read operations
