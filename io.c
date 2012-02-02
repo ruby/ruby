@@ -7306,6 +7306,14 @@ argf_next_argv(VALUE argf)
 	}
 	ARGF.init_p = 1;
     }
+    else {
+	if (NIL_P(ARGF.argv)) {
+	    ARGF.next_p = -1;
+	}
+	else if (ARGF.next_p == -1 && RARRAY_LEN(ARGF.argv) > 0) {
+	    ARGF.next_p = 1;
+	}
+    }
 
     if (ARGF.next_p == 1) {
       retry:

@@ -678,6 +678,16 @@ class TestArgf < Test::Unit::TestCase
     end
   end
 
+  def test_close_replace
+    ruby('-e', <<-SRC) do |f|
+      ARGF.close
+      ARGV.replace ['#{@t1.path}', '#{@t2.path}', '#{@t3.path}']
+      puts ARGF.read
+    SRC
+      assert_equal("1\n2\n3\n4\n5\n6\n", f.read)
+    end
+  end
+
   def test_closed
     ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
       3.times do
