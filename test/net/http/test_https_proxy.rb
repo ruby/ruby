@@ -6,6 +6,12 @@ require 'test/unit'
 
 class HTTPSProxyTest < Test::Unit::TestCase
   def test_https_proxy_authentication
+    begin
+      OpenSSL
+    rescue LoadError
+      skip 'autoload problem. see [ruby-dev:45021][Bug #5786]'
+    end
+
     t = nil
     TCPServer.open("127.0.0.1", 0) {|serv|
       _, port, _, _ = serv.addr

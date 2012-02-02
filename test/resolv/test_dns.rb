@@ -23,6 +23,12 @@ class TestResolvDNS < Test::Unit::TestCase
   end
 
   def test_query_ipv4_address
+    begin
+      OpenSSL
+    rescue LoadError
+      skip 'autoload problem. see [ruby-dev:45021][Bug #5786]'
+    end if defined?(OpenSSL)
+
     with_udp('127.0.0.1', 0) {|u|
       _, server_port, _, server_address = u.addr
       begin
