@@ -661,6 +661,7 @@ make_inspectname(VALUE node, VALUE service, struct addrinfo *res)
     VALUE inspectname = Qnil;
 
     if (res) {
+        /* drop redundant information which also shown in address:port part. */
         char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
         int ret;
         ret = rb_getnameinfo(res->ai_addr, res->ai_addrlen, hbuf,
@@ -1060,7 +1061,7 @@ inspect_sockaddr(VALUE addrinfo, VALUE ret)
  *
  * returns a string which shows addrinfo in human-readable form.
  *
- *   Addrinfo.tcp("localhost", 80).inspect #=> "#<Addrinfo: 127.0.0.1:80 TCP (localhost:80)>"
+ *   Addrinfo.tcp("localhost", 80).inspect #=> "#<Addrinfo: 127.0.0.1:80 TCP (localhost)>"
  *   Addrinfo.unix("/tmp/sock").inspect    #=> "#<Addrinfo: /tmp/sock SOCK_STREAM>"
  *
  */
@@ -1432,7 +1433,7 @@ addrinfo_to_sockaddr(VALUE self)
  * The canonical name is set by Addrinfo.getaddrinfo when AI_CANONNAME is specified.
  *
  *   list = Addrinfo.getaddrinfo("www.ruby-lang.org", 80, :INET, :STREAM, nil, Socket::AI_CANONNAME)
- *   p list[0] #=> #<Addrinfo: 221.186.184.68:80 TCP carbon.ruby-lang.org (www.ruby-lang.org:80)>
+ *   p list[0] #=> #<Addrinfo: 221.186.184.68:80 TCP carbon.ruby-lang.org (www.ruby-lang.org)>
  *   p list[0].canonname #=> "carbon.ruby-lang.org"
  *
  */
@@ -1975,8 +1976,8 @@ addrinfo_unix_path(VALUE self)
  * because some port numbers, 512 for example, are ambiguous without socktype.
  *
  *   Addrinfo.getaddrinfo("www.kame.net", 80, nil, :STREAM)
- *   #=> [#<Addrinfo: 203.178.141.194:80 TCP (www.kame.net:80)>,
- *   #    #<Addrinfo: [2001:200:0:8002:203:47ff:fea5:3085]:80 TCP (www.kame.net:80)>]
+ *   #=> [#<Addrinfo: 203.178.141.194:80 TCP (www.kame.net)>,
+ *   #    #<Addrinfo: [2001:200:dff:fff1:216:3eff:feb1:44d7]:80 TCP (www.kame.net)>]
  *
  */
 static VALUE
