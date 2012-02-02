@@ -578,7 +578,6 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
 
   def test_keep_alive_get_auto_reconnect
     start {|http|
-      http.set_debug_output($stderr)
       res = http.get('/')
       http.keep_alive_timeout = 1
       assert_kind_of Net::HTTPResponse, res
@@ -594,7 +593,6 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
 
   def test_keep_alive_get_auto_retry
     start {|http|
-      http.set_debug_output($stderr)
       res = http.get('/')
       http.keep_alive_timeout = 5
       assert_kind_of Net::HTTPResponse, res

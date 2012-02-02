@@ -1,3 +1,8 @@
+Thu Feb  2 16:21:01 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/net/http/test_http.rb (TestNetHTTPKeepAlive#*): remove debug
+	  output.
+
 Thu Feb  2 01:24:34 2012  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* parse.y (debug_lines, coverage): set file path encoding for coverage
