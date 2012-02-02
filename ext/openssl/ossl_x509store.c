@@ -571,7 +571,46 @@ Init_ossl_x509store()
 {
     VALUE x509stctx;
 
+#if 0
+    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
+    mX509 = rb_define_module_under(mOSSL, "X509");
+#endif
+
     eX509StoreError = rb_define_class_under(mX509, "StoreError", eOSSLError);
+
+    /* Document-class: OpenSSL::X509::Store
+     *
+     * The X509 certificate store holds trusted CA certificates used to verify
+     * peer certificates.
+     *
+     * The easiest way to create a useful certificate store is:
+     *
+     *   cert_store = OpenSSL::X509::Store.new
+     *   cert_store.set_default_paths
+     *
+     * This will use your system's built-in certificates.
+     *
+     * If your system does not have a default set of certificates you can
+     * obtain a set from Mozilla here: http://curl.haxx.se/docs/caextract.html
+     * (Note that this set does not have an HTTPS download option so you may
+     * wish to use the firefox-db2pem.sh script to extract the certificates
+     * from a local install to avoid man-in-the-middle attacks.)
+     *
+     * After downloading or generating a cacert.pem from the above link you
+     * can create a certificate store from the pem file like this:
+     *
+     *   cert_store = OpenSSL::X509::Store.new
+     *   cert_store.add_file 'cacert.pem'
+     *
+     * The certificate store can be used with an SSLSocket like this:
+     *
+     *   ssl_context = OpenSSL::SSL::SSLContext.new
+     *   ssl_context.cert_store = cert_store
+     *
+     *   tcp_socket = TCPSocket.open 'example.com', 443
+     *
+     *   ssl_socket = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
+     */
 
     cX509Store = rb_define_class_under(mX509, "Store", rb_cObject);
     rb_attr(cX509Store, rb_intern("verify_callback"), 1, 0, Qfalse);

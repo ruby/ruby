@@ -1,3 +1,8 @@
+Fri Feb  3 06:53:22 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl_x509store.c:  Add class documentation for
+	  OpenSSL::X509::Store
+
 Thu Feb  2 22:28:13 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/net/http/test_https_proxy.rb
