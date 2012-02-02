@@ -1,3 +1,7 @@
+Thu Feb  2 21:48:18 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/baseparser.rb: use meaningful names.
+
 Thu Feb  2 21:38:52 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/baseparser.rb, test/rexml/test_namespace.rb:
