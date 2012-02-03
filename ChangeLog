@@ -1,3 +1,27 @@
+Fri Feb  3 16:16:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (EnvUtil.invoke_ruby): yield also child pid
+	  in block form.
+
+Fri Feb  3 16:16:10 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_thread.rb
+	  (TestThreadGroup#test_thread_timer_and_interrupt): skip exit status
+	  assertion because we cannot get signal status on Windows.
+
+	* win32/win32.c (CreateChild): create process group to receive the
+	  signal by GenerateConsoleCtrlEvent().
+
+	* win32/win32.c (kill): use CTRL_BREAK_EVENT instead of CTRL_C_EVENT
+	  if a process group is specified. CTRL_C_EVENT signal cannot be
+	  generated for process groups for the specification.
+	  [ruby-dev:45149] [Bug #5812]
+
+Fri Feb  3 16:16:10 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/ruby/envutil.rb (invoke_ruby): remove :timeout option before
+	  pass it to Kernel#spawn.
+
 Fri Feb  3 10:10:02 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* thread_pthread.c (ping_signal_thread_list): remove return value.

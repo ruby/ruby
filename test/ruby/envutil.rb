@@ -42,6 +42,7 @@ module EnvUtil
       out_p.set_encoding(enc) if out_p
       err_p.set_encoding(enc) if err_p
     end
+    timeout = opt.delete(:timeout) || 10
     c = "C"
     child_env = {}
     LANG_ENVS.each {|lc| child_env[lc] = c}
@@ -54,13 +55,12 @@ module EnvUtil
     out_c.close if capture_stdout
     err_c.close if capture_stderr && capture_stderr != :merge_to_stdout
     if block_given?
-      return yield in_p, out_p, err_p
+      return yield in_p, out_p, err_p, pid
     else
       th_stdout = Thread.new { out_p.read } if capture_stdout
       th_stderr = Thread.new { err_p.read } if capture_stderr && capture_stderr != :merge_to_stdout
       in_p.write stdin_data.to_str
       in_p.close
-      timeout = opt.fetch(:timeout, 10)
       if (!th_stdout || th_stdout.join(timeout)) && (!th_stderr || th_stderr.join(timeout))
         stdout = th_stdout.value if capture_stdout
         stderr = th_stderr.value if capture_stderr && capture_stderr != :merge_to_stdout
