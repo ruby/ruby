@@ -1,3 +1,18 @@
+Fri Feb  3 10:10:02 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* thread_pthread.c (ping_signal_thread_list): remove return value.
+	* thread_pthread.c (check_signal_thread_list): add a new function to
+	  check if signal thread list is empty.
+	* thread_pthread.c (thread_timer): check signal thread list after
+	  timer_thread_function(). main thread might be added into signal thread
+	  list during timer_thread_function().
+
+Fri Feb  3 10:10:02 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c (ubf_select): call rb_thread_wakeup_timer_thread()
+	  only when it is not timer_thread. [Bug #5757] [ruby-dev:44985]
+	  patched by Tomoyuki Chikanaga.
+
 Wed Feb  1 09:50:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* doc/re.rdoc (Repetition): fix typo.  reported by Ori Avtalion

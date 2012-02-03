@@ -685,4 +685,19 @@ class TestThreadGroup < Test::Unit::TestCase
     t.join
     assert_equal(nil, t.backtrace)
   end
+
+  def test_thread_timer_and_interrupt
+    bug5757 = '[ruby-dev:44985]'
+    t0 = Time.now.to_f
+    pid = spawn(EnvUtil.rubybin, '-e', '$stdin.read')
+    sleep 1;
+    Process.kill(:SIGQUIT, pid)
+    Process.wait(pid)
+    s = $?
+    assert_equal([false, true, false],
+                 [s.exited?, s.signaled?, s.stopped?],
+                 "[s.exited?, s.signaled?, s.stopped?]")
+    t1 = Time.now.to_f
+    assert_in_delta(t1 - t0, 1, 1)
+  end
 end
