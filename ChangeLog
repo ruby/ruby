@@ -14,7 +14,7 @@ Thu Feb  2 22:28:13 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 	* test/net/http/test_https_proxy.rb
 	  (HTTPSProxyTest#test_https_proxy_authentication):
 	  add workaround to avoid to hang up without openssl.
-	  see #5786
+	  see [ruby-dev:45021][Bug #5786]
 
 	* test/resolv/test_dns.rb (TestResolvDNS#test_query_ipv4_address):
 	  ditto.
