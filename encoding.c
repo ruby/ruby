@@ -812,7 +812,6 @@ rb_enc_compatible(VALUE str1, VALUE str2)
 		if (cr2 == ENC_CODERANGE_7BIT) return enc1;
 	    }
 	    if (cr2 == ENC_CODERANGE_7BIT) {
-		if (idx1 == ENCINDEX_ASCII) return enc2;
 		return enc1;
 	    }
 	}
