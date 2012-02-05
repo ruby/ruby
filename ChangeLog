@@ -1,3 +1,9 @@
+Mon Feb  6 00:06:39 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json/parser/parser.rl (json_string_unescape): workaround fix
+	  for over optimization of GCC 4.7. [ruby-core:42085] [Bug #5888]
+	  http://gcc.gnu.org/bugzilla/show_bug.cgi?id=51862
+
 Fri Feb  3 16:16:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (EnvUtil.invoke_ruby): yield also child pid
