@@ -1358,6 +1358,13 @@ rb_io_set_sync(VALUE io, VALUE sync)
 }
 
 #ifdef HAVE_FSYNC
+static VALUE nogvl_fsync(void *ptr)
+{
+    rb_io_t *fptr = ptr;
+
+    return (VALUE)fsync(fptr->fd);
+}
+
 /*
  *  call-seq:
  *     ios.fsync   -> 0 or nil
@@ -1383,7 +1390,7 @@ rb_io_fsync(VALUE io)
     if (io_fflush(fptr) < 0)
         rb_sys_fail(0);
 #ifndef _WIN32	/* already called in io_fflush() */
-    if (fsync(fptr->fd) < 0)
+    if ((int)rb_thread_io_blocking_region(nogvl_fsync, fptr, fptr->fd) < 0)
 	rb_sys_fail_path(fptr->pathv);
 #endif
     return INT2FIX(0);
@@ -1393,6 +1400,13 @@ rb_io_fsync(VALUE io)
 #endif
 
 #ifdef HAVE_FDATASYNC
+static VALUE nogvl_fdatasync(void *ptr)
+{
+    rb_io_t *fptr = ptr;
+
+    return (VALUE)fdatasync(fptr->fd);
+}
+
 /*
  *  call-seq:
  *     ios.fdatasync   -> 0 or nil
@@ -1415,7 +1429,7 @@ rb_io_fdatasync(VALUE io)
     if (io_fflush(fptr) < 0)
         rb_sys_fail(0);
 
-    if (fdatasync(fptr->fd) == 0)
+    if ((int)rb_thread_io_blocking_region(nogvl_fdatasync, fptr, fptr->fd) == 0)
 	return INT2FIX(0);
 
     /* fall back */

@@ -1,3 +1,10 @@
+Mon Feb  6 15:19:17 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_io_fsync,rb_io_fdatasync): release GVL during fsync().
+	  fsync() and fdatasync() may take a long time on slow disks and/or
+	  if there is much dirty data.
+	  Patch by Eric Wong. [Feature #5665] [ruby-core:41247]
+
 Mon Feb  6 15:01:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (vm_call0): should pass block to enumerators.  patched
