@@ -1,3 +1,11 @@
+Mon Feb  6 20:32:17 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_strptime.c: moved detector of leftover.
+
+Mon Feb  6 20:32:17 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_parse.c: [ruby-core:42173].
+
 Mon Feb  6 20:31:35 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: uses to_integer instead.
