@@ -125,6 +125,11 @@ when nil, "-h", "--help"
   help
   exit
 else
+  unless `svn st`.empty?
+    puts 'this working directory is not clean'
+    abort
+  end
+
   q = $repos + (ARGV[1] || default_merge_branch)
   revs = ARGV[0].split /,\s*/
   log = ''
@@ -199,6 +204,7 @@ else
 
   if system *%w'svn ci -F' + [f.path]
     # tag :interactive # no longer needed.
+    system 'svn up'
     system 'rm -f subversion.commitlog'
   else
     puts 'commit failed; try again.'

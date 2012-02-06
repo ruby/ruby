@@ -1,3 +1,9 @@
+Mon Feb  6 21:55:13 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/merger.rb: abort if the working directory is dirty.
+
+	* tool/merger.rb: update the working directory after commit.
+
 Mon Feb  6 00:16:27 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_enc_compatible): return ASCII-8BIT even if 2nd string
