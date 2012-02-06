@@ -1,3 +1,14 @@
+Mon Feb  6 21:52:20 2012  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* common.mk (INSTRUBY_ARGS): added --mantype to apply mdoc2man.rb
+	  to man pages.  Fixes #5598. 
+	  (do-install-nodoc, do-install-local, do-install-man,
+	  dont-install-nodoc, dont-install-local, dont-install-man):
+	  No longer needs --mantype.
+	
+	  Reported by Rainer Orth <ro AT cebitec.uni-bielefeld.de>,
+	  patch by George Koehler <xkernigh AT netscape.net>.
+
 Mon Feb  6 21:21:46 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/unit/assertions.rb (MINI_DIR): quick dirty hack to get rid of
