@@ -290,6 +290,12 @@ class TestSocket < Test::Unit::TestCase
         }
 
         ip_addrs.each {|ai|
+          if /linux/ =~ RUBY_PLATFORM && ai.ip_address.include?('%') &&
+            (`uname -r`[/[0-9.]+/].split('.').map(&:to_i) <=> [2,6,18]) <= 0
+            # Cent OS 5.6 (2.6.18-238.19.1.el5xen) doesn't correctly work
+            # sendmsg with pktinfo for link-local ipv6 addresses
+            next
+          end
           Addrinfo.udp(ai.ip_address, port).connect {|s|
             msg1 = "<<<#{ai.inspect}>>>"
             s.sendmsg msg1
