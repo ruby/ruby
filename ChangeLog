@@ -1,3 +1,16 @@
+Mon Feb  6 20:31:35 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: uses to_integer instead.
+	* test/date/test_switch_hitter.rb: added a test.
+
+Mon Feb  6 20:31:35 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/date/date_core.c (wholenum): fix the type of the return value.
+
+Mon Feb  6 20:31:35 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c:  [ruby-dev:45008].
+
 Mon Feb  6 16:38:56 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (unixtime_to_filetime): should check the return value

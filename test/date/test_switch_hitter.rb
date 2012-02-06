@@ -180,6 +180,75 @@ class TestSH < Test::Unit::TestCase
 		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])
   end
 
+  def test_fractional
+    d = Date.jd(2451944.0)
+    assert_equal(2451944, d.jd)
+    d = Date.jd(Rational(2451944))
+    assert_equal(2451944, d.jd)
+    d = Date.jd(2451944.5)
+    assert_equal([2451944, 12], [d.jd, d.send('hour')])
+    d = Date.jd(Rational('2451944.5'))
+    assert_equal([2451944, 12], [d.jd, d.send('hour')])
+
+    d = Date.civil(2001, 2, 3.0)
+    assert_equal([2001, 2, 3], [d.year, d.mon, d.mday])
+    d = Date.civil(2001, 2, Rational(3))
+    assert_equal([2001, 2, 3], [d.year, d.mon, d.mday])
+    d = Date.civil(2001, 2, 3.5)
+    assert_equal([2001, 2, 3, 12], [d.year, d.mon, d.mday, d.send('hour')])
+    d = Date.civil(2001, 2, Rational('3.5'))
+    assert_equal([2001, 2, 3, 12], [d.year, d.mon, d.mday, d.send('hour')])
+
+    d = Date.ordinal(2001, 2.0)
+    assert_equal([2001, 2], [d.year, d.yday])
+    d = Date.ordinal(2001, Rational(2))
+    assert_equal([2001, 2], [d.year, d.yday])
+
+    d = Date.commercial(2001, 2, 3.0)
+    assert_equal([2001, 2, 3], [d.cwyear, d.cweek, d.cwday])
+    d = Date.commercial(2001, 2, Rational(3))
+    assert_equal([2001, 2, 3], [d.cwyear, d.cweek, d.cwday])
+
+    d = DateTime.jd(2451944.0)
+    assert_equal(2451944, d.jd)
+    d = DateTime.jd(Rational(2451944))
+    assert_equal(2451944, d.jd)
+    d = DateTime.jd(2451944.5)
+    assert_equal([2451944, 12], [d.jd, d.hour])
+    d = DateTime.jd(Rational('2451944.5'))
+    assert_equal([2451944, 12], [d.jd, d.hour])
+
+    d = DateTime.civil(2001, 2, 3.0)
+    assert_equal([2001, 2, 3], [d.year, d.mon, d.mday])
+    d = DateTime.civil(2001, 2, Rational(3))
+    assert_equal([2001, 2, 3], [d.year, d.mon, d.mday])
+    d = DateTime.civil(2001, 2, 3.5)
+    assert_equal([2001, 2, 3, 12], [d.year, d.mon, d.mday, d.hour])
+    d = DateTime.civil(2001, 2, Rational('3.5'))
+    assert_equal([2001, 2, 3, 12], [d.year, d.mon, d.mday, d.hour])
+    d = DateTime.civil(2001, 2, 3, 4.5)
+    assert_equal([2001, 2, 3, 4, 30], [d.year, d.mon, d.mday, d.hour, d.min])
+    d = DateTime.civil(2001, 2, 3, Rational('4.5'))
+    assert_equal([2001, 2, 3, 4, 30], [d.year, d.mon, d.mday, d.hour, d.min])
+    d = DateTime.civil(2001, 2, 3, 4, 5.5)
+    assert_equal([2001, 2, 3, 4, 5, 30],
+		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+    d = DateTime.civil(2001, 2, 3, 4, Rational('5.5'))
+    assert_equal([2001, 2, 3, 4, 5, 30],
+		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
+
+    d = DateTime.ordinal(2001, 2.0)
+    assert_equal([2001, 2], [d.year, d.yday])
+    d = DateTime.ordinal(2001, Rational(2))
+    assert_equal([2001, 2], [d.year, d.yday])
+
+    d = DateTime.commercial(2001, 2, 3.0)
+    assert_equal([2001, 2, 3], [d.cwyear, d.cweek, d.cwday])
+    d = DateTime.commercial(2001, 2, Rational(3))
+    assert_equal([2001, 2, 3], [d.cwyear, d.cweek, d.cwday])
+
+  end
+
   def test_canon24oc
     d = DateTime.jd(2451943,24)
     assert_equal([2001, 2, 3, 0, 0, 0, 0],
