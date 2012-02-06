@@ -5460,6 +5460,9 @@ unixtime_to_filetime(time_t time, FILETIME *ft)
     FILETIME lt;
 
     tm = localtime(&time);
+    if (!tm) {
+	return -1;
+    }
     st.wYear = tm->tm_year + 1900;
     st.wMonth = tm->tm_mon + 1;
     st.wDayOfWeek = tm->tm_wday;
