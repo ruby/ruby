@@ -936,8 +936,10 @@ static long
 io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 {
 #ifdef _WIN32
-    long len = rb_w32_write_console(str, fptr->fd);
-    if (len > 0) return len;
+    if (fptr->mode & FMODE_TTY) {
+	long len = rb_w32_write_console(str, fptr->fd);
+	if (len > 0) return len;
+    }
 #endif
     str = do_writeconv(str, fptr);
     return io_binwrite(str, RSTRING_PTR(str), RSTRING_LEN(str),

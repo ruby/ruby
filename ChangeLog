@@ -1,3 +1,9 @@
+Mon Feb  6 16:31:16 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (io_fwrite): call rb_w32_write_console() only if FMODE_TTY is
+	  set.  this is the one of the reason of IO writing slowness of Windows
+	  in 1.9.3 or later.
+
 Mon Feb  6 16:21:57 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (file_expand_path): reset coderange after expanding path.
