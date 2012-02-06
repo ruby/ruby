@@ -1,5 +1,5 @@
 /*
-  date_parse.c: Coded by Tadayoshi Funaba 2011
+  date_parse.c: Coded by Tadayoshi Funaba 2011,2012
 */
 
 #include "ruby.h"
@@ -235,6 +235,26 @@ regcomp(const char *source, long len, int opt)
 
 #define REGCOMP_0(pat) REGCOMP(pat, 0)
 #define REGCOMP_I(pat) REGCOMP(pat, ONIG_OPTION_IGNORECASE)
+
+#define MATCH(s,p,c) \
+{ \
+    return match(s, p, hash, c); \
+}
+
+static int
+match(VALUE str, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
+{
+    VALUE m;
+
+    m = f_match(pat, str);
+
+    if (NIL_P(m))
+	return 0;
+
+    (*cb)(m, hash);
+
+    return 1;
+}
 
 #define SUBS(s,p,c) \
 { \
@@ -1726,7 +1746,7 @@ iso8601_ext_datetime(VALUE str, VALUE hash)
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
-    SUBS(str, pat, iso8601_ext_datetime_cb);
+    MATCH(str, pat, iso8601_ext_datetime_cb);
 }
 
 #undef SNUM
@@ -1817,7 +1837,7 @@ iso8601_bas_datetime(VALUE str, VALUE hash)
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
-    SUBS(str, pat, iso8601_bas_datetime_cb);
+    MATCH(str, pat, iso8601_bas_datetime_cb);
 }
 
 #undef SNUM
@@ -1860,7 +1880,7 @@ iso8601_ext_time(VALUE str, VALUE hash)
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
-    SUBS(str, pat, iso8601_ext_time_cb);
+    MATCH(str, pat, iso8601_ext_time_cb);
 }
 
 static int
@@ -1872,7 +1892,7 @@ iso8601_bas_time(VALUE str, VALUE hash)
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
-    SUBS(str, pat, iso8601_bas_time_cb);
+    MATCH(str, pat, iso8601_bas_time_cb);
 }
 
 VALUE
@@ -1940,7 +1960,7 @@ rfc3339(VALUE str, VALUE hash)
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
-    SUBS(str, pat, rfc3339_cb);
+    MATCH(str, pat, rfc3339_cb);
 }
 
 VALUE
@@ -2004,7 +2024,7 @@ xmlschema_datetime(VALUE str, VALUE hash)
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
-    SUBS(str, pat, xmlschema_datetime_cb);
+    MATCH(str, pat, xmlschema_datetime_cb);
 }
 
 #undef SNUM
@@ -2045,7 +2065,7 @@ xmlschema_time(VALUE str, VALUE hash)
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
-    SUBS(str, pat, xmlschema_time_cb);
+    MATCH(str, pat, xmlschema_time_cb);
 }
 
 #undef SNUM
@@ -2086,7 +2106,7 @@ xmlschema_trunc(VALUE str, VALUE hash)
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
-    SUBS(str, pat, xmlschema_trunc_cb);
+    MATCH(str, pat, xmlschema_trunc_cb);
 }
 
 VALUE
@@ -2157,7 +2177,7 @@ rfc2822(VALUE str, VALUE hash)
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
-    SUBS(str, pat, rfc2822_cb);
+    MATCH(str, pat, rfc2822_cb);
 }
 
 VALUE
@@ -2215,7 +2235,7 @@ httpdate_type1(VALUE str, VALUE hash)
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
-    SUBS(str, pat, httpdate_type1_cb);
+    MATCH(str, pat, httpdate_type1_cb);
 }
 
 #undef SNUM
@@ -2262,7 +2282,7 @@ httpdate_type2(VALUE str, VALUE hash)
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
-    SUBS(str, pat, httpdate_type2_cb);
+    MATCH(str, pat, httpdate_type2_cb);
 }
 
 #undef SNUM
@@ -2303,7 +2323,7 @@ httpdate_type3(VALUE str, VALUE hash)
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
-    SUBS(str, pat, httpdate_type3_cb);
+    MATCH(str, pat, httpdate_type3_cb);
 }
 
 VALUE
@@ -2377,7 +2397,7 @@ jisx0301(VALUE str, VALUE hash)
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
-    SUBS(str, pat, jisx0301_cb);
+    MATCH(str, pat, jisx0301_cb);
 }
 
 VALUE
