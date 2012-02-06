@@ -555,6 +555,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		argv[0] = ID2SYM(me->def->original_id);
 		MEMCPY(argv+1, cfp->sp - num, VALUE, num);
 		cfp->sp += - num - 1;
+		th->passed_block = blockptr;
 		val = rb_funcall2(recv, rb_intern("method_missing"), num+1, argv);
 		break;
 	      }

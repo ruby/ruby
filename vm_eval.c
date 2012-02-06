@@ -118,6 +118,7 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 
 	RB_GC_GUARD(new_args);
 	rb_ary_unshift(new_args, ID2SYM(id));
+	th->passed_block = blockptr;
 	return rb_funcall2(recv, idMethodMissing,
 			   argc+1, RARRAY_PTR(new_args));
       }
@@ -547,6 +548,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
 {
     VALUE *nargv, result, argv_ary = 0;
     rb_thread_t *th = GET_THREAD();
+    const rb_block_t *blockptr = th->passed_block;
 
     th->method_missing_reason = call_status;
     th->passed_block = 0;
@@ -572,6 +574,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
     if (rb_method_basic_definition_p(CLASS_OF(obj) , idMethodMissing)) {
 	raise_method_missing(th, argc+1, nargv, obj, call_status | NOEX_MISSING);
     }
+    th->passed_block = blockptr;
     result = rb_funcall2(obj, idMethodMissing, argc + 1, nargv);
     if (argv_ary) rb_ary_clear(argv_ary);
     return result;

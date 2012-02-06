@@ -1,3 +1,11 @@
+Mon Feb  6 15:01:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (vm_call0): should pass block to enumerators.  patched
+	  by Kazuki Tsujimoto.  [ruby-dev:44961][Bug #5731]
+
+	* vm_eval.c (method_missing), vm_insnhelper.c (vm_call_method):
+	  ditto.  patched by satoshi shiba.
+
 Mon Feb  6 21:52:20 2012  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* common.mk (INSTRUBY_ARGS): added --mantype to apply mdoc2man.rb
