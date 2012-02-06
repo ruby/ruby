@@ -10,6 +10,8 @@ module Test
         obj.pretty_inspect.chomp
       end
 
+      MINI_DIR = File.join(File.dirname(File.dirname(File.expand_path(__FILE__))), "minitest") #:nodoc:
+
       UNASSIGNED = Object.new # :nodoc:
 
       # :call-seq:
@@ -30,7 +32,7 @@ module Test
           msg = nil
         when String, Proc
         else
-          bt = caller.reject { |s| s.rindex(MiniTest::MINI_DIR, 0) }
+          bt = caller.reject { |s| s.rindex(MINI_DIR, 0) }
           raise ArgumentError, "assertion message must be String or Proc, but #{msg.class} was given.", bt
         end
         super
@@ -250,7 +252,7 @@ EOT
       #    assert_respond_to("hello", :does_not_exist)  #Fails
       def assert_respond_to obj, meth, msg = nil
         #get rid of overcounting
-        super if !caller[0].rindex(MiniTest::MINI_DIR, 0) || !obj.respond_to?(meth)
+        super if !caller[0].rindex(MINI_DIR, 0) || !obj.respond_to?(meth)
       end
 
       ms = instance_methods(true).map {|sym| sym.to_s }

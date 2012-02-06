@@ -1,3 +1,8 @@
+Mon Feb  6 21:21:46 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/unit/assertions.rb (MINI_DIR): quick dirty hack to get rid of
+	  warnings when using assert/assert_respond_to.
+
 Mon Feb  6 20:38:19 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (file_expand_path): reset coderange after expanding path.
