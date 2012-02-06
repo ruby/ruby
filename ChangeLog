@@ -1,3 +1,7 @@
+Mon Feb  6 16:21:57 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (file_expand_path): reset coderange after expanding path.
+
 Mon Feb  6 00:06:39 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/parser/parser.rl (json_string_unescape): workaround fix
