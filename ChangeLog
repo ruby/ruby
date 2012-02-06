@@ -1,3 +1,14 @@
+Mon Feb  6 15:34:47 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ruby.c (fill_standard_fds): use fstat() instead of fcntl(F_GETFD)
+	  for MinGW.  reported by Luis Lavena.  [ruby-core:40526] [Bug #5516]
+
+Mon Feb  6 15:34:47 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ruby.c (fill_standard_fds): new function to open closed standard
+	  file descriptors.
+	  (ruby_sysinit): call fill_standard_fds.
+
 Mon Feb  6 15:19:17 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_io_fsync,rb_io_fdatasync): release GVL during fsync().

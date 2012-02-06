@@ -1815,6 +1815,36 @@ ruby_process_options(int argc, char **argv)
     return (void*)(struct RData*)iseq;
 }
 
+static void
+fill_standard_fds(void)
+{
+    int f0, f1, f2, fds[2];
+    struct stat buf;
+    f0 = fstat(0, &buf) == -1 && errno == EBADF;
+    f1 = fstat(1, &buf) == -1 && errno == EBADF;
+    f2 = fstat(2, &buf) == -1 && errno == EBADF;
+    if (f0) {
+        if (pipe(fds) == 0) {
+            close(fds[1]);
+            if (fds[0] != 0) {
+                dup2(fds[0], 0);
+                close(fds[0]);
+            }
+        }
+    }
+    if (f1 || f2) {
+        if (pipe(fds) == 0) {
+            close(fds[0]);
+            if (f1 && fds[1] != 1)
+                dup2(fds[1], 1);
+            if (f2 && fds[1] != 2)
+                dup2(fds[1], 2);
+            if (fds[1] != 1 && fds[1] != 2)
+                close(fds[1]);
+        }
+    }
+}
+
 void
 ruby_sysinit(int *argc, char ***argv)
 {
@@ -1827,4 +1857,5 @@ ruby_sysinit(int *argc, char ***argv)
 #if defined(USE_DLN_A_OUT)
     dln_argv0 = origarg.argv[0];
 #endif
+    fill_standard_fds();
 }
