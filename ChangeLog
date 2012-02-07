@@ -1,3 +1,8 @@
+Tue Feb  7 20:08:12 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* error.c (exc_inspect): Fix typo. patch from Trent Ogren
+	  via https://github.com/ruby/ruby/pull/90
+
 Tue Feb  7 19:37:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c: refactor packed entries using structs.

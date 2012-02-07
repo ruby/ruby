@@ -613,7 +613,7 @@ exc_message(VALUE exc)
  * call-seq:
  *   exception.inspect   -> string
  *
- * Return this exception's class name an message
+ * Return this exception's class name and message
  */
 
 static VALUE
