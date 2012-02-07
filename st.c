@@ -761,12 +761,21 @@ st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *
     st_index_t hash_val, bin_pos;
     register st_table_entry *ptr, **last, *tmp;
     st_data_t value;
+    int retval;
 
     if (table->entries_packed) {
 	st_index_t i = find_packed_index(table, key);
 	if (i < table->num_entries) {
 	    value = PVAL(table, i);
-	    switch ((*func)(key, &value, arg)) {
+	    retval = (*func)(key, &value, arg);
+	    if (!table->entries_packed) {
+		hash_val = do_hash(key, table);
+		bin_pos = hash_val % table->num_bins;
+		ptr = find_entry(table, key, hash_val, bin_pos);
+		if (ptr == 0) return 0;
+		goto unpacked;
+	    }
+	    switch (retval) {
 	      case ST_CONTINUE:
 		PVAL_SET(table, i, value);
 		break;
@@ -787,7 +796,9 @@ st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *
     }
     else {
 	value = ptr->record;
-	switch ((*func)(ptr->key, &value, arg)) {
+	retval = (*func)(ptr->key, &value, arg);
+      unpacked:
+	switch (retval) {
 	  case ST_CONTINUE:
 	    ptr->record = value;
 	    break;

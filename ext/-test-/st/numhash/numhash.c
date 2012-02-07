@@ -57,6 +57,30 @@ numhash_each(VALUE self)
     return st_foreach((st_table *)DATA_PTR(self), numhash_i, self) ? Qtrue : Qfalse;
 }
 
+static int
+update_func(st_data_t key, st_data_t *value, st_data_t arg)
+{
+    VALUE ret = rb_yield_values(2, (VALUE)key, (VALUE)*value);
+    switch (ret) {
+      case Qfalse:
+	return ST_STOP;
+      case Qnil:
+	return ST_DELETE;
+      default:
+	*value = ret;
+	return ST_CONTINUE;
+    }
+}
+
+static VALUE
+numhash_update(VALUE self, VALUE key)
+{
+    if (st_update((st_table *)DATA_PTR(self), (st_data_t)key, update_func, 0))
+	return Qtrue;
+    else
+	return Qfalse;
+}
+
 void
 Init_numhash(void)
 {
@@ -66,4 +90,6 @@ Init_numhash(void)
     rb_define_method(st, "[]", numhash_aref, 1);
     rb_define_method(st, "[]=", numhash_aset, 2);
     rb_define_method(st, "each", numhash_each, 0);
+    rb_define_method(st, "update", numhash_update, 1);
 }
+

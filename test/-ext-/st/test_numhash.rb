@@ -17,5 +17,11 @@ class Bug::StNumHash
       end
       assert_equal([*0..5], keys)
     end
+
+    def test_update
+      assert_equal(true, @tbl.update(0) {@tbl[5] = :x})
+      assert_equal(:x, @tbl[0])
+      assert_equal(:x, @tbl[5])
+    end
   end
 end

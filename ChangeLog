@@ -1,4 +1,6 @@
-Tue Feb  7 14:29:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Feb  7 14:52:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c (st_update): table can be unpacked in the callback.
 
 	* st.c (st_foreach): should not yield same pair when checking
 	  after unpacking.
