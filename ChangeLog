@@ -1,3 +1,7 @@
+Tue Feb  7 19:37:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c: refactor packed entries using structs.
+
 Tue Feb  7 14:52:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c (st_update): table can be unpacked in the callback.

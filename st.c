@@ -25,10 +25,25 @@ struct st_table_entry {
     st_table_entry *fore, *back;
 };
 
+typedef struct st_packed_entry {
+    st_data_t key, val;
+} st_packed_entry;
+
+#define STATIC_ASSERT(name, expr) typedef int static_assert_##name##_check[(expr) ? 1 : -1];
+
 #define ST_DEFAULT_MAX_DENSITY 5
 #define ST_DEFAULT_INIT_TABLE_SIZE 11
 #define ST_DEFAULT_SECOND_TABLE_SIZE 19
-#define MAX_PACKED_NUMHASH (ST_DEFAULT_INIT_TABLE_SIZE/2)
+#define ST_DEFAULT_PACKED_TABLE_SIZE ST_DEFAULT_INIT_TABLE_SIZE
+#define PACKED_UNIT (int)(sizeof(st_packed_entry) / sizeof(st_table_entry*))
+#define MAX_PACKED_HASH (int)(ST_DEFAULT_PACKED_TABLE_SIZE * sizeof(st_table_entry*) / sizeof(st_packed_entry))
+
+typedef struct {
+    st_packed_entry kv[MAX_PACKED_HASH];
+} st_packed_bins;
+
+STATIC_ASSERT(st_packed_entry, sizeof(st_packed_entry) == sizeof(st_table_entry*[PACKED_UNIT]))
+STATIC_ASSERT(st_packed_bins, sizeof(st_packed_bins) <= sizeof(st_table_entry*[ST_DEFAULT_PACKED_TABLE_SIZE]))
 
     /*
      * DEFAULT_MAX_DENSITY is the default for the largest we allow the
@@ -85,26 +100,27 @@ static void rehash(st_table *);
 static inline st_table_entry**
 st_realloc_bins(st_table_entry **bins, st_index_t newsize, st_index_t oldsize)
 {
-    bins = (st_table_entry **) realloc(bins, newsize * sizeof(st_table_entry *));
-    memset(bins, 0, newsize * sizeof(st_table_entry *));
+    bins = (st_table_entry **)realloc(bins, newsize * sizeof(st_table_entry *));
+    MEMZERO(bins, st_table_entry*, newsize);
     return bins;
 }
 
 /* preparation for possible packing improvements */
-#define PKEY_POS(i, num_bins) ((i)*2)
-#define PVAL_POS(i, num_bins) ((i)*2+1)
-#define PKEY(table, i) (st_data_t)(table)->bins[PKEY_POS(i, (table)->num_bins)]
-#define PVAL(table, i) (st_data_t)(table)->bins[PVAL_POS(i, (table)->num_bins)]
-#define PKEY_SET(table, i, v) do{ (table)->bins[PKEY_POS(i, (table)->num_bins)] = (st_table_entry *)(v); } while(0)
-#define PVAL_SET(table, i, v) do{ (table)->bins[PVAL_POS(i, (table)->num_bins)] = (st_table_entry *)(v); } while(0)
+#define PACKED_BINS(table) (*(st_packed_bins *)(table)->bins)
+#define PACKED_ENT(table, i) PACKED_BINS(table).kv[i]
+#define PKEY(table, i) PACKED_ENT((table), (i)).key
+#define PVAL(table, i) PACKED_ENT((table), (i)).val
+#define PHASH(table, i) PKEY((table), (i))
+#define PKEY_SET(table, i, v) (PKEY((table), (i)) = (v))
+#define PVAL_SET(table, i, v) (PVAL((table), (i)) = (v))
 /* this function depends much on packed layout, so that it placed here */
 static inline void
 remove_packed_entry(st_table *table, st_index_t i)
 {
     table->num_entries--;
     if (i < table->num_entries) {
-	memmove(table->bins + 2*i, table->bins + 2*(i+1),
-		sizeof(st_table_entry *) * 2 * (table->num_entries - i));
+	MEMMOVE(&PACKED_ENT(table, i), &PACKED_ENT(table, i+1),
+		st_packed_entry, table->num_entries - i);
     }
 }
 
@@ -217,7 +233,7 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
     tbl = st_alloc_table();
     tbl->type = type;
     tbl->num_entries = 0;
-    tbl->entries_packed = type == &type_numhash && size/2 <= MAX_PACKED_NUMHASH;
+    tbl->entries_packed = type == &type_numhash && size/PACKED_UNIT <= MAX_PACKED_HASH;
     tbl->num_bins = size;
     tbl->bins = st_alloc_bins(size);
     tbl->head = 0;
@@ -279,7 +295,7 @@ st_clear(st_table *table)
         return;
     }
 
-    for(i = 0; i < table->num_bins; i++) {
+    for (i = 0; i < table->num_bins; i++) {
 	ptr = table->bins[i];
 	table->bins[i] = 0;
 	while (ptr != 0) {
@@ -387,7 +403,7 @@ st_lookup(st_table *table, register st_data_t key, st_data_t *value)
 	return 0;
     }
     else {
-	if (value != 0)  *value = ptr->record;
+	if (value != 0) *value = ptr->record;
 	return 1;
     }
 }
@@ -455,14 +471,14 @@ static void
 unpack_entries(register st_table *table)
 {
     st_index_t i;
-    struct st_table_entry *packed_bins[ST_DEFAULT_INIT_TABLE_SIZE];
+    st_packed_bins packed_bins;
     st_table tmp_table = *table;
 
-    memcpy(packed_bins, table->bins, sizeof(st_table_entry *) * ST_DEFAULT_INIT_TABLE_SIZE);
-    table->bins = packed_bins;
+    packed_bins = PACKED_BINS(table);
+    table->bins = (st_table_entry **)&packed_bins;
     tmp_table.entries_packed = 0;
     tmp_table.num_entries = 0;
-    memset(tmp_table.bins, 0, sizeof(struct st_table_entry *) * tmp_table.num_bins);
+    MEMZERO(tmp_table.bins, st_table_entry*, tmp_table.num_bins);
     for (i = 0; i < table->num_entries; i++) {
 	/* packed table should be numhash */
 	st_index_t key = PKEY(table, i), value = PVAL(table, i);
@@ -474,7 +490,7 @@ unpack_entries(register st_table *table)
 static void
 add_packed_direct(st_table *table, st_data_t key, st_data_t value)
 {
-    if (table->num_entries < MAX_PACKED_NUMHASH) {
+    if (table->num_entries < MAX_PACKED_HASH) {
 	st_index_t i = table->num_entries++;
 	PKEY_SET(table, i, key);
 	PVAL_SET(table, i, value);
@@ -606,7 +622,7 @@ st_copy(st_table *old_table)
     }
 
     if (old_table->entries_packed) {
-        memcpy(new_table->bins, old_table->bins, sizeof(struct st_table_entry *) * old_table->num_bins);
+        MEMCPY(new_table->bins, old_table->bins, st_table_entry*, old_table->num_bins);
         return new_table;
     }
 
