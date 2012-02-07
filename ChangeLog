@@ -50,11 +50,11 @@ Mon Feb  6 15:01:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Feb  6 21:52:20 2012  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* common.mk (INSTRUBY_ARGS): added --mantype to apply mdoc2man.rb
-	  to man pages.  Fixes #5598. 
+	  to man pages.  Fixes #5598.
 	  (do-install-nodoc, do-install-local, do-install-man,
 	  dont-install-nodoc, dont-install-local, dont-install-man):
 	  No longer needs --mantype.
-	
+
 	  Reported by Rainer Orth <ro AT cebitec.uni-bielefeld.de>,
 	  patch by George Koehler <xkernigh AT netscape.net>.
 
@@ -728,11 +728,11 @@ Tue Aug 30 09:53:59 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Tue Aug 30 09:52:29 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* backport r33117 from trunk.
-	
+
 	* thread.c (rb_thread_select): rewrite by using
 	  rb_thread_fd_select(). old one is EINTR unsafe.
 	  Patch by Eric Wong. [Bug #5229] [ruby-core:39102]
-	
+
 	* test/-ext-/old_thread_select/test_old_thread_select.rb:
 	  a testcase for rb_thread_select().
 	* ext/-test-/old_thread_select/old_thread_select.c: ditto.
