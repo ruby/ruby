@@ -1,3 +1,10 @@
+Tue Feb  7 14:03:45 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* lib/tempfile.rb (Tempfile#_close): clear @tempfile and @data[1] even
+	  when exception is raised at @tempfile.close. [ruby-dev:45113]
+
+	* lib/tempfile.rb (Tempfile#unlink): fix a typo.
+
 Tue Feb  7 14:02:32 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* test/ruby/test_io.rb (test_autoclose_true_closed_by_finalizer,
