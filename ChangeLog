@@ -1,3 +1,8 @@
+Tue Feb  7 13:59:26 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* gc.c (run_finalizer): clear rb_thread_t::errinfo when ignore
+	  an exception under rb_protect(). [ruby-dev:45113]
+
 Mon Feb  6 15:34:47 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ruby.c (fill_standard_fds): use fstat() instead of fcntl(F_GETFD)
