@@ -1,10 +1,16 @@
 #include <ruby.h>
 #include <ruby/st.h>
 
+static void
+numhash_free(void *ptr)
+{
+    if (ptr) st_free_table(ptr);
+}
+
 static VALUE
 numhash_alloc(VALUE klass)
 {
-    return Data_Wrap_Struct(klass, 0, 0, 0);
+    return Data_Wrap_Struct(klass, 0, numhash_free, 0);
 }
 
 static VALUE
