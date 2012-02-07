@@ -337,6 +337,9 @@ count_collision(const struct st_hash_type *type)
 #define FOUND_ENTRY
 #endif
 
+#define FIND_ENTRY(table, ptr, hash_val, bin_pos) \
+    ((ptr) = find_entry((table), key, (hash_val), ((bin_pos) = (hash_val)%(table)->num_bins)))
+
 static st_table_entry *
 find_entry(st_table *table, st_data_t key, st_index_t hash_val, st_index_t bin_pos)
 {
@@ -420,8 +423,8 @@ st_get_key(st_table *table, register st_data_t key, st_data_t *result)
 #define collision_check 1
 
 static inline void
-add_direct(st_table * table, st_data_t key, st_data_t value,
-	st_index_t hash_val, register st_index_t bin_pos)
+add_direct(st_table *table, st_data_t key, st_data_t value,
+	   st_index_t hash_val, register st_index_t bin_pos)
 {
     register st_table_entry *entry;
     if (table->num_entries > ST_DEFAULT_MAX_DENSITY * table->num_bins) {
@@ -819,7 +822,14 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
             key = PKEY(table, i);
             val = PVAL(table, i);
             retval = (*func)(key, val, arg);
-	    if (!table->entries_packed) goto unpacked;
+	    if (!table->entries_packed) {
+		FIND_ENTRY(table, ptr, key, i);
+		if (retval == ST_CHECK) {
+		    if (!ptr) goto deleted;
+		    goto unpacked_continue;
+		}
+		goto unpacked;
+	    }
             switch (retval) {
 	      case ST_CHECK:	/* check if hash is modified during iteration */
                 for (j = 0; j < table->num_entries; j++) {
@@ -827,9 +837,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
                         break;
                 }
                 if (j == table->num_entries) {
-                    /* call func with error notice */
-                    retval = (*func)(0, 0, arg, 1);
-                    return 1;
+		    goto deleted;
                 }
 		/* fall through */
 	      case ST_CONTINUE:
@@ -843,11 +851,6 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
             }
         }
         return 0;
-      unpacked:
-	ptr = table->head;
-	while (i-- > 0) {
-	    if (!(ptr = ptr->fore)) return 0;
-	}
     }
     else {
 	ptr = table->head;
@@ -857,10 +860,12 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 	do {
 	    i = ptr->hash % table->num_bins;
 	    retval = (*func)(ptr->key, ptr->record, arg);
+	  unpacked:
 	    switch (retval) {
 	      case ST_CHECK:	/* check if hash is modified during iteration */
 		for (tmp = table->bins[i]; tmp != ptr; tmp = tmp->next) {
 		    if (!tmp) {
+		      deleted:
 			/* call func with error notice */
 			retval = (*func)(0, 0, arg, 1);
 			return 1;
@@ -868,6 +873,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 		}
 		/* fall through */
 	      case ST_CONTINUE:
+	      unpacked_continue:
 		ptr = ptr->fore;
 		break;
 	      case ST_STOP:

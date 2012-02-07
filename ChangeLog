@@ -1,3 +1,8 @@
+Tue Feb  7 14:29:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c (st_foreach): should not yield same pair when checking
+	  after unpacking.
+
 Mon Feb  6 21:55:13 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/merger.rb: abort if the working directory is dirty.
