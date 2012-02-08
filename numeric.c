@@ -2196,11 +2196,20 @@ rb_enc_uint_chr(unsigned int code, rb_encoding *enc)
 {
     int n;
     VALUE str;
-    if ((n = rb_enc_codelen(code, enc)) <= 0) {
+    switch (n = rb_enc_codelen(code, enc)) {
+      case ONIGERR_INVALID_CODE_POINT_VALUE:
+	rb_raise(rb_eRangeError, "invalid codepoint 0x%X in %s", code, rb_enc_name(enc));
+	break;
+      case ONIGERR_TOO_BIG_WIDE_CHAR_VALUE:
+      case 0:
 	rb_raise(rb_eRangeError, "%u out of char range", code);
+	break;
     }
     str = rb_enc_str_new(0, n, enc);
     rb_enc_mbcput(code, RSTRING_PTR(str), enc);
+    if (rb_enc_precise_mbclen(RSTRING_PTR(str), RSTRING_END(str), enc) != n) {
+	rb_raise(rb_eRangeError, "invalid codepoint 0x%X in %s", code, rb_enc_name(enc));
+    }
     return str;
 }
 

@@ -1,3 +1,19 @@
+Thu Feb  9 07:32:40 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (rb_enc_uint_char): raise RangeError when added codepoint
+	  is invalid. [Feature #5855] [Bug #5863] [Bug #5864]
+
+	* string.c (rb_str_concat): ditto.
+
+	* string.c (rb_str_concat): set encoding as ASCII-8BIT when the string
+	  is US-ASCII and the argument is an integer greater than 127.
+
+	* regenc.c (onigenc_mb2_code_to_mbclen): rearrange error code.
+
+	* enc/euc_jp.c (code_to_mbclen): ditto.
+
+	* enc/shift_jis.c (code_to_mbclen): ditto.
+
 Thu Feb  9 07:28:43 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/pathname/test_pathname.rb: not read but binread.

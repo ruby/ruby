@@ -22,6 +22,6 @@ class TestShiftJIS < Test::Unit::TestCase
     s = "‚ ‚¢‚¤‚¦‚¨"
     s << 0x82a9
     assert_equal("‚ ‚¢‚¤‚¦‚¨‚©", s)
-    assert_raise(ArgumentError) { s << 0x82 }
+    assert_raise(RangeError) { s << 0x82 }
   end
 end
