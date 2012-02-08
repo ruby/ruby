@@ -1,3 +1,7 @@
+Wed Feb  8 22:29:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_modify_expand): fix memory leak.
+
 Wed Feb  8 14:06:59 2012  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c: Add SSL constants and allow to unset SSL
