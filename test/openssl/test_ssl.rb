@@ -422,6 +422,21 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       }
     }
   end
+
+  def test_unset_OP_ALL
+    ctx_proc = Proc.new { |ctx|
+      ctx.options = OpenSSL::SSL::OP_ALL & ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS
+    }
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, :ctx_proc => ctx_proc){|server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.sync_close = true
+      ssl.connect
+      ssl.puts('hello')
+      assert_equal("hello\n", ssl.gets)
+      ssl.close
+    }
+  end
 end
 
 end
