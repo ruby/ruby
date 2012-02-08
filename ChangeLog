@@ -1,3 +1,8 @@
+Thu Feb  9 07:28:43 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/pathname/test_pathname.rb: not read but binread.
+	  patched by Benoit Daloze, [ruby-core:42440] [Bug #5984]
+
 Wed Feb  8 22:29:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_modify_expand): fix memory leak.
