@@ -1,3 +1,11 @@
+Wed Feb  8 09:43:48 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* error.c (name_err_mesg_to_str): clear rb_thread_t::errinfo when
+	  ignore exception under rb_protect(). [ruby-core:41612] [Bug #5755]
+
+	* test/ruby/test_exception.rb (test_exception_in_name_error_to_str):
+	  add a corresponding test.
+
 Wed Feb  8 09:36:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (require_enc): reject only loading from untrusted
