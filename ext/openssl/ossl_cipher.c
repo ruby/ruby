@@ -686,6 +686,12 @@ Init_ossl_cipher(void)
      *  key = cipher.random_key
      *  iv = cipher.random_iv # also sets the generated IV on the Cipher
      *
+     *  Although the key is generally a random value, too, it is a bad choice
+     *  as an IV. There are elaborate ways how an attacker can take advantage
+     *  of such an IV. As a general rule of thumb, exposing the key directly
+     *  or indirectly should be avoided at all cost and exceptions only be
+     *  made with good reason. 
+     *
      * === Calling Cipher#final
      *
      * ECB (which should not be used) and CBC are both block-based modes.

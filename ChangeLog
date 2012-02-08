@@ -1,3 +1,7 @@
+Wed Feb 08 09:19:00 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_cipher.c: Add warning about key as IV.
+
 Tue Feb  7 20:08:12 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* error.c (exc_inspect): Fix typo. patch from Trent Ogren
