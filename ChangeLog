@@ -1,3 +1,13 @@
+Wed Feb  8 10:34:59 2012  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/readline.c (readline_attempted_completion_function):
+	  in Readline module with GNU Readline 6 case, Readline module
+	  resets completion_append_character to " ", after it executes
+	  completion. So, Readline module stores
+	  completion_append_character, and Readline module always sets it
+	  after Readline module executes completion. [ruby-dev:43456]
+	  [Feature #4635]
+
 Wed Feb  8 09:47:52 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_sleep.rb (test_sleep_5sec): 0.1sec tolerance is too
