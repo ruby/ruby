@@ -1907,7 +1907,7 @@ dir_entries(int argc, VALUE *argv, VALUE io)
  *                          match all files beginning with
  *                          <code>c</code>; <code>*c</code> will match
  *                          all files ending with <code>c</code>; and
- *                          <code>*c*</code> will match all files that
+ *                          <code>\*c*</code> will match all files that
  *                          have <code>c</code> in them (including at
  *                          the beginning or end). Equivalent to
  *                          <code>/ .* /x</code> in regexp.
