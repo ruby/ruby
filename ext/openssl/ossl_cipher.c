@@ -126,6 +126,7 @@ ossl_cipher_initialize(VALUE self, VALUE str)
 
     return self;
 }
+
 static VALUE
 ossl_cipher_copy(VALUE self, VALUE other)
 {
@@ -180,6 +181,9 @@ ossl_s_ciphers(VALUE self)
 /*
  *  call-seq:
  *     cipher.reset -> self
+ *
+ *  Fully resets the internal state of the Cipher. By using this, the same
+ *  Cipher instance may be used several times for en- or decryption tasks.
  *
  *  Internally calls EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, -1).
  */
@@ -243,7 +247,10 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
  *  call-seq:
  *     cipher.encrypt -> self
  *
- *  Make sure to call .encrypt or .decrypt before using any of the following methods:
+ *  Initializes the Cipher for encryption.
+ *
+ *  Make sure to call Cipher#encrypt or Cipher#decrypt before using any of the
+ *  following methods:
  *  * [key=, iv=, random_key, random_iv, pkcs5_keyivgen]
  *
  *  Internally calls EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, 1).
@@ -258,7 +265,10 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     cipher.decrypt -> self
  *
- *  Make sure to call .encrypt or .decrypt before using any of the following methods:
+ *  Initializes the Cipher for decryption.
+ *
+ *  Make sure to call Cipher#encrypt or Cipher#decrypt before using any of the
+ *  following methods:
  *  * [key=, iv=, random_key, random_iv, pkcs5_keyivgen]
  *
  *  Internally calls EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, 0).
@@ -273,11 +283,13 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     cipher.pkcs5_keyivgen(pass [, salt [, iterations [, digest]]] ) -> nil
  *
- *  Generates and sets the key/iv based on a password.
+ *  Generates and sets the key/IV based on a password.
  *
- *  WARNING: This method is only PKCS5 v1.5 compliant when using RC2, RC4-40, or DES
- *  with MD5 or SHA1.  Using anything else (like AES) will generate the key/iv using an
- *  OpenSSL specific method.  Use a PKCS5 v2 key generation method instead.
+ *  WARNING: This method is only PKCS5 v1.5 compliant when using RC2, RC4-40,
+ *  or DES with MD5 or SHA1. Using anything else (like AES) will generate the
+ *  key/iv using an OpenSSL specific method. This method is deprecated and
+ *  should no longer be used. Use a PKCS5 v2 key generation method from
+ *  OpenSSL::PKCS5 instead.
  *
  *  === Parameters
  *  +salt+ must be an 8 byte string if provided.
@@ -322,6 +334,11 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     cipher.update(data [, buffer]) -> string or buffer
  *
+ *  Encrypts data in a streaming fashion. Hand consecutive blocks of data
+ *  to the +update+ method in order to encrypt it. Returns the encrypted
+ *  data chunk. When done, the output of Cipher#final should be additionally
+ *  added to the result. 
+ *
  *  === Parameters
  *  +data+ is a nonempty string.
  *  +buffer+ is an optional string to store the result.
@@ -360,9 +377,10 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     cipher.final -> aString
+ *     cipher.final -> string
  *
- *  Returns the remaining data held in the cipher object.  Further calls to update() or final() will return garbage.
+ *  Returns the remaining data held in the cipher object.  Further calls to
+ *  Cipher#update or Cipher#final will return garbage.
  *
  *  See EVP_CipherFinal_ex for further information.
  */
@@ -387,7 +405,8 @@ ossl_cipher_final(VALUE self)
  *  call-seq:
  *     cipher.name -> string
  *
- *  Returns the name of the cipher which may differ slightly from the original name provided.
+ *  Returns the name of the cipher which may differ slightly from the original
+ *  name provided.
  */
 static VALUE
 ossl_cipher_name(VALUE self)
@@ -403,9 +422,12 @@ ossl_cipher_name(VALUE self)
  *  call-seq:
  *     cipher.key = string -> string
  *
- *  Sets the cipher key.
+ *  Sets the cipher key. To generate a key, you should either use a secure
+ *  random byte string or, if the key is to be derived from a password, you
+ *  should rely on PBKDF2 functionality provided by OpenSSL::PKCS5. To
+ *  generate a secure random-based key, Cipher#random_key may be used.
  *
- *  Only call this method after calling cipher.encrypt or cipher.decrypt.
+ *  Only call this method after calling Cipher#encrypt or Cipher#decrypt.
  */
 static VALUE
 ossl_cipher_set_key(VALUE self, VALUE key)
@@ -428,9 +450,16 @@ ossl_cipher_set_key(VALUE self, VALUE key)
  *  call-seq:
  *     cipher.iv = string -> string
  *
- *  Sets the cipher iv.
+ *  Sets the cipher IV. Please note that since you should never be using ECB
+ *  mode, an IV is always explicitly required and should be set prior to
+ *  encryption. The IV itself can be safely transmitted in public, but it
+ *  should be unpredictable to prevent certain kinds of attacks. You may use
+ *  Cipher#random_iv to create a secure random IV.
  *
- *  Only call this method after calling cipher.encrypt or cipher.decrypt.
+ *  Only call this method after calling Cipher#encrypt or Cipher#decrypt.
+ *
+ *  If not explicitly set, the OpenSSL default of an all-zeroes ("\\0") IV is
+ *  used.
  */
 static VALUE
 ossl_cipher_set_iv(VALUE self, VALUE iv)
@@ -454,8 +483,9 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
  *  call-seq:
  *     cipher.key_len = integer -> integer
  *
- *  Sets the key length of the cipher.  If the cipher is a fixed length cipher then attempting to set the key
- *  length to any value other than the fixed value is an error.
+ *  Sets the key length of the cipher.  If the cipher is a fixed length cipher
+ *  then attempting to set the key length to any value other than the fixed
+ *  value is an error.
  *
  *  Under normal circumstances you do not need to call this method (and probably shouldn't).
  *
@@ -508,30 +538,28 @@ ossl_cipher_set_padding(VALUE self, VALUE padding)
 	GetCipher(self, ctx);					\
 	return INT2NUM(EVP_CIPHER_##func(EVP_CIPHER_CTX_cipher(ctx)));	\
     }
-CIPHER_0ARG_INT(key_length)
-CIPHER_0ARG_INT(iv_length)
-CIPHER_0ARG_INT(block_size)
 
-#if 0
 /*
  *  call-seq:
  *     cipher.key_len -> integer
  *
+ *  Returns the key length in bytes of the Cipher.
  */
-static VALUE ossl_cipher_key_length() { }
+CIPHER_0ARG_INT(key_length)
 /*
  *  call-seq:
  *     cipher.iv_len -> integer
  *
+ *  Returns the expected length in bytes for an IV for this Cipher.
  */
-static VALUE ossl_cipher_iv_length() { }
+CIPHER_0ARG_INT(iv_length)
 /*
  *  call-seq:
  *     cipher.block_size -> integer
  *
+ *  Returns the size in bytes of the blocks on which this Cipher operates on.
  */
-static VALUE ossl_cipher_block_size() { }
-#endif
+CIPHER_0ARG_INT(block_size)
 
 /*
  * INIT
@@ -542,6 +570,165 @@ Init_ossl_cipher(void)
 #if 0
     mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
 #endif
+
+    /* Document-class: OpenSSL::Cipher
+     *
+     * Provides symmetric algorithms for encryption and decryption. The
+     * algorithms that are available depend on the particular version
+     * of OpenSSL that is installed.
+     *
+     * === Listing all supported algorithms
+     *
+     * A list of supported algorithms can be obtained by
+     *
+     *   puts OpenSSL::Cipher.ciphers
+     *
+     * === Instantiating a Cipher
+     *
+     * There are several ways to create a Cipher instance. Generally, a
+     * Cipher algorithm is categorized by its name, the key length in bits
+     * and the cipher mode to be used. The most generic way to create a
+     * Cipher is the following
+     *
+     *   cipher = OpenSSL::Cipher.new('<name>-<key length>-<mode>')
+     *
+     * That is, a string consisting of the hyphenated concatenation of the
+     * individual components name, key length and mode. Either all uppercase
+     * or all lowercase strings may be used, for example:
+     *
+     *  cipher = OpenSSL::Cipher.new('AES-128-CBC')
+     *
+     * For each algorithm supported, there is a class defined under the
+     * Cipher class that goes by the name of the cipher, e.g. to obtain an
+     * instance of AES, you could also use
+     *
+     *   # these are equivalent
+     *   cipher = OpenSSL::Cipher::AES.new(128, :CBC)
+     *   cipher = OpenSSL::Cipher::AES.new(128, 'CBC')
+     *   cipher = OpenSSL::Cipher::AES.new('128-CBC')
+     *
+     * Finally, due to its wide-spread use, there are also extra classes
+     * defined for the different key sizes of AES
+     *
+     *   cipher = OpenSSL::Cipher::AES128.new(:CBC)
+     *   cipher = OpenSSL::Cipher::AES192.new(:CBC)
+     *   cipher = OpenSSL::Cipher::AES256.new(:CBC)
+     *
+     * === Choosing either encryption or decryption mode
+     *
+     * Encryption and decryption are often very similar operations for
+     * symmetric algorithms, this is reflected by not having to choose
+     * different classes for either operation, both can be done using the
+     * same class. Still, after obtaining a Cipher instance, we need to
+     * tell the instance what it is that we intend to do with it, so we
+     * need to call either
+     *
+     *   cipher.encrypt
+     *
+     * or
+     *
+     *   cipher.decrypt
+     *
+     * on the Cipher instance. This should be the first call after creating
+     * the instance, otherwise configuration that has already been set could
+     * get lost in the process.
+     *
+     * === Choosing a key
+     *
+     * Symmetric encryption requires a key that is the same for the encrypting
+     * and for the decrypting party and after initial key establishment should
+     * be kept as private information. There are a lot of ways to create
+     * insecure keys, the most notable is to simply take a password as the key
+     * without processing the password further. A simple and secure way to
+     * create a key for a particular Cipher is
+     *
+     *  cipher = OpenSSL::AES256.new(:CFB)
+     *  cipher.encrypt
+     *  key = cipher.random_key # also sets the generated key on the Cipher
+     *
+     * If you absolutely need to use passwords as encryption keys, you
+     * should use Password-Based Key Derivation Function 2 (PBKDF2) by
+     * generating the key with the help of the functionality provided by
+     * OpenSSL::PKCS5.pbkdf2_hmac_sha1 or OpenSSL::PKCS5.pbkdf2_hmac.
+     *
+     * Although there is Cipher#pkcs5_keyivgen, its use is deprecated and
+     * it should only be used in legacy applications because it does not use
+     * the newer PKCS#5 v2 algorithms.
+     *
+     * === Choosing an IV
+     *
+     * The cipher modes CBC, CFB, OFB and CTR all need an "initialization
+     * vector", or short, IV. ECB mode is the only mode that does not require
+     * an IV, but there is almost no legitimate use case for this mode
+     * because of the fact that it does not sufficiently hide plaintext
+     * patterns. Therefore
+     *
+     * <b>You should never use ECB mode unless you are absolutely sure that
+     * you absolutely need it</b>
+     *
+     * Because of this, you will end up with a mode that explicitly requires
+     * an IV in any case. Note that for backwards compatibility reasons,
+     * setting an IV is not explicitly mandated by the Cipher API. If not
+     * set, OpenSSL itself defaults to an all-zeroes IV ("\\0", not the
+     * character). Although the IV can be seen as public information, i.e.
+     * it may be transmitted in public once generated, it should still stay
+     * unpredictable to prevent certain kinds of attacks. Therefore, ideally
+     *
+     * <b>Always create a secure random IV for every encryption of your
+     * Cipher</b>
+     *
+     * A new, random IV should be created for every encryption of data. Think
+     * of the IV as a nonce (number used once) - it's public but random and
+     * unpredictable. A secure random IV can be created as follows
+     *
+     *  cipher = ...
+     *  cipher.encrypt
+     *  key = cipher.random_key
+     *  iv = cipher.random_iv # also sets the generated IV on the Cipher
+     *
+     *  Although the key is generally a random value, too, it is a bad choice
+     *  as an IV. There are elaborate ways how an attacker can take advantage
+     *  of such an IV. As a general rule of thumb, exposing the key directly
+     *  or indirectly should be avoided at all cost and exceptions only be
+     *  made with good reason. 
+     *
+     * === Calling Cipher#final
+     *
+     * ECB (which should not be used) and CBC are both block-based modes.
+     * This means that unlike for the other streaming-based modes, they
+     * operate on fixed-size blocks of data, and therefore they require a
+     * "finalization" step to produce or correctly decrypt the last block of
+     * data by appropriately handling some form of padding. Therefore it is
+     * essential to add the output of OpenSSL::Cipher#final to your
+     * encryption/decryption buffer or you will end up with decryption errors
+     * or truncated data.
+     *
+     * Although this is not really necessary for streaming-mode ciphers, it is
+     * still recommended to apply the same pattern of adding the output of
+     * Cipher#final there as well - it also enables you to switch between
+     * modes more easily in the future.
+     *
+     * === Encrypting and decrypting some data
+     *
+     *   data = "Very, very confidential data"
+     *
+     *   cipher = OpenSSL::Cipher::AES.new(128, :CBC)
+     *   cipher.encrypt
+     *   key = cipher.random_key
+     *   iv = cipher.random_iv
+     *
+     *   encrypted = cipher.update(data) + cipher.final
+     *   ...
+     *   decipher = OpenSSL::Cipher::AES.new(128, :CBC)
+     *   decipher.decrypt
+     *   decipher.key = key
+     *   decipher.iv = iv
+     *
+     *   plain = decipher.update(encrypted) + decipher.final
+     *
+     *   puts data == plain #=> true
+     *
+     */
     cCipher = rb_define_class_under(mOSSL, "Cipher", rb_cObject);
     eCipherError = rb_define_class_under(cCipher, "CipherError", eOSSLError);
 
