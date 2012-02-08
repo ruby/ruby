@@ -10,8 +10,8 @@ if defined? DBM
   require 'tmpdir'
   require 'fileutils'
 
-  class TestDBM < Test::Unit::TestCase
-    def TestDBM.uname_s
+  class TestDBM_RDONLY < Test::Unit::TestCase
+    def TestDBM_RDONLY.uname_s
       require 'rbconfig'
       case RbConfig::CONFIG['target_os']
       when 'cygwin'
@@ -31,7 +31,6 @@ if defined? DBM
       @tmpdir = Dir.mktmpdir("tmptest_dbm")
       @prefix = "tmptest_dbm_#{$$}"
       @path = "#{@tmpdir}/#{@prefix}_"
-      assert_instance_of(DBM, @dbm = DBM.new(@path))
 
       # prepare to make readonly DBM file
       DBM.open("#{@tmpdir}/#{@prefix}_rdonly") {|dbm|
@@ -43,8 +42,33 @@ if defined? DBM
       assert_instance_of(DBM, @dbm_rdonly = DBM.new("#{@tmpdir}/#{@prefix}_rdonly", nil))
     end
     def teardown
-      assert_nil(@dbm.close)
       assert_nil(@dbm_rdonly.close)
+      ObjectSpace.each_object(DBM) do |obj|
+        obj.close unless obj.closed?
+      end
+      FileUtils.remove_entry_secure @tmpdir
+    end
+
+    def test_delete_rdonly
+      if /^CYGWIN_9/ !~ SYSTEM
+        assert_raise(DBMError) {
+          @dbm_rdonly.delete("foo")
+        }
+
+        assert_nil(@dbm_rdonly.delete("bar"))
+      end
+    end
+  end
+
+  class TestDBM < Test::Unit::TestCase
+    def setup
+      @tmpdir = Dir.mktmpdir("tmptest_dbm")
+      @prefix = "tmptest_dbm_#{$$}"
+      @path = "#{@tmpdir}/#{@prefix}_"
+      assert_instance_of(DBM, @dbm = DBM.new(@path))
+    end
+    def teardown
+      assert_nil(@dbm.close)
       ObjectSpace.each_object(DBM) do |obj|
         obj.close unless obj.closed?
       end
@@ -325,15 +349,8 @@ if defined? DBM
       assert_equal(2, @dbm.size)
 
       assert_nil(@dbm.delete(key))
-
-      if /^CYGWIN_9/ !~ SYSTEM
-        assert_raise(DBMError) {
-          @dbm_rdonly.delete("foo")
-        }
-
-        assert_nil(@dbm_rdonly.delete("bar"))
-      end
     end
+
     def test_delete_with_block
       key = 'no called block'
       @dbm[key] = 'foo'

@@ -10,8 +10,8 @@ if defined? GDBM
   require 'tmpdir'
   require 'fileutils'
 
-  class TestGDBM < Test::Unit::TestCase
-    def TestGDBM.uname_s
+  class TestGDBM_RDONLY < Test::Unit::TestCase
+    def TestGDBM_RDONLY.uname_s
       require 'rbconfig'
       case RbConfig::CONFIG['target_os']
       when 'cygwin'
@@ -31,7 +31,6 @@ if defined? GDBM
       @tmpdir = Dir.mktmpdir("tmptest_gdbm")
       @prefix = "tmptest_gdbm_#{$$}"
       @path = "#{@tmpdir}/#{@prefix}_"
-      assert_instance_of(GDBM, @gdbm = GDBM.new(@path))
 
       # prepare to make readonly GDBM file
       GDBM.open("#{@tmpdir}/#{@prefix}_rdonly", 0400) {|gdbm|
@@ -40,8 +39,35 @@ if defined? GDBM
       assert_instance_of(GDBM, @gdbm_rdonly = GDBM.new("#{@tmpdir}/#{@prefix}_rdonly", nil))
     end
     def teardown
-      assert_nil(@gdbm.close)
       assert_nil(@gdbm_rdonly.close)
+      ObjectSpace.each_object(GDBM) do |obj|
+        obj.close unless obj.closed?
+      end
+      FileUtils.remove_entry_secure @tmpdir
+    end
+
+    def test_delete_rdonly
+      if /^CYGWIN_9/ !~ SYSTEM
+        assert_raise(GDBMError) {
+          @gdbm_rdonly.delete("foo")
+        }
+
+        assert_nil(@gdbm_rdonly.delete("bar"))
+      end
+    end
+  end
+
+  class TestGDBM < Test::Unit::TestCase
+    SYSTEM = TestGDBM_RDONLY::SYSTEM
+
+    def setup
+      @tmpdir = Dir.mktmpdir("tmptest_gdbm")
+      @prefix = "tmptest_gdbm_#{$$}"
+      @path = "#{@tmpdir}/#{@prefix}_"
+      assert_instance_of(GDBM, @gdbm = GDBM.new(@path))
+    end
+    def teardown
+      assert_nil(@gdbm.close)
       ObjectSpace.each_object(GDBM) do |obj|
         obj.close unless obj.closed?
       end
@@ -438,15 +464,8 @@ if defined? GDBM
       assert_equal(2, @gdbm.size)
 
       assert_nil(@gdbm.delete(key))
-
-      if /^CYGWIN_9/ !~ SYSTEM
-        assert_raise(GDBMError) {
-          @gdbm_rdonly.delete("foo")
-        }
-
-        assert_nil(@gdbm_rdonly.delete("bar"))
-      end
     end
+
     def test_delete_with_block
       key = 'no called block'
       @gdbm[key] = 'foo'

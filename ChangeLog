@@ -1,3 +1,9 @@
+Wed Feb  8 09:45:23 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/dbm/test_dbm.rb: split tests for read only database.
+
+	* test/gdbm/test_gdbm.rb: ditto.
+
 Wed Feb  8 09:43:48 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* error.c (name_err_mesg_to_str): clear rb_thread_t::errinfo when
