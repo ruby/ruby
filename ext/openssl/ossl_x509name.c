@@ -227,10 +227,10 @@ ossl_x509name_to_a(VALUE self)
 {
     X509_NAME *name;
     X509_NAME_ENTRY *entry;
-    int i,entries;
+    int i,entries,nid;
     char long_name[512];
     const char *short_name;
-    VALUE ary, ret;
+    VALUE ary, vname, ret;
 
     GetX509Name(self, name);
     entries = X509_NAME_entry_count(name);
@@ -246,8 +246,15 @@ ossl_x509name_to_a(VALUE self)
 	if (!i2t_ASN1_OBJECT(long_name, sizeof(long_name), entry->object)) {
 	    ossl_raise(eX509NameError, NULL);
 	}
-	short_name = OBJ_nid2sn(OBJ_ln2nid(long_name));
-	ary = rb_ary_new3(3, rb_str_new2(short_name),
+	nid = OBJ_ln2nid(long_name);
+	if (nid == NID_undef) {
+	    vname = rb_str_new2((const char *) &long_name);
+	} else {
+	    short_name = OBJ_nid2sn(nid);
+	    vname = rb_str_new2(short_name); /*do not free*/
+	}
+	ary = rb_ary_new3(3, 
+			  vname,
         		  rb_str_new((const char *)entry->value->data, entry->value->length),
         		  INT2FIX(entry->value->type));
 	rb_ary_push(ret, ary);
