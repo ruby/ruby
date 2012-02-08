@@ -1,3 +1,9 @@
+Wed Feb  8 10:38:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (CFLAGS): append ARCH_FLAG.
+
+	* configure.in (ARCH_FLAG): exclude from CFLAGS.
+
 Wed Feb 08 09:19:00 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_cipher.c: Add warning about key as IV.

@@ -2692,9 +2692,9 @@ if test -n "${cxxflags+set}"; then
 fi
 if test "${ARCH_FLAG}"; then
     archflagpat=`eval echo '"'"${ARCH_FLAG}"'"' | sed 's/[[][|.*]]/\\&/g'`
-    CFLAGS=`echo "$CFLAGS" | sed "s|$archflagpat"'|$(ARCH_FLAG)|'`
-    CXXFLAGS=`echo "$CXXFLAGS" | sed "s|$archflagpat"'|$(ARCH_FLAG)|'`
-    LDFLAGS=`echo "$LDFLAGS" | sed "s|$archflagpat"'|$(ARCH_FLAG)|'`
+    CFLAGS=`echo "$CFLAGS" | sed "s| *$archflagpat"'||'`
+    CXXFLAGS=`echo "$CXXFLAGS" | sed "s| *$archflagpat"'||'`
+    LDFLAGS=`echo "$LDFLAGS" | sed "s| *$archflagpat"'||'`
 fi
 warnflags="$rb_cv_warnflags"
 AC_SUBST(cppflags, [])dnl
