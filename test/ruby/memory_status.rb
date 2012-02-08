@@ -59,7 +59,7 @@ module Memory
       end
     end
   else
-    PSCMD = ["ps", "-o", "vsz=,rss=", "-p"]
+    PSCMD = ["ps", "-ovsz=","-orss=", "-p"]
     PAT = /^\s*(\d+)\s+(\d+)$/
 
     keys << :size << :rss
