@@ -514,7 +514,7 @@ class TestRubyOptions < Test::Unit::TestCase
     IO.pipe {|r, w|
       begin
         PTY.open {|m, s|
-          m.echo = false
+          s.echo = false
           m.print("\C-d")
           pid = spawn(EnvUtil.rubybin, :in => s, :out => w)
           w.close
@@ -530,7 +530,7 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_equal("", result, '[ruby-dev:37798]')
     IO.pipe {|r, w|
       PTY.open {|m, s|
-	m.echo = false
+	s.echo = false
 	pid = spawn(EnvUtil.rubybin, :in => s, :out => w)
 	w.close
 	m.print("$stdin.read; p $stdin.gets\n\C-d")

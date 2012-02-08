@@ -1,3 +1,9 @@
+Wed Feb  8 10:50:11 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/ruby/test_rubyoptions.rb (test_script_from_stdin): slave pty
+	  should be manipulated because master pty may not be a tty on some
+	  environment (e.g. Solaris). [Bug:#5222] [ruby-dev:44420]
+
 Wed Feb  8 10:38:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (CFLAGS): append ARCH_FLAG.
