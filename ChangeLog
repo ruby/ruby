@@ -1,3 +1,9 @@
+Wed Feb  8 10:54:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_readline): check if outstream
+	  is closed to get rid of a bug of readline 6.  [ruby-dev:45043]
+	  [Bug #5803]
+
 Wed Feb  8 10:52:51 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/readline.c (Init_readline): like r18313, libedit's
