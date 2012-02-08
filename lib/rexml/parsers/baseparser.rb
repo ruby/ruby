@@ -373,7 +373,7 @@ module REXML
               if md[4].size > 0
                 attrs = md[4].scan( ATTRIBUTE_PATTERN )
                 raise REXML::ParseException.new( "error parsing attributes: [#{attrs.join ', '}], excess = \"#$'\"", @source) if $' and $'.strip.size > 0
-                attrs.each do |name, prefix, local_part, quote, value|
+                attrs.each do |attr_name, prefix, local_part, quote, value|
                   if prefix == "xmlns"
                     if local_part == "xml"
                       if value != "http://www.w3.org/XML/1998/namespace"
@@ -391,12 +391,12 @@ module REXML
                     prefixes << prefix unless prefix == "xml"
                   end
 
-                  if attributes.has_key?(name)
-                    msg = "Duplicate attribute #{name.inspect}"
+                  if attributes.has_key?(attr_name)
+                    msg = "Duplicate attribute #{attr_name.inspect}"
                     raise REXML::ParseException.new(msg, @source, self)
                   end
 
-                  attributes[name] = value
+                  attributes[attr_name] = value
                 end
               end
 
