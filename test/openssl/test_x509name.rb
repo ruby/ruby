@@ -100,6 +100,57 @@ class OpenSSL::TestX509Name < Test::Unit::TestCase
     assert_equal(name_from_der.to_der, name.to_der)
   end
 
+  def test_unrecognized_oid
+    dn = [ ["1.2.3.4.5.6.7.8.9.7.5.3.1", "Unknown OID 1"],
+           ["1.1.2.3.5.8.13.21.34", "Unknown OID 2"],
+           ["C", "US"],
+           ["postalCode", "60602"],
+           ["ST", "Illinois"],
+           ["L", "Chicago"],
+           ["street", "123 Fake St"],
+           ["O", "Some Company LLC"],
+           ["CN", "mydomain.com"] ]
+
+    name = OpenSSL::X509::Name.new(dn)
+    ary = name.to_a
+    assert_equal("/1.2.3.4.5.6.7.8.9.7.5.3.1=Unknown OID 1/1.1.2.3.5.8.13.21.34=Unknown OID 2/C=US/postalCode=60602/ST=Illinois/L=Chicago/street=123 Fake St/O=Some Company LLC/CN=mydomain.com", name.to_s)
+    assert_equal("1.2.3.4.5.6.7.8.9.7.5.3.1", ary[0][0])
+    assert_equal("1.1.2.3.5.8.13.21.34", ary[1][0])
+    assert_equal("C", ary[2][0])
+    assert_equal("postalCode", ary[3][0])
+    assert_equal("ST", ary[4][0])
+    assert_equal("L", ary[5][0])
+    assert_equal("street", ary[6][0])
+    assert_equal("O", ary[7][0])
+    assert_equal("CN", ary[8][0])
+    assert_equal("Unknown OID 1", ary[0][1])
+    assert_equal("Unknown OID 2", ary[1][1])
+    assert_equal("US", ary[2][1])
+    assert_equal("60602", ary[3][1])
+    assert_equal("Illinois", ary[4][1])
+    assert_equal("Chicago", ary[5][1])
+    assert_equal("123 Fake St", ary[6][1])
+    assert_equal("Some Company LLC", ary[7][1])
+    assert_equal("mydomain.com", ary[8][1])
+  end
+
+  def test_unrecognized_oid_parse_encode_equality
+    dn = [ ["1.2.3.4.5.6.7.8.9.7.5.3.2", "Unknown OID1"],
+           ["1.1.2.3.5.8.13.21.35", "Unknown OID2"],
+           ["C", "US"],
+           ["postalCode", "60602"],
+           ["ST", "Illinois"],
+           ["L", "Chicago"],
+           ["street", "123 Fake St"],
+           ["O", "Some Company LLC"],
+           ["CN", "mydomain.com"] ]
+
+    name1 = OpenSSL::X509::Name.new(dn)
+    name2 = OpenSSL::X509::Name.parse(name1.to_s)
+    assert_equal(name1.to_s, name2.to_s)
+    assert_equal(name1.to_a, name2.to_a)
+  end
+
   def test_s_parse
     dn = "/DC=org/DC=ruby-lang/CN=www.ruby-lang.org"
     name = OpenSSL::X509::Name.parse(dn)
