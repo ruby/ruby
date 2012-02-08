@@ -1,3 +1,9 @@
+Wed Feb 08 09:57:33 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_asn1.c: Call INT2NUM only once for GeneralString.
+	  Thanks to Mantas Mikulenas for noticing and providing a patch!
+	  [ruby-core:42358] [Bug #5972]
+
 Wed Feb  8 10:34:59 2012  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/readline.c (readline_attempted_completion_function):
