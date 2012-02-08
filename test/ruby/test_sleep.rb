@@ -6,7 +6,8 @@ class TestSleep < Test::Unit::TestCase
     start = Time.now
     sleep 5
     slept = Time.now-start
-    assert_in_delta(5.0, slept, 0.1, "[ruby-core:18015]: longer than expected")
+    assert_operator(5.0, :<=, slept)
+    assert_operator(slept, :<=, 6.0, "[ruby-core:18015]: longer than expected")
   ensure
     GC.enable
   end

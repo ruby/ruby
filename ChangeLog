@@ -1,3 +1,8 @@
+Wed Feb  8 09:47:52 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_sleep.rb (test_sleep_5sec): 0.1sec tolerance is too
+	  small for busy environment.
+
 Wed Feb  8 09:45:23 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/dbm/test_dbm.rb: split tests for read only database.
