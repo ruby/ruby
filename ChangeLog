@@ -1,3 +1,13 @@
+Wed Feb  8 10:56:00 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/readline/readline.c (readline_attempted_completion_function):
+	  fix compile error.
+
+Wed Feb  8 10:56:00 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_attempted_completion_function):
+	  empty completion result does not mean memory error.
+
 Wed Feb  8 10:54:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_readline): check if outstream
