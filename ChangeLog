@@ -1,3 +1,7 @@
+Wed Feb  8 22:29:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_modify_expand): fix memory leak.
+
 Wed Feb  8 10:58:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_attempted_completion_function):

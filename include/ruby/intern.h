@@ -691,6 +691,7 @@ long rb_str_sublen(VALUE, long);
 VALUE rb_str_substr(VALUE, long, long);
 VALUE rb_str_subseq(VALUE, long, long);
 void rb_str_modify(VALUE);
+void rb_str_modify_expand(VALUE, long);
 VALUE rb_str_freeze(VALUE);
 void rb_str_set_len(VALUE, long);
 VALUE rb_str_resize(VALUE, long);
