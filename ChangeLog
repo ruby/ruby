@@ -1,3 +1,8 @@
+Wed Feb  8 10:58:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_attempted_completion_function):
+	  respect encodings.  [Bug #5941]
+
 Wed Feb  8 10:56:00 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/readline/readline.c (readline_attempted_completion_function):
