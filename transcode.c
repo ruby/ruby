@@ -369,6 +369,7 @@ load_transcoder_entry(transcoder_entry_t *entry)
         size_t len = strlen(lib);
         char path[sizeof(transcoder_lib_prefix) + MAX_TRANSCODER_LIBNAME_LEN];
         VALUE fn;
+	const int safe = rb_safe_level();
 
         entry->lib = NULL;
 
@@ -379,7 +380,7 @@ load_transcoder_entry(transcoder_entry_t *entry)
         fn = rb_str_new2(path);
         FL_UNSET(fn, FL_TAINT|FL_UNTRUSTED);
         OBJ_FREEZE(fn);
-        if (!rb_require_safe(fn, rb_safe_level()))
+        if (!rb_require_safe(fn, safe > 3 ? 3 : safe))
             return NULL;
     }
 

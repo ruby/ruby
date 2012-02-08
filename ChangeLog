@@ -1,3 +1,17 @@
+Wed Feb  8 09:36:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (require_enc): reject only loading from untrusted
+	  load paths.  [ruby-dev:44541] [Bug #5279]
+
+	* transcode.c (load_transcoder_entry): ditto.
+
+Wed Feb  8 09:36:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (load_encoding): predefined encoding names are safe.
+	  [ruby-dev:44469] [Bug #5279]
+
+	* transcode.c (load_transcoder_entry): ditto.
+
 Tue Feb  7 14:29:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c (st_foreach): should not yield same pair when checking

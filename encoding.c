@@ -536,7 +536,8 @@ rb_enc_registered(const char *name)
 static VALUE
 require_enc(VALUE enclib)
 {
-    return rb_require_safe(enclib, rb_safe_level());
+    int safe = rb_safe_level();
+    return rb_require_safe(enclib, safe > 3 ? 3 : safe);
 }
 
 static int
