@@ -1,3 +1,8 @@
+Thu Feb  9 23:41:44 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/pathname/test_pathname.rb (test_binread): add assertion to
+	  check encoding.
+
 Thu Feb  9 16:48:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/dl.c (Init_dl): fix mangled document.

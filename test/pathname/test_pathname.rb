@@ -710,7 +710,9 @@ class TestPathname < Test::Unit::TestCase
   def test_binread
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {|f| f.write "abc" }
-      assert_equal("abc", Pathname("a").binread)
+      str = Pathname("a").binread
+      assert_equal("abc", str)
+      assert_equal(Encoding::ASCII_8BIT, str.encoding)
     }
   end
 
