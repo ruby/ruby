@@ -1,3 +1,22 @@
+Thu Feb  9 16:19:04 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/memory_status.rb (Memory::Win32): 64bit support.
+
+Thu Feb  9 16:19:04 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/lib/value.rb (DL::ValueUtil.{unsigned_value,signed_value}):
+	  currenly pack/unpack does not accept "q!" and "Q!".
+
+Thu Feb  9 16:19:04 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/fiddle/conversions.c (value_to_generic): src is not guranteed as
+	  a Bignum if the type is LONG_LONG.  it may be a Fixnum if the value
+	  is small.
+
+Thu Feb  9 16:19:04 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/lib/types.rb: Win64 support.
+
 Thu Feb  9 11:11:15 2012  Hiroshi Shirosaki <h.shirosaki@gmail.com>
 
 	* ext/dbm/dbm.c (Init_dbm): fix a build error on mswin32.

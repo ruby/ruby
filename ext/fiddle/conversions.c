@@ -72,7 +72,7 @@ value_to_generic(int type, VALUE src, fiddle_generic * dst)
 	break;
 #if HAVE_LONG_LONG
       case TYPE_LONG_LONG:
-	dst->long_long = rb_big2ull(src);
+	dst->long_long = NUM2ULL(src);
 	break;
 #endif
       case TYPE_FLOAT:

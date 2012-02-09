@@ -13,7 +13,7 @@ module DL
       when TYPE_LONG
         [val].pack("l!").unpack("L!")[0]
       when TYPE_LONG_LONG
-        [val].pack("q!").unpack("Q!")[0]
+        [val].pack("q").unpack("Q")[0]
       else
         val
       end
@@ -30,7 +30,7 @@ module DL
       when TYPE_LONG
         [val].pack("L!").unpack("l!")[0]
       when TYPE_LONG_LONG
-        [val].pack("Q!").unpack("q!")[0]
+        [val].pack("Q").unpack("q")[0]
       else
         val
       end
