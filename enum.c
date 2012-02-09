@@ -445,6 +445,7 @@ flat_map_i(VALUE i, VALUE ary, int argc, VALUE *argv)
  *
  *  If no block is given, an enumerator is returned instead.
  *
+ *     [1, 2, 3, 4].flat_map { |e| [e, -e] } #=> [1, -1, 2, -2, 3, -3, 4, -4]
  *     [[1, 2], [3, 4]].flat_map { |e| e + [100] } #=> [1, 2, 100, 3, 4, 100]
  *
  */
