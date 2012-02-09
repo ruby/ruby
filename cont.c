@@ -646,6 +646,17 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
     /* swap machine context */
 #ifdef _WIN32
     SwitchToFiber(newfib->fib_handle);
+#elif defined(__FreeBSD__) /* FreeBSD 9 doesn't work with swapcontext */
+    if (!ruby_setjmp(oldfib->cont.jmpbuf)) {
+	if (newfib->status != RUNNING) {
+	    if (setcontext(&newfib->context) < 0) {
+		rb_bug("context switch between fiber failed");
+	    }
+	}
+	else {
+	    ruby_longjmp(newfib->cont.jmpbuf, 1);
+	}
+    }
 #else
     swapcontext(&oldfib->context, &newfib->context);
 #endif
