@@ -253,7 +253,7 @@ ossl_x509name_to_a(VALUE self)
 	    short_name = OBJ_nid2sn(nid);
 	    vname = rb_str_new2(short_name); /*do not free*/
 	}
-	ary = rb_ary_new3(3, 
+	ary = rb_ary_new3(3,
 			  vname,
         		  rb_str_new((const char *)entry->value->data, entry->value->length),
         		  INT2FIX(entry->value->type));

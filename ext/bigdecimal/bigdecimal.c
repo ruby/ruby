@@ -4335,7 +4335,7 @@ VpDivd(Real *c, Real *r, Real *a, Real *b)
         VpAsgn(c, a, VpGetSign(b));
         VpSetZero(r,VpGetSign(a));
         goto Exit;
-    } 
+    }
 
     word_a = a->Prec;
     word_b = b->Prec;

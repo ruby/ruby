@@ -5500,7 +5500,7 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
  *  be passed the opened +file+ as an argument, and the File object will
  *  automatically be closed when the block terminates.  In this instance,
  *  <code>File.open</code> returns the value of the block.
- *  
+ *
  *  See IO.new for a list of values for the +opt+ parameter.
  */
 

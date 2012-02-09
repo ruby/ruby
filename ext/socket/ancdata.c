@@ -1380,7 +1380,7 @@ static void
 discard_cmsg(struct cmsghdr *cmh, char *msg_end, int msg_peek_p)
 {
 # if !defined(FD_PASSING_WORK_WITH_RECVMSG_MSG_PEEK)
-    /* 
+    /*
      * FreeBSD 8.2.0, NetBSD 5 and MacOS X Snow Leopard doesn't
      * allocate fds by recvmsg with MSG_PEEK.
      * [ruby-dev:44189]
