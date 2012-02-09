@@ -1,3 +1,7 @@
+Thu Feb  9 16:10:34 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/memory_status.rb (Memory::Win32): 64bit support.
+
 Thu Feb  9 16:08:55 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/dl/lib/value.rb (DL::ValueUtil.{unsigned_value,signed_value}):

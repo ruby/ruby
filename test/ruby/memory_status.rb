@@ -22,7 +22,11 @@ module Memory
       extend DL::Importer
       dlload "kernel32.dll", "psapi.dll"
       include DL::Win32Types
-      typealias "SIZE_T", "DWORD"
+      if [nil].pack('p').bytesize == 8
+        typealias "SIZE_T", "DWORD64"
+      else
+        typealias "SIZE_T", "DWORD32"
+      end
 
       PROCESS_MEMORY_COUNTERS = struct [
         "DWORD  cb",
