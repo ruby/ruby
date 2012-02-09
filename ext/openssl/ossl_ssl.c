@@ -151,7 +151,6 @@ ossl_sslctx_s_alloc(VALUE klass)
         ossl_raise(eSSLError, "SSL_CTX_new:");
     }
     SSL_CTX_set_mode(ctx, mode);
-    SSL_CTX_set_options(ctx, SSL_OP_ALL);
     return Data_Wrap_Struct(klass, 0, ossl_sslctx_free, ctx);
 }
 
@@ -643,7 +642,12 @@ ossl_sslctx_setup(VALUE self)
     if(!NIL_P(val)) SSL_CTX_set_verify_depth(ctx, NUM2INT(val));
 
     val = ossl_sslctx_get_options(self);
-    if(!NIL_P(val)) SSL_CTX_set_options(ctx, NUM2LONG(val));
+    if(!NIL_P(val)) {
+	SSL_CTX_set_options(ctx, NUM2LONG(val));
+    }
+    else {
+	SSL_CTX_set_options(ctx, SSL_OP_ALL);
+    }
     rb_obj_freeze(self);
 
     val = ossl_sslctx_get_sess_id_ctx(self);
@@ -1966,18 +1970,20 @@ Init_ossl_ssl()
     ossl_ssl_def_const(VERIFY_PEER);
     ossl_ssl_def_const(VERIFY_FAIL_IF_NO_PEER_CERT);
     ossl_ssl_def_const(VERIFY_CLIENT_ONCE);
-    /* Not introduce constants included in OP_ALL such as...
-     * ossl_ssl_def_const(OP_MICROSOFT_SESS_ID_BUG);
-     * ossl_ssl_def_const(OP_NETSCAPE_CHALLENGE_BUG);
-     * ossl_ssl_def_const(OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG);
-     * ossl_ssl_def_const(OP_SSLREF2_REUSE_CERT_TYPE_BUG);
-     * ossl_ssl_def_const(OP_MICROSOFT_BIG_SSLV3_BUFFER);
-     * ossl_ssl_def_const(OP_MSIE_SSLV2_RSA_PADDING);
-     * ossl_ssl_def_const(OP_SSLEAY_080_CLIENT_DH_BUG);
-     * ossl_ssl_def_const(OP_TLS_D5_BUG);
-     * ossl_ssl_def_const(OP_TLS_BLOCK_PADDING_BUG);
-     * ossl_ssl_def_const(OP_DONT_INSERT_EMPTY_FRAGMENTS);
+    /* Introduce constants included in OP_ALL.  These constants are mostly for
+     * unset some bits in OP_ALL such as:
+     *   ctx.options = OP_ALL & ~OP_DONT_INSERT_EMPTY_FRAGMENTS
      */
+    ossl_ssl_def_const(OP_MICROSOFT_SESS_ID_BUG);
+    ossl_ssl_def_const(OP_NETSCAPE_CHALLENGE_BUG);
+    ossl_ssl_def_const(OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG);
+    ossl_ssl_def_const(OP_SSLREF2_REUSE_CERT_TYPE_BUG);
+    ossl_ssl_def_const(OP_MICROSOFT_BIG_SSLV3_BUFFER);
+    ossl_ssl_def_const(OP_MSIE_SSLV2_RSA_PADDING);
+    ossl_ssl_def_const(OP_SSLEAY_080_CLIENT_DH_BUG);
+    ossl_ssl_def_const(OP_TLS_D5_BUG);
+    ossl_ssl_def_const(OP_TLS_BLOCK_PADDING_BUG);
+    ossl_ssl_def_const(OP_DONT_INSERT_EMPTY_FRAGMENTS);
     ossl_ssl_def_const(OP_ALL);
 #if defined(SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION)
     ossl_ssl_def_const(OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
