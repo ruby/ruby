@@ -337,7 +337,7 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
  *  Encrypts data in a streaming fashion. Hand consecutive blocks of data
  *  to the +update+ method in order to encrypt it. Returns the encrypted
  *  data chunk. When done, the output of Cipher#final should be additionally
- *  added to the result. 
+ *  added to the result.
  *
  *  === Parameters
  *  +data+ is a nonempty string.
@@ -690,7 +690,7 @@ Init_ossl_cipher(void)
      *  as an IV. There are elaborate ways how an attacker can take advantage
      *  of such an IV. As a general rule of thumb, exposing the key directly
      *  or indirectly should be avoided at all cost and exceptions only be
-     *  made with good reason. 
+     *  made with good reason.
      *
      * === Calling Cipher#final
      *

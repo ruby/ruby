@@ -46,9 +46,9 @@ Wed Feb 8 13:12:02 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_x509name.c: Use the numerical representation of
 	  unrecognized OIDs instead of the sn "UNDEF".
-	  
+
 	* test/openssl/test_x509name.rb: Add tests for the fixed behavior.
-	  
+
 	  Patch provided by Paul Kehrer, thank you!
 	  [ruby-core:41769] [Feature #5787]
 
