@@ -1,6 +1,6 @@
 Thu Feb  9 16:48:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* ext/dl/dl.c (Init_dl): fix mangled documnet.
+	* ext/dl/dl.c (Init_dl): fix mangled document.
 
 Thu Feb  9 16:10:34 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -9,11 +9,11 @@ Thu Feb  9 16:10:34 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 Thu Feb  9 16:08:55 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/dl/lib/value.rb (DL::ValueUtil.{unsigned_value,signed_value}):
-	  currenly pack/unpack does not accept "q!" and "Q!".
+	  currently pack/unpack does not accept "q!" and "Q!".
 
 Thu Feb  9 16:01:29 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* ext/fiddle/conversions.c (value_to_generic): src is not guranteed as
+	* ext/fiddle/conversions.c (value_to_generic): src is not guaranteed as
 	  a Bignum if the type is LONG_LONG.  it may be a Fixnum if the value
 	  is small.
 
@@ -36,7 +36,7 @@ Wed Feb  8 14:06:59 2012  Hiroshi Nakamura  <nahi@ruby-lang.org>
 	  option to prevent BEAST attack. See [Bug #5353].
 
 	  In OpenSSL, OP_DONT_INSERT_EMPTY_FRAGMENTS is used to prevent
-	  TLS-CBC-IV vulunerability described at
+	  TLS-CBC-IV vulnerability described at
 	  http://www.openssl.org/~bodo/tls-cbc.txt
 	  It's known issue of TLSv1/SSLv3 but it attracts lots of attention
 	  these days as BEAST attack. (CVE-2011-3389)
