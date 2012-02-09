@@ -1,4 +1,6 @@
-Fri Feb 10 01:29:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Feb 10 01:30:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/dl.h (ALIGN_OF): use offsetof().
 
 	* ext/dl/dl.h (DLALIGN): round up at once and get rid of overflow.
 

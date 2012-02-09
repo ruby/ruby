@@ -134,26 +134,18 @@ extern VALUE rb_cDLSymbol;
 extern VALUE rb_eDLError;
 extern VALUE rb_eDLTypeError;
 
-typedef struct { char c; void *x; } s_voidp;
-typedef struct { char c; short x; } s_short;
-typedef struct { char c; int x; } s_int;
-typedef struct { char c; long x; } s_long;
-typedef struct { char c; float x; } s_float;
-typedef struct { char c; double x; } s_double;
-#if HAVE_LONG_LONG
-typedef struct { char c; LONG_LONG x; } s_long_long;
-#endif
+#define ALIGN_OF(type) offsetof(struct {char align_c; type align_x;}, align_x)
 
-#define ALIGN_VOIDP  (sizeof(s_voidp) - sizeof(void *))
-#define ALIGN_SHORT  (sizeof(s_short) - sizeof(short))
-#define ALIGN_CHAR   (1)
-#define ALIGN_INT    (sizeof(s_int) - sizeof(int))
-#define ALIGN_LONG   (sizeof(s_long) - sizeof(long))
+#define ALIGN_VOIDP  ALIGN_OF(void*)
+#define ALIGN_SHORT  ALIGN_OF(short)
+#define ALIGN_CHAR   ALIGN_OF(char)
+#define ALIGN_INT    ALIGN_OF(int)
+#define ALIGN_LONG   ALIGN_OF(long)
 #if HAVE_LONG_LONG
-#define ALIGN_LONG_LONG (sizeof(s_long_long) - sizeof(LONG_LONG))
+#define ALIGN_LONG_LONG ALIGN_OF(LONG_LONG)
 #endif
-#define ALIGN_FLOAT  (sizeof(s_float) - sizeof(float))
-#define ALIGN_DOUBLE (sizeof(s_double) - sizeof(double))
+#define ALIGN_FLOAT  ALIGN_OF(float)
+#define ALIGN_DOUBLE ALIGN_OF(double)
 
 #define DLALIGN(ptr,offset,align) \
     ((offset) += ((align) - ((uintptr_t)((char *)(ptr) + (offset))) % (align)) % (align))
