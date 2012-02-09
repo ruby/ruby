@@ -20,6 +20,7 @@
 #include "vm_core.h"
 #include "internal.h"
 #include "gc.h"
+#include "pool_alloc.h"
 #include "constant.h"
 #include <stdio.h>
 #include <setjmp.h>
@@ -40,6 +41,9 @@
 #elif defined(HAVE_MEMALIGN)
 #include <malloc.h>
 #endif
+static void *aligned_malloc(size_t alignment, size_t size);
+static void aligned_free(void *);
+#define REQUIRED_SIZE_BY_MALLOC (sizeof(size_t) * 5)
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 # include <valgrind/memcheck.h>
@@ -344,6 +348,45 @@ struct gc_list {
 #define CALC_EXACT_MALLOC_SIZE 0
 #endif
 
+#ifdef POOL_ALLOC_API
+/* POOL ALLOC API */
+#define POOL_SIZE_LOG 13
+#define POOL_SIZE (1 << POOL_SIZE_LOG)
+#define POOL_SIZE_MASK (POOL_SIZE - 1)
+
+typedef struct pool_holder pool_holder;
+typedef struct pool_header {
+    pool_holder *first;
+    pool_holder *_black_magick;
+    size_t      size; /* size of entry in sizeof(void*) items */
+    size_t      total; /* total amount of entires in a holder */
+} pool_header;
+
+struct pool_holder {
+    size_t        free, total;
+    pool_header  *header;
+    void         *freep;
+    pool_holder  *fore, *back;
+    void*         data[1];
+};
+#define POOL_DATA_SIZE ((POOL_SIZE - REQUIRED_SIZE_BY_MALLOC - offsetof(pool_holder, data)) / sizeof(void*))
+#define POOL_ENTRY_SIZE(item_type) ((sizeof(item_type) - 1) / sizeof(void*) + 1)
+#define POOL_HOLDER_COUNT(item_type) (POOL_DATA_SIZE/POOL_ENTRY_SIZE(item_type))
+#define INIT_POOL(item_type) {NULL, NULL, POOL_ENTRY_SIZE(item_type), POOL_HOLDER_COUNT(item_type)}
+
+static void pool_finalize_header(pool_header *header);
+
+typedef struct pool_layout_t pool_layout_t;
+struct pool_layout_t {
+    pool_header
+      p6,   /* st_table && st_table_entry */
+      p11;  /* st_table.bins init size */
+} pool_layout = {
+    INIT_POOL(void*[6]),
+    INIT_POOL(void*[11])
+};
+#endif
+
 typedef struct rb_objspace {
     struct {
 	size_t limit;
@@ -353,6 +396,9 @@ typedef struct rb_objspace {
 	size_t allocations;
 #endif
     } malloc_params;
+#ifdef POOL_ALLOC_API
+    pool_layout_t *pool_headers;
+#endif
     struct {
 	size_t increment;
 	struct heaps_slot *ptr;
@@ -402,7 +448,11 @@ typedef struct rb_objspace {
 #define ruby_initial_gc_stress	initial_params.gc_stress
 int *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 #else
+#ifdef POOL_ALLOC_API
+static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT}, &pool_layout, {HEAP_MIN_SLOTS}};
+#else
 static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT}, {HEAP_MIN_SLOTS}};
+#endif
 int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #endif
 #define malloc_limit		objspace->malloc_params.limit
@@ -444,6 +494,10 @@ rb_objspace_alloc(void)
     memset(objspace, 0, sizeof(*objspace));
     malloc_limit = initial_malloc_limit;
     ruby_gc_stress = ruby_initial_gc_stress;
+#ifdef POOL_ALLOC_API
+    objspace->pool_headers = (pool_layout_t*) malloc(sizeof(pool_layout));
+    memcpy(objspace->pool_headers, &pool_layout, sizeof(pool_layout));
+#endif
 
     return objspace;
 }
@@ -496,7 +550,6 @@ rb_gc_set_params(void)
 static void gc_sweep(rb_objspace_t *);
 static void slot_sweep(rb_objspace_t *, struct heaps_slot *);
 static void gc_clear_mark_on_sweep_slots(rb_objspace_t *);
-static void aligned_free(void *);
 
 void
 rb_objspace_free(rb_objspace_t *objspace)
@@ -532,6 +585,13 @@ rb_objspace_free(rb_objspace_t *objspace)
 	heaps_used = 0;
 	heaps = 0;
     }
+#ifdef POOL_ALLOC_API
+    if (objspace->pool_headers) {
+        pool_finalize_header(&objspace->pool_headers->p6);
+        pool_finalize_header(&objspace->pool_headers->p11);
+	free(objspace->pool_headers);
+    }
+#endif
     free(objspace);
 }
 #endif
@@ -542,7 +602,6 @@ rb_objspace_free(rb_objspace_t *objspace)
 #endif
 #define HEAP_ALIGN (1UL << HEAP_ALIGN_LOG)
 #define HEAP_ALIGN_MASK (~(~0UL << HEAP_ALIGN_LOG))
-#define REQUIRED_SIZE_BY_MALLOC (sizeof(size_t) * 5)
 #define HEAP_SIZE (HEAP_ALIGN - REQUIRED_SIZE_BY_MALLOC)
 
 #define HEAP_OBJ_LIMIT (unsigned int)(HEAP_SIZE/sizeof(struct RVALUE) - (sizeof(struct heaps_slot)/sizeof(struct RVALUE)+1))
@@ -941,6 +1000,144 @@ ruby_xfree(void *x)
 	vm_xfree(&rb_objspace, x);
 }
 
+#ifdef POOL_ALLOC_API
+/* POOL ALLOC API */
+static pool_holder *
+pool_holder_alloc(pool_header *header)
+{
+    pool_holder *holder;
+    size_t i, size, count;
+    register void **ptr;
+
+    size_t sz = offsetof(pool_holder, data) +
+	    header->size * header->total * sizeof(void*);
+#define objspace (&rb_objspace)
+    vm_malloc_prepare(objspace, POOL_SIZE);
+    if (header->first != NULL) return header->first;
+    TRY_WITH_GC(holder = (pool_holder*) aligned_malloc(POOL_SIZE, sz));
+    malloc_increase += POOL_SIZE;
+#if CALC_EXACT_MALLOC_SIZE
+    objspace->malloc_params.allocated_size += POOL_SIZE;
+    objspace->malloc_params.allocations++;
+#endif
+#undef objspace
+
+    size = header->size;
+    count = header->total;
+    holder->free = count;
+    holder->total = count;
+    holder->header = header;
+    holder->fore = NULL;
+    holder->back = NULL;
+    holder->freep = &holder->data;
+    ptr = holder->data;
+    for(i = count - 1; i; i-- ) {
+	ptr = *ptr = ptr + size;
+    }
+    *ptr = NULL;
+    header->first = holder;
+    return holder;
+}
+
+static inline void
+pool_holder_unchaing(pool_header *header, pool_holder *holder)
+{
+    register pool_holder *fore = holder->fore, *back = holder->back;
+    holder->fore = NULL;
+    holder->back = NULL;
+    if (fore != NULL)  fore->back     = back;
+    else               header->_black_magick = back;
+    if (back != NULL)  back->fore     = fore;
+    else               header->first = fore;
+}
+
+static inline pool_holder *
+entry_holder(void **entry)
+{
+    return (pool_holder*)(((uintptr_t)entry) & ~POOL_SIZE_MASK);
+}
+
+static inline void
+pool_free_entry(void **entry)
+{
+    pool_holder *holder = entry_holder(entry);
+    pool_header *header = holder->header;
+
+    if (holder->free++ == 0) {
+	register pool_holder *first = header->first;
+	if (first == NULL) {
+	    header->first = holder;
+	} else {
+	    holder->back = first;
+	    holder->fore = first->fore;
+	    first->fore = holder;
+	    if (holder->fore)
+		holder->fore->back = holder;
+	    else
+		header->_black_magick = holder;
+	}
+    } else if (holder->free == holder->total && header->first != holder ) {
+	pool_holder_unchaing(header, holder);
+	aligned_free(holder);
+#if CALC_EXACT_MALLOC_SIZE
+	rb_objspace.malloc_params.allocated_size -= DEFAULT_POOL_SIZE;
+	rb_objspace.malloc_params.allocations--;
+#endif
+	return;
+    }
+
+    *entry = holder->freep;
+    holder->freep = entry;
+}
+
+static inline void*
+pool_alloc_entry(pool_header *header)
+{
+    pool_holder *holder = header->first;
+    void **result;
+    if (holder == NULL) {
+	holder = pool_holder_alloc(header);
+    }
+
+    result = holder->freep;
+    holder->freep = *result;
+
+    if (--holder->free == 0) {
+	pool_holder_unchaing(header, holder);
+    }
+
+    return result;
+}
+
+static void
+pool_finalize_header(pool_header *header)
+{
+    /* since we believe, that there is no memory leak without pool allocator
+     * so that there is only one pool_holder to release */
+    if (header->first) {
+        aligned_free(header->first);
+        header->first = NULL;
+    }
+}
+
+void
+ruby_xpool_free(void *ptr)
+{
+    pool_free_entry((void **)ptr);
+}
+
+void *
+ruby_xpool_malloc_6p () {
+    return pool_alloc_entry(&rb_objspace.pool_headers->p6 );
+}
+
+void *
+ruby_xpool_malloc_11p () {
+    return pool_alloc_entry(&rb_objspace.pool_headers->p11 );
+}
+#undef CONCRET_POOL_MALLOC
+
+#endif
 
 /* Mimic ruby_xmalloc, but need not rb_objspace.
  * should return pointer suitable for ruby_xfree
