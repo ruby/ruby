@@ -184,6 +184,28 @@ module Test
         assert(msg === stderr, "warning message #{stderr.inspect} is expected to match #{msg.inspect}")
       end
 
+      def assert_no_memory_leak(args, prepare, code, message=nil, limit: 1.5)
+        token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
+        token_dump = token.dump
+        token_re = Regexp.quote(token)
+        args = [
+          "--disable=gems",
+          "-r", File.expand_path("../memory_status", __FILE__),
+          *args,
+          "-v", "-",
+        ]
+        cmd = [
+          'END {STDERR.puts '"#{token_dump}"'"FINAL=#{Memory::Status.new.size}"}',
+          prepare,
+          'STDERR.puts('"#{token_dump}"'"START=#{$initial_size = Memory::Status.new.size}")',
+          code,
+        ].join("\n")
+        out, err, status = EnvUtil.invoke_ruby(args, cmd, true, true)
+        before = err.sub!(/^#{token_re}START=(\d+)\n/, '') && $1.to_i
+        after = err.sub!(/^#{token_re}FINAL=(\d+)\n/, '') && $1.to_i
+        assert_equal([true, ""], [status.success?, err], message)
+        assert_operator(after.fdiv(before), :<, limit, message)
+      end
     end
   end
 end
