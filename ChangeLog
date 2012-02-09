@@ -1,3 +1,24 @@
+Thu Feb  9 11:11:15 2012  Hiroshi Shirosaki <h.shirosaki@gmail.com>
+
+	* ext/dbm/dbm.c (Init_dbm): fix a build error on mswin32.
+	  use `extern __declspec(dllimport)` for dll link with VC.
+	  [ruby-core:41996] [Bug #5869]
+
+Thu Feb  9 11:11:15 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/dbm.c: use db_version() instead of DB_VERSION_STRING to
+	  detect runtime Berkeley DB version.
+	  use dpversion instead of _QDBM_VERSION to detect runtime QDBM
+	  version.
+	  [ruby-dev:44948]
+
+Thu Feb  9 11:11:15 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: detect gdbm_version in libgdbm.
+
+	* ext/dbm/dbm.c: make DBM::VERSION more informative for gdbm, qdbm and
+	  Berkeley DB 1.x.  [ruby-dev:44944]
+
 Thu Feb  9 07:32:40 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric.c (rb_enc_uint_char): raise RangeError when added codepoint

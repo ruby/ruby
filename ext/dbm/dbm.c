@@ -901,10 +901,13 @@ fdbm_reject(VALUE obj)
  * The exact library used depends on how Ruby was compiled. It could be any
  * of the following:
  *
+ * - The original ndbm library is released in 4.3BSD.
+ *   It is based on dbm library in Unix Version 7 but has different API to
+ *   support multiple databases in a process.
  * - {Berkeley DB}[http://en.wikipedia.org/wiki/Berkeley_DB] versions
  *   1 thru 5, also known as BDB and Sleepycat DB, now owned by Oracle
  *   Corporation.
- * - ndbm, aka Berkeley DB 1.x, still found in FreeBSD and OpenBSD.
+ * - Berkeley DB 1.x, still found in FreeBSD and OpenBSD.
  * - {gdbm}[http://www.gnu.org/software/gdbm/], the GNU implementation of dbm.
  * - {qdbm}[http://fallabs.com/qdbm/index.html], another open source
  *   reimplementation of dbm.
@@ -1016,9 +1019,23 @@ Init_dbm(void)
      */
     rb_define_const(rb_cDBM, "NEWDB",   INT2FIX(O_RDWR|O_CREAT|O_TRUNC|RUBY_DBM_RW_BIT));
 
-#ifdef DB_VERSION_STRING
+#if defined(HAVE_DB_VERSION)
     /* The version of the dbm library, if using Berkeley DB */
-    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(DB_VERSION_STRING));
+    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(db_version(NULL, NULL, NULL)));
+#elif defined(HAVE_GDBM_VERSION)
+    /* since gdbm 1.9 */
+    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(gdbm_version));
+#elif defined(HAVE_LIBVAR_GDBM_VERSION)
+    /* ndbm.h doesn't declare gdbm_version until gdbm 1.8.3.
+     * See extconf.rb for more information. */
+    {
+	RUBY_EXTERN char *gdbm_version;
+	rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(gdbm_version));
+    }
+#elif defined(HAVE_DPVERSION)
+    rb_define_const(rb_cDBM, "VERSION",  rb_sprintf("QDBM %s", dpversion));
+#elif defined(_DB_H_)
+    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("Berkeley DB (unknown)"));
 #else
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("unknown"));
 #endif
