@@ -1,3 +1,7 @@
+Fri Feb 10 01:29:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/dl.h (DLALIGN): round up at once and get rid of overflow.
+
 Fri Feb 10 00:47:07 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (assert_no_memory_leak): new assertion to

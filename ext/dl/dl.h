@@ -155,9 +155,8 @@ typedef struct { char c; LONG_LONG x; } s_long_long;
 #define ALIGN_FLOAT  (sizeof(s_float) - sizeof(float))
 #define ALIGN_DOUBLE (sizeof(s_double) - sizeof(double))
 
-#define DLALIGN(ptr,offset,align) {\
-  while( (((unsigned long)((char *)(ptr) + (offset))) % (align)) != 0 ) (offset)++;\
-}
+#define DLALIGN(ptr,offset,align) \
+    ((offset) += ((align) - ((uintptr_t)((char *)(ptr) + (offset))) % (align)) % (align))
 
 
 #define DLTYPE_VOID  0
