@@ -6852,6 +6852,7 @@ argf_forward(int argc, VALUE *argv, VALUE argf)
 static void
 argf_close(VALUE file)
 {
+    if (file == rb_stdin) return;
     if (RB_TYPE_P(file, T_FILE)) {
 	rb_io_set_write_io(file, Qnil);
     }
@@ -6880,6 +6881,14 @@ argf_next_argv(VALUE argf)
 	    ARGF.next_p = -1;
 	}
 	ARGF.init_p = 1;
+    }
+    else {
+	if (NIL_P(ARGF.argv)) {
+	    ARGF.next_p = -1;
+	}
+	else if (ARGF.next_p == -1 && RARRAY_LEN(ARGF.argv) > 0) {
+	    ARGF.next_p = 1;
+	}
     }
 
     if (ARGF.next_p == 1) {
@@ -7262,6 +7271,7 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
 	ARGF.lineno = lineno + RARRAY_LEN(ary);
 	ARGF.last_lineno = ARGF.lineno;
     }
+    ARGF.init_p = 0;
     return ary;
 }
 

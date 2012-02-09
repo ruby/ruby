@@ -685,6 +685,16 @@ class TestArgf < Test::Unit::TestCase
     end
   end
 
+  def test_close_replace
+    ruby('-e', <<-SRC) do |f|
+      ARGF.close
+      ARGV.replace ['#{@t1.path}', '#{@t2.path}', '#{@t3.path}']
+      puts ARGF.read
+    SRC
+      assert_equal("1\n2\n3\n4\n5\n6\n", f.read)
+    end
+  end
+
   def test_closed
     ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
       3.times do
@@ -747,5 +757,10 @@ class TestArgf < Test::Unit::TestCase
       assert_match(/- #{Regexp.quote(path)}\z/, e.message)
     end
     assert_nil(argf.gets, bug4274)
+  end
+
+  def test_readlines_twice
+    bug5952 = '[ruby-dev:45160]'
+    assert_ruby_status(["-e", "2.times {STDIN.tty?; readlines}"], "", bug5952)
   end
 end

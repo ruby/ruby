@@ -1,3 +1,17 @@
+Fri Feb 10 05:11:43 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (argf_next_argv): reset ARGF.next_p on ARGV.replace.
+	  r34409 breaks replacing ARGV.
+	  [ruby-dev:45160] [Bug #5952]
+
+Fri Feb 10 05:11:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_close): skip stdin, which should be readable again.
+	  [ruby-dev:45160] [Bug #5952]
+
+	* io.c (argf_readlines): reinitialize after all read to be
+	  readable again.
+
 Fri Feb  9 01:36:19 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* backport r34482 from trunk
