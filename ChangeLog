@@ -1,3 +1,8 @@
+Thu Feb  9 17:08:20 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* cont.c (cont_mark): mark original Thread object from saved_thread.
+	  [ruby-dev:44567] [Bug #5386]
+
 Thu Feb  9 17:05:07 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* cont.c (HAVE_GETCONTEXT): see getcontext(3) because DragonFly BSD
