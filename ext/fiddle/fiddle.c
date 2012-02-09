@@ -2,7 +2,8 @@
 
 VALUE mFiddle;
 
-void Init_fiddle()
+void
+Init_fiddle(void)
 {
     /*
      * Document-module: Fiddle
