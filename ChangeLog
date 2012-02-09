@@ -1,3 +1,35 @@
+Fri Feb  9 02:11:19 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* backport r34482 from trunk
+
+	* ext/openssl/ossl_ssl.c: Add SSL constants and allow to unset SSL
+	  option to prevent BEAST attack. See [Bug #5353].
+
+	  In OpenSSL, OP_DONT_INSERT_EMPTY_FRAGMENTS is used to prevent
+	  TLS-CBC-IV vulunerability described at
+	  http://www.openssl.org/~bodo/tls-cbc.txt
+	  It's known issue of TLSv1/SSLv3 but it attracts lots of attention
+	  these days as BEAST attack. (CVE-2011-3389)
+
+	  Until now ossl sets OP_ALL at SSLContext allocation and call
+	  SSL_CTX_set_options at connection.  SSL_CTX_set_options updates the
+	  value by using |= so bits set by OP_ALL cannot be unset afterwards.
+	  This commit changes to call SSL_CTX_set_options only 1 time for each
+	  SSLContext. It sets the specified value if SSLContext#options= are
+	  called and sets OP_ALL if not.
+
+	  To help users to unset bits in OP_ALL, this commit also adds several
+	  constant to SSL such as
+	  OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS.  These constants were
+	  not exposed in Ruby because there's no way to unset bits in OP_ALL
+	  before.
+
+	  Following is an example to enable 0/n split for BEAST prevention.
+
+	    ctx.options = OP_ALL & ~OP_DONT_INSERT_EMPTY_FRAGMENTS
+
+	* test/openssl/test_ssl.rb: Test above option exists.
+
 Fri Jul  1 11:41:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (tr_trans): free heap ptr when the str is not embeded.
