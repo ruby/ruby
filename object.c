@@ -458,6 +458,15 @@ rb_obj_inspect(VALUE obj)
  *
  *  Returns <code>true</code> if <i>obj</i> is an instance of the given
  *  class. See also <code>Object#kind_of?</code>.
+ *
+ *     class A;     end
+ *     class B < A; end
+ *     class C < B; end
+ *
+ *     b = B.new
+ *     b.instance_of? A   #=> false
+ *     b.instance_of? B   #=> true
+ *     b.instance_of? C   #=> false
  */
 
 VALUE
@@ -492,11 +501,13 @@ rb_obj_is_instance_of(VALUE obj, VALUE c)
  *     end
  *     class B < A; end
  *     class C < B; end
+ *
  *     b = B.new
- *     b.instance_of? A   #=> false
- *     b.instance_of? B   #=> true
- *     b.instance_of? C   #=> false
- *     b.instance_of? M   #=> false
+ *     b.is_a? A          #=> true
+ *     b.is_a? B          #=> true
+ *     b.is_a? C          #=> false
+ *     b.is_a? M          #=> true
+ *
  *     b.kind_of? A       #=> true
  *     b.kind_of? B       #=> true
  *     b.kind_of? C       #=> false

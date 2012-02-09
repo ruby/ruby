@@ -1,3 +1,9 @@
+Fri Feb 10 05:13:12 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* object.c: Added examples for Object#is_a? and
+	  Object#instance_of? patcheed from Manoj Kumar.
+	  [Bug #5880] [ruby-core:42057]
+
 Fri Feb 10 05:11:43 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (argf_next_argv): reset ARGF.next_p on ARGV.replace.
