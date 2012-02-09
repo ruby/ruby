@@ -1,3 +1,8 @@
+Thu Feb  9 17:05:07 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* cont.c (HAVE_GETCONTEXT): see getcontext(3) because DragonFly BSD
+	  x64 port doesn't have it.
+
 Thu Feb  9 16:19:04 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/memory_status.rb (Memory::Win32): 64bit support.
