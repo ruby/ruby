@@ -273,101 +273,101 @@ Init_dl(void)
 
     /* Document-const: ALIGN_VOIDP
      *
-     * The Offset of a struct void* and a void*
+     * The alignment size of a void*
      */
     rb_define_const(rb_mDL, "ALIGN_VOIDP", INT2NUM(ALIGN_VOIDP));
 
     /* Document-const: ALIGN_CHAR
      *
-     * The Offset of a struct char and a char
+     * The alignment size of a char
      */
     rb_define_const(rb_mDL, "ALIGN_CHAR",  INT2NUM(ALIGN_CHAR));
 
     /* Document-const: ALIGN_SHORT
      *
-     * The Offset of a struct short and a short
+     * The alignment size of a short
      */
     rb_define_const(rb_mDL, "ALIGN_SHORT", INT2NUM(ALIGN_SHORT));
 
     /* Document-const: ALIGN_INT
      *
-     * The Offset of a struct int and a int
+     * The alignment size of an int
      */
     rb_define_const(rb_mDL, "ALIGN_INT",   INT2NUM(ALIGN_INT));
 
     /* Document-const: ALIGN_LONG
      *
-     * The Offset of a struct long and a long
+     * The alignment size of a long
      */
     rb_define_const(rb_mDL, "ALIGN_LONG",  INT2NUM(ALIGN_LONG));
 
 #if HAVE_LONG_LONG
     /* Document-const: ALIGN_LONG_LONG
      *
-     * The Offset of a struct long long and a long long
+     * The alignment size of a long long
      */
     rb_define_const(rb_mDL, "ALIGN_LONG_LONG",  INT2NUM(ALIGN_LONG_LONG));
 #endif
 
     /* Document-const: ALIGN_FLOAT
      *
-     * The Offset of a struct float and a float
+     * The alignment size of a float
      */
     rb_define_const(rb_mDL, "ALIGN_FLOAT", INT2NUM(ALIGN_FLOAT));
 
     /* Document-const: ALIGN_DOUBLE
      *
-     * The Offset of a struct double and a double
+     * The alignment size of a double
      */
     rb_define_const(rb_mDL, "ALIGN_DOUBLE",INT2NUM(ALIGN_DOUBLE));
 
     /* Document-const: SIZEOF_VOIDP
      *
-     * OS Dependent - sizeof(void*)
+     * size of a void*
      */
     rb_define_const(rb_mDL, "SIZEOF_VOIDP", INT2NUM(sizeof(void*)));
 
     /* Document-const: SIZEOF_CHAR
      *
-     * OS Dependent - sizeof(char)
+     * size of a char
      */
     rb_define_const(rb_mDL, "SIZEOF_CHAR",  INT2NUM(sizeof(char)));
 
     /* Document-const: SIZEOF_SHORT
      *
-     * OS Dependent - sizeof(short)
+     * size of a short
      */
     rb_define_const(rb_mDL, "SIZEOF_SHORT", INT2NUM(sizeof(short)));
 
     /* Document-const: SIZEOF_INT
      *
-     * OS Dependent - sizeof(int)
+     * size of an int
      */
     rb_define_const(rb_mDL, "SIZEOF_INT",   INT2NUM(sizeof(int)));
 
     /* Document-const: SIZEOF_LONG
      *
-     * OS Dependent - sizeof(long)
+     * size of a long
      */
     rb_define_const(rb_mDL, "SIZEOF_LONG",  INT2NUM(sizeof(long)));
 
 #if HAVE_LONG_LONG
     /* Document-const: SIZEOF_LONG_LONG
      *
-     * OS Dependent - sizeof(long long)
+     * size of a long long
      */
     rb_define_const(rb_mDL, "SIZEOF_LONG_LONG",  INT2NUM(sizeof(LONG_LONG)));
 #endif
 
     /* Document-const: SIZEOF_FLOAT
      *
-     * OS Dependent - sizeof(float)
+     * size of a float
      */
     rb_define_const(rb_mDL, "SIZEOF_FLOAT", INT2NUM(sizeof(float)));
 
     /* Document-const: SIZEOF_DOUBLE
      *
-     * OS Dependent - sizeof(double)
+     * size of a double
      */
     rb_define_const(rb_mDL, "SIZEOF_DOUBLE",INT2NUM(sizeof(double)));
 
