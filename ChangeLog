@@ -1,3 +1,8 @@
+Thu Feb  9 16:08:55 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/lib/value.rb (DL::ValueUtil.{unsigned_value,signed_value}):
+	  currenly pack/unpack does not accept "q!" and "Q!".
+
 Thu Feb  9 16:01:29 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/fiddle/conversions.c (value_to_generic): src is not guranteed as
