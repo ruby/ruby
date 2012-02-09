@@ -36,12 +36,16 @@ module Psych
     # The handler on which events will be called
     attr_accessor :handler
 
+    # Set the encoding for this parser to +encoding+
+    attr_writer :external_encoding
+
     ###
     # Creates a new Psych::Parser instance with +handler+.  YAML events will
     # be called on +handler+.  See Psych::Parser for more details.
 
     def initialize handler = Handler.new
       @handler = handler
+      @external_encoding = ANY
     end
   end
 end

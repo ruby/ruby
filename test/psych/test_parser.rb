@@ -32,6 +32,12 @@ module Psych
       @handler.parser = @parser
     end
 
+    def test_multiparse
+      3.times do
+        @parser.parse '--- foo'
+      end
+    end
+
     def test_filename
       ex = assert_raises(Psych::SyntaxError) do
         @parser.parse '--- `', 'omg!'
@@ -85,15 +91,6 @@ module Psych
                     [19, :end_stream]], idx_calls
 
       assert_equal 19, @parser.mark.index
-    end
-
-    def test_set_encoding_twice
-      @parser.external_encoding = Psych::Parser::UTF16LE
-
-      e = assert_raises(Psych::Exception) do
-        @parser.external_encoding = Psych::Parser::UTF16LE
-      end
-      assert_equal "don't set the encoding twice!", e.message
     end
 
     def test_bom

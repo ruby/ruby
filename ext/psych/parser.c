@@ -106,6 +106,10 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 
     Data_Get_Struct(self, yaml_parser_t, parser);
 
+    yaml_parser_delete(parser);
+    yaml_parser_initialize(parser);
+    yaml_parser_set_encoding(parser, NUM2INT(rb_iv_get(self, "@external_encoding")));
+
     if (OBJ_TAINTED(yaml)) tainted = 1;
 
     if(rb_respond_to(yaml, id_read)) {
@@ -328,29 +332,6 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    parser.external_encoding=(encoding)
- *
- * Set the encoding for this parser to +encoding+
- */
-static VALUE set_external_encoding(VALUE self, VALUE encoding)
-{
-    yaml_parser_t * parser;
-    VALUE exception;
-
-    Data_Get_Struct(self, yaml_parser_t, parser);
-
-    if(parser->encoding) {
-	exception = rb_const_get_at(mPsych, rb_intern("Exception"));
-	rb_raise(exception, "don't set the encoding twice!");
-    }
-
-    yaml_parser_set_encoding(parser, NUM2INT(encoding));
-
-    return encoding;
-}
-
-/*
- * call-seq:
  *    parser.mark # => #<Psych::Parser::Mark>
  *
  * Returns a Psych::Parser::Mark object that contains line, column, and index
@@ -397,7 +378,6 @@ void Init_psych_parser()
 
     rb_define_method(cPsychParser, "parse", parse, -1);
     rb_define_method(cPsychParser, "mark", mark, 0);
-    rb_define_method(cPsychParser, "external_encoding=", set_external_encoding, 1);
 
     id_read           = rb_intern("read");
     id_path           = rb_intern("path");

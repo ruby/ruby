@@ -1,3 +1,10 @@
+Fri Feb 10 03:41:31 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c: removed external encoding setter, allow parser
+	  to be reused.
+	* ext/psych/lib/psych/parser.rb: added external encoding setter.
+	* test/psych/test_parser.rb: test parser reuse
+
 Fri Feb 10 01:30:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/dl.h (ALIGN_OF): use offsetof().
