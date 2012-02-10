@@ -1,3 +1,12 @@
+Sat Feb 11 03:37:34 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/zlib/zlib.c (rb_gzreader_initialize): revert a part of r33937.
+	  1st, to change the mode of an IO is very sensitive problem, so
+	  the maintainer of this library should judge it.
+	  2nd, usually Zlib::GzReader.new is not called directly.  #initialize
+	  is called via .open, and in the method the I/O is opened in binary
+	  mode, so there is no problem without changing the mode in #initialize.
+
 Sat Feb 11 03:23:58 2012  Luis Lavena  <luislavena@gmail.com>
 
 	* ext/zlib/zlib.c (rb_gzreader_initialize): use binary mode by default
