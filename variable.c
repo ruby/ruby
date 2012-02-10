@@ -1952,22 +1952,13 @@ set_const_visibility(VALUE mod, int argc, VALUE *argv, rb_const_flag_t flag)
 		 "Insecure: can't change constant visibility");
     }
 
-    if (argc == 0) {
-	rb_warning("%s with no argument is just ignored", rb_id2name(rb_frame_callee()));
-    }
-
     for (i = 0; i < argc; i++) {
-	VALUE val = argv[i];
-	id = rb_to_id(&val);
-	if (RCLASS_CONST_TBL(mod) &&
-	    st_lookup(RCLASS_CONST_TBL(mod), (st_data_t)id, &v)) {
+	id = rb_to_id(argv[i]);
+	if (RCLASS_CONST_TBL(mod) && st_lookup(RCLASS_CONST_TBL(mod), (st_data_t)id, &v)) {
 	    ((rb_const_entry_t*)v)->flag = flag;
+	    return;
 	}
-	else {
-	    if ( i > 0 )
-		rb_clear_cache_by_class(mod);
-	    rb_name_error(id, "constant %s::%s not defined", rb_class2name(mod), rb_id2name(id));
-	}
+	rb_name_error(id, "constant %s::%s not defined", rb_class2name(mod), rb_id2name(id));
     }
     rb_clear_cache_by_class(mod);
 }
