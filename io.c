@@ -750,16 +750,8 @@ make_writeconv(rb_io_t *fptr)
 
         fptr->writeconv_initialized = 1;
 
-        ecflags = fptr->encs.ecflags;
+        ecflags = fptr->encs.ecflags & ~ECONV_NEWLINE_DECORATOR_READ_MASK;
         ecopts = fptr->encs.ecopts;
-#ifdef TEXTMODE_NEWLINE_DECORATOR_ON_WRITE
-	if (NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) &&
-	    (!(ecflags & ECONV_NEWLINE_DECORATOR_MASK) ||
-	     (ecflags & ECONV_UNIVERSAL_NEWLINE_DECORATOR))) {
-            ecflags &= ~ECONV_UNIVERSAL_NEWLINE_DECORATOR;
-            ecflags |= TEXTMODE_NEWLINE_DECORATOR_ON_WRITE;
-	}
-#endif
 
         if (!fptr->encs.enc || (fptr->encs.enc == rb_ascii8bit_encoding() && !fptr->encs.enc2)) {
             /* no encoding conversion */
@@ -897,6 +889,8 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
     return len;
 }
 
+# define MODE_BTMODE(a,b,c) ((fmode & FMODE_BINMODE) ? (b) : \
+                             (fmode & FMODE_TEXTMODE) ? (c) : (a))
 static VALUE
 do_writeconv(VALUE str, rb_io_t *fptr)
 {
@@ -906,12 +900,14 @@ do_writeconv(VALUE str, rb_io_t *fptr)
         make_writeconv(fptr);
 
         if (fptr->writeconv) {
+#define fmode (fptr->mode)
             if (!NIL_P(fptr->writeconv_asciicompat))
                 common_encoding = fptr->writeconv_asciicompat;
-            else if (!rb_enc_asciicompat(rb_enc_get(str))) {
+            else if (MODE_BTMODE(DEFAULT_TEXTMODE,0,1) && !rb_enc_asciicompat(rb_enc_get(str))) {
                 rb_raise(rb_eArgError, "ASCII incompatible string written for text mode IO without encoding conversion: %s",
                          rb_enc_name(rb_enc_get(str)));
             }
+#undef fmode
         }
         else {
             if (fptr->encs.enc2)
@@ -1669,7 +1665,7 @@ make_readconv(rb_io_t *fptr, int size)
         int ecflags;
         VALUE ecopts;
         const char *sname, *dname;
-        ecflags = fptr->encs.ecflags;
+        ecflags = fptr->encs.ecflags & ~ECONV_NEWLINE_DECORATOR_WRITE_MASK;
         ecopts = fptr->encs.ecopts;
         if (fptr->encs.enc2) {
             sname = rb_enc_name(fptr->encs.enc2);
@@ -4078,8 +4074,6 @@ rb_io_binmode_p(VALUE io)
 static const char*
 rb_io_fmode_modestr(int fmode)
 {
-# define MODE_BTMODE(a,b,c) ((fmode & FMODE_BINMODE) ? (b) : \
-                             (fmode & FMODE_TEXTMODE) ? (c) : (a))
     if (fmode & FMODE_APPEND) {
 	if ((fmode & FMODE_READWRITE) == FMODE_READWRITE) {
 	    return MODE_BTMODE("a+", "ab+", "at+");
@@ -4544,6 +4538,11 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 	ecflags = (fmode & FMODE_READABLE) ?
 	    MODE_BTMODE(ECONV_DEFAULT_NEWLINE_DECORATOR,
 			0, ECONV_UNIVERSAL_NEWLINE_DECORATOR) : 0;
+#ifdef TEXTMODE_NEWLINE_DECORATOR_ON_WRITE
+	ecflags |= (fmode & FMODE_WRITABLE) ?
+	    MODE_BTMODE(TEXTMODE_NEWLINE_DECORATOR_ON_WRITE,
+			0, TEXTMODE_NEWLINE_DECORATOR_ON_WRITE) : 0;
+#endif
         ecopts = Qnil;
     }
     else {
@@ -4579,6 +4578,11 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 	ecflags = (fmode & FMODE_READABLE) ?
 	    MODE_BTMODE(ECONV_DEFAULT_NEWLINE_DECORATOR,
 			0, ECONV_UNIVERSAL_NEWLINE_DECORATOR) : 0;
+#ifdef TEXTMODE_NEWLINE_DECORATOR_ON_WRITE
+	ecflags |= (fmode & FMODE_WRITABLE) ?
+	    MODE_BTMODE(TEXTMODE_NEWLINE_DECORATOR_ON_WRITE,
+			0, TEXTMODE_NEWLINE_DECORATOR_ON_WRITE) : 0;
+#endif
         ecflags = rb_econv_prepare_options(opthash, &ecopts, ecflags);
 
         if (rb_io_extract_encoding_option(opthash, &enc, &enc2, &fmode)) {
@@ -5268,8 +5272,15 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     if (convconfig) {
         fptr->encs = *convconfig;
     }
-    else if (NEED_NEWLINE_DECORATOR_ON_READ(fptr)) {
-        fptr->encs.ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
+    else {
+	if (NEED_NEWLINE_DECORATOR_ON_READ(fptr)) {
+	    fptr->encs.ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
+	}
+#ifdef TEXTMODE_NEWLINE_DECORATOR_ON_WRITE
+	if (NEED_NEWLINE_DECORATOR_ON_WRITE(fptr)) {
+	    fptr->encs.ecflags |= TEXTMODE_NEWLINE_DECORATOR_ON_WRITE;
+	}
+#endif
     }
     fptr->pid = pid;
 
@@ -6437,6 +6448,9 @@ prep_stdio(FILE *f, int fmode, VALUE klass, const char *path)
 
     GetOpenFile(io, fptr);
     fptr->encs.ecflags |= ECONV_DEFAULT_NEWLINE_DECORATOR;
+#ifdef TEXTMODE_NEWLINE_DECORATOR_ON_WRITE
+    fptr->encs.ecflags |= TEXTMODE_NEWLINE_DECORATOR_ON_WRITE;
+#endif
     fptr->stdio_file = f;
 
     return io;
@@ -6983,7 +6997,9 @@ argf_next_argv(VALUE argf)
 		    if (stdout_binmode) rb_io_binmode(rb_stdout);
 		}
 		fmode = FMODE_READABLE;
-		if (!ARGF.binmode) fmode |= DEFAULT_TEXTMODE;
+		if (!ARGF.binmode) {
+		    fmode |= DEFAULT_TEXTMODE;
+		}
 		ARGF.current_file = prep_io(fr, fmode, rb_cFile, fn);
 		if (!NIL_P(write_io)) {
 		    rb_io_set_write_io(ARGF.current_file, write_io);
@@ -6999,6 +7015,9 @@ argf_next_argv(VALUE argf)
 		fptr->encs.ecflags &= ~ECONV_NEWLINE_DECORATOR_MASK;
 		if (!ARGF.binmode) {
 		    fptr->encs.ecflags |= ECONV_DEFAULT_NEWLINE_DECORATOR;
+#ifdef TEXTMODE_NEWLINE_DECORATOR_ON_WRITE
+		    fptr->encs.ecflags |= TEXTMODE_NEWLINE_DECORATOR_ON_WRITE;
+#endif
 		}
 	    }
 	    ARGF.next_p = 0;
