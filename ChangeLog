@@ -1,3 +1,8 @@
+Sat Feb 11 03:17:41 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_io_m17n.rb (TestIO_M17N#test_{default_mode_on_dosish,
+	  default_mode_on_unix,text_mode,binary_mode}): tests for [Bug #5164].
+
 Sat Feb 11 03:13:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c: enabled econv newline option.
