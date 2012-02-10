@@ -961,6 +961,11 @@ set_method_visibility(VALUE self, int argc, VALUE *argv, rb_method_flag_t ex)
 {
     int i;
     secure_visibility(self);
+
+    if (argc == 0) {
+	rb_warning("%s with no argument is just ignored", rb_id2name(rb_frame_callee()));
+    }
+
     for (i = 0; i < argc; i++) {
 	rb_export_method(self, rb_to_id(argv[i]), ex);
     }

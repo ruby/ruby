@@ -1019,6 +1019,19 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c::FOO }
   end
 
+  def test_private_constant2
+    c = Class.new
+    c.const_set(:FOO, "foo")
+    c.const_set(:BAR, "bar")
+    assert_equal("foo", c::FOO)
+    assert_equal("bar", c::BAR)
+    c.private_constant(:FOO, :BAR)
+    assert_raise(NameError) { c::FOO }
+    assert_raise(NameError) { c::BAR }
+    assert_equal("foo", c.class_eval("FOO"))
+    assert_equal("bar", c.class_eval("BAR"))
+  end
+
   class PrivateClass
   end
   private_constant :PrivateClass
@@ -1064,6 +1077,27 @@ class TestModule < Test::Unit::TestCase
       end
     INPUT
     assert_in_out_err([], src, %w(Object :ok), [])
+  end
+
+  def test_private_constants_clear_inlinecache
+    bug5702 = '[ruby-dev:44929]'
+    src = <<-INPUT
+    class A
+      C = :Const
+      def self.get_C
+        A::C
+      end
+      # fill cache
+      A.get_C
+      private_constant :C, :D rescue nil
+      begin
+        A.get_C
+      rescue NameError
+        puts "A.get_C"
+      end
+    end
+    INPUT
+    assert_in_out_err([], src, %w(A.get_C), [], bug5702)
   end
 
   def test_constant_lookup_in_method_defined_by_class_eval
