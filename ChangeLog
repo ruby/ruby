@@ -1,3 +1,13 @@
+Sat Feb 11 02:26:51 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* lib/openssl/buffering.rb: Force multi-byte strings to be treated as
+	  binary data.
+	* test/openssl/test_ssl.rb: Add test for it.
+
+	Thanks to Niklas Baumstark for reporting the issue!
+
+	[Ruby 1.9 - Bug #5233] [ruby-core:39120]
+
 Fri Feb 10 17:25:28 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/set.rb (SortedSet.setup): remove old_init after initialize
