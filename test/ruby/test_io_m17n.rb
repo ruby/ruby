@@ -2072,29 +2072,49 @@ EOT
 
   def test_default_mode_on_dosish
     with_tmpdir {
-      open("a", "w") {|f| f.puts}
+      open("a", "w") {|f| f.write "\n"}
       assert_equal("\r\n", IO.binread("a"))
     }
   end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_default_mode_on_unix
     with_tmpdir {
-      open("a", "w") {|f| f.puts}
+      open("a", "w") {|f| f.write "\n"}
       assert_equal("\n", IO.binread("a"))
     }
   end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_text_mode
     with_tmpdir {
-      open("a", "wt") {|f| f.puts}
-      assert_equal("\r\n", IO.binread("a"))
+      open("a", "wb") {|f| f.write "\r\n"}
+      assert_equal("\n", open("a", "rt"){|f| f.read})
     }
   end
 
   def test_binary_mode
     with_tmpdir {
-      open("a", "wb") {|f| f.puts}
-      assert_equal("\n", IO.binread("a"))
+      open("a", "wb") {|f| f.write "\r\n"}
+      assert_equal("\r\n", open("a", "rb"){|f| f.read})
     }
   end
+
+  def test_default_stdout_stderr_mode
+    with_pipe do |in_r, in_w|
+      with_pipe do |out_r, out_w|
+        pid = Process.spawn({}, EnvUtil.rubybin, in: in_r, out: out_w, err: out_w)
+        in_r.close
+        out_w.close
+        in_w.write <<-EOS
+          STDOUT.puts "abc"
+          STDOUT.flush
+          STDERR.puts "def"
+          STDERR.flush
+        EOS
+        in_w.close
+        Process.wait pid
+        assert_equal "abc\r\ndef\r\n", out_r.binmode.read
+        out_r.close
+      end
+    end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 end

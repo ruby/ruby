@@ -1,3 +1,16 @@
+Sat Feb 11 03:19:45 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_io_m17n.rb
+	  (TestIO_M17N#test_default_stdout_stderr_mode): new test for
+	  r33627-33629.  see [backport #5565]
+
+Sat Feb 11 03:19:45 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_io_m17n.rb (TestIO_M17N#test_{default_mode_on_dosish,
+	  default_mode_on_unix,text_mode,binary_mode}): sorry for wrong test
+	  committed in r33144.  I'd misunderstood the spec of ruby's universal
+	  newline.
+
 Sat Feb 11 03:17:41 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io_m17n.rb (TestIO_M17N#test_{default_mode_on_dosish,
