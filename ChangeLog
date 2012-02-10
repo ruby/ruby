@@ -1,3 +1,9 @@
+Fri Feb 10 17:25:28 2012  Tanaka Akira  <akr@fsij.org>
+
+	* lib/set.rb (SortedSet.setup): remove old_init after initialize
+	  method is redefined.  The remove before redefinition makes the
+	  warning prevention fragile.  [ruby-dev:44892]
+
 Fri Feb 10 17:02:12 2012  okkez  <okkez000@gmail.com>
 
 	* thread_pthread.c (rb_thread_create_timer_thread): fix memory
