@@ -2339,7 +2339,7 @@ rb_ary_select(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.select! {|item| block } -> new_ary or nil
+ *     ary.select! {|item| block } -> ary or nil
  *     ary.select!                 -> an_enumerator
  *
  *  Invokes the block passing in successive elements from
@@ -4424,7 +4424,7 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
  *     ary.product(other_ary, ...)                -> new_ary
  *     ary.product(other_ary, ...) { |p| block }  -> ary
  *
- *  Returns an array of all combinations of elements from all arrays,
+ *  Returns an array of all combinations of elements from all arrays.
  *  The length of the returned array is the product of the length
  *  of +self+ and the argument arrays.
  *  If given a block, <i>product</i> will yield all combinations
