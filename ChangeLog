@@ -1,3 +1,50 @@
+Sat Feb 11 03:38:48 2012  Hiroshi Shirosaki <h.shirosaki@gmail.com>
+
+	* io.c (rb_sys_fail_path): move the definition.
+	  Move above for using it in set_binary_mode_with_seek_cur().
+
+	* io.c (set_binary_mode_with_seek_cur): fix improper seek cursor.
+	  Seeking file cursor with setting binary mode has possibility to
+	  cause infinite loop. Fixed the bug and refined error handling.
+	  Introduced at r34043.
+
+	  And cleanups as below.
+	  Remove unnecessary parentheses of `fptr`.
+	  Use return value of setmode().
+
+	* test/ruby/test_io_m17n.rb
+	  (TestIO_M17N#test_seek_with_setting_binmode): add a test for abobe.
+	  [ruby-core:41671] [Bug #5714]
+
+Sat Feb 11 03:38:48 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_io_m17n.rb
+	  (TestIO_M17N#test_{read_with_binmode_and_get[cs]}): only for Windows.
+
+Sat Feb 11 03:38:48 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c, include/ruby/win32.h (rb_w32_fd_is_text): new function.
+
+	* win32/win32.c (init_stdhandle): set default mode of stdin as binmode.
+
+	* io.c (set_binary_mode_with_seek_cur): new function to replace
+	  SET_BINARY_MODE_WITH_SEEK_CUR macro.  now returns previous mode of the
+	  fd and take care of LF in rbuf.
+
+	* io.c (do_writeconv): set text mode when needed.
+
+	* io.c (io_read): need to change the mode of the IO to binmode
+	  temporally when the length for IO#read, because IO#read with length
+	  must behave so.
+
+	* test/ruby/test_io_m17n.rb (TestIO_M17N#test_{read_with_length,
+	  read_with_length_binmode,get[cs]_and_read_with_binmode,
+	  read_with_binmode_and_get[cs],read_write_with_binmode}): tests for
+	  above changes.
+
+	all patches are written by Hiroshi Shirosaki. [ruby-core:41496]
+	[Feature #5714]
+
 Sat Feb 11 03:37:56 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/rexml/test_order.rb (OrderTester#test_more_ordering): use

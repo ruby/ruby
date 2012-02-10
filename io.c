@@ -219,6 +219,10 @@ rb_update_max_fd(int fd)
 #  endif
 #endif
 
+#define rb_sys_fail_path(path) rb_sys_fail(NIL_P(path) ? 0 : RSTRING_PTR(path))
+
+static int io_fflush(rb_io_t *);
+
 #define NEED_NEWLINE_DECORATOR_ON_READ(fptr) ((fptr)->mode & FMODE_TEXTMODE)
 #define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) ((fptr)->mode & FMODE_TEXTMODE)
 #if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
@@ -258,22 +262,65 @@ rb_update_max_fd(int fd)
  * but stdin and pipe cannot seek back. Stdin and pipe read should use encoding
  * conversion for working properly with mode change.
  */
-#define SET_BINARY_MODE_WITH_SEEK_CUR(fptr) do {\
-    if ((fptr)->rbuf.len > 0 && !((fptr)->mode & FMODE_DUPLEX)) {\
-	off_t r;\
-	errno = 0;\
-	r = io_seek((fptr), -(fptr)->rbuf.len, SEEK_CUR);\
-	if (r < 0 && errno) {\
-	    if (errno == ESPIPE)\
-		(fptr)->mode |= FMODE_DUPLEX;\
-	}\
-	else {\
-	    (fptr)->rbuf.off = 0;\
-	    (fptr)->rbuf.len = 0;\
-	}\
-    }\
-    setmode((fptr)->fd, O_BINARY);\
-} while(0)
+/*
+ * Return previous translation mode.
+ */
+inline static int set_binary_mode_with_seek_cur(rb_io_t *fptr) {
+    off_t r, pos;
+    ssize_t read_size;
+    long i;
+    long newlines = 0;
+    long extra_max;
+    char *p;
+
+    if (!rb_w32_fd_is_text(fptr->fd)) return O_BINARY;
+
+    if (fptr->rbuf.len == 0 || fptr->mode & FMODE_DUPLEX) {
+	return setmode(fptr->fd, O_BINARY);
+    }
+
+    if (io_fflush(fptr) < 0) {
+	rb_sys_fail(0);
+    }
+    errno = 0;
+    pos = lseek(fptr->fd, 0, SEEK_CUR);
+    if (pos < 0 && errno) {
+	if (errno == ESPIPE)
+	    fptr->mode |= FMODE_DUPLEX;
+	return setmode(fptr->fd, O_BINARY);
+    }
+    /* add extra offset for removed '\r' in rbuf */
+    extra_max = pos - fptr->rbuf.len;
+    p = fptr->rbuf.ptr + fptr->rbuf.off;
+    for (i = 0; i < fptr->rbuf.len; i++) {
+	if (*p == '\n') newlines++;
+	if (extra_max == newlines) break;
+	p++;
+    }
+    while (newlines >= 0) {
+	r = lseek(fptr->fd, pos - fptr->rbuf.len - newlines, SEEK_SET);
+	if (newlines == 0) break;
+	if (r < 0) {
+	    newlines--;
+	    continue;
+	}
+	read_size = _read(fptr->fd, fptr->rbuf.ptr, fptr->rbuf.len + newlines);
+	if (read_size < 0) {
+	    rb_sys_fail_path(fptr->pathv);
+	}
+	if (read_size == fptr->rbuf.len) {
+	    lseek(fptr->fd, r, SEEK_SET);
+	    break;
+	}
+	else {
+	    newlines--;
+	}
+    }
+    fptr->rbuf.off = 0;
+    fptr->rbuf.len = 0;
+    return setmode(fptr->fd, O_BINARY);
+}
+#define SET_BINARY_MODE_WITH_SEEK_CUR(fptr) set_binary_mode_with_seek_cur(fptr)
 
 #else
 /* Unix */
@@ -289,8 +336,6 @@ rb_update_max_fd(int fd)
 #if !defined HAVE_SHUTDOWN && !defined shutdown
 #define shutdown(a,b)	0
 #endif
-
-#define rb_sys_fail_path(path) rb_sys_fail(NIL_P(path) ? 0 : RSTRING_PTR(path))
 
 #if defined(_WIN32)
 #define is_socket(fd, path)	rb_w32_is_socket(fd)
@@ -339,7 +384,6 @@ rb_io_check_closed(rb_io_t *fptr)
     }
 }
 
-static int io_fflush(rb_io_t *);
 
 VALUE
 rb_io_get_io(VALUE io)
@@ -986,6 +1030,9 @@ do_writeconv(VALUE str, rb_io_t *fptr)
 	if ((fptr->mode & FMODE_READABLE) &&
 	    !(fptr->encs.ecflags & ECONV_NEWLINE_DECORATOR_MASK)) {
 	    setmode(fptr->fd, O_BINARY);
+	}
+	else {
+	    setmode(fptr->fd, O_TEXT);
 	}
 	if (!rb_enc_asciicompat(rb_enc_get(str))) {
 	    rb_raise(rb_eArgError, "ASCII incompatible string written for text mode IO without encoding conversion: %s",
@@ -2301,6 +2348,9 @@ io_read(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr;
     long n, len;
     VALUE length, str;
+#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+    int previous_mode;
+#endif
 
     rb_scan_args(argc, argv, "02", &length, &str);
 
@@ -2321,7 +2371,15 @@ io_read(int argc, VALUE *argv, VALUE io)
     if (len == 0) return str;
 
     READ_CHECK(fptr);
+#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+    previous_mode = set_binary_mode_with_seek_cur(fptr);
+#endif
     n = io_fread(str, 0, fptr);
+#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+    if (previous_mode == O_TEXT) {
+	setmode(fptr->fd, O_TEXT);
+    }
+#endif
     if (n == 0) {
 	if (fptr->fd < 0) return Qnil;
         rb_str_resize(str, 0);
