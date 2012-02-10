@@ -1,3 +1,7 @@
+Sat Feb 11 03:13:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c: enabled econv newline option.
+
 Sat Feb 11 02:39:09 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* variable.c (set_const_visibility): clear inine-cache when constant's
