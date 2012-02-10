@@ -1,3 +1,31 @@
+Sat Feb 11 03:23:58 2012  Luis Lavena  <luislavena@gmail.com>
+
+	* ext/zlib/zlib.c (rb_gzreader_initialize): use binary mode by default
+	  under Windows. Patch by Hiroshi Shirosaki. [ruby-core:40706]
+	  [Feature #5562]
+
+	* include/ruby/encoding.h (void rb_econv_binmode): define NEWLINE
+	  decorator.
+
+	* io.c (rb_cloexec_fcntl_dupfd): Introduce NEED_READCONV and
+	  NEED_WRITECONV to replace universal newline decorator by CRLF only
+	  when required to improve file reading and writing under Windows.
+	  Patch by Hiroshi Shirosaki. [ruby-core:40706] [Feature #5562]
+	* io.c (do_writeconv): adjust binary mode if required.
+	* io.c (read_all, appendline, swallow, rb_io_getline_1): ditto.
+	* io.c (io_getc, rb_io_each_codepoint, rb_io_ungetc): ditto.
+	* io.c (rb_io_binmode, rb_io_ascii8bit_binmode): ditto.
+	* io.c (rb_io_extract_modeenc, rb_sysopen): ditto.
+	* io.c (pipe_open, prep_stdio, io_encoding_set): ditto.
+	* io.c (rb_io_s_pipe, copy_stream_body): ditto.
+
+	* test/ruby/test_io_m17n.rb (EOT): add test for pipe and stdin in
+	  binary mode.
+
+	* win32/win32.c (init_stdhandle): remove O_BINARY from stdhandle
+	  initialization.
+	* win32/win32.c (rb_w32_write): use FTEXT mode accordingly.
+
 Sat Feb 11 03:20:22 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (argf_next_argv): wrong timing of setting ecflags.

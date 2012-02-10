@@ -2128,27 +2128,18 @@ init_stdhandle(void)
     int keep = 0;
 #define open_null(fd)						\
     (((nullfd < 0) ?						\
-      (nullfd = open("NUL", O_RDWR|O_BINARY)) : 0),		\
+      (nullfd = open("NUL", O_RDWR)) : 0),		\
      ((nullfd == (fd)) ? (keep = 1) : dup2(nullfd, fd)),	\
      (fd))
 
     if (fileno(stdin) < 0) {
 	stdin->_file = open_null(0);
     }
-    else {
-	setmode(fileno(stdin), O_BINARY);
-    }
     if (fileno(stdout) < 0) {
 	stdout->_file = open_null(1);
     }
-    else {
-	setmode(fileno(stdout), O_BINARY);
-    }
     if (fileno(stderr) < 0) {
 	stderr->_file = open_null(2);
-    }
-    else {
-	setmode(fileno(stderr), O_BINARY);
     }
     if (nullfd >= 0 && !keep) close(nullfd);
     setvbuf(stderr, NULL, _IONBF, 0);
@@ -5321,7 +5312,8 @@ rb_w32_write(int fd, const void *buf, size_t size)
 	return -1;
     }
 
-    if (_osfile(fd) & FTEXT) {
+    if ((_osfile(fd) & FTEXT) &&
+        (!(_osfile(fd) & FPIPE) || fd == fileno(stdout) || fd == fileno(stderr))) {
 	return _write(fd, buf, size);
     }
 
