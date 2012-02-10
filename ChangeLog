@@ -1,3 +1,8 @@
+Fri Feb 10 17:02:12 2012  okkez  <okkez000@gmail.com>
+
+	* thread_pthread.c (rb_thread_create_timer_thread): fix memory
+	  leak. [ruby-dev:44904] [Bug #5688]
+
 Fri Feb 10 05:22:32 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* cont.c (fiber_setcontext): Use longjmp() instead of swapcontext() on
