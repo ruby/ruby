@@ -1,3 +1,8 @@
+Sat Feb 11 08:06:12 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/openssl/test_ssl.rb (test_multibyte_read_write): start server
+	  for each length to avoid race condition.
+
 Sat Feb 11 06:13:07 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* dir.c (fnmatch): The * needs to be escaped to avoid formatting in
