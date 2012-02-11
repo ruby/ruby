@@ -274,10 +274,13 @@ check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
     me = rb_method_entry(klass, idRespond_to);
     if (me && !(me->flag & NOEX_BASIC)) {
 	VALUE args[2];
+	int arity = rb_method_entry_arity(me);
+
+	if (arity < 1 || arity > 3) arity = 2;
 
 	args[0] = ID2SYM(mid);
 	args[1] = Qtrue;
-	if (!RTEST(vm_call0(th, recv, idRespond_to, 2, args, me))) {
+	if (!RTEST(vm_call0(th, recv, idRespond_to, arity, args, me))) {
 	    return Qundef;
 	}
     }

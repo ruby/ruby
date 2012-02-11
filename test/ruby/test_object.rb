@@ -446,6 +446,20 @@ class TestObject < Test::Unit::TestCase
     assert_equal([[:respond_to?, :to_ary, true]], called, bug5158)
   end
 
+  def test_implicit_respond_to_arity_1
+    p = Object.new
+
+    called = []
+    p.singleton_class.class_eval do
+      define_method(:respond_to?) do |a|
+        called << [:respond_to?, a]
+        false
+      end
+    end
+    [[p]].flatten
+    assert_equal([[:respond_to?, :to_ary]], called, '[bug:6000]')
+  end
+
   def test_method_missing_passed_block
     bug5731 = '[ruby-dev:44961]'
 

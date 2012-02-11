@@ -1,3 +1,8 @@
+Sun Feb 12 03:14:40 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* vm_eval.c (check_funcall):  Call respond_to? with matching arity for
+	  legacy single-argument implementations.  [ruby-trunk - Bug #6000]
+
 Sat Feb 11 12:04:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (defined_expr): guard the whole expression.
