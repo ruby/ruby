@@ -2476,7 +2476,7 @@ Sun Jul 10 15:58:12 2011  NARUSE, Yui  <naruse@ruby-lang.org>
 Sun Jul 10 16:41:32 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm_core.h (typedef struct rb_vm_struct): create a new
-	  'inhibit_thread_createion' field.
+	  'inhibit_thread_creation' field.
 	* thread.c (rb_thread_terminate_all): set inhibit_thread_creation.
 	* thread.c (thread_s_new): don't permit to create new thread
 	  if the VM is under destruction. Otherwise evil finalizer code
@@ -2638,7 +2638,7 @@ Fri Jul  8 15:53:31 2011  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri Jul  8 15:01:06 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/openssl/ossl.h: include openssl/e_os2.h before checking the
-	  defition of OPENSSL_SYS_WIN32.
+	  definition of OPENSSL_SYS_WIN32.
 
 Fri Jul  8 14:40:39 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 
