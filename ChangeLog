@@ -1,3 +1,14 @@
+Sat Feb 11 15:54:37 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c, include/ruby/win32.h (rb_w32_io_cancelable_p): renamed
+	  from rb_w32_has_cancel_io().  now it takes a parameter as fd to check
+	  the fd is console or not, because we cannot cancel console input even
+	  if we have cancel_io function.
+
+	* io.c (WAIT_FD_IN_WIN32): call above function instead of the old one,
+	  so now we can kill the thread which calls STDIN.gets.
+	  the problem was reported by ko1 via IRC.
+
 Sat Feb 11 08:06:12 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/openssl/test_ssl.rb (test_multibyte_read_write): start server
