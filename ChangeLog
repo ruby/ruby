@@ -1,3 +1,8 @@
+Sat Feb 11 12:04:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (defined_expr): guard the whole expression.
+	  [ruby-dev:45021][Bug#5786]
+
 Sat Feb 11 08:34:42 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/zlib/zlib.c (rb_inflate_add_dictionary):  Added

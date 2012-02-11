@@ -113,15 +113,27 @@ class TestDefined < Test::Unit::TestCase
     def a?
       defined?(A)
     end
+    def b?
+      defined?(A::B)
+    end
   end
 
   def test_autoloaded_noload
     loaded = $".dup
     $".clear
+    loadpath = $:.dup
+    $:.clear
     x = TestAutoloadedNoload.new
     assert_equal("constant", x.a?)
+    assert_nil(x.b?)
     assert_equal([], $")
   ensure
     $".replace(loaded)
+    $:.replace(loadpath)
+  end
+
+  def test_exception
+    bug5786 = '[ruby-dev:45021]'
+    assert_nil(defined?(raise("[Bug#5786]")::A), bug5786)
   end
 end
