@@ -4851,6 +4851,12 @@ time_load(VALUE klass, VALUE str)
  *  with each other -- times that are apparently equal when displayed may be
  *  different when compared.
  *
+ *  Current implemetation uses a signed 63 bit integer, Bignum or Rational.
+ *  The integer is a number of nanoseconds since the _Epoch_ which can
+ *  represent 1823-11-12 to 2116-02-20.
+ *  When Bignum or Rational is used (before 1823, after 2116, under nanosecond),
+ *  Time works slower than the integer is used.
+ *
  *  = Examples
  *
  *  All of these examples were done using the EST timezone which is GMT-5.
