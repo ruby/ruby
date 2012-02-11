@@ -967,7 +967,7 @@ fdbm_reject(VALUE obj)
  * - {Berkeley DB}[http://en.wikipedia.org/wiki/Berkeley_DB] versions
  *   1 thru 5, also known as BDB and Sleepycat DB, now owned by Oracle
  *   Corporation.
- * - Berkeley DB 1.x, still found in FreeBSD and OpenBSD.
+ * - Berkeley DB 1.x, still found in 4.4BSD derivatives (FreeBSD, OpenBSD, etc).
  * - {gdbm}[http://www.gnu.org/software/gdbm/], the GNU implementation of dbm.
  * - {qdbm}[http://fallabs.com/qdbm/index.html], another open source
  *   reimplementation of dbm.
