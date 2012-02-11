@@ -1,3 +1,9 @@
+Sat Feb 11 08:23:02 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c (do_inflate):  Inflate more data if buffered data
+	  exists.  Allows Zlib::Inflate#set_dictionary to work.
+	  [ruby-trunk - Bug #5929]
+
 Sat Feb 11 06:00:48 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* dir.c (fnmatch): The * needs to be escaped to avoid formatting in
