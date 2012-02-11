@@ -56,6 +56,8 @@ max_uint(long n)
 
 #define sizeof(x) ((int)sizeof(x))
 
+static ID id_dictionaries;
+
 /*--------- Prototypes --------*/
 
 static NORETURN(void raise_zlib_error(int, const char*));
@@ -875,6 +877,15 @@ zstream_run(struct zstream *z, Bytef *src, long len, int flush)
 	    if (z->stream.avail_in > 0) {
 		zstream_append_input(z, z->stream.next_in, z->stream.avail_in);
 	    }
+	    if (err == Z_NEED_DICT) {
+		VALUE self = (VALUE)z->stream.opaque;
+		VALUE dicts = rb_ivar_get(self, id_dictionaries);
+		VALUE dict = rb_hash_aref(dicts, rb_uint2inum(z->stream.adler));
+		if (!NIL_P(dict)) {
+		    rb_inflate_set_dictionary(self, dict);
+		    continue;
+		}
+	    }
 	    raise_zlib_error(err, z->stream.msg);
 	}
 	if (z->stream.avail_out > 0) {
@@ -965,6 +976,7 @@ zstream_new(VALUE klass, const struct zstream_funcs *funcs)
     obj = Data_Make_Struct(klass, struct zstream,
 			   zstream_mark, zstream_free, z);
     zstream_init(z, funcs);
+    z->stream.opaque = (voidpf)obj;
     return obj;
 }
 
@@ -1602,12 +1614,12 @@ rb_deflate_set_dictionary(VALUE obj, VALUE dic)
  * dup) itself.
  */
 
-
-
 static VALUE
 rb_inflate_s_allocate(VALUE klass)
 {
-    return zstream_inflate_new(klass);
+    VALUE inflate = zstream_inflate_new(klass);
+    rb_ivar_set(inflate, id_dictionaries, rb_hash_new());
+    return inflate;
 }
 
 /*
@@ -1735,6 +1747,25 @@ do_inflate(struct zstream *z, VALUE src)
     if (RSTRING_LEN(src) > 0 || z->stream.avail_in > 0) { /* prevent Z_BUF_ERROR */
 	zstream_run(z, (Bytef*)RSTRING_PTR(src), RSTRING_LEN(src), Z_SYNC_FLUSH);
     }
+}
+
+/* Document-method: Zlib::Inflate#add_dictionary
+ *
+ * call-seq: add_dictionary(string)
+ *
+ * Provide the inflate stream with a dictionary that may be required in the
+ * future.  Multiple dictionaries may be provided.  The inflate stream will
+ * automatically choose the correct user-provided dictionary based on the
+ * stream's required dictionary.
+ */
+static VALUE
+rb_inflate_add_dictionary(VALUE obj, VALUE dictionary) {
+    VALUE dictionaries = rb_ivar_get(obj, id_dictionaries);
+    VALUE checksum = do_checksum(1, &dictionary, adler32);
+
+    rb_hash_aset(dictionaries, checksum, dictionary);
+
+    return obj;
 }
 
 /*
@@ -4018,6 +4049,8 @@ Init_zlib()
 
     mZlib = rb_define_module("Zlib");
 
+    id_dictionaries = rb_intern("@dictionaries");
+
     cZError = rb_define_class_under(mZlib, "Error", rb_eStandardError);
     cStreamEnd    = rb_define_class_under(mZlib, "StreamEnd", cZError);
     cNeedDict     = rb_define_class_under(mZlib, "NeedDict", cZError);
@@ -4086,6 +4119,7 @@ Init_zlib()
     rb_define_singleton_method(mZlib, "inflate", rb_inflate_s_inflate, 1);
     rb_define_alloc_func(cInflate, rb_inflate_s_allocate);
     rb_define_method(cInflate, "initialize", rb_inflate_initialize, -1);
+    rb_define_method(cInflate, "add_dictionary", rb_inflate_add_dictionary, 1);
     rb_define_method(cInflate, "inflate", rb_inflate_inflate, 1);
     rb_define_method(cInflate, "<<", rb_inflate_addstr, 1);
     rb_define_method(cInflate, "sync", rb_inflate_sync, 1);

@@ -185,6 +185,23 @@ if defined? Zlib
       assert_equal("foo", z.finish)
     end
 
+    def test_add_dictionary
+      dictionary = "foo"
+
+      deflate = Zlib::Deflate.new
+      deflate.set_dictionary dictionary
+      compressed = deflate.deflate "foofoofoo", Zlib::FINISH
+      deflate.close
+
+      out = nil
+      inflate = Zlib::Inflate.new
+      inflate.add_dictionary "foo"
+
+      out = inflate.inflate compressed
+
+      assert_equal "foofoofoo", out
+    end
+
     def test_inflate
       s = Zlib::Deflate.deflate("foo")
       z = Zlib::Inflate.new

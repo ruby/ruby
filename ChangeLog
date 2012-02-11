@@ -1,3 +1,9 @@
+Sat Feb 11 08:34:42 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c (rb_inflate_add_dictionary):  Added
+	  Zlib::Inflate#add_dictionary to allow users to pre-specify
+	  for using during #inflate.  [ruby-trunk - Feature #5937]
+
 Sat Feb 11 08:23:02 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/zlib/zlib.c (do_inflate):  Inflate more data if buffered data
