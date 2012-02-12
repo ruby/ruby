@@ -1419,7 +1419,7 @@ int ruby_native_thread_p(void);
 #define RUBY_EVENT_COVERAGE 0x40000
 
 typedef unsigned int rb_event_flag_t;
-typedef void (*rb_event_hook_func_t)(rb_event_flag_t, VALUE data, VALUE, ID, VALUE klass);
+typedef void (*rb_event_hook_func_t)(rb_event_flag_t evflag, VALUE data, VALUE self, ID mid, VALUE klass);
 
 typedef struct rb_event_hook_struct {
     rb_event_flag_t flag;

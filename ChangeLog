@@ -1,3 +1,7 @@
+Sun Feb 12 20:43:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_event_hook_func_t): add argument names.
+
 Sun Feb 12 16:30:23 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* tool/merger.rb (#default_merge_branch): Add support for
