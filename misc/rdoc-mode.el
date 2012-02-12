@@ -81,3 +81,5 @@
 	 1 rdoc-description-face)	; labeled | node
    ;(list "^\\s +\\(.*\\)" 1 rdoc-verbatim-face)
    ))
+
+(provide 'rdoc-mode)
