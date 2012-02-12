@@ -1,3 +1,8 @@
+Sun Feb 12 09:38:46 2012  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* vm_method.c (rb_add_method): should not call method_added hook
+	  for undef operation. [Bug #5015]
+
 Sun Feb 12 09:29:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regint.h (PLATFORM_UNALIGNED_WORD_ACCESS): Power PC does not
