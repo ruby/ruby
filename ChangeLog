@@ -1,3 +1,9 @@
+Sun Feb 12 16:30:23 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* tool/merger.rb (#default_merge_branch): Add support for
+	  Subversion 1.7 which adopted a whole new working directory
+	  structure.
+
 Sun Feb 12 15:14:41 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* benchmark/driver.rb: suppress unused/shadowing variable warnings.
