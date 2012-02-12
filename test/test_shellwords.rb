@@ -38,6 +38,15 @@ class TestShellwords < Test::Unit::TestCase
     end
   end
 
+  def test_backslashes
+    cmdline, expected = [
+      %q{/a//b///c////d/////e/ "/a//b///c////d/////e/ "'/a//b///c////d/////e/ '/a//b///c////d/////e/ },
+      %q{a/b/c//d//e a/b/c//d//e /a//b///c////d/////e/ a/b/c//d//e }
+    ].map { |str| str.tr("/", "\\\\") }
+
+    assert_equal [expected], shellwords(cmdline)
+  end
+
   def test_multibyte_characters
     # This is not a spec.  It describes the current behavior which may
     # be changed in future.  There would be no multibyte character

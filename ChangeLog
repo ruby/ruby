@@ -1,3 +1,13 @@
+Sun Feb 12 16:50:28 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/shellwords.rb: Fix rdoc markups.
+
+Sun Feb 12 16:50:28 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/shellwords.rb (Shellwords#shellsplit): Fix a bug where
+	  consecutive backslashes in double quotes are all removed except
+	  the one at the tail.
+
 Sun Feb 12 16:38:13 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/shellwords.rb (Shellwords#shellescape): Drop the //n flag
