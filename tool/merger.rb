@@ -112,7 +112,7 @@ def tag intv_p = false
 end
 
 def default_merge_branch
-  /branches\/ruby_1_8_/ =~ IO.binread(".svn/entries", 100) ? 'branches/ruby_1_8' : 'trunk'
+  %r{^URL: .*/branches/ruby_1_8_} =~ `svn info` ? 'branches/ruby_1_8' : 'trunk'
 end
 
 case ARGV[0]

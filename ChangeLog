@@ -1,3 +1,9 @@
+Sun Feb 12 16:34:55 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* tool/merger.rb (#default_merge_branch): Add support for
+	  Subversion 1.7 which adopted a whole new working directory
+	  structure.
+
 Sun Feb 12 09:38:46 2012  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* vm_method.c (rb_add_method): should not call method_added hook
