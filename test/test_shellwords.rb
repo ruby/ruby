@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require 'test/unit'
 require 'shellwords'
 
@@ -35,5 +36,12 @@ class TestShellwords < Test::Unit::TestCase
     assert_raise ArgumentError do
       shellwords(bad_cmd)
     end
+  end
+
+  def test_multibyte_characters
+    # This is not a spec.  It describes the current behavior which may
+    # be changed in future.  There would be no multibyte character
+    # used as shell meta-character that needs to be escaped.
+    assert_equal "\\あ\\い", "あい".shellescape
   end
 end
