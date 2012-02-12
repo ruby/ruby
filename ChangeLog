@@ -1,3 +1,7 @@
+Sun Feb 12 15:14:41 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* benchmark/driver.rb: suppress unused/shadowing variable warnings.
+
 Sun Feb 12 03:14:40 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* vm_eval.c (check_funcall):  Call respond_to? with matching arity for

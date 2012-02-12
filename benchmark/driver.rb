@@ -84,7 +84,7 @@ class BenchmarkDriver
     if @verbose
       @start_time = Time.now
       message @start_time
-      @execs.each_with_index{|(e, v), i|
+      @execs.each_with_index{|(_, v), i|
         message "target #{i}: #{v}"
       }
     end
@@ -116,7 +116,7 @@ class BenchmarkDriver
     difference = "\taverage difference" if @execs.length == 2
     total_difference = 0
 
-    output "name\t#{@execs.map{|(e, v)| v}.join("\t")}#{difference}"
+    output "name\t#{@execs.map{|(_, v)| v}.join("\t")}#{difference}"
     @results.each{|v, result|
       rets = []
       s = nil
@@ -154,7 +154,6 @@ class BenchmarkDriver
 
   def files
     flag = {}
-    vm1 = vm2 = wl1 = wl2 = false
     @files = Dir.glob(File.join(@dir, 'bm*.rb')).map{|file|
       next if @pattern && /#{@pattern}/ !~ File.basename(file)
       case file
@@ -253,8 +252,8 @@ if __FILE__ == $0
     o.on('-r', '--repeat-count [NUM]', "Repeat count"){|n|
       opt[:repeat] = n.to_i
     }
-    o.on('-o', '--output-file [FILE]', "Output file"){|o|
-      opt[:output] = o
+    o.on('-o', '--output-file [FILE]', "Output file"){|f|
+      opt[:output] = f
     }
     o.on('-q', '--quiet', "Run without notify information except result table."){|q|
       opt[:quiet] = q
