@@ -1,3 +1,11 @@
+Sun Feb 12 09:29:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regint.h (PLATFORM_UNALIGNED_WORD_ACCESS): Power PC does not
+	  allow unaligned word access.
+
+	* st.c (UNALIGNED_WORD_ACCESS): x86_64 allows unaligned word
+	  access as well as i386.
+
 Sat Feb 11 08:06:12 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/openssl/test_ssl.rb (test_multibyte_read_write): start server
