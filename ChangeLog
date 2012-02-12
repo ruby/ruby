@@ -1,3 +1,12 @@
+Sun Feb 12 16:53:18 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/tempfile.rb (Tempfile#unlink, Tempfile::Remover#call): Just
+	  call File.unlink and ignore ENOENT because existence check
+	  before unlinking does not help in terms of race condition.
+
+	* lib/tempfile.rb (Tempfile#unlink, Tempfile::Remover#call): My
+	  comment about thread safeness is obsolete.
+
 Sun Feb 12 16:50:28 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/shellwords.rb: Fix rdoc markups.
