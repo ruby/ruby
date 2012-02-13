@@ -544,9 +544,10 @@ rb_objspace_free(rb_objspace_t *objspace)
 #define HEAP_ALIGN_MASK (~(~0UL << HEAP_ALIGN_LOG))
 #define REQUIRED_SIZE_BY_MALLOC (sizeof(size_t) * 5)
 #define HEAP_SIZE (HEAP_ALIGN - REQUIRED_SIZE_BY_MALLOC)
+#define CEILMOD(i, mod) (((i) + (mod) - 1)/(mod))
 
-#define HEAP_OBJ_LIMIT (unsigned int)(HEAP_SIZE/sizeof(struct RVALUE) - (sizeof(struct heaps_slot)/sizeof(struct RVALUE)+1))
-#define HEAP_BITMAP_LIMIT (HEAP_OBJ_LIMIT/sizeof(uintptr_t)+1)
+#define HEAP_OBJ_LIMIT (unsigned int)((HEAP_SIZE - sizeof(struct heaps_header))/sizeof(struct RVALUE))
+#define HEAP_BITMAP_LIMIT CEILMOD(HEAP_OBJ_LIMIT, sizeof(uintptr_t)*8)
 
 #define GET_HEAP_HEADER(x) (HEAP_HEADER(((uintptr_t)x) & ~(HEAP_ALIGN_MASK)))
 #define GET_HEAP_SLOT(x) (GET_HEAP_HEADER(x)->base)

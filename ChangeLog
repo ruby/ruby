@@ -1,3 +1,13 @@
+Mon Feb 13 21:52:06 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (HEAP_OBJ_LIMIT, HEAP_BITMAP_LIMIT): HEAP_OBJ_LIMIT used
+	  `sizeof(struct heaps_slot)` while heap is currently allocated
+	  with `struct heaps_header`.
+	  HEAP_BITMAP_LIMIT were calculated from
+	  `HEAP_OBJ_LIMIT/sizeof(uintptr_t)` - one Byte for each object,
+	  not one Bit. [Bug #6006]
+	  patched by Sokolov Yura. https://github.com/ruby/ruby/pull/92
+
 Mon Feb 13 18:30:32 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_setstrbuf): defer resizing buffer string until data is
