@@ -1,3 +1,9 @@
+Tue Feb 14 05:23:40 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* process.c (proc_wait):  Change typo "SystemError" to
+	  "SystemCallError".  [ruby-trunk - Bug #5962]
+	* process.c (proc_wait2):  ditto
+
 Tue Feb 14 05:18:24 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* enumerator.c:  Document use of Enumerator.new for creating a lazy

@@ -750,8 +750,8 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
  *  haven't been reported). Not all flags are available on all
  *  platforms, but a flag value of zero will work on all platforms.
  *
- *  Calling this method raises a <code>SystemError</code> if there are
- *  no child processes. Not available on all platforms.
+ *  Calling this method raises a SystemCallError if there are no child
+ *  processes. Not available on all platforms.
  *
  *     include Process
  *     fork { exit 99 }                 #=> 27429
@@ -803,8 +803,7 @@ proc_wait(int argc, VALUE *argv)
  *  Waits for a child process to exit (see Process::waitpid for exact
  *  semantics) and returns an array containing the process id and the
  *  exit status (a <code>Process::Status</code> object) of that
- *  child. Raises a <code>SystemError</code> if there are no child
- *  processes.
+ *  child. Raises a SystemCallError if there are no child processes.
  *
  *     Process.fork { exit 99 }   #=> 27437
  *     pid, status = Process.wait2
