@@ -1,3 +1,8 @@
+Mon Feb 13 18:30:32 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_setstrbuf): defer resizing buffer string until data is
+	  read actually.
+
 Mon Feb 13 10:24:39 2012  Loren Segal  <lsegal@soen.ca>
 
 	* io.c (Init_IO): use directive hack to make ARGF documentable

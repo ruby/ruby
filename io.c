@@ -1871,13 +1871,12 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
 }
 
 static long
-io_fread(VALUE str, long offset, rb_io_t *fptr)
+io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
 {
     long len;
 
     rb_str_locktmp(str);
-    len = io_bufread(RSTRING_PTR(str) + offset, RSTRING_LEN(str) - offset,
-		     fptr);
+    len = io_bufread(RSTRING_PTR(str) + offset, size, fptr);
     rb_str_unlocktmp(str);
     if (len < 0) rb_sys_fail_path(fptr->pathv);
     return len;
@@ -2076,26 +2075,16 @@ static void
 io_setstrbuf(VALUE *str,long len)
 {
 #ifdef _WIN32
-    if (NIL_P(*str)) {
-	*str = rb_str_new(0, len+1);
-	rb_str_set_len(*str,len);
-    }
-    else {
-	StringValue(*str);
-	rb_str_modify(*str);
-	rb_str_resize(*str, len+1);
-	rb_str_set_len(*str,len);
-    }
-#else
-    if (NIL_P(*str)) {
-	*str = rb_str_new(0, len);
-    }
-    else {
-	StringValue(*str);
-	rb_str_modify(*str);
-	rb_str_resize(*str, len);
-    }
+    len = (len + 1) & ~1L;	/* round up for wide char */
 #endif
+    if (NIL_P(*str)) {
+	*str = rb_str_new(0, 0);
+    }
+    else {
+	StringValue(*str);
+	len -= RSTRING_LEN(*str);
+    }
+    rb_str_modify_expand(*str, len);
 }
 
 static VALUE
@@ -2141,18 +2130,19 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     io_setstrbuf(&str,siz);
     for (;;) {
 	READ_CHECK(fptr);
-	n = io_fread(str, bytes, fptr);
+	n = io_fread(str, bytes, siz - bytes, fptr);
 	if (n == 0 && bytes == 0) {
+	    rb_str_set_len(str, 0);
 	    break;
 	}
 	bytes += n;
+	rb_str_set_len(str, bytes);
 	if (cr != ENC_CODERANGE_BROKEN)
 	    pos += rb_str_coderange_scan_restartable(RSTRING_PTR(str) + pos, RSTRING_PTR(str) + bytes, enc, &cr);
 	if (bytes < siz) break;
 	siz += BUFSIZ;
-	rb_str_resize(str, siz);
+	rb_str_modify_expand(str, BUFSIZ);
     }
-    if (bytes != siz) rb_str_resize(str, bytes);
     str = io_enc_str(str, fptr);
     ENC_CODERANGE_SET(str, cr);
     return str;
@@ -2219,7 +2209,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
             rb_sys_fail_path(fptr->pathv);
         }
     }
-    rb_str_resize(str, n);
+    rb_str_set_len(str, n);
 
     if (n == 0)
         return Qnil;
@@ -2535,18 +2525,14 @@ io_read(int argc, VALUE *argv, VALUE io)
 #if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
     previous_mode = set_binary_mode_with_seek_cur(fptr);
 #endif
-    n = io_fread(str, 0, fptr);
+    n = io_fread(str, 0, len, fptr);
+    rb_str_set_len(str, n);
 #if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
     if (previous_mode == O_TEXT) {
 	setmode(fptr->fd, O_TEXT);
     }
 #endif
-    if (n == 0) {
-	if (fptr->fd < 0) return Qnil;
-        rb_str_resize(str, 0);
-        return Qnil;
-    }
-    rb_str_resize(str, n);
+    if (n == 0) return Qnil;
     OBJ_TAINT(str);
 
     return str;
@@ -4284,7 +4270,6 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     if (n == 0 && ilen > 0) {
 	rb_eof_error();
     }
-    rb_str_resize(str, n);
     OBJ_TAINT(str);
 
     return str;

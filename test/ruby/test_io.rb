@@ -972,7 +972,7 @@ class TestIO < Test::Unit::TestCase
     with_pipe do |r, w|
       s = ""
       t = Thread.new { r.readpartial(5, s) }
-      Thread.pass until s.size == 5
+      Thread.pass until t.stop?
       assert_raise(RuntimeError) { s.clear }
       w.write "foobarbaz"
       w.close
@@ -991,6 +991,17 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_readpartial_buffer_error
+    with_pipe do |r, w|
+      s = ""
+      t = Thread.new { r.readpartial(5, s) }
+      Thread.pass until t.stop?
+      t.kill
+      t.value
+      assert_equal("", s)
+    end
+  end
+
   def test_read
     pipe(proc do |w|
       w.write "foobarbaz"
@@ -1007,11 +1018,22 @@ class TestIO < Test::Unit::TestCase
     with_pipe do |r, w|
       s = ""
       t = Thread.new { r.read(5, s) }
-      Thread.pass until s.size == 5
+      Thread.pass until t.stop?
       assert_raise(RuntimeError) { s.clear }
       w.write "foobarbaz"
       w.close
       assert_equal("fooba", t.value)
+    end
+  end
+
+  def test_read_buffer_error
+    with_pipe do |r, w|
+      s = ""
+      t = Thread.new { r.read(5, s) }
+      Thread.pass until t.stop?
+      t.kill
+      t.value
+      assert_equal("", s)
     end
   end
 
@@ -2117,8 +2139,8 @@ End
       end
     }
     IO.pipe {|r,w|
-      assert(r.close_on_exec?) 
-      assert(w.close_on_exec?) 
+      assert(r.close_on_exec?)
+      assert(w.close_on_exec?)
     }
   end
 
