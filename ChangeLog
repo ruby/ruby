@@ -1,3 +1,8 @@
+Mon Feb 13 10:24:39 2012  Loren Segal  <lsegal@soen.ca>
+
+	* io.c (Init_IO): use directive hack to make ARGF documentable
+	  in other tools.  [ruby-core:42515][Bug #6007]
+
 Sun Feb 12 20:43:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_event_hook_func_t): add argument names.

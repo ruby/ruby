@@ -11426,10 +11426,11 @@ Init_IO(void)
     /* Holds the original stderr */
     rb_define_global_const("STDERR", rb_stderr);
 
-    /*
-     * Hack to get rdoc to regard ARGF as a class:
-     * rb_cARGF = rb_define_class("ARGF", rb_cObject);
-     */
+#if 0
+    /* Hack to get rdoc to regard ARGF as a class: */
+    rb_cARGF = rb_define_class("ARGF", rb_cObject);
+#endif
+
     rb_cARGF = rb_class_new(rb_cObject);
     rb_set_class_path(rb_cARGF, rb_cObject, "ARGF.class");
     rb_define_alloc_func(rb_cARGF, argf_alloc);
