@@ -547,8 +547,10 @@ rb_method_boundp(VALUE klass, ID id, int ex)
     rb_method_entry_t *me = rb_method_entry(klass, id);
 
     if (me != 0) {
-	if ((ex & ~NOEX_RESPONDS) && (me->flag & NOEX_PRIVATE)) {
-	    return FALSE;
+	if ((ex & ~NOEX_RESPONDS) &&
+	    ((me->flag & NOEX_PRIVATE) ||
+	     ((ex & NOEX_RESPONDS) && (me->flag & NOEX_PROTECTED)))) {
+	    return 0;
 	}
 	if (!me->def) return 0;
 	if (me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
@@ -1263,11 +1265,11 @@ rb_respond_to(VALUE obj, ID id)
 
 /*
  *  call-seq:
- *     obj.respond_to?(symbol, include_private=false) -> true or false
+ *     obj.respond_to?(symbol, include_all=false) -> true or false
  *
- *  Returns +true+ if _obj_ responds to the given
- *  method. Private methods are included in the search only if the
- *  optional second parameter evaluates to +true+.
+ *  Returns +true+ if _obj_ responds to the given method.  Private and
+ *  protected methods are included in the search only if the optional
+ *  second parameter evaluates to +true+.
  *
  *  If the method is not implemented,
  *  as Process.fork on Windows, File.lchmod on GNU/Linux, etc.,
@@ -1300,7 +1302,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 
 /*
  *  call-seq:
- *     obj.respond_to_missing?(symbol, include_private) -> true or false
+ *     obj.respond_to_missing?(symbol, include_all) -> true or false
  *
  *  Hook method to return whether the _obj_ can respond to _id_ method
  *  or not.

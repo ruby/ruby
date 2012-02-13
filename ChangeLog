@@ -1,3 +1,13 @@
+Mon Feb 13 23:01:50 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* vm_method.c (rb_method_boundp):
+	  obj.respond_to?(:a_protected_method) should return false because
+	  calling a protected method may cause NoMethodError if called
+	  from outside the class inheritance tree.  Kernel#respond_to? is
+	  mostly used to test if it is safe to call a method, so the false
+	  positive should be avoided. [ruby-dev:40461] [ruby-dev:41739]
+	  [ruby-dev:41837]
+
 Mon Feb 13 21:52:06 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (HEAP_OBJ_LIMIT, HEAP_BITMAP_LIMIT): HEAP_OBJ_LIMIT used
