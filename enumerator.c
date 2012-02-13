@@ -30,17 +30,22 @@
  *
  *   enumerator = %w(one two three).each
  *   puts enumerator.class # => Enumerator
- *   enumerator.each_with_object("foo") do |item,obj|
+ *
+ *   enumerator.each_with_object("foo") do |item, obj|
  *     puts "#{obj}: #{item}"
  *   end
+ *
  *   # foo: one
  *   # foo: two
  *   # foo: three
+ *
  *   enum_with_obj = enumerator.each_with_object("foo")
  *   puts enum_with_obj.class # => Enumerator
- *   enum_with_obj.each do |item,obj|
- *     puts "#{obj: #{item}"
+ *
+ *   enum_with_obj.each do |item, obj|
+ *     puts "#{obj}: #{item}"
  *   end
+ *
  *   # foo: one
  *   # foo: two
  *   # foo: three
@@ -49,7 +54,7 @@
  * can map a list's elements to strings containing the index
  * and the element as a string via:
  *
- *   puts %w[foo bar baz].map.with_index {|w,i| "#{i}:#{w}" }
+ *   puts %w[foo bar baz].map.with_index { |w, i| "#{i}:#{w}" }
  *   # => ["0:foo", "1:bar", "2:baz"]
  *
  * An Enumerator can also be used as an external iterator.
@@ -266,6 +271,63 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
  *   end
  *
  *   p fib.take(10) # => [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+ *
+ * The block form can be used to create a lazy enumeration that only processes
+ * elements as-needed.  The generic pattern for this is:
+ *
+ *    Enumerator.new do |yielder|
+ *      source.each do |source_item|
+ *        # process source_item and append the yielder
+ *      end
+ *    end
+ *
+ * This can be used with infinite streams to support multiple chains:
+ *
+ *   class Fib
+ *     def initialize(a = 1, b = 1)
+ *       @a, @b = a, b
+ *     end
+ *
+ *     def each
+ *       a, b = @a, @b
+ *       yield a
+ *       while true
+ *         yield b
+ *         a, b = b, a+b
+ *       end
+ *     end
+ *   end
+ *
+ *   def lazy_select enum
+ *     Enumerator.new do |y|
+ *       enum.each do |e|
+ *         y << e if yield e
+ *       end
+ *     end
+ *   end
+ *
+ *   def lazy_map enum
+ *     Enumerator.new do |y|
+ *       enum.each do |e|
+ *         y << yield(e)
+ *       end
+ *     end
+ *   end
+ *
+ *   even_fibs   = lazy_select(Fibs.new) { |x| x % 2 == 0 }
+ *   string_fibs = lazy_map(even_fibs)   { |x| "<#{x}>" }
+ *   string_fibs.each_with_index do |fib, i|
+ *     puts "#{i}: #{fib}"
+ *     break if i >= 3
+ *   end
+ *
+ * This allows output even though the Fib produces an infinite sequence of
+ * Fibonacci numbers:
+ *
+ *   0: <2>
+ *   1: <8>
+ *   2: <34>
+ *   3: <144>
  *
  * In the second, deprecated, form, a generated Enumerator iterates over the
  * given object using the given method with the given arguments passed.
