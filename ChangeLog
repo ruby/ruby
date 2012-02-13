@@ -233,6 +233,30 @@ Sat Feb 11 02:39:09 2012  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_module.rb: add a test for above.
 
+Sat Feb 11 02:39:09 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* variable.c (set_const_visibility): clear inine-cache when constant's
+	  visibility is modified. [ruby-dev:44929]
+
+	* test/ruby/test_module.rb (test_private_constants_clear_inlinecache):
+	  add test for it.
+
+Sat Feb 11 02:39:09 2012  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* variable.c (set_const_visibility): print a warning when no argument
+	  is passwd to Module#private_constant.  [ruby-list:48558]
+
+	* vm_method.c (set_method_visibility): ditto for
+	  Module#private_class_method.
+
+Sat Feb 11 02:39:09 2012  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* variable.c (set_const_visibility): Module#private_constant has
+	  changed the visibility of only the first argument.  Now it changes
+	  all of them.  [ruby-list:48558]
+
+	* test/ruby/test_module.rb: add a test for above.
+
 Sat Feb 11 02:26:51 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* lib/openssl/buffering.rb: Force multi-byte strings to be treated as
