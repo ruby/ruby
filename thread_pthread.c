@@ -857,6 +857,7 @@ rb_thread_create_timer_thread(void)
 	}
 	native_cond_wait(&timer_thread_cond, &timer_thread_lock);
 	native_mutex_unlock(&timer_thread_lock);
+	pthread_attr_destroy(&attr);
     }
     rb_disable_interrupt(); /* only timer thread recieve signal */
 }
