@@ -1,3 +1,8 @@
+Mon Feb 13 12:06:29 2012  Loren Segal  <lsegal@soen.ca>
+
+	* io.c (Init_IO): use directive hack to make ARGF documentable
+	  in other tools.  [ruby-core:42515][Bug #6007]
+
 Sun Feb 12 16:57:56 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/rdoc-mode.el (rdoc-imenu-create-index): Add imenu support
