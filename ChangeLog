@@ -1,3 +1,7 @@
+Tue Feb 14 20:22:11 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (CEILDIV): rename to a appropriate name.
+
 Tue Feb 14 18:07:20 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (assign_heap_slot): SEGV happens cause on 64-bit platform
