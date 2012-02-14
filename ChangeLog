@@ -1,4 +1,7 @@
-Wed Feb 15 05:03:41 2012  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+Wed Feb 15 05:04:47 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/cptr.c (rb_dlptr_aref, rb_dlptr_aset): check NULL pointer
+	  dereference.
 
 	* test/rinda/test_rinda.rb: decrease the code that depends on timing.
 	  [Bug #372] [Bug #4160]

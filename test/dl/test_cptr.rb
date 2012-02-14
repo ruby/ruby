@@ -212,5 +212,11 @@ module DL
       assert_equal ptr3.to_i, ptr[0,2] = ptr3.to_i
       check.call(str, ptr)
     end
+
+    def test_null_pointer
+      nullpo = CPtr.new(0)
+      assert_raise(DLError) {nullpo[0]}
+      assert_raise(DLError) {nullpo[0] = 1}
+    end
   end
 end
