@@ -286,7 +286,7 @@ module Rake
       matched = 0
       each do |fn|
         begin
-          open(fn, "rb", *options) do |inf|
+          open(fn, "r:ascii-8bit", *options) do |inf|
             count = 0
             inf.each do |line|
               count += 1
