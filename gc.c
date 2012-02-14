@@ -80,11 +80,21 @@ void *alloca ();
 #define HEAP_MIN_SLOTS 10000
 #define FREE_MIN  4096
 
-static unsigned int initial_malloc_limit   = GC_MALLOC_LIMIT;
+typedef struct {
+    unsigned int initial_malloc_limit;
+    unsigned int initial_heap_min_slots;
+    unsigned int initial_free_min;
+    int gc_stress;
+} ruby_gc_params_t;
+
+ruby_gc_params_t initial_params = {
+    GC_MALLOC_LIMIT,
+    HEAP_MIN_SLOTS,
+    FREE_MIN,
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
-static unsigned int initial_heap_min_slots = HEAP_MIN_SLOTS;
+    FALSE,
 #endif
-static unsigned int initial_free_min       = FREE_MIN;
+};
 
 #define nomem_error GET_VM()->special_exceptions[ruby_error_nomemory]
 
@@ -364,7 +374,7 @@ typedef struct rb_objspace {
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 #define rb_objspace (*GET_VM()->objspace)
-static int ruby_initial_gc_stress = 0;
+#define ruby_initial_gc_stress	initial_params.gc_stress
 int *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 #else
 static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT}, {HEAP_MIN_SLOTS}};
@@ -389,6 +399,9 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define mark_stack_overflow	objspace->markstack.overflow
 #define global_List		objspace->global_list
 #define ruby_gc_stress		objspace->gc_stress
+#define initial_malloc_limit	initial_params.initial_malloc_limit
+#define initial_heap_min_slots	initial_params.initial_heap_min_slots
+#define initial_free_min	initial_params.initial_free_min
 
 static void rb_objspace_call_finalizer(rb_objspace_t *objspace);
 
@@ -403,6 +416,7 @@ rb_objspace_alloc(void)
 
     return objspace;
 }
+#endif
 
 static void initial_expand_heap(rb_objspace_t *objspace);
 
@@ -447,6 +461,7 @@ rb_gc_set_params(void)
     }
 }
 
+#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 static void gc_sweep(rb_objspace_t *);
 static void slot_sweep(rb_objspace_t *, struct heaps_slot *);
 static void gc_clear_mark_on_sweep_slots(rb_objspace_t *);
@@ -478,11 +493,6 @@ rb_objspace_free(rb_objspace_t *objspace)
 	heaps = 0;
     }
     free(objspace);
-}
-#else
-void
-rb_gc_set_params(void)
-{
 }
 #endif
 
@@ -1105,7 +1115,6 @@ init_heap(rb_objspace_t *objspace)
     finalizer_table = st_init_numtable();
 }
 
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 static void
 initial_expand_heap(rb_objspace_t *objspace)
 {
@@ -1115,7 +1124,6 @@ initial_expand_heap(rb_objspace_t *objspace)
         add_heap_slots(objspace, min_size - heaps_used);
     }
 }
-#endif
 
 static void
 set_heaps_increment(rb_objspace_t *objspace)

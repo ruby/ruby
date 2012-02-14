@@ -1,3 +1,10 @@
+Tue Feb 14 15:58:31 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* gc.c (rb_gc_set_params): set parameters always.
+	  [ruby-dev:44648] [Bug #5467]
+
+	* gc.c (initial_params): pack in a struct.
+
 Tue Feb 14 15:44:42 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/irb/test_completion.rb: skip if cannot load irb/completion
