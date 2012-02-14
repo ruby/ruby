@@ -1,3 +1,8 @@
+Tue Feb 14 15:07:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (build_message): skip escaped
+	  question marks.
+
 Mon Feb 13 12:06:29 2012  Loren Segal  <lsegal@soen.ca>
 
 	* io.c (Init_IO): use directive hack to make ARGF documentable

@@ -265,7 +265,7 @@ EOT
 
       def build_message(head, template=nil, *arguments) #:nodoc:
         template &&= template.chomp
-        template.gsub(/\?/) { mu_pp(arguments.shift) }
+        template.gsub(/\G((?:[^\\]|\\.)*?)(\\)?\?/) { $1 + ($2 ? "?" : mu_pp(arguments.shift)) }
       end
     end
   end
