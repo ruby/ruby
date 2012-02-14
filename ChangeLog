@@ -1,3 +1,8 @@
+Tue Feb 14 15:06:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (build_message): skip escaped
+	  question marks.
+
 Tue Feb 14 12:10:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (autoload_const_set, autoload_require): fix
