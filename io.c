@@ -2072,7 +2072,7 @@ io_shift_cbuf(rb_io_t *fptr, int len, VALUE *strp)
 }
 
 static void
-io_setstrbuf(VALUE *str,long len)
+io_setstrbuf(VALUE *str, long len)
 {
 #ifdef _WIN32
     len = (len + 1) & ~1L;	/* round up for wide char */
@@ -2081,8 +2081,13 @@ io_setstrbuf(VALUE *str,long len)
 	*str = rb_str_new(0, 0);
     }
     else {
-	StringValue(*str);
-	len -= RSTRING_LEN(*str);
+	VALUE s = StringValue(*str);
+	long clen = RSTRING_LEN(s);
+	if (clen >= len) {
+	    if (clen != len) rb_str_set_len(s, len);
+	    return;
+	}
+	len -= clen;
     }
     rb_str_modify_expand(*str, len);
 }
