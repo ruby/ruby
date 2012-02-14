@@ -1,3 +1,8 @@
+Wed Feb 15 04:49:23 2012  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* parse.y (debug_lines, coverage): set file path encoding for coverage
+	  result.  [ruby-dev:44950]
+
 Tue Feb 14 16:57:11 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rake/file_list.rb (Rake::FileList#egrep): there is no need to
