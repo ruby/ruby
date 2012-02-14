@@ -1,3 +1,9 @@
+Wed Feb 15 06:58:21 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* encoding.c (Init_Encoding):  Add Encoding documentation.
+	  [ruby-trunk - Bug #5949]
+	* encoding.c (rb_set_default_external):  Fix typo in documentation.
+
 Tue Feb 14 20:22:11 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (CEILDIV): rename to a appropriate name.
