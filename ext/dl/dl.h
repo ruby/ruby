@@ -199,6 +199,7 @@ struct cfunc_data {
     char *name;
     int  type;
     ID   calltype;
+    VALUE wrap;
 };
 extern ID rbdl_id_cdecl;
 extern ID rbdl_id_stdcall;
@@ -209,6 +210,7 @@ struct ptr_data {
     void *ptr;
     long size;
     freefunc_t free;
+    VALUE wrap[2];
 };
 
 #define RDL_HANDLE(obj) ((struct dl_handle *)(DATA_PTR(obj)))

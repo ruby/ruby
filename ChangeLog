@@ -1,3 +1,11 @@
+Wed Feb 15 05:08:25 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/cptr.c (rb_dlptr_s_to_ptr): use rb_check_funcall.
+
+	* ext/dl/cfunc.c (dlcfunc_mark), ext/dl/cptr.c (dlptr_mark):
+	  workaround to mark wrapped object.  this is not a true fix,
+	  because [Bug #4929] is caused by the interface design of DL.
+
 Wed Feb 15 05:04:47 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/cptr.c (rb_dlptr_aref, rb_dlptr_aset): check NULL pointer
