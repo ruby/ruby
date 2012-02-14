@@ -1639,16 +1639,19 @@ struct autoload_const_set_args {
     VALUE value;
 };
 
-static void
-autoload_const_set(struct autoload_const_set_args* args)
+static VALUE
+autoload_const_set(VALUE arg)
 {
+    struct autoload_const_set_args* args = (struct autoload_const_set_args *)arg;
     autoload_delete(args->mod, args->id);
     rb_const_set(args->mod, args->id, args->value);
+    return 0;			/* ignored */
 }
 
 static VALUE
-autoload_require(struct autoload_data_i *ele)
+autoload_require(VALUE arg)
 {
+    struct autoload_data_i *ele = (struct autoload_data_i *)arg;
     return rb_require_safe(ele->feature, ele->safe_level);
 }
 
@@ -1674,7 +1677,7 @@ rb_autoload_load(VALUE mod, ID id)
 	ele->thread = rb_thread_current();
     }
     /* autoload_data_i can be deleted by another thread while require */
-    result = rb_protect((VALUE(*)(VALUE))autoload_require, (VALUE)ele, &state);
+    result = rb_protect(autoload_require, (VALUE)ele, &state);
     if (ele->thread == rb_thread_current()) {
 	ele->thread = Qnil;
     }
@@ -1690,7 +1693,7 @@ rb_autoload_load(VALUE mod, ID id)
 	    args.value = ele->value;
 	    safe_backup = rb_safe_level();
 	    rb_set_safe_level_force(ele->safe_level);
-	    rb_ensure((VALUE(*)(VALUE))autoload_const_set, (VALUE)&args, reset_safe, (VALUE)safe_backup);
+	    rb_ensure(autoload_const_set, (VALUE)&args, reset_safe, (VALUE)safe_backup);
 	}
     }
     RB_GC_GUARD(load);

@@ -1,3 +1,8 @@
+Tue Feb 14 12:10:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (autoload_const_set, autoload_require): fix
+	  signatures.
+
 Tue Feb 14 05:23:40 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* process.c (proc_wait):  Change typo "SystemError" to
