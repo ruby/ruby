@@ -1,3 +1,14 @@
+Tue Feb 14 16:52:17 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/rdoc/encoding.rb (RDoc::Encoding.read_file): fixup newline chars
+	  on Windows.
+	  see https://github.com/rdoc/rdoc/issues/87
+
+	* test/rdoc/test_rdoc_markup_pre_process.rb
+	  (TestRDocMarkupPreProcess#test_include_file, 
+	  TestRDocMarkupPreProcess#test_include_file_encoding_incompatible):
+	  follow above change.
+
 Tue Feb 14 16:34:11 2012  Shota Fukumori  <sorah@tubusu.net>
 
 	* test/rubygems/test_gem_commands_help_command.rb: Add one
