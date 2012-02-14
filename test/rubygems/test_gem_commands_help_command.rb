@@ -3,6 +3,7 @@ require "rubygems/test_case"
 require "rubygems/commands/help_command"
 require "rubygems/format"
 require "rubygems/command_manager"
+require_relative "rubygems_plugin"
 
 class TestGemCommandsHelpCommand < Gem::TestCase
   def setup
