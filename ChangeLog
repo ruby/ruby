@@ -1,3 +1,8 @@
+Tue Feb 14 15:44:42 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/irb/test_completion.rb: skip if cannot load irb/completion
+	  (maybe readline does not exist).
+
 Tue Feb 14 15:07:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (build_message): skip escaped
