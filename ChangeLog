@@ -1,3 +1,9 @@
+Tue Feb 14 18:07:20 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (assign_heap_slot): SEGV happens cause on 64-bit platform
+	  sometime there should be `objs-=2` instead of `objs--`.
+	  patched by Sokolov Yura. https://github.com/ruby/ruby/pull/92
+
 Tue Feb 14 16:00:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_setstrbuf): cut down the buffer if longer.

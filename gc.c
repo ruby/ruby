@@ -1165,9 +1165,7 @@ assign_heap_slot(rb_objspace_t *objspace)
     p = (RVALUE*)((VALUE)p + sizeof(struct heaps_header));
     if ((VALUE)p % sizeof(RVALUE) != 0) {
        p = (RVALUE*)((VALUE)p + sizeof(RVALUE) - ((VALUE)p % sizeof(RVALUE)));
-       if ((HEAP_SIZE - HEAP_OBJ_LIMIT * sizeof(RVALUE)) < (size_t)((char*)p - (char*)membase)) {
-           objs--;
-       }
+       objs = (HEAP_SIZE - (size_t)((VALUE)p - (VALUE)membase))/sizeof(RVALUE);
     }
 
     lo = 0;
