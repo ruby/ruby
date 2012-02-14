@@ -1,3 +1,8 @@
+Wed Feb 15 07:15:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (defined_expr): guard the whole expression.
+	  [ruby-dev:45021][Bug#5786]
+
 Wed Feb 15 05:08:25 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/cptr.c (rb_dlptr_s_to_ptr): use rb_check_funcall.
