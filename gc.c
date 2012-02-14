@@ -544,10 +544,11 @@ rb_objspace_free(rb_objspace_t *objspace)
 #define HEAP_ALIGN_MASK (~(~0UL << HEAP_ALIGN_LOG))
 #define REQUIRED_SIZE_BY_MALLOC (sizeof(size_t) * 5)
 #define HEAP_SIZE (HEAP_ALIGN - REQUIRED_SIZE_BY_MALLOC)
-#define CEILMOD(i, mod) (((i) + (mod) - 1)/(mod))
+#define CEILDIV(i, mod) (((i) + (mod) - 1)/(mod))
+#define ROUNDUP(i, mod) (CEILDIV((i), (mod)) * (mod))
 
 #define HEAP_OBJ_LIMIT (unsigned int)((HEAP_SIZE - sizeof(struct heaps_header))/sizeof(struct RVALUE))
-#define HEAP_BITMAP_LIMIT CEILMOD(HEAP_OBJ_LIMIT, sizeof(uintptr_t)*8)
+#define HEAP_BITMAP_LIMIT CEILDIV(HEAP_OBJ_LIMIT, sizeof(uintptr_t)*8)
 
 #define GET_HEAP_HEADER(x) (HEAP_HEADER(((uintptr_t)x) & ~(HEAP_ALIGN_MASK)))
 #define GET_HEAP_SLOT(x) (GET_HEAP_HEADER(x)->base)
@@ -1162,11 +1163,8 @@ assign_heap_slot(rb_objspace_t *objspace)
     heaps = slot;
 
     membase = p;
-    p = (RVALUE*)((VALUE)p + sizeof(struct heaps_header));
-    if ((VALUE)p % sizeof(RVALUE) != 0) {
-       p = (RVALUE*)((VALUE)p + sizeof(RVALUE) - ((VALUE)p % sizeof(RVALUE)));
-       objs = (HEAP_SIZE - (size_t)((char*)p - (char*)membase))/sizeof(RVALUE);
-    }
+    p = (RVALUE*)ROUNDUP((VALUE)p, sizeof(RVALUE));
+    objs = (HEAP_SIZE - (size_t)((char*)p - (char*)membase))/sizeof(RVALUE);
 
     lo = 0;
     hi = heaps_used;
