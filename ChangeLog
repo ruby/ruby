@@ -1,3 +1,8 @@
+Wed Feb 15 07:28:54 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* encoding.c (Init_Encoding):  Add IO example of internal and external
+	  encoding.  Fixed a typo in the force_encoding example.  [#5949]
+
 Wed Feb 15 06:58:21 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* encoding.c (Init_Encoding):  Add Encoding documentation.

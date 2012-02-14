@@ -1621,12 +1621,12 @@ rb_enc_aliases(VALUE klass)
  *   "some string".encoding
  *   #=> #<Encoding:UTF-8>
  *
- *   string = "some string".encode(Encoding::ISO_8859_1)
+ *   string = "some string".encode Encoding::ISO_8859_1
  *   #=> "some string"
  *   string.encoding
  *   #=> #<Encoding:ISO-8859-1>
  *
- *   "some string".encode("ISO-8859-1")
+ *   "some string".encode "ISO-8859-1"
  *   #=> "some string"
  *
  * <code>Encoding::ASCII_8BIT</code> is a special encoding that does not
@@ -1647,7 +1647,7 @@ rb_enc_aliases(VALUE klass)
  *   #=> "R\xC3\xA9sum\xC3\xA9"
  *   string.encoding
  *   #=> #<Encoding:ISO-8859-1>
- *   string.force_encoding(Encoding:UTF-8)
+ *   string.force_encoding Encoding::UTF-8
  *   #=> "Résumé"
  *
  * Second, it is possible to transcode a string, i.e. translate its internal
@@ -1755,6 +1755,37 @@ rb_enc_aliases(VALUE klass)
  * before and after the change will have inconsistent encodings.  Instead use
  * <code>ruby -E</code> to invoke ruby with the correct internal encoding.
  *
+ * == IO encoding example
+ *
+ * In the following example a UTF-8 encoded string "Résumé" is transcoded for
+ * output to ISO-8859-1 encoding, then read back in and transcoded to UTF-8:
+ *
+ *   string = "R\u00E9sum\u00E9"
+ *   
+ *   open "transcoded.txt", "w:ISO-8859-1" do |io|
+ *     io.write string
+ *   end
+ *   
+ *   puts "raw text:"
+ *   p File.binread "transcoded.txt"
+ *   puts
+ *   
+ *   open "transcoded.txt", "r:ISO-8859-1:UTF-8" do |io|
+ *     puts "transcoded text:"
+ *     p io.read
+ *   end
+ *
+ * While writing the file, the internal encoding is not specified as it is
+ * only necessary for reading.  While reading the file both the internal and
+ * external encoding must be specified to obtain the correct result.
+ *   
+ *   $ ruby t.rb 
+ *   raw text:
+ *   "R\xE9sum\xE9"
+ *
+ *   transcoded text:
+ *   "Résumé"
+ *   
  */
 
 void
