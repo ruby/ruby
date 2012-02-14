@@ -1,3 +1,14 @@
+Wed Feb 15 05:03:41 2012  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/rinda/test_rinda.rb: decrease the code that depends on timing.
+	  [Bug #372] [Bug #4160]
+
+Wed Feb 15 05:03:41 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/rinda/test_rinda.rb (test_remote_array_and_hash):
+	  add local variables to protect objects from GC. [ruby-dev:44253]
+	  [Bug #5104]
+
 Wed Feb 15 05:02:43 2012  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_err_in_callback.rb (test_err_in_callback): 
