@@ -1,3 +1,8 @@
+Wed Feb 15 10:33:41 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* vm_eval.c (check_funcall):  Call respond_to? with matching arity for
+	  legacy single-argument implementations.  [ruby-trunk - Bug #6000]
+
 Wed Feb 15 10:25:22 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* vm_eval.c (check_funcall): set array elements one-by-one to fix
