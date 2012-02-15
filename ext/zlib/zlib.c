@@ -1329,12 +1329,20 @@ rb_deflate_s_allocate(VALUE klass)
  *
  * Zlib::FILTERED::
  *   For data produced by a filter (or predictor). The effect of FILTERED is
- *   to force more Huffman coding and less string matching; it is somewhat
+ *   to force more Huffman codes and less string matching; it is somewhat
  *   intermediate between DEFAULT_STRATEGY and HUFFMAN_ONLY. Filtered data
  *   consists mostly of small values with a somewhat random distribution.
  *
+ * Zlib::FIXED::
+ *   Prevents the use of dynamic Huffman codes, allowing for a simpler decoder
+ *   for specialized applications.
+ *
  * Zlib::HUFFMAN_ONLY::
  *   Use Huffman encoding only (no string matching).
+ *
+ * Zlib::RLE::
+ *   Designed to be almost as fast as HUFFMAN_ONLY, but give better
+ *   compression for PNG image data.
  *
  * == Examples
  *
@@ -4209,6 +4217,18 @@ Init_zlib()
      *
      * Which is an argument for Deflate.new and Deflate#params. */
     rb_define_const(mZlib, "HUFFMAN_ONLY", INT2FIX(Z_HUFFMAN_ONLY));
+#ifdef Z_RLE
+    /* compression method 3
+     *
+     * Which is an argument for Deflate.new and Deflate#params. */
+    rb_define_const(mZlib, "RLE", INT2FIX(Z_RLE));
+#endif
+#ifdef Z_FIXED
+    /* compression method 4
+     *
+     * Which is an argument for Deflate.new and Deflate#params. */
+    rb_define_const(mZlib, "FIXED", INT2FIX(Z_FIXED));
+#endif
     /* compression method 0
      *
      * Which is an argument for Deflate.new and Deflate#params. */

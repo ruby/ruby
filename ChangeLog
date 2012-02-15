@@ -1,3 +1,9 @@
+Wed Feb 15 09:27:45 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c (Init_zlib):  Added Zlib::FIXED and Zlib::RLE
+	  strategies.
+	* NEWS:  Add note about the new Zlib constants.
+
 Wed Feb 15 09:11:36 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/zlib/zlib.c:  Improve documentation.  [ruby-trunk - Bug #5948]

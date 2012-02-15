@@ -62,6 +62,9 @@ with all sufficient information, see the ChangeLog file.
     * Shellwords#shelljoin() accepts non-string objects in the given
       array, each of which is stringified using to_s.
 
+* zlib
+  * Added support for the new deflate strategies Zlib::RLE and Zlib::FIXED.
+
 === Language changes
 === Compatibility issues (excluding feature bug fixes)
 
