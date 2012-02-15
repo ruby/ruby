@@ -1,3 +1,8 @@
+Wed Feb 15 12:24:40 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c:  Move constant descriptions to constants.  Remove
+	  extra comment block at the top of Init_zlib().
+
 Wed Feb 15 12:30:46 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/ostruct.rb: Create getters and setters after dup.

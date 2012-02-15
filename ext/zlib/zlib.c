@@ -261,8 +261,8 @@ static VALUE rb_gzreader_readlines(int, VALUE*, VALUE);
  *   
  *   data_compressed = Zlib::Deflate.deflate(data_to_compress)
  *
- *   puts "Compressed size is #{data_compressed.size}" 
- *   #=> Compressed is 887238
+ *   puts "Compressed size: #{data_compressed.size}" 
+ *   #=> Compressed size: 887238
  *
  *   uncompressed_data = Zlib::Inflate.inflate(data_compressed)
  *
@@ -1318,31 +1318,19 @@ rb_deflate_s_allocate(VALUE klass)
  * compression ratio while 9 uses maximum memory for optimal speed.  The
  * default value is 8. Two constants are defined:
  *
- * * Zlib::DEF_MEM_LEVEL = 8
- * * Zlib::MAX_MEM_LEVEL = 9
+ * * Zlib::DEF_MEM_LEVEL
+ * * Zlib::MAX_MEM_LEVEL
  *
  * The +strategy+ sets the deflate compression strategy.  The following
  * strategies are available:
  *
- * Zlib::DEFAULT_STRATEGY::
- *   For normal data
+ * Zlib::DEFAULT_STRATEGY:: For normal data
+ * Zlib::FILTERED:: For data produced by a filter or predictor
+ * Zlib::FIXED:: Prevents dynamic Huffman codes
+ * Zlib::HUFFMAN_ONLY:: Prevents string matching
+ * Zlib::RLE:: Designed for better compression of PNG image data
  *
- * Zlib::FILTERED::
- *   For data produced by a filter (or predictor). The effect of FILTERED is
- *   to force more Huffman codes and less string matching; it is somewhat
- *   intermediate between DEFAULT_STRATEGY and HUFFMAN_ONLY. Filtered data
- *   consists mostly of small values with a somewhat random distribution.
- *
- * Zlib::FIXED::
- *   Prevents the use of dynamic Huffman codes, allowing for a simpler decoder
- *   for specialized applications.
- *
- * Zlib::HUFFMAN_ONLY::
- *   Use Huffman encoding only (no string matching).
- *
- * Zlib::RLE::
- *   Designed to be almost as fast as HUFFMAN_ONLY, but give better
- *   compression for PNG image data.
+ * See the constants for further description.
  *
  * == Examples
  *
@@ -1509,25 +1497,13 @@ do_deflate(struct zstream *z, VALUE src, int flush)
  * The +flush+ parameter specifies the flush mode.  The following constants
  * may be used:
  *
- * Zlib::NO_FLUSH::
- *   NO_FLUSH is the default for deflation and allows deflate to decide how
- *   much data to accumulate before producing output, in order to maximize
- *   compression.
+ * Zlib::NO_FLUSH:: The default
+ * Zlib::SYNC_FLUSH:: Flushes the output to a byte boundary
+ * Zlib::FULL_FLUSH:: SYNC_FLUSH + resets the compression state
+ * Zlib::FINISH:: Pending input is processed, pending output is flushed.
  *
- * Zlib::SYNC_FLUSH::
- *   All pending output is flushed to the output buffer and the output is
- *   aligned on a byte boundary. Flushing may degrade compression so it should
- *   be used only when necessary, such as at a packet boundary for a network
- *   stream.
+ * See the constants for further description.
  *
- * Zlib::FULL_FLUSH::
- *   All output is flushed as with SYNC_FLUSH, and the compression state is
- *   reset so that decompression can restart from this point if previous
- *   compressed data has been damaged or if random access is desired. Like
- *   SYNC_FLUSH, using FULL_FLUSH too often can seriously degrade compression.
- *
- * Zlib::FINISH::
- *   Pending input is processed, pending output is flushed.
  */
 static VALUE
 rb_deflate_deflate(int argc, VALUE *argv, VALUE obj)
@@ -4021,89 +3997,6 @@ rb_gzreader_readlines(int argc, VALUE *argv, VALUE obj)
 
 #endif /* GZIP_SUPPORT */
 
-
-
-/*
- * Document-module: Zlib
- *
- * The Zlib module contains several classes for compressing and decompressing
- * streams, and for working with "gzip" files.
- *
- * == Classes
- *
- * Following are the classes that are most likely to be of interest to the
- * user:
- * Zlib::Inflate
- * Zlib::Deflate
- * Zlib::GzipReader
- * Zlib::GzipWriter
- *
- * There are two important base classes for the classes above: Zlib::ZStream
- * and Zlib::GzipFile.  Everything else is an error class.
- *
- * == Constants
- *
- * Here's a list.
- *
- *   Zlib::VERSION
- *       The Ruby/zlib version string.
- *
- *   Zlib::ZLIB_VERSION
- *       The string which represents the version of zlib.h.
- *
- *   Zlib::BINARY
- *   Zlib::ASCII
- *   Zlib::UNKNOWN
- *       The integers representing data types which Zlib::ZStream#data_type
- *       method returns.
- *
- *   Zlib::NO_COMPRESSION
- *   Zlib::BEST_SPEED
- *   Zlib::BEST_COMPRESSION
- *   Zlib::DEFAULT_COMPRESSION
- *       The integers representing compression levels which are an argument
- *       for Zlib::Deflate.new, Zlib::Deflate#deflate, and so on.
- *
- *   Zlib::FILTERED
- *   Zlib::HUFFMAN_ONLY
- *   Zlib::DEFAULT_STRATEGY
- *       The integers representing compression methods which are an argument
- *       for Zlib::Deflate.new and Zlib::Deflate#params.
- *
- *   Zlib::DEF_MEM_LEVEL
- *   Zlib::MAX_MEM_LEVEL
- *       The integers representing memory levels which are an argument for
- *       Zlib::Deflate.new, Zlib::Deflate#params, and so on.
- *
- *   Zlib::MAX_WBITS
- *       The default value of windowBits which is an argument for
- *       Zlib::Deflate.new and Zlib::Inflate.new.
- *
- *   Zlib::NO_FLUSH
- *   Zlib::SYNC_FLUSH
- *   Zlib::FULL_FLUSH
- *   Zlib::FINISH
- *       The integers to control the output of the deflate stream, which are
- *       an argument for Zlib::Deflate#deflate and so on.
- *
- *   Zlib::OS_CODE
- *   Zlib::OS_MSDOS
- *   Zlib::OS_AMIGA
- *   Zlib::OS_VMS
- *   Zlib::OS_UNIX
- *   Zlib::OS_VMCMS
- *   Zlib::OS_ATARI
- *   Zlib::OS_OS2
- *   Zlib::OS_MACOS
- *   Zlib::OS_ZSYSTEM
- *   Zlib::OS_CPM
- *   Zlib::OS_TOPS20
- *   Zlib::OS_WIN32
- *   Zlib::OS_QDOS
- *   Zlib::OS_RISCOS
- *   Zlib::OS_UNKNOWN
- *       The return values of Zlib::GzipFile#os_code method.
- */
 void
 Init_zlib()
 {
@@ -4157,14 +4050,19 @@ Init_zlib()
     rb_define_method(cZStream, "flush_next_in", rb_zstream_flush_next_in, 0);
     rb_define_method(cZStream, "flush_next_out", rb_zstream_flush_next_out, 0);
 
-    /* Integer representing date types which
-     * ZStream#data_type method returns */
+    /* Represents binary data as guessed by deflate.
+     *
+     * See Zlib::Deflate#data_type. */
     rb_define_const(mZlib, "BINARY", INT2FIX(Z_BINARY));
-    /* Integer representing date types which
-     * ZStream#data_type method returns */
+
+    /* Represents text data as guessed by deflate.
+     *
+     * See Zlib::Deflate#data_type. */
     rb_define_const(mZlib, "ASCII", INT2FIX(Z_ASCII));
-    /* Integer representing date types which
-     * ZStream#data_type method returns */
+
+    /* Represents an unknown data type as guessed by deflate.
+     *
+     * See Zlib::Deflate#data_type. */
     rb_define_const(mZlib, "UNKNOWN", INT2FIX(Z_UNKNOWN));
 
     cDeflate = rb_define_class_under(mZlib, "Deflate", cZStream);
@@ -4191,83 +4089,84 @@ Init_zlib()
     rb_define_method(cInflate, "sync_point?", rb_inflate_sync_point_p, 0);
     rb_define_method(cInflate, "set_dictionary", rb_inflate_set_dictionary, 1);
 
-    /* compression level 0
-     *
-     * Which is an argument for Deflate.new, Deflate#deflate, and so on. */
+    /* No compression, passes through data untouched.  Use this for appending
+     * pre-compressed data to a deflate stream.
+     */
     rb_define_const(mZlib, "NO_COMPRESSION", INT2FIX(Z_NO_COMPRESSION));
-    /* compression level 1
-     *
-     * Which is an argument for Deflate.new, Deflate#deflate, and so on. */
+    /* Fastest compression level, but with with lowest space savings. */
     rb_define_const(mZlib, "BEST_SPEED", INT2FIX(Z_BEST_SPEED));
-    /* compression level 9
-     *
-     * Which is an argument for Deflate.new, Deflate#deflate, and so on. */
+    /* Slowest compression level, but with the best space savings. */
     rb_define_const(mZlib, "BEST_COMPRESSION", INT2FIX(Z_BEST_COMPRESSION));
-    /* compression level -1
-     *
-     * Which is an argument for Deflate.new, Deflate#deflate, and so on. */
+    /* Default compression level which is a good trade-off between space and
+     * time
+     */
     rb_define_const(mZlib, "DEFAULT_COMPRESSION",
 		    INT2FIX(Z_DEFAULT_COMPRESSION));
 
-    /* compression method 1
-     *
-     * Which is an argument for Deflate.new and Deflate#params. */
+    /* Deflate strategy for data produced by a filter (or predictor). The
+     * effect of FILTERED is to force more Huffman codes and less string
+     * matching; it is somewhat intermediate between DEFAULT_STRATEGY and
+     * HUFFMAN_ONLY. Filtered data consists mostly of small values with a
+     * somewhat random distribution.
+     */
     rb_define_const(mZlib, "FILTERED", INT2FIX(Z_FILTERED));
-    /* compression method 2
-     *
-     * Which is an argument for Deflate.new and Deflate#params. */
+
+    /* Deflate strategy which uses Huffman codes only (no string matching). */
     rb_define_const(mZlib, "HUFFMAN_ONLY", INT2FIX(Z_HUFFMAN_ONLY));
+
 #ifdef Z_RLE
-    /* compression method 3
-     *
-     * Which is an argument for Deflate.new and Deflate#params. */
+    /* Deflate compression strategy designed to be almost as fast as
+     * HUFFMAN_ONLY, but give better compression for PNG image data.
+     */
     rb_define_const(mZlib, "RLE", INT2FIX(Z_RLE));
 #endif
+
 #ifdef Z_FIXED
-    /* compression method 4
-     *
-     * Which is an argument for Deflate.new and Deflate#params. */
+    /* Deflate strategy which prevents the use of dynamic Huffman codes,
+     * allowing for a simpler decoder for specialized applications.
+     */
     rb_define_const(mZlib, "FIXED", INT2FIX(Z_FIXED));
 #endif
-    /* compression method 0
-     *
-     * Which is an argument for Deflate.new and Deflate#params. */
+
+    /* Default deflate strategy which is used for normal data. */
     rb_define_const(mZlib, "DEFAULT_STRATEGY", INT2FIX(Z_DEFAULT_STRATEGY));
 
-     /* The default value of windowBits which is an argument for
-      * Deflate.new and Inflate.new.
-      */
+    /* The maximum size of the zlib history buffer.  Note that zlib allows
+     * larger values to enable different inflate modes.  See Zlib::Inflate.new
+     * for details.
+     */
     rb_define_const(mZlib, "MAX_WBITS", INT2FIX(MAX_WBITS));
-    /* Default value is 8
-     *
-     * The integer representing memory levels.
-     * Which are an argument for Deflate.new, Deflate#params, and so on. */
+
+    /* The default memory level for allocating zlib deflate compression state.
+     */
     rb_define_const(mZlib, "DEF_MEM_LEVEL", INT2FIX(DEF_MEM_LEVEL));
-    /* Maximum level is 9
-     *
-     * The integers representing memory levels which are an argument for
-     * Deflate.new, Deflate#params, and so on. */
+
+    /* The maximum memory level for allocating zlib deflate compression state.
+     */
     rb_define_const(mZlib, "MAX_MEM_LEVEL", INT2FIX(MAX_MEM_LEVEL));
 
-    /* Output control - 0
-     *
-     * The integers to control the output of the deflate stream, which are
-     * an argument for Deflate#deflate and so on. */
+    /* NO_FLUSH is the default flush method and allows deflate to decide how
+     * much data to accumulate before producing output in order to maximize
+     * compression.
+     */
     rb_define_const(mZlib, "NO_FLUSH", INT2FIX(Z_NO_FLUSH));
-    /* Output control - 2
-     *
-     * The integers to control the output of the deflate stream, which are
-     * an argument for Deflate#deflate and so on. */
+
+    /* The SYNC_FLUSH method flushes all pending output to the output buffer
+     * and the output is aligned on a byte boundary. Flushing may degrade
+     * compression so it should be used only when necessary, such as at a
+     * request or response boundary for a network stream.
+     */
     rb_define_const(mZlib, "SYNC_FLUSH", INT2FIX(Z_SYNC_FLUSH));
-    /* Output control - 3
-     *
-     * The integers to control the output of the deflate stream, which are
-     * an argument for Deflate#deflate and so on. */
+
+    /* Flushes all output as with SYNC_FLUSH, and the compression state is
+     * reset so that decompression can restart from this point if previous
+     * compressed data has been damaged or if random access is desired. Like
+     * SYNC_FLUSH, using FULL_FLUSH too often can seriously degrade
+     * compression.
+     */
     rb_define_const(mZlib, "FULL_FLUSH", INT2FIX(Z_FULL_FLUSH));
-    /* Oputput control - 4
-     *
-     * The integers to control the output of the deflate stream, which are
-     * an argument for Deflate#deflate and so on. */
+
+    /* Processes all pending input and flushes pending output. */
     rb_define_const(mZlib, "FINISH", INT2FIX(Z_FINISH));
 
 #if GZIP_SUPPORT
@@ -4355,38 +4254,37 @@ Init_zlib()
     rb_define_method(cGzipReader, "lines", rb_gzreader_each, -1);
     rb_define_method(cGzipReader, "readlines", rb_gzreader_readlines, -1);
 
-    /* From GzipFile#os_code - code of current host */
+    /* The OS code of current host */
     rb_define_const(mZlib, "OS_CODE", INT2FIX(OS_CODE));
-    /* From GzipFile#os_code - 0x00 */
+    /* OS code for MSDOS hosts */
     rb_define_const(mZlib, "OS_MSDOS", INT2FIX(OS_MSDOS));
-    /* From GzipFile#os_code - 0x01 */
+    /* OS code for Amiga hosts */
     rb_define_const(mZlib, "OS_AMIGA", INT2FIX(OS_AMIGA));
-    /* From GzipFile#os_code - 0x02 */
+    /* OS code for VMS hosts */
     rb_define_const(mZlib, "OS_VMS", INT2FIX(OS_VMS));
-    /* From GzipFile#os_code - 0x03 */
+    /* OS code for UNIX hosts */
     rb_define_const(mZlib, "OS_UNIX", INT2FIX(OS_UNIX));
-    /* From GzipFile#os_code - 0x05 */
+    /* OS code for Atari hosts */
     rb_define_const(mZlib, "OS_ATARI", INT2FIX(OS_ATARI));
-    /* From GzipFile#os_code - 0x06 */
+    /* OS code for OS2 hosts */
     rb_define_const(mZlib, "OS_OS2", INT2FIX(OS_OS2));
-    /* From GzipFile#os_code - 0x07 */
+    /* OS code for Mac OS hosts */
     rb_define_const(mZlib, "OS_MACOS", INT2FIX(OS_MACOS));
-    /* From GzipFile#os_code - 0x0a */
+    /* OS code for TOPS-20 hosts */
     rb_define_const(mZlib, "OS_TOPS20", INT2FIX(OS_TOPS20));
-    /* From GzipFile#os_code - 0x0b */
+    /* OS code for Win32 hosts */
     rb_define_const(mZlib, "OS_WIN32", INT2FIX(OS_WIN32));
-
-    /* From GzipFile#os_code - 0x04 */
+    /* OS code for VM OS hosts */
     rb_define_const(mZlib, "OS_VMCMS", INT2FIX(OS_VMCMS));
-    /* From GzipFile#os_code - 0x08 */
+    /* OS code for Z-System hosts */
     rb_define_const(mZlib, "OS_ZSYSTEM", INT2FIX(OS_ZSYSTEM));
-    /* From GzipFile#os_code - 0x09 */
+    /* OS code for CP/M hosts */
     rb_define_const(mZlib, "OS_CPM", INT2FIX(OS_CPM));
-    /* From GzipFile#os_code - 0x0c */
+    /* OS code for QDOS hosts */
     rb_define_const(mZlib, "OS_QDOS", INT2FIX(OS_QDOS));
-    /* From GzipFile#os_code - 0x0d */
+    /* OS code for RISC OS hosts */
     rb_define_const(mZlib, "OS_RISCOS", INT2FIX(OS_RISCOS));
-    /* From GzipFile#os_code - 0xff */
+    /* OS code for unknown hosts */
     rb_define_const(mZlib, "OS_UNKNOWN", INT2FIX(OS_UNKNOWN));
 
 #endif /* GZIP_SUPPORT */
