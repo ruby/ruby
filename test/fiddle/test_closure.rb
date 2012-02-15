@@ -55,5 +55,30 @@ module Fiddle
       n = 10000
       assert_equal(n, n.times {ObjectSpace.memsize_of(Closure.allocate)}, bug)
     end
+
+    %w[INT SHORT CHAR LONG LONG_LONG].each do |name|
+      type = DL.const_get("TYPE_#{name}") rescue next
+      size = DL.const_get("SIZEOF_#{name}")
+      [[type, size-1, name], [-type, size, "unsigned_"+name]].each do |t, s, n|
+        define_method("test_conversion_#{n.downcase}") do
+          arg = nil
+
+          clos = Class.new(Closure) do
+            define_method(:call) {|x| arg = x}
+          end.new(t, [t])
+
+          v = ~(~0 << (8*s))
+
+          arg = nil
+          assert_equal(v, clos.call(v))
+          assert_equal(arg, v, n)
+
+          arg = nil
+          func = Function.new(clos, [t], t)
+          assert_equal(v, func.call(v))
+          assert_equal(arg, v, n)
+        end
+      end
+    end
   end
 end if defined?(Fiddle)

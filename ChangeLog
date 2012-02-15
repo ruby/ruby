@@ -1,3 +1,7 @@
+Wed Feb 15 19:52:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/fiddle/closure.c (callback): same as r34506.
+
 Wed Feb 15 17:41:31 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (io_strsetbuf): call rb_str_modify to make str independent

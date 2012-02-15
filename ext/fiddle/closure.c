@@ -125,7 +125,7 @@ callback(ffi_cif *cif, void *resp, void **args, void *ctx)
 	break;
 #if HAVE_LONG_LONG
       case TYPE_LONG_LONG:
-	*(unsigned LONG_LONG *)resp = rb_big2ull(ret);
+	*(unsigned LONG_LONG *)resp = NUM2ULL(ret);
 	break;
 #endif
       default:
