@@ -1,3 +1,17 @@
+Wed Feb 15 10:25:22 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* vm_eval.c (check_funcall): set array elements one-by-one to fix
+	  compile error with Fujitsu C Compiler 5.6 on Solaris 10 on Sparc.
+
+Wed Feb 15 10:25:22 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_object.rb: tests that respond_to? returns false.
+
+Wed Feb 15 10:25:22 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (check_funcall): try respond_to? first if redefined.
+	  [Bug #5158]
+
 Wed Feb 15 07:15:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (defined_expr): guard the whole expression.

@@ -204,7 +204,7 @@ stack_check(void)
 }
 
 static inline rb_method_entry_t *rb_search_method_entry(VALUE recv, ID mid);
-static inline int rb_method_call_status(rb_thread_t *th, rb_method_entry_t *me, call_type scope, VALUE self);
+static inline int rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type scope, VALUE self);
 #define NOEX_OK NOEX_NOSUPER
 
 /*!
@@ -266,12 +266,26 @@ check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
 static VALUE
 check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
 {
-    rb_method_entry_t *me = rb_search_method_entry(recv, mid);
+    VALUE klass = CLASS_OF(recv);
+    const rb_method_entry_t *me;
     rb_thread_t *th = GET_THREAD();
-    int call_status = rb_method_call_status(th, me, CALL_FCALL, Qundef);
+    int call_status;
 
+    me = rb_method_entry(klass, idRespond_to);
+    if (me && !(me->flag & NOEX_BASIC)) {
+	VALUE args[2];
+
+	args[0] = ID2SYM(mid);
+	args[1] = Qtrue;
+	if (!RTEST(vm_call0(th, recv, idRespond_to, 2, args, me))) {
+	    return Qundef;
+	}
+    }
+
+    me = rb_search_method_entry(recv, mid);
+    call_status = rb_method_call_status(th, me, CALL_FCALL, Qundef);
     if (call_status != NOEX_OK) {
-	if (rb_method_basic_definition_p(CLASS_OF(recv), idMethodMissing)) {
+	if (rb_method_basic_definition_p(klass, idMethodMissing)) {
 	    return Qundef;
 	}
 	else {
@@ -376,7 +390,7 @@ rb_search_method_entry(VALUE recv, ID mid)
 }
 
 static inline int
-rb_method_call_status(rb_thread_t *th, rb_method_entry_t *me, call_type scope, VALUE self)
+rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type scope, VALUE self)
 {
     VALUE klass;
     ID oid;
