@@ -547,7 +547,7 @@ rb_objspace_free(rb_objspace_t *objspace)
 #define CEILDIV(i, mod) (((i) + (mod) - 1)/(mod))
 
 #define HEAP_OBJ_LIMIT (unsigned int)((HEAP_SIZE - sizeof(struct heaps_header))/sizeof(struct RVALUE))
-#define HEAP_BITMAP_LIMIT CEILDIV(HEAP_OBJ_LIMIT, sizeof(uintptr_t)*8)
+#define HEAP_BITMAP_LIMIT CEILDIV(CEILDIV(HEAP_SIZE, sizeof(struct RVALUE)), sizeof(uintptr_t)*8)
 
 #define GET_HEAP_HEADER(x) (HEAP_HEADER(((uintptr_t)x) & ~(HEAP_ALIGN_MASK)))
 #define GET_HEAP_SLOT(x) (GET_HEAP_HEADER(x)->base)

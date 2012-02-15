@@ -1,3 +1,9 @@
+Wed Feb 15 10:59:52 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (HEAP_BITMAP_LIMIT): HEAP_BITMAP_LIMIT is computed on the
+	  basis of HEAP_SIZE because it must covers a whole heap block.
+	  [ruby-trunk - Bug #6006]
+
 Wed Feb 15 09:27:45 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/zlib/zlib.c (Init_zlib):  Added Zlib::FIXED and Zlib::RLE
