@@ -1,6 +1,6 @@
 Wed Feb 15 19:57:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* ext/fiddle/closure.c (callback): deal with unsinged integers.
+	* ext/fiddle/closure.c (callback): deal with unsigned integers.
 	  [ruby-core:42458][Bug #5991][Bug #6022]
 
 	* ext/fiddle/conversions.c (value_to_generic, generic_to_value):
