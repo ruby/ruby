@@ -381,6 +381,10 @@ OnigEncodingDefine(shift_jis, Shift_JIS) = {
  * MIBenum: 17
  * Link: http://www.iana.org/assignments/character-sets
  * Link: http://ja.wikipedia.org/wiki/Shift_JIS
+ *
+ * Note that this Shift_JIS's 7bit part is US-ASCII not JIX X 0201
+ * because Shift_JIS must be ASCII compatible encoding.
+ * See also the conversion table (enc/trans/japanese_sjis.trans).
  */
 
 /*
