@@ -1,3 +1,8 @@
+Wed Feb 15 12:30:46 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/ostruct.rb: Create getters and setters after dup.
+	  [Bug #6028] [rubyspecs:0380bcc]
+
 Wed Feb 15 10:59:52 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (HEAP_BITMAP_LIMIT): HEAP_BITMAP_LIMIT is computed on the

@@ -97,6 +97,7 @@ class OpenStruct
   def initialize_copy(orig)
     super
     @table = @table.dup
+    @table.each_key{|key| new_ostruct_member(key)}
   end
 
   #
