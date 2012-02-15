@@ -1621,7 +1621,7 @@ rb_enc_aliases(VALUE klass)
  *   "some string".encoding
  *   #=> #<Encoding:UTF-8>
  *
- *   string = "some string".encode Encoding::ISO_8859_1
+ *   string = "some string".encode(Encoding::ISO_8859_1)
  *   #=> "some string"
  *   string.encoding
  *   #=> #<Encoding:ISO-8859-1>
@@ -1629,14 +1629,15 @@ rb_enc_aliases(VALUE klass)
  *   "some string".encode "ISO-8859-1"
  *   #=> "some string"
  *
- * <code>Encoding::ASCII_8BIT</code> is a special encoding that does not
- * correspond to any character encoding. In fact it represents the absence of
- * encoding and objects with this encoding can be seen as binary data.
+ * <code>Encoding::ASCII_8BIT</code> is a special encoding that is usually
+ * used for a byte string, not a character string. But as the name insists,
+ * its characters in the range of ASCII are considered as ASCII characters.
+ * This is useful when you use ASCII-8BIT characters with other ASCII
+ * compatible characters.
  *
  * == Changing an encoding
  *
- * The associated Encoding of a String can can be changed in two different
- * ways.
+ * The associated Encoding of a String can be changed in two different ways.
  *
  * First, it is possible to set the Encoding of a string to a new Encoding
  * without changing the internal byte representation of the string, with
@@ -1647,8 +1648,8 @@ rb_enc_aliases(VALUE klass)
  *   #=> "R\xC3\xA9sum\xC3\xA9"
  *   string.encoding
  *   #=> #<Encoding:ISO-8859-1>
- *   string.force_encoding Encoding::UTF-8
- *   #=> "Résumé"
+ *   string.force_encoding(Encoding::UTF-8)
+ *   #=> "R\u00E9sum\u00E9"
  *
  * Second, it is possible to transcode a string, i.e. translate its internal
  * byte representation to another encoding. Its associated encoding is also
@@ -1660,17 +1661,17 @@ rb_enc_aliases(VALUE klass)
  *   #=> "R\u00E9sum\u00E9"
  *   string.encoding
  *   #=> #<Encoding:UTF-8>
- *   string = string.encode! Encoding::ISO_8859_1
+ *   string = string.encode!(Encoding::ISO_8859_1)
  *   #=> "R\xE9sum\xE9"
  *   string.encoding
  *   #=> #<Encoding::ISO-8859-1>
  *
- * == Locale encoding
+ * == Script encoding
  *
- * All Ruby source code has an associated Encoding which any String literal
+ * All Ruby script code has an associated Encoding which any String literal
  * created in the source code will be associated to.
  *
- * The default locale encoding is <code>Encoding::US-ASCII</code>, but it can
+ * The default script encoding is <code>Encoding::US-ASCII</code>, but it can
  * be changed by a magic comment on the first line of the source code file (or
  * second line, if there is a shebang line on the first). The comment must
  * contain the word <code>coding</code> or <code>encoding</code>, followed
@@ -1681,8 +1682,8 @@ rb_enc_aliases(VALUE klass)
  *   "some string".encoding
  *   #=> #<Encoding:UTF-8>
  *
- * The <code>__ENCODING__</code> keyword returns the locale encoding that is
- * currently active:
+ * The <code>__ENCODING__</code> keyword returns the script encoding of the file
+ * which the keyword is written:
  *
  *   # encoding: ISO-8859-1
  *
@@ -1690,15 +1691,29 @@ rb_enc_aliases(VALUE klass)
  *   #=> #<Encoding:ISO-8859-1>
  *
  * <code>ruby -K</code> will change the default locale encoding, but this is
- * not recommended.  Ruby source files should include the locale encoding
- * comment even when they depend on US-ASCII strings or regular expressions.
+ * not recommended. Ruby source files should declare its script encoding by a
+ * magic comment even when they only depend on US-ASCII strings or regular
+ * expressions.
+ *
+ * == Locale encoding
+ *
+ * The default encoding of the environment. Usually derived from locale.
+ *
+ * see Encoding.locale_charmap, Encoding.find('locale')
+ *
+ * == Filesystem encoding
+ *
+ * The default encoding of strings from the filesystem of the environment.
+ * This is used for strings of file names or paths.
+ *
+ * see Encoding.find('filesystem')
  *
  * == External encoding
  *
  * Each IO object has an external encoding which indicates the encoding that
  * Ruby will use to read its data. By default Ruby sets the external encoding
- * of an IO object to the default external encoding (initialized from the
- * user's environment, set with the interpreter <code>-E</code> option).
+ * of an IO object to the default external encoding. The default external
+ * encoding is set by locale encoding or the interpreter <code>-E</code> option.
  * Encoding.default_external returns the current value of the external
  * encoding.
  *
@@ -1757,20 +1772,20 @@ rb_enc_aliases(VALUE klass)
  *
  * == IO encoding example
  *
- * In the following example a UTF-8 encoded string "R.sum." is transcoded for
+ * In the following example a UTF-8 encoded string "R\u00E9sum\u00E9" is transcoded for
  * output to ISO-8859-1 encoding, then read back in and transcoded to UTF-8:
  *
  *   string = "R\u00E9sum\u00E9"
  *   
- *   open "transcoded.txt", "w:ISO-8859-1" do |io|
- *     io.write string
+ *   open("transcoded.txt", "w:ISO-8859-1") do |io|
+ *     io.write(string)
  *   end
  *   
  *   puts "raw text:"
- *   p File.binread "transcoded.txt"
+ *   p File.binread("transcoded.txt")
  *   puts
  *   
- *   open "transcoded.txt", "r:ISO-8859-1:UTF-8" do |io|
+ *   open("transcoded.txt", "r:ISO-8859-1:UTF-8") do |io|
  *     puts "transcoded text:"
  *     p io.read
  *   end
@@ -1784,7 +1799,7 @@ rb_enc_aliases(VALUE klass)
  *   "R\xE9sum\xE9"
  *
  *   transcoded text:
- *   "R.sum."
+ *   "R\u00E9sum\u00E9"
  *   
  */
 
