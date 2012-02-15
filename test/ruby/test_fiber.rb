@@ -220,5 +220,21 @@ class TestFiber < Test::Unit::TestCase
     end
     assert_equal("Can't call on top of Fiber or Thread", error.message, bug5083)
   end
+
+  def test_fork_from_fiber
+    begin
+      Process.fork{}
+    rescue NotImplementedError
+      return
+    end
+    bug5700 = '[ruby-core:41456]'
+    pid = nil
+    assert_nothing_raised(bug5700) do
+      Fiber.new{ pid = fork {} }.resume
+    end
+    pid, status = Process.waitpid2(pid)
+    assert_equal(0, status.exitstatus, bug5700)
+    assert_equal(false, status.signaled?, bug5700)
+  end
 end
 

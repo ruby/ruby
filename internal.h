@@ -61,6 +61,10 @@ int rb_parse_in_eval(void);
 int rb_parse_in_main(void);
 VALUE rb_insns_name_array(void);
 
+/* cont.c */
+VALUE rb_obj_is_fiber(VALUE);
+void rb_fiber_reset_root_local_storage(VALUE);
+
 /* debug.c */
 PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
 

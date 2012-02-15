@@ -1609,6 +1609,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 	rb_gc_force_recycle(vm->self);
 	vm->main_thread = 0;
 	if (th) {
+	    rb_fiber_reset_root_local_storage(th->self);
 	    thread_free(th);
 	}
 	if (vm->living_threads) {
