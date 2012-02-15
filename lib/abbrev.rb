@@ -84,7 +84,7 @@ class Array
   # the pattern or starting with the string are considered.
   #
   #   %w{ car cone }.abbrev   #=> { "ca" => "car", "car" => "car",
-  #                                 "co" => "cone", "con" => cone",
+  #                                 "co" => "cone", "con" => "cone",
   #                                 "cone" => "cone" }
   def abbrev(pattern = nil)
     Abbrev::abbrev(self, pattern)

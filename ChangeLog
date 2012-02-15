@@ -1,3 +1,7 @@
+Thu Feb 16 00:14:04 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/abbrev.rb (Array#abbrev): add missing '"' in documentation.
+
 Wed Feb 15 22:20:19 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* cont.c (rb_fiber_reset_root_local_storage): add a new function to
