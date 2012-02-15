@@ -224,9 +224,50 @@ static VALUE rb_gzreader_readlines(int, VALUE*, VALUE);
 /*
  * Document-module: Zlib
  *
- * == Overview
+ * This module provides access to the {zlib library}[http://zlib.net]. Zlib is
+ * designed to be a portable, free, general-purpose, legally unencumbered --
+ * that is, not covered by any patents -- lossless data-compression library
+ * for use on virtually any computer hardware and operating system.
  *
- * Access to the zlib library.
+ * The zlib compression library provides in-memory compression and
+ * decompression functions, including integrity checks of the uncompressed 
+ * data.
+ *
+ * The zlib compressed data format is described in RFC 1950, which is a
+ * wrapper around a deflate stream which is described in RFC 1951.
+ *
+ * The library also supports reading and writing files in gzip (.gz) format 
+ * with an interface similar to that of IO. The gzip format is described in
+ * RFC 1952 which is also a wrapper around a deflate stream.
+ *
+ * The zlib format was designed to be compact and fast for use in memory and on
+ * communications channels. The gzip format was designed for single-file
+ * compression on file systems, has a larger header than zlib to maintain 
+ * directory information, and uses a different, slower check method than zlib.
+ *
+ * See your system's zlib.h for further information about zlib
+ *
+ * == Sample usage
+ *
+ * Using the wrapper to compress strings with default parameters is quite
+ * simple: 
+ *
+ *   require "zlib"
+ *
+ *   data_to_compress = File.read("don_quixote.txt")
+ *   
+ *   puts "Input size: #{data_to_compress.size}"
+ *   #=> Input size: 2347740
+ *   
+ *   data_compressed = Zlib::Deflate.deflate(data_to_compress)
+ *
+ *   puts "Compressed size is #{data_compressed.size}" 
+ *   #=> Compressed is 887238
+ *
+ *   uncompressed_data = Zlib::Inflate.inflate(data_compressed)
+ *
+ *   puts "Uncompressed data is: #{uncompressed_data}"
+ *   #=> Uncompressed data is: The Project Gutenberg EBook of Don Quixote...
  *
  * == Class tree
  *
@@ -250,8 +291,6 @@ static VALUE rb_gzreader_readlines(int, VALUE*, VALUE);
  *   - Zlib::GzipFile::LengthError
  *   - Zlib::GzipFile::CRCError
  *   - Zlib::GzipFile::NoFooter
- *
- * see also zlib.h
  *
  */
 void Init_zlib(void);
@@ -1255,60 +1294,77 @@ rb_deflate_s_allocate(VALUE klass)
 /*
  * Document-method: Zlib::Deflate.new
  *
- * call-seq: Zlib::Deflate.new(level=nil, windowBits=nil, memlevel=nil, strategy=nil)
+ * call-seq:
+ *   Zlib::Deflate.new(level=DEFAULT_COMPRESSION, window_bits=MAX_WBITS, mem_level=DEF_MEM_LEVEL, strategy=DEFAULT_STRATEGY)
  *
- * == Arguments
+ * Creates a new deflate stream for compression. If a given argument is nil,
+ * the default value of that argument is used.
  *
- * +level+::
- *   An Integer compression level between
- *   BEST_SPEED and BEST_COMPRESSION
- * +windowBits+::
- *   An Integer for the windowBits size. Should be
- *   in the range 8..15, larger values of this parameter
- *   result in better at the expense of memory usage.
- * +memlevel+::
- *   Specifies how much memory should be allocated for
- *   the internal compression state.
- *   Between DEF_MEM_LEVEL and MAX_MEM_LEVEL
- * +strategy+::
- *   A parameter to tune the compression algorithm. Use the
- *   DEFAULT_STRATEGY for normal data, FILTERED for data produced by a
- *   filter (or predictor), HUFFMAN_ONLY to force Huffman encoding only (no
- *   string match).
+ * The +level+ sets the compression level for the deflate stream between 0 (no
+ * compression) and 9 (best compression. The following constants have been
+ * defined to make code more readable:
+ *   
+ * * Zlib::NO_COMPRESSION = 0
+ * * Zlib::BEST_SPEED =  1
+ * * Zlib::DEFAULT_COMPRESSION = 6
+ * * Zlib::BEST_COMPRESSION = 9
+ *   
+ * The +window_bits+ sets the size of the history buffer and should be between
+ * 8 and 15.  Larger values of this parameter result in better compression at
+ * the expense of memory usage.
  *
- * == Description
+ * The +mem_level+ specifies how much memory should be allocated for the
+ * internal compression state.  1 uses minimum memory but is slow and reduces
+ * compression ratio while 9 uses maximum memory for optimal speed.  The
+ * default value is 8. Two constants are defined:
  *
- * Creates a new deflate stream for compression. See zlib.h for details of
- * each argument. If an argument is nil, the default value of that argument is
- * used.
+ * * Zlib::DEF_MEM_LEVEL = 8
+ * * Zlib::MAX_MEM_LEVEL = 9
  *
+ * The +strategy+ sets the deflate compression strategy.  The following
+ * strategies are available:
  *
- * == examples
+ * Zlib::DEFAULT_STRATEGY::
+ *   For normal data
  *
- * === basic
+ * Zlib::FILTERED::
+ *   For data produced by a filter (or predictor). The effect of FILTERED is
+ *   to force more Huffman coding and less string matching; it is somewhat
+ *   intermediate between DEFAULT_STRATEGY and HUFFMAN_ONLY. Filtered data
+ *   consists mostly of small values with a somewhat random distribution.
  *
- *   f = File.new("compressed.file","w+")
- *   #=> #<File:compressed.file>
- *   f << Zlib::Deflate.new().deflate(File.read("big.file"))
- *   #=> #<File:compressed.file>
- *   f.close
- *   #=> nil
+ * Zlib::HUFFMAN_ONLY::
+ *   Use Huffman encoding only (no string matching).
  *
- * === a little more robust
+ * == Examples
  *
- *   compressed_file = File.open("compressed.file", "w+")
- *   #=> #<File:compressed.file>
- *   zd = Zlib::Deflate.new(Zlib::BEST_COMPRESSION, 15, Zlib::MAX_MEM_LEVEL, Zlib::HUFFMAN_ONLY)
- *   #=> #<Zlib::Deflate:0x000000008610a0>
- *   compressed_file << zd.deflate(File.read("big.file"))
- *   #=> "\xD4z\xC6\xDE\b\xA1K\x1Ej\x8A ..."
- *   compressed_file.close
- *   #=> nil
- *   zd.close
- *   #=> nil
+ * === Basic
  *
- * (while this example will work, for best optimization the flags need to be reviewed for your specific function)
+ *   open "compressed.file", "w+" do |io|
+ *     io << Zlib::Deflate.new.deflate(File.read("big.file"))
+ *   end
  *
+ * === Custom compression
+ *
+ *   open "compressed.file", "w+" do |compressed_io|
+ *     deflate = Zlib::Deflate.new(Zlib::BEST_COMPRESSION,
+ *                                 Zlib::MAX_WBITS,
+ *                                 Zlib::MAX_MEM_LEVEL,
+ *                                 Zlib::HUFFMAN_ONLY)
+ *
+ *     begin
+ *       open "big.file" do |big_io|
+ *         until big_io.eof? do
+ *           compressed_io << zd.deflate(big_io.read(16384))
+ *         end
+ *       end
+ *     ensure
+ *       deflate.close
+ *     end
+ *   end
+ *
+ * While this example will work, for best optimization review the flags for
+ * your specific time, memory usage and output space requirements.
  */
 static VALUE
 rb_deflate_initialize(int argc, VALUE *argv, VALUE obj)
@@ -1430,37 +1486,40 @@ do_deflate(struct zstream *z, VALUE src, int flush)
 }
 
 /*
- * Document-method: Zlib.deflate
+ * Document-method: Zlib#deflate
  *
- * call-seq: deflate(string[, flush])
- *
- * == Arguments
- *
- * +string+::
- *   String
- *
- * +flush+::
- *   Integer representing a flush code. Either NO_FLUSH,
- *   SYNC_FLUSH, FULL_FLUSH, or FINISH. See zlib.h for details.
- *   Normally the parameter flush is set to Z_NO_FLUSH, which allows deflate to
- *   decide how much data to accumulate before producing output, in order to
- *   maximize compression.
- *
- * == Description
+ * call-seq:
+ *   deflate(string, flush = Zlib::NO_FLUSH)
  *
  * Inputs +string+ into the deflate stream and returns the output from the
  * stream.  On calling this method, both the input and the output buffers of
  * the stream are flushed.
  *
- * If +string+ is nil, this method finishes the
- * stream, just like Zlib::ZStream#finish.
+ * If +string+ is nil, this method finishes the stream, just like
+ * Zlib::ZStream#finish.
  *
- * == Usage
+ * The +flush+ parameter specifies the flush mode.  The following constants
+ * may be used:
  *
- *   comp = Zlib.deflate(File.read("big.file"))
- * or
- *   comp = Zlib.deflate(File.read("big.file"), Zlib::FULL_FLUSH)
+ * Zlib::NO_FLUSH::
+ *   NO_FLUSH is the default for deflation and allows deflate to decide how
+ *   much data to accumulate before producing output, in order to maximize
+ *   compression.
  *
+ * Zlib::SYNC_FLUSH::
+ *   All pending output is flushed to the output buffer and the output is
+ *   aligned on a byte boundary. Flushing may degrade compression so it should
+ *   be used only when necessary, such as at a packet boundary for a network
+ *   stream.
+ *
+ * Zlib::FULL_FLUSH::
+ *   All output is flushed as with SYNC_FLUSH, and the compression state is
+ *   reset so that decompression can restart from this point if previous
+ *   compressed data has been damaged or if random access is desired. Like
+ *   SYNC_FLUSH, using FULL_FLUSH too often can seriously degrade compression.
+ *
+ * Zlib::FINISH::
+ *   Pending input is processed, pending output is flushed.
  */
 static VALUE
 rb_deflate_deflate(int argc, VALUE *argv, VALUE obj)
@@ -1478,7 +1537,7 @@ rb_deflate_deflate(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
- * Document-method: Zlib::Deflate.<<
+ * Document-method: Zlib::Deflate#<<
  *
  * call-seq: << string
  *
@@ -1497,14 +1556,14 @@ rb_deflate_addstr(VALUE obj, VALUE src)
 /*
  * Document-method: Zlib::Deflate#flush
  *
- * call-seq: flush(flush)
+ * call-seq:
+ *   flush(flush = Zlib::SYNC_FLUSH)
  *
- * This method is equivalent to <tt>deflate('', flush)</tt>.  If flush is omitted,
- * <tt>SYNC_FLUSH</tt> is used as flush.  This method is just provided
- * to improve the readability of your Ruby program.
+ * This method is equivalent to <tt>deflate('', flush)</tt>. This method is
+ * just provided to improve the readability of your Ruby program.
  *
- * Please visit your zlib.h for a deeper detail on NO_FLUSH, SYNC_FLUSH, FULL_FLUSH, and FINISH
- *
+ * See Zlib::Deflate#deflate for detail on the +flush+ constants NO_FLUSH,
+ * SYNC_FLUSH, FULL_FLUSH and FINISH.
  */
 static VALUE
 rb_deflate_flush(int argc, VALUE *argv, VALUE obj)
@@ -1529,18 +1588,11 @@ rb_deflate_flush(int argc, VALUE *argv, VALUE obj)
  *
  * call-seq: params(level, strategy)
  *
- * Changes the parameters of the deflate stream. See zlib.h for details. The
- * output from the stream by changing the params is preserved in output
- * buffer.
+ * Changes the parameters of the deflate stream to allow changes between
+ * different types of data that require different types of compression.  Any
+ * unprocessed data is flushed before changing the params.
  *
- * +level+::
- *   An Integer compression level between
- *   BEST_SPEED and BEST_COMPRESSION
- * +strategy+::
- *   A parameter to tune the compression algorithm. Use the
- *   DEFAULT_STRATEGY for normal data, FILTERED for data produced by a
- *   filter (or predictor), HUFFMAN_ONLY to force Huffman encoding only (no
- *   string match).
+ * See Zlib::Deflate.new for a description of +level+ and +strategy+.
  *
  */
 static VALUE
@@ -1625,41 +1677,46 @@ rb_inflate_s_allocate(VALUE klass)
 /*
  * Document-method: Zlib::Inflate.new
  *
- * call-seq: Zlib::Inflate.new(window_bits)
+ * call-seq:
+ *   Zlib::Inflate.new(window_bits = Zlib::MAX_WBITS)
  *
- * == Arguments
+ * Creates a new inflate stream for decompression.  +window_bits+ sets the
+ * size of the history buffer and can have the following values:
  *
- * +windowBits+::
- *   An Integer for the windowBits size. Should be
- *   in the range 8..15, larger values of this parameter
- *   result in better at the expense of memory usage.
+ * 0::
+ *   Have inflate use the window size from the zlib header of the compressed
+ *   stream.
  *
- * == Description
+ * (8..15)
+ *   Overrides the window size of the inflate header in the compressed stream.
+ *   The window size must be greater than or equal to the window size of the
+ *   compressed stream.
  *
- * Creates a new inflate stream for decompression. See zlib.h for details
- * of the argument.  If +window_bits+ is +nil+, the default value is used.
+ * Greater than 15::
+ *   Add 32 to window_bits to enable zlib and gzip decoding with automatic
+ *   header detection, or add 16 to decode only the gzip format (a
+ *   Zlib::DataError will be raised for a non-gzip stream). 
+ *
+ * (-8..-15)::
+ *   Enables raw deflate mode which will not generate a check value, and will
+ *   not look for any check values for comparison at the end of the stream.
+ *
+ *   This is for use with other formats that use the deflate compressed data
+ *   format such as zip which provide their own check values.
  *
  * == Example
  *
- *   cf = File.open("compressed.file")
- *   ucf = File.open("uncompressed.file", "w+")
- *   zi = Zlib::Inflate.new(Zlib::MAX_WBITS)
+ *   open "compressed.file" do |compressed_io|
+ *     inflate = Zlib::Inflate.new(Zlib::MAX_WBITS + 32)
  *
- *   ucf << zi.inflate(cf.read)
- *
- *   ucf.close
- *   zi.close
- *   cf.close
- *
- * or
- *
- *   File.open("compressed.file") {|cf|
- *     zi = Zlib::Inflate.new
- *     File.open("uncompressed.file", "w+") {|ucf|
- *       ucf << zi.inflate(cf.read)
- *     }
- *     zi.close
- *   }
+ *     begin
+ *       open "uncompressed.file", "w+" do |uncompressed_io|
+ *         uncompressed_io << zi.inflate(compressed_io.read)
+ *       }
+ *     ensure
+ *       zi.close
+ *     end
+ *   end
  *
  */
 static VALUE
