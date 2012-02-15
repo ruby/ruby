@@ -67,6 +67,15 @@
 #  error "long size not supported"
 # endif
 
+#if HAVE_LONG_LONG
+# if SIZEOF_LONG_LONG == 8
+#   define ffi_type_slong_long ffi_type_sint64
+#   define ffi_type_ulong_long ffi_type_uint64
+# else
+#  error "long long size not supported"
+# endif
+#endif
+
 #include <closure.h>
 #include <conversions.h>
 #include <function.h>

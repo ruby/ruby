@@ -27,7 +27,7 @@ int_to_ffi_type(int type)
 	return rb_ffi_type_of(long);
 #if HAVE_LONG_LONG
       case TYPE_LONG_LONG:
-	return rb_ffi_type_of(int64);
+	return rb_ffi_type_of(long_long);
 #endif
       case TYPE_FLOAT:
 	return &ffi_type_float;
@@ -42,13 +42,6 @@ int_to_ffi_type(int type)
 void
 value_to_generic(int type, VALUE src, fiddle_generic * dst)
 {
-    int signed_p = 1;
-
-    if (type < 0) {
-	type = -1 * type;
-	signed_p = 0;
-    }
-
     switch (type) {
       case TYPE_VOID:
 	break;
@@ -56,23 +49,35 @@ value_to_generic(int type, VALUE src, fiddle_generic * dst)
 	dst->pointer = NUM2PTR(rb_Integer(src));
 	break;
       case TYPE_CHAR:
-	dst->schar = NUM2INT(src);
+	dst->schar = (signed char)NUM2INT(src);
+	break;
+      case -TYPE_CHAR:
+	dst->uchar = (unsigned char)NUM2UINT(src);
 	break;
       case TYPE_SHORT:
-	dst->sshort = NUM2INT(src);
+	dst->sshort = (unsigned short)NUM2INT(src);
+	break;
+      case -TYPE_SHORT:
+	dst->sshort = (signed short)NUM2UINT(src);
 	break;
       case TYPE_INT:
 	dst->sint = NUM2INT(src);
 	break;
+      case -TYPE_INT:
+	dst->uint = NUM2UINT(src);
+	break;
       case TYPE_LONG:
-	if (signed_p)
-	    dst->slong = NUM2LONG(src);
-	else
-	    dst->ulong = NUM2LONG(src);
+	dst->slong = NUM2LONG(src);
+	break;
+      case -TYPE_LONG:
+	dst->ulong = NUM2ULONG(src);
 	break;
 #if HAVE_LONG_LONG
       case TYPE_LONG_LONG:
-	dst->long_long = NUM2ULL(src);
+	dst->slong_long = NUM2LL(src);
+	break;
+      case -TYPE_LONG_LONG:
+	dst->ulong_long = NUM2ULL(src);
 	break;
 #endif
       case TYPE_FLOAT:
@@ -89,16 +94,10 @@ value_to_generic(int type, VALUE src, fiddle_generic * dst)
 VALUE
 generic_to_value(VALUE rettype, fiddle_generic retval)
 {
-    int signed_p = 1;
     int type = NUM2INT(rettype);
     VALUE cPointer;
 
     cPointer = rb_const_get(mFiddle, rb_intern("Pointer"));
-
-    if (type < 0) {
-	type = -1 * type;
-	signed_p = 0;
-    }
 
     switch (type) {
       case TYPE_VOID:
@@ -107,21 +106,26 @@ generic_to_value(VALUE rettype, fiddle_generic retval)
         return rb_funcall(cPointer, rb_intern("[]"), 1,
           PTR2NUM((void *)retval.pointer));
       case TYPE_CHAR:
-	if (signed_p) return INT2NUM((char)retval.fffi_sarg);
+	return INT2NUM((signed char)retval.fffi_sarg);
+      case -TYPE_CHAR:
 	return INT2NUM((unsigned char)retval.fffi_arg);
       case TYPE_SHORT:
-	if (signed_p) return INT2NUM((short)retval.fffi_sarg);
+	return INT2NUM((signed short)retval.fffi_sarg);
+      case -TYPE_SHORT:
 	return INT2NUM((unsigned short)retval.fffi_arg);
       case TYPE_INT:
-	if (signed_p) return INT2NUM((int)retval.fffi_sarg);
+	return INT2NUM((signed int)retval.fffi_sarg);
+      case -TYPE_INT:
 	return UINT2NUM((unsigned int)retval.fffi_arg);
       case TYPE_LONG:
-	if (signed_p) return LONG2NUM(retval.slong);
+	return LONG2NUM(retval.slong);
+      case -TYPE_LONG:
 	return ULONG2NUM(retval.ulong);
 #if HAVE_LONG_LONG
       case TYPE_LONG_LONG:
-	return rb_ll2inum(retval.long_long);
-	break;
+	return LL2NUM(retval.slong_long);
+      case -TYPE_LONG_LONG:
+	return ULL2NUM(retval.ulong_long);
 #endif
       case TYPE_FLOAT:
 	return rb_float_new(retval.ffloat);

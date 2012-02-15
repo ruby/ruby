@@ -72,6 +72,9 @@ callback(ffi_cif *cif, void *resp, void **args, void *ctx)
 	  case TYPE_INT:
 	    rb_ary_push(params, INT2NUM(*(int *)args[i]));
 	    break;
+	  case -TYPE_INT:
+	    rb_ary_push(params, UINT2NUM(*(unsigned int *)args[i]));
+	    break;
 	  case TYPE_VOIDP:
 	    rb_ary_push(params,
 			rb_funcall(cPointer, rb_intern("[]"), 1,
@@ -80,8 +83,20 @@ callback(ffi_cif *cif, void *resp, void **args, void *ctx)
 	  case TYPE_LONG:
 	    rb_ary_push(params, LONG2NUM(*(long *)args[i]));
 	    break;
+	  case -TYPE_LONG:
+	    rb_ary_push(params, ULONG2NUM(*(unsigned long *)args[i]));
+	    break;
 	  case TYPE_CHAR:
-	    rb_ary_push(params, INT2NUM(*(char *)args[i]));
+	    rb_ary_push(params, INT2NUM(*(signed char *)args[i]));
+	    break;
+	  case -TYPE_CHAR:
+	    rb_ary_push(params, UINT2NUM(*(unsigned char *)args[i]));
+	    break;
+	  case TYPE_SHORT:
+	    rb_ary_push(params, INT2NUM(*(signed short *)args[i]));
+	    break;
+	  case -TYPE_SHORT:
+	    rb_ary_push(params, UINT2NUM(*(unsigned short *)args[i]));
 	    break;
 	  case TYPE_DOUBLE:
 	    rb_ary_push(params, rb_float_new(*(double *)args[i]));
@@ -91,7 +106,10 @@ callback(ffi_cif *cif, void *resp, void **args, void *ctx)
 	    break;
 #if HAVE_LONG_LONG
 	  case TYPE_LONG_LONG:
-	    rb_ary_push(params, rb_ull2inum(*(unsigned LONG_LONG *)args[i]));
+	    rb_ary_push(params, LL2NUM(*(LONG_LONG *)args[i]));
+	    break;
+	  case -TYPE_LONG_LONG:
+	    rb_ary_push(params, ULL2NUM(*(unsigned LONG_LONG *)args[i]));
 	    break;
 #endif
 	  default:
@@ -109,10 +127,18 @@ callback(ffi_cif *cif, void *resp, void **args, void *ctx)
       case TYPE_LONG:
 	*(long *)resp = NUM2LONG(ret);
 	break;
+      case -TYPE_LONG:
+	*(unsigned long *)resp = NUM2ULONG(ret);
+	break;
       case TYPE_CHAR:
       case TYPE_SHORT:
       case TYPE_INT:
 	*(ffi_sarg *)resp = NUM2INT(ret);
+	break;
+      case -TYPE_CHAR:
+      case -TYPE_SHORT:
+      case -TYPE_INT:
+	*(ffi_arg *)resp = NUM2UINT(ret);
 	break;
       case TYPE_VOIDP:
 	*(void **)resp = NUM2PTR(ret);
@@ -125,7 +151,10 @@ callback(ffi_cif *cif, void *resp, void **args, void *ctx)
 	break;
 #if HAVE_LONG_LONG
       case TYPE_LONG_LONG:
-	*(unsigned LONG_LONG *)resp = rb_big2ull(ret);
+	*(LONG_LONG *)resp = NUM2LL(ret);
+	break;
+      case -TYPE_LONG_LONG:
+	*(unsigned LONG_LONG *)resp = NUM2ULL(ret);
 	break;
 #endif
       default:

@@ -1,3 +1,13 @@
+Thu Feb 16 06:30:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/fiddle/closure.c (callback): deal with unsinged integers.
+	  [ruby-core:42458][Bug #5991][Bug #6022]
+
+	* ext/fiddle/conversions.c (value_to_generic, generic_to_value):
+	  ditto.
+
+	* ext/fiddle/closure.c (callback): same as r34506.
+
 Wed Feb 15 10:35:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (FIXNUM_P): simple flag should be int.
