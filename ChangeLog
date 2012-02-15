@@ -1,3 +1,10 @@
+Thu Feb 16 05:41:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (splatarray): make new array if flag is set.
+
+	* compile.c (iseq_compile_each): make new array with
+	  splat. [ruby-core:21901][Feature #1125]
+
 Thu Feb 16 00:14:04 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/abbrev.rb (Array#abbrev): add missing '"' in documentation.
