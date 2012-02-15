@@ -1,3 +1,25 @@
+Wed Feb 15 22:20:19 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* cont.c (rb_fiber_reset_root_local_storage): add a new function to
+	  restore rb_thread_t::local_storage.
+
+	* cont.c (rb_obj_is_fiber): add a new function to tell finalizer to
+	  prevent fibers from destroy.
+
+	* gc.c (rb_objspace_call_finalizer): don't sweep fibers at finalizing
+	  objspace.
+
+	* internal.h (rb_fiber_reset_root_local_storage, rb_obj_is_fiber):
+	  add prototypes.
+
+	* vm.c (ruby_vm_destruct): reset main thread's local_storage before
+	  free main thread. rb_thread_t::local_storage is replaced by fiber's
+	  local storage when forked from fiber, and it should be already freed
+	  when the fiber was destroyed.
+
+	* test/ruby/test_fiber.rb (test_fork_from_fiber): add test for fork
+	  from fiber.
+
 Wed Feb 15 19:57:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/fiddle/closure.c (callback): deal with unsigned integers.

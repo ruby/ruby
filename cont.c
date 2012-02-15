@@ -330,6 +330,17 @@ fiber_memsize(const void *ptr)
     return size;
 }
 
+VALUE
+rb_obj_is_fiber(VALUE obj)
+{
+    if (rb_typeddata_is_kind_of(obj, &fiber_data_type)) {
+	return Qtrue;
+    }
+    else {
+	return Qfalse;
+    }
+}
+
 static void
 cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 {
@@ -1345,6 +1356,19 @@ VALUE
 rb_fiber_yield(int argc, VALUE *argv)
 {
     return rb_fiber_transfer(return_fiber(), argc, argv);
+}
+
+void
+rb_fiber_reset_root_local_storage(VALUE thval)
+{
+    rb_thread_t *th;
+    rb_fiber_t	*fib;
+
+    GetThreadPtr(thval, th);
+    if (th->root_fiber && th->root_fiber != th->fiber) {
+	GetFiberPtr(th->root_fiber, fib);
+	th->local_storage = fib->cont.saved_thread.local_storage;
+    }
 }
 
 /*
