@@ -2211,6 +2211,11 @@ End
         f.pos = pos3
         assert_equal(nil, f.gets)
       }
+      File.open("tmp.txt") {|f|
+        f.pos = File.size("tmp.txt")
+        s = "not empty string        "
+        assert_equal("", f.read(0,s))
+      }
     }
   end
 
