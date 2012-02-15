@@ -11,6 +11,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/util.h"
+#include "ruby/encoding.h"
 #include "node.h"
 #include "id.h"
 #include "internal.h"
@@ -2215,6 +2216,84 @@ enum_drop_while(VALUE obj)
 }
 
 static VALUE
+enum_join_i(VALUE obj, VALUE *params, int argc, VALUE *argv)
+{
+    VALUE *param = (VALUE *)params;
+    VALUE sep = param[0];
+    VALUE result = param[1];
+    int *first = (int *)param[2];
+    ID join = rb_intern("join");
+    VALUE tmp;
+
+    switch (TYPE(obj)) {
+	case T_STRING:
+	str_join:
+	  if (!NIL_P(sep) && !*first)
+		rb_str_buf_append(result, sep);
+	  if (*first)
+		rb_enc_copy(result, obj);
+	  rb_str_buf_append(result, obj);
+	  *first = FALSE;
+	  break;
+	default:
+	  if (rb_respond_to(obj, join)) {
+		obj = rb_funcall(obj, join, 1, sep);
+	  }
+	  else {
+		obj = rb_obj_as_string(obj);
+	  }
+	  rb_enc_copy(obj, result);
+	  goto str_join;
+    }
+    return result;
+}
+
+/*
+ *  call-seq:
+ *     enum.join(sep=$,)    -> str
+ *
+ *  Returns a string created by converting each element of the 
+ *  <i>enum</i> to a string, separated by <i>sep</i>.
+ *
+ *     (1..3).join        #=> "123"
+ *     (1..3).join("-")   #=> "1-2-3"
+ */
+
+static VALUE
+enum_join(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE sep;
+    VALUE result;
+    VALUE args[3];
+    int first = TRUE;
+    int taint = FALSE;
+    int untrust = FALSE;
+
+    if (!enum_any(obj))
+	return rb_usascii_str_new(0, 0);
+
+    rb_scan_args(argc, argv, "01", &sep);
+    if (NIL_P(sep)) sep = rb_output_fs;
+    if (!NIL_P(sep)) StringValue(sep);
+
+    if (OBJ_TAINTED(obj) || OBJ_TAINTED(sep)) taint = TRUE;
+    if (OBJ_UNTRUSTED(obj) || OBJ_UNTRUSTED(sep)) untrust = TRUE;
+
+    result = rb_usascii_str_new(0, 0);
+
+    if (taint) OBJ_TAINT(result);
+    if (untrust) OBJ_UNTRUST(result);
+
+    args[0] = sep;
+    args[1] = result;
+    args[2] = (VALUE)&first;
+
+    rb_block_call(obj, id_each, 0, 0, enum_join_i, (VALUE)args);
+
+    return result;
+}
+
+static VALUE
 cycle_i(VALUE i, VALUE ary, int argc, VALUE *argv)
 {
     ENUM_WANT_SVALUE();
@@ -2762,6 +2841,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "cycle", enum_cycle, -1);
     rb_define_method(rb_mEnumerable, "chunk", enum_chunk, -1);
     rb_define_method(rb_mEnumerable, "slice_before", enum_slice_before, -1);
+    rb_define_method(rb_mEnumerable, "join", enum_join, -1);
 
     id_next = rb_intern("next");
 }

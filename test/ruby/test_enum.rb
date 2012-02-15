@@ -103,6 +103,85 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([1, 2, 3, 1, 2], @obj.to_a)
   end
 
+  def test_join
+    assert_equal('123', (1..3).join )
+
+    @speach = Object.new
+    class << @speach
+      attr_writer :statements
+      include Enumerable
+      def each
+        @statements.each{|s| yield s }
+      end
+    end
+    @speach.statements = [1,2,3,1,2]
+
+    assert_equal('12312', @speach.join )
+    assert_equal('1;2;3;1;2', @speach.join(';') )
+
+    @speach.statements = [ [9,8,7], 'ohai', @obj ]
+    assert_equal('9;8;7;ohai;1;2;3;1;2', @speach.join(';') )
+
+    @speach.statements = []
+    assert_equal('', @speach.join )
+
+    ["", ":", nil].each do |output_fs|
+      $, = output_fs
+      assert_equal("", @speach.join)
+      assert_equal("", @speach.join(','))
+      assert_equal(Encoding::US_ASCII, @speach.join.encoding)
+    end
+
+    @speach.statements = [1,2,3,1,2]
+    ["", ":", nil].each do |output_fs|
+      assert_equal("1,2,3,1,2", @speach.join(','))
+    end
+
+    $, = ":"
+    assert_equal("1:2:3:1:2", @speach.join)
+
+    $, = nil
+    assert_equal("12312", @speach.join)
+
+    @speach.taint
+    @speach.untrust
+    s = @speach.join
+    assert_equal(true, s.tainted?)
+    assert_equal(true, s.untrusted?)
+
+    e = ''.force_encoding('EUC-JP')
+    u = ''.force_encoding('UTF-8')
+    assert_equal(Encoding::US_ASCII, @speach.join.encoding)
+    @speach.statements = [1, [u]]
+    assert_equal(Encoding::US_ASCII, @speach.join.encoding)
+    @speach.statements = [u, [e]]
+    assert_equal(Encoding::UTF_8, @speach.join.encoding)
+    @speach.statements = [u, [1]]
+    assert_equal(Encoding::UTF_8, @speach.join.encoding)
+    bug5379 = '[ruby-core:39776]'
+    @speach.statements = [[], u, nil]
+    assert_equal(Encoding::US_ASCII, @speach.join.encoding, bug5379)
+    @speach.statements = [[], "\u3042", nil]
+    assert_equal(Encoding::UTF_8, @speach.join.encoding, bug5379)
+
+    @nested = Object.new
+    class << @nested
+      include Enumerable
+      class Nested
+        include Enumerable
+        def each
+          yield Nested.new
+        end
+      end
+      def each
+        yield Nested.new
+      end
+    end
+    assert_raise(SystemStackError){ @nested.join }
+  ensure
+    $, = nil
+  end
+
   def test_inject
     assert_equal(12, @obj.inject {|z, x| z * x })
     assert_equal(48, @obj.inject {|z, x| z * 2 + x })
