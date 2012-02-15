@@ -30,12 +30,6 @@
 # An OpenStruct employs a Hash internally to store the methods and values and
 # can even be initialized with one:
 #
-#   country_data = { :country => "Australia", :population => 20_000_000 }
-#   australia = OpenStruct.new(country_data)
-#   p australia   # -> <OpenStruct country="Australia" population=20000000>
-#
-# You may also define the hash in the initialization call:
-#
 #   australia = OpenStruct.new(:country => "Australia", :population => 20_000_000)
 #   p australia   # -> <OpenStruct country="Australia" population=20000000>
 #
@@ -89,12 +83,6 @@ class OpenStruct
   #
   #   p data        # -> <OpenStruct country="Australia" population=20000000>
   #
-  # You may also define the hash in the initialization call:
-  #
-  #   australia = OpenStruct.new(:country => "Australia",
-  #                              :population => 20_000_000)
-  #   p australia   # -> <OpenStruct country="Australia" population=20000000>
-  #
   def initialize(hash=nil)
     @table = {}
     if hash
@@ -146,7 +134,7 @@ class OpenStruct
 
   #
   # #modifiable is used internally to check if the OpenStruct is able to be
-  # modified before granting access to the internal Hash table to be augmented.
+  # modified before granting access to the internal Hash table to be modified.
   #
   def modifiable
     begin
@@ -190,8 +178,8 @@ class OpenStruct
   end
 
   #
-  # Remove the named field from the object. Returning the value that the field
-  # contained if it has defined.
+  # Remove the named field from the object. Returns the value that the field
+  # contained if it was defined.
   #
   #   require 'ostruct'
   #
