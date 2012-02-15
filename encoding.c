@@ -1757,7 +1757,7 @@ rb_enc_aliases(VALUE klass)
  *
  * == IO encoding example
  *
- * In the following example a UTF-8 encoded string "Résumé" is transcoded for
+ * In the following example a UTF-8 encoded string "R.sum." is transcoded for
  * output to ISO-8859-1 encoding, then read back in and transcoded to UTF-8:
  *
  *   string = "R\u00E9sum\u00E9"
@@ -1784,7 +1784,7 @@ rb_enc_aliases(VALUE klass)
  *   "R\xE9sum\xE9"
  *
  *   transcoded text:
- *   "Résumé"
+ *   "R.sum."
  *   
  */
 
