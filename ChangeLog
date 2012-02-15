@@ -1,3 +1,8 @@
+Wed Feb 15 12:30:10 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c (Init_zlib):  Added Zlib::TEXT and note that
+	  Zlib::ASCII is deprecated in zlib 1.2.3 and newer.
+
 Wed Feb 15 12:24:40 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/zlib/zlib.c:  Move constant descriptions to constants.  Remove

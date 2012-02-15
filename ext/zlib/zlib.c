@@ -4057,8 +4057,18 @@ Init_zlib()
 
     /* Represents text data as guessed by deflate.
      *
+     * NOTE: The underlying constant Z_ASCII was deprecated in favor of Z_TEXT
+     * in zlib 1.2.2.  New applications should not use this constant.
+     *
      * See Zlib::Deflate#data_type. */
     rb_define_const(mZlib, "ASCII", INT2FIX(Z_ASCII));
+
+#ifdef Z_TEXT
+    /* Represents text data as guessed by deflate.
+     *
+     * See Zlib::Deflate#data_type. */
+    rb_define_const(mZlib, "TEXT", INT2FIX(Z_TEXT));
+#endif
 
     /* Represents an unknown data type as guessed by deflate.
      *
