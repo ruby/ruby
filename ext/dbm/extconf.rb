@@ -79,7 +79,8 @@ def headers.db_check2(db, hdr)
   if have_type("DBM", hdr, hsearch) and
      (db == 'libc' ? have_func('dbm_open("", 0, 0)', hdr, hsearch) :
                      have_library(db, 'dbm_open("", 0, 0)', hdr, hsearch)) and
-     have_func('dbm_clearerr((DBM *)0)', hdr, hsearch)
+     have_func('dbm_clearerr((DBM *)0)', hdr, hsearch) and
+     (/\Adb\d?\z/ =~ db || db == 'libc' || !have_macro('_DB_H_', hdr, hsearch)) # _DB_H_ should not be defined except Berkeley DB.
     case db
     when /\Adb\d?\z/
       have_func('db_version((int *)0, (int *)0, (int *)0)', hdr, hsearch)
