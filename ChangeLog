@@ -1,3 +1,7 @@
+Fri Feb 17 07:30:53 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: refactored to split too long conditions.
+
 Fri Feb 17 00:23:25 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/dbm/test_dbm.rb: fix skip condition for libgdbm 1.8.0 or prior.
