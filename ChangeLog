@@ -1,3 +1,8 @@
+Thu Feb 16 17:54:14 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/dbm/extconf.rb: merge trunk's ext/dbm/extconf.rb and
+	  related functions of lib/mkmf.rb. [Backport #6021]
+
 Thu Feb 16 09:25:52 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (enable_pthread): use -pthread on OpenBSD without
