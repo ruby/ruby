@@ -19,6 +19,7 @@ static ID id_next;
 #define id_each idEach
 #define id_eqq  idEqq
 #define id_cmp  idCmp
+#define id_lshift idLTLT
 
 static VALUE
 enum_values_pack(int argc, VALUE *argv)
@@ -2249,14 +2250,14 @@ chunk_ii(VALUE i, VALUE _argp, int argc, VALUE *argv)
 
     if (v == alone) {
         if (!NIL_P(argp->prev_value)) {
-            rb_funcall(argp->yielder, rb_intern("<<"), 1, rb_assoc_new(argp->prev_value, argp->prev_elts));
+            rb_funcall(argp->yielder, id_lshift, 1, rb_assoc_new(argp->prev_value, argp->prev_elts));
             argp->prev_value = argp->prev_elts = Qnil;
         }
-        rb_funcall(argp->yielder, rb_intern("<<"), 1, rb_assoc_new(v, rb_ary_new3(1, i)));
+        rb_funcall(argp->yielder, id_lshift, 1, rb_assoc_new(v, rb_ary_new3(1, i)));
     }
     else if (NIL_P(v) || v == separator) {
         if (!NIL_P(argp->prev_value)) {
-            rb_funcall(argp->yielder, rb_intern("<<"), 1, rb_assoc_new(argp->prev_value, argp->prev_elts));
+            rb_funcall(argp->yielder, id_lshift, 1, rb_assoc_new(argp->prev_value, argp->prev_elts));
             argp->prev_value = argp->prev_elts = Qnil;
         }
     }
@@ -2273,7 +2274,7 @@ chunk_ii(VALUE i, VALUE _argp, int argc, VALUE *argv)
                 rb_ary_push(argp->prev_elts, i);
             }
             else {
-                rb_funcall(argp->yielder, rb_intern("<<"), 1, rb_assoc_new(argp->prev_value, argp->prev_elts));
+                rb_funcall(argp->yielder, id_lshift, 1, rb_assoc_new(argp->prev_value, argp->prev_elts));
                 argp->prev_value = v;
                 argp->prev_elts = rb_ary_new3(1, i);
             }
@@ -2300,7 +2301,7 @@ chunk_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
 
     rb_block_call(enumerable, id_each, 0, 0, chunk_ii, (VALUE)&arg);
     if (!NIL_P(arg.prev_elts))
-        rb_funcall(arg.yielder, rb_intern("<<"), 1, rb_assoc_new(arg.prev_value, arg.prev_elts));
+        rb_funcall(arg.yielder, id_lshift, 1, rb_assoc_new(arg.prev_value, arg.prev_elts));
     return Qnil;
 }
 
@@ -2444,7 +2445,7 @@ slicebefore_ii(VALUE i, VALUE _argp, int argc, VALUE *argv)
         header_p = rb_funcall(argp->sep_pred, rb_intern("call"), 2, i, argp->state);
     if (RTEST(header_p)) {
         if (!NIL_P(argp->prev_elts))
-            rb_funcall(argp->yielder, rb_intern("<<"), 1, argp->prev_elts);
+            rb_funcall(argp->yielder, id_lshift, 1, argp->prev_elts);
         argp->prev_elts = rb_ary_new3(1, i);
     }
     else {
@@ -2475,7 +2476,7 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
 
     rb_block_call(enumerable, id_each, 0, 0, slicebefore_ii, (VALUE)&arg);
     if (!NIL_P(arg.prev_elts))
-        rb_funcall(arg.yielder, rb_intern("<<"), 1, arg.prev_elts);
+        rb_funcall(arg.yielder, id_lshift, 1, arg.prev_elts);
     return Qnil;
 }
 

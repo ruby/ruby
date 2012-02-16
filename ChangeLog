@@ -1,3 +1,7 @@
+Fri Feb 17 07:33:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (id_lshift): use constant ID.
+
 Fri Feb 17 07:30:53 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: refactored to split too long conditions.
