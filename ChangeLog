@@ -1,3 +1,9 @@
+Fri Feb 17 00:23:25 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/dbm/test_dbm.rb: fix skip condition for libgdbm 1.8.0 or prior.
+	  reported by Bohuslav Kabrda.
+	  [ruby-core:42685] [ruby-trunk - Bug #6036]
+
 Fri Feb 17 00:04:21 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: check _DB_H_ macro unavailable except
