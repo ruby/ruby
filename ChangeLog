@@ -1,3 +1,8 @@
+Fri Feb 17 10:15:54 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: check _DB_H_ macro unavailable except
+	  Berkeley DB library.
+
 Fri Feb 17 10:14:47 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/dbm/test_dbm.rb: fix skip condition for libgdbm 1.8.0 or prior.
