@@ -1828,6 +1828,7 @@ enum_each_slice(VALUE obj, VALUE n)
     ary = rb_ary_new2(size);
     memo = NEW_MEMO(ary, 0, size);
     rb_block_call(obj, id_each, 0, 0, each_slice_i, (VALUE)memo);
+    ary = memo->u1.value;
     if (RARRAY_LEN(ary) > 0) rb_yield(ary);
 
     return Qnil;

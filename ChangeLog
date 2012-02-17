@@ -1,4 +1,7 @@
-Fri Feb 17 13:24:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Feb 17 15:20:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enum_each_slice): arrays to be yielded can be newly
+	  created in the block.
 
 	* enum.c: move work variables to objects not to let called blocks
 	  access stack area out of scope.  [Bug #5801]
