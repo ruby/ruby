@@ -1,3 +1,7 @@
+Fri Feb 17 12:51:25 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_header): log the content of header.
+
 Fri Feb 17 12:26:15 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* test/readline/test_readline.rb (test_completion_proc_empty_result):
