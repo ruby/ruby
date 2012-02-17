@@ -1,3 +1,9 @@
+Fri Feb 17 11:46:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/readline/test_readline.rb (test_line_buffer__point): use
+	  lambda not to exit entire method by "return".  or "next" for
+	  proc.  [ruby-dev:45042] [Bug #5802]
+
 Fri Feb 17 10:15:54 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: check _DB_H_ macro unavailable except
