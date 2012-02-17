@@ -1,3 +1,8 @@
+Fri Feb 17 12:35:55 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/merger.rb: remove borders from the commit message which is used
+	  when the commit doesn't change ChangeLog.
+
 Fri Feb 17 11:50:11 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (btest, btest-ruby, test-sample test-knownbugs)

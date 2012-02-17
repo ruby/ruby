@@ -153,7 +153,7 @@ else
     if log_svn.empty?
       log_svn = IO.popen %w'svn log ' + r + [q] do |f|
         f.read
-      end
+      end.sub(/\A-+\nr.*\n/, '').sub(/\n-+\n\z/, '').gsub(/^(?=\S)/, "\t")
     end
 
     a = %w'svn merge --accept=postpone' + r + [q]
