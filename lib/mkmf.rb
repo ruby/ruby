@@ -352,11 +352,11 @@ module MakeMakefile
     end
   end
 
-  def log_src(src)
+  def log_src(src, heading="checked program was")
     src = src.split(/^/)
     fmt = "%#{src.size.to_s.size}d: %s"
     Logging::message <<"EOM"
-checked program was:
+#{heading}:
 /* begin */
 EOM
     src.each_with_index {|line, no| Logging::message fmt, no+1, line}
@@ -1557,7 +1557,8 @@ SRC
       end
     end
     hdr << "#endif\n"
-    hdr = hdr.join
+    hdr = hdr.join("")
+    log_src(hdr, "#{header} is")
     unless (IO.read(header) == hdr rescue false)
       open(header, "wb") do |hfile|
         hfile.write(hdr)
