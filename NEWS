@@ -72,6 +72,9 @@ with all sufficient information, see the ChangeLog file.
 
     See above.
 
+  * Merge Onigmo.
+    https://github.com/k-takata/Onigmo
+
   * incompatible changes:
     The :close_others option is true by default for system() and exec().
     Also, the close-on-exec flag is set by default for all new file descriptors.

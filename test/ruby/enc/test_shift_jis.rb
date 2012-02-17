@@ -5,7 +5,7 @@ require "test/unit"
 class TestShiftJIS < Test::Unit::TestCase
   def test_mbc_case_fold
     assert_match(/(‚)(a)\1\2/i, "‚a‚A")
-    assert_no_match(/(‚)(a)\1\2/i, "‚a‚`A")
+    assert_match(/(‚)(a)\1\2/i, "‚a‚`A")
   end
 
   def test_property

@@ -1,8 +1,9 @@
 /**********************************************************************
-  regenc.c -  Oniguruma (regular expression library)
+  regenc.c -  Onigmo (Oniguruma-mod) (regular expression library)
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2011       K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -66,7 +67,7 @@ onigenc_get_right_adjust_char_head(OnigEncoding enc, const UChar* start, const U
 {
   UChar* p = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s, end);
   if (p < s) {
-      p += enclen(enc, p, end);
+    p += enclen(enc, p, end);
   }
   return p;
 }
@@ -760,7 +761,7 @@ onigenc_mb2_code_to_mbc(OnigEncoding enc, OnigCodePoint code, UChar *buf)
   if (enclen(enc, buf, p) != (p - buf))
     return ONIGERR_INVALID_CODE_POINT_VALUE;
 #endif
-  return (int)(p - buf);
+  return (int )(p - buf);
 }
 
 extern int
@@ -783,7 +784,7 @@ onigenc_mb4_code_to_mbc(OnigEncoding enc, OnigCodePoint code, UChar *buf)
   if (enclen(enc, buf, p) != (p - buf))
     return ONIGERR_INVALID_CODE_POINT_VALUE;
 #endif
-  return (int)(p - buf);
+  return (int )(p - buf);
 }
 
 extern int
@@ -812,7 +813,7 @@ onigenc_minimum_property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
   len = onigenc_strlen(enc, p, end);
   for (pbe = (pb = PBS) + sizeof(PBS)/sizeof(PBS[0]); pb < pbe; ++pb) {
     if (len == pb->len &&
-        STRNCASECMP((char *)p, (char *)pb->name, len) == 0)
+        onigenc_with_ascii_strnicmp(enc, p, end, pb->name, pb->len) == 0)
       return pb->ctype;
   }
 
@@ -860,6 +861,27 @@ onigenc_with_ascii_strncmp(OnigEncoding enc, const UChar* p, const UChar* end,
 
     c = (int )ONIGENC_MBC_TO_CODE(enc, p, end);
     x = *sascii - c;
+    if (x) return x;
+
+    sascii++;
+    p += enclen(enc, p, end);
+  }
+  return 0;
+}
+
+extern int
+onigenc_with_ascii_strnicmp(OnigEncoding enc, const UChar* p, const UChar* end,
+                            const UChar* sascii /* ascii */, int n)
+{
+  int x, c;
+
+  while (n-- > 0) {
+    if (p >= end) return (int )(*sascii);
+
+    c = (int )ONIGENC_MBC_TO_CODE(enc, p, end);
+    if (ONIGENC_IS_ASCII_CODE(c))
+      c = ONIGENC_ASCII_CODE_TO_LOWER_CASE(c);
+    x = ONIGENC_ASCII_CODE_TO_LOWER_CASE(*sascii) - c;
     if (x) return x;
 
     sascii++;

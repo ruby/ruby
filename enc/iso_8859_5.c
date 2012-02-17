@@ -225,6 +225,8 @@ OnigEncodingDefine(iso_8859_5, ISO_8859_5) = {
   is_code_ctype,
   onigenc_not_support_get_ctype_code_range,
   onigenc_single_byte_left_adjust_char_head,
-  onigenc_always_true_is_allowed_reverse_match
+  onigenc_always_true_is_allowed_reverse_match,
+  0,
+  ONIGENC_FLAG_NONE,
 };
 ENC_ALIAS("ISO8859-5", "ISO-8859-5")

@@ -1,8 +1,9 @@
 /**********************************************************************
-  sjis.c -  Oniguruma (regular expression library)
+  sjis.c -  Onigmo (Oniguruma-mod) (regular expression library)
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2008  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2011       K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,6 +66,97 @@ static const char SJIS_CAN_BE_TRAIL_TABLE[256] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0
+};
+
+static const OnigPairCaseFoldCodes CaseFoldMap[] = {
+  /* Fullwidth Alphabet */
+  { 0x8260, 0x8281 },
+  { 0x8261, 0x8282 },
+  { 0x8262, 0x8283 },
+  { 0x8263, 0x8284 },
+  { 0x8264, 0x8285 },
+  { 0x8265, 0x8286 },
+  { 0x8266, 0x8287 },
+  { 0x8267, 0x8288 },
+  { 0x8268, 0x8289 },
+  { 0x8269, 0x828a },
+  { 0x826a, 0x828b },
+  { 0x826b, 0x828c },
+  { 0x826c, 0x828d },
+  { 0x826d, 0x828e },
+  { 0x826e, 0x828f },
+  { 0x826f, 0x8290 },
+  { 0x8270, 0x8291 },
+  { 0x8271, 0x8292 },
+  { 0x8272, 0x8293 },
+  { 0x8273, 0x8294 },
+  { 0x8274, 0x8295 },
+  { 0x8275, 0x8296 },
+  { 0x8276, 0x8297 },
+  { 0x8277, 0x8298 },
+  { 0x8278, 0x8299 },
+  { 0x8279, 0x829a },
+
+  /* Greek */
+  { 0x839f, 0x83bf },
+  { 0x83a0, 0x83c0 },
+  { 0x83a1, 0x83c1 },
+  { 0x83a2, 0x83c2 },
+  { 0x83a3, 0x83c3 },
+  { 0x83a4, 0x83c4 },
+  { 0x83a5, 0x83c5 },
+  { 0x83a6, 0x83c6 },
+  { 0x83a7, 0x83c7 },
+  { 0x83a8, 0x83c8 },
+  { 0x83a9, 0x83c9 },
+  { 0x83aa, 0x83ca },
+  { 0x83ab, 0x83cb },
+  { 0x83ac, 0x83cc },
+  { 0x83ad, 0x83cd },
+  { 0x83ae, 0x83ce },
+  { 0x83af, 0x83cf },
+  { 0x83b0, 0x83d0 },
+  { 0x83b1, 0x83d1 },
+  { 0x83b2, 0x83d2 },
+  { 0x83b3, 0x83d3 },
+  { 0x83b4, 0x83d4 },
+  { 0x83b5, 0x83d5 },
+  { 0x83b6, 0x83d6 },
+
+  /* Cyrillic */
+  { 0x8440, 0x8470 },
+  { 0x8441, 0x8471 },
+  { 0x8442, 0x8472 },
+  { 0x8443, 0x8473 },
+  { 0x8444, 0x8474 },
+  { 0x8445, 0x8475 },
+  { 0x8446, 0x8476 },
+  { 0x8447, 0x8477 },
+  { 0x8448, 0x8478 },
+  { 0x8449, 0x8479 },
+  { 0x844a, 0x847a },
+  { 0x844b, 0x847b },
+  { 0x844c, 0x847c },
+  { 0x844d, 0x847d },
+  { 0x844e, 0x847e },
+  { 0x844f, 0x8480 },
+  { 0x8450, 0x8481 },
+  { 0x8451, 0x8482 },
+  { 0x8452, 0x8483 },
+  { 0x8453, 0x8484 },
+  { 0x8454, 0x8485 },
+  { 0x8455, 0x8486 },
+  { 0x8456, 0x8487 },
+  { 0x8457, 0x8488 },
+  { 0x8458, 0x8489 },
+  { 0x8459, 0x848a },
+  { 0x845a, 0x848b },
+  { 0x845b, 0x848c },
+  { 0x845c, 0x848d },
+  { 0x845d, 0x848e },
+  { 0x845e, 0x848f },
+  { 0x845f, 0x8490 },
+  { 0x8460, 0x8491 },
 };
 
 #define SJIS_ISMB_FIRST(byte)  (EncLen_SJIS[byte] > 1)
@@ -150,7 +242,7 @@ mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
   int c, i, len;
   OnigCodePoint n;
 
-  len = enclen(enc, p, end);
+  len = mbc_enc_len(p, end, enc);
   c = *p++;
   n = c;
   if (len == 1) return n;
@@ -172,10 +264,90 @@ code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
   *p++ = (UChar )(code & 0xff);
 
 #if 0
-  if (enclen(enc, buf) != (p - buf))
+  if (mbc_enc_len(buf, p, enc) != (p - buf))
     return REGERR_INVALID_CODE_POINT_VALUE;
 #endif
-  return (int)(p - buf);
+  return (int )(p - buf);
+}
+
+static int
+apply_all_case_fold(OnigCaseFoldType flag,
+		    OnigApplyAllCaseFoldFunc f, void* arg, OnigEncoding enc)
+{
+  return onigenc_apply_all_case_fold_with_map(
+            sizeof(CaseFoldMap)/sizeof(OnigPairCaseFoldCodes), CaseFoldMap, 0,
+            flag, f, arg);
+}
+
+static OnigCodePoint
+get_lower_case(OnigCodePoint code)
+{
+  if (ONIGENC_IS_IN_RANGE(code, 0x8260, 0x8279)) {
+    /* Fullwidth Alphabet */
+    return (OnigCodePoint )(code + 0x0021);
+  }
+  else if (ONIGENC_IS_IN_RANGE(code, 0x839f, 0x83b6)) {
+    /* Greek */
+    return (OnigCodePoint )(code + 0x0020);
+  }
+  else if (ONIGENC_IS_IN_RANGE(code, 0x8440, 0x8460)) {
+    /* Cyrillic */
+    int d = (code >= 0x844f) ? 1 : 0;
+    return (OnigCodePoint )(code + (0x0030 + d));
+  }
+  return code;
+}
+
+static OnigCodePoint
+get_upper_case(OnigCodePoint code)
+{
+  if (ONIGENC_IS_IN_RANGE(code, 0x8281, 0x829a)) {
+    /* Fullwidth Alphabet */
+    return (OnigCodePoint )(code - 0x0021);
+  }
+  else if (ONIGENC_IS_IN_RANGE(code, 0x83bf, 0x83d6)) {
+    /* Greek */
+    return (OnigCodePoint )(code - 0x0020);
+  }
+  else if (ONIGENC_IS_IN_RANGE(code, 0x8470, 0x847e) ||
+	   ONIGENC_IS_IN_RANGE(code, 0x8480, 0x8491)) {
+    /* Cyrillic */
+    int d = (code >= 0x8480) ? 1 : 0;
+    return (OnigCodePoint )(code - (0x0030 - d));
+  }
+  return code;
+}
+
+static int
+get_case_fold_codes_by_str(OnigCaseFoldType flag,
+			   const OnigUChar* p, const OnigUChar* end,
+			   OnigCaseFoldCodeItem items[], OnigEncoding enc)
+{
+  int len;
+  OnigCodePoint code, code_lo, code_up;
+
+  code = mbc_to_code(p, end, enc);
+  if (ONIGENC_IS_ASCII_CODE(code))
+    return onigenc_ascii_get_case_fold_codes_by_str(flag, p, end, items, enc);
+
+  len = mbc_enc_len(p, end, enc);
+  code_lo = get_lower_case(code);
+  code_up = get_upper_case(code);
+
+  if (code != code_lo) {
+    items[0].byte_len = len;
+    items[0].code_len = 1;
+    items[0].code[0] = code_lo;
+    return 1;
+  }
+  else if (code != code_up) {
+    items[0].byte_len = len;
+    items[0].code_len = 1;
+    items[0].code[0] = code_up;
+    return 1;
+  }
+
+  return 0;
 }
 
 static int
@@ -191,12 +363,11 @@ mbc_case_fold(OnigCaseFoldType flag,
     return 1;
   }
   else {
-    int i;
-    int len = enclen(enc, p, end);
+    OnigCodePoint code;
+    int len;
 
-    for (i = 0; i < len; i++) {
-      *lower++ = *p++;
-    }
+    code = get_lower_case(mbc_to_code(p, end, enc));
+    len = code_to_mbc(code, lower, enc);
     (*pp) += len;
     return len; /* return byte length of converted char to lower */
   }
@@ -245,7 +416,7 @@ left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, Onig
       }
     }
   }
-  len = enclen(enc, p, end);
+  len = mbc_enc_len(p, end, enc);
   if (p + len > s) return (UChar* )p;
   p += len;
   return (UChar* )(p + ((s - p) & ~1));
@@ -278,6 +449,47 @@ static const OnigCodePoint CR_Katakana[] = {
   0x8380, 0x8396,
 }; /* CR_Katakana */
 
+#ifdef ENC_CP932
+static const OnigCodePoint CR_Han[] = {
+  6,
+  0x8157, 0x8157,
+  0x889f, 0x9872,	/* Kanji level 1 */
+  0x989f, 0x9ffc,	/* Kanji level 2 */
+  0xe040, 0xeaa4,	/* Kanji level 2 */
+  0xed40, 0xeeec,	/* NEC-selected IBM extended characters (without symbols) */
+  0xfa5c, 0xfc4b,	/* IBM extended characters (without symbols) */
+}; /* CR_Han */
+#else
+static const OnigCodePoint CR_Han[] = {
+  4,
+  0x8157, 0x8157,
+  0x889f, 0x9872,	/* Kanji level 1 */
+  0x989f, 0x9ffc,	/* Kanji level 2 */
+  0xe040, 0xeaa4,	/* Kanji level 2 */
+}; /* CR_Han */
+#endif
+
+static const OnigCodePoint CR_Latin[] = {
+  4,
+  0x0041, 0x005a,
+  0x0061, 0x007a,
+  0x8260, 0x8279,
+  0x8281, 0x829a,
+}; /* CR_Latin */
+
+static const OnigCodePoint CR_Greek[] = {
+  2,
+  0x839f, 0x83b6,
+  0x83bf, 0x83d6,
+}; /* CR_Greek */
+
+static const OnigCodePoint CR_Cyrillic[] = {
+  3,
+  0x8440, 0x8460,
+  0x8470, 0x847f,
+  0x8480, 0x8491,
+}; /* CR_Cyrillic */
+
 static int
 init_property_list(void)
 {
@@ -285,6 +497,10 @@ init_property_list(void)
 
   PROPERTY_LIST_ADD_PROP("hiragana", CR_Hiragana);
   PROPERTY_LIST_ADD_PROP("katakana", CR_Katakana);
+  PROPERTY_LIST_ADD_PROP("han", CR_Han);
+  PROPERTY_LIST_ADD_PROP("latin", CR_Latin);
+  PROPERTY_LIST_ADD_PROP("greek", CR_Greek);
+  PROPERTY_LIST_ADD_PROP("cyrillic", CR_Cyrillic);
   PropertyInited = 1;
 
  end:
@@ -308,7 +524,7 @@ property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
     return onigenc_minimum_property_name_to_ctype(enc, s, e);
   }
 
-  return (int)ctype;
+  return (int )ctype;
 }
 
 static int
@@ -357,6 +573,7 @@ get_ctype_code_range(OnigCtype ctype, OnigCodePoint* sb_out,
   }
 }
 
+#ifndef ENC_CP932
 OnigEncodingDefine(shift_jis, Shift_JIS) = {
   mbc_enc_len,
   "Shift_JIS",   /* name */
@@ -367,54 +584,22 @@ OnigEncodingDefine(shift_jis, Shift_JIS) = {
   code_to_mbclen,
   code_to_mbc,
   mbc_case_fold,
-  onigenc_ascii_apply_all_case_fold,
-  onigenc_ascii_get_case_fold_codes_by_str,
+  apply_all_case_fold,
+  get_case_fold_codes_by_str,
   property_name_to_ctype,
   is_code_ctype,
   get_ctype_code_range,
   left_adjust_char_head,
   is_allowed_reverse_match,
-  0
+  0,
+  ONIGENC_FLAG_NONE,
 };
 /*
  * Name: Shift_JIS
  * MIBenum: 17
  * Link: http://www.iana.org/assignments/character-sets
  * Link: http://ja.wikipedia.org/wiki/Shift_JIS
- *
- * Note that this Shift_JIS's 7bit part is US-ASCII not JIX X 0201
- * because Shift_JIS must be ASCII compatible encoding.
- * See also the conversion table (enc/trans/japanese_sjis.trans).
  */
-
-/*
- * Name: Windows-31J
- * MIBenum: 2024
- * Link: http://www.iana.org/assignments/character-sets
- * Link: http://www.microsoft.com/globaldev/reference/dbcs/932.mspx
- * Link: http://ja.wikipedia.org/wiki/Windows-31J
- * Link: http://source.icu-project.org/repos/icu/data/trunk/charset/data/ucm/windows-932-2000.ucm
- *
- * Windows Standard Character Set and its mapping to Unicode by Microsoft.
- * Since 1.9.3, SJIS is the alias of Windows-31J because its character
- * set is usually this one even if its mapping may differ.
- */
-ENC_REPLICATE("Windows-31J", "Shift_JIS")
-ENC_ALIAS("CP932", "Windows-31J")
-ENC_ALIAS("csWindows31J", "Windows-31J") /* IANA.  IE6 don't accept Windows-31J but csWindows31J. */
-ENC_ALIAS("SJIS", "Windows-31J")
-
-/*
- * Name: PCK
- * Link: http://download.oracle.com/docs/cd/E19253-01/819-0606/x-2chn0/index.html
- * Link: http://download.oracle.com/docs/cd/E19253-01/819-0606/appb-pckwarn-1/index.html
- *
- * Solaris's SJIS variant. Its set is Windows Standard Character Set; it
- * consists JIS X 0201 Latin (US-ASCII), JIS X 0201 Katakana, JIS X 0208, NEC
- * special characters, NEC-selected IBM extended characters, and IBM extended
- * characters. Solaris's iconv seems to use SJIS-open.
- */
-ENC_ALIAS("PCK", "Windows-31J")
 
 /*
  * Name: MacJapanese
@@ -423,3 +608,4 @@ ENC_ALIAS("PCK", "Windows-31J")
  */
 ENC_REPLICATE("MacJapanese", "Shift_JIS")
 ENC_ALIAS("MacJapan", "MacJapanese")
+#endif

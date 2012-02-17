@@ -248,9 +248,7 @@ is_mbc_newline(const UChar* p, const UChar* end, OnigEncoding enc)
     if (*p == 0x0a) return 1;
 
 #ifdef USE_UNICODE_ALL_LINE_TERMINATORS
-#ifndef USE_CRNL_AS_LINE_TERMINATOR
-    if (*p == 0x0d) return 1;
-#endif
+    if (*p == 0x0b || *p == 0x0c || *p == 0x0d) return 1;
     if (p + 1 < end) {
       if (*(p+1) == 0x85 && *p == 0xc2) /* U+0085 */
 	return 1;
@@ -272,7 +270,7 @@ mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
   int c, len;
   OnigCodePoint n;
 
-  len = enclen(enc, p, end);
+  len = mbc_enc_len(p, end, enc);
   c = *p++;
   if (len > 1) {
     len--;
@@ -363,7 +361,7 @@ code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc ARG_UNUSED)
     }
 
     *p++ = UTF8_TRAIL0(code);
-    return (int)(p - buf);
+    return (int )(p - buf);
   }
 }
 
@@ -440,7 +438,9 @@ OnigEncodingDefine(utf_8, UTF_8) = {
   onigenc_unicode_is_code_ctype,
   get_ctype_code_range,
   left_adjust_char_head,
-  onigenc_always_true_is_allowed_reverse_match
+  onigenc_always_true_is_allowed_reverse_match,
+  0,
+  ONIGENC_FLAG_UNICODE,
 };
 ENC_ALIAS("CP65001", "UTF-8")
 

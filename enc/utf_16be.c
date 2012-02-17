@@ -88,11 +88,8 @@ utf16be_is_mbc_newline(const UChar* p, const UChar* end,
     if (*(p+1) == 0x0a && *p == 0x00)
       return 1;
 #ifdef USE_UNICODE_ALL_LINE_TERMINATORS
-    if ((
-#ifndef USE_CRNL_AS_LINE_TERMINATOR
-	 *(p+1) == 0x0d ||
-#endif
-	 *(p+1) == 0x85) && *p == 0x00)
+    if ((*(p+1) == 0x0b || *(p+1) == 0x0c || *(p+1) == 0x0d || *(p+1) == 0x85)
+	&& *p == 0x00)
       return 1;
     if (*p == 0x20 && (*(p+1) == 0x29 || *(p+1) == 0x28))
       return 1;
@@ -252,6 +249,8 @@ OnigEncodingDefine(utf_16be, UTF_16BE) = {
   onigenc_unicode_is_code_ctype,
   onigenc_utf16_32_get_ctype_code_range,
   utf16be_left_adjust_char_head,
-  onigenc_always_false_is_allowed_reverse_match
+  onigenc_always_false_is_allowed_reverse_match,
+  0,
+  ONIGENC_FLAG_UNICODE,
 };
 ENC_ALIAS("UCS-2BE", "UTF-16BE")

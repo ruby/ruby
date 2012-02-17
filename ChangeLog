@@ -1,3 +1,17 @@
+Fri Feb 17 15:38:53 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* Merge Onigmo-5.13.1. [ruby-dev:45057] [Feature #5820]
+	  https://github.com/k-takata/Onigmo
+	  cp reg{comp,enc,error,exec,parse,syntax}.c reg{enc,int,parse}.h
+	  cp oniguruma.h
+	  cp tool/enc-unicode.rb
+	  cp -r enc/
+
+Fri Feb 17 12:35:55 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/merger.rb: remove borders from the commit message which is used
+	  when the commit doesn't change ChangeLog.
+
 Fri Feb 17 15:20:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (enum_each_slice): arrays to be yielded can be newly

@@ -1,10 +1,11 @@
 #ifndef ONIGURUMA_REGENC_H
 #define ONIGURUMA_REGENC_H
 /**********************************************************************
-  regenc.h -  Oniguruma (regular expression library)
+  regenc.h -  Onigmo (Oniguruma-mod) (regular expression library)
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2008  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2011       K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -107,10 +108,10 @@ typedef struct {
 
 #define PosixBracketEntryInit(name, ctype) {(const UChar *)name, ctype, (short int)(sizeof(name) - 1)}
 
-/* #define USE_CRNL_AS_LINE_TERMINATOR */
+#define USE_CRNL_AS_LINE_TERMINATOR
 #define USE_UNICODE_PROPERTIES
 /* #define USE_UNICODE_CASE_FOLD_TURKISH_AZERI */
-/* #define USE_UNICODE_ALL_LINE_TERMINATORS */  /* see Unicode.org UTF#18 */
+/* #define USE_UNICODE_ALL_LINE_TERMINATORS */  /* see Unicode.org UTS #18 */
 
 
 #define ONIG_ENCODING_INIT_DEFAULT           ONIG_ENCODING_ASCII
@@ -170,6 +171,8 @@ ONIG_EXTERN const UChar OnigEncISO_8859_1_ToUpperCaseTable[];
 
 ONIG_EXTERN int
 onigenc_with_ascii_strncmp P_((OnigEncoding enc, const UChar* p, const UChar* end, const UChar* sascii /* ascii */, int n));
+ONIG_EXTERN int
+onigenc_with_ascii_strnicmp P_((OnigEncoding enc, const UChar* p, const UChar* end, const UChar* sascii /* ascii */, int n));
 ONIG_EXTERN UChar*
 onigenc_step P_((OnigEncoding enc, const UChar* p, const UChar* end, int n));
 
@@ -189,6 +192,11 @@ ONIG_EXTERN const unsigned short OnigEncAsciiCtypeTable[];
 #define ONIGENC_IS_ASCII_CODE_CASE_AMBIG(code) \
  (ONIGENC_IS_ASCII_CODE_CTYPE(code, ONIGENC_CTYPE_UPPER) ||\
   ONIGENC_IS_ASCII_CODE_CTYPE(code, ONIGENC_CTYPE_LOWER))
+
+/* Check if the code is in the range. (from <= code && code <= to) */
+#define ONIGENC_IS_IN_RANGE(code, from, to) \
+  ((OnigCodePoint )((code) - (from)) <= (OnigCodePoint )((to) - (from)))
+
 
 #ifdef ONIG_ENC_REGISTER
 extern int ONIG_ENC_REGISTER(const char *, OnigEncodingType*);

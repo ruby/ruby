@@ -5,7 +5,7 @@
 #
 # To use this, get UnicodeData.txt, Scripts.txt, PropList.txt,
 # PropertyAliases.txt, PropertyValueAliases.txt, DerivedCoreProperties.txt,
-# and DerivedAge.txt  from unicode.org.
+# DerivedAge.txt and Blocks.txt  from unicode.org.
 # (http://unicode.org/Public/UNIDATA/) And run following command.
 # ruby1.9 tool/enc-unicode.rb data_dir > enc/unicode/name2ctype.kwd
 # You can get source file for gperf.  After this, simply make ruby.
@@ -90,7 +90,10 @@ def parse_unicode_data(file)
   # codepoints to Cn and C
   cn_remainder = (last_cp.next..0x10ffff).to_a
   data['Cn'] += cn_remainder
-  data['C'] += cn_remainder
+  data['C'] += data['Cn']
+
+  # Special case for LC (Cased_Letter). LC = Ll + Lt + Lu
+  data['LC'] = data['Ll'] + data['Lt'] + data['Lu']
 
   # Define General Category properties
   gcps = data.keys.sort - POSIX_NAMES
@@ -112,16 +115,15 @@ def define_posix_props(data)
                    (0x0061..0x0066).to_a
   data['Alnum'] = data['Alpha'] + data['Digit']
   data['Space'] = data['White_Space']
-  data['Blank'] = data['White_Space'] - [0x0A, 0x0B, 0x0C, 0x0D, 0x85] -
-    data['Line_Separator'] - data['Paragraph_Separator']
+  data['Blank'] = data['Space_Separator'] + [0x0009]
   data['Cntrl'] = data['Cc']
   data['Word'] = data['Alpha'] + data['Mark'] + data['Digit'] + data['Connector_Punctuation']
   data['Graph'] = data['Any'] - data['Space'] - data['Cntrl'] -
     data['Surrogate'] - data['Unassigned']
-  data['Print'] = data['Graph'] + data['Blank'] - data['Cntrl']
+  data['Print'] = data['Graph'] + data['Space_Separator']
 end
 
-def parse_scripts(data)
+def parse_scripts(data, categories)
   files = [
     {fn: 'DerivedCoreProperties.txt', title: 'Derived Property'},
     {fn: 'Scripts.txt', title: 'Script'},
@@ -134,7 +136,7 @@ def parse_scripts(data)
     IO.foreach(get_file(file[:fn])) do |line|
       if /^# Total code points: / =~ line
         data[current] = cps
-        make_const(current, cps, file[:title])
+        categories[current] = file[:title]
         (names[file[:title]] ||= []) << current
         cps = []
       elsif /^([0-9a-fA-F]+)(?:..([0-9a-fA-F]+))?\s*;\s*(\w+)/ =~ line
@@ -146,7 +148,7 @@ def parse_scripts(data)
   #  All code points not explicitly listed for Script
   #  have the value Unknown (Zzzz).
   data['Unknown'] =  (0..0x10ffff).to_a - data.values_at(*names['Script']).flatten
-  make_const('Unknown', data['Unknown'], 'Script')
+  categories['Unknown'] = 'Script'
   names.values.flatten << 'Unknown'
 end
 
@@ -200,6 +202,29 @@ def parse_age(data)
   ages
 end
 
+def parse_block(data)
+  current = nil
+  last_constname = nil
+  cps = []
+  blocks = []
+  IO.foreach(get_file('Blocks.txt')) do |line|
+    if /^([0-9a-fA-F]+)\.\.([0-9a-fA-F]+);\s*(.*)/ =~ line
+      cps = ($1.to_i(16)..$2.to_i(16)).to_a
+      constname = constantize_blockname($3)
+      data[constname] = cps
+      make_const(constname, cps, "Block")
+      blocks << constname
+    end
+  end
+
+  # All code points not belonging to any of the named blocks
+  # have the value No_Block.
+  no_block = (0..0x10ffff).to_a - data.values_at(*blocks).flatten
+  constname = constantize_blockname("No_Block")
+  make_const(constname, no_block, "Block")
+  blocks << constname
+end
+
 $const_cache = {}
 # make_const(property, pairs, name): Prints a 'static const' structure for a
 # given property, group of paired codepoints, and a human-friendly name for
@@ -232,6 +257,10 @@ def constantize_agename(name)
   "Age_#{name.sub(/\./, '_')}"
 end
 
+def constantize_blockname(name)
+  "In_#{name.gsub(/\W/, '_')}"
+end
+
 def get_file(name)
   File.join(ARGV[0], name)
 end
@@ -241,9 +270,16 @@ end
 puts '%{'
 puts '#define long size_t'
 props, data = parse_unicode_data(get_file('UnicodeData.txt'))
+categories = {}
+props.concat parse_scripts(data, categories)
+aliases = parse_aliases(data)
+define_posix_props(data)
+POSIX_NAMES.each do |name|
+  make_const(name, data[name], "[[:#{name}:]]")
+end
 print "\n#ifdef USE_UNICODE_PROPERTIES"
 props.each do |name|
-  category =
+  category = categories[name] ||
     case name.size
     when 1 then 'Major Category'
     when 2 then 'General Category'
@@ -251,22 +287,18 @@ props.each do |name|
     end
   make_const(name, data[name], category)
 end
-props.concat parse_scripts(data)
-puts '#endif /* USE_UNICODE_PROPERTIES */'
-aliases = parse_aliases(data)
 ages = parse_age(data)
-define_posix_props(data)
-POSIX_NAMES.each do |name|
-  make_const(name, data[name], "[[:#{name}:]]")
-end
+blocks = parse_block(data)
+puts '#endif /* USE_UNICODE_PROPERTIES */'
 puts(<<'__HEREDOC')
 
 static const OnigCodePoint* const CodeRanges[] = {
 __HEREDOC
 POSIX_NAMES.each{|name|puts"  CR_#{name},"}
 puts "#ifdef USE_UNICODE_PROPERTIES"
-props.each{|name|puts"  CR_#{name},"}
-ages.each{|name| puts"  CR_#{constantize_agename(name)},"}
+props.each{|name| puts"  CR_#{name},"}
+ages.each{|name|  puts"  CR_#{constantize_agename(name)},"}
+blocks.each{|name|puts"  CR_#{name},"}
 
 puts(<<'__HEREDOC')
 #endif /* USE_UNICODE_PROPERTIES */
@@ -284,6 +316,7 @@ i = -1
 name_to_index = {}
 POSIX_NAMES.each do |name|
   i += 1
+  next if name == 'NEWLINE'
   name = normalize_propname(name)
   name_to_index[name] = i
   puts"%-40s %3d" % [name + ',', i]
@@ -303,6 +336,12 @@ end
 ages.each do |name|
   i += 1
   name = "age=#{name}"
+  name_to_index[name] = i
+  puts "%-40s %3d" % [name + ',', i]
+end
+blocks.each do |name|
+  i += 1
+  name = normalize_propname(name)
   name_to_index[name] = i
   puts "%-40s %3d" % [name + ',', i]
 end

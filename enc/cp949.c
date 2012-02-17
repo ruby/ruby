@@ -210,7 +210,9 @@ OnigEncodingDefine(cp949, CP949) = {
   cp949_is_code_ctype,
   onigenc_not_support_get_ctype_code_range,
   cp949_left_adjust_char_head,
-  cp949_is_allowed_reverse_match
+  cp949_is_allowed_reverse_match,
+  0,
+  ONIGENC_FLAG_NONE,
 };
 /*
  * Name: CP949
