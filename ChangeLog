@@ -1,3 +1,9 @@
+Fri Feb 17 21:18:39 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: refine header/libraty mismatch detection.
+	  check only for ndbm.h except libc.  check _GDBM_H_ for gdbm.
+	  check _DBM_IOERR for the original ndbm.
+
 Fri Feb 17 20:30:44 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: don't check libdbm.  It is not a ndbm

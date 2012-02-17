@@ -79,18 +79,57 @@ def headers.db_check2(db, hdr)
     return false
   end
 
+  # 'libc' means ndbm is provided by libc.
+  # 4.3BSD original ndbm is contained in libc.
+  # 4.4BSD (and its derivatives such as NetBSD) contains Berkeley DB 1 in libc.
   if !(db == 'libc' ? have_func('dbm_open("", 0, 0)', hdr, hsearch) :
                       have_library(db, 'dbm_open("", 0, 0)', hdr, hsearch))
     return false
   end
 
+  # Skip a mismatch of Berkeley DB's ndbm.h and old gdbm library.
+  #
+  # dbm_clearerr() should be available for any ndbm implementation.
+  # It is available since the original (4.3BSD) ndbm and standardized by POSIX.
+  #
+  # However "can't resolve symbol 'dbm_clearerr'" problem may be caused by
+  # header/library mismatch: Berkeley DB ndbm.h and gdbm library until 1.8.3.
+  # gdbm (until 1.8.3) provides dbm_clearerr() as a empty macro in the header
+  # and the library don't provide dbm_clearerr().
+  # Berkeley DB provides dbm_clearerr() as a usual function.
+  # So Berkeley DB header with gdbm library causes the problem.
+  #
   if !have_func('dbm_clearerr((DBM *)0)', hdr, hsearch)
     return false
   end
 
-  # _DB_H_ should not be defined except Berkeley DB.
-  if !(/\Adb\d?\z/ =~ db || db == 'libc' || !have_macro('_DB_H_', hdr, hsearch))
-    return false
+  # ndbm.h is provided by the original (4.3BSD) dbm,
+  # Berkeley DB 1 in libc of 4.4BSD and
+  # ndbm compatibility layer of gdbm.
+  # So, try to check header/library mismatch.
+  #
+  # Assumption: There are no insane environment which libc provides ndbm
+  # functions but ndbm.h is not for that.
+  # 
+  if hdr == 'ndbm.h' && db != 'libc'
+    # Berkeley DB's ndbm.h (since 1.85 at least) includes db.h and
+    # it defines _DB_H_.
+    if /\Adb\d?\z/ !~ db && have_macro('_DB_H_', hdr, hsearch)
+      return false
+    end
+
+    # Recent GDBM's ndbm.h, since 1.9, includes gdbm.h and it defines _GDBM_H_.
+    # ndbm compatibility layer of GDBM is provided by libgdbm (until 1.8.0)
+    # and libgdbm_compat (since 1.8.1).
+    if /\Agdbm/ !~ db && have_macro('_GDBM_H_', hdr, hsearch)
+      return false
+    end
+    
+    # 4.3BSD's ndbm.h defines _DBM_IOERR.
+    # The original ndbm is provided by libc in 4.3BSD.
+    if have_macro('_DBM_IOERR', hdr, hsearch)
+      return false
+    end
   end
 
   case db
