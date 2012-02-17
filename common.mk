@@ -463,31 +463,31 @@ check: test test-all
 	$(ECHO) check succeeded
 check-ruby: test test-ruby
 
-btest: miniruby$(EXEEXT) $(TEST_RUNNABLE)-btest
+btest: $(TEST_RUNNABLE)-btest
 no-btest: PHONY
-yes-btest: PHONY
+yes-btest: miniruby$(EXEEXT) PHONY
 	$(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(MINIRUBY)" $(OPTS)
 
-btest-ruby: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) $(TEST_RUNNABLE)-btest-ruby
+btest-ruby: $(TEST_RUNNABLE)-btest-ruby
 no-btest-ruby: PHONY
-yes-btest-ruby: PHONY
+yes-btest-ruby: prog PHONY
 	@$(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib" -q $(OPTS)
 
-test-sample: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) $(TEST_RUNNABLE)-test-sample
+test-sample: $(TEST_RUNNABLE)-test-sample
 no-test-sample: PHONY
-yes-test-sample: PHONY
+yes-test-sample: prog PHONY
 	@$(RUNRUBY) $(srcdir)/tool/rubytest.rb
 
 test-knownbugs: test-knownbug
-test-knownbug: miniruby$(EXEEXT) $(PROGRAM) $(RBCONFIG) $(TEST_RUNNABLE)-test-knownbug
+test-knownbug: $(TEST_RUNNABLE)-test-knownbug
 no-test-knownbug: PHONY
-yes-test-knownbug: PHONY
+yes-test-knownbug: prog PHONY
 	-$(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM)" $(OPTS) $(srcdir)/KNOWNBUGS.rb
 
 test: test-sample btest-ruby test-knownbug
 
 test-all: $(TEST_RUNNABLE)-test-all
-yes-test-all: PHONY
+yes-test-all: prog PHONY
 	$(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TESTS)
 TESTS_BUILD = mkmf
 no-test-all: PHONY
@@ -495,7 +495,7 @@ no-test-all: PHONY
 
 test-ruby: $(TEST_RUNNABLE)-test-ruby
 no-test-ruby: PHONY
-yes-test-ruby: PHONY
+yes-test-ruby: prog PHONY
 	$(RUNRUBY) "$(srcdir)/test/runner.rb" -q $(TESTS) ruby
 
 extconf: $(PREP)
