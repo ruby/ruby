@@ -13,6 +13,16 @@ class TestEnumerable < Test::Unit::TestCase
         yield 3
         yield 1
         yield 2
+        self
+      end
+    end
+    @empty = Object.new
+    class << @empty
+      attr_reader :block
+      include Enumerable
+      def each(&block)
+        @block = block
+        self
       end
     end
     @verbose = $VERBOSE
@@ -42,6 +52,10 @@ class TestEnumerable < Test::Unit::TestCase
     a = []
     @obj.grep(2) {|x| a << x }
     assert_equal([2, 2], a)
+
+    bug5801 = '[ruby-dev:45041]'
+    @empty.grep(//)
+    assert_nothing_raised(bug5801) {100.times {@empty.block.call}}
   end
 
   def test_count
@@ -109,6 +123,7 @@ class TestEnumerable < Test::Unit::TestCase
   def test_first
     assert_equal(1, @obj.first)
     assert_equal([1, 2, 3], @obj.first(3))
+    assert_nil(@empty.first)
   end
 
   def test_sort
@@ -275,6 +290,10 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_take_while
     assert_equal([1,2], @obj.take_while {|x| x <= 2})
+
+    bug5801 = '[ruby-dev:45040]'
+    @empty.take_while {true}
+    assert_nothing_raised(bug5801) {100.times {@empty.block.call}}
   end
 
   def test_drop
