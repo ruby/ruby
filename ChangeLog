@@ -1,3 +1,7 @@
+Fri Feb 17 21:39:36 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: remove dbm.
+
 Fri Feb 17 21:18:39 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: refine header/libraty mismatch detection.
