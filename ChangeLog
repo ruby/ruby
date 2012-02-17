@@ -1,3 +1,9 @@
+Fri Feb 17 20:30:44 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: don't check libdbm.  It is not a ndbm
+	  implementation.  (libdbm in Version 7 Unix is database library
+	  for single database per process.)
+
 Fri Feb 17 15:38:53 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* Merge Onigmo-5.13.1. [ruby-dev:45057] [Feature #5820]

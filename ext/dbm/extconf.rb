@@ -9,14 +9,13 @@ else
 end
 
 headers = {
-  "libc" => ["ndbm.h"], # 4.4BSD libc contains Berkeley DB 1.
+  "libc" => ["ndbm.h"], # 4.3BSD original ndbm, Berkeley DB 1 in 4.4BSD libc.
   "db" => ["db.h"],
   "db1" => ["db1/ndbm.h", "db1.h", "ndbm.h"],
   "db2" => ["db2/db.h", "db2.h", "db.h"],
   "db3" => ["db3/db.h", "db3.h", "db.h"],
   "db4" => ["db4/db.h", "db4.h", "db.h"],
   "db5" => ["db5/db.h", "db5.h", "db.h"],
-  "dbm" => ["ndbm.h"], # traditional ndbm (4.3BSD)
   "gdbm" => ["gdbm-ndbm.h", "ndbm.h", "gdbm/ndbm.h"], # gdbm until 1.8.0
   "gdbm_compat" => ["gdbm-ndbm.h", "ndbm.h", "gdbm/ndbm.h"], # gdbm since 1.8.1
   "qdbm" => ["relic.h", "qdbm/relic.h"],
