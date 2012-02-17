@@ -208,11 +208,19 @@ class TestReadline < Test::Unit::TestCase
       stdin.write("first\t")
       stdin.flush
       Readline.completion_proc = ->(text) {[]}
-      line = nil
+      line1 = line2 = nil
       replace_stdio(stdin.path, stdout.path) {
-        assert_nothing_raised(NoMemoryError) {line = Readline.readline("> ")}
+        assert_nothing_raised(NoMemoryError) {line1 = Readline.readline("> ")}
+        stdin.write("\n")
+        stdin.flush
+        assert_nothing_raised(NoMemoryError) {line2 = Readline.readline("> ")}
       }
-      assert_equal("first", line)
+      assert_equal("first", line1)
+      assert_equal("", line2)
+      begin
+        assert_equal("", Readline.line_buffer)
+      rescue NotimplementedError
+      end
     end
   end
 

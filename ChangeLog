@@ -1,3 +1,8 @@
+Fri Feb 17 12:26:15 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/readline/test_readline.rb (test_completion_proc_empty_result):
+	  ensure clearance of Readline's line_buffer after the test.
+
 Fri Feb 17 11:46:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/readline/test_readline.rb (test_line_buffer__point): use
