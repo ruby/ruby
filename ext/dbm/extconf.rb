@@ -5,8 +5,7 @@ dir_config("dbm")
 if dblib = with_config("dbm-type", nil)
   dblib = dblib.split(/[ ,]+/)
 else
-  #dblib = %w(libc db db2 db1 db5 db4 db3 dbm gdbm gdbm_compat qdbm)
-  dblib = %w(gdbm gdbm_compat qdbm)
+  dblib = %w(libc db db2 db1 db5 db4 db3 dbm gdbm gdbm_compat qdbm)
 end
 
 headers = {
