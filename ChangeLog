@@ -1,3 +1,11 @@
+Sat Feb 18 02:48:39 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/fileutils.rb: refactored FileUtil methods to use the
+	  `define_command` API.  Patch from 7rans <transfire@gmail.com>
+	* test/fileutils/test_dryrun.rb: corresponding test refactoring
+	* test/fileutils/test_nowrite.rb: ditto
+	* test/fileutils/test_verbose.rb: ditto
+
 Fri Feb 17 21:39:36 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: remove dbm.
