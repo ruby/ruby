@@ -137,7 +137,7 @@ def parse_scripts(data)
         make_const(current, cps, file[:title])
         (names[file[:title]] ||= []) << current
         cps = []
-      elsif /^(\h+)(?:..(\h+))?\s*;\s*(\w+)/ =~ line
+      elsif /^([0-9a-fA-F]+)(?:..([0-9a-fA-F]+))?\s*;\s*(\w+)/ =~ line
         current = $3
         $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
       end
@@ -192,7 +192,7 @@ def parse_age(data)
       ages << current
       last_constname = constname
       cps = []
-    elsif /^(\h+)(?:..(\h+))?\s*;\s*(\d+\.\d+)/ =~ line
+    elsif /^([0-9a-fA-F]+)(?:..([0-9a-fA-F]+))?\s*;\s*(\d+\.\d+)/ =~ line
       current = $3
       $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
     end

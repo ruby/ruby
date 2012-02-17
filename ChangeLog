@@ -1,3 +1,10 @@
+Fri Feb 17 09:44:55 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/transcode-tblgen.rb (import_ucm): don't use \h because the
+	  script should work with ruby 1.8.
+
+	* tool/enc-unicode.rb: ditto.
+
 Fri Feb 17 07:33:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (id_lshift): use constant ID.
