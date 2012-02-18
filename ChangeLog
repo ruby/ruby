@@ -1,3 +1,8 @@
+Sat Feb 18 12:50:59 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/dbm.c (DBM::VERSION): define it by detecting _GDBM_H_ or
+	  _DBM_IOERR.
+
 Sat Feb 18 07:52:45 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/enc-unicode.rb: don't use 1.9 feature on tools.

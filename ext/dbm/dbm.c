@@ -1096,6 +1096,10 @@ Init_dbm(void)
     rb_define_const(rb_cDBM, "VERSION",  rb_sprintf("QDBM %s", dpversion));
 #elif defined(_DB_H_)
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("Berkeley DB (unknown)"));
+#elif defined(_GDBM_H_)
+    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("GDBM (unknown)"));
+#elif defined(_DBM_IOERR)
+    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("NDBM (4.3BSD)"));
 #else
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("unknown"));
 #endif
