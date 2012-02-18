@@ -124,7 +124,7 @@ if defined? DBM
         assert_equal(%w[.db], suffixes)
         db = File.binread(dbname, 16)
         assert(db[0,4].unpack("N") == [0x00061561] || # Berkeley DB 1
-               db[12,4].unpack("L") == [0x061561]) # Berkeley DBM 2 or later.
+               db[12,4].unpack("L") == [0x00061561]) # Berkeley DBM 2 or later.
       when /\bQDBM\b/
         assert_equal(%w[.dir .pag], suffixes)
         dir = File.binread(dirname, 16)
