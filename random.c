@@ -215,8 +215,6 @@ genrand_real2(struct MT *mt)
 #undef N
 #undef M
 
-/* These real versions are due to Isaku Wada, 2002/01/09 added */
-
 typedef struct {
     VALUE seed;
     struct MT mt;

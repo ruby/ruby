@@ -1,3 +1,7 @@
+Sat Feb 18 23:27:00 2012  Kenta Murata  <mrkn@mrkn.jp>
+
+	* random.c: remove a duplicated comment.
+
 Sat Feb 18 18:43:13 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb (dblib): prefer recent GDBM over older GDBM.
