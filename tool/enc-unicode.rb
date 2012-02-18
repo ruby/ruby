@@ -125,9 +125,9 @@ end
 
 def parse_scripts(data, categories)
   files = [
-    {fn: 'DerivedCoreProperties.txt', title: 'Derived Property'},
-    {fn: 'Scripts.txt', title: 'Script'},
-    {fn: 'PropList.txt', title: 'Binary Property'}
+    {:fn => 'DerivedCoreProperties.txt', :title => 'Derived Property'},
+    {:fn => 'Scripts.txt', :title => 'Script'},
+    {:fn => 'PropList.txt', :title => 'Binary Property'}
   ]
   current = nil
   cps = []
@@ -231,7 +231,7 @@ $const_cache = {}
 # the group
 def make_const(prop, data, name)
   puts "\n/* '#{prop}': #{name} */"
-  if origprop = $const_cache.key(data)
+  if origprop = $const_cache.index(data)
     puts "#define CR_#{prop} CR_#{origprop}"
   else
     $const_cache[prop] = data
