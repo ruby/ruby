@@ -3885,8 +3885,8 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
   ptrdiff_t r;
   UChar *s, *prev;
   OnigMatchArg msa;
-  const UChar *orig_start = start;
 #ifdef USE_MATCH_RANGE_MUST_BE_INSIDE_OF_SPECIFIED_RANGE
+  const UChar *orig_start = start;
   const UChar *orig_range = range;
 #endif
 

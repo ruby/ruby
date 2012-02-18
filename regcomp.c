@@ -50,6 +50,7 @@ onig_set_default_case_fold_flag(OnigCaseFoldType case_fold_flag)
 static unsigned char PadBuf[WORD_ALIGNMENT_SIZE];
 #endif
 
+#if 0
 static UChar*
 str_dup(UChar* s, UChar* end)
 {
@@ -64,6 +65,7 @@ str_dup(UChar* s, UChar* end)
   }
   else return NULL;
 }
+#endif
 
 static void
 swap_node(Node* a, Node* b)
