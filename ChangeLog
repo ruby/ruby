@@ -1,3 +1,15 @@
+Sat Feb 18 18:43:13 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb (dblib): prefer recent GDBM over older GDBM.
+	  (have_declared_libvar): new function to check a declared variable
+	  exists in a library.
+	  (have_undeclared_libvar): renamed from renamed from have_libvar.
+	  (headers.db_check2): check that GDBM version variable if GDBM header
+	  is choosen.
+
+	* ext/dbm/dbm.c (Init_dbm): use HAVE_DECLARED_LIBVAR_GDBM_VERSION and
+	  HAVE_UNDECLARED_LIBVAR_GDBM_VERSION macro.
+
 Sat Feb 18 13:53:01 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/dbm/test_dbm.rb (test_dbmfile_suffix): DBM::VERSION should

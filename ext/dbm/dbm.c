@@ -1082,10 +1082,10 @@ Init_dbm(void)
 #if defined(HAVE_DB_VERSION)
     /* The version of the dbm library, if using Berkeley DB */
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(db_version(NULL, NULL, NULL)));
-#elif defined(HAVE_GDBM_VERSION)
+#elif defined(HAVE_DECLARED_LIBVAR_GDBM_VERSION)
     /* since gdbm 1.9 */
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(gdbm_version));
-#elif defined(HAVE_LIBVAR_GDBM_VERSION)
+#elif defined(HAVE_UNDECLARED_LIBVAR_GDBM_VERSION)
     /* ndbm.h doesn't declare gdbm_version until gdbm 1.8.3.
      * See extconf.rb for more information. */
     {

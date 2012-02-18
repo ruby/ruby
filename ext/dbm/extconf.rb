@@ -5,7 +5,7 @@ dir_config("dbm")
 if dblib = with_config("dbm-type", nil)
   dblib = dblib.split(/[ ,]+/)
 else
-  dblib = %w(libc db db2 db1 db5 db4 db3 gdbm gdbm_compat qdbm)
+  dblib = %w(libc db db2 db1 db5 db4 db3 gdbm_compat gdbm qdbm)
 end
 
 headers = {
@@ -16,8 +16,8 @@ headers = {
   "db3" => ["db3/db.h", "db3.h", "db.h"],
   "db4" => ["db4/db.h", "db4.h", "db.h"],
   "db5" => ["db5/db.h", "db5.h", "db.h"],
-  "gdbm" => ["gdbm-ndbm.h", "ndbm.h", "gdbm/ndbm.h"], # gdbm until 1.8.0
   "gdbm_compat" => ["gdbm-ndbm.h", "ndbm.h", "gdbm/ndbm.h"], # gdbm since 1.8.1
+  "gdbm" => ["gdbm-ndbm.h", "ndbm.h", "gdbm/ndbm.h"], # gdbm until 1.8.0
   "qdbm" => ["relic.h", "qdbm/relic.h"],
 }
 
@@ -39,13 +39,35 @@ def headers.db_check(db, hdr)
   result
 end
 
-def have_libvar(var, headers = nil, opt = "", &b)
+def have_declared_libvar(var, headers = nil, opt = "", &b)
   checking_for checking_message([*var].compact.join(' '), headers, opt) do
-    try_libvar(var, headers, opt, &b)
+    try_declared_libvar(var, headers, opt, &b)
   end
 end
 
-def try_libvar(var, headers = nil, opt = "", &b)
+def try_declared_libvar(var, headers = nil, opt = "", &b)
+  if try_link(<<"SRC", opt, &b)
+#{cpp_include(headers)}
+/*top*/
+int main(int argc, char *argv[]) {
+  void *conftest_var = &#{var};
+  return 0;
+}
+SRC
+    $defs.push(format("-DHAVE_DECLARED_LIBVAR_%s", var.tr_cpp))
+    true
+  else
+    false
+  end
+end
+
+def have_undeclared_libvar(var, headers = nil, opt = "", &b)
+  checking_for checking_message([*var].compact.join(' '), headers, opt) do
+    try_undeclared_libvar(var, headers, opt, &b)
+  end
+end
+
+def try_undeclared_libvar(var, headers = nil, opt = "", &b)
   var, type = *var
   if try_link(<<"SRC", opt, &b)
 #{cpp_include(headers)}
@@ -57,7 +79,7 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 SRC
-    $defs.push(format("-DHAVE_LIBVAR_%s", var.tr_cpp))
+    $defs.push(format("-DHAVE_UNDECLARED_LIBVAR_%s", var.tr_cpp))
     true
   else
     false
@@ -66,6 +88,9 @@ end
 
 
 def headers.db_check2(db, hdr)
+  $defs.push(%{-DRUBYDBM_DBM_HEADER='"#{hdr}"'})
+  $defs.push(%{-DRUBYDBM_DBM_TYPE='"#{db}"'})
+
   hsearch = nil
 
   case db
@@ -103,47 +128,58 @@ def headers.db_check2(db, hdr)
     return false
   end
 
+  # Berkeley DB's ndbm.h (since 1.85 at least) includes db.h and
+  # it defines _DB_H_.
+  have_db_header_macro = have_macro('_DB_H_', hdr, hsearch)
+
+  # Recent GDBM's ndbm.h, since 1.9, includes gdbm.h and it defines _GDBM_H_.
+  # ndbm compatibility layer of GDBM is provided by libgdbm (until 1.8.0)
+  # and libgdbm_compat (since 1.8.1).
+  have_gdbm_header_macro = have_macro('_GDBM_H_', hdr, hsearch)
+
+  # 4.3BSD's ndbm.h defines _DBM_IOERR.
+  # The original ndbm is provided by libc in 4.3BSD.
+  have_ndbm_header_macro = have_macro('_DBM_IOERR', hdr, hsearch)
+
   # ndbm.h is provided by the original (4.3BSD) dbm,
   # Berkeley DB 1 in libc of 4.4BSD and
   # ndbm compatibility layer of gdbm.
   # So, try to check header/library mismatch.
   #
-  # Assumption: There are no insane environment which libc provides ndbm
-  # functions but ndbm.h is not for that.
-  # 
   if hdr == 'ndbm.h' && db != 'libc'
-    # Berkeley DB's ndbm.h (since 1.85 at least) includes db.h and
-    # it defines _DB_H_.
-    if /\Adb\d?\z/ !~ db && have_macro('_DB_H_', hdr, hsearch)
+    if /\Adb\d?\z/ !~ db && have_db_header_macro
       return false
     end
 
-    # Recent GDBM's ndbm.h, since 1.9, includes gdbm.h and it defines _GDBM_H_.
-    # ndbm compatibility layer of GDBM is provided by libgdbm (until 1.8.0)
-    # and libgdbm_compat (since 1.8.1).
-    if /\Agdbm/ !~ db && have_macro('_GDBM_H_', hdr, hsearch)
+    if /\Agdbm/ !~ db && have_gdbm_header_macro
       return false
     end
     
-    # 4.3BSD's ndbm.h defines _DBM_IOERR.
-    # The original ndbm is provided by libc in 4.3BSD.
-    if have_macro('_DBM_IOERR', hdr, hsearch)
+    if have_ndbm_header_macro
       return false
     end
   end
 
-  case db
-  when /\Adb\d?\z/
-    have_func('db_version((int *)0, (int *)0, (int *)0)', hdr, hsearch)
-  when /\Agdbm/
-    have_var("gdbm_version", hdr, hsearch)
-    # gdbm_version is not declared by ndbm.h until gdbm 1.8.3.
-    # We can't include ndbm.h and gdbm.h because they both define datum type.
-    # ndbm.h includes gdbm.h and gdbm_version is declared since gdbm 1.9.
-    have_libvar(["gdbm_version", "char *"], hdr, hsearch)
-  when /\Aqdbm\z/
-    have_var("dpversion", hdr, hsearch)
+  # Berkeley DB
+  have_func('db_version((int *)0, (int *)0, (int *)0)', hdr, hsearch)
+
+  # GDBM
+  have_gdbm_variable = have_declared_libvar("gdbm_version", hdr, hsearch)
+  # gdbm_version is available since very old version (gdbm 1.5 at least).
+  # However it is not declared by ndbm.h until gdbm 1.8.3.
+  # We can't include both ndbm.h and gdbm.h because they both define datum type.
+  # ndbm.h includes gdbm.h and gdbm_version is declared since gdbm 1.9.
+  have_gdbm_variable |= have_undeclared_libvar(["gdbm_version", "char *"], hdr, hsearch)
+
+  # QDBM
+  have_var("dpversion", hdr, hsearch)
+
+  # detect mismatch between GDBM header and other library.
+  # If GDBM header is included, GDBM library should be linked.
+  if have_gdbm_header_macro && !have_gdbm_variable
+    return false
   end
+
   if hsearch
     $defs << hsearch
     @defs = hsearch
