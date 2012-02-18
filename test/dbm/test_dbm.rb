@@ -98,18 +98,18 @@ if defined? DBM
 
     def test_dbmfile_suffix
       prefix = File.basename(@path)
-      files = Dir.entries(@tmpdir).reject {|f| !f.start_with?(prefix) }.sort
+      suffixes = Dir.entries(@tmpdir).grep(/\A#{Regexp.escape prefix}/) { $' }.sort
       case DBM::VERSION
       when /\bNDBM\b/
-        assert_equal(["#{prefix}.dir", "#{prefix}.pag"], files)
+        assert_equal(%w[.dir .pag], suffixes)
       when /\bGDBM\b/
-        assert_equal(["#{prefix}.dir", "#{prefix}.pag"], files)
+        assert_equal(%w[.dir .pag], suffixes)
       when /\bBerkeley DB\b/
-        assert_equal(["#{prefix}.db"], files)
+        assert_equal(%w[.db], suffixes)
       when /\bQDBM\b/
-        assert_equal(["#{prefix}.dir", "#{prefix}.pag"], files)
+        assert_equal(%w[.dir .pag], suffixes)
       end
-      if files == ["#{prefix}.db"]
+      if suffixes == %w[.db]
         assert_match(/\bBerkeley DB\b/, DBM::VERSION)
       end
     end
