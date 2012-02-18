@@ -68,7 +68,7 @@ if defined? DBM
       assert_instance_of(DBM, @dbm = DBM.new(@path))
     end
     def teardown
-      assert_nil(@dbm.close)
+      assert_nil(@dbm.close) unless @dbm.closed?
       ObjectSpace.each_object(DBM) do |obj|
         obj.close unless obj.closed?
       end
@@ -97,17 +97,44 @@ if defined? DBM
     end
 
     def test_dbmfile_suffix
+      @dbm.close
       prefix = File.basename(@path)
       suffixes = Dir.entries(@tmpdir).grep(/\A#{Regexp.escape prefix}/) { $' }.sort
+      pagname = "#{@path}.pag"
+      dirname = "#{@path}.dir"
+      dbname = "#{@path}.db"
       case DBM::VERSION
       when /\bNDBM\b/
         assert_equal(%w[.dir .pag], suffixes)
       when /\bGDBM\b/
         assert_equal(%w[.dir .pag], suffixes)
+        pag = File.binread(pagname, 16)
+        pag_magics = [
+          0x13579ace, # GDBM_OMAGIC
+          0x13579acd, # GDBM_MAGIC32
+          0x13579acf, # GDBM_MAGIC64
+        ]
+        assert_operator(pag_magics, :include?,
+                        pag.unpack("i")[0]) # native endian, native int.
+        if !File.identical?(pagname, dirname)
+          dir = File.binread(dirname, 16)
+          assert_equal("GDBM", dir[0, 4])
+        end
       when /\bBerkeley DB\b/
         assert_equal(%w[.db], suffixes)
+        db = File.binread(dbname, 16)
+        assert(db[0,4].unpack("N") == [0x00061561] || # Berkeley DB 1
+               db[12,4].unpack("L") == [0x061561]) # Berkeley DBM 2 or later.
       when /\bQDBM\b/
         assert_equal(%w[.dir .pag], suffixes)
+        dir = File.binread(dirname, 16)
+        assert_equal("[depot]\0\v", dir[0, 9])
+        pag = File.binread(pagname, 16)
+        if [1].pack("s") == "\x00\x01" # big endian
+          assert_equal("[DEPOT]\n\f", pag[0, 9])
+        else # little endian
+          assert_equal("[depot]\n\f", pag[0, 9])
+        end
       end
       if suffixes == %w[.db]
         assert_match(/\bBerkeley DB\b/, DBM::VERSION)

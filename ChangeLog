@@ -1,3 +1,7 @@
+Sun Feb 19 03:00:30 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/dbm/test_dbm.rb (test_dbmfile_suffix): check magic numbers.
+
 Sun Feb 19 01:05:41 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: detect GDBM's ndbm.h by testing dbm_clearerr is
