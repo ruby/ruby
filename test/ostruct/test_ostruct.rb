@@ -62,14 +62,22 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_not_respond_to(o, :a=, bug)
   end
 
-  def test_method_missing_handles_square_bracket_equals
+  def test_square_bracket_equals
     o = OpenStruct.new
-    assert_raise(NoMethodError) { o[:foo] = :bar }
+    o[:foo] = 40
+    assert_equal(o[:foo], 40)
   end
 
-  def test_method_missing_handles_square_brackets
-    o = OpenStruct.new
-    assert_raise(NoMethodError) { o[:foo] }
+  def test_square_brackets
+    o = OpenStruct.new(:foo=>4)
+    assert_equal(o[:foo], 4)
+  end
+
+  def test_merge
+    o = OpenStruct.new(:foo=>4)
+    o.merge!(:bar=>5)
+    assert_equal(o.bar, 5)
+    assert_equal(o.foo, 4)
   end
 
 end

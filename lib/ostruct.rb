@@ -114,7 +114,7 @@ class OpenStruct
   #    person.marshal_dump # => { :name => 'John Smith', :age => 70 }
   #
   def marshal_dump
-    @table
+    @table.dup
   end
 
   #
@@ -162,7 +162,11 @@ class OpenStruct
     end
     name
   end
+  protected :new_ostruct_member
 
+  #
+  # Missing methods can be used to set and read new OpenStruct members.
+  #
   def method_missing(mid, *args) # :nodoc:
     mname = mid.id2name
     len = args.length
@@ -234,4 +238,49 @@ class OpenStruct
     return false unless(other.kind_of?(OpenStruct))
     return @table == other.table
   end
+
+  #
+  # Access a value in the OpenStruct by key, like a Hash.
+  # This increases OpenStruct's "duckiness".
+  #
+  #   o = OpenStruct.new
+  #   o.t = 4
+  #   o['t']  #=> 4
+  #
+  def [](name)
+    @table[name.to_sym]
+  end
+
+  #
+  # Set a value in the OpenStruct by key, like a Hash.
+  #
+  #   o = OpenStruct.new
+  #   o['t'] = 4
+  #   o.t  #=> 4
+  #
+  def []=(name, value)
+    modifiable[new_ostruct_member(name)] = value
+  end
+
+  #
+  # Convert OpenStruct to hash. This method duplicates the
+  # underlying table and returns it.
+  #
+  #   o = OpenStruct.new('a'=>1, 'b'=>2)
+  #   o.to_h  #=> {:a=>1, :b=>2}
+  #
+  def to_h
+    @table.dup
+  end
+
+  #
+  # Merge +hash+ into underlying OpenStruct table. The keys
+  # of the hash must respond to #to_sym.
+  #
+  def merge!(hash)
+    for name,value in hash
+      modifiable[new_ostruct_member(name)] = value
+    end
+  end
+
 end
