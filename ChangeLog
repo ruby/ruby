@@ -1,3 +1,9 @@
+Sun Feb 19 00:25:55 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: don't choose 'dbm' if _GDB_H_ is defined which
+	  is available since GDBM 1.9 because 'gdbm_compat' is appropriate
+	  choise since GDBM 1.8.1.
+
 Sat Feb 18 23:27:00 2012  Kenta Murata  <mrkn@mrkn.jp>
 
 	* random.c: remove a duplicated comment.

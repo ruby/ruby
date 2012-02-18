@@ -141,6 +141,13 @@ def headers.db_check2(db, hdr)
   # The original ndbm is provided by libc in 4.3BSD.
   have_ndbm_header_macro = have_macro('_DBM_IOERR', hdr, hsearch)
 
+  # GDBM provides NDBM functions in libgdbm_compat since GDBM 1.8.1.
+  # GDBM's ndbm.h defines _GDBM_H_ since GDBM 1.9.
+  # So, reject 'gdbm'.  'gdbm_compat' is required.
+  if have_gdbm_header_macro && db == 'gdbm'
+    return false
+  end
+
   # ndbm.h is provided by the original (4.3BSD) dbm,
   # Berkeley DB 1 in libc of 4.4BSD and
   # ndbm compatibility layer of gdbm.
