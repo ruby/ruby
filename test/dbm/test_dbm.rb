@@ -109,6 +109,9 @@ if defined? DBM
       when /\bQDBM\b/
         assert_equal(["#{prefix}.dir", "#{prefix}.pag"], files)
       end
+      if files == ["#{prefix}.db"]
+        assert_match(/\bBerkeley DB\b/, DBM::VERSION)
+      end
     end
 
     def test_s_new_has_no_block

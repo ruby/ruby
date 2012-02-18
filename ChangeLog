@@ -1,3 +1,8 @@
+Sat Feb 18 13:53:01 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/dbm/test_dbm.rb (test_dbmfile_suffix): DBM::VERSION should
+	  be Berkeley DB if foo.db is created by DBM.open.
+
 Sat Feb 18 13:40:37 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/dbm/test_dbm.rb (test_dbmfile_suffix): test dbm file suffix.
