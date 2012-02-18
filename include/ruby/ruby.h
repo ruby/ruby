@@ -256,6 +256,22 @@ VALUE rb_ull2inum(unsigned LONG_LONG);
 # define SSIZET2NUM(v) INT2NUM(v)
 #endif
 
+#ifndef SIZE_MAX
+# if SIZEOF_SIZE_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
+#   define SIZE_MAX ULLONG_MAX
+#   define SIZE_MIN ULLONG_MIN
+# elif SIZEOF_SIZE_T == SIZEOF_LONG
+#   define SIZE_MAX ULONG_MAX
+#   define SIZE_MIN ULONG_MIN
+# elif SIZEOF_SIZE_T == SIZEOF_INT
+#   define SIZE_MAX UINT_MAX
+#   define SIZE_MIN UINT_MIN
+# else
+#   define SIZE_MAX USHRT_MAX
+#   define SIZE_MIN USHRT_MIN
+# endif
+#endif
+
 #ifndef SSIZE_MAX
 # if SIZEOF_SIZE_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
 #   define SSIZE_MAX LLONG_MAX
