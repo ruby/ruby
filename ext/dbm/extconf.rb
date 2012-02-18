@@ -86,6 +86,26 @@ SRC
   end
 end
 
+def have_empty_macro_dbm_clearerr(headers = nil, opt = "", &b)
+  checking_for checking_message('empty macro of dbm_clearerr(foobarbaz)',
+                                headers, opt) do
+    try_toplevel('dbm_clearerr(foobarbaz)', headers, opt, &b)
+  end
+end
+
+def try_toplevel(src, headers = nil, opt = "", &b)
+  if try_compile(<<"SRC", opt, &b)
+#{cpp_include(headers)}
+/*top*/
+#{src}
+SRC
+    $defs.push("-DHAVE_EMPTY_MACRO_DBM_CLEARERR")
+    true
+  else
+    false
+  end
+end
+
 
 def headers.db_check2(db, hdr)
   $defs.push(%{-DRUBYDBM_DBM_HEADER='"#{hdr}"'})
@@ -132,10 +152,14 @@ def headers.db_check2(db, hdr)
   # it defines _DB_H_.
   have_db_header_macro = have_macro('_DB_H_', hdr, hsearch)
 
+  # Old GDBM's ndbm.h, until 1.8.3, defines dbm_clearerr as a macro which
+  # expands to no tokens.
+  have_gdbm_header_macro1 = have_empty_macro_dbm_clearerr(hdr, hsearch)
+
   # Recent GDBM's ndbm.h, since 1.9, includes gdbm.h and it defines _GDBM_H_.
   # ndbm compatibility layer of GDBM is provided by libgdbm (until 1.8.0)
   # and libgdbm_compat (since 1.8.1).
-  have_gdbm_header_macro = have_macro('_GDBM_H_', hdr, hsearch)
+  have_gdbm_header_macro2 = have_macro('_GDBM_H_', hdr, hsearch)
 
   # 4.3BSD's ndbm.h defines _DBM_IOERR.
   # The original ndbm is provided by libc in 4.3BSD.
@@ -144,9 +168,11 @@ def headers.db_check2(db, hdr)
   # GDBM provides NDBM functions in libgdbm_compat since GDBM 1.8.1.
   # GDBM's ndbm.h defines _GDBM_H_ since GDBM 1.9.
   # So, reject 'gdbm'.  'gdbm_compat' is required.
-  if have_gdbm_header_macro && db == 'gdbm'
+  if have_gdbm_header_macro2 && db == 'gdbm'
     return false
   end
+
+  have_gdbm_header_macro = have_gdbm_header_macro1 | have_gdbm_header_macro2
 
   # ndbm.h is provided by the original (4.3BSD) dbm,
   # Berkeley DB 1 in libc of 4.4BSD and

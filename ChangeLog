@@ -1,3 +1,8 @@
+Sun Feb 19 01:05:41 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: detect GDBM's ndbm.h by testing dbm_clearerr is
+	  an empty macro.
+
 Sun Feb 19 00:25:55 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: don't choose 'dbm' if _GDB_H_ is defined which
