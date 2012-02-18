@@ -1,3 +1,7 @@
+Sat Feb 18 13:40:37 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/dbm/test_dbm.rb (test_dbmfile_suffix): test dbm file suffix.
+
 Sat Feb 18 12:50:59 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/dbm.c (DBM::VERSION): define it by detecting _GDBM_H_ or

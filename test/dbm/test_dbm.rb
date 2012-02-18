@@ -96,6 +96,21 @@ if defined? DBM
       end
     end
 
+    def test_dbmfile_suffix
+      prefix = File.basename(@path)
+      files = Dir.entries(@tmpdir).reject {|f| !f.start_with?(prefix) }.sort
+      case DBM::VERSION
+      when /\bNDBM\b/
+        assert_equal(["#{prefix}.dir", "#{prefix}.pag"], files)
+      when /\bGDBM\b/
+        assert_equal(["#{prefix}.dir", "#{prefix}.pag"], files)
+      when /\bBerkeley DB\b/
+        assert_equal(["#{prefix}.db"], files)
+      when /\bQDBM\b/
+        assert_equal(["#{prefix}.dir", "#{prefix}.pag"], files)
+      end
+    end
+
     def test_s_new_has_no_block
       # DBM.new ignore the block
       foo = true
