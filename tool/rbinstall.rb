@@ -404,7 +404,9 @@ install?(:local, :comm, :bin, :'bin-comm') do
   end
   for src in Dir[File.join(srcdir, "bin/*")]
     next unless File.file?(src)
-    next if /\/[.#]|(\.(old|bak|orig|rej|diff|patch|core)|~|\/core)$/i =~ src
+    s = src.downcase
+    next if %w(old bak orig rej diff patch core).include? File.extname(s)
+    next if /^\.\#|(~|core)$/i =~ File.basename(s)
 
     name = RbConfig.expand(trans[File.basename(src)])
 
