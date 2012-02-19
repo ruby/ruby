@@ -106,6 +106,8 @@ if defined? DBM
       case DBM::VERSION
       when /\bNDBM\b/
         assert_equal(%w[.dir .pag], suffixes)
+        assert(File.zero?(pagname))
+        assert(File.zero?(dirname))
       when /\bGDBM\b/
         assert_equal(%w[.dir .pag], suffixes)
         pag = File.binread(pagname, 16)
