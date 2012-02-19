@@ -110,6 +110,8 @@ if defined? DBM
         assert(File.zero?(dirname))
       when /\bGDBM\b/
         assert_equal(%w[.dir .pag], suffixes)
+        assert(!File.zero?(pagname))
+        assert(!File.zero?(dirname))
         pag = File.binread(pagname, 16)
         pag_magics = [
           0x13579ace, # GDBM_OMAGIC
@@ -124,11 +126,14 @@ if defined? DBM
         end
       when /\bBerkeley DB\b/
         assert_equal(%w[.db], suffixes)
+        assert(!File.zero?(dbname))
         db = File.binread(dbname, 16)
         assert(db[0,4].unpack("N") == [0x00061561] || # Berkeley DB 1
                db[12,4].unpack("L") == [0x00061561]) # Berkeley DBM 2 or later.
       when /\bQDBM\b/
         assert_equal(%w[.dir .pag], suffixes)
+        assert(!File.zero?(pagname))
+        assert(!File.zero?(dirname))
         dir = File.binread(dirname, 16)
         assert_equal("[depot]\0\v", dir[0, 9])
         pag = File.binread(pagname, 16)
