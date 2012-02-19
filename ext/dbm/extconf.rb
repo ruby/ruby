@@ -223,6 +223,9 @@ def headers.db_check2(db, hdr)
   $defs << '-DDBM_HDR="<'+hdr+'>"'
   @found << hdr
 
+  puts "header: #{hdr}"
+  puts "library: #{db}"
+
   true
 end
 
