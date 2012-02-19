@@ -22,7 +22,7 @@ Sun Feb 19 00:25:55 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: don't choose 'dbm' if _GDB_H_ is defined which
 	  is available since GDBM 1.9 because 'gdbm_compat' is appropriate
-	  choise since GDBM 1.8.1.
+	  choice since GDBM 1.8.1.
 
 Sat Feb 18 23:27:00 2012  Kenta Murata  <mrkn@mrkn.jp>
 
@@ -35,7 +35,7 @@ Sat Feb 18 18:43:13 2012  Tanaka Akira  <akr@fsij.org>
 	  exists in a library.
 	  (have_undeclared_libvar): renamed from renamed from have_libvar.
 	  (headers.db_check2): check that GDBM version variable if GDBM header
-	  is choosen.
+	  is chosen.
 
 	* ext/dbm/dbm.c (Init_dbm): use HAVE_DECLARED_LIBVAR_GDBM_VERSION and
 	  HAVE_UNDECLARED_LIBVAR_GDBM_VERSION macro.
@@ -72,7 +72,7 @@ Fri Feb 17 21:39:36 2012  Tanaka Akira  <akr@fsij.org>
 
 Fri Feb 17 21:18:39 2012  Tanaka Akira  <akr@fsij.org>
 
-	* ext/dbm/extconf.rb: refine header/libraty mismatch detection.
+	* ext/dbm/extconf.rb: refine header/library mismatch detection.
 	  check only for ndbm.h except libc.  check _GDBM_H_ for gdbm.
 	  check _DBM_IOERR for the original ndbm.
 
