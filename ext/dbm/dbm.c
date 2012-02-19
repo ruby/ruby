@@ -1079,27 +1079,35 @@ Init_dbm(void)
      */
     rb_define_const(rb_cDBM, "NEWDB",   INT2FIX(O_RDWR|O_CREAT|O_TRUNC|RUBY_DBM_RW_BIT));
 
-#if defined(HAVE_DB_VERSION)
-    /* The version of the dbm library, if using Berkeley DB */
-    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(db_version(NULL, NULL, NULL)));
-#elif defined(HAVE_DECLARED_LIBVAR_GDBM_VERSION)
+#if defined(_DBM_IOERR)
+    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("NDBM (4.3BSD)"));
+#elif defined(RUBYDBM_GDBM_HEADER)
+#  if defined(HAVE_DECLARED_LIBVAR_GDBM_VERSION)
     /* since gdbm 1.9 */
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(gdbm_version));
-#elif defined(HAVE_UNDECLARED_LIBVAR_GDBM_VERSION)
+#  elif defined(HAVE_UNDECLARED_LIBVAR_GDBM_VERSION)
     /* ndbm.h doesn't declare gdbm_version until gdbm 1.8.3.
      * See extconf.rb for more information. */
     {
 	RUBY_EXTERN char *gdbm_version;
 	rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(gdbm_version));
     }
-#elif defined(HAVE_DPVERSION)
-    rb_define_const(rb_cDBM, "VERSION",  rb_sprintf("QDBM %s", dpversion));
-#elif defined(_DB_H_)
-    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("Berkeley DB (unknown)"));
-#elif defined(_GDBM_H_) || defined(HAVE_EMPTY_MACRO_DBM_CLEARERR)
+#  else
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("GDBM (unknown)"));
-#elif defined(_DBM_IOERR)
-    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("NDBM (4.3BSD)"));
+#  endif
+#elif defined(_DB_H_)
+#  if defined(HAVE_DB_VERSION)
+    /* The version of the dbm library, if using Berkeley DB */
+    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(db_version(NULL, NULL, NULL)));
+#  else
+    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("Berkeley DB (unknown)"));
+#  endif
+#elif defined(_RELIC_H)
+#  if defined(HAVE_DPVERSION)
+    rb_define_const(rb_cDBM, "VERSION",  rb_sprintf("QDBM %s", dpversion));
+#  else
+    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("QDBM (unknown)"));
+#  endif
 #else
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("unknown"));
 #endif

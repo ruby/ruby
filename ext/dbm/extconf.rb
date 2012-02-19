@@ -173,6 +173,9 @@ def headers.db_check2(db, hdr)
   end
 
   have_gdbm_header_macro = have_gdbm_header_macro1 | have_gdbm_header_macro2
+  if have_gdbm_header_macro
+    $defs.push('-DRUBYDBM_GDBM_HEADER')
+  end
 
   # ndbm.h is provided by the original (4.3BSD) dbm,
   # Berkeley DB 1 in libc of 4.4BSD and

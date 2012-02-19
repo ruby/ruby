@@ -1,3 +1,9 @@
+Sun Feb 19 23:01:01 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/dbm.c (Init_dbm): refine DBM::VERSION definition.
+
+	* ext/dbm/extconf.rb: provide RUBYDBM_GDBM_HEADER macro.
+
 Sun Feb 19 17:07:27 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/dbm/test_dbm.rb (test_dbmfile_suffix): check pag and dir is
