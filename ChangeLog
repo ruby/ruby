@@ -3,16 +3,6 @@ Sun Feb 19 17:07:27 2012  Tanaka Akira  <akr@fsij.org>
 	* test/dbm/test_dbm.rb (test_dbmfile_suffix): check pag and dir is
 	  empty for 4.3BSD ndbm.
 
-Sun Feb 19 13:08:34 2012  Narihiro Nakamura  <authornari@gmail.com>
-
-	* gc.c (gc_clear_mark_on_sweep_slots): remove a unused variable.
-
-Sun Feb 19 11:53:35 2012  Narihiro Nakamura  <authornari@gmail.com>
-
-	* gc.c (gc_clear_mark_on_sweep_slots): uses slot_sweep() for
-	  unsweeped slots, because some dead objects might be marked in
-	  next the mark phase by false pointers.  [ruby-core:42672]
-
 Sun Feb 19 03:00:30 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/dbm/test_dbm.rb (test_dbmfile_suffix): check magic numbers.

@@ -2622,10 +2622,13 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 static void
 gc_clear_mark_on_sweep_slots(rb_objspace_t *objspace)
 {
+    struct heaps_slot *scan;
+
     if (objspace->heap.sweep_slots) {
         while (heaps_increment(objspace));
         while (objspace->heap.sweep_slots) {
-            slot_sweep(objspace, objspace->heap.sweep_slots);
+            scan = objspace->heap.sweep_slots;
+            gc_clear_slot_bits(scan);
             objspace->heap.sweep_slots = objspace->heap.sweep_slots->next;
         }
     }
