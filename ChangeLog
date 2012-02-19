@@ -1,3 +1,7 @@
+Sun Feb 19 13:08:34 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (gc_clear_mark_on_sweep_slots): remove a unused variable.
+
 Sun Feb 19 11:53:35 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (gc_clear_mark_on_sweep_slots): uses slot_sweep() for
