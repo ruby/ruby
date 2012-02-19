@@ -574,6 +574,10 @@ if defined? DBM
       FileUtils.remove_entry_secure @tmproot if File.directory?(@tmproot)
     end
 
+    def test_version
+      assert_instance_of(String, DBM::VERSION)
+    end
+
     def test_reader_open_notexist
       assert_raise(Errno::ENOENT) {
         DBM.open("#{@tmproot}/a", 0666, DBM::READER)
