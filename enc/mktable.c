@@ -58,7 +58,7 @@
 
 typedef struct {
   int   num;
-  char* name;
+  const char* name;
 } ENC_INFO;
 
 static ENC_INFO Info[] = {
