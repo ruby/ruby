@@ -1,3 +1,8 @@
+Sun Feb 19 12:27:24 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: ignore all warnings from an arbitrary
+	  header in /usr/local/include.
+
 Fri Feb 17 12:51:25 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_header): log the content of header.

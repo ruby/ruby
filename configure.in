@@ -2093,7 +2093,7 @@ if test "$with_dln_a_out" != yes; then
 			# /usr/local/include is always searched for
 			# some reason, but /usr/local/lib is not.
 			hdr=`find /usr/local/include -name \*.h -type f | sed 's:^/usr/local/include/::;q'`
-			if test -n "$hdr" && $CC -E -include "$hdr" -xc /dev/null | fgrep -q "$hdr"; then
+			if test -n "$hdr" && $CC -E -include "$hdr" -xc /dev/null 2>/dev/null | fgrep -q "$hdr"; then
 			    $CC -print-search-dirs | grep -q '^libraries:.*:/usr/local/lib/*' ||
 			    echo " $LDFLAGS " | grep -q ' -L */usr/local/lib/* ' ||
 			    LDFLAGS="${LDFLAGS:+$LDFLAGS }-L/usr/local/lib"
