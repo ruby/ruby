@@ -817,7 +817,7 @@ enumerator_feed(VALUE obj, VALUE v)
  * call-seq:
  *   e.rewind   -> e
  *
- * Rewinds the enumeration sequence by one step.
+ * Rewinds the enumeration sequence to the beginning.
  *
  * If the enclosed object responds to a "rewind" method, it is called.
  */
