@@ -1,3 +1,8 @@
+Mon Feb 20 21:08:00 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/curses/extconf.rb: restore $libs and $defs for each
+	  header/library choice.
+
 Mon Feb 20 19:57:26 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: weaken header/library consistency check if db is

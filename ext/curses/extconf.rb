@@ -1,5 +1,16 @@
 require 'mkmf'
 
+def transact
+  old_libs = $libs.dup
+  old_defs = $defs.dup
+  result = yield
+  if !result
+    $libs = old_libs
+    $defs = old_defs
+  end
+  result
+end
+
 dir_config('curses')
 dir_config('ncurses')
 dir_config('termcap')
@@ -9,14 +20,21 @@ headers = []
 
 have_library("mytinfo", "tgetent") if /bow/ =~ RUBY_PLATFORM
 have_library("tinfo", "tgetent") or have_library("termcap", "tgetent")
-if have_header(*curses=%w"ncurses.h") and (have_library("ncursesw", "initscr") or have_library("ncurses", "initscr"))
+
+curses = nil
+if transact { have_header(*curses=%w"ncurses.h") and
+              (have_library("ncursesw", "initscr") or
+               have_library("ncurses", "initscr")) }
   make=true
-elsif have_header(*curses=%w"ncurses/curses.h") and have_library("ncurses", "initscr")
+elsif transact { have_header(*curses=%w"ncurses/curses.h") and
+                 have_library("ncurses", "initscr") }
   make=true
-elsif have_header(*curses=%w"curses_colr/curses.h") and have_library("cur_colr", "initscr")
+elsif transact { have_header(*curses=%w"curses_colr/curses.h") and
+                 have_library("cur_colr", "initscr") }
   curses.unshift("varargs.h")
   make=true
-elsif have_header(*curses=%w"curses.h") and have_library("curses", "initscr")
+elsif transact { have_header(*curses=%w"curses.h") and
+                 have_library("curses", "initscr") }
   make=true
 end
 
