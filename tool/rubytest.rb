@@ -23,6 +23,7 @@ srcdir = File.expand_path('..', File.dirname(__FILE__))
   end
   error << line if %r:^(sample/test.rb|not): =~ line
 end
+puts
 print error
 print "test failed\n"
 exit false
