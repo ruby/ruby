@@ -1,3 +1,9 @@
+Mon Feb 20 21:16:48 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* lib/fileutils.rb: revert a line modified accidentally at r34669.
+	  This fixes mingw test errors in TestDir_M17N.
+	  [ruby-core:42728] [Feature #4970]
+
 Mon Feb 20 21:09:27 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/curses/curses.c (Init_curses): define Curses::VERSION.
