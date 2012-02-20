@@ -505,6 +505,9 @@ if test "$GCC" = yes; then
     ],
     [
 	RUBY_TRY_CFLAGS(-fstack-protector, [stack_protector=yes], [stack_protector=no])
+	if test "x$stack_protector" = xyes; then
+	    RUBY_TRY_LDFLAGS(-fstack-protector, [], [stack_protector=broken])
+	fi
     ])
     if test "x$stack_protector" = xyes; then
 	RUBY_APPEND_OPTION(XCFLAGS, -fstack-protector)
