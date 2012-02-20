@@ -1,3 +1,7 @@
+Mon Feb 20 21:09:27 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/curses/curses.c (Init_curses): define Curses::VERSION.
+
 Mon Feb 20 21:08:00 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/curses/extconf.rb: restore $libs and $defs for each
