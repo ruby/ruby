@@ -1,3 +1,7 @@
+Mon Feb 20 21:40:53 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/curses/extconf.rb: fold too long lines.
+
 Mon Feb 20 21:16:48 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* lib/fileutils.rb: revert a line modified accidentally at r34669.

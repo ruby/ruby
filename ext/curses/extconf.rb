@@ -39,11 +39,19 @@ elsif transact { have_header(*curses=%w"curses.h") and
 end
 
 if make
-  for f in %w(beep bkgd bkgdset curs_set deleteln doupdate flash getbkgd getnstr init isendwin keyname keypad resizeterm scrl set setscrreg ungetch wattroff wattron wattrset wbkgd wbkgdset wdeleteln wgetnstr wresize wscrl wsetscrreg def_prog_mode reset_prog_mode timeout wtimeout nodelay init_color wcolor_set use_default_colors newpad)
+  for f in %w(beep bkgd bkgdset curs_set deleteln doupdate flash
+              getbkgd getnstr init isendwin keyname keypad resizeterm
+              scrl set setscrreg ungetch
+              wattroff wattron wattrset wbkgd wbkgdset wdeleteln wgetnstr
+              wresize wscrl wsetscrreg
+              def_prog_mode reset_prog_mode timeout wtimeout nodelay
+              init_color wcolor_set use_default_colors newpad)
     have_func(f) || (have_macro(f, curses) && $defs.push(format("-DHAVE_%s", f.upcase)))
   end
   flag = "-D_XOPEN_SOURCE_EXTENDED"
-  if try_static_assert("sizeof(char*)>sizeof(int)", %w[stdio.h stdlib.h]+curses , flag)
+  if try_static_assert("sizeof(char*)>sizeof(int)",
+                       %w[stdio.h stdlib.h]+curses,
+                       flag)
     $defs << flag
   end
   have_var("ESCDELAY", curses)
