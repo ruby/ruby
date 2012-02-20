@@ -1,3 +1,7 @@
+Mon Feb 20 19:15:57 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: refine variable names.
+
 Mon Feb 20 15:50:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check if -fstack-protector is really available.

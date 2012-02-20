@@ -150,30 +150,30 @@ def headers.db_check2(db, hdr)
 
   # Berkeley DB's ndbm.h (since 1.85 at least) includes db.h and
   # it defines _DB_H_.
-  have_db_header_macro = have_macro('_DB_H_', hdr, hsearch)
+  have_db_header = have_macro('_DB_H_', hdr, hsearch)
 
   # Old GDBM's ndbm.h, until 1.8.3, defines dbm_clearerr as a macro which
   # expands to no tokens.
-  have_gdbm_header_macro1 = have_empty_macro_dbm_clearerr(hdr, hsearch)
+  have_gdbm_header1 = have_empty_macro_dbm_clearerr(hdr, hsearch)
 
   # Recent GDBM's ndbm.h, since 1.9, includes gdbm.h and it defines _GDBM_H_.
   # ndbm compatibility layer of GDBM is provided by libgdbm (until 1.8.0)
   # and libgdbm_compat (since 1.8.1).
-  have_gdbm_header_macro2 = have_macro('_GDBM_H_', hdr, hsearch)
+  have_gdbm_header2 = have_macro('_GDBM_H_', hdr, hsearch)
 
   # 4.3BSD's ndbm.h defines _DBM_IOERR.
   # The original ndbm is provided by libc in 4.3BSD.
-  have_ndbm_header_macro = have_macro('_DBM_IOERR', hdr, hsearch)
+  have_ndbm_header = have_macro('_DBM_IOERR', hdr, hsearch)
 
   # GDBM provides NDBM functions in libgdbm_compat since GDBM 1.8.1.
   # GDBM's ndbm.h defines _GDBM_H_ since GDBM 1.9.
-  # So, reject 'gdbm'.  'gdbm_compat' is required.
-  if have_gdbm_header_macro2 && db == 'gdbm'
+  # If _GDBM_H_ is defined, 'gdbm_compat' is required and reject 'gdbm'.
+  if have_gdbm_header2 && db == 'gdbm'
     return false
   end
 
-  have_gdbm_header_macro = have_gdbm_header_macro1 | have_gdbm_header_macro2
-  if have_gdbm_header_macro
+  have_gdbm_header = have_gdbm_header1 | have_gdbm_header2
+  if have_gdbm_header
     $defs.push('-DRUBYDBM_GDBM_HEADER')
   end
 
@@ -183,15 +183,15 @@ def headers.db_check2(db, hdr)
   # So, try to check header/library mismatch.
   #
   if hdr == 'ndbm.h' && db != 'libc'
-    if /\Adb\d?\z/ !~ db && have_db_header_macro
+    if /\Adb\d?\z/ !~ db && have_db_header
       return false
     end
 
-    if /\Agdbm/ !~ db && have_gdbm_header_macro
+    if /\Agdbm/ !~ db && have_gdbm_header
       return false
     end
     
-    if have_ndbm_header_macro
+    if have_ndbm_header
       return false
     end
   end
@@ -200,19 +200,19 @@ def headers.db_check2(db, hdr)
   have_func('db_version((int *)0, (int *)0, (int *)0)', hdr, hsearch)
 
   # GDBM
-  have_gdbm_variable = have_declared_libvar("gdbm_version", hdr, hsearch)
+  have_gdbm_version = have_declared_libvar("gdbm_version", hdr, hsearch)
   # gdbm_version is available since very old version (gdbm 1.5 at least).
   # However it is not declared by ndbm.h until gdbm 1.8.3.
   # We can't include both ndbm.h and gdbm.h because they both define datum type.
   # ndbm.h includes gdbm.h and gdbm_version is declared since gdbm 1.9.
-  have_gdbm_variable |= have_undeclared_libvar(["gdbm_version", "char *"], hdr, hsearch)
+  have_gdbm_version |= have_undeclared_libvar(["gdbm_version", "char *"], hdr, hsearch)
 
   # QDBM
   have_var("dpversion", hdr, hsearch)
 
   # detect mismatch between GDBM header and other library.
   # If GDBM header is included, GDBM library should be linked.
-  if have_gdbm_header_macro && !have_gdbm_variable
+  if have_gdbm_header && !have_gdbm_version
     return false
   end
 
