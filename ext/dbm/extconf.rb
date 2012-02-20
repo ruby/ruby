@@ -182,7 +182,7 @@ def headers.db_check2(db, hdr)
   # ndbm compatibility layer of gdbm.
   # So, try to check header/library mismatch.
   #
-  if hdr == 'ndbm.h' && db != 'libc'
+  if hdr == 'ndbm.h' && db != 'libc' && db != 'ndbm'
     if /\Adb\d?\z/ !~ db && have_db_header
       return false
     end

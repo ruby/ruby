@@ -1,3 +1,13 @@
+Mon Feb 20 19:57:26 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: weaken header/library consistency check if db is
+	  "ndbm".  It seems several (possibly historical) distributions
+	  provide libndbm.  However the content of libndbm vary: Berkeley DB,
+	  GDBM or even 4.3BSD NDBM.  (Mandriva, Tru64 UNIX, OpenSuSE,
+	  SCO OpenServer, ...)
+	  "ndbm" is not searched automatically now (dblib doesn't contain it)
+	  but configure --with-dbm-type=ndbm choose libndbm and ndbm.h.
+
 Mon Feb 20 19:15:57 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: refine variable names.
