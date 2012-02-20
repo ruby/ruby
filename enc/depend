@@ -5,7 +5,7 @@
 % dldflags = $2
 % enable_shared = CONFIG['ENABLE_SHARED'] == 'yes'
 % deffile = (true if /\$\(DEFFILE\)/ =~ CONFIG["LINK_SO"])
-% encs = Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)} - BUILTIN_ENCS
+% encs = Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)} - BUILTIN_ENCS - ["mktable.c"]
 % encs.each {|e| e.chomp!(".c")}
 % encs.reject! {|e| !ENC_PATTERNS.any? {|p| File.fnmatch?(p, e)}} if !ENC_PATTERNS.empty?
 % encs.reject! {|e| NOENC_PATTERNS.any? {|p| File.fnmatch?(p, e)}}
