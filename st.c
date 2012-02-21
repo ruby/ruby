@@ -7,6 +7,7 @@
 #include "st.h"
 #else
 #include "ruby/ruby.h"
+#include "pool_alloc.h"
 #endif
 
 #include <stdio.h>
@@ -91,6 +92,38 @@ static void rehash(st_table *);
 #define do_hash_bin(key,table) (do_hash((key), (table))%(table)->num_bins)
 
 /* preparation for possible allocation improvements */
+#ifdef POOL_ALLOC_API
+#define st_alloc_entry() (st_table_entry *)ruby_xpool_malloc_6p()
+#define st_free_entry(entry) ruby_xpool_free(entry)
+#define st_alloc_table() (st_table *)ruby_xpool_malloc_6p()
+#define st_dealloc_table(table) ruby_xpool_free(table)
+static inline st_table_entry **
+st_alloc_bins(st_index_t size)
+{
+    st_table_entry **result;
+    if (size == 11) {
+        result = (st_table_entry **) ruby_xpool_malloc_11p();
+        memset(result, 0, 11 * sizeof(st_table_entry *));
+    }
+    else
+        result = (st_table_entry **) ruby_xcalloc(size, sizeof(st_table_entry*));
+    return result;
+}
+static inline void
+st_free_bins(st_table_entry **bins, st_index_t size)
+{
+    if (size == 11)
+	ruby_xpool_free(bins);
+    else
+	ruby_xfree(bins);
+}
+static inline st_table_entry**
+st_realloc_bins(st_table_entry **bins, st_index_t newsize, st_index_t oldsize)
+{
+    st_free_bins(bins, oldsize);
+    return st_alloc_bins(newsize);
+}
+#else
 #define st_alloc_entry() (st_table_entry *)malloc(sizeof(st_table_entry))
 #define st_free_entry(entry) free(entry)
 #define st_alloc_table() (st_table *)malloc(sizeof(st_table))
@@ -104,6 +137,7 @@ st_realloc_bins(st_table_entry **bins, st_index_t newsize, st_index_t oldsize)
     MEMZERO(bins, st_table_entry*, newsize);
     return bins;
 }
+#endif
 
 /* preparation for possible packing improvements */
 #define PACKED_BINS(table) (*(st_packed_bins *)(table)->bins)
