@@ -1,3 +1,8 @@
+Tue Feb 21 14:41:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/ruby.pc.in: added rubylibprefix, {rubylib,vendor,site}dir
+	  and {ruby,vendor,site}archdir.  [ruby-core:42766][Feature #6052]
+
 Tue Feb 21 09:13:25 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* proc.c (method_hash, proc_hash): Fix {Unbound}Method#hash
