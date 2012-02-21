@@ -1,3 +1,11 @@
+Wed Feb 22 06:02:42 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/dbm.c (fdbm_initialize): disable Berkeley DB error messages.
+
+	* ext/dbm/extconf.rb: check DBC type for above.
+
+	[ruby-dev:45269]
+
 Tue Feb 21 20:23:47 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_any_hash): treat Qundef like as other special constants.

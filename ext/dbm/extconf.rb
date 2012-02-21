@@ -222,6 +222,11 @@ def headers.db_check2(db, hdr)
     return false
   end
 
+  # DBC type is required to disable error messages by Berkeley DB 2 or later.
+  if have_db_header
+    have_type("DBC", hdr, hsearch)
+  end
+
   if hsearch
     $defs << hsearch
     @defs = hsearch

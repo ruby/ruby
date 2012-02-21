@@ -196,6 +196,12 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 #if defined(HAVE_DBM_DIRFNO)
         rb_fd_fix_cloexec(dbm_dirfno(dbm));
 #endif
+
+#if defined(_DB_H_) && defined(HAVE_TYPE_DBC)
+    /* Disable Berkeley DB error messages such as:
+     * DB->put: attempt to modify a read-only database */
+        ((DBC*)dbm)->dbp->set_errfile(((DBC*)dbm)->dbp, NULL);
+#endif
     }
 
     if (!dbm) {
