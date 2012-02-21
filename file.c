@@ -4209,9 +4209,8 @@ test_check(int n, int argc, VALUE *argv)
  *  call-seq:
  *     test(int_cmd, file1 [, file2] ) -> obj
  *
- *  Uses the integer <i>aCmd</i> to perform various tests on
- *  <i>file1</i> (first table below) or on <i>file1</i> and
- *  <i>file2</i> (second table).
+ *  Uses the integer +int_cmd+ to perform various tests on +file1+ (first
+ *  table below) or on +file1+ and +file2+ (second table).
  *
  *  File tests on a single file:
  *
@@ -4253,7 +4252,7 @@ test_check(int n, int argc, VALUE *argv)
  *         |         | the real uid/gid
  *    "z"  | boolean | True if file1 exists and has a zero length
  *
- * Tests that take two files:
+ *  Tests that take two files:
  *
  *    "-"  | boolean | True if file1 and file2 are identical
  *    "="  | boolean | True if the modification times of file1

@@ -1,3 +1,7 @@
+Wed Feb 22 06:48:55 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* file.c (rb_f_test):  Fix formatting of Kernel#test rdoc.
+
 Wed Feb 22 06:12:15 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: check DBM_SUFFIX for Mac OS X.
