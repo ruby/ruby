@@ -1,3 +1,7 @@
+Tue Feb 21 20:22:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (hash_foreach_iter): fix signature.
+
 Tue Feb 21 19:39:34 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/curses/curses.c (Init_curses): use curses_version() for

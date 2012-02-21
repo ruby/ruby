@@ -152,8 +152,9 @@ struct hash_foreach_arg {
 };
 
 static int
-hash_foreach_iter(st_data_t key, st_data_t value, struct hash_foreach_arg *arg)
+hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int err)
 {
+    struct hash_foreach_arg *arg = (struct hash_foreach_arg *)argp;
     int status;
     st_table *tbl;
 
