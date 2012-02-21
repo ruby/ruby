@@ -158,6 +158,7 @@ class TestMethod < Test::Unit::TestCase
     o = Object.new
     def o.foo; end
     assert_kind_of(Integer, o.method(:foo).hash)
+    assert_equal(Array.instance_method(:map).hash, Array.instance_method(:collect).hash)
   end
 
   def test_receiver_name_owner

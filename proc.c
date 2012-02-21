@@ -794,6 +794,15 @@ proc_eq(VALUE self, VALUE other)
     return Qfalse;
 }
 
+st_index_t
+rb_hash_proc(st_index_t hash, VALUE prc)
+{
+    const rb_proc_t *proc = (const rb_proc_t *)prc;
+    hash = rb_hash_uint(hash, (st_index_t)proc->block.iseq);
+    hash = rb_hash_uint(hash, (st_index_t)proc->envval);
+    return rb_hash_uint(hash, (st_index_t)proc->block.lfp >> 16);
+}
+
 /*
  * call-seq:
  *   prc.hash   ->  integer
@@ -807,9 +816,8 @@ proc_hash(VALUE self)
     st_index_t hash;
     rb_proc_t *proc;
     GetProcPtr(self, proc);
-    hash = rb_hash_start((st_index_t)proc->block.iseq);
-    hash = rb_hash_uint(hash, (st_index_t)proc->envval);
-    hash = rb_hash_uint(hash, (st_index_t)proc->block.lfp >> 16);
+    hash = rb_hash_start(0);
+    hash = rb_hash_proc(hash, proc);
     hash = rb_hash_end(hash);
     return LONG2FIX(hash);
 }
@@ -1075,7 +1083,7 @@ method_hash(VALUE method)
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, m);
     hash = rb_hash_start((st_index_t)m->rclass);
     hash = rb_hash_uint(hash, (st_index_t)m->recv);
-    hash = rb_hash_uint(hash, (st_index_t)m->me->def);
+    hash = rb_hash_method_entry(hash, m->me);
     hash = rb_hash_end(hash);
 
     return INT2FIX(hash);

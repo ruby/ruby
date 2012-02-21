@@ -150,6 +150,7 @@ int rb_is_junk_name(VALUE name);
 
 /* proc.c */
 VALUE rb_proc_location(VALUE self);
+st_index_t rb_hash_proc(st_index_t hash, VALUE proc);
 
 /* rational.c */
 VALUE rb_lcm(VALUE x, VALUE y);

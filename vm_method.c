@@ -904,6 +904,40 @@ rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_defini
     }
 }
 
+static st_index_t
+rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
+{
+    hash = rb_hash_uint(hash, def->type);
+    switch (def->type) {
+      case VM_METHOD_TYPE_ISEQ:
+	return rb_hash_uint(hash, (st_index_t)def->body.iseq);
+      case VM_METHOD_TYPE_CFUNC:
+	hash = rb_hash_uint(hash, (st_index_t)def->body.cfunc.func);
+	return rb_hash_uint(hash, def->body.cfunc.argc);
+      case VM_METHOD_TYPE_ATTRSET:
+      case VM_METHOD_TYPE_IVAR:
+	return rb_hash_uint(hash, def->body.attr.id);
+      case VM_METHOD_TYPE_BMETHOD:
+	return rb_hash_proc(hash, def->body.proc);
+      case VM_METHOD_TYPE_MISSING:
+	return rb_hash_uint(hash, def->original_id);
+      case VM_METHOD_TYPE_ZSUPER:
+      case VM_METHOD_TYPE_NOTIMPLEMENTED:
+      case VM_METHOD_TYPE_UNDEF:
+	return hash;
+      case VM_METHOD_TYPE_OPTIMIZED:
+	return rb_hash_uint(hash, def->body.optimize_type);
+      default:
+	rb_bug("rb_hash_method_definition: unsupported method type (%d)\n", def->type);
+    }
+    return hash;
+}
+
+st_index_t
+rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me) {
+    return rb_hash_method_definition(hash, me->def);
+}
+
 void
 rb_alias(VALUE klass, ID name, ID def)
 {
