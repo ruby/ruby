@@ -197,7 +197,7 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
         rb_fd_fix_cloexec(dbm_dirfno(dbm));
 #endif
 
-#if defined(_DB_H_) && defined(HAVE_TYPE_DBC)
+#if defined(RUBYDBM_DB_HEADER) && defined(HAVE_TYPE_DBC)
     /* Disable Berkeley DB error messages such as:
      * DB->put: attempt to modify a read-only database */
         ((DBC*)dbm)->dbp->set_errfile(((DBC*)dbm)->dbp, NULL);
@@ -1101,7 +1101,7 @@ Init_dbm(void)
 #  else
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("GDBM (unknown)"));
 #  endif
-#elif defined(_DB_H_)
+#elif defined(RUBYDBM_DB_HEADER)
 #  if defined(HAVE_DB_VERSION)
     /* The version of the dbm library, if using Berkeley DB */
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(db_version(NULL, NULL, NULL)));

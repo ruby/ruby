@@ -152,6 +152,9 @@ def headers.db_check2(db, hdr)
   # it defines _DB_H_.
   have_db_header = have_macro('_DB_H_', hdr, hsearch)
 
+  # Mac OS X uses Berkeley DB 1 but ndbm.h doesn't include db.h.
+  have_db_header |= have_macro('DBM_SUFFIX', hdr, hsearch)
+
   # Old GDBM's ndbm.h, until 1.8.3, defines dbm_clearerr as a macro which
   # expands to no tokens.
   have_gdbm_header1 = have_empty_macro_dbm_clearerr(hdr, hsearch)
@@ -170,6 +173,10 @@ def headers.db_check2(db, hdr)
   # If _GDBM_H_ is defined, 'gdbm_compat' is required and reject 'gdbm'.
   if have_gdbm_header2 && db == 'gdbm'
     return false
+  end
+
+  if have_db_header
+    $defs.push('-DRUBYDBM_DB_HEADER')
   end
 
   have_gdbm_header = have_gdbm_header1 | have_gdbm_header2

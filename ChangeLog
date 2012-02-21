@@ -1,3 +1,8 @@
+Wed Feb 22 06:12:15 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: check DBM_SUFFIX for Mac OS X.
+	  Its ndbm.h doesn't include db.h.
+
 Wed Feb 22 06:02:42 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/dbm.c (fdbm_initialize): disable Berkeley DB error messages.
