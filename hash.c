@@ -80,20 +80,14 @@ rb_any_hash(VALUE a)
     VALUE hval;
     st_index_t hnum;
 
-    switch (TYPE(a)) {
-      case T_FIXNUM:
-      case T_SYMBOL:
-      case T_NIL:
-      case T_FALSE:
-      case T_TRUE:
-	hnum = rb_hash_end(rb_hash_start((unsigned int)a));
-	break;
-
-      case T_STRING:
+    if (SPECIAL_CONST_P(a)) {
+	if (a == Qundef) return 0;
+	hnum = rb_hash_end(rb_hash_start((st_index_t)a));
+    }
+    else if (BUILTIN_TYPE(a) == T_STRING) {
 	hnum = rb_str_hash(a);
-	break;
-
-      default:
+    }
+    else {
         hval = rb_hash(a);
 	hnum = FIX2LONG(hval);
     }
