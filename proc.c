@@ -797,7 +797,8 @@ proc_eq(VALUE self, VALUE other)
 st_index_t
 rb_hash_proc(st_index_t hash, VALUE prc)
 {
-    const rb_proc_t *proc = (const rb_proc_t *)prc;
+    rb_proc_t *proc;
+    GetProcPtr(prc, proc);
     hash = rb_hash_uint(hash, (st_index_t)proc->block.iseq);
     hash = rb_hash_uint(hash, (st_index_t)proc->envval);
     return rb_hash_uint(hash, (st_index_t)proc->block.lfp >> 16);
@@ -814,10 +815,8 @@ static VALUE
 proc_hash(VALUE self)
 {
     st_index_t hash;
-    rb_proc_t *proc;
-    GetProcPtr(self, proc);
     hash = rb_hash_start(0);
-    hash = rb_hash_proc(hash, proc);
+    hash = rb_hash_proc(hash, self);
     hash = rb_hash_end(hash);
     return LONG2FIX(hash);
 }

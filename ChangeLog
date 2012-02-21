@@ -1,3 +1,7 @@
+Tue Feb 21 16:08:17 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_hash_proc): get wrapped pointer properly.  [Bug #6048]
+
 Tue Feb 21 14:41:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/ruby.pc.in: added rubylibprefix, {rubylib,vendor,site}dir
