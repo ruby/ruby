@@ -2769,7 +2769,7 @@ Init_curses(void)
     rb_define_module_function(mCurses, "reset_prog_mode", curses_reset_prog_mode, 0);
 
 #ifdef NCURSES_VERSION
-    rb_define_const(mCurses, "VERSION", rb_sprintf("ncurses %s", NCURSES_VERSION));
+    rb_define_const(mCurses, "VERSION", rb_str_new2(curses_version()));
 #else
     rb_define_const(mCurses, "VERSION", rb_str_new2("unknown"));
 #endif

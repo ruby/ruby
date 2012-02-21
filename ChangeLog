@@ -1,3 +1,8 @@
+Tue Feb 21 19:39:34 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/curses/curses.c (Init_curses): use curses_version() for
+	  Curses::VERSION.
+
 Tue Feb 21 18:21:25 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c : remove gc_clear_mark_on_sweep_slots() and use
