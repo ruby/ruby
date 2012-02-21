@@ -1,3 +1,10 @@
+Tue Feb 21 18:21:25 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c : remove gc_clear_mark_on_sweep_slots() and use
+	  rest_sweep() instead of it, because some dead objects might be
+	  marked in next the mark phase by false pointers.
+	  [ruby-core:42672]
+
 Tue Feb 21 16:08:17 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (rb_hash_proc): get wrapped pointer properly.  [Bug #6048]
