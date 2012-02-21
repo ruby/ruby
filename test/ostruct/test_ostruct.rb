@@ -80,4 +80,24 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal(o.foo, 4)
   end
 
+  def test_eql
+    o1 = OpenStruct.new(:foo=>4)
+    o2 = OpenStruct.new(:foo=>4)
+    o3 = OpenStruct.new(:foo=>5)
+    assert o1.eql?(o2)
+    assert !o1.eql?(o3)
+  end
+
+  def test_eq
+    o1 = OpenStruct.new(:foo=>4)
+    o2 = OpenStruct.new(:foo=>4)
+    o3 = OpenStruct.new(:foo=>5)
+    h1 = {:foo=>4}
+    h2 = {:foo=>5}
+    assert o1 == o2
+    assert o1 != o3
+    assert o1 == h1
+    assert o1 != h2
+  end
+
 end

@@ -283,4 +283,29 @@ class OpenStruct
     end
   end
 
+  #
+  # Type equality, returns +true+ if +other+ is an OpenStruct
+  # and both internal tables are equal, otherwise +false+.
+  #
+  def eql?(other)
+    return false unless OpenStruct === other
+    return true if table == other.table
+    false
+  end
+
+  #
+  # General equality, returns +true+ if the internal table
+  # is equal to +other+ when converted to a Hash via #to_hash
+  # or #to_h, otherwise +false+.
+  #
+  def ==(other)
+    case
+    when other.respond_to?(:to_hash)
+      return true if table == other.to_hash
+    when other.respond_to?(:to_h)
+      return true if table == other.to_h
+    end
+    false
+  end
+
 end
