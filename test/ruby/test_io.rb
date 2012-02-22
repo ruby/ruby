@@ -1555,6 +1555,16 @@ End
     IO.foreach(t.path, "b", 3) {|x| a << x }
     assert_equal(["foo", "\nb", "ar\n", "b", "az\n"], a)
 
+    bug = '[ruby-dev:31525]'
+    assert_raise(ArgumentError, bug) {IO.foreach}
+
+    a = nil
+    assert_nothing_raised(ArgumentError, bug) {a = IO.foreach(t.path).to_a}
+    assert_equal(["foo\n", "bar\n", "baz\n"], a, bug)
+
+    bug6054 = '[ruby-dev:45267]'
+    e = assert_raise(IOError, bug6054) {IO.foreach(t.path, mode:"w").next}
+    assert_match(/not opened for reading/, e.message, bug6054)
   end
 
   def test_s_readlines
