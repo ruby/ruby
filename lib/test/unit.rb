@@ -112,6 +112,10 @@ module Test
         opts.on '-q', '--hide-skip', 'Hide skipped tests' do
           options[:hide_skip] = true
         end
+
+        opts.on '--show-skip', 'Show skipped tests' do
+          options[:hide_skip] = false
+        end
       end
 
       def non_options(files, options)

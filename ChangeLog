@@ -1,3 +1,8 @@
+Wed Feb 22 18:34:02 2012  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb (setup_options): add option "--show-skip" to
+	  cancel "--hide-skip" (-q)
+
 Wed Feb 22 17:36:22 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_s_foreach): argument check before making Enumerator.
