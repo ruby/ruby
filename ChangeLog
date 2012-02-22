@@ -1,3 +1,9 @@
+Wed Feb 22 10:32:11 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/mkmf/test_framework.rb: try CoreFoundation framework, than
+	  Cocoa which is dependent on QuickTime SDK which has separated
+	  since Xcode 4.3.
+
 Wed Feb 22 10:18:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (test-all, test-ruby): more dependencies.
