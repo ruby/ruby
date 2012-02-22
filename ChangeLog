@@ -1,3 +1,8 @@
+Wed Feb 22 17:07:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_s_foreach): return enumerator including kerword
+	  arguments.  [ruby-dev:45267][Bug #6054]
+
 Wed Feb 22 15:47:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (test-all): shut up nonsense skipping messages.

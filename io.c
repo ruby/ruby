@@ -8971,8 +8971,8 @@ rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
     VALUE opt;
     struct foreach_arg arg;
 
-    argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
     RETURN_ENUMERATOR(self, argc, argv);
+    argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
     open_key_args(argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
     return rb_ensure(io_s_foreach, (VALUE)&arg, rb_io_close, arg.io);
