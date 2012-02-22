@@ -1,3 +1,8 @@
+Wed Feb 22 18:44:41 2012  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb (setup_options): add option "--retry" as opposite
+	  for "--no-retry"
+
 Wed Feb 22 18:34:02 2012  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb (setup_options): add option "--show-skip" to

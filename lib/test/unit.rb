@@ -64,6 +64,8 @@ module Test
         opts.separator 'minitest options:'
         opts.version = MiniTest::Unit::VERSION
 
+        options[:retry] = true
+
         opts.on '-h', '--help', 'Display this help.' do
           puts opts
           exit
@@ -101,8 +103,12 @@ module Test
           options[:separate] = true
         end
 
-        opts.on '--no-retry', "Don't retry running testcase when --jobs specified" do
-          options[:no_retry] = true
+        opts.on '--retry', "Retry running testcase when --jobs specified" do
+          options[:retry] = true
+        end
+
+        opts.on '--no-retry', "Disable --retry" do
+          options[:retry] = false
         end
 
         opts.on '--ruby VAL', "Path to ruby; It'll have used at -j option" do |a|
@@ -552,7 +558,7 @@ module Test
             end
           end
 
-          if @interrupt || @options[:no_retry] || @need_quit
+          if @interrupt || !@options[:retry] || @need_quit
             rep.each do |r|
               report.push(*r[:report])
             end
