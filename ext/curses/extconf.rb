@@ -72,5 +72,44 @@ if header_library
   have_var("TABSIZE", curses)
   have_var("COLORS", curses)
   have_var("COLOR_PAIRS", curses)
+
+  # SVR4 curses has a (undocumented) variable char *curses_version.
+  # ncurses and PDcurses has a function char *curses_version().
+  # Note that the original BSD curses doesn't provide version information.
+
+  prolog = cpp_include(curses)
+  if checking_for(checking_message('function curses_version', curses)) {
+      try_run(<<-"End")
+        #{prolog}
+        int main(int argc, char *argv[])
+        {
+            curses_version();
+            return EXIT_SUCCESS;
+        }
+      End
+    }
+    $defs << '-DHAVE_FUNC_CURSES_VERSION'
+  end
+
+  if checking_for(checking_message('variable curses_version', curses)) {
+      try_run(<<-"End")
+        #{prolog}
+        extern char *curses_version;
+        int main(int argc, char *argv[])
+        {
+            int i = 0;
+            for (i = 0; i < 100; i++) {
+                if (curses_version[i] == 0)
+                    return 0 < i ? EXIT_SUCCESS : EXIT_FAILURE;
+                if (curses_version[i] & 0x80)
+                    return EXIT_FAILURE;
+            }
+            return EXIT_FAILURE;
+        }
+      End
+    }
+    $defs << '-DHAVE_VAR_CURSES_VERSION'
+  end
+
   create_makefile("curses")
 end

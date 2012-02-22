@@ -2768,8 +2768,14 @@ Init_curses(void)
     rb_define_module_function(mCurses, "def_prog_mode", curses_def_prog_mode, 0);
     rb_define_module_function(mCurses, "reset_prog_mode", curses_reset_prog_mode, 0);
 
-#ifdef NCURSES_VERSION
+#ifdef HAVE_FUNC_CURSES_VERSION
     rb_define_const(mCurses, "VERSION", rb_str_new2(curses_version()));
+#elif HAVE_VAR_CURSES_VERSION
+    {
+        /* SVR4 curses has an undocumented and undeclared variable, curses_version. */
+        RUBY_EXTERN char *curses_version;
+        rb_define_const(mCurses, "VERSION", rb_sprintf("curses (%s)", curses_version));
+    }
 #else
     rb_define_const(mCurses, "VERSION", rb_str_new2("unknown"));
 #endif

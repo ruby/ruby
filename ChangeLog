@@ -1,3 +1,10 @@
+Wed Feb 22 20:42:28 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/curses/extconf.rb: try to distinguish curses_version is a
+	  function or variable.
+
+	* ext/curses/curses.c (Init_curses): refine Curses::VERSION.
+
 Wed Feb 22 19:47:03 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/curses/extconf.rb: show the chosen header and library.
