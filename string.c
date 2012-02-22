@@ -2147,9 +2147,9 @@ rb_str_concat(VALUE str1, VALUE str2)
  *
  *  Prepend---Prepend the given string to <i>str</i>.
  *
- *  a = "world"
- *  a.prepend("hello ") #=> "hello world"
- *  a                   #=> "hello world"
+ *     a = "world"
+ *     a.prepend("hello ") #=> "hello world"
+ *     a                   #=> "hello world"
  */
 
 static VALUE
