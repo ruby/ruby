@@ -1,3 +1,7 @@
+Wed Feb 22 10:18:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (test-all, test-ruby): more dependencies.
+
 Wed Feb 22 06:48:55 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* file.c (rb_f_test):  Fix formatting of Kernel#test rdoc.

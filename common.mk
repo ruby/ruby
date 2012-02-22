@@ -487,7 +487,7 @@ yes-test-knownbug: prog PHONY
 test: test-sample btest-ruby test-knownbug
 
 test-all: $(TEST_RUNNABLE)-test-all
-yes-test-all: prog PHONY
+yes-test-all: main PHONY
 	$(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TESTS)
 TESTS_BUILD = mkmf
 no-test-all: PHONY
@@ -495,7 +495,7 @@ no-test-all: PHONY
 
 test-ruby: $(TEST_RUNNABLE)-test-ruby
 no-test-ruby: PHONY
-yes-test-ruby: prog PHONY
+yes-test-ruby: prog encs PHONY
 	$(RUNRUBY) "$(srcdir)/test/runner.rb" -q $(TESTS) ruby
 
 extconf: $(PREP)
