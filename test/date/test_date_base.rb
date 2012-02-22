@@ -53,7 +53,6 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_ordinal__julian
-    skip unless defined?(Calendar)
     for j in @from..@to
       m, d, y = julian_from_absolute(absolute_from_julian_day_number(j))
       j0 = julian_day_number_from_absolute(absolute_from_julian(12, 31, y - 1))
@@ -68,7 +67,6 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_ordinal__gregorian
-    skip unless defined?(Calendar)
     for j in @from..@to
       m, d, y = gregorian_from_absolute(absolute_from_julian_day_number(j))
       j0 =
@@ -84,7 +82,6 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_civil__julian
-    skip unless defined?(Calendar)
     for j in @from..@to
       m, d, y = julian_from_absolute(absolute_from_julian_day_number(j))
       j2 = julian_day_number_from_absolute(absolute_from_julian(m, d, y))
@@ -99,7 +96,6 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_civil__gregorian
-    skip unless defined?(Calendar)
     for j in @from..@to
       m, d, y = gregorian_from_absolute(absolute_from_julian_day_number(j))
       j2 = julian_day_number_from_absolute(absolute_from_gregorian(m, d, y))
@@ -114,7 +110,6 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_commercial__gregorian
-    skip unless defined?(Calendar)
     for j in @from..@to
       w, d, y = iso_from_absolute(absolute_from_julian_day_number(j))
       j2 = julian_day_number_from_absolute(absolute_from_iso(w, d, y))
@@ -129,7 +124,6 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_weeknum
-    skip unless defined?(Calendar)
     for j in @from..@to
       for k in 0..1
 	wy, ww, wd = Date.__send__(:jd_to_weeknum, j, k, Date::GREGORIAN)
@@ -140,7 +134,6 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_weeknum__2
-    skip unless defined?(Calendar)
     for j in @from4t..@to4t
       d = Date.jd(j)
       t = Time.mktime(d.year, d.mon, d.mday)
@@ -158,7 +151,6 @@ class TestDateBase < Test::Unit::TestCase
   end
 
   def test_nth_kday
-    skip unless defined?(Calendar)
     skip unless (Date.respond_to?(:nth_kday_to_jd, true) &&
 		 Date.respond_to?(:jd_to_nth_kday, true))
     for y in 1601..2401
@@ -439,4 +431,4 @@ class TestDateBase < Test::Unit::TestCase
     assert_nil(DateTime.__send__(valid_time_p, 24,1,1))
   end
 
-end
+end if defined?(Calendar)
