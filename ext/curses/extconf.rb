@@ -44,7 +44,10 @@ header_library = nil
 }
 
 if header_library
-  header, _ = header_library
+  header, library = header_library
+  puts "header: #{header}"
+  puts "library: #{library}"
+
   curses = [header]
   if header == 'curses_colr/curses.h'
     curses.unshift("varargs.h")
