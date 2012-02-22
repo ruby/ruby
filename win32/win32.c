@@ -5705,7 +5705,7 @@ rb_w32_uchmod(const char *path, int mode)
     WCHAR *wpath;
     int ret;
 
-    if (!(wpath = filecp_to_wstr(path, NULL)))
+    if (!(wpath = utf8_to_wstr(path, NULL)))
 	return -1;
     ret = _wchmod(wpath, mode);
     free(wpath);

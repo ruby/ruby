@@ -1,3 +1,9 @@
+Thu Feb 23 08:08:23 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_uchmod): typo.  [Bug#5671] [ruby-dev:44898]
+
+	* test/ruby/test_file.rb (TestFile#test_chmod_m17n): test of above bug.
+
 Wed Feb 22 23:27:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/iconv/test_option.rb: enabled.  [ruby-core:42802][Bug #6061]

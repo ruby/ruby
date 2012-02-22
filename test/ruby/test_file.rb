@@ -181,4 +181,12 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
+  def test_chmod_m17n
+    bug5671 = '[ruby-dev:44898]'
+    Dir.mktmpdir('test-file-chmod-m17n-') do |tmpdir|
+      file = File.join(tmpdir, "\u3042")
+      File.open(file, 'w'){}
+      assert_equal(File.chmod(0666, file), 1, bug5671)
+    end
+  end
 end
