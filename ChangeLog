@@ -1,3 +1,8 @@
+Thu Feb 23 02:33:00 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_extract_modeenc): fail only if conflicting
+	  text/binary modes given explicitly.  [ruby-dev:45268][Bug #6055]
+
 Wed Feb 22 23:27:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/iconv/test_option.rb: enabled.  [ruby-core:42802][Bug #6061]

@@ -4817,7 +4817,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 
   vmode_handle:
     if (NIL_P(vmode)) {
-        fmode = FMODE_READABLE | DEFAULT_TEXTMODE;
+        fmode = FMODE_READABLE;
         oflags = O_RDONLY;
     }
     else if (!NIL_P(intmode = rb_check_to_integer(vmode, "to_int"))) {
@@ -4867,6 +4867,11 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 	    if (!has_enc)
 		rb_io_ext_int_to_encs(rb_ascii8bit_encoding(), NULL, &enc, &enc2);
 	}
+#if DEFAULT_TEXTMODE
+	else if (NIL_P(vmode)) {
+	    fmode |= DEFAULT_TEXTMODE;
+	}
+#endif
 	if (!has_vmode) {
 	    v = rb_hash_aref(opthash, sym_mode);
 	    if (!NIL_P(v)) {
