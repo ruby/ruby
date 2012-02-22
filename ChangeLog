@@ -1,3 +1,8 @@
+Wed Feb 22 21:42:16 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: remove workaround replacement from gcc to gcc-4.2.
+	  [Backport #6043]
+
 Wed Feb 22 08:11:06 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c : remove gc_clear_mark_on_sweep_slots() and use

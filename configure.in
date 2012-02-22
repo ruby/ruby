@@ -104,11 +104,9 @@ then
 fi
 AS_CASE(["$build_os"],
   [darwin11.*], [
-    : ${CC:=gcc-4.2}
     AS_CASE(["x$CC"],
       [xgcc-4.2|x/usr/bin/gcc-4.2], [: ${CXX=g++-4.2}],
       [xgcc|x/usr/bin/gcc],         [: ${CXX=g++}],
-      [xcc-4.2|x/usr/bin/cc-4.2],   [: ${CXX=c++-4.2}],
       [xcc|x/usr/bin/cc],           [: ${CXX=c++}],
       [xclang|x/usr/bin/clang],     [: ${CXX=clang++}])
   ])
