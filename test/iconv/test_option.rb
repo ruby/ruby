@@ -40,4 +40,4 @@ class TestIconv::Option < TestIconv
     assert_equal(SJIS_STR, str)
     iconv.close
   end
-end if false and defined?(TestIconv)
+end if defined?(TestIconv)

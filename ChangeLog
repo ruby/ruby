@@ -1,3 +1,7 @@
+Wed Feb 22 23:27:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/iconv/test_option.rb: enabled.  [ruby-core:42802][Bug #6061]
+
 Wed Feb 22 21:45:56 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/curses/curses.c: use defined() to suppress a warning.
