@@ -64,14 +64,14 @@ Tue Feb 21 09:13:25 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* proc.c (method_hash, proc_hash): Fix {Unbound}Method#hash
 	  [Bug #6048]. Isolate hash computation for proc
-	
+
 	* internal.h: Declaration for above
-	
+
 	* vm_method.c (rb_method_definition_hash): Computation for
 	  hash part of a method definition
-	
+
 	* method.h: Declaration for above
-	
+
 	* test/ruby/test_method.rb: Test for above
 
 Tue Feb 21 02:56:15 2012  Yukihiro Matsumoto  <matz@ruby-lang.org>
