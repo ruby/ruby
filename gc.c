@@ -464,13 +464,12 @@ rb_gc_set_params(void)
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 static void gc_sweep(rb_objspace_t *);
 static void slot_sweep(rb_objspace_t *, struct heaps_slot *);
-static void gc_clear_mark_on_sweep_slots(rb_objspace_t *);
+static void rest_sweep(rb_objspace_t *);
 
 void
 rb_objspace_free(rb_objspace_t *objspace)
 {
-    gc_clear_mark_on_sweep_slots(objspace);
-    gc_sweep(objspace);
+    rest_sweep(objspace);
     if (objspace->profile.record) {
 	free(objspace->profile.record);
 	objspace->profile.record = 0;
@@ -2430,28 +2429,6 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 }
 
 static void
-gc_clear_mark_on_sweep_slots(rb_objspace_t *objspace)
-{
-    struct heaps_slot *scan;
-    RVALUE *p, *pend;
-
-    if (objspace->heap.sweep_slots) {
-        while (heaps_increment(objspace));
-        while (objspace->heap.sweep_slots) {
-            scan = objspace->heap.sweep_slots;
-            p = scan->slot; pend = p + scan->limit;
-            while (p < pend) {
-                if (p->as.free.flags & FL_MARK && BUILTIN_TYPE(p) != T_ZOMBIE) {
-                    p->as.basic.flags &= ~FL_MARK;
-                }
-                p++;
-            }
-            objspace->heap.sweep_slots = objspace->heap.sweep_slots->next;
-        }
-    }
-}
-
-static void
 gc_marks(rb_objspace_t *objspace)
 {
     struct gc_list *list;
@@ -2461,8 +2438,6 @@ gc_marks(rb_objspace_t *objspace)
     objspace->heap.live_num = 0;
     objspace->count++;
 
-
-    gc_clear_mark_on_sweep_slots(objspace);
 
     SET_STACK_END;
 
@@ -2519,6 +2494,8 @@ garbage_collect(rb_objspace_t *objspace)
     }
 
     GC_PROF_TIMER_START;
+
+    rest_sweep(objspace);
 
     during_gc++;
     gc_marks(objspace);
@@ -3025,7 +3002,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     size_t i;
 
     /* run finalizers */
-    gc_clear_mark_on_sweep_slots(objspace);
+    rest_sweep(objspace);
 
     do {
 	/* XXX: this loop will make no sense */

@@ -1,3 +1,10 @@
+Wed Feb 22 08:11:06 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c : remove gc_clear_mark_on_sweep_slots() and use
+	  rest_sweep() instead of it, because some dead objects might be
+	  marked in next the mark phase by false pointers.
+	  [ruby-core:42672]
+
 Sun Feb 19 12:27:24 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: ignore all warnings from an arbitrary
