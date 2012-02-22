@@ -3682,7 +3682,7 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 	  cnext = PPEEK;
 	  if (cnext == '0') {
 	    PINC;
-	    if (PPEEK_IS(get_name_end_code_point(c))) {  // \g<0>, \g'0'
+	    if (PPEEK_IS(get_name_end_code_point(c))) {  /* \g<0>, \g'0' */
 	      PINC;
 	      name_end = p;
 	      gnum = 0;
