@@ -287,11 +287,6 @@ AC_PROG_CXX
 AC_PROG_GCC_TRADITIONAL
 AC_SUBST(GCC)
 if test "$GCC" = yes; then
-    AC_TRY_LINK([
-      @%:@if defined __llvm__ && !defined __clang__
-      @%:@error llvm-gcc has ended
-      @%:@endif
-    ], [], [], [AC_MSG_ERROR(llvm-gcc has ended. Run configure with CC=clang)])
     linker_flag=-Wl,
     : ${optflags=-O3}
     AS_CASE(["$target_os"], [linux*|darwin*], [: ${debugflags=-ggdb}])

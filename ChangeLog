@@ -1,3 +1,7 @@
+Wed Feb 22 12:15:16 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: allow llvm-gcc because it work fine with r34278.
+
 Wed Feb 22 10:57:08 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regparse.c (fetch_token): don't use // comment.
