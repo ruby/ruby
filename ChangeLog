@@ -1,3 +1,7 @@
+Wed Feb 22 15:47:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (test-all): shut up nonsense skipping messages.
+
 Wed Feb 22 12:15:16 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: allow llvm-gcc because it work fine with r34278.
