@@ -1,3 +1,7 @@
+Wed Feb 22 21:44:29 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/curses/extconf.rb: refactored.
+
 Wed Feb 22 20:42:28 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/curses/extconf.rb: try to distinguish curses_version is a

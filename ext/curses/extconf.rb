@@ -1,26 +1,24 @@
 require 'mkmf'
 
-def transact
+def have_all(*args)
   old_libs = $libs.dup
   old_defs = $defs.dup
-  result = yield
-  if !result
-    $libs = old_libs
-    $defs = old_defs
-  end
-  result
-end
-
-def check_header_library(hdr, libs)
-  if !have_header(hdr)
-    return nil
-  end
-  libs.each {|lib|
-    if have_library(lib, "initscr")
-      return [hdr, lib]
+  result = []
+  begin
+    args.each {|arg|
+      r = arg.call(*result)
+      if !r
+        return nil
+      end
+      result << r
+    }
+    result
+  ensure
+    if result.length != args.length
+      $libs = old_libs
+      $defs = old_defs
     end
-  }
-  nil
+  end
 end
 
 dir_config('curses')
@@ -37,7 +35,9 @@ header_library = nil
   ["curses_colr/curses.h", ["cur_colr"]],
   ["curses.h", ["curses"]],
 ].each {|hdr, libs|
-  header_library = transact { check_header_library(hdr, libs) }
+  header_library = have_all(
+    lambda { have_header(hdr) && hdr },
+    lambda {|h| libs.find {|lib| have_library(lib, "initscr", h) } })
   if header_library
     break;
   end
