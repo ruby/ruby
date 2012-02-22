@@ -1,3 +1,7 @@
+Wed Feb 22 23:27:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/iconv/test_option.rb: enabled.  [ruby-core:42802][Bug #6061]
+
 Wed Feb 22 22:04:15 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_s_foreach): argument check before making Enumerator.
