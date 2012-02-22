@@ -1,3 +1,7 @@
+Wed Feb 22 19:08:55 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/curses/extconf.rb: refactored.
+
 Wed Feb 22 18:44:41 2012  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb (setup_options): add option "--retry" as opposite

@@ -11,34 +11,45 @@ def transact
   result
 end
 
+def check_header_library(hdr, libs)
+  if !have_header(hdr)
+    return nil
+  end
+  libs.each {|lib|
+    if have_library(lib, "initscr")
+      return [hdr, lib]
+    end
+  }
+  nil
+end
+
 dir_config('curses')
 dir_config('ncurses')
 dir_config('termcap')
 
-make=false
-headers = []
-
 have_library("mytinfo", "tgetent") if /bow/ =~ RUBY_PLATFORM
 have_library("tinfo", "tgetent") or have_library("termcap", "tgetent")
 
-curses = nil
-if transact { have_header(*curses=%w"ncurses.h") and
-              (have_library("ncursesw", "initscr") or
-               have_library("ncurses", "initscr")) }
-  make=true
-elsif transact { have_header(*curses=%w"ncurses/curses.h") and
-                 have_library("ncurses", "initscr") }
-  make=true
-elsif transact { have_header(*curses=%w"curses_colr/curses.h") and
-                 have_library("cur_colr", "initscr") }
-  curses.unshift("varargs.h")
-  make=true
-elsif transact { have_header(*curses=%w"curses.h") and
-                 have_library("curses", "initscr") }
-  make=true
-end
+header_library = nil
+[
+  ["ncurses.h", ["ncursesw", "ncurses"]],
+  ["ncurses/curses.h", ["ncurses"]],
+  ["curses_colr/curses.h", ["cur_colr"]],
+  ["curses.h", ["curses"]],
+].each {|hdr, libs|
+  header_library = transact { check_header_library(hdr, libs) }
+  if header_library
+    break;
+  end
+}
 
-if make
+if header_library
+  header, _ = header_library
+  curses = [header]
+  if header == 'curses_colr/curses.h'
+    curses.unshift("varargs.h")
+  end
+
   for f in %w(beep bkgd bkgdset curs_set deleteln doupdate flash
               getbkgd getnstr init isendwin keyname keypad resizeterm
               scrl set setscrreg ungetch
