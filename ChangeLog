@@ -1,3 +1,7 @@
+Wed Feb 22 19:22:31 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* reverted 34739 for test/date.
+
 Wed Feb 22 19:08:55 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/curses/extconf.rb: refactored.
