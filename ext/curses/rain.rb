@@ -14,7 +14,7 @@ def ranf
 end
 
 # main #
-for i in 1 .. 15  # SIGHUP .. SIGTERM
+for i in %w[HUP INT QUIT TERM]
   if trap(i, "SIG_IGN") != 0 then  # 0 for SIG_IGN
     trap(i) {|sig| onsig(sig) }
   end

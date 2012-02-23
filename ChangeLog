@@ -1,3 +1,7 @@
+Thu Feb 23 19:57:56 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/curses/rain.rb: trap SIGHUP, SIGINT, SIGQUIT and SIGTERM only.
+
 Thu Feb 23 19:56:48 2012  Tanaka Akira  <akr@fsij.org>
 
 	* signal.c (sig_trap): show signal name on error.
