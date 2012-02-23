@@ -1,3 +1,7 @@
+Thu Feb 23 22:26:53 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/test_curses.rb: new file.
+
 Thu Feb 23 19:57:56 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/curses/rain.rb: trap SIGHUP, SIGINT, SIGQUIT and SIGTERM only.
