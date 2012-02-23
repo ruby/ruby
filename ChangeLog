@@ -1,3 +1,9 @@
+Fri Feb 24 06:36:11 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* object.c (rb_obj_eql):  Improve equality documentation by adding an
+	  example of equal? vs == and recommending eql? be aliased to == when
+	  overridden.
+
 Fri Feb 24 06:21:15 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* object.c (rb_obj_hash):  Added note that the hash value is not
