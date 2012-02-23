@@ -74,12 +74,13 @@ class TestRubyLiteral < Test::Unit::TestCase
         end
       end
     end
+    bug6069 = '[ruby-dev:45278]'
     assert_equal "\x13", "\c\x33"
     assert_equal "\x13", "\C-\x33"
     assert_equal "\xB3", "\M-\x33"
-    assert_equal "\u201c", eval(%["\\\u{201c}"]), bug5262
-    assert_equal "\u201c".encode("euc-jp"), eval(%["\\\u{201c}"].encode("euc-jp")), bug5262
-    assert_equal "\u201c".encode("iso-8859-13"), eval(%["\\\u{201c}"].encode("iso-8859-13")), bug5262
+    assert_equal "\\\u201c", eval(%["\\\u{201c}"]), bug6069
+    assert_equal "\\\u201c".encode("euc-jp"), eval(%["\\\u{201c}"].encode("euc-jp")), bug6069
+    assert_equal "\\\u201c".encode("iso-8859-13"), eval(%["\\\u{201c}"].encode("iso-8859-13")), bug6069
   end
 
   def test_dstring
