@@ -148,12 +148,10 @@ def headers.db_check2(db, hdr)
     return false
   end
 
-  # Berkeley DB's ndbm.h (since 1.85 at least) includes db.h and
-  # it defines _DB_H_.
-  have_db_header = have_macro('_DB_H_', hdr, hsearch)
-
-  # Mac OS X uses Berkeley DB 1 but ndbm.h doesn't include db.h.
-  have_db_header |= have_macro('DBM_SUFFIX', hdr, hsearch)
+  # Berkeley DB's ndbm.h (since 1.85 at least) defines DBM_SUFFIX.
+  # Note that _DB_H_ is not defined on Mac OS X because 
+  # it uses Berkeley DB 1 but ndbm.h doesn't include db.h.
+  have_db_header = have_macro('DBM_SUFFIX', hdr, hsearch)
 
   # Old GDBM's ndbm.h, until 1.8.3, defines dbm_clearerr as a macro which
   # expands to no tokens.

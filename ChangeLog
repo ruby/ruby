@@ -1,3 +1,8 @@
+Thu Feb 23 12:21:48 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: use DBM_SUFFIX only to detect header of
+	  Berkeley DB.
+
 Thu Feb 23 10:00:18 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* io.c (rb_io_f_sync):  Fix double-negative typo.  [ruby-trunk - #5837]
