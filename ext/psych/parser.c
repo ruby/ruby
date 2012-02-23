@@ -75,6 +75,85 @@ static VALUE make_exception(yaml_parser_t * parser, VALUE path)
 	    parser->context ? rb_usascii_str_new2(parser->context) : Qnil);
 }
 
+#ifdef HAVE_RUBY_ENCODING_H
+static VALUE transcode_string(VALUE src, int * parser_encoding)
+{
+    int utf8    = rb_utf8_encindex();
+    int utf16le = rb_enc_find_index("UTF16_LE");
+    int utf16be = rb_enc_find_index("UTF16_BE");
+    int source_encoding = rb_enc_get_index(src);
+
+    if (source_encoding == utf8) {
+	*parser_encoding = YAML_UTF8_ENCODING;
+	return src;
+    }
+
+    if (source_encoding == utf16le) {
+	*parser_encoding = YAML_UTF16LE_ENCODING;
+	return src;
+    }
+
+    if (source_encoding == utf16be) {
+	*parser_encoding = YAML_UTF16BE_ENCODING;
+	return src;
+    }
+
+    src = rb_str_export_to_enc(src, rb_utf8_encoding());
+    RB_GC_GUARD(src);
+
+    *parser_encoding = YAML_UTF8_ENCODING;
+    return src;
+}
+
+static VALUE transcode_io(VALUE src, int * parser_encoding)
+{
+    VALUE io_external_encoding;
+    int io_external_enc_index;
+
+    io_external_encoding = rb_funcall(src, rb_intern("external_encoding"), 0);
+
+    /* if no encoding is returned, assume ascii8bit. */
+    if (NIL_P(io_external_encoding)) {
+	io_external_enc_index = rb_ascii8bit_encindex();
+    } else {
+	io_external_enc_index = rb_to_encoding_index(io_external_encoding);
+    }
+
+    /* Treat US-ASCII as utf_8 */
+    if (io_external_enc_index == rb_usascii_encindex()) {
+	*parser_encoding = YAML_UTF8_ENCODING;
+	return src;
+    }
+
+    if (io_external_enc_index == rb_utf8_encindex()) {
+	*parser_encoding = YAML_UTF8_ENCODING;
+	return src;
+    }
+
+    if (io_external_enc_index == rb_enc_find_index("UTF-16LE")) {
+	*parser_encoding = YAML_UTF16LE_ENCODING;
+	return src;
+    }
+
+    if (io_external_enc_index == rb_enc_find_index("UTF-16BE")) {
+	*parser_encoding = YAML_UTF16BE_ENCODING;
+	return src;
+    }
+
+    /* Just guess on ASCII-8BIT */
+    if (io_external_enc_index == rb_ascii8bit_encindex()) {
+	*parser_encoding = YAML_ANY_ENCODING;
+	return src;
+    }
+
+    rb_raise(rb_eArgError, "YAML file must be UTF-8, UTF-16LE, or UTF-16BE, not %s",
+	    rb_enc_name(rb_enc_from_index(io_external_enc_index)));
+
+    return Qnil;
+}
+
+#endif
+
 /*
  * call-seq:
  *    parser.parse(yaml)
@@ -91,6 +170,7 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
     yaml_event_t event;
     int done = 0;
     int tainted = 0;
+    int parser_encoding = YAML_ANY_ENCODING;
 #ifdef HAVE_RUBY_ENCODING_H
     int encoding = rb_utf8_encindex();
     rb_encoding * internal_enc = rb_default_internal_encoding();
@@ -108,15 +188,22 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 
     yaml_parser_delete(parser);
     yaml_parser_initialize(parser);
-    yaml_parser_set_encoding(parser, NUM2INT(rb_iv_get(self, "@external_encoding")));
 
     if (OBJ_TAINTED(yaml)) tainted = 1;
 
-    if(rb_respond_to(yaml, id_read)) {
+    if (rb_respond_to(yaml, id_read)) {
+#ifdef HAVE_RUBY_ENCODING_H
+	yaml = transcode_io(yaml, &parser_encoding);
+	yaml_parser_set_encoding(parser, parser_encoding);
+#endif
 	yaml_parser_set_input(parser, io_reader, (void *)yaml);
 	if (RTEST(rb_obj_is_kind_of(yaml, rb_cIO))) tainted = 1;
     } else {
 	StringValue(yaml);
+#ifdef HAVE_RUBY_ENCODING_H
+	yaml = transcode_string(yaml, &parser_encoding);
+	yaml_parser_set_encoding(parser, parser_encoding);
+#endif
 	yaml_parser_set_input_string(
 		parser,
 		(const unsigned char *)RSTRING_PTR(yaml),

@@ -112,6 +112,7 @@ module Psych
 
     def test_bogus_io
       o = Object.new
+      def o.external_encoding; nil end
       def o.read len; self end
 
       assert_raises(TypeError) do

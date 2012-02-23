@@ -1,3 +1,11 @@
+Fri Feb 24 08:08:38 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c: set parser encoding based on the YAML input
+	  rather than user configuration.
+	* test/psych/test_encoding.rb: corresponding tests.
+	* test/psych/test_parser.rb: ditto
+	* test/psych/test_tainted.rb: ditto
+
 Fri Feb 24 07:02:52 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* hash.c (Init_Hash):  Add section on how objects are used as Hash keys
