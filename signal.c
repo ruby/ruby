@@ -937,7 +937,11 @@ sig_trap(int argc, VALUE *argv)
 
     arg.sig = trap_signm(argv[0]);
     if (reserved_signal_p(arg.sig)) {
-	rb_raise(rb_eArgError, "can't trap reserved signal");
+        const char *name = signo2signm(arg.sig);
+        if (name)
+            rb_raise(rb_eArgError, "can't trap reserved signal: SIG%s", name);
+        else
+            rb_raise(rb_eArgError, "can't trap reserved signal: %d", (int)arg.sig);
     }
 
     if (argc == 1) {

@@ -1,3 +1,7 @@
+Thu Feb 23 19:56:48 2012  Tanaka Akira  <akr@fsij.org>
+
+	* signal.c (sig_trap): show signal name on error.
+
 Thu Feb 23 12:21:48 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: use DBM_SUFFIX only to detect header of
