@@ -101,14 +101,17 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
 }
 
 /*
- * Generates a <code>Fixnum</code> hash value for this object.
- * This function must have the property that a.eql?(b) implies
- * a.hash <code>==</code> b.hash.
- * The hash value is used by class <code>Hash</code>.
- * Any hash value that exceeds the capacity of a <code>Fixnum</code> will be
- * truncated before being used.
+ * Generates a Fixnum hash value for this object.  This function must have the
+ * property that <code>a.eql?(b)<code> implies <code>a.hash == b.hash</code>.
  *
- *      "waffle".hash #=> -910576647
+ * The hash value is used along with #eql? by the Hash class to determine if
+ * two objects reference the same hash key.  Any hash value that exceeds the
+ * capacity of a Fixnum will be truncated before being used.
+ *
+ * The hash value for an object may not be identical across invocations or
+ * implementations of ruby.  If you need a stable identifier across ruby
+ * invocations and implementations you will need to generate one with a custom
+ * method.
  */
 VALUE
 rb_obj_hash(VALUE obj)

@@ -1,3 +1,9 @@
+Fri Feb 24 06:21:15 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* object.c (rb_obj_hash):  Added note that the hash value is not
+	  deterministic on Marc-Andre's suggestion.  Expanded description of
+	  the purpose of the hash method.  [Bug #6068]
+
 Thu Feb 23 23:01:21 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dbm/extconf.rb: unused macro removed.
