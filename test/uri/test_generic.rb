@@ -692,6 +692,7 @@ class URI::TestGeneric < Test::Unit::TestCase
 
     uri = URI.parse('http://example.com')
     assert_raise(URI::InvalidURIError) { uri.password = 'bar' }
+    assert_raise(URI::InvalidComponentError) { uri.query = "foo\nbar" }
     uri.userinfo = 'foo:bar'
     assert_equal('http://foo:bar@example.com', uri.to_s)
     assert_raise(URI::InvalidURIError) { uri.registry = 'bar' }

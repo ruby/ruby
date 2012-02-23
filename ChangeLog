@@ -1,3 +1,8 @@
+Thu Feb 23 14:44:36 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/common.rb (URI::Parser#initialize_regexp):
+	  use \A \z instead of ^ $. [Bug #5843]
+
 Thu Feb 23 08:08:23 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_uchmod): typo.  [Bug#5671] [ruby-dev:44898]
