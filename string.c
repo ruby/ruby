@@ -2159,7 +2159,7 @@ rb_str_hash_cmp(VALUE str1, VALUE str2)
  * call-seq:
  *    str.hash   -> fixnum
  *
- * Return a hash based on the string's length and content.
+ * Return a hash based on the string's length and content, and a session local random seed. Note: Due to the random seed being generated at runtime hash values will not be consistent across sessions, if this is desired use Digest::SHA256 or another digest function
  */
 
 static VALUE
