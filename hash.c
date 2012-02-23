@@ -3208,6 +3208,51 @@ env_update(VALUE env, VALUE hash)
  *      @age  = params[:age]
  *    end
  *
+ *  === Hash Keys
+ *
+ *  Two objects refer to the same hash key when their <code>hash</code> value
+ *  is identical and the two objects are <code>eql?</code> to each other.
+ *
+ *  A user-defined class may be used as a hash key if the <code>hash</code>
+ *  and <code>eql?</code> methods are overridden to provide meaningful
+ *  behavior.  By default, separate instances refer to separate hash keys.
+ *
+ *  A typical implementation of <code>hash</code> is based on the 
+ *  object's data while <code>eql?</code> is usually aliased to the overridden
+ *  <code>==</code> method:
+ *
+ *    class Book
+ *      attr_reader :author, :title
+ *
+ *      def initialize(author, title)
+ *        @author = author
+ *        @title = title
+ *      end
+ *
+ *      def ==(other)
+ *        self.class === other and
+ *          other.author == @author and 
+ *          other.title == @title
+ *      end
+ *
+ *      alias eql? ==
+ *
+ *      def hash
+ *        @author.hash ^ @title.hash # XOR
+ *      end
+ *    end
+ *
+ *    book1 = Book.new 'matz', 'Ruby in a Nutshell'
+ *    book2 = Book.new 'matz', 'Ruby in a Nutshell'
+ *
+ *    reviews = {}
+ *
+ *    reviews[book1] = 'Great reference!'
+ *    reviews[book2] = 'Nice and compact!'
+ *
+ *    reviews.length #=> 1
+ *
+ *  See also Object#hash and Object#eql?
  */
 
 void
