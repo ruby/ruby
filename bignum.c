@@ -349,6 +349,14 @@ rb_int2inum(SIGNED_VALUE n)
  * for each 0 <= i < num_longs.
  * So buf is little endian at whole on a little endian machine.
  * But buf is mixed endian on a big endian machine.
+ *
+ * The buf represents negative integers as two's complement.
+ * So, the most significant bit of the most significant word,
+ * (buf[num_longs-1]>>(SIZEOF_LONG*CHAR_BIT-1)),
+ * is the sign bit: 1 means negative and 0 means zero or positive.
+ *
+ * If given size of buf (num_longs) is not enough to represent val,
+ * higier words (including a sign bit) are ignored.
  */
 void
 rb_big_pack(VALUE val, unsigned long *buf, long num_longs)
@@ -391,7 +399,7 @@ rb_big_pack(VALUE val, unsigned long *buf, long num_longs)
     }
 }
 
-/* See rb_big_pack comment for endianness of buf. */
+/* See rb_big_pack comment for endianness and sign of buf. */
 VALUE
 rb_big_unpack(unsigned long *buf, long num_longs)
 {
