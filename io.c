@@ -1642,7 +1642,7 @@ rb_io_set_sync(VALUE io, VALUE sync)
  *  Immediately writes all buffered data in <em>ios</em> to disk.
  *  Note that <code>fsync</code> differs from
  *  using <code>IO#sync=</code>. The latter ensures that data is flushed
- *  from Ruby's buffers, but doesn't not guarantee that the underlying
+ *  from Ruby's buffers, but does not guarantee that the underlying
  *  operating system actually writes it to disk.
  *
  *  <code>NotImplementedError</code> is raised

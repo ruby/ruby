@@ -1,3 +1,7 @@
+Thu Feb 23 10:00:18 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* io.c (rb_io_f_sync):  Fix double-negative typo.  [ruby-trunk - #5837]
+
 Thu Feb 23 09:57:21 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* load.c (rb_f_require):  Add note to require for scope of items in the
