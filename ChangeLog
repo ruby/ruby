@@ -1,3 +1,8 @@
+Thu Feb 23 09:57:21 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* load.c (rb_f_require):  Add note to require for scope of items in the
+	  loaded file.  [ruby-trunk - #5910]
+
 Thu Feb 23 03:58:08 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/ostruct.rb (delete_field): Bug fix so previous value is

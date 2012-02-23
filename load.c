@@ -469,6 +469,11 @@ load_unlock(const char *ftptr, int done)
  *
  *    require "my-library.rb"
  *    require "db-driver"
+ *
+ *  Any constants or globals within the loaded source file will be available
+ *  in the calling program's global namespace. However, local variables will
+ *  not be propagated to the loading environment.
+ *
  */
 
 VALUE
