@@ -99,7 +99,6 @@ def try_toplevel(src, headers = nil, opt = "", &b)
 /*top*/
 #{src}
 SRC
-    $defs.push("-DHAVE_EMPTY_MACRO_DBM_CLEARERR")
     true
   else
     false

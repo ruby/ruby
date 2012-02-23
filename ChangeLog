@@ -1,3 +1,7 @@
+Thu Feb 23 23:01:21 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dbm/extconf.rb: unused macro removed.
+
 Thu Feb 23 22:26:53 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/test_curses.rb: new file.
