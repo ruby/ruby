@@ -1,3 +1,8 @@
+Fri Feb 24 08:53:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_tokadd_string, parser_yylex): insert a backslash
+	  if the next character is non-ascii.  [ruby-dev:45278] [Bug #6069]
+
 Thu Feb 23 14:44:36 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/common.rb (URI::Parser#initialize_regexp):

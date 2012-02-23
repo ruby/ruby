@@ -5924,7 +5924,10 @@ parser_tokadd_string(struct parser_params *parser,
 
 	      default:
 		if (c == -1) return -1;
-		if (!ISASCII(c)) goto non_ascii;
+		if (!ISASCII(c)) {
+		    tokadd('\\');
+		    goto non_ascii;
+		}
 		if (func & STR_FUNC_REGEXP) {
 		    pushback(c);
 		    if ((c = tokadd_escape(&enc)) < 0)
@@ -7011,6 +7014,7 @@ parser_yylex(struct parser_params *parser)
             }
             else if (!lex_eol_p() && !(c = *lex_p, ISASCII(c))) {
                 nextc();
+		tokadd('\\');
                 if (tokadd_mbchar(c) == -1) return 0;
             }
             else {
