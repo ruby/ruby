@@ -75,7 +75,7 @@ char *strchr(char*,char);
 #define opendir(p) rb_w32_uopendir(p)
 #endif
 
-#define rb_sys_fail_path(path) rb_sys_fail(RSTRING_PTR(path))
+#define rb_sys_fail_path(path) rb_sys_fail_str(path)
 
 #define FNM_NOESCAPE	0x01
 #define FNM_PATHNAME	0x02

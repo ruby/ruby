@@ -374,7 +374,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 #  endif
 #endif
 
-#define rb_sys_fail_path(path) rb_sys_fail(NIL_P(path) ? 0 : RSTRING_PTR(path))
+#define rb_sys_fail_path(path) rb_sys_fail_str(path)
 
 static int io_fflush(rb_io_t *);
 
