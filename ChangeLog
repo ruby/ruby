@@ -1,3 +1,8 @@
+Fri Feb 24 09:05:40 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* complex.c (Init_Complex):  Document Complex::I.  Patch by Sylvain
+	  Daubert.  [Feature #5623]
+
 Fri Feb 24 08:52:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_tokadd_string, parser_yylex): insert a backslash
