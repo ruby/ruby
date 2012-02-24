@@ -256,7 +256,7 @@ module Net   #:nodoc:
   #   uri = URI('https://secure.example.com/some_path?query=string')
   #
   #   Net::HTTP.start(uri.host, uri.port,
-  #     :use_ssl => uri.scheme == 'https').start do |http|
+  #     :use_ssl => uri.scheme == 'https') do |http|
   #     request = Net::HTTP::Get.new uri.request_uri
   #
   #     response = http.request request # Net::HTTPResponse object
