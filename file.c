@@ -2270,7 +2270,7 @@ utime_internal(const char *path, VALUE pathv, void *arg)
                 try_utimensat = 0;
                 goto no_utimensat;
             }
-            utime_failed(path, tsp, v->atime, v->mtime);
+            utime_failed(pathv, tsp, v->atime, v->mtime);
         }
         return;
     }
