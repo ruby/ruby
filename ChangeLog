@@ -1,4 +1,6 @@
-Fri Feb 24 16:37:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Feb 24 16:39:57 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c: new functions to deal exceptions with string instances.
 
 	* dir.c, file.c, io.c: use rb_sys_fail_path.
 
