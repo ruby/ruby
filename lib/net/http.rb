@@ -1343,33 +1343,35 @@ module Net   #:nodoc:
 
     def transport_request(req)
       count = 0
-      begin_transport req
-      res = catch(:response) {
-        req.exec @socket, @curr_http_version, edit_path(req.path)
-        begin
-          res = HTTPResponse.read_new(@socket)
-        end while res.kind_of?(HTTPContinue)
-        res.reading_body(@socket, req.response_body_permitted?) {
-          yield res if block_given?
+      begin
+        begin_transport req
+        res = catch(:response) {
+          req.exec @socket, @curr_http_version, edit_path(req.path)
+          begin
+            res = HTTPResponse.read_new(@socket)
+          end while res.kind_of?(HTTPContinue)
+          res.reading_body(@socket, req.response_body_permitted?) {
+            yield res if block_given?
+          }
+          res
         }
+        end_transport req, res
         res
-      }
-      end_transport req, res
-      res
-    rescue EOFError, Errno::ECONNRESET => exception
-      if count == 0 && IDEMPOTENT_METHODS_.include?(req.method)
-        count += 1
+      rescue EOFError, Errno::ECONNRESET => exception
+        if count == 0 && IDEMPOTENT_METHODS_.include?(req.method)
+          count += 1
+          @socket.close if @socket and not @socket.closed?
+          D "Conn close because of error #{exception}, and retry"
+          retry
+        end
+        D "Conn close because of error #{exception}"
         @socket.close if @socket and not @socket.closed?
-        D "Conn close because of error #{exception}, and retry"
-        retry
+        raise
+      rescue => exception
+        D "Conn close because of error #{exception}"
+        @socket.close if @socket and not @socket.closed?
+        raise exception
       end
-      D "Conn close because of error #{exception}"
-      @socket.close if @socket and not @socket.closed?
-      raise
-    rescue => exception
-      D "Conn close because of error #{exception}"
-      @socket.close if @socket and not @socket.closed?
-      raise exception
     end
 
     def begin_transport(req)

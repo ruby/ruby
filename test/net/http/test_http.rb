@@ -605,4 +605,16 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
       assert_kind_of String, res.body
     }
   end
+
+  def test_keep_alive_EOF
+    def @server.run(sock)
+      sock.close
+    end
+
+    start {|http|
+      assert_raises(EOFError) {
+        res = http.get('/')
+      }
+    }
+  end
 end

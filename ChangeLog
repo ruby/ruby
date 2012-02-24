@@ -1,3 +1,10 @@
+Fri Feb 24 10:08:33 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb (Net::HTTP#transport_request):  Fix infinite loop
+	  upon EOFError or Errno::ECONNRESET where count is reset to 0.
+	* test/net/http/test_http.rb (class TestNetHTTPKeepAlive):  Test for
+	  above.
+
 Fri Feb 24 09:05:40 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* complex.c (Init_Complex):  Document Complex::I.  Patch by Sylvain
