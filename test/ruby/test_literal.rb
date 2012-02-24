@@ -27,6 +27,7 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal '123456789012345678901234567890', 123456789012345678901234567890.inspect
     assert_instance_of Bignum, 123456789012345678901234567890
     assert_instance_of Float, 1.3
+    assert_equal '2', eval("0x00+2").inspect
   end
 
   def test_self

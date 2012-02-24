@@ -1,3 +1,8 @@
+Fri Feb 24 17:56:39 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/ruby/test_literal.rb (TestRubyLiteral#test_special_const):
+	  test for https://bugs.php.net/bug.php?id=61095
+
 Fri Feb 24 16:48:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c, file.c, io.c (rb_sys_fail_path): use rb_sys_fail_str.
