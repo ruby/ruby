@@ -115,6 +115,18 @@ struct enumerator {
     VALUE lookahead;
     VALUE feedvalue;
     VALUE stop_exc;
+    VALUE lazy;
+    VALUE procs;
+};
+
+static struct proc_entry {
+    VALUE proc;
+    VALUE type;
+};
+
+static enum proc_entry_type {
+    T_PROC_MAP = 0,
+    T_PROC_SELECT = 1
 };
 
 static VALUE rb_cGenerator, rb_cYielder;
@@ -144,6 +156,8 @@ enumerator_mark(void *p)
     rb_gc_mark(ptr->lookahead);
     rb_gc_mark(ptr->feedvalue);
     rb_gc_mark(ptr->stop_exc);
+    rb_gc_mark(ptr->lazy);
+    rb_gc_mark(ptr->procs);
 }
 
 #define enumerator_free RUBY_TYPED_DEFAULT_FREE
@@ -246,6 +260,8 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
     ptr->lookahead = Qundef;
     ptr->feedvalue = Qundef;
     ptr->stop_exc = Qfalse;
+    ptr->lazy = Qfalse;
+    ptr->procs = rb_ary_new();
 
     return enum_obj;
 }
@@ -412,6 +428,56 @@ enumerator_block_call(VALUE obj, rb_block_call_func *func, VALUE arg)
     return rb_block_call(e->obj, meth, argc, argv, func, arg);
 }
 
+static VALUE
+enumerator_lazy(VALUE obj)
+{
+    struct enumerator *e = enumerator_ptr(obj);
+
+    e->lazy = Qtrue;
+
+    return obj;
+}
+
+static VALUE
+enumerator_map(VALUE obj)
+{
+    struct enumerator *e = enumerator_ptr(obj);
+    struct proc_entry *entry;
+    VALUE entry_obj;
+
+    if (e->lazy) {
+        entry_obj = Data_Make_Struct(rb_cObject, struct proc_entry, 0, RUBY_DEFAULT_FREE, entry);
+        Data_Get_Struct(entry_obj, struct proc_entry, entry);
+        entry->proc = rb_block_proc();
+        entry->type = T_PROC_MAP;
+        rb_ary_push(e->procs, entry_obj);
+    } else {
+        rb_call_super(0, 0);
+    }
+
+    return obj;
+}
+
+static VALUE
+enumerator_select(VALUE obj)
+{
+    struct enumerator *e = enumerator_ptr(obj);
+    struct proc_entry *entry;
+    VALUE entry_obj;
+
+    if (e->lazy) {
+        entry_obj = Data_Make_Struct(rb_cObject, struct proc_entry, 0, RUBY_DEFAULT_FREE, entry);
+        Data_Get_Struct(entry_obj, struct proc_entry, entry);
+        entry->proc = rb_block_proc();
+        entry->type = T_PROC_SELECT;
+        rb_ary_push(e->procs, entry_obj);
+    } else {
+        rb_call_super(0, 0);
+    }
+
+    return obj;
+}
+
 /*
  * call-seq:
  *   enum.each {...}
@@ -532,7 +598,29 @@ next_ii(VALUE i, VALUE obj, int argc, VALUE *argv)
     struct enumerator *e = enumerator_ptr(obj);
     VALUE feedvalue = Qnil;
     VALUE args = rb_ary_new4(argc, argv);
-    rb_fiber_yield(1, &args);
+    VALUE result = i;
+    struct proc_entry *entry;
+    VALUE move_next = Qtrue;
+
+    if (e->lazy) {
+        int j = 0;
+        for (j = 0; j < RARRAY_LEN(e->procs); j++) {
+            Data_Get_Struct(RARRAY_PTR(e->procs)[j], struct proc_entry, entry);
+            switch ((enum proc_entry_type) entry->type) {
+                case T_PROC_MAP:
+                    result = rb_funcall(entry->proc, rb_intern("call"), 1, result);
+                    break;
+                case T_PROC_SELECT:
+                    move_next = rb_funcall(entry->proc, rb_intern("call"), 1, result);
+                    break;
+            }
+        }
+        if (move_next)
+            rb_fiber_yield(1, &result);
+    } else {
+        rb_fiber_yield(1, &args);
+    }
+
     if (e->feedvalue != Qundef) {
         feedvalue = e->feedvalue;
         e->feedvalue = Qundef;
@@ -1202,6 +1290,9 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "initialize", enumerator_initialize, -1);
     rb_define_method(rb_cEnumerator, "initialize_copy", enumerator_init_copy, 1);
     rb_define_method(rb_cEnumerator, "each", enumerator_each, 0);
+    rb_define_method(rb_cEnumerator, "lazy", enumerator_lazy, 0);
+    rb_define_method(rb_cEnumerator, "map", enumerator_map, 0);
+    rb_define_method(rb_cEnumerator, "select", enumerator_select, 0);
     rb_define_method(rb_cEnumerator, "each_with_index", enumerator_each_with_index, 0);
     rb_define_method(rb_cEnumerator, "each_with_object", enumerator_with_object, 1);
     rb_define_method(rb_cEnumerator, "with_index", enumerator_with_index, -1);
