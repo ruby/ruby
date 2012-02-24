@@ -420,7 +420,9 @@ static int io_fflush(rb_io_t *);
 /*
  * Return previous translation mode.
  */
-inline static int set_binary_mode_with_seek_cur(rb_io_t *fptr) {
+static inline int
+set_binary_mode_with_seek_cur(rb_io_t *fptr)
+{
     off_t r, pos;
     ssize_t read_size;
     long i;
