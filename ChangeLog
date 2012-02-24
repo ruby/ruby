@@ -1,3 +1,7 @@
+Fri Feb 24 16:37:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c, file.c, io.c: use rb_sys_fail_path.
+
 Fri Feb 24 15:49:07 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (__builtin_unreachable): check for clang.

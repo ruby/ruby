@@ -75,6 +75,8 @@ char *strchr(char*,char);
 #define opendir(p) rb_w32_uopendir(p)
 #endif
 
+#define rb_sys_fail_path(path) rb_sys_fail(RSTRING_PTR(path))
+
 #define FNM_NOESCAPE	0x01
 #define FNM_PATHNAME	0x02
 #define FNM_DOTMATCH	0x04
@@ -414,7 +416,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 	    dp->dir = opendir(RSTRING_PTR(dirname));
 	}
 	if (dp->dir == NULL) {
-	    rb_sys_fail(RSTRING_PTR(dirname));
+	    rb_sys_fail_path(dirname);
 	}
     }
     dp->path = rb_str_dup_frozen(dirname);
@@ -750,7 +752,7 @@ static void
 dir_chdir(VALUE path)
 {
     if (chdir(RSTRING_PTR(path)) < 0)
-	rb_sys_fail(RSTRING_PTR(path));
+	rb_sys_fail_path(path);
 }
 
 static int chdir_blocking = 0;
@@ -927,7 +929,7 @@ dir_s_chroot(VALUE dir, VALUE path)
 {
     check_dirname(&path);
     if (chroot(RSTRING_PTR(path)) == -1)
-	rb_sys_fail(RSTRING_PTR(path));
+	rb_sys_fail_path(path);
 
     return INT2FIX(0);
 }
@@ -965,7 +967,7 @@ dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
 
     check_dirname(&path);
     if (mkdir(RSTRING_PTR(path), mode) == -1)
-	rb_sys_fail(RSTRING_PTR(path));
+	rb_sys_fail_path(path);
 
     return INT2FIX(0);
 }
@@ -984,7 +986,7 @@ dir_s_rmdir(VALUE obj, VALUE dir)
 {
     check_dirname(&dir);
     if (rmdir(RSTRING_PTR(dir)) < 0)
-	rb_sys_fail(RSTRING_PTR(dir));
+	rb_sys_fail_path(dir);
 
     return INT2FIX(0);
 }

@@ -4968,7 +4968,7 @@ rb_sysopen(VALUE fname, int oflags, mode_t perm)
 	    fd = rb_sysopen_internal(&data);
 	}
 	if (fd < 0) {
-	    rb_sys_fail(RSTRING_PTR(fname));
+	    rb_sys_fail_path(fname);
 	}
     }
     return fd;
@@ -5635,7 +5635,7 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     fp = popen(cmd, modestr);
     if (eargp)
 	rb_run_exec_options(&sarg, NULL);
-    if (!fp) rb_sys_fail(RSTRING_PTR(prog));
+    if (!fp) rb_sys_fail_path(prog);
     fd = fileno(fp);
 #endif
 
