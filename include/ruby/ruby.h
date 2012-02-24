@@ -36,6 +36,9 @@ extern "C" {
 #ifndef NOINLINE
 # define NOINLINE(x) x
 #endif
+#ifndef UNREACHABLE
+# define UNREACHABLE		/* unreachable */
+#endif
 
 #ifdef __GNUC__
 #define PRINTF_ARGS(decl, string_index, first_to_check) \
