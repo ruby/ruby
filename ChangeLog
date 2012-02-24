@@ -1,3 +1,8 @@
+Sat Feb 25 07:53:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_tokadd_string): insert a backslash only if
+	  quoted by single quotes.  [ruby-dev:45281] [Bug #6069]
+
 Sat Feb 25 07:53:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_inspect), io.c (rb_io_inspect): keep encoding of path.
