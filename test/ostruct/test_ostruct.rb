@@ -57,9 +57,10 @@ class TC_OpenStruct < Test::Unit::TestCase
     o.a = 'a'
     assert_respond_to(o, :a)
     assert_respond_to(o, :a=)
-    o.delete_field :a
+    a = o.delete_field :a
     assert_not_respond_to(o, :a, bug)
     assert_not_respond_to(o, :a=, bug)
+    assert_equal(a, 'a')
   end
 
   def test_method_missing_handles_square_bracket_equals

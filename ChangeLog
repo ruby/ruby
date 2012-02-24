@@ -1,3 +1,8 @@
+Fri Feb 24 23:49:05 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/ostruct.rb (delete_field): Bug fix so previous value is
+	  returned. Patch by Nick Recobra [Bug #6063]
+
 Fri Feb 24 08:53:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_tokadd_string, parser_yylex): insert a backslash
