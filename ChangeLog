@@ -1,3 +1,10 @@
+Fri Feb 24 18:21:55 2012  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* test/zlib/test_zlib.rb (TestZlibGzipReader#test_encoding): Add
+	  encoding testcases for GzipReader#read.  read() emits
+	  Encoding.default_external in contrast to read(size) emits BINARY.
+	  See also: http://bugs.jruby.org/6208
+
 Fri Feb 24 17:56:39 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* test/ruby/test_literal.rb (TestRubyLiteral#test_special_const):

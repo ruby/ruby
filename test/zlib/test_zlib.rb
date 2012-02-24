@@ -749,6 +749,22 @@ if defined? Zlib
         end
       end
     end
+
+    def test_encoding
+      t = Tempfile.new("test_zlib_gzip_reader_encoding")
+      t.binmode
+      content = (0..255).to_a.pack('c*')
+      Zlib::GzipWriter.wrap(t) {|gz| gz.print(content) }
+      t.close
+
+      read_all = Zlib::GzipReader.open(t.path) {|gz| gz.read }
+      assert_equal(Encoding.default_external, read_all.encoding)
+
+      # chunks are in BINARY regardless of encoding settings
+      read_size = Zlib::GzipReader.open(t.path) {|gz| gz.read(1024) }
+      assert_equal(Encoding::ASCII_8BIT, read_size.encoding)
+      assert_equal(content, read_size)
+    end
   end
 
   class TestZlibGzipWriter < Test::Unit::TestCase
