@@ -1,3 +1,8 @@
+Fri Feb 24 11:48:07 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* string.c (rb_str_prepend): Fix documentation for String#prepend.
+	  Patched from Franck Verrot via http://github.com/ruby/ruby/pull/98
+
 Fri Feb 24 10:08:33 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http.rb (Net::HTTP#transport_request):  Fix infinite loop
