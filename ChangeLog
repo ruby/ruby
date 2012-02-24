@@ -7,6 +7,7 @@ Fri Feb 24 11:48:07 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* string.c (rb_str_prepend): Fix documentation for String#prepend.
 	  Patched from Franck Verrot via http://github.com/ruby/ruby/pull/98
+	  and Andrew Horsman via http://github.com/ruby/ruby/pull/55
 
 Fri Feb 24 10:08:33 2012  Eric Hodel  <drbrain@segment7.net>
 
