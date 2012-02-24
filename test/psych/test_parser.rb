@@ -32,6 +32,36 @@ module Psych
       @handler.parser = @parser
     end
 
+    def test_exception_memory_leak
+      yaml = <<-eoyaml
+%YAML 1.1
+%TAG ! tag:tenderlovemaking.com,2009:
+--- &ponies
+- first element
+- *ponies
+- foo: bar
+...
+      eoyaml
+
+      [:start_stream, :start_document, :end_document, :alias, :scalar,
+       :start_sequence, :end_sequence, :start_mapping, :end_mapping,
+       :end_stream].each do |method|
+
+        klass = Class.new(Psych::Handler) do
+          define_method(method) do |*args|
+            raise
+          end
+        end
+
+        parser = Psych::Parser.new klass.new
+        2.times {
+          assert_raises(RuntimeError, method.to_s) do
+            parser.parse yaml
+          end
+        }
+      end
+    end
+
     def test_multiparse
       3.times do
         @parser.parse '--- foo'

@@ -154,6 +154,68 @@ static VALUE transcode_io(VALUE src, int * parser_encoding)
 
 #endif
 
+static VALUE protected_start_stream(VALUE pointer)
+{
+    VALUE *args = (VALUE *)pointer;
+    return rb_funcall(args[0], id_start_stream, 1, args[1]);
+}
+
+static VALUE protected_start_document(VALUE pointer)
+{
+    VALUE *args = (VALUE *)pointer;
+    return rb_funcall3(args[0], id_start_document, 3, args + 1);
+}
+
+static VALUE protected_end_document(VALUE pointer)
+{
+    VALUE *args = (VALUE *)pointer;
+    return rb_funcall(args[0], id_end_document, 1, args[1]);
+}
+
+static VALUE protected_alias(VALUE pointer)
+{
+    VALUE *args = (VALUE *)pointer;
+    return rb_funcall(args[0], id_alias, 1, args[1]);
+}
+
+static VALUE protected_scalar(VALUE pointer)
+{
+    VALUE *args = (VALUE *)pointer;
+    return rb_funcall3(args[0], id_scalar, 6, args + 1);
+}
+
+static VALUE protected_start_sequence(VALUE pointer)
+{
+    VALUE *args = (VALUE *)pointer;
+    return rb_funcall3(args[0], id_start_sequence, 4, args + 1);
+}
+
+static VALUE protected_end_sequence(VALUE handler)
+{
+    return rb_funcall(handler, id_end_sequence, 0);
+}
+
+static VALUE protected_start_mapping(VALUE pointer)
+{
+    VALUE *args = (VALUE *)pointer;
+    return rb_funcall3(args[0], id_start_mapping, 4, args + 1);
+}
+
+static VALUE protected_end_mapping(VALUE handler)
+{
+    return rb_funcall(handler, id_end_mapping, 0);
+}
+
+static VALUE protected_empty(VALUE handler)
+{
+    return rb_funcall(handler, id_empty, 0);
+}
+
+static VALUE protected_end_stream(VALUE handler)
+{
+    return rb_funcall(handler, id_end_stream, 0);
+}
+
 /*
  * call-seq:
  *    parser.parse(yaml)
@@ -170,6 +232,7 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
     yaml_event_t event;
     int done = 0;
     int tainted = 0;
+    int state = 0;
     int parser_encoding = YAML_ANY_ENCODING;
 #ifdef HAVE_RUBY_ENCODING_H
     int encoding = rb_utf8_encindex();
@@ -223,14 +286,18 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 	}
 
 	switch(event.type) {
-	  case YAML_STREAM_START_EVENT:
+	    case YAML_STREAM_START_EVENT:
+	      {
+		  VALUE args[2];
 
-	    rb_funcall(handler, id_start_stream, 1,
-		       INT2NUM((long)event.data.stream_start.encoding)
-		);
-	    break;
+		  args[0] = handler;
+		  args[1] = INT2NUM((long)event.data.stream_start.encoding);
+		  rb_protect(protected_start_stream, (VALUE)args, &state);
+	      }
+	      break;
 	  case YAML_DOCUMENT_START_EVENT:
 	    {
+		VALUE args[4];
 		/* Get a list of tag directives (if any) */
 		VALUE tag_directives = rb_ary_new();
 		/* Grab the document version */
@@ -268,19 +335,25 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 			rb_ary_push(tag_directives, rb_ary_new3((long)2, handle, prefix));
 		    }
 		}
-		rb_funcall(handler, id_start_document, 3,
-			   version, tag_directives,
-			   event.data.document_start.implicit == 1 ? Qtrue : Qfalse
-		    );
+		args[0] = handler;
+		args[1] = version;
+		args[2] = tag_directives;
+		args[3] = event.data.document_start.implicit == 1 ? Qtrue : Qfalse;
+		rb_protect(protected_start_document, (VALUE)args, &state);
 	    }
 	    break;
 	  case YAML_DOCUMENT_END_EVENT:
-	    rb_funcall(handler, id_end_document, 1,
-		       event.data.document_end.implicit == 1 ? Qtrue : Qfalse
-		);
+	    {
+		VALUE args[2];
+
+		args[0] = handler;
+		args[1] = event.data.document_end.implicit == 1 ? Qtrue : Qfalse;
+		rb_protect(protected_end_document, (VALUE)args, &state);
+	    }
 	    break;
 	  case YAML_ALIAS_EVENT:
 	    {
+		VALUE args[2];
 		VALUE alias = Qnil;
 		if(event.data.alias.anchor) {
 		    alias = rb_str_new2((const char *)event.data.alias.anchor);
@@ -290,11 +363,14 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 #endif
 		}
 
-		rb_funcall(handler, id_alias, 1, alias);
+		args[0] = handler;
+		args[1] = alias;
+		rb_protect(protected_alias, (VALUE)args, &state);
 	    }
 	    break;
 	  case YAML_SCALAR_EVENT:
 	    {
+		VALUE args[7];
 		VALUE anchor = Qnil;
 		VALUE tag = Qnil;
 		VALUE plain_implicit, quoted_implicit, style;
@@ -332,12 +408,19 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 
 		style = INT2NUM((long)event.data.scalar.style);
 
-		rb_funcall(handler, id_scalar, 6,
-			   val, anchor, tag, plain_implicit, quoted_implicit, style);
+		args[0] = handler;
+		args[1] = val;
+		args[2] = anchor;
+		args[3] = tag;
+		args[4] = plain_implicit;
+		args[5] = quoted_implicit;
+		args[6] = style;
+		rb_protect(protected_scalar, (VALUE)args, &state);
 	    }
 	    break;
 	  case YAML_SEQUENCE_START_EVENT:
 	    {
+		VALUE args[5];
 		VALUE anchor = Qnil;
 		VALUE tag = Qnil;
 		VALUE implicit, style;
@@ -363,15 +446,21 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 
 		style = INT2NUM((long)event.data.sequence_start.style);
 
-		rb_funcall(handler, id_start_sequence, 4,
-			   anchor, tag, implicit, style);
+		args[0] = handler;
+		args[1] = anchor;
+		args[2] = tag;
+		args[3] = implicit;
+		args[4] = style;
+
+		rb_protect(protected_start_sequence, (VALUE)args, &state);
 	    }
 	    break;
 	  case YAML_SEQUENCE_END_EVENT:
-	    rb_funcall(handler, id_end_sequence, 0);
+	    rb_protect(protected_end_sequence, handler, &state);
 	    break;
 	  case YAML_MAPPING_START_EVENT:
 	    {
+		VALUE args[5];
 		VALUE anchor = Qnil;
 		VALUE tag = Qnil;
 		VALUE implicit, style;
@@ -396,22 +485,28 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 
 		style = INT2NUM((long)event.data.mapping_start.style);
 
-		rb_funcall(handler, id_start_mapping, 4,
-			   anchor, tag, implicit, style);
+		args[0] = handler;
+		args[1] = anchor;
+		args[2] = tag;
+		args[3] = implicit;
+		args[4] = style;
+
+		rb_protect(protected_start_mapping, (VALUE)args, &state);
 	    }
 	    break;
 	  case YAML_MAPPING_END_EVENT:
-	    rb_funcall(handler, id_end_mapping, 0);
+	    rb_protect(protected_end_mapping, handler, &state);
 	    break;
 	  case YAML_NO_EVENT:
-	    rb_funcall(handler, id_empty, 0);
+	    rb_protect(protected_empty, handler, &state);
 	    break;
 	  case YAML_STREAM_END_EVENT:
-	    rb_funcall(handler, id_end_stream, 0);
+	    rb_protect(protected_end_stream, handler, &state);
 	    done = 1;
 	    break;
 	}
 	yaml_event_delete(&event);
+	if (state) rb_jump_tag(state);
     }
 
     return self;
