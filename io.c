@@ -1778,31 +1778,29 @@ static VALUE
 rb_io_inspect(VALUE obj)
 {
     rb_io_t *fptr;
-    const char *cname;
-    char fd_desc[4+sizeof(int)*3];
-    const char *path;
-    const char *st = "";
+    VALUE result;
+    static const char closed[] = " (closed)";
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
     if (!fptr) return rb_any_to_s(obj);
-    cname = rb_obj_classname(obj);
+    result = rb_str_new_cstr("#<");
+    rb_str_append(result, rb_class_name(CLASS_OF(obj)));
+    rb_str_cat2(result, ":");
     if (NIL_P(fptr->pathv)) {
         if (fptr->fd < 0) {
-            path = "";
-            st = "(closed)";
+	    rb_str_cat(result, closed+1, strlen(closed)-1);
         }
         else {
-            snprintf(fd_desc, sizeof(fd_desc), "fd %d", fptr->fd);
-            path = fd_desc;
+	    rb_str_catf(result, "fd %d", fptr->fd);
         }
     }
     else {
-        path = RSTRING_PTR(fptr->pathv);
+	rb_str_append(result, fptr->pathv);
         if (fptr->fd < 0) {
-            st = " (closed)";
+	    rb_str_cat(result, closed, strlen(closed));
         }
     }
-    return rb_sprintf("#<%s:%s%s>", cname, path, st);
+    return rb_str_cat2(result, ">");
 }
 
 /*
