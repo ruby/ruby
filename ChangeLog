@@ -1,3 +1,8 @@
+Sat Feb 25 17:07:15 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/fileutils.rb: use chomp(?/) instead of sub to optimize and avoid
+	  to regexping invalid string.
+
 Sat Feb 25 16:18:24 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* complex.c (nucomp_marshal_load): raise error on invalid data.
