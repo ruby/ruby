@@ -1,10 +1,10 @@
 #define RUBY_VERSION "1.9.3"
-#define RUBY_PATCHLEVEL 143
+#define RUBY_PATCHLEVEL 144
 
-#define RUBY_RELEASE_DATE "2012-02-24"
+#define RUBY_RELEASE_DATE "2012-02-25"
 #define RUBY_RELEASE_YEAR 2012
 #define RUBY_RELEASE_MONTH 2
-#define RUBY_RELEASE_DAY 24
+#define RUBY_RELEASE_DAY 25
 
 #include "ruby/version.h"
 
