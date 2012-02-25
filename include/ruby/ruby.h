@@ -1173,13 +1173,18 @@ PRINTF_ARGS(NORETURN(void rb_fatal(const char*, ...)), 1, 2);
 PRINTF_ARGS(NORETURN(void rb_bug(const char*, ...)), 1, 2);
 NORETURN(void rb_bug_errno(const char*, int));
 NORETURN(void rb_sys_fail(const char*));
+NORETURN(void rb_sys_fail_str(VALUE));
 NORETURN(void rb_mod_sys_fail(VALUE, const char*));
+NORETURN(void rb_mod_sys_fail_str(VALUE, VALUE));
 NORETURN(void rb_iter_break(void));
 NORETURN(void rb_exit(int));
 NORETURN(void rb_notimplement(void));
 VALUE rb_syserr_new(int, const char *);
+VALUE rb_syserr_new_str(int n, VALUE arg);
 NORETURN(void rb_syserr_fail(int, const char*));
+NORETURN(void rb_syserr_fail_str(int, VALUE));
 NORETURN(void rb_mod_syserr_fail(VALUE, int, const char*));
+NORETURN(void rb_mod_syserr_fail_str(VALUE, int, VALUE));
 
 /* reports if `-W' specified */
 PRINTF_ARGS(void rb_warning(const char*, ...), 1, 2);

@@ -80,6 +80,8 @@ char *strchr(char*,char);
 #define opendir(p) rb_w32_uopendir(p)
 #endif
 
+#define rb_sys_fail_path(path) rb_sys_fail_str(path)
+
 #define FNM_NOESCAPE	0x01
 #define FNM_PATHNAME	0x02
 #define FNM_DOTMATCH	0x04
@@ -762,7 +764,7 @@ dir_chdir(VALUE path)
 {
     path = rb_str_encode_ospath(path);
     if (chdir(RSTRING_PTR(path)) < 0)
-	rb_sys_fail(RSTRING_PTR(path));
+	rb_sys_fail_path(path);
 }
 
 static int chdir_blocking = 0;
@@ -934,7 +936,7 @@ dir_s_chroot(VALUE dir, VALUE path)
 
     path = rb_str_encode_ospath(path);
     if (chroot(RSTRING_PTR(path)) == -1)
-	rb_sys_fail(RSTRING_PTR(path));
+	rb_sys_fail_path(path);
 
     return INT2FIX(0);
 }
@@ -973,7 +975,7 @@ dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
     check_dirname(&path);
     path = rb_str_encode_ospath(path);
     if (mkdir(RSTRING_PTR(path), mode) == -1)
-	rb_sys_fail(RSTRING_PTR(path));
+	rb_sys_fail_path(path);
 
     return INT2FIX(0);
 }
@@ -993,7 +995,7 @@ dir_s_rmdir(VALUE obj, VALUE dir)
     check_dirname(&dir);
     dir = rb_str_encode_ospath(dir);
     if (rmdir(RSTRING_PTR(dir)) < 0)
-	rb_sys_fail(RSTRING_PTR(dir));
+	rb_sys_fail_path(dir);
 
     return INT2FIX(0);
 }
