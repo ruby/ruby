@@ -260,8 +260,11 @@ report_bug(const char *file, int line, const char *fmt, va_list args)
 	(ssize_t)fwrite(buf, 1, len, (out = stdout)) == (ssize_t)len) {
 
 	fputs("[BUG] ", out);
-	vfprintf(out, fmt, args);
-	fprintf(out, "\n%s\n\n", ruby_description);
+	vsnprintf(buf, 256, fmt, args);
+	fputs(buf, out);
+	snprintf(buf, 256, "\n%s\n\n", ruby_description);
+	fputs(buf, out);
+
 
 	rb_vm_bugreport();
 
