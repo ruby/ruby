@@ -30,6 +30,9 @@ Init_md5()
 
     rb_require("digest");
 
+#if 0
+    mDigest = rb_define_module("Digest"); /* let rdoc know */
+#endif
     mDigest = rb_path2class("Digest");
     cDigest_Base = rb_path2class("Digest::Base");
 

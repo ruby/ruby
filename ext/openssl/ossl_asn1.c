@@ -1901,6 +1901,10 @@ do{\
 
     OSSL_ASN1_DEFINE_CLASS(EndOfContent, Data);
 
+
+#if 0
+    cASN1ObjectId = rb_define_class_under(mASN1, "ObjectId", cASN1Primitive);  /* let rdoc know */
+#endif
     rb_define_singleton_method(cASN1ObjectId, "register", ossl_asn1obj_s_register, 3);
     rb_define_method(cASN1ObjectId, "sn", ossl_asn1obj_get_sn, 0);
     rb_define_method(cASN1ObjectId, "ln", ossl_asn1obj_get_ln, 0);
