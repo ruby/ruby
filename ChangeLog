@@ -1,3 +1,10 @@
+Sat Feb 25 11:08:28 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/curses/curses.c (Init_curses): use rb_define_const once for
+	  Curses::VERSION.
+
+	* ext/dbm/dbm.c (Init_dbm): ditto for DBM::VERSION.
+
 Sat Feb 25 10:34:22 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/curses/curses.c (Init_curses): make Curses::VERSION

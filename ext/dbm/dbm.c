@@ -1085,36 +1085,38 @@ Init_dbm(void)
      */
     rb_define_const(rb_cDBM, "NEWDB",   INT2FIX(O_RDWR|O_CREAT|O_TRUNC|RUBY_DBM_RW_BIT));
 
+    {
+        VALUE version;
 #if defined(_DBM_IOERR)
-    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("ndbm (4.3BSD)"));
+        version = rb_str_new2("ndbm (4.3BSD)");
 #elif defined(RUBYDBM_GDBM_HEADER)
 #  if defined(HAVE_DECLARED_LIBVAR_GDBM_VERSION)
-    /* since gdbm 1.9 */
-    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(gdbm_version));
+        /* since gdbm 1.9 */
+        version = rb_str_new2(gdbm_version);
 #  elif defined(HAVE_UNDECLARED_LIBVAR_GDBM_VERSION)
-    /* ndbm.h doesn't declare gdbm_version until gdbm 1.8.3.
-     * See extconf.rb for more information. */
-    {
-	RUBY_EXTERN char *gdbm_version;
-	rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(gdbm_version));
-    }
+        /* ndbm.h doesn't declare gdbm_version until gdbm 1.8.3.
+         * See extconf.rb for more information. */
+        RUBY_EXTERN char *gdbm_version;
+        version = rb_str_new2(gdbm_version);
 #  else
-    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("GDBM (unknown)"));
+        version = rb_str_new2("GDBM (unknown)");
 #  endif
 #elif defined(RUBYDBM_DB_HEADER)
 #  if defined(HAVE_DB_VERSION)
-    /* The version of the dbm library, if using Berkeley DB */
-    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(db_version(NULL, NULL, NULL)));
+        /* The version of the dbm library, if using Berkeley DB */
+        version = rb_str_new2(db_version(NULL, NULL, NULL));
 #  else
-    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("Berkeley DB (unknown)"));
+        version = rb_str_new2("Berkeley DB (unknown)");
 #  endif
 #elif defined(_RELIC_H)
 #  if defined(HAVE_DPVERSION)
-    rb_define_const(rb_cDBM, "VERSION",  rb_sprintf("QDBM %s", dpversion));
+        version = rb_sprintf("QDBM %s", dpversion);
 #  else
-    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("QDBM (unknown)"));
+        version = rb_str_new2("QDBM (unknown)");
 #  endif
 #else
-    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("ndbm (unknown)"));
+        version = rb_str_new2("ndbm (unknown)");
 #endif
+        rb_define_const(rb_cDBM, "VERSION", version);
+    }
 }
