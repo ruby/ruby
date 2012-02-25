@@ -459,7 +459,7 @@ realclean-extout: distclean-extout
 
 clean-enc distclean-enc realclean-enc: PHONY
 
-check: test test-all
+check: main test test-all
 	$(ECHO) check succeeded
 check-ruby: test test-ruby
 
@@ -487,7 +487,7 @@ yes-test-knownbug: prog PHONY
 test: test-sample btest-ruby test-knownbug
 
 test-all: $(TEST_RUNNABLE)-test-all
-yes-test-all: main PHONY
+yes-test-all: prog PHONY
 	$(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TESTS)
 TESTS_BUILD = mkmf
 no-test-all: PHONY
