@@ -469,4 +469,18 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(o1.class, o2.class)
     assert_equal(o1.foo, o2.foo)
   end
+
+  def test_marshal_complex
+    assert_raise(ArgumentError){Marshal.load("\x04\bU:\fComplex[\x05")}
+    assert_raise(ArgumentError){Marshal.load("\x04\bU:\fComplex[\x06i\x00")}
+    assert_equal(Complex(1, 2), Marshal.load("\x04\bU:\fComplex[\ai\x06i\a"))
+    assert_raise(ArgumentError){Marshal.load("\x04\bU:\fComplex[\bi\x00i\x00i\x00")}
+  end
+
+  def test_marshal_rational
+    assert_raise(ArgumentError){Marshal.load("\x04\bU:\rRational[\x05")}
+    assert_raise(ArgumentError){Marshal.load("\x04\bU:\rRational[\x06i\x00")}
+    assert_equal(Rational(1, 2), Marshal.load("\x04\bU:\rRational[\ai\x06i\a"))
+    assert_raise(ArgumentError){Marshal.load("\x04\bU:\rRational[\bi\x00i\x00i\x00")}
+  end
 end

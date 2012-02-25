@@ -1,3 +1,8 @@
+Sat Feb 25 16:18:24 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* complex.c (nucomp_marshal_load): raise error on invalid data.
+	  reported by John Firebaugh [ruby-core:42860] [Bug #6076]
+
 Sat Feb 25 14:46:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/dl.c (Init_dl): support intrinsic types, size_t, ptrdiff_t
