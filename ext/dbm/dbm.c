@@ -1086,7 +1086,7 @@ Init_dbm(void)
     rb_define_const(rb_cDBM, "NEWDB",   INT2FIX(O_RDWR|O_CREAT|O_TRUNC|RUBY_DBM_RW_BIT));
 
 #if defined(_DBM_IOERR)
-    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("NDBM (4.3BSD)"));
+    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("ndbm (4.3BSD)"));
 #elif defined(RUBYDBM_GDBM_HEADER)
 #  if defined(HAVE_DECLARED_LIBVAR_GDBM_VERSION)
     /* since gdbm 1.9 */
@@ -1115,6 +1115,6 @@ Init_dbm(void)
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("QDBM (unknown)"));
 #  endif
 #else
-    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("unknown"));
+    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("ndbm (unknown)"));
 #endif
 }

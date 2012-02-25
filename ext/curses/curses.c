@@ -2780,7 +2780,7 @@ Init_curses(void)
     }
 #else
     /* BSD curses, perhaps.  NetBSD 5 still use it. */ 
-    rb_define_const(mCurses, "VERSION", rb_str_new2("unknown"));
+    rb_define_const(mCurses, "VERSION", rb_str_new2("curses (unknown)"));
 #endif
 
     /*

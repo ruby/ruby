@@ -1,3 +1,10 @@
+Sat Feb 25 10:34:22 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/curses/curses.c (Init_curses): make Curses::VERSION
+	  understandable without context.
+
+	* ext/dbm/dbm.c (Init_dbm): ditto for DBM::VERSION.
+
 Sat Feb 25 07:53:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_tokadd_string): insert a backslash only if
