@@ -611,7 +611,8 @@ next_ii(VALUE i, VALUE obj, int argc, VALUE *argv)
                     result = rb_funcall(entry->proc, rb_intern("call"), 1, result);
                     break;
                 case T_PROC_SELECT:
-                    move_next = rb_funcall(entry->proc, rb_intern("call"), 1, result);
+                    if (move_next)
+                        move_next = rb_funcall(entry->proc, rb_intern("call"), 1, result);
                     break;
             }
         }
