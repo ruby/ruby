@@ -16,9 +16,9 @@ headers = {
   "db3" => ["db3/db.h", "db3.h", "db.h"],
   "db4" => ["db4/db.h", "db4.h", "db.h"],
   "db5" => ["db5/db.h", "db5.h", "db.h"],
-  "gdbm_compat" => ["gdbm-ndbm.h", "ndbm.h", "gdbm/ndbm.h"], # GDBM since 1.8.1
-  "gdbm" => ["gdbm-ndbm.h", "ndbm.h", "gdbm/ndbm.h"], # GDBM until 1.8.0
-  "qdbm" => ["relic.h", "qdbm/relic.h"],
+  "gdbm_compat" => ["gdbm-ndbm.h", "gdbm/ndbm.h", "ndbm.h"], # GDBM since 1.8.1
+  "gdbm" => ["gdbm-ndbm.h", "gdbm/ndbm.h", "ndbm.h"], # GDBM until 1.8.0
+  "qdbm" => ["qdbm/relic.h", "relic.h"],
 }
 
 class << headers
