@@ -486,8 +486,12 @@ dir_inspect(VALUE dir)
 
     TypedData_Get_Struct(dir, struct dir_data, &dir_data_type, dirp);
     if (!NIL_P(dirp->path)) {
-	const char *c = rb_obj_classname(dir);
-	return rb_sprintf("#<%s:%s>", c, RSTRING_PTR(dirp->path));
+	VALUE str = rb_str_new_cstr("#<");
+	rb_str_append(str, rb_class_name(CLASS_OF(dir)));
+	rb_str_cat2(str, ":");
+	rb_str_append(str, dirp->path);
+	rb_str_cat2(str, ">");
+	return str;
     }
     return rb_funcall(dir, rb_intern("to_s"), 0, 0);
 }

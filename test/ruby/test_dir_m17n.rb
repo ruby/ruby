@@ -213,5 +213,16 @@ class TestDir_M17N < Test::Unit::TestCase
       EOS
     }
   end
-end
 
+  def test_inspect_nonascii
+    bug6072 = '[ruby-dev:45280]'
+    paths = ["\u{3042}".encode("sjis"), "\u{ff}".encode("iso-8859-1")]
+    encs = with_tmpdir {
+      paths.map {|path|
+        Dir.mkdir(path)
+        Dir.open(path) {|d| d.inspect.encoding}
+      }
+    }
+    assert_equal(paths.map(&:encoding), encs, bug6072)
+  end
+end

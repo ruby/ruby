@@ -1,3 +1,8 @@
+Sat Feb 25 17:09:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_inspect), io.c (rb_io_inspect): keep encoding of path.
+	  [Bug #6072]
+
 Sat Feb 25 16:39:13 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* complex.c (nucomp_marshal_load): raise error on invalid data.
