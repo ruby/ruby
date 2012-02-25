@@ -15,8 +15,13 @@ class TestFiddle < Fiddle::TestCase
       :TYPE_LONG_LONG,
       :TYPE_FLOAT,
       :TYPE_DOUBLE,
+      :TYPE_SIZE_T,
+      :TYPE_SSIZE_T,
+      :TYPE_PTRDIFF_T,
+      :TYPE_INTPTR_T,
+      :TYPE_UINTPTR_T,
     ].each do |name|
-      assert_equal(DL.const_get(name), Fiddle.const_get(name))
+      assert_equal(DL.const_get(name), Fiddle.const_get(name), "Fiddle::#{name}")
     end
   end
 

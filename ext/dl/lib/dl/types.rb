@@ -40,11 +40,7 @@ module DL
         typealias "UINT", "unsigned int"
         typealias "ULONG", "unsigned long"
         typealias "UCHAR", "unsigned char"
-        if [nil].pack('p').bytesize == 8
-          typealias "HANDLE", "unsigned long long"
-        else
-          typealias "HANDLE", "unsigned long"
-        end
+        typealias "HANDLE", "uintptr_t"
         typealias "PHANDLE", "void*"
         typealias "PVOID", "void*"
         typealias "LPCSTR", "char*"

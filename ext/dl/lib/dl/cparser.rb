@@ -95,6 +95,16 @@ module DL
         return TYPE_FLOAT
       when "double"
         return TYPE_DOUBLE
+      when "size_t"
+        return TYPE_SIZE_T
+      when "ssize_t"
+        return TYPE_SSIZE_T
+      when "ptrdiff_t"
+        return TYPE_PTRDIFF_T
+      when "intptr_t"
+        return TYPE_INTPTR_T
+      when "uintptr_t"
+        return TYPE_UINTPTR_T
       when /\*/, /\[\s*\]/
         return TYPE_VOIDP
       else

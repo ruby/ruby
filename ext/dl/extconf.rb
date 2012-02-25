@@ -25,6 +25,19 @@ else
 end
 
 if check
+  config = File.read(RbConfig.expand(File.join($arch_hdrdir, "ruby/config.h")))
+  types = {"SIZE_T"=>"SSIZE_T", "PTRDIFF_T"=>nil, "INTPTR_T"=>nil}
+  types.each do |type, signed|
+    if /^\#define\s+SIZEOF_#{type}\s+(SIZEOF_(.+)|\d+)/ =~ config
+      if size = $2 and size != 'VOIDP'
+        size = types.fetch(size) {size}
+        $defs << format("-DDLTYPE_%s=DLTYPE_%s", signed||type, size)
+      end
+      if signed
+        check_signedness(type.downcase, "stddef.h")
+      end
+    end
+  end
   $defs << %[-DRUBY_VERSION=\\"#{RUBY_VERSION}\\"]
   create_makefile("dl")
 end

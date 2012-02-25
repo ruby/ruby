@@ -17,6 +17,38 @@ VALUE rb_eDLTypeError;
 ID rbdl_id_cdecl;
 ID rbdl_id_stdcall;
 
+#ifndef DLTYPE_SSIZE_T
+# if SIZEOF_SIZE_T == SIZEOF_INT
+#   define DLTYPE_SSIZE_T DLTYPE_INT
+# elif SIZEOF_SIZE_T == SIZEOF_LONG
+#   define DLTYPE_SSIZE_T DLTYPE_LONG
+# elif defined HAVE_LONG_LONG && SIZEOF_SIZE_T == SIZEOF_LONG_LONG
+#   define DLTYPE_SSIZE_T DLTYPE_LONG_LONG
+# endif
+#endif
+#define DLTYPE_SIZE_T (-1*SIGNEDNESS_OF_SIZE_T*DLTYPE_SSIZE_T)
+
+#ifndef DLTYPE_PTRDIFF_T
+# if SIZEOF_PTRDIFF_T == SIZEOF_INT
+#   define DLTYPE_PTRDIFF_T DLTYPE_INT
+# elif SIZEOF_PTRDIFF_T == SIZEOF_LONG
+#   define DLTYPE_PTRDIFF_T DLTYPE_LONG
+# elif defined HAVE_LONG_LONG && SIZEOF_PTRDIFF_T == SIZEOF_LONG_LONG
+#   define DLTYPE_PTRDIFF_T DLTYPE_LONG_LONG
+# endif
+#endif
+
+#ifndef DLTYPE_INTPTR_T
+# if SIZEOF_INTPTR_T == SIZEOF_INT
+#   define DLTYPE_INTPTR_T DLTYPE_INT
+# elif SIZEOF_INTPTR_T == SIZEOF_LONG
+#   define DLTYPE_INTPTR_T DLTYPE_LONG
+# elif defined HAVE_LONG_LONG && SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
+#   define DLTYPE_INTPTR_T DLTYPE_LONG_LONG
+# endif
+#endif
+#define DLTYPE_UINTPTR_T (-DLTYPE_INTPTR_T)
+
 VALUE
 rb_dl_dlopen(int argc, VALUE argv[], VALUE self)
 {
@@ -271,6 +303,36 @@ Init_dl(void)
      */
     rb_define_const(rb_mDL, "TYPE_DOUBLE",  INT2NUM(DLTYPE_DOUBLE));
 
+    /* Document-const: TYPE_SIZE_T
+     *
+     * DL::CFunc type - size_t
+     */
+    rb_define_const(rb_mDL, "TYPE_SIZE_T",  INT2NUM(DLTYPE_SIZE_T));
+
+    /* Document-const: TYPE_SSIZE_T
+     *
+     * DL::CFunc type - ssize_t
+     */
+    rb_define_const(rb_mDL, "TYPE_SSIZE_T", INT2NUM(DLTYPE_SSIZE_T));
+
+    /* Document-const: TYPE_PTRDIFF_T
+     *
+     * DL::CFunc type - ptrdiff_t
+     */
+    rb_define_const(rb_mDL, "TYPE_PTRDIFF_T", INT2NUM(DLTYPE_PTRDIFF_T));
+
+    /* Document-const: TYPE_INTPTR_T
+     *
+     * DL::CFunc type - intptr_t
+     */
+    rb_define_const(rb_mDL, "TYPE_INTPTR_T", INT2NUM(DLTYPE_INTPTR_T));
+
+    /* Document-const: TYPE_UINTPTR_T
+     *
+     * DL::CFunc type - uintptr_t
+     */
+    rb_define_const(rb_mDL, "TYPE_UINTPTR_T", INT2NUM(DLTYPE_UINTPTR_T));
+
     /* Document-const: ALIGN_VOIDP
      *
      * The alignment size of a void*
@@ -321,6 +383,36 @@ Init_dl(void)
      */
     rb_define_const(rb_mDL, "ALIGN_DOUBLE",INT2NUM(ALIGN_DOUBLE));
 
+    /* Document-const: ALIGN_SIZE_T
+     *
+     * The alignment size of a size_t
+     */
+    rb_define_const(rb_mDL, "ALIGN_SIZE_T", INT2NUM(ALIGN_OF(size_t)));
+
+    /* Document-const: ALIGN_SSIZE_T
+     *
+     * The alignment size of a ssize_t
+     */
+    rb_define_const(rb_mDL, "ALIGN_SSIZE_T", INT2NUM(ALIGN_OF(size_t))); /* same as size_t */
+
+    /* Document-const: ALIGN_PTRDIFF_T
+     *
+     * The alignment size of a ptrdiff_t
+     */
+    rb_define_const(rb_mDL, "ALIGN_PTRDIFF_T", INT2NUM(ALIGN_OF(ptrdiff_t)));
+
+    /* Document-const: ALIGN_INTPTR_T
+     *
+     * The alignment size of a intptr_t
+     */
+    rb_define_const(rb_mDL, "ALIGN_INTPTR_T", INT2NUM(ALIGN_OF(intptr_t)));
+
+    /* Document-const: ALIGN_UINTPTR_T
+     *
+     * The alignment size of a uintptr_t
+     */
+    rb_define_const(rb_mDL, "ALIGN_UINTPTR_T", INT2NUM(ALIGN_OF(uintptr_t)));
+
     /* Document-const: SIZEOF_VOIDP
      *
      * size of a void*
@@ -370,6 +462,36 @@ Init_dl(void)
      * size of a double
      */
     rb_define_const(rb_mDL, "SIZEOF_DOUBLE",INT2NUM(sizeof(double)));
+
+    /* Document-const: SIZEOF_SIZE_T
+     *
+     * size of a size_t
+     */
+    rb_define_const(rb_mDL, "SIZEOF_SIZE_T",  INT2NUM(sizeof(size_t)));
+
+    /* Document-const: SIZEOF_SSIZE_T
+     *
+     * size of a ssize_t
+     */
+    rb_define_const(rb_mDL, "SIZEOF_SSIZE_T",  INT2NUM(sizeof(size_t))); /* same as size_t */
+
+    /* Document-const: SIZEOF_PTRDIFF_T
+     *
+     * size of a ptrdiff_t
+     */
+    rb_define_const(rb_mDL, "SIZEOF_PTRDIFF_T",  INT2NUM(sizeof(ptrdiff_t)));
+
+    /* Document-const: SIZEOF_INTPTR_T
+     *
+     * size of a intptr_t
+     */
+    rb_define_const(rb_mDL, "SIZEOF_INTPTR_T",  INT2NUM(sizeof(intptr_t)));
+
+    /* Document-const: SIZEOF_UINTPTR_T
+     *
+     * size of a intptr_t
+     */
+    rb_define_const(rb_mDL, "SIZEOF_UINTPTR_T",  INT2NUM(sizeof(uintptr_t)));
 
     rb_define_module_function(rb_mDL, "dlwrap", rb_dl_value2ptr, 1);
     rb_define_module_function(rb_mDL, "dlunwrap", rb_dl_ptr2value, 1);

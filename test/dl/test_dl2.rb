@@ -151,5 +151,17 @@ class TestDL < TestBase
     ary2 = dlunwrap(addr)
     assert_equal(ary, ary2)
   end
+
+  def test_type_size_t
+    assert_equal(DL::TYPE_SSIZE_T, DL::TYPE_SIZE_T.abs)
+  end
+
+  def test_type_uintptr_t
+    assert_equal(-DL::TYPE_INTPTR_T, DL::TYPE_UINTPTR_T)
+  end
+
+  def test_sizeof_uintptr_t
+    assert_equal(DL::SIZEOF_VOIDP, DL::SIZEOF_INTPTR_T)
+  end
 end
 end # module DL

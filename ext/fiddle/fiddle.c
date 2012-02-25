@@ -2,6 +2,38 @@
 
 VALUE mFiddle;
 
+#ifndef TYPE_SSIZE_T
+# if SIZEOF_SIZE_T == SIZEOF_INT
+#   define TYPE_SSIZE_T TYPE_INT
+# elif SIZEOF_SIZE_T == SIZEOF_LONG
+#   define TYPE_SSIZE_T TYPE_LONG
+# elif defined HAVE_LONG_LONG && SIZEOF_SIZE_T == SIZEOF_LONG_LONG
+#   define TYPE_SSIZE_T TYPE_LONG_LONG
+# endif
+#endif
+#define TYPE_SIZE_T (-1*SIGNEDNESS_OF_SIZE_T*TYPE_SSIZE_T)
+
+#ifndef TYPE_PTRDIFF_T
+# if SIZEOF_PTRDIFF_T == SIZEOF_INT
+#   define TYPE_PTRDIFF_T TYPE_INT
+# elif SIZEOF_PTRDIFF_T == SIZEOF_LONG
+#   define TYPE_PTRDIFF_T TYPE_LONG
+# elif defined HAVE_LONG_LONG && SIZEOF_PTRDIFF_T == SIZEOF_LONG_LONG
+#   define TYPE_PTRDIFF_T TYPE_LONG_LONG
+# endif
+#endif
+
+#ifndef TYPE_INTPTR_T
+# if SIZEOF_INTPTR_T == SIZEOF_INT
+#   define TYPE_INTPTR_T TYPE_INT
+# elif SIZEOF_INTPTR_T == SIZEOF_LONG
+#   define TYPE_INTPTR_T TYPE_LONG
+# elif defined HAVE_LONG_LONG && SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
+#   define TYPE_INTPTR_T TYPE_LONG_LONG
+# endif
+#endif
+#define TYPE_UINTPTR_T (-TYPE_INTPTR_T)
+
 void
 Init_fiddle(void)
 {
@@ -70,6 +102,36 @@ Init_fiddle(void)
      * C type - double
      */
     rb_define_const(mFiddle, "TYPE_DOUBLE",    INT2NUM(TYPE_DOUBLE));
+
+    /* Document-const: TYPE_SIZE_T
+     *
+     * C type - size_t
+     */
+    rb_define_const(mFiddle, "TYPE_SIZE_T",   INT2NUM(TYPE_SIZE_T));
+
+    /* Document-const: TYPE_SSIZE_T
+     *
+     * C type - ssize_t
+     */
+    rb_define_const(mFiddle, "TYPE_SSIZE_T",   INT2NUM(TYPE_SSIZE_T));
+
+    /* Document-const: TYPE_PTRDIFF_T
+     *
+     * C type - ptrdiff_t
+     */
+    rb_define_const(mFiddle, "TYPE_PTRDIFF_T", INT2NUM(TYPE_PTRDIFF_T));
+
+    /* Document-const: TYPE_INTPTR_T
+     *
+     * C type - intptr_t
+     */
+    rb_define_const(mFiddle, "TYPE_INTPTR_T",  INT2NUM(TYPE_INTPTR_T));
+
+    /* Document-const: TYPE_UINTPTR_T
+     *
+     * C type - uintptr_t
+     */
+    rb_define_const(mFiddle, "TYPE_UINTPTR_T",  INT2NUM(TYPE_UINTPTR_T));
 
     /* Document-const: WINDOWS
      *
