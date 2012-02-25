@@ -2782,6 +2782,15 @@ Init_curses(void)
         /* BSD curses, perhaps.  NetBSD 5 still use it. */ 
         version = rb_str_new2("curses (unknown)");
 #endif
+        /*
+         * Identifies curses library version.
+         *
+         * - "ncurses 5.9.20110404"
+         * - "PDCurses 3.4 - Public Domain 2008"
+         * - "curses (SVR4)" (System V curses)
+         * - "curses (unknown)" (The original BSD curses?  NetBSD maybe.)
+         *
+         */
         rb_define_const(mCurses, "VERSION", version);
     }
 
