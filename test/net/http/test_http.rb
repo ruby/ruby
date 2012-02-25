@@ -612,7 +612,7 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
     end
 
     start {|http|
-      assert_raises(EOFError) {
+      assert_raises(EOFError,Errno::ECONNRESET) {
         res = http.get('/')
       }
     }
