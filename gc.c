@@ -310,29 +310,20 @@ typedef struct RVALUE {
 #endif
 
 struct heaps_slot {
-    void *membase;
-    RVALUE *slot;
-    size_t limit;
-    uintptr_t *bits;
+    struct heaps_header *membase;
     RVALUE *freelist;
     struct heaps_slot *next;
     struct heaps_slot *prev;
     struct heaps_slot *free_next;
+    uintptr_t bits[1];
 };
 
 struct heaps_header {
     struct heaps_slot *base;
     uintptr_t *bits;
-};
-
-struct sorted_heaps_slot {
     RVALUE *start;
     RVALUE *end;
-    struct heaps_slot *slot;
-};
-
-struct heaps_free_bitmap {
-    struct heaps_free_bitmap *next;
+    size_t limit;
 };
 
 struct gc_list {
@@ -358,12 +349,12 @@ typedef struct rb_objspace {
 	struct heaps_slot *ptr;
 	struct heaps_slot *sweep_slots;
 	struct heaps_slot *free_slots;
-	struct sorted_heaps_slot *sorted;
+	struct heaps_header **sorted;
 	size_t length;
 	size_t used;
-        struct heaps_free_bitmap *free_bitmap;
+        struct heaps_slot *reserve_slots;
 	RVALUE *range[2];
-	RVALUE *freed;
+	struct heaps_header *freed;
 	size_t live_num;
 	size_t free_num;
 	size_t free_min;
@@ -516,19 +507,18 @@ rb_objspace_free(rb_objspace_t *objspace)
 	    xfree(list);
 	}
     }
-    if (objspace->heap.free_bitmap) {
-        struct heaps_free_bitmap *list, *next;
-        for (list = objspace->heap.free_bitmap; list; list = next) {
-            next = list->next;
+    if (objspace->heap.reserve_slots) {
+        struct heaps_slot *list, *next;
+        for (list = objspace->heap.reserve_slots; list; list = next) {
+            next = list->free_next;
             free(list);
         }
     }
     if (objspace->heap.sorted) {
 	size_t i;
 	for (i = 0; i < heaps_used; ++i) {
-            free(objspace->heap.sorted[i].slot->bits);
-	    aligned_free(objspace->heap.sorted[i].slot->membase);
-            free(objspace->heap.sorted[i].slot);
+            free(objspace->heap.sorted[i]->base);
+	    aligned_free(objspace->heap.sorted[i]);
 	}
 	free(objspace->heap.sorted);
 	heaps_used = 0;
@@ -550,6 +540,7 @@ rb_objspace_free(rb_objspace_t *objspace)
 
 #define HEAP_OBJ_LIMIT (unsigned int)((HEAP_SIZE - sizeof(struct heaps_header))/sizeof(struct RVALUE))
 #define HEAP_BITMAP_LIMIT CEILDIV(CEILDIV(HEAP_SIZE, sizeof(struct RVALUE)), sizeof(uintptr_t)*8)
+#define HEAP_SLOT_SIZE (sizeof(struct heaps_slot) + (HEAP_BITMAP_LIMIT-1) * sizeof(uintptr_t))
 
 #define GET_HEAP_HEADER(x) (HEAP_HEADER(((uintptr_t)x) & ~(HEAP_ALIGN_MASK)))
 #define GET_HEAP_SLOT(x) (GET_HEAP_HEADER(x)->base)
@@ -1056,19 +1047,19 @@ rb_gc_unregister_address(VALUE *addr)
 static void
 allocate_sorted_heaps(rb_objspace_t *objspace, size_t next_heaps_length)
 {
-    struct sorted_heaps_slot *p;
-    struct heaps_free_bitmap *bits;
+    struct heaps_header **p;
+    struct heaps_slot *slot;
     size_t size, add, i;
 
-    size = next_heaps_length*sizeof(struct sorted_heaps_slot);
+    size = next_heaps_length*sizeof(struct heaps_header *);
     add = next_heaps_length - heaps_used;
 
     if (heaps_used > 0) {
-	p = (struct sorted_heaps_slot *)realloc(objspace->heap.sorted, size);
+	p = (struct heaps_header **)realloc(objspace->heap.sorted, size);
 	if (p) objspace->heap.sorted = p;
     }
     else {
-	p = objspace->heap.sorted = (struct sorted_heaps_slot *)malloc(size);
+	p = objspace->heap.sorted = (struct heaps_header **)malloc(size);
     }
 
     if (p == 0) {
@@ -1077,14 +1068,14 @@ allocate_sorted_heaps(rb_objspace_t *objspace, size_t next_heaps_length)
     }
 
     for (i = 0; i < add; i++) {
-        bits = (struct heaps_free_bitmap *)malloc(HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
-        if (bits == 0) {
+        slot = (struct heaps_slot *)malloc(HEAP_SLOT_SIZE);
+        if (slot == 0) {
             during_gc = 0;
             rb_memerror();
             return;
         }
-        bits->next = objspace->heap.free_bitmap;
-        objspace->heap.free_bitmap = bits;
+        slot->free_next = objspace->heap.reserve_slots;
+        objspace->heap.reserve_slots = slot;
     }
 }
 
@@ -1154,31 +1145,28 @@ unlink_free_heap_slot(rb_objspace_t *objspace, struct heaps_slot *slot)
 static void
 assign_heap_slot(rb_objspace_t *objspace)
 {
-    RVALUE *p, *pend, *membase;
+    RVALUE *p, *pend;
+    struct heaps_header *membase;
     struct heaps_slot *slot;
     size_t hi, lo, mid;
     size_t objs;
 
     objs = HEAP_OBJ_LIMIT;
-    p = (RVALUE*)aligned_malloc(HEAP_ALIGN, HEAP_SIZE);
-    if (p == 0) {
+    membase = (struct heaps_header*)aligned_malloc(HEAP_ALIGN, HEAP_SIZE);
+    if (membase == 0) {
 	during_gc = 0;
 	rb_memerror();
     }
-    slot = (struct heaps_slot *)malloc(sizeof(struct heaps_slot));
-    if (slot == 0) {
-       aligned_free(p);
-       during_gc = 0;
-       rb_memerror();
-    }
+    assert(objspace->heap.reserve_slots != NULL);
+    slot = objspace->heap.reserve_slots;
+    objspace->heap.reserve_slots = slot->free_next;
     MEMZERO((void*)slot, struct heaps_slot, 1);
 
     slot->next = heaps;
     if (heaps) heaps->prev = slot;
     heaps = slot;
 
-    membase = p;
-    p = (RVALUE*)((VALUE)p + sizeof(struct heaps_header));
+    p = (RVALUE*)((VALUE)membase + sizeof(struct heaps_header));
     if ((VALUE)p % sizeof(RVALUE) != 0) {
        p = (RVALUE*)((VALUE)p + sizeof(RVALUE) - ((VALUE)p % sizeof(RVALUE)));
        objs = (HEAP_SIZE - (size_t)((VALUE)p - (VALUE)membase))/sizeof(RVALUE);
@@ -1187,9 +1175,9 @@ assign_heap_slot(rb_objspace_t *objspace)
     lo = 0;
     hi = heaps_used;
     while (lo < hi) {
-	register RVALUE *mid_membase;
+	register struct heaps_header *mid_membase;
 	mid = (lo + hi) / 2;
-        mid_membase = objspace->heap.sorted[mid].slot->membase;
+        mid_membase = objspace->heap.sorted[mid];
 	if (mid_membase < membase) {
 	    lo = mid + 1;
 	}
@@ -1201,19 +1189,15 @@ assign_heap_slot(rb_objspace_t *objspace)
 	}
     }
     if (hi < heaps_used) {
-	MEMMOVE(&objspace->heap.sorted[hi+1], &objspace->heap.sorted[hi], struct sorted_heaps_slot, heaps_used - hi);
+	MEMMOVE(&objspace->heap.sorted[hi+1], &objspace->heap.sorted[hi], struct heaps_header*, heaps_used - hi);
     }
-    objspace->heap.sorted[hi].slot = slot;
-    objspace->heap.sorted[hi].start = p;
-    objspace->heap.sorted[hi].end = (p + objs);
+    objspace->heap.sorted[hi] = membase;
+    membase->start = p;
+    membase->end = (p + objs);
+    membase->base = heaps;
+    membase->bits = heaps->bits;
+    membase->limit = objs;
     heaps->membase = membase;
-    heaps->slot = p;
-    heaps->limit = objs;
-    assert(objspace->heap.free_bitmap != NULL);
-    heaps->bits = (uintptr_t *)objspace->heap.free_bitmap;
-    objspace->heap.free_bitmap = objspace->heap.free_bitmap->next;
-    HEAP_HEADER(membase)->base = heaps;
-    HEAP_HEADER(membase)->bits = heaps->bits;
     memset(heaps->bits, 0, HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
     objspace->heap.free_num += objs;
     pend = p + objs;
@@ -1514,7 +1498,7 @@ gc_mark_all(rb_objspace_t *objspace)
 
     init_mark_stack(objspace);
     for (i = 0; i < heaps_used; i++) {
-	p = objspace->heap.sorted[i].start; pend = objspace->heap.sorted[i].end;
+	p = objspace->heap.sorted[i]->start; pend = objspace->heap.sorted[i]->end;
 	while (p < pend) {
 	    if (MARKED_IN_BITMAP(GET_HEAP_BITMAP(p), p) &&
 		p->as.basic.flags) {
@@ -1545,26 +1529,27 @@ static inline int
 is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 {
     register RVALUE *p = RANY(ptr);
-    register struct sorted_heaps_slot *heap;
+    register struct heaps_header *heap;
     register size_t hi, lo, mid;
 
     if (p < lomem || p > himem) return FALSE;
     if ((VALUE)p % sizeof(RVALUE) != 0) return FALSE;
+    heap = GET_HEAP_HEADER(p);
 
     /* check if p looks like a pointer using bsearch*/
     lo = 0;
     hi = heaps_used;
     while (lo < hi) {
 	mid = (lo + hi) / 2;
-	heap = &objspace->heap.sorted[mid];
-	if (heap->start <= p) {
-	    if (p < heap->end)
-		return TRUE;
-	    lo = mid + 1;
-	}
-	else {
-	    hi = mid;
-	}
+        if (heap > objspace->heap.sorted[mid]) {
+            lo = mid + 1;
+        }
+        else if (heap < objspace->heap.sorted[mid]) {
+            hi = mid;
+        }
+        else {
+            return (p >= heap->start && p < heap->end) ? TRUE : FALSE;
+        }
     }
     return FALSE;
 }
@@ -2141,8 +2126,7 @@ finalize_list(rb_objspace_t *objspace, RVALUE *p)
             }
 	}
 	else {
-	    struct heaps_slot *slot = (struct heaps_slot *)(VALUE)RDATA(p)->dmark;
-	    slot->limit--;
+            GET_HEAP_HEADER(p)->limit--;
 	}
 	p = tmp;
     }
@@ -2167,21 +2151,19 @@ static void
 free_unused_heaps(rb_objspace_t *objspace)
 {
     size_t i, j;
-    RVALUE *last = 0;
+    struct heaps_header *last = 0;
 
     for (i = j = 1; j < heaps_used; i++) {
-	if (objspace->heap.sorted[i].slot->limit == 0) {
-            struct heaps_slot* h = objspace->heap.sorted[i].slot;
-            ((struct heaps_free_bitmap *)(h->bits))->next =
-                objspace->heap.free_bitmap;
-            objspace->heap.free_bitmap = (struct heaps_free_bitmap *)h->bits;
+	if (objspace->heap.sorted[i]->limit == 0) {
+            struct heaps_slot* h = objspace->heap.sorted[i]->base;
+            h->free_next = objspace->heap.reserve_slots;
+            objspace->heap.reserve_slots = h;
 	    if (!last) {
-                last = objspace->heap.sorted[i].slot->membase;
+                last = objspace->heap.sorted[i];
 	    }
 	    else {
-		aligned_free(objspace->heap.sorted[i].slot->membase);
+		aligned_free(objspace->heap.sorted[i]);
 	    }
-            free(objspace->heap.sorted[i].slot);
 	    heaps_used--;
 	}
 	else {
@@ -2205,8 +2187,7 @@ free_unused_heaps(rb_objspace_t *objspace)
 static void
 gc_clear_slot_bits(struct heaps_slot *slot)
 {
-    memset(GET_HEAP_BITMAP(slot->slot), 0,
-           HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
+    memset(slot->bits, 0, HEAP_BITMAP_LIMIT * sizeof(uintptr_t));
 }
 
 static void
@@ -2218,8 +2199,8 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
     int deferred;
     uintptr_t *bits;
 
-    p = sweep_slot->slot; pend = p + sweep_slot->limit;
-    bits = GET_HEAP_BITMAP(p);
+    p = sweep_slot->membase->start; pend = sweep_slot->membase->end;
+    bits = sweep_slot->bits;
     while (p < pend) {
         if ((!(MARKED_IN_BITMAP(bits, p))) && BUILTIN_TYPE(p) != T_ZOMBIE) {
             if (p->as.basic.flags) {
@@ -2249,15 +2230,15 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
         p++;
     }
     gc_clear_slot_bits(sweep_slot);
-    if (final_num + free_num == sweep_slot->limit &&
+    if (final_num + free_num == sweep_slot->membase->limit &&
         objspace->heap.free_num > objspace->heap.do_heap_free) {
         RVALUE *pp;
 
         for (pp = deferred_final_list; pp != final; pp = pp->as.free.next) {
-	    RDATA(pp)->dmark = (void (*)(void *))(VALUE)sweep_slot;
+	    RDATA(pp)->dmark = 0;
             pp->as.free.flags |= FL_SINGLETON; /* freeing page mark */
         }
-        sweep_slot->limit = final_num;
+        sweep_slot->membase->limit = final_num;
         unlink_heap_slot(objspace, sweep_slot);
     }
     else {
@@ -2826,7 +2807,7 @@ static VALUE
 objspace_each_objects(VALUE arg)
 {
     size_t i;
-    RVALUE *membase = 0;
+    struct heaps_header *membase = 0;
     RVALUE *pstart, *pend;
     rb_objspace_t *objspace = &rb_objspace;
     struct each_obj_args *args = (struct each_obj_args *)arg;
@@ -2834,16 +2815,16 @@ objspace_each_objects(VALUE arg)
 
     i = 0;
     while (i < heaps_used) {
-	while (0 < i && (uintptr_t)membase < (uintptr_t)objspace->heap.sorted[i-1].slot->membase)
+	while (0 < i && membase < objspace->heap.sorted[i-1])
 	    i--;
-	while (i < heaps_used && (uintptr_t)objspace->heap.sorted[i].slot->membase <= (uintptr_t)membase)
+	while (i < heaps_used && objspace->heap.sorted[i] <= membase)
 	    i++;
 	if (heaps_used <= i)
 	  break;
-	membase = objspace->heap.sorted[i].slot->membase;
+	membase = objspace->heap.sorted[i];
 
-	pstart = objspace->heap.sorted[i].slot->slot;
-	pend = pstart + objspace->heap.sorted[i].slot->limit;
+	pstart = membase->start;
+	pend = membase->end;
 
 	for (; pstart != pend; pstart++) {
 	    if (pstart->as.basic.flags) {
@@ -3277,7 +3258,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
     /* run data object's finalizers */
     for (i = 0; i < heaps_used; i++) {
-	p = objspace->heap.sorted[i].start; pend = objspace->heap.sorted[i].end;
+	p = objspace->heap.sorted[i]->start; pend = objspace->heap.sorted[i]->end;
 	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
 		DATA_PTR(p) && RANY(p)->as.data.dfree &&
@@ -3341,7 +3322,7 @@ is_dead_object(rb_objspace_t *objspace, VALUE ptr)
     if (!is_lazy_sweeping(objspace) || MARKED_IN_BITMAP(GET_HEAP_BITMAP(ptr), ptr))
 	return FALSE;
     while (slot) {
-	if ((VALUE)slot->slot <= ptr && ptr < (VALUE)(slot->slot + slot->limit))
+	if ((VALUE)slot->membase->start <= ptr && ptr < (VALUE)(slot->membase->end))
 	    return TRUE;
 	slot = slot->next;
     }
@@ -3526,7 +3507,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
     for (i = 0; i < heaps_used; i++) {
         RVALUE *p, *pend;
 
-        p = objspace->heap.sorted[i].start; pend = objspace->heap.sorted[i].end;
+        p = objspace->heap.sorted[i]->start; pend = objspace->heap.sorted[i]->end;
         for (;p < pend; p++) {
             if (p->as.basic.flags) {
                 counts[BUILTIN_TYPE(p)]++;
@@ -3535,7 +3516,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
                 freed++;
             }
         }
-        total += objspace->heap.sorted[i].slot->limit;
+        total += objspace->heap.sorted[i]->limit;
     }
 
     if (hash == Qnil) {
