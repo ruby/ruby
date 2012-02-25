@@ -202,7 +202,7 @@ module FileUtils
     fu_output_message "mkdir -p #{options[:mode] ? ('-m %03o ' % options[:mode]) : ''}#{list.join ' '}" if options[:verbose]
     return *list if options[:noop]
 
-    list.map {|path| path.sub(%r</\z>, '') }.each do |path|
+    list.map {|path| path.chomp(?/) }.each do |path|
       # optimize for the most common case
       begin
         fu_mkdir path, options[:mode]
@@ -239,7 +239,7 @@ module FileUtils
   OPT_TABLE['makedirs'] = [:mode, :noop, :verbose]
 
   def fu_mkdir(path, mode)   #:nodoc:
-    path = path.sub(%r</\z>, '')
+    path = path.chomp(?/)
     if mode
       Dir.mkdir path, mode
       File.chmod mode, path
@@ -267,7 +267,7 @@ module FileUtils
     return if options[:noop]
     list.each do |dir|
       begin
-        Dir.rmdir(dir = dir.sub(%r</\z>, ''))
+        Dir.rmdir(dir = dir.chomp(?/))
         if parents
           until (parent = File.dirname(dir)) == '.' or parent == dir
             Dir.rmdir(dir)
@@ -1397,7 +1397,7 @@ module FileUtils
 
     def remove_dir1
       platform_support {
-        Dir.rmdir path().sub(%r</\z>, '')
+        Dir.rmdir path().chomp(?/)
       }
     end
 
