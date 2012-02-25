@@ -38,7 +38,7 @@
 % cleanobjs << "$*.def" if deffile
 % rule_subst = CONFIG["RULE_SUBST"] || "%s"
 % transvpath = rule_subst.dup.sub!(/\{[^{}]+\}/, '$(TRANSVPATH)/') || "enc/trans/%s"
-% transvpath_prefix = (rule_subst.dup.sub!(/\{[^{}]+\}/, '{$(TRANSVPATH)}') || "") % ""
+% transvpath_prefix = rule_subst.dup.sub!(/\{[^{}]+\}/, '{$(TRANSVPATH)}') || ""
 % if File::ALT_SEPARATOR
 %   pathrep = proc {|path| path.gsub('/', File::ALT_SEPARATOR).gsub(/\$\(([@<?*]\w?|\w+)\)/, "$(\\1:/=\\#{File::ALT_SEPARATOR})")}
 % else
@@ -99,7 +99,7 @@ $(TRANSOBJS): ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.
 
 <%=transvpath % "#{e}.c"%>: <%= transvpath % "#{e}.trans"%>
 %     src = [*IO.read(File.join($srcdir, "trans", src)).scan(/^\s*require\s+[\'\"]([^\'\"]*)/).flatten.map{|c|c+".rb"}]
-<%=transvpath % "#{e}.c"%>: <%= src.map {|e| transvpath % "#{e}"}.join(" ")%> $(srcdir)/tool/transcode-tblgen.rb
+<%=transvpath % "#{e}.c"%>: <%= src.map {|s| transvpath % "#{s}"}.join(" ")%> $(srcdir)/tool/transcode-tblgen.rb
 %   end
 
 % end
@@ -150,8 +150,8 @@ clean:
 	$(Q)$(RM) enc/unicode/name2ctype.h
 	-$(Q)$(RMDIR) enc/unicode<%=@ignore_error%>
 % end
-% workdirs.reverse_each do|dir|
-	-$(Q)$(RMDIR) <%=pathrep[dir]%><%=@ignore_error%>
+% workdirs.reverse_each do|d|
+	-$(Q)$(RMDIR) <%=pathrep[d]%><%=@ignore_error%>
 % end
 
 clean-srcs:

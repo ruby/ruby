@@ -6,7 +6,6 @@ def main
   mode = nil
   ids1src = nil
   ids2src = nil
-  template = nil
   output = nil
 
   parser = @parser = OptionParser.new

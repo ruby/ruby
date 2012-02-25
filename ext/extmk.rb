@@ -190,7 +190,6 @@ def extmake(target)
 	# ignore
       ensure
 	rm_f "conftest*"
-	config = $0
 	$0 = $PROGRAM_NAME
       end
     end
@@ -424,7 +423,7 @@ end unless $extstatic
 ext_prefix = "#{$top_srcdir}/ext"
 exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
 withes, withouts = %w[--with --without].collect {|w|
-  if not (w = %w[-extensions -ext].collect {|o|arg_config(w+o)}).any?
+  if !(w = %w[-extensions -ext].collect {|o|arg_config(w+o)}).any?
     nil
   elsif (w = w.grep(String)).empty?
     proc {true}
@@ -617,20 +616,20 @@ if $configure_only and $command_output
     end
     mf.puts
     targets = %w[all install static install-so install-rb clean distclean realclean]
-    targets.each do |target|
-      mf.puts "#{target}: $(extensions:/.=/#{target})"
+    targets.each do |tgt|
+      mf.puts "#{tgt}: $(extensions:/.=/#{tgt})"
     end
     mf.puts
     mf.puts "all: #{rubies.join(' ')}"
     mf.puts "#{rubies.join(' ')}: $(extensions:/.=/all)"
-    rubies.each do |target|
-      mf.puts "#{target}:\n\t$(Q)$(MAKE) $(MFLAGS) $@"
+    rubies.each do |tgt|
+      mf.puts "#{tgt}:\n\t$(Q)$(MAKE) $(MFLAGS) $@"
     end
     mf.puts
-    exec = config_string("exec") {|s| s + " "}
-    targets.each do |target|
+    exec = config_string("exec") {|str| str + " "}
+    targets.each do |tgt|
       exts.each do |d|
-        mf.puts "#{d[0..-2]}#{target}:\n\t$(Q)cd $(@D) && #{exec}$(MAKE) $(MFLAGS) $(@F)"
+        mf.puts "#{d[0..-2]}#{tgt}:\n\t$(Q)cd $(@D) && #{exec}$(MAKE) $(MFLAGS) $(@F)"
       end
     end
   end
