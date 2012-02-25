@@ -1128,15 +1128,13 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
     else err = "unknown error";
     if (!NIL_P(mesg)) {
 	rb_encoding *le = rb_locale_encoding();
-	VALUE str = mesg;
+	VALUE str = StringValue(mesg);
+	rb_encoding *me = rb_enc_get(mesg);
 
-	StringValue(str);
 	mesg = rb_sprintf("%s - %.*s", err,
 			  (int)RSTRING_LEN(str), RSTRING_PTR(str));
-	if (le == rb_usascii_encoding()) {
-	    rb_encoding *me = rb_enc_get(mesg);
-	    if (le != me && rb_enc_asciicompat(me))
-		le = me;
+	if (le != me && rb_enc_asciicompat(me)) {
+	    le = me;
 	}/* else assume err is non ASCII string. */
 	OBJ_INFECT(mesg, str);
 	rb_enc_associate(mesg, le);

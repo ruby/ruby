@@ -387,7 +387,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 {
     struct dir_data *dp;
     rb_encoding  *fsenc;
-    VALUE dirname, opt;
+    VALUE dirname, opt, orig;
     static VALUE sym_enc;
 
     if (!sym_enc) {
@@ -405,7 +405,9 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     }
 
     GlobPathValue(dirname, FALSE);
+    orig = rb_str_dup_frozen(dirname);
     dirname = rb_str_encode_ospath(dirname);
+    dirname = rb_str_dup_frozen(dirname);
 
     TypedData_Get_Struct(dir, struct dir_data, &dir_data_type, dp);
     if (dp->dir) closedir(dp->dir);
@@ -419,10 +421,10 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 	    dp->dir = opendir(RSTRING_PTR(dirname));
 	}
 	if (dp->dir == NULL) {
-	    rb_sys_fail(RSTRING_PTR(dirname));
+	    rb_sys_fail_path(orig);
 	}
     }
-    dp->path = rb_str_dup_frozen(dirname);
+    dp->path = orig;
 
     return dir;
 }
