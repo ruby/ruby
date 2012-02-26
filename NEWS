@@ -13,6 +13,9 @@ with all sufficient information, see the ChangeLog file.
 
 === Language changes
 
+* alias
+  * Now optional comma between alias arguments is allowed.
+
 === Core classes updates (outstanding ones only)
 
 * Enumerable
