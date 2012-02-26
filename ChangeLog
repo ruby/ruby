@@ -1,3 +1,12 @@
+Sun Feb 26 11:26:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): call on special object instead of
+	  self.  since stabby lambda is a syntax, so it should not be
+	  affected by the context.  [ruby-core:42349][Bug #5966]
+
+	* insns.def (send): no special deal for FCALL.  self should be put
+	  on TOS instead.
+
 Sun Feb 26 05:35:43 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* error.c (report_bug): use buf and snprintf to avoid consuming stack.

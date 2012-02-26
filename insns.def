@@ -1012,7 +1012,7 @@ send
     ID id = op_id;
 
     /* get receiver */
-    recv = (flag & VM_CALL_FCALL_BIT) ? GET_SELF() : TOPN(num);
+    recv = TOPN(num);
     klass = CLASS_OF(recv);
     me = vm_method_search(id, klass, ic);
     CALL_METHOD(num, blockptr, flag, id, me, recv);

@@ -208,7 +208,7 @@ r_value(VALUE value)
   ADD_SEND_R((seq), (line), (id), (argc), (VALUE)Qfalse, (VALUE)INT2FIX(0))
 
 #define ADD_CALL_RECEIVER(seq, line) \
-  ADD_INSN((seq), (line), putnil)
+  ADD_INSN((seq), (line), putself)
 
 #define ADD_CALL(seq, line, id, argc) \
   ADD_SEND_R((seq), (line), (id), (argc), (VALUE)Qfalse, (VALUE)INT2FIX(VM_CALL_FCALL_BIT))
@@ -5098,7 +5098,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	/* compile same as lambda{...} */
 	VALUE block = NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, nd_line(node));
 	VALUE argc = INT2FIX(0);
-	ADD_CALL_RECEIVER(ret, nd_line(node));
+	ADD_INSN1(ret, nd_line(node), putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	ADD_CALL_WITH_BLOCK(ret, nd_line(node), ID2SYM(idLambda), argc, block);
 
 	if (poped) {
