@@ -63,4 +63,11 @@ class TestLambdaParameters < Test::Unit::TestCase
   def foo
     assert_equal(nil, ->(&b){ b }.call)
   end
+
+  def test_in_basic_object
+    bug5966 = '[ruby-core:42349]'
+    called = false
+    BasicObject.new.instance_eval {->() {called = true}.()}
+    assert_equal(true, called, bug5966)
+  end
 end
