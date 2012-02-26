@@ -1,3 +1,8 @@
+Sun Feb 26 23:29:49 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regparse.c (add_code_range_to_buf0): wrong condition of duplicated
+	  warnings.
+
 Sun Feb 26 11:26:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): call on special object instead of
