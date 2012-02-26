@@ -451,11 +451,10 @@ enumerator_map(VALUE obj)
         entry->proc = rb_block_proc();
         entry->type = T_PROC_MAP;
         rb_ary_push(e->procs, entry_obj);
+        return obj;
     } else {
-        rb_call_super(0, 0);
+        return rb_call_super(0, 0);
     }
-
-    return obj;
 }
 
 static VALUE
@@ -471,11 +470,10 @@ enumerator_select(VALUE obj)
         entry->proc = rb_block_proc();
         entry->type = T_PROC_SELECT;
         rb_ary_push(e->procs, entry_obj);
+        return obj;
     } else {
-        rb_call_super(0, 0);
+        return rb_call_super(0, 0);
     }
-
-    return obj;
 }
 
 /*
