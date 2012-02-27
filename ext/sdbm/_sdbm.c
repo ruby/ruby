@@ -672,8 +672,8 @@ fitpair(char *pag, int need)
 	register short *ino = (short *) pag;
 
 	off = ((n = GET_SHORT(ino,0)) > 0) ? GET_SHORT(ino,n) : PBLKSIZ;
-	free = off - (n + 1) * sizeof(short);
-	need += 2 * sizeof(short);
+	free = off - (n + 1) * (int)sizeof(short);
+	need += 2 * (int)sizeof(short);
 
 	debug(("free %d need %d\n", free, need));
 
