@@ -1,3 +1,9 @@
+Mon Feb 27 17:00:15 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* string.c (rb_str_crypt): Update rdoc and state that this
+	  function is system dependent.  Reviewed by nobu, thanks to
+	  @takai.
+
 Mon Feb 27 17:03:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (GetVpValueWithPrec): since methods
