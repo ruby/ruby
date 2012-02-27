@@ -3727,13 +3727,16 @@ block_param_def	: '|' opt_bv_decl '|'
 		;
 
 
-opt_bv_decl	: none
-		| ';' bv_decls
+opt_bv_decl	: opt_nl
+		    {
+		      $$ = 0;
+		    }
+		| opt_nl ';' bv_decls opt_nl
 		    {
 		    /*%%%*/
 			$$ = 0;
 		    /*%
-			$$ = $2;
+			$$ = $3;
 		    %*/
 		    }
 		;
@@ -3788,7 +3791,7 @@ lambda		:   {
 		    }
 		;
 
-f_larglist	: '(' f_args opt_bv_decl rparen
+f_larglist	: '(' f_args opt_bv_decl ')'
 		    {
 		    /*%%%*/
 			$$ = $2;

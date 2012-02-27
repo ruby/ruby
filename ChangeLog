@@ -1,3 +1,7 @@
+Mon Feb 27 23:46:09 2012  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (opt_bv_decl): allow newline at the end.  [ruby-dev:45292]
+
 Mon Feb 27 20:43:05 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_io_set_pos): add rdoc about textmode.
