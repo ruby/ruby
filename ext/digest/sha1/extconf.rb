@@ -21,4 +21,7 @@ have_header("sys/cdefs.h")
 
 $preload = %w[digest]
 
+if try_compile("", flag = " -Wno-deprecated-declarations")
+  $warnflags << flag
+end
 create_makefile("digest/sha1")

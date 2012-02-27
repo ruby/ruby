@@ -26,5 +26,8 @@ have_header("sys/cdefs.h")
 $preload = %w[digest]
 
 if have_type("uint64_t", "defs.h", $defs.join(' '))
+  if try_compile("", flag = " -Wno-deprecated-declarations")
+    $warnflags << flag
+  end
   create_makefile("digest/sha2")
 end

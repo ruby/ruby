@@ -146,6 +146,9 @@ have_struct_member("X509_ATTRIBUTE", "single", "openssl/x509.h")
 
 message "=== Checking done. ===\n"
 
+if try_compile("", flag = " -Wno-deprecated-declarations")
+  $warnflags << flag
+end
 create_header
 create_makefile("openssl")
 message "Done.\n"

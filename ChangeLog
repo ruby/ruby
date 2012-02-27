@@ -1,3 +1,8 @@
+Mon Feb 27 10:48:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/extconf.rb: suppress useless deprecation warnings
+	  from OpenSSL added by Apple.
+
 Sun Feb 26 23:29:49 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regparse.c (add_code_range_to_buf0): wrong condition of duplicated
