@@ -1,3 +1,8 @@
+Mon Feb 27 10:50:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c, process.c, time.c, ext: use rb_sys_fail_str instead of
+	  rb_sys_fail.
+
 Mon Feb 27 10:48:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/extconf.rb: suppress useless deprecation warnings

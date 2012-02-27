@@ -105,8 +105,8 @@ static VALUE rb_eIconvOutOfRange;
 static VALUE rb_eIconvBrokenLibrary;
 
 static ID rb_success, rb_failed;
-static VALUE iconv_fail _((VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env, const char *mesg));
-static VALUE iconv_fail_retry _((VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env, const char *mesg));
+static VALUE iconv_fail _((VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env, VALUE mesg));
+static VALUE iconv_fail_retry _((VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env, VALUE mesg));
 static VALUE iconv_failure_initialize _((VALUE error, VALUE mesg, VALUE success, VALUE failed));
 static VALUE iconv_failure_success _((VALUE self));
 static VALUE iconv_failure_failed _((VALUE self));
@@ -174,14 +174,23 @@ map_charset(VALUE *code)
     return StringValuePtr(*code);
 }
 
+NORETURN(static void rb_iconv_sys_fail_str(VALUE msg));
+static void
+rb_iconv_sys_fail_str(VALUE msg)
+{
+    if (errno == 0) {
+	rb_exc_raise(iconv_fail(rb_eIconvBrokenLibrary, Qnil, Qnil, NULL, msg));
+    }
+    rb_sys_fail_str(msg);
+}
+
+#define rb_sys_fail_str(s) rb_iconv_sys_fail_str(s)
+
 NORETURN(static void rb_iconv_sys_fail(const char *s));
 static void
 rb_iconv_sys_fail(const char *s)
 {
-    if (errno == 0) {
-	rb_exc_raise(iconv_fail(rb_eIconvBrokenLibrary, Qnil, Qnil, NULL, s));
-    }
-    rb_sys_fail(s);
+    rb_iconv_sys_fail_str(rb_str_new_cstr(s));
 }
 
 #define rb_sys_fail(s) rb_iconv_sys_fail(s)
@@ -237,16 +246,11 @@ iconv_create(VALUE to, VALUE from, struct rb_iconv_opt_t *opt, int *idx)
 	}
 	{
 	    const char *s = inval ? "invalid encoding " : "iconv";
-	    volatile VALUE msg = rb_str_new(0, strlen(s) + RSTRING_LEN(to) +
-					    RSTRING_LEN(from) + 8);
-
-	    sprintf(RSTRING_PTR(msg), "%s(\"%s\", \"%s\")",
-		    s, RSTRING_PTR(to), RSTRING_PTR(from));
-	    s = RSTRING_PTR(msg);
-	    rb_str_set_len(msg, strlen(s));
-	    if (!inval) rb_sys_fail(s);
+	    VALUE msg = rb_sprintf("%s(\"%s\", \"%s\")",
+				   s, RSTRING_PTR(to), RSTRING_PTR(from));
+	    if (!inval) rb_sys_fail_str(msg);
 	    rb_exc_raise(iconv_fail(rb_eIconvInvalidEncoding, Qnil,
-				    rb_ary_new3(2, to, from), NULL, s));
+				    rb_ary_new3(2, to, from), NULL, msg));
 	}
     }
 
@@ -363,12 +367,12 @@ iconv_failure_initialize(VALUE error, VALUE mesg, VALUE success, VALUE failed)
 }
 
 static VALUE
-iconv_fail(VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env, const char *mesg)
+iconv_fail(VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env, VALUE mesg)
 {
     VALUE args[3];
 
-    if (mesg && *mesg) {
-	args[0] = rb_str_new2(mesg);
+    if (!NIL_P(mesg)) {
+	args[0] = mesg;
     }
     else if (TYPE(failed) != T_STRING || RSTRING_LEN(failed) < FAILED_MAXLEN) {
 	args[0] = rb_inspect(failed);
@@ -390,7 +394,7 @@ iconv_fail(VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env, co
 }
 
 static VALUE
-iconv_fail_retry(VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env, const char *mesg)
+iconv_fail_retry(VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env, VALUE mesg)
 {
     error = iconv_fail(error, success, failed, env, mesg);
     if (!rb_block_given_p()) rb_exc_raise(error);
@@ -438,7 +442,7 @@ iconv_convert(iconv_t cd, VALUE str, long start, long length, int toidx, struct 
 	error = iconv_try(cd, &inptr, &inlen, &outptr, &outlen);
 	if (RTEST(error)) {
 	    unsigned int i;
-	    rescue = iconv_fail_retry(error, Qnil, Qnil, env, 0);
+	    rescue = iconv_fail_retry(error, Qnil, Qnil, env, Qnil);
 	    if (TYPE(rescue) == T_ARRAY) {
 		str = RARRAY_LEN(rescue) > 0 ? RARRAY_PTR(rescue)[0] : Qnil;
 	    }
@@ -469,12 +473,11 @@ iconv_convert(iconv_t cd, VALUE str, long start, long length, int toidx, struct 
     inlen = length;
 
     do {
-	char errmsg[50];
+	VALUE errmsg = Qnil;
 	const char *tmpstart = inptr;
 	outptr = buffer;
 	outlen = sizeof(buffer);
 
-	errmsg[0] = 0;
 	error = iconv_try(cd, &inptr, &inlen, &outptr, &outlen);
 
 	if (
@@ -511,7 +514,7 @@ iconv_convert(iconv_t cd, VALUE str, long start, long length, int toidx, struct 
 	}
 	else {
 	    /* Some iconv() have a bug, return *outlen out of range */
-	    sprintf(errmsg, "bug?(output length = %ld)", (long)(sizeof(buffer) - outlen));
+	    errmsg = rb_sprintf("bug?(output length = %ld)", (long)(sizeof(buffer) - outlen));
 	    error = rb_eIconvOutOfRange;
 	}
 

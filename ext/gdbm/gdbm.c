@@ -243,7 +243,7 @@ fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
         if (gdbm_errno == GDBM_FILE_OPEN_ERROR ||
             gdbm_errno == GDBM_CANT_BE_READER ||
             gdbm_errno == GDBM_CANT_BE_WRITER)
-            rb_sys_fail(RSTRING_PTR(file));
+            rb_sys_fail_str(file);
         else
             rb_raise(rb_eGDBMError, "%s", gdbm_strerror(gdbm_errno));
     }

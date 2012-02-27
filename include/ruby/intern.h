@@ -585,6 +585,7 @@ struct rb_exec_arg {
     const char *prog;
     VALUE options;
     VALUE redirect_fds;
+    VALUE progname;
 };
 int rb_proc_exec_n(int, VALUE*, const char*);
 int rb_proc_exec(const char*);

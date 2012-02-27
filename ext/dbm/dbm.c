@@ -206,7 +206,7 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 
     if (!dbm) {
 	if (mode == -1) return Qnil;
-	rb_sys_fail(RSTRING_PTR(file));
+	rb_sys_fail_str(file);
     }
 
     dbmp = ALLOC(struct dbmdata);

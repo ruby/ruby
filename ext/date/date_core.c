@@ -6587,7 +6587,7 @@ d_lite_hash(VALUE self)
 
 #include "date_tmx.h"
 static void set_tmx(VALUE, struct tmx *);
-static VALUE strftimev(const char *, VALUE,
+static VALUE strftimev(VALUE, const char *, VALUE,
 		       void (*)(VALUE, struct tmx *));
 
 /*
@@ -6604,7 +6604,7 @@ static VALUE strftimev(const char *, VALUE,
 static VALUE
 d_lite_to_s(VALUE self)
 {
-    return strftimev("%Y-%m-%d", self, set_tmx);
+    return strftimev(Qnil, "%Y-%m-%d", self, set_tmx);
 }
 
 #ifndef NDEBUG
@@ -6729,7 +6729,7 @@ size_t date_strftime(char *s, size_t maxsize, const char *format,
 
 #define SMALLBUF 100
 static size_t
-date_strftime_alloc(char **buf, const char *format,
+date_strftime_alloc(char **buf, VALUE formatv, const char *format,
 		    struct tmx *tmx)
 {
     size_t size, len, flen;
@@ -6756,6 +6756,7 @@ date_strftime_alloc(char **buf, const char *format,
 	if (len > 0) break;
 	xfree(*buf);
 	if (size >= 1024 * flen) {
+	    if (!NIL_P(formatv)) rb_sys_fail_str(formatv);
 	    rb_sys_fail(format);
 	    break;
 	}
@@ -6868,7 +6869,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
 
 	str = rb_str_new(0, 0);
 	while (p < pe) {
-	    len = date_strftime_alloc(&buf, p, &tmx);
+	    len = date_strftime_alloc(&buf, vfmt, p, &tmx);
 	    rb_str_cat(str, buf, len);
 	    p += strlen(p);
 	    if (buf != buffer) {
@@ -6883,7 +6884,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
 	return str;
     }
     else
-	len = date_strftime_alloc(&buf, fmt, &tmx);
+	len = date_strftime_alloc(&buf, vfmt, fmt, &tmx);
 
     str = rb_str_new(buf, len);
     if (buf != buffer) xfree(buf);
@@ -7077,7 +7078,7 @@ d_lite_strftime(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-strftimev(const char *fmt, VALUE self,
+strftimev(VALUE vfmt, const char *fmt, VALUE self,
 	  void (*func)(VALUE, struct tmx *))
 {
     char buffer[SMALLBUF], *buf = buffer;
@@ -7086,7 +7087,7 @@ strftimev(const char *fmt, VALUE self,
     VALUE str;
 
     (*func)(self, &tmx);
-    len = date_strftime_alloc(&buf, fmt, &tmx);
+    len = date_strftime_alloc(&buf, vfmt, fmt, &tmx);
     str = rb_usascii_str_new(buf, len);
     if (buf != buffer) xfree(buf);
     return str;
@@ -7105,7 +7106,7 @@ strftimev(const char *fmt, VALUE self,
 static VALUE
 d_lite_asctime(VALUE self)
 {
-    return strftimev("%a %b %e %H:%M:%S %Y", self, set_tmx);
+    return strftimev(Qnil, "%a %b %e %H:%M:%S %Y", self, set_tmx);
 }
 
 /*
@@ -7118,7 +7119,7 @@ d_lite_asctime(VALUE self)
 static VALUE
 d_lite_iso8601(VALUE self)
 {
-    return strftimev("%Y-%m-%d", self, set_tmx);
+    return strftimev(Qnil, "%Y-%m-%d", self, set_tmx);
 }
 
 /*
@@ -7130,7 +7131,7 @@ d_lite_iso8601(VALUE self)
 static VALUE
 d_lite_rfc3339(VALUE self)
 {
-    return strftimev("%Y-%m-%dT%H:%M:%S%:z", self, set_tmx);
+    return strftimev(Qnil, "%Y-%m-%dT%H:%M:%S%:z", self, set_tmx);
 }
 
 /*
@@ -7143,7 +7144,7 @@ d_lite_rfc3339(VALUE self)
 static VALUE
 d_lite_rfc2822(VALUE self)
 {
-    return strftimev("%a, %-d %b %Y %T %z", self, set_tmx);
+    return strftimev(Qnil, "%a, %-d %b %Y %T %z", self, set_tmx);
 }
 
 /*
@@ -7157,7 +7158,7 @@ static VALUE
 d_lite_httpdate(VALUE self)
 {
     volatile VALUE dup = dup_obj_with_new_offset(self, 0);
-    return strftimev("%a, %d %b %Y %T GMT", dup, set_tmx);
+    return strftimev(Qnil, "%a, %d %b %Y %T GMT", dup, set_tmx);
 }
 
 static VALUE
@@ -7204,7 +7205,7 @@ d_lite_jisx0301(VALUE self)
     get_d1(self);
     s = jisx0301_date(m_real_local_jd(dat),
 		      m_real_year(dat));
-    return strftimev(RSTRING_PTR(s), self, set_tmx);
+    return strftimev(s, RSTRING_PTR(s), self, set_tmx);
 }
 
 #ifndef NDEBUG
@@ -8294,7 +8295,7 @@ datetime_s_jisx0301(int argc, VALUE *argv, VALUE klass)
 static VALUE
 dt_lite_to_s(VALUE self)
 {
-    return strftimev("%Y-%m-%dT%H:%M:%S%:z", self, set_tmx);
+    return strftimev(Qnil, "%Y-%m-%dT%H:%M:%S%:z", self, set_tmx);
 }
 
 /*
@@ -8500,7 +8501,7 @@ iso8601_timediv(VALUE self, VALUE n)
 	rb_str_append(fmt, rb_f_sprintf(3, argv));
     }
     rb_str_append(fmt, rb_usascii_str_new2("%:z"));
-    return strftimev(RSTRING_PTR(fmt), self, set_tmx);
+    return strftimev(fmt, RSTRING_PTR(fmt), self, set_tmx);
 }
 
 /*
@@ -8526,7 +8527,7 @@ dt_lite_iso8601(int argc, VALUE *argv, VALUE self)
     if (argc < 1)
 	n = INT2FIX(0);
 
-    return f_add(strftimev("%Y-%m-%d", self, set_tmx),
+    return f_add(strftimev(Qnil, "%Y-%m-%d", self, set_tmx),
 		 iso8601_timediv(self, n));
 }
 
@@ -8574,7 +8575,7 @@ dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
 	get_d1(self);
 	s = jisx0301_date(m_real_local_jd(dat),
 			  m_real_year(dat));
-	return rb_str_append(strftimev(RSTRING_PTR(s), self, set_tmx),
+	return rb_str_append(strftimev(s, RSTRING_PTR(s), self, set_tmx),
 			     iso8601_timediv(self, n));
     }
 }

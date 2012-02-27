@@ -5454,13 +5454,13 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     switch (fmode & (FMODE_READABLE|FMODE_WRITABLE)) {
       case FMODE_READABLE|FMODE_WRITABLE:
         if (rb_pipe(arg.write_pair) < 0)
-            rb_sys_fail(cmd);
+            rb_sys_fail_str(prog);
         if (rb_pipe(arg.pair) < 0) {
             int e = errno;
             close(arg.write_pair[0]);
             close(arg.write_pair[1]);
             errno = e;
-            rb_sys_fail(cmd);
+            rb_sys_fail_str(prog);
         }
         if (eargp) {
             rb_exec_arg_addopt(eargp, INT2FIX(0), INT2FIX(arg.write_pair[0]));
@@ -5469,18 +5469,18 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
 	break;
       case FMODE_READABLE:
         if (rb_pipe(arg.pair) < 0)
-            rb_sys_fail(cmd);
+            rb_sys_fail_str(prog);
         if (eargp)
             rb_exec_arg_addopt(eargp, INT2FIX(1), INT2FIX(arg.pair[1]));
 	break;
       case FMODE_WRITABLE:
         if (rb_pipe(arg.pair) < 0)
-            rb_sys_fail(cmd);
+            rb_sys_fail_str(prog);
         if (eargp)
             rb_exec_arg_addopt(eargp, INT2FIX(0), INT2FIX(arg.pair[0]));
 	break;
       default:
-        rb_sys_fail(cmd);
+        rb_sys_fail_str(prog);
     }
     if (eargp) {
         rb_exec_arg_fixup(arg.execp);
@@ -5509,7 +5509,7 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
 	errno = e;
         if (errmsg[0])
             rb_sys_fail(errmsg);
-	rb_sys_fail(cmd);
+	rb_sys_fail_str(prog);
     }
     if ((fmode & FMODE_READABLE) && (fmode & FMODE_WRITABLE)) {
         close(arg.pair[1]);
@@ -5542,13 +5542,13 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     switch (fmode & (FMODE_READABLE|FMODE_WRITABLE)) {
       case FMODE_READABLE|FMODE_WRITABLE:
         if (rb_pipe(write_pair) < 0)
-            rb_sys_fail(cmd);
+            rb_sys_fail_str(prog);
         if (rb_pipe(pair) < 0) {
             int e = errno;
             close(write_pair[0]);
             close(write_pair[1]);
             errno = e;
-            rb_sys_fail(cmd);
+            rb_sys_fail_str(prog);
         }
         if (eargp) {
             rb_exec_arg_addopt(eargp, INT2FIX(0), INT2FIX(write_pair[0]));
@@ -5557,18 +5557,18 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
 	break;
       case FMODE_READABLE:
         if (rb_pipe(pair) < 0)
-            rb_sys_fail(cmd);
+            rb_sys_fail_str(prog);
         if (eargp)
             rb_exec_arg_addopt(eargp, INT2FIX(1), INT2FIX(pair[1]));
 	break;
       case FMODE_WRITABLE:
         if (rb_pipe(pair) < 0)
-            rb_sys_fail(cmd);
+            rb_sys_fail_str(prog);
         if (eargp)
             rb_exec_arg_addopt(eargp, INT2FIX(0), INT2FIX(pair[0]));
 	break;
       default:
-        rb_sys_fail(cmd);
+        rb_sys_fail_str(prog);
     }
     if (eargp) {
 	rb_exec_arg_fixup(eargp);
@@ -5597,7 +5597,7 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
 		    close(write_pair[1]);
 		}
 		errno = e;
-		rb_sys_fail(cmd);
+		rb_sys_fail_str(prog);
 	    }
 	    break;
 	}
@@ -7967,7 +7967,7 @@ do_io_advise(rb_io_t *fptr, VALUE advice, off_t offset, off_t len)
     if (rv) {
 	/* posix_fadvise(2) doesn't set errno. On success it returns 0; otherwise
 	   it returns the error code. */
-	rb_syserr_fail(rv, RSTRING_PTR(fptr->pathv));
+	rb_syserr_fail_str(rv, fptr->pathv);
     }
 
     return Qnil;

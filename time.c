@@ -4290,7 +4290,7 @@ time_to_a(VALUE time)
 
 #define SMALLBUF 100
 static size_t
-rb_strftime_alloc(char **buf, const char *format, rb_encoding *enc,
+rb_strftime_alloc(char **buf, VALUE formatv, const char *format, rb_encoding *enc,
                   struct vtm *vtm, wideval_t timew, int gmt)
 {
     size_t size, len, flen;
@@ -4328,6 +4328,7 @@ rb_strftime_alloc(char **buf, const char *format, rb_encoding *enc,
 	if (len > 0) break;
 	xfree(*buf);
 	if (size >= 1024 * flen) {
+	    if (!NIL_P(formatv)) rb_sys_fail_str(formatv);
 	    rb_sys_fail(format);
 	    break;
 	}
@@ -4345,7 +4346,7 @@ strftimev(const char *fmt, VALUE time, rb_encoding *enc)
 
     GetTimeval(time, tobj);
     MAKE_TM(time, tobj);
-    len = rb_strftime_alloc(&buf, fmt, enc, &tobj->vtm, tobj->timew, TIME_UTC_P(tobj));
+    len = rb_strftime_alloc(&buf, Qnil, fmt, enc, &tobj->vtm, tobj->timew, TIME_UTC_P(tobj));
     str = rb_enc_str_new(buf, len, enc);
     if (buf != buffer) xfree(buf);
     return str;
@@ -4563,7 +4564,8 @@ time_strftime(VALUE time, VALUE format)
 
 	str = rb_str_new(0, 0);
 	while (p < pe) {
-	    len = rb_strftime_alloc(&buf, p, enc, &tobj->vtm, tobj->timew, TIME_UTC_P(tobj));
+	    len = rb_strftime_alloc(&buf, format, p, enc,
+				    &tobj->vtm, tobj->timew, TIME_UTC_P(tobj));
 	    rb_str_cat(str, buf, len);
 	    p += strlen(p);
 	    if (buf != buffer) {
@@ -4576,7 +4578,7 @@ time_strftime(VALUE time, VALUE format)
 	return str;
     }
     else {
-	len = rb_strftime_alloc(&buf, RSTRING_PTR(format), enc,
+	len = rb_strftime_alloc(&buf, format, RSTRING_PTR(format), enc,
 				&tobj->vtm, tobj->timew, TIME_UTC_P(tobj));
     }
     str = rb_enc_str_new(buf, len, enc);

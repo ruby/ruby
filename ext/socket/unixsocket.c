@@ -62,7 +62,7 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
 
     if (status < 0) {
 	close(fd);
-	rb_sys_fail(sockaddr.sun_path);
+	rb_sys_fail_str(path);
     }
 
     if (server) {
