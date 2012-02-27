@@ -210,7 +210,7 @@ again:
 	if (prec < 0) goto unable_to_coerce_without_prec;
 	if (prec > DBL_DIG+1)goto SomeOneMayDoIt;
 	v = rb_funcall(v, id_to_r, 0);
-	/* fall through */
+	goto again;
       case T_RATIONAL:
 	if (prec < 0) goto unable_to_coerce_without_prec;
 

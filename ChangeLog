@@ -1,3 +1,9 @@
+Mon Feb 27 17:25:40 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (GetVpValueWithPrec): since methods
+	  can be overridden, so should not make an assumption on the type
+	  of results.  [ruby-core:42969][Bug #6093]
+
 Mon Feb 27 02:28:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regparse.c (add_code_range_to_buf0): wrong condition of duplicated
