@@ -1,3 +1,8 @@
+Mon Feb 27 10:54:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (try_cppflags, try_cflags, try_ldflags): replace the
+	  target flags if the given flag is accepted.
+
 Mon Feb 27 10:53:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rubygems/test_gem_specification.rb (test_self_from_yaml_syck_default_key_bug):
