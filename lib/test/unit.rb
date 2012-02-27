@@ -626,6 +626,7 @@ module Test
         e = case e
             when MiniTest::Skip then
               @skips += 1
+              return "." if /no message given\z/ =~ e.message
               "Skipped:\n#{meth}(#{klass}) [#{location e}]:\n#{e.message}\n"
             when MiniTest::Assertion then
               @failures += 1

@@ -1,3 +1,8 @@
+Mon Feb 27 10:53:12 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner#puke): skips with no
+	  messages should be trivial.
+
 Mon Feb 27 10:50:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c, process.c, time.c, ext: use rb_sys_fail_str instead of
