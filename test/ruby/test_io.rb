@@ -2194,13 +2194,13 @@ End
 
   def test_setpos
     mkcdtmpdir {
-      File.open("tmp.txt", "w") {|f|
+      File.open("tmp.txt", "wb") {|f|
         f.puts "a"
         f.puts "bc"
         f.puts "def"
       }
       pos1 = pos2 = pos3 = nil
-      File.open("tmp.txt") {|f|
+      File.open("tmp.txt", "rb") {|f|
         assert_equal("a\n", f.gets)
         pos1 = f.pos
         assert_equal("bc\n", f.gets)
@@ -2209,22 +2209,22 @@ End
         pos3 = f.pos
         assert_equal(nil, f.gets)
       }
-      File.open("tmp.txt") {|f|
+      File.open("tmp.txt", "rb") {|f|
         f.pos = pos1
         assert_equal("bc\n", f.gets)
         assert_equal("def\n", f.gets)
         assert_equal(nil, f.gets)
       }
-      File.open("tmp.txt") {|f|
+      File.open("tmp.txt", "rb") {|f|
         f.pos = pos2
         assert_equal("def\n", f.gets)
         assert_equal(nil, f.gets)
       }
-      File.open("tmp.txt") {|f|
+      File.open("tmp.txt", "rb") {|f|
         f.pos = pos3
         assert_equal(nil, f.gets)
       }
-      File.open("tmp.txt") {|f|
+      File.open("tmp.txt", "rb") {|f|
         f.pos = File.size("tmp.txt")
         s = "not empty string        "
         assert_equal("", f.read(0,s))
