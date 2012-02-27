@@ -6777,8 +6777,8 @@ rb_str_oct(VALUE str)
  *  standard library function <code>crypt(3)</code> with the given
  *  salt string.  While the format and the result are system and
  *  implementation dependent, using a salt matching the regular
- *  expression <code>^[a-zA-Z0-9./]{2}</code> should be safe and valid
- *  on any platform, in which only the first two characters are
+ *  expression <code>\A[a-zA-Z0-9./]{2}</code> should be valid and
+ *  safe on any platform, in which only the first two characters are
  *  significant.
  *
  *  This method is for use in system specific scripts, so if you want
