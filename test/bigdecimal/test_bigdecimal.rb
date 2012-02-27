@@ -1,4 +1,5 @@
 require_relative "testbase"
+require_relative "../ruby/envutil"
 
 require 'thread'
 
@@ -1302,5 +1303,11 @@ class TestBigDecimal < Test::Unit::TestCase
     y = x.dup
     assert_equal(1, y)
     assert_kind_of(c, y)
+  end
+
+  def test_to_d
+    bug6093 = '[ruby-core:42969]'
+    code = "exit(BigDecimal.new('10.0') == 10.0.to_d)"
+    assert_ruby_status(%w[-rbigdecimal -rbigdecimal/util -rmathn -], code, bug6093)
   end
 end
