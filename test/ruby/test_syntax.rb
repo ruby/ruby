@@ -52,6 +52,16 @@ class TestSyntax < Test::Unit::TestCase
     f.close!
   end
 
+  def test_newline_in_block_parameters
+    bug = '[ruby-dev:45292]'
+    ["", "a", "a, b"].product(["", ";x", [";", "x"]]) do |params|
+      params = ["|", *params, "|"].join("\n")
+      assert_nothing_raised(SyntaxError, NameError, "#{bug} #{params.inspect}") do
+        eval("1.times{#{params}}")
+      end
+    end
+  end
+
   private
 
   def make_tmpsrc(f, src)
