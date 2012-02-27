@@ -129,7 +129,6 @@ end
   end
 
   def test_self_from_yaml_syck_default_key_bug
-    skip 'syck default_key bug is only for ruby 1.8' unless RUBY_VERSION < '1.9'
     # This is equivalent to (and totally valid) psych 1.0 output and
     # causes parse errors on syck.
     yaml = <<-YAML
@@ -161,7 +160,7 @@ bindir:
     end
 
     refute_match %r%DefaultKey%, new_spec.to_ruby
-  end
+  end if RUBY_VERSION < '1.9'
 
   def test_self_load
     full_path = @a2.spec_file
