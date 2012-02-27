@@ -1437,6 +1437,8 @@ rb_io_seek_m(int argc, VALUE *argv, VALUE io)
  *     ios.pos = integer    -> integer
  *
  *  Seeks to the given position (in bytes) in <em>ios</em>.
+ *  It is not guranteed that seeking to the right position when <em>ios</em>
+ *  is textmode.
  *
  *     f = File.new("testfile")
  *     f.pos = 17
