@@ -1,3 +1,8 @@
+Tue Feb 28 11:56:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (debugflags): check if -ggdb is accepted.
+	  [ruby-core:42875][Bug #6080]
+
 Mon Feb 27 17:25:40 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (GetVpValueWithPrec): since methods
