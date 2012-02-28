@@ -1984,7 +1984,7 @@ Init_Complex(void)
     rb_define_method(rb_cFloat, "phase", float_arg, 0);
 
     /*
-     * (0+1i)
+     * The imaginary unit.
      */
     rb_define_const(rb_cComplex, "I",
 		    f_complex_new_bang2(rb_cComplex, ZERO, ONE));
