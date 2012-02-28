@@ -7,15 +7,6 @@ Tue Feb 28 14:15:29 2012  Eric Hodel  <drbrain@segment7.net>
 	* lib/net/smtp.rb:  ditto
 	* lib/net/telnet.rb:  ditto
 
-Tue Feb 28 14:06:36 2012  Eric Hodel  <drbrain@segment7.net>
-
-	* lib/net/protocol.rb: Add OpenTimeout subclass of Timeout::Error
-	* lib/net/pop.rb:  Modernize Timeout usage.  Patch by Eric Wong.
-	  Use Net::OpenTimeout instead of Timeout::Error.  [Bug #5765]
-	* lib/net/http.rb:  ditto
-	* lib/net/smtp.rb:  ditto
-	* lib/net/telnet.rb:  ditto
-
 Tue Feb 28 13:51:12 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http.rb:  Retry HTTP requests for additional network errors.
