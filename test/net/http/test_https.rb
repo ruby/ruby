@@ -119,7 +119,7 @@ class TestNetHTTPS < Test::Unit::TestCase
       conn.open_timeout = 0.01
 
       th = Thread.new do
-        assert_raise(Net::HTTP::OpenTimeout) {
+        assert_raise(Net::OpenTimeout) {
           conn.get('/')
         }
       end

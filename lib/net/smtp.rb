@@ -546,7 +546,9 @@ module Net
         check_auth_method(authtype || DEFAULT_AUTH_TYPE)
         check_auth_args user, secret
       end
-      s = timeout(@open_timeout) { tcp_socket(@address, @port) }
+      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) do
+        tcp_socket(@address, @port)
+      end
       logging "Connection opened: #{@address}:#{@port}"
       @socket = new_internet_message_io(tls? ? tlsconnect(s) : s)
       check_response critical { recv_response() }

@@ -360,9 +360,6 @@ module Net   #:nodoc:
   #
   class HTTP < Protocol
 
-    class OpenTimeout < Timeout::Error
-    end
-
     # :stopdoc:
     Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
@@ -791,7 +788,7 @@ module Net   #:nodoc:
 
     def connect
       D "opening connection to #{conn_address()}..."
-      s = timeout(@open_timeout, OpenTimeout) {
+      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) {
         TCPSocket.open(conn_address(), conn_port())
       }
       D "opened"
@@ -829,7 +826,7 @@ module Net   #:nodoc:
           end
           # Server Name Indication (SNI) RFC 3546
           s.hostname = @address if s.respond_to? :hostname=
-          timeout(@open_timeout, OpenTimeout) { s.connect }
+          Timeout.timeout(@open_timeout, Net::OpenTimeout) { s.connect }
           if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
             s.post_connection_check(@address)
           end
@@ -1363,7 +1360,7 @@ module Net   #:nodoc:
       rescue IOError, EOFError,
              Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPIPE,
              OpenSSL::SSL::SSLError, Timeout::Error => exception
-        raise if OpenTimeout === exception
+        raise if Net::OpenTimeout === exception
 
         if count == 0 && IDEMPOTENT_METHODS_.include?(req.method)
           count += 1

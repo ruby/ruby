@@ -44,6 +44,7 @@ module Net # :nodoc:
   class ProtoCommandError      < ProtocolError; end
   class ProtoRetriableError    < ProtocolError; end
   ProtocRetryError = ProtoRetriableError
+  class OpenTimeout            < Timeout::Error; end
 
 
   class BufferedIO   #:nodoc: internal use only

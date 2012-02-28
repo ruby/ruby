@@ -9,8 +9,7 @@
 # For documentation, see Net::Telnet.
 #
 
-require "socket"
-require "timeout"
+require "net/protocol"
 require "English"
 
 module Net
@@ -347,12 +346,12 @@ module Net
           if @options["Timeout"] == false
             @sock = TCPSocket.open(@options["Host"], @options["Port"])
           else
-            timeout(@options["Timeout"]) do
+            Timeout.timeout(@options["Timeout"], Net::OpenTimeout) do
               @sock = TCPSocket.open(@options["Host"], @options["Port"])
             end
           end
-        rescue TimeoutError
-          raise TimeoutError, "timed out while opening a connection to the host"
+        rescue Net::OpenTimeout
+          raise Net::OpenTimeout, "timed out while opening a connection to the host"
         rescue
           @log.write($ERROR_INFO.to_s + "\n") if @options.has_key?("Output_log")
           @dumplog.log_dump('#', $ERROR_INFO.to_s + "\n") if @options.has_key?("Dump_log")
@@ -508,7 +507,7 @@ module Net
     #          into a regular expression.  Used only if Match and
     #          Prompt are not specified.
     # Timeout:: the number of seconds to wait for data from the host
-    #           before raising a TimeoutError.  If set to false,
+    #           before raising a Timeout::Error.  If set to false,
     #           no timeout will occur.  If not specified, the
     #           Timeout option value specified when this instance
     #           was created will be used, or, failing that, the

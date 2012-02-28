@@ -542,7 +542,9 @@ module Net
 
     # internal method for Net::POP3.start
     def do_start(account, password) # :nodoc:
-      s = timeout(@open_timeout) { TCPSocket.open(@address, port) }
+      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) do
+        TCPSocket.open(@address, port)
+      end
       if use_ssl?
         raise 'openssl library not installed' unless defined?(OpenSSL)
         context = OpenSSL::SSL::SSLContext.new
