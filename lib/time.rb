@@ -620,20 +620,12 @@ class Time
   # You must require 'time' to use this method.
   #
   def xmlschema(fraction_digits=0)
-    sprintf('%0*d-%02d-%02dT%02d:%02d:%02d',
-      year < 0 ? 5 : 4, year, mon, day, hour, min, sec) +
-    if fraction_digits <= 0
-      ''
-    else
-      '.' + sprintf('%0*d', fraction_digits, (subsec * 10**fraction_digits).floor)
-    end +
-    if utc?
-      'Z'
-    else
-      off = utc_offset
-      sign = off < 0 ? '-' : '+'
-      sprintf('%s%02d:%02d', sign, *(off.abs / 60).divmod(60))
+    fraction_digits = fraction_digits.to_i
+    s = strftime("%FT%T")
+    if fraction_digits > 0
+      s << strftime(".%#{fraction_digits}N")
     end
+    s << (utc? ? 'Z' : strftime("%:z"))
   end
   alias iso8601 xmlschema
 end

@@ -154,22 +154,28 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
   end
 
   def test_encode_xmlschema
+    bug6100 = '[ruby-core:42997]'
+
     t = Time.utc(2001, 4, 17, 19, 23, 17, 300000)
     assert_equal("2001-04-17T19:23:17Z", t.xmlschema)
     assert_equal("2001-04-17T19:23:17.3Z", t.xmlschema(1))
     assert_equal("2001-04-17T19:23:17.300000Z", t.xmlschema(6))
     assert_equal("2001-04-17T19:23:17.3000000Z", t.xmlschema(7))
+    assert_equal("2001-04-17T19:23:17.3Z", t.xmlschema(1.9), bug6100)
 
     t = Time.utc(2001, 4, 17, 19, 23, 17, 123456)
     assert_equal("2001-04-17T19:23:17.1234560Z", t.xmlschema(7))
     assert_equal("2001-04-17T19:23:17.123456Z", t.xmlschema(6))
     assert_equal("2001-04-17T19:23:17.12345Z", t.xmlschema(5))
     assert_equal("2001-04-17T19:23:17.1Z", t.xmlschema(1))
+    assert_equal("2001-04-17T19:23:17.1Z", t.xmlschema(1.9), bug6100)
 
     t = Time.at(2.quo(3)).getlocal("+09:00")
     assert_equal("1970-01-01T09:00:00.666+09:00", t.xmlschema(3))
     assert_equal("1970-01-01T09:00:00.6666666666+09:00", t.xmlschema(10))
     assert_equal("1970-01-01T09:00:00.66666666666666666666+09:00", t.xmlschema(20))
+    assert_equal("1970-01-01T09:00:00.6+09:00", t.xmlschema(1.1), bug6100)
+    assert_equal("1970-01-01T09:00:00.666+09:00", t.xmlschema(3.2), bug6100)
 
     t = Time.at(123456789.quo(9999999999)).getlocal("+09:00")
     assert_equal("1970-01-01T09:00:00.012+09:00", t.xmlschema(3))
@@ -177,6 +183,7 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal("1970-01-01T09:00:00.0123456789+09:00", t.xmlschema(10))
     assert_equal("1970-01-01T09:00:00.0123456789012345678+09:00", t.xmlschema(19))
     assert_equal("1970-01-01T09:00:00.01234567890123456789+09:00", t.xmlschema(20))
+    assert_equal("1970-01-01T09:00:00.012+09:00", t.xmlschema(3.8), bug6100)
 
     t = Time.utc(1)
     assert_equal("0001-01-01T00:00:00Z", t.xmlschema)
