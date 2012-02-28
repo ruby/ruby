@@ -1,4 +1,7 @@
-Tue Feb 28 18:33:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Feb 28 18:47:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_binwrite, rb_io_syswrite): use shared frozen source
+	  strings.
 
 	* io.c (io_fread, io_getpartial, rb_io_sysread): set buffer size
 	  after check if readable, which can cause thread switch.

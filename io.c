@@ -1243,6 +1243,8 @@ io_write(VALUE io, VALUE str, int nosync)
     io = tmp;
     if (RSTRING_LEN(str) == 0) return INT2FIX(0);
 
+    str = rb_str_new_frozen(str);
+
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
 
@@ -4218,6 +4220,8 @@ rb_io_syswrite(VALUE io, VALUE str)
     io = GetWriteIO(io);
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
+
+    str = rb_str_new_frozen(str);
 
     if (fptr->wbuf.len) {
 	rb_warn("syswrite for buffered IO");
