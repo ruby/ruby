@@ -121,7 +121,7 @@ module Psych
       t.binmode
       t.write string
       t.close
-      File.open(t.path) { |f|
+      File.open(t.path, 'r:bom|utf-8') { |f|
         @parser.parse f
       }
       t.close(true)

@@ -1,3 +1,9 @@
+Tue Feb 28 10:28:51 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: default open YAML files with utf8 external
+	  encoding. [ruby-core:42967]
+	* test/psych/test_tainted.rb: ditto
+
 Mon Feb 27 23:46:09 2012  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (opt_bv_decl): allow newline at the end.  [ruby-dev:45292]

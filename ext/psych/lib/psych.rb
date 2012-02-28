@@ -156,7 +156,7 @@ module Psych
   #
   # Raises a Psych::SyntaxError when a YAML syntax error is detected.
   def self.parse_file filename
-    File.open filename do |f|
+    File.open filename, 'r:bom|utf-8' do |f|
       parse f, filename
     end
   end
@@ -264,7 +264,7 @@ module Psych
   # Load the document contained in +filename+.  Returns the yaml contained in
   # +filename+ as a ruby object
   def self.load_file filename
-    File.open(filename) { |f| self.load f, filename }
+    File.open(filename, 'r:bom|utf-8') { |f| self.load f, filename }
   end
 
   # :stopdoc:
