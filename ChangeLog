@@ -1,3 +1,8 @@
+Tue Feb 28 11:44:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (debugflags): check if -ggdb is accepted.
+	  [ruby-core:42875][Bug #6080]
+
 Tue Feb 28 10:28:51 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: default open YAML files with utf8 external
