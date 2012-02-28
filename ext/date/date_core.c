@@ -1,5 +1,5 @@
 /*
-  date_core.c: Coded by Tadayoshi Funaba 2010, 2011
+  date_core.c: Coded by Tadayoshi Funaba 2010-2012
 */
 
 #include "ruby.h"
@@ -8487,6 +8487,7 @@ iso8601_timediv(VALUE self, VALUE n)
 {
     VALUE fmt;
 
+    n = to_integer(n);
     fmt = rb_usascii_str_new2("T%H:%M:%S");
     if (f_gt_p(n, INT2FIX(0))) {
 	VALUE argv[3];

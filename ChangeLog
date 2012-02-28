@@ -1,3 +1,7 @@
+Tue Feb 28 20:27:25 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: [ruby-core:42998]
+
 Tue Feb 28 18:47:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_binwrite, rb_io_syswrite): use shared frozen source
