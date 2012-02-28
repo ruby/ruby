@@ -195,13 +195,13 @@ module TestNetHTTP_version_1_1_methods
   def test_timeout_during_HTTP_session
     bug4246 = "expected the HTTP session to have timed out but have not. c.f. [ruby-core:34203]"
 
-    # listen for connections... but deliberately do not complete SSL handshake
+    # listen for connections... but deliberately do not read
     TCPServer.open('localhost', 0) {|server|
       port = server.addr[1]
 
       conn = Net::HTTP.new('localhost', port)
-      conn.read_timeout = 1
-      conn.open_timeout = 1
+      conn.read_timeout = 0.01
+      conn.open_timeout = 0.01
 
       th = Thread.new do
         assert_raise(Timeout::Error) {
@@ -598,21 +598,19 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
       assert_kind_of Net::HTTPResponse, res
       assert_kind_of String, res.body
       sleep 1.5
-      assert_nothing_raised {
-        res = http.get('/')
-      }
+      res = http.get('/')
       assert_kind_of Net::HTTPResponse, res
       assert_kind_of String, res.body
     }
   end
 
-  def test_keep_alive_EOF
+  def test_keep_alive_server_close
     def @server.run(sock)
       sock.close
     end
 
     start {|http|
-      assert_raises(EOFError,Errno::ECONNRESET) {
+      assert_raises(EOFError, Errno::ECONNRESET, IOError) {
         res = http.get('/')
       }
     }

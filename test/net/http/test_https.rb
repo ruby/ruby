@@ -115,11 +115,11 @@ class TestNetHTTPS < Test::Unit::TestCase
 
       conn = Net::HTTP.new('localhost', port)
       conn.use_ssl = true
-      conn.read_timeout = 1
-      conn.open_timeout = 1
+      conn.read_timeout = 0.01
+      conn.open_timeout = 0.01
 
       th = Thread.new do
-        assert_raise(Timeout::Error) {
+        assert_raise(Net::HTTP::OpenTimeout) {
           conn.get('/')
         }
       end

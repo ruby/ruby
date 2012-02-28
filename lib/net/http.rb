@@ -360,6 +360,9 @@ module Net   #:nodoc:
   #
   class HTTP < Protocol
 
+    class OpenTimeout < Timeout::Error
+    end
+
     # :stopdoc:
     Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
@@ -788,7 +791,9 @@ module Net   #:nodoc:
 
     def connect
       D "opening connection to #{conn_address()}..."
-      s = timeout(@open_timeout) { TCPSocket.open(conn_address(), conn_port()) }
+      s = timeout(@open_timeout, OpenTimeout) {
+        TCPSocket.open(conn_address(), conn_port())
+      }
       D "opened"
       if use_ssl?
         ssl_parameters = Hash.new
@@ -824,7 +829,7 @@ module Net   #:nodoc:
           end
           # Server Name Indication (SNI) RFC 3546
           s.hostname = @address if s.respond_to? :hostname=
-          timeout(@open_timeout) { s.connect }
+          timeout(@open_timeout, OpenTimeout) { s.connect }
           if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
             s.post_connection_check(@address)
           end
@@ -1355,9 +1360,11 @@ module Net   #:nodoc:
           }
           res
         }
-        end_transport req, res
-        res
-      rescue EOFError, Errno::ECONNRESET => exception
+      rescue IOError, EOFError,
+             Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPIPE,
+             OpenSSL::SSL::SSLError, Timeout::Error => exception
+        raise if OpenTimeout === exception
+
         if count == 0 && IDEMPOTENT_METHODS_.include?(req.method)
           count += 1
           @socket.close if @socket and not @socket.closed?
@@ -1367,11 +1374,14 @@ module Net   #:nodoc:
         D "Conn close because of error #{exception}"
         @socket.close if @socket and not @socket.closed?
         raise
-      rescue => exception
-        D "Conn close because of error #{exception}"
-        @socket.close if @socket and not @socket.closed?
-        raise exception
       end
+
+      end_transport req, res
+      res
+    rescue => exception
+      D "Conn close because of error #{exception}"
+      @socket.close if @socket and not @socket.closed?
+      raise exception
     end
 
     def begin_transport(req)
