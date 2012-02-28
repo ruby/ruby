@@ -5144,8 +5144,9 @@ rb_path_check(const char *path)
     return 1;
 }
 
-static int
-file_load_ok(const char *path)
+#ifndef _WIN32
+int
+rb_file_load_ok(const char *path)
 {
     int ret = 1;
     int fd = rb_cloexec_open(path, O_RDONLY, 0);
@@ -5162,12 +5163,7 @@ file_load_ok(const char *path)
     (void)close(fd);
     return ret;
 }
-
-int
-rb_file_load_ok(const char *path)
-{
-    return file_load_ok(path);
-}
+#endif
 
 static int
 is_explicit_relative(const char *path)
@@ -5219,7 +5215,7 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
 	fnlen = RSTRING_LEN(fname);
 	for (i=0; ext[i]; i++) {
 	    rb_str_cat2(fname, ext[i]);
-	    if (file_load_ok(RSTRING_PTR(fname))) {
+	    if (rb_file_load_ok(RSTRING_PTR(fname))) {
 		*filep = copy_path_class(fname, *filep);
 		return (int)(i+1);
 	    }
@@ -5247,7 +5243,7 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
 	    RB_GC_GUARD(str) = rb_get_path_check(str, safe_level);
 	    if (RSTRING_LEN(str) == 0) continue;
 	    file_expand_path(fname, str, 0, tmp);
-	    if (file_load_ok(RSTRING_PTR(tmp))) {
+	    if (rb_file_load_ok(RSTRING_PTR(tmp))) {
 		*filep = copy_path_class(tmp, *filep);
 		return (int)(j+1);
 	    }
@@ -5286,7 +5282,7 @@ rb_find_file_safe(VALUE path, int safe_level)
 	if (safe_level >= 1 && !fpath_check(path)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
 	}
-	if (!file_load_ok(f)) return 0;
+	if (!rb_file_load_ok(f)) return 0;
 	if (!expanded)
 	    path = copy_path_class(file_expand_path_1(path), path);
 	return path;
@@ -5307,7 +5303,7 @@ rb_find_file_safe(VALUE path, int safe_level)
 	    if (RSTRING_LEN(str) > 0) {
 		file_expand_path(path, str, 0, tmp);
 		f = RSTRING_PTR(tmp);
-		if (file_load_ok(f)) goto found;
+		if (rb_file_load_ok(f)) goto found;
 	    }
 	}
 	return 0;

@@ -122,6 +122,9 @@ PLATFORM = mswin32
 !ifdef NTVER
 ARCHDEFS = -D_WIN32_WINNT=$(NTVER) $(ARCHDEFS)
 !endif
+!if !defined(PLATFORM_DIR)
+PLATFORM_DIR = win32
+!endif
 
 arch = $(ARCH)-$(PLATFORM)
 sitearch = $(ARCH)-$(RT)
@@ -225,7 +228,7 @@ LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib imagehlp.lib 
 LIBS = unicows.lib $(LIBS)
 !endif
 !if !defined(MISSING)
-MISSING = acosh.obj cbrt.obj crypt.obj erf.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj tgamma.obj win32.obj setproctitle.obj
+MISSING = acosh.obj cbrt.obj crypt.obj erf.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj tgamma.obj win32/win32.obj win32/file.obj setproctitle.obj
 !endif
 
 ARFLAGS = -machine:$(MACHINE) -out:
@@ -286,7 +289,7 @@ DEFAULT_PRELUDES = $(NO_GEM_PRELUDE)
 DEFAULT_PRELUDES = $(YES_GEM_PRELUDE)
 !endif
 
-MAKEDIRS = $(MINIRUBY) -run -e mkdir -- -p
+MAKEDIRS = $(BASERUBY) -run -e mkdir -- -p
 
 !if !defined(STACK)
 !if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
@@ -919,6 +922,10 @@ clean-rdoc distclean-rdoc realclean-rdoc:
 clean-capi distclean-capi realclean-capi:
 		-$(Q)$(RMALL) $(CAPIOUT:/=\)
 
+clean-platform:
+		$(Q)$(RM) $(PLATFORM_DIR)\.time
+		-$(Q)$(RMDIR) $(PLATFORM_DIR:/=\)
+
 clean-ext distclean-ext realclean-ext::
 !if "$(EXTS)" != ""
 		@for %I in ($(EXTS)) \
@@ -992,7 +999,7 @@ $(ruby_pc): $(RBCONFIG)
 {$(win_srcdir)/sys}.c.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
-{$(srcdir)}.c.obj:
+{$(srcdir)}.c{}.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 .c.obj:
@@ -1039,7 +1046,7 @@ enc/unicode/name2ctype.h: {$(srcdir)}enc/unicode/name2ctype.h.blt
 
 $(OBJS): {$(hdrdir)/ruby}win32.h
 
-dir.$(OBJEXT) win32.$(OBJEXT): {$(srcdir)}win32/dir.h
+dir.$(OBJEXT) win32/win32.$(OBJEXT): {$(srcdir)}win32/dir.h
 
 ext/extinit.obj: ext/extinit.c $(SETUP)
 	$(ECHO) compiling ext/extinit.c

@@ -1,3 +1,47 @@
+Tue Feb 28 23:20:01 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* Makefile.in (PLATFORM_DIR): add a variable for `win32` directory.
+	* Makefile.in (clean-platform): add new target.
+	  It cleans `win32` directory.
+
+	* common.mk (clean): add a dependency for `win32` directory.
+	* common.mk (distclean): ditto.
+	* common.mk (distclean-platform): add new target.
+	  It cleans `win32` directory.
+	* common.mk ($(PLATFORM_D)): add new target to make `win32` directory.
+	* common.mk (win32/win32.$(OBJEXT)): move win32.o into `win32`
+	  directory.
+	* common.mk (win32/file.$(OBJEXT)): add new target for win32/file.c.
+
+	* configure.in: move win32.o into `win32` directory and add
+	  win32/file.o to MISSING.
+
+	* file.c (file_load_ok, rb_file_load_ok): replace static
+	  file_load_ok() with public rb_file_load_ok().
+	  It's to link Windows implementation in win32/file.c.
+	* file.c (rb_find_file_ext_safe): ditto.
+	* file.c (rb_find_file_safe): ditto.
+
+	* win32/file.c (rb_file_load_ok): new file. Add Windows specific
+	  optimized implementation of rb_file_load_ok(). We created a
+	  separated file to avoid too many #ifdef macro which is unreadable.
+
+	* win32/Makefile.sub (PLATFORM_DIR): add a variable for `win32`
+	  directory.
+	* win32/Makefile.sub (MISSING): move win32.obj into `win32`
+	  directory and add win32/file.obj to MISSING.
+	* win32/Makefile.sub (MAKEDIRS): replace MINIRUBY with BASERUBY.
+	  It's because miniruby doesn't exist when making `win32` directory.
+	* win32/Makefile.sub (clean-platform): add new target to clean `win32`
+	  directory.
+	* win32/Makefile.sub ({$(srcdir)}.c{}.obj): make it not match
+	  win32/file.c to build properly.
+	* win32/Makefile.sub (win32/win32.$(OBJEXT)): move win32.obj into
+	 `win32` directory.
+
+	  Patch created with Luis Lavena.
+	  [ruby-core:42480] [Feature #5999]
+
 Tue Feb 28 20:27:25 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: [ruby-core:42998]
