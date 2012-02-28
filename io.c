@@ -1872,11 +1872,14 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
     return len - n;
 }
 
+static void io_setstrbuf(VALUE *str, long len);
+
 static long
 io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
 {
     long len;
 
+    io_setstrbuf(&str, offset + size);
     rb_str_locktmp(str);
     len = io_bufread(RSTRING_PTR(str) + offset, size, fptr);
     rb_str_unlocktmp(str);
@@ -2208,6 +2211,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
         if (nonblock) {
             rb_io_set_nonblock(fptr);
         }
+	io_setstrbuf(&str, len);
 	rb_str_locktmp(str);
 	n = rb_read_internal(fptr->fd, RSTRING_PTR(str), len);
 	rb_str_unlocktmp(str);
@@ -4269,6 +4273,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     rb_thread_wait_fd(fptr->fd);
     rb_io_check_closed(fptr);
 
+    io_setstrbuf(&str, ilen);
     rb_str_locktmp(str);
     n = rb_read_internal(fptr->fd, RSTRING_PTR(str), ilen);
     rb_str_unlocktmp(str);

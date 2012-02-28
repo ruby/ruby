@@ -1,3 +1,9 @@
+Tue Feb 28 18:33:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_fread, io_getpartial, rb_io_sysread): set buffer size
+	  after check if readable, which can cause thread switch.
+	  [ruby-dev:45297][Bug #6099]
+
 Tue Feb 28 17:16:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/time.rb (Time#xmlschema): use strftime specifiers instead of

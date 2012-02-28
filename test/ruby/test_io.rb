@@ -2240,4 +2240,37 @@ End
     assert_equal(1, $stdout.fileno)
     assert_equal(2, $stderr.fileno)
   end
+
+  def test_sysread_locktmp
+    bug6099 = '[ruby-dev:45297]'
+    buf = " " * 100
+    data = "a" * 100
+    with_pipe do |r,w|
+      th = Thread.new {r.sysread(100, buf)}
+      Thread.pass until th.stop?
+      buf.replace("")
+      assert_empty(buf)
+      w.write(data)
+      Thread.pass while th.alive?
+      th.join
+    end
+    assert_equal(data, buf)
+  end
+
+  def test_readpartial_locktmp
+    bug6099 = '[ruby-dev:45297]'
+    buf = " " * 100
+    data = "a" * 100
+    with_pipe do |r,w|
+      r.fcntl(Fcntl::F_SETFL, Fcntl::O_NONBLOCK)
+      th = Thread.new {r.readpartial(100, buf)}
+      Thread.pass until th.stop?
+      buf.replace("")
+      assert_empty(buf)
+      w.write(data)
+      Thread.pass while th.alive?
+      th.join
+    end
+    assert_equal(data, buf)
+  end
 end
