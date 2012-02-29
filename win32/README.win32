@@ -25,7 +25,11 @@
      * sed
      * ruby 1.8
 
-(5) If you want built binaries to run on Windows 95 series (including
+(5) Enable Command Extension of your command line.  It's the default behavior
+    of cmd.exe.  If you want to enable it explicitly, run cmd.exe with /E:ON
+    option.
+
+(6) If you want built binaries to run on Windows 95 series (including
     98 and Me), you need unicows.lib at compile time, and unicows.dll
     at run time.
 

@@ -1,3 +1,10 @@
+Wed Feb 29 16:11:34 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (MAKEDIRS): use mkdir of cmd.exe instead of ruby.
+	  [Bug #6103] [ruby-core:43012]
+
+	* win32/README.win32: added a notice about command extension of cmd.exe.
+
 Wed Feb 29 15:39:39 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io.rb (TestIO#test_readpartial_locktmp): skip on

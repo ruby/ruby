@@ -289,7 +289,7 @@ DEFAULT_PRELUDES = $(NO_GEM_PRELUDE)
 DEFAULT_PRELUDES = $(YES_GEM_PRELUDE)
 !endif
 
-MAKEDIRS = $(BASERUBY) -run -e mkdir -- -p
+MAKEDIRS = mkdir
 
 !if !defined(STACK)
 !if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
