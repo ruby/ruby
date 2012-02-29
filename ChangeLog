@@ -1,3 +1,14 @@
+Thu Mar  1 01:25:43 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regparse.c (is_onechar_cclass): optimize character class
+	  Merge Onigmo 27278c12e6674043cc8affca6507e20e119a86ee.
+
+	* regparse.c (is_onechar_cclass): [bug] unexpected match occurs when a
+	  char class contains no char
+
+	* enc/unicode.c (init_case_fold_table): define the sizes of case
+	  folding tables in casefold.h
+
 Wed Feb 29 16:11:34 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (MAKEDIRS): use mkdir of cmd.exe instead of ruby.

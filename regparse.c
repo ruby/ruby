@@ -1786,8 +1786,8 @@ add_code_range_to_buf0(BBuf** pbuf, ScanEnv* env, OnigCodePoint from, OnigCodePo
 
   if (inc_n != 1) {
     if (checkdup && from <= data[low*2+1]
-	&& (data[low*2] <= from  || data[low*2+1] <= to))
-	CC_DUP_WARN(env);
+	&& (data[low*2] <= from || data[low*2+1] <= to))
+      CC_DUP_WARN(env);
     if (from > data[low*2])
       from = data[low*2];
     if (to < data[(high - 1)*2 + 1])
@@ -1799,7 +1799,7 @@ add_code_range_to_buf0(BBuf** pbuf, ScanEnv* env, OnigCodePoint from, OnigCodePo
     int to_pos   = SIZE_CODE_POINT * (1 + (low + 1) * 2);
 
     if (inc_n > 0) {
-      if ((OnigCodePoint )high < n) {
+      if (high < n) {
 	int size = (n - high) * 2 * SIZE_CODE_POINT;
 	BBUF_MOVE_RIGHT(bbuf, from_pos, to_pos, size);
       }
@@ -5722,9 +5722,13 @@ is_onechar_cclass(CClassNode* cc, OnigCodePoint* code)
       }
     }
   }
+  if (found == 0) {
+    /* the character class contains no char. */
+    return 0;
+  }
   if (j >= 0) {
     /* only one char found in the bitset, calculate the code point. */
-    c = BITS_IN_ROOM * j + (countbits(b2 - 1) & 0x1f);
+    c = BITS_IN_ROOM * j + countbits(b2 - 1);
   }
   *code = c;
   return 1;
@@ -5746,7 +5750,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
   switch (tok->type) {
   case TK_ALT:
   case TK_EOT:
-    end_of_token:
+  end_of_token:
     *np = node_new_empty();
     return tok->type;
     break;
