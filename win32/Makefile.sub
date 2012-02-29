@@ -923,7 +923,7 @@ clean-capi distclean-capi realclean-capi:
 		-$(Q)$(RMALL) $(CAPIOUT:/=\)
 
 clean-platform:
-		$(Q)$(RM) $(PLATFORM_DIR)\.time
+		$(Q)$(RM) $(PLATFORM_D:/=\)
 		-$(Q)$(RMDIR) $(PLATFORM_DIR:/=\)
 
 clean-ext distclean-ext realclean-ext::

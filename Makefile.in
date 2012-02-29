@@ -348,7 +348,7 @@ clean-capi distclean-capi realclean-capi:
 	$(Q)$(RMALL) $(CAPIOUT)
 
 clean-platform:
-	@$(RM) $(PLATFORM_DIR)/.time
+	@$(RM) $(PLATFORM_D)
 	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> /dev/null || true
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
