@@ -2258,6 +2258,7 @@ End
   end
 
   def test_readpartial_locktmp
+    skip "nonblocking mode is not supported for pipe on this platform" if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
     bug6099 = '[ruby-dev:45297]'
     buf = " " * 100
     data = "a" * 100

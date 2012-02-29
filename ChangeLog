@@ -1,3 +1,8 @@
+Wed Feb 29 15:39:39 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_io.rb (TestIO#test_readpartial_locktmp): skip on
+	  windows because of the platform restriction.
+
 Wed Feb 29 15:38:50 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/memory_status.rb (Memory): syntax error.
