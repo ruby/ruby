@@ -12,7 +12,7 @@ NULL = /dev/null
 srcdir = @srcdir@
 top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
-PLATFORM_DIR = win32
+PLATFORM_DIR = @PLATFORM_DIR@
 
 CC = @CC@
 CPP = @CPP@
