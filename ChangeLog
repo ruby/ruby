@@ -1,3 +1,7 @@
+Wed Feb 29 15:38:50 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/memory_status.rb (Memory): syntax error.
+
 Wed Feb 29 13:06:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/memory_status.rb: use /proc/self/status if it is in

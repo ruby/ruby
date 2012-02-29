@@ -3,7 +3,7 @@ module Memory
   vals = []
 
   case
-  when File.exist?(procfile = "/proc/self/status") and (pat = /^Vm(\w+):\s+(\d+)/) =~ File.binread(procfile)
+  when File.exist?(procfile = "/proc/self/status") && (pat = /^Vm(\w+):\s+(\d+)/) =~ File.binread(procfile)
     PROC_FILE = procfile
     VM_PAT = pat
     def self.read_status
