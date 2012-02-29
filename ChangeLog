@@ -1,3 +1,8 @@
+Wed Feb 29 13:06:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/memory_status.rb: use /proc/self/status if it is in
+	  the expected format.
+
 Wed Feb 29 06:14:51 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: reverted r34825.

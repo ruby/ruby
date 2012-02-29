@@ -3,9 +3,9 @@ module Memory
   vals = []
 
   case
-  when File.exist?(procfile = "/proc/self/status")
+  when File.exist?(procfile = "/proc/self/status") and (pat = /^Vm(\w+):\s+(\d+)/) =~ File.binread(procfile)
     PROC_FILE = procfile
-    VM_PAT = /^Vm(\w+):\s+(\d+)/
+    VM_PAT = pat
     def self.read_status
       IO.foreach(PROC_FILE, encoding: Encoding::ASCII_8BIT) do |l|
         yield($1.downcase.intern, $2.to_i * 1024) if VM_PAT =~ l
