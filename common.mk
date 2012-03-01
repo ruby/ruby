@@ -192,11 +192,11 @@ golf: $(LIBRUBY) $(GOLFOBJS) PHONY
 	$(Q) $(MAKE) $(MFLAGS) MAINOBJ="$(GOLFOBJS)" PROGRAM=$(GORUBY)$(EXEEXT) program
 capi: $(CAPIOUT)/.timestamp PHONY
 
-doc/capi/.timestamp: Doxyfile $(PREP)
-	$(Q) $(MAKEDIRS) doc/capi
+$(CAPIOUT)/.timestamp: Doxyfile $(PREP)
+	$(Q) $(MAKEDIRS) "$(@D)"
 	$(ECHO) generating capi
 	$(Q) $(DOXYGEN) -b
-	$(Q) $(MINIRUBY) -e 'File.open("$(CAPIOUT)/.timestamp", "w"){|f| f.puts(Time.now)}'
+	$(Q) $(MINIRUBY) -e 'File.open(ARGV[0], "w"){|f| f.puts(Time.now)}' "$@"
 
 Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb $(RBCONFIG)
 	$(ECHO) generating $@
