@@ -1,3 +1,8 @@
+Thu Mar  1 18:39:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_join): honor input encodings than ASCII-8BIT.
+	  [ruby-core:40338] [Bug #5483]
+
 Tue Feb 28 11:56:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (debugflags): check if -ggdb is accepted.

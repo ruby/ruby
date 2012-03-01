@@ -3837,7 +3837,10 @@ rb_file_join(VALUE ary, VALUE sep)
 	    FilePathStringValue(tmp);
 	}
 	name = StringValueCStr(result);
-	if (i > 0 && !NIL_P(sep)) {
+	if (i == 0) {
+	    rb_enc_copy(result, tmp);
+	}
+	else if (!NIL_P(sep)) {
 	    tail = chompdirsep(name);
 	    if (RSTRING_PTR(tmp) && isdirsep(RSTRING_PTR(tmp)[0])) {
 		rb_str_set_len(result, tail - name);

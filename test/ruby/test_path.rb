@@ -247,4 +247,13 @@ class TestPath < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError) {open(s.encode("utf-32be"))}
     assert_raise(Encoding::CompatibilityError) {open(s.encode("utf-32le"))}
   end
+
+  def test_join
+    bug5483 = '[ruby-core:40338]'
+    path = %w[a b]
+    Encoding.list.each do |e|
+      next unless e.ascii_compatible?
+      assert_equal(e, File.join(*path.map {|s| s.force_encoding(e)}).encoding, bug5483)
+    end
+  end
 end
