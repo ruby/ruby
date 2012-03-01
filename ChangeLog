@@ -1,3 +1,8 @@
+Thu Mar  1 16:13:18 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (rb_file_const, rb_file_load_ok): moved functions for
+	  internal use only.
+
 Thu Mar  1 15:40:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/makedirs.bat: new command to make intermediate
