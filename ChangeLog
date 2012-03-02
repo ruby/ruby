@@ -1,3 +1,7 @@
+Fri Mar  2 22:09:03 2012  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* .travis.yml: Backport TravisCI configuration from trunk.
+
 Thu Mar  1 18:39:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_join): honor input encodings than ASCII-8BIT.
