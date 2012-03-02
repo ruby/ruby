@@ -118,6 +118,7 @@ mark_dump_arg(ptr)
     if (!p->symbols)
         return;
     rb_mark_set(p->data);
+    rb_gc_mark(p->str);
 }
 
 static void
@@ -716,6 +717,7 @@ clear_dump_arg(arg)
     st_free_table(arg->symbols);
     arg->symbols = 0;
     st_free_table(arg->data);
+    arg->data = 0;
     if (arg->taint) {
 	OBJ_TAINT(arg->str);
     }
@@ -1428,6 +1430,7 @@ clear_load_arg(arg)
     st_free_table(arg->symbols);
     arg->symbols = 0;
     st_free_table(arg->data);
+    arg->data = 0;
 }
 
 /*
