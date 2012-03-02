@@ -277,7 +277,7 @@ mktime_do(VALUE varg)
         const char *end = ptr + 1;
         const char *begin = end;
         ptrdiff_t length;
-        while ( isdigit( *end ) ) end++;
+        while ( ISDIGIT( *end ) ) end++;
         if ((length = (end - begin)) > padding) length = padding;
         MEMCPY(padded, begin, char, length);
         usec = strtol(padded, NULL, 10);

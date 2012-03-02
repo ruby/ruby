@@ -2361,7 +2361,7 @@ ScalarBlock:
             {
                 nlDoWhat = NL_KEEP;
             }
-            else if ( isdigit( *yyt ) )
+            else if ( isdigit( (unsigned char)*yyt ) )
             {
                 forceIndent = rb_long2int(strtol( yyt, NULL, 10 ));
             }

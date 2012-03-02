@@ -1,3 +1,11 @@
+Sat Mar  3 08:03:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/rubyext.c (mktime_do): use ISDIGIT().
+	  [ruby-core:43060] [Bug #6108]
+
+	* ext/syck/token.c (sycklex_yaml_utf8): cast as unsigned char.
+	  [ruby-core:43060] [Bug #6108]
+
 Sat Mar  3 06:57:14 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (ruby_pc): make configurable.  [Bug #6051]
