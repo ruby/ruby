@@ -339,23 +339,22 @@ module XMLRPC
     class << self
 
     def new2(uri, proxy=nil, timeout=nil)
-      if match = /^([^:]+):\/\/(([^@]+)@)?([^\/]+)(\/.*)?$/.match(uri)
-        proto = match[1]
-        user, passwd = (match[3] || "").split(":")
-        host, port = match[4].split(":")
-        path = match[5]
-
-        case proto
-        when 'http'  then port ||= 80
-        when 'https' then port ||= 443
-        else
-          raise ArgumentError, "Wrong protocol specified. Only http or https allowed!"
-        end
-
-        port = port.to_i
-      else
-        raise ArgumentError, "Wrong URI as parameter!"
+      begin
+        url = URI(uri)
+      rescue URI::InvalidURIError => e
+        raise ArgumentError, e.message, e.backtrace
       end
+
+      unless URI::HTTP === url
+        raise ArgumentError, "Wrong protocol specified. Only http or https allowed!"
+      end
+
+      proto  = url.scheme
+      user   = url.user
+      passwd = url.password
+      host   = url.host
+      port   = url.port
+      path   = url.path.empty? ? nil : url.request_uri
 
       proxy_host, proxy_port = (proxy || "").split(":")
       proxy_port = proxy_port.to_i if proxy_port

@@ -132,5 +132,16 @@ module XMLRPC
         XMLRPC::Client.new2 ':::::'
       end
     end
+
+    def test_new2_path_with_query
+      client = FakeClient.new2 'http://example.org/foo?bar=baz'
+      host, path, port, *rest = client.args
+
+      assert_equal 'example.org', host
+      assert_equal '/foo?bar=baz', path
+      assert port
+
+      rest.each { |x| refute x }
+    end
   end
 end
