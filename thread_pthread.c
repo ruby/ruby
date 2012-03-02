@@ -361,7 +361,7 @@ native_cond_timeout(rb_thread_cond_t *cond, struct timespec timeout_rel)
     }
 
     if (cond->clockid != CLOCK_REALTIME)
-	rb_bug("unsupported clockid %d", cond->clockid);
+	rb_bug("unsupported clockid %"PRIdVALUE, (SIGNED_VALUE)cond->clockid);
 #endif
 
     ret = gettimeofday(&tv, 0);
