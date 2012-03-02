@@ -1,3 +1,17 @@
+Fri Mar  2 11:44:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (mark_dump_arg): mark destination string.  patch by
+	  Vit Ondruch.  [Bug #4339]
+
+	* marshal.c (clear_dump_arg, clear_load_arg): clean up also data
+	  tables as same as symbols tables.
+
+Fri Mar  2 11:44:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (struct {dump,load}_arg): manage with dfree, instead
+	  of using local variable which may be moved by context switch.
+	  [ruby-dev:39425]
+
 Wed Feb  8 14:06:59 2012  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c: Add SSL constants and allow to unset SSL
