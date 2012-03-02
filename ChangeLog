@@ -1,3 +1,7 @@
+Fri Mar  2 16:37:11 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): use wcscasecmp().
+
 Fri Mar  2 16:36:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (native_cond_timeout): cast explicitly to suppress
