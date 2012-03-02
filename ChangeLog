@@ -1,3 +1,9 @@
+Sat Mar  3 08:08:11 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/xmlrpc/client.rb (new2): fix custom port specification when an
+	  SSL uri is used.
+	* test/xmlrpc/test_client.rb: tests for XMLRPC::Client.new2
+
 Sat Mar  3 08:03:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck/rubyext.c (mktime_do): use ISDIGIT().

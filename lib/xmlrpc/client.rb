@@ -279,6 +279,7 @@ require "xmlrpc/create"
 require "xmlrpc/config"
 require "xmlrpc/utils"     # ParserWriterChooseMixin
 require "net/http"
+require "uri"
 
 module XMLRPC
 
@@ -344,15 +345,20 @@ module XMLRPC
         host, port = match[4].split(":")
         path = match[5]
 
-        if proto != "http" and proto != "https"
+        case proto
+        when 'http'  then port ||= 80
+        when 'https' then port ||= 443
+        else
           raise "Wrong protocol specified. Only http or https allowed!"
         end
 
+        port = port.to_i
       else
         raise "Wrong URI as parameter!"
       end
 
       proxy_host, proxy_port = (proxy || "").split(":")
+      proxy_port = proxy_port.to_i if proxy_port
 
       self.new(host, path, port, proxy_host, proxy_port, user, passwd, (proto == "https"), timeout)
     end
