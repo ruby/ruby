@@ -460,6 +460,9 @@ realclean-golf: distclean-golf
 realclean-capi: PHONY
 realclean-extout: distclean-extout
 
+clean-ext distclean-ext realclean-ext::
+	@$(RM) $(EXTS_MK)
+
 clean-enc distclean-enc realclean-enc: PHONY
 
 check: main test test-all
