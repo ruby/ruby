@@ -98,5 +98,39 @@ module XMLRPC
 
       [ user, password, use_ssl, timeout ].each { |x| refute x }
     end
+
+    def test_new2_no_path
+      client = FakeClient.new2 'http://example.org'
+      host, path, port, *rest = client.args
+
+      assert_equal 'example.org', host
+      assert_nil path
+      assert port
+
+      rest.each { |x| refute x }
+    end
+
+    def test_new2_slash_path
+      client = FakeClient.new2 'http://example.org/'
+      host, path, port, *rest = client.args
+
+      assert_equal 'example.org', host
+      assert_equal '/', path
+      assert port
+
+      rest.each { |x| refute x }
+    end
+
+    def test_new2_bad_protocol
+      assert_raises(ArgumentError) do
+        XMLRPC::Client.new2 'ftp://example.org'
+      end
+    end
+
+    def test_new2_bad_uri
+      assert_raises(ArgumentError) do
+        XMLRPC::Client.new2 ':::::'
+      end
+    end
   end
 end

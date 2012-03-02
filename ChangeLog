@@ -1,3 +1,9 @@
+Sat Mar  3 08:20:10 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/xmlrpc/client.rb (new2): raises an ArgumentError on bad
+	  arguments.
+	* test/xmlrpc/test_client.rb: tests for bad uris
+
 Sat Mar  3 08:08:11 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/xmlrpc/client.rb (new2): fix custom port specification when an

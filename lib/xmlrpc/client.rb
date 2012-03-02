@@ -349,12 +349,12 @@ module XMLRPC
         when 'http'  then port ||= 80
         when 'https' then port ||= 443
         else
-          raise "Wrong protocol specified. Only http or https allowed!"
+          raise ArgumentError, "Wrong protocol specified. Only http or https allowed!"
         end
 
         port = port.to_i
       else
-        raise "Wrong URI as parameter!"
+        raise ArgumentError, "Wrong URI as parameter!"
       end
 
       proxy_host, proxy_port = (proxy || "").split(":")
