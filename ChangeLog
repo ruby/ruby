@@ -1,3 +1,7 @@
+Fri Mar  2 17:49:03 2012  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* .travis.yml (branches): Enable TravisCI for ruby_1_9_3.
+
 Fri Mar  2 17:13:33 2012  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* test/ruby/test_array.rb (test_combination2): Make the test case for
