@@ -5430,14 +5430,14 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     FILE *fp = 0;
     int fd = -1;
     int write_fd = -1;
-    const char *cmd = 0;
 #if !defined(HAVE_FORK)
+    const char *cmd = 0;
     int argc;
     VALUE *argv;
-#endif
 
     if (prog)
         cmd = StringValueCStr(prog);
+#endif
 
 #if !defined(HAVE_FORK)
     if (!eargp) {

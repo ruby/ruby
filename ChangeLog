@@ -1,3 +1,7 @@
+Fri Mar  2 16:35:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (pipe_open): cmd is no longer used if fork is available.
+
 Thu Mar  1 16:13:18 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h (rb_file_const, rb_file_load_ok): moved functions for
