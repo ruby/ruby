@@ -1,3 +1,9 @@
+Fri Mar  2 17:13:33 2012  Hiroshi Nakamura  <nahi@ruby-lang.org>
+
+	* test/ruby/test_array.rb (test_combination2): Make the test case for
+	  [ruby-core:29240] more descriptive.
+	  cf. http://bugs.jruby.org/6518
+
 Fri Mar  2 16:37:11 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): use wcscasecmp().

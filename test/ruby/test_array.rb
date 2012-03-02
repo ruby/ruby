@@ -2060,9 +2060,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_combination2
-    assert_nothing_raised do
-      (0..100).to_a.combination(50) { break }
-    end
+    assert_equal(:called, (0..100).to_a.combination(50) { break :called }, "[ruby-core:29240] ... must be yielded even if 100C50 > signed integer")
   end
 
   def test_product2
