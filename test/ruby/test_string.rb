@@ -1977,3 +1977,10 @@ class TestString < Test::Unit::TestCase
     assert_equal(u("\x82")+("\u3042"*9), ("\u3042"*10).byteslice(2, 28))
   end
 end
+
+class TestString2 < TestString
+  def initialize(*args)
+    super
+    @cls = S2
+  end
+end
