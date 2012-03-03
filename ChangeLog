@@ -4,7 +4,7 @@ Sat Mar  3 12:20:44 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Sat Mar  3 12:12:16 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
-	* ext/date/date_{parse,strptime}.c [ruby-dev:45303].
+	* ext/date/date_{parse,strptime}.c: [ruby-dev:45303].
 
 Sat Mar  3 10:09:21 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
