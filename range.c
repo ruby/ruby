@@ -1037,7 +1037,7 @@ range_alloc(VALUE klass)
  *       end
  *     end
  *
- *  A example of using <code>Xs</code> to construct a range:
+ *  An example of using <code>Xs</code> to construct a range:
  *
  *     r = Xs.new(3)..Xs.new(6)   #=> xxx..xxxxxx
  *     r.to_a                     #=> [xxx, xxxx, xxxxx, xxxxxx]

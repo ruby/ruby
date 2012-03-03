@@ -2939,7 +2939,7 @@ make_encobj(const char *name)
  *
  * Returns nil if the argument is an ASCII compatible encoding.
  *
- * "corresponding ASCII compatible encoding" is a ASCII compatible encoding which
+ * "corresponding ASCII compatible encoding" is an ASCII compatible encoding which
  * can represents exactly the same characters as the given ASCII incompatible encoding.
  * So, no conversion undefined error occurs when converting between the two encodings.
  *
@@ -3582,7 +3582,7 @@ econv_result_to_symbol(rb_econv_result_t res)
  * primitive_convert converts source_buffer into destination_buffer.
  *
  * source_buffer should be a string or nil.
- * nil means a empty string.
+ * nil means an empty string.
  *
  * destination_buffer should be a string.
  *
