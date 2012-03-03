@@ -2367,20 +2367,6 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
         }
     }
 
-    obj = rb_ary_entry(options, EXEC_OPTION_CHDIR);
-    if (!NIL_P(obj)) {
-        if (!NIL_P(soptions)) {
-            char *cwd = my_getcwd();
-            rb_ary_store(soptions, EXEC_OPTION_CHDIR,
-                         hide_obj(rb_str_new2(cwd)));
-            xfree(cwd);
-        }
-        if (chdir(RSTRING_PTR(obj)) == -1) {
-            ERRMSG("chdir");
-            return -1;
-        }
-    }
-
     obj = rb_ary_entry(options, EXEC_OPTION_UMASK);
     if (!NIL_P(obj)) {
         mode_t mask = NUM2MODET(obj);
@@ -2422,6 +2408,20 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
     if (!NIL_P(obj)) {
         if (run_exec_dup2_child(obj, soptions, errmsg, errmsg_buflen) == -1)
             return -1;
+    }
+
+    obj = rb_ary_entry(options, EXEC_OPTION_CHDIR);
+    if (!NIL_P(obj)) {
+        if (!NIL_P(soptions)) {
+            char *cwd = my_getcwd();
+            rb_ary_store(soptions, EXEC_OPTION_CHDIR,
+                         hide_obj(rb_str_new2(cwd)));
+            xfree(cwd);
+        }
+        if (chdir(RSTRING_PTR(obj)) == -1) {
+            ERRMSG("chdir");
+            return -1;
+        }
     }
 
     return 0;
@@ -3141,8 +3141,6 @@ rb_f_system(int argc, VALUE *argv)
  *      resource limit: resourcename is core, cpu, data, etc.  See Process.setrlimit.
  *        :rlimit_resourcename => limit
  *        :rlimit_resourcename => [cur_limit, max_limit]
- *      current directory:
- *        :chdir => str
  *      umask:
  *        :umask => int
  *      redirection:
@@ -3165,6 +3163,8 @@ rb_f_system(int argc, VALUE *argv)
  *          io      : the file descriptor specified as io.fileno
  *      file descriptor inheritance: close non-redirected non-standard fds (3, 4, 5, ...) or not
  *        :close_others => true  : don't inherit
+ *      current directory:
+ *        :chdir => str
  *
  *  If a hash is given as +env+, the environment is
  *  updated by +env+ before <code>exec(2)</code> in the child process.
@@ -3207,10 +3207,6 @@ rb_f_system(int argc, VALUE *argv)
  *    pid = spawn(command, :rlimit_core=>[0,max]) # disable core temporary.
  *    pid = spawn(command, :rlimit_core=>max) # enable core dump
  *    pid = spawn(command, :rlimit_core=>0) # never dump core.
- *
- *  The <code>:chdir</code> key in +options+ specifies the current directory.
- *
- *    pid = spawn(command, :chdir=>"/var/tmp")
  *
  *  The <code>:umask</code> key in +options+ specifies the umask.
  *
@@ -3290,6 +3286,10 @@ rb_f_system(int argc, VALUE *argv)
  *
  *    io = IO.popen(["sh", "-c", "echo out; echo err >&2", :err=>[:child, :out]])
  *    p io.read #=> "out\nerr\n"
+ *
+ *  The <code>:chdir</code> key in +options+ specifies the current directory.
+ *
+ *    pid = spawn(command, :chdir=>"/var/tmp")
  *
  *  spawn closes all non-standard unspecified descriptors by default.
  *  The "standard" descriptors are 0, 1 and 2.

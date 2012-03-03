@@ -327,6 +327,16 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_execopts_open_chdir
+    with_tmpchdir {|d|
+      Dir.mkdir "foo"
+      system(*PWD, :chdir => "foo", :out => "open_chdir_test")
+      assert(File.exist?("open_chdir_test"))
+      assert(!File.exist?("foo/open_chdir_test"))
+      assert_equal("#{d}/foo", File.read("open_chdir_test").chomp)
+    }
+  end
+
   UMASK = [RUBY, '-e', 'printf "%04o\n", File.umask']
 
   def test_execopts_umask
