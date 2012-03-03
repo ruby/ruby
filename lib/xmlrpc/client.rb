@@ -522,7 +522,6 @@ module XMLRPC
 
       if async
         # use a new HTTP object for each call
-        Net::HTTP.version_1_2
         http = Net::HTTP.new(@host, @port, @proxy_host, @proxy_port)
         http.use_ssl = @use_ssl if @use_ssl
         http.read_timeout = @timeout
