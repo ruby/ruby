@@ -1224,8 +1224,7 @@ lazy_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
 
     result = rb_funcall(m, rb_intern("call"), 1, rb_ary_entry(val, 1));
 
-    rb_funcall(rb_ary_entry(val, 0), rb_intern("yield"), 1, result);
-    return rb_ary_entry(val, 0);
+    return rb_funcall(rb_ary_entry(val, 0), rb_intern("yield"), 1, result);
 }
 
 static VALUE
