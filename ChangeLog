@@ -1,3 +1,7 @@
+Sat Mar  3 12:20:44 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_strftime.c: reassigned some variables.
+
 Sat Mar  3 12:12:16 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_{parse,strptime}.c [ruby-dev:45303].

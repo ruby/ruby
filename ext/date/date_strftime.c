@@ -177,9 +177,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	char *start = s;
 	const char *sp, *tp;
 	auto char tbuf[100];
-	long off;
 	ptrdiff_t i;
-	int w;
+	int v, w;
 	int precision, flags, colons;
 	char padding;
 	enum {LEFT, CHCASE, LOWER, UPPER, LOCALE_O, LOCALE_E};
@@ -358,22 +357,22 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'd':	/* day of the month, 01 - 31 */
-			i = range(1, tmx_mday, 31);
-			FMT('0', 2, "d", (int)i);
+			v = range(1, tmx_mday, 31);
+			FMT('0', 2, "d", v);
 			continue;
 
 		case 'H':	/* hour, 24-hour clock, 00 - 23 */
-			i = range(0, tmx_hour, 23);
-			FMT('0', 2, "d", (int)i);
+			v = range(0, tmx_hour, 23);
+			FMT('0', 2, "d", v);
 			continue;
 
 		case 'I':	/* hour, 12-hour clock, 01 - 12 */
-			i = range(0, tmx_hour, 23);
-			if (i == 0)
-				i = 12;
-			else if (i > 12)
-				i -= 12;
-			FMT('0', 2, "d", (int)i);
+			v = range(0, tmx_hour, 23);
+			if (v == 0)
+				v = 12;
+			else if (v > 12)
+				v -= 12;
+			FMT('0', 2, "d", v);
 			continue;
 
 		case 'j':	/* day of the year, 001 - 366 */
@@ -381,13 +380,13 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'm':	/* month, 01 - 12 */
-			i = range(1, tmx_mon, 12);
-			FMT('0', 2, "d", (int)i);
+			v = range(1, tmx_mon, 12);
+			FMT('0', 2, "d", v);
 			continue;
 
 		case 'M':	/* minute, 00 - 59 */
-			i = range(0, tmx_min, 59);
-			FMT('0', 2, "d", (int)i);
+			v = range(0, tmx_min, 59);
+			FMT('0', 2, "d", v);
 			continue;
 
 		case 'p':	/* AM or PM based on 12-hour clock */
@@ -397,8 +396,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(LOWER);
 			}
-			i = range(0, tmx_hour, 23);
-			if (i < 12)
+			v = range(0, tmx_hour, 23);
+			if (v < 12)
 				tp = ampm[0];
 			else
 				tp = ampm[1];
@@ -414,8 +413,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
                         continue;
 
 		case 'S':	/* second, 00 - 59 */
-			i = range(0, tmx_sec, 59);
-			FMT('0', 2, "d", (int)i);
+			v = range(0, tmx_sec, 59);
+			FMT('0', 2, "d", v);
 			continue;
 
 		case 'U':	/* week of year, Sunday is first day of week */
@@ -423,8 +422,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'w':	/* weekday, Sunday == 0, 0 - 6 */
-			i = range(0, tmx_wday, 6);
-			FMT('0', 1, "d", (int)i);
+			v = range(0, tmx_wday, 6);
+			FMT('0', 1, "d", v);
 			continue;
 
 		case 'W':	/* week of year, Monday is first day of week */
@@ -440,8 +439,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'y':	/* year without a century, 00 - 99 */
-			i = NUM2INT(mod(tmx_year, INT2FIX(100)));
-			FMT('0', 2, "d", (int)i);
+			v = NUM2INT(mod(tmx_year, INT2FIX(100)));
+			FMT('0', 2, "d", v);
 			continue;
 
 		case 'Y':	/* year with century */
@@ -460,7 +459,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 #ifdef MAILHEADER_EXT
 		case 'z':	/* time zone offset east of GMT e.g. -0600 */
 			{
-				long aoff;
+				long off, aoff;
 				int hl, hw;
 
 				off = NUM2LONG(rb_funcall(tmx_offset, rb_intern("round"), 0));
@@ -599,17 +598,17 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 
 #ifdef SUNOS_EXT
 		case 'k':	/* hour, 24-hour clock, blank pad */
-			i = range(0, tmx_hour, 23);
-			FMT(' ', 2, "d", (int)i);
+			v = range(0, tmx_hour, 23);
+			FMT(' ', 2, "d", v);
 			continue;
 
 		case 'l':	/* hour, 12-hour clock, 1 - 12, blank pad */
-			i = range(0, tmx_hour, 23);
-			if (i == 0)
-				i = 12;
-			else if (i > 12)
-				i -= 12;
-			FMT(' ', 2, "d", (int)i);
+			v = range(0, tmx_hour, 23);
+			if (v == 0)
+				v = 12;
+			else if (v > 12)
+				v -= 12;
+			FMT(' ', 2, "d", v);
 			continue;
 #endif
 
@@ -649,8 +648,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 
 #ifdef ISO_DATE_EXT
 		case 'g':	/* year of ISO week without a century */
-			i = NUM2INT(mod(tmx_cwyear, INT2FIX(100)));
-			FMT('0', 2, "d", (int)i);
+			v = NUM2INT(mod(tmx_cwyear, INT2FIX(100)));
+			FMT('0', 2, "d", v);
 			continue;
 
 		case 'G':	/* year of ISO week with century */
