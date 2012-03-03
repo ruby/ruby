@@ -4,6 +4,7 @@
 
   $Author$
 
+
   Copyright (C) 2001-2003 Akinori MUSHA
 
   $Idaemons: /home/cvs/rb/enumerator/enumerator.c,v 1.1.1.1 2001/07/15 10:12:48 knu Exp $
@@ -101,6 +102,7 @@
  *
  */
 VALUE rb_cEnumerator;
+VALUE rb_cLazy;
 static ID id_rewind, id_each;
 static VALUE sym_each;
 
@@ -1183,6 +1185,57 @@ generator_each(VALUE obj)
  *   end
  *
  */
+
+/* Lazy Enumerator methods */
+static VALUE
+lazy_init_iterator(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    if (rb_block_given_p()) {
+        return rb_yield(rb_ary_new3(2, m, val));
+    } else {
+        return rb_funcall(m, rb_intern("yield"), 1, val);
+    }
+}
+
+static VALUE
+lazy_init_block(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    return rb_block_call(m, rb_intern("each"), 0, 0, lazy_init_iterator, val);
+}
+
+static VALUE
+lazy_initialize(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE generator = generator_allocate(rb_cGenerator);
+    rb_block_call(generator, rb_intern("initialize"), 0, 0, lazy_init_block, argv[0]);
+    enumerator_init(obj, generator, sym_each, 0, 0);
+    return obj;
+}
+
+static VALUE
+enumerable_lazy(VALUE obj)
+{
+    return rb_funcall(rb_cLazy, rb_intern("new"), 1, obj);
+}
+
+static VALUE
+lazy_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    VALUE result;
+
+    result = rb_funcall(m, rb_intern("call"), 1, rb_ary_entry(val, 1));
+
+    rb_funcall(rb_ary_entry(val, 0), rb_intern("yield"), 1, result);
+    return rb_ary_entry(val, 0);
+}
+
+static VALUE
+lazy_map(VALUE obj)
+{
+    VALUE map_proc = rb_block_proc();
+    return rb_block_call(rb_cLazy, rb_intern("new"), 1, &obj, lazy_map_func, map_proc);
+}
+
 static VALUE
 stop_result(VALUE self)
 {
@@ -1213,6 +1266,11 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "feed", enumerator_feed, 1);
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
     rb_define_method(rb_cEnumerator, "inspect", enumerator_inspect, 0);
+
+    rb_cLazy = rb_define_class_under(rb_mEnumerable, "Lazy", rb_cEnumerator);
+    rb_define_method(rb_mEnumerable, "lazy", enumerable_lazy, 0);
+    rb_define_method(rb_cLazy, "initialize", lazy_initialize, -1);
+    rb_define_method(rb_cLazy, "map", lazy_map, 0);
 
     rb_eStopIteration = rb_define_class("StopIteration", rb_eIndexError);
     rb_define_method(rb_eStopIteration, "result", stop_result, 0);
