@@ -4,7 +4,6 @@
 
   $Author$
 
-
   Copyright (C) 2001-2003 Akinori MUSHA
 
   $Idaemons: /home/cvs/rb/enumerator/enumerator.c,v 1.1.1.1 2001/07/15 10:12:48 knu Exp $
@@ -1267,10 +1266,12 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
     rb_define_method(rb_cEnumerator, "inspect", enumerator_inspect, 0);
 
+    /* Enumerable::Lazy */
     rb_cLazy = rb_define_class_under(rb_mEnumerable, "Lazy", rb_cEnumerator);
     rb_define_method(rb_mEnumerable, "lazy", enumerable_lazy, 0);
     rb_define_method(rb_cLazy, "initialize", lazy_initialize, -1);
     rb_define_method(rb_cLazy, "map", lazy_map, 0);
+    rb_define_alias(rb_cLazy, "collect", "map");
 
     rb_eStopIteration = rb_define_class("StopIteration", rb_eIndexError);
     rb_define_method(rb_eStopIteration, "result", stop_result, 0);
