@@ -1262,6 +1262,48 @@ lazy_select(VALUE obj)
 }
 
 static VALUE
+lazy_reject_func(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    VALUE element = rb_ary_entry(val, 1);
+    VALUE result = rb_funcall(rb_block_proc(), id_call, 1, element);
+
+    if (!result) {
+        return rb_funcall(rb_ary_entry(val, 0), id_yield, 1, element);
+    } else {
+        return result;
+    }
+}
+
+static VALUE
+lazy_reject(VALUE obj)
+{
+    if (!rb_block_given_p()) {
+        rb_raise(rb_eArgError, "tried to call lazy reject without a block");
+    }
+
+    return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_reject_func, 0);
+}
+
+static VALUE
+lazy_grep_func(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    VALUE element = rb_ary_entry(val, 1);
+    VALUE result = rb_funcall(m, rb_intern("=~"), 1, element);
+
+    if (result != Qnil) {
+        return rb_funcall(rb_ary_entry(val, 0), id_yield, 1, element);
+    } else {
+        return result;
+    }
+}
+
+static VALUE
+lazy_grep(VALUE obj, VALUE pattern)
+{
+    return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_grep_func, pattern);
+}
+
+static VALUE
 stop_result(VALUE self)
 {
     return rb_attr_get(self, rb_intern("result"));
@@ -1298,6 +1340,8 @@ Init_Enumerator(void)
     rb_define_method(rb_cLazy, "initialize", lazy_initialize, -1);
     rb_define_method(rb_cLazy, "map", lazy_map, 0);
     rb_define_method(rb_cLazy, "select", lazy_select, 0);
+    rb_define_method(rb_cLazy, "reject", lazy_reject, 0);
+    rb_define_method(rb_cLazy, "grep", lazy_grep, 1);
 
     rb_define_alias(rb_cLazy, "collect", "map");
     rb_define_alias(rb_cLazy, "find_all", "select");
