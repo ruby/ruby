@@ -1,3 +1,8 @@
+Sat Mar  3 10:09:21 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/xmlrpc/client.rb (initialize): net/http defaults to 1_2 in 1.8+,
+	  so we can safely remove the call to enable it.
+
 Sat Mar  3 08:42:25 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/xmlrpc/client.rb (new2): use URI for uri parsing.
