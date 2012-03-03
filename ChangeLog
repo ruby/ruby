@@ -1,3 +1,7 @@
+Sat Mar  3 12:12:16 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_{parse,strptime}.c [ruby-dev:45303].
+
 Sat Mar  3 10:09:21 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/xmlrpc/client.rb (initialize): net/http defaults to 1_2 in 1.8+,

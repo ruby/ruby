@@ -89,10 +89,10 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	size_t l;
 
 	s = RSTRING_PTR(y);
-	while (!issign(*s) && !isdigit(*s))
+	while (!issign((unsigned char)*s) && !isdigit((unsigned char)*s))
 	    s++;
 	bp = s;
-	if (issign(*s))
+	if (issign((unsigned char)*s))
 	    s++;
 	l = strspn(s, "0123456789");
 	ep = s + l;
@@ -138,7 +138,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	VALUE iy;
 
 	s = RSTRING_PTR(y);
-	while (!issign(*s) && !isdigit(*s))
+	while (!issign((unsigned char)*s) && !isdigit((unsigned char)*s))
 	    s++;
 	bp = s;
 	if (issign(*s)) {
@@ -170,7 +170,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	VALUE im;
 
 	s = RSTRING_PTR(m);
-	while (!isdigit(*s))
+	while (!isdigit((unsigned char)*s))
 	    s++;
 	bp = s;
 	l = strspn(s, "0123456789");
@@ -192,7 +192,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	VALUE id;
 
 	s = RSTRING_PTR(d);
-	while (!isdigit(*s))
+	while (!isdigit((unsigned char)*s))
 	    s++;
 	bp = s;
 	l = strspn(s, "0123456789");
@@ -381,14 +381,14 @@ date_zone_to_diff(VALUE str)
     dest = d = ALLOCA_N(char, l + 1);
 
     for (i = 0; i < l; i++) {
-	if (isspace(s[i]) || s[i] == '\0') {
+	if (isspace((unsigned char)s[i]) || s[i] == '\0') {
 	    if (!sp)
 		*d++ = ' ';
 	    sp = 1;
 	}
 	else {
-	    if (isalpha(s[i]))
-		*d++ = tolower(s[i]);
+	    if (isalpha((unsigned char)s[i]))
+		*d++ = tolower((unsigned char)s[i]);
 	    else
 		*d++ = s[i];
 	    sp = 0;
@@ -1413,7 +1413,7 @@ parse_ddd_cb(VALUE m, VALUE hash)
 		s3 = s1;
 	    zone = rb_str_new2(s3);
 	    set_hash("zone", zone);
-	    if (isdigit(*s1))
+	    if (isdigit((unsigned char)*s1))
 		*--s1 = '+';
 	    set_hash("offset", date_zone_to_diff(rb_str_new2(s1)));
 	}
@@ -1520,9 +1520,9 @@ check_class(VALUE s)
 
     flags = 0;
     for (i = 0; i < RSTRING_LEN(s); i++) {
-	if (isalpha(RSTRING_PTR(s)[i]))
+	if (isalpha((unsigned char)RSTRING_PTR(s)[i]))
 	    flags |= HAVE_ALPHA;
-	if (isdigit(RSTRING_PTR(s)[i]))
+	if (isdigit((unsigned char)RSTRING_PTR(s)[i]))
 	    flags |= HAVE_DIGIT;
 	if (RSTRING_PTR(s)[i] == '-')
 	    flags |= HAVE_DASH;

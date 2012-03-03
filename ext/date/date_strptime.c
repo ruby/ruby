@@ -58,14 +58,15 @@ static const char *extz_pats[] = {
 static int
 num_pattern_p(const char *s)
 {
-    if (isdigit(*s))
+    if (isdigit((unsigned char)*s))
 	return 1;
     if (*s == '%') {
 	s++;
 	if (*s == 'E' || *s == 'O')
 	    s++;
 	if (*s &&
-	    (strchr("CDdeFGgHIjkLlMmNQRrSsTUuVvWwXxYy", *s) || isdigit(*s)))
+	    (strchr("CDdeFGgHIjkLlMmNQRrSsTUuVvWwXxYy", *s) ||
+	     isdigit((unsigned char)*s)))
 	    return 1;
     }
     return 0;
@@ -624,7 +625,7 @@ date__strptime_internal(const char *str, size_t slen,
 	  case '\v':
 	  case '\f':
 	  case '\r':
-	    while (isspace(str[si]))
+	    while (isspace((unsigned char)str[si]))
 		si++;
 	    fi++;
 	    break;
