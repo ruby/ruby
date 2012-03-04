@@ -1,3 +1,8 @@
+Sun Mar  4 23:21:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_tokadd_string): regexp engine doesn't need
+	  terminators to be escaped.  [ruby-core:40364][Bug #5484]
+
 Sat Mar  3 22:51:46 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_run_exec_options_err): chdir at last to interpret
