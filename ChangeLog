@@ -178,7 +178,7 @@ Tue Feb 28 18:47:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Feb 28 17:16:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/time.rb (Time#xmlschema): use strftime specifiers instead of
-	  fractional exponential calcuation which yields undesirable
+	  fractional exponential calculation which yields undesirable
 	  result.  [ruby-core:42997][Bug #6100]
 
 Tue Feb 28 14:15:29 2012  Eric Hodel  <drbrain@segment7.net>
