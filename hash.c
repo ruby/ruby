@@ -3217,7 +3217,7 @@ env_update(VALUE env, VALUE hash)
  *  and <code>eql?</code> methods are overridden to provide meaningful
  *  behavior.  By default, separate instances refer to separate hash keys.
  *
- *  A typical implementation of <code>hash</code> is based on the 
+ *  A typical implementation of <code>hash</code> is based on the
  *  object's data while <code>eql?</code> is usually aliased to the overridden
  *  <code>==</code> method:
  *
@@ -3231,7 +3231,7 @@ env_update(VALUE env, VALUE hash)
  *
  *      def ==(other)
  *        self.class === other and
- *          other.author == @author and 
+ *          other.author == @author and
  *          other.title == @title
  *      end
  *
