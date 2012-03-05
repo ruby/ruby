@@ -38,7 +38,7 @@ typedef struct st_packed_entry {
 #define PACKED_UNIT (int)(sizeof(st_packed_entry) / sizeof(st_table_entry*))
 #define MAX_PACKED_HASH (int)(ST_DEFAULT_PACKED_TABLE_SIZE * sizeof(st_table_entry*) / sizeof(st_packed_entry))
 
-typedef struct {
+typedef struct st_packed_bins {
     st_packed_entry kv[MAX_PACKED_HASH];
 } st_packed_bins;
 
@@ -105,14 +105,20 @@ st_realloc_bins(st_table_entry **bins, st_index_t newsize, st_index_t oldsize)
     return bins;
 }
 
+/* Shortage */
+#define bins as.big.bins
+#define head as.big.head
+#define tail as.big.tail
+
 /* preparation for possible packing improvements */
-#define PACKED_BINS(table) (*(st_packed_bins *)(table)->bins)
+#define PACKED_BINS(table) (*(table)->as.packed)
 #define PACKED_ENT(table, i) PACKED_BINS(table).kv[i]
 #define PKEY(table, i) PACKED_ENT((table), (i)).key
 #define PVAL(table, i) PACKED_ENT((table), (i)).val
 #define PHASH(table, i) PKEY((table), (i))
 #define PKEY_SET(table, i, v) (PKEY((table), (i)) = (v))
 #define PVAL_SET(table, i, v) (PVAL((table), (i)) = (v))
+
 /* this function depends much on packed layout, so that it placed here */
 static inline void
 remove_packed_entry(st_table *table, st_index_t i)
@@ -475,7 +481,7 @@ unpack_entries(register st_table *table)
     st_table tmp_table = *table;
 
     packed_bins = PACKED_BINS(table);
-    table->bins = (st_table_entry **)&packed_bins;
+    table->as.packed = &packed_bins;
     tmp_table.entries_packed = 0;
     tmp_table.num_entries = 0;
 #if ST_DEFAULT_INIT_TABLE_SIZE == ST_DEFAULT_PACKED_TABLE_SIZE
@@ -607,7 +613,7 @@ st_table*
 st_copy(st_table *old_table)
 {
     st_table *new_table;
-    st_table_entry *ptr, *entry, *prev, **tail;
+    st_table_entry *ptr, *entry, *prev, **tailp;
     st_index_t num_bins = old_table->num_bins;
     st_index_t hash_val;
 
@@ -631,7 +637,7 @@ st_copy(st_table *old_table)
 
     if ((ptr = old_table->head) != 0) {
 	prev = 0;
-	tail = &new_table->head;
+	tailp = &new_table->head;
 	do {
 	    entry = st_alloc_entry();
 	    if (entry == 0) {
@@ -643,8 +649,8 @@ st_copy(st_table *old_table)
 	    entry->next = new_table->bins[hash_val];
 	    new_table->bins[hash_val] = entry;
 	    entry->back = prev;
-	    *tail = prev = entry;
-	    tail = &entry->fore;
+	    *tailp = prev = entry;
+	    tailp = &entry->fore;
 	} while ((ptr = ptr->fore) != 0);
 	new_table->tail = prev;
     }

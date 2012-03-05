@@ -1,4 +1,7 @@
-Mon Mar  5 12:43:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Mar  5 12:44:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c (unpack_entries): use union instead of casted pointer.
+	  patched by Sokolov Yura <funny.falcon AT gmail.com>.
 
 	* st.c: use PACKED_ENT and FIND_ENTRY.  patched by Sokolov
 	  Yura <funny.falcon AT gmail.com>.
