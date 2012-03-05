@@ -1244,7 +1244,7 @@ lazy_select_func(VALUE val, VALUE m, int argc, VALUE *argv)
     VALUE element = rb_ary_entry(val, 1);
     VALUE result = rb_funcall(rb_block_proc(), id_call, 1, element);
 
-    if (result) {
+    if (RTEST(result)) {
         return rb_funcall(rb_ary_entry(val, 0), id_yield, 1, element);
     } else {
         return result;
@@ -1267,7 +1267,7 @@ lazy_reject_func(VALUE val, VALUE m, int argc, VALUE *argv)
     VALUE element = rb_ary_entry(val, 1);
     VALUE result = rb_funcall(rb_block_proc(), id_call, 1, element);
 
-    if (!result) {
+    if (!RTEST(result)) {
         return rb_funcall(rb_ary_entry(val, 0), id_yield, 1, element);
     } else {
         return result;
