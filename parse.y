@@ -2816,7 +2816,6 @@ primary		: literal
 			$$ = method_add_block($1, $2);
 		    %*/
 		    }
-		| block_call
 		| tLAMBDA lambda
 		    {
 			$$ = $2;
