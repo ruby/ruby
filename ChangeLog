@@ -1,3 +1,9 @@
+Mon Mar  5 12:43:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c (unpack_entries): reallocate bins if packed array size
+	  is not same as initial bins size.  based on a patch by
+	  Sokolov Yura <funny.falcon AT gmail.com>.
+
 Mon Mar  5 11:51:48 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/bigdecimal/lib/bigdecimal/math.rb: remove description about

@@ -478,7 +478,12 @@ unpack_entries(register st_table *table)
     table->bins = (st_table_entry **)&packed_bins;
     tmp_table.entries_packed = 0;
     tmp_table.num_entries = 0;
+#if ST_DEFAULT_INIT_TABLE_SIZE == ST_DEFAULT_PACKED_TABLE_SIZE
     MEMZERO(tmp_table.bins, st_table_entry*, tmp_table.num_bins);
+#else
+    tmp_table.bins = st_realloc_bins(tmp_table.bins, ST_DEFAULT_INIT_TABLE_SIZE, tmp_table.num_bins);
+    tmp_table.num_bins = ST_DEFAULT_INIT_TABLE_SIZE;
+#endif
     for (i = 0; i < table->num_entries; i++) {
 	/* packed table should be numhash */
 	st_index_t key = PKEY(table, i), value = PVAL(table, i);
