@@ -1,3 +1,8 @@
+Tue Mar  6 02:31:20 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/core_ext.rb: only extend Kernel if IRB is loaded
+	  in order to stop method pollution.
+
 Tue Mar  6 01:34:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (block_call): rules for block_call after block_call.

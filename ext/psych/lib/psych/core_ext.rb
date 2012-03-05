@@ -30,6 +30,7 @@ class Module
   alias :yaml_as :psych_yaml_as
 end
 
+if defined?(::IRB)
 module Kernel
   def psych_y *objects
     puts Psych.dump_stream(*objects)
@@ -37,4 +38,5 @@ module Kernel
   remove_method :y rescue nil
   alias y psych_y
   private :y
+end
 end
