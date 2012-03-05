@@ -1,3 +1,8 @@
+Tue Mar  6 07:18:10 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/xmlrpc/client.rb: switch net/http post2 calls to modern
+	  `request_post` methods.
+
 Tue Mar  6 02:31:20 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/core_ext.rb: only extend Kernel if IRB is loaded

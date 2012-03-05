@@ -325,7 +325,7 @@ module XMLRPC
       @proxy_port = @proxy_port.to_i if @proxy_port != nil
 
       # HTTP object for synchronous calls
-      @http = Net::HTTP.new(@host, @port, @proxy_host, @proxy_port)
+      @http = net_http(@host, @port, @proxy_host, @proxy_port)
       @http.use_ssl = @use_ssl if @use_ssl
       @http.read_timeout = @timeout
       @http.open_timeout = @timeout
@@ -491,6 +491,10 @@ module XMLRPC
 
     private # ----------------------------------------------------------
 
+    def net_http(host, port, proxy_host, proxy_port)
+      Net::HTTP.new host, port, proxy_host, proxy_port
+    end
+
     def set_auth
       if @user.nil?
         @auth = nil
@@ -529,7 +533,7 @@ module XMLRPC
 
         # post request
         http.start {
-          resp = http.post2(@path, request, header)
+          resp = http.request_post(@path, request, header)
         }
       else
         # reuse the HTTP object for each call => connection alive is possible
@@ -538,7 +542,7 @@ module XMLRPC
         @http.start if not @http.started?
 
         # post request
-        resp = @http.post2(@path, request, header)
+        resp = @http.request_post(@path, request, header)
       end
 
       @http_last_response = resp
