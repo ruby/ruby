@@ -7,7 +7,6 @@ require 'bigdecimal'
 #   sin (x, prec)
 #   cos (x, prec)
 #   atan(x, prec)  Note: |x|<1, x=0.9999 may not converge.
-#   log (x, prec)
 #   PI  (prec)
 #   E   (prec) == exp(1.0,prec)
 #

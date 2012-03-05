@@ -6539,6 +6539,10 @@ parser_tokadd_string(struct parser_params *parser,
 		    goto non_ascii;
 		}
 		if (func & STR_FUNC_REGEXP) {
+		    if (c == term) {
+			tokadd(c);
+			continue;
+		    }
 		    pushback(c);
 		    if ((c = tokadd_escape(&enc)) < 0)
 			return -1;

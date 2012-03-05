@@ -155,7 +155,10 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_source
+    bug5484 = '[ruby-core:40364]'
     assert_equal('', //.source)
+    assert_equal('\:', /\:/.source, bug5484)
+    assert_equal(':', %r:\::.source, bug5484)
   end
 
   def test_inspect
@@ -369,9 +372,11 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_equal
-    assert_equal(true, /abc/ == /abc/)
-    assert_equal(false, /abc/ == /abc/m)
-    assert_equal(false, /abc/ == /abd/)
+    bug5484 = '[ruby-core:40364]'
+    assert_equal(/abc/, /abc/)
+    assert_not_equal(/abc/, /abc/m)
+    assert_not_equal(/abc/, /abd/)
+    assert_equal(/\/foo/, Regexp.new('/foo'), bug5484)
   end
 
   def test_match

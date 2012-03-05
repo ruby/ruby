@@ -4111,7 +4111,7 @@ str_byte_aref(VALUE str, VALUE indx)
  *     "hello".byteslice(-1)    #=> "o"
  *     "hello".byteslice(1, 2)  #=> "el"
  *     "\x80\u3042".byteslice(1, 3) #=> "\u3042"
- *     "\x03\u3042\xff".byteslice(1..3) #=> "\u3942"
+ *     "\x03\u3042\xff".byteslice(1..3) #=> "\u3042"
  */
 
 static VALUE

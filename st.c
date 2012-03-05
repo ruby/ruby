@@ -38,7 +38,7 @@ typedef struct st_packed_entry {
 #define PACKED_UNIT (int)(sizeof(st_packed_entry) / sizeof(st_table_entry*))
 #define MAX_PACKED_HASH (int)(ST_DEFAULT_PACKED_TABLE_SIZE * sizeof(st_table_entry*) / sizeof(st_packed_entry))
 
-typedef struct {
+typedef struct st_packed_bins {
     st_packed_entry kv[MAX_PACKED_HASH];
 } st_packed_bins;
 
@@ -105,14 +105,20 @@ st_realloc_bins(st_table_entry **bins, st_index_t newsize, st_index_t oldsize)
     return bins;
 }
 
+/* Shortage */
+#define bins as.big.bins
+#define head as.big.head
+#define tail as.big.tail
+
 /* preparation for possible packing improvements */
-#define PACKED_BINS(table) (*(st_packed_bins *)(table)->bins)
+#define PACKED_BINS(table) (*(table)->as.packed)
 #define PACKED_ENT(table, i) PACKED_BINS(table).kv[i]
 #define PKEY(table, i) PACKED_ENT((table), (i)).key
 #define PVAL(table, i) PACKED_ENT((table), (i)).val
 #define PHASH(table, i) PKEY((table), (i))
 #define PKEY_SET(table, i, v) (PKEY((table), (i)) = (v))
 #define PVAL_SET(table, i, v) (PVAL((table), (i)) = (v))
+
 /* this function depends much on packed layout, so that it placed here */
 static inline void
 remove_packed_entry(st_table *table, st_index_t i)
@@ -438,6 +444,21 @@ st_get_key(st_table *table, register st_data_t key, st_data_t *result)
 #undef collision_check
 #define collision_check 1
 
+static inline st_table_entry *
+new_entry(st_table * table, st_data_t key, st_data_t value,
+	st_index_t hash_val, register st_index_t bin_pos)
+{
+    register st_table_entry *entry = st_alloc_entry();
+
+    entry->next = table->bins[bin_pos];
+    table->bins[bin_pos] = entry;
+    entry->hash = hash_val;
+    entry->key = key;
+    entry->record = value;
+
+    return entry;
+}
+
 static inline void
 add_direct(st_table *table, st_data_t key, st_data_t value,
 	   st_index_t hash_val, register st_index_t bin_pos)
@@ -448,13 +469,8 @@ add_direct(st_table *table, st_data_t key, st_data_t value,
         bin_pos = hash_val % table->num_bins;
     }
 
-    entry = st_alloc_entry();
+    entry = new_entry(table, key, value, hash_val, bin_pos);
 
-    entry->next = table->bins[bin_pos];
-    table->bins[bin_pos] = entry;
-    entry->hash = hash_val;
-    entry->key = key;
-    entry->record = value;
     if (table->head != 0) {
 	entry->fore = 0;
 	(entry->back = table->tail)->fore = entry;
@@ -472,18 +488,35 @@ unpack_entries(register st_table *table)
 {
     st_index_t i;
     st_packed_bins packed_bins;
+    register st_table_entry *entry, *preventry = 0, **chain;
     st_table tmp_table = *table;
 
     packed_bins = PACKED_BINS(table);
-    table->bins = (st_table_entry **)&packed_bins;
+    table->as.packed = &packed_bins;
     tmp_table.entries_packed = 0;
-    tmp_table.num_entries = 0;
+    tmp_table.num_entries = MAX_PACKED_HASH;
+#if ST_DEFAULT_INIT_TABLE_SIZE == ST_DEFAULT_PACKED_TABLE_SIZE
     MEMZERO(tmp_table.bins, st_table_entry*, tmp_table.num_bins);
-    for (i = 0; i < table->num_entries; i++) {
+#else
+    tmp_table.bins = st_realloc_bins(tmp_table.bins, ST_DEFAULT_INIT_TABLE_SIZE, tmp_table.num_bins);
+    tmp_table.num_bins = ST_DEFAULT_INIT_TABLE_SIZE;
+#endif
+    i = 0;
+    chain = &tmp_table.head;
+    do {
+	st_data_t key = packed_bins.kv[i].key;
+	st_data_t val = packed_bins.kv[i].val;
 	/* packed table should be numhash */
-	st_index_t key = PKEY(table, i), value = PVAL(table, i);
-	add_direct(&tmp_table, key, value, key, key % tmp_table.num_bins);
-    }
+	st_index_t hash = st_numhash(key);
+	entry = new_entry(&tmp_table, key, val, hash,
+			  hash % ST_DEFAULT_INIT_TABLE_SIZE);
+	*chain = entry;
+	entry->back = preventry;
+	preventry = entry;
+	chain = &entry->fore;
+    } while (++i < MAX_PACKED_HASH);
+    *chain = NULL;
+    tmp_table.tail = entry;
     *table = tmp_table;
 }
 
@@ -520,8 +553,7 @@ st_insert(register st_table *table, register st_data_t key, st_data_t value)
     }
 
     hash_val = do_hash(key, table);
-    bin_pos = hash_val % table->num_bins;
-    ptr = find_entry(table, key, hash_val, bin_pos);
+    FIND_ENTRY(table, ptr, hash_val, bin_pos);
 
     if (ptr == 0) {
 	add_direct(table, key, value, hash_val, bin_pos);
@@ -552,8 +584,7 @@ st_insert2(register st_table *table, register st_data_t key, st_data_t value,
     }
 
     hash_val = do_hash(key, table);
-    bin_pos = hash_val % table->num_bins;
-    ptr = find_entry(table, key, hash_val, bin_pos);
+    FIND_ENTRY(table, ptr, hash_val, bin_pos);
 
     if (ptr == 0) {
 	key = (*func)(key);
@@ -604,7 +635,7 @@ st_table*
 st_copy(st_table *old_table)
 {
     st_table *new_table;
-    st_table_entry *ptr, *entry, *prev, **tail;
+    st_table_entry *ptr, *entry, *prev, **tailp;
     st_index_t num_bins = old_table->num_bins;
     st_index_t hash_val;
 
@@ -628,7 +659,7 @@ st_copy(st_table *old_table)
 
     if ((ptr = old_table->head) != 0) {
 	prev = 0;
-	tail = &new_table->head;
+	tailp = &new_table->head;
 	do {
 	    entry = st_alloc_entry();
 	    if (entry == 0) {
@@ -640,8 +671,8 @@ st_copy(st_table *old_table)
 	    entry->next = new_table->bins[hash_val];
 	    new_table->bins[hash_val] = entry;
 	    entry->back = prev;
-	    *tail = prev = entry;
-	    tail = &entry->fore;
+	    *tailp = prev = entry;
+	    tailp = &entry->fore;
 	} while ((ptr = ptr->fore) != 0);
 	new_table->tail = prev;
     }
@@ -748,8 +779,7 @@ st_cleanup_safe(st_table *table, st_data_t never)
 	}
 	for (j = i; ++i < table->num_entries;) {
 	    if (PKEY(table, i) == never) continue;
-	    PKEY_SET(table, j,  PKEY(table, i));
-	    PVAL_SET(table, j,  PVAL(table, i));
+	    PACKED_ENT(table, j) = PACKED_ENT(table, i);
 	    j++;
 	}
 	table->num_entries = j;
@@ -786,8 +816,7 @@ st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *
 	    retval = (*func)(key, &value, arg);
 	    if (!table->entries_packed) {
 		hash_val = do_hash(key, table);
-		bin_pos = hash_val % table->num_bins;
-		ptr = find_entry(table, key, hash_val, bin_pos);
+		FIND_ENTRY(table, ptr, hash_val, bin_pos);
 		if (ptr == 0) return 0;
 		goto unpacked;
 	    }
@@ -804,8 +833,7 @@ st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *
     }
 
     hash_val = do_hash(key, table);
-    bin_pos = hash_val % table->num_bins;
-    ptr = find_entry(table, key, hash_val, bin_pos);
+    FIND_ENTRY(table, ptr, hash_val, bin_pos);
 
     if (ptr == 0) {
 	return 0;
