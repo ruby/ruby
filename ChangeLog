@@ -1,3 +1,10 @@
+Mon Mar  5 11:51:48 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/bigdecimal/lib/bigdecimal/math.rb: remove description about
+	  BigMath#log. patched by Sho Hashimoto [ruby-dev:45307] [Bug #6112]
+
+	* string.c (str_byteslice): fix typo.
+
 Sun Mar  4 23:21:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_tokadd_string): regexp engine doesn't need
