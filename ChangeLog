@@ -1,3 +1,7 @@
+Tue Mar  6 01:24:13 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (block_command, block_call): simplified rules.
+
 Mon Mar  5 18:28:35 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_regexp.rb (TestRegexp#test_source): fix typo.

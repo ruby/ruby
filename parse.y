@@ -1326,21 +1326,12 @@ command_call	: command
 		;
 
 block_command	: block_call
-		| block_call '.' operation2 command_args
+		| block_call dot_or_colon operation2 command_args
 		    {
 		    /*%%%*/
 			$$ = NEW_CALL($1, $3, $4);
 		    /*%
-			$$ = dispatch3(call, $1, ripper_id2sym('.'), $3);
-			$$ = method_arg($$, $4);
-		    %*/
-		    }
-		| block_call tCOLON2 operation2 command_args
-		    {
-		    /*%%%*/
-			$$ = NEW_CALL($1, $3, $4);
-		    /*%
-			$$ = dispatch3(call, $1, ripper_intern("::"), $3);
+			$$ = dispatch3(call, $1, $2, $3);
 			$$ = method_arg($$, $4);
 		    %*/
 		    }
@@ -3856,21 +3847,12 @@ block_call	: command do_block
 			$$ = method_add_block($1, $2);
 		    %*/
 		    }
-		| block_call '.' operation2 opt_paren_args
+		| block_call dot_or_colon operation2 opt_paren_args
 		    {
 		    /*%%%*/
 			$$ = NEW_CALL($1, $3, $4);
 		    /*%
-			$$ = dispatch3(call, $1, ripper_id2sym('.'), $3);
-			$$ = method_optarg($$, $4);
-		    %*/
-		    }
-		| block_call tCOLON2 operation2 opt_paren_args
-		    {
-		    /*%%%*/
-			$$ = NEW_CALL($1, $3, $4);
-		    /*%
-			$$ = dispatch3(call, $1, ripper_intern("::"), $3);
+			$$ = dispatch3(call, $1, $2, $3);
 			$$ = method_optarg($$, $4);
 		    %*/
 		    }
