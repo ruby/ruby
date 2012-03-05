@@ -1,4 +1,7 @@
-Mon Mar  5 12:43:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Mar  5 12:43:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c: use PACKED_ENT and FIND_ENTRY.  patched by Sokolov
+	  Yura <funny.falcon AT gmail.com>.
 
 	* st.c (unpack_entries): reallocate bins if packed array size
 	  is not same as initial bins size.  based on a patch by
