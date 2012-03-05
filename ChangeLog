@@ -1,3 +1,9 @@
+Tue Mar  6 01:34:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (block_call): rules for block_call after block_call.
+	  based on a patch by pasberth https://github.com/ruby/ruby/pull/102
+	  [ruby-dev:45308][Bug #6115]
+
 Tue Mar  6 01:24:13 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (block_command, block_call): simplified rules.

@@ -3856,6 +3856,30 @@ block_call	: command do_block
 			$$ = method_optarg($$, $4);
 		    %*/
 		    }
+		| block_call dot_or_colon operation2 opt_paren_args brace_block
+		    {
+		    /*%%%*/
+			block_dup_check($4, $5);
+			$5->nd_iter = NEW_CALL($1, $3, $4);
+			$$ = $5;
+			fixpos($$, $1);
+		    /*%
+			$$ = dispatch4(command_call, $1, $2, $3, $4);
+			$$ = method_add_block($$, $5);
+		    %*/
+		    }
+		| block_call dot_or_colon operation2 command_args do_block
+		    {
+		    /*%%%*/
+			block_dup_check($4, $5);
+			$5->nd_iter = NEW_CALL($1, $3, $4);
+			$$ = $5;
+			fixpos($$, $1);
+		    /*%
+			$$ = dispatch4(command_call, $1, $2, $3, $4);
+			$$ = method_add_block($$, $5);
+		    %*/
+		    }
 		;
 
 method_call	: operation

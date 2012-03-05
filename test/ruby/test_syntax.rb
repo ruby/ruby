@@ -63,6 +63,20 @@ class TestSyntax < Test::Unit::TestCase
     end
   end
 
+  tap do |_,
+    bug6115 = '[ruby-dev:45308]',
+    blockcall = '["elem"].each_with_object [] do end',
+    methods = [['map', 'no'], ['inject([])', 'with']],
+    blocks = [['do end', 'do'], ['{}', 'brace']],
+    *|
+    [%w'. dot', %w':: colon'].product(methods, blocks) do |(c, n1), (m, n2), (b, n3)|
+      m = m.tr_s('()', ' ').strip if n2 == 'do'
+      name = "test_#{n3}_block_after_blockcall_#{n1}_#{n2}_arg"
+      code = "#{blockcall}#{c}#{m} #{b}"
+      define_method(name) {assert_valid_syntax(code, bug6115)}
+    end
+  end
+
   private
 
   def make_tmpsrc(f, src)
