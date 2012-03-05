@@ -444,6 +444,21 @@ st_get_key(st_table *table, register st_data_t key, st_data_t *result)
 #undef collision_check
 #define collision_check 1
 
+static inline st_table_entry *
+new_entry(st_table * table, st_data_t key, st_data_t value,
+	st_index_t hash_val, register st_index_t bin_pos)
+{
+    register st_table_entry *entry = st_alloc_entry();
+
+    entry->next = table->bins[bin_pos];
+    table->bins[bin_pos] = entry;
+    entry->hash = hash_val;
+    entry->key = key;
+    entry->record = value;
+
+    return entry;
+}
+
 static inline void
 add_direct(st_table *table, st_data_t key, st_data_t value,
 	   st_index_t hash_val, register st_index_t bin_pos)
@@ -454,13 +469,8 @@ add_direct(st_table *table, st_data_t key, st_data_t value,
         bin_pos = hash_val % table->num_bins;
     }
 
-    entry = st_alloc_entry();
+    entry = new_entry(table, key, value, hash_val, bin_pos);
 
-    entry->next = table->bins[bin_pos];
-    table->bins[bin_pos] = entry;
-    entry->hash = hash_val;
-    entry->key = key;
-    entry->record = value;
     if (table->head != 0) {
 	entry->fore = 0;
 	(entry->back = table->tail)->fore = entry;
@@ -478,23 +488,35 @@ unpack_entries(register st_table *table)
 {
     st_index_t i;
     st_packed_bins packed_bins;
+    register st_table_entry *entry, *preventry = 0, **chain;
     st_table tmp_table = *table;
 
     packed_bins = PACKED_BINS(table);
     table->as.packed = &packed_bins;
     tmp_table.entries_packed = 0;
-    tmp_table.num_entries = 0;
+    tmp_table.num_entries = MAX_PACKED_HASH;
 #if ST_DEFAULT_INIT_TABLE_SIZE == ST_DEFAULT_PACKED_TABLE_SIZE
     MEMZERO(tmp_table.bins, st_table_entry*, tmp_table.num_bins);
 #else
     tmp_table.bins = st_realloc_bins(tmp_table.bins, ST_DEFAULT_INIT_TABLE_SIZE, tmp_table.num_bins);
     tmp_table.num_bins = ST_DEFAULT_INIT_TABLE_SIZE;
 #endif
-    for (i = 0; i < table->num_entries; i++) {
+    i = 0;
+    chain = &tmp_table.head;
+    do {
+	st_data_t key = packed_bins.kv[i].key;
+	st_data_t val = packed_bins.kv[i].val;
 	/* packed table should be numhash */
-	st_index_t key = PKEY(table, i), value = PVAL(table, i);
-	add_direct(&tmp_table, key, value, key, key % tmp_table.num_bins);
-    }
+	st_index_t hash = st_numhash(key);
+	entry = new_entry(&tmp_table, key, val, hash,
+			  hash % ST_DEFAULT_INIT_TABLE_SIZE);
+	*chain = entry;
+	entry->back = preventry;
+	preventry = entry;
+	chain = &entry->fore;
+    } while (++i < MAX_PACKED_HASH);
+    *chain = NULL;
+    tmp_table.tail = entry;
     *table = tmp_table;
 }
 
