@@ -61,6 +61,38 @@ class TestSyntax < Test::Unit::TestCase
       end
     end
   end
+  
+  def test_do_block_after_do_block_without_parenthesis
+    assert_nothing_raised(SyntaxError) { eval(<<-CODE) }
+        ["elem"].each_with_object [] do
+        end.map do
+        end
+    CODE
+  end
+  
+  def test_do_block_after_do_block_without_parenthesis2
+    assert_nothing_raised(SyntaxError) { eval(<<-CODE) }
+        ["elem"].each_with_object [] do
+        end.each_with_object [] do
+        end
+    CODE
+  end
+  
+  def test_brace_block_after_do_block_without_parenthesis
+    assert_nothing_raised(SyntaxError) { eval(<<-CODE) }
+        ["elem"].each_with_object [] do
+        end.map {
+        }
+    CODE
+  end
+
+  def test_brace_block_after_do_block_without_parenthesis2
+    assert_nothing_raised(SyntaxError) { eval(<<-CODE) }
+        ["elem"].each_with_object [] do
+        end.each_with_object([]) {
+        }
+    CODE
+  end
 
   private
 

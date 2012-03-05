@@ -2816,6 +2816,7 @@ primary		: literal
 			$$ = method_add_block($1, $2);
 		    %*/
 		    }
+		| block_call
 		| tLAMBDA lambda
 		    {
 			$$ = $2;
@@ -3872,6 +3873,30 @@ block_call	: command do_block
 		    /*%
 			$$ = dispatch3(call, $1, ripper_intern("::"), $3);
 			$$ = method_optarg($$, $4);
+		    %*/
+		    }
+		| block_call '.' operation2 opt_paren_args brace_block
+		    {
+		    /*%%%*/
+			block_dup_check($4,$5);
+		        $5->nd_iter = NEW_CALL($1, $3, $4);
+			$$ = $5;
+			fixpos($$, $1);
+		    /*%
+			$$ = dispatch4(command_call, $1, ripper_id2sym('.'), $3, $4);
+			$$ = method_add_block($$, $5);
+		    %*/
+		    }
+		| block_call '.' operation2 command_args do_block
+		    {
+		    /*%%%*/
+			block_dup_check($4,$5);
+		        $5->nd_iter = NEW_CALL($1, $3, $4);
+			$$ = $5;
+			fixpos($$, $1);
+		    /*%
+			$$ = dispatch4(command_call, $1, ripper_id2sym('.'), $3, $4);
+			$$ = method_add_block($$, $5);
 		    %*/
 		    }
 		;
