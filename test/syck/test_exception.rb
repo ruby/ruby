@@ -13,7 +13,7 @@ module Syck
     end
 
     def setup
-      @wups = Wups.new
+      @wups = Wups.new('test_message')
     end
 
     def test_to_yaml

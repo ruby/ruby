@@ -1,3 +1,12 @@
+Tue Mar  6 11:42:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/lib/syck/rubytypes.rb (Exception.yaml_new): fix bug
+	  that causes YAML serialization problem for Exception.
+	  Exception#initialize doesn't use visible instance variable for
+	  the exception message, so call the method with the message.
+	  patched by Jingwen Owen Ou <jingweno AT gmail.com>.
+	  http://github.com/ruby/ruby/pull/41
+
 Fri Mar  2 22:09:03 2012  Hiroshi Nakamura  <nahi@ruby-lang.org>
 
 	* .travis.yml: Backport TravisCI configuration from trunk.
