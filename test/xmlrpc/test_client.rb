@@ -1,19 +1,63 @@
 require 'minitest/autorun'
 require 'xmlrpc/client'
+require 'net/http'
 
 module XMLRPC
   class ClientTest < MiniTest::Unit::TestCase
-    class FakeClient < XMLRPC::Client
-      attr_reader :args
+    module Fake
+      class HTTP
+        attr_accessor :read_timeout, :open_timeout, :use_ssl
 
-      def initialize(*args)
-        @args = args
-        super
+        def initialize responses = {}
+          @started = false
+          @responses = responses
+        end
+
+        def started?
+          @started
+        end
+        def start; @started = true; end
+
+        def request_post path, request, headers
+          @responses[path].shift
+        end
+      end
+
+      class Client < XMLRPC::Client
+        attr_reader :args, :http
+
+        def initialize(*args)
+          @args = args
+          super
+        end
+
+        private
+        def net_http host, port, proxy_host, proxy_port
+          HTTP.new
+        end
+      end
+
+      class Response
+        def self.new body, fields = [], status = '200'
+          klass = Class.new(Net::HTTPResponse::CODE_TO_OBJ[status]) {
+            def initialize(*args)
+              super
+              @read = true
+            end
+          }
+
+          resp = klass.new '1.1', status, 'OK'
+          resp.body = body
+          fields.each do |k,v|
+            resp.add_field k, v
+          end
+          resp
+        end
       end
     end
 
     def test_new2_host_path_port
-      client = FakeClient.new2 'http://example.org/foo'
+      client = Fake::Client.new2 'http://example.org/foo'
       host, path, port, *rest = client.args
 
       assert_equal 'example.org', host
@@ -24,7 +68,7 @@ module XMLRPC
     end
 
     def test_new2_custom_port
-      client = FakeClient.new2 'http://example.org:1234/foo'
+      client = Fake::Client.new2 'http://example.org:1234/foo'
       host, path, port, *rest = client.args
 
       assert_equal 'example.org', host
@@ -35,7 +79,7 @@ module XMLRPC
     end
 
     def test_new2_ssl
-      client = FakeClient.new2 'https://example.org/foo'
+      client = Fake::Client.new2 'https://example.org/foo'
       host, path, port, proxy_host, proxy_port, user, password, use_ssl, timeout = client.args
 
       assert_equal 'example.org', host
@@ -51,7 +95,7 @@ module XMLRPC
     end
 
     def test_new2_ssl_custom_port
-      client = FakeClient.new2 'https://example.org:1234/foo'
+      client = Fake::Client.new2 'https://example.org:1234/foo'
       host, path, port, proxy_host, proxy_port, user, password, use_ssl, timeout = client.args
 
       assert_equal 'example.org', host
@@ -66,7 +110,7 @@ module XMLRPC
     end
 
     def test_new2_user_password
-      client = FakeClient.new2 'http://aaron:tenderlove@example.org/foo'
+      client = Fake::Client.new2 'http://aaron:tenderlove@example.org/foo'
       host, path, port, proxy_host, proxy_port, user, password, use_ssl, timeout = client.args
 
       [ host, path, port ].each { |x| assert x }
@@ -77,7 +121,7 @@ module XMLRPC
     end
 
     def test_new2_proxy_host
-      client = FakeClient.new2 'http://example.org/foo', 'example.com'
+      client = Fake::Client.new2 'http://example.org/foo', 'example.com'
       host, path, port, proxy_host, proxy_port, user, password, use_ssl, timeout = client.args
 
       [ host, path, port ].each { |x| assert x }
@@ -88,7 +132,7 @@ module XMLRPC
     end
 
     def test_new2_proxy_port
-      client = FakeClient.new2 'http://example.org/foo', 'example.com:1234'
+      client = Fake::Client.new2 'http://example.org/foo', 'example.com:1234'
       host, path, port, proxy_host, proxy_port, user, password, use_ssl, timeout = client.args
 
       [ host, path, port ].each { |x| assert x }
@@ -100,7 +144,7 @@ module XMLRPC
     end
 
     def test_new2_no_path
-      client = FakeClient.new2 'http://example.org'
+      client = Fake::Client.new2 'http://example.org'
       host, path, port, *rest = client.args
 
       assert_equal 'example.org', host
@@ -111,7 +155,7 @@ module XMLRPC
     end
 
     def test_new2_slash_path
-      client = FakeClient.new2 'http://example.org/'
+      client = Fake::Client.new2 'http://example.org/'
       host, path, port, *rest = client.args
 
       assert_equal 'example.org', host
@@ -134,7 +178,7 @@ module XMLRPC
     end
 
     def test_new2_path_with_query
-      client = FakeClient.new2 'http://example.org/foo?bar=baz'
+      client = Fake::Client.new2 'http://example.org/foo?bar=baz'
       host, path, port, *rest = client.args
 
       assert_equal 'example.org', host
@@ -142,6 +186,39 @@ module XMLRPC
       assert port
 
       rest.each { |x| refute x }
+    end
+
+    def test_bad_content_type
+      fh = read 'blog.xml'
+
+      responses = {
+        '/foo' => [ Fake::Response.new(fh, [['Content-Type', 'text/xml']]) ]
+      }
+
+      client = fake_client(responses).new2 'http://example.org/foo'
+
+      resp = client.call('wp.getUsersBlogs', 'tlo', 'omg')
+
+      expected = [{
+        "isAdmin"  => true,
+        "url"      => "http://tenderlovemaking.com/",
+        "blogid"   => "1",
+        "blogName" => "Tender Lovemaking",
+        "xmlrpc"   => "http://tenderlovemaking.com/xmlrpc.php"
+      }]
+
+      assert_equal expected, resp
+    end
+
+    private
+    def read filename
+      File.read File.expand_path(File.join(__FILE__, '..', 'data', filename))
+    end
+
+    def fake_client responses
+      Class.new(Fake::Client) {
+        define_method(:net_http) { |*_| Fake::HTTP.new(responses) }
+      }
     end
   end
 end

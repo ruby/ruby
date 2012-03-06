@@ -1,3 +1,9 @@
+Wed Mar  7 07:39:28 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* test/xmlrpc/test_client.rb: adding a test for performing an XMLRPC
+	  call.
+	* test/xmlrpc/data/blog.xml: supporting XML document for the response.
+
 Tue Mar  6 16:24:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_tokadd_string): escape simple regexp meta
