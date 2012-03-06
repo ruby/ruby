@@ -1,3 +1,8 @@
+Tue Mar  6 16:24:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_tokadd_string): escape simple regexp meta
+	  character termninators.
+
 Tue Mar  6 10:11:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/console.c (set_rawmode): clear ECHOE and ECHOK

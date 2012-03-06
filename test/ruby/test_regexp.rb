@@ -1,5 +1,5 @@
 require 'test/unit'
-require_relative 'envutil'
+require 'envutil'
 
 class TestRegexp < Test::Unit::TestCase
   def setup
@@ -159,6 +159,40 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('', //.source)
     assert_equal('\:', /\:/.source, bug5484)
     assert_equal(':', %r:\::.source, bug5484)
+  end
+
+  def test_source_escaped
+    expected, result = "$*+.?^|".each_char.map {|c|
+      [
+        ["\\#{c}", "\\#{c}", 1],
+        begin
+          re = eval("%r#{c}\\#{c}#{c}", nil, __FILE__, __LINE__)
+          t = eval("/\\#{c}/", nil, __FILE__, __LINE__).source
+        rescue SyntaxError => e
+          [e, t, nil]
+        else
+          [re.source, t, re =~ "a#{c}a"]
+        end
+      ]
+    }.transpose
+    assert_equal(expected, result)
+  end
+
+  def test_source_unescaped
+    expected, result = "!\"#%&',-/:;=@_`~".each_char.map {|c|
+      [
+        ["#{c}", "\\#{c}", 1],
+        begin
+          re = eval("%r#{c}\\#{c}#{c}", nil, __FILE__, __LINE__)
+          t = eval("%r{\\#{c}}", nil, __FILE__, __LINE__).source
+        rescue SyntaxError => e
+          [e, t, nil]
+        else
+          [re.source, t, re =~ "a#{c}a"]
+        end
+      ]
+    }.transpose
+    assert_equal(expected, result)
   end
 
   def test_inspect

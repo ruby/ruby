@@ -6440,6 +6440,18 @@ parser_tokadd_mbchar(struct parser_params *parser, int c)
 
 #define tokadd_mbchar(c) parser_tokadd_mbchar(parser, (c))
 
+static inline int
+simple_re_meta(int c)
+{
+    switch (c) {
+      case '$': case '*': case '+': case '.':
+      case '?': case '^': case '|':
+	return TRUE;
+      default:
+	return FALSE;
+    }
+}
+
 static int
 parser_tokadd_string(struct parser_params *parser,
 		     int func, int term, int paren, long *nest,
@@ -6520,7 +6532,7 @@ parser_tokadd_string(struct parser_params *parser,
 		    goto non_ascii;
 		}
 		if (func & STR_FUNC_REGEXP) {
-		    if (c == term) {
+		    if (c == term && !simple_re_meta(c)) {
 			tokadd(c);
 			continue;
 		    }
