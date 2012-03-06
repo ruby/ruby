@@ -1,3 +1,12 @@
+Tue Mar  6 12:05:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/yaml/rubytypes.rb (Exception.yaml_new): fix bug that causes
+	  YAML serialization problem for Exception.
+	  Exception#initialize doesn't use visible instance variable for
+	  the exception message, so call the method with the message.
+	  patched by Jingwen Owen Ou <jingweno AT gmail.com>.
+	  http://github.com/ruby/ruby/pull/41
+
 Fri Mar  2 11:44:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (mark_dump_arg): mark destination string.  patch by
