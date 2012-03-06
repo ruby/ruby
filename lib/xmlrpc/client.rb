@@ -556,7 +556,9 @@ module XMLRPC
         raise "HTTP-Error: #{resp.code} #{resp.message}"
       end
 
-      ct = parse_content_type(resp["Content-Type"]).first
+      # assume text/xml on instances where Content-Type header is not set
+      ct_expected = resp["Content-Type"] || 'text/xml'
+      ct = parse_content_type(ct_expected).first
       if ct != "text/xml"
         if ct == "text/html"
           raise "Wrong content-type (received '#{ct}' but expected 'text/xml'): \n#{data}"

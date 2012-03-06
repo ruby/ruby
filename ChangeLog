@@ -1,3 +1,11 @@
+Wed Mar  7 07:43:29 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/xmlrpc/client.rb: assume servers that do not send a Content-Type
+	  header are sending 'text/xml'. Thanks Nathan Leavitt!
+	  [ruby-core:41204] [Bug #5660]
+
+	* test/xmlrpc/test_client.rb: supporting test
+
 Wed Mar  7 07:39:28 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* test/xmlrpc/test_client.rb: adding a test for performing an XMLRPC
