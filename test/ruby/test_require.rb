@@ -5,6 +5,14 @@ require_relative 'envutil'
 require 'tmpdir'
 
 class TestRequire < Test::Unit::TestCase
+  def test_load_error_path
+    filename = "should_not_exist"
+    error = assert_raises(LoadError) do
+      require filename
+    end
+    assert_equal filename, error.path
+  end
+
   def test_require_invalid_shared_object
     t = Tempfile.new(["test_ruby_test_require", ".so"])
     t.puts "dummy"

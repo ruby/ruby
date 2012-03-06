@@ -1560,7 +1560,7 @@ load_file_internal(VALUE arg)
 		    }
 		}
 	    }
-	    rb_raise(rb_eLoadError, "no Ruby script found in input");
+	    rb_loaderror("no Ruby script found in input");
 	}
 
 	c = rb_io_getbyte(f);

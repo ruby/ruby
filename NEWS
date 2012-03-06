@@ -28,6 +28,11 @@ with all sufficient information, see the ChangeLog file.
       * respond_to? against a protected method now returns false unless
         the second argument is true.
 
+  * LoadError
+    * added method:
+      * added LoadError#path method to return the file name that could not be
+        loaded.
+
   * Signal
     * incompatible changes:
       * Signal.trap raises ArgumentError when :SEGV, :BUS, :ILL, :FPE, :VTALRM

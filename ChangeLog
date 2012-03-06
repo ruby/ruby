@@ -1,3 +1,19 @@
+Wed Mar  7 08:32:43 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* error.c (rb_loaderror_with_path): Adding the missing file as an
+	  instance variable to the LoadError exception.
+	
+	* load.c: call rb_loaderror_with_path so that the missing path is
+	  added to the exception.
+	
+	* ruby.c: call rb_loaderror rather than raising our own LoadError
+	  exception.
+
+	* include/ruby/intern.h: add declaration for rb_loaderror_with_path.
+
+	* test/ruby/test_require.rb: add supporting test for LoadError#path
+	  method.
+
 Wed Mar  7 08:28:00 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/xmlrpc/parser.rb: support i8 types. Thanks Stas Kelvich!
