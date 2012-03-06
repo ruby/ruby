@@ -233,6 +233,20 @@ module XMLRPC
       assert_equal expected, resp
     end
 
+    def test_i8_tag
+      fh = read('blog.xml').gsub(/string/, 'i8')
+
+      responses = {
+        '/foo' => [ Fake::Response.new(fh) ]
+      }
+
+      client = fake_client(responses).new2 'http://example.org/foo'
+
+      resp = client.call('wp.getUsersBlogs', 'tlo', 'omg')
+
+      assert_equal 1, resp.first['blogid']
+    end
+
     private
     def read filename
       File.read File.expand_path(File.join(__FILE__, '..', 'data', filename))

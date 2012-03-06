@@ -1,3 +1,10 @@
+Wed Mar  7 08:28:00 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* lib/xmlrpc/parser.rb: support i8 types. Thanks Stas Kelvich!
+	  [ruby-core:29246] [Feature #3090]
+
+	* test/xmlrpc/test_client.rb: supporting test
+
 Wed Mar  7 07:43:29 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/xmlrpc/client.rb: assume servers that do not send a Content-Type

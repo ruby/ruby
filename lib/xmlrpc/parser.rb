@@ -169,7 +169,7 @@ module XMLRPC
       private
 
       #
-      # remove all whitespaces but in the tags i4, int, boolean....
+      # remove all whitespaces but in the tags i4, i8, int, boolean....
       # and all comments
       #
       def removeWhitespacesAndComments(node)
@@ -179,7 +179,7 @@ module XMLRPC
           case _nodeType(nd)
           when :TEXT
             # TODO: add nil?
-            unless %w(i4 int boolean string double dateTime.iso8601 base64).include? node.nodeName
+            unless %w(i4 i8 int boolean string double dateTime.iso8601 base64).include? node.nodeName
 
                if node.nodeName == "value"
                  if not node.childNodes.to_a.detect {|n| _nodeType(n) == :ELEMENT}.nil?
@@ -253,7 +253,7 @@ module XMLRPC
       def integer(node)
         #TODO: check string for float because to_i returnsa
         #      0 when wrong string
-         nodeMustBe(node, %w(i4 int))
+         nodeMustBe(node, %w(i4 i8 int))
         hasOnlyOneChild(node)
 
         Convert.int(text(node.firstChild))
@@ -415,7 +415,7 @@ module XMLRPC
           text_zero_one(node)
         when :ELEMENT
           case child.nodeName
-          when "i4", "int"        then integer(child)
+          when "i4", "i8", "int"  then integer(child)
           when "boolean"          then boolean(child)
           when "string"           then string(child)
           when "double"           then double(child)
@@ -525,7 +525,7 @@ module XMLRPC
         case name
         when "string"
           @value = @data
-        when "i4", "int"
+        when "i4", "i8", "int"
           @value = Convert.int(@data)
         when "boolean"
           @value = Convert.boolean(@data)
