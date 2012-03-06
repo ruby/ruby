@@ -944,7 +944,7 @@ zstream_run(struct zstream *z, Bytef *src, long len, int flush)
 static VALUE
 zstream_sync(struct zstream *z, Bytef *src, long len)
 {
-    VALUE rest;
+    /* VALUE rest; */
     int err;
 
     if (!NIL_P(z->input)) {
@@ -959,7 +959,7 @@ zstream_sync(struct zstream *z, Bytef *src, long len)
 	}
 	zstream_reset_input(z);
 	if (err != Z_DATA_ERROR) {
-	    rest = rb_str_new((char*)z->stream.next_in, z->stream.avail_in);
+	    /* rest = rb_str_new((char*)z->stream.next_in, z->stream.avail_in); */
 	    raise_zlib_error(err, z->stream.msg);
 	}
     }
@@ -974,7 +974,7 @@ zstream_sync(struct zstream *z, Bytef *src, long len)
 	return Qtrue;
     }
     if (err != Z_DATA_ERROR) {
-	rest = rb_str_new((char*)z->stream.next_in, z->stream.avail_in);
+	/* rest = rb_str_new((char*)z->stream.next_in, z->stream.avail_in); */
 	raise_zlib_error(err, z->stream.msg);
     }
     return Qfalse;
@@ -2628,7 +2628,6 @@ gzfile_getc(struct gzfile *gz)
     if (gz->ec && rb_enc_dummy_p(gz->enc2)) {
 	const unsigned char *ss, *sp, *se;
 	unsigned char *ds, *dp, *de;
-	rb_econv_result_t res;
 
 	if (!gz->cbuf) {
 	    gz->cbuf = ALLOC_N(char, GZFILE_CBUF_CAPA);
@@ -2637,7 +2636,7 @@ gzfile_getc(struct gzfile *gz)
         se = sp + gz->z.buf_filled;
         ds = dp = (unsigned char *)gz->cbuf;
         de = (unsigned char *)ds + GZFILE_CBUF_CAPA;
-        res = rb_econv_convert(gz->ec, &sp, se, &dp, de, ECONV_PARTIAL_INPUT|ECONV_AFTER_OUTPUT);
+        (void)rb_econv_convert(gz->ec, &sp, se, &dp, de, ECONV_PARTIAL_INPUT|ECONV_AFTER_OUTPUT);
         rb_econv_check_error(gz->ec);
 	dst = zstream_shift_buffer(&gz->z, sp - ss);
 	gzfile_calc_crc(gz, dst);
