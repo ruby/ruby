@@ -125,10 +125,11 @@ set_rawmode(conmode *t, void *arg)
 {
 #ifdef HAVE_CFMAKERAW
     cfmakeraw(t);
+    t->c_lflag &= ~(ECHOE|ECHOK);
 #elif defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
     t->c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
     t->c_oflag &= ~OPOST;
-    t->c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN);
+    t->c_lflag &= ~(ECHO|ECHOE|ECHOK|ECHONL|ICANON|ISIG|IEXTEN);
     t->c_cflag &= ~(CSIZE|PARENB);
     t->c_cflag |= CS8;
 #elif defined HAVE_SGTTY_H
@@ -189,7 +190,7 @@ static int
 echo_p(conmode *t)
 {
 #if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
-    return (t->c_lflag & (ECHO | ECHOE | ECHOK | ECHONL)) != 0;
+    return (t->c_lflag & (ECHO | ECHONL)) != 0;
 #elif defined HAVE_SGTTY_H
     return (t->sg_flags & ECHO) != 0;
 #elif defined _WIN32
@@ -295,7 +296,7 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *, void *), void 
  *
  *   STDIN.raw(&:gets)
  *
- * will read and return a line with echo back and line editing.
+ * will read and return a line without echo back and line editing.
  *
  * You must require 'io/console' to use this method.
  */
@@ -341,6 +342,8 @@ console_set_raw(int argc, VALUE *argv, VALUE io)
  *   STDIN.cooked(&:gets)
  *
  * will read and return a line with echo back and line editing.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_cooked(VALUE io)
@@ -355,6 +358,8 @@ console_cooked(VALUE io)
  * Enables cooked mode.
  *
  * If the terminal mode needs to be back, use io.cooked { ... }.
+ *
+ * You must require 'io/console' to use this method.
  */
 static VALUE
 console_set_cooked(VALUE io)
@@ -415,6 +420,8 @@ console_noecho(VALUE io)
  *   io.echo = flag
  *
  * Enables/disables echo back.
+ * On some platforms, all combinations of this flags and raw/cooked
+ * mode may not be valid.
  *
  * You must require 'io/console' to use this method.
  */
