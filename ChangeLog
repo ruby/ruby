@@ -1,3 +1,16 @@
+Tue Mar  6 10:11:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (set_rawmode): clear ECHOE and ECHOK
+	  bits too.
+
+	* ext/io/console/console.c (echo_p): ignore ECHOE and ECHOK bits.
+	  [ruby-dev:45309] [Bug #6116]
+
+	* ext/io/console/console.c (console_raw): fix rdoc.
+
+	* ext/io/console/console.c (console_set_echo): mentioned about
+	  platform dependency.
+
 Tue Mar  6 07:18:10 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* lib/xmlrpc/client.rb: switch net/http post2 calls to modern

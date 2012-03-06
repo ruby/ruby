@@ -7,14 +7,19 @@ end
 require_relative '../../ruby/envutil'
 
 class TestIO_Console < Test::Unit::TestCase
+  Bug6116 = '[ruby-dev:45309]'
+
   def test_raw
     helper {|m, s|
       s.print "abc\n"
       assert_equal("abc\r\n", m.gets)
+      assert_send([s, :echo?])
       s.raw {
+        assert_not_send([s, :echo?], Bug6116)
         s.print "def\n"
         assert_equal("def\n", m.gets)
       }
+      assert_send([s, :echo?])
       s.print "ghi\n"
       assert_equal("ghi\r\n", m.gets)
     }
@@ -22,14 +27,19 @@ class TestIO_Console < Test::Unit::TestCase
 
   def test_cooked
     helper {|m, s|
+      assert_send([s, :echo?])
       s.raw {
         s.print "abc\n"
         assert_equal("abc\n", m.gets)
+        assert_not_send([s, :echo?], Bug6116)
         s.cooked {
+          assert_send([s, :echo?])
           s.print "def\n"
           assert_equal("def\r\n", m.gets)
         }
+        assert_not_send([s, :echo?], Bug6116)
       }
+      assert_send([s, :echo?])
       s.print "ghi\n"
       assert_equal("ghi\r\n", m.gets)
     }
@@ -37,7 +47,7 @@ class TestIO_Console < Test::Unit::TestCase
 
   def test_echo
     helper {|m, s|
-      assert(s.echo?)
+      assert_send([s, :echo?])
       m.print "a"
       assert_equal("a", m.readpartial(10))
     }
@@ -46,7 +56,7 @@ class TestIO_Console < Test::Unit::TestCase
   def test_noecho
     helper {|m, s|
       s.noecho {
-	assert(!s.echo?)
+	assert_not_send([s, :echo?])
 	m.print "a"
 	sleep 0.1
       }
@@ -57,7 +67,7 @@ class TestIO_Console < Test::Unit::TestCase
 
   def test_noecho2
     helper {|m, s|
-      assert(s.echo?)
+      assert_send([s, :echo?])
       m.print "a\n"
       sleep 0.1
       s.print "b\n"
@@ -65,13 +75,13 @@ class TestIO_Console < Test::Unit::TestCase
       assert_equal("a\r\nb\r\n", m.readpartial(10))
       assert_equal("a\n", s.readpartial(10))
       s.noecho {
-        assert(!s.echo?)
+        assert_not_send([s, :echo?])
         m.print "a\n"
         s.print "b\n"
         assert_equal("b\r\n", m.readpartial(10))
         assert_equal("a\n", s.readpartial(10))
       }
-      assert(s.echo?)
+      assert_send([s, :echo?])
       m.print "a\n"
       sleep 0.1
       s.print "b\n"
@@ -83,7 +93,7 @@ class TestIO_Console < Test::Unit::TestCase
 
   def test_setecho
     helper {|m, s|
-      assert(s.echo?)
+      assert_send([s, :echo?])
       s.echo = false
       m.print "a"
       sleep 0.1
@@ -95,7 +105,7 @@ class TestIO_Console < Test::Unit::TestCase
 
   def test_setecho2
     helper {|m, s|
-      assert(s.echo?)
+      assert_send([s, :echo?])
       m.print "a\n"
       sleep 0.1
       s.print "b\n"
@@ -103,13 +113,13 @@ class TestIO_Console < Test::Unit::TestCase
       assert_equal("a\r\nb\r\n", m.readpartial(10))
       assert_equal("a\n", s.readpartial(10))
       s.echo = false
-      assert(!s.echo?)
+      assert_not_send([s, :echo?])
       m.print "a\n"
       s.print "b\n"
       assert_equal("b\r\n", m.readpartial(10))
       assert_equal("a\n", s.readpartial(10))
       s.echo = true
-      assert(s.echo?)
+      assert_send([s, :echo?])
       m.print "a\n"
       sleep 0.1
       s.print "b\n"
