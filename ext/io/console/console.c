@@ -557,7 +557,7 @@ console_dev(VALUE klass)
 	VALUE out;
 	rb_io_t *ofptr;
 #endif
-	int fd, mode;
+	int fd;
 
 #ifdef CONSOLE_DEVICE_FOR_WRITING
 	fd = open(CONSOLE_DEVICE_FOR_WRITING, O_WRONLY);
