@@ -3198,12 +3198,11 @@ rb_str_aref(VALUE str, VALUE indx)
  *  Element Reference---If passed a single <code>Fixnum</code>, returns a
  *  substring of one character at that position. If passed two <code>Fixnum</code>
  *  objects, returns a substring starting at the offset given by the first, and
- *  a length given by the second. If given a range, a substring containing
- *  characters at offsets given by the range is returned. In all three cases, if
- *  an offset is negative, it is counted from the end of <i>str</i>. Returns
- *  <code>nil</code> if the initial offset falls outside the string, the length
- *  is negative, or the beginning of the range is greater than the end of the
- *  string.
+ *  with a length given by the second. If passed a range, its beginning and end
+ *  are interpreted as offsets delimiting the substring to be returned. In all
+ *  three cases, if an offset is negative, it is counted from the end of <i>str</i>.
+ *  Returns <code>nil</code> if the initial offset falls outside the string or
+ *  the length is negative.
  *
  *  If a <code>Regexp</code> is supplied, the matching portion of <i>str</i> is
  *  returned. If a numeric or name parameter follows the regular expression, that
@@ -3214,12 +3213,13 @@ rb_str_aref(VALUE str, VALUE indx)
  *
  *     a = "hello there"
  *     a[1]                   #=> "e"
- *     a[1,3]                 #=> "ell"
- *     a[1..3]                #=> "ell"
- *     a[-3,2]                #=> "er"
+ *     a[2, 3]                #=> "llo"
+ *     a[2..3]                #=> "ll"
+ *     a[-3, 2]               #=> "er"
+ *     a[7..-2]               #=> "her"
  *     a[-4..-2]              #=> "her"
- *     a[12..-1]              #=> nil
  *     a[-2..-4]              #=> ""
+ *     a[12..-1]              #=> nil
  *     a[/[aeiou](.)\1/]      #=> "ell"
  *     a[/[aeiou](.)\1/, 0]   #=> "ell"
  *     a[/[aeiou](.)\1/, 1]   #=> "l"
