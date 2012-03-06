@@ -1,3 +1,10 @@
+Tue Mar  6 12:31:47 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (io_getch): default delegating method
+	  for StringIO.  https://github.com/nobu/io-console/issues/4
+
+	* ext/stringio/stringio.c: moved some methods to hidden modules.
+
 Tue Mar  6 12:29:34 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* io.c (Init_IO):  Mention io/console methods.  [Ruby 1.9 - Bug #5602]

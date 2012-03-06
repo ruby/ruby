@@ -4,6 +4,7 @@ begin
   require 'pty'
 rescue LoadError
 end
+require_relative '../../ruby/envutil'
 
 class TestIO_Console < Test::Unit::TestCase
   def test_raw
@@ -175,8 +176,6 @@ class TestIO_Console < Test::Unit::TestCase
 end if defined?(PTY) and defined?(IO::console)
 
 class TestIO_Console < Test::Unit::TestCase
-  require_relative '../../ruby/envutil'
-
   case
   when Process.respond_to?(:daemon)
     noctty = [EnvUtil.rubybin, "-e", "Process.daemon(true)"]
@@ -194,6 +193,7 @@ class TestIO_Console < Test::Unit::TestCase
       t2 = Tempfile.new("console")
       t2.close
       cmd = NOCTTY + [
+        '--disable=gems',
         '-rio/console',
         '-e', 'open(ARGV[0], "w") {|f| f.puts IO.console.inspect}',
         '-e', 'File.unlink(ARGV[1])',
@@ -208,3 +208,11 @@ class TestIO_Console < Test::Unit::TestCase
     end
   end
 end if defined?(IO.console)
+
+class TestIO_Console < Test::Unit::TestCase
+  def test_stringio_getch
+    assert_ruby_status(%w"--disable=gems -rstringio -rio/console", "exit(StringIO.method_defined?(:getch))")
+    assert_ruby_status(%w"--disable=gems -rio/console -rstringio", "exit(StringIO.method_defined?(:getch))")
+    assert_ruby_status(%w"--disable=gems -rstringio", "exit(!StringIO.method_defined?(:getch))")
+  end
+end
