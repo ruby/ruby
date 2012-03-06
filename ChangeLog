@@ -1,3 +1,13 @@
+Tue Mar  6 18:55:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (assert_send, assert_not_send):
+	  parenthesize non-empty arguments.
+
+Tue Mar  6 18:55:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (assert_send): make arguments in
+	  the default message clearer.
+
 Tue Mar  6 12:48:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/console.c (set_rawmode): clear ECHOE and ECHOK
