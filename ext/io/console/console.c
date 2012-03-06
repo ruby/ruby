@@ -96,8 +96,7 @@ set_rawmode(conmode *t)
 {
 #ifdef HAVE_CFMAKERAW
     cfmakeraw(t);
-#else
-#if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
+#elif defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
     t->c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON);
     t->c_oflag &= ~OPOST;
     t->c_lflag &= ~(ECHO|ECHONL|ICANON|ISIG|IEXTEN);
@@ -109,6 +108,20 @@ set_rawmode(conmode *t)
 #elif defined _WIN32
     *t = 0;
 #endif
+}
+
+static void
+set_cookedmode(conmode *t)
+{
+#if defined HAVE_TERMIOS_H || defined HAVE_TERMIO_H
+    t->c_iflag |= (BRKINT|ISTRIP|ICRNL|IXON);
+    t->c_oflag |= OPOST;
+    t->c_lflag |= (ECHO|ECHOE|ECHOK|ECHONL|ICANON|ISIG|IEXTEN);
+#elif defined HAVE_SGTTY_H
+    t->sg_flags |= ECHO;
+    t->sg_flags &= ~RAW;
+#elif defined _WIN32
+    *t |= ENABLE_ECHO_INPUT|ENABLE_LINE_INPUT|ENABLE_PROCESSED_INPUT;
 #endif
 }
 
@@ -277,6 +290,45 @@ console_set_raw(VALUE io)
     fd = GetReadFD(fptr);
     if (!getattr(fd, &t)) rb_sys_fail(0);
     set_rawmode(&t);
+    if (!setattr(fd, &t)) rb_sys_fail(0);
+    return io;
+}
+
+/*
+ * call-seq:
+ *   io.cooked {|io| }
+ *
+ * Yields +self+ within cooked mode.
+ *
+ *   STDIN.cooked(&:gets)
+ *
+ * will read and return a line with echo back and line editing.
+ */
+static VALUE
+console_cooked(VALUE io)
+{
+    return ttymode(io, rb_yield, set_cookedmode);
+}
+
+/*
+ * call-seq:
+ *   io.cooked!
+ *
+ * Enables cooked mode.
+ *
+ * If the terminal mode needs to be back, use io.cooked { ... }.
+ */
+static VALUE
+console_set_cooked(VALUE io)
+{
+    conmode t;
+    rb_io_t *fptr;
+    int fd;
+
+    GetOpenFile(io, fptr);
+    fd = GetReadFD(fptr);
+    if (!getattr(fd, &t)) rb_sys_fail(0);
+    set_cookedmode(&t);
     if (!setattr(fd, &t)) rb_sys_fail(0);
     return io;
 }
@@ -645,6 +697,8 @@ InitVM_console(void)
 {
     rb_define_method(rb_cIO, "raw", console_raw, 0);
     rb_define_method(rb_cIO, "raw!", console_set_raw, 0);
+    rb_define_method(rb_cIO, "cooked", console_cooked, 0);
+    rb_define_method(rb_cIO, "cooked!", console_set_cooked, 0);
     rb_define_method(rb_cIO, "getch", console_getch, 0);
     rb_define_method(rb_cIO, "echo=", console_set_echo, 1);
     rb_define_method(rb_cIO, "echo?", console_echo_p, 0);

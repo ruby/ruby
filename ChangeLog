@@ -1,3 +1,8 @@
+Tue Mar  6 12:39:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (console_cooked, console_set_cooked):
+	  new methods to reset cooked mode.  [EXPERIMENTAL]
+
 Tue Mar  6 12:31:47 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/console.c (io_getch): default delegating method

@@ -20,6 +20,21 @@ class TestIO_Console < Test::Unit::TestCase
     }
   end
 
+  def test_cooked
+    helper {|m, s|
+      s.raw {
+        s.print "abc\n"
+        assert_equal("abc\n", m.gets)
+        s.cooked {
+          s.print "def\n"
+          assert_equal("def\r\n", m.gets)
+        }
+      }
+      s.print "ghi\n"
+      assert_equal("ghi\r\n", m.gets)
+    }
+  end
+
   def test_echo
     helper {|m, s|
       assert(s.echo?)
