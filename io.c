@@ -10699,6 +10699,35 @@ argf_write(VALUE argf, VALUE str)
  *  command line (or STDIN if no files are mentioned). ARGF provides
  *  the methods <code>#path</code> and <code>#filename</code> to access
  *  the name of the file currently being read.
+ *
+ *  == io/console
+ *
+ *  The io/console extension provides methods for interacting with the
+ *  console.  The console can be accessed from <code>IO.console</code> or
+ *  the standard input/output/error IO objects.
+ *
+ *  Requiring io/console adds the following methods:
+ *
+ *  * IO::console
+ *  * IO#raw
+ *  * IO#raw!
+ *  * IO#cooked
+ *  * IO#cooked!
+ *  * IO#getch
+ *  * IO#echo=
+ *  * IO#echo?
+ *  * IO#noecho
+ *  * IO#winsize
+ *  * IO#winsize=
+ *  * IO#iflush
+ *  * IO#ioflush
+ *  * IO#oflush
+ *
+ *  Example:
+ *
+ *    require 'io/console'
+ *    rows, columns = $stdin.winsize
+ *    puts "You screen is #{columns} wide and #{rows} tall"
  */
 
 void

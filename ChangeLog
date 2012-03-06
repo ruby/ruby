@@ -1,3 +1,9 @@
+Tue Mar  6 12:29:34 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* io.c (Init_IO):  Mention io/console methods.  [Ruby 1.9 - Bug #5602]
+	* ext/io/console/console.c:  Mention that io/console must be required
+	  similar to lib/time.rb
+
 Tue Mar  6 11:42:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck/lib/syck/rubytypes.rb (Exception.yaml_new): fix bug
