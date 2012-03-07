@@ -526,7 +526,7 @@ module XMLRPC
 
       if async
         # use a new HTTP object for each call
-        http = net_http.new(@host, @port, @proxy_host, @proxy_port)
+        http = net_http(@host, @port, @proxy_host, @proxy_port)
         http.use_ssl = @use_ssl if @use_ssl
         http.read_timeout = @timeout
         http.open_timeout = @timeout

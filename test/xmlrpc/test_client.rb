@@ -16,7 +16,17 @@ module XMLRPC
         def started?
           @started
         end
-        def start; @started = true; end
+        def start
+          @started = true
+          if block_given?
+            begin
+              return yield(self)
+            ensure
+              @started = false
+            end
+          end
+          self
+        end
 
         def request_post path, request, headers
           @responses[path].shift
@@ -198,6 +208,28 @@ module XMLRPC
       client = fake_client(responses).new2 'http://example.org/foo'
 
       resp = client.call('wp.getUsersBlogs', 'tlo', 'omg')
+
+      expected = [{
+        "isAdmin"  => true,
+        "url"      => "http://tenderlovemaking.com/",
+        "blogid"   => "1",
+        "blogName" => "Tender Lovemaking",
+        "xmlrpc"   => "http://tenderlovemaking.com/xmlrpc.php"
+      }]
+
+      assert_equal expected, resp
+    end
+
+    def test_async_request
+      fh = read 'blog.xml'
+
+      responses = {
+        '/foo' => [ Fake::Response.new(fh, [['Content-Type', 'text/xml']]) ]
+      }
+
+      client = fake_client(responses).new2 'http://example.org/foo'
+
+      resp = client.call_async('wp.getUsersBlogs', 'tlo', 'omg')
 
       expected = [{
         "isAdmin"  => true,

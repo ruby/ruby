@@ -1,3 +1,10 @@
+Wed Mar  7 22:41:50 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* lib/xmlrpc/client.rb (module XMLRPC): fix typo.
+
+	* test/xmlrpc/test_client.rb (test_async_call): add test for
+	  XMLRPC::Client#call_async to check above fix.
+
 Wed Mar  7 16:30:24 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_load_fail): should honor encoding.
