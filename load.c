@@ -594,7 +594,6 @@ static void
 load_failed(VALUE fname)
 {
     rb_loaderror_with_path(fname, "cannot load such file -- %s", RSTRING_PTR(fname));
-    RB_GC_GUARD(fname);
 }
 
 static VALUE
