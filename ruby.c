@@ -1524,7 +1524,7 @@ load_file_internal(VALUE arg)
 	}
 #endif
 	if ((fd = rb_cloexec_open(fname, mode, 0)) < 0) {
-	    rb_load_fail(fname_v);
+	    rb_load_fail(fname_v, strerror(errno));
 	}
         rb_update_max_fd(fd);
 

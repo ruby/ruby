@@ -588,12 +588,10 @@ search_required(VALUE fname, volatile VALUE *path, int safe_level)
     return type ? 's' : 'r';
 }
 
-void rb_loaderror_with_path(VALUE path, const char *fmt, ...);
-
 static void
 load_failed(VALUE fname)
 {
-    rb_loaderror_with_path(fname, "cannot load such file -- %s", RSTRING_PTR(fname));
+    rb_load_fail(fname, "cannot load such file");
 }
 
 static VALUE

@@ -1740,19 +1740,26 @@ rb_raise(VALUE exc, const char *fmt, ...)
     rb_exc_raise(rb_exc_new3(exc, mesg));
 }
 
+NORETURN(static void raise_loaderror(VALUE path, VALUE mesg));
+
+static void
+raise_loaderror(VALUE path, VALUE mesg)
+{
+    VALUE err = rb_exc_new3(rb_eLoadError, mesg);
+    rb_ivar_set(err, rb_intern("@path"), path);
+    rb_exc_raise(err);
+}
+
 void
 rb_loaderror(const char *fmt, ...)
 {
     va_list args;
     VALUE mesg;
-    VALUE err;
 
     va_start(args, fmt);
     mesg = rb_enc_vsprintf(rb_locale_encoding(), fmt, args);
     va_end(args);
-    err = rb_exc_new3(rb_eLoadError, mesg);
-    rb_ivar_set(err, rb_intern("@path"), Qnil);
-    rb_exc_raise(err);
+    raise_loaderror(Qnil, mesg);
 }
 
 void
@@ -1760,14 +1767,11 @@ rb_loaderror_with_path(VALUE path, const char *fmt, ...)
 {
     va_list args;
     VALUE mesg;
-    VALUE err;
 
     va_start(args, fmt);
     mesg = rb_enc_vsprintf(rb_locale_encoding(), fmt, args);
     va_end(args);
-    err = rb_exc_new3(rb_eLoadError, mesg);
-    rb_ivar_set(err, rb_intern("@path"), path);
-    rb_exc_raise(err);
+    raise_loaderror(path, mesg);
 }
 
 void
@@ -1908,9 +1912,12 @@ rb_sys_warning(const char *fmt, ...)
 }
 
 void
-rb_load_fail(VALUE path)
+rb_load_fail(VALUE path, const char *err)
 {
-    rb_loaderror_with_path(path, "%s -- %s", strerror(errno), RSTRING_PTR(path));
+    VALUE mesg = rb_str_buf_new_cstr(err);
+    rb_str_cat2(mesg, " -- ");
+    rb_str_append(mesg, path);	/* should be ASCII compatible */
+    raise_loaderror(path, mesg);
 }
 
 void

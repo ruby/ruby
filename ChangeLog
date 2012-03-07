@@ -1,3 +1,9 @@
+Wed Mar  7 16:30:24 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_load_fail): should honor encoding.
+
+	* load.c (load_failed): ditto.
+
 Wed Mar  7 12:26:25 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_load_fail): use path as a string, not char*.
