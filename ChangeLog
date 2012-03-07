@@ -1,7 +1,5 @@
 Wed Mar  7 12:26:25 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	rb_load_fail
-
 	* error.c (rb_load_fail): use path as a string, not char*.
 
 	* internal.h: (rb_load_fail): moved from ruby/intern.h.
