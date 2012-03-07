@@ -1908,9 +1908,9 @@ rb_sys_warning(const char *fmt, ...)
 }
 
 void
-rb_load_fail(const char *path)
+rb_load_fail(VALUE path)
 {
-    rb_loaderror_with_path(rb_str_new2(path), "%s -- %s", strerror(errno), path);
+    rb_loaderror_with_path(path, "%s -- %s", strerror(errno), RSTRING_PTR(path));
 }
 
 void

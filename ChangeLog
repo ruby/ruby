@@ -1,12 +1,22 @@
+Wed Mar  7 12:26:25 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	rb_load_fail
+
+	* error.c (rb_load_fail): use path as a string, not char*.
+
+	* internal.h: (rb_load_fail): moved from ruby/intern.h.
+
+	* ruby.c (load_file_internal): fname cannot be NULL.
+
 Wed Mar  7 08:32:43 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* error.c (rb_loaderror_with_path): Adding the missing file as an
 	  instance variable to the LoadError exception.
 	  [ruby-core:39079]
-	
+
 	* load.c: call rb_loaderror_with_path so that the missing path is
 	  added to the exception.
-	
+
 	* ruby.c: call rb_loaderror rather than raising our own LoadError
 	  exception.
 

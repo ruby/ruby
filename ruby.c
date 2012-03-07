@@ -1509,8 +1509,6 @@ load_file_internal(VALUE arg)
     ID set_encoding;
     int xflag = 0;
 
-    if (!fname)
-	rb_load_fail(fname);
     if (strcmp(fname, "-") == 0) {
 	f = rb_stdin;
     }
@@ -1526,7 +1524,7 @@ load_file_internal(VALUE arg)
 	}
 #endif
 	if ((fd = rb_cloexec_open(fname, mode, 0)) < 0) {
-	    rb_load_fail(fname);
+	    rb_load_fail(fname_v);
 	}
         rb_update_max_fd(fd);
 

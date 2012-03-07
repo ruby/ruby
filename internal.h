@@ -116,6 +116,7 @@ VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
 
 /* load.c */
 VALUE rb_get_load_path(void);
+NORETURN(void rb_load_fail(VALUE));
 
 /* math.c */
 VALUE rb_math_atan2(VALUE, VALUE);
