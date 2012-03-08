@@ -148,8 +148,10 @@ module Psych
   #
   # See Psych::Nodes for more information about YAML AST.
   def self.parse yaml, filename = nil
-    children = parse_stream(yaml, filename).children
-    children.empty? ? false : children.first.children.first
+    parse_stream(yaml, filename) do |node|
+      return node
+    end
+    false
   end
 
   ###

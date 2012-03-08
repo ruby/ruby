@@ -2,6 +2,16 @@ require 'psych/helper'
 
 module Psych
   class TestStream < TestCase
+    def test_parse_partial
+      rb = Psych.parse("--- foo\n...\n--- `").to_ruby
+      assert_equal 'foo', rb
+    end
+
+    def test_load_partial
+      rb = Psych.load("--- foo\n...\n--- `")
+      assert_equal 'foo', rb
+    end
+
     def test_parse_stream_yields_documents
       list = []
       Psych.parse_stream("--- foo\n...\n--- bar") do |doc|

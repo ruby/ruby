@@ -1,3 +1,10 @@
+Fri Mar  9 06:29:22 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb (load, parse): stop parsing or loading after
+	  the first document has been parsed.
+
+	* test/psych/test_stream.rb: pertinent tests.
+
 Fri Mar  9 06:17:05 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb (parse_stream, load_stream): if a block is
