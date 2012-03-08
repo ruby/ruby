@@ -13,6 +13,7 @@ require 'psych/deprecated'
 require 'psych/stream'
 require 'psych/json/tree_builder'
 require 'psych/json/stream'
+require 'psych/handlers/document_stream'
 
 ###
 # = Overview
@@ -173,11 +174,18 @@ module Psych
   # +filename+ is used in the exception message if a Psych::SyntaxError is
   # raised.
   #
+  # If a block is given, a Psych::Nodes::Document node will be yielded to the
+  # block as it's being parsed.
+  #
   # Raises a Psych::SyntaxError when a YAML syntax error is detected.
   #
   # Example:
   #
   #   Psych.parse_stream("---\n - a\n - b") # => #<Psych::Nodes::Stream:0x00>
+  #
+  #   Psych.parse_stream("--- a\n--- b") do |node|
+  #     node # => #<Psych::Nodes::Document:0x00>
+  #   end
   #
   #   begin
   #     Psych.parse_stream("--- `", "file.txt")
@@ -187,10 +195,15 @@ module Psych
   #   end
   #
   # See Psych::Nodes for more information about YAML AST.
-  def self.parse_stream yaml, filename = nil
-    parser = self.parser
-    parser.parse yaml, filename
-    parser.handler.root
+  def self.parse_stream yaml, filename = nil, &block
+    if block_given?
+      parser = Psych::Parser.new(Handlers::DocumentStream.new(&block))
+      parser.parse yaml, filename
+    else
+      parser = self.parser
+      parser.parse yaml, filename
+      parser.handler.root
+    end
   end
 
   ###
@@ -252,12 +265,27 @@ module Psych
 
   ###
   # Load multiple documents given in +yaml+.  Returns the parsed documents
-  # as a list.  For example:
+  # as a list.  If a block is given, each document will be converted to ruby
+  # and passed to the block during parsing
+  #
+  # Example:
   #
   #   Psych.load_stream("--- foo\n...\n--- bar\n...") # => ['foo', 'bar']
   #
+  #   list = []
+  #   Psych.load_stream("--- foo\n...\n--- bar\n...") do |ruby|
+  #     list << ruby
+  #   end
+  #   list # => ['foo', 'bar']
+  #
   def self.load_stream yaml, filename = nil
-    parse_stream(yaml, filename).children.map { |child| child.to_ruby }
+    if block_given?
+      parse_stream(yaml, filename) do |node|
+        yield node.to_ruby
+      end
+    else
+      parse_stream(yaml, filename).children.map { |child| child.to_ruby }
+    end
   end
 
   ###

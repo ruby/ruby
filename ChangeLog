@@ -1,3 +1,14 @@
+Fri Mar  9 06:17:05 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb (parse_stream, load_stream): if a block is
+	  given, documents will be yielded to the block as they are parsed.
+	  [ruby-core:42404] [Bug #5978]
+
+	* ext/psych/lib/psych/handlers/document_stream.rb: add a handler that
+	  yields documents as they are parsed
+
+	* test/psych/test_stream.rb: corresponding tests.
+
 Fri Mar  9 00:35:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (lazy_initialize, enumerable_lazy): no additional
