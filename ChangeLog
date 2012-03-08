@@ -1,3 +1,9 @@
+Fri Mar  9 00:30:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c: add Enumerable#lazy. based on the patch by
+	  Innokenty Mikhailov at <https://github.com/ruby/ruby/pull/101>
+	  [ruby-core:37164] [Feature #4890]
+
 Fri Mar  9 00:25:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (enumerator_each, generator_each): pass arguments to

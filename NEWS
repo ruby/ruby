@@ -17,6 +17,10 @@ with all sufficient information, see the ChangeLog file.
 
 * builtin classes
 
+  * Enumerable
+    * added method:
+      * added Enumerable#lazy method for lazy enumeration.
+
   * Kernel
     * added method:
       * added Kernel#Hash conversion method like Array() or Float().

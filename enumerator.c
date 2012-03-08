@@ -102,7 +102,8 @@
  *
  */
 VALUE rb_cEnumerator;
-static ID id_rewind, id_each;
+VALUE rb_cLazy;
+static ID id_rewind, id_each, id_new, id_initialize, id_yield, id_call;
 static VALUE sym_each;
 
 VALUE rb_eStopIteration;
@@ -1200,6 +1201,159 @@ generator_each(int argc, VALUE *argv, VALUE obj)
  *   end
  *
  */
+
+/* Lazy Enumerator methods */
+static VALUE
+lazy_init_iterator(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    VALUE args[2];
+    args[0] = m;
+    args[1] = val;
+    return rb_yield_values2(2, args);
+}
+
+static VALUE
+lazy_init_yielder(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    return rb_funcall2(m, id_yield, 1, &val);
+}
+
+static VALUE
+lazy_init_block_i(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    return rb_block_call(m, id_each, argc-1, argv+1, lazy_init_iterator, val);
+}
+
+static VALUE
+lazy_init_block(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    return rb_block_call(m, id_each, argc-1, argv+1, lazy_init_yielder, val);
+}
+
+static VALUE
+lazy_initialize(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE generator, arg;
+
+    if (argc < 1) rb_raise(rb_eArgError, "wrong number of arguments(%d for 1+)", argc);
+    --argc;
+    arg = *argv++;
+    generator = generator_allocate(rb_cGenerator);
+    rb_block_call(generator, id_initialize, 0, 0,
+		  (rb_block_given_p() ? lazy_init_block_i: lazy_init_block),
+		  arg);
+    enumerator_init(obj, generator, sym_each, argc, argv);
+
+    return obj;
+}
+
+/*
+ * call-seq:
+ *   e.lazy -> lazy_enumerator
+ */
+static VALUE
+enumerable_lazy(int argc, VALUE *argv, VALUE obj)
+{
+    if (argc > 0) {
+	VALUE ret, buff, *args = ALLOCV_N(VALUE, buff, argc + 1);
+	args[0] = obj;
+	MEMCPY(args + 1, argv, VALUE, argc);
+	ret = rb_class_new_instance(argc + 1, args, rb_cLazy);
+	ALLOCV_END(buff);
+	return ret;
+    }
+    else {
+	return rb_class_new_instance(1, &obj, rb_cLazy);
+    }
+}
+
+static VALUE
+lazy_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    VALUE result = rb_yield_values2(argc - 1, &argv[1]);
+
+    return rb_funcall(argv[0], id_yield, 1, result);
+}
+
+static VALUE
+lazy_map(VALUE obj)
+{
+    if (!rb_block_given_p()) {
+	rb_raise(rb_eArgError, "tried to call lazy map without a block");
+    }
+
+    return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_map_func, 0);
+}
+
+
+static VALUE
+lazy_select_func(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    VALUE element = argv[1];
+    VALUE result = rb_yield_values2(argc - 1, &argv[1]);
+
+    if (RTEST(result)) {
+	return rb_funcall(argv[0], id_yield, 1, element);
+    }
+    else {
+	return result;
+    }
+}
+
+static VALUE
+lazy_select(VALUE obj)
+{
+    if (!rb_block_given_p()) {
+	rb_raise(rb_eArgError, "tried to call lazy select without a block");
+    }
+
+    return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_select_func, 0);
+}
+
+static VALUE
+lazy_reject_func(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    VALUE element = argv[1];
+    VALUE result = rb_yield_values2(argc - 1, &argv[1]);
+
+    if (!RTEST(result)) {
+	return rb_funcall(argv[0], id_yield, 1, element);
+    }
+    else {
+	return result;
+    }
+}
+
+static VALUE
+lazy_reject(VALUE obj)
+{
+    if (!rb_block_given_p()) {
+	rb_raise(rb_eArgError, "tried to call lazy reject without a block");
+    }
+
+    return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_reject_func, 0);
+}
+
+static VALUE
+lazy_grep_func(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    VALUE element = argv[1];
+    VALUE result = rb_funcall(m, rb_intern("=~"), 1, element);
+
+    if (RTEST(result)) {
+	return rb_funcall(argv[0], id_yield, 1, element);
+    }
+    else {
+	return result;
+    }
+}
+
+static VALUE
+lazy_grep(VALUE obj, VALUE pattern)
+{
+    return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_grep_func, pattern);
+}
+
 static VALUE
 stop_result(VALUE self)
 {
@@ -1231,6 +1385,18 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
     rb_define_method(rb_cEnumerator, "inspect", enumerator_inspect, 0);
 
+    /* Enumerable::Lazy */
+    rb_cLazy = rb_define_class_under(rb_mEnumerable, "Lazy", rb_cEnumerator);
+    rb_define_method(rb_mEnumerable, "lazy", enumerable_lazy, -1);
+    rb_define_method(rb_cLazy, "initialize", lazy_initialize, -1);
+    rb_define_method(rb_cLazy, "map", lazy_map, 0);
+    rb_define_method(rb_cLazy, "select", lazy_select, 0);
+    rb_define_method(rb_cLazy, "reject", lazy_reject, 0);
+    rb_define_method(rb_cLazy, "grep", lazy_grep, 1);
+
+    rb_define_alias(rb_cLazy, "collect", "map");
+    rb_define_alias(rb_cLazy, "find_all", "select");
+
     rb_eStopIteration = rb_define_class("StopIteration", rb_eIndexError);
     rb_define_method(rb_eStopIteration, "result", stop_result, 0);
 
@@ -1251,6 +1417,10 @@ Init_Enumerator(void)
 
     id_rewind = rb_intern("rewind");
     id_each = rb_intern("each");
+    id_call = rb_intern("call");
+    id_yield = rb_intern("yield");
+    id_new = rb_intern("new");
+    id_initialize = rb_intern("initialize");
     sym_each = ID2SYM(id_each);
 
     rb_provide("enumerator.so");	/* for backward compatibility */
