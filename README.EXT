@@ -284,6 +284,9 @@ listed below:
   rb_ary_shift(VALUE ary)
   rb_ary_unshift(VALUE ary, VALUE val)
 
+  rb_ary_cat(VALUE ary, const VALUE *ptr, long len)
+
+    Appends len elements of objects from ptr to the array.
 
 2. Extending Ruby with C
 

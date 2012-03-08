@@ -42,6 +42,7 @@ struct vtm; /* defined by timev.h */
 /* array.c */
 VALUE rb_ary_last(int, VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
+VALUE rb_ary_cat(VALUE, const VALUE *, long);
 
 /* bignum.c */
 VALUE rb_big_fdiv(VALUE x, VALUE y);

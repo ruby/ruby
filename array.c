@@ -755,6 +755,19 @@ rb_ary_push_1(VALUE ary, VALUE item)
     return ary;
 }
 
+VALUE
+rb_ary_cat(VALUE ary, const VALUE *ptr, long len)
+{
+    long oldlen;
+
+    rb_ary_modify(ary);
+    oldlen = RARRAY_LEN(ary);
+    ary_resize_capa(ary, oldlen + len);
+    MEMCPY(RARRAY_PTR(ary) + oldlen, ptr, VALUE, len);
+    ARY_SET_LEN(ary, oldlen + len);
+    return ary;
+}
+
 /*
  *  call-seq:
  *     ary.push(obj, ... )   -> ary
@@ -771,11 +784,7 @@ rb_ary_push_1(VALUE ary, VALUE item)
 static VALUE
 rb_ary_push_m(int argc, VALUE *argv, VALUE ary)
 {
-    rb_ary_modify(ary);
-    while (argc--) {
-	rb_ary_push_1(ary, *argv++);
-    }
-    return ary;
+    return rb_ary_cat(ary, argv, argc);
 }
 
 VALUE

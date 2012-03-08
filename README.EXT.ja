@@ -312,6 +312,10 @@ Rubyが用意している関数を用いてください．
   rb_ary_shift(VALUE ary)
   rb_ary_unshift(VALUE ary, VALUE val)
 
+  rb_ary_cat(VALUE ary, const VALUE *ptr, long len)
+
+    配列aryにptrからlen個のオブジェクトを追加する．
+
 2．Rubyの機能を使う
 
 原理的にRubyで書けることはCでも書けます．RubyそのものがCで記
