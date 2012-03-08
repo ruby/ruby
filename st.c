@@ -970,20 +970,13 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
             retval = (*func)(key, val, arg);
 	    if (!table->entries_packed) {
 		FIND_ENTRY(table, ptr, key, i);
-		if (retval == ST_CHECK) {
-		    if (!ptr) goto deleted;
-		    goto unpacked_continue;
-		}
+                if (!ptr) return 0;
 		goto unpacked;
 	    }
             switch (retval) {
-	      case ST_CHECK:	/* check if hash is modified during iteration */
-                if (i != find_packed_index(table, key)) {
-		    goto deleted;
-                }
-		/* fall through */
 	      case ST_CONTINUE:
 		break;
+              case ST_CHECK:
 	      case ST_STOP:
 		return 0;
 	      case ST_DELETE:
@@ -1004,20 +997,10 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 	    retval = (*func)(ptr->key, ptr->record, arg);
 	  unpacked:
 	    switch (retval) {
-	      case ST_CHECK:	/* check if hash is modified during iteration */
-		for (tmp = table->bins[i]; tmp != ptr; tmp = tmp->next) {
-		    if (!tmp) {
-		      deleted:
-			/* call func with error notice */
-			retval = (*func)(0, 0, arg, 1);
-			return 1;
-		    }
-		}
-		/* fall through */
 	      case ST_CONTINUE:
-	      unpacked_continue:
 		ptr = ptr->fore;
 		break;
+              case ST_CHECK:
 	      case ST_STOP:
 		return 0;
 	      case ST_DELETE:
