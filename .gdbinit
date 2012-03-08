@@ -625,18 +625,18 @@ define rb_numtable_entry
   set $rb_numtable_key = 0
   set $rb_numtable_rec = 0
   if $rb_numtable_tbl->entries_packed
-    set $rb_numtable_p = $rb_numtable_tbl->bins
-    while $rb_numtable_p && $rb_numtable_p < $rb_numtable_tbl->bins+$rb_numtable_tbl->num_entries
-      if (st_data_t)$rb_numtable_p[0] == $rb_numtable_id
-	set $rb_numtable_key = (st_data_t)$rb_numtable_p[0]
-	set $rb_numtable_rec = (st_data_t)$rb_numtable_p[1]
+    set $rb_numtable_p = $rb_numtable_tbl->as.packed.bins
+    while $rb_numtable_p && $rb_numtable_p < $rb_numtable_tbl->as.packed.bins+$rb_numtable_tbl->num_entries
+      if $rb_numtable_p.k == $rb_numtable_id
+	set $rb_numtable_key = $rb_numtable_p.k
+	set $rb_numtable_rec = $rb_numtable_p.v
 	set $rb_numtable_p = 0
       else
-	set $rb_numtable_p = $rb_numtable_p + 2
+	set $rb_numtable_p = $rb_numtable_p + 1
       end
     end
   else
-    set $rb_numtable_p = $rb_numtable_tbl->bins[$rb_numtable_id % $rb_numtable_tbl->num_bins]
+    set $rb_numtable_p = $rb_numtable_tbl->as.big.bins[$rb_numtable_id % $rb_numtable_tbl->num_bins]
     while $rb_numtable_p
       if $rb_numtable_p->key == $rb_numtable_id
 	set $rb_numtable_key = $rb_numtable_p->key

@@ -1,3 +1,8 @@
+Thu Mar  8 16:44:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* .gdbinit (rb_numtable_entry): update for recent refactoring of
+	  st_table.
+
 Wed Mar  7 22:41:50 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* lib/xmlrpc/client.rb (module XMLRPC): fix typo.
