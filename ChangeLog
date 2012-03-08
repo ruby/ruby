@@ -1,3 +1,8 @@
+Fri Mar  9 00:35:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (lazy_initialize, enumerable_lazy): no additional
+	  arguments.
+
 Fri Mar  9 00:30:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c: add Enumerable#lazy. based on the patch by

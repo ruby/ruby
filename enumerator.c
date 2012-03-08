@@ -1231,20 +1231,17 @@ lazy_init_block(VALUE val, VALUE m, int argc, VALUE *argv)
 }
 
 static VALUE
-lazy_initialize(int argc, VALUE *argv, VALUE obj)
+lazy_initialize(VALUE self, VALUE obj)
 {
-    VALUE generator, arg;
+    VALUE generator;
 
-    if (argc < 1) rb_raise(rb_eArgError, "wrong number of arguments(%d for 1+)", argc);
-    --argc;
-    arg = *argv++;
     generator = generator_allocate(rb_cGenerator);
     rb_block_call(generator, id_initialize, 0, 0,
 		  (rb_block_given_p() ? lazy_init_block_i: lazy_init_block),
-		  arg);
-    enumerator_init(obj, generator, sym_each, argc, argv);
+		  obj);
+    enumerator_init(self, generator, sym_each, 0, 0);
 
-    return obj;
+    return self;
 }
 
 /*
@@ -1252,19 +1249,9 @@ lazy_initialize(int argc, VALUE *argv, VALUE obj)
  *   e.lazy -> lazy_enumerator
  */
 static VALUE
-enumerable_lazy(int argc, VALUE *argv, VALUE obj)
+enumerable_lazy(VALUE obj)
 {
-    if (argc > 0) {
-	VALUE ret, buff, *args = ALLOCV_N(VALUE, buff, argc + 1);
-	args[0] = obj;
-	MEMCPY(args + 1, argv, VALUE, argc);
-	ret = rb_class_new_instance(argc + 1, args, rb_cLazy);
-	ALLOCV_END(buff);
-	return ret;
-    }
-    else {
-	return rb_class_new_instance(1, &obj, rb_cLazy);
-    }
+    return rb_class_new_instance(1, &obj, rb_cLazy);
 }
 
 static VALUE
@@ -1387,8 +1374,8 @@ Init_Enumerator(void)
 
     /* Enumerable::Lazy */
     rb_cLazy = rb_define_class_under(rb_mEnumerable, "Lazy", rb_cEnumerator);
-    rb_define_method(rb_mEnumerable, "lazy", enumerable_lazy, -1);
-    rb_define_method(rb_cLazy, "initialize", lazy_initialize, -1);
+    rb_define_method(rb_mEnumerable, "lazy", enumerable_lazy, 0);
+    rb_define_method(rb_cLazy, "initialize", lazy_initialize, 1);
     rb_define_method(rb_cLazy, "map", lazy_map, 0);
     rb_define_method(rb_cLazy, "select", lazy_select, 0);
     rb_define_method(rb_cLazy, "reject", lazy_reject, 0);
