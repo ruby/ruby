@@ -23,5 +23,14 @@ class Bug::StNumHash
       assert_equal(:x, @tbl[0])
       assert_equal(:x, @tbl[5])
     end
+
+    def test_size_after_delete_safe
+      10.downto(1) do |up|
+        tbl = Bug::StNumHash.new
+        1.upto(up){|i| tbl[i] = i}
+        assert_equal(1, tbl.delete_safe(1))
+        assert_equal(up - 1, tbl.size, "delete_safe doesn't change size from #{up} to #{up-1}")
+      end
+    end
   end
 end
