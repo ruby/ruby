@@ -1,3 +1,8 @@
+Fri Mar  9 00:25:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (enumerator_each, generator_each): pass arguments to
+	  the block with yielder.
+
 Fri Mar  9 00:25:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_cat): new function to concat objects into array.

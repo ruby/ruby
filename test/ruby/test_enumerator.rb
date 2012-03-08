@@ -238,6 +238,18 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([1,2], e.next_values)
   end
 
+  def test_each_arg
+    o = Object.new
+    def o.each(ary)
+      ary << 1
+      yield
+    end
+    ary = []
+    e = o.to_enum.each(ary)
+    e.next
+    assert_equal([1], ary)
+  end
+
   def test_feed
     o = Object.new
     def o.each(ary)
@@ -355,6 +367,13 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([1, 2, 3], a)
     a = []
     assert_equal(:foo, g2.each {|x| a << x })
+    assert_equal([1, 2, 3], a)
+  end
+
+  def test_generator_args
+    g = Enumerator::Generator.new {|y, x| y << 1 << 2 << 3; x }
+    a = []
+    assert_equal(:bar, g.each(:bar) {|x| a << x })
     assert_equal([1, 2, 3], a)
   end
 

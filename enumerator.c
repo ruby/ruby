@@ -13,6 +13,7 @@
 ************************************************/
 
 #include "ruby/ruby.h"
+#include "internal.h"
 
 /*
  * Document-class: Enumerator
@@ -421,8 +422,20 @@ enumerator_block_call(VALUE obj, rb_block_call_func *func, VALUE arg)
  *
  */
 static VALUE
-enumerator_each(VALUE obj)
+enumerator_each(int argc, VALUE *argv, VALUE obj)
 {
+    if (argc > 0) {
+	struct enumerator *e = enumerator_ptr(obj = rb_obj_dup(obj));
+	VALUE args = e->args;
+	if (args) {
+	    args = rb_ary_dup(args);
+	    rb_ary_cat(args, argv, argc);
+	}
+	else {
+	    args = rb_ary_new4(argc, argv);
+	}
+	e->args = args;
+    }
     if (!rb_block_given_p()) return obj;
     return enumerator_block_call(obj, 0, obj);
 }
@@ -1090,7 +1103,8 @@ generator_initialize(int argc, VALUE *argv, VALUE obj)
 	rb_need_block();
 
 	proc = rb_block_proc();
-    } else {
+    }
+    else {
 	rb_scan_args(argc, argv, "1", &proc);
 
 	if (!rb_obj_is_proc(proc))
@@ -1127,14 +1141,17 @@ generator_init_copy(VALUE obj, VALUE orig)
 
 /* :nodoc: */
 static VALUE
-generator_each(VALUE obj)
+generator_each(int argc, VALUE *argv, VALUE obj)
 {
     struct generator *ptr = generator_ptr(obj);
-    VALUE yielder;
+    VALUE args = rb_ary_new2(argc + 1);
 
-    yielder = yielder_new();
+    rb_ary_push(args, yielder_new());
+    if (argc > 0) {
+	rb_ary_cat(args, argv, argc);
+    }
 
-    return rb_proc_call(ptr->proc, rb_ary_new3(1, yielder));
+    return rb_proc_call(ptr->proc, args);
 }
 
 /*
@@ -1201,7 +1218,7 @@ Init_Enumerator(void)
     rb_define_alloc_func(rb_cEnumerator, enumerator_allocate);
     rb_define_method(rb_cEnumerator, "initialize", enumerator_initialize, -1);
     rb_define_method(rb_cEnumerator, "initialize_copy", enumerator_init_copy, 1);
-    rb_define_method(rb_cEnumerator, "each", enumerator_each, 0);
+    rb_define_method(rb_cEnumerator, "each", enumerator_each, -1);
     rb_define_method(rb_cEnumerator, "each_with_index", enumerator_each_with_index, 0);
     rb_define_method(rb_cEnumerator, "each_with_object", enumerator_with_object, 1);
     rb_define_method(rb_cEnumerator, "with_index", enumerator_with_index, -1);
@@ -1223,7 +1240,7 @@ Init_Enumerator(void)
     rb_define_alloc_func(rb_cGenerator, generator_allocate);
     rb_define_method(rb_cGenerator, "initialize", generator_initialize, -1);
     rb_define_method(rb_cGenerator, "initialize_copy", generator_init_copy, 1);
-    rb_define_method(rb_cGenerator, "each", generator_each, 0);
+    rb_define_method(rb_cGenerator, "each", generator_each, -1);
 
     /* Yielder */
     rb_cYielder = rb_define_class_under(rb_cEnumerator, "Yielder", rb_cObject);
