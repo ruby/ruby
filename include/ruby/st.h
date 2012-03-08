@@ -123,6 +123,7 @@ int st_lookup(st_table *, st_data_t, st_data_t *);
 int st_get_key(st_table *, st_data_t, st_data_t *);
 int st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *value, st_data_t arg), st_data_t arg);
 int st_foreach(st_table *, int (*)(ANYARGS), st_data_t);
+int st_foreach_check(st_table *, int (*)(ANYARGS), st_data_t, st_data_t);
 int st_reverse_foreach(st_table *, int (*)(ANYARGS), st_data_t);
 void st_add_direct(st_table *, st_data_t, st_data_t);
 void st_free_table(st_table *);
