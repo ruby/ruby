@@ -96,7 +96,10 @@ struct st_table {
 	    struct st_table_entry **bins;
 	    struct st_table_entry *head, *tail;
 	} big;
-	struct st_packed_bins *packed;
+	struct {
+	    struct st_packed_entry *entries;
+	    st_index_t real_entries;
+	} packed;
     } as;
 };
 
