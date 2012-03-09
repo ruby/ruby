@@ -1059,6 +1059,9 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 	    if (check_ultra_packed(table, hash, key))
 		break;
 	    goto deleted;
+	  case ST_DELETE_SAFE:
+	    table->num_entries = 0;
+	    break;
 	  case ST_DELETE:
 	    clear_upacked_entry(table);
 	  case ST_CONTINUE:
@@ -1078,7 +1081,7 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
           packed:
 	    if (!table->entries_packed) {
 		FIND_ENTRY(table, ptr, hash, i);
-		if (retval == ST_CHECK) {
+		if (retval == ST_CHECK || retval == ST_DELETE_SAFE) {
 		    if (!ptr) goto deleted;
 		    goto unpacked_continue;
 		}
@@ -1098,6 +1101,12 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 		break;
 	      case ST_STOP:
 		return 0;
+	      case ST_DELETE_SAFE:
+		PKEY_SET(table, i, never);
+		PVAL_SET(table, i, never);
+		PHASH_SET(table, i, 0);
+		table->num_entries--;
+		break;
 	      case ST_DELETE:
 		remove_packed_entry(table, i);
                 i--;
@@ -1147,6 +1156,13 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 			break;
 		    }
 		}
+		break;
+	      case ST_DELETE_SAFE:
+		tmp = ptr->fore;
+		remove_entry(table, ptr);
+		ptr->key = ptr->record = never;
+		ptr = tmp;
+		break;
 	    }
 	} while (ptr && table->head);
     }
@@ -1175,6 +1191,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 	    table->num_entries = 0;
 	    table->real_upacked = 0;
 	  case ST_CHECK:
+	  case ST_DELETE_SAFE:
 	  case ST_CONTINUE:
 	  case ST_STOP:
 	    break;
@@ -1197,6 +1214,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
             switch (retval) {
 	      case ST_CONTINUE:
 		break;
+	      case ST_DELETE_SAFE:
               case ST_CHECK:
 	      case ST_STOP:
 		return 0;
