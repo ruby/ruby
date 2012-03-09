@@ -4914,7 +4914,7 @@ time_load(VALUE klass, VALUE str)
  *
  *    t + (60*60*24*365) #=> 1994-02-24 12:00:00 +0900
  *
- *  How many second was that from the Unix Epoc?
+ *  How many second was that from the Unix Epoch?
  *
  *    t.to_i #=> 730522800
  *
