@@ -1,3 +1,7 @@
+Fri Mar  9 14:29:32 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator.c (lazy_flat_map): add Enumerable::Lazy#flat_map.
+
 Fri Mar  9 06:29:22 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb (load, parse): stop parsing or loading after

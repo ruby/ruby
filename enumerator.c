@@ -1272,6 +1272,32 @@ lazy_map(VALUE obj)
     return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_map_func, 0);
 }
 
+static VALUE
+lazy_flat_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    VALUE result = rb_yield_values2(argc - 1, &argv[1]);
+    VALUE ary = rb_check_array_type(result); 
+    if (NIL_P(ary)) {
+	return rb_funcall(argv[0], id_yield, 1, result);
+    }
+    else {
+	int i;
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	    rb_funcall(argv[0], id_yield, 1, RARRAY_PTR(ary)[i]);
+	}
+	return Qnil;
+    }
+}
+
+static VALUE
+lazy_flat_map(VALUE obj)
+{
+    if (!rb_block_given_p()) {
+	rb_raise(rb_eArgError, "tried to call lazy flat_map without a block");
+    }
+
+    return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_flat_map_func, 0);
+}
 
 static VALUE
 lazy_select_func(VALUE val, VALUE m, int argc, VALUE *argv)
@@ -1377,11 +1403,13 @@ Init_Enumerator(void)
     rb_define_method(rb_mEnumerable, "lazy", enumerable_lazy, 0);
     rb_define_method(rb_cLazy, "initialize", lazy_initialize, 1);
     rb_define_method(rb_cLazy, "map", lazy_map, 0);
+    rb_define_method(rb_cLazy, "flat_map", lazy_flat_map, 0);
     rb_define_method(rb_cLazy, "select", lazy_select, 0);
     rb_define_method(rb_cLazy, "reject", lazy_reject, 0);
     rb_define_method(rb_cLazy, "grep", lazy_grep, 1);
 
     rb_define_alias(rb_cLazy, "collect", "map");
+    rb_define_alias(rb_cLazy, "collect_concat", "flat_map");
     rb_define_alias(rb_cLazy, "find_all", "select");
 
     rb_eStopIteration = rb_define_class("StopIteration", rb_eIndexError);
