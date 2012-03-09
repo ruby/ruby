@@ -2249,12 +2249,12 @@ End
       th = Thread.new {r.sysread(100, buf)}
       Thread.pass until th.stop?
       buf.replace("")
-      assert_empty(buf)
+      assert_empty(buf, bug6099)
       w.write(data)
       Thread.pass while th.alive?
       th.join
     end
-    assert_equal(data, buf)
+    assert_equal(data, buf, bug6099)
   end
 
   def test_readpartial_locktmp
@@ -2267,11 +2267,12 @@ End
       th = Thread.new {r.readpartial(100, buf)}
       Thread.pass until th.stop?
       buf.replace("")
-      assert_empty(buf)
+      assert_empty(buf, bug6099)
       w.write(data)
       Thread.pass while th.alive?
       th.join
     end
-    assert_equal(data, buf)
+    assert_equal(data, buf, bug6099)
+  rescue RuntimeError # can't modify string; temporarily locked
   end
 end
