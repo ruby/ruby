@@ -4419,10 +4419,14 @@ strftimev(const char *fmt, VALUE time, rb_encoding *enc)
  *
  *      %L - Millisecond of the second (000..999)
  *      %N - Fractional seconds digits, default is 9 digits (nanosecond)
- *              %3N  millisecond (3 digits)
- *              %6N  microsecond (6 digits)
- *              %9N  nanosecond (9 digits)
- *              %12N picosecond (12 digits)
+ *              %3N  milli second (3 digits)
+ *              %6N  micro second (6 digits)
+ *              %9N  nano second (9 digits)
+ *              %12N pico second (12 digits)
+ *              %15N femto second (15 digits)
+ *              %18N atto second (18 digits)
+ *              %21N zepto second (21 digits)
+ *              %24N yocto second (24 digits)
  *
  *    Time zone:
  *      %z - Time zone as hour and minute offset from UTC (e.g. +0900)
