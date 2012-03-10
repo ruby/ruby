@@ -116,7 +116,6 @@ foreach_safe_i(st_data_t key, st_data_t value, struct foreach_safe_arg *arg)
 {
     int status;
 
-    if (key == Qundef) return ST_CONTINUE;
     status = (*arg->func)(key, value, arg->arg);
     if (status == ST_CONTINUE) {
 	return ST_CHECK;
@@ -132,7 +131,7 @@ st_foreach_safe(st_table *table, int (*func)(ANYARGS), st_data_t a)
     arg.tbl = table;
     arg.func = (st_foreach_func *)func;
     arg.arg = a;
-    if (st_foreach(table, foreach_safe_i, (st_data_t)&arg)) {
+    if (st_foreach_check(table, foreach_safe_i, (st_data_t)&arg, Qundef)) {
 	rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
 }
@@ -160,8 +159,8 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int err)
     }
     switch (status) {
       case ST_DELETE:
-	st_delete_safe(tbl, &key, 0, Qundef);
 	FL_SET(arg->hash, HASH_DELETED);
+	return ST_DELETE_SAFE;
       case ST_CONTINUE:
 	break;
       case ST_STOP:
@@ -187,7 +186,7 @@ hash_foreach_ensure(VALUE hash)
 static VALUE
 hash_foreach_call(struct hash_foreach_arg *arg)
 {
-    if (st_foreach(RHASH(arg->hash)->ntbl, hash_foreach_iter, (st_data_t)arg)) {
+    if (st_foreach_check(RHASH(arg->hash)->ntbl, hash_foreach_iter, (st_data_t)arg, Qundef)) {
 	rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
     return Qnil;

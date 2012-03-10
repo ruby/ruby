@@ -54,7 +54,7 @@ numhash_i(st_data_t key, st_data_t value, st_data_t arg, int error)
 static VALUE
 numhash_each(VALUE self)
 {
-    return st_foreach((st_table *)DATA_PTR(self), numhash_i, self) ? Qtrue : Qfalse;
+    return st_foreach_check((st_table *)DATA_PTR(self), numhash_i, self, -1) ? Qtrue : Qfalse;
 }
 
 static int
@@ -81,6 +81,23 @@ numhash_update(VALUE self, VALUE key)
 	return Qfalse;
 }
 
+static VALUE
+numhash_size(VALUE self)
+{
+    return LONG2FIX(((st_table*)DATA_PTR(self))->num_entries);
+}
+
+static VALUE
+numhash_delete_safe(VALUE self, VALUE key)
+{
+    VALUE val;
+    if (st_delete_safe((st_table*)DATA_PTR(self),
+		(st_data_t*)&key, (st_data_t*)&val, (st_data_t)-1)) {
+	return val;
+    }
+    return Qnil;
+}
+
 void
 Init_numhash(void)
 {
@@ -91,5 +108,7 @@ Init_numhash(void)
     rb_define_method(st, "[]=", numhash_aset, 2);
     rb_define_method(st, "each", numhash_each, 0);
     rb_define_method(st, "update", numhash_update, 1);
+    rb_define_method(st, "size", numhash_size, 0);
+    rb_define_method(st, "delete_safe", numhash_delete_safe, 1);
 }
 

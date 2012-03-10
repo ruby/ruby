@@ -74,6 +74,11 @@ struct st_hash_type {
 
 #define ST_INDEX_BITS (sizeof(st_index_t) * CHAR_BIT)
 
+typedef struct st_packed_entry {
+    st_index_t hash;
+    st_data_t key, val;
+} st_packed_entry;
+
 struct st_table {
     const struct st_hash_type *type;
     st_index_t num_bins;
@@ -96,13 +101,17 @@ struct st_table {
 	    struct st_table_entry **bins;
 	    struct st_table_entry *head, *tail;
 	} big;
-	struct st_packed_bins *packed;
+	struct {
+	    struct st_packed_entry *entries;
+	    st_index_t real_entries;
+	} packed;
+	struct st_packed_entry upacked;
     } as;
 };
 
 #define st_is_member(table,key) st_lookup((table),(key),(st_data_t *)0)
 
-enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK};
+enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK, ST_DELETE_SAFE};
 
 st_table *st_init_table(const struct st_hash_type *);
 st_table *st_init_table_with_size(const struct st_hash_type *, st_index_t);
@@ -120,6 +129,7 @@ int st_lookup(st_table *, st_data_t, st_data_t *);
 int st_get_key(st_table *, st_data_t, st_data_t *);
 int st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *value, st_data_t arg), st_data_t arg);
 int st_foreach(st_table *, int (*)(ANYARGS), st_data_t);
+int st_foreach_check(st_table *, int (*)(ANYARGS), st_data_t, st_data_t);
 int st_reverse_foreach(st_table *, int (*)(ANYARGS), st_data_t);
 void st_add_direct(st_table *, st_data_t, st_data_t);
 void st_free_table(st_table *);

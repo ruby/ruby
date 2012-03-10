@@ -551,15 +551,17 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_shift
-    h = @h.dup
+    10.downto(1) do |times|
+      horig = Hash[*(1..(times*2))]
+      h = horig.dup
+      times.times {
+        k, v = h.shift
+        assert(horig.key?(k))
+        assert_equal(horig[k], v)
+      }
+      assert_equal(0, h.length)
+    end
 
-    @h.length.times {
-      k, v = h.shift
-      assert(@h.key?(k))
-      assert_equal(@h[k], v)
-    }
-
-    assert_equal(0, h.length)
   end
 
   def test_size
