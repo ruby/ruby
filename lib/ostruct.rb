@@ -114,7 +114,7 @@ class OpenStruct
   #    person.marshal_dump # => { :name => 'John Smith', :age => 70 }
   #
   def marshal_dump
-    @table.dup
+    @table
   end
 
   #
@@ -235,7 +235,17 @@ class OpenStruct
   # equal.
   #
   def ==(other)
-    return false unless(other.kind_of?(OpenStruct))
+    return false unless OpenStruct === other
+    return @table == other.table
+  end
+
+  #
+  # Compares this object and +other+ for strict equality.  An OpenStruct is
+  # equal to +other+ when +other+ is an OpenStruct and the two object's Hash
+  # tables are equal.
+  #
+  def eql?(other)
+    return false unless OpenStruct === other
     return @table == other.table
   end
 
@@ -281,31 +291,6 @@ class OpenStruct
     for name,value in hash
       modifiable[new_ostruct_member(name)] = value
     end
-  end
-
-  #
-  # Type equality, returns +true+ if +other+ is an OpenStruct
-  # and both internal tables are equal, otherwise +false+.
-  #
-  def eql?(other)
-    return false unless OpenStruct === other
-    return true if table == other.table
-    false
-  end
-
-  #
-  # General equality, returns +true+ if the internal table
-  # is equal to +other+ when converted to a Hash via #to_hash
-  # or #to_h, otherwise +false+.
-  #
-  def ==(other)
-    case
-    when other.respond_to?(:to_hash)
-      return true if table == other.to_hash
-    when other.respond_to?(:to_h)
-      return true if table == other.to_h
-    end
-    false
   end
 
 end
