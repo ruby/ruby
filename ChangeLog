@@ -1,4 +1,7 @@
-Sat Mar 10 23:52:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Mar 10 23:52:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c: pack tables also generic keys.  patched by Sokolov Yura at
+	  https://github.com/ruby/ruby/pull/84
 
 	* st.c: add st_foreach_check for fixing iteration over packed table
 	  and st_delete_safe.  patched by Sokolov Yura at
