@@ -81,6 +81,28 @@ numhash_update(VALUE self, VALUE key)
 	return Qfalse;
 }
 
+#if SIZEOF_LONG == SIZEOF_VOIDP
+# define ST2NUM(x) ULONG2NUM(x)
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+# define ST2NUM(x) ULL2NUM(x)
+#endif
+
+static VALUE
+numhash_size(VALUE self)
+{
+    return ST2NUM(((st_table *)DATA_PTR(self))->num_entries);
+}
+
+static VALUE
+numhash_delete_safe(VALUE self, VALUE key)
+{
+    st_data_t val, k = (st_data_t)key;
+    if (st_delete_safe((st_table *)DATA_PTR(self), &k, &val, (st_data_t)self)) {
+	return val;
+    }
+    return Qnil;
+}
+
 void
 Init_numhash(void)
 {
@@ -91,5 +113,7 @@ Init_numhash(void)
     rb_define_method(st, "[]=", numhash_aset, 2);
     rb_define_method(st, "each", numhash_each, 0);
     rb_define_method(st, "update", numhash_update, 1);
+    rb_define_method(st, "size", numhash_size, 0);
+    rb_define_method(st, "delete_safe", numhash_delete_safe, 1);
 }
 

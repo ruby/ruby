@@ -1,3 +1,8 @@
+Sat Mar 10 23:52:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c: fix packed num_entries on delete_safe.  patched by Sokolov
+	  Yura at https://github.com/ruby/ruby/pull/84
+
 Fri Mar  9 14:29:32 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator.c (lazy_flat_map): add Enumerable::Lazy#flat_map.
