@@ -1276,7 +1276,7 @@ static VALUE
 lazy_flat_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
 {
     VALUE result = rb_yield_values2(argc - 1, &argv[1]);
-    VALUE ary = rb_check_array_type(result); 
+    VALUE ary = rb_check_array_type(result);
     if (NIL_P(ary)) {
 	return rb_funcall(argv[0], id_yield, 1, result);
     }
