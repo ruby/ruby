@@ -1,4 +1,8 @@
-Sat Mar 10 23:52:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Mar 10 23:52:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c: add st_foreach_check for fixing iteration over packed table
+	  and st_delete_safe.  patched by Sokolov Yura at
+	  https://github.com/ruby/ruby/pull/84
 
 	* st.c: fix packed num_entries on delete_safe.  patched by Sokolov
 	  Yura at https://github.com/ruby/ruby/pull/84

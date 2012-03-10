@@ -54,7 +54,9 @@ numhash_i(st_data_t key, st_data_t value, st_data_t arg, int error)
 static VALUE
 numhash_each(VALUE self)
 {
-    return st_foreach((st_table *)DATA_PTR(self), numhash_i, self) ? Qtrue : Qfalse;
+    st_table *table = DATA_PTR(self);
+    st_data_t data = (st_data_t)self;
+    return st_foreach_check(table, numhash_i, data, data) ? Qtrue : Qfalse;
 }
 
 static int
