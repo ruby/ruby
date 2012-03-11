@@ -9246,18 +9246,11 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
 /*
  *  call-seq:
  *     IO.binwrite(name, string, [offset] )   => fixnum
+ *     IO.binwrite(name, string, [offset], open_args )   => fixnum
  *
- *  Opens the file, optionally seeks to the given <i>offset</i>, writes
- *  <i>string</i> then returns the length written.
- *  <code>binwrite</code> ensures the file is closed before returning.
- *  The open mode would be "wb:ASCII-8BIT".
- *  If <i>offset</i> is not given, the file is truncated.  Otherwise,
- *  it is not truncated.
+ *  Same as <code>IO.write</code> except opening the file in binary mode
+ *  and ASCII-8BIT encoding ("wb:ASCII-8BIT").
  *
- *     IO.binwrite("testfile", "0123456789", 20) # => 10
- *     # File could contain:  "This is line one\nThi0123456789two\nThis is line three\nAnd so on...\n"
- *     IO.binwrite("testfile", "0123456789")      #=> 10
- *     # File would now read: "0123456789"
  */
 
 static VALUE

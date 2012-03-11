@@ -1,3 +1,8 @@
+Sun Mar 11 15:46:45 2012  Shota Fukumori  <sorah@tubusu.net>
+
+	* io.c: fix rdoc of `IO.binwrite` to show same as `IO.write` except
+	  it opens file with mode "wb:ASCII-8BIT". [Bug #5782] [ruby-core:42592]
+
 Sat Mar 10 23:52:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c: pack tables also generic keys.  patched by Sokolov Yura at
