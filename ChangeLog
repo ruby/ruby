@@ -1,6 +1,6 @@
 Sun Mar 11 17:10:04 2012  Shota Fukumori  <sorah@tubusu.net>
 
-	* lib/test/unit.rb: Put error message into STDERR if failed to lanch
+	* lib/test/unit.rb: Put error message into STDERR if failed to launch
 	  worker (job) process. [ruby-dev:44802] [Bug #5577]
 
 	* lib/test/unit/parallel.rb: If failed to increment_io, exit with code
