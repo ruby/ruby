@@ -4,6 +4,8 @@
 require 'test/unit'
 require File.join(File.dirname(__FILE__), 'setup_variant')
 require 'stringio'
+require 'tempfile'
+require 'ostruct'
 
 unless Array.method_defined?(:permutation)
   begin
@@ -107,6 +109,8 @@ class TC_JSON < Test::Unit::TestCase
   def test_parse_json_primitive_values
     assert_raise(JSON::ParserError) { JSON.parse('') }
     assert_raise(JSON::ParserError) { JSON.parse('', :quirks_mode => true) }
+    assert_raise(TypeError) { JSON.parse(nil) }
+    assert_raise(TypeError) { JSON.parse(nil, :quirks_mode => true) }
     assert_raise(JSON::ParserError) { JSON.parse('  /* foo */ ') }
     assert_raise(JSON::ParserError) { JSON.parse('  /* foo */ ', :quirks_mode => true) }
     parser = JSON::Parser.new('null')
@@ -215,10 +219,38 @@ class TC_JSON < Test::Unit::TestCase
     end
   end
 
-  def test_parse_array_custom_class
+  class SubArrayWrapper
+    def initialize
+      @data = []
+    end
+
+    attr_reader :data
+
+    def [](index)
+      @data[index]
+    end
+
+    def <<(value)
+      @data << value
+      @shifted = true
+    end
+
+    def shifted?
+      @shifted
+    end
+  end
+
+  def test_parse_array_custom_array_derived_class
     res = parse('[1,2]', :array_class => SubArray)
     assert_equal([1,2], res)
     assert_equal(SubArray, res.class)
+    assert res.shifted?
+  end
+
+  def test_parse_array_custom_non_array_derived_class
+    res = parse('[1,2]', :array_class => SubArrayWrapper)
+    assert_equal([1,2], res.data)
+    assert_equal(SubArrayWrapper, res.class)
     assert res.shifted?
   end
 
@@ -253,14 +285,36 @@ class TC_JSON < Test::Unit::TestCase
     end
   end
 
-  def test_parse_object_custom_class
+  class SubOpenStruct < OpenStruct
+    def [](k)
+      __send__(k)
+    end
+
+    def []=(k, v)
+      @item_set = true
+      __send__("#{k}=", v)
+    end
+
+    def item_set?
+      @item_set
+    end
+  end
+
+  def test_parse_object_custom_hash_derived_class
     res = parse('{"foo":"bar"}', :object_class => SubHash)
     assert_equal({"foo" => "bar"}, res)
     assert_equal(SubHash, res.class)
     assert res.item_set?
   end
 
-  def test_generation_of_core_subclasses_with_new_to_json
+  def test_parse_object_custom_non_hash_derived_class
+    res = parse('{"foo":"bar"}', :object_class => SubOpenStruct)
+    assert_equal "bar", res.foo
+    assert_equal(SubOpenStruct, res.class)
+    assert res.item_set?
+  end
+
+  def test_generate_core_subclasses_with_new_to_json
     obj = SubHash2["foo" => SubHash2["bar" => true]]
     obj_json = JSON(obj)
     obj_again = JSON(obj_json)
@@ -271,12 +325,12 @@ class TC_JSON < Test::Unit::TestCase
     assert_equal ["foo"], JSON(JSON(SubArray2["foo"]))
   end
 
-  def test_generation_of_core_subclasses_with_default_to_json
+  def test_generate_core_subclasses_with_default_to_json
     assert_equal '{"foo":"bar"}', JSON(SubHash["foo" => "bar"])
     assert_equal '["foo"]', JSON(SubArray["foo"])
   end
 
-  def test_generation_of_core_subclasses
+  def test_generate_of_core_subclasses
     obj = SubHash["foo" => SubHash["bar" => true]]
     obj_json = JSON(obj)
     obj_again = JSON(obj_json)
@@ -414,7 +468,20 @@ EOT
       JSON.parse('{"foo":"bar", "baz":"quux"}', :symbolize_names => true))
   end
 
-  def test_load_dump
+  def test_load
+    assert_equal @hash, JSON.load(@json)
+    tempfile = Tempfile.open('json')
+    tempfile.write @json
+    tempfile.rewind
+    assert_equal @hash, JSON.load(tempfile)
+    stringio = StringIO.new(@json)
+    stringio.rewind
+    assert_equal @hash, JSON.load(stringio)
+    assert_equal nil, JSON.load(nil)
+    assert_equal nil, JSON.load('')
+  end
+
+  def test_dump
     too_deep = '[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]'
     assert_equal too_deep, JSON.dump(eval(too_deep))
     assert_kind_of String, Marshal.dump(eval(too_deep))

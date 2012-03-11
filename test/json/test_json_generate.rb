@@ -43,6 +43,8 @@ EOT
   def test_generate
     json = generate(@hash)
     assert_equal(JSON.parse(@json2), JSON.parse(json))
+    json = JSON[@hash]
+    assert_equal(JSON.parse(@json2), JSON.parse(json))
     parsed_json = parse(json)
     assert_equal(@hash, parsed_json)
     json = generate({1=>2})
@@ -121,48 +123,51 @@ EOT
   def test_pretty_state
     state = PRETTY_STATE_PROTOTYPE.dup
     assert_equal({
-      :allow_nan    => false,
-      :array_nl     => "\n",
-      :ascii_only   => false,
-      :quirks_mode  => false,
-      :depth        => 0,
-      :indent       => "  ",
-      :max_nesting  => 19,
-      :object_nl    => "\n",
-      :space        => " ",
-      :space_before => "",
+      :allow_nan             => false,
+      :array_nl              => "\n",
+      :ascii_only            => false,
+      :buffer_initial_length => 1024,
+      :quirks_mode           => false,
+      :depth                 => 0,
+      :indent                => "  ",
+      :max_nesting           => 19,
+      :object_nl             => "\n",
+      :space                 => " ",
+      :space_before          => "",
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
   def test_safe_state
     state = SAFE_STATE_PROTOTYPE.dup
     assert_equal({
-      :allow_nan    => false,
-      :array_nl     => "",
-      :ascii_only   => false,
-      :quirks_mode  => false,
-      :depth        => 0,
-      :indent       => "",
-      :max_nesting  => 19,
-      :object_nl    => "",
-      :space        => "",
-      :space_before => "",
+      :allow_nan             => false,
+      :array_nl              => "",
+      :ascii_only            => false,
+      :buffer_initial_length => 1024,
+      :quirks_mode           => false,
+      :depth                 => 0,
+      :indent                => "",
+      :max_nesting           => 19,
+      :object_nl             => "",
+      :space                 => "",
+      :space_before          => "",
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
   def test_fast_state
     state = FAST_STATE_PROTOTYPE.dup
     assert_equal({
-      :allow_nan    => false,
-      :array_nl     => "",
-      :ascii_only   => false,
-      :quirks_mode  => false,
-      :depth        => 0,
-      :indent       => "",
-      :max_nesting  => 0,
-      :object_nl    => "",
-      :space        => "",
-      :space_before => "",
+      :allow_nan             => false,
+      :array_nl              => "",
+      :ascii_only            => false,
+      :buffer_initial_length => 1024,
+      :quirks_mode           => false,
+      :depth                 => 0,
+      :indent                => "",
+      :max_nesting           => 0,
+      :object_nl             => "",
+      :space                 => "",
+      :space_before          => "",
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
@@ -198,6 +203,17 @@ EOT
     assert_equal 19, s.depth
   end
 
+  def test_buffer_initial_length
+    s = JSON.state.new
+    assert_equal 1024, s.buffer_initial_length
+    s.buffer_initial_length = 0
+    assert_equal 1024, s.buffer_initial_length
+    s.buffer_initial_length = -1
+    assert_equal 1024, s.buffer_initial_length
+    s.buffer_initial_length = 128
+    assert_equal 128, s.buffer_initial_length
+  end
+
   def test_gc
     bignum_too_long_to_embed_as_string = 1234567890123456789012345
     expect = bignum_too_long_to_embed_as_string.to_s
@@ -210,4 +226,26 @@ EOT
   ensure
     GC.stress = stress
   end if GC.respond_to?(:stress=)
+
+  if defined?(JSON::Ext::Generator)
+    def test_broken_bignum # [ruby-core:38867]
+      pid = fork do
+        Bignum.class_eval do
+          def to_s
+          end
+        end
+        begin
+          JSON::Ext::Generator::State.new.generate(1<<64)
+          exit 1
+        rescue TypeError
+          exit 0
+        end
+      end
+      _, status = Process.waitpid2(pid)
+      assert status.success?
+    rescue NotImplementedError
+      # forking to avoid modifying core class of a parent process and
+      # introducing race conditions of tests are run in parallel
+    end
+  end
 end

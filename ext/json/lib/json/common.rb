@@ -284,22 +284,40 @@ module JSON
   module_function :pretty_unparse
   # :startdoc:
 
+  class << self
+    # The global default options for the JSON.load method:
+    #  :max_nesting: false
+    #  :allow_nan:   true
+    #  :quirks_mode: true
+    attr_accessor :load_default_options
+  end
+  self.load_default_options = {
+    :max_nesting => false,
+    :allow_nan   => true,
+    :quirks_mode => true,
+  }
+
   # Load a ruby data structure from a JSON _source_ and return it. A source can
   # either be a string-like object, an IO-like object, or an object responding
   # to the read method. If _proc_ was given, it will be called with any nested
-  # Ruby object as an argument recursively in depth first order.
+  # Ruby object as an argument recursively in depth first order. The default
+  # options for the parser can be changed via the load_default_options method.
   #
   # This method is part of the implementation of the load/dump interface of
   # Marshal and YAML.
   def load(source, proc = nil)
+    opts = load_default_options
     if source.respond_to? :to_str
       source = source.to_str
     elsif source.respond_to? :to_io
       source = source.to_io.read
-    else
+    elsif source.respond_to?(:read)
       source = source.read
     end
-    result = parse(source, :max_nesting => false, :allow_nan => true)
+    if opts[:quirks_mode] && (source.nil? || source.empty?)
+      source = 'null'
+    end
+    result = parse(source, opts)
     recurse_proc(result, &proc) if proc
     result
   end
@@ -321,6 +339,19 @@ module JSON
   alias restore load
   module_function :restore
 
+  class << self
+    # The global default options for the JSON.dump method:
+    #  :max_nesting: false
+    #  :allow_nan:   true
+    #  :quirks_mode: true
+    attr_accessor :dump_default_options
+  end
+  self.dump_default_options = {
+    :max_nesting => false,
+    :allow_nan   => true,
+    :quirks_mode => true,
+  }
+
   # Dumps _obj_ as a JSON string, i.e. calls generate on the object and returns
   # the result.
   #
@@ -330,6 +361,9 @@ module JSON
   # If the number of nested arrays or objects exceeds _limit_, an ArgumentError
   # exception is raised. This argument is similar (but not exactly the
   # same!) to the _limit_ argument in Marshal.dump.
+  #
+  # The default options for the generator can be changed via the
+  # dump_default_options method.
   #
   # This method is part of the implementation of the load/dump interface of
   # Marshal and YAML.
@@ -341,8 +375,9 @@ module JSON
         anIO = nil
       end
     end
-    limit ||= 0
-    result = generate(obj, :allow_nan => true, :max_nesting => limit)
+    opts = JSON.dump_default_options
+    limit and opts.update(:max_nesting => limit)
+    result = generate(obj, opts)
     if anIO
       anIO.write result
       anIO

@@ -1,3 +1,4 @@
+#include "../fbuffer/fbuffer.h"
 #include "generator.h"
 
 #ifdef HAVE_RUBY_ENCODING_H
@@ -14,7 +15,8 @@ static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,
 static ID i_to_s, i_to_json, i_new, i_indent, i_space, i_space_before,
           i_object_nl, i_array_nl, i_max_nesting, i_allow_nan, i_ascii_only,
           i_quirks_mode, i_pack, i_unpack, i_create_id, i_extend, i_key_p,
-          i_aref, i_send, i_respond_to_p, i_match, i_keys, i_depth, i_dup;
+          i_aref, i_send, i_respond_to_p, i_match, i_keys, i_depth,
+          i_buffer_initial_length, i_dup;
 
 /*
  * Copyright 2001-2004 Unicode, Inc.
@@ -290,123 +292,6 @@ static char *fstrndup(const char *ptr, unsigned long len) {
   result = ALLOC_N(char, len);
   memccpy(result, ptr, 0, len);
   return result;
-}
-
-/* fbuffer implementation */
-
-static FBuffer *fbuffer_alloc()
-{
-    FBuffer *fb = ALLOC(FBuffer);
-    memset((void *) fb, 0, sizeof(FBuffer));
-    fb->initial_length = FBUFFER_INITIAL_LENGTH;
-    return fb;
-}
-
-static FBuffer *fbuffer_alloc_with_length(unsigned long initial_length)
-{
-    FBuffer *fb;
-    assert(initial_length > 0);
-    fb = ALLOC(FBuffer);
-    memset((void *) fb, 0, sizeof(FBuffer));
-    fb->initial_length = initial_length;
-    return fb;
-}
-
-static void fbuffer_free(FBuffer *fb)
-{
-    if (fb->ptr) ruby_xfree(fb->ptr);
-    ruby_xfree(fb);
-}
-
-static void fbuffer_clear(FBuffer *fb)
-{
-    fb->len = 0;
-}
-
-static void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
-{
-    unsigned long required;
-
-    if (!fb->ptr) {
-        fb->ptr = ALLOC_N(char, fb->initial_length);
-        fb->capa = fb->initial_length;
-    }
-
-    for (required = fb->capa; requested > required - fb->len; required <<= 1);
-
-    if (required > fb->capa) {
-        REALLOC_N(fb->ptr, char, required);
-        fb->capa = required;
-    }
-}
-
-static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
-{
-    if (len > 0) {
-        fbuffer_inc_capa(fb, len);
-        MEMCPY(fb->ptr + fb->len, newstr, char, len);
-        fb->len += len;
-    }
-}
-
-static void fbuffer_append_str(FBuffer *fb, VALUE str)
-{
-    const char *newstr = StringValuePtr(str);
-    unsigned long len = RSTRING_LEN(str);
-
-    RB_GC_GUARD(str);
-
-    fbuffer_append(fb, newstr, len);
-}
-
-static void fbuffer_append_char(FBuffer *fb, char newchr)
-{
-    fbuffer_inc_capa(fb, 1);
-    *(fb->ptr + fb->len) = newchr;
-    fb->len++;
-}
-
-static void freverse(char *start, char *end)
-{
-    char c;
-
-    while (end > start) {
-        c = *end, *end-- = *start, *start++ = c;
-    }
-}
-
-static long fltoa(long number, char *buf)
-{
-    static char digits[] = "0123456789";
-    long sign = number;
-    char* tmp = buf;
-
-    if (sign < 0) number = -number;
-    do *tmp++ = digits[number % 10]; while (number /= 10);
-    if (sign < 0) *tmp++ = '-';
-    freverse(buf, tmp - 1);
-    return tmp - buf;
-}
-
-static void fbuffer_append_long(FBuffer *fb, long number)
-{
-    char buf[20];
-    unsigned long len = fltoa(number, buf);
-    fbuffer_append(fb, buf, len);
-}
-
-static FBuffer *fbuffer_dup(FBuffer *fb)
-{
-    unsigned long len = fb->len;
-    FBuffer *result;
-
-    if (len > 0) {
-        result = fbuffer_alloc_with_length(len);
-        fbuffer_append(result, FBUFFER_PAIR(fb));
-    } else {
-        result = fbuffer_alloc();
-    }
-    return result;
 }
 
 /*
@@ -694,6 +579,16 @@ static VALUE cState_configure(VALUE self, VALUE opts)
             state->depth = 0;
         }
     }
+    tmp = ID2SYM(i_buffer_initial_length);
+    if (option_given_p(opts, tmp)) {
+        VALUE buffer_initial_length = rb_hash_aref(opts, tmp);
+        if (RTEST(buffer_initial_length)) {
+            long initial_length;
+            Check_Type(buffer_initial_length, T_FIXNUM);
+            initial_length = FIX2LONG(buffer_initial_length);
+            if (initial_length > 0) state->buffer_initial_length = initial_length;
+        }
+    }
     tmp = rb_hash_aref(opts, ID2SYM(i_allow_nan));
     state->allow_nan = RTEST(tmp);
     tmp = rb_hash_aref(opts, ID2SYM(i_ascii_only));
@@ -723,6 +618,7 @@ static VALUE cState_to_h(VALUE self)
     rb_hash_aset(result, ID2SYM(i_quirks_mode), state->quirks_mode ? Qtrue : Qfalse);
     rb_hash_aset(result, ID2SYM(i_max_nesting), LONG2FIX(state->max_nesting));
     rb_hash_aset(result, ID2SYM(i_depth), LONG2FIX(state->depth));
+    rb_hash_aset(result, ID2SYM(i_buffer_initial_length), LONG2FIX(state->buffer_initial_length));
     return result;
 }
 
@@ -920,19 +816,20 @@ static void generate_json(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *s
 
 static FBuffer *cState_prepare_buffer(VALUE self)
 {
-    FBuffer *buffer = fbuffer_alloc();
+    FBuffer *buffer;
     GET_STATE(self);
+    buffer = fbuffer_alloc(state->buffer_initial_length);
 
     if (state->object_delim) {
         fbuffer_clear(state->object_delim);
     } else {
-        state->object_delim = fbuffer_alloc_with_length(16);
+        state->object_delim = fbuffer_alloc(16);
     }
     fbuffer_append_char(state->object_delim, ',');
     if (state->object_delim2) {
         fbuffer_clear(state->object_delim2);
     } else {
-        state->object_delim2 = fbuffer_alloc_with_length(16);
+        state->object_delim2 = fbuffer_alloc(16);
     }
     fbuffer_append_char(state->object_delim2, ':');
     if (state->space) fbuffer_append(state->object_delim2, state->space, state->space_len);
@@ -940,19 +837,11 @@ static FBuffer *cState_prepare_buffer(VALUE self)
     if (state->array_delim) {
         fbuffer_clear(state->array_delim);
     } else {
-        state->array_delim = fbuffer_alloc_with_length(16);
+        state->array_delim = fbuffer_alloc(16);
     }
     fbuffer_append_char(state->array_delim, ',');
     if (state->array_nl) fbuffer_append(state->array_delim, state->array_nl, state->array_nl_len);
     return buffer;
-}
-
-static VALUE fbuffer_to_s(FBuffer *fb)
-{
-    VALUE result = rb_str_new(FBUFFER_PAIR(fb));
-    fbuffer_free(fb);
-    FORCE_UTF8(result);
-    return result;
 }
 
 static VALUE cState_partial_generate(VALUE self, VALUE obj)
@@ -1003,12 +892,15 @@ static VALUE cState_generate(VALUE self, VALUE obj)
  *   encountered. This options defaults to false.
  * * *quirks_mode*: Enables quirks_mode for parser, that is for example
  *   generating single JSON values instead of documents is possible.
+ * * *buffer_initial_length*: sets the initial length of the generator's
+ *   internal buffer.
  */
 static VALUE cState_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE opts;
     GET_STATE(self);
     state->max_nesting = 19;
+    state->buffer_initial_length = FBUFFER_INITIAL_LENGTH_DEFAULT;
     rb_scan_args(argc, argv, "01", &opts);
     if (!NIL_P(opts)) cState_configure(self, opts);
     return self;
@@ -1349,7 +1241,37 @@ static VALUE cState_depth_set(VALUE self, VALUE depth)
 {
     GET_STATE(self);
     Check_Type(depth, T_FIXNUM);
-    return state->depth = FIX2LONG(depth);
+    state->depth = FIX2LONG(depth);
+    return Qnil;
+}
+
+/*
+ * call-seq: buffer_initial_length
+ *
+ * This integer returns the current inital length of the buffer.
+ */
+static VALUE cState_buffer_initial_length(VALUE self)
+{
+    GET_STATE(self);
+    return LONG2FIX(state->buffer_initial_length);
+}
+
+/*
+ * call-seq: buffer_initial_length=(length)
+ *
+ * This sets the initial length of the buffer to +length+, if +length+ > 0,
+ * otherwise its value isn't changed.
+ */
+static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_length)
+{
+    long initial_length;
+    GET_STATE(self);
+    Check_Type(buffer_initial_length, T_FIXNUM);
+    initial_length = FIX2LONG(buffer_initial_length);
+    if (initial_length > 0) {
+        state->buffer_initial_length = initial_length;
+    }
+    return Qnil;
 }
 
 /*
@@ -1391,6 +1313,8 @@ void Init_generator()
     rb_define_method(cState, "quirks_mode=", cState_quirks_mode_set, 1);
     rb_define_method(cState, "depth", cState_depth, 0);
     rb_define_method(cState, "depth=", cState_depth_set, 1);
+    rb_define_method(cState, "buffer_initial_length", cState_buffer_initial_length, 0);
+    rb_define_method(cState, "buffer_initial_length=", cState_buffer_initial_length_set, 1);
     rb_define_method(cState, "configure", cState_configure, 1);
     rb_define_alias(cState, "merge", "configure");
     rb_define_method(cState, "to_h", cState_to_h, 0);
@@ -1438,6 +1362,7 @@ void Init_generator()
     i_ascii_only = rb_intern("ascii_only");
     i_quirks_mode = rb_intern("quirks_mode");
     i_depth = rb_intern("depth");
+    i_buffer_initial_length = rb_intern("buffer_initial_length");
     i_pack = rb_intern("pack");
     i_unpack = rb_intern("unpack");
     i_create_id = rb_intern("create_id");

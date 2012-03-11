@@ -1,3 +1,8 @@
+Sun Mar 11 22:32:43 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json: Merge 164a75c8bd2007d32c4d7665d53140d8fc126dcd.
+	  [ruby-core:41917] [Bug #5846]
+
 Sun Mar 11 17:10:04 2012  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb: Put error message into STDERR if failed to launch
