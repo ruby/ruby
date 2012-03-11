@@ -1,3 +1,10 @@
+Mon Mar 12 07:19:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tmpdir.rb (Dir.tmpdir): should not use world-writable but
+	  non-sticky directory.
+
+	* lib/tmpdir.rb (Dir.mktmpdir): check the parent directory.
+
 Mon Mar 12 07:04:11 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (Init_Random): removed rb_Random_DEFAULT and register as

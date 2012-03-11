@@ -23,7 +23,8 @@ class Dir
       tmp = @@systmpdir
     else
       for dir in [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'], @@systmpdir, '/tmp']
-        if dir and stat = File.stat(dir) and stat.directory? and stat.writable?
+        if dir and stat = File.stat(dir) and stat.directory? and stat.writable? and
+            (!stat.world_writable? or stat.sticky?)
           tmp = dir
           break
         end rescue nil
@@ -82,7 +83,11 @@ class Dir
       begin
         yield path
       ensure
-        FileUtils.remove_entry_secure path
+        stat = File.stat(File.dirname(path))
+        if stat.world_writable? and !stat.sticky?
+          raise ArgumentError, "parent directory is world writable but not sticky"
+        end
+        FileUtils.remove_entry path
       end
     else
       path
