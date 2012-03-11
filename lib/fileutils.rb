@@ -199,7 +199,7 @@ public
   #   FileUtils.cd('/') do  # chdir
   #     [...]               # do something
   #   end                   # return to original directory
-  #   
+  #
   def cd(dir, options = {}, &block) # :yield: dir
     fu_check_options options, OPT_TABLE['cd']
     fu_output_message "cd #{dir}" if options[:verbose]
@@ -606,7 +606,7 @@ public
   alias move mv
 
   define_command('mv', :force, :noop, :verbose, :secure)
-  define_command('move', :force, :noop, :verbose, :secure)  
+  define_command('move', :force, :noop, :verbose, :secure)
 
 private
 
