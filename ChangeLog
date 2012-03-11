@@ -132,7 +132,7 @@ Wed Mar  7 07:39:28 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 Tue Mar  6 16:24:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_tokadd_string): escape simple regexp meta
-	  character termninators.
+	  character terminators.
 
 Tue Mar  6 10:11:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
