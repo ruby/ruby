@@ -1,3 +1,8 @@
+Mon Mar 12 07:04:11 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (Init_Random): removed rb_Random_DEFAULT and register as
+	  mark-object instead of global variable.
+
 Mon Mar 12 07:03:32 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (random_s_rand): ensure default PRNG is re-initialized
