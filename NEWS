@@ -86,8 +86,7 @@ with all sufficient information, see the ChangeLog file.
   * Merge Onigmo.
     https://github.com/k-takata/Onigmo
 
-  * incompatible changes:
-    The :close_others option is true by default for system() and exec().
+  * The :close_others option is true by default for system() and exec().
     Also, the close-on-exec flag is set by default for all new file descriptors.
     This means file descriptors doesn't inherit to spawned process unless
     explicitly requested such as system(..., fd=>fd).
