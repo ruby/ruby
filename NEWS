@@ -73,6 +73,13 @@ with all sufficient information, see the ChangeLog file.
     * Shellwords#shelljoin() accepts non-string objects in the given
       array, each of which is stringified using to_s.
 
+* lib/tmpdir.rb 
+  * incompatible changes:
+    * Dir.mktmpdir uses FileUtils.remove_entry instead of
+      FileUtils.remove_entry_secure.  This means that applications should not
+      change the permission of the created temporary directory to make
+      accessible from other users.
+
 * zlib
   * Added support for the new deflate strategies Zlib::RLE and Zlib::FIXED.
 
@@ -93,3 +100,7 @@ with all sufficient information, see the ChangeLog file.
 
   * Kernel#respond_to? against a protected method now returns false
     unless the second argument is true.
+
+  * Dir.mktmpdir in lib/tmpdir.rb
+
+    See above.

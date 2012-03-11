@@ -36,6 +36,7 @@ class Dir
   # Dir.mktmpdir creates a temporary directory.
   #
   # The directory is created with 0700 permission.
+  # Application should not change the permission to make the temporary directory accesible from other users.
   #
   # The prefix and suffix of the name of the directory is specified by
   # the optional first argument, <i>prefix_suffix</i>.
@@ -56,7 +57,7 @@ class Dir
   # If a block is given,
   # it is yielded with the path of the directory.
   # The directory and its contents are removed
-  # using FileUtils.remove_entry_secure before Dir.mktmpdir returns.
+  # using FileUtils.remove_entry before Dir.mktmpdir returns.
   # The value of the block is returned.
   #
   #  Dir.mktmpdir {|dir|
@@ -74,7 +75,7 @@ class Dir
   #    open("#{dir}/foo", "w") { ... }
   #  ensure
   #    # remove the directory.
-  #    FileUtils.remove_entry_secure dir
+  #    FileUtils.remove_entry dir
   #  end
   #
   def Dir.mktmpdir(prefix_suffix=nil, *rest)
