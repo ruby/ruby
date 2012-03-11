@@ -1,3 +1,8 @@
+Mon Mar 12 07:03:32 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (random_s_rand): ensure default PRNG is re-initialized
+	  after fork.  patched by Eric Wong.  [ruby-core:41209][Bug #5661]
+
 Sun Mar 11 23:57:29 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* pack.c (pack_unpack): when unpack('M') occurs an illegal byte
