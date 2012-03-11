@@ -1,3 +1,10 @@
+Sun Mar 11 23:57:29 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* pack.c (pack_unpack): when unpack('M') occurs an illegal byte
+	  sequence, output the "=" character and the following character in
+	  the decoded data without any transformation.
+	  [ruby-dev:44875] [Bug #5635]
+
 Sun Mar 11 22:32:43 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json: Merge 164a75c8bd2007d32c4d7665d53140d8fc126dcd.

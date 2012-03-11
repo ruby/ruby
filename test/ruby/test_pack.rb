@@ -612,6 +612,18 @@ class TestPack < Test::Unit::TestCase
     assert_equal([0x100000000], "\220\200\200\200\000".unpack("w"), [0x100000000])
   end
 
+
+  def test_pack_unpack_M
+    assert_equal(["pre123after"], "pre=31=32=33after".unpack("M"))
+    assert_equal(["preafter"], "pre=\nafter".unpack("M"))
+    assert_equal(["preafter"], "pre=\r\nafter".unpack("M"))
+    assert_equal(["pre="], "pre=".unpack("M"))
+    assert_equal(["pre=\r"], "pre=\r".unpack("M"))
+    assert_equal(["pre=hoge"], "pre=hoge".unpack("M"))
+    assert_equal(["pre==31after"], "pre==31after".unpack("M"))
+    assert_equal(["pre===31after"], "pre===31after".unpack("M"))
+  end
+
   def test_modify_under_safe4
     s = "foo"
     assert_raise(SecurityError) do

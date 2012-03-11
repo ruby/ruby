@@ -1991,7 +1991,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	  case 'M':
 	    {
 		VALUE buf = infected_str_new(0, send - s, str);
-		char *ptr = RSTRING_PTR(buf);
+		char *ptr = RSTRING_PTR(buf), *ss = s;
 		int c1, c2;
 
 		while (s < send) {
@@ -2010,8 +2010,10 @@ pack_unpack(VALUE str, VALUE fmt)
 			*ptr++ = *s;
 		    }
 		    s++;
+		    ss = s;
 		}
 		rb_str_set_len(buf, ptr - RSTRING_PTR(buf));
+		rb_str_buf_cat(buf, ss, send-ss);
 		ENCODING_CODERANGE_SET(buf, rb_ascii8bit_encindex(), ENC_CODERANGE_VALID);
 		UNPACK_PUSH(buf);
 	    }
