@@ -429,7 +429,12 @@ module Test
 
           # Array of workers.
           launch_worker = Proc.new {
-            worker = Worker.launch(@options[:ruby],@args)
+            begin
+              worker = Worker.launch(@options[:ruby],@args)
+            rescue => e
+              warn "ERROR: Failed to launch job process - #{e.class}: #{e.message}"
+              exit 1
+            end
             worker.hook(:dead) do |w,info|
               after_worker_quit w
               after_worker_down w, *info if !info.empty? && !worker.quit_called
@@ -536,25 +541,29 @@ module Test
                 end
             end
           end
-          @workers.each do |worker|
-            begin
-              timeout(1) do
-                worker.quit
-              end
-            rescue Errno::EPIPE
-            rescue Timeout::Error
-            end
-            worker.close
-          end
-          begin
-            timeout(0.2*@workers.size) do
-              Process.waitall
-            end
-          rescue Timeout::Error
+
+          if @workers
             @workers.each do |worker|
               begin
-                Process.kill(:KILL,worker.pid)
-              rescue Errno::ESRCH; end
+                timeout(1) do
+                  worker.quit
+                end
+              rescue Errno::EPIPE
+              rescue Timeout::Error
+              end
+              worker.close
+            end
+
+            begin
+              timeout(0.2*@workers.size) do
+                Process.waitall
+              end
+            rescue Timeout::Error
+              @workers.each do |worker|
+                begin
+                  Process.kill(:KILL,worker.pid)
+                rescue Errno::ESRCH; end
+              end
             end
           end
 
@@ -565,7 +574,7 @@ module Test
             @errors   += rep.map{|x| x[:result][0] }.inject(:+)
             @failures += rep.map{|x| x[:result][1] }.inject(:+)
             @skips    += rep.map{|x| x[:result][2] }.inject(:+)
-          else
+          elsif @workers
             puts ""
             puts "Retrying..."
             puts ""

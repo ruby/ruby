@@ -1,3 +1,11 @@
+Sun Mar 11 17:10:04 2012  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb: Put error message into STDERR if failed to lanch
+	  worker (job) process. [ruby-dev:44802] [Bug #5577]
+
+	* lib/test/unit/parallel.rb: If failed to increment_io, exit with code
+	  2. [ruby-dev:44802] [Bug #5577]
+
 Sun Mar 11 15:46:45 2012  Shota Fukumori  <sorah@tubusu.net>
 
 	* io.c: fix rdoc of `IO.binwrite` to show same as `IO.write` except

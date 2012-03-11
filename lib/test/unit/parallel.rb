@@ -88,8 +88,14 @@ module Test
 
         @old_loadpath = []
         begin
-          @stdout = increment_io(STDOUT)
-          @stdin = increment_io(STDIN)
+          begin
+            @stdout = increment_io(STDOUT)
+            @stdin = increment_io(STDIN)
+          rescue
+            exit 2
+          end
+          exit 2 unless @stdout && @stdin
+
           @stdout.sync = true
           @stdout.puts "ready!"
           while buf = @stdin.gets
@@ -130,12 +136,12 @@ module Test
         rescue Errno::EPIPE
         rescue Exception => e
           begin
-            @stdout.puts "bye #{[Marshal.dump(e)].pack("m0")}"
+            @stdout.puts "bye #{[Marshal.dump(e)].pack("m0")}" if @stdout
           rescue Errno::EPIPE;end
           exit
         ensure
-          @stdin.close
-          @stdout.close
+          @stdin.close if @stdin
+          @stdout.close if @stdout
         end
       end
     end
