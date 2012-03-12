@@ -6,6 +6,8 @@
 #define CACHE_MASK 0x7ff
 #define EXPR1(c,m) ((((c)>>3)^(m))&CACHE_MASK)
 
+#define NOEX_NOREDEF NOEX_RESPONDS
+
 static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass);
 
 static ID object_id, respond_to_missing;
@@ -195,6 +197,11 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	rb_method_definition_t *old_def = old_me->def;
 
 	if (rb_method_definition_eq(old_def, def)) return old_me;
+#if 0
+	if (old_me->flag & NOEX_NOREDEF) {
+	    rb_raise(rb_eTypeError, "cannot redefine %s#%s", rb_class2name(klass), rb_id2name(mid));
+	}
+#endif
 	rb_vm_check_redefinition_opt_method(old_me, klass);
 
 	if (RTEST(ruby_verbose) &&
@@ -1385,5 +1392,14 @@ Init_eval_method(void)
     singleton_undefined = rb_intern("singleton_method_undefined");
     attached = rb_intern("__attached__");
     respond_to_missing = rb_intern("respond_to_missing?");
+
+    {
+#define REPLICATE_METHOD(klass, id) \
+	rb_method_entry_set((klass), (id), rb_method_entry((klass), (id)), \
+			    (rb_method_flag_t)(NOEX_PRIVATE | NOEX_BASIC | NOEX_NOREDEF))
+	REPLICATE_METHOD(rb_eException, idMethodMissing);
+	REPLICATE_METHOD(rb_eException, idRespond_to);
+	REPLICATE_METHOD(rb_eException, respond_to_missing);
+    }
 }
 

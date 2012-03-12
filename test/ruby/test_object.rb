@@ -728,4 +728,22 @@ class TestObject < Test::Unit::TestCase
       :foo.singleton_class
     end
   end
+
+  def test_redef_method_missing
+    bug5473 = '[ruby-core:40287]'
+    ['ArgumentError.new("bug5473")', 'ArgumentError, "bug5473"', '"bug5473"'].each do |code|
+      out, err, status = EnvUtil.invoke_ruby([], <<-SRC, true, true)
+      class ::Object
+        def method_missing(m, *a, &b)
+          raise #{code}
+        end
+      end
+
+      p((1.foo rescue $!))
+      SRC
+      assert_send([status, :success?], bug5473)
+      assert_equal("", err, bug5473)
+      assert_equal((eval("raise #{code}") rescue $!.inspect), out.chomp, bug5473)
+    end
+  end
 end
