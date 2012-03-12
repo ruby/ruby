@@ -1,5 +1,4 @@
 require 'test/unit'
-require 'stringio'
 require_relative 'allpairs'
 
 class TestM17NComb < Test::Unit::TestCase
@@ -21,62 +20,6 @@ class TestM17NComb < Test::Unit::TestCase
     enc = Encoding.find(enc) if String === enc
     assert_equal(enc, actual.encoding, message)
     assert_equal(a(bytes), a(actual), message)
-  end
-
-  def assert_warning(pat, mesg=nil)
-    begin
-      org_stderr = $stderr
-      $stderr = StringIO.new(warn = '')
-      yield
-    ensure
-      $stderr = org_stderr
-    end
-    assert_match(pat, warn, mesg)
-  end
-
-  def assert_regexp_generic_encoding(r)
-    assert(!r.fixed_encoding?)
-    %w[ASCII-8BIT EUC-JP Shift_JIS UTF-8].each {|ename|
-      # "\xc2\xa1" is a valid sequence for ASCII-8BIT, EUC-JP, Shift_JIS and UTF-8.
-      assert_nothing_raised { r =~ "\xc2\xa1".force_encoding(ename) }
-    }
-  end
-
-  def assert_regexp_fixed_encoding(r)
-    assert(r.fixed_encoding?)
-    %w[ASCII-8BIT EUC-JP Shift_JIS UTF-8].each {|ename|
-      enc = Encoding.find(ename)
-      if enc == r.encoding
-        assert_nothing_raised { r =~ "\xc2\xa1".force_encoding(enc) }
-      else
-        assert_raise(ArgumentError) { r =~ "\xc2\xa1".force_encoding(enc) }
-      end
-    }
-  end
-
-  def assert_regexp_generic_ascii(r)
-    assert_encoding("ASCII-8BIT", r.encoding)
-    assert_regexp_generic_encoding(r)
-  end
-
-  def assert_regexp_fixed_ascii8bit(r)
-    assert_encoding("ASCII-8BIT", r.encoding)
-    assert_regexp_fixed_encoding(r)
-  end
-
-  def assert_regexp_fixed_eucjp(r)
-    assert_encoding("EUC-JP", r.encoding)
-    assert_regexp_fixed_encoding(r)
-  end
-
-  def assert_regexp_fixed_sjis(r)
-    assert_encoding("Shift_JIS", r.encoding)
-    assert_regexp_fixed_encoding(r)
-  end
-
-  def assert_regexp_fixed_utf8(r)
-    assert_encoding("UTF-8", r.encoding)
-    assert_regexp_fixed_encoding(r)
   end
 
   STRINGS = [

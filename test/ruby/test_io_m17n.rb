@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'tmpdir'
 require 'timeout'
+require 'stringio'
 require_relative 'envutil'
 
 class TestIO_M17N < Test::Unit::TestCase
@@ -10,6 +11,17 @@ class TestIO_M17N < Test::Unit::TestCase
     Encoding::Shift_JIS,
     Encoding::UTF_8
   ]
+
+  def assert_warning(pat, mesg=nil)
+    begin
+      org_stderr = $stderr
+      $stderr = StringIO.new(warn = '')
+      yield
+    ensure
+      $stderr = org_stderr
+    end
+    assert_match(pat, warn, mesg)
+  end
 
   def with_tmpdir
     Dir.mktmpdir {|dir|
@@ -1064,9 +1076,9 @@ EOT
     bug5567 = '[ruby-core:40726]'
     IO.pipe do |r, w|
       assert_nothing_raised(bug5567) do
-        assert_warn(/Unsupported/, bug5567) {r.set_encoding("fffffffffffxx")}
-        assert_warn(/Unsupported/, bug5567) {r.set_encoding("fffffffffffxx", "us-ascii")}
-        assert_warn(/Unsupported/, bug5567) {r.set_encoding("us-ascii", "fffffffffffxx")}
+        assert_warning(/Unsupported/, bug5567) {r.set_encoding("fffffffffffxx")}
+        assert_warning(/Unsupported/, bug5567) {r.set_encoding("fffffffffffxx", "us-ascii")}
+        assert_warning(/Unsupported/, bug5567) {r.set_encoding("us-ascii", "fffffffffffxx")}
       end
     end
   end
