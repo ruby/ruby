@@ -1,3 +1,8 @@
+Mon Mar 12 20:19:25 2012  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tmpdir.rb (Dir::tmpdir): test the current directory suitable for
+	  temporary directory.
+
 Mon Mar 12 20:08:16 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/fileutils.rb (fu_have_symlink?): specify TypeError for rescue

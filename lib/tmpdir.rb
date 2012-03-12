@@ -18,18 +18,21 @@ class Dir
   # Returns the operating system's temporary file path.
 
   def Dir::tmpdir
-    tmp = '.'
     if $SAFE > 0
       tmp = @@systmpdir
     else
-      for dir in [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'], @@systmpdir, '/tmp']
-        if dir and stat = File.stat(dir) and stat.directory? and stat.writable? and
+      tmp = nil
+      for dir in [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'], @@systmpdir, '/tmp', '.']
+        next if !dir
+        dir = File.expand_path(dir)
+        if stat = File.stat(dir) and stat.directory? and stat.writable? and
             (!stat.world_writable? or stat.sticky?)
           tmp = dir
           break
         end rescue nil
       end
-      File.expand_path(tmp)
+      raise ArgumentError, "could not find a temporary directory" if !tmp
+      tmp
     end
   end
 
