@@ -1,3 +1,9 @@
+Mon Mar 12 14:56:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* node.h (NEW_YIELD), parse.y (new_yield_gen): array-values flags
+	  has been already obsolete.  patch by Thomas Enebo.
+	  [ruby-core:41929][Bug #5847]
+
 Mon Mar 12 12:44:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (Init_eval_method): copy basic methods to Exception.

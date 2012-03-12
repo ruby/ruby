@@ -376,7 +376,7 @@ typedef struct RNode {
 #define NEW_RESBODY(a,ex,n) NEW_NODE(NODE_RESBODY,n,ex,a)
 #define NEW_ENSURE(b,en) NEW_NODE(NODE_ENSURE,b,0,en)
 #define NEW_RETURN(s) NEW_NODE(NODE_RETURN,s,0,0)
-#define NEW_YIELD(a,s) NEW_NODE(NODE_YIELD,a,0,s)
+#define NEW_YIELD(a) NEW_NODE(NODE_YIELD,a,0,0)
 #define NEW_LIST(a)  NEW_ARRAY(a)
 #define NEW_ARRAY(a) NEW_NODE(NODE_ARRAY,a,1,0)
 #define NEW_ZARRAY() NEW_NODE(NODE_ZARRAY,0,0,0)

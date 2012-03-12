@@ -2745,7 +2745,7 @@ primary		: literal
 		| keyword_yield '(' rparen
 		    {
 		    /*%%%*/
-			$$ = NEW_YIELD(0, Qfalse);
+			$$ = NEW_YIELD(0);
 		    /*%
 			$$ = dispatch1(yield, dispatch1(paren, arg_new()));
 		    %*/
@@ -2753,7 +2753,7 @@ primary		: literal
 		| keyword_yield
 		    {
 		    /*%%%*/
-			$$ = NEW_YIELD(0, Qfalse);
+			$$ = NEW_YIELD(0);
 		    /*%
 			$$ = dispatch0(yield0);
 		    %*/
@@ -9634,18 +9634,9 @@ ret_args_gen(struct parser_params *parser, NODE *node)
 static NODE *
 new_yield_gen(struct parser_params *parser, NODE *node)
 {
-    long state = Qtrue;
+    if (node) no_blockarg(parser, node);
 
-    if (node) {
-        no_blockarg(parser, node);
-	if (node && nd_type(node) == NODE_SPLAT) {
-	    state = Qtrue;
-	}
-    }
-    else {
-        state = Qfalse;
-    }
-    return NEW_YIELD(node, state);
+    return NEW_YIELD(node);
 }
 
 static NODE*
