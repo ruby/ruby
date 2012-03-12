@@ -1247,6 +1247,27 @@ lazy_initialize(VALUE self, VALUE obj)
 /*
  * call-seq:
  *   e.lazy -> lazy_enumerator
+ *
+ * Returns a lazy enumerator, whose methods map/collect,
+ * flat_map/collect_concat, select/find_all, reject, and grep call blocks
+ * only on an as-needed basis.
+ *
+ * === Example
+ *
+ * The following program shows all pythagorean triples less than 100:
+ *
+ *   def pythagorean_triples
+ *     (1..Float::INFINITY).lazy.flat_map {|z|
+ *       (1..z).flat_map {|x|
+ *         (x..z).select {|y|
+ *           x**2 + y**2 == z**2
+ *         }.map {|y|
+ *           [x, y, z]
+ *         }
+ *       }
+ *     }
+ *   end
+ *   p pythagorean_triples.take_while { |x, y, z| z < 100 }
  */
 static VALUE
 enumerable_lazy(VALUE obj)

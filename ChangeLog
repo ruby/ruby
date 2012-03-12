@@ -1,3 +1,7 @@
+Tue Mar 13 00:09:18 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator.c (enumerable_lazy): added documentation.
+
 Mon Mar 12 20:19:25 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tmpdir.rb (Dir::tmpdir): test the current directory suitable for
