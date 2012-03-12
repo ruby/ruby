@@ -1060,6 +1060,17 @@ EOT
     }
   end
 
+  def test_set_encoding_unsupported
+    bug5567 = '[ruby-core:40726]'
+    IO.pipe do |r, w|
+      assert_nothing_raised(bug5567) do
+        assert_warn(/Unsupported/, bug5567) {r.set_encoding("fffffffffffxx")}
+        assert_warn(/Unsupported/, bug5567) {r.set_encoding("fffffffffffxx", "us-ascii")}
+        assert_warn(/Unsupported/, bug5567) {r.set_encoding("us-ascii", "fffffffffffxx")}
+      end
+    end
+  end
+
   def test_textmode_twice
     assert_raise(ArgumentError) {
       open(__FILE__, "rt", textmode: true) {|f|

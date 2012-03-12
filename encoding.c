@@ -161,7 +161,7 @@ rb_to_encoding_index(VALUE enc)
 
 /* Returns encoding index or UNSPECIFIED_ENCODING */
 static int
-str_to_encindex(VALUE enc)
+str_find_encindex(VALUE enc)
 {
     int idx;
 
@@ -170,6 +170,13 @@ str_to_encindex(VALUE enc)
 	rb_raise(rb_eArgError, "invalid name encoding (non ASCII)");
     }
     idx = rb_enc_find_index(StringValueCStr(enc));
+    return idx;
+}
+
+static int
+str_to_encindex(VALUE enc)
+{
+    int idx = str_find_encindex(enc);
     if (idx < 0) {
 	rb_raise(rb_eArgError, "unknown encoding name - %s", RSTRING_PTR(enc));
     }
@@ -187,6 +194,16 @@ rb_to_encoding(VALUE enc)
 {
     if (enc_check_encoding(enc) >= 0) return RDATA(enc)->data;
     return str_to_encoding(enc);
+}
+
+rb_encoding *
+rb_find_encoding(VALUE enc)
+{
+    int idx;
+    if (enc_check_encoding(enc) >= 0) return RDATA(enc)->data;
+    idx = str_find_encindex(enc);
+    if (idx < 0) return NULL;
+    return rb_enc_from_index(idx);
 }
 
 void

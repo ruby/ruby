@@ -4604,6 +4604,12 @@ rb_io_ext_int_to_encs(rb_encoding *ext, rb_encoding *intern, rb_encoding **enc, 
 }
 
 static void
+unsupported_encoding(const char *name)
+{
+    rb_warn("Unsupported encoding %s ignored", name);
+}
+
+static void
 parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p)
 {
     const char *p;
@@ -4647,7 +4653,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
 	ext_enc = rb_enc_from_index(idx);
     else {
 	if (idx != -2)
-	    rb_warn("Unsupported encoding %s ignored", estr);
+	    unsupported_encoding(estr);
 	ext_enc = NULL;
     }
 
@@ -4660,7 +4666,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
 	else {
 	    idx2 = rb_enc_find_index(p);
 	    if (idx2 < 0)
-		rb_warn("Unsupported encoding %s ignored", p);
+		unsupported_encoding(p);
 	    else if (idx2 == idx) {
 		rb_warn("Ignoring internal encoding %s: it is identical to external encoding %s", p, estr);
 		int_enc = (rb_encoding *)Qnil;
@@ -8709,6 +8715,14 @@ io_new_instance(VALUE args)
     return rb_class_new_instance(2, (VALUE*)args+1, *(VALUE*)args);
 }
 
+static rb_encoding *
+find_encoding(VALUE v)
+{
+    rb_encoding *enc = rb_find_encoding(v);
+    if (!enc) unsupported_encoding(StringValueCStr(v));
+    return enc;
+}
+
 static void
 io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 {
@@ -8717,7 +8731,7 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
     VALUE ecopts, tmp;
 
     if (!NIL_P(v2)) {
-	enc2 = rb_to_encoding(v1);
+	enc2 = find_encoding(v1);
 	tmp = rb_check_string_type(v2);
 	if (!NIL_P(tmp)) {
 	    if (RSTRING_LEN(tmp) == 1 && RSTRING_PTR(tmp)[0] == '-') {
@@ -8726,14 +8740,14 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 		enc2 = NULL;
 	    }
 	    else
-		enc = rb_to_encoding(v2);
+		enc = find_encoding(v2);
 	    if (enc == enc2) {
 		/* Special case - "-" => no transcoding */
 		enc2 = NULL;
 	    }
 	}
 	else
-	    enc = rb_to_encoding(v2);
+	    enc = find_encoding(v2);
 	SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags);
 	ecflags = rb_econv_prepare_options(opt, &ecopts, ecflags);
     }
@@ -8752,7 +8766,7 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
                 ecflags = rb_econv_prepare_options(opt, &ecopts, ecflags);
 	    }
 	    else {
-		rb_io_ext_int_to_encs(rb_to_encoding(v1), NULL, &enc, &enc2);
+		rb_io_ext_int_to_encs(find_encoding(v1), NULL, &enc, &enc2);
 		SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags);
                 ecopts = Qnil;
 	    }
