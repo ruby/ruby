@@ -1,3 +1,8 @@
+Mon Mar 12 10:13:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_jump.c (rb_exec_end_proc): remember the latest exit status.
+	  [ruby-core:43173][Bug #5218]
+
 Mon Mar 12 07:33:12 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tmpdir.rb: update document for changing

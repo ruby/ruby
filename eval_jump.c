@@ -99,6 +99,8 @@ rb_exec_end_proc(void)
     struct end_proc_data *volatile link;
     int status;
     volatile int safe = rb_safe_level();
+    rb_thread_t *th = GET_THREAD();
+    VALUE errinfo = th->errinfo;
 
     while (ephemeral_end_procs) {
 	link = ephemeral_end_procs;
@@ -112,6 +114,7 @@ rb_exec_end_proc(void)
 	POP_TAG();
 	if (status) {
 	    error_handle(status);
+	    if (!NIL_P(th->errinfo)) errinfo = th->errinfo;
 	}
 	xfree(link);
     }
@@ -128,10 +131,12 @@ rb_exec_end_proc(void)
 	POP_TAG();
 	if (status) {
 	    error_handle(status);
+	    if (!NIL_P(th->errinfo)) errinfo = th->errinfo;
 	}
 	xfree(link);
     }
     rb_set_safe_level_force(safe);
+    th->errinfo = errinfo;
 }
 
 void
