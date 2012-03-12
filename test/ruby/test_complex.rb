@@ -1020,7 +1020,7 @@ class Complex_Test < Test::Unit::TestCase
     end
     assert_equal(Complex(0.5,1.0), Complex(1,2).quo(2))
 
-    unless $".grep(/(\A|\/)complex/).empty?
+    unless $".grep(/(?:\A|(?<!add)\/)complex/).empty?
       assert_equal(Complex(0,2), Math.sqrt(-4.0))
 #      assert_equal(true, Math.sqrt(-4.0).inexact?)
       assert_equal(Complex(0,2), Math.sqrt(-4))
