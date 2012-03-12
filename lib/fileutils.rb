@@ -816,7 +816,7 @@ private
     File.symlink nil, nil
   rescue NotImplementedError
     return false
-  rescue
+  rescue TypeError
     return true
   end
 
