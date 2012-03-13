@@ -1389,6 +1389,63 @@ lazy_grep(VALUE obj, VALUE pattern)
 }
 
 static VALUE
+lazy_zip_func_i(VALUE val, VALUE arg, int argc, VALUE *argv)
+{
+    VALUE yielder, ary, v, result;
+    int i;
+
+    yielder = argv[0];
+    ary = rb_ary_new2(RARRAY_LEN(arg) + 1);
+    rb_ary_push(ary, argv[1]);
+    for (i = 0; i < RARRAY_LEN(arg); i++) {
+	v = rb_funcall(RARRAY_PTR(arg)[i], rb_intern("next"), 0);
+	rb_ary_push(ary, v);
+    }
+    result = rb_yield(ary);
+    rb_funcall(yielder, id_yield, 1, result);
+    return Qnil;
+}
+
+static VALUE
+lazy_zip_func(VALUE val, VALUE arg, int argc, VALUE *argv)
+{
+    VALUE yielder, ary, v;
+    int i;
+
+    yielder = argv[0];
+    ary = rb_ary_new2(RARRAY_LEN(arg) + 1);
+    rb_ary_push(ary, argv[1]);
+    for (i = 0; i < RARRAY_LEN(arg); i++) {
+	v = rb_funcall(RARRAY_PTR(arg)[i], rb_intern("next"), 0);
+	rb_ary_push(ary, v);
+    }
+    rb_funcall(yielder, id_yield, 1, ary);
+    return Qnil;
+}
+
+static VALUE
+lazy_zip(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE ary;
+    int i;
+
+    ary = rb_ary_new2(argc);
+    for (i = 0; i < argc; i++) {
+	rb_ary_push(ary, rb_funcall(argv[i], rb_intern("lazy"), 0));
+    }
+
+    return rb_block_call(rb_cLazy, id_new, 1, &obj,
+			 rb_block_given_p() ? lazy_zip_func_i :  lazy_zip_func,
+			 ary);
+}
+
+static VALUE
+lazy_lazy(VALUE obj)
+{
+    return obj;
+}
+
+static VALUE
 stop_result(VALUE self)
 {
     return rb_attr_get(self, rb_intern("result"));
@@ -1428,6 +1485,8 @@ Init_Enumerator(void)
     rb_define_method(rb_cLazy, "select", lazy_select, 0);
     rb_define_method(rb_cLazy, "reject", lazy_reject, 0);
     rb_define_method(rb_cLazy, "grep", lazy_grep, 1);
+    rb_define_method(rb_cLazy, "zip", lazy_zip, -1);
+    rb_define_method(rb_cLazy, "lazy", lazy_lazy, 0);
 
     rb_define_alias(rb_cLazy, "collect", "map");
     rb_define_alias(rb_cLazy, "collect_concat", "flat_map");

@@ -1,3 +1,9 @@
+Wed Mar 14 08:06:35 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator.c (lazy_zip): add Enumerable::Lazy#flat_map.
+
+	* enumerator.c (lazy_lazy): just returns self.
+
 Wed Mar 14 07:48:36 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c (datetime_s_now): [ruby-core:43256].

@@ -109,4 +109,26 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal('c', a.lazy.grep(/c/).first)
     assert_equal('c', a.current)
   end
+
+  def test_zip
+    a = Step.new(1..3)
+    assert_equal([1, "a"], a.zip("a".."c").first)
+    assert_equal(3, a.current)
+    assert_equal([1, "a"], a.lazy.zip("a".."c").first)
+    assert_equal(1, a.current)
+  end
+ 
+  def test_zip_without_arg
+    a = Step.new(1..3)
+    assert_equal([1], a.zip.first)
+    assert_equal(3, a.current)
+    assert_equal([1], a.lazy.zip.first)
+    assert_equal(1, a.current)
+  end
+
+  def test_zip_with_block
+    a = Step.new(1..3)
+    assert_equal(["a", 1], a.lazy.zip("a".."c") {|x, y| [y, x]}.first)
+    assert_equal(1, a.current)
+  end
 end
