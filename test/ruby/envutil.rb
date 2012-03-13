@@ -180,9 +180,10 @@ module Test
       end
 
       def assert_warn(pat, message = nil)
-        message ||= proc {"warning message #{stderr.inspect} is expected to match #{pat.inspect}"}
         stderr = EnvUtil.verbose_warning { yield }
-        assert(pat === stderr, message)
+        message = ' "' + message + '"' if message
+        msg = proc {"warning message #{stderr.inspect} is expected to match #{pat.inspect}#{message}"}
+        assert(pat === stderr, msg)
       end
 
       def assert_warning(*args)
