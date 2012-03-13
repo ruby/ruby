@@ -77,6 +77,12 @@ class TestSyntax < Test::Unit::TestCase
     end
   end
 
+  def test_keyword_rest
+    bug5989 = '[ruby-core:42455]'
+    assert_valid_syntax("def kwrest_test(**a) end", __FILE__)
+    assert_valid_syntax("def kwrest_test(**a, &b) end", __FILE__)
+  end
+
   private
 
   def make_tmpsrc(f, src)

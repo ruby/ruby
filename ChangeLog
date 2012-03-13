@@ -1,3 +1,8 @@
+Tue Mar 13 15:17:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (block_param, f_args): add rules for the case arguments
+	  begin with kwrest.  [ruby-core:42455][Bug #5989]
+
 Tue Mar 13 12:37:53 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (io_encoding_set): always warn if external encoding and internal

@@ -3672,6 +3672,14 @@ block_param	: f_arg ',' f_block_optarg ',' f_rest_arg ',' f_block_kwarg f_kwrest
 			$$ = params_new(Qnil, Qnil, Qnil, Qnil, $1, Qnil, escape_Qundef($2));
 		    %*/
 		    }
+		| tPOW tIDENTIFIER opt_f_block_arg
+		    {
+		    /*%%%*/
+			$$ = new_args(0, 0, 0, 0, 0, $2, $3);
+		    /*%
+			$$ = params_new(Qnil, Qnil, Qnil, Qnil, Qnil, $2, escape_Qundef($3));
+		    %*/
+		    }
 		| f_block_arg
 		    {
 		    /*%%%*/
@@ -4992,6 +5000,14 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg ',' f_kwarg f_kwrest opt_f_block_arg
 			$$ = new_args(0, 0, 0, 0, $1, 0, $2);
 		    /*%
 			$$ = params_new(Qnil, Qnil, Qnil, Qnil, $1, Qnil, escape_Qundef($2));
+		    %*/
+		    }
+		| tPOW tIDENTIFIER opt_f_block_arg
+		    {
+		    /*%%%*/
+			$$ = new_args(0, 0, 0, 0, 0, $2, $3);
+		    /*%
+			$$ = params_new(Qnil, Qnil, Qnil, Qnil, Qnil, $2, escape_Qundef($3));
 		    %*/
 		    }
 		| f_block_arg
