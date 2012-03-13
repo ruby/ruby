@@ -435,6 +435,9 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define HEAP_HEADER(p) ((struct heaps_header *)(p))
 
 static void rb_objspace_call_finalizer(rb_objspace_t *objspace);
+static VALUE define_final0(VALUE obj, VALUE block);
+VALUE rb_define_final(VALUE obj, VALUE block);
+VALUE rb_undefine_final(VALUE obj);
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 rb_objspace_t *
@@ -1764,19 +1767,25 @@ rb_gc_mark_maybe(VALUE obj)
     }
 }
 
+static int
+gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr)
+{
+    register uintptr_t *bits = GET_HEAP_BITMAP(ptr);
+    if (MARKED_IN_BITMAP(bits, ptr)) return 0;
+    MARK_IN_BITMAP(bits, ptr);
+    objspace->heap.live_num++;
+    return 1;
+}
+
 static void
 gc_mark(rb_objspace_t *objspace, VALUE ptr, int lev)
 {
     register RVALUE *obj;
-    register uintptr_t *bits;
 
     obj = RANY(ptr);
     if (rb_special_const_p(ptr)) return; /* special const not marked */
     if (obj->as.basic.flags == 0) return;       /* free cell */
-    bits = GET_HEAP_BITMAP(ptr);
-    if (MARKED_IN_BITMAP(bits, ptr)) return;  /* already marked */
-    MARK_IN_BITMAP(bits, ptr);
-    objspace->heap.live_num++;
+    if (!gc_mark_ptr(objspace, ptr)) return;	/* already marked */
 
     if (lev > GC_LEVEL_MAX || (lev == 0 && stack_check(STACKFRAME_FOR_GC_MARK))) {
 	if (!mark_stack_overflow) {
@@ -2998,6 +3007,12 @@ os_each_obj(int argc, VALUE *argv, VALUE os)
 static VALUE
 undefine_final(VALUE os, VALUE obj)
 {
+    return rb_undefine_final(obj);
+}
+
+VALUE
+rb_undefine_final(VALUE obj)
+{
     rb_objspace_t *objspace = &rb_objspace;
     st_data_t data = obj;
     rb_check_frozen(obj);
@@ -3018,9 +3033,7 @@ undefine_final(VALUE os, VALUE obj)
 static VALUE
 define_final(int argc, VALUE *argv, VALUE os)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-    VALUE obj, block, table;
-    st_data_t data;
+    VALUE obj, block;
 
     rb_scan_args(argc, argv, "11", &obj, &block);
     rb_check_frozen(obj);
@@ -3031,6 +3044,16 @@ define_final(int argc, VALUE *argv, VALUE os)
 	rb_raise(rb_eArgError, "wrong type argument %s (should be callable)",
 		 rb_obj_classname(block));
     }
+    return define_final0(obj, block);
+}
+
+static VALUE
+define_final0(VALUE obj, VALUE block)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    VALUE table;
+    st_data_t data;
+
     if (!FL_ABLE(obj)) {
 	rb_raise(rb_eArgError, "cannot define finalizer for %s",
 		 rb_obj_classname(obj));
@@ -3050,6 +3073,17 @@ define_final(int argc, VALUE *argv, VALUE os)
 	st_add_direct(finalizer_table, obj, table);
     }
     return block;
+}
+
+VALUE
+rb_define_final(VALUE obj, VALUE block)
+{
+    rb_check_frozen(obj);
+    if (!rb_respond_to(block, rb_intern("call"))) {
+	rb_raise(rb_eArgError, "wrong type argument %s (should be callable)",
+		 rb_obj_classname(block));
+    }
+    return define_final0(obj, block);
 }
 
 void
@@ -3537,6 +3571,165 @@ count_objects(int argc, VALUE *argv, VALUE os)
 }
 
 /*
+ *  Document-class: ObjectSpace::WeakMap
+ *
+ *  An <code>ObjectSpace::WeakMap</code> object holds references to
+ *  any objects, but those objects can get disposed by GC.
+ */
+
+struct weakmap {
+    st_table *obj2wmap;		/* obj -> [ref,...] */
+    st_table *wmap2obj;		/* ref -> obj */
+    VALUE final;
+};
+
+static int
+wmap_mark_map(st_data_t key, st_data_t val, st_data_t arg)
+{
+    gc_mark_ptr((rb_objspace_t *)arg, (VALUE)val);
+    return ST_CONTINUE;
+}
+
+static void
+wmap_mark(void *ptr)
+{
+    struct weakmap *w = ptr;
+    st_foreach(w->obj2wmap, wmap_mark_map, (st_data_t)&rb_objspace);
+    rb_gc_mark(w->final);
+}
+
+static int
+wmap_free_map(st_data_t key, st_data_t val, st_data_t arg)
+{
+    rb_ary_resize((VALUE)val, 0);
+    return ST_CONTINUE;
+}
+
+static void
+wmap_free(void *ptr)
+{
+    struct weakmap *w = ptr;
+    st_foreach(w->obj2wmap, wmap_free_map, 0);
+    st_free_table(w->obj2wmap);
+    st_free_table(w->wmap2obj);
+}
+
+size_t rb_ary_memsize(VALUE ary);
+static int
+wmap_memsize_map(st_data_t key, st_data_t val, st_data_t arg)
+{
+    *(size_t *)arg += rb_ary_memsize((VALUE)val);
+    return ST_CONTINUE;
+}
+
+static size_t
+wmap_memsize(const void *ptr)
+{
+    size_t size;
+    const struct weakmap *w = ptr;
+    if (!w) return 0;
+    size = sizeof(*w);
+    size += st_memsize(w->obj2wmap);
+    size += st_memsize(w->wmap2obj);
+    st_foreach(w->obj2wmap, wmap_memsize_map, (st_data_t)&size);
+    return size;
+}
+
+static const rb_data_type_t weakmap_type = {
+    "weakmap",
+    {
+	wmap_mark,
+	wmap_free,
+	wmap_memsize,
+    }
+};
+
+static VALUE
+wmap_allocate(VALUE klass)
+{
+    struct weakmap *w;
+    VALUE obj = TypedData_Make_Struct(klass, struct weakmap, &weakmap_type, w);
+    w->obj2wmap = st_init_numtable();
+    w->wmap2obj = st_init_numtable();
+    w->final = rb_obj_method(obj, ID2SYM(rb_intern("finalize")));
+    return obj;
+}
+
+static int
+wmap_final_func(st_data_t key, st_data_t *value, st_data_t arg)
+{
+    VALUE obj = (VALUE)key, ary = (VALUE)*value;
+    rb_ary_delete(ary, obj);
+    if (!RARRAY_LEN(ary)) return ST_DELETE;
+    return ST_CONTINUE;
+}
+
+static VALUE
+wmap_finalize(VALUE self, VALUE obj)
+{
+    st_data_t data;
+    VALUE rids;
+    long i;
+    struct weakmap *w;
+
+    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    obj = NUM2PTR(obj);
+
+    data = (st_data_t)obj;
+    if (st_delete(w->obj2wmap, &data, &data)) {
+	rids = (VALUE)data;
+	for (i = 0; i < RARRAY_LEN(rids); ++i) {
+	    data = (st_data_t)RARRAY_PTR(rids)[i];
+	    st_delete(w->wmap2obj, &data, NULL);
+	}
+    }
+
+    data = (st_data_t)obj;
+    if (st_delete(w->wmap2obj, &data, &data)) {
+	st_update(w->obj2wmap, (st_data_t)obj, wmap_final_func, 0);
+    }
+    return self;
+}
+
+static VALUE
+wmap_aset(VALUE self, VALUE wmap, VALUE orig)
+{
+    st_data_t data;
+    VALUE rids;
+    struct weakmap *w;
+
+    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    rb_define_final(orig, w->final);
+    rb_define_final(wmap, w->final);
+    if (st_lookup(w->obj2wmap, (st_data_t)orig, &data)) {
+	rids = (VALUE)data;
+    }
+    else {
+	rids = rb_ary_tmp_new(1);
+	st_insert(w->obj2wmap, (st_data_t)orig, (st_data_t)rids);
+    }
+    rb_ary_push(rids, orig);
+    st_insert(w->wmap2obj, (st_data_t)wmap, (st_data_t)orig);
+    return nonspecial_obj_id(orig);
+}
+
+static VALUE
+wmap_aref(VALUE self, VALUE wmap)
+{
+    st_data_t data;
+    VALUE obj;
+    struct weakmap *w;
+    rb_objspace_t *objspace = &rb_objspace;
+
+    TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
+    if (!st_lookup(w->wmap2obj, (st_data_t)wmap, &data)) return Qnil;
+    obj = (VALUE)data;
+    if (!is_id_value(objspace, obj)) return Qnil;
+    if (!is_live_object(objspace, obj)) return Qnil;
+    return obj;
+}
+
+/*
  *  call-seq:
  *     GC.count -> Integer
  *
@@ -3883,6 +4076,14 @@ Init_GC(void)
     rb_define_method(rb_mKernel, "object_id", rb_obj_id, 0);
 
     rb_define_module_function(rb_mObSpace, "count_objects", count_objects, -1);
+
+    {
+	VALUE rb_cWeakMap = rb_define_class_under(rb_mObSpace, "WeakMap", rb_cObject);
+	rb_define_alloc_func(rb_cWeakMap, wmap_allocate);
+	rb_define_method(rb_cWeakMap, "[]=", wmap_aset, 2);
+	rb_define_method(rb_cWeakMap, "[]", wmap_aref, 1);
+	rb_define_private_method(rb_cWeakMap, "finalize", wmap_finalize, 1);
+    }
 
 #if CALC_EXACT_MALLOC_SIZE
     rb_define_singleton_method(rb_mGC, "malloc_allocated_size", gc_malloc_allocated_size, 0);

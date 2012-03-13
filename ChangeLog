@@ -1,3 +1,11 @@
+Tue Mar 13 12:37:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	Bug #5350
+
+	* gc.c: add ObjectSpace::WeakMap.  [ruby-dev:44565][Bug #5350]
+
+	* lib/weakref.rb: use WeakMap instead of _id2ref.
+
 Tue Mar 13 10:59:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (prepare): skip if basedir is not defined.
