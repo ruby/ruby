@@ -1,7 +1,6 @@
 require 'test/unit'
 require 'tmpdir'
 require 'timeout'
-require 'stringio'
 require_relative 'envutil'
 
 class TestIO_M17N < Test::Unit::TestCase
@@ -11,17 +10,6 @@ class TestIO_M17N < Test::Unit::TestCase
     Encoding::Shift_JIS,
     Encoding::UTF_8
   ]
-
-  def assert_warning(pat, mesg=nil)
-    begin
-      org_stderr = $stderr
-      $stderr = StringIO.new(warn = '')
-      yield
-    ensure
-      $stderr = org_stderr
-    end
-    assert_match(pat, warn, mesg)
-  end
 
   def with_tmpdir
     Dir.mktmpdir {|dir|
