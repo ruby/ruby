@@ -1,3 +1,7 @@
+Wed Mar 14 08:15:54 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator.c (lazy_zip_func): use each for non-Array objects.
+
 Wed Mar 14 08:06:35 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator.c (lazy_zip): add Enumerable::Lazy#flat_map.

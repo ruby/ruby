@@ -1294,20 +1294,25 @@ lazy_map(VALUE obj)
 }
 
 static VALUE
+lazy_flat_map_i(VALUE i, VALUE yielder, int argc, VALUE *argv)
+{
+    return rb_funcall2(yielder, id_yield, argc, argv);
+}
+
+static VALUE
 lazy_flat_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
 {
     VALUE result = rb_yield_values2(argc - 1, &argv[1]);
-    VALUE ary = rb_check_array_type(result);
-    if (NIL_P(ary)) {
-	return rb_funcall(argv[0], id_yield, 1, result);
+    if (TYPE(result) == T_ARRAY) {
+	int i;
+	for (i = 0; i < RARRAY_LEN(result); i++) {
+	    rb_funcall(argv[0], id_yield, 1, RARRAY_PTR(result)[i]);
+	}
     }
     else {
-	int i;
-	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	    rb_funcall(argv[0], id_yield, 1, RARRAY_PTR(ary)[i]);
-	}
-	return Qnil;
+	rb_block_call(result, id_each, 0, 0, lazy_flat_map_i, argv[0]);
     }
+    return Qnil;
 }
 
 static VALUE

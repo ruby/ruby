@@ -88,6 +88,16 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(1, a.current)
   end
 
+  def test_flat_map_nested
+    a = Step.new(1..3)
+    assert_equal([1, "a"],
+                 a.flat_map {|x| ("a".."c").map {|y| [x, y]}}.first)
+    assert_equal(3, a.current)
+    assert_equal([1, "a"],
+                 a.lazy.flat_map {|x| ("a".."c").lazy.map {|y| [x, y]}}.first)
+    assert_equal(1, a.current)
+  end
+
   def test_reject
     a = Step.new(1..6)
     assert_equal(4, a.reject {|x| x < 4}.first)
