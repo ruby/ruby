@@ -1202,6 +1202,12 @@ generator_each(int argc, VALUE *argv, VALUE obj)
  *
  */
 
+static VALUE
+stop_result(VALUE self)
+{
+    return rb_attr_get(self, rb_intern("result"));
+}
+
 /* Lazy Enumerator methods */
 static VALUE
 lazy_init_iterator(VALUE val, VALUE m, int argc, VALUE *argv)
@@ -1242,6 +1248,12 @@ lazy_initialize(VALUE self, VALUE obj)
     enumerator_init(self, generator, sym_each, 0, 0);
 
     return self;
+}
+
+static VALUE
+obj_to_lazy(VALUE obj)
+{
+    return lazy_initialize(enumerator_allocate(rb_cLazy), obj);
 }
 
 /*
@@ -1388,17 +1400,12 @@ lazy_grep(VALUE obj, VALUE pattern)
     return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_grep_func, pattern);
 }
 
-static VALUE
-stop_result(VALUE self)
-{
-    return rb_attr_get(self, rb_intern("result"));
-}
-
 void
 Init_Enumerator(void)
 {
     rb_define_method(rb_mKernel, "to_enum", obj_to_enum, -1);
     rb_define_method(rb_mKernel, "enum_for", obj_to_enum, -1);
+    rb_define_method(rb_mKernel, "lazy", obj_to_lazy, 0);
 
     rb_cEnumerator = rb_define_class("Enumerator", rb_cObject);
     rb_include_module(rb_cEnumerator, rb_mEnumerable);
