@@ -8743,11 +8743,22 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 		enc = find_encoding(v2);
 	    if (enc == enc2) {
 		/* Special case - "-" => no transcoding */
+		VALUE tmp1 = rb_check_string_type(v1);
+		rb_warn("Ignoring internal encoding %s: it is identical to external encoding %s",
+			StringValueCStr(tmp), NIL_P(tmp1) ? rb_enc_name(enc) : StringValueCStr(tmp1));
 		enc2 = NULL;
 	    }
 	}
-	else
+	else {
 	    enc = find_encoding(v2);
+	    if (enc == enc2) {
+		/* Special case - "-" => no transcoding */
+		VALUE tmp1 = rb_check_string_type(v1);
+		rb_warn("Ignoring internal encoding %s: it is identical to external encoding %s",
+			rb_enc_name(enc), NIL_P(tmp1) ? rb_enc_name(enc) : StringValueCStr(tmp1));
+		enc2 = NULL;
+	    }
+	}
 	SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags);
 	ecflags = rb_econv_prepare_options(opt, &ecopts, ecflags);
     }

@@ -1,3 +1,8 @@
+Tue Mar 13 12:37:53 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (io_encoding_set): always warn if external encoding and internal
+	  encoding are identical. [ruby-core:40727] [Bug #5568]
+
 Tue Mar 13 12:37:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	Bug #5350

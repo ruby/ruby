@@ -984,6 +984,32 @@ EOT
          end)
   end
 
+  def test_set_encoding_identical
+    bug5568 = '[ruby-core:40727]'
+    open(__FILE__, "r") do |f|
+      assert_warn(/Ignoring internal encoding euc-jp: it is identical to external encoding eucjp/, bug5568) {
+        f.set_encoding("eucjp:euc-jp")
+      }
+      assert_warn(/Ignoring internal encoding euc-jp: it is identical to external encoding eucjp/, bug5568) {
+        f.set_encoding("eucjp", "euc-jp")
+      }
+      assert_warn(/Ignoring internal encoding euc-jp: it is identical to external encoding EUC-JP/, bug5568) {
+        f.set_encoding(Encoding::EUC_JP, "euc-jp")
+      }
+      assert_warn(/Ignoring internal encoding EUC-JP: it is identical to external encoding eucjp/, bug5568) {
+        f.set_encoding("eucjp", Encoding::EUC_JP)
+      }
+      assert_warn(/Ignoring internal encoding EUC-JP: it is identical to external encoding EUC-JP/, bug5568) {
+        f.set_encoding(Encoding::EUC_JP, Encoding::EUC_JP)
+      }
+      nonstr = Object.new
+      def nonstr.to_str; "eucjp"; end
+      assert_warn(/Ignoring internal encoding eucjp: it is identical to external encoding eucjp/, bug5568) {
+        f.set_encoding(nonstr, nonstr)
+      }
+    end
+  end
+
   def test_set_encoding_undef
     pipe(proc do |w|
            w << "\ufffd"
