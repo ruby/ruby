@@ -543,19 +543,6 @@ static VALUE ripper_id2sym(ID);
 #define params_new(pars, opts, rest, pars2, kws, kwrest, blk) \
         dispatch7(params, (pars), (opts), (rest), (pars2), (kws), (kwrest), (blk))
 
-static inline VALUE
-new_args(VALUE f, VALUE o, VALUE r, VALUE p, NODE *t)
-{
-    VALUE k = t->u1.value, kr = t->u2.value, b = t->u3.value;
-    return params_new(f, o, r, p, k, kr, escape_Qundef(b));
-}
-
-static inline NODE *
-new_args_tail(VALUE k, VALUE kr, VALUE b)
-{
-    return rb_node_newnode(NODE_MEMO, k, kr, b);
-}
-
 #define blockvar_new(p,v) dispatch2(block_var, (p), (v))
 #define blockvar_add_star(l,a) dispatch2(block_var_add_star, (l), (a))
 #define blockvar_add_block(l,a) dispatch2(block_var_add_block, (l), (a))
@@ -565,6 +552,22 @@ new_args_tail(VALUE k, VALUE kr, VALUE b)
 #define method_add_block(m,b) dispatch2(method_add_block, (m), (b))
 
 #define escape_Qundef(x) ((x)==Qundef ? Qnil : (x))
+
+static inline VALUE
+new_args_gen(struct parser_params *parser, VALUE f, VALUE o, VALUE r, VALUE p, VALUE tail)
+{
+    NODE *t = (NODE *)tail;
+    VALUE k = t->u1.value, kr = t->u2.value, b = t->u3.value;
+    return params_new(f, o, r, p, k, kr, escape_Qundef(b));
+}
+#define new_args(f,o,r,p,t) new_args_gen(parser, (f),(o),(r),(p),(t))
+
+static inline VALUE
+new_args_tail_gen(struct parser_params *parser, VALUE k, VALUE kr, VALUE b)
+{
+    return (VALUE)rb_node_newnode(NODE_MEMO, k, kr, b);
+}
+#define new_args_tail(k,kr,b) new_args_tail_gen(parser, (k),(kr),(b))
 
 #define FIXME 0
 
