@@ -1,3 +1,11 @@
+Tue Mar 13 10:59:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (prepare): skip if basedir is not defined.
+	  [ruby-core:39135][Bug #5238]
+
+	* tool/rbinstall.rb (CONFIG.[]): check for mandatory
+	  configurations.
+
 Tue Mar 13 00:09:18 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator.c (enumerable_lazy): added documentation.
