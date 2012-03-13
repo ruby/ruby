@@ -177,7 +177,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
 
     if (iseq->arg_keyword != -1) {
 	int i, j;
-	if (argc > 0) keyword_hash = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
+	if (argc > 0) keyword_hash = rb_check_hash_type(argv[argc-1]);
 	if (!NIL_P(keyword_hash)) {
 	    argc--;
 	    keyword_hash = rb_hash_dup(keyword_hash);

@@ -79,8 +79,13 @@ class TestSyntax < Test::Unit::TestCase
 
   def test_keyword_rest
     bug5989 = '[ruby-core:42455]'
-    assert_valid_syntax("def kwrest_test(**a) end", __FILE__)
-    assert_valid_syntax("def kwrest_test(**a, &b) end", __FILE__)
+    assert_valid_syntax("def kwrest_test(**a) a; end", __FILE__)
+    assert_valid_syntax("def kwrest_test2(**a, &b) end", __FILE__)
+    o = Object.new
+    def o.kw(**a) a end
+    assert_equal({}, o.kw)
+    assert_equal({foo: 1}, o.kw(foo: 1))
+    assert_equal({foo: 1, bar: 2}, o.kw(foo: 1, bar: 2))
   end
 
   private

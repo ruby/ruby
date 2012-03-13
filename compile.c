@@ -1166,6 +1166,12 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    }
 	    ADD_INSN(optargs, nd_line(args->kw_args), pop);
 	}
+	else if (args->kw_rest_arg) {
+	    iseq->arg_keyword = get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_vid);
+	    COMPILE(optargs, "kwarg", args->kw_rest_arg);
+	    iseq->arg_keyword_check = (args->kw_rest_arg->nd_vid & ID_SCOPE_MASK) == ID_JUNK;
+	    ADD_INSN(optargs, nd_line(args->kw_rest_arg), pop);
+	}
 	else {
 	    iseq->arg_keyword = -1;
 	}
@@ -4992,17 +4998,17 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	ADD_INSN1(ret, nd_line(node), putobject, ID2SYM(id));
 	ADD_SEND(ret, nd_line(node), ID2SYM(rb_intern("delete")), INT2FIX(1));
 	switch (nd_type(node->nd_body)) {
-	    case NODE_LASGN:
-		idx = iseq->local_iseq->local_size - get_local_var_idx(iseq, id);
-		ADD_INSN1(ret, nd_line(node), setlocal, INT2FIX(idx));
-		break;
-	    case NODE_DASGN:
-	    case NODE_DASGN_CURR:
-		idx = get_dyna_var_idx(iseq, id, &lv, &ls);
-		ADD_INSN2(ret, nd_line(node), setdynamic, INT2FIX(ls - idx), INT2FIX(lv));
-		break;
-	    default:
-		rb_bug("iseq_compile_each (NODE_KW_ARG): unknown node: %s", ruby_node_name(nd_type(node->nd_body)));
+	  case NODE_LASGN:
+	    idx = iseq->local_iseq->local_size - get_local_var_idx(iseq, id);
+	    ADD_INSN1(ret, nd_line(node), setlocal, INT2FIX(idx));
+	    break;
+	  case NODE_DASGN:
+	  case NODE_DASGN_CURR:
+	    idx = get_dyna_var_idx(iseq, id, &lv, &ls);
+	    ADD_INSN2(ret, nd_line(node), setdynamic, INT2FIX(ls - idx), INT2FIX(lv));
+	    break;
+	  default:
+	    rb_bug("iseq_compile_each (NODE_KW_ARG): unknown node: %s", ruby_node_name(nd_type(node->nd_body)));
 	}
 	ADD_INSNL(ret, nd_line(node), jump, end_label);
 	ADD_LABEL(ret, default_label);
