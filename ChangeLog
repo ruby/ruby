@@ -1,3 +1,7 @@
+Wed Mar 14 07:48:36 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (datetime_s_now): [ruby-core:43256].
+
 Tue Mar 13 22:00:14 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_set_arguments): keyword rest arg without keyword args.
