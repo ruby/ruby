@@ -1209,12 +1209,13 @@ lazy_initialize(VALUE self, VALUE obj)
  *   e.lazy -> lazy_enumerator
  *
  * Returns a lazy enumerator, whose methods map/collect,
- * flat_map/collect_concat, select/find_all, reject, and grep call blocks
- * only on an as-needed basis.
+ * flat_map/collect_concat, select/find_all, reject, grep, zip, take,
+ * take_while, drop, and drop_while enumerate values only on an as-needed
+ * basis.
  *
  * === Example
  *
- * The following program shows all pythagorean triples less than 100:
+ * The following program finds pythagorean triples:
  *
  *   def pythagorean_triples
  *     (1..Float::INFINITY).lazy.flat_map {|z|
@@ -1227,7 +1228,10 @@ lazy_initialize(VALUE self, VALUE obj)
  *       }
  *     }
  *   end
- *   p pythagorean_triples.take_while { |x, y, z| z < 100 }
+ *   # show first ten pythagorean triples
+ *   p pythagorean_triples.take(10).force
+ *   # show pythagorean triples less than 100
+ *   p pythagorean_triples.take_while { |*, z| z < 100 }.force
  */
 static VALUE
 enumerable_lazy(VALUE obj)
