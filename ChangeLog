@@ -1,3 +1,7 @@
+Wed Mar 14 19:28:40 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator.c (lazy_take): add Enumerable::Lazy#take.
+
 Wed Mar 14 18:40:36 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator.c: use long for array indices.

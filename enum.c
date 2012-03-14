@@ -17,15 +17,6 @@
 
 #define STATIC_ASSERT(name, expr) typedef int static_assert_##name##_check[1 - 2*!(expr)]
 
-#define NEW_MEMO(a, b, c) rb_node_newnode(NODE_MEMO, (a), (b), (c))
-
-#define roomof(x, y) ((sizeof(x) + sizeof(y) - 1) / sizeof(y))
-#define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
-#define NEW_MEMO_FOR(type, value) \
-    (rb_ary_set_len(((value) = rb_ary_tmp_new(roomof(type, VALUE))), \
-		    roomof(type, VALUE)), \
-     MEMO_FOR(type, value))
-
 VALUE rb_mEnumerable;
 static ID id_next;
 #define id_each idEach

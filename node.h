@@ -451,6 +451,14 @@ typedef struct RNode {
 #define NEW_ATTRASGN(r,m,a) NEW_NODE(NODE_ATTRASGN,r,m,a)
 #define NEW_PRELUDE(p,b) NEW_NODE(NODE_PRELUDE,p,b,0)
 #define NEW_OPTBLOCK(a) NEW_NODE(NODE_OPTBLOCK,a,0,0)
+#define NEW_MEMO(a,b,c) NEW_NODE(NODE_MEMO,a,b,c)
+
+#define roomof(x, y) ((sizeof(x) + sizeof(y) - 1) / sizeof(y))
+#define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
+#define NEW_MEMO_FOR(type, value) \
+    (rb_ary_set_len(((value) = rb_ary_tmp_new(roomof(type, VALUE))), \
+		    roomof(type, VALUE)), \
+     MEMO_FOR(type, value))
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)

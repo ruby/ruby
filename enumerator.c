@@ -13,6 +13,7 @@
 ************************************************/
 
 #include "ruby/ruby.h"
+#include "node.h"
 #include "internal.h"
 
 /*
@@ -1169,7 +1170,10 @@ lazy_init_iterator(VALUE val, VALUE m, int argc, VALUE *argv)
 static VALUE
 lazy_init_yielder(VALUE val, VALUE m, int argc, VALUE *argv)
 {
-    return rb_funcall2(m, id_yield, 1, &val);
+    VALUE result;
+    result = rb_funcall2(m, id_yield, 1, &val);
+    if (result == Qundef) rb_iter_break();
+    return result;
 }
 
 static VALUE
@@ -1399,6 +1403,33 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
+lazy_take_func(VALUE val, VALUE args, int argc, VALUE *argv)
+{
+    NODE *memo = RNODE(args);
+
+    if (memo->u3.cnt == 0) {
+	return Qundef;
+    }
+    rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
+    memo->u3.cnt--;
+    return Qnil;
+}
+
+static VALUE
+lazy_take(VALUE obj, VALUE n)
+{
+    NODE *memo;
+    long len = NUM2LONG(n);
+
+    if (len < 0) {
+	rb_raise(rb_eArgError, "attempt to take negative size");
+    }
+    memo = NEW_MEMO(0, 0, len);
+    return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_take_func,
+			 (VALUE) memo);
+}
+
+static VALUE
 lazy_lazy(VALUE obj)
 {
     return obj;
@@ -1492,6 +1523,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "reject", lazy_reject, 0);
     rb_define_method(rb_cLazy, "grep", lazy_grep, 1);
     rb_define_method(rb_cLazy, "zip", lazy_zip, -1);
+    rb_define_method(rb_cLazy, "take", lazy_take, 1);
     rb_define_method(rb_cLazy, "lazy", lazy_lazy, 0);
 
     rb_define_alias(rb_cLazy, "collect", "map");

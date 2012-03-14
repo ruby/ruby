@@ -143,4 +143,12 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(["a", 1], a.lazy.zip("a".."c") {|x, y| [y, x]}.first)
     assert_equal(1, a.current)
   end
+
+  def test_take
+    a = Step.new(1..3)
+    assert_equal(1, a.take(2).first)
+    assert_equal(2, a.current)
+    assert_equal(1, a.lazy.take(2).first)
+    assert_equal(1, a.current)
+  end
 end
