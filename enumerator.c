@@ -103,7 +103,8 @@
  */
 VALUE rb_cEnumerator;
 VALUE rb_cLazy;
-static ID id_rewind, id_each, id_new, id_initialize, id_yield, id_call, id_next, id_result, id_lazy;
+static ID id_rewind, id_each, id_new, id_initialize, id_yield, id_call;
+static ID id_eqq, id_next, id_result, id_lazy;
 static VALUE sym_each;
 
 VALUE rb_eStopIteration;
@@ -1377,7 +1378,7 @@ static VALUE
 lazy_grep_func(VALUE val, VALUE m, int argc, VALUE *argv)
 {
     VALUE element = argv[1];
-    VALUE result = rb_funcall(m, rb_intern("=~"), 1, element);
+    VALUE result = rb_funcall(m, id_eqq, 1, element);
 
     if (RTEST(result)) {
 	return rb_funcall(argv[0], id_yield, 1, element);
@@ -1530,6 +1531,7 @@ Init_Enumerator(void)
     id_next = rb_intern("next");
     id_result = rb_intern("result");
     id_lazy = rb_intern("lazy");
+    id_eqq = rb_intern("===");
     sym_each = ID2SYM(id_each);
 
     InitVM(Enumerator);

@@ -118,6 +118,8 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal('f', a.current)
     assert_equal('c', a.lazy.grep(/c/).first)
     assert_equal('c', a.current)
+    assert_equal(%w[a e], a.grep(proc {|x| /[aeiou]/ =~ x}))
+    assert_equal(%w[a e], a.lazy.grep(proc {|x| /[aeiou]/ =~ x}).to_a)
   end
 
   def test_zip

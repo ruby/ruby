@@ -1,3 +1,8 @@
+Wed Mar 14 10:44:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (lazy_grep_func): should use === instead of =~, as
+	  well as Enumerable#grep
+
 Wed Mar 14 08:15:54 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator.c (lazy_zip_func): use each for non-Array objects.
