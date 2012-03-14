@@ -1161,10 +1161,12 @@ generator_each(int argc, VALUE *argv, VALUE obj)
 static VALUE
 lazy_init_iterator(VALUE val, VALUE m, int argc, VALUE *argv)
 {
-    VALUE args[2];
+    VALUE args[2], result;
     args[0] = m;
     args[1] = val;
-    return rb_yield_values2(2, args);
+    result = rb_yield_values2(2, args);
+    if (result == Qundef) rb_iter_break();
+    return result;
 }
 
 static VALUE
@@ -1407,9 +1409,7 @@ lazy_take_func(VALUE val, VALUE args, int argc, VALUE *argv)
 {
     NODE *memo = RNODE(args);
 
-    if (memo->u3.cnt == 0) {
-	return Qundef;
-    }
+    if (memo->u3.cnt == 0) return Qundef;
     rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
     memo->u3.cnt--;
     return Qnil;
@@ -1426,6 +1426,73 @@ lazy_take(VALUE obj, VALUE n)
     }
     memo = NEW_MEMO(0, 0, len);
     return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_take_func,
+			 (VALUE) memo);
+}
+
+static VALUE
+lazy_take_while_func(VALUE val, VALUE args, int argc, VALUE *argv)
+{
+    VALUE result = rb_yield_values2(argc - 1, &argv[1]);
+    if (!RTEST(result)) return Qundef;
+    rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
+    return Qnil;
+}
+
+static VALUE
+lazy_take_while(VALUE obj)
+{
+    return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_take_while_func, 0);
+}
+
+static VALUE
+lazy_drop_func(VALUE val, VALUE args, int argc, VALUE *argv)
+{
+    NODE *memo = RNODE(args);
+
+    if (memo->u3.cnt == 0) {
+	rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
+    }
+    else {
+	memo->u3.cnt--;
+    }
+    return Qnil;
+}
+
+static VALUE
+lazy_drop(VALUE obj, VALUE n)
+{
+    NODE *memo;
+    long len = NUM2LONG(n);
+
+    if (len < 0) {
+	rb_raise(rb_eArgError, "attempt to drop negative size");
+    }
+    memo = NEW_MEMO(0, 0, len);
+    return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_drop_func,
+			 (VALUE) memo);
+}
+
+static VALUE
+lazy_drop_while_func(VALUE val, VALUE args, int argc, VALUE *argv)
+{
+    NODE *memo = RNODE(args);
+
+    if (!memo->u3.state && !RTEST(rb_yield_values2(argc - 1, &argv[1]))) {
+	memo->u3.state = TRUE;
+    }
+    if (memo->u3.state) {
+	rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
+    }
+    return Qnil;
+}
+
+static VALUE
+lazy_drop_while(VALUE obj)
+{
+    NODE *memo;
+
+    memo = NEW_MEMO(0, 0, FALSE);
+    return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_drop_while_func,
 			 (VALUE) memo);
 }
 
@@ -1524,11 +1591,15 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "grep", lazy_grep, 1);
     rb_define_method(rb_cLazy, "zip", lazy_zip, -1);
     rb_define_method(rb_cLazy, "take", lazy_take, 1);
+    rb_define_method(rb_cLazy, "take_while", lazy_take_while, 0);
+    rb_define_method(rb_cLazy, "drop", lazy_drop, 1);
+    rb_define_method(rb_cLazy, "drop_while", lazy_drop_while, 0);
     rb_define_method(rb_cLazy, "lazy", lazy_lazy, 0);
 
     rb_define_alias(rb_cLazy, "collect", "map");
     rb_define_alias(rb_cLazy, "collect_concat", "flat_map");
     rb_define_alias(rb_cLazy, "find_all", "select");
+    rb_define_alias(rb_cLazy, "force", "to_a");
 
     rb_eStopIteration = rb_define_class("StopIteration", rb_eIndexError);
     rb_define_method(rb_eStopIteration, "result", stop_result, 0);

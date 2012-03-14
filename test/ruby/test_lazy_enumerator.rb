@@ -145,10 +145,46 @@ class TestLazyEnumerator < Test::Unit::TestCase
   end
 
   def test_take
-    a = Step.new(1..3)
-    assert_equal(1, a.take(2).first)
-    assert_equal(2, a.current)
-    assert_equal(1, a.lazy.take(2).first)
+    a = Step.new(1..10)
+    assert_equal(1, a.take(5).first)
+    assert_equal(5, a.current)
+    assert_equal(1, a.lazy.take(5).first)
     assert_equal(1, a.current)
+    assert_equal((1..5).to_a, a.lazy.take(5).to_a)
+  end
+
+  def test_take_while
+    a = Step.new(1..10)
+    assert_equal(1, a.take_while {|i| i < 5}.first)
+    assert_equal(5, a.current)
+    assert_equal(1, a.lazy.take_while {|i| i < 5}.first)
+    assert_equal(1, a.current)
+    assert_equal((1..4).to_a, a.lazy.take_while {|i| i < 5}.to_a)
+  end
+
+  def test_drop
+    a = Step.new(1..10)
+    assert_equal(6, a.drop(5).first)
+    assert_equal(10, a.current)
+    assert_equal(6, a.lazy.drop(5).first)
+    assert_equal(6, a.current)
+    assert_equal((6..10).to_a, a.lazy.drop(5).to_a)
+  end
+
+  def test_drop_while
+    a = Step.new(1..10)
+    assert_equal(5, a.drop_while {|i| i < 5}.first)
+    assert_equal(10, a.current)
+    assert_equal(5, a.lazy.drop_while {|i| i < 5}.first)
+    assert_equal(5, a.current)
+    assert_equal((5..10).to_a, a.lazy.drop_while {|i| i < 5}.to_a)
+  end
+
+  def test_drop_and_take
+    assert_equal([4, 5], (1..Float::INFINITY).lazy.drop(3).take(2).to_a)
+  end
+
+  def test_force
+    assert_equal([1, 2, 3], (1..Float::INFINITY).lazy.take(3).force)
   end
 end
