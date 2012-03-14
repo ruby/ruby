@@ -1618,23 +1618,7 @@ opt_mod
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat &&
 		 BASIC_OP_UNREDEFINED_P(BOP_MOD, FLOAT_REDEFINED_OP_FLAG)) {
-	    double x = RFLOAT_VALUE(recv);
-	    double y = RFLOAT_VALUE(obj);
-	    double div, mod;
-
-	    {
-		double z;
-
-		modf(x / y, &z);
-		mod = x - z * y;
-	    }
-
-	    div = (x - mod) / y;
-	    if (y * mod < 0) {
-		mod += y;
-		div -= 1.0;
-	    }
-	    val = DBL2NUM(mod);
+	    val = DBL2NUM(ruby_float_mod(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj)));
 	}
 	else {
 	    goto INSN_LABEL(normal_dispatch);

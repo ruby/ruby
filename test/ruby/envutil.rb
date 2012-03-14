@@ -212,6 +212,10 @@ module Test
         assert_equal([true, ""], [status.success?, err], message)
         assert_operator(after.fdiv(before), :<, limit, message)
       end
+
+      def assert_is_minus_zero(f)
+        assert(1.0/f == -Float::INFINITY, "#{f} is not -0.0")
+      end
     end
   end
 end

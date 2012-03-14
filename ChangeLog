@@ -1,3 +1,16 @@
+Wed Mar 14 15:09:23 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* numeric.c: fix flodivmod for cornercases [Bug #6044]
+	  add ruby_float_mod
+
+	* insns.def (opt_mod): use ruby_float_mod
+
+	* internal.h: declare ruby_float_mod
+
+	* test/ruby/test_float.rb: tests for above
+
+	* test/ruby/envutil.rb: create helper assert_is_minus_zero
+
 Wed Mar 14 10:44:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (lazy_grep_func): should use === instead of =~, as
