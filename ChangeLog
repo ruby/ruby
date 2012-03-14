@@ -1,3 +1,7 @@
+Wed Mar 14 18:40:36 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator.c: use long for array indices.
+
 Wed Mar 14 18:25:18 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator.c: moved the comment of StopIteration.

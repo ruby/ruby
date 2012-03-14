@@ -1258,7 +1258,7 @@ lazy_flat_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
 {
     VALUE result = rb_yield_values2(argc - 1, &argv[1]);
     if (TYPE(result) == T_ARRAY) {
-	int i;
+	long i;
 	for (i = 0; i < RARRAY_LEN(result); i++) {
 	    rb_funcall(argv[0], id_yield, 1, RARRAY_PTR(result)[i]);
 	}
@@ -1351,7 +1351,7 @@ static VALUE
 lazy_zip_func_i(VALUE val, VALUE arg, int argc, VALUE *argv)
 {
     VALUE yielder, ary, v, result;
-    int i;
+    long i;
 
     yielder = argv[0];
     ary = rb_ary_new2(RARRAY_LEN(arg) + 1);
@@ -1369,7 +1369,7 @@ static VALUE
 lazy_zip_func(VALUE val, VALUE arg, int argc, VALUE *argv)
 {
     VALUE yielder, ary, v;
-    int i;
+    long i;
 
     yielder = argv[0];
     ary = rb_ary_new2(RARRAY_LEN(arg) + 1);
