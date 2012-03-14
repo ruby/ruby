@@ -1,3 +1,10 @@
+Thu Mar 15 07:03:52 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* vm_eval.c (check_funcall):  Raise ArgumentError if respond_to?
+	  requires more than three arguments. [Bug #6000]
+	* test/ruby/test_object.rb (class TestObject):  Test for respond_to?
+	  requiring more than three arguments.
+
 Thu Mar 15 06:08:06 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* include/ruby/intern.h: Add rb_check_arity, rb_error_arity [#6085]

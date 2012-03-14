@@ -272,7 +272,10 @@ check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
 	VALUE args[2];
 	int arity = rb_method_entry_arity(me);
 
-	if (arity < 1 || arity > 3) arity = 2;
+	if (arity > 2)
+	    rb_raise(rb_eArgError, "respond_to? must accept 1 or 2 arguments (requires %d)", arity);
+
+	if (arity < 1) arity = 2;
 
 	args[0] = ID2SYM(mid);
 	args[1] = Qtrue;
