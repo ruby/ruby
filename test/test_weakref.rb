@@ -2,9 +2,11 @@ require 'test/unit'
 require 'weakref'
 
 class TestWeakRef < Test::Unit::TestCase
-  def make_weakref
+  def make_weakref(level = 10)
     obj = Object.new
-    return WeakRef.new(obj), obj.to_s
+    str = obj.to_s
+    level.times {obj = WeakRef.new(obj)}
+    return WeakRef.new(obj), str
   end
 
   def test_ref
