@@ -53,11 +53,11 @@ Wed Mar 14 10:44:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Mar 14 08:15:54 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* enumerator.c (lazy_zip_func): use each for non-Array objects.
+	* enumerator.c (lazy_flat_map_func): use each for non-Array objects.
 
 Wed Mar 14 08:06:35 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* enumerator.c (lazy_zip): add Enumerable::Lazy#flat_map.
+	* enumerator.c (lazy_zip): add Enumerable::Lazy#zip.
 
 	* enumerator.c (lazy_lazy): just returns self.
 
@@ -151,7 +151,7 @@ Mon Mar 12 07:33:12 2012  Tanaka Akira  <akr@fsij.org>
 	* lib/tmpdir.rb: update document for changing
 	  FileUtils.remove_entry_secure to FileUtils.remove_entry.
 
-	* NEWS: add incompatiblity note for lib/tmpdir.rb.
+	* NEWS: add incompatibility note for lib/tmpdir.rb.
 
 Mon Mar 12 07:19:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
