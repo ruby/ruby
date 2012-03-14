@@ -3,6 +3,7 @@ require 'tmpdir'
 
 class TestTmpdir < Test::Unit::TestCase
   def test_world_writable
+    skip "no meaning on this platform" if /mswin|mingw/ =~ RUBY_PLATFORM
     Dir.mktmpdir do |tmpdir|
       # ToDo: fix for parallel test
       olddir, ENV["TMPDIR"] = ENV["TMPDIR"], tmpdir

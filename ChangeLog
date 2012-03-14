@@ -1,3 +1,7 @@
+Wed Mar 14 16:41:55 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/test_tmpdir.rb (TestTmpdir#test_world_writable): skip on Windows.
+
 Wed Mar 14 15:09:23 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* numeric.c: fix flodivmod for cornercases [Bug #6044]
