@@ -31,6 +31,21 @@ vpath.find do |dir|
     true
   end
 end
+
+method_ids = %w[
+  Intern
+  MethodMissing
+  Length
+  Size
+  Gets
+  Succ
+  Each
+  Lambda
+  Send
+  __send__
+  Initialize
+  UScore
+]
 %>
 #ifndef RUBY_ID_H
 #define RUBY_ID_H
@@ -91,18 +106,9 @@ enum ruby_method_ids {
     idAREF = tAREF,
     idASET = tASET,
     idLAST_TOKEN = tLAST_TOKEN >> ID_SCOPE_SHIFT,
-    tIntern,
-    tMethodMissing,
-    tLength,
-    tSize,
-    tGets,
-    tSucc,
-    tEach,
-    tLambda,
-    tSend,
-    t__send__,
-    tInitialize,
-    tUScore,
+% method_ids.each do |token|
+    t<%=token%>,
+% end
 #if SUPPORT_JOKE
     tBitblt,
     tAnswer,
@@ -113,18 +119,9 @@ enum ruby_method_ids {
     TOKEN2ID(Bitblt),
     TOKEN2ID(Answer),
 #endif
-    TOKEN2ID(Intern),
-    TOKEN2ID(MethodMissing),
-    TOKEN2ID(Length),
-    TOKEN2ID(Size),
-    TOKEN2ID(Gets),
-    TOKEN2ID(Succ),
-    TOKEN2ID(Each),
-    TOKEN2ID(Lambda),
-    TOKEN2ID(Send),
-    TOKEN2ID(__send__),
-    TOKEN2ID(Initialize),
-    TOKEN2ID(UScore),
+% method_ids.each do |token|
+    TOKEN2ID(<%=token%>),
+% end
     TOKEN2ID(LAST_ID)
 };
 
