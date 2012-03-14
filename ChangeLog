@@ -1,3 +1,7 @@
+Wed Mar 14 18:25:18 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator.c: moved the comment of StopIteration.
+
 Wed Mar 14 17:55:29 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (flodivmod): must through the same pass if HAVE_FMOD or not.

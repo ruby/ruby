@@ -1156,53 +1156,6 @@ generator_each(int argc, VALUE *argv, VALUE obj)
     return rb_proc_call(ptr->proc, args);
 }
 
-/*
- * Document-class: StopIteration
- *
- * Raised to stop the iteration, in particular by Enumerator#next. It is
- * rescued by Kernel#loop.
- *
- *   loop do
- *     puts "Hello"
- *     raise StopIteration
- *     puts "World"
- *   end
- *   puts "Done!"
- *
- * <em>produces:</em>
- *
- *   Hello
- *   Done!
- */
-
-/*
- * call-seq:
- *   result       -> value
- *
- * Returns the return value of the iterator.
- *
- *   o = Object.new
- *   def o.each
- *     yield 1
- *     yield 2
- *     yield 3
- *     100
- *   end
- *
- *   e = o.to_enum
- *
- *   puts e.next                   #=> 1
- *   puts e.next                   #=> 2
- *   puts e.next                   #=> 3
- *
- *   begin
- *     e.next
- *   rescue StopIteration => ex
- *     puts ex.result              #=> 100
- *   end
- *
- */
-
 /* Lazy Enumerator methods */
 static VALUE
 lazy_init_iterator(VALUE val, VALUE m, int argc, VALUE *argv)
@@ -1450,6 +1403,53 @@ lazy_lazy(VALUE obj)
 {
     return obj;
 }
+
+/*
+ * Document-class: StopIteration
+ *
+ * Raised to stop the iteration, in particular by Enumerator#next. It is
+ * rescued by Kernel#loop.
+ *
+ *   loop do
+ *     puts "Hello"
+ *     raise StopIteration
+ *     puts "World"
+ *   end
+ *   puts "Done!"
+ *
+ * <em>produces:</em>
+ *
+ *   Hello
+ *   Done!
+ */
+
+/*
+ * call-seq:
+ *   result       -> value
+ *
+ * Returns the return value of the iterator.
+ *
+ *   o = Object.new
+ *   def o.each
+ *     yield 1
+ *     yield 2
+ *     yield 3
+ *     100
+ *   end
+ *
+ *   e = o.to_enum
+ *
+ *   puts e.next                   #=> 1
+ *   puts e.next                   #=> 2
+ *   puts e.next                   #=> 3
+ *
+ *   begin
+ *     e.next
+ *   rescue StopIteration => ex
+ *     puts ex.result              #=> 100
+ *   end
+ *
+ */
 
 static VALUE
 stop_result(VALUE self)
