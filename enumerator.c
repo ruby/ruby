@@ -103,7 +103,7 @@
  */
 VALUE rb_cEnumerator;
 VALUE rb_cLazy;
-static ID id_rewind, id_each, id_new, id_initialize, id_yield, id_call;
+static ID id_rewind, id_each, id_new, id_initialize, id_yield, id_call, id_next, id_result, id_lazy;
 static VALUE sym_each;
 
 VALUE rb_eStopIteration;
@@ -563,7 +563,7 @@ next_i(VALUE curr, VALUE obj)
 
     result = rb_block_call(obj, id_each, 0, 0, next_ii, obj);
     e->stop_exc = rb_exc_new2(rb_eStopIteration, "iteration reached an end");
-    rb_ivar_set(e->stop_exc, rb_intern("result"), result);
+    rb_ivar_set(e->stop_exc, id_result, result);
     return rb_fiber_yield(1, &nil);
 }
 
@@ -1403,7 +1403,7 @@ lazy_zip_func_i(VALUE val, VALUE arg, int argc, VALUE *argv)
     ary = rb_ary_new2(RARRAY_LEN(arg) + 1);
     rb_ary_push(ary, argv[1]);
     for (i = 0; i < RARRAY_LEN(arg); i++) {
-	v = rb_funcall(RARRAY_PTR(arg)[i], rb_intern("next"), 0);
+	v = rb_funcall(RARRAY_PTR(arg)[i], id_next, 0);
 	rb_ary_push(ary, v);
     }
     result = rb_yield(ary);
@@ -1421,7 +1421,7 @@ lazy_zip_func(VALUE val, VALUE arg, int argc, VALUE *argv)
     ary = rb_ary_new2(RARRAY_LEN(arg) + 1);
     rb_ary_push(ary, argv[1]);
     for (i = 0; i < RARRAY_LEN(arg); i++) {
-	v = rb_funcall(RARRAY_PTR(arg)[i], rb_intern("next"), 0);
+	v = rb_funcall(RARRAY_PTR(arg)[i], id_next, 0);
 	rb_ary_push(ary, v);
     }
     rb_funcall(yielder, id_yield, 1, ary);
@@ -1436,7 +1436,7 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
 
     ary = rb_ary_new2(argc);
     for (i = 0; i < argc; i++) {
-	rb_ary_push(ary, rb_funcall(argv[i], rb_intern("lazy"), 0));
+	rb_ary_push(ary, rb_funcall(argv[i], id_lazy, 0));
     }
 
     return rb_block_call(rb_cLazy, id_new, 1, &obj,
@@ -1453,7 +1453,7 @@ lazy_lazy(VALUE obj)
 static VALUE
 stop_result(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("result"));
+    return rb_attr_get(self, id_result);
 }
 
 void
@@ -1521,6 +1521,9 @@ Init_Enumerator(void)
     id_yield = rb_intern("yield");
     id_new = rb_intern("new");
     id_initialize = rb_intern("initialize");
+    id_next = rb_intern("next");
+    id_result = rb_intern("result");
+    id_lazy = rb_intern("lazy");
     sym_each = ID2SYM(id_each);
 
     rb_provide("enumerator.so");	/* for backward compatibility */

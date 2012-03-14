@@ -127,7 +127,7 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal([1, "a"], a.lazy.zip("a".."c").first)
     assert_equal(1, a.current)
   end
- 
+
   def test_zip_without_arg
     a = Step.new(1..3)
     assert_equal([1], a.zip.first)
