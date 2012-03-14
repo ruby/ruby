@@ -1350,7 +1350,8 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	id = rb_to_id(argv[0]);
 	body = rb_block_lambda();
     }
-    else if (argc == 2) {
+    else {
+	rb_check_arity(argc, 1, 2);
 	id = rb_to_id(argv[0]);
 	body = argv[1];
 	if (!rb_obj_is_method(body) && !rb_obj_is_proc(body)) {
@@ -1358,9 +1359,6 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 		     "wrong argument type %s (expected Proc/Method)",
 		     rb_obj_classname(body));
 	}
-    }
-    else {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
     }
 
     if (rb_obj_is_method(body)) {

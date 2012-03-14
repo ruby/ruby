@@ -352,7 +352,7 @@ enumerator_initialize(int argc, VALUE *argv, VALUE obj)
 
     if (argc == 0) {
 	if (!rb_block_given_p())
-	    rb_raise(rb_eArgError, "wrong number of argument (0 for 1+)");
+	    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
 
 	recv = generator_init(generator_allocate(rb_cGenerator), rb_block_proc());
     }

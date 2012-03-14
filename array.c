@@ -1443,9 +1443,7 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
 	rb_ary_splice(ary, beg, len, argv[2]);
 	return argv[2];
     }
-    if (argc != 2) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
-    }
+    rb_check_arity(argc, 2, 2);
     rb_ary_modify_check(ary);
     if (FIXNUM_P(argv[0])) {
 	offset = FIX2LONG(argv[0]);
@@ -1480,9 +1478,7 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
 {
     long pos;
 
-    if (argc < 1) {
-	rb_raise(rb_eArgError, "wrong number of arguments (at least 1)");
-    }
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     rb_ary_modify_check(ary);
     if (argc == 1) return ary;
     pos = NUM2LONG(argv[0]);
@@ -3902,9 +3898,7 @@ rb_ary_shuffle_bang(int argc, VALUE *argv, VALUE ary)
     if (OPTHASH_GIVEN_P(opts)) {
 	randgen = rb_hash_lookup2(opts, sym_random, randgen);
     }
-    if (argc > 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
-    }
+    rb_check_arity(argc, 0, 0);
     rb_ary_modify(ary);
     i = RARRAY_LEN(ary);
     ptr = RARRAY_PTR(ary);

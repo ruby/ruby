@@ -58,4 +58,14 @@ class TestArity < Test::Unit::TestCase
     assert_equal :ok,  p.call(1, 2, 3)
     assert_equal :ok,  p.call
   end
+
+  def test_message_change_issue_6085
+    assert_equal "3 for 1..2",  err_mess{ SignalException.new(1, "", nil) }
+    assert_equal "1 for 0",     err_mess{ Hash.new(1){} }
+    assert_equal "3 for 1..2",  err_mess{ Module.send :define_method, 1, 2, 3 }
+    assert_equal "1 for 2",     err_mess{ "".sub!(//) }
+    assert_equal "0 for 1..2",  err_mess{ "".sub!{} }
+    assert_equal "0 for 1+",    err_mess{ exec }
+    assert_equal "0 for 1+",    err_mess{ Struct.new }
+  end
 end

@@ -2581,7 +2581,7 @@ rb_file_s_umask(int argc, VALUE *argv)
 	omask = umask(NUM2INT(argv[0]));
     }
     else {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0..1)", argc);
+	rb_check_arity(argc, 0, 1);
     }
     return INT2FIX(omask);
 }
@@ -4180,7 +4180,7 @@ test_check(int n, int argc, VALUE *argv)
 
     rb_secure(2);
     n+=1;
-    if (n != argc) rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", argc, n);
+    rb_check_arity(argc, n, n);
     for (i=1; i<n; i++) {
 	switch (TYPE(argv[i])) {
 	  case T_STRING:
@@ -4258,7 +4258,7 @@ rb_f_test(int argc, VALUE *argv)
 {
     int cmd;
 
-    if (argc == 0) rb_raise(rb_eArgError, "wrong number of arguments (0 for 2..3)");
+    if (argc == 0) rb_check_arity(argc, 2, 3);
     cmd = NUM2CHR(argv[0]);
     if (cmd == 0) goto unknown;
     if (strchr("bcdefgGkloOprRsSuwWxXz", cmd)) {

@@ -1765,13 +1765,9 @@ num_step(int argc, VALUE *argv, VALUE from)
 	step = INT2FIX(1);
     }
     else {
-	if (argc == 2) {
-	    to = argv[0];
-	    step = argv[1];
-	}
-	else {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
-	}
+	rb_check_arity(argc, 1, 2);
+	to = argv[0];
+	step = argv[1];
 	if (rb_equal(step, INT2FIX(0))) {
 	    rb_raise(rb_eArgError, "step can't be 0");
 	}
@@ -2357,7 +2353,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
       case 1:
 	break;
       default:
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0..1)", argc);
+	rb_check_arity(argc, 0, 1);
 	break;
     }
     enc = rb_to_encoding(argv[0]);

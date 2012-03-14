@@ -1721,9 +1721,7 @@ rb_check_argv(int argc, VALUE *argv)
     int i;
     const char *name = 0;
 
-    if (argc == 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments");
-    }
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
 
     prog = 0;
     tmp = rb_check_array_type(argv[0]);
@@ -3385,11 +3383,9 @@ rb_f_sleep(int argc, VALUE *argv)
     if (argc == 0) {
 	rb_thread_sleep_forever();
     }
-    else if (argc == 1) {
-	rb_thread_wait_for(rb_time_interval(argv[0]));
-    }
     else {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0..1)", argc);
+	rb_check_arity(argc, 0, 1);
+	rb_thread_wait_for(rb_time_interval(argv[0]));
     }
 
     end = time(0) - beg;

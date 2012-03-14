@@ -2665,9 +2665,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     const char *sname, *dname;
     int dencidx;
 
-    if (argc <0 || argc > 2) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0..2)", argc);
-    }
+    rb_check_arity(argc, 0, 2);
 
     if (argc == 0) {
 	arg1 = rb_enc_default_internal();
@@ -2984,8 +2982,7 @@ econv_args(int argc, VALUE *argv,
 
     if (!NIL_P(flags_v)) {
 	if (!NIL_P(opt)) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 2..3)",
-		argc + 1);
+	    rb_error_arity(argc + 1, 2, 3);
 	}
         ecflags = NUM2INT(rb_to_int(flags_v));
         ecopts = Qnil;
@@ -3672,8 +3669,7 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
 
     if (!NIL_P(flags_v)) {
 	if (!NIL_P(opt)) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 2..5)",
-		argc + 1);
+	    rb_error_arity(argc + 1, 2, 5);
 	}
 	flags = NUM2INT(rb_to_int(flags_v));
     }

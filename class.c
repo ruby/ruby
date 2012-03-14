@@ -1655,12 +1655,7 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
     return argc;
 
   argc_error:
-    if (0 < n_opt)
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d..%d%s)",
-		 argc, n_mand, n_mand + n_opt, f_var ? "+" : "");
-    else
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d%s)",
-		 argc, n_mand, f_var ? "+" : "");
+    rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
 }
 
 /*!

@@ -776,9 +776,7 @@ rb_struct_select(int argc, VALUE *argv, VALUE s)
     VALUE result;
     long i;
 
-    if (argc > 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
-    }
+    rb_check_arity(argc, 0, 0);
     RETURN_ENUMERATOR(s, 0, 0);
     result = rb_ary_new();
     for (i = 0; i < RSTRUCT_LEN(s); i++) {

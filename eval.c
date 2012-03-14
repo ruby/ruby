@@ -555,7 +555,7 @@ make_exception(int argc, VALUE *argv, int isstr)
 	}
 	break;
       default:
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0..3)", argc);
+	rb_check_arity(argc, 0, 3);
 	break;
     }
     if (argc > 0) {
@@ -889,10 +889,7 @@ rb_mod_mix_into(int argc, VALUE *argv, VALUE klass)
     st_table *const_tbl = 0, *method_tbl = 0;
     int i = 0;
 
-    if (argc < 1 || argc > 3) {
-      wrong_args:
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
-    }
+    rb_check_arity(argc, 1, 3);
     module = argv[i++];
 
     switch (TYPE(module)) {
@@ -922,7 +919,7 @@ rb_mod_mix_into(int argc, VALUE *argv, VALUE klass)
 	}
 	methods = tmp;
     }
-    if (i < argc) goto wrong_args;
+    if (i < argc) rb_raise(rb_eArgError, "wrong arguments");
     if (!NIL_P(constants)) {
 	VALUE hash = rb_hash_new();
 	for (i = 0; i < RARRAY_LEN(constants); ++i) {
@@ -1015,9 +1012,7 @@ rb_obj_extend(int argc, VALUE *argv, VALUE obj)
 {
     int i;
 
-    if (argc == 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments (at least 1)");
-    }
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     for (i = 0; i < argc; i++)
 	Check_Type(argv[i], T_MODULE);
     while (argc--) {

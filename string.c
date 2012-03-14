@@ -2727,7 +2727,7 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
 {
     VALUE re, result;
     if (argc < 1)
-       rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
+	rb_check_arity(argc, 1, 2);
     re = argv[0];
     argv[0] = str;
     result = rb_funcall2(get_pat(re, 0), rb_intern("match"), argc, argv);
@@ -3237,9 +3237,7 @@ rb_str_aref_m(int argc, VALUE *argv, VALUE str)
 	}
 	return rb_str_substr(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]));
     }
-    if (argc != 1) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
-    }
+    rb_check_arity(argc, 1, 2);
     return rb_str_aref(str, argv[0]);
 }
 
@@ -3467,9 +3465,7 @@ rb_str_aset_m(int argc, VALUE *argv, VALUE str)
 	}
 	return argv[2];
     }
-    if (argc != 2) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2..3)", argc);
-    }
+    rb_check_arity(argc, 2, 3);
     return rb_str_aset(str, argv[0], argv[1]);
 }
 
@@ -3532,9 +3528,7 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
     VALUE buf[3];
     int i;
 
-    if (argc < 1 || 2 < argc) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
-    }
+    rb_check_arity(argc, 1, 2);
     for (i=0; i<argc; i++) {
 	buf[i] = argv[i];
     }
@@ -3593,11 +3587,13 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
     int tainted = 0;
     int untrusted = 0;
     long plen;
+    int min_arity = rb_block_given_p() ? 1 : 2;
 
-    if (argc == 1 && rb_block_given_p()) {
+    rb_check_arity(argc, min_arity, 2);
+    if (argc == 1) {
 	iter = 1;
     }
-    else if (argc == 2) {
+    else {
 	repl = argv[1];
 	hash = rb_check_convert_type(argv[1], T_HASH, "Hash", "to_hash");
 	if (NIL_P(hash)) {
@@ -3605,9 +3601,6 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	}
 	if (OBJ_TAINTED(repl)) tainted = 1;
 	if (OBJ_UNTRUSTED(repl)) untrusted = 1;
-    }
-    else {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
     }
 
     pat = get_pat(argv[0], 1);
@@ -3761,7 +3754,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	if (OBJ_TAINTED(repl)) tainted = 1;
 	break;
       default:
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
+	rb_check_arity(argc, 1, 2);
     }
 
     pat = get_pat(argv[0], 1);
@@ -4120,9 +4113,7 @@ rb_str_byteslice(int argc, VALUE *argv, VALUE str)
     if (argc == 2) {
 	return str_byte_substr(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]));
     }
-    if (argc != 1) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
-    }
+    rb_check_arity(argc, 1, 2);
     return str_byte_aref(str, argv[0]);
 }
 
@@ -5394,9 +5385,7 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
     int i, ascompat, cr;
 
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
-    if (argc < 1) {
-	rb_raise(rb_eArgError, "wrong number of arguments (at least 1)");
-    }
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     for (i=0; i<argc; i++) {
 	VALUE s = argv[i];
 
@@ -5640,9 +5629,7 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     int i;
     int ascompat;
 
-    if (argc < 1) {
-	rb_raise(rb_eArgError, "wrong number of arguments (at least 1)");
-    }
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     for (i=0; i<argc; i++) {
 	VALUE tstr = argv[i];
 	unsigned char c;

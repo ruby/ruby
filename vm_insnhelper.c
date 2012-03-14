@@ -163,6 +163,11 @@ unknown_keyword_error(const rb_iseq_t *iseq, VALUE hash)
     rb_raise(rb_eArgError, msg, RSTRING_PTR(keys));
 }
 
+void
+rb_error_arity(int argc, int min, int max) {
+    rb_exc_raise(rb_arg_error_new(argc, min, max));
+}
+
 #define VM_CALLEE_SETUP_ARG(ret, th, iseq, orig_argc, orig_argv, block) \
     if (LIKELY((iseq)->arg_simple & 0x01)) { \
 	/* simple check */ \
@@ -354,10 +359,7 @@ call_cfunc(VALUE (*func)(), VALUE recv,
 {
     /* printf("len: %d, argc: %d\n", len, argc); */
 
-    if (len >= 0 && argc != len) {
-	rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)",
-		 argc, len);
-    }
+    if (len >= 0) rb_check_arity(argc, len, len);
 
     switch (len) {
       case -2:
@@ -581,17 +583,13 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		break;
 	      }
 	      case VM_METHOD_TYPE_ATTRSET:{
-		if (num != 1) {
-		    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", num);
-		}
+		rb_check_arity(num, 1, 1);
 		val = rb_ivar_set(recv, me->def->body.attr.id, *(cfp->sp - 1));
 		cfp->sp -= 2;
 		break;
 	      }
 	      case VM_METHOD_TYPE_IVAR:{
-		if (num != 0) {
-		    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", num);
-		}
+		rb_check_arity(num, 0, 0);
 		val = rb_attr_get(recv, me->def->body.attr.id);
 		cfp->sp -= 1;
 		break;

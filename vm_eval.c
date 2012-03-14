@@ -87,16 +87,12 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	break;
       }
       case VM_METHOD_TYPE_ATTRSET: {
-	if (argc != 1) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
-	}
+	rb_check_arity(argc, 1, 1);
 	val = rb_ivar_set(recv, def->body.attr.id, argv[0]);
 	break;
       }
       case VM_METHOD_TYPE_IVAR: {
-	if (argc != 0) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
-	}
+	rb_check_arity(argc, 0, 0);
 	val = rb_attr_get(recv, def->body.attr.id);
 	break;
       }
@@ -1283,36 +1279,24 @@ static VALUE
 specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
 {
     if (rb_block_given_p()) {
-	if (argc > 0) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
-	}
+	rb_check_arity(argc, 0, 0);
 	return yield_under(klass, self, Qundef);
     }
     else {
 	const char *file = "(eval)";
 	int line = 1;
 
-	if (argc == 0) {
-	    rb_raise(rb_eArgError, "block not supplied");
+	rb_check_arity(argc, 1, 3);
+	if (rb_safe_level() >= 4) {
+	    StringValue(argv[0]);
 	}
 	else {
-	    if (rb_safe_level() >= 4) {
-		StringValue(argv[0]);
-	    }
-	    else {
-		SafeStringValue(argv[0]);
-	    }
-	    if (argc > 3) {
-		const char *name = rb_id2name(rb_frame_callee());
-		rb_raise(rb_eArgError,
-			 "wrong number of arguments: %s(src) or %s{..}",
-			 name, name);
-	    }
-	    if (argc > 2)
-		line = NUM2INT(argv[2]);
-	    if (argc > 1) {
-		file = StringValuePtr(argv[1]);
-	    }
+	    SafeStringValue(argv[0]);
+	}
+	if (argc > 2)
+	    line = NUM2INT(argv[2]);
+	if (argc > 1) {
+	    file = StringValuePtr(argv[1]);
 	}
 	return eval_under(klass, self, argv[0], file, line);
     }

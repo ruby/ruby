@@ -256,6 +256,12 @@ int rb_sourceline(void);
 const char *rb_sourcefile(void);
 VALUE rb_check_funcall(VALUE, ID, int, VALUE*);
 
+NORETURN(void rb_error_arity(int, int, int));
+#define rb_check_arity(argc, min, max) do { \
+  if (((argc) < (min)) || ((argc) > (max) && (max) != UNLIMITED_ARGUMENTS)) \
+    rb_error_arity(argc, min, max); \
+  } while(0)
+
 #if defined(NFDBITS) && defined(HAVE_RB_FD_INIT)
 typedef struct {
     int maxfd;

@@ -1,3 +1,52 @@
+Thu Mar 15 06:08:06 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* include/ruby/intern.h: Add rb_check_arity, rb_error_arity [#6085]
+
+	* array.c: Use rb_check_arity / rb_error_arity
+
+	* class.c: ditto
+
+	* enumerator.c: ditto
+
+	* eval.c: ditto
+
+	* file.c: ditto
+
+	* hash.c: ditto
+
+	* numeric.c: ditto
+
+	* proc.c: ditto
+
+	* process.c: ditto
+
+	* random.c: ditto
+
+	* re.c: ditto
+
+	* signal.c: ditto
+
+	* string.c: ditto
+
+	* struct.c: ditto
+
+	* transcode.c: ditto
+
+	* vm_eval.c: ditto
+
+	* vm_insnhelper.c: ditto & implementation of rb_error_arity
+
+	* test/ruby/test_arity.rb: tests for above
+
+Thu Mar 15 06:08:05 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* vm_insnhelper.c: improve number of arguments error in case of
+	  optional parameters (issue #6085)
+
+	* include/ruby/intern.h: define UNLIMITED_ARGUMENTS
+
+	* test/ruby/test_arity.rb:  test for above
+
 Thu Mar 15 00:58:04 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator.c (enumerable_lazy): fix the documentation of

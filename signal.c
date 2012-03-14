@@ -231,10 +231,7 @@ esignal_init(int argc, VALUE *argv, VALUE self)
 	if (!NIL_P(sig)) argnum = 2;
 	else sig = argv[0];
     }
-    if (argc < 1 || argnum < argc) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-		 argc, argnum);
-    }
+    rb_check_arity(argc, 1, argnum);
     if (argnum == 2) {
 	signo = NUM2INT(sig);
 	if (signo < 0 || signo > NSIG) {
@@ -346,8 +343,8 @@ rb_f_kill(int argc, VALUE *argv)
     const char *s;
 
     rb_secure(2);
-    if (argc < 2)
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for at least 2)", argc);
+    rb_check_arity(argc, 2, UNLIMITED_ARGUMENTS);
+
     switch (TYPE(argv[0])) {
       case T_FIXNUM:
 	sig = FIX2INT(argv[0]);
@@ -931,9 +928,7 @@ sig_trap(int argc, VALUE *argv)
     struct trap_arg arg;
 
     rb_secure(2);
-    if (argc < 1 || argc > 2) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
-    }
+    rb_check_arity(argc, 1, 2);
 
     arg.sig = trap_signm(argv[0]);
     if (reserved_signal_p(arg.sig)) {

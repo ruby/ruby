@@ -1168,8 +1168,8 @@ rand_random(int argc, VALUE *argv, rb_random_t *rnd)
     if (argc == 0) {
 	return rb_float_new(genrand_real(&rnd->mt));
     }
-    else if (argc != 1) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0..1)", argc);
+    else {
+	rb_check_arity(argc, 0, 1);
     }
     vmax = argv[0];
     if (NIL_P(vmax)) {
