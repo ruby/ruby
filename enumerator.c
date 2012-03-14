@@ -1457,7 +1457,7 @@ stop_result(VALUE self)
 }
 
 void
-Init_Enumerator(void)
+InitVM_Enumerator(void)
 {
     rb_define_method(rb_mKernel, "to_enum", obj_to_enum, -1);
     rb_define_method(rb_mKernel, "enum_for", obj_to_enum, -1);
@@ -1515,6 +1515,12 @@ Init_Enumerator(void)
     rb_define_method(rb_cYielder, "yield", yielder_yield, -2);
     rb_define_method(rb_cYielder, "<<", yielder_yield_push, -2);
 
+    rb_provide("enumerator.so");	/* for backward compatibility */
+}
+
+void
+Init_Enumerator(void)
+{
     id_rewind = rb_intern("rewind");
     id_each = rb_intern("each");
     id_call = rb_intern("call");
@@ -1526,5 +1532,5 @@ Init_Enumerator(void)
     id_lazy = rb_intern("lazy");
     sym_each = ID2SYM(id_each);
 
-    rb_provide("enumerator.so");	/* for backward compatibility */
+    InitVM(Enumerator);
 }
