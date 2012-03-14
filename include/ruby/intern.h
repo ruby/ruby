@@ -43,6 +43,7 @@ extern "C" {
  */
 
 #define ID_ALLOCATOR 1
+#define UNLIMITED_ARGUMENTS (-1)
 
 /* array.c */
 void rb_mem_clear(register VALUE*, register long);
