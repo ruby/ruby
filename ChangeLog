@@ -1,3 +1,8 @@
+Thu Mar 15 17:45:27 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator.c (InitVM_Enumerator): renamed Enumerable::Lazy to
+	  Enumerator::Lazy.
+
 Thu Mar 15 16:37:38 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator.c (enumerator_lazy): added cycle to the documentation.

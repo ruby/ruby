@@ -1624,7 +1624,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cEnumerator, "inspect", enumerator_inspect, 0);
 
     /* Enumerable::Lazy */
-    rb_cLazy = rb_define_class_under(rb_mEnumerable, "Lazy", rb_cEnumerator);
+    rb_cLazy = rb_define_class_under(rb_cEnumerator, "Lazy", rb_cEnumerator);
     rb_define_method(rb_mEnumerable, "lazy", enumerable_lazy, 0);
     rb_define_method(rb_cLazy, "initialize", lazy_initialize, -1);
     rb_define_method(rb_cLazy, "map", lazy_map, 0);

@@ -19,7 +19,7 @@ class TestLazyEnumerator < Test::Unit::TestCase
 
   def test_initialize
     assert_equal([1, 2, 3], [1, 2, 3].lazy.to_a)
-    assert_equal([1, 2, 3], Enumerable::Lazy.new([1, 2, 3]).to_a)
+    assert_equal([1, 2, 3], Enumerator::Lazy.new([1, 2, 3]).to_a)
   end
 
   def test_each_args
