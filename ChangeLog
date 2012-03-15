@@ -1,3 +1,8 @@
+Thu Mar 15 13:47:17 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* hash.c (env_str_new, rb_f_getenv, env_fetch): use rb_str_conv_enc()
+	  instead of rb_str_encode() to simplify the code.
+
 Thu Mar 15 12:44:50 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c, include/ruby/win32.h (rb_w32_ugetenv): new API to
@@ -108,8 +113,8 @@ Wed Mar 14 18:25:18 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 Wed Mar 14 17:55:29 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* numeric.c (flodivmod): must through the same pass if HAVE_FMOD or not.
-	  this is a bugfix of r35013.
+	* numeric.c (flodivmod): must go through the same pass if HAVE_FMOD or
+	  not.  this is a bugfix of r35013.
 
 Wed Mar 14 16:41:55 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 

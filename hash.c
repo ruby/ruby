@@ -2032,7 +2032,7 @@ static VALUE
 env_str_new(const char *ptr, long len)
 {
 #ifdef _WIN32
-    VALUE str = rb_str_encode(rb_enc_str_new(ptr, len, rb_utf8_encoding()), rb_enc_from_encoding(rb_locale_encoding()), 0, Qnil);
+    VALUE str = rb_str_conv_enc(rb_str_new(ptr, len), rb_utf8_encoding(), rb_locale_encoding());
 #else
     VALUE str = rb_locale_str_new(ptr, len);
 #endif
@@ -2115,7 +2115,7 @@ rb_f_getenv(VALUE obj, VALUE name)
     if (env) {
 	if (ENVMATCH(nam, PATH_ENV) && !env_path_tainted(env)) {
 #ifdef _WIN32
-	    VALUE str = rb_str_encode(rb_enc_str_new(env, strlen(env), rb_utf8_encoding()), rb_enc_from_encoding(rb_filesystem_encoding()), 0, Qnil);
+	    VALUE str = rb_str_conv_enc(rb_str_new(env, strlen(env)), rb_utf8_encoding(), rb_filesystem_encoding());
 #else
 	    VALUE str = rb_filesystem_str_new_cstr(env);
 #endif
@@ -2170,7 +2170,7 @@ env_fetch(int argc, VALUE *argv)
     }
     if (ENVMATCH(nam, PATH_ENV) && !env_path_tainted(env))
 #ifdef _WIN32
-	return rb_str_encode(rb_enc_str_new(env, strlen(env), rb_utf8_encoding()), rb_enc_from_encoding(rb_filesystem_encoding()), 0, Qnil);
+	return rb_str_conv_enc(rb_str_new(env, strlen(env)), rb_utf8_encoding(), rb_filesystem_encoding());
 #else
 	return rb_filesystem_str_new_cstr(env);
 #endif
