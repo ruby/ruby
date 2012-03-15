@@ -3,16 +3,16 @@ require 'test/unit'
 class TestArity < Test::Unit::TestCase
   def err_mess(method_proc = nil, argc = 0)
     args = (1..argc).to_a
-    case method_proc
+    err = assert_raise(ArgumentError) do
+      case method_proc
       when nil
         yield
       when Symbol
         method(method_proc).call(*args)
       else
         method_proc.call(*args)
+      end
     end
-    fail "Expected ArgumentError to be raised"
-  rescue ArgumentError => err
     s = err.to_s
     assert s =~ /wrong number of arguments \((.*)\)/, "Unexpected ArgumentError's message: #{s}"
     $1

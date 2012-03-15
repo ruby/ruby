@@ -7,7 +7,7 @@ require 'tmpdir'
 class TestRequire < Test::Unit::TestCase
   def test_load_error_path
     filename = "should_not_exist"
-    error = assert_raises(LoadError) do
+    error = assert_raise(LoadError) do
       require filename
     end
     assert_equal filename, error.path

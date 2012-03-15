@@ -137,7 +137,7 @@ class TestThread < Test::Unit::TestCase
 #    mutex = Mutex.new
 #    cv = ConditionVariable.new
 #
-#    assert_raises(fatal) {
+#    assert_raise(fatal) {
 #      mutex.lock
 #      cv.wait mutex
 #      mutex.unlock

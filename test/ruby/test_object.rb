@@ -471,11 +471,11 @@ class TestObject < Test::Unit::TestCase
       end
     end
 
-    e = assert_raises(ArgumentError, '[bug:6000]') do
+    e = assert_raise(ArgumentError, '[bug:6000]') do
       [[p]].flatten
     end
 
-    assert_equal('respond_to? must accept 1 or 2 arguments (requires 3)',                        e.message)
+    assert_equal('respond_to? must accept 1 or 2 arguments (requires 3)', e.message)
   end
 
   def test_method_missing_passed_block
