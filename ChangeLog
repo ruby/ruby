@@ -1,3 +1,7 @@
+Thu Mar 15 10:57:27 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator.c (lazy_cycle): add Enumerable::Lazy#cycle.
+
 Thu Mar 15 10:31:40 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_arity.rb (TestArity#err_mess): use assert_raise.

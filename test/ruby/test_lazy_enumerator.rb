@@ -184,6 +184,16 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal([4, 5], (1..Float::INFINITY).lazy.drop(3).take(2).to_a)
   end
 
+  def test_cycle
+    a = Step.new(1..3)
+    assert_equal("1", a.cycle(2).map(&:to_s).first)
+    assert_equal(3, a.current)
+    assert_equal("1", a.lazy.cycle(2).map(&:to_s).first)
+    assert_equal(1, a.current)
+    assert_equal("1", a.lazy.cycle(2, &:to_s).first)
+    assert_equal(1, a.current)
+  end
+
   def test_force
     assert_equal([1, 2, 3], (1..Float::INFINITY).lazy.take(3).force)
   end

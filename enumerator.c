@@ -1191,15 +1191,31 @@ lazy_init_block(VALUE val, VALUE m, int argc, VALUE *argv)
 }
 
 static VALUE
-lazy_initialize(VALUE self, VALUE obj)
+lazy_initialize(int argc, VALUE *argv, VALUE self)
 {
+    VALUE obj, meth;
     VALUE generator;
+    int offset;
 
+    if (argc < 1) {
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..)", argc);
+    }
+    else {
+	obj = argv[0];
+	if (argc == 1) {
+	    meth = sym_each;
+	    offset = 1;
+	}
+	else {
+	    meth = argv[1];
+	    offset = 2;
+	}
+    }
     generator = generator_allocate(rb_cGenerator);
     rb_block_call(generator, id_initialize, 0, 0,
 		  (rb_block_given_p() ? lazy_init_block_i: lazy_init_block),
 		  obj);
-    enumerator_init(self, generator, sym_each, 0, 0);
+    enumerator_init(self, generator, meth, argc - offset, argv + offset);
 
     return self;
 }
@@ -1501,6 +1517,29 @@ lazy_drop_while(VALUE obj)
 }
 
 static VALUE
+lazy_cycle_func(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    return rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
+}
+
+static VALUE
+lazy_cycle(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE args;
+    int i;
+
+    args = rb_ary_new2(argc + 1);
+    rb_ary_push(args, obj);
+    rb_ary_push(args, ID2SYM(rb_intern("cycle")));
+    for (i = 0; i < argc; i++) {
+	rb_ary_push(args, argv[i]);
+    }
+    return rb_block_call(rb_cLazy, id_new, RARRAY_LEN(args), RARRAY_PTR(args),
+			 rb_block_given_p() ? lazy_map_func : lazy_cycle_func,
+			 0);
+}
+
+static VALUE
 lazy_lazy(VALUE obj)
 {
     return obj;
@@ -1587,7 +1626,7 @@ InitVM_Enumerator(void)
     /* Enumerable::Lazy */
     rb_cLazy = rb_define_class_under(rb_mEnumerable, "Lazy", rb_cEnumerator);
     rb_define_method(rb_mEnumerable, "lazy", enumerable_lazy, 0);
-    rb_define_method(rb_cLazy, "initialize", lazy_initialize, 1);
+    rb_define_method(rb_cLazy, "initialize", lazy_initialize, -1);
     rb_define_method(rb_cLazy, "map", lazy_map, 0);
     rb_define_method(rb_cLazy, "flat_map", lazy_flat_map, 0);
     rb_define_method(rb_cLazy, "select", lazy_select, 0);
@@ -1598,6 +1637,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "take_while", lazy_take_while, 0);
     rb_define_method(rb_cLazy, "drop", lazy_drop, 1);
     rb_define_method(rb_cLazy, "drop_while", lazy_drop_while, 0);
+    rb_define_method(rb_cLazy, "cycle", lazy_cycle, -1);
     rb_define_method(rb_cLazy, "lazy", lazy_lazy, 0);
 
     rb_define_alias(rb_cLazy, "collect", "map");
