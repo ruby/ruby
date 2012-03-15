@@ -1,3 +1,7 @@
+Fri Mar 16 05:47:09 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* enumerator.c (lazy_init_iterator):  Fix type error (int vs long).
+
 Thu Mar 15 23:13:36 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enum.c (rb_enum_values_pack): rename from enum_values_pack, and
