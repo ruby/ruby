@@ -1,5 +1,5 @@
 require 'test/unit'
-require 'stringio'
+require_relative 'envutil'
 
 class TestM17N < Test::Unit::TestCase
   def assert_encoding(encname, actual, message=nil)
@@ -21,17 +21,6 @@ class TestM17N < Test::Unit::TestCase
     enc = Encoding.find(enc) if String === enc
     assert_equal(enc, actual.encoding, message)
     assert_equal(a(bytes), a(actual), message)
-  end
-
-  def assert_warning(pat, mesg=nil)
-    begin
-      org_stderr = $stderr
-      $stderr = StringIO.new(warn = '')
-      yield
-    ensure
-      $stderr = org_stderr
-    end
-    assert_match(pat, warn, mesg)
   end
 
   def assert_regexp_generic_encoding(r)
