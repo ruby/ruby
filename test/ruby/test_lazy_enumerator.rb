@@ -130,6 +130,12 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(1, a.current)
   end
 
+  def test_zip_short_arg
+    a = Step.new(1..5)
+    assert_equal([5, nil], a.zip("a".."c").last)
+    assert_equal([5, nil], a.lazy.zip("a".."c").force.last)
+  end
+
   def test_zip_without_arg
     a = Step.new(1..3)
     assert_equal([1], a.zip.first)

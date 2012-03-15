@@ -1,3 +1,8 @@
+Thu Mar 15 19:12:31 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator.c (lazy_zip): rescue StopIteration returned by
+	  Enumerator#next.
+
 Thu Mar 15 18:19:53 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator.c (lazy_zip, lazy_cycle): Enumerator::Lazy#{zip,cycle}

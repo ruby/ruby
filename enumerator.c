@@ -1374,6 +1374,18 @@ lazy_grep(VALUE obj, VALUE pattern)
 }
 
 static VALUE
+call_next(VALUE obj)
+{
+    return rb_funcall(obj, id_next, 0);
+}
+
+static VALUE
+next_stopped(VALUE obj)
+{
+    return Qnil;
+}
+
+static VALUE
 lazy_zip_func(VALUE val, VALUE arg, int argc, VALUE *argv)
 {
     VALUE yielder, ary, v;
@@ -1383,7 +1395,8 @@ lazy_zip_func(VALUE val, VALUE arg, int argc, VALUE *argv)
     ary = rb_ary_new2(RARRAY_LEN(arg) + 1);
     rb_ary_push(ary, argv[1]);
     for (i = 0; i < RARRAY_LEN(arg); i++) {
-	v = rb_funcall(RARRAY_PTR(arg)[i], id_next, 0);
+	v = rb_rescue2(call_next, RARRAY_PTR(arg)[i], next_stopped, 0,
+		       rb_eStopIteration, 0);
 	rb_ary_push(ary, v);
     }
     rb_funcall(yielder, id_yield, 1, ary);
