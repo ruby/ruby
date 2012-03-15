@@ -1177,7 +1177,7 @@ lazy_init_iterator(VALUE val, VALUE m, int argc, VALUE *argv)
 	if (argc > 0) {
 	    rb_ary_cat(args, argv, argc);
 	}
-	result = rb_yield_values2(RARRAY_LENINT(args), RARRAY_PTR(args));
+	result = rb_yield_values2(len, RARRAY_PTR(args));
 	RB_GC_GUARD(args);
     }
     if (result == Qundef) rb_iter_break();

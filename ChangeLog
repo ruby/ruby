@@ -1,3 +1,7 @@
+Fri Mar 16 06:29:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (lazy_init_iterator): no need to check overflow twice.
+
 Fri Mar 16 05:47:09 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* enumerator.c (lazy_init_iterator):  Fix type error (int vs long).
