@@ -2008,6 +2008,8 @@ static char **origenviron;
 static char **my_environ;
 #undef environ
 #define environ my_environ
+#undef getenv
+#define getenv(n) rb_w32_ugetenv(n)
 #elif defined(__APPLE__)
 #undef environ
 #define environ (*_NSGetEnviron())
@@ -2029,7 +2031,11 @@ extern char **environ;
 static VALUE
 env_str_new(const char *ptr, long len)
 {
+#ifdef _WIN32
+    VALUE str = rb_str_encode(rb_enc_str_new(ptr, len, rb_utf8_encoding()), rb_enc_from_encoding(rb_locale_encoding()), 0, Qnil);
+#else
     VALUE str = rb_locale_str_new(ptr, len);
+#endif
 
     rb_obj_freeze(str);
     return str;
@@ -2108,7 +2114,11 @@ rb_f_getenv(VALUE obj, VALUE name)
     env = getenv(nam);
     if (env) {
 	if (ENVMATCH(nam, PATH_ENV) && !env_path_tainted(env)) {
+#ifdef _WIN32
+	    VALUE str = rb_str_encode(rb_enc_str_new(env, strlen(env), rb_utf8_encoding()), rb_enc_from_encoding(rb_filesystem_encoding()), 0, Qnil);
+#else
 	    VALUE str = rb_filesystem_str_new_cstr(env);
+#endif
 
 	    rb_obj_freeze(str);
 	    return str;
@@ -2159,7 +2169,11 @@ env_fetch(int argc, VALUE *argv)
 	return if_none;
     }
     if (ENVMATCH(nam, PATH_ENV) && !env_path_tainted(env))
+#ifdef _WIN32
+	return rb_str_encode(rb_enc_str_new(env, strlen(env), rb_utf8_encoding()), rb_enc_from_encoding(rb_filesystem_encoding()), 0, Qnil);
+#else
 	return rb_filesystem_str_new_cstr(env);
+#endif
     return env_str_new2(env);
 }
 

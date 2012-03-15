@@ -630,6 +630,7 @@ static CRITICAL_SECTION select_mutex;
 static int NtSocketsInitialized = 0;
 static st_table *socklist = NULL;
 static char *envarea;
+static char *uenvarea;
 
 /* License: Ruby's */
 static void
@@ -647,6 +648,10 @@ exit_handler(void)
     if (envarea) {
 	FreeEnvironmentStrings(envarea);
 	envarea = NULL;
+    }
+    if (uenvarea) {
+	free(uenvarea);
+	uenvarea = NULL;
     }
 }
 
@@ -4236,13 +4241,58 @@ wait(int *status)
 
 /* License: Ruby's */
 char *
+rb_w32_ugetenv(const char *name)
+{
+    WCHAR *wenvarea, *wenv;
+    int len = strlen(name);
+    char *env;
+    int wlen;
+
+    if (len == 0) return NULL;
+
+    if (uenvarea) {
+	free(uenvarea);
+	uenvarea = NULL;
+    }
+    if (envarea) {
+	FreeEnvironmentStrings(envarea);
+	envarea = NULL;
+    }
+    wenvarea = GetEnvironmentStringsW();
+    if (!wenvarea) {
+	map_errno(GetLastError());
+	return NULL;
+    }
+    for (wenv = wenvarea, wlen = 1; *wenv; wenv += lstrlenW(wenv) + 1)
+	wlen += lstrlenW(wenv) + 1;
+    uenvarea = wstr_to_mbstr(CP_UTF8, wenvarea, wlen, NULL);
+    FreeEnvironmentStringsW(wenvarea);
+    if (!uenvarea)
+	return NULL;
+
+    for (env = uenvarea; *env; env += strlen(env) + 1)
+	if (strncasecmp(env, name, len) == 0 && *(env + len) == '=')
+	    return env + len + 1;
+
+    return NULL;
+}
+
+/* License: Ruby's */
+char *
 rb_w32_getenv(const char *name)
 {
     int len = strlen(name);
     char *env;
 
     if (len == 0) return NULL;
-    if (envarea) FreeEnvironmentStrings(envarea);
+    if (uenvarea) {
+	free(uenvarea);
+	uenvarea = NULL;
+    }
+    if (envarea) {
+	FreeEnvironmentStrings(envarea);
+	envarea = NULL;
+    }
     envarea = GetEnvironmentStrings();
     if (!envarea) {
 	map_errno(GetLastError());
@@ -5011,7 +5061,7 @@ rb_w32_asynchronize(asynchronous_func_t func, uintptr_t self,
 char **
 rb_w32_get_environ(void)
 {
-    char *envtop, *env;
+    WCHAR *envtop, *env;
     char **myenvtop, **myenv;
     int num;
 
@@ -5022,23 +5072,24 @@ rb_w32_get_environ(void)
      * CygWin deals these values by changing first `=' to '!'. But we don't
      * use such trick and follow cmd.exe's way that just doesn't show these
      * values.
-     * (U.N. 2001-11-15)
+     *
+     * This function returns UTF-8 strings.
      */
-    envtop = GetEnvironmentStrings();
-    for (env = envtop, num = 0; *env; env += strlen(env) + 1)
+    envtop = GetEnvironmentStringsW();
+    for (env = envtop, num = 0; *env; env += lstrlenW(env) + 1)
 	if (*env != '=') num++;
 
     myenvtop = (char **)malloc(sizeof(char *) * (num + 1));
-    for (env = envtop, myenv = myenvtop; *env; env += strlen(env) + 1) {
+    for (env = envtop, myenv = myenvtop; *env; env += lstrlenW(env) + 1) {
 	if (*env != '=') {
-	    if (!(*myenv = strdup(env))) {
+	    if (!(*myenv = wstr_to_utf8(env, NULL))) {
 		break;
 	    }
 	    myenv++;
 	}
     }
     *myenv = NULL;
-    FreeEnvironmentStrings(envtop);
+    FreeEnvironmentStringsW(envtop);
 
     return myenvtop;
 }

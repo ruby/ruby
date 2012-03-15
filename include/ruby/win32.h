@@ -268,6 +268,7 @@ extern struct servent  *WSAAPI rb_w32_getservbyname(const char *, const char *);
 extern struct servent  *WSAAPI rb_w32_getservbyport(int, const char *);
 extern int    rb_w32_socketpair(int, int, int, int *);
 extern char * rb_w32_getcwd(char *, int);
+extern char * rb_w32_ugetenv(const char *);
 extern char * rb_w32_getenv(const char *);
 extern int    rb_w32_rename(const char *, const char *);
 extern int    rb_w32_urename(const char *, const char *);

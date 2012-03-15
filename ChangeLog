@@ -1,3 +1,15 @@
+Thu Mar 15 12:44:50 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c, include/ruby/win32.h (rb_w32_ugetenv): new API to
+	  accept and to return UTF-8 strings.
+
+	* win32/win32.c (rb_w32_getenv): follow above change.
+
+	* win32/win32.c (rb_w32_get_environ): returns UTF-8 environment area.
+
+	* hash.c (env_str_new, rb_f_getenv, env_fetch): follow above changes.
+	  [Bug #5570] [ruby-core:40737]
+
 Thu Mar 15 10:57:27 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator.c (lazy_cycle): add Enumerable::Lazy#cycle.
