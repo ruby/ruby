@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestSyntax < Test::Unit::TestCase
   def assert_valid_syntax(code, fname, mesg = fname)
@@ -8,6 +9,7 @@ class TestSyntax < Test::Unit::TestCase
     }
     code.force_encoding("us-ascii")
     verbose, $VERBOSE = $VERBOSE, nil
+    yield if defined?(yield)
     assert_nothing_raised(SyntaxError, mesg) do
       assert_equal(:ok, catch {|tag| eval(code, binding, fname, 0)}, mesg)
     end
@@ -86,6 +88,12 @@ class TestSyntax < Test::Unit::TestCase
     assert_equal({}, o.kw)
     assert_equal({foo: 1}, o.kw(foo: 1))
     assert_equal({foo: 1, bar: 2}, o.kw(foo: 1, bar: 2))
+  end
+
+  def test_warn_grouped_expression
+    assert_warn("test:2: warning: (...) interpreted as grouped expression\n") do
+      assert_valid_syntax("foo \\\n(\n  true)", "test") {$VERBOSE = true}
+    end
   end
 
   private

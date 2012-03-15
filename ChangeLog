@@ -1,3 +1,7 @@
+Thu Mar 15 15:37:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): fix warning line number.
+
 Thu Mar 15 15:19:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (lazy_cycle): check argument number overflow before

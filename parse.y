@@ -2694,7 +2694,6 @@ primary		: literal
 		    }
 		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} rparen
 		    {
-			rb_warning0("(...) interpreted as grouped expression");
 		    /*%%%*/
 			$$ = $2;
 		    /*%
@@ -7617,6 +7616,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	else if (IS_SPCARG(-1)) {
 	    c = tLPAREN_ARG;
+	    rb_warning0("(...) interpreted as grouped expression");
 	}
 	paren_nest++;
 	COND_PUSH(0);
