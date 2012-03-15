@@ -1025,7 +1025,8 @@ ubf_select(void *ptr)
 }
 
 static void
-ping_signal_thread_list(void) {
+ping_signal_thread_list(void)
+{
     if (signal_thread_list_anchor.next) {
 	FGLOCK(&signal_thread_list_lock, {
 	    struct signal_thread_list *list;
