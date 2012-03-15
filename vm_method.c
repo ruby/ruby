@@ -941,7 +941,8 @@ rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
 }
 
 st_index_t
-rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me) {
+rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me)
+{
     return rb_hash_method_definition(hash, me->def);
 }
 

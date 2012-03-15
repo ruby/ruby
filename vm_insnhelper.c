@@ -106,7 +106,8 @@ vm_pop_frame(rb_thread_t *th)
 
 /* method dispatch */
 static inline VALUE
-rb_arg_error_new(int argc, int min, int max) {
+rb_arg_error_new(int argc, int min, int max)
+{
     VALUE err_mess = 0;
     if (min == max) {
 	err_mess = rb_sprintf("wrong number of arguments (%d for %d)", argc, min);
@@ -164,7 +165,8 @@ unknown_keyword_error(const rb_iseq_t *iseq, VALUE hash)
 }
 
 void
-rb_error_arity(int argc, int min, int max) {
+rb_error_arity(int argc, int min, int max)
+{
     rb_exc_raise(rb_arg_error_new(argc, min, max));
 }
 

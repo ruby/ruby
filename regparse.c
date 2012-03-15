@@ -5670,7 +5670,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 }
 
 static int
-countbits(unsigned int bits) {
+countbits(unsigned int bits)
+{
   bits = (bits & 0x55555555) + ((bits >> 1) & 0x55555555);
   bits = (bits & 0x33333333) + ((bits >> 2) & 0x33333333);
   bits = (bits & 0x0f0f0f0f) + ((bits >> 4) & 0x0f0f0f0f);

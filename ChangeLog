@@ -6,6 +6,7 @@ Thu Mar 15 07:03:52 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* vm_eval.c (check_funcall):  Raise ArgumentError if respond_to?
 	  requires more than three arguments. [Bug #6000]
+
 	* test/ruby/test_object.rb (class TestObject):  Test for respond_to?
 	  requiring more than three arguments.
 
@@ -152,8 +153,6 @@ Tue Mar 13 12:37:53 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 	  encoding are identical. [ruby-core:40727] [Bug #5568]
 
 Tue Mar 13 12:37:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	Bug #5350
 
 	* gc.c: add ObjectSpace::WeakMap.  [ruby-dev:44565][Bug #5350]
 
