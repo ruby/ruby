@@ -3563,7 +3563,7 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
 #endif
     long f = 0, n = -1;
 
-    end = name + *alllen;
+    end = name + (alllen ? (size_t)*alllen : strlen(name));
     name = skipprefix(name, end, enc);
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
     root = name;
