@@ -483,6 +483,7 @@ rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags,
     unsigned char *dp;
 
     if (!to) return str;
+    if (!from) from = rb_enc_get(str);
     if (from == to) return str;
     if ((rb_enc_asciicompat(to) && ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) ||
 	to == rb_ascii8bit_encoding()) {
