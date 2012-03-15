@@ -161,4 +161,11 @@ class TestSymbol < Test::Unit::TestCase
       assert_equal(':"\\u3042\\u3044\\u3046"', "\u3042\u3044\u3046".encode(e).to_sym.inspect)
     end
   end
+
+  def test_symbol_encoding
+    assert_equal(Encoding::US_ASCII, "$-A".force_encoding("iso-8859-15").intern.encoding)
+    assert_equal(Encoding::US_ASCII, "foobar~!".force_encoding("iso-8859-15").intern.encoding)
+    assert_equal(Encoding::UTF_8, "\u{2192}".intern.encoding)
+    assert_raise(EncodingError) {"\xb0a".force_encoding("utf-8").intern}
+  end
 end

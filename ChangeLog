@@ -1,4 +1,10 @@
-Thu Mar 15 15:02:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar 15 15:04:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (sym_check_asciionly): check ascii compatibility before
+	  scanning for code range.
+
+	* parse.y (intern_str): set to us-ascii if ascii only.
+	  [ruby-dev:45363][Bug #6146]
 
 	* file.c (ruby_enc_find_basename): allow NULL as alllen.
 	  [ruby-dev:45363][Bug #6146]

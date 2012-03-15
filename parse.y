@@ -9955,13 +9955,21 @@ register_symid_str(ID id, VALUE str)
 static int
 sym_check_asciionly(VALUE str)
 {
-    int cr = rb_enc_str_coderange(str);
-    if (cr == ENC_CODERANGE_BROKEN) {
+    if (!rb_enc_asciicompat(rb_enc_get(str))) return FALSE;
+    switch (rb_enc_str_coderange(str)) {
+      case ENC_CODERANGE_BROKEN:
     	rb_raise(rb_eEncodingError, "invalid encoding symbol");
+      case ENC_CODERANGE_7BIT:
+	return TRUE;
     }
-    return cr == ENC_CODERANGE_7BIT;
+    return FALSE;
 }
 
+/*
+ * _str_ itself will be registered at the global symbol table.  _str_
+ * can be modified before the registration, since the encoding will be
+ * set to ASCII-8BIT if it is a special global name.
+ */
 static ID intern_str(VALUE str);
 
 ID
@@ -9979,8 +9987,6 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     rb_enc_associate(str, enc);
     OBJ_FREEZE(str);
 
-    if (sym_check_asciionly(str)) enc = rb_usascii_encoding();
-
     if (st_lookup(global_symbols.sym_id, str, &data))
 	return (ID)data;
 
@@ -9993,7 +9999,7 @@ intern_str(VALUE str)
 {
     const char *name, *m, *e;
     long len, last;
-    rb_encoding *enc;
+    rb_encoding *enc, *symenc;
     unsigned char c;
     ID id;
     int mb;
@@ -10002,6 +10008,7 @@ intern_str(VALUE str)
     m = name;
     e = m + len;
     enc = rb_enc_get(str);
+    symenc = enc;
 
     if (rb_cString && !rb_enc_asciicompat(enc)) {
 	id = ID_JUNK;
@@ -10013,7 +10020,7 @@ intern_str(VALUE str)
       case '$':
 	id |= ID_GLOBAL;
 	if ((mb = is_special_global_name(++m, e, enc)) != 0) {
-	    if (!--mb) enc = rb_ascii8bit_encoding();
+	    if (!--mb) symenc = rb_usascii_encoding();
 	    goto new_id;
 	}
 	break;
@@ -10075,7 +10082,9 @@ intern_str(VALUE str)
 	}
     }
     if (m - name < len) id = ID_JUNK;
+    if (sym_check_asciionly(str)) symenc = rb_usascii_encoding();
   new_id:
+    if (symenc != enc) rb_enc_associate(str, symenc);
     if (global_symbols.last_id >= ~(ID)0 >> (ID_SCOPE_SHIFT+RUBY_SPECIAL_SHIFT)) {
 	if (len > 20) {
 	    rb_raise(rb_eRuntimeError, "symbol table overflow (symbol %.20s...)",
@@ -10107,21 +10116,11 @@ rb_intern(const char *name)
 ID
 rb_intern_str(VALUE str)
 {
-    rb_encoding *enc;
     st_data_t id;
-    int ascii = sym_check_asciionly(str);
 
     if (st_lookup(global_symbols.sym_id, str, &id))
 	return (ID)id;
-    if (ascii && (enc = rb_usascii_encoding()) != rb_enc_get(str)) {
-	str = rb_str_dup(str);
-	rb_enc_associate(str, enc);
-	OBJ_FREEZE(str);
-    }
-    else {
-	str = rb_str_dup_frozen(str);
-    }
-    return intern_str(str);
+    return intern_str(rb_str_dup(str));
 }
 
 VALUE
