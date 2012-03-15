@@ -1374,24 +1374,6 @@ lazy_grep(VALUE obj, VALUE pattern)
 }
 
 static VALUE
-lazy_zip_func_i(VALUE val, VALUE arg, int argc, VALUE *argv)
-{
-    VALUE yielder, ary, v, result;
-    long i;
-
-    yielder = argv[0];
-    ary = rb_ary_new2(RARRAY_LEN(arg) + 1);
-    rb_ary_push(ary, argv[1]);
-    for (i = 0; i < RARRAY_LEN(arg); i++) {
-	v = rb_funcall(RARRAY_PTR(arg)[i], id_next, 0);
-	rb_ary_push(ary, v);
-    }
-    result = rb_yield(ary);
-    rb_funcall(yielder, id_yield, 1, result);
-    return Qnil;
-}
-
-static VALUE
 lazy_zip_func(VALUE val, VALUE arg, int argc, VALUE *argv)
 {
     VALUE yielder, ary, v;
@@ -1414,14 +1396,15 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
     VALUE ary;
     int i;
 
+    if (rb_block_given_p()) {
+	return rb_call_super(argc, argv);
+    }
     ary = rb_ary_new2(argc);
     for (i = 0; i < argc; i++) {
 	rb_ary_push(ary, rb_funcall(argv[i], id_lazy, 0));
     }
 
-    return rb_block_call(rb_cLazy, id_new, 1, &obj,
-			 rb_block_given_p() ? lazy_zip_func_i :  lazy_zip_func,
-			 ary);
+    return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_zip_func, ary);
 }
 
 static VALUE
@@ -1528,6 +1511,9 @@ lazy_cycle(int argc, VALUE *argv, VALUE obj)
     VALUE args;
     int len = rb_long2int((long)argc + 2);
 
+    if (rb_block_given_p()) {
+	return rb_call_super(argc, argv);
+    }
     args = rb_ary_tmp_new(len);
     rb_ary_push(args, obj);
     rb_ary_push(args, sym_cycle);
@@ -1535,8 +1521,7 @@ lazy_cycle(int argc, VALUE *argv, VALUE obj)
 	rb_ary_cat(args, argv, argc);
     }
     return rb_block_call(rb_cLazy, id_new, len, RARRAY_PTR(args),
-			 rb_block_given_p() ? lazy_map_func : lazy_cycle_func,
-			 args /* prevent from GC */);
+			 lazy_cycle_func, args /* prevent from GC */);
 }
 
 static VALUE

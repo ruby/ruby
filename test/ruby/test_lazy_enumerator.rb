@@ -139,9 +139,12 @@ class TestLazyEnumerator < Test::Unit::TestCase
   end
 
   def test_zip_with_block
+    # zip should be eager when a block is given
     a = Step.new(1..3)
-    assert_equal(["a", 1], a.lazy.zip("a".."c") {|x, y| [y, x]}.first)
-    assert_equal(1, a.current)
+    ary = []
+    assert_equal(nil, a.lazy.zip("a".."c") {|x, y| ary << [x, y]})
+    assert_equal(a.zip("a".."c"), ary)
+    assert_equal(3, a.current)
   end
 
   def test_take
@@ -190,8 +193,15 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(3, a.current)
     assert_equal("1", a.lazy.cycle(2).map(&:to_s).first)
     assert_equal(1, a.current)
-    assert_equal("1", a.lazy.cycle(2, &:to_s).first)
-    assert_equal(1, a.current)
+  end
+
+  def test_cycle_with_block
+    # cycle should be eager when a block is given
+    a = Step.new(1..3)
+    ary = []
+    assert_equal(nil, a.lazy.cycle(2) {|i| ary << i})
+    assert_equal(a.cycle(2).to_a, ary)
+    assert_equal(3, a.current)
   end
 
   def test_force
