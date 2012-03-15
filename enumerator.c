@@ -1420,7 +1420,7 @@ lazy_zip_func(VALUE val, VALUE arg, int argc, VALUE *argv)
     rb_ary_push(ary, argv[1]);
     for (i = 0; i < RARRAY_LEN(arg); i++) {
 	v = rb_rescue2(call_next, RARRAY_PTR(arg)[i], next_stopped, 0,
-		       rb_eStopIteration, 0);
+		       rb_eStopIteration, (VALUE)0);
 	rb_ary_push(ary, v);
     }
     rb_funcall(yielder, id_yield, 1, ary);

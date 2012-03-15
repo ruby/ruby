@@ -1,4 +1,7 @@
-Fri Mar 16 06:29:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Mar 16 06:30:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (lazy_zip_func): variadic argument needs explicit cast
+	  on the platforms where VALUE is longer than int.
 
 	* enumerator.c (lazy_init_iterator): no need to check overflow twice.
 
