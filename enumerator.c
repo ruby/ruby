@@ -106,7 +106,7 @@ VALUE rb_cEnumerator;
 VALUE rb_cLazy;
 static ID id_rewind, id_each, id_new, id_initialize, id_yield, id_call;
 static ID id_eqq, id_next, id_result, id_lazy;
-static VALUE sym_each;
+static VALUE sym_each, sym_cycle;
 
 VALUE rb_eStopIteration;
 
@@ -1526,17 +1526,17 @@ static VALUE
 lazy_cycle(int argc, VALUE *argv, VALUE obj)
 {
     VALUE args;
-    int i;
+    int len = rb_long2int((long)argc + 2);
 
-    args = rb_ary_new2(argc + 1);
+    args = rb_ary_tmp_new(len);
     rb_ary_push(args, obj);
-    rb_ary_push(args, ID2SYM(rb_intern("cycle")));
-    for (i = 0; i < argc; i++) {
-	rb_ary_push(args, argv[i]);
+    rb_ary_push(args, sym_cycle);
+    if (argc > 0) {
+	rb_ary_cat(args, argv, argc);
     }
-    return rb_block_call(rb_cLazy, id_new, RARRAY_LEN(args), RARRAY_PTR(args),
+    return rb_block_call(rb_cLazy, id_new, len, RARRAY_PTR(args),
 			 rb_block_given_p() ? lazy_map_func : lazy_cycle_func,
-			 0);
+			 args /* prevent from GC */);
 }
 
 static VALUE
@@ -1680,6 +1680,7 @@ Init_Enumerator(void)
     id_lazy = rb_intern("lazy");
     id_eqq = rb_intern("===");
     sym_each = ID2SYM(id_each);
+    sym_cycle = ID2SYM(rb_intern("cycle"));
 
     InitVM(Enumerator);
 }
