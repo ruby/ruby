@@ -1,4 +1,7 @@
-Thu Mar 15 15:04:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar 15 15:04:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_strtod): no need to check same digit for hexdigit
+	  twice.  [ruby-dev:45363][Bug #6146]
 
 	* parse.y (sym_check_asciionly): check ascii compatibility before
 	  scanning for code range.

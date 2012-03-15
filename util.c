@@ -1977,8 +1977,11 @@ break2:
 	    nd0 = -4;
 
 	    if (!*++s || !(s1 = strchr(hexdigit, *s))) goto ret0;
-	    while (*s == '0') s++;
-	    if ((s1 = strchr(hexdigit, *s)) != NULL) {
+	    if (*s == '0') {
+		while (*++s == '0');
+		s1 = strchr(hexdigit, *s);
+	    }
+	    if (s1 != NULL) {
 		do {
 		    adj += aadj * ((s1 - hexdigit) & 15);
 		    nd0 += 4;
