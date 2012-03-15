@@ -1226,8 +1226,8 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
  *
  * Returns a lazy enumerator, whose methods map/collect,
  * flat_map/collect_concat, select/find_all, reject, grep, zip, take,
- * take_while, drop, and drop_while enumerate values only on an as-needed
- * basis.
+ * take_while, drop, drop_while, and cycle enumerate values only on an
+ * as-needed basis.
  *
  * === Example
  *

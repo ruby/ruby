@@ -1,3 +1,7 @@
+Thu Mar 15 16:37:38 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator.c (enumerator_lazy): added cycle to the documentation.
+
 Thu Mar 15 15:37:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): fix warning line number.
