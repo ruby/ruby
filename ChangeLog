@@ -1,3 +1,15 @@
+Thu Mar 15 23:13:36 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enum.c (rb_enum_values_pack): rename from enum_values_pack, and
+	  remove static.
+
+	* enumerator.c (lazy_init_iterator, lazy_init_yielder,
+	  lazy_select_func, lazy_reject_func, lazy_grep_func): handle
+	  multiple values correctly.
+
+	* enumerator.c (lazy_grep): change the behavior when a block is
+	  given, to be consistent with Enumerable#grep.
+
 Thu Mar 15 19:12:31 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator.c (lazy_zip): rescue StopIteration returned by

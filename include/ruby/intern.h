@@ -198,6 +198,7 @@ VALUE rb_fiber_yield(int argc, VALUE *args);
 VALUE rb_fiber_current(void);
 VALUE rb_fiber_alive_p(VALUE);
 /* enum.c */
+VALUE rb_enum_values_pack(int, VALUE*);
 /* enumerator.c */
 VALUE rb_enumeratorize(VALUE, VALUE, int, VALUE *);
 #define RETURN_ENUMERATOR(obj, argc, argv) do {				\

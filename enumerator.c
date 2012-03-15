@@ -1161,33 +1161,50 @@ generator_each(int argc, VALUE *argv, VALUE obj)
 static VALUE
 lazy_init_iterator(VALUE val, VALUE m, int argc, VALUE *argv)
 {
-    VALUE args[2], result;
-    args[0] = m;
-    args[1] = val;
-    result = rb_yield_values2(2, args);
+    VALUE result;
+    if (argc == 1) {
+	VALUE args[2];
+	args[0] = m;
+	args[1] = val;
+	result = rb_yield_values2(2, args);
+    }
+    else {
+	VALUE args;
+	int len = rb_long2int((long)argc + 1);
+
+	args = rb_ary_tmp_new(len);
+	rb_ary_push(args, m);
+	if (argc > 0) {
+	    rb_ary_cat(args, argv, argc);
+	}
+	result = rb_yield_values2(RARRAY_LEN(args), RARRAY_PTR(args));
+	RB_GC_GUARD(args);
+    }
     if (result == Qundef) rb_iter_break();
-    return result;
+    return Qnil;
 }
 
 static VALUE
 lazy_init_yielder(VALUE val, VALUE m, int argc, VALUE *argv)
 {
     VALUE result;
-    result = rb_funcall2(m, id_yield, 1, &val);
+    result = rb_funcall2(m, id_yield, argc, argv);
     if (result == Qundef) rb_iter_break();
-    return result;
+    return Qnil;
 }
 
 static VALUE
 lazy_init_block_i(VALUE val, VALUE m, int argc, VALUE *argv)
 {
-    return rb_block_call(m, id_each, argc-1, argv+1, lazy_init_iterator, val);
+    rb_block_call(m, id_each, argc-1, argv+1, lazy_init_iterator, val);
+    return Qnil;
 }
 
 static VALUE
 lazy_init_block(VALUE val, VALUE m, int argc, VALUE *argv)
 {
-    return rb_block_call(m, id_each, argc-1, argv+1, lazy_init_yielder, val);
+    rb_block_call(m, id_each, argc-1, argv+1, lazy_init_yielder, val);
+    return Qnil;
 }
 
 static VALUE
@@ -1213,7 +1230,7 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
     }
     generator = generator_allocate(rb_cGenerator);
     rb_block_call(generator, id_initialize, 0, 0,
-		  (rb_block_given_p() ? lazy_init_block_i: lazy_init_block),
+		  (rb_block_given_p() ? lazy_init_block_i : lazy_init_block),
 		  obj);
     enumerator_init(self, generator, meth, argc - offset, argv + offset);
 
@@ -1260,7 +1277,8 @@ lazy_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
 {
     VALUE result = rb_yield_values2(argc - 1, &argv[1]);
 
-    return rb_funcall(argv[0], id_yield, 1, result);
+    rb_funcall(argv[0], id_yield, 1, result);
+    return Qnil;
 }
 
 static VALUE
@@ -1308,15 +1326,12 @@ lazy_flat_map(VALUE obj)
 static VALUE
 lazy_select_func(VALUE val, VALUE m, int argc, VALUE *argv)
 {
-    VALUE element = argv[1];
-    VALUE result = rb_yield_values2(argc - 1, &argv[1]);
+    VALUE element = rb_enum_values_pack(argc - 1, argv + 1);
 
-    if (RTEST(result)) {
+    if (RTEST(rb_yield(element))) {
 	return rb_funcall(argv[0], id_yield, 1, element);
     }
-    else {
-	return result;
-    }
+    return Qnil;
 }
 
 static VALUE
@@ -1332,15 +1347,12 @@ lazy_select(VALUE obj)
 static VALUE
 lazy_reject_func(VALUE val, VALUE m, int argc, VALUE *argv)
 {
-    VALUE element = argv[1];
-    VALUE result = rb_yield_values2(argc - 1, &argv[1]);
+    VALUE element = rb_enum_values_pack(argc - 1, argv + 1);
 
-    if (!RTEST(result)) {
+    if (!RTEST(rb_yield(element))) {
 	return rb_funcall(argv[0], id_yield, 1, element);
     }
-    else {
-	return result;
-    }
+    return Qnil;
 }
 
 static VALUE
@@ -1356,21 +1368,33 @@ lazy_reject(VALUE obj)
 static VALUE
 lazy_grep_func(VALUE val, VALUE m, int argc, VALUE *argv)
 {
-    VALUE element = argv[1];
-    VALUE result = rb_funcall(m, id_eqq, 1, element);
+    VALUE i = rb_enum_values_pack(argc - 1, argv + 1);
+    VALUE result = rb_funcall(m, id_eqq, 1, i);
 
     if (RTEST(result)) {
-	return rb_funcall(argv[0], id_yield, 1, element);
+	rb_funcall(argv[0], id_yield, 1, i);
     }
-    else {
-	return result;
+    return Qnil;
+}
+
+static VALUE
+lazy_grep_iter(VALUE val, VALUE m, int argc, VALUE *argv)
+{
+    VALUE i = rb_enum_values_pack(argc - 1, argv + 1);
+    VALUE result = rb_funcall(m, id_eqq, 1, i);
+
+    if (RTEST(result)) {
+	rb_funcall(argv[0], id_yield, 1, rb_yield(i));
     }
+    return Qnil;
 }
 
 static VALUE
 lazy_grep(VALUE obj, VALUE pattern)
 {
-    return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_grep_func, pattern);
+    return rb_block_call(rb_cLazy, id_new, 1, &obj,
+			 rb_block_given_p() ? lazy_grep_iter : lazy_grep_func,
+			 pattern);
 }
 
 static VALUE

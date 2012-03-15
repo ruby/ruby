@@ -72,6 +72,18 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal("word", a.current)
   end
 
+  def test_select_multiple_values
+    e = Enumerator.new { |yielder|
+      for i in 1..5
+        yielder.yield(i, i.to_s)
+      end
+    }
+    assert_equal([[2, "2"], [4, "4"]],
+                 e.select {|x| x[0] % 2 == 0})
+    assert_equal([[2, "2"], [4, "4"]],
+                 e.lazy.select {|x| x[0] % 2 == 0}.force)
+  end
+
   def test_map
     a = Step.new(1..3)
     assert_equal(2, a.map {|x| x * 2}.first)
@@ -112,6 +124,18 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(nil, a.current)
   end
 
+  def test_reject_multiple_values
+    e = Enumerator.new { |yielder|
+      for i in 1..5
+        yielder.yield(i, i.to_s)
+      end
+    }
+    assert_equal([[2, "2"], [4, "4"]],
+                 e.reject {|x| x[0] % 2 != 0})
+    assert_equal([[2, "2"], [4, "4"]],
+                 e.lazy.reject {|x| x[0] % 2 != 0}.force)
+  end
+
   def test_grep
     a = Step.new('a'..'f')
     assert_equal('c', a.grep(/c/).first)
@@ -120,6 +144,24 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal('c', a.current)
     assert_equal(%w[a e], a.grep(proc {|x| /[aeiou]/ =~ x}))
     assert_equal(%w[a e], a.lazy.grep(proc {|x| /[aeiou]/ =~ x}).to_a)
+  end
+
+  def test_grep_with_block
+    a = Step.new('a'..'f')
+    assert_equal('C', a.grep(/c/) {|i| i.upcase}.first)
+    assert_equal('C', a.lazy.grep(/c/) {|i| i.upcase}.first)
+  end
+
+  def test_grep_multiple_values
+    e = Enumerator.new { |yielder|
+      3.times { |i|
+        yielder.yield(i, i.to_s)
+      }
+    }
+    assert_equal([[2, "2"]], e.grep(proc {|x| x == [2, "2"]}))
+    assert_equal([[2, "2"]], e.lazy.grep(proc {|x| x == [2, "2"]}).force)
+    assert_equal(["22"],
+                 e.lazy.grep(proc {|x| x == [2, "2"]}, &:join).force)
   end
 
   def test_zip
