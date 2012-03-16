@@ -990,7 +990,7 @@ class TestModule < Test::Unit::TestCase
       Module.new do
         define_method(:foo) do end
         alias bar foo
-        alias barf oo
+        alias bar foo
       end
     end
     assert_equal("", stderr)
