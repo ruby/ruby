@@ -1449,10 +1449,13 @@ lazy_take_func(VALUE val, VALUE args, int argc, VALUE *argv)
 {
     NODE *memo = RNODE(args);
 
-    if (memo->u3.cnt == 0) return Qundef;
     rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
-    memo->u3.cnt--;
-    return Qnil;
+    if (--memo->u3.cnt == 0) {
+	return Qundef;
+    }
+    else {
+	return Qnil;
+    }
 }
 
 static VALUE
@@ -1460,12 +1463,20 @@ lazy_take(VALUE obj, VALUE n)
 {
     NODE *memo;
     long len = NUM2LONG(n);
+    int argc = 1;
+    VALUE argv[3];
 
     if (len < 0) {
 	rb_raise(rb_eArgError, "attempt to take negative size");
     }
+    argv[0] = obj;
+    if (len == 0) {
+	argv[1] = sym_cycle;
+	argv[2] = INT2NUM(0);
+	argc = 3;
+    }
     memo = NEW_MEMO(0, 0, len);
-    return rb_block_call(rb_cLazy, id_new, 1, &obj, lazy_take_func,
+    return rb_block_call(rb_cLazy, id_new, argc, argv, lazy_take_func,
 			 (VALUE) memo);
 }
 

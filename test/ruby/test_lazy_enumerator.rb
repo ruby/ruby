@@ -201,7 +201,11 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(5, a.current)
     assert_equal(1, a.lazy.take(5).first)
     assert_equal(1, a.current)
-    assert_equal((1..5).to_a, a.lazy.take(5).to_a)
+    assert_equal((1..5).to_a, a.lazy.take(5).force)
+    assert_equal(5, a.current)
+    a = Step.new(1..10)
+    assert_equal([], a.lazy.take(0).force)
+    assert_equal(nil, a.current)
   end
 
   def test_take_while
