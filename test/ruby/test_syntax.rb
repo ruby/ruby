@@ -81,13 +81,13 @@ class TestSyntax < Test::Unit::TestCase
 
   def test_keyword_rest
     bug5989 = '[ruby-core:42455]'
-    assert_valid_syntax("def kwrest_test(**a) a; end", __FILE__)
-    assert_valid_syntax("def kwrest_test2(**a, &b) end", __FILE__)
+    assert_valid_syntax("def kwrest_test(**a) a; end", __FILE__, bug5989)
+    assert_valid_syntax("def kwrest_test2(**a, &b) end", __FILE__, bug5989)
     o = Object.new
     def o.kw(**a) a end
-    assert_equal({}, o.kw)
-    assert_equal({foo: 1}, o.kw(foo: 1))
-    assert_equal({foo: 1, bar: 2}, o.kw(foo: 1, bar: 2))
+    assert_equal({}, o.kw, bug5989)
+    assert_equal({foo: 1}, o.kw(foo: 1), bug5989)
+    assert_equal({foo: 1, bar: 2}, o.kw(foo: 1, bar: 2), bug5989)
   end
 
   def test_warn_grouped_expression
