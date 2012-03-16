@@ -82,16 +82,16 @@ class TestException < Test::Unit::TestCase
     assert(!$bad)
 
     assert(catch(:foo) {
-         loop do
-           loop do
-    	 throw :foo, true
-    	 break
-           end
-           break
-           assert(false)			# should no reach here
-         end
-         false
-       })
+             loop do
+               loop do
+                 throw :foo, true
+                 break
+               end
+               break
+               assert(false)			# should no reach here
+             end
+             false
+           })
 
   end
 
