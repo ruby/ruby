@@ -96,6 +96,13 @@ class TestSyntax < Test::Unit::TestCase
     end
   end
 
+  def test_warn_unreachable
+    assert_warn("test:3: warning: statement not reached\n") do
+      code = "loop do\n" "break\n" "foo\n" "end"
+      assert_valid_syntax(code, "test") {$VERBOSE = true}
+    end
+  end
+
   private
 
   def make_tmpsrc(f, src)

@@ -8155,7 +8155,7 @@ block_append_gen(struct parser_params *parser, NODE *head, NODE *tail)
       case NODE_REDO:
       case NODE_RETRY:
 	if (RTEST(ruby_verbose)) {
-	    parser_warning(nd, "statement not reached");
+	    parser_warning(tail, "statement not reached");
 	}
 	break;
 

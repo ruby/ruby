@@ -1,3 +1,8 @@
+Fri Mar 16 17:42:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (block_append_gen): fix unreachable warning line number.
+	  should warn at the code, not jump.
+
 Fri Mar 16 17:33:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (enum_take): allocate buffer array before iteration, as well
