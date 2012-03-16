@@ -675,7 +675,7 @@ iseq_to_a(VALUE self)
 }
 
 int
-rb_iseq_first_lineno(rb_iseq_t *iseq)
+rb_iseq_first_lineno(const rb_iseq_t *iseq)
 {
     return FIX2INT(iseq->line_no);
 }
