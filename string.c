@@ -4956,13 +4956,13 @@ trnext(struct tr *t, rb_encoding *enc)
     for (;;) {
 	if (!t->gen) {
 	    if (t->p == t->pend) return -1;
-	    if (t->p < t->pend - 1 && *t->p == '\\') {
-		t->p++;
+	    if (rb_enc_ascget(t->p, t->pend, &n, enc) == '\\') {
+		t->p += n;
 	    }
 	    t->now = rb_enc_codepoint_len(t->p, t->pend, &n, enc);
 	    t->p += n;
-	    if (t->p < t->pend - 1 && *t->p == '-') {
-		t->p++;
+	    if (rb_enc_ascget(t->p, t->pend, &n, enc) == '-') {
+		t->p += n;
 		if (t->p < t->pend) {
 		    unsigned int c = rb_enc_codepoint_len(t->p, t->pend, &n, enc);
 		    t->p += n;

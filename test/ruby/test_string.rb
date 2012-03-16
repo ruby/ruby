@@ -1500,6 +1500,10 @@ class TestString < Test::Unit::TestCase
     assert_equal(true, "\u0101".tr("\u0101", "a").ascii_only?)
     assert_equal(true, "\u3041".tr("\u3041", "a").ascii_only?)
     assert_equal(false, "\u3041\u3042".tr("\u3041", "a").ascii_only?)
+
+    bug6156 = '[ruby-core:43335]'
+    str, range, star = %w[b a-z *].map{|s|s.encode("utf-16le")}
+    assert_equal(star, str.tr(range, star), bug6156)
   end
 
   def test_tr!

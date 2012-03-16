@@ -1,3 +1,8 @@
+Fri Mar 16 20:06:24 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (trnext): should advance char-wise.
+	  [ruby-core:43335][Bug #6156]
+
 Fri Mar 16 17:42:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (block_append_gen): fix unreachable warning line number.
