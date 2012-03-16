@@ -94,9 +94,9 @@ module EnvUtil
     end
     stderr, $stderr, verbose, $VERBOSE = $stderr, stderr, $VERBOSE, true
     yield stderr
+    return $stderr
   ensure
     stderr, $stderr, $VERBOSE = $stderr, stderr, verbose
-    return stderr
   end
   module_function :verbose_warning
 
