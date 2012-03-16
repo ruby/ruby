@@ -2281,6 +2281,11 @@ module Net
       def rfc822_text
         token = match(T_ATOM)
         name = token.value.upcase
+        token = lookahead
+        if token.symbol == T_LBRA
+          shift_token
+          match(T_RBRA)
+        end
         match(T_SPACE)
         return name, nstring
       end

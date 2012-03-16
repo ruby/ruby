@@ -126,4 +126,20 @@ EOF
     }
     assert_match(/ for \{123\}/, e.message)
   end
+
+  def test_msg_att_rfc822_text
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+* 123 FETCH (RFC822 {5}
+foo
+)
+EOF
+    assert_equal("foo\r\n", response.data.attr["RFC822"])
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+* 123 FETCH (RFC822[] {5}
+foo
+)
+EOF
+    assert_equal("foo\r\n", response.data.attr["RFC822"])
+  end
 end

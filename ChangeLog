@@ -1,3 +1,8 @@
+Fri Mar 16 13:50:12 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (rfc822_text): ignore [] after RFC822.
+	  [ruby-core:40945] [Bug #5620]
+
 Fri Mar 16 12:00:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (argument_error): use line number at the beginning
