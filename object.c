@@ -627,9 +627,9 @@ rb_obj_tap(VALUE obj)
  * Example:
  *
  *    class Foo
- *       def self.inherited(subclass)
- *          puts "New subclass: #{subclass}"
- *       end
+ *      def self.inherited(subclass)
+ *        puts "New subclass: #{subclass}"
+ *      end
  *    end
  *
  *    class Bar < Foo

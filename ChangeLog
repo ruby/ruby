@@ -1,3 +1,7 @@
+Sat Mar 17 06:56:58 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* object.c:  Fix indentation of Class#inherited example.
+
 Sat Mar 17 01:46:05 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* string.c (trnext): fix bug with string ending with '\\'.
