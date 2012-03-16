@@ -245,7 +245,7 @@ class TestException < Test::Unit::TestCase
   end
 
   def test_thread_signal_location
-    stdout, stderr, status = EnvUtil.invoke_ruby("-d", <<-RUBY, false, true)
+    _, stderr, _ = EnvUtil.invoke_ruby("-d", <<-RUBY, false, true)
 Thread.start do
   begin
     Process.kill(:INT, $$)
@@ -400,7 +400,7 @@ end.join
       o = Object.new
       def o.exception(arg)
       end
-      RuntimeError.new("a") == o
+      _ = RuntimeError.new("a") == o
     EOC
     end
     assert_nothing_raised(ArgumentError, bug5865) do

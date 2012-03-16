@@ -206,7 +206,7 @@ module Test
           'STDERR.puts('"#{token_dump}"'"START=#{$initial_size = Memory::Status.new.size}")',
           code,
         ].join("\n")
-        out, err, status = EnvUtil.invoke_ruby(args, cmd, true, true)
+        _, err, status = EnvUtil.invoke_ruby(args, cmd, true, true)
         before = err.sub!(/^#{token_re}START=(\d+)\n/, '') && $1.to_i
         after = err.sub!(/^#{token_re}FINAL=(\d+)\n/, '') && $1.to_i
         assert_equal([true, ""], [status.success?, err], message)
