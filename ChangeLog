@@ -1,3 +1,8 @@
+Fri Mar 16 14:43:18 2012  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* load.c (ruby_init_ext): don't free the given pointer itself.
+	  It is not guaranteed even that the pointer is on heap.
+
 Fri Mar 16 14:37:57 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_eval.c (rb_mod_module_eval): fix the documentation of

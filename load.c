@@ -681,11 +681,12 @@ init_ext_call(VALUE arg)
 RUBY_FUNC_EXPORTED void
 ruby_init_ext(const char *name, void (*init)(void))
 {
-    if (load_lock(name)) {
+    char* const lock_key = load_lock(name);
+    if (lock_key) {
 	rb_vm_call_cfunc(rb_vm_top_self(), init_ext_call, (VALUE)init,
 			 0, rb_str_new2(name));
 	rb_provide(name);
-	load_unlock(name, 1);
+	load_unlock(lock_key, 1);
     }
 }
 
