@@ -1065,6 +1065,10 @@ module Net
       @exception = nil
 
       @greeting = get_response
+      if @greeting.nil?
+        @sock.close
+        raise Error, "connection closed"
+      end
       if @greeting.name == "BYE"
         @sock.close
         raise ByeResponseError, @greeting

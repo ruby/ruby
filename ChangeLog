@@ -1,3 +1,9 @@
+Fri Mar 16 14:10:45 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (initialize): raise Net::IMAP::Error when the
+	  connection is closed without a greeting response.
+	  [ruby-core:40938] [Bug #5616]
+
 Fri Mar 16 13:50:12 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (rfc822_text): ignore [] after RFC822.

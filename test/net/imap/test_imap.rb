@@ -418,6 +418,25 @@ class IMAPTest < Test::Unit::TestCase
     end
   end
 
+  def test_connection_closed_without_greeting
+    server = create_tcp_server
+    port = server.addr[1]
+    Thread.start do
+      begin
+        sock = server.accept
+        sock.close
+      rescue
+      end
+    end
+    begin
+      assert_raise(Net::IMAP::Error) do
+        Net::IMAP.new(SERVER_ADDR, :port => port)
+      end
+    ensure
+      server.close
+    end
+  end
+
   def test_default_port
     assert_equal(143, Net::IMAP.default_port)
     assert_equal(143, Net::IMAP.default_imap_port)
