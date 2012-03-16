@@ -1379,10 +1379,11 @@ rb_obj_instance_exec(int argc, VALUE *argv, VALUE self)
  *     mod.class_eval(string [, filename [, lineno]])  -> obj
  *     mod.module_eval {|| block }                     -> obj
  *
- *  Evaluates the string or block in the context of _mod_. This can
- *  be used to add methods to a class. <code>module_eval</code> returns
- *  the result of evaluating its argument. The optional _filename_
- *  and _lineno_ parameters set the text for error messages.
+ *  Evaluates the string or block in the context of _mod_, except that when
+ *  a block is given, constant lookup is not affected. This can be used to
+ *  add methods to a class. <code>module_eval</code> returns the result of
+ *  evaluating its argument. The optional _filename_ and _lineno_ parameters
+ *  set the text for error messages.
  *
  *     class Thing
  *     end
