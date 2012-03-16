@@ -1,3 +1,7 @@
+Fri Mar 16 15:02:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enum_first): remove duplication.
+
 Fri Mar 16 14:43:18 2012  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* load.c (ruby_init_ext): don't free the given pointer itself.

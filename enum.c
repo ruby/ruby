@@ -703,22 +703,7 @@ first_i(VALUE i, VALUE params, int argc, VALUE *argv)
     return Qnil;		/* not reached */
 }
 
-static VALUE
-first_ary_i(VALUE i, VALUE params, int argc, VALUE *argv)
-{
-    NODE *memo = RNODE(params);
-    long n = memo->u3.cnt;
-
-    ENUM_WANT_SVALUE();
-
-    rb_ary_push(memo->u1.value, i);
-    n--;
-    if (n <= 0) {
-	rb_iter_break();
-    }
-    memo->u3.cnt = n;
-    return Qnil;
-}
+static VALUE enum_take(VALUE obj, VALUE n);
 
 /*
  *  call-seq:
@@ -740,21 +725,9 @@ static VALUE
 enum_first(int argc, VALUE *argv, VALUE obj)
 {
     NODE *memo;
+    rb_check_arity(argc, 0, 1);
     if (argc > 0) {
-	VALUE ary = Qnil;
-	VALUE n;
-	long len = 0;
-
-	rb_scan_args(argc, argv, "01", &n);
-	len = NUM2LONG(n);
-	if (len == 0) return rb_ary_new2(0);
-	if (len < 0) {
-	    rb_raise(rb_eArgError, "negative length");
-	}
-	ary = rb_ary_new2(len);
-	memo = NEW_MEMO(ary, 0, len);
-	rb_block_call(obj, id_each, 0, 0, first_ary_i, (VALUE)memo);
-	return ary;
+	return enum_take(obj, argv[0]);
     }
     else {
 	memo = NEW_MEMO(Qnil, 0, 0);
