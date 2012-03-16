@@ -1,4 +1,8 @@
-Fri Mar 16 11:59:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Mar 16 12:00:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (argument_error): use line number at the beginning
+	  of lambda, not the first code ob its body.
+	  [ruby-core:43314][Bug #6151]
 
 	* iseq.c (rb_iseq_first_lineno): constified.
 

@@ -130,11 +130,7 @@ argument_error(const rb_iseq_t *iseq, int miss_argc, int min_argc, int max_argc)
     VALUE err_line = 0;
 
     if (iseq) {
-	int line_no = 1;
-
-	if (iseq->line_info_size) {
-	    line_no = iseq->line_info_table[0].line_no;
-	}
+	int line_no = rb_iseq_first_lineno(iseq);
 
 	err_line = rb_sprintf("%s:%d:in `%s'",
 			      RSTRING_PTR(iseq->filename),

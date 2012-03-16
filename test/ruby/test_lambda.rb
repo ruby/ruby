@@ -70,4 +70,23 @@ class TestLambdaParameters < Test::Unit::TestCase
     BasicObject.new.instance_eval {->() {called = true}.()}
     assert_equal(true, called, bug5966)
   end
+
+  def test_location_on_error
+    bug6151 = '[ruby-core:43314]'
+    called = 0
+    line, f = __LINE__, lambda do
+      called += 1
+      true
+    end
+    e = assert_raise(ArgumentError) do
+      f.call(42)
+    end
+    assert_send([e.backtrace.first, :start_with?, "#{__FILE__}:#{line}:"], bug6151)
+    assert_equal(0, called)
+    e = assert_raise(ArgumentError) do
+      42.times(&f)
+    end
+    assert_send([e.backtrace.first, :start_with?, "#{__FILE__}:#{line}:"], bug6151)
+    assert_equal(0, called)
+  end
 end
