@@ -2050,7 +2050,7 @@ enum_take(VALUE obj, VALUE n)
     }
 
     if (len == 0) return rb_ary_new2(0);
-    result = rb_ary_new();
+    result = rb_ary_new2(len);
     memo = NEW_MEMO(result, 0, len);
     rb_block_call(obj, id_each, 0, 0, take_i, (VALUE)memo);
     return result;

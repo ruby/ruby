@@ -1,4 +1,7 @@
-Fri Mar 16 15:02:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Mar 16 17:33:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enum_take): allocate buffer array before iteration, as well
+	  as enum_first did.
 
 	* enum.c (enum_first): remove duplication.
 
