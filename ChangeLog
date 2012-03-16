@@ -1,3 +1,11 @@
+Sat Mar 17 01:46:05 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* string.c (trnext): fix bug with string ending with '\\'.
+	  [ruby-dev:45374][Bug #6160]
+
+	* test/ruby/test_string.rb (TestString#test_delete): test for
+	  above.
+
 Fri Mar 16 20:06:24 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (trnext): should advance char-wise.

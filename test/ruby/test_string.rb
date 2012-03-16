@@ -508,6 +508,9 @@ class TestString < Test::Unit::TestCase
     assert_equal("a", "abc\u{3042 3044 3046}".delete("^a"))
     assert_equal("bc\u{3042 3044 3046}", "abc\u{3042 3044 3046}".delete("a"))
     assert_equal("\u3042", "abc\u{3042 3044 3046}".delete("^\u3042"))
+
+    bug6160 = '[ruby-dev:45374]'
+    assert_equal("", '\\'.delete('\\'), bug6160)
   end
 
   def test_delete!
