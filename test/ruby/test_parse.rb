@@ -742,7 +742,7 @@ x = __ENCODING__
         x = def o.foo; end
       END
     end
-    assert_equal($stderr.string.lines.to_a.size, 14)
+    assert_equal(14, $stderr.string.lines.to_a.size)
     $stderr = stderr
   end
 
