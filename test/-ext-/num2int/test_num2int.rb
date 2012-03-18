@@ -188,7 +188,7 @@ class TestNum2int < Test::Unit::TestCase
     assert_output((FIXNUM_MAX+1).to_s) do
       Num2int.print_num2ll(FIXNUM_MAX+1)
     end
-  end
+  end if defined?(Num2int.print_num2ll)
 
   def test_num2ull
     assert_output("0") do
@@ -221,7 +221,7 @@ class TestNum2int < Test::Unit::TestCase
     assert_output((FIXNUM_MAX+1).to_s) do
       Num2int.print_num2ull(FIXNUM_MAX+1)
     end
-  end
+  end if defined?(Num2int.print_num2ull)
 end
 
 
