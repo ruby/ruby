@@ -1,3 +1,8 @@
+Sun Mar 18 17:17:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (free_method_entry_i): method entry may be in
+	  unlinked_method_entry_list.  [ruby-core:43383][Bug #6171]
+
 Sun Mar 18 15:27:31 2012  Tanaka Akira  <akr@fsij.org>
 
 	* compile.c: typo fix by Run Paint Run Run.
