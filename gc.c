@@ -1106,7 +1106,18 @@ aligned_malloc(size_t alignment, size_t size)
 #elif defined(HAVE_MEMALIGN)
     res = memalign(alignment, size);
 #else
-#error no memalign function
+    char* aligned;
+    res = malloc(alignment + size + sizeof(void*));
+    aligned = (char*)res + alignment + sizeof(void*);
+    aligned -= ((VALUE)aligned & (alignment - 1));
+    ((void**)aligned)[-1] = res;
+    res = (void*)aligned;
+#endif
+
+#if defined(_DEBUG) || defined(GC_DEBUG)
+    /* alignment must be a power of 2 */
+    assert((alignment - 1) & alignment == 0);
+    assert(alignment % sizeof(void*) == 0);
 #endif
     return res;
 }
@@ -1118,8 +1129,10 @@ aligned_free(void *ptr)
     __mingw_aligned_free(ptr);
 #elif defined _WIN32 && !defined __CYGWIN__
     _aligned_free(ptr);
-#else
+#elif defined(HAVE_MEMALIGN) && defined(HAVE_POSIX_MEMALIGN)
     free(ptr);
+#else
+    free(((void**)ptr)[-1]);
 #endif
 }
 

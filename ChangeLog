@@ -1,3 +1,8 @@
+Sun Mar 18 18:31:45 2012  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* gc.c (aligned_malloc, aligned_free): added fallback implementations
+	  for platforms like OSX Leopard.
+
 Sun Mar 18 17:17:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_pow): estimate result bit size more precisely.
