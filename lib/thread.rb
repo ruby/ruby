@@ -56,7 +56,8 @@ class ConditionVariable
   # Creates a new ConditionVariable
   #
   def initialize
-    @waiters = []
+    @waiters = {}
+    @waiters.compare_by_identity
     @waiters_mutex = Mutex.new
   end
 
@@ -68,19 +69,17 @@ class ConditionVariable
   #
   def wait(mutex, timeout=nil)
     # Rely on GVL for sychronizing @waiters.push
-    @waiters.push(Thread.current)
+    @waiters[Thread.current] = true
     mutex.sleep timeout do
-      # We could not rely on GVL cause compare is called
-      @waiters_mutex.synchronize do
-        @waiters.delete(Thread.current)
-      end
+      # We could rely on GVL cause hash were set to compare_by_identity mode
+      @waiters.delete(Thread.current)
     end
     self
   end if Thread::RELY_ON_GVL
 
   def wait(mutex, timeout=nil) # :nodoc: 
     @waiters_mutex.synchronize do
-      @waiters.push(Thread.current)
+      @waiters[Thread.current] = true
     end
     mutex.sleep timeout do
       @waiters_mutex.synchronize do
@@ -95,7 +94,7 @@ class ConditionVariable
   #
   def signal
     begin
-      t = @waiters.shift
+      t, _ = @waiters.shift
       t.run if t
     rescue ThreadError
       retry
@@ -105,7 +104,7 @@ class ConditionVariable
 
   def signal # :nodoc:
     begin
-      t = @waiters_mutex.synchronize { @waiters.shift }
+      t, _ = @waiters_mutex.synchronize { @waiters.shift }
       t.run if t
     rescue ThreadError
       retry
@@ -120,7 +119,7 @@ class ConditionVariable
     # TODO: incomplete
     waiters0 = nil
     @waiters_mutex.synchronize do
-      waiters0 = @waiters.dup
+      waiters0 = @waiters.keys
       @waiters.clear
     end
     for t in waiters0
@@ -166,26 +165,29 @@ class Queue
   #
   def initialize
     @que = []
-    @waiting = []
+    @waiting = {}
+    @waiting.compare_by_identity
     @que.taint          # enable tainted communication
     @waiting.taint
     self.taint
     @mutex = Mutex.new
   end
 
+  def push_no_sync(obj) # :nodoc:
+    @que.push obj
+    begin
+      t, _ = @waiting.shift
+      t.wakeup if t
+    rescue ThreadError
+      retry
+    end
+  end
+  private :push_no_sync
   #
   # Pushes +obj+ to the queue.
   #
   def push(obj)
-    @mutex.synchronize{
-      @que.push obj
-      begin
-        t = @waiting.shift
-        t.wakeup if t
-      rescue ThreadError
-        retry
-      end
-    }
+    @mutex.synchronize{ push_no_sync(obj) }
   end
 
   #
@@ -209,9 +211,7 @@ class Queue
         while true
           if @que.empty?
             raise ThreadError, "queue empty" if non_block
-            # @waiting.include? check is necessary for avoiding a race against
-            # Thread.wakeup [Bug 5195]
-            @waiting.push Thread.current unless @waiting.include?(Thread.current)
+            @waiting[Thread.current] = true
             @mutex.sleep
           else
             return @que.shift
@@ -280,7 +280,8 @@ class SizedQueue < Queue
   def initialize(max)
     raise ArgumentError, "queue size must be positive" unless max > 0
     @max = max
-    @queue_wait = []
+    @queue_wait = {}
+    @queue_wait.compare_by_identity
     @queue_wait.taint           # enable tainted comunication
     super()
   end
@@ -309,7 +310,7 @@ class SizedQueue < Queue
     if diff
       diff.times do
         begin
-          t = @queue_wait.shift
+          t, _ = @queue_wait.shift
           t.run if t
         rescue ThreadError
           retry
@@ -328,20 +329,13 @@ class SizedQueue < Queue
       begin
         while true
           break if @que.length < @max
-          @queue_wait.push Thread.current unless @queue_wait.include?(Thread.current)
+          @queue_wait[Thread.current] = true
           @mutex.sleep
         end
       ensure
         @queue_wait.delete(Thread.current)
       end
-
-      @que.push obj
-      begin
-        t = @waiting.shift
-        t.wakeup if t
-      rescue ThreadError
-        retry
-      end
+      push_no_sync obj
     }
   end
 
@@ -363,7 +357,7 @@ class SizedQueue < Queue
     @mutex.synchronize {
       if @que.length < @max
         begin
-          t = @queue_wait.shift
+          t, _ = @queue_wait.shift
           t.wakeup if t
         rescue ThreadError
           retry
