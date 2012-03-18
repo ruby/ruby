@@ -20,6 +20,10 @@ if $DEBUG
   Thread.abort_on_exception = true
 end
 
+unless defined?(Thread::RELY_ON_GVL)
+  Thread::RELY_ON_GVL = false
+end
+
 #
 # ConditionVariable objects augment class Mutex. Using condition variables,
 # it is possible to suspend while in the middle of a critical section until a
@@ -63,7 +67,18 @@ class ConditionVariable
   # even if no other thread doesn't signal.
   #
   def wait(mutex, timeout=nil)
-    # TODO: mutex should not be used
+    # Rely on GVL for sychronizing @waiters.push
+    @waiters.push(Thread.current)
+    mutex.sleep timeout do
+      # We could not rely on GVL cause compare is called
+      @waiters_mutex.synchronize do
+        @waiters.delete(Thread.current)
+      end
+    end
+    self
+  end if Thread::RELY_ON_GVL
+
+  def wait(mutex, timeout=nil) # :nodoc: 
     @waiters_mutex.synchronize do
       @waiters.push(Thread.current)
     end
@@ -73,20 +88,30 @@ class ConditionVariable
       end
     end
     self
-  end
+  end unless Thread::RELY_ON_GVL
 
   #
   # Wakes up the first thread in line waiting for this lock.
   #
   def signal
     begin
-      t = @waiters_mutex.synchronize {@waiters.shift}
+      t = @waiters.shift
       t.run if t
     rescue ThreadError
       retry
     end
     self
-  end
+  end if Thread::RELY_ON_GVL
+
+  def signal # :nodoc:
+    begin
+      t = @waiters_mutex.synchronize { @waiters.shift }
+      t.run if t
+    rescue ThreadError
+      retry
+    end
+    self
+  end unless Thread::RELY_ON_GVL
 
   #
   # Wakes up all threads waiting for this lock.

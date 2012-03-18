@@ -4528,6 +4528,7 @@ Init_Thread(void)
     rb_define_singleton_method(rb_cThread, "list", rb_thread_list, 0);
     rb_define_singleton_method(rb_cThread, "abort_on_exception", rb_thread_s_abort_exc, 0);
     rb_define_singleton_method(rb_cThread, "abort_on_exception=", rb_thread_s_abort_exc_set, 1);
+    rb_define_const(rb_cThread, "RELY_ON_GVL", Qtrue);
 #if THREAD_DEBUG < 0
     rb_define_singleton_method(rb_cThread, "DEBUG", rb_thread_s_debug, 0);
     rb_define_singleton_method(rb_cThread, "DEBUG=", rb_thread_s_debug_set, 1);
