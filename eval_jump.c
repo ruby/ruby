@@ -100,7 +100,7 @@ rb_exec_end_proc(void)
     int status;
     volatile int safe = rb_safe_level();
     rb_thread_t *th = GET_THREAD();
-    VALUE errinfo = th->errinfo;
+    volatile VALUE errinfo = th->errinfo;
 
     while (ephemeral_end_procs) {
 	link = ephemeral_end_procs;
