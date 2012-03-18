@@ -1,3 +1,8 @@
+Sun Mar 18 17:17:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_pow): estimate result bit size more precisely.
+	  [ruby-core:30735][Feature #3429]
+
 Sun Mar 18 17:17:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (free_method_entry_i): method entry may be in

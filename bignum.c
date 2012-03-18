@@ -3095,10 +3095,11 @@ rb_big_pow(VALUE x, VALUE y)
 	else {
 	    VALUE z = 0;
 	    SIGNED_VALUE mask;
-	    const long BIGLEN_LIMIT = 1024*1024 / SIZEOF_BDIGITS;
+	    const long xlen = RBIGNUM_LEN(x) - 1;
+	    const long xbits = ffs(RBIGNUM_DIGITS(x)[xlen]) + SIZEOF_BDIGITS*BITSPERDIG*xlen;
+	    const long BIGLEN_LIMIT = BITSPERDIG*1024*1024;
 
-	    if ((RBIGNUM_LEN(x) > BIGLEN_LIMIT) ||
-		(RBIGNUM_LEN(x) > BIGLEN_LIMIT / yy)) {
+	    if ((xbits > BIGLEN_LIMIT) || (xbits * yy > BIGLEN_LIMIT)) {
 		rb_warn("in a**b, b may be too big");
 		d = (double)yy;
 		break;
