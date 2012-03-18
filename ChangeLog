@@ -1,3 +1,8 @@
+Sun Mar 18 23:21:17 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (aligned_free): fix condition for free.  memalign() and
+	  posix_memalign() are not defined together normally.
+
 Sun Mar 18 18:31:45 2012  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* gc.c (aligned_malloc, aligned_free): added fallback implementations

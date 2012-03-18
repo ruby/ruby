@@ -1100,7 +1100,8 @@ aligned_malloc(size_t alignment, size_t size)
 #elif defined(HAVE_POSIX_MEMALIGN)
     if (posix_memalign(&res, alignment, size) == 0) {
         return res;
-    } else {
+    }
+    else {
         return NULL;
     }
 #elif defined(HAVE_MEMALIGN)
@@ -1129,7 +1130,7 @@ aligned_free(void *ptr)
     __mingw_aligned_free(ptr);
 #elif defined _WIN32 && !defined __CYGWIN__
     _aligned_free(ptr);
-#elif defined(HAVE_MEMALIGN) && defined(HAVE_POSIX_MEMALIGN)
+#elif defined(HAVE_MEMALIGN) || defined(HAVE_POSIX_MEMALIGN)
     free(ptr);
 #else
     free(((void**)ptr)[-1]);
