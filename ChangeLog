@@ -1,3 +1,8 @@
+Sun Mar 18 13:23:28 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_enc_compatible): return ASCII-8BIT even if 2nd string
+	  is ascii only string. [ruby-core:42354] [Bug #5968]
+
 Tue Mar  6 18:55:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (assert_send, assert_not_send):

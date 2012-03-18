@@ -99,4 +99,18 @@ class TestEncoding < Test::Unit::TestCase
     str2 = Marshal.load(Marshal.dump(str2))
     assert_equal(str, str2, '[ruby-dev:38596]')
   end
+
+  def test_unsafe
+    bug5279 = '[ruby-dev:44469]'
+    assert_ruby_status([], '$SAFE=4; "a".encode("utf-16be")', bug5279)
+  end
+
+  def test_compatible_p
+    ua = "abc".force_encoding(Encoding::UTF_8)
+    assert_equal(Encoding::UTF_8, Encoding.compatible?(ua, :abc))
+    assert_equal(nil, Encoding.compatible?(ua, 1))
+    bin = "a".force_encoding(Encoding::ASCII_8BIT)
+    asc = "b".force_encoding(Encoding::US_ASCII)
+    assert_equal(Encoding::ASCII_8BIT, Encoding.compatible?(bin, asc))
+  end
 end
