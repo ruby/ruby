@@ -370,6 +370,8 @@ ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
 stub: $(STUBPROGRAM)
 
+!include $(srcdir)/common.mk
+
 !ifdef SCRIPTPROGRAMS
 !else if [echo>scriptbin.mk SCRIPTPROGRAMS = \]
 !else if [for %I in ($(srcdir:/=\)\bin\*) do @echo>>scriptbin.mk %~nI.exe \]
@@ -380,9 +382,12 @@ stub: $(STUBPROGRAM)
 !endif
 !if [for %I in ($(srcdir:/=\)\bin\*) do @for %J in (\
 "%~nI.exe: $$(srcdir)/bin/%~nI" \
-"	@echo generating $$(@)" \
-"	@copy /b $$(STUBPROGRAM) +<< +$$(srcdir:/=\)\bin\%~nI $$(@) > nul" \
-"" "<<" "" \
+"	$$(ECHO) generating $$(@)" \
+"	$$(Q) copy /y /b $$(STUBPROGRAM) $$(@) > nul" \
+"	$$(Q) echo.>>$$(@)" \
+"	$$(Q) echo.>>$$(@)" \
+"	$$(Q) copy /b $$(@)+$$(srcdir:/=\)\bin\%~nI $$(@) > nul" \
+"" \
 ) do @echo.%~J>>scriptbin.mk]
 !else
 ! include scriptbin.mk
@@ -396,8 +401,6 @@ $(SCRIPTPROGRAMS): $(STUBPROGRAM)
 
 up::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && $(VCSUP)
-
-!include $(srcdir)/common.mk
 
 update-mspec:
 !if exist($(srcdir)/spec/mspec)
