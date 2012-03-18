@@ -59,7 +59,7 @@
 
 module Profiler__
   # internal values
-  @@start = @@stack = @@map = nil
+  @@start = @@stack = @@map = @@array = nil
   PROFILE_PROC = proc{|event, file, line, id, binding, klass|
     case event
     when "call", "c-call"
@@ -69,7 +69,11 @@ module Profiler__
       now = Process.times[0]
       key = [klass, id]
       if tick = @@stack.pop
-        data = (@@map[key] ||= [0, 0.0, 0.0, key])
+        data = begin
+                 @@map[key] ||= [0, 0.0, 0.0, key]
+               rescue NoMethodError
+                 @@array.find{|i| i[3] == key} || (@@array << [0, 0.0, 0.0, key])[-1]
+               end
         data[0] += 1
         cost = now - tick[0]
         data[1] += cost
@@ -83,6 +87,7 @@ module_function
     @@start = Process.times[0]
     @@stack = []
     @@map = {}
+    @@array = []
     set_trace_func PROFILE_PROC
   end
   def stop_profile
@@ -92,7 +97,7 @@ module_function
     stop_profile
     total = Process.times[0] - @@start
     if total == 0 then total = 0.01 end
-    data = @@map.values
+    data = @@map.values + @@array
     data = data.sort_by{|x| -x[2]}
     sum = 0
     f.printf "  %%   cumulative   self              self     total\n"
@@ -113,6 +118,9 @@ module_function
       name += "."
     end
     name + id.id2name
+  rescue NoMethodError => e
+    name = e.message.slice(/#<.*?:0x[0-9a-f]+>/) || ""
+    name + "." + id.id2name
   end
   private :get_name
 end

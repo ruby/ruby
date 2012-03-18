@@ -1,3 +1,8 @@
+Sun Mar 18 10:01:02 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* lib/profiler.rb: support calling singleton methods of
+	  an instance of BasicObject.
+
 Sat Mar 17 06:56:58 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* object.c:  Fix indentation of Class#inherited example.
