@@ -1,3 +1,8 @@
+Sun Mar 18 15:27:31 2012  Tanaka Akira  <akr@fsij.org>
+
+	* compile.c: typo fix by Run Paint Run Run.
+	  [ruby-core:28368] [Bug #2824]
+
 Sun Mar 18 10:01:02 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* lib/profiler.rb: support calling singleton methods of

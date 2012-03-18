@@ -4762,7 +4762,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_SCLASS:{
 	ID singletonclass;
 	VALUE iseqval =
-	    NEW_ISEQVAL(node->nd_body, rb_str_new2("singletonclass"),
+	    NEW_ISEQVAL(node->nd_body, rb_str_new2("singleton class"),
 			ISEQ_TYPE_CLASS, nd_line(node));
 
 	COMPILE(ret, "sclass#recv", node->nd_recv);
