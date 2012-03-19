@@ -1244,7 +1244,8 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
  * Returns a lazy enumerator, whose methods map/collect,
  * flat_map/collect_concat, select/find_all, reject, grep, zip, take,
  * take_while, drop, drop_while, and cycle enumerate values only on an
- * as-needed basis.
+ * as-needed basis.  However, if a block is given to zip or cycle, values
+ * are enumerated immediately.
  *
  * === Example
  *
@@ -1262,7 +1263,8 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
  *     }
  *   end
  *   # show first ten pythagorean triples
- *   p pythagorean_triples.take(10).force
+ *   p pythagorean_triples.take(10).force # take is lazy, so force is needed
+ *   p pythagorean_triples.first(10)      # first is eager
  *   # show pythagorean triples less than 100
  *   p pythagorean_triples.take_while { |*, z| z < 100 }.force
  */

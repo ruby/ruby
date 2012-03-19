@@ -1,3 +1,10 @@
+Mon Mar 19 15:36:41 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator.c (enumerable_lazy): add an example of take and first
+	  to the documentation.  [ruby-core:43344] [Bug #6158]
+	  add the description of the behavior when a block is given to zip
+	  or cycle.
+
 Mon Mar 19 15:20:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_specialized_instruction): DRY and replace chain
@@ -150,7 +157,7 @@ Thu Mar 15 17:45:27 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 Thu Mar 15 16:37:38 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* enumerator.c (enumerator_lazy): added cycle to the documentation.
+	* enumerator.c (enumerable_lazy): added cycle to the documentation.
 
 Thu Mar 15 15:37:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
