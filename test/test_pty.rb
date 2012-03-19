@@ -176,6 +176,9 @@ class TestPTY < Test::Unit::TestCase
         sleep(0.1)
       end until st2 = PTY.check(pid)
     end
+  rescue RuntimeError
+    skip $!
+  else
     assert_equal(pid, st1.pid) if st1
     assert_nil(st1)
     assert_equal(pid, st2.pid)
@@ -192,6 +195,9 @@ class TestPTY < Test::Unit::TestCase
       sleep(0.1)
       st2 = assert_raise(PTY::ChildExited, bug2642) {PTY.check(pid, true)}.status
     end
+  rescue RuntimeError
+    skip $!
+  else
     assert_equal(pid, st1.pid) if st1
     assert_nil(st1)
     assert_equal(pid, st2.pid)
@@ -206,6 +212,8 @@ class TestPTY < Test::Unit::TestCase
       assert(r.close_on_exec?)
       assert(w.close_on_exec?)
     }
+  rescue RuntimeError
+    skip $!
   end
 end if defined? PTY
 

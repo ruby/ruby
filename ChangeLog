@@ -1,3 +1,8 @@
+Mon Mar 19 15:05:54 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/test_pty.rb: same as r29280, skip tests when PTY allocation
+	  failed (that's not our fault).
+
 Sun Mar 18 23:21:17 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (aligned_free): fix condition for free.  memalign() and
