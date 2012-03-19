@@ -1943,7 +1943,7 @@ zip_i(VALUE val, NODE *memo, int argc, VALUE *argv)
 	    VALUE v[2];
 
 	    v[1] = RARRAY_PTR(args)[i];
-	    rb_rescue2(call_next, (VALUE)v, call_stop, (VALUE)v, rb_eStopIteration, 0);
+	    rb_rescue2(call_next, (VALUE)v, call_stop, (VALUE)v, rb_eStopIteration, (VALUE)0);
 	    if (v[0] == Qundef) {
 		RARRAY_PTR(args)[i] = Qnil;
 		v[0] = Qnil;

@@ -1,3 +1,8 @@
+Mon Mar 19 16:34:14 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enum.c (zip_i):  variadic argument needs explicit cast on the
+	  platforms where VALUE is longer than int.
+
 Mon Mar 19 15:36:41 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator.c (enumerable_lazy): add an example of take and first
