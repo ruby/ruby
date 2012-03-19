@@ -1,3 +1,9 @@
+Mon Mar 19 15:20:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_specialized_instruction): DRY and replace chain
+	  of if-else with switch for special instructions.  based on a
+	  patch by Vasfed.  https://github.com/ruby/ruby/pull/105
+
 Mon Mar 19 15:05:54 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* test/test_pty.rb: same as r29280, skip tests when PTY allocation

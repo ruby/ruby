@@ -1870,68 +1870,40 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 	VALUE block = OPERAND_AT(iobj, 2);
 	VALUE flag = OPERAND_AT(iobj, 3);
 
-	/* TODO: should be more sophisticated search */
+#define SP_INSN(opt) insn_set_specialized_instruction(iseq, iobj, BIN(opt_##opt))
+
 	if (block == 0 && flag == INT2FIX(0)) {
-	    if (argc == 0) {
-		if (mid == idLength) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_length));
+	    switch (argc) {
+	      case 0:
+		switch (mid) {
+		  case idLength: SP_INSN(length); break;
+		  case idSize:	 SP_INSN(size);	  break;
+		  case idSucc:	 SP_INSN(succ);	  break;
+		  case idNot:	 SP_INSN(not);	  break;
 		}
-		else if (mid == idSize) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_size));
+		break;
+	      case 1:
+		switch (mid) {
+		  case idPLUS:	 SP_INSN(plus);	  break;
+		  case idMINUS:	 SP_INSN(minus);  break;
+		  case idMULT:	 SP_INSN(mult);	  break;
+		  case idDIV:	 SP_INSN(div);	  break;
+		  case idMOD:	 SP_INSN(mod);	  break;
+		  case idEq:	 SP_INSN(eq);	  break;
+		  case idNeq:	 SP_INSN(neq);	  break;
+		  case idLT:	 SP_INSN(lt);	  break;
+		  case idLE:	 SP_INSN(le);	  break;
+		  case idGT:	 SP_INSN(gt);	  break;
+		  case idGE:	 SP_INSN(ge);	  break;
+		  case idLTLT:	 SP_INSN(ltlt);	  break;
+		  case idAREF:	 SP_INSN(aref);	  break;
 		}
-		else if (mid == idSucc) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_succ));
-		}
-		else if (mid == idNot) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_not));
-		}
-	    }
-	    else if (argc == 1) {
-		if (0) {
-		}
-		else if (mid == idPLUS) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_plus));
-		}
-		else if (mid == idMINUS) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_minus));
-		}
-		else if (mid == idMULT) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_mult));
-		}
-		else if (mid == idDIV) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_div));
-		}
-		else if (mid == idMOD) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_mod));
-		}
-		else if (mid == idEq) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_eq));
-		}
-		else if (mid == idNeq) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_neq));
-		}
-		else if (mid == idLT) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_lt));
-		}
-		else if (mid == idLE) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_le));
-		}
-		else if (mid == idGT) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_gt));
-		}
-		else if (mid == idGE) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_ge));
-		}
-		else if (mid == idLTLT) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_ltlt));
-		}
-		else if (mid == idAREF) {
-		    insn_set_specialized_instruction(iseq, iobj, BIN(opt_aref));
-		}
+		break;
 	    }
 	}
     }
     return COMPILE_OK;
+#undef SP_INSN
 }
 
 static int
