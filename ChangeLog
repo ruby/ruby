@@ -1,6 +1,12 @@
+Mon Mar 19 17:18:51 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator.c (lazy_flat_map_func): convert the block value to
+	  Array if it doesn't respond to each.  [ruby-core:43334]
+	  [Bug #6155]
+
 Mon Mar 19 16:34:14 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* enum.c (zip_i):  variadic argument needs explicit cast on the
+	* enum.c (zip_i): variadic argument needs explicit cast on the
 	  platforms where VALUE is longer than int.
 
 Mon Mar 19 15:36:41 2012  Shugo Maeda  <shugo@ruby-lang.org>

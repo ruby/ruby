@@ -110,6 +110,27 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(1, a.current)
   end
 
+  def test_flat_map_to_ary
+    to_ary = Class.new {
+      def initialize(value)
+        @value = value
+      end
+
+      def to_ary
+        [:to_ary, @value]
+      end
+    }
+    assert_equal([:to_ary, 1, :to_ary, 2, :to_ary, 3],
+                 [1, 2, 3].flat_map {|x| to_ary.new(x)})
+    assert_equal([:to_ary, 1, :to_ary, 2, :to_ary, 3],
+                 [1, 2, 3].lazy.flat_map {|x| to_ary.new(x)}.force)
+  end
+
+  def test_flat_map_non_array
+    assert_equal(["1", "2", "3"], [1, 2, 3].flat_map {|x| x.to_s})
+    assert_equal(["1", "2", "3"], [1, 2, 3].lazy.flat_map {|x| x.to_s}.force)
+  end
+
   def test_reject
     a = Step.new(1..6)
     assert_equal(4, a.reject {|x| x < 4}.first)

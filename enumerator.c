@@ -1300,6 +1300,32 @@ lazy_flat_map_i(VALUE i, VALUE yielder, int argc, VALUE *argv)
 }
 
 static VALUE
+lazy_flat_map_each(VALUE obj)
+{
+    NODE *memo = RNODE(obj);
+    rb_block_call(memo->u1.value, id_each, 0, 0, lazy_flat_map_i,
+		  memo->u2.value);
+    return Qnil;
+}
+
+static VALUE
+lazy_flat_map_to_ary(VALUE obj)
+{
+    NODE *memo = RNODE(obj);
+    VALUE ary = rb_check_array_type(memo->u1.value);
+    if (NIL_P(ary)) {
+	rb_funcall(memo->u2.value, id_yield, 1, memo->u1.value);
+    }
+    else {
+	long i;
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	    rb_funcall(memo->u2.value, id_yield, 1, RARRAY_PTR(ary)[i]);
+	}
+    }
+    return Qnil;
+}
+
+static VALUE
 lazy_flat_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
 {
     VALUE result = rb_yield_values2(argc - 1, &argv[1]);
@@ -1310,7 +1336,11 @@ lazy_flat_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
 	}
     }
     else {
-	rb_block_call(result, id_each, 0, 0, lazy_flat_map_i, argv[0]);
+	NODE *memo;
+	memo = NEW_MEMO(result, argv[0], 0);
+	rb_rescue2(lazy_flat_map_each, (VALUE) memo,
+		   lazy_flat_map_to_ary, (VALUE) memo,
+		   rb_eNoMethodError, (VALUE)0);
     }
     return Qnil;
 }
