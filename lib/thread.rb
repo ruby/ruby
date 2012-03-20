@@ -82,7 +82,7 @@ class ConditionVariable
   #
   def signal
     begin
-      t = @waiters_mutex.synchronize { @waiters.shift }
+      t = @waiters_mutex.synchronize {@waiters.shift}
       t.run if t
     rescue ThreadError
       retry

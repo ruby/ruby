@@ -67,13 +67,6 @@ class TestThread < Test::Unit::TestCase
     assert_equal([0, 1, 2], result)
   end
 
-  def test_condvar_wait_not_owner
-    mutex = Mutex.new
-    condvar = ConditionVariable.new
-
-    assert_raise(ThreadError) { condvar.wait(mutex) }
-  end
-
   def test_condvar_wait_exception_handling
     # Calling wait in the only thread running should raise a ThreadError of
     # 'stopping only thread'
@@ -194,7 +187,7 @@ class TestThread < Test::Unit::TestCase
     mutex = Mutex.new
     condvar = ConditionVariable.new
 
-    assert_raise(ThreadError) { condvar.wait(mutex) }
+    assert_raise(ThreadError) {condvar.wait(mutex)}
   end
 
   def test_condvar_nolock_2
