@@ -5015,6 +5015,8 @@ parse_enclose(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
 	  num = backs[0];       /* XXX: use left most named group as Perl */
 	}
 #endif
+	else
+	  return ONIGERR_INVALID_CONDITION_PATTERN;
 	*np = node_new_enclose(ENCLOSE_CONDITION);
 	CHECK_NULL_RETURN_MEMERR(*np);
 	NENCLOSE(*np)->regnum = num;
@@ -5975,7 +5977,8 @@ parse_exp(Node** np, OnigToken* tok, int term,
             *np = node_new_cclass();
             CHECK_NULL_RETURN_MEMERR(*np);
             cc = NCCLASS(*np);
-            add_ctype_to_cc(cc, tok->u.prop.ctype, 0, 0, env);
+            r = add_ctype_to_cc(cc, tok->u.prop.ctype, 0, 0, env);
+	    if (r != 0) return r;
             if (tok->u.prop.not != 0) NCCLASS_SET_NOT(cc);
 #ifdef USE_SHARED_CCLASS_TABLE
           }
@@ -6005,6 +6008,7 @@ parse_exp(Node** np, OnigToken* tok, int term,
 
       cc = NCCLASS(*np);
       if (is_onechar_cclass(cc, &code)) {
+	onig_node_free(*np);
 	*np = node_new_empty();
 	CHECK_NULL_RETURN_MEMERR(*np);
 	r = node_str_cat_codepoint(*np, env->enc, code);

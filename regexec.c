@@ -446,16 +446,16 @@ onig_region_copy(OnigRegion* to, OnigRegion* from)
 
 #define STACK_INIT(alloc_addr, ptr_num, stack_num)  do {\
   if (msa->stack_p) {\
-    alloc_addr = (char* )xalloca(sizeof(char*) * (ptr_num));\
+    alloc_addr = (char* )xalloca(sizeof(OnigStackIndex) * (ptr_num));\
     stk_alloc  = (OnigStackType* )(msa->stack_p);\
     stk_base   = stk_alloc;\
     stk        = stk_base;\
     stk_end    = stk_base + msa->stack_n;\
   }\
   else {\
-    alloc_addr = (char* )xalloca(sizeof(char*) * (ptr_num)\
+    alloc_addr = (char* )xalloca(sizeof(OnigStackIndex) * (ptr_num)\
 		       + sizeof(OnigStackType) * (stack_num));\
-    stk_alloc  = (OnigStackType* )(alloc_addr + sizeof(char*) * (ptr_num));\
+    stk_alloc  = (OnigStackType* )(alloc_addr + sizeof(OnigStackIndex) * (ptr_num));\
     stk_base   = stk_alloc;\
     stk        = stk_base;\
     stk_end    = stk_base + (stack_num);\
