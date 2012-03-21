@@ -1357,6 +1357,28 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_pos_with_getc
+    bug6179 = '[ruby-core:43497]'
+    t = make_tempfile
+    open(t.path, "w") do |f|
+      f.write "0123456789"
+    end
+
+    open(t.path, "r") do |f|
+      assert_equal 0, f.pos
+      assert_equal '0', f.getc
+      assert_equal 1, f.pos
+      assert_equal '1', f.getc
+      assert_equal 2, f.pos
+      assert_equal '2', f.getc
+      assert_equal 3, f.pos
+      assert_equal '3', f.getc
+      assert_equal 4, f.pos
+      assert_equal '4', f.getc
+    end
+  end
+
+
   def test_sysseek
     t = make_tempfile
 

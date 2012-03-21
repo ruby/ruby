@@ -1,3 +1,8 @@
+Wed Mar 21 17:01:55 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_io.rb (TestIO#test_pos_with_getc): added.
+	  see [Bug #6179][ruby-core:43518]
+
 Mon Mar 19 17:18:51 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator.c (lazy_flat_map_func): convert the block value to
