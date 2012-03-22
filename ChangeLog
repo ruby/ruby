@@ -1,3 +1,11 @@
+Thu Mar 22 19:55:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_fstat, rb_w32_fstati64): convert FILETIME
+	  to time_t directly, not to be affected by TZ unnecessarily.
+
+	* win32/win32.c (unixtime_to_filetime): convert time_t to FILETIME
+	  simply.
+
 Thu Mar 22 13:43:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_pkey_rsa.c (rsa_generate): fix argument type.

@@ -150,6 +150,7 @@ extern DWORD rb_w32_osid(void);
 #define getppid()		rb_w32_getppid()
 #define sleep(x)		rb_w32_Sleep((x)*1000)
 #define Sleep(msec)		(void)rb_w32_Sleep(msec)
+#define _fstati64(fd,st)	rb_w32_fstati64(fd,st)
 #ifdef __BORLANDC__
 #define creat(p, m)		_creat(p, m)
 #define eof()			_eof()
@@ -158,7 +159,6 @@ extern DWORD rb_w32_osid(void);
 #define tell(h)			_tell(h)
 #define _open			_sopen
 #define sopen			_sopen
-#define _fstati64(fd,st)	rb_w32_fstati64(fd,st)
 #undef fopen
 #define fopen(p, m)		rb_w32_fopen(p, m)
 #undef fdopen
@@ -306,9 +306,9 @@ extern int rb_w32_ustati64(const char *, struct stati64 *);
 extern int rb_w32_access(const char *, int);
 extern int rb_w32_uaccess(const char *, int);
 extern char rb_w32_fd_is_text(int);
+extern int rb_w32_fstati64(int, struct stati64 *);
 
 #ifdef __BORLANDC__
-extern int rb_w32_fstati64(int, struct stati64 *);
 extern off_t _lseeki64(int, off_t, int);
 extern FILE *rb_w32_fopen(const char *, const char *);
 extern FILE *rb_w32_fdopen(int, const char *);
