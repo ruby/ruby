@@ -482,7 +482,7 @@ MSG
       end
     else
       try_do(src, cmd, *opts, &b)
-    end
+    end and File.executable?("conftest#{$EXEEXT}")
   end
 
   # Returns whether or not the +src+ can be compiled as a C source and linked
@@ -511,7 +511,8 @@ MSG
   # [+src+] a String which contains a C source
   # [+opt+] a String which contains compiler options
   def try_compile(src, opt="", *opts, &b)
-    with_werror(opt, *opts) {|_opt, *_opts| try_do(src, cc_command(_opt), *_opts, &b)}
+    with_werror(opt, *opts) {|_opt, *_opts| try_do(src, cc_command(_opt), *_opts, &b)} and
+      File.file?("conftest.#{$OBJEXT}")
   ensure
     MakeMakefile.rm_f "conftest*"
   end
@@ -526,7 +527,8 @@ MSG
   # [+src+] a String which contains a C source
   # [+opt+] a String which contains preprocessor options
   def try_cpp(src, opt="", *opts, &b)
-    try_do(src, cpp_command(CPPOUTFILE, opt), *opts, &b)
+    try_do(src, cpp_command(CPPOUTFILE, opt), *opts, &b) and
+      File.file?("conftest.i")
   ensure
     MakeMakefile.rm_f "conftest*"
   end
@@ -2242,6 +2244,7 @@ site-install-rb: install-rb
     $DLDFLAGS = with_config("dldflags", arg_config("DLDFLAGS", config["DLDFLAGS"])).dup
     $LIBEXT = config['LIBEXT'].dup
     $OBJEXT = config["OBJEXT"].dup
+    $EXEEXT = config["EXEEXT"].dup
     $LIBS = "#{config['LIBS']} #{config['DLDLIBS']}"
     $LIBRUBYARG = ""
     $LIBRUBYARG_STATIC = config['LIBRUBYARG_STATIC']
