@@ -2785,6 +2785,10 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
     encidx = str_transcode(argc, argv, &newstr);
 
     if (encidx < 0) return str;
+    if (newstr == str) {
+	rb_enc_associate_index(str, encidx);
+	return str;
+    }
     rb_str_shared_replace(str, newstr);
     return str_encode_associate(str, encidx);
 }
@@ -2871,6 +2875,8 @@ encoded_dup(VALUE newstr, VALUE str, int encidx)
     if (encidx < 0) return rb_str_dup(str);
     if (newstr == str) {
 	newstr = rb_str_dup(str);
+	rb_enc_associate_index(newstr, encidx);
+	return newstr;
     }
     else {
 	RBASIC(newstr)->klass = rb_obj_class(str);
