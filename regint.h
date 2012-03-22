@@ -390,7 +390,7 @@ typedef unsigned int  BitStatusType;
 /* bitset */
 #define BITS_PER_BYTE      8
 #define SINGLE_BYTE_SIZE   (1 << BITS_PER_BYTE)
-#define BITS_IN_ROOM       (sizeof(Bits) * BITS_PER_BYTE)
+#define BITS_IN_ROOM       ((int)sizeof(Bits) * BITS_PER_BYTE)
 #define BITSET_SIZE        (SINGLE_BYTE_SIZE / BITS_IN_ROOM)
 
 #ifdef PLATFORM_UNALIGNED_WORD_ACCESS
@@ -408,8 +408,8 @@ typedef Bits*          BitSetRef;
   for (i = 0; i < (int )BITSET_SIZE; i++) { (bs)[i] = 0; }	\
 } while (0)
 
-#define BS_ROOM(bs,pos)            (bs)[pos / BITS_IN_ROOM]
-#define BS_BIT(pos)                (1 << (pos % BITS_IN_ROOM))
+#define BS_ROOM(bs,pos)            (bs)[(int)(pos) / BITS_IN_ROOM]
+#define BS_BIT(pos)                (1 << ((int)(pos) % BITS_IN_ROOM))
 
 #define BITSET_AT(bs, pos)         (BS_ROOM(bs,pos) & BS_BIT(pos))
 #define BITSET_SET_BIT(bs, pos)     BS_ROOM(bs,pos) |= BS_BIT(pos)
