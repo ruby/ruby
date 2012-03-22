@@ -631,10 +631,14 @@ SRC
 int conftest_const = (int)(#{const});
 int main() {printf("%d\\n", conftest_const); return 0;}
 }
-      if try_link0(src, opt, &b)
-        xpopen("./conftest") do |f|
-          return Integer(f.gets)
-        end
+      begin
+	if try_link0(src, opt, &b)
+	  xpopen("./conftest") do |f|
+	    return Integer(f.gets)
+	  end
+	end
+      ensure
+	MakeMakefile.rm_f "conftest*"
       end
     end
     nil
