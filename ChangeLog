@@ -1,3 +1,20 @@
+Thu Mar 22 22:30:44 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* io.c (static int io_fflush): add the definition.
+	  Use it in set_binary_mode_with_seek_cur().
+
+	* io.c (set_binary_mode_with_seek_cur): refactoring to split the
+	  content into io_unread(). Fix the possibility of buffer overflow.
+
+	* io.c (io_unread): add new implementation for Windows. Previous one
+	  caused invalid cursor position using IO#pos with OS text mode. New
+	  one fixes the bug.
+
+	* test/ruby/test_io_m17n.rb
+	  (TestIO_M17N#test_pos_dont_move_cursor_position): add a test for
+	  above bug.
+	  [ruby-core:43497] [Bug #6179]
+
 Thu Mar 22 19:55:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_fstat, rb_w32_fstati64): convert FILETIME
