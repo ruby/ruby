@@ -3051,19 +3051,22 @@ AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s
 
 AC_CONFIG_FILES($FIRSTMAKEFILE)
 AC_CONFIG_FILES(Makefile, [{
-	if test -d "$srcdir/.svn"; then
+	if ${VCS+set}; then
+	    :
+	elif svn info "$srcdir" > /dev/null 2>&1; then
 	    VCS='svn'
-	    VCSUP='$(VCS) up $(SVNUPOPTIONS)'
 	elif test -d "$srcdir/.git/svn"; then
 	    VCS='git svn'
-	    VCSUP='$(VCS) rebase $(GITSVNREBASEOPTIONS)'
 	elif test -d "$srcdir/.git"; then
 	    VCS='git'
-	    VCSUP='$(VCS) pull $(GITPULLOPTIONS)'
 	else
 	    VCS='echo cannot'
-	    VCSUP='$(VCS)'
 	fi
+	AS_CASE("$VCS",
+		[svn],       [VCSUP='$(VCS) up $(SVNUPOPTIONS)'],
+		["git svn"], [VCSUP='$(VCS) rebase $(GITSVNREBASEOPTIONS)'],
+		[git],       [VCSUP='$(VCS) pull $(GITPULLOPTIONS)'],
+		[VCSUP='$(VCS)'])
 	sed '/^MISSING/s/\$U\././g;/^VCS *=/s#@VCS@#'"$VCS"'#;/^VCSUP *=/s#@VCSUP@#'"$VCSUP"'#' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
 	if test "$gnumake" != yes; then
