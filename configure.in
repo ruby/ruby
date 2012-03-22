@@ -3051,7 +3051,7 @@ AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s
 
 AC_CONFIG_FILES($FIRSTMAKEFILE)
 AC_CONFIG_FILES(Makefile, [{
-	if ${VCS+set}; then
+	if test ${VCS+set}; then
 	    :
 	elif svn info "$srcdir" > /dev/null 2>&1; then
 	    VCS='svn'
