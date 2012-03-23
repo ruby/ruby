@@ -404,4 +404,10 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     bug4456 = '[ruby-dev:43284]'
     assert_normal_exit %q{ Time.now.strftime("%1000000000F") }, bug4456
   end
+
+  def test_sec_str
+    bug6193 = '[ruby-core:43569]'
+    assert_normal_exit %q{ Time.new(2012, 1, 2, 3, 4, "5") }, bug6193
+    assert_equal(Time.new(2012, 1, 2, 3, 4, 5), Time.new(2012, 1, 2, 3, 4, "5"))
+  end
 end
