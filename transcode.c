@@ -2815,6 +2815,10 @@ static VALUE encoded_dup(VALUE newstr, VALUE str, int encidx);
  *  in the source encoding. The last form by default does not raise
  *  exceptions but uses replacement strings.
  *
+ *  Please note that conversion from an encoding +enc+ to the
+ *  same encoding +enc+ is a no-op, i.e. the receiver is returned without
+ *  any changes, and no exceptions are raised, even if there are invalid bytes.
+ *
  *  The +options+ Hash gives details for conversion and can have the following
  *  keys:
  *

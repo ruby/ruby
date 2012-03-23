@@ -1,3 +1,10 @@
+Fri Mar 23 15:12:12 2012  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode.c (documentation for str_encode): Explain
+	  that transcoding to the same encoding is a no-op
+	  (i.e. no exceptions, no replacements,...).
+	  [ruby-core:43557][Bug #6190]
+
 Fri Mar 23 13:19:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_str_to_inum): must be ASCII compatible encoding as
