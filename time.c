@@ -2160,7 +2160,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
     vtm.sec = 0;
     vtm.subsecx = INT2FIX(0);
     if (!NIL_P(v[5])) {
-        VALUE sec = num_exact(v[5]);
+        VALUE sec = obj2vint(v[5]);
         VALUE subsec;
         divmodv(sec, INT2FIX(1), &sec, &subsec);
         vtm.sec = NUM2INT(sec);
