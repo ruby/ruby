@@ -3640,9 +3640,9 @@ rb_file_s_basename(int argc, VALUE *argv)
     rb_encoding *enc;
 
     if (rb_scan_args(argc, argv, "11", &fname, &fext) == 2) {
-	rb_encoding *enc;
 	StringValue(fext);
-	if (!rb_enc_asciicompat(enc = rb_enc_get(fext))) {
+	enc = rb_enc_get(fext);
+	if (!rb_enc_asciicompat(enc)) {
 	    rb_raise(rb_eEncCompatError, "ascii incompatible character encodings: %s",
 		     rb_enc_name(enc));
 	}
