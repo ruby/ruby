@@ -1465,6 +1465,13 @@ class TestString < Test::Unit::TestCase
     assert_equal(0x4000000000000000, "4611686018427387904".to_i(10))
     assert_equal(1, "1__2".to_i(10))
     assert_equal(1, "1_z".to_i(10))
+
+    bug6192 = '[ruby-core:43566]'
+    assert_raise(Encoding::CompatibilityError, bug6192) {"0".encode("utf-16be").to_i}
+    assert_raise(Encoding::CompatibilityError, bug6192) {"0".encode("utf-16le").to_i}
+    assert_raise(Encoding::CompatibilityError, bug6192) {"0".encode("utf-32be").to_i}
+    assert_raise(Encoding::CompatibilityError, bug6192) {"0".encode("utf-32le").to_i}
+    assert_raise(Encoding::CompatibilityError, bug6192) {"0".encode("iso-2022-jp").to_i}
   end
 
   def test_to_s

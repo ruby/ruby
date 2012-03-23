@@ -707,6 +707,7 @@ VALUE rb_str_buf_cat2(VALUE, const char*);
 VALUE rb_str_buf_cat_ascii(VALUE, const char*);
 VALUE rb_obj_as_string(VALUE);
 VALUE rb_check_string_type(VALUE);
+void rb_must_asciicompat(VALUE);
 VALUE rb_str_dup(VALUE);
 VALUE rb_str_resurrect(VALUE str);
 VALUE rb_str_locktmp(VALUE);

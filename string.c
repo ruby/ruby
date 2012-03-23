@@ -1409,6 +1409,15 @@ rb_str_associated(VALUE str)
     return Qfalse;
 }
 
+void
+rb_must_asciicompat(VALUE str)
+{
+    rb_encoding *enc = rb_enc_get(str);
+    if (!rb_enc_asciicompat(enc)) {
+	rb_raise(rb_eEncCompatError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
+    }
+}
+
 VALUE
 rb_string_value(volatile VALUE *ptr)
 {
@@ -6722,11 +6731,6 @@ rb_str_scan(VALUE str, VALUE pat)
 static VALUE
 rb_str_hex(VALUE str)
 {
-    rb_encoding *enc = rb_enc_get(str);
-
-    if (!rb_enc_asciicompat(enc)) {
-	rb_raise(rb_eEncCompatError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
-    }
     return rb_str_to_inum(str, 16, FALSE);
 }
 
@@ -6748,11 +6752,6 @@ rb_str_hex(VALUE str)
 static VALUE
 rb_str_oct(VALUE str)
 {
-    rb_encoding *enc = rb_enc_get(str);
-
-    if (!rb_enc_asciicompat(enc)) {
-	rb_raise(rb_eEncCompatError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
-    }
     return rb_str_to_inum(str, -8, FALSE);
 }
 

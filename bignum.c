@@ -775,6 +775,7 @@ rb_str_to_inum(VALUE str, int base, int badcheck)
     VALUE ret;
 
     StringValue(str);
+    rb_must_asciicompat(str);
     if (badcheck) {
 	s = StringValueCStr(str);
     }
