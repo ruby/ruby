@@ -1457,9 +1457,11 @@ class TestIO < Test::Unit::TestCase
 
   def try_fdopen(fd, autoclose = true, level = 100)
     if level > 0
-      f = try_fdopen(fd, autoclose, level - 1)
-      GC.start
-      f
+      begin
+        1.times {return try_fdopen(fd, autoclose, level - 1)}
+      ensure
+        GC.start
+      end
     else
       WeakRef.new(IO.for_fd(fd, autoclose: autoclose))
     end
