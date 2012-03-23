@@ -3050,7 +3050,9 @@ AC_MSG_RESULT($PACKAGE library version = $ruby_version)
 AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s/^ *//;s/  *$//'`])
 
 AC_CONFIG_FILES($FIRSTMAKEFILE)
-AC_CONFIG_FILES(Makefile, [{
+AC_CONFIG_FILES(Makefile, [
+    tmpmk=confmk$$.tmp
+    {
 	if test ${VCS+set}; then
 	    :
 	elif svn info "$srcdir" > /dev/null 2>&1; then
@@ -3075,12 +3077,20 @@ AC_CONFIG_FILES(Makefile, [{
 	else
 	    echo 'distclean-local::; @$(RM) GNUmakefile uncommon.mk'
 	fi
-    } > confmk$$.tmp && mv -f confmk$$.tmp Makefile &&
-    {
-	grep '^ruby:' Makefile > /dev/null ||
-	${MAKE-make} info-program | grep '^PROGRAM=ruby$' > /dev/null ||
-	echo 'ruby: $(PROGRAM);' >> Makefile
-    }],
+    } > $tmpmk && if ! grep '^ruby:' $tmpmk > /dev/null; then
+	if test "${gnumake}" = yes; then
+	    tmpgmk=confgmk$$.tmp
+	    {
+		echo "include $tmpmk"
+		echo "-include uncommon.mk"
+	    } > $tmpgmk
+	else
+	    tmpgmk=$tmpmk
+	fi &&
+	test -z "`${MAKE-make} -f $tmpgmk info-program | grep '^PROGRAM=ruby$'`" &&
+	echo 'ruby: $(PROGRAM);' >> $tmpmk
+	test "$tmpmk" = "$tmpgmk" || rm -f "$tmpgmk"
+    fi && mv -f $tmpmk Makefile],
 [EXEEXT='$EXEEXT' gnumake='$gnumake'])
 
 AC_ARG_WITH([ruby-pc],
