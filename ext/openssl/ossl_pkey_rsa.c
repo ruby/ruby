@@ -95,7 +95,7 @@ rsa_blocking_gen(void *arg)
 #endif
 
 static RSA *
-rsa_generate(int size, int exp)
+rsa_generate(int size, unsigned long exp)
 {
 #if defined(HAVE_RSA_GENERATE_KEY_EX) && HAVE_BN_GENCB
     int i;
@@ -111,7 +111,7 @@ rsa_generate(int size, int exp)
 	return 0;
     }
     for (i = 0; i < (int)sizeof(exp) * 8; ++i) {
-	if (exp & (1 << i)) {
+	if (exp & (1UL << i)) {
 	    if (BN_set_bit(e, i) == 0) {
 		BN_free(e);
 		RSA_free(rsa);
@@ -168,7 +168,7 @@ ossl_rsa_s_generate(int argc, VALUE *argv, VALUE klass)
 
     rb_scan_args(argc, argv, "11", &size, &exp);
 
-    rsa = rsa_generate(NUM2INT(size), NIL_P(exp) ? RSA_F4 : NUM2INT(exp)); /* err handled by rsa_instance */
+    rsa = rsa_generate(NUM2INT(size), NIL_P(exp) ? RSA_F4 : NUM2ULONG(exp)); /* err handled by rsa_instance */
     obj = rsa_instance(klass, rsa);
 
     if (obj == Qfalse) {
@@ -213,7 +213,7 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 	rsa = RSA_new();
     }
     else if (FIXNUM_P(arg)) {
-	rsa = rsa_generate(FIX2INT(arg), NIL_P(pass) ? RSA_F4 : NUM2INT(pass));
+	rsa = rsa_generate(FIX2INT(arg), NIL_P(pass) ? RSA_F4 : NUM2ULONG(pass));
 	if (!rsa) ossl_raise(eRSAError, NULL);
     }
     else {

@@ -29,6 +29,11 @@ Thu Mar 22 19:55:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* win32/win32.c (unixtime_to_filetime): convert time_t to FILETIME
 	  simply.
 
+Thu Mar 22 13:43:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_pkey_rsa.c (rsa_generate): fix argument type.
+	  [Bug #6094]
+
 Thu Mar 22 11:14:10 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_io.rb (TestIO#test_pos_with_getc): updated.
