@@ -354,7 +354,6 @@ typedef struct rb_objspace {
 	size_t used;
         struct heaps_slot *reserve_slots;
 	RVALUE *range[2];
-	struct heaps_header *freed;
 	size_t live_num;
 	size_t free_num;
 	size_t free_min;
@@ -404,7 +403,6 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define lomem			objspace->heap.range[0]
 #define himem			objspace->heap.range[1]
 #define heaps_inc		objspace->heap.increment
-#define heaps_freed		objspace->heap.freed
 #define dont_gc 		objspace->flags.dont_gc
 #define during_gc		objspace->flags.during_gc
 #define finalizing		objspace->flags.finalizing
@@ -2113,6 +2111,8 @@ add_slot_local_freelist(rb_objspace_t *objspace, RVALUE *p)
     return slot;
 }
 
+static void free_unused_heap(rb_objspace_t *objspace, struct heaps_header *heap);
+
 static void
 finalize_list(rb_objspace_t *objspace, RVALUE *p)
 {
@@ -2126,7 +2126,10 @@ finalize_list(rb_objspace_t *objspace, RVALUE *p)
             }
 	}
 	else {
-            GET_HEAP_HEADER(p)->limit--;
+            struct heaps_header *heap = GET_HEAP_HEADER(p);
+            if (--heap->limit == 0) {
+                free_unused_heap(objspace, heap);
+            }
 	}
 	p = tmp;
     }
@@ -2148,39 +2151,30 @@ unlink_heap_slot(rb_objspace_t *objspace, struct heaps_slot *slot)
 }
 
 static void
-free_unused_heaps(rb_objspace_t *objspace)
+free_unused_heap(rb_objspace_t *objspace, struct heaps_header *heap)
 {
-    size_t i, j;
-    struct heaps_header *last = 0;
-
-    for (i = j = 1; j < heaps_used; i++) {
-	if (objspace->heap.sorted[i]->limit == 0) {
-            struct heaps_slot* h = objspace->heap.sorted[i]->base;
+    register size_t hi, lo, mid;
+    lo = 0;
+    hi = heaps_used;
+    while (lo < hi) {
+        mid = (lo + hi) / 2;
+        if (heap > objspace->heap.sorted[mid]) {
+            lo = mid + 1;
+        }
+        else if (heap < objspace->heap.sorted[mid]) {
+            hi = mid;
+        }
+        else {
+            /* remove unused heap */
+            struct heaps_slot* h = objspace->heap.sorted[mid]->base;
             h->free_next = objspace->heap.reserve_slots;
             objspace->heap.reserve_slots = h;
-	    if (!last) {
-                last = objspace->heap.sorted[i];
-	    }
-	    else {
-		aligned_free(objspace->heap.sorted[i]);
-	    }
-	    heaps_used--;
-	}
-	else {
-	    if (i != j) {
-		objspace->heap.sorted[j] = objspace->heap.sorted[i];
-	    }
-	    j++;
-	}
-    }
-    if (last) {
-	if (last < heaps_freed) {
-	    aligned_free(heaps_freed);
-	    heaps_freed = last;
-	}
-	else {
-	    aligned_free(last);
-	}
+            aligned_free(objspace->heap.sorted[mid]);
+            heaps_used--;
+            MEMMOVE(objspace->heap.sorted + mid, objspace->heap.sorted + mid + 1,
+                    struct heaps_header *, heaps_used - mid);
+            return;
+        }
     }
 }
 
@@ -2240,6 +2234,9 @@ slot_sweep(rb_objspace_t *objspace, struct heaps_slot *sweep_slot)
         }
         sweep_slot->membase->limit = final_num;
         unlink_heap_slot(objspace, sweep_slot);
+        if (final_num == 0) {
+            free_unused_heap(objspace, sweep_slot->membase);
+        }
     }
     else {
         if (free_num > 0) {
@@ -2309,8 +2306,6 @@ after_gc_sweep(rb_objspace_t *objspace)
 	if (malloc_limit < initial_malloc_limit) malloc_limit = initial_malloc_limit;
     }
     malloc_increase = 0;
-
-    free_unused_heaps(objspace);
 }
 
 static int
@@ -3303,7 +3298,6 @@ rb_gc(void)
     rb_objspace_t *objspace = &rb_objspace;
     garbage_collect(objspace);
     if (!finalizing) finalize_deferred(objspace);
-    free_unused_heaps(objspace);
 }
 
 static inline int
