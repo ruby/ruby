@@ -695,7 +695,7 @@ st_copy(st_table *old_table)
 }
 
 static inline void
-remove_entry(st_table *table, st_table_entry *ptr)
+unlink_entry(st_table *table, st_table_entry *ptr)
 {
     if (ptr->fore == 0 && ptr->back == 0) {
 	table->head = 0;
@@ -708,6 +708,12 @@ remove_entry(st_table *table, st_table_entry *ptr)
 	if (ptr == table->head) table->head = fore;
 	if (ptr == table->tail) table->tail = back;
     }
+}
+
+static inline void
+remove_entry(st_table *table, st_table_entry *ptr)
+{
+    unlink_entry(table, ptr);
     table->num_entries--;
 }
 
@@ -734,7 +740,7 @@ st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
 
     prev = &table->bins[hash_val % table->num_bins];
     for (;(ptr = *prev) != 0; prev = &ptr->next) {
-	if (EQUAL(table, *key, ptr->key)) {
+	if (hash_val == ptr->hash && EQUAL(table, *key, ptr->key)) {
 	    *prev = ptr->next;
 	    remove_entry(table, ptr);
 	    if (value != 0) *value = ptr->record;
@@ -771,16 +777,14 @@ st_delete_safe(register st_table *table, register st_data_t *key, st_data_t *val
 	return 0;
     }
 
-    ptr = table->bins[hash_val % table->num_bins];
-
-    for (; ptr != 0; ptr = ptr->next) {
-	if ((ptr->key != never) && EQUAL(table, ptr->key, *key)) {
-	    remove_entry(table, ptr);
-	    *key = ptr->key;
-	    if (value != 0) *value = ptr->record;
-	    ptr->key = ptr->record = never;
-	    return 1;
-	}
+    ptr = find_entry(table, *key, hash_val, hash_val % table->num_bins);
+    if (ptr) {
+	*key = ptr->key;
+	if (value != 0) *value = ptr->record;
+	ptr->key = ptr->record = never;
+	ptr->hash = 0;
+	table->num_entries--;
+	return 1;
     }
 
     if (value != 0) *value = 0;
@@ -815,6 +819,7 @@ st_cleanup_safe(st_table *table, st_data_t never)
 	    if (ptr->key == never) {
 		tmp = ptr;
 		*last = ptr = ptr->next;
+		unlink_entry(table, tmp);
 		st_free_entry(tmp);
 	    }
 	    else {
@@ -903,12 +908,21 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 	    if (key == never) continue;
 	    retval = (*func)(key, val, arg);
 	    if (!table->entries_packed) {
-		FIND_ENTRY(table, ptr, hash, i);
-		if (retval == ST_CHECK) {
-		    if (!ptr) return 1;
-		    goto unpacked_continue;
+		if (retval == ST_STOP) return 0;
+
+		ptr = table->head;
+		while(i-- && ptr && ptr->key != key) {
+		   ptr = ptr->next;
 		}
-		goto unpacked;
+		if (!ptr || (ptr->key != key && ptr->key != never)) {
+		    if (retval == ST_CHECK) return 1;
+		    return 0;
+		}
+
+		if (retval == ST_DELETE && ptr->key == key) {
+		    goto unpacked_delete;
+		}
+		goto unpacked_continue;
 	    }
 	    switch (retval) {
 	      case ST_CHECK:	/* check if hash is modified during iteration */
@@ -942,7 +956,6 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 		goto unpacked_continue;
 	    i = ptr->hash % table->num_bins;
 	    retval = (*func)(ptr->key, ptr->record, arg);
-	  unpacked:
 	    switch (retval) {
 	      case ST_CHECK:	/* check if hash is modified during iteration */
 		for (tmp = table->bins[i]; tmp != ptr; tmp = tmp->next) {
@@ -958,6 +971,7 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 	      case ST_STOP:
 		return 0;
 	      case ST_DELETE:
+	      unpacked_delete:
 		last = &table->bins[ptr->hash % table->num_bins];
 		for (; (tmp = *last) != 0; last = &tmp->next) {
 		    if (ptr == tmp) {
