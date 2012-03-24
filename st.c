@@ -722,7 +722,7 @@ st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
 
     if (table->entries_packed) {
 	st_index_t i = find_packed_index(table, hash_val, *key);
-	if (i < table->num_entries) {
+	if (i < table->real_entries) {
 	    if (value != 0) *value = PVAL(table, i);
 	    *key = PKEY(table, i);
 	    remove_packed_entry(table, i);
