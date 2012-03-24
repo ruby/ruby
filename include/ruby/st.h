@@ -76,7 +76,11 @@ struct st_hash_type {
 
 struct st_table {
     const struct st_hash_type *type;
-    st_index_t num_bins;
+    unsigned int safe_mode : 2;
+#ifdef __GNUC__
+    __extension__
+#endif
+    st_index_t num_bins : ST_INDEX_BITS - 2;
     unsigned int entries_packed : 1;
 #ifdef __GNUC__
     /*
@@ -106,6 +110,7 @@ struct st_table {
 #define st_is_member(table,key) st_lookup((table),(key),(st_data_t *)0)
 
 enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK};
+enum st_safe_mode {ST_REGULAR = 0, ST_SAFEMODE, ST_HAS_DELETED = 3};
 
 st_table *st_init_table(const struct st_hash_type *);
 st_table *st_init_table_with_size(const struct st_hash_type *, st_index_t);
@@ -116,18 +121,17 @@ st_table *st_init_strtable_with_size(st_index_t);
 st_table *st_init_strcasetable(void);
 st_table *st_init_strcasetable_with_size(st_index_t);
 int st_delete(st_table *, st_data_t *, st_data_t *); /* returns 0:notfound 1:deleted */
-int st_delete_safe(st_table *, st_data_t *, st_data_t *, st_data_t);
 int st_insert(st_table *, st_data_t, st_data_t);
 int st_insert2(st_table *, st_data_t, st_data_t, st_data_t (*)(st_data_t));
 int st_lookup(st_table *, st_data_t, st_data_t *);
 int st_get_key(st_table *, st_data_t, st_data_t *);
 int st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *value, st_data_t arg), st_data_t arg);
 int st_foreach(st_table *, int (*)(ANYARGS), st_data_t);
-int st_foreach_check(st_table *, int (*)(ANYARGS), st_data_t, st_data_t);
+int st_foreach_check(st_table *, int (*)(ANYARGS), st_data_t);
 int st_reverse_foreach(st_table *, int (*)(ANYARGS), st_data_t);
 void st_add_direct(st_table *, st_data_t, st_data_t);
 void st_free_table(st_table *);
-void st_cleanup_safe(st_table *, st_data_t);
+void st_cleanup_safe(st_table *);
 void st_clear(st_table *);
 st_table *st_copy(st_table *);
 int st_numcmp(st_data_t, st_data_t);

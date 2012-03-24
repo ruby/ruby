@@ -54,8 +54,11 @@ static VALUE
 numhash_each(VALUE self)
 {
     st_table *table = DATA_PTR(self);
-    st_data_t data = (st_data_t)self;
-    return st_foreach_check(table, numhash_i, data, data) ? Qtrue : Qfalse;
+    int res;
+    table->safe_mode = ST_SAFEMODE;
+    res = st_foreach_check(table, numhash_i, (st_data_t)self);
+    table->safe_mode = ST_REGULAR;
+    return res ? Qtrue : Qfalse;
 }
 
 static int
@@ -98,7 +101,7 @@ static VALUE
 numhash_delete_safe(VALUE self, VALUE key)
 {
     st_data_t val, k = (st_data_t)key;
-    if (st_delete_safe((st_table *)DATA_PTR(self), &k, &val, (st_data_t)self)) {
+    if (st_delete((st_table *)DATA_PTR(self), &k, &val)) {
 	return val;
     }
     return Qnil;

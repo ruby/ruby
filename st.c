@@ -84,8 +84,16 @@ static void rehash(st_table *);
 
 #define EQUAL(table,x,y) ((x)==(y) || (*(table)->type->compare)((x),(y)) == 0)
 
-#define do_hash(key,table) (st_index_t)(*(table)->type->hash)((key))
-#define do_hash_bin(key,table) (do_hash((key), (table))%(table)->num_bins)
+#define HASH_MASK ((~(st_index_t)0) >> 1)
+#define DELETED_BIT (~HASH_MASK)
+#define DELETED(entry) ((entry)->hash & DELETED_BIT)
+#define MARK_DELETED(table, entry) do {      \
+	(table)->safe_mode = ST_HAS_DELETED; \
+	(table)->num_entries--;              \
+	(entry)->hash |= DELETED_BIT;        \
+} while(0)
+
+#define do_hash(key,table) ((st_index_t)(*(table)->type->hash)((key)) & HASH_MASK)
 
 /* preparation for possible allocation improvements */
 #define st_alloc_entry() (st_table_entry *)malloc(sizeof(st_table_entry))
@@ -117,6 +125,8 @@ st_realloc_bins(st_table_entry **bins, st_index_t newsize, st_index_t oldsize)
 #define PKEY_SET(table, i, v) (PKEY((table), (i)) = (v))
 #define PVAL_SET(table, i, v) (PVAL((table), (i)) = (v))
 #define PHASH_SET(table, i, v) (PHASH((table), (i)) = (v))
+#define PDELETED(table, i) DELETED(&PACKED_ENT((table), (i)))
+#define PMARK_DELETED(table, i) MARK_DELETED((table), &PACKED_ENT((table), (i)))
 
 /* this function depends much on packed layout, so that it placed here */
 static inline void
@@ -167,9 +177,9 @@ static const unsigned int primes[] = {
 	134217728 + 29,
 	268435456 + 3,
 	536870912 + 11,
-	1073741824 + 85,
 	0
 };
+#define PRIME_30BIT 1073741789
 
 static st_index_t
 new_size(st_index_t size)
@@ -187,6 +197,7 @@ new_size(st_index_t size)
     for (i = 0, newsize = MINSIZE; i < numberof(primes); i++, newsize <<= 1) {
 	if (newsize > size) return primes[i];
     }
+    if (newsize <= PRIME_30BIT) return PRIME_30BIT;
     /* Ran out of polynomials */
 #ifndef NOT_RUBY
     rb_raise(rb_eRuntimeError, "st_table too big");
@@ -246,6 +257,7 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
 	size = new_size(size);	/* round up to prime number */
     }
     tbl->num_bins = size;
+    tbl->safe_mode = 0;
     tbl->bins = st_alloc_bins(size);
     tbl->head = 0;
     tbl->tail = 0;
@@ -295,11 +307,22 @@ st_init_strcasetable_with_size(st_index_t size)
     return st_init_table_with_size(&type_strcasehash, size);
 }
 
+static int
+clear_i(VALUE key, VALUE value, VALUE dummy)
+{
+    return ST_DELETE;
+}
+
 void
 st_clear(st_table *table)
 {
     register st_table_entry *ptr, *next;
     st_index_t i;
+
+    if (table->safe_mode) {
+	st_foreach_check(table, clear_i, 0);
+	return;
+    }
 
     if (table->entries_packed) {
         table->num_entries = 0;
@@ -324,6 +347,7 @@ st_clear(st_table *table)
 void
 st_free_table(st_table *table)
 {
+    table->safe_mode = 0;
     st_clear(table);
     st_free_bins(table->bins, table->num_bins);
     st_dealloc_table(table);
@@ -731,7 +755,12 @@ st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
 	if (i < table->real_entries) {
 	    if (value != 0) *value = PVAL(table, i);
 	    *key = PKEY(table, i);
-	    remove_packed_entry(table, i);
+	    if (table->safe_mode) {
+		PMARK_DELETED(table, i);
+	    }
+	    else {
+		remove_packed_entry(table, i);
+	    }
 	    return 1;
         }
         if (value != 0) *value = 0;
@@ -741,50 +770,18 @@ st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
     prev = &table->bins[hash_val % table->num_bins];
     for (;(ptr = *prev) != 0; prev = &ptr->next) {
 	if (hash_val == ptr->hash && EQUAL(table, *key, ptr->key)) {
-	    *prev = ptr->next;
-	    remove_entry(table, ptr);
 	    if (value != 0) *value = ptr->record;
 	    *key = ptr->key;
-	    st_free_entry(ptr);
+	    if (table->safe_mode) {
+		MARK_DELETED(table, ptr);
+	    }
+	    else {
+		*prev = ptr->next;
+		remove_entry(table, ptr);
+		st_free_entry(ptr);
+	    }
 	    return 1;
 	}
-    }
-
-    if (value != 0) *value = 0;
-    return 0;
-}
-
-int
-st_delete_safe(register st_table *table, register st_data_t *key, st_data_t *value, st_data_t never)
-{
-    st_index_t hash_val;
-    register st_table_entry *ptr;
-
-    hash_val = do_hash(*key, table);
-
-    if (table->entries_packed) {
-	st_index_t i = find_packed_index(table, hash_val, *key);
-	if (i < table->real_entries) {
-	    if (value != 0) *value = PVAL(table, i);
-	    *key = PKEY(table, i);
-	    PKEY_SET(table, i, never);
-	    PVAL_SET(table, i, never);
-	    PHASH_SET(table, i, 0);
-	    table->num_entries--;
-	    return 1;
-	}
-	if (value != 0) *value = 0;
-	return 0;
-    }
-
-    ptr = find_entry(table, *key, hash_val, hash_val % table->num_bins);
-    if (ptr) {
-	*key = ptr->key;
-	if (value != 0) *value = ptr->record;
-	ptr->key = ptr->record = never;
-	ptr->hash = 0;
-	table->num_entries--;
-	return 1;
     }
 
     if (value != 0) *value = 0;
@@ -792,18 +789,20 @@ st_delete_safe(register st_table *table, register st_data_t *key, st_data_t *val
 }
 
 void
-st_cleanup_safe(st_table *table, st_data_t never)
+st_cleanup_safe(st_table *table)
 {
     st_table_entry *ptr, **last, *tmp;
     st_index_t i;
 
+    table->safe_mode = ST_REGULAR;
+
     if (table->entries_packed) {
 	st_index_t i = 0, j = 0;
-	while (PKEY(table, i) != never) {
+	while (!PDELETED(table, i)) {
 	    if (i++ == table->real_entries) return;
 	}
 	for (j = i; ++i < table->real_entries;) {
-	    if (PKEY(table, i) == never) continue;
+	    if (PDELETED(table, i)) continue;
 	    PACKED_ENT(table, j) = PACKED_ENT(table, i);
 	    j++;
 	}
@@ -816,7 +815,7 @@ st_cleanup_safe(st_table *table, st_data_t never)
     for (i = 0; i < table->num_bins; i++) {
 	ptr = *(last = &table->bins[i]);
 	while (ptr != 0) {
-	    if (ptr->key == never) {
+	    if (DELETED(ptr)) {
 		tmp = ptr;
 		*last = ptr = ptr->next;
 		unlink_entry(table, tmp);
@@ -854,7 +853,12 @@ st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *
 		PVAL_SET(table, i, value);
 		break;
 	      case ST_DELETE:
-		remove_packed_entry(table, i);
+		if (table->safe_mode) {
+		    PMARK_DELETED(table, i);
+		}
+		else {
+		    remove_packed_entry(table, i);
+		}
 	    }
 	    return 1;
 	}
@@ -875,6 +879,10 @@ st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *
 	    ptr->record = value;
 	    break;
 	  case ST_DELETE:
+	    if (table->safe_mode) {
+		MARK_DELETED(table, ptr);
+		break;
+	    }
 	    last = &table->bins[bin_pos];
 	    for (; (tmp = *last) != 0; last = &tmp->next) {
 		if (ptr == tmp) {
@@ -892,7 +900,7 @@ st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *
 }
 
 int
-st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t never)
+st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 {
     st_table_entry *ptr, **last, *tmp;
     enum st_retval retval;
@@ -900,36 +908,31 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 
     if (table->entries_packed) {
 	for (i = 0; i < table->real_entries; i++) {
-	    st_data_t key, val;
-	    st_index_t hash;
-	    key = PKEY(table, i);
-	    val = PVAL(table, i);
-	    hash = PHASH(table, i);
-	    if (key == never) continue;
-	    retval = (*func)(key, val, arg);
+	    st_packed_entry pkd = PACKED_ENT(table, i);
+	    if (DELETED(&pkd)) continue;
+	    retval = (*func)(pkd.key, pkd.val, arg);
 	    if (!table->entries_packed) {
 		if (retval == ST_STOP) return 0;
 
 		ptr = table->head;
-		while(i-- && ptr && ptr->key != key) {
+		while(i-- && ptr && ptr->key != pkd.key) {
 		   ptr = ptr->next;
 		}
-		if (!ptr || (ptr->key != key && ptr->key != never)) {
+		if (!ptr || (ptr->key != pkd.key && !DELETED(ptr))) {
 		    if (retval == ST_CHECK) return 1;
 		    return 0;
 		}
 
-		if (retval == ST_DELETE && ptr->key == key) {
+		if (retval == ST_DELETE && ptr->key == pkd.key) {
 		    goto unpacked_delete;
 		}
 		goto unpacked_continue;
 	    }
 	    switch (retval) {
 	      case ST_CHECK:	/* check if hash is modified during iteration */
-		if (PHASH(table, i) == 0 && PKEY(table, i) == never) {
-		    break;
-		}
-		i = find_packed_index(table, hash, key);
+		if (PDELETED(table, i)) break;
+
+		i = find_packed_index(table, pkd.hash, pkd.key);
 		if (i == table->real_entries) {
 		    return 1;
 		}
@@ -939,8 +942,13 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 	      case ST_STOP:
 		return 0;
 	      case ST_DELETE:
-		remove_packed_entry(table, i);
-		i--;
+		if (table->safe_mode) {
+		    PMARK_DELETED(table, i);
+		}
+		else {
+		    remove_packed_entry(table, i);
+		    i--;
+		}
 		break;
 	    }
 	}
@@ -952,7 +960,7 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 
     if (ptr != 0) {
 	do {
-	    if (ptr->key == never)
+	    if (DELETED(ptr))
 		goto unpacked_continue;
 	    i = ptr->hash % table->num_bins;
 	    retval = (*func)(ptr->key, ptr->record, arg);
@@ -972,6 +980,10 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 		return 0;
 	      case ST_DELETE:
 	      unpacked_delete:
+		if (table->safe_mode) {
+		    MARK_DELETED(table, ptr);
+		    break;
+		}
 		last = &table->bins[ptr->hash % table->num_bins];
 		for (; (tmp = *last) != 0; last = &tmp->next) {
 		    if (ptr == tmp) {

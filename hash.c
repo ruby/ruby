@@ -23,7 +23,6 @@
 
 static VALUE rb_hash_s_try_convert(VALUE, VALUE);
 
-#define HASH_DELETED  FL_USER1
 #define HASH_PROC_DEFAULT FL_USER2
 
 VALUE
@@ -131,7 +130,7 @@ st_foreach_safe(st_table *table, int (*func)(ANYARGS), st_data_t a)
     arg.tbl = table;
     arg.func = (st_foreach_func *)func;
     arg.arg = a;
-    if (st_foreach_check(table, foreach_safe_i, (st_data_t)&arg, Qundef)) {
+    if (st_foreach_check(table, foreach_safe_i, (st_data_t)&arg)) {
 	rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
 }
@@ -156,16 +155,7 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp)
     if (RHASH(arg->hash)->ntbl != tbl) {
 	rb_raise(rb_eRuntimeError, "rehash occurred during iteration");
     }
-    switch (status) {
-      case ST_DELETE:
-	st_delete_safe(tbl, &key, 0, Qundef);
-	FL_SET(arg->hash, HASH_DELETED);
-      case ST_CONTINUE:
-	break;
-      case ST_STOP:
-	return ST_STOP;
-    }
-    return ST_CHECK;
+    return status == ST_CONTINUE ? ST_CHECK : status;
 }
 
 static VALUE
@@ -174,9 +164,11 @@ hash_foreach_ensure(VALUE hash)
     RHASH(hash)->iter_lev--;
 
     if (RHASH(hash)->iter_lev == 0) {
-	if (FL_TEST(hash, HASH_DELETED)) {
-	    st_cleanup_safe(RHASH(hash)->ntbl, Qundef);
-	    FL_UNSET(hash, HASH_DELETED);
+	if (RHASH(hash)->ntbl->safe_mode == ST_HAS_DELETED) {
+	    st_cleanup_safe(RHASH(hash)->ntbl);
+	}
+	else {
+	    RHASH(hash)->ntbl->safe_mode = ST_REGULAR;
 	}
     }
     return 0;
@@ -185,7 +177,7 @@ hash_foreach_ensure(VALUE hash)
 static VALUE
 hash_foreach_call(struct hash_foreach_arg *arg)
 {
-    if (st_foreach_check(RHASH(arg->hash)->ntbl, hash_foreach_iter, (st_data_t)arg, Qundef)) {
+    if (st_foreach_check(RHASH(arg->hash)->ntbl, hash_foreach_iter, (st_data_t)arg)) {
 	rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
     return Qnil;
@@ -199,6 +191,7 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
     if (!RHASH(hash)->ntbl)
         return;
     RHASH(hash)->iter_lev++;
+    RHASH(hash)->ntbl->safe_mode = ST_SAFEMODE;
     arg.hash = hash;
     arg.func = (rb_foreach_func *)func;
     arg.arg  = farg;
@@ -764,13 +757,7 @@ rb_hash_delete_key(VALUE hash, VALUE key)
 
     if (!RHASH(hash)->ntbl)
         return Qundef;
-    if (RHASH(hash)->iter_lev > 0) {
-	if (st_delete_safe(RHASH(hash)->ntbl, &ktmp, &val, Qundef)) {
-	    FL_SET(hash, HASH_DELETED);
-	    return (VALUE)val;
-	}
-    }
-    else if (st_delete(RHASH(hash)->ntbl, &ktmp, &val))
+    if (st_delete(RHASH(hash)->ntbl, &ktmp, &val))
 	return (VALUE)val;
     return Qundef;
 }
@@ -861,7 +848,7 @@ static int
 delete_if_i(VALUE key, VALUE value, VALUE hash)
 {
     if (RTEST(rb_yield_values(2, key, value))) {
-	rb_hash_delete_key(hash, key);
+	return ST_DELETE;
     }
     return ST_CONTINUE;
 }
@@ -1043,12 +1030,6 @@ rb_hash_keep_if(VALUE hash)
     return hash;
 }
 
-static int
-clear_i(VALUE key, VALUE value, VALUE dummy)
-{
-    return ST_DELETE;
-}
-
 /*
  *  call-seq:
  *     hsh.clear -> hsh
@@ -1067,10 +1048,7 @@ rb_hash_clear(VALUE hash)
     if (!RHASH(hash)->ntbl)
         return hash;
     if (RHASH(hash)->ntbl->num_entries > 0) {
-	if (RHASH(hash)->iter_lev > 0)
-	    rb_hash_foreach(hash, clear_i, 0);
-	else
-	    st_clear(RHASH(hash)->ntbl);
+	st_clear(RHASH(hash)->ntbl);
     }
 
     return hash;
