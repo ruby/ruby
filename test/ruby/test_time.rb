@@ -744,4 +744,11 @@ class TestTime < Test::Unit::TestCase
     end
     assert_equal("Insecure: can't modify #{tc}", error.message, bug5036)
   end
+
+  def test_sec_str
+    bug6193 = '[ruby-core:43569]'
+    t = nil
+    assert_nothing_raised(bug6193) {t = Time.new(2012, 1, 2, 3, 4, "5")}
+    assert_equal(Time.new(2012, 1, 2, 3, 4, 5), t, bug6193)
+  end
 end

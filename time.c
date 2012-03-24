@@ -845,6 +845,7 @@ static VALUE obj2vint(VALUE obj);
 static int month_arg(VALUE arg);
 static void validate_utc_offset(VALUE utc_offset);
 static void validate_vtm(struct vtm *vtm);
+static int obj2subsecx(VALUE obj, VALUE *subsecx);
 
 static VALUE time_gmtime(VALUE);
 static VALUE time_localtime(VALUE);
@@ -2156,15 +2157,8 @@ time_init_1(int argc, VALUE *argv, VALUE time)
 
     vtm.min  = NIL_P(v[4]) ? 0 : obj2int(v[4]);
 
-    vtm.sec = 0;
     vtm.subsecx = INT2FIX(0);
-    if (!NIL_P(v[5])) {
-        VALUE sec = num_exact(v[5]);
-        VALUE subsec;
-        divmodv(sec, INT2FIX(1), &sec, &subsec);
-        vtm.sec = NUM2INT(sec);
-        vtm.subsecx = w2v(rb_time_magnify(v2w(subsec)));
-    }
+    vtm.sec  = NIL_P(v[5]) ? 0 : obj2subsecx(v[5], &vtm.subsecx);
 
     vtm.isdst = -1;
     vtm.utc_offset = Qnil;

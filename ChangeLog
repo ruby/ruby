@@ -1,3 +1,8 @@
+Sat Mar 24 22:22:18 2012  Sambasiva Rao Suda  <sambasivarao@gmail.org>
+
+	* time.c (time_init_1): Time.new will accept seconds as string or
+	  int.  [ruby-core:43569][Bug #6193]
+
 Fri Mar 23 15:12:12 2012  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* transcode.c (documentation for str_encode): Explain
