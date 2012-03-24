@@ -905,7 +905,7 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 	    if (!table->entries_packed) {
 		FIND_ENTRY(table, ptr, hash, i);
 		if (retval == ST_CHECK) {
-		    if (!ptr) goto deleted;
+		    if (!ptr) return 1;
 		    goto unpacked_continue;
 		}
 		goto unpacked;
@@ -917,7 +917,7 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 		}
 		i = find_packed_index(table, hash, key);
 		if (i == table->real_entries) {
-		    goto deleted;
+		    return 1;
 		}
 		/* fall through */
 	      case ST_CONTINUE:
@@ -947,9 +947,6 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 	      case ST_CHECK:	/* check if hash is modified during iteration */
 		for (tmp = table->bins[i]; tmp != ptr; tmp = tmp->next) {
 		    if (!tmp) {
-		      deleted:
-			/* call func with error notice */
-			retval = (*func)(0, 0, arg, 1);
 			return 1;
 		    }
 		}
