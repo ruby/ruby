@@ -1244,31 +1244,17 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
 		  (rb_block_given_p() ? lazy_init_block_i : lazy_init_block),
 		  obj);
     enumerator_init(self, generator, meth, argc - offset, argv + offset);
+    rb_iv_set(self, "receiver", obj);
 
     return self;
 }
 
-static void
-lazy_set_inspection_data(VALUE obj, VALUE receiver, VALUE method)
-{
-    rb_iv_set(obj, "receiver", receiver);
-    if (NIL_P(method)) {
-	ID id = rb_frame_this_func();
-	rb_iv_set(obj, "method", ID2SYM(id));
-    }
-    else {
-	rb_iv_set(obj, "method", method);
-    }
-}
-
-/*
- * An ugly macro to set inspection data to arg, and return arg.
- * RETURN_LAZY assumes that the reciver is obj.
- */
-#define RETURN_LAZY(arg) do { \
-    VALUE lazy = arg; \
-    lazy_set_inspection_data(lazy, obj, Qnil); \
-    return lazy; \
+/* A macro to set the current method name to lazy and return lazy. */
+#define RETURN_LAZY(lazy) do { \
+    VALUE result = lazy; \
+    ID id = rb_frame_this_func(); \
+    rb_iv_set(result, "method", ID2SYM(id)); \
+    return result; \
 } while (0)
 
 /*
@@ -1309,7 +1295,7 @@ enumerable_lazy(VALUE obj)
 
     result = rb_class_new_instance(1, &obj, rb_cLazy);
     /* Qfalse indicates that the Enumerator::Lazy has no method name */
-    lazy_set_inspection_data(result, obj, Qfalse);
+    rb_iv_set(result, "method", Qfalse);
     return result;
 }
 

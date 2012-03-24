@@ -1,3 +1,11 @@
+Sun Mar 25 00:46:06 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator (lazy_initialize): set the instance variable "receiver"
+	  to include the receiver to the return value of inspect on a lazy
+	  enumerator directly created by Enumerator::Lazy.new.
+
+	* enumerator (RETURN_LAZY): don't set the instance variable "receiver".
+
 Sat Mar 24 23:59:00 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator (enumerator_inspect): include the original receiver and
