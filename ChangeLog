@@ -1,3 +1,13 @@
+Sat Mar 24 23:59:00 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator (enumerator_inspect): include the original receiver and
+	  method name of Enumerator::Lazy in the result of inspect.
+	  [ruby-core:43345] [Bug #6159]
+
+	* enumerator (InitVM_Enumerator): don't use rb_define_alias for
+	  some methods such as collect in order to make rb_frame_this_func()
+	  return the correct method names.
+
 Sat Mar 24 22:22:18 2012  Sambasiva Rao Suda  <sambasivarao@gmail.org>
 
 	* time.c (time_init_1): Time.new will accept seconds as string or

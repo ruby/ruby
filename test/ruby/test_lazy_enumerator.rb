@@ -280,4 +280,16 @@ class TestLazyEnumerator < Test::Unit::TestCase
   def test_force
     assert_equal([1, 2, 3], (1..Float::INFINITY).lazy.take(3).force)
   end
+
+  def test_inspect
+    assert_equal("#<Enumerator::Lazy: 1..10>", (1..10).lazy.inspect)
+    assert_equal('#<Enumerator::Lazy: #<Enumerator: "foo":chars>>',
+                 "foo".chars.lazy.inspect)
+    assert_equal("#<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:map>",
+                 (1..10).lazy.map {}.inspect)
+    l = (1..10).lazy.map {}.collect {}.flat_map {}.collect_concat {}.select {}.find_all {}.reject {}.grep(1).zip(?a..?c).take(10).take_while {}.drop(3).drop_while {}.cycle
+    assert_equal(<<EOS.chomp, l.inspect)
+#<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:map>:collect>:flat_map>:collect_concat>:select>:find_all>:reject>:grep>:zip>:take>:take_while>:drop>:drop_while>:cycle>
+EOS
+  end
 end
