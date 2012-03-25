@@ -1,3 +1,9 @@
+Sun Mar 25 18:13:14 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (tr_setup_table): fix multiple non latin argument for
+	  non latin (over 256 characters) tr-like methods.
+	  [ruby-core:43371] [Bug #6167]
+
 Sun Mar 25 00:46:06 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator (lazy_initialize): set the instance variable "receiver"

@@ -5332,24 +5332,28 @@ tr_setup_table(VALUE str, char stable[TR_TABLE_SIZE], int first,
 	else {
 	    VALUE key = UINT2NUM(c);
 
-	    if (!table) {
-		table = rb_hash_new();
+	    if (!table && (first || *tablep || stable[256])) {
 		if (cflag) {
 		    ptable = *ctablep;
+		    table = ptable ? ptable : rb_hash_new();
 		    *ctablep = table;
 		}
 		else {
+		    table = rb_hash_new();
 		    ptable = *tablep;
 		    *tablep = table;
 		}
 	    }
-	    if (!ptable || !NIL_P(rb_hash_aref(ptable, key))) {
+	    if (table && (!ptable || (cflag ^ !NIL_P(rb_hash_aref(ptable, key))))) {
 		rb_hash_aset(table, key, Qtrue);
 	    }
 	}
     }
     for (i=0; i<256; i++) {
 	stable[i] = stable[i] && buf[i];
+    }
+    if (!table && !cflag) {
+	*tablep = 0;
     }
 }
 
