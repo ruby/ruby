@@ -43,6 +43,7 @@ y.tab.c
 /automake
 /beos
 /breakpoints.gdb
+/conftest
 /config.cache
 /config.h
 /config.h.in
