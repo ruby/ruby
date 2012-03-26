@@ -749,8 +749,10 @@ rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
     if (err == 0 || err == 2) {
 	if (beg > len)
 	    goto out_of_range;
+	if (end == len && !excl)
+	    end -= 1;
 	if (end > len)
-	    end = len;
+	    end = excl ? len : len - 1;
     }
     if (end < 0)
 	end += len;

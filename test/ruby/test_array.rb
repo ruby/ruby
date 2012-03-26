@@ -888,6 +888,12 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls['a', 'c', 'e'], a.values_at(0, 2, 4))
     assert_equal(@cls['j', 'h', 'f'], a.values_at(-1, -3, -5))
     assert_equal(@cls['h', nil, 'a'], a.values_at(-3, 99, 0))
+    assert_equal(@cls['h', 'i', 'j'], a.values_at(7..9))
+    assert_equal(@cls['h', 'i', 'j'], a.values_at(7..10))
+    assert_equal(@cls['h', 'i', 'j'], a.values_at(7..11))
+    assert_equal(@cls['h', 'i', 'j'], a.values_at(7...10))
+    assert_equal(@cls['h', 'i', 'j'], a.values_at(7...11))
+    assert_equal(@cls['h', 'i', 'j'], a.values_at(7...12))
   end
 
   def test_join
