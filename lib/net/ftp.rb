@@ -963,8 +963,9 @@ module Net
     private :parse_pasv_ipv6_host
 
     def parse_pasv_port(s)
-      high, low = s.split(/,/).map(&:to_i)
-      return (high << 8) + low
+      return s.split(/,/).map(&:to_i).inject { |x, y|
+        (x << 8) + y
+      }
     end
     private :parse_pasv_port
 

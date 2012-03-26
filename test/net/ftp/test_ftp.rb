@@ -99,4 +99,12 @@ class FTPTest < Test::Unit::TestCase
       ftp.send(:parse229, "229 ) foo bar (")
     end
   end
+
+  def test_parse_pasv_port
+    ftp = Net::FTP.new
+    assert_equal(12, ftp.send(:parse_pasv_port, "12"))
+    assert_equal(3106, ftp.send(:parse_pasv_port, "12,34"))
+    assert_equal(795192, ftp.send(:parse_pasv_port, "12,34,56"))
+    assert_equal(203569230, ftp.send(:parse_pasv_port, "12,34,56,78"))
+  end
 end

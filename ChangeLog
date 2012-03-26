@@ -1,3 +1,7 @@
+Mon Mar 26 23:19:03 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (parse_pasv_port): refactored.
+
 Mon Mar 26 19:49:49 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/net/ftp/test_ftp.rb: add the test, which was forgotten in the
