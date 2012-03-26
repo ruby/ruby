@@ -923,8 +923,8 @@ module Net
       if resp[0, 3] != "227"
         raise FTPReplyError, resp
       end
-      if /\((?<host>\d+(,\d+){3}),(?<port>\d+,\d+)\)/ =~ resp
-        return parse_pasv_ipv4_host($~["host"]), parse_pasv_port($~["port"])
+      if m = /\((?<host>\d+(,\d+){3}),(?<port>\d+,\d+)\)/.match(resp)
+        return parse_pasv_ipv4_host(m["host"]), parse_pasv_port(m["port"])
       else
         raise FTPProtoError, resp
       end
@@ -939,10 +939,10 @@ module Net
       if resp[0, 3] != "228"
         raise FTPReplyError, resp
       end
-      if /\(4,4,(?<host>\d+(,\d+){3}),2,(?<port>\d+,\d+)\)/ =~ resp
-        return parse_pasv_ipv4_host($~["host"]), parse_pasv_port($~["port"])
-      elsif /\(6,16,(?<host>\d+(,(\d+)){15}),2,(?<port>\d+,\d+)\)/ =~ resp
-        return parse_pasv_ipv6_host($~["host"]), parse_pasv_port($~["port"])
+      if m = /\(4,4,(?<host>\d+(,\d+){3}),2,(?<port>\d+,\d+)\)/.match(resp)
+        return parse_pasv_ipv4_host(m["host"]), parse_pasv_port(m["port"])
+      elsif m = /\(6,16,(?<host>\d+(,(\d+)){15}),2,(?<port>\d+,\d+)\)/.match(resp)
+        return parse_pasv_ipv6_host(m["host"]), parse_pasv_port(m["port"])
       else
         raise FTPProtoError, resp
       end
@@ -977,8 +977,8 @@ module Net
       if resp[0, 3] != "229"
         raise FTPReplyError, resp
       end
-      if /\((?<d>[!-~])\k<d>\k<d>(?<port>\d+)\k<d>\)/ =~ resp
-        return @sock.peeraddr[3], $~["port"].to_i
+      if m = /\((?<d>[!-~])\k<d>\k<d>(?<port>\d+)\k<d>\)/.match(resp)
+        return @sock.peeraddr[3], m["port"].to_i
       else
         raise FTPProtoError, resp
       end
