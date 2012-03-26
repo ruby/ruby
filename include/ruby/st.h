@@ -74,6 +74,11 @@ struct st_hash_type {
 
 #define ST_INDEX_BITS (sizeof(st_index_t) * CHAR_BIT)
 
+typedef struct st_packed_entry {
+    st_index_t hash;
+    st_data_t key, val;
+} st_packed_entry;
+
 struct st_table {
     const struct st_hash_type *type;
     unsigned int safe_mode : 2;
@@ -104,6 +109,7 @@ struct st_table {
 	    struct st_packed_entry *entries;
 	    st_index_t real_entries;
 	} packed;
+	struct st_packed_entry upacked;
     } as;
 };
 

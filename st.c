@@ -25,11 +25,6 @@ struct st_table_entry {
     st_table_entry *fore, *back;
 };
 
-typedef struct st_packed_entry {
-    st_index_t hash;
-    st_data_t key, val;
-} st_packed_entry;
-
 #define STATIC_ASSERT(name, expr) typedef int static_assert_##name##_check[(expr) ? 1 : -1];
 
 #define ST_DEFAULT_MAX_DENSITY 5
@@ -139,6 +134,25 @@ remove_packed_entry(st_table *table, st_index_t i)
 		st_packed_entry, table->real_entries - i);
     }
 }
+
+/* ultrapacking */
+#define MAX_UPACKED_HASH 1
+#define ureal_entries num_bins
+//#define ULTRA_PACKED(table) ((table)->num_bins & ((~(st_index_t)0)<<1) == 0)
+#define ULTRA_PACKED(table) ((table)->num_bins <= 1)
+#define UPACKED_ENT(table) ((table)->as.upacked)
+#define UPKEY(table)  UPACKED_ENT(table).key
+#define UPVAL(table)  UPACKED_ENT(table).val
+#define UPHASH(table) UPACKED_ENT(table).hash
+#define UPKEY_SET(table, v)  (UPKEY(table) = (v))
+#define UPVAL_SET(table, v)  (UPVAL(table) = (v))
+#define UPHASH_SET(table, v) (UPHASH(table) = (v))
+#define UPDELETED(table) DELETED(&UPACKED_ENT(table))
+#define UPMARK_DELETED(table) MARK_DELETED((table), &UPACKED_ENT(table))
+#define remove_upacked_entry(table) do { \
+    (table)->num_entries = 0;            \
+    (table)->num_bins = 0;	         \
+} while(0)
 
 /*
  * MINSIZE is the minimum size of a dictionary.
@@ -251,14 +265,14 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
     tbl->num_entries = 0;
     tbl->entries_packed = size <= MAX_PACKED_HASH;
     if (tbl->entries_packed) {
-	size = ST_DEFAULT_PACKED_TABLE_SIZE;
+	size = size <= MAX_UPACKED_HASH ? 0 : ST_DEFAULT_PACKED_TABLE_SIZE;
     }
     else {
 	size = new_size(size);	/* round up to prime number */
     }
     tbl->num_bins = size;
     tbl->safe_mode = 0;
-    tbl->bins = st_alloc_bins(size);
+    tbl->bins = size ? st_alloc_bins(size) : 0;
     tbl->head = 0;
     tbl->tail = 0;
 
@@ -324,6 +338,12 @@ st_clear(st_table *table)
 	return;
     }
 
+    if (ULTRA_PACKED(table)) {
+	table->num_entries = 0;
+	table->ureal_entries = 0;
+	return;
+    }
+
     if (table->entries_packed) {
         table->num_entries = 0;
         table->real_entries = 0;
@@ -349,14 +369,18 @@ st_free_table(st_table *table)
 {
     table->safe_mode = 0;
     st_clear(table);
-    st_free_bins(table->bins, table->num_bins);
+    if (!ULTRA_PACKED(table))
+	st_free_bins(table->bins, table->num_bins);
     st_dealloc_table(table);
 }
 
 size_t
 st_memsize(const st_table *table)
 {
-    if (table->entries_packed) {
+    if (ULTRA_PACKED(table)) {
+	return sizeof(table);
+    }
+    else if (table->entries_packed) {
 	return table->num_bins * sizeof (void *) + sizeof(st_table);
     }
     else {
@@ -418,7 +442,22 @@ find_packed_index(st_table *table, st_index_t hash_val, st_data_t key)
     return i;
 }
 
+static inline int
+check_upacked(st_table *table, st_index_t hash_val, st_data_t key)
+{
+    return table->ureal_entries && UPHASH(table) == hash_val &&
+	EQUAL(table, key, UPKEY(table));
+}
+
 #define collision_check 0
+
+#define RETURN(cond, value_ptr, value) do { \
+    if (cond) {                                \
+	if ((value_ptr) != 0) *(value_ptr) = (value); \
+	return 1;                              \
+    }                                          \
+    return 0;                                  \
+} while(0)
 
 int
 st_lookup(st_table *table, register st_data_t key, st_data_t *value)
@@ -428,24 +467,17 @@ st_lookup(st_table *table, register st_data_t key, st_data_t *value)
 
     hash_val = do_hash(key, table);
 
+    if (ULTRA_PACKED(table)) {
+	RETURN(check_upacked(table, hash_val, key), value, UPVAL(table));
+    }
+
     if (table->entries_packed) {
 	st_index_t i = find_packed_index(table, hash_val, key);
-	if (i < table->real_entries) {
-	    if (value != 0) *value = PVAL(table, i);
-	    return 1;
-	}
-        return 0;
+	RETURN(i < table->real_entries, value, PVAL(table, i));
     }
 
     ptr = find_entry(table, key, hash_val, hash_val % table->num_bins);
-
-    if (ptr == 0) {
-	return 0;
-    }
-    else {
-	if (value != 0) *value = ptr->record;
-	return 1;
-    }
+    RETURN(ptr != 0, value, ptr->record);
 }
 
 int
@@ -456,24 +488,17 @@ st_get_key(st_table *table, register st_data_t key, st_data_t *result)
 
     hash_val = do_hash(key, table);
 
+    if (ULTRA_PACKED(table)) {
+	RETURN(check_upacked(table, hash_val, key), result, UPKEY(table));
+    }
+
     if (table->entries_packed) {
 	st_index_t i = find_packed_index(table, hash_val, key);
-	if (i < table->real_entries) {
-	    if (result != 0) *result = PKEY(table, i);
-	    return 1;
-	}
-        return 0;
+	RETURN(i < table->real_entries, result, PKEY(table, i));
     }
 
     ptr = find_entry(table, key, hash_val, hash_val % table->num_bins);
-
-    if (ptr == 0) {
-	return 0;
-    }
-    else {
-	if (result != 0)  *result = ptr->key;
-	return 1;
-    }
+    RETURN(ptr != 0, result, ptr->key);
 }
 
 #undef collision_check
@@ -569,6 +594,28 @@ add_packed_direct(st_table *table, st_data_t key, st_data_t value, st_index_t ha
     }
 }
 
+static void
+add_upacked_direct(st_table *table, st_data_t key, st_data_t value, st_index_t hash_val)
+{
+    if (table->ureal_entries) {
+	st_packed_entry ent = UPACKED_ENT(table);
+	st_packed_entry *entries = (st_packed_entry*)st_alloc_bins(ST_DEFAULT_PACKED_TABLE_SIZE);
+	table->num_bins = ST_DEFAULT_PACKED_TABLE_SIZE;
+	table->as.packed.entries = entries;
+	table->num_entries++;
+	table->real_entries = 2;
+	PACKED_ENT(table, 0) = ent;
+	PHASH_SET(table, 1, hash_val);
+	PKEY_SET(table, 1, key);
+	PVAL_SET(table, 1, value);
+    }
+    else {
+	UPHASH_SET(table, hash_val);
+	UPKEY_SET(table, key);
+	UPVAL_SET(table, value);
+	table->num_entries = table->ureal_entries = 1;
+    }
+}
 
 int
 st_insert(register st_table *table, register st_data_t key, st_data_t value)
@@ -578,6 +625,15 @@ st_insert(register st_table *table, register st_data_t key, st_data_t value)
     register st_table_entry *ptr;
 
     hash_val = do_hash(key, table);
+
+    if (ULTRA_PACKED(table)) {
+	if (check_upacked(table, hash_val, key)) {
+	    UPVAL_SET(table, value);
+	    return 1;
+	}
+	add_upacked_direct(table, key, value, hash_val);
+	return 0;
+    }
 
     if (table->entries_packed) {
 	st_index_t i = find_packed_index(table, hash_val, key);
@@ -611,6 +667,16 @@ st_insert2(register st_table *table, register st_data_t key, st_data_t value,
 
     hash_val = do_hash(key, table);
 
+    if (ULTRA_PACKED(table)) {
+	if (check_upacked(table, hash_val, key)) {
+	    UPVAL_SET(table, value);
+	    return 1;
+	}
+	key = (*func)(key);
+	add_upacked_direct(table, key, value, hash_val);
+	return 0;
+    }
+
     if (table->entries_packed) {
 	st_index_t i = find_packed_index(table, hash_val, key);
 	if (i < table->real_entries) {
@@ -641,6 +707,11 @@ st_add_direct(st_table *table, st_data_t key, st_data_t value)
     st_index_t hash_val;
 
     hash_val = do_hash(key, table);
+    if (ULTRA_PACKED(table)) {
+	add_upacked_direct(table, key, value, hash_val);
+	return;
+    }
+
     if (table->entries_packed) {
 	add_packed_direct(table, key, value, hash_val);
 	return;
@@ -683,6 +754,10 @@ st_copy(st_table *old_table)
     }
 
     *new_table = *old_table;
+    if (ULTRA_PACKED(old_table)) {
+	return new_table;
+    }
+
     new_table->bins = st_alloc_bins(num_bins);
 
     if (new_table->bins == 0) {
@@ -741,6 +816,32 @@ remove_entry(st_table *table, st_table_entry *ptr)
     table->num_entries--;
 }
 
+static inline int
+delete_packed_entry(st_table *table, st_index_t i, st_data_t *key, st_data_t *value)
+{
+    if (value != 0) *value = PVAL(table, i);
+    if (key != 0) *key = PKEY(table, i);
+    if (table->safe_mode)
+	PMARK_DELETED(table, i);
+    else
+	remove_packed_entry(table, i);
+    return 1;
+}
+
+static inline int
+delete_upacked_entry(st_table *table, st_data_t *key, st_data_t *value)
+{
+    if (value != 0)  *value = UPVAL(table);
+    if (key   != 0)  *key   = UPKEY(table);
+    if (table->safe_mode) {
+	UPMARK_DELETED(table);
+    }
+    else {
+	remove_upacked_entry(table);
+    }
+    return 1;
+}
+
 int
 st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
 {
@@ -750,21 +851,19 @@ st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
 
     hash_val = do_hash(*key, table);
 
+    if (ULTRA_PACKED(table)) {
+	if (check_upacked(table, hash_val, *key)) {
+	    return delete_upacked_entry(table, key, value);
+	}
+	goto not_found;
+    }
+
     if (table->entries_packed) {
 	st_index_t i = find_packed_index(table, hash_val, *key);
 	if (i < table->real_entries) {
-	    if (value != 0) *value = PVAL(table, i);
-	    *key = PKEY(table, i);
-	    if (table->safe_mode) {
-		PMARK_DELETED(table, i);
-	    }
-	    else {
-		remove_packed_entry(table, i);
-	    }
-	    return 1;
+	    return delete_packed_entry(table, i, key, value);
         }
-        if (value != 0) *value = 0;
-        return 0;
+	goto not_found;
     }
 
     prev = &table->bins[hash_val % table->num_bins];
@@ -784,6 +883,7 @@ st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
 	}
     }
 
+not_found:
     if (value != 0) *value = 0;
     return 0;
 }
@@ -795,6 +895,13 @@ st_cleanup_safe(st_table *table)
     st_index_t i;
 
     table->safe_mode = ST_REGULAR;
+
+    if (ULTRA_PACKED(table)) {
+	if (UPDELETED(table)) {
+	    remove_upacked_entry(table);
+	}
+	return;
+    }
 
     if (table->entries_packed) {
 	st_index_t i = 0, j = 0;
@@ -831,18 +938,45 @@ st_cleanup_safe(st_table *table)
 int
 st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *value, st_data_t arg), st_data_t arg)
 {
-    st_index_t hash_val, bin_pos;
+    st_index_t hash_val, bin_pos, i = 0;
     register st_table_entry *ptr, **last, *tmp;
     st_data_t value;
     int retval;
 
     hash_val = do_hash(key, table);
 
+    if (ULTRA_PACKED(table)) {
+	if (check_upacked(table, hash_val, key)) {
+	    value = UPVAL(table);
+	    retval = (*func)(key, &value, arg);
+	    if (!ULTRA_PACKED(table)) {
+		if (PKEY(table, 0) != key) return 0;
+		goto packed;
+	    }
+	    if (UPKEY(table) != key) return 0;
+	    switch (retval) {
+	      case ST_CONTINUE:
+		UPVAL_SET(table, value);
+	        break;
+	      case ST_DELETE:
+		if (table->safe_mode) {
+		    UPMARK_DELETED(table);
+		}
+		else {
+		    remove_upacked_entry(table);
+		}
+	    }
+	    return 1;
+	}
+	return 0;
+    }
+
     if (table->entries_packed) {
-	st_index_t i = find_packed_index(table, hash_val, key);
+	i = find_packed_index(table, hash_val, key);
 	if (i < table->real_entries) {
 	    value = PVAL(table, i);
 	    retval = (*func)(key, &value, arg);
+	  packed:
 	    if (!table->entries_packed) {
 		FIND_ENTRY(table, ptr, hash_val, bin_pos);
 		if (ptr == 0) return 0;
@@ -915,6 +1049,29 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 	return 0;
     }
 
+    if (ULTRA_PACKED(table)) {
+	if (UPDELETED(table)) return 0;
+	key = UPKEY(table);
+	val = UPVAL(table);
+	hash = UPHASH(table);
+	retval = (*func)(key, val, arg);
+
+	if (retval == ST_STOP) return 0;
+
+	if (!ULTRA_PACKED(table)) goto packed;
+
+	if (table->ureal_entries == 0 || key != UPKEY(table)) {
+	    return 1;
+	}
+	if (retval == ST_DELETE) {
+	    if (table->safe_mode)
+	      UPMARK_DELETED(table);
+	    else
+	      remove_upacked_entry(table);
+	}
+	return 0;
+    }
+
     if (table->entries_packed) {
 	for (i = 0; i < table->real_entries; i++) {
 	    if (PDELETED(table, i)) continue;
@@ -924,7 +1081,7 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 	    retval = (*func)(key, val, arg);
 
 	    if (retval == ST_STOP) return 0;
-
+	  packed:
 	    if (!table->entries_packed) {
 		ptr = table->head;
 		while(i-- && ptr && ptr->key != key) {
@@ -1011,6 +1168,24 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 	return 0;
     }
 
+    if (ULTRA_PACKED(table)) {
+	if (UPDELETED(table)) return 0;
+	key = UPKEY(table);
+	val = UPVAL(table);
+	hash = UPHASH(table);
+	retval = (*func)(key, val, arg);
+
+	if (retval == ST_STOP) return 0;
+
+	if (!ULTRA_PACKED(table)) {
+	    if (PKEY(table, 0) != key) return 0;
+	    goto packed;
+	}
+	if (retval == ST_DELETE && UPKEY(table) == key) {
+	    remove_upacked_entry(table);
+	}
+	return 0;
+    }
 
     if (table->entries_packed) {
 	for (i = 0; i < table->real_entries; i++) {
@@ -1021,7 +1196,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 	    retval = (*func)(key, val, arg);
 
 	    if (retval == ST_STOP) return 0;
-
+	  packed:
 	    if (!table->entries_packed) {
 		last = &table->bins[hash % table->num_bins];
 		for(;;last = &ptr->next) {
