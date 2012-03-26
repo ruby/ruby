@@ -185,18 +185,13 @@ else
 
   interactive 'conflicts resolved? (y:yes, a:abort, r:retry, otherwise abort)' do
     f.rewind
-    IO.popen('-', 'wb') do |g|
-      if g
-        g << `svn stat`
-        g << "\n\n"
-        g << f.read
-        g << "\n\n"
-        g << `svn diff --diff-cmd=diff -x -upw`
-      else
-        exec 'less'
-      end
+    IO.popen(ENV["PAGER"] || "less", "w") do |g|
+      g << `svn stat`
+      g << "\n\n"
+      g << f.read
+      g << "\n\n"
+      g << `svn diff --diff-cmd=diff -x -upw`
     end
-    Process.waitall
   end
 
   if system *%w'svn ci -F' + [f.path]
