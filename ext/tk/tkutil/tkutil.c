@@ -267,7 +267,7 @@ to_strkey(key, value, hash)
     VALUE hash;
 {
     rb_hash_aset(hash, rb_funcall(key, ID_to_s, 0, 0), value);
-    return ST_CHECK;
+    return ST_CONTINUE;
 }
 
 static VALUE
@@ -658,11 +658,11 @@ push_kv(key, val, args)
 #endif
     rb_ary_push(ary, key2keyname(key));
 
-    if (val == TK_None) return ST_CHECK;
+    if (val == TK_None) return ST_CONTINUE;
 
     rb_ary_push(ary, get_eval_string_core(val, Qnil, RARRAY_PTR(args)[1]));
 
-    return ST_CHECK;
+    return ST_CONTINUE;
 }
 
 static VALUE
@@ -702,11 +702,11 @@ push_kv_enc(key, val, args)
 #endif
     rb_ary_push(ary, key2keyname(key));
 
-    if (val == TK_None) return ST_CHECK;
+    if (val == TK_None) return ST_CONTINUE;
 
     rb_ary_push(ary, get_eval_string_core(val, Qtrue, RARRAY_PTR(args)[1]));
 
-    return ST_CHECK;
+    return ST_CONTINUE;
 }
 
 static VALUE

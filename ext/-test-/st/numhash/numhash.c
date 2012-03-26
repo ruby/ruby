@@ -46,7 +46,6 @@ numhash_i(st_data_t key, st_data_t value, st_data_t arg)
 {
     VALUE ret;
     ret = rb_yield_values(3, (VALUE)key, (VALUE)value, (VALUE)arg);
-    if (ret == Qtrue) return ST_CHECK;
     return ST_CONTINUE;
 }
 

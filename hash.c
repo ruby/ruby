@@ -110,27 +110,10 @@ struct foreach_safe_arg {
     st_data_t arg;
 };
 
-static int
-foreach_safe_i(st_data_t key, st_data_t value, struct foreach_safe_arg *arg)
-{
-    int status;
-
-    status = (*arg->func)(key, value, arg->arg);
-    if (status == ST_CONTINUE) {
-	return ST_CHECK;
-    }
-    return status;
-}
-
 void
 st_foreach_safe(st_table *table, int (*func)(ANYARGS), st_data_t a)
 {
-    struct foreach_safe_arg arg;
-
-    arg.tbl = table;
-    arg.func = (st_foreach_func *)func;
-    arg.arg = a;
-    if (st_foreach_check(table, foreach_safe_i, (st_data_t)&arg)) {
+    if (st_foreach_check(table, func, a)) {
 	rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
 }
@@ -155,7 +138,7 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp)
     if (RHASH(arg->hash)->ntbl != tbl) {
 	rb_raise(rb_eRuntimeError, "rehash occurred during iteration");
     }
-    return status == ST_CONTINUE ? ST_CHECK : status;
+    return status;
 }
 
 static VALUE
