@@ -1,4 +1,7 @@
-Mon Mar 26 11:41:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Mar 26 11:46:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file_internal): bail out if the script is a directory.
+	  [Feature #2408][ruby-core:26925]
 
 	* win32/win32.c (rb_w32_open, rb_w32_wopen): check if the file is a
 	  directory when access denied, to set errno to EISDIR.

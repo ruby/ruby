@@ -553,4 +553,9 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_in_out_err(["-C", dir, a], "", [], /LoadError/, bug3851)
     end
   end
+
+  def test_script_is_directory
+    feature2408 = '[ruby-core:26925]'
+    assert_in_out_err(%w[.], "", [], /Is a directory -- \./, feature2408)
+  end
 end
