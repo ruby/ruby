@@ -1,3 +1,8 @@
+Mon Mar 26 19:49:49 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/net/ftp/test_ftp.rb: add the test, which was forgotten in the
+	  previous commit.
+
 Mon Mar 26 19:37:27 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (parse227, parse228, parse229): refactored.
