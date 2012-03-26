@@ -44,14 +44,15 @@ def version
   return v, p
 end
 
-def interactive str
+def interactive str, editfile = nil
   loop do
     yield
-    STDERR.puts str
+    STDERR.puts "#{str} ([y]es|[a]bort|[r]etry#{'|[e]dit' if editfile})"
     case STDIN.gets
     when /\Aa/i then exit
     when /\Ar/i then redo
     when /\Ay/i then break
+    when /\Ae/i then system(ENV["EDITOR"], editfile)
     else exit
     end
   end
@@ -105,7 +106,7 @@ def tag intv_p = false
   z = 'v' + x + '_' + p
   w = $repos + 'tags/' + z
   if intv_p
-    interactive "OK? svn cp -m \"add tag #{z}\" #{y} #{w} ([y]es|[a]bort|[r]etry)" do
+    interactive "OK? svn cp -m \"add tag #{z}\" #{y} #{w}" do
     end
   end
   system *%w'svn cp -m' + ["add tag #{z}"] + [y, w]
@@ -181,14 +182,14 @@ else
   f.write log_svn
   f.flush
   f.close
-  f.open # avoid gc
 
-  interactive 'conflicts resolved? (y:yes, a:abort, r:retry, otherwise abort)' do
-    f.rewind
+  interactive 'conflicts resolved?', f.path do
     IO.popen(ENV["PAGER"] || "less", "w") do |g|
       g << `svn stat`
       g << "\n\n"
+      f.open
       g << f.read
+      f.close
       g << "\n\n"
       g << `svn diff --diff-cmd=diff -x -upw`
     end
