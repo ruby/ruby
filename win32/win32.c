@@ -5188,9 +5188,18 @@ rb_w32_uopen(const char *file, int oflag, ...)
 static int
 check_if_dir(const char *file)
 {
-    struct stati64 st;
-    if (rb_w32_stati64(file, &st) != 0 || !S_ISDIR(st.st_mode))
+    DWORD attr;
+    WCHAR *wfile;
+
+    if (!(wfile = filecp_to_wstr(file, NULL)))
 	return FALSE;
+    attr = GetFileAttributesW(wfile);
+    if (attr == (DWORD)-1L ||
+	!(attr & FILE_ATTRIBUTE_DIRECTORY) ||
+	check_valid_dir(wfile)) {
+	return FALSE;
+    }
+    free(wfile);
     errno = EISDIR;
     return TRUE;
 }
@@ -5199,9 +5208,12 @@ check_if_dir(const char *file)
 static int
 check_if_wdir(const WCHAR *wfile)
 {
-    struct stati64 st;
-    if (wstati64(wfile, &st) != 0 || !S_ISDIR(st.st_mode))
+    DWORD attr = GetFileAttributesW(wfile);
+    if (attr == (DWORD)-1L ||
+	!(attr & FILE_ATTRIBUTE_DIRECTORY) ||
+	check_valid_dir(wfile)) {
 	return FALSE;
+    }
     errno = EISDIR;
     return TRUE;
 }

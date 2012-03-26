@@ -1,3 +1,10 @@
+Mon Mar 26 13:51:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (check_if_dir, check_if_wdir): fix for Visual C++
+	  not to use S_ISDIR().  [Feature #2408][ruby-core:26925]
+
+	* ruby.c (load_file_internal): ditto.
+
 Mon Mar 26 11:46:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (load_file_internal): bail out if the script is a directory.

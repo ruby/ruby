@@ -1524,19 +1524,20 @@ load_file_internal(VALUE arg)
 	}
 #endif
 	if ((fd = rb_cloexec_open(fname, mode, 0)) < 0) {
-	  load_failed:
 	    rb_load_fail(fname_v, strerror(errno));
 	}
         rb_update_max_fd(fd);
+#if !defined DOSISH && !defined __CYGWIN__
 	{
 	    struct stat st;
-	    if (fstat(fd, &st) != 0) goto load_failed;
+	    if (fstat(fd, &st) != 0)
+		rb_load_fail(fname_v, strerror(errno));
 	    if (S_ISDIR(st.st_mode)) {
 		errno = EISDIR;
-		goto load_failed;
+		rb_load_fail(fname_v, strerror(EISDIR));
 	    }
 	}
-
+#endif
 	f = rb_io_fdopen(fd, mode, fname);
     }
 
