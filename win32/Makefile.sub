@@ -370,6 +370,17 @@ ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
 stub: $(STUBPROGRAM)
 
+!if !exist(newline.c) && exist($(srcdir)/newline.c)
+NEWLINE_C = $(srcdir)/newline.c
+!else
+NEWLINE_C = newline.c
+!endif
+!if !exist(miniprelude.c) && exist($(srcdir)/miniprelude.c)
+MINIPRELUDE_C = $(srcdir)/miniprelude.c
+!else
+MINIPRELUDE_C = miniprelude.c
+!endif
+
 !include $(srcdir)/common.mk
 
 !ifdef SCRIPTPROGRAMS

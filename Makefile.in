@@ -148,6 +148,9 @@ INSTALLED_LIST= .installed.list
 
 MKMAIN_CMD    = mkmain.sh
 
+NEWLINE_C     = newline.c
+MINIPRELUDE_C = miniprelude.c
+
 SRC_FILE      = $<
 
 MESSAGE_BEGIN = @for line in
