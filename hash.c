@@ -777,22 +777,6 @@ rb_hash_delete(VALUE hash, VALUE key)
     return Qnil;
 }
 
-struct shift_var {
-    VALUE key;
-    VALUE val;
-};
-
-static int
-shift_i(VALUE key, VALUE value, VALUE arg)
-{
-    struct shift_var *var = (struct shift_var *)arg;
-
-    if (var->key != Qundef) return ST_STOP;
-    var->key = key;
-    var->val = value;
-    return ST_DELETE;
-}
-
 /*
  *  call-seq:
  *     hsh.shift -> anArray or obj
@@ -809,15 +793,12 @@ shift_i(VALUE key, VALUE value, VALUE arg)
 static VALUE
 rb_hash_shift(VALUE hash)
 {
-    struct shift_var var;
+    st_data_t key = 0, val = 0;
 
     rb_hash_modify_check(hash);
-    if (RHASH(hash)->ntbl) {
-	var.key = Qundef;
-	rb_hash_foreach(hash, shift_i, (VALUE)&var);
-	if (var.key != Qundef) {
-	    return rb_assoc_new(var.key, var.val);
-	}
+
+    if (RHASH(hash)->ntbl && st_shift(RHASH(hash)->ntbl, &key, &val)) {
+	return rb_assoc_new(key, val);
     }
     if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
 	return rb_funcall(RHASH_IFNONE(hash), id_yield, 2, hash, Qnil);

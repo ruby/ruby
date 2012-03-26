@@ -888,6 +888,53 @@ not_found:
     return 0;
 }
 
+int
+st_shift(register st_table *table, st_data_t *key, st_data_t *value)
+{
+    register st_table_entry *ptr;
+    if (table->num_entries == 0) {
+	goto not_found;
+    }
+
+    if (ULTRA_PACKED(table)) {
+	return delete_upacked_entry(table, key, value);
+    }
+
+    if (table->entries_packed) {
+	register st_index_t i = 0;
+
+	while(i < table->real_entries && PDELETED(table, i)) i++;
+	if (i < table->real_entries) {
+	    return delete_packed_entry(table, i, key, value);
+	}
+	goto not_found;
+    }
+
+    for(ptr = table->head; ptr && DELETED(ptr); ptr = ptr->fore);
+    if (ptr) {
+	if (value != 0) *value = ptr->record;
+	if (key != 0) *key = ptr->key;
+	if (table->safe_mode) {
+	    MARK_DELETED(table, ptr);
+	}
+	else {
+	    st_table_entry **tmp;
+	    tmp = &table->bins[ptr->hash % table->num_bins];
+
+	    while(*tmp != ptr) tmp = &(*tmp)->next;
+	    *tmp = ptr->next;
+	    remove_entry(table, ptr);
+	    st_free_entry(ptr);
+	}
+	return 1;
+    }
+
+not_found:
+    if (value != 0) *value = 0;
+    if (key != 0) *key = 0;
+    return 0;
+}
+
 void
 st_cleanup_safe(st_table *table)
 {
