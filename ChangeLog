@@ -1,3 +1,8 @@
+Mon Mar 26 11:46:23 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enumerator.c (inspect_enumerator): show method arguments of
+	  lazy enumerators correctly.
+
 Mon Mar 26 13:51:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (check_if_dir, check_if_wdir): fix for Visual C++

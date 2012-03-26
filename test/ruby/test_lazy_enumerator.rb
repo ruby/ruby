@@ -291,9 +291,21 @@ class TestLazyEnumerator < Test::Unit::TestCase
                  "foo".chars.lazy.inspect)
     assert_equal("#<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:map>",
                  (1..10).lazy.map {}.inspect)
-    l = (1..10).lazy.map {}.collect {}.flat_map {}.collect_concat {}.select {}.find_all {}.reject {}.grep(1).zip(?a..?c).take(10).take_while {}.drop(3).drop_while {}.cycle
+    assert_equal("#<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:take(0)>",
+                 (1..10).lazy.take(0).inspect)
+    assert_equal("#<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:take(3)>",
+                 (1..10).lazy.take(3).inspect)
+    assert_equal('#<Enumerator::Lazy: #<Enumerator::Lazy: "a".."c">:grep(/b/)>',
+                 ("a".."c").lazy.grep(/b/).inspect)
+    assert_equal("#<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:cycle(3)>",
+                 (1..10).lazy.cycle(3).inspect)
+    assert_equal("#<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:cycle>",
+                 (1..10).lazy.cycle.inspect)
+    assert_equal("#<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:cycle(3)>",
+                 (1..10).lazy.cycle(3).inspect)
+    l = (1..10).lazy.map {}.collect {}.flat_map {}.collect_concat {}.select {}.find_all {}.reject {}.grep(1).zip(?a..?c).take(10).take_while {}.drop(3).drop_while {}.cycle(3)
     assert_equal(<<EOS.chomp, l.inspect)
-#<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:map>:collect>:flat_map>:collect_concat>:select>:find_all>:reject>:grep>:zip>:take>:take_while>:drop>:drop_while>:cycle>
+#<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:map>:collect>:flat_map>:collect_concat>:select>:find_all>:reject>:grep(1)>:zip("a".."c")>:take(10)>:take_while>:drop(3)>:drop_while>:cycle(3)>
 EOS
   end
 end
