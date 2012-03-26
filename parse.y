@@ -5440,6 +5440,7 @@ parser_nextc(struct parser_params *parser)
 	    if (parser->tokp < lex_pend) {
 		if (NIL_P(parser->delayed)) {
 		    parser->delayed = rb_str_buf_new(1024);
+		    rb_enc_associate(parser->delayed, parser->enc);
 		    rb_str_buf_cat(parser->delayed,
 				   parser->tokp, lex_pend - parser->tokp);
 		    parser->delayed_line = ruby_sourceline;
