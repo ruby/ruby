@@ -1,3 +1,9 @@
+Mon Mar 26 23:34:40 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (parse227, parse228, parse229): don't use local
+	  variables defined by named capture for other Ruby implementations
+	  such as Rubinius.
+
 Mon Mar 26 23:19:03 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (parse_pasv_port): refactored.

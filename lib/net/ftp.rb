@@ -924,7 +924,7 @@ module Net
         raise FTPReplyError, resp
       end
       if /\((?<host>\d+(,\d+){3}),(?<port>\d+,\d+)\)/ =~ resp
-        return parse_pasv_ipv4_host(host), parse_pasv_port(port)
+        return parse_pasv_ipv4_host($~["host"]), parse_pasv_port($~["port"])
       else
         raise FTPProtoError, resp
       end
@@ -940,9 +940,9 @@ module Net
         raise FTPReplyError, resp
       end
       if /\(4,4,(?<host>\d+(,\d+){3}),2,(?<port>\d+,\d+)\)/ =~ resp
-        return parse_pasv_ipv4_host(host), parse_pasv_port(port)
+        return parse_pasv_ipv4_host($~["host"]), parse_pasv_port($~["port"])
       elsif /\(6,16,(?<host>\d+(,(\d+)){15}),2,(?<port>\d+,\d+)\)/ =~ resp
-        return parse_pasv_ipv6_host(host), parse_pasv_port(port)
+        return parse_pasv_ipv6_host($~["host"]), parse_pasv_port($~["port"])
       else
         raise FTPProtoError, resp
       end
@@ -978,7 +978,7 @@ module Net
         raise FTPReplyError, resp
       end
       if /\((?<d>[!-~])\k<d>\k<d>(?<port>\d+)\k<d>\)/ =~ resp
-        return @sock.peeraddr[3], port.to_i
+        return @sock.peeraddr[3], $~["port"].to_i
       else
         raise FTPProtoError, resp
       end
