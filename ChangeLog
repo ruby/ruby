@@ -1,3 +1,7 @@
+Mon Mar 26 19:37:27 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (parse227, parse228, parse229): refactored.
+
 Mon Mar 26 11:46:23 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enumerator.c (inspect_enumerator): show method arguments of

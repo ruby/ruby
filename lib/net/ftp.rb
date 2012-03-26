@@ -923,18 +923,11 @@ module Net
       if resp[0, 3] != "227"
         raise FTPReplyError, resp
       end
-      left = resp.index("(")
-      right = resp.index(")")
-      if left == nil or right == nil
+      if /\((?<host>\d+(,\d+){3}),(?<port>\d+,\d+)\)/ =~ resp
+        return parse_pasv_ipv4_host(host), parse_pasv_port(port)
+      else
         raise FTPProtoError, resp
       end
-      numbers = resp[left + 1 .. right - 1].split(",")
-      if numbers.length != 6
-        raise FTPProtoError, resp
-      end
-      host = numbers[0, 4].join(".")
-      port = (numbers[4].to_i << 8) + numbers[5].to_i
-      return host, port
     end
     private :parse227
 
@@ -946,33 +939,34 @@ module Net
       if resp[0, 3] != "228"
         raise FTPReplyError, resp
       end
-      left = resp.index("(")
-      right = resp.index(")")
-      if left == nil or right == nil
+      if /\(4,4,(?<host>\d+(,\d+){3}),2,(?<port>\d+,\d+)\)/ =~ resp
+        return parse_pasv_ipv4_host(host), parse_pasv_port(port)
+      elsif /\(6,16,(?<host>\d+(,(\d+)){15}),2,(?<port>\d+,\d+)\)/ =~ resp
+        return parse_pasv_ipv6_host(host), parse_pasv_port(port)
+      else
         raise FTPProtoError, resp
-      end
-      numbers = resp[left + 1 .. right - 1].split(",")
-      if numbers[0] == "4"
-        if numbers.length != 9 || numbers[1] != "4" || numbers[2 + 4] != "2"
-          raise FTPProtoError, resp
-        end
-        host = numbers[2, 4].join(".")
-        port = (numbers[7].to_i << 8) + numbers[8].to_i
-      elsif numbers[0] == "6"
-        if numbers.length != 21 || numbers[1] != "16" || numbers[2 + 16] != "2"
-          raise FTPProtoError, resp
-        end
-        v6 = ["", "", "", "", "", "", "", ""]
-        for i in 0 .. 7
-          v6[i] = sprintf("%02x%02x", numbers[(i * 2) + 2].to_i,
-                          numbers[(i * 2) + 3].to_i)
-        end
-        host = v6[0, 8].join(":")
-        port = (numbers[19].to_i << 8) + numbers[20].to_i
       end
       return host, port
     end
     private :parse228
+
+    def parse_pasv_ipv4_host(s)
+      return s.tr(",", ".")
+    end
+    private :parse_pasv_ipv4_host
+
+    def parse_pasv_ipv6_host(s)
+      return s.split(/,/).map { |i|
+        "%02x" % i.to_i
+      }.each_slice(2).map(&:join).join(":")
+    end
+    private :parse_pasv_ipv6_host
+
+    def parse_pasv_port(s)
+      high, low = s.split(/,/).map(&:to_i)
+      return (high << 8) + low
+    end
+    private :parse_pasv_port
 
     # handler for response code 229
     # (Extended Passive Mode Entered)
@@ -982,18 +976,11 @@ module Net
       if resp[0, 3] != "229"
         raise FTPReplyError, resp
       end
-      left = resp.index("(")
-      right = resp.index(")")
-      if left == nil or right == nil
+      if /\((?<d>[!-~])\k<d>\k<d>(?<port>\d+)\k<d>\)/ =~ resp
+        return @sock.peeraddr[3], port.to_i
+      else
         raise FTPProtoError, resp
       end
-      numbers = resp[left + 1 .. right - 1].split(resp[left + 1, 1])
-      if numbers.length != 4
-        raise FTPProtoError, resp
-      end
-      port = numbers[3].to_i
-      host = (@sock.peeraddr())[3]
-      return host, port
     end
     private :parse229
 
