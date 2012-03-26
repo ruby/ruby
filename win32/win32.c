@@ -5185,6 +5185,28 @@ rb_w32_uopen(const char *file, int oflag, ...)
 }
 
 /* License: Ruby's */
+static int
+check_if_dir(const char *file)
+{
+    struct stati64 st;
+    if (rb_w32_stati64(file, &st) != 0 || !S_ISDIR(st.st_mode))
+	return FALSE;
+    errno = EISDIR;
+    return TRUE;
+}
+
+/* License: Ruby's */
+static int
+check_if_wdir(const WCHAR *wfile)
+{
+    struct stati64 st;
+    if (wstati64(wfile, &st) != 0 || !S_ISDIR(st.st_mode))
+	return FALSE;
+    errno = EISDIR;
+    return TRUE;
+}
+
+/* License: Ruby's */
 int
 rb_w32_open(const char *file, int oflag, ...)
 {
@@ -5197,8 +5219,11 @@ rb_w32_open(const char *file, int oflag, ...)
     pmode = va_arg(arg, int);
     va_end(arg);
 
-    if ((oflag & O_TEXT) || !(oflag & O_BINARY))
-	return _open(file, oflag, pmode);
+    if ((oflag & O_TEXT) || !(oflag & O_BINARY)) {
+	ret = _open(file, oflag, pmode);
+	if (ret == -1 && errno == EACCES) check_if_dir(file);
+	return ret;
+    }
 
     if (!(wfile = filecp_to_wstr(file, NULL)))
 	return -1;
@@ -5224,7 +5249,9 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
 	va_start(arg, oflag);
 	pmode = va_arg(arg, int);
 	va_end(arg);
-	return _wopen(file, oflag, pmode);
+	fd = _wopen(file, oflag, pmode);
+	if (fd == -1 && errno == EACCES) check_if_wdir(file);
+	return fd;
     }
 
     sec.nLength = sizeof(sec);
@@ -5340,7 +5367,9 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
 	h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE, &sec,
 			create, attr, NULL);
 	if (h == INVALID_HANDLE_VALUE) {
-	    errno = map_errno(GetLastError());
+	    DWORD e = GetLastError();
+	    if (e != ERROR_ACCESS_DENIED || !check_if_wdir(file))
+		errno = map_errno(e);
 	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
 	    fd = -1;
 	    goto quit;

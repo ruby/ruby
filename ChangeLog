@@ -1,3 +1,8 @@
+Mon Mar 26 11:41:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_open, rb_w32_wopen): check if the file is a
+	  directory when access denied, to set errno to EISDIR.
+
 Sun Mar 25 18:13:14 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (tr_setup_table): fix multiple non latin argument for
