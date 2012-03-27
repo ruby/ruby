@@ -192,6 +192,7 @@ def package(rev, destdir)
         f.puts "s,@DLDFLAGS@,|#_!!_#|,g"
         f.puts "s,@LIBEXT@,|#_!!_#|a,g"
         f.puts "s,@OBJEXT@,|#_!!_#|o,g"
+        f.puts "s,@EXEEXT@,|#_!!_#|,g"
         f.puts "s,@LIBRUBY@,|#_!!_#|liburyb.a,g"
         f.puts "s,@LIBRUBY_A@,|#_!!_#|liburyb.a,g"
         f.puts "s,@RM@,|#_!!_#|rm -f,g"
