@@ -670,10 +670,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
 #define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
-#define RUBY_LIB_VERSION_STYLE 3	/* full */
-#define RUBY_LIB_PREFIX "/lib/$(RUBY_BASE_NAME)"
-#define RUBY_PLATFORM "$(arch)"
-#define RUBY_SITEARCH "$(sitearch)"
 #define RUBY_COREDLL "$(RT)"
 #define LIBRUBY_SO "$(LIBRUBY_SO)"
 #if 0
@@ -682,6 +678,13 @@ config.h: nul
 $(BANG)endif
 #endif
 #endif /* $(guard) */
+<<
+	@echo Creating verconf.h
+	@$(IFCHANGE) verconf.h <<
+#define RUBY_LIB_VERSION_STYLE 3	/* full */
+#define RUBY_LIB_PREFIX "/lib/$(RUBY_BASE_NAME)"
+#define RUBY_PLATFORM "$(arch)"
+#define RUBY_SITEARCH "$(sitearch)"
 <<
 	@exit > $(@:/=\)
 

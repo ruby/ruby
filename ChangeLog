@@ -1,3 +1,8 @@
+Tue Mar 27 22:44:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (verconf.h): separate load path specific stuff from
+	  config.h.
+
 Tue Mar 27 22:43:40 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub: fix config.h path to include.

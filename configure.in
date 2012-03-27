@@ -2831,10 +2831,12 @@ if test ${RUBY_LIB_VERSION_STYLE+set}; then
     echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
     echo '#define STRINGIZE(x) x'
     test -f revision.h -o -f "${srcdir}/revision.h" || echo '#define RUBY_REVISION 0'
+    echo '#include "verconf.h"'
     echo '#include "version.h"'
     echo 'ruby_version=RUBY_LIB_VERSION'
     } > conftest.c
-    ruby_version="`$CPP -I"${srcdir}" -I"${srcdir}/include" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
+    test -f verconf.h || > verconf.h
+    ruby_version="`$CPP -I. -I"${srcdir}" -I"${srcdir}/include" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
     eval $ruby_version
 else
     RUBY_LIB_VERSION="\"${ruby_version}\""
@@ -2896,21 +2898,21 @@ AS_CASE(["$RUBY_LIB_PREFIX"],
     ])
 
 if test ${RUBY_LIB_VERSION_STYLE+set}; then
-    AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION_STYLE, $RUBY_LIB_VERSION_STYLE)
+    AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION_STYLE, $RUBY_LIB_VERSION_STYLE !<verconf>!)
 else
-    AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION, [$RUBY_LIB_VERSION])
+    AC_DEFINE_UNQUOTED(RUBY_LIB_VERSION, [$RUBY_LIB_VERSION] !<verconf>!)
 fi
 AC_DEFINE_UNQUOTED(RUBY_EXEC_PREFIX, "${RUBY_EXEC_PREFIX}")
-AC_DEFINE_UNQUOTED(RUBY_LIB_PREFIX, ${RUBY_LIB_PREFIX})
+AC_DEFINE_UNQUOTED(RUBY_LIB_PREFIX, ${RUBY_LIB_PREFIX} !<verconf>!)
 if test "x$SITE_DIR" = xno; then
-    AC_DEFINE(NO_RUBY_SITE_LIB)
+    AC_DEFINE(NO_RUBY_SITE_LIB, [] !<verconf>!)
 else
-    AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, ${RUBY_SITE_LIB_PATH})
+    AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, ${RUBY_SITE_LIB_PATH} !<verconf>!)
 fi
 if test "x$VENDOR_DIR" = xno; then
-    AC_DEFINE(NO_RUBY_VENDOR_LIB)
+    AC_DEFINE(NO_RUBY_VENDOR_LIB !<verconf>!)
 else
-    AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, ${RUBY_VENDOR_LIB_PATH})
+    AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, ${RUBY_VENDOR_LIB_PATH} !<verconf>!)
 fi
 
 AC_SUBST(arch)dnl
@@ -2928,7 +2930,7 @@ if test "${universal_binary-no}" = yes ; then
 	AC_TRY_COMPILE([const char arch[] = __ARCHITECTURE__;], [puts(arch);],
 	     [rb_cv_architecture_available=yes], [rb_cv_architecture_available=no]))
     if test "${rb_cv_architecture_available}" = yes; then
-	AC_DEFINE_UNQUOTED(RUBY_PLATFORM_CPU, __ARCHITECTURE__)
+	AC_DEFINE_UNQUOTED(RUBY_PLATFORM_CPU, __ARCHITECTURE__ !<verconf>!)
     else
 	for archs in ${universal_archnames}; do
 	    cpu=`echo $archs | sed 's/.*=//'`
@@ -2940,24 +2942,24 @@ if test "${universal_binary-no}" = yes ; then
     test "$ac_cv_type_long_long" = yes && ints="'long long' $ints"
     AC_SUBST(UNIVERSAL_ARCHNAMES, "${universal_archnames}")
     AC_SUBST(UNIVERSAL_INTS, "${ints}")
-    AC_DEFINE_UNQUOTED(RUBY_PLATFORM_OS, "${target_os}")
-    AC_DEFINE_UNQUOTED(RUBY_ARCH, "universal-"RUBY_PLATFORM_OS)
-    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal."RUBY_PLATFORM_CPU"-"RUBY_PLATFORM_OS)
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM_OS, "${target_os}" !<verconf>!)
+    AC_DEFINE_UNQUOTED(RUBY_ARCH, "universal-"RUBY_PLATFORM_OS !<verconf>!)
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal."RUBY_PLATFORM_CPU"-"RUBY_PLATFORM_OS !<verconf>!)
 else
     arch="${target_cpu}-${target_os}"
-    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}" !<verconf>!)
 fi
 
 unset sitearch
 AS_CASE(["$target_os"],[mingw*],[sitearch="$target_cpu-$rb_cv_msvcrt"])
-test ${sitearch+set} && AC_DEFINE_UNQUOTED(RUBY_SITEARCH, "${sitearch}")
+test ${sitearch+set} && AC_DEFINE_UNQUOTED(RUBY_SITEARCH, "${sitearch}" !<verconf>!)
 : ${sitearch='${arch}'}
 
 AC_ARG_WITH(search-path,
 		AS_HELP_STRING([--with-search-path=DIR], [specify the additional search path]),
 		[search_path=$withval])
 if test "$search_path" != ""; then
-    AC_DEFINE_UNQUOTED(RUBY_SEARCH_PATH,"$search_path")
+    AC_DEFINE_UNQUOTED(RUBY_SEARCH_PATH,"$search_path" !<verconf>!)
 fi
 
 AC_ARG_WITH(rubyhdrdir,
@@ -3017,10 +3019,11 @@ guard=INCLUDE_RUBY_CONFIG_H
 {
   echo "#ifndef $guard"
   echo "#define $guard 1"
-  grep -v "^#define PACKAGE_" confdefs.h
+  grep -v "^#define PACKAGE_" confdefs.h | grep -v ' !<verconf>!$'
   echo "#endif /* $guard */"
 } | tr -d '\015' |
 ${srcdir}/tool/ifchange "${config_h}" -
+sed -n 's/ !<verconf>!$//p' confdefs.h | ${srcdir}/tool/ifchange verconf.h -
 tr -d '\015' < largefile.h > confdefs.h
 rm largefile.h
 
