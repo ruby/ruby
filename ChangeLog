@@ -1,3 +1,7 @@
+Tue Mar 27 17:08:08 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* win32/win32.c (check_if_dir): fix memory leak.
+
 Tue Mar 27 13:13:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_new_empty): should copy also the encoding as an

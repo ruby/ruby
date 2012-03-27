@@ -5186,26 +5186,6 @@ rb_w32_uopen(const char *file, int oflag, ...)
 
 /* License: Ruby's */
 static int
-check_if_dir(const char *file)
-{
-    DWORD attr;
-    WCHAR *wfile;
-
-    if (!(wfile = filecp_to_wstr(file, NULL)))
-	return FALSE;
-    attr = GetFileAttributesW(wfile);
-    if (attr == (DWORD)-1L ||
-	!(attr & FILE_ATTRIBUTE_DIRECTORY) ||
-	check_valid_dir(wfile)) {
-	return FALSE;
-    }
-    free(wfile);
-    errno = EISDIR;
-    return TRUE;
-}
-
-/* License: Ruby's */
-static int
 check_if_wdir(const WCHAR *wfile)
 {
     DWORD attr = GetFileAttributesW(wfile);
@@ -5216,6 +5196,20 @@ check_if_wdir(const WCHAR *wfile)
     }
     errno = EISDIR;
     return TRUE;
+}
+
+/* License: Ruby's */
+static int
+check_if_dir(const char *file)
+{
+    WCHAR *wfile;
+    int ret;
+
+    if (!(wfile = filecp_to_wstr(file, NULL)))
+	return FALSE;
+    ret = check_if_wdir(wfile);
+    free(wfile);
+    return ret;
 }
 
 /* License: Ruby's */
