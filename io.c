@@ -473,6 +473,7 @@ io_unread(rb_io_t *fptr)
 	}
 	read_size = _read(fptr->fd, buf, fptr->rbuf.len + newlines);
 	if (read_size < 0) {
+	    free(buf);
 	    rb_sys_fail_path(fptr->pathv);
 	}
 	if (read_size == fptr->rbuf.len) {
@@ -483,6 +484,7 @@ io_unread(rb_io_t *fptr)
 	    newlines--;
 	}
     }
+    free(buf);
     fptr->rbuf.off = 0;
     fptr->rbuf.len = 0;
     return;
