@@ -451,8 +451,8 @@ config.status: $(CONFIG_H)
 
 BANG = !
 
-!if exist(config.h)
-!include config.h
+!if exist($(RUBY_CONFIG_H))
+!include $(RUBY_CONFIG_H)
 !endif
 
 guard = INCLUDE_RUBY_CONFIG_H

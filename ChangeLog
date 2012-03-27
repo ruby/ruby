@@ -1,3 +1,7 @@
+Tue Mar 27 22:43:40 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub: fix config.h path to include.
+
 Tue Mar 27 17:08:08 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* win32/win32.c (check_if_dir): fix memory leak.
