@@ -726,6 +726,7 @@ static VALUE
 str_new_empty(VALUE str)
 {
     VALUE v = rb_str_new5(str, 0, 0);
+    rb_enc_copy(v, str);
     OBJ_INFECT(v, str);
     return v;
 }

@@ -1,3 +1,8 @@
+Tue Mar 27 13:13:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_new_empty): should copy also the encoding as an
+	  empty substring.  [ruby-dev:45441][Bug #6206]
+
 Mon Mar 26 23:43:04 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (parse227, parse228, parse229): don't use $~.
