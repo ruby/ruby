@@ -163,7 +163,10 @@ def package(rev, destdir)
   "take a breath, and go ahead".scan(/./) {|c|print c; sleep(c == "," ? 0.7 : 0.05)}; puts
   def (clean = []).add(n) push(n); n end
   Dir.chdir(v) do
-    File.open(clean.add("cross.rb"), "w") {|f| f.puts "CROSS_COMPILING=true"}
+    File.open(clean.add("cross.rb"), "w") do |f|
+      f.puts "Object.__send__(:remove_const, :CROSS_COMPILING) if defined?(CROSS_COMPILING)"
+      f.puts "CROSS_COMPILING=true"
+    end
     unless File.exist?("configure")
       print "creating configure..."
       unless system("autoconf")
