@@ -1,3 +1,9 @@
+Tue Mar 27 22:22:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_STACK_GROW_DIRECTION): substitute CPU name as
+	  shell variable name.  based on the patch by The Written Word Inc. at
+	  [ruby-core:40421].  [Bug #5488]
+
 Mon Mar 26 09:57:12 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* parse.y (parser_nextc): set encoding for the buffer of ripper.

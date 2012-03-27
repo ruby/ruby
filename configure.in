@@ -1759,7 +1759,8 @@ if test "$ac_cv_func_sysconf" = yes; then
 fi
 
 AC_DEFUN(RUBY_STACK_GROW_DIRECTION, [
-    AC_CACHE_CHECK(stack growing direction on $1, rb_cv_stack_grow_dir_$1, [
+    AS_VAR_PUSHDEF([stack_grow_dir], [rb_cv_stack_grow_dir_$1])
+    AC_CACHE_CHECK(stack growing direction on $1, stack_grow_dir, [
 AS_CASE(["$1"],
 [m68*|x86*|x64|i?86|ia64|ppc*|sparc*|alpha*], [ $2=-1],
 [hppa*], [ $2=+1],
@@ -1783,8 +1784,9 @@ int main()
 }
 ], $2=-1, $2=+1, $2=0)
   ])
-eval rb_cv_stack_grow_dir_$1=\$$2])
-eval $2=\$rb_cv_stack_grow_dir_$1])
+eval stack_grow_dir=\$$2])
+eval $2=\$stack_grow_dir
+AS_VAR_POPDEF([stack_grow_dir])])
 if test "${universal_binary-no}" = yes ; then
     archflagpat=`eval echo '"'"${ARCH_FLAG}"'"' | sed 's/[[][|.*]]/\\&/g'`
     save_CFLAGS="$CFLAGS" new_cflags=`echo "$CFLAGS" | sed "s|$archflagpat"'||'`
@@ -1805,7 +1807,7 @@ if test "${universal_binary-no}" = yes ; then
     if test x$stack_dir = xno; then
 	for archs in ${universal_archnames}; do
 	    archs=`echo $archs | sed 's/=.*//'`
-	    eval dir=\$rb_cv_stack_grow_dir_$archs
+	    eval dir=\$[rb_cv_stack_grow_dir_]AS_TR_SH([$archs])
 	    RUBY_DEFINE_IF([defined __${archs}__], STACK_GROW_DIRECTION, $dir)
 	done
     else
