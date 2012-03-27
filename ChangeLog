@@ -1,3 +1,9 @@
+Wed Mar 28 08:44:24 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: updating version to match gem
+	* ext/psych/psych.gemspec: ditto
+	* ext/psych/lib/psych/visitors/to_ruby.rb: fixing deprecation warning
+
 Tue Mar 27 23:44:11 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (io_unread): fixed memory leak.  report by nagachika via IRC.

@@ -285,7 +285,7 @@ module Psych
           o.init_with c
         elsif o.respond_to?(:yaml_initialize)
           if $VERBOSE
-            "Implementing #{o.class}#yaml_initialize is deprecated, please implement \"init_with(coder)\""
+            warn "Implementing #{o.class}#yaml_initialize is deprecated, please implement \"init_with(coder)\""
           end
           o.yaml_initialize c.tag, c.map
         else
