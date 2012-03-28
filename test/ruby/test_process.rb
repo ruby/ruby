@@ -1180,6 +1180,12 @@ class TestProcess < Test::Unit::TestCase
   rescue NotImplementedError
   end
 
+  def test_seteuid_name
+    user = ENV["USER"] or return
+    assert_nothing_raised(TypeError) {Process.euid = user}
+  rescue NotImplementedError
+  end
+
   def test_getegid
     assert_kind_of(Integer, Process.egid)
   end

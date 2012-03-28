@@ -1,3 +1,8 @@
+Wed Mar 28 16:39:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (obj2uid, obj2gid): allow strings as input user/group id.
+	  [ruby-core:40923][Feature #5610]
+
 Wed Mar 28 15:06:18 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_symreal): default to ASCII-8BIT for non-ascii symbols,

@@ -67,6 +67,9 @@
 #include <sys/times.h>
 #endif
 
+#ifdef HAVE_PWD_H
+#include <pwd.h>
+#endif
 #ifdef HAVE_GRP_H
 #include <grp.h>
 #endif
@@ -3974,13 +3977,147 @@ check_gid_switch(void)
  *  <code>Process::UID</code>, and <code>Process::GID</code> modules.
  */
 
+#if 1
+#define p_uid_from_name p_uid_from_name
+#define p_gid_from_name p_gid_from_name
+#endif
+
+#if defined(HAVE_PWD_H)
+# ifdef HAVE_GETPWNAM_R
+#   define PREPARE_GETPWNAM \
+    long getpw_buf_len = sysconf(_SC_GETPW_R_SIZE_MAX); \
+    char *getpw_buf = ALLOCA_N(char, (getpw_buf_len < 0 ? (getpw_buf_len = 4096) : getpw_buf_len));
+#   define OBJ2UID(id) obj2uid((id), getpw_buf, getpw_buf_len)
+# else
+#   define PREPARE_GETPWNAM	/* do nothing */
+#   define OBJ2UID(id) obj2uid((id))
+# endif
+
+static rb_uid_t
+obj2uid(VALUE id
+# ifdef HAVE_GETPWNAM_R
+	, char *getpw_buf, size_t getpw_buf_len
+# endif
+    )
+{
+    rb_uid_t uid;
+    VALUE tmp;
+
+    if (FIXNUM_P(id) || NIL_P(tmp = rb_check_string_type(id))) {
+	uid = NUM2UIDT(id);
+    }
+    else {
+	const char *usrname = StringValueCStr(id);
+	struct passwd *pwptr;
+#ifdef HAVE_GETPWNAM_R
+	struct passwd pwbuf;
+	if (getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr))
+	    rb_sys_fail("getpwnam_r");
+#else
+	pwptr = getpwnam(usrname);
+#endif
+	if (!pwptr) {
+#ifndef HAVE_GETPWNAM_R
+	    endpwent();
+#endif
+	    rb_raise(rb_eArgError, "can't find user for %s", usrname);
+	}
+	uid = pwptr->pw_uid;
+#ifndef HAVE_GETPWNAM_R
+	endpwent();
+#endif
+    }
+    return uid;
+}
+
+# ifdef p_uid_from_name
+static VALUE
+p_uid_from_name(VALUE self, VALUE id)
+{
+    PREPARE_GETPWNAM
+    return UIDT2NUM(OBJ2UID(id));
+}
+# endif
+#else
+# define PREPARE_GETPWNAM	/* do nothing */
+# define OBJ2UID(id) NUM2UIDT(id)
+# ifdef p_uid_from_name
+#   undef p_uid_from_name
+#   define p_uid_from_name rb_f_notimplement
+# endif
+#endif
+
+#if defined(HAVE_GRP_H)
+# ifdef HAVE_GETGRNAM_R
+#   define PREPARE_GETGRNAM \
+    long getgr_buf_len = sysconf(_SC_GETGR_R_SIZE_MAX); \
+    char *getgr_buf = ALLOCA_N(char, (getgr_buf_len < 0 ? (getgr_buf_len = 4096) : getgr_buf_len));
+#   define OBJ2GID(id) obj2gid((id), getgr_buf, getgr_buf_len)
+# else
+#   define PREPARE_GETGRNAM	/* do nothing */
+#   define OBJ2GID(id) obj2gid((id))
+# endif
+
+static rb_gid_t
+obj2gid(VALUE id
+# ifdef HAVE_GETGRNAM_R
+	, char *getgr_buf, size_t getgr_buf_len
+# endif
+    )
+{
+    rb_gid_t gid;
+    VALUE tmp;
+
+    if (FIXNUM_P(id) || NIL_P(tmp = rb_check_string_type(id))) {
+	gid = NUM2GIDT(id);
+    }
+    else {
+	const char *grpname = StringValueCStr(id);
+	struct group *grptr;
+#ifdef HAVE_GETGRNAM_R
+	struct group grbuf;
+	if (getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr))
+	    rb_sys_fail("getgrnam_r");
+#else
+	grptr = getgrnam(grpname);
+#endif
+	if (!grptr) {
+#ifndef HAVE_GETGRNAM_R
+	    endgrent();
+#endif
+	    rb_raise(rb_eArgError, "can't find group for %s", grpname);
+	}
+	gid = grptr->gr_gid;
+#ifndef HAVE_GETGRNAM_R
+	endgrent();
+#endif
+    }
+    return gid;
+}
+
+# ifdef p_gid_from_name
+static VALUE
+p_gid_from_name(VALUE self, VALUE id)
+{
+    PREPARE_GETGRNAM;
+    return GIDT2NUM(OBJ2GID(id));
+}
+# endif
+#else
+# define PREPARE_GETGRNAM	/* do nothing */
+# define OBJ2GID(id) NUM2GIDT(id)
+# ifdef p_gid_from_name
+#   undef p_gid_from_name
+#   define p_gid_from_name rb_f_notimplement
+# endif
+#endif
 
 #if defined HAVE_SETUID
 /*
  *  call-seq:
- *     Process::Sys.setuid(integer)   -> nil
+ *     Process::Sys.setuid(user)   -> nil
  *
- *  Set the user ID of the current process to _integer_. Not
+ *  Set the user ID of the current process to _user_. Not
  *  available on all platforms.
  *
  */
@@ -3988,8 +4125,9 @@ check_gid_switch(void)
 static VALUE
 p_sys_setuid(VALUE obj, VALUE id)
 {
+    PREPARE_GETPWNAM;
     check_uid_switch();
-    if (setuid(NUM2UIDT(id)) != 0) rb_sys_fail(0);
+    if (setuid(OBJ2UID(id)) != 0) rb_sys_fail(0);
     return Qnil;
 }
 #else
@@ -4000,9 +4138,9 @@ p_sys_setuid(VALUE obj, VALUE id)
 #if defined HAVE_SETRUID
 /*
  *  call-seq:
- *     Process::Sys.setruid(integer)   -> nil
+ *     Process::Sys.setruid(user)   -> nil
  *
- *  Set the real user ID of the calling process to _integer_.
+ *  Set the real user ID of the calling process to _user_.
  *  Not available on all platforms.
  *
  */
@@ -4010,8 +4148,9 @@ p_sys_setuid(VALUE obj, VALUE id)
 static VALUE
 p_sys_setruid(VALUE obj, VALUE id)
 {
+    PREPARE_GETPWNAM;
     check_uid_switch();
-    if (setruid(NUM2UIDT(id)) != 0) rb_sys_fail(0);
+    if (setruid(OBJ2UID(id)) != 0) rb_sys_fail(0);
     return Qnil;
 }
 #else
@@ -4022,18 +4161,19 @@ p_sys_setruid(VALUE obj, VALUE id)
 #if defined HAVE_SETEUID
 /*
  *  call-seq:
- *     Process::Sys.seteuid(integer)   -> nil
+ *     Process::Sys.seteuid(user)   -> nil
  *
  *  Set the effective user ID of the calling process to
- *  _integer_.  Not available on all platforms.
+ *  _user_.  Not available on all platforms.
  *
  */
 
 static VALUE
 p_sys_seteuid(VALUE obj, VALUE id)
 {
+    PREPARE_GETPWNAM;
     check_uid_switch();
-    if (seteuid(NUM2UIDT(id)) != 0) rb_sys_fail(0);
+    if (seteuid(OBJ2UID(id)) != 0) rb_sys_fail(0);
     return Qnil;
 }
 #else
@@ -4046,7 +4186,7 @@ p_sys_seteuid(VALUE obj, VALUE id)
  *  call-seq:
  *     Process::Sys.setreuid(rid, eid)   -> nil
  *
- *  Sets the (integer) real and/or effective user IDs of the current
+ *  Sets the (user) real and/or effective user IDs of the current
  *  process to _rid_ and _eid_, respectively. A value of
  *  <code>-1</code> for either means to leave that ID unchanged. Not
  *  available on all platforms.
@@ -4056,8 +4196,9 @@ p_sys_seteuid(VALUE obj, VALUE id)
 static VALUE
 p_sys_setreuid(VALUE obj, VALUE rid, VALUE eid)
 {
+    PREPARE_GETPWNAM;
     check_uid_switch();
-    if (setreuid(NUM2UIDT(rid),NUM2UIDT(eid)) != 0) rb_sys_fail(0);
+    if (setreuid(OBJ2UID(rid), OBJ2UID(eid)) != 0) rb_sys_fail(0);
     return Qnil;
 }
 #else
@@ -4070,7 +4211,7 @@ p_sys_setreuid(VALUE obj, VALUE rid, VALUE eid)
  *  call-seq:
  *     Process::Sys.setresuid(rid, eid, sid)   -> nil
  *
- *  Sets the (integer) real, effective, and saved user IDs of the
+ *  Sets the (user) real, effective, and saved user IDs of the
  *  current process to _rid_, _eid_, and _sid_ respectively. A
  *  value of <code>-1</code> for any value means to
  *  leave that ID unchanged. Not available on all platforms.
@@ -4080,8 +4221,9 @@ p_sys_setreuid(VALUE obj, VALUE rid, VALUE eid)
 static VALUE
 p_sys_setresuid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 {
+    PREPARE_GETPWNAM;
     check_uid_switch();
-    if (setresuid(NUM2UIDT(rid),NUM2UIDT(eid),NUM2UIDT(sid)) != 0) rb_sys_fail(0);
+    if (setresuid(OBJ2UID(rid), OBJ2UID(eid), OBJ2UID(sid)) != 0) rb_sys_fail(0);
     return Qnil;
 }
 #else
@@ -4111,9 +4253,9 @@ proc_getuid(VALUE obj)
 #if defined(HAVE_SETRESUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRUID) || defined(HAVE_SETUID)
 /*
  *  call-seq:
- *     Process.uid= integer   -> numeric
+ *     Process.uid= user   -> numeric
  *
- *  Sets the (integer) user ID for this process. Not available on all
+ *  Sets the (user) user ID for this process. Not available on all
  *  platforms.
  */
 
@@ -4121,10 +4263,11 @@ static VALUE
 proc_setuid(VALUE obj, VALUE id)
 {
     rb_uid_t uid;
+    PREPARE_GETPWNAM;
 
     check_uid_switch();
 
-    uid = NUM2UIDT(id);
+    uid = OBJ2UID(id);
 #if defined(HAVE_SETRESUID)
     if (setresuid(uid, -1, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREUID
@@ -4177,10 +4320,10 @@ setreuid(rb_uid_t ruid, rb_uid_t euid)
 
 /*
  *  call-seq:
- *     Process::UID.change_privilege(integer)   -> fixnum
+ *     Process::UID.change_privilege(user)   -> fixnum
  *
  *  Change the current process's real and effective user ID to that
- *  specified by _integer_. Returns the new user ID. Not
+ *  specified by _user_. Returns the new user ID. Not
  *  available on all platforms.
  *
  *     [Process.uid, Process.euid]          #=> [0, 0]
@@ -4192,10 +4335,11 @@ static VALUE
 p_uid_change_privilege(VALUE obj, VALUE id)
 {
     rb_uid_t uid;
+    PREPARE_GETPWNAM;
 
     check_uid_switch();
 
-    uid = NUM2UIDT(id);
+    uid = OBJ2UID(id);
 
     if (geteuid() == 0) { /* root-user */
 #if defined(HAVE_SETRESUID)
@@ -4350,9 +4494,9 @@ p_uid_change_privilege(VALUE obj, VALUE id)
 #if defined HAVE_SETGID
 /*
  *  call-seq:
- *     Process::Sys.setgid(integer)   -> nil
+ *     Process::Sys.setgid(group)   -> nil
  *
- *  Set the group ID of the current process to _integer_. Not
+ *  Set the group ID of the current process to _group_. Not
  *  available on all platforms.
  *
  */
@@ -4360,8 +4504,9 @@ p_uid_change_privilege(VALUE obj, VALUE id)
 static VALUE
 p_sys_setgid(VALUE obj, VALUE id)
 {
+    PREPARE_GETGRNAM;
     check_gid_switch();
-    if (setgid(NUM2GIDT(id)) != 0) rb_sys_fail(0);
+    if (setgid(OBJ2GID(id)) != 0) rb_sys_fail(0);
     return Qnil;
 }
 #else
@@ -4372,9 +4517,9 @@ p_sys_setgid(VALUE obj, VALUE id)
 #if defined HAVE_SETRGID
 /*
  *  call-seq:
- *     Process::Sys.setrgid(integer)   -> nil
+ *     Process::Sys.setrgid(group)   -> nil
  *
- *  Set the real group ID of the calling process to _integer_.
+ *  Set the real group ID of the calling process to _group_.
  *  Not available on all platforms.
  *
  */
@@ -4382,8 +4527,9 @@ p_sys_setgid(VALUE obj, VALUE id)
 static VALUE
 p_sys_setrgid(VALUE obj, VALUE id)
 {
+    PREPARE_GETGRNAM;
     check_gid_switch();
-    if (setrgid(NUM2GIDT(id)) != 0) rb_sys_fail(0);
+    if (setrgid(OBJ2GID(id)) != 0) rb_sys_fail(0);
     return Qnil;
 }
 #else
@@ -4394,18 +4540,19 @@ p_sys_setrgid(VALUE obj, VALUE id)
 #if defined HAVE_SETEGID
 /*
  *  call-seq:
- *     Process::Sys.setegid(integer)   -> nil
+ *     Process::Sys.setegid(group)   -> nil
  *
  *  Set the effective group ID of the calling process to
- *  _integer_.  Not available on all platforms.
+ *  _group_.  Not available on all platforms.
  *
  */
 
 static VALUE
 p_sys_setegid(VALUE obj, VALUE id)
 {
+    PREPARE_GETGRNAM;
     check_gid_switch();
-    if (setegid(NUM2GIDT(id)) != 0) rb_sys_fail(0);
+    if (setegid(OBJ2GID(id)) != 0) rb_sys_fail(0);
     return Qnil;
 }
 #else
@@ -4418,7 +4565,7 @@ p_sys_setegid(VALUE obj, VALUE id)
  *  call-seq:
  *     Process::Sys.setregid(rid, eid)   -> nil
  *
- *  Sets the (integer) real and/or effective group IDs of the current
+ *  Sets the (group) real and/or effective group IDs of the current
  *  process to <em>rid</em> and <em>eid</em>, respectively. A value of
  *  <code>-1</code> for either means to leave that ID unchanged. Not
  *  available on all platforms.
@@ -4428,8 +4575,9 @@ p_sys_setegid(VALUE obj, VALUE id)
 static VALUE
 p_sys_setregid(VALUE obj, VALUE rid, VALUE eid)
 {
+    PREPARE_GETGRNAM;
     check_gid_switch();
-    if (setregid(NUM2GIDT(rid),NUM2GIDT(eid)) != 0) rb_sys_fail(0);
+    if (setregid(OBJ2GID(rid), OBJ2GID(eid)) != 0) rb_sys_fail(0);
     return Qnil;
 }
 #else
@@ -4441,7 +4589,7 @@ p_sys_setregid(VALUE obj, VALUE rid, VALUE eid)
  *  call-seq:
  *     Process::Sys.setresgid(rid, eid, sid)   -> nil
  *
- *  Sets the (integer) real, effective, and saved user IDs of the
+ *  Sets the (group) real, effective, and saved user IDs of the
  *  current process to <em>rid</em>, <em>eid</em>, and <em>sid</em>
  *  respectively. A value of <code>-1</code> for any value means to
  *  leave that ID unchanged. Not available on all platforms.
@@ -4451,8 +4599,9 @@ p_sys_setregid(VALUE obj, VALUE rid, VALUE eid)
 static VALUE
 p_sys_setresgid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 {
+    PREPARE_GETGRNAM;
     check_gid_switch();
-    if (setresgid(NUM2GIDT(rid),NUM2GIDT(eid),NUM2GIDT(sid)) != 0) rb_sys_fail(0);
+    if (setresgid(OBJ2GID(rid), OBJ2GID(eid), OBJ2GID(sid)) != 0) rb_sys_fail(0);
     return Qnil;
 }
 #else
@@ -4520,10 +4669,11 @@ static VALUE
 proc_setgid(VALUE obj, VALUE id)
 {
     rb_gid_t gid;
+    PREPARE_GETGRNAM;
 
     check_gid_switch();
 
-    gid = NUM2GIDT(id);
+    gid = OBJ2GID(id);
 #if defined(HAVE_SETRESGID)
     if (setresgid(gid, -1, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREGID
@@ -4653,14 +4803,7 @@ proc_setgroups(VALUE obj, VALUE ary)
 {
     int ngroups, i;
     rb_gid_t *groups;
-#ifdef HAVE_GETGRNAM_R
-    long getgr_buf_len = sysconf(_SC_GETGR_R_SIZE_MAX);
-    char* getgr_buf;
-
-    if (getgr_buf_len < 0)
-	getgr_buf_len = 4096;
-    getgr_buf = ALLOCA_N(char, getgr_buf_len);
-#endif
+    PREPARE_GETGRNAM;
 
     Check_Type(ary, T_ARRAY);
 
@@ -4673,35 +4816,7 @@ proc_setgroups(VALUE obj, VALUE ary)
     for (i = 0; i < ngroups; i++) {
 	VALUE g = RARRAY_PTR(ary)[i];
 
-	if (FIXNUM_P(g)) {
-	    groups[i] = NUM2GIDT(g);
-	}
-	else {
-	    VALUE tmp = rb_check_string_type(g);
-	    struct group grp;
-	    struct group *p;
-	    int ret;
-
-	    if (NIL_P(tmp)) {
-		groups[i] = NUM2GIDT(g);
-	    }
-	    else {
-		const char *grpname = StringValueCStr(tmp);
-
-#ifdef HAVE_GETGRNAM_R
-		ret = getgrnam_r(grpname, &grp, getgr_buf, getgr_buf_len, &p);
-		if (ret)
-		    rb_sys_fail("getgrnam_r");
-#else
-		p = getgrnam(grpname);
-#endif
-		if (p == NULL) {
-		    rb_raise(rb_eArgError,
-			     "can't find group for %s", RSTRING_PTR(tmp));
-		}
-		groups[i] = p->gr_gid;
-	    }
-	}
+	groups[i] = OBJ2GID(g);
     }
 
     if (setgroups(ngroups, groups) == -1) /* ngroups <= maxgroups */
@@ -4735,7 +4850,8 @@ proc_setgroups(VALUE obj, VALUE ary)
 static VALUE
 proc_initgroups(VALUE obj, VALUE uname, VALUE base_grp)
 {
-    if (initgroups(StringValuePtr(uname), NUM2GIDT(base_grp)) != 0) {
+    PREPARE_GETGRNAM;
+    if (initgroups(StringValuePtr(uname), OBJ2GID(base_grp)) != 0) {
 	rb_sys_fail(0);
     }
     return proc_getgroups(obj);
@@ -4907,10 +5023,10 @@ setregid(rb_gid_t rgid, rb_gid_t egid)
 
 /*
  *  call-seq:
- *     Process::GID.change_privilege(integer)   -> fixnum
+ *     Process::GID.change_privilege(group)   -> fixnum
  *
  *  Change the current process's real and effective group ID to that
- *  specified by _integer_. Returns the new group ID. Not
+ *  specified by _group_. Returns the new group ID. Not
  *  available on all platforms.
  *
  *     [Process.gid, Process.egid]          #=> [0, 0]
@@ -4922,10 +5038,11 @@ static VALUE
 p_gid_change_privilege(VALUE obj, VALUE id)
 {
     rb_gid_t gid;
+    PREPARE_GETGRNAM;
 
     check_gid_switch();
 
-    gid = NUM2GIDT(id);
+    gid = OBJ2GID(id);
 
     if (geteuid() == 0) { /* root-user */
 #if defined(HAVE_SETRESGID)
@@ -5121,7 +5238,7 @@ proc_seteuid(rb_uid_t uid)
 #if defined(HAVE_SETRESUID) || defined(HAVE_SETREUID) || defined(HAVE_SETEUID) || defined(HAVE_SETUID)
 /*
  *  call-seq:
- *     Process.euid= integer
+ *     Process.euid= user
  *
  *  Sets the effective user ID for this process. Not available on all
  *  platforms.
@@ -5130,8 +5247,9 @@ proc_seteuid(rb_uid_t uid)
 static VALUE
 proc_seteuid_m(VALUE mod, VALUE euid)
 {
+    PREPARE_GETPWNAM;
     check_uid_switch();
-    proc_seteuid(NUM2UIDT(euid));
+    proc_seteuid(OBJ2UID(euid));
     return euid;
 }
 #else
@@ -5180,11 +5298,11 @@ rb_seteuid_core(rb_uid_t euid)
 
 /*
  *  call-seq:
- *     Process::UID.grant_privilege(integer)   -> fixnum
- *     Process::UID.eid= integer               -> fixnum
+ *     Process::UID.grant_privilege(user)   -> fixnum
+ *     Process::UID.eid= user               -> fixnum
  *
  *  Set the effective user ID, and if possible, the saved user ID of
- *  the process to the given _integer_. Returns the new
+ *  the process to the given _user_. Returns the new
  *  effective user ID. Not available on all platforms.
  *
  *     [Process.uid, Process.euid]          #=> [0, 0]
@@ -5195,7 +5313,8 @@ rb_seteuid_core(rb_uid_t euid)
 static VALUE
 p_uid_grant_privilege(VALUE obj, VALUE id)
 {
-    rb_seteuid_core(NUM2UIDT(id));
+    PREPARE_GETPWNAM;
+    rb_seteuid_core(OBJ2UID(id));
     return id;
 }
 
@@ -5234,12 +5353,13 @@ proc_setegid(VALUE obj, VALUE egid)
 {
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETEGID) || defined(HAVE_SETGID)
     rb_gid_t gid;
+    PREPARE_GETGRNAM;
 #endif
 
     check_gid_switch();
 
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETEGID) || defined(HAVE_SETGID)
-    gid = NUM2GIDT(egid);
+    gid = OBJ2GID(egid);
 #endif
 
 #if defined(HAVE_SETRESGID)
@@ -5310,11 +5430,11 @@ rb_setegid_core(rb_gid_t egid)
 
 /*
  *  call-seq:
- *     Process::GID.grant_privilege(integer)    -> fixnum
- *     Process::GID.eid = integer               -> fixnum
+ *     Process::GID.grant_privilege(group)    -> fixnum
+ *     Process::GID.eid = group               -> fixnum
  *
  *  Set the effective group ID, and if possible, the saved group ID of
- *  the process to the given _integer_. Returns the new
+ *  the process to the given _group_. Returns the new
  *  effective group ID. Not available on all platforms.
  *
  *     [Process.gid, Process.egid]          #=> [0, 0]
@@ -5325,7 +5445,8 @@ rb_setegid_core(rb_gid_t egid)
 static VALUE
 p_gid_grant_privilege(VALUE obj, VALUE id)
 {
-    rb_setegid_core(NUM2GIDT(id));
+    PREPARE_GETGRNAM;
+    rb_setegid_core(OBJ2GID(id));
     return id;
 }
 
@@ -6008,6 +6129,12 @@ Init_process(void)
     rb_define_module_function(rb_mProcGID, "sid_available?", p_gid_have_saved_id, 0);
     rb_define_module_function(rb_mProcUID, "switch", p_uid_switch, 0);
     rb_define_module_function(rb_mProcGID, "switch", p_gid_switch, 0);
+#ifdef p_uid_from_name
+    rb_define_module_function(rb_mProcUID, "from_name", p_uid_from_name, 1);
+#endif
+#ifdef p_gid_from_name
+    rb_define_module_function(rb_mProcGID, "from_name", p_gid_from_name, 1);
+#endif
 
     rb_mProcID_Syscall = rb_define_module_under(rb_mProcess, "Sys");
 
