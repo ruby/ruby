@@ -1,3 +1,9 @@
+Wed Mar 28 15:06:18 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (r_symreal): default to ASCII-8BIT for non-ascii symbols,
+	  otherwise it should be converted to US-ASCII in rb_intern_str() if
+	  possible.  [ruby-core:43762][Bug #6209]
+
 Wed Mar 28 08:44:24 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: updating version to match gem

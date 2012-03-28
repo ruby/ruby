@@ -1161,8 +1161,7 @@ r_symreal(struct load_arg *arg, int ivar)
 	    idx = id2encidx(id, r_object(arg));
 	}
     }
-    if (idx < 0) idx = rb_usascii_encindex();
-    rb_enc_associate_index(s, idx);
+    if (idx > 0) rb_enc_associate_index(s, idx);
     id = rb_intern_str(s);
     st_insert(arg->symbols, (st_data_t)n, (st_data_t)id);
 

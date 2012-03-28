@@ -455,6 +455,15 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(o1, o2)
   end
 
+  def test_marshal_symbol_ascii8bit
+    bug6209 = '[ruby-core:43762]'
+    o1 = "\xff".force_encoding("ASCII-8BIT").intern
+    m = Marshal.dump(o1)
+    o2 = nil
+    assert_nothing_raised(EncodingError, bug6209) {o2 = Marshal.load(m)}
+    assert_equal(o1, o2, bug6209)
+  end
+
   class PrivateClass
     def initialize(foo)
       @foo = foo
