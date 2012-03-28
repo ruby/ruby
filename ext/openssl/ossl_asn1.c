@@ -149,11 +149,16 @@ num_to_asn1integer(VALUE obj, ASN1_INTEGER *ai)
 ASN1_INTEGER *
 num_to_asn1integer(VALUE obj, ASN1_INTEGER *ai)
 {
-    BIGNUM *bn = GetBNPtr(obj);
+    BIGNUM *bn;
+   
+    if (NIL_P(obj)) 
+	ossl_raise(rb_eTypeError, "Can't convert nil into Integer");
 
-    if (!(ai = BN_to_ASN1_INTEGER(bn, ai))) {
+    bn = GetBNPtr(obj);
+
+    if (!(ai = BN_to_ASN1_INTEGER(bn, ai)))
 	ossl_raise(eOSSLError, NULL);
-    }
+
     return ai;
 }
 #endif
@@ -219,6 +224,9 @@ static ID sivVALUE, sivTAG, sivTAG_CLASS, sivTAGGING, sivINFINITE_LENGTH, sivUNU
 static ASN1_BOOLEAN
 obj_to_asn1bool(VALUE obj)
 {
+    if (NIL_P(obj))
+	ossl_raise(rb_eTypeError, "Can't convert nil into Boolean");
+
 #if OPENSSL_VERSION_NUMBER < 0x00907000L
      return RTEST(obj) ? 0xff : 0x100;
 #else

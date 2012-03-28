@@ -198,6 +198,18 @@ class  OpenSSL::TestASN1 < Test::Unit::TestCase
     encode_decode_test(OpenSSL::ASN1::Integer, [72, -127, -128, 128, -1, 0, 1, -(2**12345), 2**12345])
   end
 
+  def test_encode_nil
+    m = OpenSSL::ASN1
+    [ 
+      m::Boolean, m::Integer, m::BitString, m::OctetString,
+      m::ObjectId, m::Enumerated, m::UTF8String, m::UTCTime,
+      m::GeneralizedTime, m::Sequence, m::Set
+    ].each do |klass|
+      #Primitives raise TypeError, Constructives NoMethodError
+      assert_raise(TypeError, NoMethodError) { klass.send(:new, nil).to_der }
+    end
+  end
+
   def encode_decode_test(type, values)
     values.each do |v|
       assert_equal(v, OpenSSL::ASN1.decode(type.new(v).to_der).value)
