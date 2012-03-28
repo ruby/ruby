@@ -83,6 +83,13 @@ with all sufficient information, see the ChangeLog file.
 * zlib
   * Added support for the new deflate strategies Zlib::RLE and Zlib::FIXED.
 
+* openssl
+  * Consistently raise an error when trying to encode nil values. All instances
+    of OpenSSL::ASN1::Primitive now raise TypeError when calling to_der on an
+    instance whose value is nil. All instances of OpenSSL::ASN1::Constructive
+    raise NoMethodError in the same case. Constructing such values is still
+    permitted.
+
 === Language changes
 === Compatibility issues (excluding feature bug fixes)
 
