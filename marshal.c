@@ -1148,7 +1148,7 @@ r_symlink(struct load_arg *arg)
 static ID
 r_symreal(struct load_arg *arg, int ivar)
 {
-    volatile VALUE s = r_bytes(arg);
+    VALUE s = r_bytes(arg);
     ID id;
     int idx = -1;
     st_index_t n = arg->symbols->num_entries;
