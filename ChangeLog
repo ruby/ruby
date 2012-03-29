@@ -1,3 +1,8 @@
+Thu Mar 29 16:35:32 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (terminal_width, del_status_line, put_status):
+	  extract as methods.
+
 Thu Mar 29 10:20:18 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_pkcs7.c: fix crash when parsing garbage data.

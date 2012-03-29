@@ -374,24 +374,39 @@ module Test
         exit c
       end
 
+      def terminal_width
+        @terminal_width ||=
+          begin
+            require 'io/console'
+            $stdout.winsize[1]
+          rescue LoadError, NoMethodError
+            ENV["COLUMNS"].to_i.nonzero? || 80
+          end
+      end
+
+      def del_status_line
+        return unless @tty
+        print "\r"+" "*terminal_width+"\r"
+        $stdout.flush
+      end
+
+      def put_status(line)
+        return print(line) unless @tty
+        @status_line_size ||= 0
+        del_status_line
+        $stdout.flush
+        line = line[0...@terminal_width]
+        print line
+        $stdout.flush
+        @status_line_size = line.size
+      end
+
       def jobs_status
         return unless @options[:job_status]
         puts "" unless @options[:verbose]
         status_line = @workers.map(&:to_s).join(" ")
-        if @options[:job_status] == :replace and $stdout.tty?
-          @terminal_width ||=
-            begin
-              require 'io/console'
-              $stdout.winsize[1]
-            rescue LoadError, NoMethodError
-              ENV["COLUMNS"].to_i.nonzero? || 80
-            end
-          @jstr_size ||= 0
-          del_jobs_status
-          $stdout.flush
-          print status_line[0...@terminal_width]
-          $stdout.flush
-          @jstr_size = [status_line.size, @terminal_width].min
+        if @options[:job_status] == :replace and @tty
+          put_status status_line
         else
           puts status_line
         end
@@ -399,7 +414,7 @@ module Test
 
       def del_jobs_status
         return unless @options[:job_status] == :replace && @jstr_size.nonzero?
-        print "\r"+" "*@jstr_size+"\r"
+        del_status_line
       end
 
       def after_worker_quit(worker)
@@ -627,6 +642,8 @@ module Test
         result
       end
 
+      alias mini_run_suite _run_suite
+
       # Overriding of MiniTest::Unit#puke
       def puke klass, meth, e
         # TODO:
@@ -647,6 +664,11 @@ module Test
             end
         @report << e
         e[0, 1]
+      end
+
+      def initialize # :nodoc:
+        super
+        @tty = $stdout.tty?
       end
 
       def status(*args)

@@ -7,7 +7,7 @@ module Test
         undef autorun
       end
 
-      alias orig_run_suite _run_suite
+      alias orig_run_suite mini_run_suite
       undef _run_suite
       undef _run_suites
       undef run
