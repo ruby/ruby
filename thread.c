@@ -1312,7 +1312,7 @@ rb_threadptr_execute_interrupts_common(rb_thread_t *th)
 	}
 
 	if (timer_interrupt) {
-	    unsigned long limits_us = 250 * 1000;
+	    unsigned long limits_us = TIME_QUANTUM_USEC;
 
 	    if (th->priority > 0)
 		limits_us <<= th->priority;

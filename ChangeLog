@@ -1,3 +1,11 @@
+Thu Mar 29 10:12:12 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread.c (rb_threadptr_execute_interrupts_common): use defined
+	  TIME_QUANTUM_USEC instead of a magic number.  there is no meanings
+	  to use different values for checking interval of interruption and
+	  thread switching limits.
+	  cf. [Bug #6098]
+
 Thu Mar 29 09:26:17 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_x509cert.rb: Exclude test that fails when issuing
