@@ -1,3 +1,10 @@
+Thu Mar 29 10:20:18 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_pkcs7.c: fix crash when parsing garbage data.
+	* test/openssl/test_pkcs7.rb: assert correct behavior for it.
+	  Thanks to Matt Venables for reporting the issue.
+	  [ruby-core:43250][Bug #6134]
+
 Thu Mar 29 10:16:05 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread_win32.c (TIME_QUANTUM_USEC): 10ms(= old setting) [experimental]
@@ -13,7 +20,7 @@ Thu Mar 29 10:12:12 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Thu Mar 29 09:26:17 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
-	* test/openssl/test_x509cert.rb: Exclude test that fails when issuing
+	* test/openssl/test_x509cert.rb: exclude test that fails when issuing
 	  a certificate with RSA signature and DSS1 digest for earlier
 	  OpenSSL versions when used in conjunction with OpenSSL 1.0.1.
 	  Thanks, Vit Ondruch, for reporting the issue.
