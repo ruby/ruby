@@ -267,7 +267,7 @@ to_strkey(key, value, hash)
     VALUE hash;
 {
     rb_hash_aset(hash, rb_funcall(key, ID_to_s, 0, 0), value);
-    return ST_CHECK;
+    return ST_CONTINUE;
 }
 
 static VALUE
@@ -279,7 +279,7 @@ tk_symbolkey2str(self, keys)
 
     if NIL_P(keys) return new_keys;
     keys = rb_convert_type(keys, T_HASH, "Hash", "to_hash");
-    st_foreach_check(RHASH_TBL(keys), to_strkey, new_keys, Qundef);
+    st_foreach_check(RHASH_TBL(keys), to_strkey, new_keys);
     return new_keys;
 }
 
@@ -658,11 +658,11 @@ push_kv(key, val, args)
 #endif
     rb_ary_push(ary, key2keyname(key));
 
-    if (val == TK_None) return ST_CHECK;
+    if (val == TK_None) return ST_CONTINUE;
 
     rb_ary_push(ary, get_eval_string_core(val, Qnil, RARRAY_PTR(args)[1]));
 
-    return ST_CHECK;
+    return ST_CONTINUE;
 }
 
 static VALUE
@@ -674,7 +674,7 @@ hash2kv(hash, ary, self)
     volatile VALUE dst = rb_ary_new2(2 * RHASH_SIZE(hash));
     volatile VALUE args = rb_ary_new3(2, dst, self);
 
-    st_foreach_check(RHASH_TBL(hash), push_kv, args, Qundef);
+    st_foreach_check(RHASH_TBL(hash), push_kv, args);
 
     if (NIL_P(ary)) {
         return dst;
@@ -702,11 +702,11 @@ push_kv_enc(key, val, args)
 #endif
     rb_ary_push(ary, key2keyname(key));
 
-    if (val == TK_None) return ST_CHECK;
+    if (val == TK_None) return ST_CONTINUE;
 
     rb_ary_push(ary, get_eval_string_core(val, Qtrue, RARRAY_PTR(args)[1]));
 
-    return ST_CHECK;
+    return ST_CONTINUE;
 }
 
 static VALUE
@@ -718,7 +718,7 @@ hash2kv_enc(hash, ary, self)
     volatile VALUE dst = rb_ary_new2(2 * RHASH_SIZE(hash));
     volatile VALUE args = rb_ary_new3(2, dst, self);
 
-    st_foreach_check(RHASH_TBL(hash), push_kv_enc, args, Qundef);
+    st_foreach_check(RHASH_TBL(hash), push_kv_enc, args);
 
     if (NIL_P(ary)) {
         return dst;

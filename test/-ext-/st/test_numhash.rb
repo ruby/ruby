@@ -39,7 +39,7 @@ class Bug::StNumHash
         1.upto(up){|i| tbl[i] = i}
         assert_nothing_raised("delete_safe forces iteration to fail with size #{up}") do
           tbl.each do |k, v, t|
-            assert_equal k, t.delete_safe(k)
+            assert_equal k, vv = t.delete_safe(k), "delete_safe returns #{vv.inspect} instead of #{k} (initial size #{up})"
             true
           end
         end
