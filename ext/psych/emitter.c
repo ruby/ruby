@@ -351,7 +351,7 @@ static VALUE start_mapping(
 	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValuePtr(anchor)),
 	    (yaml_char_t *)(NIL_P(tag) ? NULL : StringValuePtr(tag)),
 	    implicit ? 1 : 0,
-	    (yaml_sequence_style_t)NUM2INT(style)
+	    (yaml_mapping_style_t)NUM2INT(style)
 	    );
 
     emit(emitter, &event);

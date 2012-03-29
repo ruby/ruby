@@ -46,9 +46,13 @@ module Psych
         end
       when TIME
         parse_time string
-      when /^\d{4}-\d{1,2}-\d{1,2}$/
+      when /^\d{4}-(?:1[012]|0\d|\d)-(?:[12]\d|3[01]|0\d|\d)$/
         require 'date'
-        Date.strptime(string, '%Y-%m-%d')
+        begin
+          Date.strptime(string, '%Y-%m-%d')
+        rescue ArgumentError
+          string
+        end
       when /^\.inf$/i
         1 / 0.0
       when /^-\.inf$/i
@@ -61,7 +65,7 @@ module Psych
         else
           string.sub(/^:/, '').to_sym
         end
-      when /^[-+]?[1-9][0-9_]*(:[0-5]?[0-9])+$/
+      when /^[-+]?[0-9][0-9_]*(:[0-5]?[0-9])+$/
         i = 0
         string.split(':').each_with_index do |n,e|
           i += (n.to_i * 60 ** (e - 2).abs)
@@ -74,13 +78,19 @@ module Psych
         end
         i
       when FLOAT
-        return Float(string.gsub(/[,_]/, '')) rescue ArgumentError
+        begin
+          return Float(string.gsub(/[,_]/, ''))
+        rescue ArgumentError
+        end
 
         @string_cache[string] = true
         string
       else
         if string.count('.') < 2
-          return Integer(string.gsub(/[,_]/, '')) rescue ArgumentError
+          begin
+            return Integer(string.gsub(/[,_]/, ''))
+          rescue ArgumentError
+          end
         end
 
         @string_cache[string] = true

@@ -31,6 +31,79 @@ module Psych
       @emitter = Psych::Emitter.new @buffer
     end
 
+    def test_transcode_shiftjis
+      str = "こんにちは！"
+      loaded = Psych.load("--- こんにちは！".encode('SHIFT_JIS'))
+      assert_equal str, loaded
+    end
+
+    def test_transcode_utf16le
+      str = "こんにちは！"
+      loaded = Psych.load("--- こんにちは！".encode('UTF-16LE'))
+      assert_equal str, loaded
+    end
+
+    def test_transcode_utf16be
+      str = "こんにちは！"
+      loaded = Psych.load("--- こんにちは！".encode('UTF-16BE'))
+      assert_equal str, loaded
+    end
+
+    def test_io_shiftjis
+      t = Tempfile.new(['shiftjis', 'yml'], :encoding => 'SHIFT_JIS')
+      t.write '--- こんにちは！'
+      t.close
+
+      # If the external encoding isn't utf8, utf16le, or utf16be, we cannot
+      # process the file.
+      File.open(t.path, 'r', :encoding => 'SHIFT_JIS') do |f|
+        assert_raises ArgumentError do
+          Psych.load(f)
+        end
+      end
+
+      t.close(true)
+    end
+
+    def test_io_utf16le
+      t = Tempfile.new(['utf16le', 'yml'])
+      t.binmode
+      t.write '--- こんにちは！'.encode('UTF-16LE')
+      t.close
+
+      File.open(t.path, 'rb', :encoding => 'UTF-16LE') do |f|
+        assert_equal "こんにちは！", Psych.load(f)
+      end
+
+      t.close(true)
+    end
+
+    def test_io_utf16be
+      t = Tempfile.new(['utf16be', 'yml'])
+      t.binmode
+      t.write '--- こんにちは！'.encode('UTF-16BE')
+      t.close
+
+      File.open(t.path, 'rb', :encoding => 'UTF-16BE') do |f|
+        assert_equal "こんにちは！", Psych.load(f)
+      end
+
+      t.close(true)
+    end
+
+    def test_io_utf8
+      t = Tempfile.new(['utf8', 'yml'])
+      t.binmode
+      t.write '--- こんにちは！'.encode('UTF-8')
+      t.close
+
+      File.open(t.path, 'rb', :encoding => 'UTF-8') do |f|
+        assert_equal "こんにちは！", Psych.load(f)
+      end
+
+      t.close(true)
+    end
+
     def test_emit_alias
       @emitter.start_stream Psych::Parser::UTF8
       @emitter.start_document [], [], true

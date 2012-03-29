@@ -2,6 +2,37 @@ require 'psych/helper'
 
 module Psych
   class TestString < TestCase
+    class X < String
+    end
+
+    class Y < String
+      attr_accessor :val
+    end
+
+    def test_backwards_with_syck
+      x = Psych.load "--- !str:#{X.name} foo\n\n"
+      assert_equal X, x.class
+      assert_equal 'foo', x
+    end
+
+    def test_empty_subclass
+      assert_match "!ruby/string:#{X}", Psych.dump(X.new)
+      x = Psych.load Psych.dump X.new
+      assert_equal X, x.class
+    end
+
+    def test_subclass_with_attributes
+      y = Psych.load Psych.dump Y.new.tap {|y| y.val = 1}
+      assert_equal Y, y.class
+      assert_equal 1, y.val
+    end
+
+    def test_string_with_base_60
+      yaml = Psych.dump '01:03:05'
+      assert_match "'01:03:05'", yaml
+      assert_equal '01:03:05', Psych.load(yaml)
+    end
+
     def test_tagged_binary_should_be_dumped_as_binary
       string = "hello world!"
       string.force_encoding 'ascii-8bit'

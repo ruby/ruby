@@ -2,6 +2,15 @@ require 'psych/helper'
 
 module Psych
   class TestMergeKeys < TestCase
+    def test_missing_merge_key
+      yaml = <<-eoyml
+bar:
+  << : *foo
+      eoyml
+      exp = assert_raises(Psych::BadAlias) { Psych.load yaml }
+      assert_match 'foo', exp.message
+    end
+
     # [ruby-core:34679]
     def test_merge_key
       yaml = <<-eoyml

@@ -31,9 +31,7 @@ module Psych
         result
       end
 
-      def visit_Psych_Nodes_Scalar o
-        @st[o.anchor] = o.value if o.anchor
-
+      def deserialize o
         if klass = Psych.load_tags[o.tag]
           instance = klass.allocate
 
@@ -52,8 +50,16 @@ module Psych
         case o.tag
         when '!binary', 'tag:yaml.org,2002:binary'
           o.value.unpack('m').first
-        when '!str', 'tag:yaml.org,2002:str'
-          o.value
+        when /^!(?:str|ruby\/string)(?::(.*))?/, 'tag:yaml.org,2002:str'
+          klass = resolve_class($1)
+          if klass
+            klass.allocate.replace o.value
+          else
+            o.value
+          end
+        when '!ruby/object:BigDecimal'
+          require 'bigdecimal'
+          BigDecimal._load o.value
         when "!ruby/object:DateTime"
           require 'date'
           @ss.parse_time(o.value).to_datetime
@@ -92,6 +98,11 @@ module Psych
           @ss.tokenize o.value
         end
       end
+      private :deserialize
+
+      def visit_Psych_Nodes_Scalar o
+        register o, deserialize(o)
+      end
 
       def visit_Psych_Nodes_Sequence o
         if klass = Psych.load_tags[o.tag]
@@ -108,15 +119,18 @@ module Psych
 
         case o.tag
         when '!omap', 'tag:yaml.org,2002:omap'
-          map = Psych::Omap.new
-          @st[o.anchor] = map if o.anchor
+          map = register(o, Psych::Omap.new)
           o.children.each { |a|
             map[accept(a.children.first)] = accept a.children.last
           }
           map
+        when /^!(?:seq|ruby\/array):(.*)$/
+          klass = resolve_class($1)
+          list  = register(o, klass.allocate)
+          o.children.each { |c| list.push accept c }
+          list
         else
-          list = []
-          @st[o.anchor] = list if o.anchor
+          list = register(o, [])
           o.children.each { |c| list.push accept c }
           list
         end
@@ -127,16 +141,33 @@ module Psych
         return revive_hash({}, o) unless o.tag
 
         case o.tag
-        when '!str', 'tag:yaml.org,2002:str'
+        when /^!(?:str|ruby\/string)(?::(.*))?/, 'tag:yaml.org,2002:str'
+          klass = resolve_class($1)
           members = Hash[*o.children.map { |c| accept c }]
           string = members.delete 'str'
+
+          if klass
+            string = klass.allocate
+            string.replace string
+          end
+
           init_with(string, members.map { |k,v| [k.to_s.sub(/^@/, ''),v] }, o)
+        when /^!ruby\/array:(.*)$/
+          klass = resolve_class($1)
+          list  = register(o, klass.allocate)
+
+          members = Hash[o.children.map { |c| accept c }.each_slice(2).to_a]
+          list.replace members['internal']
+
+          members['ivars'].each do |ivar, v|
+            list.instance_variable_set ivar, v
+          end
+          list
         when /^!ruby\/struct:?(.*)?$/
           klass = resolve_class($1)
 
           if klass
-            s = klass.allocate
-            @st[o.anchor] = s if o.anchor
+            s = register(o, klass.allocate)
 
             members = {}
             struct_members = s.members.map { |x| x.to_sym }
@@ -158,7 +189,7 @@ module Psych
 
         when '!ruby/range'
           h = Hash[*o.children.map { |c| accept c }]
-          Range.new(h['begin'], h['end'], h['excl'])
+          register o, Range.new(h['begin'], h['end'], h['excl'])
 
         when /^!ruby\/exception:?(.*)?$/
           h = Hash[*o.children.map { |c| accept c }]
@@ -177,11 +208,11 @@ module Psych
 
         when '!ruby/object:Complex'
           h = Hash[*o.children.map { |c| accept c }]
-          Complex(h['real'], h['image'])
+          register o, Complex(h['real'], h['image'])
 
         when '!ruby/object:Rational'
           h = Hash[*o.children.map { |c| accept c }]
-          Rational(h['numerator'], h['denominator'])
+          register o, Rational(h['numerator'], h['denominator'])
 
         when /^!ruby\/object:?(.*)?$/
           name = $1 || 'Object'
@@ -205,10 +236,15 @@ module Psych
       end
 
       def visit_Psych_Nodes_Alias o
-        @st[o.anchor]
+        @st.fetch(o.anchor) { raise BadAlias, "Unknown alias: #{o.anchor}" }
       end
 
       private
+      def register node, object
+        @st[node.anchor] = object if node.anchor
+        object
+      end
+
       def revive_hash hash, o
         @st[o.anchor] = hash if o.anchor
 
@@ -249,7 +285,7 @@ module Psych
           o.init_with c
         elsif o.respond_to?(:yaml_initialize)
           if $VERBOSE
-            "Implementing #{o.class}#yaml_initialize is deprecated, please implement \"init_with(coder)\""
+            warn "Implementing #{o.class}#yaml_initialize is deprecated, please implement \"init_with(coder)\""
           end
           o.yaml_initialize c.tag, c.map
         else

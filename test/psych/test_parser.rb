@@ -32,6 +32,49 @@ module Psych
       @handler.parser = @parser
     end
 
+    def test_exception_memory_leak
+      yaml = <<-eoyaml
+%YAML 1.1
+%TAG ! tag:tenderlovemaking.com,2009:
+--- &ponies
+- first element
+- *ponies
+- foo: bar
+...
+      eoyaml
+
+      [:start_stream, :start_document, :end_document, :alias, :scalar,
+       :start_sequence, :end_sequence, :start_mapping, :end_mapping,
+       :end_stream].each do |method|
+
+        klass = Class.new(Psych::Handler) do
+          define_method(method) do |*args|
+            raise
+          end
+        end
+
+        parser = Psych::Parser.new klass.new
+        2.times {
+          assert_raises(RuntimeError, method.to_s) do
+            parser.parse yaml
+          end
+        }
+      end
+    end
+
+    def test_multiparse
+      3.times do
+        @parser.parse '--- foo'
+      end
+    end
+
+    def test_filename
+      ex = assert_raises(Psych::SyntaxError) do
+        @parser.parse '--- `', 'omg!'
+      end
+      assert_match 'omg!', ex.message
+    end
+
     def test_line_numbers
       assert_equal 0, @parser.mark.line
       @parser.parse "---\n- hello\n- world"
@@ -80,15 +123,6 @@ module Psych
       assert_equal 19, @parser.mark.index
     end
 
-    def test_set_encoding_twice
-      @parser.external_encoding = Psych::Parser::UTF16LE
-
-      e = assert_raises(Psych::Exception) do
-        @parser.external_encoding = Psych::Parser::UTF16LE
-      end
-      assert_equal "don't set the encoding twice!", e.message
-    end
-
     def test_bom
       tadpole = 'おたまじゃくし'
 
@@ -108,6 +142,7 @@ module Psych
 
     def test_bogus_io
       o = Object.new
+      def o.external_encoding; nil end
       def o.read len; self end
 
       assert_raises(TypeError) do

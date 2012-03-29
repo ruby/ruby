@@ -1,3 +1,161 @@
+Wed Mar 28 08:44:24 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: updating version to match gem
+	* ext/psych/psych.gemspec: ditto
+	* ext/psych/lib/psych/visitors/to_ruby.rb: fixing deprecation warning
+
+Mon Jul 18 13:36:47 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: define a new BadAlias error class.
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: raise an exception when
+	  deserializing an alias that does not exist.
+
+	* test/psych/test_merge_keys.rb: corresponding test.
+
+Fri Mar  9 06:29:22 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb (load, parse): stop parsing or loading after
+	  the first document has been parsed.
+
+	* test/psych/test_stream.rb: pertinent tests.
+
+Fri Mar  9 06:17:05 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb (parse_stream, load_stream): if a block is
+	  given, documents will be yielded to the block as they are parsed.
+	  [ruby-core:42404] [Bug #5978]
+
+	* ext/psych/lib/psych/handlers/document_stream.rb: add a handler that
+	  yields documents as they are parsed
+
+	* test/psych/test_stream.rb: corresponding tests.
+
+Tue Mar  6 02:31:20 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/core_ext.rb: only extend Kernel if IRB is loaded
+	  in order to stop method pollution.
+
+Tue Feb 28 10:28:51 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: default open YAML files with utf8 external
+	  encoding. [ruby-core:42967]
+	* test/psych/test_tainted.rb: ditto
+
+Fri Feb 24 13:54:33 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c: prevent a memory leak by protecting calls to
+	  handler callbacks.
+	* test/psych/test_parser.rb: test to demonstrate leak.
+
+Fri Feb 24 08:08:38 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c: set parser encoding based on the YAML input
+	  rather than user configuration.
+	* test/psych/test_encoding.rb: corresponding tests.
+	* test/psych/test_parser.rb: ditto
+	* test/psych/test_tainted.rb: ditto
+
+Fri Feb 10 03:41:31 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c: removed external encoding setter, allow parser
+	  to be reused.
+	* ext/psych/lib/psych/parser.rb: added external encoding setter.
+	* test/psych/test_parser.rb: test parser reuse
+
+Wed Jan 18 12:49:15 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: Added support for loading
+	  subclasses of String with ivars
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: Added support for dumping
+	  subclasses of String with ivars
+	* test/psych/test_string.rb: corresponding tests
+
+Wed Jan 18 10:39:47 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: Added ability to load array
+	  subclasses with ivars.
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: Added ability to dump
+	  array subclasses with ivars.
+	* test/psych/test_array.rb: corresponding tests
+
+Wed Dec 21 02:25:36 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/emitter.c: fixing clang warnings. Thanks Joey!
+
+Sun Dec 18 12:42:48 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: BigDecimals can be restored
+	  from YAML.
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: BigDecimals can be dumped
+	  to YAML.
+	* test/psych/test_numeric.rb: tests for BigDecimal serialization
+
+Sun Dec 18 12:03:13 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: Strings that look like dates
+	  should be treated as strings and not dates.
+
+	* test/psych/test_scalar_scanner.rb: corresponding tests.
+
+Wed Dec  7 08:04:31 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb (module Psych): parse and load methods take
+	  an optional file name that is used when raising Psych::SyntaxError
+	  exceptions
+	* ext/psych/lib/psych/syntax_error.rb (module Psych): allow nil file
+	  names and handle nil file names in the exception message
+	* test/psych/test_exception.rb (module Psych): Tests for changes.
+
+Wed Nov 30 09:09:37 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c (parse): parse method can take an option file
+	  name for use in exception messages.
+	* test/psych/test_parser.rb: corresponding tests.
+
+Tue Nov 22 04:46:22 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: remove autoload from psych
+	* ext/psych/lib/psych/json.rb: ditto
+
+Wed Nov  9 04:52:16 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/tree_builder.rb: dump complex numbers,
+	  rationals, etc with reference ids.
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: ditto
+	* ext/psych/lib/psych/visitors/to_ruby.rb: loading complex numbers,
+	  rationals, etc with reference ids.
+	* test/psych/test_object_references.rb: corresponding tests
+
+Mon Nov  7 20:31:52 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: make sure strings that look
+	  like base 60 numbers are serialized as quoted strings.
+	* test/psych/test_string.rb: test for change.
+
+Thu Oct 27 08:47:38 2011  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/psych/parser.c: remove unused variable.
+
+Wed Oct  5 02:50:27 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/syntax_error.rb: Add file, line, offset, and
+	  message attributes during parse failure.
+	* ext/psych/parser.c: Update parser to raise exception with correct
+	  values.
+	* test/psych/test_exception.rb: corresponding tests.
+
+Wed Oct  5 01:52:16 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c (parse): Use context_mark for indicating error
+	  line and column.
+
+Wed Oct  5 01:22:08 2011  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: use normal begin / rescue
+	  since postfix rescue cannot receive the exception class. Thanks
+	  nagachika!
+
 Tue Mar 27 22:22:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_STACK_GROW_DIRECTION): substitute CPU name as
