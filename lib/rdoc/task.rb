@@ -316,6 +316,8 @@ end
 # :stopdoc:
 module Rake
 
+  remove_const(:RDocTask) if defined?(RDocTask) # remove deprecated class
+
   ##
   # For backwards compatibility
 
