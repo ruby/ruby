@@ -2,9 +2,9 @@
 #include <ruby/st.h>
 
 static int
-update_func(st_data_t key, st_data_t *value, st_data_t arg, int existing)
+update_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
-    VALUE ret = rb_yield_values(existing ? 2 : 1, (VALUE)key, (VALUE)*value);
+    VALUE ret = rb_yield_values(existing ? 2 : 1, (VALUE)*key, (VALUE)*value);
     switch (ret) {
       case Qfalse:
 	return ST_STOP;

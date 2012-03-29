@@ -417,7 +417,7 @@ load_lock(const char *ftptr)
 }
 
 static int
-release_barrier(st_data_t key, st_data_t *value, st_data_t done, int existing)
+release_barrier(st_data_t *key, st_data_t *value, st_data_t done, int existing)
 {
     VALUE barrier = (VALUE)*value;
     if (!existing) return ST_STOP;
@@ -425,7 +425,7 @@ release_barrier(st_data_t key, st_data_t *value, st_data_t done, int existing)
 	/* still in-use */
 	return ST_CONTINUE;
     }
-    xfree((char *)key);
+    xfree((char *)*key);
     return ST_DELETE;
 }
 

@@ -1,3 +1,7 @@
+Thu Mar 29 23:50:15 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c (st_update): pass pointer to key to the callback function.
+
 Thu Mar 29 16:36:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c (st_update): add existing parameter to the callback function.

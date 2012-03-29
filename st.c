@@ -841,7 +841,7 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 	    existing = 1;
 	}
 	{
-	    retval = (*func)(key, &value, arg, existing);
+	    retval = (*func)(&key, &value, arg, existing);
 	    if (!table->entries_packed) {
 		FIND_ENTRY(table, ptr, hash_val, bin_pos);
 		goto unpacked;
@@ -869,7 +869,7 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 	existing = 1;
     }
     {
-	retval = (*func)(ptr->key, &value, arg, existing);
+	retval = (*func)(&key, &value, arg, existing);
       unpacked:
 	switch (retval) {
 	  case ST_CONTINUE:
