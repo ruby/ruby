@@ -13,7 +13,7 @@
 
 #include <process.h>
 
-#define TIME_QUANTUM_USEC (100 * 1000)
+#define TIME_QUANTUM_USEC (10 * 1000)
 #define RB_CONDATTR_CLOCK_MONOTONIC 1 /* no effect */
 
 #undef Sleep

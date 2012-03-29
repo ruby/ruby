@@ -1,3 +1,8 @@
+Thu Mar 29 10:16:05 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread_win32.c (TIME_QUANTUM_USEC): 10ms(= old setting) [experimental]
+	  cf. [Bug #6098]
+
 Thu Mar 29 10:12:12 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread.c (rb_threadptr_execute_interrupts_common): use defined
