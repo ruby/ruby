@@ -645,6 +645,35 @@ module Test
 
       alias mini_run_suite _run_suite
 
+      def _run_suite suite, type
+        header = "#{type}_suite_header"
+        puts send(header, suite) if respond_to? header
+
+        filter = options[:filter] || '/./'
+        filter = Regexp.new $1 if filter =~ /\A\/(.*)\/\z/
+
+        assertions = suite.send("#{type}_methods").grep(filter).map { |method|
+          inst = suite.new method
+          inst._assertions = 0
+          _run_testcase(inst)
+          inst._assertions
+        }
+
+        return assertions.size, assertions.inject(0) { |sum, n| sum + n }
+      end
+
+      def _run_testcase(inst)
+        print "#{inst.class}##{inst.__name__}" if @verbose
+
+        @start_time = Time.now
+        result = inst.run self
+        time = Time.now - @start_time
+
+        print " = %.2f s = " % time if @verbose
+        print result
+        puts if @verbose
+      end
+
       # Overriding of MiniTest::Unit#puke
       def puke klass, meth, e
         # TODO:
