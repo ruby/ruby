@@ -663,15 +663,28 @@ module Test
       end
 
       def _run_testcase(inst)
-        print "#{inst.class}##{inst.__name__}" if @verbose
+        put_status "#{inst.class}##{inst.__name__}" if @tty or @verbose
 
         @start_time = Time.now
         result = inst.run self
         time = Time.now - @start_time
 
+        if @tty and !@verbose and report.empty?
+          del_status_line
+          return
+        end
         print " = %.2f s = " % time if @verbose
         print result
-        puts if @verbose
+        puts if @tty or @verbose
+        if @tty and !@verbose
+          @report_count ||= 0
+          report.each do |msg|
+            next if @options[:hide_skip] and msg.start_with? "Skipped:"
+            puts "%3d) %s\n" % [@report_count += 1, msg]
+          end
+          report.clear
+        end
+        $stdout.flush
       end
 
       # Overriding of MiniTest::Unit#puke
