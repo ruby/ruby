@@ -1,3 +1,11 @@
+Thu Mar 29 09:26:17 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_x509cert.rb: Exclude test that fails when issuing
+	  a certificate with RSA signature and DSS1 digest for earlier
+	  OpenSSL versions when used in conjunction with OpenSSL 1.0.1.
+	  Thanks, Vit Ondruch, for reporting the issue.
+	  [ruby-core:42949][Bug #6089]
+
 Thu Mar 29 08:25:35 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* NEWS: add note about unified behavior of encoding nil values in
