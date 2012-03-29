@@ -3672,9 +3672,10 @@ wmap_allocate(VALUE klass)
 }
 
 static int
-wmap_final_func(st_data_t key, st_data_t *value, st_data_t arg)
+wmap_final_func(st_data_t key, st_data_t *value, st_data_t arg, int existing)
 {
     VALUE obj = (VALUE)key, ary = (VALUE)*value;
+    if (!existing) return ST_STOP;
     rb_ary_delete(ary, obj);
     if (!RARRAY_LEN(ary)) return ST_DELETE;
     return ST_CONTINUE;

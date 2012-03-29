@@ -1,3 +1,7 @@
+Thu Mar 29 16:36:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c (st_update): add existing parameter to the callback function.
+
 Thu Mar 29 16:35:32 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (terminal_width, del_status_line, put_status):

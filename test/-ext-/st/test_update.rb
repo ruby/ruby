@@ -10,9 +10,8 @@ class Bug::StTable
     end
 
     def test_notfound
-      called = false
-      assert_equal(false, @tbl.st_update(:c) {called = true})
-      assert_equal(false, called)
+      assert_equal(false, @tbl.st_update(:c) {42})
+      assert_equal({a: 1, b: 2, c: 42}, @tbl)
     end
 
     def test_continue

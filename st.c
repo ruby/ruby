@@ -825,12 +825,12 @@ st_cleanup_safe(st_table *table, st_data_t never)
 }
 
 int
-st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *value, st_data_t arg), st_data_t arg)
+st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data_t arg)
 {
     st_index_t hash_val, bin_pos;
     register st_table_entry *ptr, **last, *tmp;
-    st_data_t value;
-    int retval;
+    st_data_t value = 0;
+    int retval, existing = 0;
 
     hash_val = do_hash(key, table);
 
@@ -838,38 +838,49 @@ st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *
 	st_index_t i = find_packed_index(table, hash_val, key);
 	if (i < table->real_entries) {
 	    value = PVAL(table, i);
-	    retval = (*func)(key, &value, arg);
+	    existing = 1;
+	}
+	{
+	    retval = (*func)(key, &value, arg, existing);
 	    if (!table->entries_packed) {
 		FIND_ENTRY(table, ptr, hash_val, bin_pos);
-		if (ptr == 0) return 0;
 		goto unpacked;
 	    }
 	    switch (retval) {
 	      case ST_CONTINUE:
+		if (!existing) {
+		    add_packed_direct(table, key, value, hash_val);
+		    break;
+		}
 		PVAL_SET(table, i, value);
 		break;
 	      case ST_DELETE:
+		if (!existing) break;
 		remove_packed_entry(table, i);
 	    }
-	    return 1;
 	}
-	return 0;
+	return existing;
     }
 
     FIND_ENTRY(table, ptr, hash_val, bin_pos);
 
-    if (ptr == 0) {
-	return 0;
-    }
-    else {
+    if (ptr != 0) {
 	value = ptr->record;
-	retval = (*func)(ptr->key, &value, arg);
+	existing = 1;
+    }
+    {
+	retval = (*func)(ptr->key, &value, arg, existing);
       unpacked:
 	switch (retval) {
 	  case ST_CONTINUE:
+	    if (!existing) {
+		add_direct(table, key, value, hash_val, hash_val % table->num_bins);
+		break;
+	    }
 	    ptr->record = value;
 	    break;
 	  case ST_DELETE:
+	    if (!existing) break;
 	    last = &table->bins[bin_pos];
 	    for (; (tmp = *last) != 0; last = &tmp->next) {
 		if (ptr == tmp) {
@@ -882,7 +893,7 @@ st_update(st_table *table, st_data_t key, int (*func)(st_data_t key, st_data_t *
 	    }
 	    break;
 	}
-	return 1;
+	return existing;
     }
 }
 

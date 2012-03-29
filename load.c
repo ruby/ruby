@@ -417,9 +417,10 @@ load_lock(const char *ftptr)
 }
 
 static int
-release_barrier(st_data_t key, st_data_t *value, st_data_t done)
+release_barrier(st_data_t key, st_data_t *value, st_data_t done, int existing)
 {
     VALUE barrier = (VALUE)*value;
+    if (!existing) return ST_STOP;
     if (done ? rb_barrier_destroy(barrier) : rb_barrier_release(barrier)) {
 	/* still in-use */
 	return ST_CONTINUE;
