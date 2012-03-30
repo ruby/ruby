@@ -43,6 +43,7 @@ lb = LocalBarrier.new(n)
 end
 
 lb.sync
-print "#{n-1}: cone\n"
+print "#{n-1}: cont\n"
+lb.join
 
 print "exit.\n"
