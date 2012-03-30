@@ -622,6 +622,7 @@ module Test
       end
 
       def _run_suites suites, type
+        _prepare_run(suites, type)
         @interrupt = nil
         result = []
         GC.start
@@ -643,16 +644,21 @@ module Test
         result
       end
 
+      def _prepare_run(suites, type)
+        if /\A\/(.*)\/\z/ =~ (filter = options[:filter])
+          options[:filter] = filter = Regexp.new($1)
+        end
+      end
+
       alias mini_run_suite _run_suite
 
       def _run_suite suite, type
         header = "#{type}_suite_header"
         puts send(header, suite) if respond_to? header
 
-        filter = options[:filter] || '/./'
-        filter = Regexp.new $1 if filter =~ /\A\/(.*)\/\z/
-
-        assertions = suite.send("#{type}_methods").grep(filter).map { |method|
+        tests = suite.send("#{type}_methods")
+        filter = options[:filter] and tests = tests.grep(filter)
+        assertions = tests.map { |method|
           inst = suite.new method
           inst._assertions = 0
           _run_testcase(inst)
