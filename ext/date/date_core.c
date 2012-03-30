@@ -9229,31 +9229,37 @@ Init_date_core(void)
     positive_inf = +INFINITY;
     negative_inf = -INFINITY;
 
-    /*
-     * date and datetime class - Tadayoshi Funaba 1998-2011
+     * The Date and DateTime classes provide methods for storing, comparing, transforming, and operating on values of date and time. Date objects store only the date (e.g. 1987-06-29), while DateTime objects store both the date and time (e.g. 1984-02-09 05:32:12).
      *
-     * 'date' provides two classes Date and DateTime.
+     * 1998-2011 by Tadayoshi Funaba
+     *
+     * Introduction
+     *
+     * Date and DateTime are included in the standard library. To use, require ‘date’ will provide both classes.
      *
      * == Terms and definitions
      *
      * Some terms and definitions are based on ISO 8601 and JIS X 0301.
      *
-     * === calendar date
+     * === Calendar date
      *
      * The calendar date is a particular day of a calendar year,
      * identified by its ordinal number within a calendar month within
      * that year.
      *
-     * In those classes, this is so-called "civil".
+     *      In the Date and DateTime classes, this is called "civil".
+     *      Date.civil(2012,03,17) refers to March 17th, 2012
      *
-     * === ordinal date
+     * === Ordinal date
      *
      * The ordinal date is a particular day of a calendar year identified
      * by its ordinal number within the year.
      *
-     * In those classes, this is so-called "ordinal".
+     *      In the Date and DateTime classes, this is called "ordinal".
+     *      Date.ordinal(2012,77) refers to the 77th day of 2012
      *
-     * === week date
+     *
+     * === Week date
      *
      * The week date is a date identified by calendar week and day numbers.
      *
@@ -9263,9 +9269,11 @@ Init_date_core(void)
      * includes the first Thursday of that year.  In the Gregorian
      * calendar, this is equivalent to the week which includes January 4.
      *
-     * In those classes, this so-called "commercial".
+     *      In the Date and DateTime classes, this is called "commercial".
+     *      Date.commercial(2012,11,06) refers to the 6th day of the 11th week of 2012
      *
-     * === julian day number
+     *
+     * === Julian day number
      *
      * The Julian day number is in elapsed days since noon (Greenwich mean
      * time) on January 1, 4713 BCE (in the Julian calendar).
@@ -9279,9 +9287,10 @@ Init_date_core(void)
      * it just refers to "chronological Julian day number", not the
      * original.
      *
-     * In those classes, those are so-called "ajd" and "jd".
+     *      In the Date and DateTime classes, this is called "ajd" and "jd".
+     *      Date.jd(2456004) refers to 2,456,004 days since January 1, 4713 BCE
      *
-     * === modified julian day number
+     * === Modified julian day number
      *
      * The modified Julian day number is in elapsed days since midnight
      * (Coordinated universal time) on November 17, 1858 CE (in the
@@ -9297,8 +9306,8 @@ Init_date_core(void)
      * appears, it just refers to "chronological modified Julian day
      * number", not the original.
      *
-     * In those classes, this is so-called "mjd".
-     *
+     *      In the Date and DateTime classes, this is called "mjd".
+     *      Date.new(2012,03,17).mjd #=> 56003
      *
      * == Date
      *
