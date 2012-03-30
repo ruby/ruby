@@ -648,6 +648,14 @@ module Test
         if /\A\/(.*)\/\z/ =~ (filter = options[:filter])
           options[:filter] = filter = Regexp.new($1)
         end
+        type = "#{type}_methods"
+        total = if filter
+                  suites.inject(0) {|n, suite| n + suite.send(type).grep(filter).size}
+                else
+                  suites.inject(0) {|n, suite| n + suite.send(type).size}
+                end
+        @test_count = 0
+        @total_tests = total.to_s(10)
       end
 
       alias mini_run_suite _run_suite
@@ -669,7 +677,10 @@ module Test
       end
 
       def _run_testcase(inst)
-        put_status "#{inst.class}##{inst.__name__}" if @tty or @verbose
+        if @tty or @verbose
+          put_status("[#{(@test_count += 1).to_s(10).rjust(@total_tests.size)}/#{@total_tests}] "\
+                     "#{inst.class}##{inst.__name__}")
+        end
 
         @start_time = Time.now
         result = inst.run self
