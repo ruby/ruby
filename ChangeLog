@@ -1,4 +1,6 @@
-Sat Mar 31 07:40:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Mar 31 07:44:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c: Qundef cannot be passed from st_foreach_check().
 
 	* hash.c, marshal.c, object.c, variable.c: fix callback argument types
 	  of iterators.

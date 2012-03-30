@@ -131,7 +131,7 @@ st_foreach_safe(st_table *table, int (*func)(ANYARGS), st_data_t a)
     arg.tbl = table;
     arg.func = (st_foreach_func *)func;
     arg.arg = a;
-    if (st_foreach_check(table, foreach_safe_i, (st_data_t)&arg, Qundef)) {
+    if (st_foreach_check(table, foreach_safe_i, (st_data_t)&arg, (st_data_t)Qundef)) {
 	rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
 }
@@ -152,14 +152,13 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int err)
     st_table *tbl;
 
     tbl = RHASH(arg->hash)->ntbl;
-    if ((VALUE)key == Qundef) return ST_CONTINUE;
     status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
     if (RHASH(arg->hash)->ntbl != tbl) {
 	rb_raise(rb_eRuntimeError, "rehash occurred during iteration");
     }
     switch (status) {
       case ST_DELETE:
-	st_delete_safe(tbl, &key, 0, Qundef);
+	st_delete_safe(tbl, &key, 0, (st_data_t)Qundef);
 	FL_SET(arg->hash, HASH_DELETED);
       case ST_CONTINUE:
 	break;
@@ -176,7 +175,7 @@ hash_foreach_ensure(VALUE hash)
 
     if (RHASH(hash)->iter_lev == 0) {
 	if (FL_TEST(hash, HASH_DELETED)) {
-	    st_cleanup_safe(RHASH(hash)->ntbl, Qundef);
+	    st_cleanup_safe(RHASH(hash)->ntbl, (st_data_t)Qundef);
 	    FL_UNSET(hash, HASH_DELETED);
 	}
     }
@@ -438,7 +437,7 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
 {
     st_table *tbl = (st_table *)arg;
 
-    if (key != Qundef) st_insert(tbl, key, value);
+    if (key != Qundef) st_insert(tbl, (st_data_t)key, (st_data_t)value);
     return ST_CONTINUE;
 }
 
@@ -767,7 +766,7 @@ rb_hash_delete_key(VALUE hash, VALUE key)
     if (!RHASH(hash)->ntbl)
         return Qundef;
     if (RHASH(hash)->iter_lev > 0) {
-	if (st_delete_safe(RHASH(hash)->ntbl, &ktmp, &val, Qundef)) {
+	if (st_delete_safe(RHASH(hash)->ntbl, &ktmp, &val, (st_data_t)Qundef)) {
 	    FL_SET(hash, HASH_DELETED);
 	    return (VALUE)val;
 	}
@@ -819,7 +818,6 @@ shift_i(VALUE key, VALUE value, VALUE arg)
 {
     struct shift_var *var = (struct shift_var *)arg;
 
-    if (key == Qundef) return ST_CONTINUE;
     if (var->key != Qundef) return ST_STOP;
     var->key = key;
     var->val = value;
@@ -831,7 +829,6 @@ shift_i_safe(VALUE key, VALUE value, VALUE arg)
 {
     struct shift_var *var = (struct shift_var *)arg;
 
-    if (key == Qundef) return ST_CONTINUE;
     var->key = key;
     var->val = value;
     return ST_STOP;
