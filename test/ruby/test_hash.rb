@@ -390,27 +390,27 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_key2?
-    assert(!@cls[].key?(1))
-    assert(!@cls[].key?(nil))
-    assert(@h.key?(nil))
-    assert(@h.key?(1))
-    assert(!@h.key?('gumby'))
+    assert_not_send([@cls[], :key?, 1])
+    assert_not_send([@cls[], :key?, nil])
+    assert_send([@h, :key?, nil])
+    assert_send([@h, :key?, 1])
+    assert_not_send([@h, :key?, 'gumby'])
   end
 
   def test_value?
-    assert(!@cls[].value?(1))
-    assert(!@cls[].value?(nil))
-    assert(@h.value?('one'))
-    assert(@h.value?(nil))
-    assert(!@h.value?('gumby'))
+    assert_not_send([@cls[], :value?, 1])
+    assert_not_send([@cls[], :value?, nil])
+    assert_send([@h, :value?, 'one'])
+    assert_send([@h, :value?, nil])
+    assert_not_send([@h, :value?, 'gumby'])
   end
 
   def test_include?
-    assert(!@cls[].include?(1))
-    assert(!@cls[].include?(nil))
-    assert(@h.include?(nil))
-    assert(@h.include?(1))
-    assert(!@h.include?('gumby'))
+    assert_not_send([@cls[], :include?, 1])
+    assert_not_send([@cls[], :include?, nil])
+    assert_send([@h, :include?, nil])
+    assert_send([@h, :include?, 1])
+    assert_not_send([@h, :include?, 'gumby'])
   end
 
   def test_key
@@ -457,11 +457,11 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_key?
-    assert(!@cls[].key?(1))
-    assert(!@cls[].key?(nil))
-    assert(@h.key?(nil))
-    assert(@h.key?(1))
-    assert(!@h.key?('gumby'))
+    assert_not_send([@cls[], :key?, 1])
+    assert_not_send([@cls[], :key?, nil])
+    assert_send([@h, :key?, nil])
+    assert_send([@h, :key?, 1])
+    assert_not_send([@h, :key?, 'gumby'])
   end
 
   def test_keys
@@ -480,11 +480,11 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_member?
-    assert(!@cls[].member?(1))
-    assert(!@cls[].member?(nil))
-    assert(@h.member?(nil))
-    assert(@h.member?(1))
-    assert(!@h.member?('gumby'))
+    assert_not_send([@cls[], :member?, 1])
+    assert_not_send([@cls[], :member?, nil])
+    assert_send([@h, :member?, nil])
+    assert_send([@h, :member?, 1])
+    assert_not_send([@h, :member?, 'gumby'])
   end
 
   def test_rehash
@@ -555,7 +555,7 @@ class TestHash < Test::Unit::TestCase
 
     @h.length.times {
       k, v = h.shift
-      assert(@h.key?(k))
+      assert_send([@h, :key?, k])
       assert_equal(@h[k], v)
     }
 
@@ -662,11 +662,11 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_value2?
-    assert(!@cls[].value?(1))
-    assert(!@cls[].value?(nil))
-    assert(@h.value?(nil))
-    assert(@h.value?('one'))
-    assert(!@h.value?('gumby'))
+    assert_not_send([@cls[], :value?, 1])
+    assert_not_send([@cls[], :value?, nil])
+    assert_send([@h, :value?, nil])
+    assert_send([@h, :value?, 'one'])
+    assert_not_send([@h, :value?, 'gumby'])
   end
 
   def test_values
@@ -798,13 +798,13 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_eql
-    assert(!({}.eql?(0)))
+    assert_not_send([{}, :eql?, 0])
     o = Object.new
     def o.to_hash; {}; end
     def o.eql?(x); true; end
-    assert({}.eql?(o))
+    assert_send([{}, :eql?, o])
     def o.eql?(x); false; end
-    assert(!({}.eql?(o)))
+    assert_not_send([{}, :eql?, o])
   end
 
   def test_hash2
