@@ -817,7 +817,9 @@ flodivmod(double x, double y, double *divp, double *modp)
 #ifdef HAVE_FMOD
     mod = fmod(x, y);
 #else
-    {
+    if((x == 0.0) || (isinf(y) && !isinf(x)))
+        mod = x;
+    else {
 	double z;
 
 	modf(x/y, &z);
@@ -836,6 +838,17 @@ flodivmod(double x, double y, double *divp, double *modp)
     if (divp) *divp = div;
 }
 
+/*
+ * Returns the modulo of division of x by y.
+ * An error will be raised if y == 0.
+ */
+
+double ruby_float_mod(double x, double y) {
+    double mod;
+    flodivmod(x, y, 0, &mod);
+    return mod;
+}
+
 
 /*
  *  call-seq:
@@ -851,7 +864,7 @@ flodivmod(double x, double y, double *divp, double *modp)
 static VALUE
 flo_mod(VALUE x, VALUE y)
 {
-    double fy, mod;
+    double fy;
 
     switch (TYPE(y)) {
       case T_FIXNUM:
@@ -866,8 +879,7 @@ flo_mod(VALUE x, VALUE y)
       default:
 	return rb_num_coerce_bin(x, y, '%');
     }
-    flodivmod(RFLOAT_VALUE(x), fy, 0, &mod);
-    return DBL2NUM(mod);
+    return DBL2NUM(ruby_float_mod(RFLOAT_VALUE(x), fy));
 }
 
 static VALUE
@@ -2648,12 +2660,7 @@ fix_mod(VALUE x, VALUE y)
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_modulo(x, y);
       case T_FLOAT:
-	{
-	    double mod;
-
-	    flodivmod((double)FIX2LONG(x), RFLOAT_VALUE(y), 0, &mod);
-	    return DBL2NUM(mod);
-	}
+	return DBL2NUM(ruby_float_mod((double)FIX2LONG(x), RFLOAT_VALUE(y)));
       default:
 	return rb_num_coerce_bin(x, y, '%');
     }

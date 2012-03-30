@@ -1,3 +1,16 @@
+Fri Mar 30 14:12:53 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* numeric.c: fix flodivmod for cornercases [Bug #6044]
+	  add ruby_float_mod
+
+	* insns.def (opt_mod): use ruby_float_mod
+
+	* internal.h: declare ruby_float_mod
+
+	* test/ruby/test_float.rb: tests for above
+
+	* test/ruby/envutil.rb: create helper assert_is_minus_zero
+
 Wed Mar 28 08:44:24 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: updating version to match gem

@@ -184,6 +184,10 @@ module Test
         assert(msg === stderr, "warning message #{stderr.inspect} is expected to match #{msg.inspect}")
       end
 
+
+      def assert_is_minus_zero(f)
+        assert(1.0/f == -Float::INFINITY, "#{f} is not -0.0")
+      end
     end
   end
 end
