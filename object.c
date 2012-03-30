@@ -400,8 +400,11 @@ rb_inspect(VALUE obj)
 }
 
 static int
-inspect_i(ID id, VALUE value, VALUE str)
+inspect_i(st_data_t k, st_data_t v, st_data_t a)
 {
+    ID id = (ID)k;
+    VALUE value = (VALUE)v;
+    VALUE str = (VALUE)a;
     VALUE str2;
     const char *ivname;
 

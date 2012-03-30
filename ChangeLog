@@ -1,3 +1,8 @@
+Sat Mar 31 07:40:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c, marshal.c, object.c, variable.c: fix callback argument types
+	  of iterators.
+
 Thu Mar 29 23:50:15 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c (st_update): pass pointer to key to the callback function.

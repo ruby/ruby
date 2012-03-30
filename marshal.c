@@ -506,8 +506,12 @@ w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
 }
 
 static int
-w_obj_each(ID id, VALUE value, struct dump_call_arg *arg)
+w_obj_each(st_data_t key, st_data_t val, st_data_t a)
 {
+    ID id = (ID)key;
+    VALUE value = (VALUE)val;
+    struct dump_call_arg *arg = (struct dump_call_arg *)a;
+
     if (id == rb_id_encoding()) return ST_CONTINUE;
     if (id == rb_intern("E")) return ST_CONTINUE;
     w_symbol(id, arg->arg);
