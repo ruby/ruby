@@ -1,3 +1,7 @@
+Fri Mar 30 14:14:36 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c (datetime_s_now): [ruby-core:43256].
+
 Fri Mar 30 14:12:53 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* numeric.c: fix flodivmod for cornercases [Bug #6044]
