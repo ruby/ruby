@@ -1164,6 +1164,12 @@ class TestString < Test::Unit::TestCase
 
     assert_equal("[2, 3]", [1,2,3].slice!(1,10000).inspect, "moved from btest/knownbug")
 
+    bug6206 = '[ruby-dev:45441]'
+    Encoding.list.each do |enc|
+      next unless enc.ascii_compatible?
+      s = S("a:".force_encoding(enc))
+      assert_equal([enc]*2, s.split(":", 2).map(&:encoding), bug6206)
+    end
   end
 
   def test_squeeze
@@ -1803,6 +1809,13 @@ class TestString < Test::Unit::TestCase
     assert_raise(TypeError) { "hello".partition(1) }
     def (hyphen = Object.new).to_str; "-"; end
     assert_equal(%w(foo - bar), "foo-bar".partition(hyphen), '[ruby-core:23540]')
+
+    bug6206 = '[ruby-dev:45441]'
+    Encoding.list.each do |enc|
+      next unless enc.ascii_compatible?
+      s = S("a:".force_encoding(enc))
+      assert_equal([enc]*3, s.partition("|").map(&:encoding), bug6206)
+    end
   end
 
   def test_rpartition
@@ -1811,6 +1824,13 @@ class TestString < Test::Unit::TestCase
     assert_raise(TypeError) { "hello".rpartition(1) }
     def (hyphen = Object.new).to_str; "-"; end
     assert_equal(%w(foo - bar), "foo-bar".rpartition(hyphen), '[ruby-core:23540]')
+
+    bug6206 = '[ruby-dev:45441]'
+    Encoding.list.each do |enc|
+      next unless enc.ascii_compatible?
+      s = S("a:".force_encoding(enc))
+      assert_equal([enc]*3, s.rpartition("|").map(&:encoding), bug6206)
+    end
   end
 
   def test_setter
