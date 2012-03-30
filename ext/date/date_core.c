@@ -9229,6 +9229,7 @@ Init_date_core(void)
     positive_inf = +INFINITY;
     negative_inf = -INFINITY;
 
+    /*
      * The Date and DateTime classes provide methods for storing, comparing, transforming, and operating on values of date and time. Date objects store only the date (e.g. 1987-06-29), while DateTime objects store both the date and time (e.g. 1984-02-09 05:32:12).
      *
      * 1998-2011 by Tadayoshi Funaba
@@ -9289,6 +9290,7 @@ Init_date_core(void)
      *
      *      In the Date and DateTime classes, this is called "ajd" and "jd".
      *      Date.jd(2456004) refers to 2,456,004 days since January 1, 4713 BCE
+     *      Date.new(2012,03,17).ajd #=> (4912007/2)
      *
      * === Modified julian day number
      *
