@@ -9234,7 +9234,7 @@ Init_date_core(void)
      *
      * 1998-2011 by Tadayoshi Funaba
      *
-     * Introduction
+     * = Introduction
      *
      * Date and DateTime are included in the standard library. To use, require ‘date’ will provide both classes.
      *
@@ -9248,16 +9248,20 @@ Init_date_core(void)
      * identified by its ordinal number within a calendar month within
      * that year.
      *
-     *      In the Date and DateTime classes, this is called "civil".
-     *      Date.civil(2012,03,17) refers to March 17th, 2012
+     * In the Date and DateTime classes, this is called "civil."
+     *
+     *      Date.civil(2012,03,17)
+     * This refers to March 17th, 2012.
      *
      * === Ordinal date
      *
      * The ordinal date is a particular day of a calendar year identified
      * by its ordinal number within the year.
      *
-     *      In the Date and DateTime classes, this is called "ordinal".
-     *      Date.ordinal(2012,77) refers to the 77th day of 2012
+     * In the Date and DateTime classes, this is called "ordinal."
+     *
+     *      Date.ordinal(2012,77)
+     * This refers to the 77th day of 2012.
      *
      *
      * === Week date
@@ -9270,8 +9274,10 @@ Init_date_core(void)
      * includes the first Thursday of that year.  In the Gregorian
      * calendar, this is equivalent to the week which includes January 4.
      *
-     *      In the Date and DateTime classes, this is called "commercial".
-     *      Date.commercial(2012,11,06) refers to the 6th day of the 11th week of 2012
+     * In the Date and DateTime classes, this is called "commercial."
+     *
+     *      Date.commercial(2012,11,06)
+     * This refers to the 6th day of the 11th week of 2012.
      *
      *
      * === Julian day number
@@ -9288,9 +9294,10 @@ Init_date_core(void)
      * it just refers to "chronological Julian day number", not the
      * original.
      *
-     *      In the Date and DateTime classes, this is called "ajd" and "jd".
-     *      Date.jd(2456004) refers to 2,456,004 days since January 1, 4713 BCE
-     *      Date.new(2012,03,17).ajd #=> (4912007/2)
+     * In the Date and DateTime classes, this is called "ajd" and "jd."
+     *
+     *      Date.jd(2456004)
+     * This refers to 2,456,004 days since January 1, 4713 BCE.
      *
      * === Modified julian day number
      *
@@ -9308,8 +9315,10 @@ Init_date_core(void)
      * appears, it just refers to "chronological modified Julian day
      * number", not the original.
      *
-     *      In the Date and DateTime classes, this is called "mjd".
+     * In the Date and DateTime classes, this is called "mjd."
+     *
      *      Date.new(2012,03,17).mjd #=> 56003
+     * 2012-03-17 is 56,003 days after November 17, 1858 CE.
      *
      * == Date
      *
