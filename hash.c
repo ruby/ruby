@@ -131,7 +131,7 @@ st_foreach_safe(st_table *table, int (*func)(ANYARGS), st_data_t a)
     arg.tbl = table;
     arg.func = (st_foreach_func *)func;
     arg.arg = a;
-    if (st_foreach_check(table, foreach_safe_i, (st_data_t)&arg, (st_data_t)Qundef)) {
+    if (st_foreach_check(table, foreach_safe_i, (st_data_t)&arg, 0)) {
 	rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
 }
