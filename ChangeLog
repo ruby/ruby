@@ -1,3 +1,18 @@
+Fri Mar 30 14:17:17 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_pkcs7.c: fix crash when parsing garbage data.
+	* test/openssl/test_pkcs7.rb: assert correct behavior for it.
+	  Thanks to Matt Venables for reporting the issue.
+	  [ruby-core:43250][Bug #6134]
+
+Fri Mar 30 14:17:17 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_x509cert.rb: exclude test that fails when issuing
+	  a certificate with RSA signature and DSS1 digest for earlier
+	  OpenSSL versions when used in conjunction with OpenSSL 1.0.1.
+	  Thanks, Vit Ondruch, for reporting the issue.
+	  [ruby-core:42949][Bug #6089]
+
 Fri Mar 30 14:15:40 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_new_empty): should copy also the encoding as an

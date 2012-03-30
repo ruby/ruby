@@ -146,6 +146,11 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
     assert_equal(3, recip[1].serial)
     assert_equal(data, p7.decrypt(@rsa1024, @ee2_cert))
   end
+  
+  def test_graceful_parsing_failure #[ruby-core:43250]
+    contents = File.read(__FILE__)
+    assert_raise(ArgumentError) { OpenSSL::PKCS7.new(contents) }
+  end
 end
 
 end

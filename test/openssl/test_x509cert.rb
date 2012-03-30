@@ -175,7 +175,8 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
     assert_raise(OpenSSL::X509::CertificateError) do
       cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
                         nil, nil, OpenSSL::Digest::DSS1.new)
-    end
+    end if OpenSSL::OPENSSL_VERSION_NUMBER < 0x10001000 # [ruby-core:42949]
+
     assert_raise(OpenSSL::X509::CertificateError) do
       cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
                         nil, nil, OpenSSL::Digest::MD5.new)
