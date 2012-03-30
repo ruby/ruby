@@ -1,4 +1,7 @@
-Sat Mar 31 07:47:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Mar 31 07:53:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c (st_foreach_check): remove the entry by replacing with never
+	  when ST_DELETE.
 
 	* hash.c (st_foreach_safe): since table is not for VALUE, Qundef is
 	  not special value, so use 0 instead.  therefore this function can be

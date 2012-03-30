@@ -130,6 +130,15 @@ remove_packed_entry(st_table *table, st_index_t i)
     }
 }
 
+static inline void
+remove_safe_packed_entry(st_table *table, st_index_t i, st_data_t never)
+{
+    table->num_entries--;
+    PKEY_SET(table, i, never);
+    PVAL_SET(table, i, never);
+    PHASH_SET(table, i, 0);
+}
+
 /*
  * MINSIZE is the minimum size of a dictionary.
  */
@@ -761,10 +770,7 @@ st_delete_safe(register st_table *table, register st_data_t *key, st_data_t *val
 	if (i < table->real_entries) {
 	    if (value != 0) *value = PVAL(table, i);
 	    *key = PKEY(table, i);
-	    PKEY_SET(table, i, never);
-	    PVAL_SET(table, i, never);
-	    PHASH_SET(table, i, 0);
-	    table->num_entries--;
+	    remove_safe_packed_entry(table, i, never);
 	    return 1;
 	}
 	if (value != 0) *value = 0;
@@ -936,8 +942,7 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 	      case ST_STOP:
 		return 0;
 	      case ST_DELETE:
-		remove_packed_entry(table, i);
-		i--;
+		remove_safe_packed_entry(table, i, never);
 		break;
 	    }
 	}
@@ -976,9 +981,9 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 		for (; (tmp = *last) != 0; last = &tmp->next) {
 		    if (ptr == tmp) {
 			tmp = ptr->fore;
-			*last = ptr->next;
 			remove_entry(table, ptr);
-			st_free_entry(ptr);
+			ptr->key = ptr->record = never;
+			ptr->hash = 0;
 			if (ptr == tmp) return 0;
 			ptr = tmp;
 			break;

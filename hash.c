@@ -158,8 +158,8 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int err)
     }
     switch (status) {
       case ST_DELETE:
-	st_delete_safe(tbl, &key, 0, (st_data_t)Qundef);
 	FL_SET(arg->hash, HASH_DELETED);
+	return ST_DELETE;
       case ST_CONTINUE:
 	break;
       case ST_STOP:
