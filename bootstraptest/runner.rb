@@ -110,6 +110,8 @@ End
   tests = Dir.glob("#{File.dirname($0)}/test_*.rb").sort if tests.empty?
   pathes = tests.map {|path| File.expand_path(path) }
 
+  @progress = %w[- \\ | /]
+  @tty = !@verbose && $stderr.tty?
   unless quiet
     puts Time.now
     if defined?(RUBY_DESCRIPTION)
@@ -136,8 +138,18 @@ def exec_test(pathes)
   @location = nil
   pathes.each do |path|
     $stderr.print "\n#{File.basename(path)} "
+    $stderr.print "." if @tty
     $stderr.puts if @verbose
+    count = @count
+    error = @error
     load File.expand_path(path)
+    if @tty
+      if @error == error
+        $stderr.print "\b""PASS #{@count-count}"
+      else
+        $stderr.print "\b""FAIL #{@error-error}/#{@count-count}"
+      end
+    end
   end
   $stderr.puts
   if @error == 0
@@ -162,7 +174,11 @@ def show_progress(message = '')
   end
   faildesc = yield
   if !faildesc
-    $stderr.print '.'
+    if @tty
+      $stderr.print "\b#{@progress[@count % @progress.size]}"
+    else
+      $stderr.print '.'
+    end
     $stderr.puts if @verbose
   else
     $stderr.print 'F'
