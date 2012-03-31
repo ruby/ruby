@@ -742,7 +742,7 @@ class TestHash < Test::Unit::TestCase
   def test_shift_none
     h = Hash.new {|hh, k| "foo"}
     def h.default(k = nil)
-      default_proc.call(k).upcase
+      super.upcase
     end
     assert_equal("FOO", h.shift)
   end
