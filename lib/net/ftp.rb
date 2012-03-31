@@ -16,6 +16,7 @@
 
 require "socket"
 require "monitor"
+require "net/protocol"
 
 module Net
 
@@ -76,7 +77,7 @@ module Net
     # :stopdoc:
     FTP_PORT = 21
     CRLF = "\r\n"
-    DEFAULT_BLOCKSIZE = 4096
+    DEFAULT_BLOCKSIZE = BufferedIO::BUFSIZE
     # :startdoc:
 
     # When +true+, transfers are performed in binary mode.  Default: +true+.
@@ -92,6 +93,24 @@ module Net
     # Sets or retrieves the +resume+ status, which decides whether incomplete
     # transfers are resumed or restarted.  Default: +false+.
     attr_accessor :resume
+
+    # Number of seconds to wait for the connection to open. Any number
+    # may be used, including Floats for fractional seconds. If the FTP
+    # object cannot open a connection in this many seconds, it raises a
+    # Net::OpenTimeout exception.
+    attr_accessor :open_timeout
+
+    # Number of seconds to wait for one block to be read (via one read(2)
+    # call). Any number may be used, including Floats for fractional
+    # seconds. If the FTP object cannot read data in this many seconds,
+    # it raises a TimeoutError exception.
+    attr_reader :read_timeout
+
+    # Setter for the read_timeout attribute.
+    def read_timeout=(sec)
+      @sock.read_timeout = sec
+      @read_timeout = sec
+    end
 
     # The server's welcome message.
     attr_reader :welcome
@@ -135,6 +154,8 @@ module Net
       @resume = false
       @sock = NullSocket.new
       @logged_in = false
+      @open_timeout = nil
+      @read_timeout = 60
       if host
         connect(host)
         if user
@@ -199,12 +220,17 @@ module Net
     # SOCKS_SERVER, then a SOCKSSocket is returned, else a TCPSocket is
     # returned.
     def open_socket(host, port) # :nodoc:
-      if defined? SOCKSSocket and ENV["SOCKS_SERVER"]
-        @passive = true
-        return SOCKSSocket.open(host, port)
-      else
-        return TCPSocket.open(host, port)
-      end
+      return Timeout.timeout(@open_timeout, Net::OpenTimeout) {
+        if defined? SOCKSSocket and ENV["SOCKS_SERVER"]
+          @passive = true
+          sock = SOCKSSocket.open(host, port)
+        else
+          sock = TCPSocket.open(host, port)
+        end
+        io = BufferedSocket.new(sock)
+        io.read_timeout = @read_timeout
+        io
+      }
     end
     private :open_socket
 
@@ -405,7 +431,8 @@ module Net
         if resp[0] != ?1
           raise FTPReplyError, resp
         end
-        conn = sock.accept
+        conn = BufferedSocket.new(sock.accept)
+        conn.read_timeout = @read_timeout
         sock.close
       end
       return conn
@@ -1016,8 +1043,45 @@ module Net
 
     # :stopdoc:
     class NullSocket
+      def read_timeout=(sec)
+      end
+
+      def close
+      end
+
       def method_missing(mid, *args)
         raise FTPConnectionError, "not connected"
+      end
+    end
+
+    class BufferedSocket < BufferedIO
+      [:addr, :peeraddr].each do |method|
+        define_method(method) { |*args|
+          @io.__send__(method, *args)
+        }
+      end
+
+      def read(len = nil)
+        if len
+          s = super(len, "", true)
+          return s.empty? ? nil : s
+        else
+          result = ""
+          while s = super(BUFSIZ, "", true)
+            result << s
+          end
+          return result
+        end
+      end
+
+      def gets
+        return readuntil("\n")
+      rescue EOFError
+        return nil
+      end
+
+      def readline
+        return readuntil("\n")
       end
     end
     # :startdoc:

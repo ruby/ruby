@@ -1,3 +1,7 @@
+Sat Mar 31 13:42:39 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (read_timeout=, open_timeout=): supported timeout.
+
 Sat Mar 31 13:20:40 2012  Sokolov Yura (funny-falcon)  <funny.falcon@gmail.com>
 
 	* hash.c: remove unnecessary checks for Qundef in hash iterations.
