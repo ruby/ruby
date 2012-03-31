@@ -1,3 +1,7 @@
+Sat Mar 31 12:11:21 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_x509cert.c: Fix doc typo.
+
 Fri Mar 30 14:17:17 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_pkcs7.c: fix crash when parsing garbage data.
