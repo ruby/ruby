@@ -1,3 +1,9 @@
+Sat Mar 31 13:20:40 2012  Sokolov Yura (funny-falcon)  <funny.falcon@gmail.com>
+
+	* hash.c: remove unnecessary checks for Qundef in hash iterations.
+	  since hash use st_foreach_check for iterations, such checks are
+	  needless.
+
 Sat Mar 31 12:05:01 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_x509cert.c: Fix doc typo.
