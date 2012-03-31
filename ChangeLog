@@ -1,3 +1,7 @@
+Sat Mar 31 10:01:39 2012  Sokolov Yura  <funny-falcon <funny.falcon@gmail.com>>
+
+	* st.c (st_delete): use real_entries in st_delete for packed tables
+
 Sat Mar 31 07:53:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c (st_foreach_check): remove the entry by replacing with never
