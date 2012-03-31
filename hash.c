@@ -649,7 +649,7 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
 static VALUE
 rb_hash_set_default(VALUE hash, VALUE ifnone)
 {
-    rb_hash_modify(hash);
+    rb_hash_modify_check(hash);
     RHASH_IFNONE(hash) = ifnone;
     FL_UNSET(hash, HASH_PROC_DEFAULT);
     return ifnone;
@@ -697,7 +697,7 @@ rb_hash_set_default_proc(VALUE hash, VALUE proc)
 {
     VALUE b;
 
-    rb_hash_modify(hash);
+    rb_hash_modify_check(hash);
     b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
     if (NIL_P(b) || !rb_obj_is_proc(b)) {
 	rb_raise(rb_eTypeError,
@@ -799,7 +799,7 @@ rb_hash_delete(VALUE hash, VALUE key)
 {
     VALUE val;
 
-    rb_hash_modify(hash);
+    rb_hash_modify_check(hash);
     val = rb_hash_delete_key(hash, key);
     if (val != Qundef) return val;
     if (rb_block_given_p()) {
@@ -852,18 +852,20 @@ rb_hash_shift(VALUE hash)
 {
     struct shift_var var;
 
-    rb_hash_modify(hash);
-    var.key = Qundef;
-    rb_hash_foreach(hash, RHASH(hash)->iter_lev > 0 ? shift_i_safe : shift_i,
-		    (VALUE)&var);
+    rb_hash_modify_check(hash);
+    if (RHASH(hash)->ntbl) {
+	var.key = Qundef;
+	rb_hash_foreach(hash, RHASH(hash)->iter_lev > 0 ? shift_i_safe : shift_i,
+			(VALUE)&var);
 
-    if (var.key != Qundef) {
-	if (RHASH(hash)->iter_lev > 0) {
-	    rb_hash_delete_key(hash, var.key);
+	if (var.key != Qundef) {
+	    if (RHASH(hash)->iter_lev > 0) {
+		rb_hash_delete_key(hash, var.key);
+	    }
+	    return rb_assoc_new(var.key, var.val);
 	}
-	return rb_assoc_new(var.key, var.val);
     }
-    else if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
+    if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
 	return rb_funcall(RHASH_IFNONE(hash), id_yield, 2, hash, Qnil);
     }
     else {
@@ -899,8 +901,9 @@ VALUE
 rb_hash_delete_if(VALUE hash)
 {
     RETURN_ENUMERATOR(hash, 0, 0);
-    rb_hash_modify(hash);
-    rb_hash_foreach(hash, delete_if_i, hash);
+    rb_hash_modify_check(hash);
+    if (RHASH(hash)->ntbl)
+	rb_hash_foreach(hash, delete_if_i, hash);
     return hash;
 }
 
@@ -1025,7 +1028,7 @@ rb_hash_select_bang(VALUE hash)
     st_index_t n;
 
     RETURN_ENUMERATOR(hash, 0, 0);
-    rb_hash_modify(hash);
+    rb_hash_modify_check(hash);
     if (!RHASH(hash)->ntbl)
         return Qnil;
     n = RHASH(hash)->ntbl->num_entries;
@@ -1050,8 +1053,9 @@ VALUE
 rb_hash_keep_if(VALUE hash)
 {
     RETURN_ENUMERATOR(hash, 0, 0);
-    rb_hash_modify(hash);
-    rb_hash_foreach(hash, keep_if_i, hash);
+    rb_hash_modify_check(hash);
+    if (RHASH(hash)->ntbl)
+	rb_hash_foreach(hash, keep_if_i, hash);
     return hash;
 }
 

@@ -1,3 +1,7 @@
+Sat Mar 31 14:16:02 2012  Sokolov Yura (funny-falcon)  <funny.falcon@gmail.com>
+
+	* hash.c: do not allocate st_table when it is not necessary.
+
 Sat Mar 31 13:42:39 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (read_timeout=, open_timeout=): supported timeout.
