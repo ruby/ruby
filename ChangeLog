@@ -1,3 +1,8 @@
+Sat Mar 31 21:39:45 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler): dup to prevent
+	  @timeout_info's "can't add a new key into hash during iteration".
+
 Sat Mar 31 14:22:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (hash_default_value): extract from rb_hash_aref(), to be
