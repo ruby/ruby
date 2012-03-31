@@ -41,7 +41,7 @@ module Net
   #
   # === Example 1
   #
-  #   ftp = Net::FTP.new('ftp.netlab.co.jp')
+  #   ftp = Net::FTP.new('example.com')
   #   ftp.login
   #   files = ftp.chdir('pub/lang/ruby/contrib')
   #   files = ftp.list('n*')
@@ -50,7 +50,7 @@ module Net
   #
   # === Example 2
   #
-  #   Net::FTP.open('ftp.netlab.co.jp') do |ftp|
+  #   Net::FTP.open('example.com') do |ftp|
   #     ftp.login
   #     files = ftp.chdir('pub/lang/ruby/contrib')
   #     files = ftp.list('n*')

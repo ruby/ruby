@@ -1,3 +1,7 @@
+Sun Apr  1 00:41:56 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb: fixed the domain name in examples.
+
 Sat Mar 31 21:39:45 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler): dup to prevent
