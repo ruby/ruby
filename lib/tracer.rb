@@ -205,12 +205,12 @@ class Tracer
         else
           source = get_line(file, line)
         end
-        printf("%s:%d:%s:%s: %s",
-               file,
-               line,
-               klass || '',
-               EVENT_SYMBOL[event],
-               source)
+        stdout.printf("%s:%d:%s:%s: %s",
+                      file,
+                      line,
+                      klass || '',
+                      EVENT_SYMBOL[event],
+                      source)
       end
     end
 
