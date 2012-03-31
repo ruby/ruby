@@ -490,7 +490,7 @@ ossl_x509_get_not_after(VALUE self)
 
 /*
  * call-seq:
- *    cert.not_before = time => time
+ *    cert.not_after = time => time
  */
 static VALUE
 ossl_x509_set_not_after(VALUE self, VALUE time)

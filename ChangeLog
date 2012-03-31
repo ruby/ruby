@@ -1,3 +1,7 @@
+Sat Mar 31 12:05:01 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_x509cert.c: Fix doc typo.
+
 Sat Mar 31 10:13:24 2012  Sokolov Yura (funny-falcon)  <funny.falcon@gmail.com>
 
 	* st.c (st_foreach_check, st_foreach): remove ancient check.  This
