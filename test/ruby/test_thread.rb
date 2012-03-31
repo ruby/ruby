@@ -158,8 +158,9 @@ class TestThread < Test::Unit::TestCase
     assert_raise(Timeout::Error) do
       Timeout.timeout(0.1) { condvar.wait mutex }
     end
-    mutex.unlock rescue
-    threads[i].each.join
+    mutex.unlock
+    threads.each(&:kill)
+    threads.each(&:join)
   end
 
   def test_condvar_timed_wait
