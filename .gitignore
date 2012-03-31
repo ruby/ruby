@@ -84,6 +84,7 @@ y.tab.c
 /tmp
 /transdb.h
 /uncommon.mk
+/verconf.h
 /web
 /yasmdata.rb
 
