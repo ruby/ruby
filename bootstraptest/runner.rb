@@ -112,6 +112,13 @@ End
 
   @progress = %w[- \\ | /]
   @tty = !@verbose && $stderr.tty?
+  if @tty and /mswin|mingw/ !~ RUBY_PLATFORM and /dumb/ !~ ENV["TERM"]
+    @passed = "\e[32m"
+    @failed = "\e[31m"
+    @reset = "\e[m"
+  else
+    @passed = @failed = @reset = ""
+  end
   unless quiet
     puts Time.now
     if defined?(RUBY_DESCRIPTION)
@@ -145,9 +152,9 @@ def exec_test(pathes)
     load File.expand_path(path)
     if @tty
       if @error == error
-        $stderr.print "\b""PASS #{@count-count}"
+        $stderr.print "\b#{@passed}PASS #{@count-count}#{@reset}"
       else
-        $stderr.print "\b""FAIL #{@error-error}/#{@count-count}"
+        $stderr.print "\b#{@failed}FAIL #{@error-error}/#{@count-count}#{@reset}"
       end
     end
   end
