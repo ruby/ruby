@@ -32,6 +32,7 @@ static VALUE rb_checked_expanded_cache(int*);
 static void rb_set_expanded_cache(VALUE, int);
 static VALUE rb_expand_load_paths(long, VALUE*, int*);
 static int cached_expanded_load_path = 1;
+VALUE rb_cExpandedPath;
 
 VALUE
 rb_get_expanded_load_path(void)
@@ -900,6 +901,7 @@ rb_expand_load_paths(long pathc, VALUE* paths, int *has_relative)
 	p = RSTRING_PTR(path);
 	*has_relative = *has_relative || !rb_is_absolute_path(p);
 	path = rb_file_expand_path(path, Qnil);
+	RBASIC(path)->klass = rb_cExpandedPath;
 	rb_str_freeze(path);
 	rb_ary_push(expanded, path);
     }
@@ -991,6 +993,9 @@ rb_load_path_init(void)
     if (cached_flag != NULL) {
 	cached_expanded_load_path = atoi(cached_flag);
     }
+
+    rb_cExpandedPath = rb_class_new(rb_cString); /* XXX could GC collect it before next line is executed? */
+    rb_iv_set(rb_cFile, "expanded_path", rb_cExpandedPath); /* prevent from GC */
 
     /* Do all the magick if user did not disable it
      * with RUBY_CACHED_LOAD_PATH=0 environment variable

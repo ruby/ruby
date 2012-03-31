@@ -167,6 +167,10 @@ rb_get_path_check(VALUE obj, int level)
     }
     StringValue(tmp);
 
+    if (RBASIC(obj)->klass == rb_cExpandedPath) {
+        return obj;
+    }
+
     tmp = file_path_convert(tmp);
     if (obj != tmp && insecure_obj_p(tmp, level)) {
 	rb_insecure_operation();
@@ -2903,6 +2907,16 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
     enc = rb_enc_get(fname);
     BUFINIT();
     tainted = OBJ_TAINTED(fname);
+
+    if (RBASIC(fname)->klass == rb_cExpandedPath) {
+        size_t dlen = RSTRING_LEN(fname);
+        BUFCHECK(dlen > buflen);
+        strncpy(buf, RSTRING_PTR(fname), dlen + 1);
+        rb_str_set_len(result, dlen);
+        rb_enc_associate(result, rb_enc_check(result, fname));
+        ENC_CODERANGE_CLEAR(result);
+        return result;
+    }
 
     if (s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
 	long userlen = 0;
