@@ -739,6 +739,14 @@ class TestHash < Test::Unit::TestCase
     h.each { assert_equal([1, 2], h.shift) }
   end
 
+  def test_shift_none
+    h = Hash.new {|hh, k| "foo"}
+    def h.default(k = nil)
+      default_proc.call(k).upcase
+    end
+    assert_equal("FOO", h.shift)
+  end
+
   def test_reject_bang2
     assert_equal({1=>2}, {1=>2,3=>4}.reject! {|k, v| k + v == 7 })
     assert_nil({1=>2,3=>4}.reject! {|k, v| k == 5 })

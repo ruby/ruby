@@ -1,3 +1,9 @@
+Sat Mar 31 14:22:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (hash_default_value): extract from rb_hash_aref(), to be
+	  shared with rb_hash_shift(), so that overriding Hash#default
+	  will be respected.
+
 Sat Mar 31 14:16:02 2012  Sokolov Yura (funny-falcon)  <funny.falcon@gmail.com>
 
 	* hash.c: do not allocate st_table when it is not necessary.

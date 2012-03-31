@@ -480,6 +480,20 @@ rb_hash_rehash(VALUE hash)
     return hash;
 }
 
+static VALUE
+hash_default_value(VALUE hash, VALUE key)
+{
+    if (rb_method_basic_definition_p(CLASS_OF(hash), id_default)) {
+	VALUE ifnone = RHASH_IFNONE(hash);
+	if (!FL_TEST(hash, HASH_PROC_DEFAULT)) return ifnone;
+	if (key == Qundef) return Qnil;
+	return rb_funcall(ifnone, id_yield, 2, hash, key);
+    }
+    else {
+	return rb_funcall(hash, id_default, 1, key);
+    }
+}
+
 /*
  *  call-seq:
  *     hsh[key]    ->  value
@@ -500,13 +514,7 @@ rb_hash_aref(VALUE hash, VALUE key)
     st_data_t val;
 
     if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
-	if (!FL_TEST(hash, HASH_PROC_DEFAULT) &&
-	    rb_method_basic_definition_p(CLASS_OF(hash), id_default)) {
-	    return RHASH_IFNONE(hash);
-	}
-	else {
-	    return rb_funcall(hash, id_default, 1, key);
-	}
+	return hash_default_value(hash, key);
     }
     return (VALUE)val;
 }
@@ -865,12 +873,7 @@ rb_hash_shift(VALUE hash)
 	    return rb_assoc_new(var.key, var.val);
 	}
     }
-    if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
-	return rb_funcall(RHASH_IFNONE(hash), id_yield, 2, hash, Qnil);
-    }
-    else {
-	return RHASH_IFNONE(hash);
-    }
+    return hash_default_value(hash, Qnil);
 }
 
 static int
