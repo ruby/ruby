@@ -209,7 +209,6 @@ push_include(const char *path, VALUE (*filter)(VALUE))
 {
     const char sep = PATH_SEP_CHAR;
     const char *p, *s;
-    VALUE load_path = GET_VM()->load_path;
 
     p = path;
     while (*p) {
@@ -217,7 +216,7 @@ push_include(const char *path, VALUE (*filter)(VALUE))
 	    p++;
 	if (!*p) break;
 	for (s = p; *s && *s != sep; s = CharNext(s));
-	rb_ary_push(load_path, (*filter)(rubylib_mangled_path(p, s - p)));
+	rb_load_path_ary_push((*filter)(rubylib_mangled_path(p, s - p)));
 	p = s;
     }
 }
@@ -338,7 +337,6 @@ ruby_init_loadpath(void)
 void
 ruby_init_loadpath_safe(int safe_level)
 {
-    VALUE load_path;
     ID id_initial_load_path_mark;
     extern const char ruby_initial_load_paths[];
     const char *paths = ruby_initial_load_paths;
@@ -438,7 +436,6 @@ ruby_init_loadpath_safe(int safe_level)
 #define RUBY_RELATIVE(path, len) rubylib_mangled_path((path), (len))
 #define PREFIX_PATH() RUBY_RELATIVE(exec_prefix, sizeof(exec_prefix)-1)
 #endif
-    load_path = GET_VM()->load_path;
 
     if (safe_level == 0) {
 #ifdef MANGLED_PATH
@@ -452,7 +449,7 @@ ruby_init_loadpath_safe(int safe_level)
 	size_t len = strlen(paths);
 	VALUE path = RUBY_RELATIVE(paths, len);
 	rb_ivar_set(path, id_initial_load_path_mark, path);
-	rb_ary_push(load_path, path);
+	rb_load_path_ary_push(path);
 	paths += len + 1;
     }
 
@@ -1349,6 +1346,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 	    rb_enc_associate(RARRAY_PTR(load_path)[i], lenc);
 	}
+	rb_reset_expanded_cache();
     }
     if (!(opt->disable & DISABLE_BIT(gems))) {
 #if defined DISABLE_RUBYGEMS && DISABLE_RUBYGEMS
