@@ -1,4 +1,8 @@
-Sat Mar 31 10:01:39 2012  Sokolov Yura  <funny-falcon <funny.falcon@gmail.com>>
+Sat Mar 31 10:13:24 2012  Sokolov Yura (funny-falcon)  <funny.falcon@gmail.com>
+
+	* st.c (st_foreach_check, st_foreach): remove ancient check.  This
+	  check are from initial ordered hash commit when first entry were
+	  created with entry->fore = entry->back = entry.
 
 	* st.c (st_delete): use real_entries in st_delete for packed tables
 

@@ -984,7 +984,6 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 			remove_entry(table, ptr);
 			ptr->key = ptr->record = never;
 			ptr->hash = 0;
-			if (ptr == tmp) return 0;
 			ptr = tmp;
 			break;
 		    }
@@ -1052,7 +1051,6 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 			*last = ptr->next;
 			remove_entry(table, ptr);
 			st_free_entry(ptr);
-			if (ptr == tmp) return 0;
 			ptr = tmp;
 			break;
 		    }
