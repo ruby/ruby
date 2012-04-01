@@ -1055,7 +1055,7 @@ module Net
     end
 
     class BufferedSocket < BufferedIO
-      [:addr, :peeraddr].each do |method|
+      [:addr, :peeraddr, :send].each do |method|
         define_method(method) { |*args|
           @io.__send__(method, *args)
         }
