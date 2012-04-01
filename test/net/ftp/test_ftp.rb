@@ -263,7 +263,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("150 Here comes the directory listing.\r\n")
       conn = TCPSocket.new(host, port)
       list_lines.each_with_index do |l, i|
-        if i == 1
+        if i == 0
           sleep(0.3)
         else
           sleep(0.1)
