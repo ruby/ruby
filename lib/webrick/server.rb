@@ -204,7 +204,7 @@ module WEBrick
           else
             @logger.debug "close: <address unknown>"
           end
-          sock.close
+          sock.close unless sock.closed?
         end
       }
     end

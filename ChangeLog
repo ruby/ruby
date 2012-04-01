@@ -1,3 +1,8 @@
+Mon Apr  2 03:35:25 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/server.rb (WEBrick::GenericServer): close socket only if
+	  the socket is not closed yet.
+
 Sun Apr  1 23:03:18 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/ftp.rb (Net::BufferedSocket): should delegate send() to @io
