@@ -535,7 +535,7 @@ class FTPTest < Test::Unit::TestCase
         assert_match(/\APASS /, commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         ftp.abort
-        assert_equal("\n", commands.shift)
+        assert_equal("\n", commands.shift) # ???
         assert_equal(nil, commands.shift)
       ensure
         ftp.close if ftp
@@ -557,20 +557,20 @@ class FTPTest < Test::Unit::TestCase
       sock.print("200 Switching to Binary mode.\r\n")
       commands.push(sock.recv(1024, Socket::MSG_OOB))
       sock.print("211-FTP server status:\r\n")
-      sock.print("\n211 End of status\r\n")
+      sock.print("211 End of status\r\n")
 
     }
     begin
       begin
         ftp = Net::FTP.new
-        #ftp.read_timeout = 0.2
+        ftp.read_timeout = 0.2
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
         assert_match(/\APASS /, commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         ftp.status
-        assert_equal("\n", commands.shift)
+        assert_equal("\n", commands.shift) # ???
         assert_equal(nil, commands.shift)
       ensure
         ftp.close if ftp
