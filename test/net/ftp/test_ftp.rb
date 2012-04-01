@@ -556,7 +556,6 @@ class FTPTest < Test::Unit::TestCase
       commands.push(sock.gets)
       sock.print("200 Switching to Binary mode.\r\n")
       commands.push(sock.recv(1024))
-      sock.print("211-FTP server status:\r\n")
       sock.print("211 End of status\r\n")
     }
     begin
