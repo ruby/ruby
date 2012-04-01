@@ -263,8 +263,8 @@ class FTPTest < Test::Unit::TestCase
       sock.print("150 Here comes the directory listing.\r\n")
       conn = TCPSocket.new(host, port)
       list_lines.each_with_index do |l, i|
-        if i == 0
-          sleep(0.3)
+        if i == 1
+          sleep(0.5)
         else
           sleep(0.1)
         end
@@ -377,7 +377,7 @@ class FTPTest < Test::Unit::TestCase
       conn = TCPSocket.new(host, port)
       binary_data.scan(/.{1,1024}/nm).each_with_index do |s, i|
         if i == 1
-          sleep(0.3)
+          sleep(0.5)
         else
           sleep(0.1)
         end
