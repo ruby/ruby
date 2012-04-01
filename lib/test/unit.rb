@@ -697,7 +697,8 @@ module Test
           @report_count ||= 0
           report.each do |msg|
             next if @options[:hide_skip] and msg.start_with? "Skipped:"
-            puts "%3d) %s\n" % [@report_count += 1, msg]
+            msg = msg.split(/$/, 2)
+            puts "#{@failed_color}%3d) %s#{@reset_color}%s\n" % [@report_count += 1, *msg]
           end
           report.clear
         end
@@ -729,6 +730,12 @@ module Test
       def initialize # :nodoc:
         super
         @tty = $stdout.tty?
+        if @tty and /mswin|mingw/ !~ RUBY_PLATFORM and /dumb/ !~ ENV["TERM"]
+          @failed_color = "\e[31m"
+          @reset_color = "\e[m"
+        else
+          @failed_color = @reset_color = ""
+        end
       end
 
       def status(*args)
