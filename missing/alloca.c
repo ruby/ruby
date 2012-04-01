@@ -30,6 +30,8 @@ static char	SCCSid[] = "@(#)alloca.c	1.1";	/* for the "what" utility */
 #endif
 
 #include "ruby/config.h"
+#define X3J11 1		   /* config.h should contain void if neede */
+
 #ifdef C_ALLOCA
 
 #ifdef emacs
@@ -52,7 +54,9 @@ typedef void	*pointer;		/* generic pointer type */
 typedef char	*pointer;		/* generic pointer type */
 #endif /* X3J11 */
 
+#ifndef NULL
 #define	NULL	0			/* null pointer constant */
+#endif
 
 #ifdef RUBY_LIB_PREFIX
 #define xmalloc ruby_xmalloc
