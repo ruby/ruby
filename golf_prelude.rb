@@ -84,6 +84,10 @@ class String
     split('')
   end
 
+  def is_integer?
+    self == self.to_i.to_s
+  end
+  
   (Array.instance_methods-instance_methods-[:to_ary,:transpose,:flatten,:flatten!,:compact,:compact!,:assoc,:rassoc]).each{|meth|
     eval"
     def #{meth}(*args, &block)
