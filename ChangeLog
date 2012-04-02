@@ -16,7 +16,7 @@ Mon Apr  2 03:35:25 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 Sun Apr  1 23:03:18 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/ftp.rb (Net::BufferedSocket): should delegate send() to @io
-	  for Net::FTP#abort and Net::FTP#status..
+	  for Net::FTP#abort and Net::FTP#status.
 
 Sun Apr  1 00:41:56 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
