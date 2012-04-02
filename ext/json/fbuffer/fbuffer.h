@@ -1,4 +1,3 @@
-
 #ifndef _FBUFFER_H_
 #define _FBUFFER_H_
 
@@ -35,10 +34,7 @@ static FBuffer *fbuffer_alloc(unsigned long initial_length);
 static void fbuffer_free(FBuffer *fb);
 static void fbuffer_clear(FBuffer *fb);
 static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len);
-static void fbuffer_append_long(FBuffer *fb, long number);
 static void fbuffer_append_char(FBuffer *fb, char newchr);
-static FBuffer *fbuffer_dup(FBuffer *fb);
-static VALUE fbuffer_to_s(FBuffer *fb);
 
 static FBuffer *fbuffer_alloc(unsigned long initial_length)
 {
@@ -87,16 +83,6 @@ static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
     }
 }
 
-static void fbuffer_append_str(FBuffer *fb, VALUE str)
-{
-    const char *newstr = StringValuePtr(str);
-    unsigned long len = RSTRING_LEN(str);
-
-    RB_GC_GUARD(str);
-
-    fbuffer_append(fb, newstr, len);
-}
-
 static void fbuffer_append_char(FBuffer *fb, char newchr)
 {
     fbuffer_inc_capa(fb, 1);
@@ -126,31 +112,4 @@ static long fltoa(long number, char *buf)
     return tmp - buf;
 }
 
-static void fbuffer_append_long(FBuffer *fb, long number)
-{
-    char buf[20];
-    unsigned long len = fltoa(number, buf);
-    fbuffer_append(fb, buf, len);
-}
-
-static FBuffer *fbuffer_dup(FBuffer *fb)
-{
-    unsigned long len = fb->len;
-    FBuffer *result;
-
-    assert(len > 0);
-    if (len > 0) {
-        result = fbuffer_alloc(len);
-        fbuffer_append(result, FBUFFER_PAIR(fb));
-    }
-    return result;
-}
-
-static VALUE fbuffer_to_s(FBuffer *fb)
-{
-    VALUE result = rb_str_new(FBUFFER_PAIR(fb));
-    fbuffer_free(fb);
-    FORCE_UTF8(result);
-    return result;
-}
 #endif
