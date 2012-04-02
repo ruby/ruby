@@ -1,3 +1,7 @@
+Mon Apr  2 13:25:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse/ac.rb: autoconf-like options.
+
 Mon Apr  2 10:34:00 2012  eregon  <eregontp@gmail.com>
 
 	* string.c (rb_str_start_with, rb_str_end_with): raise an error if
