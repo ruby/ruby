@@ -758,10 +758,12 @@ rb_mod_method_defined(VALUE mod, VALUE mid)
 #define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
 
 static VALUE
-check_definition(VALUE mod, ID mid, rb_method_flag_t noex)
+check_definition(VALUE mod, VALUE mid, rb_method_flag_t noex)
 {
     const rb_method_entry_t *me;
-    me = rb_method_entry(mod, mid);
+    ID id = rb_check_id(&mid);
+    if (!id) return Qfalse;
+    me = rb_method_entry(mod, id);
     if (me) {
 	if (VISI_CHECK(me->flag, noex))
 	    return Qtrue;
@@ -798,9 +800,7 @@ check_definition(VALUE mod, ID mid, rb_method_flag_t noex)
 static VALUE
 rb_mod_public_method_defined(VALUE mod, VALUE mid)
 {
-    ID id = rb_check_id(&mid);
-    if (!id) return Qfalse;
-    return check_definition(mod, id, NOEX_PUBLIC);
+    return check_definition(mod, mid, NOEX_PUBLIC);
 }
 
 /*
@@ -832,9 +832,7 @@ rb_mod_public_method_defined(VALUE mod, VALUE mid)
 static VALUE
 rb_mod_private_method_defined(VALUE mod, VALUE mid)
 {
-    ID id = rb_check_id(&mid);
-    if (!id) return Qfalse;
-    return check_definition(mod, id, NOEX_PRIVATE);
+    return check_definition(mod, mid, NOEX_PRIVATE);
 }
 
 /*
@@ -866,9 +864,7 @@ rb_mod_private_method_defined(VALUE mod, VALUE mid)
 static VALUE
 rb_mod_protected_method_defined(VALUE mod, VALUE mid)
 {
-    ID id = rb_check_id(&mid);
-    if (!id) return Qfalse;
-    return check_definition(mod, id, NOEX_PROTECTED);
+    return check_definition(mod, mid, NOEX_PROTECTED);
 }
 
 int
