@@ -659,6 +659,15 @@ class TestString < Test::Unit::TestCase
     assert(!S("not").empty?)
   end
 
+  def test_end_with?
+    assert_send([S("hello"), :end_with?, S("llo")])
+    assert_not_send([S("hello"), :end_with?, S("ll")])
+    assert_send([S("hello"), :end_with?, S("el"), S("lo")])
+
+    bug5536 = '[ruby-core:40623]'
+    assert_raise(TypeError, bug5536) {S("str").end_with? :not_convertible_to_string}
+  end
+
   def test_eql?
     a = S("hello")
     assert(a.eql?(S("hello")))
@@ -1205,6 +1214,15 @@ class TestString < Test::Unit::TestCase
 
     a=S("The quick brown fox")
     assert_nil(a.squeeze!)
+  end
+
+  def test_start_with?
+    assert_send([S("hello"), :start_with?, S("hel")])
+    assert_not_send([S("hello"), :start_with?, S("el")])
+    assert_send([S("hello"), :start_with?, S("el"), S("he")])
+
+    bug5536 = '[ruby-core:40623]'
+    assert_raise(TypeError, bug5536) {S("str").start_with? :not_convertible_to_string}
   end
 
   def test_strip
@@ -1772,10 +1790,6 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("34\n"), l.slice!(/\A.*\n/), "[ruby-dev:31665]")
     assert_equal(S("4\n"), l.slice!(/\A.*\n/), "[ruby-dev:31665]")
     assert_nil(l.slice!(/\A.*\n/), "[ruby-dev:31665]")
-  end
-
-  def test_end_with?
-    assert("abc".end_with?("c"))
   end
 
   def test_times2

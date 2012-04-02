@@ -1,3 +1,9 @@
+Mon Apr  2 10:34:00 2012  eregon  <eregontp@gmail.com>
+
+	* string.c (rb_str_start_with, rb_str_end_with): raise an error if
+	  an argument is not convertible to a String.
+	  [ruby-core:40623][Bug #5536]
+
 Mon Apr  2 03:35:25 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/server.rb (WEBrick::GenericServer): close socket only if
