@@ -67,7 +67,7 @@ class TestMkmf < Test::Unit::TestCase
     }
     mkconfig = {
       "hdrdir" => "$(top_srcdir)/include",
-      "srcdir" => "$(top_srcdir)/ext/#{$mdir}",
+      "srcdir" => "$(top_srcdir)",
       "topdir" => $topdir,
     }
     rbconfig0.each_pair {|key, val| rbconfig[key] ||= val.dup}
