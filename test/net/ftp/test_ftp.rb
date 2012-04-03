@@ -591,6 +591,7 @@ class FTPTest < Test::Unit::TestCase
         sock = server.accept
         begin
           yield(sock)
+          sleep 0.1
         ensure
           sock.close
         end
