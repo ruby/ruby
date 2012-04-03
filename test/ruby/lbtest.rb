@@ -44,6 +44,6 @@ end
 
 lb.sync
 print "#{n-1}: cont\n"
-lb.join
+# lb.join # [ruby-dev:30653]
 
 print "exit.\n"
