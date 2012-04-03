@@ -22,6 +22,8 @@ class TestMkmf
           assert_include($defs, "-DSIGNEDNESS_OF_TEST1_T=#{expect}")
         end
       end
+    ensure
+      File.unlink("confdefs.h")
     end
   end
 end

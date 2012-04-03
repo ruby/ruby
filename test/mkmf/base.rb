@@ -107,8 +107,10 @@ class TestMkmf < Test::Unit::TestCase
     }
     Logging.quiet = @quiet
     Logging.log_close
+    FileUtils.rm_f("mkmf.log")
     Dir.chdir(@curdir)
     FileUtils.rm_rf(@tmpdir)
+    assert_empty(Dir.glob("conftest*") - %w[. ..])
   end
 
   def mkmf(*args, &block)

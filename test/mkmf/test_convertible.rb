@@ -27,6 +27,8 @@ class TestMkmf
           assert_include($defs, "-DNUM2TEST1T=NUM2#{u}#{type.upcase}")
         end
       end
+    ensure
+      File.unlink("confdefs.h")
     end
   end
 end

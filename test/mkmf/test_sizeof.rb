@@ -40,6 +40,8 @@ class TestMkmf
         f.puts "typedef struct {int x, y;} test1_t;"
       }
       assert_equal(2 * @sizeof_int, mkmf {check_sizeof("test1_t", "confdefs.h")}, MKMFLOG)
+    ensure
+      File.unlink("confdefs.h")
     end
   end
 end
