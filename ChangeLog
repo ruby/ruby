@@ -1,3 +1,8 @@
+Tue Apr  3 18:33:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (setreuid, setregid): suppress warnings.
+	  [ruby-core:43374][Bug #6169]
+
 Tue Apr  3 10:18:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (inspect_enumerator): suppress uninitialized
