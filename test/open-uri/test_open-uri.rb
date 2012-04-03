@@ -152,7 +152,7 @@ class TestOpenURI < Test::Unit::TestCase
         assert_equal("200", f.status[0])
         assert_equal("without_block", f.read)
       ensure
-        f.close
+        f.close if f && !f.closed?
       end
     }
   end
