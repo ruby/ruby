@@ -110,9 +110,11 @@ static VALUE rb_cProcessTms;
 
 #ifdef BROKEN_SETREUID
 #define setreuid ruby_setreuid
+int setreuid(rb_uid_t ruid, rb_uid_t euid);
 #endif
 #ifdef BROKEN_SETREGID
 #define setregid ruby_setregid
+int setregid(rb_gid_t rgid, rb_gid_t egid);
 #endif
 
 #if defined(HAVE_44BSD_SETUID) || defined(__MacOS_X__)
@@ -4214,11 +4216,11 @@ static rb_uid_t SAVED_USER_ID = -1;
 int
 setreuid(rb_uid_t ruid, rb_uid_t euid)
 {
-    if (ruid != -1 && ruid != getuid()) {
-	if (euid == -1) euid = geteuid();
+    if (ruid != (rb_uid_t)-1 && ruid != getuid()) {
+	if (euid == (rb_uid_t)-1) euid = geteuid();
 	if (setuid(ruid) < 0) return -1;
     }
-    if (euid != -1 && euid != geteuid()) {
+    if (euid != (rb_uid_t)-1 && euid != geteuid()) {
 	if (seteuid(euid) < 0) return -1;
     }
     return 0;
@@ -4926,11 +4928,11 @@ static rb_gid_t SAVED_GROUP_ID = -1;
 int
 setregid(rb_gid_t rgid, rb_gid_t egid)
 {
-    if (rgid != -1 && rgid != getgid()) {
-	if (egid == -1) egid = getegid();
+    if (rgid != (rb_gid_t)-1 && rgid != getgid()) {
+	if (egid == (rb_gid_t)-1) egid = getegid();
 	if (setgid(rgid) < 0) return -1;
     }
-    if (egid != -1 && egid != getegid()) {
+    if (egid != (rb_gid_t)-1 && egid != getegid()) {
 	if (setegid(egid) < 0) return -1;
     }
     return 0;
