@@ -66,6 +66,8 @@ module Test
 
         options[:retry] = true
 
+        options[:job_status] ||= :replace if @tty
+
         opts.on '-h', '--help', 'Display this help.' do
           puts opts
           exit
