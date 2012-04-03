@@ -403,7 +403,7 @@ module Test
 
       def jobs_status
         return unless @options[:job_status]
-        puts "" unless @options[:verbose]
+        puts "" unless @options[:verbose] or @tty
         status_line = @workers.map(&:to_s).join(" ")
         if @options[:job_status] == :replace and @tty
           put_status status_line
@@ -413,7 +413,7 @@ module Test
       end
 
       def del_jobs_status
-        return unless @options[:job_status] == :replace && @jstr_size.nonzero?
+        return unless @options[:job_status] == :replace && @status_line_size.nonzero?
         del_status_line
       end
 
