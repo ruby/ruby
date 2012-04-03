@@ -105,7 +105,7 @@
 VALUE rb_cEnumerator;
 VALUE rb_cLazy;
 static ID id_rewind, id_each, id_new, id_initialize, id_yield, id_call;
-static ID id_eqq, id_next, id_result, id_lazy;
+static ID id_eqq, id_next, id_result, id_lazy, id_receiver, id_arguments, id_method;
 static VALUE sym_each, sym_cycle;
 
 VALUE rb_eStopIteration;
@@ -875,7 +875,7 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
 	return str;
     }
 
-    eobj = rb_attr_get(obj, rb_intern("receiver"));
+    eobj = rb_attr_get(obj, id_receiver);
     if (NIL_P(eobj)) {
 	eobj = e->obj;
     }
@@ -886,7 +886,7 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
     /* (1..100).each_cons(2) => "#<Enumerator: 1..100:each_cons(2)>" */
     str = rb_sprintf("#<%s: ", cname);
     rb_str_concat(str, rb_inspect(eobj));
-    method = rb_attr_get(obj, rb_intern("method"));
+    method = rb_attr_get(obj, id_method);
     if (NIL_P(method)) {
 	rb_str_buf_cat2(str, ":");
 	rb_str_buf_cat2(str, rb_id2name(e->meth));
@@ -897,7 +897,7 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
 	rb_str_buf_cat2(str, rb_id2name(SYM2ID(method)));
     }
 
-    eargs = rb_attr_get(obj, rb_intern("arguments"));
+    eargs = rb_attr_get(obj, id_arguments);
     if (NIL_P(eargs)) {
 	eargs = e->args;
     }
@@ -1250,7 +1250,7 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
 		  (rb_block_given_p() ? lazy_init_block_i : lazy_init_block),
 		  obj);
     enumerator_init(self, generator, meth, argc - offset, argv + offset);
-    rb_iv_set(self, "receiver", obj);
+    rb_ivar_set(self, id_receiver, obj);
 
     return self;
 }
@@ -1259,13 +1259,13 @@ static VALUE
 lazy_set_method(VALUE lazy, VALUE args)
 {
     ID id = rb_frame_this_func();
-    rb_iv_set(lazy, "method", ID2SYM(id));
+    rb_ivar_set(lazy, id_method, ID2SYM(id));
     if (NIL_P(args)) {
 	/* Qfalse indicates that the arguments are empty */
-	rb_iv_set(lazy, "arguments", Qfalse);
+	rb_ivar_set(lazy, id_arguments, Qfalse);
     }
     else {
-	rb_iv_set(lazy, "arguments", args);
+	rb_ivar_set(lazy, id_arguments, args);
     }
     return lazy;
 }
@@ -1308,7 +1308,7 @@ enumerable_lazy(VALUE obj)
 
     result = rb_class_new_instance(1, &obj, rb_cLazy);
     /* Qfalse indicates that the Enumerator::Lazy has no method name */
-    rb_iv_set(result, "method", Qfalse);
+    rb_ivar_set(result, id_method, Qfalse);
     return result;
 }
 
@@ -1801,6 +1801,9 @@ Init_Enumerator(void)
     id_result = rb_intern("result");
     id_lazy = rb_intern("lazy");
     id_eqq = rb_intern("===");
+    id_receiver = rb_intern("receiver");
+    id_arguments = rb_intern("arguments");
+    id_method = rb_intern("method");
     sym_each = ID2SYM(id_each);
     sym_cycle = ID2SYM(rb_intern("cycle"));
 
