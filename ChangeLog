@@ -1,3 +1,9 @@
+Tue Apr  3 10:18:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (inspect_enumerator): suppress uninitialized
+	  instance variable warnings.  [ruby-dev:45449][Bug #6214]
+	  patched by no6v (Nobuhiro IMAI).
+
 Mon Apr  2 13:25:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse/ac.rb: autoconf-like options.

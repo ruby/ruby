@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestEnumerator < Test::Unit::TestCase
   def setup
@@ -356,6 +357,12 @@ class TestEnumerator < Test::Unit::TestCase
     a << e
     assert_equal("#<Enumerator: [#<Enumerator: ...>]:each_with_object([#<Enumerator: ...>])>",
 		e.inspect)
+  end
+
+  def test_inspect_verbose
+    bug6214 = '[ruby-dev:45449]'
+    assert_warn("", bug6214) { "".bytes.inspect }
+    assert_warn("", bug6214) { [].lazy.inspect }
   end
 
   def test_generator

@@ -875,7 +875,7 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
 	return str;
     }
 
-    eobj = rb_iv_get(obj, "receiver");
+    eobj = rb_attr_get(obj, rb_intern("receiver"));
     if (NIL_P(eobj)) {
 	eobj = e->obj;
     }
@@ -886,7 +886,7 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
     /* (1..100).each_cons(2) => "#<Enumerator: 1..100:each_cons(2)>" */
     str = rb_sprintf("#<%s: ", cname);
     rb_str_concat(str, rb_inspect(eobj));
-    method = rb_iv_get(obj, "method");
+    method = rb_attr_get(obj, rb_intern("method"));
     if (NIL_P(method)) {
 	rb_str_buf_cat2(str, ":");
 	rb_str_buf_cat2(str, rb_id2name(e->meth));
@@ -897,7 +897,7 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
 	rb_str_buf_cat2(str, rb_id2name(SYM2ID(method)));
     }
 
-    eargs = rb_iv_get(obj, "arguments");
+    eargs = rb_attr_get(obj, rb_intern("arguments"));
     if (NIL_P(eargs)) {
 	eargs = e->args;
     }
