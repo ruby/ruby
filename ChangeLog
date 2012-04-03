@@ -1,3 +1,12 @@
+Wed Apr  4 01:48:35 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/ftp/ftp.rb (Net::FTP#close): close socket more gracefully.
+
+	* lib/ftp/ftp.rb (Net::BufferedSocket#shutdown): added.
+
+	* test/net/ftp/test_ftp.rb (FTPTest#create_ftp_server): wait socket
+	  with shutdown and read.
+
 Tue Apr  3 19:00:52 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/net/ftp/test_ftp.rb (FTPTest#create_ftp_server): should wait
@@ -140,7 +149,7 @@ Thu Mar 29 08:25:35 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 Thu Mar 29 07:45:36 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_asn1.c: raise TypeError when trying to encode nil
-	  values for Primitive instances. 
+	  values for Primitive instances.
 	* test/openssl/test_asn1.rb: Assert consistent behavior when
 	  encoding nil values: Primitives raise TypeError, Constructives
 	  raise NoMethodError.

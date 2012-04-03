@@ -375,14 +375,10 @@ class FTPTest < Test::Unit::TestCase
       commands.push(sock.gets)
       sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
       conn = TCPSocket.new(host, port)
-      binary_data.scan(/.{1,1024}/nm).each_with_index do |s, i|
-        if i == 1
-          sleep(0.5)
-        else
-          sleep(0.1)
-        end
-        conn.print(s)
-      end
+      sleep(0.1)
+      conn.print(binary_data[0,1024])
+      sleep(0.5)
+      assert_raise(Errno::EPIPE){ conn.print(binary_data[1024, 1024]) }
       conn.close
       sock.print("226 Transfer complete.\r\n")
     }
@@ -406,7 +402,7 @@ class FTPTest < Test::Unit::TestCase
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
-        ftp.close if ftp
+        ftp.close unless ftp.closed?
       end
     ensure
       server.close
@@ -591,7 +587,9 @@ class FTPTest < Test::Unit::TestCase
         sock = server.accept
         begin
           yield(sock)
-          sleep 0.1
+          sock.shutdown(Socket::SHUT_WR)
+          sock.read_timeout = 1
+          sock.read unless sock.eof?
         ensure
           sock.close
         end

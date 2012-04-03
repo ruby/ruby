@@ -932,7 +932,12 @@ module Net
     # a new connection with #connect.
     #
     def close
-      @sock.close if @sock and not @sock.closed?
+      if @sock and not @sock.closed?
+        @sock.shutdown(Socket::SHUT_WR)
+        @sock.read_timeout = 1
+        @sock.read
+        @sock.close
+      end
     end
 
     #
@@ -1055,7 +1060,7 @@ module Net
     end
 
     class BufferedSocket < BufferedIO
-      [:addr, :peeraddr, :send].each do |method|
+      [:addr, :peeraddr, :send, :shutdown].each do |method|
         define_method(method) { |*args|
           @io.__send__(method, *args)
         }
@@ -1067,7 +1072,8 @@ module Net
           return s.empty? ? nil : s
         else
           result = ""
-          while s = super(BUFSIZ, "", true)
+          while s = super(DEFAULT_BLOCKSIZE, "", true)
+            break if s.empty?
             result << s
           end
           return result
