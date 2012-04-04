@@ -460,7 +460,6 @@ readonly_setter(VALUE val, ID id, void *data, struct global_variable *gvar)
 static int
 mark_global_entry(st_data_t k, st_data_t v, st_data_t a)
 {
-    ID key = (ID)k;
     struct global_entry *entry = (struct global_entry *)v;
     struct trace_var *trace;
     struct global_variable *var = entry->var;
