@@ -1,3 +1,10 @@
+Wed Apr  4 18:29:15 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_sleep.rb (TestSleep#test_sleep_5sec): syntax error.
+
+	* test/ruby/test_sleep.rb (TestSleep#test_sleep_5sec): call uname
+	  only on linux because it's a workaround for linux only.
+
 Wed Apr  4 11:32:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/-test-/add_suffix/bug.c: make all functions in util.c static
