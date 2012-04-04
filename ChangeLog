@@ -1,3 +1,7 @@
+Wed Apr  4 13:06:39 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/ftp/ftp.rb (Net::FTP#close): restore original read_timeout.
+
 Wed Apr  4 10:33:31 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/ftp/ftp.rb (Net::FTP#close): ignore exceptions from shutdown and

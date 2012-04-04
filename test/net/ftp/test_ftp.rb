@@ -229,7 +229,8 @@ class FTPTest < Test::Unit::TestCase
         assert_equal("TYPE I\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
-        ftp.close if ftp
+        ftp.close
+        assert_equal(0.2, ftp.read_timeout)
       end
     ensure
       server.close

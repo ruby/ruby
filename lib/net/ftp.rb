@@ -933,10 +933,14 @@ module Net
     #
     def close
       if @sock and not @sock.closed?
-        @sock.shutdown(Socket::SHUT_WR) rescue nil
-        @sock.read_timeout = 3
-        @sock.read rescue nil
-        @sock.close
+        begin
+          @sock.shutdown(Socket::SHUT_WR) rescue nil
+          orig, self.read_timeout = self.read_timeout, 3
+          @sock.read rescue nil
+        ensure
+          @sock.close
+          self.read_timeout = orig
+        end
       end
     end
 
