@@ -495,7 +495,7 @@ public
   #   # If you want to copy all contents of a directory instead of the
   #   # directory itself, c.f. src/x -> dest/x, src/y -> dest/y,
   #   # use following code.
-  #   FileUtils.cp_r 'src/.', 'dest'     # cp_r('src', 'dest') makes src/dest,
+  #   FileUtils.cp_r 'src/.', 'dest'     # cp_r('src', 'dest') makes dest/src,
   #                                      # but this doesn't.
   #
   def cp_r(src, dest, options = {})
