@@ -52,7 +52,7 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_200
     with_http {|srv, dr, url|
-      open("#{dr}/foo200", "w") {|f| f << "foo200" }
+      srv.mount_proc("/foo200", lambda { |req, res| res.body = "foo200" } )
       open("#{url}/foo200") {|f|
         assert_equal("200", f.status[0])
         assert_equal("foo200", f.read)
@@ -63,7 +63,7 @@ class TestOpenURI < Test::Unit::TestCase
   def test_200big
     with_http {|srv, dr, url|
       content = "foo200big"*10240
-      open("#{dr}/foo200big", "w") {|f| f << content }
+      srv.mount_proc("/foo200big", lambda { |req, res| res.body = content } )
       open("#{url}/foo200big") {|f|
         assert_equal("200", f.status[0])
         assert_equal(content, f.read)
@@ -80,7 +80,7 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_open_uri
     with_http {|srv, dr, url|
-      open("#{dr}/foo_ou", "w") {|f| f << "foo_ou" }
+      srv.mount_proc("/foo_ou", lambda { |req, res| res.body = "foo_ou" } )
       u = URI("#{url}/foo_ou")
       open(u) {|f|
         assert_equal("200", f.status[0])
@@ -124,7 +124,7 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_mode
     with_http {|srv, dr, url|
-      open("#{dr}/mode", "w") {|f| f << "mode" }
+      srv.mount_proc("/mode", lambda { |req, res| res.body = "mode" } )
       open("#{url}/mode", "r") {|f|
         assert_equal("200", f.status[0])
         assert_equal("mode", f.read)
@@ -146,7 +146,7 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_without_block
     with_http {|srv, dr, url|
-      open("#{dr}/without_block", "w") {|g| g << "without_block" }
+      srv.mount_proc("/without_block", lambda { |req, res| res.body = "without_block" } )
       begin
         f = open("#{url}/without_block")
         assert_equal("200", f.status[0])
@@ -197,8 +197,7 @@ class TestOpenURI < Test::Unit::TestCase
       proxy_url = "http://#{proxy_host}:#{proxy_port}/"
       begin
         proxy.start
-        open("#{dr}/proxy", "w") {|f| f << "proxy" }
-        sleep 0.5
+        srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
         open("#{url}/proxy", :proxy=>proxy_url) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
@@ -251,7 +250,7 @@ class TestOpenURI < Test::Unit::TestCase
       proxy_url = "http://#{proxy_host}:#{proxy_port}/"
       begin
         proxy.start
-        open("#{dr}/proxy", "w") {|f| f << "proxy" }
+        srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
         exc = assert_raise(OpenURI::HTTPError) { open("#{url}/proxy", :proxy=>proxy_url) {} }
         assert_equal("407", exc.io.status[0])
         assert_match(/#{Regexp.quote url}/, log); log.clear
@@ -420,7 +419,7 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_uri_read
     with_http {|srv, dr, url|
-      open("#{dr}/uriread", "w") {|f| f << "uriread" }
+      srv.mount_proc("/uriread", lambda { |req, res| res.body = "uriread" } )
       data = URI("#{url}/uriread").read
       assert_equal("200", data.status[0])
       assert_equal("uriread", data)
