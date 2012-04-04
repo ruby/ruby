@@ -21,7 +21,7 @@ class TestOpenURI < Test::Unit::TestCase
         :Port => 0})
       _, port, _, host = srv.listeners[0].addr
       begin
-        th = srv.start
+        srv.start
         yield srv, dr, "http://#{host}:#{port}"
       ensure
         srv.shutdown
@@ -196,8 +196,9 @@ class TestOpenURI < Test::Unit::TestCase
       _, proxy_port, _, proxy_host = proxy.listeners[0].addr
       proxy_url = "http://#{proxy_host}:#{proxy_port}/"
       begin
-        th = proxy.start
+        proxy.start
         open("#{dr}/proxy", "w") {|f| f << "proxy" }
+        sleep 0.5
         open("#{url}/proxy", :proxy=>proxy_url) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
@@ -249,7 +250,7 @@ class TestOpenURI < Test::Unit::TestCase
       _, proxy_port, _, proxy_host = proxy.listeners[0].addr
       proxy_url = "http://#{proxy_host}:#{proxy_port}/"
       begin
-        th = proxy.start
+        proxy.start
         open("#{dr}/proxy", "w") {|f| f << "proxy" }
         exc = assert_raise(OpenURI::HTTPError) { open("#{url}/proxy", :proxy=>proxy_url) {} }
         assert_equal("407", exc.io.status[0])
@@ -555,7 +556,7 @@ class TestOpenURI < Test::Unit::TestCase
           assert_equal("CWD foo\r\n", s.gets); s.print "250 CWD successful\r\n"
           assert_equal("PASV\r\n", s.gets)
           TCPServer.open("127.0.0.1", 0) {|data_serv|
-            _, data_serv_port, _, data_serv_host = data_serv.addr
+            _, data_serv_port, _, _ = data_serv.addr
             hi = data_serv_port >> 8
             lo = data_serv_port & 0xff
             s.print "227 Entering Passive Mode (127,0,0,1,#{hi},#{lo}).\r\n"
@@ -638,7 +639,7 @@ class TestOpenURI < Test::Unit::TestCase
           assert_equal("SIZE bar\r\n", s.gets); s.print "213 #{content.bytesize}\r\n"
           assert_equal("PASV\r\n", s.gets)
           TCPServer.open("127.0.0.1", 0) {|data_serv|
-            _, data_serv_port, _, data_serv_host = data_serv.addr
+            _, data_serv_port, _, _ = data_serv.addr
             hi = data_serv_port >> 8
             lo = data_serv_port & 0xff
             s.print "227 Entering Passive Mode (127,0,0,1,#{hi},#{lo}).\r\n"
