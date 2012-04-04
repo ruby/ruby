@@ -1,3 +1,9 @@
+Wed Apr  4 11:32:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/-test-/add_suffix/bug.c: make all functions in util.c static
+	  to get rid of multiple definitions.  reported at
+	  https://trac.macports.org/ticket/33814
+
 Tue Apr  3 18:34:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (setreuid, setregid): suppress warnings.

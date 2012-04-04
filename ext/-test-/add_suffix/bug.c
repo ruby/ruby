@@ -1,3 +1,14 @@
+static unsigned long ruby_scan_oct();
+static unsigned long ruby_scan_hex();
+static unsigned long ruby_strtoul();
+static void ruby_add_suffix();
+static void ruby_qsort();
+static char *ruby_strdup();
+static char *ruby_getcwd();
+static double ruby_strtod();
+static char *ruby_dtoa();
+static void ruby_each_words();
+static char *ruby_hdtoa();
 #include "ruby.h"
 #include "ruby/defines.h"
 #include "ruby/util.h"
