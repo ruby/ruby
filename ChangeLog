@@ -1,3 +1,8 @@
+Thu Apr  5 13:26:15 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/alloca.c (xmalloc, xfree): use ruby version, not
+	  depending on RUBY_LIB_PREFIX.  [ruby-dev:45492][Bug #6255]
+
 Wed Apr  4 13:06:39 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/ftp/ftp.rb (Net::FTP#close): restore original read_timeout.
