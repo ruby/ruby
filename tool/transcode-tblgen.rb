@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require 'optparse'
 require 'erb'
 require 'fileutils'
@@ -553,37 +554,48 @@ class ActionMap
       min = max = 0
     end
 
-    offsets_key = [min, max, offsets[min..max]]
-    if n = OffsetsMemo[offsets_key]
-      offsets_name = n
-    else
-      offsets_name = "#{name}_offsets"
-      OffsetsMemo[offsets_key] = offsets_name
-      size = bytes_code.length
-      bytes_code.insert_at_last(2+max-min+1,
-        "\#define #{offsets_name} #{size}\n" +
-        format_offsets(min,max,offsets) + "\n")
-    end
+    # 一つの文字コード変換を Tables クラスとしてデータで格納
+    GENERATED_CODE << Tables.new(name, min, max, offsets, infos)
 
-    if n = InfosMemo[infos]
-      infos_name = n
-    else
-      infos_name = "#{name}_infos"
-      InfosMemo[infos] = infos_name
+=begin
+      # 文字列化をしない
+      offsets_key = [min, max, offsets[min..max]]
+      if n = OffsetsMemo[offsets_key]
+        offsets_name = n
+      else
+        offsets_name = "#{name}_offsets"
+        OffsetsMemo[offsets_key] = offsets_name
+
+        size = bytes_code.length
+        bytes_code.insert_at_last(2+max-min+1,
+                             "\#define #{offsets_name} #{size}\n" +
+                             format_offsets(min,max,offsets) + "\n")
+      end
+
+      if n = InfosMemo[infos]
+        infos_name = n
+      else
+        infos_name = "#{name}_infos"
+        InfosMemo[infos] = infos_name
+
+
+        size = words_code.length
+        words_code.insert_at_last(infos.length,
+                             "\#define #{infos_name} WORDINDEX2INFO(#{size})\n" +
+                             format_infos(infos) + "\n")
+
+        infos_state = 0
+      end
 
       size = words_code.length
-      words_code.insert_at_last(infos.length,
-        "\#define #{infos_name} WORDINDEX2INFO(#{size})\n" +
-        format_infos(infos) + "\n")
-    end
-
-    size = words_code.length
-    words_code.insert_at_last(NUM_ELEM_BYTELOOKUP,
-      "\#define #{name} WORDINDEX2INFO(#{size})\n" +
-      <<"End" + "\n")
+      words_code.insert_at_last(NUM_ELEM_BYTELOOKUP,
+                           "\#define #{name} WORDINDEX2INFO(#{size})\n" +
+                           <<"End" + "\n")
     #{offsets_name},
     #{infos_name},
 End
+=end
+
   end
 
   PreMemo = {}
@@ -864,7 +876,428 @@ def transcode_generate_node(am, name_hint=nil)
   ''
 end
 
+# 一つの offsets テーブルを表すクラス
+class Offsets
+  attr_accessor :content, :min, :max
+  attr_reader :name
+  def initialize(name, min, max, content)
+    @name = name
+    @content = content
+    @min = min
+    @max = max
+  end
+
+  # 以下、既存のものをコピー・修正
+  def format_offsets
+    offsets = @content[@min..@max]
+    code = "%d, %d,\n" % [min, max]
+    0.step(offsets.length-1,16) {|i|
+      code << "    "
+      code << offsets[i,8].map {|off| "%3d," % off.to_s }.join('')
+      if i+8 < offsets.length
+        code << "  "
+        code << offsets[i+8,8].map {|off| "%3d," % off.to_s }.join('')
+      end
+      code << "\n"
+    }
+    code
+  end
+end
+
+# 一つの infos テーブルを表すクラス
+class Infos
+  attr_accessor :content
+  attr_reader :name
+  def initialize(name, content)
+    @name = name
+    @content = content
+  end
+
+  # 以下、既存のものをコピー・修正
+  UsedName = {}
+
+  StrMemo = {}
+
+  def str_name(bytes)
+    size = TRANSCODE_GENERATED_BYTES_CODE.length
+    rawbytes = [bytes].pack("H*")
+
+    n = nil
+    if !n && !(suf = rawbytes.gsub(/[^A-Za-z0-9_]/, '')).empty? && !UsedName[nn = "str1_" + suf] then n = nn end
+    if !n && !UsedName[nn = "str1_" + bytes] then n = nn end
+    n ||= "str1s_#{size}"
+
+    StrMemo[bytes] = n
+    UsedName[n] = true
+    n
+  end
+
+  def gen_str(bytes)
+    if n = StrMemo[bytes]
+      n
+    else
+      len = bytes.length/2
+      size = TRANSCODE_GENERATED_BYTES_CODE.length
+      n = str_name(bytes)
+      TRANSCODE_GENERATED_BYTES_CODE.insert_at_last(1 + len,
+        "\#define #{n} makeSTR1(#{size})\n" +
+        "    makeSTR1LEN(#{len})," + bytes.gsub(/../, ' 0x\&,') + "\n\n")
+      n
+    end
+  end
+
+  def generate_info(info)
+    case info
+    when :info_a
+      "INFO_A"
+    when :info_b
+      "INFO_B"
+    when :info_c
+      "INFO_C"
+    when :info_d
+      "INFO_D"
+    when :info_e
+      "INFO_E"
+    when :nomap, :nomap0
+      # :nomap0 is low priority.  it never collides.
+      "NOMAP"
+    when :undef
+      "UNDEF"
+    when :invalid
+      "INVALID"
+    when :func_ii
+      "FUNii"
+    when :func_si
+      "FUNsi"
+    when :func_io
+      "FUNio"
+    when :func_so
+      "FUNso"
+    when /\A(#{HEX2})\z/o
+      "o1(0x#$1)"
+    when /\A(#{HEX2})(#{HEX2})\z/o
+      "o2(0x#$1,0x#$2)"
+    when /\A(#{HEX2})(#{HEX2})(#{HEX2})\z/o
+      "o3(0x#$1,0x#$2,0x#$3)"
+    when /funsio\((\d+)\)/
+      "funsio(#{$1})"
+    when /\A(#{HEX2})(3[0-9])(#{HEX2})(3[0-9])\z/o
+      "g4(0x#$1,0x#$2,0x#$3,0x#$4)"
+    when /\A(f[0-7])(#{HEX2})(#{HEX2})(#{HEX2})\z/o
+      "o4(0x#$1,0x#$2,0x#$3,0x#$4)"
+    when /\A(#{HEX2}){4,259}\z/o
+      gen_str(info.upcase)
+    when /\A\/\*BYTE_LOOKUP\*\// # pointer to BYTE_LOOKUP structure
+      $'.to_s
+    else
+      raise "unexpected action: #{info.inspect}"
+    end
+  end
+
+  def format_infos
+    infos = @content.map {|info| generate_info(info) }
+    maxlen = infos.map {|info| info.length }.max
+    columns = maxlen <= 16 ? 4 : 2
+    code = ""
+    0.step(infos.length-1, columns) {|i|
+      code << "    "
+      is = infos[i,columns]
+      is.each {|info|
+        code << sprintf(" %#{maxlen}s,", info)
+      }
+      code << "\n"
+    }
+    code
+  end
+end
+
+# 一つの文字コード変換を表すクラス
+class Tables
+  attr_accessor :offsets, :infos, :have_tbls
+  attr_reader :offsets_org, :infos_org, :name
+  def initialize(name, min, max, offsets, infos)
+    @name = name
+    @offsets = Offsets.new(name + "_offsets", min, max, offsets)
+    # 元の offsets テーブル（変更されない）
+    @offsets_org = Offsets.new(name + "_offsets", min, max, offsets)
+    @infos = Infos.new(name + "_infos", infos)
+    # 元の infos テーブル（変更されない）
+    @infos_org = Infos.new(name + "_infos", infos)
+    @have_tbls = 1 # 自分を含めて共用してるテーブルの数
+  end
+end
+
+# 完全に offsets が一致する場合に共有
+def share_no_change
+  GENERATED_CODE.each_with_index do |tables, i|
+    # 対象の offsets がすでに共用されているかどうかチェック
+    # 共用済みだった場合は次へ
+    next if tables.offsets.class == Tables
+    j = i + 1
+    while j < GENERATED_CODE.length
+      # offsets の content, min, max 全てが一致すれば共用
+      # 既存の変換と整合性を保つ
+      if tables.offsets.class == Offsets && GENERATED_CODE[j].offsets.class == Offsets
+        if tables.offsets_org.content == GENERATED_CODE[j].offsets_org.content &&
+            tables.offsets_org.min == GENERATED_CODE[j].offsets_org.min &&
+            tables.offsets_org.max == GENERATED_CODE[j].offsets_org.max
+          # 共用する Tables クラスを 共用される Tables クラスの offsets に代入
+          # 共用の関係を保存しておく
+          GENERATED_CODE[j].offsets = tables
+          # 削減メモリ計算のための処理
+          tables.have_tbls += GENERATED_CODE[j].have_tbls
+        end
+      end
+      j += 1
+    end
+  end
+end
+
+# 片方を共用することができるパターン
+# 共用する方は infos テーブルの変更が必要（generate_string メソッドで行っている）
+def share_infos_change
+  cutback = [0] # 削減したメモリ量を保存（一つのファイルの削減）
+  GENERATED_CODE.each do |trg| # trg = target
+    STDERR.print "." # 処理の経過を見る
+
+    # target が共有済みで無ければ
+    if trg.offsets.class == Offsets
+      GENERATED_CODE.each do |comp|
+        # 同じ文字コード変換の場合はスキップ
+        next if trg.name == comp.name
+
+        # 比較する方が共用済みで無ければ
+        if comp.offsets.class == Offsets
+          if comp_offsets(trg, comp, cutback)
+            # trg の offsets テーブルのサイズが comp のものより狭い場合
+            # comp のサイズに合わせる必要がある
+            trg.offsets.max = comp.offsets.max if comp.offsets.max > trg.offsets.max
+            trg.offsets.min = comp.offsets.min if comp.offsets.min < trg.offsets.min
+            # comp の offsets を Tables クラス trg に変更
+            comp.offsets = trg
+            # 共用されたテーブルの数を増やす
+            trg.have_tbls += comp.have_tbls
+          end
+        end
+      end
+    end
+  end
+  STDERR.puts # STDERR.print "." を見やすくする
+  # puts cutback[0] # 削減メモリを出力
+end
+
+# 二つの文字コード変換の offsets テーブルが片方に共用可能かどうか判断する
+def comp_offsets(trg, comp, cutback)
+  # target の offset の種類が comp の offsets の種類より小さいと共用できない
+  return FALSE if trg.offsets.content.max <= comp.offsets.content.max
+  return FALSE if calc_cut(trg, comp) <= 0 # 削減量による共用の条件を指定
+  set_offset = {} # それぞれの offsets テーブルにある同位置の offset をセットとする
+
+  # 同位置にある offset のペアの種類を調べ、出現回数をカウント
+  trg.offsets.content.each_with_index do |o_trg, i|
+    o_comp = comp.offsets.content[i]
+    key = [o_trg, o_comp]
+    if set_offset[key]
+      set_offset[key] += 1
+    else
+      set_offset[key] = 1
+    end
+  end
+
+  # offset ペアの数が target の offset の種類以下（等しい）でなければそのまま共用できない
+  return FALSE if set_offset.length > trg.offsets.content.max + 1
+
+  # 以下、共用可能
+  # どれくらい削減できるか計算して、条件によって実行するかどうか決める
+  cutback[0] += calc_cut(trg, comp) # デバック用として削減できたメモリの量を再計算
+  return TRUE
+end
+
+def calc_cut(trg, comp) # 今のところは offsets のみを代えた場合の計算
+  # offset 共用により削減できる量
+  cut_offsets = comp.offsets.max - comp.offsets.min + 1
+  # infos 増加より増加する量
+  # (共用 offsets の種類 - 削減 offsets の種類) * 4 byte * (削減するテーブルが共用してる数)
+  add_infos = ((trg.offsets.content.max + 1) - (comp.offsets.content.max + 1)) * 4 * comp.have_tbls
+
+  return cut_offsets - add_infos
+end
+
+# 共用されていた場合に最終的に利用する offsets テーブルを探索する
+def search_real_offsets(target)
+  if target.offsets.class == Tables
+    return search_real_offsets(target.offsets)
+  else
+    return target.offsets
+  end
+end
+
+# 共用されていた場合に最終的に利用する infos テーブルを探索する
+def search_real_infos(target)
+  if target.infos.class == Tables
+    return search_real_infos(target.infos)
+  else
+    return target.infos
+  end
+end
+
+# データとして格納していた文字コード変換を文字列化
+# 文字列化の部分は既存の処理を一部修正し、利用している
+def generate_string
+  GENERATED_CODE.each do |tables|
+    name = tables.name # 文字コード変換自体の名前
+
+    # 共用済みとそうでない場合で処理を分ける
+    if tables.offsets.class == Offsets # 共用なし
+      # 既存の処理と変わらない
+      offsets_name = tables.offsets.name
+      size = TRANSCODE_GENERATED_BYTES_CODE.length
+      TRANSCODE_GENERATED_BYTES_CODE.insert_at_last(2+tables.offsets.max-tables.offsets.min+1,
+        "\#define #{offsets_name} #{size}\n" +
+        tables.offsets.format_offsets + "\n")
+    else # 共用あり
+      # 実際に利用している offsets テーブルを探索
+      offsets_real = search_real_offsets(tables.offsets)
+      offsets_name = offsets_real.name
+
+      # 実際に利用している infos テーブルを探索
+      infos_real = search_real_infos(tables)
+      if tables.infos.class == Infos
+        # offsets 共用済みかつ infos の共用なしの場合
+        # offsets の変更による infos の変更を調整
+        tables.infos.content = adjust_infos(tables, offsets_real)
+      end
+    end
+
+    # 変更後の offsets から infos を計算し、変更前と同じかどうか確かめるテスト
+    # test_tables(tables, offsets_real)
+
+    key = tables.infos.content # 完全に一致するものを共用するためのもの
+    # infos の共用は既存の処理と同じ
+    if i_name = WORD_CODE[key]
+      infos_name = i_name
+    else
+      WORD_CODE[key] = infos_name = tables.infos.name
+      size = TRANSCODE_GENERATED_WORDS_CODE.length
+      TRANSCODE_GENERATED_WORDS_CODE.insert_at_last(tables.infos.content.length,
+        "\#define #{infos_name} WORDINDEX2INFO(#{size})\n" +
+        tables.infos.format_infos + "\n")
+    end
+
+    size = TRANSCODE_GENERATED_WORDS_CODE.length
+    TRANSCODE_GENERATED_WORDS_CODE.insert_at_last(NUM_ELEM_BYTELOOKUP,
+      "\#define #{name} WORDINDEX2INFO(#{size})\n" +
+      <<"End" + "\n")
+    #{offsets_name},
+    #{infos_name},
+End
+  end
+end
+
+# 新旧の 2 段階テーブルの整合性を確かめるテスト
+def test_tables(tables, new_offsets)
+  old_o = tables.offsets_org.content.dup # 元の offsets テーブル
+  old_i = tables.infos_org.content.dup   # 元の infos テーブル
+  new_i = tables.infos.content.dup       # 新しい infos テーブル
+  # 新しい offsets（共用なしなら、自分自身を新しい offsets テーブルとする）
+  new_o = tables.offsets.class == Offsets ?
+            tables.offsets.content.dup : new_offsets.content.dup
+
+  # offsets から求めた infos が新旧で正しいか正しくないかを格納
+  t_or_f = {"true"=>0, "false"=>0}
+
+  # offsets から求めた infos が新旧で正しいか正しくないかを一つずつ検証
+  i = 0
+  while (i < 256)
+    index_old = old_o[i]
+    info_old = old_i[index_old]
+    index_new = new_o[i]
+    info_new = new_i[index_new]
+
+    info_old == info_new ? t_or_f["true"] += 1 : t_or_f["false"] += 1
+
+    i += 1
+  end
+
+  puts t_or_f
+  # output_tables は文字コート変換を形式的に出力するメソッド
+  output_tables(tables) if t_or_f["false"] > 0
+end
+
+# 変更後の offsets に対応した infos を作成するメソッド
+def adjust_infos(tables, offsets_real)
+  o_new = offsets_real.content
+  o_old = tables.offsets_org.content
+  i_old = tables.infos_org.content
+
+  # 新しい offsets の最大値が新しい infos の数となる
+  num_info = o_new.max
+  i_new = []
+  # あらかじめ必要となる infos の配列を初期化
+  # offsets の数値が順番通りに並んでいないことを考慮
+  i_new.fill("", 0..num_info)
+  set_offset = {}
+
+  # 旧 offset と 新 offset のペアを作る
+  o_old.each_with_index do |o1, i|
+    o2 = o_new[i]
+    key = [o1, o2]
+    if !set_offset[key]
+      set_offset[key] = 1
+    end
+  end
+
+  # 新 offset の値の場所に、旧 offset が示す info を挿入
+  set_offset.each_key do |key|
+    num_old, num_new = key
+    i_new[num_new] = i_old[num_old]
+  end
+
+  return i_new
+end
+
+# 文字コート変換を形式的に出力するメソッド
+def output_tables(tables)
+  puts "##TRANSCODE_NAME##"
+  puts tables.name
+
+  puts "##OFFSETS_INFO##"
+  real_offsets = search_real_offsets(tables)
+
+  if tables.offsets.class == Offsets
+    puts tables.offsets.name
+  else
+    print tables.name + " > "
+    puts output_real_offsets(tables.offsets)
+  end
+
+  puts
+  puts "It has #{tables.have_tbls} offsets tables."
+  puts "changed #{real_offsets.content.max + 1} <> original #{tables.offsets_org.content.max + 1}"
+
+  puts "##INFOS_INFO##"
+  real_infos = search_real_infos(tables)
+  p tables.infos_org.content
+  p real_infos.content
+
+  puts
+  puts
+end
+
+# 実際の offsets テーブルまでのつながりを出力
+def output_real_offsets(tables)
+  if tables.offsets.class == Tables
+    return tables.name + " > " + output_real_offsets(tables.offsets)
+  else
+    return tables.name
+  end
+end
+
 def transcode_generated_code
+  share_no_change # 完全に一致する offsets を共用
+  share_infos_change # 片方を利用できる offsets を共用 （infos に変更が必要）
+  generate_string # 最終的な文字列化と infos テーブルが完全に一致する場合の共用を行う
+
   TRANSCODE_GENERATED_BYTES_CODE.to_s +
     TRANSCODE_GENERATED_WORDS_CODE.to_s +
     "\#define TRANSCODE_TABLE_INFO " +
@@ -988,6 +1421,9 @@ if __FILE__ == $0
   TRANSCODE_GENERATED_BYTES_CODE = ArrayCode.new("unsigned char", "#{OUTPUT_PREFIX}byte_array")
   TRANSCODE_GENERATED_WORDS_CODE = ArrayCode.new("unsigned int", "#{OUTPUT_PREFIX}word_array")
 
+  GENERATED_CODE = [] # 文字コード変換の Tables クラスを格納する変数
+  WORD_CODE = {} # infos テーブルの完全一致を判断するために格納するハッシュ
+
   arg = ARGV.shift
   $srcdir = File.dirname(arg)
   $:.unshift $srcdir unless $:.include? $srcdir
@@ -1059,6 +1495,6 @@ if __FILE__ == $0
     elapsed = Time.now - start_time
     STDERR.puts "done.  (#{'%.2f' % tms.utime}user #{'%.2f' % tms.stime}system #{'%.2f' % elapsed}elapsed)" if VERBOSE_MODE
   else
-    print result
+    #print result
   end
 end

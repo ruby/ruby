@@ -82,7 +82,7 @@ rb_struct_s_members_m(VALUE klass)
  *  call-seq:
  *     struct.members    -> array
  *
- *  Returns an array of strings representing the names of the instance
+ *  Returns an array of symbols representing the names of the instance
  *  variables.
  *
  *     Customer = Struct.new(:name, :address, :zip)
