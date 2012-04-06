@@ -1,3 +1,7 @@
+Fri Apr  6 14:27:04 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* Makefile.in ($(LIBRUBY_A)): fix typo.
+
 Thu Apr  5 13:26:15 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/alloca.c (xmalloc, xfree): use ruby version, not

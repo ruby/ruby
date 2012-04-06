@@ -185,7 +185,7 @@ $(LIBRUBY_A):
 		$(Q) $(AR) $(ARFLAGS) $@ $(OBJS) $(DMYEXT)
 		@-$(RANLIB) $@ 2> /dev/null || true
 		@$(PURIFY) $(CC) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)conftest$(EXEEXT) $(LDFLAGS)
-		@$(RM) conftset$(EXEEXT)
+		@$(RM) conftest$(EXEEXT)
 
 $(LIBRUBY_SO):
 		@-$(PRE_LIBRUBY_UPDATE)
