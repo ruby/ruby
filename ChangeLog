@@ -1,3 +1,9 @@
+Sat Apr  7 02:07:00 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c: fall back to any encoding if the external
+	  encoding is wrong.  [ruby-core:44163]
+	* test/psych/test_encoding.rb: fix test
+
 Fri Apr  6 16:24:24 2012  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* struct.c (documentation for rb_struct_members_m):

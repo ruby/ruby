@@ -57,7 +57,7 @@ module Psych
       # If the external encoding isn't utf8, utf16le, or utf16be, we cannot
       # process the file.
       File.open(t.path, 'r', :encoding => 'SHIFT_JIS') do |f|
-        assert_raises ArgumentError do
+        assert_raises Psych::SyntaxError do
           Psych.load(f)
         end
       end

@@ -146,10 +146,11 @@ static VALUE transcode_io(VALUE src, int * parser_encoding)
 	return src;
     }
 
-    rb_raise(rb_eArgError, "YAML file must be UTF-8, UTF-16LE, or UTF-16BE, not %s",
-	    rb_enc_name(rb_enc_from_index(io_external_enc_index)));
+    /* If the external encoding is something we don't know how to handle,
+     * fall back to YAML_ANY_ENCODING. */
+    *parser_encoding = YAML_ANY_ENCODING;
 
-    return Qnil;
+    return src;
 }
 
 #endif
