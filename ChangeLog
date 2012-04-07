@@ -1,3 +1,8 @@
+Sun Apr  8 06:51:57 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (io_unread): cast as long the value for extra_max.
+	  [ruby-core:44137] [Bug #6257]
+
 Sun Apr  8 06:46:48 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/httpresponse.rb (WEBrick::HTTPResponse#send_body_io):

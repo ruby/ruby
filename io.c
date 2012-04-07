@@ -455,7 +455,7 @@ io_unread(rb_io_t *fptr)
     }
 
     /* add extra offset for removed '\r' in rbuf */
-    extra_max = pos - fptr->rbuf.len;
+    extra_max = (long)(pos - fptr->rbuf.len);
     p = fptr->rbuf.ptr + fptr->rbuf.off;
     for (i = 0; i < fptr->rbuf.len; i++) {
 	if (*p == '\n') newlines++;
