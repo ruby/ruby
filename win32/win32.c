@@ -72,7 +72,7 @@
 
 #define TO_SOCKET(x)	_get_osfhandle(x)
 
-static struct ChildRecord *CreateChild(const WCHAR *, const WCHAR *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
+static struct ChildRecord *CreateChild(const WCHAR *, const WCHAR *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE, DWORD);
 static int has_redirection(const char *);
 int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
 static int rb_w32_open_osfhandle(intptr_t osfhandle, int flags);
@@ -1087,10 +1087,9 @@ child_result(struct ChildRecord *child, int mode)
 /* License: Ruby's */
 static struct ChildRecord *
 CreateChild(const WCHAR *cmd, const WCHAR *prog, SECURITY_ATTRIBUTES *psa,
-	    HANDLE hInput, HANDLE hOutput, HANDLE hError)
+	    HANDLE hInput, HANDLE hOutput, HANDLE hError, DWORD dwCreationFlags)
 {
     BOOL fRet;
-    DWORD  dwCreationFlags;
     STARTUPINFOW aStartupInfo;
     PROCESS_INFORMATION aProcessInformation;
     SECURITY_ATTRIBUTES sa;
@@ -1137,7 +1136,7 @@ CreateChild(const WCHAR *cmd, const WCHAR *prog, SECURITY_ATTRIBUTES *psa,
 	aStartupInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
     }
 
-    dwCreationFlags = NORMAL_PRIORITY_CLASS;
+    dwCreationFlags |= NORMAL_PRIORITY_CLASS;
 
     if (lstrlenW(cmd) > 32767) {
 	child->pid = 0;		/* release the slot */
@@ -1290,7 +1289,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     wshell = shell ? acp_to_wstr(shell, NULL) : NULL;
     if (v2) ALLOCV_END(v2);
 
-    ret = child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, NULL), mode);
+    ret = child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, NULL, 0), mode);
     free(wshell);
     free(wcmd);
     return ret;
@@ -1298,7 +1297,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 
 /* License: Artistic or GPL */
 rb_pid_t
-rb_w32_aspawn(int mode, const char *prog, char *const *argv)
+rb_w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags)
 {
     int c_switch = 0;
     size_t len;
@@ -1357,10 +1356,16 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
     if (v) ALLOCV_END(v);
     wprog = prog ? acp_to_wstr(prog, NULL) : NULL;
 
-    ret = child_result(CreateChild(wcmd, wprog, NULL, NULL, NULL, NULL), mode);
+    ret = child_result(CreateChild(wcmd, wprog, NULL, NULL, NULL, NULL, flags), mode);
     free(wprog);
     free(wcmd);
     return ret;
+}
+
+rb_pid_t
+rb_w32_aspawn(int mode, const char *prog, char *const *argv)
+{
+    return rb_w32_aspawn_flags(mode, prog, argv, 0);
 }
 
 /* License: Artistic or GPL */

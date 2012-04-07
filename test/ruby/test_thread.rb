@@ -681,12 +681,13 @@ class TestThreadGroup < Test::Unit::TestCase
   end
 
   def test_thread_timer_and_interrupt
-    skip 'Process.kill cannot kill a subprocess' if /mswin|mingw/ =~ RUBY_PLATFORM
     bug5757 = '[ruby-dev:44985]'
     t0 = Time.now.to_f
     pid = nil
     cmd = 'r,=IO.pipe; Thread.start {Thread.pass until Thread.main.stop?; puts; STDOUT.flush}; r.read'
-    s, err = EnvUtil.invoke_ruby(['-e', cmd], "", true, true) do |in_p, out_p, err_p, cpid|
+    opt = {}
+    opt[:new_pgroup] = true if /mswin|mingw/ =~ RUBY_PLATFORM
+    s, err = EnvUtil.invoke_ruby(['-e', cmd], "", true, true, opt) do |in_p, out_p, err_p, cpid|
       out_p.gets
       pid = cpid
       Process.kill(:SIGINT, pid)
