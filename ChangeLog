@@ -1,3 +1,10 @@
+Sun Apr  8 06:46:48 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/httpresponse.rb (WEBrick::HTTPResponse#send_body_io):
+	  use readpartial to get data even if the response is streaming data and
+	  each data is smaller than @buffer_size.
+	  patched by yu nobuoka. [ruby-dev:45471] [Bug #6230]
+
 Sat Apr  7 22:35:36 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* include/ruby/win32.h (rb_w32_aspawn_flags): add the declaration of
