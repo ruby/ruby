@@ -1,3 +1,8 @@
+Sat Apr  7 10:28:40 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: bumping up psych version to match release.
+	* ext/psych/psych.gemspec: ditto
+
 Sat Apr  7 02:07:00 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/parser.c: fall back to any encoding if the external

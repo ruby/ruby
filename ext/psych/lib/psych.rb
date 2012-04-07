@@ -93,7 +93,7 @@ require 'psych/handlers/document_stream'
 
 module Psych
   # The version is Psych you're using
-  VERSION         = '1.3.1'
+  VERSION         = '1.3.2'
 
   # The version of libyaml Psych is using
   LIBYAML_VERSION = Psych.libyaml_version.join '.'
