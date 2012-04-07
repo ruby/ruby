@@ -290,7 +290,7 @@ inline static int set_binary_mode_with_seek_cur(rb_io_t *fptr) {
 	return setmode(fptr->fd, O_BINARY);
     }
     /* add extra offset for removed '\r' in rbuf */
-    extra_max = pos - fptr->rbuf.len;
+    extra_max = (long)(pos - fptr->rbuf.len);
     p = fptr->rbuf.ptr + fptr->rbuf.off;
     for (i = 0; i < fptr->rbuf.len; i++) {
 	if (*p == '\n') newlines++;

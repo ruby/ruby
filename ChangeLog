@@ -1,3 +1,8 @@
+Sun Apr  8 06:53:55 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (io_unread): cast as long the value for extra_max.
+	  [ruby-core:44137] [Bug #6257]
+
 Sat Apr  7 10:28:40 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: bumping up psych version to match release.
