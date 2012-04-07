@@ -1,3 +1,14 @@
+Sat Apr  7 22:32:00 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_thread.rb
+	  (TestThreadGroup#test_thread_timer_and_interrupt): skip on Windows.
+	  Process.kill cannot kill a subprocess if CREATE_NEW_PROCESS_GROUP
+	  flag is not specified in a call to CreateProcessW().
+
+	* win32/win32.c (CreateChild): revert the usage of
+	  CREATE_NEW_PROCESS_GROUP flag for compatibility.
+	  [ruby-core:43245][Bug #6131]
+
 Sat Apr  7 10:28:40 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: bumping up psych version to match release.

@@ -1137,7 +1137,7 @@ CreateChild(const WCHAR *cmd, const WCHAR *prog, SECURITY_ATTRIBUTES *psa,
 	aStartupInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
     }
 
-    dwCreationFlags = (CREATE_NEW_PROCESS_GROUP | NORMAL_PRIORITY_CLASS);
+    dwCreationFlags = NORMAL_PRIORITY_CLASS;
 
     if (lstrlenW(cmd) > 32767) {
 	child->pid = 0;		/* release the slot */
