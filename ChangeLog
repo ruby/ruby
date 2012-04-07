@@ -1,3 +1,9 @@
+Sun Apr  8 07:26:40 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler): get keys
+	  and fetch values from it to prevent @timeout_info's error
+	  "can't add a new key into hash during iteration".
+
 Sun Apr  8 06:51:57 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (io_unread): cast as long the value for extra_max.
