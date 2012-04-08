@@ -1,3 +1,8 @@
+Mon Apr  9 08:01:15 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_strftime.c: gets the value with range() consistetly.
+	* ext/date/date_strftime.c (range): now just replaces the given item.
+
 Mon Apr  9 06:58:01 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_expt): [ruby-core:44170].

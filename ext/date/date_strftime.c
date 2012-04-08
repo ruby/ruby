@@ -122,7 +122,11 @@ extern char *getenv();
 extern char *strchr();
 #endif
 
+#if 0
 #define range(low, item, hi)	max((low), min((item), (hi)))
+#else
+#define range(low, item, hi)	(item)
+#endif
 
 #undef min	/* just in case */
 
@@ -376,7 +380,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'j':	/* day of the year, 001 - 366 */
-			FMT('0', 3, "d", tmx_yday);
+			v = range(1, tmx_yday, 366);
+			FMT('0', 3, "d", v);
 			continue;
 
 		case 'm':	/* month, 01 - 12 */
@@ -418,7 +423,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'U':	/* week of year, Sunday is first day of week */
-			FMT('0', 2, "d", tmx_wnum0);
+			v = range(0, tmx_wnum0, 53);
+			FMT('0', 2, "d", v);
 			continue;
 
 		case 'w':	/* weekday, Sunday == 0, 0 - 6 */
@@ -427,7 +433,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'W':	/* week of year, Monday is first day of week */
-			FMT('0', 2, "d", tmx_wnum1);
+			v = range(0, tmx_wnum1, 53);
+			FMT('0', 2, "d", v);
 			continue;
 
 		case 'x':	/* appropriate date representation */
@@ -580,7 +587,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			continue;
 
 		case 'e':	/* day of month, blank padded */
-			FMT(' ', 2, "d", range(1, tmx_mday, 31));
+			v = range(1, tmx_mday, 31);
+			FMT(' ', 2, "d", v);
 			continue;
 
 		case 'r':	/* time as %I:%M:%S %p */
@@ -637,12 +645,14 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				goto again;
 			goto unknown;
 		case 'V':	/* week of year according ISO 8601 */
-			FMT('0', 2, "d", tmx_cweek);
+			v = range(1, tmx_cweek, 53);
+			FMT('0', 2, "d", v);
 			continue;
 
 		case 'u':
 		/* ISO 8601: Weekday as a decimal number [1 (Monday) - 7] */
-			FMT('0', 1, "d", tmx_cwday);
+			v = range(1, tmx_cwday, 7);
+			FMT('0', 1, "d", v);
 			continue;
 #endif	/* POSIX2_DATE */
 
