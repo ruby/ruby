@@ -222,7 +222,7 @@ class TestReadline < Test::Unit::TestCase
       rescue NotimplementedError
       end
     end
-  end
+  end if !/EditLine/n.match(Readline::VERSION)
 
   def test_get_screen_size
     begin
@@ -320,7 +320,7 @@ class TestReadline < Test::Unit::TestCase
   ensure
     Readline.completion_case_fold = completion_case_fold
     Readline.completion_append_character = append_character
-  end
+  end if !/EditLine/n.match(Readline::VERSION)
 
   # basic_word_break_characters
   # completer_word_break_characters
