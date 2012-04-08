@@ -1,3 +1,8 @@
+Mon Apr  9 02:52:03 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* complex.c (nucomp_expt): the result of f_complex_new2 may be a fixnum
+	  with mathn. [ruby-core:44170] [Bug #6267]
+
 Sun Apr  8 22:46:01 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/generator/generator.c (generate_json_bignum):
