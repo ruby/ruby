@@ -92,9 +92,9 @@ static void fbuffer_append_str(FBuffer *fb, VALUE str)
     const char *newstr = StringValuePtr(str);
     unsigned long len = RSTRING_LEN(str);
 
-    RB_GC_GUARD(str);
-
     fbuffer_append(fb, newstr, len);
+
+    RB_GC_GUARD(str);
 }
 
 static void fbuffer_append_char(FBuffer *fb, char newchr)
