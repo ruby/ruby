@@ -896,10 +896,7 @@ nucomp_expt(VALUE self, VALUE other)
 		z = f_mul(z, x);
 		n--;
 	    }
-	    {
-		get_dat1(z);
-		return f_complex_new2(CLASS_OF(self), dat->real, dat->imag);
-	    }
+	    return z;
 	}
 	return f_expt(f_reciprocal(self), f_negate(other));
     }
