@@ -1,3 +1,9 @@
+Sun Apr  8 22:46:01 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json/generator/generator.c (generate_json_bignum):
+	  add RB_GC_GUARD.
+	  http://fb.rubyci.org/~chkbuild/ruby-trunk/log/20120407T210301Z.diff.html.gz
+
 Sun Apr  8 07:26:40 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler): get keys
