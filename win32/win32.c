@@ -4407,8 +4407,11 @@ static int
 isUNCRoot(const WCHAR *path)
 {
     if (path[0] == L'\\' && path[1] == L'\\') {
-	const WCHAR *p;
-	for (p = path + 2; *p; p++) {
+	const WCHAR *p = path + 2;
+	if (p[0] == L'?' && p[1] == L'\\') {
+	    p += 2;
+	}
+	for (; *p; p++) {
 	    if (*p == L'\\')
 		break;
 	}
@@ -4577,11 +4580,13 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
 {
     HANDLE h;
     WIN32_FIND_DATAW wfd;
+    const WCHAR *p = path;
 
     memset(st, 0, sizeof(*st));
     st->st_nlink = 1;
 
-    if (wcspbrk(path, L"?*")) {
+    if (wcsncmp(p, L"\\\\?\\", 4) == 0) p += 4;
+    if (wcspbrk(p, L"?*")) {
 	errno = ENOENT;
 	return -1;
     }

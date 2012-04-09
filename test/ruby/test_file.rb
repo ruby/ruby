@@ -204,4 +204,14 @@ class TestFile < Test::Unit::TestCase
       assert_equal(File.chmod(0666, file), 1, bug5671)
     end
   end
+
+  if /(bcc|ms|cyg)win|mingw|emx/ =~ RUBY_PLATFORM
+    def test_long_unc
+      feature3399 = '[ruby-core:30623]'
+      path = File.expand_path(__FILE__)
+      assert_nothing_raised(Errno::ENOENT, feature3399) do
+        File.stat("//?/#{path}")
+      end
+    end
+  end
 end

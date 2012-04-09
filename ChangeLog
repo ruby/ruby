@@ -1,3 +1,8 @@
+Mon Apr  9 23:10:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (isUNCRoot, winnt_stat): support long UNC.
+	  [ruby-core:30623][Feature #3399]
+
 Mon Apr  9 15:16:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (string_content, parser_yylex): count brace nesting to
