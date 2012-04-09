@@ -1,3 +1,10 @@
+Mon Apr  9 13:06:58 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* hash.c (rb_hash_set_default_proc): Accept nil, patch by Run Paint
+	  [Feature #4234]
+
+	* test/ruby/test_hash.rb: test for above.
+
 Mon Apr  9 08:01:15 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_strftime.c: gets the value with range() consistetly.

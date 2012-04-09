@@ -718,6 +718,10 @@ class TestHash < Test::Unit::TestCase
   def test_default_proc
     h = Hash.new {|hh, k| hh + k + "baz" }
     assert_equal("foobarbaz", h.default_proc.call("foo", "bar"))
+    assert_nil(h.default_proc = nil)
+    assert_nil(h.default_proc)
+    h.default_proc = ->(h, k){ true }
+    assert(h[:nope])
     h = {}
     assert_nil(h.default_proc)
   end

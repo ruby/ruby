@@ -689,9 +689,9 @@ rb_hash_default_proc(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.default_proc = proc_obj     -> proc_obj
+ *     hsh.default_proc = proc_obj or nil
  *
- *  Sets the default proc to be executed on each key lookup.
+ *  Sets the default proc to be executed on each failed key lookup.
  *
  *     h.default_proc = proc do |hash, key|
  *       hash[key] = key + key
@@ -706,6 +706,11 @@ rb_hash_set_default_proc(VALUE hash, VALUE proc)
     VALUE b;
 
     rb_hash_modify_check(hash);
+    if (NIL_P(proc)) {
+	FL_UNSET(hash, HASH_PROC_DEFAULT);
+	RHASH_IFNONE(hash) = proc;
+	return proc;
+    }
     b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
     if (NIL_P(b) || !rb_obj_is_proc(b)) {
 	rb_raise(rb_eTypeError,
