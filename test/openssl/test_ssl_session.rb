@@ -351,9 +351,12 @@ __EOS__
         ssl.connect
         last_client_session = ssl.session
         ssl.close
-        Thread.pass # try to ensure server calls callbacks
-        assert(called.delete(:new))
-        assert(called.delete(:remove))
+        timeout(5) do
+          Thread.pass until called.key?(:new)
+          assert(called.delete(:new))
+          Thread.pass until called.key?(:remove)
+          assert(called.delete(:remove))
+        end
       end
     end
     assert(called[:get1])
