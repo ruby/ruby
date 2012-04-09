@@ -1,3 +1,8 @@
+Mon Apr  9 15:16:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (string_content, parser_yylex): count brace nesting to
+	  dispatch embexpr_end.  [ruby-core:43775][Bug #6211]
+
 Mon Apr  9 13:06:58 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* hash.c (rb_hash_set_default_proc): Accept nil, patch by Run Paint

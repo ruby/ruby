@@ -210,8 +210,6 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
   end
 
   def test_embexpr_end
-=begin
-    # currently detected as "rbrace"
     assert_equal [],
                  scan('embexpr_end', '')
     assert_equal ['}'],
@@ -222,7 +220,6 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('embexpr_end', '%Q[#{expr}]')
     assert_equal ['}'],
                  scan('embexpr_end', "m(<<EOS)\n\#{expr}\nEOS")
-=end
   end
 
   def test_embvar

@@ -213,6 +213,7 @@ struct parser_params {
     int parser_lpar_beg;
     int parser_in_single;
     int parser_in_def;
+    int parser_brace_nest;
     int parser_compile_for_eval;
     VALUE parser_cur_mid;
     int parser_in_defined;
@@ -287,6 +288,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define class_nest		(parser->parser_class_nest)
 #define paren_nest		(parser->parser_paren_nest)
 #define lpar_beg		(parser->parser_lpar_beg)
+#define brace_nest		(parser->parser_brace_nest)
 #define in_single		(parser->parser_in_single)
 #define in_def			(parser->parser_in_def)
 #define compile_for_eval	(parser->parser_compile_for_eval)
@@ -760,7 +762,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 %token tAMPER		/* & */
 %token tLAMBDA		/* -> */
 %token tSYMBEG tSTRING_BEG tXSTRING_BEG tREGEXP_BEG tWORDS_BEG tQWORDS_BEG
-%token tSTRING_DBEG tSTRING_DVAR tSTRING_END tLAMBEG
+%token tSTRING_DBEG tSTRING_DEND tSTRING_DVAR tSTRING_END tLAMBEG
 
 /*
  *	precedence table
@@ -4219,16 +4221,21 @@ string_content	: tSTRING_CONTENT
 			lex_strterm = 0;
 			lex_state = EXPR_BEG;
 		    }
-		  compstmt '}'
+		    {
+			$<num>$ = brace_nest;
+			brace_nest = 0;
+		    }
+		  compstmt tSTRING_DEND
 		    {
 			cond_stack = $<val>1;
 			cmdarg_stack = $<val>2;
 			lex_strterm = $<node>3;
+			brace_nest = $<num>4;
 		    /*%%%*/
-			if ($4) $4->flags &= ~NODE_FL_NEWLINE;
-			$$ = new_evstr($4);
+			if ($5) $5->flags &= ~NODE_FL_NEWLINE;
+			$$ = new_evstr($5);
 		    /*%
-			$$ = dispatch1(string_embexpr, $4);
+			$$ = dispatch1(string_embexpr, $5);
 		    %*/
 		    }
 		;
@@ -7517,6 +7524,9 @@ parser_yylex(struct parser_params *parser)
 	    lex_state = EXPR_ENDFN;
 	else
 	    lex_state = EXPR_ENDARG;
+	if (c == '}') {
+	    if (!brace_nest--) c = tSTRING_DEND;
+	}
 	return c;
 
       case ':':
@@ -7650,6 +7660,7 @@ parser_yylex(struct parser_params *parser)
 	return c;
 
       case '{':
+	++brace_nest;
 	if (lpar_beg && lpar_beg == paren_nest) {
 	    lex_state = EXPR_BEG;
 	    lpar_beg = 0;
@@ -10390,6 +10401,7 @@ parser_initialize(struct parser_params *parser)
     parser->parser_class_nest = 0;
     parser->parser_paren_nest = 0;
     parser->parser_lpar_beg = 0;
+    parser->parser_brace_nest = 0;
     parser->parser_in_single = 0;
     parser->parser_in_def = 0;
     parser->parser_in_defined = 0;
