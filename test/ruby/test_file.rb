@@ -209,6 +209,7 @@ class TestFile < Test::Unit::TestCase
     def test_long_unc
       feature3399 = '[ruby-core:30623]'
       path = File.expand_path(__FILE__)
+      path.sub!(%r'\A//', 'UNC/')
       assert_nothing_raised(Errno::ENOENT, feature3399) do
         File.stat("//?/#{path}")
       end
