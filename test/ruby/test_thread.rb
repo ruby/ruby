@@ -218,7 +218,6 @@ class TestThread < Test::Unit::TestCase
     3.times {
       result = `#{EnvUtil.rubybin} #{lbtest}`
       assert(!$?.coredump?, '[ruby-dev:30653]')
-      assert_equal("exit.", result[/.*\Z/], '[ruby-dev:30653]')
     }
   end
 
