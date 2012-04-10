@@ -1,3 +1,8 @@
+Tue Apr 10 16:53:21 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c: add prototype declarations for older Mac OS X.
+	  [ruby-core:43376][Bug #6170]
+
 Tue Apr 10 15:35:21 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_set_sequence): show a hint if there are duplicated
