@@ -1987,6 +1987,25 @@ module Net   #:nodoc:
 
     private
 
+    class Chunker #:nodoc:
+      def initialize(sock)
+        @sock = sock
+        @prev = nil
+      end
+
+      def write(buf)
+        # avoid memcpy() of buf, buf can huge and eat memory bandwidth
+        @sock.write("#{buf.bytesize.to_s(16)}\r\n")
+        rv = @sock.write(buf)
+        @sock.write("\r\n")
+        rv
+      end
+
+      def finish
+        @sock.write("0\r\n\r\n")
+      end
+    end
+
     def send_request_with_body(sock, ver, path, body)
       self.content_length = body.bytesize
       delete 'Transfer-Encoding'
@@ -2005,14 +2024,13 @@ module Net   #:nodoc:
       write_header sock, ver, path
       wait_for_continue sock, ver if sock.continue_timeout
       if chunked?
-        while s = f.read(1024)
-          sock.write(sprintf("%x\r\n", s.length) << s << "\r\n")
-        end
-        sock.write "0\r\n\r\n"
+        chunker = Chunker.new(sock)
+        IO.copy_stream(f, chunker)
+        chunker.finish
       else
-        while s = f.read(1024)
-          sock.write s
-        end
+        # copy_stream can sendfile() to sock.io unless we use SSL.
+        # If sock.io is an SSLSocket, copy_stream will hit SSL_write()
+        IO.copy_stream(f, sock.io)
       end
     end
 

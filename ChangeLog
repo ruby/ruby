@@ -1,3 +1,9 @@
+Tue Apr 10 18:19:32 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP#send_request_with_body_stream):
+	  use IO.copy_stream for requests using body_stream.
+	  patched by Eric Wong. [ruby-core:40898] [Feature #5605]
+
 Tue Apr 10 16:53:21 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c: add prototype declarations for older Mac OS X.
