@@ -651,4 +651,39 @@ class TestPack < Test::Unit::TestCase
     assert_nil("".unpack("i") {|x| result = x}, bug4059)
     assert_equal(:ok, result)
   end
+
+  def test_pack_garbage
+    assert_silent do
+      assert_equal "\000", [0].pack("*U")
+    end
+
+    verbose = $VERBOSE
+    $VERBOSE = true
+
+    _, err = capture_io do
+      assert_equal "\000", [0].pack("*U")
+    end
+
+    assert_match %r%unknown pack directive '\*' in '\*U'$%, err
+  ensure
+    $VERBOSE = verbose
+  end
+
+  def test_unpack_garbage
+    assert_silent do
+      assert_equal [0], "\000".unpack("*U")
+    end
+
+    verbose = $VERBOSE
+    $VERBOSE = true
+
+    _, err = capture_io do
+      assert_equal [0], "\000".unpack("*U")
+    end
+
+    assert_match %r%unknown unpack directive '\*' in '\*U'$%, err
+  ensure
+    $VERBOSE = verbose
+  end
+
 end

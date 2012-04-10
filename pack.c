@@ -1026,6 +1026,8 @@ pack_pack(VALUE ary, VALUE fmt)
 	    break;
 
 	  default:
+	    rb_warning("unknown pack directive '%c' in '%s'",
+		type, RSTRING_PTR(fmt));
 	    break;
 	}
     }
@@ -2143,6 +2145,8 @@ pack_unpack(VALUE str, VALUE fmt)
 	    break;
 
 	  default:
+	    rb_warning("unknown unpack directive '%c' in '%s'",
+		type, RSTRING_PTR(fmt));
 	    break;
 	}
     }

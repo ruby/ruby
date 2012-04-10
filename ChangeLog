@@ -1,3 +1,11 @@
+Wed Apr 11 07:33:13 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* pack.c (pack_pack):  Warn when an invalid character is found in the
+	  format string when $VERBOSE is true.  [ruby-trunk - Feature #5219]
+	* pack.c (pack_unpack):  ditto
+	* test/ruby/test_pack.rb (class TestPack):  Test for warnings on
+	  invalid format characters.
+
 Wed Apr 11 06:11:10 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* string.c (rb_str_tr):  Documented use of \ to escape characters.
