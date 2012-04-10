@@ -1,3 +1,8 @@
+Wed Apr 11 03:02:24 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* ext/ripper/lib/ripper/sexp.rb: fix spelling. patched by
+	  Jonathan Hinkle via https://github.com/ruby/ruby/pull/116
+
 Tue Apr 10 19:07:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_enc_raise): new function to raise an exception with
