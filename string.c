@@ -5270,20 +5270,35 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
  *  call-seq:
  *     str.tr(from_str, to_str)   => new_str
  *
- *  Returns a copy of <i>str</i> with the characters in <i>from_str</i>
- *  replaced by the corresponding characters in <i>to_str</i>. If
- *  <i>to_str</i> is shorter than <i>from_str</i>, it is padded with its last
- *  character in order to maintain the correspondence.
+ *  Returns a copy of +str+ with the characters in +from_str+ replaced by the
+ *  corresponding characters in +to_str+.  If +to_str+ is shorter than
+ *  +from_str+, it is padded with its last character in order to maintain the
+ *  correspondence.
  *
  *     "hello".tr('el', 'ip')      #=> "hippo"
  *     "hello".tr('aeiou', '*')    #=> "h*ll*"
+ *     "hello".tr('aeiou', 'AA*')  #=> "hAll*"
  *
- *  Both strings may use the c1-c2 notation to denote ranges of characters,
- *  and <i>from_str</i> may start with a <code>^</code>, which denotes all
- *  characters except those listed.
+ *  Both strings may use the <code>c1-c2</code> notation to denote ranges of
+ *  characters, and +from_str+ may start with a <code>^</code>, which denotes
+ *  all characters except those listed.
  *
  *     "hello".tr('a-y', 'b-z')    #=> "ifmmp"
  *     "hello".tr('^aeiou', '*')   #=> "*e**o"
+ *
+ *  The backslash character <code>\</code> can be used to escape
+ *  <code>^</code> or <code>-</code> and is otherwise ignored unless it
+ *  appears at the end of a range or the end of the +from_str+ or +to_str+:
+ *
+ *     "hello^world".tr("\\^aeiou", "*") #=> "h*ll**w*rld"
+ *     "hello-world".tr("a\\-eo", "*")   #=> "h*ll**w*rld"
+ *
+ *     "hello\r\nworld".tr("\r", "")   #=> "hello\nworld"
+ *     "hello\r\nworld".tr("\\r", "")  #=> "hello\r\nwold"
+ *     "hello\r\nworld".tr("\\\r", "") #=> "hello\nworld"
+ *
+ *     "X['\\b']".tr("X\\", "")   #=> "['b']"
+ *     "X['\\b']".tr("X-\\]", "") #=> "'b'"
  */
 
 static VALUE
@@ -5622,16 +5637,27 @@ rb_str_tr_s(VALUE str, VALUE src, VALUE repl)
  *  call-seq:
  *     str.count([other_str]+)   -> fixnum
  *
- *  Each <i>other_str</i> parameter defines a set of characters to count.  The
- *  intersection of these sets defines the characters to count in
- *  <i>str</i>. Any <i>other_str</i> that starts with a caret (^) is
- *  negated. The sequence c1--c2 means all characters between c1 and c2.
+ *  Each +other_str+ parameter defines a set of characters to count.  The
+ *  intersection of these sets defines the characters to count in +str+.  Any
+ *  +other_str+ that starts with a caret <code>^</code> is negated.  The
+ *  sequence <code>c1-c2</code> means all characters between c1 and c2.  The
+ *  backslash character <code>\</code> can be used to escape <code>^</code> or
+ *  <code>-</code> and is otherwise ignored unless it appears at the end of a
+ *  sequence or the end of a +other_str+.
  *
  *     a = "hello world"
- *     a.count "lo"            #=> 5
- *     a.count "lo", "o"       #=> 2
- *     a.count "hello", "^l"   #=> 4
- *     a.count "ej-m"          #=> 4
+ *     a.count "lo"                   #=> 5
+ *     a.count "lo", "o"              #=> 2
+ *     a.count "hello", "^l"          #=> 4
+ *     a.count "ej-m"                 #=> 4
+ *
+ *     "hello^world".count "\\^aeiou" #=> 4
+ *     "hello-world".count "a\\-eo"   #=> 4
+ *
+ *     c = "hello world\\r\\n"
+ *     c.count "\\"                   #=> 2
+ *     c.count "\\A"                  #=> 0
+ *     c.count "X-\\w"                #=> 3
  */
 
 static VALUE
