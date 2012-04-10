@@ -1,3 +1,8 @@
+Wed Apr 11 05:14:51 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/abbrev.rb:  Clarified that Abbrev.abbrev returns a Hash instead
+	  of an Array.  Patch by Andrei Bocan.  [ruby-trunk - Bug #6107]
+
 Wed Apr 11 03:02:24 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* ext/ripper/lib/ripper/sexp.rb: fix spelling. patched by

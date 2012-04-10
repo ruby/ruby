@@ -10,22 +10,23 @@
 # $Id$
 #++
 
-# Calculate the set of unique abbreviations for a given set of strings.
+##
+# Calculates the set of unique abbreviations for a given set of strings.
 #
 #   require 'abbrev'
 #   require 'pp'
 #
-#   pp Abbrev::abbrev(['ruby', 'rules']).sort
+#   pp Abbrev.abbrev(['ruby', 'rules'])
 #
-# <i>Generates:</i>
+# Generates:
 #
-#   [["rub", "ruby"],
-#    ["ruby", "ruby"],
-#    ["rul", "rules"],
-#    ["rule", "rules"],
-#    ["rules", "rules"]]
+#   { "rub"   =>  "ruby",
+#     "ruby"  =>  "ruby",
+#     "rul"   =>  "rules",
+#     "rule"  =>  "rules",
+#     "rules" =>  "rules" }
 #
-# Also adds an +abbrev+ method to class +Array+.
+# It also adds an +abbrev+ method to class Array.
 
 module Abbrev
 
