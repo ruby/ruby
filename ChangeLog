@@ -1,3 +1,9 @@
+Tue Apr 10 19:07:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_enc_raise): new function to raise an exception with
+	  the message in the given encoding.  patched by now (Nikolai
+	  Weibull) at [ruby-core:41160].  [Feature #5650]
+
 Tue Apr 10 18:19:32 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP#send_request_with_body_stream):
