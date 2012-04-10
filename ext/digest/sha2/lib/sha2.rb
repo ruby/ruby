@@ -68,11 +68,11 @@ module Digest
     #
     # Returns the block length of the digest in bytes.
     #
-    #   Digest::SHA256.new.digest_length * 8
+    #   Digest::SHA256.new.block_length * 8
     #   # => 512
-    #   Digest::SHA384.new.digest_length * 8
+    #   Digest::SHA384.new.block_length * 8
     #   # => 1024
-    #   Digest::SHA512.new.digest_length * 8
+    #   Digest::SHA512.new.block_length * 8
     #   # => 1024
     def block_length
       @sha2.block_length
