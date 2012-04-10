@@ -566,6 +566,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		const char *start = p;
 		char term = (*p == '<') ? '>' : '}';
+		int len;
 
 		for (; p < end && *p != term; ) {
 		    p += rb_enc_mbclen(p, end, enc);
@@ -573,14 +574,23 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		if (p >= end) {
 		    rb_raise(rb_eArgError, "malformed name - unmatched parenthesis");
 		}
+#if SIZEOF_INT < SIZEOF_SIZE_T
+		if ((size_t)(p - start) >= INT_MAX) {
+		    const int message_limit = 20;
+		    len = (int)(rb_enc_right_char_head(start, start + message_limit, p, enc) - start);
+		    rb_raise(rb_eArgError, "too long name (%"PRIdSIZE" bytes) - %.*s...%c",
+			     (size_t)(p - start - 2), len, start, term);
+		}
+#endif
+		len = (int)(p - start + 1); /* including parenthesis */
 		if (id) {
 		    rb_raise(rb_eArgError, "name%.*s after <%s>",
-			     (int)(p - start + 1), start, rb_id2name(id));
+			     len, start, rb_id2name(id));
 		}
-		id = rb_intern3(start + 1, p - start - 1, enc);
-		nextvalue = GETNAMEARG(ID2SYM(id), start, (int)(p - start + 1));
+		id = rb_intern3(start + 1, len - 2 /* without parenthesis */, enc);
+		nextvalue = GETNAMEARG(ID2SYM(id), start, len);
 		if (nextvalue == Qundef) {
-		    rb_raise(rb_eKeyError, "key%.*s not found", (int)(p - start + 1), start);
+		    rb_raise(rb_eKeyError, "key%.*s not found", len, start);
 		}
 		if (term == '}') goto format_s;
 		p++;
