@@ -1,3 +1,8 @@
+Tue Apr 10 09:48:31 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c (rb_deflate_s_deflate):  Fixed ruby example replacing
+	  NO_FLUSH with FINISH.  [ruby-trunk - Bug #6273]
+
 Mon Apr  9 23:10:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (isUNCRoot, winnt_stat): support long UNC.

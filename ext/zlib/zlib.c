@@ -1434,7 +1434,7 @@ deflate_run(VALUE args)
  *
  *   def deflate(string, level)
  *     z = Zlib::Deflate.new(level)
- *     dst = z.deflate(string, Zlib::NO_FLUSH)
+ *     dst = z.deflate(string, Zlib::FINISH)
  *     z.close
  *     dst
  *   end
