@@ -25,6 +25,9 @@ class TestOpenURI < Test::Unit::TestCase
         yield srv, dr, "http://#{host}:#{port}"
       ensure
         srv.shutdown
+        until srv.status == :Stop
+          sleep 0.1
+        end
       end
     }
   end
