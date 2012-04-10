@@ -5742,6 +5742,9 @@ static const char isspacetable[256] = {
  *  limit to the number of fields returned, and trailing null fields are not
  *  suppressed.
  *
+ *  When the input +str+ is empty an empty Array is returned as the string is
+ *  considered to have no fields to split.
+ *
  *     " now's  the time".split        #=> ["now's", "the", "time"]
  *     " now's  the time".split(' ')   #=> ["now's", "the", "time"]
  *     " now's  the time".split(/ /)   #=> ["", "now's", "", "the", "time"]
@@ -5754,6 +5757,8 @@ static const char isspacetable[256] = {
  *     "1,2,,3,4,,".split(',')         #=> ["1", "2", "", "3", "4"]
  *     "1,2,,3,4,,".split(',', 4)      #=> ["1", "2", "", "3,4,,"]
  *     "1,2,,3,4,,".split(',', -4)     #=> ["1", "2", "", "3", "4", "", ""]
+ *
+ *     "".split(',', -1)               #=> []
  */
 
 static VALUE

@@ -1,3 +1,8 @@
+Tue Apr 10 09:57:00 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* string.c (rb_str_split_m):  Documented behavior of split on the empty
+	  string.  [ruby-trunk - Feature #3575]
+
 Tue Apr 10 09:48:31 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/zlib/zlib.c (rb_deflate_s_deflate):  Fixed ruby example replacing
