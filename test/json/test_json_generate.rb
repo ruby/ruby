@@ -214,14 +214,17 @@ EOT
     assert_equal 128, s.buffer_initial_length
   end
 
+  require'timeout'
   def test_gc
     bignum_too_long_to_embed_as_string = 1234567890123456789012345
     expect = bignum_too_long_to_embed_as_string.to_s
     stress, GC.stress = GC.stress, true
 
-    10.times do |i|
-      tmp = bignum_too_long_to_embed_as_string.to_json
-      assert_equal expect, tmp
+    timeout(1) do
+      10.times do |i|
+        tmp = bignum_too_long_to_embed_as_string.to_json
+        assert_equal expect, tmp
+      end
     end
   ensure
     GC.stress = stress
