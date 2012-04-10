@@ -1,3 +1,8 @@
+Tue Apr 10 15:35:21 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_set_sequence): show a hint if there are duplicated
+	  "when" clauses.  [ruby-core:41502] [ruby-trunk - Feature #5716]
+
 Tue Apr 10 09:57:00 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* string.c (rb_str_split_m):  Documented behavior of split on the empty

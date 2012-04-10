@@ -1454,8 +1454,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 				    rb_hash_aset(map, obj, INT2FIX(lobj->position - (pos+len)));
 				}
 				else {
+				    int n = i/2 + 1;
 				    rb_compile_warning(RSTRING_PTR(iseq->filename), iobj->line_no,
-						       "duplicated when clause is ignored");
+						       "duplicated when clause (#%d) is ignored", n);
 				}
 			    }
 			    hide_obj(map);
