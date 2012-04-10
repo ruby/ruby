@@ -221,7 +221,7 @@ EOT
     GC.start
     stress, GC.stress = GC.stress, true
 
-    timeout(1) do
+    timeout(5) do
       10.times do |i|
         tmp = bignum_too_long_to_embed_as_string.to_json
         assert_equal expect, tmp
