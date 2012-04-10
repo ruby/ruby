@@ -218,6 +218,7 @@ EOT
   def test_gc
     bignum_too_long_to_embed_as_string = 1234567890123456789012345
     expect = bignum_too_long_to_embed_as_string.to_s
+    GC.start
     stress, GC.stress = GC.stress, true
 
     timeout(1) do
