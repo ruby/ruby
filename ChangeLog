@@ -1,3 +1,9 @@
+Wed Apr 11 07:38:33 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/digest/sha2/lib/sha2.rb (Digest#block_length):  Fixed method name
+	  in documentation examples.  Patch by naleski via
+	  https://github.com/ruby/ruby/pull/115
+
 Wed Apr 11 07:33:13 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* pack.c (pack_pack):  Warn when an invalid character is found in the
