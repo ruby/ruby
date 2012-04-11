@@ -2430,4 +2430,20 @@ EOT
       end
     }
   end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_read_crlf_and_eof
+    bug6271 = '[ruby-core:44189]'
+    with_tmpdir {
+      str = "a\r\nb\r\nc\r\n"
+      generate_file("tmp", str)
+      open("tmp", "r") do |f|
+        i = 0
+        until f.eof?
+          assert_equal(str[i], f.read(1), bug6271)
+          i += 1
+        end
+        assert_equal(str.size, i, bug6271)
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 end
