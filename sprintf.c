@@ -584,7 +584,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 #endif
 		len = (int)(p - start + 1); /* including parenthesis */
 		if (id) {
-		    rb_raise(rb_eArgError, "name%.*s after <%s>",
+		    rb_raise(rb_eArgError, "named%.*s after <%s>",
 			     len, start, rb_id2name(id));
 		}
 		id = rb_intern3(start + 1, len - 2 /* without parenthesis */, enc);

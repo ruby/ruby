@@ -325,10 +325,15 @@ class TestSprintf < Test::Unit::TestCase
 
   def test_named
     assert_equal("value", sprintf("%<key>s", :key => "value"))
-    assert_raise(ArgumentError) {sprintf("%1$<key2>s", :key => "value")}
-    assert_raise(ArgumentError) {sprintf("%<key><key2>s", :key => "value")}
+    e = assert_raise(ArgumentError) {sprintf("%1$<key2>s", :key => "value")}
+    assert_equal("named<key2> after numbered", e.message)
+    e = assert_raise(ArgumentError) {sprintf("%<key><key2>s", :key => "value")}
+    assert_equal("named<key2> after <key>", e.message)
     assert_equal("value", sprintf("%{key}", :key => "value"))
-    assert_raise(ArgumentError) {sprintf("%1${key2}", :key => "value")}
+    e = assert_raise(ArgumentError) {sprintf("%1${key2}", :key => "value")}
+    assert_equal("named{key2} after numbered", e.message)
+    e = assert_raise(ArgumentError) {sprintf("%<key>{key2}", :key => "value")}
+    assert_equal("named{key2} after <key>", e.message)
     assert_equal("value{key2}", sprintf("%{key}{key2}", :key => "value"))
   end
 end
