@@ -323,15 +323,22 @@ class TestSprintf < Test::Unit::TestCase
     assert(b1 == b2, "[ruby-dev:33224]")
   end
 
-  def test_named
+  def test_named_untyped
     assert_equal("value", sprintf("%<key>s", :key => "value"))
     e = assert_raise(ArgumentError) {sprintf("%1$<key2>s", :key => "value")}
     assert_equal("named<key2> after numbered", e.message)
+    e = assert_raise(ArgumentError) {sprintf("%s%s%<key2>s", "foo", "bar", :key => "value")}
+    assert_equal("named<key2> after unnumbered(2)", e.message)
     e = assert_raise(ArgumentError) {sprintf("%<key><key2>s", :key => "value")}
     assert_equal("named<key2> after <key>", e.message)
+  end
+
+  def test_named_typed
     assert_equal("value", sprintf("%{key}", :key => "value"))
     e = assert_raise(ArgumentError) {sprintf("%1${key2}", :key => "value")}
     assert_equal("named{key2} after numbered", e.message)
+    e = assert_raise(ArgumentError) {sprintf("%s%s%{key2}", "foo", "bar", :key => "value")}
+    assert_equal("named{key2} after unnumbered(2)", e.message)
     e = assert_raise(ArgumentError) {sprintf("%<key>{key2}", :key => "value")}
     assert_equal("named{key2} after <key>", e.message)
     assert_equal("value{key2}", sprintf("%{key}{key2}", :key => "value"))
