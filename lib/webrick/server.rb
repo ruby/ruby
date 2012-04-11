@@ -112,6 +112,9 @@ module WEBrick
             # if the listening socket was closed in GenericServer#shutdown,
             # IO::select raise it.
           rescue Exception => ex
+            if [NoMemoryError, SignalException, Interrupt, SystemExit].include?(ex.class)
+              raise ex
+            end
             msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
             @logger.error msg
           end
