@@ -333,6 +333,25 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("named<key2> after <key>", e.message)
   end
 
+  def test_named_untyped_enc
+    key = "\u{3012}"
+    [Encoding::UTF_8, Encoding::EUC_JP].each do |enc|
+      k = key.encode(enc)
+      e = assert_raise(ArgumentError) {sprintf("%1$<#{k}>s", key: "value")}
+      assert_equal(enc, e.message.encoding)
+      assert_equal("named<#{k}> after numbered", e.message)
+      e = assert_raise(ArgumentError) {sprintf("%s%s%<#{k}>s", "foo", "bar", key: "value")}
+      assert_equal(enc, e.message.encoding)
+      assert_equal("named<#{k}> after unnumbered(2)", e.message)
+      e = assert_raise(ArgumentError) {sprintf("%<key><#{k}>s", key: "value")}
+      assert_equal(enc, e.message.encoding)
+      assert_equal("named<#{k}> after <key>", e.message)
+      e = assert_raise(ArgumentError) {sprintf("%<#{k}><key>s", k.to_sym => "value")}
+      assert_equal(enc, e.message.encoding)
+      assert_equal("named<key> after <#{k}>", e.message)
+    end
+  end
+
   def test_named_typed
     assert_equal("value", sprintf("%{key}", :key => "value"))
     e = assert_raise(ArgumentError) {sprintf("%1${key2}", :key => "value")}
@@ -342,5 +361,24 @@ class TestSprintf < Test::Unit::TestCase
     e = assert_raise(ArgumentError) {sprintf("%<key>{key2}", :key => "value")}
     assert_equal("named{key2} after <key>", e.message)
     assert_equal("value{key2}", sprintf("%{key}{key2}", :key => "value"))
+  end
+
+  def test_named_typed_enc
+    key = "\u{3012}"
+    [Encoding::UTF_8, Encoding::EUC_JP].each do |enc|
+      k = key.encode(enc)
+      e = assert_raise(ArgumentError) {sprintf("%1${#{k}}s", key: "value")}
+      assert_equal(enc, e.message.encoding)
+      assert_equal("named{#{k}} after numbered", e.message)
+      e = assert_raise(ArgumentError) {sprintf("%s%s%{#{k}}s", "foo", "bar", key: "value")}
+      assert_equal(enc, e.message.encoding)
+      assert_equal("named{#{k}} after unnumbered(2)", e.message)
+      e = assert_raise(ArgumentError) {sprintf("%<key>{#{k}}s", key: "value")}
+      assert_equal(enc, e.message.encoding)
+      assert_equal("named{#{k}} after <key>", e.message)
+      e = assert_raise(ArgumentError) {sprintf("%<#{k}>{key}s", k.to_sym => "value")}
+      assert_equal(enc, e.message.encoding)
+      assert_equal("named{key} after <#{k}>", e.message)
+    end
   end
 end

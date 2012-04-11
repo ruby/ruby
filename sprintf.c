@@ -119,11 +119,11 @@ sign_bits(int base, const char *p)
 #define GETNTHARG(nth) \
     (((nth) >= argc) ? (rb_raise(rb_eArgError, "too few arguments"), 0) : argv[(nth)])
 
-#define GETNAMEARG(id, name, len) ( \
+#define GETNAMEARG(id, name, len, enc) ( \
     posarg > 0 ? \
-    (rb_raise(rb_eArgError, "named%.*s after unnumbered(%d)", (len), (name), posarg), 0) : \
+    (rb_enc_raise((enc), rb_eArgError, "named%.*s after unnumbered(%d)", (len), (name), posarg), 0) : \
     posarg == -1 ? \
-    (rb_raise(rb_eArgError, "named%.*s after numbered", (len), (name)), 0) :	\
+    (rb_enc_raise((enc), rb_eArgError, "named%.*s after numbered", (len), (name)), 0) :	\
     (posarg = -2, rb_hash_lookup2(get_hash(&hash, argc, argv), (id), Qundef)))
 
 #define GETNUM(n, val) \
@@ -578,19 +578,20 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		if ((size_t)(p - start) >= INT_MAX) {
 		    const int message_limit = 20;
 		    len = (int)(rb_enc_right_char_head(start, start + message_limit, p, enc) - start);
-		    rb_raise(rb_eArgError, "too long name (%"PRIdSIZE" bytes) - %.*s...%c",
-			     (size_t)(p - start - 2), len, start, term);
+		    rb_enc_raise(enc, rb_eArgError,
+				 "too long name (%"PRIdSIZE" bytes) - %.*s...%c",
+				 (size_t)(p - start - 2), len, start, term);
 		}
 #endif
 		len = (int)(p - start + 1); /* including parenthesis */
 		if (id) {
-		    rb_raise(rb_eArgError, "named%.*s after <%s>",
-			     len, start, rb_id2name(id));
+		    rb_enc_raise(enc, rb_eArgError, "named%.*s after <%s>",
+				 len, start, rb_id2name(id));
 		}
 		id = rb_intern3(start + 1, len - 2 /* without parenthesis */, enc);
-		nextvalue = GETNAMEARG(ID2SYM(id), start, len);
+		nextvalue = GETNAMEARG(ID2SYM(id), start, len, enc);
 		if (nextvalue == Qundef) {
-		    rb_raise(rb_eKeyError, "key%.*s not found", len, start);
+		    rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
 		}
 		if (term == '}') goto format_s;
 		p++;
