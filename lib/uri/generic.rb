@@ -339,7 +339,7 @@ module URI
     # see also URI::Generic.scheme=
     #
     def set_scheme(v)
-      @scheme = v
+      @scheme = v ? v.downcase : v
     end
     protected :set_scheme
 

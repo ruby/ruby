@@ -708,6 +708,12 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_raise(URI::InvalidURIError) { uri.query = 'bar' }
   end
 
+  def test_set_scheme
+    uri = URI.parse 'HTTP://example'
+
+    assert_equal 'http://example', uri.to_s
+  end
+
   def test_ipv6
     assert_equal("[::1]", URI("http://[::1]/bar/baz").host)
     assert_equal("::1", URI("http://[::1]/bar/baz").hostname)

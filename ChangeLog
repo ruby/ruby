@@ -1,3 +1,9 @@
+Thu Apr 12 07:10:37 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/uri/generic.rb (module URI):  URI now downcases the scheme to
+	  follow RFC 2396 section 3.1.  [ruby-trunk - Feature #4551]
+	* test/uri/test_generic.rb (class URI):  Test for above
+
 Thu Apr 12 06:15:44 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/protocol.rb (module Net):  Added ReadTimeout to match
