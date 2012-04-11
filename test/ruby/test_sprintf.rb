@@ -331,6 +331,8 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("named<key2> after unnumbered(2)", e.message)
     e = assert_raise(ArgumentError) {sprintf("%<key><key2>s", :key => "value")}
     assert_equal("named<key2> after <key>", e.message)
+    e = assert_raise(KeyError) {sprintf("%<key>s", {})}
+    assert_equal("key<key> not found", e.message)
   end
 
   def test_named_untyped_enc
@@ -349,6 +351,9 @@ class TestSprintf < Test::Unit::TestCase
       e = assert_raise(ArgumentError) {sprintf("%<#{k}><key>s", k.to_sym => "value")}
       assert_equal(enc, e.message.encoding)
       assert_equal("named<key> after <#{k}>", e.message)
+      e = assert_raise(KeyError) {sprintf("%<#{k}>s", {})}
+      assert_equal(enc, e.message.encoding)
+      assert_equal("key<#{k}> not found", e.message)
     end
   end
 
@@ -361,6 +366,8 @@ class TestSprintf < Test::Unit::TestCase
     e = assert_raise(ArgumentError) {sprintf("%<key>{key2}", :key => "value")}
     assert_equal("named{key2} after <key>", e.message)
     assert_equal("value{key2}", sprintf("%{key}{key2}", :key => "value"))
+    e = assert_raise(KeyError) {sprintf("%{key}", {})}
+    assert_equal("key{key} not found", e.message)
   end
 
   def test_named_typed_enc
@@ -379,6 +386,9 @@ class TestSprintf < Test::Unit::TestCase
       e = assert_raise(ArgumentError) {sprintf("%<#{k}>{key}s", k.to_sym => "value")}
       assert_equal(enc, e.message.encoding)
       assert_equal("named{key} after <#{k}>", e.message)
+      e = assert_raise(KeyError) {sprintf("%{#{k}}", {})}
+      assert_equal(enc, e.message.encoding)
+      assert_equal("key{#{k}} not found", e.message)
     end
   end
 end

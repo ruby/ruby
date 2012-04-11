@@ -588,8 +588,11 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    rb_enc_raise(enc, rb_eArgError, "named%.*s after <%s>",
 				 len, start, rb_id2name(id));
 		}
-		id = rb_intern3(start + 1, len - 2 /* without parenthesis */, enc);
-		nextvalue = GETNAMEARG(ID2SYM(id), start, len, enc);
+		nextvalue = GETNAMEARG((id = rb_check_id_cstr(start + 1,
+							      len - 2 /* without parenthesis */,
+							      enc),
+					ID2SYM(id)),
+				       start, len, enc);
 		if (nextvalue == Qundef) {
 		    rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
 		}

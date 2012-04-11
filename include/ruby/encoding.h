@@ -220,6 +220,7 @@ char *rb_enc_path_last_separator(const char *,const char *,rb_encoding*);
 char *rb_enc_path_end(const char *,const char *,rb_encoding*);
 const char *ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encoding *enc);
 const char *ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc);
+ID rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc);
 
 RUBY_EXTERN VALUE rb_cEncoding;
 #define ENC_DUMMY_FLAG (1<<24)

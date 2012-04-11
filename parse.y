@@ -10336,6 +10336,34 @@ rb_check_id(volatile VALUE *namep)
     return (ID)0;
 }
 
+ID
+rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc)
+{
+    st_data_t id;
+    struct RString fake_str;
+    const VALUE name = (VALUE)&fake_str;
+    fake_str.basic.flags = T_STRING|RSTRING_NOEMBED;
+    fake_str.basic.klass = rb_cString;
+    fake_str.as.heap.len = len;
+    fake_str.as.heap.ptr = (char *)ptr;
+    fake_str.as.heap.aux.capa = len;
+    rb_enc_associate(name, enc);
+
+    sym_check_asciionly(name);
+
+    if (st_lookup(global_symbols.sym_id, (st_data_t)name, &id))
+	return (ID)id;
+
+    if (rb_is_attrset_name(name)) {
+	fake_str.as.heap.len = len - 1;
+	if (st_lookup(global_symbols.sym_id, (st_data_t)name, &id)) {
+	    return rb_id_attrset((ID)id);
+	}
+    }
+
+    return (ID)0;
+}
+
 int
 rb_is_const_name(VALUE name)
 {
