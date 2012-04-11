@@ -1,3 +1,8 @@
+Wed Apr 11 16:22:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/-test-/add_suffix/bug.c (ruby_add_suffix): no static
+	  declaration.  [ruby-core:44277][Bug #6279]
+
 Sun Apr  8 06:53:55 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (io_unread): cast as long the value for extra_max.

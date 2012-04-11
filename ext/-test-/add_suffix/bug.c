@@ -1,7 +1,6 @@
 static unsigned long ruby_scan_oct();
 static unsigned long ruby_scan_hex();
 static unsigned long ruby_strtoul();
-static void ruby_add_suffix();
 static void ruby_qsort();
 static char *ruby_strdup();
 static char *ruby_getcwd();
