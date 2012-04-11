@@ -1,3 +1,19 @@
+Thu Apr 12 06:15:44 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/protocol.rb (module Net):  Added ReadTimeout to match
+	  OpenTimeout.  ReadTimeout is now raised by rbuf_fill instead of
+	  Timeout::Error to help users distinguish what type of timeout
+	  occurred.  [ruby-trunk - Feature #6088]
+	* lib/net/pop.rb (module Net):  Updated documentation for ReadTimeout
+	  and OpenTimeout.
+	* lib/net/http.rb (module Net):  ditto
+	* lib/net/smtp.rb (module Net):  ditto
+	* lib/net/telnet.rb (module Net):  Net::ReadTimeout is now raised in
+	  waitfor to match Net::Protocol.
+	* test/net/http/test_http.rb:  Updated Timeout::Error expectation to
+	  Net::ReadTimeout.
+	* test/net/ftp/test_ftp.rb:  ditto
+
 Thu Apr 12 05:27:01 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/webrick/server.rb (module WEBrick::GenericServer):  A server

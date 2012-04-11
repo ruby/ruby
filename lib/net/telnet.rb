@@ -243,15 +243,15 @@ module Net
     #
     # Timeout:: the number of seconds to wait before timing out both the
     #           initial attempt to connect to host (in this constructor),
-    #           and all attempts to read data from the host (in #waitfor(),
-    #           #cmd(), and #login()).  Exceeding this timeout causes a
-    #           TimeoutError to be raised.  The default value is 10 seconds.
+    #           which raises a Net::OpenTimeout, and all attempts to read data
+    #           from the host, which raises a Net::ReadTimeout (in #waitfor(),
+    #           #cmd(), and #login()).  The default value is 10 seconds.
     #           You can disable the timeout by setting this value to false.
     #           In this case, the connect attempt will eventually timeout
     #           on the underlying connect(2) socket call with an
     #           Errno::ETIMEDOUT error (but generally only after a few
     #           minutes), but other attempts to read data from the host
-    #           will hand indefinitely if no data is forthcoming.
+    #           will hang indefinitely if no data is forthcoming.
     #
     # Waittime:: the amount of time to wait after seeing what looks like a
     #            prompt (that is, received data that matches the Prompt
@@ -554,7 +554,7 @@ module Net
       rest = ''
       until(prompt === line and not IO::select([@sock], nil, nil, waittime))
         unless IO::select([@sock], nil, nil, time_out)
-          raise TimeoutError, "timed out while waiting for more data"
+          raise Net::ReadTimeout, "timed out while waiting for more data"
         end
         begin
           c = @sock.readpartial(1024 * 1024)

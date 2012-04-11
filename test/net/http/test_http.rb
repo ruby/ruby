@@ -204,7 +204,7 @@ module TestNetHTTP_version_1_1_methods
       conn.open_timeout = 0.01
 
       th = Thread.new do
-        assert_raise(Timeout::Error) {
+        assert_raise(Net::ReadTimeout) {
           conn.get('/')
         }
       end

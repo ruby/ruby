@@ -364,12 +364,12 @@ module Net
 
     # Seconds to wait while attempting to open a connection.
     # If the connection cannot be opened within this time, a
-    # TimeoutError is raised.
+    # Net::OpenTimeout is raised.
     attr_accessor :open_timeout
 
     # Seconds to wait while reading one block (by one read(2) call).
     # If the read(2) call does not complete within this time, a
-    # TimeoutError is raised.
+    # Net::ReadTimeout is raised.
     attr_reader :read_timeout
 
     # Set the number of seconds to wait until timing-out a read(2)
@@ -448,8 +448,9 @@ module Net
     # * Net::SMTPSyntaxError
     # * Net::SMTPFatalError
     # * Net::SMTPUnknownError
+    # * Net::OpenTimeout
+    # * Net::ReadTimeout
     # * IOError
-    # * TimeoutError
     #
     def SMTP.start(address, port = nil, helo = 'localhost',
                    user = nil, secret = nil, authtype = nil,
@@ -509,8 +510,9 @@ module Net
     # * Net::SMTPSyntaxError
     # * Net::SMTPFatalError
     # * Net::SMTPUnknownError
+    # * Net::OpenTimeout
+    # * Net::ReadTimeout
     # * IOError
-    # * TimeoutError
     #
     def start(helo = 'localhost',
               user = nil, secret = nil, authtype = nil)   # :yield: smtp
@@ -653,8 +655,8 @@ module Net
     # * Net::SMTPSyntaxError
     # * Net::SMTPFatalError
     # * Net::SMTPUnknownError
+    # * Net::ReadTimeout
     # * IOError
-    # * TimeoutError
     #
     def send_message(msgstr, from_addr, *to_addrs)
       raise IOError, 'closed session' unless @socket
@@ -706,8 +708,8 @@ module Net
     # * Net::SMTPSyntaxError
     # * Net::SMTPFatalError
     # * Net::SMTPUnknownError
+    # * Net::ReadTimeout
     # * IOError
-    # * TimeoutError
     #
     def open_message_stream(from_addr, *to_addrs, &block)   # :yield: stream
       raise IOError, 'closed session' unless @socket

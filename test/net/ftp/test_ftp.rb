@@ -190,7 +190,7 @@ class FTPTest < Test::Unit::TestCase
         ftp = Net::FTP.new
         ftp.read_timeout = 0.2
         ftp.connect(SERVER_ADDR, server.port)
-        assert_raise(Timeout::Error) do
+        assert_raise(Net::ReadTimeout) do
           ftp.login
         end
         assert_match(/\AUSER /, commands.shift)
@@ -283,7 +283,7 @@ class FTPTest < Test::Unit::TestCase
         assert_match(/\AUSER /, commands.shift)
         assert_match(/\APASS /, commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
-        assert_raise(Timeout::Error) do
+        assert_raise(Net::ReadTimeout) do
           ftp.list
         end
         assert_equal("TYPE A\r\n", commands.shift)
@@ -393,7 +393,7 @@ class FTPTest < Test::Unit::TestCase
         assert_match(/\APASS /, commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         buf = ""
-        assert_raise(Timeout::Error) do
+        assert_raise(Net::ReadTimeout) do
           ftp.retrbinary("RETR foo", 1024) do |s|
             buf << s
           end

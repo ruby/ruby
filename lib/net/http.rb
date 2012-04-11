@@ -624,13 +624,13 @@ module Net   #:nodoc:
     # Number of seconds to wait for the connection to open. Any number
     # may be used, including Floats for fractional seconds. If the HTTP
     # object cannot open a connection in this many seconds, it raises a
-    # TimeoutError exception.
+    # Net::OpenTimeout exception.
     attr_accessor :open_timeout
 
     # Number of seconds to wait for one block to be read (via one read(2)
     # call). Any number may be used, including Floats for fractional
     # seconds. If the HTTP object cannot read data in this many seconds,
-    # it raises a TimeoutError exception.
+    # it raises a Net::ReadTimeout exception.
     attr_reader :read_timeout
 
     # Setter for the read_timeout attribute.
