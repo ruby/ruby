@@ -1,3 +1,14 @@
+Thu Apr 12 05:27:01 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/webrick/server.rb (module WEBrick::GenericServer):  A server
+	  will now continue only when a StandardError subclass is raised.  For
+	  other exception types the error will be logged at the fatal level and
+	  the server will safely stop.  Based on a patch by Alex Young.
+	  [ruby-trunk - Feature #6236]
+	* test/webrick/test_server.rb:  Test for new exception handling
+	  behavior.  Join the server thread instead of busy-waiting for it to
+	  shut down to remove race conditions.
+
 Thu Apr 12 03:50:44 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit:Runner::Worker#_run_suites):

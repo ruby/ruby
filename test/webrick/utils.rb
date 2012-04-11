@@ -36,14 +36,13 @@ module TestWEBrick
       :AccessLog => [[logger, ""]]
     }.update(config))
     begin
-      server.start
+      server_thread = server.start
       addr = server.listeners[0].addr
       block.yield([server, addr[3], addr[1], log])
     ensure
       server.shutdown
-      until server.status == :Stop
-        sleep 0.1
-      end
+
+      server_thread.join
     end
     log_string
   end

@@ -82,6 +82,27 @@ module WEBrick
       @listeners += Utils::create_listeners(address, port, @logger)
     end
 
+    ##
+    # Starts the server and runs the +block+ for each connection.  This method
+    # does not return until the server is stopped from a signal handler or
+    # another thread using #stop or #shutdown.
+    #
+    # If the block raises a subclass of StandardError the exception is logged
+    # and ignored.  If an IOError or Errno::EBADF exception is raised the
+    # exception is ignored.  If an Exception subclass is raised the exception
+    # is logged and re-raised which stops the server.
+    #
+    # To completely shut down a server call #shutdown from ensure:
+    #
+    #   server = WEBrick::GenericServer.new
+    #   # or WEBrick::HTTPServer.new
+    #
+    #   begin
+    #     server.start
+    #   ensure
+    #     server.shutdown
+    #   end
+
     def start(&block)
       raise ServerError, "already started." if @status != :Stop
       server_type = @config[:ServerType] || SimpleServer
@@ -93,43 +114,56 @@ module WEBrick
 
         thgroup = ThreadGroup.new
         @status = :Running
-        while @status == :Running
-          begin
-            if svrs = IO.select(@listeners, nil, nil, 2.0)
-              svrs[0].each{|svr|
-                @tokens.pop          # blocks while no token is there.
-                if sock = accept_client(svr)
-                  sock.do_not_reverse_lookup = config[:DoNotReverseLookup]
-                  th = start_thread(sock, &block)
-                  th[:WEBrickThread] = true
-                  thgroup.add(th)
-                else
-                  @tokens.push(nil)
-                end
-              }
+        begin
+          while @status == :Running
+            begin
+              if svrs = IO.select(@listeners, nil, nil, 2.0)
+                svrs[0].each{|svr|
+                  @tokens.pop          # blocks while no token is there.
+                  if sock = accept_client(svr)
+                    sock.do_not_reverse_lookup = config[:DoNotReverseLookup]
+                    th = start_thread(sock, &block)
+                    th[:WEBrickThread] = true
+                    thgroup.add(th)
+                  else
+                    @tokens.push(nil)
+                  end
+                }
+              end
+            rescue Errno::EBADF, IOError => ex
+              # if the listening socket was closed in GenericServer#shutdown,
+              # IO::select raise it.
+            rescue StandardError => ex
+              msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
+              @logger.error msg
+            rescue Exception => ex
+              @logger.fatal ex
+              raise
             end
-          rescue Errno::EBADF, IOError => ex
-            # if the listening socket was closed in GenericServer#shutdown,
-            # IO::select raise it.
-          rescue Exception => ex
-            msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
-            @logger.error msg
           end
-        end
 
-        @logger.info "going to shutdown ..."
-        thgroup.list.each{|th| th.join if th[:WEBrickThread] }
-        call_callback(:StopCallback)
-        @logger.info "#{self.class}#start done."
-        @status = :Stop
+        ensure
+          @logger.info "going to shutdown ..."
+          thgroup.list.each{|th| th.join if th[:WEBrickThread] }
+          call_callback(:StopCallback)
+          @logger.info "#{self.class}#start done."
+          @status = :Stop
+        end
       }
     end
 
+    ##
+    # Stops the server from accepting new connections.
+
     def stop
       if @status == :Running
-        @status = :Shutdown
+        @status = :Stop
       end
     end
+
+    ##
+    # Shuts down the server and all listening sockets.  New listeners must be
+    # provided to restart the server.
 
     def shutdown
       stop
@@ -169,7 +203,7 @@ module WEBrick
         Utils::set_close_on_exec(sock)
       rescue Errno::ECONNRESET, Errno::ECONNABORTED,
              Errno::EPROTO, Errno::EINVAL => ex
-      rescue Exception => ex
+      rescue StandardError => ex
         msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
         @logger.error msg
       end
