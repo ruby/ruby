@@ -653,11 +653,13 @@ class TestPack < Test::Unit::TestCase
   end
 
   def test_pack_garbage
+    verbose = $VERBOSE
+    $VERBOSE = false
+
     assert_silent do
       assert_equal "\000", [0].pack("*U")
     end
 
-    verbose = $VERBOSE
     $VERBOSE = true
 
     _, err = capture_io do
@@ -670,11 +672,13 @@ class TestPack < Test::Unit::TestCase
   end
 
   def test_unpack_garbage
+    verbose = $VERBOSE
+    $VERBOSE = false
+
     assert_silent do
       assert_equal [0], "\000".unpack("*U")
     end
 
-    verbose = $VERBOSE
     $VERBOSE = true
 
     _, err = capture_io do
