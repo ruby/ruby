@@ -624,6 +624,7 @@ module Test
       def _run_suites suites, type
         @interrupt = nil
         result = []
+        GC.start
         if @options[:parallel]
           _run_parallel suites, type, result
         else

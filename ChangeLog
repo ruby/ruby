@@ -1,3 +1,8 @@
+Thu Apr 12 03:50:44 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit:Runner::Worker#_run_suites):
+	  call GC.start before running the test suites.
+
 Wed Apr 11 22:31:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_check_id_cstr): new function to check if ID is
