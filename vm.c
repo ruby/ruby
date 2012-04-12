@@ -2030,6 +2030,44 @@ m_core_set_postexe(VALUE self, VALUE iseqval)
     return Qnil;
 }
 
+static VALUE
+m_core_hash_from_ary(VALUE self, VALUE ary)
+{
+    VALUE hash = rb_hash_new();
+    int i;
+
+    for (i=0; i<RARRAY_LEN(ary); i+=2) {
+	rb_hash_aset(hash, RARRAY_PTR(ary)[i], RARRAY_PTR(ary)[i+1]);
+    }
+
+    return hash;
+}
+
+static VALUE
+m_core_hash_merge_ary(VALUE self, VALUE hash, VALUE ary)
+{
+    int i;
+
+    for (i=0; i<RARRAY_LEN(ary); i+=2) {
+	rb_hash_aset(hash, RARRAY_PTR(ary)[i], RARRAY_PTR(ary)[i+1]);
+    }
+
+    return hash;
+}
+
+static VALUE
+m_core_hash_merge_ptr(int argc, VALUE *argv, VALUE recv)
+{
+    int i;
+    VALUE hash = argv[0];
+
+    for (i=1; i<argc; i+=2) {
+	rb_hash_aset(hash, argv[i], argv[i+1]);
+    }
+
+    return hash;
+}
+
 extern VALUE *rb_gc_stack_start;
 extern size_t rb_gc_stack_maxsize;
 #ifdef __ia64
@@ -2093,6 +2131,9 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_define_method, m_core_define_method, 3);
     rb_define_method_id(klass, id_core_define_singleton_method, m_core_define_singleton_method, 3);
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 1);
+    rb_define_method_id(klass, id_core_hash_from_ary, m_core_hash_from_ary, 1);
+    rb_define_method_id(klass, id_core_hash_merge_ary, m_core_hash_merge_ary, 2);
+    rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
     rb_obj_freeze(fcore);
     rb_gc_register_mark_object(fcore);
     rb_mRubyVMFrozenCore = fcore;

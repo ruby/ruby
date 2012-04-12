@@ -2274,65 +2274,139 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * cond,
     return COMPILE_OK;
 }
 
+enum compile_array_type_t {
+    COMPILE_ARRAY_TYPE_ARRAY,
+    COMPILE_ARRAY_TYPE_HASH,
+    COMPILE_ARRAY_TYPE_ARGS,
+};
+
 static int
 compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
-	       VALUE opt_p, int poped)
+	       enum compile_array_type_t type, int poped)
 {
     NODE *node = node_root;
-    int len = (int)node->nd_alen, line = (int)nd_line(node), i=0;
-    DECL_ANCHOR(anchor);
+    int line = (int)nd_line(node);
+    int len = 0;
 
-    INIT_ANCHOR(anchor);
-    if (nd_type(node) != NODE_ZARRAY) {
-	while (node) {
-	    if (nd_type(node) != NODE_ARRAY) {
-		rb_bug("compile_array: This node is not NODE_ARRAY, but %s",
-		       ruby_node_name(nd_type(node)));
-	    }
-
-	    i++;
-	    if (opt_p && nd_type(node->nd_head) != NODE_LIT) {
-		opt_p = Qfalse;
-	    }
-	    COMPILE_(anchor, "array element", node->nd_head, poped);
-	    node = node->nd_next;
-	}
-    }
-
-    if (len != i) {
-	if (0) {
-	    rb_bug("node error: compile_array (%d: %d-%d)",
-		   (int)nd_line(node_root), len, i);
-	}
-	len = i;
-    }
-
-    if (opt_p == Qtrue) {
+    if (nd_type(node) == NODE_ZARRAY) {
 	if (!poped) {
-	    VALUE ary = rb_ary_tmp_new(len);
-	    node = node_root;
-	    while (node) {
-		rb_ary_push(ary, node->nd_head->nd_lit);
-		node = node->nd_next;
+	    switch (type) {
+	      case COMPILE_ARRAY_TYPE_ARRAY: ADD_INSN1(ret, line, newarray, INT2FIX(0)); break;
+	      case COMPILE_ARRAY_TYPE_HASH: ADD_INSN1(ret, line, newhash, INT2FIX(0)); break;
+	      case COMPILE_ARRAY_TYPE_ARGS: /* do nothing */ break;
 	    }
-	    OBJ_FREEZE(ary);
-	    iseq_add_mark_object_compile_time(iseq, ary);
-	    ADD_INSN1(ret, nd_line(node_root), duparray, ary);
 	}
     }
     else {
-	if (!poped) {
-	    ADD_INSN1(anchor, line, newarray, INT2FIX(len));
+	int opt_p = 1;
+	int first = 1, i;
+
+	while (node) {
+	    NODE *start_node = node, *end_node;
+	    const int max = 0x100;
+	    DECL_ANCHOR(anchor);
+	    INIT_ANCHOR(anchor);
+
+	    for (i=0; i<max && node; i++, len++) {
+		if (CPDEBUG > 0 && nd_type(node) != NODE_ARRAY) {
+		    rb_bug("compile_array: This node is not NODE_ARRAY, but %s", ruby_node_name(nd_type(node)));
+		}
+
+		if (opt_p && nd_type(node->nd_head) != NODE_LIT) {
+		    opt_p = 0;
+		}
+
+		COMPILE_(anchor, "array element", node->nd_head, poped);
+		node = node->nd_next;
+	    }
+
+	    if (opt_p && type != COMPILE_ARRAY_TYPE_ARGS) {
+		if (!poped) {
+		    VALUE ary = rb_ary_tmp_new(i);
+
+		    end_node = node;
+		    node = start_node;
+
+		    while (node != end_node) {
+			rb_ary_push(ary, node->nd_head->nd_lit);
+			node = node->nd_next;
+		    }
+		    while (node && nd_type(node->nd_head) == NODE_LIT) {
+			rb_ary_push(ary, node->nd_head->nd_lit);
+			node = node->nd_next;
+			len++;
+		    }
+
+		    OBJ_FREEZE(ary);
+
+		    iseq_add_mark_object_compile_time(iseq, ary);
+
+		    if (first) {
+			first = 0;
+			if (type == COMPILE_ARRAY_TYPE_ARRAY) {
+			    ADD_INSN1(ret, line, duparray, ary);
+			}
+			else { /* COMPILE_ARRAY_TYPE_HASH */
+			    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+			    ADD_INSN1(ret, line, putobject, ary);
+			    ADD_SEND(ret, line, ID2SYM(id_core_hash_from_ary), INT2FIX(1));
+			}
+		    }
+		    else {
+			if (type == COMPILE_ARRAY_TYPE_ARRAY) {
+			    ADD_INSN1(ret, line, putobject, ary);
+			    ADD_INSN(ret, line, concatarray);
+			}
+			else {
+			    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+			    ADD_INSN1(ret, line, putobject, ary);
+			    ADD_SEND(ret, line, ID2SYM(id_core_hash_merge_ary), INT2FIX(1));
+			}
+		    }
+		}
+	    }
+	    else {
+		if (!poped) {
+		    switch (type) {
+		      case COMPILE_ARRAY_TYPE_ARRAY:
+			ADD_INSN1(anchor, line, newarray, INT2FIX(i));
+
+			if (first) {
+			    first = 0;
+			}
+			else {
+			    ADD_INSN(anchor, line, concatarray);
+			}
+			APPEND_LIST(ret, anchor);
+			break;
+		      case COMPILE_ARRAY_TYPE_HASH:
+			if (first) {
+			    first = 0;
+			    ADD_INSN1(anchor, line, newhash, INT2FIX(i));
+			    APPEND_LIST(ret, anchor);
+			}
+			else {
+			    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+			    ADD_INSN(ret, line, swap);
+			    APPEND_LIST(ret, anchor);
+			    ADD_SEND(ret, line, ID2SYM(id_core_hash_merge_ptr), INT2FIX(i + 1));
+			}
+			break;
+		      case COMPILE_ARRAY_TYPE_ARGS:
+			APPEND_LIST(ret, anchor);
+			break;
+		    }
+		}
+	    }
 	}
-	APPEND_LIST(ret, anchor);
     }
     return len;
 }
 
 static VALUE
-compile_array(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root, VALUE opt_p)
+compile_array(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root, enum compile_array_type_t type)
 {
-    return compile_array_(iseq, ret, node_root, opt_p, 0);
+    return compile_array_(iseq, ret, node_root, type, 0);
 }
 
 static VALUE
@@ -2963,8 +3037,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, VALUE *flag)
 	    *flag |= VM_CALL_ARGS_SPLAT_BIT;
 
 	    if (next_is_array) {
-		argc = INT2FIX(compile_array(iseq, args, argn->nd_head, Qfalse) + 1);
-		POP_ELEMENT(args);
+		argc = INT2FIX(compile_array(iseq, args, argn->nd_head, COMPILE_ARRAY_TYPE_ARGS) + 1);
 	    }
 	    else {
 		argn = argn->nd_head;
@@ -2973,8 +3046,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, VALUE *flag)
 	    break;
 	  }
 	  case NODE_ARRAY: {
-	    argc = INT2FIX(compile_array(iseq, args, argn, Qfalse));
-	    POP_ELEMENT(args);
+	    argc = INT2FIX(compile_array(iseq, args, argn, COMPILE_ARRAY_TYPE_ARGS));
 	    break;
 	  }
 	  default: {
@@ -4265,7 +4337,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_ARRAY:{
-	compile_array_(iseq, ret, node, Qtrue, poped);
+	compile_array_(iseq, ret, node, COMPILE_ARRAY_TYPE_ARRAY, poped);
 	break;
       }
       case NODE_ZARRAY:{
@@ -4293,21 +4365,18 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	INIT_ANCHOR(list);
 	switch (type) {
-	  case NODE_ARRAY:{
-	    compile_array(iseq, list, node->nd_head, Qfalse);
-	    size = OPERAND_AT(POP_ELEMENT(list), 0);
+	  case NODE_ARRAY:
+	    size = INT2FIX(compile_array(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH));
 	    ADD_SEQ(ret, list);
 	    break;
-	  }
+
 	  case NODE_ZARRAY:
-	    size = INT2FIX(0);
+	    ADD_INSN1(ret, nd_line(node), newhash, INT2FIX(0));
 	    break;
 
 	  default:
 	    rb_bug("can't make hash with this node: %s", ruby_node_name(type));
 	}
-
-	ADD_INSN1(ret, nd_line(node), newhash, size);
 
 	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);

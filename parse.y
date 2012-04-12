@@ -802,6 +802,9 @@ static void token_info_pop(struct parser_params*, const char *token);
 %nonassoc id_core_define_method
 %nonassoc id_core_define_singleton_method
 %nonassoc id_core_set_postexe
+%nonassoc id_core_hash_from_ary
+%nonassoc id_core_hash_merge_ary
+%nonassoc id_core_hash_merge_ptr
 
 %token tLAST_TOKEN
 

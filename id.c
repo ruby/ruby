@@ -31,6 +31,9 @@ Init_id(void)
     REGISTER_SYMID(id_core_define_method,      	    "core#define_method");
     REGISTER_SYMID(id_core_define_singleton_method, "core#define_singleton_method");
     REGISTER_SYMID(id_core_set_postexe,             "core#set_postexe");
+    REGISTER_SYMID(id_core_hash_from_ary,           "core#hash_from_ary");
+    REGISTER_SYMID(id_core_hash_merge_ary,          "core#hash_merge_ary");
+    REGISTER_SYMID(id_core_hash_merge_ptr,          "core#hash_merge_ptr");
 
     REGISTER_SYMID(idEach, "each");
     REGISTER_SYMID(idLength, "length");

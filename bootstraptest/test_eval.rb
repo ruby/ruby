@@ -316,6 +316,5 @@ assert_normal_exit %q{
   end
   begin
     eval "class C; @@h = #{hash.inspect}; end"
-  rescue SystemStackError
   end
 }, '[ruby-core:25714]'

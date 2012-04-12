@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestRubyLiteral < Test::Unit::TestCase
 
@@ -184,6 +185,13 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal 2, h.size
     assert_equal h, h
     assert_equal "literal", h["string"]
+  end
+
+  def test_big_array_and_hash_literal
+    assert_normal_exit %q{x = nil; raise if eval("[#{(1..1_000_000).map{'x'}.join(", ")}]").size != 1_000_000}, "", timeout: 300
+    assert_normal_exit %q{x = nil; raise if eval("[#{(1..1_000_000).to_a.join(", ")}]").size != 1_000_000}, "", timeout: 300
+    assert_normal_exit %q{x = nil; raise if eval("{#{(1..1_000_000).map{|n| "#{n} => x"}.join(', ')}}").size != 1_000_000}, "", timeout: 300
+    assert_normal_exit %q{x = nil; raise if eval("{#{(1..1_000_000).map{|n| "#{n} => #{n}"}.join(', ')}}").size != 1_000_000}, "", timeout: 300
   end
 
   def test_range
