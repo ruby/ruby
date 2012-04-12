@@ -171,9 +171,7 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp)
 static VALUE
 hash_foreach_ensure(VALUE hash)
 {
-    RHASH(hash)->iter_lev--;
-
-    if (RHASH(hash)->iter_lev == 0) {
+    if (--RHASH_ITER_LEV(hash) == 0) {
 	if (FL_TEST(hash, HASH_DELETED)) {
 	    st_cleanup_safe(RHASH(hash)->ntbl, (st_data_t)Qundef);
 	    FL_UNSET(hash, HASH_DELETED);
@@ -199,7 +197,7 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
 
     if (!RHASH(hash)->ntbl)
         return;
-    RHASH(hash)->iter_lev++;
+    RHASH_ITER_LEV(hash)++;
     arg.hash = hash;
     arg.func = (rb_foreach_func *)func;
     arg.arg  = farg;
@@ -265,7 +263,7 @@ rb_hash_modify(VALUE hash)
 static void
 hash_update(VALUE hash, VALUE key)
 {
-    if (RHASH(hash)->iter_lev > 0 && !st_lookup(RHASH(hash)->ntbl, key, 0)) {
+    if (RHASH_ITER_LEV(hash) > 0 && !st_lookup(RHASH(hash)->ntbl, key, 0)) {
 	rb_raise(rb_eRuntimeError, "can't add a new key into hash during iteration");
     }
 }
@@ -466,7 +464,7 @@ rb_hash_rehash(VALUE hash)
 {
     st_table *tbl;
 
-    if (RHASH(hash)->iter_lev > 0) {
+    if (RHASH_ITER_LEV(hash) > 0) {
 	rb_raise(rb_eRuntimeError, "rehash during iteration");
     }
     rb_hash_modify_check(hash);
@@ -778,7 +776,7 @@ rb_hash_delete_key(VALUE hash, VALUE key)
 
     if (!RHASH(hash)->ntbl)
         return Qundef;
-    if (RHASH(hash)->iter_lev > 0) {
+    if (RHASH_ITER_LEV(hash) > 0) {
 	if (st_delete_safe(RHASH(hash)->ntbl, &ktmp, &val, (st_data_t)Qundef)) {
 	    FL_SET(hash, HASH_DELETED);
 	    return (VALUE)val;
@@ -868,11 +866,11 @@ rb_hash_shift(VALUE hash)
     rb_hash_modify_check(hash);
     if (RHASH(hash)->ntbl) {
 	var.key = Qundef;
-	rb_hash_foreach(hash, RHASH(hash)->iter_lev > 0 ? shift_i_safe : shift_i,
+	rb_hash_foreach(hash, RHASH_ITER_LEV(hash) > 0 ? shift_i_safe : shift_i,
 			(VALUE)&var);
 
 	if (var.key != Qundef) {
-	    if (RHASH(hash)->iter_lev > 0) {
+	    if (RHASH_ITER_LEV(hash) > 0) {
 		rb_hash_delete_key(hash, var.key);
 	    }
 	    return rb_assoc_new(var.key, var.val);
@@ -1091,7 +1089,7 @@ rb_hash_clear(VALUE hash)
     if (!RHASH(hash)->ntbl)
         return hash;
     if (RHASH(hash)->ntbl->num_entries > 0) {
-	if (RHASH(hash)->iter_lev > 0)
+	if (RHASH_ITER_LEV(hash) > 0)
 	    rb_hash_foreach(hash, clear_i, 0);
 	else
 	    st_clear(RHASH(hash)->ntbl);
