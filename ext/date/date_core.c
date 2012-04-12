@@ -4205,8 +4205,9 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
  *    Date._strptime(string[, format='%F'])  ->  hash
  *
  * Parses the given representation of date and time with the given
- * template, and returns a hash of parsed elements.
- *
+ * template, and returns a hash of parsed elements.  _strptime does
+ * not support specification of flags and width unlike strftime.
+ * 
  * For example:
  *
  *    Date._strptime('2001-02-03', '%Y-%m-%d')
@@ -4225,7 +4226,8 @@ date_s__strptime(int argc, VALUE *argv, VALUE klass)
  *    Date.strptime([string='-4712-01-01'[, format='%F'[, start=ITALY]]])  ->  date
  *
  * Parses the given representation of date and time with the given
- * template, and creates a date object.
+ * template, and creates a date object.  strptime does not support
+ * specification of flags and width unlike strftime.
  *
  * For example:
  *
@@ -8013,7 +8015,8 @@ dt_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
  *    DateTime._strptime(string[, format='%FT%T%z'])  ->  hash
  *
  * Parses the given representation of date and time with the given
- * template, and returns a hash of parsed elements.
+ * template, and returns a hash of parsed elements.  _strptime does
+ * not support specification of flags and width unlike strftime.
  *
  *  See also strptime(3) and strftime.
  */
@@ -8028,7 +8031,8 @@ datetime_s__strptime(int argc, VALUE *argv, VALUE klass)
  *    DateTime.strptime([string='-4712-01-01T00:00:00+00:00'[, format='%FT%T%z'[ ,start=ITALY]]])  ->  datetime
  *
  * Parses the given representation of date and time with the given
- * template, and creates a date object.
+ * template, and creates a date object.  strptime does not support
+ * specification of flags and width unlike strftime.
  *
  * For example:
  *
