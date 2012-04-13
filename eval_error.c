@@ -168,7 +168,7 @@ error_print(void)
 #define TRACE_TAIL 5
 
 	for (i = 1; i < len; i++) {
-	    if (TYPE(ptr[i]) == T_STRING) {
+	    if (RB_TYPE_P(ptr[i], T_STRING)) {
 		warn_printf("\tfrom %s\n", RSTRING_PTR(ptr[i]));
 	    }
 	    if (skip && i == TRACE_HEAD && len > TRACE_MAX) {

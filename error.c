@@ -685,14 +685,12 @@ rb_check_backtrace(VALUE bt)
     static const char err[] = "backtrace must be Array of String";
 
     if (!NIL_P(bt)) {
-	int t = TYPE(bt);
-
-	if (t == T_STRING) return rb_ary_new3(1, bt);
-	if (t != T_ARRAY) {
+	if (RB_TYPE_P(bt, T_STRING)) return rb_ary_new3(1, bt);
+	if (!RB_TYPE_P(bt, T_ARRAY)) {
 	    rb_raise(rb_eTypeError, err);
 	}
 	for (i=0;i<RARRAY_LEN(bt);i++) {
-	    if (TYPE(RARRAY_PTR(bt)[i]) != T_STRING) {
+	    if (!RB_TYPE_P(RARRAY_PTR(bt)[i], T_STRING)) {
 		rb_raise(rb_eTypeError, err);
 	    }
 	}
@@ -1045,14 +1043,14 @@ name_err_mesg_to_str(VALUE obj)
 	int state = 0;
 
 	obj = ptr[1];
-	switch (TYPE(obj)) {
-	  case T_NIL:
+	switch (obj) {
+	  case Qnil:
 	    desc = "nil";
 	    break;
-	  case T_TRUE:
+	  case Qtrue:
 	    desc = "true";
 	    break;
-	  case T_FALSE:
+	  case Qfalse:
 	    desc = "false";
 	    break;
 	  default:
