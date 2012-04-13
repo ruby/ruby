@@ -3829,6 +3829,8 @@ rlimit_resource_type(VALUE rtype)
         return r;
 
     rb_raise(rb_eArgError, "invalid resource name: %s", name);
+
+    UNREACHABLE;
 }
 
 static rlim_t
@@ -3867,6 +3869,8 @@ rlimit_resource_value(VALUE rval)
     if (strcmp(name, "SAVED_CUR") == 0) return RLIM_SAVED_CUR;
 #endif
     rb_raise(rb_eArgError, "invalid resource value: %s", name);
+
+    UNREACHABLE;
 }
 #endif
 
@@ -5690,6 +5694,8 @@ p_uid_switch(VALUE obj)
 	errno = EPERM;
 	rb_sys_fail(0);
     }
+
+    UNREACHABLE;
 }
 #else
 static VALUE
@@ -5803,6 +5809,8 @@ p_gid_switch(VALUE obj)
 	errno = EPERM;
 	rb_sys_fail(0);
     }
+
+    UNREACHABLE;
 }
 #else
 static VALUE

@@ -1462,6 +1462,8 @@ vm_search_normal_superclass(VALUE klass, VALUE recv)
     else {
 	rb_bug("vm_search_normal_superclass: should not be reach here");
     }
+
+    UNREACHABLE;
 }
 
 static void

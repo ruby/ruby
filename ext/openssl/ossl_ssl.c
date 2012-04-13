@@ -1593,6 +1593,8 @@ ossl_ssl_session_reused(VALUE self)
     case 0:	return Qfalse;
     default:	ossl_raise(eSSLError, "SSL_session_reused");
     }
+
+    UNREACHABLE;
 }
 
 /*

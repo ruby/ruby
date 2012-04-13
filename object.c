@@ -2483,6 +2483,8 @@ rb_Float(VALUE val)
       default:
 	return rb_convert_type(val, T_FLOAT, "Float", "to_f");
     }
+
+    UNREACHABLE;
 }
 
 /*

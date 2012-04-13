@@ -2144,6 +2144,8 @@ rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len)
       default:
         rb_raise(rb_eTypeError, "neither IO nor file descriptor");
     }
+
+    UNREACHABLE;
 }
 
 /*

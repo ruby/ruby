@@ -800,6 +800,8 @@ tk_hash_kv(argc, argv, self)
         }
         rb_raise(rb_eArgError, "Hash is expected for 1st argument");
     }
+
+    UNREACHABLE;
 }
 
 static VALUE

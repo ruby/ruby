@@ -275,4 +275,6 @@ ripper_token2eventid(int tok)
         return ripper_id_CHAR;
     }
     rb_raise(rb_eRuntimeError, "[Ripper FATAL] unknown token %d", tok);
+
+    UNREACHABLE;
 }

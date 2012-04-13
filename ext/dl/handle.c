@@ -78,6 +78,8 @@ rb_dlhandle_close(VALUE self)
 	return INT2NUM(ret);
     }
     rb_raise(rb_eDLError, "dlclose() called too many times");
+
+    UNREACHABLE;
 }
 
 VALUE

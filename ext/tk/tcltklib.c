@@ -1407,6 +1407,8 @@ pending_exception_check0()
     } else {
         return 0;
     }
+
+    UNREACHABLE;
 }
 
 static int
@@ -1448,6 +1450,8 @@ pending_exception_check1(thr_crit_bup, ptr)
     } else {
         return 0;
     }
+
+    UNREACHABLE;
 }
 
 
@@ -7781,6 +7785,8 @@ ip_cancel_eval_core(interp, msg, flag)
 #if TCL_MAJOR_VERSION < 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION < 6)
     rb_raise(rb_eNotImpError,
 	     "cancel_eval is supported Tcl/Tk8.6 or later.");
+
+    UNREACHABLE;
 #else
     Tcl_Obj *msg_obj;
 
@@ -10014,6 +10020,8 @@ lib_get_reltype_name(self)
     default:
       rb_raise(rb_eRuntimeError, "tcltklib has invalid release type number");
     }
+
+    UNREACHABLE;
 }
 
 
@@ -10117,6 +10125,8 @@ create_dummy_encoding_for_tk_core(interp, name, error_mode)
       return Qnil;
     }
   }
+
+  UNREACHABLE;
 #else
     return name;
 #endif

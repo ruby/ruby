@@ -154,6 +154,8 @@ static VALUE
 rb_digest_instance_update(VALUE self, VALUE str)
 {
     rb_digest_instance_method_unimpl(self, "update");
+
+    UNREACHABLE;
 }
 
 /*
@@ -172,6 +174,8 @@ static VALUE
 rb_digest_instance_finish(VALUE self)
 {
     rb_digest_instance_method_unimpl(self, "finish");
+
+    UNREACHABLE;
 }
 
 /*
@@ -186,6 +190,8 @@ static VALUE
 rb_digest_instance_reset(VALUE self)
 {
     rb_digest_instance_method_unimpl(self, "reset");
+
+    UNREACHABLE;
 }
 
 /*
@@ -409,6 +415,8 @@ static VALUE
 rb_digest_instance_block_length(VALUE self)
 {
     rb_digest_instance_method_unimpl(self, "block_length");
+
+    UNREACHABLE;
 }
 
 /*

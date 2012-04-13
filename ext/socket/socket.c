@@ -1334,6 +1334,8 @@ sock_s_getnameinfo(int argc, VALUE *argv)
   error_exit_name:
     if (res) freeaddrinfo(res);
     rsock_raise_socket_error("getnameinfo", error);
+
+    UNREACHABLE;
 }
 
 /*

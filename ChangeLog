@@ -1,3 +1,47 @@
+Sat Apr 14 08:38:20 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* encoding.c (rb_enc_codepoint_len):  Use UNREACHABLE to avoid "control
+	  reaches end of non-void function" warnings.  [ruby-trunk - Bug #6066]
+	* re.c (name_to_backref_number):  ditto.
+	* object.c (rb_Float):  ditto.
+	* io.c (io_readpartial):  ditto.
+	* io.c (io_read_nonblock):  ditto.
+	* pack.c (rb_uv_to_utf8):  ditto.
+	* proc.c (rb_method_entry_arity):  ditto.
+	* vm_method.c (rb_f_notimplement):  ditto.
+	* struct.c (rb_struct_aset_id):  ditto.
+	* class.c (rb_scan_args):  ditto.
+	* process.c (rlimit_resource_type):  ditto.
+	* process.c (rlimit_resource_value):  ditto.
+	* process.c (p_uid_switch):  ditto.
+	* process.c (p_gid_switch):  ditto.
+	* ext/digest/digest.c (rb_digest_instance_update):  ditto.
+	* ext/digest/digest.c (rb_digest_instance_finish):  ditto.
+	* ext/digest/digest.c (rb_digest_instance_reset):  ditto.
+	* ext/digest/digest.c (rb_digest_instance_block_length):  ditto.
+	* ext/bigdecimal/bigdecimal.c (BigDecimalCmp):  ditto.
+	* ext/dl/handle.c (rb_dlhandle_close):  ditto.
+	* ext/tk/tcltklib.c (pending_exception_check0):  ditto.
+	* ext/tk/tcltklib.c (pending_exception_check1):  ditto.
+	* ext/tk/tcltklib.c (ip_cancel_eval_core):  ditto.
+	* ext/tk/tcltklib.c (lib_get_reltype_name):  ditto.
+	* ext/tk/tcltklib.c (create_dummy_encoding_for_tk_core):  ditto.
+	* ext/tk/tkutil/tkutil.c (tk_hash_kv):  ditto.
+	* ext/openssl/ossl_ssl.c (ossl_ssl_session_reused):  ditto.
+	* ext/openssl/ossl_pkey_ec.c (ossl_ec_key_dsa_verify_asn1):  ditto.
+	* ext/openssl/ossl_pkey_ec.c (ossl_ec_point_is_at_infinit):  ditto.
+	* ext/openssl/ossl_pkey_ec.c (ossl_ec_point_is_on_curve):  ditto.
+	* ext/fiddle/conversions.c (generic_to_value):  ditto.
+	* ext/socket/raddrinfo.c (rsock_io_socket_addrinfo):  ditto.
+	* ext/socket/socket.c (sock_s_getnameinfo):  ditto.
+	* ext/ripper/eventids2.c (ripper_token2eventid):  ditto.
+	* cont.c (return_fiber):  ditto.
+	* dmydln.c (dln_load):  ditto.
+	* vm_insnhelper.c (vm_search_normal_superclass):  ditto.
+	* bignum.c (big_fdiv):  ditto.
+	* marshal.c (r_symlink):  ditto.
+	* marshal.c (r_symbol):  ditto.
+
 Fri Apr 13 17:12:09 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* hash.c (inspect_i): keep string's coderange.

@@ -66,6 +66,8 @@ VALUE
 rb_f_notimplement(int argc, VALUE *argv, VALUE obj)
 {
     rb_notimplement();
+
+    UNREACHABLE;
 }
 
 static void

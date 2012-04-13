@@ -3001,7 +3001,8 @@ big_fdiv(VALUE x, VALUE y)
 	goto bignum;
     }
     rb_bug("big_fdiv");
-    /* NOTREACHED */
+
+    UNREACHABLE;
 }
 
 /*

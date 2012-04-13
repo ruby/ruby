@@ -2199,6 +2199,8 @@ rb_uv_to_utf8(char buf[6], unsigned long uv)
 	return 6;
     }
     rb_raise(rb_eRangeError, "pack(U): value out of range");
+
+    UNREACHABLE;
 }
 
 static const unsigned long utf8_limits[] = {

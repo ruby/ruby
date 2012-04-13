@@ -134,6 +134,8 @@ generic_to_value(VALUE rettype, fiddle_generic retval)
       default:
 	rb_raise(rb_eRuntimeError, "unknown type %d", type);
     }
+
+    UNREACHABLE;
 }
 
 /* vim: set noet sw=4 sts=4 */

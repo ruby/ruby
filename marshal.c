@@ -1147,6 +1147,8 @@ r_symlink(struct load_arg *arg)
 	return (ID)id;
     }
     rb_raise(rb_eArgError, "bad symbol");
+
+    UNREACHABLE;
 }
 
 static ID
@@ -1193,6 +1195,8 @@ r_symbol(struct load_arg *arg)
 	rb_raise(rb_eArgError, "dump format error for symbol(0x%x)", type);
 	break;
     }
+
+    UNREACHABLE;
 }
 
 static VALUE

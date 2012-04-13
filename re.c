@@ -1665,6 +1665,8 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
 	rb_raise(rb_eIndexError, "undefined group name reference: %s",
 				 StringValuePtr(s));
     }
+
+    UNREACHABLE;
 }
 
 /*

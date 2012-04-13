@@ -928,6 +928,8 @@ rb_enc_codepoint_len(const char *p, const char *e, int *len_p, rb_encoding *enc)
     }
     else
 	rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
+
+    UNREACHABLE;
 }
 
 #undef rb_enc_codepoint

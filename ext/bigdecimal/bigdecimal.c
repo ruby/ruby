@@ -971,6 +971,8 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
     }
 
     rb_bug("Undefined operation in BigDecimalCmp()");
+
+    UNREACHABLE;
 }
 
 /* Returns True if the value is zero. */

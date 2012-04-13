@@ -700,6 +700,8 @@ static VALUE ossl_ec_key_dsa_verify_asn1(VALUE self, VALUE data, VALUE sig)
     }
 
     ossl_raise(eECError, "ECDSA_verify");
+
+    UNREACHABLE;
 }
 
 static void ossl_ec_group_free(ossl_ec_group *ec_group)
@@ -1349,6 +1351,8 @@ static VALUE ossl_ec_point_is_at_infinity(VALUE self)
     case 0: return Qfalse;
     default: ossl_raise(cEC_POINT, "EC_POINT_is_at_infinity");
     }
+
+    UNREACHABLE;
 }
 
 /*
@@ -1370,6 +1374,8 @@ static VALUE ossl_ec_point_is_on_curve(VALUE self)
     case 0: return Qfalse;
     default: ossl_raise(cEC_POINT, "EC_POINT_is_on_curve");
     }
+
+    UNREACHABLE;
 }
 
 /*

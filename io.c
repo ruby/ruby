@@ -2338,6 +2338,8 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
         rb_eof_error();
     else
         return ret;
+
+    UNREACHABLE;
 }
 
 /*
@@ -2399,6 +2401,8 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
         rb_eof_error();
     else
         return ret;
+
+    UNREACHABLE;
 }
 
 /*

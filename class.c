@@ -1656,6 +1656,8 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 
   argc_error:
     rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
+
+    UNREACHABLE;
 }
 
 /*!

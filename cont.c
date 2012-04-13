@@ -1110,6 +1110,8 @@ return_fiber(void)
 	fib->prev = Qnil;
 	return prev;
     }
+
+    UNREACHABLE;
 }
 
 VALUE rb_fiber_transfer(VALUE fib, int argc, VALUE *argv);

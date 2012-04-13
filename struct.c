@@ -681,6 +681,8 @@ rb_struct_aset_id(VALUE s, ID id, VALUE val)
 	}
     }
     rb_name_error(id, "no member '%s' in struct", rb_id2name(id));
+
+    UNREACHABLE;
 }
 
 /*
