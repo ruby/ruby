@@ -260,19 +260,18 @@ rb_hash_modify(VALUE hash)
     rb_hash_tbl(hash);
 }
 
+NORETURN(static void no_new_key(void));
 static void
-no_new_key(int existing)
+no_new_key(void)
 {
-    if (!existing) {
-	rb_raise(rb_eRuntimeError, "can't add a new key into hash during iteration");
-    }
+    rb_raise(rb_eRuntimeError, "can't add a new key into hash during iteration");
 }
 
 #define NOINSERT_UPDATE_CALLBACK(func) \
 int \
 func##_noinsert(st_data_t *key, st_data_t *val, st_data_t arg, int existing) \
 { \
-    no_new_key(existing); \
+    if (!existing) no_new_key(); \
     return func(key, val, arg, existing); \
 }
 
@@ -1158,7 +1157,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 
     rb_hash_modify(hash);
     if (!tbl) {
-	if (iter_lev > 0) no_new_key(0);
+	if (iter_lev > 0) no_new_key();
 	tbl = RHASH_TBL(hash);
     }
     if (tbl->type == &identhash || rb_obj_class(key) != rb_cString) {
