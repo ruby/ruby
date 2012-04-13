@@ -1392,14 +1392,14 @@ inspect_i(VALUE key, VALUE value, VALUE str)
 
     str2 = rb_inspect(key);
     if (RSTRING_LEN(str) > 1) {
-	rb_str_cat2(str, ", ");
+	rb_str_buf_cat_ascii(str, ", ");
     }
     else {
 	rb_enc_copy(str, str2);
     }
     rb_str_buf_append(str, str2);
     OBJ_INFECT(str, str2);
-    rb_str_buf_cat2(str, "=>");
+    rb_str_buf_cat_ascii(str, "=>");
     str2 = rb_inspect(value);
     rb_str_buf_append(str, str2);
     OBJ_INFECT(str, str2);
