@@ -133,16 +133,17 @@ module WEBrick
             rescue Errno::EBADF, IOError => ex
               # if the listening socket was closed in GenericServer#shutdown,
               # IO::select raise it.
-            rescue StandardError => ex
-              msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
-              @logger.error msg
-            rescue Exception => ex
+            rescue Interrupt => ex # ^C
               @logger.fatal ex
               raise
+            rescue Exception => ex
+              msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
+              @logger.error msg
             end
           end
 
         ensure
+          @status = :Shutdown
           @logger.info "going to shutdown ..."
           thgroup.list.each{|th| th.join if th[:WEBrickThread] }
           call_callback(:StopCallback)
@@ -157,7 +158,7 @@ module WEBrick
 
     def stop
       if @status == :Running
-        @status = :Stop
+        @status = :Shutdown
       end
     end
 

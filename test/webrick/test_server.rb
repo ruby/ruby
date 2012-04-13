@@ -29,23 +29,22 @@ class TestWEBrickServer < Test::Unit::TestCase
       :StopCallback => Proc.new{ stopped += 1 },
     }
 
-    e = assert_raises(Exception) do
+    e = assert_raises(Interrupt) do
       TestWEBrick.start_server(Echo, config) { |server, addr, port, log|
         listener = server.listeners.first
 
         def listener.accept
-          raise Exception, 'fatal' # simulate ^C
+          Process.kill(:INT, $$) # simulate ^C
         end
 
-        true while server.status != :Running
+        Thread.pass while server.status != :Running
 
         TCPSocket.open(addr, port) { |sock| sock << "foo\n" }
 
-        sleep 0.1 until server.status == :Stop
+        Thread.pass until server.status == :Stop
       }
     end
 
-    assert_equal('fatal', e.message)
     assert_equal(stopped, 1)
   end
 
