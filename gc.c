@@ -2594,8 +2594,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       default:
-	rb_bug("gc_sweep(): unknown data type 0x%x(%p)",
-	       BUILTIN_TYPE(obj), (void*)obj);
+	rb_bug("gc_sweep(): unknown data type 0x%x(%p) 0x%"PRIxVALUE,
+	       BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
     }
 
     return 0;
