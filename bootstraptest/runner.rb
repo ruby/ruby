@@ -111,6 +111,7 @@ End
   pathes = tests.map {|path| File.expand_path(path) }
 
   @progress = %w[- \\ | /]
+  @progress_bs = "\b" * @progress[0].size
   @tty = !@verbose && $stderr.tty?
   if @tty and /mswin|mingw/ !~ RUBY_PLATFORM and /dumb/ !~ ENV["TERM"]
     @passed = "\e[32m"
@@ -145,16 +146,16 @@ def exec_test(pathes)
   @location = nil
   pathes.each do |path|
     $stderr.print "\n#{File.basename(path)} "
-    $stderr.print "." if @tty
+    $stderr.print @progress[@count % @progress.size] if @tty
     $stderr.puts if @verbose
     count = @count
     error = @error
     load File.expand_path(path)
     if @tty
       if @error == error
-        $stderr.print "\b#{@passed}PASS #{@count-count}#{@reset}"
+        $stderr.print "#{@progress_bs}#{@passed}PASS #{@count-count}#{@reset}"
       else
-        $stderr.print "\b#{@failed}FAIL #{@error-error}/#{@count-count}#{@reset}"
+        $stderr.print "#{@progress_bs}#{@failed}FAIL #{@error-error}/#{@count-count}#{@reset}"
       end
     end
   end
@@ -182,7 +183,7 @@ def show_progress(message = '')
   faildesc = yield
   if !faildesc
     if @tty
-      $stderr.print "\b#{@progress[@count % @progress.size]}"
+      $stderr.print "#{@progress_bs}#{@progress[@count % @progress.size]}"
     else
       $stderr.print '.'
     end
