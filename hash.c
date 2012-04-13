@@ -261,12 +261,29 @@ rb_hash_modify(VALUE hash)
 }
 
 static void
-hash_update(VALUE hash, VALUE key)
+no_new_key(int existing)
 {
-    if (RHASH_ITER_LEV(hash) > 0 && !st_lookup(RHASH(hash)->ntbl, key, 0)) {
+    if (!existing) {
 	rb_raise(rb_eRuntimeError, "can't add a new key into hash during iteration");
     }
 }
+
+#define NOINSERT_UPDATE_CALLBACK(func) \
+int \
+func##_noinsert(st_data_t *key, st_data_t *val, st_data_t arg, int existing) \
+{ \
+    no_new_key(existing); \
+    return func(key, val, arg, existing); \
+}
+
+#define UPDATE_CALLBACK(iter_lev, func) ((iter_lev) > 0 ? func##_noinsert : func)
+
+#define RHASH_UPDATE_ITER(hash, iter_lev, key, func, arg) \
+    st_update(RHASH(hash)->ntbl, (st_data_t)(key),	  \
+	      UPDATE_CALLBACK((iter_lev), func),	  \
+	      (st_data_t)(arg))
+#define RHASH_UPDATE(hash, key, func, arg) \
+    RHASH_UPDATE_ITER(hash, RHASH_ITER_LEV(hash), key, func, arg)
 
 static void
 default_proc_arity_check(VALUE proc)
@@ -1098,11 +1115,22 @@ rb_hash_clear(VALUE hash)
     return hash;
 }
 
-static st_data_t
-copy_str_key(st_data_t str)
+static int
+hash_aset(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 {
-    return (st_data_t)rb_str_new4((VALUE)str);
+    *val = arg;
+    return ST_CONTINUE;
 }
+
+static int
+hash_aset_str(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
+{
+    *key = (st_data_t)rb_str_new_frozen((VALUE)*key);
+    return hash_aset(key, val, arg, existing);
+}
+
+static NOINSERT_UPDATE_CALLBACK(hash_aset)
+static NOINSERT_UPDATE_CALLBACK(hash_aset_str)
 
 /*
  *  call-seq:
@@ -1125,13 +1153,19 @@ copy_str_key(st_data_t str)
 VALUE
 rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 {
+    int iter_lev = RHASH_ITER_LEV(hash);
+    st_table *tbl = RHASH(hash)->ntbl;
+
     rb_hash_modify(hash);
-    hash_update(hash, key);
-    if (RHASH(hash)->ntbl->type == &identhash || rb_obj_class(key) != rb_cString) {
-	st_insert(RHASH(hash)->ntbl, key, val);
+    if (!tbl) {
+	if (iter_lev > 0) no_new_key(0);
+	tbl = RHASH_TBL(hash);
+    }
+    if (tbl->type == &identhash || rb_obj_class(key) != rb_cString) {
+	RHASH_UPDATE_ITER(hash, iter_lev, key, hash_aset, val);
     }
     else {
-	st_insert2(RHASH(hash)->ntbl, key, val, copy_str_key);
+	RHASH_UPDATE_ITER(hash, iter_lev, key, hash_aset_str, val);
     }
     return val;
 }
@@ -1720,21 +1754,38 @@ rb_hash_invert(VALUE hash)
 }
 
 static int
+rb_hash_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    *value = arg;
+    return ST_CONTINUE;
+}
+
+static NOINSERT_UPDATE_CALLBACK(rb_hash_update_callback)
+
+static int
 rb_hash_update_i(VALUE key, VALUE value, VALUE hash)
 {
-    hash_update(hash, key);
-    st_insert(RHASH(hash)->ntbl, key, value);
+    RHASH_UPDATE(hash, key, rb_hash_update_callback, value);
     return ST_CONTINUE;
 }
 
 static int
+rb_hash_update_block_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    VALUE newvalue = (VALUE)arg;
+    if (existing) {
+	newvalue = rb_yield_values(3, (VALUE)*key, (VALUE)*value, newvalue);
+    }
+    *value = (st_data_t)newvalue;
+    return ST_CONTINUE;
+}
+
+static NOINSERT_UPDATE_CALLBACK(rb_hash_update_block_callback)
+
+static int
 rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
 {
-    if (rb_hash_has_key(hash, key)) {
-	value = rb_yield_values(3, key, rb_hash_aref(hash, key), value);
-    }
-    hash_update(hash, key);
-    st_insert(RHASH(hash)->ntbl, key, value);
+    RHASH_UPDATE(hash, key, rb_hash_update_block_callback, value);
     return ST_CONTINUE;
 }
 
@@ -1777,8 +1828,23 @@ rb_hash_update(VALUE hash1, VALUE hash2)
 
 struct update_arg {
     VALUE hash;
+    VALUE value;
     rb_hash_update_func *func;
 };
+
+static int
+rb_hash_update_func_callback(st_data_t *key, st_data_t *value, st_data_t arg0, int existing)
+{
+    struct update_arg *arg = (struct update_arg *)arg0;
+    VALUE newvalue = arg->value;
+    if (existing) {
+	newvalue = (*arg->func)((VALUE)*key, (VALUE)*value, newvalue);
+    }
+    *value = (st_data_t)newvalue;
+    return ST_CONTINUE;
+}
+
+static NOINSERT_UPDATE_CALLBACK(rb_hash_update_func_callback)
 
 static int
 rb_hash_update_func_i(VALUE key, VALUE value, VALUE arg0)
@@ -1786,11 +1852,8 @@ rb_hash_update_func_i(VALUE key, VALUE value, VALUE arg0)
     struct update_arg *arg = (struct update_arg *)arg0;
     VALUE hash = arg->hash;
 
-    if (rb_hash_has_key(hash, key)) {
-	value = (*arg->func)(key, rb_hash_aref(hash, key), value);
-    }
-    hash_update(hash, key);
-    st_insert(RHASH(hash)->ntbl, key, value);
+    arg->value = value;
+    RHASH_UPDATE(hash, key, rb_hash_update_func_callback, arg);
     return ST_CONTINUE;
 }
 
