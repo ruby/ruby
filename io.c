@@ -1444,6 +1444,11 @@ rb_io_eof(VALUE io)
     if (READ_CHAR_PENDING(fptr)) return Qfalse;
     if (READ_DATA_PENDING(fptr)) return Qfalse;
     READ_CHECK(fptr);
+#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+    if (!NEED_READCONV(fptr) && NEED_NEWLINE_DECORATOR_ON_READ(fptr)) {
+	return eof(fptr->fd) ? Qtrue : Qfalse;
+    }
+#endif
     if (io_fillbuf(fptr) < 0) {
 	return Qtrue;
     }

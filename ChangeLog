@@ -1,3 +1,13 @@
+Sun Apr 15 04:35:48 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* io.c (rb_io_eof): use eof() instead of io_fillbuf(). It's because
+	  io_unread() doesn't work properly when reading CRLF with read(length)
+	  and mode 'r'.
+	  [ruby-core:44189][Bug #6271]
+
+	* test/ruby/test_io_m17n.rb (TestIO_M17N#test_read_crlf_and_eof):
+	  test for above.
+
 Sun Apr 15 03:00:54 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (io_unread): fixed memory leak.  report by nagachika via IRC.
