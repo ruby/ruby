@@ -1,3 +1,54 @@
+Sun Apr 15 06:40:28 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* include/ruby/win32.h (rb_w32_aspawn_flags): add the declaration of
+	  new function.
+
+	* process.c (enum): add EXEC_OPTION_PGROUP and move the position
+	  above for the usage in proc_spawn_n().
+
+	* process.c (proc_spawn_n): add an argument to pass new option
+	  `new_pgroup`. The option specifies CREATE_NEW_PROCESS_GROUP flag to
+	  CreateProcessW(). This flag is necessary for the usage of
+	  Process.kill on the subprocess on Windows.
+
+	* process.c (rb_exec_arg_addopt): ditto.
+
+	* process.c (rb_spawn_process): ditto.
+
+	* process.c (documentation for rb_f_spawn): add documentation for new
+	  option `new_pgroup` of spawn.
+
+	* test/ruby/test_process.rb (TestProcess#test_execopts_new_pgroup):
+	  add tests for option `new_pgroup`.
+
+	* test/ruby/test_thread.rb
+	  (TestThreadGroup#test_thread_timer_and_interrupt):
+	  add option `new_pgroup: true` to spawn on Windows. It's needed for
+	  Process.kill on a subprocess.
+
+	* win32/win32.c (CreateChild): add an argument to pass
+	  dwCreationFlags of CreateProcessW().
+
+	* win32/win32.c (rb_w32_spawn): ditto.
+
+	* win32/win32.c (rb_w32_aspawn_flags): add new function to pass
+	  dwCreationFlags.
+
+	* win32/win32.c (rb_w32_aspawn): refactor to move the content to
+	  rb_w32_aspawn_flags().
+	  [ruby-core:43245][Bug #6131]
+
+Sun Apr 15 06:40:28 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_thread.rb
+	  (TestThreadGroup#test_thread_timer_and_interrupt): skip on Windows.
+	  Process.kill cannot kill a subprocess if CREATE_NEW_PROCESS_GROUP
+	  flag is not specified in a call to CreateProcessW().
+
+	* win32/win32.c (CreateChild): revert the usage of
+	  CREATE_NEW_PROCESS_GROUP flag for compatibility.
+	  [ruby-core:43245][Bug #6131]
+
 Sun Apr 15 04:35:48 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* io.c (rb_io_eof): use eof() instead of io_fillbuf(). It's because
