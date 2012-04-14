@@ -217,9 +217,15 @@ EOT
   require'timeout'
   def test_gc
     bignum_too_long_to_embed_as_string = 1234567890123456789012345
-    expect = bignum_too_long_to_embed_as_string.to_s
-    GC.start
-    stress, GC.stress = GC.stress, true
+    expect = nil
+    stress = nil
+    timeout(1) do
+      expect = bignum_too_long_to_embed_as_string.to_s
+    end
+    timeout(30) do
+      GC.start
+      stress, GC.stress = GC.stress, true
+    end
 
     timeout(30) do
       10.times do |i|
