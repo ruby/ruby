@@ -1,3 +1,10 @@
+Sat Apr 14 12:55:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (UNREACHABLE): gcc 4.4 eliminates unreachable code
+	  if -O3 is given.
+
+	* win32/win32.c (child_result): dropped colon.
+
 Sat Apr 14 10:45:18 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/server.rb (WEBrick::GenericServer#start):
