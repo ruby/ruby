@@ -1,3 +1,34 @@
+Sun Apr 15 03:00:54 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (io_unread): fixed memory leak.  report by nagachika via IRC.
+
+Sun Apr 15 03:00:54 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* io.c (static int io_fflush): add the definition.
+	  Use it in set_binary_mode_with_seek_cur().
+
+	* io.c (set_binary_mode_with_seek_cur): refactoring to split the
+	  content into io_unread(). Fix the possibility of buffer overflow.
+
+	* io.c (io_unread): add new implementation for Windows. Previous one
+	  caused invalid cursor position using IO#pos with OS text mode. New
+	  one fixes the bug.
+
+	* test/ruby/test_io_m17n.rb
+	  (TestIO_M17N#test_pos_dont_move_cursor_position): add a test for
+	  above bug.
+	  [ruby-core:43497] [Bug #6179]
+
+Sun Apr 15 03:00:54 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_io.rb (TestIO#test_pos_with_getc): updated.
+	  see [ruby-core:43550]
+
+Sun Apr 15 03:00:54 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_io.rb (TestIO#test_pos_with_getc): added.
+	  see [Bug #6179][ruby-core:43518]
+
 Wed Apr 11 16:22:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/-test-/add_suffix/bug.c (ruby_add_suffix): no static

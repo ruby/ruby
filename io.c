@@ -222,6 +222,7 @@ rb_update_max_fd(int fd)
 #define rb_sys_fail_path(path) rb_sys_fail_str(path)
 
 static int io_fflush(rb_io_t *);
+static rb_io_t *flush_before_seek(rb_io_t *fptr);
 
 #define NEED_NEWLINE_DECORATOR_ON_READ(fptr) ((fptr)->mode & FMODE_TEXTMODE)
 #define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) ((fptr)->mode & FMODE_TEXTMODE)
@@ -257,38 +258,47 @@ static int io_fflush(rb_io_t *);
 	(ecflags) |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;\
     }\
 } while(0)
+
 /*
- * We use io_seek to back cursor position when changing mode from text to binary,
- * but stdin and pipe cannot seek back. Stdin and pipe read should use encoding
- * conversion for working properly with mode change.
+ * IO unread with taking care of removed '\r' in text mode.
  */
-/*
- * Return previous translation mode.
- */
-inline static int set_binary_mode_with_seek_cur(rb_io_t *fptr) {
+static void
+io_unread(rb_io_t *fptr)
+{
     off_t r, pos;
     ssize_t read_size;
     long i;
     long newlines = 0;
     long extra_max;
     char *p;
+    char *buf;
 
-    if (!rb_w32_fd_is_text(fptr->fd)) return O_BINARY;
-
+    rb_io_check_closed(fptr);
     if (fptr->rbuf.len == 0 || fptr->mode & FMODE_DUPLEX) {
-	return setmode(fptr->fd, O_BINARY);
+	return;
     }
 
-    if (io_fflush(fptr) < 0) {
-	rb_sys_fail(0);
-    }
     errno = 0;
+    if (!rb_w32_fd_is_text(fptr->fd)) {
+	r = lseek(fptr->fd, -fptr->rbuf.len, SEEK_CUR);
+	if (r < 0 && errno) {
+	    if (errno == ESPIPE)
+		fptr->mode |= FMODE_DUPLEX;
+	    return;
+	}
+
+	fptr->rbuf.off = 0;
+	fptr->rbuf.len = 0;
+	return;
+    }
+
     pos = lseek(fptr->fd, 0, SEEK_CUR);
     if (pos < 0 && errno) {
 	if (errno == ESPIPE)
 	    fptr->mode |= FMODE_DUPLEX;
-	return setmode(fptr->fd, O_BINARY);
+	return;
     }
+
     /* add extra offset for removed '\r' in rbuf */
     extra_max = (long)(pos - fptr->rbuf.len);
     p = fptr->rbuf.ptr + fptr->rbuf.off;
@@ -297,6 +307,8 @@ inline static int set_binary_mode_with_seek_cur(rb_io_t *fptr) {
 	if (extra_max == newlines) break;
 	p++;
     }
+
+    buf = ALLOC_N(char, fptr->rbuf.len + newlines);
     while (newlines >= 0) {
 	r = lseek(fptr->fd, pos - fptr->rbuf.len - newlines, SEEK_SET);
 	if (newlines == 0) break;
@@ -304,8 +316,9 @@ inline static int set_binary_mode_with_seek_cur(rb_io_t *fptr) {
 	    newlines--;
 	    continue;
 	}
-	read_size = _read(fptr->fd, fptr->rbuf.ptr, fptr->rbuf.len + newlines);
+	read_size = _read(fptr->fd, buf, fptr->rbuf.len + newlines);
 	if (read_size < 0) {
+	    free(buf);
 	    rb_sys_fail_path(fptr->pathv);
 	}
 	if (read_size == fptr->rbuf.len) {
@@ -316,8 +329,28 @@ inline static int set_binary_mode_with_seek_cur(rb_io_t *fptr) {
 	    newlines--;
 	}
     }
+    free(buf);
     fptr->rbuf.off = 0;
     fptr->rbuf.len = 0;
+    return;
+}
+
+/*
+ * We use io_seek to back cursor position when changing mode from text to binary,
+ * but stdin and pipe cannot seek back. Stdin and pipe read should use encoding
+ * conversion for working properly with mode change.
+ *
+ * Return previous translation mode.
+ */
+static inline int
+set_binary_mode_with_seek_cur(rb_io_t *fptr)
+{
+    if (!rb_w32_fd_is_text(fptr->fd)) return O_BINARY;
+
+    if (fptr->rbuf.len == 0 || fptr->mode & FMODE_DUPLEX) {
+	return setmode(fptr->fd, O_BINARY);
+    }
+    flush_before_seek(fptr);
     return setmode(fptr->fd, O_BINARY);
 }
 #define SET_BINARY_MODE_WITH_SEEK_CUR(fptr) set_binary_mode_with_seek_cur(fptr)
@@ -448,6 +481,7 @@ rb_io_s_try_convert(VALUE dummy, VALUE io)
     return rb_io_check_io(io);
 }
 
+#if !(defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32))
 static void
 io_unread(rb_io_t *fptr)
 {
@@ -467,6 +501,7 @@ io_unread(rb_io_t *fptr)
     fptr->rbuf.len = 0;
     return;
 }
+#endif
 
 static rb_encoding *io_input_encoding(rb_io_t *fptr);
 
