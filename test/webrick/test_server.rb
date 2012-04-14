@@ -29,12 +29,12 @@ class TestWEBrickServer < Test::Unit::TestCase
       :StopCallback => Proc.new{ stopped += 1 },
     }
 
-    e = assert_raises(Interrupt) do
+    e = assert_raises(SignalException) do
       TestWEBrick.start_server(Echo, config) { |server, addr, port, log|
         listener = server.listeners.first
 
         def listener.accept
-          Process.kill(:INT, $$) # simulate ^C
+          raise SignalException, 'SIGTERM' # simulate signal in main thread
         end
 
         Thread.pass while server.status != :Running

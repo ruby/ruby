@@ -1,3 +1,12 @@
+Sat Apr 14 10:45:18 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/server.rb (WEBrick::GenericServer#start):
+	  partially revert r35315.
+
+	* test/webrick/test_server.rb (test_start_exception):
+	  received signal is delivered to the main thread, so it is needed to
+	  emulate it. patched by Eric Hodel. [ruby-core:44348] [Feature #6236]
+
 Sat Apr 14 09:35:45 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* variable.c (trace_ev):  Removed "not reached" comment as this line is

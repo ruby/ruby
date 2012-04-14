@@ -133,12 +133,12 @@ module WEBrick
             rescue Errno::EBADF, IOError => ex
               # if the listening socket was closed in GenericServer#shutdown,
               # IO::select raise it.
-            rescue Interrupt => ex # ^C
-              @logger.fatal ex
-              raise
-            rescue Exception => ex
+            rescue StandardError => ex
               msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
               @logger.error msg
+            rescue Exception => ex
+              @logger.fatal ex
+              raise
             end
           end
 
