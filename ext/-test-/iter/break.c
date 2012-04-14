@@ -4,7 +4,8 @@ static VALUE
 iter_break_value(VALUE self, VALUE val)
 {
     rb_iter_break_value(val);
-    return self;		/* not reached */
+
+    UNREACHABLE;
 }
 
 void

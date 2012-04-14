@@ -694,7 +694,8 @@ trace_ev(struct trace_data *data)
 	(*trace->func)(trace->data, data->val);
 	trace = trace->next;
     }
-    return Qnil;		/* not reached */
+
+    return Qnil;
 }
 
 static VALUE
@@ -1363,7 +1364,8 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 	break;
     }
     rb_name_error(id, "instance variable %s not defined", rb_id2name(id));
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 NORETURN(static void uninitialized_constant(VALUE, ID));
@@ -1427,7 +1429,8 @@ rb_mod_const_missing(VALUE klass, VALUE name)
 {
     rb_frame_pop(); /* pop frame for "const_missing" */
     uninitialized_constant(klass, rb_to_id(name));
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 static void
@@ -2408,7 +2411,8 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
     }
     rb_name_error(id, "class variable %s not defined for %s",
 		  rb_id2name(id), rb_class2name(mod));
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 VALUE

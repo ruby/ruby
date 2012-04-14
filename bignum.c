@@ -3674,8 +3674,8 @@ rb_big_coerce(VALUE x, VALUE y)
 	rb_raise(rb_eTypeError, "can't coerce %s to Bignum",
 		 rb_obj_classname(y));
     }
-    /* not reached */
-    return Qnil;
+
+    UNREACHABLE;
 }
 
 /*

@@ -4448,7 +4448,8 @@ rb_io_fmode_modestr(int fmode)
 	return MODE_BTMODE("r+", "rb+", "rt+");
     }
     rb_raise(rb_eArgError, "invalid access fmode 0x%x", fmode);
-    return NULL;		/* not reached */
+
+    UNREACHABLE;
 }
 
 static int
@@ -4614,7 +4615,8 @@ rb_io_oflags_modestr(int oflags)
 	return MODE_BINARY("r+", "rb+");
     }
     rb_raise(rb_eArgError, "invalid access oflags 0x%x", oflags);
-    return NULL;		/* not reached */
+
+    UNREACHABLE;
 }
 
 /*

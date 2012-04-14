@@ -98,7 +98,8 @@ ossl_pkey_new(EVP_PKEY *pkey)
     default:
 	ossl_raise(ePKeyError, "unsupported key type");
     }
-    return Qnil; /* not reached */
+
+    UNREACHABLE;
 }
 
 VALUE

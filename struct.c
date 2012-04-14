@@ -113,7 +113,8 @@ rb_struct_getmember(VALUE obj, ID id)
 	}
     }
     rb_name_error(id, "%s is not struct member", rb_id2name(id));
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 static VALUE
@@ -175,7 +176,8 @@ rb_struct_set(VALUE obj, VALUE val)
     }
     rb_name_error(rb_frame_this_func(), "`%s' is not a struct member",
 		  rb_id2name(rb_frame_this_func()));
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 static VALUE
@@ -617,7 +619,8 @@ rb_struct_aref_id(VALUE s, ID id)
 	}
     }
     rb_name_error(id, "no member '%s' in struct", rb_id2name(id));
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 /*

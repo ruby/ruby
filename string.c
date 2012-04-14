@@ -3186,7 +3186,8 @@ rb_str_aref(VALUE str, VALUE indx)
 	idx = NUM2LONG(indx);
 	goto num_index;
     }
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 
@@ -4092,7 +4093,8 @@ str_byte_aref(VALUE str, VALUE indx)
 	idx = NUM2LONG(indx);
 	goto num_index;
     }
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 /*
@@ -7764,7 +7766,8 @@ rb_to_id(VALUE name)
       case T_SYMBOL:
 	return SYM2ID(name);
     }
-    return Qnil; /* not reached */
+
+    UNREACHABLE;
 }
 
 /*

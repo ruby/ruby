@@ -2868,7 +2868,7 @@ rb_f_exit_bang(int argc, VALUE *argv, VALUE obj)
     }
     _exit(istatus);
 
-    return Qnil;		/* not reached */
+    UNREACHABLE;
 }
 
 void
@@ -2941,7 +2941,8 @@ rb_f_exit(int argc, VALUE *argv)
 	istatus = EXIT_SUCCESS;
     }
     rb_exit(istatus);
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 
@@ -2975,7 +2976,8 @@ rb_f_abort(int argc, VALUE *argv)
 	args[0] = INT2NUM(EXIT_FAILURE);
 	rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
     }
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 void

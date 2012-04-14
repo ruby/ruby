@@ -1,3 +1,43 @@
+Sat Apr 14 09:35:45 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* variable.c (trace_ev):  Removed "not reached" comment as this line is
+	  reached.
+	* variable.c (rb_obj_remove_instance_variable):  Replaced "not reached"
+	  comment with the UNREACHABLE macro.
+	* variable.c (rb_mod_const_missing):  ditto.
+	* variable.c (rb_mod_remove_cvar):  ditto.
+	* enum.c (first_i):  ditto.
+	* string.c (rb_str_aref):  ditto.
+	* string.c (str_byte_aref):  ditto.
+	* string.c (rb_to_id):  ditto.
+	* io.c (rb_io_fmode_modestr):  ditto.
+	* io.c (rb_io_oflags_modestr):  ditto.
+	* pack.c (num2i32):  ditto.
+	* vm_eval.c (rb_method_missing):  ditto.
+	* vm_eval.c (rb_f_throw):  ditto.
+	* dir.c (dir_read):  ditto.
+	* win32/win32.c (child_result):  ditto.
+	* struct.c (rb_struct_getmember):  ditto.
+	* struct.c (rb_struct_set):  ditto.
+	* struct.c (rb_struct_aref_id):  ditto.
+	* eval.c (rb_f_raise):  ditto.
+	* process.c (rb_f_exit_bang):  ditto.
+	* process.c (rb_f_exit):  ditto.
+	* process.c (rb_f_abort):  ditto.
+	* ext/-test-/iter/break.c (iter_break_value):  ditto.
+	* ext/pty/pty.c (pty_check):  ditto.
+	* ext/openssl/ossl_pkey.c (ossl_pkey_new):  ditto.
+	* ext/readline/readline.c (rb_remove_history):  ditto.
+	* ext/stringio/stringio.c (strio_unimpl):  ditto.
+	* numeric.c (num_sadded):  ditto.
+	* numeric.c (num_init_copy):  ditto.
+	* numeric.c (rb_num2ll):  ditto.
+	* numeric.c (rb_num2ull):  ditto.
+	* vm_insnhelper.c (call_cfunc):  ditto.
+	* ruby.c (opt_W_getter):  ditto.
+	* bignum.c (rb_big_coerce):  ditto.
+	* file.c (rb_f_test):  ditto.
+
 Sat Apr 14 08:38:20 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* encoding.c (rb_enc_codepoint_len):  Use UNREACHABLE to avoid "control

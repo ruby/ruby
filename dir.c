@@ -590,7 +590,8 @@ dir_read(VALUE dir)
     else {
 	rb_sys_fail(0);
     }
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 /*

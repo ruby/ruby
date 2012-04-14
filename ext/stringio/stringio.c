@@ -287,7 +287,8 @@ strio_unimpl(int argc, VALUE *argv, VALUE self)
 {
     StringIO(self);
     rb_notimplement();
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 /*

@@ -431,7 +431,7 @@ call_cfunc(VALUE (*func)(), VALUE recv,
 	break;
       default:
 	rb_raise(rb_eArgError, "too many arguments(%d)", len);
-	return Qundef; /* not reached */
+	UNREACHABLE;
     }
 }
 

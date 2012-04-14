@@ -260,7 +260,8 @@ num_sadded(VALUE x, VALUE name)
 	     "can't define singleton method \"%s\" for %s",
 	     rb_id2name(mid),
 	     rb_obj_classname(x));
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 /* :nodoc: */
@@ -269,7 +270,8 @@ num_init_copy(VALUE x, VALUE y)
 {
     /* Numerics are immutable values, which should not be copied */
     rb_raise(rb_eTypeError, "can't copy %s", rb_obj_classname(x));
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 /*
@@ -2099,17 +2101,19 @@ rb_num2ll(VALUE val)
 
       case T_STRING:
 	rb_raise(rb_eTypeError, "no implicit conversion from string");
-	return Qnil;            /* not reached */
+	break;
 
       case T_TRUE:
       case T_FALSE:
 	rb_raise(rb_eTypeError, "no implicit conversion from boolean");
-	return Qnil;		/* not reached */
+	break;
 
       default:
 	val = rb_to_int(val);
 	return NUM2LL(val);
     }
+
+    UNREACHABLE;
 }
 
 unsigned LONG_LONG
@@ -2141,17 +2145,19 @@ rb_num2ull(VALUE val)
 
       case T_STRING:
 	rb_raise(rb_eTypeError, "no implicit conversion from string");
-	return Qnil;            /* not reached */
+	break;
 
       case T_TRUE:
       case T_FALSE:
 	rb_raise(rb_eTypeError, "no implicit conversion from boolean");
-	return Qnil;		/* not reached */
+	break;
 
       default:
 	val = rb_to_int(val);
 	return NUM2ULL(val);
     }
+
+    UNREACHABLE;
 }
 
 #endif  /* HAVE_LONG_LONG */

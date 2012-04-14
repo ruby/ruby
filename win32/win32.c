@@ -1079,8 +1079,8 @@ child_result(struct ChildRecord *child, int mode)
 	GetExitCodeProcess(child->hProcess, &exitcode);
 	CloseChildHandle(child);
 	_exit(exitcode);
-      default:
-	return -1;	/* not reached */
+      default
+	UNREACHABLE;
     }
 }
 

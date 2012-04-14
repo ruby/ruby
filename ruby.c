@@ -1757,7 +1757,8 @@ opt_W_getter(ID id, void *data)
       case Qtrue:
 	return INT2FIX(2);
     }
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 void

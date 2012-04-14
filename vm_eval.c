@@ -496,7 +496,7 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 {
     rb_thread_t *th = GET_THREAD();
     raise_method_missing(th, argc, argv, obj, th->method_missing_reason);
-    return Qnil;		/* not reached */
+    UNREACHABLE;
 }
 
 #define NOEX_MISSING   0x80
@@ -1450,7 +1450,7 @@ rb_f_throw(int argc, VALUE *argv)
 
     rb_scan_args(argc, argv, "11", &tag, &value);
     rb_throw_obj(tag, value);
-    return Qnil;		/* not reached */
+    UNREACHABLE;
 }
 
 void

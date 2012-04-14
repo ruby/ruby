@@ -4387,7 +4387,8 @@ rb_f_test(int argc, VALUE *argv)
     else {
 	rb_raise(rb_eArgError, "unknown command \"\\x%02X\"", cmd);
     }
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 

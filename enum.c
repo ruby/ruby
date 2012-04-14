@@ -700,7 +700,8 @@ first_i(VALUE i, VALUE params, int argc, VALUE *argv)
 
     memo->u1.value = i;
     rb_iter_break();
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 static VALUE enum_take(VALUE obj, VALUE n);

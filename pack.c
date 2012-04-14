@@ -247,7 +247,8 @@ num2i32(VALUE x)
 	return rb_big2ulong_pack(x);
     }
     rb_raise(rb_eTypeError, "can't convert %s to `integer'", rb_obj_classname(x));
-    return 0;			/* not reached */
+
+    UNREACHABLE;
 }
 
 #define MAX_INTEGER_PACK_SIZE 8
