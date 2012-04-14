@@ -772,7 +772,7 @@ rb_big2str0(x, base, trim)
     int base;
     int trim;
 {
-    volatile VALUE t;
+    VALUE t;
     BDIGIT *ds;
     long i, j, hbase;
     VALUE ss;
@@ -847,6 +847,7 @@ rb_big2str0(x, base, trim)
 	    if (trim && i == 0 && num == 0) break;
 	}
     }
+    RB_GC_GUARD(t);
     if (trim) {while (s[j] == '0') j++;}
     i = RSTRING(ss)->len - j;
     if (RBIGNUM(x)->sign) {

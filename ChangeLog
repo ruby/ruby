@@ -1,3 +1,9 @@
+Sat Apr 14 18:51:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big2str0): prevent working clone from
+	  GC. [exerb-dev:0578].  patched by MURASE Masamitsu
+	  <masamitsu.murase AT gmail.com> at [exerb-dev:0580]
+
 Tue Mar  6 12:05:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb (Exception.yaml_new): fix bug that causes
