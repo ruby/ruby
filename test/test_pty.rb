@@ -172,8 +172,9 @@ class TestPTY < Test::Unit::TestCase
       st1 = PTY.check(pid)
       w.close
       r.close
-      sleep(0.1)
-      st2 = PTY.check(pid)
+      begin
+        sleep(0.1)
+      end until st2 = PTY.check(pid)
     end
     assert_equal(pid, st1.pid) if st1
     assert_nil(st1)

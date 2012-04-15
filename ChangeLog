@@ -1,3 +1,8 @@
+Sun Apr 15 14:57:00 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/test_pty.rb (test_pty_check_default): call PTY.check until
+	  "cat" command is finished.
+
 Sun Apr 15 14:54:16 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_process.rb (TestProcess#windows?): new method.
