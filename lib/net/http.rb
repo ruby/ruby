@@ -194,6 +194,7 @@ module Net   #:nodoc:
   #       Net::HTTP::Head
   #       Net::HTTP::Post
   #       Net::HTTP::Put
+  #       Net::HTTP::Patch
   #       Net::HTTP::Proppatch
   #       Net::HTTP::Lock
   #       Net::HTTP::Unlock
@@ -857,6 +858,12 @@ module Net   #:nodoc:
       res = request(Put.new(path, initheader), data)
       res.value unless @newimpl
       res
+    end
+
+    # Sends a PATCH request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def patch(path, body, initheader = nil)
+      request(Patch.new(path, initheader), body)
     end
 
     # Sends a PROPPATCH request to the +path+ and gets a response,
@@ -1626,6 +1633,12 @@ module Net   #:nodoc:
 
     class Put < HTTPRequest
       METHOD = 'PUT'
+      REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Patch < HTTPRequest
+      METHOD = 'PATCH'
       REQUEST_HAS_BODY = true
       RESPONSE_HAS_BODY = true
     end
