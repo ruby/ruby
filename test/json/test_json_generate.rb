@@ -214,25 +214,25 @@ EOT
     assert_equal 128, s.buffer_initial_length
   end
 
-  require'timeout'
   def test_gc
+    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
     bignum_too_long_to_embed_as_string = 1234567890123456789012345
-    expect = nil
-    stress = nil
-    timeout(1) do
-      expect = bignum_too_long_to_embed_as_string.to_s
-    end
-    timeout(30) do
-      GC.start
-      stress, GC.stress = GC.stress, true
-    end
+    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
+    expect = bignum_too_long_to_embed_as_string.to_s
+    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
+    GC.start
+    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
+    stress, GC.stress = GC.stress, true
+    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
 
-    timeout(30) do
-      10.times do |i|
-        tmp = bignum_too_long_to_embed_as_string.to_json
-        assert_equal expect, tmp
-      end
+    10.times do |i|
+    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
+      tmp = bignum_too_long_to_embed_as_string.to_json
+    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
+      assert_equal expect, tmp
+    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
     end
+    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
   ensure
     GC.stress = stress
   end if GC.respond_to?(:stress=)

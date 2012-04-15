@@ -68,6 +68,7 @@ static void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
     if (!fb->ptr) {
         fb->ptr = ALLOC_N(char, fb->initial_length);
         fb->capa = fb->initial_length;
+        fb->len = 0;
     }
 
     for (required = fb->capa; requested > required - fb->len; required <<= 1);
