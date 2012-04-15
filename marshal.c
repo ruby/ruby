@@ -1143,12 +1143,10 @@ r_symlink(struct load_arg *arg)
     st_data_t id;
     long num = r_long(arg);
 
-    if (st_lookup(arg->symbols, num, &id)) {
-	return (ID)id;
+    if (!st_lookup(arg->symbols, num, &id)) {
+	rb_raise(rb_eArgError, "bad symbol");
     }
-    rb_raise(rb_eArgError, "bad symbol");
-
-    UNREACHABLE;
+    return (ID)id;
 }
 
 static ID
@@ -1181,6 +1179,8 @@ r_symbol(struct load_arg *arg)
 
   again:
     switch ((type = r_byte(arg))) {
+      default:
+	rb_raise(rb_eArgError, "dump format error for symbol(0x%x)", type);
       case TYPE_IVAR:
 	ivar = 1;
 	goto again;
@@ -1191,12 +1191,7 @@ r_symbol(struct load_arg *arg)
 	    rb_raise(rb_eArgError, "dump format error (symlink with encoding)");
 	}
 	return r_symlink(arg);
-      default:
-	rb_raise(rb_eArgError, "dump format error for symbol(0x%x)", type);
-	break;
     }
-
-    UNREACHABLE;
 }
 
 static VALUE

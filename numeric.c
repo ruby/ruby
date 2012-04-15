@@ -2109,11 +2109,11 @@ rb_num2ll(VALUE val)
 	break;
 
       default:
-	val = rb_to_int(val);
-	return NUM2LL(val);
+	break;
     }
 
-    UNREACHABLE;
+    val = rb_to_int(val);
+    return NUM2LL(val);
 }
 
 unsigned LONG_LONG
@@ -2153,11 +2153,11 @@ rb_num2ull(VALUE val)
 	break;
 
       default:
-	val = rb_to_int(val);
-	return NUM2ULL(val);
+	break;
     }
 
-    UNREACHABLE;
+    val = rb_to_int(val);
+    return NUM2ULL(val);
 }
 
 #endif  /* HAVE_LONG_LONG */

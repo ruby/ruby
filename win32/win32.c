@@ -1071,17 +1071,13 @@ child_result(struct ChildRecord *child, int mode)
 	return -1;
     }
 
-    switch (mode) {
-      case P_NOWAIT:
-	return child->pid;
-      case P_OVERLAY:
+    if (mode == P_OVERLAY) {
 	WaitForSingleObject(child->hProcess, INFINITE);
 	GetExitCodeProcess(child->hProcess, &exitcode);
 	CloseChildHandle(child);
 	_exit(exitcode);
-      default:
-	UNREACHABLE;
     }
+    return child->pid;
 }
 
 /* License: Ruby's */

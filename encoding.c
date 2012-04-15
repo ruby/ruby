@@ -922,14 +922,11 @@ rb_enc_codepoint_len(const char *p, const char *e, int *len_p, rb_encoding *enc)
     if (e <= p)
         rb_raise(rb_eArgError, "empty string");
     r = rb_enc_precise_mbclen(p, e, enc);
-    if (MBCLEN_CHARFOUND_P(r)) {
-	if (len_p) *len_p = MBCLEN_CHARFOUND_LEN(r);
-        return rb_enc_mbc_to_codepoint(p, e, enc);
-    }
-    else
+    if (!MBCLEN_CHARFOUND_P(r)) {
 	rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
-
-    UNREACHABLE;
+    }
+    if (len_p) *len_p = MBCLEN_CHARFOUND_LEN(r);
+    return rb_enc_mbc_to_codepoint(p, e, enc);
 }
 
 #undef rb_enc_codepoint

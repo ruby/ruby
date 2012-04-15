@@ -2336,10 +2336,7 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
     ret = io_getpartial(argc, argv, io, 0);
     if (NIL_P(ret))
         rb_eof_error();
-    else
-        return ret;
-
-    UNREACHABLE;
+    return ret;
 }
 
 /*
@@ -2399,10 +2396,7 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
     ret = io_getpartial(argc, argv, io, 1);
     if (NIL_P(ret))
         rb_eof_error();
-    else
-        return ret;
-
-    UNREACHABLE;
+    return ret;
 }
 
 /*
@@ -4437,6 +4431,8 @@ rb_io_fmode_modestr(int fmode)
 	return MODE_BTMODE("a", "ab", "at");
     }
     switch (fmode & FMODE_READWRITE) {
+      default:
+	rb_raise(rb_eArgError, "invalid access fmode 0x%x", fmode);
       case FMODE_READABLE:
 	return MODE_BTMODE("r", "rb", "rt");
       case FMODE_WRITABLE:
@@ -4447,9 +4443,6 @@ rb_io_fmode_modestr(int fmode)
 	}
 	return MODE_BTMODE("r+", "rb+", "rt+");
     }
-    rb_raise(rb_eArgError, "invalid access fmode 0x%x", fmode);
-
-    UNREACHABLE;
 }
 
 static int
@@ -4607,6 +4600,8 @@ rb_io_oflags_modestr(int oflags)
 	}
     }
     switch (oflags & (O_RDONLY|O_WRONLY|O_RDWR)) {
+      default:
+	rb_raise(rb_eArgError, "invalid access oflags 0x%x", oflags);
       case O_RDONLY:
 	return MODE_BINARY("r", "rb");
       case O_WRONLY:
@@ -4614,9 +4609,6 @@ rb_io_oflags_modestr(int oflags)
       case O_RDWR:
 	return MODE_BINARY("r+", "rb+");
     }
-    rb_raise(rb_eArgError, "invalid access oflags 0x%x", oflags);
-
-    UNREACHABLE;
 }
 
 /*

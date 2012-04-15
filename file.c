@@ -4182,13 +4182,8 @@ test_check(int n, int argc, VALUE *argv)
     n+=1;
     rb_check_arity(argc, n, n);
     for (i=1; i<n; i++) {
-	switch (TYPE(argv[i])) {
-	  case T_STRING:
-	  default:
+	if (!RB_TYPE_P(argv[i], T_FILE)) {
 	    FilePathValue(argv[i]);
-	    break;
-	  case T_FILE:
-	    break;
 	}
     }
 }
@@ -4260,7 +4255,16 @@ rb_f_test(int argc, VALUE *argv)
 
     if (argc == 0) rb_check_arity(argc, 2, 3);
     cmd = NUM2CHR(argv[0]);
-    if (cmd == 0) goto unknown;
+    if (cmd == 0) {
+      unknown:
+	/* unknown command */
+	if (ISPRINT(cmd)) {
+	    rb_raise(rb_eArgError, "unknown command '%s%c'", cmd == '\'' || cmd == '\\' ? "\\" : "", cmd);
+	}
+	else {
+	    rb_raise(rb_eArgError, "unknown command \"\\x%02X\"", cmd);
+	}
+    }
     if (strchr("bcdefgGkloOprRsSuwWxXz", cmd)) {
 	CHECK(1);
 	switch (cmd) {
@@ -4379,16 +4383,7 @@ rb_f_test(int argc, VALUE *argv)
 	    return Qfalse;
 	}
     }
-  unknown:
-    /* unknown command */
-    if (ISPRINT(cmd)) {
-	rb_raise(rb_eArgError, "unknown command '%s%c'", cmd == '\'' || cmd == '\\' ? "\\" : "", cmd);
-    }
-    else {
-	rb_raise(rb_eArgError, "unknown command \"\\x%02X\"", cmd);
-    }
-
-    UNREACHABLE;
+    goto unknown;
 }
 
 

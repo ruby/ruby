@@ -584,14 +584,10 @@ dir_read(VALUE dir)
     if (READDIR(dirp->dir, dirp->enc, &STRUCT_DIRENT(entry), dp)) {
 	return rb_external_str_new_with_enc(dp->d_name, NAMLEN(dp), dirp->enc);
     }
-    else if (errno == 0) {	/* end of stream */
-	return Qnil;
-    }
     else {
-	rb_sys_fail(0);
+	if (errno != 0) rb_sys_fail(0);
+	return Qnil;		/* end of stream */
     }
-
-    UNREACHABLE;
 }
 
 /*
