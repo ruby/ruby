@@ -52,6 +52,11 @@ with all sufficient information, see the ChangeLog file.
       * Signal.trap raises ArgumentError when :SEGV, :BUS, :ILL, :FPE, :VTALRM
         are specified.
 
+  * Struct
+    * added method:
+      * added Struct#to_h returning values with keys corresponding to the
+        instance variable names.
+
   * Time
     * change return value:
       * Time#to_s returned encoding defaults to US-ASCII but automatically
