@@ -3078,7 +3078,8 @@ env_index(VALUE dmy, VALUE value)
 
 /*
  * call-seq:
- *   ENV.to_hash -> Hash
+ *   ENV.to_hash -> hash
+ *   ENV.to_h    -> hash
  *
  * Creates a hash with a copy of the environment variables.
  *
@@ -3468,6 +3469,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl,"key?", env_has_key, 1);
     rb_define_singleton_method(envtbl,"value?", env_has_value, 1);
     rb_define_singleton_method(envtbl,"to_hash", env_to_hash, 0);
+    rb_define_singleton_method(envtbl,"to_h", env_to_hash, 0);
     rb_define_singleton_method(envtbl,"assoc", env_assoc, 1);
     rb_define_singleton_method(envtbl,"rassoc", env_rassoc, 1);
 

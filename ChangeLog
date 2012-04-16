@@ -1,3 +1,16 @@
+Mon Apr 16 12:13:42 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* hash.c: Alias ENV.to_h to ENV.to_hash [ref #6276]
+	  [rubyspec:6587eead7cd1]
+	* lib/ostruct.rb: Add OpenStruct#to_h [Feature #6276]
+	  [ref #1400] [rubyspec:9e0250b2fc6f]
+	* struct.c: Add Struct#to_h [Feature #6276]
+	  [ref #4862] [rubyspec:2082ef46d46e]
+	* object.c: Add NilClass#to_h [Feature #6276]
+	  [ref #5008] [rubyspec:dc5ecddbd608]
+	* hash.c: Add Hash#to_h [Feature #6276]
+	  [rubyspec:84b7fe3f24d2]
+
 Mon Apr 16 09:42:50 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rubygems/remote_fetcher.rb (Gem::RemoteFetcher#download): should
