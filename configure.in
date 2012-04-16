@@ -1089,6 +1089,7 @@ main()
 		rb_cv_negative_time_t=no
 		ac_cv_func_fcntl=yes
 		ac_cv_func_flock=yes
+		ac_cv_func_gmtime_r=yes
 		rb_cv_large_fd_select=yes
 		AC_LIBOBJ([langinfo])
 		: ${enable_win95=maybe}

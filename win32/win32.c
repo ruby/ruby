@@ -6257,3 +6257,108 @@ char
 rb_w32_fd_is_text(int fd) {
     return _osfile(fd) & FTEXT;
 }
+
+#if RUBY_MSVCRT_VERSION < 80
+static int
+unixtime_to_systemtime(const time_t t, SYSTEMTIME *st)
+{
+    FILETIME ft;
+    if (unixtime_to_filetime(t, &ft)) return -1;
+    if (!FileTimeToSystemTime(&ft, st)) return -1;
+    return 0;
+}
+
+static void
+systemtime_to_tm(const SYSTEMTIME *st, struct tm *t)
+{
+    int y = st->wYear, m = st->wMonth, d = st->wDay;
+    t->tm_sec  = st->wSecond;
+    t->tm_min  = st->wMinute;
+    t->tm_hour = st->wHour;
+    t->tm_mday = st->wDay;
+    t->tm_mon  = st->wMonth - 1;
+    t->tm_year = y - 1900;
+    t->tm_wday = st->wDayOfWeek;
+    switch (m) {
+      case 1:
+	break;
+      case 2:
+	d += 31;
+	break;
+      default:
+	d += 31 + 28 + (!(y % 4) && ((y % 100) || !(y % 400)));
+	d += ((m - 3) * 153 + 2) / 5;
+	break;
+    }
+    t->tm_yday = d - 1;
+}
+
+static int
+systemtime_to_localtime(TIME_ZONE_INFORMATION *tz, SYSTEMTIME *gst, SYSTEMTIME *lst)
+{
+    TIME_ZONE_INFORMATION stdtz;
+    SYSTEMTIME sst;
+
+    if (!SystemTimeToTzSpecificLocalTime(tz, gst, lst)) return -1;
+    if (!tz) {
+	GetTimeZoneInformation(&stdtz);
+	tz = &stdtz;
+    }
+    if (tz->StandardBias == tz->DaylightBias) return 0;
+    if (!tz->StandardDate.wMonth) return 0;
+    if (!tz->DaylightDate.wMonth) return 0;
+    if (tz != &stdtz) stdtz = *tz;
+
+    stdtz.StandardDate.wMonth = stdtz.DaylightDate.wMonth = 0;
+    if (!SystemTimeToTzSpecificLocalTime(&stdtz, gst, &sst)) return 0;
+    if (lst->wMinute == sst.wMinute && lst->wHour == sst.wHour)
+	return 0;
+    return 1;
+}
+#endif
+
+struct tm *
+gmtime_r(const time_t *tp, struct tm *rp)
+{
+    int e = EINVAL;
+    if (!tp || !rp) {
+      error:
+	errno = e;
+	return NULL;
+    }
+#if RUBY_MSVCRT_VERSION >= 80
+    e = gmtime_s(rp, tp);
+    if (e != 0) goto error;
+#else
+    {
+	SYSTEMTIME st;
+	if (unixtime_to_systemtime(*tp, &st)) goto error;
+	rp->tm_isdst = 0;
+	systemtime_to_tm(&st, rp);
+    }
+#endif
+    return rp;
+}
+
+struct tm *
+localtime_r(const time_t *tp, struct tm *rp)
+{
+    int e = EINVAL;
+    if (!tp || !rp) {
+      error:
+	errno = e;
+	return NULL;
+    }
+#if RUBY_MSVCRT_VERSION >= 80
+    e = localtime_s(rp, tp);
+    if (e) goto error;
+#else
+    {
+	SYSTEMTIME gst, lst;
+	if (unixtime_to_systemtime(*tp, &gst)) goto error;
+	rp->tm_isdst = systemtime_to_localtime(NULL, &gst, &lst);
+	systemtime_to_tm(&lst, rp);
+    }
+#endif
+    return rp;
+}

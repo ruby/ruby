@@ -690,6 +690,9 @@ struct tms {
 
 int rb_w32_times(struct tms *);
 
+struct tm *gmtime_r(const time_t *, struct tm *);
+struct tm *localtime_r(const time_t *, struct tm *);
+
 /* thread stuff */
 int  rb_w32_sleep(unsigned long msec);
 int  rb_w32_putc(int, FILE*);

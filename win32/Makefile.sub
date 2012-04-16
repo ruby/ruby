@@ -651,6 +651,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_SIGNBIT 1
 #define HAVE_TZNAME 1
 #define HAVE_DAYLIGHT 1
+#define HAVE_GMTIME_R 1
 #define SETPGRP_VOID 1
 #define RSHIFT(x,y) ((x)>>(int)y)
 #define HAVE_RB_FD_INIT 1

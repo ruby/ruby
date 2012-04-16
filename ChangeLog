@@ -1,4 +1,7 @@
-Mon Apr 16 16:08:18 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Apr 16 16:22:40 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (gmtime_r, localtime_r): POSIX compliant reentrant
+	  versions.
 
 	* configure.in (RUBY_MSVCRT_VERSION): define on mingw too.
 
