@@ -614,7 +614,7 @@ class Matrix
   #
   def hermitian?
     Matrix.Raise ErrDimensionMismatch unless square?
-    each_with_index(:strict_upper).all? do |e, row, col|
+    each_with_index(:upper).all? do |e, row, col|
       e == rows[col][row].conj
     end
   end
