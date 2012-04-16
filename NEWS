@@ -74,6 +74,10 @@ with all sufficient information, see the ChangeLog file.
     * Net::IMAP.default_ssl_port
     * Net::IMAP.default_imaps_port
 
+* ostruct
+  * new methods:
+    * OpenStruct#to_h converts the struct to a hash.
+
 * pathname
   * extended method:
     * Pathname#find returns an enumerator if no block is given.
