@@ -343,6 +343,9 @@ AS_CASE(["$target_os"],
 				   sed -n '/^[[ 	]]*dll name: \(msvc.*\)\.dll$/{s//\1/p;q;}'`],
 		    [rb_cv_msvcrt=msvcrt])
 	test "$rb_cv_msvcrt" = "" && rb_cv_msvcrt=msvcrt])
+	RT_VER=`echo "$rb_cv_msvcrt" | tr -cd [0-9]`
+	test "$RT_VER" = "" && RT_VER=60
+	AC_DEFINE_UNQUOTED(RUBY_MSVCRT_VERSION, $RT_VER)
     ])
     : ${enable_shared=yes}
     ],

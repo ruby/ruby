@@ -288,7 +288,7 @@ rb_bug(const char *fmt, ...)
     report_bug(file, line, fmt, args);
     va_end(args);
 
-#if defined(_WIN32) && defined(RT_VER) && RT_VER >= 80
+#if defined(_WIN32) && defined(RUBY_MSVCRT_VERSION) && RUBY_MSVCRT_VERSION >= 80
     _set_abort_behavior( 0, _CALL_REPORTFAULT);
 #endif
 

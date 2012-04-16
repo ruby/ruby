@@ -598,7 +598,7 @@ init_func(void)
 
 static void init_stdhandle(void);
 
-#if RT_VER >= 80
+#if RUBY_MSVCRT_VERSION >= 80
 /* License: Ruby's */
 static void
 invalid_parameter(const wchar_t *expr, const wchar_t *func, const wchar_t *file, unsigned int line, uintptr_t dummy)
@@ -732,7 +732,7 @@ socklist_delete(SOCKET *sockp, int *flagp)
 void
 rb_w32_sysinit(int *argc, char ***argv)
 {
-#if RT_VER >= 80
+#if RUBY_MSVCRT_VERSION >= 80
     static void set_pioinfo_extra(void);
 
     _CrtSetReportMode(_CRT_ASSERT, 0);
@@ -2132,7 +2132,7 @@ typedef struct	{
     int lockinitflag;
     CRITICAL_SECTION lock;
 #endif
-#if RT_VER >= 80
+#if RUBY_MSVCRT_VERSION >= 80
     char textmode;
     char pipech2[2];
 #endif
@@ -2153,7 +2153,7 @@ static inline ioinfo* _pioinfo(int);
 #define _osfile(i)  (_pioinfo(i)->osfile)
 #define _pipech(i)  (_pioinfo(i)->pipech)
 
-#if RT_VER >= 80
+#if RUBY_MSVCRT_VERSION >= 80
 static size_t pioinfo_extra = 0;	/* workaround for VC++8 SP1 */
 
 /* License: Ruby's */
@@ -6208,7 +6208,7 @@ rb_w32_fsopen(const char *path, const char *mode, int shflags)
 }
 #endif
 
-#if defined(_MSC_VER) && RT_VER <= 60
+#if defined(_MSC_VER) && RUBY_MSVCRT_VERSION <= 60
 extern long _ftol(double);
 /* License: Ruby's */
 long

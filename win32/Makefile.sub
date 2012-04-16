@@ -474,7 +474,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if "$(ENABLE_WIN95)" == "yes" && "$(MACHINE)" == "x86"
 #define WIN95 1
 !endif
-#define RT_VER $(RT_VER)
+#define RUBY_MSVCRT_VERSION $(RT_VER)
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
