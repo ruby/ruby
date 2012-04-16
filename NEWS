@@ -22,6 +22,8 @@ with all sufficient information, see the ChangeLog file.
       * added Enumerable#lazy method for lazy enumeration.
 
   * Hash
+    * added method:
+      * added Hash#to_h as explicit conversion method, like Array#to_a.
     * extended method:
       * Hash#default_proc= can be passed nil to clear the default proc.
 
