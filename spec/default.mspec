@@ -13,9 +13,9 @@ class MSpecScript
   set :target, File.join(builddir, "miniruby#{config['exeext']}")
   set :prefix, File.expand_path('rubyspec', File.dirname(__FILE__))
   set :flags, %W[
-    -I#{srcdir}/lib
-    -I#{srcdir}/#{config['EXTOUT']}/common
-    -I#{srcdir}/-
-    #{srcdir}/tool/runruby.rb --extout=#{config['EXTOUT']}
+    -I#{File.expand_path srcdir}/lib
+    -I#{File.expand_path srcdir}/#{config['EXTOUT']}/common
+    -I#{File.expand_path srcdir}/-
+    #{File.expand_path srcdir}/tool/runruby.rb --archdir=#{Dir.pwd} --extout=#{config['EXTOUT']}
   ]
 end
