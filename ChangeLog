@@ -1,3 +1,8 @@
+Mon Apr 16 21:25:24 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (rb_w32_check_imported): skip ordinal entries.  patched by
+	  phasis68 (Heesob Park) at [ruby-core:44381].  [Bug #6303]
+
 Mon Apr 16 18:22:14 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* spec/default.mspec: expand relative path for ruby_exe which uses
