@@ -19,7 +19,7 @@ Mon Apr 16 12:13:42 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 Mon Apr 16 09:42:50 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rubygems/remote_fetcher.rb (Gem::RemoteFetcher#download): should
-	  use File.identical? to chech the identicality of the files.
+	  use File.identical? to check the identity of the files.
 	  this fixed an error of a test on Windows.
 
 Sat Apr 14 12:55:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
