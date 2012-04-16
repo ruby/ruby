@@ -78,7 +78,7 @@ static VALUE CNaN, CInfinity, CMinusInfinity;
 static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
           i_chr, i_max_nesting, i_allow_nan, i_symbolize_names, i_quirks_mode,
           i_object_class, i_array_class, i_key_p, i_deep_const_get, i_match,
-          i_match_string, i_aset, i_leftshift;
+          i_match_string, i_aset, i_aref, i_leftshift;
 
 %%{
     machine JSON_common;
@@ -166,7 +166,12 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
     if (cs >= JSON_object_first_final) {
         if (json->create_additions) {
-            VALUE klassname = rb_hash_aref(*result, json->create_id);
+						VALUE klassname;
+            if (NIL_P(json->object_class)) {
+							klassname = rb_hash_aref(*result, json->create_id);
+						} else {
+							klassname = rb_funcall(*result, i_aref, 1, json->create_id);
+						}
             if (!NIL_P(klassname)) {
                 VALUE klass = rb_funcall(mJSON, i_deep_const_get, 1, klassname);
                 if (RTEST(rb_funcall(klass, i_json_creatable_p, 0))) {
@@ -886,6 +891,7 @@ void Init_parser()
     i_key_p = rb_intern("key?");
     i_deep_const_get = rb_intern("deep_const_get");
     i_aset = rb_intern("[]=");
+    i_aref = rb_intern("[]");
     i_leftshift = rb_intern("<<");
 #ifdef HAVE_RUBY_ENCODING_H
     CEncoding_UTF_8 = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-8"));
