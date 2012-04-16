@@ -2912,7 +2912,7 @@ else
     AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, ${RUBY_SITE_LIB_PATH} !<verconf>!)
 fi
 if test "x$VENDOR_DIR" = xno; then
-    AC_DEFINE(NO_RUBY_VENDOR_LIB !<verconf>!)
+    AC_DEFINE(NO_RUBY_VENDOR_LIB, [] !<verconf>!)
 else
     AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, ${RUBY_VENDOR_LIB_PATH} !<verconf>!)
 fi
