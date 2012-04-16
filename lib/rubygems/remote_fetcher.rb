@@ -174,7 +174,7 @@ class Gem::RemoteFetcher
 
       begin
         FileUtils.cp source_path, local_gem_path unless
-          File.expand_path(source_path) == File.expand_path(local_gem_path)
+          File.identical?(source_path, local_gem_path)
       rescue Errno::EACCES
         local_gem_path = source_uri.to_s
       end
