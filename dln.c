@@ -1214,7 +1214,7 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
     while (desc->Name) {
 	PIMAGE_THUNK_DATA pint = (PIMAGE_THUNK_DATA)((char *)ext + desc->Characteristics);
 	PIMAGE_THUNK_DATA piat = (PIMAGE_THUNK_DATA)((char *)ext + desc->FirstThunk);
-	while (piat->u1.Function) {
+	for (; piat->u1.Function; piat++, pint++) {
 	    static const char prefix[] = "rb_";
 	    PIMAGE_IMPORT_BY_NAME pii;
 	    const char *name;
@@ -1226,8 +1226,6 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 		FARPROC addr = GetProcAddress(mine, name);
 		if (addr) return (FARPROC)piat->u1.Function == addr;
 	    }
-	    piat++;
-	    pint++;
 	}
 	desc++;
     }
