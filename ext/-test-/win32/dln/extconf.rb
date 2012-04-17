@@ -1,5 +1,7 @@
 if /mswin|mingw/ =~ RUBY_PLATFORM
   $objs = ["dlntest.o"]
+  $cleanfiles << "$(topdir)/dlntest.dll"
+  $cleanfiles.concat(config_string('cleanobjs') {|t| t.gsub(/\$\*/, 'dlntest')}.split)
 
   create_makefile("-test-/win32/dln")
   m = File.read("Makefile")
