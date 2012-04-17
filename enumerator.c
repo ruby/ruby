@@ -1281,14 +1281,25 @@ lazy_init_block(VALUE val, VALUE m, int argc, VALUE *argv)
 }
 
 static VALUE
-lazy_generator_init(VALUE obj, VALUE procs)
+lazy_generator_init(VALUE old_generator, VALUE procs)
 {
     VALUE generator;
+    VALUE obj;
     struct generator *gen_ptr;
+    struct generator *old_gen_ptr;
+
+    old_gen_ptr = generator_ptr(old_generator);
+    if (old_gen_ptr->obj) {
+        obj = old_gen_ptr->obj;
+    } else {
+        obj = old_generator;
+    }
 
     generator = generator_allocate(rb_cGenerator);
+
     rb_block_call(generator, id_initialize, 0, 0, lazy_init_block,
 		  rb_ary_new3(2, obj, procs));
+
     gen_ptr = generator_ptr(generator);
     gen_ptr->obj = obj;
 
@@ -1330,7 +1341,6 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
     VALUE generator;
     VALUE procs;
     struct enumerator *ptr;
-    struct generator *gen_ptr;
     int offset;
 
     if (argc < 1) {
@@ -1353,8 +1363,6 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
     rb_block_call(generator, id_initialize, 0, 0,
 		  (rb_block_given_p() ? lazy_init_block_i : lazy_init_block),
                   rb_ary_new3(2, obj, procs));
-    gen_ptr = generator_ptr(generator);
-    gen_ptr->obj = obj;
     enumerator_init(self, generator, meth, argc - offset, argv + offset);
     ptr = enumerator_ptr(self);
     ptr->procs = procs;
@@ -1426,8 +1434,6 @@ lazy_copy(VALUE obj)
 {
     struct enumerator *e;
     struct enumerator *new_e;
-    struct generator *g;
-    struct generator *new_g;
     VALUE new_obj;
     VALUE new_generator;
     VALUE new_procs;
@@ -1435,14 +1441,11 @@ lazy_copy(VALUE obj)
     e = enumerator_ptr(obj);
     new_obj = enumerator_init_copy(enumerator_allocate(rb_cLazy), obj);
     new_e = enumerator_ptr(new_obj);
-    g = generator_ptr(e->obj);
     new_procs = rb_ary_new4(RARRAY_LEN(e->procs), RARRAY_PTR(e->procs));
 
-    new_generator = lazy_generator_init(g->obj, new_procs);
-    new_g = generator_ptr(new_generator);
-    new_g->obj = g->obj;
-    new_e->procs = new_procs;
+    new_generator = lazy_generator_init(e->obj, new_procs);
     new_e->obj = new_generator;
+    new_e->procs = new_procs;
 
     return new_obj;
 }
