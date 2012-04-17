@@ -1093,25 +1093,22 @@ return_fiber(void)
 {
     rb_fiber_t *fib;
     VALUE curr = rb_fiber_current();
+    VALUE prev;
     GetFiberPtr(curr, fib);
 
-    if (fib->prev == Qnil) {
-	rb_thread_t *th = GET_THREAD();
+    prev = fib->prev;
+    if (NIL_P(prev)) {
+	const VALUE root_fiber = GET_THREAD()->root_fiber;
 
-	if (th->root_fiber != curr) {
-	    return th->root_fiber;
-	}
-	else {
+	if (root_fiber == curr) {
 	    rb_raise(rb_eFiberError, "can't yield from root fiber");
 	}
+	return root_fiber;
     }
     else {
-	VALUE prev = fib->prev;
 	fib->prev = Qnil;
 	return prev;
     }
-
-    UNREACHABLE;
 }
 
 VALUE rb_fiber_transfer(VALUE fib, int argc, VALUE *argv);
