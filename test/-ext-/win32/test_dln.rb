@@ -10,4 +10,4 @@ module Bug
       end
     end
   end
-end
+end if /mswin|mingw/ =~ RUBY_PLATFORM
