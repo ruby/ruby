@@ -57,7 +57,7 @@ class TestGemFormat < Gem::Package::TarTestCase
 
   def test_class_from_file_by_path_nonexistent
     assert_raises Gem::Exception do
-      Gem::Format.from_file_by_path '/a/path/that/is/nonexistent'
+      Gem::Format.from_file_by_path '/nonexistent'
     end
   end
 

@@ -238,12 +238,6 @@ class Gem::Version
     initialize array[0]
   end
 
-  def yaml_initialize(tag, map)
-    @version = map['version']
-    @segments = nil
-    @hash = nil
-  end
-
   ##
   # A version is considered a prerelease if it contains a letter.
 

@@ -255,12 +255,8 @@ class Gem::SpecFetcher
     loaded     = false
 
     if File.exist? local_file then
-      begin
-        spec_dump =
-          @fetcher.fetch_path(spec_path, File.mtime(local_file))
-      rescue Gem::RemoteFetcher::FetchError => e
-        alert_warning "Error fetching data: #{e.message}"
-      end
+      spec_dump =
+        @fetcher.fetch_path(spec_path, File.mtime(local_file)) rescue nil
 
       loaded = true if spec_dump
 

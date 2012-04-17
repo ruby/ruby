@@ -7,9 +7,7 @@
 
 module Gem
   QUICKLOADER_SUCKAGE = RUBY_VERSION =~ /^1\.9\.1/
-
-  # Only MRI 1.9.2 has the custom prelude.
-  GEM_PRELUDE_SUCKAGE = RUBY_VERSION =~ /^1\.9\.2/ && RUBY_ENGINE == "ruby"
+  GEM_PRELUDE_SUCKAGE = RUBY_VERSION =~ /^1\.9\.2/
 end
 
 if Gem::GEM_PRELUDE_SUCKAGE and defined?(Gem::QuickLoader) then
@@ -120,7 +118,7 @@ require "rubygems/deprecate"
 # -The RubyGems Team
 
 module Gem
-  VERSION = '1.8.21'
+  VERSION = '1.8.11'
 
   ##
   # Raised when RubyGems is unable to load or activate a gem.  Contains the
@@ -258,7 +256,7 @@ module Gem
 
     Gem.path.each do |gemdir|
       each_load_path all_partials(gemdir) do |load_path|
-        result << load_path
+        result << gemdir.add(load_path).expand_path
       end
     end
 
@@ -444,10 +442,10 @@ module Gem
   # problem, then we will silently continue.
 
   def self.ensure_gem_subdirectories dir = Gem.dir
-    old_umask = File.umask
-    File.umask old_umask | 002
-
     require 'fileutils'
+
+    old_umask = File.umask
+    File.umask old_umask | 022
 
     %w[cache doc gems specifications].each do |name|
       subdir = File.join dir, name
@@ -641,54 +639,35 @@ module Gem
     index
   end
 
-  @yaml_loaded = false
-
   ##
   # Loads YAML, preferring Psych
 
   def self.load_yaml
-    return if @yaml_loaded
+    begin
+      gem 'psych', '~> 1.2', '>= 1.2.1' unless ENV['TEST_SYCK']
+    rescue Gem::LoadError
+      # It's OK if the user does not have the psych gem installed.  We will
+      # attempt to require the stdlib version
+    end
 
-    test_syck = ENV['TEST_SYCK']
+    begin
+      # Try requiring the gem version *or* stdlib version of psych.
+      require 'psych' unless ENV['TEST_SYCK']
+    rescue ::LoadError
+    ensure
+      require 'yaml'
+    end
 
-    unless test_syck
-      begin
-        gem 'psych', '~> 1.2', '>= 1.2.1'
-      rescue Gem::LoadError
-        # It's OK if the user does not have the psych gem installed.  We will
-        # attempt to require the stdlib version
-      end
-
-      begin
-        # Try requiring the gem version *or* stdlib version of psych.
-        require 'psych'
-      rescue ::LoadError
-        # If we can't load psych, thats fine, go on.
-      else
-        # If 'yaml' has already been required, then we have to
-        # be sure to switch it over to the newly loaded psych.
-        if defined?(YAML::ENGINE) && YAML::ENGINE.yamler != "psych"
-          YAML::ENGINE.yamler = "psych"
+    # Hack to handle syck's DefaultKey bug with psych.
+    # See the note at the top of lib/rubygems/requirement.rb for
+    # why we end up defining DefaultKey more than once.
+    if !defined? YAML::Syck
+      YAML.module_eval do
+          const_set 'Syck', Module.new {
+            const_set 'DefaultKey', Class.new
+          }
         end
-
-        require 'rubygems/psych_additions'
-        require 'rubygems/psych_tree'
-      end
     end
-
-    require 'yaml'
-
-    # If we're supposed to be using syck, then we may have to force
-    # activate it via the YAML::ENGINE API.
-    if test_syck and defined?(YAML::ENGINE)
-      YAML::ENGINE.yamler = "syck" unless YAML::ENGINE.syck?
-    end
-
-    # Now that we're sure some kind of yaml library is loaded, pull
-    # in our hack to deal with Syck's DefaultKey ugliness.
-    require 'rubygems/syck_hack'
-
-    @yaml_loaded = true
   end
 
   ##
@@ -1008,8 +987,9 @@ module Gem
 
   def self.loaded_path? path
     # TODO: ruby needs a feature to let us query what's loaded in 1.8 and 1.9
-    re = /(^|\/)#{Regexp.escape path}#{Regexp.union(*Gem.suffixes)}$/
-    $LOADED_FEATURES.any? { |s| s =~ re }
+    $LOADED_FEATURES.find { |s|
+      s =~ /(^|\/)#{Regexp.escape path}#{Regexp.union(*Gem.suffixes)}$/
+    }
   end
 
   ##

@@ -44,13 +44,6 @@ module Gem
   end
 
   ##
-  # Paths where RubyGems' .rb files and bin files are installed
-
-  def self.default_rubygems_dirs
-    nil # default to standard layout
-  end
-
-  ##
   # Path for gems in the user's home directory
 
   def self.user_dir

@@ -43,6 +43,7 @@ class TestGemSecurity < Gem::TestCase
       :key_size  => 512,
       :save_cert => false,
       :save_key  => false,
+      :trust_dir => File.join(Gem.user_home, '.gem', 'trust'),
     }
 
     result = Gem::Security.build_self_signed_cert email, opt
