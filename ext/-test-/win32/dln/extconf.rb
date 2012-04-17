@@ -1,8 +1,7 @@
 if /mswin|mingw/ =~ RUBY_PLATFORM
   $objs = ["dlntest.o"]
 
-  target_prefix = "-test-/win32/"
-  create_makefile(target_prefix+"dln")
+  create_makefile("-test-/win32/dln")
   m = File.read("Makefile")
   m.sub!(/^OBJS =.*/) {$&+" dlntest.#{$LIBEXT}"}
   open("Makefile", "wb") do |mf|
