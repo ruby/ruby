@@ -668,6 +668,22 @@ class TestTime < Test::Unit::TestCase
 
     bug4457 = '[ruby-dev:43285]'
     assert_raise(Errno::ERANGE, bug4457) {Time.now.strftime('%8192z')}
+
+    bug4458 = '[ruby-dev:43287]'
+    t = T2000.getlocal("+09:00")
+    assert_equal("      +900", t.strftime("%_10z"), bug4458)
+    assert_equal("+000000900", t.strftime("%10z"), bug4458)
+    assert_equal("     +9:00", t.strftime("%_:10z"), bug4458)
+    assert_equal("+000009:00", t.strftime("%:10z"), bug4458)
+    assert_equal("  +9:00:00", t.strftime("%_::10z"), bug4458)
+    assert_equal("+009:00:00", t.strftime("%::10z"), bug4458)
+    t = T2000.getlocal("-05:00")
+    assert_equal("      -500", t.strftime("%_10z"), bug4458)
+    assert_equal("-000000500", t.strftime("%10z"), bug4458)
+    assert_equal("     -5:00", t.strftime("%_:10z"), bug4458)
+    assert_equal("-000005:00", t.strftime("%:10z"), bug4458)
+    assert_equal("  -5:00:00", t.strftime("%_::10z"), bug4458)
+    assert_equal("-005:00:00", t.strftime("%::10z"), bug4458)
   end
 
   def test_delegate

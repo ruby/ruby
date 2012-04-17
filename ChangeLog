@@ -1,3 +1,8 @@
+Tue Apr 17 22:18:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (rb_strftime_with_timespec): fix padding of time zone
+	  offset.  [ruby-dev:43287][Bug #4458]
+
 Tue Apr 17 13:11:14 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (rb_w32_check_imported): skip ordinal entries.  based on a

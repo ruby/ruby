@@ -189,6 +189,9 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 	char padding;
 	enum {LEFT, CHCASE, LOWER, UPPER, LOCALE_O, LOCALE_E};
 #define BIT_OF(n) (1U<<(n))
+#ifdef MAILHEADER_EXT
+	int sign;
+#endif
 
 	/* various tables, useful in North America */
 	static const char days_l[][10] = {
@@ -485,11 +488,12 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 			}
 			if (off < 0) {
 				off = -off;
-				*s++ = '-';
+				sign = -1;
 			} else {
-				*s++ = '+';
+				sign = +1;
 			}
-			i = snprintf(s, endp - s, (padding == ' ' ? "%*ld" : "%.*ld"), precision, off / 3600);
+			i = snprintf(s, endp - s, (padding == ' ' ? "%+*ld" : "%+.*ld"),
+				     precision + 1, sign * (off / 3600));
 			if (i < 0) goto err;
 			s += i;
                         off = off % 3600;
