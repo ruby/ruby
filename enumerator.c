@@ -1225,24 +1225,19 @@ static VALUE
 lazy_init_iterator(VALUE val, VALUE m, int argc, VALUE *argv)
 {
     VALUE result;
-    VALUE yielder = RARRAY_PTR(m)[0];
-    VALUE procs = RARRAY_PTR(m)[1];
-    VALUE move_next = Qtrue;
 
     if (argc == 1) {
 	VALUE args[2];
-	args[0] = yielder;
-        result = args[1] = process_element(procs, yielder, val, &move_next);
-        if (RTEST(move_next)) {
-            result = rb_yield_values2(2, args);
-        }
+        args[0] = m;
+        args[1] = val;
+        result = rb_yield_values2(2, args);
     }
     else {
 	VALUE args;
 	int len = rb_long2int((long)argc + 1);
 
 	args = rb_ary_tmp_new(len);
-	rb_ary_push(args, yielder);
+	rb_ary_push(args, m);
 	if (argc > 0) {
 	    rb_ary_cat(args, argv, argc);
 	}
@@ -1273,7 +1268,7 @@ static VALUE
 lazy_init_block_i(VALUE val, VALUE m, int argc, VALUE *argv)
 {
     rb_block_call(rb_ary_entry(m, 0), id_each, argc-1, argv+1,
-            lazy_init_iterator, rb_ary_new3(2, val, rb_ary_entry(m, 1)));
+            lazy_init_iterator, val);
     return Qnil;
 }
 
