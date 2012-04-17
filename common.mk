@@ -859,8 +859,8 @@ $(srcdir)/revision.h:
 	@exit > $@
 
 $(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
-	@-$(BASERUBY) $(srcdir)/tool/file2lastrev.rb --revision.h "$(srcdir)" > "$(srcdir)/revision.tmp"
-	@$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" "$(srcdir)/revision.tmp"
+	@-$(BASERUBY) $(srcdir)/tool/file2lastrev.rb --revision.h "$(srcdir)" > revision.tmp
+	@$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" revision.tmp
 
 $(srcdir)/ext/ripper/ripper.c: parse.y
 	$(ECHO) generating $@
