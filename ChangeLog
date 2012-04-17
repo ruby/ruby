@@ -1,3 +1,10 @@
+Tue Apr 17 21:35:47 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/baseparser.rb, test/rexml/test_namespace.rb:
+	  fix the default xml namespace URI validation.
+	  [ruby-dev:45169] [Bug #5956]
+	  Reported by Miho Hiramatsu. Thanks!!!
+
 Mon Apr 17 14:27:22 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (rb_w32_check_imported): skip ordinal entries.  based on a

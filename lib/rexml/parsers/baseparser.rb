@@ -376,7 +376,7 @@ module REXML
                 attrs.each { |a,b,c,d,e|
                   if b == "xmlns"
                     if c == "xml"
-                      if d != "http://www.w3.org/XML/1998/namespace"
+                      if e != "http://www.w3.org/XML/1998/namespace"
                         msg = "The 'xml' prefix must not be bound to any other namespace "+
                         "(http://www.w3.org/TR/REC-xml-names/#ns-decl)"
                         raise REXML::ParseException.new( msg, @source, self )
