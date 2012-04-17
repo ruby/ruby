@@ -1,4 +1,4 @@
-if /mswin|mingw/ =~ RUBY_PLATFORM
+if $mingw or $mswin
   $objs = ["dlntest.o"]
   $cleanfiles << "$(topdir)/dlntest.dll"
   config_string('cleanobjs') {|t| $cleanfiles.concat(t.gsub(/\$\*/, 'dlntest').split)}
@@ -9,10 +9,11 @@ if /mswin|mingw/ =~ RUBY_PLATFORM
   open("Makefile", "wb") do |mf|
     mf.puts m, "\n"
     sodir = $extout ? "$(RUBYARCHDIR)/" : ''
-    mf.print "#{sodir}$(DLLIB): dlntest.#{$LIBEXT}"
+    mf.print "#{sodir}$(DLLIB): $(topdir)/dlntest.dll"
     mf.puts
-    mf.puts "dlntest.#{$LIBEXT}: $(topdir)/dlntest.dll"
-    mf.puts
+    if $mingw
+      mf.puts "$(topdir)/dlntest.dll: DEFFILE := $(srcdir)/libdlntest.def"
+    end
     mf.puts depend_rules("$(topdir)/dlntest.dll: libdlntest.o libdlntest.def")
     mf.puts "\t$(ECHO) linking shared-object $(@F)\n"
     mf.print "\t-$(Q)$(RM) $@\n"
