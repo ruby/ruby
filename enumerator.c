@@ -1196,29 +1196,35 @@ enum proc_entry_type {
 };
 
 static VALUE
-process_element(VALUE procs_array, VALUE yielder, VALUE result, VALUE *move_next)
+process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
 {
+    VALUE result = argv[0];
     struct proc_entry *entry;
     VALUE *procs = RARRAY_PTR(procs_array);
+    VALUE move_next = Qtrue;
     long i = 0;
 
-    *move_next = Qtrue;
     for (i = 0; i < RARRAY_LEN(procs_array); i++) {
         Data_Get_Struct(procs[i], struct proc_entry, entry);
-        if (RTEST(*move_next)) {
+        if (RTEST(move_next)) {
             switch ((enum proc_entry_type) entry->type) {
                 case T_PROC_MAP:
                     result = rb_funcall(entry->proc, rb_intern("call"),
                             1, result);
                     break;
                 case T_PROC_SELECT:
-                    *move_next = rb_funcall(entry->proc, rb_intern("call"),
+                    move_next = rb_funcall(entry->proc, rb_intern("call"),
                             1, result);
                     break;
             }
         }
     }
 
+    if (RTEST(move_next)) {
+        argv[0] = result;
+        rb_funcall2(yielder, id_yield, argc, argv);
+        if (result == Qundef) rb_iter_break();
+    }
     return result;
 }
 static VALUE
@@ -1251,16 +1257,10 @@ lazy_init_iterator(VALUE val, VALUE m, int argc, VALUE *argv)
 static VALUE
 lazy_init_yielder(VALUE val, VALUE m, int argc, VALUE *argv)
 {
-    VALUE result;
     VALUE yielder = RARRAY_PTR(m)[0];
     VALUE procs = RARRAY_PTR(m)[1];
-    VALUE move_next = Qtrue;
 
-    argv[0] = process_element(procs, yielder, argv[0], &move_next);
-    if (RTEST(move_next)) {
-        result = rb_funcall2(yielder, id_yield, argc, argv);
-        if (result == Qundef) rb_iter_break();
-    }
+    process_element(procs, yielder, argc, argv);
     return Qnil;
 }
 
