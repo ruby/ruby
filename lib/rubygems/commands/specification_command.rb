@@ -62,7 +62,25 @@ FIELD         name of gemspec field to show
             "Please specify a gem name or file on the command line"
     end
 
-    dep = Gem::Dependency.new gem, options[:version]
+    case options[:version]
+    when String
+      req = Gem::Requirement.parse options[:version]
+    when Gem::Requirement
+      req = options[:version]
+    else
+      raise Gem::CommandLineError, "Unsupported version type: #{options[:version]}"
+    end
+
+    if !req.none? and options[:all]
+      alert_error "Specify --all or -v, not both"
+      terminate_interaction 1
+    end
+
+    if options[:all]
+      dep = Gem::Dependency.new gem
+    else
+      dep = Gem::Dependency.new gem, options[:version]
+    end
 
     field = get_one_optional_argument
 
@@ -80,7 +98,11 @@ FIELD         name of gemspec field to show
     end
 
     if remote? then
-      found = Gem::SpecFetcher.fetcher.fetch dep
+      found = Gem::SpecFetcher.fetcher.fetch dep, true
+
+      if dep.prerelease? or options[:prerelease]
+        found += Gem::SpecFetcher.fetcher.fetch dep, false, true, true
+      end
 
       specs.push(*found.map { |spec,| spec })
     end

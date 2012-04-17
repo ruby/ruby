@@ -262,18 +262,19 @@ class Gem::Specification
 
   def self._all # :nodoc:
     unless defined?(@@all) && @@all then
-      specs = []
+      specs = {}
 
-      self.dirs.reverse_each { |dir|
+      self.dirs.each { |dir|
         Dir[File.join(dir, "*.gemspec")].each { |path|
           spec = Gem::Specification.load path.untaint
           # #load returns nil if the spec is bad, so we just ignore
           # it at this stage
-          specs << spec if spec
+          specs[spec.full_name] ||= spec if spec
         }
       }
 
-      @@all = specs
+      @@all = specs.values
+
       _resort!
     end
     @@all
@@ -484,6 +485,8 @@ class Gem::Specification
   # +input+ can be anything that YAML.load() accepts: String or IO.
 
   def self.from_yaml(input)
+    Gem.load_yaml
+
     input = normalize_yaml_input input
     spec = YAML.load input
 
@@ -535,7 +538,7 @@ class Gem::Specification
     file = file.dup.untaint
 
     code = if defined? Encoding
-             File.read file, :encoding => "UTF-8"
+             File.read file, :mode => 'r:UTF-8:-'
            else
              File.read file
            end
@@ -663,11 +666,16 @@ class Gem::Specification
       raise TypeError, "invalid Gem::Specification format #{array.inspect}"
     end
 
+    # Cleanup any YAML::PrivateType. They only show up for an old bug
+    # where nil => null, so just convert them to nil based on the type.
+
+    array.map! { |e| e.kind_of?(YAML::PrivateType) ? nil : e }
+
     spec.instance_variable_set :@rubygems_version,          array[0]
     # spec version
     spec.instance_variable_set :@name,                      array[2]
     spec.instance_variable_set :@version,                   array[3]
-    spec.instance_variable_set :@date,                      array[4]
+    spec.date =                                             array[4]
     spec.instance_variable_set :@summary,                   array[5]
     spec.instance_variable_set :@required_ruby_version,     array[6]
     spec.instance_variable_set :@required_rubygems_version, array[7]
@@ -756,8 +764,16 @@ class Gem::Specification
 
   def activate_dependencies
     self.runtime_dependencies.each do |spec_dep|
-      # TODO: check for conflicts! not just name!
-      next if Gem.loaded_specs.include? spec_dep.name
+      if loaded = Gem.loaded_specs[spec_dep.name]
+        next if spec_dep.matches_spec? loaded
+
+        msg = "can't satisfy '#{spec_dep}', already activated '#{loaded.full_name}'"
+        e = Gem::LoadError.new msg
+        e.name = spec_dep.name
+
+        raise e
+      end
+
       specs = spec_dep.to_specs
 
       if specs.size == 1 then
@@ -985,6 +1001,12 @@ class Gem::Specification
     @date = case date
             when String then
               if /\A(\d{4})-(\d{2})-(\d{2})\Z/ =~ date then
+                Time.utc($1.to_i, $2.to_i, $3.to_i)
+
+              # Workaround for where the date format output from psych isn't
+              # parsed as a Time object by syck and thus comes through as a
+              # string.
+              elsif /\A(\d{4})-(\d{2})-(\d{2}) \d{2}:\d{2}:\d{2}\.\d+?Z\z/ =~ date then
                 Time.utc($1.to_i, $2.to_i, $3.to_i)
               else
                 raise(Gem::InvalidSpecificationException,
@@ -1362,7 +1384,7 @@ class Gem::Specification
         val = other_spec.instance_variable_get(name)
         if val then
           instance_variable_set name, val.dup
-        else
+        elsif Gem.configuration.really_verbose
           warn "WARNING: #{full_name} has an invalid nil value for #{name}"
         end
       rescue TypeError
@@ -1912,7 +1934,22 @@ class Gem::Specification
 
   def to_yaml(opts = {}) # :nodoc:
     if YAML.const_defined?(:ENGINE) && !YAML::ENGINE.syck? then
-      super.gsub(/ !!null \n/, " \n")
+      # Because the user can switch the YAML engine behind our
+      # back, we have to check again here to make sure that our
+      # psych code was properly loaded, and load it if not.
+      unless Gem.const_defined?(:NoAliasYAMLTree)
+        require 'rubygems/psych_tree'
+      end
+
+      builder = Gem::NoAliasYAMLTree.new({})
+      builder << self
+      ast = builder.tree
+
+      io = StringIO.new
+
+      Psych::Visitors::Emitter.new(io).accept(ast)
+
+      io.string.gsub(/ !!null \n/, " \n")
     else
       YAML.quick_emit object_id, opts do |out|
         out.map taguri, to_yaml_style do |map|
@@ -2097,7 +2134,13 @@ class Gem::Specification
   # FIX: have this handle the platform/new_platform/original_platform bullshit
   def yaml_initialize(tag, vals) # :nodoc:
     vals.each do |ivar, val|
-      instance_variable_set "@#{ivar}", val
+      case ivar
+      when "date"
+        # Force Date to go through the extra coerce logic in date=
+        self.date = val.untaint
+      else
+        instance_variable_set "@#{ivar}", val.untaint
+      end
     end
 
     @original_platform = @platform # for backwards compatibility

@@ -210,21 +210,25 @@ class Gem::Package::TarInput
   # the unpacking speed) we threw our hands in the air and declared that
   # this method would use the String IO approach on all platforms at all
   # times.  And that's the way it is.
-
+  #
+  # Revisited.  Here's the beginning of the long story.
+  # http://osdir.com/ml/lang.ruby.gems.devel/2007-06/msg00045.html
+  #
+  # StringIO wraping has never worked as a workaround by definition.  Skipping
+  # initial 10 bytes and passing -MAX_WBITS to Zlib::Inflate luckily works as
+  # gzip reader, but it only works if the GZip header is 10 bytes long (see
+  # below) and it does not check inflated stream consistency (CRC value in the
+  # Gzip trailer.)
+  #
+  #   RubyGems generated Gzip Header: 10 bytes
+  #     magic(2) + method(1) + flag(1) + mtime(4) + exflag(1) + os(1) +
+  #     orig_name(0) + comment(0)
+  #
+  # Ideally, it must return a GZipReader without meaningless buffering.  We
+  # have lots of CRuby committers around so let's fix windows build when we
+  # received an error.
   def zipped_stream(entry)
-    if defined? Rubinius or defined? Maglev then
-      # these implementations have working Zlib
-      zis = Zlib::GzipReader.new entry
-      dis = zis.read
-      is = StringIO.new(dis)
-    else
-      # This is Jamis Buck's Zlib workaround for some unknown issue
-      entry.read(10) # skip the gzip header
-      zis = Zlib::Inflate.new(-Zlib::MAX_WBITS)
-      is = StringIO.new(zis.inflate(entry.read))
-    end
-  ensure
-    zis.finish if zis
+    Zlib::GzipReader.new entry
   end
 
 end

@@ -366,7 +366,7 @@ class Gem::Installer
 
     if /\A#!/ =~ first_line then
       # Preserve extra words on shebang line, like "-w".  Thanks RPA.
-      shebang = first_line.sub(/\A\#!.*?ruby\S*(?=(\s+\S+))/, "#!#{Gem.ruby}")
+      shebang = first_line.sub(/\A\#!.*?ruby\S*((\s+\S+)+)/, "#!#{Gem.ruby}")
       opts = $1
       shebang.strip! # Avoid nasty ^M issues.
     end
@@ -466,9 +466,13 @@ require 'rubygems'
 
 version = "#{Gem::Requirement.default}"
 
-if ARGV.first =~ /^_(.*)_$/ and Gem::Version.correct? $1 then
-  version = $1
-  ARGV.shift
+if ARGV.first
+  str = ARGV.first
+  str = str.dup.force_encoding("BINARY") if str.respond_to? :force_encoding
+  if str =~ /\\A_(.*)_\\z/
+    version = $1
+    ARGV.shift
+  end
 end
 
 gem '#{spec.name}', version

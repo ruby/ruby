@@ -353,6 +353,29 @@ class TestGem < Gem::TestCase
 
   ##
   # [A] depends on
+  #     [C]  = 1.0 depends on
+  #         [B] = 2.0
+  #     [B] ~> 1.0 (satisfied by 1.0)
+
+  def test_self_activate_checks_dependencies
+    a, _  = util_spec 'a', '1.0'
+            a.add_dependency 'c', '= 1.0'
+            a.add_dependency 'b', '~> 1.0'
+
+            util_spec 'b', '1.0'
+            util_spec 'b', '2.0'
+    c,  _ = util_spec 'c', '1.0', 'b' => '= 2.0'
+
+    e = assert_raises Gem::LoadError do
+      assert_activate nil, a, c, "b"
+    end
+
+    expected = "can't satisfy 'b (~> 1.0)', already activated 'b-2.0'"
+    assert_equal expected, e.message
+  end
+
+  ##
+  # [A] depends on
   #     [B] ~> 1.0 (satisfied by 1.0)
   #     [C]  = 1.0 depends on
   #         [B] = 2.0
@@ -606,8 +629,8 @@ class TestGem < Gem::TestCase
     File.umask 0
     Gem.ensure_gem_subdirectories @gemhome
 
-    assert_equal 0, File::Stat.new(@gemhome).mode & 022
-    assert_equal 0, File::Stat.new(File.join(@gemhome, "cache")).mode & 022
+    assert_equal 0, File::Stat.new(@gemhome).mode & 002
+    assert_equal 0, File::Stat.new(File.join(@gemhome, "cache")).mode & 002
   ensure
     File.umask old_umask
   end unless win_platform?
@@ -1097,6 +1120,86 @@ class TestGem < Gem::TestCase
       expected = [File.join(@gemhome, "gems", "a-4", "lib")]
       assert_equal expected, Gem.latest_load_paths
     end
+  end
+
+  def test_gem_path_ordering
+    refute_equal Gem.dir, Gem.user_dir
+
+    write_file File.join(@tempdir, 'lib', "g.rb") { |fp| fp.puts "" }
+    write_file File.join(@tempdir, 'lib', 'm.rb') { |fp| fp.puts "" }
+
+    g = new_spec 'g', '1', nil, "lib/g.rb"
+    m = new_spec 'm', '1', nil, "lib/m.rb"
+
+    install_gem g, :install_dir => Gem.dir
+    m0 = install_gem m, :install_dir => Gem.dir
+    m1 = install_gem m, :install_dir => Gem.user_dir
+
+    assert_equal m0.gem_dir, File.join(Gem.dir, "gems", "m-1")
+    assert_equal m1.gem_dir, File.join(Gem.user_dir, "gems", "m-1")
+
+    tests = [
+      [:dir0, [ Gem.dir, Gem.user_dir], m0],
+      [:dir1, [ Gem.user_dir, Gem.dir], m1]
+    ]
+
+    tests.each do |_name, _paths, expected|
+      Gem.paths = { 'GEM_HOME' => _paths.first, 'GEM_PATH' => _paths }
+      Gem::Specification.reset
+      Gem.searcher = nil
+
+      assert_equal Gem::Dependency.new('m','1').to_specs,
+                   Gem::Dependency.new('m','1').to_specs.sort
+
+      assert_equal \
+        [expected.gem_dir],
+        Gem::Dependency.new('m','1').to_specs.map(&:gem_dir).sort,
+        "Wrong specs for #{_name}"
+
+      spec = Gem::Dependency.new('m','1').to_spec
+
+      assert_equal \
+        File.join(_paths.first, "gems", "m-1"),
+        spec.gem_dir,
+        "Wrong spec before require for #{_name}"
+      refute spec.activated?, "dependency already activated for #{_name}"
+
+      gem "m"
+
+      spec = Gem::Dependency.new('m','1').to_spec
+      assert spec.activated?, "dependency not activated for #{_name}"
+
+      assert_equal \
+        File.join(_paths.first, "gems", "m-1"),
+        spec.gem_dir,
+        "Wrong spec after require for #{_name}"
+
+      spec.instance_variable_set :@activated, false
+      Gem.loaded_specs.delete(spec.name)
+      $:.delete(File.join(spec.gem_dir, "lib"))
+    end
+  end
+
+  def test_gem_path_ordering_short
+    write_file File.join(@tempdir, 'lib', "g.rb") { |fp| fp.puts "" }
+    write_file File.join(@tempdir, 'lib', 'm.rb') { |fp| fp.puts "" }
+
+    g = new_spec 'g', '1', nil, "lib/g.rb"
+    m = new_spec 'm', '1', nil, "lib/m.rb"
+
+    install_gem g, :install_dir => Gem.dir
+    install_gem m, :install_dir => Gem.dir
+    install_gem m, :install_dir => Gem.user_dir
+
+    Gem.paths = {
+      'GEM_HOME' => Gem.dir,
+      'GEM_PATH' => [ Gem.dir, Gem.user_dir]
+    }
+
+    assert_equal \
+      File.join(Gem.dir, "gems", "m-1"),
+      Gem::Dependency.new('m','1').to_spec.gem_dir,
+      "Wrong spec selected"
   end
 
   def with_plugin(path)

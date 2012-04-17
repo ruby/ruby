@@ -4,7 +4,11 @@ require 'rubygems/builder'
 class Gem::Commands::BuildCommand < Gem::Command
 
   def initialize
-    super('build', 'Build a gem from a gemspec')
+    super 'build', 'Build a gem from a gemspec'
+
+    add_option '--force', 'skip validation of the spec' do |value, options|
+      options[:force] = true
+    end
   end
 
   def arguments # :nodoc:
@@ -22,7 +26,7 @@ class Gem::Commands::BuildCommand < Gem::Command
       spec = load_gemspec gemspec
 
       if spec then
-        Gem::Builder.new(spec).build
+        Gem::Builder.new(spec).build options[:force]
       else
         alert_error "Error loading gemspec. Aborting."
         terminate_interaction 1

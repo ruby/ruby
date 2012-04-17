@@ -25,6 +25,8 @@
 # +:sources+:: Sets Gem::sources
 # +:verbose+:: See #verbose
 
+require 'rbconfig'
+
 class Gem::ConfigFile
 
   DEFAULT_BACKTRACE = false
@@ -68,7 +70,7 @@ class Gem::ConfigFile
 
         path.strip
       rescue LoadError
-        "/etc"
+        RbConfig::CONFIG["sysconfdir"] || "/etc"
       end
     end
 
