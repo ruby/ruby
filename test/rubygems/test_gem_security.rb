@@ -4,6 +4,16 @@ require 'rubygems/fix_openssl_warnings' if RUBY_VERSION < "1.9"
 
 class TestGemSecurity < Gem::TestCase
 
+  def setup
+    super
+    Gem::Security::OPT[:trust_dir] = File.join(Gem.user_home, '.gem', 'trust')
+  end
+
+  def teardown
+    super
+    Gem::Security::OPT[:trust_dir] = File.join(Gem.user_home, '.gem', 'trust')
+  end
+
   def test_class_build_cert
     name = OpenSSL::X509::Name.parse "CN=nobody/DC=example"
     key = OpenSSL::PKey::RSA.new 512
