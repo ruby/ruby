@@ -218,6 +218,10 @@ class Gem::Version
     @hash ||= segments.hash
   end
 
+  def init_with coder # :nodoc:
+    yaml_initialize coder.tag, coder.map
+  end
+
   def inspect # :nodoc:
     "#<#{self.class} #{version.inspect}>"
   end

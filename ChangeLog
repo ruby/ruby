@@ -1,3 +1,8 @@
+Wed Apr 18 09:58:29 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/version.rb:  Fixed init_with warning by calling into
+	  yaml_initialize (for syck) from psych's init_with
+
 Wed Apr 18 09:03:43 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 1.8.22 plus r33517 and r35337 which
