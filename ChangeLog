@@ -1,3 +1,8 @@
+Wed Apr 18 10:22:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (rb_strftime_with_timespec): add an interim digit for
+	  the timezone offset which is less than an hour.
+
 Wed Apr 18 09:58:29 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/version.rb:  Fixed init_with warning by calling into

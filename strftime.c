@@ -493,9 +493,9 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 				sign = +1;
 			}
 			i = snprintf(s, endp - s, (padding == ' ' ? "%+*ld" : "%+.*ld"),
-				     precision + 1, sign * (off / 3600));
+				     precision + 2, sign * (off / 360 + 1));
 			if (i < 0) goto err;
-			s += i;
+			s += i - 1;
                         off = off % 3600;
                         if (1 <= colons)
                             *s++ = ':';
