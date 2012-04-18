@@ -1,6 +1,10 @@
 #include "ruby/ruby.h"
 #include <winbase.h>
 
+#ifndef INVALID_FILE_ATTRIBUTES
+# define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
+#endif
+
 int
 rb_file_load_ok(const char *path)
 {
