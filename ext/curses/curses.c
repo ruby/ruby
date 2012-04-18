@@ -2439,11 +2439,14 @@ window_keypad(VALUE obj, VALUE val)
 #ifdef HAVE_NODELAY
 /*
  * Document-method: Curses::Window.nodelay
- * call-seq: nodelay(bool)
+ * call-seq:
+ *   window.nodelay = bool
  *
- * Causes Curses::Window.getch to be a non-blocking call.  If no input is ready, getch returns ERR.
+ * When in no-delay mode Curses::Window#getch is a non-blocking call.  If no
+ * input is ready #getch returns ERR.
  *
- * If disabled (+bool+ is +false+), Curses::Window.getch waits until a key is pressed.
+ * When in delay mode (+bool+ is +false+ which is the default),
+ * Curses::Window#getch blocks until a key is pressed.
  *
  */
 static VALUE

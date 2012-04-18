@@ -1,3 +1,10 @@
+Thu Apr 19 08:59:02 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/curses/curses.c (window_nodelay):  Fixed call-seq of nodelay to
+	  include the '='.
+
+	  Improved description window.nodelay=.
+
 Thu Apr 19 08:47:54 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* io.c (io_readpartial):  Document the output buffer parameter is
