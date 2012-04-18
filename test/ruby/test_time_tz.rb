@@ -1,8 +1,9 @@
 require 'test/unit'
 
 class TestTimeTZ < Test::Unit::TestCase
-  def with_tz(tz)
-    if /linux/ =~ RUBY_PLATFORM || ENV["RUBY_FORCE_TIME_TZ_TEST"] == "yes"
+  force_tz_test = /linux/ =~ RUBY_PLATFORM || ENV["RUBY_FORCE_TIME_TZ_TEST"] == "yes"
+  if force_tz_test
+    def with_tz(tz)
       old = ENV["TZ"]
       begin
         ENV["TZ"] = tz
@@ -10,7 +11,9 @@ class TestTimeTZ < Test::Unit::TestCase
       ensure
         ENV["TZ"] = old
       end
-    else
+    end
+  else
+    def with_tz(tz)
       if ENV["TZ"] == tz
         yield
       end
@@ -60,10 +63,12 @@ class TestTimeTZ < Test::Unit::TestCase
   include Util
   extend Util
 
-  def time_to_s(t)
-    if RUBY_VERSION < "1.9"
+  if RUBY_VERSION < "1.9"
+    def time_to_s(t)
       t.strftime("%Y-%m-%d %H:%M:%S ") + format_gmtoff(t.gmtoff)
-    else
+    end
+  else
+    def time_to_s(t)
       t.to_s
     end
   end
