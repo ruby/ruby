@@ -67,8 +67,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_singleton_method
-    prev_stress = GC.stress
-    assert_nothing_raised("[ruby-dev:42832]") do
+    assert_in_out_err(%w[--disable-gems], <<-EOS, [], [], "[ruby-dev:42832]")
       GC.stress = true
       10.times do
         obj = Object.new
@@ -76,9 +75,7 @@ class TestGc < Test::Unit::TestCase
         def obj.bar() raise "obj.foo is called, but this is obj.bar" end
         obj.foo
       end
-    end
-  ensure
-    GC.stress = prev_stress
+    EOS
   end
 
   def test_gc_parameter
