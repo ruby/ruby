@@ -1,3 +1,12 @@
+Wed Apr 18 22:58:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (DOT, DOXYGEN): use AC_CHECK_PROGS instead of
+	  AC_CHECK_PROG which needs the third argument.  [ruby-core:44433]
+	  [Bug #6316]
+
+	* configure.in (PKG_CONFIG): fix condition to skip older version
+	  of pkg-config.  continue in backticks does not affect outside.
+
 Wed Apr 18 13:59:40 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/file.c (INVALID_FILE_ATTRIBUTES): define for old SDK.

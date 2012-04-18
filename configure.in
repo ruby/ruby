@@ -368,11 +368,11 @@ fi
 MAKEDIRS="$MKDIR_P"
 AC_SUBST(MAKEDIRS)
 
-AC_CHECK_PROG(DOT, dot)
-AC_CHECK_PROG(DOXYGEN, doxygen)
+AC_CHECK_PROGS(DOT, dot)
+AC_CHECK_PROGS(DOXYGEN, doxygen)
 
-AC_CHECK_PROG(PKG_CONFIG, pkg-config, [], [], [],
-    [`$as_dir/$ac_word$ac_exec_ext --print-errors --version > /dev/null 2>&1 || continue`])
+AC_CHECK_PROG(PKG_CONFIG, pkg-config, [pkg-config], [], [],
+    [`"$as_dir/$ac_word$ac_exec_ext" --print-errors --version > /dev/null 2>&1 || echo "$as_dir/$ac_word$ac_exec_ext"`])
 
 # checks for UNIX variants that set C preprocessor variables
 AC_USE_SYSTEM_EXTENSIONS
