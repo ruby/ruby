@@ -1210,7 +1210,7 @@ strio_putc(VALUE self, VALUE ch)
 
 /*
  * call-seq:
- *   strio.read([length [, buffer]])    -> string, buffer, or nil
+ *   strio.read([length [, outbuf]])    -> string, outbuf, or nil
  *
  * See IO#read.
  */

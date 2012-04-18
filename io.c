@@ -2281,6 +2281,8 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
  *  It doesn't block if some data available.
  *  If the optional <i>outbuf</i> argument is present,
  *  it must reference a String, which will receive the data.
+ *  The <i>outbuf</i> will contain only the received data after the method call
+ *  even if it is not empty at the beginning.
  *  It raises <code>EOFError</code> on end of file.
  *
  *  readpartial is designed for streams such as pipe, socket, tty, etc.
@@ -2350,6 +2352,8 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
  *
  *  If the optional <i>outbuf</i> argument is present,
  *  it must reference a String, which will receive the data.
+ *  The <i>outbuf</i> will contain only the received data after the method call
+ *  even if it is not empty at the beginning.
  *
  *  read_nonblock just calls the read(2) system call.
  *  It causes all errors the read(2) system call causes: Errno::EWOULDBLOCK, Errno::EINTR, etc.
@@ -2483,7 +2487,7 @@ rb_io_write_nonblock(VALUE io, VALUE str)
 
 /*
  *  call-seq:
- *     ios.read([length [, buffer]])    -> string, buffer, or nil
+ *     ios.read([length [, outbuf]])    -> string, outbuf, or nil
  *
  *  Reads <i>length</i> bytes from the I/O stream.
  *
@@ -2503,8 +2507,10 @@ rb_io_write_nonblock(VALUE io, VALUE str)
  *
  *  If <i>length</i> is zero, it returns <code>""</code>.
  *
- *  If the optional <i>buffer</i> argument is present, it must reference
+ *  If the optional <i>outbuf</i> argument is present, it must reference
  *  a String, which will receive the data.
+ *  The <i>outbuf</i> will contain only the received data after the method call
+ *  even if it is not empty at the beginning.
  *
  *  At end of file, it returns <code>nil</code> or <code>""</code>
  *  depend on <i>length</i>.
@@ -4282,6 +4288,8 @@ rb_io_syswrite(VALUE io, VALUE str)
  *  that read from <em>ios</em> or you may get unpredictable results.
  *  If the optional <i>outbuf</i> argument is present, it must reference
  *  a String, which will receive the data.
+ *  The <i>outbuf</i> will contain only the received data after the method call
+ *  even if it is not empty at the beginning.
  *  Raises <code>SystemCallError</code> on error and
  *  <code>EOFError</code> at end of file.
  *
@@ -10333,7 +10341,7 @@ argf_eof(VALUE argf)
 
 /*
  *  call-seq:
- *     ARGF.read([length [, buffer]])    -> string, buffer, or nil
+ *     ARGF.read([length [, outbuf]])    -> string, outbuf, or nil
  *
  *  Reads _length_ bytes from ARGF. The files named on the command line
  *  are concatenated and treated as a single file by this method, so when
@@ -10350,8 +10358,10 @@ argf_eof(VALUE argf)
  *
  *  If _length_ is zero, it returns _""_.
  *
- *  If the optional _buffer_ argument is present, it must reference a String,
+ *  If the optional _outbuf_ argument is present, it must reference a String,
  *  which will receive the data.
+ *  The <i>outbuf</i> will contain only the received data after the method call
+ *  even if it is not empty at the beginning.
  *
  * For example:
  *
@@ -10437,7 +10447,10 @@ static VALUE argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock);
  *  Reads at most _maxlen_ bytes from the ARGF stream. It blocks only if
  *  +ARGF+ has no data immediately available. If the optional _outbuf_
  *  argument is present, it must reference a String, which will receive the
- *  data. It raises <code>EOFError</code> on end of file.
+ *  data.
+ *  The <i>outbuf</i> will contain only the received data after the method call
+ *  even if it is not empty at the beginning.
+ *  It raises <code>EOFError</code> on end of file.
  *
  *  +readpartial+ is designed for streams such as pipes, sockets, and ttys. It
  *  blocks only when no data is immediately available. This means that it

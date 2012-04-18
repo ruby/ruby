@@ -446,6 +446,16 @@ class TestArgf < Test::Unit::TestCase
     end
   end
 
+  def test_read2_with_not_empty_buffer
+    ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
+      s = "0123456789"
+      ARGF.read(8, s)
+      p s
+    SRC
+      assert_equal("\"1\\n2\\n3\\n4\\n\"\n", f.read)
+    end
+  end
+
   def test_read3
     ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
       nil while ARGF.gets
@@ -463,6 +473,8 @@ class TestArgf < Test::Unit::TestCase
         loop do
           s << ARGF.readpartial(1)
           t = ""; ARGF.readpartial(1, t); s << t
+          # not empty buffer
+          u = "abcdef"; ARGF.readpartial(1, u); s << u
         end
       rescue EOFError
         puts s

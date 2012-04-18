@@ -991,6 +991,16 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_readpartial_with_not_empty_buffer
+    pipe(proc do |w|
+      w.write "foob"
+      w.close
+    end, proc do |r|
+      r.readpartial(5, s = "01234567")
+      assert_equal("foob", s)
+    end)
+  end
+
   def test_readpartial_buffer_error
     with_pipe do |r, w|
       s = ""
@@ -1026,6 +1036,16 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_read_with_not_empty_buffer
+    pipe(proc do |w|
+      w.write "foob"
+      w.close
+    end, proc do |r|
+      r.read(nil, s = "01234567")
+      assert_equal("foob", s)
+    end)
+  end
+
   def test_read_buffer_error
     with_pipe do |r, w|
       s = ""
@@ -1044,6 +1064,17 @@ class TestIO < Test::Unit::TestCase
       w.close
     end, proc do |r|
       assert_equal("1", r.read)
+    end)
+  end
+
+  def test_read_nonblock_with_not_empty_buffer
+    skip "IO#read_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+    pipe(proc do |w|
+      w.write "foob"
+      w.close
+    end, proc do |r|
+      r.read_nonblock(5, s = "01234567")
+      assert_equal("foob", s)
     end)
   end
 
@@ -1415,6 +1446,16 @@ class TestIO < Test::Unit::TestCase
       a.reverse_each {|c| f.ungetc c }
       assert_raise(IOError) { f.sysread(1) }
     end
+  end
+
+  def test_sysread_with_not_empty_buffer
+    pipe(proc do |w|
+      w.write "foob"
+      w.close
+    end, proc do |r|
+      r.sysread( 5, s = "01234567" )
+      assert_equal( "foob", s )
+    end)
   end
 
   def test_flag

@@ -1,3 +1,19 @@
+Thu Apr 19 08:47:54 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* io.c (io_readpartial):  Document the output buffer parameter is
+	  overwritten with the read contents even when non-empty.
+	  Patch by yu nobuoka.  [ruby-trunk - Bug #6285]
+	* io.c (io_read_nonblock):  ditto.
+	* io.c (io_read):  ditto.
+	* io.c (rb_io_sysread):  ditto.
+	* io.c (argf_read):  ditto.
+	* io.c (argf_readpartial):  ditto.
+	* ext/stringio/stringio.c (strio_read):  ditto.
+	* test/ruby/test_argf.rb (class TestArgf):  Add test for existing
+	  behavior of read outbuf.
+	* test/ruby/test_io.rb (class TestIO):  ditto.
+	* test/stringio/test_stringio.rb (class TestStringIO):  ditto.
+
 Wed Apr 18 22:58:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (DOT, DOXYGEN): use AC_CHECK_PROGS instead of
