@@ -51,7 +51,6 @@ y.tab.c
 /configure
 /doc/capi
 /enc.mk
-/enc/trans/*.c
 /encdb.h
 /exts.mk
 /goruby
@@ -97,11 +96,7 @@ y.tab.c
 # /ext/
 /ext/extinit.c
 
-# /ext/dl/
-/ext/dl/*.func
-
 # /ext/dl/callback/
-/ext/dl/callback/*.func
 /ext/dl/callback/callback-*.c
 /ext/dl/callback/callback.c
 
