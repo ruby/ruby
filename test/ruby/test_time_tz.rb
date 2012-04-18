@@ -1,7 +1,16 @@
 require 'test/unit'
 
 class TestTimeTZ < Test::Unit::TestCase
-  force_tz_test = /linux/ =~ RUBY_PLATFORM || ENV["RUBY_FORCE_TIME_TZ_TEST"] == "yes"
+  has_right_tz = true
+  force_tz_test = ENV["RUBY_FORCE_TIME_TZ_TEST"] == "yes"
+  case RUBY_PLATFORM
+  when /linux/
+    force_tz_test = true
+  when /darwin/
+    has_right_tz = false
+    force_tz_test = true
+  end
+
   if force_tz_test
     def with_tz(tz)
       old = ENV["TZ"]
@@ -144,7 +153,7 @@ class TestTimeTZ < Test::Unit::TestCase
     with_tz(tz="Europe/Lisbon") {
       assert_equal("LMT", Time.new(-0x1_0000_0000_0000_0000).zone)
     }
-  end
+  end if has_right_tz
 
   def test_europe_moscow
     with_tz(tz="Europe/Moscow") {
@@ -169,7 +178,7 @@ class TestTimeTZ < Test::Unit::TestCase
       assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2008,12,31,24,0,0])
       assert_time_constructor(tz, "2009-01-01 00:00:00 UTC", :utc, [2009,1,1,0,0,0])
     }
-  end
+  end if has_right_tz
 
   def test_right_america_los_angeles
     with_tz(tz="right/America/Los_Angeles") {
@@ -177,7 +186,7 @@ class TestTimeTZ < Test::Unit::TestCase
       assert_time_constructor(tz, "2008-12-31 15:59:60 -0800", :local, [2008,12,31,15,59,60])
       assert_time_constructor(tz, "2008-12-31 16:00:00 -0800", :local, [2008,12,31,16,0,0])
     }
-  end
+  end if has_right_tz
 
   MON2NUM = {
     "Jan" => 1, "Feb" => 2, "Mar" => 3, "Apr" => 4, "May" => 5, "Jun" => 6,
@@ -191,9 +200,9 @@ class TestTimeTZ < Test::Unit::TestCase
     s.sub(/gen_/) { "gen" + "_#{hint}_".gsub(/[^0-9A-Za-z]+/, '_') }
   end
 
-  def self.gen_zdump_test
+  def self.gen_zdump_test(data)
     sample = []
-    ZDUMP_SAMPLE.each_line {|line|
+    data.each_line {|line|
       next if /\A\#/ =~ line || /\A\s*\z/ =~ line
       /\A(\S+)\s+
        \S+\s+(\S+)\s+(\d+)\s+(\d\d):(\d\d):(\d\d)\s+(\d+)\s+UTC
@@ -279,7 +288,7 @@ class TestTimeTZ < Test::Unit::TestCase
     }
   end
 
-  ZDUMP_SAMPLE = <<'End'
+  gen_zdump_test <<'End'
 America/Lima  Sun Apr  1 03:59:59 1990 UTC = Sat Mar 31 23:59:59 1990 PEST isdst=1 gmtoff=-14400
 America/Lima  Sun Apr  1 04:00:00 1990 UTC = Sat Mar 31 23:00:00 1990 PET isdst=0 gmtoff=-18000
 America/Lima  Sat Jan  1 04:59:59 1994 UTC = Fri Dec 31 23:59:59 1993 PET isdst=0 gmtoff=-18000
@@ -331,6 +340,8 @@ Europe/Moscow  Sat Sep 26 18:59:59 1992 UTC = Sat Sep 26 22:59:59 1992 MSD isdst
 Europe/Moscow  Sat Sep 26 19:00:00 1992 UTC = Sat Sep 26 22:00:00 1992 MSK isdst=0 gmtoff=10800
 Pacific/Kiritimati  Sun Jan  1 09:59:59 1995 UTC = Sat Dec 31 23:59:59 1994 LINT isdst=0 gmtoff=-36000
 Pacific/Kiritimati  Sun Jan  1 10:00:00 1995 UTC = Mon Jan  2 00:00:00 1995 LINT isdst=0 gmtoff=50400
+End
+  gen_zdump_test <<'End' if has_right_tz
 right/America/Los_Angeles  Fri Jun 30 23:59:60 1972 UTC = Fri Jun 30 16:59:60 1972 PDT isdst=1 gmtoff=-25200
 right/America/Los_Angeles  Wed Dec 31 23:59:60 2008 UTC = Wed Dec 31 15:59:60 2008 PST isdst=0 gmtoff=-28800
 #right/Asia/Tokyo  Fri Jun 30 23:59:60 1972 UTC = Sat Jul  1 08:59:60 1972 JST isdst=0 gmtoff=32400
@@ -339,5 +350,4 @@ right/Europe/Paris  Fri Jun 30 23:59:60 1972 UTC = Sat Jul  1 00:59:60 1972 CET 
 right/Europe/Paris  Wed Dec 31 23:59:60 2008 UTC = Thu Jan  1 00:59:60 2009 CET isdst=0 gmtoff=3600
 Europe/Lisbon  Mon Jan  1 00:36:31 1912 UTC = Sun Dec 31 23:59:59 1911 LMT isdst=0 gmtoff=-2192
 End
-  gen_zdump_test
 end
