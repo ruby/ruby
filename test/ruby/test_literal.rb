@@ -188,10 +188,10 @@ class TestRubyLiteral < Test::Unit::TestCase
   end
 
   def test_big_array_and_hash_literal
-    assert_normal_exit %q{x = nil; raise if eval("[#{(1..1_000_000).map{'x'}.join(", ")}]").size != 1_000_000}, "", timeout: 300
-    assert_normal_exit %q{x = nil; raise if eval("[#{(1..1_000_000).to_a.join(", ")}]").size != 1_000_000}, "", timeout: 300
-    assert_normal_exit %q{x = nil; raise if eval("{#{(1..1_000_000).map{|n| "#{n} => x"}.join(', ')}}").size != 1_000_000}, "", timeout: 300
-    assert_normal_exit %q{x = nil; raise if eval("{#{(1..1_000_000).map{|n| "#{n} => #{n}"}.join(', ')}}").size != 1_000_000}, "", timeout: 300
+    assert_normal_exit %q{GC.disable=true; x = nil; raise if eval("[#{(1..1_000_000).map{'x'}.join(", ")}]").size != 1_000_000}, "", timeout: 300, child_env: %[--disable-gems]
+    assert_normal_exit %q{GC.disable=true; x = nil; raise if eval("[#{(1..1_000_000).to_a.join(", ")}]").size != 1_000_000}, "", timeout: 300, child_env: %[--disable-gems]
+    assert_normal_exit %q{GC.disable=true; x = nil; raise if eval("{#{(1..1_000_000).map{|n| "#{n} => x"}.join(', ')}}").size != 1_000_000}, "", timeout: 300, child_env: %[--disable-gems]
+    assert_normal_exit %q{GC.disable=true; x = nil; raise if eval("{#{(1..1_000_000).map{|n| "#{n} => #{n}"}.join(', ')}}").size != 1_000_000}, "", timeout: 300, child_env: %[--disable-gems]
   end
 
   def test_range
