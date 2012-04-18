@@ -101,27 +101,32 @@ class OpenStruct
   end
 
   #
-  # Converts the OpenStruct to a hash with keys representing
-  # each attribute (as symbols) and their corresponding values
-  # Example:
+  # Provides marshalling support for use by the Marshal library. Returning the
+  # underlying Hash table that contains the functions defined as the keys and
+  # the values assigned to them.
   #
-  #   require 'ostruct'
-  #   data = OpenStruct.new("country" => "Australia", :population => 20_000_000)
-  #   data.to_h   # => {:country => "Australia", :population => 20000000 }
+  #    require 'ostruct'
   #
-  def to_h
-    @table.dup
-  end
-
+  #    person = OpenStruct.new
+  #    person.name = 'John Smith'
+  #    person.age  = 70
   #
-  # Provides marshalling support for use by the Marshal library.
+  #    person.marshal_dump # => { :name => 'John Smith', :age => 70 }
   #
   def marshal_dump
     @table
   end
 
   #
-  # Provides marshalling support for use by the Marshal library.
+  # Provides marshalling support for use by the Marshal library. Accepting
+  # a Hash of keys and values which will be used to populate the internal table
+  #
+  #    require 'ostruct'
+  #
+  #    event = OpenStruct.new
+  #    hash = { 'time' => Time.now, 'title' => 'Birthday Party' }
+  #    event.marshal_load(hash)
+  #    event.title # => 'Birthday Party'
   #
   def marshal_load(x)
     @table = x

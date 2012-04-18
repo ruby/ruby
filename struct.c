@@ -586,31 +586,6 @@ rb_struct_to_a(VALUE s)
     return rb_ary_new4(RSTRUCT_LEN(s), RSTRUCT_PTR(s));
 }
 
-/*
- *  call-seq:
- *     struct.to_h     -> hash
- *
- *  Returns the values for this instance as a hash with keys
- *  corresponding to the instance variable name.
- *
- *     Customer = Struct.new(:name, :address, :zip)
- *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.to_h[:address]   #=> "123 Maple, Anytown NC"
- */
-
-static VALUE
-rb_struct_to_h(VALUE s)
-{
-    VALUE h = rb_hash_new();
-    VALUE members = rb_struct_members(s);
-    long i;
-
-    for (i=0; i<RSTRUCT_LEN(s); i++) {
-	rb_hash_aset(h, rb_ary_entry(members, i), RSTRUCT_PTR(s)[i]);
-    }
-    return h;
-}
-
 /* :nodoc: */
 VALUE
 rb_struct_init_copy(VALUE copy, VALUE s)
@@ -986,7 +961,6 @@ Init_Struct(void)
     rb_define_method(rb_cStruct, "inspect", rb_struct_inspect, 0);
     rb_define_alias(rb_cStruct,  "to_s", "inspect");
     rb_define_method(rb_cStruct, "to_a", rb_struct_to_a, 0);
-    rb_define_method(rb_cStruct, "to_h", rb_struct_to_h, 0);
     rb_define_method(rb_cStruct, "values", rb_struct_to_a, 0);
     rb_define_method(rb_cStruct, "size", rb_struct_size, 0);
     rb_define_method(rb_cStruct, "length", rb_struct_size, 0);
