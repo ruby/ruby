@@ -1,3 +1,12 @@
+Wed Apr 18 23:08:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (DOT, DOXYGEN): use AC_CHECK_PROGS instead of
+	  AC_CHECK_PROG which needs the third argument.  [ruby-core:44433]
+	  [Bug #6316]
+
+	* configure.in (PKG_CONFIG): fix condition to skip older version
+	  of pkg-config.  continue in backticks does not affect outside.
+
 Tue Apr 17 21:35:47 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/baseparser.rb, test/rexml/test_namespace.rb:
