@@ -32,9 +32,9 @@ class Gem::Builder
   # Builds the gem from the specification.  Returns the name of the file
   # written.
 
-  def build
+  def build(skip_validation=false)
     @spec.mark_version
-    @spec.validate
+    @spec.validate unless skip_validation
     @signer = sign
     write_package
     say success if Gem.configuration.verbose

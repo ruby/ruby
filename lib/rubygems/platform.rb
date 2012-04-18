@@ -68,6 +68,7 @@ class Gem::Platform
                       when /aix(\d+)/ then             [ 'aix',       $1  ]
                       when /cygwin/ then               [ 'cygwin',    nil ]
                       when /darwin(\d+)?/ then         [ 'darwin',    $1  ]
+                      when /^macruby$/ then            [ 'macruby',   nil ]
                       when /freebsd(\d+)/ then         [ 'freebsd',   $1  ]
                       when /hpux(\d+)/ then            [ 'hpux',      $1  ]
                       when /^java$/, /^jruby$/ then    [ 'java',      nil ]

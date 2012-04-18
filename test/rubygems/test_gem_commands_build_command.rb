@@ -98,5 +98,21 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_equal "this is a summary", spec.summary
   end
 
+  def test_execute_force
+    @gem.instance_variable_set :@required_rubygems_version, nil
+
+    gemspec_file = File.join(@tempdir, @gem.spec_name)
+
+    File.open gemspec_file, 'w' do |gs|
+      gs.write @gem.to_yaml
+    end
+
+    @cmd.options[:args] = [gemspec_file]
+    @cmd.options[:force] = true
+
+    util_test_build_gem @gem, gemspec_file
+  end
+
+
 end
 

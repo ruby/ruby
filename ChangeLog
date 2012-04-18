@@ -1,3 +1,21 @@
+Wed Apr 18 09:03:43 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 1.8.22 plus r33517 and r35337 which
+	  were ported to the rubygems git repository.
+	
+	  See https://github.com/rubygems/rubygems/blob/1.8/History.txt for
+	  changes since 1.8.11.
+	* test/rubygems:  ditto.
+
+Wed Apr 18 06:29:36 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 1.8.22 plus r33517 and r35337 which
+	  were ported to the rubygems git repository.
+	
+	  See https://github.com/rubygems/rubygems/blob/1.8/History.txt for
+	  changes since 1.8.11.
+	* test/rubygems:  ditto.
+
 Tue Apr 17 22:18:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* strftime.c (rb_strftime_with_timespec): fix padding of time zone

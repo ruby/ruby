@@ -3,6 +3,7 @@ require 'rubygems/commands/install_command'
 
 begin
   gem "rdoc"
+  gem "json"
 rescue Gem::LoadError
   # ignore
 end
@@ -175,6 +176,38 @@ class TestGemCommandsInstallCommand < Gem::TestCase
     end
 
     assert_match(/ould not find a valid gem 'nonexistent'/, @ui.error)
+  end
+
+  def test_execute_bad_source
+    util_setup_fake_fetcher
+    util_setup_spec_fetcher
+
+    # This is needed because we need to exercise the cache path
+    # within SpecFetcher
+    path = File.join Gem.user_home, '.gem', 'specs', "not-there.nothing%80",
+                                    "latest_specs.4.8"
+
+    FileUtils.mkdir_p File.dirname(path)
+
+    File.open path, "w" do |f|
+      f.write Marshal.dump([])
+    end
+
+    Gem.sources.replace ["http://not-there.nothing"]
+
+    @cmd.options[:args] = %w[nonexistent]
+
+    use_ui @ui do
+      e = assert_raises Gem::SystemExitException do
+        @cmd.execute
+      end
+      assert_equal 2, e.exit_code
+    end
+
+    errs = @ui.error.split("\n")
+
+    assert_match(/WARNING:  Error fetching data/, errs.shift)
+    assert_match(/ould not find a valid gem 'nonexistent'/, errs.shift)
   end
 
   def test_execute_nonexistent_with_hint
