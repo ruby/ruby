@@ -1,3 +1,7 @@
+Wed Apr 18 13:59:40 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/file.c (INVALID_FILE_ATTRIBUTES): define for old SDK.
+
 Wed Apr 18 10:22:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* strftime.c (rb_strftime_with_timespec): add an interim digit for
