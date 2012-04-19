@@ -684,6 +684,22 @@ class TestTime < Test::Unit::TestCase
     assert_equal("-000005:00", t.strftime("%:10z"), bug4458)
     assert_equal("  -5:00:00", t.strftime("%_::10z"), bug4458)
     assert_equal("-005:00:00", t.strftime("%::10z"), bug4458)
+
+    bug6323 = '[ruby-core:44447]'
+    t = T2000.getlocal("+00:36")
+    assert_equal("      +036", t.strftime("%_10z"), bug6323)
+    assert_equal("+000000036", t.strftime("%10z"), bug6323)
+    assert_equal("     +0:36", t.strftime("%_:10z"), bug6323)
+    assert_equal("+000000:36", t.strftime("%:10z"), bug6323)
+    assert_equal("  +0:36:00", t.strftime("%_::10z"), bug6323)
+    assert_equal("+000:36:00", t.strftime("%::10z"), bug6323)
+    t = T2000.getlocal("-00:55")
+    assert_equal("      -055", t.strftime("%_10z"), bug6323)
+    assert_equal("-000000055", t.strftime("%10z"), bug6323)
+    assert_equal("     -0:55", t.strftime("%_:10z"), bug6323)
+    assert_equal("-000000:55", t.strftime("%:10z"), bug6323)
+    assert_equal("  -0:55:00", t.strftime("%_::10z"), bug6323)
+    assert_equal("-000:55:00", t.strftime("%::10z"), bug6323)
   end
 
   def test_delegate

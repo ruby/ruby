@@ -1,3 +1,9 @@
+Thu Apr 19 16:33:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (rb_strftime_with_timespec): fix carrir-up bug and
+	  overwrite '+' with '-' if negative offset less than a hour.
+	  [ruby-core:44447][Bug #6323]
+
 Thu Apr 19 09:39:57 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/-test-/win32/dln/extconf.rb: need import library for ordinal
