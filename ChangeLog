@@ -1,3 +1,16 @@
+Fri Apr 20 07:39:50 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 1.8.22 plus r33517 and r35337 which
+	  were ported to the rubygems git repository.
+
+	  See https://github.com/rubygems/rubygems/blob/1.8/History.txt for
+	  changes since 1.8.11.
+
+	* test/rubygems:  ditto.
+
+	* lib/rubygems/version.rb:  Fixed init_with warning by calling into
+	  yaml_initialize (for syck) from psych's init_with
+
 Thu Apr 19 12:55:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/-test-/win32/dln/extconf.rb: need import library for ordinal

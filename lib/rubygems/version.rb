@@ -218,6 +218,10 @@ class Gem::Version
     @hash ||= segments.hash
   end
 
+  def init_with coder # :nodoc:
+    yaml_initialize coder.tag, coder.map
+  end
+
   def inspect # :nodoc:
     "#<#{self.class} #{version.inspect}>"
   end
@@ -236,6 +240,12 @@ class Gem::Version
 
   def marshal_load array
     initialize array[0]
+  end
+
+  def yaml_initialize(tag, map)
+    @version = map['version']
+    @segments = nil
+    @hash = nil
   end
 
   ##
