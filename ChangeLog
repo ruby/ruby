@@ -1,3 +1,8 @@
+Thu Apr 19 12:55:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/-test-/win32/dln/extconf.rb: need import library for ordinal
+	  entry even on mingw.  [ruby-core:44441][Bug #6320]
+
 Wed Apr 18 23:08:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (DOT, DOXYGEN): use AC_CHECK_PROGS instead of
