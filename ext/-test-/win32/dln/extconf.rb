@@ -5,14 +5,18 @@ if $mingw or $mswin
 
   create_makefile("-test-/win32/dln")
   m = File.read("Makefile")
-  m.sub!(/^OBJS =.*/) {$&+" dlntest.#{$LIBEXT}"}
+  dlntestlib = "dlntest.#{$LIBEXT}"
+  m.sub!(/^OBJS =.*/) {"#{$&} #{dlntestlib}"}
   open("Makefile", "wb") do |mf|
     mf.puts m, "\n"
     sodir = $extout ? "$(RUBYARCHDIR)/" : ''
-    mf.print "#{sodir}$(DLLIB): $(topdir)/dlntest.dll"
+    mf.print "#{sodir}$(DLLIB): #{dlntestlib}"
+    mf.puts
+    mf.puts "#{dlntestlib}: $(topdir)/dlntest.dll"
     mf.puts
     if $mingw
       mf.puts "$(topdir)/dlntest.dll: DEFFILE := $(srcdir)/libdlntest.def"
+      mf.puts "$(topdir)/dlntest.dll: DLDFLAGS += -Wl,--out-implib,#{dlntestlib}"
     end
     mf.puts depend_rules("$(topdir)/dlntest.dll: libdlntest.o libdlntest.def")
     mf.puts "\t$(ECHO) linking shared-object $(@F)\n"

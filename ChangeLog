@@ -1,3 +1,8 @@
+Thu Apr 19 09:39:57 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/-test-/win32/dln/extconf.rb: need import library for ordinal
+	  entry even on mingw.  [ruby-core:44441][Bug #6320]
+
 Thu Apr 19 09:35:15 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* random.c (random_init):  Clarify that the default seed is
