@@ -215,26 +215,17 @@ EOT
   end
 
   def test_gc
-    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
-    bignum_too_long_to_embed_as_string = 1234567890123456789012345
-    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
-    expect = bignum_too_long_to_embed_as_string.to_s
-    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
-    GC.start
-    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
-    stress, GC.stress = GC.stress, true
-    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
+    require_relative '../ruby/envutil.rb'
+    assert_in_out_err(%w[-rjson --disable-gems], <<-EOS, [], [])
+      bignum_too_long_to_embed_as_string = 1234567890123456789012345
+      expect = bignum_too_long_to_embed_as_string.to_s
+      GC.stress = true
 
-    10.times do |i|
-    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
-      tmp = bignum_too_long_to_embed_as_string.to_json
-    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
-      assert_equal expect, tmp
-    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
-    end
-    $stdout.puts 'debug: %s:%d:' % [__FILE__, __LINE__]
-  ensure
-    GC.stress = stress
+      10.times do |i|
+        tmp = bignum_too_long_to_embed_as_string.to_json
+        raise "'\#{expect}' is expected, but '\#{tmp}'" unless tmp == expect
+      end
+    EOS
   end if GC.respond_to?(:stress=)
 
   if defined?(JSON::Ext::Generator)
