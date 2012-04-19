@@ -1069,13 +1069,12 @@ class TestIO < Test::Unit::TestCase
 
   def test_read_nonblock_with_not_empty_buffer
     skip "IO#read_nonblock is not supported on file/pipe." if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
-    pipe(proc do |w|
+    with_pipe {|r, w|
       w.write "foob"
       w.close
-    end, proc do |r|
       r.read_nonblock(5, s = "01234567")
       assert_equal("foob", s)
-    end)
+    }
   end
 
   def test_read_nonblock_error
