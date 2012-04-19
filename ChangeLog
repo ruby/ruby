@@ -1,3 +1,16 @@
+Fri Apr 20 08:30:55 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Update to RubyGems 1.8.23 which contains security
+	  fixes:
+
+	  RubyGems now disallows redirection from HTTPS to HTTP.
+
+	  RubyGems now verifies SSL connections.
+
+	  See https://github.com/rubygems/rubygems/blob/1.8/History.txt for
+	  changes since 1.8.22.
+	* test/rubygems:  ditto.
+
 Fri Apr 20 07:39:50 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 1.8.22 plus r33517 and r35337 which

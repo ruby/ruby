@@ -16,8 +16,9 @@ module YAML
   # well.
   if defined? ::Syck
     # for tests that change YAML::ENGINE
-    remove_const :Syck if const_defined? :Syck, false
-    
+    # 1.8 does not support the second argument to const_defined?
+    remove_const :Syck rescue nil
+
     Syck = ::Syck
 
   # JRuby's "Syck" is called "Yecht"
@@ -38,6 +39,8 @@ module YAML
   # should.
   module Syck
     class DefaultKey
+      remove_method :to_s rescue nil
+
       def to_s
         '='
       end
