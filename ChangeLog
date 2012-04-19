@@ -1,3 +1,10 @@
+Thu Apr 19 09:35:15 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* random.c (random_init):  Clarify that the default seed is
+	  Random.new_seed, not zero.  Based on patch by Roger Pack.
+	  [ruby-trunk - Bug #6313]
+	* random.c (rb_f_srand):  ditto.
+
 Thu Apr 19 08:59:02 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/curses/curses.c (window_nodelay):  Fixed call-seq of nodelay to

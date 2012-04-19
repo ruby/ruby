@@ -448,8 +448,7 @@ rand_init(struct MT *mt, VALUE vseed)
 
 /*
  * call-seq:
- *   Random.new()     -> prng
- *   Random.new(seed) -> prng
+ *   Random.new(seed = Random.new_seed) -> prng
  *
  * Creates a new PRNG using +seed+ to set the initial state. If +seed+ is
  * omitted, the generator is initialized with Random.new_seed.
@@ -762,7 +761,7 @@ random_load(VALUE obj, VALUE dump)
 
 /*
  * call-seq:
- *   srand(number=0)    -> old_seed
+ *   srand(number = Random.new_seed) -> old_seed
  *
  * Seeds the system pseudo-random number generator, Random::DEFAULT, with
  * +number+.  The previous seed value is returned.
