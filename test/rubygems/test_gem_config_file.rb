@@ -52,6 +52,8 @@ class TestGemConfigFile < Gem::TestCase
       fp.puts ":gempath:"
       fp.puts "- /usr/ruby/1.8/lib/ruby/gems/1.8"
       fp.puts "- /var/ruby/1.8/gem_home"
+      fp.puts ":ssl_verify_mode: 0"
+      fp.puts ":ssl_ca_cert: /etc/ssl/certs"
     end
 
     util_config_file
@@ -65,6 +67,8 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal '--wrappers', @cfg[:install]
     assert_equal(['/usr/ruby/1.8/lib/ruby/gems/1.8', '/var/ruby/1.8/gem_home'],
                  @cfg.path)
+    assert_equal 0, @cfg.ssl_verify_mode
+    assert_equal '/etc/ssl/certs', @cfg.ssl_ca_cert
   end
 
   def test_initialize_handle_arguments_config_file
@@ -289,6 +293,22 @@ class TestGemConfigFile < Gem::TestCase
 
     assert_equal({:rubygems => '701229f217cdf23b1344c7b4b54ca97',
                   :other => 'a5fdbb6ba150cbb83aad2bb2fede64c'}, @cfg.api_keys)
+  end
+
+  def test_load_ssl_verify_mode_from_config
+    File.open @temp_conf, 'w' do |fp|
+      fp.puts ":ssl_verify_mode: 1"
+    end
+    util_config_file
+    assert_equal(1, @cfg.ssl_verify_mode)
+  end
+
+  def test_load_ssl_ca_cert_from_config
+    File.open @temp_conf, 'w' do |fp|
+      fp.puts ":ssl_ca_cert: /home/me/certs"
+    end
+    util_config_file
+    assert_equal('/home/me/certs', @cfg.ssl_ca_cert)
   end
 
   def util_config_file(args = @cfg_args)
