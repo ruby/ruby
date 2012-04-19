@@ -13,7 +13,7 @@ Fri Apr 20 08:07:06 2012  Eric Hodel  <drbrain@segment7.net>
 
 Thu Apr 19 16:33:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* strftime.c (rb_strftime_with_timespec): fix carrir-up bug and
+	* strftime.c (rb_strftime_with_timespec): fix carry-up bug and
 	  overwrite '+' with '-' if negative offset less than a hour.
 	  [ruby-core:44447][Bug #6323]
 
