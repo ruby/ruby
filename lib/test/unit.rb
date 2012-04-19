@@ -377,13 +377,17 @@ module Test
       end
 
       def terminal_width
-        @terminal_width ||=
+        unless @terminal_width
           begin
             require 'io/console'
-            $stdout.winsize[1]
+            width = $stdout.winsize[1]
           rescue LoadError, NoMethodError
-            ENV["COLUMNS"].to_i.nonzero? || 80
+            width = ENV["COLUMNS"].to_i.nonzero? || 80
           end
+          width -= 1 if /mswin|mingw/ =~ RUBY_PLATFORM
+          @terminal_width = width
+        end
+        @terminal_width
       end
 
       def del_status_line
