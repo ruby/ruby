@@ -246,16 +246,40 @@ class Gem::RemoteFetcher
     connection = @connections[connection_id]
 
     if uri.scheme == 'https' and not connection.started? then
-      require 'net/https'
-      connection.use_ssl = true
-      connection.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      configure_connection_for_https(connection)
     end
 
     connection.start unless connection.started?
 
     connection
-  rescue Errno::EHOSTDOWN => e
+  rescue OpenSSL::SSL::SSLError, Errno::EHOSTDOWN => e
     raise FetchError.new(e.message, uri)
+  end
+
+  def configure_connection_for_https(connection)
+    require 'net/https'
+    connection.use_ssl = true
+    connection.verify_mode =
+      Gem.configuration.ssl_verify_mode || OpenSSL::SSL::VERIFY_PEER
+    store = OpenSSL::X509::Store.new
+    if Gem.configuration.ssl_ca_cert
+      if File.directory? Gem.configuration.ssl_ca_cert
+        store.add_path Gem.configuration.ssl_ca_cert
+      else
+        store.add_file Gem.configuration.ssl_ca_cert
+      end
+    else
+      store.set_default_paths
+      add_rubygems_trusted_certs(store)
+    end
+    connection.cert_store = store
+  end
+
+  def add_rubygems_trusted_certs(store)
+    pattern = File.expand_path("./ssl_certs/*.pem", File.dirname(__FILE__))
+    Dir.glob(pattern).each do |ssl_cert_file|
+      store.add_file ssl_cert_file
+    end
   end
 
   ##
@@ -294,6 +318,12 @@ class Gem::RemoteFetcher
     when Net::HTTPMovedPermanently, Net::HTTPFound, Net::HTTPSeeOther,
          Net::HTTPTemporaryRedirect then
       raise FetchError.new('too many redirects', uri) if depth > 10
+
+      location = URI.parse response['Location']
+
+      if https?(uri) && !https?(location)
+        raise FetchError.new("redirecting to non-https resource: #{location}", uri)
+      end
 
       open_uri_or_path(response['Location'], last_modified, head, depth + 1)
     else
@@ -383,5 +413,8 @@ class Gem::RemoteFetcher
     connection.start
   end
 
+  def https?(uri)
+    uri.scheme.downcase == 'https'
+  end
 end
 

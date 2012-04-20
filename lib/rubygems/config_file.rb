@@ -105,6 +105,16 @@ class Gem::ConfigFile
   attr_reader :rubygems_api_key
 
   ##
+  # openssl verify mode value, used for remote https connection
+
+  attr_reader :ssl_verify_mode
+
+  ##
+  # Path name of directory or file of openssl CA certificate, used for remote https connection
+
+  attr_reader :ssl_ca_cert
+
+  ##
   # Create the config file object.  +args+ is the list of arguments
   # from the command line.
   #
@@ -166,6 +176,8 @@ class Gem::ConfigFile
     @path             = @hash[:gempath]          if @hash.key? :gempath
     @update_sources   = @hash[:update_sources]   if @hash.key? :update_sources
     @verbose          = @hash[:verbose]          if @hash.key? :verbose
+    @ssl_verify_mode  = @hash[:ssl_verify_mode]  if @hash.key? :ssl_verify_mode
+    @ssl_ca_cert      = @hash[:ssl_ca_cert]      if @hash.key? :ssl_ca_cert
 
     load_rubygems_api_key
 
