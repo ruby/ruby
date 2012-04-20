@@ -1,3 +1,12 @@
+Fri Apr 20 12:30:06 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/ssl_certs/AddTrustExternalCARoot.pem:  Removed to avoid
+	  conflict with ca-bundle.pem
+	* lib/rubygems/ssl_certs/VerisignClass3PublicPrimaryCertificationAuthority-G2.pem:
+	  ditto.
+	* lib/rubygems/ssl_certs/Entrust_net-Secure-Server-Certification-Authority.pem:
+	  ditto.
+
 Fri Apr 20 08:30:55 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Update to RubyGems 1.8.23 which contains security
