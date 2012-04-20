@@ -1,3 +1,15 @@
+Sat Apr 21 07:16:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (rb_strftime_with_timespec): fix padding of time zone
+	  offset.  [ruby-dev:43287][Bug #4458]
+
+	* strftime.c (rb_strftime_with_timespec): add an interim digit for
+	  the timezone offset which is less than an hour.
+
+	* strftime.c (rb_strftime_with_timespec): fix carry-up bug and
+	  overwrite '+' with '-' if negative offset less than a hour.
+	  [ruby-core:44447][Bug #6323]
+
 Fri Apr 20 12:30:06 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/ssl_certs/AddTrustExternalCARoot.pem:  Removed to avoid
