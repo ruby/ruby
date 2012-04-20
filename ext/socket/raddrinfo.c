@@ -1969,7 +1969,16 @@ addrinfo_unix_path(VALUE self)
  *
  * Similarly, PF_INET6 as family restricts for IPv6.
  *
- * flags should be bitwise OR of Socket::AI_??? constants.
+ * flags should be bitwise OR of Socket::AI_??? constants such as follows.
+ * Note that the exact list of the constants depends on OS.
+ *
+ *   AI_PASSIVE      Get address to use with bind()
+ *   AI_CANONNAME    Fill in the canonical name
+ *   AI_NUMERICHOST  Prevent host name resolution
+ *   AI_NUMERICSERV  Prevent service name resolution
+ *   AI_V4MAPPED     Accept IPv4-mapped IPv6 addresses
+ *   AI_ALL          Allow all addresses
+ *   AI_ADDRCONFIG   Accept only if any address is assigned
  *
  * Note that socktype should be specified whenever application knows the usage of the address.
  * Some platform causes an error when socktype is omitted and servname is specified as an integer
