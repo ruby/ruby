@@ -94,7 +94,7 @@ end
 
 class TupleSpace
   def sleep(n)
-    Time.sleep(n)
+    Kernel.sleep(n * 0.01)
   end
 end
 
