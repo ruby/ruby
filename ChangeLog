@@ -1,3 +1,8 @@
+Sun Apr 22 07:51:29 2012  Tanaka Akira  <akr@fsij.org>
+
+	* lib/drb/ssl.rb: close accepted TCP socket if SSL accept is failed.
+	  [ruby-dev:45541]
+
 Sat Apr 21 14:36:49 2012  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.rb: fix sticks on some tests problem
