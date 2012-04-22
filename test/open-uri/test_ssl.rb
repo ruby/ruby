@@ -93,6 +93,9 @@ class TestOpenURISSL < Test::Unit::TestCase
         sio.truncate(0); sio.rewind
       ensure
         prxy.shutdown
+        until prxy.status == :Stop
+          sleep 0.1
+        end
       end
     }
   end
