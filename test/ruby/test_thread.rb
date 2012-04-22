@@ -439,9 +439,14 @@ class TestThread < Test::Unit::TestCase
     assert(c.stop?)
 
     d.kill
-    assert_equal(["aborting", false], [d.status, d.stop?])
+    # to avoid thread switching...
+    ds1 = d.status
+    ds2 = d.stop?
+    es1 = e.status
+    es2 = e.stop?
+    assert_equal(["aborting", false], [ds1, ds2])
 
-    assert_equal(["run", false], [e.status, e.stop?])
+    assert_equal(["run", false], [es1, es2])
 
   ensure
     a.kill if a
