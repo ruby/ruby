@@ -79,7 +79,15 @@ module DRb
         @servers[name] = false
       end
       uri = @uri || DRb.uri
-      Process.detach spawn("#{command} #{uri} #{name}")
+      if command.respond_to? :to_ary
+        command = command.to_ary + [uri, name]
+        pid = spawn(*command)
+      else
+        pid = spawn("#{command} #{uri} #{name}")
+      end
+      th = Process.detach(pid)
+      th[:drb_service] = name
+      th
     end
   end
 end

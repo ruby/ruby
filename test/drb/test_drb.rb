@@ -202,7 +202,8 @@ end
 
 class TestDRbSafe1 < TestDRbAry
   def setup
-    @ext = DRbService.ext_service('ut_safe1.rb')
+    @service_name = 'ut_safe1.rb'
+    @ext = DRbService.ext_service(@service_name)
     @there = @ext.front
   end
 end

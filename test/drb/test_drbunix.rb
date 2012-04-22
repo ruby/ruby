@@ -20,7 +20,8 @@ end
 class TestDRbUNIXCore < Test::Unit::TestCase
   include DRbCore
   def setup
-    @ext = DRbUNIXService.ext_service('ut_drb_drbunix.rb')
+    @service_name = 'ut_drb_drbunix.rb'
+    @ext = DRbUNIXService.ext_service(@service_name)
     @there = @ext.front
   end
 
@@ -37,7 +38,8 @@ end
 class TestDRbUNIXAry < Test::Unit::TestCase
   include DRbAry
   def setup
-    @ext = DRbUNIXService.ext_service('ut_array_drbunix.rb')
+    @service_name = 'ut_array_drbunix.rb'
+    @ext = DRbUNIXService.ext_service(@service_name)
     @there = @ext.front
   end
 end
