@@ -57,6 +57,11 @@ unless have_header("openssl/conf_api.h")
   message "OpenSSL 0.9.6 or later required.\n"
   exit 1
 end
+if try_compile("", flag = "-Werror=deprecated-declarations")
+  unless have_func("SSL_library_init()", "openssl/ssl.h", flag)
+    abort "Ignore OpenSSL broken by Apple"
+  end
+end
 
 message "=== Checking for OpenSSL features... ===\n"
 have_func("ERR_peek_last_error")
@@ -139,9 +144,6 @@ have_struct_member("X509_ATTRIBUTE", "single", "openssl/x509.h")
 
 message "=== Checking done. ===\n"
 
-if try_compile("", flag = " -Wno-deprecated-declarations")
-  $warnflags << flag
-end
 create_header
 create_makefile("openssl")
 message "Done.\n"
