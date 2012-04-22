@@ -29,13 +29,6 @@ if with_config("debug") or enable_config("debug")
   $defs.push("-DOSSL_DEBUG") unless $defs.include? "-DOSSL_DEBUG"
 end
 
-##
-# Automatically adds -Wall flag for compilation when GCC is used
-#
-if CONFIG['GCC'] == 'yes'
-  $CPPFLAGS += " -Wall" unless $CPPFLAGS.split.include? "-Wall"
-end
-
 message "=== Checking for system dependent stuff... ===\n"
 have_library("nsl", "t_open")
 have_library("socket", "socket")
