@@ -1357,11 +1357,11 @@ module Net   #:nodoc:
           }
           res
         }
-      rescue IOError, EOFError,
+      rescue Net::OpenTimeout
+        raise
+      rescue Net::ReadTimeout, IOError, EOFError,
              Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPIPE,
              OpenSSL::SSL::SSLError, Timeout::Error => exception
-        raise if Net::OpenTimeout === exception
-
         if count == 0 && IDEMPOTENT_METHODS_.include?(req.method)
           count += 1
           @socket.close if @socket and not @socket.closed?
