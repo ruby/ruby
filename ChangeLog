@@ -1,3 +1,9 @@
+Mon Apr 23 22:07:00 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/socket/test_unix.rb (bound_unix_socket): make temporary
+	  filename shorter for less possibility of Unix socket path over
+	  107 bytes when TMPDIR has long path.
+
 Mon Apr 23 20:35:49 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (szInternalCmds, internal_match, internal_cmd_match):

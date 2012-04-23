@@ -244,7 +244,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   end
 
   def bound_unix_socket(klass)
-    tmpfile = Tempfile.new("testrubysock")
+    tmpfile = Tempfile.new("s")
     path = tmpfile.path
     tmpfile.close(true)
     yield klass.new(path), path
