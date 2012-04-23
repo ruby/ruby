@@ -84,6 +84,10 @@ class TestSystem < Test::Unit::TestCase
           ENV["PATH"] = path
         end
         File.unlink tmpfilename
+
+        testname = '[ruby-core:44505]'
+        assert_match /Windows/, `ver`, testname
+        assert_equal 0, $?.to_i, testname
       end
     }
   end

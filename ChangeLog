@@ -1,3 +1,12 @@
+Mon Apr 23 20:35:49 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (szInternalCmds, internal_match, internal_cmd_match):
+	  get rid of a segmentation fault with GCC 4.7.0.
+	  reported by raylinn@gmail.com (ray linn) at [ruby-core:44505]
+	  [Bug #6333], and patched by mame.
+
+	* test/ruby/test_system.rb (TestSystem#test_system): test for it.
+
 Mon Apr 23 20:11:02 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/drb/ssl.rb: generate 1024 bits RSA key instead of 512 bits.
