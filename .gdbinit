@@ -731,8 +731,8 @@ define rb_ps_vm
   if $ps_threads->entries_packed
     set $ps_threads_i = 0
     while $ps_threads_i < $ps_threads->num_entries
-      set $ps_threads_key = (st_data_t)$ps_threads->bins[$ps_threads_i * 2]
-      set $ps_threads_val = (st_data_t)$ps_threads->bins[$ps_threads_i * 2 + 1]
+      set $ps_threads_key = (st_data_t)$ps_threads->as.packed.entries[$ps_threads_i].key
+      set $ps_threads_val = (st_data_t)$ps_threads->as.packed.entries[$ps_threads_i].val
       rb_ps_thread $ps_threads_key $ps_threads_val
       set $ps_threads_i = $ps_threads_i + 1
     end
