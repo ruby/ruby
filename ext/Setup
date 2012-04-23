@@ -13,7 +13,6 @@
 #etc
 #fcntl
 #gdbm
-#iconv
 #io/wait
 #nkf
 #openssl

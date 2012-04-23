@@ -1,3 +1,7 @@
+Mon Apr 23 22:56:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv: deprecated.  [Feature #6322]
+
 Mon Apr 23 22:07:00 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/socket/test_unix.rb (bound_unix_socket): make temporary

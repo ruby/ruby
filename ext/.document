@@ -27,7 +27,6 @@ fiddle/fiddle.c
 fiddle/function.c
 fiddle/lib
 gdbm/gdbm.c
-iconv/iconv.c
 io/console/console.c
 io/nonblock/nonblock.c
 io/wait/lib
