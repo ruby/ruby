@@ -1,3 +1,8 @@
+Mon Apr 23 19:54:33 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/drb/drbtest.rb: rescue Errno::ESRCH for Process.kill.
+	  [ruby-dev:45551] reported by NARUSE, Yui.
+
 Mon Apr 23 14:16:45 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* .gdbinit (rb_ps_vm): follow st_table's packing change.
