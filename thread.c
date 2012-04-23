@@ -4731,7 +4731,7 @@ rb_check_deadlock(rb_vm_t *vm)
     if (!found) {
 	VALUE argv[2];
 	argv[0] = rb_eFatal;
-	argv[1] = rb_str_new2("deadlock detected");
+	argv[1] = rb_str_new2("No live threads left. Deadlock?");
 #ifdef DEBUG_DEADLOCK_CHECK
 	printf("%d %d %p %p\n", vm->living_threads->num_entries, vm->sleeper, GET_THREAD(), vm->main_thread);
 	st_foreach(vm->living_threads, debug_i, (st_data_t)0);

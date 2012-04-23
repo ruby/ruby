@@ -1,3 +1,8 @@
+Tue Apr 24 00:25:39 2012  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (rb_check_deadlock): refine an error message of deadlock
+	  detection.  [ruby-core:44336] [Bug #6288]
+
 Tue Apr 24 00:14:42 2012  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* parse.y (primary): remove wrong "fixpos" that caused incorrect
