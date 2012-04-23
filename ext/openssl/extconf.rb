@@ -59,7 +59,9 @@ unless have_header("openssl/conf_api.h")
 end
 if try_compile("", flag = "-Werror=deprecated-declarations")
   unless have_func("SSL_library_init()", "openssl/ssl.h", flag)
-    abort "Ignore OpenSSL broken by Apple"
+    with_config("broken-apple-openssl") or
+      abort "Ignore OpenSSL broken by Apple"
+    $warnflags << " -Wno-deprecated-declarations"
   end
 end
 
