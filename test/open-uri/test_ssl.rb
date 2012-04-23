@@ -35,6 +35,9 @@ class TestOpenURISSL
         yield srv, dr, "https://#{host}:#{port}"
       ensure
         srv.shutdown
+        until srv.status == :Stop
+          sleep 0.1
+        end
       end
     }
   end
