@@ -200,7 +200,7 @@ module Net
   #
   class IMAP
     include MonitorMixin
-    if defined?(OpenSSL)
+    if defined?(OpenSSL::SSL)
       include OpenSSL
       include SSL
     end
@@ -1438,7 +1438,7 @@ module Net
     end
 
     def start_tls_session(params = {})
-      unless defined?(OpenSSL)
+      unless defined?(OpenSSL::SSL)
         raise "SSL extension not installed"
       end
       if @sock.kind_of?(OpenSSL::SSL::SSLSocket)
