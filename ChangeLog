@@ -1,3 +1,8 @@
+Mon Apr 23 10:43:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: disable rubygems not to load rbconfig.rb before
+	  fake.rb.  [ruby-core:44492][Bug #6329]
+
 Sun Apr 22 20:26:06 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/drb/extservm.rb (DRb::ExtServManager): don't use /bin/sh to

@@ -19,8 +19,13 @@ AC_ARG_WITH(baseruby,
 	[
 		BASERUBY="ruby"
 	])
-test "`RUBYOPT=- $BASERUBY -e 'p 42' 2>/dev/null`" = 42 ||
+if test "`RUBYOPT=- $BASERUBY -e 'p 42' 2>/dev/null`" = 42; then
+    if test "`RUBYOPT=- $BASERUBY --disable=gems -e 'p 42' 2>/dev/null`" = 42; then
+	BASERUBY="$BASERUBY --disable=gems"
+    fi
+else
     BASERUBY="echo executable host ruby is required.  use --with-baseruby option.; false"
+fi
 AC_SUBST(BASERUBY)
 
 AC_DEFUN([RUBY_MINGW32],
