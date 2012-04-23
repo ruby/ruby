@@ -1059,6 +1059,20 @@ class TestProc < Test::Unit::TestCase
     assert_equal(@@line_of_attr_accessor_source_location_test, lineno)
   end
 
+  def block_source_location_test(*args, &block)
+    block.source_location
+  end
+
+  def test_block_source_location
+    exp_lineno = __LINE__ + 3
+    file, lineno = block_source_location_test(1,
+                                              2,
+                                              3) do
+                                              end
+    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
+    assert_equal(exp_lineno, lineno)
+  end
+
   def test_splat_without_respond_to
     def (obj = Object.new).respond_to?(m,*); false end
     [obj].each do |a, b|

@@ -1,3 +1,10 @@
+Tue Apr 24 00:14:42 2012  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* parse.y (primary): remove wrong "fixpos" that caused incorrect
+	  source_location of blocks.  [ruby-core:42232] [Bug #5930]
+
+	* test/ruby/test_proc.rb: add a test for above.
+
 Mon Apr 23 22:56:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv: deprecated.  [Feature #6322]

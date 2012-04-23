@@ -2813,7 +2813,6 @@ primary		: literal
 		    /*%%%*/
 			$2->nd_iter = NEW_FCALL($1, 0);
 			$$ = $2;
-			fixpos($2->nd_iter, $2);
 		    /*%
 			$$ = method_arg(dispatch1(fcall, $1), arg_new());
 			$$ = method_add_block($$, $2);
@@ -2826,7 +2825,6 @@ primary		: literal
 			block_dup_check($1->nd_args, $2);
 			$2->nd_iter = $1;
 			$$ = $2;
-			fixpos($$, $1);
 		    /*%
 			$$ = method_add_block($1, $2);
 		    %*/
