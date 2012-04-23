@@ -100,10 +100,6 @@ y.tab.c
 /ext/dl/callback/callback-*.c
 /ext/dl/callback/callback.c
 
-# /ext/iconv/
-/ext/iconv/config.charset
-/ext/iconv/iconv.rb
-
 # /ext/ripper/
 /ext/ripper/eventids1.c
 /ext/ripper/eventids2table.c
