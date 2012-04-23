@@ -102,7 +102,7 @@ module XMLRPC
       refute user
       refute password
       refute timeout
-    end
+    end if defined?(OpenSSL)
 
     def test_new2_ssl_custom_port
       client = Fake::Client.new2 'https://example.org:1234/foo'
@@ -117,7 +117,7 @@ module XMLRPC
       refute user
       refute password
       refute timeout
-    end
+    end if defined?(OpenSSL)
 
     def test_new2_user_password
       client = Fake::Client.new2 'http://aaron:tenderlove@example.org/foo'

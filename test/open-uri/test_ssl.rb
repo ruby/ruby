@@ -1,13 +1,18 @@
 require 'test/unit'
 require 'open-uri'
-require 'openssl'
 require 'stringio'
 require 'webrick'
-require 'webrick/https'
+begin
+  require 'openssl'
+  require 'webrick/https'
+rescue LoadError
+end
 require 'webrick/httpproxy'
 
 class TestOpenURISSL < Test::Unit::TestCase
+end
 
+class TestOpenURISSL
   NullLog = Object.new
   def NullLog.<<(arg)
   end
@@ -100,7 +105,7 @@ class TestOpenURISSL < Test::Unit::TestCase
     }
   end
 
-end
+end if defined?(OpenSSL)
 
 # mkdir demoCA demoCA/private demoCA/newcerts
 # touch demoCA/index.txt
