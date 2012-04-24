@@ -3921,6 +3921,7 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 	int count = 0;
 	int ret;
 	HANDLE events[MAXCHILDNUM];
+	struct ChildRecord* cause;
 
 	FOREACH_CHILD(child) {
 	    if (!child->pid || child->pid < 0) continue;
@@ -3942,7 +3943,12 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 	    return -1;
 	}
 
-	return poll_child_status(FindChildSlotByHandle(events[ret]), stat_loc);
+	cause = FindChildSlotByHandle(events[ret]);
+	if (!cause) {
+	    errno = ECHILD;
+	    return -1;
+	}
+	return poll_child_status(cause, stat_loc);
     }
     else {
 	struct ChildRecord* child = FindChildSlot(pid);

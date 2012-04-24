@@ -1,3 +1,9 @@
+Tue Apr 24 17:03:51 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (waitpid): need to check the return value of
+	  FindChildSlotByHandle() before passing poll_child_status().
+	  this fixed a SEGV in test-all.  reported by ko1 via IRC.
+
 Tue Apr 24 16:04:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): EXPR_BEG by keywords is a start point of
