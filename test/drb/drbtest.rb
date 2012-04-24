@@ -73,10 +73,11 @@ module DRbCore
   def teardown
     @ext.stop_service if defined?(@ext) && @ext
     DRbService.manager.unregist(@service_name)
+    signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :INT : :TERM
     Thread.list.each {|th|
       if th.respond_to?(:pid) && th[:drb_service] == @service_name
         begin
-          Process.kill :TERM, th.pid
+          Process.kill signal, th.pid
         rescue Errno::ESRCH
         end
         th.join
@@ -290,10 +291,11 @@ module DRbAry
   def teardown
     @ext.stop_service if defined?(@ext) && @ext
     DRbService.manager.unregist(@service_name)
+    signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :INT : :TERM
     Thread.list.each {|th|
       if th.respond_to?(:pid) && th[:drb_service] == @service_name
         begin
-          Process.kill :TERM, th.pid
+          Process.kill signal, th.pid
         rescue Errno::ESRCH
         end
         th.join

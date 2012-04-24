@@ -1,3 +1,8 @@
+Tue Apr 24 10:54:34 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/drb/drbtest.rb ({DRbCore,DRbAry}#teardown}: cannot pass SIGTERM
+	  to another process on Windows, so use SIGINT instead.
+
 Tue Apr 24 00:25:39 2012  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (rb_check_deadlock): refine an error message of deadlock
