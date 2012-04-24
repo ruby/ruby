@@ -1,3 +1,8 @@
+Wed Apr 25 05:46:12 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#to_a): split for each lines.
+	  [ruby-dev:45568][Bug #6348]
+
 Tue Apr 24 21:57:53 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (init_unix_addrinfo): show actual path length
