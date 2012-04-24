@@ -697,7 +697,7 @@ module Test
           return
         end
         print " = %.2f s = " % time if @verbose
-        print result
+        print result if !@tty or @verbose
         puts if @tty or @verbose
         if @tty and !@verbose
           @report_count ||= 0
