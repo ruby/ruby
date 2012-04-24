@@ -955,7 +955,7 @@ module Net
 
     def check_continue(res)
       unless res.continue?
-        raise SMTPUnknownError, "could not get 3xx (#{res.status})"
+        raise SMTPUnknownError, "could not get 3xx (#{res.status}: #{res.string})"
       end
     end
 
