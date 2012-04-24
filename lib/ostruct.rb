@@ -101,6 +101,19 @@ class OpenStruct
   end
 
   #
+  # Converts the OpenStruct to a hash with keys representing
+  # each attribute (as symbols) and their corresponding values
+  # Example:
+  #
+  #   require 'ostruct'
+  #   data = OpenStruct.new("country" => "Australia", :population => 20_000_000)
+  #   data.to_h   # => {:country => "Australia", :population => 20000000 }
+  #
+  def to_h
+    @table.dup
+  end
+
+  #
   # Provides marshalling support for use by the Marshal library. Returning the
   # underlying Hash table that contains the functions defined as the keys and
   # the values assigned to them.

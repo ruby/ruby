@@ -1,3 +1,8 @@
+Tue Apr 24 12:46:50 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* hash.c, object.c, struct.c, lib/ostruct.rb: add to_h methods.
+	  [Feature #6276]
+
 Tue Apr 24 10:54:34 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/drb/drbtest.rb ({DRbCore,DRbAry}#teardown}: cannot pass SIGTERM

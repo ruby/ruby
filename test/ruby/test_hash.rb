@@ -77,7 +77,7 @@ class TestHash < Test::Unit::TestCase
   # From rubicon
 
   def setup
-    @cls = Hash
+    @cls ||= Hash
     @h = @cls[
       1 => 'one', 2 => 'two', 3 => 'three',
       self => 'self', true => 'true', nil => 'nil',
@@ -631,6 +631,20 @@ class TestHash < Test::Unit::TestCase
   def test_to_hash
     h = @h.to_hash
     assert_equal(@h, h)
+    assert_instance_of(@cls, h)
+  end
+
+  def test_to_h
+    h = @h.to_h
+    assert_equal(@h, h)
+    assert_instance_of(Hash, h)
+  end
+
+  def test_nil_to_h
+    h = nil.to_h
+    assert_equal({}, h)
+    assert_nil(h.default)
+    assert_nil(h.default_proc)
   end
 
   def test_to_s
@@ -930,6 +944,16 @@ class TestHash < Test::Unit::TestCase
     feature4262 = '[ruby-core:34334]'
     [{1=>2}, {123=>"abc"}].each do |h|
       assert_not_equal(h.hash, h.invert.hash, feature4262)
+    end
+  end
+
+  class TestSubHash < TestHash
+    class SubHash < Hash
+    end
+
+    def setup
+      @cls = SubHash
+      super
     end
   end
 end

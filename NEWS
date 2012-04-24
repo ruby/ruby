@@ -21,7 +21,13 @@ with all sufficient information, see the ChangeLog file.
     * added method:
       * added Enumerable#lazy method for lazy enumeration.
 
+  * ENV
+    * aliased method:
+      * ENV.to_h is a new alias for ENV.to_hash
+
   * Hash
+    * added method:
+      * added Hash#to_h as explicit conversion method, like Array#to_a.
     * extended method:
       * Hash#default_proc= can be passed nil to clear the default proc.
 
@@ -41,10 +47,19 @@ with all sufficient information, see the ChangeLog file.
       * added LoadError#path method to return the file name that could not be
         loaded.
 
+  * NilClass
+    * added method:
+      * added nil.to_h which returns {}
+
   * Signal
     * incompatible changes:
       * Signal.trap raises ArgumentError when :SEGV, :BUS, :ILL, :FPE, :VTALRM
         are specified.
+
+  * Struct
+    * added method:
+      * added Struct#to_h returning values with keys corresponding to the
+        instance variable names.
 
   * Time
     * change return value:
@@ -62,6 +77,10 @@ with all sufficient information, see the ChangeLog file.
     * Net::IMAP.default_tls_port
     * Net::IMAP.default_ssl_port
     * Net::IMAP.default_imaps_port
+
+* ostruct
+  * new methods:
+    * OpenStruct#to_h converts the struct to a hash.
 
 * pathname
   * extended method:

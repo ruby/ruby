@@ -327,6 +327,10 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(h, ENV.to_hash)
   end
 
+  def test_to_h
+    assert_equal(ENV.to_hash, ENV.to_h)
+  end
+
   def test_reject
     h1 = {}
     ENV.each_pair {|k, v| h1[k] = v }

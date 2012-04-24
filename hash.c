@@ -1452,6 +1452,30 @@ rb_hash_to_hash(VALUE hash)
     return hash;
 }
 
+/*
+ *  call-seq:
+ *     hsh.to_h     -> hsh or new_hash
+ *
+ *  Returns +self+. If called on a subclass of Hash, converts
+ *  the receiver to a Hash object.
+ */
+
+static VALUE
+rb_hash_to_h(VALUE hash)
+{
+    if (rb_obj_class(hash) != rb_cHash) {
+	VALUE ret = rb_hash_new();
+	if (!RHASH_EMPTY_P(hash))
+	    RHASH(ret)->ntbl = st_copy(RHASH(hash)->ntbl);
+	if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
+	    FL_SET(ret, HASH_PROC_DEFAULT);
+	}
+	RHASH_IFNONE(ret) = RHASH_IFNONE(hash);
+	return ret;
+    }
+    return hash;
+}
+
 static int
 keys_i(VALUE key, VALUE value, VALUE ary)
 {
@@ -3054,7 +3078,8 @@ env_index(VALUE dmy, VALUE value)
 
 /*
  * call-seq:
- *   ENV.to_hash -> Hash
+ *   ENV.to_hash -> hash
+ *   ENV.to_h    -> hash
  *
  * Creates a hash with a copy of the environment variables.
  *
@@ -3333,6 +3358,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"rehash", rb_hash_rehash, 0);
 
     rb_define_method(rb_cHash,"to_hash", rb_hash_to_hash, 0);
+    rb_define_method(rb_cHash,"to_h", rb_hash_to_h, 0);
     rb_define_method(rb_cHash,"to_a", rb_hash_to_a, 0);
     rb_define_method(rb_cHash,"inspect", rb_hash_inspect, 0);
     rb_define_alias(rb_cHash, "to_s", "inspect");
@@ -3443,6 +3469,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl,"key?", env_has_key, 1);
     rb_define_singleton_method(envtbl,"value?", env_has_value, 1);
     rb_define_singleton_method(envtbl,"to_hash", env_to_hash, 0);
+    rb_define_singleton_method(envtbl,"to_h", env_to_hash, 0);
     rb_define_singleton_method(envtbl,"assoc", env_assoc, 1);
     rb_define_singleton_method(envtbl,"rassoc", env_rassoc, 1);
 
