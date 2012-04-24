@@ -3626,9 +3626,12 @@ econv_result_to_symbol(rb_econv_result_t res)
  *
  * primitive_convert stops conversion when one of following condition met.
  * - invalid byte sequence found in source buffer (:invalid_byte_sequence)
+ *   +primitive_errinfo+ and +last_error+ methods returns the detail of the error.
  * - unexpected end of source buffer (:incomplete_input)
  *   this occur only when :partial_input is not specified.
+ *   +primitive_errinfo+ and +last_error+ methods returns the detail of the error.
  * - character not representable in output encoding (:undefined_conversion)
+ *   +primitive_errinfo+ and +last_error+ methods returns the detail of the error.
  * - after some output is generated, before input is done (:after_output)
  *   this occur only when :after_output is specified.
  * - destination buffer is full (:destination_buffer_full)
