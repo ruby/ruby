@@ -103,7 +103,39 @@ class TestSyntax < Test::Unit::TestCase
     end
   end
 
+  def test_cmd_symbol_after_keyword
+    bug6347 = '[ruby-dev:45563]'
+    assert_not_label(:foo, 'if true then not_label:foo end', bug6347)
+    assert_not_label(:foo, 'if false; else not_label:foo end', bug6347)
+    assert_not_label(:foo, 'begin not_label:foo end', bug6347)
+    assert_not_label(:foo, 'begin ensure not_label:foo end', bug6347)
+  end
+
+  def test_cmd_symbol_in_string
+    bug6347 = '[ruby-dev:45563]'
+    assert_not_label(:foo, '"#{not_label:foo}"', bug6347)
+  end
+
+  def test_cmd_symbol_singleton_class
+    bug6347 = '[ruby-dev:45563]'
+    @not_label = self
+    assert_not_label(:foo, 'class << not_label:foo; end', bug6347)
+  end
+
+  def test_cmd_symbol_superclass
+    bug6347 = '[ruby-dev:45563]'
+    @not_label = Object
+    assert_not_label(:foo, 'class Foo < not_label:foo; end', bug6347)
+  end
+
   private
+
+  def not_label(x) @result = x; @not_label ||= nil end
+  def assert_not_label(expected, src, message = nil)
+    @result = nil
+    assert_nothing_raised(SyntaxError, message) {eval(src)}
+    assert_equal(expected, @result, message)
+  end
 
   def make_tmpsrc(f, src)
     f.open

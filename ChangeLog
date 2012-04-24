@@ -1,3 +1,15 @@
+Tue Apr 24 16:04:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): EXPR_BEG by keywords is a start point of
+	  commands.  [ruby-dev:45563][Bug #6347]
+
+	* parse.y (superclass): ditto for superclass.
+
+	* parse.y (parser_parse_string, parser_here_document): ditto for
+	  string interpolation.
+
+	* parse.y (parser_yylex): ditto for singleton class.
+
 Tue Apr 24 15:51:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#to_a): should split by end-of-line

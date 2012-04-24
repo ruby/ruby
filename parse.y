@@ -4407,6 +4407,7 @@ superclass	: term
 		| '<'
 		    {
 			lex_state = EXPR_BEG;
+			command_start = TRUE;
 		    }
 		  expr_value term
 		    {
@@ -6144,6 +6145,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
 	    pushback(c);
 	    return tSTRING_DVAR;
 	  case '{':
+	    command_start = TRUE;
 	    return tSTRING_DBEG;
 	}
 	tokadd('#');
@@ -6369,6 +6371,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 		pushback(c);
 		return tSTRING_DVAR;
 	      case '{':
+		command_start = TRUE;
 		return tSTRING_DBEG;
 	    }
 	    tokadd('#');
@@ -7009,6 +7012,8 @@ parser_yylex(struct parser_params *parser)
 	switch (lex_state) {
 	  case EXPR_FNAME: case EXPR_DOT:
 	    lex_state = EXPR_ARG; break;
+	  case EXPR_CLASS:
+	    command_start = TRUE;
 	  default:
 	    lex_state = EXPR_BEG; break;
 	}
@@ -7997,8 +8002,10 @@ parser_yylex(struct parser_params *parser)
 			set_yylval_name(rb_intern(kw->name));
 			return kw->id[0];
 		    }
-		    if (kw->id[0] == keyword_do) {
+		    if (lex_state == EXPR_BEG) {
 			command_start = TRUE;
+		    }
+		    if (kw->id[0] == keyword_do) {
 			if (lpar_beg && lpar_beg == paren_nest) {
 			    lpar_beg = 0;
 			    --paren_nest;
