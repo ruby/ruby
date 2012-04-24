@@ -65,8 +65,11 @@ class TestTranscode < Test::Unit::TestCase
         "\x82\xdc\x82\xc2\x82\xe0\x82\xc6 \x82\xe4\x82\xab\x82\xd0\x82\xeb", 'shift_jis') # まつもと ゆきひろ
     check_both_ways("\u307E\u3064\u3082\u3068 \u3086\u304D\u3072\u308D",
         "\xa4\xde\xa4\xc4\xa4\xe2\xa4\xc8 \xa4\xe6\xa4\xad\xa4\xd2\xa4\xed", 'euc-jp')
+    check_both_ways("\u307E\u3064\u3082\u3068 \u3086\u304D\u3072\u308D",
+        "\xa4\xde\xa4\xc4\xa4\xe2\xa4\xc8 \xa4\xe6\xa4\xad\xa4\xd2\xa4\xed", 'euc-jp-2004')
     check_both_ways("\u677E\u672C\u884C\u5F18", "\x8f\xbc\x96\x7b\x8d\x73\x8d\x4f", 'shift_jis') # 松本行弘
     check_both_ways("\u677E\u672C\u884C\u5F18", "\xbe\xbe\xcb\xdc\xb9\xd4\xb9\xb0", 'euc-jp')
+    check_both_ways("\u677E\u672C\u884C\u5F18", "\xbe\xbe\xcb\xdc\xb9\xd4\xb9\xb0", 'euc-jp-2004')
     check_both_ways("D\u00FCrst", "D\xFCrst", 'iso-8859-1') # Dürst
     check_both_ways("D\u00FCrst", "D\xFCrst", 'iso-8859-2')
     check_both_ways("D\u00FCrst", "D\xFCrst", 'iso-8859-3')
@@ -83,6 +86,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u0643\u062A\u0628", "\xE3\xCA\xC8", 'iso-8859-6') # كتب
     check_both_ways("\u65E5\u8A18", "\x93\xFA\x8BL", 'shift_jis') # 日記
     check_both_ways("\u65E5\u8A18", "\xC6\xFC\xB5\xAD", 'euc-jp')
+    check_both_ways("\u65E5\u8A18", "\xC6\xFC\xB5\xAD", 'euc-jp-2004')
     check_both_ways("\uC560\uC778\uAD6C\uD568\u0020\u6734\uC9C0\uC778",
          "\xBE\xD6\xC0\xCE\xB1\xB8\xC7\xD4\x20\xDA\xD3\xC1\xF6\xC0\xCE", 'euc-kr') # 애인구함 朴지인
     check_both_ways("\uC544\uD58F\uD58F\u0020\uB620\uBC29\uD6BD\uB2D8\u0020\uC0AC\uB791\uD716",
@@ -1155,9 +1159,15 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("\uFFFD!",
       "\xff!".encode("utf-8", "euc-jp", :invalid=>:replace))
     assert_equal("\uFFFD!",
+      "\xff!".encode("utf-8", "euc-jp-2004", :invalid=>:replace))
+    assert_equal("\uFFFD!",
       "\xa1!".encode("utf-8", "euc-jp", :invalid=>:replace))
     assert_equal("\uFFFD!",
+      "\xa1!".encode("utf-8", "euc-jp-2004", :invalid=>:replace))
+    assert_equal("\uFFFD!",
       "\x8f\xa1!".encode("utf-8", "euc-jp", :invalid=>:replace))
+    assert_equal("\uFFFD!",
+      "\x8f\xa1!".encode("utf-8", "euc-jp-2004", :invalid=>:replace))
 
     assert_equal("?",
       "\xdc\x00".encode("EUC-JP", "UTF-16BE", :invalid=>:replace), "[ruby-dev:35776]")
@@ -1174,6 +1184,7 @@ class TestTranscode < Test::Unit::TestCase
 
   def test_invalid_replace_string
     assert_equal("a<x>A", "a\x80A".encode("us-ascii", "euc-jp", :invalid=>:replace, :replace=>"<x>"))
+    assert_equal("a<x>A", "a\x80A".encode("us-ascii", "euc-jp-2004", :invalid=>:replace, :replace=>"<x>"))
   end
 
   def test_undef_replace
@@ -1286,6 +1297,64 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u677E\u672C\u884C\u5F18", "\xBE\xBE\xCB\xDC\xB9\xD4\xB9\xB0", 'euc-jp') # 松本行弘
     check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\xC0\xC4\xBB\xB3\xB3\xD8\xB1\xA1\xC2\xE7\xB3\xD8", 'euc-jp') # 青山学院大学
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\xBF\xC0\xCE\xD3\xB5\xC1\xC7\xEE", 'euc-jp') # 神林義博
+  end
+
+  def test_euc_jp_2004
+    check_both_ways("\u3000", "\xA1\xA1", 'euc-jp-2004') # full-width space
+    check_both_ways("\u00D7", "\xA1\xDF", 'euc-jp-2004') # ×
+    check_both_ways("\u00F7", "\xA1\xE0", 'euc-jp-2004') # ÷
+    check_both_ways("\u25C7", "\xA1\xFE", 'euc-jp-2004') # ◇
+    check_both_ways("\u25C6", "\xA2\xA1", 'euc-jp-2004') # ◆
+    check_both_ways("\uFF07", "\xA2\xAF", 'euc-jp-2004') # ＇
+    check_both_ways("\u309F", "\xA2\xB9", 'euc-jp-2004') # ゟ
+    check_both_ways("\u2284", "\xA2\xC2", 'euc-jp-2004') # ⊄
+    check_both_ways("\u2306", "\xA2\xC9", 'euc-jp-2004') # ⌆
+    check_both_ways("\u2295", "\xA2\xD1", 'euc-jp-2004') # ⊕
+    check_both_ways("\u3017", "\xA2\xDB", 'euc-jp-2004') # 〗
+    check_both_ways("\u2262", "\xA2\xEB", 'euc-jp-2004') # ≢
+    check_both_ways("\u2194", "\xA2\xF1", 'euc-jp-2004') # ↔
+    check_both_ways("\u266E", "\xA2\xFA", 'euc-jp-2004') # ♮
+    check_both_ways("\u2669", "\xA2\xFD", 'euc-jp-2004') # ♩
+    check_both_ways("\u25EF", "\xA2\xFE", 'euc-jp-2004') # ◯
+    check_both_ways("\u2935", "\xA3\xAF", 'euc-jp-2004') # ⤵
+    check_both_ways("\u29BF", "\xA3\xBA", 'euc-jp-2004') # ⦿
+    check_both_ways("\u2022", "\xA3\xC0", 'euc-jp-2004') # •
+    check_both_ways("\u2213", "\xA3\xDB", 'euc-jp-2004') # ∓
+    check_both_ways("\u2127", "\xA3\xE0", 'euc-jp-2004') # ℧
+    check_both_ways("\u30A0", "\xA3\xFB", 'euc-jp-2004') # ゠
+    check_both_ways("\uFF54", "\xA3\xF4", 'euc-jp-2004') # ｔ
+    assert_raise(Encoding::UndefinedConversionError) { "\xA5\xF7".encode("utf-8", 'euc-jp-2004') }
+    check_both_ways("\u2664", "\xA6\xB9", 'euc-jp-2004') # ♤
+    check_both_ways("\u2663", "\xA6\xC0", 'euc-jp-2004') # ♣
+    check_both_ways("\u03C2", "\xA6\xD9", 'euc-jp-2004') # ς
+    check_both_ways("\u23BE", "\xA7\xC2", 'euc-jp-2004') # ⎾
+    check_both_ways("\u23CC", "\xA7\xD0", 'euc-jp-2004') # ⏌
+    check_both_ways("\u30F7", "\xA7\xF2", 'euc-jp-2004') # ヷ
+    check_both_ways("\u3251", "\xA8\xC1", 'euc-jp-2004') # ㉑
+    check_both_ways("\u{20B9F}", "\xCF\xD4", 'euc-jp-2004') # 𠮑
+    check_both_ways("\u541E", "\xCF\xFE", 'euc-jp-2004') # 吞
+    check_both_ways("\u6A97", "\xDD\xA1", 'euc-jp-2004') # 檗
+    check_both_ways("\u6BEF", "\xDD\xDF", 'euc-jp-2004') # 毯
+    check_both_ways("\u9EBE", "\xDD\xE0", 'euc-jp-2004') # 麾
+    check_both_ways("\u6CBE", "\xDD\xFE", 'euc-jp-2004') # 沾
+    check_both_ways("\u6CBA", "\xDE\xA1", 'euc-jp-2004') # 沺
+    check_both_ways("\u6ECC", "\xDE\xFE", 'euc-jp-2004') # 滌
+    check_both_ways("\u6F3E", "\xDF\xA1", 'euc-jp-2004') # 漾
+    check_both_ways("\u70DD", "\xDF\xDF", 'euc-jp-2004') # 烝
+    check_both_ways("\u70D9", "\xDF\xE0", 'euc-jp-2004') # 烙
+    check_both_ways("\u71FC", "\xDF\xFE", 'euc-jp-2004') # 燼
+    check_both_ways("\u71F9", "\xE0\xA1", 'euc-jp-2004') # 燹
+    check_both_ways("\u73F1", "\xE0\xFE", 'euc-jp-2004') # 珱
+    check_both_ways("\u5653", "\xF4\xA7", 'euc-jp-2004') # 噓
+    #check_both_ways("\u9ADC", "\xFC\xE3", 'euc-jp') # 髜 (IBM extended)
+
+    check_both_ways("\u9DD7", "\xFE\xE5", 'euc-jp-2004') # 鷗
+    check_both_ways("\u{2000B}", "\xAE\xA2", 'euc-jp-2004') # 𠀋
+    check_both_ways("\u{2A6B2}", "\x8F\xFE\xF6", 'euc-jp-2004') # 𪚲
+
+    check_both_ways("\u677E\u672C\u884C\u5F18", "\xBE\xBE\xCB\xDC\xB9\xD4\xB9\xB0", 'euc-jp-2004') # 松本行弘
+    check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\xC0\xC4\xBB\xB3\xB3\xD8\xB1\xA1\xC2\xE7\xB3\xD8", 'euc-jp-2004') # 青山学院大学
+    check_both_ways("\u795E\u6797\u7FA9\u535A", "\xBF\xC0\xCE\xD3\xB5\xC1\xC7\xEE", 'euc-jp-2004') # 神林義博
   end
 
   def test_eucjp_ms

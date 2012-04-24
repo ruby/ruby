@@ -1,3 +1,21 @@
+Tue Apr 24 19:59:31 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* enc/euc_jp.c: added EUC-JP-2004 and its alias EUC-JISX0213.
+	  [ruby-dev:45571] [Feature #6349]
+	  Requested by Kyouhei Yanagita <yanagi@shakenbu.org>.
+
+	* enc/trans/japanese_euc.trans: ditto.
+
+	* enc/trans/JIS/JISX0213-[12]%UCS@{BMP,SIP}.src: JIS X 0213:2004 ->
+	  Unicode mapping table from NetBSD.
+
+	* enc/trans/JIS/UCS@{BMP,SIP}%JISX0213-[12].src: Unicode -> JIX X
+	  0213:2004 mapping table from NetBSD.
+
+	* tool/transcode-tblgen.rb: added SIP support.
+
+	* test/ruby/test_transcode.rb: tests of above changes.
+
 Tue Apr 24 18:12:13 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c: fix to output warning when the same literals
