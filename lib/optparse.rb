@@ -1065,13 +1065,13 @@ XXX
   #
   # Returns option summary string.
   #
-  def help; summarize(banner.to_s.sub(/\n?\z/, "\n")) end
+  def help; summarize("#{banner}".sub(/\n?\z/, "\n")) end
   alias to_s help
 
   #
   # Returns option summary list.
   #
-  def to_a; summarize(banner.to_a.dup) end
+  def to_a; summarize([*banner]) end
 
   #
   # Checks if an argument is given twice, in which case an ArgumentError is
