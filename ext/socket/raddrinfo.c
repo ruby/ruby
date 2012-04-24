@@ -768,8 +768,8 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
     StringValue(path);
 
     if (sizeof(un.sun_path) <= (size_t)RSTRING_LEN(path))
-        rb_raise(rb_eArgError, "too long unix socket path (max: %dbytes)",
-            (int)sizeof(un.sun_path)-1);
+        rb_raise(rb_eArgError, "too long unix socket path (%ldbytes given but %dbytes max)",
+            RSTRING_LEN(path), (int)sizeof(un.sun_path)-1);
 
     MEMZERO(&un, struct sockaddr_un, 1);
 

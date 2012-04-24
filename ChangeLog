@@ -1,3 +1,12 @@
+Tue Apr 24 21:57:53 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (init_unix_addrinfo): show actual path length
+	  when it is too long for Unix socket.
+
+	* ext/socket/unixsocket.c (rsock_init_unixsock): ditto.
+
+	* ext/socket/socket.c (sock_s_pack_sockaddr_un): ditto.
+
 Tue Apr 24 21:43:58 2012  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/net/smtp.rb (check_continue): raise an error with an explanatory

@@ -1429,8 +1429,8 @@ sock_s_pack_sockaddr_un(VALUE self, VALUE path)
     sockaddr.sun_family = AF_UNIX;
     sun_path = StringValueCStr(path);
     if (sizeof(sockaddr.sun_path) <= strlen(sun_path)) {
-        rb_raise(rb_eArgError, "too long unix socket path (max: %dbytes)",
-            (int)sizeof(sockaddr.sun_path)-1);
+        rb_raise(rb_eArgError, "too long unix socket path (%ldbytes given but %dbytes max)",
+            RSTRING_LEN(path), (int)sizeof(sockaddr.sun_path)-1);
     }
     strncpy(sockaddr.sun_path, sun_path, sizeof(sockaddr.sun_path)-1);
     addr = rb_str_new((char*)&sockaddr, sizeof(sockaddr));
