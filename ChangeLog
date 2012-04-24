@@ -1,3 +1,13 @@
+Tue Apr 24 18:12:13 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c: fix to output warning when the same literals
+	  are available as a condition of same case clause.
+	  And remove infomation ('#n') because we can find duplicated
+	  condition with explicit line numbers.
+	  [ruby-core:38343] [Ruby 1.9 - Bug #5068]
+
+	* test/ruby/test_syntax.rb: add a test for above.
+
 Tue Apr 24 17:03:51 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (waitpid): need to check the return value of

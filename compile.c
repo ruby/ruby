@@ -1309,6 +1309,21 @@ static const struct st_hash_type cdhash_type = {
     cdhash_hash,
 };
 
+struct cdhash_set_label_struct {
+    VALUE hash;
+    int pos;
+    int len;
+};
+
+static int
+cdhash_set_label_i(VALUE key, VALUE val, void *ptr)
+{
+    struct cdhash_set_label_struct *data = (struct cdhash_set_label_struct *)ptr;
+    LABEL *lobj = (LABEL *)(val & ~1);
+    rb_hash_aset(data->hash, key, INT2FIX(lobj->position - (data->pos+data->len)));
+    return ST_CONTINUE;
+}
+
 /**
   ruby insn object list -> raw instruction sequence
  */
@@ -1427,41 +1442,19 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    if (lobj->sp == -1) {
 				lobj->sp = sp;
 			    }
-			    generated_iseq[pos + 1 + j] =
-				lobj->position - (pos + len);
+			    generated_iseq[pos + 1 + j] = lobj->position - (pos + len);
 			    break;
 			}
 		      case TS_CDHASH:
 			{
-			    /*
-			     * [obj, label, ...]
-			     */
-			    int i;
-			    VALUE lits = operands[j];
-			    VALUE map = rb_hash_new();
-			    RHASH_TBL(map)->type = &cdhash_type;
+			    VALUE map = operands[j];
+			    struct cdhash_set_label_struct data = {
+				map, pos, len,
+			    };
+			    rb_hash_foreach(map, cdhash_set_label_i, (VALUE)&data);
 
-			    for (i=0; i < RARRAY_LEN(lits); i+=2) {
-				VALUE obj = rb_ary_entry(lits, i);
-				VALUE lv  = rb_ary_entry(lits, i+1);
-				lobj = (LABEL *)(lv & ~1);
-
-				if (!lobj->set) {
-				    rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
-						     "unknown label");
-				}
-				if (!st_lookup(rb_hash_tbl(map), obj, 0)) {
-				    rb_hash_aset(map, obj, INT2FIX(lobj->position - (pos+len)));
-				}
-				else {
-				    int n = i/2 + 1;
-				    rb_compile_warning(RSTRING_PTR(iseq->filename), iobj->line_no,
-						       "duplicated when clause (#%d) is ignored", n);
-				}
-			    }
 			    hide_obj(map);
 			    generated_iseq[pos + 1 + j] = map;
-			    iseq_add_mark_object(iseq, map);
 			    break;
 			}
 		      case TS_LINDEX:
@@ -2428,25 +2421,26 @@ case_when_optimizable_literal(NODE * node)
       case NODE_STR:
 	return node->nd_lit;
     }
-    return Qfalse;
+    return Qundef;
 }
 
-static VALUE
-when_vals(rb_iseq_t *iseq, LINK_ANCHOR *cond_seq, NODE *vals, LABEL *l1, VALUE special_literals)
+static int
+when_vals(rb_iseq_t *iseq, LINK_ANCHOR *cond_seq, NODE *vals, LABEL *l1, int only_special_literals, VALUE literals)
 {
     while (vals) {
-	VALUE lit;
-	NODE* val;
+	NODE* val = vals->nd_head;
+	VALUE lit = case_when_optimizable_literal(val);
 
-	val = vals->nd_head;
-
-	if (special_literals &&
-	    (lit = case_when_optimizable_literal(val)) != Qfalse) {
-	    rb_ary_push(special_literals, lit);
-	    rb_ary_push(special_literals, (VALUE)(l1) | 1);
+	if (lit == Qundef) {
+	    only_special_literals = 0;
 	}
 	else {
-	    special_literals = Qfalse;
+	    if (rb_hash_lookup(literals, lit) != Qnil) {
+		rb_compile_warning(RSTRING_PTR(iseq->filename), nd_line(val), "duplicated when clause is ignored");
+	    }
+	    else {
+		rb_hash_aset(literals, lit, (VALUE)(l1) | 1);
+	    }
 	}
 
 	if (nd_type(val) == NODE_STR) {
@@ -2462,7 +2456,7 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *cond_seq, NODE *vals, LABEL *l1, VALUE s
 	ADD_INSNL(cond_seq, nd_line(val), branchif, l1);
 	vals = vals->nd_next;
     }
-    return special_literals;
+    return only_special_literals;
 }
 
 static int
@@ -3152,11 +3146,15 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	DECL_ANCHOR(head);
 	DECL_ANCHOR(body_seq);
 	DECL_ANCHOR(cond_seq);
-	VALUE special_literals = rb_ary_tmp_new(1);
+	int only_special_literals = 1;
+	VALUE literals = rb_hash_new();
 
 	INIT_ANCHOR(head);
 	INIT_ANCHOR(body_seq);
 	INIT_ANCHOR(cond_seq);
+
+	RHASH_TBL(literals)->type = &cdhash_type;
+
 	if (node->nd_head == 0) {
 	    COMPILE_(ret, "when", node->nd_body, poped);
 	    break;
@@ -3188,12 +3186,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    if (vals) {
 		switch (nd_type(vals)) {
 		  case NODE_ARRAY:
-		    special_literals = when_vals(iseq, cond_seq, vals, l1, special_literals);
+		    only_special_literals = when_vals(iseq, cond_seq, vals, l1, only_special_literals, literals);
 		    break;
 		  case NODE_SPLAT:
 		  case NODE_ARGSCAT:
 		  case NODE_ARGSPUSH:
-		    special_literals = 0;
+		    only_special_literals = 0;
 		    COMPILE(cond_seq, "when/cond splat", vals);
 		    ADD_INSN1(cond_seq, nd_line(vals), checkincludearray, Qtrue);
 		    ADD_INSNL(cond_seq, nd_line(vals), branchif, l1);
@@ -3230,11 +3228,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_INSNL(cond_seq, nd_line(tempnode), jump, endlabel);
 	}
 
-	if (special_literals) {
+	if (only_special_literals) {
+	    iseq_add_mark_object(iseq, literals);
+
 	    ADD_INSN(ret, nd_line(tempnode), dup);
-	    ADD_INSN2(ret, nd_line(tempnode), opt_case_dispatch,
-		      special_literals, elselabel);
-	    iseq_add_mark_object_compile_time(iseq, special_literals);
+	    ADD_INSN2(ret, nd_line(tempnode), opt_case_dispatch, literals, elselabel);
 	}
 
 	ADD_SEQ(ret, cond_seq);

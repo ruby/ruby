@@ -128,6 +128,29 @@ class TestSyntax < Test::Unit::TestCase
     assert_not_label(:foo, 'class Foo < not_label:foo; end', bug6347)
   end
 
+  def test_duplicated_when
+    w = 'warning: duplicated when clause is ignored'
+    assert_warn(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
+      eval %q{
+        case 1
+        when 1, 1
+        when 1, 1
+        when 1, 1
+        end
+      }
+    }
+    assert_warn(/#{w}/){#/3: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
+      a = 1
+      eval %q{
+        case 1
+        when 1, 1
+        when 1, a
+        when 1, 1
+        end
+      }
+    }
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
