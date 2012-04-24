@@ -1071,7 +1071,7 @@ XXX
   #
   # Returns option summary list.
   #
-  def to_a; summarize([*banner]) end
+  def to_a; summarize("#{banner}".split(/$/)) end
 
   #
   # Checks if an argument is given twice, in which case an ArgumentError is

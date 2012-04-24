@@ -31,8 +31,8 @@ class TestOptionParser::SummaryTest < TestOptionParser
   end
 
   def test_summary
-    o = OptionParser.new("foo bar")
-    assert_equal("foo bar\n", o.to_s)
-    assert_equal(["foo bar"], o.to_a)
+    o = OptionParser.new("foo\nbar")
+    assert_equal("foo\nbar\n", o.to_s)
+    assert_equal(["foo", "bar"], o.to_a)
   end
 end
