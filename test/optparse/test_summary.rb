@@ -35,4 +35,12 @@ class TestOptionParser::SummaryTest < TestOptionParser
     assert_equal("foo\nbar\n", o.to_s)
     assert_equal(["foo\n", "bar"], o.to_a)
   end
+
+  def test_summary_containing_space
+    # test for r35467. OptionParser#to_a shouldn't split str by spaces.
+    bug6348 = '[ruby-dev:45568]'
+    o = OptionParser.new("foo bar")
+    assert_equal("foo bar\n", o.to_s, bug6348)
+    assert_equal(["foo bar"], o.to_a, bug6348)
+  end
 end

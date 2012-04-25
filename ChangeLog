@@ -1,3 +1,8 @@
+Thu Apr 26 01:32:33 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/optparse/test_summary.rb (test_summary_containing_space): add
+	  test for r35467. OptionParser#to_a shouldn't split banner by spaces.
+
 Wed Apr 25 23:02:46 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (init_unix_addrinfo): refine error message
