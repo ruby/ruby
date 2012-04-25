@@ -768,8 +768,9 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
     StringValue(path);
 
     if (sizeof(un.sun_path) <= (size_t)RSTRING_LEN(path))
-        rb_raise(rb_eArgError, "too long unix socket path (%ldbytes given but %dbytes max)",
-            RSTRING_LEN(path), (int)sizeof(un.sun_path)-1);
+        rb_raise(rb_eArgError,
+            "too long unix socket path (%"PRIuSIZE" bytes given but %"PRIuSIZE" bytes max)",
+            (size_t)RSTRING_LEN(path), sizeof(un.sun_path)-1);
 
     MEMZERO(&un, struct sockaddr_un, 1);
 
@@ -1304,7 +1305,9 @@ addrinfo_mload(VALUE self, VALUE ary)
 
         StringValue(v);
         if (sizeof(uaddr.sun_path) <= (size_t)RSTRING_LEN(v))
-            rb_raise(rb_eSocket, "too long AF_UNIX path");
+            rb_raise(rb_eSocket,
+                "too long AF_UNIX path (%"PRIuSIZE" bytes given but %"PRIuSIZE" bytes max)",
+                (size_t)RSTRING_LEN(v), sizeof(uaddr.sun_path)-1);
         memcpy(uaddr.sun_path, RSTRING_PTR(v), RSTRING_LEN(v));
         len = (socklen_t)sizeof(uaddr);
         memcpy(&ss, &uaddr, len);
@@ -1937,9 +1940,12 @@ addrinfo_unix_path(VALUE self)
     s = addr->sun_path;
     e = (char*)addr + rai->sockaddr_len;
     if (e < s)
-        rb_raise(rb_eSocket, "too short AF_UNIX address");
+        rb_raise(rb_eSocket, "too short AF_UNIX address: %"PRIuSIZE" bytes given for minimum %"PRIuSIZE" bytes.",
+            (size_t)rai->sockaddr_len, (size_t)(s - (char *)addr));
     if (addr->sun_path + sizeof(addr->sun_path) < e)
-        rb_raise(rb_eSocket, "too long AF_UNIX address");
+        rb_raise(rb_eSocket,
+            "too long AF_UNIX path (%"PRIuSIZE" bytes given but %"PRIuSIZE" bytes max)",
+            (size_t)(e - addr->sun_path), sizeof(addr->sun_path));
     while (s < e && *(e-1) == '\0')
         e--;
     return rb_str_new(s, e-s);

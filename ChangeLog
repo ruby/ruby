@@ -1,3 +1,12 @@
+Wed Apr 25 23:02:46 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (init_unix_addrinfo): refine error message
+	  format.
+	  (addrinfo_mload): show more information on "too long AF_UNIX path"
+	  error.
+	  (addrinfo_unix_path): ditto for "too short AF_UNIX address" and
+	  "too long AF_UNIX address" error.
+
 Wed Apr 25 05:46:12 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#to_a): split for each lines.
