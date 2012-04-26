@@ -73,7 +73,7 @@ Tue Apr 24 19:59:31 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* enc/trans/JIS/JISX0213-[12]%UCS@{BMP,SIP}.src: JIS X 0213:2004 ->
 	  Unicode mapping table from NetBSD.
 
-	* enc/trans/JIS/UCS@{BMP,SIP}%JISX0213-[12].src: Unicode -> JIX X
+	* enc/trans/JIS/UCS@{BMP,SIP}%JISX0213-[12].src: Unicode -> JIS X
 	  0213:2004 mapping table from NetBSD.
 
 	* tool/transcode-tblgen.rb: added SIP support.
@@ -123,7 +123,7 @@ Tue Apr 24 12:46:50 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 Tue Apr 24 10:54:34 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* test/drb/drbtest.rb ({DRbCore,DRbAry}#teardown}: cannot pass SIGTERM
+	* test/drb/drbtest.rb ({DRbCore,DRbAry}#teardown): cannot pass SIGTERM
 	  to another process on Windows, so use SIGINT instead.
 
 Tue Apr 24 00:25:39 2012  Yusuke Endoh  <mame@tsg.ne.jp>
