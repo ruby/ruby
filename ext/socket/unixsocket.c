@@ -39,9 +39,9 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
 
     MEMZERO(&sockaddr, struct sockaddr_un, 1);
     sockaddr.sun_family = AF_UNIX;
-    if (sizeof(sockaddr.sun_path) <= (size_t)RSTRING_LEN(path)) {
+    if (sizeof(sockaddr.sun_path) < (size_t)RSTRING_LEN(path)) {
         rb_raise(rb_eArgError, "too long unix socket path (%ldbytes given but %dbytes max)",
-            RSTRING_LEN(path), (int)sizeof(sockaddr.sun_path)-1);
+            RSTRING_LEN(path), (int)sizeof(sockaddr.sun_path));
     }
     memcpy(sockaddr.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
 
@@ -118,7 +118,7 @@ unix_path(VALUE sock)
 	socklen_t len = (socklen_t)sizeof(addr);
 	if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	    rb_sys_fail(0);
-	fptr->pathv = rb_obj_freeze(rb_str_new_cstr(rsock_unixpath(&addr, len)));
+	fptr->pathv = rb_obj_freeze(rsock_unixpath_str(&addr, len));
     }
     return rb_str_dup(fptr->pathv);
 }

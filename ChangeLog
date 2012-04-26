@@ -1,3 +1,28 @@
+Thu Apr 26 12:28:06 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (init_unix_addrinfo): support the longest
+	  path in sockaddr_un.
+	  (inspect_sockaddr): ditto.
+	  (addrinfo_mdump): ditto.
+	  (addrinfo_mload): ditto.
+	  (rsock_unixpath_str): new function.
+	  (rsock_unixpath): removed.
+	  (rsock_unixaddr): use rsock_unixpath_str.
+
+	* ext/socket/socket.c (sock_s_pack_sockaddr_un): support the longest
+	  path in sockaddr_un.
+	  (sock_s_unpack_sockaddr_un): ditto.
+	  (sock_s_gethostbyaddr): unused variable removed.
+
+	* ext/socket/unixsocket.c (rsock_init_unixsock): support the longest
+	  path in sockaddr_un.
+
+	* ext/socket/rubysocket.h (rsock_unixpath_str): declared.
+	  (rsock_unixpath): removed.
+
+	* test/socket/test_unix.rb: comment out test_nul because abstract unix
+	  sockets may contain NULs.
+
 Thu Apr 26 01:32:33 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* test/optparse/test_summary.rb (test_summary_containing_space): add
