@@ -1273,6 +1273,7 @@ static void
 rb_threadptr_execute_interrupts_common(rb_thread_t *th)
 {
     rb_atomic_t interrupt;
+    int first_p = TRUE;
 
     if (th->raised_flag) return;
 
@@ -1281,6 +1282,11 @@ rb_threadptr_execute_interrupts_common(rb_thread_t *th)
 	int timer_interrupt = interrupt & 0x01;
 	int finalizer_interrupt = interrupt & 0x04;
 	int sig;
+
+	if (first_p)
+	    first_p = FALSE;
+	else if (interrupt == 0x01)
+	    break;
 
 	th->status = THREAD_RUNNABLE;
 

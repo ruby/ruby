@@ -1,3 +1,34 @@
+Fri Apr 27 01:45:05 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread.c (rb_threadptr_execute_interrupts_common):
+	  handle timer_interrupt only on the first loop for the case to avoid
+	  the infinite loop like following case:
+	  * there is 2 Ruby threads (3 pthreads)
+	  (1) main thread is waiting at gvl_yield:112 (native_cond_wait)
+	  (2) sub thread works
+	  (3) sub thread waits at gvl_yield:133 (native_mutex_unlock)
+	  (4) main thread works
+	  (5) main thread goes to gvl_acquire_common
+	  (6) main thread call rb_wakeup_timer_thread
+	  (7) timer thread set timer interrupt to the main thread
+	  (8) main thread works
+	  (9) main thread waits at gvl_acquire_common:64 (native_cond_wait)
+	  (10) sub tread works
+	  (11) set sub thread as the current thread
+	  (12) run Ruby thread
+	  (13) ...100ms
+	  (14) sub thread goes to rb_threadptr_execute_interrupts_common
+	  (15) sub thread call rb_thread_schedule_limits
+	  (16) sub thread call gvl_release_common
+	  (17) sub threads waits at gvl_yield:121 (native_cond_wait)
+	  (18) main threads works
+	  (19) main thread back to gvl_yield
+	  (20) set main thread as the current thread
+	  (21) main thread call gvl_yield
+	  (22) main thread waits at gvl_yield:112 (native_cond_wait)
+	  As described above, the main thread can't escape from
+	  rb_threadptr_execute_interrupts_common.
+
 Fri Apr 27 07:15:07 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (sock_s_pack_sockaddr_un): support the longest
