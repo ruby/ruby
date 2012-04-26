@@ -1426,7 +1426,7 @@ sock_s_pack_sockaddr_un(VALUE self, VALUE path)
     StringValue(path);
     MEMZERO(&sockaddr, struct sockaddr_un, 1);
     sockaddr.sun_family = AF_UNIX;
-    if (sizeof(sockaddr.sun_path) <= RSTRING_LEN(path)) {
+    if (sizeof(sockaddr.sun_path) <= (size_t)RSTRING_LEN(path)) {
         rb_raise(rb_eArgError, "too long unix socket path (%"PRIuSIZE" bytes given but %"PRIuSIZE" bytes max)",
             (size_t)RSTRING_LEN(path), sizeof(sockaddr.sun_path));
     }
