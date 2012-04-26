@@ -1,3 +1,8 @@
+Fri Apr 27 08:29:51 2012  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/rinda/test_rinda.rb: fix sticks on some testsf problem 
+	  [Bug #6272]
+
 Wed Apr 25 05:56:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#to_a): split for each lines.
