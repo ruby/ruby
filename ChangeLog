@@ -1,3 +1,10 @@
+Fri Apr 27 07:15:07 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (sock_s_pack_sockaddr_un): support the longest
+	  path in sockaddr_un, really.
+	  reported by nagachika.
+	  http://d.hatena.ne.jp/nagachika/20120426/ruby_trunk_changes_35474_35476
+
 Thu Apr 26 12:28:06 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (init_unix_addrinfo): support the longest
