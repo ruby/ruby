@@ -372,13 +372,16 @@ class TestReadline < Test::Unit::TestCase
       open(stdout_path, "w"){|stdout|
         orig_stdin = STDIN.dup
         orig_stdout = STDOUT.dup
+        orig_stderr = STDERR.dup
         STDIN.reopen(stdin)
         STDOUT.reopen(stdout)
+        STDERR.reopen(stdout)
         begin
           Readline.input = STDIN
           Readline.output = STDOUT
           yield
         ensure
+          STDERR.reopen(orig_stderr)
           STDIN.reopen(orig_stdin)
           STDOUT.reopen(orig_stdout)
           orig_stdin.close
@@ -398,13 +401,20 @@ class TestReadline < Test::Unit::TestCase
   end
 
   def with_pipe
+    stderr = nil
     IO.pipe do |r, w|
       yield(r, w)
       Readline.input = r
       Readline.output = w.reopen(IO::NULL)
+      stderr = STDERR.dup
+      STDERR.reopen(w)
       Readline.readline
     end
   ensure
+    if stderr
+      STDERR.reopen(stderr)
+      stderr.close
+    end
     Readline.input = STDIN
     Readline.output = STDOUT
   end
