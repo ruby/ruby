@@ -308,70 +308,35 @@ module TupleSpaceTestModule
 
   def test_core_03_notify
     notify1 = @ts.notify(nil, [:req, Integer])
-    notify2 = @ts.notify(nil, {"message"=>String, "name"=>String}, 8)
-
-    @ts.write({"message"=>"first", "name"=>"3"}, 3)
-    @ts.write({"message"=>"second", "name"=>"1"}, 1)
-    @ts.write({"message"=>"third", "name"=>"0"})
-    @ts.take({"message"=>"third", "name"=>"0"})
-
-    listener = Thread.new do
-      lv = 0
-      n = 0
-      notify1.each  do |ev, tuple|
-	n += 1
-	if ev == 'write'
-	  lv = lv + 1
-	elsif ev == 'take'
-	  lv = lv - 1
-	else
-	  break
-	end
-	assert(lv >= 0)
-	assert_equal([:req, 2], tuple)
-      end
-      [lv, n]
-    end
-
-    taker = Thread.new(5) do |count|
-      s = 0
-      count.times do
-        tuple = @ts.take([:req, Integer])
-        assert_equal(2, tuple[1])
-        s += tuple[1]
-      end
-      @ts.write([:ans, s])
-      s
-    end
+    notify2 = @ts.notify(nil, {"message"=>String, "name"=>String})
 
     5.times do |n|
       @ts.write([:req, 2])
     end
 
+    5.times do
+      tuple = @ts.take([:req, Integer])
+      assert_equal(2, tuple[1])
+    end
+
+    5.times do
+      assert_equal(['write', [:req, 2]], notify1.pop)
+    end
+    5.times do
+      assert_equal(['take', [:req, 2]], notify1.pop)
+    end
+
+    @ts.write({"message"=>"first", "name"=>"3"})
+    @ts.write({"message"=>"second", "name"=>"1"})
+    @ts.write({"message"=>"third", "name"=>"0"})
+    @ts.take({"message"=>"third", "name"=>"0"})
     @ts.take({"message"=>"first", "name"=>"3"})
 
-    assert_equal(10, thread_join(taker))
-    assert_equal([:ans, 10], @ts.take([:ans, 10]))
-    assert_equal([], @ts.read_all([nil, nil]))
-
-    notify1.cancel
-    sleep(8)
-
-    assert_equal([0, 11], thread_join(listener))
-
-    ary = []
-    ary.push(["write", {"message"=>"first", "name"=>"3"}])
-    ary.push(["write", {"message"=>"second", "name"=>"1"}])
-    ary.push(["write", {"message"=>"third", "name"=>"0"}])
-    ary.push(["take", {"message"=>"third", "name"=>"0"}])
-    ary.push(["take", {"message"=>"first", "name"=>"3"}])
-    ary.push(["delete", {"message"=>"second", "name"=>"1"}])
-    ary.push(["close"])
-
-    notify2.each do |ev|
-      assert_equal(ary.shift, ev)
-    end
-    assert_equal([], ary)
+    assert_equal(["write", {"message"=>"first", "name"=>"3"}], notify2.pop)
+    assert_equal(["write", {"message"=>"second", "name"=>"1"}], notify2.pop)
+    assert_equal(["write", {"message"=>"third", "name"=>"0"}], notify2.pop)
+    assert_equal(["take", {"message"=>"third", "name"=>"0"}], notify2.pop)
+    assert_equal(["take", {"message"=>"first", "name"=>"3"}], notify2.pop)
   end
 
   def test_cancel_01
