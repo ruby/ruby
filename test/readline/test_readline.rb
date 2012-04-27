@@ -36,7 +36,14 @@ else
 end
 
 class TestReadline < Test::Unit::TestCase
+  INPUTRC = "INPUTRC"
+
+  def setup
+    @inputrc, ENV[INPUTRC] = ENV[INPUTRC], IO::NULL
+  end
+
   def teardown
+    ENV[INPUTRC] = @inputrc
     Readline.instance_variable_set("@completion_proc", nil)
   end
 

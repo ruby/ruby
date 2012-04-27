@@ -1,3 +1,8 @@
+Fri Apr 27 10:58:17 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/readline/test_readline.rb (setup): avoid affected by user's
+	  inputrc file.  [ruby-dev:45584][Bug #6357]
+
 Fri Apr 27 01:45:05 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread.c (rb_threadptr_execute_interrupts_common):
