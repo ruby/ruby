@@ -32,6 +32,13 @@ module Psych
       @handler.parser = @parser
     end
 
+    def test_ast_roundtrip
+      parser = Psych.parser
+      parser.parse('null')
+      ast = parser.handler.root
+      assert_match(/^null/, ast.yaml)
+    end
+
     def test_exception_memory_leak
       yaml = <<-eoyaml
 %YAML 1.1
