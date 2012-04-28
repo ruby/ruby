@@ -34,6 +34,7 @@ Init_id(void)
     REGISTER_SYMID(id_core_hash_from_ary,           "core#hash_from_ary");
     REGISTER_SYMID(id_core_hash_merge_ary,          "core#hash_merge_ary");
     REGISTER_SYMID(id_core_hash_merge_ptr,          "core#hash_merge_ptr");
+    REGISTER_SYMID(id_core_hash_merge_kwd,          "core#hash_merge_kwd");
 
     REGISTER_SYMID(idEach, "each");
     REGISTER_SYMID(idLength, "length");

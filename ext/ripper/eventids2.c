@@ -233,6 +233,7 @@ static const struct token_assoc {
     {tRPAREN,		&ripper_id_rparen},
     {tRSHFT,		&ripper_id_op},
     {tSTAR,		&ripper_id_op},
+    {tDSTAR,		&ripper_id_op},
     {tSTRING_BEG,	&ripper_id_tstring_beg},
     {tSTRING_CONTENT,	&ripper_id_tstring_content},
     {tSTRING_DBEG,	&ripper_id_embexpr_beg},

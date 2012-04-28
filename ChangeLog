@@ -1,3 +1,13 @@
+Sun Apr 29 06:12:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (assoc, parser_yylex): add syntax to splat keyword hash.
+	  [ruby-core:44591][Feature #6353]
+
+	* compile.c (compile_array_): generate keyword splat insns.
+
+	* vm.c (m_core_hash_merge_kwd): merge keyword hash into intermediate
+	  hash.  leftward argument is prior currently.
+
 Sat Apr 28 18:39:40 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h (rb_thread_t#yielding): add a field.

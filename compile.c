@@ -2296,21 +2296,28 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
 
 	while (node) {
 	    NODE *start_node = node, *end_node;
+	    NODE *kw = 0;
 	    const int max = 0x100;
 	    DECL_ANCHOR(anchor);
 	    INIT_ANCHOR(anchor);
 
-	    for (i=0; i<max && node; i++, len++) {
+	    for (i=0; i<max && node; i++, len++, node = node->nd_next) {
 		if (CPDEBUG > 0 && nd_type(node) != NODE_ARRAY) {
 		    rb_bug("compile_array: This node is not NODE_ARRAY, but %s", ruby_node_name(nd_type(node)));
 		}
 
+		if (type == COMPILE_ARRAY_TYPE_HASH && !node->nd_head) {
+		    opt_p = 0;
+		    kw = node->nd_next;
+		    node = kw->nd_next;
+		    kw = kw->nd_head;
+		    break;
+		}
 		if (opt_p && nd_type(node->nd_head) != NODE_LIT) {
 		    opt_p = 0;
 		}
 
 		COMPILE_(anchor, "array element", node->nd_head, poped);
-		node = node->nd_next;
 	    }
 
 	    if (opt_p && type != COMPILE_ARRAY_TYPE_ARGS) {
@@ -2378,11 +2385,17 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
 			    ADD_INSN1(anchor, line, newhash, INT2FIX(i));
 			    APPEND_LIST(ret, anchor);
 			}
-			else {
+			else if (i > 0) {
 			    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 			    ADD_INSN(ret, line, swap);
 			    APPEND_LIST(ret, anchor);
 			    ADD_SEND(ret, line, ID2SYM(id_core_hash_merge_ptr), INT2FIX(i + 1));
+			}
+			if (kw) {
+			    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+			    ADD_INSN(ret, line, swap);
+			    COMPILE(ret, "keyword splat", kw);
+			    ADD_SEND(ret, line, ID2SYM(id_core_hash_merge_kwd), INT2FIX(2));
 			}
 			break;
 		      case COMPILE_ARRAY_TYPE_ARGS:

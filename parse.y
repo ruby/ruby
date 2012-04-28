@@ -759,6 +759,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 %token tLBRACE		/* { */
 %token tLBRACE_ARG	/* { */
 %token tSTAR		/* * */
+%token tDSTAR		/* ** */
 %token tAMPER		/* & */
 %token tLAMBDA		/* -> */
 %token tSYMBEG tSTRING_BEG tXSTRING_BEG tREGEXP_BEG tWORDS_BEG tQWORDS_BEG
@@ -805,6 +806,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 %nonassoc id_core_hash_from_ary
 %nonassoc id_core_hash_merge_ary
 %nonassoc id_core_hash_merge_ptr
+%nonassoc id_core_hash_merge_kwd
 
 %token tLAST_TOKEN
 
@@ -1918,6 +1920,7 @@ op		: '|'		{ ifndef_ripper($$ = '|'); }
 		| '/'		{ ifndef_ripper($$ = '/'); }
 		| '%'		{ ifndef_ripper($$ = '%'); }
 		| tPOW		{ ifndef_ripper($$ = tPOW); }
+		| tDSTAR	{ ifndef_ripper($$ = tDSTAR); }
 		| '!'		{ ifndef_ripper($$ = '!'); }
 		| '~'		{ ifndef_ripper($$ = '~'); }
 		| tUPLUS	{ ifndef_ripper($$ = tUPLUS); }
@@ -4699,7 +4702,11 @@ f_kwarg		: f_kw
 		    }
 		;
 
-f_kwrest	: tPOW tIDENTIFIER
+kwrest_mark	: tPOW
+		| tDSTAR
+		;
+
+f_kwrest	: kwrest_mark tIDENTIFIER
 		    {
 			$$ = $2;
 		    }
@@ -4923,6 +4930,16 @@ assoc		: arg_value tASSOC arg_value
 			$$ = dispatch2(assoc_new, $1, $2);
 		    %*/
 		    }
+		| tDSTAR arg_value
+		    {
+		    /*%%%*/
+			$$ = list_append(NEW_LIST(0), $2);
+		    /*%
+			$$ = dispatch1(assoc_splat, $2);
+		    %*/
+		    }
+		;
+
 		;
 
 operation	: tIDENTIFIER
@@ -6890,7 +6907,17 @@ parser_yylex(struct parser_params *parser)
 		return tOP_ASGN;
 	    }
 	    pushback(c);
-	    c = tPOW;
+	    if (IS_SPCARG(c)) {
+		rb_warning0("`**' interpreted as argument prefix");
+		c = tDSTAR;
+	    }
+	    else if (IS_BEG()) {
+		c = tDSTAR;
+	    }
+	    else {
+		warn_balanced("**", "argument prefix");
+		c = tPOW;
+	    }
 	}
 	else {
 	    if (c == '=') {
@@ -9701,6 +9728,7 @@ static const struct {
     {'+',	"+(binary)"},
     {'-',	"-(binary)"},
     {tPOW,	"**"},
+    {tDSTAR,	"**"},
     {tUPLUS,	"+@"},
     {tUMINUS,	"-@"},
     {tCMP,	"<=>"},

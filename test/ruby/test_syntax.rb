@@ -90,6 +90,21 @@ class TestSyntax < Test::Unit::TestCase
     assert_equal({foo: 1, bar: 2}, o.kw(foo: 1, bar: 2), bug5989)
   end
 
+  def test_keyword_splat
+    assert_valid_syntax("foo(**h)", __FILE__)
+    o = Object.new
+    def o.kw(k1: 1, k2: 2) [k1, k2] end
+    h = {k1: 11, k2: 12}
+    assert_equal([11, 12], o.kw(**h))
+    assert_equal([11, 22], o.kw(k2: 22, **h))
+    assert_equal([11, 12], o.kw(**h, **{k2: 22}))
+    assert_equal([11, 22], o.kw(**{k2: 22}, **h))
+    h = {k3: 31}
+    assert_raise(ArgumentError) {o.kw(**h)}
+    h = {"k1"=>11, k2: 12}
+    assert_raise(TypeError) {o.kw(**h)}
+  end
+
   def test_warn_grouped_expression
     assert_warn("test:2: warning: (...) interpreted as grouped expression\n") do
       assert_valid_syntax("foo \\\n(\n  true)", "test") {$VERBOSE = true}

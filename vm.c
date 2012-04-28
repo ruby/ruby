@@ -2068,6 +2068,30 @@ m_core_hash_merge_ptr(int argc, VALUE *argv, VALUE recv)
     return hash;
 }
 
+static int
+kwmerge_ii(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    if (existing) return ST_STOP;
+    *value = arg;
+    return ST_CONTINUE;
+}
+
+static int
+kwmerge_i(VALUE key, VALUE value, VALUE hash)
+{
+    if (!SYMBOL_P(key)) Check_Type(key, T_SYMBOL);
+    st_update(RHASH_TBL(hash), key, kwmerge_ii, (st_data_t)value);
+    return ST_CONTINUE;
+}
+
+static VALUE
+m_core_hash_merge_kwd(VALUE recv, VALUE hash, VALUE kw)
+{
+    kw = rb_convert_type(kw, T_HASH, "Hash", "to_hash");
+    rb_hash_foreach(kw, kwmerge_i, hash);
+    return hash;
+}
+
 extern VALUE *rb_gc_stack_start;
 extern size_t rb_gc_stack_maxsize;
 #ifdef __ia64
@@ -2134,6 +2158,7 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_hash_from_ary, m_core_hash_from_ary, 1);
     rb_define_method_id(klass, id_core_hash_merge_ary, m_core_hash_merge_ary, 2);
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
+    rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);
     rb_obj_freeze(fcore);
     rb_gc_register_mark_object(fcore);
     rb_mRubyVMFrozenCore = fcore;

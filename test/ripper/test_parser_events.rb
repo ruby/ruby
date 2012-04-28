@@ -146,6 +146,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_assoc_new
   end
 
+  def test_assoc_splat
+    thru_assoc_splat = false
+    parse('m(**h)', :on_assoc_splat) {thru_assoc_splat = true}
+    assert_equal true, thru_assoc_splat
+  end
+
   def test_aref_field
     assert_equal '[assign(aref_field(vcall(a),[1]),2)]', parse('a[1]=2')
   end
