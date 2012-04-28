@@ -1021,8 +1021,10 @@ rb_thread_schedule_limits(unsigned long limits_us)
 
 	if (th->running_time_us >= limits_us) {
 	    thread_debug("rb_thread_schedule/switch start\n");
+	    th->yielding = 1;
 	    RB_GC_SAVE_MACHINE_CONTEXT(th);
 	    gvl_yield(th->vm, th);
+	    th->yielding = 0;
 	    rb_thread_set_current(th);
 	    thread_debug("rb_thread_schedule/switch done\n");
 	}
@@ -1273,7 +1275,6 @@ static void
 rb_threadptr_execute_interrupts_common(rb_thread_t *th)
 {
     rb_atomic_t interrupt;
-    int first_p = TRUE;
 
     if (th->raised_flag) return;
 
@@ -1282,11 +1283,6 @@ rb_threadptr_execute_interrupts_common(rb_thread_t *th)
 	int timer_interrupt = interrupt & 0x01;
 	int finalizer_interrupt = interrupt & 0x04;
 	int sig;
-
-	if (first_p)
-	    first_p = FALSE;
-	else if (interrupt == 0x01)
-	    break;
 
 	th->status = THREAD_RUNNABLE;
 
@@ -2939,7 +2935,9 @@ timer_thread_function(void *arg)
     rb_vm_t *vm = GET_VM(); /* TODO: fix me for Multi-VM */
 
     /* for time slice */
-    RUBY_VM_SET_TIMER_INTERRUPT(vm->running_thread);
+    if (!vm->running_thread->yielding) {
+	RUBY_VM_SET_TIMER_INTERRUPT(vm->running_thread);
+    }
 
     /* check signal */
     rb_threadptr_check_signal(vm->main_thread);

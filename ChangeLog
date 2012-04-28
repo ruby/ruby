@@ -1,3 +1,19 @@
+Sat Apr 28 18:39:40 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h (rb_thread_t#yielding): add a field.
+
+	* thread.c (rb_thread_schedule_limits): set th#yielding while
+	  release GVL to yield CPU time.
+
+	* thread.c (timer_thread_function): skip timer interrupt when
+	  th#yielding is true.  This patch fixes r35480.
+
+	* thread.c (rb_threadptr_execute_interrupts_common): revert
+	  a patch of r35480.
+
+	* ChangeLog: add an extended memo of r35480.
+	  http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/R35480_ExtendedMemo
+
 Fri Apr 27 12:34:23 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/dl/cfunc.c (rb_dlcfunc_call): should convert a Bignum value to
@@ -39,6 +55,7 @@ Fri Apr 27 01:45:05 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 	  (22) main thread waits at gvl_yield:112 (native_cond_wait)
 	  As described above, the main thread can't escape from
 	  rb_threadptr_execute_interrupts_common.
+	  See extended memo: http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/R35480_ExtendedMemo
 
 Fri Apr 27 07:15:07 2012  Tanaka Akira  <akr@fsij.org>
 
