@@ -1188,11 +1188,13 @@ generator_each(int argc, VALUE *argv, VALUE obj)
 struct proc_entry {
     VALUE proc;
     VALUE type;
+    VALUE memo;
 };
 
 enum proc_entry_type {
     T_PROC_MAP = 0,
-    T_PROC_SELECT = 1
+    T_PROC_SELECT = 1,
+    T_PROC_TAKE = 2
 };
 
 static VALUE
@@ -1202,6 +1204,8 @@ process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
     struct proc_entry *entry;
     VALUE *procs = RARRAY_PTR(procs_array);
     VALUE move_next = Qtrue;
+    VALUE break_point = Qtrue;
+    NODE *memo;
     long i = 0;
 
     for (i = 0; i < RARRAY_LEN(procs_array); i++) {
@@ -1216,6 +1220,15 @@ process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
                     move_next = rb_funcall(entry->proc, rb_intern("call"),
                             1, result);
                     break;
+                case T_PROC_TAKE:
+                    memo = RNODE(entry->memo);
+                    if (memo->u3.cnt == 0) {
+                        move_next = Qfalse;
+                        break_point = Qundef;
+                    } else if (--memo->u3.cnt == 0) {
+                        break_point = Qundef;
+                    }
+                    break;
             }
         }
     }
@@ -1223,8 +1236,8 @@ process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
     if (RTEST(move_next)) {
         argv[0] = result;
         rb_funcall2(yielder, id_yield, argc, argv);
-        if (result == Qundef) rb_iter_break();
     }
+    if (break_point == Qundef) rb_iter_break();
     return result;
 }
 static VALUE
@@ -1307,7 +1320,7 @@ lazy_generator_init(VALUE old_generator, VALUE procs)
 }
 
 static VALUE
-create_proc_entry(enum proc_entry_type proc_type)
+create_proc_entry(enum proc_entry_type proc_type, VALUE memo)
 {
     struct proc_entry *entry;
     VALUE entry_obj;
@@ -1315,19 +1328,22 @@ create_proc_entry(enum proc_entry_type proc_type)
     entry_obj = Data_Make_Struct(rb_cObject, struct proc_entry,
             0, RUBY_DEFAULT_FREE, entry);
     Data_Get_Struct(entry_obj, struct proc_entry, entry);
-    entry->proc = rb_block_proc();
+    if (proc_type != T_PROC_TAKE) {
+        entry->proc = rb_block_proc();
+    }
     entry->type = proc_type;
+    entry->memo = memo;
 
     return entry_obj;
 }
 
 static VALUE
-lazy_add_proc(VALUE enum_obj, enum proc_entry_type proc_type)
+lazy_add_proc(VALUE enum_obj, enum proc_entry_type proc_type, VALUE memo)
 {
     struct enumerator *ptr;
     VALUE entry;
 
-    entry = create_proc_entry(proc_type);
+    entry = create_proc_entry(proc_type, memo);
     ptr = enumerator_ptr(enum_obj);
     rb_ary_push(ptr->procs, entry);
 
@@ -1430,7 +1446,7 @@ enumerable_lazy(VALUE obj)
 }
 
 static VALUE
-lazy_copy(VALUE obj)
+lazy_copy(int argc, VALUE *argv, VALUE obj)
 {
     struct enumerator *e;
     struct enumerator *new_e;
@@ -1439,13 +1455,18 @@ lazy_copy(VALUE obj)
     VALUE new_procs;
 
     e = enumerator_ptr(obj);
+    new_procs = rb_ary_new4(RARRAY_LEN(e->procs), RARRAY_PTR(e->procs));
+    new_generator = lazy_generator_init(e->obj, new_procs);
+
     new_obj = enumerator_init_copy(enumerator_allocate(rb_cLazy), obj);
     new_e = enumerator_ptr(new_obj);
-    new_procs = rb_ary_new4(RARRAY_LEN(e->procs), RARRAY_PTR(e->procs));
-
-    new_generator = lazy_generator_init(e->obj, new_procs);
     new_e->obj = new_generator;
     new_e->procs = new_procs;
+
+    if (argc > 0) {
+        new_e->meth = rb_to_id(*argv++);
+        new_e->args = rb_ary_new4(argc - 1, argv);
+    }
 
     return new_obj;
 }
@@ -1459,8 +1480,8 @@ lazy_map(VALUE obj)
 	rb_raise(rb_eArgError, "tried to call lazy map without a block");
     }
 
-    new_enum = lazy_copy(obj);
-    lazy_add_proc(new_enum, T_PROC_MAP);
+    new_enum = lazy_copy(0, 0, obj);
+    lazy_add_proc(new_enum, T_PROC_MAP, Qnil);
 
     return new_enum;
 }
@@ -1538,8 +1559,8 @@ lazy_select(VALUE obj)
 	rb_raise(rb_eArgError, "tried to call lazy select without a block");
     }
 
-    new_enum = lazy_copy(obj);
-    lazy_add_proc(new_enum, T_PROC_SELECT);
+    new_enum = lazy_copy(0, 0, obj);
+    lazy_add_proc(new_enum, T_PROC_SELECT, Qnil);
 
     return lazy_set_method(new_enum, Qnil);
 }
@@ -1651,41 +1672,28 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
-lazy_take_func(VALUE val, VALUE args, int argc, VALUE *argv)
-{
-    NODE *memo = RNODE(args);
-
-    rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
-    if (--memo->u3.cnt == 0) {
-	memo->u3.cnt = memo->u2.argc;
-	return Qundef;
-    }
-    else {
-	return Qnil;
-    }
-}
-
-static VALUE
 lazy_take(VALUE obj, VALUE n)
 {
     NODE *memo;
     long len = NUM2LONG(n);
-    int argc = 1;
-    VALUE argv[3];
+    VALUE new_enum;
+    int argc = 0;
+    VALUE argv[2];
 
     if (len < 0) {
 	rb_raise(rb_eArgError, "attempt to take negative size");
     }
-    argv[0] = obj;
+
     if (len == 0) {
-	argv[1] = sym_cycle;
-	argv[2] = INT2NUM(0);
-	argc = 3;
+       argv[0] = sym_cycle;
+       argv[1] = INT2NUM(0);
+       argc = 2;
     }
     memo = NEW_MEMO(0, len, len);
-    return lazy_set_method(rb_block_call(rb_cLazy, id_new, argc, argv,
-					 lazy_take_func, (VALUE) memo),
-			   rb_ary_new3(1, n));
+    new_enum = lazy_copy(argc, argv, obj);
+    lazy_add_proc(new_enum, T_PROC_TAKE, (VALUE) memo);
+
+    return new_enum;
 }
 
 static VALUE
