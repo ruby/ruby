@@ -1194,7 +1194,8 @@ struct proc_entry {
 enum proc_entry_type {
     T_PROC_MAP = 0,
     T_PROC_SELECT = 1,
-    T_PROC_TAKE = 2
+    T_PROC_TAKE = 2,
+    T_PROC_DROP = 3
 };
 
 static VALUE
@@ -1227,6 +1228,12 @@ process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
                         break_point = Qundef;
                     } else if (--memo->u3.cnt == 0) {
                         break_point = Qundef;
+                    }
+                    break;
+                case T_PROC_DROP:
+                    memo = RNODE(entry->memo);
+                    if (memo->u3.cnt-- > 0) {
+                        move_next = Qfalse;
                     }
                     break;
             }
@@ -1328,7 +1335,7 @@ create_proc_entry(enum proc_entry_type proc_type, VALUE memo)
     entry_obj = Data_Make_Struct(rb_cObject, struct proc_entry,
             0, RUBY_DEFAULT_FREE, entry);
     Data_Get_Struct(entry_obj, struct proc_entry, entry);
-    if (proc_type != T_PROC_TAKE) {
+    if (proc_type != T_PROC_TAKE && proc_type != T_PROC_DROP) {
         entry->proc = rb_block_proc();
     }
     entry->type = proc_type;
@@ -1714,32 +1721,21 @@ lazy_take_while(VALUE obj)
 }
 
 static VALUE
-lazy_drop_func(VALUE val, VALUE args, int argc, VALUE *argv)
-{
-    NODE *memo = RNODE(args);
-
-    if (memo->u3.cnt == 0) {
-	rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
-    }
-    else {
-	memo->u3.cnt--;
-    }
-    return Qnil;
-}
-
-static VALUE
 lazy_drop(VALUE obj, VALUE n)
 {
     NODE *memo;
     long len = NUM2LONG(n);
+    VALUE new_enum;
 
     if (len < 0) {
 	rb_raise(rb_eArgError, "attempt to drop negative size");
     }
+
     memo = NEW_MEMO(0, 0, len);
-    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 lazy_drop_func, (VALUE) memo),
-			   rb_ary_new3(1, n));
+    new_enum = lazy_copy(0, 0, obj);
+    lazy_add_proc(new_enum, T_PROC_DROP, (VALUE) memo);
+
+    return new_enum;
 }
 
 static VALUE
