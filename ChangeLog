@@ -1,3 +1,8 @@
+Mon Apr 30 04:43:53 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/json/yaml_events.rb: implicit styles should not
+	  be changeable for JSON events.
+
 Sun Apr 29 06:12:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (assoc, parser_yylex): add syntax to splat keyword hash.
