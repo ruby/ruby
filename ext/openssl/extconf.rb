@@ -15,6 +15,7 @@
 =end
 
 require "mkmf"
+require_relative 'deprecation'
 
 dir_config("openssl")
 dir_config("kerberos")
@@ -57,12 +58,8 @@ unless have_header("openssl/conf_api.h")
   message "OpenSSL 0.9.6 or later required.\n"
   exit 1
 end
-if try_compile("", flag = "-Werror=deprecated-declarations")
-  unless have_func("SSL_library_init()", "openssl/ssl.h", flag)
-    with_config("broken-apple-openssl") or
-      abort "Ignore OpenSSL broken by Apple"
-    $warnflags << " -Wno-deprecated-declarations"
-  end
+unless OpenSSL.check_func("SSL_library_init()", "openssl/ssl.h")
+  abort "Ignore OpenSSL broken by Apple"
 end
 
 message "=== Checking for OpenSSL features... ===\n"

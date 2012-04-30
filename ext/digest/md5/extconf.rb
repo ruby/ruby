@@ -9,9 +9,11 @@ $INCFLAGS << " -I$(srcdir)/.."
 $objs = [ "md5init.#{$OBJEXT}" ]
 
 dir_config("openssl")
+pkg_config("openssl")
+require_relative '../../openssl/deprecation'
 
 if !with_config("bundled-md5") &&
-    have_library("crypto") && have_header("openssl/md5.h")
+    have_library("crypto") && OpenSSL.check_func("MD5_Transform", "openssl/md5.h")
   $objs << "md5ossl.#{$OBJEXT}"
 
 else
@@ -22,7 +24,4 @@ have_header("sys/cdefs.h")
 
 $preload = %w[digest]
 
-if try_compile("", flag = " -Wno-deprecated-declarations")
-  $warnflags << flag
-end
 create_makefile("digest/md5")

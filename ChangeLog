@@ -1,3 +1,10 @@
+Tue May  1 06:03:34 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/digest/*/extconf.rb: use pkg_config to use same library with
+	  openssl.  [ruby-core:44755][Bug #6379]
+
+	* ext/openssl/deprecation.rb: extract check for broken Apple OpenSSL.
+
 Tue May  1 05:02:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (optflags): disable unsafe optimizations.
