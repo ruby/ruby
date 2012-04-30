@@ -333,7 +333,9 @@ class TestFileUtils
     touch 'tmp/cross/b/f'
     ln_s '../a/f', 'tmp/cross/b/l'
     ln_s '../b/f', 'tmp/cross/a/l'
-    cp_r 'tmp/cross', 'tmp/cross2', :preserve => true
+    assert_nothing_raised {
+      cp_r 'tmp/cross', 'tmp/cross2', :preserve => true
+    }
   end if have_symlink?
 
   def test_cp_r_pathname
