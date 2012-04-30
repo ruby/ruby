@@ -1,3 +1,9 @@
+Mon Apr 30 09:02:15 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* ext/openssl/lib/openssl/ssl.rb: add hostname to "hostname does not
+	  match server cert." error. patched by Wes Morgan via Github.
+	  https://github.com/ruby/ruby/pull/122
+
 Mon Apr 30 04:43:53 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/json/yaml_events.rb: implicit styles should not
