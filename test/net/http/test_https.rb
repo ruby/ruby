@@ -103,7 +103,7 @@ class TestNetHTTPS < Test::Unit::TestCase
     ex = assert_raise(OpenSSL::SSL::SSLError){
       http.request_get("/") {|res| }
     }
-    assert_match(/hostname does not match/, ex.message)
+    assert_match(/hostname \"127.0.0.1\" does not match/, ex.message)
   end
 
   def test_timeout_during_SSL_handshake
