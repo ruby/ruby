@@ -479,11 +479,14 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 	    wflag=`echo x$wflag | sed 's/^x-Werror=/-W/;s/^x//'`
 	fi
 	ok=no
-	RUBY_TRY_CFLAGS($wflag, [warnflags="${warnflags+$warnflags }$wflag" ok=yes])
+	RUBY_TRY_CFLAGS($wflag, [
+	    RUBY_APPEND_OPTIONS(warnflags, $wflag)
+	    ok=yes
+	])
 	AS_CASE([$ok:$wflag], [no:-Werror=*], [
 	    wflag=`echo x$wflag | sed 's/^x-Werror=/-W/'`
 	    RUBY_TRY_CFLAGS($wflag, [
-		warnflags="${warnflags+$warnflags }$wflag"
+		RUBY_APPEND_OPTIONS(warnflags, $wflag)
 		particular_werror_flags=no
 	    ])
 	])
@@ -539,9 +542,14 @@ if test "$GCC" = yes; then
 fi
 
 if test "$GCC" = yes; then
+    # optflags
+
     AS_CASE(["$target_os"], [mingw*], [
 	RUBY_TRY_CFLAGS(-fno-omit-frame-pointer, [optflags="${optflags+$optflags }-fno-omit-frame-pointer"])
     ])
+
+    # disable fast-math
+    RUBY_TRY_CFLAGS(-fno-fast-math, [RUBY_APPEND_OPTION(optflags, $oflag)])
 fi
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""

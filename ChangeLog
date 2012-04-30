@@ -1,3 +1,8 @@
+Mon Apr 30 21:09:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (optflags): disable unsafe optimizations.
+	  [ruby-core:44679][Bug #6370]
+
 Mon Apr 30 20:10:04 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/zlib/extconf.rb: detect z_crc_t type which will be defined
