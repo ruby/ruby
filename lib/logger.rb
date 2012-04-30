@@ -396,7 +396,7 @@ class Logger
   # See #info for more information.
   #
   def debug(progname = nil, &block)
-    add(DEBUG, nil, progname, &block)
+    add(DEBUG, nil, progname, &block) if debug?
   end
 
   #
