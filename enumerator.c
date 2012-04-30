@@ -127,6 +127,7 @@ static VALUE rb_cGenerator, rb_cYielder;
 struct generator {
     VALUE proc;
     VALUE obj;
+    VALUE hybrid;
 };
 
 struct yielder {
@@ -1059,6 +1060,7 @@ generator_mark(void *p)
     struct generator *ptr = p;
     rb_gc_mark(ptr->proc);
     rb_gc_mark(ptr->obj);
+    rb_gc_mark(ptr->hybrid);
 }
 
 #define generator_free RUBY_TYPED_DEFAULT_FREE
@@ -1115,6 +1117,7 @@ generator_init(VALUE obj, VALUE proc)
     }
 
     ptr->proc = proc;
+    ptr->hybrid = Qfalse;
 
     return obj;
 }
@@ -1309,10 +1312,10 @@ lazy_generator_init(VALUE old_generator, VALUE procs)
     struct generator *old_gen_ptr;
 
     old_gen_ptr = generator_ptr(old_generator);
-    if (old_gen_ptr->obj) {
-        obj = old_gen_ptr->obj;
-    } else {
+    if (old_gen_ptr->hybrid) {
         obj = old_generator;
+    } else {
+        obj = old_gen_ptr->obj;
     }
 
     generator = generator_allocate(rb_cGenerator);
@@ -1362,6 +1365,7 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE obj, meth;
     VALUE generator;
+    struct generator *g_ptr;
     VALUE procs;
     struct enumerator *ptr;
     int offset;
@@ -1386,12 +1390,25 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
     rb_block_call(generator, id_initialize, 0, 0,
 		  (rb_block_given_p() ? lazy_init_block_i : lazy_init_block),
                   rb_ary_new3(2, obj, procs));
+    g_ptr = generator_ptr(generator);
+    g_ptr->obj = obj;
     enumerator_init(self, generator, meth, argc - offset, argv + offset);
     ptr = enumerator_ptr(self);
     ptr->procs = procs;
 
     rb_ivar_set(self, id_receiver, obj);
     return self;
+}
+
+static VALUE
+lazy_mark_as_hybrid(VALUE obj)
+{
+    struct enumerator *e;
+    struct generator *g;
+    e = enumerator_ptr(obj);
+    g = generator_ptr(e->obj);
+    g->hybrid = Qtrue;
+    return obj;
 }
 
 static VALUE
@@ -1406,6 +1423,7 @@ lazy_set_method(VALUE lazy, VALUE args)
     else {
 	rb_ivar_set(lazy, id_arguments, args);
     }
+    lazy_mark_as_hybrid(lazy);
     return lazy;
 }
 
@@ -1569,7 +1587,7 @@ lazy_select(VALUE obj)
     new_enum = lazy_copy(0, 0, obj);
     lazy_add_proc(new_enum, T_PROC_SELECT, Qnil);
 
-    return lazy_set_method(new_enum, Qnil);
+    return new_enum;
 }
 
 static VALUE
