@@ -1,3 +1,8 @@
+Mon Apr 30 23:05:53 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/ruby/test_continuation.rb (tracing_with_set_trace_func): don't
+	  call Continuation from other threads. [ruby-dev:45596] [Bug #6382]
+
 Mon Apr 30 21:09:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (optflags): disable unsafe optimizations.
