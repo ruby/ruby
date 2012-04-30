@@ -325,6 +325,17 @@ class TestFileUtils
     assert_equal 'SLdest', File.readlink('tmp/cpr_dest2/symlink')
   end if have_symlink?
 
+  def test_cp_r_symlink_preserve
+    mkdir 'tmp/cross'
+    mkdir 'tmp/cross/a'
+    mkdir 'tmp/cross/b'
+    touch 'tmp/cross/a/f'
+    touch 'tmp/cross/b/f'
+    ln_s '../a/f', 'tmp/cross/b/l'
+    ln_s '../b/f', 'tmp/cross/a/l'
+    cp_r 'tmp/cross', 'tmp/cross2', :preserve => true
+  end if have_symlink?
+
   def test_cp_r_pathname
     # pathname
     touch 'tmp/cprtmp'

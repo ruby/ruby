@@ -1444,14 +1444,37 @@ private
 
     def copy_metadata(path)
       st = lstat()
-      File.utime st.atime, st.mtime, path
+      if !st.symlink?
+        File.utime st.atime, st.mtime, path
+      end
       begin
-        File.chown st.uid, st.gid, path
+        if st.symlink?
+          begin
+            File.lchown st.uid, st.gid, path
+          rescue NotImplementedError
+          end
+        else
+          File.chown st.uid, st.gid, path
+        end
       rescue Errno::EPERM
         # clear setuid/setgid
-        File.chmod st.mode & 01777, path
+        if st.symlink?
+          begin
+            File.lchmod st.mode & 01777, path
+          rescue NotImplementedError
+          end
+        else
+          File.chmod st.mode & 01777, path
+        end
       else
-        File.chmod st.mode, path
+        if st.symlink?
+          begin
+            File.lchmod st.mode, path
+          rescue NotImplementedError
+          end
+        else
+          File.chmod st.mode, path
+        end
       end
     end
 
