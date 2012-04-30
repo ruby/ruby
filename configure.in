@@ -549,7 +549,9 @@ if test "$GCC" = yes; then
     ])
 
     # disable fast-math
-    RUBY_TRY_CFLAGS(-fno-fast-math, [RUBY_APPEND_OPTION(optflags, $oflag)])
+    for oflag in -fno-fast-math; do
+	RUBY_TRY_CFLAGS(oflag, [RUBY_APPEND_OPTION(optflags, $oflag)])
+    done
 fi
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
