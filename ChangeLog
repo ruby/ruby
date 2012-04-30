@@ -1,3 +1,10 @@
+Mon Apr 30 20:10:04 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/zlib/extconf.rb: detect z_crc_t type which will be defined
+	  since zlib-1.2.7.
+
+	* ext/zlib/zlib.c (rb_zlib_crc_table): use z_crc_t if available.
+
 Mon Apr 30 09:02:15 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* ext/openssl/lib/openssl/ssl.rb: add hostname to "hostname does not
