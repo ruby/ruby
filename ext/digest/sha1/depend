@@ -4,3 +4,5 @@ sha1init.o: sha1init.c $(srcdir)/../digest.h $(hdrdir)/ruby.h \
   $(topdir)/config.h $(hdrdir)/defines.h $(hdrdir)/intern.h \
   sha1.h $(srcdir)/../defs.h
 sha1ossl.o: sha1ossl.h  $(srcdir)/../defs.h
+
+$(RUBY_EXTCONF_H): $(top_srcdir)/ext/openssl/deprecation.rb
