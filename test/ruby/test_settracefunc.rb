@@ -16,9 +16,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_c_call
     events = []
-    eval <<-EOF.gsub(/^.*?: /, "")
+    name = "#{self.class}\##{__method__}"
+    eval <<-EOF.gsub(/^.*?: /, ""), nil, name
      1: set_trace_func(Proc.new { |event, file, lineno, mid, binding, klass|
-     2:   events << [event, lineno, mid, klass]
+     2:   events << [event, lineno, mid, klass] if file == name
      3: })
      4: x = 1 + 1
      5: set_trace_func(nil)
@@ -40,9 +41,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_call
     events = []
-    eval <<-EOF.gsub(/^.*?: /, "")
+    name = "#{self.class}\##{__method__}"
+    eval <<-EOF.gsub(/^.*?: /, ""), nil, name
      1: set_trace_func(Proc.new { |event, file, lineno, mid, binding, klass|
-     2:   events << [event, lineno, mid, klass]
+     2:   events << [event, lineno, mid, klass] if file == name
      3: })
      4: def add(x, y)
      5:   x + y
@@ -79,9 +81,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_class
     events = []
-    eval <<-EOF.gsub(/^.*?: /, "")
+    name = "#{self.class}\##{__method__}"
+    eval <<-EOF.gsub(/^.*?: /, ""), nil, name
      1: set_trace_func(Proc.new { |event, file, lineno, mid, binding, klass|
-     2:   events << [event, lineno, mid, klass]
+     2:   events << [event, lineno, mid, klass] if file == name
      3: })
      4: class Foo
      5:   def bar
@@ -131,9 +134,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_return # [ruby-dev:38701]
     events = []
-    eval <<-EOF.gsub(/^.*?: /, "")
+    name = "#{self.class}\##{__method__}"
+    eval <<-EOF.gsub(/^.*?: /, ""), nil, name
      1: set_trace_func(Proc.new { |event, file, lineno, mid, binding, klass|
-     2:   events << [event, lineno, mid, klass]
+     2:   events << [event, lineno, mid, klass] if file == name
      3: })
      4: def foo(a)
      5:   return if a
@@ -176,9 +180,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_return2 # [ruby-core:24463]
     events = []
-    eval <<-EOF.gsub(/^.*?: /, "")
+    name = "#{self.class}\##{__method__}"
+    eval <<-EOF.gsub(/^.*?: /, ""), nil, name
      1: set_trace_func(Proc.new { |event, file, lineno, mid, binding, klass|
-     2:   events << [event, lineno, mid, klass]
+     2:   events << [event, lineno, mid, klass] if file == name
      3: })
      4: def foo
      5:   a = 5
@@ -214,9 +219,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_raise
     events = []
-    eval <<-EOF.gsub(/^.*?: /, "")
+    name = "#{self.class}\##{__method__}"
+    eval <<-EOF.gsub(/^.*?: /, ""), nil, name
      1: set_trace_func(Proc.new { |event, file, lineno, mid, binding, klass|
-     2:   events << [event, lineno, mid, klass]
+     2:   events << [event, lineno, mid, klass] if file == name
      3: })
      4: begin
      5:   raise TypeError, "error"
@@ -265,9 +271,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_break # [ruby-core:27606] [Bug #2610]
     events = []
-    eval <<-EOF.gsub(/^.*?: /, "")
+    name = "#{self.class}\##{__method__}"
+    eval <<-EOF.gsub(/^.*?: /, ""), nil, name
      1: set_trace_func(Proc.new { |event, file, lineno, mid, binding, klass|
-     2:   events << [event, lineno, mid, klass]
+     2:   events << [event, lineno, mid, klass] if file == name
      3: })
      4: [1,2,3].any? {|n| n}
      8: set_trace_func(nil)
@@ -306,7 +313,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     th = Thread.new do
       th = Thread.current
-      eval <<-EOF.gsub(/^.*?: /, "")
+      name = "#{self.class}\##{__method__}"
+      eval <<-EOF.gsub(/^.*?: /, ""), nil, name
        1: th.set_trace_func(prc)
        2: th.add_trace_func(prc2)
        3: class ThreadTraceInnerClass
@@ -357,11 +365,12 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_trace_defined_method
     events = []
-    eval <<-EOF.gsub(/^.*?: /, "")
+    name = "#{self.class}\##{__method__}"
+    eval <<-EOF.gsub(/^.*?: /, ""), nil, name
      1: class FooBar; define_method(:foobar){}; end
      2: fb = FooBar.new
      3: set_trace_func(Proc.new { |event, file, lineno, mid, binding, klass|
-     4:   events << [event, lineno, mid, klass]
+     4:   events << [event, lineno, mid, klass] if file == name
      5: })
      6: fb.foobar
      7: set_trace_func(nil)
