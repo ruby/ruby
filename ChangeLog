@@ -1,3 +1,8 @@
+Tue May  1 14:17:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/deprecation.rb (OpenSSL.check_func): check if header is
+	  available for macro compatibility.
+
 Tue May  1 10:53:54 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_settracefunc.rb: ignore traces from another threads
