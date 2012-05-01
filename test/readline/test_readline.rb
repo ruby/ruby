@@ -1,34 +1,5 @@
 begin
   require "readline"
-=begin
-  class << Readline
-    [
-     "line_buffer",
-     "point",
-     "set_screen_size",
-     "get_screen_size",
-     "vi_editing_mode",
-     "emacs_editing_mode",
-     "completion_append_character=",
-     "completion_append_character",
-     "basic_word_break_characters=",
-     "basic_word_break_characters",
-     "completer_word_break_characters=",
-     "completer_word_break_characters",
-     "basic_quote_characters=",
-     "basic_quote_characters",
-     "completer_quote_characters=",
-     "completer_quote_characters",
-     "filename_quote_characters=",
-     "filename_quote_characters",
-     "refresh_line",
-    ].each do |method_name|
-      define_method(method_name.to_sym) do |*args|
-        raise NotImplementedError
-      end
-    end
-  end
-=end
 rescue LoadError
 else
   require "test/unit"
@@ -77,6 +48,10 @@ class TestReadline < Test::Unit::TestCase
        ["point"],
        ["set_screen_size", 1, 1],
        ["get_screen_size"],
+       ["pre_input_hook=", proc {}],
+       ["pre_input_hook"],
+       ["insert_text", ""],
+       ["redisplay"],
       ]
     method_args.each do |method_name, *args|
       assert_raise(SecurityError, NotImplementedError,
@@ -371,6 +346,53 @@ class TestReadline < Test::Unit::TestCase
       assert_raise(IOError, bug5803) {Readline.readline}
     end
   end
+
+  def test_pre_input_hook
+    begin
+      pr = proc {}
+      assert_equal(Readline.pre_input_hook = pr, pr)
+      assert_equal(Readline.pre_input_hook, pr)
+      assert_nil(Readline.pre_input_hook = nil)
+    rescue NotImplementedError
+    end
+  end
+
+  def test_insert_text
+    begin
+      str = "test_insert_text"
+      assert_equal(Readline.insert_text(str), Readline)
+      assert_equal(Readline.line_buffer, str)
+      assert_equal(Readline.line_buffer.encoding,
+                   get_default_internal_encoding)
+    rescue NotImplementedError
+    end
+  end if !/EditLine/n.match(Readline::VERSION)
+
+  def test_modify_text_in_pre_input_hook
+    begin
+      stdin = Tempfile.new("readline_redisplay_stdin")
+      stdout = Tempfile.new("readline_redisplay_stdout")
+      stdin.write("world\n")
+      stdin.close
+      Readline.pre_input_hook = proc do
+        assert_equal("", Readline.line_buffer)
+        Readline.insert_text("hello ")
+        Readline.redisplay
+      end
+      replace_stdio(stdin.path, stdout.path) do
+        line = Readline.readline("> ")
+        assert_equal("hello world", line)
+      end
+      assert_equal("> hello world\n", stdout.read)
+      stdout.close
+    rescue NotImplementedError
+    ensure
+      begin
+        Readline.pre_input_hook = nil
+      rescue NotImplementedError
+      end
+    end
+  end if !/EditLine/n.match(Readline::VERSION)
 
   private
 

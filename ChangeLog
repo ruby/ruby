@@ -1,3 +1,9 @@
+Tue May  1 22:18:45 2012  Kouji Takao  <kouji.takao@gmail.com>
+
+	* ext/readline/readline.c (Readline.pre_input_hook)
+	  (Readline.insert_text, Readline.redisplay): new function. An
+	  original patch was created by nagachika. [Feature #5785]
+
 Tue May  1 15:46:48 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: "$(Q)-..." doesn't work on nmake.

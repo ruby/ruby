@@ -61,6 +61,9 @@ static ID completion_proc, completion_case_fold;
 #if USE_INSERT_IGNORE_ESCAPE
 static ID id_orig_prompt, id_last_prompt;
 #endif
+#if defined(HAVE_RL_PRE_INPUT_HOOK)
+static ID id_pre_input_hook;
+#endif
 
 #ifndef HAVE_RL_FILENAME_COMPLETION_FUNCTION
 # define rl_filename_completion_function filename_completion_function
@@ -467,6 +470,108 @@ readline_s_set_output(VALUE self, VALUE output)
     rl_outstream = rb_io_stdio_file(ofp);
     return output;
 }
+
+#if defined(HAVE_RL_PRE_INPUT_HOOK)
+/*
+ * call-seq:
+ *   Readline.pre_input_hook = proc
+ *
+ * Specifies a Proc object +proc+ to call after the first prompt has
+ * been printed and just before readline starts reading input
+ * characters.
+ *
+ * See GNU Readline's rl_pre_input_hook variable.
+ * 
+ * Raises ArgumentError if +proc+ does not respond to the call method.
+ *
+ * Raises SecurityError if $SAFE is 4.
+ */
+static VALUE
+readline_s_set_pre_input_hook(VALUE self, VALUE proc)
+{
+    rb_secure(4);
+    if (!NIL_P(proc) && !rb_respond_to(proc, rb_intern("call")))
+	rb_raise(rb_eArgError, "argument must respond to `call'");
+    return rb_ivar_set(mReadline, id_pre_input_hook, proc);
+}
+
+/*
+ * call-seq:
+ *   Readline.pre_input_hook -> proc
+ *
+ * Returns a Proc object +proc+ to call after the first prompt has
+ * been printed and just before readline starts reading input
+ * characters. The default is nil.
+ *
+ * Raises SecurityError if $SAFE is 4.
+ */
+static VALUE
+readline_s_get_pre_input_hook(VALUE self)
+{
+    rb_secure(4);
+    return rb_attr_get(mReadline, id_pre_input_hook);
+}
+
+static int
+readline_pre_input_hook(void)
+{
+    VALUE proc;
+
+    proc = rb_attr_get(mReadline, id_pre_input_hook);
+    if (!NIL_P(proc))
+	rb_funcall(proc, rb_intern("call"), 0);
+    return 0;
+}
+#else
+#define readline_s_set_pre_input_hook rb_f_notimplement
+#define readline_s_get_pre_input_hook rb_f_notimplement
+#endif
+
+#if defined(HAVE_RL_INSERT_TEXT)
+/*
+ * call-seq:
+ *   Readline.insert_text(string) -> self
+ *
+ * Insert text into the line at the current cursor position.
+ *
+ * See GNU Readline's rl_insert_text function.
+ *
+ * Raises SecurityError if $SAFE is 4.
+ */
+static VALUE
+readline_s_insert_text(VALUE self, VALUE str)
+{
+    rb_secure(4);
+    OutputStringValue(str);
+    rl_insert_text(RSTRING_PTR(str));
+    return self;
+}
+#else
+#define readline_s_insert_text rb_f_notimplement
+#endif
+
+#if defined(HAVE_RL_REDISPLAY)
+/*
+ * call-seq:
+ *   Readline.redisplay -> self
+ *
+ * Change what's displayed on the screen to reflect the current
+ * contents.
+ *
+ * See GNU Readline's rl_redisplay function.
+ *
+ * Raises SecurityError if $SAFE is 4.
+ */
+static VALUE
+readline_s_redisplay(VALUE self)
+{
+    rb_secure(4);
+    rl_redisplay();
+    return self;
+}
+#else
+#define readline_s_redisplay rb_f_notimplement
+#endif
 
 /*
  * call-seq:
@@ -1537,6 +1642,9 @@ Init_readline()
 
     completion_proc = rb_intern(COMPLETION_PROC);
     completion_case_fold = rb_intern(COMPLETION_CASE_FOLD);
+#if defined(HAVE_RL_PRE_INPUT_HOOK)
+    id_pre_input_hook = rb_intern("pre_input_hook");
+#endif
 
     mReadline = rb_define_module("Readline");
     rb_define_module_function(mReadline, "readline",
@@ -1595,6 +1703,14 @@ Init_readline()
 			       readline_s_get_filename_quote_characters, 0);
     rb_define_singleton_method(mReadline, "refresh_line",
 			       readline_s_refresh_line, 0);
+    rb_define_singleton_method(mReadline, "pre_input_hook=",
+			       readline_s_set_pre_input_hook, 1);
+    rb_define_singleton_method(mReadline, "pre_input_hook",
+			       readline_s_get_pre_input_hook, 0);
+    rb_define_singleton_method(mReadline, "insert_text",
+			       readline_s_insert_text, 1);
+    rb_define_singleton_method(mReadline, "redisplay",
+			       readline_s_redisplay, 0);
 
 #if USE_INSERT_IGNORE_ESCAPE
     CONST_ID(id_orig_prompt, "orig_prompt");
@@ -1678,6 +1794,9 @@ Init_readline()
     rb_define_const(mReadline, "VERSION", version);
 
     rl_attempted_completion_function = readline_attempted_completion_function;
+#if defined(HAVE_RL_PRE_INPUT_HOOK)
+    rl_pre_input_hook = (Function *)readline_pre_input_hook;
+#endif
 #ifdef HAVE_RL_CATCH_SIGNALS
     rl_catch_signals = 0;
 #endif
