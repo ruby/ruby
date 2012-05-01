@@ -1,3 +1,8 @@
+Tue May  1 15:32:10 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: replace '@' prefix to '$(Q)' to control build
+	  process outputs.
+
 Tue May  1 14:17:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/deprecation.rb (OpenSSL.check_func): check if header is

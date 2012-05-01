@@ -168,7 +168,7 @@ exts: build-ext
 
 EXTS_MK = exts.mk
 $(EXTS_MK): $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)
-	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$(EXTS_MK) $(EXTMK_ARGS) configure
+	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$(EXTS_MK) $(EXTMK_ARGS) configure
 
 configure-ext: $(EXTS_MK)
 
@@ -176,7 +176,7 @@ build-ext: $(EXTS_MK)
 	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS)
 
 $(MKMAIN_CMD): $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)
-	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$@ $(EXTMK_ARGS)
+	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$@ $(EXTMK_ARGS)
 
 prog: program wprogram
 
@@ -216,11 +216,11 @@ $(LIBRUBY_EXTS):
 	@exit > $@
 
 $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
-	@$(RM) $@
+	$(Q)$(RM) $@
 	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
 
 ruby.imp: $(EXPORTOBJS)
-	@$(NM) -Pgp $(EXPORTOBJS) | \
+	$(Q)$(NM) -Pgp $(EXPORTOBJS) | \
 	awk 'BEGIN{print "#!"}; $$2~/^[BDT]$$/&&$$1!~/^(Init_|.*_threadptr_|\.)/{print $$1}' | \
 	sort -u -o $@
 
@@ -427,12 +427,12 @@ clear-installed-list: PHONY
 
 clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-capi clean-extout clean-platform
 clean-local:: PHONY
-	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
-	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
-	@$(RM) y.tab.c y.output encdb.h transdb.h prelude.c config.log rbconfig.rb $(ruby_pc)
+	$(Q)$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
+	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
+	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h prelude.c config.log rbconfig.rb $(ruby_pc)
 clean-ext:: PHONY
 clean-golf: PHONY
-	@$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
+	$(Q)$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
 clean-rdoc: PHONY
 clean-capi: PHONY
 clean-platform: PHONY
@@ -441,12 +441,12 @@ clean-docs: clean-rdoc clean-capi
 
 distclean: distclean-ext distclean-local distclean-enc distclean-golf distclean-extout distclean-platform
 distclean-local:: clean-local
-	@$(RM) $(MKFILES) yasmdata.rb *.inc
-	@$(RM) config.cache config.status config.status.lineno $(PRELUDES)
-	@$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
+	$(Q)$(RM) $(MKFILES) yasmdata.rb *.inc
+	$(Q)$(RM) config.cache config.status config.status.lineno $(PRELUDES)
+	$(Q)$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 distclean-ext:: PHONY
 distclean-golf: clean-golf
-	@$(RM) $(GOLFPRELUDES)
+	$(Q)$(RM) $(GOLFPRELUDES)
 distclean-rdoc: PHONY
 distclean-capi: PHONY
 distclean-extout: clean-extout
@@ -454,14 +454,14 @@ distclean-platform: clean-platform
 
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 realclean-local:: distclean-local
-	@$(RM) parse.c parse.h lex.c newline.c revision.h
+	$(Q)$(RM) parse.c parse.h lex.c newline.c revision.h
 realclean-ext::
 realclean-golf: distclean-golf
 realclean-capi: PHONY
 realclean-extout: distclean-extout
 
 clean-ext distclean-ext realclean-ext::
-	@$(RM) $(EXTS_MK)
+	$(Q)$(RM) $(EXTS_MK)
 
 clean-enc distclean-enc realclean-enc: PHONY
 
@@ -477,12 +477,12 @@ yes-btest: miniruby$(EXEEXT) PHONY
 btest-ruby: $(TEST_RUNNABLE)-btest-ruby
 no-btest-ruby: PHONY
 yes-btest-ruby: prog PHONY
-	@$(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib" -q $(OPTS)
+	$(Q)$(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib" -q $(OPTS)
 
 test-sample: $(TEST_RUNNABLE)-test-sample
 no-test-sample: PHONY
 yes-test-sample: prog PHONY
-	@$(RUNRUBY) $(srcdir)/tool/rubytest.rb
+	$(Q)$(RUNRUBY) $(srcdir)/tool/rubytest.rb
 
 test-knownbugs: test-knownbug
 test-knownbug: $(TEST_RUNNABLE)-test-knownbug
@@ -509,7 +509,7 @@ extconf: $(PREP)
 	$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
 $(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(srcdir)/version.h $(PREP)
-	@$(MINIRUBY) $(srcdir)/tool/mkconfig.rb -timestamp=$@ \
+	$(Q)$(MINIRUBY) $(srcdir)/tool/mkconfig.rb -timestamp=$@ \
 		-install_name=$(RUBY_INSTALL_NAME) \
 		-so_name=$(RUBY_SO_NAME) rbconfig.rb
 
@@ -549,12 +549,13 @@ PHONY:
 parse.h {$(VPATH)}parse.h: {$(VPATH)}parse.c
 
 {$(srcdir)}.y.c:
-	$(YACC) -d $(YFLAGS) -o y.tab.c $(SRC_FILE)
-	sed -f $(srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@.new
-	@$(MV) $@.new $@
-	sed -e "/^#line.*y\.tab\.h/d;/^#line.*parse\.y/d" y.tab.h > $(@:.c=.h).new
-	@$(IFCHANGE) $(@:.c=.h) $(@:.c=.h).new
-	@$(RM) y.tab.c y.tab.h
+	$(ECHO) generating $@
+	$(Q)$(YACC) -d $(YFLAGS) -o y.tab.c $(SRC_FILE)
+	$(Q)sed -f $(srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@.new
+	$(Q)$(MV) $@.new $@
+	$(Q)sed -e "/^#line.*y\.tab\.h/d;/^#line.*parse\.y/d" y.tab.h > $(@:.c=.h).new
+	$(Q)$(IFCHANGE) $(@:.c=.h) $(@:.c=.h).new
+	$(Q)$(RM) y.tab.c y.tab.h
 
 acosh.$(OBJEXT): {$(VPATH)}acosh.c
 alloca.$(OBJEXT): {$(VPATH)}alloca.c {$(VPATH)}config.h
@@ -859,8 +860,8 @@ $(srcdir)/revision.h:
 	@exit > $@
 
 $(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
-	@-$(BASERUBY) $(srcdir)/tool/file2lastrev.rb --revision.h "$(srcdir)" > revision.tmp
-	@$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" revision.tmp
+	$(Q)-$(BASERUBY) $(srcdir)/tool/file2lastrev.rb --revision.h "$(srcdir)" > revision.tmp
+	$(Q)$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" revision.tmp
 
 $(srcdir)/ext/ripper/ripper.c: parse.y
 	$(ECHO) generating $@
@@ -926,7 +927,7 @@ dist:
 	$(BASERUBY) $(srcdir)/tool/make-snapshot tmp $(RELNAME)
 
 up::
-	-@$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(REVISION_H)"
+	-$(Q)$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(REVISION_H)"
 
 info: info-program info-libruby_a info-libruby_so info-arch
 info-program:
