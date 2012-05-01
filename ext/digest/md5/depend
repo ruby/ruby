@@ -4,5 +4,3 @@ md5init.o: md5init.c $(srcdir)/../digest.h $(hdrdir)/ruby.h \
   $(topdir)/config.h $(hdrdir)/defines.h $(hdrdir)/intern.h md5.h \
   $(srcdir)/../defs.h
 md5ossl.o: md5ossl.h
-
-$(RUBY_EXTCONF_H): $(top_srcdir)/ext/openssl/deprecation.rb

@@ -1897,14 +1897,7 @@ RULES
     unless suffixes.empty?
       depout.unshift(".SUFFIXES: ." + suffixes.uniq.join(" .") + "\n\n")
     end
-    if $extconf_h
-      depout.unshift("$(OBJS): $(RUBY_EXTCONF_H)\n\n",
-                     "$(RUBY_EXTCONF_H): $(srcdir)/extconf.rb\n",
-                     "$(RUBY_EXTCONF_H):\n",
-                     "\t$(Q)$(RM) $(@)\n",
-                     "\t$(ECHO) $@ is outdated, re-configure\n",
-                     "\t@exit 1\n")
-    end
+    depout.unshift("$(OBJS): $(RUBY_EXTCONF_H)\n\n") if $extconf_h
     depout.flatten!
     depout
   end
