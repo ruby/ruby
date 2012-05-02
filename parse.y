@@ -7294,7 +7294,7 @@ parser_yylex(struct parser_params *parser)
 	    return tOP_ASGN;
 	}
 	if (c == '>') {
-	    lex_state = EXPR_ARG;
+	    lex_state = EXPR_ENDFN;
 	    return tLAMBDA;
 	}
 	if (IS_BEG() || (IS_SPCARG(c) && arg_ambiguous())) {

@@ -1,3 +1,8 @@
+Wed May  2 23:21:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): allow spaces between lambda arrow and
+	  parenthesis.  [ruby-dev:45605][Feature #6390]
+
 Wed May  2 19:06:30 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* cont.c (rb_fiber_m_transfer): Improved Fiber documentation.

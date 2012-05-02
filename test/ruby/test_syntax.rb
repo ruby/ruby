@@ -166,6 +166,11 @@ class TestSyntax < Test::Unit::TestCase
     }
   end
 
+  def test_lambda_with_space
+    feature6390 = '[ruby-dev:45605]'
+    assert_valid_syntax("-> (x, y) {}", __FILE__, feature6390)
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
