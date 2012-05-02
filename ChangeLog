@@ -1,3 +1,8 @@
+Wed May  2 19:06:30 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* cont.c (rb_fiber_m_transfer): Improved Fiber documentation.
+	  patched by Anuj Dutta. [ruby-core:44540][Bug #6343]
+
 Wed May  2 13:06:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README, README.ja: reformatted using rdoc markup.  based on the

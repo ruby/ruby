@@ -1425,6 +1425,32 @@ rb_fiber_m_resume(int argc, VALUE *argv, VALUE fib)
  *  You cannot resume a fiber that transferred control to another one.
  *  This will cause a double resume error. You need to transfer control
  *  back to this fiber before it can yield and resume.
+ *
+ *  Example:
+ *
+ *    fiber1 = Fiber.new do
+ *      puts "In Fiber 1"
+ *      Fiber.yield
+ *    end
+ *
+ *    fiber2 = Fiber.new do
+ *      puts "In Fiber 2"
+ *      fiber1.transfer
+ *    end
+ *
+ *    fiber3 = Fiber.new do
+ *      puts "In Fiber 3"
+ *    end
+ *
+ *    fiber2.resume
+ *    fiber3.resume
+ *
+ *    <em>produces</em>
+ *
+ *    I am in fiber2
+ *    I am in fiber1
+ *    I am in fiber3
+ *
  */
 static VALUE
 rb_fiber_m_transfer(int argc, VALUE *argv, VALUE fibval)
