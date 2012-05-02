@@ -1,3 +1,8 @@
+Wed May  2 23:26:04 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* cont.c (rb_fiber_m_transfer): improve sample code in Fiber#transfer
+	  documentation. emphasize the difference between transfer and resume.
+
 Wed May  2 23:21:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): allow spaces between lambda arrow and
