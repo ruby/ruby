@@ -64,6 +64,9 @@ static ID id_orig_prompt, id_last_prompt;
 #if defined(HAVE_RL_PRE_INPUT_HOOK)
 static ID id_pre_input_hook;
 #endif
+#if defined(HAVE_RL_SPECIAL_PREFIXES)
+static ID id_special_prefixes;
+#endif
 
 #ifndef HAVE_RL_FILENAME_COMPLETION_FUNCTION
 # define rl_filename_completion_function filename_completion_function
@@ -1179,6 +1182,73 @@ readline_s_get_completer_word_break_characters(VALUE self, VALUE str)
 #define readline_s_get_completer_word_break_characters rb_f_notimplement
 #endif
 
+#if defined(HAVE_RL_SPECIAL_PREFIXES)
+/*
+ * call-seq:
+ *   Readline.special_prefixes = string
+ *
+ * Sets the list of characters that are word break characters, but
+ * should be left in text when it is passed to the completion
+ * function. Programs can use this to help determine what kind of
+ * completing to do. For instance, Bash sets this variable to "$@" so
+ * that it can complete shell variables and hostnames.
+ *
+ * See GNU Readline's rl_special_prefixes variable.
+ *
+ * Raises NotImplementedError if the using readline library does not support.
+ *
+ * Raises SecurityError exception if $SAFE is 4.
+ */
+static VALUE
+readline_s_set_special_prefixes(VALUE self, VALUE str)
+{
+    rb_secure(4);
+    if (!NIL_P(str)) {
+	OutputStringValue(str);
+	str = rb_str_dup_frozen(str);
+	RBASIC(str)->klass = 0;
+    }
+    rb_ivar_set(mReadline, id_special_prefixes, str);
+    if (NIL_P(str)) {
+	rl_special_prefixes = NULL;
+    }
+    else {
+	rl_special_prefixes = RSTRING_PTR(str);
+    }
+    return self;
+}
+
+/*
+ * call-seq:
+ *   Readline.special_prefixes -> string
+ *
+ * Gets the list of characters that are word break characters, but
+ * should be left in text when it is passed to the completion
+ * function.
+ *
+ * See GNU Readline's rl_special_prefixes variable.
+ *
+ * Raises NotImplementedError if the using readline library does not support.
+ *
+ * Raises SecurityError exception if $SAFE is 4.
+ */
+static VALUE
+readline_s_get_special_prefixes(VALUE self)
+{
+    VALUE str;
+    rb_secure(4);
+    str = rb_ivar_get(mReadline, id_special_prefixes);
+    if (!NIL_P(str)) {
+	str = rb_str_dup_frozen(str);
+	RBASIC(str)->klass = rb_cString;
+    }
+    return str;
+}
+#else
+#define readline_s_set_special_prefixes rb_f_notimplement
+#define readline_s_get_special_prefixes rb_f_notimplement
+#endif
+
 #ifdef HAVE_RL_BASIC_QUOTE_CHARACTERS
 /*
  * call-seq:
@@ -1645,6 +1715,9 @@ Init_readline()
 #if defined(HAVE_RL_PRE_INPUT_HOOK)
     id_pre_input_hook = rb_intern("pre_input_hook");
 #endif
+#if defined(HAVE_RL_SPECIAL_PREFIXES)
+    id_special_prefixes = rb_intern("special_prefixes");
+#endif
 
     mReadline = rb_define_module("Readline");
     rb_define_module_function(mReadline, "readline",
@@ -1711,6 +1784,10 @@ Init_readline()
 			       readline_s_insert_text, 1);
     rb_define_singleton_method(mReadline, "redisplay",
 			       readline_s_redisplay, 0);
+    rb_define_singleton_method(mReadline, "special_prefixes=",
+ 			       readline_s_set_special_prefixes, 1);
+    rb_define_singleton_method(mReadline, "special_prefixes",
+ 			       readline_s_get_special_prefixes, 0);
 
 #if USE_INSERT_IGNORE_ESCAPE
     CONST_ID(id_orig_prompt, "orig_prompt");

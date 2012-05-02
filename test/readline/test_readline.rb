@@ -52,6 +52,8 @@ class TestReadline < Test::Unit::TestCase
        ["pre_input_hook"],
        ["insert_text", ""],
        ["redisplay"],
+       ["special_prefixes=", "$"],
+       ["special_prefixes"],
       ]
     method_args.each do |method_name, *args|
       assert_raise(SecurityError, NotImplementedError,
@@ -309,6 +311,7 @@ class TestReadline < Test::Unit::TestCase
   # basic_quote_characters
   # completer_quote_characters
   # filename_quote_characters
+  # special_prefixes
   def test_some_characters_methods
     method_names = [
                     "basic_word_break_characters",
@@ -316,6 +319,7 @@ class TestReadline < Test::Unit::TestCase
                     "basic_quote_characters",
                     "completer_quote_characters",
                     "filename_quote_characters",
+                    "special_prefixes",
                    ]
     method_names.each do |method_name|
       begin
