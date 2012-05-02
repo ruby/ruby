@@ -228,7 +228,7 @@ module Test
         return false if !super
         result = false
         files.each {|f|
-          d = File.dirname(path = File.expand_path(f))
+          d = File.dirname(path = File.realpath(f))
           unless $:.include? d
             $: << d
           end

@@ -1,3 +1,8 @@
+Wed May  2 23:55:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::RequireFiles#non_options): expand
+	  real path to get rid of loading same files via symlinks.
+
 Wed May  2 23:26:04 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* cont.c (rb_fiber_m_transfer): improve sample code in Fiber#transfer
