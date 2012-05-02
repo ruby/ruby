@@ -1,3 +1,10 @@
+Wed May  2 13:06:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README, README.ja: reformatted using rdoc markup.  based on the
+	  patches by zzak (Zachary Scott) in [Feature #6388].
+
+	* README, README.ja: updated the author's mail address.
+
 Wed May  2 09:46:09 2012  Kouji Takao  <kouji@takao7.net>
 
 	* ext/readline/readline.c (Readline.special_prefixes=)
