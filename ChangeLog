@@ -4,7 +4,7 @@ Wed May  2 09:46:09 2012  Kouji Takao  <kouji@takao7.net>
 	  (Readline.special_prefixes): new function. An original patch was
 	  created by nagachika. [Feature #5784]
 
-Tue May  1 22:18:45 2012  Kouji Takao  <kouji.takao@gmail.com>
+Tue May  1 22:18:45 2012  Kouji Takao  <kouji@takao7.net>
 
 	* ext/readline/readline.c (Readline.pre_input_hook)
 	  (Readline.insert_text, Readline.redisplay): new function. An
