@@ -103,11 +103,11 @@ WARN_LOGFILE           =
 # configuration options related to the input files
 #---------------------------------------------------------------------------
 INPUT_ENCODING         = UTF-8
-FILE_PATTERNS          = *.c *.h *.y *.inc
+FILE_PATTERNS          = *.c *.h *.y *.def
 RECURSIVE              = YES
 EXCLUDE                = 
 EXCLUDE_SYMLINKS       = YES
-EXCLUDE_PATTERNS       = *.src doc build tmp test yarvtest lib bootstraptest spec .ext .git .svn
+EXCLUDE_PATTERNS       = *.src doc build tmp test yarvtest lib bootstraptest spec .ext .git .svn -test- enc extconf.h ext/dl/callback *prelude.c encdb.h transdb.h
 EXCLUDE_SYMBOLS        = 
 EXAMPLE_PATH           = 
 EXAMPLE_PATTERNS       = 
