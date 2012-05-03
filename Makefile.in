@@ -315,7 +315,7 @@ clean-local::
 distclean-local::
 	$(Q)$(RM) ext/config.cache $(RBCONFIG) Doxyfile
 	-$(Q)$(RM) run.gdb
-	-$(Q)$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h
+	-$(Q)$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h verconf.h
 	-$(Q)$(RMDIRS) $(arch_hdrdir)/ruby 2> /dev/null || true
 
 clean-ext distclean-ext realclean-ext::
