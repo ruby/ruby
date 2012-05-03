@@ -312,7 +312,7 @@ sitearchlibdir = CONFIG["sitearchdir"]
 vendorlibdir = CONFIG["vendorlibdir"]
 vendorarchlibdir = CONFIG["vendorarchdir"]
 mandir = CONFIG["mandir", true]
-capidir = CONFIG["docdir", true]
+docdir = CONFIG["docdir", true]
 configure_args = Shellwords.shellwords(CONFIG["configure_args"])
 enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
 dll = CONFIG["LIBRUBY_SO", enable_shared]
@@ -396,8 +396,8 @@ install?(:doc, :rdoc) do
   end
 end
 install?(:doc, :capi) do
-  prepare "capi-docs", capidir
-  install_recursive "doc/capi", capidir, :mode => $data_mode
+  prepare "capi-docs", docdir
+  install_recursive "doc/capi", docdir+"/capi", :mode => $data_mode
 end
 
 if load_relative
