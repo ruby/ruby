@@ -207,7 +207,8 @@ th = Thread.new do
   begin
     require ARGV[0]
   ensure
-    Marshal.dump($!, STDOUT)
+    err = $! ? [$!, $!.backtrace] : $!
+    Marshal.dump(err, STDOUT)
     STDOUT.flush
   end
 end
