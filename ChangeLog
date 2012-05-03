@@ -1,3 +1,8 @@
+Fri May  4 07:19:02 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rdoc/parser.rb (RDoc.binary?): fix wrong regexp.
+	  [ruby-core:44798] [Bug #6393]
+
 Fri May  4 01:33:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/parser.rb (RDoc.alias_extension): a real file is irrelevant
