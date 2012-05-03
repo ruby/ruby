@@ -1,4 +1,13 @@
-Fri May  4 01:31:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri May  4 01:33:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/parser.rb (RDoc.alias_extension): a real file is irrelevant
+	  to aliasing.  [ruby-core:44796][Bug #6392]
+
+	* lib/rdoc/parser.rb (RDoc.zip?): non-existent file will not be a zip
+	  file.
+
+	* lib/rdoc/parser.rb (RDoc.can_parse_by_name): accept aliased
+	  extension file names.
 
 	* lib/rdoc/parser.rb (RDoc.binary?): binary read data may have
 	  incomplete multibyte sequence.  [ruby-core:44798][Bug #6393]

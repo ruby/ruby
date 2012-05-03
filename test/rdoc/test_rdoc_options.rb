@@ -337,6 +337,15 @@ file 'unreadable' not readable
     $LOAD_PATH.replace orig_LOAD_PATH
   end
 
+  def test_parse_extension_alias
+    out, err = capture_io do
+      @options.parse %w[--extension foobar=rdoc]
+    end
+
+    assert_empty out
+    assert_empty err
+  end
+
   def test_setup_generator
     test_generator = Class.new do
       def self.setup_options op
