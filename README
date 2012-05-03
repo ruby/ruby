@@ -116,8 +116,8 @@ This is what you need to do to compile and install Ruby:
      * <tt>${DESTDIR}${prefix}/share/man/man1</tt>
      * <tt>${DESTDIR}${prefix}/share/ri/${MAJOR}.${MINOR}.${TEENY}/system</tt>
 
-     If Ruby's API version is `_x.y.z_', the <tt>${MAJOR}</tt> is `_x_', the
-     <tt>${MINOR}</tt> is `_y_', and the <tt>${TEENY}</tt> is `_z_'.
+     If Ruby's API version is '_x.y.z_', the <tt>${MAJOR}</tt> is '_x_', the
+     <tt>${MINOR}</tt> is '_y_', and the <tt>${TEENY}</tt> is '_z_'.
 
      *NOTE*: teeny of the API version may be different from one of
      Ruby's program version

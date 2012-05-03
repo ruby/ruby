@@ -142,8 +142,8 @@ Ruby拡張モジュールについて話し合うruby-extメーリングリス�
      * <tt>${DESTDIR}${prefix}/share/man/man1</tt>
      * <tt>${DESTDIR}${prefix}/share/ri/${MAJOR}.${MINOR}.${TEENY}/system</tt>
 
-     RubyのAPIバージョンが`_x.y.z_'であれば，<tt>${MAJOR}</tt>は
-     `_x_'で，<tt>${MINOR}</tt>は`_y_'，<tt>${TEENY}</tt>は`_z_'です．
+     RubyのAPIバージョンが'_x.y.z_'であれば，<tt>${MAJOR}</tt>は
+     '_x_'で，<tt>${MINOR}</tt>は'_y_'，<tt>${TEENY}</tt>は'_z_'です．
 
      <b>注意</b>: APIバージョンの+teeny+は，Rubyプログラムのバージョ
      ンとは異なることがあります．
