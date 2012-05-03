@@ -1,3 +1,8 @@
+Fri May  4 01:31:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/parser.rb (RDoc.binary?): binary read data may have
+	  incomplete multibyte sequence.  [ruby-core:44798][Bug #6393]
+
 Wed May  2 23:55:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::RequireFiles#non_options): expand
