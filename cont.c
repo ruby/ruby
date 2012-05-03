@@ -1448,9 +1448,9 @@ rb_fiber_m_resume(int argc, VALUE *argv, VALUE fib)
  *
  *    <em>produces</em>
  *
- *    I am in fiber2
- *    I am in fiber1
- *    I am in fiber3
+ *    In fiber 2
+ *    In fiber 1
+ *    In fiber 3
  *
  */
 static VALUE
