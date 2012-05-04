@@ -1210,7 +1210,11 @@ end
 
   def test_to_yaml_emits_syck_compat_yaml
     if YAML.const_defined?(:ENGINE) && YAML::ENGINE.syck?
-      yamler, YAML::ENGINE.yamler = YAML::ENGINE.yamler, 'psych'
+      begin
+        yamler, YAML::ENGINE.yamler = YAML::ENGINE.yamler, 'psych'
+      rescue LoadError
+        skip 'cannot load psych'
+      end
     end
     begin
       @a1.add_dependency "gx", "1.0.0"
