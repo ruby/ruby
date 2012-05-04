@@ -869,5 +869,13 @@ if defined? Zlib
       assert_instance_of(Array, t)
       t.each {|x| assert_kind_of(Integer, x) }
     end
+
+    def test_inflate
+      TestZlibInflate.new(__name__).test_inflate
+    end
+
+    def test_deflate
+      TestZlibDeflate.new(__name__).test_deflate
+    end
   end
 end

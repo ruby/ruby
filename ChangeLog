@@ -1,3 +1,10 @@
+Sat May  5 01:47:33 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/zlib/test_zlib.rb (test_inflate): add a test for Zlib.inflate.
+	  patched by headius (Charles Nutter). [ruby-core:44859] [Bug #6398]
+
+	* test/zlib/test_zlib.rb (test_deflate): add a test for Zlib.deflate.
+
 Sat May  5 00:53:55 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (parse_mode_enc): remove warnings 'Ignoring internal encoding'.
