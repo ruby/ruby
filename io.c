@@ -4712,7 +4712,6 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
 	    if (idx2 < 0)
 		unsupported_encoding(p);
 	    else if (idx2 == idx) {
-		rb_warn("Ignoring internal encoding %s: it is identical to external encoding %s", p, estr);
 		int_enc = (rb_encoding *)Qnil;
 	    }
 	    else
@@ -8788,8 +8787,6 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 	    if (enc == enc2) {
 		/* Special case - "-" => no transcoding */
 		VALUE tmp1 = rb_check_string_type(v1);
-		rb_warn("Ignoring internal encoding %s: it is identical to external encoding %s",
-			StringValueCStr(tmp), NIL_P(tmp1) ? rb_enc_name(enc) : StringValueCStr(tmp1));
 		enc2 = NULL;
 	    }
 	}
@@ -8798,8 +8795,6 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 	    if (enc == enc2) {
 		/* Special case - "-" => no transcoding */
 		VALUE tmp1 = rb_check_string_type(v1);
-		rb_warn("Ignoring internal encoding %s: it is identical to external encoding %s",
-			rb_enc_name(enc), NIL_P(tmp1) ? rb_enc_name(enc) : StringValueCStr(tmp1));
 		enc2 = NULL;
 	    }
 	}
