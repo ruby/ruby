@@ -1,10 +1,12 @@
+# encoding: utf-8
 ######################################################################
 # This file is imported from the minitest project.
 # DO NOT make modifications in this repo. They _will_ be reverted!
 # File a patch instead and assign it to Ryan Davis.
 ######################################################################
 
-class MockExpectationError < StandardError; end
+class MockExpectationError < StandardError # :nodoc:
+end # omg... worst bug ever. rdoc doesn't allow 1-liners
 
 ##
 # A simple and clean mock object framework.
@@ -24,8 +26,8 @@ module MiniTest
     end
 
     def initialize # :nodoc:
-      @expected_calls = {}
-      @actual_calls = Hash.new {|h,k| h[k] = [] }
+      @expected_calls = Hash.new { |calls, name| calls[name] = [] }
+      @actual_calls   = Hash.new { |calls, name| calls[name] = [] }
     end
 
     ##
@@ -50,8 +52,18 @@ module MiniTest
     #   @mock.verify  # => raises MockExpectationError
 
     def expect(name, retval, args=[])
-      @expected_calls[name] = { :retval => retval, :args => args }
+      raise ArgumentError, "args must be an array" unless Array === args
+      @expected_calls[name] << { :retval => retval, :args => args }
       self
+    end
+
+    def call name, data
+      case data
+      when Hash then
+        "#{name}(#{data[:args].inspect[1..-2]}) => #{data[:retval].inspect}"
+      else
+        data.map { |d| call name, d }.join ", "
+      end
     end
 
     ##
@@ -60,34 +72,50 @@ module MiniTest
     # expected.
 
     def verify
-      @expected_calls.each_key do |name|
-        expected = @expected_calls[name]
-        msg1 = "expected #{name}, #{expected.inspect}"
-        msg2 = "#{msg1}, got #{@actual_calls[name].inspect}"
+      @expected_calls.each do |name, calls|
+        calls.each do |expected|
+          msg1 = "expected #{call name, expected}"
+          msg2 = "#{msg1}, got [#{call name, @actual_calls[name]}]"
 
-        raise MockExpectationError, msg2 if
-          @actual_calls.has_key? name and
-          not @actual_calls[name].include?(expected)
+          raise MockExpectationError, msg2 if
+            @actual_calls.has_key? name and
+            not @actual_calls[name].include?(expected)
 
-        raise MockExpectationError, msg1 unless
-          @actual_calls.has_key? name and @actual_calls[name].include?(expected)
+          raise MockExpectationError, msg1 unless
+            @actual_calls.has_key? name and @actual_calls[name].include?(expected)
+        end
       end
       true
     end
 
     def method_missing(sym, *args) # :nodoc:
-      expected = @expected_calls[sym]
-
-      unless expected then
+      unless @expected_calls.has_key?(sym) then
         raise NoMethodError, "unmocked method %p, expected one of %p" %
           [sym, @expected_calls.keys.sort_by(&:to_s)]
       end
 
-      expected_args, retval = expected[:args], expected[:retval]
+      index = @actual_calls[sym].length
+      expected_call = @expected_calls[sym][index]
 
-      unless expected_args.size == args.size
+      unless expected_call then
+        raise MockExpectationError, "No more expects available for %p: %p" %
+          [sym, args]
+      end
+
+      expected_args, retval = expected_call[:args], expected_call[:retval]
+
+      if expected_args.size != args.size then
         raise ArgumentError, "mocked method %p expects %d arguments, got %d" %
-          [sym, expected[:args].size, args.size]
+          [sym, expected_args.size, args.size]
+      end
+
+      fully_matched = expected_args.zip(args).all? { |mod, a|
+        mod === a or mod == a
+      }
+
+      unless fully_matched then
+        raise MockExpectationError, "mocked method %p called with unexpected arguments %p" %
+          [sym, args]
       end
 
       @actual_calls[sym] << {

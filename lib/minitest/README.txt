@@ -14,7 +14,7 @@ TDD, BDD, mocking, and benchmarking.
      paired up and we cracked open the code for a few test
      frameworks...
 
-     I MUST say that mintiest is *very* readable / understandable
+     I MUST say that minitest is *very* readable / understandable
      compared to the 'other two' options we looked at. Nicely done and
      thank you for helping us keep our mental sanity."
 
@@ -44,7 +44,7 @@ implementors that need a minimal set of methods to bootstrap a working
 test suite. For example, there is no magic involved for test-case
 discovery.
 
-    "Again, I can’t praise enough the idea of a testing/specing
+    "Again, I can't praise enough the idea of a testing/specing
      framework that I can actually read in full in one sitting!"
 
     -- Piotr Szotkowski
@@ -117,6 +117,10 @@ Given that you'd like to test the following class:
     end
   end
 
+For matchers support check out:
+
+https://github.com/zenspider/minitest-matchers
+
 === Benchmarks
 
 Add benchmarks to your regular unit tests. If the unit tests fail, the
@@ -167,7 +171,7 @@ Output is tab-delimited to make it easy to paste into a spreadsheet.
 
     def ask(question)
       method = question.tr(" ","_") + "?"
-      @meme.send(method)
+      @meme.__send__(method)
     end
   end
 
@@ -241,6 +245,46 @@ fixture loading:
   end
 
   MiniTest::Unit.runner = MiniTestWithTransactions::Unit.new
+
+== Known Extensions:
+
+minitest-capistrano    :: Assertions and expectations for testing Capistrano recipes
+minitest-capybara      :: Capybara matchers support for minitest unit and spec
+minitest-chef-handler  :: Run Minitest suites as Chef report handlers
+minitest-ci            :: CI reporter plugin for MiniTest.
+minitest-colorize      :: Colorize MiniTest output and show failing tests instantly.
+minitest-context       :: Defines contexts for code reuse in MiniTest
+                          specs that share common expectations.
+minitest-debugger      :: Wraps assert so failed assertions drop into
+                          the ruby debugger.
+minitest-display       :: Patches MiniTest to allow for an easily configurable output.
+minitest-emoji         :: Print out emoji for your test passes, fails, and skips.
+minitest-excludes      :: Clean API for excluding certain tests you
+                          don't want to run under certain conditions.
+minitest-firemock      :: Makes your MiniTest mocks more resilient.
+minitest-growl         :: Test notifier for minitest via growl.
+minitest-instrument    :: Instrument ActiveSupport::Notifications when
+                          test method is executed
+minitest-instrument-db :: Store information about speed of test
+                          execution provided by minitest-instrument in database
+minitest-libnotify     :: Test notifier for minitest via libnotify.
+minitest-macruby       :: Provides extensions to minitest for macruby UI testing.
+minitest-matchers      :: Adds support for RSpec-style matchers to minitest.
+minitest-metadata      :: Annotate tests with metadata (key-value).
+minitest-mongoid       :: Mongoid assertion matchers for MiniTest
+minitest-must_not      :: Provides must_not as an alias for wont in MiniTest
+minitest-predicates    :: Adds support for .predicate? methods
+minitest-pry           :: A minitest plugin to drop into pry on assertion failure.
+minitest-rails         :: MiniTest integration for Rails 3.1.
+minitest-reporters     :: Create customizable MiniTest output formats
+minitest-rg            :: redgreen minitest
+minitest-spec-magic    :: Minitest::Spec extensions for Rails and beyond
+minitest-tags          :: add tags for minitest
+minitest-wscolor       :: Yet another test colorizer.
+minitest_owrapper      :: Get tests results as a TestResult object.
+minitest_should        :: Shoulda style syntax for minitest test::unit.
+minitest_tu_shim       :: minitest_tu_shim bridges between test/unit and minitest.
+mongoid-minitest       :: MiniTest matchers for Mongoid.
 
 == REQUIREMENTS:
 

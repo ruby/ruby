@@ -1,3 +1,4 @@
+# encoding: utf-8
 ######################################################################
 # This file is imported from the minitest project.
 # DO NOT make modifications in this repo. They _will_ be reverted!
@@ -26,7 +27,7 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
   def test_blow_up_if_not_called
     @mock.foo
 
-    util_verify_bad
+    util_verify_bad "expected meaning_of_life() => 42, got []"
   end
 
   def test_not_blow_up_if_everything_called
@@ -46,7 +47,7 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
     @mock.meaning_of_life
     @mock.expect(:bar, true)
 
-    util_verify_bad
+    util_verify_bad "expected bar() => true, got []"
   end
 
   def test_blow_up_on_wrong_number_of_arguments
@@ -84,9 +85,20 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
     @mock.meaning_of_life
     @mock.expect(:sum, 3, [1, 2])
 
-    @mock.sum(2, 4)
+    e = assert_raises MockExpectationError do
+      @mock.sum(2, 4)
+    end
 
-    util_verify_bad
+    exp = "mocked method :sum called with unexpected arguments [2, 4]"
+    assert_equal exp, e.message
+  end
+
+  def test_expect_with_non_array_args
+    e = assert_raises ArgumentError do
+      @mock.expect :blah, 3, false
+    end
+
+    assert_equal "args must be an array", e.message
   end
 
   def test_respond_appropriately
@@ -142,29 +154,59 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
   def test_verify_raises_with_strict_args
     mock = MiniTest::Mock.new
     mock.expect :strict_expectation, true, [2]
-    mock.strict_expectation 1
 
-    util_verify_bad
-  end
-
-  def test_verify_shows_the_actual_arguments_in_the_message
-    mock = MiniTest::Mock.new
-    mock.expect :capitalized, true, ["a"]
-    mock.capitalized "b"
     e = assert_raises MockExpectationError do
-      mock.verify
+      mock.strict_expectation 1
     end
 
-    a = {:retval=>true, :args=>["a"]}
-    b = {:retval=>true, :args=>["b"]}
-
-    expected = "expected capitalized, #{a.inspect}, got [#{b.inspect}]"
-    assert_equal expected, e.message
+    exp = "mocked method :strict_expectation called with unexpected arguments [1]"
+    assert_equal exp, e.message
   end
 
-  def util_verify_bad
-    assert_raises MockExpectationError do
+  def test_method_missing_empty
+    mock = MiniTest::Mock.new
+
+    mock.expect :a, nil
+
+    mock.a
+
+    e = assert_raises MockExpectationError do
+      mock.a
+    end
+
+    assert_equal "No more expects available for :a: []", e.message
+  end
+
+  def test_same_method_expects_are_verified_when_all_called
+    mock = MiniTest::Mock.new
+    mock.expect :foo, nil, [:bar]
+    mock.expect :foo, nil, [:baz]
+
+    mock.foo :bar
+    mock.foo :baz
+
+    assert mock.verify
+  end
+
+  def test_same_method_expects_blow_up_when_not_all_called
+    mock = MiniTest::Mock.new
+    mock.expect :foo, nil, [:bar]
+    mock.expect :foo, nil, [:baz]
+
+    mock.foo :bar
+
+    e = assert_raises(MockExpectationError) { mock.verify }
+
+    exp = "expected foo(:baz) => nil, got [foo(:bar) => nil]"
+
+    assert_equal exp, e.message
+  end
+
+  def util_verify_bad exp
+    e = assert_raises MockExpectationError do
       @mock.verify
     end
+
+    assert_equal exp, e.message
   end
 end

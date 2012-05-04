@@ -1,3 +1,8 @@
+Sat May  5 06:43:10 2012  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*: Imported minitest 2.12.1 (r7323)
+	* test/minitest/*: ditto
+
 Sat May  5 01:47:33 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/zlib/test_zlib.rb (test_inflate): add a test for Zlib.inflate.
@@ -5261,7 +5266,7 @@ Fri Nov 18 13:03:38 2011  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/win32.c (fcntl): on F_DUPFD, determine the inheritance of the
 	  new handle by O_NOINHERIT flag of original fd.
 
-Fri Nov 18 08:00:41 2011  Ryan Davis  <ryan@lust.zenspider.com>
+Fri Nov 18 08:00:41 2011  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*: Imported minitest 2.8.1 (r6750)
 	* test/minitest/*: ditto

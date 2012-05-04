@@ -1,3 +1,4 @@
+# encoding: utf-8
 ######################################################################
 # This file is imported from the minitest project.
 # DO NOT make modifications in this repo. They _will_ be reverted!
@@ -13,11 +14,14 @@ class Module # :nodoc:
     # warn "%-22p -> %p %p" % [meth, new_name, dont_flip]
     self.class_eval <<-EOM
       def #{new_name} *args
-        return MiniTest::Spec.current.#{meth}(*args, &self) if
-          Proc === self
-        return MiniTest::Spec.current.#{meth}(args.first, self) if
-          args.size == 1 unless #{!!dont_flip}
-        return MiniTest::Spec.current.#{meth}(self, *args)
+        case
+        when Proc === self then
+          MiniTest::Spec.current.#{meth}(*args, &self)
+        when #{!!dont_flip} then
+          MiniTest::Spec.current.#{meth}(self, *args)
+        else
+          MiniTest::Spec.current.#{meth}(args.first, self, *args[1..-1])
+        end
       end
     EOM
   end
@@ -177,6 +181,12 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
     add_teardown_hook {|tc| tc.instance_eval(&block) }
   end
 
+  NAME_RE = if RUBY_VERSION >= "1.9"
+              Regexp.new("[^[[:word:]]]+")
+            else
+              /\W+/u
+            end
+
   ##
   # Define an expectation with name +desc+. Name gets morphed to a
   # proper test method name. For some freakish reason, people who
@@ -194,14 +204,21 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
     @specs ||= 0
     @specs += 1
 
-    name = "test_%04d_%s" % [ @specs, desc.gsub(/\W+/, '_').downcase ]
+    name = "test_%04d_%s" % [ @specs, desc.gsub(NAME_RE, '_').downcase ]
 
     define_method name, &block
 
     self.children.each do |mod|
       mod.send :undef_method, name if mod.public_method_defined? name
     end
+
+    name
   end
+
+  ##
+  # Essentially, define an accessor for +name+ with +block+.
+  #
+  # Why use let instead of def? I honestly don't know.
 
   def self.let name, &block
     define_method name do
@@ -209,6 +226,10 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
       @_memoized.fetch(name) { |k| @_memoized[k] = instance_eval(&block) }
     end
   end
+
+  ##
+  # Another lazy man's accessor generator. Made even more lazy by
+  # setting the name for you to +subject+.
 
   def self.subject &block
     let :subject, &block
@@ -232,6 +253,14 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
   end
 
   # :stopdoc:
+  def after_setup
+    run_setup_hooks
+  end
+
+  def before_teardown
+    run_teardown_hooks
+  end
+
   class << self
     attr_reader :desc
     alias :specify :it
@@ -239,6 +268,9 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
   end
   # :startdoc:
 end
+
+##
+# It's where you hide your "assertions".
 
 module MiniTest::Expectations
   ##
@@ -248,7 +280,7 @@ module MiniTest::Expectations
   #
   # :method: must_be_empty
 
-  infect_an_assertion :assert_empty, :must_be_empty
+  infect_an_assertion :assert_empty, :must_be_empty, :unary
 
   ##
   # See MiniTest::Assertions#assert_equal
@@ -322,7 +354,7 @@ module MiniTest::Expectations
   #
   # :method: must_be_nil
 
-  infect_an_assertion :assert_nil, :must_be_nil
+  infect_an_assertion :assert_nil, :must_be_nil, :unary
 
   ##
   # See MiniTest::Assertions#assert_operator
@@ -408,7 +440,7 @@ module MiniTest::Expectations
   #
   # :method: wont_be_empty
 
-  infect_an_assertion :refute_empty, :wont_be_empty
+  infect_an_assertion :refute_empty, :wont_be_empty, :unary
 
   ##
   # See MiniTest::Assertions#refute_equal
@@ -483,7 +515,7 @@ module MiniTest::Expectations
   #
   # :method: wont_be_nil
 
-  infect_an_assertion :refute_nil, :wont_be_nil
+  infect_an_assertion :refute_nil, :wont_be_nil, :unary
 
   ##
   # See MiniTest::Assertions#refute_operator
@@ -517,6 +549,6 @@ module MiniTest::Expectations
   infect_an_assertion :refute_same, :wont_be_same_as
 end
 
-class Object
+class Object # :nodoc:
   include MiniTest::Expectations
 end
