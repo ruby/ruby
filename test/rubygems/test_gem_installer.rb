@@ -1217,7 +1217,7 @@ load Gem.bin_path('a', 'executable', version)
   def test_dir
     util_setup_install
 
-    assert_match @installer.dir, %r!/installer/gems/a-2$!
+    assert_match %r!/installer/gems/a-2$!, @installer.dir
   end
 
   def old_ruby_required
