@@ -1,9 +1,3 @@
-Sat May  5 18:19:06 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
-
-	* test/rubygems/test_gem_installer.rb: fix broken test for r35541.
-	  [ruby-core:44884][Bug #6405]
-	* test/rubygems/test_gem_platform.rb: ditto.
-
 Sat May  5 06:43:10 2012  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*: Imported minitest 2.12.1 (r7323)
