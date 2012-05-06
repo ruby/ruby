@@ -107,6 +107,18 @@ struct {
     OSSL_SSL_METHOD_ENTRY(TLSv1),
     OSSL_SSL_METHOD_ENTRY(TLSv1_server),
     OSSL_SSL_METHOD_ENTRY(TLSv1_client),
+#if defined(HAVE_TLSV1_2_METHOD) && defined(HAVE_TLSV1_2_SERVER_METHOD) && \
+        defined(HAVE_TLSV1_2_CLIENT_METHOD)
+    OSSL_SSL_METHOD_ENTRY(TLSv1_2),
+    OSSL_SSL_METHOD_ENTRY(TLSv1_2_server),
+    OSSL_SSL_METHOD_ENTRY(TLSv1_2_client),
+#endif
+#if defined(HAVE_TLSV1_1_METHOD) && defined(HAVE_TLSV1_1_SERVER_METHOD) && \
+        defined(HAVE_TLSV1_1_CLIENT_METHOD)
+    OSSL_SSL_METHOD_ENTRY(TLSv1_1),
+    OSSL_SSL_METHOD_ENTRY(TLSv1_1_server),
+    OSSL_SSL_METHOD_ENTRY(TLSv1_1_client),
+#endif
 #if defined(HAVE_SSLV2_METHOD) && defined(HAVE_SSLV2_SERVER_METHOD) && \
         defined(HAVE_SSLV2_CLIENT_METHOD)
     OSSL_SSL_METHOD_ENTRY(SSLv2),
@@ -1505,11 +1517,31 @@ ossl_ssl_get_peer_cert_chain(VALUE self)
 }
 
 /*
- * call-seq:
- *    ssl.cipher => [name, version, bits, alg_bits]
- *
- * The cipher being used for the current connection
- */
+* call-seq:
+*    ssl.version => String
+*
+* Returns a String representing the SSL/TLS version that was negotiated
+* for the connection, for example "TLSv1.2".
+*/
+static VALUE
+ossl_ssl_get_version(VALUE self)
+{
+    SSL *ssl;
+
+    Data_Get_Struct(self, SSL, ssl);
+    if (!ssl) {
+        rb_warning("SSL session is not started yet.");
+        return Qnil;
+    }
+    return rb_str_new2(SSL_get_version(ssl));
+}
+
+/*
+* call-seq:
+*    ssl.cipher => [name, version, bits, alg_bits]
+*
+* The cipher being used for the current connection
+*/
 static VALUE
 ossl_ssl_get_cipher(VALUE self)
 {
@@ -1957,6 +1989,7 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "cert",       ossl_ssl_get_cert, 0);
     rb_define_method(cSSLSocket, "peer_cert",  ossl_ssl_get_peer_cert, 0);
     rb_define_method(cSSLSocket, "peer_cert_chain", ossl_ssl_get_peer_cert_chain, 0);
+    rb_define_method(cSSLSocket, "ssl_version",    ossl_ssl_get_version, 0);
     rb_define_method(cSSLSocket, "cipher",     ossl_ssl_get_cipher, 0);
     rb_define_method(cSSLSocket, "state",      ossl_ssl_get_state, 0);
     rb_define_method(cSSLSocket, "pending",    ossl_ssl_pending, 0);

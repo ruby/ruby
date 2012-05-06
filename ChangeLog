@@ -1,3 +1,12 @@
+Mon May 07 09:14:11 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_ssl.c: support TLSv1.1 & TLSv1.1. Add 
+	  SSLContext#version to inspect the version that was negotiated for
+	  a given connection.
+	* ext/openssl/extconf.rb: detect TLS 1.1 & 1.2 support.
+	* test/openssl/test_ssl.rb: add tests for TLS 1.1 & 1.2 given they
+	  are supported by the native OpenSSL being used.
+
 Sun May  6 21:34:29 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (io_encoding_set): suppress warnings. [ruby-dev:45627]

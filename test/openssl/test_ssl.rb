@@ -437,6 +437,35 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ssl.close
     }
   end
+
+  def test_tls_v_1_1
+    ctx_proc = Proc.new { |ctx|
+      ctx.ssl_version = :TLSv1_1
+    }
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, :ctx_proc => ctx_proc) { |server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.sync_close = true
+      ssl.connect
+      assert_equal("TLSv1.1", ssl.ssl_version)
+      ssl.close
+    }
+  end if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_1
+
+  def test_tls_v_1_2
+    ctx_proc = Proc.new { |ctx|
+      ctx.ssl_version = :TLSv1_2
+    }
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, :ctx_proc => ctx_proc) { |server, port|
+      sock = TCPSocket.new("127.0.0.1", port)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock)
+      ssl.sync_close = true
+      ssl.connect
+      assert_equal("TLSv1.2", ssl.ssl_version)
+      ssl.close
+    }
+  end if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
+
 end
 
 end
