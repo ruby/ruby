@@ -220,19 +220,19 @@ parse_debug_line_cu(int num_traces, void **traces,
     int default_is_stmt, line_base;
     unsigned int header_length, minimum_instruction_length, line_range,
 		 opcode_base;
-    unsigned char *standard_opcode_lengths;
+    /* unsigned char *standard_opcode_lengths; */
 
     /* The registers. */
     unsigned long addr = 0;
     unsigned int file = 1;
     unsigned int line = 1;
-    unsigned int column = 0;
+    /* unsigned int column = 0; */
     int is_stmt;
-    int basic_block = 0;
-    int end_sequence = 0;
-    int prologue_end = 0;
-    int epilogue_begin = 0;
-    unsigned int isa = 0;
+    /* int basic_block = 0; */
+    /* int end_sequence = 0; */
+    /* int prologue_end = 0; */
+    /* int epilogue_begin = 0; */
+    /* unsigned int isa = 0; */
 
     p = *debug_line;
 
@@ -268,7 +268,7 @@ parse_debug_line_cu(int num_traces, void **traces,
     opcode_base = *(unsigned char *)p;
     p++;
 
-    standard_opcode_lengths = (unsigned char *)p - 1;
+    /* standard_opcode_lengths = (unsigned char *)p - 1; */
     p += opcode_base - 1;
 
     include_directories = p;
@@ -288,7 +288,7 @@ parse_debug_line_cu(int num_traces, void **traces,
     do {							    \
 	fill_line(num_traces, traces, addr, file, line,		    \
 		  include_directories, filenames, lines);	    \
-	basic_block = prologue_end = epilogue_begin = 0;	    \
+	/*basic_block = prologue_end = epilogue_begin = 0;*/	    \
     } while (0)
 
     while (p < cu_end) {
@@ -311,13 +311,13 @@ parse_debug_line_cu(int num_traces, void **traces,
 	    file = (unsigned int)uleb128(&p);
 	    break;
 	case DW_LNS_set_column:
-	    column = (unsigned int)uleb128(&p);
+	    /*column = (unsigned int)*/(void)uleb128(&p);
 	    break;
 	case DW_LNS_negate_stmt:
 	    is_stmt = !is_stmt;
 	    break;
 	case DW_LNS_set_basic_block:
-	    basic_block = 1;
+	    /*basic_block = 1; */
 	    break;
 	case DW_LNS_const_add_pc:
 	    a = ((255 - opcode_base) / line_range) *
@@ -329,28 +329,28 @@ parse_debug_line_cu(int num_traces, void **traces,
 	    addr += a;
 	    break;
 	case DW_LNS_set_prologue_end:
-	    prologue_end = 1;
+	    /* prologue_end = 1; */
 	    break;
 	case DW_LNS_set_epilogue_begin:
-	    epilogue_begin = 1;
+	    /* epilogue_begin = 1; */
 	    break;
 	case DW_LNS_set_isa:
-	    isa = (unsigned int)uleb128(&p);
+	    /* isa = (unsigned int)*/(void)uleb128(&p);
 	    break;
 	case 0:
 	    a = *(unsigned char *)p++;
 	    op = *p++;
 	    switch (op) {
 	    case DW_LNE_end_sequence:
-		end_sequence = 1;
+		/* end_sequence = 1; */
 		FILL_LINE();
 		addr = 0;
 		file = 1;
 		line = 1;
-		column = 0;
+		/* column = 0; */
 		is_stmt = default_is_stmt;
-		end_sequence = 0;
-		isa = 0;
+		/* end_sequence = 0; */
+		/* isa = 0; */
 		break;
 	    case DW_LNE_set_address:
 		addr = *(unsigned long *)p;
