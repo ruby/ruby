@@ -1,3 +1,7 @@
+Sun May  6 14:50:03 2012  Tanaka Akira  <akr@fsij.org>
+
+	* lib/securerandom.rb: show actual read length in an error message.
+
 Sat May  5 06:43:10 2012  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*: Imported minitest 2.12.1 (r7323)
