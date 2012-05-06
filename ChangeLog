@@ -1,3 +1,7 @@
+Sun May  6 18:39:39 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): remove unused variable `size'.
+
 Sun May  6 14:50:03 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb: show actual read length in an error message.
