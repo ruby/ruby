@@ -952,6 +952,15 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
     @tc.assert_match "blah", obj
   end
 
+  def test_assert_match_matchee_match
+    @assertion_count = 2
+
+    obj = Object.new
+    def obj.=~(o); true end
+
+    @tc.assert_match "blah", obj
+  end
+
   def test_assert_match_object_triggered
     @assertion_count = 2
 

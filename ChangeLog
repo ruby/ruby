@@ -1,3 +1,10 @@
+Tue May  8 02:34:26 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/minitest/unit.rb (assert_match): refix of r35563.
+	  r35563 breaks the intention of the original change.
+	  https://github.com/seattlerb/minitest/commit/68858105b2eb11c85105ffac5f32b662c59397f3
+	* lib/minitest/unit.rb (refute_match): ditto.
+
 Mon May  7 21:19:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json: Merge JSON 1.7.1.

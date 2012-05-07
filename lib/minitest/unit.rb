@@ -282,7 +282,7 @@ module MiniTest
     def assert_match matcher, obj, msg = nil
       msg = message(msg) { "Expected #{mu_pp matcher} to match #{mu_pp obj}" }
       assert_respond_to obj, :"=~"
-      matcher = Regexp.new Regexp.escape matcher if String === matcher and String === obj
+      matcher = Regexp.new Regexp.escape matcher if String === matcher and obj.respond_to?(:to_str)
       assert matcher =~ obj, msg
     end
 
@@ -583,7 +583,7 @@ module MiniTest
     def refute_match matcher, obj, msg = nil
       msg = message(msg) {"Expected #{mu_pp matcher} to not match #{mu_pp obj}"}
       assert_respond_to obj, :"=~"
-      matcher = Regexp.new Regexp.escape matcher if String === matcher and String === obj
+      matcher = Regexp.new Regexp.escape matcher if String === matcher and obj.respond_to?(:to_str)
       refute matcher =~ obj, msg
     end
 
