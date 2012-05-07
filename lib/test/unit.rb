@@ -655,10 +655,14 @@ module Test
 
       alias mini_run_suite _run_suite
 
+      def output
+        @output || super
+      end
+
       def _prepare_run(suites, type)
         if @tty
           @verbose ||= !options[:parallel]
-          MiniTest::Unit.output = StatusLineOutput.new(self)
+          @output = StatusLineOutput.new(self)
         end
         if /\A\/(.*)\/\z/ =~ (filter = options[:filter])
           options[:filter] = filter = Regexp.new($1)

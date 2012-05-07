@@ -1,4 +1,7 @@
-Tue May  8 03:54:34 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue May  8 04:47:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner#output): prefer local output to
+	  get rid of unexpected side effect in test/minitest/metametameta.rb.
 
 	* lib/test/unit.rb (MiniTest#run_test): show the running test in $0.
 
