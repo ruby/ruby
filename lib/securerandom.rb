@@ -80,7 +80,7 @@ module SecureRandom
           @has_urandom = true
           ret = f.read(n)
           if ret.length != n
-            raise NotImplementedError, "Unexpected partial read from random device: only #{ret.length} for #{n}"
+            raise NotImplementedError, "Unexpected partial read from random device: only #{ret.length} for #{n} bytes"
           end
           return ret
         }
