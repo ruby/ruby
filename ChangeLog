@@ -1,3 +1,14 @@
+Mon May  7 17:54:12 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/minitest/unit.rb (assert_match): replace matcher only if both
+	  matcher and obj are String. fix r35541. [Bug #6405]
+	  DON'T COMMIT IF YOU CAN'T RUN TEST.
+	  FIX AS SOON AS POSSIBLE YOU BREAK TESTS.
+	  patched by ayumin.
+	  https://github.com/seattlerb/minitest/pull/124
+
+	* lib/minitest/unit.rb (refute_match): ditto.
+
 Mon May  7 13:41:00 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (PROGRAM), configure.in (POSTLINK): sign built program
