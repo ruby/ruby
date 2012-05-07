@@ -1059,6 +1059,11 @@ main()
                 if test "$rb_cv_broken_crypt" = yes; then
                   AC_DEFINE(BROKEN_CRYPT, 1)
                 fi
+		if test "${RUBY_CODESIGN:+set}"; then
+		    AC_CHECK_PROGS(codesign, codesign)
+		    POSTLINK="$ac_cv_prog_codesign -s '$RUBY_CODESIGN' -f \$@"
+		    AC_SUBST(POSTLINK)
+		fi
 		],
 [hpux*], [	LIBS="-lm $LIBS"
 		ac_cv_c_inline=no],

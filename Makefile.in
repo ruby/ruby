@@ -73,6 +73,7 @@ ARCHMINIOBJS = @MINIOBJS@
 BUILTIN_ENCOBJS = @BUILTIN_ENCOBJS@
 BUILTIN_TRANSSRCS = @BUILTIN_TRANSSRCS@
 BUILTIN_TRANSOBJS = @BUILTIN_TRANSOBJS@
+POSTLINK = @POSTLINK@
 
 RUBY_BASE_NAME=@RUBY_BASE_NAME@
 RUBY_PROGRAM_VERSION=@RUBY_PROGRAM_VERSION@
@@ -175,6 +176,7 @@ $(PROGRAM):
 		@$(RM) $@
 		$(ECHO) linking $@
 		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) $(OUTFLAG)$@
+		$(Q) $(POSTLINK)
 
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not

@@ -1,3 +1,8 @@
+Mon May  7 13:41:00 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (PROGRAM), configure.in (POSTLINK): sign built program
+	  using RUBY_CODESIGN identity.
+
 Mon May  7 13:03:55 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (body_type_attachment): parse body type
