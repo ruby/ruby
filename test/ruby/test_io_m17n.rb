@@ -71,7 +71,7 @@ class TestIO_M17N < Test::Unit::TestCase
 #{encdump expected} expected but not equal to
 #{encdump actual}.
 EOT
-    assert_block(full_message) { expected == actual }
+    assert_equal(expected, actual, full_message)
   end
 
   def test_open_r

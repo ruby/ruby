@@ -15,7 +15,7 @@ class TestUTF32 < Test::Unit::TestCase
 #{encdump expected} expected but not equal to
 #{encdump actual}.
 EOT
-    assert_block(full_message) { expected == actual }
+    assert_equal(expected, actual, full_message)
   end
 
   def test_substr

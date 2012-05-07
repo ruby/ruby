@@ -84,10 +84,10 @@ class PStoreTest < Test::Unit::TestCase
           sleep 1
         end
       end
-      until flag; end
+      sleep 0.1 until flag
       @pstore.transaction {}
     end
-    assert_block do
+    begin
       pstore = PStore.new(second_file, true)
       flag = false
       Thread.new do
@@ -97,8 +97,8 @@ class PStoreTest < Test::Unit::TestCase
           sleep 1
         end
       end
-      until flag; end
-      pstore.transaction { pstore[:foo] == "bar" }
+      sleep 0.1 until flag
+      assert_equal("bar", pstore.transaction { pstore[:foo] })
     end
   ensure
     File.unlink(second_file) rescue nil
