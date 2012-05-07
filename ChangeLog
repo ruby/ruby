@@ -1,3 +1,8 @@
+Mon May  7 10:16:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/rubygems/test_gem_installer.rb (TestGemInstaller#test_dir): fix
+	  argument order.  expected value must come first.
+
 Mon May 07 09:14:11 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_ssl.c: support TLSv1.1 & TLSv1.2. Add 
