@@ -1,4 +1,7 @@
-Tue May  8 03:51:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue May  8 03:53:40 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bootstraptest/runner.rb (exec_test, show_progress): show rotators
+	  and pass/fail counts.
 
 	* sample/test.rb (PROGRESS): refine output.
 
