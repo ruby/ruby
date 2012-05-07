@@ -1,3 +1,8 @@
+Mon May  7 10:49:36 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (Init_bigdecimal): define IDs before
+	  they are used. [ruby-core:44900] [Bug #6406]
+
 Mon May  7 10:27:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/digest/rmd160/rmd160.c (RMD160_Update): fix for huge data.
