@@ -6,7 +6,7 @@
 ######################################################################
 
 require 'pathname'
-require 'test/minitest/metametameta'
+require File.expand_path('../metametameta', __FILE__)
 
 module MyModule; end
 class AnError < StandardError; include MyModule; end
