@@ -35,10 +35,14 @@ static FBuffer *fbuffer_alloc(unsigned long initial_length);
 static void fbuffer_free(FBuffer *fb);
 static void fbuffer_clear(FBuffer *fb);
 static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len);
+#ifdef JSON_GENERATOR
 static void fbuffer_append_long(FBuffer *fb, long number);
+#endif
 static void fbuffer_append_char(FBuffer *fb, char newchr);
+#ifdef JSON_GENERATOR
 static FBuffer *fbuffer_dup(FBuffer *fb);
 static VALUE fbuffer_to_s(FBuffer *fb);
+#endif
 
 static FBuffer *fbuffer_alloc(unsigned long initial_length)
 {
@@ -68,7 +72,6 @@ static void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
     if (!fb->ptr) {
         fb->ptr = ALLOC_N(char, fb->initial_length);
         fb->capa = fb->initial_length;
-        fb->len = 0;
     }
 
     for (required = fb->capa; requested > required - fb->len; required <<= 1);
@@ -88,15 +91,17 @@ static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
     }
 }
 
+#ifdef JSON_GENERATOR
 static void fbuffer_append_str(FBuffer *fb, VALUE str)
 {
     const char *newstr = StringValuePtr(str);
     unsigned long len = RSTRING_LEN(str);
 
-    fbuffer_append(fb, newstr, len);
-
     RB_GC_GUARD(str);
+
+    fbuffer_append(fb, newstr, len);
 }
+#endif
 
 static void fbuffer_append_char(FBuffer *fb, char newchr)
 {
@@ -105,6 +110,7 @@ static void fbuffer_append_char(FBuffer *fb, char newchr)
     fb->len++;
 }
 
+#ifdef JSON_GENERATOR
 static void freverse(char *start, char *end)
 {
     char c;
@@ -154,4 +160,5 @@ static VALUE fbuffer_to_s(FBuffer *fb)
     FORCE_UTF8(result);
     return result;
 }
+#endif
 #endif

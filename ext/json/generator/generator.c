@@ -762,7 +762,6 @@ static void generate_json_bignum(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
 {
     VALUE tmp = rb_funcall(obj, i_to_s, 0);
     fbuffer_append_str(buffer, tmp);
-    RB_GC_GUARD(tmp);
 }
 
 static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
@@ -854,6 +853,21 @@ static VALUE cState_partial_generate(VALUE self, VALUE obj)
 }
 
 /*
+ * This function returns true if string is either a JSON array or JSON object.
+ * It might suffer from false positives, e. g. syntactically incorrect JSON in
+ * the string or certain UTF-8 characters on the right hand side.
+ */
+static int isArrayOrObject(VALUE string)
+{
+    long string_len = RSTRING_LEN(string);
+    char *p = RSTRING_PTR(string), *q = p + string_len - 1;
+    if (string_len < 2) return 0;
+    for (; p < q && isspace(*p); p++);
+    for (; q > p && isspace(*q); q--);
+    return *p == '[' && *q == ']' || *p == '{' && *q == '}';
+}
+
+/*
  * call-seq: generate(obj)
  *
  * Generates a valid JSON document from object +obj+ and returns the
@@ -863,15 +877,9 @@ static VALUE cState_partial_generate(VALUE self, VALUE obj)
 static VALUE cState_generate(VALUE self, VALUE obj)
 {
     VALUE result = cState_partial_generate(self, obj);
-    VALUE re, args[2];
     GET_STATE(self);
-    if (!state->quirks_mode) {
-        args[0] = rb_str_new2("\\A\\s*(?:\\[.*\\]|\\{.*\\})\\s*\\Z");
-        args[1] = CRegexp_MULTILINE;
-        re = rb_class_new_instance(2, args, rb_cRegexp);
-        if (NIL_P(rb_funcall(re, i_match, 1, result))) {
-            rb_raise(eGeneratorError, "only generation of JSON objects or arrays allowed");
-        }
+    if (!state->quirks_mode && !isArrayOrObject(result)) {
+        rb_raise(eGeneratorError, "only generation of JSON objects or arrays allowed");
     }
     return result;
 }

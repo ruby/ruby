@@ -1,4 +1,5 @@
 require 'json/version'
+require 'json/generic_object'
 
 module JSON
   class << self

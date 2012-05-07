@@ -10,7 +10,7 @@ require 'json/add/bigdecimal'
 require 'json/add/ostruct'
 require 'date'
 
-class TC_JSONAddition < Test::Unit::TestCase
+class TestJSONAddition < Test::Unit::TestCase
   include JSON
 
   class A
@@ -64,7 +64,7 @@ class TC_JSONAddition < Test::Unit::TestCase
 
     def to_json(*args)
       {
-        'json_class'  => 'TC_JSONAddition::Nix',
+        'json_class'  => 'TestJSONAddition::Nix',
       }.to_json(*args)
     end
   end
@@ -88,7 +88,7 @@ class TC_JSONAddition < Test::Unit::TestCase
     a_hash = JSON.parse(json, :create_additions => false)
     assert_kind_of Hash, a_hash
     assert_equal(
-      {"args"=>[666], "json_class"=>"TC_JSONAddition::A"}.sort_by { |k,| k },
+      {"args"=>[666], "json_class"=>"TestJSONAddition::A"}.sort_by { |k,| k },
       a_hash.sort_by { |k,| k }
     )
   end
@@ -97,7 +97,7 @@ class TC_JSONAddition < Test::Unit::TestCase
     b = B.new
     assert !B.json_creatable?
     json = generate(b)
-    assert_equal({ "json_class"=>"TC_JSONAddition::B" }, JSON.parse(json))
+    assert_equal({ "json_class"=>"TestJSONAddition::B" }, JSON.parse(json))
   end
 
   def test_extended_json_fail2

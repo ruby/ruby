@@ -4,7 +4,7 @@
 require 'test/unit'
 require File.join(File.dirname(__FILE__), 'setup_variant')
 
-class TC_JSONGenerate < Test::Unit::TestCase
+class TestJSONGenerate < Test::Unit::TestCase
   include JSON
 
   def setup

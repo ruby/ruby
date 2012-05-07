@@ -21,7 +21,7 @@ unless Array.method_defined?(:permutation)
   end
 end
 
-class TC_JSON < Test::Unit::TestCase
+class TestJSON < Test::Unit::TestCase
   include JSON
 
   def setup
@@ -109,6 +109,8 @@ class TC_JSON < Test::Unit::TestCase
   def test_parse_json_primitive_values
     assert_raise(JSON::ParserError) { JSON.parse('') }
     assert_raise(JSON::ParserError) { JSON.parse('', :quirks_mode => true) }
+    assert_raise(TypeError) { JSON::Parser.new(nil).parse }
+    assert_raise(TypeError) { JSON::Parser.new(nil, :quirks_mode => true).parse }
     assert_raise(TypeError) { JSON.parse(nil) }
     assert_raise(TypeError) { JSON.parse(nil, :quirks_mode => true) }
     assert_raise(JSON::ParserError) { JSON.parse('  /* foo */ ') }
@@ -312,6 +314,16 @@ class TC_JSON < Test::Unit::TestCase
     assert_equal "bar", res.foo
     assert_equal(SubOpenStruct, res.class)
     assert res.item_set?
+  end
+
+  def test_parse_generic_object
+    res = parse('{"foo":"bar", "baz":{}}', :object_class => JSON::GenericObject)
+    assert_equal(JSON::GenericObject, res.class)
+    assert_equal "bar", res.foo
+    assert_equal "bar", res["foo"]
+    assert_equal "bar", res[:foo]
+    assert_equal "bar", res.to_hash[:foo]
+    assert_equal(JSON::GenericObject, res.baz.class)
   end
 
   def test_generate_core_subclasses_with_new_to_json

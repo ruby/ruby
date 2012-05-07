@@ -4,6 +4,7 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+#include <ctype.h>
 
 #include "ruby.h"
 
@@ -105,7 +106,6 @@ typedef struct JSON_Generator_StateStruct {
     Data_Get_Struct(Vstate, JSON_Generator_State, state);                                       \
     buffer = cState_prepare_buffer(Vstate);                                                     \
     generate_json_##type(buffer, Vstate, state, self);                                          \
-    RB_GC_GUARD(Vstate); \
     return fbuffer_to_s(buffer)
 
 static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self);

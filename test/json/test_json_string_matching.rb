@@ -6,7 +6,7 @@ require File.join(File.dirname(__FILE__), 'setup_variant')
 require 'stringio'
 require 'time'
 
-class TestJsonStringMatching < Test::Unit::TestCase
+class TestJSONStringMatching < Test::Unit::TestCase
   include JSON
 
   class TestTime < ::Time
