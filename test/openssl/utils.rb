@@ -235,7 +235,7 @@ aPgwHyJBiK1/ebK3tYcrSKrOoRyrAgEC
           server_proc.call(ctx, ssl)
         end
       end
-    rescue Errno::EBADF, IOError, Errno::EINVAL, Errno::ECONNABORTED, Errno::ENOTSOCK
+    rescue Errno::EBADF, IOError, Errno::EINVAL, Errno::ECONNABORTED, Errno::ENOTSOCK, Errno::ECONNRESET
     end
 
     DHParam = OpenSSL::PKey::DH.new(128)

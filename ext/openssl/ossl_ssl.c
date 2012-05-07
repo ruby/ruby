@@ -1919,7 +1919,7 @@ Init_ossl_ssl()
     rb_define_const(cSSLContext, "SESSION_CACHE_BOTH", LONG2FIX(SSL_SESS_CACHE_BOTH)); /* no different than CACHE_SERVER in 0.9.8e */
 
     /*
-     * Normally the sesison cache is checked for expired sessions every 255
+     * Normally the session cache is checked for expired sessions every 255
      * connections.  Since this may lead to a delay that cannot be controlled,
      * the automatic flushing may be disabled and #flush_sessions can be
      * called explicitly.
@@ -2035,6 +2035,12 @@ Init_ossl_ssl()
     ossl_ssl_def_const(OP_NO_SSLv2);
     ossl_ssl_def_const(OP_NO_SSLv3);
     ossl_ssl_def_const(OP_NO_TLSv1);
+#if defined(SSL_OP_NO_TLSv1_1)
+    ossl_ssl_def_const(OP_NO_TLSv1_1);
+#endif
+#if defined(SSL_OP_NO_TLSv1_2)
+    ossl_ssl_def_const(OP_NO_TLSv1_2);
+#endif
 #if defined(SSL_OP_NO_TICKET)
     ossl_ssl_def_const(OP_NO_TICKET);
 #endif

@@ -1,3 +1,17 @@
+Mon May 07 22:54:22 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_ssl.c: add support for option flags
+	  OpenSSL::SSL::OP_NO_TLSv1_1
+	  OpenSSL::SSL::OP_NO_TLSv1_2
+	  to allow blocking specific TLS versions. Thanks to Justin Guyett for
+	  pointing this out to me.
+	* test/openssl/test_ssl.rb: add tests to assert correct behavior when
+	  blocking certain versions of TLS/SSL both on server and client side.
+	  Also refactored tests to reduce boilerplate code a little.
+	* test/openssl/utils.rb: rescue Errno::ECONNRESET for tests where
+	  client rejects the connection because a forbidden protocol version
+	  was used.
+
 Mon May  7 20:14:15 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb (random_bytes): call to_int method for the
