@@ -65,6 +65,7 @@ module Test
         opts.version = MiniTest::Unit::VERSION
 
         options[:retry] = true
+        options[:job_status] ||= :replace if @tty
 
         opts.on '-h', '--help', 'Display this help.' do
           puts opts
@@ -375,18 +376,22 @@ module Test
       end
 
       def terminal_width
-        @terminal_width ||=
+        unless @terminal_width
           begin
             require 'io/console'
-            $stdout.winsize[1]
-          rescue LoadError, NoMethodError
-            ENV["COLUMNS"].to_i.nonzero? || 80
+            width = $stdout.winsize[1]
+          rescue LoadError, NoMethodError, Errno::ENOTTY
+            width = ENV["COLUMNS"].to_i.nonzero? || 80
           end
+          width -= 1 if /mswin|mingw/ =~ RUBY_PLATFORM
+          @terminal_width = width
+        end
+        @terminal_width
       end
 
       def del_status_line
         return unless @tty
-        print "\r"+" "*terminal_width+"\r"
+        print "\r"+" "*@status_line_size+"\r"
         $stdout.flush
       end
 
@@ -395,15 +400,24 @@ module Test
         @status_line_size ||= 0
         del_status_line
         $stdout.flush
-        line = line[0...@terminal_width]
+        line = line[0...terminal_width]
         print line
         $stdout.flush
         @status_line_size = line.size
       end
 
+      def add_status(line)
+        return print(line) unless @tty
+        @status_line_size ||= 0
+        line = line[0...(terminal_width-@status_line_size)]
+        print line
+        $stdout.flush
+        @status_line_size += line.size
+      end
+
       def jobs_status
         return unless @options[:job_status]
-        puts "" unless @options[:verbose]
+        puts "" unless @options[:verbose] or @tty
         status_line = @workers.map(&:to_s).join(" ")
         if @options[:job_status] == :replace and @tty
           put_status status_line
@@ -413,7 +427,7 @@ module Test
       end
 
       def del_jobs_status
-        return unless @options[:job_status] == :replace && @jstr_size.nonzero?
+        return unless @options[:job_status] == :replace && @status_line_size.nonzero?
         del_status_line
       end
 
@@ -582,28 +596,23 @@ module Test
             end
           end
 
-          if @interrupt || !@options[:retry] || @need_quit
+          if !(@interrupt || !@options[:retry] || @need_quit) && @workers
+            @options[:parallel] = false
+            suites, rep = rep.partition {|r| r[:testcase] && r[:file] && !r[:report].empty?}
+            suites.map {|r| r[:file]}.uniq.each {|file| require file}
+            suites.map! {|r| eval("::"+r[:testcase])}
+            puts ""
+            puts "Retrying..."
+            puts ""
+            _run_suites(suites, type)
+          end
+          unless rep.empty?
             rep.each do |r|
               report.push(*r[:report])
             end
             @errors   += rep.map{|x| x[:result][0] }.inject(:+)
             @failures += rep.map{|x| x[:result][1] }.inject(:+)
             @skips    += rep.map{|x| x[:result][2] }.inject(:+)
-          elsif @workers
-            puts ""
-            puts "Retrying..."
-            puts ""
-            rep.each do |r|
-              if r[:testcase] && r[:file] && !r[:report].empty?
-                require r[:file]
-                _run_suite(eval("::"+r[:testcase]),type)
-              else
-                report.push(*r[:report])
-                @errors += r[:result][0]
-                @failures += r[:result][1]
-                @skips += r[:result][2]
-              end
-            end
           end
           if @warnings
             warn ""
@@ -622,6 +631,7 @@ module Test
       end
 
       def _run_suites suites, type
+        _prepare_run(suites, type)
         @interrupt = nil
         result = []
         GC.start
@@ -645,6 +655,42 @@ module Test
 
       alias mini_run_suite _run_suite
 
+      def _prepare_run(suites, type)
+        if @tty
+          @verbose ||= !options[:parallel]
+          MiniTest::Unit.output = StatusLineOutput.new(self)
+        end
+        if /\A\/(.*)\/\z/ =~ (filter = options[:filter])
+          options[:filter] = filter = Regexp.new($1)
+        end
+        type = "#{type}_methods"
+        total = if filter
+                  suites.inject(0) {|n, suite| n + suite.send(type).grep(filter).size}
+                else
+                  suites.inject(0) {|n, suite| n + suite.send(type).size}
+                end
+        @test_count = 0
+        @total_tests = total.to_s(10)
+      end
+
+      def new_test(s)
+        put_status("[#{(@test_count += 1).to_s(10).rjust(@total_tests.size)}/#{@total_tests}] #{s}")
+      end
+
+      def _print(s); $stdout.print(s); end
+      def succeed; del_status_line; end
+
+      def failed(s)
+        $stdout.puts
+        @report_count ||= 0
+        report.each do |msg|
+          next if @options[:hide_skip] and msg.start_with? "Skipped:"
+          msg = msg.split(/$/, 2)
+          $stdout.puts "#{@failed_color}%3d) %s#{@reset_color}%s\n" % [@report_count += 1, *msg]
+        end
+        report.clear
+      end
+
       # Overriding of MiniTest::Unit#puke
       def puke klass, meth, e
         # TODO:
@@ -662,6 +708,12 @@ module Test
       def initialize # :nodoc:
         super
         @tty = $stdout.tty?
+        if @tty and /mswin|mingw/ !~ RUBY_PLATFORM and /dumb/ !~ ENV["TERM"]
+          @failed_color = "\e[31m"
+          @reset_color = "\e[m"
+        else
+          @failed_color = @reset_color = ""
+        end
       end
 
       def status(*args)
@@ -674,6 +726,27 @@ module Test
         result = super
         puts "\nruby -v: #{RUBY_DESCRIPTION}"
         result
+      end
+    end
+
+    class StatusLineOutput < Struct.new(:runner)
+      def puts(*a) $stdout.puts(*a) unless a.empty? end
+      def respond_to_missing?(*a) $stdout.respond_to?(*a) end
+      def method_missing(*a, &b) $stdout.__send__(*a, &b) end
+
+      def print(s)
+        case s
+        when /\A(.*\#.*) = \z/
+          runner.new_test($1)
+        when /\A(.* s) = \z/
+          runner.add_status(" = "+$1.chomp)
+        when /\A\.\z/
+          runner.succeed
+        when /\A[EFS]\z/
+          runner.failed(s)
+        else
+          $stdout.print(s)
+        end
       end
     end
 

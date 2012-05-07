@@ -1,4 +1,7 @@
-Tue May  8 03:54:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue May  8 03:54:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::StatusLineOutput): new class to output
+	  in status line.
 
 	* test/testunit/test_hideskip.rb (TestHideSkip#test_hideskip):
 	  MiniTest#puke now reports Skipped messages only if verbose mode.
