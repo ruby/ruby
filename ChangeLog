@@ -1,3 +1,8 @@
+Tue May  8 08:54:48 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/abbrev.rb:  Fixed typo in abbrev pattern documentation.  Based on
+	  patch by Mark Rushakoff.  [ruby-trunk - #6346]
+
 Tue May  8 07:44:18 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_start_ssl): remove useless rb_sys_fail

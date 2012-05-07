@@ -38,8 +38,8 @@ module Abbrev
   # would be "co", "con", and "cone".
   #
   # The optional +pattern+ parameter is a pattern or a string. Only
-  # those input strings matching the pattern, or begging the string,
-  # are considered for inclusion in the output hash
+  # input strings that match the pattern or start with the string
+  # are included in the output hash.
 
   def abbrev(words, pattern = nil)
     table = {}
@@ -81,12 +81,17 @@ end
 
 class Array
   # Calculates the set of unambiguous abbreviations for the strings in
-  # +self+. If passed a pattern or a string, only the strings matching
-  # the pattern or starting with the string are considered.
+  # +self+.
+  #
+  # The optional +pattern+ parameter is a pattern or a string. Only
+  # input strings that match the pattern or start with the string
+  # are included in the output hash.
   #
   #   %w{ car cone }.abbrev   #=> { "ca" => "car", "car" => "car",
   #                                 "co" => "cone", "con" => "cone",
   #                                 "cone" => "cone" }
+  #
+  # See also Abbrev#abbrev
   def abbrev(pattern = nil)
     Abbrev::abbrev(self, pattern)
   end
