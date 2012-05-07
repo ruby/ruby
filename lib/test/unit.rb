@@ -66,6 +66,8 @@ module Test
 
         options[:retry] = true
 
+        options[:job_status] ||= :replace if @tty
+
         opts.on '-h', '--help', 'Display this help.' do
           puts opts
           exit
@@ -375,13 +377,17 @@ module Test
       end
 
       def terminal_width
-        @terminal_width ||=
+        unless @terminal_width
           begin
             require 'io/console'
-            $stdout.winsize[1]
+            width = $stdout.winsize[1]
           rescue LoadError, NoMethodError
-            ENV["COLUMNS"].to_i.nonzero? || 80
+            width = ENV["COLUMNS"].to_i.nonzero? || 80
           end
+          width -= 1 if /mswin|mingw/ =~ RUBY_PLATFORM
+          @terminal_width = width
+        end
+        @terminal_width
       end
 
       def del_status_line
@@ -403,7 +409,7 @@ module Test
 
       def jobs_status
         return unless @options[:job_status]
-        puts "" unless @options[:verbose]
+        puts "" unless @options[:verbose] or @tty
         status_line = @workers.map(&:to_s).join(" ")
         if @options[:job_status] == :replace and @tty
           put_status status_line
@@ -413,7 +419,7 @@ module Test
       end
 
       def del_jobs_status
-        return unless @options[:job_status] == :replace && @jstr_size.nonzero?
+        return unless @options[:job_status] == :replace && @status_line_size.nonzero?
         del_status_line
       end
 
@@ -622,6 +628,7 @@ module Test
       end
 
       def _run_suites suites, type
+        _prepare_run(suites, type)
         @interrupt = nil
         result = []
         GC.start
@@ -643,7 +650,66 @@ module Test
         result
       end
 
+      def _prepare_run(suites, type)
+        if /\A\/(.*)\/\z/ =~ (filter = options[:filter])
+          options[:filter] = filter = Regexp.new($1)
+        end
+        type = "#{type}_methods"
+        total = if filter
+                  suites.inject(0) {|n, suite| n + suite.send(type).grep(filter).size}
+                else
+                  suites.inject(0) {|n, suite| n + suite.send(type).size}
+                end
+        @test_count = 0
+        @total_tests = total.to_s(10)
+      end
+
       alias mini_run_suite _run_suite
+
+      def _run_suite suite, type
+        header = "#{type}_suite_header"
+        puts send(header, suite) if respond_to? header
+
+        tests = suite.send("#{type}_methods")
+        filter = options[:filter] and tests = tests.grep(filter)
+        assertions = tests.map { |method|
+          inst = suite.new method
+          inst._assertions = 0
+          _run_testcase(inst)
+          inst._assertions
+        }
+
+        return assertions.size, assertions.inject(0) { |sum, n| sum + n }
+      end
+
+      def _run_testcase(inst)
+        if @tty or @verbose
+          put_status("[#{(@test_count += 1).to_s(10).rjust(@total_tests.size)}/#{@total_tests}] "\
+                     "#{inst.class}##{inst.__name__}")
+        end
+
+        @start_time = Time.now
+        result = inst.run self
+        time = Time.now - @start_time
+
+        if @tty and !@verbose and report.empty?
+          del_status_line
+          return
+        end
+        print " = %.2f s = " % time if @verbose
+        print result if !@tty or @verbose
+        puts if @tty or @verbose
+        if @tty and !@verbose
+          @report_count ||= 0
+          report.each do |msg|
+            next if @options[:hide_skip] and msg.start_with? "Skipped:"
+            msg = msg.split(/$/, 2)
+            puts "#{@failed_color}%3d) %s#{@reset_color}%s\n" % [@report_count += 1, *msg]
+          end
+          report.clear
+        end
+        $stdout.flush
+      end
 
       # Overriding of MiniTest::Unit#puke
       def puke klass, meth, e
@@ -670,6 +736,12 @@ module Test
       def initialize # :nodoc:
         super
         @tty = $stdout.tty?
+        if @tty and /mswin|mingw/ !~ RUBY_PLATFORM and /dumb/ !~ ENV["TERM"]
+          @failed_color = "\e[31m"
+          @reset_color = "\e[m"
+        else
+          @failed_color = @reset_color = ""
+        end
       end
 
       def status(*args)
@@ -718,6 +790,17 @@ module Test
         new(*args).run
       end
     end
+  end
+end
+
+class MiniTest::Unit::TestCase
+  undef run_test
+  def run_test(name)
+    progname, $0 = $0, "#{$0}: #{self.class}##{name}"
+    self.__send__(name)
+  ensure
+    $@[-caller.size, 1] = [] if $@
+    $0 = progname
   end
 end
 

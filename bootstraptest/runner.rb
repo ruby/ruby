@@ -110,6 +110,16 @@ End
   tests = Dir.glob("#{File.dirname($0)}/test_*.rb").sort if tests.empty?
   pathes = tests.map {|path| File.expand_path(path) }
 
+  @progress = %w[- \\ | /]
+  @progress_bs = "\b" * @progress[0].size
+  @tty = !@verbose && $stderr.tty?
+  if @tty and /mswin|mingw/ !~ RUBY_PLATFORM and /dumb/ !~ ENV["TERM"]
+    @passed = "\e[32m"
+    @failed = "\e[31m"
+    @reset = "\e[m"
+  else
+    @passed = @failed = @reset = ""
+  end
   unless quiet
     puts Time.now
     if defined?(RUBY_DESCRIPTION)
@@ -136,8 +146,18 @@ def exec_test(pathes)
   @location = nil
   pathes.each do |path|
     $stderr.print "\n#{File.basename(path)} "
+    $stderr.print @progress[@count % @progress.size] if @tty
     $stderr.puts if @verbose
+    count = @count
+    error = @error
     load File.expand_path(path)
+    if @tty
+      if @error == error
+        $stderr.print "#{@progress_bs}#{@passed}PASS #{@count-count}#{@reset}"
+      else
+        $stderr.print "#{@progress_bs}#{@failed}FAIL #{@error-error}/#{@count-count}#{@reset}"
+      end
+    end
   end
   $stderr.puts
   if @error == 0
@@ -162,7 +182,11 @@ def show_progress(message = '')
   end
   faildesc = yield
   if !faildesc
-    $stderr.print '.'
+    if @tty
+      $stderr.print "#{@progress_bs}#{@progress[@count % @progress.size]}"
+    else
+      $stderr.print '.'
+    end
     $stderr.puts if @verbose
   else
     $stderr.print 'F'
