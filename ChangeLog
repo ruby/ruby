@@ -1,3 +1,7 @@
+Tue May  8 03:51:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sample/test.rb (PROGRESS): refine output.
+
 Tue May  8 02:34:26 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/minitest/unit.rb (assert_match): refix of r35563.
