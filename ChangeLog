@@ -1,3 +1,8 @@
+Tue May  8 05:35:18 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* object.c (Init_Object):  Added reference to variable.c where
+	  public_constant and private_constant documentation lives.  [#6381]
+
 Tue May  8 04:47:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::Runner#output): prefer local output to
