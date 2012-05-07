@@ -4371,13 +4371,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_HASH:{
 	DECL_ANCHOR(list);
-	VALUE size = 0;
 	int type = node->nd_head ? nd_type(node->nd_head) : NODE_ZARRAY;
 
 	INIT_ANCHOR(list);
 	switch (type) {
 	  case NODE_ARRAY:
-	    size = INT2FIX(compile_array(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH));
+	    compile_array(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH);
 	    ADD_SEQ(ret, list);
 	    break;
 

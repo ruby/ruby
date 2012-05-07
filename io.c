@@ -8786,7 +8786,6 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 		enc = find_encoding(v2);
 	    if (enc == enc2) {
 		/* Special case - "-" => no transcoding */
-		VALUE tmp1 = rb_check_string_type(v1);
 		enc2 = NULL;
 	    }
 	}
@@ -8794,7 +8793,6 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 	    enc = find_encoding(v2);
 	    if (enc == enc2) {
 		/* Special case - "-" => no transcoding */
-		VALUE tmp1 = rb_check_string_type(v1);
 		enc2 = NULL;
 	    }
 	}

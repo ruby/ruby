@@ -1,3 +1,32 @@
+Mon May  7 10:16:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/rubygems/test_gem_installer.rb (TestGemInstaller#test_dir): fix
+	  argument order.  expected value must come first.
+
+Mon May 07 09:14:11 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_ssl.c: support TLSv1.1 & TLSv1.2. Add 
+	  SSLContext#version to inspect the version that was negotiated for
+	  a given connection.
+	* ext/openssl/extconf.rb: detect TLS 1.1 & 1.2 support.
+	* test/openssl/test_ssl.rb: add tests for TLS 1.1 & 1.2 given they
+	  are supported by the native OpenSSL being used.
+
+Sun May  6 21:34:29 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (io_encoding_set): suppress warnings. [ruby-dev:45627]
+	  this tmp1 is not required after r35538.
+
+	* addr2line.c: suppress warnings.
+
+Sun May  6 18:39:39 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): remove unused variable `size'.
+
+Sun May  6 14:50:03 2012  Tanaka Akira  <akr@fsij.org>
+
+	* lib/securerandom.rb: show actual read length in an error message.
+
 Sat May  5 06:43:10 2012  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*: Imported minitest 2.12.1 (r7323)
