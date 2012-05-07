@@ -140,8 +140,7 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_keys
-    a = nil
-    assert_block { a = ENV.keys }
+    a = ENV.keys
     assert_kind_of(Array, a)
     a.each {|k| assert_kind_of(String, k) }
   end
@@ -151,8 +150,7 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_values
-    a = nil
-    assert_block { a = ENV.values }
+    a = ENV.values
     assert_kind_of(Array, a)
     a.each {|k| assert_kind_of(String, k) }
   end

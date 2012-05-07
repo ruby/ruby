@@ -3,17 +3,8 @@
 module Test
   module Unit
     module FileAssertions
-
-      def _wrap_assertion
-        yield
-      end
-
       def assert_same_file(from, to, message=nil)
-        _wrap_assertion {
-          assert_block("file #{from} != #{to}#{message&&': '}#{message||''}") {
-            File.read(from) == File.read(to)
-          }
-        }
+        assert_equal(File.read(from), File.read(to), "file #{from} != #{to}#{message&&': '}#{message||''}")
       end
 
       def assert_same_entry(from, to, message=nil)
@@ -28,76 +19,52 @@ module Test
       end
 
       def assert_file_exist(path, message=nil)
-        _wrap_assertion {
-          assert_block("file not exist: #{path}#{message&&': '}#{message||''}") {
-            File.exist?(path)
-          }
-        }
+        assert(File.exist?(path), "file not exist: #{path}#{message&&': '}#{message||''}")
       end
 
       def assert_file_not_exist(path, message=nil)
-        _wrap_assertion {
-          assert_block("file not exist: #{path}#{message&&': '}#{message||''}") {
-            not File.exist?(path)
-          }
-        }
+        assert(!File.exist?(path), "file exist: #{path}#{message&&': '}#{message||''}")
       end
 
       def assert_directory(path, message=nil)
-        _wrap_assertion {
-          assert_block("is not directory: #{path}#{message&&': '}#{message||''}") {
-            File.directory?(path)
-          }
-        }
+        assert(File.directory?(path), "is not directory: #{path}#{message&&': '}#{message||''}")
       end
 
       def assert_symlink(path, message=nil)
-        _wrap_assertion {
-          assert_block("is not a symlink: #{path}#{message&&': '}#{message||''}") {
-            File.symlink?(path)
-          }
-        }
+        assert(File.symlink?(path), "is not a symlink: #{path}#{message&&': '}#{message||''}")
       end
 
       def assert_not_symlink(path)
-        _wrap_assertion {
-          assert_block("is a symlink: #{path}#{message&&': '}#{message||''}") {
-            not File.symlink?(path)
-          }
-        }
+        assert(!File.symlink?(path), "is a symlink: #{path}#{message&&': '}#{message||''}")
       end
 
       def assert_equal_time(expected, actual, message=nil)
-        _wrap_assertion {
-	  expected_str = expected.to_s
-	  actual_str = actual.to_s
-	  if expected_str == actual_str
-	    expected_str << " (nsec=#{expected.nsec})"
-	    actual_str << " (nsec=#{actual.nsec})"
-	  end
-	  full_message = build_message(message, <<EOT)
+        expected_str = expected.to_s
+        actual_str = actual.to_s
+        if expected_str == actual_str
+          expected_str << " (nsec=#{expected.nsec})"
+          actual_str << " (nsec=#{actual.nsec})"
+        end
+        full_message = build_message(message, <<EOT)
 <#{expected_str}> expected but was
 <#{actual_str}>.
 EOT
-	  assert_block(full_message) { expected == actual }
-        }
+        assert_equal(expected, actual, full_message)
       end
 
       def assert_equal_timestamp(expected, actual, message=nil)
-        _wrap_assertion {
-	  expected_str = expected.to_s
-	  actual_str = actual.to_s
-	  if expected_str == actual_str
-	    expected_str << " (nsec=#{expected.nsec})"
-	    actual_str << " (nsec=#{actual.nsec})"
-	  end
-	  full_message = build_message(message, <<EOT)
+        expected_str = expected.to_s
+        actual_str = actual.to_s
+        if expected_str == actual_str
+          expected_str << " (nsec=#{expected.nsec})"
+          actual_str << " (nsec=#{actual.nsec})"
+        end
+        full_message = build_message(message, <<EOT)
 <#{expected_str}> expected but was
 <#{actual_str}>.
 EOT
-          # subsecond timestamp is not portable.
-	  assert_block(full_message) { expected.tv_sec == actual.tv_sec }
-        }
+        # subsecond timestamp is not portable.
+        assert_equal(expected.tv_sec, actual.tv_sec, full_message)
       end
 
     end

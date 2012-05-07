@@ -818,11 +818,11 @@ gems:
   end
 
   def assert_data_from_server(data)
-    assert_block("Data is not from server") { data =~ /0\.4\.11/ }
+    assert_match(/0\.4\.11/, data, "Data is not from server")
   end
 
   def assert_data_from_proxy(data)
-    assert_block("Data is not from proxy") { data =~ /0\.4\.2/ }
+    assert_match(/0\.4\.2/, data, "Data is not from proxy")
   end
 
   class Conn

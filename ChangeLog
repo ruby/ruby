@@ -1,3 +1,15 @@
+Mon May  7 10:23:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/fileutils/fileasserts.rb: use assert_equal, assert_match, and so on.
+
+	* test/ruby/enc/test_utf16.rb, test/ruby/enc/test_utf32.rb,
+	  test/ruby/test_io_m17n.rb (assert_str_equal): ditto.
+
+	* test/rubygems/test_gem_remote_fetcher.rb
+	  (assert_data_from_{server,proxy}): ditto.
+
+	* test/test_pstore.rb (test_thread_safe): ditto.
+
 Mon May  7 10:16:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rubygems/test_gem_installer.rb (TestGemInstaller#test_dir): fix
