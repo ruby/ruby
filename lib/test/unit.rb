@@ -786,4 +786,15 @@ module Test
   end
 end
 
+class MiniTest::Unit::TestCase
+  undef run_test
+  def run_test(name)
+    progname, $0 = $0, "#{$0}: #{self.class}##{name}"
+    self.__send__(name)
+  ensure
+    $@[-caller.size, 1] = [] if $@
+    $0 = progname
+  end
+end
+
 Test::Unit::Runner.autorun

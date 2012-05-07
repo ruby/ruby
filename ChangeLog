@@ -1,4 +1,6 @@
-Tue May  8 03:54:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue May  8 03:54:34 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (MiniTest#run_test): show the running test in $0.
 
 	* lib/test/unit.rb (Test::Unit::StatusLineOutput): new class to output
 	  in status line.
