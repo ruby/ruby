@@ -1,3 +1,8 @@
+Mon May  7 11:09:20 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (Init_bigdecimal): define IDs before
+	  they are used. [ruby-core:44900] [Bug #6406]
+
 Fri Apr 27 11:02:33 2012  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.rb (test_core_03_notify): Fixed test failures

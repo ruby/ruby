@@ -2802,6 +2802,10 @@ Init_bigdecimal(void)
 {
     VALUE arg;
 
+    id_BigDecimal_exception_mode = rb_intern_const("BigDecimal.exception_mode");
+    id_BigDecimal_rounding_mode = rb_intern_const("BigDecimal.rounding_mode");
+    id_BigDecimal_precision_limit = rb_intern_const("BigDecimal.precision_limit");
+
     /* Initialize VP routines */
     VpInit(0UL);
 
@@ -2992,10 +2996,6 @@ Init_bigdecimal(void)
     rb_mBigMath = rb_define_module("BigMath");
     rb_define_singleton_method(rb_mBigMath, "exp", BigMath_s_exp, 2);
     rb_define_singleton_method(rb_mBigMath, "log", BigMath_s_log, 2);
-
-    id_BigDecimal_exception_mode = rb_intern_const("BigDecimal.exception_mode");
-    id_BigDecimal_rounding_mode = rb_intern_const("BigDecimal.rounding_mode");
-    id_BigDecimal_precision_limit = rb_intern_const("BigDecimal.precision_limit");
 
     id_up = rb_intern_const("up");
     id_down = rb_intern_const("down");
