@@ -142,4 +142,14 @@ foo
 EOF
     assert_equal("foo\r\n", response.data.attr["RFC822"])
   end
+
+  # [Bug #6397] [ruby-core:44849]
+  def test_body_type_attachment
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+* 980 FETCH (UID 2862 BODYSTRUCTURE ((("TEXT" "PLAIN" ("CHARSET" "iso-8859-1") NIL NIL "7BIT" 416 21 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "iso-8859-1") NIL NIL "7BIT" 1493 32 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "Boundary_(ID_IaecgfnXwG5bn3x8lIeGIQ)") NIL NIL)("MESSAGE" "RFC822" ("NAME" "Fw_ ____ _____ ____.eml") NIL NIL "7BIT" 1980088 NIL ("ATTACHMENT" ("FILENAME" "Fw_ ____ _____ ____.eml")) NIL) "MIXED" ("BOUNDARY" "Boundary_(ID_eDdLc/j0mBIzIlR191pHjA)") NIL NIL))
+EOF
+    assert_equal("Fw_ ____ _____ ____.eml",
+      response.data.attr["BODYSTRUCTURE"].parts[1].body.param["FILENAME"])
+  end
 end

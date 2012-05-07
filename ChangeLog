@@ -1,3 +1,8 @@
+Mon May  7 13:03:55 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (body_type_attachment): parse body type
+	  "ATTACHMENT". [ruby-core:44849] [Bug #6397]
+
 Mon May  7 10:49:36 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (Init_bigdecimal): define IDs before

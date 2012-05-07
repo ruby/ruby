@@ -1977,6 +1977,26 @@ module Net
       end
     end
 
+    # Net::IMAP::BodyTypeAttachment represents attachment body structures
+    # of messages.
+    #
+    # ==== Fields:
+    #
+    # media_type:: Returns the content media type name.
+    #
+    # subtype:: Returns +nil+.
+    #
+    # param:: Returns a hash that represents parameters.
+    #
+    # multipart?:: Returns false.
+    #
+    class BodyTypeAttachment < Struct.new(:media_type, :subtype,
+                                          :param)
+      def multipart?
+        return false
+      end
+    end
+
     # Net::IMAP::BodyTypeMultipart represents multipart body structures
     # of messages.
     #
@@ -2347,6 +2367,8 @@ module Net
           return body_type_text
         when /\A(?:MESSAGE)\z/ni
           return body_type_msg
+        when /\A(?:ATTACHMENT)\z/ni
+          return body_type_attachment
         else
           return body_type_basic
         end
@@ -2397,6 +2419,13 @@ module Net
                                    desc, enc, size,
                                    env, b, lines,
                                    md5, disposition, language, extension)
+      end
+
+      def body_type_attachment
+        mtype = case_insensitive_string
+        match(T_SPACE)
+        param = body_fld_param
+        return BodyTypeAttachment.new(mtype, nil, param)
       end
 
       def body_type_mpart
