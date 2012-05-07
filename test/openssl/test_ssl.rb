@@ -146,7 +146,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         client_ca_from_server = sslconn.client_ca
         [@cli_cert, @cli_key]
       end
-      server_connect(port, ctx) { |ssl| assert_equal([@ca], client_ca_from_server) } 
+      server_connect(port, ctx) { |ssl| assert_equal([@ca], client_ca_from_server) }
     }
   end
 
@@ -471,7 +471,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
       ctx.ssl_version = :TLSv1_1
       assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
     }
-  end
+  end if defined?(OpenSSL::SSL::OP_NO_TLSv1_1)
 
   def test_forbid_tls_v1_1_from_server
     start_server_version(:TLSv1_1) { |server, port|
@@ -479,7 +479,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
       ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_TLSv1_1
       assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
     }
-  end
+  end if defined?(OpenSSL::SSL::OP_NO_TLSv1_1)
 
   def test_forbid_tls_v1_2_for_client
     ctx_proc = Proc.new { |ctx| ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_TLSv1_2 }
@@ -488,7 +488,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
       ctx.ssl_version = :TLSv1_2
       assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
     }
-  end
+  end if defined?(OpenSSL::SSL::OP_NO_TLSv1_2)
 
   def test_forbid_tls_v1_2_from_server
     start_server_version(:TLSv1_2) { |server, port|
@@ -496,14 +496,14 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
       ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_TLSv1_2
       assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
     }
-  end
+  end if defined?(OpenSSL::SSL::OP_NO_TLSv1_2)
 
 end
 
   private
 
   def start_server_version(version, ctx_proc=nil, &blk)
-    ctx_wrap = Proc.new { |ctx| 
+    ctx_wrap = Proc.new { |ctx|
       ctx.ssl_version = version
       ctx_proc.call(ctx) if ctx_proc
     }
