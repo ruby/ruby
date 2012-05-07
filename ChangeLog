@@ -1,3 +1,9 @@
+Tue May  8 07:44:18 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_start_ssl): remove useless rb_sys_fail
+	  before ossl_raise. this cause a test failure on Linux.
+	  http://u64.rubyci.org/~chkbuild/ruby-trunk/log/20120507T190102Z.log.html.gz
+
 Tue May  8 05:35:18 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* object.c (Init_Object):  Added reference to variable.c where
