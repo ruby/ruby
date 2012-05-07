@@ -1,4 +1,7 @@
-Tue May  8 03:53:40 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue May  8 03:53:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner#puke): modify only result and
+	  drop useless reports, not override entirely.
 
 	* bootstraptest/runner.rb (exec_test, show_progress): show rotators
 	  and pass/fail counts.
