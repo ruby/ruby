@@ -1,4 +1,10 @@
-Tue May  8 03:53:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue May  8 03:54:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/testunit/test_hideskip.rb (TestHideSkip#test_hideskip):
+	  MiniTest#puke now reports Skipped messages only if verbose mode.
+
+	* test/testunit/test_sorting.rb (TestTestUnitSorting#test_sorting):
+	  ditto.
 
 	* lib/test/unit.rb (Test::Unit::Runner#puke): modify only result and
 	  drop useless reports, not override entirely.

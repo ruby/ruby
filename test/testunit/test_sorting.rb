@@ -4,7 +4,7 @@ class TestTestUnitSorting < Test::Unit::TestCase
   def test_sorting
     test_out, o = IO.pipe
     spawn(*@options[:ruby], "#{File.dirname(__FILE__)}/test4test_sorting.rb",
-          out: o, err: o)
+          "--verbose", out: o, err: o)
     o.close
     result = test_out.read
 
