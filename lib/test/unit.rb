@@ -656,7 +656,7 @@ module Test
       alias mini_run_suite _run_suite
 
       def output
-        @output || super
+        (@output ||= nil) || super
       end
 
       def _prepare_run(suites, type)
