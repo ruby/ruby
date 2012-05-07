@@ -54,7 +54,7 @@ module SecureRandom
   # If secure random number generator is not available,
   # NotImplementedError is raised.
   def self.random_bytes(n=nil)
-    n ||= 16
+    n = n ? n.to_int : 16
 
     if defined? OpenSSL::Random
       @pid = 0 if !defined?(@pid)
@@ -80,7 +80,7 @@ module SecureRandom
           @has_urandom = true
           ret = f.readpartial(n)
           if ret.length != n
-            raise NotImplementedError, "Unexpected partial read from random device"
+            raise NotImplementedError, "Unexpected partial read from random device: only #{ret.length} for #{n} bytes"
           end
           return ret
         }
