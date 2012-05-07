@@ -54,7 +54,7 @@ module SecureRandom
   # If secure random number generator is not available,
   # NotImplementedError is raised.
   def self.random_bytes(n=nil)
-    n ||= 16
+    n = n ? n.to_int : 16
 
     if defined? OpenSSL::Random
       @pid = 0 if !defined?(@pid)

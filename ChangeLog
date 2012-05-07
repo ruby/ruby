@@ -1,3 +1,8 @@
+Mon May  7 20:14:15 2012  Tanaka Akira  <akr@fsij.org>
+
+	* lib/securerandom.rb (random_bytes): call to_int method for the
+	  argument at first.
+
 Mon May  7 17:54:12 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/minitest/unit.rb (assert_match): replace matcher only if both
