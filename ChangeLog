@@ -1,3 +1,7 @@
+Wed May  9 06:23:33 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: reverted.
+
 Wed May  9 04:31:26 2012  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/ring.rb (lookup_ring_any): fix Rinda::RingFinger.primary 
