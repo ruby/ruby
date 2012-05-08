@@ -2582,7 +2582,7 @@ reg_hash(VALUE re)
  *
  *     /abc/  == /abc/x   #=> false
  *     /abc/  == /abc/i   #=> false
- *     /abc/  == /abc/n   #=> false
+ *     /abc/  == /abc/u   #=> false
  *     /abc/u == /abc/n   #=> false
  */
 

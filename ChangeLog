@@ -1,3 +1,8 @@
+Wed May  9 06:28:59 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* re.c (rb_reg_equal):  Removed incorrect example for Regexp#== with
+	  "n" option.  [ruby-talk - Bug #6415]
+
 Wed May  9 06:23:33 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: reverted.
