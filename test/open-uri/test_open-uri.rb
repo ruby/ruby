@@ -2,7 +2,10 @@ require 'test/unit'
 require 'open-uri'
 require 'webrick'
 require 'webrick/httpproxy'
-require 'zlib'
+begin
+  require 'zlib'
+rescue LoadError
+end
 
 class TestOpenURI < Test::Unit::TestCase
 
@@ -497,7 +500,7 @@ class TestOpenURI < Test::Unit::TestCase
         assert_equal(content_gz, f.read.force_encoding("ascii-8bit"))
       }
     }
-  end
+  end if defined?(Zlib::GzipWriter)
 
   # 192.0.2.0/24 is TEST-NET.  [RFC3330]
 

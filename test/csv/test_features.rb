@@ -7,7 +7,10 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "zlib"
+begin
+  require "zlib"
+rescue LoadError
+end
 
 require_relative "base"
 
@@ -205,7 +208,7 @@ class TestCSV::Features < TestCSV
                )
     end
     assert_equal("\r\n", zipped.row_sep)
-  end
+  end if defined?(Zlib::GzipReader)
 
   def test_gzip_writer_bug_fix
     tempfile = Tempfile.new(%w"temp .gz")
@@ -223,7 +226,7 @@ class TestCSV::Features < TestCSV
                              include?($INPUT_RECORD_SEPARATOR),
             "@row_sep did not default" )
     tempfile.close(true)
-  end
+  end if defined?(Zlib::GzipWriter)
 
   def test_inspect_is_smart_about_io_types
     str = CSV.new("string,data").inspect

@@ -1,6 +1,9 @@
 require 'rexml_test_utils'
 require 'rexml/document'
-require 'zlib'
+begin
+  require 'zlib'
+rescue LoadError
+end
 
 class OrderTester < Test::Unit::TestCase
   include REXMLTestUtils
@@ -98,5 +101,5 @@ END
        assert_equal( actual[count], n ) unless n =~ /Arrive at/
        count += 1
      }
-   end
+   end if defined?(Zlib::GzipReader)
 end
