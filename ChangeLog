@@ -1,3 +1,8 @@
+Tue May  8 13:36:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (POSTLINK): default to : command to get rid of flag
+	  only command, since BSD make does not work with it.
+
 Tue May  8 13:35:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (MiniTest#run_test): remove exact trace and get rid
