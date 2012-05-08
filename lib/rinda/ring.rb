@@ -203,13 +203,17 @@ module Rinda
           queue.push(ts)
         end
         queue.push(nil)
+      end
+
+      @primary = queue.pop
+      raise('RingNotFound') if @primary.nil?
+
+      Thread.new do
         while it = queue.pop
           @rings.push(it)
         end
       end
 
-      @primary = queue.pop
-      raise('RingNotFound') if @primary.nil?
       @primary
     end
 
