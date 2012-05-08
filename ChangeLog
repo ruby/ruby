@@ -1,3 +1,9 @@
+Tue May  8 13:38:17 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* ext/date/date_core.c: improving introduction in Date/DateTime
+	  documentation. patched by Daniel Kaufman via Github.
+		https://github.com/ruby/ruby/pull/110
+
 Tue May  8 13:36:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (POSTLINK): default to : command to get rid of flag
