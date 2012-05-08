@@ -26,8 +26,13 @@ class MetaMetaMetaTestCase < MiniTest::Unit::TestCase
     output = @output.string.dup
     output.sub!(/Finished tests in .*/, "Finished tests in 0.00")
     output.sub!(/Loaded suite .*/, 'Loaded suite blah')
-    output.gsub!(/\[[^\]:]+:\d+\]/, '[FILE:LINE]')
-    output.gsub!(/^(\s+)[^:]+:\d+:in/, '\1FILE:LINE:in')
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      output.gsub!(/\[(?:[A-Za-z]:)?[^\]:]+:\d+\]/, '[FILE:LINE]')
+      output.gsub!(/^(\s+)(?:[A-Za-z]:)?[^:]+:\d+:in/, '\1FILE:LINE:in')
+    else
+      output.gsub!(/\[[^\]:]+:\d+\]/, '[FILE:LINE]')
+      output.gsub!(/^(\s+)[^:]+:\d+:in/, '\1FILE:LINE:in')
+    end
     assert_equal(expected, output)
   end
 
