@@ -8,13 +8,16 @@
 #  under the terms of Ruby's license.
 
 require_relative "base"
+require "tempfile"
 
 class TestCSV::Interface < TestCSV
   extend DifferentOFS
 
   def setup
     super
-    @path = File.join(File.dirname(__FILE__), "temp_test_data.csv")
+    @tempfile = Tempfile.new(%w"temp .csv")
+    @tempfile.close
+    @path = @tempfile.path
 
     File.open(@path, "wb") do |file|
       file << "1\t2\t3\r\n"
@@ -25,7 +28,7 @@ class TestCSV::Interface < TestCSV
   end
 
   def teardown
-    File.unlink(@path)
+    @tempfile.close(true)
     super
   end
 
@@ -112,7 +115,7 @@ class TestCSV::Interface < TestCSV
       assert_equal(nil, csv.shift)
     end
   end
-  
+
   def test_enumerators_are_supported
     CSV.open(@path, col_sep: "\t", row_sep: "\r\n") do |csv|
       enum = csv.each

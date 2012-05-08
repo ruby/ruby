@@ -21,13 +21,6 @@ class TestLogger < Test::Unit::TestCase
 
   def setup
     @logger = Logger.new(nil)
-    @filename = __FILE__ + ".#{$$}"
-  end
-
-  def teardown
-    unless $DEBUG
-      File.unlink(@filename) if File.exist?(@filename)
-    end
   end
 
   class Log
@@ -279,13 +272,14 @@ class TestLogDevice < Test::Unit::TestCase
   end
 
   def setup
-    @filename = __FILE__ + ".#{$$}"
+    @tempfile = Tempfile.new("logger")
+    @tempfile.close
+    @filename = @tempfile.path
+    File.unlink(@filename)
   end
 
   def teardown
-    unless $DEBUG
-      File.unlink(@filename) if File.exist?(@filename)
-    end
+    @tempfile.close(true)
   end
 
   def d(log, opt = {})
@@ -480,13 +474,14 @@ end
 class TestLoggerApplication < Test::Unit::TestCase
   def setup
     @app = Logger::Application.new('appname')
-    @filename = __FILE__ + ".#{$$}"
+    @tempfile = Tempfile.new("logger")
+    @tempfile.close
+    @filename = @tempfile.path
+    File.unlink(@filename)
   end
 
   def teardown
-    unless $DEBUG
-      File.unlink(@filename) if File.exist?(@filename)
-    end
+    @tempfile.close(true)
   end
 
   def test_initialize
