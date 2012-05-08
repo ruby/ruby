@@ -11,8 +11,8 @@ PROGRESS.instance_eval do
   @bs = "\b" * @rotator[0].size
   @tty = STDERR.tty?
   if @tty and /mswin|mingw/ !~ RUBY_PLATFORM and /dumb/ !~ ENV["TERM"]
-    @passed = "\e[32m"
-    @failed = "\e[31m"
+    @passed = "\e[#{ENV['PASSED_COLOR']||'32'}m"
+    @failed = "\e[#{ENV['FAILED_COLOR']||'31'}m"
     @reset = "\e[m"
   else
     @passed = @failed = @reset = ""

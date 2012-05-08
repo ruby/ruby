@@ -114,8 +114,8 @@ End
   @progress_bs = "\b" * @progress[0].size
   @tty = !@verbose && $stderr.tty?
   if @tty and /mswin|mingw/ !~ RUBY_PLATFORM and /dumb/ !~ ENV["TERM"]
-    @passed = "\e[32m"
-    @failed = "\e[31m"
+    @passed = "\e[#{ENV['PASSED_COLOR']||'32'}m"
+    @failed = "\e[#{ENV['FAILED_COLOR']||'31'}m"
     @reset = "\e[m"
   else
     @passed = @failed = @reset = ""

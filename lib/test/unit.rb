@@ -713,7 +713,7 @@ module Test
         super
         @tty = $stdout.tty?
         if @tty and /mswin|mingw/ !~ RUBY_PLATFORM and /dumb/ !~ ENV["TERM"]
-          @failed_color = "\e[31m"
+          @failed_color = "\e[#{ENV['FAILED_COLOR']||'31'}m"
           @reset_color = "\e[m"
         else
           @failed_color = @reset_color = ""
