@@ -1,3 +1,13 @@
+Tue May  8 20:44:46 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* io.c (io_unread): fix IO#pos with mode 'r' bug on Windows.
+	  If the end of reading buffer is CR, io_unread() needs to unread one
+	  more byte.
+	  [ruby-core:44874] [Bug #6401]
+
+	* test/ruby/test_io_m17n.rb (TestIO_M17N#test_pos_with_buffer_end_cr):
+	  add a test for above.
+
 Tue May  8 13:38:17 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* ext/date/date_core.c: improving introduction in Date/DateTime
