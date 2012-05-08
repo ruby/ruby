@@ -1,14 +1,14 @@
 Tue May  8 21:09:00 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* include/ruby/win32.h (FD_SET): change function to macro.
-	  To avoid buffer overflow when smaller FD_SETSISE is used in ext
+	  To avoid buffer overflow when smaller FD_SETSIZE is used in ext
 	  libraries.
 
 	* win32/win32.c (rb_w32_fdset): this function is not used anymore.
 	  But we leave this for compatibility.
 
 	* win32/win32.c (rb_w32_select_with_thread): fix SEGV when smaller
-	  FD_SETSISE is used in ext libraries. Dereference of fd_set pointer
+	  FD_SETSIZE is used in ext libraries. Dereference of fd_set pointer
 	  causes SEGV.
 
 	* test/-ext-/win32/test_fd_setsize.rb(TestFdSetSize): add tests for
