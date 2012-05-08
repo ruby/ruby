@@ -15,10 +15,12 @@ class TestMkmf < Test::Unit::TestCase
   end
 
   class Capture
+    attr_accessor :origin
     def initialize
       @buffer = ""
       @filter = nil
       @out = true
+      @origin = nil
     end
     def clear
       @buffer.clear
@@ -33,8 +35,10 @@ class TestMkmf < Test::Unit::TestCase
         initialize_copy(io)
       when File
         @out = false
+        @origin.reopen(io) if @origin
       when IO
         @out = true
+        @origin.reopen(io) if @origin
       else
         @out = false
       end
@@ -114,10 +118,10 @@ class TestMkmf < Test::Unit::TestCase
 
   def mkmf(*args, &block)
     @stdout.clear
-    stdout, $stdout = $stdout, @stdout
+    stdout, @stdout.origin, $stdout = @stdout.origin, $stdout, @stdout
     @mkmfobj.instance_eval(*args, &block)
   ensure
-    $stdout = stdout
+    $stdout, @stdout.origin = @stdout.origin, stdout
   end
 
   def config_value(name)
