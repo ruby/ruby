@@ -660,8 +660,8 @@ module Test
       end
 
       def _prepare_run(suites, type)
-        if @tty
-          @verbose ||= !options[:parallel]
+        if @tty and !@verbose
+          @verbose = !options[:parallel]
           @output = StatusLineOutput.new(self)
         end
         if /\A\/(.*)\/\z/ =~ (filter = options[:filter])
