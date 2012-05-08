@@ -1,3 +1,8 @@
+Tue May  8 13:35:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (MiniTest#run_test): remove exact trace and get rid
+	  of IndexError, which could caused by modified $@ sometimes.
+
 Tue May  8 11:21:27 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/minitest/metametameta.rb (MetaMetaMetaTestCase#assert_report):

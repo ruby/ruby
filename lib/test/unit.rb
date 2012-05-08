@@ -792,11 +792,12 @@ end
 
 class MiniTest::Unit::TestCase
   undef run_test
+  RUN_TEST_TRACE = "#{__FILE__}:#{__LINE__+3}:in `run_test'".freeze
   def run_test(name)
     progname, $0 = $0, "#{$0}: #{self.class}##{name}"
     self.__send__(name)
   ensure
-    $@[-caller.size, 1] = [] if $@
+    $@.delete(RUN_TEST_TRACE) if $@
     $0 = progname
   end
 end
