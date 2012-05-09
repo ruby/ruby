@@ -1,3 +1,9 @@
+Wed May  9 15:59:17 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_WERROR_FLAG): append all warning flags which
+	  are enabled to compile, so that printf format modifiers properly
+	  fail.  [ruby-core:41351] [Bug #5679]
+
 Mon May  7 20:23:29 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb (random_bytes): call to_int method for the
