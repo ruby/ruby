@@ -1655,9 +1655,8 @@ SRC
       # default to package specific config command, as a last resort.
       get = proc {|opt| `#{pkgconfig} --#{opt}`.chomp}
     end
-    if get
+    if get and try_ldflags(ldflags = get['libs'])
       cflags = get['cflags']
-      ldflags = get['libs']
       libs = get['libs-only-l']
       ldflags = (Shellwords.shellwords(ldflags) - Shellwords.shellwords(libs)).quote.join(" ")
       $CFLAGS += " " << cflags

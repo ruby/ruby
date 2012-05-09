@@ -1,3 +1,8 @@
+Wed May  9 16:36:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#pkg_config): check if libs resulted from
+	  pkg-config works actually.
+
 Wed May  9 16:01:38 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (decode_utf7, encode_utf7): refactored by
