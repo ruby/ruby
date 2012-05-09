@@ -1,3 +1,8 @@
+Wed May  9 16:01:38 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (decode_utf7, encode_utf7): refactored by
+	  Nobuyoshi Nakada, to use String#encode.
+
 Wed May  9 13:26:25 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rubygems/test_gem_remote_fetcher.rb: skip OpenSSL dependent
