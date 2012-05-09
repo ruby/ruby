@@ -1,3 +1,8 @@
+Wed May  9 13:26:25 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/rubygems/test_gem_remote_fetcher.rb: skip OpenSSL dependent
+	  tests if not available.
+
 Wed May  9 08:09:38 2012  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*: Imported minitest 3.0.0 (r7435)
