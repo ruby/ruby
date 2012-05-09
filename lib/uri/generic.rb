@@ -290,6 +290,12 @@ module URI
     #
     attr_reader :fragment
 
+    # Returns the default parser
+    #
+    def self.parser
+      DEFAULT_PARSER
+    end
+
     # returns the parser to be used.
     #
     # Unless a URI::Parser is defined, then DEFAULT_PARSER is used.
