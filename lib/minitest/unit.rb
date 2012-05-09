@@ -193,7 +193,7 @@ module MiniTest
     # Fails unless the block returns a true value.
 
     def assert_block msg = nil
-      warn "NOTE: MiniTest::Unit::TestCase#assert_block is deprecated, use assert. It will be removed on or after 2012-06-01."
+      warn "NOTE: MiniTest::Unit::TestCase#assert_block is deprecated, use assert. It will be removed on or after 2012-06-01. Called from #{caller.first}"
       msg = message(msg) { "Expected block to return true value" }
       assert yield, msg
     end
@@ -281,8 +281,8 @@ module MiniTest
 
     def assert_match matcher, obj, msg = nil
       msg = message(msg) { "Expected #{mu_pp matcher} to match #{mu_pp obj}" }
-      assert_respond_to obj, :"=~"
-      matcher = Regexp.new Regexp.escape matcher if String === matcher and obj.respond_to?(:to_str)
+      assert_respond_to matcher, :"=~"
+      matcher = Regexp.new Regexp.escape matcher if String === matcher
       assert matcher =~ obj, msg
     end
 
@@ -582,8 +582,8 @@ module MiniTest
 
     def refute_match matcher, obj, msg = nil
       msg = message(msg) {"Expected #{mu_pp matcher} to not match #{mu_pp obj}"}
-      assert_respond_to obj, :"=~"
-      matcher = Regexp.new Regexp.escape matcher if String === matcher and obj.respond_to?(:to_str)
+      assert_respond_to matcher, :"=~"
+      matcher = Regexp.new Regexp.escape matcher if String === matcher
       refute matcher =~ obj, msg
     end
 
@@ -652,7 +652,7 @@ module MiniTest
   end
 
   class Unit # :nodoc:
-    VERSION = "2.12.1" # :nodoc:
+    VERSION = "3.0.0" # :nodoc:
 
     attr_accessor :report, :failures, :errors, :skips # :nodoc:
     attr_accessor :test_count, :assertion_count       # :nodoc:

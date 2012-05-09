@@ -207,64 +207,71 @@ class TestGemPlatform < Gem::TestCase
   def test_equals_tilde
     util_set_arch 'i386-mswin32'
 
-    assert_match 'mswin32',      Gem::Platform.local
-    assert_match 'i386-mswin32', Gem::Platform.local
+    assert_local_match 'mswin32'
+    assert_local_match 'i386-mswin32'
 
     # oddballs
-    assert_match 'i386-mswin32-mq5.3', Gem::Platform.local
-    assert_match 'i386-mswin32-mq6',   Gem::Platform.local
-    refute_match 'win32-1.8.2-VC7',    Gem::Platform.local
-    refute_match 'win32-1.8.4-VC6',    Gem::Platform.local
-    refute_match 'win32-source',       Gem::Platform.local
-    refute_match 'windows',            Gem::Platform.local
+    assert_local_match 'i386-mswin32-mq5.3'
+    assert_local_match 'i386-mswin32-mq6'
+    refute_local_match 'win32-1.8.2-VC7'
+    refute_local_match 'win32-1.8.4-VC6'
+    refute_local_match 'win32-source'
+    refute_local_match 'windows'
 
     util_set_arch 'i686-linux'
-    assert_match 'i486-linux', Gem::Platform.local
-    assert_match 'i586-linux', Gem::Platform.local
-    assert_match 'i686-linux', Gem::Platform.local
+    assert_local_match 'i486-linux'
+    assert_local_match 'i586-linux'
+    assert_local_match 'i686-linux'
 
     util_set_arch 'i686-darwin8'
-    assert_match 'i686-darwin8.4.1', Gem::Platform.local
-    assert_match 'i686-darwin8.8.2', Gem::Platform.local
+    assert_local_match 'i686-darwin8.4.1'
+    assert_local_match 'i686-darwin8.8.2'
 
     util_set_arch 'java'
-    assert_match 'java',  Gem::Platform.local
-    assert_match 'jruby', Gem::Platform.local
+    assert_local_match 'java'
+    assert_local_match 'jruby'
 
     util_set_arch 'universal-dotnet2.0'
-    assert_match 'universal-dotnet',     Gem::Platform.local
-    assert_match 'universal-dotnet-2.0', Gem::Platform.local
-    refute_match 'universal-dotnet-4.0', Gem::Platform.local
-    assert_match 'dotnet',               Gem::Platform.local
-    assert_match 'dotnet-2.0',           Gem::Platform.local
-    refute_match 'dotnet-4.0',           Gem::Platform.local
+    assert_local_match 'universal-dotnet'
+    assert_local_match 'universal-dotnet-2.0'
+    refute_local_match 'universal-dotnet-4.0'
+    assert_local_match 'dotnet'
+    assert_local_match 'dotnet-2.0'
+    refute_local_match 'dotnet-4.0'
 
     util_set_arch 'universal-dotnet4.0'
-    assert_match 'universal-dotnet',      Gem::Platform.local
-    refute_match 'universal-dotnet-2.0',  Gem::Platform.local
-    assert_match 'universal-dotnet-4.0',  Gem::Platform.local
-    assert_match 'dotnet',                Gem::Platform.local
-    refute_match 'dotnet-2.0',            Gem::Platform.local
-    assert_match 'dotnet-4.0',            Gem::Platform.local
+    assert_local_match 'universal-dotnet'
+    refute_local_match 'universal-dotnet-2.0'
+    assert_local_match 'universal-dotnet-4.0'
+    assert_local_match 'dotnet'
+    refute_local_match 'dotnet-2.0'
+    assert_local_match 'dotnet-4.0'
 
     util_set_arch 'universal-macruby-1.0'
-    assert_match 'universal-macruby',      Gem::Platform.local
-    assert_match 'macruby',                Gem::Platform.local
-    refute_match 'universal-macruby-0.10', Gem::Platform.local
-    assert_match 'universal-macruby-1.0',  Gem::Platform.local
+    assert_local_match 'universal-macruby'
+    assert_local_match 'macruby'
+    refute_local_match 'universal-macruby-0.10'
+    assert_local_match 'universal-macruby-1.0'
 
     util_set_arch 'powerpc-darwin'
-    assert_match 'powerpc-darwin', Gem::Platform.local
+    assert_local_match 'powerpc-darwin'
 
     util_set_arch 'powerpc-darwin7'
-    assert_match 'powerpc-darwin7.9.0', Gem::Platform.local
+    assert_local_match 'powerpc-darwin7.9.0'
 
     util_set_arch 'powerpc-darwin8'
-    assert_match 'powerpc-darwin8.10.0', Gem::Platform.local
+    assert_local_match 'powerpc-darwin8.10.0'
 
     util_set_arch 'sparc-solaris2.8'
-    assert_match 'sparc-solaris2.8-mq5.3', Gem::Platform.local
+    assert_local_match 'sparc-solaris2.8-mq5.3'
   end
 
+  def assert_local_match name
+    assert_match Gem::Platform.local, name
+  end
+
+  def refute_local_match name
+    refute_match Gem::Platform.local, name
+  end
 end
 

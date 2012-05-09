@@ -1,10 +1,7 @@
 require 'rubygems/test_case'
 require 'ostruct'
 require 'webrick'
-begin
-  require 'webrick/https'
-rescue LoadError
-end
+require 'webrick/https'
 require 'rubygems/remote_fetcher'
 require 'rubygems/format'
 
@@ -752,7 +749,7 @@ gems:
     with_configured_fetcher(":ssl_ca_cert: #{temp_ca_cert}") do |fetcher|
       fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
     end
-  end if defined?(OpenSSL::PKey)
+  end
 
   def test_do_not_allow_insecure_ssl_connection_by_default
     ssl_server = self.class.start_ssl_server
@@ -761,14 +758,14 @@ gems:
         fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
       end
     end
-  end if defined?(OpenSSL::PKey)
+  end
 
   def test_ssl_connection_allow_verify_none
     ssl_server = self.class.start_ssl_server
     with_configured_fetcher(":ssl_verify_mode: 0") do |fetcher|
       fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/yaml")
     end
-  end if defined?(OpenSSL::PKey)
+  end
 
   def test_do_not_follow_insecure_redirect
     ssl_server = self.class.start_ssl_server
@@ -778,7 +775,7 @@ gems:
         fetcher.fetch_path("https://localhost:#{ssl_server.config[:Port]}/insecure_redirect?to=#{@server_uri}")
       end
     end
-  end if defined?(OpenSSL::PKey)
+  end
 
   def with_configured_fetcher(config_str = nil, &block)
     if config_str
@@ -856,7 +853,7 @@ gems:
     end
 
     DIR = File.expand_path(File.dirname(__FILE__))
-    DH_PARAM = defined?(OpenSSL::PKey) ? OpenSSL::PKey::DH.new(128) : nil
+    DH_PARAM = OpenSSL::PKey::DH.new(128)
 
     def start_ssl_server(config = {})
       null_logger = NilLog.new
@@ -894,7 +891,7 @@ gems:
         end
       end
       server
-    end if DH_PARAM
+    end
 
 
 

@@ -33,8 +33,8 @@ algorithms in a repeatable manner. Now you can assert that your newb
 co-worker doesn't replace your linear algorithm with an exponential
 one!
 
-minitest/mock by Steven Baker, is a beautifully tiny mock object
-framework.
+minitest/mock by Steven Baker, is a beautifully tiny mock (and stub)
+object framework.
 
 minitest/pride shows pride in testing and adds coloring to your test
 output. I guess it is an example of how to write IO pipes too. :P
@@ -54,7 +54,7 @@ discovery.
 * minitest/autorun - the easy and explicit way to run all your tests.
 * minitest/unit - a very fast, simple, and clean test system.
 * minitest/spec - a very fast, simple, and clean spec system.
-* minitest/mock - a simple and clean mock system.
+* minitest/mock - a simple and clean mock/stub system.
 * minitest/benchmark - an awesome way to assert your algorithm's performance.
 * minitest/pride - show your pride in testing!
 * Incredibly small and fast runner, but no bells and whistles.
@@ -191,6 +191,18 @@ Output is tab-delimited to make it easy to paste into a spreadsheet.
           @meme.verify
         end
       end
+    end
+  end
+
+=== Stubs
+
+  def test_stale_eh
+    obj_under_test = Something.new
+
+    refute obj_under_test.stale?
+
+    Time.stub :now, Time.at(0) do   # stub goes away once the block is done
+      assert obj_under_test.stale?
     end
   end
 

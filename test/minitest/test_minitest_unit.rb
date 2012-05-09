@@ -6,7 +6,7 @@
 ######################################################################
 
 require 'pathname'
-require File.expand_path('../metametameta', __FILE__)
+require 'test/minitest/metametameta'
 
 module MyModule; end
 class AnError < StandardError; include MyModule; end
@@ -706,13 +706,16 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
 
   def test_assert_block
     exp = ["NOTE: MiniTest::Unit::TestCase#assert_block is deprecated,",
-           "use assert. It will be removed on or after 2012-06-01.\n"].join " "
+           "use assert. It will be removed on or after 2012-06-01."].join " "
 
-    assert_output "", exp do
+    out, err = capture_io do
       @tc.assert_block do
         true
       end
     end
+
+    assert_equal "", out
+    assert_match exp, err
   end
 
   def test_assert_block_triggered
@@ -948,15 +951,6 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
 
     obj = Object.new
     def obj.to_str; "blah" end
-
-    @tc.assert_match "blah", obj
-  end
-
-  def test_assert_match_matchee_match
-    @assertion_count = 2
-
-    obj = Object.new
-    def obj.=~(o); true end
 
     @tc.assert_match "blah", obj
   end

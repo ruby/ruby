@@ -1,3 +1,11 @@
+Wed May  9 08:09:38 2012  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*: Imported minitest 3.0.0 (r7435)
+	* test/minitest/*: ditto
+	* test/rubygems/*: Imported fixes for buggy use of assert_match
+	  and deprecated assert_block
+	UNBUNCH YOUR PANTIES. THE TESTS DO NOT RUN CLEAN ON OSX.
+
 Wed May  9 06:28:59 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* re.c (rb_reg_equal):  Removed incorrect example for Regexp#== with
