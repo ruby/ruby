@@ -305,6 +305,7 @@ class TestSocket < Test::Unit::TestCase
       skip "Socket.ip_address_list not implemented"
     end
 
+    ifconfig = nil
     Socket.udp_server_sockets(0) {|sockets|
       famlies = {}
       sockets.each {|s| famlies[s.local_address.afamily] = s }
@@ -327,9 +328,16 @@ class TestSocket < Test::Unit::TestCase
             # Link-local IPv6 addresses on those interfaces don't work.
             ulSIOCGIFINFO_IN6 = 3225971052
             bIFDISABLED = 4
-            in6_ifreq = ifr_name
-            s.ioctl(ulSIOCGIFINFO_IN6, in6_ifreq)
-            next true if in6_ifreq.unpack('A16L6').last[bIFDISABLED-1] == 1
+            in6_ondireq = ifr_name
+            s.ioctl(ulSIOCGIFINFO_IN6, in6_ondireq)
+            next true if in6_ondireq.unpack('A16L6').last[bIFDISABLED-1] == 1
+          end
+        when /darwin/
+          if ai.ipv6?
+            ifconfig ||= `ifconfig`
+            next true if ifconfig.scan(/^(\w+):(.*(?:\n\t.*)*)/).find do|ifname, value|
+              value.include?(ai.ip_address) && value.include?('POINTOPOINT')
+            end
           end
         end
       }
