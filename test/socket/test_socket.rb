@@ -334,7 +334,7 @@ class TestSocket < Test::Unit::TestCase
           end
         when /darwin/
           if ai.ipv6?
-            ifconfig ||= `ifconfig`
+            ifconfig ||= `/sbin/ifconfig`
             next true if ifconfig.scan(/^(\w+):(.*(?:\n\t.*)*)/).find do|ifname, value|
               value.include?(ai.ip_address) && value.include?('POINTOPOINT')
             end
