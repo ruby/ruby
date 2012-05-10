@@ -1,3 +1,8 @@
+Thu May 10 10:18:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lex_state_name): returns name for lex_state_e, for debug
+	  use.
+
 Wed May  9 16:36:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#pkg_config): check if libs resulted from

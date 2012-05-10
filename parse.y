@@ -11,6 +11,9 @@
 
 %{
 
+#ifndef PARSER_DEBUG
+#define PARSER_DEBUG 0
+#endif
 #define YYDEBUG 1
 #define YYERROR_VERBOSE 1
 #define YYSTACK_USE_ALLOCA 0
@@ -73,6 +76,10 @@ enum lex_state_e {
     EXPR_VALUE,			/* alike EXPR_BEG but label is disallowed. */
     EXPR_MAX_STATE
 };
+
+#if PARSER_DEBUG
+static const char *lex_state_name(enum lex_state_e state);
+#endif
 
 typedef VALUE stack_type;
 
@@ -8479,6 +8486,28 @@ id_is_var_gen(struct parser_params *parser, ID id)
 }
 #endif /* !RIPPER */
 
+#if PARSER_DEBUG
+static const char *
+lex_state_name(enum lex_state_e state)
+{
+    switch (state) {
+      case EXPR_BEG:    return "EXPR_BEG";
+      case EXPR_END:    return "EXPR_END";
+      case EXPR_ENDARG: return "EXPR_ENDARG";
+      case EXPR_ENDFN:  return "EXPR_ENDFN";
+      case EXPR_ARG:    return "EXPR_ARG";
+      case EXPR_CMDARG: return "EXPR_CMDARG";
+      case EXPR_MID:    return "EXPR_MID";
+      case EXPR_FNAME:  return "EXPR_FNAME";
+      case EXPR_DOT:    return "EXPR_DOT";
+      case EXPR_CLASS: 	return "EXPR_CLASS";
+      case EXPR_VALUE: 	return "EXPR_VALUE";
+      case EXPR_MAX_STATE: break;
+    }
+    return NULL;
+}
+#endif
+
 #ifdef RIPPER
 static VALUE
 assignable_gen(struct parser_params *parser, VALUE lhs)
@@ -9807,6 +9836,9 @@ Init_sym(void)
 
     (void)nodetype;
     (void)nodeline;
+#if PARSER_DEBUG
+    (void)lex_state_name(-1);
+#endif
 
     Init_id();
 }
