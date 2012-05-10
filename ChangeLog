@@ -1,3 +1,7 @@
+Thu May 11 03:41:00 2012  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c: use RB_GC_GUARD. [ruby-dev:45627]
+
 Thu May 10 10:55:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/minitest/test_minitest_mock.rb: Correct requiring path to
