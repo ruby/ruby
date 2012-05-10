@@ -1199,7 +1199,9 @@ enum proc_entry_type {
     T_PROC_SELECT     = 1,
     T_PROC_TAKE       = 2,
     T_PROC_DROP       = 3,
-    T_PROC_TAKE_WHILE = 4
+    T_PROC_TAKE_WHILE = 4,
+    T_PROC_DROP_WHILE = 5,
+    T_PROC_REJECT     = 6
 };
 
 static VALUE
@@ -1244,6 +1246,18 @@ process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
                     move_next = rb_funcall(entry->proc, rb_intern("call"),
                             1, result);
                     if (!RTEST(move_next)) result = Qundef;
+                    break;
+                case T_PROC_DROP_WHILE:
+                    memo = RNODE(entry->memo);
+                    if (!memo->u3.state) {
+                        move_next = !RTEST(rb_funcall(entry->proc,
+                                    rb_intern("call"), 1, result));
+                        if (move_next) memo->u3.state = TRUE;
+                    }
+                    break;
+                case T_PROC_REJECT:
+                    move_next = !RTEST(rb_funcall(entry->proc, rb_intern("call"),
+                                1, result));
                     break;
             }
         }
@@ -1597,26 +1611,18 @@ lazy_select(VALUE obj)
 }
 
 static VALUE
-lazy_reject_func(VALUE val, VALUE m, int argc, VALUE *argv)
-{
-    VALUE element = rb_enum_values_pack(argc - 1, argv + 1);
-
-    if (!RTEST(rb_yield(element))) {
-	return rb_funcall(argv[0], id_yield, 1, element);
-    }
-    return Qnil;
-}
-
-static VALUE
 lazy_reject(VALUE obj)
 {
+    VALUE new_enum;
+
     if (!rb_block_given_p()) {
 	rb_raise(rb_eArgError, "tried to call lazy reject without a block");
     }
 
-    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 lazy_reject_func, 0),
-			   Qnil);
+    new_enum = lazy_copy(0, 0, obj);
+    lazy_add_proc(new_enum, T_PROC_REJECT, Qnil);
+
+    return lazy_set_method(new_enum, Qnil);
 }
 
 static VALUE
@@ -1757,28 +1763,16 @@ lazy_drop(VALUE obj, VALUE n)
 }
 
 static VALUE
-lazy_drop_while_func(VALUE val, VALUE args, int argc, VALUE *argv)
-{
-    NODE *memo = RNODE(args);
-
-    if (!memo->u3.state && !RTEST(rb_yield_values2(argc - 1, &argv[1]))) {
-	memo->u3.state = TRUE;
-    }
-    if (memo->u3.state) {
-	rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
-    }
-    return Qnil;
-}
-
-static VALUE
 lazy_drop_while(VALUE obj)
 {
     NODE *memo;
+    VALUE new_enum;
 
     memo = NEW_MEMO(0, 0, FALSE);
-    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 lazy_drop_while_func, (VALUE) memo),
-			   Qnil);
+    new_enum = lazy_copy(0, 0, obj);
+    lazy_add_proc(new_enum, T_PROC_DROP_WHILE, (VALUE) memo);
+
+    return lazy_set_method(new_enum, Qnil);
 }
 
 static VALUE
