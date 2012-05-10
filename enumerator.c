@@ -1195,10 +1195,11 @@ struct proc_entry {
 };
 
 enum proc_entry_type {
-    T_PROC_MAP = 0,
-    T_PROC_SELECT = 1,
-    T_PROC_TAKE = 2,
-    T_PROC_DROP = 3
+    T_PROC_MAP        = 0,
+    T_PROC_SELECT     = 1,
+    T_PROC_TAKE       = 2,
+    T_PROC_DROP       = 3,
+    T_PROC_TAKE_WHILE = 4
 };
 
 static VALUE
@@ -1238,6 +1239,11 @@ process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
                     if (memo->u3.cnt-- > 0) {
                         move_next = Qfalse;
                     }
+                    break;
+                case T_PROC_TAKE_WHILE:
+                    move_next = rb_funcall(entry->proc, rb_intern("call"),
+                            1, result);
+                    if (!RTEST(move_next)) result = Qundef;
                     break;
             }
         }
@@ -1722,20 +1728,14 @@ lazy_take(VALUE obj, VALUE n)
 }
 
 static VALUE
-lazy_take_while_func(VALUE val, VALUE args, int argc, VALUE *argv)
-{
-    VALUE result = rb_yield_values2(argc - 1, &argv[1]);
-    if (!RTEST(result)) return Qundef;
-    rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
-    return Qnil;
-}
-
-static VALUE
 lazy_take_while(VALUE obj)
 {
-    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 lazy_take_while_func, 0),
-			   Qnil);
+    VALUE new_enum;
+
+    new_enum = lazy_copy(0, 0, obj);
+    lazy_add_proc(new_enum, T_PROC_TAKE_WHILE, Qnil);
+
+    return lazy_set_method(new_enum, Qnil);
 }
 
 static VALUE
