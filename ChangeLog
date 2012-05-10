@@ -1,3 +1,11 @@
+Thu May 10 10:55:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/minitest/test_minitest_mock.rb: Correct requiring path to
+	  metametameta.rb.
+
+	* test/minitest/test_minitest_unit.rb: Correct requiring path to
+	  metametameta.rb.
+
 Thu May 10 10:18:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (lex_state_name): returns name for lex_state_e, for debug
