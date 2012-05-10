@@ -1,3 +1,13 @@
+Fri May 11 01:04:54 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* io.c (io_unread): fix IO#pos with mode 'r' bug on Windows.
+	  If the end of reading buffer is CR, io_unread() needs to unread one
+	  more byte.
+	  [ruby-core:44874] [Bug #6401]
+
+	* test/ruby/test_io_m17n.rb (TestIO_M17N#test_pos_with_buffer_end_cr):
+	  add a test for above.
+
 Wed May  9 15:59:17 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_WERROR_FLAG): append all warning flags which

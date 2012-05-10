@@ -2363,6 +2363,22 @@ EOT
     }
   end if /mswin|mingw/ =~ RUBY_PLATFORM
 
+  def test_pos_with_buffer_end_cr
+    bug6401 = '[ruby-core:44874]'
+    with_tmpdir {
+      # Read buffer size is 8191. This generates '\r' at 8191.
+      lines = ["X" * 8187, "X"]
+      generate_file("tmp", lines.join("\r\n") + "\r\n")
+
+      open("tmp", "r") do |f|
+        lines.each do |line|
+          f.pos
+          assert_equal(line, f.readline.chomp, bug6401)
+        end
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def test_read_crlf_and_eof
     bug6271 = '[ruby-core:44189]'
     with_tmpdir {
