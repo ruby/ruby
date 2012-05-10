@@ -205,6 +205,36 @@ class TestFile < Test::Unit::TestCase
     end
   end
 
+  def test_file_open_permissions
+    Dir.mktmpdir(__method__.to_s) do |tmpdir|
+      File.open('x', :mode     => IO::RDWR | IO::CREAT | IO::BINARY,
+                     :encoding => Encoding::ASCII_8BIT) do |x|
+
+        assert x.autoclose?
+        assert_equal Encoding::ASCII_8BIT, x.external_encoding
+        assert x.write 'hello'
+
+        x.seek 0, IO::SEEK_SET
+
+        assert_equal 'hello', x.read
+
+      end
+    end
+  end
+
+  def test_file_open_double_mode
+    e = assert_raises(ArgumentError) { File.open("a", 'w', :mode => 'rw+') }
+    assert_equal 'mode specified twice', e.message
+  end
+
+  def test_conflicting_encodings
+    Dir.mktmpdir(__method__.to_s) do |tmpdir|
+      File.open('x', 'wb', :encoding => Encoding::EUC_JP) do |x|
+        assert_equal Encoding::EUC_JP, x.external_encoding
+      end
+    end
+  end
+
   if /(bcc|ms|cyg)win|mingw|emx/ =~ RUBY_PLATFORM
     def test_long_unc
       feature3399 = '[ruby-core:30623]'
