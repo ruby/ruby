@@ -1,3 +1,9 @@
+Fri May 11 14:09:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (PUSH): to prevent VALUE from GC,
+	  must not cast it to unsigned long, which may be shorter than
+	  VALUE, and the result can be mere garbage.
+
 Fri Apr 20 12:40:19 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/ssl_certs/AddTrustExternalCARoot.pem:  Removed to avoid
