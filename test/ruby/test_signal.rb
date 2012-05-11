@@ -212,7 +212,7 @@ th = Thread.new do
     STDOUT.flush
   end
 end
-Thread.pass until th.stop? # this may stop inside lex_io_gets
+Thread.pass while th.running?
 Process.kill(:INT, $$)
 th.join
 EOS
