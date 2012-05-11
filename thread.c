@@ -1300,7 +1300,7 @@ rb_threadptr_execute_interrupts_common(rb_thread_t *th)
 	    thread_debug("rb_thread_execute_interrupts: %"PRIdVALUE"\n", err);
 
 	    if (err == eKillSignal || err == eTerminateSignal) {
-		th->errinfo = INT2FIX(TAG_FATAL);
+		th->errinfo = rb_exc_new2(rb_eInterrupt, "");
 		TH_JUMP_TAG(th, TAG_FATAL);
 	    }
 	    else {

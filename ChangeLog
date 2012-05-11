@@ -1,3 +1,11 @@
+Fri May 11 22:54:22 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread.c (rb_threadptr_execute_interrupts_common): th->errinfo is
+	  not Fixnum, but exception object.
+	  This causes test_signal_requiring of test/ruby/test_signal.rb fail
+	  if the sub process is killed on waiting IO in lex_io_gets in require
+	  itself, not sleep.
+
 Fri May 11 14:23:11 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (primary): begin/end block should be isolated from outside.
