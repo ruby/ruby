@@ -319,7 +319,8 @@ rb_load_internal(VALUE fname, int wrap)
     th->top_self = self;
     th->top_wrapper = wrapper;
 
-    if (!loaded) {
+    if (!loaded && !FIXNUM_P(GET_THREAD()->errinfo)) {
+	/* an error on loading don't include INT2FIX(TAG_FATAL) see r35625 */
 	rb_exc_raise(GET_THREAD()->errinfo);
     }
     if (state) {

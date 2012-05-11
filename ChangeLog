@@ -1,3 +1,21 @@
+Sat May 12 05:23:06 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread.c (rb_threadptr_execute_interrupts_common):
+	  test_signal_requiring of test/ruby/test_signal.rb fail if the sub
+	  process is killed on waiting IO in lex_io_gets in rb_load_file in
+	  rb_load_internal in require.
+	  This is because
+	  (1) the process receive the killing signal in
+	      rb_thread_io_blocking_region in rb_read_internal in lex_io_gets.
+	  (2) set th->errinfo as INT2FIX(TAG_FATAL) at
+	      rb_threadptr_execute_interrupts_common.
+	  (3) escape rb_load_file in rb_load_internal and jump to EXEC_TAG()
+	      without set loaded as TRUE.
+	  (4) call first rb_exc_raise(GET_THREAD()->errinfo); because loaded
+	      is FALSE as above. this errinfo should be an exception object
+	      but this is INT2FIX(TAG_FATAL).
+	  Don't call first rb_exc_raise if GET_THREAD()->errinfo is Fixnum.
+
 Fri May 11 14:23:11 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (primary): begin/end block should be isolated from outside.
