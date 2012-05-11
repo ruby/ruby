@@ -1,3 +1,9 @@
+Fri May 11 14:09:47 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (PUSH): to prevent VALUE from GC,
+	  must not cast it to unsigned long, which may be shorter than
+	  VALUE, and the result can be mere garbage.
+
 Fri May 11 09:51:07 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::Runner#failed): no unnecessary
