@@ -1,3 +1,8 @@
+Sat May 12 06:02:03 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/fileutils.rb (cp_r):  Fixed cp_r example.  Patch by TJ Koblentz
+	  from pull request #114.  [ruby-trunk - Bug #6410]
+
 Sat May 12 05:23:06 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread.c (rb_threadptr_execute_interrupts_common):
