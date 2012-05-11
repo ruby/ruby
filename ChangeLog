@@ -1,3 +1,8 @@
+Sat May 12 07:00:16 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/sdbm/init.c:  Added documentation.  Patch by Justin Collins,
+	  cleanup by Zachary Scott.  [ruby-trunk - #6410]
+
 Sat May 12 06:02:03 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/fileutils.rb (cp_r):  Fixed cp_r example.  Patch by TJ Koblentz
