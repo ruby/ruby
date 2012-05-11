@@ -685,12 +685,15 @@ module Test
       def succeed; del_status_line; end
 
       def failed(s)
-        $stdout.puts
+        sep = "\n"
         @report_count ||= 0
         report.each do |msg|
           next if @options[:hide_skip] and msg.start_with? "Skipped:"
           msg = msg.split(/$/, 2)
-          $stdout.puts "#{@failed_color}%3d) %s#{@reset_color}%s\n" % [@report_count += 1, *msg]
+          $stdout.printf("%s%s%3d) %s%s%s\n",
+                         sep, @failed_color, @report_count += 1,
+                         msg[0], @reset_color, msg[1])
+          sep = nil
         end
         report.clear
       end

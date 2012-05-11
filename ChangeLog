@@ -1,3 +1,8 @@
+Fri May 11 09:51:07 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner#failed): no unnecessary
+	  newlines if no reports to be displayed.
+
 Thu May 11 03:41:00 2012  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c: use RB_GC_GUARD. [ruby-dev:45627]
