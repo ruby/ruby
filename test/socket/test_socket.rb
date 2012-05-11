@@ -275,8 +275,32 @@ class TestSocket < Test::Unit::TestCase
 
     Socket.udp_server_sockets(0) {|sockets|
       famlies = {}
-      sockets.each {|s| famlies[s.local_address.afamily] = true }
-      ip_addrs.reject! {|ai| !famlies[ai.afamily] }
+      sockets.each {|s| famlies[s.local_address.afamily] = s }
+      ip_addrs.reject! {|ai|
+        s = famlies[ai.afamily]
+        next true unless s
+        case RUBY_PLATFORM
+        when /linux/
+          if ai.ip_address.include?('%') and
+            (`uname -r`[/[0-9.]+/].split('.').map(&:to_i) <=> [2,6,18]) <= 0
+            # Cent OS 5.6 (2.6.18-238.19.1.el5xen) doesn't correctly work
+            # sendmsg with pktinfo for link-local ipv6 addresses
+            next true
+          end
+        when /freebsd/
+          if ifr_name = ai.ip_address[/%(.*)/, 1]
+            # FreeBSD 9.0 with default setting (ipv6_activate_all_interfaces
+            # is not YES) sets IFDISABLED to interfaces which don't have
+            # global IPv6 address.
+            # Link-local IPv6 addresses on those interfaces don't work.
+            ulSIOCGIFINFO_IN6 = 3225971052
+            bIFDISABLED = 4
+            in6_ifreq = ifr_name
+            s.ioctl(ulSIOCGIFINFO_IN6, in6_ifreq)
+            next true if in6_ifreq.unpack('A16L6').last[bIFDISABLED-1] == 1
+          end
+        end
+      }
       skipped = false
       begin
         port = sockets.first.local_address.ip_port
@@ -290,12 +314,6 @@ class TestSocket < Test::Unit::TestCase
         }
 
         ip_addrs.each {|ai|
-          if /linux/ =~ RUBY_PLATFORM && ai.ip_address.include?('%') &&
-            (`uname -r`[/[0-9.]+/].split('.').map(&:to_i) <=> [2,6,18]) <= 0
-            # Cent OS 5.6 (2.6.18-238.19.1.el5xen) doesn't correctly work
-            # sendmsg with pktinfo for link-local ipv6 addresses
-            next
-          end
           Addrinfo.udp(ai.ip_address, port).connect {|s|
             msg1 = "<<<#{ai.inspect}>>>"
             s.sendmsg msg1
