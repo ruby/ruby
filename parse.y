@@ -2684,6 +2684,8 @@ primary		: literal
 		    }
 		| k_begin
 		    {
+			$<val>1 = cmdarg_stack;
+			cmdarg_stack = 0;
 		    /*%%%*/
 			$<num>$ = ruby_sourceline;
 		    /*%
@@ -2692,6 +2694,7 @@ primary		: literal
 		  bodystmt
 		  k_end
 		    {
+			cmdarg_stack = $<val>1;
 		    /*%%%*/
 			if ($3 == NULL) {
 			    $$ = NEW_NIL();

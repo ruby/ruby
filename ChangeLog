@@ -1,3 +1,8 @@
+Fri May 11 14:23:11 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (primary): begin/end block should be isolated from outside.
+	  [ruby-dev:45631][Bug #6419]
+
 Fri May 11 14:09:47 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (PUSH): to prevent VALUE from GC,
