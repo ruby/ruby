@@ -668,6 +668,10 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(400000000000000000000000000000, x.div(3, 1))
     assert_equal(420000000000000000000000000000, x.div(3, 2))
     assert_equal(423000000000000000000000000000, x.div(3, 3))
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+      assert_equal(0, BigDecimal("0").div(BigDecimal("Infinity")))
+    end
   end
 
   def test_abs_bigdecimal
