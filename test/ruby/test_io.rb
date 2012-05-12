@@ -10,6 +10,14 @@ require 'weakref'
 require_relative 'envutil'
 
 class TestIO < Test::Unit::TestCase
+  def setup
+    GC.disable
+  end
+
+  def teardown
+    GC.enable
+  end
+
   def have_close_on_exec?
     begin
       $stdin.close_on_exec?
