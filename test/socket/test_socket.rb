@@ -293,7 +293,7 @@ class TestSocket < Test::Unit::TestCase
             # is not YES) sets IFDISABLED to interfaces which don't have
             # global IPv6 address.
             # Link-local IPv6 addresses on those interfaces don't work.
-            ulSIOCGIFINFO_IN6 = 3225971052
+            ulSIOCGIFINFO_IN6 = -1068996244
             bIFDISABLED = 4
             in6_ifreq = ifr_name
             s.ioctl(ulSIOCGIFINFO_IN6, in6_ifreq)
