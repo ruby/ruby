@@ -1,3 +1,12 @@
+Mon May 14 00:14:24 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* enumerator.c (lazy_take_func, lazy_take): multiple calls of
+	  force/to_a method to Enumerator::Lazy#take should return same
+	  results. [ruby-dev:45634] [Bug #6428]
+
+	* test/ruby/test_lazy_enumerator.rb (test_take_recycle): add test for
+	  above.
+
 Sun May 13 23:38:31 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/ruby/test_io.rb (test_flush_in_finalizer1): don't use IO.for_fd

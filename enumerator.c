@@ -1533,6 +1533,7 @@ lazy_take_func(VALUE val, VALUE args, int argc, VALUE *argv)
 
     rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
     if (--memo->u3.cnt == 0) {
+	memo->u3.cnt = memo->u2.argc;
 	return Qundef;
     }
     else {
@@ -1557,7 +1558,7 @@ lazy_take(VALUE obj, VALUE n)
 	argv[2] = INT2NUM(0);
 	argc = 3;
     }
-    memo = NEW_MEMO(0, 0, len);
+    memo = NEW_MEMO(0, len, len);
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, argc, argv,
 					 lazy_take_func, (VALUE) memo),
 			   rb_ary_new3(1, n));

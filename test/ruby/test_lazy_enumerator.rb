@@ -229,6 +229,14 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(nil, a.current)
   end
 
+  def test_take_recycle
+    bug6428 = '[ruby-dev:45634]'
+    a = Step.new(1..10)
+    take5 = a.lazy.take(5)
+    assert_equal((1..5).to_a, take5.force, bug6428)
+    assert_equal((1..5).to_a, take5.force, bug6428)
+  end
+
   def test_take_while
     a = Step.new(1..10)
     assert_equal(1, a.take_while {|i| i < 5}.first)
