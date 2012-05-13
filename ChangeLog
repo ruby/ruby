@@ -1,3 +1,7 @@
+Sun May 13 18:10:43 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_strftime.c: removed unused code and changed the style.
+
 Sun May 13 17:37:56 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_strftime.c: refactored.
