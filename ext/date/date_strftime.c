@@ -188,7 +188,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	enum {LEFT, CHCASE, LOWER, UPPER, LOCALE_O, LOCALE_E};
 #define BIT_OF(n) (1U<<(n))
 
-	/* various tables, useful in North America */
+	/* various tables for locale C */
 	static const char days_l[][10] = {
 		"Sunday", "Monday", "Tuesday", "Wednesday",
 		"Thursday", "Friday", "Saturday",
@@ -292,11 +292,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			format--;
 			goto unknown;
 
-		case '%':
-			FILL_PADDING(1);
-			*s++ = '%';
-			continue;
-
+		case 'A':	/* full weekday name */
 		case 'a':	/* abbreviated weekday name */
 			if (flags & BIT_OF(CHCASE)) {
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
@@ -306,43 +302,20 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				int wday = tmx_wday;
 				if (wday < 0 || wday > 6)
 					i = 1, tp = "?";
-				else
-					i = 3, tp = days_l[wday];
-			}
-			break;
-
-		case 'A':	/* full weekday name */
-			if (flags & BIT_OF(CHCASE)) {
-				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
-				flags |= BIT_OF(UPPER);
-			}
-			{
-				int wday = tmx_wday;
-				if (wday < 0 || wday > 6)
-					i = 1, tp = "?";
-				else
-					i = strlen(tp = days_l[wday]);
-			}
-			break;
-
-#ifdef SYSV_EXT
-		case 'h':	/* abbreviated month name */
-#endif
-		case 'b':	/* abbreviated month name */
-			if (flags & BIT_OF(CHCASE)) {
-				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
-				flags |= BIT_OF(UPPER);
-			}
-			{
-				int mon = tmx_mon;
-				if (mon < 1 || mon > 12)
-					i = 1, tp = "?";
-				else
-					i = 3, tp = months_l[mon-1];
+				else {
+					if (*format == 'A')
+						i = strlen(tp = days_l[wday]);
+					else
+						i = 3, tp = days_l[wday];
+				}
 			}
 			break;
 
 		case 'B':	/* full month name */
+		case 'b':	/* abbreviated month name */
+#ifdef SYSV_EXT
+		case 'h':	/* abbreviated month name */
+#endif
 			if (flags & BIT_OF(CHCASE)) {
 				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(UPPER);
@@ -351,32 +324,81 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				int mon = tmx_mon;
 				if (mon < 1 || mon > 12)
 					i = 1, tp = "?";
-				else
-					i = strlen(tp = months_l[mon-1]);
+				else {
+					if (*format == 'B')
+						i = strlen(tp = months_l[mon-1]);
+					else
+						i = 3, tp = months_l[mon-1];
+				}
 			}
 			break;
+
+#ifdef POSIX2_DATE
+		case 'C':
+                        FMTV('0', 2, "d", div(tmx_year, INT2FIX(100)));
+			continue;
+#endif
 
 		case 'c':	/* appropriate date and time representation */
 			STRFTIME("%a %b %e %H:%M:%S %Y");
 			continue;
 
+#ifdef SYSV_EXT
+		case 'D':	/* date as %m/%d/%y */
+			STRFTIME("%m/%d/%y");
+			continue;
+#endif
+
 		case 'd':	/* day of the month, 01 - 31 */
+#ifdef SYSV_EXT
+		case 'e':	/* day of month, blank padded */
+#endif
 			v = range(1, tmx_mday, 31);
-			FMT('0', 2, "d", v);
+			FMT((*format == 'd') ? '0' : ' ', 2, "d", v);
 			continue;
 
-		case 'H':	/* hour, 24-hour clock, 00 - 23 */
-			v = range(0, tmx_hour, 23);
+		case 'F':	/*  Equivalent to %Y-%m-%d */
+			STRFTIME("%Y-%m-%d");
+			continue;
+
+#ifdef ISO_DATE_EXT
+		case 'G':	/* year of ISO week with century */
+			{
+				VALUE year = tmx_cwyear;
+				if (FIXNUM_P(year)) {
+					long y = FIX2LONG(year);
+					FMT('0', 0 <= y ? 4 : 5, "ld", y);
+				}
+				else {
+					FMTV('0', 4, "d", year);
+				}
+			}
+			continue;
+
+		case 'g':	/* year of ISO week without a century */
+			v = NUM2INT(mod(tmx_cwyear, INT2FIX(100)));
 			FMT('0', 2, "d", v);
+			continue;
+#endif /*  ISO_DATE_EXT */
+
+		case 'H':	/* hour, 24-hour clock, 00 - 23 */
+#ifdef SUNOS_EXT
+		case 'k':	/* hour, 24-hour clock, blank pad */
+#endif
+			v = range(0, tmx_hour, 23);
+			FMT((*format == 'H') ? '0' : ' ', 2, "d", v);
 			continue;
 
 		case 'I':	/* hour, 12-hour clock, 01 - 12 */
+#ifdef SUNOS_EXT
+		case 'l':	/* hour, 12-hour clock, 1 - 12, blank pad */
+#endif
 			v = range(0, tmx_hour, 23);
 			if (v == 0)
 				v = 12;
 			else if (v > 12)
 				v -= 12;
-			FMT('0', 2, "d", v);
+			FMT((*format == 'I') ? '0' : ' ', 2, "d", v);
 			continue;
 
 		case 'j':	/* day of the year, 001 - 366 */
@@ -384,9 +406,56 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			FMT('0', 3, "d", v);
 			continue;
 
-		case 'm':	/* month, 01 - 12 */
-			v = range(1, tmx_mon, 12);
-			FMT('0', 2, "d", v);
+		case 'L':
+			w = 3;
+			goto subsec;
+
+		case 'N':
+			/*
+			 * fractional second digits. default is 9 digits
+			 * (nanosecond).
+			 *
+			 * %3N  millisecond (3 digits)
+			 * %6N  microsecond (6 digits)
+			 * %9N  nanosecond (9 digits)
+			 */
+			w = 9;
+		subsec:
+                        if (precision <= 0) {
+                            precision = w;
+                        }
+                        NEEDS(precision);
+
+			{
+                                VALUE subsec = tmx_sec_fraction;
+                                int ww;
+                                long n;
+
+                                ww = precision;
+                                while (9 <= ww) {
+                                        subsec = mul(subsec, INT2FIX(1000000000));
+                                        ww -= 9;
+                                }
+                                n = 1;
+                                for (; 0 < ww; ww--)
+                                        n *= 10;
+                                if (n != 1)
+                                        subsec = mul(subsec, INT2FIX(n));
+                                subsec = div(subsec, INT2FIX(1));
+
+                                if (FIXNUM_P(subsec)) {
+                                        (void)snprintf(s, endp - s, "%0*ld", precision, FIX2LONG(subsec));
+                                        s += precision;
+                                }
+                                else {
+                                        VALUE args[2], result;
+                                        args[0] = INT2FIX(precision);
+                                        args[1] = subsec;
+                                        result = rb_str_format(2, args, rb_str_new2("%0*d"));
+                                        (void)strlcpy(s, StringValueCStr(result), endp-s);
+                                        s += precision;
+                                }
+			}
 			continue;
 
 		case 'M':	/* minute, 00 - 59 */
@@ -394,8 +463,25 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			FMT('0', 2, "d", v);
 			continue;
 
-		case 'p':	/* AM or PM based on 12-hour clock */
+		case 'm':	/* month, 01 - 12 */
+			v = range(1, tmx_mon, 12);
+			FMT('0', 2, "d", v);
+			continue;
+
+#ifdef SYSV_EXT
+		case 'n':	/* same as \n */
+			FILL_PADDING(1);
+			*s++ = '\n';
+			continue;
+
+		case 't':	/* same as \t */
+			FILL_PADDING(1);
+			*s++ = '\t';
+			continue;
+#endif /*  SYSV_EXT */
+
 		case 'P':	/* am or pm based on 12-hour clock */
+		case 'p':	/* AM or PM based on 12-hour clock */
 			if ((*format == 'p' && (flags & BIT_OF(CHCASE))) ||
 			    (*format == 'P' && !(flags & (BIT_OF(CHCASE)|BIT_OF(UPPER))))) {
 				flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
@@ -409,45 +495,71 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			i = 2;
 			break;
 
-		case 's':
-			FMTV('0', 1, "d", tmx_secs);
-                        continue;
-
 		case 'Q':
 			FMTV('0', 1, "d", tmx_msecs);
                         continue;
+
+#ifdef SYSV_EXT
+		case 'R':	/* time as %H:%M */
+			STRFTIME("%H:%M");
+			continue;
+
+		case 'r':	/* time as %I:%M:%S %p */
+			STRFTIME("%I:%M:%S %p");
+			continue;
+#endif /* SYSV_EXT */
 
 		case 'S':	/* second, 00 - 59 */
 			v = range(0, tmx_sec, 59);
 			FMT('0', 2, "d", v);
 			continue;
 
+		case 's':
+			FMTV('0', 1, "d", tmx_secs);
+                        continue;
+
+#ifdef SYSV_EXT
+		case 'T':	/* time as %H:%M:%S */
+			STRFTIME("%H:%M:%S");
+			continue;
+#endif
+
 		case 'U':	/* week of year, Sunday is first day of week */
-			v = range(0, tmx_wnum0, 53);
+		case 'W':	/* week of year, Monday is first day of week */
+			v = range(0, (*format == 'U') ? tmx_wnum0 : tmx_wnum1, 53);
 			FMT('0', 2, "d", v);
 			continue;
+
+#ifdef POSIX2_DATE
+		case 'u':
+		/* ISO 8601: Weekday as a decimal number [1 (Monday) - 7] */
+			v = range(1, tmx_cwday, 7);
+			FMT('0', 1, "d", v);
+			continue;
+
+		case 'V':	/* week of year according ISO 8601 */
+			v = range(1, tmx_cweek, 53);
+			FMT('0', 2, "d", v);
+			continue;
+#endif /*  POSIX2_DATE */
+
+#ifdef VMS_EXT
+		case 'v':	/* date as dd-bbb-YYYY */
+			STRFTIME("%e-%b-%Y");
+			continue;
+#endif
 
 		case 'w':	/* weekday, Sunday == 0, 0 - 6 */
 			v = range(0, tmx_wday, 6);
 			FMT('0', 1, "d", v);
 			continue;
 
-		case 'W':	/* week of year, Monday is first day of week */
-			v = range(0, tmx_wnum1, 53);
-			FMT('0', 2, "d", v);
-			continue;
-
-		case 'x':	/* appropriate date representation */
-			STRFTIME("%m/%d/%y");
-			continue;
-
 		case 'X':	/* appropriate time representation */
 			STRFTIME("%H:%M:%S");
 			continue;
 
-		case 'y':	/* year without a century, 00 - 99 */
-			v = NUM2INT(mod(tmx_year, INT2FIX(100)));
-			FMT('0', 2, "d", v);
+		case 'x':	/* appropriate date representation */
+			STRFTIME("%m/%d/%y");
 			continue;
 
 		case 'Y':	/* year with century */
@@ -462,6 +574,26 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 				}
 			}
 			continue;
+
+		case 'y':	/* year without a century, 00 - 99 */
+			v = NUM2INT(mod(tmx_year, INT2FIX(100)));
+			FMT('0', 2, "d", v);
+			continue;
+
+		case 'Z':	/* time zone name or abbreviation */
+			if (flags & BIT_OF(CHCASE)) {
+				flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
+				flags |= BIT_OF(LOWER);
+			}
+			{
+				char *zone = tmx_zone;
+				if (zone == NULL)
+					tp = "";
+				else
+					tp = zone;
+				i = strlen(tp);
+			}
+			break;
 
 #ifdef MAILHEADER_EXT
 		case 'z':	/* time zone offset east of GMT e.g. -0600 */
@@ -556,81 +688,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			continue;
 #endif /* MAILHEADER_EXT */
 
-		case 'Z':	/* time zone name or abbreviation */
-			if (flags & BIT_OF(CHCASE)) {
-				flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
-				flags |= BIT_OF(LOWER);
-			}
-			{
-				char *zone = tmx_zone;
-				if (zone == NULL)
-					tp = "";
-				else
-					tp = zone;
-				i = strlen(tp);
-			}
-			break;
-
-#ifdef SYSV_EXT
-		case 'n':	/* same as \n */
-			FILL_PADDING(1);
-			*s++ = '\n';
-			continue;
-
-		case 't':	/* same as \t */
-			FILL_PADDING(1);
-			*s++ = '\t';
-			continue;
-
-		case 'D':	/* date as %m/%d/%y */
-			STRFTIME("%m/%d/%y");
-			continue;
-
-		case 'e':	/* day of month, blank padded */
-			v = range(1, tmx_mday, 31);
-			FMT(' ', 2, "d", v);
-			continue;
-
-		case 'r':	/* time as %I:%M:%S %p */
-			STRFTIME("%I:%M:%S %p");
-			continue;
-
-		case 'R':	/* time as %H:%M */
-			STRFTIME("%H:%M");
-			continue;
-
-		case 'T':	/* time as %H:%M:%S */
-			STRFTIME("%H:%M:%S");
-			continue;
-#endif
-
-#ifdef SUNOS_EXT
-		case 'k':	/* hour, 24-hour clock, blank pad */
-			v = range(0, tmx_hour, 23);
-			FMT(' ', 2, "d", v);
-			continue;
-
-		case 'l':	/* hour, 12-hour clock, 1 - 12, blank pad */
-			v = range(0, tmx_hour, 23);
-			if (v == 0)
-				v = 12;
-			else if (v > 12)
-				v -= 12;
-			FMT(' ', 2, "d", v);
-			continue;
-#endif
-
-#ifdef VMS_EXT
-		case 'v':	/* date as dd-bbb-YYYY */
-			STRFTIME("%e-%b-%Y");
-			continue;
-#endif
-
 #ifdef POSIX2_DATE
-		case 'C':
-                        FMTV('0', 2, "d", div(tmx_year, INT2FIX(100)));
-			continue;
-
 		case 'E':
 			/* POSIX locale extensions, ignored for now */
 			flags |= BIT_OF(LOCALE_E);
@@ -644,97 +702,16 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 						    *(format + 1)))
 				goto again;
 			goto unknown;
-		case 'V':	/* week of year according ISO 8601 */
-			v = range(1, tmx_cweek, 53);
-			FMT('0', 2, "d", v);
-			continue;
+#endif /* POSIX2_DATE */
 
-		case 'u':
-		/* ISO 8601: Weekday as a decimal number [1 (Monday) - 7] */
-			v = range(1, tmx_cwday, 7);
-			FMT('0', 1, "d", v);
-			continue;
-#endif	/* POSIX2_DATE */
-
-#ifdef ISO_DATE_EXT
-		case 'g':	/* year of ISO week without a century */
-			v = NUM2INT(mod(tmx_cwyear, INT2FIX(100)));
-			FMT('0', 2, "d", v);
-			continue;
-
-		case 'G':	/* year of ISO week with century */
-			{
-				VALUE year = tmx_cwyear;
-				if (FIXNUM_P(year)) {
-					long y = FIX2LONG(year);
-					FMT('0', 0 <= y ? 4 : 5, "ld", y);
-				}
-				else {
-					FMTV('0', 4, "d", year);
-				}
-                                continue;
-			}
-
-#endif /* ISO_DATE_EXT */
-
-		case 'L':
-			w = 3;
-			goto subsec;
-
-		case 'N':
-			/*
-			 * fractional second digits. default is 9 digits
-			 * (nanosecond).
-			 *
-			 * %3N  millisecond (3 digits)
-			 * %6N  microsecond (6 digits)
-			 * %9N  nanosecond (9 digits)
-			 */
-			w = 9;
-		subsec:
-                        if (precision <= 0) {
-                            precision = w;
-                        }
-                        NEEDS(precision);
-
-			{
-                                VALUE subsec = tmx_sec_fraction;
-                                int ww;
-                                long n;
-
-                                ww = precision;
-                                while (9 <= ww) {
-                                        subsec = mul(subsec, INT2FIX(1000000000));
-                                        ww -= 9;
-                                }
-                                n = 1;
-                                for (; 0 < ww; ww--)
-                                        n *= 10;
-                                if (n != 1)
-                                        subsec = mul(subsec, INT2FIX(n));
-                                subsec = div(subsec, INT2FIX(1));
-
-                                if (FIXNUM_P(subsec)) {
-                                        (void)snprintf(s, endp - s, "%0*ld", precision, FIX2LONG(subsec));
-                                        s += precision;
-                                }
-                                else {
-                                        VALUE args[2], result;
-                                        args[0] = INT2FIX(precision);
-                                        args[1] = subsec;
-                                        result = rb_str_format(2, args, rb_str_new2("%0*d"));
-                                        (void)strlcpy(s, StringValueCStr(result), endp-s);
-                                        s += precision;
-                                }
-			}
-			continue;
-
-		case 'F':	/*  Equivalent to %Y-%m-%d */
-			STRFTIME("%Y-%m-%d");
-			continue;
 		case '+':
 			STRFTIME("%a %b %e %H:%M:%S %Z %Y");
 			continue;
+
+		case '_':
+			FLAG_FOUND();
+			padding = ' ';
+			goto again;
 
 		case '-':
 			FLAG_FOUND();
@@ -752,14 +729,14 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 			flags |= BIT_OF(CHCASE);
 			goto again;
 
-		case '_':
-			FLAG_FOUND();
-			padding = ' ';
-			goto again;
-
 		case ':':
                         colons++;
 			goto again;
+
+		case '%':
+			FILL_PADDING(1);
+			*s++ = '%';
+			continue;
 
 		case '0':
 			padding = '0';
@@ -1161,4 +1138,4 @@ char **argv;
 
 	exit(0);
 }
-#endif	/* TEST_STRFTIME */
+#endif /* TEST_STRFTIME */

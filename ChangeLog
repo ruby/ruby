@@ -1,3 +1,7 @@
+Sun May 13 17:37:56 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_strftime.c: refactored.
+
 Sun May 13 06:40:12 2012  Luis Lavena  <luislavena@gmail.com>
 
 	* test/ruby/test_io.rb (class TestIO):  Disable GC during IO tests to
