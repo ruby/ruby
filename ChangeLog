@@ -1,3 +1,10 @@
+Sun May 13 22:46:36 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/etc/etc.c (passwd_ensure): move endpwent() call from
+	  passwd_iterate to close /etc/passwd on exception.
+	  (group_ensure): move endgrent() call from group_iterate to close
+	  /etc/group on exception.
+
 Sun May 13 18:10:43 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_strftime.c: removed unused code and changed the style.

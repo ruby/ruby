@@ -174,6 +174,7 @@ static int passwd_blocking = 0;
 static VALUE
 passwd_ensure(void)
 {
+    endpwent();
     passwd_blocking = (int)Qfalse;
     return Qnil;
 }
@@ -187,7 +188,6 @@ passwd_iterate(void)
     while (pw = getpwent()) {
 	rb_yield(setup_passwd(pw));
     }
-    endpwent();
     return Qnil;
 }
 
@@ -412,6 +412,7 @@ static int group_blocking = 0;
 static VALUE
 group_ensure(void)
 {
+    endgrent();
     group_blocking = (int)Qfalse;
     return Qnil;
 }
@@ -425,7 +426,6 @@ group_iterate(void)
     while (pw = getgrent()) {
 	rb_yield(setup_group(pw));
     }
-    endgrent();
     return Qnil;
 }
 
