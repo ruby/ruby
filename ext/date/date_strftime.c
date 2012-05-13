@@ -7,18 +7,9 @@
 #include "ruby/ruby.h"
 #include "date_tmx.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <time.h>
-
-#if HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
-#include <sys/types.h>
-#include <math.h>
 #include <errno.h>
 
 #undef strchr	/* avoid AIX weirdness */
@@ -174,7 +165,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 
 	  case 'B':	/* full month name */
 	  case 'b':	/* abbreviated month name */
-	  case 'h':	/* abbreviated month name */
+	  case 'h':	/* same as %b */
 	    if (flags & BIT_OF(CHCASE)) {
 		flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
 		flags |= BIT_OF(UPPER);
@@ -200,7 +191,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    STRFTIME("%a %b %e %H:%M:%S %Y");
 	    continue;
 
-	  case 'D':	/* date as %m/%d/%y */
+	  case 'D':
 	    STRFTIME("%m/%d/%y");
 	    continue;
 
@@ -210,7 +201,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    FMT((*format == 'd') ? '0' : ' ', 2, "d", v);
 	    continue;
 
-	  case 'F':	/*  Equivalent to %Y-%m-%d */
+	  case 'F':
 	    STRFTIME("%Y-%m-%d");
 	    continue;
 
@@ -253,24 +244,14 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    FMT('0', 3, "d", v);
 	    continue;
 
-	  case 'L':
-	    w = 3;
-	    goto subsec;
-
-	  case 'N':
-	    /*
-	     * fractional second digits. default is 9 digits
-	     * (nanosecond).
-	     *
-	     * %3N  millisecond (3 digits)
-	     * %6N  microsecond (6 digits)
-	     * %9N  nanosecond (9 digits)
-	     */
-	    w = 9;
-	  subsec:
-	    if (precision <= 0) {
+	  case 'L':	/* millisecond */
+	  case 'N':	/* nanosecond */
+	    if (*format == 'L')
+		w = 3;
+	    else
+		w = 9;
+	    if (precision <= 0)
 		precision = w;
-	    }
 	    NEEDS(precision);
 
 	    {
@@ -344,11 +325,11 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    FMTV('0', 1, "d", tmx_msecs);
 	    continue;
 
-	  case 'R':	/* time as %H:%M */
+	  case 'R':
 	    STRFTIME("%H:%M");
 	    continue;
 
-	  case 'r':	/* time as %I:%M:%S %p */
+	  case 'r':
 	    STRFTIME("%I:%M:%S %p");
 	    continue;
 
@@ -361,7 +342,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    FMTV('0', 1, "d", tmx_secs);
 	    continue;
 
-	  case 'T':	/* time as %H:%M:%S */
+	  case 'T':
 	    STRFTIME("%H:%M:%S");
 	    continue;
 
@@ -382,7 +363,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    FMT('0', 2, "d", v);
 	    continue;
 
-	  case 'v':	/* date as dd-bbb-YYYY */
+	  case 'v':
 	    STRFTIME("%e-%b-%Y");
 	    continue;
 
@@ -432,7 +413,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    }
 	    break;
 
-	  case 'z':	/* time zone offset east of GMT e.g. -0600 */
+	  case 'z':	/* time zone offset east of UTC e.g. -0600 */
 	    {
 		long off, aoff;
 		int hl, hw;
@@ -618,8 +599,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
     if (*format == '\0') {
 	*s = '\0';
 	return (s - start);
-    } else
-	return 0;
+    }
+    return 0;
 }
 
 size_t
