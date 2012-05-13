@@ -1,3 +1,8 @@
+Sun May 13 23:32:16 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+
+	* test/ruby/test_io.rb (TestIO): revert r35631. it broke the intent of
+	  test_flush_in_finalizer1.  [ruby-core:43951] [Bug ##6228]
+
 Sun May 13 22:46:36 2012  Tanaka Akira  <akr@fsij.org>
 
 	* ext/etc/etc.c (passwd_ensure): move endpwent() call from
