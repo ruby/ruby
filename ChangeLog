@@ -1,4 +1,11 @@
-Sun May 13 23:32:16 2012  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
+Sun May 13 23:38:31 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/ruby/test_io.rb (test_flush_in_finalizer1): don't use IO.for_fd
+	  to close IO objects. it create IO object with already closed fd, and
+	  cause occasional Errno::EBADF in following tests. [ruby-core:45020]
+	  [Bug #6228]
+
+Sun May 13 23:32:16 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/ruby/test_io.rb (TestIO): revert r35631. it broke the intent of
 	  test_flush_in_finalizer1.  [ruby-core:43951] [Bug ##6228]

@@ -1891,7 +1891,7 @@ End
       }
     end
   ensure
-    fds.each {|fd| IO.for_fd(fd).close rescue next}
+    GC.start
   end
 
   def test_flush_in_finalizer2
