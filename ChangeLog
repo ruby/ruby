@@ -1,3 +1,9 @@
+Mon May 14 13:17:57 2012  Luis Lavena  <luislavena@gmail.com>
+
+	* test/ruby/test_io.rb (class TestIO):  Disable GC during IO tests to
+	  avoid file descriptors being GC'ed. Suggestion by Tomoyuki Chikanaga
+	  [ruby-core:43951][Bug #6228]
+
 Fri May 11 14:09:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (PUSH): to prevent VALUE from GC,
