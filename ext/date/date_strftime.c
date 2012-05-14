@@ -1,6 +1,6 @@
 /*
   date_strftime.c: based on a public-domain implementation of ANSI C
-  library routine of strftime, which is originally written by Arnold
+  library routine strftime, which is originally written by Arnold
   Robbins.
  */
 
@@ -84,7 +84,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    if (precision <= 0) precision = (def_prec);			\
 	    if (flags & BIT_OF(LEFT)) precision = 1;			\
 	    l = snprintf(s, endp - s,					\
-			 ((padding == '0' || (!padding && (def_pad) == '0')) ? "%0*"fmt : "%*"fmt), \
+			 ((padding == '0' || (!padding && (def_pad) == '0')) ? \
+			  "%0*"fmt : "%*"fmt),				\
 			 precision, (val));				\
 	    if (l < 0) goto err;					\
 	    s += l;							\
@@ -121,8 +122,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 		    result = rb_str_format(2, args, rb_str_new2("%0*"fmt)); \
 		else							\
 		    result = rb_str_format(2, args, rb_str_new2("%*"fmt)); \
-		l = strlcpy(s, StringValueCStr(result), endp-s);	\
-		if ((size_t)(endp-s) <= l)				\
+		l = strlcpy(s, StringValueCStr(result), endp - s);	\
+		if ((size_t)(endp - s) <= l)				\
 		    goto err;						\
 		s += l;							\
 	    }								\
@@ -176,14 +177,14 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 		    i = 1, tp = "?";
 		else {
 		    if (*format == 'B')
-			i = strlen(tp = months_l[mon-1]);
+			i = strlen(tp = months_l[mon - 1]);
 		    else
-			i = 3, tp = months_l[mon-1];
+			i = 3, tp = months_l[mon - 1];
 		}
 	    }
 	    break;
 
-	  case 'C':
+	  case 'C':	/* century (year/100) */
 	    FMTV('0', 2, "d", div(tmx_year, INT2FIX(100)));
 	    continue;
 
@@ -272,7 +273,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 		subsec = div(subsec, INT2FIX(1));
 
 		if (FIXNUM_P(subsec)) {
-		    (void)snprintf(s, endp - s, "%0*ld", precision, FIX2LONG(subsec));
+		    (void)snprintf(s, endp - s, "%0*ld",
+				   precision, FIX2LONG(subsec));
 		    s += precision;
 		}
 		else {
@@ -280,7 +282,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 		    args[0] = INT2FIX(precision);
 		    args[1] = subsec;
 		    result = rb_str_format(2, args, rb_str_new2("%0*d"));
-		    (void)strlcpy(s, StringValueCStr(result), endp-s);
+		    (void)strlcpy(s, StringValueCStr(result), endp - s);
 		    s += precision;
 		}
 	    }
@@ -321,7 +323,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    i = 2;
 	    break;
 
-	  case 'Q':
+	  case 'Q':	/* microseconds since Unix epoch */
 	    FMTV('0', 1, "d", tmx_msecs);
 	    continue;
 
@@ -338,7 +340,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    FMT('0', 2, "d", v);
 	    continue;
 
-	  case 's':
+	  case 's':	/* seconds since Unix epoch */
 	    FMTV('0', 1, "d", tmx_secs);
 	    continue;
 
@@ -352,8 +354,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    FMT('0', 2, "d", v);
 	    continue;
 
-	  case 'u':
-	    /* ISO 8601: Weekday as a decimal number [1 (Monday) - 7] */
+	  case 'u':	/* weekday, Monday == 1, 1 - 7 */
 	    v = range(1, tmx_cwday, 7);
 	    FMT('0', 1, "d", v);
 	    continue;
@@ -413,7 +414,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    }
 	    break;
 
-	  case 'z':	/* time zone offset east of UTC e.g. -0600 */
+	  case 'z':	/* offset from UTC */
 	    {
 		long off, aoff;
 		int hl, hw;
@@ -434,32 +435,35 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 
 		switch (colons) {
 		  case 0: /* %z -> +hhmm */
-		    precision = precision <= (3 + hw) ? hw : precision-3;
+		    precision = precision <= (3 + hw) ? hw : precision - 3;
 		    NEEDS(precision + 3);
 		    break;
 
 		  case 1: /* %:z -> +hh:mm */
-		    precision = precision <= (4 + hw) ? hw : precision-4;
+		    precision = precision <= (4 + hw) ? hw : precision - 4;
 		    NEEDS(precision + 4);
 		    break;
 
 		  case 2: /* %::z -> +hh:mm:ss */
-		    precision = precision <= (7 + hw) ? hw : precision-7;
+		    precision = precision <= (7 + hw) ? hw : precision - 7;
 		    NEEDS(precision + 7);
 		    break;
 
 		  case 3: /* %:::z -> +hh[:mm[:ss]] */
 		    {
 			if (aoff % 3600 == 0) {
-			    precision = precision <= (1 + hw) ? hw : precision-1;
+			    precision = precision <= (1 + hw) ?
+				hw : precision - 1;
 			    NEEDS(precision + 3);
 			}
 			else if (aoff % 60 == 0) {
-			    precision = precision <= (4 + hw) ? hw : precision-4;
+			    precision = precision <= (4 + hw) ?
+				hw : precision - 4;
 			    NEEDS(precision + 4);
 			}
 			else {
-			    precision = precision <= (7 + hw) ? hw : precision-7;
+			    precision = precision <= (7 + hw) ?
+				hw : precision - 7;
 			    NEEDS(precision + 7);
 			}
 		    }

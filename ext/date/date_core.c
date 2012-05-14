@@ -4207,7 +4207,7 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
  * Parses the given representation of date and time with the given
  * template, and returns a hash of parsed elements.  _strptime does
  * not support specification of flags and width unlike strftime.
- * 
+ *
  * For example:
  *
  *    Date._strptime('2001-02-03', '%Y-%m-%d')
