@@ -1,3 +1,15 @@
+Mon May 14 17:14:10 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/ruby/test_io.rb (test_flush_in_finalizer1): don't use IO.for_fd
+	  to close IO objects. it create IO object with already closed fd, and
+	  cause occasional Errno::EBADF in following tests. [ruby-core:45020]
+	  [Bug #6228]
+
+Mon May 14 17:14:10 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/ruby/test_io.rb (TestIO): revert r35631. it broke the intent of
+	  test_flush_in_finalizer1.  [ruby-core:43951] [Bug ##6228]
+
 Mon May 14 13:18:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_tokadd_string): insert a backslash only if

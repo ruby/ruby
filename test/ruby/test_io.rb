@@ -10,14 +10,6 @@ require 'weakref'
 require_relative 'envutil'
 
 class TestIO < Test::Unit::TestCase
-  def setup
-    GC.disable
-  end
-
-  def teardown
-    GC.enable
-  end
-
   def have_close_on_exec?
     begin
       $stdin.close_on_exec?
@@ -1807,7 +1799,7 @@ End
       }
     end
   ensure
-    fds.each {|fd| IO.for_fd(fd).close rescue next}
+    GC.start
   end
 
   def test_flush_in_finalizer2
