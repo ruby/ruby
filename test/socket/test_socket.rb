@@ -327,13 +327,27 @@ class TestSocket < Test::Unit::TestCase
             # global IPv6 address.
             # Link-local IPv6 addresses on those interfaces don't work.
             ulSIOCGIFINFO_IN6 = 3225971052
-            bIFDISABLED = 4
+            ulND6_IFF_IFDISABLED = 8
             in6_ondireq = ifr_name
             s.ioctl(ulSIOCGIFINFO_IN6, in6_ondireq)
-            next true if in6_ondireq.unpack('A16L6').last[bIFDISABLED-1] == 1
+            next true if in6_ondireq.unpack('A16L6').last & ulND6_IFF_IFDISABLED != 0
           end
         when /darwin/
-          if ai.ipv6?
+          if !ai.ipv6?
+          elsif ifr_name = ai.ip_address[/%(.*)/, 1]
+            # Mac OS X may sets IFDISABLED as FreeBSD does
+            ulSIOCGIFFLAGS = 3223349521
+            ulSIOCGIFINFO_IN6 = 3224398156
+            ulSIOCGIFAFLAG_IN6 = 3240126793
+            ulIFF_POINTOPOINT = 0x10
+            ulND6_IFF_IFDISABLED = 8
+            in6_ondireq = ifr_name
+            s.ioctl(ulSIOCGIFINFO_IN6, in6_ondireq)
+            next true if in6_ondireq.unpack('A16L6').last & ulND6_IFF_IFDISABLED != 0
+            in6_ifreq = [ifr_name,ai.to_sockaddr].pack('a16A*')
+            s.ioctl(ulSIOCGIFFLAGS, in6_ifreq)
+            next true if in6_ifreq.unpack('A16L1').last & ulIFF_POINTOPOINT != 0
+          else
             ifconfig ||= `/sbin/ifconfig`
             next true if ifconfig.scan(/^(\w+):(.*(?:\n\t.*)*)/).find do|ifname, value|
               value.include?(ai.ip_address) && value.include?('POINTOPOINT')
