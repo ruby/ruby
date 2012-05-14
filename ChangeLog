@@ -1,3 +1,10 @@
+Mon May 14 16:28:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (f_arglist): should reset lexical states after empty
+	  argument list with no parenthesis as well as parenthesized list,
+	  so that reserved name method definition work.  [ruby-dev:45626]
+	  [Bug #6403]
+
 Mon May 14 00:14:24 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* enumerator.c (lazy_take_func, lazy_take): multiple calls of

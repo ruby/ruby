@@ -176,6 +176,11 @@ class TestSyntax < Test::Unit::TestCase
     assert_valid_syntax("p begin 1.times do 1 end end", __FILE__, bug6419)
   end
 
+  def test_reserved_method_no_args
+    bug6403 = '[ruby-dev:45626]'
+    assert_valid_syntax("def self; :foo; end", __FILE__, bug6403)
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
