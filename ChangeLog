@@ -1,3 +1,8 @@
+Mon May 14 13:18:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_tokadd_string): insert a backslash only if
+	  quoted by single quotes.  [ruby-dev:45281] [Bug #6069]
+
 Mon May 14 13:17:57 2012  Luis Lavena  <luislavena@gmail.com>
 
 	* test/ruby/test_io.rb (class TestIO):  Disable GC during IO tests to
