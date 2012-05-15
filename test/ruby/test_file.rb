@@ -207,7 +207,8 @@ class TestFile < Test::Unit::TestCase
 
   def test_file_open_permissions
     Dir.mktmpdir(__method__.to_s) do |tmpdir|
-      File.open('x', :mode     => IO::RDWR | IO::CREAT | IO::BINARY,
+      tmp = File.join(tmpdir, 'x')
+      File.open(tmp, :mode     => IO::RDWR | IO::CREAT | IO::BINARY,
                      :encoding => Encoding::ASCII_8BIT) do |x|
 
         assert x.autoclose?
@@ -229,7 +230,8 @@ class TestFile < Test::Unit::TestCase
 
   def test_conflicting_encodings
     Dir.mktmpdir(__method__.to_s) do |tmpdir|
-      File.open('x', 'wb', :encoding => Encoding::EUC_JP) do |x|
+      tmp = File.join(tmpdir, 'x')
+      File.open(tmp, 'wb', :encoding => Encoding::EUC_JP) do |x|
         assert_equal Encoding::EUC_JP, x.external_encoding
       end
     end
