@@ -222,6 +222,13 @@ module Psych
         when /^!map:(.*)$/, /^!ruby\/hash:(.*)$/
           revive_hash resolve_class($1).new, o
 
+        when '!omap', 'tag:yaml.org,2002:omap'
+          map = register(o, Psych::Omap.new)
+          o.children.each_slice(2) do |l,r|
+            map[accept(l)] = accept r
+          end
+          map
+
         else
           revive_hash({}, o)
         end

@@ -1,3 +1,10 @@
+Wed May 16 01:31:21 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: convert omap tagged maps to
+	  Psych::Omap objects rather than hashes. [Bug #6425]
+
+	* test/psych/test_omap.rb: pertinent test.
+
 Wed May 16 01:15:45 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: keep a reference to
