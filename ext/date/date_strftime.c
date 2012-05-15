@@ -23,6 +23,24 @@
 #define div(x,y) (rb_funcall((x), rb_intern("div"), 1, (y)))
 #define mod(x,y) (rb_funcall((x), '%', 1, (y)))
 
+static void
+upcase(char *s, size_t i)
+{
+    do {
+	if (ISLOWER(*s))
+	    *s = TOUPPER(*s);
+    } while (s++, --i);
+}
+
+static void
+downcase(char *s, size_t i)
+{
+    do {
+	if (ISUPPER(*s))
+	    *s = TOLOWER(*s);
+    } while (s++, --i);
+}
+
 /* strftime --- produce formatted time */
 
 static size_t
@@ -37,7 +55,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
     int v, w;
     int precision, flags, colons;
     char padding;
-    enum {LEFT, CHCASE, LOWER, UPPER, LOCALE_O, LOCALE_E};
+    /* LOCALE_[OE] and COLONS are actually modifiers, not flags */
+    enum {LEFT, CHCASE, LOWER, UPPER, LOCALE_O, LOCALE_E, COLONS};
 #define BIT_OF(n) (1U<<(n))
 
     /* various tables for locale C */
@@ -64,7 +83,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 
     for (; *format && s < endp - 1; format++) {
 #define FLAG_FOUND() do {						\
-	    if (precision > 0 || flags & (BIT_OF(LOCALE_E)|BIT_OF(LOCALE_O))) \
+	    if (precision > 0 || flags & (BIT_OF(LOCALE_E) | BIT_OF(LOCALE_O) | BIT_OF(COLONS))) \
 		goto unknown;						\
 	} while (0)
 #define NEEDS(n) do if (s >= endp || (n) >= endp - s - 1) goto err; while (0)
@@ -94,7 +113,9 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	do {								\
 	    i = date_strftime_with_tmx(s, endp - s, (fmt), tmx);	\
 	    if (!i) return 0;						\
-	    if (precision > i) {					\
+	    if (flags & BIT_OF(UPPER))					\
+		upcase(s, i);						\
+	    if (!(flags & BIT_OF(LEFT)) && precision > i) {		\
 		if (start + maxsize < s + precision) {			\
 		    errno = ERANGE;					\
 		    return 0;						\
@@ -148,7 +169,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	  case 'A':	/* full weekday name */
 	  case 'a':	/* abbreviated weekday name */
 	    if (flags & BIT_OF(CHCASE)) {
-		flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
+		flags &= ~(BIT_OF(LOWER) | BIT_OF(CHCASE));
 		flags |= BIT_OF(UPPER);
 	    }
 	    {
@@ -168,7 +189,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	  case 'b':	/* abbreviated month name */
 	  case 'h':	/* same as %b */
 	    if (flags & BIT_OF(CHCASE)) {
-		flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
+		flags &= ~(BIT_OF(LOWER) | BIT_OF(CHCASE));
 		flags |= BIT_OF(UPPER);
 	    }
 	    {
@@ -311,8 +332,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	  case 'P':	/* am or pm based on 12-hour clock */
 	  case 'p':	/* AM or PM based on 12-hour clock */
 	    if ((*format == 'p' && (flags & BIT_OF(CHCASE))) ||
-		(*format == 'P' && !(flags & (BIT_OF(CHCASE)|BIT_OF(UPPER))))) {
-		flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
+		(*format == 'P' && !(flags & (BIT_OF(CHCASE) | BIT_OF(UPPER))))) {
+		flags &= ~(BIT_OF(UPPER) | BIT_OF(CHCASE));
 		flags |= BIT_OF(LOWER);
 	    }
 	    v = range(0, tmx_hour, 23);
@@ -401,7 +422,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 
 	  case 'Z':	/* time zone name or abbreviation */
 	    if (flags & BIT_OF(CHCASE)) {
-		flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
+		flags &= ~(BIT_OF(UPPER) | BIT_OF(CHCASE));
 		flags |= BIT_OF(LOWER);
 	    }
 	    {
@@ -508,6 +529,10 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    }
 	    continue;
 
+	  case '+':
+	    STRFTIME("%a %b %e %H:%M:%S %Z %Y");
+	    continue;
+
 	  case 'E':
 	    /* POSIX locale extensions, ignored for now */
 	    flags |= BIT_OF(LOCALE_E);
@@ -522,9 +547,19 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 		goto again;
 	    goto unknown;
 
-	  case '+':
-	    STRFTIME("%a %b %e %H:%M:%S %Z %Y");
-	    continue;
+	  case ':':
+	    flags |= BIT_OF(COLONS);
+	    {
+		size_t l = strspn(format, ":");
+		format += l;
+		if (*format == 'z') {
+		    colons = l;
+		    format--;
+		    goto again;
+		}
+		format -= l;
+	    }
+	    goto unknown;
 
 	  case '_':
 	    FLAG_FOUND();
@@ -534,7 +569,6 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	  case '-':
 	    FLAG_FOUND();
 	    flags |= BIT_OF(LEFT);
-	    padding = precision = 0;
 	    goto again;
 
 	  case '^':
@@ -547,16 +581,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    flags |= BIT_OF(CHCASE);
 	    goto again;
 
-	  case ':':
-	    colons++;
-	    goto again;
-
-	  case '%':
-	    FILL_PADDING(1);
-	    *s++ = '%';
-	    continue;
-
 	  case '0':
+	    FLAG_FOUND();
 	    padding = '0';
 	  case '1':  case '2': case '3': case '4':
 	  case '5': case '6':  case '7': case '8': case '9':
@@ -566,6 +592,11 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 		format = e - 1;
 		goto again;
 	    }
+
+	  case '%':
+	    FILL_PADDING(1);
+	    *s++ = '%';
+	    continue;
 
 	  default:
 	  unknown:
@@ -580,21 +611,15 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	if (i) {
 	    FILL_PADDING(i);
 	    memcpy(s, tp, i);
-	    switch (flags & (BIT_OF(UPPER)|BIT_OF(LOWER))) {
+	    switch (flags & (BIT_OF(UPPER) | BIT_OF(LOWER))) {
 	      case BIT_OF(UPPER):
-		do {
-		    if (ISLOWER(*s)) *s = TOUPPER(*s);
-		} while (s++, --i);
+		upcase(s, i);
 		break;
 	      case BIT_OF(LOWER):
-		do {
-		    if (ISUPPER(*s)) *s = TOLOWER(*s);
-		} while (s++, --i);
-		break;
-	      default:
-		s += i;
+		downcase(s, i);
 		break;
 	    }
+	    s += i;
 	}
     }
     if (s >= endp) {

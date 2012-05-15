@@ -336,6 +336,21 @@ class TestDateStrftime < Test::Unit::TestCase
     assert_equal('+09:08:07', d.strftime('%:::z'))
   end
 
+  def test_strftime__gnuext_complex
+    d = DateTime.parse('2001-02-03T04:05:06+09:00')
+    assert_equal('Sat Feb  3 04:05:06 2001', d.strftime('%-100c'))
+    assert_equal('Sat Feb  3 04:05:06 2001'.rjust(100), d.strftime('%100c'))
+    assert_equal('Sat Feb  3 04:05:06 2001'.rjust(100), d.strftime('%_100c'))
+    assert_equal('Sat Feb  3 04:05:06 2001'.rjust(100, '0'), d.strftime('%0100c'))
+    assert_equal('SAT FEB  3 04:05:06 2001', d.strftime('%^c'))
+
+    assert_equal('Sat Feb  3 04:05:06 +09:00 2001', d.strftime('%-100+'))
+    assert_equal('Sat Feb  3 04:05:06 +09:00 2001'.rjust(100), d.strftime('%100+'))
+    assert_equal('Sat Feb  3 04:05:06 +09:00 2001'.rjust(100), d.strftime('%_100+'))
+    assert_equal('Sat Feb  3 04:05:06 +09:00 2001'.rjust(100, '0'), d.strftime('%0100+'))
+    assert_equal('SAT FEB  3 04:05:06 +09:00 2001', d.strftime('%^+'))
+  end
+
   def test__different_format
     d = Date.new(2001,2,3)
 
