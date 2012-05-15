@@ -1201,13 +1201,14 @@ enum proc_entry_type {
     T_PROC_DROP       = 3,
     T_PROC_TAKE_WHILE = 4,
     T_PROC_DROP_WHILE = 5,
-    T_PROC_REJECT     = 6
+    T_PROC_REJECT     = 6,
+    T_PROC_GREP       = 7
 };
 
 static VALUE
 process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
 {
-    VALUE result = argv[0];
+    VALUE result = rb_enum_values_pack(argc, argv);
     struct proc_entry *entry;
     VALUE *procs = RARRAY_PTR(procs_array);
     VALUE move_next = Qtrue;
@@ -1259,13 +1260,20 @@ process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
                     move_next = !RTEST(rb_funcall(entry->proc, rb_intern("call"),
                                 1, result));
                     break;
+                case T_PROC_GREP:
+                    move_next = rb_funcall(entry->memo, id_eqq, 1, result);
+
+                    if (RTEST(move_next) && entry->proc) {
+                        result = rb_funcall(entry->proc,
+                                    rb_intern("call"), 1, result);
+                    }
+                    break;
             }
         }
     }
 
     if (RTEST(move_next)) {
-        argv[0] = result;
-        rb_funcall2(yielder, id_yield, argc, argv);
+        rb_funcall2(yielder, id_yield, 1, &result);
     }
     if (break_point == Qundef) rb_iter_break();
     return result;
@@ -1358,7 +1366,7 @@ create_proc_entry(enum proc_entry_type proc_type, VALUE memo)
     entry_obj = Data_Make_Struct(rb_cObject, struct proc_entry,
             0, RUBY_DEFAULT_FREE, entry);
     Data_Get_Struct(entry_obj, struct proc_entry, entry);
-    if (proc_type != T_PROC_TAKE && proc_type != T_PROC_DROP) {
+    if (rb_block_given_p()) {
         entry->proc = rb_block_proc();
     }
     entry->type = proc_type;
@@ -1622,41 +1630,18 @@ lazy_reject(VALUE obj)
     new_enum = lazy_copy(0, 0, obj);
     lazy_add_proc(new_enum, T_PROC_REJECT, Qnil);
 
-    return lazy_set_method(new_enum, Qnil);
-}
-
-static VALUE
-lazy_grep_func(VALUE val, VALUE m, int argc, VALUE *argv)
-{
-    VALUE i = rb_enum_values_pack(argc - 1, argv + 1);
-    VALUE result = rb_funcall(m, id_eqq, 1, i);
-
-    if (RTEST(result)) {
-	rb_funcall(argv[0], id_yield, 1, i);
-    }
-    return Qnil;
-}
-
-static VALUE
-lazy_grep_iter(VALUE val, VALUE m, int argc, VALUE *argv)
-{
-    VALUE i = rb_enum_values_pack(argc - 1, argv + 1);
-    VALUE result = rb_funcall(m, id_eqq, 1, i);
-
-    if (RTEST(result)) {
-	rb_funcall(argv[0], id_yield, 1, rb_yield(i));
-    }
-    return Qnil;
+    return new_enum;
 }
 
 static VALUE
 lazy_grep(VALUE obj, VALUE pattern)
 {
-    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 rb_block_given_p() ?
-					 lazy_grep_iter : lazy_grep_func,
-					 pattern),
-			   rb_ary_new3(1, pattern));
+    VALUE new_enum;
+
+    new_enum = lazy_copy(0, 0, obj);
+    lazy_add_proc(new_enum, T_PROC_GREP, pattern);
+
+    return new_enum;
 }
 
 static VALUE
@@ -1741,7 +1726,7 @@ lazy_take_while(VALUE obj)
     new_enum = lazy_copy(0, 0, obj);
     lazy_add_proc(new_enum, T_PROC_TAKE_WHILE, Qnil);
 
-    return lazy_set_method(new_enum, Qnil);
+    return new_enum;
 }
 
 static VALUE
@@ -1772,7 +1757,7 @@ lazy_drop_while(VALUE obj)
     new_enum = lazy_copy(0, 0, obj);
     lazy_add_proc(new_enum, T_PROC_DROP_WHILE, (VALUE) memo);
 
-    return lazy_set_method(new_enum, Qnil);
+    return new_enum;
 }
 
 static VALUE
