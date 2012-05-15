@@ -1,3 +1,8 @@
+Wed May 16 01:15:45 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: keep a reference to
+	  custom coders so that GC does not impact dumped yaml reference ids.
+
 Tue May 15 23:59:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::Options#setup_options): add --color option.

@@ -20,6 +20,7 @@ module Psych
         @st       = {}
         @ss       = ss
         @options  = options
+        @coders   = []
 
         @dispatch_cache = Hash.new do |h,klass|
           method = "visit_#{(klass.name || '').split('::').join('_')}"
@@ -406,6 +407,7 @@ module Psych
       end
 
       def dump_coder o
+        @coders << o
         tag = Psych.dump_tags[o.class]
         unless tag
           klass = o.class == Object ? nil : o.class.name
