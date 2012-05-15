@@ -9,6 +9,7 @@ $INCFLAGS << " -I$(srcdir)/.."
 $objs = [ "rmd160init.#{$OBJEXT}" ]
 
 dir_config("openssl")
+pkg_config("openssl")
 
 if !with_config("bundled-rmd160") &&
     have_library("crypto") && have_header("openssl/ripemd.h")

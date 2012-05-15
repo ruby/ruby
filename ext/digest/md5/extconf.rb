@@ -9,6 +9,7 @@ $INCFLAGS << " -I$(srcdir)/.."
 $objs = [ "md5init.#{$OBJEXT}" ]
 
 dir_config("openssl")
+pkg_config("openssl")
 
 if !with_config("bundled-md5") &&
     have_library("crypto") && have_header("openssl/md5.h")

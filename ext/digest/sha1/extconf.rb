@@ -9,6 +9,7 @@ $INCFLAGS << " -I$(srcdir)/.."
 $objs = [ "sha1init.#{$OBJEXT}" ]
 
 dir_config("openssl")
+pkg_config("openssl")
 
 if !with_config("bundled-sha1") &&
     have_library("crypto") && have_header("openssl/sha.h")

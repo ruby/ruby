@@ -1,3 +1,12 @@
+Wed May 16 01:07:46 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/digest/md5/extconf.rb: use pkg_config for openssl so that
+	  customized ssl paths are used for linking.  Backports fixes for
+	  [ruby-core:44755].
+	* ext/digest/rmd160/extconf.rb: ditto
+	* ext/digest/sha1/extconf.rb: ditto
+	* ext/digest/sha2/extconf.rb: ditto
+
 Mon May 14 17:14:10 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/ruby/test_io.rb (test_flush_in_finalizer1): don't use IO.for_fd
