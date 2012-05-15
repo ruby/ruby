@@ -1,3 +1,12 @@
+Wed May 16 05:11:29 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: fix a bug with string
+	  subclass dumping and loading.
+
+	* test/psych/test_array.rb: pertinent tests
+
+	* test/psych/test_string.rb: ditto
+
 Wed May 16 01:31:21 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: convert omap tagged maps to
