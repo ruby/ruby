@@ -1,3 +1,10 @@
+Tue May 15 23:59:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Options#setup_options): add --color option.
+
+	* lib/test/unit.rb (Test::Unit::Runner#_prepare_run): defer color code
+	  initialization to regard --color option.
+
 Mon May 14 16:28:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_arglist): should reset lexical states after empty

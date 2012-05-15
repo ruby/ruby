@@ -123,6 +123,12 @@ module Test
         opts.on '--show-skip', 'Show skipped tests' do
           options[:hide_skip] = false
         end
+
+        opts.on '--color[=WHEN]',
+                [:always, :never, :auto],
+                "colorize the output.  WHEN defaults to 'always'", "or can be 'never' or 'auto'." do |c|
+          options[:color] = c || :always
+        end
       end
 
       def non_options(files, options)
@@ -380,7 +386,7 @@ module Test
           begin
             require 'io/console'
             width = $stdout.winsize[1]
-          rescue LoadError, NoMethodError, Errno::ENOTTY
+          rescue LoadError, NoMethodError, Errno::ENOTTY, Errno::EBADF
             width = ENV["COLUMNS"].to_i.nonzero? || 80
           end
           width -= 1 if /mswin|mingw/ =~ RUBY_PLATFORM
@@ -390,13 +396,13 @@ module Test
       end
 
       def del_status_line
-        return unless @tty
+        return unless @options[:job_status] == :replace
         print "\r"+" "*@status_line_size+"\r"
         $stdout.flush
       end
 
       def put_status(line)
-        return print(line) unless @tty
+        return print(line) unless @options[:job_status] == :replace
         @status_line_size ||= 0
         del_status_line
         $stdout.flush
@@ -407,7 +413,7 @@ module Test
       end
 
       def add_status(line)
-        return print(line) unless @tty
+        return print(line) unless @options[:job_status] == :replace
         @status_line_size ||= 0
         line = line[0...(terminal_width-@status_line_size)]
         print line
@@ -417,9 +423,9 @@ module Test
 
       def jobs_status
         return unless @options[:job_status]
-        puts "" unless @options[:verbose] or @tty
+        puts "" unless @options[:verbose] or @options[:job_status] == :replace
         status_line = @workers.map(&:to_s).join(" ")
-        if @options[:job_status] == :replace and @tty
+        if @options[:job_status] == :replace
           put_status status_line
         else
           puts status_line
@@ -660,7 +666,22 @@ module Test
       end
 
       def _prepare_run(suites, type)
-        if @tty and !@verbose
+        case options[:color]
+        when :always
+          color = true
+        when :auto, nil
+          color = @options[:job_status] == :replace and /mswin|mingw/ !~ RUBY_PLATFORM and /dumb/ !~ ENV["TERM"]
+        else
+          color = false
+        end
+        if color
+          @passed_color = "\e[#{ENV['PASSED_COLOR']||'32'}m"
+          @failed_color = "\e[#{ENV['FAILED_COLOR']||'31'}m"
+          @reset_color = "\e[m"
+        else
+          @failed_color = @reset_color = ""
+        end
+        if @options[:job_status] == :replace
           @verbose = !options[:parallel]
           @output = StatusLineOutput.new(self)
         end
@@ -678,7 +699,8 @@ module Test
       end
 
       def new_test(s)
-        put_status("[#{(@test_count += 1).to_s(10).rjust(@total_tests.size)}/#{@total_tests}] #{s}")
+        count = (@test_count += 1).to_s(10).rjust(@total_tests.size)
+        put_status("#{@passed_color}[#{count}/#{@total_tests}]#{@reset_color} #{s}")
       end
 
       def _print(s); $stdout.print(s); end
@@ -715,12 +737,6 @@ module Test
       def initialize # :nodoc:
         super
         @tty = $stdout.tty?
-        if @tty and /mswin|mingw/ !~ RUBY_PLATFORM and /dumb/ !~ ENV["TERM"]
-          @failed_color = "\e[#{ENV['FAILED_COLOR']||'31'}m"
-          @reset_color = "\e[m"
-        else
-          @failed_color = @reset_color = ""
-        end
       end
 
       def status(*args)
