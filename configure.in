@@ -2126,7 +2126,7 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes],
 	[esix*|uxpds*], [ : ${LDSHARED='$(LD) -G'}
 			rb_cv_dlopen=yes],
-	[osf*], [	: ${LDSHARED='$(LD) -shared -expect_unresolved \'*\""}
+	[osf*], [	: ${LDSHARED='$(LD) -shared -expect_unresolved "*"'}
 			rb_cv_dlopen=yes],
 	[bsdi3*], [	AS_CASE(["$CC"],
 			[*shlicc*], [	: ${LDSHARED='$(CC) -r'}
