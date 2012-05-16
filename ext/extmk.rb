@@ -649,7 +649,7 @@ if $configure_only and $command_output
     mf.puts
     mf.puts "#{rubies.join(' ')}: $(extensions:/.=/#{$force_static ? 'static' : 'all'})"
     rubies.each do |tgt|
-      mf.puts "#{tgt}:\n\t$(Q)$(MAKE) $(MFLAGS) EXTOBJS='$(EXTOBJS)' EXTLIBS='$(EXTLIBS)' $@"
+      mf.puts "#{tgt}:\n\t$(Q)$(MAKE) $(MFLAGS) EXTOBJS=\"$(EXTOBJS)\" EXTLIBS=\"$(EXTLIBS)\" $@"
     end
     mf.puts "ext/extinit.#{$OBJEXT}:\n\t$(Q)$(MAKE) $(MFLAGS) V=$(V) $@"
     mf.puts

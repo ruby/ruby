@@ -1,3 +1,8 @@
+Wed May 16 15:43:10 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/extmk.rb (exts.mk): use double quotes instead of single quotes
+	  for commandline because it's not recognized as quotes on Windows.
+
 Wed May 16 15:15:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LD): enclose with single qoutes but not double quotes
