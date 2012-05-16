@@ -1,3 +1,8 @@
+Wed May 16 15:15:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LD): enclose with single qoutes but not double quotes
+	  not to expand command substitution.
+
 Wed May 16 14:19:51 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	Supports static linking of extensions and encodings again.
@@ -11,7 +16,7 @@ Wed May 16 14:19:51 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* common.mk: Builds static libraries rather than shared objects if
 	  specified.
-	
+
 	* configure.in (LD): new substitution.
 
 	* enc/depend: Supports static linked libraries
@@ -19,10 +24,10 @@ Wed May 16 14:19:51 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* enc/encinit.c.erb: new template to generate the initialization of
 	  statically linked encodings.
-	
+
 	* enc/make_encmake.rb (--module): new flag to specify whether static
 	  or dynamic.
-	
+
 	* transcode_data.h (TRANS_INIT): New macro to get rid of the name
 	  collision of encoding initializers and transcoder initializers.
 
