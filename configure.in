@@ -2516,7 +2516,7 @@ AS_CASE("$enable_shared", [yes], [
   LIBRUBYARG_SHARED=
 
   # enable PIE if possible
-  if test "$GCC" = yes and -z "$EXTSTATIC"; then
+  if test "$GCC" = yes -a -z "$EXTSTATIC"; then
     RUBY_TRY_CFLAGS(-fPIE, [pie=yes], [pie=no])
     if test "$pie" = yes; then
       RUBY_APPEND_OPTION(XCFLAGS, -fPIE)
