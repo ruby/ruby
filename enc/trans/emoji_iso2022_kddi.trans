@@ -208,8 +208,7 @@ rb_iso2022jp_kddi_encoder = {
     iso2022jp_kddi_encoder_reset_sequence_size, finish_iso2022jp_kddi_encoder
 };
 
-void
-Init_emoji_iso2022_kddi(void)
+TRANS_INIT(emoji_iso2022_kddi)
 {
     rb_register_transcoder(&rb_iso2022jp_kddi_decoder);
     rb_register_transcoder(&rb_iso2022jp_kddi_encoder);

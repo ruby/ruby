@@ -84,8 +84,7 @@
 
 <%= transcode_generated_code %>
 
-void
-Init_single_byte(void)
+TRANS_INIT(single_byte)
 {
 <%= transcode_register_code %>
 }

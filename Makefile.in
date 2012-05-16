@@ -16,6 +16,7 @@ PLATFORM_DIR = @PLATFORM_DIR@
 
 CC = @CC@
 CPP = @CPP@
+LD = @LD@
 YACC = bison
 PURIFY =
 AUTOCONF = autoconf
@@ -70,6 +71,8 @@ DLDFLAGS = @LIBRUBY_DLDFLAGS@ $(XLDFLAGS) $(ARCH_FLAG)
 SOLIBS = @SOLIBS@
 MAINLIBS = @MAINLIBS@
 ARCHMINIOBJS = @MINIOBJS@
+ENCOBJS = @ENCOBJS@
+EXTOBJS = @EXTOBJS@
 BUILTIN_ENCOBJS = @BUILTIN_ENCOBJS@
 BUILTIN_TRANSSRCS = @BUILTIN_TRANSSRCS@
 BUILTIN_TRANSOBJS = @BUILTIN_TRANSOBJS@
@@ -175,7 +178,7 @@ miniruby$(EXEEXT):
 $(PROGRAM):
 		@$(RM) $@
 		$(ECHO) linking $@
-		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) $(OUTFLAG)$@
+		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(ENCOBJS) $(LIBRUBYARG) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
 		$(Q) $(POSTLINK)
 
 # We must `rm' the library each time this rule is invoked because "updating" a
@@ -186,8 +189,9 @@ $(LIBRUBY_A):
 		$(ECHO) linking static-library $@
 		$(Q) $(AR) $(ARFLAGS) $@ $(OBJS) $(DMYEXT)
 		@-$(RANLIB) $@ 2> /dev/null || true
+		$(ECHO) verifying static-library $@
 		@$(PURIFY) $(CC) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)conftest$(EXEEXT) $(LDFLAGS)
-		@$(RM) conftest$(EXEEXT)
+		@$(RM) conftset$(EXEEXT) conftest.c
 
 $(LIBRUBY_SO):
 		@-$(PRE_LIBRUBY_UPDATE)
@@ -311,7 +315,8 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	$(Q) $(CPP) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -E $< > $@
 
 clean-local::
-	$(Q)$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output
+	$(Q)$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output \
+		enc/encinit.c enc/encinit.$(OBJEXT)
 	-$(Q)$(RM) $(pkgconfig_DATA)
 
 distclean-local::
@@ -335,8 +340,10 @@ clean-ext distclean-ext realclean-ext::
 		$(RMDIRS) "ext/$$dir" 2> /dev/null || true;; \
 	    esac; \
 	done
+	-$(Q)$(RM) ext/extinit.$(OBJEXT)
 
 distclean-ext realclean-ext::
+	-$(Q)$(RM) ext/extinit.c
 	-$(Q)$(RMDIR) ext 2> /dev/null || true
 
 clean-extout:
@@ -361,6 +368,8 @@ clean-platform:
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(ECHO) compiling $@
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
+
+enc/encinit.$(OBJEXT): enc/encinit.c $(SETUP)
 
 up::
 	@$(CHDIR) "$(srcdir)" && LC_TIME=C exec $(VCSUP)

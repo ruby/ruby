@@ -5,34 +5,7 @@
 % dldflags = $2
 % enable_shared = CONFIG['ENABLE_SHARED'] == 'yes'
 % deffile = (true if /\$\(DEFFILE\)/ =~ CONFIG["LINK_SO"])
-% encs = Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)} - BUILTIN_ENCS - ["mktable.c"]
-% encs.each {|e| e.chomp!(".c")}
-% encs.reject! {|e| !ENC_PATTERNS.any? {|p| File.fnmatch?(p, e)}} if !ENC_PATTERNS.empty?
-% encs.reject! {|e| NOENC_PATTERNS.any? {|p| File.fnmatch?(p, e)}}
-% alphanumeric_order = proc {|e| e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten}
-% encs = encs.sort_by(&alphanumeric_order)
-% encs.unshift(encs.delete("encdb"))
-% atrans = []
-% trans = Dir.open($srcdir+"/trans") {|d|
-%   d.select {|e|
-%     if e.chomp!('.trans')
-%       atrans << e
-%       true
-%     elsif e.chomp!('.c')
-%       true
-%     end
-%   }
-% }
-% trans -= BUILTIN_TRANSES
-% atrans -= BUILTIN_TRANSES
-% trans.uniq!
-% atrans = atrans.sort_by(&alphanumeric_order)
-% trans = trans.sort_by(&alphanumeric_order)
-% trans.unshift(trans.delete("transdb"))
-% trans.compact!
-% trans |= atrans
-% trans.map! {|e| "trans/#{e}"}
-% dependencies = encs + trans
+% dependencies = ENCS + TRANS
 % cleanlibs = Shellwords.shellwords(CONFIG["cleanlibs"] || "")
 % cleanobjs = Shellwords.shellwords(CONFIG["cleanobjs"] || "")
 % cleanobjs << "$*.def" if deffile
@@ -54,31 +27,51 @@ else
   ''
 end %> <%=CONFIG['LIBS']%> $(EXTLIBS)
 
-ENCOBJS = <%=encs.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t  ")%><%="\n" if encs.size>1%>
-ENCSOS = <%=encs.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t ")%><%="\n" if encs.size>1%>
+ENCOBJS = <%=ENCS.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t  ")%><%="\n" if ENCS.size>1%>
+ENCSOS = <%=ENCS.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t ")%><%="\n" if ENCS.size>1%>
 ENCCLEANLIBS = <%=cleanlibs.map {|clean|
   clean.gsub(/\$\*(\.\w+)?/) {"$(ENCOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
 }.join(" ")%>
 ENCCLEANOBJS = <%=cleanobjs.map {|clean|
   clean.gsub(/\$\*(\.\w+)?/) {"$(ENCOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
 }.join(" ")%>
+LIBENC=enc/libenc.$(LIBEXT)
 
 TRANSVPATH = $(srcdir)/enc/trans
 
-TRANSCSRCS = <%=atrans.map {|e| transvpath % "#{e}.c"}.join(" \\\n\t     ")%><%="\n" if trans.size>1%>
-TRANSOBJS = <%=trans.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t    ")%><%="\n" if trans.size>1%>
-TRANSSOS = <%=trans.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t   ")%><%="\n" if trans.size>1%>
+TRANSCSRCS = <%=ATRANS.map {|e| transvpath % "#{e}.c"}.join(" \\\n\t     ")%><%="\n" if TRANS.size>1%>
+TRANSOBJS = <%=TRANS.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t    ")%><%="\n" if TRANS.size>1%>
+TRANSSOS = <%=TRANS.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t   ")%><%="\n" if TRANS.size>1%>
 TRANSCLEANLIBS = <%=cleanlibs.map {|clean|
   clean.gsub(/\$\*(\.\w+)?/) {"$(TRANSOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
 }.join(" ")%>
 TRANSCLEANOBJS = <%=cleanobjs.map {|clean|
   clean.gsub(/\$\*(\.\w+)?/) {"$(TRANSOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
 }.join(" ")%>
+LIBTRANS=enc/libtrans.$(LIBEXT)
 
 encs: all
+% if MODULE_TYPE == :static
+all: libenc libtrans
+% else
 all: enc trans
+%end
+libencs: libenc libtrans
 enc: $(ENCSOS)
+libenc: $(LIBENC)
 trans: $(TRANSSOS)
+libtrans: $(LIBTRANS)
+
+$(LIBENC): $(ENCOBJS)
+	@$(RM) $@
+	$(ECHO) linking statically-linked encoding library $@
+	$(Q) $(AR) <%=CONFIG['ARFLAGS'] || 'rcu' %> $@ $(ENCOBJS)
+	@-$(RANLIB) $@ 2> /dev/null || true
+$(LIBTRANS): $(TRANSOBJS)
+	@$(RM) $@
+	$(ECHO) linking statically-linked transcoder library $@
+	$(Q) $(AR) <%=CONFIG['ARFLAGS'] || 'rcu' %> $@ $(TRANSOBJS)
+	@-$(RANLIB) $@ 2> /dev/null || true
 
 srcs: $(TRANSCSRCS)
 
@@ -86,15 +79,15 @@ srcs: $(TRANSCSRCS)
 	$(ECHO) generating table from $@
 	$(Q)$(MINIRUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo "$@" "$<"
 
-% unless encs.empty? or trans.empty?
+% unless ENCS.empty? or TRANS.empty?
 
-%   unless encs.empty?
+%   unless ENCS.empty?
 $(ENCOBJS): regenc.h oniguruma.h config.h defines.h
 %   end
-%   unless trans.empty?
+%   unless TRANS.empty?
 $(TRANSOBJS): ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.h st.h transcode_data.h
 %   end
-%   atrans.each do |e|
+%   ATRANS.each do |e|
 %     src = "#{e}.trans"
 
 <%=transvpath % "#{e}.c"%>: <%= transvpath % "#{e}.trans"%>
@@ -142,7 +135,7 @@ enc/encdb.$(OBJEXT): encdb.h
 enc/trans/transdb.$(OBJEXT): transdb.h
 
 clean:
-% %w[$(ENCSOS) $(ENCOBJS) $(ENCCLEANOBJS) $(ENCCLEANLIBS) $(TRANSSOS) $(TRANSOBJS) $(TRANSCLEANOBJS) $(TRANSCLEANLIBS)].each do |clean|
+% %w[$(ENCSOS) $(LIBENC) $(ENCOBJS) $(ENCCLEANOBJS) $(ENCCLEANLIBS) $(TRANSSOS) $(LIBTRANS) $(TRANSOBJS) $(TRANSCLEANOBJS) $(TRANSCLEANLIBS)].each do |clean|
 	$(Q)$(RM) <%=pathrep[clean]%>
 % end
 % @ignore_error = $nmake ? '' : ' 2> /dev/null || true'
@@ -160,3 +153,5 @@ clean-srcs:
 	$(Q)$(RM) enc/unicode/name2ctype.h
 	-$(Q)$(RMDIR) <%=pathrep['enc/unicode']%><%=@ignore_error%>
 	-$(Q)$(RMDIR) <%=pathrep['enc']%><%=@ignore_error%>
+
+<%# vim: set ft=eruby noexpandtab ts=8 sw=2 : -%>

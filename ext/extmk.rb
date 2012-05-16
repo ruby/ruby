@@ -10,7 +10,7 @@ $dryrun = false
 $clean = nil
 $nodynamic = nil
 $extinit = nil
-$extobjs = nil
+$extobjs = []
 $extflags = ""
 $extlibs = nil
 $extpath = nil
@@ -25,6 +25,8 @@ alias $0 $progname
 
 $extlist = []
 $compiled = {}
+
+DUMMY_SIGNATURE = "***DUMMY MAKEFILE***"
 
 srcdir = File.dirname(File.dirname(__FILE__))
 unless defined?(CROSS_COMPILING) and CROSS_COMPILING
@@ -46,7 +48,18 @@ def sysquote(x)
 end
 
 def verbose?
-  $mflags.defined?("Q") != "@"
+  $mflags.defined?("V") == "1"
+end
+
+def system(*args)
+  if verbose?
+    if args.size == 1
+      puts args
+    else
+      puts args.map{|arg| Shellwords.escape(arg)}.join(' ')
+    end
+  end
+  super
 end
 
 def extract_makefile(makefile, keep = true)
@@ -100,7 +113,7 @@ def extract_makefile(makefile, keep = true)
 end
 
 def extmake(target)
-  unless $configure_only
+  unless $configure_only || verbose?
     print "#{$message} #{target}\n"
     $stdout.flush
   end
@@ -163,7 +176,11 @@ def extmake(target)
         then
 	  ok = false
           if $configure_only
-            print "#{$message} #{target}\n"
+            if verbose?
+              print "#{conf}\n" if conf
+            else
+              print "#{$message} #{target}\n"
+            end
             $stdout.flush
           end
           init_mkmf
@@ -193,9 +210,11 @@ def extmake(target)
 	$0 = $PROGRAM_NAME
       end
     end
+    ok &&= File.open(makefile){|f| !f.gets[DUMMY_SIGNATURE]}
     ok = yield(ok) if block_given?
     unless ok
       open(makefile, "w") do |f|
+        f.puts "# " + DUMMY_SIGNATURE
 	f.print(*dummy_makefile(CONFIG["srcdir"]))
       end
       print "Failed to configure #{target}. It will not be installed.\n"
@@ -205,9 +224,9 @@ def extmake(target)
     unless $destdir.to_s.empty? or $mflags.defined?("DESTDIR")
       args += [sysquote("DESTDIR=" + relative_from($destdir, "../"+prefix))]
     end
-    if $static
+    if $static and %r(\A-test-) !~ target and target != 'json' and ok
       args += ["static"] unless $clean
-      $extlist.push [$static, $target, File.basename($target), $preload]
+      $extlist.push [$static, target, $target, $preload]
     end
     FileUtils.rm_f(old_cleanfiles - $distcleanfiles)
     FileUtils.rm_f(old_objs - $objs)
@@ -466,7 +485,7 @@ Dir::chdir('ext')
 hdrdir = $hdrdir
 $hdrdir = ($top_srcdir = relative_from(srcdir, $topdir = "..")) + "/include"
 exts.each do |d|
-  $static = $force_static ? $static_ext[target] : nil
+  $static = $force_static ? true : $static_ext[target]
 
   if $ignore or !$nodynamic or $static
     extmake(d) or abort
@@ -502,7 +521,7 @@ if $ignore
 end
 
 $extinit ||= ""
-$extobjs ||= ""
+$extobjs ||= []
 $extpath ||= []
 $extflags ||= ""
 $extlibs ||= []
@@ -519,31 +538,27 @@ unless $extlist.empty?
       end
       next
     end
-    f = format("%s/%s.%s", t, i, $LIBEXT)
-    if File.exist?(f)
-      $extinit << "    init(Init_#{i}, \"#{t}.so\");\n"
-      $extobjs << "ext/#{f} "
-      built << t
-    end
+    $extinit << "    init(Init_#{File.basename i}, \"#{i}.so\");\n"
+    $extobjs << format("ext/%s/%s.%s", t, File.basename(i), $LIBEXT)
+    built << t
   end
 
   src = %{\
-#include "ruby.h"
+#include "ruby/ruby.h"
 
 #define init(func, name) {	\\
-    extern void func _((void));	\\
+    extern void func(void);	\\
     ruby_init_ext(name, func);	\\
 }
 
-void ruby_init_ext _((const char *name, void (*init)(void)));
+void ruby_init_ext(const char *name, void (*init)(void));
 
-void Init_ext _((void))\n{\n#$extinit}
+void Init_ext(void)\n{\n#$extinit}
 }
   if !modified?(extinit.c, MTIMES) || IO.read(extinit.c) != src
     open(extinit.c, "w") {|fe| fe.print src}
   end
 
-  $extobjs = "ext/#{extinit.o} #{$extobjs}"
   if RUBY_PLATFORM =~ /beos/
     $extflags.delete("-L/usr/local/lib")
   end
@@ -552,7 +567,6 @@ void Init_ext _((void))\n{\n#$extinit}
   conf = [
     ['LIBRUBY_SO_UPDATE', '$(LIBRUBY_EXTS)'],
     ['SETUP', $setup],
-    [enable_config("shared", $enable_shared) ? 'DLDOBJS' : 'EXTOBJS', $extobjs],
     ['EXTLIBS', $extlibs.join(' ')], ['EXTLDFLAGS', $extflags]
   ].map {|n, v|
     "#{n}=#{v}" if v and !(v = v.strip).empty?
@@ -615,21 +629,34 @@ if $configure_only and $command_output
       w += d.size + 1
     end
     mf.puts
+    if !$extlist.empty?
+      mf.puts "EXTOBJS = ext/extinit.#{$OBJEXT} #{$extobjs.join(' ')}"
+      mf.puts "EXTLIBS = #{$extlibs.join(' ')}"
+    else
+      mf.puts "EXTOBJS = "
+      mf.puts "EXTLIBS = "
+    end
+    mf.puts
     targets = %w[all install static install-so install-rb clean distclean realclean]
     targets.each do |tgt|
       mf.puts "#{tgt}: $(extensions:/.=/#{tgt})"
     end
     mf.puts
     mf.puts "all: #{rubies.join(' ')}"
-    mf.puts "#{rubies.join(' ')}: $(extensions:/.=/all)"
+    mf.puts "static: ext/extinit.#{$OBJEXT} #{rubies.join(' ')}"
+    mf.puts "clean:\n\t-$(Q)$(RM) ext/extinit.#{$OBJEXT}"
+    mf.puts "distclean:\n\t-$(Q)$(RM) ext/extinit.c"
+    mf.puts
+    mf.puts "#{rubies.join(' ')}: $(extensions:/.=/#{$force_static ? 'static' : 'all'})"
     rubies.each do |tgt|
-      mf.puts "#{tgt}:\n\t$(Q)$(MAKE) $(MFLAGS) $@"
+      mf.puts "#{tgt}:\n\t$(Q)$(MAKE) $(MFLAGS) EXTOBJS='$(EXTOBJS)' EXTLIBS='$(EXTLIBS)' $@"
     end
+    mf.puts "ext/extinit.#{$OBJEXT}:\n\t$(Q)$(MAKE) $(MFLAGS) V=$(V) $@"
     mf.puts
     exec = config_string("exec") {|str| str + " "}
     targets.each do |tgt|
       exts.each do |d|
-        mf.puts "#{d[0..-2]}#{tgt}:\n\t$(Q)cd $(@D) && #{exec}$(MAKE) $(MFLAGS) $(@F)"
+        mf.puts "#{d[0..-2]}#{tgt}:\n\t$(Q)cd $(@D) && #{exec}$(MAKE) $(MFLAGS) V=$(V) $(@F)"
       end
     end
   end

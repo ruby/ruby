@@ -85,8 +85,7 @@ rb_escape_xml_attr_quote = {
     escape_xml_attr_quote_finish
 };
 
-void
-Init_escape(void)
+TRANS_INIT(escape)
 {
 <%= transcode_register_code %>
     rb_register_transcoder(&rb_escape_xml_attr_quote);

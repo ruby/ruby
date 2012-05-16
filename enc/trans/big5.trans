@@ -26,8 +26,7 @@
 
 <%= transcode_generated_code %>
 
-void
-Init_big5(void)
+TRANS_INIT(big5)
 {
 <%= transcode_register_code %>
 }

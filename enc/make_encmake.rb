@@ -15,6 +15,7 @@ BUILTIN_ENCS = []
 BUILTIN_TRANSES = []
 ENC_PATTERNS = []
 NOENC_PATTERNS = []
+module_type = :dynamic
 
 until ARGV.empty?
   case ARGV[0]
@@ -30,10 +31,56 @@ until ARGV.empty?
   when /\A--no-encs=/
     NOENC_PATTERNS.concat $'.split
     ARGV.shift
+  when /\A--module$/
+    ARGV.shift
+  when /\A--modulestatic$/
+    module_type = :static
+    ARGV.shift
   else
     break
   end
 end
+
+ALPHANUMERIC_ORDER = proc {|e| e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten}
+def target_encodings
+  encs = Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)} - BUILTIN_ENCS - ["mktable.c"]
+  encs.each {|e| e.chomp!(".c")}
+  encs.reject! {|e| !ENC_PATTERNS.any? {|p| File.fnmatch?(p, e)}} if !ENC_PATTERNS.empty?
+  encs.reject! {|e| NOENC_PATTERNS.any? {|p| File.fnmatch?(p, e)}}
+  encs = encs.sort_by(&ALPHANUMERIC_ORDER)
+  encs.unshift(encs.delete("encdb"))
+  return encs
+end
+
+def target_transcoders
+  atrans = []
+  trans = Dir.open($srcdir+"/trans") {|d|
+    d.select {|e|
+      if e.chomp!('.trans')
+        atrans << e
+        true
+      elsif e.chomp!('.c')
+        true
+      end
+    }
+  }
+  trans -= BUILTIN_TRANSES
+  atrans -= BUILTIN_TRANSES
+  trans.uniq!
+  atrans = atrans.sort_by(&ALPHANUMERIC_ORDER)
+  trans = trans.sort_by(&ALPHANUMERIC_ORDER)
+  trans.unshift(trans.delete("transdb"))
+  trans.compact!
+  trans |= atrans
+  trans.map! {|e| "trans/#{e}"}
+
+  return atrans, trans
+end
+
+# Constants that "depend" needs.
+MODULE_TYPE = module_type
+ENCS = target_encodings
+ATRANS, TRANS = target_transcoders
 
 if File.exist?(depend = File.join($srcdir, "depend"))
   erb = ERB.new(File.read(depend), nil, '%')
@@ -48,3 +95,18 @@ mkin.gsub!(/@(#{CONFIG.keys.join('|')})@/) {CONFIG[$1]}
 open(ARGV[0], 'wb') {|f|
   f.puts mkin, dep
 }
+if MODULE_TYPE == :static
+  erb = ERB.new(File.read(File.join($srcdir, "encinit.c.erb")), nil, '%-')
+  erb.filename = "enc/encinit.c.cerb"
+  tmp = erb.result(binding)
+  begin
+    Dir.mkdir 'enc'
+  rescue Errno::EEXIST
+  end
+  File.open("enc/encinit.c", "w") {|f|
+    f.puts "/* Automatically generated from enc/encinit.c.erb"
+    f.puts " * Do not edit."
+    f.puts " */"
+    f.puts tmp
+  }
+end

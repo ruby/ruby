@@ -51,8 +51,7 @@
 
 <%= transcode_generated_code %>
 
-void
-Init_japanese_euc(void)
+TRANS_INIT(japanese_euc)
 {
 <%= transcode_register_code %>
 }

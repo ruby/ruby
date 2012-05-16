@@ -26,8 +26,7 @@
 
 <%= transcode_generated_code %>
 
-void
-Init_emoji_sjis_docomo(void)
+TRANS_INIT(emoji_sjis_docomo)
 {
 <%= transcode_register_code %>
 }

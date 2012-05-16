@@ -1835,7 +1835,7 @@ DISTCLEANFILES = #{$distcleanfiles.join(' ')}
 
 all install static install-so install-rb: Makefile
 .PHONY: all install static install-so install-rb
-.PHONY: clean clean-so clean-rb
+.PHONY: clean clean-so clean-static clean-rb
 
 RULES
   end
@@ -2064,7 +2064,7 @@ CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$
 all:    #{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}
 static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
 .PHONY: all install static install-so install-rb
-.PHONY: clean clean-so clean-rb
+.PHONY: clean clean-so clean-static clean-rb
 "
     mfile.print CLEANINGS
     fsep = config_string('BUILD_FILE_SEPARATOR') {|s| s unless s == "/"}
@@ -2100,6 +2100,8 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
           mfile.print "\t@echo #{dir}/#{File.basename(f)}>>$(INSTALLED_LIST)\n"
         end
       end
+      mfile.print "clean-static::\n"
+      mfile.print "\t-$(Q)$(RM) $(STATIC_LIB)\n"
     else
       mfile.puts "Makefile"
     end
@@ -2372,13 +2374,14 @@ MESSAGE
 clean-rb-default::
 clean-rb::
 clean-so::
-clean: clean-so clean-rb-default clean-rb
+clean: clean-so clean-static clean-rb-default clean-rb
 \t\t-$(Q)$(RM) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep})
 
 distclean-rb-default::
 distclean-rb::
 distclean-so::
-distclean: clean distclean-so distclean-rb-default distclean-rb
+distclean-static::
+distclean: clean distclean-so distclean-static distclean-rb-default distclean-rb
 \t\t-$(Q)$(RM) Makefile $(RUBY_EXTCONF_H) conftest.* mkmf.log
 \t\t-$(Q)$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES#{sep})
 \t\t-$(Q)$(RMDIRS) $(DISTCLEANDIRS#{sep})#{$ignore_error}

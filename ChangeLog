@@ -1,3 +1,39 @@
+Wed May 16 14:19:51 2012  Yuki Yugui Sonoda  <yugui@google.com>
+
+	Supports static linking of extensions and encodings again.
+	Fixes --with-static-linked-ext.
+
+	Patch by Google Inc. [ruby-core:45073].
+
+	* Makefile.in (ENCOBJS, EXTOBJS): New variables to specify static
+	  linked libraries. Also reintroduces extinit.o, introduces encinit.o
+	  introduces encinit.o
+
+	* common.mk: Builds static libraries rather than shared objects if
+	  specified.
+	
+	* configure.in (LD): new substitution.
+
+	* enc/depend: Supports static linked libraries
+	  (libencs, libenc, libtrans): New target.
+
+	* enc/encinit.c.erb: new template to generate the initialization of
+	  statically linked encodings.
+	
+	* enc/make_encmake.rb (--module): new flag to specify whether static
+	  or dynamic.
+	
+	* transcode_data.h (TRANS_INIT): New macro to get rid of the name
+	  collision of encoding initializers and transcoder initializers.
+
+	* ext/extmk.rb: Fixes the behavior on $extstatic is true.
+
+	* lib/mkmf.rb (clean-static): new target to clean up static linked
+	  libraries.
+
+	* ruby.c (process_options): New initializes statically linked
+	  encodings here.
+
 Wed May 16 14:30:43 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c: fixed a merge mistake of r33878, reported by nobu via IRC.

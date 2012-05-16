@@ -12,8 +12,7 @@
 
 <%= transcode_generated_code %>
 
-void
-Init_korean(void)
+TRANS_INIT(korean)
 {
 <%= transcode_register_code %>
 }

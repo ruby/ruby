@@ -291,6 +291,8 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_GCC_TRADITIONAL
 AC_SUBST(GCC)
+AC_CHECK_TOOL([LD], [ld], [ld])
+AC_SUBST(LD)
 if test "$GCC" = yes; then
     linker_flag=-Wl,
     : ${optflags=-O3}
@@ -2095,7 +2097,7 @@ if test "$with_dln_a_out" != yes; then
 
   AS_CASE(["$target_os"],
 	[hpux*], [	DLDFLAGS="$DLDFLAGS -E"
-			: ${LDSHARED='ld -b'}
+			: ${LDSHARED="$(LD) -b"}
 			XLDFLAGS="$XLDFLAGS -Wl,-E"
 			: ${LIBPATHENV=SHLIB_PATH}
 			if test "$rb_cv_prog_gnu_ld" = no; then
@@ -2114,17 +2116,17 @@ if test "$with_dln_a_out" != yes; then
 			    : ${LIBPATHENV=LD_LIBRARY_PATH_64}
 			fi
 			rb_cv_dlopen=yes],
-	[sunos*], [	: ${LDSHARED='ld -assert nodefinitions'}
+	[sunos*], [	: ${LDSHARED="$(LD) -assert nodefinitions"}
 			rb_cv_dlopen=yes],
-	[irix*], [	: ${LDSHARED='ld -shared'}
+	[irix*], [	: ${LDSHARED="$(LD) -shared"}
 			rb_cv_dlopen=yes],
-	[sysv4*], [	: ${LDSHARED='ld -G'}
+	[sysv4*], [	: ${LDSHARED="$(LD) -G"}
 			rb_cv_dlopen=yes],
 	[nto-qnx*], [	: ${LDSHARED='$(CC) -shared'}
 			rb_cv_dlopen=yes],
-	[esix*|uxpds*], [ : ${LDSHARED="ld -G"}
+	[esix*|uxpds*], [ : ${LDSHARED="$(LD) -G"}
 			rb_cv_dlopen=yes],
-	[osf*], [	: ${LDSHARED="ld -shared -expect_unresolved \"*\""}
+	[osf*], [	: ${LDSHARED="$(LD) -shared -expect_unresolved \"*\""}
 			rb_cv_dlopen=yes],
 	[bsdi3*], [	AS_CASE(["$CC"],
 			[*shlicc*], [	: ${LDSHARED='$(CC) -r'}
@@ -2145,7 +2147,7 @@ if test "$with_dln_a_out" != yes; then
 			    LDFLAGS="$LDFLAGS -rdynamic"
 			    DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$(.TARGET)'
 			else
-			  test "$GCC" = yes && test "$rb_cv_prog_gnu_ld" = yes || LDSHARED="ld -Bshareable"
+			  test "$GCC" = yes && test "$rb_cv_prog_gnu_ld" = yes || LDSHARED="$(LD) -Bshareable"
 			fi
 			rb_cv_dlopen=yes],
 	[openbsd*], [	: ${LDSHARED='$(CC) -shared ${CCDLFLAGS}'}
@@ -2179,12 +2181,12 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes],
 	[beos*], [	AS_CASE(["$target_cpu"],
 			  [powerpc*], [
-			    : ${LDSHARED="ld -xms"}
+			    : ${LDSHARED="$(LD) -xms"}
 			    DLDFLAGS="$DLDFLAGS "'-export Init_$(TARGET) -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o'
 			    LDFLAGS="$LDFLAGS -L/boot/home/config/lib -lbe -lroot"
 			    ],
 			  [i586*], [
-			    : ${LDSHARED="ld -shared"}
+			    : ${LDSHARED="$(LD) -shared"}
 			    DLDFLAGS="$DLDFLAGS -L/boot/develop/lib/x86 -L/boot/home/config/lib \$(topdir)/_APP_ -lbe -lroot"
 			    LDFLAGS="$LDFLAGS -L/boot/develop/lib/x86 -L/boot/home/config/lib -lbe -lroot"
 			    ])
@@ -2192,17 +2194,17 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes],
 	[haiku*], [	AS_CASE(["$target_cpu"],
 			  [powerpc*], [
-			    : ${LDSHARED="ld -xms"}
+			    : ${LDSHARED="$(LD) -xms"}
 			    DLDFLAGS="$DLDFLAGS "'-export Init_$(TARGET) -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o'
                             ],
 			  [i586*], [
-			    : ${LDSHARED="ld -shared"}
+			    : ${LDSHARED="$(LD) -shared"}
 			    DLDFLAGS="$DLDFLAGS -L/boot/develop/lib/x86 -lbe -lroot"
 			    ])
 			: ${LIBPATHENV=LIBRARY_PATH}
 			rb_cv_dlopen=yes ],
 	[nto-qnx*], [	DLDFLAGS="$DLDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
-			: ${LDSHARED='ld -Bshareable -x'}
+			: ${LDSHARED="$(LD) -Bshareable -x"}
 			LDFLAGS="$LDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
 			rb_cv_dlopen=yes],
 	[cygwin*|mingw*], [
@@ -2211,12 +2213,12 @@ if test "$with_dln_a_out" != yes; then
 			DLDFLAGS="${DLDFLAGS} -Wl,--enable-auto-image-base,--enable-auto-import"
 			: ${LIBPATHENV=""}
 			rb_cv_dlopen=yes],
-	[hiuxmpp], [	: ${LDSHARED='ld -r'}],
+	[hiuxmpp], [	: ${LDSHARED="$(LD) -r"}],
 	[atheos*], [	: ${LDSHARED='$(CC) -shared'}
 			rb_cv_dlopen=yes],
 	[os2-emx*], [	LDFLAGS="$LDFLAGS -Zomf"
 			],
-	[ 	: ${LDSHARED='ld'}])
+	[ 	: ${LDSHARED="$(LD)"}])
   AC_MSG_RESULT($rb_cv_dlopen)
 fi
 if test "${LDSHAREDXX}" = ""; then
@@ -2324,6 +2326,13 @@ AC_SUBST(EXTSTATIC)dnl
 AC_ARG_WITH(static-linked-ext,
 	    AS_HELP_STRING([--with-static-linked-ext], [link external modules statically]),
             [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static])])
+if test x"$EXTSTATIC" = xstatic; then
+  ENCOBJS='enc/encinit.$(OBJEXT) enc/libenc.a enc/libtrans.a'
+  EXTOBJS='ext/extinit.$(OBJEXT) ext/libext.a'
+  AC_DEFINE_UNQUOTED(EXTSTATIC, 1)
+fi
+AC_SUBST(ENCOBJS)
+AC_SUBST(EXTOBJS)
 
 AS_CASE(["$target_os"],
   dnl OS/2 environment w/ Autoconf 2.1x for EMX
@@ -2507,7 +2516,7 @@ AS_CASE("$enable_shared", [yes], [
   LIBRUBYARG_SHARED=
 
   # enable PIE if possible
-  if test "$GCC" = yes; then
+  if test "$GCC" = yes and -z "$EXTSTATIC"; then
     RUBY_TRY_CFLAGS(-fPIE, [pie=yes], [pie=no])
     if test "$pie" = yes; then
       RUBY_APPEND_OPTION(XCFLAGS, -fPIE)

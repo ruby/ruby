@@ -176,8 +176,7 @@ rb_to_GB18030 = {
 };
 
 
-void
-Init_gb18030(void)
+TRANS_INIT(gb18030)
 {
     rb_register_transcoder(&rb_from_GB18030);
     rb_register_transcoder(&rb_to_GB18030);

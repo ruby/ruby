@@ -110,6 +110,16 @@ struct rb_transcoder {
 void rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib);
 void rb_register_transcoder(const rb_transcoder *);
 
+/*
+ * To get rid of collision of initializer symbols in statically-linked encodings
+ * and transcoders
+ */
+#if defined(EXTSTATIC) && EXTSTATIC
+# define TRANS_INIT(name) void Init_trans_ ## name(void)
+#else
+# define TRANS_INIT(name) void Init_ ## name(void)
+#endif
+
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
 #endif

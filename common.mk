@@ -32,7 +32,6 @@ ID_H_TARGET   = -id.h-
 DMYEXT	      = dmyext.$(OBJEXT)
 NORMALMAINOBJ = main.$(OBJEXT)
 MAINOBJ       = $(NORMALMAINOBJ)
-EXTOBJS	      = 
 DLDOBJS	      = $(DMYEXT)
 MINIOBJS      = $(ARCHMINIOBJS) dmyencoding.$(OBJEXT) dmyversion.$(OBJEXT) miniprelude.$(OBJEXT)
 ENC_MK        = enc.mk
@@ -141,7 +140,7 @@ COMPILE_PRELUDE = $(MINIRUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb
 
 all: showflags main docs
 
-main: showflags encs exts
+main: showflags $(EXTSTATIC:static=lib)encs exts
 	@$(NULLCMD)
 
 .PHONY: showflags
@@ -168,12 +167,13 @@ exts: build-ext
 
 EXTS_MK = exts.mk
 $(EXTS_MK): $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)
+	$(ECHO) generating makefile $@
 	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$(EXTS_MK) $(EXTMK_ARGS) configure
 
 configure-ext: $(EXTS_MK)
 
 build-ext: $(EXTS_MK)
-	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS)
+	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS) $(EXTSTATIC)
 
 $(MKMAIN_CMD): $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)
 	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$@ $(EXTMK_ARGS)
@@ -206,7 +206,7 @@ Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb
 program: showflags $(PROGRAM)
 wprogram: showflags $(WPROGRAM)
 
-$(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
+$(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(ENCOBJS) $(SETUP) $(PREP)
 
 $(LIBRUBY_A):	$(OBJS) $(MAINOBJ) $(DMYEXT) $(ARCHFILE)
 
@@ -519,17 +519,21 @@ test-rubyspec: test-rubyspec-precheck
 	$(RUNRUBY) $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec $(MSPECOPT)
 
 encs: enc trans
-encs enc trans: showflags $(ENC_MK) $(LIBRUBY) $(PREP)
+libencs: libenc libtrans
+encs enc trans libencs libenc libtrans: showflags $(ENC_MK) $(LIBRUBY) $(PREP)
 	$(ECHO) making $@
-	$(Q) $(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) $@
+	$(Q) $(MAKE) -f $(ENC_MK) V="$(V)" \
+		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" \
+		$(MFLAGS) $@
 
-enc: {$(VPATH)}encdb.h
-trans: {$(VPATH)}transdb.h
+
+libenc enc: {$(VPATH)}encdb.h
+libtrans trans: {$(VPATH)}transdb.h
 
 $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
-	$(srcdir)/lib/mkmf.rb $(RBCONFIG)
+	$(srcdir)/enc/encinit.c.erb $(srcdir)/lib/mkmf.rb $(RBCONFIG)
 	$(ECHO) generating $@
-	$(Q) $(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" --builtin-transes="$(BUILTIN_TRANSOBJS)" $@ $(ENCS)
+	$(Q) $(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" --builtin-transes="$(BUILTIN_TRANSOBJS)" --module$(EXTSTATIC) $@ $(ENCS)
 
 .PRECIOUS: $(MKFILES)
 
@@ -832,6 +836,8 @@ encdb.h: $(PREP) $(srcdir)/tool/generic_erb.rb $(srcdir)/template/encdb.h.tmpl
 transdb.h: $(PREP) srcs-enc $(srcdir)/tool/generic_erb.rb $(srcdir)/template/transdb.h.tmpl
 	$(ECHO) generating $@
 	$(Q) $(MINIRUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/transdb.h.tmpl $(srcdir)/enc/trans enc/trans
+
+enc/encinit.c: $(ENC_MK) $(srcdir)/enc/encinit.c.erb
 
 known_errors.inc: $(srcdir)/template/known_errors.inc.tmpl $(srcdir)/defs/known_errors.def
 	$(ECHO) generating $@

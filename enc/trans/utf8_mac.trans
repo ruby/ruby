@@ -233,8 +233,7 @@ rb_from_UTF8_MAC = {
     from_utf8_mac_finish
 };
 
-void
-Init_utf8_mac(void)
+TRANS_INIT(utf8_mac)
 {
 <%= transcode_register_code %>
     rb_register_transcoder(&rb_from_UTF8_MAC);
