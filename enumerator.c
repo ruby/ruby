@@ -1205,6 +1205,32 @@ enum proc_entry_type {
     T_PROC_GREP       = 7
 };
 
+static void
+proc_entry_mark(void *p)
+{
+    struct proc_entry *ptr = p;
+    rb_gc_mark(ptr->proc);
+    rb_gc_mark(ptr->type);
+    rb_gc_mark(ptr->memo);
+}
+
+#define proc_entry_free RUBY_TYPED_DEFAULT_FREE
+
+static size_t
+proc_entry_memsize(const void *p)
+{
+    return p ? sizeof(struct proc_entry) : 0;
+}
+
+static const rb_data_type_t proc_entry_data_type = {
+    "proc_entry",
+    {
+	proc_entry_mark,
+	proc_entry_free,
+	proc_entry_memsize,
+    },
+};
+
 static VALUE
 process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
 {
@@ -1217,7 +1243,7 @@ process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
     long i = 0;
 
     for (i = 0; i < RARRAY_LEN(procs_array); i++) {
-        Data_Get_Struct(procs[i], struct proc_entry, entry);
+        TypedData_Get_Struct(procs[i], struct proc_entry, &proc_entry_data_type, entry);
         if (RTEST(move_next)) {
             switch ((enum proc_entry_type) entry->type) {
                 case T_PROC_MAP:
@@ -1363,9 +1389,8 @@ create_proc_entry(enum proc_entry_type proc_type, VALUE memo)
     struct proc_entry *entry;
     VALUE entry_obj;
 
-    entry_obj = Data_Make_Struct(rb_cObject, struct proc_entry,
-            0, RUBY_DEFAULT_FREE, entry);
-    Data_Get_Struct(entry_obj, struct proc_entry, entry);
+    entry_obj = TypedData_Make_Struct(rb_cObject, struct proc_entry,
+            &proc_entry_data_type, entry);
     if (rb_block_given_p()) {
         entry->proc = rb_block_proc();
     }
