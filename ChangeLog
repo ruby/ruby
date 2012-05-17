@@ -1,3 +1,8 @@
+Fri May 18 01:28:21 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c (transcode_string): fix encoding index names.
+	  Thanks markizko for reporting.
+
 Thu May 17 23:03:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: fix function name to be checked, to initialize
