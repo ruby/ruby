@@ -636,6 +636,7 @@ if $configure_only and $command_output
       mf.puts "EXTOBJS = "
       mf.puts "EXTLIBS = "
     end
+    mf.puts "EXTLDFLAGS = #{$extflags}"
     mf.puts
     targets = %w[all install static install-so install-rb clean distclean realclean]
     targets.each do |tgt|
@@ -649,7 +650,8 @@ if $configure_only and $command_output
     mf.puts
     mf.puts "#{rubies.join(' ')}: $(extensions:/.=/#{$force_static ? 'static' : 'all'})"
     rubies.each do |tgt|
-      mf.puts "#{tgt}:\n\t$(Q)$(MAKE) $(MFLAGS) EXTOBJS=\"$(EXTOBJS)\" EXTLIBS=\"$(EXTLIBS)\" $@"
+      mf.print "#{tgt}:\n\t$(Q)$(MAKE) "
+      mf.puts '$(MFLAGS) EXTOBJS="$(EXTOBJS)" EXTLIBS="$(EXTLIBS)" EXTLDFLAGS="$(EXTLDFLAGS)" $@'
     end
     mf.puts "ext/extinit.#{$OBJEXT}:\n\t$(Q)$(MAKE) $(MFLAGS) V=$(V) $@"
     mf.puts

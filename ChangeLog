@@ -1,3 +1,7 @@
+Thu May 17 10:34:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: EXTLDFLAGS also needs to be passed.
+
 Wed May 16 15:44:22 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* configure.in: Fix an unbalanced quote.
