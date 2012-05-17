@@ -27,6 +27,9 @@
 #if HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif
+#if defined(__native_client__) && defined(NACL_NEWLIB)
+# include "nacl/select.h"
+#endif
 
 static void native_mutex_lock(pthread_mutex_t *lock);
 static void native_mutex_unlock(pthread_mutex_t *lock);
@@ -137,9 +140,11 @@ static void
 gvl_init(rb_vm_t *vm)
 {
     native_mutex_initialize(&vm->gvl.lock);
+#ifdef HAVE_PTHREAD_CONDATTR_INIT
     native_cond_initialize(&vm->gvl.cond, RB_CONDATTR_CLOCK_MONOTONIC);
     native_cond_initialize(&vm->gvl.switch_cond, RB_CONDATTR_CLOCK_MONOTONIC);
     native_cond_initialize(&vm->gvl.switch_wait_cond, RB_CONDATTR_CLOCK_MONOTONIC);
+#endif
     vm->gvl.acquired = 0;
     vm->gvl.waiting = 0;
     vm->gvl.need_yield = 0;
@@ -148,9 +153,11 @@ gvl_init(rb_vm_t *vm)
 static void
 gvl_destroy(rb_vm_t *vm)
 {
+#ifdef HAVE_PTHREAD_CONDATTR_INIT
     native_cond_destroy(&vm->gvl.switch_wait_cond);
     native_cond_destroy(&vm->gvl.switch_cond);
     native_cond_destroy(&vm->gvl.cond);
+#endif
     native_mutex_destroy(&vm->gvl.lock);
 }
 
@@ -232,6 +239,9 @@ native_mutex_destroy(pthread_mutex_t *lock)
     }
 }
 
+#ifdef HAVE_PTHREAD_CONDATTR_INIT
+int pthread_condattr_init(pthread_condattr_t *attr);
+
 static void
 native_cond_initialize(rb_thread_cond_t *cond, int flags)
 {
@@ -266,6 +276,7 @@ native_cond_destroy(rb_thread_cond_t *cond)
 	rb_bug_errno("pthread_cond_destroy", r);
     }
 }
+#endif
 
 /*
  * In OS X 10.7 (Lion), pthread_cond_signal and pthread_cond_broadcast return
@@ -439,20 +450,26 @@ Init_native_thread(void)
 #ifdef USE_SIGNAL_THREAD_LIST
     native_mutex_initialize(&signal_thread_list_lock);
 #endif
+#ifndef __native_client__
     posix_signal(SIGVTALRM, null_func);
+#endif
 }
 
 static void
 native_thread_init(rb_thread_t *th)
 {
+#ifdef HAVE_PTHREAD_CONDATTR_INIT
     native_cond_initialize(&th->native_thread_data.sleep_cond, RB_CONDATTR_CLOCK_MONOTONIC);
+#endif
     ruby_thread_set_native(th);
 }
 
 static void
 native_thread_destroy(rb_thread_t *th)
 {
+#ifdef HAVE_PTHREAD_CONDATTR_INIT
     native_cond_destroy(&th->native_thread_data.sleep_cond);
+#endif
 }
 
 #define USE_THREAD_CACHE 0
@@ -1197,6 +1214,7 @@ thread_timer(void *p)
 static void
 rb_thread_create_timer_thread(void)
 {
+#ifndef __native_client__
     if (!timer_thread_id) {
 	pthread_attr_t attr;
 	int err;
@@ -1256,6 +1274,7 @@ rb_thread_create_timer_thread(void)
 	}
 	pthread_attr_destroy(&attr);
     }
+#endif
 }
 
 static int

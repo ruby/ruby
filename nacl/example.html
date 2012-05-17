@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ruby Example</title>
+
+  <script type="text/javascript">
+    RubyModule = null;  // Global application object.
+    statusText = 'NO-STATUS';
+    rubyReady = false;
+
+    // Indicate load success.
+    function moduleDidLoad() {
+      RubyModule = document.getElementById('ruby');
+      form = document.getElementById('source-form');
+      form.style.display = "block";
+      updateStatus('SUCCESS');
+    }
+
+    function evalSource() {
+      if (rubyReady) {
+        RubyModule.postMessage('eval:' + document.getElementById("source").value);
+      } else {
+        throw "Not yet ready";
+      }
+      return false;
+    }
+
+    function RubyError(message) {
+      this.message = message;
+      this.toString = function() {
+        return message;
+      }
+    }
+
+    function FatalError(message) {
+      this.message = message;
+    }
+
+    // The 'message' event handler.  This handler is fired when the NaCl module
+    // posts a message to the browser by calling PPB_Messaging.PostMessage()
+    // (in C) or pp::Instance.PostMessage() (in C++).  This implementation
+    // simply displays the content of the message in an alert panel.
+    function handleMessage(message_event) {
+      var raw = message_event.data;
+      var components;
+      if (raw.indexOf("error") == 0) {
+        components = raw.split(":", 2);
+        throw new RubyError(components[1]);
+      } else if (raw.indexOf("return") == 0) {
+        components = raw.split(":", 2);
+        document.getElementById("result").value = components[1];
+      } else if (raw == "rubyReady") {
+        rubyReady = true;
+      } else {
+        throw new FatalError(raw);
+      }
+    }
+
+    // If the page loads before the Native Client module loads, then set the
+    // status message indicating that the module is still loading.  Otherwise,
+    // do not change the status message.
+    function pageDidLoad() {
+      if (RubyModule == null) {
+        updateStatus('LOADING...');
+      } else {
+        // It's possible that the Native Client module onload event fired
+        // before the page's onload event.  In this case, the status message
+        // will reflect 'SUCCESS', but won't be displayed.  This call will
+        // display the current message.
+        updateStatus();
+      }
+    }
+
+    // Set the global status message.  If the element with id 'statusField'
+    // exists, then set its HTML to the status message as well.
+    // opt_message The message test.  If this is null or undefined, then
+    // attempt to set the element with id 'statusField' to the value of
+    // |statusText|.
+    function updateStatus(opt_message) {
+      if (opt_message)
+        statusText = opt_message;
+      var statusField = document.getElementById('status_field');
+      if (statusField) {
+        statusField.innerHTML = statusText;
+      }
+    }
+  </script>
+</head>
+<body onload="pageDidLoad()">
+
+<h1>Native Client Module Ruby</h1>
+<p>
+  <!-- Load the published .nexe.  This includes the 'nacl' attribute which
+  shows how to load multi-architecture modules.  Each entry in the "nexes"
+  object in the .nmf manifest file is a key-value pair: the key is the
+  instruction set architecture ('x86-32', 'x86-64', etc.); the value is a URL
+  for the desired NaCl module.
+  To load the debug versions of your .nexes, set the 'nacl' attribute to the
+  _dbg.nmf version of the manifest file.
+
+  Note: Since this NaCl module does not use any real-estate in the browser,
+  it's width and height are set to 0.
+
+  Note: The <EMBED> element is wrapped inside a <DIV>, which has both a 'load'
+  and a 'message' event listener attached.  This wrapping method is used
+  instead of attaching the event listeners directly to the <EMBED> element to
+  ensure that the listeners are active before the NaCl module 'load' event
+  fires.  This also allows you to use PPB_Messaging.PostMessage() (in C) or
+  pp::Instance.PostMessage() (in C++) from within the initialization code in
+  your NaCl module.
+  -->
+  <div id="listener">
+    <script type="text/javascript">
+      var listener = document.getElementById('listener');
+      listener.addEventListener('load', moduleDidLoad, true);
+      listener.addEventListener('message', handleMessage, true);
+    </script>
+
+    <embed name="nacl_module"
+       id="ruby"
+       width="0" height="0"
+       src="ruby.nmf"
+       type="application/x-nacl" />
+    <form id="source-form" action="#" method="post" style="display:none"
+      onsubmit="evalSource(); return false">
+      <table>
+        <tbody>
+          <tr>
+            <th>Source</th>
+            <td>
+              <textarea rows="10" cols="80" id="source"></textarea>
+              <input type="submit" />
+            </td>
+          </tr>
+          <tr>
+            <th>Result</th>
+            <td>
+              <textarea rows="10" cols="80" id="result"></textarea>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </form>
+  </div>
+</p>
+
+<h2>Status</h2>
+<div id="status_field">NO-STATUS</div>
+</body>
+</html>

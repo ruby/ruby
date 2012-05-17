@@ -530,7 +530,7 @@ unless $extlist.empty?
   list = $extlist.dup
   built = []
   while e = list.shift
-    s,t,i,r = e
+    s,t,i,r,os = e
     if r and !(r -= built).empty?
       l = list.size
       if (while l > 0; break true if r.include?(list[l-=1][1]) end)

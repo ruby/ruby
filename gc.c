@@ -33,6 +33,12 @@
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
+#if defined(__native_client__) && defined(NACL_NEWLIB)
+# include "nacl/resource.h"
+# undef HAVE_POSIX_MEMALIGN
+# undef HAVE_MEMALIGN
+
+#endif
 
 #if defined _WIN32 || defined __CYGWIN__
 #include <windows.h>

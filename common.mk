@@ -472,7 +472,7 @@ check-ruby: test test-ruby
 btest: $(TEST_RUNNABLE)-btest
 no-btest: PHONY
 yes-btest: miniruby$(EXEEXT) PHONY
-	$(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(MINIRUBY)" $(OPTS)
+	$(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(BTESTRUBY)" $(OPTS)
 
 btest-ruby: $(TEST_RUNNABLE)-btest-ruby
 no-btest-ruby: PHONY

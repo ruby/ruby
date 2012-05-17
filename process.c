@@ -62,6 +62,11 @@
 #endif
 
 #include <sys/stat.h>
+#if defined(__native_client__) && defined(NACL_NEWLIB)
+# include "nacl/stat.h"
+# include "nacl/unistd.h"
+#endif
+
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -1042,7 +1047,7 @@ security(const char *str)
     }
 }
 
-#ifdef HAVE_FORK
+#if defined(HAVE_FORK) && !defined(__native_client__)
 #define try_with_sh(prog, argv) ((saved_errno == ENOEXEC) ? exec_with_sh((prog), (argv)) : (void)0)
 static void
 exec_with_sh(const char *prog, char **argv)
@@ -1061,13 +1066,20 @@ exec_with_sh(const char *prog, char **argv)
 #define ALLOC_ARGV_WITH_STR(n, v, s, l) \
     (char **)(((s) = ALLOCV_N(char, (v), ARGV_SIZE(n) + (l)) + ARGV_SIZE(n)) - ARGV_SIZE(n))
 
+#ifdef __native_client__
+static int
+proc_exec_v(char **argv, const char *prog)
+{
+  rb_notimplement();
+}
+#else
 static int
 proc_exec_v(char **argv, const char *prog)
 {
     char fbuf[MAXPATHLEN];
-#if defined(__EMX__) || defined(OS2)
+# if defined(__EMX__) || defined(OS2)
     char **new_argv = NULL;
-#endif
+# endif
 
     if (!prog)
 	prog = argv[0];
@@ -1077,9 +1089,9 @@ proc_exec_v(char **argv, const char *prog)
 	return -1;
     }
 
-#if defined(__EMX__) || defined(OS2)
+# if defined(__EMX__) || defined(OS2)
     {
-#define COMMAND "cmd.exe"
+#  define COMMAND "cmd.exe"
 	char *extension;
 
 	if ((extension = strrchr(prog, '.')) != NULL && STRCASECMP(extension, ".bat") == 0) {
@@ -1104,18 +1116,19 @@ proc_exec_v(char **argv, const char *prog)
 	    }
 	}
     }
-#endif /* __EMX__ */
+# endif /* __EMX__ */
     before_exec();
     execv(prog, argv);
     preserving_errno(try_with_sh(prog, argv); after_exec());
-#if defined(__EMX__) || defined(OS2)
+# if defined(__EMX__) || defined(OS2)
     if (new_argv) {
 	xfree(new_argv[0]);
 	xfree(new_argv);
     }
-#endif
+# endif
     return -1;
 }
+#endif
 
 int
 rb_proc_exec_n(int argc, VALUE *argv, const char *prog)
@@ -1137,6 +1150,13 @@ rb_proc_exec_n(int argc, VALUE *argv, const char *prog)
     return ret;
 }
 
+#ifdef __native_client__
+int
+rb_proc_exec(const char *str)
+{
+  rb_notimplement();
+}
+#else
 int
 rb_proc_exec(const char *str)
 {
@@ -1206,6 +1226,7 @@ rb_proc_exec(const char *str)
     return ret;
 #endif	/* _WIN32 */
 }
+#endif
 
 enum {
     EXEC_OPTION_PGROUP,

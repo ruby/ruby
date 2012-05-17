@@ -1318,13 +1318,28 @@ dln_load(const char *file)
 # define RTLD_GLOBAL 0
 #endif
 
+#ifdef __native_client__
+	char* p, *orig;
+        if (file[0] == '.' && file[1] == '/') file+=2;
+	orig = strdup(file);
+	for (p = file; *p; ++p) {
+	    if (*p == '/') *p = '_';
+	}
+#endif
 	/* Load file */
 	if ((handle = (void*)dlopen(file, RTLD_LAZY|RTLD_GLOBAL)) == NULL) {
+#ifdef __native_client__
+            free(orig);
+#endif
 	    error = dln_strerror();
 	    goto failed;
 	}
 
 	init_fct = (void(*)())(VALUE)dlsym(handle, buf);
+#ifdef __native_client__
+	strcpy(file, orig);
+	free(orig);
+#endif
 #if defined __SYMBIAN32__
 	if (init_fct == NULL) {
 	    init_fct = (void(*)())dlsym(handle, "1"); /* Some Symbian versions do not support symbol table in DLL, ordinal numbers only */

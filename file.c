@@ -60,6 +60,13 @@ int flock(int, int);
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#if defined(__native_client__) && defined(NACL_NEWLIB)
+# include "nacl/utime.h"
+# include "nacl/stat.h"
+# include "nacl/unistd.h"
+#endif
+
+
 #ifdef HAVE_SYS_MKDEV_H
 #include <sys/mkdev.h>
 #endif
@@ -3358,7 +3365,11 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
                 struct stat sbuf;
                 int ret;
                 VALUE testpath2 = rb_str_encode_ospath(testpath);
+#ifdef __native_client__
+                ret = stat(RSTRING_PTR(testpath2), &sbuf);
+#else
                 ret = lstat(RSTRING_PTR(testpath2), &sbuf);
+#endif
                 if (ret == -1) {
                     if (errno == ENOENT) {
                         if (strict || !last || *unresolved_firstsep)
@@ -3403,6 +3414,13 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
     }
 }
 
+#ifdef __native_client__
+VALUE
+rb_realpath_internal(VALUE basedir, VALUE path, int strict)
+{
+    return path;
+}
+#else
 VALUE
 rb_realpath_internal(VALUE basedir, VALUE path, int strict)
 {
@@ -3476,6 +3494,7 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
     OBJ_TAINT(resolved);
     return resolved;
 }
+#endif
 
 /*
  * call-seq:
@@ -5142,6 +5161,9 @@ rb_path_check(const char *path)
 }
 
 #ifndef _WIN32
+#ifdef __native_client__
+__attribute__((noinline))
+#endif
 int
 rb_file_load_ok(const char *path)
 {

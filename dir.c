@@ -44,6 +44,10 @@
 #  include "win32/dir.h"
 # endif
 #endif
+#if defined(__native_client__) && defined(NACL_NEWLIB)
+# include "nacl/dirent.h"
+# include "nacl/stat.h"
+#endif
 
 #include <errno.h>
 

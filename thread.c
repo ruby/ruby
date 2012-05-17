@@ -2420,6 +2420,11 @@ rb_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src)
     memcpy(dst->fdset, src->fdset, size);
 }
 
+#ifdef __native_client__
+int select(int nfds, fd_set *readfds, fd_set *writefds,
+           fd_set *exceptfds, struct timeval *timeout);
+#endif
+
 int
 rb_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *exceptfds, struct timeval *timeout)
 {
@@ -3298,7 +3303,9 @@ mutex_free(void *ptr)
 	    if (err) rb_bug("%s", err);
 	}
 	native_mutex_destroy(&mutex->lock);
+#ifdef HAVE_PTHREAD_COND_INITIALIZE
 	native_cond_destroy(&mutex->cond);
+#endif
     }
     ruby_xfree(ptr);
 }
@@ -3333,7 +3340,9 @@ mutex_alloc(VALUE klass)
 
     obj = TypedData_Make_Struct(klass, rb_mutex_t, &mutex_data_type, mutex);
     native_mutex_initialize(&mutex->lock);
+#ifdef HAVE_PTHREAD_COND_INITIALIZE
     native_cond_initialize(&mutex->cond, RB_CONDATTR_CLOCK_MONOTONIC);
+#endif
     return obj;
 }
 
@@ -4781,4 +4790,3 @@ rb_reset_coverages(void)
     GET_VM()->coverages = Qfalse;
     rb_remove_event_hook(update_coverage);
 }
-

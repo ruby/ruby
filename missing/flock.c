@@ -1,7 +1,8 @@
 #include "ruby/config.h"
+#include "ruby/ruby.h"
 
 #if defined _WIN32
-#elif defined HAVE_FCNTL && defined HAVE_FCNTL_H
+#elif defined HAVE_FCNTL && defined HAVE_FCNTL_H && !defined(__native_client__)
 
 /* These are the flock() constants.  Since this sytems doesn't have
    flock(), the values of the constants are probably not available.

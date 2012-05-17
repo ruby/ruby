@@ -28,7 +28,9 @@
 #if defined HAVE_NET_SOCKET_H
 # include <net/socket.h>
 #elif defined HAVE_SYS_SOCKET_H
-# include <sys/socket.h>
+# ifndef __native_client__
+#  include <sys/socket.h>
+# endif
 #endif
 
 #if defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__EMX__) || defined(__BEOS__) || defined(__HAIKU__)
@@ -46,6 +48,9 @@
 #include <sys/types.h>
 #if defined(HAVE_SYS_IOCTL_H) && !defined(_WIN32)
 #include <sys/ioctl.h>
+#endif
+#if defined(__native_client__) && defined(NACL_NEWLIB)
+# include "nacl/ioctl.h"
 #endif
 #if defined(HAVE_FCNTL_H) || defined(_WIN32)
 #include <fcntl.h>
@@ -161,7 +166,7 @@ void
 rb_maygvl_fd_fix_cloexec(int fd)
 {
   /* MinGW don't have F_GETFD and FD_CLOEXEC.  [ruby-core:40281] */
-#ifdef F_GETFD
+#if defined(F_GETFD) && !defined(__native_client__)
     int flags, flags2, ret;
     flags = fcntl(fd, F_GETFD); /* should not fail except EBADF. */
     if (flags == -1) {
@@ -186,7 +191,6 @@ rb_fd_fix_cloexec(int fd)
     rb_maygvl_fd_fix_cloexec(fd);
     if (max_file_descriptor < fd) max_file_descriptor = fd;
 }
-
 
 int
 rb_cloexec_open(const char *pathname, int flags, mode_t mode)
@@ -1502,6 +1506,7 @@ rb_io_set_pos(VALUE io, VALUE offset)
 
 static void clear_readconv(rb_io_t *fptr);
 
+#if defined(HAVE_FSYNC) || !defined(_WIN32)
 /*
  *  call-seq:
  *     ios.rewind    -> 0
@@ -1540,6 +1545,7 @@ rb_io_rewind(VALUE io)
 
     return INT2FIX(0);
 }
+#endif
 
 static int
 io_fillbuf(rb_io_t *fptr)
@@ -1629,6 +1635,7 @@ rb_io_eof(VALUE io)
     return Qfalse;
 }
 
+#ifdef HAVE_FSYNC
 /*
  *  call-seq:
  *     ios.sync    -> true or false
@@ -1683,8 +1690,6 @@ rb_io_set_sync(VALUE io, VALUE sync)
     return sync;
 }
 
-#ifdef HAVE_FSYNC
-
 /*
  *  call-seq:
  *     ios.fsync   -> 0 or nil
@@ -1709,14 +1714,19 @@ rb_io_fsync(VALUE io)
 
     if (io_fflush(fptr) < 0)
         rb_sys_fail(0);
-#ifndef _WIN32	/* already called in io_fflush() */
+# ifndef _WIN32	/* already called in io_fflush() */
     if ((int)rb_thread_io_blocking_region(nogvl_fsync, fptr, fptr->fd) < 0)
 	rb_sys_fail_path(fptr->pathv);
-#endif
+# endif
     return INT2FIX(0);
 }
 #else
-#define rb_io_fsync rb_f_notimplement
+# define rb_io_fsync rb_f_notimplement
+# define rb_io_sync rb_f_notimplement
+static VALUE rb_io_set_sync(VALUE io, VALUE sync) {
+  rb_notimplement();
+  /* NEVER REACHED */ return Qundef;
+}
 #endif
 
 #ifdef HAVE_FDATASYNC
@@ -8200,10 +8210,10 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
 
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
  typedef unsigned long ioctl_req_t;
- #define NUM2IOCTLREQ(num) NUM2ULONG(num)
+# define NUM2IOCTLREQ(num) NUM2ULONG(num)
 #else
  typedef int ioctl_req_t;
- #define NUM2IOCTLREQ(num) NUM2INT(num)
+# define NUM2IOCTLREQ(num) NUM2INT(num)
 #endif
 
 struct ioctl_arg {

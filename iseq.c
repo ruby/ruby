@@ -1548,4 +1548,3 @@ Init_ISeq(void)
     rb_define_singleton_method(rb_cISeq, "disasm", iseq_s_disasm, 1);
     rb_define_singleton_method(rb_cISeq, "disassemble", iseq_s_disasm, 1);
 }
-

@@ -1,6 +1,53 @@
+Thu May 17 11:33:07 2012  Yuki Yugui Sonoda  <yugui@google.com>
+
+	Imports Ruby's port to NativeClient (a.k.a NaCl).
+	Patch by Google Inc. [ruby-core:45073].
+
+	* configure.in (RUBY_NACL): New M4 func to configure variables for
+	  NaCl.
+	  (RUBY_NACL_CHECK_PEPPER_TYPES): New M4 func to check the old names
+	  of Pepper interface types.
+	  (BTESTRUBY): New variable to specify which ruby should be run on
+	  "make btest". NaCl can run the built binary by sel_ldr, but it need
+	  rbconfig.rb. So this variable is distinguished from $MINIRUBY.
+	  
+	* thread_pthread.c: Disabled some features on NaCl.
+
+	* io.c: ditto.
+
+	* process.c: ditto.
+
+	* signal.c: ditto.
+
+	* file.c: ditto.
+
+	* missing/flock.c: ditto.
+
+	* nacl/pepper_main.c: An example implementation of Pepper application
+	  that embeds Ruby.
+
+	* nacl/example.html: An example of web page that uses the Pepper
+	  application.
+
+	* nacl/nacl-config.rb: Detects variants of NaCl SDK.
+
+	* nacl/GNUmakefile.in: Makefile template for NaCl specific build
+	  process.
+
+	* nacl/package.rb: script for packaging a NaCl-Ruby embedding
+	  application. 
+
+	* nacl/reate_nmf.rb: Wrapper script of create_nmf.py
+
+	* dln.c (dln_load): Added a hack to call on NaCl.
+
+	* util.c (ruby_getcwd): Path to the current directort is not available
+	  on NaCl.
+
 Thu May 17 10:54:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* ext/tk/extconf.rb: add -l options to $libs not $LDFLAGS, to be
+	* ext/tk/extconf.rb: add -l options to $libs not $LDFLAGS,
+	to be
 	  passed to EXTLIBS in exts.mk.
 
 	* enc/encinit.c.erb: use %-lines to adjust indent in the generated file.

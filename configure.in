@@ -51,6 +51,79 @@ target_cpu=x64
 ])
 ])
 
+AC_DEFUN([RUBY_NACL],
+[
+ AS_CASE(["${host_os}"], 
+[nacl], [
+  ac_cv_exeext=.nexe
+  host_vendor=chromium
+  ac_cv_host=chromium
+  AC_MSG_CHECKING([wheather \$NACL_SDK_ROOT is set])
+  if test x"${NACL_SDK_ROOT}" = x; then
+    AC_MSG_RESULT([no])
+    AC_MSG_ERROR([You need to set \$NACL_SDK_ROOT environment variable to build for NativeClient])
+  fi
+  AC_MSG_RESULT([yes])
+
+  nacl_cv_build_variant=glibc
+  AC_ARG_WITH(newlib,
+              AS_HELP_STRING([--with-newlib], [uses newlib version of NativeClient SDK]),
+              [AS_CASE([$withval],
+                       [no], [nacl_cv_build_variant=glibc],
+                       [yes], [nacl_cv_build_variant=newlib])])
+
+  AS_CASE(["$build_cpu"],
+          [x86_64|i?86], [nacl_cv_cpu_nick=x86], [nacl_cv_cpu_nick=$build_cpu])
+  AS_CASE(["$build_os"],
+          [linux*], [nacl_cv_os_nick=linux],
+          [darwin*], [nacl_cv_os_nick=mac],
+          [cygwin*|mingw*], [nacl_cv_os_nick=win],
+          [nacl_cv_os_nick=$build_os])
+
+  host="$host_cpu-chromium-$host_os-"
+  ac_tool_prefix="$host_cpu-nacl-"
+
+  AC_MSG_CHECKING([NativeClient toolchain])
+  if test -d \
+    "${NACL_SDK_ROOT}/toolchain/${nacl_cv_os_nick}_${nacl_cv_cpu_nick}_${nacl_cv_build_variant}"; then
+    NACL_TOOLCHAIN="${nacl_cv_os_nick}_${nacl_cv_cpu_nick}_${nacl_cv_build_variant}"
+  else
+    AS_CASE(
+      ["${nacl_cv_build_variant}"],
+      [glibc], [if test \
+        -d "${NACL_SDK_ROOT}/toolchain/${nacl_cv_os_nick}_${nacl_cv_cpu_nick}_newlib" \
+        -a -d "${NACL_SDK_ROOT}/toolchain/${nacl_cv_os_nick}_${nacl_cv_cpu_nick}"; then
+        NACL_TOOLCHAIN="${nacl_cv_os_nick}_${nacl_cv_cpu_nick}"
+      fi],
+      [newlib], [ NACL_TOOLCHAIN="${nacl_cv_os_nick}_${nacl_cv_cpu_nick}" ])
+  fi
+  if test ! -e "${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/${ac_tool_prefix}gcc"; then
+    if test "${build_cpu}" = i686 -a -e "${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/nacl-gcc"; then
+      ac_tool_prefix=nacl-
+    fi
+    if test "${build_cpu}" = x86_64 -a -e "${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/nacl-gcc"; then
+      ac_tool_prefix=nacl64-
+    fi
+  fi
+  if test -z "${NACL_TOOLCHAIN}"; then
+    AC_MSG_ERROR([Unrecognized --host and --build combination or NaCl SDK is not installed])
+  fi
+  PATH="${PATH}:${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin"
+  AC_MSG_RESULT(${NACL_TOOLCHAIN})
+
+  AC_SUBST(NACL_TOOLCHAIN)
+  AC_SUBST(NACL_SDK_ROOT)
+  AC_SUBST(NACL_SDK_VARIANT, nacl_cv_build_variant)
+])])
+
+AC_DEFUN([RUBY_NACL_CHECK_PEPPER_TYPES],
+[
+ AC_CHECK_TYPES([struct PPB_Core, struct PPB_Messaging, struct PPB_Var,
+              struct PPB_URLLoader, struct PPB_URLRequestInfo,
+              struct PPB_URLResponseInfo, struct PPB_FileRef,
+              struct PPP_Instance])
+])
+
 AC_DEFUN([RUBY_CPPOUTFILE],
 [AC_CACHE_CHECK(whether ${CPP} accepts -o, rb_cv_cppoutfile,
 [cppflags=$CPPFLAGS
@@ -283,6 +356,7 @@ if test -z "${CXXFLAGS+set}"; then
     cxxflags="$cxxflags "'${optflags} ${debugflags} ${warnflags}'
 fi
 
+RUBY_NACL
 if test x"${build}" != x"${host}"; then
   AC_CHECK_TOOL(CC, gcc)
 fi
@@ -377,6 +451,7 @@ AC_SUBST(MAKEDIRS)
 
 AC_CHECK_PROGS(DOT, dot)
 AC_CHECK_PROGS(DOXYGEN, doxygen)
+AS_CASE(["${host_os}"], [nacl], [AC_PATH_PROG(PYTHON, python)])
 
 AC_CHECK_PROG(PKG_CONFIG, pkg-config, [pkg-config], [], [],
     [`"$as_dir/$ac_word$ac_exec_ext" --print-errors --version > /dev/null 2>&1 || echo "$as_dir/$ac_word$ac_exec_ext"`])
@@ -509,7 +584,7 @@ if test "$GCC" = yes; then
 
     # -fstack-protector
     AS_CASE(["$target_os"],
-    [mingw*], [
+    [mingw*|nacl], [
 	stack_protector=no
     ],
     [
@@ -1135,6 +1210,14 @@ main()
 		],
 [superux*], [	ac_cv_func_setitimer=no
 		],
+[nacl], [
+  LIBS="-lm -lnosys $LIBS"
+  if test "${nacl_cv_build_variant}" = "newlib"; then
+    RUBY_APPEND_OPTION(CPPFLAGS, -DNACL_NEWLIB)
+  else
+    RUBY_APPEND_OPTION(XCFLAGS, -fPIC)
+  fi
+  ],
 [	LIBS="-lm $LIBS"])
 AC_CHECK_LIB(crypt, crypt)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
@@ -1201,6 +1284,9 @@ AC_CHECK_MEMBERS([struct stat.st_ctimensec])
 
 AC_CHECK_TYPES([struct timespec], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@include <time.h>
+@%:@endif
+@%:@ifdef HAVE_SYS_TIME_H
+@%:@include <sys/time.h>
 @%:@endif])
 
 AC_CHECK_TYPES([struct timezone], [], [], [@%:@ifdef HAVE_TIME_H
@@ -1262,6 +1348,8 @@ RUBY_DEFINT(uint128_t, 16, unsigned)
 RUBY_DEFINT(intptr_t, void*)
 RUBY_DEFINT(uintptr_t, void*, unsigned)
 RUBY_DEFINT(ssize_t, size_t, [], [@%:@include <sys/types.h>])	dnl may differ from int, so not use AC_TYPE_SSIZE_T.
+
+RUBY_NACL_CHECK_PEPPER_TYPES
 
 AC_CACHE_CHECK(for stack end address, rb_cv_stack_end_address,
 [rb_cv_stack_end_address=no
@@ -1451,11 +1539,11 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall __syscall chroot ge
 	      getpgrp setpgrp getpgid setpgid initgroups getgroups setgroups\
 	      getpriority getrlimit setrlimit sysconf close getpwnam_r getgrnam_r\
 	      dlopen sigprocmask sigaction sigsetjmp _setjmp _longjmp\
-	      setsid telldir seekdir fchmod cosh sinh tanh log2 round\
+	      setsid telldir seekdir fchmod cosh sinh tanh log2 round llabs\
 	      setuid setgid daemon select_large_fdset setenv unsetenv\
               mktime timegm gmtime_r clock_gettime gettimeofday poll ppoll\
               pread sendfile shutdown sigaltstack dl_iterate_phdr\
-              dup3 pipe2 posix_memalign memalign)
+              dup3 pipe2 posix_memalign memalign ioctl)
 
 AC_CACHE_CHECK(for unsetenv returns a value, rb_cv_unsetenv_return_value,
   [AC_TRY_COMPILE([
@@ -1917,7 +2005,8 @@ if test x"$enable_pthread" = xyes; then
 	pthread_getattr_np pthread_attr_get_np pthread_attr_getstack\
 	pthread_get_stackaddr_np pthread_get_stacksize_np \
 	thr_stksegment pthread_stackseg_np pthread_getthrds_np \
-	pthread_condattr_setclock pthread_sigmask)
+        pthread_cond_initialize pthread_condattr_setclock pthread_condattr_init \
+        pthread_sigmask)
 fi
 if test x"$ac_cv_header_ucontext_h" = xyes; then
     if test x"$rb_with_pthread" = xyes; then
@@ -2034,11 +2123,14 @@ if test "$rb_cv_binary_elf" = yes; then
   if test "$with_dln_a_out" = yes; then
     AC_MSG_ERROR(dln_a_out does not work with ELF)
   fi
-  AC_LIBOBJ([addr2line])
+  AC_CHECK_HEADERS([elf.h elf_abi.h])
+  if test $ac_cv_header_elf_h = yes -o $ac_cv_header_elf_abi_h = yes; then
+    AC_LIBOBJ([addr2line])
+  fi
 fi
 
 AS_CASE(["$target_os"],
-[linux* | gnu* | k*bsd*-gnu | bsdi* | kopensolaris*-gnu], [
+[linux* | gnu* | k*bsd*-gnu | bsdi* | kopensolaris*-gnu | nacl], [
     if test "$rb_cv_binary_elf" = no; then
 	with_dln_a_out=yes
     else
@@ -2218,6 +2310,7 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes],
 	[os2-emx*], [	LDFLAGS="$LDFLAGS -Zomf"
 			],
+        [nacl], [ LDSHARED='$(CC) -shared' ],
 	[ 	: ${LDSHARED='$(LD)'}])
   AC_MSG_RESULT($rb_cv_dlopen)
 fi
@@ -2342,6 +2435,9 @@ AS_CASE(["$target_os"],
   [*djgpp*], [
     setup=Setup.dj
     ],
+  [nacl], [
+    setup=Setup.nacl
+    ],
   [
     setup=Setup
     ])
@@ -2352,6 +2448,7 @@ if test "$prefix" = NONE; then
   prefix=$ac_default_prefix
 fi
 
+BTESTRUBY='$(MINIRUBY)'
 if test x"$cross_compiling" = xyes; then
   test x"$MINIRUBY" = x && MINIRUBY="${RUBY-$BASERUBY} -I`pwd` "-r'$(arch)-fake'
   XRUBY_LIBDIR=`${RUBY-$BASERUBY} -rrbconfig -e ['puts RbConfig::CONFIG["libdir"]']`
@@ -2364,6 +2461,20 @@ if test x"$cross_compiling" = xyes; then
   RUNRUBY='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
   XRUBY='$(MINIRUBY)'
   TEST_RUNNABLE=no
+
+  if test "$host_os" = "nacl"; then 
+      if test "$build_cpu" = "$host_cpu" || test "${nacl_cv_cpu_nick}" = "x86" -a "$host_cpu" = "i686"; then
+          nacl_cv_sel_ldr='`$(MINIRUBY) $(srcdir)/nacl/nacl-config.rb sel_ldr`'
+          nacl_cv_irt_core='`$(MINIRUBY) $(srcdir)/nacl/nacl-config.rb irt_core`'
+          nacl_cv_runnable_ld='`$(MINIRUBY) $(srcdir)/nacl/nacl-config.rb runnable_ld`'
+          nacl_cv_host_lib='`$(MINIRUBY) $(srcdir)/nacl/nacl-config.rb host_lib`'
+          TEST_RUNNABLE=yes
+          BTESTRUBY="${nacl_cv_sel_ldr} -a -B ${nacl_cv_irt_core} -w 1:3 -w 2:4"
+          BTESTRUBY="$BTESTRUBY -- ${nacl_cv_runnable_ld} --library-path ${nacl_cv_host_lib}"
+          BTESTRUBY="$BTESTRUBY `pwd`/"'miniruby$(EXEEXT) -I`cd $(srcdir)/lib; pwd` -I.'
+          BTESTRUBY="$BTESTRUBY"' -I$(EXTOUT)/common 3>&1 4>&2 1>/dev/null 2>/dev/null '
+      fi
+  fi
 else
   MINIRUBY='./miniruby$(EXEEXT) -I$(srcdir)/lib -I.'
   MINIRUBY="$MINIRUBY"' -I$(EXTOUT)/common'
@@ -2374,6 +2485,7 @@ else
 fi
 AC_SUBST(TEST_RUNNABLE)
 AC_SUBST(MINIRUBY)
+AC_SUBST(BTESTRUBY)
 AC_SUBST(PREP)
 AC_SUBST(RUNRUBY)
 AC_SUBST(XRUBY)
@@ -2600,6 +2712,7 @@ AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
 SYMBOL_PREFIX="$rb_cv_symbol_prefix"
 test "x$SYMBOL_PREFIX" = xNONE && SYMBOL_PREFIX=''
 MINIDLNOBJ=dmydln.o
+
 AS_CASE(["$target_os"],
     [linux*], [
 	],
@@ -2679,7 +2792,10 @@ AS_CASE(["$target_os"],
 	AS_CASE(["$YACC"],[*yacc*], [
 	    XCFLAGS="$XCFLAGS -DYYMAXDEPTH=300"
 	    YACC="$YACC -Nl40000 -Nm40000"
-	])])
+	])],
+    [nacl], [
+	FIRSTMAKEFILE=GNUmakefile:nacl/GNUmakefile.in
+	])
 MINIOBJS="$MINIDLNOBJ"
 
 AS_CASE(["$THREAD_MODEL"],

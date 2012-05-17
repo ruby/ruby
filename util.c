@@ -462,6 +462,15 @@ ruby_strdup(const char *str)
     return tmp;
 }
 
+#ifdef __native_client__
+char *
+ruby_getcwd(void)
+{
+    char *buf = xmalloc(2);
+    strcpy(buf, ".");
+    return buf;
+}
+#else
 char *
 ruby_getcwd(void)
 {
@@ -490,6 +499,7 @@ ruby_getcwd(void)
 #endif
     return buf;
 }
+#endif
 
 /****************************************************************
  *
