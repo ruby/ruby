@@ -1239,7 +1239,7 @@ static VALUE
 curses_pair_number(VALUE obj, VALUE attrs)
 {
     curses_stdscr();
-    return INT2FIX(PAIR_NUMBER(NUM2INT(attrs)));
+    return INT2FIX(PAIR_NUMBER(NUM2LONG(attrs)));
 }
 #endif /* USE_COLOR */
 
