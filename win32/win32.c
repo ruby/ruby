@@ -4131,7 +4131,8 @@ isUNCRoot(const WCHAR *path)
 	(dest).st_ctime = (src).st_ctime;	\
     } while (0)
 
-#ifdef __BORLANDC__
+static time_t filetime_to_unixtime(const FILETIME *ft);
+
 #undef fstat
 int
 rb_w32_fstat(int fd, struct stat *st)
@@ -4140,10 +4141,18 @@ rb_w32_fstat(int fd, struct stat *st)
     int ret = fstat(fd, st);
 
     if (ret) return ret;
+#ifdef __BORLANDC__
     st->st_mode &= ~(S_IWGRP | S_IWOTH);
-    if (GetFileInformationByHandle((HANDLE)_get_osfhandle(fd), &info) &&
-	!(info.dwFileAttributes & FILE_ATTRIBUTE_READONLY)) {
-	st->st_mode |= S_IWUSR;
+#endif
+    if (GetFileInformationByHandle((HANDLE)_get_osfhandle(fd), &info)) {
+#ifdef __BORLANDC__
+	if (!(info.dwFileAttributes & FILE_ATTRIBUTE_READONLY)) {
+	    st->st_mode |= S_IWUSR;
+	}
+#endif
+	st->st_atime = filetime_to_unixtime(&info.ftLastAccessTime);
+	st->st_mtime = filetime_to_unixtime(&info.ftLastWriteTime);
+	st->st_ctime = filetime_to_unixtime(&info.ftCreationTime);
     }
     return ret;
 }
@@ -4156,17 +4165,23 @@ rb_w32_fstati64(int fd, struct stati64 *st)
     int ret = fstat(fd, &tmp);
 
     if (ret) return ret;
+#ifdef __BORLANDC__
     tmp.st_mode &= ~(S_IWGRP | S_IWOTH);
+#endif
     COPY_STAT(tmp, *st, +);
     if (GetFileInformationByHandle((HANDLE)_get_osfhandle(fd), &info)) {
+#ifdef __BORLANDC__
 	if (!(info.dwFileAttributes & FILE_ATTRIBUTE_READONLY)) {
 	    st->st_mode |= S_IWUSR;
 	}
+#endif
 	st->st_size = ((__int64)info.nFileSizeHigh << 32) | info.nFileSizeLow;
+	st->st_atime = filetime_to_unixtime(&info.ftLastAccessTime);
+	st->st_mtime = filetime_to_unixtime(&info.ftLastWriteTime);
+	st->st_ctime = filetime_to_unixtime(&info.ftCreationTime);
     }
     return ret;
 }
-#endif
 
 static time_t
 filetime_to_unixtime(const FILETIME *ft)
@@ -5456,27 +5471,11 @@ rb_w32_write_console(uintptr_t strarg, int fd)
 static int
 unixtime_to_filetime(time_t time, FILETIME *ft)
 {
-    struct tm *tm;
-    SYSTEMTIME st;
-    FILETIME lt;
+    ULARGE_INTEGER tmp;
 
-    tm = localtime(&time);
-    if (!tm) {
-	return -1;
-    }
-    st.wYear = tm->tm_year + 1900;
-    st.wMonth = tm->tm_mon + 1;
-    st.wDayOfWeek = tm->tm_wday;
-    st.wDay = tm->tm_mday;
-    st.wHour = tm->tm_hour;
-    st.wMinute = tm->tm_min;
-    st.wSecond = tm->tm_sec;
-    st.wMilliseconds = 0;
-    if (!SystemTimeToFileTime(&st, &lt) ||
-	!LocalFileTimeToFileTime(&lt, ft)) {
-	errno = map_errno(GetLastError());
-	return -1;
-    }
+    tmp.QuadPart = ((LONG_LONG)time + (LONG_LONG)((1970-1601)*365.2425) * 24 * 60 * 60) * 10 * 1000 * 1000;
+    ft->dwLowDateTime = tmp.LowPart;
+    ft->dwHighDateTime = tmp.HighPart;
     return 0;
 }
 

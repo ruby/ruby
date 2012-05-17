@@ -1,3 +1,11 @@
+Fri May 18 00:04:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_fstat, rb_w32_fstati64): convert FILETIME
+	  to time_t directly, not to be affected by TZ unnecessarily.
+
+	* win32/win32.c (unixtime_to_filetime): convert time_t to FILETIME
+	  simply.
+
 Wed May 16 01:07:46 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/digest/md5/extconf.rb: use pkg_config for openssl so that

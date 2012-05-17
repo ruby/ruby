@@ -181,6 +181,26 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
+  def test_utime
+    bug6385 = '[ruby-core:44776]'
+
+    mod_time_contents = Time.at 1306527039
+
+    file = Tempfile.new("utime")
+    file.close
+    path = file.path
+
+    File.utime(File.atime(path), mod_time_contents, path)
+    stats = File.stat(path)
+
+    file.open
+    file_mtime = file.mtime
+    file.close(true)
+
+    assert_equal(mod_time_contents, file_mtime, bug6385)
+    assert_equal(mod_time_contents, stats.mtime, bug6385)
+  end
+
   def test_chmod_m17n
     bug5671 = '[ruby-dev:44898]'
     Dir.mktmpdir('test-file-chmod-m17n-') do |tmpdir|
