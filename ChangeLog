@@ -1,3 +1,8 @@
+Thu May 17 12:53:07 2012  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* thread.c, thread_pthread.c: Moved pthread-specific preprocessor
+	  hacks to thread_pthread.c
+
 Thu May 17 12:18:47 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* io.c: Fix a mistake on merging the patch in the previous commit.

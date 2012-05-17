@@ -245,6 +245,7 @@ int pthread_condattr_init(pthread_condattr_t *attr);
 static void
 native_cond_initialize(rb_thread_cond_t *cond, int flags)
 {
+#ifdef HAVE_PTHREAD_COND_INITIALIZE
     int r;
     pthread_condattr_t attr;
 
@@ -266,15 +267,18 @@ native_cond_initialize(rb_thread_cond_t *cond, int flags)
     }
 
     return;
- }
+#endif
+}
 
 static void
 native_cond_destroy(rb_thread_cond_t *cond)
 {
+#ifdef HAVE_PTHREAD_COND_INITIALIZE
     int r = pthread_cond_destroy(&cond->cond);
     if (r != 0) {
 	rb_bug_errno("pthread_cond_destroy", r);
     }
+#endif
 }
 #endif
 

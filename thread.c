@@ -3303,9 +3303,7 @@ mutex_free(void *ptr)
 	    if (err) rb_bug("%s", err);
 	}
 	native_mutex_destroy(&mutex->lock);
-#ifdef HAVE_PTHREAD_COND_INITIALIZE
 	native_cond_destroy(&mutex->cond);
-#endif
     }
     ruby_xfree(ptr);
 }
@@ -3340,9 +3338,7 @@ mutex_alloc(VALUE klass)
 
     obj = TypedData_Make_Struct(klass, rb_mutex_t, &mutex_data_type, mutex);
     native_mutex_initialize(&mutex->lock);
-#ifdef HAVE_PTHREAD_COND_INITIALIZE
     native_cond_initialize(&mutex->cond, RB_CONDATTR_CLOCK_MONOTONIC);
-#endif
     return obj;
 }
 
