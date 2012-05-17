@@ -1506,7 +1506,6 @@ rb_io_set_pos(VALUE io, VALUE offset)
 
 static void clear_readconv(rb_io_t *fptr);
 
-#if defined(HAVE_FSYNC)
 /*
  *  call-seq:
  *     ios.rewind    -> 0
@@ -1545,7 +1544,6 @@ rb_io_rewind(VALUE io)
 
     return INT2FIX(0);
 }
-#endif
 
 static int
 io_fillbuf(rb_io_t *fptr)
