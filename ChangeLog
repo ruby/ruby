@@ -1,3 +1,11 @@
+Thu May 17 23:03:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: fix function name to be checked, to initialize
+	  rb_thread_cond_t properly.
+
+	* thread_pthread.c (native_cond_initialize, native_cond_destroy):
+	  fix macro name.
+
 Thu May 17 12:53:07 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* thread.c, thread_pthread.c: Moved pthread-specific preprocessor
