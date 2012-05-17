@@ -96,6 +96,9 @@ with all sufficient information, see the ChangeLog file.
     * Shellwords#shelljoin() accepts non-string objects in the given
       array, each of which is stringified using to_s.
 
+* syslog
+  * Added Syslog::Logger which provides a Logger API atop Syslog.
+
 * lib/tmpdir.rb
   * incompatible changes:
     * Dir.mktmpdir uses FileUtils.remove_entry instead of

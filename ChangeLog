@@ -1,3 +1,10 @@
+Fri May 18 06:14:07 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/syslog/lib/syslog/logger.rb:  Added Syslog::Logger which was
+	  ported from the SyslogLogger gem.  [ruby-trunk - Feature #5096]
+	* NEWS:  ditto.
+	* test/syslog/test_syslog_logger.rb:  ditto.
+
 Fri May 18 01:28:21 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/parser.c (transcode_string): fix encoding index names.
