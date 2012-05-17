@@ -1,3 +1,7 @@
+Thu May 17 12:18:47 2012  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* io.c: Fix a mistake on merging the patch in the previous commit.
+
 Thu May 17 11:33:07 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	Imports Ruby's port to NativeClient (a.k.a NaCl).

@@ -1506,7 +1506,7 @@ rb_io_set_pos(VALUE io, VALUE offset)
 
 static void clear_readconv(rb_io_t *fptr);
 
-#if defined(HAVE_FSYNC) || !defined(_WIN32)
+#if defined(HAVE_FSYNC)
 /*
  *  call-seq:
  *     ios.rewind    -> 0
@@ -1635,7 +1635,6 @@ rb_io_eof(VALUE io)
     return Qfalse;
 }
 
-#ifdef HAVE_FSYNC
 /*
  *  call-seq:
  *     ios.sync    -> true or false
@@ -1658,6 +1657,8 @@ rb_io_sync(VALUE io)
     GetOpenFile(io, fptr);
     return (fptr->mode & FMODE_SYNC) ? Qtrue : Qfalse;
 }
+
+#ifdef HAVE_FSYNC
 
 /*
  *  call-seq:
