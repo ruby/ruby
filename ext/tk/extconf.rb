@@ -1463,7 +1463,7 @@ end
 def setup_for_macosx_framework(tclver, tkver)
   # use framework, but no tclConfig.sh
   unless $LDFLAGS && $LDFLAGS.include?('-framework')
-    ($LDFLAGS ||= "") << ' -framework Tk -framework Tcl'
+    ($LDFLAGS ||= "") << ' -framework=Tk -framework=Tcl'
   end
 
   if TkLib_Config["tcl-framework-header"]
@@ -1947,53 +1947,55 @@ if TkLib_Config["tcltk-framework"]
   puts("Use MacOS X Frameworks.")
   ($LDFLAGS ||= "") << " -L#{TkLib_Config["tcl-build-dir"].quote} -Wl,-R#{TkLib_Config["tcl-build-dir"].quote}" if TkLib_Config["tcl-build-dir"]
 
+  libs = ''
   if tcl_cfg_dir
     TclConfig_Info['TCL_LIBS'] ||= ""
     ($INCFLAGS ||= "") << ' ' << TclConfig_Info['TCL_INCLUDE_SPEC']
-    $LDFLAGS  << ' ' << TclConfig_Info['TCL_LIBS']
+    libs << ' ' << TclConfig_Info['TCL_LIBS']
     if stubs
       if TkLib_Config["tcl-build-dir"] &&
           TclConfig_Info['TCL_BUILD_STUB_LIB_SPEC'] &&
           !TclConfig_Info['TCL_BUILD_STUB_LIB_SPEC'].strip.empty?
-        $LDFLAGS << ' ' << TclConfig_Info['TCL_BUILD_STUB_LIB_SPEC']
+        libs << ' ' << TclConfig_Info['TCL_BUILD_STUB_LIB_SPEC']
       else
-        $LDFLAGS << ' ' << TclConfig_Info['TCL_STUB_LIB_SPEC']
+        libs << ' ' << TclConfig_Info['TCL_STUB_LIB_SPEC']
       end
     else
       if TkLib_Config["tcl-build-dir"] &&
           TclConfig_Info['TCL_BUILD_LIB_SPEC'] &&
           !TclConfig_Info['TCL_BUILD_LIB_SPEC'].strip.empty?
-        $LDFLAGS << ' ' << TclConfig_Info['TCL_BUILD_LIB_SPEC']
+        libs << ' ' << TclConfig_Info['TCL_BUILD_LIB_SPEC']
       else
-        $LDFLAGS << ' ' << TclConfig_Info['TCL_LIB_SPEC']
+        libs << ' ' << TclConfig_Info['TCL_LIB_SPEC']
       end
     end
   end
 
-  $LDFLAGS  << " -L#{TkLib_Config["tk-build-dir"].quote} -Wl,-R#{TkLib_Config["tk-build-dir"].quote}" if TkLib_Config["tk-build-dir"]
+  libs << " -L#{TkLib_Config["tk-build-dir"].quote} -Wl,-R#{TkLib_Config["tk-build-dir"].quote}" if TkLib_Config["tk-build-dir"]
 
   if tk_cfg_dir
     TkConfig_Info['TK_LIBS'] ||= ""
     ($INCFLAGS ||= "") << ' ' << TkConfig_Info['TK_INCLUDE_SPEC']
-    $LDFLAGS  << ' ' << TkConfig_Info['TK_LIBS']
+    libs << ' ' << TkConfig_Info['TK_LIBS']
     if stubs
       if TkLib_Config["tk-build-dir"] &&
           TclConfig_Info['TK_BUILD_STUB_LIB_SPEC'] &&
           !TclConfig_Info['TK_BUILD_STUB_LIB_SPEC'].strip.empty?
-        $LDFLAGS << ' ' << TkConfig_Info['TK_BUILD_STUB_LIB_SPEC']
+        libs << ' ' << TkConfig_Info['TK_BUILD_STUB_LIB_SPEC']
       else
-        $LDFLAGS << ' ' << TkConfig_Info['TK_STUB_LIB_SPEC']
+        libs << ' ' << TkConfig_Info['TK_STUB_LIB_SPEC']
       end
     else
       if TkLib_Config["tk-build-dir"] &&
           TclConfig_Info['TK_BUILD_LIB_SPEC'] &&
           !TclConfig_Info['TK_BUILD_LIB_SPEC'].strip.empty?
-        $LDFLAGS << ' ' << TkConfig_Info['TK_BUILD_LIB_SPEC']
+        libs << ' ' << TkConfig_Info['TK_BUILD_LIB_SPEC']
       else
-        $LDFLAGS << ' ' << TkConfig_Info['TK_LIB_SPEC']
+        libs << ' ' << TkConfig_Info['TK_LIB_SPEC']
       end
     end
   end
+  $LDFLAGS << ' ' << libs.gsub(/((?:\A|\s)-framework)\s/, '\1=') << ' -ltk -ltcl'
   setup_for_macosx_framework(tclver, tkver) if tcl_cfg_dir && tk_cfg_dir
 end
 

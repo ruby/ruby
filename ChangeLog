@@ -1,4 +1,9 @@
-Thu May 17 10:34:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu May 17 10:37:07 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#have_framework): combine -framework option
+	  and its argument with an equal sign not to be separated in merge_libs.
+
+	* ext/tk/extconf.rb: ditto.
 
 	* ext/extmk.rb: EXTLDFLAGS also needs to be passed.
 
