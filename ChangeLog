@@ -1,4 +1,7 @@
-Thu May 17 10:39:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu May 17 10:54:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/extconf.rb: add -l options to $libs not $LDFLAGS, to be
+	  passed to EXTLIBS in exts.mk.
 
 	* enc/encinit.c.erb: use %-lines to adjust indent in the generated file.
 
