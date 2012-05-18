@@ -224,7 +224,7 @@ def extmake(target)
     unless $destdir.to_s.empty? or $mflags.defined?("DESTDIR")
       args += [sysquote("DESTDIR=" + relative_from($destdir, "../"+prefix))]
     end
-    if $static and %r(\A-test-) !~ target and target != 'json' and ok
+    if $static and %r(\A-test-) !~ target and ok
       args += ["static"] unless $clean
       $extlist.push [$static, target, $target, $preload]
     end
