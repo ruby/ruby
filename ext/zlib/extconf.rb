@@ -15,7 +15,7 @@ if %w'z libz zlib1 zlib zdll'.find {|z| have_library(z, 'deflateReset')} and
 
   defines = []
 
-  message 'checking for kind of operating system... '
+  Logging::message 'checking for kind of operating system... '
   os_code = with_config('os-code') ||
     case RUBY_PLATFORM.split('-',2)[1]
     when 'amigaos' then
@@ -50,7 +50,7 @@ if %w'z libz zlib1 zlib zdll'.find {|z| have_library(z, 'deflateReset')} and
   unless OS_NAMES.key? os_code then
     raise "invalid OS_CODE `#{os_code}'"
   end
-  message "#{OS_NAMES[os_code]}\n"
+  Logging::message "#{OS_NAMES[os_code]}\n"
   defines << "OS_CODE=#{os_code}"
 
   $defs.concat(defines.collect{|d|' -D'+d})

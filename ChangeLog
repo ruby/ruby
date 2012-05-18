@@ -1,3 +1,8 @@
+Sat May 19 04:46:53 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/openssl/extconf.rb: Use Logging::message instead of message.
+	* ext/zlib/extconf.rb: ditto.
+
 Fri May 18 18:13:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#configuration): keep space at end of
