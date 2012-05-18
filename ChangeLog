@@ -1,3 +1,7 @@
+Fri May 18 15:54:07 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/zlib/extconf.rb: Use an exception instaed of bare puts.
+
 Fri May 18 15:53:05 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/psych/extconf.rb: Use an exception instaed of bare abort.

@@ -48,8 +48,7 @@ if %w'z libz zlib1 zlib zdll'.find {|z| have_library(z, 'deflateReset')} and
     'OS_UNKNOWN' => 'Unknown',
   }
   unless OS_NAMES.key? os_code then
-    puts "invalid OS_CODE `#{os_code}'"
-    exit
+    raise "invalid OS_CODE `#{os_code}'"
   end
   message "#{OS_NAMES[os_code]}\n"
   defines << "OS_CODE=#{os_code}"
