@@ -1,3 +1,8 @@
+Fri May 18 18:13:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#configuration): keep space at end of
+	  OUTFLAG and COUTFLAG.  [ruby-dev:45650]
+
 Fri May 11 14:09:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (PUSH): to prevent VALUE from GC,
