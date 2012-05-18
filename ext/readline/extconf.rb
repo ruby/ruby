@@ -40,14 +40,14 @@ when true
   unless (have_readline_header("editline/readline.h") ||
           have_readline_header("readline/readline.h")) &&
           have_library("edit", "readline")
-    exit
+    raise "libedit not found"
   end
 when false
   # --disable-libedit
   unless ((have_readline_header("readline/readline.h") &&
            have_readline_header("readline/history.h")) &&
            have_library("readline", "readline"))
-    exit
+    raise "readline not found"
   end
 else
   # does not specify
@@ -57,7 +57,7 @@ else
             have_library("edit", "readline"))) ||
             (have_readline_header("editline/readline.h") &&
              have_library("edit", "readline"))
-    exit
+    raise "readline nor libedit not found"
   end
 end
 

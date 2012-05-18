@@ -1,3 +1,7 @@
+Fri May 18 15:49:35 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/readline/extconf.rb: Use an exception instead of bare exit.
+
 Fri May 18 15:38:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/ripper/extconf.rb: Use an exception instead of bare
