@@ -1,3 +1,8 @@
+Fri May 18 15:23:06 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/openssl/extconf.rb: Clarify a message when hit Apple
+	  OpenSSL issue.
+
 Fri May 18 15:14:32 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/extmk.rb: Show a message when extconf.rb raised an exception.
