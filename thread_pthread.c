@@ -1252,14 +1252,18 @@ rb_thread_create_timer_thread(void)
 	    }
             rb_update_max_fd(timer_thread_pipe[0]);
             rb_update_max_fd(timer_thread_pipe[1]);
-#if defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL)
+#if defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) && defined(O_NONBLOCK)
 	    {
 		int oflags;
-#if defined(O_NONBLOCK)
+		int err;
+
 		oflags = fcntl(timer_thread_pipe[1], F_GETFL);
+		if (oflags == -1)
+		    rb_sys_fail(0);
 		oflags |= O_NONBLOCK;
-		fcntl(timer_thread_pipe[1], F_SETFL, oflags);
-#endif /* defined(O_NONBLOCK) */
+		err = fcntl(timer_thread_pipe[1], F_SETFL, oflags);
+		if (err == -1)
+		    rb_sys_fail(0);
 	    }
 #endif /* defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) */
 
