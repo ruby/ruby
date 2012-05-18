@@ -47,8 +47,13 @@
 #define RB_PAGE_SIZE (pagesize)
 #define RB_PAGE_MASK (~(RB_PAGE_SIZE - 1))
 static long pagesize;
-#define FIBER_MACHINE_STACK_ALLOCATION_SIZE  (0x10000)
-#endif
+
+ #if SIZEOF_VOIDP==8
+  #define FIBER_MACHINE_STACK_ALLOCATION_SIZE  (0x100000)
+ #else
+  #define FIBER_MACHINE_STACK_ALLOCATION_SIZE  (0x10000)
+ #endif
+#endif /*FIBER_USE_NATIVE*/
 
 #define CAPTURE_JUST_VALID_VM_STACK 1
 

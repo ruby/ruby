@@ -1,3 +1,8 @@
+Fri May 18 17:25:33 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* cont.c: bump up fiber machine stack size when running on 64bit
+	  arch. [Bug #6344] [ruby-dev:45554]
+
 Fri May 18 15:20:56 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic.build): duplicate args before adding
