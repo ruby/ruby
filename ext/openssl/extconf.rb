@@ -55,11 +55,10 @@ unless result
 end
 
 unless have_header("openssl/conf_api.h")
-  message "OpenSSL 0.9.6 or later required.\n"
-  exit 1
+  raise "OpenSSL 0.9.6 or later required."
 end
 unless OpenSSL.check_func("SSL_library_init()", "openssl/ssl.h")
-  abort "Ignore OpenSSL broken by Apple"
+  raise "Ignore OpenSSL broken by Apple"
 end
 
 message "=== Checking for OpenSSL features... ===\n"
