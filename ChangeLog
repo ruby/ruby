@@ -1,3 +1,17 @@
+Fri May 18 15:20:56 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic.build): duplicate args before adding
+	  new items. (don't change arguments)
+
+	* lib/uri/generic.rb (URI::Generic.build): use URI::Generic::COMPONENT
+	  if this method is called from URI::Generic.
+
+	* lib/uri/generic.rb (URI::Generic.build2): escape only if the item is
+	  a String.
+
+	* lib/uri/generic.rb (URI::Generic.build2): use DEFAULT_PARSER because
+	  it doesn't have parser method. [Bug #6420]
+
 Fri May 18 15:54:07 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/zlib/extconf.rb: Use an exception instaed of bare puts.

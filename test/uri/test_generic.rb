@@ -723,4 +723,13 @@ class URI::TestGeneric < Test::Unit::TestCase
     u.hostname = "::1"
     assert_equal("http://[::1]/bar", u.to_s)
   end
+
+  def test_build
+    URI::Generic.build(['http', nil, 'example.com', 80, nil, '/foo', nil, nil, nil])
+  end
+
+  def test_build2
+    URI::Generic.build2(path: "/foo bar/baz")
+    URI::Generic.build2(['http', nil, 'example.com', 80, nil, '/foo bar' , nil, nil, nil])
+  end
 end
