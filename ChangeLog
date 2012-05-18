@@ -34,15 +34,15 @@ Fri May 18 15:20:56 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Fri May 18 15:54:07 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* ext/zlib/extconf.rb: Use an exception instaed of bare puts.
+	* ext/zlib/extconf.rb: Use an exception instead of bare puts.
 
 Fri May 18 15:53:05 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* ext/psych/extconf.rb: Use an exception instaed of bare abort.
+	* ext/psych/extconf.rb: Use an exception instead of bare abort.
 
 Fri May 18 15:51:32 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* ext/fiddle/extconf.rb: Use an exception instaed of bare abort.
+	* ext/fiddle/extconf.rb: Use an exception instead of bare abort.
 
 Fri May 18 15:49:35 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
@@ -106,7 +106,7 @@ Thu May 17 11:33:07 2012  Yuki Yugui Sonoda  <yugui@google.com>
 	  (BTESTRUBY): New variable to specify which ruby should be run on
 	  "make btest". NaCl can run the built binary by sel_ldr, but it need
 	  rbconfig.rb. So this variable is distinguished from $MINIRUBY.
-	  
+
 	* thread_pthread.c: Disabled some features on NaCl.
 
 	* io.c: ditto.
@@ -131,20 +131,19 @@ Thu May 17 11:33:07 2012  Yuki Yugui Sonoda  <yugui@google.com>
 	  process.
 
 	* nacl/package.rb: script for packaging a NaCl-Ruby embedding
-	  application. 
+	  application.
 
 	* nacl/reate_nmf.rb: Wrapper script of create_nmf.py
 
 	* dln.c (dln_load): Added a hack to call on NaCl.
 
-	* util.c (ruby_getcwd): Path to the current directort is not available
+	* util.c (ruby_getcwd): Path to the current directory is not available
 	  on NaCl.
 
 Thu May 17 10:54:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/extconf.rb: add -l options to $libs not $LDFLAGS,
-	to be
-	  passed to EXTLIBS in exts.mk.
+	  to be passed to EXTLIBS in exts.mk.
 
 	* enc/encinit.c.erb: use %-lines to adjust indent in the generated file.
 
@@ -166,7 +165,7 @@ Wed May 16 15:43:10 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Wed May 16 15:15:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* configure.in (LD): enclose with single qoutes but not double quotes
+	* configure.in (LD): enclose with single quotes but not double quotes
 	  not to expand command substitution.
 
 Wed May 16 14:19:51 2012  Yuki Yugui Sonoda  <yugui@google.com>
