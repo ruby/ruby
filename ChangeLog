@@ -1,3 +1,8 @@
+Fri May 18 15:38:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/ripper/extconf.rb: Use an exception instead of bare
+	  Logging.message.
+
 Fri May 18 15:23:06 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/openssl/extconf.rb: Clarify a message when hit Apple
