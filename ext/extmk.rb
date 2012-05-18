@@ -234,7 +234,7 @@ def extmake(target)
     unless $destdir.to_s.empty? or $mflags.defined?("DESTDIR")
       args += [sysquote("DESTDIR=" + relative_from($destdir, "../"+prefix))]
     end
-    if $static and %r(\A-test-) !~ target and ok
+    if $static and ok and !$objs.empty? and !File.fnmatch?("-*", target)
       args += ["static"] unless $clean
       $extlist.push [$static, target, $target, $preload]
     end

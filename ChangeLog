@@ -1,3 +1,8 @@
+Fri May 18 17:41:00 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): link archives only, skip script only
+	  extension libraries.
+
 Fri May 18 17:25:33 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* cont.c: bump up fiber machine stack size when running on 64bit
