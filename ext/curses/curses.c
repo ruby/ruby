@@ -1666,6 +1666,7 @@ window_cury(VALUE obj)
 
     GetWINDOW(obj, winp);
     getyx(winp->window, y, x);
+    (void)x;
     return INT2FIX(y);
 }
 
@@ -1682,6 +1683,7 @@ window_curx(VALUE obj)
 
     GetWINDOW(obj, winp);
     getyx(winp->window, y, x);
+    (void)y;
     return INT2FIX(x);
 }
 
@@ -1702,6 +1704,7 @@ window_maxy(VALUE obj)
     {
 	int x, y;
 	getmaxyx(winp->window, y, x);
+	(void)x;
 	return INT2FIX(y);
     }
 #else
@@ -1726,6 +1729,7 @@ window_maxx(VALUE obj)
     {
 	int x, y;
 	getmaxyx(winp->window, y, x);
+	(void)y;
 	return INT2FIX(x);
     }
 #else
@@ -1747,10 +1751,11 @@ window_begy(VALUE obj)
     GetWINDOW(obj, winp);
 #ifdef getbegyx
     getbegyx(winp->window, y, x);
-    return INT2FIX(y);
+    (void)x;
 #else
-    return INT2FIX(winp->window->_begy);
+    y = winp->window->_begy;
 #endif
+    return INT2FIX(y);
 }
 
 /*
@@ -1767,10 +1772,11 @@ window_begx(VALUE obj)
     GetWINDOW(obj, winp);
 #ifdef getbegyx
     getbegyx(winp->window, y, x);
-    return INT2FIX(x);
+    (void)y;
 #else
-    return INT2FIX(winp->window->_begx);
+    x = winp->window->_begx;
 #endif
+    return INT2FIX(x);
 }
 
 /*
