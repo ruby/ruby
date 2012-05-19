@@ -2420,8 +2420,8 @@ AC_ARG_WITH(static-linked-ext,
 	    AS_HELP_STRING([--with-static-linked-ext], [link external modules statically]),
             [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static])])
 if test x"$EXTSTATIC" = xstatic; then
-  ENCOBJS='enc/encinit.$(OBJEXT) enc/libenc.a enc/libtrans.a'
-  EXTOBJS='ext/extinit.$(OBJEXT) ext/libext.a'
+  ENCOBJS='enc/encinit.$(OBJEXT) enc/libenc.$(LIBEXT) enc/libtrans.$(LIBEXT)'
+  EXTOBJS='ext/extinit.$(OBJEXT) ext/libext.$(LIBEXT)'
   AC_DEFINE_UNQUOTED(EXTSTATIC, 1)
 fi
 AC_SUBST(ENCOBJS)
