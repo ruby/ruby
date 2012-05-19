@@ -10,7 +10,8 @@
 
 void ruby_init_ext(const char *name, void (*init)(void));
 
-void Init_enc()
+void
+Init_enc(void)
 {
 % ENCS.each do |enc|
     init(Init_<%= enc %>, "enc/<%= enc %>.so");
