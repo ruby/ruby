@@ -2421,7 +2421,7 @@ AC_ARG_WITH(static-linked-ext,
             [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static])])
 if test x"$EXTSTATIC" = xstatic; then
   ENCOBJS='enc/encinit.$(OBJEXT) enc/libenc.$(LIBEXT) enc/libtrans.$(LIBEXT)'
-  EXTOBJS='ext/extinit.$(OBJEXT) ext/libext.$(LIBEXT)'
+  EXTOBJS='ext/extinit.$(OBJEXT)'
   AC_DEFINE_UNQUOTED(EXTSTATIC, 1)
 fi
 AC_SUBST(ENCOBJS)
