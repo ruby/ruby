@@ -54,7 +54,7 @@ module DRb
           return
         end
 
-        rsa = OpenSSL::PKey::RSA.new(512){|p, n|
+        rsa = OpenSSL::PKey::RSA.new(1024){|p, n|
           next unless self[:verbose]
           case p
           when 0; $stderr.putc "."  # BN_generate_prime

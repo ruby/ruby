@@ -1,7 +1,15 @@
+Sat May 19 14:42:20 2012  Tanaka Akira  <akr@fsij.org>
+
+	* lib/drb/ssl.rb: generate 1024 bits RSA key instead of 512 bits.
+	  OpenSSL 1.0.1 rejects 512 bits RSA key for TLS1.2 with SHA512.
+	  http://rt.openssl.org/Ticket/Display.html?id=2769&user=guest&pass=guest
+	  reported by Bohuslav Kabrda.
+	  [ruby-core:43844] [ruby-trunk - Bug #6221]
+
 Sat May 19 14:41:45 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/drb/drbtest.rb: rescue Errno::ESRCH for Process.kill.
-	  [ruby-dev:45551] reported by NARUSE, Yui.
+	  reported by NARUSE, Yui.  [ruby-dev:45551]
 
 Sat May 19 14:41:09 2012  Tanaka Akira  <akr@fsij.org>
 
