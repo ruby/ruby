@@ -1,3 +1,9 @@
+Sat May 19 14:39:50 2012  Tanaka Akira  <akr@fsij.org>
+
+	* lib/webrick/utils.rb: fix fcntl call.
+
+	* lib/drb/unix.rb: ditto.
+
 Fri May 18 18:13:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#configuration): keep space at end of
