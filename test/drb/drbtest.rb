@@ -11,7 +11,7 @@ class DRbService
   @@ruby += " -d" if $DEBUG
   def self.add_service_command(nm)
     dir = File.dirname(File.expand_path(__FILE__))
-    DRb::ExtServManager.command[nm] = "#{@@ruby} \"#{dir}/#{nm}\""
+    DRb::ExtServManager.command[nm] = [@@ruby, "#{dir}/#{nm}"]
   end
 
   %w(ut_drb.rb ut_array.rb ut_port.rb ut_large.rb ut_safe1.rb ut_eval.rb ut_eq.rb).each do |nm|
@@ -65,12 +65,20 @@ end
 
 module DRbCore
   def setup
-    @ext = DRbService.ext_service('ut_drb.rb')
+    @service_name = 'ut_drb.rb'
+    @ext = DRbService.ext_service(@service_name)
     @there = @ext.front
   end
 
   def teardown
-    @ext.stop_service if @ext
+    @ext.stop_service if defined?(@ext) && @ext
+    DRbService.manager.unregist(@service_name)
+    Thread.list.each {|th|
+      if th.respond_to?(:pid) && th[:drb_service] == @service_name
+        Process.kill :TERM, th.pid
+        th.join
+      end
+    }
   end
 
   def test_00_DRbObject
@@ -271,12 +279,20 @@ end
 
 module DRbAry
   def setup
-    @ext = DRbService.ext_service('ut_array.rb')
+    @service_name = 'ut_array.rb'
+    @ext = DRbService.ext_service(@service_name)
     @there = @ext.front
   end
 
   def teardown
-    @ext.stop_service if @ext
+    @ext.stop_service if defined?(@ext) && @ext
+    DRbService.manager.unregist(@service_name)
+    Thread.list.each {|th|
+      if th.respond_to?(:pid) && th[:drb_service] == @service_name
+        Process.kill :TERM, th.pid
+        th.join
+      end
+    }
   end
 
   def test_01

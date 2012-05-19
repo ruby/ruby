@@ -1,3 +1,16 @@
+Sat May 19 14:41:09 2012  Tanaka Akira  <akr@fsij.org>
+
+	* lib/drb/extservm.rb (DRb::ExtServManager): don't use /bin/sh to
+	  invoke service subprocess.  mark detach threads for clean up.
+
+	* test/drb/drbtest.rb: clean up the service subprocess in teardown.
+
+	* test/drb/test_drb.rb: set @service_name for teardown.
+
+	* test/drb/test_drbunix.rb: ditto.
+
+	* test/drb/test_drbssl.rb: ditto.
+
 Sat May 19 14:40:49 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/drb/ssl.rb: close accepted TCP socket if SSL accept is failed.
