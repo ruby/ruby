@@ -193,7 +193,7 @@ $(LIBRUBY_A):
 		@-$(RANLIB) $@ 2> /dev/null || true
 		$(ECHO) verifying static-library $@
 		@$(PURIFY) $(CC) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)conftest$(EXEEXT) $(LDFLAGS)
-		@$(RM) conftset$(EXEEXT) conftest.c
+		@$(RM) conftest$(EXEEXT) conftest.c
 
 $(LIBRUBY_SO):
 		@-$(PRE_LIBRUBY_UPDATE)
