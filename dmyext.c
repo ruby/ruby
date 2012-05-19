@@ -4,6 +4,6 @@ Init_ext(void)
 }
 
 void
-Init_enc()
+Init_enc(void)
 {
 }
