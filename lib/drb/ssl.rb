@@ -177,7 +177,11 @@ module DRb
         break if (@acl ? @acl.allow_socket?(soc) : true)
         soc.close
       end
-      ssl = @config.accept(soc)
+      begin
+	ssl = @config.accept(soc)
+      ensure
+        soc.close if $!
+      end
       self.class.new(uri, ssl, @config, true)
       rescue OpenSSL::SSL::SSLError
         warn("#{__FILE__}:#{__LINE__}: warning: #{$!.message} (#{$!.class})") if @config[:verbose]
