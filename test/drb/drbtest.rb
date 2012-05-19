@@ -75,7 +75,10 @@ module DRbCore
     DRbService.manager.unregist(@service_name)
     Thread.list.each {|th|
       if th.respond_to?(:pid) && th[:drb_service] == @service_name
-        Process.kill :TERM, th.pid
+        begin
+          Process.kill :TERM, th.pid
+        rescue Errno::ESRCH
+        end
         th.join
       end
     }
@@ -289,7 +292,10 @@ module DRbAry
     DRbService.manager.unregist(@service_name)
     Thread.list.each {|th|
       if th.respond_to?(:pid) && th[:drb_service] == @service_name
-        Process.kill :TERM, th.pid
+        begin
+          Process.kill :TERM, th.pid
+        rescue Errno::ESRCH
+        end
         th.join
       end
     }

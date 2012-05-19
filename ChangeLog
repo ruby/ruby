@@ -1,3 +1,8 @@
+Sat May 19 14:41:45 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/drb/drbtest.rb: rescue Errno::ESRCH for Process.kill.
+	  [ruby-dev:45551] reported by NARUSE, Yui.
+
 Sat May 19 14:41:09 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/drb/extservm.rb (DRb::ExtServManager): don't use /bin/sh to
