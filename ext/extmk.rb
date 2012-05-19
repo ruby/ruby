@@ -628,25 +628,25 @@ if $configure_only and $command_output
     mf.puts "MFLAGS = -$(MAKEFLAGS)" if $nmake
     mf.puts
 
-    mf.print "extensions ="
-    w = 12
-    exts.each do |d|
-      if d.size + w > 70
-        mf.print " \\\n\t    "
-        w = 12
+    def mf.macro(name, values, max = 70)
+      print name, " ="
+      w = w0 = name.size + 2
+      h = " \\\n" + "\t" * (w / 8) + " " * (w % 8)
+      values.each do |s|
+        if s.size + w > max
+          print h
+          w = w0
+        end
+        print " ", s
+        w += s.size + 1
       end
-      mf.print " #{d}"
-      w += d.size + 1
+      puts
     end
-    mf.puts
-    if !$extlist.empty?
-      mf.puts "EXTOBJS = ext/extinit.#{$OBJEXT} #{$extobjs.join(' ')}"
-      mf.puts "EXTLIBS = #{$extlibs.join(' ')}"
-    else
-      mf.puts "EXTOBJS = "
-      mf.puts "EXTLIBS = "
-    end
-    mf.puts "EXTLDFLAGS = #{$extflags}"
+
+    mf.macro "extensions", exts
+    mf.macro "EXTOBJS", $extlist.empty? ? [] : ["ext/extinit.#{$OBJEXT}", *$extobjs]
+    mf.macro "EXTLIBS", $extlibs
+    mf.macro "EXTLDFLAGS", $extflags.split
     mf.puts
     targets = %w[all install static install-so install-rb clean distclean realclean]
     targets.each do |tgt|
