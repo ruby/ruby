@@ -181,7 +181,7 @@ miniruby$(EXEEXT):
 $(PROGRAM):
 		@$(RM) $@
 		$(ECHO) linking $@
-		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(ENCOBJS) $(LIBRUBYARG) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
+		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
 		$(Q) $(POSTLINK)
 
 # We must `rm' the library each time this rule is invoked because "updating" a

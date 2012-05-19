@@ -654,16 +654,22 @@ if $configure_only and $command_output
     end
     mf.puts
     mf.puts "all: #{rubies.join(' ')}"
-    mf.puts "static: ext/extinit.#{$OBJEXT} #{rubies.join(' ')}"
+    mf.puts "static: #{rubies.join(' ')}"
     mf.puts "clean:\n\t-$(Q)$(RM) ext/extinit.#{$OBJEXT}"
     mf.puts "distclean:\n\t-$(Q)$(RM) ext/extinit.c"
     mf.puts
     mf.puts "#{rubies.join(' ')}: $(extensions:/.=/#{$force_static ? 'static' : 'all'})"
     rubies.each do |tgt|
       mf.print "#{tgt}:\n\t$(Q)$(MAKE) "
-      mf.puts '$(MFLAGS) EXTOBJS="$(EXTOBJS)" EXTLIBS="$(EXTLIBS)" EXTLDFLAGS="$(EXTLDFLAGS)" $@'
+      mf.print "$(MFLAGS) "
+      if enable_config("shared", $enable_shared)
+        mf.print %[DLDOBJS="$(EXTOBJS)" SOLIBS="$(ENCOBJS) $(EXTLIBS)" ]
+        mf.print 'LIBRUBY_SO_UPDATE=$(LIBRUBY_EXTS) '
+      else
+        mf.print %[EXTOBJS="$(EXTOBJS)" EXTLIBS="$(EXTLIBS)" ]
+      end
+      mf.puts 'EXTLDFLAGS="$(EXTLDFLAGS)" $@'
     end
-    mf.puts "ext/extinit.#{$OBJEXT}:\n\t$(Q)$(MAKE) $(MFLAGS) V=$(V) $@"
     mf.puts
     exec = config_string("exec") {|str| str + " "}
     targets.each do |tgt|

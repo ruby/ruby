@@ -1,4 +1,11 @@
-Sat May 19 11:36:22 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat May 19 11:37:18 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, common.mk (PROGRAM): no extension libraries.
+
+	* common.mk (build-ext): pass macros for libruby.so.
+
+	* ext/extmk.rb (command_output): link extension libraries and encoding
+	  libraries into libruby.so, not ruby executable.
 
 	* ext/extmk.rb (command_output): fold long macro lines.
 

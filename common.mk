@@ -32,6 +32,7 @@ ID_H_TARGET   = -id.h-
 DMYEXT	      = dmyext.$(OBJEXT)
 NORMALMAINOBJ = main.$(OBJEXT)
 MAINOBJ       = $(NORMALMAINOBJ)
+EXTOBJS	      =
 DLDOBJS	      = $(DMYEXT)
 MINIOBJS      = $(ARCHMINIOBJS) dmyencoding.$(OBJEXT) dmyversion.$(OBJEXT) miniprelude.$(OBJEXT)
 ENC_MK        = enc.mk
@@ -173,7 +174,7 @@ $(EXTS_MK): $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)
 configure-ext: $(EXTS_MK)
 
 build-ext: $(EXTS_MK)
-	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS) $(EXTSTATIC)
+	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS) $(EXTSTATIC) LIBRUBY_EXTS=$(LIBRUBY_EXTS) ENCOBJS="$(ENCOBJS)"
 
 $(MKMAIN_CMD): $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)
 	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$@ $(EXTMK_ARGS)
@@ -206,7 +207,7 @@ Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb
 program: showflags $(PROGRAM)
 wprogram: showflags $(WPROGRAM)
 
-$(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(ENCOBJS) $(SETUP) $(PREP)
+$(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
 
 $(LIBRUBY_A):	$(OBJS) $(MAINOBJ) $(DMYEXT) $(ARCHFILE)
 
