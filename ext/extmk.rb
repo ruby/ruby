@@ -644,7 +644,7 @@ if $configure_only and $command_output
     end
 
     mf.macro "extensions", exts
-    mf.macro "EXTOBJS", $extlist.empty? ? [] : ["ext/extinit.#{$OBJEXT}", *$extobjs]
+    mf.macro "EXTOBJS", $extlist.empty? ? ["dmyext.#{$OBJEXT}"] : ["ext/extinit.#{$OBJEXT}", *$extobjs]
     mf.macro "EXTLIBS", $extlibs
     mf.macro "EXTLDFLAGS", $extflags.split
     mf.puts

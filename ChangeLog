@@ -1,4 +1,7 @@
-Sat May 19 11:37:18 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat May 19 14:57:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (command_output): dmyext is needed as DLDOBJS if no
+	  static lined extensions.
 
 	* Makefile.in, common.mk (PROGRAM): no extension libraries.
 
