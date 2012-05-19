@@ -666,7 +666,7 @@ if $configure_only and $command_output
         mf.print %[DLDOBJS="$(EXTOBJS)" SOLIBS="$(ENCOBJS) $(EXTLIBS)" ]
         mf.print 'LIBRUBY_SO_UPDATE=$(LIBRUBY_EXTS) '
       else
-        mf.print %[EXTOBJS="$(EXTOBJS)" EXTLIBS="$(EXTLIBS)" ]
+        mf.print %[EXTOBJS="$(EXTOBJS) $(ENCOBJS)" EXTLIBS="$(EXTLIBS)" ]
       end
       mf.puts 'EXTLDFLAGS="$(EXTLDFLAGS)" $@'
     end
