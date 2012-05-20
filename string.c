@@ -4967,6 +4967,7 @@ trnext(struct tr *t, rb_encoding *enc)
 
     for (;;) {
 	if (!t->gen) {
+nextpart:
 	    if (t->p == t->pend) return -1;
 	    if (rb_enc_ascget(t->p, t->pend, &n, enc) == '\\' && t->p + n < t->pend) {
 		t->p += n;
@@ -4995,12 +4996,20 @@ trnext(struct tr *t, rb_encoding *enc)
 	    }
 	    return t->now;
 	}
-	else if (++t->now < t->max) {
-	    return t->now;
-	}
 	else {
-	    t->gen = 0;
-	    return t->max;
+	    while (ONIGENC_CODE_TO_MBCLEN(enc, ++t->now) <= 0) {
+		if (t->now == t->max) {
+		    t->gen = 0;
+		    goto nextpart;
+		}
+	    }
+	    if (t->now < t->max) {
+		return t->now;
+	    }
+	    else {
+		t->gen = 0;
+		return t->max;
+	    }
 	}
     }
 }

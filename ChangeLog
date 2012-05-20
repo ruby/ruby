@@ -1,3 +1,11 @@
+Sun May 20 21:36:39 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/shift_jis.c (code_to_mbclen): return
+	  ONIGERR_INVALID_CODE_POINT_VALUE if the code is invalid.
+
+	* enc/shift_jis.c (tr_next): increment character until the code
+	  is a valid character. [ruby-dev:45652] [Bug #6450]
+
 Sun May 20 12:25:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (LIBRUBY_SO): link EXTSOLIBS too.

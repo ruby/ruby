@@ -230,6 +230,9 @@ code_to_mbclen(OnigCodePoint code, OnigEncoding enc ARG_UNUSED)
       return ONIGERR_INVALID_CODE_POINT_VALUE;
   }
   else if (code <= 0xffff) {
+    int low = code & 0xff;
+    if (low < 0x40 || low == 0x7f || 0xfc < low)
+      return ONIGERR_INVALID_CODE_POINT_VALUE;
     return 2;
   }
   else
