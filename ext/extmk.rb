@@ -56,7 +56,7 @@ def system(*args)
     if args.size == 1
       puts args
     else
-      puts args.map{|arg| Shellwords.escape(arg)}.join(' ')
+      puts Shellwords.join(args)
     end
   end
   super
