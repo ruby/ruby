@@ -222,6 +222,9 @@ RFLAGS = -r
 !if !defined(EXTLIBS)
 EXTLIBS =
 !endif
+!if !defined(EXTSOLIBS)
+EXTSOLIBS =
+!endif
 !if !defined(LIBS)
 LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib imagehlp.lib $(EXTLIBS)
 !endif

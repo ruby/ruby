@@ -34,6 +34,7 @@ NORMALMAINOBJ = main.$(OBJEXT)
 MAINOBJ       = $(NORMALMAINOBJ)
 EXTOBJS	      =
 DLDOBJS	      = $(DMYEXT)
+EXTSOLIBS     =
 MINIOBJS      = $(ARCHMINIOBJS) dmyencoding.$(OBJEXT) dmyversion.$(OBJEXT) miniprelude.$(OBJEXT)
 ENC_MK        = enc.mk
 

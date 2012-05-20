@@ -1,3 +1,10 @@
+Sun May 20 12:25:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (LIBRUBY_SO): link EXTSOLIBS too.
+
+	* ext/extmk.rb (mf.macro): use EXTSOLIBS instead of SOLIBS to get rid
+	  of discard libraries needed by default.  [Bug #6462]
+
 Sat May 19 19:04:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (command_output): ENCOBJS is needed for all linked
