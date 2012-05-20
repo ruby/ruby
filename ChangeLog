@@ -24,7 +24,7 @@ Sat May 19 19:04:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  ruby, if --disable-shared and --with-static-linked-ext.
 
 	* ext/extmk.rb (command_output): dmyext is needed as DLDOBJS if no
-	  static lined extensions.
+	  static linked extensions.
 
 	* Makefile.in, common.mk (PROGRAM): no extension libraries.
 
