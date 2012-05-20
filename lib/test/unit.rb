@@ -686,7 +686,7 @@ module Test
           @output = StatusLineOutput.new(self)
         end
         if /\A\/(.*)\/\z/ =~ (filter = options[:filter])
-          options[:filter] = filter = Regexp.new($1)
+          filter = Regexp.new($1)
         end
         type = "#{type}_methods"
         total = if filter
