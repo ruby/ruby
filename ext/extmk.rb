@@ -187,15 +187,18 @@ def extmake(target)
 	  Logging::logfile 'mkmf.log'
 	  rm_f makefile
 	  if conf
+            stdout = $stdout.dup
+            stderr = $stderr.dup
             unless verbose?
-              stdout, $stdout = $stdout, File.open(File::NULL, "a")
-            else
-              stdout = $stdout
+              $stderr.reopen($stdout.reopen(File::NULL))
             end
             begin
               load $0 = conf
             ensure
-              $stdout = stdout
+              $stderr.reopen(stderr)
+              $stdout.reopen(stdout)
+              stdout.close
+              stderr.close
             end
 	  else
 	    create_makefile(target)

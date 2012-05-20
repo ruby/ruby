@@ -1,3 +1,8 @@
+Sun May 20 23:00:11 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): reopen $stdout to NULL, since setting
+	  $stdout cannot affect child processes.
+
 Sun May 20 21:36:39 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/shift_jis.c (code_to_mbclen): return
