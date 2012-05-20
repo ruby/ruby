@@ -271,6 +271,8 @@ class FTPTest < Test::Unit::TestCase
         end
         conn.print(l, "\r\n")
       end
+      conn.shutdown(Socket::SHUT_WR)
+      conn.read
       conn.close
       sock.print("226 Directory send OK.\r\n")
     }
@@ -398,6 +400,7 @@ class FTPTest < Test::Unit::TestCase
             buf << s
           end
         end
+        assert_equal(1024, buf.bytesize)
         assert_equal(binary_data[0, 1024], buf)
         assert_match(/\APORT /, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
@@ -434,6 +437,8 @@ class FTPTest < Test::Unit::TestCase
         sleep(0.1)
         conn.print(s)
       end
+      conn.shutdown(Socket::SHUT_WR)
+      conn.read
       conn.close
       sock.print("226 Transfer complete.\r\n")
     }
@@ -450,6 +455,7 @@ class FTPTest < Test::Unit::TestCase
         ftp.retrbinary("RETR foo", 1024) do |s|
           buf << s
         end
+        assert_equal(binary_data.bytesize, buf.bytesize)
         assert_equal(binary_data, buf)
         assert_match(/\APORT /, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)

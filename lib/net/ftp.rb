@@ -433,6 +433,8 @@ module Net
         end
         conn = BufferedSocket.new(sock.accept)
         conn.read_timeout = @read_timeout
+        sock.shutdown(Socket::SHUT_WR)
+        sock.read rescue nil
         sock.close
       end
       return conn
@@ -487,6 +489,9 @@ module Net
             break if data == nil
             yield(data)
           end
+          conn.shutdown(Socket::SHUT_WR)
+          conn.read_timeout = 1
+          conn.read
           conn.close
           voidresp
         end
@@ -508,6 +513,9 @@ module Net
             break if line == nil
             yield(line.sub(/\r?\n\z/, ""), !line.match(/\n\z/).nil?)
           end
+          conn.shutdown(Socket::SHUT_WR)
+          conn.read_timeout = 1
+          conn.read
           conn.close
           voidresp
         end
