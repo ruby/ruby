@@ -992,6 +992,7 @@ class TestPathname < Test::Unit::TestCase
     with_tmpchdir('rubytest-pathname') {|dir|
       open("f", "w") {|f| f.write "abc" }
       assert_equal(true, Pathname("f").exist?)
+      assert_equal(true, Pathname("f").exists?)
     }
   end
 
