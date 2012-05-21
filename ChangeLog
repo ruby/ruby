@@ -1,3 +1,8 @@
+Mon May 21 12:44:11 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* .travis.yml (install): It seems tcl/tk is skipped in Travis
+	  CI. Trying to fix the situation.
+
 Mon May 21 12:11:25 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/depend (ENCOBJS): add dependencies.

@@ -1,4 +1,7 @@
 # no installation...
+
+# 1.9.1 is OK, since it is the most adopted version
+install: "sudo apt-get build-dep ruby1.9.1"
 before_script: autoconf
 script: "./configure && make all test"
 
