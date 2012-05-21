@@ -313,24 +313,17 @@ static VALUE mSyslog_log(int argc, VALUE *argv, VALUE self)
  */
 static VALUE mSyslog_inspect(VALUE self)
 {
-    char buf[1024];
-
     Check_Type(self, T_MODULE);
 
-    if (syslog_opened) {
-	snprintf(buf, sizeof(buf),
-	  "<#%s: opened=true, ident=\"%s\", options=%d, facility=%d, mask=%d>",
-	  rb_class2name(self),
-	  syslog_ident,
-	  syslog_options,
-	  syslog_facility,
-	  syslog_mask);
-    } else {
-	snprintf(buf, sizeof(buf),
-	  "<#%s: opened=false>", rb_class2name(self));
-    }
+    if (!syslog_opened)
+	return rb_sprintf("<#%s: opened=false>", rb_class2name(self));
 
-    return rb_str_new2(buf);
+    return rb_sprintf("<#%s: opened=true, ident=\"%s\", options=%d, facility=%d, mask=%d>",
+		      rb_class2name(self),
+		      syslog_ident,
+		      syslog_options,
+		      syslog_facility,
+		      syslog_mask);
 }
 
 /* Returns self, for backward compatibility.
