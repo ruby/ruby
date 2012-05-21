@@ -48,8 +48,32 @@ def target_encodings
   encs.reject! {|e| !ENC_PATTERNS.any? {|p| File.fnmatch?(p, e)}} if !ENC_PATTERNS.empty?
   encs.reject! {|e| NOENC_PATTERNS.any? {|p| File.fnmatch?(p, e)}}
   encs = encs.sort_by(&ALPHANUMERIC_ORDER)
-  encs.unshift(encs.delete("encdb"))
-  return encs
+  deps = Hash.new {[]}
+  inc_srcs = Hash.new {[]}
+  default_deps = %w[regenc.h oniguruma.h config.h defines.h]
+  db = encs.delete("encdb")
+  encs.each do |e|
+    File.foreach("#$srcdir/#{e}.c") do |l|
+      if /^\s*#\s*include\s+(?:"([^\"]+)"|<(ruby\/\sw+.h)>)/ =~ l
+        n = $1 || $2
+        if /\.c$/ =~ n
+          inc_srcs[e] <<= $`
+          n = "enc/#{n}"
+        end
+        deps[e] <<= n unless default_deps.include?(n)
+      end
+    end
+  end
+  class << inc_srcs; self; end.class_eval do
+    define_method(:expand) do |d|
+      d.map {|n| deps[n] | self.expand(self[n])}.flatten
+    end
+  end
+  inc_srcs.each do |e, d|
+    deps[e].concat(inc_srcs.expand(d))
+  end
+  encs.unshift(db)
+  return encs, deps
 end
 
 def target_transcoders
@@ -79,7 +103,7 @@ end
 
 # Constants that "depend" needs.
 MODULE_TYPE = module_type
-ENCS = target_encodings
+ENCS, ENC_DEPS = target_encodings
 ATRANS, TRANS = target_transcoders
 
 if File.exist?(depend = File.join($srcdir, "depend"))

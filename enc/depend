@@ -84,6 +84,9 @@ srcs: $(TRANSCSRCS)
 %   unless ENCS.empty?
 $(ENCOBJS): regenc.h oniguruma.h config.h defines.h
 %   end
+%   ENC_DEPS.each do |e, deps|
+enc/<%=e%>.$(OBJEXT): <%=deps.map {|n| rule_subst % n}.join(' ')%>
+%   end
 %   unless TRANS.empty?
 $(TRANSOBJS): ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.h st.h transcode_data.h
 %   end
