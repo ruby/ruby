@@ -1,3 +1,8 @@
+Mon May 21 16:29:47 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/syslog/syslog.c (mSyslog_inspect): Make sure self is a
+	  module before calling rb_class2name().
+
 Fri May 18 18:13:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#configuration): keep space at end of
