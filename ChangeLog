@@ -1,4 +1,6 @@
-Mon May 21 16:24:00 2012  Akinori MUSHA  <knu@iDaemons.org>
+Mon May 21 16:24:40 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/syslog/syslog.c (mSyslog_inspect): Use rb_sprintf().
 
 	* ext/syslog/syslog.c (mSyslog_inspect): Make sure self is a
 	  module before calling rb_class2name().
