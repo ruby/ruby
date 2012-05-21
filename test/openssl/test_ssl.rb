@@ -462,7 +462,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
     start_server_version(:TLSv1_2) { |server, port|
       server_connect(port) { |ssl| assert_equal("TLSv1.2", ssl.ssl_version) }
     }
-  end
+  end if OpenSSL::OPENSSL_VERSION_NUMBER > 0x10001000
 
   def test_forbid_tls_v1_1_for_client
     ctx_proc = Proc.new { |ctx| ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_TLSv1_1 }
