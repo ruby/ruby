@@ -65,7 +65,7 @@ module Test
         opts.version = MiniTest::Unit::VERSION
 
         options[:retry] = true
-        options[:job_status] ||= :replace if @tty
+        options[:job_status] = nil
 
         opts.on '-h', '--help', 'Display this help.' do
           puts opts
@@ -666,6 +666,7 @@ module Test
       end
 
       def _prepare_run(suites, type)
+        options[:job_status] ||= @tty && !options[:verbose] ? :replace : :normal
         case options[:color]
         when :always
           color = true
@@ -681,7 +682,7 @@ module Test
         else
           @failed_color = @reset_color = ""
         end
-        if @options[:job_status] == :replace
+        if color or @options[:job_status] == :replace
           @verbose = !options[:parallel]
           @output = StatusLineOutput.new(self)
         end
