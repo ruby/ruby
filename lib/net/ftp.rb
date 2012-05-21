@@ -494,7 +494,7 @@ module Net
             conn.read_timeout = 1
             conn.read
           ensure
-            conn.close
+            conn.close if conn
           end
           voidresp
         end
@@ -510,16 +510,19 @@ module Net
     def retrlines(cmd) # :yield: line
       synchronize do
         with_binary(false) do
-          conn = transfercmd(cmd)
-          loop do
-            line = conn.gets
-            break if line == nil
-            yield(line.sub(/\r?\n\z/, ""), !line.match(/\n\z/).nil?)
+          begin
+            conn = transfercmd(cmd)
+            loop do
+              line = conn.gets
+              break if line == nil
+              yield(line.sub(/\r?\n\z/, ""), !line.match(/\n\z/).nil?)
+            end
+            conn.shutdown(Socket::SHUT_WR)
+            conn.read_timeout = 1
+            conn.read
+          ensure
+            conn.close if conn
           end
-          conn.shutdown(Socket::SHUT_WR)
-          conn.read_timeout = 1
-          conn.read
-          conn.close
           voidresp
         end
       end

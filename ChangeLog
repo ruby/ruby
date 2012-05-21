@@ -1,3 +1,10 @@
+Mon May 21 19:20:25 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/ftp.rb (Net::FTP#retrbinary): close only if conn is not nil
+	  because transfercmd may fail and return nil.
+
+	* lib/net/ftp.rb (Net::FTP#retrlines): ditto.
+
 Mon May 21 15:10:28 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/syslog/syslog.c: Classify constants and macros into several
