@@ -366,10 +366,10 @@ set_binary_mode_with_seek_cur(rb_io_t *fptr)
 # define DEFAULT_TEXTMODE 0
 #define NEED_READCONV(fptr) ((fptr)->encs.enc2 != NULL || NEED_NEWLINE_DECORATOR_ON_READ(fptr))
 #define NEED_WRITECONV(fptr) (((fptr)->encs.enc != NULL && (fptr)->encs.enc != rb_ascii8bit_encoding()) || NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) || ((fptr)->encs.ecflags & (ECONV_DECORATOR_MASK|ECONV_STATEFUL_DECORATOR_MASK)))
-#define SET_BINARY_MODE(fptr) 0
-#define NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr) 0
-#define SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags) 0
-#define SET_BINARY_MODE_WITH_SEEK_CUR(fptr) 0
+#define SET_BINARY_MODE(fptr) (void)(fptr)
+#define NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr) (void)(fptr)
+#define SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags) ((void)(enc2), (void)(ecflags))
+#define SET_BINARY_MODE_WITH_SEEK_CUR(fptr) (void)(fptr)
 #endif
 
 #if !defined HAVE_SHUTDOWN && !defined shutdown
