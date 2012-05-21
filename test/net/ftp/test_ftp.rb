@@ -6,6 +6,16 @@ require "stringio"
 class FTPTest < Test::Unit::TestCase
   SERVER_ADDR = "127.0.0.1"
 
+  def setup
+    @thread = nil
+  end
+
+  def teardown
+    if @thread
+      @thread.join
+    end
+  end
+
   def test_not_connected
     ftp = Net::FTP.new
     assert_raise(Net::FTPConnectionError) do
@@ -272,7 +282,8 @@ class FTPTest < Test::Unit::TestCase
         conn.print(l, "\r\n")
       end
       conn.shutdown(Socket::SHUT_WR)
-      conn.read
+      conn.read_timeout = 1
+      conn.read unless conn.eof?
       conn.close
       sock.print("226 Directory send OK.\r\n")
     }
@@ -586,7 +597,7 @@ class FTPTest < Test::Unit::TestCase
 
   def create_ftp_server(sleep_time = nil)
     server = TCPServer.new(SERVER_ADDR, 0)
-    Thread.start do
+    @thread = Thread.start do
       begin
         if sleep_time
           sleep(sleep_time)

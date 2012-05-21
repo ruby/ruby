@@ -1,3 +1,7 @@
+Mon May 21 11:26:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/ftp.rb (Net::FTP#transfercmd): rescue shutdown.
+
 Sun May 20 23:00:11 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): reopen $stdout to NULL, since setting

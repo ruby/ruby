@@ -433,7 +433,7 @@ module Net
         end
         conn = BufferedSocket.new(sock.accept)
         conn.read_timeout = @read_timeout
-        sock.shutdown(Socket::SHUT_WR)
+        sock.shutdown(Socket::SHUT_WR) rescue nil
         sock.read rescue nil
         sock.close
       end
@@ -483,16 +483,19 @@ module Net
     def retrbinary(cmd, blocksize, rest_offset = nil) # :yield: data
       synchronize do
         with_binary(true) do
-          conn = transfercmd(cmd, rest_offset)
-          loop do
-            data = conn.read(blocksize)
-            break if data == nil
-            yield(data)
+          begin
+            conn = transfercmd(cmd, rest_offset)
+            loop do
+              data = conn.read(blocksize)
+              break if data == nil
+              yield(data)
+            end
+            conn.shutdown(Socket::SHUT_WR)
+            conn.read_timeout = 1
+            conn.read
+          ensure
+            conn.close
           end
-          conn.shutdown(Socket::SHUT_WR)
-          conn.read_timeout = 1
-          conn.read
-          conn.close
           voidresp
         end
       end
