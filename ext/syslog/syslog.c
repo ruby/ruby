@@ -315,6 +315,8 @@ static VALUE mSyslog_inspect(VALUE self)
 {
     char buf[1024];
 
+    Check_Type(self, T_MODULE);
+
     if (syslog_opened) {
 	snprintf(buf, sizeof(buf),
 	  "<#%s: opened=true, ident=\"%s\", options=%d, facility=%d, mask=%d>",
