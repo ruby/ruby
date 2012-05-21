@@ -64,18 +64,9 @@ rb_struct_members(VALUE s)
 static VALUE
 rb_struct_s_members_m(VALUE klass)
 {
-    VALUE members, ary;
-    VALUE *p, *pend;
+    VALUE members = rb_struct_s_members(klass);
 
-    members = rb_struct_s_members(klass);
-    ary = rb_ary_new2(RARRAY_LEN(members));
-    p = RARRAY_PTR(members); pend = p + RARRAY_LEN(members);
-    while (p < pend) {
-	rb_ary_push(ary, *p);
-	p++;
-    }
-
-    return ary;
+    return rb_ary_dup(members);
 }
 
 /*

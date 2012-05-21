@@ -1,3 +1,12 @@
+Tue May 22 00:45:05 2012  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* struct.c (rb_struct_members): Refactoring.  As Struct#members had
+	  returned an array of String, the old code was needed to convert
+	  Symbols to Strings.  But it is almost unnecessary because the
+	  method now returns an array of Symbols.  A patch by Masaki
+	  Matsushita <glass.saga at gmail dot com>  [Feature #6218]
+	  [ruby-dev:45451]
+
 Mon May 21 19:20:25 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/ftp.rb (Net::FTP#retrbinary): close only if conn is not nil
