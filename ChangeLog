@@ -1,5 +1,9 @@
 Mon May 21 15:10:28 2012  Akinori MUSHA  <knu@iDaemons.org>
 
+	* ext/syslog/syslog.c: Classify constants and macros into several
+	  sub-modules. (Syslog::Priority, Syslog::Level, Syslog::Option
+	  and Syslog::Macros)
+
 	* ext/syslog/syslog.c (mSyslog_inspect): Use rb_sprintf().
 
 	* ext/syslog/syslog.c (mSyslog_inspect): Make sure self is a

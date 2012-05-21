@@ -13,7 +13,21 @@
 #include <syslog.h>
 
 /* Syslog class */
-static VALUE mSyslog, mSyslogConstants;
+static VALUE mSyslog;
+/*
+ * Module holding all Syslog constants.  See Syslog::log and
+ * Syslog::open for constant descriptions.
+ */
+static VALUE mSyslogConstants;
+/* Module holding Syslog option constants */
+static VALUE mSyslogOption;
+/* Module holding Syslog facility constants */
+static VALUE mSyslogFacility;
+/* Module holding Syslog level constants */
+static VALUE mSyslogLevel;
+/* Module holding Syslog utility macros */
+static VALUE mSyslogMacros;
+
 static const char *syslog_ident = NULL;
 static int syslog_options = -1, syslog_facility = -1, syslog_mask = -1;
 static int syslog_opened = 0;
@@ -371,7 +385,7 @@ define_syslog_shortcut_method(LOG_DEBUG, debug)
  *
  * Generates a mask bit for a priority level. See #mask=
  */
-static VALUE mSyslogConstants_LOG_MASK(VALUE klass, VALUE pri)
+static VALUE mSyslogMacros_LOG_MASK(VALUE mod, VALUE pri)
 {
     return INT2FIX(LOG_MASK(NUM2INT(pri)));
 }
@@ -382,9 +396,15 @@ static VALUE mSyslogConstants_LOG_MASK(VALUE klass, VALUE pri)
  * Generates a mask value for priority levels at or below the level specified.
  * See #mask=
  */
-static VALUE mSyslogConstants_LOG_UPTO(VALUE klass, VALUE pri)
+static VALUE mSyslogMacros_LOG_UPTO(VALUE mod, VALUE pri)
 {
     return INT2FIX(LOG_UPTO(NUM2INT(pri)));
+}
+
+static VALUE mSyslogMacros_included(VALUE mod, VALUE target)
+{
+    rb_extend_object(target, mSyslogMacros);
+    return mod;
 }
 
 /* The syslog package provides a Ruby interface to the POSIX system logging
@@ -405,14 +425,12 @@ void Init_syslog()
 {
     mSyslog = rb_define_module("Syslog");
 
-    /* Document-module: Syslog::Constants
-     *
-     * Module holding Syslog constants.  See Syslog::log and Syslog::open for
-     * constant descriptions.
-     */
-    mSyslogConstants = rb_define_module_under(mSyslog, "Constants");
+    mSyslogConstants    = rb_define_module_under(mSyslog, "Constants");
 
-    rb_include_module(mSyslog, mSyslogConstants);
+    mSyslogOption       = rb_define_module_under(mSyslog, "Option");
+    mSyslogFacility     = rb_define_module_under(mSyslog, "Facility");
+    mSyslogLevel        = rb_define_module_under(mSyslog, "Level");
+    mSyslogMacros       = rb_define_module_under(mSyslog, "Macros");
 
     rb_define_module_function(mSyslog, "open", mSyslog_open, -1);
     rb_define_module_function(mSyslog, "reopen", mSyslog_reopen, -1);
@@ -428,143 +446,150 @@ void Init_syslog()
     rb_define_module_function(mSyslog, "mask", mSyslog_get_mask, 0);
     rb_define_module_function(mSyslog, "mask=", mSyslog_set_mask, 1);
 
-    rb_define_module_function(mSyslog, "LOG_MASK", mSyslogConstants_LOG_MASK, 1);
-    rb_define_module_function(mSyslog, "LOG_UPTO", mSyslogConstants_LOG_UPTO, 1);
-
     rb_define_module_function(mSyslog, "inspect", mSyslog_inspect, 0);
     rb_define_module_function(mSyslog, "instance", mSyslog_instance, 0);
 
-    rb_define_module_function(mSyslogConstants, "LOG_MASK", mSyslogConstants_LOG_MASK, 1);
-    rb_define_module_function(mSyslogConstants, "LOG_UPTO", mSyslogConstants_LOG_UPTO, 1);
+    /* Syslog options */
 
-#define rb_define_syslog_const(id) \
-    rb_define_const(mSyslogConstants, #id, INT2NUM(id))
+#define rb_define_syslog_option(c) \
+    rb_define_const(mSyslogOption, #c, INT2NUM(c))
 
-    /* Various options when opening log */
 #ifdef LOG_PID
-    rb_define_syslog_const(LOG_PID);
+    rb_define_syslog_option(LOG_PID);
 #endif
 #ifdef LOG_CONS
-    rb_define_syslog_const(LOG_CONS);
+    rb_define_syslog_option(LOG_CONS);
 #endif
 #ifdef LOG_ODELAY
-    rb_define_syslog_const(LOG_ODELAY); /* deprecated */
+    rb_define_syslog_option(LOG_ODELAY); /* deprecated */
 #endif
 #ifdef LOG_NDELAY
-    rb_define_syslog_const(LOG_NDELAY);
+    rb_define_syslog_option(LOG_NDELAY);
 #endif
 #ifdef LOG_NOWAIT
-    rb_define_syslog_const(LOG_NOWAIT); /* deprecated */
+    rb_define_syslog_option(LOG_NOWAIT); /* deprecated */
 #endif
 #ifdef LOG_PERROR
-    rb_define_syslog_const(LOG_PERROR);
+    rb_define_syslog_option(LOG_PERROR);
 #endif
 
-    /* Various syslog facilities */
+    /* Syslog facilities */
+
+#define rb_define_syslog_facility(c) \
+    rb_define_const(mSyslogFacility, #c, INT2NUM(c))
+
 #ifdef LOG_AUTH
-    rb_define_syslog_const(LOG_AUTH);
+    rb_define_syslog_facility(LOG_AUTH);
 #endif
 #ifdef LOG_AUTHPRIV
-    rb_define_syslog_const(LOG_AUTHPRIV);
+    rb_define_syslog_facility(LOG_AUTHPRIV);
 #endif
 #ifdef LOG_CONSOLE
-    rb_define_syslog_const(LOG_CONSOLE);
+    rb_define_syslog_facility(LOG_CONSOLE);
 #endif
 #ifdef LOG_CRON
-    rb_define_syslog_const(LOG_CRON);
+    rb_define_syslog_facility(LOG_CRON);
 #endif
 #ifdef LOG_DAEMON
-    rb_define_syslog_const(LOG_DAEMON);
+    rb_define_syslog_facility(LOG_DAEMON);
 #endif
 #ifdef LOG_FTP
-    rb_define_syslog_const(LOG_FTP);
+    rb_define_syslog_facility(LOG_FTP);
 #endif
 #ifdef LOG_KERN
-    rb_define_syslog_const(LOG_KERN);
+    rb_define_syslog_facility(LOG_KERN);
 #endif
 #ifdef LOG_LPR
-    rb_define_syslog_const(LOG_LPR);
+    rb_define_syslog_facility(LOG_LPR);
 #endif
 #ifdef LOG_MAIL
-    rb_define_syslog_const(LOG_MAIL);
+    rb_define_syslog_facility(LOG_MAIL);
 #endif
 #ifdef LOG_NEWS
-    rb_define_syslog_const(LOG_NEWS);
+    rb_define_syslog_facility(LOG_NEWS);
 #endif
 #ifdef LOG_NTP
-   rb_define_syslog_const(LOG_NTP);
+   rb_define_syslog_facility(LOG_NTP);
 #endif
 #ifdef LOG_SECURITY
-    rb_define_syslog_const(LOG_SECURITY);
+    rb_define_syslog_facility(LOG_SECURITY);
 #endif
 #ifdef LOG_SYSLOG
-    rb_define_syslog_const(LOG_SYSLOG);
+    rb_define_syslog_facility(LOG_SYSLOG);
 #endif
 #ifdef LOG_USER
-    rb_define_syslog_const(LOG_USER);
+    rb_define_syslog_facility(LOG_USER);
 #endif
 #ifdef LOG_UUCP
-    rb_define_syslog_const(LOG_UUCP);
+    rb_define_syslog_facility(LOG_UUCP);
 #endif
 #ifdef LOG_LOCAL0
-    rb_define_syslog_const(LOG_LOCAL0);
+    rb_define_syslog_facility(LOG_LOCAL0);
 #endif
 #ifdef LOG_LOCAL1
-    rb_define_syslog_const(LOG_LOCAL1);
+    rb_define_syslog_facility(LOG_LOCAL1);
 #endif
 #ifdef LOG_LOCAL2
-    rb_define_syslog_const(LOG_LOCAL2);
+    rb_define_syslog_facility(LOG_LOCAL2);
 #endif
 #ifdef LOG_LOCAL3
-    rb_define_syslog_const(LOG_LOCAL3);
+    rb_define_syslog_facility(LOG_LOCAL3);
 #endif
 #ifdef LOG_LOCAL4
-    rb_define_syslog_const(LOG_LOCAL4);
+    rb_define_syslog_facility(LOG_LOCAL4);
 #endif
 #ifdef LOG_LOCAL5
-    rb_define_syslog_const(LOG_LOCAL5);
+    rb_define_syslog_facility(LOG_LOCAL5);
 #endif
 #ifdef LOG_LOCAL6
-    rb_define_syslog_const(LOG_LOCAL6);
+    rb_define_syslog_facility(LOG_LOCAL6);
 #endif
 #ifdef LOG_LOCAL7
-    rb_define_syslog_const(LOG_LOCAL7);
+    rb_define_syslog_facility(LOG_LOCAL7);
 #endif
 
-#define rb_define_syslog_shortcut(name) \
-    rb_define_module_function(mSyslog, #name, mSyslog_##name, -1)
+    /* Syslog levels and the shortcut methods */
 
-    /* Various syslog priorities and the shortcut methods */
+#define rb_define_syslog_level(c, m)				\
+    rb_define_const(mSyslogLevel, #c, INT2NUM(c));		\
+    rb_define_module_function(mSyslog, #m, mSyslog_##m, -1)
+
 #ifdef LOG_EMERG
-    rb_define_syslog_const(LOG_EMERG);
-    rb_define_syslog_shortcut(emerg);
+    rb_define_syslog_level(LOG_EMERG, emerg);
 #endif
 #ifdef LOG_ALERT
-    rb_define_syslog_const(LOG_ALERT);
-    rb_define_syslog_shortcut(alert);
+    rb_define_syslog_level(LOG_ALERT, alert);
 #endif
 #ifdef LOG_CRIT
-    rb_define_syslog_const(LOG_CRIT);
-    rb_define_syslog_shortcut(crit);
+    rb_define_syslog_level(LOG_CRIT, crit);
 #endif
 #ifdef LOG_ERR
-    rb_define_syslog_const(LOG_ERR);
-    rb_define_syslog_shortcut(err);
+    rb_define_syslog_level(LOG_ERR, err);
 #endif
 #ifdef LOG_WARNING
-    rb_define_syslog_const(LOG_WARNING);
-    rb_define_syslog_shortcut(warning);
+    rb_define_syslog_level(LOG_WARNING, warning);
 #endif
 #ifdef LOG_NOTICE
-    rb_define_syslog_const(LOG_NOTICE);
-    rb_define_syslog_shortcut(notice);
+    rb_define_syslog_level(LOG_NOTICE, notice);
 #endif
 #ifdef LOG_INFO
-    rb_define_syslog_const(LOG_INFO);
-    rb_define_syslog_shortcut(info);
+    rb_define_syslog_level(LOG_INFO, info);
 #endif
 #ifdef LOG_DEBUG
-    rb_define_syslog_const(LOG_DEBUG);
-    rb_define_syslog_shortcut(debug);
+    rb_define_syslog_level(LOG_DEBUG, debug);
 #endif
+
+    /* Syslog macros */
+
+    rb_define_method(mSyslogMacros, "LOG_MASK", mSyslogMacros_LOG_MASK, 1);
+    rb_define_method(mSyslogMacros, "LOG_UPTO", mSyslogMacros_LOG_UPTO, 1);
+    rb_define_singleton_method(mSyslogMacros, "included", mSyslogMacros_included, 1);
+
+    rb_include_module(mSyslogConstants, mSyslogOption);
+    rb_include_module(mSyslogConstants, mSyslogFacility);
+    rb_include_module(mSyslogConstants, mSyslogLevel);
+    rb_funcall(mSyslogConstants, rb_intern("include"), 1, mSyslogMacros);
+
+    rb_define_singleton_method(mSyslogConstants, "included", mSyslogMacros_included, 1);
+    rb_funcall(mSyslog, rb_intern("include"), 1, mSyslogConstants);
 }

@@ -98,6 +98,9 @@ with all sufficient information, see the ChangeLog file.
 
 * syslog
   * Added Syslog::Logger which provides a Logger API atop Syslog.
+  * Syslog::Priority, Syslog::Level, Syslog::Option and Syslog::Macros
+    are introduced for easy detection of available constants on a
+    running system.
 
 * lib/tmpdir.rb
   * incompatible changes:
