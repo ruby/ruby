@@ -1,3 +1,16 @@
+Tue May 22 11:09:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_init_loadpath_safe): use real path for non-shared
+	  build.
+
+	* configure.in (LIBRUBY_RELATIVE): use rpath token expansion.
+
+	* tool/rbinstall.rb (bin-comm): prepend prolog shell script if
+	  necessary.
+
+	* ruby.c (ruby_init_loadpath_safe): relatively called non-shared
+	  binary cannot be found in PATH, so use given pathname.
+
 Mon May 21 16:27:24 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/syslog/syslog.c (mSyslog_inspect): Make sure self is a
