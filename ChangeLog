@@ -1,3 +1,17 @@
+Wed May 23 05:35:58 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb:  Broke up Net::HTTP into individual files.
+	  [ruby-trunk - Feature #6435]
+	* lib/net/http/backward.rb:  ditto.
+	* lib/net/http/response.rb:  ditto.
+	* lib/net/http/exceptions.rb:  ditto.
+	* lib/net/http/responses.rb:  ditto.
+	* lib/net/http/generic_request.rb:  ditto.
+	* lib/net/http/header.rb:  ditto.
+	* lib/net/http/request.rb:  ditto.
+	* lib/net/http/proxy_delta.rb:  ditto.
+	* lib/net/http/requests.rb:  ditto.
+
 Wed May 23 05:15:11 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* class.c (rb_mod_init_copy):  Clear the cached inspect string of a
