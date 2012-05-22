@@ -184,7 +184,7 @@ struct rb_iseq_struct {
     unsigned long iseq_size;
     VALUE mark_ary;	/* Array: includes operands which should be GC marked */
     VALUE coverage;     /* coverage array */
-    
+
     /* insn info, must be freed */
     struct iseq_line_info_entry *line_info_table;
     size_t line_info_size;
