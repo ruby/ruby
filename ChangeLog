@@ -1,3 +1,19 @@
+Tue May 22 16:49:15 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: add a data type rb_location_t to store iseq location
+	  information.
+	  rb_location_t#filename, filepath, name and line_no was moved from
+	  rb_iseq_t.  rb_location_t#basename is a new field which is
+	  similar to `name' field without any decoration.
+	  `name' field contains some decoration such as `block in foo'.
+	  `basename' only contains `foo'.
+	  rb_iseq_t contains memory object of rb_location_t.
+
+	* iseq.c: setup rb_location_t for each rb_iseq_t memory objects.
+
+	* compile.c, proc.c, vm.c, vm_dump.c, vm_eval.c, vm_insnhelper.c,
+	  vm_method.c: support about it.
+
 Tue May 22 00:45:05 2012  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* struct.c (rb_struct_members): Refactoring.  As Struct#members had

@@ -322,7 +322,7 @@ rb_binding_new(void)
 
     GetBindingPtr(bindval, bind);
     bind->env = rb_vm_make_env_object(th, cfp);
-    bind->filename = cfp->iseq->filename;
+    bind->filename = cfp->iseq->location.filename;
     bind->line_no = rb_vm_get_sourceline(cfp);
     return bindval;
 }
@@ -699,7 +699,7 @@ iseq_location(rb_iseq_t *iseq)
     VALUE loc[2];
 
     if (!iseq) return Qnil;
-    loc[0] = iseq->filename;
+    loc[0] = iseq->location.filename;
     if (iseq->line_info_table) {
 	loc[1] = INT2FIX(rb_iseq_first_lineno(iseq));
     }
@@ -849,7 +849,7 @@ proc_to_s(VALUE self)
 	    line_no = rb_iseq_first_lineno(iseq);
 	}
 	str = rb_sprintf("#<%s:%p@%s:%d%s>", cname, (void *)self,
-			 RSTRING_PTR(iseq->filename),
+			 RSTRING_PTR(iseq->location.filename),
 			 line_no, is_lambda);
     }
     else {
@@ -1980,7 +1980,7 @@ proc_binding(VALUE self)
     GetBindingPtr(bindval, bind);
     bind->env = proc->envval;
     if (RUBY_VM_NORMAL_ISEQ_P(proc->block.iseq)) {
-	bind->filename = proc->block.iseq->filename;
+	bind->filename = proc->block.iseq->location.filename;
 	bind->line_no = rb_iseq_first_lineno(proc->block.iseq);
     }
     else {

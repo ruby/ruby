@@ -150,6 +150,14 @@ struct iseq_inline_cache_entry {
 #define GetISeqPtr(obj, ptr) \
   GetCoreDataFromValue((obj), rb_iseq_t, (ptr))
 
+typedef struct rb_location_struct {
+    VALUE filename;
+    VALUE filepath;
+    VALUE basename;
+    VALUE name;
+    size_t line_no;
+} rb_location_t;
+
 struct rb_iseq_struct;
 
 struct rb_iseq_struct {
@@ -169,16 +177,14 @@ struct rb_iseq_struct {
 	ISEQ_TYPE_DEFINED_GUARD
     } type;              /* instruction sequence type */
 
-    VALUE name;	         /* String: iseq name */
-    VALUE filename;      /* file information where this sequence from */
-    VALUE filepath;      /* real file path or nil */
+    rb_location_t location;
+
     VALUE *iseq;         /* iseq (insn number and operands) */
     VALUE *iseq_encoded; /* encoded iseq */
     unsigned long iseq_size;
     VALUE mark_ary;	/* Array: includes operands which should be GC marked */
     VALUE coverage;     /* coverage array */
-    unsigned short line_no;
-
+    
     /* insn info, must be freed */
     struct iseq_line_info_entry *line_info_table;
     size_t line_info_size;

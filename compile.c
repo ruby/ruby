@@ -166,10 +166,10 @@ r_value(VALUE value)
 #define NEW_LABEL(l) new_label_body(iseq, (l))
 
 #define iseq_filename(iseq) \
-  (((rb_iseq_t*)DATA_PTR(iseq))->filename)
+  (((rb_iseq_t*)DATA_PTR(iseq))->location.filename)
 
 #define iseq_filepath(iseq) \
-  (((rb_iseq_t*)DATA_PTR(iseq))->filepath)
+  (((rb_iseq_t*)DATA_PTR(iseq))->location.filepath)
 
 #define NEW_ISEQVAL(node, name, type, line_no)       \
   new_child_iseq(iseq, (node), (name), 0, (type), (line_no))
@@ -423,7 +423,7 @@ iseq_add_mark_object(rb_iseq_t *iseq, VALUE v)
     return COMPILE_OK;
 }
 
-#define ruby_sourcefile		RSTRING_PTR(iseq->filename)
+#define ruby_sourcefile		RSTRING_PTR(iseq->location.filename)
 
 static int
 iseq_add_mark_object_compile_time(rb_iseq_t *iseq, VALUE v)
@@ -491,13 +491,13 @@ rb_iseq_compile_node(VALUE self, NODE *node)
 	    break;
 	  }
 	  case ISEQ_TYPE_CLASS: {
-	    ADD_TRACE(ret, FIX2INT(iseq->line_no), RUBY_EVENT_CLASS);
+	    ADD_TRACE(ret, FIX2INT(iseq->location.line_no), RUBY_EVENT_CLASS);
 	    COMPILE(ret, "scoped node", node->nd_body);
 	    ADD_TRACE(ret, nd_line(node), RUBY_EVENT_END);
 	    break;
 	  }
 	  case ISEQ_TYPE_METHOD: {
-	    ADD_TRACE(ret, FIX2INT(iseq->line_no), RUBY_EVENT_CALL);
+	    ADD_TRACE(ret, FIX2INT(iseq->location.line_no), RUBY_EVENT_CALL);
 	    COMPILE(ret, "scoped node", node->nd_body);
 	    ADD_TRACE(ret, nd_line(node), RUBY_EVENT_RETURN);
 	    break;
@@ -1376,7 +1376,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	  default:
 	    dump_disasm_list(FIRST_ELEMENT(anchor));
 	    dump_disasm_list(list);
-	    rb_compile_error(RSTRING_PTR(iseq->filename), line,
+	    rb_compile_error(RSTRING_PTR(iseq->location.filename), line,
 			     "error: set_sequence");
 	    break;
 	}
@@ -1419,7 +1419,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		if (iobj->operand_size != len - 1) {
 		    /* printf("operand size miss! (%d, %d)\n", iobj->operand_size, len); */
 		    dump_disasm_list(list);
-		    rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
+		    rb_compile_error(RSTRING_PTR(iseq->location.filename), iobj->line_no,
 				     "operand size miss! (%d for %d)",
 				     iobj->operand_size, len - 1);
 		    xfree(generated_iseq);
@@ -1436,7 +1436,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    /* label(destination position) */
 			    lobj = (LABEL *)operands[j];
 			    if (!lobj->set) {
-				rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
+				rb_compile_error(RSTRING_PTR(iseq->location.filename), iobj->line_no,
 						 "unknown label");
 			    }
 			    if (lobj->sp == -1) {
@@ -1502,7 +1502,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			}
 			break;
 		      default:
-			rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
+			rb_compile_error(RSTRING_PTR(iseq->location.filename), iobj->line_no,
 					 "unknown operand type: %c", type);
 			xfree(generated_iseq);
 			xfree(line_info_table);
@@ -2045,7 +2045,7 @@ insn_set_sc_state(rb_iseq_t *iseq, INSN *iobj, int state)
 		dump_disasm_list((LINK_ELEMENT *)iobj);
 		dump_disasm_list((LINK_ELEMENT *)lobj);
 		printf("\n-- %d, %d\n", lobj->sc_state, nstate);
-		rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
+		rb_compile_error(RSTRING_PTR(iseq->location.filename), iobj->line_no,
 				 "insn_set_sc_state error\n");
 		return 0;
 	    }
@@ -2147,7 +2147,7 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			  case SCS_XX:
 			    goto normal_insn;
 			  default:
-			    rb_compile_error(RSTRING_PTR(iseq->filename), iobj->line_no,
+			    rb_compile_error(RSTRING_PTR(iseq->location.filename), iobj->line_no,
 					     "unreachable");
 			}
 			/* remove useless pop */
@@ -2449,7 +2449,7 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *cond_seq, NODE *vals, LABEL *l1, int onl
 	}
 	else {
 	    if (rb_hash_lookup(literals, lit) != Qnil) {
-		rb_compile_warning(RSTRING_PTR(iseq->filename), nd_line(val), "duplicated when clause is ignored");
+		rb_compile_warning(RSTRING_PTR(iseq->location.filename), nd_line(val), "duplicated when clause is ignored");
 	    }
 	    else {
 		rb_hash_aset(literals, lit, (VALUE)(l1) | 1);
@@ -2897,7 +2897,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	VALUE rescue = NEW_CHILD_ISEQVAL(NEW_NIL(),
 					 rb_str_concat(rb_str_new2
 						       ("defined guard in "),
-						       iseq->name),
+						       iseq->location.name),
 					 ISEQ_TYPE_DEFINED_GUARD, 0);
 	APPEND_LABEL(ret, lcur, lstart);
 	ADD_LABEL(ret, lend);
@@ -2924,10 +2924,10 @@ make_name_for_block(rb_iseq_t *iseq)
     }
 
     if (level == 1) {
-	return rb_sprintf("block in %s", RSTRING_PTR(ip->name));
+	return rb_sprintf("block in %s", RSTRING_PTR(ip->location.name));
     }
     else {
-	return rb_sprintf("block (%d levels) in %s", level, RSTRING_PTR(ip->name));
+	return rb_sprintf("block (%d levels) in %s", level, RSTRING_PTR(ip->location.name));
     }
 }
 
@@ -3649,7 +3649,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	LABEL *lcont = NEW_LABEL(nd_line(node));
 	VALUE rescue = NEW_CHILD_ISEQVAL(
 	    node->nd_resq,
-	    rb_str_concat(rb_str_new2("rescue in "), iseq->name),
+	    rb_str_concat(rb_str_new2("rescue in "), iseq->location.name),
 	    ISEQ_TYPE_RESCUE, nd_line(node));
 
 	ADD_LABEL(ret, lstart);
@@ -3731,7 +3731,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	VALUE ensure = NEW_CHILD_ISEQVAL(node->nd_ensr,
 					 rb_str_concat(rb_str_new2
 						       ("ensure in "),
-						       iseq->name),
+						       iseq->location.name),
 					 ISEQ_TYPE_ENSURE, nd_line(node));
 	LABEL *lstart = NEW_LABEL(nd_line(node));
 	LABEL *lend = NEW_LABEL(nd_line(node));
@@ -4917,7 +4917,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	LABEL *lfin = NEW_LABEL(nd_line(node));
 	LABEL *ltrue = NEW_LABEL(nd_line(node));
 	VALUE key = rb_sprintf("flipflag/%s-%p-%d",
-			       RSTRING_PTR(iseq->name), (void *)iseq,
+			       RSTRING_PTR(iseq->location.name), (void *)iseq,
 			       iseq->compile_data->flip_cnt++);
 
 	hide_obj(key);
@@ -5454,12 +5454,12 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 	    if (st_lookup(insn_table, (st_data_t)insn, &insn_id) == 0) {
 		/* TODO: exception */
 		RB_GC_GUARD(insn) = rb_inspect(insn);
-		rb_compile_error(RSTRING_PTR(iseq->filename), line_no,
+		rb_compile_error(RSTRING_PTR(iseq->location.filename), line_no,
 				 "unknown instruction: %s", RSTRING_PTR(insn));
 	    }
 
 	    if (argc != insn_len((VALUE)insn_id)-1) {
-		rb_compile_error(RSTRING_PTR(iseq->filename), line_no,
+		rb_compile_error(RSTRING_PTR(iseq->location.filename), line_no,
 				 "operand size mismatch");
 	    }
 

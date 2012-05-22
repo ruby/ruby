@@ -38,7 +38,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     VALUE tmp;
 
     if (cfp->block_iseq != 0 && BUILTIN_TYPE(cfp->block_iseq) != T_NODE) {
-	biseq_name = "";	/* RSTRING(cfp->block_iseq->name)->ptr; */
+	biseq_name = "";	/* RSTRING(cfp->block_iseq->location.name)->ptr; */
     }
 
     if (lfp < 0 || (size_t)lfp > th->stack_size) {
@@ -110,10 +110,10 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	}
 	else {
 	    pc = cfp->pc - cfp->iseq->iseq_encoded;
-	    iseq_name = RSTRING_PTR(cfp->iseq->name);
+	    iseq_name = RSTRING_PTR(cfp->iseq->location.name);
 	    line = rb_vm_get_sourceline(cfp);
 	    if (line) {
-		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(cfp->iseq->filename), line);
+		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(cfp->iseq->location.filename), line);
 	    }
 	}
     }
@@ -271,7 +271,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
     else {
 	argc = iseq->argc;
 	local_size = iseq->local_size;
-	name = RSTRING_PTR(iseq->name);
+	name = RSTRING_PTR(iseq->location.name);
     }
 
     /* stack trace header */

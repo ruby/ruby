@@ -69,8 +69,8 @@ iseq_free(void *ptr)
 	if (!iseq->orig) {
 	    /* It's possible that strings are freed */
 	    if (0) {
-		RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->name),
-					  RSTRING_PTR(iseq->filename));
+		RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->location.name),
+					  RSTRING_PTR(iseq->location.filename));
 	    }
 
 	    if (iseq->iseq != iseq->iseq_encoded) {
@@ -99,11 +99,14 @@ iseq_mark(void *ptr)
     if (ptr) {
 	rb_iseq_t *iseq = ptr;
 
-	RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->name), RSTRING_PTR(iseq->filename));
+	RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->location.name), RSTRING_PTR(iseq->location.filename));
 	RUBY_MARK_UNLESS_NULL(iseq->mark_ary);
-	RUBY_MARK_UNLESS_NULL(iseq->name);
-	RUBY_MARK_UNLESS_NULL(iseq->filename);
-	RUBY_MARK_UNLESS_NULL(iseq->filepath);
+
+	RUBY_MARK_UNLESS_NULL(iseq->location.name);
+	RUBY_MARK_UNLESS_NULL(iseq->location.basename);
+	RUBY_MARK_UNLESS_NULL(iseq->location.filename);
+	RUBY_MARK_UNLESS_NULL(iseq->location.filepath);
+
 	RUBY_MARK_UNLESS_NULL((VALUE)iseq->cref_stack);
 	RUBY_MARK_UNLESS_NULL(iseq->klass);
 	RUBY_MARK_UNLESS_NULL(iseq->coverage);
@@ -175,6 +178,17 @@ iseq_alloc(VALUE klass)
     return TypedData_Make_Struct(klass, rb_iseq_t, &iseq_data_type, iseq);
 }
 
+static rb_location_t *
+iseq_location_setup(rb_iseq_t *iseq, VALUE filename, VALUE filepath, VALUE name, size_t line_no)
+{
+    rb_location_t *loc = &iseq->location;
+    loc->filename = filename;
+    loc->filepath = filepath;
+    loc->name = loc->basename = name;
+    loc->line_no = line_no;
+    return loc;
+}
+
 static void
 set_relation(rb_iseq_t *iseq, const VALUE parent)
 {
@@ -225,23 +239,26 @@ prepare_iseq_build(rb_iseq_t *iseq,
 		   VALUE parent, enum iseq_type type, VALUE block_opt,
 		   const rb_compile_option_t *option)
 {
-    OBJ_FREEZE(name);
-    OBJ_FREEZE(filename);
-
-    iseq->name = name;
-    iseq->filename = filename;
-    iseq->filepath = filepath;
-    iseq->line_no = (unsigned short)line_no; /* TODO: really enough? */
-    iseq->defined_method_id = 0;
-    iseq->mark_ary = rb_ary_tmp_new(3);
-    OBJ_UNTRUST(iseq->mark_ary);
-    RBASIC(iseq->mark_ary)->klass = 0;
-
     iseq->type = type;
     iseq->arg_rest = -1;
     iseq->arg_block = -1;
     iseq->arg_keyword = -1;
     iseq->klass = 0;
+    set_relation(iseq, parent);
+
+    OBJ_FREEZE(name);
+    OBJ_FREEZE(filename);
+
+    iseq_location_setup(iseq, filename, filepath, name, line_no);
+    if (iseq != iseq->local_iseq) {
+	iseq->location.basename = iseq->local_iseq->location.name;
+    }
+
+    iseq->defined_method_id = 0;
+    iseq->mark_ary = rb_ary_tmp_new(3);
+    OBJ_UNTRUST(iseq->mark_ary);
+    RBASIC(iseq->mark_ary)->klass = 0;
+
 
     /*
      * iseq->special_block_builder = GC_GUARDED_PTR_REF(block_opt);
@@ -269,8 +286,6 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->compile_data->option = option;
     iseq->compile_data->last_coverable_line = -1;
 
-    set_relation(iseq, parent);
-
     iseq->coverage = Qfalse;
     if (!GET_THREAD()->parse_in_eval) {
 	VALUE coverages = rb_get_coverages();
@@ -292,7 +307,7 @@ cleanup_iseq_build(rb_iseq_t *iseq)
     compile_data_free(data);
 
     if (RTEST(err)) {
-	rb_funcall2(err, rb_intern("set_backtrace"), 1, &iseq->filename);
+	rb_funcall2(err, rb_intern("set_backtrace"), 1, &iseq->location.filename);
 	rb_exc_raise(err);
     }
     return Qtrue;
@@ -560,7 +575,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE filepath, VALUE line, V
     make_compile_option(&option, opt);
 
     if (th->base_block && th->base_block->iseq) {
-	return rb_iseq_new_with_opt(node, th->base_block->iseq->name,
+	return rb_iseq_new_with_opt(node, th->base_block->iseq->location.name,
 				    file, filepath, line, th->base_block->iseq->self,
 				    ISEQ_TYPE_EVAL, &option);
     }
@@ -636,7 +651,7 @@ iseq_check(VALUE val)
 {
     rb_iseq_t *iseq;
     GetISeqPtr(val, iseq);
-    if (!iseq->name) {
+    if (!iseq->location.name) {
 	rb_raise(rb_eTypeError, "uninitialized InstructionSequence");
     }
     return iseq;
@@ -654,13 +669,13 @@ iseq_inspect(VALUE self)
 {
     rb_iseq_t *iseq;
     GetISeqPtr(self, iseq);
-    if (!iseq->name) {
+    if (!iseq->location.name) {
         return rb_sprintf("#<%s: uninitialized>", rb_obj_classname(self));
     }
 
     return rb_sprintf("<%s:%s@%s>",
                       rb_obj_classname(self),
-		      RSTRING_PTR(iseq->name), RSTRING_PTR(iseq->filename));
+		      RSTRING_PTR(iseq->location.name), RSTRING_PTR(iseq->location.filename));
 }
 
 static
@@ -677,7 +692,7 @@ iseq_to_a(VALUE self)
 int
 rb_iseq_first_lineno(const rb_iseq_t *iseq)
 {
-    return FIX2INT(iseq->line_no);
+    return FIX2INT(iseq->location.line_no);
 }
 
 /* TODO: search algorithm is brute force.
@@ -808,7 +823,7 @@ insn_operand_intern(rb_iseq_t *iseq,
 	{
 	    rb_iseq_t *iseq = (rb_iseq_t *)op;
 	    if (iseq) {
-		ret = iseq->name;
+		ret = iseq->location.name;
 		if (child) {
 		    rb_ary_push(child, iseq->self);
 		}
@@ -1342,10 +1357,10 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     rb_ary_push(val, INT2FIX(ISEQ_MINOR_VERSION)); /* minor */
     rb_ary_push(val, INT2FIX(1));
     rb_ary_push(val, misc);
-    rb_ary_push(val, iseq->name);
-    rb_ary_push(val, iseq->filename);
-    rb_ary_push(val, iseq->filepath);
-    rb_ary_push(val, iseq->line_no);
+    rb_ary_push(val, iseq->location.name);
+    rb_ary_push(val, iseq->location.filename);
+    rb_ary_push(val, iseq->location.filepath);
+    rb_ary_push(val, iseq->location.line_no);
     rb_ary_push(val, type);
     rb_ary_push(val, locals);
     rb_ary_push(val, args);
@@ -1482,9 +1497,9 @@ rb_iseq_build_for_ruby2cext(
 
     /* copy iseq */
     *iseq = *iseq_template;
-    iseq->name = rb_str_new2(name);
-    iseq->filename = rb_str_new2(filename);
-    iseq->line_no = line_no;
+    iseq->location.name = rb_str_new2(name);
+    iseq->location.filename = rb_str_new2(filename);
+    iseq->location.line_no = line_no;
     iseq->mark_ary = rb_ary_tmp_new(3);
     OBJ_UNTRUST(iseq->mark_ary);
     iseq->self = iseqval;
