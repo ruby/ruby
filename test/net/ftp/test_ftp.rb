@@ -327,19 +327,21 @@ class FTPTest < Test::Unit::TestCase
       sock.print("200 PORT command successful.\r\n")
       commands.push(sock.gets)
       sock.print("150 Here comes the directory listing.\r\n")
-      conn = TCPSocket.new(host, port)
-      list_lines.each_with_index do |l, i|
-        if i == 1
-          sleep(0.5)
-        else
-          sleep(0.1)
+      begin
+        conn = TCPSocket.new(host, port)
+        list_lines.each_with_index do |l, i|
+          if i == 1
+            sleep(0.5)
+          else
+            sleep(0.1)
+          end
+          conn.print(l, "\r\n")
         end
-        conn.print(l, "\r\n")
+      rescue Errno::EPIPE
+      ensure
+        assert_nil($!)
+        conn.close
       end
-      conn.shutdown(Socket::SHUT_WR)
-      conn.read_timeout = 1
-      conn.read unless conn.eof?
-      conn.close
       sock.print("226 Directory send OK.\r\n")
     }
     begin
