@@ -1,3 +1,9 @@
+Wed May 23 05:15:11 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* class.c (rb_mod_init_copy):  Clear the cached inspect string of a
+	  dup'd anonymous module or class.  [ruby-trunk - Bug #6454]
+	* test/ruby/test_module.rb (class TestModule):  ditto
+
 Tue May 22 16:49:15 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: add a data type rb_location_t to store iseq location

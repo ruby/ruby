@@ -174,6 +174,8 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 	    st_free_table(RCLASS_IV_TBL(clone));
 	}
 	RCLASS_IV_TBL(clone) = st_copy(RCLASS_IV_TBL(orig));
+	CONST_ID(id, "__tmp_classpath__");
+	st_delete(RCLASS_IV_TBL(clone), &id, 0);
 	CONST_ID(id, "__classpath__");
 	st_delete(RCLASS_IV_TBL(clone), &id, 0);
 	CONST_ID(id, "__classid__");

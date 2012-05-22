@@ -259,6 +259,31 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:MIXIN, :USER], User.constants.sort)
   end
 
+  def test_dup
+    bug6454 = '[ruby-core:45132]'
+
+    a = Module.new
+    Other.const_set :BUG6454, a
+
+    original = Other::BUG6454.inspect
+
+    b = a.dup
+    Other.const_set :BUG6454_dup, b
+
+    assert_equal "TestModule::Other::BUG6454_dup", b.inspect, bug6454
+  end
+
+  def test_dup_anonymous
+    bug6454 = '[ruby-core:45132]'
+
+    a = Module.new
+    original = a.inspect
+
+    b = a.dup
+
+    refute_equal original, b.inspect, bug6454
+  end
+
   def test_included_modules
     assert_equal([], Mixin.included_modules)
     assert_equal([Mixin], User.included_modules)
