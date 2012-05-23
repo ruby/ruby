@@ -177,18 +177,44 @@ module Net::HTTPHeader
   # HTTP header field, or +nil+ if there is no such header.
   def range
     return nil unless @header['range']
-    self['Range'].split(/,/).map {|spec|
-      m = /bytes\s*=\s*(\d+)?\s*-\s*(\d+)?/i.match(spec) or
-              raise HTTPHeaderSyntaxError, "wrong Range: #{spec}"
+
+    value = self['Range']
+    # byte-range-set = *( "," OWS ) ( byte-range-spec / suffix-byte-range-spec )
+    #   *( OWS "," [ OWS ( byte-range-spec / suffix-byte-range-spec ) ] )
+    # corrected collected ABNF
+    # http://tools.ietf.org/html/draft-ietf-httpbis-p5-range-19#section-5.4.1
+    # http://tools.ietf.org/html/draft-ietf-httpbis-p5-range-19#appendix-C
+    # http://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-19#section-3.2.5
+    unless /\Abytes=((?:,[ \t]*)*(?:\d+-\d*|-\d+)(?:[ \t]*,(?:[ \t]*\d+-\d*|-\d+)?)*)\z/ =~ value
+      raise Net::HTTPHeaderSyntaxError, "invalid syntax for byte-ranges-specifier: '#{value}'"
+    end
+
+    byte_range_set = $1
+    result = byte_range_set.split(/,/).map {|spec|
+      m = /(\d+)?\s*-\s*(\d+)?/i.match(spec) or
+              raise Net::HTTPHeaderSyntaxError, "invalid byte-range-spec: '#{spec}'"
       d1 = m[1].to_i
       d2 = m[2].to_i
-      if    m[1] and m[2] then  d1..d2
-      elsif m[1]          then  d1..-1
-      elsif          m[2] then -d2..-1
+      if m[1] and m[2]
+        if d1 > d2
+          raise Net::HTTPHeaderSyntaxError, "last-byte-pos MUST greater than or equal to first-byte-pos but '#{spec}'"
+        end
+        d1..d2
+      elsif m[1]
+        d1..-1
+      elsif m[2]
+        -d2..-1
       else
-        raise HTTPHeaderSyntaxError, 'range is not specified'
+        raise Net::HTTPHeaderSyntaxError, 'range is not specified'
       end
     }
+    # if result.empty?
+    # byte-range-set must include at least one byte-range-spec or suffix-byte-range-spec
+    # but above regexp already denies it.
+    if result.size == 1 && result[0].begin == 0 && result[0].end == -1
+      raise Net::HTTPHeaderSyntaxError, 'only one suffix-byte-range-spec with zero suffix-length'
+    end
+    result
   end
 
   # Sets the HTTP Range: header.

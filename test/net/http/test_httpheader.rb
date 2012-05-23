@@ -156,15 +156,32 @@ class HTTPHeaderTest < Test::Unit::TestCase
   end
 
   def test_range
-    try_range(1..5,     '1-5')
-    try_range(234..567, '234-567')
-    try_range(-5..-1,   '-5')
-    try_range(1..-1,    '1-')
+    try_range([1..5],     '1-5')
+    try_invalid_range('5-1')
+    try_range([234..567], '234-567')
+    try_range([-5..-1],   '-5')
+    try_invalid_range('-0')
+    try_range([1..-1],    '1-')
+    try_range([0..0,-1..-1],    '0-0,-1')
+    try_range([1..2, 3..4], '1-2,3-4')
+    try_range([1..2, 3..4], '1-2 , 3-4')
+    try_range([1..2, 1..4], '1-2,1-4')
+
+    try_invalid_range('invalid')
+    try_invalid_range(' 12-')
+    try_invalid_range('12- ')
+    try_invalid_range('123-abc')
+    try_invalid_range('abc-123')
   end
 
   def try_range(r, s)
     @c['range'] = "bytes=#{s}"
-    assert_equal r, Array(@c.range)[0]
+    assert_equal r, @c.range
+  end
+
+  def try_invalid_range(s)
+    @c['range'] = "bytes=#{s}"
+    assert_raise(Net::HTTPHeaderSyntaxError, s){ @c.range }
   end
 
   def test_range=
