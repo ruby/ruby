@@ -1,3 +1,10 @@
+Wed May 23 10:18:54 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (finish_overlapped_socket, overlapped_socket_io):
+	  replace ECONNABORTED to EPIPE in send, sendto and sendmsg to improve
+	  BSD socket compatibility.  this change removes a failure on the test
+	  of net/ftp.
+
 Wed May 23 05:35:58 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http.rb:  Broke up Net::HTTP into individual files.

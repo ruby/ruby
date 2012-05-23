@@ -3084,7 +3084,7 @@ rb_w32_listen(int s, int backlog)
 
 /* License: Ruby's */
 static int
-finish_overlapped_socket(SOCKET s, WSAOVERLAPPED *wol, int result, DWORD *len, DWORD size)
+finish_overlapped_socket(BOOL input, SOCKET s, WSAOVERLAPPED *wol, int result, DWORD *len, DWORD size)
 {
     DWORD flg;
     int err;
@@ -3103,7 +3103,10 @@ finish_overlapped_socket(SOCKET s, WSAOVERLAPPED *wol, int result, DWORD *len, D
 	    }
 	    /* thru */
 	  default:
-	    errno = map_errno(WSAGetLastError());
+	    if ((err = WSAGetLastError()) == WSAECONNABORTED && !input)
+		errno = EPIPE;
+	    else
+		errno = map_errno(WSAGetLastError());
 	    /* thru */
 	  case WAIT_OBJECT_0 + 1:
 	    /* interrupted */
@@ -3113,7 +3116,10 @@ finish_overlapped_socket(SOCKET s, WSAOVERLAPPED *wol, int result, DWORD *len, D
 	}
     }
     else {
-	errno = map_errno(err);
+	if (err == WSAECONNABORTED && !input)
+	    errno = EPIPE;
+	else
+	    errno = map_errno(err);
 	*len = -1;
     }
     CloseHandle(wol->hEvent);
@@ -3146,15 +3152,22 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 		    r = recvfrom(s, buf, len, flags, addr, addrlen);
 		else
 		    r = recv(s, buf, len, flags);
+		if (r == SOCKET_ERROR)
+		    errno = map_errno(WSAGetLastError());
 	    }
 	    else {
 		if (addr && addrlen)
 		    r = sendto(s, buf, len, flags, addr, *addrlen);
 		else
 		    r = send(s, buf, len, flags);
+		if (r == SOCKET_ERROR) {
+		    DWORD err = WSAGetLastError();
+		    if (err == WSAECONNABORTED)
+			errno = EPIPE;
+		    else
+			errno = map_errno(err);
+		}
 	    }
-	    if (r == SOCKET_ERROR)
-		errno = map_errno(WSAGetLastError());
 	});
     }
     else {
@@ -3182,7 +3195,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 	    }
 	});
 
-	finish_overlapped_socket(s, &wol, ret, &rlen, size);
+	finish_overlapped_socket(input, s, &wol, ret, &rlen, size);
 	r = (int)rlen;
     }
 
@@ -3300,7 +3313,7 @@ recvmsg(int fd, struct msghdr *msg, int flags)
 	    ret = pWSARecvMsg(s, &wsamsg, &size, &wol, NULL);
 	});
 
-	ret = finish_overlapped_socket(s, &wol, ret, &len, size);
+	ret = finish_overlapped_socket(TRUE, s, &wol, ret, &len, size);
     }
     if (ret == SOCKET_ERROR)
 	return -1;
@@ -3357,7 +3370,7 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
 	    ret = pWSASendMsg(s, &wsamsg, flags, &size, &wol, NULL);
 	});
 
-	finish_overlapped_socket(s, &wol, ret, &len, size);
+	finish_overlapped_socket(FALSE, s, &wol, ret, &len, size);
     }
 
     return len;
