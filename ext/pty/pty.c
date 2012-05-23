@@ -461,7 +461,7 @@ pty_close_pty(VALUE assoc)
 
     for (i = 0; i < 2; i++) {
         io = rb_ary_entry(assoc, i);
-        if (TYPE(io) == T_FILE && 0 <= RFILE(io)->fptr->fd)
+        if (RB_TYPE_P(io, T_FILE) && 0 <= RFILE(io)->fptr->fd)
             rb_io_close(io);
     }
     return Qnil;

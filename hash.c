@@ -45,7 +45,7 @@ rb_any_cmp(VALUE a, VALUE b)
 	return a != b;
     }
     if (RB_TYPE_P(a, T_STRING) && RBASIC(a)->klass == rb_cString &&
-	TYPE(b) == T_STRING && RBASIC(b)->klass == rb_cString) {
+	RB_TYPE_P(b, T_STRING) && RBASIC(b)->klass == rb_cString) {
 	return rb_str_hash_cmp(a, b);
     }
     if (a == Qundef || b == Qundef) return -1;

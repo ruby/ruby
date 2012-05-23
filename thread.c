@@ -733,7 +733,7 @@ thread_join(rb_thread_t *target_th, double delay)
 	if (FIXNUM_P(err)) {
 	    /* */
 	}
-	else if (TYPE(target_th->errinfo) == T_NODE) {
+	else if (RB_TYPE_P(target_th->errinfo, T_NODE)) {
 	    rb_exc_raise(rb_vm_make_jump_tag_but_local_jump(
 		GET_THROWOBJ_STATE(err), GET_THROWOBJ_VAL(err)));
 	}

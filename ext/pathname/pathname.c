@@ -9,7 +9,7 @@ get_strpath(VALUE obj)
 {
     VALUE strpath;
     strpath = rb_ivar_get(obj, id_at_path);
-    if (TYPE(strpath) != T_STRING)
+    if (!RB_TYPE_P(strpath, T_STRING))
         rb_raise(rb_eTypeError, "unexpected @path");
     return strpath;
 }
@@ -28,7 +28,7 @@ static VALUE
 path_initialize(VALUE self, VALUE arg)
 {
     VALUE str;
-    if (TYPE(arg) == T_STRING) {
+    if (RB_TYPE_P(arg, T_STRING)) {
         str = arg;
     }
     else {

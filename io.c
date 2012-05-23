@@ -6495,7 +6495,7 @@ rb_f_printf(int argc, VALUE *argv)
     VALUE out;
 
     if (argc == 0) return Qnil;
-    if (TYPE(argv[0]) == T_STRING) {
+    if (RB_TYPE_P(argv[0], T_STRING)) {
 	out = rb_stdout;
     }
     else {
@@ -6705,7 +6705,7 @@ rb_io_puts(int argc, VALUE *argv, VALUE out)
 	return Qnil;
     }
     for (i=0; i<argc; i++) {
-	if (TYPE(argv[i]) == T_STRING) {
+	if (RB_TYPE_P(argv[i], T_STRING)) {
 	    line = argv[i];
 	    goto string;
 	}
@@ -7336,7 +7336,7 @@ argf_forward(int argc, VALUE *argv, VALUE argf)
 
 #define next_argv() argf_next_argv(argf)
 #define ARGF_GENERIC_INPUT_P() \
-    (ARGF.current_file == rb_stdin && TYPE(ARGF.current_file) != T_FILE)
+    (ARGF.current_file == rb_stdin && !RB_TYPE_P(ARGF.current_file, T_FILE))
 #define ARGF_FORWARD(argc, argv) do {\
     if (ARGF_GENERIC_INPUT_P())\
 	return argf_forward((argc), (argv), argf);\
@@ -9831,13 +9831,13 @@ copy_stream_body(VALUE arg)
     stp->total = 0;
 
     if (stp->src == argf ||
-        !(TYPE(stp->src) == T_FILE ||
-          TYPE(stp->src) == T_STRING ||
+        !(RB_TYPE_P(stp->src, T_FILE) ||
+          RB_TYPE_P(stp->src, T_STRING) ||
           rb_respond_to(stp->src, rb_intern("to_path")))) {
         src_fd = -1;
     }
     else {
-        src_io = TYPE(stp->src) == T_FILE ? stp->src : Qnil;
+        src_io = RB_TYPE_P(stp->src, T_FILE) ? stp->src : Qnil;
         if (NIL_P(src_io)) {
             VALUE args[2];
             int oflags = O_RDONLY;
@@ -9858,13 +9858,13 @@ copy_stream_body(VALUE arg)
     stp->src_fd = src_fd;
 
     if (stp->dst == argf ||
-        !(TYPE(stp->dst) == T_FILE ||
-          TYPE(stp->dst) == T_STRING ||
+        !(RB_TYPE_P(stp->dst, T_FILE) ||
+          RB_TYPE_P(stp->dst, T_STRING) ||
           rb_respond_to(stp->dst, rb_intern("to_path")))) {
         dst_fd = -1;
     }
     else {
-        dst_io = TYPE(stp->dst) == T_FILE ? stp->dst : Qnil;
+        dst_io = RB_TYPE_P(stp->dst, T_FILE) ? stp->dst : Qnil;
         if (NIL_P(dst_io)) {
             VALUE args[3];
             int oflags = O_WRONLY|O_CREAT|O_TRUNC;
@@ -10609,7 +10609,7 @@ argf_getbyte(VALUE argf)
 
   retry:
     if (!next_argv()) return Qnil;
-    if (TYPE(ARGF.current_file) != T_FILE) {
+    if (!RB_TYPE_P(ARGF.current_file, T_FILE)) {
 	ch = rb_funcall3(ARGF.current_file, rb_intern("getbyte"), 0, 0);
     }
     else {
@@ -10649,7 +10649,7 @@ argf_readchar(VALUE argf)
 
   retry:
     if (!next_argv()) rb_eof_error();
-    if (TYPE(ARGF.current_file) != T_FILE) {
+    if (!RB_TYPE_P(ARGF.current_file, T_FILE)) {
 	ch = rb_funcall3(ARGF.current_file, rb_intern("getc"), 0, 0);
     }
     else {

@@ -2057,7 +2057,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		    p = RARRAY_PTR(a);
 		    pend = p + RARRAY_LEN(a);
 		    while (p < pend) {
-			if (TYPE(*p) == T_STRING && RSTRING_PTR(*p) == t) {
+			if (RB_TYPE_P(*p, T_STRING) && RSTRING_PTR(*p) == t) {
 			    if (len < RSTRING_LEN(*p)) {
 				tmp = rb_tainted_str_new(t, len);
 				rb_str_associate(tmp, a);
@@ -2099,7 +2099,7 @@ pack_unpack(VALUE str, VALUE fmt)
 			p = RARRAY_PTR(a);
 			pend = p + RARRAY_LEN(a);
 			while (p < pend) {
-			    if (TYPE(*p) == T_STRING && RSTRING_PTR(*p) == t) {
+			    if (RB_TYPE_P(*p, T_STRING) && RSTRING_PTR(*p) == t) {
 				tmp = *p;
 				break;
 			    }

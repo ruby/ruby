@@ -451,7 +451,7 @@ rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *pare
 int
 rb_typeddata_is_kind_of(VALUE obj, const rb_data_type_t *data_type)
 {
-    if (SPECIAL_CONST_P(obj) || BUILTIN_TYPE(obj) != T_DATA ||
+    if (!RB_TYPE_P(obj, T_DATA) ||
 	!RTYPEDDATA_P(obj) || !rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
 	return 0;
     }
@@ -464,7 +464,7 @@ rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
     const char *etype;
     static const char mesg[] = "wrong argument type %s (expected %s)";
 
-    if (SPECIAL_CONST_P(obj) || BUILTIN_TYPE(obj) != T_DATA) {
+    if (!RB_TYPE_P(obj, T_DATA)) {
 	etype = builtin_type_name(obj);
 	rb_raise(rb_eTypeError, mesg, etype, data_type->wrap_struct_name);
     }

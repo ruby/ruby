@@ -673,25 +673,25 @@ make_inspectname(VALUE node, VALUE service, struct addrinfo *res)
                              sizeof(hbuf), pbuf, sizeof(pbuf),
                              NI_NUMERICHOST|NI_NUMERICSERV);
         if (ret == 0) {
-            if (TYPE(node) == T_STRING && strcmp(hbuf, RSTRING_PTR(node)) == 0)
+            if (RB_TYPE_P(node, T_STRING) && strcmp(hbuf, RSTRING_PTR(node)) == 0)
                 node = Qnil;
-            if (TYPE(service) == T_STRING && strcmp(pbuf, RSTRING_PTR(service)) == 0)
+            if (RB_TYPE_P(service, T_STRING) && strcmp(pbuf, RSTRING_PTR(service)) == 0)
                 service = Qnil;
-            else if (TYPE(service) == T_FIXNUM && atoi(pbuf) == FIX2INT(service))
+            else if (RB_TYPE_P(service, T_FIXNUM) && atoi(pbuf) == FIX2INT(service))
                 service = Qnil;
         }
     }
 
-    if (TYPE(node) == T_STRING) {
+    if (RB_TYPE_P(node, T_STRING)) {
         inspectname = rb_str_dup(node);
     }
-    if (TYPE(service) == T_STRING) {
+    if (RB_TYPE_P(service, T_STRING)) {
         if (NIL_P(inspectname))
             inspectname = rb_sprintf(":%s", StringValueCStr(service));
         else
             rb_str_catf(inspectname, ":%s", StringValueCStr(service));
     }
-    else if (TYPE(service) == T_FIXNUM && FIX2INT(service) != 0)
+    else if (RB_TYPE_P(service, T_FIXNUM) && FIX2INT(service) != 0)
     {
         if (NIL_P(inspectname))
             inspectname = rb_sprintf(":%d", FIX2INT(service));

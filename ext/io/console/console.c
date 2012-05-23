@@ -659,7 +659,7 @@ console_dev(VALUE klass)
     if (klass == rb_cIO) klass = rb_cFile;
     if (rb_const_defined(klass, id_console)) {
 	con = rb_const_get(klass, id_console);
-	if (TYPE(con) == T_FILE) {
+	if (RB_TYPE_P(con, T_FILE)) {
 	    if ((fptr = RFILE(con)->fptr) && GetReadFD(fptr) != -1)
 		return con;
 	}

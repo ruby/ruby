@@ -506,7 +506,7 @@ static VALUE
 strio_reopen(int argc, VALUE *argv, VALUE self)
 {
     rb_io_taint_check(self);
-    if (argc == 1 && TYPE(*argv) != T_STRING) {
+    if (argc == 1 && !RB_TYPE_P(*argv, T_STRING)) {
 	return strio_copy(self, *argv);
     }
     strio_init(argc, argv, StringIO(self));
@@ -931,7 +931,7 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 	break;
 
       case 1:
-	if (!NIL_P(str) && TYPE(str) != T_STRING) {
+	if (!NIL_P(str) && !RB_TYPE_P(str, T_STRING)) {
 	    VALUE tmp = rb_check_string_type(str);
 	    if (NIL_P(tmp)) {
 		limit = NUM2LONG(str);
@@ -1124,7 +1124,7 @@ strio_write(VALUE self, VALUE str)
     rb_encoding *enc, *enc2;
 
     RB_GC_GUARD(str);
-    if (TYPE(str) != T_STRING)
+    if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
     enc = rb_enc_get(ptr->string);
     enc2 = rb_enc_get(str);

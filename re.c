@@ -2907,7 +2907,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     long len;
 
     rb_check_arity(argc, 1, 3);
-    if (TYPE(argv[0]) == T_REGEXP) {
+    if (RB_TYPE_P(argv[0], T_REGEXP)) {
 	VALUE re = argv[0];
 
 	if (argc > 1) {

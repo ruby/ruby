@@ -196,7 +196,7 @@ ancillary_s_unix_rights(int argc, VALUE *argv, VALUE klass)
 
     for (i = 0 ; i < argc; i++) {
         VALUE obj = argv[i];
-        if (TYPE(obj) != T_FILE) {
+        if (!RB_TYPE_P(obj, T_FILE)) {
             rb_raise(rb_eTypeError, "IO expected");
         }
         rb_ary_push(ary, obj);
@@ -1496,7 +1496,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     rb_secure(4);
 
     vopts = Qnil;
-    if (0 < argc && TYPE(argv[argc-1]) == T_HASH)
+    if (0 < argc && RB_TYPE_P(argv[argc-1], T_HASH))
         vopts = argv[--argc];
 
     rb_scan_args(argc, argv, "03", &vmaxdatlen, &vflags, &vmaxctllen);

@@ -1369,7 +1369,7 @@ static VALUE
 lazy_flat_map_func(VALUE val, VALUE m, int argc, VALUE *argv)
 {
     VALUE result = rb_yield_values2(argc - 1, &argv[1]);
-    if (TYPE(result) == T_ARRAY) {
+    if (RB_TYPE_P(result, T_ARRAY)) {
 	long i;
 	for (i = 0; i < RARRAY_LEN(result); i++) {
 	    rb_funcall(argv[0], id_yield, 1, RARRAY_PTR(result)[i]);

@@ -416,7 +416,7 @@ extract_user_token(struct cparse_params *v, VALUE block_args,
         return;
     }
 
-    if (TYPE(block_args) != T_ARRAY) {
+    if (!RB_TYPE_P(block_args, T_ARRAY)) {
         rb_raise(rb_eTypeError,
                  "%s() %s %s (must be Array[2])",
                  v->lex_is_iterator ? rb_id2name(v->lexmid) : "next_token",

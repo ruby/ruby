@@ -1058,7 +1058,7 @@ errinfo_place(rb_thread_t *th)
 		return &cfp->dfp[-2];
 	    }
 	    else if (cfp->iseq->type == ISEQ_TYPE_ENSURE &&
-		     TYPE(cfp->dfp[-2]) != T_NODE &&
+		     !RB_TYPE_P(cfp->dfp[-2], T_NODE) &&
 		     !FIXNUM_P(cfp->dfp[-2])) {
 		return &cfp->dfp[-2];
 	    }

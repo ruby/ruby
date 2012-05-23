@@ -1970,7 +1970,7 @@ proc_binding(VALUE self)
     rb_binding_t *bind;
 
     GetProcPtr(self, proc);
-    if (TYPE(proc->block.iseq) == T_NODE) {
+    if (RB_TYPE_P((VALUE)proc->block.iseq, T_NODE)) {
 	if (!IS_METHOD_PROC_NODE((NODE *)proc->block.iseq)) {
 	    rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
 	}
