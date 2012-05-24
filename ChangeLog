@@ -1,3 +1,7 @@
+Thu May 24 12:07:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_strip_bom): check EOF.  [Bug #6487][ruby-core:45203]
+
 Wed May 23 22:06:14 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http/header.rb (Net::HTTPHeader#range): fix broken parser of
