@@ -154,10 +154,9 @@ unknown_keyword_error(const rb_iseq_t *iseq, VALUE hash)
     }
     keys = rb_funcall(hash, rb_intern("keys"), 0, 0);
     if (!RB_TYPE_P(keys, T_ARRAY)) rb_raise(rb_eArgError, "unknown keyword");
-    msg = RARRAY_LEN(keys) == 1 ? "unknown keyword: %s" : "unknown keywords: %s";
+    msg = RARRAY_LEN(keys) == 1 ? "" : "s";
     keys = rb_funcall(keys, rb_intern("join"), 1, sep);
-    RB_GC_GUARD(keys);
-    rb_raise(rb_eArgError, msg, RSTRING_PTR(keys));
+    rb_raise(rb_eArgError, "unknown keyword%s: %"PRIsVALUE, msg, keys);
 }
 
 void

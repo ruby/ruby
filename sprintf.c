@@ -1146,6 +1146,11 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #define BSD__hdtoa ruby_hdtoa
 #include "vsnprintf.c"
 
+typedef struct {
+    rb_printf_buffer base;
+    volatile VALUE value;
+} rb_printf_buffer_extra;
+
 static int
 ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
 {
@@ -1172,10 +1177,41 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
     return 0;
 }
 
+static char *
+ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz)
+{
+    VALUE value, result = (VALUE)fp->_bf._base;
+    rb_encoding *enc;
+    char *cp;
+
+    if (valsize != sizeof(VALUE)) return 0;
+    value = *(VALUE *)valp;
+    if (RBASIC(result)->klass) {
+	rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");
+    }
+    value = rb_obj_as_string(value);
+    enc = rb_enc_compatible(result, value);
+    if (enc) {
+	rb_enc_associate(result, enc);
+    }
+    else {
+	enc = rb_enc_get(result);
+	value = rb_str_conv_enc_opts(value, rb_enc_get(value), enc,
+				     ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE,
+				     Qnil);
+	*(volatile VALUE *)valp = value;
+    }
+    StringValueCStr(value);
+    RSTRING_GETMEM(value, cp, *sz);
+    ((rb_printf_buffer_extra *)fp)->value = value;
+    return cp;
+}
+
 VALUE
 rb_enc_vsprintf(rb_encoding *enc, const char *fmt, va_list ap)
 {
-    rb_printf_buffer f;
+    rb_printf_buffer_extra buffer;
+#define f buffer.base
     VALUE result;
 
     f._flags = __SWR | __SSTR;
@@ -1194,9 +1230,12 @@ rb_enc_vsprintf(rb_encoding *enc, const char *fmt, va_list ap)
     f._p = (unsigned char *)RSTRING_PTR(result);
     RBASIC(result)->klass = 0;
     f.vwrite = ruby__sfvwrite;
+    f.vextra = ruby__sfvextra;
+    buffer.value = 0;
     BSD_vfprintf(&f, fmt, ap);
     RBASIC(result)->klass = rb_cString;
     rb_str_resize(result, (char *)f._p - RSTRING_PTR(result));
+#undef f
 
     return result;
 }
@@ -1236,7 +1275,8 @@ rb_sprintf(const char *format, ...)
 VALUE
 rb_str_vcatf(VALUE str, const char *fmt, va_list ap)
 {
-    rb_printf_buffer f;
+    rb_printf_buffer_extra buffer;
+#define f buffer.base
     VALUE klass;
 
     StringValue(str);
@@ -1249,9 +1289,12 @@ rb_str_vcatf(VALUE str, const char *fmt, va_list ap)
     klass = RBASIC(str)->klass;
     RBASIC(str)->klass = 0;
     f.vwrite = ruby__sfvwrite;
+    f.vextra = ruby__sfvextra;
+    buffer.value = 0;
     BSD_vfprintf(&f, fmt, ap);
     RBASIC(str)->klass = klass;
     rb_str_resize(str, (char *)f._p - RSTRING_PTR(str));
+#undef f
 
     return str;
 }

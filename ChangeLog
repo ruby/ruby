@@ -1,3 +1,8 @@
+Thu May 24 23:36:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vsnprintf.c (BSD_vfprintf): [EXPERIMENTAL] object representation in
+	  rb_enc_vsprintf(). [Feature #5896]
+
 Thu May 24 15:33:01 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_method.c (rb_method_defined_by): removed.
