@@ -1,3 +1,8 @@
+Fri May 25 00:37:22 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/rubygems/test_gem_indexer.rb (setup, teardown): save @tempdir
+	  to remove it properly.  [Bug #5348]
+
 Thu May 24 23:36:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vsnprintf.c (BSD_vfprintf): [EXPERIMENTAL] object representation in
