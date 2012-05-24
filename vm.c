@@ -822,7 +822,7 @@ frame_info_to_str_override(rb_frame_info_t *fi, VALUE *args)
 
 typedef struct rb_backtrace_struct {
     rb_frame_info_t *backtrace;
-    int backtrace_size;
+    size_t backtrace_size;
     VALUE str;
 } rb_backtrace_t;
 
@@ -831,7 +831,7 @@ backtrace_mark(void *ptr)
 {
     if (ptr) {
 	rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
-	int i, s = bt->backtrace_size;
+	size_t i, s = bt->backtrace_size;
 
 	for (i=0; i<s; i++) {
 	    frame_info_mark(&bt->backtrace[i]);
@@ -885,19 +885,19 @@ backtrace_alloc(VALUE klass)
 }
 
 static VALUE
-backtrace_object(rb_thread_t *th, int lev, int n)
+backtrace_object(rb_thread_t *th, int lev, ptrdiff_t n)
 {
     VALUE btobj = backtrace_alloc(rb_cBacktrace);
     rb_backtrace_t *bt;
     rb_control_frame_t *last_cfp = th->cfp;
     rb_control_frame_t *start_cfp = RUBY_VM_END_CONTROL_FRAME(th);
     rb_control_frame_t *cfp;
-    int size, i, j;
+    ptrdiff_t size, i, j;
 
     start_cfp = RUBY_VM_NEXT_CONTROL_FRAME(
 	RUBY_VM_NEXT_CONTROL_FRAME(
 	    RUBY_VM_NEXT_CONTROL_FRAME(start_cfp))); /* skip top frames */
-    size = (int)(start_cfp - last_cfp) + 1;	     /* TODO: check overflow */
+    size = (start_cfp - last_cfp) + 1;
 
     if (n <= 0) {
 	n = size + n;
@@ -949,7 +949,7 @@ static VALUE
 backtreace_collect(rb_backtrace_t *bt, VALUE (*func)(rb_frame_info_t *, VALUE *))
 {
     VALUE btary;
-    int i;
+    size_t i;
     VALUE args[3];
     rb_thread_t *th = GET_THREAD();
 
@@ -1016,7 +1016,7 @@ backtrace_load_data(VALUE self, VALUE str)
 /* old style backtrace for compatibility */
 
 static int
-vm_backtrace_each(rb_thread_t *th, int lev, int n, void (*init)(void *), rb_backtrace_iter_func *iter, void *arg)
+vm_backtrace_each(rb_thread_t *th, int lev, ptrdiff_t n, void (*init)(void *), rb_backtrace_iter_func *iter, void *arg)
 {
     const rb_control_frame_t *limit_cfp = th->cfp;
     const rb_control_frame_t *cfp = (void *)(th->stack + th->stack_size);
@@ -1024,7 +1024,7 @@ vm_backtrace_each(rb_thread_t *th, int lev, int n, void (*init)(void *), rb_back
     int line_no = 0;
 
     if (n <= 0) {
-	n = (int)(cfp - limit_cfp); /* TODO: check overflow */
+	n = cfp - limit_cfp;
     }
 
     cfp -= 2;
