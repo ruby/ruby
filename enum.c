@@ -130,11 +130,10 @@ count_all_i(VALUE i, VALUE memop, int argc, VALUE *argv)
  *     enum.count(item)           -> int
  *     enum.count { |obj| block } -> int
  *
- *  Returns the number of items in <i>enum</i> if it responds to a #size call,
- *  otherwise the items are counted through enumeration.  If an argument is
- *  given the number of items in <i>enum</i> that are equal to <i>item</i> are
- *  counted.  If a block is given, it counts the number of elements yielding a
- *  true value.
+ *  Returns the number of items in +enum+ through enumeration.
+ *  If an argument is given, the number of items in +enum+ that
+ *  are equal to +item+ are counted.  If a block is given, it
+ *  counts the number of elements yielding a true value.
  *
  *     ary = [1, 2, 4, 2]
  *     ary.count               #=> 4

@@ -1,3 +1,8 @@
+Fri May 25 08:51:39 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* enum.c (enum_count):  Enumerable#count no longer uses #size when
+	  counting elements.  Patch by Nobuhiro IMAI.  [ruby-trunk - Bug #6473]
+
 Fri May 25 01:15:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (ruby__sfvextra): [EXPERIMENTAL] use inspect instead of
