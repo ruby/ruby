@@ -37,7 +37,9 @@ VALUE rb_cThread;
 VALUE rb_cEnv;
 VALUE rb_mRubyVMFrozenCore;
 VALUE rb_cBacktrace;
+#if 0
 VALUE rb_cFrameInfo;
+#endif
 
 VALUE ruby_vm_const_missing_count = 0;
 char ruby_vm_redefined_flag[BOP_LAST_];
@@ -804,7 +806,7 @@ static VALUE
 frame_info_to_str_override(rb_frame_info_t *fi, VALUE *args)
 {
     switch (fi->type) {
-      case FRAME_INFO_TYPE_ISEQ: 
+      case FRAME_INFO_TYPE_ISEQ:
 	args[0] = fi->body.iseq.iseq->location.filename;
 	args[1] = INT2FIX(calc_line_no(fi->body.iseq.iseq, fi->body.iseq.pc));
 	args[2] = fi->body.iseq.iseq->location.name;
@@ -2446,7 +2448,7 @@ Init_VM(void)
     /* ::RubyVM::Backtrace */
     rb_cBacktrace = rb_define_class_under(rb_cRubyVM, "Backtrace", rb_cObject);
     rb_define_alloc_func(rb_cBacktrace, backtrace_alloc);
-    rb_undef_method(CLASS_OF(rb_cFrameInfo), "new");
+    rb_undef_method(CLASS_OF(rb_cBacktrace), "new");
     rb_define_method(rb_cBacktrace, "_dump_data", backtrace_dump_data, 0);
     rb_define_method(rb_cBacktrace, "_load_data", backtrace_load_data, 1);
 
