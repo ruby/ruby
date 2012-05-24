@@ -897,7 +897,7 @@ backtrace_object(rb_thread_t *th, int lev, int n)
     start_cfp = RUBY_VM_NEXT_CONTROL_FRAME(
 	RUBY_VM_NEXT_CONTROL_FRAME(
 	    RUBY_VM_NEXT_CONTROL_FRAME(start_cfp))); /* skip top frames */
-    size = (start_cfp - last_cfp) + 1;
+    size = (int)(start_cfp - last_cfp) + 1;	     /* TODO: check overflow */
 
     if (n <= 0) {
 	n = size + n;
@@ -1024,7 +1024,7 @@ vm_backtrace_each(rb_thread_t *th, int lev, int n, void (*init)(void *), rb_back
     int line_no = 0;
 
     if (n <= 0) {
-	n = cfp - limit_cfp;
+	n = (int)(cfp - limit_cfp); /* TODO: check overflow */
     }
 
     cfp -= 2;

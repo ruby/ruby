@@ -9,7 +9,7 @@ Thu May 24 15:33:01 2012  Koichi Sasada  <ko1@atdot.net>
 Thu May 24 14:30:13 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c: add RubyVM::Backtrace object (btobj).
-	  Backtrace information contains an array consists of location 
+	  Backtrace information contains an array consists of location
           information for each frames by string.
 	  RubyVM::Backtrace object is lightweight backtrace information,
 	  which contains complete information to generate traditional style
@@ -32,11 +32,11 @@ Thu May 24 14:30:13 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_settracefunc.rb: fix for above change.
 
-	* vm_method.c (rb_method_defined_by): added.  This function 
+	* vm_method.c (rb_method_defined_by): added.  This function
 	  checks that the given object responds with the given method
 	  by the given cfunc.
 
-	* benchmark/bm_vm2_raise1.rb, benchmark/bm_vm2_raise2.rb: 
+	* benchmark/bm_vm2_raise1.rb, benchmark/bm_vm2_raise2.rb:
 	  add to measure exception creation speed. raise1 create
 	  exception objects from shallow stack frame.  raise2 create
 	  exception objects from deep stack frame.
@@ -343,7 +343,7 @@ Thu May 17 10:54:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Wed May 16 15:44:22 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* configure.in: Fix an unbalanced quote.
- 
+
 Wed May 16 15:43:10 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/extmk.rb (exts.mk): use double quotes instead of single quotes
@@ -567,7 +567,7 @@ Wed May  9 06:23:33 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Wed May  9 04:31:26 2012  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* lib/rinda/ring.rb (lookup_ring_any): fix Rinda::RingFinger.primary 
+	* lib/rinda/ring.rb (lookup_ring_any): fix Rinda::RingFinger.primary
 	  hungs forever. [ruby-talk:395364]
 
 Tue May  8 21:09:00 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
@@ -742,7 +742,7 @@ Mon May  7 10:16:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon May 07 09:14:11 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
-	* ext/openssl/ossl_ssl.c: support TLSv1.1 & TLSv1.2. Add 
+	* ext/openssl/ossl_ssl.c: support TLSv1.1 & TLSv1.2. Add
 	  SSLContext#version to inspect the version that was negotiated for
 	  a given connection.
 	* ext/openssl/extconf.rb: detect TLS 1.1 & 1.2 support.
