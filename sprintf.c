@@ -1178,7 +1178,7 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
 }
 
 static char *
-ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz)
+ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int sign)
 {
     VALUE value, result = (VALUE)fp->_bf._base;
     rb_encoding *enc;
@@ -1189,7 +1189,12 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz)
     if (RBASIC(result)->klass) {
 	rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");
     }
-    value = rb_obj_as_string(value);
+    if (sign == '+') {
+	value = rb_inspect(value);
+    }
+    else {
+	value = rb_obj_as_string(value);
+    }
     enc = rb_enc_compatible(result, value);
     if (enc) {
 	rb_enc_associate(result, enc);

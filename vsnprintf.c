@@ -183,7 +183,7 @@ typedef	struct __sFILE {
 	struct	__sbuf _bf;	/* the buffer (at least 1 byte, if !NULL) */
 	size_t	_lbfsize;	/* 0 or -_bf._size, for inline putc */
 	int	(*vwrite)(/* struct __sFILE*, struct __suio * */);
-	char	*(*vextra)(/* struct __sFILE*, size_t, void*, long* */);
+	char	*(*vextra)(/* struct __sFILE*, size_t, void*, long*, int */);
 } FILE;
 
 
@@ -811,11 +811,12 @@ reswitch:	switch (ch) {
 				FLUSH();
 #if defined _HAVE_SANE_QUAD_ && SIZEOF_VOIDP == SIZEOF_LONG_LONG
 				uqval = va_arg(ap, u_quad_t);
-				cp = (*fp->vextra)(fp, sizeof(uqval), &uqval, &fieldsz);
+				cp = (*fp->vextra)(fp, sizeof(uqval), &uqval, &fieldsz, sign);
 #else
 				ulval = va_arg(ap, u_long);
-				cp = (*fp->vextra)(fp, sizeof(ulval), &ulval, &fieldsz);
+				cp = (*fp->vextra)(fp, sizeof(ulval), &ulval, &fieldsz, sign);
 #endif
+				sign = '\0';
 				if (!cp) goto error;
 				if (prec < 0) goto long_len;
 				size = fieldsz < prec ? (int)fieldsz : prec;
