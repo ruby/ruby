@@ -83,6 +83,7 @@ void rb_gc_mark_encodings(void);
 NORETURN(PRINTF_ARGS(void rb_compile_bug(const char*, int, const char*, ...), 3, 4));
 VALUE rb_check_backtrace(VALUE);
 NORETURN(void rb_async_bug_errno(const char *,int));
+VALUE rb_exc_set_backtrace(VALUE exc, VALUE bt);
 
 /* eval_error.c */
 void ruby_error_print(void);
@@ -207,6 +208,9 @@ void rb_vm_inc_const_missing_count(void);
 void rb_thread_mark(void *th);
 const void **rb_vm_get_insns_address_table(void);
 VALUE rb_sourcefilename(void);
+int rb_backtrace_p(VALUE obj);
+VALUE rb_backtrace_to_str_ary(VALUE obj);
+VALUE rb_vm_backtrace_object();
 
 /* vm_dump.c */
 void rb_vm_bugreport(void);
@@ -217,6 +221,7 @@ VALUE rb_current_realfilepath(void);
 
 /* vm_method.c */
 void Init_eval_method(void);
+int rb_method_defined_by(VALUE obj, ID mid, VALUE (*cfunc)(ANYARGS));
 
 /* miniprelude.c, prelude.c */
 void Init_prelude(void);

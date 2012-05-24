@@ -36,13 +36,15 @@ VALUE rb_cRubyVM;
 VALUE rb_cThread;
 VALUE rb_cEnv;
 VALUE rb_mRubyVMFrozenCore;
+VALUE rb_cBacktrace;
+VALUE rb_cFrameInfo;
 
 VALUE ruby_vm_const_missing_count = 0;
-
 char ruby_vm_redefined_flag[BOP_LAST_];
-
 rb_thread_t *ruby_current_thread = 0;
 rb_vm_t *ruby_current_vm = 0;
+
+extern VALUE ruby_engine_name;
 
 static void thread_free(void *ptr);
 
@@ -731,6 +733,12 @@ rb_lastline_set(VALUE val)
 
 /* backtrace */
 
+inline static int
+calc_line_no(const rb_iseq_t *iseq, VALUE *pc)
+{
+    return rb_iseq_line_no(iseq, pc - iseq->iseq_encoded);
+}
+
 int
 rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 {
@@ -738,22 +746,289 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
     const rb_iseq_t *iseq = cfp->iseq;
 
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	size_t pos = cfp->pc - cfp->iseq->iseq_encoded;
-	line_no = rb_iseq_line_no(iseq, pos);
+	line_no = calc_line_no(cfp->iseq, cfp->pc);
     }
     return line_no;
 }
 
+typedef struct rb_frame_info_struct {
+    enum FRAME_INFO_TYPE {
+	FRAME_INFO_TYPE_ISEQ = 1,
+	FRAME_INFO_TYPE_CFUNC,
+	FRAME_INFO_TYPE_IFUNC,
+    } type;
+
+    union {
+	struct {
+	    rb_iseq_t *iseq;
+	    VALUE *pc;
+	} iseq;
+	struct {
+	    ID mid;
+	} cfunc;
+    } body;
+} rb_frame_info_t;
+
+static void
+frame_info_mark(void *ptr)
+{
+    if (ptr) {
+	rb_frame_info_t *fi = (rb_frame_info_t *)ptr;
+
+	switch (fi->type) {
+	  case FRAME_INFO_TYPE_ISEQ:
+	    rb_gc_mark(fi->body.iseq.iseq->self);
+	    break;
+	  case FRAME_INFO_TYPE_CFUNC:
+	  case FRAME_INFO_TYPE_IFUNC:
+	  default:
+	    break;
+	}
+    }
+}
+
+static VALUE
+frame_info_format(VALUE file, VALUE line_no, VALUE name)
+{
+    if (line_no != INT2FIX(0)) {
+	return rb_enc_sprintf(rb_enc_compatible(file, name), "%s:%d:in `%s'",
+			      RSTRING_PTR(file), FIX2INT(line_no), RSTRING_PTR(name));
+    }
+    else {
+	return rb_enc_sprintf(rb_enc_compatible(file, name), "%s:in `%s'",
+			      RSTRING_PTR(file), RSTRING_PTR(name));
+    }
+}
+
+static VALUE
+frame_info_to_str_override(rb_frame_info_t *fi, VALUE *args)
+{
+    switch (fi->type) {
+      case FRAME_INFO_TYPE_ISEQ: 
+	args[0] = fi->body.iseq.iseq->location.filename;
+	args[1] = INT2FIX(calc_line_no(fi->body.iseq.iseq, fi->body.iseq.pc));
+	args[2] = fi->body.iseq.iseq->location.name;
+	break;
+      case FRAME_INFO_TYPE_CFUNC:
+	args[2] = rb_id2str(fi->body.cfunc.mid);
+	break;
+      case FRAME_INFO_TYPE_IFUNC:
+      default:
+	rb_bug("frame_info_to_str_overwrite: unreachable");
+    }
+
+    return frame_info_format(args[0], args[1], args[2]);
+}
+
+typedef struct rb_backtrace_struct {
+    rb_frame_info_t *backtrace;
+    int backtrace_size;
+    VALUE str;
+} rb_backtrace_t;
+
+static void
+backtrace_mark(void *ptr)
+{
+    if (ptr) {
+	rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
+	int i, s = bt->backtrace_size;
+
+	for (i=0; i<s; i++) {
+	    frame_info_mark(&bt->backtrace[i]);
+	    rb_gc_mark(bt->str);
+	}
+    }
+}
+
+static void
+backtrace_free(void *ptr)
+{
+   if (ptr) {
+       rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
+       if (bt->backtrace) ruby_xfree(bt->backtrace);
+       ruby_xfree(bt);
+   }
+}
+
+static size_t
+backtrace_memsize(const void *ptr)
+{
+    rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
+    return sizeof(rb_backtrace_t) + sizeof(rb_frame_info_t) * bt->backtrace_size;
+}
+
+static const rb_data_type_t backtrace_data_type = {
+    "backtrace",
+    {backtrace_mark, backtrace_free, backtrace_memsize,},
+};
+
+int
+rb_backtrace_p(VALUE obj)
+{
+    if (TYPE(obj) == T_DATA && RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj) == &backtrace_data_type) {
+	return 1;
+    }
+    else {
+	return 0;
+    }
+}
+
+static VALUE
+backtrace_alloc(VALUE klass)
+{
+    rb_backtrace_t *bt;
+    VALUE obj = TypedData_Make_Struct(klass, rb_backtrace_t, &backtrace_data_type, bt);
+    bt->backtrace = 0;
+    bt->backtrace_size = 0;
+    bt->str = 0;
+    return obj;
+}
+
+static VALUE
+backtrace_object(rb_thread_t *th, int lev, int n)
+{
+    VALUE btobj = backtrace_alloc(rb_cBacktrace);
+    rb_backtrace_t *bt;
+    rb_control_frame_t *last_cfp = th->cfp;
+    rb_control_frame_t *start_cfp = RUBY_VM_END_CONTROL_FRAME(th);
+    rb_control_frame_t *cfp;
+    int size, i, j;
+
+    start_cfp = RUBY_VM_NEXT_CONTROL_FRAME(
+	RUBY_VM_NEXT_CONTROL_FRAME(
+	    RUBY_VM_NEXT_CONTROL_FRAME(start_cfp))); /* skip top frames */
+    size = (start_cfp - last_cfp) + 1;
+
+    if (n <= 0) {
+	n = size + n;
+	if (n < 0) {
+	    n = 0;
+	}
+    }
+    if (lev < 0) {
+	lev = 0;
+    }
+
+    GetCoreDataFromValue(btobj, rb_backtrace_t, bt);
+    bt->backtrace = ruby_xmalloc(sizeof(rb_frame_info_t) * n);
+    bt->backtrace_size = n;
+
+    for (i=lev, j=0, cfp = start_cfp; i<size && j<n; i++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+	rb_frame_info_t *fi = &bt->backtrace[j];
+
+	if (cfp->iseq) {
+	    if (cfp->pc) {
+		fi->type = FRAME_INFO_TYPE_ISEQ;
+		fi->body.iseq.iseq = cfp->iseq;
+		fi->body.iseq.pc = cfp->pc;
+		j++;
+	    }
+	}
+	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
+	    ID mid = cfp->me->def ? cfp->me->def->original_id : cfp->me->called_id;
+
+	    if (mid != ID_ALLOCATOR) {
+		fi->type = FRAME_INFO_TYPE_CFUNC;
+		fi->body.cfunc.mid = mid;
+		j++;
+	    }
+	}
+    }
+
+    if (j > 0) {
+	bt->backtrace_size = j; /* TODO: realloc? */
+	return btobj;
+    }
+    else {
+	/* gc will free object */
+	return Qnil;
+    }
+}
+
+static VALUE
+backtreace_collect(rb_backtrace_t *bt, VALUE (*func)(rb_frame_info_t *, VALUE *))
+{
+    VALUE btary;
+    int i;
+    VALUE args[3];
+    rb_thread_t *th = GET_THREAD();
+
+    btary = rb_ary_new2(bt->backtrace_size);
+    rb_ary_store(btary, bt->backtrace_size-1, Qnil); /* create places */
+
+    args[0] = th->vm->progname ? th->vm->progname : ruby_engine_name;;
+    args[1] = INT2FIX(0);
+    args[2] = Qnil;
+
+    for (i=0; i<bt->backtrace_size; i++) {
+	rb_frame_info_t *fi = &bt->backtrace[i];
+	RARRAY_PTR(btary)[bt->backtrace_size - i - 1] = func(fi, args);
+    }
+
+    return btary;
+}
+
+VALUE
+rb_backtrace_to_str_ary(VALUE self)
+{
+    rb_backtrace_t *bt;
+    GetCoreDataFromValue(self, rb_backtrace_t, bt);
+
+    if (bt->str) {
+	return bt->str;
+    }
+    else {
+	bt->str = backtreace_collect(bt, frame_info_to_str_override);
+	return bt->str;
+    }
+}
+
+#if 0
+static VALUE
+rb_backtrace_to_frame_ary(VALUE self)
+{
+    return backtreace_collect(self, frame_info_create);
+}
+
+static VALUE
+vm_backtrace_frame_ary(rb_thread_t *th, int lev, int n)
+{
+    return rb_backtrace_to_frame_ary(vm_backtrace_create(th, lev, n));
+}
+#endif
+
+static VALUE
+backtrace_dump_data(VALUE self)
+{
+    VALUE str = rb_backtrace_to_str_ary(self);
+    return str;
+}
+
+static VALUE
+backtrace_load_data(VALUE self, VALUE str)
+{
+    rb_backtrace_t *bt;
+    GetCoreDataFromValue(self, rb_backtrace_t, bt);
+    bt->str = str;
+    return self;
+}
+
+/* old style backtrace for compatibility */
+
 static int
-vm_backtrace_each(rb_thread_t *th, int lev, void (*init)(void *), rb_backtrace_iter_func *iter, void *arg)
+vm_backtrace_each(rb_thread_t *th, int lev, int n, void (*init)(void *), rb_backtrace_iter_func *iter, void *arg)
 {
     const rb_control_frame_t *limit_cfp = th->cfp;
     const rb_control_frame_t *cfp = (void *)(th->stack + th->stack_size);
     VALUE file = Qnil;
     int line_no = 0;
 
+    if (n <= 0) {
+	n = cfp - limit_cfp;
+    }
+
     cfp -= 2;
-    while (lev-- >= 0) {
+    while (lev-- >= 0 && n > 0) {
 	if (++limit_cfp > cfp) {
 	    return FALSE;
 	}
@@ -761,20 +1036,21 @@ vm_backtrace_each(rb_thread_t *th, int lev, void (*init)(void *), rb_backtrace_i
     if (init) (*init)(arg);
     limit_cfp = RUBY_VM_NEXT_CONTROL_FRAME(limit_cfp);
     if (th->vm->progname) file = th->vm->progname;
-    while (cfp > limit_cfp) {
+    while (cfp > limit_cfp && n>0) {
 	if (cfp->iseq != 0) {
 	    if (cfp->pc != 0) {
 		rb_iseq_t *iseq = cfp->iseq;
 
 		line_no = rb_vm_get_sourceline(cfp);
 		file = iseq->location.filename;
+		n--;
 		if ((*iter)(arg, file, line_no, iseq->location.name)) break;
 	    }
 	}
 	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
 	    ID id;
-	    extern VALUE ruby_engine_name;
 
+	    n--;
 	    if (NIL_P(file)) file = ruby_engine_name;
 	    if (cfp->me->def)
 		id = cfp->me->def->original_id;
@@ -813,15 +1089,15 @@ vm_backtrace_push(void *arg, VALUE file, int line_no, VALUE name)
     return 0;
 }
 
-static inline VALUE
-vm_backtrace(rb_thread_t *th, int lev)
+static VALUE
+vm_backtrace_str_ary(rb_thread_t *th, int lev, int n)
 {
     VALUE ary = 0;
 
     if (lev < 0) {
 	ary = rb_ary_new();
     }
-    vm_backtrace_each(th, lev, vm_backtrace_alloc, vm_backtrace_push, &ary);
+    vm_backtrace_each(th, lev, 0, vm_backtrace_alloc, vm_backtrace_push, &ary);
     if (!ary) return Qnil;
     return rb_ary_reverse(ary);
 }
@@ -2171,6 +2447,13 @@ Init_VM(void)
     /* ::Thread */
     rb_cThread = rb_define_class("Thread", rb_cObject);
     rb_undef_alloc_func(rb_cThread);
+
+    /* ::RubyVM::Backtrace */
+    rb_cBacktrace = rb_define_class_under(rb_cRubyVM, "Backtrace", rb_cObject);
+    rb_define_alloc_func(rb_cBacktrace, backtrace_alloc);
+    rb_undef_method(CLASS_OF(rb_cFrameInfo), "new");
+    rb_define_method(rb_cBacktrace, "_dump_data", backtrace_dump_data, 0);
+    rb_define_method(rb_cBacktrace, "_load_data", backtrace_load_data, 1);
 
     /* ::RubyVM::USAGE_ANALYSIS_* */
     rb_define_const(rb_cRubyVM, "USAGE_ANALYSIS_INSN", rb_hash_new());

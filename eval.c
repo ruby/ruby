@@ -387,7 +387,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
 	else {
 	    at = get_backtrace(mesg);
 	    if (NIL_P(at)) {
-		at = rb_make_backtrace();
+		at = rb_vm_backtrace_object();
 		if (OBJ_FROZEN(mesg)) {
 		    mesg = rb_obj_dup(mesg);
 		}

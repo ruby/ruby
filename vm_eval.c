@@ -15,12 +15,14 @@ static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv
 static inline VALUE rb_vm_set_finish_env(rb_thread_t * th);
 static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const NODE *cref);
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
-static inline VALUE vm_backtrace(rb_thread_t *th, int lev);
-static int vm_backtrace_each(rb_thread_t *th, int lev, void (*init)(void *), rb_backtrace_iter_func *iter, void *arg);
 static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref);
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
+
+static int vm_backtrace_each(rb_thread_t *th, int lev, int n, void (*init)(void *), rb_backtrace_iter_func *iter, void *arg);
+static VALUE backtrace_object(rb_thread_t *th, int lev, int n);
+static VALUE vm_backtrace_str_ary(rb_thread_t *th, int lev, int n);
 
 typedef enum call_type {
     CALL_PUBLIC,
@@ -1085,7 +1087,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 		errat = rb_get_backtrace(errinfo);
 		mesg = rb_attr_get(errinfo, id_mesg);
 		if (!NIL_P(errat) && RB_TYPE_P(errat, T_ARRAY) &&
-		    (bt2 = vm_backtrace(th, -2), RARRAY_LEN(bt2) > 0)) {
+		    (bt2 = vm_backtrace_str_ary(th, -2, 0), RARRAY_LEN(bt2) > 0)) {
 		    if (!NIL_P(mesg) && RB_TYPE_P(mesg, T_STRING) && !RSTRING_LEN(mesg)) {
 			if (OBJ_FROZEN(mesg)) {
 			    VALUE m = rb_str_cat(rb_str_dup(RARRAY_PTR(errat)[0]), ": ", 2);
@@ -1620,7 +1622,7 @@ rb_f_caller(int argc, VALUE *argv)
     if (lev < 0)
 	rb_raise(rb_eArgError, "negative level (%d)", lev);
 
-    return vm_backtrace(GET_THREAD(), lev);
+    return vm_backtrace_str_ary(GET_THREAD(), lev, 0);
 }
 
 static int
@@ -1642,13 +1644,19 @@ print_backtrace(void *arg, VALUE file, int line, VALUE method)
 void
 rb_backtrace(void)
 {
-    vm_backtrace_each(GET_THREAD(), -1, NULL, print_backtrace, stderr);
+    vm_backtrace_each(GET_THREAD(), -1, 0, NULL, print_backtrace, stderr);
 }
 
 VALUE
 rb_make_backtrace(void)
 {
-    return vm_backtrace(GET_THREAD(), -1);
+    return vm_backtrace_str_ary(GET_THREAD(), -1, 0);
+}
+
+VALUE
+rb_vm_backtrace_object()
+{
+    return backtrace_object(GET_THREAD(), -1, 0);
 }
 
 VALUE
@@ -1667,13 +1675,13 @@ rb_thread_backtrace(VALUE thval)
 	return Qnil;
     }
 
-    return vm_backtrace(th, 0);
+    return vm_backtrace_str_ary(th, 0, 0);
 }
 
 int
 rb_backtrace_each(rb_backtrace_iter_func *iter, void *arg)
 {
-    return vm_backtrace_each(GET_THREAD(), -1, NULL, iter, arg);
+    return vm_backtrace_each(GET_THREAD(), -1, 0, NULL, iter, arg);
 }
 
 /*

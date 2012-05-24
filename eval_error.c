@@ -58,6 +58,17 @@ rb_get_backtrace(VALUE info)
 static void
 set_backtrace(VALUE info, VALUE bt)
 {
+    ID set_backtrace = rb_intern("set_backtrace");
+
+    if (rb_backtrace_p(bt)) {
+	if (rb_method_defined_by(info, set_backtrace, rb_exc_set_backtrace)) {
+	    rb_exc_set_backtrace(info, bt);
+	    return;
+	}
+	else {
+	    bt = rb_backtrace_to_str_ary(bt);
+	}
+    }
     rb_funcall(info, rb_intern("set_backtrace"), 1, bt);
 }
 

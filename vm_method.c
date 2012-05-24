@@ -1402,3 +1402,18 @@ Init_eval_method(void)
     }
 }
 
+int
+rb_method_defined_by(VALUE obj, ID mid, VALUE (*cfunc)(ANYARGS))
+{
+    rb_method_entry_t *me = search_method(CLASS_OF(obj), mid);
+
+    if (me && me->def &&
+	me->def->type == VM_METHOD_TYPE_CFUNC &&
+	me->def->body.cfunc.func == cfunc) {
+	return 1;
+    }
+    else {
+	return 0;
+    }
+}
+
