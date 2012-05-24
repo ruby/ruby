@@ -865,12 +865,7 @@ static const rb_data_type_t backtrace_data_type = {
 int
 rb_backtrace_p(VALUE obj)
 {
-    if (TYPE(obj) == T_DATA && RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj) == &backtrace_data_type) {
-	return 1;
-    }
-    else {
-	return 0;
-    }
+    return rb_typeddata_is_kind_of(obj, &backtrace_data_type);
 }
 
 static VALUE
