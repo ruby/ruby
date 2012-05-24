@@ -1,3 +1,11 @@
+Thu May 24 15:33:01 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_method.c (rb_method_defined_by): removed.
+	  nobu pointed out that rb_method_basic_definition_p() is enough
+	  for last commit.
+
+	* error.c, eval_error.c: change for above.
+
 Thu May 24 14:30:13 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c: add RubyVM::Backtrace object (btobj).

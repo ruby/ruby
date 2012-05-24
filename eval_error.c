@@ -55,13 +55,15 @@ rb_get_backtrace(VALUE info)
     return get_backtrace(info);
 }
 
+VALUE rb_exc_set_backtrace(VALUE exc, VALUE bt);
+
 static void
 set_backtrace(VALUE info, VALUE bt)
 {
     ID set_backtrace = rb_intern("set_backtrace");
 
     if (rb_backtrace_p(bt)) {
-	if (rb_method_defined_by(info, set_backtrace, rb_exc_set_backtrace)) {
+	if (rb_method_basic_definition_p(CLASS_OF(info), set_backtrace)) {
 	    rb_exc_set_backtrace(info, bt);
 	    return;
 	}

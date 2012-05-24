@@ -717,10 +717,16 @@ rb_check_backtrace(VALUE bt)
  *
  */
 
+static VALUE
+exc_set_backtrace(VALUE exc, VALUE bt)
+{
+    return rb_iv_set(exc, "bt", rb_check_backtrace(bt));
+}
+
 VALUE
 rb_exc_set_backtrace(VALUE exc, VALUE bt)
 {
-    return rb_iv_set(exc, "bt", rb_check_backtrace(bt));
+    return exc_set_backtrace(exc, bt);
 }
 
 static VALUE
@@ -1678,7 +1684,7 @@ Init_Exception(void)
     rb_define_method(rb_eException, "message", exc_message, 0);
     rb_define_method(rb_eException, "inspect", exc_inspect, 0);
     rb_define_method(rb_eException, "backtrace", exc_backtrace, 0);
-    rb_define_method(rb_eException, "set_backtrace", rb_exc_set_backtrace, 1);
+    rb_define_method(rb_eException, "set_backtrace", exc_set_backtrace, 1);
 
     rb_eSystemExit  = rb_define_class("SystemExit", rb_eException);
     rb_define_method(rb_eSystemExit, "initialize", exit_initialize, -1);
