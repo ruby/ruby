@@ -1,21 +1,24 @@
 require 'test/unit'
 
 class TestSyntax < Test::Unit::TestCase
-  def valid_syntax?(code, fname)
+  def assert_valid_syntax(code, fname, mesg = fname)
     code = code.dup.force_encoding("ascii-8bit")
     code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
       "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
     }
     code.force_encoding("us-ascii")
-    catch {|tag| eval(code, binding, fname, 0)}
-  rescue SyntaxError
-    false
+    verbose, $VERBOSE = $VERBOSE, nil
+    assert_nothing_raised(SyntaxError, mesg) do
+      assert_equal(:ok, catch {|tag| eval(code, binding, fname, 0)}, mesg)
+    end
+  ensure
+    $VERBOSE = verbose
   end
 
   def test_syntax
     assert_nothing_raised(Exception) do
       for script in Dir[File.expand_path("../../../{lib,sample,ext,test}/**/*.rb", __FILE__)].sort
-        assert(valid_syntax?(IO::read(script), script), script)
+        assert_valid_syntax(IO::read(script), script)
       end
     end
   end
@@ -50,11 +53,6 @@ class TestSyntax < Test::Unit::TestCase
       end
     end
     f.close!
-  end
-
-  def test_reserved_method_no_args
-    bug6403 = '[ruby-dev:45626]'
-    assert_valid_syntax("def self; :foo; end", __FILE__, bug6403)
   end
 
   def test_reserved_method_no_args
