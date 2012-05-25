@@ -574,7 +574,22 @@ extern char *rb_w32_strerror(int);
 #define O_NONBLOCK 1
 
 #undef FD_SET
-#define FD_SET(f, s)		rb_w32_fdset(f, s)
+#define FD_SET(fd, set)	do {\
+    unsigned int i;\
+    SOCKET s = _get_osfhandle(fd);\
+\
+    for (i = 0; i < (set)->fd_count; i++) {\
+        if ((set)->fd_array[i] == s) {\
+            break;\
+        }\
+    }\
+    if (i == (set)->fd_count) {\
+        if ((set)->fd_count < FD_SETSIZE) {\
+            (set)->fd_array[i] = s;\
+            (set)->fd_count++;\
+        }\
+    }\
+} while(0)
 
 #undef FD_CLR
 #define FD_CLR(f, s)		rb_w32_fdclr(f, s)

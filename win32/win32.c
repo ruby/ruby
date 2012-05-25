@@ -2316,25 +2316,10 @@ ioctl(int i, int u, ...)
     return -1;
 }
 
-#undef FD_SET
-
 void
 rb_w32_fdset(int fd, fd_set *set)
 {
-    unsigned int i;
-    SOCKET s = TO_SOCKET(fd);
-
-    for (i = 0; i < set->fd_count; i++) {
-        if (set->fd_array[i] == s) {
-            return;
-        }
-    }
-    if (i == set->fd_count) {
-        if (set->fd_count < FD_SETSIZE) {
-            set->fd_array[i] = s;
-            set->fd_count++;
-        }
-    }
+    FD_SET(fd, set);
 }
 
 #undef FD_CLR
@@ -2718,14 +2703,19 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		fd_set orig_rd;
 		fd_set orig_wr;
 		fd_set orig_ex;
-		if (rd) orig_rd = *rd;
-		if (wr) orig_wr = *wr;
-		if (ex) orig_ex = *ex;
+
+		FD_ZERO(&orig_rd);
+		FD_ZERO(&orig_wr);
+		FD_ZERO(&orig_ex);
+
+		if (rd) copy_fd(&orig_rd, rd);
+		if (wr) copy_fd(&orig_wr, wr);
+		if (ex) copy_fd(&orig_ex, ex);
 		r = do_select(nfds, rd, wr, ex, &zero);	// polling
 		if (r != 0) break; // signaled or error
-		if (rd) *rd = orig_rd;
-		if (wr) *wr = orig_wr;
-		if (ex) *ex = orig_ex;
+		if (rd) copy_fd(rd, &orig_rd);
+		if (wr) copy_fd(wr, &orig_wr);
+		if (ex) copy_fd(ex, &orig_ex);
 
 		if (timeout) {
 		    struct timeval now;
