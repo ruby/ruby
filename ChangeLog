@@ -1,3 +1,10 @@
+Fri May 25 17:18:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (f_arglist): should reset lexical states after empty
+	  argument list with no parenthesis as well as parenthesized list,
+	  so that reserved name method definition work.  [ruby-dev:45626]
+	  [Bug #6403]
+
 Fri May 25 10:40:31 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* include/ruby/win32.h (FD_SET): change function to macro.
