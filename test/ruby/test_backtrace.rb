@@ -40,7 +40,7 @@ class TestBacktrace < Test::Unit::TestCase
           rec[n-1]
         }
       else
-        max.times{|i|
+        (max*3).times{|i|
           total_size = caller(0).size
           c = caller(i)
           if c
@@ -53,5 +53,35 @@ class TestBacktrace < Test::Unit::TestCase
       rec[max]
     }.resume
   end
-end
 
+  def test_caller_lev_and_n
+    m = 10
+    rec = lambda{|n|
+      if n < 0
+        (m*6).times{|lev|
+          (m*6).times{|n|
+            t = caller(0).size
+            r = caller(lev, n)
+            r = r.size if r.respond_to? :size
+
+            # STDERR.puts [t, lev, n, r].inspect
+            if n == 0
+              assert_equal(0, r, [t, lev, n, r].inspect)
+            elsif t < lev
+              assert_equal(nil, r, [t, lev, n, r].inspect)
+            else
+              if t - lev > n
+                assert_equal(n, r, [t, lev, n, r].inspect)
+              else
+                assert_equal(t - lev, r, [t, lev, n, r].inspect)
+              end
+            end
+          }
+        }
+      else
+        rec[n-1]
+      end
+    }
+    rec[m]
+  end
+end

@@ -1,3 +1,17 @@
+Fri May 25 19:51:36 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_eval.c (rb_f_caller): caller() method accepts second optional
+	  argument `n' which specify how many frames should return.
+	  For example, `caller(0, 1)' returns only one frame information
+	  which calls caller() method.  If there are less than n frame
+	  information, then all frame information are returned.  If n is 0,
+	  then always return [].
+	  This fix is part of [ruby-dev:42345] [Ruby 1.9-Feature#3917].
+	  However, performance and features are not enough.
+	  RDoc is also not available.
+
+	* test/ruby/test_backtrace.rb: add a test for above.
+
 Fri May 25 17:05:07 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (oldbt_init, vm_backtrace_str_ary): arg->data should
