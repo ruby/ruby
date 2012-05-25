@@ -1,8 +1,16 @@
+Fri May 25 23:38:58 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_ssl.rb: Clarify the intention of errors to be
+	  expected. Two errors are possible when connection is refused due
+	  to a protocol version that was explicitly disallowed,
+	  OpenSSL::SSL::SSLError or Errno::ECONNRESET, depending on the
+	  OpenSSL version in use.
+
 Fri May 25 22:19:40 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_ssl.c: Revert r35583
 	* test/openssl/test_ssl.rb: Handle ECONNRESET in code instead to avoid
-	the test failing in Ruby CI [1]
+	  the test failing in Ruby CI [1]
 	
 	[1] http://u64.rubyci.org/~chkbuild/ruby-trunk/log/20120507T190102Z.log.html.gz#test-all
 

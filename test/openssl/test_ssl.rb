@@ -408,6 +408,11 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  # different OpenSSL versions react differently when being faced with a
+  # SSL/TLS version that has been marked as forbidden, therefore either of
+  # these may be raised
+  FORBIDDEN_PROTOCOL_ERRORS = [OpenSSL::SSL::SSLError, Errno::ECONNRESET]
+  
 if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1
 
   def test_forbid_ssl_v3_for_client
@@ -415,7 +420,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1
     start_server_version(:SSLv23, ctx_proc) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.ssl_version = :SSLv3
-      assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
+      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
     }
   end
 
@@ -423,7 +428,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1
     start_server_version(:SSLv3) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_SSLv3
-      assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
+      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
     }
   end
 
@@ -442,7 +447,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_1
     start_server_version(:SSLv23, ctx_proc) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.ssl_version = :TLSv1
-      assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
+      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
     }
   end
 
@@ -450,7 +455,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_1
     start_server_version(:TLSv1) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_TLSv1
-      assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
+      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
     }
   end
 
@@ -469,7 +474,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
     start_server_version(:SSLv23, ctx_proc) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.ssl_version = :TLSv1_1
-      assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
+      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
     }
   end if defined?(OpenSSL::SSL::OP_NO_TLSv1_1)
 
@@ -477,7 +482,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
     start_server_version(:TLSv1_1) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_TLSv1_1
-      assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
+      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
     }
   end if defined?(OpenSSL::SSL::OP_NO_TLSv1_1)
 
@@ -486,7 +491,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
     start_server_version(:SSLv23, ctx_proc) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.ssl_version = :TLSv1_2
-      assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
+      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
     }
   end if defined?(OpenSSL::SSL::OP_NO_TLSv1_2)
 
@@ -494,7 +499,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
     start_server_version(:TLSv1_2) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_TLSv1_2
-      assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
+      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
     }
   end if defined?(OpenSSL::SSL::OP_NO_TLSv1_2)
 
@@ -516,8 +521,6 @@ end
     ssl.sync_close = true
     ssl.connect
     yield ssl
-  rescue Errno::ECONNRESET => e
-    raise OpenSSL::SSL::SSLError.new(e.message)
   ensure
     ssl.close
   end
