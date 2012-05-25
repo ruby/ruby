@@ -1,3 +1,29 @@
+Fri May 25 10:52:52 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c: refactoring backtrace related funcitons.
+	  (1) unify similar functions (rb_backtrace_each() and
+	      backtrace_object()).  backtrace_each() is a unified function.
+	      variation:
+	      a) backtrace_object(): create backtrace object.
+	      b) vm_backtrace_str_ary(): create bt as an array of string.
+	      c) vm_backtrace_print(): print backtrace to specified file.
+	      d) rb_backtrace_print_as_bugreport(): print backtrace on
+	                                            bugreport style.
+	  (2) remove rb_backtrace_each().  Use backtrace_each() instead.
+	  (3) chang the type of lev parameter to size_t.
+	      a) lev == 0 means current frame (exception, etc use it).
+	      b) lev == 1 means upper frame (caller(0) use it).
+
+	* vm_core.h, vm_dump.c, vm_eval.c: ditto.
+
+	* vm.c (backtrace_object(), vm_backtrace_str_ary()): fix to return a
+	  correct size of caller(lev) array.
+	  Let n be a "caller(0).size" then ln as caller(lev).size should be
+	  (n - lev).  However, the previous implementation returns a wrong
+	  size array (ln > n - lev).  [ruby-dev:45673]
+
+	* test/ruby/test_backtrace.rb: add tests for backtrace.
+
 Fri May 25 08:51:39 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* enum.c (enum_count):  Enumerable#count no longer uses #size when

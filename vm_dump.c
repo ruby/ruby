@@ -572,24 +572,6 @@ rb_vmdebug_thread_dump_state(VALUE self)
     return Qnil;
 }
 
-static int
-bugreport_backtrace(void *arg, VALUE file, int line, VALUE method)
-{
-    const char *filename = NIL_P(file) ? "ruby" : RSTRING_PTR(file);
-    if (!*(int *)arg) {
-	fprintf(stderr, "-- Ruby level backtrace information "
-		"----------------------------------------\n");
-	*(int *)arg = 1;
-    }
-    if (NIL_P(method)) {
-	fprintf(stderr, "%s:%d:in unknown method\n", filename, line);
-    }
-    else {
-	fprintf(stderr, "%s:%d:in `%s'\n", filename, line, RSTRING_PTR(method));
-    }
-    return 0;
-}
-
 #if defined(__FreeBSD__) && defined(__OPTIMIZE__)
 #undef HAVE_BACKTRACE
 #endif
@@ -774,6 +756,8 @@ dump_thread(void *arg)
 }
 #endif
 
+void rb_backtrace_print_as_bugreport(void);
+
 void
 rb_vm_bugreport(void)
 {
@@ -787,12 +771,9 @@ rb_vm_bugreport(void)
 #endif
     const rb_vm_t *const vm = GET_VM();
     if (vm) {
-	int i = 0;
 	SDR();
-
-	if (rb_backtrace_each(bugreport_backtrace, &i)) {
-	    fputs("\n", stderr);
-	}
+	rb_backtrace_print_as_bugreport();
+	fputs("\n", stderr);
     }
 
 #if HAVE_BACKTRACE || defined(_WIN32)
