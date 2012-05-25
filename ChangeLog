@@ -1,3 +1,8 @@
+Fri May 25 17:05:07 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (oldbt_init, vm_backtrace_str_ary): arg->data should
+	  be initialized before calling `backtrace_each()'.
+
 Fri May 25 16:11:27 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* trunk/ext/-test-/printf/printf.c: change function names because of

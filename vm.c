@@ -1090,7 +1090,6 @@ oldbt_init(void *ptr, int dmy)
 
     arg->filename = th->vm->progname ? th->vm->progname : ruby_engine_name;;
     arg->line_no = 0;
-    arg->data = (void *)rb_ary_new();
 }
 
 static void
@@ -1142,6 +1141,7 @@ vm_backtrace_str_ary(rb_thread_t *th, size_t lev, size_t n)
     VALUE *ptr;
 
     arg.func = oldbt_push;
+    arg.data = (void *)rb_ary_new();
 
     backtrace_each(th,
 		   oldbt_init,
