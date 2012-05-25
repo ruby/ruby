@@ -1,3 +1,10 @@
+Fri May 25 10:36:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (f_arglist): should reset lexical states after empty
+	  argument list with no parenthesis as well as parenthesized list,
+	  so that reserved name method definition work.  [ruby-dev:45626]
+	  [Bug #6403]
+
 Mon May 21 16:24:40 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/syslog/syslog.c (mSyslog_inspect): Use rb_sprintf().

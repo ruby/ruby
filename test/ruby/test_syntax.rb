@@ -52,6 +52,11 @@ class TestSyntax < Test::Unit::TestCase
     f.close!
   end
 
+  def test_reserved_method_no_args
+    bug6403 = '[ruby-dev:45626]'
+    assert_valid_syntax("def self; :foo; end", __FILE__, bug6403)
+  end
+
   private
 
   def make_tmpsrc(f, src)
