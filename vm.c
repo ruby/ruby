@@ -881,7 +881,7 @@ backtrace_alloc(VALUE klass)
 
 static void
 backtrace_each(rb_thread_t *th,
-	       void (*init)(void *arg, int size),
+	       void (*init)(void *arg, size_t size),
 	       void (*iter_iseq)(void *arg, const rb_iseq_t *iseq, const VALUE *pc),
 	       void (*iter_cfunc)(void *arg, ID mid),
 	       void *arg)
@@ -939,7 +939,7 @@ struct bt_iter_arg {
 };
 
 static void
-bt_init(void *ptr, int size)
+bt_init(void *ptr, size_t size)
 {
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
     arg->btobj = backtrace_alloc(rb_cBacktrace);
@@ -1083,7 +1083,7 @@ struct oldbt_arg {
 };
 
 static void
-oldbt_init(void *ptr, int dmy)
+oldbt_init(void *ptr, size_t dmy)
 {
     struct oldbt_arg *arg = (struct oldbt_arg *)ptr;
     rb_thread_t *th = GET_THREAD();
