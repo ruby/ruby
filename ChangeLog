@@ -1,3 +1,11 @@
+Fri May 25 22:19:40 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_ssl.c: Revert r35583
+	* test/openssl/test_ssl.rb: Handle ECONNRESET in code instead to avoid
+	the test failing in Ruby CI [1]
+	
+	[1] http://u64.rubyci.org/~chkbuild/ruby-trunk/log/20120507T190102Z.log.html.gz#test-all
+
 Fri May 25 19:51:36 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_eval.c (rb_f_caller): caller() method accepts second optional

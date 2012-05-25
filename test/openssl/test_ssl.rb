@@ -516,6 +516,8 @@ end
     ssl.sync_close = true
     ssl.connect
     yield ssl
+  rescue Errno::ECONNRESET => e
+    raise OpenSSL::SSL::SSLError.new(e.message)
   ensure
     ssl.close
   end
