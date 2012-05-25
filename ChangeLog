@@ -1,3 +1,8 @@
+Fri May 25 16:11:27 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* trunk/ext/-test-/printf/printf.c: change function names because of
+	  conflict with msvcrt.  fixed build error of mswin.
+
 Fri May 25 10:52:52 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c: refactoring backtrace related funcitons.
