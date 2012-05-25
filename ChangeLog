@@ -1,3 +1,7 @@
+Fri May 25 10:38:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_strip_bom): check EOF.  [Bug #6487][ruby-core:45203]
+
 Fri May 25 10:36:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_arglist): should reset lexical states after empty

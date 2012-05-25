@@ -4900,65 +4900,63 @@ static void io_encoding_set(rb_io_t *, VALUE, VALUE, VALUE);
 static int
 io_strip_bom(VALUE io)
 {
-    int b1, b2, b3, b4;
-    switch (b1 = FIX2INT(rb_io_getbyte(io))) {
-      case 0xEF:
-	b2 = FIX2INT(rb_io_getbyte(io));
-	if (b2 == 0xBB) {
-	    b3 = FIX2INT(rb_io_getbyte(io));
-	    if (b3 == 0xBF) {
+    VALUE b1, b2, b3, b4;
+
+    if (NIL_P(b1 = rb_io_getbyte(io))) return 0;
+    switch (b1) {
+      case INT2FIX(0xEF):
+	if (NIL_P(b2 = rb_io_getbyte(io))) break;
+	if (b2 == INT2FIX(0xBB) && !NIL_P(b3 = rb_io_getbyte(io))) {
+	    if (b3 == INT2FIX(0xBF)) {
 		return rb_utf8_encindex();
 	    }
-	    rb_io_ungetbyte(io, INT2FIX(b3));
+	    rb_io_ungetbyte(io, b3);
 	}
-	rb_io_ungetbyte(io, INT2FIX(b2));
+	rb_io_ungetbyte(io, b2);
 	break;
 
-      case 0xFE:
-	b2 = FIX2INT(rb_io_getbyte(io));
-	if (b2 == 0xFF) {
+      case INT2FIX(0xFE):
+	if (NIL_P(b2 = rb_io_getbyte(io))) break;
+	if (b2 == INT2FIX(0xFF)) {
 	    return rb_enc_find_index("UTF-16BE");
 	}
-	rb_io_ungetbyte(io, INT2FIX(b2));
+	rb_io_ungetbyte(io, b2);
 	break;
 
-      case 0xFF:
-	b2 = FIX2INT(rb_io_getbyte(io));
-	if (b2 == 0xFE) {
-	    b3 = FIX2INT(rb_io_getbyte(io));
-	    if (b3 == 0) {
-		b4 = FIX2INT(rb_io_getbyte(io));
-		if (b4 == 0) {
+      case INT2FIX(0xFF):
+	if (NIL_P(b2 = rb_io_getbyte(io))) break;
+	if (b2 == INT2FIX(0xFE)) {
+	    b3 = rb_io_getbyte(io);
+	    if (b3 == INT2FIX(0) && !NIL_P(b4 = rb_io_getbyte(io))) {
+		if (b4 == INT2FIX(0)) {
 		    return rb_enc_find_index("UTF-32LE");
 		}
-		rb_io_ungetbyte(io, INT2FIX(b4));
+		rb_io_ungetbyte(io, b4);
+		rb_io_ungetbyte(io, b3);
 	    }
 	    else {
-		rb_io_ungetbyte(io, INT2FIX(b3));
+		rb_io_ungetbyte(io, b3);
 		return rb_enc_find_index("UTF-16LE");
 	    }
-	    rb_io_ungetbyte(io, INT2FIX(b3));
 	}
-	rb_io_ungetbyte(io, INT2FIX(b2));
+	rb_io_ungetbyte(io, b2);
 	break;
 
-      case 0:
-	b2 = FIX2INT(rb_io_getbyte(io));
-	if (b2 == 0) {
-	    b3 = FIX2INT(rb_io_getbyte(io));
-	    if (b3 == 0xFE) {
-		b4 = FIX2INT(rb_io_getbyte(io));
-		if (b4 == 0xFF) {
+      case INT2FIX(0):
+	if (NIL_P(b2 = rb_io_getbyte(io))) break;
+	if (b2 == INT2FIX(0) && !NIL_P(b3 = rb_io_getbyte(io))) {
+	    if (b3 == INT2FIX(0xFE) && !NIL_P(b4 = rb_io_getbyte(io))) {
+		if (b4 == INT2FIX(0xFF)) {
 		    return rb_enc_find_index("UTF-32BE");
 		}
-		rb_io_ungetbyte(io, INT2FIX(b4));
+		rb_io_ungetbyte(io, b4);
 	    }
-	    rb_io_ungetbyte(io, INT2FIX(b3));
+	    rb_io_ungetbyte(io, b3);
 	}
-	rb_io_ungetbyte(io, INT2FIX(b2));
+	rb_io_ungetbyte(io, b2);
 	break;
     }
-    rb_io_ungetbyte(io, INT2FIX(b1));
+    rb_io_ungetbyte(io, b1);
     return 0;
 }
 
