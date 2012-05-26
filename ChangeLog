@@ -1,3 +1,7 @@
+Sat May 26 18:14:57 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_strftime.c: reduced the code.
+
 Sat May 26 18:08:59 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* time.c: modified doc.

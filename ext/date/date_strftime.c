@@ -228,8 +228,9 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    continue;
 
 	  case 'G':	/* year of ISO week with century */
+	  case 'Y':	/* year with century */
 	    {
-		VALUE year = tmx_cwyear;
+		VALUE year = (*format == 'G') ? tmx_cwyear : tmx_year;
 		if (FIXNUM_P(year)) {
 		    long y = FIX2LONG(year);
 		    FMT('0', 0 <= y ? 4 : 5, "ld", y);
@@ -241,7 +242,8 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    continue;
 
 	  case 'g':	/* year of ISO week without a century */
-	    v = NUM2INT(mod(tmx_cwyear, INT2FIX(100)));
+	  case 'y':	/* year without a century */
+	    v = NUM2INT(mod((*format == 'g') ? tmx_cwyear : tmx_year, INT2FIX(100)));
 	    FMT('0', 2, "d", v);
 	    continue;
 
@@ -400,24 +402,6 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 
 	  case 'x':	/* appropriate date representation */
 	    STRFTIME("%m/%d/%y");
-	    continue;
-
-	  case 'Y':	/* year with century */
-	    {
-		VALUE year = tmx_year;
-		if (FIXNUM_P(year)) {
-		    long y = FIX2LONG(year);
-		    FMT('0', 0 <= y ? 4 : 5, "ld", y);
-		}
-		else {
-		    FMTV('0', 4, "d", year);
-		}
-	    }
-	    continue;
-
-	  case 'y':	/* year without a century, 00 - 99 */
-	    v = NUM2INT(mod(tmx_year, INT2FIX(100)));
-	    FMT('0', 2, "d", v);
 	    continue;
 
 	  case 'Z':	/* time zone name or abbreviation */
