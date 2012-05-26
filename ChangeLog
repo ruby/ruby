@@ -1,3 +1,23 @@
+Sat May 26 13:40:29 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (RubyVM::FrameInfo): add a class to access each frame
+	  information.  You don't need to parse strings from caller().
+	  FrameInfo has the following methods:
+	    FrameInfo#name: method name, class name, etc with decorations.
+	    FrameInfo#basename: name without decorations.
+	    FrameInfo#line_no: line number.
+	    FrameInfo#filename: file name.
+	    FrameInfo#filepath: full filepath.
+	    FrameInfo#iseq: iseq if it is iseq frame (defined by ruby script)
+	    FrameInfo#to_s: return caller() method style string.
+	  RubyVM::FrameInfoFrameInfo.caller(n, lev) returns array of
+	  FrameInfo objects.  The name "RubyVM::FrameInfoFrameInfo.caller"
+	  is long and ambiguous (same as caller() method), we need to change
+	  the name before Ruby 2.0 release.
+	  Good names or comments are welcome.
+
+	* test/ruby/test_backtrace.rb: add a test for above change.
+
 Sat May 26 12:18:09 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (frame_info_to_str): add `break'.

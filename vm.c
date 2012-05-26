@@ -36,10 +36,8 @@ VALUE rb_cRubyVM;
 VALUE rb_cThread;
 VALUE rb_cEnv;
 VALUE rb_mRubyVMFrozenCore;
-VALUE rb_cBacktrace;
-#if 0
-VALUE rb_cFrameInfo;
-#endif
+static VALUE rb_cBacktrace;
+static VALUE rb_cFrameInfo;
 
 VALUE ruby_vm_const_missing_count = 0;
 char ruby_vm_redefined_flag[BOP_LAST_];
@@ -761,11 +759,6 @@ typedef struct rb_frame_info_struct {
 	FRAME_INFO_TYPE_IFUNC,
     } type;
 
-    enum FRAME_INFO_STORAGE {
-	FRAME_INFO_STORAGE_BACKTRACE,
-	FRAME_INFO_STORAGE_VALUE,
-    } storage;
-
     union {
 	struct {
 	    const rb_iseq_t *iseq;
@@ -781,27 +774,195 @@ typedef struct rb_frame_info_struct {
     } body;
 } rb_frame_info_t;
 
+struct valued_frame_info {
+    rb_frame_info_t *fi;
+    VALUE btobj;
+};
+
 static void
 frame_info_mark(void *ptr)
 {
     if (ptr) {
-	rb_frame_info_t *fi = (rb_frame_info_t *)ptr;
-
-	switch (fi->type) {
-	  case FRAME_INFO_TYPE_ISEQ:
-	  case FRAME_INFO_TYPE_ISEQ_CALCED:
-	    rb_gc_mark(fi->body.iseq.iseq->self);
-	    break;
-	  case FRAME_INFO_TYPE_CFUNC:
-	    if (fi->body.cfunc.prev_fi && fi->body.cfunc.prev_fi->storage == FRAME_INFO_STORAGE_VALUE) {
-		/* TODO: rb_gc_mark(fi->body.cfunc.prev_fi->self) */
-	    }
-	    break;
-	  case FRAME_INFO_TYPE_IFUNC:
-	  default:
-	    break;
-	}
+	struct valued_frame_info *vfi = (struct valued_frame_info *)ptr;
+	rb_gc_mark(vfi->btobj);
     }
+}
+
+static void
+frame_info_mark_entry(rb_frame_info_t *fi)
+{
+    switch (fi->type) {
+      case FRAME_INFO_TYPE_ISEQ:
+      case FRAME_INFO_TYPE_ISEQ_CALCED:
+	rb_gc_mark(fi->body.iseq.iseq->self);
+	break;
+      case FRAME_INFO_TYPE_CFUNC:
+      case FRAME_INFO_TYPE_IFUNC:
+      default:
+	break;
+    }
+}
+
+static void
+frame_info_free(void *ptr)
+{
+    if (ptr) {
+	rb_frame_info_t *fi = (rb_frame_info_t *)ptr;
+	ruby_xfree(fi);
+    }
+}
+
+static size_t
+frame_info_memsize(const void *ptr)
+{
+    /* rb_frame_info_t *fi = (rb_frame_info_t *)ptr; */
+    return sizeof(rb_frame_info_t);
+}
+
+static const rb_data_type_t frame_info_data_type = {
+    "frame_info",
+    {frame_info_mark, frame_info_free, frame_info_memsize,},
+};
+
+static inline rb_frame_info_t *
+frame_info_ptr(VALUE fiobj)
+{
+    struct valued_frame_info *vfi;
+    GetCoreDataFromValue(fiobj, struct valued_frame_info, vfi);
+    return vfi->fi;
+}
+
+static int
+frame_info_line_no(rb_frame_info_t *fi)
+{
+    switch (fi->type) {
+      case FRAME_INFO_TYPE_ISEQ:
+	fi->type = FRAME_INFO_TYPE_ISEQ_CALCED;
+	return (fi->body.iseq.line_no.line_no = calc_line_no(fi->body.iseq.iseq, fi->body.iseq.line_no.pc));
+      case FRAME_INFO_TYPE_ISEQ_CALCED:
+	return fi->body.iseq.line_no.line_no;
+      case FRAME_INFO_TYPE_CFUNC:
+	if (fi->body.cfunc.prev_fi) {
+	    return frame_info_line_no(fi->body.cfunc.prev_fi);
+	}
+	return 0;
+      default:
+	rb_bug("frame_info_line_no: unreachable");
+    }
+}
+
+static VALUE
+frame_info_line_no_m(VALUE self)
+{
+    return INT2FIX(frame_info_line_no(frame_info_ptr(self)));
+}
+
+static VALUE
+frame_info_name(rb_frame_info_t *fi)
+{
+    switch (fi->type) {
+      case FRAME_INFO_TYPE_ISEQ: 
+      case FRAME_INFO_TYPE_ISEQ_CALCED:
+	return fi->body.iseq.iseq->location.name;
+      case FRAME_INFO_TYPE_CFUNC:
+	return rb_id2str(fi->body.cfunc.mid);
+      case FRAME_INFO_TYPE_IFUNC:
+      default:
+	rb_bug("frame_info_name: unreachable");
+    }
+}
+
+static VALUE
+frame_info_name_m(VALUE self)
+{
+    return frame_info_name(frame_info_ptr(self));
+}
+
+static VALUE
+frame_info_basename(rb_frame_info_t *fi)
+{
+    switch (fi->type) {
+      case FRAME_INFO_TYPE_ISEQ: 
+      case FRAME_INFO_TYPE_ISEQ_CALCED:
+	return fi->body.iseq.iseq->location.basename;
+      case FRAME_INFO_TYPE_CFUNC:
+	return rb_sym_to_s(ID2SYM(fi->body.cfunc.mid));
+      case FRAME_INFO_TYPE_IFUNC:
+      default:
+	rb_bug("frame_info_basename: unreachable");
+   }
+}
+
+static VALUE
+frame_info_basename_m(VALUE self)
+{
+    return frame_info_basename(frame_info_ptr(self));
+}
+
+static VALUE
+frame_info_filename(rb_frame_info_t *fi)
+{
+    switch (fi->type) {
+      case FRAME_INFO_TYPE_ISEQ: 
+      case FRAME_INFO_TYPE_ISEQ_CALCED:
+	return fi->body.iseq.iseq->location.filename;
+      case FRAME_INFO_TYPE_CFUNC:
+	if (fi->body.cfunc.prev_fi) {
+	    return frame_info_filename(fi->body.cfunc.prev_fi);
+	}
+	return Qnil;
+      case FRAME_INFO_TYPE_IFUNC:
+      default:
+	rb_bug("frame_info_filename: unreachable");
+    }
+}
+
+static VALUE
+frame_info_filename_m(VALUE self)
+{
+    return frame_info_filename(frame_info_ptr(self));
+}
+
+static VALUE
+frame_info_filepath(rb_frame_info_t *fi)
+{
+    switch (fi->type) {
+      case FRAME_INFO_TYPE_ISEQ: 
+      case FRAME_INFO_TYPE_ISEQ_CALCED:
+	return fi->body.iseq.iseq->location.filepath;
+      case FRAME_INFO_TYPE_CFUNC:
+	if (fi->body.cfunc.prev_fi) {
+	    return frame_info_filepath(fi->body.cfunc.prev_fi);
+	}
+	return Qnil;
+      case FRAME_INFO_TYPE_IFUNC:
+      default:
+	rb_bug("frame_info_filepath: unreachable");
+    }
+}
+
+static VALUE
+frame_info_filepath_m(VALUE self)
+{
+    return frame_info_filepath(frame_info_ptr(self));
+}
+
+static VALUE
+frame_info_iseq(rb_frame_info_t *fi)
+{
+    switch (fi->type) {
+      case FRAME_INFO_TYPE_ISEQ:
+      case FRAME_INFO_TYPE_ISEQ_CALCED:
+	return fi->body.iseq.iseq->self;
+      default:
+	return Qnil;
+    }
+}
+
+static VALUE
+frame_info_iseq_m(VALUE self)
+{
+    return frame_info_iseq(frame_info_ptr(self));
 }
 
 static VALUE
@@ -815,22 +976,6 @@ frame_info_format(VALUE file, int line_no, VALUE name)
 	return rb_enc_sprintf(rb_enc_compatible(file, name), "%s:in `%s'",
 			      RSTRING_PTR(file), RSTRING_PTR(name));
     }
-}
-
-static int
-frame_info_line_no(rb_frame_info_t *fi)
-{
-    switch (fi->type) {
-      case FRAME_INFO_TYPE_ISEQ:
-	fi->type = FRAME_INFO_TYPE_ISEQ_CALCED;
-	return (fi->body.iseq.line_no.line_no = calc_line_no(fi->body.iseq.iseq, fi->body.iseq.line_no.pc));
-      case FRAME_INFO_TYPE_ISEQ_CALCED:
-	return fi->body.iseq.line_no.line_no;
-      case FRAME_INFO_TYPE_CFUNC:
-      case FRAME_INFO_TYPE_IFUNC:
-	break;
-    }
-    return 0;
 }
 
 static VALUE
@@ -872,6 +1017,12 @@ frame_info_to_str(rb_frame_info_t *fi)
     return frame_info_format(file, line_no, name);
 }
 
+static VALUE
+frame_info_to_str_m(VALUE self)
+{
+    return frame_info_to_str(frame_info_ptr(self));
+}
+
 typedef struct rb_backtrace_struct {
     rb_frame_info_t *backtrace;
     rb_frame_info_t *backtrace_base;
@@ -887,7 +1038,7 @@ backtrace_mark(void *ptr)
 	size_t i, s = bt->backtrace_size;
 
 	for (i=0; i<s; i++) {
-	    frame_info_mark(&bt->backtrace[i]);
+	    frame_info_mark_entry(&bt->backtrace[i]);
 	    rb_gc_mark(bt->strary);
 	}
     }
@@ -1005,7 +1156,6 @@ bt_iter_iseq(void *ptr, const rb_iseq_t *iseq, const VALUE *pc)
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
     rb_frame_info_t *fi = &arg->bt->backtrace[arg->bt->backtrace_size++];
     fi->type = FRAME_INFO_TYPE_ISEQ;
-    fi->storage = FRAME_INFO_STORAGE_BACKTRACE;
     fi->body.iseq.iseq = iseq;
     fi->body.iseq.line_no.pc = pc;
     arg->prev_fi = fi;
@@ -1017,7 +1167,6 @@ bt_iter_cfunc(void *ptr, ID mid)
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
     rb_frame_info_t *fi = &arg->bt->backtrace[arg->bt->backtrace_size++];
     fi->type = FRAME_INFO_TYPE_CFUNC;
-    fi->storage = FRAME_INFO_STORAGE_BACKTRACE;
     fi->body.cfunc.mid = mid;
     fi->body.cfunc.prev_fi = arg->prev_fi;
 }
@@ -1044,7 +1193,7 @@ rb_vm_backtrace_object(void)
 }
 
 static VALUE
-backtreace_collect(rb_backtrace_t *bt, int lev, int n, VALUE (*func)(rb_frame_info_t *))
+backtreace_collect(rb_backtrace_t *bt, int lev, int n, VALUE (*func)(rb_frame_info_t *, void *arg), void *arg)
 {
     VALUE btary;
     int i;
@@ -1053,10 +1202,16 @@ backtreace_collect(rb_backtrace_t *bt, int lev, int n, VALUE (*func)(rb_frame_in
 
     for (i=0; i+lev<(int)bt->backtrace_size && i<n; i++) {
 	rb_frame_info_t *fi = &bt->backtrace[bt->backtrace_size - 1 - (lev+i)];
-	rb_ary_push(btary, func(fi));
+	rb_ary_push(btary, func(fi, arg));
     }
 
     return btary;
+}
+
+static VALUE
+frame_info_to_str_dmyarg(rb_frame_info_t *fi, void *dmy)
+{
+    return frame_info_to_str(fi);
 }
 
 VALUE
@@ -1069,7 +1224,7 @@ rb_backtrace_to_str_ary(VALUE self)
 	return bt->strary;
     }
     else {
-	bt->strary = backtreace_collect(bt, 0, bt->backtrace_size, frame_info_to_str);
+	bt->strary = backtreace_collect(bt, 0, bt->backtrace_size, frame_info_to_str_dmyarg, 0);
 	return bt->strary;
     }
 }
@@ -1080,8 +1235,6 @@ backtrace_to_str_ary2(VALUE self, size_t lev, size_t n)
     rb_backtrace_t *bt;
     size_t size;
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
-    /* fprintf(stderr, "btsize: %d, lev: %d, n: %d\n", (int)bt->backtrace_size, lev, n); */
-
     size = bt->backtrace_size;
 
     if (n == 0) {
@@ -1091,22 +1244,39 @@ backtrace_to_str_ary2(VALUE self, size_t lev, size_t n)
 	return Qnil;
     }
 
-    return backtreace_collect(bt, lev, n, frame_info_to_str);
-}
-
-#if 0
-static VALUE
-rb_backtrace_to_frame_ary(VALUE self)
-{
-    return backtreace_collect(self, frame_info_create);
+    return backtreace_collect(bt, lev, n, frame_info_to_str_dmyarg, 0);
 }
 
 static VALUE
-backtrace_frame_ary(rb_thread_t *th, size_t lev, size_t n)
+frame_info_create(rb_frame_info_t *srcfi, void *btobj)
 {
-    return rb_backtrace_to_frame_ary(backtrace_create(th, lev, n));
+    VALUE obj;
+    struct valued_frame_info *vfi;
+    obj = TypedData_Make_Struct(rb_cFrameInfo, struct valued_frame_info, &frame_info_data_type, vfi);
+
+    vfi->fi = srcfi;
+    vfi->btobj = (VALUE)btobj;
+
+    return obj;
 }
-#endif
+
+static VALUE
+backtrace_to_frame_ary(VALUE self, size_t lev, size_t n)
+{
+    rb_backtrace_t *bt;
+    size_t size;
+    GetCoreDataFromValue(self, rb_backtrace_t, bt);
+    size = bt->backtrace_size;
+
+    if (n == 0) {
+	n = size;
+    }
+    if (lev > size) {
+	return Qnil;
+    }
+
+    return backtreace_collect(bt, lev, n, frame_info_create, (void *)self);
+}
 
 static VALUE
 backtrace_dump_data(VALUE self)
@@ -1128,6 +1298,12 @@ static VALUE
 vm_backtrace_str_ary(rb_thread_t *th, size_t lev, size_t n)
 {
     return backtrace_to_str_ary2(backtrace_object(th), lev, n);
+}
+
+static VALUE
+vm_backtrace_frame_ary(rb_thread_t *th, size_t lev, size_t n)
+{
+    return backtrace_to_frame_ary(backtrace_object(th), lev, n);
 }
 
 /* old style backtrace directly */
@@ -2586,6 +2762,19 @@ Init_VM(void)
     rb_define_alloc_func(rb_cBacktrace, backtrace_alloc);
     rb_undef_method(CLASS_OF(rb_cBacktrace), "new");
     rb_marshal_define_compat(rb_cBacktrace, rb_cArray, backtrace_dump_data, backtrace_load_data);
+
+    /* ::RubyVM::FrameInfo */
+    rb_cFrameInfo = rb_define_class_under(rb_cRubyVM, "FrameInfo", rb_cObject);
+    rb_undef_alloc_func(rb_cFrameInfo);
+    rb_undef_method(CLASS_OF(rb_cFrameInfo), "new");
+    rb_define_method(rb_cFrameInfo, "line_no", frame_info_line_no_m, 0);
+    rb_define_method(rb_cFrameInfo, "name", frame_info_name_m, 0);
+    rb_define_method(rb_cFrameInfo, "basename", frame_info_basename_m, 0);
+    rb_define_method(rb_cFrameInfo, "filename", frame_info_filename_m, 0);
+    rb_define_method(rb_cFrameInfo, "filepath", frame_info_filepath_m, 0);
+    rb_define_method(rb_cFrameInfo, "iseq", frame_info_iseq_m, 0);
+    rb_define_method(rb_cFrameInfo, "to_s", frame_info_to_str_m, 0);
+    rb_define_singleton_method(rb_cFrameInfo, "caller", rb_f_caller_frame_info, -1);
 
     /* ::RubyVM::USAGE_ANALYSIS_* */
     rb_define_const(rb_cRubyVM, "USAGE_ANALYSIS_INSN", rb_hash_new());

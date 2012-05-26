@@ -84,4 +84,14 @@ class TestBacktrace < Test::Unit::TestCase
     }
     rec[m]
   end
+
+  def test_caller_frame_info
+    fis = RubyVM::FrameInfo.caller(0); cs = caller(0)
+    assert_equal(cs.size, fis.size)
+    fis.zip(cs).each{|fi, s|
+      assert_match(/#{fi.name}/, s)
+      assert_match(/#{fi.filename}/, s)
+      assert_match(/#{fi.line_no}/, s)
+    }
+  end
 end

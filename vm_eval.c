@@ -21,6 +21,7 @@ static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref)
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
 
 static VALUE vm_backtrace_str_ary(rb_thread_t *th, size_t lev, size_t n);
+static VALUE vm_backtrace_frame_ary(rb_thread_t *th, size_t lev, size_t n);
 static void vm_backtrace_print(FILE *fp);
 
 typedef enum call_type {
@@ -1636,6 +1637,36 @@ rb_f_caller(int argc, VALUE *argv)
     return vm_backtrace_str_ary(GET_THREAD(), lev+1, n);
 }
 
+static VALUE
+rb_f_caller_frame_info(int argc, VALUE *argv)
+{
+    VALUE level, vn;
+    int lev, n;
+
+    rb_scan_args(argc, argv, "02", &level, &vn);
+
+    lev = NIL_P(level) ? 1 : NUM2INT(level);
+
+    if (NIL_P(vn)) {
+	n = 0;
+    }
+    else {
+	n = NUM2INT(vn);
+	if (n == 0) {
+	    return rb_ary_new();
+	}
+    }
+
+    if (lev < 0) {
+	rb_raise(rb_eArgError, "negative level (%d)", lev);
+    }
+    if (n < 0) {
+	rb_raise(rb_eArgError, "negative n (%d)", n);
+    }
+
+    return vm_backtrace_frame_ary(GET_THREAD(), lev+1, n);
+}
+
 void
 rb_backtrace(void)
 {
@@ -1806,4 +1837,3 @@ Init_vm_eval(void)
 
     rb_define_global_function("caller", rb_f_caller, -1);
 }
-
