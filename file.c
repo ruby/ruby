@@ -3350,6 +3350,13 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
             VALUE testpath = rb_str_dup(*resolvedp);
             if (*prefixlenp < RSTRING_LEN(testpath))
                 rb_str_cat2(testpath, "/");
+#if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER)
+	    if (*prefixlenp > 1 && *prefixlenp == RSTRING_LEN(testpath)) {
+		const char *prefix = RSTRING_PTR(testpath);
+		const char *last = rb_enc_left_char_head(prefix, prefix + *prefixlenp - 1, prefix + *prefixlenp, enc);
+		if (!isdirsep(*last)) rb_str_cat2(testpath, "/");
+	    }
+#endif
             rb_str_cat(testpath, testname, testnamelen);
             checkval = rb_hash_aref(loopcheck, testpath);
             if (!NIL_P(checkval)) {

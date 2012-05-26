@@ -231,6 +231,14 @@ class TestFile < Test::Unit::TestCase
       assert_equal(realdir, File.realdirpath(".", tst))
       assert_equal(File.join(realdir, "foo"), File.realdirpath("foo", tst))
     }
+    begin
+      result = File.realdirpath("bar", "//:/foo")
+    rescue SystemCallError
+    else
+      if result.start_with?("//")
+        assert_equal("//:/foo/bar", result)
+      end
+    end
   end
 
   def test_utime_with_minus_time_segv
