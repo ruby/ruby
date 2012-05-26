@@ -1,3 +1,8 @@
+Sat May 26 18:08:59 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* time.c: modified doc.
+	* ext/date/date_core.c: ditto.
+
 Sat May 26 17:05:45 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (backtrace_*): change type of lev and n from size_t to int.
