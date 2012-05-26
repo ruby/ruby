@@ -33,7 +33,7 @@ class TestBacktrace < Test::Unit::TestCase
     assert_equal(nil, cs[4])
 
     #
-    max = 20
+    max = 10
     rec = lambda{|n|
       if n > 0
         1.times{
