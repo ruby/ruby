@@ -1,3 +1,17 @@
+Sat May 26 12:18:09 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (frame_info_to_str): add `break'.
+
+	* vm.c (backtrace_object): remove lev and n parameter.
+	  backtrace_object always returns all of backtrace information.
+
+	* vm.c (rb_backtrace_to_str_ary): fix to use backtrace_object().
+	  This change improve performance of caller(lev, n).
+
+	* benchmark/bm_vm3_backtrace.rb: added to check above improvement.
+	  FYI: measurement on my laptop, 1.9.3p229 needs 5.125 sec, 
+	  and current trunk only needs 0.299sec.
+
 Sat May 26 11:05:09 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (rb_frame_info_t): keep previous ISEQ frame info for CFUNC

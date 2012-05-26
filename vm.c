@@ -851,6 +851,7 @@ frame_info_to_str(rb_frame_info_t *fi)
 	file = fi->body.iseq.iseq->location.filename;
 	line_no = fi->body.iseq.line_no.line_no;
 	name = fi->body.iseq.iseq->location.name;
+	break;
       case FRAME_INFO_TYPE_CFUNC:
 	if (fi->body.cfunc.prev_fi) {
 	    file = fi->body.cfunc.prev_fi->body.iseq.iseq->location.filename;
@@ -1022,7 +1023,7 @@ bt_iter_cfunc(void *ptr, ID mid)
 }
 
 static VALUE
-backtrace_object(rb_thread_t *th, size_t lev, size_t n)
+backtrace_object(rb_thread_t *th)
 {
     struct bt_iter_arg arg;
     arg.prev_fi = 0;
@@ -1033,45 +1034,26 @@ backtrace_object(rb_thread_t *th, size_t lev, size_t n)
 		   bt_iter_cfunc,
 		   &arg);
 
-    if (lev > 0) {
-	if (lev > arg.bt->backtrace_size) {
-	    arg.bt->backtrace = 0;
-	    arg.bt->backtrace_size = 0;
-	    arg.btobj = Qnil;
-	}
-	else {
-	    arg.bt->backtrace += lev;
-	    arg.bt->backtrace_size -= lev;
-	}
-    }
-
-    if (n > 0) {
-	if (n < arg.bt->backtrace_size) {
-	    arg.bt->backtrace_size = n; /* trim */
-	}
-    }
-
     return arg.btobj;
 }
 
 VALUE
 rb_vm_backtrace_object(void)
 {
-    return backtrace_object(GET_THREAD(), 0, 0);
+    return backtrace_object(GET_THREAD());
 }
 
 static VALUE
-backtreace_collect(rb_backtrace_t *bt, VALUE (*func)(rb_frame_info_t *))
+backtreace_collect(rb_backtrace_t *bt, int lev, int n, VALUE (*func)(rb_frame_info_t *))
 {
     VALUE btary;
-    size_t i;
+    int i;
 
-    btary = rb_ary_new2(bt->backtrace_size);
-    rb_ary_store(btary, bt->backtrace_size-1, Qnil); /* create places */
+    btary = rb_ary_new();
 
-    for (i=0; i<bt->backtrace_size; i++) {
-	rb_frame_info_t *fi = &bt->backtrace[i];
-	RARRAY_PTR(btary)[bt->backtrace_size - i - 1] = func(fi);
+    for (i=0; i+lev<(int)bt->backtrace_size && i<n; i++) {
+	rb_frame_info_t *fi = &bt->backtrace[bt->backtrace_size - 1 - (lev+i)];
+	rb_ary_push(btary, func(fi));
     }
 
     return btary;
@@ -1087,9 +1069,29 @@ rb_backtrace_to_str_ary(VALUE self)
 	return bt->strary;
     }
     else {
-	bt->strary = backtreace_collect(bt, frame_info_to_str);
+	bt->strary = backtreace_collect(bt, 0, bt->backtrace_size, frame_info_to_str);
 	return bt->strary;
     }
+}
+
+static VALUE
+backtrace_to_str_ary2(VALUE self, size_t lev, size_t n)
+{
+    rb_backtrace_t *bt;
+    size_t size;
+    GetCoreDataFromValue(self, rb_backtrace_t, bt);
+    /* fprintf(stderr, "btsize: %d, lev: %d, n: %d\n", (int)bt->backtrace_size, lev, n); */
+
+    size = bt->backtrace_size;
+
+    if (n == 0) {
+	n = size;
+    }
+    if (lev > size) {
+	return Qnil;
+    }
+
+    return backtreace_collect(bt, lev, n, frame_info_to_str);
 }
 
 #if 0
@@ -1120,6 +1122,12 @@ backtrace_load_data(VALUE self, VALUE str)
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
     bt->strary = str;
     return self;
+}
+
+static VALUE
+vm_backtrace_str_ary(rb_thread_t *th, size_t lev, size_t n)
+{
+    return backtrace_to_str_ary2(backtrace_object(th), lev, n);
 }
 
 /* old style backtrace directly */
@@ -1161,66 +1169,6 @@ oldbt_iter_cfunc(void *ptr, ID mid)
     int line_no = arg->line_no;
 
     (arg->func)(arg->data, file, line_no, name);
-}
-
-static void
-oldbt_push(void *data, VALUE file, int line_no, VALUE name)
-{
-    VALUE ary = (VALUE)data;
-    VALUE bt;
-
-    if (line_no) {
-	bt = rb_enc_sprintf(rb_enc_compatible(file, name), "%s:%d:in `%s'",
-			    RSTRING_PTR(file), line_no, RSTRING_PTR(name));
-    }
-    else {
-	bt = rb_enc_sprintf(rb_enc_compatible(file, name), "%s:in `%s'",
-			    RSTRING_PTR(file), RSTRING_PTR(name));
-    }
-    rb_ary_push(ary, bt);
-}
-
-static VALUE
-vm_backtrace_str_ary(rb_thread_t *th, size_t lev, size_t n)
-{
-    struct oldbt_arg arg;
-    VALUE ary, result;
-    int i;
-    size_t size;
-    VALUE *ptr;
-
-    arg.func = oldbt_push;
-    arg.data = (void *)rb_ary_new();
-
-    backtrace_each(th,
-		   oldbt_init,
-		   oldbt_iter_iseq,
-		   oldbt_iter_cfunc,
-		   &arg);
-
-    ary = (VALUE)arg.data;
-    size = RARRAY_LEN(ary);
-
-    /* ["top", "2nd", ..........., "size-th"] */
-    /*                 <-- n --> <-- lev -->  */
-    /*         return: [.......]              */
-
-    if (n == 0) {
-	n = size;
-    }
-
-    if (size < lev) {
-	return Qnil;
-    }
-
-    result = rb_ary_new();
-    ptr = RARRAY_PTR(ary);
-
-    for (i=0; i<(int)(size - lev) && i<(int)n; i++) {
-	rb_ary_push(result, ptr[(size - 1) - lev - i]);
-    }
-
-    return result;
 }
 
 static void
