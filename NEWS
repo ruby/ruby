@@ -36,6 +36,8 @@ with all sufficient information, see the ChangeLog file.
       * added Kernel#Hash conversion method like Array() or Float().
     * extended method:
       * Kernel#warn accepts multiple args in like puts.
+      * Kernel#caller accepts second optional argument `n' which specify
+	required caller size.
     * incompatible changes:
       * system() and exec() closes non-standard file descriptors
         (The default of :close_others option is changed to true by default.)

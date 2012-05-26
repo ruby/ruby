@@ -1,3 +1,7 @@
+Sat May 26 13:50:48 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* NEWS: add Kernel#caller's second argument.
+
 Sat May 26 13:40:29 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (RubyVM::FrameInfo): add a class to access each frame
