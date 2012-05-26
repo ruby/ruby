@@ -27,7 +27,7 @@ Sat May 26 16:26:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat May 26 15:29:22 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_backtrace.rb (test_caller_lev):
-	  decreaze recursion size.
+	  decrease recursion size.
 
 Sat May 26 13:50:48 2012  Koichi Sasada  <ko1@atdot.net>
 
