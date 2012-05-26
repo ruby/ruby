@@ -213,7 +213,7 @@ class TestFile < Test::Unit::TestCase
   def test_realpath
     Dir.mktmpdir('rubytest-realpath') {|tmpdir|
       realdir = File.realpath(tmpdir)
-      tst = realdir.sub(/#{Regexp.escape(File::SEPARATOR)}/, '\0\0\0')
+      tst = realdir + (File::SEPARATOR*3 + ".")
       assert_equal(realdir, File.realpath(tst))
       assert_equal(realdir, File.realpath(".", tst))
       if File::ALT_SEPARATOR
@@ -226,7 +226,7 @@ class TestFile < Test::Unit::TestCase
   def test_realdirpath
     Dir.mktmpdir('rubytest-realdirpath') {|tmpdir|
       realdir = File.realpath(tmpdir)
-      tst = realdir.sub(/#{Regexp.escape(File::SEPARATOR)}/, '\0\0\0')
+      tst = realdir + (File::SEPARATOR*3 + ".")
       assert_equal(realdir, File.realdirpath(tst))
       assert_equal(realdir, File.realdirpath(".", tst))
       assert_equal(File.join(realdir, "foo"), File.realdirpath("foo", tst))
