@@ -756,17 +756,27 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 typedef struct rb_frame_info_struct {
     enum FRAME_INFO_TYPE {
 	FRAME_INFO_TYPE_ISEQ = 1,
+	FRAME_INFO_TYPE_ISEQ_CALCED,
 	FRAME_INFO_TYPE_CFUNC,
 	FRAME_INFO_TYPE_IFUNC,
     } type;
 
+    enum FRAME_INFO_STORAGE {
+	FRAME_INFO_STORAGE_BACKTRACE,
+	FRAME_INFO_STORAGE_VALUE,
+    } storage;
+
     union {
 	struct {
 	    const rb_iseq_t *iseq;
-	    const VALUE *pc;
+	    union {
+		const VALUE *pc;
+		int line_no;
+	    } line_no;
 	} iseq;
 	struct {
 	    ID mid;
+	    struct rb_frame_info_struct *prev_fi;
 	} cfunc;
     } body;
 } rb_frame_info_t;
@@ -779,9 +789,14 @@ frame_info_mark(void *ptr)
 
 	switch (fi->type) {
 	  case FRAME_INFO_TYPE_ISEQ:
+	  case FRAME_INFO_TYPE_ISEQ_CALCED:
 	    rb_gc_mark(fi->body.iseq.iseq->self);
 	    break;
 	  case FRAME_INFO_TYPE_CFUNC:
+	    if (fi->body.cfunc.prev_fi && fi->body.cfunc.prev_fi->storage == FRAME_INFO_STORAGE_VALUE) {
+		/* TODO: rb_gc_mark(fi->body.cfunc.prev_fi->self) */
+	    }
+	    break;
 	  case FRAME_INFO_TYPE_IFUNC:
 	  default:
 	    break;
@@ -790,11 +805,11 @@ frame_info_mark(void *ptr)
 }
 
 static VALUE
-frame_info_format(VALUE file, VALUE line_no, VALUE name)
+frame_info_format(VALUE file, int line_no, VALUE name)
 {
-    if (line_no != INT2FIX(0)) {
+    if (line_no != 0) {
 	return rb_enc_sprintf(rb_enc_compatible(file, name), "%s:%d:in `%s'",
-			      RSTRING_PTR(file), FIX2INT(line_no), RSTRING_PTR(name));
+			      RSTRING_PTR(file), line_no, RSTRING_PTR(name));
     }
     else {
 	return rb_enc_sprintf(rb_enc_compatible(file, name), "%s:in `%s'",
@@ -802,24 +817,58 @@ frame_info_format(VALUE file, VALUE line_no, VALUE name)
     }
 }
 
-static VALUE
-frame_info_to_str_override(rb_frame_info_t *fi, VALUE *args)
+static int
+frame_info_line_no(rb_frame_info_t *fi)
 {
     switch (fi->type) {
       case FRAME_INFO_TYPE_ISEQ:
-	args[0] = fi->body.iseq.iseq->location.filename;
-	args[1] = INT2FIX(calc_line_no(fi->body.iseq.iseq, fi->body.iseq.pc));
-	args[2] = fi->body.iseq.iseq->location.name;
-	break;
+	fi->type = FRAME_INFO_TYPE_ISEQ_CALCED;
+	return (fi->body.iseq.line_no.line_no = calc_line_no(fi->body.iseq.iseq, fi->body.iseq.line_no.pc));
+      case FRAME_INFO_TYPE_ISEQ_CALCED:
+	return fi->body.iseq.line_no.line_no;
       case FRAME_INFO_TYPE_CFUNC:
-	args[2] = rb_id2str(fi->body.cfunc.mid);
+      case FRAME_INFO_TYPE_IFUNC:
+	break;
+    }
+    return 0;
+}
+
+static VALUE
+frame_info_to_str(rb_frame_info_t *fi)
+{
+    VALUE file, name;
+    int line_no;
+
+    switch (fi->type) {
+      case FRAME_INFO_TYPE_ISEQ:
+	file = fi->body.iseq.iseq->location.filename;
+	name = fi->body.iseq.iseq->location.name;
+
+	line_no = fi->body.iseq.line_no.line_no = calc_line_no(fi->body.iseq.iseq, fi->body.iseq.line_no.pc);
+	fi->type = FRAME_INFO_TYPE_ISEQ_CALCED;
+	break;
+      case FRAME_INFO_TYPE_ISEQ_CALCED:
+	file = fi->body.iseq.iseq->location.filename;
+	line_no = fi->body.iseq.line_no.line_no;
+	name = fi->body.iseq.iseq->location.name;
+      case FRAME_INFO_TYPE_CFUNC:
+	if (fi->body.cfunc.prev_fi) {
+	    file = fi->body.cfunc.prev_fi->body.iseq.iseq->location.filename;
+	    line_no = frame_info_line_no(fi->body.cfunc.prev_fi);
+	}
+	else {
+	    rb_thread_t *th = GET_THREAD();
+	    file = th->vm->progname ? th->vm->progname : ruby_engine_name;
+	    line_no = INT2FIX(0);
+	}
+	name = rb_id2str(fi->body.cfunc.mid);
 	break;
       case FRAME_INFO_TYPE_IFUNC:
       default:
-	rb_bug("frame_info_to_str_overwrite: unreachable");
+	rb_bug("frame_info_to_str: unreachable");
     }
 
-    return frame_info_format(args[0], args[1], args[2]);
+    return frame_info_format(file, line_no, name);
 }
 
 typedef struct rb_backtrace_struct {
@@ -936,6 +985,7 @@ backtrace_each(rb_thread_t *th,
 struct bt_iter_arg {
     rb_backtrace_t *bt;
     VALUE btobj;
+    rb_frame_info_t *prev_fi;
 };
 
 static void
@@ -954,8 +1004,10 @@ bt_iter_iseq(void *ptr, const rb_iseq_t *iseq, const VALUE *pc)
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
     rb_frame_info_t *fi = &arg->bt->backtrace[arg->bt->backtrace_size++];
     fi->type = FRAME_INFO_TYPE_ISEQ;
+    fi->storage = FRAME_INFO_STORAGE_BACKTRACE;
     fi->body.iseq.iseq = iseq;
-    fi->body.iseq.pc = pc;
+    fi->body.iseq.line_no.pc = pc;
+    arg->prev_fi = fi;
 }
 
 static void
@@ -964,13 +1016,16 @@ bt_iter_cfunc(void *ptr, ID mid)
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
     rb_frame_info_t *fi = &arg->bt->backtrace[arg->bt->backtrace_size++];
     fi->type = FRAME_INFO_TYPE_CFUNC;
+    fi->storage = FRAME_INFO_STORAGE_BACKTRACE;
     fi->body.cfunc.mid = mid;
+    fi->body.cfunc.prev_fi = arg->prev_fi;
 }
 
 static VALUE
 backtrace_object(rb_thread_t *th, size_t lev, size_t n)
 {
     struct bt_iter_arg arg;
+    arg.prev_fi = 0;
 
     backtrace_each(th,
 		   bt_init,
@@ -1006,23 +1061,17 @@ rb_vm_backtrace_object(void)
 }
 
 static VALUE
-backtreace_collect(rb_backtrace_t *bt, VALUE (*func)(rb_frame_info_t *, VALUE *))
+backtreace_collect(rb_backtrace_t *bt, VALUE (*func)(rb_frame_info_t *))
 {
     VALUE btary;
     size_t i;
-    VALUE args[3];
-    rb_thread_t *th = GET_THREAD();
 
     btary = rb_ary_new2(bt->backtrace_size);
     rb_ary_store(btary, bt->backtrace_size-1, Qnil); /* create places */
 
-    args[0] = th->vm->progname ? th->vm->progname : ruby_engine_name;;
-    args[1] = INT2FIX(0);
-    args[2] = Qnil;
-
     for (i=0; i<bt->backtrace_size; i++) {
 	rb_frame_info_t *fi = &bt->backtrace[i];
-	RARRAY_PTR(btary)[bt->backtrace_size - i - 1] = func(fi, args);
+	RARRAY_PTR(btary)[bt->backtrace_size - i - 1] = func(fi);
     }
 
     return btary;
@@ -1038,7 +1087,7 @@ rb_backtrace_to_str_ary(VALUE self)
 	return bt->strary;
     }
     else {
-	bt->strary = backtreace_collect(bt, frame_info_to_str_override);
+	bt->strary = backtreace_collect(bt, frame_info_to_str);
 	return bt->strary;
     }
 }

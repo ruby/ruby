@@ -1,3 +1,9 @@
+Sat May 26 11:05:09 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (rb_frame_info_t): keep previous ISEQ frame info for CFUNC
+	  frame info.  And fix to cache a calculated line_no of ISEQ frame
+	  info.
+
 Sat May 26 09:54:53 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_ssl.c: Allow disabling client-side renegotiation.
