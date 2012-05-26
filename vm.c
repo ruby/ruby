@@ -1026,7 +1026,7 @@ frame_info_to_str_m(VALUE self)
 typedef struct rb_backtrace_struct {
     rb_frame_info_t *backtrace;
     rb_frame_info_t *backtrace_base;
-    size_t backtrace_size;
+    int backtrace_size;
     VALUE strary;
 } rb_backtrace_t;
 
@@ -1198,9 +1198,13 @@ backtreace_collect(rb_backtrace_t *bt, int lev, int n, VALUE (*func)(rb_frame_in
     VALUE btary;
     int i;
 
+    if (UNLIKELY(lev < 0 || n < 0)) {
+	rb_bug("backtreace_collect: unreachable");
+    }
+
     btary = rb_ary_new();
 
-    for (i=0; i+lev<(int)bt->backtrace_size && i<n; i++) {
+    for (i=0; i+lev<bt->backtrace_size && i<n; i++) {
 	rb_frame_info_t *fi = &bt->backtrace[bt->backtrace_size - 1 - (lev+i)];
 	rb_ary_push(btary, func(fi, arg));
     }
@@ -1230,10 +1234,10 @@ rb_backtrace_to_str_ary(VALUE self)
 }
 
 static VALUE
-backtrace_to_str_ary2(VALUE self, size_t lev, size_t n)
+backtrace_to_str_ary2(VALUE self, int lev, int n)
 {
     rb_backtrace_t *bt;
-    size_t size;
+    int size;
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
     size = bt->backtrace_size;
 
@@ -1261,10 +1265,10 @@ frame_info_create(rb_frame_info_t *srcfi, void *btobj)
 }
 
 static VALUE
-backtrace_to_frame_ary(VALUE self, size_t lev, size_t n)
+backtrace_to_frame_ary(VALUE self, int lev, int n)
 {
     rb_backtrace_t *bt;
-    size_t size;
+    int size;
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
     size = bt->backtrace_size;
 
@@ -1295,13 +1299,13 @@ backtrace_load_data(VALUE self, VALUE str)
 }
 
 static VALUE
-vm_backtrace_str_ary(rb_thread_t *th, size_t lev, size_t n)
+vm_backtrace_str_ary(rb_thread_t *th, int lev, int n)
 {
     return backtrace_to_str_ary2(backtrace_object(th), lev, n);
 }
 
 static VALUE
-vm_backtrace_frame_ary(rb_thread_t *th, size_t lev, size_t n)
+vm_backtrace_frame_ary(rb_thread_t *th, int lev, int n)
 {
     return backtrace_to_frame_ary(backtrace_object(th), lev, n);
 }

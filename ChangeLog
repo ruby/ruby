@@ -1,3 +1,11 @@
+Sat May 26 17:05:45 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (backtrace_*): change type of lev and n from size_t to int.
+	  Also set type of rb_backtrace_t#backtrace_size to int.
+	  A patch from nobu.
+
+	* vm_eval.c: ditto.
+
 Sat May 26 16:26:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (realpath_rec): UNC prefix does not end with path separator,

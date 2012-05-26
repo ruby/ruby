@@ -20,8 +20,8 @@ static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref);
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
 
-static VALUE vm_backtrace_str_ary(rb_thread_t *th, size_t lev, size_t n);
-static VALUE vm_backtrace_frame_ary(rb_thread_t *th, size_t lev, size_t n);
+static VALUE vm_backtrace_str_ary(rb_thread_t *th, int lev, int n);
+static VALUE vm_backtrace_frame_ary(rb_thread_t *th, int lev, int n);
 static void vm_backtrace_print(FILE *fp);
 
 typedef enum call_type {
