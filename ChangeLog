@@ -1,3 +1,20 @@
+Sat May 26 09:54:53 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_ssl.c: Allow disabling client-side renegotiation.
+	* test/openssl/test_ssl.rb: Simple tests for this.
+
+	  Client-side renegotiation is still considered problematic, even
+	  when used in the context of secure renegotiation (RI, RFC 5746).
+	  The changes allow users to either completely disable client
+	  renegotiation on the server, or to specify a maximum number of
+	  handshakes allowed in total. The number of total handshakes is
+	  counted in a callback set as SSL_set_info_callback. If the
+	  maximum number of handshakes is exceeded an error will be raised
+	  We do not support renegotiation in the OpenSSL extension, therefore
+	  this feature can only be tested externally.
+	  The feature is opt-in, the default setting will be to allow
+	  unlimited client renegotiation, as was the case before.
+
 Fri May 25 23:38:58 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_ssl.rb: Clarify the intention of errors to be

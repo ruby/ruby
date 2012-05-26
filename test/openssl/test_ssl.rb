@@ -505,14 +505,54 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
 
 end
 
+  def test_disable_client_renegotiation
+    ctx_proc = Proc.new { |ctx| ctx.disable_client_renegotiation }
+    start_server_version(:SSLv23, ctx_proc) { |server, port|
+      server_connect(port) { |ssl|
+        assert(ssl.ssl_version)
+      }
+    }
+  end
+
+  def test_allow_client_renegotiation_args
+    ctx = OpenSSL::SSL::SSLContext.new
+    assert_raise(ArgumentError) { ctx.allow_client_renegotiation(0) }
+    assert_raise(ArgumentError) { ctx.allow_client_renegotiation(-1) }
+  end
+
+  def test_allow_client_renegotiation_once
+    ctx_proc = Proc.new { |ctx| ctx.allow_client_renegotiation(2) }
+    start_server_version(:SSLv23, ctx_proc) { |server, port|
+      server_connect(port) { |ssl|
+        assert(ssl.ssl_version)
+      }
+    }
+  end
+
+  def test_allow_arbitrary_client_renegotiation
+    ctx_proc = Proc.new { |ctx| ctx.allow_client_renegotiation }
+    start_server_version(:SSLv23, ctx_proc) { |server, port|
+      server_connect(port) { |ssl|
+        assert(ssl.ssl_version)
+      }
+    }
+  end
+
   private
 
-  def start_server_version(version, ctx_proc=nil, &blk)
+  def start_server_version(version, ctx_proc=nil, server_proc=nil, &blk)
     ctx_wrap = Proc.new { |ctx|
       ctx.ssl_version = version
       ctx_proc.call(ctx) if ctx_proc
     }
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, :ctx_proc => ctx_wrap, &blk)
+    start_server(
+      PORT, 
+      OpenSSL::SSL::VERIFY_NONE, 
+      true, 
+      :ctx_proc => ctx_wrap, 
+      :server_proc => server_proc, 
+      &blk
+    )
   end
 
   def server_connect(port, ctx=nil)

@@ -29,41 +29,43 @@ VALUE eSSLError;
 VALUE cSSLContext;
 VALUE cSSLSocket;
 
-#define ossl_sslctx_set_cert(o,v)        rb_iv_set((o),"@cert",(v))
-#define ossl_sslctx_set_key(o,v)         rb_iv_set((o),"@key",(v))
-#define ossl_sslctx_set_client_ca(o,v)   rb_iv_set((o),"@client_ca",(v))
-#define ossl_sslctx_set_ca_file(o,v)     rb_iv_set((o),"@ca_file",(v))
-#define ossl_sslctx_set_ca_path(o,v)     rb_iv_set((o),"@ca_path",(v))
-#define ossl_sslctx_set_timeout(o,v)     rb_iv_set((o),"@timeout",(v))
-#define ossl_sslctx_set_verify_mode(o,v) rb_iv_set((o),"@verify_mode",(v))
-#define ossl_sslctx_set_verify_dep(o,v)  rb_iv_set((o),"@verify_depth",(v))
-#define ossl_sslctx_set_verify_cb(o,v)   rb_iv_set((o),"@verify_callback",(v))
-#define ossl_sslctx_set_options(o,v)     rb_iv_set((o),"@options",(v))
-#define ossl_sslctx_set_cert_store(o,v)  rb_iv_set((o),"@cert_store",(v))
-#define ossl_sslctx_set_extra_cert(o,v)  rb_iv_set((o),"@extra_chain_cert",(v))
-#define ossl_sslctx_set_client_cert_cb(o,v) rb_iv_set((o),"@client_cert_cb",(v))
-#define ossl_sslctx_set_tmp_dh_cb(o,v)   rb_iv_set((o),"@tmp_dh_callback",(v))
-#define ossl_sslctx_set_sess_id_ctx(o, v) rb_iv_get((o),"@session_id_context"(v))
+#define ossl_sslctx_set_cert(o,v)        	rb_iv_set((o),"@cert",(v))
+#define ossl_sslctx_set_key(o,v)         	rb_iv_set((o),"@key",(v))
+#define ossl_sslctx_set_client_ca(o,v)   	rb_iv_set((o),"@client_ca",(v))
+#define ossl_sslctx_set_ca_file(o,v)     	rb_iv_set((o),"@ca_file",(v))
+#define ossl_sslctx_set_ca_path(o,v)     	rb_iv_set((o),"@ca_path",(v))
+#define ossl_sslctx_set_timeout(o,v)     	rb_iv_set((o),"@timeout",(v))
+#define ossl_sslctx_set_verify_mode(o,v) 	rb_iv_set((o),"@verify_mode",(v))
+#define ossl_sslctx_set_verify_dep(o,v)  	rb_iv_set((o),"@verify_depth",(v))
+#define ossl_sslctx_set_verify_cb(o,v)   	rb_iv_set((o),"@verify_callback",(v))
+#define ossl_sslctx_set_options(o,v)     	rb_iv_set((o),"@options",(v))
+#define ossl_sslctx_set_cert_store(o,v)  	rb_iv_set((o),"@cert_store",(v))
+#define ossl_sslctx_set_extra_cert(o,v)  	rb_iv_set((o),"@extra_chain_cert",(v))
+#define ossl_sslctx_set_client_cert_cb(o,v) 	rb_iv_set((o),"@client_cert_cb",(v))
+#define ossl_sslctx_set_tmp_dh_cb(o,v)   	rb_iv_set((o),"@tmp_dh_callback",(v))
+#define ossl_sslctx_set_sess_id_ctx(o, v) 	rb_iv_set((o),"@session_id_context",(v))
+#define ossl_sslctx_set_max_handshake(o, v)  	rb_iv_set((o),"@max_handshake",(v))
 
-#define ossl_sslctx_get_cert(o)          rb_iv_get((o),"@cert")
-#define ossl_sslctx_get_key(o)           rb_iv_get((o),"@key")
-#define ossl_sslctx_get_client_ca(o)     rb_iv_get((o),"@client_ca")
-#define ossl_sslctx_get_ca_file(o)       rb_iv_get((o),"@ca_file")
-#define ossl_sslctx_get_ca_path(o)       rb_iv_get((o),"@ca_path")
-#define ossl_sslctx_get_timeout(o)       rb_iv_get((o),"@timeout")
-#define ossl_sslctx_get_verify_mode(o)   rb_iv_get((o),"@verify_mode")
-#define ossl_sslctx_get_verify_dep(o)    rb_iv_get((o),"@verify_depth")
-#define ossl_sslctx_get_verify_cb(o)     rb_iv_get((o),"@verify_callback")
-#define ossl_sslctx_get_options(o)       rb_iv_get((o),"@options")
-#define ossl_sslctx_get_cert_store(o)    rb_iv_get((o),"@cert_store")
-#define ossl_sslctx_get_extra_cert(o)    rb_iv_get((o),"@extra_chain_cert")
-#define ossl_sslctx_get_client_cert_cb(o) rb_iv_get((o),"@client_cert_cb")
-#define ossl_sslctx_get_tmp_dh_cb(o)     rb_iv_get((o),"@tmp_dh_callback")
-#define ossl_sslctx_get_sess_id_ctx(o)   rb_iv_get((o),"@session_id_context")
+#define ossl_sslctx_get_cert(o)          	rb_iv_get((o),"@cert")
+#define ossl_sslctx_get_key(o)           	rb_iv_get((o),"@key")
+#define ossl_sslctx_get_client_ca(o)     	rb_iv_get((o),"@client_ca")
+#define ossl_sslctx_get_ca_file(o)       	rb_iv_get((o),"@ca_file")
+#define ossl_sslctx_get_ca_path(o)       	rb_iv_get((o),"@ca_path")
+#define ossl_sslctx_get_timeout(o)       	rb_iv_get((o),"@timeout")
+#define ossl_sslctx_get_verify_mode(o)   	rb_iv_get((o),"@verify_mode")
+#define ossl_sslctx_get_verify_dep(o)    	rb_iv_get((o),"@verify_depth")
+#define ossl_sslctx_get_verify_cb(o)     	rb_iv_get((o),"@verify_callback")
+#define ossl_sslctx_get_options(o)       	rb_iv_get((o),"@options")
+#define ossl_sslctx_get_cert_store(o)    	rb_iv_get((o),"@cert_store")
+#define ossl_sslctx_get_extra_cert(o)    	rb_iv_get((o),"@extra_chain_cert")
+#define ossl_sslctx_get_client_cert_cb(o) 	rb_iv_get((o),"@client_cert_cb")
+#define ossl_sslctx_get_tmp_dh_cb(o)     	rb_iv_get((o),"@tmp_dh_callback")
+#define ossl_sslctx_get_sess_id_ctx(o)   	rb_iv_get((o),"@session_id_context")
+#define ossl_sslctx_get_max_handshake(o)     	rb_iv_get((o),"@max_handshake")
 
 static const char *ossl_sslctx_attrs[] = {
     "cert", "key", "client_ca", "ca_file", "ca_path",
-    "timeout", "verify_mode", "verify_depth",
+    "timeout", "verify_mode", "verify_depth", "max_handshake",
     "verify_callback", "options", "cert_store", "extra_chain_cert",
     "client_cert_cb", "tmp_dh_callback", "session_id_context",
     "session_get_cb", "session_new_cb", "session_remove_cb",
@@ -78,6 +80,7 @@ static const char *ossl_sslctx_attrs[] = {
 #define ossl_ssl_get_x509(o)         rb_iv_get((o),"@x509")
 #define ossl_ssl_get_key(o)          rb_iv_get((o),"@key")
 #define ossl_ssl_get_tmp_dh(o)       rb_iv_get((o),"@tmp_dh")
+#define ossl_ssl_get_handshake(o)    rb_iv_get((o),"@handshake")
 
 #define ossl_ssl_set_io(o,v)         rb_iv_set((o),"@io",(v))
 #define ossl_ssl_set_ctx(o,v)        rb_iv_set((o),"@context",(v))
@@ -85,6 +88,7 @@ static const char *ossl_sslctx_attrs[] = {
 #define ossl_ssl_set_x509(o,v)       rb_iv_set((o),"@x509",(v))
 #define ossl_ssl_set_key(o,v)        rb_iv_set((o),"@key",(v))
 #define ossl_ssl_set_tmp_dh(o,v)     rb_iv_set((o),"@tmp_dh",(v))
+#define ossl_ssl_set_handshake(o,v)  rb_iv_set((o),"@handshake",(v))
 
 static const char *ossl_ssl_attr_readers[] = { "io", "context", };
 static const char *ossl_ssl_attrs[] = {
@@ -542,6 +546,33 @@ ssl_servername_cb(SSL *ssl, int *ad, void *arg)
 }
 #endif
 
+static int
+ssl_get_max_handshake(VALUE ssl)
+{
+    VALUE rb_ctx = ossl_ssl_get_ctx(ssl);
+    VALUE max_handshake = ossl_sslctx_get_max_handshake(rb_ctx);
+    return NIL_P(max_handshake) ? -1 : NUM2INT(max_handshake);
+}
+
+static void
+ssl_renegotiation_cb(const SSL *ssl, int where, int val)
+{
+    int state = SSL_state(ssl);
+
+    /* Count handshakes on the server */
+    if ((where & SSL_CB_HANDSHAKE_START) && 
+	(state & SSL_ST_ACCEPT)) {
+	VALUE rb_ssl = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
+	int max = ssl_get_max_handshake(rb_ssl);
+	int cur = NUM2INT(ossl_ssl_get_handshake(rb_ssl));
+
+	if (max != -1 && cur == max)
+	    ossl_raise(eSSLError, "Client renegotations exceeded maximum");
+
+	ossl_ssl_set_handshake(rb_ssl, INT2NUM(cur + 1));
+    }
+}
+
 /*
  * call-seq:
  *    ctx.setup => Qtrue # first time
@@ -792,7 +823,6 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     return v;
 }
 
-
 /*
  *  call-seq:
  *     ctx.session_add(session) -> true | false
@@ -980,6 +1010,51 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ *  call-seq:
+ *     ctx.disable_client_renegotiation -> self
+ *
+ * Completely disables client-side renegotiation. Will only affect the
+ * behavior of a server. A server with client renegotation disabled
+ * will reject any client-side attempts to renegotiate the session.
+ */
+static VALUE
+ossl_sslctx_disable_client_renegotation(VALUE self)
+{
+    ossl_sslctx_set_max_handshake(self, INT2NUM(1));
+    return self;
+}
+
+/*
+ *  call-seq:
+ *     ctx.allow_client_renegotiation[(num_handshakes)] -> self
+ *
+ * Affects only server connections. If no argument is provided, there is no
+ * restriction on the number of client-side renegotiation attempts, which is
+ * also the default setting. If an Integer +num_handshakes+ is provided, this
+ * specifies the maximum number of total handshakes that are allowed before
+ * further attempts will be rejected. So to allow exactly one renegotiation,
+ * an argument of 2 would be needed (the initial handshake plus one
+ * renegotiation attempt). An ArgumentError will be raised for negative
+ * arguments or a value of 0.
+ */
+static VALUE
+ossl_sslctx_allow_client_renegotiation(int argc, VALUE *argv, VALUE self)
+{
+    VALUE max = Qnil;
+
+    rb_scan_args(argc, argv, "01", &max);
+
+    if (NIL_P(max)) {
+	ossl_sslctx_set_max_handshake(self, INT2NUM(-1));
+    } else {
+	if (NUM2INT(max) <= 0)
+	    ossl_raise(rb_eArgError, "Maximum handshakes must be positive and non-zero");
+	ossl_sslctx_set_max_handshake(self, max);
+    }
+    return self;
+}
+
+/*
  * SSLSocket class
  */
 static void
@@ -998,8 +1073,8 @@ ossl_ssl_shutdown(SSL *ssl)
 	    if (rc = SSL_shutdown(ssl))
 		break;
 	}
-	ERR_clear_error();
 	SSL_clear(ssl);
+	ERR_clear_error();
     }
 }
 
@@ -1045,6 +1120,7 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     ossl_ssl_set_io(self, io);
     ossl_ssl_set_ctx(self, ctx);
     ossl_ssl_set_sync_close(self, Qfalse);
+    ossl_ssl_set_handshake(self, INT2NUM(0));
     ossl_sslctx_setup(ctx);
 
     rb_iv_set(self, "@hostname", Qnil);
@@ -1095,6 +1171,7 @@ ossl_ssl_setup(VALUE self)
 	SSL_set_ex_data(ssl, ossl_ssl_ex_client_cert_cb_idx, (void*)cb);
 	cb = ossl_sslctx_get_tmp_dh_cb(v_ctx);
 	SSL_set_ex_data(ssl, ossl_ssl_ex_tmp_dh_callback_idx, (void*)cb);
+	SSL_set_info_callback(ssl, ssl_renegotiation_cb);
     }
 
     return Qtrue;
@@ -1305,7 +1382,6 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     return str;
 }
 
-
 /*
  * call-seq:
  *    ssl.sysread(length) => string
@@ -1415,6 +1491,7 @@ ossl_ssl_close(VALUE self)
 {
     SSL *ssl;
 
+    ossl_ssl_set_handshake(self, INT2NUM(0));
     Data_Get_Struct(self, SSL, ssl);
     ossl_ssl_shutdown(ssl);
     if (RTEST(ossl_ssl_get_sync_close(self)))
@@ -1894,6 +1971,8 @@ Init_ossl_ssl()
     rb_define_method(cSSLContext, "ssl_version=", ossl_sslctx_set_ssl_version, 1);
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
+    rb_define_method(cSSLContext, "disable_client_renegotiation", ossl_sslctx_disable_client_renegotation, 0);
+    rb_define_method(cSSLContext, "allow_client_renegotiation", ossl_sslctx_allow_client_renegotiation, -1);
 
     rb_define_method(cSSLContext, "setup", ossl_sslctx_setup, 0);
 
