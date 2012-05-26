@@ -1,3 +1,7 @@
+Sat May 26 19:04:34 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: added description.
+
 Sat May 26 18:14:57 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_strftime.c: reduced the code.

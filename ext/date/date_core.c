@@ -6971,10 +6971,10 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  *
  *      %L - Millisecond of the second (000..999)
  *      %N - Fractional seconds digits, default is 9 digits (nanosecond)
- *              %3N  millisecond (3 digits)
- *              %6N  microsecond (6 digits)
- *              %9N  nanosecond (9 digits)
- *              %12N picosecond (12 digits)
+ *              %3N  millisecond (3 digits)   %15N femtosecond (15 digits)
+ *              %6N  microsecond (6 digits)   %18N attosecond  (18 digits)
+ *              %9N  nanosecond  (9 digits)   %21N zeptosecond (21 digits)
+ *              %12N picosecond (12 digits)   %24N yoctosecond (24 digits)
  *
  *    Time zone:
  *      %z - Time zone as hour and minute offset from UTC (e.g. +0900)
@@ -8408,10 +8408,10 @@ dt_lite_to_s(VALUE self)
  *
  *      %L - Millisecond of the second (000..999)
  *      %N - Fractional seconds digits, default is 9 digits (nanosecond)
- *              %3N  millisecond (3 digits)
- *              %6N  microsecond (6 digits)
- *              %9N  nanosecond (9 digits)
- *              %12N picosecond (12 digits)
+ *              %3N  millisecond (3 digits)   %15N femtosecond (15 digits)
+ *              %6N  microsecond (6 digits)   %18N attosecond  (18 digits)
+ *              %9N  nanosecond  (9 digits)   %21N zeptosecond (21 digits)
+ *              %12N picosecond (12 digits)   %24N yoctosecond (24 digits)
  *
  *    Time zone:
  *      %z - Time zone as hour and minute offset from UTC (e.g. +0900)
