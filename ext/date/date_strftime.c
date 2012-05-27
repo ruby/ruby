@@ -526,8 +526,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	  case 'O':
 	    /* POSIX locale extensions, ignored for now */
 	    flags |= BIT_OF(LOCALE_O);
-	    if (*(format + 1) && strchr("deHImMSuUVwWy",
-					*(format + 1)))
+	    if (*(format + 1) && strchr("deHkIlmMSuUVwWy", *(format + 1)))
 		goto again;
 	    goto unknown;
 
