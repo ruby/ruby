@@ -6927,12 +6927,11 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  *    0  use zeros for padding.
  *    ^  upcase the result string.
  *    #  change case.
- *    :  use colons for %z.
  *
  *  The minimum field width specifies the minimum width.
  *
- *  The modifier is "E" and "O".
- *  They are ignored.
+ *  The modifiers are "E", "O", ":", "::" and ":::".
+ *  "E" and "O" are ignored.  No effect to result currently.
  *
  *  Format directives:
  *
