@@ -9,7 +9,7 @@ Sun May 27 23:37:48 2012  Koichi Sasada  <ko1@atdot.net>
 	* benchmark/bm_vm2_bigarray.rb: added.
 	  This benchmark mesures a big array literal creation time.
 
-	* benchmark/bm_vm2_bighash.rb: 
+	* benchmark/bm_vm2_bighash.rb:
 	  This benchmark mesures a big hash literal creation time.
 
 	* benchmark/bm*: change notation "i=0" to "i = 0".
@@ -97,7 +97,7 @@ Sat May 26 12:18:09 2012  Koichi Sasada  <ko1@atdot.net>
 	  This change improve performance of caller(lev, n).
 
 	* benchmark/bm_vm3_backtrace.rb: added to check above improvement.
-	  FYI: measurement on my laptop, 1.9.3p229 needs 5.125 sec, 
+	  FYI: measurement on my laptop, 1.9.3p229 needs 5.125 sec,
 	  and current trunk only needs 0.299sec.
 
 Sat May 26 11:05:09 2012  Koichi Sasada  <ko1@atdot.net>
