@@ -72,19 +72,19 @@ class TestDateStrftime < Test::Unit::TestCase
       assert_equal(s[0], d.strftime(f), [f, s].inspect)
       case f[-1,1]
       when 'c', 'C', 'x', 'X', 'y', 'Y'
-	f2 = f.sub(/\A%/, '%E')
-	assert_equal(s[0], d.strftime(f2), [f2, s].inspect)
+		f2 = f.sub(/\A%/, '%E')
+		assert_equal(s[0], d.strftime(f2), [f2, s].inspect)
       else
-	f2 = f.sub(/\A%/, '%E')
-	assert_equal(f2, d.strftime(f2), [f2, s].inspect)
+		f2 = f.sub(/\A%/, '%E')
+		assert_equal(f2, d.strftime(f2), [f2, s].inspect)
       end
       case f[-1,1]
-      when 'd', 'e', 'H', 'I', 'm', 'M', 'S', 'u', 'U', 'V', 'w', 'W', 'y'
-	f2 = f.sub(/\A%/, '%O')
-	assert_equal(s[0], d.strftime(f2), [f2, s].inspect)
+      when 'd', 'e', 'H', 'k', 'I', 'l', 'm', 'M', 'S', 'u', 'U', 'V', 'w', 'W', 'y'
+		f2 = f.sub(/\A%/, '%O')
+		assert_equal(s[0], d.strftime(f2), [f2, s].inspect)
       else
-	f2 = f.sub(/\A%/, '%O')
-	assert_equal(f2, d.strftime(f2), [f2, s].inspect)
+		f2 = f.sub(/\A%/, '%O')
+		assert_equal(f2, d.strftime(f2), [f2, s].inspect)
       end
     end
   end
