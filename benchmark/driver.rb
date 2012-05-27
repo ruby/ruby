@@ -223,10 +223,11 @@ class BenchmarkDriver
     }
 
     if $? != 0
-      raise "\`#{cmd}\' exited with abnormal status (#{$?})"
+      output "\`#{cmd}\' exited with abnormal status (#{$?})"
+      0
+    else
+      m.real
     end
-
-    m.real
   end
 end
 

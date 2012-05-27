@@ -1,3 +1,8 @@
+Sun May 27 13:33:26 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: fix to continue benchmarks when
+	  an error is occurred.
+
 Sun May 27 11:27:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::Runner#_prepare_run): fix operator
