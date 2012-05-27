@@ -5,7 +5,7 @@
 # based on code from Aristarkh A Zagorodnikov and Dat Nguyen
 
 STUFF = "hello\n"
-i=0
+i = 0
 while i<10
   i+=1
   hello = ''

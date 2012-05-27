@@ -1,3 +1,19 @@
+Sun May 27 23:37:48 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm1_lvar_init.rb: added.
+	  This benchmark measures a initialize time of non-used variable.
+
+	* benchmark/bm_vm1_lvar_set.rb: added.
+	  This benchmark measures a local variables initialization time.
+
+	* benchmark/bm_vm2_bigarray.rb: added.
+	  This benchmark mesures a big array literal creation time.
+
+	* benchmark/bm_vm2_bighash.rb: 
+	  This benchmark mesures a big hash literal creation time.
+
+	* benchmark/bm*: change notation "i=0" to "i = 0".
+
 Sun May 27 13:33:26 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb: fix to continue benchmarks when

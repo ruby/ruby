@@ -7,7 +7,7 @@ max = 2000
 lmax = max * max
 (1..1).map{
   Thread.new{
-    i=0
+    i = 0
     while i<lmax
       i+=1
       m.synchronize{

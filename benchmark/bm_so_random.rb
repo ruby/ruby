@@ -12,7 +12,7 @@ end
 
 N = 3_000_000
 
-i=0
+i = 0
 while i<N
   i+=1
   gen_random(100.0)
