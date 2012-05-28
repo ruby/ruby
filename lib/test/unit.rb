@@ -683,6 +683,7 @@ module Test
           @failed_color = @reset_color = ""
         end
         if color or @options[:job_status] == :replace
+          @options[:job_status] ||= :replace unless @verbose
           @verbose = !options[:parallel]
           @output = StatusLineOutput.new(self)
         end

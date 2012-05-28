@@ -1,3 +1,8 @@
+Mon May 28 16:56:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner#_prepare_run): StatusLineOutput
+	  needs job_status to be :replace.
+
 Mon May 28 13:35:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (do-install-*): fix dependencies.  based on the patch by
