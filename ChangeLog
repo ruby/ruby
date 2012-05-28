@@ -1,3 +1,8 @@
+Mon May 28 11:40:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_extract_modeenc): fail only if conflicting
+	  text/binary modes given explicitly.  [ruby-dev:45268][Bug #6055]
+
 Fri May 25 17:18:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_arglist): should reset lexical states after empty

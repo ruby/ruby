@@ -4700,7 +4700,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 
   vmode_handle:
     if (NIL_P(vmode)) {
-        fmode = FMODE_READABLE | DEFAULT_TEXTMODE;
+        fmode = FMODE_READABLE;
         oflags = O_RDONLY;
     }
     else if (!NIL_P(intmode = rb_check_to_integer(vmode, "to_int"))) {
@@ -4746,6 +4746,11 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 #ifdef O_BINARY
 	if (fmode & FMODE_BINMODE)
             oflags |= O_BINARY;
+#endif
+#if DEFAULT_TEXTMODE
+	else if (NIL_P(vmode)) {
+	    fmode |= DEFAULT_TEXTMODE;
+	}
 #endif
 	if (!has_vmode) {
 	    v = rb_hash_aref(opthash, sym_mode);

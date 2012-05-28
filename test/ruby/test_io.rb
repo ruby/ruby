@@ -1951,15 +1951,18 @@ End
 
   def test_open_mode
     feature4742 = "[ruby-core:36338]"
+    bug6055 = '[ruby-dev:45268]'
 
     mkcdtmpdir do
-      refute_nil(f = File.open('symbolic', 'w'))
+      assert_not_nil(f = File.open('symbolic', 'w'))
       f.close
-      refute_nil(f = File.open('numeric',  File::WRONLY|File::TRUNC|File::CREAT))
+      assert_not_nil(f = File.open('numeric',  File::WRONLY|File::TRUNC|File::CREAT))
       f.close
-      refute_nil(f = File.open('hash-symbolic', :mode => 'w'))
+      assert_not_nil(f = File.open('hash-symbolic', :mode => 'w'))
       f.close
-      refute_nil(f = File.open('hash-numeric', :mode => File::WRONLY|File::TRUNC|File::CREAT), feature4742)
+      assert_not_nil(f = File.open('hash-numeric', :mode => File::WRONLY|File::TRUNC|File::CREAT), feature4742)
+      f.close
+      assert_nothing_raised(bug6055) {f = File.open('hash-symbolic', binmode: true)}
       f.close
     end
   end
