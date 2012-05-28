@@ -450,35 +450,35 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 
 		case 'Y':	/* year with century */
                         if (FIXNUM_P(vtm->year)) {
-                            long y = FIX2LONG(vtm->year);
-                            FMT('0', 0 <= y ? 4 : 5, "ld", y);
+				long y = FIX2LONG(vtm->year);
+				FMT('0', 0 <= y ? 4 : 5, "ld", y);
                         }
                         else {
-                            FMTV('0', 4, "d", vtm->year);
+				FMTV('0', 4, "d", vtm->year);
                         }
 			continue;
 
 #ifdef MAILHEADER_EXT
 		case 'z':	/* time zone offset east of GMT e.g. -0600 */
                         switch (colons) {
-                          case 0: /* %z -> +hhmm */
-                            precision = precision <= 5 ? 2 : precision-3;
-                            NEEDS(precision + 3);
-                            break;
+			case 0: /* %z -> +hhmm */
+				precision = precision <= 5 ? 2 : precision-3;
+				NEEDS(precision + 3);
+				break;
 
-                          case 1: /* %:z -> +hh:mm */
-                            precision = precision <= 6 ? 2 : precision-4;
-                            NEEDS(precision + 4);
-                            break;
+			case 1: /* %:z -> +hh:mm */
+				precision = precision <= 6 ? 2 : precision-4;
+				NEEDS(precision + 4);
+				break;
 
-                          case 2: /* %::z -> +hh:mm:ss */
-                            precision = precision <= 9 ? 2 : precision-7;
-                            NEEDS(precision + 7);
-                            break;
+			case 2: /* %::z -> +hh:mm:ss */
+				precision = precision <= 9 ? 2 : precision-7;
+				NEEDS(precision + 7);
+				break;
 
-                          default:
-                            format--;
-                            goto unknown;
+			default:
+				format--;
+				goto unknown;
                         }
 			if (gmt) {
 				off = 0;
