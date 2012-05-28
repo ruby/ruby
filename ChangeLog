@@ -1,3 +1,8 @@
+Mon May 28 13:35:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (do-install-*): fix dependencies.  based on the patch by
+	  nagachika at [ruby-dev:45683].  [Bug #6506]
+
 Mon May 28 12:03:04 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (obj_free): doesn't free a method table if it doesn't

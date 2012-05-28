@@ -240,25 +240,25 @@ post-install-all:: post-install-local post-install-ext post-install-doc
 
 install-nodoc: pre-install-nodoc do-install-nodoc post-install-nodoc
 pre-install-nodoc:: pre-install-local pre-install-ext
-do-install-nodoc: $(PREP)
+do-install-nodoc: $(PROGRAM)
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS)
 post-install-nodoc:: post-install-local post-install-ext
 
 install-local: pre-install-local do-install-local post-install-local
 pre-install-local:: pre-install-bin pre-install-lib pre-install-man
-do-install-local: $(PREP)
+do-install-local: $(PROGRAM)
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=local
 post-install-local:: post-install-bin post-install-lib post-install-man
 
 install-ext: pre-install-ext do-install-ext post-install-ext
 pre-install-ext:: pre-install-ext-arch pre-install-ext-comm
-do-install-ext: $(PREP)
+do-install-ext: exts
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=ext
 post-install-ext:: post-install-ext-arch post-install-ext-comm
 
 install-arch: pre-install-arch do-install-arch post-install-arch
 pre-install-arch:: pre-install-bin pre-install-ext-arch
-do-install-arch: $(PREP)
+do-install-arch: $(PROGRAM)
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=bin --install=ext-arch
 post-install-arch:: post-install-bin post-install-ext-arch
 
@@ -270,7 +270,7 @@ post-install-comm:: post-install-lib post-install-ext-comm post-install-man
 
 install-bin: pre-install-bin do-install-bin post-install-bin
 pre-install-bin:: install-prereq
-do-install-bin: $(PREP)
+do-install-bin: $(PROGRAM)
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=bin
 post-install-bin::
 	@$(NULLCMD)
@@ -284,14 +284,14 @@ post-install-lib::
 
 install-ext-comm: pre-install-ext-comm do-install-ext-comm post-install-ext-comm
 pre-install-ext-comm:: install-prereq
-do-install-ext-comm: $(PREP)
+do-install-ext-comm: exts
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=ext-comm
 post-install-ext-comm::
 	@$(NULLCMD)
 
 install-ext-arch: pre-install-ext-arch do-install-ext-arch post-install-ext-arch
 pre-install-ext-arch:: install-prereq
-do-install-ext-arch: $(PREP)
+do-install-ext-arch: exts
 	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=ext-arch
 post-install-ext-arch::
 	@$(NULLCMD)
