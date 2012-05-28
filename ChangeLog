@@ -1,3 +1,10 @@
+Mon May 28 12:03:04 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (obj_free): doesn't free a method table if it doesn't
+	  exits. [ruby-dev:44436]
+	* test/ruby/test_gc.rb (class TestGc): added the test case for
+	  this issue.
+
 Sun May 27 23:37:48 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_vm1_lvar_init.rb: added.

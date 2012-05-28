@@ -78,6 +78,20 @@ class TestGc < Test::Unit::TestCase
     EOS
   end
 
+  def test_singleton_method_added
+    assert_in_out_err(%w[--disable-gems], <<-EOS, [], [], "[ruby-dev:44436]")
+      class BasicObject
+        def singleton_method_added(mid)
+          raise
+        end
+      end
+      b = proc {}
+      class << b; end
+      b.clone rescue nil
+      GC.start
+    EOS
+  end
+
   def test_gc_parameter
     env = {
       "RUBY_GC_MALLOC_LIMIT" => "60000000",
