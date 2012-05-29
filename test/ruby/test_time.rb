@@ -613,6 +613,11 @@ class TestTime < Test::Unit::TestCase
     assert_equal(" 2", t.strftime("%_l"))
   end
 
+  def test_strftime_invalid_flags
+    t = Time.mktime(2001, 10, 1, 2, 0, 0)
+    assert_equal("%4^p", t.strftime("%4^p"), 'prec after flag')
+  end
+
   def test_strftime_year
     t = Time.utc(1,1,4)
     assert_equal("0001", t.strftime("%Y"))
@@ -726,6 +731,19 @@ class TestTime < Test::Unit::TestCase
     assert_equal("-000000:55", t.strftime("%10:z"), bug6323)
     assert_equal("  -0:55:00", t.strftime("%_10::z"), bug6323)
     assert_equal("-000:55:00", t.strftime("%10::z"), bug6323)
+  end
+
+  def test_strftime_invalid_modifier
+    t = T2000.getlocal("+09:00")
+    assert_equal("%:y", t.strftime("%:y"), 'invalid conversion after : modifier')
+    assert_equal("%:0z", t.strftime("%:0z"), 'flag after : modifier')
+    assert_equal("%:10z", t.strftime("%:10z"), 'prec after : modifier')
+    assert_equal("%Ob", t.strftime("%Ob"), 'invalid conversion after locale modifier')
+    assert_equal("%Eb", t.strftime("%Eb"), 'invalid conversion after locale modifier')
+    assert_equal("%O0y", t.strftime("%O0y"), 'flag after locale modifier')
+    assert_equal("%E0y", t.strftime("%E0y"), 'flag after locale modifier')
+    assert_equal("%O10y", t.strftime("%O10y"), 'prec after locale modifier')
+    assert_equal("%E10y", t.strftime("%E10y"), 'prec after locale modifier')
   end
 
   def test_delegate

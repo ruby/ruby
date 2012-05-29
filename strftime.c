@@ -187,7 +187,7 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 	long y;
 	int precision, flags, colons;
 	char padding;
-	enum {LEFT, CHCASE, LOWER, UPPER, LOCALE_O, LOCALE_E};
+	enum {LEFT, CHCASE, LOWER, UPPER};
 #define BIT_OF(n) (1U<<(n))
 #ifdef MAILHEADER_EXT
 	int sign;
@@ -222,7 +222,7 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 
 	for (; *format && s < endp - 1; format++) {
 #define FLAG_FOUND() do { \
-			if (precision > 0 || flags & (BIT_OF(LOCALE_E)|BIT_OF(LOCALE_O))) \
+			if (precision > 0) \
 				goto unknown; \
 		} while (0)
 #define NEEDS(n) do if (s >= endp || (n) >= endp - s - 1) goto err; while (0)
@@ -608,11 +608,13 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 
 		case 'E':
 			/* POSIX locale extensions, ignored for now */
-			flags |= BIT_OF(LOCALE_E);
+			if (!format[1] || !strchr("cCxXyY", format[1]))
+				goto unknown;
 			goto again;
 		case 'O':
 			/* POSIX locale extensions, ignored for now */
-			flags |= BIT_OF(LOCALE_O);
+			if (!format[1] || !strchr("deHkIlmMSuUVwWy", format[1]))
+				goto unknown;
 			goto again;
 
 		case 'V':	/* week of year according ISO 8601 */
