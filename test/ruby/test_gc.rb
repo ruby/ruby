@@ -81,6 +81,7 @@ class TestGc < Test::Unit::TestCase
   def test_singleton_method_added
     assert_in_out_err(%w[--disable-gems], <<-EOS, [], [], "[ruby-dev:44436]")
       class BasicObject
+        undef singleton_method_added
         def singleton_method_added(mid)
           raise
         end
