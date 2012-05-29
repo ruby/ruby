@@ -709,11 +709,11 @@ rb_check_backtrace(VALUE bt)
 
 /*
  *  call-seq:
- *     exc.set_backtrace(array)   ->  array
+ *     exc.set_backtrace(backtrace)   ->  array
  *
- *  Sets the backtrace information associated with <i>exc</i>. The
- *  argument must be an array of <code>String</code> objects in the
- *  format described in <code>Exception#backtrace</code>.
+ *  Sets the backtrace information associated with +exc+. The +backtrace+ must
+ *  be an array of String objects or a single String in the format described
+ *  in Exception#backtrace.
  *
  */
 

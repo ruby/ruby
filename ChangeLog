@@ -1,3 +1,9 @@
+Wed May 30 06:20:29 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* error.c (exc_set_backtrace):  Updated documentation to indicate
+	  set_backtrace allows a string as well as an array of strings.
+	  [ruby-trunk - Bug #6501]
+
 Tue May 29 17:28:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* strftime.c (rb_strftime_with_timespec): support GNU extension triple
