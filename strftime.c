@@ -460,6 +460,18 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 
 #ifdef MAILHEADER_EXT
 		case 'z':	/* time zone offset east of GMT e.g. -0600 */
+			if (gmt) {
+				off = 0;
+			}
+			else {
+				off = NUM2LONG(rb_funcall(vtm->utc_offset, rb_intern("round"), 0));
+			}
+			if (off < 0) {
+				off = -off;
+				sign = -1;
+			} else {
+				sign = +1;
+			}
                         switch (colons) {
 			case 0: /* %z -> +hhmm */
 				precision = precision <= 5 ? 2 : precision-3;
@@ -476,22 +488,25 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 				NEEDS(precision + 7);
 				break;
 
+			case 3: /* %:::z -> +hh[:mm[:ss]] */
+				if (off % 3600 == 0) {
+					precision = precision <= 3 ? 2 : precision-1;
+					NEEDS(precision + 3);
+				}
+				else if (off % 60 == 0) {
+					precision = precision <= 6 ? 2 : precision-4;
+					NEEDS(precision + 4);
+				}
+				else {
+					precision = precision <= 9 ? 2 : precision-7;
+					NEEDS(precision + 9);
+				}
+				break;
+
 			default:
 				format--;
 				goto unknown;
                         }
-			if (gmt) {
-				off = 0;
-			}
-			else {
-				off = NUM2LONG(rb_funcall(vtm->utc_offset, rb_intern("round"), 0));
-			}
-			if (off < 0) {
-				off = -off;
-				sign = -1;
-			} else {
-				sign = +1;
-			}
 			i = snprintf(s, endp - s, (padding == ' ' ? "%+*ld" : "%+.*ld"),
 				     precision + 1, sign * (off / 3600));
 			if (i < 0) goto err;
@@ -500,12 +515,16 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 			}
 			s += i;
                         off = off % 3600;
+			if (colons == 3 && off == 0)
+				continue;
                         if (1 <= colons)
                             *s++ = ':';
 			i = snprintf(s, endp - s, "%02d", (int)(off / 60));
 			if (i < 0) goto err;
 			s += i;
                         off = off % 60;
+			if (colons == 3 && off == 0)
+				continue;
                         if (2 <= colons) {
                             *s++ = ':';
                             i = snprintf(s, endp - s, "%02d", (int)off);

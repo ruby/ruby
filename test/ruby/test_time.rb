@@ -695,6 +695,20 @@ class TestTime < Test::Unit::TestCase
     assert_raise(Errno::ERANGE, bug4457) {Time.now.strftime('%8192z')}
   end
 
+  def test_strfimte_zoneoffset
+    t = T2000.getlocal("+09:00:00")
+    assert_equal("+0900", t.strftime("%z"))
+    assert_equal("+09:00", t.strftime("%:z"))
+    assert_equal("+09:00:01", t.strftime("%::z"))
+    assert_equal("+09", t.strftime("%:::z"))
+
+    t = T2000.getlocal("+09:00:01")
+    assert_equal("+0900", t.strftime("%z"))
+    assert_equal("+09:00", t.strftime("%:z"))
+    assert_equal("+09:00:01", t.strftime("%::z"))
+    assert_equal("+09:00:01", t.strftime("%:::z"))
+  end
+
   def test_strftime_padding
     bug4458 = '[ruby-dev:43287]'
     t = T2000.getlocal("+09:00")
@@ -706,6 +720,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal("+000009:00", t.strftime("%10:z"), bug4458)
     assert_equal("  +9:00:00", t.strftime("%_10::z"), bug4458)
     assert_equal("+009:00:00", t.strftime("%10::z"), bug4458)
+    assert_equal("+000000009", t.strftime("%10:::z"))
     t = T2000.getlocal("-05:00")
     assert_equal("-0500", t.strftime("%z"))
     assert_equal("-05:00", t.strftime("%:z"))
@@ -715,6 +730,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal("-000005:00", t.strftime("%10:z"), bug4458)
     assert_equal("  -5:00:00", t.strftime("%_10::z"), bug4458)
     assert_equal("-005:00:00", t.strftime("%10::z"), bug4458)
+    assert_equal("-000000005", t.strftime("%10:::z"))
 
     bug6323 = '[ruby-core:44447]'
     t = T2000.getlocal("+00:36")
@@ -724,6 +740,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal("+000000:36", t.strftime("%10:z"), bug6323)
     assert_equal("  +0:36:00", t.strftime("%_10::z"), bug6323)
     assert_equal("+000:36:00", t.strftime("%10::z"), bug6323)
+    assert_equal("+000000:36", t.strftime("%10:::z"))
     t = T2000.getlocal("-00:55")
     assert_equal("      -055", t.strftime("%_10z"), bug6323)
     assert_equal("-000000055", t.strftime("%10z"), bug6323)
@@ -731,6 +748,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal("-000000:55", t.strftime("%10:z"), bug6323)
     assert_equal("  -0:55:00", t.strftime("%_10::z"), bug6323)
     assert_equal("-000:55:00", t.strftime("%10::z"), bug6323)
+    assert_equal("-000000:55", t.strftime("%10:::z"))
   end
 
   def test_strftime_invalid_modifier

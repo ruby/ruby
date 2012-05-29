@@ -1,4 +1,7 @@
-Tue May 29 17:28:15 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue May 29 17:28:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (rb_strftime_with_timespec): support GNU extension triple
+	  colons modifier.  [EXPERIMENTAL]
 
 	* strftime.c (rb_strftime_with_timespec): check conversion with locale
 	  modifier.
