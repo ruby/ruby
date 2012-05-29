@@ -758,8 +758,12 @@ rb_strftime_with_timespec(char *s, size_t maxsize, const char *format, rb_encodi
 			goto again;
 
 		case ':':
-			FLAG_FOUND();
-                        colons++;
+			{
+				size_t l = strspn(format, ":");
+				if (l > 3 || format[l] != 'z') goto unknown;
+				colons = (int)l;
+				format += l - 1;
+			}
 			goto again;
 
 		case '0':

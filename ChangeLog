@@ -1,3 +1,8 @@
+Tue May 29 17:28:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (rb_strftime_with_timespec): colons are valid only for
+	  'z' and must come just before it.
+
 Mon May 28 16:56:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::Runner#_prepare_run): StatusLineOutput
