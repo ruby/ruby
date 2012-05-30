@@ -1732,7 +1732,7 @@ do_inflate(struct zstream *z, VALUE src)
 	return;
     }
     StringValue(src);
-    if (RSTRING_LEN(src) > 0) { /* prevent Z_BUF_ERROR */
+    if (RSTRING_LEN(src) > 0 || z->stream.avail_in > 0) { /* prevent Z_BUF_ERROR */
 	zstream_run(z, (Bytef*)RSTRING_PTR(src), RSTRING_LEN(src), Z_SYNC_FLUSH);
     }
 }
@@ -1749,7 +1749,23 @@ do_inflate(struct zstream *z, VALUE src)
  *
  * Raises a Zlib::NeedDict exception if a preset dictionary is needed to
  * decompress.  Set the dictionary by Zlib::Inflate#set_dictionary and then
- * call this method again with an empty string.  (<i>???</i>)
+ * call this method again with an empty string to flush the stream:
+ *
+ *   inflater = Zlib::Inflate.new
+ *
+ *   begin
+ *     out = inflater.inflate compressed
+ *   rescue Zlib::NeedDict
+ *     # ensure the dictionary matches the stream's required dictionary
+ *     raise unless inflater.adler == Zlib.adler32(dictionary)
+ *
+ *     inflater.set_dictionary dictionary
+ *     inflater.inflate ''
+ *   end
+ *
+ *   # ...
+ *
+ *   inflater.close
  *
  * See also Zlib::Inflate.new
  */

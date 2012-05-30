@@ -195,6 +195,29 @@ if defined? Zlib
       z << "foo" # ???
     end
 
+    def test_inflate_dictionary
+      dictionary = "foo"
+
+      deflate = Zlib::Deflate.new
+      deflate.set_dictionary dictionary
+      compressed = deflate.deflate "foofoofoo", Zlib::FINISH
+      deflate.close
+
+      out = nil
+      inflate = Zlib::Inflate.new
+
+      begin
+        out = inflate.inflate compressed
+
+        flunk "Zlib::NeedDict was not raised"
+      rescue Zlib::NeedDict
+        inflate.set_dictionary dictionary
+        out = inflate.inflate ""
+      end
+
+      assert_equal "foofoofoo", out
+    end
+
     def test_sync
       z = Zlib::Deflate.new
       s = z.deflate("foo" * 1000, Zlib::FULL_FLUSH)

@@ -1,3 +1,9 @@
+Wed May 30 17:19:56 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c (do_inflate):  Inflate more data if buffered data
+	  exists.  Allows Zlib::Inflate#set_dictionary to work.
+	  [ruby-trunk - Bug #5929]
+
 Mon May 28 11:40:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_extract_modeenc): fail only if conflicting
