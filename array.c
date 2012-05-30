@@ -4690,7 +4690,7 @@ rb_ary_drop_while(VALUE ary)
  *     ary.part_of? other_ary   ->   bool
  *
  *  Array 'A' is part of another array 'B' if
- *  each element from 'A' are include in 'B'
+ *  each element from 'A' are included in 'B'
  *
  *  [ "a", "c" ].part_of? [ "a", "b", "c" ]    #=> true
  *  [ "a", "d" ].part_of? [ "a", "b", "c" ]    #=> false
@@ -4702,11 +4702,9 @@ static VALUE
 rb_ary_part_of(VALUE ary1, VALUE ary2)
 {
 
-    if (ary1 == ary2) return Qtrue;
-    VALUE ary3, ary4;
-    ary3 = rb_ary_and(ary1, ary2);
-    ary4 = rb_ary_diff(ary1, ary3);
-    return rb_ary_empty_p(ary4);
+    ary2 = rb_ary_and(ary1, ary2);
+    ary2 = rb_ary_diff(ary1, ary2);
+    return rb_ary_empty_p(ary2);
 }
 
 /*
