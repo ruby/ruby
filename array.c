@@ -4686,6 +4686,30 @@ rb_ary_drop_while(VALUE ary)
 }
 
 /*
+ *  call-seq:
+ *     ary.part_of? other_ary   ->   bool
+ *
+ *  Array 'A' is part of another array 'B' if
+ *  each element from 'A' are include in 'B'
+ *
+ *  [ "a", "c" ].part_of? [ "a", "b", "c" ]    #=> true
+ *  [ "a", "d" ].part_of? [ "a", "b", "c" ]    #=> false
+ *  [].part_of []                              #=> true
+ *
+ */
+
+static VALUE
+rb_ary_part_of(VALUE ary1, VALUE ary2)
+{
+
+    if (ary1 == ary2) return Qtrue;
+    VALUE ary3, ary4;
+    ary3 = rb_ary_and(ary1, ary2);
+    ary4 = rb_ary_diff(ary1, ary3);
+    return rb_ary_empty_p(ary4);
+}
+
+/*
  * Arrays are ordered, integer-indexed collections of any object.
  * Array indexing starts at 0, as in C or Java.  A negative index is
  * assumed to be relative to the end of the array---that is, an index of -1
@@ -5020,6 +5044,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "take_while", rb_ary_take_while, 0);
     rb_define_method(rb_cArray, "drop", rb_ary_drop, 1);
     rb_define_method(rb_cArray, "drop_while", rb_ary_drop_while, 0);
+    rb_define_method(rb_cArray, "part_of?", rb_ary_part_of, 1);
 
     id_cmp = rb_intern("<=>");
     sym_random = ID2SYM(rb_intern("random"));
