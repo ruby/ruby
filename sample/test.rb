@@ -6,11 +6,23 @@ $ntest=0
 $failed = 0
 PROGRESS = Object.new
 PROGRESS.instance_eval do
+  @color = nil
+  case ARGV[0]
+  when /\A--color(?:=(?:always|(auto)|(never)))?\z/
+    @color = (!$2 unless $1)
+  end
   @count = 0
   @rotator = %w[- \\ | /]
   @bs = "\b" * @rotator[0].size
-  @tty = STDERR.tty?
-  if @tty and /mswin|mingw/ !~ RUBY_PLATFORM and /dumb/ !~ ENV["TERM"]
+  @tty = STDERR.tty? && /dumb/ !~ ENV["TERM"]
+  @tty &&= /mswin|mingw/ !~ RUBY_PLATFORM
+  case @color
+  when nil
+    @color = @tty
+  when true
+    @tty = true
+  end
+  if @color
     @passed = "\e[#{ENV['PASSED_COLOR']||'32'}m"
     @failed = "\e[#{ENV['FAILED_COLOR']||'31'}m"
     @reset = "\e[m"

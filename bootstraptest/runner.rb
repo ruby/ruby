@@ -61,6 +61,7 @@ def main
   @ruby = File.expand_path('miniruby')
   @verbose = false
   $stress = false
+  @color = nil
   dir = nil
   quiet = false
   tests = nil
@@ -81,6 +82,9 @@ def main
       true
     when /\A(--stress|-s)/
       $stress = true
+    when /\A--color(?:=(?:always|(auto)|(never)))?\z/
+      @color = (!$2 unless $1)
+      true
     when /\A(-q|--q(uiet))\z/
       quiet = true
       true
@@ -113,7 +117,14 @@ End
   @progress = %w[- \\ | /]
   @progress_bs = "\b" * @progress[0].size
   @tty = !@verbose && $stderr.tty?
-  if @tty and /mswin|mingw/ !~ RUBY_PLATFORM and /dumb/ !~ ENV["TERM"]
+  case @color
+  when nil
+    @color = @tty && /dumb/ !~ ENV["TERM"]
+    @color &= /mswin|mingw/ !~ RUBY_PLATFORM
+  when true
+    @tty = true
+  end
+  if @color
     @passed = "\e[#{ENV['PASSED_COLOR']||'32'}m"
     @failed = "\e[#{ENV['FAILED_COLOR']||'31'}m"
     @reset = "\e[m"
