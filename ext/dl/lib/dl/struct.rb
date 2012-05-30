@@ -234,17 +234,9 @@ module DL
     #                          DL::TYPE_VOIDP])
     #   => 8
     def CUnionEntity.size(types)
-      size   = 0
-      types.each_with_index{|t,i|
-        if( t.is_a?(Array) )
-          tsize = PackInfo::SIZE_MAP[t[0]] * t[1]
-        else
-          tsize = PackInfo::SIZE_MAP[t]
-        end
-        if( tsize > size )
-          size = tsize
-        end
-      }
+      types.map { |type, count = 1|
+        PackInfo::SIZE_MAP[type] * count
+      }.max
     end
 
     # Given +types+, calculate the necessary offset and for each union member
