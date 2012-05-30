@@ -1,3 +1,10 @@
+Wed May 30 16:20:00 2012  Kenta Murata  <mrkn@cookpad.com>
+
+	* ext/bigdecimal/lib/bigdecimal/jacobian.rb (Jacobian#dfdxi):
+	  fix jacobian to get stuck in an infinite loop when a solution is not
+	  found due to forget to increment nRetry counter.
+	  Patch by alperakgun from github.com/shyouhei/ruby/pull/8
+
 Wed May 30 10:58:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (utc_offset_arg): utc offset can be precision in seconds.
