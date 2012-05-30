@@ -2111,18 +2111,27 @@ utc_offset_arg(VALUE arg)
 {
     VALUE tmp;
     if (!NIL_P(tmp = rb_check_string_type(arg))) {
-        int n;
+        int n = 0;
         char *s = RSTRING_PTR(tmp);
-        if (!rb_enc_str_asciicompat_p(tmp) ||
-            RSTRING_LEN(tmp) != 6 ||
-            (s[0] != '+' && s[0] != '-') ||
-            !ISDIGIT(s[1]) ||
-            !ISDIGIT(s[2]) ||
-            s[3] != ':' ||
-            !ISDIGIT(s[4]) ||
-            !ISDIGIT(s[5]))
+        if (!rb_enc_str_asciicompat_p(tmp)) {
+	  invalid_utc_offset:
             rb_raise(rb_eArgError, "\"+HH:MM\" or \"-HH:MM\" expected for utc_offset");
-        n = (s[1] * 10 + s[2] - '0' * 11) * 3600;
+	}
+	switch (RSTRING_LEN(tmp)) {
+	  case 9:
+	    if (s[6] != ':') goto invalid_utc_offset;
+	    if (!ISDIGIT(s[7]) || !ISDIGIT(s[8])) goto invalid_utc_offset;
+	    n += (s[7] * 10 + s[8] - '0' * 11);
+	  case 6:
+	    if (s[0] != '+' && s[0] != '-') goto invalid_utc_offset;
+	    if (!ISDIGIT(s[1]) || !ISDIGIT(s[2])) goto invalid_utc_offset;
+	    if (s[3] != ':') goto invalid_utc_offset;
+	    if (!ISDIGIT(s[4]) || !ISDIGIT(s[5])) goto invalid_utc_offset;
+	    break;
+	  default:
+	    goto invalid_utc_offset;
+	}
+        n += (s[1] * 10 + s[2] - '0' * 11) * 3600;
         n += (s[4] * 10 + s[5] - '0' * 11) * 60;
         if (s[0] == '-')
             n = -n;

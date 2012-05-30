@@ -699,7 +699,7 @@ class TestTime < Test::Unit::TestCase
     t = T2000.getlocal("+09:00:00")
     assert_equal("+0900", t.strftime("%z"))
     assert_equal("+09:00", t.strftime("%:z"))
-    assert_equal("+09:00:01", t.strftime("%::z"))
+    assert_equal("+09:00:00", t.strftime("%::z"))
     assert_equal("+09", t.strftime("%:::z"))
 
     t = T2000.getlocal("+09:00:01")

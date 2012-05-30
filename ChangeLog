@@ -1,3 +1,8 @@
+Wed May 30 10:58:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (utc_offset_arg): utc offset can be precision in seconds.
+	  e.g. old Europe/Lisbon (c.f. [ruby-dev:40066])
+
 Wed May 30 06:20:29 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* error.c (exc_set_backtrace):  Updated documentation to indicate
