@@ -14,5 +14,17 @@ class DL::TestCUnionEntity < DL::TestBase
 
     assert_equal DL::SIZEOF_CHAR * 20, size
   end
+
+  def test_set_ctypes
+    union = DL::CUnionEntity.malloc [DL::TYPE_INT, DL::TYPE_LONG]
+    union.assign_names %w[int long]
+
+    # this test is roundabout because the stored ctypes are not accessible
+    union['long'] = 1
+    assert_equal 1, union['long']
+
+    union['int'] = 1
+    assert_equal 1, union['int']
+  end
 end
 

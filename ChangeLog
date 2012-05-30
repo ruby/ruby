@@ -1,3 +1,9 @@
+Thu May 31 08:40:34 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/dl/lib/dl/struct.rb (DL::CUnionEntity#set_ctypes):  Refactored
+	  #set_types to reuse DL::CUnionEntity::size
+	* test/dl/test_c_union_entity.rb:  Added test
+
 Thu May 31 08:20:14 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/dl/lib/dl/struct.rb (DL::CUnionEntity::size):  Fixed ::size to

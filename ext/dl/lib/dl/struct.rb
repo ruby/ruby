@@ -242,19 +242,8 @@ module DL
     # Given +types+, calculate the necessary offset and for each union member
     def set_ctypes(types)
       @ctypes = types
-      @offset = []
-      @size   = 0
-      types.each_with_index{|t,i|
-        @offset[i] = 0
-        if( t.is_a?(Array) )
-          size = SIZE_MAP[t[0]] * t[1]
-        else
-          size = SIZE_MAP[t]
-        end
-        if( size > @size )
-          @size = size
-        end
-      }
+      @offset = Array.new(types.length, 0)
+      @size   = self.class.size types
     end
   end
 end
