@@ -1,3 +1,10 @@
+Wed May 30 16:30:00 2012  Kenta Murata  <mrkn@cookpad.com>
+
+	* ext/bigdecimal/lib/bigdecimal/jacobian.rb,
+	  ext/bigdecimal/lib/bigdecimal/newton.rb:
+	  fix documentation comments.
+	  Patch by alperakgun from github.com/shyouhei/ruby/pull/8
+
 Wed May 30 16:20:00 2012  Kenta Murata  <mrkn@cookpad.com>
 
 	* ext/bigdecimal/lib/bigdecimal/jacobian.rb (Jacobian#dfdxi):
