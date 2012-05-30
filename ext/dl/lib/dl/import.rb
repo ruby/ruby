@@ -179,11 +179,17 @@ module DL
       f
     end
 
+    # Creates a class to wrap the C struct described by +signature+.
+    #
+    #   MyStruct = struct ['int i', 'char c']
     def struct(signature)
       tys, mems = parse_struct_signature(signature, @type_alias)
       DL::CStructBuilder.create(CStruct, tys, mems)
     end
 
+    # Creates a class to wrap the C union described by +signature+.
+    #
+    #   MyUnion = union ['int i', 'char c']
     def union(signature)
       tys, mems = parse_struct_signature(signature, @type_alias)
       DL::CStructBuilder.create(CUnion, tys, mems)

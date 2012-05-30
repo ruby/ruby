@@ -2,19 +2,50 @@ require 'dl'
 require 'dl/pack.rb'
 
 module DL
+  # C struct shell
   class CStruct
+    # accessor to DL::CStructEntity
     def CStruct.entity_class()
       CStructEntity
     end
   end
 
+  # C union shell
   class CUnion
+    # accessor to DL::CUnionEntity
     def CUnion.entity_class()
       CUnionEntity
     end
   end
 
+  # Used to construct C classes (CUnion, CStruct, etc)
+  #
+  # DL::Importer#struct and DL::Importer#union wrap this functionality in an
+  # easy-to-use manner.
   module CStructBuilder
+    # Construct a new class given a C:
+    # * class +klass+ (CUnion, CStruct, or other that provide an
+    #   #entity_class)
+    # * +types+ (DL:TYPE_INT, DL::TYPE_SIZE_T, etc., see the C types
+    #   constants)
+    # * corresponding +members+
+    #
+    # DL::Importer#struct and DL::Importer#union wrap this functionality in an
+    # easy-to-use manner.
+    #
+    # Example:
+    #
+    #   require 'dl/struct'
+    #   require 'dl/cparser'
+    #
+    #   include DL::CParser
+    #
+    #   types, members = parse_struct_signature(['int i','char c'])
+    #
+    #   MyStruct = DL::CStructBuilder.create(CUnion, types, members)
+    #
+    #   obj = MyStruct.allocate
+    #
     def create(klass, types, members)
       new_class = Class.new(klass){
         define_method(:initialize){|addr|
@@ -43,15 +74,23 @@ module DL
     module_function :create
   end
 
+  # A C struct wrapper
   class CStructEntity < CPtr
     include PackInfo
     include ValueUtil
 
+    # Allocates a C struct the +types+ provided.  The C function +func+ is
+    # called when the instance is garbage collected.
     def CStructEntity.malloc(types, func = nil)
       addr = DL.malloc(CStructEntity.size(types))
       CStructEntity.new(addr, types, func)
     end
 
+    # Given +types+, returns the offset for the packed sizes of those types
+    #
+    #   DL::CStructEntity.size([DL::TYPE_DOUBLE, DL::TYPE_INT, DL::TYPE_CHAR,
+    #                           DL::TYPE_VOIDP])
+    #   => 24
     def CStructEntity.size(types)
       offset = 0
       max_align = 0
@@ -76,15 +115,22 @@ module DL
       offset
     end
 
+    # Wraps the C pointer +addr+ as a C struct with the given +types+.  The C
+    # function +func+ is called when the instance is garbage collected.
+    #
+    # See also DL::CPtr.new
     def initialize(addr, types, func = nil)
       set_ctypes(types)
       super(addr, @size, func)
     end
 
+    # Set the names of the +members+ in this C struct
     def assign_names(members)
       @members = members
     end
 
+    # Given +types+, calculate the offsets and sizes for the types in the
+    # struct.
     def set_ctypes(types)
       @ctypes = types
       @offset = []
@@ -112,6 +158,7 @@ module DL
       @size = offset
     end
 
+    # Fetch struct member +name+
     def [](name)
       idx = @members.index(name)
       if( idx.nil? )
@@ -145,6 +192,7 @@ module DL
       end
     end
 
+    # Set struct member +name+, to value +val+
     def []=(name, val)
       idx = @members.index(name)
       if( idx.nil? )
@@ -164,19 +212,27 @@ module DL
       end
     end
 
-    def to_s()
+    def to_s() # :nodoc:
       super(@size)
     end
   end
 
+  # A C union wrapper
   class CUnionEntity < CStructEntity
     include PackInfo
 
+    # Allocates a C union the +types+ provided.  The C function +func+ is
+    # called when the instance is garbage collected.
     def CUnionEntity.malloc(types, func=nil)
       addr = DL.malloc(CUnionEntity.size(types))
       CUnionEntity.new(addr, types, func)
     end
 
+    # Given +types+, returns the size needed for the union.
+    #
+    #   DL::CUnionEntity.size([DL::TYPE_DOUBLE, DL::TYPE_INT, DL::TYPE_CHAR,
+    #                          DL::TYPE_VOIDP])
+    #   => 8
     def CUnionEntity.size(types)
       size   = 0
       types.each_with_index{|t,i|
@@ -191,6 +247,7 @@ module DL
       }
     end
 
+    # Given +types+, calculate the necessary offset and for each union member
     def set_ctypes(types)
       @ctypes = types
       @offset = []

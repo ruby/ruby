@@ -1,5 +1,13 @@
 module DL
+  # Methods for parsing C struct and C prototype signatures.
   module CParser
+    # Parses a C struct's members
+    #
+    # Example:
+    #
+    #   parse_struct_signature(['int i', 'char c'])
+    #   => [[DL::TYPE_INT, DL::TYPE_CHAR], ["i", "c"]]
+    #
     def parse_struct_signature(signature, tymap=nil)
       if( signature.is_a?(String) )
         signature = signature.split(/\s*,\s*/)
@@ -35,6 +43,16 @@ module DL
       return tys, mems
     end
 
+    # Parses a C prototype signature
+    #
+    # Example:
+    #
+    #   include DL::CParser
+    #   => Object
+    #
+    #   parse_signature('double sum(double, double)')
+    #   => ["sum", DL::TYPE_DOUBLE, [DL::TYPE_DOUBLE, DL::TYPE_DOUBLE]]
+    #
     def parse_signature(signature, tymap=nil)
       tymap ||= {}
       signature = signature.gsub(/\s+/, " ").strip
@@ -56,6 +74,25 @@ module DL
       end
     end
 
+    # Given a String of C type +ty+, return the corresponding DL constant.
+    #
+    # +ty+ can also accept an Array of C type Strings, and will returned in a
+    # corresponding Array.
+    #
+    # If Hash +tymap+ is provided, +ty+ is expected to be the key, and the
+    # value will be the C type to be looked up.
+    #
+    # Example:
+    #
+    #   parse_ctype('int')
+    #   => DL::TYPE_INT
+    #
+    #   parse_ctype('double')
+    #   => DL::TYPE_DOUBLE
+    #
+    #   parse_ctype('unsigned char')
+    #   => -DL::TYPE_CHAR
+    #
     def parse_ctype(ty, tymap=nil)
       tymap ||= {}
       case ty

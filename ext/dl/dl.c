@@ -49,6 +49,21 @@ ID rbdl_id_stdcall;
 #endif
 #define DLTYPE_UINTPTR_T (-DLTYPE_INTPTR_T)
 
+/*
+ * call-seq: DL.dlopen(so_lib)
+ *
+ * An interface to the dynamic linking loader
+ *
+ * This is a shortcut to DL::Handle.new and takes the same arguments.
+ *
+ * Example:
+ *
+ *   libc_so = "/lib64/libc.so.6"
+ *   => "/lib64/libc.so.6"
+ *
+ *   libc = DL.dlopen(libc_so)
+ *   => #<DL::Handle:0x00000000e05b00>
+ */
 VALUE
 rb_dl_dlopen(int argc, VALUE argv[], VALUE self)
 {
@@ -56,7 +71,7 @@ rb_dl_dlopen(int argc, VALUE argv[], VALUE self)
 }
 
 /*
- * call-seq: DL.malloc
+ * call-seq: DL.malloc(size)
  *
  * Allocate +size+ bytes of memory and return the integer memory address
  * for the allocated memory.
@@ -103,6 +118,22 @@ rb_dl_free(VALUE self, VALUE addr)
     return Qnil;
 }
 
+/*
+ * call-seq: DL.dlunwrap(addr)
+ *
+ * Returns the hexadecimal representation of a memory pointer address +addr+
+ *
+ * Example:
+ *
+ *   lib = DL.dlopen('/lib64/libc-2.15.so')
+ *   => #<DL::Handle:0x00000001342460>
+ *
+ *   lib['strcpy'].to_s(16)
+ *   => "7f59de6dd240"
+ *
+ *   DL.dlunwrap(DL.dlwrap(lib['strcpy'].to_s(16)))
+ *   => "7f59de6dd240"
+ */
 VALUE
 rb_dl_ptr2value(VALUE self, VALUE addr)
 {
@@ -110,6 +141,19 @@ rb_dl_ptr2value(VALUE self, VALUE addr)
     return (VALUE)NUM2PTR(addr);
 }
 
+/*
+ * call-seq: DL.dlwrap(val)
+ *
+ * Returns a memory pointer of a function's hexadecimal address location +val+
+ *
+ * Example:
+ *
+ *   lib = DL.dlopen('/lib64/libc-2.15.so')
+ *   => #<DL::Handle:0x00000001342460>
+ *
+ *   DL.dlwrap(lib['strcpy'].to_s(16))
+ *   => 25522520
+ */
 VALUE
 rb_dl_value2ptr(VALUE self, VALUE val)
 {
@@ -489,7 +533,7 @@ Init_dl(void)
 
     /* Document-const: SIZEOF_UINTPTR_T
      *
-     * size of a intptr_t
+     * size of a uintptr_t
      */
     rb_define_const(rb_mDL, "SIZEOF_UINTPTR_T",  INT2NUM(sizeof(uintptr_t)));
 

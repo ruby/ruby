@@ -1,3 +1,8 @@
+Thu May 31 07:45:43 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/dl:  Added documentation.  Patch by Vincent Batts.
+	  [ruby-trunk - Bug #6496]
+
 Wed May 30 16:30:00 2012  Kenta Murata  <mrkn@cookpad.com>
 
 	* ext/bigdecimal/lib/bigdecimal/jacobian.rb,
