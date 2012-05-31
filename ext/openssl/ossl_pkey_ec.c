@@ -1467,6 +1467,82 @@ static VALUE ossl_ec_point_to_bn(VALUE self)
     return bn_obj;
 }
 
+/*
+ *  call-seq:
+ *     point.mul(bn)  => point
+ *     point.mul(bn, bn) => point
+ *     point.mul([bn], [point]) => point
+ *     point.mul([bn], [point], bn) => point
+ *
+ */
+
+static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
+{
+    EC_POINT *point1, *point2;
+    const EC_GROUP *group;
+    VALUE group_v = rb_iv_get(self, "@group");
+    VALUE args[1] = {group_v};
+    VALUE bn_v1, bn_v2, r, points_v;
+    BIGNUM *bn1 = NULL, *bn2 = NULL;
+
+    Require_EC_POINT(self, point1);
+    SafeRequire_EC_GROUP(group_v, group);
+
+    r = rb_obj_alloc(cEC_POINT);
+    ossl_ec_point_initialize(1, args, r);
+    Require_EC_POINT(r, point2);
+
+    argc = rb_scan_args(argc, argv, "12", &bn_v1, &points_v, &bn_v2); 
+    
+    if (rb_obj_is_kind_of(bn_v1, cBN)) {
+        bn1 = GetBNPtr(bn_v1);
+        if (argc >= 2) {
+            bn2 = GetBNPtr(points_v);
+        }
+        if (EC_POINT_mul(group, point2, bn2, point1, bn1, ossl_bn_ctx) != 1)
+            return Qnil;
+
+    }
+    else {
+        size_t i, points_len, bignums_len;
+        EC_POINT **points;
+        BIGNUM **bignums;
+
+        Check_Type(bn_v1, T_ARRAY);
+        bignums_len = RARRAY_LEN(bn_v1);
+        bignums = (BIGNUM **)OPENSSL_malloc(bignums_len * sizeof(BIGNUM *));
+
+        for (i = 0; i < bignums_len; ++i) {
+            bignums[i] = GetBNPtr(rb_ary_entry(bn_v1, i));
+        }
+
+        if (!rb_obj_is_kind_of(points_v, rb_cArray)) {
+            OPENSSL_free(bignums); 
+            rb_raise(rb_eTypeError, "Argument2 must be an array");
+        }
+        rb_ary_unshift(points_v, self);
+        points_len = RARRAY_LEN(points_v);
+        points = (EC_POINT **)OPENSSL_malloc(points_len * sizeof(EC_POINT *));
+
+        for (i = 0; i < points_len; ++i) {
+            Get_EC_POINT(rb_ary_entry(points_v, i), points[i]);
+        }
+
+        if (argc >= 3) {
+            bn2 = GetBNPtr(bn_v2);
+        }
+        if (EC_POINTs_mul(group, point2, bn2, points_len, points, bignums, ossl_bn_ctx) != 1){
+            OPENSSL_free(bignums); 
+            OPENSSL_free(points); 
+            return Qnil;
+        }
+        OPENSSL_free(bignums); 
+        OPENSSL_free(points); 
+    } 
+
+    return r;
+}
+
 static void no_copy(VALUE klass)
 {
     rb_undef_method(klass, "copy");
@@ -1587,6 +1663,7 @@ void Init_ossl_ec()
 /* all the other methods */
 
     rb_define_method(cEC_POINT, "to_bn", ossl_ec_point_to_bn, 0);
+    rb_define_method(cEC_POINT, "mul", ossl_ec_point_mul, -1);
 
     no_copy(cEC);
     no_copy(cEC_GROUP);
