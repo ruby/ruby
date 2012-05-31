@@ -93,26 +93,18 @@ module DL
     #   => 24
     def CStructEntity.size(types)
       offset = 0
-      max_align = 0
-      types.each_with_index{|t,i|
-        orig_offset = offset
-        if( t.is_a?(Array) )
-          align = PackInfo::ALIGN_MAP[t[0]]
-          offset = PackInfo.align(orig_offset, align)
-          size = offset - orig_offset
-          offset += (PackInfo::SIZE_MAP[t[0]] * t[1])
-        else
-          align = PackInfo::ALIGN_MAP[t]
-          offset = PackInfo.align(orig_offset, align)
-          size = offset - orig_offset
-          offset += PackInfo::SIZE_MAP[t]
-        end
-        if (max_align < align)
-          max_align = align
-        end
-      }
-      offset = PackInfo.align(offset, max_align)
-      offset
+
+      max_align = types.map { |type, count = 1|
+        last_offset = offset
+
+        align = PackInfo::ALIGN_MAP[type]
+        offset = PackInfo.align(last_offset, align) + 
+                 (PackInfo::SIZE_MAP[type] * count)
+
+        align
+      }.max
+
+      PackInfo.align(offset, max_align)
     end
 
     # Wraps the C pointer +addr+ as a C struct with the given +types+.  The C

@@ -1,3 +1,9 @@
+Thu May 31 09:27:06 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/dl/lib/dl/struct.rb (DL::CStructEntity::size):  Refactored ::size
+	  to remove unused variables and simplify using newer ruby features.
+	* test/dl/test_c_struct_entry.rb:  Test to validate refactoring
+
 Thu May 31 08:40:34 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/dl/lib/dl/struct.rb (DL::CUnionEntity#set_ctypes):  Refactored
