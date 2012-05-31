@@ -1,3 +1,8 @@
+Fri Jun  1 08:50:47 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* array.c:  Updated Array documentation formatting.  Patch by Zachary
+	  Scott.  [ruby-trunk - Feature #6517]
+
 Fri Jun  1 06:57:10 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/dl/lib/dl/struct.rb (DL::CStructEntity#set_ctypes):  Refactored

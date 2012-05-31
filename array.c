@@ -274,6 +274,16 @@ rb_ary_modify(VALUE ary)
     }
 }
 
+/*
+ *  call-seq:
+ *      ary.freeze -> ary
+ *
+ *  Calls Object#freeze on +ary+ to prevent any further
+ *  modification. A RuntimeError will be raised if a modification
+ *  attempt is made.
+ *
+ */
+
 VALUE
 rb_ary_freeze(VALUE ary)
 {
@@ -284,8 +294,8 @@ rb_ary_freeze(VALUE ary)
  *  call-seq:
  *     ary.frozen?  -> true or false
  *
- *  Return <code>true</code> if this array is frozen (or temporarily frozen
- *  while being sorted).
+ *  Return +true+ if this array is frozen (or temporarily frozen
+ *  while being sorted). See also Object#frozen?
  */
 
 static VALUE
@@ -772,13 +782,16 @@ rb_ary_cat(VALUE ary, const VALUE *ptr, long len)
  *  call-seq:
  *     ary.push(obj, ... )   -> ary
  *
- *  Append---Pushes the given object(s) on to the end of this array. This
+ *  Append --- Pushes the given object(s) on to the end of this array. This
  *  expression returns the array itself, so several appends
- *  may be chained together.
+ *  may be chained together. See also Array#pop for the opposite
+ *  effect.
  *
  *     a = [ "a", "b", "c" ]
  *     a.push("d", "e", "f")
  *             #=> ["a", "b", "c", "d", "e", "f"]
+ *     [1, 2, 3,].push(4).push(5)
+ *             #=> [1, 2, 3, 4, 5]
  */
 
 static VALUE
@@ -810,10 +823,11 @@ rb_ary_pop(VALUE ary)
  *     ary.pop(n) -> new_ary
  *
  *  Removes the last element from +self+ and returns it, or
- *  <code>nil</code> if the array is empty.
+ *  +nil+ if the array is empty.
  *
- *  If a number +n+ is given, returns an array of the last n elements
- *  (or less) just like <code>array.slice!(-n, n)</code> does.
+ *  If a number +n+ is given, returns an array of the last +n+ elements
+ *  (or less) just like <code>array.slice!(-n, n)</code> does. See also
+ *  Array#push for the opposite effect.
  *
  *     a = [ "a", "b", "c", "d" ]
  *     a.pop     #=> "d"
@@ -869,12 +883,14 @@ rb_ary_shift(VALUE ary)
  *     ary.shift    -> obj or nil
  *     ary.shift(n) -> new_ary
  *
- *  Returns the first element of +self+ and removes it (shifting all
- *  other elements down by one). Returns <code>nil</code> if the array
+ *  Removes the first element of +self+ and returns it (shifting all
+ *  other elements down by one). Returns +nil+ if the array
  *  is empty.
  *
- *  If a number +n+ is given, returns an array of the first n elements
- *  (or less) just like <code>array.slice!(0, n)</code> does.
+ *  If a number +n+ is given, returns an array of the first +n+ elements
+ *  (or less) just like <code>array.slice!(0, n)</code> does. With +ary+
+ *  containing only the remainder elements, not including what was shifted to
+ *  +new_ary+. See also Array#unshift for the opposite effect.
  *
  *     args = [ "-m", "-q", "filename" ]
  *     args.shift     #=> "-m"
@@ -916,8 +932,8 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *     ary.unshift(obj, ...)  -> ary
  *
- *  Prepends objects to the front of +self+,
- *  moving other elements upwards.
+ *  Prepends objects to the front of +self+, moving other elements upwards.
+ *  See also Array#shift for the opposite effect.
  *
  *     a = [ "b", "c", "d" ]
  *     a.unshift("a")   #=> ["a", "b", "c", "d"]
@@ -1056,9 +1072,9 @@ rb_ary_aref(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *     ary.at(index)   ->   obj  or nil
  *
- *  Returns the element at +index+. A
- *  negative index counts from the end of +self+.  Returns +nil+
- *  if the index is out of range. See also <code>Array#[]</code>.
+ *  Returns the element at +index+. A negative index counts from the end of
+ *  +self+. Returns +nil+ if the index is out of range. See also
+ *  Array#[].
  *
  *     a = [ "a", "b", "c", "d", "e" ]
  *     a.at(0)     #=> "a"
@@ -1077,8 +1093,9 @@ rb_ary_at(VALUE ary, VALUE pos)
  *     ary.first(n)  ->   new_ary
  *
  *  Returns the first element, or the first +n+ elements, of the array.
- *  If the array is empty, the first form returns <code>nil</code>, and the
- *  second form returns an empty array.
+ *  If the array is empty, the first form returns +nil+, and the
+ *  second form returns an empty array. See also Array#last for
+ *  the opposite effect.
  *
  *     a = [ "q", "r", "s", "t" ]
  *     a.first     #=> "q"
@@ -1103,7 +1120,9 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
  *     ary.last(n)  ->  new_ary
  *
  *  Returns the last element(s) of +self+. If the array is empty,
- *  the first form returns <code>nil</code>.
+ *  the first form returns +nil+.
+ *
+ *  See also Array#first for the opposite effect.
  *
  *     a = [ "w", "x", "y", "z" ]
  *     a.last     #=> "z"
@@ -1125,21 +1144,17 @@ rb_ary_last(int argc, VALUE *argv, VALUE ary)
 /*
  *  call-seq:
  *     ary.fetch(index)                    -> obj
- *     ary.fetch(index, default )          -> obj
- *     ary.fetch(index) {|index| block }   -> obj
- *
- *  Tries to return the element at position +index+. If the index lies outside
- *  the array, the first form throws an IndexError exception, the second form
- *  returns +default+, and the third form returns the value of invoking the
- *  block, passing in the index. Negative values of +index+ count from the end
- *  of the array.
+ *     ary.fetch(index, default)           -> obj
+ *     ary.fetch(index) { |index| block }  -> obj
  *
  *  Tries to return the element at position +index+, but throws an IndexError
- *  exception if the referenced index lies outside of the array bounds.  This
+ *  exception if the referenced +index+ lies outside of the array bounds.  This
  *  error can be prevented by supplying a second argument, which will act as a
- *  +default+ value.  Alternatively, if the second argument is a block it will
- *  only be executed when an invalid index is referenced.  Negative values of
- *  +index+ count from the end of the array.
+ *  +default+ value.
+ *
+ *  Alternatively, if a block is given it will only be executed when an
+ *  invalid +index+ is referenced.  Negative values of +index+ count from the
+ *  end of the array.
  *
  *     a = [ 11, 22, 33, 44 ]
  *     a.fetch(1)               #=> 22
@@ -1179,24 +1194,27 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.index(obj)           ->  int or nil
- *     ary.index {|item| block} ->  int or nil
- *     ary.index                ->  an_enumerator
+ *     ary.index(obj)             ->  int or nil
+ *     ary.index { |item| block } ->  int or nil
+ *     ary.index                  ->  Enumerator
  *
- *  Returns the index of the first object in +self+ such that the object is
- *  <code>==</code> to +obj+. If a block is given instead of an
- *  argument, returns index of first object for which <em>block</em> is true.
- *  Returns <code>nil</code> if no match is found.
- *  See also <code>Array#rindex</code>.
+ *  Returns the _index_ of the first object in +ary+ such that the object is
+ *  <code>==</code> to +obj+.
  *
- *  If neither block nor argument is given, an enumerator is returned instead.
+ *  If a block is given instead of an argument, returns the _index_ of first
+ *  the object for which the block returns +true+.  Returns +nil+ if no match
+ *  is found.
+ *
+ *  See also Array#rindex.
+ *
+ *  An Enumerator is returned if neither a block nor argument is given.
  *
  *     a = [ "a", "b", "c" ]
- *     a.index("b")        #=> 1
- *     a.index("z")        #=> nil
- *     a.index{|x|x=="b"}  #=> 1
+ *     a.index("b")              #=> 1
+ *     a.index("z")              #=> nil
+ *     a.index { |x| x == "b" }  #=> 1
  *
- *  This is an alias of <code>#find_index</code>.
+ *  This is an alias of Array#find_index.
  */
 
 static VALUE
@@ -1226,18 +1244,20 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.rindex(obj)           ->  int or nil
- *     ary.rindex {|item| block} ->  int or nil
- *     ary.rindex                ->  an_enumerator
+ *     ary.rindex(obj)             ->  int or nil
+ *     ary.rindex { |item| block } ->  int or nil
+ *     ary.rindex                  ->  Enumerator
  *
- *  Returns the index of the last object in +self+
- *  <code>==</code> to +obj+. If a block is given instead of an
- *  argument, returns index of first object for which <em>block</em> is
- *  true, starting from the last object.
- *  Returns <code>nil</code> if no match is found.
+ *  Returns the _index_ of the last object in +self+ <code>==</code> to +obj+.
+ *
+ *  If a block is given instead of an argument, returns _index_ of first object
+ *  for which block returns +true+, starting from the last object.
+ *
+ *  Returns +nil+ if no match is found.
+ *
  *  See also Array#index.
  *
- *  If neither block nor argument is given, an enumerator is returned instead.
+ *  If neither block nor argument is given, an Enumerator is returned instead.
  *
  *     a = [ "a", "b", "b", "b", "c" ]
  *     a.rindex("b")             #=> 3
@@ -1409,16 +1429,18 @@ rb_ary_resize(VALUE ary, long len)
  *     ary[start, length] = obj or other_ary or nil  ->  obj or other_ary or nil
  *     ary[range]         = obj or other_ary or nil  ->  obj or other_ary or nil
  *
- *  Element Assignment---Sets the element at +index+,
- *  or replaces a subarray starting at +start+ and
- *  continuing for +length+ elements, or replaces a subarray
- *  specified by +range+.  If indices are greater than
- *  the current capacity of the array, the array grows
- *  automatically. A negative indices will count backward
- *  from the end of the array. Inserts elements if +length+ is
- *  zero. An IndexError is raised if a negative index points
- *  past the beginning of the array. See also
- *  Array#push, and Array#unshift.
+ *  Element Assignment --- Sets the element at +index+, or replaces a subarray
+ *  from +start+ for +length+ elements, or replaces a subarray specified by
+ *  +range+.
+ *
+ *  If indices are greater than the current capacity of the array, the array
+ *  grows automatically. Negative indices will count backward from the end of
+ *  the array. Inserts elements if +length+ is zero.
+ *
+ *  An IndexError is raised if a negative index points past the beginning of
+ *  the array.
+ *
+ *  See also Array#push, and Array#unshift.
  *
  *     a = Array.new
  *     a[4] = "4";                 #=> [nil, nil, nil, nil, "4"]
@@ -1465,8 +1487,10 @@ fixnum:
  *  call-seq:
  *     ary.insert(index, obj...)  -> ary
  *
- *  Inserts the given values before the element with the given index
- *  (which may be negative).
+ *  Inserts the given values before the element with the given +index+.
+ *
+ *  Negative indices count backwards from the end of the array, where +-1+ is
+ *  the last element.
  *
  *     a = %w{ a b c d }
  *     a.insert(2, 99)         #=> ["a", "b", 99, "c", "d"]
@@ -1494,13 +1518,13 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.each {|item| block }   -> ary
- *     ary.each                   -> an_enumerator
+ *     ary.each { |item| block }  -> ary
+ *     ary.each                   -> Enumerator
  *
- *  Calls +block+ once for each element in +self+, passing that
- *  element as a parameter.
+ *  Calls the given block once for each element in +self+, passing that element
+ *  as a parameter.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  An Enumerator is returned if no block is given.
  *
  *     a = [ "a", "b", "c" ]
  *     a.each {|x| print x, " -- " }
@@ -1525,14 +1549,13 @@ rb_ary_each(VALUE array)
 
 /*
  *  call-seq:
- *     ary.each_index {|index| block }  -> ary
- *     ary.each_index                   -> an_enumerator
+ *     ary.each_index { |index| block }  -> ary
+ *     ary.each_index                    -> Enumerator
  *
- *  Same as Array#each, but passes the index of the element instead of the
+ *  Same as Array#each, but passes the +index+ of the element instead of the
  *  element itself.
  *
- *  If no block is given, an enumerator is returned instead.
- *
+ *  An Enumerator is returned if no block is given.
  *
  *     a = [ "a", "b", "c" ]
  *     a.each_index {|x| print x, " -- " }
@@ -1556,8 +1579,8 @@ rb_ary_each_index(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.reverse_each {|item| block }   -> ary
- *     ary.reverse_each                   -> an_enumerator
+ *     ary.reverse_each { |item| block }  -> ary
+ *     ary.reverse_each                   -> Enumerator
  *
  *  Same as Array#each, but traverses +self+ in reverse order.
  *
@@ -1592,6 +1615,7 @@ rb_ary_reverse_each(VALUE ary)
  *  Returns the number of elements in +self+. May be zero.
  *
  *     [ 1, 2, 3, 4, 5 ].length   #=> 5
+ *     [].length                  #=> 0
  */
 
 static VALUE
@@ -1605,7 +1629,7 @@ rb_ary_length(VALUE ary)
  *  call-seq:
  *     ary.empty?   -> true or false
  *
- *  Returns <code>true</code> if +self+ contains no elements.
+ *  Returns +true+ if +self+ contains no elements.
  *
  *     [].empty?   #=> true
  */
@@ -1771,10 +1795,10 @@ rb_ary_join(VALUE ary, VALUE sep)
 
 /*
  *  call-seq:
- *     ary.join(sep=$,)    -> str
+ *     ary.join(separator=$,)    -> str
  *
  *  Returns a string created by converting each element of the array to
- *  a string, separated by +sep+.
+ *  a string, separated by the given +separator+.
  *
  *     [ "a", "b", "c" ].join        #=> "abc"
  *     [ "a", "b", "c" ].join("-")   #=> "a-b-c"
@@ -1817,10 +1841,12 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
 
 /*
  *  call-seq:
- *     ary.to_s -> string
  *     ary.inspect  -> string
+ *     ary.to_s     -> string
  *
  *  Creates a string representation of +self+.
+ *
+ *     [ "a", "b", "c" ].to_s     #=> "[\"a\", \"b\", \"c\"]"
  */
 
 static VALUE
@@ -1840,8 +1866,9 @@ rb_ary_to_s(VALUE ary)
  *  call-seq:
  *     ary.to_a     -> ary
  *
- *  Returns +self+. If called on a subclass of Array, converts
- *  the receiver to an Array object.
+ *  Returns +self+.
+ *
+ *  If called on a subclass of Array, converts the receiver to an Array object.
  */
 
 static VALUE
@@ -1912,7 +1939,7 @@ rb_ary_reverse_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.reverse -> new_ary
+ *     ary.reverse    -> new_ary
  *
  *  Returns a new array containing +self+'s elements in reverse order.
  *
@@ -1964,11 +1991,13 @@ rb_ary_rotate(VALUE ary, long cnt)
 
 /*
  *  call-seq:
- *     ary.rotate!(cnt=1) -> ary
+ *     ary.rotate!(count=1)   -> ary
  *
- *  Rotates +self+ in place so that the element at +cnt+ comes first,
- *  and returns +self+.  If +cnt+ is negative then it rotates in
- *  the opposite direction.
+ *  Rotates +self+ in place so that the element at +count+ comes first, and
+ *  returns +self+.
+ *
+ *  If +count+ is negative then it rotates in the opposite direction, starting
+ *  from the end of the array where +-1+ is the last element.
  *
  *     a = [ "a", "b", "c", "d" ]
  *     a.rotate!        #=> ["b", "c", "d", "a"]
@@ -1993,11 +2022,13 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.rotate(cnt=1) -> new_ary
+ *     ary.rotate(count=1)    -> new_ary
  *
- *  Returns new array by rotating +self+ so that the element at
- *  +cnt+ in +self+ is the first element of the new array. If +cnt+
- *  is negative then it rotates in the opposite direction.
+ *  Returns new array by rotating +self+ so that the element at +count+ is the
+ *  first element of the new array.
+ *
+ *  If +count+ is negative then it rotates in the opposite direction, starting
+ *  from the end of +self+ where +-1+ is the last element.
  *
  *     a = [ "a", "b", "c", "d" ]
  *     a.rotate         #=> ["b", "c", "d", "a"]
@@ -2104,17 +2135,22 @@ sort_2(const void *ap, const void *bp, void *dummy)
 /*
  *  call-seq:
  *     ary.sort!                   -> ary
- *     ary.sort! {| a,b | block }  -> ary
+ *     ary.sort! { |a, b| block }  -> ary
  *
- *  Sorts +self+. Comparisons for
- *  the sort will be done using the <code><=></code> operator or using
- *  an optional code block. The block implements a comparison between
- *  +a+ and +b+, returning -1, 0, or +1. See also
- *  Enumerable#sort_by.
+ *  Sorts +self+ in place.
+ *
+ *  Comparisons for the sort will be done using the <code><=></code> operator
+ *  or using an optional code block.
+ *
+ *  The block must implement a comparison between +a+ and +b+, and return
+ *  +-1+, when +a+ follows +b+, +0+ when +a+ and +b+ are equivalent, or ++1+
+ *  if +b+ follows +a+.
+ *
+ *  See also Enumerable#sort_by.
  *
  *     a = [ "d", "a", "e", "c", "b" ]
  *     a.sort!                    #=> ["a", "b", "c", "d", "e"]
- *     a.sort! {|x,y| y <=> x }   #=> ["e", "d", "c", "b", "a"]
+ *     a.sort! { |x,y| y <=> x }  #=> ["e", "d", "c", "b", "a"]
  */
 
 VALUE
@@ -2180,17 +2216,23 @@ rb_ary_sort_bang(VALUE ary)
 /*
  *  call-seq:
  *     ary.sort                   -> new_ary
- *     ary.sort {| a,b | block }  -> new_ary
+ *     ary.sort { |a, b| block }  -> new_ary
  *
- *  Returns a new array created by sorting +self+. Comparisons for
- *  the sort will be done using the <code><=></code> operator or using
- *  an optional code block. The block implements a comparison between
- *  +a+ and +b+, returning -1, 0, or +1. See also
- *  Enumerable#sort_by.
+ *  Returns a new array created by sorting +self+.
+ *
+ *  Comparisons for the sort will be done using the <code><=></code> operator
+ *  or using an optional code block.
+ *
+ *  The block must implement a comparison between +a+ and +b+, and return
+ *  +-1+, when +a+ follows +b+, +0+ when +a+ and +b+ are equivalent, or ++1+
+ *  if +b+ follows +a+.
+ *
+ *
+ *  See also Enumerable#sort_by.
  *
  *     a = [ "d", "a", "e", "c", "b" ]
  *     a.sort                    #=> ["a", "b", "c", "d", "e"]
- *     a.sort {|x,y| y <=> x }   #=> ["e", "d", "c", "b", "a"]
+ *     a.sort { |x,y| y <=> x }  #=> ["e", "d", "c", "b", "a"]
  */
 
 VALUE
@@ -2210,13 +2252,13 @@ sort_by_i(VALUE i)
 
 /*
  *  call-seq:
- *     ary.sort_by! {| obj | block }    -> ary
- *     ary.sort_by!                     -> an_enumerator
+ *     ary.sort_by! { |obj| block }    -> ary
+ *     ary.sort_by!                    -> Enumerator
  *
  *  Sorts +self+ in place using a set of keys generated by mapping the
  *  values in +self+ through the given block.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If no block is given, an Enumerator is returned instead.
  *
  */
 
@@ -2235,20 +2277,22 @@ rb_ary_sort_by_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.collect {|item| block }  -> new_ary
- *     ary.map     {|item| block }  -> new_ary
- *     ary.collect                  -> an_enumerator
- *     ary.map                      -> an_enumerator
+ *     ary.collect { |item| block }  -> new_ary
+ *     ary.map     { |item| block }  -> new_ary
+ *     ary.collect                   -> Enumerator
+ *     ary.map                       -> Enumerator
  *
- *  Invokes +block+ once for each element of +self+. Creates a
- *  new array containing the values returned by the block.
+ *  Invokes the given block once for each element of +self+.
+ *
+ *  Creates a new array containing the values returned by the block.
+ *
  *  See also Enumerable#collect.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If no block is given, an Enumerator is returned instead.
  *
  *     a = [ "a", "b", "c", "d" ]
- *     a.map {|x| x + "!" }   #=> ["a!", "b!", "c!", "d!"]
- *     a                      #=> ["a", "b", "c", "d"]
+ *     a.map { |x| x + "!" }   #=> ["a!", "b!", "c!", "d!"]
+ *     a                       #=> ["a", "b", "c", "d"]
  */
 
 static VALUE
@@ -2270,14 +2314,15 @@ rb_ary_collect(VALUE ary)
  *  call-seq:
  *     ary.collect! {|item| block }   -> ary
  *     ary.map!     {|item| block }   -> ary
- *     ary.collect                    -> an_enumerator
- *     ary.map                        -> an_enumerator
+ *     ary.collect!                   -> Enumerator
+ *     ary.map!                       -> Enumerator
  *
- *  Invokes the block once for each element of +self+, replacing the
- *  element with the value returned by +block+.
+ *  Invokes the given block once for each element of +self+, replacing the
+ *  element with the value returned by the block.
+ *
  *  See also Enumerable#collect.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If no block is given, an Enumerator is returned instead.
  *
  *     a = [ "a", "b", "c", "d" ]
  *     a.map! {|x| x + "!" }
@@ -2327,11 +2372,13 @@ rb_get_values_at(VALUE obj, long olen, int argc, VALUE *argv, VALUE (*func) (VAL
 
 /*
  *  call-seq:
- *     ary.values_at(selector,... )  -> new_ary
+ *     ary.values_at(selector, ...)  -> new_ary
  *
- *  Returns an array containing the elements in
- *  +self+ corresponding to the given selector(s). The selectors
- *  may be either integer indices or ranges.
+ *  Returns an array containing the elements in +self+ corresponding to the
+ *  given +selector+(s).
+ *
+ *  The selectors may be either integer indices or ranges.
+ *
  *  See also Array#select.
  *
  *     a = %w{ a b c d e f }
@@ -2350,17 +2397,19 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.select {|item| block } -> new_ary
- *     ary.select                 -> an_enumerator
+ *     ary.select { |item| block } -> new_ary
+ *     ary.select                  -> Enumerator
  *
- *  Invokes the block passing in successive elements from +self+,
- *  returning an array containing those elements for which the block
- *  returns a true value (equivalent to Enumerable#select).
+ *  Invokes the given block passing in successive elements from +self+,
+ *  returning an array containing those elements for which the block returns
+ *  a +true+ value.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  See also Enumerable#select.
+ *
+ *  If no block is given, an Enumerator is returned instead.
  *
  *     a = %w{ a b c d e f }
- *     a.select {|v| v =~ /[aeiou]/}   #=> ["a", "e"]
+ *     a.select { |v| v =~ /[aeiou]/ }  #=> ["a", "e"]
  */
 
 static VALUE
@@ -2381,16 +2430,17 @@ rb_ary_select(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.select! {|item| block } -> ary or nil
- *     ary.select!                 -> an_enumerator
+ *     ary.select!  {|item| block } -> ary or nil
+ *     ary.select!                  -> Enumerator
  *
- *  Invokes the block passing in successive elements from
- *  +self+, deleting elements for which the block returns a
- *  false value. It returns +self+ if changes were made,
- *  otherwise it returns <code>nil</code>.
+ *  Invokes the given block passing in successive elements from +self+,
+ *  deleting elements for which the block returns a +false+ value.
+ *
+ *  If changes were made, it will return +self+, otherwise it returns +nil+.
+ *
  *  See also Array#keep_if
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If no block is given, an Enumerator is returned instead.
  *
  */
 
@@ -2418,17 +2468,18 @@ rb_ary_select_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.keep_if {|item| block } -> ary
- *     ary.keep_if                 -> an_enumerator
+ *     ary.keep_if { |item| block } -> ary
+ *     ary.keep_if                  -> Enumerator
  *
- *  Deletes every element of +self+ for which +block+ evaluates
- *  to false.
+ *  Deletes every element of +self+ for which the given block evaluates to
+ *  +false+.
+ *
  *  See also Array#select!
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If no block is given, an Enumerator is returned instead.
  *
  *     a = %w{ a b c d e f }
- *     a.keep_if {|v| v =~ /[aeiou]/}   #=> ["a", "e"]
+ *     a.keep_if { |v| v =~ /[aeiou]/ }  #=> ["a", "e"]
  */
 
 static VALUE
@@ -2444,12 +2495,13 @@ rb_ary_keep_if(VALUE ary)
  *     ary.delete(obj)            -> obj or nil
  *     ary.delete(obj) { block }  -> obj or nil
  *
- *  Deletes items from +self+ that are equal to +obj+.
- *  If any items are found, returns +obj+.   If
- *  the item is not found, returns <code>nil</code>. If the optional
- *  code block is given, returns the result of +block+ if the item
- *  is not found.  (To remove <code>nil</code> elements and
- *  get an informative return value, use #compact!)
+ *  Deletes all items from +self+ that are equal to +obj+.
+ *
+ *  If any items are found, returns +obj+, otherwise +nil+ is returned instead.
+ *
+ *  If the optional code block is given, the result of the block is returned if
+ *  the item is not found.  (To remove +nil+ elements and get an informative
+ *  return value, use Array#compact!)
  *
  *     a = [ "a", "b", "b", "b", "c" ]
  *     a.delete("b")                   #=> "b"
@@ -2520,9 +2572,10 @@ rb_ary_delete_at(VALUE ary, long pos)
  *  call-seq:
  *     ary.delete_at(index)  -> obj or nil
  *
- *  Deletes the element at the specified index, returning that element,
- *  or <code>nil</code> if the index is out of range. See also
- *  Array#slice!.
+ *  Deletes the element at the specified +index+, returning that element, or
+ *  +nil+ if the +index+ is out of range.
+ *
+ *  See also Array#slice!
  *
  *     a = ["ant", "bat", "cat", "dog"]
  *     a.delete_at(2)    #=> "cat"
@@ -2542,9 +2595,11 @@ rb_ary_delete_at_m(VALUE ary, VALUE pos)
  *     ary.slice!(start, length) -> new_ary or nil
  *     ary.slice!(range)         -> new_ary or nil
  *
- *  Deletes the element(s) given by an index (optionally with a length)
- *  or by a range. Returns the deleted object (or objects), or
- *  <code>nil</code> if the index is out of range.
+ *  Deletes the element(s) given by an +index+ (optionally up to +length+
+ *  elements) or by a +range+.
+ *
+ *  Returns the deleted object (or objects), or +nil+ if the +index+ is out of
+ *  range.
  *
  *     a = [ "a", "b", "c" ]
  *     a.slice!(1)     #=> "b"
@@ -2642,18 +2697,18 @@ ary_reject_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.reject! {|item| block }  -> ary or nil
- *     ary.reject!                  -> an_enumerator
+ *     ary.reject! { |item| block }  -> ary or nil
+ *     ary.reject!                   -> Enumerator
  *
- *  Equivalent to Array#delete_if, deleting elements from
- *  +self+ for which the block evaluates to true, but returns
- *  <code>nil</code> if no changes were made.
- *  The array is changed instantly every time the block is called and
- *  not after the iteration is over.
+ *  Equivalent to Array#delete_if, deleting elements from +self+ for which the
+ *  block evaluates to +true+, but returns +nil+ if no changes were made.
+ *
+ *  The array is changed instantly every time the block is called, not after
+ *  the iteration is over.
+ *
  *  See also Enumerable#reject and Array#delete_if.
  *
- *  If no block is given, an enumerator is returned instead.
- *
+ *  If no block is given, an Enumerator is returned instead.
  */
 
 static VALUE
@@ -2665,15 +2720,15 @@ rb_ary_reject_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.reject {|item| block }  -> new_ary
- *     ary.reject                  -> an_enumerator
+ *     ary.reject  {|item| block }  -> new_ary
+ *     ary.reject                   -> Enumerator
  *
- *  Returns a new array containing the items in +self+
- *  for which the block is not true.
+ *  Returns a new array containing the items in +self+ for which the given
+ *  block is not +true+.
+ *
  *  See also Array#delete_if
  *
- *  If no block is given, an enumerator is returned instead.
- *
+ *  If no block is given, an Enumerator is returned instead.
  */
 
 static VALUE
@@ -2689,16 +2744,17 @@ rb_ary_reject(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.delete_if {|item| block }  -> ary
- *     ary.delete_if                  -> an_enumerator
+ *     ary.delete_if { |item| block }  -> ary
+ *     ary.delete_if                   -> Enumerator
  *
- *  Deletes every element of +self+ for which +block+ evaluates
- *  to true.
- *  The array is changed instantly every time the block is called and
- *  not after the iteration is over.
+ *  Deletes every element of +self+ for which block evaluates to +true+.
+ *
+ *  The array is changed instantly every time the block is called, not after
+ *  the iteration is over.
+ *
  *  See also Array#reject!
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If no block is given, an Enumerator is returned instead.
  *
  *     a = [ "a", "b", "c" ]
  *     a.delete_if {|x| x >= "b" }   #=> ["a"]
@@ -2737,23 +2793,26 @@ take_items(VALUE obj, long n)
 
 /*
  *  call-seq:
- *     ary.zip(arg, ...)                   -> new_ary
- *     ary.zip(arg, ...) {| arr | block }  -> nil
+ *     ary.zip(arg, ...)                  -> new_ary
+ *     ary.zip(arg, ...) { |arr| block }  -> nil
  *
- *  Converts any arguments to arrays, then merges elements of
- *  +self+ with corresponding elements from each argument. This
- *  generates a sequence of <code>self.size</code> <em>n</em>-element
- *  arrays, where <em>n</em> is one more that the count of arguments. If
- *  the size of any argument is less than <code>enumObj.size</code>,
- *  <code>nil</code> values are supplied. If a block is given, it is
- *  invoked for each output array, otherwise an array of arrays is
- *  returned.
+ *  Converts any arguments to arrays, then merges elements of +self+ with
+ *  corresponding elements from each argument.
+ *
+ *  This generates a sequence of <code>ary.size</code> _n_-element arrays,
+ *  where _n_ is one more that the count of arguments.
+ *
+ *  If the size of any argument is less than the size of the initial array,
+ *  +nil+ values are supplied.
+ *
+ *  If a block is given, it is invoked for each output +array+, otherwise an
+ *  array of arrays is returned.
  *
  *     a = [ 4, 5, 6 ]
  *     b = [ 7, 8, 9 ]
- *     [1,2,3].zip(a, b)      #=> [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
- *     [1,2].zip(a,b)         #=> [[1, 4, 7], [2, 5, 8]]
- *     a.zip([1,2],[8])       #=> [[4,1,8], [5,2,nil], [6,nil,nil]]
+ *     [1, 2, 3].zip(a, b)   #=> [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
+ *     [1, 2].zip(a, b)      #=> [[1, 4, 7], [2, 5, 8]]
+ *     a.zip([1, 2], [8])    #=> [[4, 1, 8], [5, 2, nil], [6, nil, nil]]
  */
 
 static VALUE
@@ -2792,11 +2851,13 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *     ary.transpose -> new_ary
  *
- *  Assumes that +self+ is an array of arrays and transposes the
- *  rows and columns.
+ *  Assumes that +self+ is an array of arrays and transposes the rows and
+ *  columns.
  *
  *     a = [[1,2], [3,4], [5,6]]
  *     a.transpose   #=> [[1, 3, 5], [2, 4, 6]]
+ *
+ *  If the length of the subarrays don't match, an IndexError is raised.
  */
 
 static VALUE
@@ -2831,8 +2892,8 @@ rb_ary_transpose(VALUE ary)
  *  call-seq:
  *     ary.replace(other_ary)  -> ary
  *
- *  Replaces the contents of +self+ with the contents of
- *  +other_ary+, truncating or expanding if necessary.
+ *  Replaces the contents of +self+ with the contents of +other_ary+,
+ *  truncating or expanding if necessary.
  *
  *     a = [ "a", "b", "c", "d", "e" ]
  *     a.replace([ "x", "y", "z" ])   #=> ["x", "y", "z"]
@@ -2910,27 +2971,32 @@ rb_ary_clear(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.fill(obj)                                -> ary
- *     ary.fill(obj, start [, length])              -> ary
- *     ary.fill(obj, range )                        -> ary
- *     ary.fill {|index| block }                    -> ary
- *     ary.fill(start [, length] ) {|index| block } -> ary
- *     ary.fill(range) {|index| block }             -> ary
+ *     ary.fill(obj)                                 -> ary
+ *     ary.fill(obj, start [, length])               -> ary
+ *     ary.fill(obj, range )                         -> ary
+ *     ary.fill { |index| block }                    -> ary
+ *     ary.fill(start [, length] ) { |index| block } -> ary
+ *     ary.fill(range) { |index| block }             -> ary
  *
  *  The first three forms set the selected elements of +self+ (which
- *  may be the entire array) to +obj+. A +start+ of
- *  <code>nil</code> is equivalent to zero. A +length+ of
- *  <code>nil</code> is equivalent to <code>self.length</code>. The last three
- *  forms fill the array with the value of the block. The block is
- *  passed the absolute index of each element to be filled.
- *  Negative values of +start+ count from the end of the array.
+ *  may be the entire array) to +obj+.
+ *
+ *  A +start+ of +nil+ is equivalent to zero.
+ *
+ *  A +length+ of +nil+ is equivalent to the length of the array.
+ *
+ *  The last three forms fill the array with the value of the given block,
+ *  which is passed the absolute index of each element to be filled.
+ *
+ *  Negative values of +start+ count from the end of the array, where +-1+ is
+ *  the last element.
  *
  *     a = [ "a", "b", "c", "d" ]
  *     a.fill("x")              #=> ["x", "x", "x", "x"]
  *     a.fill("z", 2, 2)        #=> ["x", "x", "z", "z"]
  *     a.fill("y", 0..1)        #=> ["y", "y", "z", "z"]
- *     a.fill {|i| i*i}         #=> [0, 1, 4, 9]
- *     a.fill(-2) {|i| i*i*i}   #=> [0, 1, 8, 27]
+ *     a.fill { |i| i*i }       #=> [0, 1, 4, 9]
+ *     a.fill(-2) { |i| i*i*i } #=> [0, 1, 8, 27]
  */
 
 static VALUE
@@ -3008,10 +3074,13 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *     ary + other_ary   -> new_ary
  *
- *  Concatenation---Returns a new array built by concatenating the
+ *  Concatenation --- Returns a new array built by concatenating the
  *  two arrays together to produce a third array.
  *
  *     [ 1, 2, 3 ] + [ 4, 5 ]    #=> [ 1, 2, 3, 4, 5 ]
+ *     a = [ "a", "b", "c" ]
+ *     a + [ "d", "e", "f" ]
+ *     a                         #=> [ "a", "b", "c", "d", "e", "f" ]
  */
 
 VALUE
@@ -3036,8 +3105,10 @@ rb_ary_plus(VALUE x, VALUE y)
  *  Appends the elements of +other_ary+ to +self+.
  *
  *     [ "a", "b" ].concat( ["c", "d"] ) #=> [ "a", "b", "c", "d" ]
+ *     a = [ 1, 2, 3 ]
+ *     a.concat( [ 4, 5 ] )
+ *     a                                 #=> [ 1, 2, 3, 4, 5 ]
  */
-
 
 VALUE
 rb_ary_concat(VALUE x, VALUE y)
@@ -3056,9 +3127,11 @@ rb_ary_concat(VALUE x, VALUE y)
  *     ary * int     -> new_ary
  *     ary * str     -> new_string
  *
- *  Repetition---With a String argument, equivalent to
- *  self.join(str). Otherwise, returns a new array
- *  built by concatenating the +int+ copies of +self+.
+ *  Repetition --- With a String argument, equivalent to
+ *  <code>ary.join(str)</code>.
+ *
+ *  Otherwise, returns a new array built by concatenating the +int+ copies of
+ *  +self+.
  *
  *
  *     [ 1, 2, 3 ] * 3    #=> [ 1, 2, 3, 1, 2, 3, 1, 2, 3 ]
@@ -3116,13 +3189,13 @@ rb_ary_times(VALUE ary, VALUE times)
  *  call-seq:
  *     ary.assoc(obj)   -> new_ary  or  nil
  *
- *  Searches through an array whose elements are also arrays
- *  comparing +obj+ with the first element of each contained array
- *  using obj.==.
- *  Returns the first contained array that matches (that
- *  is, the first associated array),
- *  or +nil+ if no match is found.
- *  See also Array#rassoc.
+ *  Searches through an array whose elements are also arrays comparing +obj+
+ *  with the first element of each contained array using <code>obj.==</code>.
+ *
+ *  Returns the first contained array that matches (that is, the first
+ *  associated array), or +nil+ if no match is found.
+ *
+ *  See also Array#rassoc
  *
  *     s1 = [ "colors", "red", "blue", "green" ]
  *     s2 = [ "letters", "a", "b", "c" ]
@@ -3151,10 +3224,14 @@ rb_ary_assoc(VALUE ary, VALUE key)
  *  call-seq:
  *     ary.rassoc(obj) -> new_ary or nil
  *
- *  Searches through the array whose elements are also arrays. Compares
- *  +obj+ with the second element of each contained array using
- *  <code>==</code>. Returns the first contained array that matches. See
- *  also Array#assoc.
+ *  Searches through the array whose elements are also arrays.
+ *
+ *  Compares +obj+ with the second element of each contained array using
+ *  <code>obj.==</code>.
+ *
+ *  Returns the first contained array that matches +obj+.
+ *
+ *  See also Array#assoc.
  *
  *     a = [ [ 1, "one"], [2, "two"], [3, "three"], ["ii", "two"] ]
  *     a.rassoc("two")    #=> [2, "two"]
@@ -3194,9 +3271,9 @@ recursive_equal(VALUE ary1, VALUE ary2, int recur)
  *  call-seq:
  *     ary == other_ary   ->   bool
  *
- *  Equality---Two arrays are equal if they contain the same number
- *  of elements and if each element is equal to (according to
- *  Object.==) the corresponding element in the other array.
+ *  Equality --- Two arrays are equal if they contain the same number of
+ *  elements and if each element is equal to (according to Object#==) the
+ *  corresponding element in +other_ary+.
  *
  *     [ "a", "c" ]    == [ "a", "c", 7 ]     #=> false
  *     [ "a", "c", 7 ] == [ "a", "c", 7 ]     #=> true
@@ -3235,7 +3312,7 @@ recursive_eql(VALUE ary1, VALUE ary2, int recur)
  *  call-seq:
  *     ary.eql?(other)  -> true or false
  *
- *  Returns <code>true</code> if +self+ and +other+ are the same object,
+ *  Returns +true+ if +self+ and +other+ are the same object,
  *  or are both arrays with the same content.
  */
 
@@ -3273,8 +3350,10 @@ recursive_hash(VALUE ary, VALUE dummy, int recur)
  *  call-seq:
  *     ary.hash   -> fixnum
  *
- *  Compute a hash-code for this array. Two arrays with the same content
- *  will have the same hash code (and will compare using <code>eql?</code>).
+ *  Compute a hash-code for this array.
+ *
+ *  Two arrays with the same content will have the same hash code (and will
+ *  compare using #eql?).
  */
 
 static VALUE
@@ -3287,9 +3366,8 @@ rb_ary_hash(VALUE ary)
  *  call-seq:
  *     ary.include?(object)   -> true or false
  *
- *  Returns <code>true</code> if the given +object+ is present in
- *  +self+ (that is, if any object <code>==</code> +object+),
- *  <code>false</code> otherwise.
+ *  Returns +true+ if the given +object+ is present in +self+ (that is, if any
+ *  object <code>==</code> +object+), otherwise returns +false+.
  *
  *     a = [ "a", "b", "c" ]
  *     a.include?("b")   #=> true
@@ -3333,17 +3411,19 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
  *  call-seq:
  *     ary <=> other_ary   ->  -1, 0, +1 or nil
  *
- *  Comparison---Returns an integer (-1, 0,
- *  or +1) if this array is less than, equal to, or greater than
- *  +other_ary+.
+ *  Comparison --- Returns an integer (+-1+, +0+, or <code>+1</code>) if this
+ *  array is less than, equal to, or greater than +other_ary+.
  *
- *  Each object in each array is compared (using <=>). Arrays are compared in
- *  an "element-wise" manner; the first two elements that are not equal will
- *  determine the return value for the whole comparison.  If all the values
- *  are equal, then the return is based on a comparison of the array lengths.
- *  Thus, two arrays are "equal" according to Array#<=> if and only if they
- *  have the same length and the value of each element is equal to the
- *  value of the corresponding element in the other array.
+ *  Each object in each array is compared (using the <=> operator).
+ *
+ *  Arrays are compared in an "element-wise" manner; the first two elements
+ *  that are not equal will determine the return value for the whole
+ *  comparison.
+ *
+ *  If all the values are equal, then the return is based on a comparison of
+ *  the array lengths. Thus, two arrays are "equal" according to Array#<=> if,
+ *  and only if, they have the same length and the value of each element is
+ *  equal to the value of the corresponding element in the other array.
  *
  *     [ "a", "a", "c" ]    <=> [ "a", "b", "c" ]   #=> -1
  *     [ 1, 2, 3, 4, 5, 6 ] <=> [ 1, 2 ]            #=> +1
@@ -3429,10 +3509,9 @@ ary_recycle_hash(VALUE hash)
  *  call-seq:
  *     ary - other_ary    -> new_ary
  *
- *  Array Difference---Returns a new array that is a copy of
- *  the original array, removing any items that also appear in
- *  +other_ary+. (If you need set-like behavior, see the
- *  library class Set.)
+ *  Array Difference --- Returns a new array that is a copy of the original
+ *  array, removing any items that also appear in +other_ary+. (If you need
+ *  set-like behavior, see the library class Set.)
  *
  *     [ 1, 1, 2, 2, 3, 3, 4, 5 ] - [ 1, 2, 4 ]  #=>  [ 3, 3, 5 ]
  */
@@ -3459,10 +3538,11 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *  call-seq:
  *     ary & other_ary      -> new_ary
  *
- *  Set Intersection---Returns a new array
- *  containing elements common to the two arrays, with no duplicates.
+ *  Set Intersection --- Returns a new array containing elements common to the
+ *  two arrays, excluding any duplicates.
  *
- *     [ 1, 1, 3, 5 ] & [ 1, 2, 3 ]   #=> [ 1, 3 ]
+ *     [ 1, 1, 3, 5 ] & [ 1, 2, 3 ]                 #=> [ 1, 3 ]
+ *     [ 'a', 'b', 'b', 'z' ] & [ 'a', 'b', 'c' ]   #=> [ 'a', 'b' ]
  */
 
 
@@ -3496,11 +3576,10 @@ rb_ary_and(VALUE ary1, VALUE ary2)
  *  call-seq:
  *     ary | other_ary     -> new_ary
  *
- *  Set Union---Returns a new array by joining this array with
- *  +other_ary+, removing duplicates.
+ *  Set Union --- Returns a new array by joining +ary+ with +other_ary+,
+ *  excluding any duplicates.
  *
- *     [ "a", "b", "c" ] | [ "c", "d", "a" ]
- *            #=> [ "a", "b", "c", "d" ]
+ *     [ "a", "b", "c" ] | [ "c", "d", "a" ]    #=> [ "a", "b", "c", "d" ]
  */
 
 static VALUE
@@ -3542,10 +3621,12 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
  *     ary.uniq!                -> ary or nil
  *     ary.uniq! { |item| ... } -> ary or nil
  *
- *  Removes duplicate elements from +self+. If a block is given,
- *  it will use the return value of the block for comparison.
- *  Returns <code>nil</code> if no changes are made (that is, no
- *  duplicates are found).
+ *  Removes duplicate elements from +self+.
+ *
+ *  If a block is given, it will use the return value of the block for
+ *  comparison.
+ *
+ *  Returns +nil+ if no changes are made (that is, no duplicates are found).
  *
  *     a = [ "a", "a", "b", "b", "c" ]
  *     a.uniq!   # => ["a", "b", "c"]
@@ -3647,6 +3728,7 @@ rb_ary_uniq(VALUE ary)
  *     ary.compact!    -> ary  or  nil
  *
  *  Removes +nil+ elements from the array.
+ *
  *  Returns +nil+ if no changes were made, otherwise returns the array.
  *
  *     [ "a", nil, "b", nil, "c" ].compact! #=> [ "a", "b", "c" ]
@@ -3699,19 +3781,22 @@ rb_ary_compact(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.count      -> int
- *     ary.count(obj) -> int
+ *     ary.count                   -> int
+ *     ary.count(obj)              -> int
  *     ary.count { |item| block }  -> int
  *
- *  Returns the number of elements.  If an argument is given, counts
- *  the number of elements which equals to +obj+.  If a block is
- *  given, counts the number of elements for which the block returns a true
- *  value.
+ *  Returns the number of elements.
+ *
+ *  If an argument is given, counts the number of elements which equal +obj+
+ *  using <code>===</code>.
+ *
+ *  If a block is given, counts the number of elements for which the block
+ *  returns a true value.
  *
  *     ary = [1, 2, 4, 2]
- *     ary.count             #=> 4
- *     ary.count(2)          #=> 2
- *     ary.count{|x|x%2==0}  #=> 3
+ *     ary.count                  #=> 4
+ *     ary.count(2)               #=> 2
+ *     ary.count { |x| x%2 == 0 } #=> 3
  *
  */
 
@@ -3801,13 +3886,15 @@ flatten(VALUE ary, int level, int *modified)
 
 /*
  *  call-seq:
- *     ary.flatten!        -> ary or nil
- *     ary.flatten!(level) -> array or nil
+ *     ary.flatten!        -> Array or nil
+ *     ary.flatten!(level) -> Array or nil
  *
  *  Flattens +self+ in place.
- *  Returns <code>nil</code> if no modifications were made (i.e.,
- *  the array contains no subarrays.)  If the optional +level+
- *  argument determines the level of recursion to flatten.
+ *
+ *  Returns +nil+ if no modifications were made (i.e., the array contains no
+ *  subarrays.)
+ *
+ *  The optional +level+ argument determines the level of recursion to flatten.
  *
  *     a = [ 1, 2, [3, [4, 5] ] ]
  *     a.flatten!   #=> [1, 2, 3, 4, 5]
@@ -3845,10 +3932,14 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *     ary.flatten -> new_ary
  *     ary.flatten(level) -> new_ary
  *
- *  Returns a new array that is a one-dimensional flattening of this
- *  array (recursively). That is, for every element that is an array,
- *  extract its elements into the new array.  If the optional
- *  +level+ argument determines the level of recursion to flatten.
+ *  Returns a new array that is a one-dimensional flattening of +self+
+ *  (recursively).
+ *
+ *  That is, for every element that is an array, extract its elements into
+ *  the new array.
+ *
+ *  The optional +level+ argument determines the level of recursion to
+ *  flatten.
  *
  *     s = [ 1, 2, 3 ]           #=> [1, 2, 3]
  *     t = [ 4, 5, 6, [7, 8] ]   #=> [4, 5, 6, [7, 8]]
@@ -3886,7 +3977,8 @@ static VALUE sym_random;
  *     ary.shuffle!(random: rng) -> ary
  *
  *  Shuffles elements in +self+ in place.
- *  If +rng+ is given, it will be used as the random number generator.
+ *
+ *  The optional +rng+ argument will be used as random number generator.
  */
 
 static VALUE
@@ -3923,12 +4015,12 @@ rb_ary_shuffle_bang(int argc, VALUE *argv, VALUE ary)
  *     ary.shuffle              -> new_ary
  *     ary.shuffle(random: rng) -> new_ary
  *
- *  Returns a new array with elements of this array shuffled.
+ *  Returns a new array with elements of +self+ shuffled.
  *
  *     a = [ 1, 2, 3 ]           #=> [1, 2, 3]
  *     a.shuffle                 #=> [2, 3, 1]
  *
- *  If +rng+ is given, it will be used as the random number generator.
+ *  The optional +rng+ argument will be used as the random number generator.
  *
  *     a.shuffle(random: Random.new(1))  #=> [1, 3, 2]
  */
@@ -3949,13 +4041,16 @@ rb_ary_shuffle(int argc, VALUE *argv, VALUE ary)
  *     ary.sample(n)               -> new_ary
  *     ary.sample(n, random: rng)  -> new_ary
  *
- *  Choose a random element or +n+ random elements from the array. The elements
- *  are chosen by using random and unique indices into the array in order to
- *  ensure that an element doesn't repeat itself unless the array already
- *  contained duplicate elements. If the array is empty the first form returns
- *  <code>nil</code> and the second form returns an empty array.
+ *  Choose a random element or +n+ random elements from the array.
  *
- *  If +rng+ is given, it will be used as the random number generator.
+ *  The elements are chosen by using random and unique indices into the array
+ *  in order to ensure that an element doesn't repeat itself unless the array
+ *  already contained duplicate elements.
+ *
+ *  If the array is empty the first form returns +nil+ and the second form
+ *  returns an empty array.
+ *
+ *  The optional +rng+ argument will be used as the random number generator.
  *
  *     a = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
  *     a.sample         #=> 7
@@ -4063,20 +4158,21 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.cycle(n=nil) {|obj| block }  -> nil
- *     ary.cycle(n=nil)                 -> an_enumerator
+ *     ary.cycle(n=nil) { |obj| block }  -> nil
+ *     ary.cycle(n=nil)                  -> Enumerator
  *
- *  Calls +block+ for each element repeatedly +n+ times or
- *  forever if none or +nil+ is given.  If a non-positive number is
- *  given or the array is empty, does nothing.  Returns +nil+ if the
- *  loop has finished without getting interrupted.
+ *  Calls the given block for each element +n+ times or forever if +nil+ is
+ *  given.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  Does nothing if a non-positive number is given or the array is empty.
  *
+ *  Returns +nil+ if the loop has finished without getting interrupted.
+ *
+ *  If no block is given, an Enumerator is returned instead.
  *
  *     a = ["a", "b", "c"]
- *     a.cycle {|x| puts x }  # print, a, b, c, a, b, c,.. forever.
- *     a.cycle(2) {|x| puts x }  # print, a, b, c, a, b, c.
+ *     a.cycle { |x| puts x }     # print, a, b, c, a, b, c,.. forever.
+ *     a.cycle(2) { |x| puts x }  # print, a, b, c, a, b, c.
  *
  */
 
@@ -4111,7 +4207,9 @@ rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
 #define tmpary_discard(a) (ary_discard(a), RBASIC(a)->klass = rb_cArray)
 
 /*
- * Recursively compute permutations of r elements of the set [0..n-1].
+ * Recursively compute permutations of +r+ elements of the set
+ * <code>[0..n-1]</code>.
+ *
  * When we have a complete permutation of array indexes, copy the values
  * at those indexes into a new array and yield that array.
  *
@@ -4157,27 +4255,29 @@ permute0(long n, long r, long *p, long index, char *used, VALUE values)
 /*
  *  call-seq:
  *     ary.permutation { |p| block }          -> ary
- *     ary.permutation                        -> an_enumerator
+ *     ary.permutation                        -> Enumerator
  *     ary.permutation(n) { |p| block }       -> ary
- *     ary.permutation(n)                     -> an_enumerator
+ *     ary.permutation(n)                     -> Enumerator
  *
- * When invoked with a block, yield all permutations of length +n+
- * of the elements of the array, then return the array itself.
+ * When invoked with a block, yield all permutations of length +n+ of the
+ * elements of the array, then return the array itself.
+ *
  * If +n+ is not specified, yield all permutations of all elements.
- * The implementation makes no guarantees about the order in which
- * the permutations are yielded.
  *
- * If no block is given, an enumerator is returned instead.
+ * The implementation makes no guarantees about the order in which the
+ * permutations are yielded.
+ *
+ * If no block is given, an Enumerator is returned instead.
  *
  * Examples:
  *
- *     a = [1, 2, 3]
- *     a.permutation.to_a     #=> [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
- *     a.permutation(1).to_a  #=> [[1],[2],[3]]
- *     a.permutation(2).to_a  #=> [[1,2],[1,3],[2,1],[2,3],[3,1],[3,2]]
- *     a.permutation(3).to_a  #=> [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
- *     a.permutation(0).to_a  #=> [[]] # one permutation of length 0
- *     a.permutation(4).to_a  #=> []   # no permutations of length 4
+ *   a = [1, 2, 3]
+ *   a.permutation.to_a    #=> [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
+ *   a.permutation(1).to_a #=> [[1],[2],[3]]
+ *   a.permutation(2).to_a #=> [[1,2],[1,3],[2,1],[2,3],[3,1],[3,2]]
+ *   a.permutation(3).to_a #=> [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
+ *   a.permutation(0).to_a #=> [[]] # one permutation of length 0
+ *   a.permutation(4).to_a #=> []   # no permutations of length 4
  */
 
 static VALUE
@@ -4187,7 +4287,7 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
     long r, n, i;
 
     n = RARRAY_LEN(ary);                  /* Array length */
-    RETURN_ENUMERATOR(ary, argc, argv);   /* Return enumerator if no block */
+    RETURN_ENUMERATOR(ary, argc, argv);   /* Return Enumerator if no block */
     rb_scan_args(argc, argv, "01", &num);
     r = NIL_P(num) ? n : NUM2LONG(num);   /* Permutation size from argument */
 
@@ -4223,14 +4323,15 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 /*
  *  call-seq:
  *     ary.combination(n) { |c| block }    -> ary
- *     ary.combination(n)                  -> an_enumerator
+ *     ary.combination(n)                  -> Enumerator
  *
- * When invoked with a block, yields all combinations of length +n+
- * of elements from the array and then returns the array itself.
- * The implementation makes no guarantees about the order in which
- * the combinations are yielded.
+ * When invoked with a block, yields all combinations of length +n+ of elements
+ * from the array and then returns the array itself.
  *
- * If no block is given, an enumerator is returned instead.
+ * The implementation makes no guarantees about the order in which the
+ * combinations are yielded.
+ *
+ * If no block is given, an Enumerator is returned instead.
  *
  * Examples:
  *
@@ -4294,8 +4395,9 @@ rb_ary_combination(VALUE ary, VALUE num)
 }
 
 /*
- * Recursively compute repeated permutations of r elements of the set
- * [0..n-1].
+ * Recursively compute repeated permutations of +r+ elements of the set
+ * <code>[0..n-1]</code>.
+ *
  * When we have a complete repeated permutation of array indexes, copy the
  * values at those indexes into a new array and yield that array.
  *
@@ -4335,14 +4437,15 @@ rpermute0(long n, long r, long *p, long index, VALUE values)
 /*
  *  call-seq:
  *     ary.repeated_permutation(n) { |p| block } -> ary
- *     ary.repeated_permutation(n)               -> an_enumerator
+ *     ary.repeated_permutation(n)               -> Enumerator
  *
- * When invoked with a block, yield all repeated permutations of length
- * +n+ of the elements of the array, then return the array itself.
- * The implementation makes no guarantees about the order in which
- * the repeated permutations are yielded.
+ * When invoked with a block, yield all repeated permutations of length +n+ of
+ * the elements of the array, then return the array itself.
  *
- * If no block is given, an enumerator is returned instead.
+ * The implementation makes no guarantees about the order in which the repeated
+ * permutations are yielded.
+ *
+ * If no block is given, an Enumerator is returned instead.
  *
  * Examples:
  *
@@ -4360,7 +4463,7 @@ rb_ary_repeated_permutation(VALUE ary, VALUE num)
     long r, n, i;
 
     n = RARRAY_LEN(ary);                  /* Array length */
-    RETURN_ENUMERATOR(ary, 1, &num);      /* Return enumerator if no block */
+    RETURN_ENUMERATOR(ary, 1, &num);      /* Return Enumerator if no block */
     r = NUM2LONG(num);                    /* Permutation size from argument */
 
     if (r < 0) {
@@ -4414,27 +4517,27 @@ rcombinate0(long n, long r, long *p, long index, long rest, VALUE values)
 /*
  *  call-seq:
  *     ary.repeated_combination(n) { |c| block } -> ary
- *     ary.repeated_combination(n)               -> an_enumerator
+ *     ary.repeated_combination(n)               -> Enumerator
  *
- * When invoked with a block, yields all repeated combinations of
- * length +n+ of elements from the array and then returns
- * the array itself.
- * The implementation makes no guarantees about the order in which
- * the repeated combinations are yielded.
+ * When invoked with a block, yields all repeated combinations of length +n+ of
+ * elements from the array and then returns the array itself.
  *
- * If no block is given, an enumerator is returned instead.
+ * The implementation makes no guarantees about the order in which the repeated
+ * combinations are yielded.
+ *
+ * If no block is given, an Enumerator is returned instead.
  *
  * Examples:
  *
- *     a = [1, 2, 3]
- *     a.repeated_combination(1).to_a  #=> [[1], [2], [3]]
- *     a.repeated_combination(2).to_a  #=> [[1,1],[1,2],[1,3],[2,2],[2,3],[3,3]]
- *     a.repeated_combination(3).to_a  #=> [[1,1,1],[1,1,2],[1,1,3],[1,2,2],[1,2,3],
- *                                     #    [1,3,3],[2,2,2],[2,2,3],[2,3,3],[3,3,3]]
- *     a.repeated_combination(4).to_a  #=> [[1,1,1,1],[1,1,1,2],[1,1,1,3],[1,1,2,2],[1,1,2,3],
- *                                     #    [1,1,3,3],[1,2,2,2],[1,2,2,3],[1,2,3,3],[1,3,3,3],
- *                                     #    [2,2,2,2],[2,2,2,3],[2,2,3,3],[2,3,3,3],[3,3,3,3]]
- *     a.repeated_combination(0).to_a  #=> [[]] # one combination of length 0
+ *   a = [1, 2, 3]
+ *   a.repeated_combination(1).to_a  #=> [[1], [2], [3]]
+ *   a.repeated_combination(2).to_a  #=> [[1,1],[1,2],[1,3],[2,2],[2,3],[3,3]]
+ *   a.repeated_combination(3).to_a  #=> [[1,1,1],[1,1,2],[1,1,3],[1,2,2],[1,2,3],
+ *                                   #    [1,3,3],[2,2,2],[2,2,3],[2,3,3],[3,3,3]]
+ *   a.repeated_combination(4).to_a  #=> [[1,1,1,1],[1,1,1,2],[1,1,1,3],[1,1,2,2],[1,1,2,3],
+ *                                   #    [1,1,3,3],[1,2,2,2],[1,2,2,3],[1,2,3,3],[1,3,3,3],
+ *                                   #    [2,2,2,2],[2,2,2,3],[2,2,3,3],[2,3,3,3],[3,3,3,3]]
+ *   a.repeated_combination(0).to_a  #=> [[]] # one combination of length 0
  *
  */
 
@@ -4444,7 +4547,7 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
     long n, i, len;
 
     n = NUM2LONG(num);                 /* Combination size from argument */
-    RETURN_ENUMERATOR(ary, 1, &num);   /* Return enumerator if no block */
+    RETURN_ENUMERATOR(ary, 1, &num);   /* Return Enumerator if no block */
     len = RARRAY_LEN(ary);
     if (n < 0) {
 	/* yield nothing */
@@ -4479,11 +4582,12 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
  *     ary.product(other_ary, ...) { |p| block }  -> ary
  *
  *  Returns an array of all combinations of elements from all arrays.
- *  The length of the returned array is the product of the length
- *  of +self+ and the argument arrays.
- *  If given a block, #product will yield all combinations
- *  and return +self+ instead.
  *
+ *  The length of the returned array is the product of the length of +self+ and
+ *  the argument arrays.
+ *
+ *  If given a block, #product will yield all combinations and return +self+
+ *  instead.
  *
  *     [1,2,3].product([4,5])     #=> [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]]
  *     [1,2].product([1,2])       #=> [[1,1],[1,2],[2,1],[2,2]]
@@ -4589,6 +4693,10 @@ done:
  *
  *  Returns first +n+ elements from the array.
  *
+ *  If a non-positive number is given, raises an ArgumentError.
+ *
+ *  See also Array#drop
+ *
  *     a = [1, 2, 3, 4, 5, 0]
  *     a.take(3)             #=> [1, 2, 3]
  *
@@ -4606,16 +4714,18 @@ rb_ary_take(VALUE obj, VALUE n)
 
 /*
  *  call-seq:
- *     ary.take_while {|arr| block }   -> new_ary
- *     ary.take_while                  -> an_enumerator
+ *     ary.take_while { |arr| block }  -> new_ary
+ *     ary.take_while                  -> Enumerator
  *
- *  Passes elements to the block until the block returns +nil+ or +false+,
- *  then stops iterating and returns an array of all prior elements.
+ *  Passes elements to the block until the block returns +nil+ or +false+, then
+ *  stops iterating and returns an array of all prior elements.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If no block is given, an Enumerator is returned instead.
+ *
+ *  See also Array#drop_while
  *
  *     a = [1, 2, 3, 4, 5, 0]
- *     a.take_while {|i| i < 3 }   #=> [1, 2]
+ *     a.take_while { |i| i < 3 }  #=> [1, 2]
  *
  */
 
@@ -4635,8 +4745,12 @@ rb_ary_take_while(VALUE ary)
  *  call-seq:
  *     ary.drop(n)               -> new_ary
  *
- *  Drops first n elements from +ary+ and returns the rest of
- *  the elements in an array.
+ *  Drops first +n+ elements from +ary+ and returns the rest of the elements in
+ *  an array.
+ *
+ *  If a non-positive number is given, raises an ArgumentError.
+ *
+ *  See also Array#take
  *
  *     a = [1, 2, 3, 4, 5, 0]
  *     a.drop(3)             #=> [4, 5, 0]
@@ -4659,14 +4773,16 @@ rb_ary_drop(VALUE ary, VALUE n)
 
 /*
  *  call-seq:
- *     ary.drop_while {|arr| block }   -> new_ary
- *     ary.drop_while                  -> an_enumerator
+ *     ary.drop_while { |arr| block }   -> new_ary
+ *     ary.drop_while                  -> Enumerator
  *
- *  Drops elements up to, but not including, the first element for
- *  which the block returns +nil+ or +false+ and returns an array
- *  containing the remaining elements.
+ *  Drops elements up to, but not including, the first element for which the
+ *  block returns +nil+ or +false+ and returns an array containing the
+ *  remaining elements.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If no block is given, an Enumerator is returned instead.
+ *
+ *  See also Array#take_while
  *
  *     a = [1, 2, 3, 4, 5, 0]
  *     a.drop_while {|i| i < 3 }   #=> [3, 4, 5, 0]
@@ -4686,227 +4802,231 @@ rb_ary_drop_while(VALUE ary)
 }
 
 /*
- * Arrays are ordered, integer-indexed collections of any object.
- * Array indexing starts at 0, as in C or Java.  A negative index is
- * assumed to be relative to the end of the array---that is, an index of -1
- * indicates the last element of the array, -2 is the next to last
- * element in the array, and so on.
+ *  Arrays are ordered, integer-indexed collections of any object.
  *
- * == Creating Arrays
+ *  Array indexing starts at 0, as in C or Java.  A negative index is assumed
+ *  to be relative to the end of the array---that is, an index of -1 indicates
+ *  the last element of the array, -2 is the next to last element in the
+ *  array, and so on.
  *
- * A new array can be created by using the literal constructor
- * <code>[]</code>.  Arrays can contain different types of objects.  For
- * example, the array below contains an Integer, a String and a Float:
+ *  == Creating Arrays
  *
- *    ary = [1, "two", 3.0] #=> [1, "two", 3.0]
+ *  A new array can be created by using the literal constructor
+ *  <code>[]</code>.  Arrays can contain different types of objects.  For
+ *  example, the array below contains an Integer, a String and a Float:
  *
- * An array can also be created by explicitly calling Array.new with zero,
- * one (the initial size of the Array) or two arguments (the initial size and
- * a default object).
+ *     ary = [1, "two", 3.0] #=> [1, "two", 3.0]
  *
- *    ary = Array.new    #=> []
- *    Array.new(3)       #=> [nil, nil, nil]
- *    Array.new(3, true) #=> [0, 0, 0]
+ *  An array can also be created by explicitly calling Array.new with zero, one
+ *  (the initial size of the Array) or two arguments (the initial size and a
+ *  default object).
  *
- * Note that the second argument populates the array with references the same
- * object.  Therefore, it is only recommended in cases when you need to
- * instantiate arrays with natively immutable objects such Symbols, numbers,
- * true or false.
+ *     ary = Array.new    #=> []
+ *     Array.new(3)       #=> [nil, nil, nil]
+ *     Array.new(3, true) #=> [0, 0, 0]
  *
- * To create an array with separate objects a block can be passed instead.
- * This method is safe to use with mutable objects such as hashes, strings or
- * other arrays:
+ *  Note that the second argument populates the array with references the same
+ *  object.  Therefore, it is only recommended in cases when you need to
+ *  instantiate arrays with natively immutable objects such Symbols, numbers,
+ *  true or false.
  *
- *    Array.new(4) { Hash.new } #=> [{}, {}, {}, {}]
+ *  To create an array with separate objects a block can be passed instead.
+ *  This method is safe to use with mutable objects such as hashes, strings or
+ *  other arrays:
  *
- * This is also a quick way to build up multi-dimensional arrays:
+ *     Array.new(4) { Hash.new } #=> [{}, {}, {}, {}]
  *
- *    empty_table = Array.new(3) { Array.new(3) }
- *    #=> [[nil, nil, nil], [nil, nil, nil], [nil, nil, nil]]
+ *  This is also a quick way to build up multi-dimensional arrays:
  *
- * == Example Usage
+ *     empty_table = Array.new(3) { Array.new(3) }
+ *     #=> [[nil, nil, nil], [nil, nil, nil], [nil, nil, nil]]
  *
- * In addition to the methods it mixes in through the Enumerable module, the
- * Array class has proprietary methods for accessing, searching and otherwise
- * manipulating arrays.  Some of the more common ones are illustrated below.
+ *  == Example Usage
  *
- * == Accessing Elements
+ *  In addition to the methods it mixes in through the Enumerable module, the
+ *  Array class has proprietary methods for accessing, searching and otherwise
+ *  manipulating arrays.
  *
- * Elements in an array can be retrieved using the Array#[] method.  It can
- * take a single integer argument (a numeric index), a pair of arguments
- * (start and length) or a range.
+ *  Some of the more common ones are illustrated below.
  *
- *    arr = [1, 2, 3, 4, 5, 6]
- *    arr[2]    #=> 3
- *    arr[100]  #=> nil
- *    arr[-3]   #=> 4
- *    arr[2, 3] #=> [3, 4, 5]
- *    arr[1..4] #=> [2, 3, 4, 5]
+ *  == Accessing Elements
  *
- * Another way to access a particular array element is by using the #at method
+ *  Elements in an array can be retrieved using the Array#[] method.  It can
+ *  take a single integer argument (a numeric index), a pair of arguments
+ *  (start and length) or a range.
  *
- *    arr.at(0) #=> 1
+ *     arr = [1, 2, 3, 4, 5, 6]
+ *     arr[2]    #=> 3
+ *     arr[100]  #=> nil
+ *     arr[-3]   #=> 4
+ *     arr[2, 3] #=> [3, 4, 5]
+ *     arr[1..4] #=> [2, 3, 4, 5]
  *
- * The #slice method works in an identical manner to Array#[].
+ *  Another way to access a particular array element is by using the #at method
  *
- * To raise an error for indices outside of the array bounds or else to provide
- * a default value when that happens, you can use #fetch.
+ *     arr.at(0) #=> 1
  *
- *    arr = ['a', 'b', 'c', 'd', 'e', 'f']
- *    arr.fetch(100) #=> IndexError: index 100 outside of array bounds: -6...6
- *    arr.fetch(100, "oops") #=> "oops"
+ *  The #slice method works in an identical manner to Array#[].
  *
- * The special methods #first and #last will return the first and last
- * elements of an array, respectively.
+ *  To raise an error for indices outside of the array bounds or else to
+ *  provide a default value when that happens, you can use #fetch.
  *
- *    arr.first #=> 1
- *    arr.last  #=> 6
+ *     arr = ['a', 'b', 'c', 'd', 'e', 'f']
+ *     arr.fetch(100) #=> IndexError: index 100 outside of array bounds: -6...6
+ *     arr.fetch(100, "oops") #=> "oops"
  *
- * To return the first n elements of an array, use #take
+ *  The special methods #first and #last will return the first and last
+ *  elements of an array, respectively.
  *
- *    arr.take(3) #=> [1, 2, 3]
+ *     arr.first #=> 1
+ *     arr.last  #=> 6
  *
- * #drop does the opposite of #take, by returning the elements after n elements
- * have been dropped:
+ *  To return the first +n+ elements of an array, use #take
  *
- *    arr.drop(3) #=> [4, 5, 6]
+ *     arr.take(3) #=> [1, 2, 3]
  *
- * == Obtaining Information about an Array
+ *  #drop does the opposite of #take, by returning the elements after +n+
+ *  elements have been dropped:
  *
- * Arrays keep track of their own length at all times.  To query an array about
- * the number of elements it contains, use #length, #count or #size.
+ *     arr.drop(3) #=> [4, 5, 6]
  *
- *   browsers = ['Chrome', 'Firefox', 'Safari', 'Opera', 'IE']
- *   browsers.length #=> 5
- *   browsers.count #=> 5
+ *  == Obtaining Information about an Array
  *
- * To check whether an array contains any elements at all
+ *  Arrays keep track of their own length at all times.  To query an array
+ *  about the number of elements it contains, use #length, #count or #size.
  *
- *   browsers.empty? #=> false
+ *    browsers = ['Chrome', 'Firefox', 'Safari', 'Opera', 'IE']
+ *    browsers.length #=> 5
+ *    browsers.count #=> 5
  *
- * To check whether a particular item is included in the array
+ *  To check whether an array contains any elements at all
  *
- *   browsers.include?('Konqueror') #=> false
+ *    browsers.empty? #=> false
  *
- * == Adding Items to Arrays
+ *  To check whether a particular item is included in the array
  *
- * Items can be added to the end of an array by using either #push or
- * <code><<</code>
+ *    browsers.include?('Konqueror') #=> false
  *
- *   arr = [1, 2, 3, 4]
- *   arr.push(5) #=> [1, 2, 3, 4, 5]
- *   arr << 6    #=> [1, 2, 3, 4, 5, 6]
+ *  == Adding Items to Arrays
  *
- * #unshift will add a new item to the beginning of an array.
+ *  Items can be added to the end of an array by using either #push or #<<
  *
- *    arr.unshift(0) #=> [0, 1, 2, 3, 4, 5, 6]
+ *    arr = [1, 2, 3, 4]
+ *    arr.push(5) #=> [1, 2, 3, 4, 5]
+ *    arr << 6    #=> [1, 2, 3, 4, 5, 6]
  *
- * With #insert you can add a new element to an array at any position.
+ *  #unshift will add a new item to the beginning of an array.
  *
- *    arr.insert(3, 'apple')  #=> [0, 1, 2, 'apple', 3, 4, 5, 6]
+ *     arr.unshift(0) #=> [0, 1, 2, 3, 4, 5, 6]
  *
- * Using the #insert method, you can also insert multiple values at once:
+ *  With #insert you can add a new element to an array at any position.
  *
- *    arr.insert(3, 'orange', 'pear', 'grapefruit')
- *    #=> [0, 1, 2, "orange", "pear", "grapefruit", "apple", 3, 4, 5, 6]
+ *     arr.insert(3, 'apple')  #=> [0, 1, 2, 'apple', 3, 4, 5, 6]
  *
- * == Removing Items from an Array
+ *  Using the #insert method, you can also insert multiple values at once:
  *
- * The method #pop removes the last element in an array and returns it:
+ *     arr.insert(3, 'orange', 'pear', 'grapefruit')
+ *     #=> [0, 1, 2, "orange", "pear", "grapefruit", "apple", 3, 4, 5, 6]
  *
- *    arr =  [1, 2, 3, 4, 5, 6]
- *    arr.pop #=> 6
- *    arr #=> [1, 2, 3, 4, 5]
+ *  == Removing Items from an Array
  *
- * To retrieve and at the same time remove the first item, use #shift:
+ *  The method #pop removes the last element in an array and returns it:
  *
- *    arr.shift #=> 1
- *    arr #=> [2, 3, 4, 5]
+ *     arr =  [1, 2, 3, 4, 5, 6]
+ *     arr.pop #=> 6
+ *     arr #=> [1, 2, 3, 4, 5]
  *
- * To delete an element at a particular index:
+ *  To retrieve and at the same time remove the first item, use #shift:
  *
- *    arr.delete_at(2) #=> 4
- *    arr #=> [2, 3, 5]
+ *     arr.shift #=> 1
+ *     arr #=> [2, 3, 4, 5]
  *
- * To delete a particular element anywhere in an array, use #delete:
+ *  To delete an element at a particular index:
  *
- *    arr = [1, 2, 2, 3]
- *    arr.delete(2) #=> [1, 3]
+ *     arr.delete_at(2) #=> 4
+ *     arr #=> [2, 3, 5]
  *
- * A useful method if you need to remove +nil+ values from an array is
- * #compact:
+ *  To delete a particular element anywhere in an array, use #delete:
  *
- *    arr = ['foo', 0, nil, 'bar', 7, 'baz', nil]
- *    arr.compact  #=> ['foo', 0, 'bar', 7, 'baz']
- *    arr          #=> ['foo', 0, nil, 'bar', 7, 'baz', nil]
- *    arr.compact! #=> ['foo', 0, 'bar', 7, 'baz']
- *    arr          #=> ['foo', 0, 'bar', 7, 'baz']
+ *     arr = [1, 2, 2, 3]
+ *     arr.delete(2) #=> [1, 3]
  *
- * Another common need is to remove duplicate elements from an array.
- * It has a non-destructive (#uniq) and a destructive method (#uniq!)
+ *  A useful method if you need to remove +nil+ values from an array is
+ *  #compact:
  *
- *    arr = [2, 5, 6, 556, 6, 6, 8, 9, 0, 123, 556]
- *    arr.uniq #=> [2, 5, 6, 556, 8, 9, 0, 123]
+ *     arr = ['foo', 0, nil, 'bar', 7, 'baz', nil]
+ *     arr.compact  #=> ['foo', 0, 'bar', 7, 'baz']
+ *     arr          #=> ['foo', 0, nil, 'bar', 7, 'baz', nil]
+ *     arr.compact! #=> ['foo', 0, 'bar', 7, 'baz']
+ *     arr          #=> ['foo', 0, 'bar', 7, 'baz']
  *
- * == Iterating over Arrays
+ *  Another common need is to remove duplicate elements from an array.
  *
- * Like all classes that include the Enumerable module, Array has an each
- * method, which defines what elements should be iterated over and how.  In
- * case of Array's #each, all elements in the Array instance are yielded
- * to the supplied block in sequence.  Note that this
- * operation leaves the array unchanged.
+ *  It has the non-destructive #uniq, and destructive method #uniq!
  *
- *    arr = [1, 2, 3, 4, 5]
- *    arr.each { |a| print a -= 10, " " }
- *    # prints: -9 -8 -7 -6 -5
- *    #=> [1, 2, 3, 4, 5]
+ *     arr = [2, 5, 6, 556, 6, 6, 8, 9, 0, 123, 556]
+ *     arr.uniq #=> [2, 5, 6, 556, 8, 9, 0, 123]
  *
- * Another sometimes useful iterator is #reverse_each which will iterate over
- * the elements in the array in reverse order.
+ *  == Iterating over Arrays
  *
- *    words = %w[rats live on no evil star]
- *    str = ""
- *    words.reverse_each { |word| str += "#{word.reverse} " }
- *    str #=> "rats live on no evil star "
+ *  Like all classes that include the Enumerable module, Array has an each
+ *  method, which defines what elements should be iterated over and how.  In
+ *  case of Array's #each, all elements in the Array instance are yielded to
+ *  the supplied block in sequence.
  *
- * The #map method can be used to create a new array based on the original
- * array, but with the values modified by the supplied block:
+ *  Note that this operation leaves the array unchanged.
  *
- *    arr.map { |a| 2*a }   #=> [2, 4, 6, 8, 10]
- *    arr                   #=> [1, 2, 3, 4, 5]
- *    arr.map! { |a| a**2 } #=> [1, 4, 9, 16, 25]
- *    arr                   #=> [1, 4, 9, 16, 25]
+ *     arr = [1, 2, 3, 4, 5]
+ *     arr.each { |a| print a -= 10, " " }
+ *     # prints: -9 -8 -7 -6 -5
+ *     #=> [1, 2, 3, 4, 5]
  *
- * == Selecting Items from an Array
+ *  Another sometimes useful iterator is #reverse_each which will iterate over
+ *  the elements in the array in reverse order.
  *
- * Elements can be selected from an array according to criteria defined in a
- * block.  The selection can happen in a destructive or a non-destructive
- * manner.  While the destructive operations will modify the array they were
- * called on, the non-destructive methods usually return a new array with the
- * selected elements, but leave the original array unchanged.
+ *     words = %w[rats live on no evil star]
+ *     str = ""
+ *     words.reverse_each { |word| str += "#{word.reverse} " }
+ *     str #=> "rats live on no evil star "
  *
- * === Non-destructive Selection
+ *  The #map method can be used to create a new array based on the original
+ *  array, but with the values modified by the supplied block:
  *
- *    arr = [1, 2, 3, 4, 5, 6]
- *    arr.select { |a| a > 3 }     #=> [4, 5, 6]
- *    arr.reject { |a| a < 3 }     #=> [4, 5, 6]
- *    arr.drop_while { |a| a < 4 } #=> [4, 5, 6]
- *    arr                          #=> [1, 2, 3, 4, 5, 6]
+ *     arr.map { |a| 2*a }   #=> [2, 4, 6, 8, 10]
+ *     arr                   #=> [1, 2, 3, 4, 5]
+ *     arr.map! { |a| a**2 } #=> [1, 4, 9, 16, 25]
+ *     arr                   #=> [1, 4, 9, 16, 25]
  *
- * === Destructive Selection
+ *  == Selecting Items from an Array
  *
- * #select! and #reject! are the corresponding destructive methods to #select
- * and #reject
+ *  Elements can be selected from an array according to criteria defined in a
+ *  block.  The selection can happen in a destructive or a non-destructive
+ *  manner.  While the destructive operations will modify the array they were
+ *  called on, the non-destructive methods usually return a new array with the
+ *  selected elements, but leave the original array unchanged.
  *
- * Similar to #select vs. #reject, #delete_if and #keep_if have the exact
- * opposite result when supplied with the same block:
+ *  === Non-destructive Selection
  *
- *    arr.delete_if { |a| a < 4 } #=> [4, 5, 6]
- *    arr                         #=> [4, 5, 6]
+ *     arr = [1, 2, 3, 4, 5, 6]
+ *     arr.select { |a| a > 3 }     #=> [4, 5, 6]
+ *     arr.reject { |a| a < 3 }     #=> [4, 5, 6]
+ *     arr.drop_while { |a| a < 4 } #=> [4, 5, 6]
+ *     arr                          #=> [1, 2, 3, 4, 5, 6]
  *
- *    arr = [1, 2, 3, 4, 5, 6]
- *    arr.keep_if { |a| a < 4 } #=> [1, 2, 3]
- *    arr                       #=> [1, 2, 3]
+ *  === Destructive Selection
+ *
+ *  #select! and #reject! are the corresponding destructive methods to #select
+ *  and #reject
+ *
+ *  Similar to #select vs. #reject, #delete_if and #keep_if have the exact
+ *  opposite result when supplied with the same block:
+ *
+ *     arr.delete_if { |a| a < 4 } #=> [4, 5, 6]
+ *     arr                         #=> [4, 5, 6]
+ *
+ *     arr = [1, 2, 3, 4, 5, 6]
+ *     arr.keep_if { |a| a < 4 } #=> [1, 2, 3]
+ *     arr                       #=> [1, 2, 3]
  *
  */
 
@@ -5024,4 +5144,3 @@ Init_Array(void)
     id_cmp = rb_intern("<=>");
     sym_random = ID2SYM(rb_intern("random"));
 }
-
