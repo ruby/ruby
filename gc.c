@@ -2942,7 +2942,7 @@ os_obj_of_i(void *vstart, void *vend, size_t stride, void *data)
 		continue;
 	      case T_CLASS:
 		if (FL_TEST(p, FL_SINGLETON))
-		  continue;
+		    continue;
 	      default:
 		if (!p->as.basic.klass) continue;
 		v = (VALUE)p;
