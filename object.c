@@ -42,9 +42,9 @@ static ID id_const_missing;
  *  call-seq:
  *     obj === other   -> true or false
  *
- *  Case Equality---For class <code>Object</code>, effectively the same
- *  as calling  <code>#==</code>, but typically overridden by descendants
- *  to provide meaningful semantics in <code>case</code> statements.
+ *  Case Equality -- For class Object, effectively the same as calling
+ *  <code>#==</code>, but typically overridden by descendants to provide
+ *  meaningful semantics in +case+ statements.
  */
 
 VALUE

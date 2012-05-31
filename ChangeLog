@@ -1,3 +1,8 @@
+Fri Jun  1 06:29:42 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* object.c (rb_equal):  Let Object be a link in #=== documentation.
+	  Patch by Zachary Scott.  [ruby-trunk - Feature #6518]
+
 Thu May 31 09:27:06 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/dl/lib/dl/struct.rb (DL::CStructEntity::size):  Refactored ::size
