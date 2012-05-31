@@ -2845,6 +2845,18 @@ Init_Object(void)
     rb_define_private_method(rb_cBasicObject, "singleton_method_removed", rb_obj_dummy, 1);
     rb_define_private_method(rb_cBasicObject, "singleton_method_undefined", rb_obj_dummy, 1);
 
+    /* Document-module: Kernel
+     *
+     * The Kernel module is included by class Object, so its methods are
+     * available in every Ruby object.
+     *
+     * The Kernel instance methods are documented in class Object while the
+     * module methods are documented here.  These methods are called without a
+     * receiver and thus can be called in functional form:
+     *
+     *   sprintf "%.1f", 1.234 #=> "1.2"
+     *
+     */
     rb_mKernel = rb_define_module("Kernel");
     rb_include_module(rb_cObject, rb_mKernel);
     rb_define_private_method(rb_cClass, "inherited", rb_obj_dummy, 1);

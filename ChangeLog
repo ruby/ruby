@@ -1,3 +1,9 @@
+Fri Jun  1 06:40:25 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* object.c (Init_Object):  Restored Kernel documentation based on
+	  Pickaxe book documentation.  Patch by Zachary Scott.
+	  [ruby-trunk - Feature #6521]
+
 Fri Jun  1 06:29:42 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* object.c (rb_equal):  Let Object be a link in #=== documentation.
