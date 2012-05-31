@@ -37,5 +37,17 @@ class DL::TestCStructEntity < DL::TestBase
 
     assert_equal expected, size
   end
+
+  def test_set_ctypes
+    union = DL::CStructEntity.malloc [DL::TYPE_INT, DL::TYPE_LONG]
+    union.assign_names %w[int long]
+
+    # this test is roundabout because the stored ctypes are not accessible
+    union['long'] = 1
+    union['int'] = 2
+
+    assert_equal 1, union['long']
+    assert_equal 2, union['int']
+  end
 end
 

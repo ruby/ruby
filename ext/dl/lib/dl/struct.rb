@@ -127,27 +127,20 @@ module DL
       @ctypes = types
       @offset = []
       offset = 0
-      max_align = 0
-      types.each_with_index{|t,i|
+
+      max_align = types.map { |type, count = 1|
         orig_offset = offset
-        if( t.is_a?(Array) )
-          align = ALIGN_MAP[t[0]]
-        else
-          align = ALIGN_MAP[t]
-        end
+        align = ALIGN_MAP[type]
         offset = PackInfo.align(orig_offset, align)
-        @offset[i] = offset
-        if( t.is_a?(Array) )
-          offset += (SIZE_MAP[t[0]] * t[1])
-        else
-          offset += SIZE_MAP[t]
-        end
-        if (max_align < align)
-          max_align = align
-        end
-      }
-      offset = PackInfo.align(offset, max_align)
-      @size = offset
+
+        @offset << offset
+
+        offset += (SIZE_MAP[type] * count)
+
+        align
+      }.max
+
+      @size = PackInfo.align(offset, max_align)
     end
 
     # Fetch struct member +name+

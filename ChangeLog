@@ -1,3 +1,10 @@
+Fri Jun  1 06:57:10 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/dl/lib/dl/struct.rb (DL::CStructEntity#set_ctypes):  Refactored
+	  #set_ctypes using newer ruby features to simplify its implementation.
+	* test/dl/test_c_struct_entry.rb (class DL):  Test to verify
+	  refactoring.
+
 Fri Jun  1 06:40:25 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* object.c (Init_Object):  Restored Kernel documentation based on
