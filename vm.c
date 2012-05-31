@@ -848,6 +848,7 @@ frame_info_line_no(rb_frame_info_t *fi)
 	return 0;
       default:
 	rb_bug("frame_info_line_no: unreachable");
+	UNREACHABLE;
     }
 }
 
@@ -861,7 +862,7 @@ static VALUE
 frame_info_name(rb_frame_info_t *fi)
 {
     switch (fi->type) {
-      case FRAME_INFO_TYPE_ISEQ: 
+      case FRAME_INFO_TYPE_ISEQ:
       case FRAME_INFO_TYPE_ISEQ_CALCED:
 	return fi->body.iseq.iseq->location.name;
       case FRAME_INFO_TYPE_CFUNC:
@@ -869,6 +870,7 @@ frame_info_name(rb_frame_info_t *fi)
       case FRAME_INFO_TYPE_IFUNC:
       default:
 	rb_bug("frame_info_name: unreachable");
+	UNREACHABLE;
     }
 }
 
@@ -882,7 +884,7 @@ static VALUE
 frame_info_basename(rb_frame_info_t *fi)
 {
     switch (fi->type) {
-      case FRAME_INFO_TYPE_ISEQ: 
+      case FRAME_INFO_TYPE_ISEQ:
       case FRAME_INFO_TYPE_ISEQ_CALCED:
 	return fi->body.iseq.iseq->location.basename;
       case FRAME_INFO_TYPE_CFUNC:
@@ -890,7 +892,8 @@ frame_info_basename(rb_frame_info_t *fi)
       case FRAME_INFO_TYPE_IFUNC:
       default:
 	rb_bug("frame_info_basename: unreachable");
-   }
+	UNREACHABLE;
+    }
 }
 
 static VALUE
@@ -903,7 +906,7 @@ static VALUE
 frame_info_filename(rb_frame_info_t *fi)
 {
     switch (fi->type) {
-      case FRAME_INFO_TYPE_ISEQ: 
+      case FRAME_INFO_TYPE_ISEQ:
       case FRAME_INFO_TYPE_ISEQ_CALCED:
 	return fi->body.iseq.iseq->location.filename;
       case FRAME_INFO_TYPE_CFUNC:
@@ -914,6 +917,7 @@ frame_info_filename(rb_frame_info_t *fi)
       case FRAME_INFO_TYPE_IFUNC:
       default:
 	rb_bug("frame_info_filename: unreachable");
+	UNREACHABLE;
     }
 }
 
@@ -927,7 +931,7 @@ static VALUE
 frame_info_filepath(rb_frame_info_t *fi)
 {
     switch (fi->type) {
-      case FRAME_INFO_TYPE_ISEQ: 
+      case FRAME_INFO_TYPE_ISEQ:
       case FRAME_INFO_TYPE_ISEQ_CALCED:
 	return fi->body.iseq.iseq->location.filepath;
       case FRAME_INFO_TYPE_CFUNC:
@@ -938,6 +942,7 @@ frame_info_filepath(rb_frame_info_t *fi)
       case FRAME_INFO_TYPE_IFUNC:
       default:
 	rb_bug("frame_info_filepath: unreachable");
+	UNREACHABLE;
     }
 }
 
