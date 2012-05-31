@@ -2184,4 +2184,18 @@ class TestArray < Test::Unit::TestCase
     a = [1,2,3]
     assert_raise(ArgumentError) { a.rotate!(1, 1) }
   end
+
+  def test_part_of?
+    assert_equal(true, [].part_of?([]))
+    a = [1, 3, 4]
+    b = [1, 2, 3, 4, 5]
+    assert_equal(true, a.part_of?(b))
+    assert_equal(false, b.part_of?(a))
+    a = %w( ant bat cat dog )
+    b = %w( dog cat bat ant )
+    assert_equal(true, a.part_of?(b))
+    assert_equal(true, b.part_of?(a))
+    assert_raise(TypeError) { a.part_of? 1 }
+    assert_raise(ArgumentError) { a.part_of?() }
+  end
 end
