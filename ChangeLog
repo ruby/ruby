@@ -1,3 +1,9 @@
+Sat Jun  2 07:04:48 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/re.rdoc (Performance):  Replaced incorrect example of reducing
+	  backtracking through anchoring with reduced backtracking through a
+	  range.  [ruby-trunk - Bug #6525]
+
 Sat Jun  2 06:34:15 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/re.rdoc (Performance):  Removed useless sample output from final

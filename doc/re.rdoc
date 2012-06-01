@@ -640,9 +640,10 @@ repeatedly so as to satisfy as many of the optional matches as it can
 while still matching the mandatory 29. It is plain to us that none of the
 optional matches can succeed, but this fact unfortunately eludes Ruby.
 
-One approach for improving performance is to anchor the match to the
-beginning of the string, thus significantly reducing the amount of
-backtracking needed.
+The best way to improve performance is to significantly reduce the amount of
+backtracking needed.  For this case, instead of individually matching 29
+optional <i>a</i>s, a range of optional <i>a</i>s can be matched all at once
+with <i>a{0,29}</i>:
 
-    Regexp.new('\A' 'a?' * 29 + 'a' * 29) =~ 'a' * 29
+    Regexp.new('a{0,29}' + 'a' * 29) =~ 'a' * 29
 
