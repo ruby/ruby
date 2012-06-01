@@ -644,6 +644,5 @@ One approach for improving performance is to anchor the match to the
 beginning of the string, thus significantly reducing the amount of
 backtracking needed.
 
-    Regexp.new('\A' 'a?' * 29 + 'a' * 29).match('a' * 29)
-        #=> #<MatchData "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa">
+    Regexp.new('\A' 'a?' * 29 + 'a' * 29) =~ 'a' * 29
 
