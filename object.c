@@ -509,6 +509,22 @@ rb_obj_inspect(VALUE obj)
     return rb_funcall(obj, rb_intern("to_s"), 0, 0);
 }
 
+static VALUE
+class_or_module_required(VALUE c)
+{
+    if (SPECIAL_CONST_P(c)) goto not_class;
+    switch (BUILTIN_TYPE(c)) {
+      case T_MODULE:
+      case T_CLASS:
+      case T_ICLASS:
+	break;
+
+      default:
+      not_class:
+	rb_raise(rb_eTypeError, "class or module required");
+    }
+    return c;
+}
 
 /*
  *  call-seq:
@@ -530,15 +546,7 @@ rb_obj_inspect(VALUE obj)
 VALUE
 rb_obj_is_instance_of(VALUE obj, VALUE c)
 {
-    switch (TYPE(c)) {
-      case T_MODULE:
-      case T_CLASS:
-      case T_ICLASS:
-	break;
-      default:
-	rb_raise(rb_eTypeError, "class or module required");
-    }
-
+    c = class_or_module_required(c);
     if (rb_obj_class(obj) == c) return Qtrue;
     return Qfalse;
 }
@@ -577,16 +585,7 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
 {
     VALUE cl = CLASS_OF(obj);
 
-    switch (TYPE(c)) {
-      case T_MODULE:
-      case T_CLASS:
-      case T_ICLASS:
-	break;
-
-      default:
-	rb_raise(rb_eTypeError, "class or module required");
-    }
-
+    c = class_or_module_required(c);
     while (cl) {
 	if (cl == c || RCLASS_M_TBL(cl) == RCLASS_M_TBL(c))
 	    return Qtrue;
