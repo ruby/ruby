@@ -3768,7 +3768,7 @@ wmap_aref(VALUE self, VALUE wmap)
 static VALUE
 gc_count(VALUE self)
 {
-    return UINT2NUM((&rb_objspace)->count);
+    return UINT2NUM(rb_objspace.count);
 }
 
 /*
@@ -3839,7 +3839,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 static VALUE
 gc_malloc_allocated_size(VALUE self)
 {
-    return UINT2NUM((&rb_objspace)->malloc_params.allocated_size);
+    return UINT2NUM(rb_objspace.malloc_params.allocated_size);
 }
 
 /*
@@ -3854,7 +3854,7 @@ gc_malloc_allocated_size(VALUE self)
 static VALUE
 gc_malloc_allocations(VALUE self)
 {
-    return UINT2NUM((&rb_objspace)->malloc_params.allocations);
+    return UINT2NUM(rb_objspace.malloc_params.allocations);
 }
 #endif
 
