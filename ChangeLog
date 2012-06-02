@@ -1,3 +1,10 @@
+Sun Jun  3 00:20:53 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_backtrace.c: added.  Separate backtrace related functions to
+	  this file.
+
+	* vm.c, common.mk: ditto.
+
 Sat Jun  2 18:09:02 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/ipaddr.rb: Inhibit zero-filled octets in an IPv4 address in
