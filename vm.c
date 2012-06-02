@@ -26,7 +26,6 @@
 
 #include "vm_method.c"
 #include "vm_eval.c"
-#include "vm_backtrace.c"
 
 #include <assert.h>
 
@@ -2155,6 +2154,7 @@ Init_VM(void)
     }
     vm_init_redefined_flag();
 
+    /* vm_backtrac.c */
     Init_vm_backtrace();
 }
 

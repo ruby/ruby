@@ -91,6 +91,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		iseq.$(OBJEXT) \
 		vm.$(OBJEXT) \
 		vm_dump.$(OBJEXT) \
+		vm_backtrace.$(OBJEXT) \
 		thread.$(OBJEXT) \
 		cont.$(OBJEXT) \
 		$(BUILTIN_ENCOBJS) \
@@ -752,13 +753,17 @@ vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}gc.h {$(VPATH)}iseq.h \
   {$(VPATH)}vm_insnhelper.c {$(VPATH)}vm_insnhelper.h {$(VPATH)}vm_exec.c \
   {$(VPATH)}vm_exec.h {$(VPATH)}insns.def {$(VPATH)}vmtc.inc \
   {$(VPATH)}vm.inc {$(VPATH)}insns.inc {$(VPATH)}debug.h \
-  {$(VPATH)}internal.h {$(VPATH)}vm.h {$(VPATH)}constant.h {$(VPATH)}vm_backtrace.c
+  {$(VPATH)}internal.h {$(VPATH)}vm.h {$(VPATH)}constant.h
 vm_dump.$(OBJEXT): {$(VPATH)}vm_dump.c $(RUBY_H_INCLUDES) \
-  $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h {$(VPATH)}addr2line.h
+  $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h {$(VPATH)}addr2line.h \
+  {$(VPATH)}internal.h
 debug.$(OBJEXT): {$(VPATH)}debug.c $(RUBY_H_INCLUDES) \
   $(ENCODING_H_INCLUDES) $(VM_CORE_H_INCLUDES) {$(VPATH)}eval_intern.h \
   {$(VPATH)}util.h {$(VPATH)}debug.h
 id.$(OBJEXT): {$(VPATH)}id.c $(RUBY_H_INCLUDES) $(ID_H_INCLUDES)
+vm_backtrace.$(OBJEXT): {$(VPATH)}vm_backtrace.c \
+  $(VM_CORE_H_INCLUDES) $(RUBY_H_INCLUDES) \
+  {$(VPATH)}internal.h {$(VPATH)}iseq.h 
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c $(RUBY_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h {$(VPATH)}internal.h
 prelude.$(OBJEXT): {$(VPATH)}prelude.c $(RUBY_H_INCLUDES) \

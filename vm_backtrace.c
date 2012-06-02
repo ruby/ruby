@@ -9,7 +9,12 @@
 
 **********************************************************************/
 
-/* this file is included by vm.c */
+#include "ruby/ruby.h"
+#include "ruby/encoding.h"
+
+#include "internal.h"
+#include "vm_core.h"
+#include "iseq.h"
 
 static VALUE rb_cBacktrace;
 static VALUE rb_cFrameInfo;
@@ -586,13 +591,13 @@ backtrace_load_data(VALUE self, VALUE str)
     return self;
 }
 
-static VALUE
+VALUE
 vm_backtrace_str_ary(rb_thread_t *th, int lev, int n)
 {
     return backtrace_to_str_ary2(backtrace_object(th), lev, n);
 }
 
-static VALUE
+VALUE
 vm_backtrace_frame_ary(rb_thread_t *th, int lev, int n)
 {
     return backtrace_to_frame_ary(backtrace_object(th), lev, n);
@@ -701,7 +706,129 @@ rb_backtrace_print_as_bugreport(void)
 		   &arg);
 }
 
-static void
+void
+rb_backtrace(void)
+{
+    vm_backtrace_print(stderr);
+}
+
+VALUE
+rb_make_backtrace(void)
+{
+    return vm_backtrace_str_ary(GET_THREAD(), 0, 0);
+}
+
+VALUE
+rb_thread_backtrace(VALUE thval)
+{
+    rb_thread_t *th;
+    GetThreadPtr(thval, th);
+
+    switch (th->status) {
+      case THREAD_RUNNABLE:
+      case THREAD_STOPPED:
+      case THREAD_STOPPED_FOREVER:
+	break;
+      case THREAD_TO_KILL:
+      case THREAD_KILLED:
+	return Qnil;
+    }
+
+    return vm_backtrace_str_ary(th, 0, 0);
+}
+
+/*
+ *  call-seq:
+ *     caller(start=1)    -> array or nil
+ *
+ *  Returns the current execution stack---an array containing strings in
+ *  the form ``<em>file:line</em>'' or ``<em>file:line: in
+ *  `method'</em>''. The optional _start_ parameter
+ *  determines the number of initial stack entries to omit from the
+ *  result.
+ *
+ *  Returns +nil+ if _start_ is greater than the size of
+ *  current execution stack.
+ *
+ *     def a(skip)
+ *       caller(skip)
+ *     end
+ *     def b(skip)
+ *       a(skip)
+ *     end
+ *     def c(skip)
+ *       b(skip)
+ *     end
+ *     c(0)   #=> ["prog:2:in `a'", "prog:5:in `b'", "prog:8:in `c'", "prog:10:in `<main>'"]
+ *     c(1)   #=> ["prog:5:in `b'", "prog:8:in `c'", "prog:11:in `<main>'"]
+ *     c(2)   #=> ["prog:8:in `c'", "prog:12:in `<main>'"]
+ *     c(3)   #=> ["prog:13:in `<main>'"]
+ *     c(4)   #=> []
+ *     c(5)   #=> nil
+ */
+
+static VALUE
+rb_f_caller(int argc, VALUE *argv)
+{
+    VALUE level, vn;
+    int lev, n;
+
+    rb_scan_args(argc, argv, "02", &level, &vn);
+
+    lev = NIL_P(level) ? 1 : NUM2INT(level);
+
+    if (NIL_P(vn)) {
+	n = 0;
+    }
+    else {
+	n = NUM2INT(vn);
+	if (n == 0) {
+	    return rb_ary_new();
+	}
+    }
+
+    if (lev < 0) {
+	rb_raise(rb_eArgError, "negative level (%d)", lev);
+    }
+    if (n < 0) {
+	rb_raise(rb_eArgError, "negative n (%d)", n);
+    }
+
+    return vm_backtrace_str_ary(GET_THREAD(), lev+1, n);
+}
+
+static VALUE
+rb_f_caller_frame_info(int argc, VALUE *argv)
+{
+    VALUE level, vn;
+    int lev, n;
+
+    rb_scan_args(argc, argv, "02", &level, &vn);
+
+    lev = NIL_P(level) ? 1 : NUM2INT(level);
+
+    if (NIL_P(vn)) {
+	n = 0;
+    }
+    else {
+	n = NUM2INT(vn);
+	if (n == 0) {
+	    return rb_ary_new();
+	}
+    }
+
+    if (lev < 0) {
+	rb_raise(rb_eArgError, "negative level (%d)", lev);
+    }
+    if (n < 0) {
+	rb_raise(rb_eArgError, "negative n (%d)", n);
+    }
+
+    return vm_backtrace_frame_ary(GET_THREAD(), lev+1, n);
+}
+
+/* called from Init_vm() in vm.c */
+void
 Init_vm_backtrace(void)
 {
     /* ::RubyVM::Backtrace */
@@ -722,4 +849,6 @@ Init_vm_backtrace(void)
     rb_define_method(rb_cFrameInfo, "iseq", frame_info_iseq_m, 0);
     rb_define_method(rb_cFrameInfo, "to_s", frame_info_to_str_m, 0);
     rb_define_singleton_method(rb_cFrameInfo, "caller", rb_f_caller_frame_info, -1);
+
+    rb_define_global_function("caller", rb_f_caller, -1);
 }

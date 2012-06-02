@@ -12,6 +12,7 @@
 #include "ruby/ruby.h"
 #include "addr2line.h"
 #include "vm_core.h"
+#include "internal.h"
 
 /* see vm_insnhelper.h for the values */
 #ifndef VMDEBUG
@@ -755,8 +756,6 @@ dump_thread(void *arg)
     FreeLibrary(dbghelp);
 }
 #endif
-
-void rb_backtrace_print_as_bugreport(void);
 
 void
 rb_vm_bugreport(void)

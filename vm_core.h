@@ -678,7 +678,6 @@ void rb_thread_reset_timer_thread(void);
 void rb_thread_wakeup_timer_thread(void);
 
 int ruby_thread_has_gvl_p(void);
-VALUE rb_make_backtrace(void);
 typedef int rb_backtrace_iter_func(void *, VALUE, int, VALUE);
 rb_control_frame_t *rb_vm_get_ruby_level_next_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 int rb_vm_get_sourceline(const rb_control_frame_t *);

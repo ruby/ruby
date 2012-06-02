@@ -190,7 +190,6 @@ VALUE rb_obj_is_mutex(VALUE obj);
 VALUE ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always);
 void rb_thread_execute_interrupts(VALUE th);
 void rb_clear_trace_func(void);
-VALUE rb_thread_backtrace(VALUE thval);
 VALUE rb_get_coverages(void);
 
 /* thread_pthread.c, thread_win32.c */
@@ -207,9 +206,6 @@ void rb_vm_inc_const_missing_count(void);
 void rb_thread_mark(void *th);
 const void **rb_vm_get_insns_address_table(void);
 VALUE rb_sourcefilename(void);
-int rb_backtrace_p(VALUE obj);
-VALUE rb_backtrace_to_str_ary(VALUE obj);
-VALUE rb_vm_backtrace_object();
 
 /* vm_dump.c */
 void rb_vm_bugreport(void);
@@ -224,6 +220,15 @@ int rb_method_defined_by(VALUE obj, ID mid, VALUE (*cfunc)(ANYARGS));
 
 /* miniprelude.c, prelude.c */
 void Init_prelude(void);
+
+/* vm_backtrace.c */
+void Init_vm_backtrace(void);
+VALUE rb_thread_backtrace(VALUE thval);
+VALUE rb_make_backtrace(void);
+void rb_backtrace_print_as_bugreport(void);
+int rb_backtrace_p(VALUE obj);
+VALUE rb_backtrace_to_str_ary(VALUE obj);
+VALUE rb_vm_backtrace_object();
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)

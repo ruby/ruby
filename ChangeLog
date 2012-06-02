@@ -1,3 +1,15 @@
+Sun Jun  3 00:49:11 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: fix to build vm_backtrace.c only itself (vm_backtrace.c
+	  is no longer included from vm.c).  I hope this separation reduce
+	  compile time of vm.c.
+
+	* internal.h: ditto.
+
+	* vm.c, vm_core.h, vm_dump.c, vm_eval.c: ditto.
+
+	* vm_eval.c: some functions (callee, etc) moved to vm_backtrace.c.
+
 Sun Jun  3 00:20:53 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_backtrace.c: added.  Separate backtrace related functions to
