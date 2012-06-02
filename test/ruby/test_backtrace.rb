@@ -85,13 +85,21 @@ class TestBacktrace < Test::Unit::TestCase
     rec[m]
   end
 
-  def test_caller_frame_info
-    fis = RubyVM::FrameInfo.caller(0); cs = caller(0)
-    assert_equal(cs.size, fis.size)
-    fis.zip(cs).each{|fi, s|
-      assert_match(/#{fi.name}/, s)
-      assert_match(/#{fi.filename}/, s)
-      assert_match(/#{fi.line_no}/, s)
+  def test_caller_locations
+    locs = caller_locations(0); cs = caller(0).map{|line|
+      path, lineno, label_str = line.split(':')
+      unless label_str
+        label_str = lineno
+        lineno = 0
+      end
+      lineno = lineno.to_i
+      if /in `(.+?)\'/ =~ label_str
+        label = $1
+      else
+        label = nil
+      end
+      [path, lineno, label]
     }
+    assert_equal(locs.map{|loc| [loc.path, loc.lineno, loc.label]}, cs)
   end
 end

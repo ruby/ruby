@@ -1,3 +1,24 @@
+Sun Jun  3 01:36:52 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_backtrace.c: change names.
+	  (1) Class name: RubyVM::FrameInfo -> RubyVM::Backtrace::Location.
+	  (2) Method name: RubyVM::FrameInfo.caller ->
+	      Kernel.caller_locations.
+	  (3) Instance methods of
+              RubyVM::FrameInfo (RubyVM::Backtrace::Location)
+	      (3-1) name -> label
+	      (3-2) basename -> base_label (basename is confusing with
+	            File.basename)
+	      (3-3) line_no -> lineno (We have already similar name
+	            File#lineno, commented by kou [ruby-dev:45686]).
+	      (3-4) filename -> path.
+	      (3-5) filepath -> absolute_path.
+	      (3-5) iseq -> removed (we will make other APIs to access iseq
+	            and other information of frame for debugging).
+
+	* test/ruby/test_backtrace.rb: apply above changes.
+	  And apply comment from kou [ruby-dev:45686].
+
 Sun Jun  3 00:49:11 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: fix to build vm_backtrace.c only itself (vm_backtrace.c

@@ -17,12 +17,12 @@
 #include "iseq.h"
 
 static VALUE rb_cBacktrace;
-static VALUE rb_cFrameInfo;
+static VALUE rb_cBacktraceLocation;
 
 extern VALUE ruby_engine_name;
 
 inline static int
-calc_line_no(const rb_iseq_t *iseq, const VALUE *pc)
+calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
 {
     return rb_iseq_line_no(iseq, pc - iseq->iseq_encoded);
 }
@@ -30,21 +30,21 @@ calc_line_no(const rb_iseq_t *iseq, const VALUE *pc)
 int
 rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 {
-    int line_no = 0;
+    int lineno = 0;
     const rb_iseq_t *iseq = cfp->iseq;
 
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	line_no = calc_line_no(cfp->iseq, cfp->pc);
+	lineno = calc_lineno(cfp->iseq, cfp->pc);
     }
-    return line_no;
+    return lineno;
 }
 
-typedef struct rb_frame_info_struct {
-    enum FRAME_INFO_TYPE {
-	FRAME_INFO_TYPE_ISEQ = 1,
-	FRAME_INFO_TYPE_ISEQ_CALCED,
-	FRAME_INFO_TYPE_CFUNC,
-	FRAME_INFO_TYPE_IFUNC,
+typedef struct rb_backtrace_location_struct {
+    enum LOCATION_TYPE {
+	LOCATION_TYPE_ISEQ = 1,
+	LOCATION_TYPE_ISEQ_CALCED,
+	LOCATION_TYPE_CFUNC,
+	LOCATION_TYPE_IFUNC,
     } type;
 
     union {
@@ -52,23 +52,23 @@ typedef struct rb_frame_info_struct {
 	    const rb_iseq_t *iseq;
 	    union {
 		const VALUE *pc;
-		int line_no;
-	    } line_no;
+		int lineno;
+	    } lineno;
 	} iseq;
 	struct {
 	    ID mid;
-	    struct rb_frame_info_struct *prev_fi;
+	    struct rb_backtrace_location_struct *prev_loc;
 	} cfunc;
     } body;
-} rb_frame_info_t;
+} rb_backtrace_location_t;
 
 struct valued_frame_info {
-    rb_frame_info_t *fi;
+    rb_backtrace_location_t *loc;
     VALUE btobj;
 };
 
 static void
-frame_info_mark(void *ptr)
+location_mark(void *ptr)
 {
     if (ptr) {
 	struct valued_frame_info *vfi = (struct valued_frame_info *)ptr;
@@ -77,193 +77,175 @@ frame_info_mark(void *ptr)
 }
 
 static void
-frame_info_mark_entry(rb_frame_info_t *fi)
+location_mark_entry(rb_backtrace_location_t *fi)
 {
     switch (fi->type) {
-      case FRAME_INFO_TYPE_ISEQ:
-      case FRAME_INFO_TYPE_ISEQ_CALCED:
+      case LOCATION_TYPE_ISEQ:
+      case LOCATION_TYPE_ISEQ_CALCED:
 	rb_gc_mark(fi->body.iseq.iseq->self);
 	break;
-      case FRAME_INFO_TYPE_CFUNC:
-      case FRAME_INFO_TYPE_IFUNC:
+      case LOCATION_TYPE_CFUNC:
+      case LOCATION_TYPE_IFUNC:
       default:
 	break;
     }
 }
 
 static void
-frame_info_free(void *ptr)
+location_free(void *ptr)
 {
     if (ptr) {
-	rb_frame_info_t *fi = (rb_frame_info_t *)ptr;
+	rb_backtrace_location_t *fi = (rb_backtrace_location_t *)ptr;
 	ruby_xfree(fi);
     }
 }
 
 static size_t
-frame_info_memsize(const void *ptr)
+location_memsize(const void *ptr)
 {
-    /* rb_frame_info_t *fi = (rb_frame_info_t *)ptr; */
-    return sizeof(rb_frame_info_t);
+    /* rb_backtrace_location_t *fi = (rb_backtrace_location_t *)ptr; */
+    return sizeof(rb_backtrace_location_t);
 }
 
-static const rb_data_type_t frame_info_data_type = {
+static const rb_data_type_t location_data_type = {
     "frame_info",
-    {frame_info_mark, frame_info_free, frame_info_memsize,},
+    {location_mark, location_free, location_memsize,},
 };
 
-static inline rb_frame_info_t *
-frame_info_ptr(VALUE fiobj)
+static inline rb_backtrace_location_t *
+location_ptr(VALUE locobj)
 {
-    struct valued_frame_info *vfi;
-    GetCoreDataFromValue(fiobj, struct valued_frame_info, vfi);
-    return vfi->fi;
+    struct valued_frame_info *vloc;
+    GetCoreDataFromValue(locobj, struct valued_frame_info, vloc);
+    return vloc->loc;
 }
 
 static int
-frame_info_line_no(rb_frame_info_t *fi)
+location_lineno(rb_backtrace_location_t *loc)
 {
-    switch (fi->type) {
-      case FRAME_INFO_TYPE_ISEQ:
-	fi->type = FRAME_INFO_TYPE_ISEQ_CALCED;
-	return (fi->body.iseq.line_no.line_no = calc_line_no(fi->body.iseq.iseq, fi->body.iseq.line_no.pc));
-      case FRAME_INFO_TYPE_ISEQ_CALCED:
-	return fi->body.iseq.line_no.line_no;
-      case FRAME_INFO_TYPE_CFUNC:
-	if (fi->body.cfunc.prev_fi) {
-	    return frame_info_line_no(fi->body.cfunc.prev_fi);
+    switch (loc->type) {
+      case LOCATION_TYPE_ISEQ:
+	loc->type = LOCATION_TYPE_ISEQ_CALCED;
+	return (loc->body.iseq.lineno.lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc));
+      case LOCATION_TYPE_ISEQ_CALCED:
+	return loc->body.iseq.lineno.lineno;
+      case LOCATION_TYPE_CFUNC:
+	if (loc->body.cfunc.prev_loc) {
+	    return location_lineno(loc->body.cfunc.prev_loc);
 	}
 	return 0;
       default:
-	rb_bug("frame_info_line_no: unreachable");
+	rb_bug("location_lineno: unreachable");
 	UNREACHABLE;
     }
 }
 
 static VALUE
-frame_info_line_no_m(VALUE self)
+location_lineno_m(VALUE self)
 {
-    return INT2FIX(frame_info_line_no(frame_info_ptr(self)));
+    return INT2FIX(location_lineno(location_ptr(self)));
 }
 
 static VALUE
-frame_info_name(rb_frame_info_t *fi)
+location_label(rb_backtrace_location_t *loc)
 {
-    switch (fi->type) {
-      case FRAME_INFO_TYPE_ISEQ:
-      case FRAME_INFO_TYPE_ISEQ_CALCED:
-	return fi->body.iseq.iseq->location.name;
-      case FRAME_INFO_TYPE_CFUNC:
-	return rb_id2str(fi->body.cfunc.mid);
-      case FRAME_INFO_TYPE_IFUNC:
+    switch (loc->type) {
+      case LOCATION_TYPE_ISEQ:
+      case LOCATION_TYPE_ISEQ_CALCED:
+	return loc->body.iseq.iseq->location.name;
+      case LOCATION_TYPE_CFUNC:
+	return rb_id2str(loc->body.cfunc.mid);
+      case LOCATION_TYPE_IFUNC:
       default:
-	rb_bug("frame_info_name: unreachable");
+	rb_bug("location_label: unreachable");
 	UNREACHABLE;
     }
 }
 
 static VALUE
-frame_info_name_m(VALUE self)
+location_label_m(VALUE self)
 {
-    return frame_info_name(frame_info_ptr(self));
+    return location_label(location_ptr(self));
 }
 
 static VALUE
-frame_info_basename(rb_frame_info_t *fi)
+location_base_label(rb_backtrace_location_t *loc)
 {
-    switch (fi->type) {
-      case FRAME_INFO_TYPE_ISEQ:
-      case FRAME_INFO_TYPE_ISEQ_CALCED:
-	return fi->body.iseq.iseq->location.basename;
-      case FRAME_INFO_TYPE_CFUNC:
-	return rb_sym_to_s(ID2SYM(fi->body.cfunc.mid));
-      case FRAME_INFO_TYPE_IFUNC:
+    switch (loc->type) {
+      case LOCATION_TYPE_ISEQ:
+      case LOCATION_TYPE_ISEQ_CALCED:
+	return loc->body.iseq.iseq->location.basename;
+      case LOCATION_TYPE_CFUNC:
+	return rb_sym_to_s(ID2SYM(loc->body.cfunc.mid));
+      case LOCATION_TYPE_IFUNC:
       default:
-	rb_bug("frame_info_basename: unreachable");
+	rb_bug("location_base_label: unreachable");
 	UNREACHABLE;
     }
 }
 
 static VALUE
-frame_info_basename_m(VALUE self)
+location_base_label_m(VALUE self)
 {
-    return frame_info_basename(frame_info_ptr(self));
+    return location_base_label(location_ptr(self));
 }
 
 static VALUE
-frame_info_filename(rb_frame_info_t *fi)
+location_path(rb_backtrace_location_t *loc)
 {
-    switch (fi->type) {
-      case FRAME_INFO_TYPE_ISEQ:
-      case FRAME_INFO_TYPE_ISEQ_CALCED:
-	return fi->body.iseq.iseq->location.filename;
-      case FRAME_INFO_TYPE_CFUNC:
-	if (fi->body.cfunc.prev_fi) {
-	    return frame_info_filename(fi->body.cfunc.prev_fi);
+    switch (loc->type) {
+      case LOCATION_TYPE_ISEQ:
+      case LOCATION_TYPE_ISEQ_CALCED:
+	return loc->body.iseq.iseq->location.filename;
+      case LOCATION_TYPE_CFUNC:
+	if (loc->body.cfunc.prev_loc) {
+	    return location_path(loc->body.cfunc.prev_loc);
 	}
 	return Qnil;
-      case FRAME_INFO_TYPE_IFUNC:
+      case LOCATION_TYPE_IFUNC:
       default:
-	rb_bug("frame_info_filename: unreachable");
+	rb_bug("location_path: unreachable");
 	UNREACHABLE;
     }
 }
 
 static VALUE
-frame_info_filename_m(VALUE self)
+location_path_m(VALUE self)
 {
-    return frame_info_filename(frame_info_ptr(self));
+    return location_path(location_ptr(self));
 }
 
 static VALUE
-frame_info_filepath(rb_frame_info_t *fi)
+location_absolute_path(rb_backtrace_location_t *loc)
 {
-    switch (fi->type) {
-      case FRAME_INFO_TYPE_ISEQ:
-      case FRAME_INFO_TYPE_ISEQ_CALCED:
-	return fi->body.iseq.iseq->location.filepath;
-      case FRAME_INFO_TYPE_CFUNC:
-	if (fi->body.cfunc.prev_fi) {
-	    return frame_info_filepath(fi->body.cfunc.prev_fi);
+    switch (loc->type) {
+      case LOCATION_TYPE_ISEQ:
+      case LOCATION_TYPE_ISEQ_CALCED:
+	return loc->body.iseq.iseq->location.filepath;
+      case LOCATION_TYPE_CFUNC:
+	if (loc->body.cfunc.prev_loc) {
+	    return location_absolute_path(loc->body.cfunc.prev_loc);
 	}
 	return Qnil;
-      case FRAME_INFO_TYPE_IFUNC:
+      case LOCATION_TYPE_IFUNC:
       default:
-	rb_bug("frame_info_filepath: unreachable");
+	rb_bug("location_absolute_path: unreachable");
 	UNREACHABLE;
     }
 }
 
 static VALUE
-frame_info_filepath_m(VALUE self)
+location_absolute_path_m(VALUE self)
 {
-    return frame_info_filepath(frame_info_ptr(self));
+    return location_absolute_path(location_ptr(self));
 }
 
 static VALUE
-frame_info_iseq(rb_frame_info_t *fi)
+location_format(VALUE file, int lineno, VALUE name)
 {
-    switch (fi->type) {
-      case FRAME_INFO_TYPE_ISEQ:
-      case FRAME_INFO_TYPE_ISEQ_CALCED:
-	return fi->body.iseq.iseq->self;
-      default:
-	return Qnil;
-    }
-}
-
-static VALUE
-frame_info_iseq_m(VALUE self)
-{
-    return frame_info_iseq(frame_info_ptr(self));
-}
-
-static VALUE
-frame_info_format(VALUE file, int line_no, VALUE name)
-{
-    if (line_no != 0) {
+    if (lineno != 0) {
 	return rb_enc_sprintf(rb_enc_compatible(file, name), "%s:%d:in `%s'",
-			      RSTRING_PTR(file), line_no, RSTRING_PTR(name));
+			      RSTRING_PTR(file), lineno, RSTRING_PTR(name));
     }
     else {
 	return rb_enc_sprintf(rb_enc_compatible(file, name), "%s:in `%s'",
@@ -272,53 +254,53 @@ frame_info_format(VALUE file, int line_no, VALUE name)
 }
 
 static VALUE
-frame_info_to_str(rb_frame_info_t *fi)
+location_to_str(rb_backtrace_location_t *loc)
 {
     VALUE file, name;
-    int line_no;
+    int lineno;
 
-    switch (fi->type) {
-      case FRAME_INFO_TYPE_ISEQ:
-	file = fi->body.iseq.iseq->location.filename;
-	name = fi->body.iseq.iseq->location.name;
+    switch (loc->type) {
+      case LOCATION_TYPE_ISEQ:
+	file = loc->body.iseq.iseq->location.filename;
+	name = loc->body.iseq.iseq->location.name;
 
-	line_no = fi->body.iseq.line_no.line_no = calc_line_no(fi->body.iseq.iseq, fi->body.iseq.line_no.pc);
-	fi->type = FRAME_INFO_TYPE_ISEQ_CALCED;
+	lineno = loc->body.iseq.lineno.lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
+	loc->type = LOCATION_TYPE_ISEQ_CALCED;
 	break;
-      case FRAME_INFO_TYPE_ISEQ_CALCED:
-	file = fi->body.iseq.iseq->location.filename;
-	line_no = fi->body.iseq.line_no.line_no;
-	name = fi->body.iseq.iseq->location.name;
+      case LOCATION_TYPE_ISEQ_CALCED:
+	file = loc->body.iseq.iseq->location.filename;
+	lineno = loc->body.iseq.lineno.lineno;
+	name = loc->body.iseq.iseq->location.name;
 	break;
-      case FRAME_INFO_TYPE_CFUNC:
-	if (fi->body.cfunc.prev_fi) {
-	    file = fi->body.cfunc.prev_fi->body.iseq.iseq->location.filename;
-	    line_no = frame_info_line_no(fi->body.cfunc.prev_fi);
+      case LOCATION_TYPE_CFUNC:
+	if (loc->body.cfunc.prev_loc) {
+	    file = loc->body.cfunc.prev_loc->body.iseq.iseq->location.filename;
+	    lineno = location_lineno(loc->body.cfunc.prev_loc);
 	}
 	else {
 	    rb_thread_t *th = GET_THREAD();
 	    file = th->vm->progname ? th->vm->progname : ruby_engine_name;
-	    line_no = INT2FIX(0);
+	    lineno = INT2FIX(0);
 	}
-	name = rb_id2str(fi->body.cfunc.mid);
+	name = rb_id2str(loc->body.cfunc.mid);
 	break;
-      case FRAME_INFO_TYPE_IFUNC:
+      case LOCATION_TYPE_IFUNC:
       default:
-	rb_bug("frame_info_to_str: unreachable");
+	rb_bug("location_to_str: unreachable");
     }
 
-    return frame_info_format(file, line_no, name);
+    return location_format(file, lineno, name);
 }
 
 static VALUE
-frame_info_to_str_m(VALUE self)
+location_to_str_m(VALUE self)
 {
-    return frame_info_to_str(frame_info_ptr(self));
+    return location_to_str(location_ptr(self));
 }
 
 typedef struct rb_backtrace_struct {
-    rb_frame_info_t *backtrace;
-    rb_frame_info_t *backtrace_base;
+    rb_backtrace_location_t *backtrace;
+    rb_backtrace_location_t *backtrace_base;
     int backtrace_size;
     VALUE strary;
 } rb_backtrace_t;
@@ -331,7 +313,7 @@ backtrace_mark(void *ptr)
 	size_t i, s = bt->backtrace_size;
 
 	for (i=0; i<s; i++) {
-	    frame_info_mark_entry(&bt->backtrace[i]);
+	    location_mark_entry(&bt->backtrace[i]);
 	    rb_gc_mark(bt->strary);
 	}
     }
@@ -351,7 +333,7 @@ static size_t
 backtrace_memsize(const void *ptr)
 {
     rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
-    return sizeof(rb_backtrace_t) + sizeof(rb_frame_info_t) * bt->backtrace_size;
+    return sizeof(rb_backtrace_t) + sizeof(rb_backtrace_location_t) * bt->backtrace_size;
 }
 
 static const rb_data_type_t backtrace_data_type = {
@@ -430,7 +412,7 @@ backtrace_each(rb_thread_t *th,
 struct bt_iter_arg {
     rb_backtrace_t *bt;
     VALUE btobj;
-    rb_frame_info_t *prev_fi;
+    rb_backtrace_location_t *prev_loc;
 };
 
 static void
@@ -439,7 +421,7 @@ bt_init(void *ptr, size_t size)
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
     arg->btobj = backtrace_alloc(rb_cBacktrace);
     GetCoreDataFromValue(arg->btobj, rb_backtrace_t, arg->bt);
-    arg->bt->backtrace_base = arg->bt->backtrace = ruby_xmalloc(sizeof(rb_frame_info_t) * size);
+    arg->bt->backtrace_base = arg->bt->backtrace = ruby_xmalloc(sizeof(rb_backtrace_location_t) * size);
     arg->bt->backtrace_size = 0;
 }
 
@@ -447,28 +429,28 @@ static void
 bt_iter_iseq(void *ptr, const rb_iseq_t *iseq, const VALUE *pc)
 {
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
-    rb_frame_info_t *fi = &arg->bt->backtrace[arg->bt->backtrace_size++];
-    fi->type = FRAME_INFO_TYPE_ISEQ;
-    fi->body.iseq.iseq = iseq;
-    fi->body.iseq.line_no.pc = pc;
-    arg->prev_fi = fi;
+    rb_backtrace_location_t *loc = &arg->bt->backtrace[arg->bt->backtrace_size++];
+    loc->type = LOCATION_TYPE_ISEQ;
+    loc->body.iseq.iseq = iseq;
+    loc->body.iseq.lineno.pc = pc;
+    arg->prev_loc = loc;
 }
 
 static void
 bt_iter_cfunc(void *ptr, ID mid)
 {
     struct bt_iter_arg *arg = (struct bt_iter_arg *)ptr;
-    rb_frame_info_t *fi = &arg->bt->backtrace[arg->bt->backtrace_size++];
-    fi->type = FRAME_INFO_TYPE_CFUNC;
-    fi->body.cfunc.mid = mid;
-    fi->body.cfunc.prev_fi = arg->prev_fi;
+    rb_backtrace_location_t *loc = &arg->bt->backtrace[arg->bt->backtrace_size++];
+    loc->type = LOCATION_TYPE_CFUNC;
+    loc->body.cfunc.mid = mid;
+    loc->body.cfunc.prev_loc = arg->prev_loc;
 }
 
 static VALUE
 backtrace_object(rb_thread_t *th)
 {
     struct bt_iter_arg arg;
-    arg.prev_fi = 0;
+    arg.prev_loc = 0;
 
     backtrace_each(th,
 		   bt_init,
@@ -486,7 +468,7 @@ rb_vm_backtrace_object(void)
 }
 
 static VALUE
-backtreace_collect(rb_backtrace_t *bt, int lev, int n, VALUE (*func)(rb_frame_info_t *, void *arg), void *arg)
+backtreace_collect(rb_backtrace_t *bt, int lev, int n, VALUE (*func)(rb_backtrace_location_t *, void *arg), void *arg)
 {
     VALUE btary;
     int i;
@@ -498,17 +480,17 @@ backtreace_collect(rb_backtrace_t *bt, int lev, int n, VALUE (*func)(rb_frame_in
     btary = rb_ary_new();
 
     for (i=0; i+lev<bt->backtrace_size && i<n; i++) {
-	rb_frame_info_t *fi = &bt->backtrace[bt->backtrace_size - 1 - (lev+i)];
-	rb_ary_push(btary, func(fi, arg));
+	rb_backtrace_location_t *loc = &bt->backtrace[bt->backtrace_size - 1 - (lev+i)];
+	rb_ary_push(btary, func(loc, arg));
     }
 
     return btary;
 }
 
 static VALUE
-frame_info_to_str_dmyarg(rb_frame_info_t *fi, void *dmy)
+location_to_str_dmyarg(rb_backtrace_location_t *loc, void *dmy)
 {
-    return frame_info_to_str(fi);
+    return location_to_str(loc);
 }
 
 VALUE
@@ -521,7 +503,7 @@ rb_backtrace_to_str_ary(VALUE self)
 	return bt->strary;
     }
     else {
-	bt->strary = backtreace_collect(bt, 0, bt->backtrace_size, frame_info_to_str_dmyarg, 0);
+	bt->strary = backtreace_collect(bt, 0, bt->backtrace_size, location_to_str_dmyarg, 0);
 	return bt->strary;
     }
 }
@@ -541,18 +523,18 @@ backtrace_to_str_ary2(VALUE self, int lev, int n)
 	return Qnil;
     }
 
-    return backtreace_collect(bt, lev, n, frame_info_to_str_dmyarg, 0);
+    return backtreace_collect(bt, lev, n, location_to_str_dmyarg, 0);
 }
 
 static VALUE
-frame_info_create(rb_frame_info_t *srcfi, void *btobj)
+location_create(rb_backtrace_location_t *srcloc, void *btobj)
 {
     VALUE obj;
-    struct valued_frame_info *vfi;
-    obj = TypedData_Make_Struct(rb_cFrameInfo, struct valued_frame_info, &frame_info_data_type, vfi);
+    struct valued_frame_info *vloc;
+    obj = TypedData_Make_Struct(rb_cBacktraceLocation, struct valued_frame_info, &location_data_type, vloc);
 
-    vfi->fi = srcfi;
-    vfi->btobj = (VALUE)btobj;
+    vloc->loc = srcloc;
+    vloc->btobj = (VALUE)btobj;
 
     return obj;
 }
@@ -572,7 +554,7 @@ backtrace_to_frame_ary(VALUE self, int lev, int n)
 	return Qnil;
     }
 
-    return backtreace_collect(bt, lev, n, frame_info_create, (void *)self);
+    return backtreace_collect(bt, lev, n, location_create, (void *)self);
 }
 
 static VALUE
@@ -607,8 +589,8 @@ vm_backtrace_frame_ary(rb_thread_t *th, int lev, int n)
 
 struct oldbt_arg {
     VALUE filename;
-    int line_no;
-    void (*func)(void *data, VALUE file, int line_no, VALUE name);
+    int lineno;
+    void (*func)(void *data, VALUE file, int lineno, VALUE name);
     void *data; /* result */
 };
 
@@ -619,7 +601,7 @@ oldbt_init(void *ptr, size_t dmy)
     rb_thread_t *th = GET_THREAD();
 
     arg->filename = th->vm->progname ? th->vm->progname : ruby_engine_name;;
-    arg->line_no = 0;
+    arg->lineno = 0;
 }
 
 static void
@@ -628,9 +610,9 @@ oldbt_iter_iseq(void *ptr, const rb_iseq_t *iseq, const VALUE *pc)
     struct oldbt_arg *arg = (struct oldbt_arg *)ptr;
     VALUE file = arg->filename = iseq->location.filename;
     VALUE name = iseq->location.name;
-    int line_no = arg->line_no = calc_line_no(iseq, pc);
+    int lineno = arg->lineno = calc_lineno(iseq, pc);
 
-    (arg->func)(arg->data, file, line_no, name);
+    (arg->func)(arg->data, file, lineno, name);
 }
 
 static void
@@ -639,23 +621,23 @@ oldbt_iter_cfunc(void *ptr, ID mid)
     struct oldbt_arg *arg = (struct oldbt_arg *)ptr;
     VALUE file = arg->filename;
     VALUE name = rb_id2str(mid);
-    int line_no = arg->line_no;
+    int lineno = arg->lineno;
 
-    (arg->func)(arg->data, file, line_no, name);
+    (arg->func)(arg->data, file, lineno, name);
 }
 
 static void
-oldbt_print(void *data, VALUE file, int line_no, VALUE name)
+oldbt_print(void *data, VALUE file, int lineno, VALUE name)
 {
     FILE *fp = (FILE *)data;
 
     if (NIL_P(name)) {
 	fprintf(fp, "\tfrom %s:%d:in unknown method\n",
-		RSTRING_PTR(file), line_no);
+		RSTRING_PTR(file), lineno);
     }
     else {
 	fprintf(fp, "\tfrom %s:%d:in `%s'\n",
-		RSTRING_PTR(file), line_no, RSTRING_PTR(name));
+		RSTRING_PTR(file), lineno, RSTRING_PTR(name));
     }
 }
 
@@ -798,7 +780,7 @@ rb_f_caller(int argc, VALUE *argv)
 }
 
 static VALUE
-rb_f_caller_frame_info(int argc, VALUE *argv)
+rb_f_caller_locations(int argc, VALUE *argv)
 {
     VALUE level, vn;
     int lev, n;
@@ -837,18 +819,17 @@ Init_vm_backtrace(void)
     rb_undef_method(CLASS_OF(rb_cBacktrace), "new");
     rb_marshal_define_compat(rb_cBacktrace, rb_cArray, backtrace_dump_data, backtrace_load_data);
 
-    /* ::RubyVM::FrameInfo */
-    rb_cFrameInfo = rb_define_class_under(rb_cRubyVM, "FrameInfo", rb_cObject);
-    rb_undef_alloc_func(rb_cFrameInfo);
-    rb_undef_method(CLASS_OF(rb_cFrameInfo), "new");
-    rb_define_method(rb_cFrameInfo, "line_no", frame_info_line_no_m, 0);
-    rb_define_method(rb_cFrameInfo, "name", frame_info_name_m, 0);
-    rb_define_method(rb_cFrameInfo, "basename", frame_info_basename_m, 0);
-    rb_define_method(rb_cFrameInfo, "filename", frame_info_filename_m, 0);
-    rb_define_method(rb_cFrameInfo, "filepath", frame_info_filepath_m, 0);
-    rb_define_method(rb_cFrameInfo, "iseq", frame_info_iseq_m, 0);
-    rb_define_method(rb_cFrameInfo, "to_s", frame_info_to_str_m, 0);
-    rb_define_singleton_method(rb_cFrameInfo, "caller", rb_f_caller_frame_info, -1);
+    /* ::RubyVM::Backtrace::Location */
+    rb_cBacktraceLocation = rb_define_class_under(rb_cBacktrace, "Location", rb_cObject);
+    rb_undef_alloc_func(rb_cBacktraceLocation);
+    rb_undef_method(CLASS_OF(rb_cBacktraceLocation), "new");
+    rb_define_method(rb_cBacktraceLocation, "lineno", location_lineno_m, 0);
+    rb_define_method(rb_cBacktraceLocation, "label", location_label_m, 0);
+    rb_define_method(rb_cBacktraceLocation, "base_label", location_base_label_m, 0);
+    rb_define_method(rb_cBacktraceLocation, "path", location_path_m, 0);
+    rb_define_method(rb_cBacktraceLocation, "absolute_path", location_absolute_path_m, 0);
+    rb_define_method(rb_cBacktraceLocation, "to_s", location_to_str_m, 0);
 
     rb_define_global_function("caller", rb_f_caller, -1);
+    rb_define_global_function("caller_locations", rb_f_caller_locations, -1);
 }
