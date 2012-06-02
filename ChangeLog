@@ -1,3 +1,12 @@
+Sat Jun  2 16:59:00 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_enc_cr_str_buf_cat): don't reset coderange as unknown.
+	  the condition 'ptr_a8 && str_cr != ENC_CODERANGE_7BIT' means not
+	  unknown, str is also ASCII-8BIT because str_encindex == ptr_encindex,
+	  and nont (str_cr == ENC_CODERANGE_UNKNOWN) and
+	  str_cr != ENC_CODERANGE_7BIT means str_cr is valid because ASCII-8BIT
+	  can't be broken. [ruby-dev:45688] [Bug #6509]
+
 Sat Jun  2 07:04:48 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/re.rdoc (Performance):  Replaced incorrect example of reducing

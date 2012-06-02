@@ -1925,10 +1925,11 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     str_cr = ENC_CODERANGE(str);
 
     if (str_encindex == ptr_encindex) {
-        if (str_cr == ENC_CODERANGE_UNKNOWN ||
-            (ptr_a8 && str_cr != ENC_CODERANGE_7BIT)) {
+        if (str_cr == ENC_CODERANGE_UNKNOWN)
             ptr_cr = ENC_CODERANGE_UNKNOWN;
-        }
+	else if (ptr_a8 && str_cr == ENC_CODERANGE_VALID)
+	    /* since str is also ASCII-8BIT, 7bit nor unknown means valid */
+	    ptr_cr = ENC_CODERANGE_VALID;
         else if (ptr_cr == ENC_CODERANGE_UNKNOWN) {
             ptr_cr = coderange_scan(ptr, len, rb_enc_from_index(ptr_encindex));
         }
