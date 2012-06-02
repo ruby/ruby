@@ -1,3 +1,7 @@
+Sun Jun  3 03:15:46 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regparse.c (onig_number_of_names): suppress a warning.
+
 Sun Jun  3 01:36:52 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_backtrace.c: change names.
