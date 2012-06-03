@@ -1,3 +1,23 @@
+Sun Jun  3 17:23:52 2012  Tanaka Akira  <akr@fsij.org>
+
+	* use execve() to preserve environment variables when exec method is
+	  failed.  [ruby-core:44093] [ruby-trunk - Bug #6249]
+
+	* include/ruby/intern.h (rb_exec_arg): add envp_str and envp_buf field
+	  to store envp of execve().
+
+	* process.c (proc_exec_v): takes envp_str as an argument and use it
+	  for execve().
+	  (rb_proc_exec_ne): extended version of rb_proc_exec_n().
+	  (rb_proc_exec_n): use rb_proc_exec_ne().
+	  (rb_proc_exec): follow proc_exec_v() change.
+	  (fill_envp_buf_i): new function.
+	  (rb_exec_arg_fixup): set up envp_str and envp_buf.
+	  (save_env_i): removed.
+	  (save_env): removed.
+	  (rb_run_exec_options_err): don't modify environment variables.
+	  (rb_exec_err): use rb_proc_exec_ne().
+
 Sun Jun  3 16:33:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c: revert r35879 "now marshal_{load|dump} are external."

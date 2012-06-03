@@ -303,6 +303,12 @@ class TestProcess < Test::Unit::TestCase
     end
   end
 
+  def test_execopts_preserve_env_on_exec_failure
+    ENV["mgg"] = nil
+    assert_raise(Errno::ENOENT) { Process.exec({"mgg" => "mggoo"}, "/nonexistent") }
+    assert_equal(nil, ENV["mgg"], "[ruby-core:44093] [ruby-trunk - Bug #6249]")
+  end
+
   def test_execopts_unsetenv_others
     h = {}
     MANDATORY_ENVS.each {|k| e = ENV[k] and h[k] = e}

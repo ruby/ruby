@@ -1068,13 +1068,13 @@ exec_with_sh(const char *prog, char **argv)
 
 #ifdef __native_client__
 static int
-proc_exec_v(char **argv, const char *prog)
+proc_exec_v(char **argv, const char *prog, VALUE envp_str)
 {
   rb_notimplement();
 }
 #else
 static int
-proc_exec_v(char **argv, const char *prog)
+proc_exec_v(char **argv, const char *prog, VALUE envp_str)
 {
     char fbuf[MAXPATHLEN];
 # if defined(__EMX__) || defined(OS2)
@@ -1118,7 +1118,10 @@ proc_exec_v(char **argv, const char *prog)
     }
 # endif /* __EMX__ */
     before_exec();
-    execv(prog, argv);
+    if (envp_str)
+        execve(prog, argv, (char **)RSTRING_PTR(envp_str));
+    else
+        execv(prog, argv);
     preserving_errno(try_with_sh(prog, argv); after_exec());
 # if defined(__EMX__) || defined(OS2)
     if (new_argv) {
@@ -1130,8 +1133,8 @@ proc_exec_v(char **argv, const char *prog)
 }
 #endif
 
-int
-rb_proc_exec_n(int argc, VALUE *argv, const char *prog)
+static int
+rb_proc_exec_ne(int argc, VALUE *argv, const char *prog, VALUE envp_str)
 {
     char **args;
     int i;
@@ -1144,10 +1147,16 @@ rb_proc_exec_n(int argc, VALUE *argv, const char *prog)
     }
     args[i] = 0;
     if (args[0]) {
-	ret = proc_exec_v(args, prog);
+	ret = proc_exec_v(args, prog, envp_str);
     }
     ALLOCV_END(v);
     return ret;
+}
+
+int
+rb_proc_exec_n(int argc, VALUE *argv, const char *prog)
+{
+    return rb_proc_exec_ne(argc, argv, prog, Qfalse);
 }
 
 #ifdef __native_client__
@@ -1217,7 +1226,7 @@ rb_proc_exec(const char *str)
 	*a = NULL;
     }
     if (argv[0]) {
-	ret = proc_exec_v(argv, 0);
+	ret = proc_exec_v(argv, NULL, Qfalse);
     }
     else {
 	errno = ENOENT;
@@ -1855,10 +1864,81 @@ rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
     return prog;
 }
 
+static int
+fill_envp_buf_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
+{
+    VALUE key = (VALUE)st_key;
+    VALUE val = (VALUE)st_val;
+    VALUE envp_buf = (VALUE)arg;
+
+    rb_str_buf_cat2(envp_buf, StringValueCStr(key));
+    rb_str_buf_cat2(envp_buf, "=");
+    rb_str_buf_cat2(envp_buf, StringValueCStr(val));
+    rb_str_buf_cat(envp_buf, "", 1); /* append '\0' */
+
+    return ST_CONTINUE;
+}
+
 void
 rb_exec_arg_fixup(struct rb_exec_arg *e)
 {
+    VALUE unsetenv_others, envopts;
+
     e->redirect_fds = check_exec_fds(e->options);
+
+    unsetenv_others = rb_ary_entry(e->options, EXEC_OPTION_UNSETENV_OTHERS);
+    envopts = rb_ary_entry(e->options, EXEC_OPTION_ENV);
+    if (RTEST(unsetenv_others) || !NIL_P(envopts)) {
+        VALUE envtbl, envp_str, envp_buf;
+        char *p, *ep;
+        if (RTEST(unsetenv_others)) {
+            envtbl = rb_hash_new();
+        }
+        else {
+            envtbl = rb_const_get(rb_cObject, rb_intern("ENV"));
+            envtbl = rb_convert_type(envtbl, T_HASH, "Hash", "to_hash");
+        }
+        hide_obj(envtbl);
+        if (!NIL_P(envopts)) {
+            st_table *stenv = RHASH_TBL(envtbl);
+            long i;
+            for (i = 0; i < RARRAY_LEN(envopts); i++) {
+                VALUE pair = RARRAY_PTR(envopts)[i];
+                VALUE key = RARRAY_PTR(pair)[0];
+                VALUE val = RARRAY_PTR(pair)[1];
+                if (NIL_P(val)) {
+                    st_data_t stkey = (st_data_t)key;
+                    st_delete(stenv, &stkey, NULL);
+                }
+                else {
+                    st_insert(stenv, (st_data_t)key, (st_data_t)val);
+                }
+            }
+        }
+        envp_buf = rb_str_buf_new(0);
+        hide_obj(envp_buf);
+        st_foreach(RHASH_TBL(envtbl), fill_envp_buf_i, (st_data_t)envp_buf);
+        envp_str = rb_str_buf_new(sizeof(char*) * (RHASH_SIZE(envtbl) + 1));
+        hide_obj(envp_str);
+        p = RSTRING_PTR(envp_buf);
+        ep = p + RSTRING_LEN(envp_buf);
+        while (p < ep) {
+            rb_str_buf_cat(envp_str, (char *)&p, sizeof(p));
+            p += strlen(p) + 1;
+        }
+        p = NULL;
+        rb_str_buf_cat(envp_str, (char *)&p, sizeof(p));
+        e->envp_str = envp_str;
+        e->envp_buf = envp_buf;
+
+        /*
+        char **tmp_envp = (char **)RSTRING_PTR(envp_str);
+        while (*tmp_envp) {
+            printf("%s\n", *tmp_envp);
+            tmp_envp++;
+        }
+        */
+    }
 }
 
 /*
@@ -2025,28 +2105,6 @@ save_redirect_fd(int fd, VALUE save, char *errmsg, size_t errmsg_buflen)
     }
 
     return 0;
-}
-
-static VALUE
-save_env_i(VALUE i, VALUE ary, int argc, VALUE *argv)
-{
-    rb_ary_push(ary, hide_obj(rb_ary_dup(argv[0])));
-    return Qnil;
-}
-
-static void
-save_env(VALUE save)
-{
-    if (!NIL_P(save) && NIL_P(rb_ary_entry(save, EXEC_OPTION_ENV))) {
-        VALUE env = rb_const_get(rb_cObject, rb_intern("ENV"));
-        if (RTEST(env)) {
-            VALUE ary = hide_obj(rb_ary_new());
-            rb_block_call(env, rb_intern("each"), 0, 0, save_env_i,
-                          (VALUE)ary);
-            rb_ary_store(save, EXEC_OPTION_ENV, ary);
-        }
-        rb_ary_store(save, EXEC_OPTION_UNSETENV_OTHERS, Qtrue);
-    }
 }
 
 static int
@@ -2372,6 +2430,7 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
         s->options = soptions = hide_obj(rb_ary_new());
         s->redirect_fds = Qnil;
 	s->progname = Qnil;
+	s->envp_str = s->envp_buf = 0;
     }
 
 #ifdef HAVE_SETPGID
@@ -2389,27 +2448,6 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
             return -1;
     }
 #endif
-
-    obj = rb_ary_entry(options, EXEC_OPTION_UNSETENV_OTHERS);
-    if (RTEST(obj)) {
-        save_env(soptions);
-        rb_env_clear();
-    }
-
-    obj = rb_ary_entry(options, EXEC_OPTION_ENV);
-    if (!NIL_P(obj)) {
-        long i;
-        save_env(soptions);
-        for (i = 0; i < RARRAY_LEN(obj); i++) {
-            VALUE pair = RARRAY_PTR(obj)[i];
-            VALUE key = RARRAY_PTR(pair)[0];
-            VALUE val = RARRAY_PTR(pair)[1];
-            if (NIL_P(val))
-                ruby_setenv(StringValueCStr(key), 0);
-            else
-                ruby_setenv(StringValueCStr(key), StringValueCStr(val));
-        }
-    }
 
     obj = rb_ary_entry(options, EXEC_OPTION_UMASK);
     if (!NIL_P(obj)) {
@@ -2492,7 +2530,7 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 	rb_proc_exec(prog);
     }
     else {
-	rb_proc_exec_n(argc, argv, prog);
+	rb_proc_exec_ne(argc, argv, prog, e->envp_str);
     }
     return -1;
 }

@@ -592,6 +592,8 @@ struct rb_exec_arg {
     VALUE options;
     VALUE redirect_fds;
     VALUE progname;
+    VALUE envp_str;
+    VALUE envp_buf;
 };
 int rb_proc_exec_n(int, VALUE*, const char*);
 int rb_proc_exec(const char*);
