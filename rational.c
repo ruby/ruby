@@ -1632,6 +1632,21 @@ nurat_marshal_load(VALUE self, VALUE a)
     return self;
 }
 
+#ifdef MARSHAL_LOAD_DIRECT
+/* :nodoc: */
+static VALUE
+nurat_marshal_load_fake(VALUE self, VALUE a)
+{
+    rb_raise(rb_eNotImpError, "not implemented");
+}
+
+ VALUE
+rb_Rational_marshal_load(VALUE obj, VALUE a)
+{
+    return nurat_marshal_load(obj, a);
+}
+#endif
+
 #ifdef MARSHAL_OLD_STYLE
 /* :nodoc: */
 static VALUE
@@ -2393,12 +2408,17 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "to_s", nurat_to_s, 0);
     rb_define_method(rb_cRational, "inspect", nurat_inspect, 0);
 
+#ifndef MARSHAL_LOAD_DIRECT
 #ifndef MARSHAL_OLD_STYLE
     rb_define_method(rb_cRational, "marshal_dump", nurat_marshal_dump, 0);
     rb_define_method(rb_cRational, "marshal_load", nurat_marshal_load, 1);
 #else
     rb_define_method(rb_cRational, "_dump", nurat_marshal__dump, 1);
     rb_define_singleton_method(rb_cRational, "_load", nurat_marshal__load, 1);
+#endif
+#else
+    rb_define_method(rb_cRational, "marshal_dump", nurat_marshal_dump, 0);
+    rb_define_method(rb_cRational, "marshal_load", nurat_marshal_load_fake, 1);
 #endif
 
     /* --- */

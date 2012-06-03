@@ -1622,7 +1622,21 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    }
 	    v = r_entry(v, arg);
 	    data = r_object(arg);
+#ifndef MARSHAL_LOAD_DIRECT
 	    rb_funcall(v, s_mload, 1, data);
+#else
+	    switch (TYPE(v)) {
+	    case T_COMPLEX:
+	      rb_Complex_marshal_load(v, data);
+	      break;
+	    case T_RATIONAL:
+	      rb_Rational_marshal_load(v, data);
+	      break;
+	    default:
+	      rb_funcall(v, s_mload, 1, data);
+	      break;
+	    }
+#endif
 	    check_load_arg(arg, s_mload);
             v = r_leave(v, arg);
 	}

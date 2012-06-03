@@ -1,3 +1,11 @@
+Sun Jun  3 21:14:26 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* marshal.c: calls directly rb_{Complex,Rational}_marshal_load().
+	  But now disabled. [experimental]
+	* complex.c: followed the above.
+	* rational.c: ditto.
+	* include/rub/intern.h: ditto.
+
 Sun Jun  3 21:18:17 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_check_argv): use rb_str_new_frozen instead of

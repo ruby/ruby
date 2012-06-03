@@ -147,6 +147,9 @@ VALUE rb_rational_new(VALUE, VALUE);
 VALUE rb_Rational(VALUE, VALUE);
 #define rb_Rational1(x) rb_Rational((x), INT2FIX(1))
 #define rb_Rational2(x,y) rb_Rational((x), (y))
+#ifdef MARSHAL_LOAD_DIRECT
+VALUE rb_Rational_marshal_load(VALUE, VALUE);
+#endif
 /* complex.c */
 VALUE rb_complex_raw(VALUE, VALUE);
 #define rb_complex_raw1(x) rb_complex_raw((x), INT2FIX(0))
@@ -158,6 +161,9 @@ VALUE rb_complex_polar(VALUE, VALUE);
 VALUE rb_Complex(VALUE, VALUE);
 #define rb_Complex1(x) rb_Complex((x), INT2FIX(0))
 #define rb_Complex2(x,y) rb_Complex((x), (y))
+#ifdef MARSHAL_LOAD_DIRECT
+VALUE rb_Complex_marshal_load(VALUE, VALUE);
+#endif
 /* class.c */
 VALUE rb_class_boot(VALUE);
 VALUE rb_class_new(VALUE);
