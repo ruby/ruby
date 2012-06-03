@@ -831,6 +831,11 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(TypeError, bug3656) {
       Rational(1,2).marshal_load(0)
     }
+
+    c = Rational(1,2)
+    c.freeze
+    assert(c.frozen?)
+    assert_raise(RuntimeError){c.marshal_load([2,3])}
   end
 
   def test_parse

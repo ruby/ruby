@@ -1,3 +1,8 @@
+Sun Jun  3 10:23:32 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_marshal_load): [ruby-core:45394]
+	* rational.c (nurat_marshal_load): ditto.
+
 Sun Jun  3 03:15:46 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regparse.c (onig_number_of_names): suppress a warning.

@@ -1605,6 +1605,10 @@ static VALUE
 nurat_marshal_load(VALUE self, VALUE a)
 {
     get_dat1(self);
+
+    rb_check_frozen(self);
+    rb_check_trusted(self);
+
     Check_Type(a, T_ARRAY);
     if (RARRAY_LEN(a) != 2)
 	rb_raise(rb_eArgError, "marshaled rational must have an array whose length is 2 but %ld", RARRAY_LEN(a));
