@@ -1146,7 +1146,7 @@ rb_proc_exec_e(const char *str, VALUE envp_str)
 static int
 rb_proc_exec_e(const char *str, VALUE envp_str)
 {
-    while (*str && ISSPACE(*str))
+    while (*str == ' ' || *str == '\t' || *str == '\n')
 	str++;
 
     if (!*str) {

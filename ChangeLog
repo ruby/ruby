@@ -1,3 +1,8 @@
+Mon Jun  4 00:11:51 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_proc_exec_e): don't use ISSPACE().  \f, \r and \v
+	  are not word separator in Bourne shell.
+
 Sun Jun  3 23:47:30 2012  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_exec_arg): remove argc and argv fields.
