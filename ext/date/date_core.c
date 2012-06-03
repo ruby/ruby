@@ -4696,6 +4696,9 @@ d_lite_initialize(int argc, VALUE *argv, VALUE self)
     int df, of;
     double sg;
 
+    rb_check_frozen(self);
+    rb_check_trusted(self);
+
     rb_scan_args(argc, argv, "05", &vjd, &vdf, &vsf, &vof, &vsg);
 
     jd = INT2FIX(0);
@@ -4749,6 +4752,9 @@ d_lite_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 d_lite_initialize_copy(VALUE copy, VALUE date)
 {
+    rb_check_frozen(copy);
+    rb_check_trusted(copy);
+
     if (copy == date)
 	return copy;
     {
@@ -7269,6 +7275,9 @@ static VALUE
 d_lite_marshal_load(VALUE self, VALUE a)
 {
     get_d1(self);
+
+    rb_check_frozen(self);
+    rb_check_trusted(self);
 
     if (TYPE(a) != T_ARRAY)
 	rb_raise(rb_eTypeError, "expected an array");

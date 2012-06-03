@@ -1,3 +1,7 @@
+Sun Jun  3 14:13:58 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: checks whether the object is frozen or not.
+
 Sun Jun  3 14:00:51 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: wrote Complex#_dump and Complex::load.  But now
