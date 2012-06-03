@@ -1,3 +1,8 @@
+Sun Jun  3 21:53:00 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* GPL: update text of GPLv2. [ruby-core:44488] [Bug #6328]
+	  http://www.gnu.org/licenses/gpl-2.0.txt
+
 Sun Jun  3 21:22:52 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_exec_getargs): remove rb_exec_arg argument.
