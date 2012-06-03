@@ -657,6 +657,7 @@ class Complex_Test < Test::Unit::TestCase
       assert_instance_of(Complex, c2)
     end
 
+=begin
     bug3656 = '[ruby-core:31622]'
     assert_raise(TypeError, bug3656) {
       Complex(1,2).marshal_load(0)
@@ -666,6 +667,7 @@ class Complex_Test < Test::Unit::TestCase
     c.freeze
     assert(c.frozen?)
     assert_raise(RuntimeError){c.marshal_load([2,3])}
+=end
   end
 
   def test_parse

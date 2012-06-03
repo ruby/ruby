@@ -1,3 +1,10 @@
+Sun Jun  3 14:00:51 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: wrote Complex#_dump and Complex::load.  But now
+	  disabled (due to compatibility) [experimental].
+
+	* rational.c: wrote Rational#_dump and Rational::load. ditto.
+
 Sun Jun  3 10:23:32 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_marshal_load): [ruby-core:45394]
