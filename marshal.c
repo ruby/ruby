@@ -1642,24 +1642,24 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	break;
 
       case TYPE_DATA:
-       {
-           VALUE klass = path2class(r_unique(arg));
+	{
+	    VALUE klass = path2class(r_unique(arg));
 
-	   v = rb_obj_alloc(klass);
-           if (!RB_TYPE_P(v, T_DATA)) {
-               rb_raise(rb_eArgError, "dump format error");
-           }
-           v = r_entry(v, arg);
-           if (!rb_respond_to(v, s_load_data)) {
-               rb_raise(rb_eTypeError,
-                        "class %s needs to have instance method `_load_data'",
-                        rb_class2name(klass));
-           }
-           rb_funcall(v, s_load_data, 1, r_object0(arg, 0, extmod));
-	   check_load_arg(arg, s_load_data);
-           v = r_leave(v, arg);
-       }
-       break;
+	    v = rb_obj_alloc(klass);
+	    if (!RB_TYPE_P(v, T_DATA)) {
+		rb_raise(rb_eArgError, "dump format error");
+	    }
+	    v = r_entry(v, arg);
+	    if (!rb_respond_to(v, s_load_data)) {
+		rb_raise(rb_eTypeError,
+			 "class %s needs to have instance method `_load_data'",
+			 rb_class2name(klass));
+	    }
+	    rb_funcall(v, s_load_data, 1, r_object0(arg, 0, extmod));
+	    check_load_arg(arg, s_load_data);
+	    v = r_leave(v, arg);
+	}
+	break;
 
       case TYPE_MODULE_OLD:
         {
