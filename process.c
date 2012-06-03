@@ -1160,14 +1160,14 @@ rb_proc_exec_n(int argc, VALUE *argv, const char *prog)
 }
 
 #ifdef __native_client__
-int
-rb_proc_exec(const char *str)
+static int
+rb_proc_exec_e(const char *str, VALUE envp_str)
 {
   rb_notimplement();
 }
 #else
-int
-rb_proc_exec(const char *str)
+static int
+rb_proc_exec_e(const char *str, VALUE envp_str)
 {
 #ifndef _WIN32
     const char *s = str;
@@ -1210,7 +1210,10 @@ rb_proc_exec(const char *str)
 		exit(status);
 #else
 	    before_exec();
-	    execl("/bin/sh", "sh", "-c", str, (char *)NULL);
+            if (envp_str)
+                execle("/bin/sh", "sh", "-c", str, (char *)NULL, (char **)RSTRING_PTR(envp_str));
+            else
+                execl("/bin/sh", "sh", "-c", str, (char *)NULL);
 	    preserving_errno(after_exec());
 #endif
 	    return -1;
@@ -1226,7 +1229,7 @@ rb_proc_exec(const char *str)
 	*a = NULL;
     }
     if (argv[0]) {
-	ret = proc_exec_v(argv, NULL, Qfalse);
+	ret = proc_exec_v(argv, NULL, envp_str);
     }
     else {
 	errno = ENOENT;
@@ -1236,6 +1239,12 @@ rb_proc_exec(const char *str)
 #endif	/* _WIN32 */
 }
 #endif
+
+int
+rb_proc_exec(const char *str)
+{
+    return rb_proc_exec_e(str, Qfalse);
+}
 
 enum {
     EXEC_OPTION_PGROUP,
@@ -2527,7 +2536,7 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
     }
 
     if (argc == 0) {
-	rb_proc_exec(prog);
+	rb_proc_exec_e(prog, e->envp_str);
     }
     else {
 	rb_proc_exec_ne(argc, argv, prog, e->envp_str);

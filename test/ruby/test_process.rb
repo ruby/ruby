@@ -309,6 +309,18 @@ class TestProcess < Test::Unit::TestCase
     assert_equal(nil, ENV["mgg"], "[ruby-core:44093] [ruby-trunk - Bug #6249]")
   end
 
+  def test_execopts_env_single_word
+    with_tmpchdir {|d|
+      open("test_execopts_env_single_word.rb", "w") {|f|
+        f.puts "print ENV['hgga']"
+      }
+      system({"hgga"=>"ugu"}, RUBY,
+             :in => 'test_execopts_env_single_word.rb',
+             :out => 'test_execopts_env_single_word.out')
+      assert_equal('ugu', File.read('test_execopts_env_single_word.out'))
+    }
+  end
+
   def test_execopts_unsetenv_others
     h = {}
     MANDATORY_ENVS.each {|k| e = ENV[k] and h[k] = e}

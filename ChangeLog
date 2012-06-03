@@ -1,3 +1,10 @@
+Sun Jun  3 20:10:52 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_proc_exec_e): extended version of rb_proc_exec() to
+	  call execle().
+	  (rb_proc_exec): use rb_proc_exec_e().
+	  (rb_exec_err): use rb_proc_exec_e().
+
 Sun Jun  3 19:47:18 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread.c (vm_living_thread_num): suppress a warning.
