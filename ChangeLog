@@ -1,3 +1,7 @@
+Mon Jun  4 00:45:18 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_spawn_process): fix for Windows.  not tested.
+
 Mon Jun  4 00:11:51 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_proc_exec_e): don't use ISSPACE().  \f, \r and \v

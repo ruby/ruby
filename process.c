@@ -3094,14 +3094,17 @@ rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errm
         return -1;
     }
 
-    argc = earg->argc;
-    argv = earg->argv;
-    if (prog && !earg->use_shell) argv[0] = prog;
+    if (prog && !earg->use_shell) {
+        char **argv = (char **)RSTRING_PTR(earg->argv_str);
+        argv[0] = prog;
+    }
 # if defined HAVE_SPAWNV
     if (earg->use_shell) {
 	pid = proc_spawn(RSTRING_PTR(prog));
     }
     else {
+        char **argv = (char **)RSTRING_PTR(earg->argv_str);
+        int argc = RSTRING_LEN(earg->argv_str) / sizeof(char *) - 1;
 	pid = proc_spawn_n(argc, argv, prog, earg->options);
     }
 #  if defined(_WIN32)
@@ -3109,7 +3112,11 @@ rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errm
 	rb_last_status_set(0x7f << 8, 0);
 #  endif
 # else
-    if (!earg->use_shell) prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
+    if (!earg->use_shell) {
+        char **argv = (char **)RSTRING_PTR(earg->argv_str);
+        int argc = RSTRING_LEN(earg->argv_str) / sizeof(char *) - 1;
+        prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
+    }
     status = system(StringValuePtr(prog));
     rb_last_status_set((status & 0xff) << 8, 0);
 # endif
