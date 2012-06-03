@@ -1,3 +1,8 @@
+Sun Jun  3 21:18:17 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_check_argv): use rb_str_new_frozen instead of
+	  rb_str_new4.
+
 Sun Jun  3 20:10:52 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_proc_exec_e): extended version of rb_proc_exec() to
