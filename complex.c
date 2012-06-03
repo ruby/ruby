@@ -21,7 +21,8 @@ VALUE rb_cComplex;
 static ID id_abs, id_abs2, id_arg, id_cmp, id_conj, id_convert,
     id_denominator, id_divmod, id_eqeq_p, id_expt, id_fdiv,  id_floor,
     id_idiv, id_imag, id_inspect, id_negate, id_numerator, id_quo,
-    id_real, id_real_p, id_to_f, id_to_i, id_to_r, id_to_s;
+    id_real, id_real_p, id_to_f, id_to_i, id_to_r, id_to_s,
+    id_i_real, id_i_imag;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -1244,13 +1245,31 @@ nucomp_inspect(VALUE self)
 
 /* :nodoc: */
 static VALUE
+nucomp_dumper(VALUE self)
+{
+    return self;
+}
+
+/* :nodoc: */
+static VALUE
+nucomp_loader(VALUE self, VALUE a)
+{
+    get_dat1(self);
+
+    dat->real = rb_ivar_get(a, id_i_real);
+    dat->imag = rb_ivar_get(a, id_i_imag);
+
+    return self;
+}
+
+/* :nodoc: */
+static VALUE
 nucomp_marshal_dump(VALUE self)
 {
     VALUE a;
     get_dat1(self);
 
     a = rb_assoc_new(dat->real, dat->imag);
-    rb_copy_generic_ivar(a, self);
     return a;
 }
 
@@ -1258,17 +1277,11 @@ nucomp_marshal_dump(VALUE self)
 static VALUE
 nucomp_marshal_load(VALUE self, VALUE a)
 {
-    get_dat1(self);
-
-    rb_check_frozen(self);
-    rb_check_trusted(self);
-
     Check_Type(a, T_ARRAY);
     if (RARRAY_LEN(a) != 2)
 	rb_raise(rb_eArgError, "marshaled complex must have an array whose length is 2 but %ld", RARRAY_LEN(a));
-    dat->real = RARRAY_PTR(a)[0];
-    dat->imag = RARRAY_PTR(a)[1];
-    rb_copy_generic_ivar(self, a);
+    rb_ivar_set(self, id_i_real, RARRAY_PTR(a)[0]);
+    rb_ivar_set(self, id_i_imag, RARRAY_PTR(a)[1]);
     return self;
 }
 
@@ -1833,6 +1846,7 @@ float_arg(VALUE self)
 void
 Init_Complex(void)
 {
+    VALUE compat;
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
@@ -1862,6 +1876,8 @@ Init_Complex(void)
     id_to_i = rb_intern("to_i");
     id_to_r = rb_intern("to_r");
     id_to_s = rb_intern("to_s");
+    id_i_real = rb_intern("@real");
+    id_i_imag = rb_intern("@image");
 
     rb_cComplex = rb_define_class("Complex", rb_cNumeric);
 
@@ -1951,7 +1967,9 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "inspect", nucomp_inspect, 0);
 
     rb_define_method(rb_cComplex, "marshal_dump", nucomp_marshal_dump, 0);
-    rb_define_method(rb_cComplex, "marshal_load", nucomp_marshal_load, 1);
+    compat = rb_define_class_under(rb_cComplex, "compatible", rb_cObject);
+    rb_define_method(compat, "marshal_load", nucomp_marshal_load, 1);
+    rb_marshal_define_compat(rb_cComplex, compat, nucomp_dumper, nucomp_loader);
 
     /* --- */
 
