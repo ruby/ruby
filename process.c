@@ -1068,18 +1068,21 @@ exec_with_sh(const char *prog, char **argv)
 
 #ifdef __native_client__
 static int
-proc_exec_v(char **argv, const char *prog, VALUE envp_str)
+proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
 {
   rb_notimplement();
 }
 #else
 static int
-proc_exec_v(char **argv, const char *prog, VALUE envp_str)
+proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
 {
+    char **argv;
     char fbuf[MAXPATHLEN];
 # if defined(__EMX__) || defined(OS2)
     char **new_argv = NULL;
 # endif
+
+    argv = (char **)RSTRING_PTR(argv_str);
 
     if (!prog)
 	prog = argv[0];
@@ -1133,32 +1136,6 @@ proc_exec_v(char **argv, const char *prog, VALUE envp_str)
 }
 #endif
 
-static int
-rb_proc_exec_ne(int argc, VALUE *argv, const char *prog, VALUE envp_str)
-{
-    char **args;
-    int i;
-    int ret = -1;
-    VALUE v;
-
-    args = ALLOC_ARGV(argc+1, v);
-    for (i=0; i<argc; i++) {
-	args[i] = RSTRING_PTR(argv[i]);
-    }
-    args[i] = 0;
-    if (args[0]) {
-	ret = proc_exec_v(args, prog, envp_str);
-    }
-    ALLOCV_END(v);
-    return ret;
-}
-
-int
-rb_proc_exec_n(int argc, VALUE *argv, const char *prog)
-{
-    return rb_proc_exec_ne(argc, argv, prog, Qfalse);
-}
-
 #ifdef __native_client__
 static int
 rb_proc_exec_e(const char *str, VALUE envp_str)
@@ -1169,16 +1146,13 @@ rb_proc_exec_e(const char *str, VALUE envp_str)
 static int
 rb_proc_exec_e(const char *str, VALUE envp_str)
 {
-#ifndef _WIN32
-    const char *s = str;
-    char *ss, *t;
-    char **argv, **a;
-    VALUE v;
-    int ret = -1;
-#endif
-
     while (*str && ISSPACE(*str))
 	str++;
+
+    if (!*str) {
+        errno = ENOENT;
+        return -1;
+    }
 
 #ifdef _WIN32
     before_exec();
@@ -1186,56 +1160,29 @@ rb_proc_exec_e(const char *str, VALUE envp_str)
     after_exec();
     return -1;
 #else
-    for (s=str; *s; s++) {
-	if (ISSPACE(*s)) {
-	    const char *p, *nl = NULL;
-	    for (p = s; ISSPACE(*p); p++) {
-		if (*p == '\n') nl = p;
-	    }
-	    if (!*p) break;
-	    if (nl) s = nl;
-	}
-	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 #if defined(__CYGWIN32__) || defined(__EMX__)
-	    char fbuf[MAXPATHLEN];
-	    char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
-	    int status = -1;
-	    before_exec();
-	    if (shell)
-		execl(shell, "sh", "-c", str, (char *) NULL);
-	    else
-		status = system(str);
-	    after_exec();
-	    if (status != -1)
-		exit(status);
+    {
+        char fbuf[MAXPATHLEN];
+        char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
+        int status = -1;
+        before_exec();
+        if (shell)
+            execl(shell, "sh", "-c", str, (char *) NULL);
+        else
+            status = system(str);
+        after_exec();
+        if (status != -1)
+            exit(status);
+    }
 #else
-	    before_exec();
-            if (envp_str)
-                execle("/bin/sh", "sh", "-c", str, (char *)NULL, (char **)RSTRING_PTR(envp_str));
-            else
-                execl("/bin/sh", "sh", "-c", str, (char *)NULL);
-	    preserving_errno(after_exec());
+    before_exec();
+    if (envp_str)
+        execle("/bin/sh", "sh", "-c", str, (char *)NULL, (char **)RSTRING_PTR(envp_str));
+    else
+        execl("/bin/sh", "sh", "-c", str, (char *)NULL);
+    preserving_errno(after_exec());
 #endif
-	    return -1;
-	}
-    }
-    a = argv = ALLOC_ARGV_WITH_STR((s-str)/2+2, v, ss, s-str+1);
-    memcpy(ss, str, s-str);
-    ss[s-str] = '\0';
-    if ((*a++ = strtok(ss, " \t")) != 0) {
-	while ((t = strtok(NULL, " \t")) != 0) {
-	    *a++ = t;
-	}
-	*a = NULL;
-    }
-    if (argv[0]) {
-	ret = proc_exec_v(argv, NULL, envp_str);
-    }
-    else {
-	errno = ENOENT;
-    }
-    ALLOCV_END(v);
-    return ret;
+    return -1;
 #endif	/* _WIN32 */
 }
 #endif
@@ -1857,10 +1804,73 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
         rb_ary_store(options, EXEC_OPTION_ENV, env);
     }
 
-    e->argc = argc;
-    e->argv = argv;
+    e->use_shell = argc == 0;
     e->prog = prog ? RSTRING_PTR(prog) : 0;
     e->progname = prog;
+
+#ifndef _WIN32
+    if (e->use_shell) {
+        char *p;
+        int has_meta = 0;
+        int has_nonspace = 0;
+        for (p = RSTRING_PTR(prog); *p; p++) {
+            if (*p != ' ' && *p != '\t')
+                has_nonspace = 1;
+            if (strchr("*?{}[]<>()~&|\\$;'`\"\n", *p))
+                has_meta = 1;
+        }
+        if (has_nonspace && !has_meta) {
+            /* avoid shell since no shell meta charactor found. */
+            e->use_shell = 0;
+        }
+        if (!e->use_shell) {
+            VALUE argv_buf;
+            argv_buf = hide_obj(rb_str_buf_new(0));
+            p = RSTRING_PTR(prog);
+            while (*p) {
+                while (*p == ' ' || *p == '\t')
+                    p++;
+                if (*p) {
+                    char *w = p;
+                    while (*p && *p != ' ' && *p != '\t')
+                        p++;
+                    rb_str_buf_cat(argv_buf, w, p-w);
+                    rb_str_buf_cat(argv_buf, "", 1); /* append '\0' */
+                }
+            }
+            e->argv_buf = argv_buf;
+            e->progname = hide_obj(rb_str_new_cstr(RSTRING_PTR(argv_buf)));
+            e->prog = RSTRING_PTR(e->progname);
+        }
+    }
+#endif
+
+    if (!e->use_shell && !e->argv_buf) {
+        int i;
+        VALUE argv_buf;
+        argv_buf = rb_str_buf_new(0);
+        hide_obj(argv_buf);
+        for (i = 0; i < argc; i++) {
+            rb_str_buf_cat2(argv_buf, StringValueCStr(argv[i]));
+            rb_str_buf_cat(argv_buf, "", 1); /* append '\0' */
+        }
+        e->argv_buf = argv_buf;
+    }
+
+    if (e->argv_buf) {
+        char *p, *ep;
+        VALUE argv_str;
+        argv_str = hide_obj(rb_str_buf_new(sizeof(char*) * (argc + 1)));
+        p = RSTRING_PTR(e->argv_buf);
+        ep = p + RSTRING_LEN(e->argv_buf);
+        while (p < ep) {
+            rb_str_buf_cat(argv_str, (char *)&p, sizeof(p));
+            p += strlen(p) + 1;
+        }
+        p = NULL;
+        rb_str_buf_cat(argv_str, (char *)&p, sizeof(p));
+        e->argv_str = argv_str;
+    }
 }
 
 VALUE
@@ -2433,8 +2443,6 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
         return 0;
 
     if (s) {
-        s->argc = 0;
-        s->argv = NULL;
         s->prog = NULL;
         s->options = soptions = hide_obj(rb_ary_new());
         s->redirect_fds = Qnil;
@@ -2527,19 +2535,17 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
 int
 rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 {
-    int argc = e->argc;
-    VALUE *argv = e->argv;
     const char *prog = e->prog;
 
     if (rb_run_exec_options_err(e, NULL, errmsg, errmsg_buflen) < 0) {
         return -1;
     }
 
-    if (argc == 0) {
+    if (e->use_shell) {
 	rb_proc_exec_e(prog, e->envp_str);
     }
     else {
-	rb_proc_exec_ne(argc, argv, prog, e->envp_str);
+        proc_exec_v(prog, e->argv_str, e->envp_str);
     }
     return -1;
 }
@@ -3090,9 +3096,9 @@ rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errm
 
     argc = earg->argc;
     argv = earg->argv;
-    if (prog && argc) argv[0] = prog;
+    if (prog && !earg->use_shell) argv[0] = prog;
 # if defined HAVE_SPAWNV
-    if (!argc) {
+    if (earg->use_shell) {
 	pid = proc_spawn(RSTRING_PTR(prog));
     }
     else {
@@ -3103,7 +3109,7 @@ rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errm
 	rb_last_status_set(0x7f << 8, 0);
 #  endif
 # else
-    if (argc) prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
+    if (!earg->use_shell) prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
     status = system(StringValuePtr(prog));
     rb_last_status_set((status & 0xff) << 8, 0);
 # endif

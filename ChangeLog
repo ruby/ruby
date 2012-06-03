@@ -1,3 +1,19 @@
+Sun Jun  3 23:47:30 2012  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_exec_arg): remove argc and argv fields.
+	  add use_shell, argv_str and argv_buf fields.
+
+	* process.c (rb_proc_exec_e): don't split shell command line arguments
+	  here to avoid memory allocation in a child process.
+	  (rb_exec_fillarg): split shell command line arguments here.
+	  (proc_exec_v): takes argv_str argument instead of argv.
+	  (rb_proc_exec_ne): removed.
+	  (rb_proc_exec_n): removed.
+	  (rb_run_exec_options_err): don't initialize the removed fields.
+	  (rb_exec_err): don't initialize the removed fields.
+	  call proc_exec_v directly instead of rb_proc_exec_ne.
+	  (rb_spawn_process): use use_shell field.
+
 Sun Jun  3 21:53:00 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* GPL: update text of GPLv2. [ruby-core:44488] [Bug #6328]

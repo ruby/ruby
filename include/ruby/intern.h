@@ -592,12 +592,13 @@ VALUE rb_sym_all_symbols(void);
 void rb_last_status_set(int status, rb_pid_t pid);
 VALUE rb_last_status_get(void);
 struct rb_exec_arg {
-    int argc;
-    VALUE *argv;
     const char *prog;
     VALUE options;
     VALUE redirect_fds;
     VALUE progname;
+    int use_shell;
+    VALUE argv_str;
+    VALUE argv_buf;
     VALUE envp_str;
     VALUE envp_buf;
 };
