@@ -1,3 +1,10 @@
+Mon Jun  4 04:24:06 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* marshal.c: experimental test aborted.
+	* complex.c: ditto.
+	* rational.c: ditto.
+	* include/ruby/intern.h: ditto.
+
 Mon Jun  4 00:45:18 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_spawn_process): fix for Windows.  not tested.

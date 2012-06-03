@@ -1254,17 +1254,6 @@ nucomp_marshal_dump(VALUE self)
     return a;
 }
 
-#ifdef MARSHAL_OLD_STYLE
-/* :nodoc: */
-static VALUE
-nucomp_marshal__dump(VALUE self, VALUE limit)
-{
-    VALUE arg;
-    arg = nucomp_marshal_dump(self);
-    return rb_marshal_dump(arg, Qnil);
-}
-#endif
-
 /* :nodoc: */
 static VALUE
 nucomp_marshal_load(VALUE self, VALUE a)
@@ -1282,30 +1271,6 @@ nucomp_marshal_load(VALUE self, VALUE a)
     rb_copy_generic_ivar(self, a);
     return self;
 }
-
-#ifdef MARSHAL_LOAD_DIRECT
-/* :nodoc: */
-static VALUE
-nucomp_marshal_load_fake(VALUE self, VALUE a)
-{
-    rb_raise(rb_eNotImpError, "not implemented");
-}
-
-VALUE
-rb_Complex_marshal_load(VALUE obj, VALUE a)
-{
-    return nucomp_marshal_load(obj, a);
-}
-#endif
-
-#ifdef MARSHAL_OLD_STYLE
-/* :nodoc: */
-static VALUE
-nucomp_marshal__load(VALUE klass, VALUE s)
-{
-    return nucomp_marshal_load(nucomp_s_alloc(klass), rb_marshal_load(s));
-}
-#endif
 
 /* --- */
 
@@ -1985,18 +1950,8 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "to_s", nucomp_to_s, 0);
     rb_define_method(rb_cComplex, "inspect", nucomp_inspect, 0);
 
-#ifndef MARSHAL_LOAD_DIRECT
-#ifndef MARSHAL_OLD_STYLE
     rb_define_method(rb_cComplex, "marshal_dump", nucomp_marshal_dump, 0);
     rb_define_method(rb_cComplex, "marshal_load", nucomp_marshal_load, 1);
-#else
-    rb_define_method(rb_cComplex, "_dump", nucomp_marshal__dump, 1);
-    rb_define_singleton_method(rb_cComplex, "_load", nucomp_marshal__load, 1);
-#endif
-#else
-    rb_define_method(rb_cComplex, "marshal_dump", nucomp_marshal_dump, 0);
-    rb_define_method(rb_cComplex, "marshal_load", nucomp_marshal_load_fake, 1);
-#endif
 
     /* --- */
 
