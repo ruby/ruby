@@ -1,3 +1,11 @@
+Sun Jun  3 16:33:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c: revert r35879 "now marshal_{load|dump} are external."
+
+	* complex.c (nucomp_marshal__{dump,load}): should use rb_marshal_{dump,load}.
+
+	* rational.c (nurat_marshal__{dump,load}): ditto.
+
 Sun Jun  3 14:13:58 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: checks whether the object is frozen or not.

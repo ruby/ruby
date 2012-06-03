@@ -1255,15 +1255,13 @@ nucomp_marshal_dump(VALUE self)
 }
 
 #ifdef MARSHAL_OLD_STYLE
-VALUE marshal_dump(int, VALUE *);
-
 /* :nodoc: */
 static VALUE
 nucomp_marshal__dump(VALUE self, VALUE limit)
 {
-    VALUE argv[1];
-    argv[0] = nucomp_marshal_dump(self);
-    return marshal_dump(1, argv);
+    VALUE arg;
+    arg = nucomp_marshal_dump(self);
+    return rb_marshal_dump(arg, Qnil);
 }
 #endif
 
@@ -1286,13 +1284,11 @@ nucomp_marshal_load(VALUE self, VALUE a)
 }
 
 #ifdef MARSHAL_OLD_STYLE
-VALUE marshal_load(int, VALUE *);
-
 /* :nodoc: */
 static VALUE
 nucomp_marshal__load(VALUE klass, VALUE s)
 {
-    return nucomp_marshal_load(nucomp_s_alloc(klass), marshal_load(1, &s));
+    return nucomp_marshal_load(nucomp_s_alloc(klass), rb_marshal_load(s));
 }
 #endif
 

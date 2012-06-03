@@ -899,7 +899,7 @@ clear_dump_arg(struct dump_arg *arg)
  *   ThreadGroup, Continuation
  * * objects which defines singleton methods
  */
-VALUE
+static VALUE
 marshal_dump(int argc, VALUE *argv)
 {
     VALUE obj, port, a1, a2;
@@ -1752,7 +1752,7 @@ clear_load_arg(struct load_arg *arg)
  * to_str. If proc is specified, it will be passed each object as it
  * is deserialized.
  */
-VALUE
+static VALUE
 marshal_load(int argc, VALUE *argv)
 {
     VALUE port, proc;
