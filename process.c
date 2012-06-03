@@ -1810,7 +1810,7 @@ rb_check_argv(int argc, VALUE *argv)
 }
 
 static VALUE
-rb_exec_getargs(int *argc_p, VALUE **argv_p, int accept_shell, VALUE *env_ret, VALUE *opthash_ret, struct rb_exec_arg *e)
+rb_exec_getargs(int *argc_p, VALUE **argv_p, int accept_shell, VALUE *env_ret, VALUE *opthash_ret)
 {
     VALUE hash, prog;
 
@@ -1868,7 +1868,7 @@ rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
 {
     VALUE prog;
     VALUE env = Qnil, opthash = Qnil;
-    prog = rb_exec_getargs(&argc, &argv, accept_shell, &env, &opthash, e);
+    prog = rb_exec_getargs(&argc, &argv, accept_shell, &env, &opthash);
     rb_exec_fillarg(prog, argc, argv, env, opthash, e);
     return prog;
 }

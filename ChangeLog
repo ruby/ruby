@@ -1,3 +1,7 @@
+Sun Jun  3 21:22:52 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_exec_getargs): remove rb_exec_arg argument.
+
 Sun Jun  3 21:14:26 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* marshal.c: calls directly rb_{Complex,Rational}_marshal_load().
