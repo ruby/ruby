@@ -1,3 +1,7 @@
+Mon Jun  4 06:12:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (r_object0): remove old warning for _alloc.
+
 Mon Jun  4 04:24:06 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* marshal.c: experimental test aborted.

@@ -1644,18 +1644,8 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
       case TYPE_DATA:
        {
            VALUE klass = path2class(r_unique(arg));
-           if (rb_respond_to(klass, s_alloc)) {
-	       static int warn = TRUE;
-	       if (warn) {
-		   rb_warn("define `allocate' instead of `_alloc'");
-		   warn = FALSE;
-	       }
-	       v = rb_funcall(klass, s_alloc, 0);
-	       check_load_arg(arg, s_alloc);
-           }
-	   else {
-	       v = rb_obj_alloc(klass);
-	   }
+
+	   v = rb_obj_alloc(klass);
            if (!RB_TYPE_P(v, T_DATA)) {
                rb_raise(rb_eArgError, "dump format error");
            }
