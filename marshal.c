@@ -1293,24 +1293,39 @@ path2module(VALUE path)
 }
 
 static VALUE
-obj_alloc_by_path(VALUE path, struct load_arg *arg)
+obj_alloc_by_klass(VALUE klass, struct load_arg *arg, VALUE *oldclass)
 {
-    VALUE klass;
     st_data_t data;
     rb_alloc_func_t allocator;
-
-    klass = path2class(path);
 
     allocator = rb_get_alloc_func(klass);
     if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, &data)) {
         marshal_compat_t *compat = (marshal_compat_t*)data;
         VALUE real_obj = rb_obj_alloc(klass);
         VALUE obj = rb_obj_alloc(compat->oldclass);
+	if (oldclass) *oldclass = compat->oldclass;
         st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
         return obj;
     }
 
     return rb_obj_alloc(klass);
+}
+
+static VALUE
+obj_alloc_by_path(VALUE path, struct load_arg *arg)
+{
+    return obj_alloc_by_klass(path2class(path), arg, 0);
+}
+
+static VALUE
+append_extmod(VALUE obj, VALUE extmod)
+{
+    long i = RARRAY_LEN(extmod);
+    while (i > 0) {
+	VALUE m = RARRAY_PTR(extmod)[--i];
+	rb_extend_object(obj, m);
+    }
+    return obj;
 }
 
 static VALUE
@@ -1347,7 +1362,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	{
 	    VALUE m = path2module(r_unique(arg));
 
-            if (NIL_P(extmod)) extmod = rb_ary_new2(0);
+            if (NIL_P(extmod)) extmod = rb_ary_tmp_new(0);
             rb_ary_push(extmod, m);
 
 	    v = r_object0(arg, 0, extmod);
@@ -1607,14 +1622,13 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
       case TYPE_USRMARSHAL:
         {
 	    VALUE klass = path2class(r_unique(arg));
+	    VALUE oldclass = 0;
 	    VALUE data;
 
-	    v = rb_obj_alloc(klass);
+	    v = obj_alloc_by_klass(klass, arg, &oldclass);
             if (!NIL_P(extmod)) {
-                while (RARRAY_LEN(extmod) > 0) {
-                    VALUE m = rb_ary_pop(extmod);
-                    rb_extend_object(v, m);
-                }
+		/* for the case marshal_load is overridden */
+		append_extmod(v, extmod);
             }
 	    if (!rb_respond_to(v, s_mload)) {
 		rb_raise(rb_eTypeError, "instance of %s needs to have method `marshal_load'",
@@ -1625,6 +1639,10 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    rb_funcall(v, s_mload, 1, data);
 	    check_load_arg(arg, s_mload);
             v = r_leave(v, arg);
+	    if (!NIL_P(extmod)) {
+		if (oldclass) append_extmod(v, extmod);
+		rb_ary_clear(extmod);
+	    }
 	}
         break;
 
@@ -1644,8 +1662,9 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
       case TYPE_DATA:
 	{
 	    VALUE klass = path2class(r_unique(arg));
+	    VALUE oldclass = 0;
 
-	    v = rb_obj_alloc(klass);
+	    v = obj_alloc_by_klass(klass, arg, &oldclass);
 	    if (!RB_TYPE_P(v, T_DATA)) {
 		rb_raise(rb_eArgError, "dump format error");
 	    }
