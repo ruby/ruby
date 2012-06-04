@@ -1,3 +1,8 @@
+Mon Jun  4 12:01:21 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_backtrace.rb: fix test.
+	  Windows path includes `:' character.
+
 Mon Jun  4 11:42:39 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h (rb_location_t): fix type and field name.

@@ -86,20 +86,9 @@ class TestBacktrace < Test::Unit::TestCase
   end
 
   def test_caller_locations
-    locs = caller_locations(0); cs = caller(0).map{|line|
-      path, lineno, label_str = line.split(':')
-      unless label_str
-        label_str = lineno
-        lineno = 0
-      end
-      lineno = lineno.to_i
-      if /in `(.+?)\'/ =~ label_str
-        label = $1
-      else
-        label = nil
-      end
-      [path, lineno, label]
+    cs = caller(0); locs = caller_locations(0).map{|loc|
+      loc.to_s
     }
-    assert_equal(locs.map{|loc| [loc.path, loc.lineno, loc.label]}, cs)
+    assert_equal(cs, locs)
   end
 end
