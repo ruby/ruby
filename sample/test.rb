@@ -15,7 +15,6 @@ PROGRESS.instance_eval do
   @rotator = %w[- \\ | /]
   @bs = "\b" * @rotator[0].size
   @tty = STDERR.tty? && /dumb/ !~ ENV["TERM"]
-  @tty &&= /mswin|mingw/ !~ RUBY_PLATFORM
   case @color
   when nil
     @color = @tty

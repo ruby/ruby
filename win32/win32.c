@@ -629,8 +629,38 @@ rtc_error_handler(int e, const char *src, int line, const char *exe, const char 
 static CRITICAL_SECTION select_mutex;
 static int NtSocketsInitialized = 0;
 static st_table *socklist = NULL;
+static st_table *conlist = NULL;
 static char *envarea;
 static char *uenvarea;
+
+/* License: Ruby's */
+struct constat {
+    struct {
+	int state, seq[16];
+	WORD attr;
+	COORD saved;
+    } vt100;
+};
+enum {constat_init = -2, constat_esc = -1, constat_seq = 0};
+
+/* License: Ruby's */
+static int
+free_conlist(st_data_t key, st_data_t val, st_data_t arg)
+{
+    xfree((struct constat *)val);
+    return ST_DELETE;
+}
+
+/* License: Ruby's */
+static void
+constat_delete(HANDLE h)
+{
+    if (conlist) {
+	st_data_t key = (st_data_t)h, val;
+	st_delete(conlist, &key, &val);
+	xfree((struct constat *)val);
+    }
+}
 
 /* License: Ruby's */
 static void
@@ -644,6 +674,11 @@ exit_handler(void)
 	}
 	DeleteCriticalSection(&select_mutex);
 	NtSocketsInitialized = 0;
+    }
+    if (conlist) {
+	st_foreach(conlist, free_conlist, 0);
+	st_free_table(conlist);
+	conlist = NULL;
     }
     if (envarea) {
 	FreeEnvironmentStrings(envarea);
@@ -5541,6 +5576,322 @@ rb_w32_pipe(int fds[2])
 }
 
 /* License: Ruby's */
+static struct constat *
+constat_handle(HANDLE h)
+{
+    st_data_t data;
+    struct constat *p;
+    if (!conlist) {
+	conlist = st_init_numtable();
+    }
+    if (st_lookup(conlist, (st_data_t)h, &data)) {
+	p = (struct constat *)data;
+    }
+    else {
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	p = ALLOC(struct constat);
+	p->vt100.state = constat_init;
+	p->vt100.attr = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
+	p->vt100.saved.X = p->vt100.saved.Y = 0;
+	if (GetConsoleScreenBufferInfo(h, &csbi)) {
+	    p->vt100.attr = csbi.wAttributes;
+	}
+	st_insert(conlist, (st_data_t)h, (st_data_t)p);
+    }
+    return p;
+}
+
+/* License: Ruby's */
+static void
+constat_reset(HANDLE h)
+{
+    st_data_t data;
+    struct constat *p;
+    if (!conlist) return;
+    if (!st_lookup(conlist, (st_data_t)h, &data)) return;
+    p = (struct constat *)data;
+    p->vt100.state = constat_init;
+}
+
+/* License: Ruby's */
+static DWORD
+constat_attr(int count, const int *seq, DWORD attr, DWORD default_attr)
+{
+#define FOREGROUND_MASK (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED)
+#define BACKGROUND_MASK (BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED)
+    DWORD bold = attr & (FOREGROUND_INTENSITY | BACKGROUND_INTENSITY);
+    int rev = 0;
+
+    if (!count) return attr;
+    while (count-- > 0) {
+	switch (*seq++) {
+	  case 0:
+	    attr = default_attr;
+	    rev = 0;
+	    bold = 0;
+	    break;
+	  case 1:
+	    bold |= rev ? BACKGROUND_INTENSITY : FOREGROUND_INTENSITY;
+	    break;
+	  case 4:
+#ifndef COMMON_LVB_UNDERSCORE
+#define COMMON_LVB_UNDERSCORE 0x8000
+#endif
+	    attr |= COMMON_LVB_UNDERSCORE;
+	    break;
+	  case 7:
+	    rev = 1;
+	    break;
+
+	  case 30:
+	    attr &= ~(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+	    break;
+	  case 17:
+	  case 31:
+	    attr = attr & ~(FOREGROUND_BLUE | FOREGROUND_GREEN) | FOREGROUND_RED;
+	    break;
+	  case 18:
+	  case 32:
+	    attr = attr & ~(FOREGROUND_BLUE | FOREGROUND_RED) | FOREGROUND_GREEN;
+	    break;
+	  case 19:
+	  case 33:
+	    attr = attr & ~FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
+	    break;
+	  case 20:
+	  case 34:
+	    attr = attr & ~(FOREGROUND_GREEN | FOREGROUND_RED) | FOREGROUND_BLUE;
+	    break;
+	  case 21:
+	  case 35:
+	    attr = attr & ~FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_RED;
+	    break;
+	  case 22:
+	  case 36:
+	    attr = attr & ~FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_GREEN;
+	    break;
+	  case 23:
+	  case 37:
+	    attr |= FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
+	    break;
+
+	  case 40:
+	    attr &= ~(BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED);
+	  case 41:
+	    attr = attr & ~(BACKGROUND_BLUE | BACKGROUND_GREEN) | BACKGROUND_RED;
+	    break;
+	  case 42:
+	    attr = attr & ~(BACKGROUND_BLUE | BACKGROUND_RED) | BACKGROUND_GREEN;
+	    break;
+	  case 43:
+	    attr = attr & ~BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED;
+	    break;
+	  case 44:
+	    attr = attr & ~(BACKGROUND_GREEN | BACKGROUND_RED) | BACKGROUND_BLUE;
+	    break;
+	  case 45:
+	    attr = attr & ~BACKGROUND_GREEN | BACKGROUND_BLUE | BACKGROUND_RED;
+	    break;
+	  case 46:
+	    attr = attr & ~BACKGROUND_RED | BACKGROUND_BLUE | BACKGROUND_GREEN;
+	    break;
+	  case 47:
+	    attr |= BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED;
+	    break;
+	}
+    }
+    if (rev) {
+	attr = attr & ~(FOREGROUND_MASK | BACKGROUND_MASK) |
+	    ((attr & FOREGROUND_MASK) << 4) |
+	    ((attr & BACKGROUND_MASK) >> 4);
+    }
+    return attr | bold;
+}
+
+/* License: Ruby's */
+static void
+constat_apply(HANDLE handle, struct constat *s, WCHAR w)
+{
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    const int *seq = s->vt100.seq;
+    int count = s->vt100.state;
+    int arg1 = 1;
+    COORD pos;
+    DWORD written;
+
+    if (!GetConsoleScreenBufferInfo(handle, &csbi)) return;
+    if (count > 0 && seq[0] > 0) arg1 = seq[0];
+    switch (w) {
+      case L'm':
+	SetConsoleTextAttribute(handle, constat_attr(count, seq, csbi.wAttributes, s->vt100.attr));
+	break;
+      case L'F':
+	csbi.dwCursorPosition.X = 0;
+      case L'A':
+	csbi.dwCursorPosition.Y -= arg1;
+	if (csbi.dwCursorPosition.Y < 0)
+	    csbi.dwCursorPosition.Y = 0;
+	SetConsoleCursorPosition(handle, csbi.dwCursorPosition);
+	break;
+      case L'E':
+	csbi.dwCursorPosition.X = 0;
+      case L'B':
+      case L'e':
+	csbi.dwCursorPosition.Y += arg1;
+	if (csbi.dwCursorPosition.Y >= csbi.dwSize.Y)
+	    csbi.dwCursorPosition.Y = csbi.dwSize.Y;
+	SetConsoleCursorPosition(handle, csbi.dwCursorPosition);
+	break;
+      case L'C':
+	csbi.dwCursorPosition.X += arg1;
+	if (csbi.dwCursorPosition.X >= csbi.dwSize.X)
+	    csbi.dwCursorPosition.X = csbi.dwSize.X;
+	SetConsoleCursorPosition(handle, csbi.dwCursorPosition);
+	break;
+      case L'D':
+	csbi.dwCursorPosition.X -= arg1;
+	if (csbi.dwCursorPosition.X < 0)
+	    csbi.dwCursorPosition.X = 0;
+	SetConsoleCursorPosition(handle, csbi.dwCursorPosition);
+	break;
+      case L'G':
+      case L'`':
+	csbi.dwCursorPosition.X = (arg1 > csbi.dwSize.X ? csbi.dwSize.X : arg1) - 1;
+	SetConsoleCursorPosition(handle, csbi.dwCursorPosition);
+	break;
+      case L'd':
+	csbi.dwCursorPosition.Y = (arg1 > csbi.dwSize.Y ? csbi.dwSize.Y : arg1) - 1;
+	SetConsoleCursorPosition(handle, csbi.dwCursorPosition);
+	break;
+      case L'H':
+      case L'f':
+	pos.Y = (arg1 > csbi.dwSize.Y ? csbi.dwSize.Y : arg1) - 1;
+	if (count < 2 || (arg1 = seq[1]) <= 0) arg1 = 1;
+	pos.X = (arg1 > csbi.dwSize.X ? csbi.dwSize.X : arg1) - 1;
+	SetConsoleCursorPosition(handle, pos);
+	break;
+      case L'J':
+	switch (arg1) {
+	  case 0:	/* erase after cursor */
+	    FillConsoleOutputCharacterW(handle, L' ',
+					csbi.dwSize.X * (csbi.dwSize.Y - csbi.dwCursorPosition.Y) - csbi.dwCursorPosition.X,
+					csbi.dwCursorPosition, &written);
+	    break;
+	  case 1:	/* erase before cursor */
+	    pos.X = 0;
+	    pos.Y = csbi.dwCursorPosition.Y;
+	    FillConsoleOutputCharacterW(handle, L' ',
+					csbi.dwSize.X * csbi.dwCursorPosition.Y + csbi.dwCursorPosition.X,
+					pos, &written);
+	    break;
+	  case 2:	/* erase entire line */
+	    pos.X = 0;
+	    pos.Y = 0;
+	    FillConsoleOutputCharacterW(handle, L' ', csbi.dwSize.X * csbi.dwSize.Y, pos, &written);
+	    break;
+	}
+	break;
+      case L'K':
+	switch (arg1) {
+	  case 0:	/* erase after cursor */
+	    FillConsoleOutputCharacterW(handle, L' ', csbi.dwSize.X - csbi.dwCursorPosition.X, csbi.dwCursorPosition, &written);
+	    break;
+	  case 1:	/* erase before cursor */
+	    pos.X = 0;
+	    pos.Y = csbi.dwCursorPosition.Y;
+	    FillConsoleOutputCharacterW(handle, L' ', csbi.dwCursorPosition.X, pos, &written);
+	    break;
+	  case 2:	/* erase entire line */
+	    pos.X = 0;
+	    pos.Y = csbi.dwCursorPosition.Y;
+	    FillConsoleOutputCharacterW(handle, L' ', csbi.dwSize.X, pos, &written);
+	    break;
+	}
+	break;
+      case L's':
+	s->vt100.saved = csbi.dwCursorPosition;
+	break;
+      case L'u':
+	SetConsoleCursorPosition(handle, s->vt100.saved);
+	break;
+      case L'h':
+	if (count >= 2 && seq[0] == -1 && seq[1] == 25) {
+	    CONSOLE_CURSOR_INFO cci;
+	    GetConsoleCursorInfo(handle, &cci);
+	    cci.bVisible = TRUE;
+	    SetConsoleCursorInfo(handle, &cci);
+	}
+	break;
+      case L'l':
+	if (count >= 2 && seq[0] == -1 && seq[1] == 25) {
+	    CONSOLE_CURSOR_INFO cci;
+	    GetConsoleCursorInfo(handle, &cci);
+	    cci.bVisible = FALSE;
+	    SetConsoleCursorInfo(handle, &cci);
+	}
+	break;
+    }
+}
+
+/* License: Ruby's */
+static long
+constat_parse(HANDLE h, struct constat *s, const WCHAR **ptrp, long *lenp)
+{
+    const WCHAR *ptr = *ptrp;
+    long rest, len = *lenp;
+    while (len-- > 0) {
+	WCHAR wc = *ptr++;
+	if (wc == 0x1b) {
+	    rest = *lenp - len - 1;
+	    s->vt100.state = constat_esc;
+	}
+	else if (s->vt100.state == constat_esc && wc == L'[') {
+	    rest = *lenp - len - 1;
+	    if (rest > 0) --rest;
+	    s->vt100.state = constat_seq;
+	    s->vt100.seq[0] = 0;
+	}
+	else if (s->vt100.state >= constat_seq) {
+	    if (wc >= L'0' && wc <= L'9') {
+		if (s->vt100.state < (int)numberof(s->vt100.seq)) {
+		    int *seq = &s->vt100.seq[s->vt100.state];
+		    *seq = (*seq * 10) + (wc - L'0');
+		}
+	    }
+	    else if (s->vt100.state == constat_seq && s->vt100.seq[0] == 0 && wc == L'?') {
+		s->vt100.seq[s->vt100.state++] = -1;
+	    }
+	    else {
+		do {
+		    if (++s->vt100.state < (int)numberof(s->vt100.seq)) {
+			s->vt100.seq[s->vt100.state] = 0;
+		    }
+		    else {
+			s->vt100.state = (int)numberof(s->vt100.seq);
+		    }
+		} while (0);
+		if (wc != L';') {
+		    constat_apply(h, s, wc);
+		    s->vt100.state = constat_init;
+		}
+	    }
+	    rest = 0;
+	}
+	else {
+	    continue;
+	}
+	*ptrp = ptr;
+	*lenp = len;
+	return rest;
+    }
+    len = *lenp;
+    *ptrp = ptr;
+    *lenp = 0;
+    return len;
+}
+
+
+/* License: Ruby's */
 int
 rb_w32_close(int fd)
 {
@@ -5553,6 +5904,7 @@ rb_w32_close(int fd)
     }
     _set_osfhnd(fd, (SOCKET)INVALID_HANDLE_VALUE);
     socklist_delete(&sock, NULL);
+    constat_delete((HANDLE)sock);
     _close(fd);
     errno = save_errno;
     if (closesocket(sock) == SOCKET_ERROR) {
@@ -5608,6 +5960,7 @@ rb_w32_read(int fd, void *buf, size_t size)
   retry:
     /* get rid of console reading bug */
     if (isconsole) {
+	constat_reset((HANDLE)_osfhnd(fd));
 	if (start)
 	    len = 1;
 	else {
@@ -5860,6 +6213,10 @@ rb_w32_write_console(uintptr_t strarg, int fd)
     HANDLE handle;
     DWORD dwMode, reslen;
     VALUE str = strarg;
+    rb_encoding *utf16 = rb_enc_find("UTF-16LE");
+    const WCHAR *ptr, *next;
+    struct constat *s;
+    long len;
 
     if (disable) return -1L;
     handle = (HANDLE)_osfhnd(fd);
@@ -5867,14 +6224,23 @@ rb_w32_write_console(uintptr_t strarg, int fd)
 	!rb_econv_has_convpath_p(rb_enc_name(rb_enc_get(str)), "UTF-16LE"))
 	return -1L;
 
-    str = rb_str_encode(str, rb_enc_from_encoding(rb_enc_find("UTF-16LE")),
+    str = rb_str_encode(str, rb_enc_from_encoding(utf16),
 			ECONV_INVALID_REPLACE|ECONV_UNDEF_REPLACE, Qnil);
-    if (!WriteConsoleW(handle, (LPWSTR)RSTRING_PTR(str), RSTRING_LEN(str)/2,
-		       &reslen, NULL)) {
-	if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
-	    disable = TRUE;
-	return -1L;
+    ptr = (const WCHAR *)RSTRING_PTR(str);
+    len = RSTRING_LEN(str) / sizeof(WCHAR);
+    s = constat_handle(handle);
+    while (len > 0) {
+	long curlen = constat_parse(handle, s, (next = ptr, &next), &len);
+	if (curlen > 0) {
+	    if (!WriteConsoleW(handle, ptr, curlen, &reslen, NULL)) {
+		if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
+		    disable = TRUE;
+		return -1L;
+	    }
+	}
+	ptr = next;
     }
+    RB_GC_GUARD(str);
     return (long)reslen;
 }
 
