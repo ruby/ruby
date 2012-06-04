@@ -1253,30 +1253,21 @@ proc_spawn_v(char **argv, char *prog)
 #endif
 
 static rb_pid_t
-proc_spawn_n(int argc, VALUE *argv, VALUE prog, VALUE options)
+proc_spawn_n(int argc, char **argv, VALUE prog, VALUE options)
 {
-    char **args;
-    int i;
-    VALUE v;
     rb_pid_t pid = -1;
 
-    args = ALLOC_ARGV(argc + 1, v);
-    for (i = 0; i < argc; i++) {
-	args[i] = RSTRING_PTR(argv[i]);
-    }
-    args[i] = (char*) 0;
-    if (args[0]) {
+    if (argv[0]) {
 #if defined(_WIN32)
 	DWORD flags = 0;
 	if (RTEST(rb_ary_entry(options, EXEC_OPTION_NEW_PGROUP))) {
 	    flags = CREATE_NEW_PROCESS_GROUP;
 	}
-	pid = rb_w32_aspawn_flags(P_NOWAIT, prog ? RSTRING_PTR(prog) : 0, args, flags);
+	pid = rb_w32_aspawn_flags(P_NOWAIT, prog ? RSTRING_PTR(prog) : 0, argv, flags);
 #else
-	pid = proc_spawn_v(args, prog ? RSTRING_PTR(prog) : 0);
+	pid = proc_spawn_v(argv, prog ? RSTRING_PTR(prog) : 0);
 #endif
     }
-    ALLOCV_END(v);
     return pid;
 }
 
@@ -3096,7 +3087,7 @@ rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errm
 
     if (prog && !earg->use_shell) {
         char **argv = (char **)RSTRING_PTR(earg->argv_str);
-        argv[0] = prog;
+        argv[0] = RSTRING_PTR(prog);
     }
 # if defined HAVE_SPAWNV
     if (earg->use_shell) {

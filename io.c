@@ -5501,24 +5501,6 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
         cmd = StringValueCStr(prog);
 #endif
 
-#if !defined(HAVE_FORK)
-    if (!eargp) {
-        /* fork : IO.popen("-") */
-        argc = 0;
-        argv = 0;
-    }
-    else if (eargp->argc) {
-        /* no shell : IO.popen([prog, arg0], arg1, ...) */
-        argc = eargp->argc;
-        argv = eargp->argv;
-    }
-    else {
-        /* with shell : IO.popen(prog) */
-        argc = 0;
-        argv = 0;
-    }
-#endif
-
 #if defined(HAVE_FORK)
     arg.execp = eargp;
     arg.modef = fmode;
@@ -5599,18 +5581,8 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
         fd = arg.pair[1];
     }
 #elif defined(_WIN32)
-    if (argc) {
-	int i;
-
-	if (argc >= (int)(FIXNUM_MAX / sizeof(char *))) {
-	    rb_raise(rb_eArgError, "too many arguments");
-	}
-	argbuf = rb_str_tmp_new((argc+1) * sizeof(char *));
-	args = (void *)RSTRING_PTR(argbuf);
-	for (i = 0; i < argc; ++i) {
-	    args[i] = StringValueCStr(argv[i]);
-	}
-	args[i] = NULL;
+    if (eargp && eargp->argv_str) {
+	args = (char **)RSTRING_PTR(eargp->argv_str);
     }
     switch (fmode & (FMODE_READABLE|FMODE_WRITABLE)) {
       case FMODE_READABLE|FMODE_WRITABLE:

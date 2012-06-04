@@ -1,3 +1,11 @@
+Mon Jun  4 10:42:04 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (pipe_open): follow up changes in r35889.
+
+	* process.c (proc_spawn_n): now uses char ** instead of VALUE *.
+
+	* process.c (rb_spawn_process): prog is now VALUE of String, not char *.
+
 Mon Jun  4 06:12:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_object0): remove old warning for _alloc.
