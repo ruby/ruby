@@ -736,7 +736,7 @@ rb_sourcefilename(void)
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
     if (cfp) {
-	return cfp->iseq->location.filename;
+	return cfp->iseq->location.path;
     }
     else {
 	return Qnil;
@@ -750,7 +750,7 @@ rb_sourcefile(void)
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
     if (cfp) {
-	return RSTRING_PTR(cfp->iseq->location.filename);
+	return RSTRING_PTR(cfp->iseq->location.path);
     }
     else {
 	return 0;
@@ -1414,9 +1414,9 @@ rb_thread_current_status(const rb_thread_t *th)
 	if (cfp->pc != 0) {
 	    rb_iseq_t *iseq = cfp->iseq;
 	    int line_no = rb_vm_get_sourceline(cfp);
-	    char *file = RSTRING_PTR(iseq->location.filename);
+	    char *file = RSTRING_PTR(iseq->location.path);
 	    str = rb_sprintf("%s:%d:in `%s'",
-			     file, line_no, RSTRING_PTR(iseq->location.name));
+			     file, line_no, RSTRING_PTR(iseq->location.label));
 	}
     }
     else if (cfp->me->def->original_id) {
@@ -2164,7 +2164,7 @@ rb_vm_set_progname(VALUE filename)
     rb_thread_t *th = GET_VM()->main_thread;
     rb_control_frame_t *cfp = (void *)(th->stack + th->stack_size);
     --cfp;
-    cfp->iseq->location.filename = filename;
+    cfp->iseq->location.path = filename;
 }
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE

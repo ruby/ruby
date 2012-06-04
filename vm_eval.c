@@ -1019,9 +1019,9 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	    if (rb_obj_is_kind_of(scope, rb_cBinding)) {
 		GetBindingPtr(scope, bind);
 		envval = bind->env;
-		if (strcmp(file, "(eval)") == 0 && bind->filename != Qnil) {
-		    file = RSTRING_PTR(bind->filename);
-		    line = bind->line_no;
+		if (strcmp(file, "(eval)") == 0 && bind->path != Qnil) {
+		    file = RSTRING_PTR(bind->path);
+		    line = bind->first_lineno;
 		}
 	    }
 	    else {
@@ -1676,7 +1676,7 @@ rb_current_realfilepath(void)
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     cfp = vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
-    if (cfp != 0) return cfp->iseq->location.filepath;
+    if (cfp != 0) return cfp->iseq->location.absolute_path;
     return Qnil;
 }
 

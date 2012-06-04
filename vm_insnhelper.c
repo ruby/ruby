@@ -133,8 +133,8 @@ argument_error(const rb_iseq_t *iseq, int miss_argc, int min_argc, int max_argc)
 	int line_no = rb_iseq_first_lineno(iseq);
 
 	err_line = rb_sprintf("%s:%d:in `%s'",
-			      RSTRING_PTR(iseq->location.filename),
-			      line_no, RSTRING_PTR(iseq->location.name));
+			      RSTRING_PTR(iseq->location.path),
+			      line_no, RSTRING_PTR(iseq->location.label));
 	rb_funcall(bt, rb_intern("unshift"), 1, err_line);
     }
 

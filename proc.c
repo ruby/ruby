@@ -256,7 +256,7 @@ binding_mark(void *ptr)
     if (ptr) {
 	bind = ptr;
 	RUBY_MARK_UNLESS_NULL(bind->env);
-	RUBY_MARK_UNLESS_NULL(bind->filename);
+	RUBY_MARK_UNLESS_NULL(bind->path);
     }
     RUBY_MARK_LEAVE("binding");
 }
@@ -294,8 +294,8 @@ binding_dup(VALUE self)
     GetBindingPtr(self, src);
     GetBindingPtr(bindval, dst);
     dst->env = src->env;
-    dst->filename = src->filename;
-    dst->line_no = src->line_no;
+    dst->path = src->path;
+    dst->first_lineno = src->first_lineno;
     return bindval;
 }
 
@@ -322,8 +322,8 @@ rb_binding_new(void)
 
     GetBindingPtr(bindval, bind);
     bind->env = rb_vm_make_env_object(th, cfp);
-    bind->filename = cfp->iseq->location.filename;
-    bind->line_no = rb_vm_get_sourceline(cfp);
+    bind->path = cfp->iseq->location.path;
+    bind->first_lineno = rb_vm_get_sourceline(cfp);
     return bindval;
 }
 
@@ -699,7 +699,7 @@ iseq_location(rb_iseq_t *iseq)
     VALUE loc[2];
 
     if (!iseq) return Qnil;
-    loc[0] = iseq->location.filename;
+    loc[0] = iseq->location.path;
     if (iseq->line_info_table) {
 	loc[1] = INT2FIX(rb_iseq_first_lineno(iseq));
     }
@@ -843,14 +843,14 @@ proc_to_s(VALUE self)
     is_lambda = proc->is_lambda ? " (lambda)" : "";
 
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	int line_no = 0;
+	int first_lineno = 0;
 
 	if (iseq->line_info_table) {
-	    line_no = rb_iseq_first_lineno(iseq);
+	    first_lineno = rb_iseq_first_lineno(iseq);
 	}
 	str = rb_sprintf("#<%s:%p@%s:%d%s>", cname, (void *)self,
-			 RSTRING_PTR(iseq->location.filename),
-			 line_no, is_lambda);
+			 RSTRING_PTR(iseq->location.path),
+			 first_lineno, is_lambda);
     }
     else {
 	str = rb_sprintf("#<%s:%p%s>", cname, (void *)proc->block.iseq,
@@ -1980,12 +1980,12 @@ proc_binding(VALUE self)
     GetBindingPtr(bindval, bind);
     bind->env = proc->envval;
     if (RUBY_VM_NORMAL_ISEQ_P(proc->block.iseq)) {
-	bind->filename = proc->block.iseq->location.filename;
-	bind->line_no = rb_iseq_first_lineno(proc->block.iseq);
+	bind->path = proc->block.iseq->location.path;
+	bind->first_lineno = rb_iseq_first_lineno(proc->block.iseq);
     }
     else {
-	bind->filename = Qnil;
-	bind->line_no = 0;
+	bind->path = Qnil;
+	bind->first_lineno = 0;
     }
     return bindval;
 }

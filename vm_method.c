@@ -224,9 +224,9 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	      default:
 		break;
 	    }
-	    if (iseq && !NIL_P(iseq->location.filename)) {
+	    if (iseq && !NIL_P(iseq->location.path)) {
 		int line = iseq->line_info_table ? rb_iseq_first_lineno(iseq) : 0;
-		rb_compile_warning(RSTRING_PTR(iseq->location.filename), line,
+		rb_compile_warning(RSTRING_PTR(iseq->location.path), line,
 				   "previous definition of %s was here",
 				   rb_id2name(old_def->original_id));
 	    }
@@ -307,7 +307,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 	th = GET_THREAD();
 	cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 	if (cfp && (line = rb_vm_get_sourceline(cfp))) {
-	    VALUE location = rb_ary_new3(2, cfp->iseq->location.filename, INT2FIX(line));
+	    VALUE location = rb_ary_new3(2, cfp->iseq->location.path, INT2FIX(line));
 	    def->body.attr.location = rb_ary_freeze(location);
 	}
 	break;

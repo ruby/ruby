@@ -1,3 +1,26 @@
+Mon Jun  4 11:42:39 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h (rb_location_t): fix type and field name.
+	  (1) rename rb_location_t to rb_iseq_location_t.
+	  (2) rename field names of rb_iseq_location_t to adjust
+	      RubyVM::Backtrace::Location methods.
+	      (2-1) filename -> path
+	      (2-2) filepath -> absolute_path
+	      (2-3) basename -> base_label
+	      (2-4) name -> label
+	  (3) rename filed name rb_iseq_location_t#line_no to
+	      rb_iseq_location_t#first_lineno to clear purpose of this field.
+	  (4) The field names rb_binding_t#(filename|line_no) are also renamed
+	      to rb_binding_t#(path|first_lineno).
+
+	* compile.c: apply above changes.
+
+	* iseq.c: ditto.
+
+	* proc.c: ditto.
+
+	* vm*.c: ditto.
+
 Mon Jun  4 11:40:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_object0): also load TYPE_USRMARSHAL, TYPE_DATA using

@@ -150,13 +150,13 @@ struct iseq_inline_cache_entry {
 #define GetISeqPtr(obj, ptr) \
   GetCoreDataFromValue((obj), rb_iseq_t, (ptr))
 
-typedef struct rb_location_struct {
-    VALUE filename;
-    VALUE filepath;
-    VALUE basename;
-    VALUE name;
-    size_t line_no;
-} rb_location_t;
+typedef struct rb_iseq_location_struct {
+    VALUE path;
+    VALUE absolute_path;
+    VALUE base_label;
+    VALUE label;
+    size_t first_lineno;
+} rb_iseq_location_t;
 
 struct rb_iseq_struct;
 
@@ -177,7 +177,7 @@ struct rb_iseq_struct {
 	ISEQ_TYPE_DEFINED_GUARD
     } type;              /* instruction sequence type */
 
-    rb_location_t location;
+    rb_iseq_location_t location;
 
     VALUE *iseq;         /* iseq (insn number and operands) */
     VALUE *iseq_encoded; /* encoded iseq */
@@ -512,12 +512,12 @@ typedef struct rb_thread_struct {
 #pragma GCC visibility push(default)
 #endif
 VALUE rb_iseq_new(NODE*, VALUE, VALUE, VALUE, VALUE, enum iseq_type);
-VALUE rb_iseq_new_top(NODE *node, VALUE name, VALUE filename, VALUE filepath, VALUE parent);
-VALUE rb_iseq_new_main(NODE *node, VALUE filename, VALUE filepath);
+VALUE rb_iseq_new_top(NODE *node, VALUE name, VALUE path, VALUE absolute_path, VALUE parent);
+VALUE rb_iseq_new_main(NODE *node, VALUE path, VALUE absolute_path);
 VALUE rb_iseq_new_with_bopt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE, enum iseq_type, VALUE);
 VALUE rb_iseq_new_with_opt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE, enum iseq_type, const rb_compile_option_t*);
 VALUE rb_iseq_compile(VALUE src, VALUE file, VALUE line);
-VALUE rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE filepath, VALUE line, VALUE opt);
+VALUE rb_iseq_compile_with_option(VALUE src, VALUE path, VALUE absolute_path, VALUE line, VALUE opt);
 VALUE rb_iseq_disasm(VALUE self);
 int rb_iseq_disasm_insn(VALUE str, VALUE *iseqval, size_t pos, rb_iseq_t *iseq, VALUE child);
 const char *ruby_node_name(int node);
@@ -563,8 +563,8 @@ typedef struct {
 
 typedef struct {
     VALUE env;
-    VALUE filename;
-    unsigned short line_no;
+    VALUE path;
+    unsigned short first_lineno;
 } rb_binding_t;
 
 /* used by compile time and send insn */
