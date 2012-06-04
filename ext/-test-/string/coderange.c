@@ -15,6 +15,7 @@ str_coderange(VALUE str)
       case ENC_CODERANGE_BROKEN:
 	return sym_broken;
     }
+    rb_bug("wrong condition of coderange");
     UNREACHABLE;
 }
 
