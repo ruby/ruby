@@ -3140,11 +3140,11 @@ rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errm
     }
 # if defined HAVE_SPAWNV
     if (earg->use_shell) {
-	pid = proc_spawn(RSTRING_PTR(prog));
+	pid = proc_spawn(RSTRING_PTR(prog)); /* xxx: earg is ignored. */
     }
     else {
         char **argv = ARGVSTR2ARGV(earg->argv_str);
-	pid = proc_spawn_n(argv, prog, earg->options);
+	pid = proc_spawn_n(argv, prog, earg->options); /* xxx: earg (except options) is ignored. */
     }
 #  if defined(_WIN32)
     if (pid == -1)
@@ -3156,7 +3156,7 @@ rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errm
         int argc = ARGVSTR2ARGC(earg->argv_str);
         prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
     }
-    status = system(StringValuePtr(prog));
+    status = system(StringValuePtr(prog)); /* xxx: earg is ignored. */
     rb_last_status_set((status & 0xff) << 8, 0);
 # endif
 
