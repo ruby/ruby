@@ -1,3 +1,11 @@
+Mon Jun  4 11:33:42 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (rb_run_exec_options_err): restore save_env() call for
+	  non-fork environments.
+
+	* process.c (rb_exec_err): restore environments after the failure of
+	  exec to fix [ruby-core:44093] [Bug #6249] on non-fork environments
+
 Mon Jun  4 10:42:04 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (pipe_open): follow up changes in r35889.

@@ -2423,6 +2423,30 @@ run_exec_rlimit(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 }
 #endif
 
+#if !defined(HAVE_FORK)
+static VALUE
+save_env_i(VALUE i, VALUE ary, int argc, VALUE *argv)
+{
+    rb_ary_push(ary, hide_obj(rb_ary_dup(argv[0])));
+    return Qnil;
+}
+
+static void
+save_env(VALUE save)
+{
+    if (!NIL_P(save) && NIL_P(rb_ary_entry(save, EXEC_OPTION_ENV))) {
+        VALUE env = rb_const_get(rb_cObject, rb_intern("ENV"));
+        if (RTEST(env)) {
+            VALUE ary = hide_obj(rb_ary_new());
+            rb_block_call(env, rb_intern("each"), 0, 0, save_env_i,
+                          (VALUE)ary);
+            rb_ary_store(save, EXEC_OPTION_ENV, ary);
+        }
+        rb_ary_store(save, EXEC_OPTION_UNSETENV_OTHERS, Qtrue);
+    }
+}
+#endif
+
 int
 rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char *errmsg, size_t errmsg_buflen)
 {
@@ -2454,6 +2478,29 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
     if (!NIL_P(obj)) {
         if (run_exec_rlimit(obj, soptions, errmsg, errmsg_buflen) == -1)
             return -1;
+    }
+#endif
+
+#if !defined(HAVE_FORK)
+    obj = rb_ary_entry(options, EXEC_OPTION_UNSETENV_OTHERS);
+    if (RTEST(obj)) {
+        save_env(soptions);
+        rb_env_clear();
+    }
+
+    obj = rb_ary_entry(options, EXEC_OPTION_ENV);
+    if (!NIL_P(obj)) {
+        long i;
+        save_env(soptions);
+        for (i = 0; i < RARRAY_LEN(obj); i++) {
+            VALUE pair = RARRAY_PTR(obj)[i];
+            VALUE key = RARRAY_PTR(pair)[0];
+            VALUE val = RARRAY_PTR(pair)[1];
+            if (NIL_P(val))
+                ruby_setenv(StringValueCStr(key), 0);
+            else
+                ruby_setenv(StringValueCStr(key), StringValueCStr(val));
+        }
     }
 #endif
 
@@ -2527,8 +2574,13 @@ int
 rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 {
     const char *prog = e->prog;
+#if !defined(HAVE_FORK)
+    struct rb_exec_arg sarg, *sargp = &sarg;
+#else
+# define sargp NULL
+#endif
 
-    if (rb_run_exec_options_err(e, NULL, errmsg, errmsg_buflen) < 0) {
+    if (rb_run_exec_options_err(e, sargp, errmsg, errmsg_buflen) < 0) {
         return -1;
     }
 
@@ -2538,6 +2590,11 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
     else {
         proc_exec_v(prog, e->argv_str, e->envp_str);
     }
+#if !defined(HAVE_FORK)
+    rb_run_exec_options_err(sargp, NULL, errmsg, errmsg_buflen);
+#else
+# undef sargp
+#endif
     return -1;
 }
 
