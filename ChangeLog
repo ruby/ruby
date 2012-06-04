@@ -1,3 +1,14 @@
+Mon Jun  4 16:13:00 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.h: remove magical code "lfp[0] & 0x02".
+	  Current VM doesn't use this bit.
+
+	* vm_core.h (RUBY_VM_GET_BLOCK_PTR): added.
+
+	* eval.c (rb_block_given_p): use RUBY_VM_GET_BLOCK_PTR().
+
+	* vm_eval.c (rb_f_block_given_p): ditto.
+
 Mon Jun  4 15:39:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (constat_apply): apply VT100 functions.

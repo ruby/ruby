@@ -622,6 +622,8 @@ typedef rb_control_frame_t *
 #define GC_GUARDED_PTR_REF(p) ((void *)(((VALUE)(p)) & ~0x03))
 #define GC_GUARDED_PTR_P(p)   (((VALUE)(p)) & 0x01)
 
+#define RUBY_VM_GET_BLOCK_PTR(cfp) ((rb_block_t *)(GC_GUARDED_PTR_REF((cfp)->lfp[0])))
+
 #define RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp) ((cfp)+1)
 #define RUBY_VM_NEXT_CONTROL_FRAME(cfp) ((cfp)-1)
 #define RUBY_VM_END_CONTROL_FRAME(th) \

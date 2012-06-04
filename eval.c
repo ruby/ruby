@@ -604,8 +604,7 @@ rb_block_given_p(void)
 {
     rb_thread_t *th = GET_THREAD();
 
-    if ((th->cfp->lfp[0] & 0x02) == 0 &&
-	GC_GUARDED_PTR_REF(th->cfp->lfp[0])) {
+    if (RUBY_VM_GET_BLOCK_PTR(th->cfp)) {
 	return TRUE;
     }
     else {
