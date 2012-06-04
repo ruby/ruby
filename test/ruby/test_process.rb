@@ -304,9 +304,22 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopts_preserve_env_on_exec_failure
-    ENV["mgg"] = nil
-    assert_raise(Errno::ENOENT) { Process.exec({"mgg" => "mggoo"}, "/nonexistent") }
-    assert_equal(nil, ENV["mgg"], "[ruby-core:44093] [ruby-trunk - Bug #6249]")
+    with_tmpchdir {|d|
+      write_file 's', <<-"End"
+        ENV["mgg"] = nil
+        prog = "/nonexistent"
+        begin
+          Process.exec({"mgg" => "mggoo"}, [prog, prog])
+        rescue Errno::ENOENT
+        end
+        open('out', 'w') {|f|
+          f.print ENV["mgg"].inspect
+        }
+      End
+      system(RUBY, 's')
+      assert_equal(nil.inspect, File.read('out'),
+        "[ruby-core:44093] [ruby-trunk - Bug #6249]")
+    }
   end
 
   def test_execopts_env_single_word
