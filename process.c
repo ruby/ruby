@@ -3131,8 +3131,6 @@ rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errm
 #endif
 #if !defined HAVE_FORK || USE_SPAWNV
     struct rb_exec_arg sarg;
-    int argc;
-    VALUE *argv;
 #endif
 
 #if defined HAVE_FORK && !USE_SPAWNV

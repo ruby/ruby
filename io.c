@@ -5494,8 +5494,10 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
     int write_fd = -1;
 #if !defined(HAVE_FORK)
     const char *cmd = 0;
+#if !defined(_WIN32)
     int argc;
     VALUE *argv;
+#endif
 
     if (prog)
         cmd = StringValueCStr(prog);
