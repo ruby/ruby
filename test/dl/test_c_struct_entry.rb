@@ -1,6 +1,8 @@
 require_relative 'test_base'
 
-require 'dl/cparser'
+require 'dl/function'
+require 'dl/value'
+require 'dl/struct'
 
 class DL::TestCStructEntity < DL::TestBase
   def test_class_size
