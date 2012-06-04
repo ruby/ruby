@@ -672,7 +672,6 @@ module Test
           color = true
         when :auto, nil
           color = @options[:job_status] == :replace && /dumb/ !~ ENV["TERM"]
-          color &&= /mswin|mingw/ !~ RUBY_PLATFORM
         else
           color = false
         end

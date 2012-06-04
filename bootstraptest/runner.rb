@@ -120,7 +120,6 @@ End
   case @color
   when nil
     @color = @tty && /dumb/ !~ ENV["TERM"]
-    @color &= /mswin|mingw/ !~ RUBY_PLATFORM
   when true
     @tty = true
   end
