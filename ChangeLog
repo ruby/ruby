@@ -1,3 +1,7 @@
+Mon Jun  4 14:06:12 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (rb_exec_err): should preserve errno.
+
 Mon Jun  4 13:10:11 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/dl/test_c_{struct,union}_entity.rb: broken require.

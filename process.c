@@ -2591,7 +2591,7 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
         proc_exec_v(prog, e->argv_str, e->envp_str);
     }
 #if !defined(HAVE_FORK)
-    rb_run_exec_options_err(sargp, NULL, errmsg, errmsg_buflen);
+    preserving_errno(rb_run_exec_options_err(sargp, NULL, errmsg, errmsg_buflen));
 #else
 # undef sargp
 #endif
