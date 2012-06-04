@@ -1079,7 +1079,7 @@ proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
     char **new_argv = NULL;
 # endif
 
-    argv = (char **)RSTRING_PTR(argv_str);
+    argv = ARGVSTR2ARGV(argv_str);
 
     if (!prog)
 	prog = argv[0];
@@ -3135,7 +3135,7 @@ rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errm
     }
 
     if (prog && !earg->use_shell) {
-        char **argv = (char **)RSTRING_PTR(earg->argv_str);
+        char **argv = ARGVSTR2ARGV(earg->argv_str);
         argv[0] = RSTRING_PTR(prog);
     }
 # if defined HAVE_SPAWNV
@@ -3143,7 +3143,7 @@ rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errm
 	pid = proc_spawn(RSTRING_PTR(prog));
     }
     else {
-        char **argv = (char **)RSTRING_PTR(earg->argv_str);
+        char **argv = ARGVSTR2ARGV(earg->argv_str);
 	pid = proc_spawn_n(argv, prog, earg->options);
     }
 #  if defined(_WIN32)
@@ -3152,8 +3152,8 @@ rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errm
 #  endif
 # else
     if (!earg->use_shell) {
-        char **argv = (char **)RSTRING_PTR(earg->argv_str);
-        int argc = RSTRING_LEN(earg->argv_str) / sizeof(char *) - 1;
+        char **argv = ARGVSTR2ARGV(earg->argv_str);
+        int argc = ARGVSTR2ARGC(earg->argv_str);
         prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
     }
     status = system(StringValuePtr(prog));

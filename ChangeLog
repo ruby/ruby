@@ -1,3 +1,13 @@
+Mon Jun  4 19:17:06 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (ARGVSTR2ARGC): defined.
+	  (ARGVSTR2ARGV): defined.
+
+	* process.c (proc_exec_v): use ARGVSTR2ARGV.
+	  (rb_spawn_process): use ARGVSTR2ARGC and ARGVSTR2ARGV.
+
+	* io.c (pipe_open): use ARGVSTR2ARGV.
+
 Mon Jun  4 16:13:00 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.h: remove magical code "lfp[0] & 0x02".

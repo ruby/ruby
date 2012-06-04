@@ -157,6 +157,13 @@ int rb_is_junk_name(VALUE name);
 VALUE rb_proc_location(VALUE self);
 st_index_t rb_hash_proc(st_index_t hash, VALUE proc);
 
+/* process.c */
+
+/* argv_str contains an extra element for terminating NULL used by execve..
+ * See rb_exec_fillarg() in process.c. */
+#define ARGVSTR2ARGC(argv_str) (RSTRING_LEN(argv_str) / sizeof(char *) - 1)
+#define ARGVSTR2ARGV(argv_str) ((char **)RSTRING_PTR(argv_str))
+
 /* rational.c */
 VALUE rb_lcm(VALUE x, VALUE y);
 VALUE rb_rational_reciprocal(VALUE x);
