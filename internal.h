@@ -159,10 +159,12 @@ st_index_t rb_hash_proc(st_index_t hash, VALUE proc);
 
 /* process.c */
 
-/* argv_str contains an extra element for terminating NULL used by execve..
+/* argv_str contains extra two elements.
+ * The beginning one is for /bin/sh used by exec_with_sh.
+ * The last one for terminating NULL used by execve.
  * See rb_exec_fillarg() in process.c. */
-#define ARGVSTR2ARGC(argv_str) (RSTRING_LEN(argv_str) / sizeof(char *) - 1)
-#define ARGVSTR2ARGV(argv_str) ((char **)RSTRING_PTR(argv_str))
+#define ARGVSTR2ARGC(argv_str) (RSTRING_LEN(argv_str) / sizeof(char *) - 2)
+#define ARGVSTR2ARGV(argv_str) ((char **)RSTRING_PTR(argv_str) + 1)
 
 /* rational.c */
 VALUE rb_lcm(VALUE x, VALUE y);

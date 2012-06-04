@@ -1843,17 +1843,17 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
     }
 
     if (e->argv_buf) {
-        char *p, *ep;
+        char *p, *ep, *null=NULL;
         VALUE argv_str;
-        argv_str = hide_obj(rb_str_buf_new(sizeof(char*) * (argc + 1)));
+        argv_str = hide_obj(rb_str_buf_new(sizeof(char*) * (argc + 2)));
+        rb_str_buf_cat(argv_str, (char *)&null, sizeof(null)); /* place holder for /bin/sh of try_with_sh. */
         p = RSTRING_PTR(e->argv_buf);
         ep = p + RSTRING_LEN(e->argv_buf);
         while (p < ep) {
             rb_str_buf_cat(argv_str, (char *)&p, sizeof(p));
             p += strlen(p) + 1;
         }
-        p = NULL;
-        rb_str_buf_cat(argv_str, (char *)&p, sizeof(p));
+        rb_str_buf_cat(argv_str, (char *)&null, sizeof(null)); /* terminator for execve.  */
         e->argv_str = argv_str;
     }
 }

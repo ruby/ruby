@@ -1,3 +1,11 @@
+Mon Jun  4 19:36:25 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_exec_fillarg): allocate one more element before
+	  beginning in argv_str for try_with_sh.
+
+	* internal.h (ARGVSTR2ARGC): adjust for the above change.
+	  (ARGVSTR2ARGV): ditto.
+
 Mon Jun  4 19:17:06 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (ARGVSTR2ARGC): defined.
