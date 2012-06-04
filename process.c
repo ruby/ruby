@@ -1066,16 +1066,13 @@ exec_with_sh(const char *prog, char **argv)
 #define ALLOC_ARGV_WITH_STR(n, v, s, l) \
     (char **)(((s) = ALLOCV_N(char, (v), ARGV_SIZE(n) + (l)) + ARGV_SIZE(n)) - ARGV_SIZE(n))
 
+static int
+proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
+{
 #ifdef __native_client__
-static int
-proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
-{
-  rb_notimplement();
-}
+    rb_notimplement();
+    UNREACHABLE;
 #else
-static int
-proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
-{
     char **argv;
     char fbuf[MAXPATHLEN];
 # if defined(__EMX__) || defined(OS2)
@@ -1133,19 +1130,16 @@ proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
     }
 # endif
     return -1;
-}
 #endif
-
-#ifdef __native_client__
-static int
-rb_proc_exec_e(const char *str, VALUE envp_str)
-{
-  rb_notimplement();
 }
-#else
+
 static int
 rb_proc_exec_e(const char *str, VALUE envp_str)
 {
+#ifdef __native_client__
+    rb_notimplement();
+    UNREACHABLE;
+#else
     while (*str == ' ' || *str == '\t' || *str == '\n')
 	str++;
 
@@ -1184,8 +1178,8 @@ rb_proc_exec_e(const char *str, VALUE envp_str)
 #endif
     return -1;
 #endif	/* _WIN32 */
-}
 #endif
+}
 
 int
 rb_proc_exec(const char *str)
