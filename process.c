@@ -1253,7 +1253,7 @@ proc_spawn_v(char **argv, char *prog)
 #endif
 
 static rb_pid_t
-proc_spawn_n(int argc, char **argv, VALUE prog, VALUE options)
+proc_spawn_n(char **argv, VALUE prog, VALUE options)
 {
     rb_pid_t pid = -1;
 
@@ -3150,8 +3150,7 @@ rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errm
     }
     else {
         char **argv = (char **)RSTRING_PTR(earg->argv_str);
-        int argc = RSTRING_LEN(earg->argv_str) / sizeof(char *) - 1;
-	pid = proc_spawn_n(argc, argv, prog, earg->options);
+	pid = proc_spawn_n(argv, prog, earg->options);
     }
 #  if defined(_WIN32)
     if (pid == -1)
