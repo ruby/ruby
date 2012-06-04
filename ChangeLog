@@ -1,3 +1,9 @@
+Mon Jun  4 21:53:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_sysinit): let the system not display the
+	  critical-error-handler message box and the Windows Error Reporting
+	  dialog.  [ruby-core:45389] [Bug #6535]
+
 Mon Jun  4 19:36:25 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_exec_fillarg): allocate one more element before
