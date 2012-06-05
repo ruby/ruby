@@ -6387,7 +6387,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     off_t pos;
 
     io = rb_io_get_io(io);
-    if (dest == io) return dest;
+    if (!OBJ_INIT_COPY(dest, io)) return dest;
     GetOpenFile(io, orig);
     MakeOpenFile(dest, fptr);
 
@@ -7286,6 +7286,7 @@ argf_initialize(VALUE argf, VALUE argv)
 static VALUE
 argf_initialize_copy(VALUE argf, VALUE orig)
 {
+    if (!OBJ_INIT_COPY(argf, orig)) return argf;
     ARGF = argf_of(orig);
     ARGF.argv = rb_obj_dup(ARGF.argv);
     if (ARGF.inplace) {

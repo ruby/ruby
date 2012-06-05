@@ -3425,8 +3425,7 @@ time_init_copy(VALUE copy, VALUE time)
 {
     struct time_object *tobj, *tcopy;
 
-    if (copy == time) return copy;
-    time_modify(copy);
+    if (!OBJ_INIT_COPY(copy, time)) return copy;
     GetTimeval(time, tobj);
     GetTimeval(copy, tcopy);
     MEMCPY(tcopy, tobj, struct time_object, 1);

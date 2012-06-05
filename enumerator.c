@@ -373,6 +373,7 @@ enumerator_init_copy(VALUE obj, VALUE orig)
 {
     struct enumerator *ptr0, *ptr1;
 
+    if (!OBJ_INIT_COPY(obj, orig)) return obj;
     ptr0 = enumerator_ptr(orig);
     if (ptr0->fib) {
 	/* Fibers cannot be copied */
@@ -1145,6 +1146,8 @@ static VALUE
 generator_init_copy(VALUE obj, VALUE orig)
 {
     struct generator *ptr0, *ptr1;
+
+    if (!OBJ_INIT_COPY(obj, orig)) return obj;
 
     ptr0 = generator_ptr(orig);
 

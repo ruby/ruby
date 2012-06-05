@@ -252,6 +252,9 @@ rb_check_trusted_inline(VALUE obj)
 #define rb_check_trusted(obj) rb_check_trusted_inline(obj)
 #endif
 
+#define OBJ_INIT_COPY(obj, orig) \
+    ((obj) != (orig) && (rb_obj_init_copy((obj), (orig)), 1))
+
 /* eval.c */
 int rb_sourceline(void);
 const char *rb_sourcefile(void);

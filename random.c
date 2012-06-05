@@ -596,9 +596,14 @@ random_get_seed(VALUE obj)
 static VALUE
 random_copy(VALUE obj, VALUE orig)
 {
-    rb_random_t *rnd1 = get_rnd(obj);
-    rb_random_t *rnd2 = get_rnd(orig);
-    struct MT *mt = &rnd1->mt;
+    rb_random_t *rnd1, *rnd2;
+    struct MT *mt;
+
+    if (!OBJ_INIT_COPY(obj, orig)) return obj;
+
+    rnd1 = get_rnd(obj);
+    rnd2 = get_rnd(orig);
+    mt = &rnd1->mt;
 
     *rnd1 = *rnd2;
     mt->next = mt->state + numberof(mt->state) - mt->left + 1;

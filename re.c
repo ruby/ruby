@@ -939,11 +939,8 @@ match_init_copy(VALUE obj, VALUE orig)
 {
     struct rmatch *rm;
 
-    if (obj == orig) return obj;
+    if (!OBJ_INIT_COPY(obj, orig)) return obj;
 
-    if (!rb_obj_is_instance_of(orig, rb_obj_class(obj))) {
-	rb_raise(rb_eTypeError, "wrong argument class");
-    }
     RMATCH(obj)->str = RMATCH(orig)->str;
     RMATCH(obj)->regexp = RMATCH(orig)->regexp;
 
@@ -3260,12 +3257,7 @@ rb_reg_init_copy(VALUE copy, VALUE re)
     const char *s;
     long len;
 
-    if (copy == re) return copy;
-    rb_check_frozen(copy);
-    /* need better argument type check */
-    if (!rb_obj_is_instance_of(re, rb_obj_class(copy))) {
-	rb_raise(rb_eTypeError, "wrong argument type");
-    }
+    if (!OBJ_INIT_COPY(copy, re)) return copy;
     rb_reg_check(re);
     s = RREGEXP_SRC_PTR(re);
     len = RREGEXP_SRC_LEN(re);

@@ -1,3 +1,7 @@
+Tue Jun  5 20:13:15 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_obj_init_copy): should check if trusted too.
+
 Tue Jun  5 19:59:13 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (strtok): declaration removed because it is not used.

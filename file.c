@@ -4470,12 +4470,7 @@ rb_stat_init_copy(VALUE copy, VALUE orig)
 {
     struct stat *nst;
 
-    if (copy == orig) return orig;
-    rb_check_frozen(copy);
-    /* need better argument type check */
-    if (!rb_obj_is_instance_of(orig, rb_obj_class(copy))) {
-	rb_raise(rb_eTypeError, "wrong argument class");
-    }
+    if (!OBJ_INIT_COPY(copy, orig)) return copy;
     if (DATA_PTR(copy)) {
 	xfree(DATA_PTR(copy));
 	DATA_PTR(copy) = 0;

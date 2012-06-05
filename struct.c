@@ -606,11 +606,7 @@ rb_struct_to_h(VALUE s)
 VALUE
 rb_struct_init_copy(VALUE copy, VALUE s)
 {
-    if (copy == s) return copy;
-    rb_check_frozen(copy);
-    if (!rb_obj_is_instance_of(s, rb_obj_class(copy))) {
-	rb_raise(rb_eTypeError, "wrong argument class");
-    }
+    if (!OBJ_INIT_COPY(copy, s)) return copy;
     if (RSTRUCT_LEN(copy) != RSTRUCT_LEN(s)) {
 	rb_raise(rb_eTypeError, "struct size mismatch");
     }

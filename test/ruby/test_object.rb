@@ -764,4 +764,36 @@ class TestObject < Test::Unit::TestCase
       assert_equal((eval("raise #{code}") rescue $!.inspect), out.chomp, bug5473)
     end
   end
+
+  def assert_not_initialize_copy
+    a = yield
+    b = yield
+    assert_nothing_raised("copy") {a.instance_eval {initialize_copy(b)}}
+    c = a.dup.freeze
+    assert_raise(RuntimeError, "frozen") {c.instance_eval {initialize_copy(b)}}
+    d = a.dup.trust
+    assert_raise(SecurityError, "untrust") do
+      proc {
+        $SAFE = 4
+        d.instance_eval {initialize_copy(b)}
+      }.call
+    end
+    [a, b, c, d]
+  end
+
+  def test_bad_initialize_copy
+    assert_not_initialize_copy {Object.new}
+    assert_not_initialize_copy {[].to_enum}
+    assert_not_initialize_copy {Enumerator::Generator.new {}}
+    assert_not_initialize_copy {Enumerator::Yielder.new {}}
+    assert_not_initialize_copy {File.stat(__FILE__)}
+    assert_not_initialize_copy {open(__FILE__)}.each(&:close)
+    assert_not_initialize_copy {ARGF.class.new}
+    assert_not_initialize_copy {Random.new}
+    assert_not_initialize_copy {//}
+    assert_not_initialize_copy {/.*/.match("foo")}
+    st = Struct.new(:foo)
+    assert_not_initialize_copy {st.new}
+    assert_not_initialize_copy {Time.now}
+  end
 end
