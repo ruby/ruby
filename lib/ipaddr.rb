@@ -2,7 +2,7 @@
 # ipaddr.rb - A class to manipulate an IP address
 #
 # Copyright (c) 2002 Hajimu UMEMOTO <ume@mahoroba.org>.
-# Copyright (c) 2007 Akinori MUSHA <knu@iDaemons.org>.
+# Copyright (c) 2007, 2009, 2012 Akinori MUSHA <knu@iDaemons.org>.
 # All rights reserved.
 #
 # You can redistribute and/or modify it under the same terms as Ruby.
@@ -16,61 +16,6 @@
 #   - scope_id support
 #
 require 'socket'
-
-unless Socket.const_defined? "AF_INET6"
-  class Socket < BasicSocket
-    # IPv6 protocol family
-    AF_INET6 = Object.new
-  end
-
-  class << IPSocket
-    # Returns +true+ if +addr+ is a valid IPv4 address.
-    def valid_v4?(addr)
-      if /\A(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\Z/ =~ addr
-        return $~.captures.all? {|i| i.to_i < 256}
-      end
-      return false
-    end
-
-    # Returns +true+ if +addr+ is a valid IPv6 address.
-    def valid_v6?(addr)
-      # IPv6 (normal)
-      return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*\Z/ =~ addr
-      return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*)?\Z/ =~ addr
-      return true if /\A::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*)?\Z/ =~ addr
-      # IPv6 (IPv4 compat)
-      return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*:/ =~ addr && valid_v4?($')
-      return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*:)?/ =~ addr && valid_v4?($')
-      return true if /\A::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*:)?/ =~ addr && valid_v4?($')
-
-      false
-    end
-
-    # Returns +true+ if +addr+ is either a valid IPv4 or IPv6 address.
-    def valid?(addr)
-      valid_v4?(addr) || valid_v6?(addr)
-    end
-
-    alias getaddress_orig getaddress
-
-    # Returns a +String+ based representation of a valid DNS hostname,
-    # IPv4 or IPv6 address.
-    # 
-    #   IPSocket.getaddress 'localhost'         #=> "::1"
-    #   IPSocket.getaddress 'broadcasthost'     #=> "255.255.255.255"
-    #   IPSocket.getaddress 'www.ruby-lang.org' #=> "221.186.184.68"
-    #   IPSocket.getaddress 'www.ccc.de'        #=> "2a00:1328:e102:ccc0::122"
-    def getaddress(s)
-      if valid?(s)
-        s
-      elsif /\A[-A-Za-z\d.]+\Z/ =~ s
-        getaddress_orig(s)
-      else
-        raise ArgumentError, "invalid address"
-      end
-    end
-  end
-end
 
 # IPAddr provides a set of methods to manipulate an IP address.  Both IPv4 and
 # IPv6 are supported.
@@ -99,8 +44,43 @@ class IPAddr
   IN4MASK = 0xffffffff
   # 128 bit mask for IPv4
   IN6MASK = 0xffffffffffffffffffffffffffffffff
-  # Formatstring for IPv6
+  # Format string for IPv6
   IN6FORMAT = (["%.4x"] * 8).join(':')
+
+  # Regexp _internally_ used for parsing IPv4 address.
+  RE_IPV4ADDRLIKE = %r{
+    \A
+    (\d+) \. (\d+) \. (\d+) \. (\d+)
+    \z
+  }x
+
+  # Regexp _internally_ used for parsing IPv6 address.
+  RE_IPV6ADDRLIKE_FULL = %r{
+    \A
+    (?:
+      (?: [\da-f]{1,4} : ){7} [\da-f]{1,4}
+    |
+      ( (?: [\da-f]{1,4} : ){6} )
+      (\d+) \. (\d+) \. (\d+) \. (\d+)
+    )
+    \z
+  }xi
+
+  # Regexp _internally_ used for parsing IPv6 address.
+  RE_IPV6ADDRLIKE_COMPRESSED = %r{
+    \A
+    ( (?: (?: [\da-f]{1,4} : )* [\da-f]{1,4} )? )
+    ::
+    ( (?:
+      ( (?: [\da-f]{1,4} : )* )
+      (?:
+        [\da-f]{1,4}
+      |
+        (\d+) \. (\d+) \. (\d+) \. (\d+)
+      )
+    )? )
+    \z
+  }xi
 
   # Returns the address family of this IP address.
   attr_reader :family
@@ -212,7 +192,7 @@ class IPAddr
 
     str.gsub!(/\b0{1,3}([\da-f]+)\b/i, '\1')
     loop do
-      break if str.sub!(/\A0:0:0:0:0:0:0:0\Z/, '::')
+      break if str.sub!(/\A0:0:0:0:0:0:0:0\z/, '::')
       break if str.sub!(/\b0:0:0:0:0:0:0\b/, ':')
       break if str.sub!(/\b0:0:0:0:0:0\b/, ':')
       break if str.sub!(/\b0:0:0:0:0\b/, ':')
@@ -223,7 +203,7 @@ class IPAddr
     end
     str.sub!(/:{3,}/, '::')
 
-    if /\A::(ffff:)?([\da-f]{1,4}):([\da-f]{1,4})\Z/i =~ str
+    if /\A::(ffff:)?([\da-f]{1,4}):([\da-f]{1,4})\z/i =~ str
       str = sprintf('::%s%d.%d.%d.%d', $1, $2.hex / 256, $2.hex % 256, $3.hex / 256, $3.hex % 256)
     end
 
@@ -490,11 +470,6 @@ class IPAddr
     # It seems AI_NUMERICHOST doesn't do the job.
     #Socket.getaddrinfo(left, nil, Socket::AF_INET6, Socket::SOCK_STREAM, nil,
     #                  Socket::AI_NUMERICHOST)
-    begin
-      IPSocket.getaddress(prefix)               # test if address is valid
-    rescue
-      raise ArgumentError, "invalid address"
-    end
     @addr = @family = nil
     if family == Socket::AF_UNSPEC || family == Socket::AF_INET
       @addr = in_addr(prefix)
@@ -528,26 +503,44 @@ class IPAddr
   end
 
   def in_addr(addr)
-    if addr =~ /^\d+\.\d+\.\d+\.\d+$/
-      return addr.split('.').inject(0) { |i, s|
-        i << 8 | s.to_i
-      }
+    case addr
+    when Array
+      octets = addr
+    else
+      m = RE_IPV4ADDRLIKE.match(addr) or return nil
+      octets = m.captures
     end
-    return nil
+    octets.inject(0) { |i, s|
+      (n = s.to_i) < 256 or raise ArgumentError, "invalid address"
+      s.match(/\A0./) and raise ArgumentError, "zero-filled number is ambiguous"
+      i << 8 | n
+    }
   end
 
   def in6_addr(left)
     case left
-    when /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i
-      return in_addr($1) + 0xffff00000000
-    when /^::(\d+\.\d+\.\d+\.\d+)$/i
-      return in_addr($1)
-    when /[^0-9a-f:]/i
-      raise ArgumentError, "invalid address"
-    when /^(.*)::(.*)$/
-      left, right = $1, $2
-    else
+    when RE_IPV6ADDRLIKE_FULL
+      if $2
+        addr = in_addr($~[2,4])
+        left = $1 + ':'
+      else
+        addr = 0
+      end
       right = ''
+    when RE_IPV6ADDRLIKE_COMPRESSED
+      if $4
+        left.count(':') <= 6 or raise ArgumentError, "invalid address"
+        addr = in_addr($~[4,4])
+        left = $1
+        right = $3 + '0:0'
+      else
+        left.count(':') <= 7 or raise ArgumentError, "invalid address"
+        left = $1
+        right = $2
+        addr = 0
+      end
+    else
+      raise ArgumentError, "invalid address"
     end
     l = left.split(':')
     r = right.split(':')
@@ -555,9 +548,9 @@ class IPAddr
     if rest < 0
       return nil
     end
-    return (l + Array.new(rest, '0') + r).inject(0) { |i, s|
+    (l + Array.new(rest, '0') + r).inject(0) { |i, s|
       i << 16 | s.hex
-    }
+    } | addr
   end
 
   def addr_mask(addr)
@@ -599,6 +592,55 @@ class IPAddr
 
 end
 
+unless Socket.const_defined? "AF_INET6"
+  class Socket < BasicSocket
+    # IPv6 protocol family
+    AF_INET6 = Object.new
+  end
+
+  class << IPSocket
+    private
+
+    def valid_v6?(addr)
+      case addr
+      when IPAddr::RE_IPV6ADDRLIKE_FULL
+        if $2
+          $~[2,4].all? {|i| i.to_i < 256 }
+        else
+          true
+        end
+      when IPAddr::RE_IPV6ADDRLIKE_COMPRESSED
+        if $4
+          addr.count(':') <= 6 && $~[4,4].all? {|i| i.to_i < 256}
+        else
+          addr.count(':') <= 7
+        end
+      else
+        false
+      end
+    end
+
+    alias getaddress_orig getaddress
+
+    public
+
+    # Returns a +String+ based representation of a valid DNS hostname,
+    # IPv4 or IPv6 address.
+    # 
+    #   IPSocket.getaddress 'localhost'         #=> "::1"
+    #   IPSocket.getaddress 'broadcasthost'     #=> "255.255.255.255"
+    #   IPSocket.getaddress 'www.ruby-lang.org' #=> "221.186.184.68"
+    #   IPSocket.getaddress 'www.ccc.de'        #=> "2a00:1328:e102:ccc0::122"
+    def getaddress(s)
+      if valid_v6?(s)
+        s
+      else
+        getaddress_orig(s)
+      end
+    end
+  end
+end
+
 if $0 == __FILE__
   eval DATA.read, nil, $0, __LINE__+4
 end
@@ -609,10 +651,15 @@ require 'test/unit'
 
 class TC_IPAddr < Test::Unit::TestCase
   def test_s_new
-    assert_nothing_raised {
-      IPAddr.new("3FFE:505:ffff::/48")
-      IPAddr.new("0:0:0:1::")
-      IPAddr.new("2001:200:300::/48")
+    [
+      ["3FFE:505:ffff::/48"],
+      ["0:0:0:1::"],
+      ["2001:200:300::/48"],
+      ["2001:200:300::192.168.1.2/48"],
+    ].each { |args|
+      assert_nothing_raised {
+        IPAddr.new(*args)
+      }
     }
 
     a = IPAddr.new
@@ -667,9 +714,10 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("2001:200:300::", IPAddr.new("[2001:200:300::]/48").to_s)
 
     [
+      ["192.168.0.256"],
+      ["192.168.0.011"],
       ["fe80::1%fxp0"],
       ["::1/255.255.255.0"],
-      ["::1:192.168.1.2/120"],
       [IPAddr.new("::1").to_i],
       ["::ffff:192.168.1.2/120", Socket::AF_INET],
       ["[192.168.1.2]/120"],
@@ -811,7 +859,9 @@ class TC_Operator < Test::Unit::TestCase
   end
 
   def test_equal
-    assert_equal(true, @a == IPAddr.new("3ffe:505:2::"))
+    assert_equal(true, @a == IPAddr.new("3FFE:505:2::"))
+    assert_equal(true, @a == IPAddr.new("3ffe:0505:0002::"))
+    assert_equal(true, @a == IPAddr.new("3ffe:0505:0002:0:0:0:0:0"))
     assert_equal(false, @a == IPAddr.new("3ffe:505:3::"))
     assert_equal(true, @a != IPAddr.new("3ffe:505:3::"))
     assert_equal(false, @a != IPAddr.new("3ffe:505:2::"))

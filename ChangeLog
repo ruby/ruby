@@ -1,3 +1,16 @@
+Tue Jun  5 14:03:53 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/ipaddr.rb: Inhibit zero-filled octets in an IPv4 address in
+	  all platforms. [ruby-dev:45671]
+
+	* lib/ipaddr.rb: Allow the x:x:x:x:x:x:d.d.d.d form not limited to
+	  IPv4 mapped/compatible addresses.  This change also makes it
+	  possible for the parser to understand IPv4 mapped and compatible
+	  IPv6 addresses in non-compressed form.
+
+	* lib/ipaddr.rb: Stop exposing IPSocket.valid*? methods which were
+	  only usable on non-IPv6-ready platforms.
+
 Sat Jun  2 18:49:39 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_enc_cr_str_buf_cat): don't reset coderange as unknown.
