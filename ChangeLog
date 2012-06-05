@@ -1,3 +1,8 @@
+Wed Jun  6 05:27:54 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_exec_fillarg): check use_shell field before accessing
+	  a union field.
+
 Wed Jun  6 04:58:44 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_spawn_process): prog variable is not used for Unix.

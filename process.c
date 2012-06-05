@@ -1830,7 +1830,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
         e->invoke.cmd.argv_buf = argv_buf;
     }
 
-    if (e->invoke.cmd.argv_buf) {
+    if (!e->use_shell) {
         char *p, *ep, *null=NULL;
         VALUE argv_str;
         argv_str = hide_obj(rb_str_buf_new(sizeof(char*) * (argc + 2)));
