@@ -1,3 +1,8 @@
+Tue Jun  5 09:25:10 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* io.c:  Edited documentation for IO and File open and new and
+	  Kernel#open for consistency and clarity.
+
 Mon Jun  4 21:53:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_sysinit): let the system not display the

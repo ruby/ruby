@@ -5933,27 +5933,29 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
  *
  *  With no associated block, <code>File.open</code> is a synonym for
  *  File.new. If the optional code block is given, it will
- *  be passed the opened +file+ as an argument, and the File object will
- *  automatically be closed when the block terminates.  In this instance,
- *  <code>File.open</code> returns the value of the block.
+ *  be passed the opened +file+ as an argument and the File object will
+ *  automatically be closed when the block terminates.  The value of the block
+ *  will be returned from <code>File.open</code>.
  *
- *  See IO.new for a list of values for the +opt+ parameter.
+ *  If a file is being created, its initial permissions may be set using the
+ *  +perm+ parameter.  See File.new for further discussion.
+ *
+ *  See IO.new for a description of the +mode+ and +opt+ parameters.
  */
 
 /*
  *  Document-method: IO::open
  *
  *  call-seq:
- *     IO.open(fd, mode_string="r" [, opt])               -> io
- *     IO.open(fd, mode_string="r" [, opt]) {|io| block } -> obj
+ *     IO.open(fd, mode="r" [, opt])                -> io
+ *     IO.open(fd, mode="r" [, opt]) { |io| block } -> obj
  *
- *  With no associated block, <code>IO.open</code> is a synonym for IO.new. If
- *  the optional code block is given, it will be passed +io+ as an
- *  argument, and the IO object will automatically be closed when the block
- *  terminates. In this instance, IO.open returns the value of the block.
+ *  With no associated block, <code>IO.open</code> is a synonym for IO.new.  If
+ *  the optional code block is given, it will be passed +io+ as an argument,
+ *  and the IO object will automatically be closed when the block terminates.
+ *  In this instance, IO.open returns the value of the block.
  *
- *  See IO.new for a description of values for the +opt+ parameter.
- *
+ *  See IO.new for a description of the +fd+, +mode+ and +opt+ parameters.
  */
 
 static VALUE
@@ -5976,7 +5978,6 @@ rb_io_s_open(int argc, VALUE *argv, VALUE klass)
  *  <code>Fixnum</code>.
  *
  *     IO.sysopen("testfile")   #=> 3
- *
  */
 
 static VALUE
@@ -6024,72 +6025,58 @@ check_pipe_command(VALUE filename_or_command)
 
 /*
  *  call-seq:
- *     open(path [, mode_enc [, perm]] [, opt])                -> io or nil
- *     open(path [, mode_enc [, perm]] [, opt]) {|io| block }  -> obj
+ *     open(path [, mode [, perm]] [, opt])                -> io or nil
+ *     open(path [, mode [, perm]] [, opt]) {|io| block }  -> obj
  *
- *  Creates an <code>IO</code> object connected to the given stream,
- *  file, or subprocess.
+ *  Creates an IO object connected to the given stream, file, or subprocess.
  *
- *  If <i>path</i> does not start with a pipe character
- *  (``<code>|</code>''), treat it as the name of a file to open using
- *  the specified mode (defaulting to ``<code>r</code>'').
+ *  If +path+ does not start with a pipe character (<code>|</code>), treat it
+ *  as the name of a file to open using the specified mode (defaulting to
+ *  "r").
  *
- *  The mode_enc is
- *  either a string or an integer.  If it is an integer, it must be
- *  bitwise-or of open(2) flags, such as File::RDWR or File::EXCL.
- *  If it is a string, it is either "mode", "mode:ext_enc", or
- *  "mode:ext_enc:int_enc".
- *  The mode is one of the following:
+ *  The +mode+ is either a string or an integer.  If it is an integer, it
+ *  must be bitwise-or of open(2) flags, such as File::RDWR or File::EXCL.  If
+ *  it is a string, it is either "fmode", "fmode:ext_enc", or
+ *  "fmode:ext_enc:int_enc".
  *
- *   r: read (default)
- *   w: write
- *   a: append
+ *  See the documentation of IO.new for full documentation of the +mode+ string
+ *  directives.
  *
- *  The mode can be followed by "b" (means binary-mode), or "+"
- *  (means both reading and writing allowed) or both.
- *  If ext_enc (external encoding) is specified,
- *  read string will be tagged by the encoding in reading,
- *  and output string will be converted
- *  to the specified encoding in writing.
- *  If ext_enc starts with 'BOM|', check whether the input has a BOM. If
- *  there is a BOM, strip it and set external encoding as
- *  what the BOM tells. If there is no BOM, use ext_enc without 'BOM|'.
- *  If two encoding names,
- *  ext_enc and int_enc (external encoding and internal encoding),
- *  are specified, the read string is converted from ext_enc
- *  to int_enc then tagged with the int_enc in read mode,
- *  and in write mode, the output string will be
- *  converted from int_enc to ext_enc before writing.
+ *  If a file is being created, its initial permissions may be set using the
+ *  +perm+ parameter.  See File.new and the open(2) and chmod(2) man pages for
+ *  a description of permissions.
  *
- *  If a file is being created, its initial permissions may be
- *  set using the integer third parameter.
+ *  If a block is specified, it will be invoked with the IO object as a
+ *  parameter, and the IO will be automatically closed when the block
+ *  terminates.  The call returns the value of the block.
  *
- *  If a block is specified, it will be invoked with the
- *  <code>File</code> object as a parameter, and the file will be
- *  automatically closed when the block terminates. The call
- *  returns the value of the block.
+ *  If +path+ starts with a pipe character (<code>"|"</code>), a subprocess is
+ *  created, connected to the caller by a pair of pipes.  The returned IO
+ *  object may be used to write to the standard input and read from the
+ *  standard output of this subprocess.
  *
- *  If <i>path</i> starts with a pipe character, a subprocess is
- *  created, connected to the caller by a pair of pipes. The returned
- *  <code>IO</code> object may be used to write to the standard input
- *  and read from the standard output of this subprocess. If the command
- *  following the ``<code>|</code>'' is a single minus sign, Ruby forks,
- *  and this subprocess is connected to the parent. In the subprocess,
- *  the <code>open</code> call returns <code>nil</code>. If the command
- *  is not ``<code>-</code>'', the subprocess runs the command. If a
- *  block is associated with an <code>open("|-")</code> call, that block
- *  will be run twice---once in the parent and once in the child. The
- *  block parameter will be an <code>IO</code> object in the parent and
- *  <code>nil</code> in the child. The parent's <code>IO</code> object
- *  will be connected to the child's <code>$stdin</code> and
- *  <code>$stdout</code>. The subprocess will be terminated at the end
- *  of the block.
+ *  If the command following the pipe is a single minus sign
+ *  (<code>"|-"</code>), Ruby forks, and this subprocess is connected to the
+ *  parent.  If the command is not <code>"-"</code>, the subprocess runs the
+ *  command.
+ *
+ *  When the subprocess is ruby (opened via <code>"|-"</code>), the +open+
+ *  call returns +nil+.  If a block is associated with the open call, that
+ *  block will run twice --- once in the parent and once in the child.
+ *
+ *  The block parameter will be an IO object in the parent and +nil+ in the
+ *  child. The parent's +IO+ object will be connected to the child's $stdin
+ *  and $stdout.  The subprocess will be terminated at the end of the block.
+ *
+ *  === Examples
+ *
+ *  Reading from "testfile":
  *
  *     open("testfile") do |f|
  *       print f.gets
  *     end
  *
- *  <em>produces:</em>
+ *  Produces:
  *
  *     This is line one
  *
@@ -6099,7 +6086,7 @@ check_pipe_command(VALUE filename_or_command)
  *     print cmd.gets
  *     cmd.close
  *
- *  <em>produces:</em>
+ *  Produces:
  *
  *     Wed Apr  9 08:56:31 CDT 2003
  *
@@ -6113,21 +6100,23 @@ check_pipe_command(VALUE filename_or_command)
  *       puts "Got: #{f.gets}"
  *     end
  *
- *  <em>produces:</em>
+ *  Produces:
  *
  *     Got: in Child
  *
- *  Open a subprocess using a block to receive the I/O object:
+ *  Open a subprocess using a block to receive the IO object:
  *
- *     open("|-") do |f|
- *       if f == nil
- *         puts "in Child"
- *       else
+ *     open "|-" do |f|
+ *       if f then
+ *         # parent process
  *         puts "Got: #{f.gets}"
+ *       else
+ *         # child process
+ *         puts "in Child"
  *       end
  *     end
  *
- *  <em>produces:</em>
+ *  Produces:
  *
  *     Got: in Child
  */
@@ -6910,59 +6899,116 @@ rb_io_stdio_file(rb_io_t *fptr)
  *  call-seq:
  *     IO.new(fd [, mode] [, opt])   -> io
  *
- *  Returns a new IO object (a stream) for the given IO object or integer file
- *  descriptor and mode string.  See also IO.sysopen and IO.for_fd.
+ *  Returns a new IO object (a stream) for the given integer file descriptor
+ *  +fd+ and +mode+ string.  +opt+ may be used to specify parts of +mode+ in a
+ *  more readable fashion.  See also IO.sysopen and IO.for_fd.
  *
- *  === Parameters
+ *  IO.new is called by various File and IO opening methods such as IO::open,
+ *  Kernel#open, and File::open.
  *
- *  fd:: numeric file descriptor or IO object
- *  mode:: file mode. a string or an integer
- *  opt:: hash for specifying +mode+ by name.
+ *  === Open Mode
  *
- *  ==== Mode
+ *  When +mode+ is an integer it must be combination of the modes defined in
+ *  File::Constants (+File::RDONLY+, +File::WRONLY | File::CREAT+).  See the
+ *  open(2) man page for more information.
  *
- *  When mode is an integer it must be combination of the modes defined in
- *  File::Constants.
+ *  When +mode+ is a string it must be in one of the following forms:
  *
- *  When mode is a string it must be in one of the following forms:
- *  - "fmode",
- *  - "fmode:extern",
- *  - "fmode:extern:intern".
- *  <code>extern</code> is the external encoding name for the IO.
- *  <code>intern</code> is the internal encoding.
- *  <code>fmode</code> must be a file open mode string. See the description of
- *  class IO for mode string directives.
+ *    fmode
+ *    fmode ":" ext_enc
+ *    fmode ":" ext_enc ":" int_enc
+ *    fmode ":" "BOM|UTF-*"
  *
- *  When the mode of original IO is read only, the mode cannot be changed to
- *  be writable.  Similarly, the mode cannot be changed from write only to
- *  readable.
+ *  +fmode+ is an IO open mode string, +ext_enc+ is the external encoding for
+ *  the IO and +int_enc+ is the internal encoding.
+ *
+ *  ==== IO Open Mode
+ *
+ *  Ruby allows the following open modes:
+ *
+ *  "r"  :: Read-only, starts at beginning of file  (default mode).
+ *
+ *  "r+" :: Read-write, starts at beginning of file.
+ *
+ *  "w"  :: Write-only, truncates existing file
+ *          to zero length or creates a new file for writing.
+ *
+ *  "w+" :: Read-write, truncates existing file to zero length
+ *          or creates a new file for reading and writing.
+ *
+ *  "a"  :: Write-only, starts at end of file if file exists,
+ *          otherwise creates a new file for writing.
+ *
+ *  "a+" :: Read-write, starts at end of file if file exists,
+ *          otherwise creates a new file for reading and
+ *          writing.
+ *
+ *  "b"  :: Binary file mode (may appear with
+ *          any of the key letters listed above).
+ *          Suppresses EOL <-> CRLF conversion on Windows. And
+ *          sets external encoding to ASCII-8BIT unless explicitly
+ *          specified.
+ *
+ *  "t"  :: Text file mode (may appear with
+ *          any of the key letters listed above except "b").
+ *
+ *  When the open mode of original IO is read only, the mode cannot be
+ *  changed to be writable.  Similarly, the open mode cannot be changed from
+ *  write only to readable.
  *
  *  When such a change is attempted the error is raised in different locations
  *  according to the platform.
  *
- *  ==== Options
- *  +opt+ can have the following keys
+ *  === IO Encoding
+ *
+ *  When +ext_enc+ is specified, strings read will be tagged by the encoding
+ *  when reading, and strings output will be converted to the specified
+ *  encoding when writing.
+ *
+ *  When +ext_enc+ and +int_enc+ are specified read strings will be converted
+ *  from +ext_enc+ to +int_enc+ upon input, and written strings will be
+ *  converted from +int_enc+ to +ext_enc+ upon output.  See Encoding for
+ *  further details of transcoding on input and output.
+ *
+ *  If "BOM|UTF-8", "BOM|UTF-16LE" or "BOM|UTF16-BE" are used, ruby checks for
+ *  a Unicode BOM in the input document to help determine the encoding.  For
+ *  UTF-16 encodings the file open mode must be binary.  When present, the BOM
+ *  is stripped and the external encoding from the BOM is used.  When the BOM
+ *  is missing the given Unicode encoding is used as +ext_enc+.  (The BOM-set
+ *  encoding option is case insensitive, so "bom|utf-8" is also valid.)
+ *
+ *  === Options
+ *
+ *  +opt+ can be used instead of +mode+ for improved readability.  The
+ *  following keys are supported:
+ *
  *  :mode ::
  *    Same as +mode+ parameter
- *  :external_encoding ::
+ *
+ *  :\external_encoding ::
  *    External encoding for the IO.  "-" is a synonym for the default external
  *    encoding.
- *  :internal_encoding ::
+ *
+ *  :\internal_encoding ::
  *    Internal encoding for the IO.  "-" is a synonym for the default internal
  *    encoding.
  *
  *    If the value is nil no conversion occurs.
+ *
  *  :encoding ::
  *    Specifies external and internal encodings as "extern:intern".
+ *
  *  :textmode ::
  *    If the value is truth value, same as "t" in argument +mode+.
+ *
  *  :binmode ::
  *    If the value is truth value, same as "b" in argument +mode+.
+ *
  *  :autoclose ::
  *    If the value is +false+, the +fd+ will be kept open after this IO
  *    instance gets finalized.
  *
- *  Also +opt+ can have same keys in String#encode for controlling conversion
+ *  Also, +opt+ can have same keys in String#encode for controlling conversion
  *  between the external encoding and the internal encoding.
  *
  *  === Example 1
@@ -6972,7 +7018,7 @@ rb_io_stdio_file(rb_io_t *fptr)
  *    $stderr.puts "Hello"
  *    a.puts "World"
  *
- *  <em>produces:</em>
+ *  Produces:
  *
  *    Hello
  *    World
@@ -7059,20 +7105,14 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
  *     File.new(filename, mode="r" [, opt])            -> file
  *     File.new(filename [, mode [, perm]] [, opt])    -> file
  *
- *  Opens the file named by +filename+ according to +mode+ (default is "r")
- *  and returns a new <code>File</code> object.
+ *  Opens the file named by +filename+ according to the given +mode+ and
+ *  returns a new File object.
  *
- *  === Parameters
+ *  See IO.new for a description of +mode+ and +opt+.
  *
- *  See the description of class IO for a description of +mode+.  The file
- *  mode may optionally be specified as a Fixnum by +or+-ing together the
- *  flags (O_RDONLY etc, again described under +IO+).
- *
- *  Optional permission bits may be given in +perm+.  These mode and
- *  permission bits are platform dependent; on Unix systems, see
- *  <code>open(2)</code> for details.
- *
- *  Optional +opt+ parameter is same as in IO.open.
+ *  If a file is being created, permission bits may be given in +perm+.  These
+ *  mode and permission bits are platform dependent; on Unix systems, see
+ *  open(2) and chmod(2) man pages for details.
  *
  *  === Examples
  *
@@ -11177,91 +11217,59 @@ argf_write(VALUE argf, VALUE str)
  */
 
 /*
- *  Class <code>IO</code> is the basis for all input and output in Ruby.
+ *  The IO class is the basis for all input and output in Ruby.
  *  An I/O stream may be <em>duplexed</em> (that is, bidirectional), and
  *  so may use more than one native operating system stream.
  *
- *  Many of the examples in this section use class <code>File</code>,
- *  the only standard subclass of <code>IO</code>. The two classes are
- *  closely associated.
+ *  Many of the examples in this section use the File class, the only standard
+ *  subclass of IO. The two classes are closely associated.  Like the File
+ *  class, the Socket library subclasses from IO (such as TCPSocket or
+ *  UDPSocket).
  *
- *  As used in this section, <em>portname</em> may take any of the
- *  following forms.
+ *  The Kernel#open method can create an IO (or File) object for these types
+ *  of arguments:
  *
  *  * A plain string represents a filename suitable for the underlying
  *    operating system.
  *
- *  * A string starting with ``<code>|</code>'' indicates a subprocess.
- *    The remainder of the string following the ``<code>|</code>'' is
+ *  * A string starting with <code>"|"</code> indicates a subprocess.
+ *    The remainder of the string following the <code>"|"</code> is
  *    invoked as a process with appropriate input/output channels
  *    connected to it.
  *
- *  * A string equal to ``<code>|-</code>'' will create another Ruby
+ *  * A string equal to <code>"|-"</code> will create another Ruby
  *    instance as a subprocess.
  *
- *  Ruby will convert pathnames between different operating system
- *  conventions if possible. For instance, on a Windows system the
- *  filename ``<code>/gumby/ruby/test.rb</code>'' will be opened as
- *  ``<code>\gumby\ruby\test.rb</code>''. When specifying a
- *  Windows-style filename in a Ruby string, remember to escape the
- *  backslashes:
+ *  The IO may be opened with different file modes (read-only, write-only) and
+ *  encodings for proper conversion.  See IO.new for these options.  See
+ *  Kernel#open for details of the various command formats described above.
  *
- *     "c:\\gumby\\ruby\\test.rb"
+ *  IO.popen, the Open3 library, or  Process#spawn may also be used to
+ *  communicate with subprocesses through an IO.
+ *
+ *  Ruby will convert pathnames between different operating system
+ *  conventions if possible.  For instance, on a Windows system the
+ *  filename <code>"/gumby/ruby/test.rb"</code> will be opened as
+ *  <code>"\gumby\ruby\test.rb"</code>.  When specifying a Windows-style
+ *  filename in a Ruby string, remember to escape the backslashes:
+ *
+ *    "c:\\gumby\\ruby\\test.rb"
  *
  *  Our examples here will use the Unix-style forward slashes;
- *  <code>File::SEPARATOR</code> can be used to get the
- *  platform-specific separator character.
- *
- *  I/O ports may be opened in any one of several different modes, which
- *  are shown in this section as <em>mode</em>. The mode may
- *  either be a Fixnum or a String. If numeric, it should be
- *  one of the operating system specific constants (O_RDONLY,
- *  O_WRONLY, O_RDWR, O_APPEND and so on). See man open(2) for
- *  more information.
- *
- *  If the mode is given as a String, it must be one of the
- *  values listed in the following table.
- *
- *    Mode |  Meaning
- *    -----+--------------------------------------------------------
- *    "r"  |  Read-only, starts at beginning of file  (default mode).
- *    -----+--------------------------------------------------------
- *    "r+" |  Read-write, starts at beginning of file.
- *    -----+--------------------------------------------------------
- *    "w"  |  Write-only, truncates existing file
- *         |  to zero length or creates a new file for writing.
- *    -----+--------------------------------------------------------
- *    "w+" |  Read-write, truncates existing file to zero length
- *         |  or creates a new file for reading and writing.
- *    -----+--------------------------------------------------------
- *    "a"  |  Write-only, starts at end of file if file exists,
- *         |  otherwise creates a new file for writing.
- *    -----+--------------------------------------------------------
- *    "a+" |  Read-write, starts at end of file if file exists,
- *         |  otherwise creates a new file for reading and
- *         |  writing.
- *    -----+--------------------------------------------------------
- *     "b" |  Binary file mode (may appear with
- *         |  any of the key letters listed above).
- *         |  Suppresses EOL <-> CRLF conversion on Windows. And
- *         |  sets external encoding to ASCII-8BIT unless explicitly
- *         |  specified.
- *    -----+--------------------------------------------------------
- *     "t" |  Text file mode (may appear with
- *         |  any of the key letters listed above except "b").
- *
+ *  File::ALT_SEPARATOR can be used to get the platform-specific separator
+ *  character.
  *
  *  The global constant ARGF (also accessible as $<) provides an
  *  IO-like stream which allows access to all files mentioned on the
- *  command line (or STDIN if no files are mentioned). ARGF provides
- *  the methods <code>#path</code> and <code>#filename</code> to access
- *  the name of the file currently being read.
+ *  command line (or STDIN if no files are mentioned). ARGF#path and its alias
+ *  ARGF#filename are provided to access the name of the file currently being
+ *  read.
  *
  *  == io/console
  *
  *  The io/console extension provides methods for interacting with the
- *  console.  The console can be accessed from <code>IO.console</code> or
- *  the standard input/output/error IO objects.
+ *  console.  The console can be accessed from IO.console or the standard
+ *  input/output/error IO objects.
  *
  *  Requiring io/console adds the following methods:
  *
