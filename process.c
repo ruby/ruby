@@ -982,10 +982,6 @@ proc_detach(VALUE obj, VALUE pid)
     return rb_detach_process(NUM2PIDT(pid));
 }
 
-#ifndef HAVE_STRING_H
-char *strtok();
-#endif
-
 static int forked_child = 0;
 
 #ifdef SIGPIPE
