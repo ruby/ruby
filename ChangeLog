@@ -1,3 +1,9 @@
+Tue Jun  5 22:28:46 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h: rb_exec_arg and related stuff moved from intern.h
+
+	* include/ruby/intern.h (rb_proc_exec_n): removed.
+
 Tue Jun  5 21:57:22 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_exec_arg_fixup): allocate a temporary buffer for

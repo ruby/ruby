@@ -159,12 +159,33 @@ st_index_t rb_hash_proc(st_index_t hash, VALUE proc);
 
 /* process.c */
 
+struct rb_exec_arg {
+    const char *prog;
+    VALUE options;
+    VALUE redirect_fds;
+    VALUE progname;
+    int use_shell;
+    VALUE argv_str;
+    VALUE argv_buf;
+    VALUE envp_str;
+    VALUE envp_buf;
+    VALUE dup2_tmpbuf;
+};
+
 /* argv_str contains extra two elements.
  * The beginning one is for /bin/sh used by exec_with_sh.
  * The last one for terminating NULL used by execve.
  * See rb_exec_fillarg() in process.c. */
 #define ARGVSTR2ARGC(argv_str) (RSTRING_LEN(argv_str) / sizeof(char *) - 2)
 #define ARGVSTR2ARGV(argv_str) ((char **)RSTRING_PTR(argv_str) + 1)
+
+VALUE rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e);
+int rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val);
+void rb_exec_arg_fixup(struct rb_exec_arg *e);
+int rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s);
+int rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char*, size_t);
+int rb_exec(const struct rb_exec_arg*);
+int rb_exec_err(const struct rb_exec_arg*, char*, size_t);
 
 /* rational.c */
 VALUE rb_lcm(VALUE x, VALUE y);

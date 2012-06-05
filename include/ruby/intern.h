@@ -588,27 +588,7 @@ VALUE rb_sym_all_symbols(void);
 /* process.c */
 void rb_last_status_set(int status, rb_pid_t pid);
 VALUE rb_last_status_get(void);
-struct rb_exec_arg {
-    const char *prog;
-    VALUE options;
-    VALUE redirect_fds;
-    VALUE progname;
-    int use_shell;
-    VALUE argv_str;
-    VALUE argv_buf;
-    VALUE envp_str;
-    VALUE envp_buf;
-    VALUE dup2_tmpbuf;
-};
-int rb_proc_exec_n(int, VALUE*, const char*);
 int rb_proc_exec(const char*);
-VALUE rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e);
-int rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val);
-void rb_exec_arg_fixup(struct rb_exec_arg *e);
-int rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s);
-int rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char*, size_t);
-int rb_exec(const struct rb_exec_arg*);
-int rb_exec_err(const struct rb_exec_arg*, char*, size_t);
 rb_pid_t rb_fork(int*, int (*)(void*), void*, VALUE);
 rb_pid_t rb_fork_err(int*, int (*)(void*, char*, size_t), void*, VALUE, char*, size_t);
 VALUE rb_f_exec(int,VALUE*);
