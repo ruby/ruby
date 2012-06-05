@@ -1775,8 +1775,10 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
     }
 
     e->use_shell = argc == 0;
-    e->prog = prog ? RSTRING_PTR(prog) : 0;
-    e->progname = prog;
+    if (e->use_shell)
+        e->invoke.sh.shell_script = prog;
+    else
+        e->invoke.cmd.command_name = prog;
 
 #ifndef _WIN32
     if (e->use_shell) {
@@ -1810,14 +1812,13 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
                     rb_str_buf_cat(argv_buf, "", 1); /* append '\0' */
                 }
             }
-            e->argv_buf = argv_buf;
-            e->progname = hide_obj(rb_str_new_cstr(RSTRING_PTR(argv_buf)));
-            e->prog = RSTRING_PTR(e->progname);
+            e->invoke.cmd.argv_buf = argv_buf;
+            e->invoke.cmd.command_name = hide_obj(rb_str_new_cstr(RSTRING_PTR(argv_buf)));
         }
     }
 #endif
 
-    if (!e->use_shell && !e->argv_buf) {
+    if (!e->use_shell && !e->invoke.cmd.argv_buf) {
         int i;
         VALUE argv_buf;
         argv_buf = rb_str_buf_new(0);
@@ -1826,22 +1827,22 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
             rb_str_buf_cat2(argv_buf, StringValueCStr(argv[i]));
             rb_str_buf_cat(argv_buf, "", 1); /* append '\0' */
         }
-        e->argv_buf = argv_buf;
+        e->invoke.cmd.argv_buf = argv_buf;
     }
 
-    if (e->argv_buf) {
+    if (e->invoke.cmd.argv_buf) {
         char *p, *ep, *null=NULL;
         VALUE argv_str;
         argv_str = hide_obj(rb_str_buf_new(sizeof(char*) * (argc + 2)));
         rb_str_buf_cat(argv_str, (char *)&null, sizeof(null)); /* place holder for /bin/sh of try_with_sh. */
-        p = RSTRING_PTR(e->argv_buf);
-        ep = p + RSTRING_LEN(e->argv_buf);
+        p = RSTRING_PTR(e->invoke.cmd.argv_buf);
+        ep = p + RSTRING_LEN(e->invoke.cmd.argv_buf);
         while (p < ep) {
             rb_str_buf_cat(argv_str, (char *)&p, sizeof(p));
             p += strlen(p) + 1;
         }
         rb_str_buf_cat(argv_str, (char *)&null, sizeof(null)); /* terminator for execve.  */
-        e->argv_str = argv_str;
+        e->invoke.cmd.argv_str = argv_str;
     }
 }
 
@@ -2003,7 +2004,7 @@ rb_f_exec(int argc, VALUE *argv)
     rb_exec_err(&earg, errmsg, sizeof(errmsg));
     if (errmsg[0])
         rb_sys_fail(errmsg);
-    rb_sys_fail_str(earg.progname);
+    rb_sys_fail_str(earg.use_shell ? earg.invoke.sh.shell_script : earg.invoke.cmd.command_name);
     return Qnil;		/* dummy */
 }
 
@@ -2460,10 +2461,8 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
         return 0;
 
     if (s) {
-        s->prog = NULL;
         s->options = soptions = hide_obj(rb_ary_new());
         s->redirect_fds = Qnil;
-	s->progname = Qnil;
 	s->envp_str = s->envp_buf = 0;
     }
 
@@ -2576,7 +2575,6 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
 int
 rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 {
-    const char *prog = e->prog;
 #if !defined(HAVE_FORK)
     struct rb_exec_arg sarg, *sargp = &sarg;
 #else
@@ -2588,10 +2586,10 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
     }
 
     if (e->use_shell) {
-	rb_proc_exec_e(prog, e->envp_str); /* not async-signal-safe because after_exec. */
+	rb_proc_exec_e(RSTRING_PTR(e->invoke.sh.shell_script), e->envp_str); /* not async-signal-safe because after_exec. */
     }
     else {
-        proc_exec_v(prog, e->argv_str, e->envp_str); /* not async-signal-safe because dln_find_exe_r */
+        proc_exec_v(RSTRING_PTR(e->invoke.cmd.command_name), e->invoke.cmd.argv_str, e->envp_str); /* not async-signal-safe because dln_find_exe_r */
     }
 #if !defined(HAVE_FORK)
     preserving_errno(rb_run_exec_options_err(sargp, NULL, errmsg, errmsg_buflen));
@@ -2613,7 +2611,8 @@ rb_exec(const struct rb_exec_arg *e)
 	}
 	else {
 	    fprintf(stderr, "%s:%d: command not found: %s\n",
-		    rb_sourcefile(), rb_sourceline(), e->prog);
+		    rb_sourcefile(), rb_sourceline(), 
+                    RSTRING_PTR(e->use_shell ? e->invoke.sh.shell_script : e->invoke.cmd.command_name));
 	}
     );
     return ret;
@@ -3145,7 +3144,7 @@ rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errm
     }
 
     if (prog && !earg->use_shell) {
-        char **argv = ARGVSTR2ARGV(earg->argv_str);
+        char **argv = ARGVSTR2ARGV(earg->invoke.cmd.argv_str);
         argv[0] = RSTRING_PTR(prog);
     }
 # if defined HAVE_SPAWNV
@@ -3153,7 +3152,7 @@ rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errm
 	pid = proc_spawn(RSTRING_PTR(prog)); /* xxx: earg is ignored. */
     }
     else {
-        char **argv = ARGVSTR2ARGV(earg->argv_str);
+        char **argv = ARGVSTR2ARGV(earg->invoke.cmd.argv_str);
 	pid = proc_spawn_n(argv, prog, earg->options); /* xxx: earg (except options) is ignored. */
     }
 #  if defined(_WIN32)
@@ -3162,8 +3161,8 @@ rb_spawn_process(struct rb_exec_arg *earg, VALUE prog, char *errmsg, size_t errm
 #  endif
 # else
     if (!earg->use_shell) {
-        char **argv = ARGVSTR2ARGV(earg->argv_str);
-        int argc = ARGVSTR2ARGC(earg->argv_str);
+        char **argv = ARGVSTR2ARGV(earg->invoke.cmd.argv_str);
+        int argc = ARGVSTR2ARGC(earg->invoke.cmd.argv_str);
         prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
     }
     status = system(StringValuePtr(prog)); /* xxx: earg is ignored. */
@@ -3518,7 +3517,7 @@ rb_f_spawn(int argc, VALUE *argv)
     if (pid == -1) {
 	const char *prog = errmsg;
 	if (!prog[0]) {
-	    rb_sys_fail_str(earg.progname);
+	    rb_sys_fail_str(earg.use_shell ? earg.invoke.sh.shell_script : earg.invoke.cmd.command_name);
 	}
 	rb_sys_fail(prog);
     }

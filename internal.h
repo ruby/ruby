@@ -160,13 +160,19 @@ st_index_t rb_hash_proc(st_index_t hash, VALUE proc);
 /* process.c */
 
 struct rb_exec_arg {
-    const char *prog;
+    int use_shell;
+    union {
+        struct {
+            VALUE shell_script;
+        } sh;
+        struct {
+            VALUE command_name;
+            VALUE argv_str;
+            VALUE argv_buf;
+        } cmd;
+    } invoke;
     VALUE options;
     VALUE redirect_fds;
-    VALUE progname;
-    int use_shell;
-    VALUE argv_str;
-    VALUE argv_buf;
     VALUE envp_str;
     VALUE envp_buf;
     VALUE dup2_tmpbuf;

@@ -1,3 +1,12 @@
+Tue Jun  5 23:51:33 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_exec_arg): use union to represent command invocation
+	  with/without shell.
+
+	* process.c: follow the rb_exec_arg change.
+
+	* io.c (pipe_open): ditto.
+
 Tue Jun  5 22:28:46 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h: rb_exec_arg and related stuff moved from intern.h

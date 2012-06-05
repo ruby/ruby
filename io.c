@@ -5584,8 +5584,8 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
         fd = arg.pair[1];
     }
 #elif defined(_WIN32)
-    if (eargp && eargp->argv_str) {
-        args = ARGVSTR2ARGV(eargp->argv_str);
+    if (eargp && !eargp->use_shell) {
+        args = ARGVSTR2ARGV(eargp->invoke.cmd.argv_str);
     }
     switch (fmode & (FMODE_READABLE|FMODE_WRITABLE)) {
       case FMODE_READABLE|FMODE_WRITABLE:
