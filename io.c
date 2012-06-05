@@ -5471,8 +5471,9 @@ popen_exec(void *pp, char *errmsg, size_t errmsg_len)
 #endif
 
 static VALUE
-pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig)
+pipe_open(struct rb_exec_arg *eargp, const char *modestr, int fmode, convconfig_t *convconfig)
 {
+    VALUE prog = eargp ? (eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name) : Qfalse ;
     rb_pid_t pid = 0;
     rb_io_t *fptr;
     VALUE port;
@@ -5730,10 +5731,9 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *modestr, int fmode,
 static VALUE
 pipe_open_v(int argc, VALUE *argv, const char *modestr, int fmode, convconfig_t *convconfig)
 {
-    VALUE prog;
     struct rb_exec_arg earg;
-    prog = rb_exec_arg_init(argc, argv, FALSE, &earg);
-    return pipe_open(&earg, prog, modestr, fmode, convconfig);
+    rb_exec_arg_init(argc, argv, FALSE, &earg);
+    return pipe_open(&earg, modestr, fmode, convconfig);
 }
 
 static VALUE
@@ -5749,11 +5749,11 @@ pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig
 	rb_raise(rb_eNotImpError,
 		 "fork() function is unimplemented on this machine");
 #endif
-        return pipe_open(0, 0, modestr, fmode, convconfig);
+        return pipe_open(NULL, modestr, fmode, convconfig);
     }
 
     rb_exec_arg_init(argc, argv, TRUE, &earg);
-    return pipe_open(&earg, prog, modestr, fmode, convconfig);
+    return pipe_open(&earg, modestr, fmode, convconfig);
 }
 
 /*

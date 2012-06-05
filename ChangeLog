@@ -1,3 +1,19 @@
+Wed Jun  6 00:20:37 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_exec_arg_init): change return type to void.
+
+	* process.c (rb_exec_arg_init): don't return a value.
+	  (rb_exec_arg_prepare): ditto.
+	  (rb_spawn_process): don't take the prog argument.  extract the 
+	  information from earg.
+	  (rb_spawn_internal): follow rb_spawn_process change.
+	  (rb_f_spawn): ditto.
+
+	* io.c (pipe_open): don't take the prog argument.  extract the
+	  information from eargp.
+	  (pipe_open_v): follow pipe_open change.
+	  (pipe_open_s): ditto.
+
 Tue Jun  5 23:51:33 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_exec_arg): use union to represent command invocation

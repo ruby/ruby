@@ -185,7 +185,7 @@ struct rb_exec_arg {
 #define ARGVSTR2ARGC(argv_str) (RSTRING_LEN(argv_str) / sizeof(char *) - 2)
 #define ARGVSTR2ARGV(argv_str) ((char **)RSTRING_PTR(argv_str) + 1)
 
-VALUE rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e);
+void rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e);
 int rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val);
 void rb_exec_arg_fixup(struct rb_exec_arg *e);
 int rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s);
