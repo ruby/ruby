@@ -2514,7 +2514,7 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
 
     obj = rb_ary_entry(options, EXEC_OPTION_DUP2);
     if (!NIL_P(obj)) {
-        if (run_exec_dup2(obj, e->dup2_tmpbuf, soptions, errmsg, errmsg_buflen) == -1) /* xxx: not async-signal-safe */
+        if (run_exec_dup2(obj, e->dup2_tmpbuf, soptions, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
             return -1;
     }
 
@@ -2580,7 +2580,7 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 # define sargp NULL
 #endif
 
-    if (rb_run_exec_options_err(e, sargp, errmsg, errmsg_buflen) < 0) { /* not async-signal-safe because run_exec_dup2. */
+    if (rb_run_exec_options_err(e, sargp, errmsg, errmsg_buflen) < 0) { /* async-signal-safe */
         return -1;
     }
 
@@ -2626,7 +2626,7 @@ static int
 rb_exec_atfork(void* arg, char *errmsg, size_t errmsg_buflen)
 {
     rb_thread_atfork_before_exec(); /* xxx: not async-signal-safe because it calls rb_thread_atfork_internal which calls st_insert, etc. */
-    return rb_exec_err(arg, errmsg, errmsg_buflen); /* not async-signal-safe because run_exec_dup2, after_exec and dln_find_exe_r */
+    return rb_exec_err(arg, errmsg, errmsg_buflen); /* not async-signal-safe because after_exec and dln_find_exe_r */
 }
 #endif
 
