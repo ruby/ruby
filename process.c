@@ -2591,7 +2591,7 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 	rb_proc_exec_e(prog, e->envp_str); /* not async-signal-safe because after_exec. */
     }
     else {
-        proc_exec_v(prog, e->argv_str, e->envp_str); /* async-signal-safe not checked */
+        proc_exec_v(prog, e->argv_str, e->envp_str); /* not async-signal-safe because dln_find_exe_r */
     }
 #if !defined(HAVE_FORK)
     preserving_errno(rb_run_exec_options_err(sargp, NULL, errmsg, errmsg_buflen));
@@ -2623,12 +2623,12 @@ rb_exec(const struct rb_exec_arg *e)
 }
 
 #ifdef HAVE_FORK
-/* This function should be async-signal-safe but rb_thread_atfork_before_exec is not checked. */
+/* This function should be async-signal-safe. */
 static int
 rb_exec_atfork(void* arg, char *errmsg, size_t errmsg_buflen)
 {
-    rb_thread_atfork_before_exec();
-    return rb_exec_err(arg, errmsg, errmsg_buflen);
+    rb_thread_atfork_before_exec(); /* xxx: not async-signal-safe because it calls rb_thread_atfork_internal which calls st_insert, etc. */
+    return rb_exec_err(arg, errmsg, errmsg_buflen); /* not async-signal-safe because run_exec_dup2, after_exec and dln_find_exe_r */
 }
 #endif
 
