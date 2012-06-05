@@ -1870,12 +1870,24 @@ fill_envp_buf_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     return ST_CONTINUE;
 }
 
+
+static long run_exec_dup2_tmpbuf_size(long n);
+
 void
 rb_exec_arg_fixup(struct rb_exec_arg *e)
 {
     VALUE unsetenv_others, envopts;
+    VALUE ary;
 
     e->redirect_fds = check_exec_fds(e->options);
+
+    ary = rb_ary_entry(e->options, EXEC_OPTION_DUP2);
+    if (!NIL_P(ary)) {
+        size_t len = run_exec_dup2_tmpbuf_size(RARRAY_LEN(ary));
+        VALUE tmpbuf = hide_obj(rb_str_new(0, len));
+        rb_str_set_len(tmpbuf, len);
+        e->dup2_tmpbuf = tmpbuf;
+    }
 
     unsetenv_others = rb_ary_entry(e->options, EXEC_OPTION_UNSETENV_OTHERS);
     envopts = rb_ary_entry(e->options, EXEC_OPTION_ENV);
@@ -2110,26 +2122,30 @@ intrcmp(const void *a, const void *b)
     return *(int*)b - *(int*)a;
 }
 
+struct run_exec_dup2_fd_pair {
+    int oldfd;
+    int newfd;
+    long older_index;
+    long num_newer;
+};
+
+static long
+run_exec_dup2_tmpbuf_size(long n)
+{
+    return sizeof(struct run_exec_dup2_fd_pair) * n;
+}
+
 /* This function should be async-signal-safe when _save_ is not Qnil. */
 static int
-run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
+run_exec_dup2(VALUE ary, VALUE tmpbuf, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
     long n, i;
     int ret;
     int extra_fd = -1;
-    struct fd_pair {
-        int oldfd;
-        int newfd;
-        long older_index;
-        long num_newer;
-    } *pairs = 0;
+    struct run_exec_dup2_fd_pair *pairs = 0;
 
     n = RARRAY_LEN(ary);
-    pairs = (struct fd_pair *)malloc(sizeof(struct fd_pair) * n); /* xxx: not async-signal-safe */
-    if (pairs == NULL) {
-        ERRMSG("malloc");
-        return -1;
-    }
+    pairs = (struct run_exec_dup2_fd_pair *)RSTRING_PTR(tmpbuf);
 
     /* initialize oldfd and newfd: O(n) */
     for (i = 0; i < n; i++) {
@@ -2141,16 +2157,16 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 
     /* sort the table by oldfd: O(n log n) */
     if (!RTEST(save))
-        qsort(pairs, n, sizeof(struct fd_pair), intcmp); /* hopefully async-signal-safe */
+        qsort(pairs, n, sizeof(struct run_exec_dup2_fd_pair), intcmp); /* hopefully async-signal-safe */
     else
-        qsort(pairs, n, sizeof(struct fd_pair), intrcmp);
+        qsort(pairs, n, sizeof(struct run_exec_dup2_fd_pair), intrcmp);
 
     /* initialize older_index and num_newer: O(n log n) */
     for (i = 0; i < n; i++) {
         int newfd = pairs[i].newfd;
-        struct fd_pair key, *found;
+        struct run_exec_dup2_fd_pair key, *found;
         key.oldfd = newfd;
-        found = bsearch(&key, pairs, n, sizeof(struct fd_pair), intcmp); /* hopefully async-signal-safe */
+        found = bsearch(&key, pairs, n, sizeof(struct run_exec_dup2_fd_pair), intcmp); /* hopefully async-signal-safe */
         pairs[i].num_newer = 0;
         if (found) {
             while (pairs < found && (found-1)->oldfd == newfd)
@@ -2245,11 +2261,9 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
         }
     }
 
-    free(pairs); /* xxx: not async-signal-safe */
     return 0;
 
   fail:
-    free(pairs); /* xxx: not async-signal-safe */
     return -1;
 }
 
@@ -2502,7 +2516,7 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
 
     obj = rb_ary_entry(options, EXEC_OPTION_DUP2);
     if (!NIL_P(obj)) {
-        if (run_exec_dup2(obj, soptions, errmsg, errmsg_buflen) == -1) /* xxx: not async-signal-safe */
+        if (run_exec_dup2(obj, e->dup2_tmpbuf, soptions, errmsg, errmsg_buflen) == -1) /* xxx: not async-signal-safe */
             return -1;
     }
 

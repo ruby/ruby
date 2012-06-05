@@ -598,6 +598,7 @@ struct rb_exec_arg {
     VALUE argv_buf;
     VALUE envp_str;
     VALUE envp_buf;
+    VALUE dup2_tmpbuf;
 };
 int rb_proc_exec_n(int, VALUE*, const char*);
 int rb_proc_exec(const char*);
