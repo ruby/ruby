@@ -5421,6 +5421,7 @@ linux_get_maxfd(void)
 }
 #endif
 
+/* This function should be async-signal-safe. */
 void
 rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
 {
@@ -5428,7 +5429,7 @@ rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
     int max = max_file_descriptor;
 #ifdef F_MAXFD
     /* F_MAXFD is available since NetBSD 2.0. */
-    ret = fcntl(0, F_MAXFD);
+    ret = fcntl(0, F_MAXFD); /* async-signal-safe */
     if (ret != -1)
         maxhint = max = ret;
 #elif defined(__linux__)
@@ -5441,15 +5442,15 @@ rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
         max = maxhint;
     for (fd = lowfd; fd <= max; fd++) {
         if (!NIL_P(noclose_fds) &&
-            RTEST(rb_hash_lookup(noclose_fds, INT2FIX(fd))))
+            RTEST(rb_hash_lookup(noclose_fds, INT2FIX(fd)))) /* async-signal-safe */
             continue;
 #ifdef FD_CLOEXEC
-	ret = fcntl(fd, F_GETFD);
+	ret = fcntl(fd, F_GETFD); /* async-signal-safe */
 	if (ret != -1 && !(ret & FD_CLOEXEC)) {
-            fcntl(fd, F_SETFD, ret|FD_CLOEXEC);
+            fcntl(fd, F_SETFD, ret|FD_CLOEXEC); /* async-signal-safe */
         }
 #else
-	ret = close(fd);
+	ret = close(fd); /* async-signal-safe */
 #endif
 #define CONTIGUOUS_CLOSED_FDS 20
         if (ret != -1) {

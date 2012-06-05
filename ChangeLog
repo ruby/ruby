@@ -1,3 +1,9 @@
+Tue Jun  5 19:15:14 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: add comments about async-signal-safe.
+
+	* io.c: ditto.
+
 Tue Jun  5 09:25:10 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* io.c:  Edited documentation for IO and File open and new and

@@ -1048,14 +1048,17 @@ security(const char *str)
 }
 
 #if defined(HAVE_FORK) && !defined(__native_client__)
+
+/* try_with_sh and exec_with_sh should be async-signal-safe. */
 #define try_with_sh(prog, argv) ((saved_errno == ENOEXEC) ? exec_with_sh((prog), (argv)) : (void)0)
 static void
 exec_with_sh(const char *prog, char **argv)
 {
     *argv = (char *)prog;
     *--argv = (char *)"sh";
-    execv("/bin/sh", argv);
+    execv("/bin/sh", argv); /* async-signal-safe */
 }
+
 #define ARGV_COUNT(n) ((n)+1)
 #else
 #define try_with_sh(prog, argv) (void)0
@@ -1066,6 +1069,7 @@ exec_with_sh(const char *prog, char **argv)
 #define ALLOC_ARGV_WITH_STR(n, v, s, l) \
     (char **)(((s) = ALLOCV_N(char, (v), ARGV_SIZE(n) + (l)) + ARGV_SIZE(n)) - ARGV_SIZE(n))
 
+/* This function should be async-signal-safe. */
 static int
 proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
 {
@@ -1083,7 +1087,7 @@ proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
 
     if (!prog)
 	prog = argv[0];
-    prog = dln_find_exe_r(prog, 0, fbuf, sizeof(fbuf));
+    prog = dln_find_exe_r(prog, 0, fbuf, sizeof(fbuf)); /* xxx: not async-signal-safe because getenv(), strdup(), etc. */
     if (!prog) {
 	errno = ENOENT;
 	return -1;
@@ -1117,12 +1121,13 @@ proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
 	}
     }
 # endif /* __EMX__ */
-    before_exec();
+    before_exec(); /* async-signal-safe if forked_child is true */
     if (envp_str)
-        execve(prog, argv, (char **)RSTRING_PTR(envp_str));
+        execve(prog, argv, (char **)RSTRING_PTR(envp_str)); /* async-signal-safe */
     else
-        execv(prog, argv);
-    preserving_errno(try_with_sh(prog, argv); after_exec());
+        execv(prog, argv); /* async-signal-safe */
+    preserving_errno(try_with_sh(prog, argv); /* try_with_sh() is async-signal-safe. */
+                     after_exec()); /* after_exec() is not async-signal-safe */
 # if defined(__EMX__) || defined(OS2)
     if (new_argv) {
 	xfree(new_argv[0]);
@@ -1133,6 +1138,7 @@ proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
 #endif
 }
 
+/* This function should be async-signal-safe. */
 static int
 rb_proc_exec_e(const char *str, VALUE envp_str)
 {
@@ -1169,12 +1175,12 @@ rb_proc_exec_e(const char *str, VALUE envp_str)
             exit(status);
     }
 #else
-    before_exec();
+    before_exec(); /* async-signal-safe if forked_child is true. */
     if (envp_str)
-        execle("/bin/sh", "sh", "-c", str, (char *)NULL, (char **)RSTRING_PTR(envp_str));
+        execle("/bin/sh", "sh", "-c", str, (char *)NULL, (char **)RSTRING_PTR(envp_str)); /* async-signal-safe */
     else
-        execl("/bin/sh", "sh", "-c", str, (char *)NULL);
-    preserving_errno(after_exec());
+        execl("/bin/sh", "sh", "-c", str, (char *)NULL); /* async-signal-safe */
+    preserving_errno(after_exec()); /* xxx: not async-signal-safe because after_exec calls rb_thread_start_timer_thread.  */
 #endif
     return -1;
 #endif	/* _WIN32 */
@@ -2123,6 +2129,7 @@ intrcmp(const void *a, const void *b)
     return *(int*)b - *(int*)a;
 }
 
+/* This function should be async-signal-safe when _save_ is not Qnil. */
 static int
 run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2137,7 +2144,7 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
     } *pairs = 0;
 
     n = RARRAY_LEN(ary);
-    pairs = (struct fd_pair *)malloc(sizeof(struct fd_pair) * n);
+    pairs = (struct fd_pair *)malloc(sizeof(struct fd_pair) * n); /* xxx: not async-signal-safe */
     if (pairs == NULL) {
         ERRMSG("malloc");
         return -1;
@@ -2153,7 +2160,7 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 
     /* sort the table by oldfd: O(n log n) */
     if (!RTEST(save))
-        qsort(pairs, n, sizeof(struct fd_pair), intcmp);
+        qsort(pairs, n, sizeof(struct fd_pair), intcmp); /* hopefully async-signal-safe */
     else
         qsort(pairs, n, sizeof(struct fd_pair), intrcmp);
 
@@ -2162,7 +2169,7 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
         int newfd = pairs[i].newfd;
         struct fd_pair key, *found;
         key.oldfd = newfd;
-        found = bsearch(&key, pairs, n, sizeof(struct fd_pair), intcmp);
+        found = bsearch(&key, pairs, n, sizeof(struct fd_pair), intcmp); /* hopefully async-signal-safe */
         pairs[i].num_newer = 0;
         if (found) {
             while (pairs < found && (found-1)->oldfd == newfd)
@@ -2179,14 +2186,14 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
     for (i = 0; i < n; i++) {
         long j = i;
         while (j != -1 && pairs[j].oldfd != -1 && pairs[j].num_newer == 0) {
-            if (save_redirect_fd(pairs[j].newfd, save, errmsg, errmsg_buflen) < 0)
+            if (save_redirect_fd(pairs[j].newfd, save, errmsg, errmsg_buflen) < 0) /* async-signal-safe */
                 goto fail;
-            ret = redirect_dup2(pairs[j].oldfd, pairs[j].newfd);
+            ret = redirect_dup2(pairs[j].oldfd, pairs[j].newfd); /* async-signal-safe */
             if (ret == -1) {
                 ERRMSG("dup2");
                 goto fail;
             }
-            rb_update_max_fd(pairs[j].newfd);
+            rb_update_max_fd(pairs[j].newfd); /* async-signal-safe but don't need to call it in a child process. */
             pairs[j].oldfd = -1;
             j = pairs[j].older_index;
             if (j != -1)
@@ -2202,14 +2209,14 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
         if (pairs[i].oldfd == pairs[i].newfd) { /* self cycle */
 #ifdef F_GETFD
             int fd = pairs[i].oldfd;
-            ret = fcntl(fd, F_GETFD);
+            ret = fcntl(fd, F_GETFD); /* async-signal-safe */
             if (ret == -1) {
                 ERRMSG("fcntl(F_GETFD)");
                 goto fail;
             }
             if (ret & FD_CLOEXEC) {
                 ret &= ~FD_CLOEXEC;
-                ret = fcntl(fd, F_SETFD, ret);
+                ret = fcntl(fd, F_SETFD, ret); /* async-signal-safe */
                 if (ret == -1) {
                     ERRMSG("fcntl(F_SETFD)");
                     goto fail;
@@ -2220,7 +2227,7 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
             continue;
         }
         if (extra_fd == -1) {
-            extra_fd = redirect_dup(pairs[i].oldfd);
+            extra_fd = redirect_dup(pairs[i].oldfd); /* async-signal-safe */
             if (extra_fd == -1) {
                 ERRMSG("dup");
                 goto fail;
@@ -2228,7 +2235,7 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
             rb_update_max_fd(extra_fd);
         }
         else {
-            ret = redirect_dup2(pairs[i].oldfd, extra_fd);
+            ret = redirect_dup2(pairs[i].oldfd, extra_fd); /* async-signal-safe */
             if (ret == -1) {
                 ERRMSG("dup2");
                 goto fail;
@@ -2239,7 +2246,7 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
         j = pairs[i].older_index;
         pairs[i].older_index = -1;
         while (j != -1) {
-            ret = redirect_dup2(pairs[j].oldfd, pairs[j].newfd);
+            ret = redirect_dup2(pairs[j].oldfd, pairs[j].newfd); /* async-signal-safe */
             if (ret == -1) {
                 ERRMSG("dup2");
                 goto fail;
@@ -2250,21 +2257,22 @@ run_exec_dup2(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
         }
     }
     if (extra_fd != -1) {
-        ret = redirect_close(extra_fd);
+        ret = redirect_close(extra_fd); /* async-signal-safe */
         if (ret == -1) {
             ERRMSG("close");
             goto fail;
         }
     }
 
-    free(pairs);
+    free(pairs); /* xxx: not async-signal-safe */
     return 0;
 
   fail:
-    free(pairs);
+    free(pairs); /* xxx: not async-signal-safe */
     return -1;
 }
 
+/* This function should be async-signal-safe. */
 static int
 run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
 {
@@ -2274,7 +2282,7 @@ run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
     for (i = 0; i < RARRAY_LEN(ary); i++) {
         VALUE elt = RARRAY_PTR(ary)[i];
         int fd = FIX2INT(RARRAY_PTR(elt)[0]);
-        ret = redirect_close(fd);
+        ret = redirect_close(fd); /* async-signal-safe */
         if (ret == -1) {
             ERRMSG("close");
             return -1;
@@ -2283,6 +2291,7 @@ run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
     return 0;
 }
 
+/* This function should be async-signal-safe when _save_ is not Qnil. */
 static int
 run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2297,7 +2306,7 @@ run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
         int flags = NUM2INT(RARRAY_PTR(param)[1]);
         int perm = NUM2INT(RARRAY_PTR(param)[2]);
         int need_close = 1;
-        int fd2 = redirect_open(path, flags, perm);
+        int fd2 = redirect_open(path, flags, perm); /* async-signal-safe */
         if (fd2 == -1) {
             ERRMSG("open");
             return -1;
@@ -2310,9 +2319,9 @@ run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
                 need_close = 0;
             }
             else {
-                if (save_redirect_fd(fd, save, errmsg, errmsg_buflen) < 0)
+                if (save_redirect_fd(fd, save, errmsg, errmsg_buflen) < 0) /* async-signal-safe */
                     return -1;
-                ret = redirect_dup2(fd2, fd);
+                ret = redirect_dup2(fd2, fd); /* async-signal-safe */
                 if (ret == -1) {
                     ERRMSG("dup2");
                     return -1;
@@ -2322,7 +2331,7 @@ run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
             i++;
         }
         if (need_close) {
-            ret = redirect_close(fd2);
+            ret = redirect_close(fd2); /* async-signal-safe */
             if (ret == -1) {
                 ERRMSG("close");
                 return -1;
@@ -2332,6 +2341,7 @@ run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
     return 0;
 }
 
+/* This function should be async-signal-safe when _save_ is not Qnil. */
 static int
 run_exec_dup2_child(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2343,9 +2353,9 @@ run_exec_dup2_child(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
         int newfd = FIX2INT(RARRAY_PTR(elt)[0]);
         int oldfd = FIX2INT(RARRAY_PTR(elt)[1]);
 
-        if (save_redirect_fd(newfd, save, errmsg, errmsg_buflen) < 0)
+        if (save_redirect_fd(newfd, save, errmsg, errmsg_buflen) < 0) /* async-signal-safe */
             return -1;
-        ret = redirect_dup2(oldfd, newfd);
+        ret = redirect_dup2(oldfd, newfd); /* async-signal-safe */
         if (ret == -1) {
             ERRMSG("dup2");
             return -1;
@@ -2356,6 +2366,7 @@ run_exec_dup2_child(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 }
 
 #ifdef HAVE_SETPGID
+/* This function should be async-signal-safe when _save_ is not Qnil. */
 static int
 run_exec_pgroup(VALUE obj, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2373,15 +2384,16 @@ run_exec_pgroup(VALUE obj, VALUE save, char *errmsg, size_t errmsg_buflen)
     }
     pgroup = NUM2PIDT(obj);
     if (pgroup == 0) {
-        pgroup = getpid();
+        pgroup = getpid(); /* async-signal-safe */
     }
-    ret = setpgid(getpid(), pgroup);
+    ret = setpgid(getpid(), pgroup); /* async-signal-safe */
     if (ret == -1) ERRMSG("setpgid");
     return ret;
 }
 #endif
 
 #if defined(HAVE_SETRLIMIT) && defined(RLIM2NUM)
+/* This function should be async-signal-safe when _save_ is not Qnil. */
 static int
 run_exec_rlimit(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2408,7 +2420,7 @@ run_exec_rlimit(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
         }
         rlim.rlim_cur = NUM2RLIM(RARRAY_PTR(elt)[1]);
         rlim.rlim_max = NUM2RLIM(RARRAY_PTR(elt)[2]);
-        if (setrlimit(rtype, &rlim) == -1) {
+        if (setrlimit(rtype, &rlim) == -1) { /* hopefully async-signal-safe */
             ERRMSG("setrlimit");
             return -1;
         }
@@ -2441,6 +2453,7 @@ save_env(VALUE save)
 }
 #endif
 
+/* This function should be async-signal-safe when _s_ is not NULL. */
 int
 rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char *errmsg, size_t errmsg_buflen)
 {
@@ -2462,7 +2475,7 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
 #ifdef HAVE_SETPGID
     obj = rb_ary_entry(options, EXEC_OPTION_PGROUP);
     if (RTEST(obj)) {
-        if (run_exec_pgroup(obj, soptions, errmsg, errmsg_buflen) == -1)
+        if (run_exec_pgroup(obj, soptions, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
             return -1;
     }
 #endif
@@ -2470,7 +2483,7 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
 #if defined(HAVE_SETRLIMIT) && defined(RLIM2NUM)
     obj = rb_ary_entry(options, EXEC_OPTION_RLIMIT);
     if (!NIL_P(obj)) {
-        if (run_exec_rlimit(obj, soptions, errmsg, errmsg_buflen) == -1)
+        if (run_exec_rlimit(obj, soptions, errmsg, errmsg_buflen) == -1) /* not async-signal-safe */
             return -1;
     }
 #endif
@@ -2501,14 +2514,14 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
     obj = rb_ary_entry(options, EXEC_OPTION_UMASK);
     if (!NIL_P(obj)) {
         mode_t mask = NUM2MODET(obj);
-        mode_t oldmask = umask(mask); /* never fail */
+        mode_t oldmask = umask(mask); /* never fail */ /* async-signal-safe */
         if (!NIL_P(soptions))
             rb_ary_store(soptions, EXEC_OPTION_UMASK, MODET2NUM(oldmask));
     }
 
     obj = rb_ary_entry(options, EXEC_OPTION_DUP2);
     if (!NIL_P(obj)) {
-        if (run_exec_dup2(obj, soptions, errmsg, errmsg_buflen) == -1)
+        if (run_exec_dup2(obj, soptions, errmsg, errmsg_buflen) == -1) /* xxx: not async-signal-safe */
             return -1;
     }
 
@@ -2517,7 +2530,7 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
         if (!NIL_P(soptions))
             rb_warn("cannot close fd before spawn");
         else {
-            if (run_exec_close(obj, errmsg, errmsg_buflen) == -1)
+            if (run_exec_close(obj, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
                 return -1;
         }
     }
@@ -2525,19 +2538,19 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
 #ifdef HAVE_FORK
     obj = rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS);
     if (obj != Qfalse) {
-        rb_close_before_exec(3, FIX2INT(obj), e->redirect_fds);
+        rb_close_before_exec(3, FIX2INT(obj), e->redirect_fds); /* async-signal-safe */
     }
 #endif
 
     obj = rb_ary_entry(options, EXEC_OPTION_OPEN);
     if (!NIL_P(obj)) {
-        if (run_exec_open(obj, soptions, errmsg, errmsg_buflen) == -1)
+        if (run_exec_open(obj, soptions, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
             return -1;
     }
 
     obj = rb_ary_entry(options, EXEC_OPTION_DUP2_CHILD);
     if (!NIL_P(obj)) {
-        if (run_exec_dup2_child(obj, soptions, errmsg, errmsg_buflen) == -1)
+        if (run_exec_dup2_child(obj, soptions, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
             return -1;
     }
 
@@ -2549,7 +2562,7 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
                          hide_obj(rb_str_new2(cwd)));
             xfree(cwd);
         }
-        if (chdir(RSTRING_PTR(obj)) == -1) {
+        if (chdir(RSTRING_PTR(obj)) == -1) { /* async-signal-safe */
             ERRMSG("chdir");
             return -1;
         }
@@ -2564,6 +2577,7 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
     return rb_run_exec_options_err(e, s, NULL, 0);
 }
 
+/* This function should be async-signal-safe. */
 int
 rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 {
@@ -2574,15 +2588,15 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 # define sargp NULL
 #endif
 
-    if (rb_run_exec_options_err(e, sargp, errmsg, errmsg_buflen) < 0) {
+    if (rb_run_exec_options_err(e, sargp, errmsg, errmsg_buflen) < 0) { /* not async-signal-safe because run_exec_dup2. */
         return -1;
     }
 
     if (e->use_shell) {
-	rb_proc_exec_e(prog, e->envp_str);
+	rb_proc_exec_e(prog, e->envp_str); /* not async-signal-safe because after_exec. */
     }
     else {
-        proc_exec_v(prog, e->argv_str, e->envp_str);
+        proc_exec_v(prog, e->argv_str, e->envp_str); /* async-signal-safe not checked */
     }
 #if !defined(HAVE_FORK)
     preserving_errno(rb_run_exec_options_err(sargp, NULL, errmsg, errmsg_buflen));
@@ -2614,6 +2628,7 @@ rb_exec(const struct rb_exec_arg *e)
 }
 
 #ifdef HAVE_FORK
+/* This function should be async-signal-safe but rb_thread_atfork_before_exec is not checked. */
 static int
 rb_exec_atfork(void* arg, char *errmsg, size_t errmsg_buflen)
 {
