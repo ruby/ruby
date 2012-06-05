@@ -1805,10 +1805,12 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
         int has_meta = 0;
         int has_nonspace = 0;
         for (p = RSTRING_PTR(prog); *p; p++) {
-            if (*p != ' ' && *p != '\t')
+            if (!has_nonspace && *p != ' ' && *p != '\t')
                 has_nonspace = 1;
-            if (strchr("*?{}[]<>()~&|\\$;'`\"\n", *p))
+            if (!has_meta && strchr("*?{}[]<>()~&|\\$;'`\"\n", *p))
                 has_meta = 1;
+            if (has_nonspace && has_meta)
+                break;
         }
         if (has_nonspace && !has_meta) {
             /* avoid shell since no shell meta charactor found. */

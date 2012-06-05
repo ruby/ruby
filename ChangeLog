@@ -1,3 +1,7 @@
+Tue Jun  5 19:21:10 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_exec_fillarg): bail out a loop eagerly.
+
 Tue Jun  5 19:15:14 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: add comments about async-signal-safe.
