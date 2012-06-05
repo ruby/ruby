@@ -3126,20 +3126,20 @@ rb_exec_arg_prepare(struct rb_exec_arg *earg, int argc, VALUE *argv, int default
 static rb_pid_t
 rb_spawn_process(struct rb_exec_arg *earg, char *errmsg, size_t errmsg_buflen)
 {
-    VALUE prog;
     rb_pid_t pid;
 #if !USE_SPAWNV
     int status;
 #endif
 #if !defined HAVE_FORK || USE_SPAWNV
+    VALUE prog;
     struct rb_exec_arg sarg;
 #endif
-
-    prog = earg->use_shell ? earg->invoke.sh.shell_script : earg->invoke.cmd.command_name;
 
 #if defined HAVE_FORK && !USE_SPAWNV
     pid = rb_fork_err(&status, rb_exec_atfork, earg, earg->redirect_fds, errmsg, errmsg_buflen);
 #else
+    prog = earg->use_shell ? earg->invoke.sh.shell_script : earg->invoke.cmd.command_name;
+
     if (rb_run_exec_options_err(earg, &sarg, errmsg, errmsg_buflen) < 0) {
         return -1;
     }

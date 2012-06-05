@@ -1,3 +1,7 @@
+Wed Jun  6 04:58:44 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_spawn_process): prog variable is not used for Unix.
+
 Wed Jun  6 00:20:37 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_exec_arg_init): change return type to void.
