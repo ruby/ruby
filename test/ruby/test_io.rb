@@ -534,10 +534,8 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
-  def test_copy_stream_socket
-    return unless defined? UNIXSocket
+  def test_copy_stream_socket1
     mkcdtmpdir {
-
       content = "foobar"
       File.open("src", "w") {|f| f << content }
 
@@ -547,7 +545,11 @@ class TestIO < Test::Unit::TestCase
         s1.close
         assert_equal(content, s2.read)
       }
+    }
+  end if defined? UNIXSocket
 
+  def test_copy_stream_socket2
+    mkcdtmpdir {
       bigcontent = "abc" * 123456
       File.open("bigsrc", "w") {|f| f << bigcontent }
 
@@ -559,6 +561,13 @@ class TestIO < Test::Unit::TestCase
         result = t.value
         assert_equal(bigcontent, result)
       }
+    }
+  end if defined? UNIXSocket
+
+  def test_copy_stream_socket3
+    mkcdtmpdir {
+      bigcontent = "abc" * 123456
+      File.open("bigsrc", "w") {|f| f << bigcontent }
 
       with_socketpair {|s1, s2|
         t = Thread.new { s2.read }
@@ -568,6 +577,13 @@ class TestIO < Test::Unit::TestCase
         result = t.value
         assert_equal(bigcontent[0,10000], result)
       }
+    }
+  end if defined? UNIXSocket
+
+  def test_copy_stream_socket4
+    mkcdtmpdir {
+      bigcontent = "abc" * 123456
+      File.open("bigsrc", "w") {|f| f << bigcontent }
 
       File.open("bigsrc") {|f|
         assert_equal(0, f.pos)
@@ -581,6 +597,13 @@ class TestIO < Test::Unit::TestCase
           assert_equal(bigcontent[100..-1], result)
         }
       }
+    }
+  end if defined? UNIXSocket
+
+  def test_copy_stream_socket5
+    mkcdtmpdir {
+      bigcontent = "abc" * 123456
+      File.open("bigsrc", "w") {|f| f << bigcontent }
 
       File.open("bigsrc") {|f|
         assert_equal(bigcontent[0,100], f.read(100))
@@ -595,54 +618,64 @@ class TestIO < Test::Unit::TestCase
           assert_equal(bigcontent[100..-1], result)
         }
       }
+    }
+  end if defined? UNIXSocket
 
+  def test_copy_stream_socket6
+    mkcdtmpdir {
       megacontent = "abc" * 1234567
       File.open("megasrc", "w") {|f| f << megacontent }
 
-      if have_nonblock?
-        with_socketpair {|s1, s2|
-          begin
-            s1.nonblock = true
-          rescue Errno::EBADF
-            skip "nonblocking IO for pipe is not implemented"
-          end
-          t = Thread.new { s2.read }
-          ret = IO.copy_stream("megasrc", s1)
-          assert_equal(megacontent.bytesize, ret)
-          s1.close
-          result = t.value
-          assert_equal(megacontent, result)
-        }
-        with_socketpair {|s1, s2|
-          begin
-            s1.nonblock = true
-          rescue Errno::EBADF
-            skip "nonblocking IO for pipe is not implemented"
-          end
-          trapping_usr1 do
-            nr = 30
-            begin
-              pid = fork do
-                s1.close
-                IO.select([s2])
-                Process.kill(:USR1, Process.ppid)
-                s2.read
-              end
-              s2.close
-              nr.times do
-                assert_equal megacontent.bytesize, IO.copy_stream("megasrc", s1)
-              end
-              assert_equal(1, @usr1_rcvd)
-            ensure
-              s1.close
-              _, status = Process.waitpid2(pid) if pid
-            end
-            assert status.success?, status.inspect
-          end
-        }
-      end
+      with_socketpair {|s1, s2|
+        begin
+          s1.nonblock = true
+        rescue Errno::EBADF
+          skip "nonblocking IO for pipe is not implemented"
+        end
+        t = Thread.new { s2.read }
+        ret = IO.copy_stream("megasrc", s1)
+        assert_equal(megacontent.bytesize, ret)
+        s1.close
+        result = t.value
+        assert_equal(megacontent, result)
+      }
     }
-  end
+  end if defined? UNIXSocket
+
+  def test_copy_stream_socket7
+    mkcdtmpdir {
+      megacontent = "abc" * 1234567
+      File.open("megasrc", "w") {|f| f << megacontent }
+
+      with_socketpair {|s1, s2|
+        begin
+          s1.nonblock = true
+        rescue Errno::EBADF
+          skip "nonblocking IO for pipe is not implemented"
+        end
+        trapping_usr1 do
+          nr = 30
+          begin
+            pid = fork do
+              s1.close
+              IO.select([s2])
+              Process.kill(:USR1, Process.ppid)
+              s2.read
+            end
+            s2.close
+            nr.times do
+              assert_equal megacontent.bytesize, IO.copy_stream("megasrc", s1)
+            end
+            assert_equal(1, @usr1_rcvd)
+          ensure
+            s1.close
+            _, status = Process.waitpid2(pid) if pid
+          end
+          assert status.success?, status.inspect
+        end
+      }
+    }
+  end if defined? UNIXSocket and IO.method_defined?("nonblock=")
 
   def test_copy_stream_strio
     src = StringIO.new("abcd")
