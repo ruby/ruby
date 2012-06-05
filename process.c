@@ -1278,30 +1278,13 @@ static rb_pid_t
 proc_spawn(char *str)
 {
     char fbuf[MAXPATHLEN];
-    char *s, *t;
-    char **argv, **a;
     rb_pid_t status;
-    VALUE v;
 
-    for (s = str; *s; s++) {
-	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
-	    char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
-	    before_exec();
-	    status = spawnl(P_NOWAIT, (shell ? shell : "/bin/sh"), "sh", "-c", str, (char*)NULL);
-	    rb_last_status_set(status == -1 ? 127 : status, 0);
-	    after_exec();
-	    return status;
-	}
-    }
-    a = argv = ALLOC_ARGV_WITH_STR((s - str) / 2 + 2, v, s, s - str + 1);
-    strcpy(s, str);
-    if (*a++ = strtok(s, " \t")) {
-	while (t = strtok(NULL, " \t"))
-	    *a++ = t;
-	*a = NULL;
-    }
-    status = argv[0] ? proc_spawn_v(argv, 0) : -1;
-    ALLOCV_END(v);
+    char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
+    before_exec();
+    status = spawnl(P_NOWAIT, (shell ? shell : "/bin/sh"), "sh", "-c", str, (char*)NULL);
+    rb_last_status_set(status == -1 ? 127 : status, 0);
+    after_exec();
     return status;
 }
 #endif
