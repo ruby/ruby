@@ -1,3 +1,9 @@
+Wed Jun  6 14:44:13 2012  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (rb_big2dbl), test/ruby/test_bignum.rb (test_to_f):
+	  A negative Bignum out of Float range should be converted to -Infinity.
+	  [ruby-core:30492] [Bug #3362]
+
 Wed Jun  6 14:06:02 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/webrick/utils.rb: fix fcntl call.
@@ -20,15 +26,6 @@ Sat Apr 14 18:51:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* bignum.c (rb_big2str0): prevent working clone from
 	  GC. [exerb-dev:0578].  patched by MURASE Masamitsu
 	  <masamitsu.murase AT gmail.com> at [exerb-dev:0580]
-
-Tue Mar  6 12:05:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* lib/yaml/rubytypes.rb (Exception.yaml_new): fix bug that causes
-	  YAML serialization problem for Exception.
-	  Exception#initialize doesn't use visible instance variable for
-	  the exception message, so call the method with the message.
-	  patched by Jingwen Owen Ou <jingweno AT gmail.com>.
-	  http://github.com/ruby/ruby/pull/41
 
 Fri Mar  2 11:44:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
