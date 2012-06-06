@@ -1046,13 +1046,16 @@ security(const char *str)
 #if defined(HAVE_FORK) && !defined(__native_client__)
 
 /* try_with_sh and exec_with_sh should be async-signal-safe. */
-#define try_with_sh(prog, argv) ((saved_errno == ENOEXEC) ? exec_with_sh((prog), (argv)) : (void)0)
+#define try_with_sh(prog, argv, envp) ((saved_errno == ENOEXEC) ? exec_with_sh((prog), (argv), (envp)) : (void)0)
 static void
-exec_with_sh(const char *prog, char **argv)
+exec_with_sh(const char *prog, char **argv, char **envp)
 {
     *argv = (char *)prog;
     *--argv = (char *)"sh";
-    execv("/bin/sh", argv); /* async-signal-safe */
+    if (envp)
+        execve("/bin/sh", argv, envp); /* async-signal-safe */
+    else
+        execv("/bin/sh", argv); /* async-signal-safe */
 }
 
 #define ARGV_COUNT(n) ((n)+1)
@@ -1075,6 +1078,7 @@ proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
 #else
     char **argv;
     char fbuf[MAXPATHLEN];
+    char **envp;
 # if defined(__EMX__) || defined(OS2)
     char **new_argv = NULL;
 # endif
@@ -1118,11 +1122,12 @@ proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
     }
 # endif /* __EMX__ */
     before_exec(); /* async-signal-safe if forked_child is true */
+    envp = envp_str ? (char **)RSTRING_PTR(envp_str) : NULL;
     if (envp_str)
-        execve(prog, argv, (char **)RSTRING_PTR(envp_str)); /* async-signal-safe */
+        execve(prog, argv, envp); /* async-signal-safe */
     else
         execv(prog, argv); /* async-signal-safe */
-    preserving_errno(try_with_sh(prog, argv); /* try_with_sh() is async-signal-safe. */
+    preserving_errno(try_with_sh(prog, argv, envp); /* try_with_sh() is async-signal-safe. */
                      after_exec()); /* after_exec() is not async-signal-safe */
 # if defined(__EMX__) || defined(OS2)
     if (new_argv) {

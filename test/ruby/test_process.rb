@@ -1297,6 +1297,11 @@ class TestProcess < Test::Unit::TestCase
       open("tmp_script.#{$$}", "w") {|f| f.puts "echo $#: $@"; f.chmod(0755)}
       result = IO.popen(["./tmp_script.#{$$}", "a b", "c"]) {|f| f.read}
       assert_equal("2: a b c\n", result, feature)
+
+      open("tmp_script.#{$$}", "w") {|f| f.puts "echo $hghg"; f.chmod(0755)}
+      result = IO.popen([{"hghg" => "mogomogo"}, "./tmp_script.#{$$}", "a b", "c"]) {|f| f.read}
+      assert_equal("mogomogo\n", result, feature)
+
     end
   end if File.executable?("/bin/sh")
 

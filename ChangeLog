@@ -1,3 +1,9 @@
+Wed Jun  6 20:08:01 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (try_with_sh): take envp argument.
+	  (exec_with_sh): ditto.  use it for execve.
+	  (proc_exec_v): provide envp for try_with_sh.
+
 Wed Jun  6 13:25:04 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c, include/ruby/win32.h (rb_w32_wrap_io_handle): new API.
