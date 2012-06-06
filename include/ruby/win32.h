@@ -726,6 +726,8 @@ long rb_w32_write_console(uintptr_t, int);	/* use uintptr_t instead of VALUE bec
 int  WINAPI rb_w32_Sleep(unsigned long msec);
 int  rb_w32_wait_events_blocking(HANDLE *events, int num, DWORD timeout);
 int  rb_w32_time_subtract(struct timeval *rest, const struct timeval *wait);
+int  rb_w32_wrap_io_handle(HANDLE, int);
+int  rb_w32_unwrap_io_handle(int);
 
 /*
 == ***CAUTION***

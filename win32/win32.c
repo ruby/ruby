@@ -6747,3 +6747,41 @@ localtime_r(const time_t *tp, struct tm *rp)
 #endif
     return rp;
 }
+
+/* License: Ruby's */
+int
+rb_w32_wrap_io_handle(HANDLE h, int flags)
+{
+    BOOL tmp;
+    int len = sizeof(tmp);
+    int r = getsockopt((SOCKET)h, SOL_SOCKET, SO_DEBUG, (char *)&tmp, &len);
+    if (r != SOCKET_ERROR || WSAGetLastError() != WSAENOTSOCK) {
+        int f = 0;
+        if (flags & O_NONBLOCK) {
+            flags &= ~O_NONBLOCK;
+            f = O_NONBLOCK;
+        }
+        socklist_insert((SOCKET)h, f);
+    }
+    else if (flags & O_NONBLOCK) {
+        errno = EINVAL;
+        return -1;
+    }
+    return rb_w32_open_osfhandle((intptr_t)h, flags);
+}
+
+/* License: Ruby's */
+int
+rb_w32_unwrap_io_handle(int fd)
+{
+    SOCKET sock = TO_SOCKET(fd);
+    _set_osfhnd(fd, (SOCKET)INVALID_HANDLE_VALUE);
+    if (!is_socket(sock)) {
+	UnlockFile((HANDLE)sock, 0, 0, LK_LEN, LK_LEN);
+	constat_delete((HANDLE)sock);
+    }
+    else {
+	socklist_delete(&sock, NULL);
+    }
+    return _close(fd);
+}

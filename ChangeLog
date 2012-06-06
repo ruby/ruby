@@ -1,3 +1,16 @@
+Wed Jun  6 13:25:04 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c, include/ruby/win32.h (rb_w32_wrap_io_handle): new API.
+	  this API wraps an I/O handle (HANDLE or SOCKET) and returns fd.
+	  the second parameter should be combination of O_*, for example,
+	  O_RDWR | O_BINARY | O_NOINHERT.
+
+	* win32/win32.c, include/ruby/win32.h (rb_w32_unwrap_io_handle): new
+	  API.  this API unwraps an I/O handle and close the fd (not closes
+	  the handle itself).
+
+	[Feature #4960] [ruby-core:37227]
+
 Wed Jun  6 13:18:26 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_close): of course, console handle is not socket.
