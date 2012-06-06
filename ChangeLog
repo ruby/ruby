@@ -1,3 +1,9 @@
+Wed Jun  6 14:06:02 2012  Tanaka Akira  <akr@fsij.org>
+
+	* lib/webrick/utils.rb: fix fcntl call.
+
+	* lib/drb/unix.rb: ditto.
+
 Mon May 21 16:29:47 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/syslog/syslog.c (mSyslog_inspect): Make sure self is a
