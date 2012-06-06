@@ -1,3 +1,7 @@
+Wed Jun  6 09:45:21 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/dl/test_c_{struct_entry,union_entity}.rb: sorry, typos.
+
 Wed Jun  6 05:27:54 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_exec_fillarg): check use_shell field before accessing
@@ -123,7 +127,7 @@ Mon Jun  4 14:06:12 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Mon Jun  4 13:10:11 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* test/dl/test_c_{struct,union}_entity.rb: broken require.
+	* test/dl/test_c_{struct_entry,union_entity}.rb: broken require.
 
 Mon Jun  4 12:01:21 2012  Koichi Sasada  <ko1@atdot.net>
 
