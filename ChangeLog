@@ -9,7 +9,7 @@ Wed Jun  6 13:25:04 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 	  API.  this API unwraps an I/O handle and close the fd (not closes
 	  the handle itself).
 
-	[Feature #4960] [ruby-core:37227]
+	[Feature #4906] [ruby-core:37227]
 
 Wed Jun  6 13:18:26 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
