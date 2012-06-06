@@ -1060,7 +1060,7 @@ exec_with_sh(const char *prog, char **argv, char **envp)
 
 #define ARGV_COUNT(n) ((n)+1)
 #else
-#define try_with_sh(prog, argv) (void)0
+#define try_with_sh(prog, argv, envp) (void)0
 #define ARGV_COUNT(n) (n)
 #endif
 #define ARGV_SIZE(n) (sizeof(char*) * ARGV_COUNT(n))
