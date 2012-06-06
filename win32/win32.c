@@ -3062,6 +3062,8 @@ rb_w32_getsockname(int s, struct sockaddr *addr, int *addrlen)
     return r;
 }
 
+#undef getsockopt
+
 /* License: Artistic or GPL */
 int WSAAPI
 rb_w32_getsockopt(int s, int level, int optname, char *optval, int *optlen)
@@ -5902,11 +5904,11 @@ rb_w32_close(int fd)
 
     if (!is_socket(sock)) {
 	UnlockFile((HANDLE)sock, 0, 0, LK_LEN, LK_LEN);
+	constat_delete((HANDLE)sock);
 	return _close(fd);
     }
     _set_osfhnd(fd, (SOCKET)INVALID_HANDLE_VALUE);
     socklist_delete(&sock, NULL);
-    constat_delete((HANDLE)sock);
     _close(fd);
     errno = save_errno;
     if (closesocket(sock) == SOCKET_ERROR) {
@@ -6630,12 +6632,14 @@ rb_w32_inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
     return numaddr;
 }
 
+/* License: Ruby's */
 char
 rb_w32_fd_is_text(int fd) {
     return _osfile(fd) & FTEXT;
 }
 
 #if RUBY_MSVCRT_VERSION < 80
+/* License: Ruby's */
 static int
 unixtime_to_systemtime(const time_t t, SYSTEMTIME *st)
 {
@@ -6645,6 +6649,7 @@ unixtime_to_systemtime(const time_t t, SYSTEMTIME *st)
     return 0;
 }
 
+/* License: Ruby's */
 static void
 systemtime_to_tm(const SYSTEMTIME *st, struct tm *t)
 {
@@ -6670,6 +6675,7 @@ systemtime_to_tm(const SYSTEMTIME *st, struct tm *t)
     t->tm_yday = d - 1;
 }
 
+/* License: Ruby's */
 static int
 systemtime_to_localtime(TIME_ZONE_INFORMATION *tz, SYSTEMTIME *gst, SYSTEMTIME *lst)
 {
@@ -6694,6 +6700,7 @@ systemtime_to_localtime(TIME_ZONE_INFORMATION *tz, SYSTEMTIME *gst, SYSTEMTIME *
 }
 #endif
 
+/* License: Ruby's */
 struct tm *
 gmtime_r(const time_t *tp, struct tm *rp)
 {
@@ -6717,6 +6724,7 @@ gmtime_r(const time_t *tp, struct tm *rp)
     return rp;
 }
 
+/* License: Ruby's */
 struct tm *
 localtime_r(const time_t *tp, struct tm *rp)
 {
