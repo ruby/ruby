@@ -1,3 +1,15 @@
+Wed Jun  6 20:45:08 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (proc_exec_v): don't call dln_find_exe_r here because it
+	  is not async-signal-safe and proc_exec_v is called in a child
+	  process.
+	  command_abspath field of rb_exec_arg.
+	  (rb_exec_fillarg): call dln_find_exe_r and set command_abspath.
+	  (rb_exec_err): Give the absolute path of the invoking command for
+	  proc_exec_v, instead of the command name.
+
+	* internal.h: add command_abspath field for rb_exec_arg. 
+
 Wed Jun  6 20:08:01 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (try_with_sh): take envp argument.

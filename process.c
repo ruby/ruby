@@ -1077,7 +1077,6 @@ proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
     UNREACHABLE;
 #else
     char **argv;
-    char fbuf[MAXPATHLEN];
     char **envp;
 # if defined(__EMX__) || defined(OS2)
     char **new_argv = NULL;
@@ -1085,9 +1084,6 @@ proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
 
     argv = ARGVSTR2ARGV(argv_str);
 
-    if (!prog)
-	prog = argv[0];
-    prog = dln_find_exe_r(prog, 0, fbuf, sizeof(fbuf)); /* xxx: not async-signal-safe because getenv(), strdup(), etc. */
     if (!prog) {
 	errno = ENOENT;
 	return -1;
@@ -1767,6 +1763,8 @@ static void
 rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, struct rb_exec_arg *e)
 {
     VALUE options;
+    char fbuf[MAXPATHLEN];
+
     MEMZERO(e, struct rb_exec_arg, 1);
     options = hide_obj(rb_ary_new());
     e->options = options;
@@ -1822,6 +1820,15 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
         }
     }
 #endif
+
+    if (!e->use_shell) {
+	char *abspath;
+        abspath = dln_find_exe_r(RSTRING_PTR(e->invoke.cmd.command_name), 0, fbuf, sizeof(fbuf));
+	if (abspath)
+	    e->invoke.cmd.command_abspath = rb_str_new_cstr(abspath);
+	else
+	    e->invoke.cmd.command_abspath = Qnil;
+    }
 
     if (!e->use_shell && !e->invoke.cmd.argv_buf) {
         int i;
@@ -2604,7 +2611,10 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 	rb_proc_exec_e(RSTRING_PTR(e->invoke.sh.shell_script), e->envp_str); /* not async-signal-safe because after_exec. */
     }
     else {
-        proc_exec_v(RSTRING_PTR(e->invoke.cmd.command_name), e->invoke.cmd.argv_str, e->envp_str); /* not async-signal-safe because dln_find_exe_r */
+	char *abspath = NULL;
+	if (!NIL_P(e->invoke.cmd.command_abspath))
+	    abspath = RSTRING_PTR(e->invoke.cmd.command_abspath);
+	proc_exec_v(abspath, e->invoke.cmd.argv_str, e->envp_str); /* async-signal-safe */
     }
 #if !defined(HAVE_FORK)
     preserving_errno(rb_run_exec_options_err(sargp, NULL, errmsg, errmsg_buflen));
@@ -2642,7 +2652,7 @@ static int
 rb_exec_atfork(void* arg, char *errmsg, size_t errmsg_buflen)
 {
     rb_thread_atfork_before_exec(); /* xxx: not async-signal-safe because it calls rb_thread_atfork_internal which calls st_insert, etc. */
-    return rb_exec_err(arg, errmsg, errmsg_buflen); /* not async-signal-safe because after_exec and dln_find_exe_r */
+    return rb_exec_err(arg, errmsg, errmsg_buflen); /* not async-signal-safe because after_exec */
 }
 #endif
 

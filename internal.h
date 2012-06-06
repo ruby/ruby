@@ -167,6 +167,7 @@ struct rb_exec_arg {
         } sh;
         struct {
             VALUE command_name;
+            VALUE command_abspath; /* full path string or nil */
             VALUE argv_str;
             VALUE argv_buf;
         } cmd;
