@@ -1070,7 +1070,7 @@ exec_with_sh(const char *prog, char **argv, char **envp)
 
 /* This function should be async-signal-safe.  Actually it isn't because after_exec(). */
 static int
-proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
+proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
 {
 #ifdef __native_client__
     rb_notimplement();
@@ -1137,7 +1137,7 @@ proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
 
 /* This function should be async-signal-safe.  Actually it isn't because after_exec(). */
 static int
-rb_proc_exec_e(const char *str, VALUE envp_str)
+proc_exec_sh(const char *str, VALUE envp_str)
 {
 #ifdef __native_client__
     rb_notimplement();
@@ -1187,7 +1187,7 @@ rb_proc_exec_e(const char *str, VALUE envp_str)
 int
 rb_proc_exec(const char *str)
 {
-    return rb_proc_exec_e(str, Qfalse);
+    return proc_exec_sh(str, Qfalse);
 }
 
 enum {
@@ -1220,10 +1220,10 @@ enum {
 
 #if USE_SPAWNV
 #if defined(_WIN32)
-#define proc_spawn_v(argv, prog) rb_w32_aspawn(P_NOWAIT, (prog), (argv))
+#define proc_spawn_cmd_internal(argv, prog) rb_w32_aspawn(P_NOWAIT, (prog), (argv))
 #else
 static rb_pid_t
-proc_spawn_v(char **argv, char *prog)
+proc_spawn_cmd_internal(char **argv, char *prog)
 {
     char fbuf[MAXPATHLEN];
     rb_pid_t status;
@@ -1250,7 +1250,7 @@ proc_spawn_v(char **argv, char *prog)
 #endif
 
 static rb_pid_t
-proc_spawn_n(char **argv, VALUE prog, VALUE options)
+proc_spawn_cmd(char **argv, VALUE prog, VALUE options)
 {
     rb_pid_t pid = -1;
 
@@ -1262,17 +1262,17 @@ proc_spawn_n(char **argv, VALUE prog, VALUE options)
 	}
 	pid = rb_w32_aspawn_flags(P_NOWAIT, prog ? RSTRING_PTR(prog) : 0, argv, flags);
 #else
-	pid = proc_spawn_v(argv, prog ? RSTRING_PTR(prog) : 0);
+	pid = proc_spawn_cmd_internal(argv, prog ? RSTRING_PTR(prog) : 0);
 #endif
     }
     return pid;
 }
 
 #if defined(_WIN32)
-#define proc_spawn(str) rb_w32_spawn(P_NOWAIT, (str), 0)
+#define proc_spawn_sh(str) rb_w32_spawn(P_NOWAIT, (str), 0)
 #else
 static rb_pid_t
-proc_spawn(char *str)
+proc_spawn_sh(char *str)
 {
     char fbuf[MAXPATHLEN];
     rb_pid_t status;
@@ -2608,13 +2608,13 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
     }
 
     if (e->use_shell) {
-	rb_proc_exec_e(RSTRING_PTR(e->invoke.sh.shell_script), e->envp_str); /* not async-signal-safe because after_exec. */
+	proc_exec_sh(RSTRING_PTR(e->invoke.sh.shell_script), e->envp_str); /* not async-signal-safe because after_exec. */
     }
     else {
 	char *abspath = NULL;
 	if (!NIL_P(e->invoke.cmd.command_abspath))
 	    abspath = RSTRING_PTR(e->invoke.cmd.command_abspath);
-	proc_exec_v(abspath, e->invoke.cmd.argv_str, e->envp_str); /* async-signal-safe */
+	proc_exec_cmd(abspath, e->invoke.cmd.argv_str, e->envp_str); /* async-signal-safe */
     }
 #if !defined(HAVE_FORK)
     preserving_errno(rb_run_exec_options_err(sargp, NULL, errmsg, errmsg_buflen));
@@ -3176,11 +3176,11 @@ rb_spawn_process(struct rb_exec_arg *earg, char *errmsg, size_t errmsg_buflen)
     }
 # if defined HAVE_SPAWNV
     if (earg->use_shell) {
-	pid = proc_spawn(RSTRING_PTR(prog)); /* xxx: earg is ignored. */
+	pid = proc_spawn_sh(RSTRING_PTR(prog)); /* xxx: earg is ignored. */
     }
     else {
         char **argv = ARGVSTR2ARGV(earg->invoke.cmd.argv_str);
-	pid = proc_spawn_n(argv, prog, earg->options); /* xxx: earg (except options) is ignored. */
+	pid = proc_spawn_cmd(argv, prog, earg->options); /* xxx: earg (except options) is ignored. */
     }
 #  if defined(_WIN32)
     if (pid == -1)
