@@ -205,6 +205,16 @@ array_from_list(List const *list)
     return ary;
 }
 
+static void
+adjust_join(const List *list, VALUE new)
+{
+    extern void rb_thread_set_join _((VALUE, VALUE));
+    Entry *entry;
+    for (entry = list->entries; entry; entry = entry->next) {
+	rb_thread_set_join(entry->value, new);
+    }
+}
+
 static VALUE
 wake_thread(VALUE thread)
 {
@@ -221,7 +231,7 @@ run_thread(VALUE thread)
 }
 
 static VALUE
-wake_one(List *list)
+wake_first(List *list)
 {
     VALUE waking;
 
@@ -234,10 +244,22 @@ wake_one(List *list)
 }
 
 static VALUE
+wake_one(List *list)
+{
+    VALUE waking = wake_first(list);
+
+    if (!NIL_P(waking)) {
+	adjust_join(list, waking);
+    }
+
+    return waking;
+}
+
+static VALUE
 wake_all(List *list)
 {
     while (list->entries) {
-        wake_one(list);
+        wake_first(list);
     }
     return Qnil;
 }

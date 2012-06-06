@@ -1,3 +1,8 @@
+Wed Jun  6 15:09:00 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_join), ext/thread/thread.c (wake_one): adjusts
+	  targets of rest waiting threads to join.  [ruby-core:23457]
+
 Wed Jun  6 14:44:13 2012  Kenta Murata  <mrkn@mrkn.jp>
 
 	* bignum.c (rb_big2dbl), test/ruby/test_bignum.rb (test_to_f):
