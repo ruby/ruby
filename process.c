@@ -2614,7 +2614,7 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 	char *abspath = NULL;
 	if (!NIL_P(e->invoke.cmd.command_abspath))
 	    abspath = RSTRING_PTR(e->invoke.cmd.command_abspath);
-	proc_exec_cmd(abspath, e->invoke.cmd.argv_str, e->envp_str); /* async-signal-safe */
+	proc_exec_cmd(abspath, e->invoke.cmd.argv_str, e->envp_str); /* not async-signal-safe because after_exec. */
     }
 #if !defined(HAVE_FORK)
     preserving_errno(rb_run_exec_options_err(sargp, NULL, errmsg, errmsg_buflen));
