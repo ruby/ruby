@@ -2460,6 +2460,7 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
         return 0;
 
     if (s) {
+        /* assume that s is always NULL on fork-able environments */
         s->options = soptions = hide_obj(rb_ary_new());
         s->redirect_fds = Qnil;
 	s->envp_str = s->envp_buf = 0;
@@ -2558,6 +2559,16 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
         if (chdir(RSTRING_PTR(obj)) == -1) { /* async-signal-safe */
             ERRMSG("chdir");
             return -1;
+        }
+    }
+
+    if (s) {
+        VALUE ary = rb_ary_entry(s->options, EXEC_OPTION_DUP2);
+        if (!NIL_P(ary)) {
+            size_t len = run_exec_dup2_tmpbuf_size(RARRAY_LEN(ary));
+            VALUE tmpbuf = hide_obj(rb_str_new(0, len));
+            rb_str_set_len(tmpbuf, len);
+            s->dup2_tmpbuf = tmpbuf;
         }
     }
 

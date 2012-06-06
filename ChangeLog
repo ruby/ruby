@@ -1,3 +1,8 @@
+Wed Jun  6 12:37:43 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (rb_run_exec_options_err): allocate a temporary buffer for
+	  run_exec_dup2() for restoring fds on non-fork environments.
+
 Wed Jun  6 09:45:21 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/dl/test_c_{struct_entry,union_entity}.rb: sorry, typos.
