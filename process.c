@@ -1045,7 +1045,7 @@ security(const char *str)
 
 #if defined(HAVE_FORK) && !defined(__native_client__)
 
-/* try_with_sh and exec_with_sh should be async-signal-safe. */
+/* try_with_sh and exec_with_sh should be async-signal-safe. Actually it is.*/
 #define try_with_sh(prog, argv, envp) ((saved_errno == ENOEXEC) ? exec_with_sh((prog), (argv), (envp)) : (void)0)
 static void
 exec_with_sh(const char *prog, char **argv, char **envp)
@@ -1068,7 +1068,7 @@ exec_with_sh(const char *prog, char **argv, char **envp)
 #define ALLOC_ARGV_WITH_STR(n, v, s, l) \
     (char **)(((s) = ALLOCV_N(char, (v), ARGV_SIZE(n) + (l)) + ARGV_SIZE(n)) - ARGV_SIZE(n))
 
-/* This function should be async-signal-safe. */
+/* This function should be async-signal-safe.  Actually it isn't because after_exec(). */
 static int
 proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
 {
@@ -1135,7 +1135,7 @@ proc_exec_v(const char *prog, VALUE argv_str, VALUE envp_str)
 #endif
 }
 
-/* This function should be async-signal-safe. */
+/* This function should be async-signal-safe.  Actually it isn't because after_exec(). */
 static int
 rb_proc_exec_e(const char *str, VALUE envp_str)
 {
@@ -2147,7 +2147,7 @@ run_exec_dup2_tmpbuf_size(long n)
     return sizeof(struct run_exec_dup2_fd_pair) * n;
 }
 
-/* This function should be async-signal-safe when _save_ is not Qnil. */
+/* This function should be async-signal-safe when _save_ is not Qnil.  Hopefully it is. */
 static int
 run_exec_dup2(VALUE ary, VALUE tmpbuf, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2279,7 +2279,7 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, VALUE save, char *errmsg, size_t errmsg_b
     return -1;
 }
 
-/* This function should be async-signal-safe. */
+/* This function should be async-signal-safe.  Actually it is. */
 static int
 run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
 {
@@ -2298,7 +2298,7 @@ run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
     return 0;
 }
 
-/* This function should be async-signal-safe when _save_ is not Qnil. */
+/* This function should be async-signal-safe when _save_ is not Qnil.  Actually it is. */
 static int
 run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2348,7 +2348,7 @@ run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
     return 0;
 }
 
-/* This function should be async-signal-safe when _save_ is not Qnil. */
+/* This function should be async-signal-safe when _save_ is not Qnil.  Actually it is. */
 static int
 run_exec_dup2_child(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2373,7 +2373,7 @@ run_exec_dup2_child(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 }
 
 #ifdef HAVE_SETPGID
-/* This function should be async-signal-safe when _save_ is not Qnil. */
+/* This function should be async-signal-safe when _save_ is not Qnil.  Actually it is. */
 static int
 run_exec_pgroup(VALUE obj, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2400,7 +2400,7 @@ run_exec_pgroup(VALUE obj, VALUE save, char *errmsg, size_t errmsg_buflen)
 #endif
 
 #if defined(HAVE_SETRLIMIT) && defined(RLIM2NUM)
-/* This function should be async-signal-safe when _save_ is not Qnil. */
+/* This function should be async-signal-safe when _save_ is not Qnil.  Hopefully it is. */
 static int
 run_exec_rlimit(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2460,7 +2460,7 @@ save_env(VALUE save)
 }
 #endif
 
-/* This function should be async-signal-safe when _s_ is not NULL. */
+/* This function should be async-signal-safe when _s_ is not NULL.  Hopefully it is. */
 int
 rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char *errmsg, size_t errmsg_buflen)
 {
@@ -2489,7 +2489,7 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
 #if defined(HAVE_SETRLIMIT) && defined(RLIM2NUM)
     obj = rb_ary_entry(options, EXEC_OPTION_RLIMIT);
     if (!NIL_P(obj)) {
-        if (run_exec_rlimit(obj, soptions, errmsg, errmsg_buflen) == -1) /* not async-signal-safe */
+        if (run_exec_rlimit(obj, soptions, errmsg, errmsg_buflen) == -1) /* hopefully async-signal-safe */
             return -1;
     }
 #endif
@@ -2593,7 +2593,7 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
     return rb_run_exec_options_err(e, s, NULL, 0);
 }
 
-/* This function should be async-signal-safe. */
+/* This function should be async-signal-safe.  Actually it isn't because after_exec(). */
 int
 rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 {
@@ -2647,7 +2647,7 @@ rb_exec(const struct rb_exec_arg *e)
 }
 
 #ifdef HAVE_FORK
-/* This function should be async-signal-safe. */
+/* This function should be async-signal-safe.  Actually it isn't. */
 static int
 rb_exec_atfork(void* arg, char *errmsg, size_t errmsg_buflen)
 {
