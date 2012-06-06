@@ -870,6 +870,25 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_popen_wordsplit_beginning_and_trailing_spaces
+    with_tmpchdir {|d|
+      write_file("script", <<-'End')
+        print "fufumm pid=#{$$} ppid=#{Process.ppid}"
+        exit 7
+      End
+      str = " #{RUBY} script "
+      io = IO.popen(str)
+      pid = io.pid
+      result = io.read
+      io.close
+      status = $?
+      assert_equal(pid, status.pid)
+      assert(status.exited?)
+      assert_equal(7, status.exitstatus)
+      assert_equal("fufumm pid=#{status.pid} ppid=#{$$}", result)
+    }
+  end
+
   def test_exec_wordsplit
     with_tmpchdir {|d|
       write_file("script", <<-'End')
