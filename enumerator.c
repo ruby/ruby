@@ -1260,6 +1260,7 @@ process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
                         move_next = Qfalse;
                         break_point = Qundef;
                     } else if (--memo->u3.cnt == 0) {
+                        memo->u3.cnt = memo->u2.argc;
                         break_point = Qundef;
                     }
                     break;
@@ -1736,6 +1737,7 @@ lazy_take(VALUE obj, VALUE n)
        argv[1] = INT2NUM(0);
        argc = 2;
     }
+
     memo = NEW_MEMO(0, len, len);
     new_enum = lazy_copy(argc, argv, obj);
     lazy_add_proc(new_enum, T_PROC_TAKE, (VALUE) memo);
