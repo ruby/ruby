@@ -2787,13 +2787,13 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
-	    if (!status && !chfunc) {
+	    if (!status) {
 		rb_thread_sleep(1);
 		continue;
 	    }
 	    else {
 		rb_protect((VALUE (*)())rb_thread_sleep, 1, &state);
-		if (status) *status = state;
+		*status = state;
 		if (!state) continue;
 	    }
 	  default:

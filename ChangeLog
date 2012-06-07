@@ -1,3 +1,7 @@
+Thu Jun  7 22:13:05 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_fork_err): Fix the conditoin to use rb_protect.
+
 Thu Jun  7 20:29:12 2012  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h: rb_exec_arg and related stuff moved back from
