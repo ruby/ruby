@@ -755,3 +755,16 @@ define rb_ps_thread
   set $ps_thread_id = $arg1
   print $ps_thread_th = (rb_thread_t*)$ps_thread->data
 end
+
+# Details: https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/MachineInstructionsTraceWithGDB
+define trace_machine_instructions
+  set logging on
+  set height 0
+  set width 0
+  display/i $pc
+  while !$exit_code
+    info line *$pc
+    si
+  end
+end
+

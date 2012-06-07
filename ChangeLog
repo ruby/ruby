@@ -1,3 +1,10 @@
+Thu Jun 07 15:53:03 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* .gdbinit: add function `trace_machine_instructions' to trace
+	  in native machine assemble.
+	  See https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/MachineInstructionsTraceWithGDB
+	  for more details.
+
 Wed Jun  6 21:31:21 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (proc_exec_cmd) renamed from proc_exec_v.
