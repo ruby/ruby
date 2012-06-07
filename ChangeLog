@@ -1,3 +1,8 @@
+Thu Jun  7 20:29:12 2012  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h: rb_exec_arg and related stuff moved back from
+	  internal.h
+
 Thu Jun 07 15:53:03 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* .gdbinit: add function `trace_machine_instructions' to trace
