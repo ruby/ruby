@@ -1,3 +1,8 @@
+Thu Jun  7 19:00:35 2012  Kenta Murata <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (VpMemAlloc): Fixes a bug reported
+	  by Drew Yao <ayao at apple.com>
+
 Wed Jun  6 15:09:00 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_join), ext/thread/thread.c (wake_one): adjusts
