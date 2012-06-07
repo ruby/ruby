@@ -1238,7 +1238,7 @@ process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
     struct proc_entry *entry;
     VALUE *procs = RARRAY_PTR(procs_array);
     VALUE move_next = Qtrue;
-    VALUE break_point = Qtrue;
+    VALUE break_point = Qfalse;
     NODE *memo;
     long i = 0;
 
@@ -1258,10 +1258,10 @@ process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
                     memo = RNODE(entry->memo);
                     if (memo->u3.cnt == 0) {
                         move_next = Qfalse;
-                        break_point = Qundef;
+                        break_point = Qtrue;
                     } else if (--memo->u3.cnt == 0) {
                         memo->u3.cnt = memo->u2.argc;
-                        break_point = Qundef;
+                        break_point = Qtrue;
                     }
                     break;
                 case T_PROC_DROP:
@@ -1302,7 +1302,7 @@ process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
     if (RTEST(move_next)) {
         rb_funcall2(yielder, id_yield, 1, &result);
     }
-    if (break_point == Qundef) rb_iter_break();
+    if (break_point) rb_iter_break();
     return result;
 }
 static VALUE
