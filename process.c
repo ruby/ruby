@@ -1117,8 +1117,7 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
         execve(prog, argv, envp); /* async-signal-safe */
     else
         execv(prog, argv); /* async-signal-safe */
-    preserving_errno(try_with_sh(prog, argv, envp); /* try_with_sh() is async-signal-safe. */
-                     after_exec()); /* after_exec() is not async-signal-safe */
+    preserving_errno(try_with_sh(prog, argv, envp)); /* try_with_sh() is async-signal-safe. */
 # if defined(__EMX__) || defined(OS2)
     if (new_argv) {
 	xfree(new_argv[0]);
@@ -1148,7 +1147,6 @@ proc_exec_sh(const char *str, VALUE envp_str)
 #ifdef _WIN32
     before_exec();
     rb_w32_spawn(P_OVERLAY, (char *)str, 0);
-    after_exec();
     return -1;
 #else
 #if defined(__CYGWIN32__) || defined(__EMX__)
@@ -1161,7 +1159,6 @@ proc_exec_sh(const char *str, VALUE envp_str)
             execl(shell, "sh", "-c", str, (char *) NULL);
         else
             status = system(str);
-        after_exec();
         if (status != -1)
             exit(status);
     }
@@ -1171,7 +1168,6 @@ proc_exec_sh(const char *str, VALUE envp_str)
         execle("/bin/sh", "sh", "-c", str, (char *)NULL, (char **)RSTRING_PTR(envp_str)); /* async-signal-safe */
     else
         execl("/bin/sh", "sh", "-c", str, (char *)NULL); /* async-signal-safe */
-    preserving_errno(after_exec()); /* xxx: not async-signal-safe because after_exec calls rb_thread_start_timer_thread.  */
 #endif
     return -1;
 #endif	/* _WIN32 */
@@ -1181,7 +1177,9 @@ proc_exec_sh(const char *str, VALUE envp_str)
 int
 rb_proc_exec(const char *str)
 {
-    return proc_exec_sh(str, Qfalse);
+    int ret = proc_exec_sh(str, Qfalse);
+    preserving_errno(after_exec());
+    return ret;
 }
 
 enum {
@@ -2615,6 +2613,7 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 #else
 # undef sargp
 #endif
+    preserving_errno(after_exec()); /* xxx: not async-signal-safe because after_exec calls rb_thread_start_timer_thread.  */
     return -1;
 }
 

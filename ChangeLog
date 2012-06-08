@@ -1,3 +1,9 @@
+Fri Jun  8 19:43:33 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_exec_err): after_exec() call moved from proc_exec_cmd and
+	  proc_exec_sh.
+	  (rb_proc_exec): ditto.
+
 Fri Jun  8 19:00:59 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (ARGV_COUNT): unused macro removed.
