@@ -7216,18 +7216,15 @@ rb_str_rpartition(VALUE str, VALUE sep)
 
 /*
  *  call-seq:
- *     str.start_with?([prefix]+)   -> true or false
+ *     str.start_with?([prefixes]+)   -> true or false
  *
- *  Returns true if <i>str</i> starts with one of the prefixes given.
+ *  Returns true if +str+ starts with one of the +prefixes+ given.
  *
- *    p "hello".start_with?("hell")               #=> true
+ *    "hello".start_with?("hell")               #=> true
  *
  *    # returns true if one of the prefixes matches.
- *    p "hello".start_with?("heaven", "hell")     #=> true
- *    p "hello".start_with?("heaven", "paradise") #=> false
- *
- *
- *
+ *    "hello".start_with?("heaven", "hell")     #=> true
+ *    "hello".start_with?("heaven", "paradise") #=> false
  */
 
 static VALUE
@@ -7248,9 +7245,9 @@ rb_str_start_with(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.end_with?([suffix]+)   -> true or false
+ *     str.end_with?([suffixes]+)   -> true or false
  *
- *  Returns true if <i>str</i> ends with one of the suffixes given.
+ *  Returns true if +str+ ends with one of the +suffixes+ given.
  */
 
 static VALUE

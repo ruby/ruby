@@ -1,3 +1,10 @@
+Sat Jun  9 08:09:38 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* string.c (rb_str_start_with):  Removed "p" from start_with? examples
+	  to match other String method examples.  [ruby-trunk - Bug #6553]
+	* string.c (rb_str_end_with):  Updated end_with? to use code markup
+	  instead of italic.
+
 Sat Jun  9 07:56:03 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/benchmark.rb:  Updated formatting of Benchmark documentation for
