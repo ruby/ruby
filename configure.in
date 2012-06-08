@@ -53,7 +53,7 @@ target_cpu=x64
 
 AC_DEFUN([RUBY_NACL],
 [
- AS_CASE(["${host_os}"], 
+ AS_CASE(["${host_os}"],
 [nacl], [
   ac_cv_exeext=.nexe
   host_vendor=chromium
@@ -2462,7 +2462,7 @@ if test x"$cross_compiling" = xyes; then
   XRUBY='$(MINIRUBY)'
   TEST_RUNNABLE=no
 
-  if test "$host_os" = "nacl"; then 
+  if test "$host_os" = "nacl"; then
       if test "$build_cpu" = "$host_cpu" || test "${nacl_cv_cpu_nick}" = "x86" -a "$host_cpu" = "i686"; then
           nacl_cv_sel_ldr='`$(MINIRUBY) $(srcdir)/nacl/nacl-config.rb sel_ldr`'
           nacl_cv_irt_core='`$(MINIRUBY) $(srcdir)/nacl/nacl-config.rb irt_core`'

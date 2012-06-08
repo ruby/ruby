@@ -1792,15 +1792,15 @@ rb_enc_aliases(VALUE klass)
  * output to ISO-8859-1 encoding, then read back in and transcoded to UTF-8:
  *
  *   string = "R\u00E9sum\u00E9"
- *   
+ *
  *   open("transcoded.txt", "w:ISO-8859-1") do |io|
  *     io.write(string)
  *   end
- *   
+ *
  *   puts "raw text:"
  *   p File.binread("transcoded.txt")
  *   puts
- *   
+ *
  *   open("transcoded.txt", "r:ISO-8859-1:UTF-8") do |io|
  *     puts "transcoded text:"
  *     p io.read
@@ -1809,14 +1809,14 @@ rb_enc_aliases(VALUE klass)
  * While writing the file, the internal encoding is not specified as it is
  * only necessary for reading.  While reading the file both the internal and
  * external encoding must be specified to obtain the correct result.
- *   
- *   $ ruby t.rb 
+ *
+ *   $ ruby t.rb
  *   raw text:
  *   "R\xE9sum\xE9"
  *
  *   transcoded text:
  *   "R\u00E9sum\u00E9"
- *   
+ *
  */
 
 void

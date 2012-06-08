@@ -2630,7 +2630,7 @@ rb_exec(const struct rb_exec_arg *e)
 	}
 	else {
 	    fprintf(stderr, "%s:%d: command not found: %s\n",
-		    rb_sourcefile(), rb_sourceline(), 
+		    rb_sourcefile(), rb_sourceline(),
                     RSTRING_PTR(e->use_shell ? e->invoke.sh.shell_script : e->invoke.cmd.command_name));
 	}
     );
@@ -2784,7 +2784,7 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 	    }
 	    else {
                 /* rb_protect() is required not only for non-NULL status
-                 * but also for non-NULL chfunc because 
+                 * but also for non-NULL chfunc because
                  * ep[0] and ep[1] should be closed on exceptions.
                  * If status is NULL, the catched exception is re-raised
                  * by rb_jump_tag() below, after closing them.  */
