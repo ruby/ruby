@@ -1,3 +1,13 @@
+Sat Jun  9 08:21:32 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* README.EXT (prepare extconf.rb):  Added note to see MakeMakefile for
+	  documentation of extconf.rb functions.  Patch by Zachary Scott.
+	  [ruby-trunk - Feature #6522]
+	* README.EXT (Appendix C):  Removed in favor of MakeMakefile.
+	  Patch by Zachary Scott.
+	* lib/mkmf.rb:  Merged documentation from README.EXT Appendix C.  Patch
+	  by Zachary Scott.
+
 Sat Jun  9 08:16:47 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/re.rdoc:  Completed wording in the description of the =~ operator.

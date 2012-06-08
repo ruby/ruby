@@ -763,7 +763,7 @@ various conditions.
   have_header(header[, preheaders[, opt]]): check whether header file exists
   find_header(header, *paths): find header from paths
   have_framework(fw): check whether framework exists (for MacOS X)
-  have_struct_member(type, member[, headers]): check whether struct has member
+  have_struct_member(type, member[, headers[, opt]]): check whether struct has member
   have_type(type[, headers[, opt]]): check whether type exists
   find_type(type, opt, *headers): check whether type exists in headers
   have_const(const[, headers[, opt]]): check whether constant is defined
@@ -772,7 +772,9 @@ various conditions.
   convertible_int(type[, headers[, opts]]): find convertible integer type
   find_executable(bin[, path]): find excutable file path
   create_header(header): generate configured header
-  create_makefile(target): generate Makefile
+  create_makefile(target[, target_prefix]): generate Makefile
+
+See MakeMakefile for full documentation of these functions.
 
 The value of the variables below will affect the Makefile.
 
@@ -1406,105 +1408,6 @@ mere st.h.
 
 Means that rb_add_event_hook() takes the third argument `data', to be
 passed to the given event hook function.
-
-Appendix C. Functions Available in extconf.rb
-
-These functions are available in extconf.rb:
-
- have_macro(macro, headers, opt)
-
-Checks whether macro is defined with header.  Returns true if the macro
-is defined.
-
- have_library(lib, func, opt)
-
-Checks whether the library exists, containing the specified function.
-Returns true if the library exists.
-
- find_library(lib, func, path...)
-
-Checks whether a library which contains the specified function exists in
-path.  Returns true if the library exists.
-
- have_func(func, headers, opt)
-
-Checks whether func exists with header.  Returns true if the function
-exists.  To check functions in an additional library, you need to
-check that library first using have_library().
-The func shall be either mere function name or function name with
-arguments.
-Example:
-    have_func("LONG2NUM(0)")
-
- have_var(var, header, opt)
-
-Checks whether var exists with header.  Returns true if the variable
-exists.  To check variables in an additional library, you need to
-check that library first using have_library().
-
- have_header(header, preheaders, opt)
-
-Checks whether header exists.  Returns true if the header file exists.
-
- find_header(header, path...)
-
-Checks whether header exists in path.  Returns true if the header file
-exists.
-
- have_struct_member(type, member, headers, opt)
-
-Checks whether type has member with header.  Returns true if the type
-is defined and has the member.
-
- have_type(type, headers, opt)
-
-Checks whether type is defined with header.  Returns true if the type
-is defined.
-
- check_sizeof(type, header)
-
-Checks the size of type in char with header.  Returns the size if the
-type is defined, otherwise nil.
-
- create_makefile(target)
-
-Generates the Makefile for the extension library.  If you don't invoke
-this method, the compilation will not be done.
-
- find_executable(bin, path)
-
-Finds command in path, which is File::PATH_SEPARATOR-separated list of
-directories.  If path is nil or omitted, environment variable PATH
-will be used.  Returns the path name of the command if it is found,
-otherwise nil.
-
- with_config(withval[, default=nil])
-
-Parses the command line options and returns the value specified by
---with-<withval>.
-
- enable_config(config, *defaults)
- disable_config(config, *defaults)
-
-Parses the command line options for boolean.  Returns true if
---enable-<config> is given, or false if --disable-<config> is given.
-Otherwise, yields defaults to the given block and returns the result
-if it is called with a block, or returns defaults.
-
- dir_config(target[, default_dir])
- dir_config(target[, default_include, default_lib])
-
-Parses the command line options and adds the directories specified by
---with-<target>-dir, --with-<target>-include, and/or --with-<target>-lib
-to $CFLAGS and/or $LDFLAGS.  --with-<target>-dir=/path is equivalent to
---with-<target>-include=/path/include --with-<target>-lib=/path/lib.
-Returns an array of the added directories ([include_dir, lib_dir]).
-
- pkg_config(pkg)
-
-Obtains the information for pkg by pkg-config command.  The actual
-command name can be overridden by --with-pkg-config command line
-option.
 
 /*
  * Local variables:

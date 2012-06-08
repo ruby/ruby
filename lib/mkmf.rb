@@ -885,7 +885,7 @@ SRC
   end
 
   # Returns whether or not the given entry point +func+ can be found within
-  # +lib+.  If +func+ is nil, the <code>main()</code> entry point is used by
+  # +lib+.  If +func+ is +nil+, the <code>main()</code> entry point is used by
   # default.  If found, it adds the library to list of libraries to be used
   # when linking your extension.
   #
@@ -915,7 +915,7 @@ SRC
 
   # Returns whether or not the entry point +func+ can be found within the
   # library +lib+ in one of the +paths+ specified, where +paths+ is an array
-  # of strings.  If +func+ is nil , then the <code>main()</code> function is
+  # of strings.  If +func+ is +nil+ , then the <code>main()</code> function is
   # used as the entry point.
   #
   # If +lib+ is found, then the path it was found on is added to the list of
@@ -948,7 +948,11 @@ SRC
   # is passed as a preprocessor constant to the compiler using the function
   # name, in uppercase, prepended with +HAVE_+.
   #
-  # For example, if <code>have_func('foo')</code> returned true, then the
+  # To check functions in an additional library, you need to check that
+  # library first using <code>have_library()</code>.  The +func+ shall be
+  # either mere function name or function name with arguments.
+  #
+  # For example, if <code>have_func('foo')</code> returned +true+, then the
   # +HAVE_FOO+ preprocessor macro would be passed to the compiler.
   #
   def have_func(func, headers = nil, opt = "", &b)
@@ -966,6 +970,9 @@ SRC
   # header files, or within any +headers+ that you provide.  If found, a macro
   # is passed as a preprocessor constant to the compiler using the variable
   # name, in uppercase, prepended with +HAVE_+.
+  #
+  # To check variables in an additional library, you need to check that
+  # library first using <code>have_library()</code>.
   #
   # For example, if <code>have_var('foo')</code> returned true, then the
   # +HAVE_FOO+ preprocessor macro would be passed to the compiler.
@@ -1482,8 +1489,8 @@ SRC
   # :startdoc:
 
   # Tests for the presence of a <tt>--with-</tt>_config_ or
-  # <tt>--without-</tt>_config_ option.  Returns true if the with option is
-  # given, false if the without option is given, and the default value
+  # <tt>--without-</tt>_config_ option.  Returns +true+ if the with option is
+  # given, +false+ if the without option is given, and the default value
   # otherwise.
   #
   # This can be useful for adding custom definitions, such as debug
@@ -1517,8 +1524,8 @@ SRC
   end
 
   # Tests for the presence of an <tt>--enable-</tt>_config_ or
-  # <tt>--disable-</tt>_config_ option. Returns true if the enable option is
-  # given, false if the disable option is given, and the default value
+  # <tt>--disable-</tt>_config_ option. Returns +true+ if the enable option is
+  # given, +false+ if the disable option is given, and the default value
   # otherwise.
   #
   # This can be useful for adding custom definitions, such as debug
@@ -1641,6 +1648,9 @@ SRC
 
   # Handles meta information about installed libraries. Uses your platform's
   # pkg-config program if it has one.
+  #
+  # The actual command name can be overridden by
+  # <code>--with-pkg-config</code> command line option.
   def pkg_config(pkg)
     if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
       # iff package specific config command is given
