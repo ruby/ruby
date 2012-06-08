@@ -19,7 +19,7 @@
 # used to execute Ruby code.
 #
 # * Measure the time to construct the string given by the expression
-#   <tt>"a"*1_000_000</tt>:
+#   <code>"a"*1_000_000</code>:
 #
 #       require 'benchmark'
 #
@@ -122,18 +122,18 @@
 
 module Benchmark
 
-  BENCHMARK_VERSION = "2002-04-25" #:nodoc"
+  BENCHMARK_VERSION = "2002-04-25" # :nodoc:
 
-  # Invokes the block with a <tt>Benchmark::Report</tt> object, which
+  # Invokes the block with a Benchmark::Report object, which
   # may be used to collect and report on the results of individual
-  # benchmark tests. Reserves <i>label_width</i> leading spaces for
-  # labels on each line. Prints _caption_ at the top of the
-  # report, and uses _format_ to format each line.
+  # benchmark tests. Reserves +label_width+ leading spaces for
+  # labels on each line. Prints +caption+ at the top of the
+  # report, and uses +format+ to format each line.
   # Returns an array of Benchmark::Tms objects.
   #
   # If the block returns an array of
-  # <tt>Benchmark::Tms</tt> objects, these will be used to format
-  # additional lines of output. If _label_ parameters are
+  # Benchmark::Tms objects, these will be used to format
+  # additional lines of output. If +label+ parameters are
   # given, these are used to label these extra lines.
   #
   # _Note_: Other methods provide a simpler interface to this one, and are
@@ -153,7 +153,7 @@ module Benchmark
   #       [tf+tt+tu, (tf+tt+tu)/3]
   #     end
   #
-  # <i>Generates:</i>
+  # Generates:
   #
   #                     user     system      total        real
   #        for:     1.016667   0.016667   1.033333 (  0.485749)
@@ -181,8 +181,9 @@ module Benchmark
   end
 
 
-  # A simple interface to the #benchmark method, #bm is generates sequential reports
-  # with labels.  The parameters have the same meaning as for #benchmark.
+  # A simple interface to the #benchmark method, #bm is generates sequential
+  # reports with labels.  The parameters have the same meaning as for
+  # #benchmark.
   #
   #     require 'benchmark'
   #
@@ -193,7 +194,7 @@ module Benchmark
   #       x.report("upto:")  { 1.upto(n) do ; a = "1"; end }
   #     end
   #
-  # <i>Generates:</i>
+  # Generates:
   #
   #                     user     system      total        real
   #        for:     1.050000   0.000000   1.050000 (  0.503462)
@@ -211,7 +212,7 @@ module Benchmark
   # that run later. #bmbm attempts to minimize this effect by running
   # the tests twice, the first time as a rehearsal in order to get the
   # runtime environment stable, the second time for
-  # real. <tt>GC.start</tt> is executed before the start of each of
+  # real. GC.start is executed before the start of each of
   # the real timings; the cost of this is not included in the
   # timings. In reality, though, there's only so much that #bmbm can
   # do, and the results are not guaranteed to be isolated from garbage
@@ -229,7 +230,7 @@ module Benchmark
   #         x.report("sort")  { array.dup.sort  }
   #       end
   #
-  # <i>Generates:</i>
+  # Generates:
   #
   #        Rehearsal -----------------------------------------
   #        sort!  11.928000   0.010000  11.938000 ( 12.756000)
@@ -307,8 +308,8 @@ module Benchmark
     # Returns an initialized Job instance.
     # Usually, one doesn't call this method directly, as new
     # Job objects are created by the #bmbm method.
-    # _width_ is a initial value for the label offset used in formatting;
-    # the #bmbm method passes its _width_ argument to this constructor.
+    # +width+ is a initial value for the label offset used in formatting;
+    # the #bmbm method passes its +width+ argument to this constructor.
     #
     def initialize(width)
       @width = width
@@ -345,7 +346,7 @@ module Benchmark
     # Returns an initialized Report instance.
     # Usually, one doesn't call this method directly, as new
     # Report objects are created by the #benchmark and #bm methods.
-    # _width_ and _format_ are the label offset and
+    # +width+ and +format+ are the label offset and
     # format string used by Tms#format.
     #
     def initialize(width = 0, format = nil)
@@ -353,8 +354,8 @@ module Benchmark
     end
 
     #
-    # Prints the _label_ and measured time for the block,
-    # formatted by _format_. See Tms#format for the
+    # Prints the +label+ and measured time for the block,
+    # formatted by +format+. See Tms#format for the
     # formatting rules.
     #
     def item(label = "", *format, &blk) # :yield:
@@ -399,7 +400,7 @@ module Benchmark
     # Elapsed real time
     attr_reader :real
 
-    # Total time, that is _utime_ + _stime_ + _cutime_ + _cstime_
+    # Total time, that is +utime+ + +stime+ + +cutime+ + +cstime+
     attr_reader :total
 
     # Label
@@ -407,9 +408,9 @@ module Benchmark
 
     #
     # Returns an initialized Tms object which has
-    # _utime_ as the user CPU time, _stime_ as the system CPU time,
-    # _cutime_ as the children's user CPU time, _cstime_ as the children's
-    # system CPU time, _real_ as the elapsed real time and _label_ as the label.
+    # +utime+ as the user CPU time, +stime+ as the system CPU time,
+    # +cutime+ as the children's user CPU time, +cstime+ as the children's
+    # system CPU time, +real+ as the elapsed real time and +label+ as the label.
     #
     def initialize(utime = 0.0, stime = 0.0, cutime = 0.0, cstime = 0.0, real = 0.0, label = nil)
       @utime, @stime, @cutime, @cstime, @real, @label = utime, stime, cutime, cstime, real, label.to_s
@@ -418,7 +419,7 @@ module Benchmark
 
     #
     # Returns a new Tms object whose times are the sum of the times for this
-    # Tms object, plus the time required to execute the code block (_blk_).
+    # Tms object, plus the time required to execute the code block (+blk+).
     #
     def add(&blk) # :yield:
       self + Benchmark.measure(&blk)
@@ -512,7 +513,7 @@ module Benchmark
     end
 
     protected
-    
+
     #
     # Returns a new Tms object obtained by memberwise operation +op+
     # of the individual times for this Tms object with those of the other

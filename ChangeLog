@@ -1,3 +1,8 @@
+Sat Jun  9 07:56:03 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/benchmark.rb:  Updated formatting of Benchmark documentation for
+	  consistency.  [ruby-trunk - Bug #6533]
+
 Sat Jun  9 07:46:26 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/delegate.rb:  Added documentation for Delegator#!.  Patch by
