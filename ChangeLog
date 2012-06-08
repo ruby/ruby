@@ -1,3 +1,8 @@
+Sat Jun  9 08:16:47 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* doc/re.rdoc:  Completed wording in the description of the =~ operator.
+	  [ruby-trunk - Bug #6529]
+
 Sat Jun  9 08:09:38 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* string.c (rb_str_start_with):  Removed "p" from start_with? examples

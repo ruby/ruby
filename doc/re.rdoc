@@ -32,11 +32,15 @@ method.
 === <tt>=~</tt> operator
 
 <tt>=~</tt> is Ruby's basic pattern-matching operator.  When one operand is a
-regular expression and is a string (this operator is equivalently defined by
-Regexp and String). If a match is found, the operator returns index of first
-match in string, otherwise it returns +nil+.
+regular expression and the other is a string then the regular expression is
+used as a pattern to match against the string.  (This operator is equivalently
+defined by Regexp and String so the order of String and Regexp do not matter.
+Other classes may have different implementations of <tt>=~</tt>.)  If a match
+is found, the operator returns index of first match in string, otherwise it
+returns +nil+.
 
     /hay/ =~ 'haystack'   #=> 0
+    'haystack' =~ /hay/   #=> 0
     /a/   =~ 'haystack'   #=> 1
     /u/   =~ 'haystack'   #=> nil
 
