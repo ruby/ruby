@@ -1,3 +1,9 @@
+Fri Jun  8 22:39:32 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_fork_err): revert r35955.  The condition needs !chfunc
+	  to close ep[0] and ep[1].  The catched exception is re-raised
+	  immediately after that if status is not NULL.
+
 Fri Jun  8 19:43:33 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_exec_err): after_exec() call moved from proc_exec_cmd and
