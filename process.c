@@ -2788,10 +2788,16 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 		continue;
 	    }
 	    else {
+                /* rb_protect() is required not only for non-NULL status
+                 * but also for non-NULL chfunc because 
+                 * ep[0] and ep[1] should be closed on exceptions.
+                 * If status is NULL, the catched exception is re-raised
+                 * by rb_jump_tag() below, after closing them.  */
 		rb_protect((VALUE (*)())rb_thread_sleep, 1, &state);
 		if (status) *status = state;
 		if (!state) continue;
 	    }
+            /* fall through */
 	  default:
 #ifdef FD_CLOEXEC
 	    if (chfunc) {
