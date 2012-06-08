@@ -196,6 +196,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 	close(master);
 	close(slave);
 	errno = e;
+	if (status) rb_jump_tag(status);
 	rb_sys_fail(errbuf[0] ? errbuf : "fork failed");
     }
 

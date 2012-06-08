@@ -1,4 +1,9 @@
-Fri Jun  8 11:25:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jun  8 11:26:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_fork_err): determine status on errors.
+
+	* ext/pty/pty.c (establishShell): reraise exception if something
+	  raised during sleep.
 
 	* ext/pty/pty.c (establishShell): now needs status to protect from
 	  exceptions in rb_fork_err().

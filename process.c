@@ -2736,7 +2736,9 @@ chfunc_protect(VALUE arg)
  * process.
  *
  * If +status+ is given, protects from any exceptions and sets the
- * jump status to it.
+ * jump status to it, and returns -1.  If failed to fork new process
+ * but no exceptions occurred, sets 0 to it.  Otherwise, if forked
+ * successfully, the value of +status+ is undetermined.
  *
  * In the child process, just returns 0 if +chfunc+ is +NULL+.
  * Otherwise +chfunc+ will be called with +charg+, and then the child
@@ -2773,6 +2775,7 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 
 #ifdef FD_CLOEXEC
     if (chfunc) {
+	if (status) *status = 0;
 	if (pipe_nocrash(ep, fds)) return -1;
 	if (fcntl(ep[1], F_SETFD, FD_CLOEXEC)) {
 	    preserving_errno((close(ep[0]), close(ep[1])));
