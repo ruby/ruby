@@ -1850,13 +1850,14 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
     }
 }
 
-void
+VALUE
 rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
 {
     VALUE prog;
     VALUE env = Qnil, opthash = Qnil;
     prog = rb_exec_getargs(&argc, &argv, accept_shell, &env, &opthash);
     rb_exec_fillarg(prog, argc, argv, env, opthash, e);
+    return e->use_shell ? e->invoke.sh.shell_script : e->invoke.cmd.command_name;
 }
 
 static int

@@ -1,3 +1,10 @@
+Sat Jun  9 01:11:07 2012  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_exec_arg_init): declaration changed to
+	  return a value.
+
+	* process.c (rb_exec_arg_init): return a value.
+
 Fri Jun  8 23:44:14 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: don't check the availability of FD_CLOEXEC.  It should
