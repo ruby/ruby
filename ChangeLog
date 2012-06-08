@@ -1,3 +1,11 @@
+Fri Jun  8 16:19:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/runner.rb (src_testdir): expand real path so that
+	  TestGem#test_self_find_files does not fail by aliased load path when
+	  srcdir contains a symbolic link.
+
+	* tool/runruby.rb (srcdir): ditto.
+
 Fri Jun  8 12:04:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_fork_err): error state in the child process is prior

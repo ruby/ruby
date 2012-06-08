@@ -32,7 +32,16 @@ while arg = ARGV[0]
   ARGV.shift
 end
 
-srcdir ||= File.expand_path('..', File.dirname(__FILE__))
+unless defined?(File.realpath)
+  def File.realpath(*args)
+    Dir.chdir do
+      expand_path(*args)
+      Dir.pwd
+    end
+  end
+end
+
+srcdir ||= File.realpath('..', File.dirname(__FILE__))
 archdir ||= '.'
 
 abs_archdir = File.expand_path(archdir)
@@ -50,7 +59,7 @@ end
 libs = [abs_archdir]
 extout ||= config["EXTOUT"]
 if extout
-  abs_extout = File.expand_path(extout)
+  abs_extout = File.expand_path(extout, abs_archdir)
   libs << File.expand_path("common", abs_extout) << File.expand_path(config['arch'], abs_extout)
 end
 libs << File.expand_path("lib", srcdir)
