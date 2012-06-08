@@ -1,3 +1,8 @@
+Fri Jun  8 11:25:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/pty/pty.c (establishShell): now needs status to protect from
+	  exceptions in rb_fork_err().
+
 Thu Jun  7 22:13:05 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_fork_err): Fix the conditoin to use rb_protect.

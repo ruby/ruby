@@ -155,7 +155,7 @@ static void
 establishShell(int argc, VALUE *argv, struct pty_info *info,
 	       char SlaveName[DEVICELEN])
 {
-    int 		master,slave;
+    int 		master, slave, status = 0;
     rb_pid_t		pid;
     char		*p, *getenv();
     struct passwd	*pwent;
@@ -189,7 +189,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     carg.argc = argc;
     carg.argv = argv;
     errbuf[0] = '\0';
-    pid = rb_fork_err(0, chfunc, &carg, Qnil, errbuf, sizeof(errbuf));
+    pid = rb_fork_err(&status, chfunc, &carg, Qnil, errbuf, sizeof(errbuf));
 
     if (pid < 0) {
 	int e = errno;
