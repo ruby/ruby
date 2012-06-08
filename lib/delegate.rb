@@ -130,6 +130,9 @@ class Delegator < BasicObject
     __getobj__ != obj
   end
 
+  #
+  # Delegates ! to the \_\_getobj\_\_
+  #
   def !
     !__getobj__
   end
@@ -285,8 +288,7 @@ class SimpleDelegator<Delegator
   end
 end
 
-# :stopdoc:
-def Delegator.delegating_block(mid)
+def Delegator.delegating_block(mid) # :nodoc:
   lambda do |*args, &block|
     target = self.__getobj__
     begin
@@ -296,7 +298,6 @@ def Delegator.delegating_block(mid)
     end
   end
 end
-# :startdoc:
 
 #
 # The primary interface to this library.  Use to setup delegation when defining

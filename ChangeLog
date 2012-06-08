@@ -1,3 +1,8 @@
+Sat Jun  9 07:46:26 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/delegate.rb:  Added documentation for Delegator#!.  Patch by
+	  Zachary Scott.  [ruby-trunk - Feature #6534]
+
 Sat Jun  9 07:39:50 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http/responses.rb:  Add RFC 6585 response codes.  Patch by
