@@ -1,3 +1,9 @@
+Sat Jun  9 01:24:28 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_exec_err): before_exec() call moved from proc_exec_cmd
+	  and proc_exec_sh.
+	  (rb_proc_exec): ditto.
+
 Sat Jun  9 01:11:07 2012  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_exec_arg_init): declaration changed to
@@ -20,8 +26,8 @@ Fri Jun  8 22:39:32 2012  Tanaka Akira  <akr@fsij.org>
 
 Fri Jun  8 19:43:33 2012  Tanaka Akira  <akr@fsij.org>
 
-	* process.c (rb_exec_err): after_exec() call moved from proc_exec_cmd and
-	  proc_exec_sh.
+	* process.c (rb_exec_err): after_exec() call moved from proc_exec_cmd
+	  and proc_exec_sh.
 	  (rb_proc_exec): ditto.
 
 Fri Jun  8 19:00:59 2012  Tanaka Akira  <akr@fsij.org>

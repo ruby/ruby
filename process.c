@@ -1111,7 +1111,6 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
 	}
     }
 # endif /* __EMX__ */
-    before_exec(); /* async-signal-safe if forked_child is true */
     envp = envp_str ? (char **)RSTRING_PTR(envp_str) : NULL;
     if (envp_str)
         execve(prog, argv, envp); /* async-signal-safe */
@@ -1136,6 +1135,7 @@ proc_exec_sh(const char *str, VALUE envp_str)
     rb_notimplement();
     UNREACHABLE;
 #else
+
     while (*str == ' ' || *str == '\t' || *str == '\n')
 	str++;
 
@@ -1145,7 +1145,6 @@ proc_exec_sh(const char *str, VALUE envp_str)
     }
 
 #ifdef _WIN32
-    before_exec();
     rb_w32_spawn(P_OVERLAY, (char *)str, 0);
     return -1;
 #else
@@ -1154,7 +1153,6 @@ proc_exec_sh(const char *str, VALUE envp_str)
         char fbuf[MAXPATHLEN];
         char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
         int status = -1;
-        before_exec();
         if (shell)
             execl(shell, "sh", "-c", str, (char *) NULL);
         else
@@ -1163,7 +1161,6 @@ proc_exec_sh(const char *str, VALUE envp_str)
             exit(status);
     }
 #else
-    before_exec(); /* async-signal-safe if forked_child is true. */
     if (envp_str)
         execle("/bin/sh", "sh", "-c", str, (char *)NULL, (char **)RSTRING_PTR(envp_str)); /* async-signal-safe */
     else
@@ -2596,8 +2593,10 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 # define sargp NULL
 #endif
 
+    before_exec(); /* async-signal-safe if forked_child is true */
+
     if (rb_run_exec_options_err(e, sargp, errmsg, errmsg_buflen) < 0) { /* async-signal-safe */
-        return -1;
+        goto failure;
     }
 
     if (e->use_shell) {
@@ -2614,6 +2613,7 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 #else
 # undef sargp
 #endif
+failure:
     preserving_errno(after_exec()); /* xxx: not async-signal-safe because after_exec calls rb_thread_start_timer_thread.  */
     return -1;
 }
