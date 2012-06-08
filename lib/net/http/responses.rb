@@ -116,6 +116,16 @@ end
 class Net::HTTPPreconditionFailed < Net::HTTPClientError            # 412
   HAS_BODY = true
 end
+class Net::HTTPPreconditionRequired < Net::HTTPClientError          # 428
+  HAS_BODY = true
+end
+class Net::HTTPTooManyRequests < Net::HTTPClientError               # 429
+  HAS_BODY = true
+end
+class Net::HTTPRequestHeaderFieldsTooLarge < Net::HTTPClientError   # 431
+  HAS_BODY = true
+end
+
 class Net::HTTPRequestEntityTooLarge < Net::HTTPClientError         # 413
   HAS_BODY = true
 end
@@ -133,22 +143,25 @@ class Net::HTTPExpectationFailed < Net::HTTPClientError             # 417
   HAS_BODY = true
 end
 
-class Net::HTTPInternalServerError < Net::HTTPServerError   # 500
+class Net::HTTPInternalServerError < Net::HTTPServerError           # 500
   HAS_BODY = true
 end
-class Net::HTTPNotImplemented < Net::HTTPServerError        # 501
+class Net::HTTPNotImplemented < Net::HTTPServerError                # 501
   HAS_BODY = true
 end
-class Net::HTTPBadGateway < Net::HTTPServerError            # 502
+class Net::HTTPBadGateway < Net::HTTPServerError                    # 502
   HAS_BODY = true
 end
-class Net::HTTPServiceUnavailable < Net::HTTPServerError    # 503
+class Net::HTTPServiceUnavailable < Net::HTTPServerError            # 503
   HAS_BODY = true
 end
-class Net::HTTPGatewayTimeOut < Net::HTTPServerError        # 504
+class Net::HTTPGatewayTimeOut < Net::HTTPServerError                # 504
   HAS_BODY = true
 end
-class Net::HTTPVersionNotSupported < Net::HTTPServerError   # 505
+class Net::HTTPVersionNotSupported < Net::HTTPServerError           # 505
+  HAS_BODY = true
+end
+class Net::HTTPNetworkAuthenticationRequired < Net::HTTPServerError # 511
   HAS_BODY = true
 end
 
@@ -198,13 +211,17 @@ class Net::HTTPResponse
     '415' => Net::HTTPUnsupportedMediaType,
     '416' => Net::HTTPRequestedRangeNotSatisfiable,
     '417' => Net::HTTPExpectationFailed,
+    '428' => Net::HTTPPreconditionRequired,
+    '429' => Net::HTTPTooManyRequests,
+    '431' => Net::HTTPRequestHeaderFieldsTooLarge,
 
     '500' => Net::HTTPInternalServerError,
     '501' => Net::HTTPNotImplemented,
     '502' => Net::HTTPBadGateway,
     '503' => Net::HTTPServiceUnavailable,
     '504' => Net::HTTPGatewayTimeOut,
-    '505' => Net::HTTPVersionNotSupported
+    '505' => Net::HTTPVersionNotSupported,
+    '511' => Net::HTTPNetworkAuthenticationRequired,
   }
 end
 

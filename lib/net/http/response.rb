@@ -55,6 +55,9 @@
 #       415        HTTPUnsupportedMediaType
 #       416        HTTPRequestedRangeNotSatisfiable
 #       417        HTTPExpectationFailed
+#       428        HTTPPreconditionRequired
+#       429        HTTPTooManyRequests
+#       431        HTTPRequestHeaderFieldsTooLarge
 #
 #     5xx        HTTPServerError
 #       500        HTTPInternalServerError
@@ -63,6 +66,7 @@
 #       503        HTTPServiceUnavailable
 #       504        HTTPGatewayTimeOut
 #       505        HTTPVersionNotSupported
+#       511        HTTPNetworkAuthenticationRequired
 #
 #     xxx        HTTPUnknownResponse
 #

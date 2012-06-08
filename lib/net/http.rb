@@ -347,6 +347,9 @@ module Net   #:nodoc:
   #   HTTPUnsupportedMediaType::            415
   #   HTTPRequestedRangeNotSatisfiable::    416
   #   HTTPExpectationFailed::               417
+  #   HTTPPreconditionRequired::            428
+  #   HTTPTooManyRequests::                 429
+  #   HTTPRequestHeaderFieldsTooLarge::     431
   # HTTPServerError::                    5xx
   #   HTTPInternalServerError::             500
   #   HTTPNotImplemented::                  501
@@ -354,6 +357,7 @@ module Net   #:nodoc:
   #   HTTPServiceUnavailable::              503
   #   HTTPGatewayTimeOut::                  504
   #   HTTPVersionNotSupported::             505
+  #   HTTPNetworkAuthenticationRequired::   511
   #
   # There is also the Net::HTTPBadResponse exception which is raised when
   # there is a protocol error.

@@ -1,3 +1,11 @@
+Sat Jun  9 07:39:50 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http/responses.rb:  Add RFC 6586 response codes.  Patch by
+	  Sangil Jung.  [ruby-trunk - Feature #6480]
+	* lib/net/http/response.rb:  ditto
+	* lib/net/http.rb:  ditto
+	* lib/webrick/httpstatus.rb:  ditto
+
 Sat Jun  9 01:24:28 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_exec_err): before_exec() call moved from proc_exec_cmd
