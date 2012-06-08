@@ -607,7 +607,7 @@ ruby_init_stack(volatile VALUE *addr
     {
 	size_t size = 0;
 	size_t space = 0;
-#if defined(HAVE_PTHREAD_ATTR_GET_NP)
+#if defined(STACKADDR_AVAILABLE)
 	void* addr;
 	get_stack(&addr, &size);
 #elif defined(HAVE_GETRLIMIT)
@@ -615,8 +615,8 @@ ruby_init_stack(volatile VALUE *addr
 	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
 	    size = (size_t)rlim.rlim_cur;
 	}
-#endif
 	space = size > 5 * 1024 * 1024 ? 1024 * 1024 : size / 5;
+#endif
 	native_main_thread.stack_maxsize = size - space;
     }
 }
