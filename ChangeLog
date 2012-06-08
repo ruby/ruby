@@ -1,3 +1,10 @@
+Fri Jun  8 19:00:59 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (ARGV_COUNT): unused macro removed.
+	  (ARGV_SIZE): ditto.
+	  (ALLOC_ARGV): ditto.
+	  (ALLOC_ARGV_WITH_STR): ditto.
+
 Fri Jun  8 16:19:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/runner.rb (src_testdir): expand real path so that

@@ -1058,15 +1058,9 @@ exec_with_sh(const char *prog, char **argv, char **envp)
         execv("/bin/sh", argv); /* async-signal-safe */
 }
 
-#define ARGV_COUNT(n) ((n)+1)
 #else
 #define try_with_sh(prog, argv, envp) (void)0
-#define ARGV_COUNT(n) (n)
 #endif
-#define ARGV_SIZE(n) (sizeof(char*) * ARGV_COUNT(n))
-#define ALLOC_ARGV(n, v) ALLOCV_N(char*, (v), ARGV_COUNT(n))
-#define ALLOC_ARGV_WITH_STR(n, v, s, l) \
-    (char **)(((s) = ALLOCV_N(char, (v), ARGV_SIZE(n) + (l)) + ARGV_SIZE(n)) - ARGV_SIZE(n))
 
 /* This function should be async-signal-safe.  Actually it isn't because after_exec(). */
 static int
