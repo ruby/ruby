@@ -2874,8 +2874,8 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 	    rb_io_close(io);
 	if (state || size) {
 	    if (status) {
-		*status = state;
 		rb_protect(proc_syswait, (VALUE)pid, status);
+		if (state) *status = state;
 	    }
 	    else {
 		rb_syswait(pid);

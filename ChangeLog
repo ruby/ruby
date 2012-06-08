@@ -1,4 +1,7 @@
-Fri Jun  8 11:26:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jun  8 12:04:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_fork_err): error state in the child process is prior
+	  to exceptions in proc_syswait().
 
 	* process.c (rb_fork_err): determine status on errors.
 
