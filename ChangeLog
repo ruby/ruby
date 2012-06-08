@@ -1,3 +1,10 @@
+Fri Jun  8 23:44:14 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: don't check the availability of FD_CLOEXEC.  It should
+	  be available if fork() is available.
+
+	* io.c: ditto.
+
 Fri Jun  8 22:39:32 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_fork_err): revert r35955.  The condition needs !chfunc

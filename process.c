@@ -2650,7 +2650,6 @@ rb_exec_atfork(void* arg, char *errmsg, size_t errmsg_buflen)
 #endif
 
 #ifdef HAVE_FORK
-#ifdef FD_CLOEXEC
 #if SIZEOF_INT == SIZEOF_LONG
 #define proc_syswait (VALUE (*)(VALUE))rb_syswait
 #else
@@ -2660,7 +2659,6 @@ proc_syswait(VALUE pid)
     rb_syswait((int)pid);
     return Qnil;
 }
-#endif
 #endif
 
 static int
@@ -2755,10 +2753,8 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 {
     rb_pid_t pid;
     int err, state = 0;
-#ifdef FD_CLOEXEC
     int ep[2];
     VALUE io = Qnil;
-#endif
 
 #define prefork() (		\
 	rb_io_flush(rb_stdout), \
@@ -2766,7 +2762,6 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 	)
     prefork();
 
-#ifdef FD_CLOEXEC
     if (chfunc) {
 	if (status) *status = 0;
 	if (pipe_nocrash(ep, fds)) return -1;
@@ -2775,7 +2770,6 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 	    return -1;
 	}
     }
-#endif
     for (; before_fork(), (pid = fork()) < 0; prefork()) {
 	after_fork();
 	switch (errno) {
@@ -2799,11 +2793,9 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 	    }
             /* fall through */
 	  default:
-#ifdef FD_CLOEXEC
 	    if (chfunc) {
 		preserving_errno((close(ep[0]), close(ep[1])));
 	    }
-#endif
 	    if (state && !status) rb_jump_tag(state);
 	    return -1;
 	}
@@ -2816,11 +2808,8 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 	    arg.arg = charg;
 	    arg.errmsg = errmsg;
 	    arg.buflen = errmsg_buflen;
-#ifdef FD_CLOEXEC
 	    close(ep[0]);
-#endif
 	    if (!(int)rb_protect(chfunc_protect, (VALUE)&arg, &state)) _exit(EXIT_SUCCESS);
-#ifdef FD_CLOEXEC
 	    if (write(ep[1], &state, sizeof(state)) == sizeof(state) && state) {
 		VALUE errinfo = rb_errinfo();
 		io = rb_io_fdopen(ep[1], O_WRONLY|O_BINARY, NULL);
@@ -2836,7 +2825,6 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 		    err = errno;
             }
 	    if (!NIL_P(io)) rb_io_close(io);
-#endif
 #if EXIT_SUCCESS == 127
 	    _exit(EXIT_FAILURE);
 #else
@@ -2845,7 +2833,6 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 	}
     }
     after_fork();
-#ifdef FD_CLOEXEC
     if (pid && chfunc) {
 	ssize_t size;
 	VALUE exc = Qnil;
@@ -2884,7 +2871,6 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 	    return -1;
 	}
     }
-#endif
     return pid;
 }
 

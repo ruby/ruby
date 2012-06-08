@@ -5444,14 +5444,10 @@ rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
         if (!NIL_P(noclose_fds) &&
             RTEST(rb_hash_lookup(noclose_fds, INT2FIX(fd)))) /* async-signal-safe */
             continue;
-#ifdef FD_CLOEXEC
 	ret = fcntl(fd, F_GETFD); /* async-signal-safe */
 	if (ret != -1 && !(ret & FD_CLOEXEC)) {
             fcntl(fd, F_SETFD, ret|FD_CLOEXEC); /* async-signal-safe */
         }
-#else
-	ret = close(fd); /* async-signal-safe */
-#endif
 #define CONTIGUOUS_CLOSED_FDS 20
         if (ret != -1) {
 	    if (max < fd + CONTIGUOUS_CLOSED_FDS)
