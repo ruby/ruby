@@ -1,3 +1,7 @@
+Sun Jun 10 06:21:10 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* NEWS: document new features of Ruby OpenSSL.
+
 Sun Jun 10 03:09:41 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl.c: Fix error in example. Patch by David Albert.
