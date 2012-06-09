@@ -1174,7 +1174,9 @@ proc_exec_sh(const char *str, VALUE envp_str)
 int
 rb_proc_exec(const char *str)
 {
-    int ret = proc_exec_sh(str, Qfalse);
+    int ret;
+    before_exec();
+    ret = proc_exec_sh(str, Qfalse);
     preserving_errno(after_exec());
     return ret;
 }

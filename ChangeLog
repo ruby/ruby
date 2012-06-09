@@ -1,3 +1,8 @@
+Sat Jun  9 09:00:58 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_proc_exec): call before_exec() here addition to
+	  rb_exec_err.
+
 Sat Jun  9 08:30:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (ruby_init_stack): use stack info if possible.
