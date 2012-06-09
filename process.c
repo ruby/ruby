@@ -2583,7 +2583,7 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
     return rb_run_exec_options_err(e, s, NULL, 0);
 }
 
-/* This function should be async-signal-safe.  Actually it is. */
+/* This function should be async-signal-safe.  Hopefully it is. */
 static int
 rb_exec_async_signal_safe(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 {
@@ -2593,7 +2593,7 @@ rb_exec_async_signal_safe(const struct rb_exec_arg *e, char *errmsg, size_t errm
 # define sargp NULL
 #endif
 
-    if (rb_run_exec_options_err(e, sargp, errmsg, errmsg_buflen) < 0) { /* async-signal-safe */
+    if (rb_run_exec_options_err(e, sargp, errmsg, errmsg_buflen) < 0) { /* hopefully async-signal-safe */
         return -1;
     }
 
