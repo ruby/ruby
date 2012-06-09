@@ -1,3 +1,14 @@
+Sun Jun 10 01:41:45 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_ssl.c: Introduce SSLContext#renegotiation_cb and
+	  remove SSLContext#disable_client_renegotiation and related
+	  functionality introduced in r35797. The new callback approach
+	  gives clients maximum flexibility to decide on their own what to
+	  do on renegotiation attempts.
+	  Add documentation for SSL module and SSLError. 
+	* test/openssl/test_ssl.rb: Add a test for
+	  SSLContext#renegotiation_cb.
+
 Sun Jun 10 01:37:18 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_fork_internal): initialize exc.
