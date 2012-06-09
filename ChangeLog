@@ -1,3 +1,13 @@
+Sun Jun 10 06:43:51 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: split after_exec into async-signal-safe part and rest.
+	  (after_exec_async_signal_safe): extracted from after_exec.
+	  (after_exec_non_async_signal_safe): ditto.
+	  (after_exec): call them.
+	  (rb_exec_async_signal_safe): call after_exec_async_signal_safe.
+	  (rb_exec_err): call after_exec_non_async_signal_safe instead of
+	  after_exec.
+
 Sun Jun 10 06:21:10 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* NEWS: document new features of Ruby OpenSSL.

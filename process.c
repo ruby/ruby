@@ -1026,16 +1026,26 @@ static void before_exec(void)
     before_exec_async_signal_safe();
 }
 
-static void after_exec(void)
+/* This function should be async-signal-safe.  Actually it is. */
+static void after_exec_async_signal_safe(void)
+{
+#ifdef SIGPIPE
+    signal(SIGPIPE, saved_sigpipe_handler); /* async-signal-safe */
+#endif
+}
+
+static void after_exec_non_async_signal_safe(void)
 {
     rb_thread_reset_timer_thread();
     rb_thread_start_timer_thread();
 
-#ifdef SIGPIPE
-    signal(SIGPIPE, saved_sigpipe_handler);
-#endif
-
     forked_child = 0;
+}
+
+static void after_exec(void)
+{
+    after_exec_async_signal_safe();
+    after_exec_non_async_signal_safe();
 }
 
 #define before_fork() before_exec()
@@ -2606,7 +2616,7 @@ rb_exec_async_signal_safe(const struct rb_exec_arg *e, char *errmsg, size_t errm
     before_exec_async_signal_safe(); /* async-signal-safe */
 
     if (rb_run_exec_options_err(e, sargp, errmsg, errmsg_buflen) < 0) { /* hopefully async-signal-safe */
-        return -1;
+        goto failure;
     }
 
     if (e->use_shell) {
@@ -2623,6 +2633,9 @@ rb_exec_async_signal_safe(const struct rb_exec_arg *e, char *errmsg, size_t errm
 #else
 # undef sargp
 #endif
+
+failure:
+    preserving_errno(after_exec_async_signal_safe()); /* async-signal-safe */
     return -1;
 }
 
@@ -2632,7 +2645,7 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
     int ret;
     before_exec_non_async_signal_safe(); /* async-signal-safe if forked_child is true */
     ret = rb_exec_async_signal_safe(e, errmsg, errmsg_buflen);
-    preserving_errno(after_exec()); /* not async-signal-safe because after_exec calls rb_thread_start_timer_thread.  */
+    preserving_errno(after_exec_non_async_signal_safe()); /* not async-signal-safe because after_exec calls rb_thread_start_timer_thread.  */
     return ret;
 }
 
