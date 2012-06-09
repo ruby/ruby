@@ -1062,7 +1062,7 @@ exec_with_sh(const char *prog, char **argv, char **envp)
 #define try_with_sh(prog, argv, envp) (void)0
 #endif
 
-/* This function should be async-signal-safe.  Actually it isn't because after_exec(). */
+/* This function should be async-signal-safe.  Actually it is. */
 static int
 proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
 {
@@ -1127,7 +1127,7 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
 #endif
 }
 
-/* This function should be async-signal-safe.  Actually it isn't because after_exec(). */
+/* This function should be async-signal-safe.  Actually it is. */
 static int
 proc_exec_sh(const char *str, VALUE envp_str)
 {
@@ -2600,13 +2600,13 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
     }
 
     if (e->use_shell) {
-	proc_exec_sh(RSTRING_PTR(e->invoke.sh.shell_script), e->envp_str); /* not async-signal-safe because after_exec. */
+	proc_exec_sh(RSTRING_PTR(e->invoke.sh.shell_script), e->envp_str); /* async-signal-safe */
     }
     else {
 	char *abspath = NULL;
 	if (!NIL_P(e->invoke.cmd.command_abspath))
 	    abspath = RSTRING_PTR(e->invoke.cmd.command_abspath);
-	proc_exec_cmd(abspath, e->invoke.cmd.argv_str, e->envp_str); /* not async-signal-safe because after_exec. */
+	proc_exec_cmd(abspath, e->invoke.cmd.argv_str, e->envp_str); /* async-signal-safe */
     }
 #if !defined(HAVE_FORK)
     preserving_errno(rb_run_exec_options_err(sargp, NULL, errmsg, errmsg_buflen));
