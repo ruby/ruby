@@ -1,3 +1,7 @@
+Sat Jun  9 23:57:03 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_fork_err): rewrite a complex "if" statement.
+
 Sat Jun  9 23:44:29 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (before_exec_async_signal_safe): extracted from

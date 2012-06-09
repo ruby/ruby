@@ -2900,13 +2900,15 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
             return pid;
         if (!pid) {
             struct chfunc_protect_t arg;
+            int ret;
             forked_child = 1;
             close(ep[0]);
             arg.chfunc = chfunc;
             arg.arg = charg;
             arg.errmsg = errmsg;
             arg.buflen = errmsg_buflen;
-            if (!(int)rb_protect(chfunc_protect, (VALUE)&arg, &state)) _exit(EXIT_SUCCESS);
+            ret = (int)rb_protect(chfunc_protect, (VALUE)&arg, &state);
+            if (!ret) _exit(EXIT_SUCCESS);
             send_child_error(ep[1], state, errmsg, errmsg_buflen);
 #if EXIT_SUCCESS == 127
             _exit(EXIT_FAILURE);
