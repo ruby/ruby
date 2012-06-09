@@ -1,3 +1,7 @@
+Sat Jun  9 10:57:14 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_exec_async_signal_safe): extracted from rb_exec_err.
+
 Sat Jun  9 09:31:07 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: simplified because close_others option is always

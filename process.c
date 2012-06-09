@@ -2583,9 +2583,9 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
     return rb_run_exec_options_err(e, s, NULL, 0);
 }
 
-/* This function should be async-signal-safe.  Actually it isn't because after_exec(). */
-int
-rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
+/* This function should be async-signal-safe.  Actually it is. */
+static int
+rb_exec_async_signal_safe(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 {
 #if !defined(HAVE_FORK)
     struct rb_exec_arg sarg, *sargp = &sarg;
@@ -2593,10 +2593,8 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 # define sargp NULL
 #endif
 
-    before_exec(); /* async-signal-safe if forked_child is true */
-
     if (rb_run_exec_options_err(e, sargp, errmsg, errmsg_buflen) < 0) { /* async-signal-safe */
-        goto failure;
+        return -1;
     }
 
     if (e->use_shell) {
@@ -2613,9 +2611,17 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 #else
 # undef sargp
 #endif
-failure:
-    preserving_errno(after_exec()); /* xxx: not async-signal-safe because after_exec calls rb_thread_start_timer_thread.  */
     return -1;
+}
+
+int
+rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
+{
+    int ret;
+    before_exec(); /* async-signal-safe if forked_child is true */
+    ret = rb_exec_async_signal_safe(e, errmsg, errmsg_buflen);
+    preserving_errno(after_exec()); /* not async-signal-safe because after_exec calls rb_thread_start_timer_thread.  */
+    return ret;
 }
 
 int
