@@ -1,3 +1,9 @@
+Sat Jun  9 21:50:04 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (retry_fork): extracted from rb_fork_err.
+	  (send_child_error): ditto.
+	  (recv_child_error): ditto.
+
 Sat Jun  9 17:21:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (iseq_load): type is a symbol, and invalid as ID in common.

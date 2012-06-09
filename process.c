@@ -2754,29 +2754,19 @@ chfunc_protect(VALUE arg)
  *
  * +chfunc+ must not raise any exceptions.
  */
-rb_pid_t
-rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds,
-        char *errmsg, size_t errmsg_buflen)
+
+static rb_pid_t
+retry_fork(int *status, int *ep)
 {
     rb_pid_t pid;
-    int err, state = 0;
-    int ep[2];
-    VALUE io = Qnil;
+    int state = 0;
 
 #define prefork() (		\
 	rb_io_flush(rb_stdout), \
 	rb_io_flush(rb_stderr)	\
 	)
-    prefork();
 
-    if (chfunc) {
-	if (status) *status = 0;
-	if (pipe_nocrash(ep, fds)) return -1;
-	if (fcntl(ep[1], F_SETFD, FD_CLOEXEC)) {
-	    preserving_errno((close(ep[0]), close(ep[1])));
-	    return -1;
-	}
-    }
+    prefork();
     for (; before_fork(), (pid = fork()) < 0; prefork()) {
 	after_fork();
 	switch (errno) {
@@ -2784,101 +2774,147 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
-	    if (!status && !chfunc) {
+	    if (!status && !ep) {
 		rb_thread_sleep(1);
 		continue;
 	    }
 	    else {
-                /* rb_protect() is required not only for non-NULL status
-                 * but also for non-NULL chfunc because
-                 * ep[0] and ep[1] should be closed on exceptions.
-                 * If status is NULL, the catched exception is re-raised
-                 * by rb_jump_tag() below, after closing them.  */
 		rb_protect((VALUE (*)())rb_thread_sleep, 1, &state);
 		if (status) *status = state;
 		if (!state) continue;
 	    }
             /* fall through */
 	  default:
-	    if (chfunc) {
+	    if (ep) {
 		preserving_errno((close(ep[0]), close(ep[1])));
 	    }
 	    if (state && !status) rb_jump_tag(state);
 	    return -1;
 	}
     }
-    if (!pid) {
-        forked_child = 1;
-	if (chfunc) {
-	    struct chfunc_protect_t arg;
-	    arg.chfunc = chfunc;
-	    arg.arg = charg;
-	    arg.errmsg = errmsg;
-	    arg.buflen = errmsg_buflen;
-	    close(ep[0]);
-	    if (!(int)rb_protect(chfunc_protect, (VALUE)&arg, &state)) _exit(EXIT_SUCCESS);
-	    if (write(ep[1], &state, sizeof(state)) == sizeof(state) && state) {
-		VALUE errinfo = rb_errinfo();
-		io = rb_io_fdopen(ep[1], O_WRONLY|O_BINARY, NULL);
-		rb_marshal_dump(errinfo, io);
-		rb_io_flush(io);
-	    }
-	    err = errno;
-	    if (write(ep[1], &err, sizeof(err)) < 0) err = errno;
-            if (errmsg && 0 < errmsg_buflen) {
-                errmsg[errmsg_buflen-1] = '\0';
-                errmsg_buflen = strlen(errmsg);
-		if (errmsg_buflen > 0 &&write(ep[1], errmsg, errmsg_buflen) < 0)
-		    err = errno;
-            }
-	    if (!NIL_P(io)) rb_io_close(io);
-#if EXIT_SUCCESS == 127
-	    _exit(EXIT_FAILURE);
-#else
-	    _exit(127);
-#endif
-	}
+    return pid;
+}
+
+static void
+send_child_error(int fd, int state, char *errmsg, size_t errmsg_buflen)
+{
+    VALUE io = Qnil;
+    int err;
+
+    if (write(fd, &state, sizeof(state)) == sizeof(state) && state) {
+        VALUE errinfo = rb_errinfo();
+        io = rb_io_fdopen(fd, O_WRONLY|O_BINARY, NULL);
+        rb_marshal_dump(errinfo, io);
+        rb_io_flush(io);
     }
-    after_fork();
-    if (pid && chfunc) {
-	ssize_t size;
-	VALUE exc = Qnil;
-	close(ep[1]);
-	if ((read(ep[0], &state, sizeof(state))) == sizeof(state) && state) {
-	    io = rb_io_fdopen(ep[0], O_RDONLY|O_BINARY, NULL);
-	    exc = rb_marshal_load(io);
-	    rb_set_errinfo(exc);
-	}
+    err = errno;
+    if (write(fd, &err, sizeof(err)) < 0) err = errno;
+    if (errmsg && 0 < errmsg_buflen) {
+        errmsg[errmsg_buflen-1] = '\0';
+        errmsg_buflen = strlen(errmsg);
+        if (errmsg_buflen > 0 && write(fd, errmsg, errmsg_buflen) < 0)
+            err = errno;
+    }
+    if (!NIL_P(io)) rb_io_close(io);
+}
+
+static int
+recv_child_error(int fd, int *statep, VALUE *excp, int *errp, char *errmsg, size_t errmsg_buflen)
+{
+    int err, state = 0;
+    VALUE io = Qnil;
+    ssize_t size;
+    VALUE exc = Qnil;
+    if ((read(fd, &state, sizeof(state))) == sizeof(state) && state) {
+        io = rb_io_fdopen(fd, O_RDONLY|O_BINARY, NULL);
+        exc = rb_marshal_load(io);
+        rb_set_errinfo(exc);
+    }
+    if (!*statep && state) *statep = state;
+    *excp = exc;
 #define READ_FROM_CHILD(ptr, len) \
-	(NIL_P(io) ? read(ep[0], (ptr), (len)) : rb_io_bufread(io, (ptr), (len)))
-	if ((size = READ_FROM_CHILD(&err, sizeof(err))) < 0) {
-	    err = errno;
-	}
-        if (size == sizeof(err) &&
-            errmsg && 0 < errmsg_buflen) {
-	    ssize_t ret = READ_FROM_CHILD(errmsg, errmsg_buflen-1);
-            if (0 <= ret) {
-                errmsg[ret] = '\0';
-            }
+    (NIL_P(io) ? read(fd, (ptr), (len)) : rb_io_bufread(io, (ptr), (len)))
+    if ((size = READ_FROM_CHILD(&err, sizeof(err))) < 0) {
+        err = errno;
+    }
+    *errp = err;
+    if (size == sizeof(err) &&
+        errmsg && 0 < errmsg_buflen) {
+        ssize_t ret = READ_FROM_CHILD(errmsg, errmsg_buflen-1);
+        if (0 <= ret) {
+            errmsg[ret] = '\0';
         }
-	if (NIL_P(io))
-	    close(ep[0]);
-	else
-	    rb_io_close(io);
-	if (state || size) {
-	    if (status) {
-		rb_protect(proc_syswait, (VALUE)pid, status);
-		if (state) *status = state;
-	    }
-	    else {
-		rb_syswait(pid);
-		if (state) rb_exc_raise(exc);
-	    }
-	    errno = err;
+    }
+    if (NIL_P(io))
+        close(fd);
+    else
+        rb_io_close(io);
+    return size != 0;
+}
+
+rb_pid_t
+rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds,
+        char *errmsg, size_t errmsg_buflen)
+{
+    rb_pid_t pid;
+    int err, state = 0;
+    int ep[2];
+    VALUE exc;
+    int error_occured;
+
+    if (status) *status = 0;
+
+    if (!chfunc) {
+        pid = retry_fork(status, NULL);
+        if (pid < 0)
+            return pid;
+        if (!pid)
+            forked_child = 1;
+        after_fork();
+        return pid;
+    }
+    else {
+	if (pipe_nocrash(ep, fds)) return -1;
+	if (fcntl(ep[1], F_SETFD, FD_CLOEXEC)) {
+	    preserving_errno((close(ep[0]), close(ep[1])));
 	    return -1;
 	}
+        pid = retry_fork(status, ep);
+        if (pid < 0)
+            return pid;
+        if (!pid) {
+            struct chfunc_protect_t arg;
+            forked_child = 1;
+            close(ep[0]);
+            arg.chfunc = chfunc;
+            arg.arg = charg;
+            arg.errmsg = errmsg;
+            arg.buflen = errmsg_buflen;
+            if (!(int)rb_protect(chfunc_protect, (VALUE)&arg, &state)) _exit(EXIT_SUCCESS);
+            send_child_error(ep[1], state, errmsg, errmsg_buflen);
+#if EXIT_SUCCESS == 127
+            _exit(EXIT_FAILURE);
+#else
+            _exit(127);
+#endif
+        }
+        after_fork();
+        close(ep[1]);
+        error_occured = recv_child_error(ep[0], &state, &exc, &err, errmsg, errmsg_buflen);
+        if (state || error_occured) {
+            if (status) {
+                rb_protect(proc_syswait, (VALUE)pid, status);
+                if (state) *status = state;
+            }
+            else {
+                rb_syswait(pid);
+                if (state) rb_exc_raise(exc);
+            }
+            errno = err;
+            return -1;
+        }
+        return pid;
     }
-    return pid;
 }
 
 struct chfunc_wrapper_t {
