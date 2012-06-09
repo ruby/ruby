@@ -516,11 +516,12 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     }
 
     if (st_lookup(type_map, type, &iseq_type) == 0) {
-	const char *typename = rb_id2name(type);
+	ID typeid = SYM2ID(type);
+	const char *typename = rb_id2name(typeid);
 	if (typename)
 	    rb_raise(rb_eTypeError, "unsupport type: :%s", typename);
 	else
-	    rb_raise(rb_eTypeError, "unsupport type: %p", (void *)type);
+	    rb_raise(rb_eTypeError, "unsupport type: %p", (void *)typeid);
     }
 
     if (parent == Qnil) {

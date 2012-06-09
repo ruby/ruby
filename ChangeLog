@@ -1,3 +1,7 @@
+Sat Jun  9 17:21:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (iseq_load): type is a symbol, and invalid as ID in common.
+
 Sat Jun  9 10:57:14 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_exec_async_signal_safe): extracted from rb_exec_err.
