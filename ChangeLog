@@ -5,8 +5,8 @@ Sun Jun 10 06:21:10 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 Sun Jun 10 03:09:41 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl.c: Fix error in example. Patch by David Albert.
-	  
-	  Add/extend existing documentation. Examples now also cover RSA 
+	
+	  Add/extend existing documentation. Examples now also cover RSA
 	  signatures and PBKDF2.
 	  [ruby-core: 45154][ruby-trunk - Bug #6475]
 
@@ -18,7 +18,7 @@ Sun Jun 10 01:41:45 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 	  functionality introduced in r35797. The new callback approach
 	  gives clients maximum flexibility to decide on their own what to
 	  do on renegotiation attempts.
-	  Add documentation for SSL module and SSLError. 
+	  Add documentation for SSL module and SSLError.
 	* test/openssl/test_ssl.rb: Add a test for
 	  SSLContext#renegotiation_cb.
 
@@ -74,7 +74,7 @@ Sat Jun  9 23:36:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Jun  9 22:27:05 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (retry_fork): rewrite a complex "for" statement by
-	  simple statements. 
+	  simple statements.
 
 Sat Jun  9 21:50:04 2012  Tanaka Akira  <akr@fsij.org>
 
@@ -105,9 +105,9 @@ Sat Jun  9 09:31:07 2012  Tanaka Akira  <akr@fsij.org>
 	  (rb_spawn): don't need to give default_close_others
 	  argument for rb_spawn_internal.
 	  (rb_f_system): don't need to give default_close_others argument for
-	  rb_spawn_internal. 
+	  rb_spawn_internal.
 	  (rb_f_spawn): don't need to give default_close_others argument for
-	  rb_exec_arg_prepare. 
+	  rb_exec_arg_prepare.
 
 Sat Jun  9 09:00:58 2012  Tanaka Akira  <akr@fsij.org>
 
@@ -257,7 +257,7 @@ Wed Jun  6 20:45:08 2012  Tanaka Akira  <akr@fsij.org>
 	  (rb_exec_err): Give the absolute path of the invoking command for
 	  proc_exec_v, instead of the command name.
 
-	* internal.h: add command_abspath field for rb_exec_arg. 
+	* internal.h: add command_abspath field for rb_exec_arg.
 
 Wed Jun  6 20:08:01 2012  Tanaka Akira  <akr@fsij.org>
 
@@ -306,7 +306,7 @@ Wed Jun  6 00:20:37 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_exec_arg_init): don't return a value.
 	  (rb_exec_arg_prepare): ditto.
-	  (rb_spawn_process): don't take the prog argument.  extract the 
+	  (rb_spawn_process): don't take the prog argument.  extract the
 	  information from earg.
 	  (rb_spawn_internal): follow rb_spawn_process change.
 	  (rb_f_spawn): ditto.

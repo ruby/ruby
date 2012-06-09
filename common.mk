@@ -763,7 +763,7 @@ debug.$(OBJEXT): {$(VPATH)}debug.c $(RUBY_H_INCLUDES) \
 id.$(OBJEXT): {$(VPATH)}id.c $(RUBY_H_INCLUDES) $(ID_H_INCLUDES)
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_backtrace.c \
   $(VM_CORE_H_INCLUDES) $(RUBY_H_INCLUDES) \
-  {$(VPATH)}internal.h {$(VPATH)}iseq.h 
+  {$(VPATH)}internal.h {$(VPATH)}iseq.h
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c $(RUBY_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h {$(VPATH)}internal.h
 prelude.$(OBJEXT): {$(VPATH)}prelude.c $(RUBY_H_INCLUDES) \
@@ -898,8 +898,8 @@ parse: miniruby$(EXEEXT) PHONY
 	$(MINIRUBY) $(srcdir)/tool/parse.rb $(TESTRUN_SCRIPT)
 
 COMPARE_RUBY = $(BASERUBY)
-ITEM = 
-OPTS = 
+ITEM =
+OPTS =
 
 benchmark: $(PROGRAM) PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
