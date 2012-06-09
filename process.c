@@ -2881,7 +2881,7 @@ rb_fork_internal(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
     rb_pid_t pid;
     int err, state = 0;
     int ep[2];
-    VALUE exc;
+    VALUE exc = Qnil;
     int error_occured;
 
     if (status) *status = 0;

@@ -1,3 +1,7 @@
+Sun Jun 10 01:37:18 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_fork_internal): initialize exc.
+
 Sun Jun 10 00:19:25 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: don't use non async-signal-safe functions in a child
