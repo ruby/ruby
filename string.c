@@ -7450,6 +7450,25 @@ sym_printable(const char *s, const char *send, rb_encoding *enc)
     return TRUE;
 }
 
+int
+rb_str_symname_p(VALUE sym)
+{
+    rb_encoding *enc;
+    const char *ptr;
+    long len;
+    rb_encoding *resenc = rb_default_internal_encoding();
+
+    if (resenc == NULL) resenc = rb_default_external_encoding();
+    enc = STR_ENC_GET(sym);
+    ptr = RSTRING_PTR(sym);
+    len = RSTRING_LEN(sym);
+    if ((resenc != enc && !rb_str_is_ascii_only_p(sym)) || len != (long)strlen(ptr) ||
+	!rb_enc_symname_p(ptr, enc) || !sym_printable(ptr, ptr + len, enc)) {
+	return FALSE;
+    }
+    return TRUE;
+}
+
 /*
  *  call-seq:
  *     sym.inspect    -> string
@@ -7463,20 +7482,13 @@ static VALUE
 sym_inspect(VALUE sym)
 {
     VALUE str;
-    ID id = SYM2ID(sym);
-    rb_encoding *enc;
     const char *ptr;
     long len;
+    ID id = SYM2ID(sym);
     char *dest;
-    rb_encoding *resenc = rb_default_internal_encoding();
 
-    if (resenc == NULL) resenc = rb_default_external_encoding();
     sym = rb_id2str(id);
-    enc = STR_ENC_GET(sym);
-    ptr = RSTRING_PTR(sym);
-    len = RSTRING_LEN(sym);
-    if ((resenc != enc && !rb_str_is_ascii_only_p(sym)) || len != (long)strlen(ptr) ||
-	!rb_enc_symname_p(ptr, enc) || !sym_printable(ptr, ptr + len, enc)) {
+    if (!rb_str_symname_p(sym)) {
 	str = rb_str_inspect(sym);
 	len = RSTRING_LEN(str);
 	rb_str_resize(str, len + 1);
@@ -7485,7 +7497,9 @@ sym_inspect(VALUE sym)
 	dest[0] = ':';
     }
     else {
-	char *dest;
+	rb_encoding *enc = STR_ENC_GET(sym);
+	ptr = RSTRING_PTR(sym);
+	len = RSTRING_LEN(sym);
 	str = rb_enc_str_new(0, len + 1, enc);
 	dest = RSTRING_PTR(str);
 	dest[0] = ':';

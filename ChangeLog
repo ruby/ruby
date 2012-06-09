@@ -1,3 +1,8 @@
+Sat Jun  9 23:36:15 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_symname_p): new function that checks if the string
+	  is valid as a symbol name.  split from sym_inspect().
+
 Sat Jun  9 22:27:05 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (retry_fork): rewrite a complex "for" statement by
