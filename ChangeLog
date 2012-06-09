@@ -1,4 +1,8 @@
-Sat Jun  9 23:36:15 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jun  9 23:36:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (iseq_load, insn_operand_intern, rb_iseq_disasm)
+	  (rb_iseq_parameters): use rb_id2str() instead of rb_id2name() to
+	  keep encoding.
 
 	* string.c (rb_str_symname_p): new function that checks if the string
 	  is valid as a symbol name.  split from sym_inspect().
