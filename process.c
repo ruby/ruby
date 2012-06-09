@@ -2663,8 +2663,7 @@ rb_exec(const struct rb_exec_arg *e)
 static int
 rb_exec_atfork(void* arg, char *errmsg, size_t errmsg_buflen)
 {
-    rb_thread_atfork_before_exec(); /* xxx: not async-signal-safe because it calls rb_thread_atfork_internal which calls st_insert, etc. */
-    return rb_exec_err(arg, errmsg, errmsg_buflen); /* not async-signal-safe because after_exec */
+    return rb_exec_async_signal_safe(arg, errmsg, errmsg_buflen); /* hopefully async-signal-safe */
 }
 #endif
 
@@ -2768,7 +2767,7 @@ chfunc_protect(VALUE arg)
  */
 
 static rb_pid_t
-retry_fork(int *status, int *ep)
+retry_fork(int *status, int *ep, int chfunc_is_async_signal_safe)
 {
     rb_pid_t pid;
     int state = 0;
@@ -2780,11 +2779,13 @@ retry_fork(int *status, int *ep)
 
     while (1) {
         prefork();
-        before_fork();
+        if (!chfunc_is_async_signal_safe)
+            before_fork();
         pid = fork();
         if (0 <= pid)
             break;
-        after_fork();
+        if (!chfunc_is_async_signal_safe)
+            after_fork();
 	switch (errno) {
 	  case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
@@ -2812,16 +2813,18 @@ retry_fork(int *status, int *ep)
 }
 
 static void
-send_child_error(int fd, int state, char *errmsg, size_t errmsg_buflen)
+send_child_error(int fd, int state, char *errmsg, size_t errmsg_buflen, int chfunc_is_async_signal_safe)
 {
     VALUE io = Qnil;
     int err;
 
-    if (write(fd, &state, sizeof(state)) == sizeof(state) && state) {
-        VALUE errinfo = rb_errinfo();
-        io = rb_io_fdopen(fd, O_WRONLY|O_BINARY, NULL);
-        rb_marshal_dump(errinfo, io);
-        rb_io_flush(io);
+    if (!chfunc_is_async_signal_safe) {
+        if (write(fd, &state, sizeof(state)) == sizeof(state) && state) {
+            VALUE errinfo = rb_errinfo();
+            io = rb_io_fdopen(fd, O_WRONLY|O_BINARY, NULL);
+            rb_marshal_dump(errinfo, io);
+            rb_io_flush(io);
+        }
     }
     err = errno;
     if (write(fd, &err, sizeof(err)) < 0) err = errno;
@@ -2835,19 +2838,21 @@ send_child_error(int fd, int state, char *errmsg, size_t errmsg_buflen)
 }
 
 static int
-recv_child_error(int fd, int *statep, VALUE *excp, int *errp, char *errmsg, size_t errmsg_buflen)
+recv_child_error(int fd, int *statep, VALUE *excp, int *errp, char *errmsg, size_t errmsg_buflen, int chfunc_is_async_signal_safe)
 {
     int err, state = 0;
     VALUE io = Qnil;
     ssize_t size;
     VALUE exc = Qnil;
-    if ((read(fd, &state, sizeof(state))) == sizeof(state) && state) {
-        io = rb_io_fdopen(fd, O_RDONLY|O_BINARY, NULL);
-        exc = rb_marshal_load(io);
-        rb_set_errinfo(exc);
+    if (!chfunc_is_async_signal_safe) {
+        if ((read(fd, &state, sizeof(state))) == sizeof(state) && state) {
+            io = rb_io_fdopen(fd, O_RDONLY|O_BINARY, NULL);
+            exc = rb_marshal_load(io);
+            rb_set_errinfo(exc);
+        }
+        if (!*statep && state) *statep = state;
+        *excp = exc;
     }
-    if (!*statep && state) *statep = state;
-    *excp = exc;
 #define READ_FROM_CHILD(ptr, len) \
     (NIL_P(io) ? read(fd, (ptr), (len)) : rb_io_bufread(io, (ptr), (len)))
     if ((size = READ_FROM_CHILD(&err, sizeof(err))) < 0) {
@@ -2868,8 +2873,9 @@ recv_child_error(int fd, int *statep, VALUE *excp, int *errp, char *errmsg, size
     return size != 0;
 }
 
-rb_pid_t
-rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds,
+static rb_pid_t
+rb_fork_internal(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
+        int chfunc_is_async_signal_safe, VALUE fds,
         char *errmsg, size_t errmsg_buflen)
 {
     rb_pid_t pid;
@@ -2881,7 +2887,7 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
     if (status) *status = 0;
 
     if (!chfunc) {
-        pid = retry_fork(status, NULL);
+        pid = retry_fork(status, NULL, FALSE);
         if (pid < 0)
             return pid;
         if (!pid)
@@ -2895,7 +2901,7 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
 	    preserving_errno((close(ep[0]), close(ep[1])));
 	    return -1;
 	}
-        pid = retry_fork(status, ep);
+        pid = retry_fork(status, ep, chfunc_is_async_signal_safe);
         if (pid < 0)
             return pid;
         if (!pid) {
@@ -2903,13 +2909,17 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
             int ret;
             forked_child = 1;
             close(ep[0]);
-            arg.chfunc = chfunc;
-            arg.arg = charg;
-            arg.errmsg = errmsg;
-            arg.buflen = errmsg_buflen;
-            ret = (int)rb_protect(chfunc_protect, (VALUE)&arg, &state);
+            if (chfunc_is_async_signal_safe)
+                ret = chfunc(charg, errmsg, errmsg_buflen);
+            else {
+                arg.chfunc = chfunc;
+                arg.arg = charg;
+                arg.errmsg = errmsg;
+                arg.buflen = errmsg_buflen;
+                ret = (int)rb_protect(chfunc_protect, (VALUE)&arg, &state);
+            }
             if (!ret) _exit(EXIT_SUCCESS);
-            send_child_error(ep[1], state, errmsg, errmsg_buflen);
+            send_child_error(ep[1], state, errmsg, errmsg_buflen, chfunc_is_async_signal_safe);
 #if EXIT_SUCCESS == 127
             _exit(EXIT_FAILURE);
 #else
@@ -2918,7 +2928,7 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
         }
         after_fork();
         close(ep[1]);
-        error_occured = recv_child_error(ep[0], &state, &exc, &err, errmsg, errmsg_buflen);
+        error_occured = recv_child_error(ep[0], &state, &exc, &err, errmsg, errmsg_buflen, chfunc_is_async_signal_safe);
         if (state || error_occured) {
             if (status) {
                 rb_protect(proc_syswait, (VALUE)pid, status);
@@ -2933,6 +2943,20 @@ rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALU
         }
         return pid;
     }
+}
+
+rb_pid_t
+rb_fork_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds,
+        char *errmsg, size_t errmsg_buflen)
+{
+    return rb_fork_internal(status, chfunc, charg, FALSE, fds, errmsg, errmsg_buflen);
+}
+
+rb_pid_t
+rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds,
+        char *errmsg, size_t errmsg_buflen)
+{
+    return rb_fork_internal(status, chfunc, charg, TRUE, fds, errmsg, errmsg_buflen);
 }
 
 struct chfunc_wrapper_t {
@@ -3207,7 +3231,7 @@ rb_spawn_process(struct rb_exec_arg *earg, char *errmsg, size_t errmsg_buflen)
 #endif
 
 #if defined HAVE_FORK && !USE_SPAWNV
-    pid = rb_fork_err(&status, rb_exec_atfork, earg, earg->redirect_fds, errmsg, errmsg_buflen);
+    pid = rb_fork_async_signal_safe(&status, rb_exec_atfork, earg, earg->redirect_fds, errmsg, errmsg_buflen);
 #else
     prog = earg->use_shell ? earg->invoke.sh.shell_script : earg->invoke.cmd.command_name;
 

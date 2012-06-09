@@ -1,3 +1,24 @@
+Sun Jun 10 00:19:25 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: don't use non async-signal-safe functions in a child
+	  process before exec, for invoking a command.
+	  (rb_exec_atfork): call rb_exec_async_signal_safe only.
+	  (retry_fork): take chfunc_is_async_signal_safe argument.  call
+	  before_fork and after_fork only unless chfunc_is_async_signal_safe.
+	  (send_child_error): take chfunc_is_async_signal_safe argument.
+	  send an exception only unless chfunc_is_async_signal_safe.
+	  (recv_child_error): take chfunc_is_async_signal_safe argument.
+	  receive an exception only unless chfunc_is_async_signal_safe.
+	  (rb_fork_internal): renamed from rb_fork_err and take
+	  chfunc_is_async_signal_safe argument.
+	  use rb_protect only unless chfunc_is_async_signal_safe.
+	  (rb_fork_err): call rb_fork_internal with false as
+	  chfunc_is_async_signal_safe.
+	  (rb_fork_async_signal_safe): call rb_fork_internal with true as
+	  chfunc_is_async_signal_safe.
+	  (rb_spawn_process): call rb_fork_async_signal_safe instead of
+	  rb_fork_err.
+
 Sat Jun  9 23:57:03 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_fork_err): rewrite a complex "if" statement.
