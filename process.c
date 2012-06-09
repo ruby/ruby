@@ -2766,9 +2766,13 @@ retry_fork(int *status, int *ep)
 	rb_io_flush(rb_stderr)	\
 	)
 
-    prefork();
-    for (; before_fork(), (pid = fork()) < 0; prefork()) {
-	after_fork();
+    while (1) {
+        prefork();
+        before_fork();
+        pid = fork();
+        if (0 <= pid)
+            break;
+        after_fork();
 	switch (errno) {
 	  case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN

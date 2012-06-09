@@ -1,3 +1,8 @@
+Sat Jun  9 22:27:05 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (retry_fork): rewrite a complex "for" statement by
+	  simple statements. 
+
 Sat Jun  9 21:50:04 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (retry_fork): extracted from rb_fork_err.
