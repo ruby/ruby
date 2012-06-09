@@ -1,3 +1,14 @@
+Sat Jun  9 23:44:29 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (before_exec_async_signal_safe): extracted from
+	  before_exec.
+	  (before_exec_non_async_signal_safe): ditto.
+	  (before_exec): call before_exec_async_signal_safe and
+	  before_exec_non_async_signal_safe.
+	  (rb_exec_async_signal_safe): call before_exec_async_signal_safe.
+	  (rb_exec_err): call before_exec_non_async_signal_safe instead of
+	  before_exec.
+
 Sat Jun  9 23:36:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (iseq_load, insn_operand_intern, rb_iseq_disasm)

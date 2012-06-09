@@ -994,7 +994,8 @@ static RETSIGTYPE sig_do_nothing(int sig)
 }
 #endif
 
-static void before_exec(void)
+/* This function should be async-signal-safe.  Actually it is. */
+static void before_exec_async_signal_safe(void)
 {
 #ifdef SIGPIPE
     /*
@@ -1003,9 +1004,12 @@ static void before_exec(void)
      * child process interaction might fail. (e.g. ruby -e "system 'yes | ls'")
      * [ruby-dev:12261]
      */
-    saved_sigpipe_handler = signal(SIGPIPE, sig_do_nothing);
+    saved_sigpipe_handler = signal(SIGPIPE, sig_do_nothing); /* async-signal-safe */
 #endif
+}
 
+static void before_exec_non_async_signal_safe(void)
+{
     if (!forked_child) {
 	/*
 	 * On Mac OS X 10.5.x (Leopard) or earlier, exec() may return ENOTSUPP
@@ -1014,6 +1018,12 @@ static void before_exec(void)
 	 */
 	rb_thread_stop_timer_thread(0);
     }
+}
+
+static void before_exec(void)
+{
+    before_exec_non_async_signal_safe();
+    before_exec_async_signal_safe();
 }
 
 static void after_exec(void)
@@ -2593,6 +2603,8 @@ rb_exec_async_signal_safe(const struct rb_exec_arg *e, char *errmsg, size_t errm
 # define sargp NULL
 #endif
 
+    before_exec_async_signal_safe(); /* async-signal-safe */
+
     if (rb_run_exec_options_err(e, sargp, errmsg, errmsg_buflen) < 0) { /* hopefully async-signal-safe */
         return -1;
     }
@@ -2618,7 +2630,7 @@ int
 rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 {
     int ret;
-    before_exec(); /* async-signal-safe if forked_child is true */
+    before_exec_non_async_signal_safe(); /* async-signal-safe if forked_child is true */
     ret = rb_exec_async_signal_safe(e, errmsg, errmsg_buflen);
     preserving_errno(after_exec()); /* not async-signal-safe because after_exec calls rb_thread_start_timer_thread.  */
     return ret;
