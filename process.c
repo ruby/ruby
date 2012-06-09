@@ -2000,8 +2000,6 @@ rb_f_exec(int argc, VALUE *argv)
     char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
 
     rb_exec_arg_init(argc, argv, TRUE, &earg);
-    if (NIL_P(rb_ary_entry(earg.options, EXEC_OPTION_CLOSE_OTHERS)))
-        rb_exec_arg_addopt(&earg, ID2SYM(rb_intern("close_others")), Qtrue);
     rb_exec_arg_fixup(&earg);
 
     rb_exec_err(&earg, errmsg, sizeof(errmsg));
@@ -3130,13 +3128,9 @@ rb_syswait(rb_pid_t pid)
 }
 
 static void
-rb_exec_arg_prepare(struct rb_exec_arg *earg, int argc, VALUE *argv, int default_close_others)
+rb_exec_arg_prepare(struct rb_exec_arg *earg, int argc, VALUE *argv)
 {
     rb_exec_arg_init(argc, argv, TRUE, earg);
-    if (NIL_P(rb_ary_entry(earg->options, EXEC_OPTION_CLOSE_OTHERS))) {
-        VALUE v = default_close_others ? Qtrue : Qfalse;
-        rb_exec_arg_addopt(earg, ID2SYM(rb_intern("close_others")), v);
-    }
     rb_exec_arg_fixup(earg);
 }
 
@@ -3193,24 +3187,23 @@ rb_spawn_process(struct rb_exec_arg *earg, char *errmsg, size_t errmsg_buflen)
 }
 
 static rb_pid_t
-rb_spawn_internal(int argc, VALUE *argv, int default_close_others,
-                  char *errmsg, size_t errmsg_buflen)
+rb_spawn_internal(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
 {
     struct rb_exec_arg earg;
-    rb_exec_arg_prepare(&earg, argc, argv, default_close_others);
+    rb_exec_arg_prepare(&earg, argc, argv);
     return rb_spawn_process(&earg, errmsg, errmsg_buflen);
 }
 
 rb_pid_t
 rb_spawn_err(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
 {
-    return rb_spawn_internal(argc, argv, TRUE, errmsg, errmsg_buflen);
+    return rb_spawn_internal(argc, argv, errmsg, errmsg_buflen);
 }
 
 rb_pid_t
 rb_spawn(int argc, VALUE *argv)
 {
-    return rb_spawn_internal(argc, argv, TRUE, NULL, 0);
+    return rb_spawn_internal(argc, argv, NULL, 0);
 }
 
 /*
@@ -3261,7 +3254,7 @@ rb_f_system(int argc, VALUE *argv)
 
     chfunc = signal(SIGCHLD, SIG_DFL);
 #endif
-    pid = rb_spawn_internal(argc, argv, TRUE, NULL, 0);
+    pid = rb_spawn_internal(argc, argv, NULL, 0);
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
     if (pid > 0) {
 	rb_syswait(pid);
@@ -3531,7 +3524,7 @@ rb_f_spawn(int argc, VALUE *argv)
     char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
     struct rb_exec_arg earg;
 
-    rb_exec_arg_prepare(&earg, argc, argv, TRUE);
+    rb_exec_arg_prepare(&earg, argc, argv);
     pid = rb_spawn_process(&earg, errmsg, sizeof(errmsg));
     if (pid == -1) {
 	const char *prog = errmsg;

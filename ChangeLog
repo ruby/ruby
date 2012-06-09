@@ -1,3 +1,22 @@
+Sat Jun  9 09:31:07 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: simplified because close_others option is always
+	  enabled by default.
+	  (rb_f_exec): don't need to set the option.
+	  (rb_exec_arg_prepare): don't need to set the option.  don't need
+	  default_close_others argument.
+	  (rb_spawn_internal): don't need to give default_close_others
+	  argument for rb_exec_arg_prepare.  don't need default_close_others
+	  argument.
+	  (rb_spawn_err): don't need to give default_close_others
+	  argument for rb_spawn_internal.
+	  (rb_spawn): don't need to give default_close_others
+	  argument for rb_spawn_internal.
+	  (rb_f_system): don't need to give default_close_others argument for
+	  rb_spawn_internal. 
+	  (rb_f_spawn): don't need to give default_close_others argument for
+	  rb_exec_arg_prepare. 
+
 Sat Jun  9 09:00:58 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_proc_exec): call before_exec() here addition to
