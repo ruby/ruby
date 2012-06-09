@@ -1,3 +1,12 @@
+Sun Jun 10 03:09:41 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl.c: Fix error in example. Patch by David Albert.
+	  
+	  Add/extend existing documentation. Examples now also cover RSA 
+	  signatures and PBKDF2.
+	  [ruby-core: 45154][ruby-trunk - Bug #6475]
+
+
 Sun Jun 10 01:41:45 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_ssl.c: Introduce SSLContext#renegotiation_cb and
