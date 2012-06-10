@@ -2543,7 +2543,7 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
 
     obj = rb_ary_entry(options, EXEC_OPTION_DUP2);
     if (!NIL_P(obj)) {
-        if (run_exec_dup2(obj, e->dup2_tmpbuf, soptions, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
+        if (run_exec_dup2(obj, e->dup2_tmpbuf, soptions, errmsg, errmsg_buflen) == -1) /* hopefully async-signal-safe */
             return -1;
     }
 
@@ -2650,8 +2650,8 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 {
     int ret;
     before_exec_non_async_signal_safe(); /* async-signal-safe if forked_child is true */
-    ret = rb_exec_async_signal_safe(e, errmsg, errmsg_buflen);
-    preserving_errno(after_exec_non_async_signal_safe()); /* not async-signal-safe because after_exec calls rb_thread_start_timer_thread.  */
+    ret = rb_exec_async_signal_safe(e, errmsg, errmsg_buflen); /* hopefully async-signal-safe */
+    preserving_errno(after_exec_non_async_signal_safe()); /* not async-signal-safe because it calls rb_thread_start_timer_thread.  */
     return ret;
 }
 
@@ -2678,7 +2678,7 @@ rb_exec(const struct rb_exec_arg *e)
 }
 
 #ifdef HAVE_FORK
-/* This function should be async-signal-safe.  Actually it isn't. */
+/* This function should be async-signal-safe.  Hopefully it is. */
 static int
 rb_exec_atfork(void* arg, char *errmsg, size_t errmsg_buflen)
 {
