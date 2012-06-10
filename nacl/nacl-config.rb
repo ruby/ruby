@@ -10,8 +10,8 @@ require 'rbconfig'
 module NaClConfig
   config = RbConfig::CONFIG
 
-  cpu_nick = config['host_alias'].sub(/-gnu$|-newlib$/, '').sub(/-nacl$/, '')
-  ARCH = cpu_nick.sub('x86_64', 'x86-64').sub(/i.86/, 'x86-32')
+  cpu_nick = config['host_alias'].sub(/-gnu$|-newlib$/, '').sub(/-nacl$/, '').sub(/i.86/, 'x86_32')
+  ARCH = cpu_nick.sub('x86_64', 'x86-64').sub('x86_32', 'x86-32')
   HOST = ARCH.sub(/x86-../, 'x86_64') + '-nacl'
 
   lib_suffix = config['host_cpu'][/i.86/] ? '32' : ''
@@ -21,7 +21,7 @@ module NaClConfig
   CREATE_NMF = [
     File.join(SDK_ROOT, 'build_tools', 'nacl_sdk_scons', 'site_tools', 'create_nmf.py'),
     File.join(SDK_ROOT, 'tools', 'create_nmf.py')
-  ].find{|path| File.exist?(path) }
+  ].find{|path| File.exist?(path) } or raise "No create_nmf found"
   HOST_LIB = File.join(SDK_ROOT, 'toolchain', config['NACL_TOOLCHAIN'], HOST, "lib#{lib_suffix}")
 
   INSTALL_PROGRAM = config['INSTALL_PROGRAM']
@@ -30,11 +30,11 @@ module NaClConfig
   SEL_LDR = [
     File.join(SDK_ROOT, 'toolchain', config['NACL_TOOLCHAIN'], 'bin', "sel_ldr_#{cpu_nick}"),
     File.join(SDK_ROOT, 'tools', "sel_ldr_#{cpu_nick}")
-  ].find{|path| File.executable?(path)}
+  ].find{|path| File.executable?(path)} or raise "No sel_ldr found"
   IRT_CORE = [
     File.join(SDK_ROOT, 'toolchain', config['NACL_TOOLCHAIN'], 'bin', "irt_core_#{cpu_nick}.nexe"),
     File.join(SDK_ROOT, 'tools', "irt_core_#{cpu_nick}.nexe")
-  ].find{|path| File.executable?(path)}
+  ].find{|path| File.executable?(path)} or raise "No irt_core found"
   RUNNABLE_LD = File.join(HOST_LIB, 'runnable-ld.so')
 
   module_function
