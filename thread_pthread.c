@@ -608,8 +608,9 @@ ruby_init_stack(volatile VALUE *addr
 	size_t size = 0;
 	size_t space = 0;
 #if defined(STACKADDR_AVAILABLE)
-	void* addr;
-	get_stack(&addr, &size);
+	void* stackaddr;
+	get_stack(&stackaddr, &size);
+	space = STACK_DIR_UPPER((char *)addr - (char *)stackaddr, (char *)stackaddr - (char *)addr);
 #elif defined(HAVE_GETRLIMIT)
 	struct rlimit rlim;
 	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {

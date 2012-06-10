@@ -1,3 +1,8 @@
+Sun Jun 10 17:54:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (ruby_init_stack): adjust stack size for offset of
+	  addr from the bottom.
+
 Sun Jun 10 15:49:47 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (retry_fork): call after_fork except in a child process.
