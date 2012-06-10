@@ -2610,7 +2610,7 @@ rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
 }
 
 /* This function should be async-signal-safe.  Hopefully it is. */
-static int
+int
 rb_exec_async_signal_safe(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 {
 #if !defined(HAVE_FORK)

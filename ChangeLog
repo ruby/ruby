@@ -1,3 +1,18 @@
+Sun Jun 10 10:24:51 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_exec_async_signal_safe): exported.
+
+	* ext/pty/extconf.rb: modify $INCFLAGS to include internal.h
+
+	* ext/pty/pty.c: include internal.h.
+	  (chfunc): don't call rb_thread_atfork_before_exec.  use
+	  rb_exec_async_signal_safe instead of rb_f_exec.
+	  (establishShell): set up earg.  use rb_fork_async_signal_safe
+	  instead of rb_fork_err.
+
+	* internal.h (rb_exec_async_signal_safe): declared.
+	  (rb_fork_async_signal_safe): declared.
+
 Sun Jun 10 10:21:37 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl.c

@@ -261,6 +261,10 @@ VALUE rb_thread_call_without_gvl(
 /* io.c */
 void rb_maygvl_fd_fix_cloexec(int fd);
 
+/* process.c */
+int rb_exec_async_signal_safe(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen);
+rb_pid_t rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds, char *errmsg, size_t errmsg_buflen);
+
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
 #endif

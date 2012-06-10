@@ -32,6 +32,7 @@
 #include "ruby/ruby.h"
 #include "ruby/io.h"
 #include "ruby/util.h"
+#include "internal.h"
 
 #include <signal.h>
 #ifdef HAVE_SYS_STROPTS_H
@@ -77,8 +78,7 @@ static void getDevice(int*, int*, char [DEVICELEN], int);
 struct child_info {
     int master, slave;
     char *slavename;
-    int argc;
-    VALUE *argv;
+    struct rb_exec_arg earg;
 };
 
 static int
@@ -87,15 +87,11 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     struct child_info *carg = data;
     int master = carg->master;
     int slave = carg->slave;
-    int argc = carg->argc;
-    VALUE *argv = carg->argv;
 
 #define ERROR_EXIT(str) do { \
 	strlcpy(errbuf, (str), errbuf_len); \
 	return -1; \
     } while (0)
-
-    rb_thread_atfork_before_exec();
 
     /*
      * Set free from process group and controlling terminal
@@ -146,8 +142,7 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     seteuid(getuid());
 #endif
 
-    rb_f_exec(argc, argv);
-    return 0;
+    return rb_exec_async_signal_safe(&carg->earg, errbuf, sizeof(errbuf_len));
 #undef ERROR_EXIT
 }
 
@@ -181,15 +176,16 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 	argv = &v;
     }
 
+    rb_exec_arg_init(argc, argv, 1, &carg.earg);
+    rb_exec_arg_fixup(&carg.earg);
+
     getDevice(&master, &slave, SlaveName, 0);
 
     carg.master = master;
     carg.slave = slave;
     carg.slavename = SlaveName;
-    carg.argc = argc;
-    carg.argv = argv;
     errbuf[0] = '\0';
-    pid = rb_fork_err(&status, chfunc, &carg, Qnil, errbuf, sizeof(errbuf));
+    pid = rb_fork_async_signal_safe(&status, chfunc, &carg, Qnil, errbuf, sizeof(errbuf));
 
     if (pid < 0) {
 	int e = errno;
