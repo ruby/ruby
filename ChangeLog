@@ -1,3 +1,11 @@
+Sun Jun 10 10:48:15 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* lib/openssl/ssl.rb: Use a simple random number to generate the
+	  session id. MD5, as was used before, causes problems when
+	  using a FIPS version of OpenSSL. Issue was found by Jared
+	  Jennings, thank you!
+	  [ruby-trunk - Bug #6137]
+
 Sun Jun 10 10:27:34 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* NEWS: Add note about the new private key export behavior.

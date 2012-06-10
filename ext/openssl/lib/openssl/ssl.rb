@@ -146,7 +146,9 @@ module OpenSSL
         @svr = svr
         @ctx = ctx
         unless ctx.session_id_context
-          session_id = OpenSSL::Digest::MD5.hexdigest($0)
+          # see #6137 - session id may not exceed 32 bytes
+          prng = ::Random.new($0.hash)
+          session_id = prng.bytes(16).unpack('H*')[0]
           @ctx.session_id_context = session_id
         end
         @start_immediately = true
