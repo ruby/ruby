@@ -1,3 +1,7 @@
+Mon Jun 11 06:31:33 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_proc_exec_n): revert the function removed at r35889.
+
 Mon Jun 11 06:20:50 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread_pthread.c (rb_thread_create_timer_thread): assign return

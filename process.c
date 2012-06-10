@@ -1147,6 +1147,54 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
 #endif
 }
 
+/* deprecated */
+static int
+proc_exec_v(char **argv, const char *prog)
+{
+    char fbuf[MAXPATHLEN];
+
+    if (!prog)
+        prog = argv[0];
+    prog = dln_find_exe_r(prog, 0, fbuf, sizeof(fbuf));
+    if (!prog) {
+        errno = ENOENT;
+        return -1;
+    }
+    before_exec();
+    execv(prog, argv);
+    preserving_errno(try_with_sh(prog, argv, 0); after_exec());
+    return -1;
+}
+
+/* deprecated */
+int
+rb_proc_exec_n(int argc, VALUE *argv, const char *prog)
+{
+#define ARGV_COUNT(n) ((n)+1)
+#define ARGV_SIZE(n) (sizeof(char*) * ARGV_COUNT(n))
+#define ALLOC_ARGV(n, v) ALLOCV_N(char*, (v), ARGV_COUNT(n))
+
+    char **args;
+    int i;
+    int ret = -1;
+    VALUE v;
+
+    args = ALLOC_ARGV(argc+1, v);
+    for (i=0; i<argc; i++) {
+	args[i] = RSTRING_PTR(argv[i]);
+    }
+    args[i] = 0;
+    if (args[0]) {
+	ret = proc_exec_v(args, prog);
+    }
+    ALLOCV_END(v);
+    return ret;
+
+#undef ARGV_COUNT
+#undef ARGV_SIZE
+#undef ALLOC_ARGV
+}
+
 /* This function should be async-signal-safe.  Actually it is. */
 static int
 proc_exec_sh(const char *str, VALUE envp_str)

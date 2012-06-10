@@ -607,6 +607,7 @@ struct rb_exec_arg {
     VALUE envp_buf;
     VALUE dup2_tmpbuf;
 };
+int rb_proc_exec_n(int, VALUE*, const char*);
 int rb_proc_exec(const char*);
 VALUE rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e);
 int rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val);
