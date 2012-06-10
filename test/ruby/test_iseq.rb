@@ -18,9 +18,11 @@ class TestISeq < Test::Unit::TestCase
 
   def test_disasm_encoding
     src = "\u{3042} = 1"
-    enc = Encoding.default_internal || Encoding.default_external
-    assert_equal(enc, RubyVM::InstructionSequence.compile(src.encode(enc)).disasm.encoding)
-    enc = enc == Encoding::UTF_8 ? Encoding::Shift_JIS : Encoding::UTF_8
-    assert_equal(true, RubyVM::InstructionSequence.compile(src.encode(enc)).disasm.ascii_only?)
+    enc, Encoding.default_internal = Encoding.default_internal, src.encoding
+    assert_equal(src.encoding, RubyVM::InstructionSequence.compile(src).disasm.encoding)
+    src.encode!(Encoding::Shift_JIS)
+    assert_equal(true, RubyVM::InstructionSequence.compile(src).disasm.ascii_only?)
+  ensure
+    Encoding.default_internal = enc
   end
 end
