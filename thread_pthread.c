@@ -1342,7 +1342,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
     }
     size /= 5;
     if (size > water_mark) size = water_mark;
-    if (STACK_DIR_UPPER(1, 0)) {
+    if (IS_STACK_DIR_UPPER()) {
 	if (size > ~(size_t)base+1) size = ~(size_t)base+1;
 	if (addr > base && addr <= (void *)((char *)base + size)) return 1;
     }

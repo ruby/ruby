@@ -1,4 +1,6 @@
-Sun Jun 10 17:54:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jun 10 17:54:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.h (IS_STACK_DIR_UPPER): utility macro.
 
 	* thread_pthread.c (get_stack): seems stack size does not include
 	  guard size on Mac OS X.
