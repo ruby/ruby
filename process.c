@@ -2945,7 +2945,8 @@ rb_fork_internal(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
             _exit(127);
 #endif
         }
-        after_fork();
+	if (!chfunc_is_async_signal_safe)
+	    after_fork();
         close(ep[1]);
         error_occured = recv_child_error(ep[0], &state, &exc, &err, errmsg, errmsg_buflen, chfunc_is_async_signal_safe);
         if (state || error_occured) {

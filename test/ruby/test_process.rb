@@ -1424,4 +1424,13 @@ class TestProcess < Test::Unit::TestCase
     assert_nothing_raised { spawn(*TRUECOMMAND, :new_pgroup=>true) }
     assert_nothing_raised { IO.popen([*TRUECOMMAND, :new_pgroup=>true]) {} }
   end
+
+  def test_sigpipe
+    system(RUBY, "-e", "")
+    with_pipe {|r, w|
+      r.close
+      assert_raise(Errno::EPIPE) { w.print "a" }
+    }
+  end
+
 end

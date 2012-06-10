@@ -1,3 +1,8 @@
+Sun Jun 10 11:44:57 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_fork_internal): call after_fork only unless
+	  chfunc_is_async_signal_safe.
+
 Sun Jun 10 11:33:01 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl_pkey_ec.c
