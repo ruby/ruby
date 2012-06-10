@@ -1,3 +1,8 @@
+Sun Jun 10 15:49:47 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (retry_fork): call after_fork except in a child process.
+	  (rb_fork_internal): restrict after_fork call condition.
+
 Sun Jun 10 14:19:33 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: NetBSD 6 adds libexecinfo but it only works on amd64.

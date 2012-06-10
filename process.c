@@ -2805,10 +2805,13 @@ retry_fork(int *status, int *ep, int chfunc_is_async_signal_safe)
         if (!chfunc_is_async_signal_safe)
             before_fork();
         pid = fork();
-        if (0 <= pid)
-            break;
+        if (pid == 0) /* fork succeed, child process */
+            return pid;
         if (!chfunc_is_async_signal_safe)
-            after_fork();
+            preserving_errno(after_fork());
+        if (0 < pid) /* fork succeed, parent process */
+            return pid;
+        /* fork failed */
 	switch (errno) {
 	  case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
@@ -2832,7 +2835,6 @@ retry_fork(int *status, int *ep, int chfunc_is_async_signal_safe)
 	    return -1;
 	}
     }
-    return pid;
 }
 
 static void
@@ -2913,9 +2915,10 @@ rb_fork_internal(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
         pid = retry_fork(status, NULL, FALSE);
         if (pid < 0)
             return pid;
-        if (!pid)
+        if (!pid) {
             forked_child = 1;
-        after_fork();
+            after_fork();
+        }
         return pid;
     }
     else {
@@ -2949,8 +2952,6 @@ rb_fork_internal(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
             _exit(127);
 #endif
         }
-	if (!chfunc_is_async_signal_safe)
-	    after_fork();
         close(ep[1]);
         error_occured = recv_child_error(ep[0], &state, &exc, &err, errmsg, errmsg_buflen, chfunc_is_async_signal_safe);
         if (state || error_occured) {
