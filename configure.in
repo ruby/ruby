@@ -2015,6 +2015,11 @@ if test x"$enable_pthread" = xyes; then
 	thr_stksegment pthread_stackseg_np pthread_getthrds_np \
 	pthread_cond_init pthread_condattr_setclock pthread_condattr_init \
         pthread_sigmask)
+    if test "${host_os}" = "nacl"; then
+      ac_cv_func_pthread_attr_init=no
+    else
+      AC_CHECK_FUNCS(pthread_attr_init)
+    fi
 fi
 if test x"$ac_cv_header_ucontext_h" = xyes; then
     if test x"$rb_with_pthread" = xyes; then
