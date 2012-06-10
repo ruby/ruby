@@ -1,3 +1,7 @@
+Sun Jun 10 21:13:10 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_fork): call rb_fork_internal instead of rb_fork_err.
+
 Sun Jun 10 20:55:59 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_fork_ruby): call rb_fork_internal directly.

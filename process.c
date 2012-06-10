@@ -3003,10 +3003,10 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
         struct chfunc_wrapper_t warg;
         warg.chfunc = chfunc;
         warg.arg = charg;
-        return rb_fork_err(status, chfunc_wrapper, &warg, fds, NULL, 0);
+        return rb_fork_internal(status, chfunc_wrapper, &warg, FALSE, fds, NULL, 0);
     }
     else {
-        return rb_fork_err(status, NULL, NULL, fds, NULL, 0);
+        return rb_fork_internal(status, NULL, NULL, FALSE, fds, NULL, 0);
     }
 
 }
