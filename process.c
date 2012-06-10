@@ -1968,6 +1968,13 @@ rb_exec_arg_fixup(struct rb_exec_arg *e)
     }
 }
 
+static void
+rb_exec_arg_prepare(struct rb_exec_arg *earg, int argc, VALUE *argv)
+{
+    rb_exec_arg_init(argc, argv, TRUE, earg);
+    rb_exec_arg_fixup(earg);
+}
+
 /*
  *  call-seq:
  *     exec([env,] command... [,options])
@@ -2019,8 +2026,7 @@ rb_f_exec(int argc, VALUE *argv)
 #define CHILD_ERRMSG_BUFLEN 80
     char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
 
-    rb_exec_arg_init(argc, argv, TRUE, &earg);
-    rb_exec_arg_fixup(&earg);
+    rb_exec_arg_prepare(&earg, argc, argv);
 
     rb_exec_err(&earg, errmsg, sizeof(errmsg));
     if (errmsg[0])
@@ -3222,13 +3228,6 @@ rb_syswait(rb_pid_t pid)
     int status;
 
     rb_waitpid(pid, &status, 0);
-}
-
-static void
-rb_exec_arg_prepare(struct rb_exec_arg *earg, int argc, VALUE *argv)
-{
-    rb_exec_arg_init(argc, argv, TRUE, earg);
-    rb_exec_arg_fixup(earg);
 }
 
 static rb_pid_t
