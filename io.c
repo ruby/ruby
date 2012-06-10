@@ -5541,7 +5541,7 @@ pipe_open(struct rb_exec_arg *eargp, const char *modestr, int fmode, convconfig_
 	pid = rb_fork_async_signal_safe(&status, popen_exec, &arg, arg.execp->redirect_fds, errmsg, sizeof(errmsg));
     }
     else {
-	pid = rb_fork(&status, 0, 0, Qnil);
+	pid = rb_fork_ruby(&status);
 	if (pid == 0) {		/* child */
 	    rb_thread_atfork();
 	    popen_redirect(&arg);

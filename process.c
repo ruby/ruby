@@ -3011,6 +3011,12 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
 
 }
 
+rb_pid_t
+rb_fork_ruby(int *status)
+{
+    return rb_fork(status, NULL, NULL, Qnil);
+}
+
 #endif
 
 #if defined(HAVE_FORK) && !defined(CANNOT_FORK_WITH_PTHREAD)
@@ -3044,7 +3050,7 @@ rb_f_fork(VALUE obj)
 
     rb_secure(2);
 
-    switch (pid = rb_fork(0, 0, 0, Qnil)) {
+    switch (pid = rb_fork_ruby(NULL)) {
       case 0:
 	rb_thread_atfork();
 	if (rb_block_given_p()) {
@@ -5241,7 +5247,7 @@ rb_daemon(int nochdir, int noclose)
 #else
     int n;
 
-    switch (rb_fork(0, 0, 0, Qnil)) {
+    switch (rb_fork_ruby(NULL)) {
       case -1:
 	rb_sys_fail("daemon");
       case 0:
@@ -5253,7 +5259,7 @@ rb_daemon(int nochdir, int noclose)
     proc_setsid();
 
     /* must not be process-leader */
-    switch (rb_fork(0, 0, 0, Qnil)) {
+    switch (rb_fork_ruby(NULL)) {
       case -1:
 	return -1;
       case 0:

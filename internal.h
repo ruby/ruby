@@ -166,6 +166,8 @@ st_index_t rb_hash_proc(st_index_t hash, VALUE proc);
 #define ARGVSTR2ARGC(argv_str) (RSTRING_LEN(argv_str) / sizeof(char *) - 2)
 #define ARGVSTR2ARGV(argv_str) ((char **)RSTRING_PTR(argv_str) + 1)
 
+rb_pid_t rb_fork_ruby(int *status);
+
 /* rational.c */
 VALUE rb_lcm(VALUE x, VALUE y);
 VALUE rb_rational_reciprocal(VALUE x);
