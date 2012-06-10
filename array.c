@@ -1225,6 +1225,37 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 
     if (argc == 0) {
 	RETURN_ENUMERATOR(ary, 0, 0);
+	for (i=0; i<RARRAY_LEN(ary); i++) {
+	    if (RTEST(rb_yield(RARRAY_PTR(ary)[i]))) {
+		return LONG2NUM(i);
+	    }
+	}
+	return Qnil;
+    }
+    rb_scan_args(argc, argv, "1", &val);
+    if (rb_block_given_p())
+	rb_warn("given block not used");
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	if (rb_equal(RARRAY_PTR(ary)[i], val))
+	    return LONG2NUM(i);
+    }
+    return Qnil;
+}
+
+
+/*
+ *
+ * 
+ */
+static VALUE
+rb_ary_indexes(int argc, VALUE *argv, VALUE ary)
+{
+	
+    VALUE val;
+    long i;
+
+    if (argc == 0) {
+	RETURN_ENUMERATOR(ary, 0, 0);
     array_lenth = 0;
 
 	for (i=0; i<RARRAY_LEN(ary); i++) {
@@ -1246,16 +1277,7 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 
 	return Qnil;
     }
-    rb_scan_args(argc, argv, "1", &val);
-    if (rb_block_given_p())
-	rb_warn("given block not used");
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-	if (rb_equal(RARRAY_PTR(ary)[i], val))
-	    return LONG2NUM(i);
-    }
-    return Qnil;
 }
-
 /*
  *  call-seq:
  *     ary.rindex(obj)             ->  int or nil
@@ -5090,6 +5112,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "empty?", rb_ary_empty_p, 0);
     rb_define_method(rb_cArray, "find_index", rb_ary_index, -1);
     rb_define_method(rb_cArray, "index", rb_ary_index, -1);
+    rb_define_method(rb_cArray, "indexes", rb_ary_indexes, -1);
+    rb_define_method(rb_cArray, "index_all", rb_ary_indexes, -1);
     rb_define_method(rb_cArray, "rindex", rb_ary_rindex, -1);
     rb_define_method(rb_cArray, "join", rb_ary_join_m, -1);
     rb_define_method(rb_cArray, "reverse", rb_ary_reverse_m, 0);
