@@ -493,7 +493,10 @@ static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int forma
 	    if (!NIL_P(ciph)) {
 		cipher = GetCipherPtr(ciph);
 		if (!NIL_P(pass)) {
-		    password = StringValuePtr(pass);
+		    StringValue(pass);
+		    if (RSTRING_LENINT(pass) < OSSL_MIN_PWD_LEN)
+			ossl_raise(eOSSLError, "OpenSSL requires passwords to be at least four characters long");
+		    password = RSTRING_PTR(pass);
 		}
 	    }
 	    else {
@@ -530,8 +533,8 @@ static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int forma
 
 /*
  *  call-seq:
- *     key.to_pem   => String
- *     key.to_pem(cipher, pass_phrase) => String
+ *     key.export   => String
+ *     key.export(cipher, pass_phrase) => String
  *
  * Outputs the EC key in PEM encoding.  If +cipher+ and +pass_phrase+ are
  * given they will be used to encrypt the key.  +cipher+ must be an
@@ -540,7 +543,7 @@ static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int forma
  * text.
  *
  */
-static VALUE ossl_ec_key_to_pem(int argc, VALUE *argv, VALUE self)
+static VALUE ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
 {
     VALUE cipher, passwd;
     rb_scan_args(argc, argv, "02", &cipher, &passwd);
@@ -1533,7 +1536,8 @@ void Init_ossl_ec()
     rb_define_method(cEC, "dsa_verify_asn1", ossl_ec_key_dsa_verify_asn1, 2);
 /* do_sign/do_verify */
 
-    rb_define_method(cEC, "to_pem", ossl_ec_key_to_pem, -1);
+    rb_define_method(cEC, "export", ossl_ec_key_export, -1);
+    rb_define_alias(cEC, "to_pem", "export");
     rb_define_method(cEC, "to_der", ossl_ec_key_to_der, 0);
     rb_define_method(cEC, "to_text", ossl_ec_key_to_text, 0);
 

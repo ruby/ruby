@@ -74,6 +74,11 @@ extern "C" {
 #  include <openssl/ocsp.h>
 #endif
 
+/* OpenSSL requires passwords for PEM-encoded files to be at least four
+ * characters long
+ */
+#define OSSL_MIN_PWD_LEN 4
+
 /*
  * Common Module
  */

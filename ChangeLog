@@ -1,3 +1,20 @@
+Sun Jun 10 10:21:37 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl.c
+	  ext/openssl/ossl_pkey_rsa.c
+	  ext/openssl/ossl_pkey_dsa.c
+	  ext/openssl/ossl_pkey_ec.c: Forbid export passwords that are less
+	  than four characters long, as OpenSSL itself does not allow this.
+	  Issue found by Eric Hodel.
+	* ext/openssl/ossl_pkey_ec.c: Add export as an alias of to_pem,
+	  following the PKey interface contract.
+	* test/openssl/test_pkey_dsa.rb
+	  test/openssl/test_pkey_rsa.rb
+	  test/openssl/test_pkey_ec.rb: Add tests that assert correct
+	  behaviour when dealing with passwords that are less than four
+	  characters long.
+	  [ruby-core: 42281][ruby-trunk - Bug #5951]
+
 Sun Jun 10 10:14:26 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_f_exec): use rb_exec_arg_prepare.

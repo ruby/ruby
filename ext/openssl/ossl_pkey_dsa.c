@@ -318,7 +318,10 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
     if (!NIL_P(cipher)) {
 	ciph = GetCipherPtr(cipher);
 	if (!NIL_P(pass)) {
-	    passwd = StringValuePtr(pass);
+	    StringValue(pass);
+	    if (RSTRING_LENINT(pass) < OSSL_MIN_PWD_LEN)
+		ossl_raise(eOSSLError, "OpenSSL requires passwords to be at least four characters long");
+	    passwd = RSTRING_PTR(pass);
 	}
     }
     if (!(out = BIO_new(BIO_s_mem()))) {

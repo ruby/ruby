@@ -244,6 +244,15 @@ AwEAAQ==
     assert_equal([], OpenSSL.errors)
   end
 
+  def test_export_password_length
+    key = OpenSSL::TestUtils::TEST_KEY_RSA1024
+    assert_raise(OpenSSL::OpenSSLError) do
+      key.export(OpenSSL::Cipher.new('AES-128-CBC'), 'sec')
+    end
+    pem = key.export(OpenSSL::Cipher.new('AES-128-CBC'), 'secr')
+    assert(pem)
+  end
+
   private
 
   def check_PUBKEY(asn1, key)

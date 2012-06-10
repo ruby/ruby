@@ -175,6 +175,15 @@ class OpenSSL::TestEC < Test::Unit::TestCase
     assert_equal([], OpenSSL.errors)
   end
 
+  def test_export_password_length
+    key = OpenSSL::TestUtils::TEST_KEY_EC_P256V1
+    assert_raise(OpenSSL::OpenSSLError) do
+      key.export(OpenSSL::Cipher.new('AES-128-CBC'), 'sec')
+    end
+    pem = key.export(OpenSSL::Cipher.new('AES-128-CBC'), 'secr')
+    assert(pem)
+  end
+
 # test Group: asn1_flag, point_conversion
 
 end

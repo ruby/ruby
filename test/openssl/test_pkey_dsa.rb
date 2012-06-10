@@ -218,6 +218,15 @@ YNMbNw==
     assert_equal([], OpenSSL.errors)
   end
 
+  def test_export_password_length
+    key = OpenSSL::TestUtils::TEST_KEY_DSA256
+    assert_raise(OpenSSL::OpenSSLError) do
+      key.export(OpenSSL::Cipher.new('AES-128-CBC'), 'sec')
+    end
+    pem = key.export(OpenSSL::Cipher.new('AES-128-CBC'), 'secr')
+    assert(pem)
+  end
+
   private
 
   def check_sign_verify(digest)
