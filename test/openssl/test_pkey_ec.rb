@@ -184,6 +184,22 @@ class OpenSSL::TestEC < Test::Unit::TestCase
     assert(pem)
   end
 
+  def test_ec_point_mul
+    ec = OpenSSL::TestUtils::TEST_KEY_EC_P256V1
+    p1 = ec.public_key
+    bn1 = OpenSSL::BN.new('10')
+    bn2 = OpenSSL::BN.new('20')
+
+    p2 = p1.mul(bn1)
+    assert(p1.group == p2.group)
+    p2 = p1.mul(bn1, bn2)
+    assert(p1.group == p2.group)
+    p2 = p1.mul([bn1, bn2], [p1])
+    assert(p1.group == p2.group)
+    p2 = p1.mul([bn1, bn2], [p1], bn2)
+    assert(p1.group == p2.group)
+  end
+
 # test Group: asn1_flag, point_conversion
 
 end

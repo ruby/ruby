@@ -1,3 +1,10 @@
+Sun Jun 10 11:33:01 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/ossl_pkey_ec.c
+	  test/openssl/test_pkey_ec.rb: Add support for EC_POINT_mul.
+	  Patch provided by Sambasiva Suda. Thanks!
+	  [ruby-core:44408][ruby-trunk - Feature #6310]
+
 Sun Jun 10 10:48:15 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* lib/openssl/ssl.rb: Use a simple random number to generate the
