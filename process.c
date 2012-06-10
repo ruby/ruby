@@ -3014,7 +3014,7 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg, VALUE fds)
 rb_pid_t
 rb_fork_ruby(int *status)
 {
-    return rb_fork(status, NULL, NULL, Qnil);
+    return rb_fork_internal(status, NULL, NULL, FALSE, Qnil, NULL, 0);
 }
 
 #endif

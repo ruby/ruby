@@ -1,3 +1,7 @@
+Sun Jun 10 20:55:59 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_fork_ruby): call rb_fork_internal directly.
+
 Sun Jun 10 20:19:40 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_fork_ruby): new function.
