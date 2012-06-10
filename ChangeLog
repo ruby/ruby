@@ -1,4 +1,7 @@
-Sun Jun 10 17:54:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jun 10 17:54:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (get_stack): seems stack size does not include
+	  guard size on Mac OS X.
 
 	* thread_pthread.c (ruby_init_stack): adjust stack size for offset of
 	  addr from the bottom.

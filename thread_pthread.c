@@ -503,8 +503,7 @@ get_stack(void **addr, size_t *size)
 {
 #define CHECK_ERR(expr)				\
     {int err = (expr); if (err) return err;}
-#if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP || \
-    (defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP)
+#if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
     pthread_attr_t attr;
     size_t guard = 0;
 
@@ -529,15 +528,14 @@ get_stack(void **addr, size_t *size)
     CHECK_ERR(pthread_attr_getstacksize(&attr, size));
     STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
 #   endif
-# else /* MacOS X */
-    pthread_t th = pthread_self();
-    *addr = pthread_get_stackaddr_np(th);
-    *size = pthread_get_stacksize_np(th);
-    CHECK_ERR(pthread_attr_init(&attr));
-# endif
     CHECK_ERR(pthread_attr_getguardsize(&attr, &guard));
     *size -= guard;
     pthread_attr_destroy(&attr);
+# endif
+#elif (defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP) /* MacOS X */
+    pthread_t th = pthread_self();
+    *addr = pthread_get_stackaddr_np(th);
+    *size = pthread_get_stacksize_np(th);
 #elif defined HAVE_THR_STKSEGMENT || defined HAVE_PTHREAD_STACKSEG_NP
     stack_t stk;
 # if defined HAVE_THR_STKSEGMENT /* Solaris */
