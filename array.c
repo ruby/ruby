@@ -1225,11 +1225,24 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 
     if (argc == 0) {
 	RETURN_ENUMERATOR(ary, 0, 0);
+    array_lenth = 0;
+
 	for (i=0; i<RARRAY_LEN(ary); i++) {
 	    if (RTEST(rb_yield(RARRAY_PTR(ary)[i]))) {
-		return LONG2NUM(i);
+		  array_len++;
 	    }
 	}
+
+    indexes = malloc(array_length * sizeof(int));
+    index = 0;
+
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+        if (RTEST(rb_yield(RARRAY_PTR(ary)[i]))) {
+          indexes[index] = LONG2NUM(i);
+          index++;
+        }
+    }
+
 	return Qnil;
     }
     rb_scan_args(argc, argv, "1", &val);
