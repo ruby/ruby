@@ -108,8 +108,16 @@ AC_DEFUN([RUBY_NACL],
   if test -z "${NACL_TOOLCHAIN}"; then
     AC_MSG_ERROR([Unrecognized --host and --build combination or NaCl SDK is not installed])
   fi
-  PATH="${PATH}:${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin"
   AC_MSG_RESULT(${NACL_TOOLCHAIN})
+
+  AC_MSG_CHECKING([path to SDK])
+  if echo -- "${PATH}" | grep -F "${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin" > /dev/null; then
+    AC_MSG_RESULT([set])
+  else
+    AC_MSG_RESULT([no])
+    AC_MSG_WARN([Add "${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin" to \$PATH])
+    PATH="${PATH}:${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin"
+  fi
 
   AC_SUBST(NACL_TOOLCHAIN)
   AC_SUBST(NACL_SDK_ROOT)

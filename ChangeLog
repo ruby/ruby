@@ -1,3 +1,9 @@
+Sun Jun 10 18:31:42 2012  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* configure.in (RUBY_NACL): Warns if $PATH does not contain the path
+	  to NativeClient SDK. PATH variable redefinition in GNUmakefile does
+	  not work for GNU make 3.81.
+
 Sun Jun 10 17:54:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.h (IS_STACK_DIR_UPPER): utility macro.
