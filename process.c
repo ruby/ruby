@@ -1975,6 +1975,8 @@ rb_exec_arg_prepare(struct rb_exec_arg *earg, int argc, VALUE *argv)
     rb_exec_arg_fixup(earg);
 }
 
+static int rb_exec_without_timer_thread(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen);
+
 /*
  *  call-seq:
  *     exec([env,] command... [,options])
@@ -2029,7 +2031,7 @@ rb_f_exec(int argc, VALUE *argv)
     rb_exec_arg_prepare(&earg, argc, argv);
 
 #ifdef __MacOS_X__
-    rb_exec_err(&earg, errmsg, sizeof(errmsg));
+    rb_exec_without_timer_thread(&earg, errmsg, sizeof(errmsg));
 #else
     rb_exec_async_signal_safe(&earg, errmsg, sizeof(errmsg));
 #endif
@@ -2649,8 +2651,8 @@ failure:
     return -1;
 }
 
-int
-rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
+static int
+rb_exec_without_timer_thread(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 {
     int ret;
     before_exec_non_async_signal_safe(); /* async-signal-safe if forked_child is true */
@@ -2660,11 +2662,17 @@ rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 }
 
 int
+rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
+{
+    return rb_exec_without_timer_thread(e, errmsg, errmsg_buflen);
+}
+
+int
 rb_exec(const struct rb_exec_arg *e)
 {
 #if !defined FD_CLOEXEC && !defined HAVE_SPAWNV
     char errmsg[80] = { '\0' };
-    int ret = rb_exec_err(e, errmsg, sizeof(errmsg));
+    int ret = rb_exec_without_timer_thread(e, errmsg, sizeof(errmsg));
     preserving_errno(
 	if (errmsg[0]) {
 	    fprintf(stderr, "%s\n", errmsg);
@@ -2677,7 +2685,7 @@ rb_exec(const struct rb_exec_arg *e)
     );
     return ret;
 #else
-    return rb_exec_err(e, NULL, 0);
+    return rb_exec_without_timer_thread(e, NULL, 0);
 #endif
 }
 

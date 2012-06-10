@@ -1,3 +1,11 @@
+Sun Jun 10 21:30:11 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_exec_without_timer_thread): renamed from rb_exec_err.
+	  (rb_exec_err): new stub function to call
+	  rb_exec_without_timer_thread.
+	  (rb_f_exec): call rb_exec_without_timer_thread.
+	  (rb_exec): call rb_exec_without_timer_thread.
+
 Sun Jun 10 21:13:10 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_fork): call rb_fork_internal instead of rb_fork_err.
