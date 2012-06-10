@@ -116,16 +116,6 @@ end
 class Net::HTTPPreconditionFailed < Net::HTTPClientError            # 412
   HAS_BODY = true
 end
-class Net::HTTPPreconditionRequired < Net::HTTPClientError          # 428
-  HAS_BODY = true
-end
-class Net::HTTPTooManyRequests < Net::HTTPClientError               # 429
-  HAS_BODY = true
-end
-class Net::HTTPRequestHeaderFieldsTooLarge < Net::HTTPClientError   # 431
-  HAS_BODY = true
-end
-
 class Net::HTTPRequestEntityTooLarge < Net::HTTPClientError         # 413
   HAS_BODY = true
 end
@@ -140,6 +130,15 @@ class Net::HTTPRequestedRangeNotSatisfiable < Net::HTTPClientError  # 416
   HAS_BODY = true
 end
 class Net::HTTPExpectationFailed < Net::HTTPClientError             # 417
+  HAS_BODY = true
+end
+class Net::HTTPPreconditionRequired < Net::HTTPClientError          # 428 - RFC 6585
+  HAS_BODY = true
+end
+class Net::HTTPTooManyRequests < Net::HTTPClientError               # 429 - RFC 6585
+  HAS_BODY = true
+end
+class Net::HTTPRequestHeaderFieldsTooLarge < Net::HTTPClientError   # 431 - RFC 6585
   HAS_BODY = true
 end
 
@@ -161,7 +160,7 @@ end
 class Net::HTTPVersionNotSupported < Net::HTTPServerError           # 505
   HAS_BODY = true
 end
-class Net::HTTPNetworkAuthenticationRequired < Net::HTTPServerError # 511
+class Net::HTTPNetworkAuthenticationRequired < Net::HTTPServerError # 511 - RFC 6585
   HAS_BODY = true
 end
 

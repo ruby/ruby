@@ -9,66 +9,9 @@
 # Note that each possible HTTP response code defines its own
 # HTTPResponse subclass.  These are listed below.
 #
-# All classes are
-# defined under the Net module. Indentation indicates inheritance.
+# All classes are defined under the Net module. Indentation indicates
+# inheritance.  For a list of the classes see Net::HTTP.
 #
-#   xxx        HTTPResponse
-#
-#     1xx        HTTPInformation
-#       100        HTTPContinue
-#       101        HTTPSwitchProtocol
-#
-#     2xx        HTTPSuccess
-#       200        HTTPOK
-#       201        HTTPCreated
-#       202        HTTPAccepted
-#       203        HTTPNonAuthoritativeInformation
-#       204        HTTPNoContent
-#       205        HTTPResetContent
-#       206        HTTPPartialContent
-#
-#     3xx        HTTPRedirection
-#       300        HTTPMultipleChoice
-#       301        HTTPMovedPermanently
-#       302        HTTPFound
-#       303        HTTPSeeOther
-#       304        HTTPNotModified
-#       305        HTTPUseProxy
-#       307        HTTPTemporaryRedirect
-#
-#     4xx        HTTPClientError
-#       400        HTTPBadRequest
-#       401        HTTPUnauthorized
-#       402        HTTPPaymentRequired
-#       403        HTTPForbidden
-#       404        HTTPNotFound
-#       405        HTTPMethodNotAllowed
-#       406        HTTPNotAcceptable
-#       407        HTTPProxyAuthenticationRequired
-#       408        HTTPRequestTimeOut
-#       409        HTTPConflict
-#       410        HTTPGone
-#       411        HTTPLengthRequired
-#       412        HTTPPreconditionFailed
-#       413        HTTPRequestEntityTooLarge
-#       414        HTTPRequestURITooLong
-#       415        HTTPUnsupportedMediaType
-#       416        HTTPRequestedRangeNotSatisfiable
-#       417        HTTPExpectationFailed
-#       428        HTTPPreconditionRequired
-#       429        HTTPTooManyRequests
-#       431        HTTPRequestHeaderFieldsTooLarge
-#
-#     5xx        HTTPServerError
-#       500        HTTPInternalServerError
-#       501        HTTPNotImplemented
-#       502        HTTPBadGateway
-#       503        HTTPServiceUnavailable
-#       504        HTTPGatewayTimeOut
-#       505        HTTPVersionNotSupported
-#       511        HTTPNetworkAuthenticationRequired
-#
-#     xxx        HTTPUnknownResponse
 #
 class Net::HTTPResponse
   class << self

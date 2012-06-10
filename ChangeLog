@@ -1,3 +1,10 @@
+Sun Jun 10 18:58:16 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/net/http/response.rb: Remove a duplicated rdoc and leave a
+	  pointer.
+
+	* lib/net/http/responses.rb: Add RFC numbers to base on.
+
 Sun Jun 10 18:31:42 2012  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* configure.in (RUBY_NACL): Warns if $PATH does not contain the path
