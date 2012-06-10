@@ -768,3 +768,7 @@ define trace_machine_instructions
   end
 end
 
+define SDR
+  call rb_vmdebug_stack_dump_raw_current()
+end
+

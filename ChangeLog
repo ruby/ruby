@@ -1,3 +1,7 @@
+Mon Jun 11 05:21:57 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* .gdbinit (SDR): add SDR function.  It's only for VM debugging.
+
 Sun Jun 10 21:50:45 2012  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* nacl/nacl_config.rb: Fixed for 32bit hosts.
