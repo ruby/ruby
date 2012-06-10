@@ -5461,8 +5461,7 @@ popen_exec(void *pp, char *errmsg, size_t errmsg_len)
 {
     struct popen_arg *p = (struct popen_arg*)pp;
 
-    rb_thread_atfork_before_exec();
-    return rb_exec_err(p->execp, errmsg, errmsg_len);
+    return rb_exec_async_signal_safe(p->execp, errmsg, errmsg_len);
 }
 #endif
 
@@ -5539,7 +5538,7 @@ pipe_open(struct rb_exec_arg *eargp, const char *modestr, int fmode, convconfig_
     }
     if (eargp) {
         rb_exec_arg_fixup(arg.execp);
-	pid = rb_fork_err(&status, popen_exec, &arg, arg.execp->redirect_fds, errmsg, sizeof(errmsg));
+	pid = rb_fork_async_signal_safe(&status, popen_exec, &arg, arg.execp->redirect_fds, errmsg, sizeof(errmsg));
     }
     else {
 	pid = rb_fork(&status, 0, 0, Qnil);
