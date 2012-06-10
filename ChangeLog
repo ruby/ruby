@@ -1,3 +1,8 @@
+Sun Jun 10 12:43:23 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_f_exec): call rb_exec_async_signal_safe except on
+	  Mac OS X.  cf. the comment in before_exec_non_async_signal_safe.
+
 Sun Jun 10 12:15:18 2012  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (popen_exec): don't call rb_thread_atfork_before_exec.  use

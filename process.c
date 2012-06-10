@@ -1014,7 +1014,7 @@ static void before_exec_non_async_signal_safe(void)
 	/*
 	 * On Mac OS X 10.5.x (Leopard) or earlier, exec() may return ENOTSUPP
 	 * if the process have multiple threads. Therefore we have to kill
-	 * internal threads temporary. [ruby-core: 10583]
+	 * internal threads temporary. [ruby-core:10583]
 	 */
 	rb_thread_stop_timer_thread(0);
     }
@@ -2028,7 +2028,11 @@ rb_f_exec(int argc, VALUE *argv)
 
     rb_exec_arg_prepare(&earg, argc, argv);
 
+#ifdef __MacOS_X__
     rb_exec_err(&earg, errmsg, sizeof(errmsg));
+#else
+    rb_exec_async_signal_safe(&earg, errmsg, sizeof(errmsg));
+#endif
     if (errmsg[0])
         rb_sys_fail(errmsg);
     rb_sys_fail_str(earg.use_shell ? earg.invoke.sh.shell_script : earg.invoke.cmd.command_name);
