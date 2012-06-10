@@ -1,3 +1,8 @@
+Mon Jun 11 06:20:50 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c (rb_thread_create_timer_thread): assign return
+	  value to the variable err.
+
 Mon Jun 11 06:17:06 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread_pthread.c (native_cond_initialize): fix typo in r36022.

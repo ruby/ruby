@@ -1274,7 +1274,8 @@ rb_thread_create_timer_thread(void)
 #ifdef HAVE_PTHREAD_ATTR_INIT
 	pthread_attr_t attr;
 
-	if (pthread_attr_init(&attr)) {
+	err = pthread_attr_init(&attr);
+	if (err != 0) {
 	    fprintf(stderr, "[FATAL] Failed to initialize pthread attr(errno: %d)\n", err);
 	    exit(EXIT_FAILURE);
         }
