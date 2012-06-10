@@ -248,7 +248,7 @@ native_cond_initialize(rb_thread_cond_t *cond, int flags)
 {
 #ifdef HAVE_PTHREAD_COND_INIT
     int r;
-# ifdef HAVE_PTHREAD_COND_ATTR_INIT
+# ifdef HAVE_PTHREAD_CONDATTR_INIT
     pthread_condattr_t attr;
 
     pthread_condattr_init(&attr);

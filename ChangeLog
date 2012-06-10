@@ -1,3 +1,9 @@
+Mon Jun 11 06:17:06 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c (native_cond_initialize): fix typo in r36022.
+	  this cause a failure on FreeBSD 8.2 amd64.
+	  http://fbsd.rubyci.org/~chkbuild/ruby-trunk/log/20120610T130201Z.diff.html.gz
+
 Mon Jun 11 05:21:57 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* .gdbinit (SDR): add SDR function.  It's only for VM debugging.
