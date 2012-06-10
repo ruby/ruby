@@ -131,6 +131,13 @@ with all sufficient information, see the ChangeLog file.
     also allows to programmatically decline (client) renegotiation attempts.
   * Support for "0/n" splitting of records as BEAST mitigation via
     OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS.
+  * OpenSSL requires passwords for decrypting PEM-encoded files to be at least
+    four characters long. This led to awkward situations where an export with
+    a password with fewer than four characters was possible, but accessing the
+    file afterwards failed. OpenSSL::PKey::RSA, OpenSSL::PKey::DSA and
+    OpenSSL::PKey::EC therefore now enforce the same check when exporting a
+    private key to PEM with a password - it has to be at least four characters
+    long.
 
 === Language changes
 === Compatibility issues (excluding feature bug fixes)

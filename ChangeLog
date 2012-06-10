@@ -1,3 +1,7 @@
+Sun Jun 10 10:27:34 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* NEWS: Add note about the new private key export behavior.
+
 Sun Jun 10 10:24:51 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_exec_async_signal_safe): exported.
