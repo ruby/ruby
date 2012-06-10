@@ -1242,6 +1242,7 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
           index++;
         }
     }
+	return indexes;
 
 	return Qnil;
     }
