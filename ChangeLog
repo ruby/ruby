@@ -1,3 +1,8 @@
+Mon Jun 11 18:49:52 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: on checking libexecinfo, don't specify /use/local.
+	  On FreeBSD people must specify --with-opt-dir or --with-execinfo-dir.
+
 Mon Jun 11 12:14:37 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: remove lfp (local frame pointer) and rename
