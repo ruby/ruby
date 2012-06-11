@@ -1,3 +1,9 @@
+Mon Jun 11 19:56:22 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/webrick/test_cgi.rb (class TestWEBrickCGI): respect
+	  RbConfig::CONFIG["LIBPATHENV"]. [Bug #5135] [ruby-core:38653]
+	* test/webrick/test_filehandler.rb (class WEBrick): ditto.
+
 Tue Jun  5 14:03:53 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/ipaddr.rb: Inhibit zero-filled octets in an IPv4 address in

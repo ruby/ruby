@@ -252,6 +252,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
         def req.meta_vars
           meta = super
           meta["RUBYLIB"] = $:.join(File::PATH_SEPARATOR)
+          meta[RbConfig::CONFIG['LIBPATHENV']] = ENV[RbConfig::CONFIG['LIBPATHENV']]
           return meta
         end
       },
