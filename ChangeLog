@@ -1,3 +1,7 @@
+Tue Jun 12 06:40:23 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_exec_fillarg): detect '#' as a meta character.
+
 Mon Jun 11 22:15:44 2012  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_proc_exec_n): deprecated.
