@@ -15,6 +15,20 @@ class TestTime < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def no_leap_seconds?
+    # 1972-06-30T23:59:60Z is the first leap second.
+    Time.utc(1972, 7, 1, 0, 0, 0) - Time.utc(1972, 6, 30, 23, 59, 59) == 1
+  end
+
+  def get_t2000
+    if no_leap_seconds?
+      # Sat Jan 01 00:00:00 UTC 2000
+      Time.at(946684800).gmtime
+    else
+      Time.utc(2000, 1, 1)
+    end
+  end
+
   def test_new
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,10, 11,0,0, 3600*11))
     assert_equal(Time.utc(2000,2,10), Time.new(2000,2,9, 13,0,0, -3600*11))
@@ -81,15 +95,13 @@ class TestTime < Test::Unit::TestCase
     assert_equal(31536000, Time.utc(1971, 1, 1, 0, 0, 0).tv_sec)
     assert_equal(78796799, Time.utc(1972, 6, 30, 23, 59, 59).tv_sec)
 
-    # 1972-06-30T23:59:60Z is the first leap second.
-    if Time.utc(1972, 7, 1, 0, 0, 0) - Time.utc(1972, 6, 30, 23, 59, 59) == 1
-      # no leap second.
+    if no_leap_seconds?
       assert_equal(78796800, Time.utc(1972, 7, 1, 0, 0, 0).tv_sec)
       assert_equal(78796801, Time.utc(1972, 7, 1, 0, 0, 1).tv_sec)
       assert_equal(946684800, Time.utc(2000, 1, 1, 0, 0, 0).tv_sec)
       assert_equal(0x7fffffff, Time.utc(2038, 1, 19, 3, 14, 7).tv_sec)
+      assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
     else
-      # leap seconds supported.
       assert_equal(2, Time.utc(1972, 7, 1, 0, 0, 0) - Time.utc(1972, 6, 30, 23, 59, 59))
       assert_equal(78796800, Time.utc(1972, 6, 30, 23, 59, 60).tv_sec)
       assert_equal(78796801, Time.utc(1972, 7, 1, 0, 0, 0).tv_sec)
@@ -285,9 +297,6 @@ class TestTime < Test::Unit::TestCase
       "[ruby-dev:44827] [Bug #5586]")
   end
 
-  # Sat Jan 01 00:00:00 UTC 2000
-  T2000 = Time.at(946684800).gmtime
-
   def test_security_error
     assert_raise(SecurityError) do
       Thread.new do
@@ -299,7 +308,8 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_at3
-    assert_equal(T2000, Time.at(T2000))
+    t2000 = get_t2000
+    assert_equal(t2000, Time.at(t2000))
 #    assert_raise(RangeError) do
 #      Time.at(2**31-1, 1_000_000)
 #      Time.at(2**63-1, 1_000_000)
@@ -311,13 +321,14 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_utc_or_local
-    assert_equal(T2000, Time.gm(2000))
-    assert_equal(T2000, Time.gm(0, 0, 0, 1, 1, 2000, :foo, :bar, false, :baz))
-    assert_equal(T2000, Time.gm(2000, "jan"))
-    assert_equal(T2000, Time.gm(2000, "1"))
-    assert_equal(T2000, Time.gm(2000, 1, 1, 0, 0, 0, 0))
-    assert_equal(T2000, Time.gm(2000, 1, 1, 0, 0, 0, "0"))
-    assert_equal(T2000, Time.gm(2000, 1, 1, 0, 0, "0", :foo, :foo))
+    t2000 = get_t2000
+    assert_equal(t2000, Time.gm(2000))
+    assert_equal(t2000, Time.gm(0, 0, 0, 1, 1, 2000, :foo, :bar, false, :baz))
+    assert_equal(t2000, Time.gm(2000, "jan"))
+    assert_equal(t2000, Time.gm(2000, "1"))
+    assert_equal(t2000, Time.gm(2000, 1, 1, 0, 0, 0, 0))
+    assert_equal(t2000, Time.gm(2000, 1, 1, 0, 0, 0, "0"))
+    assert_equal(t2000, Time.gm(2000, 1, 1, 0, 0, "0", :foo, :foo))
     assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, -1, :foo, :foo) }
     assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, -1.0, :foo, :foo) }
     assert_raise(RangeError) do
@@ -337,7 +348,7 @@ class TestTime < Test::Unit::TestCase
     assert_raise(ArgumentError) { Time.gm(2000, 13) }
 
     t = Time.local(2000)
-    assert_equal(t.gmt_offset, T2000 - t)
+    assert_equal(t.gmt_offset, t2000 - t)
 
     assert_equal(-4427700000, Time.utc(-4427700000,12,1).year)
     assert_equal(-2**30+10, Time.utc(-2**30+10,1,1).year)
@@ -354,18 +365,21 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_to_f
-    assert_equal(946684800.0, T2000.to_f)
+    t2000 = Time.at(946684800).gmtime
+    assert_equal(946684800.0, t2000.to_f)
   end
 
   def test_cmp
-    assert_equal(-1, T2000 <=> Time.gm(2001))
-    assert_equal(1, T2000 <=> Time.gm(1999))
-    assert_nil(T2000 <=> 0)
+    t2000 = get_t2000
+    assert_equal(-1, t2000 <=> Time.gm(2001))
+    assert_equal(1, t2000 <=> Time.gm(1999))
+    assert_nil(t2000 <=> 0)
   end
 
   def test_eql
-    assert(T2000.eql?(T2000))
-    assert(!T2000.eql?(Time.gm(2001)))
+    t2000 = get_t2000
+    assert(t2000.eql?(t2000))
+    assert(!t2000.eql?(Time.gm(2001)))
   end
 
   def test_utc_p
@@ -375,13 +389,15 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_hash
-    assert_kind_of(Integer, T2000.hash)
+    t2000 = get_t2000
+    assert_kind_of(Integer, t2000.hash)
   end
 
   def test_init_copy
-    assert_equal(T2000, T2000.dup)
+    t2000 = get_t2000
+    assert_equal(t2000, t2000.dup)
     assert_raise(TypeError) do
-      T2000.instance_eval { initialize_copy(nil) }
+      t2000.instance_eval { initialize_copy(nil) }
     end
   end
 
@@ -423,14 +439,16 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_asctime
-    assert_equal("Sat Jan  1 00:00:00 2000", T2000.asctime)
-    assert_equal(Encoding::US_ASCII, T2000.asctime.encoding)
+    t2000 = get_t2000
+    assert_equal("Sat Jan  1 00:00:00 2000", t2000.asctime)
+    assert_equal(Encoding::US_ASCII, t2000.asctime.encoding)
     assert_kind_of(String, Time.at(0).asctime)
   end
 
   def test_to_s
-    assert_equal("2000-01-01 00:00:00 UTC", T2000.to_s)
-    assert_equal(Encoding::US_ASCII, T2000.to_s.encoding)
+    t2000 = get_t2000
+    assert_equal("2000-01-01 00:00:00 UTC", t2000.to_s)
+    assert_equal(Encoding::US_ASCII, t2000.to_s.encoding)
     assert_kind_of(String, Time.at(946684800).getlocal.to_s)
     assert_equal(Time.at(946684800).getlocal.to_s, Time.at(946684800).to_s)
   end
@@ -440,11 +458,12 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_plus_minus_succ
-    # assert_raise(RangeError) { T2000 + 10000000000 }
-    # assert_raise(RangeError)  T2000 - 3094168449 }
-    # assert_raise(RangeError) { T2000 + 1200798848 }
-    assert_raise(TypeError) { T2000 + Time.now }
-    assert_equal(T2000 + 1, T2000.succ)
+    t2000 = get_t2000
+    # assert_raise(RangeError) { t2000 + 10000000000 }
+    # assert_raise(RangeError)  t2000 - 3094168449 }
+    # assert_raise(RangeError) { t2000 + 1200798848 }
+    assert_raise(TypeError) { t2000 + Time.now }
+    assert_equal(t2000 + 1, t2000.succ)
   end
 
   def test_plus_type
@@ -473,26 +492,27 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_readers
-    assert_equal(0, T2000.sec)
-    assert_equal(0, T2000.min)
-    assert_equal(0, T2000.hour)
-    assert_equal(1, T2000.mday)
-    assert_equal(1, T2000.mon)
-    assert_equal(2000, T2000.year)
-    assert_equal(6, T2000.wday)
-    assert_equal(1, T2000.yday)
-    assert_equal(false, T2000.isdst)
-    assert_equal("UTC", T2000.zone)
-    assert_equal(Encoding.find("locale"), T2000.zone.encoding)
-    assert_equal(0, T2000.gmt_offset)
-    assert(!T2000.sunday?)
-    assert(!T2000.monday?)
-    assert(!T2000.tuesday?)
-    assert(!T2000.wednesday?)
-    assert(!T2000.thursday?)
-    assert(!T2000.friday?)
-    assert(T2000.saturday?)
-    assert_equal([0, 0, 0, 1, 1, 2000, 6, 1, false, "UTC"], T2000.to_a)
+    t2000 = get_t2000
+    assert_equal(0, t2000.sec)
+    assert_equal(0, t2000.min)
+    assert_equal(0, t2000.hour)
+    assert_equal(1, t2000.mday)
+    assert_equal(1, t2000.mon)
+    assert_equal(2000, t2000.year)
+    assert_equal(6, t2000.wday)
+    assert_equal(1, t2000.yday)
+    assert_equal(false, t2000.isdst)
+    assert_equal("UTC", t2000.zone)
+    assert_equal(Encoding.find("locale"), t2000.zone.encoding)
+    assert_equal(0, t2000.gmt_offset)
+    assert(!t2000.sunday?)
+    assert(!t2000.monday?)
+    assert(!t2000.tuesday?)
+    assert(!t2000.wednesday?)
+    assert(!t2000.thursday?)
+    assert(!t2000.friday?)
+    assert(t2000.saturday?)
+    assert_equal([0, 0, 0, 1, 1, 2000, 6, 1, false, "UTC"], t2000.to_a)
 
     t = Time.at(946684800).getlocal
     assert_equal(t.sec, Time.at(946684800).sec)
@@ -518,34 +538,35 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_strftime
+    t2000 = get_t2000
     t = Time.at(946684800).getlocal
-    assert_equal("Sat", T2000.strftime("%a"))
-    assert_equal("Saturday", T2000.strftime("%A"))
-    assert_equal("Jan", T2000.strftime("%b"))
-    assert_equal("January", T2000.strftime("%B"))
-    assert_kind_of(String, T2000.strftime("%c"))
-    assert_equal("01", T2000.strftime("%d"))
-    assert_equal("00", T2000.strftime("%H"))
-    assert_equal("12", T2000.strftime("%I"))
-    assert_equal("001", T2000.strftime("%j"))
-    assert_equal("01", T2000.strftime("%m"))
-    assert_equal("00", T2000.strftime("%M"))
-    assert_equal("AM", T2000.strftime("%p"))
-    assert_equal("00", T2000.strftime("%S"))
-    assert_equal("00", T2000.strftime("%U"))
-    assert_equal("00", T2000.strftime("%W"))
-    assert_equal("6", T2000.strftime("%w"))
-    assert_equal("01/01/00", T2000.strftime("%x"))
-    assert_equal("00:00:00", T2000.strftime("%X"))
-    assert_equal("00", T2000.strftime("%y"))
-    assert_equal("2000", T2000.strftime("%Y"))
-    assert_equal("UTC", T2000.strftime("%Z"))
-    assert_equal("%", T2000.strftime("%%"))
-    assert_equal("0", T2000.strftime("%-S"))
+    assert_equal("Sat", t2000.strftime("%a"))
+    assert_equal("Saturday", t2000.strftime("%A"))
+    assert_equal("Jan", t2000.strftime("%b"))
+    assert_equal("January", t2000.strftime("%B"))
+    assert_kind_of(String, t2000.strftime("%c"))
+    assert_equal("01", t2000.strftime("%d"))
+    assert_equal("00", t2000.strftime("%H"))
+    assert_equal("12", t2000.strftime("%I"))
+    assert_equal("001", t2000.strftime("%j"))
+    assert_equal("01", t2000.strftime("%m"))
+    assert_equal("00", t2000.strftime("%M"))
+    assert_equal("AM", t2000.strftime("%p"))
+    assert_equal("00", t2000.strftime("%S"))
+    assert_equal("00", t2000.strftime("%U"))
+    assert_equal("00", t2000.strftime("%W"))
+    assert_equal("6", t2000.strftime("%w"))
+    assert_equal("01/01/00", t2000.strftime("%x"))
+    assert_equal("00:00:00", t2000.strftime("%X"))
+    assert_equal("00", t2000.strftime("%y"))
+    assert_equal("2000", t2000.strftime("%Y"))
+    assert_equal("UTC", t2000.strftime("%Z"))
+    assert_equal("%", t2000.strftime("%%"))
+    assert_equal("0", t2000.strftime("%-S"))
 
-    assert_equal("", T2000.strftime(""))
-    assert_equal("foo\0bar\x0000\x0000\x0000", T2000.strftime("foo\0bar\0%H\0%M\0%S"))
-    assert_equal("foo" * 1000, T2000.strftime("foo" * 1000))
+    assert_equal("", t2000.strftime(""))
+    assert_equal("foo\0bar\x0000\x0000\x0000", t2000.strftime("foo\0bar\0%H\0%M\0%S"))
+    assert_equal("foo" * 1000, t2000.strftime("foo" * 1000))
 
     t = Time.mktime(2000, 1, 1)
     assert_equal("Sat", t.strftime("%a"))
@@ -558,7 +579,15 @@ class TestTime < Test::Unit::TestCase
     assert_equal("123456789", t.strftime("%9N"))
     assert_equal("1234567890", t.strftime("%10N"))
     assert_equal("123456789", t.strftime("%0N"))
+  end
+
+  def test_strftime_sec
+    t = get_t2000.getlocal
     assert_equal("000", t.strftime("%3S"))
+  end
+
+  def test_strftime_seconds_from_epoch
+    t = Time.at(946684800, 123456.789)
     assert_equal("946684800", t.strftime("%s"))
     assert_equal("946684800", t.utc.strftime("%s"))
   end
@@ -641,25 +670,27 @@ class TestTime < Test::Unit::TestCase
 
   def test_strftime_ctrlchar
     # [ruby-dev:37160]
-    assert_equal("\t", T2000.strftime("%t"))
-    assert_equal("\t", T2000.strftime("%0t"))
-    assert_equal("\t", T2000.strftime("%1t"))
-    assert_equal("  \t", T2000.strftime("%3t"))
-    assert_equal("00\t", T2000.strftime("%03t"))
-    assert_equal("\n", T2000.strftime("%n"))
-    assert_equal("\n", T2000.strftime("%0n"))
-    assert_equal("\n", T2000.strftime("%1n"))
-    assert_equal("  \n", T2000.strftime("%3n"))
-    assert_equal("00\n", T2000.strftime("%03n"))
+    t2000 = get_t2000
+    assert_equal("\t", t2000.strftime("%t"))
+    assert_equal("\t", t2000.strftime("%0t"))
+    assert_equal("\t", t2000.strftime("%1t"))
+    assert_equal("  \t", t2000.strftime("%3t"))
+    assert_equal("00\t", t2000.strftime("%03t"))
+    assert_equal("\n", t2000.strftime("%n"))
+    assert_equal("\n", t2000.strftime("%0n"))
+    assert_equal("\n", t2000.strftime("%1n"))
+    assert_equal("  \n", t2000.strftime("%3n"))
+    assert_equal("00\n", t2000.strftime("%03n"))
   end
 
   def test_strftime_weekflags
     # [ruby-dev:37162]
-    assert_equal("SAT", T2000.strftime("%#a"))
-    assert_equal("SATURDAY", T2000.strftime("%#A"))
-    assert_equal("JAN", T2000.strftime("%#b"))
-    assert_equal("JANUARY", T2000.strftime("%#B"))
-    assert_equal("JAN", T2000.strftime("%#h"))
+    t2000 = get_t2000
+    assert_equal("SAT", t2000.strftime("%#a"))
+    assert_equal("SATURDAY", t2000.strftime("%#A"))
+    assert_equal("JAN", t2000.strftime("%#b"))
+    assert_equal("JANUARY", t2000.strftime("%#B"))
+    assert_equal("JAN", t2000.strftime("%#h"))
     assert_equal("FRIDAY", Time.local(2008,1,4).strftime("%#A"))
   end
 
@@ -696,13 +727,14 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_strfimte_zoneoffset
-    t = T2000.getlocal("+09:00:00")
+    t2000 = get_t2000
+    t = t2000.getlocal("+09:00:00")
     assert_equal("+0900", t.strftime("%z"))
     assert_equal("+09:00", t.strftime("%:z"))
     assert_equal("+09:00:00", t.strftime("%::z"))
     assert_equal("+09", t.strftime("%:::z"))
 
-    t = T2000.getlocal("+09:00:01")
+    t = t2000.getlocal("+09:00:01")
     assert_equal("+0900", t.strftime("%z"))
     assert_equal("+09:00", t.strftime("%:z"))
     assert_equal("+09:00:01", t.strftime("%::z"))
@@ -711,7 +743,8 @@ class TestTime < Test::Unit::TestCase
 
   def test_strftime_padding
     bug4458 = '[ruby-dev:43287]'
-    t = T2000.getlocal("+09:00")
+    t2000 = get_t2000
+    t = t2000.getlocal("+09:00")
     assert_equal("+0900", t.strftime("%z"))
     assert_equal("+09:00", t.strftime("%:z"))
     assert_equal("      +900", t.strftime("%_10z"), bug4458)
@@ -721,7 +754,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal("  +9:00:00", t.strftime("%_10::z"), bug4458)
     assert_equal("+009:00:00", t.strftime("%10::z"), bug4458)
     assert_equal("+000000009", t.strftime("%10:::z"))
-    t = T2000.getlocal("-05:00")
+    t = t2000.getlocal("-05:00")
     assert_equal("-0500", t.strftime("%z"))
     assert_equal("-05:00", t.strftime("%:z"))
     assert_equal("      -500", t.strftime("%_10z"), bug4458)
@@ -733,7 +766,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal("-000000005", t.strftime("%10:::z"))
 
     bug6323 = '[ruby-core:44447]'
-    t = T2000.getlocal("+00:36")
+    t = t2000.getlocal("+00:36")
     assert_equal("      +036", t.strftime("%_10z"), bug6323)
     assert_equal("+000000036", t.strftime("%10z"), bug6323)
     assert_equal("     +0:36", t.strftime("%_10:z"), bug6323)
@@ -741,7 +774,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal("  +0:36:00", t.strftime("%_10::z"), bug6323)
     assert_equal("+000:36:00", t.strftime("%10::z"), bug6323)
     assert_equal("+000000:36", t.strftime("%10:::z"))
-    t = T2000.getlocal("-00:55")
+    t = t2000.getlocal("-00:55")
     assert_equal("      -055", t.strftime("%_10z"), bug6323)
     assert_equal("-000000055", t.strftime("%10z"), bug6323)
     assert_equal("     -0:55", t.strftime("%_10:z"), bug6323)
@@ -752,7 +785,8 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_strftime_invalid_modifier
-    t = T2000.getlocal("+09:00")
+    t2000 = get_t2000
+    t = t2000.getlocal("+09:00")
     assert_equal("%:y", t.strftime("%:y"), 'invalid conversion after : modifier')
     assert_equal("%:0z", t.strftime("%:0z"), 'flag after : modifier')
     assert_equal("%:10z", t.strftime("%:10z"), 'prec after : modifier')
@@ -845,4 +879,92 @@ class TestTime < Test::Unit::TestCase
     assert_nothing_raised(bug6193) {t = Time.new(2012, 1, 2, 3, 4, "5")}
     assert_equal(Time.new(2012, 1, 2, 3, 4, 5), t, bug6193)
   end
+
+  def test_past
+    [
+      [-(1 << 100), 1, 1, 0, 0, 0],
+      [-4000, 1, 1, 0, 0, 0],
+      [-3000, 1, 1, 0, 0, 0],
+    ].each {|year, mon, day, hour, min, sec|
+      t = Time.utc(year, mon, day, hour, min, sec)
+      assert_equal(year, t.year)
+      assert_equal(mon, t.mon)
+      assert_equal(day, t.day)
+      assert_equal(hour, t.hour)
+      assert_equal(min, t.min)
+      assert_equal(sec, t.sec)
+    }
+  end
+
+  def test_1901
+    assert_equal(-0x80000001, Time.utc(1901, 12, 13, 20, 45, 51).tv_sec)
+    [
+      [1901, 12, 13, 20, 45, 50],
+      [1901, 12, 13, 20, 45, 51],
+      [1901, 12, 13, 20, 45, 52], # -0x80000000
+      [1901, 12, 13, 20, 45, 53],
+    ].each {|year, mon, day, hour, min, sec|
+      t = Time.utc(year, mon, day, hour, min, sec)
+      assert_equal(year, t.year)
+      assert_equal(mon, t.mon)
+      assert_equal(day, t.day)
+      assert_equal(hour, t.hour)
+      assert_equal(min, t.min)
+      assert_equal(sec, t.sec)
+    }
+  end
+
+  def test_1970
+    assert_equal(0, Time.utc(1970, 1, 1, 0, 0, 0).tv_sec)
+    [
+      [1969, 12, 31, 23, 59, 59],
+      [1970, 1, 1, 0, 0, 0],
+      [1970, 1, 1, 0, 0, 1],
+    ].each {|year, mon, day, hour, min, sec|
+      t = Time.utc(year, mon, day, hour, min, sec)
+      assert_equal(year, t.year)
+      assert_equal(mon, t.mon)
+      assert_equal(day, t.day)
+      assert_equal(hour, t.hour)
+      assert_equal(min, t.min)
+      assert_equal(sec, t.sec)
+    }
+  end
+
+  def test_2038
+    if no_leap_seconds?
+      assert_equal(0x80000000, Time.utc(2038, 1, 19, 3, 14, 8).tv_sec)
+    end
+    [
+      [2038, 1, 19, 3, 14, 7],
+      [2038, 1, 19, 3, 14, 8],
+      [2038, 1, 19, 3, 14, 9],
+      [2039, 1, 1, 0, 0, 0],
+    ].each {|year, mon, day, hour, min, sec|
+      t = Time.utc(year, mon, day, hour, min, sec)
+      assert_equal(year, t.year)
+      assert_equal(mon, t.mon)
+      assert_equal(day, t.day)
+      assert_equal(hour, t.hour)
+      assert_equal(min, t.min)
+      assert_equal(sec, t.sec)
+    }
+  end
+
+  def test_future
+    [
+      [3000, 1, 1, 0, 0, 0],
+      [4000, 1, 1, 0, 0, 0],
+      [1 << 100, 1, 1, 0, 0, 0],
+    ].each {|year, mon, day, hour, min, sec|
+      t = Time.utc(year, mon, day, hour, min, sec)
+      assert_equal(year, t.year)
+      assert_equal(mon, t.mon)
+      assert_equal(day, t.day)
+      assert_equal(hour, t.hour)
+      assert_equal(min, t.min)
+      assert_equal(sec, t.sec)
+    }
+  end
+
 end
