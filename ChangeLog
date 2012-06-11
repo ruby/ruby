@@ -1,3 +1,11 @@
+Mon Jun 11 22:15:44 2012  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_proc_exec_n): deprecated.
+	  (rb_exec): ditto.
+	  (rb_exec_err): ditto.
+	  (rb_fork): ditto.
+	  (rb_fork_err): ditto.
+
 Mon Jun 11 18:49:52 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: on checking libexecinfo, don't specify /use/local.
