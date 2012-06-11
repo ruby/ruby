@@ -1847,6 +1847,30 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
         char *p;
         int has_meta = 0;
         int has_nonspace = 0;
+        /*
+         * meta characters:
+         *
+         * *    Pathname Expansion
+         * ?    Pathname Expansion
+         * {}   Grouping Commands
+         * []   Pathname Expansion
+         * <>   Redirection
+         * ()   Grouping Commands
+         * ~    Tilde Expansion
+         * &    AND Lists, Asynchronous Lists
+         * |    OR Lists, Pipelines
+         * \    Escape Character
+         * $    Parameter Expansion
+         * ;    Sequential Lists
+         * '    Single-Quotes
+         * `    Command Substitution
+         * "    Double-Quotes
+         * \n   Lists
+         *
+         * #    Comment
+         * =    Assignment preceding command name
+         * %    (used in Parameter Expansion)
+         */
         for (p = RSTRING_PTR(prog); *p; p++) {
             if (!has_nonspace && *p != ' ' && *p != '\t')
                 has_nonspace = 1;
