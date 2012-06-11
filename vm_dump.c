@@ -28,9 +28,8 @@ static void
 control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     ptrdiff_t pc = -1, bp = -1;
-    ptrdiff_t lfp = cfp->lfp - th->stack;
-    ptrdiff_t dfp = cfp->dfp - th->stack;
-    char lfp_in_heap = ' ', dfp_in_heap = ' ';
+    ptrdiff_t ep = cfp->ep - th->stack;
+    char ep_in_heap = ' ';
     char posbuf[MAX_POSBUF+1];
     int line = 0;
     int nopos = 0;
@@ -42,13 +41,9 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	biseq_name = "";	/* RSTRING(cfp->block_iseq->location.label)->ptr; */
     }
 
-    if (lfp < 0 || (size_t)lfp > th->stack_size) {
-	lfp = (ptrdiff_t)cfp->lfp;
-	lfp_in_heap = 'p';
-    }
-    if (dfp < 0 || (size_t)dfp > th->stack_size) {
-	dfp = (ptrdiff_t)cfp->dfp;
-	dfp_in_heap = 'p';
+    if (ep < 0 || (size_t)ep > th->stack_size) {
+	ep = (ptrdiff_t)cfp->ep;
+	ep_in_heap = 'p';
     }
     if (cfp->bp) {
 	bp = cfp->bp - th->stack;
@@ -133,8 +128,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	fprintf(stderr, "p:%04"PRIdPTRDIFF" ", pc);
     }
     fprintf(stderr, "s:%04"PRIdPTRDIFF" b:%04"PRIdPTRDIFF" ", (cfp->sp - th->stack), bp);
-    fprintf(stderr, lfp_in_heap == ' ' ? "l:%06"PRIdPTRDIFF" " : "l:%06"PRIxPTRDIFF" ", lfp % 10000);
-    fprintf(stderr, dfp_in_heap == ' ' ? "d:%06"PRIdPTRDIFF" " : "d:%06"PRIxPTRDIFF" ", dfp % 10000);
+    fprintf(stderr, ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "e:%06"PRIxPTRDIFF" ", ep % 10000);
     fprintf(stderr, "%-6s", magic);
     if (line && !nopos) {
 	fprintf(stderr, " %s", posbuf);
@@ -152,9 +146,7 @@ void
 rb_vmdebug_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
 {
 #if 0
-    VALUE *sp = cfp->sp, *bp = cfp->bp;
-    VALUE *lfp = cfp->lfp;
-    VALUE *dfp = cfp->dfp;
+    VALUE *sp = cfp->sp, *bp = cfp->bp, *ep = cfp->ep;
     VALUE *p, *st, *t;
 
     fprintf(stderr, "-- stack frame ------------\n");
@@ -166,10 +158,8 @@ rb_vmdebug_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
 	    fprintf(stderr, " (= %ld)", (long)((VALUE *)GC_GUARDED_PTR_REF(t) - th->stack));
 	}
 
-	if (p == lfp)
-	    fprintf(stderr, " <- lfp");
-	if (p == dfp)
-	    fprintf(stderr, " <- dfp");
+	if (p == ep)
+	    fprintf(stderr, " <- ep");
 	if (p == bp)
 	    fprintf(stderr, " <- bp");	/* should not be */
 
@@ -194,7 +184,7 @@ rb_vmdebug_stack_dump_raw_current(void)
 }
 
 void
-rb_vmdebug_env_dump_raw(rb_env_t *env, VALUE *lfp, VALUE *dfp)
+rb_vmdebug_env_dump_raw(rb_env_t *env, VALUE *ep)
 {
     int i;
     fprintf(stderr, "-- env --------------------\n");
@@ -204,10 +194,8 @@ rb_vmdebug_env_dump_raw(rb_env_t *env, VALUE *lfp, VALUE *dfp)
 	for (i = 0; i < env->env_size; i++) {
 	    fprintf(stderr, "%04d: %08"PRIxVALUE" (%p)", -env->local_size + i, env->env[i],
 		   (void *)&env->env[i]);
-	    if (&env->env[i] == lfp)
-		fprintf(stderr, " <- lfp");
-	    if (&env->env[i] == dfp)
-		fprintf(stderr, " <- dfp");
+	    if (&env->env[i] == ep)
+		fprintf(stderr, " <- ep");
 	    fprintf(stderr, "\n");
 	}
 
@@ -232,7 +220,7 @@ rb_vmdebug_proc_dump_raw(rb_proc_t *proc)
     fprintf(stderr, "-- proc -------------------\n");
     fprintf(stderr, "self: %s\n", selfstr);
     GetEnvPtr(proc->envval, env);
-    rb_vmdebug_env_dump_raw(env, proc->block.lfp, proc->block.dfp);
+    rb_vmdebug_env_dump_raw(env, proc->block.ep);
 }
 
 void
@@ -251,8 +239,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 
     VALUE rstr;
     VALUE *sp = cfp->sp;
-    VALUE *lfp = cfp->lfp;
-    VALUE *dfp = cfp->dfp;
+    VALUE *ep = cfp->ep;
 
     int argc = 0, local_size = 0;
     const char *name;
@@ -287,14 +274,11 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_IFUNC ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_EVAL) {
 
-	VALUE *ptr = dfp - local_size;
+	VALUE *ptr = ep - local_size;
 
 	vm_stack_dump_each(th, cfp + 1);
 	control_frame_dump(th, cfp);
 
-	if (lfp != dfp) {
-	    local_size++;
-	}
 	for (i = 0; i < argc; i++) {
 	    rstr = rb_inspect(*ptr);
 	    fprintf(stderr, "  arg   %2d: %8s (%p)\n", i, StringValueCStr(rstr),
@@ -337,22 +321,20 @@ rb_vmdebug_debug_print_register(rb_thread_t *th)
 {
     rb_control_frame_t *cfp = th->cfp;
     ptrdiff_t pc = -1;
-    ptrdiff_t lfp = cfp->lfp - th->stack;
-    ptrdiff_t dfp = cfp->dfp - th->stack;
+    ptrdiff_t ep = cfp->ep - th->stack;
     ptrdiff_t cfpi;
 
     if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	pc = cfp->pc - cfp->iseq->iseq_encoded;
     }
 
-    if (lfp < 0 || (size_t)lfp > th->stack_size)
-	lfp = -1;
-    if (dfp < 0 || (size_t)dfp > th->stack_size)
-	dfp = -1;
+    if (ep < 0 || (size_t)ep > th->stack_size) {
+	ep = -1;
+    }
 
     cfpi = ((rb_control_frame_t *)(th->stack + th->stack_size)) - cfp;
-    fprintf(stderr, "  [PC] %04"PRIdPTRDIFF", [SP] %04"PRIdPTRDIFF", [LFP] %04"PRIdPTRDIFF", [DFP] %04"PRIdPTRDIFF", [CFP] %04"PRIdPTRDIFF"\n",
-	    pc, (cfp->sp - th->stack), lfp, dfp, cfpi);
+    fprintf(stderr, "  [PC] %04"PRIdPTRDIFF", [SP] %04"PRIdPTRDIFF", [EP] %04"PRIdPTRDIFF", [CFP] %04"PRIdPTRDIFF"\n",
+	    pc, (cfp->sp - th->stack), ep, cfpi);
 }
 
 void
@@ -371,8 +353,13 @@ rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp)
     if (iseq != 0 && VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_FINISH) {
 	VALUE *seq = iseq->iseq;
 	ptrdiff_t pc = cfp->pc - iseq->iseq_encoded;
+	int i;
 
-	printf("%3"PRIdPTRDIFF" ", VM_CFP_CNT(th, cfp));
+	for (i=0; i<(int)VM_CFP_CNT(th, cfp); i++) {
+	    printf(" ");
+	}
+	printf("| ");
+	/* printf("%3"PRIdPTRDIFF" ", VM_CFP_CNT(th, cfp)); */
 	if (pc >= 0) {
 	    rb_iseq_disasm_insn(0, seq, (size_t)pc, iseq, 0);
 	}
@@ -518,11 +505,10 @@ vm_analysis_register(int reg, int isset)
     static const char regstrs[][5] = {
 	"pc",			/* 0 */
 	"sp",			/* 1 */
-	"cfp",			/* 2 */
-	"lfp",			/* 3 */
-	"dfp",			/* 4 */
-	"self",			/* 5 */
-	"iseq",			/* 6 */
+	"ep",                   /* 2 */
+	"cfp",			/* 3 */
+	"self",			/* 4 */
+	"iseq",			/* 5 */
     };
     static const char getsetstr[][4] = {
 	"get",
@@ -568,7 +554,7 @@ rb_vmdebug_thread_dump_state(VALUE self)
 
     fprintf(stderr, "Thread state dump:\n");
     fprintf(stderr, "pc : %p, sp : %p\n", (void *)cfp->pc, (void *)cfp->sp);
-    fprintf(stderr, "cfp: %p, lfp: %p, dfp: %p\n", (void *)cfp, (void *)cfp->lfp, (void *)cfp->dfp);
+    fprintf(stderr, "cfp: %p, ep : %p\n", (void *)cfp, (void *)cfp->ep);
 
     return Qnil;
 }

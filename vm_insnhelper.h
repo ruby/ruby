@@ -81,8 +81,7 @@ extern VALUE ruby_vm_const_missing_count;
 #define REG_CFP (reg_cfp)
 #define REG_PC  (REG_CFP->pc)
 #define REG_SP  (REG_CFP->sp)
-#define REG_LFP (REG_CFP->lfp)
-#define REG_DFP (REG_CFP->dfp)
+#define REG_EP  (REG_CFP->ep)
 
 #define RESTORE_REGS() do { \
   REG_CFP = th->cfp; \
@@ -91,16 +90,29 @@ extern VALUE ruby_vm_const_missing_count;
 #define REG_A   reg_a
 #define REG_B   reg_b
 
+enum vm_regan_regtype {
+    VM_REGAN_PC = 0,
+    VM_REGAN_SP = 1,
+    VM_REGAN_EP = 2,
+    VM_REGAN_CFP = 3,
+    VM_REGAN_SELF = 4,
+    VM_REGAN_ISEQ = 5,
+};
+enum vm_regan_acttype {
+    VM_REGAN_ACT_GET = 0,
+    VM_REGAN_ACT_SET = 1,
+};
+
 #ifdef COLLECT_USAGE_ANALYSIS
 #define USAGE_ANALYSIS_REGISTER_HELPER(a, b, v) \
-  (USAGE_ANALYSIS_REGISTER((a), (b)), (v))
+  (USAGE_ANALYSIS_REGISTER((VM_REGAN_#a), (VM_REGAN_ACT_#b)), (v))
 #else
 #define USAGE_ANALYSIS_REGISTER_HELPER(a, b, v) (v)
 #endif
 
 /* PC */
-#define GET_PC()           (USAGE_ANALYSIS_REGISTER_HELPER(0, 0, REG_PC))
-#define SET_PC(x)          (REG_PC = (USAGE_ANALYSIS_REGISTER_HELPER(0, 1, (x))))
+#define GET_PC()           (USAGE_ANALYSIS_REGISTER_HELPER(PC, GET, REG_PC))
+#define SET_PC(x)          (REG_PC = (USAGE_ANALYSIS_REGISTER_HELPER(PC, SET, (x))))
 #define GET_CURRENT_INSN() (*GET_PC())
 #define GET_OPERAND(n)     (GET_PC()[(n)])
 #define ADD_PC(n)          (SET_PC(REG_PC + (n)))
@@ -108,18 +120,17 @@ extern VALUE ruby_vm_const_missing_count;
 #define GET_PC_COUNT()     (REG_PC - GET_ISEQ()->iseq_encoded)
 #define JUMP(dst)          (REG_PC += (dst))
 
-/* FP */
-#define GET_CFP()  (USAGE_ANALYSIS_REGISTER_HELPER(2, 0, REG_CFP))
-#define GET_LFP()  (USAGE_ANALYSIS_REGISTER_HELPER(3, 0, REG_LFP))
-#define SET_LFP(x) (REG_LFP = (USAGE_ANALYSIS_REGISTER_HELPER(3, 1, (x))))
-#define GET_DFP()  (USAGE_ANALYSIS_REGISTER_HELPER(4, 0, REG_DFP))
-#define SET_DFP(x) (REG_DFP = (USAGE_ANALYSIS_REGISTER_HELPER(4, 1, (x))))
+/* frame pointer, environment pointer */
+#define GET_CFP()  (USAGE_ANALYSIS_REGISTER_HELPER(CFP, GET, REG_CFP))
+#define GET_EP()   (USAGE_ANALYSIS_REGISTER_HELPER(EP, GET, REG_EP))
+#define SET_EP(x)  (REG_EP = (USAGE_ANALYSIS_REGISTER_HELPER(EP, SET, (x))))
+#define GET_LEP()  (VM_EP_LEP(GET_EP()))
 
 /* SP */
-#define GET_SP()   (USAGE_ANALYSIS_REGISTER_HELPER(1, 0, REG_SP))
-#define SET_SP(x)  (REG_SP  = (USAGE_ANALYSIS_REGISTER_HELPER(1, 1, (x))))
-#define INC_SP(x)  (REG_SP += (USAGE_ANALYSIS_REGISTER_HELPER(1, 1, (x))))
-#define DEC_SP(x)  (REG_SP -= (USAGE_ANALYSIS_REGISTER_HELPER(1, 1, (x))))
+#define GET_SP()   (USAGE_ANALYSIS_REGISTER_HELPER(SP, GET, REG_SP))
+#define SET_SP(x)  (REG_SP  = (USAGE_ANALYSIS_REGISTER_HELPER(SP, SET, (x))))
+#define INC_SP(x)  (REG_SP += (USAGE_ANALYSIS_REGISTER_HELPER(SP, SET, (x))))
+#define DEC_SP(x)  (REG_SP -= (USAGE_ANALYSIS_REGISTER_HELPER(SP, SET, (x))))
 #define SET_SV(x)  (*GET_SP() = (x))
   /* set current stack value as x */
 
@@ -132,7 +143,7 @@ extern VALUE ruby_vm_const_missing_count;
 /* deal with variables                                    */
 /**********************************************************/
 
-#define GET_PREV_DFP(dfp)                ((VALUE *)((dfp)[0] & ~0x03))
+#define GET_PREV_EP(ep)                ((VALUE *)((ep)[0] & ~0x03))
 
 #define GET_GLOBAL(entry)       rb_gvar_get((struct rb_global_entry*)(entry))
 #define SET_GLOBAL(entry, val)  rb_gvar_set((struct rb_global_entry*)(entry), (val))
@@ -170,7 +181,7 @@ extern VALUE ruby_vm_const_missing_count;
     } \
 } while (0)
 
-#define GET_BLOCK_PTR() ((rb_block_t *)(GC_GUARDED_PTR_REF(GET_LFP()[0])))
+#define GET_BLOCK_PTR() ((rb_block_t *)(GC_GUARDED_PTR_REF(GET_LEP()[0])))
 
 /**********************************************************/
 /* deal with control flow 3: exception                    */

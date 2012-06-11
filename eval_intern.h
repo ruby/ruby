@@ -5,7 +5,7 @@
 #include "vm_core.h"
 
 #define PASS_PASSED_BLOCK_TH(th) do { \
-    (th)->passed_block = GC_GUARDED_PTR_REF((rb_block_t *)(th)->cfp->lfp[0]); \
+    (th)->passed_block = rb_vm_control_frame_block_ptr(th->cfp); \
     (th)->cfp->flag |= VM_FRAME_FLAG_PASSED; \
 } while (0)
 

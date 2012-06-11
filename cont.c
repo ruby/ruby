@@ -1059,9 +1059,8 @@ fiber_init(VALUE fibval, VALUE proc)
     th->cfp->pc = 0;
     th->cfp->sp = th->stack + 1;
     th->cfp->bp = 0;
-    th->cfp->lfp = th->stack;
-    *th->cfp->lfp = 0;
-    th->cfp->dfp = th->stack;
+    th->cfp->ep = th->stack;
+    *th->cfp->ep = VM_ENVVAL_BLOCK_PTR(0);
     th->cfp->self = Qnil;
     th->cfp->flag = 0;
     th->cfp->iseq = 0;
@@ -1155,8 +1154,8 @@ rb_fiber_start(void)
 	argv = (argc = cont->argc) > 1 ? RARRAY_PTR(args) : &args;
 	cont->value = Qnil;
 	th->errinfo = Qnil;
-	th->local_lfp = proc->block.lfp;
-	th->local_svar = Qnil;
+	th->root_lep = rb_vm_ep_local_ep(proc->block.ep);
+	th->root_svar = Qnil;
 
 	fib->status = RUNNING;
 	cont->value = rb_vm_invoke_proc(th, proc, proc->block.self, argc, argv, 0);

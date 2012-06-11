@@ -349,17 +349,15 @@ typedef struct {
     rb_iseq_t *iseq;		/* cfp[3] */
     VALUE flag;			/* cfp[4] */
     VALUE self;			/* cfp[5] / block[0] */
-    VALUE *lfp;			/* cfp[6] / block[1] */
-    VALUE *dfp;			/* cfp[7] / block[2] */
-    rb_iseq_t *block_iseq;	/* cfp[8] / block[3] */
-    VALUE proc;			/* cfp[9] / block[4] */
-    const rb_method_entry_t *me;/* cfp[10] */
+    VALUE *ep;			/* cfp[6] / block[1] */
+    rb_iseq_t *block_iseq;	/* cfp[7] / block[2] */
+    VALUE proc;			/* cfp[8] / block[3] */
+    const rb_method_entry_t *me;/* cfp[9] */
 } rb_control_frame_t;
 
 typedef struct rb_block_struct {
     VALUE self;			/* share with method frame if it's only block */
-    VALUE *lfp;			/* share with method frame if it's only block */
-    VALUE *dfp;			/* share with method frame if it's only block */
+    VALUE *ep;			/* share with method frame if it's only block */
     rb_iseq_t *iseq;
     VALUE proc;
 } rb_block_t;
@@ -434,8 +432,8 @@ typedef struct rb_thread_struct {
     /* eval env */
     rb_block_t *base_block;
 
-    VALUE *local_lfp;
-    VALUE local_svar;
+    VALUE *root_lep;
+    VALUE root_svar;
 
     /* thread control */
     rb_thread_id_t thread_id;
@@ -622,7 +620,27 @@ typedef rb_control_frame_t *
 #define GC_GUARDED_PTR_REF(p) ((void *)(((VALUE)(p)) & ~0x03))
 #define GC_GUARDED_PTR_P(p)   (((VALUE)(p)) & 0x01)
 
-#define RUBY_VM_GET_BLOCK_PTR(cfp) ((rb_block_t *)(GC_GUARDED_PTR_REF((cfp)->lfp[0])))
+/*
+ * block frame:
+ *  ep[ 0]: prev frame
+ *  ep[-1]: CREF (for *_eval)
+ *
+ * method frame:
+ *  ep[ 0]: block pointer (ptr | VM_ENVVAL_BLOCK_PTR_FLAG)
+ */
+
+#define VM_ENVVAL_BLOCK_PTR_FLAG 0x02
+#define VM_ENVVAL_BLOCK_PTR(v)     (GC_GUARDED_PTR(v) | VM_ENVVAL_BLOCK_PTR_FLAG)
+#define VM_ENVVAL_BLOCK_PTR_P(v)   ((v) & VM_ENVVAL_BLOCK_PTR_FLAG)
+#define VM_ENVVAL_PREV_EP_PTR(v)   ((VALUE)GC_GUARDED_PTR(v))
+#define VM_ENVVAL_PREV_EP_PTR_P(v) (!(VM_ENVVAL_BLOCK_PTR_P(v)))
+
+#define VM_EP_PREV_EP(ep)   ((VALUE *)GC_GUARDED_PTR_REF((ep)[0]))
+#define VM_EP_BLOCK_PTR(ep) ((rb_block_t *)GC_GUARDED_PTR_REF((ep)[0]))
+#define VM_EP_LEP_P(ep)     VM_ENVVAL_BLOCK_PTR_P((ep)[0])
+
+VALUE *rb_vm_ep_local_ep(VALUE *ep);
+rb_block_t *rb_vm_control_frame_block_ptr(rb_control_frame_t *cfp);
 
 #define RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp) ((cfp)+1)
 #define RUBY_VM_NEXT_CONTROL_FRAME(cfp) ((cfp)-1)
@@ -647,6 +665,9 @@ VALUE rb_proc_alloc(VALUE klass);
 
 /* for debug */
 extern void rb_vmdebug_stack_dump_raw(rb_thread_t *, rb_control_frame_t *);
+extern void rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp);
+extern void rb_vmdebug_debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp);
+
 #define SDR() rb_vmdebug_stack_dump_raw(GET_THREAD(), GET_THREAD()->cfp)
 #define SDR2(cfp) rb_vmdebug_stack_dump_raw(GET_THREAD(), (cfp))
 void rb_vm_bugreport(void);
@@ -666,7 +687,7 @@ VALUE rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 			int argc, const VALUE *argv, const rb_block_t *blockptr);
 VALUE rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass);
 VALUE rb_vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
-void rb_vm_rewrite_dfp_in_errinfo(rb_thread_t *th, rb_control_frame_t *cfp);
+void rb_vm_rewrite_ep_in_errinfo(rb_thread_t *th, rb_control_frame_t *cfp);
 void rb_vm_inc_const_missing_count(void);
 void rb_vm_gvl_destroy(rb_vm_t *vm);
 VALUE rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc,

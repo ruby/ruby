@@ -1,3 +1,60 @@
+Mon Jun 11 12:14:37 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove lfp (local frame pointer) and rename
+	  dfp (dynamic frame pointer) to ep (environment pointer).
+	  This change make VM `normal' (similar to other interpreters).
+	  Before this commit:
+            Each frame has two env pointers lfp and dfp.  lfp points
+	    local environment which is method/class/toplevel frame.
+	    lfp[0] is block pointer.
+	    dfp is block local frame. dfp[0] points previous (parent)
+	    environment pointer.
+	    lfp == dfp when frame is method/class/toplevel.
+	    You can get lfp from dfp by traversing previous environment
+	    pointers.
+	  After this commit:
+	    Each frame has only `ep' to point respective enviornoment.
+	    If there is parent environment, then ep[0] points parent
+	    envioenment (as dfp).  If there are no more environment,
+	    then ep[0] points block pointer (as lfp).  We call such ep
+	    as `LEP' (local EP).  We add some macros to get LEP and to
+	    detect LEP or not.
+	    In short, we replace dfp and lfp with ep and LEP.
+	  rb_block_t and rb_binding_t member `lfp' and `dfp' are removed
+	  and member `ep' is added.
+	  rename rb_thread_t's member `local_lfp' and `local_svar' to
+	  `root_lep' and `root_svar'.
+	  (VM_EP_PREV_EP(ep)): get previous environment pointer.  This macro
+	    assume that ep is not LEP.
+	  (VM_EP_BLOCK_PTR(ep)): get block pointer.  This macro assume
+	    that ep is LEP.
+	  (VM_EP_LEP_P(ep)): detect ep is LEP or not.
+	  (VM_ENVVAL_BLOCK_PTR(ptr)): make block pointer.
+	  (VM_ENVVAL_BLOCK_PTR_P(v)): detect v is block pointer.
+	  (VM_ENVVAL_PREV_EP_PTR(ptr)): make prev environment pointer.
+	  (VM_ENVVAL_PREV_EP_PTR_P(v)): detect v is prev env pointer.
+
+	* vm.c: apply above changes.
+	  (VM_EP_LEP(ep)): get LEP.
+	  (VM_CF_LEP(cfp)): get LEP of cfp->ep.
+	  (VM_CF_PREV_EP(cfp)): utility function VM_EP_PREV_EP(cfp->ep).
+	  (VM_CF_BLOCK_PTR(cfp)): utility function VM_EP_BLOCK_PTR(cfp->ep).
+
+	* vm.c, vm_eval.c, vm_insnhelper.c, vm_insnhelper.h, insns.def:
+	  apply above changes.
+
+	* cont.c: ditto.
+
+	* eval.c, eval_intern.h: ditto.
+
+	* proc.c: ditto.
+
+	* thread.c: ditto.
+
+	* vm_dump.c: ditto.
+
+	* vm_exec.h: fix function name (on vm debug mode).
+
 Mon Jun 11 11:52:18 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* compile.c (iseq_set_sequence): nonstatic initializer of an

@@ -383,17 +383,13 @@ proc_new(VALUE klass, int is_lambda)
     rb_control_frame_t *cfp = th->cfp;
     rb_block_t *block;
 
-    if ((GC_GUARDED_PTR_REF(cfp->lfp[0])) != 0) {
-
-	block = GC_GUARDED_PTR_REF(cfp->lfp[0]);
+    if ((block = rb_vm_control_frame_block_ptr(cfp)) != 0) {
+	/* block found */
     }
     else {
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
-	if ((GC_GUARDED_PTR_REF(cfp->lfp[0])) != 0) {
-
-	    block = GC_GUARDED_PTR_REF(cfp->lfp[0]);
-
+	if ((block = rb_vm_control_frame_block_ptr(cfp)) != 0) {
 	    if (is_lambda) {
 		rb_warn("tried to create Proc object without a block");
 	    }
@@ -418,7 +414,7 @@ proc_new(VALUE klass, int is_lambda)
     }
 
     procval = rb_vm_make_proc(th, block, klass);
-    rb_vm_rewrite_dfp_in_errinfo(th, cfp);
+    rb_vm_rewrite_ep_in_errinfo(th, cfp);
 
     if (is_lambda) {
 	rb_proc_t *proc;
@@ -801,7 +797,7 @@ rb_hash_proc(st_index_t hash, VALUE prc)
     GetProcPtr(prc, proc);
     hash = rb_hash_uint(hash, (st_index_t)proc->block.iseq);
     hash = rb_hash_uint(hash, (st_index_t)proc->envval);
-    return rb_hash_uint(hash, (st_index_t)proc->block.lfp >> 16);
+    return rb_hash_uint(hash, (st_index_t)proc->block.ep >> 16);
 }
 
 /*

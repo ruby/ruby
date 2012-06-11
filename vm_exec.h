@@ -38,7 +38,7 @@ typedef rb_iseq_t *ISEQ;
 #if VMDEBUG > 0
 #define debugs printf
 #define DEBUG_ENTER_INSN(insn) \
-  debug_print_pre(th, GET_CFP());
+  rb_vmdebug_debug_print_pre(th, GET_CFP());
 
 #if OPT_STACK_CACHING
 #define SC_REGS() , reg_a, reg_b
@@ -47,7 +47,7 @@ typedef rb_iseq_t *ISEQ;
 #endif
 
 #define DEBUG_END_INSN() \
-  debug_print_post(th, GET_CFP() SC_REGS());
+  rb_vmdebug_debug_print_post(th, GET_CFP() SC_REGS());
 
 #else
 

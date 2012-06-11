@@ -454,8 +454,8 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 		if (!th->first_func) {
 		    GetProcPtr(th->first_proc, proc);
 		    th->errinfo = Qnil;
-		    th->local_lfp = proc->block.lfp;
-		    th->local_svar = Qnil;
+		    th->root_lep = rb_vm_ep_local_ep(proc->block.ep);
+		    th->root_svar = Qnil;
 		    th->value = rb_vm_invoke_proc(th, proc, proc->block.self,
 						  (int)RARRAY_LEN(args), RARRAY_PTR(args), 0);
 		}

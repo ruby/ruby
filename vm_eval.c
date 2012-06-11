@@ -74,7 +74,7 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	    rb_control_frame_t *reg_cfp = th->cfp;
 	    rb_control_frame_t *cfp =
 		vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
-			      recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
+			      recv, VM_ENVVAL_BLOCK_PTR(blockptr), 0, reg_cfp->sp, 1);
 
 	    cfp->me = me;
 	    val = call_cfunc(def->body.cfunc.func, recv, def->body.cfunc.argc, argc, argv);
@@ -896,7 +896,7 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 		blockptr->proc = 0;
 	    }
 	    else {
-		blockptr = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
+		blockptr = VM_CF_BLOCK_PTR(th->cfp);
 	    }
 	    th->passed_block = blockptr;
 	}
@@ -905,10 +905,10 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
     else {
 	VALUE err = th->errinfo;
 	if (state == TAG_BREAK) {
-	    VALUE *escape_dfp = GET_THROWOBJ_CATCH_POINT(err);
-	    VALUE *cdfp = cfp->dfp;
+	    VALUE *escape_ep = GET_THROWOBJ_CATCH_POINT(err);
+	    VALUE *cep = cfp->ep;
 
-	    if (cdfp == escape_dfp) {
+	    if (cep == escape_ep) {
 		state = 0;
 		th->state = 0;
 		th->errinfo = Qnil;
@@ -932,10 +932,10 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 	    }
 	}
 	else if (state == TAG_RETRY) {
-	    VALUE *escape_dfp = GET_THROWOBJ_CATCH_POINT(err);
-	    VALUE *cdfp = cfp->dfp;
+	    VALUE *escape_ep = GET_THROWOBJ_CATCH_POINT(err);
+	    VALUE *cep = cfp->ep;
 
-	    if (cdfp == escape_dfp) {
+	    if (cep == escape_ep) {
 		state = 0;
 		th->state = 0;
 		th->errinfo = Qnil;
@@ -1247,10 +1247,10 @@ yield_under(VALUE under, VALUE self, VALUE values)
     rb_block_t block, *blockptr;
     NODE *cref;
 
-    if ((blockptr = GC_GUARDED_PTR_REF(th->cfp->lfp[0])) != 0) {
+    if ((blockptr = VM_CF_BLOCK_PTR(th->cfp)) != 0) {
 	block = *blockptr;
 	block.self = self;
-	th->cfp->lfp[0] = GC_GUARDED_PTR(&block);
+	VM_CF_LEP(th->cfp)[0] = VM_ENVVAL_BLOCK_PTR(&block);
     }
     cref = vm_cref_push(th, under, NOEX_PUBLIC, blockptr);
     cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL;
@@ -1611,15 +1611,15 @@ rb_f_local_variables(void)
 		}
 	    }
 	}
-	if (cfp->lfp != cfp->dfp) {
+	if (!VM_EP_LEP_P(cfp->ep)) {
 	    /* block */
-	    VALUE *dfp = GC_GUARDED_PTR_REF(cfp->dfp[0]);
+	    VALUE *ep = VM_CF_PREV_EP(cfp);
 
-	    if (vm_collect_local_variables_in_heap(th, dfp, ary)) {
+	    if (vm_collect_local_variables_in_heap(th, ep, ary)) {
 		break;
 	    }
 	    else {
-		while (cfp->dfp != dfp) {
+		while (cfp->ep != ep) {
 		    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 		}
 	    }
@@ -1660,7 +1660,7 @@ rb_f_block_given_p(void)
     rb_control_frame_t *cfp = th->cfp;
     cfp = vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
 
-    if (cfp != 0 && RUBY_VM_GET_BLOCK_PTR(cfp)) {
+    if (cfp != 0 && VM_CF_BLOCK_PTR(cfp)) {
 	return Qtrue;
     }
     else {

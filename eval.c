@@ -604,7 +604,7 @@ rb_block_given_p(void)
 {
     rb_thread_t *th = GET_THREAD();
 
-    if (RUBY_VM_GET_BLOCK_PTR(th->cfp)) {
+    if (rb_vm_control_frame_block_ptr(th->cfp)) {
 	return TRUE;
     }
     else {
@@ -1054,12 +1054,12 @@ errinfo_place(rb_thread_t *th)
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	    if (cfp->iseq->type == ISEQ_TYPE_RESCUE) {
-		return &cfp->dfp[-2];
+		return &cfp->ep[-2];
 	    }
 	    else if (cfp->iseq->type == ISEQ_TYPE_ENSURE &&
-		     !RB_TYPE_P(cfp->dfp[-2], T_NODE) &&
-		     !FIXNUM_P(cfp->dfp[-2])) {
-		return &cfp->dfp[-2];
+		     !RB_TYPE_P(cfp->ep[-2], T_NODE) &&
+		     !FIXNUM_P(cfp->ep[-2])) {
+		return &cfp->ep[-2];
 	    }
 	}
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
