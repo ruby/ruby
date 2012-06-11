@@ -1449,9 +1449,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		      case TS_CDHASH:
 			{
 			    VALUE map = operands[j];
-			    struct cdhash_set_label_struct data = {
-				map, pos, len,
-			    };
+			    struct cdhash_set_label_struct data;
+                            data.hash = map;
+                            data.pos = pos;
+                            data.len = len;
 			    rb_hash_foreach(map, cdhash_set_label_i, (VALUE)&data);
 
 			    hide_obj(map);
@@ -2271,7 +2272,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * cond,
 enum compile_array_type_t {
     COMPILE_ARRAY_TYPE_ARRAY,
     COMPILE_ARRAY_TYPE_HASH,
-    COMPILE_ARRAY_TYPE_ARGS,
+    COMPILE_ARRAY_TYPE_ARGS
 };
 
 static int

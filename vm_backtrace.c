@@ -44,7 +44,7 @@ typedef struct rb_backtrace_location_struct {
 	LOCATION_TYPE_ISEQ = 1,
 	LOCATION_TYPE_ISEQ_CALCED,
 	LOCATION_TYPE_CFUNC,
-	LOCATION_TYPE_IFUNC,
+	LOCATION_TYPE_IFUNC
     } type;
 
     union {

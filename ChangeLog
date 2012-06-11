@@ -1,3 +1,13 @@
+Mon Jun 11 11:52:18 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* compile.c (iseq_set_sequence): nonstatic initializer of an
+	  aggregate type is a C99ism.
+
+	* compile.c (enum compile_array_type_t): comma at the end of enum
+	  list is a C99ism.
+
+	* vm_backtrace.c (enum LOCATION_TYPE): ditto.
+
 Mon Jun 11 06:31:33 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_proc_exec_n): revert the function removed at r35889.
