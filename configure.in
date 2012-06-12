@@ -584,6 +584,7 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     warnflags=
 fi
 if test "$GCC" = yes; then
+    test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-ggdb3, [debugflags=-ggdb])}
     test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-ggdb, [debugflags=-ggdb])}
     test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-g3, [debugflags=-g3])}
 
@@ -606,6 +607,12 @@ if test "$GCC" = yes; then
 	RUBY_APPEND_OPTION(XLDFLAGS, -fstack-protector)
 	RUBY_APPEND_OPTION(LDFLAGS, -fstack-protector)
     fi
+
+    # ANSI (no XCFLAGS because this is C only)
+    RUBY_TRY_CFLAGS(-ansi -std=iso9899:199409, [
+      RUBY_APPEND_OPTION(warnflags, -ansi -std=iso9899:199409)
+      RUBY_APPEND_OPTION(rb_cv_warnflags, -ansi -std=iso9899:199409)
+    ])
 
     # suppress annoying -Wstrict-overflow warnings
     RUBY_TRY_CFLAGS(-fno-strict-overflow, [RUBY_APPEND_OPTION(XCFLAGS, -fno-strict-overflow)])

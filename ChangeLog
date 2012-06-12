@@ -1,3 +1,8 @@
+Tue Jun 12 18:39:59 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* configure.in: enable strict ANSI mode by default in case of GCC,
+	  requested by _ko1.
+
 Tue Jun 12 06:40:23 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_exec_fillarg): detect '#' as a meta character.
