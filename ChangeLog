@@ -1,3 +1,7 @@
+Tue Jun 12 22:49:42 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* process.c (rb_exec_arg_fixup): fix compile error
+
 Tue Jun 12 21:40:13 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_exec_fillarg): treat '=' character as a meta

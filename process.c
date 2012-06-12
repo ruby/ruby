@@ -2055,7 +2055,7 @@ rb_execarg_fixup(struct rb_exec_arg *e)
 void
 rb_exec_arg_fixup(struct rb_exec_arg *e)
 {
-    return rb_execarg_fixup(e);
+    rb_execarg_fixup(e);
 }
 
 static void
