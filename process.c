@@ -1503,7 +1503,7 @@ static int rlimit_type_by_lname(const char *name);
 #endif
 
 int
-rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
+rb_execarg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
 {
     VALUE options = e->options;
     ID id;
@@ -1636,13 +1636,19 @@ redirect:
     return ST_CONTINUE;
 }
 
+int
+rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
+{
+    return rb_execarg_addopt(e, key, val);
+}
+
 static int
 check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 {
     VALUE key = (VALUE)st_key;
     VALUE val = (VALUE)st_val;
     struct rb_exec_arg *e = (struct rb_exec_arg *)arg;
-    return rb_exec_arg_addopt(e, key, val);
+    return rb_execarg_addopt(e, key, val);
 }
 
 static VALUE
@@ -1942,13 +1948,19 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
 }
 
 VALUE
-rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
+rb_execarg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
 {
     VALUE prog;
     VALUE env = Qnil, opthash = Qnil;
     prog = rb_exec_getargs(&argc, &argv, accept_shell, &env, &opthash);
     rb_exec_fillarg(prog, argc, argv, env, opthash, e);
     return e->use_shell ? e->invoke.sh.shell_script : e->invoke.cmd.command_name;
+}
+
+VALUE
+rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
+{
+    return rb_execarg_init(argc, argv, accept_shell, e);
 }
 
 static int
@@ -1970,7 +1982,7 @@ fill_envp_buf_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 static long run_exec_dup2_tmpbuf_size(long n);
 
 void
-rb_exec_arg_fixup(struct rb_exec_arg *e)
+rb_execarg_fixup(struct rb_exec_arg *e)
 {
     VALUE unsetenv_others, envopts;
     VALUE ary;
@@ -2040,11 +2052,17 @@ rb_exec_arg_fixup(struct rb_exec_arg *e)
     }
 }
 
+void
+rb_exec_arg_fixup(struct rb_exec_arg *e)
+{
+    return rb_execarg_fixup(e);
+}
+
 static void
 rb_exec_arg_prepare(struct rb_exec_arg *earg, int argc, VALUE *argv)
 {
-    rb_exec_arg_init(argc, argv, TRUE, earg);
-    rb_exec_arg_fixup(earg);
+    rb_execarg_init(argc, argv, TRUE, earg);
+    rb_execarg_fixup(earg);
 }
 
 static int rb_exec_without_timer_thread(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen);
@@ -2556,7 +2574,7 @@ save_env(VALUE save)
 
 /* This function should be async-signal-safe when _s_ is not NULL.  Hopefully it is. */
 int
-rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char *errmsg, size_t errmsg_buflen)
+rb_execarg_run_options(const struct rb_exec_arg *e, struct rb_exec_arg *s, char *errmsg, size_t errmsg_buflen)
 {
     VALUE options = e->options;
     VALUE soptions = Qnil;
@@ -2682,9 +2700,15 @@ rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char
 }
 
 int
+rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char *errmsg, size_t errmsg_buflen)
+{
+    return rb_execarg_run_options(e, s, errmsg, errmsg_buflen);
+}
+
+int
 rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
 {
-    return rb_run_exec_options_err(e, s, NULL, 0);
+    return rb_execarg_run_options(e, s, NULL, 0);
 }
 
 /* This function should be async-signal-safe.  Hopefully it is. */
@@ -2699,7 +2723,7 @@ rb_exec_async_signal_safe(const struct rb_exec_arg *e, char *errmsg, size_t errm
 
     before_exec_async_signal_safe(); /* async-signal-safe */
 
-    if (rb_run_exec_options_err(e, sargp, errmsg, errmsg_buflen) < 0) { /* hopefully async-signal-safe */
+    if (rb_execarg_run_options(e, sargp, errmsg, errmsg_buflen) < 0) { /* hopefully async-signal-safe */
         goto failure;
     }
 

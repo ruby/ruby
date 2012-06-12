@@ -1,3 +1,34 @@
+Tue Jun 12 20:29:19 2012  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_exec_arg_init): deprecated.
+	  (rb_exec_arg_addopt): ditto.
+	  (rb_exec_arg_fixup): ditto.
+	  (rb_run_exec_options): ditto.
+	  (rb_run_exec_options_err): ditto.
+
+	* internal.h (rb_execarg_init): declared.
+	  (rb_execarg_addopt): ditto.
+	  (rb_execarg_fixup): ditto.
+	  (rb_execarg_run_options): ditto.
+
+	* process.c: call rb_execarg_addopt, rb_execarg_fixup,
+	  rb_execarg_run_options, rb_execarg_init.
+	  (rb_execarg_addopt): renamed from rb_exec_arg_addopt.
+	  (rb_exec_arg_addopt): stub to call rb_execarg_addopt.
+	  (rb_execarg_init): renamed from rb_exec_arg_init.
+	  (rb_exec_arg_init): stub to call rb_execarg_init.
+	  (rb_execarg_fixup): renamed from rb_exec_arg_fixup.
+	  (rb_exec_arg_fixup): stub to call rb_execarg_fixup.
+	  (rb_execarg_run_options): renamed from rb_run_exec_options_err.
+	  (rb_run_exec_options_err): stub to call rb_execarg_run_options.
+	  (rb_run_exec_options): call rb_execarg_run_options.
+
+	* io.c: call rb_execarg_addopt, rb_execarg_fixup,
+	  rb_execarg_run_options, rb_execarg_init.
+
+	* ext/pty/pty.c (establishShell): call rb_execarg_init and
+	  rb_execarg_fixup.
+
 Tue Jun 12 18:39:59 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* configure.in: enable strict ANSI mode by default in case of GCC,

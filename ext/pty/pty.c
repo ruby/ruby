@@ -176,8 +176,8 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 	argv = &v;
     }
 
-    rb_exec_arg_init(argc, argv, 1, &carg.earg);
-    rb_exec_arg_fixup(&carg.earg);
+    rb_execarg_init(argc, argv, 1, &carg.earg);
+    rb_execarg_fixup(&carg.earg);
 
     getDevice(&master, &slave, SlaveName, 0);
 

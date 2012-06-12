@@ -266,6 +266,10 @@ void rb_maygvl_fd_fix_cloexec(int fd);
 /* process.c */
 int rb_exec_async_signal_safe(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen);
 rb_pid_t rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds, char *errmsg, size_t errmsg_buflen);
+VALUE rb_execarg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e);
+int rb_execarg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val);
+void rb_execarg_fixup(struct rb_exec_arg *e);
+int rb_execarg_run_options(const struct rb_exec_arg *e, struct rb_exec_arg *s, char* errmsg, size_t errmsg_buflen);
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop

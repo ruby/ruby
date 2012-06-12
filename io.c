@@ -5517,27 +5517,27 @@ pipe_open(struct rb_exec_arg *eargp, const char *modestr, int fmode, convconfig_
             rb_sys_fail_str(prog);
         }
         if (eargp) {
-            rb_exec_arg_addopt(eargp, INT2FIX(0), INT2FIX(arg.write_pair[0]));
-            rb_exec_arg_addopt(eargp, INT2FIX(1), INT2FIX(arg.pair[1]));
+            rb_execarg_addopt(eargp, INT2FIX(0), INT2FIX(arg.write_pair[0]));
+            rb_execarg_addopt(eargp, INT2FIX(1), INT2FIX(arg.pair[1]));
         }
 	break;
       case FMODE_READABLE:
         if (rb_pipe(arg.pair) < 0)
             rb_sys_fail_str(prog);
         if (eargp)
-            rb_exec_arg_addopt(eargp, INT2FIX(1), INT2FIX(arg.pair[1]));
+            rb_execarg_addopt(eargp, INT2FIX(1), INT2FIX(arg.pair[1]));
 	break;
       case FMODE_WRITABLE:
         if (rb_pipe(arg.pair) < 0)
             rb_sys_fail_str(prog);
         if (eargp)
-            rb_exec_arg_addopt(eargp, INT2FIX(0), INT2FIX(arg.pair[0]));
+            rb_execarg_addopt(eargp, INT2FIX(0), INT2FIX(arg.pair[0]));
 	break;
       default:
         rb_sys_fail_str(prog);
     }
     if (eargp) {
-        rb_exec_arg_fixup(arg.execp);
+        rb_execarg_fixup(arg.execp);
 	pid = rb_fork_async_signal_safe(&status, popen_exec, &arg, arg.execp->redirect_fds, errmsg, sizeof(errmsg));
     }
     else {
@@ -5595,28 +5595,28 @@ pipe_open(struct rb_exec_arg *eargp, const char *modestr, int fmode, convconfig_
             rb_sys_fail_str(prog);
         }
         if (eargp) {
-            rb_exec_arg_addopt(eargp, INT2FIX(0), INT2FIX(write_pair[0]));
-            rb_exec_arg_addopt(eargp, INT2FIX(1), INT2FIX(pair[1]));
+            rb_execarg_addopt(eargp, INT2FIX(0), INT2FIX(write_pair[0]));
+            rb_execarg_addopt(eargp, INT2FIX(1), INT2FIX(pair[1]));
         }
 	break;
       case FMODE_READABLE:
         if (rb_pipe(pair) < 0)
             rb_sys_fail_str(prog);
         if (eargp)
-            rb_exec_arg_addopt(eargp, INT2FIX(1), INT2FIX(pair[1]));
+            rb_execarg_addopt(eargp, INT2FIX(1), INT2FIX(pair[1]));
 	break;
       case FMODE_WRITABLE:
         if (rb_pipe(pair) < 0)
             rb_sys_fail_str(prog);
         if (eargp)
-            rb_exec_arg_addopt(eargp, INT2FIX(0), INT2FIX(pair[0]));
+            rb_execarg_addopt(eargp, INT2FIX(0), INT2FIX(pair[0]));
 	break;
       default:
         rb_sys_fail_str(prog);
     }
     if (eargp) {
-	rb_exec_arg_fixup(eargp);
-	rb_run_exec_options(eargp, &sarg);
+	rb_execarg_fixup(eargp);
+	rb_execarg_run_options(eargp, &sarg, NULL, 0);
     }
     while ((pid = (args ?
 		   rb_w32_aspawn(P_NOWAIT, cmd, args) :
@@ -5633,7 +5633,7 @@ pipe_open(struct rb_exec_arg *eargp, const char *modestr, int fmode, convconfig_
 	    {
 		int e = errno;
 		if (eargp)
-		    rb_run_exec_options(&sarg, NULL);
+		    rb_execarg_run_options(&sarg, NULL, NULL, 0);
 		close(pair[0]);
 		close(pair[1]);
 		if ((fmode & (FMODE_READABLE|FMODE_WRITABLE)) == (FMODE_READABLE|FMODE_WRITABLE)) {
@@ -5650,7 +5650,7 @@ pipe_open(struct rb_exec_arg *eargp, const char *modestr, int fmode, convconfig_
     RB_GC_GUARD(argbuf);
 
     if (eargp)
-	rb_run_exec_options(&sarg, NULL);
+	rb_execarg_run_options(&sarg, NULL, NULL, 0);
     if ((fmode & FMODE_READABLE) && (fmode & FMODE_WRITABLE)) {
         close(pair[1]);
         fd = pair[0];
@@ -5671,12 +5671,12 @@ pipe_open(struct rb_exec_arg *eargp, const char *modestr, int fmode, convconfig_
 	cmd = StringValueCStr(prog);
     }
     if (eargp) {
-	rb_exec_arg_fixup(eargp);
-	rb_run_exec_options(eargp, &sarg);
+	rb_execarg_fixup(eargp);
+	rb_execarg_run_options(eargp, &sarg, NULL, 0);
     }
     fp = popen(cmd, modestr);
     if (eargp)
-	rb_run_exec_options(&sarg, NULL);
+	rb_execarg_run_options(&sarg, NULL, NULL, 0);
     if (!fp) rb_sys_fail_path(prog);
     fd = fileno(fp);
 #endif
@@ -5727,7 +5727,7 @@ static VALUE
 pipe_open_v(int argc, VALUE *argv, const char *modestr, int fmode, convconfig_t *convconfig)
 {
     struct rb_exec_arg earg;
-    rb_exec_arg_init(argc, argv, FALSE, &earg);
+    rb_execarg_init(argc, argv, FALSE, &earg);
     return pipe_open(&earg, modestr, fmode, convconfig);
 }
 
@@ -5747,7 +5747,7 @@ pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig
         return pipe_open(NULL, modestr, fmode, convconfig);
     }
 
-    rb_exec_arg_init(argc, argv, TRUE, &earg);
+    rb_execarg_init(argc, argv, TRUE, &earg);
     return pipe_open(&earg, modestr, fmode, convconfig);
 }
 
