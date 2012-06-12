@@ -1244,8 +1244,18 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 
 
 /*
+ * Call-seq:
  *
+ *	array.indexes(elem)	-> array
+ *
+ * Returns an array of indexes of the word into the concerned array
+ *
+ * 	a = ["a", "b", "c", "a"]
+ *	a.indexes("a") 		# => [0, 3]
+ *	a.index_all("a")	# => [0, 3]
+ *	a.indexes("b")		# => [1]
  * 
+ * This method also has an alias which is Array#index_all
  */
 static VALUE
 rb_ary_indexes(int argc, VALUE *argv, VALUE ary)
