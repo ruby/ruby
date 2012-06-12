@@ -1,6 +1,6 @@
 Tue Jun 12 21:40:13 2012  Tanaka Akira  <akr@fsij.org>
 
-	* process.c (rb_exec_fillarg): treat '=' character as an meta
+	* process.c (rb_exec_fillarg): treat '=' character as a meta
 	  character to detect assignments preceding command name.
 
 Tue Jun 12 20:29:19 2012  Tanaka Akira  <akr@fsij.org>
