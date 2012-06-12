@@ -1433,4 +1433,11 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_sh_env
+    IO.popen("foofoo=barbar env") {|f|
+      lines = f.readlines
+      assert_operator(lines, :include?, "foofoo=barbar\n")
+    }
+  end if File.executable?("/bin/sh")
+
 end
