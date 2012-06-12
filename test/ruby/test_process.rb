@@ -1433,6 +1433,12 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_sh_comment
+    IO.popen("echo a # fofoof") {|f|
+      assert_equal("a\n", f.read)
+    }
+  end if File.executable?("/bin/sh")
+
   def test_sh_env
     IO.popen("foofoo=barbar env") {|f|
       lines = f.readlines
