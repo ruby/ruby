@@ -2382,6 +2382,7 @@ MESSAGE
 
   sep = config_string('BUILD_FILE_SEPARATOR') {|s| ":/=#{s}" if s != "/"} || ""
   CLEANINGS = "
+clean-static::
 clean-rb-default::
 clean-rb::
 clean-so::

@@ -1,3 +1,8 @@
+Tue Jun 12 23:45:36 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/mkmf.rb: add dummy clean-static target to prevent errors for the
+	  case real clean-static target doesn't exist.
+
 Tue Jun 12 22:49:42 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* process.c (rb_exec_arg_fixup): fix compile error
