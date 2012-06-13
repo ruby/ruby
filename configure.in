@@ -618,9 +618,7 @@ if test "$GCC" = yes; then
       # extension libs cannot include those headers.
     ],
     [cygwin*], [
-      # needs C99 to isinf() and so on
-        RUBY_APPEND_OPTION(warnflags, -ansi -std=c99)
-        RUBY_APPEND_OPTION(rb_cv_warnflags, -ansi -std=c99)
+      # ditto
     ],
     [
       # ANSI (no XCFLAGS because this is C only)
