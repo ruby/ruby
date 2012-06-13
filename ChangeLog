@@ -1,3 +1,8 @@
+Thu Jun 14 06:21:00 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/drb/drb.rb:  Replace broken links to the English DRb book.
+	  Patch by Zachary Scott.  [ruby-trunk - Bug #6544]
+
 Thu Jun 14 06:17:47 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/observer.rb:  Update broken link to the Programming Ruby book.

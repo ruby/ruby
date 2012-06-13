@@ -34,15 +34,9 @@
 # [http://www2a.biglobe.ne.jp/~seki/ruby/druby.en.html]
 #    The English version of the dRuby home page.
 #
-# [http://www.chadfowler.com/ruby/drb.html]
-#    A quick tutorial introduction to using dRuby by Chad Fowler.
-#
-# [http://www.linux-mag.com/2002-09/ruby_05.html]
-#   A tutorial introduction to dRuby in Linux Magazine by Dave Thomas.
-#   Includes a discussion of Rinda.
-#
-# [http://www.eng.cse.dmu.ac.uk/~hgs/ruby/dRuby/]
-#   Links to English-language Ruby material collected by Hugh Sasse.
+# [http://pragprog.com/book/sidruby/the-druby-book]
+#    The dRuby Book: Distributed and Parallel Computing with Ruby
+#    by Masatoshi Seki and Makoto Inoue
 #
 # [http://www.ruby-doc.org/docs/ProgrammingRuby/html/ospace.html]
 #   The chapter from *Programming* *Ruby* by Dave Thomas and Andy Hunt
