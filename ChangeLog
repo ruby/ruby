@@ -1,4 +1,7 @@
-Wed Jun 13 10:20:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jun 13 10:20:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_exec_fillarg): get rid of SIZE_T_MAX which may need
+	  more headers.
 
 	* process.c (rb_exec_fillarg): fix array element size.  "continue" and
 	  "readonly" exceeded the size.

@@ -1938,7 +1938,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
 		    has_meta = 1;
 		}
 		else if (*p == '/') {
-		    first.len = SIZE_T_MAX; /* longer than any posix_sh_cmds */
+		    first.len = 0x100; /* longer than any posix_sh_cmds */
 		}
 	    }
 	    if (has_meta)
