@@ -1,3 +1,18 @@
+Thu Jun 14 00:16:59 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/net/http/responses.rb, lib/webrick/httpstatus.rb: Add HTTP
+	  response codes added in RFCs 2817 and 4918.  [ruby-core:45547]
+	  [Feature #6569]
+
+	* lib/net/http/responses.rb: Rename Net::HTTPMultipleChoice to
+	  Net::HTTPMultipleChoices, leaving the former as alias to the
+	  latter for backward compatibitily.  [ruby-core:45547]
+	  [Feature #6569]
+
+	* lib/net/http/responses.rb: Add comments about unused,
+	  still-in-draft and private extension response codes.
+	  [ruby-core:45547] [Feature #6569]
+
 Wed Jun 13 22:44:32 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/dl/test_func.rb (test_qsort1, test_qsort2): use TYPE_SIZE_T

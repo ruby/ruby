@@ -30,6 +30,7 @@ end
 class Net::HTTPSwitchProtocol < Net::HTTPInformation     # 101
   HAS_BODY = false
 end
+# 102 - RFC 2518; removed in RFC 4918
 
 class Net::HTTPOK < Net::HTTPSuccess                            # 200
   HAS_BODY = true
@@ -52,10 +53,16 @@ end
 class Net::HTTPPartialContent < Net::HTTPSuccess                # 206
   HAS_BODY = true
 end
-
-class Net::HTTPMultipleChoice < Net::HTTPRedirection     # 300
+class Net::HTTPMultiStatus < Net::HTTPSuccess                   # 207 - RFC 4918
   HAS_BODY = true
 end
+# 208 Already Reported - RFC 5842; experimental
+# 226 IM Used - RFC 3229; no famous implementation known
+
+class Net::HTTPMultipleChoices < Net::HTTPRedirection    # 300
+  HAS_BODY = true
+end
+Net::HTTPMultipleChoice = Net::HTTPMultipleChoices
 class Net::HTTPMovedPermanently < Net::HTTPRedirection   # 301
   HAS_BODY = true
 end
@@ -72,10 +79,11 @@ end
 class Net::HTTPUseProxy < Net::HTTPRedirection           # 305
   HAS_BODY = false
 end
-# 306 unused
+# 306 Switch Proxy - no longer unused
 class Net::HTTPTemporaryRedirect < Net::HTTPRedirection  # 307
   HAS_BODY = true
 end
+# 308 Permanent Redirect - in draft
 
 class Net::HTTPBadRequest < Net::HTTPClientError                    # 400
   HAS_BODY = true
@@ -132,6 +140,21 @@ end
 class Net::HTTPExpectationFailed < Net::HTTPClientError             # 417
   HAS_BODY = true
 end
+# 418 I'm a teapot - RFC 2324; a joke RFC
+# 420 Enhance Your Calm - Twitter
+class Net::HTTPUnprocessableEntity < Net::HTTPSuccess               # 422 - RFC 4918
+  HAS_BODY = true
+end
+class Net::HTTPLocked < Net::HTTPSuccess                            # 423 - RFC 4918
+  HAS_BODY = true
+end
+class Net::HTTPFailedDependency < Net::HTTPSuccess                  # 424 - RFC 4918
+  HAS_BODY = true
+end
+# 425 Unordered Collection - existed only in draft
+class Net::HTTPUpgradeRequired < Net::HTTPSuccess                   # 426 - RFC 2817
+  HAS_BODY = true
+end
 class Net::HTTPPreconditionRequired < Net::HTTPClientError          # 428 - RFC 6585
   HAS_BODY = true
 end
@@ -141,6 +164,10 @@ end
 class Net::HTTPRequestHeaderFieldsTooLarge < Net::HTTPClientError   # 431 - RFC 6585
   HAS_BODY = true
 end
+# 444 No Response - Nginx
+# 449 Retry With - Microsoft
+# 450 Blocked by Windows Parental Controls - Microsoft
+# 499 Client Closed Request - Nginx
 
 class Net::HTTPInternalServerError < Net::HTTPServerError           # 500
   HAS_BODY = true
@@ -160,6 +187,13 @@ end
 class Net::HTTPVersionNotSupported < Net::HTTPServerError           # 505
   HAS_BODY = true
 end
+# 506 Variant Also Negotiates - RFC 2295; experimental
+class Net::HTTPInsufficientStorage < Net::HTTPServerError           # 507 - RFC 4918
+  HAS_BODY = true
+end
+# 508 Loop Detected - RFC 5842; experimental
+# 509 Bandwidth Limit Exceeded - Apache bw/limited extension
+# 510 Not Extended - RFC 2774; experimental
 class Net::HTTPNetworkAuthenticationRequired < Net::HTTPServerError # 511 - RFC 6585
   HAS_BODY = true
 end
@@ -183,8 +217,9 @@ class Net::HTTPResponse
     '204' => Net::HTTPNoContent,
     '205' => Net::HTTPResetContent,
     '206' => Net::HTTPPartialContent,
+    '207' => Net::HTTPMultiStatus,
 
-    '300' => Net::HTTPMultipleChoice,
+    '300' => Net::HTTPMultipleChoices,
     '301' => Net::HTTPMovedPermanently,
     '302' => Net::HTTPFound,
     '303' => Net::HTTPSeeOther,
@@ -210,6 +245,10 @@ class Net::HTTPResponse
     '415' => Net::HTTPUnsupportedMediaType,
     '416' => Net::HTTPRequestedRangeNotSatisfiable,
     '417' => Net::HTTPExpectationFailed,
+    '422' => Net::HTTPUnprocessableEntity,
+    '423' => Net::HTTPLocked,
+    '424' => Net::HTTPFailedDependency,
+    '426' => Net::HTTPUpgradeRequired,
     '428' => Net::HTTPPreconditionRequired,
     '429' => Net::HTTPTooManyRequests,
     '431' => Net::HTTPRequestHeaderFieldsTooLarge,
@@ -220,6 +259,7 @@ class Net::HTTPResponse
     '503' => Net::HTTPServiceUnavailable,
     '504' => Net::HTTPGatewayTimeOut,
     '505' => Net::HTTPVersionNotSupported,
+    '507' => Net::HTTPInsufficientStorage,
     '511' => Net::HTTPNetworkAuthenticationRequired,
   }
 end

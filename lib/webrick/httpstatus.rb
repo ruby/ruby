@@ -63,6 +63,7 @@ module WEBrick
       204 => 'No Content',
       205 => 'Reset Content',
       206 => 'Partial Content',
+      207 => 'Multi-Status',
       300 => 'Multiple Choices',
       301 => 'Moved Permanently',
       302 => 'Found',
@@ -88,6 +89,10 @@ module WEBrick
       415 => 'Unsupported Media Type',
       416 => 'Request Range Not Satisfiable',
       417 => 'Expectation Failed',
+      422 => 'Unprocessable Entity',
+      423 => 'Locked',
+      424 => 'Failed Dependency',
+      426 => 'Upgrade Required',
       428 => 'Precondition Required',
       429 => 'Too Many Requests',
       431 => 'Request Header Fields Too Large',
@@ -97,6 +102,7 @@ module WEBrick
       503 => 'Service Unavailable',
       504 => 'Gateway Timeout',
       505 => 'HTTP Version Not Supported',
+      507 => 'Insufficient Storage',
       511 => 'Network Authentication Required',
     }
 

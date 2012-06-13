@@ -320,8 +320,9 @@ module Net   #:nodoc:
   #   HTTPNoContent::                       204
   #   HTTPResetContent::                    205
   #   HTTPPartialContent::                  206
+  #   HTTPMultiStatus::                     207
   # HTTPRedirection::                    3xx
-  #   HTTPMultipleChoice::                  300
+  #   HTTPMultipleChoices::                 300
   #   HTTPMovedPermanently::                301
   #   HTTPFound::                           302
   #   HTTPSeeOther::                        303
@@ -347,6 +348,10 @@ module Net   #:nodoc:
   #   HTTPUnsupportedMediaType::            415
   #   HTTPRequestedRangeNotSatisfiable::    416
   #   HTTPExpectationFailed::               417
+  #   HTTPUnprocessableEntity::             422
+  #   HTTPLocked::                          423
+  #   HTTPFailedDependency::                424
+  #   HTTPUpgradeRequired::                 426
   #   HTTPPreconditionRequired::            428
   #   HTTPTooManyRequests::                 429
   #   HTTPRequestHeaderFieldsTooLarge::     431
@@ -357,6 +362,7 @@ module Net   #:nodoc:
   #   HTTPServiceUnavailable::              503
   #   HTTPGatewayTimeOut::                  504
   #   HTTPVersionNotSupported::             505
+  #   HTTPInsufficientStorage::             507
   #   HTTPNetworkAuthenticationRequired::   511
   #
   # There is also the Net::HTTPBadResponse exception which is raised when
