@@ -3102,13 +3102,13 @@ rb_fork_internal(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
         if (pid < 0)
             return pid;
         if (!pid) {
-            struct chfunc_protect_t arg;
             int ret;
             forked_child = 1;
             close(ep[0]);
             if (chfunc_is_async_signal_safe)
                 ret = chfunc(charg, errmsg, errmsg_buflen);
             else {
+                struct chfunc_protect_t arg;
                 arg.chfunc = chfunc;
                 arg.arg = charg;
                 arg.errmsg = errmsg;
