@@ -1851,6 +1851,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
 #ifndef _WIN32
     if (e->use_shell) {
 	const char *p;
+	int first = 1;
         int has_meta = 0;
         int has_nonspace = 0;
         /*
@@ -1880,8 +1881,12 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
         for (p = RSTRING_PTR(prog); *p; p++) {
             if (!has_nonspace && *p != ' ' && *p != '\t')
                 has_nonspace = 1;
-            if (!has_meta && strchr("*?{}[]<>()~&|\\$;'`\"\n#=", *p))
+	    if (has_nonspace && (*p == ' ' || *p == '\t'))
+		first = 0;
+            if (!has_meta && strchr("*?{}[]<>()~&|\\$;'`\"\n#", *p))
                 has_meta = 1;
+	    if (first && *p == '=')
+		has_meta = 1;
             if (has_nonspace && has_meta)
                 break;
         }
