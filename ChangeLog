@@ -1,3 +1,7 @@
+Wed Jun 13 13:39:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h: get rid of C99 style one line comments.
+
 Wed Jun 13 13:39:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_alias_internal): use strdup defined as macro.
