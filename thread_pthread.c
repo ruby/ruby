@@ -509,7 +509,9 @@ get_stack(void **addr, size_t *size)
     {int err = (expr); if (err) return err;}
 #if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
     pthread_attr_t attr;
+# if defined HAVE_PTHREAD_ATTR_GET_NP /* HAVE_PTHREAD_ATTR_GETGUARDSIZE */
     size_t guard = 0;
+# endif
 
 # ifdef HAVE_PTHREAD_GETATTR_NP /* Linux */
     STACK_GROW_DIR_DETECTION;
