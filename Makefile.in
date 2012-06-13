@@ -315,7 +315,7 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 
 .c.i:
 	@$(ECHO) preprocessing $<
-	$(Q) $(CPP) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -E $< > $@
+	$(Q) $(CPP) $(warnflags) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -E $< > $@
 
 clean-local::
 	$(Q)$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output \
