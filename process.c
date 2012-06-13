@@ -1826,6 +1826,7 @@ rb_exec_getargs(int *argc_p, VALUE **argv_p, int accept_shell, VALUE *env_ret, V
     return prog;
 }
 
+#ifndef _WIN32
 struct string_part {
     const char *ptr;
     size_t len;
@@ -1839,6 +1840,7 @@ compare_posix_sh(const void *key, const void *el)
     if (!ret && ((const char *)el)[word->len]) ret = -1;
     return ret;
 }
+#endif
 
 static void
 rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, struct rb_exec_arg *e)
