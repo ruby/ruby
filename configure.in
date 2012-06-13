@@ -125,11 +125,13 @@ AC_DEFUN([RUBY_NACL],
 ])])
 
 AC_DEFUN([RUBY_NACL_CHECK_PEPPER_TYPES],
-[
+[AS_CASE(["${host_os}"],
+[nacl], [
  AC_CHECK_TYPES([struct PPB_Core, struct PPB_Messaging, struct PPB_Var,
               struct PPB_URLLoader, struct PPB_URLRequestInfo,
               struct PPB_URLResponseInfo, struct PPB_FileRef,
               struct PPP_Instance])
+])
 ])
 
 AC_DEFUN([RUBY_CPPOUTFILE],
