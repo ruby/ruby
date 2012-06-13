@@ -1866,7 +1866,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
 
 #ifndef _WIN32
     if (e->use_shell) {
-	static const char posix_sh_cmds[][8] = {
+	static const char posix_sh_cmds[][9] = {
 	    "!",		/* reserved */
 	    ".",		/* special built-in */
 	    "break",		/* special built-in */

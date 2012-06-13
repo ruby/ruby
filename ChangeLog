@@ -1,4 +1,7 @@
-Wed Jun 13 09:56:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jun 13 10:20:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_exec_fillarg): fix array element size.  "continue" and
+	  "readonly" exceeded the size.
 
 	* process.c (rb_exec_fillarg): use shell if the first word is reserved
 	  or special built-in name.
