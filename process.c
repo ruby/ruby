@@ -2167,6 +2167,13 @@ static int rb_exec_without_timer_thread(const struct rb_exec_arg *e, char *errms
  *  This behavior is modified by env and options.
  *  See <code>spawn</code> for details.
  *
+ *  This method modifies process attributes according to _options_
+ *  (details described in <code>spawn</code>)
+ *  before <code>exec(2)</code> system call.
+ *  The modified attributes may be retained when <code>exec(2)</code> system call fails.
+ *  For example, hard resource limits is not restorable.
+ *  If it is not acceptable, consider methods which create a child process such as <code>spawn</code> or <code>system</code>.
+ *
  *  Raises SystemCallError if the command couldn't execute (typically
  *  <code>Errno::ENOENT</code> when it was not found).
  *
