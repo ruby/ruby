@@ -91,7 +91,7 @@ module DL
       cb = Function.new(CFunc.new(0, TYPE_INT, '<callback>qsort'),
                         [TYPE_VOIDP, TYPE_VOIDP]){|x,y| CPtr.new(x)[0] <=> CPtr.new(y)[0]}
       qsort = Function.new(CFunc.new(@libc['qsort'], TYPE_VOID, 'qsort'),
-                           [TYPE_VOIDP, TYPE_INT, TYPE_INT, TYPE_VOIDP])
+                           [TYPE_VOIDP, TYPE_SIZE_T, TYPE_SIZE_T, TYPE_VOIDP])
       buff = "9341"
       qsort.call(buff, buff.size, 1, cb)
       assert_equal("1349", buff)
@@ -106,7 +106,7 @@ module DL
       cb = TempFunction.new(CFunc.new(0, TYPE_INT, '<callback>qsort'),
                                [TYPE_VOIDP, TYPE_VOIDP])
       qsort = Function.new(CFunc.new(@libc['qsort'], TYPE_VOID, 'qsort'),
-                           [TYPE_VOIDP, TYPE_INT, TYPE_INT, TYPE_VOIDP])
+                           [TYPE_VOIDP, TYPE_SIZE_T, TYPE_SIZE_T, TYPE_VOIDP])
       buff = "9341"
       qsort.call(buff, buff.size, 1, cb){|x,y| CPtr.new(x)[0] <=> CPtr.new(y)[0]}
       assert_equal("1349", buff)
