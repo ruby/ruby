@@ -1,3 +1,11 @@
+Wed Jun 13 15:12:07 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* configure.in: On Windows  platforms, system provided headers are
+	  VC++ optimized.  That is, C++ habits are often contaminated into
+	  various  headers.  Most  frequent  situation is  the  use of  //
+	  comments.  We bypass ANSI  C mode for them.  Otherwise extension
+	  libs cannot include those headers.
+
 Wed Jun 13 13:39:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/win32.h: get rid of C99 style one line comments.

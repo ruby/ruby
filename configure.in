@@ -610,10 +610,19 @@ if test "$GCC" = yes; then
 	RUBY_APPEND_OPTION(LDFLAGS, -fstack-protector)
     fi
 
-    # ANSI (no XCFLAGS because this is C only)
-    RUBY_TRY_CFLAGS(-ansi -std=iso9899:199409, [
-      RUBY_APPEND_OPTION(warnflags, -ansi -std=iso9899:199409)
-      RUBY_APPEND_OPTION(rb_cv_warnflags, -ansi -std=iso9899:199409)
+    AS_CASE(["$target_os"],[mingw*], [
+      # On  Windows  platforms,   system  provided  headers  are  VC++
+      # optimized.  That  is, C++  habits are often  contaminated into
+      # various  headers.  Most frequent  situation is  the use  of //
+      # comments.   We  bypass  ANSI   C  mode  for  them.   Otherwise
+      # extension libs cannot include those headers.
+    ],
+    [
+      # ANSI (no XCFLAGS because this is C only)
+      RUBY_TRY_CFLAGS(-ansi -std=iso9899:199409, [
+        RUBY_APPEND_OPTION(warnflags, -ansi -std=iso9899:199409)
+        RUBY_APPEND_OPTION(rb_cv_warnflags, -ansi -std=iso9899:199409)
+      ])
     ])
 
     # suppress annoying -Wstrict-overflow warnings
