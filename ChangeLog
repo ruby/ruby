@@ -1,3 +1,8 @@
+Thu Jun 14 07:59:12 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c (get_stack): Linux is the only OS which includes
+	  the size of guard page into the stack size.
+
 Thu Jun 14 06:21:00 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/drb/drb.rb:  Replace broken links to the English DRb book.

@@ -507,37 +507,34 @@ get_stack(void **addr, size_t *size)
 {
 #define CHECK_ERR(expr)				\
     {int err = (expr); if (err) return err;}
-#if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
+#ifdef HAVE_PTHREAD_GETATTR_NP /* Linux */
     pthread_attr_t attr;
-# if defined HAVE_PTHREAD_ATTR_GET_NP /* HAVE_PTHREAD_ATTR_GETGUARDSIZE */
     size_t guard = 0;
-# endif
-
-# ifdef HAVE_PTHREAD_GETATTR_NP /* Linux */
     STACK_GROW_DIR_DETECTION;
     CHECK_ERR(pthread_getattr_np(pthread_self(), &attr));
-#   ifdef HAVE_PTHREAD_ATTR_GETSTACK
+# ifdef HAVE_PTHREAD_ATTR_GETSTACK
     CHECK_ERR(pthread_attr_getstack(&attr, addr, size));
     STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
-#   else
+# else
     CHECK_ERR(pthread_attr_getstackaddr(&attr, addr));
     CHECK_ERR(pthread_attr_getstacksize(&attr, size));
-#   endif
-# elif defined HAVE_PTHREAD_ATTR_GET_NP /* FreeBSD, DragonFly BSD, NetBSD */
-    CHECK_ERR(pthread_attr_init(&attr));
-    CHECK_ERR(pthread_attr_get_np(pthread_self(), &attr));
-#   ifdef HAVE_PTHREAD_ATTR_GETSTACK
-    CHECK_ERR(pthread_attr_getstack(&attr, addr, size));
-    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
-#   else
-    CHECK_ERR(pthread_attr_getstackaddr(&attr, addr));
-    CHECK_ERR(pthread_attr_getstacksize(&attr, size));
-    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
-#   endif
+# endif
     CHECK_ERR(pthread_attr_getguardsize(&attr, &guard));
     *size -= guard;
     pthread_attr_destroy(&attr);
+#elif defined HAVE_PTHREAD_ATTR_GET_NP /* FreeBSD, DragonFly BSD, NetBSD */
+    pthread_attr_t attr;
+    CHECK_ERR(pthread_attr_init(&attr));
+    CHECK_ERR(pthread_attr_get_np(pthread_self(), &attr));
+# ifdef HAVE_PTHREAD_ATTR_GETSTACK
+    CHECK_ERR(pthread_attr_getstack(&attr, addr, size));
+    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
+# else
+    CHECK_ERR(pthread_attr_getstackaddr(&attr, addr));
+    CHECK_ERR(pthread_attr_getstacksize(&attr, size));
+    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
 # endif
+    pthread_attr_destroy(&attr);
 #elif (defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP) /* MacOS X */
     pthread_t th = pthread_self();
     *addr = pthread_get_stackaddr_np(th);
