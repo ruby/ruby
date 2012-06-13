@@ -1446,4 +1446,10 @@ class TestProcess < Test::Unit::TestCase
     }
   end if File.executable?("/bin/sh")
 
+  def test_sh_exec
+    IO.popen("exec echo exexexec") {|f|
+      assert_equal("exexexec\n", f.read)
+    }
+  end if File.executable?("/bin/sh")
+
 end
