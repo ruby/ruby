@@ -1,3 +1,11 @@
+Thu Jun 14 02:54:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: use -fbuiltin with -ansi -std=iso9899:199409.
+	  This prevents errors introduced by disabling bulitin functions,
+	  which is the sub-effect of -ansi/-std.
+	  Now NetBSD can use -ansi -std=iso9899:199409.
+	  Maybe mingw, cygwin and darwin can also.
+
 Thu Jun 14 02:53:30 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* Makefile.in: don't remove macros. now name2ctype uses macros.
