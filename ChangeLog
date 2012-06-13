@@ -1,3 +1,8 @@
+Wed Jun 13 21:46:34 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: cygwin does not provide some declarations in strict
+	  ANSI mode.
+
 Wed Jun 13 20:19:59 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_fork_internal): move a variable declaration.
