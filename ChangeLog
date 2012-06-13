@@ -1,3 +1,13 @@
+Thu Jun 14 02:53:30 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* Makefile.in: don't remove macros. now name2ctype uses macros.
+
+	* tool/enc-unicode.rb: add comment why it uses Hash#index.
+
+	* enc/unicode/{name2ctype.kwd,name2ctype.src,name2ctype.h.blt}:
+	  update to follow the current name2ctype.h.
+	  FYI current Unicode version is 6.1.
+
 Thu Jun 14 00:16:59 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/net/http/responses.rb, lib/webrick/httpstatus.rb: Add HTTP

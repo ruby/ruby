@@ -294,7 +294,7 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	  trap '$(RM) $@-1.h $@-2.h' 0 && \
 	  set -x; \
 	  sed '/^#ifdef USE_UNICODE_PROPERTIES/,/^#endif/d' $? | gperf $(NAME2CTYPE_OPTIONS) > $@-1.h && \
-	  sed -e '/^#ifdef USE_UNICODE_PROPERTIES/,/^#endif/{' -e '/^#/d' -e '}' $? | gperf $(NAME2CTYPE_OPTIONS) > $@-2.h && \
+	  sed '/^#ifdef USE_UNICODE_PROPERTIES/d;/^#endif/d' $? | gperf $(NAME2CTYPE_OPTIONS) > $@-2.h && \
 	  diff -DUSE_UNICODE_PROPERTIES $@-1.h $@-2.h > $@.tmp || :; \
 	  $(MV) $@.tmp $@ && \
 	  $(CP) $? $(?:.kwd=.src) && \

@@ -231,7 +231,7 @@ $const_cache = {}
 # the group
 def make_const(prop, data, name)
   puts "\n/* '#{prop}': #{name} */"
-  if origprop = $const_cache.index(data)
+  if origprop = $const_cache.index(data) # don't use Hash#key because it is 1.9 feature
     puts "#define CR_#{prop} CR_#{origprop}"
   else
     $const_cache[prop] = data
