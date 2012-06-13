@@ -1850,7 +1850,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
 
 #ifndef _WIN32
     if (e->use_shell) {
-        char *p;
+	const char *p;
         int has_meta = 0;
         int has_nonspace = 0;
         /*
@@ -1897,7 +1897,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
                 while (*p == ' ' || *p == '\t')
                     p++;
                 if (*p) {
-                    char *w = p;
+		    const char *w = p;
                     while (*p && *p != ' ' && *p != '\t')
                         p++;
                     rb_str_buf_cat(argv_buf, w, p-w);
@@ -1911,7 +1911,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
 #endif
 
     if (!e->use_shell) {
-	char *abspath;
+	const char *abspath;
         abspath = dln_find_exe_r(RSTRING_PTR(e->invoke.cmd.command_name), 0, fbuf, sizeof(fbuf));
 	if (abspath)
 	    e->invoke.cmd.command_abspath = rb_str_new_cstr(abspath);
@@ -1932,7 +1932,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
     }
 
     if (!e->use_shell) {
-        char *p, *ep, *null=NULL;
+        const char *p, *ep, *null=NULL;
         VALUE argv_str;
         argv_str = hide_obj(rb_str_buf_new(sizeof(char*) * (argc + 2)));
         rb_str_buf_cat(argv_str, (char *)&null, sizeof(null)); /* place holder for /bin/sh of try_with_sh. */
