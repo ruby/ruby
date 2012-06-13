@@ -461,6 +461,12 @@ rb_enc_unicode_p(rb_encoding *enc)
     return name[0] == 'U' && name[1] == 'T' && name[2] == 'F' && name[4] != '7';
 }
 
+static st_data_t
+enc_dup_name(st_data_t name)
+{
+    return (st_data_t)strdup((const char *)name);
+}
+
 /*
  * Returns copied alias name when the key is added for st_table,
  * else returns NULL.
@@ -469,7 +475,7 @@ static int
 enc_alias_internal(const char *alias, int idx)
 {
     return st_insert2(enc_table.names, (st_data_t)alias, (st_data_t)idx,
-	    (st_data_t(*)(st_data_t))strdup);
+		      enc_dup_name);
 }
 
 static int
