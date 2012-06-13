@@ -44,7 +44,7 @@
 # [http://www.eng.cse.dmu.ac.uk/~hgs/ruby/dRuby/]
 #   Links to English-language Ruby material collected by Hugh Sasse.
 #
-# [http://www.rubycentral.com/book/ospace.html]
+# [http://www.ruby-doc.org/docs/ProgrammingRuby/html/ospace.html]
 #   The chapter from *Programming* *Ruby* by Dave Thomas and Andy Hunt
 #   which discusses dRuby.
 #

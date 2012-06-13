@@ -1,7 +1,7 @@
 #
 # Implementation of the _Observer_ object-oriented design pattern.  The
 # following documentation is copied, with modifications, from "Programming
-# Ruby", by Hunt and Thomas; http://www.rubycentral.com/book/lib_patterns.html.
+# Ruby", by Hunt and Thomas; http://www.ruby-doc.org/docs/ProgrammingRuby/html/lib_patterns.html.
 #
 # See Observable for more info.
 

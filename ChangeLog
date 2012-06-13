@@ -1,3 +1,9 @@
+Thu Jun 14 06:17:47 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/observer.rb:  Update broken link to the Programming Ruby book.
+	  Patch by Zachary Scott.  [ruby-trunk - Bug #6536]
+	* lib/drb/drb.rb:  ditto.
+
 Thu Jun 14 05:23:05 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regparse.c (PFETCH_READY): suppress Wunused-but-set-variable.
