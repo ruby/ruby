@@ -1,3 +1,8 @@
+Wed Jun 13 17:51:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: cygwin needs C99 for some stuff, e.g.,
+	  pthread_attr_setstacksize, sched_yield.
+
 Wed Jun 13 17:50:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (.c.i): add warnflags to make the result consistent with

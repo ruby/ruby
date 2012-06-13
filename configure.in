@@ -617,6 +617,11 @@ if test "$GCC" = yes; then
       # comments.   We  bypass  ANSI   C  mode  for  them.   Otherwise
       # extension libs cannot include those headers.
     ],
+    [cygwin*], [
+      # needs C99 to isinf() and so on
+        RUBY_APPEND_OPTION(warnflags, -ansi -std=c99)
+        RUBY_APPEND_OPTION(rb_cv_warnflags, -ansi -std=c99)
+    ],
     [
       # ANSI (no XCFLAGS because this is C only)
       RUBY_TRY_CFLAGS(-ansi -std=iso9899:199409, [
