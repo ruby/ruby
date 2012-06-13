@@ -79,6 +79,8 @@
 #include <grp.h>
 #endif
 
+#define numberof(array) (int)(sizeof(array)/sizeof((array)[0]))
+
 #if defined(HAVE_TIMES) || defined(_WIN32)
 static VALUE rb_cProcessTms;
 #endif
@@ -1824,6 +1826,20 @@ rb_exec_getargs(int *argc_p, VALUE **argv_p, int accept_shell, VALUE *env_ret, V
     return prog;
 }
 
+struct string_part {
+    const char *ptr;
+    size_t len;
+};
+
+static int
+compare_posix_sh(const void *key, const void *el)
+{
+    const struct string_part *word = key;
+    int ret = strncmp(word->ptr, el, word->len);
+    if (!ret && ((const char *)el)[word->len]) ret = -1;
+    return ret;
+}
+
 static void
 rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, struct rb_exec_arg *e)
 {
@@ -1850,10 +1866,40 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
 
 #ifndef _WIN32
     if (e->use_shell) {
+	static const char posix_sh_cmds[][8] = {
+	    "!",		/* reserved */
+	    ".",		/* special built-in */
+	    "break",		/* special built-in */
+	    "case",		/* reserved */
+	    "colon",		/* special built-in */
+	    "continue",		/* special built-in */
+	    "do",		/* reserved */
+	    "done",		/* reserved */
+	    "elif",		/* reserved */
+	    "else",		/* reserved */
+	    "esac",		/* reserved */
+	    "eval",		/* special built-in */
+	    "exec",		/* special built-in */
+	    "exit",		/* special built-in */
+	    "export",		/* special built-in */
+	    "fi",		/* reserved */
+	    "for",		/* reserved */
+	    "if",		/* reserved */
+	    "in",		/* reserved */
+	    "readonly",		/* special built-in */
+	    "return",		/* special built-in */
+	    "set",		/* special built-in */
+	    "shift",		/* special built-in */
+	    "then",		/* reserved */
+	    "times",		/* special built-in */
+	    "trap",		/* special built-in */
+	    "unset",		/* special built-in */
+	    "until",		/* reserved */
+	    "while",		/* reserved */
+	};
 	const char *p;
-	int first = 1;
+	struct string_part first = {0, 0};
         int has_meta = 0;
-        int has_nonspace = 0;
         /*
          * meta characters:
          *
@@ -1879,18 +1925,32 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
          * %    (used in Parameter Expansion)
          */
         for (p = RSTRING_PTR(prog); *p; p++) {
-            if (!has_nonspace && *p != ' ' && *p != '\t')
-                has_nonspace = 1;
-	    if (has_nonspace && (*p == ' ' || *p == '\t'))
-		first = 0;
+	    if (*p == ' ' || *p == '\t') {
+		if (first.ptr && !first.len) first.len = p - first.ptr;
+	    }
+	    else {
+		if (!first.ptr) first.ptr = p;
+	    }
             if (!has_meta && strchr("*?{}[]<>()~&|\\$;'`\"\n#", *p))
                 has_meta = 1;
-	    if (first && *p == '=')
-		has_meta = 1;
-            if (has_nonspace && has_meta)
+	    if (!first.len) {
+		if (*p == '=') {
+		    has_meta = 1;
+		}
+		else if (*p == '/') {
+		    first.len = SIZE_T_MAX; /* longer than any posix_sh_cmds */
+		}
+	    }
+	    if (has_meta)
                 break;
         }
-        if (has_nonspace && !has_meta) {
+	if (!has_meta && first.ptr) {
+	    if (!first.len) first.len = p - first.ptr;
+	    if (first.len > 0 && first.len <= sizeof(posix_sh_cmds[0]) &&
+		bsearch(&first, posix_sh_cmds, numberof(posix_sh_cmds), sizeof(posix_sh_cmds[0]), compare_posix_sh))
+		has_meta = 1;
+	}
+	if (!has_meta) {
             /* avoid shell since no shell meta charactor found. */
             e->use_shell = 0;
         }

@@ -1,4 +1,8 @@
-Wed Jun 13 09:55:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jun 13 09:56:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_exec_fillarg): use shell if the first word is reserved
+	  or special built-in name.
+	  http://pubs.opengroup.org/onlinepubs/009695399/utilities/xcu_chap02.html
 
 	* process.c (rb_exec_fillarg): treat '=' only in the first word.  if
 	  the first word does not contain '=', it is the command name and
