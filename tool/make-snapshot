@@ -197,12 +197,11 @@ def package(rev, destdir)
         f.puts "s,@LIBRUBY_A@,|#_!!_#|liburyb.a,g"
         f.puts "s,@RM@,|#_!!_#|rm -f,g"
         f.puts "s,@CP@,|#_!!_#|cp,g"
-        f.puts "s,@MKDIR_P@,|#_!!_#|mkdir -p,g"
       }
       FileUtils.mkpath(hdrdir = "#{extout}/include/ruby")
       File.open("#{hdrdir}/config.h", "w") {}
       miniruby = ENV['MINIRUBY'] + " -r./cross"
-      IO.popen("make -f - prereq srcdir=. CHDIR=cd IFCHANGE=tool/ifchange 'MINIRUBY=#{miniruby}' 'RUBY=#{ENV["RUBY"]}'", "w") do |f|
+      IO.popen("make -f - prereq srcdir=. CHDIR=cd IFCHANGE=tool/ifchange MAKEDIRS='mkdir -p' 'MINIRUBY=#{miniruby}' 'RUBY=#{ENV["RUBY"]}'", "w") do |f|
         f.puts(IO.read("Makefile.in").gsub(/^@.*\n/, '').gsub(/@([A-Za-z_]\w*)@/) {ENV[$1]})
         f.puts(commonmk.gsub(/\{[^{}]*\}/, ""))
       end
@@ -252,7 +251,7 @@ revisions.collect {|rev| package(rev, destdir)}.flatten.each do |name|
   sha = Digest::SHA256.hexdigest str
   puts "* #{name}"
   puts "  SIZE:   #{str.bytesize} bytes"
-  puts "  MD5:    #{md5}"
+  puts "  MD5:    #{md5}" 
   puts "  SHA256: #{sha}"
   puts
 end
