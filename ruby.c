@@ -1742,7 +1742,7 @@ parse_and_compile_main(VALUE fname, const struct ruby_compile_main_arg* arg, VAL
         return NULL;
     } else {
         *error = Qnil;
-        return iseq;
+        return (ruby_opaque_t)iseq;
     }
 }
 
