@@ -3648,8 +3648,9 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
  *     File.basename(file_name [, suffix] )  ->  base_name
  *
  *  Returns the last component of the filename given in <i>file_name</i>,
- *  which must be formed using forward slashes (``<code>/</code>'')
- *  regardless of the separator used on the local file system. If
+ *  which can be formed using both <code>File::SEPARATOR</code> and
+ *  <code>File::ALT_SEPARETOR</code> as the separator when
+ *  <code>File::ALT_SEPARATOR</code> is not <code>nil</code>. If
  *  <i>suffix</i> is given and present at the end of <i>file_name</i>,
  *  it is removed.
  *
@@ -3708,9 +3709,9 @@ rb_file_s_basename(int argc, VALUE *argv)
  *     File.dirname(file_name )  ->  dir_name
  *
  *  Returns all components of the filename given in <i>file_name</i>
- *  except the last one. The filename must be formed using forward
- *  slashes (``<code>/</code>'') regardless of the separator used on the
- *  local file system.
+ *  except the last one. The filename can be formed using both
+ *  <code>File::SEPARATOR</code> and <code>File::ALT_SEPARETOR</code> as the
+ *  separator when <code>File::ALT_SEPARATOR</code> is not <code>nil</code>.
  *
  *     File.dirname("/home/gumby/work/ruby.rb")   #=> "/home/gumby/work"
  */

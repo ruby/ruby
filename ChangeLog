@@ -1,3 +1,8 @@
+Thu Jun 14 15:54:02 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (rb_file_s_basename, rb_file_s_dirname): documentaion fix.
+	  File.basename and File.dirname support File::ALT_SEPARATOR.
+
 Thu Jun 14 11:10:10 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* nacl/pepper_maini.c: Applies the new embedding API to pepper_ruby.
