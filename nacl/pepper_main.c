@@ -27,10 +27,8 @@
 #include "ppapi/c/ppp_messaging.h"
 
 #include "ruby/ruby.h"
-#include "vm_core.h"
-#include "eval_intern.h"
+#include "ruby/embed.h"
 #include "gc.h"
-#include "node.h"
 
 RUBY_GLOBAL_SETUP
 
@@ -271,21 +269,12 @@ pruby_obj_to_var(volatile VALUE obj)
   static const char* const error = 
       "throw 'Failed to convert the result to a JavaScript object';";
   int state;
-  PUSH_TAG();
-  if ((state = EXEC_TAG()) == 0) {
-    obj = rb_obj_as_string(obj);
-  }
-  POP_TAG();
-
-  switch (state) {
-    case 0:
+  obj = rb_protect(&rb_obj_as_string, obj, &state);
+  if (!state) {
       return pruby_str_to_var(obj);
-    case TAG_RAISE:
-      rb_set_errinfo(Qnil);
+  }
+  else {
       return pruby_cstr_to_var(error);
-    default:
-      fprintf(stderr, "Fatal error white converting the result to a string\n");
-      exit(EXIT_FAILURE);
   }
 }
 
@@ -353,24 +342,26 @@ pruby_post_value(void* data)
 static void
 init_loadpath(void)
 {
-  volatile VALUE path;
-  VALUE load_path = GET_VM()->load_path;
+  ruby_incpush("lib/ruby/2.0.0");
+  ruby_incpush("lib/ruby/2.0.0/x86_64-nacl");
+  ruby_incpush(".");
+}
 
-  path = rb_usascii_str_new_cstr("lib/ruby/2.0.0");
-  rb_ary_push(load_path, path);
-  path = rb_usascii_str_new_cstr("lib/ruby/2.0.0/x86_64-nacl");
-  rb_ary_push(load_path, path);
+static VALUE
+init_libraries_internal(VALUE unused)
+{
+  extern void Init_enc();
+  extern void Init_ext();
 
-  path = rb_usascii_str_new_cstr(".");
-  rb_ary_push(load_path, path);
+  init_loadpath();
+  Init_enc();
+  Init_ext();
+  return Qnil;
 }
 
 static void*
 init_libraries(void* data)
 {
-  extern void Init_enc();
-  extern void Init_ext();
-
   int state;
   struct PepperInstance* const instance = (struct PepperInstance*)data;
   current_instance = instance->instance;
@@ -379,15 +370,7 @@ init_libraries(void* data)
     perror("pepper-ruby:pthread_mutex_lock");
     return 0;
   }
-
-  PUSH_TAG();
-  if ((state = EXEC_TAG()) == 0) {
-    init_loadpath();
-    Init_enc();
-    Init_ext();
-  }
-  POP_TAG();
-
+  rb_protect(&init_libraries_internal, Qnil, &state);
   pthread_mutex_unlock(&instance->mutex);
 
   if (state) {
@@ -440,64 +423,36 @@ static void*
 pruby_eval(void* data)
 {
   struct PepperInstance* const instance = (struct PepperInstance*)data;
+  volatile VALUE path;
   volatile VALUE src = (VALUE)instance->async_call_args;
-  volatile VALUE iseq, result = Qnil;
-  volatile VALUE filename;
-  NODE* tree;
+  volatile VALUE result = Qnil;
+  ruby_opaque_t prog;
   volatile int state;
-  rb_thread_t *th;
-  rb_env_t *env;
 
   RUBY_INIT_STACK;
-  PUSH_TAG();
 
   if (pthread_mutex_lock(&instance->mutex)) {
     perror("pepper-ruby:pthread_mutex_lock");
     return 0;
   }
 
-  if ((state = EXEC_TAG()) == 0) {
-    th = GET_THREAD();
-    SAVE_ROOT_JMPBUF(th, {
-      th->mild_compile_error++;
-      tree = rb_compile_string("(pepper-ruby)", src, 1);
-      th->mild_compile_error--;
-      if (RTEST(rb_errinfo())) {
-        rb_exc_raise(rb_errinfo());
-      }
-
-      {
-        VALUE toplevel_binding = rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING"));
-        rb_binding_t *bind;
-
-        GetBindingPtr(toplevel_binding, bind);
-        GetEnvPtr(bind->env, env);
-      }
-
-      filename = rb_usascii_str_new("(pepper-ruby)", strlen("(pepper-ruby)"));
-      th->parse_in_eval--;
-      th->base_block = &env->block;
-      iseq = rb_iseq_new_main(tree, filename, filename);
-      th->parse_in_eval++;
-      th->base_block = 0;
-
-      result = rb_iseq_eval_main(iseq);
-    });
+  path = rb_usascii_str_new_cstr("(pepper-ruby)");
+  prog = ruby_compile_main_from_string(path, src, (VALUE*)&result);
+  if (prog) {
+    state = ruby_eval_main(prog, (VALUE*)&result);
   }
-  POP_TAG();
 
   pthread_mutex_unlock(&instance->mutex);
 
-  switch (state) {
-    case 0:
+  if (!state) {
       instance->async_call_args = 
           rb_str_concat(rb_usascii_str_new_cstr("return:"),
                         rb_obj_as_string(result));
       core_interface->CallOnMainThread(
           0, PP_MakeCompletionCallback(pruby_post_value, instance), 0);
       return NULL;
-    case TAG_RAISE: 
-      result = rb_errinfo();
+  }
+  else {
       rb_set_errinfo(Qnil);
       instance->async_call_args =
           rb_str_concat(rb_usascii_str_new_cstr("error:"),
@@ -505,9 +460,6 @@ pruby_eval(void* data)
       core_interface->CallOnMainThread(
           0, PP_MakeCompletionCallback(pruby_post_value, instance), 0);
       return NULL;
-    default:
-      fprintf(stderr, "Fatal error\n");
-      exit(EXIT_FAILURE);
   }
 }
 
@@ -916,6 +868,7 @@ rb_load_file(const char *path)
   }
   else if (RB_TYPE_P(instance->async_call_result.as_value, T_STRING)) {
     VALUE str = instance->async_call_result.as_value;
+    extern void* rb_compile_cstr(const char *f, const char *s, int len, int line); 
     return rb_compile_cstr(path, RSTRING_PTR(str), RSTRING_LEN(str), 0);
   }
   else {
