@@ -1,3 +1,7 @@
+Thu Jun 14 22:10:50 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (proc_exec_sh): don't strip leading spaces of the script.
+
 Thu Jun 14 15:54:02 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (rb_file_s_basename, rb_file_s_dirname): documentaion fix.

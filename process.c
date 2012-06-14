@@ -1205,11 +1205,13 @@ proc_exec_sh(const char *str, VALUE envp_str)
     rb_notimplement();
     UNREACHABLE;
 #else
+    const char *s;
 
-    while (*str == ' ' || *str == '\t' || *str == '\n')
-	str++;
+    s = str;
+    while (*s == ' ' || *s == '\t' || *s == '\n')
+	s++;
 
-    if (!*str) {
+    if (!*s) {
         errno = ENOENT;
         return -1;
     }
