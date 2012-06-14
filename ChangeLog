@@ -1,4 +1,8 @@
-Thu Jun 14 22:49:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jun 14 22:59:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CPPOUTFILE): check if output is really sent to
+	  specified file to tell if -o option works.  [ruby-dev:45742]
+	  [Bug#6591]
 
 	* configure.in (RUBY_CPPOUTFILE): check if output file is actually
 	  created.  [ruby-dev:45742] [Bug#6591]

@@ -139,7 +139,8 @@ AC_DEFUN([RUBY_CPPOUTFILE],
 [cppflags=$CPPFLAGS
 CPPFLAGS='-o conftest-1.i'
 rb_cv_cppoutfile=no
-AC_TRY_CPP([], [test -f conftest-1.i && rb_cv_cppoutfile=yes])
+AC_TRY_CPP([test-for-cppout],
+	   [grep test-for-cppout conftest-1.i > /dev/null && rb_cv_cppoutfile=yes])
 CPPFLAGS=$cppflags
 rm -f conftest*])
 if test "$rb_cv_cppoutfile" = yes; then
