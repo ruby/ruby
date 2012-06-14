@@ -883,6 +883,13 @@ class TestArray < Test::Unit::TestCase
     assert_equal(1, a.index(99) {|x| x == 'cat' })
   end
 
+  def test_indexes
+    a = @cls[ 'cat', 99, /a/, 99, @cls[ 1, 2, 3] ]
+    assert_equal(@cls[1, 3], a.indexes(99))
+    assert_equal(@cls[], a.indexes('car'))
+    assert_equal(@cls[4], a.indexes([1,2,3]))
+  end
+
   def test_values_at
     a = @cls[*('a'..'j').to_a]
     assert_equal(@cls['a', 'c', 'e'], a.values_at(0, 2, 4))
