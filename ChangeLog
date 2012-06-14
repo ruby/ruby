@@ -1486,8 +1486,8 @@ Thu May 24 14:30:13 2012  Koichi Sasada  <ko1@atdot.net>
 	  backtrace (an array of strings) with faster generation.
 	  If someone accesses to backtrace information via
 	  Exception#backtrace, then convert a RubyVM::Backtrace object to
-	  traditonal style backtrace.
-	  This change causes incompatibility on marshal dumpped binary
+	  traditional style backtrace.
+	  This change causes incompatibility on marshal dumped binary
 	  of Exception.  If you have any trouble on it, please tell us
 	  before Ruby 2.0 release.
 	  Note that RubyVM::Backtrace object should not expose Ruby level.
