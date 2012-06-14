@@ -283,7 +283,7 @@ ruby_eval_main_internal(VALUE iseqval, VALUE* result)
 	});
     }
     POP_TAG();
-    *result = state ? th->errinfo : retval; 
+    *result = state ? th->errinfo : retval;
     return state;
 }
 

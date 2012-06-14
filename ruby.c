@@ -1753,7 +1753,7 @@ parse_and_compile_main(VALUE fname, const struct ruby_compile_main_arg* arg, VAL
  * @li loads the file specified by path.
  * @li parses the source and compiles it
  *
- * @param fname <code>$0</code> is set to this value. 
+ * @param fname <code>$0</code> is set to this value.
  *              If nil,
  *              uses the given path instead.
  * @param path path to the source
@@ -1776,7 +1776,7 @@ ruby_compile_main_from_file(VALUE fname, const char* path, VALUE* error)
  *
  * This function parses the given source and compiles it
  *
- * @param fname <code>$0</code> is set to this value. 
+ * @param fname <code>$0</code> is set to this value.
  * @param source Ruby source string
  * @param error where to store the exception if an error occured.
  * @return The compiled source code. Or NULL if an error occured.

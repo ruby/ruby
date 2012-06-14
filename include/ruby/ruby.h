@@ -1464,10 +1464,6 @@ unsigned long ruby_strtoul(const char *str, char **endptr, int base);
 PRINTF_ARGS(int ruby_snprintf(char *str, size_t n, char const *fmt, ...), 3, 4);
 int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
-
 #ifndef RUBY_DONT_SUBST
 #include "ruby/subst.h"
 #endif
@@ -1488,7 +1484,7 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
  */
 typedef void *ruby_opaque_t;
 
-/*! @deprecated You no longer need to use this macro. */ 
+/*! @deprecated You no longer need to use this macro. */
 #if (defined(__APPLE__) || defined(__NeXT__)) && defined(__MACH__)
 #define RUBY_GLOBAL_SETUP /* use linker option to link startup code with ObjC support */
 #else
@@ -1554,6 +1550,10 @@ void ruby_incpush(const char*);
 void ruby_sig_finalize(void);
 
 /*! @} */
+
+#if defined __GNUC__ && __GNUC__ >= 4
+#pragma GCC visibility pop
+#endif
 
 #if defined(__cplusplus)
 #if 0

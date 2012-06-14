@@ -265,8 +265,8 @@ pruby_str_to_var(volatile VALUE str)
 
 static struct PP_Var
 pruby_obj_to_var(volatile VALUE obj)
-{ 
-  static const char* const error = 
+{
+  static const char* const error =
       "throw 'Failed to convert the result to a JavaScript object';";
   int state;
   obj = rb_protect(&rb_obj_as_string, obj, &state);
@@ -318,7 +318,7 @@ pruby_post_cstr(void* data)
   /* PPAPI main thread */
   struct PepperInstance* const instance = (struct PepperInstance*)data;
   const char* const msg = (const char*)instance->async_call_args;
-  messaging_interface->PostMessage(instance->instance, 
+  messaging_interface->PostMessage(instance->instance,
                                    pruby_cstr_to_var(msg));
 }
 
@@ -445,7 +445,7 @@ pruby_eval(void* data)
   pthread_mutex_unlock(&instance->mutex);
 
   if (!state) {
-      instance->async_call_args = 
+      instance->async_call_args =
           rb_str_concat(rb_usascii_str_new_cstr("return:"),
                         rb_obj_as_string(result));
       core_interface->CallOnMainThread(
@@ -805,7 +805,7 @@ load_file_read_contents_callback(void *data, int result)
 {
   struct PepperInstance* const instance = (struct PepperInstance*)data;
   if (result > 0) {
-    rb_str_buf_cat(instance->async_call_result.as_value, 
+    rb_str_buf_cat(instance->async_call_result.as_value,
                    instance->buf, result);
     loader_interface->ReadResponseBody(
         instance->url_loader, instance->buf, 1000, PP_MakeCompletionCallback(load_file_read_contents_callback, instance));
@@ -868,7 +868,7 @@ rb_load_file(const char *path)
   }
   else if (RB_TYPE_P(instance->async_call_result.as_value, T_STRING)) {
     VALUE str = instance->async_call_result.as_value;
-    extern void* rb_compile_cstr(const char *f, const char *s, int len, int line); 
+    extern void* rb_compile_cstr(const char *f, const char *s, int len, int line);
     return rb_compile_cstr(path, RSTRING_PTR(str), RSTRING_LEN(str), 0);
   }
   else {
