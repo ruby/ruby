@@ -2506,27 +2506,26 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *
  *  Creates an enumerator for each chunked elements.
  *  The beginnings of chunks are defined by _pattern_ and the block.
- *  If _pattern_ === _elt_ returns true or
- *  the block returns true for the element,
- *  the element is beginning of a chunk.
- *
- *  The === and block is called from the first element to the last element
- *  of _enum_.
- *  The result for the first element is ignored.
- *
- *  The result enumerator yields the chunked elements as an array for +each+
- *  method.
- *  +each+ method can be called as follows.
+
+ *  If <code>_pattern_ === _elt_</code> returns <code>true</code> or the block
+ *  returns <code>true</code> for the element, the element is beginning of a
+ *  chunk.
+
+ *  The <code>===</code> and _block_ is called from the first element to the last
+ *  element of _enum_.  The result for the first element is ignored.
+
+ *  The result enumerator yields the chunked elements as an array.
+ *  So +each+ method can be called as follows:
  *
  *    enum.slice_before(pattern).each { |ary| ... }
  *    enum.slice_before { |elt| bool }.each { |ary| ... }
  *    enum.slice_before(initial_state) { |elt, state| bool }.each { |ary| ... }
  *
- *  Other methods of Enumerator class and Enumerable module,
+ *  Other methods of the Enumerator class and Enumerable module,
  *  such as map, etc., are also usable.
  *
  *  For example, iteration over ChangeLog entries can be implemented as
- *  follows.
+ *  follows:
  *
  *    # iterate over ChangeLog entries.
  *    open("ChangeLog") { |f|
@@ -2538,8 +2537,9 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *      f.slice_before { |line| /\A\S/ === line }.each { |e| pp e }
  *    }
  *
- * "svn proplist -R" produces multiline output for each file.
- * They can be chunked as follows:
+ *
+ *  "svn proplist -R" produces multiline output for each file.
+ *  They can be chunked as follows:
  *
  *    IO.popen([{"LC_ALL"=>"C"}, "svn", "proplist", "-R"]) { |f|
  *      f.lines.slice_before(/\AProp/).each { |lines| p lines }
@@ -2567,15 +2567,14 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *
  *  However local variables are not appropriate to maintain state
  *  if the result enumerator is used twice or more.
- *  In such case, the last state of the 1st +each+ is used in 2nd +each+.
- *  _initial_state_ argument can be used to avoid this problem.
+ *  In such a case, the last state of the 1st +each+ is used in the 2nd +each+.
+ *  The _initial_state_ argument can be used to avoid this problem.
  *  If non-nil value is given as _initial_state_,
- *  it is duplicated for each "each" method invocation of the enumerator.
+ *  it is duplicated for each +each+ method invocation of the enumerator.
  *  The duplicated object is passed to 2nd argument of the block for
  *  +slice_before+ method.
  *
- *    # word wrapping.
- *    # this assumes all characters have same width.
+ *    # Word wrapping.  This assumes all characters have same width.
  *    def wordwrap(words, maxwidth)
  *      # if cols is a local variable, 2nd "each" may start with non-zero cols.
  *      words.slice_before(cols: 0) { |w, h|
@@ -2603,8 +2602,8 @@ slicebefore_i(VALUE yielder, VALUE enumerator, int argc, VALUE *argv)
  *    #   20
  *    #   ----------
  *
- * mbox contains series of mails which start with Unix From line.
- * So each mail can be extracted by slice before Unix From line.
+ *  mbox contains series of mails which start with Unix From line.
+ *  So each mail can be extracted by slice before Unix From line.
  *
  *    # parse mbox
  *    open("mbox") { |f|
