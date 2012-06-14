@@ -1264,7 +1264,7 @@ rb_ary_indexes(int argc, VALUE *argv, VALUE ary)
     VALUE val;
     long i;
 
-    if (argc == 0) {
+    if (argc > 0) {
 	   RETURN_ENUMERATOR(ary, 0, 0);
         array_length = 0;
 
