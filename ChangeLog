@@ -1,3 +1,15 @@
+Thu Jun 14 10:39:48 2012  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* eval.c: Add doxygen comments.
+
+	* ruby.c: ditto.
+
+	* thread_pthread.c: ditto
+
+	* version.c: ditto.
+
+	* vm_core.h: ditto.
+
 Thu Jun 14 10:16:07 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: revert r36071 and add NetBSD to blacklist of -ansi.

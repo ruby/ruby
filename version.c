@@ -96,6 +96,7 @@ const char ruby_initial_load_paths[] =
 #endif
     "";
 
+/*! Defines platform-depended Ruby-level constants */
 void
 Init_version(void)
 {
@@ -134,6 +135,7 @@ Init_version(void)
     rb_define_global_const("RUBY_ENGINE", ruby_engine_name = MKSTR(engine));
 }
 
+/*! Prints the version information of the CRuby interpreter to stdout. */
 void
 ruby_show_version(void)
 {
@@ -141,6 +143,9 @@ ruby_show_version(void)
     fflush(stdout);
 }
 
+/*! Prints the copyright notice of the CRuby interpreter to stdout and \em exits
+ *  this process successfully.
+ */
 void
 ruby_show_copyright(void)
 {

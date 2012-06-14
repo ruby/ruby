@@ -61,6 +61,16 @@ ruby_init(void)
     GET_VM()->running = 1;
 }
 
+/*! Processes command line arguments and compiles the Ruby source to execute.
+ *
+ * This function does:
+ * \li  Processses the given command line flags and arguments for ruby(1)
+ * \li compiles the source code from the given argument, -e or stdin, and
+ * \li returns the compiled source as an opaque pointer to an internal data structure
+ *
+ * @return an opaque pointer to the compiled source or an internal special value.
+ * @sa ruby_executable_node().
+ */
 void *
 ruby_options(int argc, char **argv)
 {
@@ -101,6 +111,13 @@ ruby_finalize_1(void)
     rb_gc_call_finalizer_at_exit();
 }
 
+/** Runs the VM finalization processes.
+ *
+ * <code>END{}</code> and procs registered by <code>Kernel.#at_ext</code> are
+ * executed here. See the Ruby language spec for more details.
+ *
+ * @note This function is allowed to raise an exception if an error occurred.
+ */
 void
 ruby_finalize(void)
 {
@@ -108,6 +125,16 @@ ruby_finalize(void)
     ruby_finalize_1();
 }
 
+/** Destructs the VM.
+ *
+ * Runs the VM finalization processes as well as ruby_finalize(), and frees
+ * resources used by the VM.
+ *
+ * @param ex Default value to the return value.
+ * @return If an error occured returns a non-zero. If otherwise, reurns the
+ *         given ex.
+ * @note This function does not raise any exception.
+ */
 int
 ruby_cleanup(volatile int ex)
 {
@@ -210,12 +237,25 @@ ruby_exec_internal(void *n)
     return state;
 }
 
+/*! Calls ruby_cleanup() and exits the process */
 void
 ruby_stop(int ex)
 {
     exit(ruby_cleanup(ex));
 }
 
+/*! Checks the return value of ruby_options().
+ * @param n return value of ruby_options().
+ * @param status pointer to the exit status of this process.
+ *
+ * ruby_options() sometimes returns a special value to indicate this process
+ * should immediately exit. This function checks if the case. Also stores the
+ * exit status that the caller have to pass to exit(3) into
+ * <code>*status</code>.
+ *
+ * @retval non-zero if the given opaque pointer is actually a compiled source.
+ * @retval 0 if the given value is such a special value.
+ */
 int
 ruby_executable_node(void *n, int *status)
 {
@@ -233,6 +273,10 @@ ruby_executable_node(void *n, int *status)
     return FALSE;
 }
 
+/*! Runs the given compiled source and exits this process.
+ * @retval 0 if successfully run thhe source
+ * @retval non-zero if an error occurred.
+*/
 int
 ruby_run_node(void *n)
 {
@@ -244,6 +288,7 @@ ruby_run_node(void *n)
     return ruby_cleanup(ruby_exec_node(n));
 }
 
+/*! Runs the given compiled source */
 int
 ruby_exec_node(void *n)
 {

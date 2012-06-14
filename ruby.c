@@ -1706,6 +1706,11 @@ set_arg0(VALUE val, ID id)
     rb_progname = rb_obj_freeze(rb_external_str_new(s, i));
 }
 
+/*! Sets the current script name to this value.
+ *
+ * This is similiar to <code>$0 = name</code> in Ruby level but also affects
+ * <code>Method#location</code> and others.
+ */
 void
 ruby_script(const char *name)
 {
@@ -1765,6 +1770,7 @@ opt_W_getter(ID id, void *data)
     }
 }
 
+/*! Defines built-in variables */
 void
 ruby_prog_init(void)
 {
@@ -1860,6 +1866,12 @@ fill_standard_fds(void)
     }
 }
 
+/*! Initializes the process for ruby(1).
+ *
+ * This function assumes this process is ruby(1) and it has just started.
+ * Usually programs that embeds CRuby interpreter should not call this function,
+ * and should do their own initialization.
+ */
 void
 ruby_sysinit(int *argc, char ***argv)
 {

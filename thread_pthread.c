@@ -581,6 +581,10 @@ extern void *STACK_END_ADDRESS;
 #endif
 
 #undef ruby_init_stack
+/* Set stack bottom of Ruby implementation.
+ *
+ * You must call this function before any heap allocation by Ruby implementation.
+ * Or GC will break living objects */
 void
 ruby_init_stack(volatile VALUE *addr
 #ifdef __ia64

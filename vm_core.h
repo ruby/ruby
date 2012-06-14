@@ -458,7 +458,18 @@ typedef struct rb_thread_struct {
     struct rb_vm_tag *tag;
     struct rb_vm_protect_tag *protect_tag;
 
+    /*! Thread-local state of evaluation context.
+     * 
+     *  If negative, this thread is evaluating the main program.
+     *  If positive, this thread is evaluating a program under Kernel::eval
+     *  family.
+     */
     int parse_in_eval;
+
+    /*! Thread-local state of compiling context.
+     *
+     * If non-zero, the parser does not automatically print error messages to
+     * stderr. */
     int mild_compile_error;
 
     /* storage */
