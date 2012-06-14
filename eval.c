@@ -273,7 +273,10 @@ ruby_eval_main_internal(VALUE iseqval, VALUE* result)
     volatile VALUE retval;
     rb_thread_t *th = GET_THREAD();
 
-    if (!iseqval) return 0;
+    if (!iseqval) {
+	*result = Qnil;
+	return 0;
+    }
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
