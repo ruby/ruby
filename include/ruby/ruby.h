@@ -1229,21 +1229,6 @@ NORETURN(void rb_throw_obj(VALUE,VALUE));
 
 VALUE rb_require(const char*);
 
-#ifdef __ia64
-void ruby_init_stack(volatile VALUE*, void*);
-#define ruby_init_stack(addr) ruby_init_stack((addr), rb_ia64_bsp())
-#else
-void ruby_init_stack(volatile VALUE*);
-#endif
-#define RUBY_INIT_STACK \
-    VALUE variable_in_this_stack_frame; \
-    ruby_init_stack(&variable_in_this_stack_frame);
-void ruby_init(void);
-void *ruby_options(int, char**);
-int ruby_run_node(void *);
-int ruby_exec_node(void *);
-int ruby_executable_node(void *n, int *status);
-
 RUBY_EXTERN VALUE rb_mKernel;
 RUBY_EXTERN VALUE rb_mComparable;
 RUBY_EXTERN VALUE rb_mEnumerable;
@@ -1400,14 +1385,6 @@ rb_special_const_p(VALUE obj)
 static char *dln_libs_to_be_linked[] = { EXTLIB, 0 };
 #endif
 
-#if (defined(__APPLE__) || defined(__NeXT__)) && defined(__MACH__)
-#define RUBY_GLOBAL_SETUP /* use linker option to link startup code with ObjC support */
-#else
-#define RUBY_GLOBAL_SETUP
-#endif
-
-void ruby_sysinit(int *, char ***);
-
 #define RUBY_VM 1 /* YARV */
 #define HAVE_NATIVETHREAD
 int ruby_native_thread_p(void);
@@ -1494,6 +1471,89 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 #ifndef RUBY_DONT_SUBST
 #include "ruby/subst.h"
 #endif
+
+/**
+ * @defgroup embed CRuby Embedding APIs
+ * CRuby interpreter APIs. These are APIs to embed MRI interpreter into your
+ * program.
+ * These functions are not a part of Ruby extention library API.
+ * Extension libraries of Ruby should not depend on these functions.
+ * @{
+ */
+
+/*! Opaque pointer to an inner data structure.
+ *
+ * You do not have to know what the actual data type this pointer points.
+ * It often changes for internal improvements.
+ */
+typedef void *ruby_opaque_t;
+
+/*! @deprecated You no longer need to use this macro. */ 
+#if (defined(__APPLE__) || defined(__NeXT__)) && defined(__MACH__)
+#define RUBY_GLOBAL_SETUP /* use linker option to link startup code with ObjC support */
+#else
+#define RUBY_GLOBAL_SETUP
+#endif
+
+/** @defgroup ruby1 ruby(1) implementation
+ * A part of the implementation of ruby(1) command.
+ * Other programs that embed Ruby interpreter do not always need to use these
+ * functions.
+ * @{
+ */
+
+void ruby_sysinit(int *argc, char ***argv);
+void ruby_init(void);
+ruby_opaque_t ruby_options(int argc, char** argv);
+int ruby_executable_node(ruby_opaque_t n, int *status);
+int ruby_run_node(ruby_opaque_t n);
+
+/* version.c */
+void ruby_show_version(void);
+void ruby_show_copyright(void);
+
+
+/*! A convenience macro to call ruby_init_stack(). Must be placed just after
+ *  variable declarations */
+#define RUBY_INIT_STACK \
+    VALUE variable_in_this_stack_frame; \
+    ruby_init_stack(&variable_in_this_stack_frame);
+/*! @} */
+
+#ifdef __ia64
+void ruby_init_stack(volatile VALUE*, void*);
+#define ruby_init_stack(addr) ruby_init_stack((addr), rb_ia64_bsp())
+#else
+void ruby_init_stack(volatile VALUE*);
+#endif
+#define Init_stack(addr) ruby_init_stack(addr)
+
+int ruby_setup(void);
+int ruby_cleanup(volatile int);
+
+void ruby_finalize(void);
+NORETURN(void ruby_stop(int));
+
+void ruby_set_stack_size(size_t);
+int ruby_stack_check(void);
+size_t ruby_stack_length(VALUE**);
+
+ruby_opaque_t ruby_compile_main_from_file(VALUE fname, const char* path, VALUE* error);
+ruby_opaque_t ruby_compile_main_from_string(VALUE fname, VALUE string, VALUE* error);
+int ruby_exec_node(ruby_opaque_t n);
+int ruby_eval_main(ruby_opaque_t n, VALUE *result);
+
+void ruby_script(const char* name);
+void ruby_set_script_name(VALUE name);
+
+void ruby_prog_init(void);
+void ruby_set_argv(int, char**);
+void *ruby_process_options(int, char**);
+void ruby_init_loadpath(void);
+void ruby_incpush(const char*);
+void ruby_sig_finalize(void);
+
+/*! @} */
 
 #if defined(__cplusplus)
 #if 0

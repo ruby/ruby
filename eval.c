@@ -31,16 +31,18 @@ VALUE rb_eSysStackError;
 #include "eval_error.c"
 #include "eval_jump.c"
 
-/* initialize ruby */
-
-void
-ruby_init(void)
+/* Initializes the Ruby VM and builtin libraries.
+ * @retval 0 if succeeded.
+ * @retval non-zero an error occured.
+ */
+int
+ruby_setup(void)
 {
     static int initialized = 0;
     int state;
 
     if (initialized)
-	return;
+	return 0;
     initialized = 1;
 
     ruby_init_stack((void *)&state);
@@ -54,11 +56,22 @@ ruby_init(void)
     }
     POP_TAG();
 
+    if (!state) GET_VM()->running = 1;
+    return state;
+}
+
+/* Calls ruby_setup() and check error.
+ *
+ * Prints errors and calls exit(3) if an error occured.
+ */
+void
+ruby_init(void)
+{
+    int state = ruby_setup();
     if (state) {
 	error_print();
 	exit(EXIT_FAILURE);
     }
-    GET_VM()->running = 1;
 }
 
 /*! Processes command line arguments and compiles the Ruby source to execute.
@@ -71,7 +84,7 @@ ruby_init(void)
  * @return an opaque pointer to the compiled source or an internal special value.
  * @sa ruby_executable_node().
  */
-void *
+ruby_opaque_t
 ruby_options(int argc, char **argv)
 {
     int state;
@@ -217,26 +230,6 @@ ruby_cleanup(volatile int ex)
     return ex;
 }
 
-static int
-ruby_exec_internal(void *n)
-{
-    volatile int state;
-    VALUE iseq = (VALUE)n;
-    rb_thread_t *th = GET_THREAD();
-
-    if (!n) return 0;
-
-    PUSH_TAG();
-    if ((state = EXEC_TAG()) == 0) {
-	SAVE_ROOT_JMPBUF(th, {
-	    th->base_block = 0;
-	    rb_iseq_eval_main(iseq);
-	});
-    }
-    POP_TAG();
-    return state;
-}
-
 /*! Calls ruby_cleanup() and exits the process */
 void
 ruby_stop(int ex)
@@ -257,7 +250,7 @@ ruby_stop(int ex)
  * @retval 0 if the given value is such a special value.
  */
 int
-ruby_executable_node(void *n, int *status)
+ruby_executable_node(ruby_opaque_t n, int *status)
 {
     VALUE v = (VALUE)n;
     int s;
@@ -273,12 +266,33 @@ ruby_executable_node(void *n, int *status)
     return FALSE;
 }
 
+static int
+ruby_eval_main_internal(VALUE iseqval, VALUE* result)
+{
+    volatile int state;
+    volatile VALUE retval;
+    rb_thread_t *th = GET_THREAD();
+
+    if (!iseqval) return 0;
+
+    PUSH_TAG();
+    if ((state = EXEC_TAG()) == 0) {
+	SAVE_ROOT_JMPBUF(th, {
+	    th->base_block = 0;
+	    retval = rb_iseq_eval_main(iseqval);
+	});
+    }
+    POP_TAG();
+    *result = state ? th->errinfo : retval; 
+    return state;
+}
+
 /*! Runs the given compiled source and exits this process.
  * @retval 0 if successfully run thhe source
  * @retval non-zero if an error occurred.
 */
 int
-ruby_run_node(void *n)
+ruby_run_node(ruby_opaque_t n)
 {
     int status;
     if (!ruby_executable_node(n, &status)) {
@@ -290,10 +304,27 @@ ruby_run_node(void *n)
 
 /*! Runs the given compiled source */
 int
-ruby_exec_node(void *n)
+ruby_exec_node(ruby_opaque_t n)
 {
+    VALUE dummy;
     ruby_init_stack((void *)&n);
-    return ruby_exec_internal(n);
+    return ruby_eval_main_internal((VALUE)n, &dummy);
+}
+
+
+/*!
+ * Evaluates the given iseq in the main (toplevel) context.
+ *
+ * @param iseqval a VALUE that wraps an iseq.
+ * @param result Stores the evaluated value if succeeded,
+ *        or an exception if failed.
+ * @retval 0 if succeeded
+ * @retval non-zero if failed.
+ */
+int
+ruby_eval_main(ruby_opaque_t n, VALUE *result)
+{
+    return !!ruby_eval_main_internal((VALUE)n, result);
 }
 
 /*

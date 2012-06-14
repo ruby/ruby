@@ -386,9 +386,6 @@ VALUE rb_protect(VALUE (*)(VALUE), VALUE, int*);
 void rb_set_end_proc(void (*)(VALUE), VALUE);
 void rb_mark_end_proc(void);
 void rb_exec_end_proc(void);
-void ruby_finalize(void);
-NORETURN(void ruby_stop(int));
-int ruby_cleanup(volatile int);
 DEPRECATED(void rb_gc_mark_threads(void));
 void rb_thread_schedule(void);
 void rb_thread_wait_fd(int);
@@ -432,10 +429,7 @@ VALUE rb_file_directory_p(VALUE,VALUE);
 VALUE rb_str_encode_ospath(VALUE);
 int rb_is_absolute_path(const char *);
 /* gc.c */
-void ruby_set_stack_size(size_t);
 NORETURN(void rb_memerror(void));
-int ruby_stack_check(void);
-size_t ruby_stack_length(VALUE**);
 int rb_during_gc(void);
 void rb_gc_mark_locations(VALUE*, VALUE*);
 void rb_mark_tbl(struct st_table*);
@@ -451,7 +445,6 @@ void rb_gc_call_finalizer_at_exit(void);
 VALUE rb_gc_enable(void);
 VALUE rb_gc_disable(void);
 VALUE rb_gc_start(void);
-#define Init_stack(addr) ruby_init_stack(addr)
 void rb_gc_set_params(void);
 /* hash.c */
 void st_foreach_safe(struct st_table *, int (*)(ANYARGS), st_data_t);
@@ -662,12 +655,6 @@ int rb_reg_options(VALUE);
 RUBY_EXTERN VALUE rb_argv0;
 VALUE rb_get_argv(void);
 void *rb_load_file(const char*);
-void ruby_script(const char*);
-void ruby_prog_init(void);
-void ruby_set_argv(int, char**);
-void *ruby_process_options(int, char**);
-void ruby_init_loadpath(void);
-void ruby_incpush(const char*);
 /* signal.c */
 VALUE rb_f_kill(int, VALUE*);
 void rb_gc_mark_trap_list(void);
@@ -675,7 +662,6 @@ void rb_gc_mark_trap_list(void);
 #define posix_signal ruby_posix_signal
 RETSIGTYPE (*posix_signal(int, RETSIGTYPE (*)(int)))(int);
 #endif
-void ruby_sig_finalize(void);
 void rb_trap_exit(void);
 void rb_trap_exec(void);
 const char *ruby_signal_name(int);
@@ -929,9 +915,6 @@ VALUE rb_cv_get(VALUE, const char*);
 void rb_define_class_variable(VALUE, const char*, VALUE);
 VALUE rb_mod_class_variables(VALUE);
 VALUE rb_mod_remove_cvar(VALUE, VALUE);
-/* version.c */
-void ruby_show_version(void);
-void ruby_show_copyright(void);
 
 ID rb_frame_callee(void);
 VALUE rb_str_succ(VALUE);

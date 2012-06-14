@@ -496,6 +496,26 @@ require_libraries(VALUE *req_list)
     th->base_block = prev_base_block;
 }
 
+static rb_env_t*
+toplevel_context(void)
+{
+    rb_env_t *env;
+    VALUE toplevel_binding = rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING"));
+    rb_binding_t *bind;
+
+    GetBindingPtr(toplevel_binding, bind);
+    GetEnvPtr(bind->env, env);
+    return env;
+}
+
+#define PREPARE_PARSE_MAIN(th, env, expr) do { \
+    (th)->parse_in_eval--; \
+    (th)->base_block = &(env)->block; \
+    expr; \
+    (th)->parse_in_eval++; \
+    (th)->base_block = 0; \
+} while (0)
+
 static void
 process_sflag(int *sflag)
 {
@@ -1365,22 +1385,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 
-    {
-	/* set eval context */
-	VALUE toplevel_binding = rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING"));
-	rb_binding_t *bind;
-
-	GetBindingPtr(toplevel_binding, bind);
-	GetEnvPtr(bind->env, env);
-    }
-
-#define PREPARE_PARSE_MAIN(expr) do { \
-    th->parse_in_eval--; \
-    th->base_block = &env->block; \
-    expr; \
-    th->parse_in_eval++; \
-    th->base_block = 0; \
-} while (0)
+    env = toplevel_context();
 
     if (opt->e_script) {
 	VALUE progname = rb_progname;
@@ -1392,11 +1397,11 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	    eenc = lenc;
 	}
 	rb_enc_associate(opt->e_script, eenc);
-	rb_vm_set_progname(rb_progname = opt->script_name);
+        ruby_set_script_name(opt->script_name);
 	require_libraries(&opt->req_list);
-	rb_vm_set_progname(rb_progname = progname);
+        ruby_set_script_name(progname);
 
-	PREPARE_PARSE_MAIN({
+	PREPARE_PARSE_MAIN(th, env, {
 	    tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
 	});
     }
@@ -1405,12 +1410,11 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	    forbid_setid("program input from stdin");
 	}
 
-	PREPARE_PARSE_MAIN({
+	PREPARE_PARSE_MAIN(th, env, {
 	    tree = load_file(parser, opt->script_name, 1, opt);
 	});
     }
-    rb_progname = opt->script_name;
-    rb_vm_set_progname(rb_progname);
+    ruby_set_script_name(opt->script_name);
     if (opt->dump & DUMP_BIT(yydebug)) return Qtrue;
 
     if (opt->ext.enc.index >= 0) {
@@ -1446,12 +1450,12 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     }
 
     if (opt->do_print) {
-	PREPARE_PARSE_MAIN({
+	PREPARE_PARSE_MAIN(th, env, {
 	    tree = rb_parser_append_print(parser, tree);
 	});
     }
     if (opt->do_loop) {
-	PREPARE_PARSE_MAIN({
+	PREPARE_PARSE_MAIN(th, env, {
 	    tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
 	});
 	rb_define_global_function("sub", rb_f_sub, -1);
@@ -1466,7 +1470,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	return Qtrue;
     }
 
-    PREPARE_PARSE_MAIN({
+    PREPARE_PARSE_MAIN(th, env, {
 	VALUE path = Qnil;
 	if (!opt->e_script && strcmp(opt->script, "-"))
 	    path = rb_realpath_internal(Qnil, opt->script_name, 1);
@@ -1622,7 +1626,7 @@ load_file_internal(VALUE arg)
 	    if (f != rb_stdin) rb_io_close(f);
 	    f = Qnil;
 	}
-	rb_vm_set_progname(rb_progname = opt->script_name);
+        ruby_set_script_name(opt->script_name);
 	require_libraries(&opt->req_list);	/* Why here? unnatural */
     }
     if (opt->src.enc.index >= 0) {
@@ -1689,6 +1693,103 @@ rb_load_file(const char *fname)
     return load_file(rb_parser_new(), fname_v, 0, cmdline_options_init(&opt));
 }
 
+struct ruby_compile_main_arg {
+    int is_string;
+    union {
+        VALUE path;
+        VALUE string;
+    } source;
+};
+
+static ruby_opaque_t
+parse_and_compile_main(VALUE fname, const struct ruby_compile_main_arg* arg, VALUE* error)
+{
+    rb_env_t *const env = toplevel_context();
+    rb_thread_t *const th = GET_THREAD();
+    NODE* tree;
+    VALUE iseq;
+    VALUE path;
+    int state;
+
+    PUSH_TAG();
+    if ((state = EXEC_TAG()) == 0) {
+        PREPARE_PARSE_MAIN(th, env, {
+            VALUE parser = rb_parser_new();
+            th->mild_compile_error++;
+            if (arg->is_string) {
+                FilePathValue(fname);
+                path = fname;
+                tree = rb_parser_compile_string(parser, RSTRING_PTR(fname), arg->source.string, 1);
+            }
+            else {
+                struct cmdline_options opt;
+                path = arg->source.path;
+                tree = load_file(parser, path, 0, cmdline_options_init(&opt));
+            }
+            th->mild_compile_error--;
+        });
+        if (!tree) rb_exc_raise(th->errinfo);
+
+        ruby_set_script_name(fname);
+
+        PREPARE_PARSE_MAIN(th, env, {
+            iseq = rb_iseq_new_main(tree, fname, path);
+        });
+    }
+    POP_TAG();
+    if (state) {
+        *error = th->errinfo;
+        return NULL;
+    } else {
+        *error = Qnil;
+        return iseq;
+    }
+}
+
+/**
+ * Compiles a main Ruby script file into the internal a data structure.
+ *
+ * This function:
+ * @li loads the file specified by path.
+ * @li parses the source and compiles it
+ *
+ * @param fname <code>$0</code> is set to this value. 
+ *              If nil,
+ *              uses the given path instead.
+ * @param path path to the source
+ * @param error where to store the exception if an error occured.
+ * @return The compiled source code. Or NULL if an error occured.
+ */
+ruby_opaque_t
+ruby_compile_main_from_file(VALUE fname, const char* path, VALUE* error)
+{
+    struct ruby_compile_main_arg arg;
+    arg.is_string = FALSE;
+    arg.source.path = rb_str_new_cstr(path);
+
+    if (NIL_P(fname)) fname = arg.source.path;
+    return parse_and_compile_main(fname, &arg, error);
+}
+
+/**
+ * Compiles a main Ruby script in a string into the internal a data structure.
+ *
+ * This function parses the given source and compiles it
+ *
+ * @param fname <code>$0</code> is set to this value. 
+ * @param source Ruby source string
+ * @param error where to store the exception if an error occured.
+ * @return The compiled source code. Or NULL if an error occured.
+ */
+ruby_opaque_t
+ruby_compile_main_from_string(VALUE fname, VALUE source, VALUE* error)
+{
+    struct ruby_compile_main_arg arg;
+    arg.is_string = TRUE;
+    arg.source.string = source;
+    return parse_and_compile_main(fname, &arg, error);
+}
+
 static void
 set_arg0(VALUE val, ID id)
 {
@@ -1718,6 +1819,17 @@ ruby_script(const char *name)
 	rb_progname = rb_external_str_new(name, strlen(name));
 	rb_vm_set_progname(rb_progname);
     }
+}
+
+/*! Sets the current script name to this value.
+ *
+ * Same as ruby_script() but accepts a VALUE.
+ */
+void
+ruby_set_script_name(VALUE name)
+{
+    rb_progname = rb_str_dup(name);
+    rb_vm_set_progname(rb_progname);
 }
 
 static void

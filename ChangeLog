@@ -1,3 +1,26 @@
+Thu Jun 14 10:44:41 2012  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* include/ruby/ruby.h: Grouped APIs for embedding CRuby interpreter.
+	  (ruby_setup, ruby_compile_main_from_file,
+	  ruby_compile_main_from_string, ruby_eval_main,
+	  ruby_set_script_name): new APIs to embed CRuby.
+	  (ruby_opaque_t) Opaque pointer to an internal data, to NODE or iseq
+	  in particular.
+
+	* eval.c (ruby_setup): Similar to ruby_init but returns an error code
+	  instead of exit(3) on error.
+	  (ruby_eval_main): Similar to ruby_exec_node but returns the
+	  evaluation result.
+	  (ruby_eval_main_internal): renamed from ruby_exec_internal.
+
+	* ruby.c (toplevel_context): new helper function.
+	  (PREPARE_EVAL_MAIN): moved.
+	  (process_options): refactored with new functions.
+	  (parse_and_compile_main) new helper funciton.
+	  (ruby_compile_main_from_file, ruby_compile_main_from_string) new API
+	  (ruby_set_script_name): new API.
+
+
 Thu Jun 14 10:39:48 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* eval.c: Add doxygen comments.
