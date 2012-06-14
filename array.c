@@ -1265,27 +1265,25 @@ rb_ary_indexes(int argc, VALUE *argv, VALUE ary)
     long i;
 
     if (argc == 0) {
-	RETURN_ENUMERATOR(ary, 0, 0);
-    array_lenth = 0;
+	   RETURN_ENUMERATOR(ary, 0, 0);
+        array_length = 0;
 
-	for (i=0; i<RARRAY_LEN(ary); i++) {
-	    if (RTEST(rb_yield(RARRAY_PTR(ary)[i]))) {
-		  array_len++;
-	    }
-	}
+    	for (i=0; i<RARRAY_LEN(ary); i++) {
+    	    if (RTEST(rb_yield(RARRAY_PTR(ary)[i]))) {
+    		  array_length++;
+    	    }
+    	}
 
-    indexes = malloc(array_length * sizeof(int));
-    index = 0;
+        indexes = rb_ary_new2(array_length);
+        index = 0;
 
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-        if (RTEST(rb_yield(RARRAY_PTR(ary)[i]))) {
-          indexes[index] = LONG2NUM(i);
-          index++;
+        for (i=0; i<RARRAY_LEN(ary); i++) {
+            if (RTEST(rb_yield(RARRAY_PTR(ary)[i]))) {
+              indexes[index] = LONG2NUM(i);
+              index++;
+            }
         }
-    }
-	return indexes;
-
-	return Qnil;
+    	return indexes;
     }
 }
 /*
