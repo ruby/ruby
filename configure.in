@@ -617,14 +617,14 @@ if test "$GCC" = yes; then
       # comments.   We  bypass  ANSI   C  mode  for  them.   Otherwise
       # extension libs cannot include those headers.
     ],
-    [cygwin*|darwin*], [
+    [cygwin*|darwin*|netbsd*], [
       # need lgamma_r(), finite()
     ],
     [
       # ANSI (no XCFLAGS because this is C only)
-      RUBY_TRY_CFLAGS(-ansi -std=iso9899:199409 -fbuiltin, [
-        RUBY_APPEND_OPTION(warnflags, -ansi -std=iso9899:199409 -fbuiltin)
-        RUBY_APPEND_OPTION(rb_cv_warnflags, -ansi -std=iso9899:199409 -fbuiltin)
+      RUBY_TRY_CFLAGS(-ansi -std=iso9899:199409, [
+        RUBY_APPEND_OPTION(warnflags, -ansi -std=iso9899:199409)
+        RUBY_APPEND_OPTION(rb_cv_warnflags, -ansi -std=iso9899:199409)
       ])
     ])
 
