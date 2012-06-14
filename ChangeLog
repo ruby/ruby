@@ -1,3 +1,8 @@
+Thu Jun 14 22:49:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CPPOUTFILE): check if output file is actually
+	  created.  [ruby-dev:45742] [Bug#6591]
+
 Thu Jun 14 22:10:50 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (proc_exec_sh): don't strip leading spaces of the script.
