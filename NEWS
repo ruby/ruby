@@ -25,6 +25,10 @@ with all sufficient information, see the ChangeLog file.
     * aliased method:
       * ENV.to_h is a new alias for ENV.to_hash
 
+  * File
+    * added method:
+      * added File.rootname returns root part of file name.
+
   * Hash
     * added method:
       * added Hash#to_h as explicit conversion method, like Array#to_a.

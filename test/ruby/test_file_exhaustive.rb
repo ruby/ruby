@@ -522,6 +522,30 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_incompatible_encoding {|d| File.extname(d)}
   end
 
+  def assert_rootname(expect, path, *rest)
+    assert_equal(expect, File.rootname(path), *rest)
+  end
+
+  if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    alias assert_rootname_slash assert_rootname
+    def assert_rootname(expect, path, *rest)
+      assert_rootname_slash(expect, path, *rest)
+      assert_rootname_slash(expect.tr("/", "\\"), path.tr("/", "\\"), *rest)
+    end
+  end
+
+  def test_rootname
+    if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+      assert_rootname("c:/", "c:/Users/gumby/work/ruby.rb")
+      assert_rootname("//host/share/", "//host/share/gumby/work/ruby.rb")
+      assert_rootname("//./device/", "//./device/foo")
+      assert_rootname("", "c:gumby/work/ruby.rb")
+    end
+    root = /mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM ? "" : "/"
+    assert_rootname(root, "/Users/gumby/work/ruby.rb")
+    assert_rootname("", "home/gumby/work/ruby.rb")
+  end
+
   def test_split
     d, b = File.split(@file)
     assert_equal(File.dirname(@file), d)
