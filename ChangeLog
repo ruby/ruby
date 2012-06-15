@@ -1,3 +1,8 @@
+Fri Jun 15 19:11:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner#puke): always add skipped
+	  results to the report for parallel test.  [Bug #6595]
+
 Fri Jun 15 09:01:35 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* nacl/pepper_main.c: Removed an unnecessary and errorneous inclusion.
