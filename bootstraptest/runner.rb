@@ -82,8 +82,9 @@ def main
       true
     when /\A(--stress|-s)/
       $stress = true
-    when /\A--color(?:=(?:always|(auto)|(never)))?\z/
-      @color = (!$2 unless $1)
+    when /\A--color(?:=(?:always|(auto)|(never)|(.*)))?\z/
+      warn "unknown --color argument: #$3" if $3
+      @color = $1 ? nil : !$2
       true
     when /\A(-q|--q(uiet))\z/
       quiet = true
