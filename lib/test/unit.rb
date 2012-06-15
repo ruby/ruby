@@ -614,7 +614,9 @@ module Test
           end
           unless rep.empty?
             rep.each do |r|
-              report.push(*r[:report])
+              r[:report].each do |f|
+                report.push(puke(*f)) if f
+              end
             end
             @errors   += rep.map{|x| x[:result][0] }.inject(:+)
             @failures += rep.map{|x| x[:result][1] }.inject(:+)

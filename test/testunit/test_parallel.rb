@@ -104,8 +104,9 @@ module TestParallel
         assert_kind_of(Array,result[2])
         assert_kind_of(Array,result[3])
         assert_kind_of(Array,result[4])
-        assert_match(/Skipped:$/,result[2][1])
-        assert_match(/Failure:$/,result[2][0])
+        assert_kind_of(Array,result[2][1])
+        assert_kind_of(MiniTest::Assertion,result[2][0][2])
+        assert_kind_of(MiniTest::Skip,result[2][1][2])
         assert_equal(result[5], "TestE")
       end
     end
