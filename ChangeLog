@@ -1,3 +1,8 @@
+Sat Jun 16 07:12:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/runruby.rb (File.realpath): return real path of expanded path.
+	  [Bug #6598]
+
 Sat Jun 16 07:12:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bootstraptest/runner.rb (main): ignore -j option for compatibility

@@ -34,8 +34,7 @@ end
 
 unless defined?(File.realpath)
   def File.realpath(*args)
-    Dir.chdir do
-      expand_path(*args)
+    Dir.chdir(expand_path(*args)) do
       Dir.pwd
     end
   end
