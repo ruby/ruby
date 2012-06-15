@@ -680,9 +680,10 @@ module Test
           colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w)=([^:]*)/)] : {}
           @passed_color = "\e[#{colors["pass"] || "32"}m"
           @failed_color = "\e[#{colors["fail"] || "31"}m"
+          @skipped_color = "\e[#{colors["skip"] || "33"}m"
           @reset_color = "\e[m"
         else
-          @passed_color = @failed_color = @reset_color = ""
+          @passed_color = @failed_color = @skipped_color = @reset_color = ""
         end
         if color or @options[:job_status] == :replace
           @options[:job_status] ||= :replace unless @verbose
@@ -714,10 +715,15 @@ module Test
         sep = "\n"
         @report_count ||= 0
         report.each do |msg|
-          next if @options[:hide_skip] and msg.start_with? "Skipped:"
+          if msg.start_with? "Skipped:"
+            next if @options[:hide_skip]
+            color = @skipped_color
+          else
+            color = @failed_color
+          end
           msg = msg.split(/$/, 2)
           $stdout.printf("%s%s%3d) %s%s%s\n",
-                         sep, @failed_color, @report_count += 1,
+                         sep, color, @report_count += 1,
                          msg[0], @reset_color, msg[1])
           sep = nil
         end
