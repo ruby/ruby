@@ -676,11 +676,13 @@ module Test
           color = false
         end
         if color
-          @passed_color = "\e[#{ENV['PASSED_COLOR']||'32'}m"
-          @failed_color = "\e[#{ENV['FAILED_COLOR']||'31'}m"
+          # dircolors-like style
+          colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w)=([^:]*)/)] : {}
+          @passed_color = "\e[#{colors["pass"] || "32"}m"
+          @failed_color = "\e[#{colors["fail"] || "31"}m"
           @reset_color = "\e[m"
         else
-          @failed_color = @reset_color = ""
+          @passed_color = @failed_color = @reset_color = ""
         end
         if color or @options[:job_status] == :replace
           @options[:job_status] ||= :replace unless @verbose

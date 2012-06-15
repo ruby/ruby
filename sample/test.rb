@@ -23,8 +23,10 @@ PROGRESS.instance_eval do
     @tty = true
   end
   if @color
-    @passed = "\e[#{ENV['PASSED_COLOR']||'32'}m"
-    @failed = "\e[#{ENV['FAILED_COLOR']||'31'}m"
+    # dircolors-like style
+    colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w)=([^:]*)/)] : {}
+    @passed = "\e[#{colors["pass"] || "32"}m"
+    @failed = "\e[#{colors["fail"] || "31"}m"
     @reset = "\e[m"
   else
     @passed = @failed = @reset = ""
