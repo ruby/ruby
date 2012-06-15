@@ -105,6 +105,8 @@ Usage: #{File.basename($0, '.*')} --ruby=PATH [--sets=NAME,NAME,...]
     -h, --help                      Print this message and quit.
 End
       exit true
+    when /\A-j/
+      true
     else
       false
     end
