@@ -27,7 +27,6 @@
 #include "ppapi/c/ppp_messaging.h"
 
 #include "ruby/ruby.h"
-#include "ruby/embed.h"
 #include "gc.h"
 
 RUBY_GLOBAL_SETUP

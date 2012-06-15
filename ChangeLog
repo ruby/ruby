@@ -1,3 +1,7 @@
+Fri Jun 15 09:01:35 2012  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* nacl/pepper_main.c: Removed an unnecessary and errorneous inclusion.
+
 Thu Jun 14 22:59:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_CPPOUTFILE): check if output is really sent to
