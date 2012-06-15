@@ -1,3 +1,8 @@
+Sat Jun 16 01:27:14 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: bumping psych to 1.3.3
+	* ext/psych/psych.gemspec: ditto
+
 Fri Jun 15 20:54:28 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* vm_backtrace.c (backtrace_collect): rename from backtreace_collect.
