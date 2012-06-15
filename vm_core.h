@@ -596,7 +596,6 @@ enum vm_special_object_type {
 #define VM_FRAME_MAGIC_BLOCK  0x21
 #define VM_FRAME_MAGIC_CLASS  0x31
 #define VM_FRAME_MAGIC_TOP    0x41
-#define VM_FRAME_MAGIC_FINISH 0x51
 #define VM_FRAME_MAGIC_CFUNC  0x61
 #define VM_FRAME_MAGIC_PROC   0x71
 #define VM_FRAME_MAGIC_IFUNC  0x81
@@ -609,6 +608,8 @@ enum vm_special_object_type {
 
 /* other frame flag */
 #define VM_FRAME_FLAG_PASSED 0x0100
+#define VM_FRAME_FLAG_FINISH 0x0200
+#define VM_FRAME_TYPE_FINISH_P(cfp) ((cfp)->flag & VM_FRAME_FLAG_FINISH)
 
 #define RUBYVM_CFUNC_FRAME_P(cfp) \
   (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_CFUNC)

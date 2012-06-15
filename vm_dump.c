@@ -32,7 +32,6 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     char ep_in_heap = ' ';
     char posbuf[MAX_POSBUF+1];
     int line = 0;
-    int nopos = 0;
 
     const char *magic, *iseq_name = "-", *selfstr = "-", *biseq_name = "-";
     VALUE tmp;
@@ -61,10 +60,6 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	break;
       case VM_FRAME_MAGIC_BLOCK:
 	magic = "BLOCK";
-	break;
-      case VM_FRAME_MAGIC_FINISH:
-	magic = "FINISH";
-	nopos = 1;
 	break;
       case VM_FRAME_MAGIC_CFUNC:
 	magic = "CFUNC";
@@ -97,10 +92,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	selfstr = "";
     }
 
-    if (nopos) {
-	/* no name */
-    }
-    else if (cfp->iseq != 0) {
+    if (cfp->iseq != 0) {
 	if (RUBY_VM_IFUNC_P(cfp->iseq)) {
 	    iseq_name = "<ifunc>";
 	}
@@ -130,8 +122,11 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     fprintf(stderr, "s:%04"PRIdPTRDIFF" b:%04"PRIdPTRDIFF" ", (cfp->sp - th->stack), bp);
     fprintf(stderr, ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "e:%06"PRIxPTRDIFF" ", ep % 10000);
     fprintf(stderr, "%-6s", magic);
-    if (line && !nopos) {
+    if (line) {
 	fprintf(stderr, " %s", posbuf);
+    }
+    if (VM_FRAME_TYPE_FINISH_P(cfp)) {
+	fprintf(stderr, " [FINISH]");
     }
     if (0) {
 	fprintf(stderr, "              \t");
@@ -302,8 +297,8 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 		    (ptr - th->stack));
 	}
     }
-    else if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_FINISH) {
-	if ((th)->stack + (th)->stack_size > (VALUE *)(cfp + 2)) {
+    else if (VM_FRAME_TYPE_FINISH_P(VM_FRAME_TYPE(cfp))) {
+	if ((th)->stack + (th)->stack_size > (VALUE *)(cfp + 1)) {
 	    vm_stack_dump_each(th, cfp + 1);
 	}
 	else {
@@ -350,7 +345,7 @@ rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     rb_iseq_t *iseq = cfp->iseq;
 
-    if (iseq != 0 && VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_FINISH) {
+    if (iseq != 0 && !VM_FRAME_TYPE_FINISH_P(cfp)) {
 	VALUE *seq = iseq->iseq;
 	ptrdiff_t pc = cfp->pc - iseq->iseq_encoded;
 	int i;

@@ -1092,27 +1092,19 @@ leave
     }
 
     RUBY_VM_CHECK_INTS();
-    vm_pop_frame(th);
-    RESTORE_REGS();
-}
 
-/**
-  @c method/iterator
-  @e return from this vm loop
-  @j VM loop から抜ける。
- */
-DEFINE_INSN
-finish
-()
-(VALUE val)
-(VALUE val)
-{
+    if (UNLIKELY(VM_FRAME_TYPE_FINISH_P(GET_CFP()))) {
 #if OPT_CALL_THREADED_CODE
-    rb_bug("unused instruction on OPT_CALL_THREADED_CODE");
+	rb_bug("unused instruction on OPT_CALL_THREADED_CODE");
 #else
-    th->cfp++;
-    return val;
+	vm_pop_frame(th);
+	return val;
 #endif
+    }
+    else {
+	vm_pop_frame(th);
+	RESTORE_REGS();
+    }
 }
 
 /**********************************************************/

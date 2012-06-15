@@ -25,14 +25,6 @@
 #endif
 /* #define DECL_SC_REG(r, reg) VALUE reg_##r */
 
-#if OPT_STACK_CACHING
-static VALUE finish_insn_seq[1] = { BIN(finish_SC_ax_ax) };
-#elif OPT_CALL_THREADED_CODE
-static VALUE const finish_insn_seq[1] = { 0 };
-#else
-static VALUE finish_insn_seq[1] = { BIN(finish) };
-#endif
-
 #if !OPT_CALL_THREADED_CODE
 static VALUE
 vm_exec_core(rb_thread_t *th, VALUE initial)
@@ -84,11 +76,6 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 #if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 #include "vmtc.inc"
     if (UNLIKELY(th == 0)) {
-#if OPT_STACK_CACHING
-	finish_insn_seq[0] = (VALUE)&&LABEL (finish_SC_ax_ax);
-#else
-	finish_insn_seq[0] = (VALUE)&&LABEL (finish);
-#endif
 	return (VALUE)insns_address_table;
     }
 #endif
@@ -145,7 +132,7 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 	}
     }
 
-    if (VM_FRAME_TYPE(th->cfp) != VM_FRAME_MAGIC_FINISH) {
+    if (VM_FRAME_TYPE_FINISH_P(th->cfp)) {
 	rb_bug("cfp consistency error");
     }
 

@@ -12,7 +12,6 @@
 **********************************************************************/
 
 static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status);
-static inline VALUE rb_vm_set_finish_env(rb_thread_t * th);
 static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const NODE *cref);
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
 static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr);
@@ -50,11 +49,8 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
   again:
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ: {
-	rb_control_frame_t *reg_cfp;
+	rb_control_frame_t *reg_cfp = th->cfp;
 	int i;
-
-	rb_vm_set_finish_env(th);
-	reg_cfp = th->cfp;
 
 	CHECK_STACK_OVERFLOW(reg_cfp, argc + 1);
 
@@ -64,6 +60,7 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	}
 
 	vm_setup_method(th, reg_cfp, recv, argc, blockptr, 0 /* flag */, me);
+	th->cfp->flag |= VM_FRAME_FLAG_FINISH;
 	val = vm_exec(th);
 	break;
       }

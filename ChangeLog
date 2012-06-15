@@ -1,3 +1,43 @@
+Fri Jun 15 19:22:13 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove VM_FRAME_MAGIC_FINISH (finish frame type).
+	  Before this commit:
+	    `finish frame' was place holder which indicates that VM loop
+	    needs to return function.
+	    If a C method calls a Ruby methods (a method written by Ruby),
+	    then VM loop will be (re-)invoked.  When the Ruby method returns,
+	    then also VM loop should be escaped.  `finish frame' has only
+	    one instruction `finish', which returns VM loop function.
+	    VM loop function executes `finish' instruction, then VM loop
+	    function returns itself.
+	    With such mechanism, `leave' instruction (which returns one
+	    frame from current scope) doesn't need to check that this `leave'
+	    should also return from VM loop function.
+	    Strictly, one branch can be removed from `leave' instructon.
+	  Consideration:
+	    However, pushing the `finish frame' needs costs because
+	    it needs several memory accesses.  The number of pushing
+	    `finish frame' is greater than I had assumed.  Of course,
+	    pushing `finish frame' consumes additional control frame.
+	    Moreover, recent processors has good branch prediction,
+	    with which we can ignore such trivial checking.
+	  After this commit:
+	    Finally, I decide to remove `finish frame' and `finish'
+	    instruction.  Some parts of VM depend on `finish frame',
+	    so the new frame flag VM_FRAME_FLAG_FINISH is introduced.
+	    If this frame should escape from VM function loop, then
+	    the result of VM_FRAME_TYPE_FINISH_P(cfp) is true.
+	    `leave' instruction checks this flag every time.
+	    I measured performance on it.  However on my environments,
+	    it improves some benchmarks and slows some benchmarks down.
+	    Maybe it is because of C compiler optimization parameters.
+	    I'll re-visit here if this cause problems.
+
+	* insns.def (leave, finish): remove finish instruction.
+
+	* vm.c, vm_eval.c, vm_exec.c, vm_backtrace.c, vm_dump.c:
+	  apply above changes.
+
 Fri Jun 15 19:11:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::Runner#puke): always add skipped

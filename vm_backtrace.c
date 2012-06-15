@@ -379,8 +379,7 @@ backtrace_each(rb_thread_t *th,
 
     start_cfp =
       RUBY_VM_NEXT_CONTROL_FRAME(
-	  RUBY_VM_NEXT_CONTROL_FRAME(
-	      RUBY_VM_NEXT_CONTROL_FRAME(start_cfp))); /* skip top frames */
+	  RUBY_VM_NEXT_CONTROL_FRAME(start_cfp)); /* skip top frames */
 
     if (start_cfp < last_cfp) {
 	size = 0;
