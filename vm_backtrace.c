@@ -467,13 +467,13 @@ rb_vm_backtrace_object(void)
 }
 
 static VALUE
-backtreace_collect(rb_backtrace_t *bt, int lev, int n, VALUE (*func)(rb_backtrace_location_t *, void *arg), void *arg)
+backtrace_collect(rb_backtrace_t *bt, int lev, int n, VALUE (*func)(rb_backtrace_location_t *, void *arg), void *arg)
 {
     VALUE btary;
     int i;
 
     if (UNLIKELY(lev < 0 || n < 0)) {
-	rb_bug("backtreace_collect: unreachable");
+	rb_bug("backtrace_collect: unreachable");
     }
 
     btary = rb_ary_new();
@@ -502,7 +502,7 @@ rb_backtrace_to_str_ary(VALUE self)
 	return bt->strary;
     }
     else {
-	bt->strary = backtreace_collect(bt, 0, bt->backtrace_size, location_to_str_dmyarg, 0);
+	bt->strary = backtrace_collect(bt, 0, bt->backtrace_size, location_to_str_dmyarg, 0);
 	return bt->strary;
     }
 }
@@ -522,7 +522,7 @@ backtrace_to_str_ary2(VALUE self, int lev, int n)
 	return Qnil;
     }
 
-    return backtreace_collect(bt, lev, n, location_to_str_dmyarg, 0);
+    return backtrace_collect(bt, lev, n, location_to_str_dmyarg, 0);
 }
 
 static VALUE
@@ -553,7 +553,7 @@ backtrace_to_frame_ary(VALUE self, int lev, int n)
 	return Qnil;
     }
 
-    return backtreace_collect(bt, lev, n, location_create, (void *)self);
+    return backtrace_collect(bt, lev, n, location_create, (void *)self);
 }
 
 static VALUE

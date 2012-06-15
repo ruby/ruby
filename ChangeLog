@@ -1,3 +1,7 @@
+Fri Jun 15 20:54:28 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* vm_backtrace.c (backtrace_collect): rename from backtreace_collect.
+
 Fri Jun 15 09:01:35 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 Fri Jun 15 19:22:13 2012  Koichi Sasada  <ko1@atdot.net>
