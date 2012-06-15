@@ -2157,7 +2157,7 @@ Init_VM(void)
     }
     vm_init_redefined_flag();
 
-    /* vm_backtrac.c */
+    /* vm_backtrace.c */
     Init_vm_backtrace();
 }
 

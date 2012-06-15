@@ -1,3 +1,5 @@
+Fri Jun 15 09:01:35 2012  Yuki Yugui Sonoda  <yugui@google.com>
+
 Fri Jun 15 19:22:13 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: remove VM_FRAME_MAGIC_FINISH (finish frame type).
@@ -45,7 +47,7 @@ Fri Jun 15 19:11:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Jun 15 09:01:35 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
-	* nacl/pepper_main.c: Removed an unnecessary and errorneous inclusion.
+	* nacl/pepper_main.c: Removed an unnecessary and erroneous inclusion.
 
 Thu Jun 14 22:59:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -62,12 +64,12 @@ Thu Jun 14 22:10:50 2012  Tanaka Akira  <akr@fsij.org>
 
 Thu Jun 14 15:54:02 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* file.c (rb_file_s_basename, rb_file_s_dirname): documentaion fix.
+	* file.c (rb_file_s_basename, rb_file_s_dirname): documentation fix.
 	  File.basename and File.dirname support File::ALT_SEPARATOR.
 
 Thu Jun 14 11:10:10 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
-	* nacl/pepper_maini.c: Applies the new embedding API to pepper_ruby.
+	* nacl/pepper_main.c: Applies the new embedding API to pepper_ruby.
 
 Thu Jun 14 10:44:41 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
@@ -87,7 +89,7 @@ Thu Jun 14 10:44:41 2012  Yuki Yugui Sonoda  <yugui@google.com>
 	* ruby.c (toplevel_context): new helper function.
 	  (PREPARE_EVAL_MAIN): moved.
 	  (process_options): refactored with new functions.
-	  (parse_and_compile_main) new helper funciton.
+	  (parse_and_compile_main) new helper function.
 	  (ruby_compile_main_from_file, ruby_compile_main_from_string) new API
 	  (ruby_set_script_name): new API.
 
@@ -134,7 +136,7 @@ Thu Jun 14 05:23:05 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 Thu Jun 14 02:54:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: use -fbuiltin with -ansi -std=iso9899:199409.
-	  This prevents errors introduced by disabling bulitin functions,
+	  This prevents errors introduced by disabling builtin functions,
 	  which is the sub-effect of -ansi/-std.
 	  Now NetBSD can use -ansi -std=iso9899:199409.
 	  Maybe mingw, cygwin and darwin can also.
@@ -157,7 +159,7 @@ Thu Jun 14 00:16:59 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/net/http/responses.rb: Rename Net::HTTPMultipleChoice to
 	  Net::HTTPMultipleChoices, leaving the former as alias to the
-	  latter for backward compatibitily.  [ruby-core:45547]
+	  latter for backward compatibility.  [ruby-core:45547]
 	  [Feature #6569]
 
 	* lib/net/http/responses.rb: Add comments about unused,
@@ -313,9 +315,9 @@ Mon Jun 11 12:14:37 2012  Koichi Sasada  <ko1@atdot.net>
 	    You can get lfp from dfp by traversing previous environment
 	    pointers.
 	  After this commit:
-	    Each frame has only `ep' to point respective enviornoment.
+	    Each frame has only `ep' to point respective environment.
 	    If there is parent environment, then ep[0] points parent
-	    envioenment (as dfp).  If there are no more environment,
+	    environment (as dfp).  If there are no more environment,
 	    then ep[0] points block pointer (as lfp).  We call such ep
 	    as `LEP' (local EP).  We add some macros to get LEP and to
 	    detect LEP or not.
@@ -762,7 +764,7 @@ Fri Jun  8 12:04:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Jun  7 22:13:05 2012  Tanaka Akira  <akr@fsij.org>
 
-	* process.c (rb_fork_err): Fix the conditoin to use rb_protect.
+	* process.c (rb_fork_err): Fix the condition to use rb_protect.
 
 Thu Jun  7 20:29:12 2012  Tanaka Akira  <akr@fsij.org>
 
@@ -812,7 +814,7 @@ Wed Jun  6 13:25:04 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/win32.c, include/ruby/win32.h (rb_w32_wrap_io_handle): new API.
 	  this API wraps an I/O handle (HANDLE or SOCKET) and returns fd.
 	  the second parameter should be combination of O_*, for example,
-	  O_RDWR | O_BINARY | O_NOINHERT.
+	  O_RDWR | O_BINARY | O_NOINHERIT.
 
 	* win32/win32.c, include/ruby/win32.h (rb_w32_unwrap_io_handle): new
 	  API.  this API unwraps an I/O handle and close the fd (not closes
@@ -1060,7 +1062,7 @@ Sun Jun  3 21:14:26 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 	  But now disabled. [experimental]
 	* complex.c: followed the above.
 	* rational.c: ditto.
-	* include/rub/intern.h: ditto.
+	* include/ruby/intern.h: ditto.
 
 Sun Jun  3 21:18:17 2012  Tanaka Akira  <akr@fsij.org>
 
