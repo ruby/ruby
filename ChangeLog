@@ -2,8 +2,6 @@ Fri Jun 15 20:54:28 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* vm_backtrace.c (backtrace_collect): rename from backtreace_collect.
 
-Fri Jun 15 09:01:35 2012  Yuki Yugui Sonoda  <yugui@google.com>
-
 Fri Jun 15 19:22:13 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: remove VM_FRAME_MAGIC_FINISH (finish frame type).
@@ -19,7 +17,7 @@ Fri Jun 15 19:22:13 2012  Koichi Sasada  <ko1@atdot.net>
 	    With such mechanism, `leave' instruction (which returns one
 	    frame from current scope) doesn't need to check that this `leave'
 	    should also return from VM loop function.
-	    Strictly, one branch can be removed from `leave' instructon.
+	    Strictly, one branch can be removed from `leave' instruction.
 	  Consideration:
 	    However, pushing the `finish frame' needs costs because
 	    it needs several memory accesses.  The number of pushing
@@ -1477,7 +1475,7 @@ Fri May 25 16:11:27 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Fri May 25 10:52:52 2012  Koichi Sasada  <ko1@atdot.net>
 
-	* vm.c: refactoring backtrace related funcitons.
+	* vm.c: refactoring backtrace related functions.
 	  (1) unify similar functions (rb_backtrace_each() and
 	      backtrace_object()).  backtrace_each() is a unified function.
 	      variation:
@@ -1487,7 +1485,7 @@ Fri May 25 10:52:52 2012  Koichi Sasada  <ko1@atdot.net>
 	      d) rb_backtrace_print_as_bugreport(): print backtrace on
 	                                            bugreport style.
 	  (2) remove rb_backtrace_each().  Use backtrace_each() instead.
-	  (3) chang the type of lev parameter to size_t.
+	  (3) change the type of lev parameter to size_t.
 	      a) lev == 0 means current frame (exception, etc use it).
 	      b) lev == 1 means upper frame (caller(0) use it).
 
@@ -4788,7 +4786,7 @@ Wed Feb 22 17:36:22 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Feb 22 17:07:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* io.c (rb_io_s_foreach): return enumerator including kerword
+	* io.c (rb_io_s_foreach): return enumerator including keyword
 	  arguments.  [ruby-dev:45267][Bug #6054]
 
 Wed Feb 22 12:15:16 2012  NARUSE, Yui  <naruse@ruby-lang.org>
