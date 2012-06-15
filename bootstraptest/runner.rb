@@ -96,6 +96,8 @@ Usage: #{File.basename($0, '.*')} --ruby=PATH [--sets=NAME,NAME,...]
         --sets=NAME,NAME,...        Name of test sets.
         --dir=DIRECTORY             Working directory.
                                     default: /tmp/bootstraptestXXXXX.tmpwd
+        --color[=WHEN]              Colorize the output.  WHEN defaults to 'always'
+                                    or can be 'never' or 'auto'.
     -s, --stress                    stress test.
     -v, --verbose                   Output test name before exec.
     -q, --quiet                     Don\'t print header message.
