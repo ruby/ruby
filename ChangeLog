@@ -1,3 +1,8 @@
+Sat Jun 16 07:46:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner#_run_parallel): format workers
+	  results in the parent.
+
 Sat Jun 16 07:12:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/runruby.rb (File.realpath): return real path of expanded path.
