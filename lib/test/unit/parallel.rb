@@ -25,7 +25,7 @@ module Test
       end
 
       def _run_suite(suite, type)
-        r = report.dup
+        @partial_report = []
         orig_testout = MiniTest::Unit.output
         i,o = IO.pipe
 
@@ -63,7 +63,8 @@ module Test
         end
         i.close
 
-        result << (report - r)
+        result << @partial_report
+        @partial_report = nil
         result << [@errors-e,@failures-f,@skips-s]
         result << ($: - @old_loadpath)
         result << suite.name
@@ -143,6 +144,11 @@ module Test
           @stdin.close if @stdin
           @stdout.close if @stdout
         end
+      end
+
+      def puke(klass, meth, e)
+        @partial_report << [klass.name, meth, e]
+        super
       end
     end
   end

@@ -1,3 +1,14 @@
+Sat Jun 16 07:11:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner#puke): modify only result and
+	  drop useless reports, not override entirely.
+
+	* lib/test/unit/parallel.rb (Test::Unit::Worker#_run_suite): report
+	  unformatted results.  formatting messages is not a workers task.
+
+	* lib/test/unit/parallel.rb (Test::Unit::Worker#puke): store raw
+	  results.
+
 Sat Jun 16 01:27:14 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: bumping psych to 1.3.3
