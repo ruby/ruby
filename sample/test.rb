@@ -24,7 +24,7 @@ PROGRESS.instance_eval do
   end
   if @color
     # dircolors-like style
-    colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w)=([^:]*)/)] : {}
+    colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:]*)/)] : {}
     @passed = "\e[#{colors["pass"] || "32"}m"
     @failed = "\e[#{colors["fail"] || "31"}m"
     @reset = "\e[m"

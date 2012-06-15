@@ -677,7 +677,7 @@ module Test
         end
         if color
           # dircolors-like style
-          colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w)=([^:]*)/)] : {}
+          colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:]*)/)] : {}
           @passed_color = "\e[#{colors["pass"] || "32"}m"
           @failed_color = "\e[#{colors["fail"] || "31"}m"
           @skipped_color = "\e[#{colors["skip"] || "33"}m"
