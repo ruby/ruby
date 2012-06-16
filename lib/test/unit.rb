@@ -626,7 +626,7 @@ module Test
             @failures += rep.map{|x| x[:result][1] }.inject(:+)
             @skips    += rep.map{|x| x[:result][2] }.inject(:+)
           end
-          if @warnings
+          unless @warnings.empty?
             warn ""
             ary = []
             @warnings.reject! do |w|
