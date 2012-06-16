@@ -611,9 +611,10 @@ module Test
             suites.map {|r| r[:file]}.uniq.each {|file| require file}
             suites.map! {|r| eval("::"+r[:testcase])}
             del_status_line or puts
-            puts "Retrying..."
-            puts ""
-            _run_suites(suites, type)
+            unless suites.empty?
+              puts "Retrying..."
+              _run_suites(suites, type)
+            end
           end
           unless rep.empty?
             rep.each do |r|
