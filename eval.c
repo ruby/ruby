@@ -53,10 +53,10 @@ ruby_setup(void)
     if ((state = EXEC_TAG()) == 0) {
 	rb_call_inits();
 	ruby_prog_init();
+	GET_VM()->running = 1;
     }
     POP_TAG();
 
-    if (!state) GET_VM()->running = 1;
     return state;
 }
 

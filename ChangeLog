@@ -1,3 +1,8 @@
+Sat Jun 16 18:31:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_setup): set running state in the normal case before
+	  popping a tag.
+
 Sat Jun 16 07:46:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::Runner#_run_parallel): format workers
