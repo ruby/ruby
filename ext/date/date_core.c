@@ -218,13 +218,10 @@ f_negative_p(VALUE x)
 #include <float.h>
 #endif
 
-#if defined(FLT_RADIX) && defined(FLT_MANT_DIG)
-#if FLT_RADIX == 2 && FLT_MANT_DIG > 22
-#define USE_FLOAT
-#define sg_cast float
+#if defined(FLT_RADIX) && defined(FLT_MANT_DIG) && FLT_RADIX == 2 && FLT_MANT_DIG > 22
+#define date_sg_t float
 #else
-#define sg_cast double
-#endif
+#define date_sg_t double
 #endif
 
 /* A set of nth, jd, df and sf denote ajd + 1/2.  Each ajd begin at
@@ -240,11 +237,7 @@ struct SimpleDateData
     /* df is zero */
     /* sf is zero */
     /* of is zero */
-#ifndef USE_FLOAT
-    double sg;  /* 2298874..2426355 or -/+oo */
-#else
-    float sg;	/* at most 22 bits */
-#endif
+    date_sg_t sg;  /* 2298874..2426355 or -/+oo -- at most 22 bits */
     /* decoded as utc=local */
     int year;	/* truncated */
 #ifndef USE_PACK
@@ -267,11 +260,7 @@ struct ComplexDateData
     int df;	/* as utc, in secs */
     VALUE sf;	/* in nano secs */
     int of;	/* in secs */
-#ifndef USE_FLOAT
-    double sg;  /* 2298874..2426355 or -/+oo */
-#else
-    float sg;	/* at most 22 bits */
-#endif
+    date_sg_t sg;  /* 2298874..2426355 or -/+oo -- at most 22 bits */
     /* decoded as local */
     int year;	/* truncated */
 #ifndef USE_PACK
@@ -325,7 +314,7 @@ canon(VALUE x)
 {\
     (x)->nth = canon(_nth);\
     (x)->jd = _jd;\
-    (x)->sg = (sg_cast)(_sg);\
+    (x)->sg = (date_sg_t)(_sg);\
     (x)->year = _year;\
     (x)->mon = _mon;\
     (x)->mday = _mday;\
@@ -336,7 +325,7 @@ canon(VALUE x)
 {\
     (x)->nth = canon(_nth);\
     (x)->jd = _jd;\
-    (x)->sg = (sg_cast)(_sg);\
+    (x)->sg = (date_sg_t)(_sg);\
     (x)->year = _year;\
     (x)->pc = PACK2(_mon, _mday);\
     (x)->flags = _flags;\
@@ -352,7 +341,7 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
     (x)->df = _df;\
     (x)->sf = canon(_sf);\
     (x)->of = _of;\
-    (x)->sg = (sg_cast)(_sg);\
+    (x)->sg = (date_sg_t)(_sg);\
     (x)->year = _year;\
     (x)->mon = _mon;\
     (x)->mday = _mday;\
@@ -370,7 +359,7 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
     (x)->df = _df;\
     (x)->sf = canon(_sf);\
     (x)->of = _of;\
-    (x)->sg = (sg_cast)(_sg);\
+    (x)->sg = (date_sg_t)(_sg);\
     (x)->year = _year;\
     (x)->pc = PACK5(_mon, _mday, _hour, _min, _sec);\
     (x)->flags = _flags;\
@@ -385,7 +374,7 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
     (x)->df = 0;\
     (x)->sf = INT2FIX(0);\
     (x)->of = 0;\
-    (x)->sg = (sg_cast)((y)->sg);\
+    (x)->sg = (date_sg_t)((y)->sg);\
     (x)->year = (y)->year;\
     (x)->mon = (y)->mon;\
     (x)->mday = (y)->mday;\
@@ -402,7 +391,7 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
     (x)->df = 0;\
     (x)->sf = INT2FIX(0);\
     (x)->of = 0;\
-    (x)->sg = (sg_cast)((y)->sg);\
+    (x)->sg = (date_sg_t)((y)->sg);\
     (x)->year = (y)->year;\
     (x)->pc = PACK5(EX_MON((y)->pc), EX_MDAY((y)->pc), 0, 0, 0);\
     (x)->flags = (y)->flags;\
@@ -414,7 +403,7 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
 {\
     (x)->nth = (y)->nth;\
     (x)->jd = (y)->jd;\
-    (x)->sg = (sg_cast)((y)->sg);\
+    (x)->sg = (date_sg_t)((y)->sg);\
     (x)->year = (y)->year;\
     (x)->mon = (y)->mon;\
     (x)->mday = (y)->mday;\
@@ -425,7 +414,7 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
 {\
     (x)->nth = (y)->nth;\
     (x)->jd = (y)->jd;\
-    (x)->sg = (sg_cast)((y)->sg);\
+    (x)->sg = (date_sg_t)((y)->sg);\
     (x)->year = (y)->year;\
     (x)->pc = PACK2(EX_MON((y)->pc), EX_MDAY((y)->pc));\
     (x)->flags = (y)->flags;\
@@ -5394,12 +5383,12 @@ set_sg(union DateData *x, double sg)
     if (simple_dat_p(x)) {
 	get_s_jd(x);
 	clear_civil(x);
-	x->s.sg = (sg_cast)sg;
+	x->s.sg = (date_sg_t)sg;
     } else {
 	get_c_jd(x);
 	get_c_df(x);
 	clear_civil(x);
-	x->c.sg = (sg_cast)sg;
+	x->c.sg = (date_sg_t)sg;
     }
 }
 
