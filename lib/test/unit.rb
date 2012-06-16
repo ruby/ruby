@@ -399,10 +399,14 @@ module Test
         return unless @options[:job_status] == :replace
         print "\r"+" "*@status_line_size+"\r"
         $stdout.flush
+        @status_line_size = 0
       end
 
       def put_status(line)
-        return print(line) unless @options[:job_status] == :replace
+        unless @options[:job_status] == :replace
+          print(line)
+          return
+        end
         @status_line_size ||= 0
         del_status_line
         $stdout.flush
@@ -413,7 +417,10 @@ module Test
       end
 
       def add_status(line)
-        return print(line) unless @options[:job_status] == :replace
+        unless @options[:job_status] == :replace
+          print(line)
+          return
+        end
         @status_line_size ||= 0
         line = line[0...(terminal_width-@status_line_size)]
         print line
@@ -425,11 +432,7 @@ module Test
         return unless @options[:job_status]
         puts "" unless @options[:verbose] or @options[:job_status] == :replace
         status_line = @workers.map(&:to_s).join(" ")
-        if @options[:job_status] == :replace
-          put_status status_line
-        else
-          puts status_line
-        end
+        put_status status_line or (puts; nil)
       end
 
       def del_jobs_status
@@ -607,7 +610,7 @@ module Test
             suites, rep = rep.partition {|r| r[:testcase] && r[:file] && !r[:report].empty?}
             suites.map {|r| r[:file]}.uniq.each {|file| require file}
             suites.map! {|r| eval("::"+r[:testcase])}
-            puts ""
+            del_status_line or puts
             puts "Retrying..."
             puts ""
             _run_suites(suites, type)
