@@ -6813,10 +6813,10 @@ tmx_m_msecs(union DateData *x)
     return s;
 }
 
-static VALUE
+static int
 tmx_m_of(union DateData *x)
 {
-    return INT2FIX(m_of(x));
+    return m_of(x);
 }
 
 static char *
@@ -6842,7 +6842,7 @@ static struct tmx_funcs tmx_funcs = {
     (VALUE (*)(void *))m_sf_in_sec,
     (VALUE (*)(void *))tmx_m_secs,
     (VALUE (*)(void *))tmx_m_msecs,
-    (VALUE (*)(void *))tmx_m_of,
+    (int (*)(void *))tmx_m_of,
     (char *(*)(void *))tmx_m_zone
 };
 
@@ -8650,7 +8650,7 @@ dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
 static VALUE
 time_to_time(VALUE self)
 {
-    return rb_funcall(self, rb_intern("getlocal"), 0);
+    return f_getlocal(self);
 }
 
 /*

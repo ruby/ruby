@@ -1,3 +1,9 @@
+Sat Jun 16 18:46:57 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_tmx.h: offset in struct tmx_funcs is now int.
+	* ext/date/date_strftime.c: ditto.
+	* ext/date/date_core.c: ditto.
+
 Sat Jun 16 18:31:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_setup): set running state in the normal case before

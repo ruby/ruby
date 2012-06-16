@@ -424,8 +424,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 		long off, aoff;
 		int hl, hw;
 
-		off = NUM2LONG(rb_funcall(tmx_offset, rb_intern("round"), 0));
-
+		off = tmx_offset;
 		aoff = off;
 		if (aoff < 0)
 		    aoff = -off;

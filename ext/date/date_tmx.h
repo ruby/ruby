@@ -18,7 +18,7 @@ struct tmx_funcs {
     VALUE (*sec_fraction)(void *dat);
     VALUE (*secs)(void *dat);
     VALUE (*msecs)(void *dat);
-    VALUE (*offset)(void *dat);
+    int (*offset)(void *dat);
     char *(*zone)(void *dat);
 };
 struct tmx {
