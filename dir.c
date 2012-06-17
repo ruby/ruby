@@ -2025,6 +2025,22 @@ dir_s_home(int argc, VALUE *argv, VALUE obj)
     return rb_home_dir(u, rb_str_new(0, 0));
 }
 
+#if 0
+/*
+ * call-seq:
+ *   Dir.exist?(file_name)   ->  true or false
+ *   Dir.exists?(file_name)   ->  true or false
+ *
+ * Returns <code>true</code> if the named file is a directory,
+ * <code>false</code> otherwise.
+ *
+ */
+VALUE
+rb_file_directory_p()
+{
+}
+#endif
+
 /*
  *  Objects of class <code>Dir</code> are directory streams representing
  *  directories in the underlying file system. They provide a variety of
@@ -2073,8 +2089,8 @@ Init_Dir(void)
 
     rb_define_singleton_method(rb_cDir,"glob", dir_s_glob, -1);
     rb_define_singleton_method(rb_cDir,"[]", dir_s_aref, -1);
-    rb_define_singleton_method(rb_cDir,"exist?", rb_file_directory_p, 1); /* in file.c */
-    rb_define_singleton_method(rb_cDir,"exists?", rb_file_directory_p, 1); /* in file.c */
+    rb_define_singleton_method(rb_cDir,"exist?", rb_file_directory_p, 1);
+    rb_define_singleton_method(rb_cDir,"exists?", rb_file_directory_p, 1);
 
     rb_define_singleton_method(rb_cFile,"fnmatch", file_s_fnmatch, -1);
     rb_define_singleton_method(rb_cFile,"fnmatch?", file_s_fnmatch, -1);

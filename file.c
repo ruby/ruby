@@ -1092,18 +1092,6 @@ access_internal(const char *path, int mode)
  */
 
 /*
- * Document-method: exist?
- *
- * call-seq:
- *   Dir.exist?(file_name)   ->  true or false
- *   Dir.exists?(file_name)   ->  true or false
- *
- * Returns <code>true</code> if the named file is a directory,
- * <code>false</code> otherwise.
- *
- */
-
-/*
  * Document-method: directory?
  *
  * call-seq:

@@ -1,3 +1,9 @@
+Sun Jun 17 22:23:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (rb_file_directory_p): move documentation for Dir.exist? from
+	  file.c so that the proper description will be shown instead of the
+	  documentation of File.directory?.  [ruby-core:45685]
+
 Sun Jun 17 16:21:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_win32.h (rb_thread_lock_t): make a union for USE_WIN32_MUTEX.
