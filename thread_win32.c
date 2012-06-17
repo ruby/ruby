@@ -448,7 +448,7 @@ native_cond_broadcast(rb_thread_cond_t *cond)
 
 
 static int
-__cond_timedwait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, unsigned long msec)
+native_cond_timedwait_ms(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, unsigned long msec)
 {
     DWORD r;
     struct cond_event_entry entry;
@@ -481,7 +481,7 @@ __cond_timedwait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, unsigned long 
 static int
 native_cond_wait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex)
 {
-    return __cond_timedwait(cond, mutex, INFINITE);
+    return native_cond_timedwait_ms(cond, mutex, INFINITE);
 }
 
 static unsigned long
@@ -509,7 +509,7 @@ native_cond_timedwait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex, struct ti
     if (!timeout_ms)
 	return ETIMEDOUT;
 
-    return __cond_timedwait(cond, mutex, timeout_ms);
+    return native_cond_timedwait_ms(cond, mutex, timeout_ms);
 }
 
 #if SIZEOF_TIME_T == SIZEOF_LONG
