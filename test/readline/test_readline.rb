@@ -354,9 +354,10 @@ class TestReadline < Test::Unit::TestCase
   def test_pre_input_hook
     begin
       pr = proc {}
-      assert_equal(Readline.pre_input_hook = pr, pr)
-      assert_equal(Readline.pre_input_hook, pr)
-      assert_nil(Readline.pre_input_hook = nil)
+      Readline.pre_input_hook = pr
+      assert_equal(pr, Readline.pre_input_hook)
+      Readline.pre_input_hook = nil
+      assert_nil(Readline.pre_input_hook)
     rescue NotImplementedError
     end
   end
@@ -364,10 +365,10 @@ class TestReadline < Test::Unit::TestCase
   def test_insert_text
     begin
       str = "test_insert_text"
-      assert_equal(Readline.insert_text(str), Readline)
-      assert_equal(Readline.line_buffer, str)
-      assert_equal(Readline.line_buffer.encoding,
-                   get_default_internal_encoding)
+      assert_equal(Readline, Readline.insert_text(str))
+      assert_equal(str, Readline.line_buffer)
+      assert_equal(get_default_internal_encoding,
+                   Readline.line_buffer.encoding)
     rescue NotImplementedError
     end
   end if !/EditLine/n.match(Readline::VERSION)
