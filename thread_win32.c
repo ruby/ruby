@@ -343,8 +343,8 @@ native_mutex_lock(rb_thread_lock_t *lock)
     w32_mutex_lock(*lock);
 #else
     EnterCriticalSection(lock);
-    return 0;
 #endif
+    return 0;
 }
 
 static int
@@ -394,7 +394,7 @@ static void
 native_mutex_destroy(rb_thread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
-    w32_close_handle(lock);
+    w32_close_handle(*lock);
 #else
     DeleteCriticalSection(lock);
 #endif

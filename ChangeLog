@@ -1,4 +1,7 @@
-Sun Jun 17 16:20:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jun 17 16:20:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_win32.c (native_mutex_lock, native_mutex_destroy): fix for
+	  USE_WIN32_MUTEX.
 
 	* thread_win32.c (native_cond_timedwait_ms): rename reserved pattern
 	  name.  user defined symbols should not start with __.
