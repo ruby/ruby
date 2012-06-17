@@ -1,4 +1,8 @@
-Sun Jun 17 16:20:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jun 17 16:21:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_win32.h (rb_thread_lock_t): make a union for USE_WIN32_MUTEX.
+	  this internal is used only in thread_win32.c, but has to be complete
+	  to define rb_thread_t.
 
 	* thread_win32.c (native_mutex_lock, native_mutex_destroy): fix for
 	  USE_WIN32_MUTEX.
