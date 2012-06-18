@@ -1,3 +1,8 @@
+Mon Jun 18 17:10:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_subpos): split from rb_str_substr.  returns
+	  adjusted position for substring.
+
 Mon Jun 18 10:42:57 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_getc): deal with ESC just followed

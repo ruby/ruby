@@ -1635,32 +1635,30 @@ rb_str_subseq(VALUE str, long beg, long len)
     return str2;
 }
 
-VALUE
-rb_str_substr(VALUE str, long beg, long len)
+static char *
+rb_str_subpos(VALUE str, long beg, long *lenp)
 {
+    long len = *lenp;
+    long slen = -1L;
+    long blen = RSTRING_LEN(str);
     rb_encoding *enc = STR_ENC_GET(str);
-    VALUE str2;
-    char *p, *s = RSTRING_PTR(str), *e = s + RSTRING_LEN(str);
+    char *p, *s = RSTRING_PTR(str), *e = s + blen;
 
-    if (len < 0) return Qnil;
-    if (!RSTRING_LEN(str)) {
+    if (len < 0) return 0;
+    if (!blen) {
 	len = 0;
     }
     if (single_byte_optimizable(str)) {
-	if (beg > RSTRING_LEN(str)) return Qnil;
+	if (beg > blen) return 0;
 	if (beg < 0) {
-	    beg += RSTRING_LEN(str);
-	    if (beg < 0) return Qnil;
+	    beg += blen;
+	    if (beg < 0) return 0;
 	}
-	if (beg + len > RSTRING_LEN(str))
-	    len = RSTRING_LEN(str) - beg;
-	if (len <= 0) {
-	    len = 0;
-	    p = 0;
-	}
-	else
-	    p = s + beg;
-	goto sub;
+	if (beg + len > blen)
+	    len = blen - beg;
+	if (len < 0) return 0;
+	p = s + beg;
+	goto end;
     }
     if (beg < 0) {
 	if (len > -beg) len = -beg;
@@ -1668,29 +1666,32 @@ rb_str_substr(VALUE str, long beg, long len)
 	    beg = -beg;
 	    while (beg-- > len && (e = rb_enc_prev_char(s, e, e, enc)) != 0);
 	    p = e;
-	    if (!p) return Qnil;
+	    if (!p) return 0;
 	    while (len-- > 0 && (p = rb_enc_prev_char(s, p, e, enc)) != 0);
-	    if (!p) return Qnil;
+	    if (!p) return 0;
 	    len = e - p;
-	    goto sub;
+	    goto end;
 	}
 	else {
-	    beg += str_strlen(str, enc);
-	    if (beg < 0) return Qnil;
+	    slen = str_strlen(str, enc);
+	    beg += slen;
+	    if (beg < 0) return 0;
+	    p = s + beg;
+	    if (len == 0) goto end;
 	}
     }
     else if (beg > 0 && beg > RSTRING_LEN(str)) {
-	return Qnil;
+	return 0;
     }
     if (len == 0) {
-	if (beg > str_strlen(str, enc)) return Qnil;
-	p = 0;
+	if (beg > str_strlen(str, enc)) return 0;
+	p = s + beg;
     }
 #ifdef NONASCII_MASK
     else if (ENC_CODERANGE(str) == ENC_CODERANGE_VALID &&
         enc == rb_utf8_encoding()) {
         p = str_utf8_nth(s, e, &beg);
-        if (beg > 0) return Qnil;
+        if (beg > 0) return 0;
         len = str_utf8_offset(p, e, len);
     }
 #endif
@@ -1699,7 +1700,7 @@ rb_str_substr(VALUE str, long beg, long len)
 
 	p = s + beg * char_sz;
 	if (p > e) {
-	    return Qnil;
+	    return 0;
 	}
         else if (len * char_sz > e - p)
             len = e - p;
@@ -1707,14 +1708,25 @@ rb_str_substr(VALUE str, long beg, long len)
 	    len *= char_sz;
     }
     else if ((p = str_nth_len(s, e, &beg, enc)) == e) {
-	if (beg > 0) return Qnil;
+	if (beg > 0) return 0;
 	len = 0;
     }
     else {
 	len = str_offset(p, e, len, enc, 0);
     }
-  sub:
-    if (len > RSTRING_EMBED_LEN_MAX && beg + len == RSTRING_LEN(str)) {
+  end:
+    *lenp = len;
+    return p;
+}
+
+VALUE
+rb_str_substr(VALUE str, long beg, long len)
+{
+    VALUE str2;
+    char *p = rb_str_subpos(str, beg, &len);
+
+    if (!p) return Qnil;
+    if (len > RSTRING_EMBED_LEN_MAX && p + len == RSTRING_END(str)) {
 	str2 = rb_str_new4(str);
 	str2 = str_new3(rb_obj_class(str2), str2);
 	RSTRING(str2)->as.heap.ptr += RSTRING(str2)->as.heap.len - len;
