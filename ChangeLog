@@ -1,3 +1,9 @@
+Mon Jun 18 10:42:57 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_getc): deal with ESC just followed
+	  by ASCII as meta prefix in incremental search mode.  based on the
+	  patch from rctay (Tay Ray Chuan) at [ruby-core:45682].  [Bug #6601]
+
 Sun Jun 17 22:23:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (rb_file_directory_p): move documentation for Dir.exist? from

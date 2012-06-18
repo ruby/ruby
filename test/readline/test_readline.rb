@@ -399,6 +399,21 @@ class TestReadline < Test::Unit::TestCase
     end
   end if !/EditLine/n.match(Readline::VERSION)
 
+  def test_input_metachar
+    bug6601 = '[ruby-core:45682]'
+    Readline::HISTORY << "hello"
+    wo = nil
+    line = with_pipe do |r, w|
+      wo = w.dup
+      wo.write("\C-re\ef\n")
+    end
+    assert_equal("hello", line, bug6601)
+  ensure
+    wo.close
+    with_pipe {|r, w| w.write("\C-a\C-k\n")} # clear line_buffer
+    Readline::HISTORY.clear
+  end
+
   private
 
   def replace_stdio(stdin_path, stdout_path)
