@@ -396,7 +396,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     }
     fsenc = rb_filesystem_encoding();
 
-    argc = rb_scan_args(argc, argv, "1:", &dirname, &opt);
+    rb_scan_args(argc, argv, "1:", &dirname, &opt);
 
     if (!NIL_P(opt)) {
 	VALUE enc = rb_hash_aref(opt, sym_enc);

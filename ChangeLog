@@ -1,3 +1,8 @@
+Mon Jun 18 20:07:23 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* dir.c (dir_initialize): get rid of "unused return: argc = rb_scan_args()"
+	  warning.
+
 Mon Jun 18 19:31:20 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/missing.h: include math.h before checking INFINITY
