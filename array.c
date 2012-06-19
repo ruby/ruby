@@ -1896,8 +1896,7 @@ rb_ary_to_ary_m(VALUE ary)
 }
 
 static void
-ary_reverse(p1, p2)
-    VALUE *p1, *p2;
+ary_reverse(VALUE *p1, VALUE *p2)
 {
     while (p1 < p2) {
 	VALUE tmp = *p1;
