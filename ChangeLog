@@ -1,3 +1,8 @@
+Mon Jun 18 19:31:20 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/missing.h: include math.h before checking INFINITY
+	  and NAN. Otherwise, strange macro redefinition will occur.
+
 Mon Jun 18 19:12:37 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* array.c (ary_reverse): use ansi style declaration.

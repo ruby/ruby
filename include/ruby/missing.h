@@ -20,6 +20,7 @@ extern "C" {
 
 #include "ruby/config.h"
 #include <stddef.h>
+#include <math.h> /* for INFINITY and NAN */
 #ifdef RUBY_EXTCONF_H
 #include RUBY_EXTCONF_H
 #endif
