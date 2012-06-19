@@ -174,6 +174,7 @@ readline_getc(FILE *input)
 #endif
     c = rb_io_getbyte(readline_instream);
     if (NIL_P(c)) return EOF;
+#ifdef ESC
     if (c == INT2FIX(ESC) &&
 	RL_ISSTATE(RL_STATE_ISEARCH) && /* isn't needed in other states? */
 	rb_io_read_pending(ifp)) {
@@ -184,6 +185,7 @@ readline_getc(FILE *input)
 	if (meta) rl_execute_next(ESC);
 	return ESC;
     }
+#endif
     return FIX2INT(c);
 }
 #elif defined HAVE_RL_EVENT_HOOK

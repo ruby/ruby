@@ -1,3 +1,8 @@
+Tue Jun 19 11:43:16 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_getc): fix editline compatibility
+	  broken by r36123. [Bug #6601]
+
 Mon Jun 18 17:10:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_subpos): split from rb_str_substr.  returns

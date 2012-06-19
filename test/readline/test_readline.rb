@@ -412,7 +412,7 @@ class TestReadline < Test::Unit::TestCase
     wo.close
     with_pipe {|r, w| w.write("\C-a\C-k\n")} # clear line_buffer
     Readline::HISTORY.clear
-  end
+  end if !/EditLine/n.match(Readline::VERSION)
 
   private
 
