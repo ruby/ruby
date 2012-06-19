@@ -2780,7 +2780,7 @@ rb_f_hash(VALUE obj, VALUE arg)
  *      end
  *
  *      def respond_to_missing?(name, include_private = false)
- *        DELGATE.include?(name) or super
+ *        DELEGATE.include?(name) or super
  *      end
  *    end
  *
