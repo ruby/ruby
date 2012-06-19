@@ -1248,6 +1248,7 @@ readline_s_get_special_prefixes(VALUE self)
 {
     VALUE str;
     rb_secure(4);
+    if (rl_special_prefixes == NULL) return Qnil;
     str = rb_ivar_get(mReadline, id_special_prefixes);
     if (!NIL_P(str)) {
 	str = rb_str_dup_frozen(str);

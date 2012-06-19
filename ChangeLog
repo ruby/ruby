@@ -1,3 +1,8 @@
+Tue Jun 19 11:52:59 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_s_get_special_prefixes): suppress
+	  warning: unitinialized instance variable.
+
 Tue Jun 19 11:43:16 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_getc): fix editline compatibility

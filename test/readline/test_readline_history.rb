@@ -94,7 +94,7 @@ class Readline::TestHistory < Test::Unit::TestCase
   end
 
   def test_get__out_of_range
-    lines = push_history(5)
+    push_history(5)
     invalid_indexes = [5, 6, 100, -6, -7, -100]
     invalid_indexes.each do |i|
       assert_raise(IndexError, "i=<#{i}>") do
@@ -113,7 +113,7 @@ class Readline::TestHistory < Test::Unit::TestCase
 
   def test_set
     begin
-      lines = push_history(5)
+      push_history(5)
       5.times do |i|
         expected = "set: #{i}"
         HISTORY[i] = expected
@@ -128,7 +128,7 @@ class Readline::TestHistory < Test::Unit::TestCase
       HISTORY[0] = "set: 0"
     end
 
-    lines = push_history(5)
+    push_history(5)
     invalid_indexes = [5, 6, 100, -6, -7, -100]
     invalid_indexes.each do |i|
       assert_raise(IndexError, NotImplementedError, "index=<#{i}>") do
@@ -277,7 +277,7 @@ class Readline::TestHistory < Test::Unit::TestCase
       HISTORY.delete_at(0)
     end
 
-    lines = push_history(5)
+    push_history(5)
     invalid_indexes = [5, 6, 100, -6, -7, -100]
     invalid_indexes.each do |i|
       assert_raise(IndexError, NotImplementedError, "index=<#{i}>") do
