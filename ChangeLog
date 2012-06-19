@@ -1,3 +1,7 @@
+Tue Jun 19 18:43:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/backward/rubysig.h: fix visibility.  [Bug #6607]
+
 Tue Jun 19 17:51:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_execarg_run_options): do not call any methods in the
