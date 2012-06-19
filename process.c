@@ -17,6 +17,8 @@
 #include "internal.h"
 #include "vm_core.h"
 
+#define STATIC_ASSERT(name, expr) typedef int static_assert_##name##_check[1 - 2*!(expr)]
+
 #include <stdio.h>
 #include <errno.h>
 #include <signal.h>
@@ -1595,6 +1597,7 @@ rb_execarg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
                                   hide_obj(rb_str_dup(val)));
         }
         else if (id == rb_intern("umask")) {
+	    STATIC_ASSERT(sizeof_mode_t, sizeof(long) >= sizeof(mode_t)); /* for LONG2NUM */
 	    mode_t cmask = NUM2MODET(val);
             if (!NIL_P(rb_ary_entry(options, EXEC_OPTION_UMASK))) {
                 rb_raise(rb_eArgError, "umask option specified twice");
@@ -2707,7 +2710,7 @@ rb_execarg_run_options(const struct rb_exec_arg *e, struct rb_exec_arg *s, char 
 
     obj = rb_ary_entry(options, EXEC_OPTION_UMASK);
     if (!NIL_P(obj)) {
-        mode_t mask = NUM2MODET(obj);
+        mode_t mask = (mode_t)FIX2LONG(obj); /* no method calls */
         mode_t oldmask = umask(mask); /* never fail */ /* async-signal-safe */
         if (!NIL_P(soptions))
             rb_ary_store(soptions, EXEC_OPTION_UMASK, MODET2NUM(oldmask));

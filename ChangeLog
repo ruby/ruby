@@ -1,3 +1,9 @@
+Tue Jun 19 17:51:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_execarg_run_options): do not call any methods in the
+	  async-signal-safe function.  mask has been checked with NUM2MODET()
+	  already and converted with LONG2NUM().
+
 Tue Jun 19 11:59:56 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/readline.c (Init_readline): don't set 0 to
