@@ -414,6 +414,28 @@ class TestReadline < Test::Unit::TestCase
     Readline::HISTORY.clear
   end if !/EditLine/n.match(Readline::VERSION)
 
+  def test_input_metachar_multibyte
+    bug6602 = '[ruby-core:45683]'
+    Readline::HISTORY << "\u3042\u3093"
+    Readline::HISTORY << "\u3044\u3093"
+    Readline::HISTORY << "\u3046\u3093"
+    open(IO::NULL, 'w') do |null|
+      IO.pipe do |r, w|
+        Readline.input = r
+        Readline.output = null
+        w << "\cr\u3093\n\n"
+        w << "\cr\u3042\u3093"
+        w.reopen(IO::NULL)
+        assert_equal("\u3046\u3093", Readline.readline("", true), bug6602)
+        assert_equal("\u3042\u3093", Readline.readline("", true), bug6602)
+        assert_equal(nil,            Readline.readline("", true), bug6602)
+      end
+    end
+  ensure
+    with_pipe {|r, w| w.write("\C-a\C-k\n")} # clear line_buffer
+    Readline::HISTORY.clear
+  end if !/EditLine/n.match(Readline::VERSION)
+
   private
 
   def replace_stdio(stdin_path, stdout_path)
