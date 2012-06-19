@@ -415,6 +415,7 @@ class TestReadline < Test::Unit::TestCase
   end if !/EditLine/n.match(Readline::VERSION)
 
   def test_input_metachar_multibyte
+    skip 'this test needs UTF-8 locale' unless Encoding.find("locale") == Encoding::UTF_8
     bug6602 = '[ruby-core:45683]'
     Readline::HISTORY << "\u3042\u3093"
     Readline::HISTORY << "\u3044\u3093"
