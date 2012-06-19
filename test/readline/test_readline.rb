@@ -397,7 +397,7 @@ class TestReadline < Test::Unit::TestCase
       rescue NotImplementedError
       end
     end
-  end if !/EditLine/n.match(Readline::VERSION)
+  end if !/EditLine|\A4\.3\z/n.match(Readline::VERSION)
 
   def test_input_metachar
     bug6601 = '[ruby-core:45682]'
