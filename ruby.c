@@ -1175,9 +1175,7 @@ uscore_get(void)
  */
 
 static VALUE
-rb_f_sub(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_f_sub(int argc, VALUE *argv)
 {
     VALUE str = rb_funcall3(uscore_get(), rb_intern("sub"), argc, argv);
     rb_lastline_set(str);
@@ -1196,9 +1194,7 @@ rb_f_sub(argc, argv)
  */
 
 static VALUE
-rb_f_gsub(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_f_gsub(int argc, VALUE *argv)
 {
     VALUE str = rb_funcall3(uscore_get(), rb_intern("gsub"), argc, argv);
     rb_lastline_set(str);
@@ -1236,9 +1232,7 @@ rb_f_chop(void)
  */
 
 static VALUE
-rb_f_chomp(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_f_chomp(int argc, VALUE *argv)
 {
     VALUE str = rb_funcall3(uscore_get(), rb_intern("chomp"), argc, argv);
     rb_lastline_set(str);

@@ -1,3 +1,9 @@
+Mon Jun 18 20:29:04 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ruby.c (rb_f_sub): use ansi style declaration.
+	* ruby.c (rb_f_gsub): ditto.
+	* ruby.c (rb_f_chomp): ditto.
+
 Mon Jun 18 20:26:23 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* random.c (rb_random_int32): get rid of "warning: constant 0x100000000
