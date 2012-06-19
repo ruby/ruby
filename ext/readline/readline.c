@@ -1885,12 +1885,6 @@ Init_readline()
 #if defined(HAVE_RL_PRE_INPUT_HOOK)
     rl_pre_input_hook = (Function *)readline_pre_input_hook;
 #endif
-#ifdef HAVE_RL_CATCH_SIGNALS
-    rl_catch_signals = 0;
-#endif
-#ifdef HAVE_RL_CATCH_SIGWINCH
-    rl_catch_sigwinch = 0;
-#endif
 #ifdef HAVE_RL_CLEAR_SIGNALS
     rl_clear_signals();
 #endif
