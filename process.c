@@ -2338,7 +2338,7 @@ run_exec_dup2_tmpbuf_size(long n)
     return sizeof(struct run_exec_dup2_fd_pair) * n;
 }
 
-/* This function should be async-signal-safe when _save_ is not Qnil.  Hopefully it is. */
+/* This function should be async-signal-safe when _save_ is Qnil.  Hopefully it is. */
 static int
 run_exec_dup2(VALUE ary, VALUE tmpbuf, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2489,7 +2489,7 @@ run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
     return 0;
 }
 
-/* This function should be async-signal-safe when _save_ is not Qnil.  Actually it is. */
+/* This function should be async-signal-safe when _save_ is Qnil.  Actually it is. */
 static int
 run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2539,7 +2539,7 @@ run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
     return 0;
 }
 
-/* This function should be async-signal-safe when _save_ is not Qnil.  Actually it is. */
+/* This function should be async-signal-safe when _save_ is Qnil.  Actually it is. */
 static int
 run_exec_dup2_child(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2564,7 +2564,7 @@ run_exec_dup2_child(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 }
 
 #ifdef HAVE_SETPGID
-/* This function should be async-signal-safe when _save_ is not Qnil.  Actually it is. */
+/* This function should be async-signal-safe when _save_ is Qnil.  Actually it is. */
 static int
 run_exec_pgroup(VALUE obj, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2591,7 +2591,7 @@ run_exec_pgroup(VALUE obj, VALUE save, char *errmsg, size_t errmsg_buflen)
 #endif
 
 #if defined(HAVE_SETRLIMIT) && defined(RLIM2NUM)
-/* This function should be async-signal-safe when _save_ is not Qnil.  Hopefully it is. */
+/* This function should be async-signal-safe when _save_ is Qnil.  Hopefully it is. */
 static int
 run_exec_rlimit(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 {
@@ -2651,7 +2651,7 @@ save_env(VALUE save)
 }
 #endif
 
-/* This function should be async-signal-safe when _s_ is not NULL.  Hopefully it is. */
+/* This function should be async-signal-safe when _s_ is NULL.  Hopefully it is. */
 int
 rb_execarg_run_options(const struct rb_exec_arg *e, struct rb_exec_arg *s, char *errmsg, size_t errmsg_buflen)
 {
