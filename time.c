@@ -1277,7 +1277,7 @@ static time_t known_leap_seconds_limit;
 static int number_of_leap_seconds_known;
 
 static void
-init_leap_second_info()
+init_leap_second_info(void)
 {
     /*
      * leap seconds are determined by IERS.
