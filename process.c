@@ -2105,8 +2105,9 @@ fill_envp_buf_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 static long run_exec_dup2_tmpbuf_size(long n);
 
 void
-rb_execarg_fixup(struct rb_execarg *e)
+rb_execarg_fixup(VALUE execarg_obj)
 {
+    struct rb_execarg *e = rb_execarg_get(execarg_obj);
     VALUE unsetenv_others, envopts;
     VALUE ary;
 
@@ -2173,19 +2174,13 @@ rb_execarg_fixup(struct rb_execarg *e)
         }
         */
     }
+    RB_GC_GUARD(execarg_obj);
 }
 
 void
 rb_exec_arg_fixup(struct rb_exec_arg *e)
 {
-    rb_execarg_fixup(rb_execarg_get(e->execarg_obj));
-}
-
-static void
-rb_exec_arg_prepare(struct rb_execarg *earg, int argc, VALUE *argv)
-{
-    rb_execarg_init(argc, argv, TRUE, earg);
-    rb_execarg_fixup(earg);
+    rb_execarg_fixup(e->execarg_obj);
 }
 
 static int rb_exec_without_timer_thread(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen);
@@ -2251,7 +2246,7 @@ rb_f_exec(int argc, VALUE *argv)
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
     earg = rb_execarg_get(execarg_obj);
-    rb_execarg_fixup(earg);
+    rb_execarg_fixup(execarg_obj);
     fail_str = earg->use_shell ? earg->invoke.sh.shell_script : earg->invoke.cmd.command_name;
 
 #ifdef __MacOS_X__
@@ -3543,7 +3538,7 @@ rb_spawn_internal(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
     earg = rb_execarg_get(execarg_obj);
-    rb_execarg_fixup(earg);
+    rb_execarg_fixup(execarg_obj);
     ret = rb_spawn_process(earg, errmsg, errmsg_buflen);
     RB_GC_GUARD(execarg_obj);
     return ret;
@@ -3882,7 +3877,7 @@ rb_f_spawn(int argc, VALUE *argv)
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
     earg = rb_execarg_get(execarg_obj);
-    rb_execarg_fixup(earg);
+    rb_execarg_fixup(execarg_obj);
     fail_str = earg->use_shell ? earg->invoke.sh.shell_script : earg->invoke.cmd.command_name;
 
     pid = rb_spawn_process(earg, errmsg, sizeof(errmsg));

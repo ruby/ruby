@@ -1,3 +1,14 @@
+Thu Jun 21 06:21:54 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_execarg_fixup): take a VALUE argument instead of
+	  struct rb_execarg.
+
+	* internal.h (rb_execarg_fixup): follow the definition change.
+
+	* io.c (pipe_open): follow rb_execarg_fixup change.
+
+	* ext/pty/pty.c (establishShell): ditto.
+
 Wed Jun 20 21:25:37 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (struct rb_execarg): add umask_given and umask_mask

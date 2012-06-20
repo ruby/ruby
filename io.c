@@ -5342,6 +5342,7 @@ rb_pipe(int *pipes)
 
 #ifdef HAVE_FORK
 struct popen_arg {
+    VALUE execarg_obj;
     struct rb_execarg *execp;
     int modef;
     int pair[2];
@@ -5466,8 +5467,9 @@ popen_exec(void *pp, char *errmsg, size_t errmsg_len)
 #endif
 
 static VALUE
-pipe_open(struct rb_execarg *eargp, const char *modestr, int fmode, convconfig_t *convconfig)
+pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convconfig)
 {
+    struct rb_execarg *eargp = NIL_P(execarg_obj) ? NULL : rb_execarg_get(execarg_obj);
     VALUE prog = eargp ? (eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name) : Qfalse ;
     rb_pid_t pid = 0;
     rb_io_t *fptr;
@@ -5501,6 +5503,7 @@ pipe_open(struct rb_execarg *eargp, const char *modestr, int fmode, convconfig_t
 #endif
 
 #if defined(HAVE_FORK)
+    arg.execarg_obj = execarg_obj;
     arg.execp = eargp;
     arg.modef = fmode;
     arg.pair[0] = arg.pair[1] = -1;
@@ -5536,8 +5539,8 @@ pipe_open(struct rb_execarg *eargp, const char *modestr, int fmode, convconfig_t
       default:
         rb_sys_fail_str(prog);
     }
-    if (eargp) {
-        rb_execarg_fixup(arg.execp);
+    if (!NIL_P(execarg_obj)) {
+        rb_execarg_fixup(execarg_obj);
 	pid = rb_fork_async_signal_safe(&status, popen_exec, &arg, arg.execp->redirect_fds, errmsg, sizeof(errmsg));
     }
     else {
@@ -5614,8 +5617,8 @@ pipe_open(struct rb_execarg *eargp, const char *modestr, int fmode, convconfig_t
       default:
         rb_sys_fail_str(prog);
     }
-    if (eargp) {
-	rb_execarg_fixup(eargp);
+    if (!NIL_P(execarg_obj)) {
+	rb_execarg_fixup(execarg_obj);
 	rb_execarg_run_options(eargp, &sarg, NULL, 0);
     }
     while ((pid = (args ?
@@ -5670,8 +5673,8 @@ pipe_open(struct rb_execarg *eargp, const char *modestr, int fmode, convconfig_t
 	prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
 	cmd = StringValueCStr(prog);
     }
-    if (eargp) {
-	rb_execarg_fixup(eargp);
+    if (!NIL_P(execarg_obj)) {
+	rb_execarg_fixup(execarg_obj);
 	rb_execarg_run_options(eargp, &sarg, NULL, 0);
     }
     fp = popen(cmd, modestr);
@@ -5730,7 +5733,7 @@ pipe_open_v(int argc, VALUE *argv, const char *modestr, int fmode, convconfig_t 
     struct rb_execarg *earg;
     execarg_obj = rb_execarg_new(argc, argv, FALSE);
     earg = rb_execarg_get(execarg_obj);
-    ret = pipe_open(earg, modestr, fmode, convconfig);
+    ret = pipe_open(execarg_obj, modestr, fmode, convconfig);
     RB_GC_GUARD(execarg_obj);
     return ret;
 }
@@ -5749,12 +5752,12 @@ pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig
 	rb_raise(rb_eNotImpError,
 		 "fork() function is unimplemented on this machine");
 #endif
-        return pipe_open(NULL, modestr, fmode, convconfig);
+        return pipe_open(Qnil, modestr, fmode, convconfig);
     }
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
     earg = rb_execarg_get(execarg_obj);
-    ret = pipe_open(earg, modestr, fmode, convconfig);
+    ret = pipe_open(execarg_obj, modestr, fmode, convconfig);
     RB_GC_GUARD(execarg_obj);
     return ret;
 }
