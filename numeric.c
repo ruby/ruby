@@ -150,6 +150,20 @@ rb_num_to_uint(VALUE val, unsigned int *ret)
     return NUMERR_TYPE;
 }
 
+static inline int
+positive_int_p(VALUE num)
+{
+    const ID mid = '>';
+    return RTEST(rb_funcall(num, mid, 1, INT2FIX(0)));
+}
+
+static inline int
+negative_int_p(VALUE num)
+{
+    const ID mid = '<';
+    return RTEST(rb_funcall(num, mid, 1, INT2FIX(0)));
+}
+
 /*
  *  call-seq:
  *     num.coerce(numeric)  ->  array
@@ -405,10 +419,10 @@ num_remainder(VALUE x, VALUE y)
     VALUE z = rb_funcall(x, '%', 1, y);
 
     if ((!rb_equal(z, INT2FIX(0))) &&
-	((RTEST(rb_funcall(x, '<', 1, INT2FIX(0))) &&
-	  RTEST(rb_funcall(y, '>', 1, INT2FIX(0)))) ||
-	 (RTEST(rb_funcall(x, '>', 1, INT2FIX(0))) &&
-	  RTEST(rb_funcall(y, '<', 1, INT2FIX(0)))))) {
+	((negative_int_p(x) &&
+	  positive_int_p(y)) ||
+	 (positive_int_p(x) &&
+	  negative_int_p(y)))) {
 	return rb_funcall(z, '-', 1, y);
     }
     return z;
@@ -504,7 +518,7 @@ num_int_p(VALUE num)
 static VALUE
 num_abs(VALUE num)
 {
-    if (RTEST(rb_funcall(num, '<', 1, INT2FIX(0)))) {
+    if (negative_int_p(num)) {
 	return rb_funcall(num, rb_intern("-@"), 0);
     }
     return num;
@@ -1503,7 +1517,7 @@ int_round_0(VALUE num, int ndigits)
     h = rb_funcall(f, '/', 1, INT2FIX(2));
     r = rb_funcall(num, '%', 1, f);
     n = rb_funcall(num, '-', 1, r);
-    op = RTEST(rb_funcall(num, '<', 1, INT2FIX(0))) ? rb_intern("<=") : '<';
+    op = negative_int_p(num) ? rb_intern("<=") : '<';
     if (!RTEST(rb_funcall(r, op, 1, h))) {
 	n = rb_funcall(n, '+', 1, f);
     }
@@ -1801,7 +1815,7 @@ num_step(int argc, VALUE *argv, VALUE from)
 	VALUE i = from;
 	ID cmp;
 
-	if (RTEST(rb_funcall(step, '>', 1, INT2FIX(0)))) {
+	if (positive_int_p(step)) {
 	    cmp = '>';
 	}
 	else {
@@ -1905,11 +1919,11 @@ check_int(SIGNED_VALUE num)
 }
 
 static void
-check_uint(VALUE num, VALUE sign)
+check_uint(VALUE num, int sign)
 {
     static const VALUE mask = ~(VALUE)UINT_MAX;
 
-    if (RTEST(sign)) {
+    if (sign) {
 	/* minus */
 	if ((num & mask) != mask || (num & ~mask) <= INT_MAX)
 #define VALUE_MSBMASK   ((VALUE)1 << ((sizeof(VALUE) * CHAR_BIT) - 1))
@@ -1945,7 +1959,7 @@ rb_num2uint(VALUE val)
 {
     VALUE num = rb_num2ulong(val);
 
-    check_uint(num, rb_funcall(val, '<', 1, INT2FIX(0)));
+    check_uint(num, negative_int_p(val));
     return (unsigned long)num;
 }
 
@@ -1959,7 +1973,7 @@ rb_fix2uint(VALUE val)
     }
     num = FIX2ULONG(val);
 
-    check_uint(num, rb_funcall(val, '<', 1, INT2FIX(0)));
+    check_uint(num, negative_int_p(val));
     return num;
 }
 #else
@@ -1992,11 +2006,11 @@ check_short(SIGNED_VALUE num)
 }
 
 static void
-check_ushort(VALUE num, VALUE sign)
+check_ushort(VALUE num, int sign)
 {
     static const VALUE mask = ~(VALUE)USHRT_MAX;
 
-    if (RTEST(sign)) {
+    if (sign) {
 	/* minus */
 	if ((num & mask) != mask || (num & ~mask) <= SHRT_MAX)
 #define VALUE_MSBMASK   ((VALUE)1 << ((sizeof(VALUE) * CHAR_BIT) - 1))
@@ -2032,7 +2046,7 @@ rb_num2ushort(VALUE val)
 {
     VALUE num = rb_num2ulong(val);
 
-    check_ushort(num, rb_funcall(val, '<', 1, INT2FIX(0)));
+    check_ushort(num, negative_int_p(val));
     return (unsigned long)num;
 }
 
@@ -2046,7 +2060,7 @@ rb_fix2ushort(VALUE val)
     }
     num = FIX2ULONG(val);
 
-    check_ushort(num, rb_funcall(val, '<', 1, INT2FIX(0)));
+    check_ushort(num, negative_int_p(val));
     return num;
 }
 
@@ -2867,7 +2881,7 @@ fix_pow(VALUE x, VALUE y)
     switch (TYPE(y)) {
       case T_BIGNUM:
 
-	if (rb_funcall(y, '<', 1, INT2FIX(0)))
+	if (negative_int_p(y))
 	    return rb_funcall(rb_rational_raw1(x), rb_intern("**"), 1, y);
 
 	if (a == 0) return INT2FIX(0);
