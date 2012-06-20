@@ -1,3 +1,8 @@
+Wed Jun 20 11:24:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner#_run_parallel): deal with
+	  sudden-death of workers.
+
 Mon Jun 18 20:34:20 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* time.c (init_leap_second_info): fix non-ANSI function declaration.

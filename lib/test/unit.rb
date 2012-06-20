@@ -544,7 +544,7 @@ module Test
                 @warnings << Marshal.load($1.unpack("m")[0])
               when /^bye (.+?)$/
                 after_worker_down worker, Marshal.load($1.unpack("m")[0])
-              when /^bye$/
+              when /^bye$/, nil
                 if shutting_down || worker.quit_called
                   after_worker_quit worker
                 else
