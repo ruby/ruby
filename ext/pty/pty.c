@@ -79,7 +79,7 @@ struct child_info {
     int master, slave;
     char *slavename;
     VALUE execarg_obj;
-    struct rb_exec_arg *earg;
+    struct rb_execarg *earg;
 };
 
 static int

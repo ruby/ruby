@@ -582,23 +582,7 @@ VALUE rb_sym_all_symbols(void);
 void rb_last_status_set(int status, rb_pid_t pid);
 VALUE rb_last_status_get(void);
 struct rb_exec_arg {
-    int use_shell;
-    union {
-        struct {
-            VALUE shell_script;
-        } sh;
-        struct {
-            VALUE command_name;
-            VALUE command_abspath; /* full path string or nil */
-            VALUE argv_str;
-            VALUE argv_buf;
-        } cmd;
-    } invoke;
-    VALUE options;
-    VALUE redirect_fds;
-    VALUE envp_str;
-    VALUE envp_buf;
-    VALUE dup2_tmpbuf;
+    VALUE execarg_obj;
 };
 DEPRECATED(int rb_proc_exec_n(int, VALUE*, const char*));
 int rb_proc_exec(const char*);

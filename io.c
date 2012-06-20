@@ -5342,7 +5342,7 @@ rb_pipe(int *pipes)
 
 #ifdef HAVE_FORK
 struct popen_arg {
-    struct rb_exec_arg *execp;
+    struct rb_execarg *execp;
     int modef;
     int pair[2];
     int write_pair[2];
@@ -5466,7 +5466,7 @@ popen_exec(void *pp, char *errmsg, size_t errmsg_len)
 #endif
 
 static VALUE
-pipe_open(struct rb_exec_arg *eargp, const char *modestr, int fmode, convconfig_t *convconfig)
+pipe_open(struct rb_execarg *eargp, const char *modestr, int fmode, convconfig_t *convconfig)
 {
     VALUE prog = eargp ? (eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name) : Qfalse ;
     rb_pid_t pid = 0;
@@ -5484,7 +5484,7 @@ pipe_open(struct rb_exec_arg *eargp, const char *modestr, int fmode, convconfig_
     int pair[2], write_pair[2];
 #endif
 #if !defined(HAVE_FORK)
-    struct rb_exec_arg sarg;
+    struct rb_execarg sarg;
 #endif
     FILE *fp = 0;
     int fd = -1;
@@ -5727,7 +5727,7 @@ static VALUE
 pipe_open_v(int argc, VALUE *argv, const char *modestr, int fmode, convconfig_t *convconfig)
 {
     VALUE execarg_obj, ret;
-    struct rb_exec_arg *earg;
+    struct rb_execarg *earg;
     execarg_obj = rb_execarg_new(argc, argv, FALSE);
     earg = rb_execarg_get(execarg_obj);
     ret = pipe_open(earg, modestr, fmode, convconfig);
@@ -5742,7 +5742,7 @@ pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig
     int argc = 1;
     VALUE *argv = &prog;
     VALUE execarg_obj, ret;
-    struct rb_exec_arg *earg;
+    struct rb_execarg *earg;
 
     if (RSTRING_LEN(prog) == 1 && cmd[0] == '-') {
 #if !defined(HAVE_FORK)

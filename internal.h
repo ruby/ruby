@@ -159,6 +159,26 @@ st_index_t rb_hash_proc(st_index_t hash, VALUE proc);
 
 /* process.c */
 
+struct rb_execarg {
+    int use_shell;
+    union {
+        struct {
+            VALUE shell_script;
+        } sh;
+        struct {
+            VALUE command_name;
+            VALUE command_abspath; /* full path string or nil */
+            VALUE argv_str;
+            VALUE argv_buf;
+        } cmd;
+    } invoke;
+    VALUE options;
+    VALUE redirect_fds;
+    VALUE envp_str;
+    VALUE envp_buf;
+    VALUE dup2_tmpbuf;
+};
+
 /* argv_str contains extra two elements.
  * The beginning one is for /bin/sh used by exec_with_sh.
  * The last one for terminating NULL used by execve.
@@ -264,14 +284,14 @@ VALUE rb_thread_call_without_gvl(
 void rb_maygvl_fd_fix_cloexec(int fd);
 
 /* process.c */
-int rb_exec_async_signal_safe(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen);
+int rb_exec_async_signal_safe(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen);
 rb_pid_t rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds, char *errmsg, size_t errmsg_buflen);
 VALUE rb_execarg_new(int argc, VALUE *argv, int accept_shell);
-struct rb_exec_arg *rb_execarg_get(VALUE execarg_obj); /* dangerous.  needs GC guard. */
-VALUE rb_execarg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e);
-int rb_execarg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val);
-void rb_execarg_fixup(struct rb_exec_arg *e);
-int rb_execarg_run_options(const struct rb_exec_arg *e, struct rb_exec_arg *s, char* errmsg, size_t errmsg_buflen);
+struct rb_execarg *rb_execarg_get(VALUE execarg_obj); /* dangerous.  needs GC guard. */
+VALUE rb_execarg_init(int argc, VALUE *argv, int accept_shell, struct rb_execarg *e);
+int rb_execarg_addopt(struct rb_execarg *e, VALUE key, VALUE val);
+void rb_execarg_fixup(struct rb_execarg *e);
+int rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char* errmsg, size_t errmsg_buflen);
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop

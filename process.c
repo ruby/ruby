@@ -1273,7 +1273,7 @@ enum {
 static void
 mark_exec_arg(void *ptr)
 {
-    struct rb_exec_arg *earg = ptr;
+    struct rb_execarg *earg = ptr;
     if (earg->use_shell)
         rb_gc_mark(earg->invoke.sh.shell_script);
     else {
@@ -1298,7 +1298,7 @@ free_exec_arg(void *ptr)
 static size_t
 memsize_exec_arg(const void *ptr)
 {
-    return ptr ? sizeof(struct rb_exec_arg) : 0;
+    return ptr ? sizeof(struct rb_execarg) : 0;
 }
 
 static const rb_data_type_t exec_arg_data_type = {
@@ -1545,7 +1545,7 @@ static int rlimit_type_by_lname(const char *name);
 #endif
 
 int
-rb_execarg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
+rb_execarg_addopt(struct rb_execarg *e, VALUE key, VALUE val)
 {
     VALUE options = e->options;
     ID id;
@@ -1682,7 +1682,7 @@ redirect:
 int
 rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
 {
-    return rb_execarg_addopt(e, key, val);
+    return rb_execarg_addopt(rb_execarg_get(e->execarg_obj), key, val);
 }
 
 static int
@@ -1690,7 +1690,7 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 {
     VALUE key = (VALUE)st_key;
     VALUE val = (VALUE)st_val;
-    struct rb_exec_arg *e = (struct rb_exec_arg *)arg;
+    struct rb_execarg *e = (struct rb_execarg *)arg;
     return rb_execarg_addopt(e, key, val);
 }
 
@@ -1766,7 +1766,7 @@ check_exec_fds(VALUE options)
 }
 
 static void
-rb_check_exec_options(VALUE opthash, struct rb_exec_arg *e)
+rb_check_exec_options(VALUE opthash, struct rb_execarg *e)
 {
     if (RHASH_EMPTY_P(opthash))
         return;
@@ -1884,12 +1884,12 @@ compare_posix_sh(const void *key, const void *el)
 #endif
 
 static void
-rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, struct rb_exec_arg *e)
+rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, struct rb_execarg *e)
 {
     VALUE options;
     char fbuf[MAXPATHLEN];
 
-    MEMZERO(e, struct rb_exec_arg, 1);
+    MEMZERO(e, struct rb_execarg, 1);
     options = hide_obj(rb_ary_new());
     e->options = options;
 
@@ -2059,22 +2059,22 @@ VALUE
 rb_execarg_new(int argc, VALUE *argv, int accept_shell)
 {
     VALUE execarg_obj;
-    struct rb_exec_arg *e;
-    execarg_obj = TypedData_Make_Struct(rb_cData, struct rb_exec_arg, &exec_arg_data_type, e);
+    struct rb_execarg *e;
+    execarg_obj = TypedData_Make_Struct(rb_cData, struct rb_execarg, &exec_arg_data_type, e);
     hide_obj(execarg_obj);
     rb_execarg_init(argc, argv, accept_shell, e);
     return execarg_obj;
 }
 
-struct rb_exec_arg *rb_execarg_get(VALUE execarg_obj)
+struct rb_execarg *rb_execarg_get(VALUE execarg_obj)
 {
-    struct rb_exec_arg *e;
-    TypedData_Get_Struct(execarg_obj, struct rb_exec_arg, &exec_arg_data_type, e);
+    struct rb_execarg *e;
+    TypedData_Get_Struct(execarg_obj, struct rb_execarg, &exec_arg_data_type, e);
     return e;
 }
 
 VALUE
-rb_execarg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
+rb_execarg_init(int argc, VALUE *argv, int accept_shell, struct rb_execarg *e)
 {
     VALUE prog;
     VALUE env = Qnil, opthash = Qnil;
@@ -2086,7 +2086,7 @@ rb_execarg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
 VALUE
 rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
 {
-    return rb_execarg_init(argc, argv, accept_shell, e);
+    return rb_execarg_init(argc, argv, accept_shell, rb_execarg_get(e->execarg_obj));
 }
 
 static int
@@ -2108,7 +2108,7 @@ fill_envp_buf_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 static long run_exec_dup2_tmpbuf_size(long n);
 
 void
-rb_execarg_fixup(struct rb_exec_arg *e)
+rb_execarg_fixup(struct rb_execarg *e)
 {
     VALUE unsetenv_others, envopts;
     VALUE ary;
@@ -2181,17 +2181,17 @@ rb_execarg_fixup(struct rb_exec_arg *e)
 void
 rb_exec_arg_fixup(struct rb_exec_arg *e)
 {
-    rb_execarg_fixup(e);
+    rb_execarg_fixup(rb_execarg_get(e->execarg_obj));
 }
 
 static void
-rb_exec_arg_prepare(struct rb_exec_arg *earg, int argc, VALUE *argv)
+rb_exec_arg_prepare(struct rb_execarg *earg, int argc, VALUE *argv)
 {
     rb_execarg_init(argc, argv, TRUE, earg);
     rb_execarg_fixup(earg);
 }
 
-static int rb_exec_without_timer_thread(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen);
+static int rb_exec_without_timer_thread(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen);
 
 /*
  *  call-seq:
@@ -2248,7 +2248,7 @@ VALUE
 rb_f_exec(int argc, VALUE *argv)
 {
     VALUE execarg_obj, fail_str;
-    struct rb_exec_arg *earg;
+    struct rb_execarg *earg;
 #define CHILD_ERRMSG_BUFLEN 80
     char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
 
@@ -2712,7 +2712,7 @@ save_env(VALUE save)
 
 /* This function should be async-signal-safe when _s_ is NULL.  Hopefully it is. */
 int
-rb_execarg_run_options(const struct rb_exec_arg *e, struct rb_exec_arg *s, char *errmsg, size_t errmsg_buflen)
+rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char *errmsg, size_t errmsg_buflen)
 {
     VALUE options = e->options;
     VALUE soptions = Qnil;
@@ -2840,21 +2840,21 @@ rb_execarg_run_options(const struct rb_exec_arg *e, struct rb_exec_arg *s, char 
 int
 rb_run_exec_options_err(const struct rb_exec_arg *e, struct rb_exec_arg *s, char *errmsg, size_t errmsg_buflen)
 {
-    return rb_execarg_run_options(e, s, errmsg, errmsg_buflen);
+    return rb_execarg_run_options(rb_execarg_get(e->execarg_obj), rb_execarg_get(s->execarg_obj), errmsg, errmsg_buflen);
 }
 
 int
 rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
 {
-    return rb_execarg_run_options(e, s, NULL, 0);
+    return rb_execarg_run_options(rb_execarg_get(e->execarg_obj), rb_execarg_get(s->execarg_obj), NULL, 0);
 }
 
 /* This function should be async-signal-safe.  Hopefully it is. */
 int
-rb_exec_async_signal_safe(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
+rb_exec_async_signal_safe(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen)
 {
 #if !defined(HAVE_FORK)
-    struct rb_exec_arg sarg, *sargp = &sarg;
+    struct rb_execarg sarg, *sargp = &sarg;
 #else
 # define sargp NULL
 #endif
@@ -2886,7 +2886,7 @@ failure:
 }
 
 static int
-rb_exec_without_timer_thread(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
+rb_exec_without_timer_thread(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen)
 {
     int ret;
     before_exec_non_async_signal_safe(); /* async-signal-safe if forked_child is true */
@@ -2898,7 +2898,7 @@ rb_exec_without_timer_thread(const struct rb_exec_arg *e, char *errmsg, size_t e
 int
 rb_exec_err(const struct rb_exec_arg *e, char *errmsg, size_t errmsg_buflen)
 {
-    return rb_exec_without_timer_thread(e, errmsg, errmsg_buflen);
+    return rb_exec_without_timer_thread(rb_execarg_get(e->execarg_obj), errmsg, errmsg_buflen);
 }
 
 int
@@ -2906,7 +2906,7 @@ rb_exec(const struct rb_exec_arg *e)
 {
 #if !defined FD_CLOEXEC && !defined HAVE_SPAWNV
     char errmsg[80] = { '\0' };
-    int ret = rb_exec_without_timer_thread(e, errmsg, sizeof(errmsg));
+    int ret = rb_exec_without_timer_thread(rb_execarg_get(e->execarg_obj), errmsg, sizeof(errmsg));
     preserving_errno(
 	if (errmsg[0]) {
 	    fprintf(stderr, "%s\n", errmsg);
@@ -2919,7 +2919,7 @@ rb_exec(const struct rb_exec_arg *e)
     );
     return ret;
 #else
-    return rb_exec_without_timer_thread(e, NULL, 0);
+    return rb_exec_without_timer_thread(rb_execarg_get(e->execarg_obj), NULL, 0);
 #endif
 }
 
@@ -3485,7 +3485,7 @@ rb_syswait(rb_pid_t pid)
 }
 
 static rb_pid_t
-rb_spawn_process(struct rb_exec_arg *earg, char *errmsg, size_t errmsg_buflen)
+rb_spawn_process(struct rb_execarg *earg, char *errmsg, size_t errmsg_buflen)
 {
     rb_pid_t pid;
 #if !USE_SPAWNV
@@ -3493,7 +3493,7 @@ rb_spawn_process(struct rb_exec_arg *earg, char *errmsg, size_t errmsg_buflen)
 #endif
 #if !defined HAVE_FORK || USE_SPAWNV
     VALUE prog;
-    struct rb_exec_arg sarg;
+    struct rb_execarg sarg;
 #endif
 
 #if defined HAVE_FORK && !USE_SPAWNV
@@ -3540,7 +3540,7 @@ static rb_pid_t
 rb_spawn_internal(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
 {
     VALUE execarg_obj;
-    struct rb_exec_arg *earg;
+    struct rb_execarg *earg;
     VALUE ret;
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
@@ -3880,7 +3880,7 @@ rb_f_spawn(int argc, VALUE *argv)
     rb_pid_t pid;
     char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
     VALUE execarg_obj, fail_str;
-    struct rb_exec_arg *earg;
+    struct rb_execarg *earg;
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
     earg = rb_execarg_get(execarg_obj);

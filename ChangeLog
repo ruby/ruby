@@ -1,3 +1,26 @@
+Wed Jun 20 20:38:23 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (struct rb_execarg) moved and renamed from
+	  struct rb_exec_arg in intern.h.
+
+	* include/ruby/intern.h (struct rb_exec_arg): refer Data object which
+	  contains struct rb_execarg.
+
+	* process.c: use struct rb_execarg instead of struct rb_exec_arg
+	  except functions declared in intern.h.
+	  (rb_exec_arg_addopt): extract a pointer to struct rb_execarg from
+	  struct rb_exec_arg.
+	  (rb_exec_arg_init): ditto.
+	  (rb_exec_arg_fixup): ditto.
+	  (rb_run_exec_options_err): ditto.
+	  (rb_run_exec_options): ditto.
+	  (rb_exec_err): ditto.
+	  (rb_exec): ditto.
+
+	* io.c: use struct rb_execarg instead of struct rb_exec_arg.
+
+	* ext/pty/pty.c: ditto.
+
 Wed Jun 20 19:13:25 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_execarg_new): declared.
