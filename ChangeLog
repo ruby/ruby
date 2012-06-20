@@ -1,3 +1,9 @@
+Wed Jun 20 16:36:14 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/setproctitle.c (environ): use (*_NSGetEnviron()) instead of
+	  environ on Darwin for namespace cleanness, same as [ruby-core:00537].
+	  [ruby-core:45615] [Bug #6576]
+
 Wed Jun 20 11:33:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_execarg_addopt): always make Fixnum, and ignore higher

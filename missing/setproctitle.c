@@ -48,6 +48,12 @@
 #endif
 #include <string.h>
 
+#if defined(__APPLE__)
+#include <crt_externs.h>
+#undef environ
+#define environ (*_NSGetEnviron())
+#endif
+
 #define SPT_NONE	0	/* don't use it at all */
 #define SPT_PSTAT	1	/* use pstat(PSTAT_SETCMD, ...) */
 #define SPT_REUSEARGV	2	/* cover argv with title information */
