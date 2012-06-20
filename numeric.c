@@ -150,10 +150,21 @@ rb_num_to_uint(VALUE val, unsigned int *ret)
     return NUMERR_TYPE;
 }
 
+#define method_basic_p(klass) rb_method_basic_definition_p(klass, mid)
+
 static inline int
 positive_int_p(VALUE num)
 {
     const ID mid = '>';
+
+    if (FIXNUM_P(num)) {
+	if (method_basic_p(rb_cFixnum))
+	    return (SIGNED_VALUE)num > 0;
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	if (method_basic_p(rb_cBignum))
+	    return RBIGNUM_POSITIVE_P(num);
+    }
     return RTEST(rb_funcall(num, mid, 1, INT2FIX(0)));
 }
 
@@ -161,6 +172,15 @@ static inline int
 negative_int_p(VALUE num)
 {
     const ID mid = '<';
+
+    if (FIXNUM_P(num)) {
+	if (method_basic_p(rb_cFixnum))
+	    return (SIGNED_VALUE)num < 0;
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	if (method_basic_p(rb_cBignum))
+	    return RBIGNUM_NEGATIVE_P(num);
+    }
     return RTEST(rb_funcall(num, mid, 1, INT2FIX(0)));
 }
 
