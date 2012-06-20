@@ -1,3 +1,23 @@
+Wed Jun 20 19:13:25 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_execarg_new): declared.
+	  (rb_execarg_get): ditto.
+
+	* process.c (mark_exec_arg): new function.
+	  (free_exec_arg): ditto.
+	  (memsize_exec_arg): ditto.
+	  (exec_arg_data_type): defined.
+	  (rb_execarg_new): new function.
+	  (rb_execarg_get): ditto.
+	  (rb_f_exec): use rb_execarg_new.
+	  (rb_spawn_internal): ditto.
+	  (rb_f_spawn): ditto.
+
+	* io.c (pipe_open_v): use rb_execarg_new.
+	  (pipe_open_s): ditto.
+
+	* ext/pty/pty.c (establishShell): use rb_execarg_new.
+
 Wed Jun 20 16:36:14 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/setproctitle.c (environ): use (*_NSGetEnviron()) instead of

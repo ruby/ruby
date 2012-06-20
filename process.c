@@ -1270,6 +1270,42 @@ enum {
     EXEC_OPTION_NEW_PGROUP
 };
 
+static void
+mark_exec_arg(void *ptr)
+{
+    struct rb_exec_arg *earg = ptr;
+    if (earg->use_shell)
+        rb_gc_mark(earg->invoke.sh.shell_script);
+    else {
+        rb_gc_mark(earg->invoke.cmd.command_name);
+        rb_gc_mark(earg->invoke.cmd.command_abspath);
+        rb_gc_mark(earg->invoke.cmd.argv_str);
+        rb_gc_mark(earg->invoke.cmd.argv_buf);
+    }
+    rb_gc_mark(earg->options);
+    rb_gc_mark(earg->redirect_fds);
+    rb_gc_mark(earg->envp_str);
+    rb_gc_mark(earg->envp_buf);
+    rb_gc_mark(earg->dup2_tmpbuf);
+}
+
+static void
+free_exec_arg(void *ptr)
+{
+    xfree(ptr);
+}
+
+static size_t
+memsize_exec_arg(const void *ptr)
+{
+    return ptr ? sizeof(struct rb_exec_arg) : 0;
+}
+
+static const rb_data_type_t exec_arg_data_type = {
+  "exec_arg",
+  {mark_exec_arg, free_exec_arg, memsize_exec_arg},
+};
+
 #if defined(_WIN32)
 #define HAVE_SPAWNV 1
 #endif
@@ -2020,6 +2056,24 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
 }
 
 VALUE
+rb_execarg_new(int argc, VALUE *argv, int accept_shell)
+{
+    VALUE execarg_obj;
+    struct rb_exec_arg *e;
+    execarg_obj = TypedData_Make_Struct(rb_cData, struct rb_exec_arg, &exec_arg_data_type, e);
+    hide_obj(execarg_obj);
+    rb_execarg_init(argc, argv, accept_shell, e);
+    return execarg_obj;
+}
+
+struct rb_exec_arg *rb_execarg_get(VALUE execarg_obj)
+{
+    struct rb_exec_arg *e;
+    TypedData_Get_Struct(execarg_obj, struct rb_exec_arg, &exec_arg_data_type, e);
+    return e;
+}
+
+VALUE
 rb_execarg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
 {
     VALUE prog;
@@ -2193,20 +2247,25 @@ static int rb_exec_without_timer_thread(const struct rb_exec_arg *e, char *errms
 VALUE
 rb_f_exec(int argc, VALUE *argv)
 {
-    struct rb_exec_arg earg;
+    VALUE execarg_obj, fail_str;
+    struct rb_exec_arg *earg;
 #define CHILD_ERRMSG_BUFLEN 80
     char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
 
-    rb_exec_arg_prepare(&earg, argc, argv);
+    execarg_obj = rb_execarg_new(argc, argv, TRUE);
+    earg = rb_execarg_get(execarg_obj);
+    rb_execarg_fixup(earg);
+    fail_str = earg->use_shell ? earg->invoke.sh.shell_script : earg->invoke.cmd.command_name;
 
 #ifdef __MacOS_X__
-    rb_exec_without_timer_thread(&earg, errmsg, sizeof(errmsg));
+    rb_exec_without_timer_thread(earg, errmsg, sizeof(errmsg));
 #else
-    rb_exec_async_signal_safe(&earg, errmsg, sizeof(errmsg));
+    rb_exec_async_signal_safe(earg, errmsg, sizeof(errmsg));
 #endif
+    RB_GC_GUARD(execarg_obj);
     if (errmsg[0])
         rb_sys_fail(errmsg);
-    rb_sys_fail_str(earg.use_shell ? earg.invoke.sh.shell_script : earg.invoke.cmd.command_name);
+    rb_sys_fail_str(fail_str);
     return Qnil;		/* dummy */
 }
 
@@ -3480,9 +3539,16 @@ rb_spawn_process(struct rb_exec_arg *earg, char *errmsg, size_t errmsg_buflen)
 static rb_pid_t
 rb_spawn_internal(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
 {
-    struct rb_exec_arg earg;
-    rb_exec_arg_prepare(&earg, argc, argv);
-    return rb_spawn_process(&earg, errmsg, errmsg_buflen);
+    VALUE execarg_obj;
+    struct rb_exec_arg *earg;
+    VALUE ret;
+
+    execarg_obj = rb_execarg_new(argc, argv, TRUE);
+    earg = rb_execarg_get(execarg_obj);
+    rb_execarg_fixup(earg);
+    ret = rb_spawn_process(earg, errmsg, errmsg_buflen);
+    RB_GC_GUARD(execarg_obj);
+    return ret;
 }
 
 rb_pid_t
@@ -3813,14 +3879,21 @@ rb_f_spawn(int argc, VALUE *argv)
 {
     rb_pid_t pid;
     char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
-    struct rb_exec_arg earg;
+    VALUE execarg_obj, fail_str;
+    struct rb_exec_arg *earg;
 
-    rb_exec_arg_prepare(&earg, argc, argv);
-    pid = rb_spawn_process(&earg, errmsg, sizeof(errmsg));
+    execarg_obj = rb_execarg_new(argc, argv, TRUE);
+    earg = rb_execarg_get(execarg_obj);
+    rb_execarg_fixup(earg);
+    fail_str = earg->use_shell ? earg->invoke.sh.shell_script : earg->invoke.cmd.command_name;
+
+    pid = rb_spawn_process(earg, errmsg, sizeof(errmsg));
+    RB_GC_GUARD(execarg_obj);
+
     if (pid == -1) {
 	const char *prog = errmsg;
 	if (!prog[0]) {
-	    rb_sys_fail_str(earg.use_shell ? earg.invoke.sh.shell_script : earg.invoke.cmd.command_name);
+	    rb_sys_fail_str(fail_str);
 	}
 	rb_sys_fail(prog);
     }
