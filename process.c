@@ -1602,7 +1602,7 @@ rb_execarg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
             if (!NIL_P(rb_ary_entry(options, EXEC_OPTION_UMASK))) {
                 rb_raise(rb_eArgError, "umask option specified twice");
             }
-            rb_ary_store(options, EXEC_OPTION_UMASK, LONG2NUM(cmask));
+            rb_ary_store(options, EXEC_OPTION_UMASK, LONG2FIX(cmask));
         }
         else if (id == rb_intern("close_others")) {
             if (!NIL_P(rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS))) {

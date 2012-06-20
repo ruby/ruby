@@ -1,3 +1,8 @@
+Wed Jun 20 11:33:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_execarg_addopt): always make Fixnum, and ignore higher
+	  bits in too large umask value.
+
 Wed Jun 20 11:24:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::Runner#_run_parallel): deal with
