@@ -177,6 +177,8 @@ struct rb_execarg {
     VALUE envp_str;
     VALUE envp_buf;
     VALUE dup2_tmpbuf;
+    unsigned umask_given : 1;
+    mode_t umask_mask;
 };
 
 /* argv_str contains extra two elements.

@@ -1,3 +1,12 @@
+Wed Jun 20 21:25:37 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (struct rb_execarg): add umask_given and umask_mask
+	  fields.
+
+	* process.c (STATIC_ASSERT): removed.
+	  (rb_execarg_addopt): follow the rb_execarg change.
+	  (rb_execarg_run_options): ditto.
+
 Wed Jun 20 20:38:23 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (struct rb_execarg) moved and renamed from

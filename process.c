@@ -17,8 +17,6 @@
 #include "internal.h"
 #include "vm_core.h"
 
-#define STATIC_ASSERT(name, expr) typedef int static_assert_##name##_check[1 - 2*!(expr)]
-
 #include <stdio.h>
 #include <errno.h>
 #include <signal.h>
@@ -1261,7 +1259,6 @@ enum {
     EXEC_OPTION_UNSETENV_OTHERS,
     EXEC_OPTION_ENV,
     EXEC_OPTION_CHDIR,
-    EXEC_OPTION_UMASK,
     EXEC_OPTION_DUP2,
     EXEC_OPTION_CLOSE,
     EXEC_OPTION_OPEN,
@@ -1633,12 +1630,12 @@ rb_execarg_addopt(struct rb_execarg *e, VALUE key, VALUE val)
                                   hide_obj(rb_str_dup(val)));
         }
         else if (id == rb_intern("umask")) {
-	    STATIC_ASSERT(sizeof_mode_t, sizeof(long) >= sizeof(mode_t)); /* for LONG2NUM */
 	    mode_t cmask = NUM2MODET(val);
-            if (!NIL_P(rb_ary_entry(options, EXEC_OPTION_UMASK))) {
+            if (e->umask_given) {
                 rb_raise(rb_eArgError, "umask option specified twice");
             }
-            rb_ary_store(options, EXEC_OPTION_UMASK, LONG2FIX(cmask));
+            e->umask_given = 1;
+            e->umask_mask = cmask;
         }
         else if (id == rb_intern("close_others")) {
             if (!NIL_P(rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS))) {
@@ -2767,12 +2764,13 @@ rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char *e
     }
 #endif
 
-    obj = rb_ary_entry(options, EXEC_OPTION_UMASK);
-    if (!NIL_P(obj)) {
-        mode_t mask = (mode_t)FIX2LONG(obj); /* no method calls */
+    if (e->umask_given) {
+        mode_t mask = e->umask_mask;
         mode_t oldmask = umask(mask); /* never fail */ /* async-signal-safe */
-        if (!NIL_P(soptions))
-            rb_ary_store(soptions, EXEC_OPTION_UMASK, MODET2NUM(oldmask));
+        if (s) {
+            s->umask_given = 1;
+            s->umask_mask = oldmask;
+        }
     }
 
     obj = rb_ary_entry(options, EXEC_OPTION_DUP2);
