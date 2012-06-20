@@ -99,7 +99,42 @@ compile_snprintf(char *buf, long len, const char *file, int line, const char *fm
     }
 }
 
-static void err_append(const char*, rb_encoding *);
+static void
+compile_err_append(const char *s, rb_encoding *enc)
+{
+    rb_thread_t *th = GET_THREAD();
+    VALUE err = th->errinfo;
+    rb_block_t *prev_base_block = th->base_block;
+    th->base_block = 0;
+    /* base_block should be zero while normal Ruby execution */
+    /* after this line, any Ruby code *can* run */
+
+    if (th->mild_compile_error) {
+	if (!RTEST(err)) {
+	    err = rb_exc_new3(rb_eSyntaxError,
+			      rb_enc_str_new(s, strlen(s), enc));
+	    th->errinfo = err;
+	}
+	else {
+	    VALUE str = rb_obj_as_string(err);
+
+	    rb_str_cat2(str, "\n");
+	    rb_str_cat2(str, s);
+	    th->errinfo = rb_exc_new3(rb_eSyntaxError, str);
+	}
+    }
+    else {
+	if (!RTEST(err)) {
+	    err = rb_exc_new2(rb_eSyntaxError, "compile error");
+	    th->errinfo = err;
+	}
+	rb_write_error(s);
+	rb_write_error("\n");
+    }
+
+    /* returned to the parser world */
+    th->base_block = prev_base_block;
+}
 
 void
 rb_compile_error_with_enc(const char *file, int line, void *enc, const char *fmt, ...)
@@ -110,7 +145,7 @@ rb_compile_error_with_enc(const char *file, int line, void *enc, const char *fmt
     va_start(args, fmt);
     compile_snprintf(buf, BUFSIZ, file, line, fmt, args);
     va_end(args);
-    err_append(buf, (rb_encoding *)enc);
+    compile_err_append(buf, (rb_encoding *)enc);
 }
 
 void
@@ -122,7 +157,7 @@ rb_compile_error(const char *file, int line, const char *fmt, ...)
     va_start(args, fmt);
     compile_snprintf(buf, BUFSIZ, file, line, fmt, args);
     va_end(args);
-    err_append(buf, NULL);
+    compile_err_append(buf, NULL);
 }
 
 void
@@ -134,7 +169,7 @@ rb_compile_error_append(const char *fmt, ...)
     va_start(args, fmt);
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
-    err_append(buf, NULL);
+    compile_err_append(buf, NULL);
 }
 
 static void
@@ -1984,34 +2019,4 @@ Init_syserr(void)
 #include "known_errors.inc"
 #undef defined_error
 #undef undefined_error
-}
-
-static void
-err_append(const char *s, rb_encoding *enc)
-{
-    rb_thread_t *th = GET_THREAD();
-    VALUE err = th->errinfo;
-
-    if (th->mild_compile_error) {
-	if (!RTEST(err)) {
-	    err = rb_exc_new3(rb_eSyntaxError,
-			      rb_enc_str_new(s, strlen(s), enc));
-	    th->errinfo = err;
-	}
-	else {
-	    VALUE str = rb_obj_as_string(err);
-
-	    rb_str_cat2(str, "\n");
-	    rb_str_cat2(str, s);
-	    th->errinfo = rb_exc_new3(rb_eSyntaxError, str);
-	}
-    }
-    else {
-	if (!RTEST(err)) {
-	    err = rb_exc_new2(rb_eSyntaxError, "compile error");
-	    th->errinfo = err;
-	}
-	rb_write_error(s);
-	rb_write_error("\n");
-    }
 }

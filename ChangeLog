@@ -1,3 +1,8 @@
+Thu Jun 21 07:06:52 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* error.c (err_append): rename err_append() to compile_err_append()
+	  and move definition body.  err_append() is used only by compiling.
+
 Thu Jun 21 06:21:54 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_execarg_fixup): take a VALUE argument instead of
