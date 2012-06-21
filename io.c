@@ -5732,7 +5732,6 @@ pipe_open_v(int argc, VALUE *argv, const char *modestr, int fmode, convconfig_t 
     VALUE execarg_obj, ret;
     execarg_obj = rb_execarg_new(argc, argv, FALSE);
     ret = pipe_open(execarg_obj, modestr, fmode, convconfig);
-    RB_GC_GUARD(execarg_obj);
     return ret;
 }
 
@@ -5754,7 +5753,6 @@ pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
     ret = pipe_open(execarg_obj, modestr, fmode, convconfig);
-    RB_GC_GUARD(execarg_obj);
     return ret;
 }
 
