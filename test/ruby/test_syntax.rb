@@ -88,6 +88,10 @@ class TestSyntax < Test::Unit::TestCase
     assert_equal({}, o.kw, bug5989)
     assert_equal({foo: 1}, o.kw(foo: 1), bug5989)
     assert_equal({foo: 1, bar: 2}, o.kw(foo: 1, bar: 2), bug5989)
+    EnvUtil.under_gc_stress do
+      eval("def o.m(k: 0) k end")
+    end
+    assert_equal(42, o.m(k: 42), '[ruby-core:45744]')
   end
 
   def test_keyword_splat

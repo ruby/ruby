@@ -9289,8 +9289,11 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
     int saved_line = ruby_sourceline;
     struct rb_args_info *args;
     NODE *kw_rest_arg = 0;
+    NODE *node;
 
     args = ALLOC(struct rb_args_info);
+    MEMZERO(args, struct rb_args_info, 1);
+    node = NEW_NODE(NODE_ARGS, 0, 0, args);
 
     args->block_arg      = b;
     args->kw_args        = k;
@@ -9302,7 +9305,7 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
     args->kw_rest_arg    = kw_rest_arg;
 
     ruby_sourceline = saved_line;
-    return NEW_NODE(NODE_ARGS, 0, 0, args);
+    return node;
 }
 #endif /* !RIPPER */
 

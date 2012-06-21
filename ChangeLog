@@ -1,3 +1,11 @@
+Thu Jun 21 17:20:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (new_args_tail_gen): fix GC problem of keyword rest
+	  argument.  the wrapped struct should be bound to the wrapping node
+	  before assignment of child nodes, to get rid of the case the
+	  children are referred by only the struct pointer which is not a
+	  subject of GC.  [ruby-core:45744]
+
 Thu Jun 21 07:06:52 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* error.c (err_append): rename err_append() to compile_err_append()
