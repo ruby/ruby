@@ -3534,7 +3534,7 @@ rb_spawn_internal(int argc, VALUE *argv, char *errmsg, size_t errmsg_buflen)
 {
     VALUE execarg_obj;
     struct rb_execarg *earg;
-    VALUE ret;
+    rb_pid_t ret;
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
     earg = rb_execarg_get(execarg_obj);
