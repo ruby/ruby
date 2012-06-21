@@ -1,3 +1,9 @@
+Thu Jun 21 19:02:43 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_exec_fillarg): take a VALUE argument instead of
+	  struct rb_execarg.
+	  (rb_execarg_init): follow the rb_exec_fillarg change.
+
 Thu Jun 21 18:36:43 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_execarg_init): take a VALUE argument instead of

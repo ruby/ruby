@@ -1881,8 +1881,9 @@ compare_posix_sh(const void *key, const void *el)
 #endif
 
 static void
-rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, struct rb_execarg *e)
+rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VALUE execarg_obj)
 {
+    struct rb_execarg *e = rb_execarg_get(execarg_obj);
     VALUE options;
     char fbuf[MAXPATHLEN];
 
@@ -2050,6 +2051,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, str
         rb_str_buf_cat(argv_str, (char *)&null, sizeof(null)); /* terminator for execve.  */
         e->invoke.cmd.argv_str = argv_str;
     }
+    RB_GC_GUARD(execarg_obj);
 }
 
 VALUE
@@ -2077,7 +2079,7 @@ rb_execarg_init(int argc, VALUE *argv, int accept_shell, VALUE execarg_obj)
     VALUE prog, ret;
     VALUE env = Qnil, opthash = Qnil;
     prog = rb_exec_getargs(&argc, &argv, accept_shell, &env, &opthash);
-    rb_exec_fillarg(prog, argc, argv, env, opthash, e);
+    rb_exec_fillarg(prog, argc, argv, env, opthash, execarg_obj);
     ret = e->use_shell ? e->invoke.sh.shell_script : e->invoke.cmd.command_name;
     RB_GC_GUARD(execarg_obj);
     return ret;
