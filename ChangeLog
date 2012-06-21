@@ -1,3 +1,8 @@
+Fri Jun 22 05:55:20 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* eval.c (ruby_cleanup):  Fixed typo.  Patch by Trever Dawe.
+	  Fixes #131 (github).  [ruby-trunk - Bug #6619]
+
 Thu Jun 21 21:16:58 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_execarg_addopt): take a VALUE argument instead of
