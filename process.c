@@ -2873,7 +2873,7 @@ rb_exec_async_signal_safe(const struct rb_execarg *e, char *errmsg, size_t errms
 	proc_exec_cmd(abspath, e->invoke.cmd.argv_str, e->envp_str); /* async-signal-safe */
     }
 #if !defined(HAVE_FORK)
-    preserving_errno(rb_run_exec_options_err(sargp, NULL, errmsg, errmsg_buflen));
+    preserving_errno(rb_execarg_run_options(sargp, NULL, errmsg, errmsg_buflen));
 #else
 # undef sargp
 #endif
@@ -3499,7 +3499,7 @@ rb_spawn_process(struct rb_execarg *earg, char *errmsg, size_t errmsg_buflen)
 #else
     prog = earg->use_shell ? earg->invoke.sh.shell_script : earg->invoke.cmd.command_name;
 
-    if (rb_run_exec_options_err(earg, &sarg, errmsg, errmsg_buflen) < 0) {
+    if (rb_execarg_run_options(earg, &sarg, errmsg, errmsg_buflen) < 0) {
         return -1;
     }
 
@@ -3529,7 +3529,7 @@ rb_spawn_process(struct rb_execarg *earg, char *errmsg, size_t errmsg_buflen)
     rb_last_status_set((status & 0xff) << 8, 0);
 # endif
 
-    rb_run_exec_options_err(&sarg, NULL, errmsg, errmsg_buflen);
+    rb_execarg_run_options(&sarg, NULL, errmsg, errmsg_buflen);
 #endif
     return pid;
 }
