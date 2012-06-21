@@ -2059,7 +2059,7 @@ rb_execarg_new(int argc, VALUE *argv, int accept_shell)
     struct rb_execarg *e;
     execarg_obj = TypedData_Make_Struct(rb_cData, struct rb_execarg, &exec_arg_data_type, e);
     hide_obj(execarg_obj);
-    rb_execarg_init(argc, argv, accept_shell, e);
+    rb_execarg_init(argc, argv, accept_shell, execarg_obj);
     return execarg_obj;
 }
 
@@ -2071,19 +2071,22 @@ struct rb_execarg *rb_execarg_get(VALUE execarg_obj)
 }
 
 VALUE
-rb_execarg_init(int argc, VALUE *argv, int accept_shell, struct rb_execarg *e)
+rb_execarg_init(int argc, VALUE *argv, int accept_shell, VALUE execarg_obj)
 {
-    VALUE prog;
+    struct rb_execarg *e = rb_execarg_get(execarg_obj);
+    VALUE prog, ret;
     VALUE env = Qnil, opthash = Qnil;
     prog = rb_exec_getargs(&argc, &argv, accept_shell, &env, &opthash);
     rb_exec_fillarg(prog, argc, argv, env, opthash, e);
-    return e->use_shell ? e->invoke.sh.shell_script : e->invoke.cmd.command_name;
+    ret = e->use_shell ? e->invoke.sh.shell_script : e->invoke.cmd.command_name;
+    RB_GC_GUARD(execarg_obj);
+    return ret;
 }
 
 VALUE
 rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
 {
-    return rb_execarg_init(argc, argv, accept_shell, rb_execarg_get(e->execarg_obj));
+    return rb_execarg_init(argc, argv, accept_shell, e->execarg_obj);
 }
 
 static int

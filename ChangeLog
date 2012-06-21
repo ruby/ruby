@@ -1,3 +1,12 @@
+Thu Jun 21 18:36:43 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_execarg_init): take a VALUE argument instead of
+	  struct rb_execarg.
+	  (rb_execarg_new): follow the rb_execarg_init change.
+	  (rb_exec_arg_init): ditto.
+
+	* internal.h (rb_execarg_init): follow the definition change.
+
 Thu Jun 21 17:20:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (new_args_tail_gen): fix GC problem of keyword rest
