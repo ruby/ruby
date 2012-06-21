@@ -291,7 +291,7 @@ rb_pid_t rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, siz
 VALUE rb_execarg_new(int argc, VALUE *argv, int accept_shell);
 struct rb_execarg *rb_execarg_get(VALUE execarg_obj); /* dangerous.  needs GC guard. */
 VALUE rb_execarg_init(int argc, VALUE *argv, int accept_shell, VALUE execarg_obj);
-int rb_execarg_addopt(struct rb_execarg *e, VALUE key, VALUE val);
+int rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val);
 void rb_execarg_fixup(VALUE execarg_obj);
 int rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char* errmsg, size_t errmsg_buflen);
 

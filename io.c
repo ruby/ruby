@@ -5520,21 +5520,21 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
             rb_sys_fail_str(prog);
         }
         if (eargp) {
-            rb_execarg_addopt(eargp, INT2FIX(0), INT2FIX(arg.write_pair[0]));
-            rb_execarg_addopt(eargp, INT2FIX(1), INT2FIX(arg.pair[1]));
+            rb_execarg_addopt(execarg_obj, INT2FIX(0), INT2FIX(arg.write_pair[0]));
+            rb_execarg_addopt(execarg_obj, INT2FIX(1), INT2FIX(arg.pair[1]));
         }
 	break;
       case FMODE_READABLE:
         if (rb_pipe(arg.pair) < 0)
             rb_sys_fail_str(prog);
         if (eargp)
-            rb_execarg_addopt(eargp, INT2FIX(1), INT2FIX(arg.pair[1]));
+            rb_execarg_addopt(execarg_obj, INT2FIX(1), INT2FIX(arg.pair[1]));
 	break;
       case FMODE_WRITABLE:
         if (rb_pipe(arg.pair) < 0)
             rb_sys_fail_str(prog);
         if (eargp)
-            rb_execarg_addopt(eargp, INT2FIX(0), INT2FIX(arg.pair[0]));
+            rb_execarg_addopt(execarg_obj, INT2FIX(0), INT2FIX(arg.pair[0]));
 	break;
       default:
         rb_sys_fail_str(prog);
@@ -5598,21 +5598,21 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
             rb_sys_fail_str(prog);
         }
         if (eargp) {
-            rb_execarg_addopt(eargp, INT2FIX(0), INT2FIX(write_pair[0]));
-            rb_execarg_addopt(eargp, INT2FIX(1), INT2FIX(pair[1]));
+            rb_execarg_addopt(execarg_obj, INT2FIX(0), INT2FIX(write_pair[0]));
+            rb_execarg_addopt(execarg_obj, INT2FIX(1), INT2FIX(pair[1]));
         }
 	break;
       case FMODE_READABLE:
         if (rb_pipe(pair) < 0)
             rb_sys_fail_str(prog);
         if (eargp)
-            rb_execarg_addopt(eargp, INT2FIX(1), INT2FIX(pair[1]));
+            rb_execarg_addopt(execarg_obj, INT2FIX(1), INT2FIX(pair[1]));
 	break;
       case FMODE_WRITABLE:
         if (rb_pipe(pair) < 0)
             rb_sys_fail_str(prog);
         if (eargp)
-            rb_execarg_addopt(eargp, INT2FIX(0), INT2FIX(pair[0]));
+            rb_execarg_addopt(execarg_obj, INT2FIX(0), INT2FIX(pair[0]));
 	break;
       default:
         rb_sys_fail_str(prog);

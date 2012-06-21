@@ -1542,8 +1542,10 @@ static int rlimit_type_by_lname(const char *name);
 #endif
 
 int
-rb_execarg_addopt(struct rb_execarg *e, VALUE key, VALUE val)
+rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
 {
+    struct rb_execarg *e = rb_execarg_get(execarg_obj);
+
     VALUE options = e->options;
     ID id;
 #if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
@@ -1673,13 +1675,14 @@ redirect:
         rb_raise(rb_eArgError, "wrong exec option");
     }
 
+    RB_GC_GUARD(execarg_obj);
     return ST_CONTINUE;
 }
 
 int
 rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
 {
-    return rb_execarg_addopt(rb_execarg_get(e->execarg_obj), key, val);
+    return rb_execarg_addopt(e->execarg_obj, key, val);
 }
 
 static int
@@ -1688,11 +1691,7 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     VALUE key = (VALUE)st_key;
     VALUE val = (VALUE)st_val;
     VALUE execarg_obj = (VALUE)arg;
-    struct rb_execarg *e = rb_execarg_get(execarg_obj);
-    int ret;
-    ret = rb_execarg_addopt(e, key, val);
-    RB_GC_GUARD(execarg_obj);
-    return ret;
+    return rb_execarg_addopt(execarg_obj, key, val);
 }
 
 static VALUE

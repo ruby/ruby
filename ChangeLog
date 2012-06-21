@@ -1,3 +1,14 @@
+Thu Jun 21 21:16:58 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_execarg_addopt): take a VALUE argument instead of
+	  struct rb_execarg.
+	  (rb_exec_arg_addopt): follow the rb_execarg_addopt change.
+	  (check_exec_options_i): ditto.
+
+	* io.c (pipe_open): follow the rb_execarg_addopt change.
+
+	* internal.h (rb_execarg_addopt): follow the definition change.
+
 Thu Jun 21 20:34:19 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_exec_fillarg): take a VALUE argument instead of
