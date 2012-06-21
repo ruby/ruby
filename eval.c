@@ -144,7 +144,7 @@ ruby_finalize(void)
  * resources used by the VM.
  *
  * @param ex Default value to the return value.
- * @return If an error occured returns a non-zero. If otherwise, reurns the
+ * @return If an error occured returns a non-zero. If otherwise, returns the
  *         given ex.
  * @note This function does not raise any exception.
  */
