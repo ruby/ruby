@@ -5730,9 +5730,7 @@ static VALUE
 pipe_open_v(int argc, VALUE *argv, const char *modestr, int fmode, convconfig_t *convconfig)
 {
     VALUE execarg_obj, ret;
-    struct rb_execarg *earg;
     execarg_obj = rb_execarg_new(argc, argv, FALSE);
-    earg = rb_execarg_get(execarg_obj);
     ret = pipe_open(execarg_obj, modestr, fmode, convconfig);
     RB_GC_GUARD(execarg_obj);
     return ret;
@@ -5745,7 +5743,6 @@ pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig
     int argc = 1;
     VALUE *argv = &prog;
     VALUE execarg_obj, ret;
-    struct rb_execarg *earg;
 
     if (RSTRING_LEN(prog) == 1 && cmd[0] == '-') {
 #if !defined(HAVE_FORK)
@@ -5756,7 +5753,6 @@ pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig
     }
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
-    earg = rb_execarg_get(execarg_obj);
     ret = pipe_open(execarg_obj, modestr, fmode, convconfig);
     RB_GC_GUARD(execarg_obj);
     return ret;
