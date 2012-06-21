@@ -1,3 +1,11 @@
+Thu Jun 21 20:34:19 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_exec_fillarg): take a VALUE argument instead of
+	  struct rb_execarg.
+	  (rb_check_exec_options): ditto.
+	  (check_exec_options_i): ditto.
+
+	the third argument 
 Thu Jun 21 19:48:05 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_exec_async_signal_safe): use rb_execarg_run_options

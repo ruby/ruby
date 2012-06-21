@@ -1687,8 +1687,12 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 {
     VALUE key = (VALUE)st_key;
     VALUE val = (VALUE)st_val;
-    struct rb_execarg *e = (struct rb_execarg *)arg;
-    return rb_execarg_addopt(e, key, val);
+    VALUE execarg_obj = (VALUE)arg;
+    struct rb_execarg *e = rb_execarg_get(execarg_obj);
+    int ret;
+    ret = rb_execarg_addopt(e, key, val);
+    RB_GC_GUARD(execarg_obj);
+    return ret;
 }
 
 static VALUE
@@ -1763,11 +1767,11 @@ check_exec_fds(VALUE options)
 }
 
 static void
-rb_check_exec_options(VALUE opthash, struct rb_execarg *e)
+rb_check_exec_options(VALUE opthash, VALUE execarg_obj)
 {
     if (RHASH_EMPTY_P(opthash))
         return;
-    st_foreach(RHASH_TBL(opthash), check_exec_options_i, (st_data_t)e);
+    st_foreach(RHASH_TBL(opthash), check_exec_options_i, (st_data_t)execarg_obj);
 }
 
 static int
@@ -1892,7 +1896,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
     e->options = options;
 
     if (!NIL_P(opthash)) {
-        rb_check_exec_options(opthash, e);
+        rb_check_exec_options(opthash, execarg_obj);
     }
     if (!NIL_P(env)) {
         env = rb_check_exec_env(env);
