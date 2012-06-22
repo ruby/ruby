@@ -433,7 +433,7 @@ module Test
         return unless @options[:job_status]
         puts "" unless @options[:verbose] or @options[:job_status] == :replace
         status_line = @workers.map(&:to_s).join(" ")
-        put_status status_line or (puts; nil)
+        update_status(status_line) or (puts; nil)
       end
 
       def del_jobs_status
@@ -463,6 +463,7 @@ module Test
           @need_quit = false
           @dead_workers = []  # Array of dead workers.
           @warnings = []
+          @total_tests = @tasks.size.to_s(10)
           shutting_down = false
           rep = [] # FIXME: more good naming
 
@@ -528,6 +529,7 @@ module Test
                     worker = new_worker
                   end
                   worker.run(@tasks.shift, type)
+                  @test_count += 1
                 end
 
                 jobs_status
@@ -711,7 +713,12 @@ module Test
       end
 
       def new_test(s)
-        count = (@test_count += 1).to_s(10).rjust(@total_tests.size)
+        @test_count += 1
+        update_status(s)
+      end
+
+      def update_status(s)
+        count = @test_count.to_s(10).rjust(@total_tests.size)
         put_status("#{@passed_color}[#{count}/#{@total_tests}]#{@reset_color} #{s}")
       end
 
