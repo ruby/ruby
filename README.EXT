@@ -562,7 +562,7 @@ The prototypes of the getter and setter functions are as follows:
 To wrap and objectify a C pointer as a Ruby object (so called
 DATA), use Data_Wrap_Struct().
 
-  Data_Wrap_Struct(klass, mark, free, ptr)
+  Data_Wrap_Struct(klass, mark, free, sval)
 
 Data_Wrap_Struct() returns a created DATA object.  The klass argument
 is the class for the DATA object.  The mark argument is the function

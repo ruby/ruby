@@ -623,7 +623,7 @@ RubyオブジェクトにCの構造体(へのポインタ)をくるむことでR
 Dataオブジェクトを生成して構造体をRubyオブジェクトにカプセル
 化するためには，以下のマクロを使います．
 
-  Data_Wrap_Struct(klass, mark, free, ptr)
+  Data_Wrap_Struct(klass, mark, free, sval)
 
 このマクロの戻り値は生成されたDataオブジェクトです．
 
