@@ -1,3 +1,17 @@
+Fri Jun 22 18:19:38 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: pass struct rb_execarg value instead of its options
+	  field for saving process attribute changing functions.
+	  (save_redirect_fd): take a struct rb_execarg argument.
+	  (run_exec_dup2): ditto.
+	  (run_exec_close): ditto.
+	  (run_exec_open): ditto.
+	  (run_exec_dup2_child): ditto.
+	  (run_exec_pgroup): ditto.
+	  (run_exec_rlimit): ditto.
+	  (save_env): ditto.
+	  (rb_execarg_run_options): follow the above functions change.
+
 Fri Jun 22 17:55:48 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_backtrace.rb: decrease recursion depth

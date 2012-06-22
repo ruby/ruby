@@ -2341,9 +2341,10 @@ redirect_open(const char *pathname, int flags, mode_t perm)
 #endif
 
 static int
-save_redirect_fd(int fd, VALUE save, char *errmsg, size_t errmsg_buflen)
+save_redirect_fd(int fd, struct rb_execarg *s, char *errmsg, size_t errmsg_buflen)
 {
-    if (!NIL_P(save)) {
+    if (s) {
+	VALUE save = s->options;
         VALUE newary;
         int save_fd = redirect_dup(fd);
         if (save_fd == -1) {
@@ -2399,7 +2400,7 @@ run_exec_dup2_tmpbuf_size(long n)
 
 /* This function should be async-signal-safe when _save_ is Qnil.  Hopefully it is. */
 static int
-run_exec_dup2(VALUE ary, VALUE tmpbuf, VALUE save, char *errmsg, size_t errmsg_buflen)
+run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *s, char *errmsg, size_t errmsg_buflen)
 {
     long n, i;
     int ret;
@@ -2418,7 +2419,7 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, VALUE save, char *errmsg, size_t errmsg_b
     }
 
     /* sort the table by oldfd: O(n log n) */
-    if (!RTEST(save))
+    if (!s)
         qsort(pairs, n, sizeof(struct run_exec_dup2_fd_pair), intcmp); /* hopefully async-signal-safe */
     else
         qsort(pairs, n, sizeof(struct run_exec_dup2_fd_pair), intrcmp);
@@ -2445,7 +2446,7 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, VALUE save, char *errmsg, size_t errmsg_b
     for (i = 0; i < n; i++) {
         long j = i;
         while (j != -1 && pairs[j].oldfd != -1 && pairs[j].num_newer == 0) {
-            if (save_redirect_fd(pairs[j].newfd, save, errmsg, errmsg_buflen) < 0) /* async-signal-safe */
+            if (save_redirect_fd(pairs[j].newfd, s, errmsg, errmsg_buflen) < 0) /* async-signal-safe */
                 goto fail;
             ret = redirect_dup2(pairs[j].oldfd, pairs[j].newfd); /* async-signal-safe */
             if (ret == -1) {
@@ -2550,7 +2551,7 @@ run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
 
 /* This function should be async-signal-safe when _save_ is Qnil.  Actually it is. */
 static int
-run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
+run_exec_open(VALUE ary, struct rb_execarg *s, char *errmsg, size_t errmsg_buflen)
 {
     long i;
     int ret;
@@ -2576,7 +2577,7 @@ run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
                 need_close = 0;
             }
             else {
-                if (save_redirect_fd(fd, save, errmsg, errmsg_buflen) < 0) /* async-signal-safe */
+                if (save_redirect_fd(fd, s, errmsg, errmsg_buflen) < 0) /* async-signal-safe */
                     return -1;
                 ret = redirect_dup2(fd2, fd); /* async-signal-safe */
                 if (ret == -1) {
@@ -2600,7 +2601,7 @@ run_exec_open(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 
 /* This function should be async-signal-safe when _save_ is Qnil.  Actually it is. */
 static int
-run_exec_dup2_child(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
+run_exec_dup2_child(VALUE ary, struct rb_execarg *s, char *errmsg, size_t errmsg_buflen)
 {
     long i;
     int ret;
@@ -2610,7 +2611,7 @@ run_exec_dup2_child(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
         int newfd = FIX2INT(RARRAY_PTR(elt)[0]);
         int oldfd = FIX2INT(RARRAY_PTR(elt)[1]);
 
-        if (save_redirect_fd(newfd, save, errmsg, errmsg_buflen) < 0) /* async-signal-safe */
+        if (save_redirect_fd(newfd, s, errmsg, errmsg_buflen) < 0) /* async-signal-safe */
             return -1;
         ret = redirect_dup2(oldfd, newfd); /* async-signal-safe */
         if (ret == -1) {
@@ -2625,7 +2626,7 @@ run_exec_dup2_child(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
 #ifdef HAVE_SETPGID
 /* This function should be async-signal-safe when _save_ is Qnil.  Actually it is. */
 static int
-run_exec_pgroup(VALUE obj, VALUE save, char *errmsg, size_t errmsg_buflen)
+run_exec_pgroup(VALUE obj, struct rb_execarg *s, char *errmsg, size_t errmsg_buflen)
 {
     /*
      * If FD_CLOEXEC is available, rb_fork waits the child's execve.
@@ -2635,7 +2636,8 @@ run_exec_pgroup(VALUE obj, VALUE save, char *errmsg, size_t errmsg_buflen)
      */
     int ret;
     pid_t pgroup;
-    if (!NIL_P(save)) {
+    if (s) {
+	VALUE save = s->options;
         /* maybe meaningless with no fork environment... */
         rb_ary_store(save, EXEC_OPTION_PGROUP, PIDT2NUM(getpgrp()));
     }
@@ -2652,14 +2654,15 @@ run_exec_pgroup(VALUE obj, VALUE save, char *errmsg, size_t errmsg_buflen)
 #if defined(HAVE_SETRLIMIT) && defined(RLIM2NUM)
 /* This function should be async-signal-safe when _save_ is Qnil.  Hopefully it is. */
 static int
-run_exec_rlimit(VALUE ary, VALUE save, char *errmsg, size_t errmsg_buflen)
+run_exec_rlimit(VALUE ary, struct rb_execarg *s, char *errmsg, size_t errmsg_buflen)
 {
     long i;
     for (i = 0; i < RARRAY_LEN(ary); i++) {
         VALUE elt = RARRAY_PTR(ary)[i];
         int rtype = NUM2INT(RARRAY_PTR(elt)[0]);
         struct rlimit rlim;
-        if (!NIL_P(save)) {
+        if (s) {
+	    VALUE save = s->options;
             VALUE tmp, newary;
             if (getrlimit(rtype, &rlim) == -1) {
                 ERRMSG("getrlimit");
@@ -2695,9 +2698,13 @@ save_env_i(VALUE i, VALUE ary, int argc, VALUE *argv)
 }
 
 static void
-save_env(VALUE save)
+save_env(struct rb_execarg *s)
 {
-    if (!NIL_P(save) && NIL_P(rb_ary_entry(save, EXEC_OPTION_ENV))) {
+    VALUE save;
+    if (!s)
+        return;
+    save = s->options;
+    if (NIL_P(rb_ary_entry(save, EXEC_OPTION_ENV))) {
         VALUE env = rb_const_get(rb_cObject, rb_intern("ENV"));
         if (RTEST(env)) {
             VALUE ary = hide_obj(rb_ary_new());
@@ -2715,7 +2722,6 @@ int
 rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char *errmsg, size_t errmsg_buflen)
 {
     VALUE options = e->options;
-    VALUE soptions = Qnil;
     VALUE obj;
 
     if (!RTEST(options))
@@ -2723,7 +2729,7 @@ rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char *e
 
     if (s) {
         /* assume that s is always NULL on fork-able environments */
-        s->options = soptions = hide_obj(rb_ary_new());
+        s->options = hide_obj(rb_ary_new());
         s->redirect_fds = Qnil;
 	s->envp_str = s->envp_buf = 0;
     }
@@ -2731,7 +2737,7 @@ rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char *e
 #ifdef HAVE_SETPGID
     obj = rb_ary_entry(options, EXEC_OPTION_PGROUP);
     if (RTEST(obj)) {
-        if (run_exec_pgroup(obj, soptions, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
+        if (run_exec_pgroup(obj, s, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
             return -1;
     }
 #endif
@@ -2739,7 +2745,7 @@ rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char *e
 #if defined(HAVE_SETRLIMIT) && defined(RLIM2NUM)
     obj = rb_ary_entry(options, EXEC_OPTION_RLIMIT);
     if (!NIL_P(obj)) {
-        if (run_exec_rlimit(obj, soptions, errmsg, errmsg_buflen) == -1) /* hopefully async-signal-safe */
+        if (run_exec_rlimit(obj, s, errmsg, errmsg_buflen) == -1) /* hopefully async-signal-safe */
             return -1;
     }
 #endif
@@ -2747,14 +2753,14 @@ rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char *e
 #if !defined(HAVE_FORK)
     obj = rb_ary_entry(options, EXEC_OPTION_UNSETENV_OTHERS);
     if (RTEST(obj)) {
-        save_env(soptions);
+        save_env(s);
         rb_env_clear();
     }
 
     obj = rb_ary_entry(options, EXEC_OPTION_ENV);
     if (!NIL_P(obj)) {
         long i;
-        save_env(soptions);
+        save_env(s);
         for (i = 0; i < RARRAY_LEN(obj); i++) {
             VALUE pair = RARRAY_PTR(obj)[i];
             VALUE key = RARRAY_PTR(pair)[0];
@@ -2778,13 +2784,13 @@ rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char *e
 
     obj = rb_ary_entry(options, EXEC_OPTION_DUP2);
     if (!NIL_P(obj)) {
-        if (run_exec_dup2(obj, e->dup2_tmpbuf, soptions, errmsg, errmsg_buflen) == -1) /* hopefully async-signal-safe */
+        if (run_exec_dup2(obj, e->dup2_tmpbuf, s, errmsg, errmsg_buflen) == -1) /* hopefully async-signal-safe */
             return -1;
     }
 
     obj = rb_ary_entry(options, EXEC_OPTION_CLOSE);
     if (!NIL_P(obj)) {
-        if (!NIL_P(soptions))
+        if (s)
             rb_warn("cannot close fd before spawn");
         else {
             if (run_exec_close(obj, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
@@ -2801,21 +2807,21 @@ rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char *e
 
     obj = rb_ary_entry(options, EXEC_OPTION_OPEN);
     if (!NIL_P(obj)) {
-        if (run_exec_open(obj, soptions, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
+        if (run_exec_open(obj, s, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
             return -1;
     }
 
     obj = rb_ary_entry(options, EXEC_OPTION_DUP2_CHILD);
     if (!NIL_P(obj)) {
-        if (run_exec_dup2_child(obj, soptions, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
+        if (run_exec_dup2_child(obj, s, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
             return -1;
     }
 
     obj = rb_ary_entry(options, EXEC_OPTION_CHDIR);
     if (!NIL_P(obj)) {
-        if (!NIL_P(soptions)) {
+        if (s) {
             char *cwd = my_getcwd();
-            rb_ary_store(soptions, EXEC_OPTION_CHDIR,
+            rb_ary_store(s->options, EXEC_OPTION_CHDIR,
                          hide_obj(rb_str_new2(cwd)));
             xfree(cwd);
         }
