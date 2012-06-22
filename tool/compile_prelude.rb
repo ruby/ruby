@@ -119,7 +119,7 @@ prelude_prefix_path(VALUE self)
 static void
 prelude_eval(VALUE code, VALUE name, VALUE line)
 {
-    rb_iseq_eval(rb_iseq_compile_with_option(code, name, Qnil, line, Qtrue));
+    rb_iseq_eval(rb_iseq_compile_with_option(code, name, Qnil, line, 0, Qtrue));
 }
 % end
 

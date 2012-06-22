@@ -1,3 +1,41 @@
+Fri Jun 22 18:04:26 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c, vm_eval.c: set th->base_block properly.
+	  th->base_block is information for (a) parsing, (b) compiling
+	  and (c) setting up the frame to execute the program passed by
+	  `eval' method.  For example, (1) parser need to know up-level
+	  variables to detect it is variable or method without paren.
+	  Befor (a), (b) and (c), VM set th->base_block by passed bindng
+	  (or previous frame information).  After execute (a), (b) and (c),
+	  VM should clear th->base_block.  However, if (a), (b) or (c)
+	  raises an exception, then th->base_block is not cleared.
+	  Problem is that the uncleared value th->balo_block is used for
+	  irrelevant iseq compilation.  It causes SEGV or critical error.
+	  I tried to solve this problem: to clear them before exception,
+	  but finally I found out that it is difficult to do it (Ruby
+	  program can be run in many places).
+	  Because of this background, I set th->base_block before
+	  compiling iseq and restore it after compiling.
+	  Basically, th->base_block is dirty hack (similar to global
+	  variable) and this patch is also dirty.
+
+	* bootstraptest/test_eval.rb: add a test for above.
+
+	* internal.h: remove unused decl.
+
+	* iseq.c (rb_iseq_compile_with_option): add base_block parameter.
+	  set th->base_block before compation and restore it after
+	  compilation.
+
+	* ruby.c (require_libraries): pass 0 as base_block instead of
+	  setting th->base_block
+
+	* tool/compile_prelude.rb (prelude_eval): apply above changes.
+
+	* vm.c, vm_eval.c: ditto.
+
+	* vm_core.h: add comments.
+
 Fri Jun 22 18:19:38 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: pass struct rb_execarg value instead of its options

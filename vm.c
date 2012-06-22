@@ -141,15 +141,14 @@ vm_set_top_stack(rb_thread_t * th, VALUE iseqval)
 }
 
 static void
-vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref)
+vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref, rb_block_t *base_block)
 {
     rb_iseq_t *iseq;
-    rb_block_t * const block = th->base_block;
     GetISeqPtr(iseqval, iseq);
 
     CHECK_STACK_OVERFLOW(th->cfp, iseq->local_size + iseq->stack_max);
-    vm_push_frame(th, iseq, VM_FRAME_MAGIC_EVAL | VM_FRAME_FLAG_FINISH, block->self,
-		  VM_ENVVAL_PREV_EP_PTR(block->ep), iseq->iseq_encoded,
+    vm_push_frame(th, iseq, VM_FRAME_MAGIC_EVAL | VM_FRAME_FLAG_FINISH, base_block->self,
+		  VM_ENVVAL_PREV_EP_PTR(base_block->ep), iseq->iseq_encoded,
 		  th->cfp->sp, iseq->local_size);
 
     if (cref) {
@@ -167,9 +166,7 @@ vm_set_main_stack(rb_thread_t *th, VALUE iseqval)
 
     GetBindingPtr(toplevel_binding, bind);
     GetEnvPtr(bind->env, env);
-    th->base_block = &env->block;
-    vm_set_eval_stack(th, iseqval, 0);
-    th->base_block = 0;
+    vm_set_eval_stack(th, iseqval, 0, &env->block);
 
     /* save binding */
     GetISeqPtr(iseqval, iseq);

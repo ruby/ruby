@@ -16,7 +16,7 @@ static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *a
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
 static NODE *vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr);
 static VALUE vm_exec(rb_thread_t *th);
-static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref);
+static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref, rb_block_t *base_block);
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
 
 /* vm_backtrace.c */
@@ -996,7 +996,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
     rb_binding_t *bind = 0;
     rb_thread_t *th = GET_THREAD();
     rb_env_t *env = NULL;
-    rb_block_t block;
+    rb_block_t block, *base_block;
     volatile int parse_in_eval;
     volatile int mild_compile_error;
 
@@ -1027,16 +1027,16 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 			 rb_obj_classname(scope));
 	    }
 	    GetEnvPtr(envval, env);
-	    th->base_block = &env->block;
+	    base_block = &env->block;
 	}
 	else {
 	    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
 	    if (cfp != 0) {
 		block = *RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
-		th->base_block = &block;
-		th->base_block->self = self;
-		th->base_block->iseq = cfp->iseq;	/* TODO */
+		base_block = &block;
+		base_block->self = self;
+		base_block->iseq = cfp->iseq;	/* TODO */
 	    }
 	    else {
 		rb_raise(rb_eRuntimeError, "Can't eval on top of Fiber or Thread");
@@ -1046,12 +1046,11 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	/* make eval iseq */
 	th->parse_in_eval++;
 	th->mild_compile_error++;
-	iseqval = rb_iseq_compile(src, rb_str_new2(file), INT2FIX(line));
+	iseqval = rb_iseq_compile_on_base(src, rb_str_new2(file), INT2FIX(line), base_block);
 	th->mild_compile_error--;
 	th->parse_in_eval--;
 
-	vm_set_eval_stack(th, iseqval, cref);
-	th->base_block = 0;
+	vm_set_eval_stack(th, iseqval, cref, base_block);
 
 	if (0) {		/* for debug */
 	    VALUE disasm = rb_iseq_disasm(iseqval);

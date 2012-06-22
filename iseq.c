@@ -11,6 +11,7 @@
 
 #include "ruby/ruby.h"
 #include "internal.h"
+#include "eval_intern.h"
 
 /* #define RUBY_MARK_FREE_DEBUG 1 */
 #include "gc.h"
@@ -566,30 +567,55 @@ parse_string(VALUE str, const char *file, int line)
 }
 
 VALUE
-rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE line, VALUE opt)
+rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE line, rb_block_t *base_block, VALUE opt)
 {
-    rb_compile_option_t option;
-    const char *fn = StringValueCStr(file);
-    int ln = NUM2INT(line);
-    NODE *node = parse_string(StringValue(src), fn, ln);
+    int state;
     rb_thread_t *th = GET_THREAD();
-    make_compile_option(&option, opt);
+    rb_block_t *prev_base_block = th->base_block;
+    VALUE iseqval;
 
-    if (th->base_block && th->base_block->iseq) {
-	return rb_iseq_new_with_opt(node, th->base_block->iseq->location.label,
-				    file, absolute_path, line, th->base_block->iseq->self,
-				    ISEQ_TYPE_EVAL, &option);
+    th->base_block = base_block;
+
+    TH_PUSH_TAG(th);
+    if ((state = EXEC_TAG()) == 0) {
+	int ln = NUM2INT(line);
+	const char *fn = StringValueCStr(file);
+	NODE *node = parse_string(StringValue(src), fn, ln);
+	rb_compile_option_t option;
+
+	make_compile_option(&option, opt);
+
+	if (base_block && base_block->iseq) {
+	    iseqval = rb_iseq_new_with_opt(node, base_block->iseq->location.label,
+					   file, absolute_path, line, base_block->iseq->self,
+					   ISEQ_TYPE_EVAL, &option);
+	}
+	else {
+	    iseqval = rb_iseq_new_with_opt(node, rb_str_new2("<compiled>"), file, absolute_path, line, Qfalse,
+					   ISEQ_TYPE_TOP, &option);
+	}
     }
-    else {
-	return rb_iseq_new_with_opt(node, rb_str_new2("<compiled>"), file, absolute_path, line, Qfalse,
-				    ISEQ_TYPE_TOP, &option);
+    TH_POP_TAG();
+
+    th->base_block = prev_base_block;
+
+    if (state) {
+	JUMP_TAG(state);
     }
+
+    return iseqval;
 }
 
 VALUE
 rb_iseq_compile(VALUE src, VALUE file, VALUE line)
 {
-    return rb_iseq_compile_with_option(src, file, Qnil, line, Qnil);
+    return rb_iseq_compile_with_option(src, file, Qnil, line, 0, Qnil);
+}
+
+VALUE
+rb_iseq_compile_on_base(VALUE src, VALUE file, VALUE line, rb_block_t *base_block)
+{
+    return rb_iseq_compile_with_option(src, file, Qnil, line, base_block, Qnil);
 }
 
 static VALUE
@@ -603,7 +629,7 @@ iseq_s_compile(int argc, VALUE *argv, VALUE self)
     if (NIL_P(file)) file = rb_str_new2("<compiled>");
     if (NIL_P(line)) line = INT2FIX(1);
 
-    return rb_iseq_compile_with_option(src, file, path, line, opt);
+    return rb_iseq_compile_with_option(src, file, path, line, 0, opt);
 }
 
 static VALUE
