@@ -79,7 +79,7 @@ struct child_info {
     int master, slave;
     char *slavename;
     VALUE execarg_obj;
-    struct rb_execarg *earg;
+    struct rb_execarg *eargp;
 };
 
 static int
@@ -143,7 +143,7 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     seteuid(getuid());
 #endif
 
-    return rb_exec_async_signal_safe(carg->earg, errbuf, sizeof(errbuf_len));
+    return rb_exec_async_signal_safe(carg->eargp, errbuf, sizeof(errbuf_len));
 #undef ERROR_EXIT
 }
 
@@ -178,7 +178,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     }
 
     carg.execarg_obj = rb_execarg_new(argc, argv, 1);
-    carg.earg = rb_execarg_get(carg.execarg_obj);
+    carg.eargp = rb_execarg_get(carg.execarg_obj);
     rb_execarg_fixup(carg.execarg_obj);
 
     getDevice(&master, &slave, SlaveName, 0);

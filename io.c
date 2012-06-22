@@ -5343,7 +5343,7 @@ rb_pipe(int *pipes)
 #ifdef HAVE_FORK
 struct popen_arg {
     VALUE execarg_obj;
-    struct rb_execarg *execp;
+    struct rb_execarg *eargp;
     int modef;
     int pair[2];
     int write_pair[2];
@@ -5462,7 +5462,7 @@ popen_exec(void *pp, char *errmsg, size_t errmsg_len)
 {
     struct popen_arg *p = (struct popen_arg*)pp;
 
-    return rb_exec_async_signal_safe(p->execp, errmsg, errmsg_len);
+    return rb_exec_async_signal_safe(p->eargp, errmsg, errmsg_len);
 }
 #endif
 
@@ -5504,7 +5504,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 
 #if defined(HAVE_FORK)
     arg.execarg_obj = execarg_obj;
-    arg.execp = eargp;
+    arg.eargp = eargp;
     arg.modef = fmode;
     arg.pair[0] = arg.pair[1] = -1;
     arg.write_pair[0] = arg.write_pair[1] = -1;
@@ -5541,7 +5541,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
     }
     if (!NIL_P(execarg_obj)) {
         rb_execarg_fixup(execarg_obj);
-	pid = rb_fork_async_signal_safe(&status, popen_exec, &arg, arg.execp->redirect_fds, errmsg, sizeof(errmsg));
+	pid = rb_fork_async_signal_safe(&status, popen_exec, &arg, arg.eargp->redirect_fds, errmsg, sizeof(errmsg));
     }
     else {
 	pid = rb_fork_ruby(&status);
