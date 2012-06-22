@@ -1,3 +1,8 @@
+Fri Jun 22 17:55:48 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_backtrace.rb: decrease recursion depth
+	  to reduce consuming stack size.
+
 Fri Jun 22 13:36:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (random_init, random_load): cannot initialize frozen object
