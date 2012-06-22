@@ -1,3 +1,13 @@
+Fri Jun 22 20:27:39 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_execarg): add pgroup_given and pgroup_pgid fields.
+
+	* process.c (EXEC_OPTION_PGROUP): removed.
+	  (rb_execarg_addopt): update the new fields, instead of options array.
+	  (run_exec_pgroup): take a struct rb_execarg argument.  refer the new
+	  fields.
+	  (rb_execarg_run_options): follow run_exec_pgroup change.
+
 Fri Jun 22 18:48:51 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* README.EXT, README.EXT.ja: use "sval" for the third argument

@@ -176,7 +176,9 @@ struct rb_execarg {
     VALUE envp_str;
     VALUE envp_buf;
     VALUE dup2_tmpbuf;
+    unsigned pgroup_given : 1;
     unsigned umask_given : 1;
+    pid_t pgroup_pgid; /* asis(-1), new pgroup(0), specified pgroup (0<V). */
     mode_t umask_mask;
 };
 

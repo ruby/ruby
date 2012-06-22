@@ -1254,7 +1254,6 @@ rb_proc_exec(const char *str)
 }
 
 enum {
-    EXEC_OPTION_PGROUP,
     EXEC_OPTION_RLIMIT,
     EXEC_OPTION_UNSETENV_OTHERS,
     EXEC_OPTION_ENV,
@@ -1559,21 +1558,22 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
         id = SYM2ID(key);
 #ifdef HAVE_SETPGID
         if (id == rb_intern("pgroup")) {
-            if (!NIL_P(rb_ary_entry(options, EXEC_OPTION_PGROUP))) {
+            pid_t pgroup;
+            if (e->pgroup_given) {
                 rb_raise(rb_eArgError, "pgroup option specified twice");
             }
             if (!RTEST(val))
-                val = Qfalse;
+                pgroup = -1; /* asis(-1) means "don't call setpgid()". */
             else if (val == Qtrue)
-                val = INT2FIX(0);
+                pgroup = 0; /* new process group. */
             else {
-                pid_t pgroup = NUM2PIDT(val);
+                pgroup = NUM2PIDT(val);
                 if (pgroup < 0) {
                     rb_raise(rb_eArgError, "negative process group ID : %ld", (long)pgroup);
                 }
-                val = PIDT2NUM(pgroup);
             }
-            rb_ary_store(options, EXEC_OPTION_PGROUP, val);
+            e->pgroup_given = 1;
+            e->pgroup_pgid = pgroup;
         }
         else
 #endif
@@ -2626,22 +2626,27 @@ run_exec_dup2_child(VALUE ary, struct rb_execarg *s, char *errmsg, size_t errmsg
 #ifdef HAVE_SETPGID
 /* This function should be async-signal-safe when _save_ is Qnil.  Actually it is. */
 static int
-run_exec_pgroup(VALUE obj, struct rb_execarg *s, char *errmsg, size_t errmsg_buflen)
+run_exec_pgroup(const struct rb_execarg *e, struct rb_execarg *s, char *errmsg, size_t errmsg_buflen)
 {
     /*
      * If FD_CLOEXEC is available, rb_fork waits the child's execve.
      * So setpgid is done in the child when rb_fork is returned in the parent.
      * No race condition, even without setpgid from the parent.
-     * (Is there an environment which has setpgid but FD_CLOEXEC?)
+     * (Is there an environment which has setpgid but no FD_CLOEXEC?)
      */
     int ret;
     pid_t pgroup;
+
+    pgroup = e->pgroup_pgid;
+    if (pgroup == -1)
+        return 0;
+
     if (s) {
-	VALUE save = s->options;
         /* maybe meaningless with no fork environment... */
-        rb_ary_store(save, EXEC_OPTION_PGROUP, PIDT2NUM(getpgrp()));
+        s->pgroup_given = 1;
+        s->pgroup_pgid = getpgrp();
     }
-    pgroup = NUM2PIDT(obj);
+
     if (pgroup == 0) {
         pgroup = getpid(); /* async-signal-safe */
     }
@@ -2735,9 +2740,8 @@ rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char *e
     }
 
 #ifdef HAVE_SETPGID
-    obj = rb_ary_entry(options, EXEC_OPTION_PGROUP);
-    if (RTEST(obj)) {
-        if (run_exec_pgroup(obj, s, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
+    if (e->pgroup_given) {
+        if (run_exec_pgroup(e, s, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
             return -1;
     }
 #endif
