@@ -1227,7 +1227,7 @@ rb_ivar_count(VALUE obj)
 		}
 	    }
 	    return count;
-        }
+	}
 	break;
       case T_CLASS:
       case T_MODULE:
@@ -1627,9 +1627,9 @@ rb_autoloading_value(VALUE mod, ID id, VALUE* value)
     }
     if (ele->thread == rb_thread_current()) {
 	if (ele->value != Qundef) {
-    	    if (value) {
-    		*value = ele->value;
-    	    }
+	    if (value) {
+		*value = ele->value;
+	    }
 	    return 1;
 	}
     }
