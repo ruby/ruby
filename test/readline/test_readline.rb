@@ -429,7 +429,7 @@ class TestReadline < Test::Unit::TestCase
     assert_equal("hello", line, bug6601)
   ensure
     wo.close
-    with_pipe {|r, w| w.write("\C-a\C-k\n")} # clear line_buffer
+    Readline.delete_text
     Readline::HISTORY.clear
   end if !/EditLine/n.match(Readline::VERSION)
 
@@ -452,7 +452,7 @@ class TestReadline < Test::Unit::TestCase
       end
     end
   ensure
-    with_pipe {|r, w| w.write("\C-a\C-k\n")} # clear line_buffer
+    Readline.delete_text
     Readline::HISTORY.clear
   end if !/EditLine/n.match(Readline::VERSION)
 
