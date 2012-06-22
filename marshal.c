@@ -865,6 +865,13 @@ clear_dump_arg(struct dump_arg *arg)
     }
 }
 
+NORETURN(static inline void io_needed(void));
+static inline void
+io_needed(void)
+{
+    rb_raise(rb_eTypeError, "instance of IO needed");
+}
+
 /*
  * call-seq:
  *      dump( obj [, anIO] , limit=-1 ) -> anIO
@@ -911,12 +918,12 @@ marshal_dump(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "12", &obj, &a1, &a2);
     if (argc == 3) {
 	if (!NIL_P(a2)) limit = NUM2INT(a2);
-	if (NIL_P(a1)) goto type_error;
+	if (NIL_P(a1)) io_needed();
 	port = a1;
     }
     else if (argc == 2) {
 	if (FIXNUM_P(a1)) limit = FIX2INT(a1);
-	else if (NIL_P(a1)) goto type_error;
+	else if (NIL_P(a1)) io_needed();
 	else port = a1;
     }
     wrapper = TypedData_Make_Struct(rb_cData, struct dump_arg, &dump_arg_data, arg);
@@ -929,8 +936,7 @@ marshal_dump(int argc, VALUE *argv)
     arg->str = rb_str_buf_new(0);
     if (!NIL_P(port)) {
 	if (!rb_respond_to(port, s_write)) {
-	  type_error:
-	    rb_raise(rb_eTypeError, "instance of IO needed");
+	    io_needed();
 	}
 	arg->dest = port;
 	if (rb_respond_to(port, s_binmode)) {
@@ -1783,7 +1789,7 @@ marshal_load(int argc, VALUE *argv)
 	infection = (int)(FL_TAINT | FL_TEST(port, FL_UNTRUSTED));
     }
     else {
-	rb_raise(rb_eTypeError, "instance of IO needed");
+	io_needed();
     }
     wrapper = TypedData_Make_Struct(rb_cData, struct load_arg, &load_arg_data, arg);
     arg->infection = infection;
