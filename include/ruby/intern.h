@@ -598,6 +598,8 @@ void rb_fd_fix_cloexec(int fd);
 /* marshal.c */
 VALUE rb_marshal_dump(VALUE, VALUE);
 VALUE rb_marshal_load(VALUE);
+VALUE rb_marshal_dump_limited(VALUE obj, VALUE port, int level);
+VALUE rb_marshal_load_with_proc(VALUE port, VALUE proc);
 void rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE), VALUE (*loader)(VALUE, VALUE));
 /* numeric.c */
 NORETURN(void rb_num_zerodiv(void));
