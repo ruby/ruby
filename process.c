@@ -2855,9 +2855,9 @@ int
 rb_exec_async_signal_safe(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen)
 {
 #if !defined(HAVE_FORK)
-    struct rb_execarg sarg, *sargp = &sarg;
+    struct rb_execarg sarg, *const sargp = &sarg;
 #else
-# define sargp NULL
+    struct rb_execarg *const sargp = NULL;
 #endif
 
     before_exec_async_signal_safe(); /* async-signal-safe */
@@ -2877,8 +2877,6 @@ rb_exec_async_signal_safe(const struct rb_execarg *e, char *errmsg, size_t errms
     }
 #if !defined(HAVE_FORK)
     preserving_errno(rb_execarg_run_options(sargp, NULL, errmsg, errmsg_buflen));
-#else
-# undef sargp
 #endif
 
 failure:
