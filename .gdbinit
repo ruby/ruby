@@ -107,14 +107,20 @@ define rp
   if ($flags & RUBY_T_MASK) == RUBY_T_CLASS
     printf "T_CLASS%s: ", ($flags & RUBY_FL_SINGLETON) ? "*" : ""
     print (struct RClass *)($arg0)
+    print *(struct RClass *)($arg0)
+    print *((struct RClass *)($arg0))->ptr
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_ICLASS
     printf "T_ICLASS: "
     print (struct RClass *)($arg0)
+    print *(struct RClass *)($arg0)
+    print *((struct RClass *)($arg0))->ptr
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_MODULE
     printf "T_MODULE: "
     print (struct RClass *)($arg0)
+    print *(struct RClass *)($arg0)
+    print *((struct RClass *)($arg0))->ptr
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_FLOAT
     printf "T_FLOAT: %.16g ", (((struct RFloat*)($arg0))->float_value)
