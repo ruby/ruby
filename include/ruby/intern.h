@@ -251,6 +251,7 @@ rb_check_trusted_inline(VALUE obj)
 }
 #define rb_check_trusted(obj) rb_check_trusted_inline(obj)
 #endif
+void rb_check_copyable(VALUE obj, VALUE orig);
 
 #define OBJ_INIT_COPY(obj, orig) \
     ((obj) != (orig) && (rb_obj_init_copy((obj), (orig)), 1))

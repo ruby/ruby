@@ -1,3 +1,8 @@
+Fri Jun 22 13:32:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_check_copyable): new function, to ensure the target is
+	  not frozen and the source is not tainted nor untrusted.
+
 Fri Jun 22 05:55:20 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* eval.c (ruby_cleanup):  Fixed typo.  Patch by Trever Dawe.
