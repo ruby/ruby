@@ -1,3 +1,7 @@
+Wed Jun 20 18:27:03 2012  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* common.mk: Add missing dependencies.
+
 Fri Jun 22 20:27:39 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_execarg): add pgroup_given and pgroup_pgid fields.
