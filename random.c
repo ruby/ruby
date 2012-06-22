@@ -462,10 +462,12 @@ random_init(int argc, VALUE *argv, VALUE obj)
     rb_random_t *rnd = get_rnd(obj);
 
     if (argc == 0) {
+	rb_check_frozen(obj);
 	vseed = random_seed();
     }
     else {
 	rb_scan_args(argc, argv, "01", &vseed);
+	rb_check_copyable(obj, vseed);
     }
     rnd->seed = rand_init(&rnd->mt, vseed);
     return obj;
@@ -686,6 +688,7 @@ random_load(VALUE obj, VALUE dump)
     VALUE *ary;
     unsigned long x;
 
+    rb_check_copyable(obj, dump);
     Check_Type(dump, T_ARRAY);
     ary = RARRAY_PTR(dump);
     switch (RARRAY_LEN(dump)) {

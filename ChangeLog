@@ -1,3 +1,8 @@
+Fri Jun 22 13:36:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (random_init, random_load): cannot initialize frozen object
+	  again, nor with tainted/untrusted object.  [Bug #6540]
+
 Fri Jun 22 13:32:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_check_copyable): new function, to ensure the target is

@@ -484,4 +484,25 @@ END
       Random.new.marshal_load(0)
     }
   end
+
+  def test_marshal_load_frozen
+    r = Random.new(0)
+    d = r.marshal_dump
+    r.freeze
+    assert_raise(RuntimeError, '[Bug #6540]') do
+      r.marshal_load(d)
+    end
+  end
+
+  def test_marshal_load_insecure
+    r = Random.new(0)
+    d = r.marshal_dump
+    l = proc do
+      $SAFE = 4
+      r.marshal_load(d)
+    end
+    assert_raise(SecurityError, '[Bug #6540]') do
+      l.call
+    end
+  end
 end
