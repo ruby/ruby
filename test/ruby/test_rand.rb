@@ -485,6 +485,14 @@ END
     }
   end
 
+  def test_initialize_frozen
+    r = Random.new(0)
+    r.freeze
+    assert_raise(RuntimeError, '[Bug #6540]') do
+      r.__send__(:initialize, r)
+    end
+  end
+
   def test_marshal_load_frozen
     r = Random.new(0)
     d = r.marshal_dump
