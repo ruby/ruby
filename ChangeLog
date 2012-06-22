@@ -44,7 +44,7 @@ Fri Jun 22 18:04:26 2012  Koichi Sasada  <ko1@atdot.net>
 	* internal.h: remove unused decl.
 
 	* iseq.c (rb_iseq_compile_with_option): add base_block parameter.
-	  set th->base_block before compation and restore it after
+	  set th->base_block before compilation and restore it after
 	  compilation.
 
 	* ruby.c (require_libraries): pass 0 as base_block instead of
