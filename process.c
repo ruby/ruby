@@ -1255,7 +1255,6 @@ rb_proc_exec(const char *str)
 
 enum {
     EXEC_OPTION_RLIMIT,
-    EXEC_OPTION_UNSETENV_OTHERS,
     EXEC_OPTION_ENV,
     EXEC_OPTION_CHDIR,
     EXEC_OPTION_DUP2,
@@ -1617,11 +1616,11 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
         else
 #endif
         if (id == rb_intern("unsetenv_others")) {
-            if (!NIL_P(rb_ary_entry(options, EXEC_OPTION_UNSETENV_OTHERS))) {
+            if (eargp->unsetenv_others_given) {
                 rb_raise(rb_eArgError, "unsetenv_others option specified twice");
             }
-            val = RTEST(val) ? Qtrue : Qfalse;
-            rb_ary_store(options, EXEC_OPTION_UNSETENV_OTHERS, val);
+            eargp->unsetenv_others_given = 1;
+            eargp->unsetenv_others_do = RTEST(val) ? 1 : 0;
         }
         else if (id == rb_intern("chdir")) {
             if (!NIL_P(rb_ary_entry(options, EXEC_OPTION_CHDIR))) {
@@ -2116,7 +2115,8 @@ void
 rb_execarg_fixup(VALUE execarg_obj)
 {
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
-    VALUE unsetenv_others, envopts;
+    int unsetenv_others;
+    VALUE envopts;
     VALUE ary;
 
     eargp->redirect_fds = check_exec_fds(eargp->options);
@@ -2129,12 +2129,12 @@ rb_execarg_fixup(VALUE execarg_obj)
         eargp->dup2_tmpbuf = tmpbuf;
     }
 
-    unsetenv_others = rb_ary_entry(eargp->options, EXEC_OPTION_UNSETENV_OTHERS);
+    unsetenv_others = eargp->unsetenv_others_given && eargp->unsetenv_others_do;
     envopts = rb_ary_entry(eargp->options, EXEC_OPTION_ENV);
-    if (RTEST(unsetenv_others) || !NIL_P(envopts)) {
+    if (unsetenv_others || !NIL_P(envopts)) {
         VALUE envtbl, envp_str, envp_buf;
         char *p, *ep;
-        if (RTEST(unsetenv_others)) {
+        if (unsetenv_others) {
             envtbl = rb_hash_new();
         }
         else {

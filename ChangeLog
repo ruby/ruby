@@ -1,3 +1,12 @@
+Sat Jun 23 10:41:59 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_execarg): add unsetenv_others_given and
+	  unsetenv_others_do fields.
+
+	* process.c (EXEC_OPTION_UNSETENV_OTHERS): removed.
+	  (rb_execarg_addopt): update the new fields, instead of options array.
+	  (rb_execarg_fixup): use the new fields.
+
 Sat Jun 23 09:35:47 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: use the variable name "soptions" for sargp->options.
