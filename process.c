@@ -1265,7 +1265,6 @@ mark_exec_arg(void *ptr)
         rb_gc_mark(eargp->invoke.cmd.argv_str);
         rb_gc_mark(eargp->invoke.cmd.argv_buf);
     }
-    rb_gc_mark(eargp->options);
     rb_gc_mark(eargp->redirect_fds);
     rb_gc_mark(eargp->envp_str);
     rb_gc_mark(eargp->envp_buf);
@@ -1888,12 +1887,9 @@ static void
 rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VALUE execarg_obj)
 {
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
-    VALUE options;
     char fbuf[MAXPATHLEN];
 
     MEMZERO(eargp, struct rb_execarg, 1);
-    options = hide_obj(rb_ary_new());
-    eargp->options = options;
 
     if (!NIL_P(opthash)) {
         rb_check_exec_options(opthash, execarg_obj);
@@ -2724,16 +2720,11 @@ save_env(struct rb_execarg *sargp)
 int
 rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
-    VALUE options = eargp->options;
     VALUE obj;
-
-    if (!RTEST(options))
-        return 0;
 
     if (sargp) {
         /* assume that sargp is always NULL on fork-able environments */
         MEMZERO(sargp, struct rb_execarg, 1);
-        sargp->options = hide_obj(rb_ary_new());
         sargp->redirect_fds = Qnil;
     }
 

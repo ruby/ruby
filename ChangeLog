@@ -1,3 +1,9 @@
+Sun Jun 24 07:47:17 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_execarg): options field removed.
+
+	* process.c: follow the rb_execarg change.
+
 Sat Jun 23 23:48:21 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (proc_spawn_cmd): unused variable removed to suppress a

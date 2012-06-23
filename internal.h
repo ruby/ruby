@@ -171,7 +171,6 @@ struct rb_execarg {
             VALUE argv_buf;
         } cmd;
     } invoke;
-    VALUE options;
     VALUE redirect_fds;
     VALUE envp_str;
     VALUE envp_buf;
