@@ -1253,10 +1253,6 @@ rb_proc_exec(const char *str)
     return ret;
 }
 
-enum {
-    EXEC_OPTION_NEW_PGROUP
-};
-
 static void
 mark_exec_arg(void *ptr)
 {
@@ -1345,14 +1341,15 @@ proc_spawn_cmd_internal(char **argv, char *prog)
 #endif
 
 static rb_pid_t
-proc_spawn_cmd(char **argv, VALUE prog, VALUE options)
+proc_spawn_cmd(char **argv, VALUE prog, struct rb_execarg *eargp)
 {
+    VALUE options = eargp->options;
     rb_pid_t pid = -1;
 
     if (argv[0]) {
 #if defined(_WIN32)
 	DWORD flags = 0;
-	if (RTEST(rb_ary_entry(options, EXEC_OPTION_NEW_PGROUP))) {
+	if (eargp->new_pgroup_given && eargp->new_pgroup_flag) {
 	    flags = CREATE_NEW_PROCESS_GROUP;
 	}
 	pid = rb_w32_aspawn_flags(P_NOWAIT, prog ? RSTRING_PTR(prog) : 0, argv, flags);
@@ -1579,11 +1576,11 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
 #endif
 #ifdef _WIN32
         if (id == rb_intern("new_pgroup")) {
-            if (!NIL_P(rb_ary_entry(options, EXEC_OPTION_NEW_PGROUP))) {
+            if (eargp->new_pgroup_given) {
                 rb_raise(rb_eArgError, "new_pgroup option specified twice");
             }
-            val = RTEST(val) ? Qtrue : Qfalse;
-            rb_ary_store(options, EXEC_OPTION_NEW_PGROUP, val);
+            eargp->new_pgroup_given = 1;
+            eargp->new_pgroup_flag = RTEST(val) ? 1 : 0;
         }
         else
 #endif
@@ -3525,7 +3522,7 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
     }
     else {
         char **argv = ARGVSTR2ARGV(eargp->invoke.cmd.argv_str);
-	pid = proc_spawn_cmd(argv, prog, eargp->options);
+	pid = proc_spawn_cmd(argv, prog, eargp);
     }
 #  if defined(_WIN32)
     if (pid == -1)

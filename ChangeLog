@@ -1,3 +1,14 @@
+Sat Jun 23 23:19:31 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_execarg): add new_pgroup_given and new_pgroup_flag
+	  fields.
+
+	* process.c (EXEC_OPTION_NEW_PGROUP): removed.
+	  (proc_spawn_cmd): take a struct rb_execarg argument.
+	  use the new fields.
+	  (rb_execarg_addopt): use the new fields.
+	  (rb_spawn_process): follow the proc_spawn_cmd change.
+	  
 Sat Jun 23 20:26:36 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_execarg): add fd_dup2, fd_close, fd_open,
