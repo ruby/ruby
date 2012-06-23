@@ -2147,7 +2147,7 @@ rb_execarg_fixup(VALUE execarg_obj)
             envtbl = rb_convert_type(envtbl, T_HASH, "Hash", "to_hash");
         }
         hide_obj(envtbl);
-        if (!NIL_P(envopts)) {
+        if (envopts != Qfalse) {
             st_table *stenv = RHASH_TBL(envtbl);
             long i;
             for (i = 0; i < RARRAY_LEN(envopts); i++) {
