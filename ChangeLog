@@ -1,3 +1,14 @@
+Sat Jun 23 17:04:08 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_execarg): add env_modification field.
+
+	* process.c (EXEC_OPTION_ENV): removed.
+	  (mark_exec_arg): mark env_modification field.
+	  (rb_exec_fillarg): update the new field, instead of options array.
+	  (rb_execarg_fixup): use the new field.
+	  (save_env): ditto.
+	  (rb_execarg_run_options): ditto.
+
 Sat Jun 23 16:27:01 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_execarg): add rlimit_limits field.

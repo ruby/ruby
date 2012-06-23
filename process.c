@@ -1254,7 +1254,6 @@ rb_proc_exec(const char *str)
 }
 
 enum {
-    EXEC_OPTION_ENV,
     EXEC_OPTION_DUP2,
     EXEC_OPTION_CLOSE,
     EXEC_OPTION_OPEN,
@@ -1280,6 +1279,7 @@ mark_exec_arg(void *ptr)
     rb_gc_mark(eargp->envp_buf);
     rb_gc_mark(eargp->dup2_tmpbuf);
     rb_gc_mark(eargp->rlimit_limits);
+    rb_gc_mark(eargp->env_modification);
     rb_gc_mark(eargp->chdir_dir);
 }
 
@@ -1896,7 +1896,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
     }
     if (!NIL_P(env)) {
         env = rb_check_exec_env(env);
-        rb_ary_store(options, EXEC_OPTION_ENV, env);
+        eargp->env_modification = env;
     }
 
     eargp->use_shell = argc == 0;
@@ -2128,8 +2128,8 @@ rb_execarg_fixup(VALUE execarg_obj)
     }
 
     unsetenv_others = eargp->unsetenv_others_given && eargp->unsetenv_others_do;
-    envopts = rb_ary_entry(eargp->options, EXEC_OPTION_ENV);
-    if (unsetenv_others || !NIL_P(envopts)) {
+    envopts = eargp->env_modification;
+    if (unsetenv_others || envopts != Qfalse) {
         VALUE envtbl, envp_str, envp_buf;
         char *p, *ep;
         if (unsetenv_others) {
@@ -2705,13 +2705,13 @@ save_env(struct rb_execarg *sargp)
     if (!sargp)
         return;
     soptions = sargp->options;
-    if (NIL_P(rb_ary_entry(soptions, EXEC_OPTION_ENV))) {
+    if (sargp->env_modification == Qfalse) {
         VALUE env = rb_const_get(rb_cObject, rb_intern("ENV"));
         if (RTEST(env)) {
             VALUE ary = hide_obj(rb_ary_new());
             rb_block_call(env, rb_intern("each"), 0, 0, save_env_i,
                           (VALUE)ary);
-            rb_ary_store(soptions, EXEC_OPTION_ENV, ary);
+            sargp->env_modification = ary;
         }
         rb_ary_store(soptions, EXEC_OPTION_UNSETENV_OTHERS, Qtrue);
     }
@@ -2757,8 +2757,8 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
         rb_env_clear();
     }
 
-    obj = rb_ary_entry(options, EXEC_OPTION_ENV);
-    if (!NIL_P(obj)) {
+    obj = eargp->env_modification;
+    if (obj != Qfalse) {
         long i;
         save_env(sargp);
         for (i = 0; i < RARRAY_LEN(obj); i++) {

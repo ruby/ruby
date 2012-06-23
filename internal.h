@@ -187,6 +187,7 @@ struct rb_execarg {
     VALUE rlimit_limits; /* Qfalse or [[rtype, softlim, hardlim], ...] */
     mode_t umask_mask;
     int close_others_maxhint;
+    VALUE env_modification; /* Qfalse or [[k1,v1], ...] */
     VALUE chdir_dir;
 };
 
