@@ -2344,7 +2344,7 @@ static int
 save_redirect_fd(int fd, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
     if (sargp) {
-	VALUE save = sargp->options;
+	VALUE soptions = sargp->options;
         VALUE newary;
         int save_fd = redirect_dup(fd);
         if (save_fd == -1) {
@@ -2354,18 +2354,18 @@ save_redirect_fd(int fd, struct rb_execarg *sargp, char *errmsg, size_t errmsg_b
             return -1;
         }
         rb_update_max_fd(save_fd);
-        newary = rb_ary_entry(save, EXEC_OPTION_DUP2);
+        newary = rb_ary_entry(soptions, EXEC_OPTION_DUP2);
         if (NIL_P(newary)) {
             newary = hide_obj(rb_ary_new());
-            rb_ary_store(save, EXEC_OPTION_DUP2, newary);
+            rb_ary_store(soptions, EXEC_OPTION_DUP2, newary);
         }
         rb_ary_push(newary,
                     hide_obj(rb_assoc_new(INT2FIX(fd), INT2FIX(save_fd))));
 
-        newary = rb_ary_entry(save, EXEC_OPTION_CLOSE);
+        newary = rb_ary_entry(soptions, EXEC_OPTION_CLOSE);
         if (NIL_P(newary)) {
             newary = hide_obj(rb_ary_new());
-            rb_ary_store(save, EXEC_OPTION_CLOSE, newary);
+            rb_ary_store(soptions, EXEC_OPTION_CLOSE, newary);
         }
         rb_ary_push(newary, hide_obj(rb_assoc_new(INT2FIX(save_fd), Qnil)));
     }
@@ -2667,7 +2667,7 @@ run_exec_rlimit(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg
         int rtype = NUM2INT(RARRAY_PTR(elt)[0]);
         struct rlimit rlim;
         if (sargp) {
-	    VALUE save = sargp->options;
+	    VALUE soptions = sargp->options;
             VALUE tmp, newary;
             if (getrlimit(rtype, &rlim) == -1) {
                 ERRMSG("getrlimit");
@@ -2676,10 +2676,10 @@ run_exec_rlimit(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg
             tmp = hide_obj(rb_ary_new3(3, RARRAY_PTR(elt)[0],
                                        RLIM2NUM(rlim.rlim_cur),
                                        RLIM2NUM(rlim.rlim_max)));
-            newary = rb_ary_entry(save, EXEC_OPTION_RLIMIT);
+            newary = rb_ary_entry(soptions, EXEC_OPTION_RLIMIT);
             if (NIL_P(newary)) {
                 newary = hide_obj(rb_ary_new());
-                rb_ary_store(save, EXEC_OPTION_RLIMIT, newary);
+                rb_ary_store(soptions, EXEC_OPTION_RLIMIT, newary);
             }
             rb_ary_push(newary, tmp);
         }
@@ -2705,19 +2705,19 @@ save_env_i(VALUE i, VALUE ary, int argc, VALUE *argv)
 static void
 save_env(struct rb_execarg *sargp)
 {
-    VALUE save;
+    VALUE soptions;
     if (!sargp)
         return;
-    save = sargp->options;
-    if (NIL_P(rb_ary_entry(save, EXEC_OPTION_ENV))) {
+    soptions = sargp->options;
+    if (NIL_P(rb_ary_entry(soptions, EXEC_OPTION_ENV))) {
         VALUE env = rb_const_get(rb_cObject, rb_intern("ENV"));
         if (RTEST(env)) {
             VALUE ary = hide_obj(rb_ary_new());
             rb_block_call(env, rb_intern("each"), 0, 0, save_env_i,
                           (VALUE)ary);
-            rb_ary_store(save, EXEC_OPTION_ENV, ary);
+            rb_ary_store(soptions, EXEC_OPTION_ENV, ary);
         }
-        rb_ary_store(save, EXEC_OPTION_UNSETENV_OTHERS, Qtrue);
+        rb_ary_store(soptions, EXEC_OPTION_UNSETENV_OTHERS, Qtrue);
     }
 }
 #endif

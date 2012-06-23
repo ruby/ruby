@@ -1,3 +1,7 @@
+Sat Jun 23 09:35:47 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: use the variable name "soptions" for sargp->options.
+
 Sat Jun 23 09:17:49 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: use the name "sargp" for struct rb_execarg variables
