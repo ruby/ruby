@@ -1430,6 +1430,28 @@ check_exec_redirect_fd(VALUE v, int iskey)
     return INT2FIX(fd);
 }
 
+static VALUE
+check_exec_redirect1(VALUE ary, VALUE key, VALUE param)
+{
+    if (NIL_P(ary)) {
+        ary = hide_obj(rb_ary_new());
+    }
+    if (!RB_TYPE_P(key, T_ARRAY)) {
+        VALUE fd = check_exec_redirect_fd(key, !NIL_P(param));
+        rb_ary_push(ary, hide_obj(rb_assoc_new(fd, param)));
+    }
+    else {
+        int i, n=0;
+        for (i = 0 ; i < RARRAY_LEN(key); i++) {
+            VALUE v = RARRAY_PTR(key)[i];
+            VALUE fd = check_exec_redirect_fd(v, !NIL_P(param));
+            rb_ary_push(ary, hide_obj(rb_assoc_new(fd, param)));
+            n++;
+        }
+    }
+    return ary;
+}
+
 static void
 check_exec_redirect(VALUE key, VALUE val, VALUE options)
 {
@@ -1515,23 +1537,8 @@ check_exec_redirect(VALUE key, VALUE val, VALUE options)
     }
 
     ary = rb_ary_entry(options, index);
-    if (NIL_P(ary)) {
-        ary = hide_obj(rb_ary_new());
-        rb_ary_store(options, index, ary);
-    }
-    if (!RB_TYPE_P(key, T_ARRAY)) {
-        VALUE fd = check_exec_redirect_fd(key, !NIL_P(param));
-        rb_ary_push(ary, hide_obj(rb_assoc_new(fd, param)));
-    }
-    else {
-        int i, n=0;
-        for (i = 0 ; i < RARRAY_LEN(key); i++) {
-            VALUE v = RARRAY_PTR(key)[i];
-            VALUE fd = check_exec_redirect_fd(v, !NIL_P(param));
-            rb_ary_push(ary, hide_obj(rb_assoc_new(fd, param)));
-            n++;
-        }
-    }
+    ary = check_exec_redirect1(ary, key, param);
+    rb_ary_store(options, index, ary);
 }
 
 #if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
