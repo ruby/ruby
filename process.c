@@ -1256,7 +1256,6 @@ rb_proc_exec(const char *str)
 enum {
     EXEC_OPTION_RLIMIT,
     EXEC_OPTION_ENV,
-    EXEC_OPTION_CHDIR,
     EXEC_OPTION_DUP2,
     EXEC_OPTION_CLOSE,
     EXEC_OPTION_OPEN,
@@ -1281,6 +1280,7 @@ mark_exec_arg(void *ptr)
     rb_gc_mark(eargp->envp_str);
     rb_gc_mark(eargp->envp_buf);
     rb_gc_mark(eargp->dup2_tmpbuf);
+    rb_gc_mark(eargp->chdir_dir);
 }
 
 static void
@@ -1622,12 +1622,12 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
             eargp->unsetenv_others_do = RTEST(val) ? 1 : 0;
         }
         else if (id == rb_intern("chdir")) {
-            if (!NIL_P(rb_ary_entry(options, EXEC_OPTION_CHDIR))) {
+            if (eargp->chdir_given) {
                 rb_raise(rb_eArgError, "chdir option specified twice");
             }
             FilePathValue(val);
-            rb_ary_store(options, EXEC_OPTION_CHDIR,
-                                  hide_obj(rb_str_dup(val)));
+            eargp->chdir_given = 1;
+            eargp->chdir_dir = hide_obj(rb_str_dup(val));
         }
         else if (id == rb_intern("umask")) {
 	    mode_t cmask = NUM2MODET(val);
@@ -2818,15 +2818,14 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
             return -1;
     }
 
-    obj = rb_ary_entry(options, EXEC_OPTION_CHDIR);
-    if (!NIL_P(obj)) {
+    if (eargp->chdir_given) {
         if (sargp) {
             char *cwd = my_getcwd();
-            rb_ary_store(sargp->options, EXEC_OPTION_CHDIR,
-                         hide_obj(rb_str_new2(cwd)));
+            sargp->chdir_given = 1;
+            sargp->chdir_dir = hide_obj(rb_str_new2(cwd));
             xfree(cwd);
         }
-        if (chdir(RSTRING_PTR(obj)) == -1) { /* async-signal-safe */
+        if (chdir(RSTRING_PTR(eargp->chdir_dir)) == -1) { /* async-signal-safe */
             ERRMSG("chdir");
             return -1;
         }

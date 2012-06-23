@@ -1,3 +1,12 @@
+Sat Jun 23 14:29:25 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_execarg): add chdir_given and chdir_dir fields.
+
+	* process.c (EXEC_OPTION_CHDIR): removed.
+	  (mark_exec_arg): mark chdir_dir field.
+	  (rb_execarg_addopt): update the new fields, instead of options array.
+	  (rb_execarg_run_options): use the new fields.
+
 Sat Jun 23 13:20:47 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_execarg): add close_others_given, close_others_do and
