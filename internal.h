@@ -186,6 +186,10 @@ struct rb_execarg {
     pid_t pgroup_pgid; /* asis(-1), new pgroup(0), specified pgroup (0<V). */
     VALUE rlimit_limits; /* Qfalse or [[rtype, softlim, hardlim], ...] */
     mode_t umask_mask;
+    VALUE fd_dup2;
+    VALUE fd_close;
+    VALUE fd_open;
+    VALUE fd_dup2_child;
     int close_others_maxhint;
     VALUE env_modification; /* Qfalse or [[k1,v1], ...] */
     VALUE chdir_dir;

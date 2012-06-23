@@ -1,3 +1,20 @@
+Sat Jun 23 20:26:36 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_execarg): add fd_dup2, fd_close, fd_open,
+	  fd_dup2_child fields.
+
+	* process.c (EXEC_OPTION_DUP2): removed.
+	  (EXEC_OPTION_CLOSE): removed.
+	  (EXEC_OPTION_OPEN): removed.
+	  (EXEC_OPTION_DUP2_CHILD): removed.
+	  (mark_exec_arg): mark the new fields.
+	  (check_exec_redirect1): change condition for default option.
+	  (check_exec_redirect): take a struct rb_execarg argument.
+	  use the new fields.
+	  (rb_execarg_addopt): follow the check_exec_redirect change.
+	  (check_exec_fds): use the new fields.
+	  (save_redirect_fd): ditto.
+
 Sat Jun 23 19:01:18 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_execarg_fixup): fix envopts condition.
