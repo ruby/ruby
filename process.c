@@ -1254,7 +1254,6 @@ rb_proc_exec(const char *str)
 }
 
 enum {
-    EXEC_OPTION_RLIMIT,
     EXEC_OPTION_ENV,
     EXEC_OPTION_DUP2,
     EXEC_OPTION_CLOSE,
@@ -1280,6 +1279,7 @@ mark_exec_arg(void *ptr)
     rb_gc_mark(eargp->envp_str);
     rb_gc_mark(eargp->envp_buf);
     rb_gc_mark(eargp->dup2_tmpbuf);
+    rb_gc_mark(eargp->rlimit_limits);
     rb_gc_mark(eargp->chdir_dir);
 }
 
@@ -1588,12 +1588,12 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
 #if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
         if (strncmp("rlimit_", rb_id2name(id), 7) == 0 &&
             (rtype = rlimit_type_by_lname(rb_id2name(id)+7)) != -1) {
-            VALUE ary = rb_ary_entry(options, EXEC_OPTION_RLIMIT);
+            VALUE ary = eargp->rlimit_limits;
             VALUE tmp, softlim, hardlim;
-            if (NIL_P(ary)) {
-                ary = hide_obj(rb_ary_new());
-                rb_ary_store(options, EXEC_OPTION_RLIMIT, ary);
-            }
+            if (eargp->rlimit_limits == Qfalse)
+                ary = eargp->rlimit_limits = hide_obj(rb_ary_new());
+            else
+                ary = eargp->rlimit_limits;
             tmp = rb_check_array_type(val);
             if (!NIL_P(tmp)) {
                 if (RARRAY_LEN(tmp) == 1)
@@ -2665,7 +2665,6 @@ run_exec_rlimit(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg
         int rtype = NUM2INT(RARRAY_PTR(elt)[0]);
         struct rlimit rlim;
         if (sargp) {
-	    VALUE soptions = sargp->options;
             VALUE tmp, newary;
             if (getrlimit(rtype, &rlim) == -1) {
                 ERRMSG("getrlimit");
@@ -2674,11 +2673,10 @@ run_exec_rlimit(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg
             tmp = hide_obj(rb_ary_new3(3, RARRAY_PTR(elt)[0],
                                        RLIM2NUM(rlim.rlim_cur),
                                        RLIM2NUM(rlim.rlim_max)));
-            newary = rb_ary_entry(soptions, EXEC_OPTION_RLIMIT);
-            if (NIL_P(newary)) {
-                newary = hide_obj(rb_ary_new());
-                rb_ary_store(soptions, EXEC_OPTION_RLIMIT, newary);
-            }
+            if (sargp->rlimit_limits == Qfalse)
+                newary = sargp->rlimit_limits = hide_obj(rb_ary_new());
+            else 
+                newary = sargp->rlimit_limits;
             rb_ary_push(newary, tmp);
         }
         rlim.rlim_cur = NUM2RLIM(RARRAY_PTR(elt)[1]);
@@ -2732,9 +2730,9 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
 
     if (sargp) {
         /* assume that sargp is always NULL on fork-able environments */
+        MEMZERO(sargp, struct rb_execarg, 1);
         sargp->options = hide_obj(rb_ary_new());
         sargp->redirect_fds = Qnil;
-	sargp->envp_str = sargp->envp_buf = 0;
     }
 
 #ifdef HAVE_SETPGID
@@ -2745,8 +2743,8 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
 #endif
 
 #if defined(HAVE_SETRLIMIT) && defined(RLIM2NUM)
-    obj = rb_ary_entry(options, EXEC_OPTION_RLIMIT);
-    if (!NIL_P(obj)) {
+    obj = eargp->rlimit_limits;
+    if (obj != Qfalse) {
         if (run_exec_rlimit(obj, sargp, errmsg, errmsg_buflen) == -1) /* hopefully async-signal-safe */
             return -1;
     }

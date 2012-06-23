@@ -1,3 +1,14 @@
+Sat Jun 23 16:27:01 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_execarg): add rlimit_limits field.
+
+	* process.c (EXEC_OPTION_RLIMIT): removed.
+	  (mark_exec_arg): mark rlimit_limits field.
+	  (rb_execarg_addopt): update the new fields, instead of options array.
+	  (run_exec_rlimit): use the new field.
+	  (rb_execarg_run_options): clear sarg using MEMZERO.  use the new
+	  field.
+
 Sat Jun 23 14:29:25 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_execarg): add chdir_given and chdir_dir fields.
