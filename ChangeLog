@@ -1,3 +1,15 @@
+Sat Jun 23 13:20:47 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_execarg): add close_others_given, close_others_do and
+	  close_others_maxhint fields.
+
+	* process.c (EXEC_OPTION_CLOSE_OTHERS): removed.
+	  (rb_execarg_addopt): update the new fields, instead of options array.
+	  (check_exec_fds): take eargp as an argument.  update the
+	  close_others_maxhint field.
+	  (rb_execarg_fixup): follow the argument change of check_exec_fds.
+	  (rb_execarg_run_options): use the new fields.
+
 Sat Jun 23 10:41:59 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_execarg): add unsetenv_others_given and

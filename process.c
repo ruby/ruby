@@ -1261,7 +1261,6 @@ enum {
     EXEC_OPTION_CLOSE,
     EXEC_OPTION_OPEN,
     EXEC_OPTION_DUP2_CHILD,
-    EXEC_OPTION_CLOSE_OTHERS,
     EXEC_OPTION_NEW_PGROUP
 };
 
@@ -1639,11 +1638,11 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
             eargp->umask_mask = cmask;
         }
         else if (id == rb_intern("close_others")) {
-            if (!NIL_P(rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS))) {
+            if (eargp->close_others_given) {
                 rb_raise(rb_eArgError, "close_others option specified twice");
             }
-            val = RTEST(val) ? Qtrue : Qfalse;
-            rb_ary_store(options, EXEC_OPTION_CLOSE_OTHERS, val);
+            eargp->close_others_given = 1;
+            eargp->close_others_do = RTEST(val) ? 1 : 0;
         }
         else if (id == rb_intern("in")) {
             key = INT2FIX(0);
@@ -1694,8 +1693,9 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 }
 
 static VALUE
-check_exec_fds(VALUE options)
+check_exec_fds(struct rb_execarg *eargp)
 {
+    VALUE options = eargp->options;
     VALUE h = rb_hash_new();
     VALUE ary;
     int index, maxhint = -1;
@@ -1758,9 +1758,7 @@ check_exec_fds(VALUE options)
         }
     }
 
-    if (rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS) != Qfalse) {
-        rb_ary_store(options, EXEC_OPTION_CLOSE_OTHERS, INT2FIX(maxhint));
-    }
+    eargp->close_others_maxhint = maxhint;
     return h;
 }
 
@@ -2119,7 +2117,7 @@ rb_execarg_fixup(VALUE execarg_obj)
     VALUE envopts;
     VALUE ary;
 
-    eargp->redirect_fds = check_exec_fds(eargp->options);
+    eargp->redirect_fds = check_exec_fds(eargp);
 
     ary = rb_ary_entry(eargp->options, EXEC_OPTION_DUP2);
     if (!NIL_P(ary)) {
@@ -2803,9 +2801,8 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
     }
 
 #ifdef HAVE_FORK
-    obj = rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS);
-    if (obj != Qfalse) {
-        rb_close_before_exec(3, FIX2INT(obj), eargp->redirect_fds); /* async-signal-safe */
+    if (!eargp->close_others_given || eargp->close_others_do) {
+        rb_close_before_exec(3, eargp->close_others_maxhint, eargp->redirect_fds); /* async-signal-safe */
     }
 #endif
 
