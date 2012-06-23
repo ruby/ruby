@@ -1,3 +1,8 @@
+Sat Jun 23 17:22:02 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (save_env): don't use EXEC_OPTION_UNSETENV_OTHERS.
+	  (rb_execarg_run_options): ditto.
+
 Sat Jun 23 17:04:08 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_execarg): add env_modification field.

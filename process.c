@@ -2713,7 +2713,8 @@ save_env(struct rb_execarg *sargp)
                           (VALUE)ary);
             sargp->env_modification = ary;
         }
-        rb_ary_store(soptions, EXEC_OPTION_UNSETENV_OTHERS, Qtrue);
+        sargp->unsetenv_others_given = 1;
+        sargp->unsetenv_others_do = 1;
     }
 }
 #endif
@@ -2751,8 +2752,7 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
 #endif
 
 #if !defined(HAVE_FORK)
-    obj = rb_ary_entry(options, EXEC_OPTION_UNSETENV_OTHERS);
-    if (RTEST(obj)) {
+    if (eargp->unsetenv_others_given && eargp->unsetenv_others_do) {
         save_env(sargp);
         rb_env_clear();
     }
