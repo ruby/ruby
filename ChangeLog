@@ -1,3 +1,10 @@
+Sat Jun 23 09:17:49 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: use the name "sargp" for struct rb_execarg variables
+	  consistently for saving process attributes. 
+
+	* io.c: ditto.
+
 Sat Jun 23 07:59:57 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: use the name "eargp" for struct rb_execarg variables

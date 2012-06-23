@@ -5486,7 +5486,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
     int pair[2], write_pair[2];
 #endif
 #if !defined(HAVE_FORK)
-    struct rb_execarg sarg;
+    struct rb_execarg sarg, *sargp = &sarg;
 #endif
     FILE *fp = 0;
     int fd = -1;
@@ -5619,7 +5619,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
     }
     if (!NIL_P(execarg_obj)) {
 	rb_execarg_fixup(execarg_obj);
-	rb_execarg_run_options(eargp, &sarg, NULL, 0);
+	rb_execarg_run_options(eargp, sargp, NULL, 0);
     }
     while ((pid = (args ?
 		   rb_w32_aspawn(P_NOWAIT, cmd, args) :
@@ -5636,7 +5636,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 	    {
 		int e = errno;
 		if (eargp)
-		    rb_execarg_run_options(&sarg, NULL, NULL, 0);
+		    rb_execarg_run_options(sargp, NULL, NULL, 0);
 		close(pair[0]);
 		close(pair[1]);
 		if ((fmode & (FMODE_READABLE|FMODE_WRITABLE)) == (FMODE_READABLE|FMODE_WRITABLE)) {
@@ -5653,7 +5653,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
     RB_GC_GUARD(argbuf);
 
     if (eargp)
-	rb_execarg_run_options(&sarg, NULL, NULL, 0);
+	rb_execarg_run_options(sargp, NULL, NULL, 0);
     if ((fmode & FMODE_READABLE) && (fmode & FMODE_WRITABLE)) {
         close(pair[1]);
         fd = pair[0];
@@ -5675,11 +5675,11 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
     }
     if (!NIL_P(execarg_obj)) {
 	rb_execarg_fixup(execarg_obj);
-	rb_execarg_run_options(eargp, &sarg, NULL, 0);
+	rb_execarg_run_options(eargp, sargp, NULL, 0);
     }
     fp = popen(cmd, modestr);
     if (eargp)
-	rb_execarg_run_options(&sarg, NULL, NULL, 0);
+	rb_execarg_run_options(sargp, NULL, NULL, 0);
     if (!fp) rb_sys_fail_path(prog);
     fd = fileno(fp);
 #endif
