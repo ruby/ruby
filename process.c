@@ -1343,7 +1343,6 @@ proc_spawn_cmd_internal(char **argv, char *prog)
 static rb_pid_t
 proc_spawn_cmd(char **argv, VALUE prog, struct rb_execarg *eargp)
 {
-    VALUE options = eargp->options;
     rb_pid_t pid = -1;
 
     if (argv[0]) {
@@ -2705,10 +2704,8 @@ save_env_i(VALUE i, VALUE ary, int argc, VALUE *argv)
 static void
 save_env(struct rb_execarg *sargp)
 {
-    VALUE soptions;
     if (!sargp)
         return;
-    soptions = sargp->options;
     if (sargp->env_modification == Qfalse) {
         VALUE env = rb_const_get(rb_cObject, rb_intern("ENV"));
         if (RTEST(env)) {

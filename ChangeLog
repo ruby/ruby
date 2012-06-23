@@ -1,3 +1,11 @@
+Sat Jun 23 23:48:21 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (proc_spawn_cmd): unused variable removed to suppress a
+	  warning.
+	  (save_env): ditto.
+
+	  [ruby-core:45797] reported by Luis Lavena.
+
 Sat Jun 23 23:19:31 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_execarg): add new_pgroup_given and new_pgroup_flag
@@ -9,6 +17,8 @@ Sat Jun 23 23:19:31 2012  Tanaka Akira  <akr@fsij.org>
 	  (rb_execarg_addopt): use the new fields.
 	  (rb_spawn_process): follow the proc_spawn_cmd change.
 	  
+	  [ruby-core:45794] [ruby-trunk - Bug #6633] reported by Luis Lavena.
+
 Sat Jun 23 20:26:36 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_execarg): add fd_dup2, fd_close, fd_open,
