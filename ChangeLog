@@ -1,3 +1,7 @@
+Sun Jun 24 23:02:17 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (pipe_open): merge win32 code using spawnv().
+
 Sun Jun 24 22:53:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (check_exec_fds): separate check_exec_fds_1() since

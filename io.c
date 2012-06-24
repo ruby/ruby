@@ -5340,7 +5340,13 @@ rb_pipe(int *pipes)
     return ret;
 }
 
-#ifdef HAVE_FORK
+#ifdef _WIN32
+#define HAVE_SPAWNV 1
+#define spawnv(mode, cmd, args) rb_w32_aspawn((mode), (cmd), (args))
+#define spawn(mode, cmd) rb_w32_spawn((mode), (cmd), 0)
+#endif
+
+#if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
 struct popen_arg {
     VALUE execarg_obj;
     struct rb_execarg *eargp;
@@ -5348,7 +5354,9 @@ struct popen_arg {
     int pair[2];
     int write_pair[2];
 };
+#endif
 
+#ifdef HAVE_FORK
 static void
 popen_redirect(struct popen_arg *p)
 {
@@ -5478,12 +5486,24 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
     VALUE write_port;
 #if defined(HAVE_FORK)
     int status;
-    struct popen_arg arg;
     char errmsg[80] = { '\0' };
-#elif defined(_WIN32)
-    volatile VALUE argbuf;
+#endif
+#if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
+    struct popen_arg arg;
+    int e = 0;
+#endif
+#if defined(HAVE_SPAWNV)
+# if defined(HAVE_SPAWNVE)
+#   define DO_SPAWN(cmd, args, envp) ((args) ? \
+				      spawnve(P_NOWAIT, (cmd), (args), (envp)) : \
+				      spawne(P_NOWAIT, (cmd), (envp)))
+# else
+#   define DO_SPAWN(cmd, args, envp) ((args) ? \
+				      spawnv(P_NOWAIT, (cmd), (args)) : \
+				      spawn(P_NOWAIT, (cmd)))
+# endif
     char **args = NULL;
-    int pair[2], write_pair[2];
+    char **envp = NULL;
 #endif
 #if !defined(HAVE_FORK)
     struct rb_execarg sarg, *sargp = &sarg;
@@ -5493,7 +5513,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
     int write_fd = -1;
 #if !defined(HAVE_FORK)
     const char *cmd = 0;
-#if !defined(_WIN32)
+#if !defined(HAVE_SPAWNV)
     int argc;
     VALUE *argv;
 #endif
@@ -5502,12 +5522,17 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
         cmd = StringValueCStr(prog);
 #endif
 
-#if defined(HAVE_FORK)
+#if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
     arg.execarg_obj = execarg_obj;
     arg.eargp = eargp;
     arg.modef = fmode;
     arg.pair[0] = arg.pair[1] = -1;
     arg.write_pair[0] = arg.write_pair[1] = -1;
+# if !defined(HAVE_FORK)
+    if (eargp && !eargp->use_shell) {
+        args = ARGVSTR2ARGV(eargp->invoke.cmd.argv_str);
+    }
+# endif
     switch (fmode & (FMODE_READABLE|FMODE_WRITABLE)) {
       case FMODE_READABLE|FMODE_WRITABLE:
         if (rb_pipe(arg.write_pair) < 0)
@@ -5541,9 +5566,29 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
     }
     if (!NIL_P(execarg_obj)) {
         rb_execarg_fixup(execarg_obj);
+# if defined(HAVE_FORK)
 	pid = rb_fork_async_signal_safe(&status, popen_exec, &arg, arg.eargp->redirect_fds, errmsg, sizeof(errmsg));
+# else
+	rb_execarg_run_options(eargp, sargp, NULL, 0);
+	if (eargp->envp_str) envp = (char **)RSTRING_PTR(eargp->envp_str);
+	while ((pid = DO_SPAWN(cmd, args, envp)) == -1) {
+	    /* exec failed */
+	    switch (e = errno) {
+	      case EAGAIN:
+#   if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+	      case EWOULDBLOCK:
+#   endif
+		rb_thread_sleep(1);
+		continue;
+	    }
+	    break;
+	}
+	if (eargp)
+	    rb_execarg_run_options(sargp, NULL, NULL, 0);
+# endif
     }
     else {
+# if defined(HAVE_FORK)
 	pid = rb_fork_ruby(&status);
 	if (pid == 0) {		/* child */
 	    rb_thread_atfork();
@@ -5552,11 +5597,16 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 	    rb_io_synchronized(RFILE(orig_stderr)->fptr);
 	    return Qnil;
 	}
+# else
+	rb_notimplement();
+# endif
     }
 
     /* parent */
     if (pid == -1) {
-	int e = errno;
+# if defined(HAVE_FORK)
+	e = errno;
+# endif
 	close(arg.pair[0]);
 	close(arg.pair[1]);
         if ((fmode & (FMODE_READABLE|FMODE_WRITABLE)) == (FMODE_READABLE|FMODE_WRITABLE)) {
@@ -5564,8 +5614,10 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
             close(arg.write_pair[1]);
         }
 	errno = e;
+# if defined(HAVE_FORK)
         if (errmsg[0])
             rb_sys_fail(errmsg);
+# endif
 	rb_sys_fail_str(prog);
     }
     if ((fmode & FMODE_READABLE) && (fmode & FMODE_WRITABLE)) {
@@ -5581,92 +5633,6 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
     else {
         close(arg.pair[0]);
         fd = arg.pair[1];
-    }
-#elif defined(_WIN32)
-    if (eargp && !eargp->use_shell) {
-        args = ARGVSTR2ARGV(eargp->invoke.cmd.argv_str);
-    }
-    switch (fmode & (FMODE_READABLE|FMODE_WRITABLE)) {
-      case FMODE_READABLE|FMODE_WRITABLE:
-        if (rb_pipe(write_pair) < 0)
-            rb_sys_fail_str(prog);
-        if (rb_pipe(pair) < 0) {
-            int e = errno;
-            close(write_pair[0]);
-            close(write_pair[1]);
-            errno = e;
-            rb_sys_fail_str(prog);
-        }
-        if (eargp) {
-            rb_execarg_addopt(execarg_obj, INT2FIX(0), INT2FIX(write_pair[0]));
-            rb_execarg_addopt(execarg_obj, INT2FIX(1), INT2FIX(pair[1]));
-        }
-	break;
-      case FMODE_READABLE:
-        if (rb_pipe(pair) < 0)
-            rb_sys_fail_str(prog);
-        if (eargp)
-            rb_execarg_addopt(execarg_obj, INT2FIX(1), INT2FIX(pair[1]));
-	break;
-      case FMODE_WRITABLE:
-        if (rb_pipe(pair) < 0)
-            rb_sys_fail_str(prog);
-        if (eargp)
-            rb_execarg_addopt(execarg_obj, INT2FIX(0), INT2FIX(pair[0]));
-	break;
-      default:
-        rb_sys_fail_str(prog);
-    }
-    if (!NIL_P(execarg_obj)) {
-	rb_execarg_fixup(execarg_obj);
-	rb_execarg_run_options(eargp, sargp, NULL, 0);
-    }
-    while ((pid = (args ?
-		   rb_w32_aspawn(P_NOWAIT, cmd, args) :
-		   rb_w32_spawn(P_NOWAIT, cmd, 0))) == -1) {
-	/* exec failed */
-	switch (errno) {
-	  case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-	  case EWOULDBLOCK:
-#endif
-	    rb_thread_sleep(1);
-	    break;
-	  default:
-	    {
-		int e = errno;
-		if (eargp)
-		    rb_execarg_run_options(sargp, NULL, NULL, 0);
-		close(pair[0]);
-		close(pair[1]);
-		if ((fmode & (FMODE_READABLE|FMODE_WRITABLE)) == (FMODE_READABLE|FMODE_WRITABLE)) {
-		    close(write_pair[0]);
-		    close(write_pair[1]);
-		}
-		errno = e;
-		rb_sys_fail_str(prog);
-	    }
-	    break;
-	}
-    }
-
-    RB_GC_GUARD(argbuf);
-
-    if (eargp)
-	rb_execarg_run_options(sargp, NULL, NULL, 0);
-    if ((fmode & FMODE_READABLE) && (fmode & FMODE_WRITABLE)) {
-        close(pair[1]);
-        fd = pair[0];
-        close(write_pair[0]);
-        write_fd = write_pair[1];
-    }
-    else if (fmode & FMODE_READABLE) {
-        close(pair[1]);
-        fd = pair[0];
-    }
-    else {
-        close(pair[0]);
-        fd = pair[1];
     }
 #else
     if (argc) {
@@ -5747,8 +5713,9 @@ pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig
 #if !defined(HAVE_FORK)
 	rb_raise(rb_eNotImpError,
 		 "fork() function is unimplemented on this machine");
-#endif
+#else
         return pipe_open(Qnil, modestr, fmode, convconfig);
+#endif
     }
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
