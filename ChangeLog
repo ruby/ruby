@@ -1,3 +1,8 @@
+Sun Jun 24 22:53:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (check_exec_fds): separate check_exec_fds_1() since
+	  nonstatic initializer of an aggregate type is not allowed by C89.
+
 Sun Jun 24 07:47:17 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_execarg): options field removed.

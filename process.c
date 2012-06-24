@@ -1689,25 +1689,12 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     return rb_execarg_addopt(execarg_obj, key, val);
 }
 
-static VALUE
-check_exec_fds(struct rb_execarg *eargp)
+static int
+check_exec_fds_1(struct rb_execarg *eargp, VALUE h, int maxhint, VALUE ary)
 {
-    VALUE h = rb_hash_new();
-    VALUE ary;
-    int maxhint = -1;
     long i;
-    int j;
-    VALUE fd_opts[] = {
-        eargp->fd_dup2,
-        eargp->fd_close,
-        eargp->fd_open,
-        eargp->fd_dup2_child
-    };
 
-    for (j = 0; j < (int)(sizeof(fd_opts)/sizeof(*fd_opts)); j++) {
-        ary = fd_opts[j];
-        if (ary == Qfalse)
-            continue;
+    if (ary != Qfalse) {
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_PTR(ary)[i];
             int fd = FIX2INT(RARRAY_PTR(elt)[0]);
@@ -1729,6 +1716,21 @@ check_exec_fds(struct rb_execarg *eargp)
             }
         }
     }
+    return maxhint;
+}
+
+static VALUE
+check_exec_fds(struct rb_execarg *eargp)
+{
+    VALUE h = rb_hash_new();
+    VALUE ary;
+    int maxhint = -1;
+    long i;
+
+    maxhint = check_exec_fds_1(eargp, h, maxhint, eargp->fd_dup2);
+    maxhint = check_exec_fds_1(eargp, h, maxhint, eargp->fd_close);
+    maxhint = check_exec_fds_1(eargp, h, maxhint, eargp->fd_open);
+    maxhint = check_exec_fds_1(eargp, h, maxhint, eargp->fd_dup2_child);
 
     if (eargp->fd_dup2_child) {
         ary = eargp->fd_dup2_child;
