@@ -2395,7 +2395,7 @@ run_exec_dup2_tmpbuf_size(long n)
     return sizeof(struct run_exec_dup2_fd_pair) * n;
 }
 
-/* This function should be async-signal-safe when _save_ is Qnil.  Hopefully it is. */
+/* This function should be async-signal-safe when sargp is NULL.  Hopefully it is. */
 static int
 run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
@@ -2546,7 +2546,7 @@ run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
     return 0;
 }
 
-/* This function should be async-signal-safe when _save_ is Qnil.  Actually it is. */
+/* This function should be async-signal-safe when sargp is NULL.  Actually it is. */
 static int
 run_exec_open(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
@@ -2596,7 +2596,7 @@ run_exec_open(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg_b
     return 0;
 }
 
-/* This function should be async-signal-safe when _save_ is Qnil.  Actually it is. */
+/* This function should be async-signal-safe when sargp is NULL.  Actually it is. */
 static int
 run_exec_dup2_child(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
@@ -2621,7 +2621,7 @@ run_exec_dup2_child(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t er
 }
 
 #ifdef HAVE_SETPGID
-/* This function should be async-signal-safe when _save_ is Qnil.  Actually it is. */
+/* This function should be async-signal-safe when sargp is NULL.  Actually it is. */
 static int
 run_exec_pgroup(const struct rb_execarg *eargp, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
@@ -2654,7 +2654,7 @@ run_exec_pgroup(const struct rb_execarg *eargp, struct rb_execarg *sargp, char *
 #endif
 
 #if defined(HAVE_SETRLIMIT) && defined(RLIM2NUM)
-/* This function should be async-signal-safe when _save_ is Qnil.  Hopefully it is. */
+/* This function should be async-signal-safe when sargp is NULL.  Hopefully it is. */
 static int
 run_exec_rlimit(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
@@ -2716,7 +2716,7 @@ save_env(struct rb_execarg *sargp)
 }
 #endif
 
-/* This function should be async-signal-safe when _s_ is NULL.  Hopefully it is. */
+/* This function should be async-signal-safe when sargp is NULL.  Hopefully it is. */
 int
 rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
