@@ -22,7 +22,7 @@ Sat Jun 23 23:19:31 2012  Tanaka Akira  <akr@fsij.org>
 	  use the new fields.
 	  (rb_execarg_addopt): use the new fields.
 	  (rb_spawn_process): follow the proc_spawn_cmd change.
-	  
+
 	  [ruby-core:45794] [ruby-trunk - Bug #6633] reported by Luis Lavena.
 
 Sat Jun 23 20:26:36 2012  Tanaka Akira  <akr@fsij.org>
@@ -115,14 +115,14 @@ Sat Jun 23 09:35:47 2012  Tanaka Akira  <akr@fsij.org>
 Sat Jun 23 09:17:49 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: use the name "sargp" for struct rb_execarg variables
-	  consistently for saving process attributes. 
+	  consistently for saving process attributes.
 
 	* io.c: ditto.
 
 Sat Jun 23 07:59:57 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: use the name "eargp" for struct rb_execarg variables
-	  consistently except for saving process attributes. 
+	  consistently except for saving process attributes.
 
 	* io.c: ditto.
 
@@ -1033,7 +1033,7 @@ Sun Jun 10 06:21:10 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 Sun Jun 10 03:09:41 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/ossl.c: Fix error in example. Patch by David Albert.
-	
+
 	  Add/extend existing documentation. Examples now also cover RSA
 	  signatures and PBKDF2.
 	  [ruby-core: 45154][ruby-trunk - Bug #6475]
@@ -1928,7 +1928,7 @@ Fri May 25 22:19:40 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 	* ext/openssl/ossl_ssl.c: Revert r35583
 	* test/openssl/test_ssl.rb: Handle ECONNRESET in code instead to avoid
 	  the test failing in Ruby CI [1]
-	
+
 	[1] http://u64.rubyci.org/~chkbuild/ruby-trunk/log/20120507T190102Z.log.html.gz#test-all
 
 Fri May 25 19:51:36 2012  Koichi Sasada  <ko1@atdot.net>
