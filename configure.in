@@ -1384,12 +1384,11 @@ RUBY_NACL_CHECK_PEPPER_TYPES
 
 AC_CACHE_CHECK(for stack end address, rb_cv_stack_end_address,
 [rb_cv_stack_end_address=no
-for addr in __libc_stack_end _SEND; do
   AC_TRY_LINK(
-    [extern void *$addr;],
-    [if (!$addr) return 1;],
-    [rb_cv_stack_end_address="$addr"; break])
-done])
+    [extern void *__libc_stack_end;],
+    [if (!__libc_stack_end) return 1;],
+    [rb_cv_stack_end_address="__libc_stack_end"])
+])
 if test $rb_cv_stack_end_address != no; then
   AC_DEFINE_UNQUOTED(STACK_END_ADDRESS, $rb_cv_stack_end_address)
 fi

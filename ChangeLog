@@ -1,3 +1,8 @@
+Mon Jun 25 00:25:01 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in (for stack end address): remove human68k specific
+	  check. It is no longer supported.
+
 Sun Jun 24 23:02:17 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (pipe_open): merge win32 code using spawnv().
