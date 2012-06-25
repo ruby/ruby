@@ -1224,7 +1224,15 @@ class TestIO < Test::Unit::TestCase
     t.puts "bar"
     t.puts "baz"
     t.close
-    t
+    if block_given?
+      begin
+        yield t
+      ensure
+        t.close(true)
+      end
+    else
+      t
+    end
   end
 
   def test_set_lineno
@@ -1443,6 +1451,31 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+
+  def test_seek
+    make_tempfile {|t|
+      open(t.path) { |f|
+        f.seek(9)
+        assert_equal("az\n", f.read)
+      }
+
+      open(t.path) { |f|
+        f.seek(9, IO::SEEK_SET)
+        assert_equal("az\n", f.read)
+      }
+
+      open(t.path) { |f|
+        f.seek(-4, IO::SEEK_END)
+        assert_equal("baz\n", f.read)
+      }
+
+      open(t.path) { |f|
+        assert_equal("foo\n", f.gets)
+        f.seek(2, IO::SEEK_CUR)
+        assert_equal("r\nbaz\n", f.read)
+      }
+    }
+  end
 
   def test_sysseek
     t = make_tempfile
