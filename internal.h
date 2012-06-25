@@ -184,7 +184,7 @@ struct rb_execarg {
     unsigned chdir_given : 1;
     unsigned new_pgroup_given : 1;
     unsigned new_pgroup_flag : 1;
-    pid_t pgroup_pgid; /* asis(-1), new pgroup(0), specified pgroup (0<V). */
+    rb_pid_t pgroup_pgid; /* asis(-1), new pgroup(0), specified pgroup (0<V). */
     VALUE rlimit_limits; /* Qfalse or [[rtype, softlim, hardlim], ...] */
     mode_t umask_mask;
     VALUE fd_dup2;

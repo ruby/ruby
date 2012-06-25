@@ -1,3 +1,8 @@
+Mon Jun 25 11:34:45 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* internal.h: use rb_pid_t instead of pid_t because of there is no
+	  definition of pid_t here on Windows.
+
 Mon Jun 25 00:25:01 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in (for stack end address): remove human68k specific
