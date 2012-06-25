@@ -1,3 +1,7 @@
+Mon Jun 25 17:49:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_mix_module): revert Module#mix.
+
 Mon Jun 25 16:57:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (rb_mod_define_method): allow method transplanting from a

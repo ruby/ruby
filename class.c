@@ -120,7 +120,7 @@ rb_class_new(VALUE super)
 }
 
 static void
-rb_mod_clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
+clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
 {
     VALUE newiseqval;
     if (me->def && me->def->type == VM_METHOD_TYPE_ISEQ) {
@@ -138,7 +138,7 @@ rb_mod_clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
 static int
 clone_method_i(st_data_t key, st_data_t value, st_data_t data)
 {
-    rb_mod_clone_method((VALUE)data, (ID)key, (const rb_method_entry_t *)value);
+    clone_method((VALUE)data, (ID)key, (const rb_method_entry_t *)value);
     return ST_CONTINUE;
 }
 
@@ -694,136 +694,6 @@ rb_include_module(VALUE klass, VALUE module)
 	module = RCLASS_SUPER(module);
     }
     if (changed) rb_clear_cache();
-}
-
-struct mixing_arg {
-    st_table *mtbl;
-    ID id;
-    st_table *aliasing;
-    VALUE klass;
-};
-
-static int
-check_mix_const_i(st_data_t key, st_data_t value, st_data_t arg)
-{
-    struct mixing_arg *argp = (struct mixing_arg *)arg;
-    ID id = (ID)key;
-    st_table *aliasing = argp->aliasing;
-    st_data_t alias;
-
-    if (!rb_is_const_id(id)) return ST_CONTINUE;
-    if (aliasing && st_lookup(aliasing, ID2SYM(id), &alias)) {
-	id = rb_to_id(alias);
-    }
-    if (st_lookup(argp->mtbl, id, NULL)) {
-	argp->id = id;
-	return ST_STOP;
-    }
-    return ST_CONTINUE;
-}
-
-static int
-do_mix_const_i(st_data_t key, st_data_t value, st_data_t arg)
-{
-    struct mixing_arg *argp = (struct mixing_arg *)arg;
-    ID id = (ID)key;
-    st_table *aliasing = argp->aliasing;
-    st_data_t old, alias;
-
-    if (!rb_is_const_id(id)) return ST_CONTINUE;
-    if (aliasing && st_lookup(aliasing, ID2SYM(id), &alias)) {
-	id = rb_to_id(alias);
-    }
-    if (st_lookup(argp->mtbl, id, &old)) {
-	argp->id = id;
-	return ST_STOP;
-    }
-    st_insert(argp->mtbl, id, value);
-    return ST_CONTINUE;
-}
-
-static int
-check_mix_method_i(st_data_t key, st_data_t value, st_data_t arg)
-{
-    struct mixing_arg *argp = (struct mixing_arg *)arg;
-    ID id = (ID)key;
-    st_table *aliasing = argp->aliasing;
-    st_data_t alias;
-
-    if (aliasing && st_lookup(aliasing, ID2SYM(id), &alias)) {
-	if (NIL_P(alias)) return ST_CONTINUE;
-	id = rb_to_id(alias);
-    }
-    if (st_lookup(argp->mtbl, id, NULL)) {
-	argp->id = id;
-	return ST_STOP;
-    }
-    return ST_CONTINUE;
-}
-
-static int
-do_mix_method_i(st_data_t key, st_data_t value, st_data_t arg)
-{
-    struct mixing_arg *argp = (struct mixing_arg *)arg;
-    ID id = (ID)key;
-    st_table *aliasing = argp->aliasing;
-    st_data_t old, alias;
-
-    if (aliasing && st_lookup(aliasing, ID2SYM(id), &alias)) {
-	if (NIL_P(alias)) return ST_CONTINUE;
-	id = rb_to_id(alias);
-    }
-    if (st_lookup(argp->mtbl, id, &old)) {
-	argp->id = id;
-	return ST_STOP;
-    }
-    rb_mod_clone_method(argp->klass, id, (rb_method_entry_t *)value);
-    return ST_CONTINUE;
-}
-
-void
-rb_mix_module(VALUE klass, VALUE module, st_table *constants, st_table *methods)
-{
-    st_table *mtbl_from;
-    struct mixing_arg methodarg, constarg;
-
-    rb_frozen_class_p(klass);
-    if (!OBJ_UNTRUSTED(klass)) {
-	rb_secure(4);
-    }
-
-    if (!RB_TYPE_P(module, T_MODULE)) {
-	Check_Type(module, T_MODULE);
-    }
-
-    OBJ_INFECT(klass, module);
-
-    mtbl_from = RMODULE_M_TBL(module);
-    methodarg.mtbl = RMODULE_M_TBL(klass);
-    methodarg.id = 0;
-    methodarg.aliasing = methods;
-    methodarg.klass = klass;
-    constarg.mtbl = RMODULE_IV_TBL(klass);
-    constarg.id = 0;
-    constarg.aliasing = constants;
-
-    st_foreach(mtbl_from, check_mix_method_i, (st_data_t)&methodarg);
-    if (methodarg.id) {
-	rb_raise(rb_eArgError, "method would conflict - %s", rb_id2name(methodarg.id));
-    }
-    st_foreach(mtbl_from, check_mix_const_i, (st_data_t)&constarg);
-    if (constarg.id) {
-	rb_raise(rb_eArgError, "constant would conflict - %s", rb_id2name(constarg.id));
-    }
-    st_foreach(mtbl_from, do_mix_method_i, (st_data_t)&methodarg);
-    if (methodarg.id) {
-	rb_raise(rb_eArgError, "method would conflict - %s", rb_id2name(methodarg.id));
-    }
-    st_foreach(mtbl_from, do_mix_const_i, (st_data_t)&constarg);
-    if (constarg.id) {
-	rb_raise(rb_eArgError, "constant would conflict - %s", rb_id2name(constarg.id));
-    }
-    rb_vm_inc_const_missing_count();
 }
 
 /*
