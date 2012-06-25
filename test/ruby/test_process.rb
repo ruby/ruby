@@ -275,31 +275,50 @@ class TestProcess < Test::Unit::TestCase
       assert_equal("PATH\n", io.read)
     }
 
-    IO.popen([{"FOO"=>"BAR"}, *ENVCOMMAND]) {|io|
-      assert_match(/^FOO=BAR$/, io.read)
-    }
-
     with_tmpchdir {|d|
       system({"fofo"=>"haha"}, *ENVCOMMAND, STDOUT=>"out")
-      assert_match(/^fofo=haha$/, File.read("out").chomp)
+      assert_match(/^fofo=haha$/, File.read("out").chomp, message)
+    }
+  end
+
+  def _test_execopts_env_popen(cmd)
+    message = cmd.inspect
+    IO.popen([{"FOO"=>"BAR"}, *cmd]) {|io|
+      assert_match(/^FOO=BAR$/, io.read, message)
     }
 
     old = ENV["hmm"]
     begin
       ENV["hmm"] = "fufu"
-      IO.popen(ENVCOMMAND) {|io| assert_match(/^hmm=fufu$/, io.read) }
-      IO.popen([{"hmm"=>""}, *ENVCOMMAND]) {|io| assert_match(/^hmm=$/, io.read) }
-      IO.popen([{"hmm"=>nil}, *ENVCOMMAND]) {|io| assert_not_match(/^hmm=/, io.read) }
+      IO.popen(cmd) {|io| assert_match(/^hmm=fufu$/, io.read, message)}
+      IO.popen([{"hmm"=>""}, *cmd]) {|io| assert_match(/^hmm=$/, io.read, message)}
+      IO.popen([{"hmm"=>nil}, *cmd]) {|io| assert_not_match(/^hmm=/, io.read, message)}
       ENV["hmm"] = ""
-      IO.popen(ENVCOMMAND) {|io| assert_match(/^hmm=$/, io.read) }
-      IO.popen([{"hmm"=>""}, *ENVCOMMAND]) {|io| assert_match(/^hmm=$/, io.read) }
-      IO.popen([{"hmm"=>nil}, *ENVCOMMAND]) {|io| assert_not_match(/^hmm=/, io.read) }
+      IO.popen(cmd) {|io| assert_match(/^hmm=$/, io.read, message)}
+      IO.popen([{"hmm"=>""}, *cmd]) {|io| assert_match(/^hmm=$/, io.read, message)}
+      IO.popen([{"hmm"=>nil}, *cmd]) {|io| assert_not_match(/^hmm=/, io.read, message)}
       ENV["hmm"] = nil
-      IO.popen(ENVCOMMAND) {|io| assert_not_match(/^hmm=/, io.read) }
-      IO.popen([{"hmm"=>""}, *ENVCOMMAND]) {|io| assert_match(/^hmm=$/, io.read) }
-      IO.popen([{"hmm"=>nil}, *ENVCOMMAND]) {|io| assert_not_match(/^hmm=/, io.read) }
+      IO.popen(cmd) {|io| assert_not_match(/^hmm=/, io.read, message)}
+      IO.popen([{"hmm"=>""}, *cmd]) {|io| assert_match(/^hmm=$/, io.read, message)}
+      IO.popen([{"hmm"=>nil}, *cmd]) {|io| assert_not_match(/^hmm=/, io.read, message)}
     ensure
       ENV["hmm"] = old
+    end
+  end
+
+  def test_execopts_env_popen_vector
+    _test_execopts_env_popen(ENVCOMMAND)
+  end
+
+  def test_execopts_env_popen_string
+    with_tmpchdir do |d|
+      open('test-script', 'w') do |f|
+        ENVCOMMAND.each_with_index do |cmd, i|
+          next if i.zero? or cmd == "-e"
+          f.puts cmd
+        end
+      end
+      _test_execopts_env_popen("#{RUBY} test-script")
     end
   end
 
@@ -603,7 +622,7 @@ class TestProcess < Test::Unit::TestCase
   def test_execopts_popen
     with_tmpchdir {|d|
       IO.popen("#{RUBY} -e 'puts :foo'") {|io| assert_equal("foo\n", io.read) }
-      assert_raise(Errno::ENOENT) { IO.popen(["echo bar"]) {} } # assuming "echo bar" command not exist.
+      IO.popen(["echo bar"]) {|io| assert_equal("bar\n", io.read) }
       IO.popen(ECHO["baz"]) {|io| assert_equal("baz\n", io.read) }
       assert_raise(ArgumentError) {
         IO.popen([*ECHO["qux"], STDOUT=>STDOUT]) {|io| }

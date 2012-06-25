@@ -5692,35 +5692,30 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
     return port;
 }
 
-static VALUE
-pipe_open_v(int argc, VALUE *argv, const char *modestr, int fmode, convconfig_t *convconfig)
+static int
+is_popen_fork(VALUE prog)
 {
-    VALUE execarg_obj, ret;
-    execarg_obj = rb_execarg_new(argc, argv, FALSE);
-    ret = pipe_open(execarg_obj, modestr, fmode, convconfig);
-    return ret;
+    if (RSTRING_LEN(prog) == 1 && RSTRING_PTR(prog)[0] == '-') {
+#if !defined(HAVE_FORK)
+	rb_raise(rb_eNotImpError,
+		 "fork() function is unimplemented on this machine");
+#else
+	return TRUE;
+#endif
+    }
+    return FALSE;
 }
 
 static VALUE
 pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig)
 {
-    const char *cmd = RSTRING_PTR(prog);
     int argc = 1;
     VALUE *argv = &prog;
-    VALUE execarg_obj, ret;
+    VALUE execarg_obj = Qnil;
 
-    if (RSTRING_LEN(prog) == 1 && cmd[0] == '-') {
-#if !defined(HAVE_FORK)
-	rb_raise(rb_eNotImpError,
-		 "fork() function is unimplemented on this machine");
-#else
-        return pipe_open(Qnil, modestr, fmode, convconfig);
-#endif
-    }
-
-    execarg_obj = rb_execarg_new(argc, argv, TRUE);
-    ret = pipe_open(execarg_obj, modestr, fmode, convconfig);
-    return ret;
+    if (!is_popen_fork(prog))
+	execarg_obj = rb_execarg_new(argc, argv, TRUE);
+    return pipe_open(execarg_obj, modestr, fmode, convconfig);
 }
 
 /*
@@ -5810,7 +5805,7 @@ static VALUE
 rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 {
     const char *modestr;
-    VALUE pname, pmode, port, tmp, opt;
+    VALUE pname, pmode, port, tmp, opt, execarg_obj;
     int oflags, fmode;
     convconfig_t convconfig;
 
@@ -5829,13 +5824,16 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 #endif
 	tmp = rb_ary_dup(tmp);
 	RBASIC(tmp)->klass = 0;
-	port = pipe_open_v((int)len, RARRAY_PTR(tmp), modestr, fmode, &convconfig);
+	execarg_obj = rb_execarg_new((int)len, RARRAY_PTR(tmp), TRUE);
 	rb_ary_clear(tmp);
     }
     else {
 	SafeStringValue(pname);
-	port = pipe_open_s(pname, modestr, fmode, &convconfig);
+	execarg_obj = Qnil;
+	if (!is_popen_fork(pname))
+	    execarg_obj = rb_execarg_new(1, &pname, TRUE);
     }
+    port = pipe_open(execarg_obj, modestr, fmode, &convconfig);
     if (NIL_P(port)) {
 	/* child */
 	if (rb_block_given_p()) {

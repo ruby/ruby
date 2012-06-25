@@ -1,3 +1,11 @@
+Mon Jun 25 15:42:00 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (is_popen_fork): check if fork and raise NotImplementedError if
+	  unavailable.
+
+	* io.c (rb_io_s_popen): allow shell commands with modified environment
+	  variables.
+
 Mon Jun 25 11:34:45 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* internal.h: use rb_pid_t instead of pid_t because of there is no
