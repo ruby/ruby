@@ -1,3 +1,8 @@
+Mon Jun 25 16:57:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_mod_define_method): allow method transplanting from a
+	  module to either class or module.  [ruby-core:34267][Feature #4254]
+
 Mon Jun 25 15:42:00 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (is_popen_fork): check if fork and raise NotImplementedError if

@@ -36,7 +36,7 @@ class TestMethod < Test::Unit::TestCase
   module M
     def func; end
     module_function :func
-    def meth; end
+    def meth; :meth end
   end
 
   def mv1() end
@@ -230,9 +230,11 @@ class TestMethod < Test::Unit::TestCase
       Module.new.module_eval {define_method(:foo, Base.instance_method(:foo))}
     end
 
-    assert_raise(TypeError) do
-      Class.new.class_eval {define_method(:meth, M.instance_method(:meth))}
-    end
+    feature4254 = '[ruby-core:34267]'
+    m = Module.new {define_method(:meth, M.instance_method(:meth))}
+    assert_equal(:meth, Object.new.extend(m).meth, feature4254)
+    c = Class.new {define_method(:meth, M.instance_method(:meth))}
+    assert_equal(:meth, c.new.meth, feature4254)
   end
 
   def test_super_in_proc_from_define_method

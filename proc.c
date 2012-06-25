@@ -1360,7 +1360,8 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
     if (rb_obj_is_method(body)) {
 	struct METHOD *method = (struct METHOD *)DATA_PTR(body);
 	VALUE rclass = method->rclass;
-	if (rclass != mod && !RTEST(rb_class_inherited_p(mod, rclass))) {
+	if (rclass != mod && !RB_TYPE_P(rclass, T_MODULE) &&
+	    !RTEST(rb_class_inherited_p(mod, rclass))) {
 	    if (FL_TEST(rclass, FL_SINGLETON)) {
 		rb_raise(rb_eTypeError,
 			 "can't bind singleton method to a different class");
