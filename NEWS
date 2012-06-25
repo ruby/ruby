@@ -49,6 +49,10 @@ with all sufficient information, see the ChangeLog file.
       * added LoadError#path method to return the file name that could not be
         loaded.
 
+  * Module
+    * extended method:
+      * Module#define_method accepts a UnboundMethod from a Module.
+
   * NilClass
     * added method:
       * added nil.to_h which returns {}
