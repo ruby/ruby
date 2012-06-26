@@ -1,3 +1,9 @@
+Wed Jun 27 04:23:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_sysinit): let the system not display the
+	  critical-error-handler message box and the Windows Error Reporting
+	  dialog.  [ruby-core:45389] [Bug #6535]
+
 Wed Jun 27 04:20:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_pow): estimate result bit size more precisely.
