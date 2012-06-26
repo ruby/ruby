@@ -1,3 +1,9 @@
+Tue Jun 26 20:35:59 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c (do_inflate):  Inflate more data if buffered data
+	  exists.  Allows Zlib::Inflate#set_dictionary to work.
+	  [ruby-trunk - Bug #5929]
+
 Thu Jun 21 13:42:57 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread.c (rb_threadptr_execute_interrupts_common):
