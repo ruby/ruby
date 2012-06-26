@@ -1,3 +1,10 @@
+Wed Jun 27 08:31:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (splatarray): make new array if flag is set.
+
+	* compile.c (iseq_compile_each): make new array with
+	  splat. [ruby-core:21901][Feature #1125]
+
 Wed Jun 27 04:23:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_sysinit): let the system not display the

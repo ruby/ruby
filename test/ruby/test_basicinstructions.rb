@@ -632,7 +632,7 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal 'i', $~[9]
     assert_equal 'x', $`
     assert_equal 'abcdefghi', $&
-    assert_equal 'y', $'
+    assert_equal "y", $'
     assert_equal 'i', $+
     assert_equal 'a', $1
     assert_equal 'b', $2
@@ -662,15 +662,20 @@ class TestBasicInstructions < Test::Unit::TestCase
   end
 
   def test_array_splat
+    feature1125 = '[ruby-core:21901]'
+
     a = []
     assert_equal [], [*a]
     assert_equal [1], [1, *a]
+    assert_not_same(a, [*a], feature1125)
     a = [2]
     assert_equal [2], [*a]
     assert_equal [1, 2], [1, *a]
+    assert_not_same(a, [*a], feature1125)
     a = [2, 3]
     assert_equal [2, 3], [*a]
     assert_equal [1, 2, 3], [1, *a]
+    assert_not_same(a, [*a], feature1125)
 
     a = nil
     assert_equal [], [*a]
