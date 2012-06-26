@@ -7,10 +7,13 @@ $failed = 0
 PROGRESS = Object.new
 PROGRESS.instance_eval do
   @color = nil
+  @quiet = nil
   case ARGV[0]
   when /\A--color(?:=(?:always|(auto)|(never)|(.*)))?\z/
     warn "unknown --color argument: #$3" if $3
     @color = $1 ? nil : !$2
+  when /\A-(q|-quiet)\z/
+    @quiet = true
   end
   @count = 0
   @rotator = %w[- \\ | /]
@@ -46,6 +49,7 @@ PROGRESS.instance_eval do
     end
     def self.finish
       STDERR.print "#{@bs}#{' ' * @bs.size}#{@bs}#{@passed}#{@ok ? 'OK' : ''} #{$testnum}#{@reset}"
+      STDERR.print @quiet ? "\r\e[2K\r" : "\n"
     end
   else
     def self.pass
@@ -65,7 +69,7 @@ def test_check(what)
   unless $ntest.zero?
     PROGRESS.finish
   end
-  STDERR.print "\nsample/test.rb:#{what} "
+  STDERR.print "sample/test.rb:#{what} "
   PROGRESS.init
   $what = what
   $testnum = 0

@@ -62,6 +62,7 @@ def main
   @verbose = false
   $stress = false
   @color = nil
+  @quiet = false
   dir = nil
   quiet = false
   tests = nil
@@ -88,6 +89,7 @@ def main
       true
     when /\A(-q|--q(uiet))\z/
       quiet = true
+      @quiet = true
       true
     when /\A(-v|--v(erbose))\z/
       @verbose = true
@@ -162,7 +164,7 @@ def exec_test(pathes)
   @errbuf = []
   @location = nil
   pathes.each do |path|
-    $stderr.print "\n#{File.basename(path)} "
+    $stderr.print "#{File.basename(path)} "
     $stderr.print @progress[@count % @progress.size] if @tty
     $stderr.puts if @verbose
     count = @count
@@ -171,12 +173,13 @@ def exec_test(pathes)
     if @tty
       if @error == error
         $stderr.print "#{@progress_bs}#{@passed}PASS #{@count-count}#{@reset}"
+        $stderr.print "\r\e[2K\r" if @quiet
       else
         $stderr.print "#{@progress_bs}#{@failed}FAIL #{@error-error}/#{@count-count}#{@reset}"
       end
     end
+    $stderr.puts unless @quiet
   end
-  $stderr.puts
   if @error == 0
     if @count == 0
       $stderr.puts "No tests, no problem"
