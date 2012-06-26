@@ -7251,11 +7251,6 @@ d_lite_marshal_dump(VALUE self)
 		    INT2FIX(m_of(dat)),
 		    DBL2NUM(m_sg(dat)));
 
-    if (FL_TEST(self, FL_EXIVAR)) {
-	rb_copy_generic_ivar(a, self);
-	FL_SET(a, FL_EXIVAR);
-    }
-
     return a;
 }
 
@@ -7336,6 +7331,19 @@ d_lite_marshal_load(VALUE self, VALUE a)
     return self;
 }
 
+/* :nodoc: */
+static VALUE
+d_lite_old_load(VALUE klass, VALUE s)
+{
+    VALUE data = rb_marshal_load(s);
+    VALUE self = rb_obj_alloc(klass);
+    Check_Type(data, T_ARRAY);
+    if (RARRAY_LEN(data) == 2) {
+	const VALUE *ptr = RARRAY_PTR(data);
+	data = rb_ary_new3(3, ptr[0], INT2FIX(0), ptr[1]);
+    }
+    return d_lite_marshal_load(self, data);
+}
 
 /* datetime */
 
@@ -9674,6 +9682,7 @@ Init_date_core(void)
 #endif
     rb_define_method(cDate, "marshal_dump", d_lite_marshal_dump, 0);
     rb_define_method(cDate, "marshal_load", d_lite_marshal_load, 1);
+    rb_define_singleton_method(cDate, "_load", d_lite_old_load, 1);
 
     /* datetime */
 
