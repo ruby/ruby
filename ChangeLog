@@ -1,3 +1,8 @@
+Tue Jun 26 10:01:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_s_popen): revert r36213 "popen: shell commands with
+	  envvar" because it disabled to let single command bypass shell.
+
 Mon Jun 25 17:49:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_mix_module): revert Module#mix.
@@ -6,14 +11,6 @@ Mon Jun 25 16:57:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (rb_mod_define_method): allow method transplanting from a
 	  module to either class or module.  [ruby-core:34267][Feature #4254]
-
-Mon Jun 25 15:42:00 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* io.c (is_popen_fork): check if fork and raise NotImplementedError if
-	  unavailable.
-
-	* io.c (rb_io_s_popen): allow shell commands with modified environment
-	  variables.
 
 Mon Jun 25 11:34:45 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
