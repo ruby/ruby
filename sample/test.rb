@@ -8,12 +8,14 @@ PROGRESS = Object.new
 PROGRESS.instance_eval do
   @color = nil
   @quiet = nil
-  case ARGV[0]
-  when /\A--color(?:=(?:always|(auto)|(never)|(.*)))?\z/
-    warn "unknown --color argument: #$3" if $3
-    @color = $1 ? nil : !$2
-  when /\A-(q|-quiet)\z/
-    @quiet = true
+  ARGV.each do |arg|
+    case arg
+    when /\A--color(?:=(?:always|(auto)|(never)|(.*)))?\z/
+      warn "unknown --color argument: #$3" if $3
+      @color = $1 ? nil : !$2
+    when /\A-(q|-quiet)\z/
+      @quiet = true
+    end
   end
   @count = 0
   @rotator = %w[- \\ | /]
