@@ -299,6 +299,9 @@ class TestBignum < Test::Unit::TestCase
     ### rational changes the behavior of Bignum#**
     #assert_raise(TypeError) { T32**"foo" }
     assert_raise(TypeError, ArgumentError) { T32**"foo" }
+
+    feature3429 = '[ruby-core:30735]'
+    assert_instance_of(Bignum, (2 ** 7830457), feature3429)
   end
 
   def test_and

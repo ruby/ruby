@@ -1,3 +1,8 @@
+Wed Jun 27 04:20:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_pow): estimate result bit size more precisely.
+	  [ruby-core:30735][Feature #3429]
+
 Tue Jun 26 20:36:53 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/drb/ssl.rb: generate 1024 bits RSA key instead of 512 bits.
