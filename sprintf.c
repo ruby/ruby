@@ -161,7 +161,7 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
     if (argc != 2) {
 	rb_raise(rb_eArgError, "one hash required");
     }
-    tmp = rb_check_convert_type(argv[1], T_HASH, "Hash", "to_hash");
+    tmp = rb_check_hash_type(argv[1]);
     if (NIL_P(tmp)) {
 	rb_raise(rb_eArgError, "one hash required");
     }

@@ -3616,7 +3616,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
     }
     else {
 	repl = argv[1];
-	hash = rb_check_convert_type(argv[1], T_HASH, "Hash", "to_hash");
+	hash = rb_check_hash_type(argv[1]);
 	if (NIL_P(hash)) {
 	    StringValue(repl);
 	}
@@ -3768,7 +3768,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	break;
       case 2:
 	repl = argv[1];
-	hash = rb_check_convert_type(argv[1], T_HASH, "Hash", "to_hash");
+	hash = rb_check_hash_type(argv[1]);
 	if (NIL_P(hash)) {
 	    StringValue(repl);
 	}

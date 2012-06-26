@@ -1463,7 +1463,7 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 		argc--;
 	}
 	else {
-	    hash = rb_check_convert_type(last, T_HASH, "Hash", "to_hash");
+	    hash = rb_check_hash_type(last);
 	    if (!NIL_P(hash))
 		argc--;
 	}
