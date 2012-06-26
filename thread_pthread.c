@@ -480,7 +480,9 @@ native_thread_destroy(rb_thread_t *th)
 #endif
 }
 
+#ifndef USE_THREAD_CACHE
 #define USE_THREAD_CACHE 0
+#endif
 
 #if USE_THREAD_CACHE
 static rb_thread_t *register_cached_thread_and_wait(void);
@@ -717,11 +719,15 @@ register_cached_thread_and_wait(void)
 {
     rb_thread_cond_t cond = { PTHREAD_COND_INITIALIZER, };
     volatile rb_thread_t *th_area = 0;
+    struct timeval tv;
+    struct timespec ts;
     struct cached_thread_entry *entry =
       (struct cached_thread_entry *)malloc(sizeof(struct cached_thread_entry));
 
-    struct timeval tv;
-    struct timespec ts;
+    if (entry == 0) {
+	return 0; /* failed -> terminate thread immediately */
+    }
+
     gettimeofday(&tv, 0);
     ts.tv_sec = tv.tv_sec + 60;
     ts.tv_nsec = tv.tv_usec * 1000;

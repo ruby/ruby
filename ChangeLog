@@ -1,3 +1,11 @@
+Tue Jun 26 16:57:14 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_pthread.c (register_cached_thread_and_wait):
+	  return immediately if malloc() failed.
+	  [ruby-core:43960] [ruby-trunk - Bug #6235]
+
+	* thread_pthread.c (USE_THREAD_CACHE): check already defined or not.
+
 Tue Jun 26 10:01:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_s_popen): revert r36213 "popen: shell commands with
