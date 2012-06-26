@@ -5692,41 +5692,36 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
     return port;
 }
 
-static VALUE
-pipe_open_v(int argc, VALUE *argv, const char *modestr, int fmode, convconfig_t *convconfig)
+static int
+is_popen_fork(VALUE prog)
 {
-    VALUE execarg_obj, ret;
-    execarg_obj = rb_execarg_new(argc, argv, FALSE);
-    ret = pipe_open(execarg_obj, modestr, fmode, convconfig);
-    return ret;
+    if (RSTRING_LEN(prog) == 1 && RSTRING_PTR(prog)[0] == '-') {
+#if !defined(HAVE_FORK)
+	rb_raise(rb_eNotImpError,
+		 "fork() function is unimplemented on this machine");
+#else
+	return TRUE;
+#endif
+    }
+    return FALSE;
 }
 
 static VALUE
 pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig)
 {
-    const char *cmd = RSTRING_PTR(prog);
     int argc = 1;
     VALUE *argv = &prog;
-    VALUE execarg_obj, ret;
+    VALUE execarg_obj = Qnil;
 
-    if (RSTRING_LEN(prog) == 1 && cmd[0] == '-') {
-#if !defined(HAVE_FORK)
-	rb_raise(rb_eNotImpError,
-		 "fork() function is unimplemented on this machine");
-#else
-        return pipe_open(Qnil, modestr, fmode, convconfig);
-#endif
-    }
-
-    execarg_obj = rb_execarg_new(argc, argv, TRUE);
-    ret = pipe_open(execarg_obj, modestr, fmode, convconfig);
-    return ret;
+    if (!is_popen_fork(prog))
+	execarg_obj = rb_execarg_new(argc, argv, TRUE);
+    return pipe_open(execarg_obj, modestr, fmode, convconfig);
 }
 
 /*
  *  call-seq:
- *     IO.popen(cmd, mode="r" [, opt])               -> io
- *     IO.popen(cmd, mode="r" [, opt]) {|io| block } -> obj
+ *     IO.popen([env,] cmd, mode="r" [, opt])               -> io
+ *     IO.popen([env,] cmd, mode="r" [, opt]) {|io| block } -> obj
  *
  *  Runs the specified command as a subprocess; the subprocess's
  *  standard input and output will be connected to the returned
@@ -5763,6 +5758,11 @@ pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig
  *    # merge standard output and standard error using
  *    # spawn option.  See the document of Kernel.spawn.
  *    IO.popen(["ls", "/", :err=>[:child, :out]]) {|ls_io|
+ *      ls_result_with_error = ls_io.read
+ *    }
+ *
+ *    # spawn options can be mixed with IO options
+ *    IO.popen(["ls", "/"], :err=>[:child, :out]) {|ls_io|
  *      ls_result_with_error = ls_io.read
  *    }
  *
@@ -5810,14 +5810,24 @@ static VALUE
 rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 {
     const char *modestr;
-    VALUE pname, pmode, port, tmp, opt;
+    VALUE pname, pmode = Qnil, port, tmp, opt = Qnil, env = Qnil, execarg_obj = Qnil;
     int oflags, fmode;
     convconfig_t convconfig;
 
-    argc = rb_scan_args(argc, argv, "11:", &pname, &pmode, &opt);
-
-    rb_io_extract_modeenc(&pmode, 0, opt, &oflags, &fmode, &convconfig);
-    modestr = rb_io_oflags_modestr(oflags);
+    if (argc > 1 && !NIL_P(opt = rb_check_hash_type(argv[argc-1]))) --argc;
+    if (argc > 1 && !NIL_P(env = rb_check_hash_type(argv[0]))) --argc, ++argv;
+    switch (argc) {
+      case 2:
+	pmode = argv[1];
+      case 1:
+	pname = argv[0];
+	break;
+      default:
+	{
+	    int ex = !NIL_P(opt);
+	    rb_error_arity(argc + ex, 1 + ex, 2 + ex);
+	}
+    }
 
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
@@ -5829,13 +5839,25 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 #endif
 	tmp = rb_ary_dup(tmp);
 	RBASIC(tmp)->klass = 0;
-	port = pipe_open_v((int)len, RARRAY_PTR(tmp), modestr, fmode, &convconfig);
+	execarg_obj = rb_execarg_new((int)len, RARRAY_PTR(tmp), FALSE);
 	rb_ary_clear(tmp);
     }
     else {
 	SafeStringValue(pname);
-	port = pipe_open_s(pname, modestr, fmode, &convconfig);
+	execarg_obj = Qnil;
+	if (!is_popen_fork(pname))
+	    execarg_obj = rb_execarg_new(1, &pname, TRUE);
     }
+    if (!NIL_P(execarg_obj)) {
+	if (!NIL_P(opt))
+	    opt = rb_execarg_extract_options(execarg_obj, opt);
+	if (!NIL_P(env))
+	    rb_execarg_setenv(execarg_obj, env);
+    }
+    rb_io_extract_modeenc(&pmode, 0, opt, &oflags, &fmode, &convconfig);
+    modestr = rb_io_oflags_modestr(oflags);
+
+    port = pipe_open(execarg_obj, modestr, fmode, &convconfig);
     if (NIL_P(port)) {
 	/* child */
 	if (rb_block_given_p()) {
