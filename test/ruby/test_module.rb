@@ -1284,4 +1284,10 @@ class TestModule < Test::Unit::TestCase
     bug6655 = '[ruby-core:45915]'
     assert_equal(Object.instance_methods, Class.new {prepend Module.new}.instance_methods, bug6655)
   end
+
+  def test_prepend_singleton_methods
+    o = Object.new
+    o.singleton_class.class_eval {prepend Module.new}
+    assert_equal([], o.singleton_methods)
+  end
 end

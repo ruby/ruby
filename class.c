@@ -1172,12 +1172,14 @@ rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
     klass = CLASS_OF(obj);
     list = st_init_numtable();
     if (klass && FL_TEST(klass, FL_SINGLETON)) {
-	st_foreach(RCLASS_M_TBL(klass), method_entry_i, (st_data_t)list);
+	if (RCLASS_M_TBL(klass))
+	    st_foreach(RCLASS_M_TBL(klass), method_entry_i, (st_data_t)list);
 	klass = RCLASS_SUPER(klass);
     }
     if (RTEST(recur)) {
 	while (klass && (FL_TEST(klass, FL_SINGLETON) || RB_TYPE_P(klass, T_ICLASS))) {
-	    st_foreach(RCLASS_M_TBL(klass), method_entry_i, (st_data_t)list);
+	    if (RCLASS_M_TBL(klass))
+		st_foreach(RCLASS_M_TBL(klass), method_entry_i, (st_data_t)list);
 	    klass = RCLASS_SUPER(klass);
 	}
     }
