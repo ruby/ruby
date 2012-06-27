@@ -1290,4 +1290,13 @@ class TestModule < Test::Unit::TestCase
     o.singleton_class.class_eval {prepend Module.new}
     assert_equal([], o.singleton_methods)
   end
+
+  def test_prepend_remove_method
+    assert_raise(NameError) do
+      Class.new do
+        prepend Module.new {def foo; end}
+        remove_method(:foo)
+      end
+    end
+  end
 end

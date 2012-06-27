@@ -452,6 +452,7 @@ remove_method(VALUE klass, ID mid)
     st_data_t key, data;
     rb_method_entry_t *me = 0;
 
+    klass = RCLASS_ORIGIN(klass);
     if (klass == rb_cObject) {
 	rb_secure(4);
     }
