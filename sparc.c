@@ -9,7 +9,8 @@
 
  See http://bugs.ruby-lang.org/issues/5244 for discussion.
 *********************************************************************/
-void rb_sparc_flush_register_windows(void)
+void
+rb_sparc_flush_register_windows(void)
 {
     asm
 #ifdef __GNUC__

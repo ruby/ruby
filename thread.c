@@ -2725,8 +2725,9 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
 
 #ifndef HAVE_PPOLL
 /* TODO: don't ignore sigmask */
-int ppoll(struct pollfd *fds, nfds_t nfds,
-	  const struct timespec *ts, const sigset_t *sigmask)
+int
+ppoll(struct pollfd *fds, nfds_t nfds,
+      const struct timespec *ts, const sigset_t *sigmask)
 {
     int timeout_ms;
 
@@ -2743,7 +2744,8 @@ int ppoll(struct pollfd *fds, nfds_t nfds,
 	    else
 		timeout_ms = tmp + tmp2;
 	}
-    } else
+    }
+    else
 	timeout_ms = -1;
 
     return poll(fds, nfds, timeout_ms);
@@ -2822,7 +2824,8 @@ retry:
     return result;
 }
 #else /* ! USE_POLL - implement rb_io_poll_fd() using select() */
-static rb_fdset_t *init_set_fd(int fd, rb_fdset_t *fds)
+static rb_fdset_t *
+init_set_fd(int fd, rb_fdset_t *fds)
 {
     rb_fd_init(fds);
     rb_fd_set(fd, fds);

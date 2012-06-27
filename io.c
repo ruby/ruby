@@ -1351,7 +1351,8 @@ rb_io_addstr(VALUE io, VALUE str)
 }
 
 #ifdef HAVE_FSYNC
-static VALUE nogvl_fsync(void *ptr)
+static VALUE
+nogvl_fsync(void *ptr)
 {
     rb_io_t *fptr = ptr;
 
@@ -1722,14 +1723,17 @@ rb_io_fsync(VALUE io)
 #else
 # define rb_io_fsync rb_f_notimplement
 # define rb_io_sync rb_f_notimplement
-static VALUE rb_io_set_sync(VALUE io, VALUE sync) {
-  rb_notimplement();
-  /* NEVER REACHED */ return Qundef;
+static VALUE
+rb_io_set_sync(VALUE io, VALUE sync)
+{
+    rb_notimplement();
+    UNREACHABLE;
 }
 #endif
 
 #ifdef HAVE_FDATASYNC
-static VALUE nogvl_fdatasync(void *ptr)
+static VALUE
+nogvl_fdatasync(void *ptr)
 {
     rb_io_t *fptr = ptr;
 
@@ -8224,7 +8228,8 @@ struct ioctl_arg {
     long	narg;
 };
 
-static VALUE nogvl_ioctl(void *ptr)
+static VALUE
+nogvl_ioctl(void *ptr)
 {
     struct ioctl_arg *arg = ptr;
 
@@ -8521,7 +8526,8 @@ struct fcntl_arg {
     long	narg;
 };
 
-static VALUE nogvl_fcntl(void *ptr)
+static VALUE
+nogvl_fcntl(void *ptr)
 {
     struct fcntl_arg *arg = ptr;
 

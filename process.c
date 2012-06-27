@@ -991,13 +991,15 @@ static RETSIGTYPE (*saved_sigpipe_handler)(int) = 0;
 #endif
 
 #ifdef SIGPIPE
-static RETSIGTYPE sig_do_nothing(int sig)
+static RETSIGTYPE
+sig_do_nothing(int sig)
 {
 }
 #endif
 
 /* This function should be async-signal-safe.  Actually it is. */
-static void before_exec_async_signal_safe(void)
+static void
+before_exec_async_signal_safe(void)
 {
 #ifdef SIGPIPE
     /*
@@ -1010,7 +1012,8 @@ static void before_exec_async_signal_safe(void)
 #endif
 }
 
-static void before_exec_non_async_signal_safe(void)
+static void
+before_exec_non_async_signal_safe(void)
 {
     if (!forked_child) {
 	/*
@@ -1022,21 +1025,24 @@ static void before_exec_non_async_signal_safe(void)
     }
 }
 
-static void before_exec(void)
+static void
+before_exec(void)
 {
     before_exec_non_async_signal_safe();
     before_exec_async_signal_safe();
 }
 
 /* This function should be async-signal-safe.  Actually it is. */
-static void after_exec_async_signal_safe(void)
+static void
+after_exec_async_signal_safe(void)
 {
 #ifdef SIGPIPE
     signal(SIGPIPE, saved_sigpipe_handler); /* async-signal-safe */
 #endif
 }
 
-static void after_exec_non_async_signal_safe(void)
+static void
+after_exec_non_async_signal_safe(void)
 {
     rb_thread_reset_timer_thread();
     rb_thread_start_timer_thread();
@@ -1044,7 +1050,8 @@ static void after_exec_non_async_signal_safe(void)
     forked_child = 0;
 }
 
-static void after_exec(void)
+static void
+after_exec(void)
 {
     after_exec_async_signal_safe();
     after_exec_non_async_signal_safe();
@@ -2099,7 +2106,8 @@ rb_execarg_new(int argc, VALUE *argv, int accept_shell)
     return execarg_obj;
 }
 
-struct rb_execarg *rb_execarg_get(VALUE execarg_obj)
+struct rb_execarg
+*rb_execarg_get(VALUE execarg_obj)
 {
     struct rb_execarg *eargp;
     TypedData_Get_Struct(execarg_obj, struct rb_execarg, &exec_arg_data_type, eargp);
@@ -5305,7 +5313,8 @@ proc_setgid(VALUE obj, VALUE id)
  */
 #define RB_MAX_GROUPS (65536)
 static int _maxgroups = -1;
-static int get_sc_ngroups_max(void)
+static int
+get_sc_ngroups_max(void)
 {
 #ifdef _SC_NGROUPS_MAX
     return (int)sysconf(_SC_NGROUPS_MAX);
@@ -5315,7 +5324,8 @@ static int get_sc_ngroups_max(void)
     return -1;
 #endif
 }
-static int maxgroups(void)
+static int
+maxgroups(void)
 {
     if (_maxgroups < 0) {
 	_maxgroups = get_sc_ngroups_max();
