@@ -205,7 +205,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 #if NOEX_NOREDEF
 	if (old_me->flag & NOEX_NOREDEF) {
 	    rb_raise(rb_eTypeError, "cannot redefine %"PRIsVALUE"#%"PRIsVALUE,
-		     klass, rb_id2str(mid));
+		     rb_class_name(klass), rb_id2str(mid));
 	}
 #endif
 	rb_vm_check_redefinition_opt_method(old_me, klass);
