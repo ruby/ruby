@@ -11,10 +11,6 @@
 # without restriction.
 #
 
-unless defined?(NotImplementedError)
-  NotImplementedError = NotImplementError
-end
-
 module Racc
   class ParseError < StandardError; end
 end

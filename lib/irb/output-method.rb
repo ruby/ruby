@@ -19,7 +19,7 @@ module IRB
     @RCS_ID='-$Id$-'
 
     def print(*opts)
-      IRB.fail NotImplementError, "print"
+      IRB.fail NotImplementedError, "print"
     end
 
     def printn(*opts)

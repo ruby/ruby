@@ -1,3 +1,9 @@
+Wed Jun 27 21:28:59 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/racc/parser.rb: NotImplementError is not exist.
+
+	* lib/irb/output-method.rb (IRB::OutputMethod#print): ditto.
+
 Wed Jun 27 21:31:13 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_prepend_module): ancestors of prepending module also
