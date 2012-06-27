@@ -6,7 +6,10 @@
 #define CACHE_MASK 0x7ff
 #define EXPR1(c,m) ((((c)>>3)^(m))&CACHE_MASK)
 
+#define NOEX_NOREDEF 0
+#ifndef NOEX_NOREDEF
 #define NOEX_NOREDEF NOEX_RESPONDS
+#endif
 
 static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass);
 
@@ -199,9 +202,10 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	rb_method_definition_t *old_def = old_me->def;
 
 	if (rb_method_definition_eq(old_def, def)) return old_me;
-#if 0
+#if NOEX_NOREDEF
 	if (old_me->flag & NOEX_NOREDEF) {
-	    rb_raise(rb_eTypeError, "cannot redefine %s#%s", rb_class2name(klass), rb_id2name(mid));
+	    rb_raise(rb_eTypeError, "cannot redefine %"PRIsVALUE"#%"PRIsVALUE,
+		     klass, rb_id2str(mid));
 	}
 #endif
 	rb_vm_check_redefinition_opt_method(old_me, klass);
