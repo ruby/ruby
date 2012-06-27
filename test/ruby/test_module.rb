@@ -1273,9 +1273,9 @@ class TestModule < Test::Unit::TestCase
 
   def test_prepend_inheritance
     bug6654 = '[ruby-core:45914]'
-    a = Module.new
-    b = Module.new {include a}
-    c = Class.new {prepend b}
+    a = labeled_module("a")
+    b = labeled_module("b") {include a}
+    c = labeled_class("c") {prepend b}
     assert_operator(c, :<, b, bug6654)
     assert_operator(c, :<, a, bug6654)
   end
@@ -1297,6 +1297,34 @@ class TestModule < Test::Unit::TestCase
         prepend Module.new {def foo; end}
         remove_method(:foo)
       end
+    end
+  end
+
+  def test_prepend_class_ancestors
+    bug6658 = '[ruby-core:45919]'
+    m = labeled_module("m")
+    c = labeled_class("c") {prepend m}
+    assert_equal([m, c], c.ancestors[0, 2], bug6658)
+  end
+
+  def test_prepend_module_ancestors
+    bug6659 = '[ruby-dev:45861]'
+    m0 = labeled_module("m0")
+    m1 = labeled_module("m1") {prepend m0}
+    assert_equal([m0, m1], m1.ancestors, bug6659)
+  end
+
+  def labeled_module(name, &block)
+    Module.new do
+      singleton_class.class_eval {define_method(:to_s) {name}}
+      class_eval(&block) if block
+    end
+  end
+
+  def labeled_class(name, superclass = Object, &block)
+    Class.new(superclass) do
+      singleton_class.class_eval {define_method(:to_s) {name}}
+      class_eval(&block) if block
     end
   end
 end

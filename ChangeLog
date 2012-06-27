@@ -1,3 +1,8 @@
+Thu Jun 28 06:12:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_mod_ancestors): fix ancestors order.
+	  [ruby-core:45919][Bug #6658] [ruby-dev:45861][Bug #6659]
+
 Wed Jun 27 21:28:59 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/racc/parser.rb: NotImplementError is not exist.

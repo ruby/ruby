@@ -838,11 +838,22 @@ VALUE
 rb_mod_ancestors(VALUE mod)
 {
     VALUE p, ary = rb_ary_new();
+    VALUE origin = RCLASS_ORIGIN(mod);
 
-    for (p = mod; p; p = RCLASS_SUPER(p)) {
+    p = mod;
+    if (origin == mod) {
+	origin = 0;
+    }
+    else {
+	p = RCLASS_SUPER(p);
+    }
+    for (; p; p = RCLASS_SUPER(p)) {
 	if (FL_TEST(p, FL_SINGLETON))
 	    continue;
-	if (BUILTIN_TYPE(p) == T_ICLASS) {
+	if (p == origin) {
+	    rb_ary_push(ary, mod);
+	}
+	else if (BUILTIN_TYPE(p) == T_ICLASS) {
 	    rb_ary_push(ary, RBASIC(p)->klass);
 	}
 	else {
