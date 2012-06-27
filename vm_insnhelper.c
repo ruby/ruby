@@ -1425,6 +1425,7 @@ static inline VALUE
 vm_search_normal_superclass(VALUE klass, VALUE recv)
 {
     if (BUILTIN_TYPE(klass) == T_CLASS) {
+	klass = RCLASS_ORIGIN(klass);
 	return RCLASS_SUPER(klass);
     }
     else if (BUILTIN_TYPE(klass) == T_MODULE) {

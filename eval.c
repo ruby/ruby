@@ -954,6 +954,58 @@ rb_mod_include(int argc, VALUE *argv, VALUE module)
     return module;
 }
 
+/*
+ *  call-seq:
+ *     prepend_features(mod)   -> mod
+ *
+ *  When this module is prepended in another, Ruby calls
+ *  <code>prepend_features</code> in this module, passing it the
+ *  receiving module in _mod_. Ruby's default implementation is
+ *  to overlay the constants, methods, and module variables of this module
+ *  to _mod_ if this module has not already been added to
+ *  _mod_ or one of its ancestors. See also <code>Module#prepend</code>.
+ */
+
+static VALUE
+rb_mod_prepend_features(VALUE module, VALUE prepend)
+{
+    switch (TYPE(prepend)) {
+      case T_CLASS:
+      case T_MODULE:
+	break;
+      default:
+	Check_Type(prepend, T_CLASS);
+	break;
+    }
+    rb_prepend_module(prepend, module);
+
+    return module;
+}
+
+/*
+ *  call-seq:
+ *     prepend(module, ...)    -> self
+ *
+ *  Invokes <code>Module.prepend_features</code> on each parameter in reverse order.
+ */
+
+static VALUE
+rb_mod_prepend(int argc, VALUE *argv, VALUE module)
+{
+    int i;
+    ID id_prepend_features, id_prepended;
+
+    CONST_ID(id_prepend_features, "prepend_features");
+    CONST_ID(id_prepended, "prepended");
+    for (i = 0; i < argc; i++)
+	Check_Type(argv[i], T_MODULE);
+    while (argc--) {
+	rb_funcall(argv[argc], id_prepend_features, 1, module);
+	rb_funcall(argv[argc], id_prepended, 1, module);
+    }
+    return module;
+}
+
 void
 rb_obj_call_init(VALUE obj, int argc, VALUE *argv)
 {
@@ -1213,6 +1265,8 @@ Init_eval(void)
     rb_define_private_method(rb_cModule, "append_features", rb_mod_append_features, 1);
     rb_define_private_method(rb_cModule, "extend_object", rb_mod_extend_object, 1);
     rb_define_private_method(rb_cModule, "include", rb_mod_include, -1);
+    rb_define_private_method(rb_cModule, "prepend_features", rb_mod_prepend_features, 1);
+    rb_define_private_method(rb_cModule, "prepend", rb_mod_prepend, -1);
 
     rb_undef_method(rb_cClass, "module_function");
 

@@ -1,3 +1,9 @@
+Wed Jun 27 16:48:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_prepend_module): prepend module into another module.
+
+	* eval.c (rb_mod_prepend): new method Module#prepend.  [Feature #1102]
+
 Wed Jun 27 09:15:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (is_popen_fork): check if fork and raise NotImplementedError if

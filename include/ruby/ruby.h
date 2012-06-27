@@ -1080,6 +1080,7 @@ VALUE rb_define_module_under(VALUE, const char*);
 
 void rb_include_module(VALUE,VALUE);
 void rb_extend_object(VALUE,VALUE);
+void rb_prepend_module(VALUE,VALUE);
 
 struct rb_global_variable;
 

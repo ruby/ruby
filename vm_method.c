@@ -169,6 +169,9 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 		     rb_method_definition_t *def, rb_method_flag_t noex)
 {
     rb_method_entry_t *me;
+#if NOEX_NOREDEF
+    VALUE rklass;
+#endif
     st_table *mtbl;
     st_data_t data;
 
@@ -194,6 +197,10 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
     }
 
     rb_check_frozen(klass);
+#if NOEX_NOREDEF
+    rklass = klass;
+#endif
+    klass = RCLASS_ORIGIN(klass);
     mtbl = RCLASS_M_TBL(klass);
 
     /* check re-definition */
@@ -205,7 +212,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 #if NOEX_NOREDEF
 	if (old_me->flag & NOEX_NOREDEF) {
 	    rb_raise(rb_eTypeError, "cannot redefine %"PRIsVALUE"#%"PRIsVALUE,
-		     rb_class_name(klass), rb_id2str(mid));
+		     rb_class_name(rklass), rb_id2str(mid));
 	}
 #endif
 	rb_vm_check_redefinition_opt_method(old_me, klass);
@@ -384,7 +391,7 @@ search_method(VALUE klass, ID id)
 	return 0;
     }
 
-    while (!st_lookup(RCLASS_M_TBL(klass), id, &body)) {
+    while (!RCLASS_M_TBL(klass) || !st_lookup(RCLASS_M_TBL(klass), id, &body)) {
 	klass = RCLASS_SUPER(klass);
 	if (!klass) {
 	    return 0;

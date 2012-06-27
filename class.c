@@ -56,6 +56,7 @@ class_alloc(VALUE flags, VALUE klass)
     RCLASS_CONST_TBL(obj) = 0;
     RCLASS_M_TBL(obj) = 0;
     RCLASS_SUPER(obj) = 0;
+    RCLASS_ORIGIN(obj) = (VALUE)obj;
     RCLASS_IV_INDEX_TBL(obj) = 0;
     return (VALUE)obj;
 }
@@ -687,6 +688,8 @@ rb_include_module(VALUE klass, VALUE module)
 		break;
 	    }
 	}
+	if (c == klass)
+	    c = RCLASS_ORIGIN(klass);
 	c = RCLASS_SUPER(c) = include_class_new(module, RCLASS_SUPER(c));
 	if (RMODULE_M_TBL(module) && RMODULE_M_TBL(module)->num_entries)
 	    changed = 1;
@@ -694,6 +697,45 @@ rb_include_module(VALUE klass, VALUE module)
 	module = RCLASS_SUPER(module);
     }
     if (changed) rb_clear_cache();
+}
+
+void
+rb_prepend_module(VALUE klass, VALUE module)
+{
+    VALUE p, c, origin;
+
+    rb_frozen_class_p(klass);
+    if (!OBJ_UNTRUSTED(klass)) {
+	rb_secure(4);
+    }
+
+    Check_Type(module, T_MODULE);
+
+    OBJ_INFECT(klass, module);
+    c = RCLASS_SUPER(klass);
+    if (RCLASS_M_TBL(klass) == RCLASS_M_TBL(module))
+	rb_raise(rb_eArgError, "cyclic include detected");
+    for (p = c; p; p = RCLASS_SUPER(p)) {
+	if (BUILTIN_TYPE(p) == T_ICLASS) {
+	    if (RCLASS_M_TBL(p) == RCLASS_M_TBL(module)) {
+		rb_raise(rb_eArgError, "already prepended module");
+	    }
+	}
+    }
+    origin = RCLASS_ORIGIN(klass);
+    if (origin == klass) {
+	origin = class_alloc(T_ICLASS, rb_cClass);
+	RCLASS_SUPER(origin) = RCLASS_SUPER(klass);
+	RCLASS_SUPER(klass) = origin;
+	RCLASS_ORIGIN(klass) = origin;
+	RCLASS_M_TBL(origin) = RCLASS_M_TBL(klass);
+	RCLASS_M_TBL(klass) = 0;
+	c = origin;
+    }
+    RCLASS_SUPER(klass) = include_class_new(module, c);
+    if (RMODULE_M_TBL(module) && RMODULE_M_TBL(module)->num_entries) {
+	rb_clear_cache_by_class(klass);
+    }
 }
 
 /*
