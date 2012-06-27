@@ -1,3 +1,17 @@
+Wed Jun 27 09:15:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (is_popen_fork): check if fork and raise NotImplementedError if
+	  unavailable.
+
+	* io.c (rb_io_s_popen): allow environment variables hash and exec
+	  options as flat parameters, not in an array arguments.
+	  [Feature#6651] [EXPERIMENTAL]
+
+	* process.c (rb_execarg_extract_options): extract exec options, but no
+	  exceptions on non-exec options and returns them as a Hash.
+
+	* process.c (rb_execarg_setenv): set environment variables.
+
 Tue Jun 26 16:57:14 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c (register_cached_thread_and_wait):

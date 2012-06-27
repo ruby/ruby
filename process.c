@@ -1654,8 +1654,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
             goto redirect;
         }
         else {
-            rb_raise(rb_eArgError, "wrong exec option symbol: %s",
-                                   rb_id2name(id));
+	    return ST_STOP;
         }
         break;
 
@@ -1667,7 +1666,7 @@ redirect:
         break;
 
       default:
-        rb_raise(rb_eArgError, "wrong exec option");
+	return ST_STOP;
     }
 
     RB_GC_GUARD(execarg_obj);
@@ -1686,7 +1685,28 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     VALUE key = (VALUE)st_key;
     VALUE val = (VALUE)st_val;
     VALUE execarg_obj = (VALUE)arg;
-    return rb_execarg_addopt(execarg_obj, key, val);
+    if (rb_execarg_addopt(execarg_obj, key, val) != ST_CONTINUE) {
+	if (SYMBOL_P(key))
+	    rb_raise(rb_eArgError, "wrong exec option symbol: %"PRIsVALUE,
+		     key);
+	rb_raise(rb_eArgError, "wrong exec option");
+    }
+    return ST_CONTINUE;
+}
+
+static int
+check_exec_options_i_extract(st_data_t st_key, st_data_t st_val, st_data_t arg)
+{
+    VALUE key = (VALUE)st_key;
+    VALUE val = (VALUE)st_val;
+    VALUE *args = (VALUE *)arg;
+    VALUE execarg_obj = args[0];
+    if (rb_execarg_addopt(execarg_obj, key, val) != ST_CONTINUE) {
+	VALUE nonopts = args[1];
+	if (NIL_P(nonopts)) args[1] = nonopts = rb_hash_new();
+	rb_hash_aset(nonopts, key, val);
+    }
+    return ST_CONTINUE;
 }
 
 static int
@@ -1773,6 +1793,18 @@ rb_check_exec_options(VALUE opthash, VALUE execarg_obj)
     if (RHASH_EMPTY_P(opthash))
         return;
     st_foreach(RHASH_TBL(opthash), check_exec_options_i, (st_data_t)execarg_obj);
+}
+
+VALUE
+rb_execarg_extract_options(VALUE execarg_obj, VALUE opthash)
+{
+    VALUE args[2];
+    if (RHASH_EMPTY_P(opthash))
+        return Qnil;
+    args[0] = execarg_obj;
+    args[1] = Qnil;
+    st_foreach(RHASH_TBL(opthash), check_exec_options_i_extract, (st_data_t)args);
+    return args[1];
 }
 
 static int
@@ -2091,6 +2123,14 @@ VALUE
 rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
 {
     return rb_execarg_init(argc, argv, accept_shell, e->execarg_obj);
+}
+
+void
+rb_execarg_setenv(VALUE execarg_obj, VALUE env)
+{
+    struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
+    env = !NIL_P(env) ? rb_check_exec_env(env) : Qfalse;
+    eargp->env_modification = env;
 }
 
 static int
