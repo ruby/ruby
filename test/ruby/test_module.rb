@@ -1271,6 +1271,15 @@ class TestModule < Test::Unit::TestCase
     assert_equal(expected, obj.m1)
   end
 
+  def test_prepend_inheritance
+    bug6654 = '[ruby-core:45914]'
+    a = Module.new
+    b = Module.new {include a}
+    c = Class.new {prepend b}
+    assert_operator(c, :<, b, bug6654)
+    assert_operator(c, :<, a, bug6654)
+  end
+
   def test_prepend_instance_methods
     bug6655 = '[ruby-core:45915]'
     assert_equal(Object.instance_methods, Class.new {prepend Module.new}.instance_methods, bug6655)

@@ -1,3 +1,8 @@
+Wed Jun 27 21:31:13 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_prepend_module): ancestors of prepending module also
+	  should be included.  [ruby-core:45914][Bug #6654]
+
 Wed Jun 27 21:01:32 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (class_instance_method_list): m_tbl in prepended

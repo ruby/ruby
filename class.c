@@ -650,10 +650,11 @@ include_class_new(VALUE module, VALUE super)
     return (VALUE)klass;
 }
 
+static int include_modules_at(VALUE klass, VALUE c, VALUE module);
+
 void
 rb_include_module(VALUE klass, VALUE module)
 {
-    VALUE p, c;
     int changed = 0;
 
     rb_frozen_class_p(klass);
@@ -666,7 +667,17 @@ rb_include_module(VALUE klass, VALUE module)
     }
 
     OBJ_INFECT(klass, module);
-    c = klass;
+
+    changed = include_modules_at(klass, klass, module);
+    if (changed) rb_clear_cache();
+}
+
+static int
+include_modules_at(VALUE klass, VALUE c, VALUE module)
+{
+    VALUE p;
+    int changed = 0;
+
     while (module) {
 	int superclass_seen = FALSE;
 
@@ -696,13 +707,15 @@ rb_include_module(VALUE klass, VALUE module)
       skip:
 	module = RCLASS_SUPER(module);
     }
-    if (changed) rb_clear_cache();
+
+    return changed;
 }
 
 void
 rb_prepend_module(VALUE klass, VALUE module)
 {
     VALUE p, c, origin;
+    int changed = 0;
 
     rb_frozen_class_p(klass);
     if (!OBJ_UNTRUSTED(klass)) {
@@ -714,7 +727,7 @@ rb_prepend_module(VALUE klass, VALUE module)
     OBJ_INFECT(klass, module);
     c = RCLASS_SUPER(klass);
     if (RCLASS_M_TBL(klass) == RCLASS_M_TBL(module))
-	rb_raise(rb_eArgError, "cyclic include detected");
+	rb_raise(rb_eArgError, "cyclic prepend detected");
     for (p = c; p; p = RCLASS_SUPER(p)) {
 	if (BUILTIN_TYPE(p) == T_ICLASS) {
 	    if (RCLASS_M_TBL(p) == RCLASS_M_TBL(module)) {
@@ -733,9 +746,12 @@ rb_prepend_module(VALUE klass, VALUE module)
 	c = origin;
     }
     RCLASS_SUPER(klass) = include_class_new(module, c);
-    if (RMODULE_M_TBL(module) && RMODULE_M_TBL(module)->num_entries) {
-	rb_clear_cache_by_class(klass);
+    if (RCLASS_SUPER(module)) {
+	changed = include_modules_at(klass, RCLASS_SUPER(klass), RCLASS_SUPER(module));
     }
+    if (!changed)
+	changed = RMODULE_M_TBL(module) && RMODULE_M_TBL(module)->num_entries;
+    if (changed) rb_clear_cache();
 }
 
 /*
