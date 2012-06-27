@@ -657,15 +657,15 @@ class Complex_Test < Test::Unit::TestCase
       assert_instance_of(Complex, c2)
     end
 
-    bug3656 = '[ruby-core:31622]'
-    assert_raise(TypeError, bug3656) {
-      Complex(1,2).marshal_load(0)
-    }
-
     c = Complex(1,2)
-    c.freeze
-    assert(c.frozen?)
-    assert_raise(RuntimeError){c.marshal_load([2,3])}
+    assert_respond_to(c, :marshal_dump)
+    assert_not_respond_to(c, :marshal_load)
+  end
+
+  def test_marshal_old
+    bug6625 = '[ruby-core:45775]'
+    data = "\004\bo:\fComplex\a:\n@reali\f:\v@imagei/"
+    assert_equal(Complex(7, 42), Marshal.load(data), bug6625)
   end
 
   def test_parse
