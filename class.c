@@ -925,7 +925,7 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int obj, int (*func
 
     list = st_init_numtable();
     for (; mod; mod = RCLASS_SUPER(mod)) {
-	st_foreach(RCLASS_M_TBL(mod), method_entry_i, (st_data_t)list);
+	if (RCLASS_M_TBL(mod)) st_foreach(RCLASS_M_TBL(mod), method_entry_i, (st_data_t)list);
 	if (BUILTIN_TYPE(mod) == T_ICLASS) continue;
 	if (obj && FL_TEST(mod, FL_SINGLETON)) continue;
 	if (!recur) break;

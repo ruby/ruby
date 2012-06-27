@@ -1270,4 +1270,9 @@ class TestModule < Test::Unit::TestCase
     expected = [:M2,[:M3,[:C1,[:M4,[:M1,[:C0,[:M0],:C0],:M1],:M4],:C1],:M3],:M2]
     assert_equal(expected, obj.m1)
   end
+
+  def test_prepend_instance_methods
+    bug6655 = '[ruby-core:45915]'
+    assert_equal(Object.instance_methods, Class.new {prepend Module.new}.instance_methods, bug6655)
+  end
 end
