@@ -60,7 +60,9 @@ memsize_of(VALUE obj)
 	break;
       case T_MODULE:
       case T_CLASS:
-	size += st_memsize(RCLASS_M_TBL(obj));
+	if (RCLASS_M_TBL(obj)) {
+	    size += st_memsize(RCLASS_M_TBL(obj));
+	}
 	if (RCLASS_IV_TBL(obj)) {
 	    size += st_memsize(RCLASS_IV_TBL(obj));
 	}
