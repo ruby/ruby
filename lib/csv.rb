@@ -973,6 +973,7 @@ class CSV
   # <b><tt>:header_converters</tt></b>::  +nil+
   # <b><tt>:skip_blanks</tt></b>::        +false+
   # <b><tt>:force_quotes</tt></b>::       +false+
+  # <b><tt>:comment_marker</tt></b>::     +nil+
   #
   DEFAULT_OPTIONS = { col_sep:            ",",
                       row_sep:            :auto,
@@ -984,7 +985,8 @@ class CSV
                       return_headers:     false,
                       header_converters:  nil,
                       skip_blanks:        false,
-                      force_quotes:       false }.freeze
+                      force_quotes:       false,
+                      comment_marker:     nil }.freeze
 
   #
   # This method will return a CSV instance, just like CSV::new(), but the
@@ -1554,6 +1556,11 @@ class CSV
   #                                       skip over any rows with no content.
   # <b><tt>:force_quotes</tt></b>::       When set to a +true+ value, CSV will
   #                                       quote all CSV fields it creates.
+  # <b><tt>:comment_marker</tt></b>::     When set to a character every line
+  #                                       beginning with that character is
+  #                                       considered a comment and ignored
+  #                                       during parsing. When set to +nil+
+  #                                       no line is considered a comment.
   #
   # See CSV::DEFAULT_OPTIONS for the default settings.
   #
@@ -1591,6 +1598,7 @@ class CSV
     init_parsers(options)
     init_converters(options)
     init_headers(options)
+    init_comments(options)
 
     options.delete(:encoding)
     options.delete(:internal_encoding)
@@ -1620,6 +1628,10 @@ class CSV
   attr_reader :quote_char
   # The limit for field size, if any.  See CSV::new for details.
   attr_reader :field_size_limit
+
+  # The character marking a line as a comment. See CSV::new for details
+  attr_reader :comment_marker
+
   #
   # Returns the current list of converters in effect.  See CSV::new for details.
   # Built-in converters will be returned by name, while others will be returned
@@ -1872,6 +1884,8 @@ class CSV
           end
         end
       end
+
+      next if @comment_marker and parse.start_with? @comment_marker
 
       parts =  parse.split(@col_sep, -1)
       if parts.empty?
@@ -2189,6 +2203,12 @@ class CSV
     init_converters(options, :header_converters)
   end
 
+  def init_comments(options)
+    @comment_marker = options.delete(:comment_marker)
+    if @comment_marker and @comment_marker.length != 1
+      raise ArgumentError, ":comment_marker has to be a single character String"
+    end
+  end
   #
   # The actual work method for adding converters, used by both CSV.convert() and
   # CSV.header_convert().

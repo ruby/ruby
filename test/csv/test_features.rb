@@ -266,4 +266,33 @@ class TestCSV::Features < TestCSV
     assert(CSV::VERSION.frozen?)
     assert_match(/\A\d\.\d\.\d\Z/, CSV::VERSION)
   end
+  
+  def test_accepts_comment_marker_option
+    assert_nothing_raised(ArgumentError) do
+      CSV.new nil, :comment_marker => "#"
+    end
+  end
+  
+  def test_accepts_comment_defaults_to_nil
+    c = CSV.new nil
+    assert_equal c.comment_marker, nil
+  end
+
+  def test_requires_comment_markers_to_be_single_characters
+    assert_raises(ArgumentError) do
+      CSV.new :comment_marker, :comment_marker => "foo"
+    end
+  end
+
+  def test_comment_rows_are_ignored
+    sample_data = "line,1,a\n#not,a,line\nline,2,b"
+    c = CSV.new sample_data, :comment_marker => "#"
+    assert_equal c.each.to_a, [["line", "1", "a"], ["line", "2", "b"]]
+  end
+
+  def test_quoted_comment_markers_are_ignored
+    sample_data = "line,1,a\n\"#not\",a,line\nline,2,b"
+    c = CSV.new sample_data, :comment_marker => "#"
+    assert_equal c.each.to_a, [["line", "1", "a"], ["#not", "a", "line"], ["line", "2", "b"]]
+  end
 end
