@@ -938,7 +938,7 @@ static VALUE
 class_instance_method_list(int argc, VALUE *argv, VALUE mod, int obj, int (*func) (st_data_t, st_data_t, st_data_t))
 {
     VALUE ary;
-    int recur;
+    int recur, prepended = 0;
     st_table *list;
 
     if (argc == 0) {
@@ -950,10 +950,15 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int obj, int (*func
 	recur = RTEST(r);
     }
 
+    if (!recur && RCLASS_ORIGIN(mod) != mod) {
+	mod = RCLASS_ORIGIN(mod);
+	prepended = 1;
+    }
+
     list = st_init_numtable();
     for (; mod; mod = RCLASS_SUPER(mod)) {
 	if (RCLASS_M_TBL(mod)) st_foreach(RCLASS_M_TBL(mod), method_entry_i, (st_data_t)list);
-	if (BUILTIN_TYPE(mod) == T_ICLASS) continue;
+	if (BUILTIN_TYPE(mod) == T_ICLASS && !prepended) continue;
 	if (obj && FL_TEST(mod, FL_SINGLETON)) continue;
 	if (!recur) break;
     }

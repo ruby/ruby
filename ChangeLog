@@ -1,3 +1,12 @@
+Thu Jun 28 09:27:09 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* class.c (class_instance_method_list): consider prepended Class/Module
+	  when recur != 0. [ruby-dev:45863] [Bug #6660]
+
+	* test/ruby/test_module.rb (test_prepend_instance_methods_false): add
+	  a test for it.
+
+
 Thu Jun 28 06:12:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_mod_ancestors): fix ancestors order.

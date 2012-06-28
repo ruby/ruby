@@ -1327,4 +1327,10 @@ class TestModule < Test::Unit::TestCase
       class_eval(&block) if block
     end
   end
+
+  def test_prepend_instance_methods_false
+    bug6660 = '[ruby-dev:45863]'
+    assert_equal([:m1], Class.new{ prepend Module.new; def m1; end }.instance_methods(false), bug6660)
+    assert_equal([:m1], Class.new(Class.new{def m2;end}){ prepend Module.new; def m1; end }.instance_methods(false), bug6660)
+  end
 end
