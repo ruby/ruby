@@ -3884,6 +3884,9 @@ rb_f_system(int argc, VALUE *argv)
  *
  *  :close_others is true by default for spawn and IO.popen.
  *
+ *  Note that fds which close-on-exec flag is already set are closed
+ *  regardless of :close_others option.
+ *
  *  So IO.pipe and spawn can be used as IO.popen.
  *
  *    # similar to r = IO.popen(command)
