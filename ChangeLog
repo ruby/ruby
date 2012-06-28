@@ -1,3 +1,9 @@
+Thu Jun 28 20:33:15 2012  Luis Lavena  <luislavena@gmail.com>
+
+	* test/win32ole/test_win32ole.rb (test_s_codepage_changed):
+	  FileSystemObject only supports ANSI or UTF-16LE encoding.
+	  Patch by bosko (Bosko Ivanisevic) [ruby-trunk - Bug #6650]
+
 Thu Jun 28 09:27:09 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* class.c (class_instance_method_list): consider prepended Class/Module

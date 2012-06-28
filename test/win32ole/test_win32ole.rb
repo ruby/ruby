@@ -352,7 +352,7 @@ if defined?(WIN32OLE)
         WIN32OLE.codepage = cp
         file = fso.opentextfile(fname, 2, true)
         begin
-          file.write [0x3042].pack("U*").force_encoding("UTF-8")
+          file.write [0x3042].pack("U*").force_encoding("UTF-16")
         ensure
           file.close
         end
@@ -360,7 +360,7 @@ if defined?(WIN32OLE)
         open(fname, "r:ascii-8bit") {|ifs|
           str = ifs.read
         }
-        assert_equal("\202\240", str)
+        assert_equal("\343\201\202", str)
 
         # This test fail if codepage 20932 (euc) is not installed.
         begin
@@ -371,14 +371,14 @@ if defined?(WIN32OLE)
           WIN32OLE.codepage = cp
           file = fso.opentextfile(fname, 2, true)
           begin
-            file.write [164, 162].pack("c*").force_encoding("EUC-JP")
+            file.write [164, 162].pack("c*").force_encoding("UTF-16")
           ensure
             file.close
           end
           open(fname, "r:ascii-8bit") {|ifs|
             str = ifs.read
           }
-          assert_equal("\202\240", str)
+          assert_equal("\244\242", str)
         end
 
       ensure
