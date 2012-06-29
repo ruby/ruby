@@ -10824,6 +10824,7 @@ stack_extend(rb_thread_t th, int exit)
 	if (space > th->stk_pos) {
 # ifdef HAVE_ALLOCA
 	    sp = ALLOCA_N(VALUE, &space[0] - th->stk_pos);
+	    space[0] = *sp;
 # else
 	    stack_extend(th, exit);
 # endif
@@ -10838,6 +10839,7 @@ stack_extend(rb_thread_t th, int exit)
 	if (&space[STACK_PAD_SIZE] < th->stk_pos + th->stk_len) {
 # ifdef HAVE_ALLOCA
 	    sp = ALLOCA_N(VALUE, th->stk_pos + th->stk_len - &space[STACK_PAD_SIZE]);
+	    space[0] = *sp;
 # else
 	    stack_extend(th, exit);
 # endif

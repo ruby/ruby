@@ -1,3 +1,9 @@
+Fri Jun 29 21:26:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (stack_extend): prevent ALLOCA_N, which reserves a memory
+	  space with for restoring machine stack stored in each threads, from
+	  optimization out.  backport r34278 from the trunk.
+
 Mon Jun 18 18:32:43 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* backport r32609 from trunk.
