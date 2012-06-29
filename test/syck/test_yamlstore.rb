@@ -2,9 +2,9 @@ require 'test/unit'
 require 'yaml/store'
 require 'tmpdir'
 
-Syck::Store = YAML::Store unless defined?(Syck::Store)
-
 module Syck
+  Store = YAML::Store unless defined?(Store)
+
   class YAMLStoreTest < Test::Unit::TestCase
     def setup
       @engine, YAML::ENGINE.yamler = YAML::ENGINE.yamler, 'syck'
