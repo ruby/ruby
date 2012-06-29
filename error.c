@@ -416,8 +416,21 @@ static const struct types {
     {T_UNDEF,	"undef"},	/* internal use: #undef; should not happen */
 };
 
+const char *
+rb_builtin_type_name(int t)
+{
+    const struct types *type = builtin_types;
+    const struct types *const typeend = builtin_types +
+	sizeof(builtin_types) / sizeof(builtin_types[0]);
+    while (type < typeend) {
+	if (type->type == t) return type->name;
+	type++;
+    }
+    return 0;
+}
+
 static const char *
-builtin_type_name(VALUE x)
+builtin_class_name(VALUE x)
 {
     const char *etype;
 
@@ -445,9 +458,6 @@ builtin_type_name(VALUE x)
 void
 rb_check_type(VALUE x, int t)
 {
-    const struct types *type = builtin_types;
-    const struct types *const typeend = builtin_types +
-	sizeof(builtin_types) / sizeof(builtin_types[0]);
     int xt;
 
     if (x == Qundef) {
@@ -456,15 +466,10 @@ rb_check_type(VALUE x, int t)
 
     xt = TYPE(x);
     if (xt != t || (xt == T_DATA && RTYPEDDATA_P(x))) {
-	while (type < typeend) {
-	    if (type->type == t) {
-		const char *etype;
-
-		etype = builtin_type_name(x);
-		rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
-			 etype, type->name);
-	    }
-	    type++;
+	const char *tname = rb_builtin_type_name(t);
+	if (tname) {
+	    rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
+		     builtin_class_name(x), tname);
 	}
 	if (xt > T_MASK && xt <= 0x3f) {
 	    rb_fatal("unknown type 0x%x (0x%x given, probably comes from extension library for ruby 1.8)", t, xt);
@@ -500,7 +505,7 @@ rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
     static const char mesg[] = "wrong argument type %s (expected %s)";
 
     if (!RB_TYPE_P(obj, T_DATA)) {
-	etype = builtin_type_name(obj);
+	etype = builtin_class_name(obj);
 	rb_raise(rb_eTypeError, mesg, etype, data_type->wrap_struct_name);
     }
     if (!RTYPEDDATA_P(obj)) {

@@ -85,6 +85,7 @@ void rb_gc_mark_encodings(void);
 NORETURN(PRINTF_ARGS(void rb_compile_bug(const char*, int, const char*, ...), 3, 4));
 VALUE rb_check_backtrace(VALUE);
 NORETURN(void rb_async_bug_errno(const char *,int));
+const char *rb_builtin_type_name(int t);
 
 /* eval_error.c */
 void ruby_error_print(void);
