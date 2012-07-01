@@ -230,19 +230,19 @@ static VALUE rb_gzreader_readlines(int, VALUE*, VALUE);
  * for use on virtually any computer hardware and operating system.
  *
  * The zlib compression library provides in-memory compression and
- * decompression functions, including integrity checks of the uncompressed 
+ * decompression functions, including integrity checks of the uncompressed
  * data.
  *
  * The zlib compressed data format is described in RFC 1950, which is a
  * wrapper around a deflate stream which is described in RFC 1951.
  *
- * The library also supports reading and writing files in gzip (.gz) format 
+ * The library also supports reading and writing files in gzip (.gz) format
  * with an interface similar to that of IO. The gzip format is described in
  * RFC 1952 which is also a wrapper around a deflate stream.
  *
  * The zlib format was designed to be compact and fast for use in memory and on
  * communications channels. The gzip format was designed for single-file
- * compression on file systems, has a larger header than zlib to maintain 
+ * compression on file systems, has a larger header than zlib to maintain
  * directory information, and uses a different, slower check method than zlib.
  *
  * See your system's zlib.h for further information about zlib
@@ -250,18 +250,18 @@ static VALUE rb_gzreader_readlines(int, VALUE*, VALUE);
  * == Sample usage
  *
  * Using the wrapper to compress strings with default parameters is quite
- * simple: 
+ * simple:
  *
  *   require "zlib"
  *
  *   data_to_compress = File.read("don_quixote.txt")
- *   
+ *
  *   puts "Input size: #{data_to_compress.size}"
  *   #=> Input size: 2347740
- *   
+ *
  *   data_compressed = Zlib::Deflate.deflate(data_to_compress)
  *
- *   puts "Compressed size: #{data_compressed.size}" 
+ *   puts "Compressed size: #{data_compressed.size}"
  *   #=> Compressed size: 887238
  *
  *   uncompressed_data = Zlib::Inflate.inflate(data_compressed)
@@ -1307,12 +1307,12 @@ rb_deflate_s_allocate(VALUE klass)
  * The +level+ sets the compression level for the deflate stream between 0 (no
  * compression) and 9 (best compression. The following constants have been
  * defined to make code more readable:
- *   
+ *
  * * Zlib::NO_COMPRESSION = 0
- * * Zlib::BEST_SPEED =  1
+ * * Zlib::BEST_SPEED = 1
  * * Zlib::DEFAULT_COMPRESSION = 6
  * * Zlib::BEST_COMPRESSION = 9
- *   
+ *
  * The +window_bits+ sets the size of the history buffer and should be between
  * 8 and 15.  Larger values of this parameter result in better compression at
  * the expense of memory usage.
