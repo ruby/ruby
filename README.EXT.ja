@@ -839,7 +839,7 @@ Makefileを作る場合の雛型になるextconf.rbというファイルを作�
   have_library(lib, func): ライブラリの存在チェック
   have_func(func, header): 関数の存在チェック
   have_header(header): ヘッダファイルの存在チェック
-  create_makefile(target): Makefileの生成
+  create_makefile(target[, target_prefix]): Makefileの生成
 
 以下の変数を使うことができます．
 
@@ -1527,7 +1527,7 @@ find_header(header, path...)
   ヘッダファイルheaderの存在を -Ipath を追加しながらチェック
   する．ヘッダファイルが見付かった時，trueを返す．
 
-have_struct_member(type, member, header)
+have_struct_member(type, member[, header[, opt]])
 
   ヘッダファイルheaderをインクルードして型typeにメンバmember
   が存在するかをチェックする．typeが定義されていて，memberを
@@ -1544,7 +1544,7 @@ check_sizeof(type, header)
   ズを調べる．typeが定義されている時そのサイズを返す．定義さ
   れていないときはnilを返す．
 
-create_makefile(target)
+create_makefile(target[, target_prefix])
 
   拡張ライブラリ用のMakefileを生成する．この関数を呼ばなけれ
   ばそのライブラリはコンパイルされない．targetはモジュール名

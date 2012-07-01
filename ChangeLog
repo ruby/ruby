@@ -1,3 +1,9 @@
+Mon Jul  2 03:21:53 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* README.EXT.ja: fixed args of have_struct_member() ,
+	  create_makefile() same as r35977. however, mkmf.rb include
+	  no Japanese-docs, so Appendix C was not removed. [Bug #6597]
+
 Fri Jun 29 05:08:41 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/test/unit/parallel.rb: workaround fix for rubygems.
