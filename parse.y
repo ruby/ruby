@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
+#include <assert.h>
 
 #define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 
@@ -5494,6 +5495,7 @@ rb_compile_file(const char *f, VALUE file, int start)
 {
     VALUE volatile vparser = rb_parser_new();
 
+    assert(BUILTIN_TYPE(file) == T_FILE); /* Not sure if we can call rb_raise() here. */
     return rb_parser_compile_file(vparser, f, file, start);
 }
 
@@ -11089,7 +11091,7 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
 
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, parser);
     rb_scan_args(argc, argv, "12", &src, &fname, &lineno);
-    if (rb_obj_respond_to(src, ripper_id_gets, 0)) {
+    if (BUILTIN_TYPE(src) == T_FILE) {
         parser->parser_lex_gets = ripper_lex_get_generic;
     }
     else {
