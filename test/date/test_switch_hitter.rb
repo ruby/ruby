@@ -472,7 +472,39 @@ class TestSH < Test::Unit::TestCase
     period2_iter(+cm_period * (1 << 64) - 3, +cm_period * (1 << 64) + 3)
   end
 
-  def test_marshal
+=begin
+  def test_marshal14
+    s = "\x04\x03u:\x01\x04Date\x01\v\x04\x03[\x01\x02i\x03\xE8i%T"
+    d = Marshal.load(s)
+    assert_equal(Rational(4903887,2), d.ajd)
+    assert_equal(0, d.send(:offset))
+    assert_equal(Date::GREGORIAN, d.start)
+  end
+
+  def test_marshal16
+    s = "\x04\x06u:\tDate\x0F\x04\x06[\ai\x03\xE8i%T"
+    d = Marshal.load(s)
+    assert_equal(Rational(4903887,2), d.ajd)
+    assert_equal(0, d.send(:offset))
+    assert_equal(Date::GREGORIAN, d.start)
+  end
+
+  def test_marshal18
+    s = "\x04\bu:\tDateP\x04\b[\bo:\rRational\a:\x0F@numeratori\x03\xCF\xD3J:\x11@denominatori\ai\x00o:\x13Date::Infinity\x06:\a@di\xFA"
+    d = Marshal.load(s)
+    assert_equal(Rational(4903887,2), d.ajd)
+    assert_equal(0, d.send(:offset))
+    assert_equal(Date::GREGORIAN, d.start)
+
+    s = "\x04\bu:\rDateTime`\x04\b[\bo:\rRational\a:\x0F@numeratorl+\b\xC9\xB0\x81\xBD\x02\x00:\x11@denominatori\x02\xC0\x12o;\x00\a;\x06i\b;\ai\ro:\x13Date::Infinity\x06:\a@di\xFA"
+    d = Marshal.load(s)
+    assert_equal(Rational(11769327817,4800), d.ajd)
+    assert_equal(Rational(9,24), d.offset)
+    assert_equal(Date::GREGORIAN, d.start)
+  end
+=end
+
+  def test_marshal192
     s = "\x04\bU:\tDate[\bU:\rRational[\ai\x03\xCF\xD3Ji\ai\x00o:\x13Date::Infinity\x06:\a@di\xFA"
     d = Marshal.load(s)
     assert_equal(Rational(4903887,2), d.ajd)

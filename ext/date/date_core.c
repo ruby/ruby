@@ -7272,15 +7272,26 @@ d_lite_marshal_load(VALUE self, VALUE a)
 	rb_raise(rb_eTypeError, "expected an array");
 
     switch (RARRAY_LEN(a)) {
-      case 3:
+      case 2: /* 1.6.x */
+      case 3: /* 1.8.x, 1.9.2 */
 	{
 	    VALUE ajd, of, sg, nth, sf;
 	    int jd, df, rof;
 	    double rsg;
 
-	    ajd = RARRAY_PTR(a)[0];
-	    of = RARRAY_PTR(a)[1];
-	    sg = RARRAY_PTR(a)[2];
+
+	    if  (RARRAY_LEN(a) == 2) {
+		ajd = f_sub(RARRAY_PTR(a)[0], half_days_in_day);
+		of = INT2FIX(0);
+		sg = RARRAY_PTR(a)[1];
+		if (!k_numeric_p(sg))
+		    sg = DBL2NUM(RTEST(sg) ? GREGORIAN : JULIAN);
+	    }
+	    else {
+		ajd = RARRAY_PTR(a)[0];
+		of = RARRAY_PTR(a)[1];
+		sg = RARRAY_PTR(a)[2];
+	    }
 
 	    old_to_new(ajd, of, sg,
 		       &nth, &jd, &df, &sf, &rof, &rsg);
@@ -7336,6 +7347,16 @@ d_lite_marshal_load(VALUE self, VALUE a)
     return self;
 }
 
+/* :nodoc: */
+static VALUE
+date_s__load(VALUE klass, VALUE s)
+{
+    VALUE a, obj;
+
+    a = rb_marshal_load(s);
+    obj = d_lite_s_alloc(klass);
+    return d_lite_marshal_load(obj, a);
+}
 
 /* datetime */
 
@@ -9674,6 +9695,7 @@ Init_date_core(void)
 #endif
     rb_define_method(cDate, "marshal_dump", d_lite_marshal_dump, 0);
     rb_define_method(cDate, "marshal_load", d_lite_marshal_load, 1);
+    rb_define_singleton_method(cDate, "_load", date_s__load, 1);
 
     /* datetime */
 
