@@ -1,3 +1,9 @@
+Tue Jul  3 06:12:13 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* object.c (Init_Object):  Added RDoc location pointers for
+	  Kernel#methods, Kernel#protected_methods, Kernel#private_methods and
+	  Kernel#public_methods.  [Bug #6666]
+
 Tue Jul  3 06:02:54 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/zlib/zlib.c (zstream_run):  Process zlib streams without GVL.
