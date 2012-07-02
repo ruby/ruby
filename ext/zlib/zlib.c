@@ -554,6 +554,7 @@ struct zstream {
 /* I think that more better value should be found,
    but I gave up finding it. B) */
 #define ZSTREAM_INITIAL_BUFSIZE       1024
+/* Allow a quick return when the thread is interrupted */
 #define ZSTREAM_AVAIL_OUT_STEP_MAX   16384
 #define ZSTREAM_AVAIL_OUT_STEP_MIN    2048
 
