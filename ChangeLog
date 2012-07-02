@@ -1,3 +1,9 @@
+Tue Jul  3 06:02:54 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c (zstream_run):  Process zlib streams without GVL.
+	  [Feature #6615]
+	* NEWS:  ditto.
+
 Mon Jul  2 22:13:04 2012  Tanaka Akira  <akr@fsij.org>
 
 	* thread.c (rb_thread_aref): add explanation for why Thread#[] and

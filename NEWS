@@ -117,6 +117,8 @@ with all sufficient information, see the ChangeLog file.
 
 * zlib
   * Added support for the new deflate strategies Zlib::RLE and Zlib::FIXED.
+  * Zlib streams are now processed without the GVL.  This allows gzip, zlib and
+    deflate streams to be processed in parallel.
 
 * openssl
   * Consistently raise an error when trying to encode nil values. All instances
