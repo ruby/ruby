@@ -1,3 +1,17 @@
+Mon Jul  2 17:06:32 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_include_module): include modules after the origin.
+
+	* class.c (include_modules_at): skip prepended modules.
+
+	* class.c (rb_prepend_module): now basic.klass in ICLASS refers the
+	  old original class/module.  [ruby-dev:45868][Bug #6662]
+
+	* class.c (rb_mod_ancestors): ditto.
+
+	* vm_method.c (search_method): search method entry from the origin
+	  iclass.
+
 Mon Jul  2 05:54:58 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: [ruby-core:46058].

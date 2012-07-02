@@ -387,15 +387,13 @@ static rb_method_entry_t*
 search_method(VALUE klass, ID id)
 {
     st_data_t body;
-    if (!klass) {
-	return 0;
-    }
 
-    while (!RCLASS_M_TBL(klass) || !st_lookup(RCLASS_M_TBL(klass), id, &body)) {
-	klass = RCLASS_SUPER(klass);
-	if (!klass) {
-	    return 0;
+    for (body = 0; klass; klass = RCLASS_SUPER(klass)) {
+	st_table *m_tbl = RCLASS_M_TBL(klass);
+	if (!m_tbl) {
+	    m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(RBASIC(klass)->klass));
 	}
+	if (st_lookup(m_tbl, id, &body)) break;
     }
 
     return (rb_method_entry_t *)body;

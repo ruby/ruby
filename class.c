@@ -668,7 +668,9 @@ rb_include_module(VALUE klass, VALUE module)
 
     OBJ_INFECT(klass, module);
 
-    changed = include_modules_at(klass, klass, module);
+    changed = include_modules_at(klass, RCLASS_ORIGIN(klass), module);
+    if (changed < 0)
+	rb_raise(rb_eArgError, "cyclic include detected");
     if (changed) rb_clear_cache();
 }
 
@@ -681,8 +683,10 @@ include_modules_at(VALUE klass, VALUE c, VALUE module)
     while (module) {
 	int superclass_seen = FALSE;
 
-	if (RCLASS_M_TBL(klass) == RCLASS_M_TBL(module))
-	    rb_raise(rb_eArgError, "cyclic include detected");
+	if (RCLASS_ORIGIN(module) != module)
+	    goto skip;
+	if (RCLASS_M_TBL(klass) && RCLASS_M_TBL(klass) == RCLASS_M_TBL(module))
+	    return -1;
 	/* ignore if the module included already in superclasses */
 	for (p = RCLASS_SUPER(klass); p; p = RCLASS_SUPER(p)) {
 	    switch (BUILTIN_TYPE(p)) {
@@ -699,8 +703,6 @@ include_modules_at(VALUE klass, VALUE c, VALUE module)
 		break;
 	    }
 	}
-	if (c == klass)
-	    c = RCLASS_ORIGIN(klass);
 	c = RCLASS_SUPER(c) = include_class_new(module, RCLASS_SUPER(c));
 	if (RMODULE_M_TBL(module) && RMODULE_M_TBL(module)->num_entries)
 	    changed = 1;
@@ -714,7 +716,7 @@ include_modules_at(VALUE klass, VALUE c, VALUE module)
 void
 rb_prepend_module(VALUE klass, VALUE module)
 {
-    VALUE p, c, origin;
+    VALUE origin;
     int changed = 0;
 
     rb_frozen_class_p(klass);
@@ -725,32 +727,19 @@ rb_prepend_module(VALUE klass, VALUE module)
     Check_Type(module, T_MODULE);
 
     OBJ_INFECT(klass, module);
-    c = RCLASS_SUPER(klass);
-    if (RCLASS_M_TBL(klass) == RCLASS_M_TBL(module))
-	rb_raise(rb_eArgError, "cyclic prepend detected");
-    for (p = c; p; p = RCLASS_SUPER(p)) {
-	if (BUILTIN_TYPE(p) == T_ICLASS) {
-	    if (RCLASS_M_TBL(p) == RCLASS_M_TBL(module)) {
-		rb_raise(rb_eArgError, "already prepended module");
-	    }
-	}
-    }
+
     origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
-	origin = class_alloc(T_ICLASS, rb_cClass);
+	origin = class_alloc(T_ICLASS, klass);
 	RCLASS_SUPER(origin) = RCLASS_SUPER(klass);
 	RCLASS_SUPER(klass) = origin;
 	RCLASS_ORIGIN(klass) = origin;
 	RCLASS_M_TBL(origin) = RCLASS_M_TBL(klass);
 	RCLASS_M_TBL(klass) = 0;
-	c = origin;
     }
-    RCLASS_SUPER(klass) = include_class_new(module, c);
-    if (RCLASS_SUPER(module)) {
-	changed = include_modules_at(klass, RCLASS_SUPER(klass), RCLASS_SUPER(module));
-    }
-    if (!changed)
-	changed = RMODULE_M_TBL(module) && RMODULE_M_TBL(module)->num_entries;
+    changed = include_modules_at(klass, klass, module);
+    if (changed < 0)
+	rb_raise(rb_eArgError, "cyclic prepend detected");
     if (changed) rb_clear_cache();
 }
 
@@ -838,25 +827,14 @@ VALUE
 rb_mod_ancestors(VALUE mod)
 {
     VALUE p, ary = rb_ary_new();
-    VALUE origin = RCLASS_ORIGIN(mod);
 
-    p = mod;
-    if (origin == mod) {
-	origin = 0;
-    }
-    else {
-	p = RCLASS_SUPER(p);
-    }
-    for (; p; p = RCLASS_SUPER(p)) {
+    for (p = mod; p; p = RCLASS_SUPER(p)) {
 	if (FL_TEST(p, FL_SINGLETON))
 	    continue;
-	if (p == origin) {
-	    rb_ary_push(ary, mod);
-	}
-	else if (BUILTIN_TYPE(p) == T_ICLASS) {
+	if (BUILTIN_TYPE(p) == T_ICLASS) {
 	    rb_ary_push(ary, RBASIC(p)->klass);
 	}
-	else {
+	else if (p == RCLASS_ORIGIN(p)) {
 	    rb_ary_push(ary, p);
 	}
     }
