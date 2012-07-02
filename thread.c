@@ -2078,6 +2078,39 @@ rb_thread_local_aref(VALUE thread, ID id)
  *     #<Thread:0x00000002a54220 dead>: A
  *     #<Thread:0x00000002a541a8 dead>: B
  *     #<Thread:0x00000002a54130 dead>: C
+ *
+ *  Thread#[] and Thread#[]= are not thread-local but fiber-local.
+ *  This confusion was not exist until Ruby 1.8 because
+ *  fiber is available since Ruby 1.9.
+ *  Ruby 1.9 chooses that the methods behaves fiber-local to save
+ *  following idiom for dynamic scope.
+ *
+ *    def meth(newvalue)
+ *      begin
+ *        oldvalue = Thread.current[:name]
+ *        Thread.current[:name] = newvalue
+ *        yield
+ *      ensure
+ *        Thread.current[:name] = oldvalue
+ *      end
+ *    end
+ *
+ *  The idiom may not work as dynamic scope if the methods are thread-local
+ *  and a given block switches fiber.
+ *
+ *    f = Fiber.new {
+ *      meth(1) {
+ *        Fiber.yield
+ *      }
+ *    }
+ *    meth(2) {
+ *      f.resume
+ *    }
+ *    f.resume
+ *    p Thread.current[:name]
+ *    #=> nil if fiber-local
+ *    #=> 2 if thread-local (The value 2 is leaked to outside of meth method.)
+ *
  */
 
 static VALUE

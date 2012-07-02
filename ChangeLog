@@ -1,3 +1,9 @@
+Mon Jul  2 22:13:04 2012  Tanaka Akira  <akr@fsij.org>
+
+	* thread.c (rb_thread_aref): add explanation for why Thread#[] and
+	  Thread#[]= are fiber-local and not thread-local.
+	  reported by Julien A.  [ruby-core:41606] [ruby-trunk - Bug #5750]
+
 Mon Jul  2 21:25:55 2012  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (timew_out_of_timet_range): specialization for
