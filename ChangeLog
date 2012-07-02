@@ -1,3 +1,8 @@
+Mon Jul  2 21:25:55 2012  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (timew_out_of_timet_range): specialization for
+	  SIZEOF_TIME_T == SIZEOF_INT64_T.
+
 Mon Jul  2 17:06:32 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_include_module): include modules after the origin.

@@ -1741,6 +1741,19 @@ timew_out_of_timet_range(wideval_t timew)
         return 0;
     }
 #endif
+#if SIZEOF_TIME_T == SIZEOF_INT64_T
+    if (FIXWV_P(timew)) {
+        wideint_t t = FIXWV2WINT(timew);
+        if (~(time_t)0 <= 0) {
+            return 0;
+        }
+        else {
+            if (t < 0)
+                return 1;
+            return 0;
+        }
+    }
+#endif
     timexv = w2v(timew);
     if (lt(timexv, mul(INT2FIX(TIME_SCALE), TIMET2NUM(TIMET_MIN))) ||
         le(mul(INT2FIX(TIME_SCALE), add(TIMET2NUM(TIMET_MAX), INT2FIX(1))), timexv))
