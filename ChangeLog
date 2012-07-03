@@ -1,3 +1,9 @@
+Tue Jul  3 12:05:51 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/cfunc.c (rb_dlcfunc_call): also needed the workaround for VC8
+	  for x64.  [ruby-dev:45875] [Bug #6676]
+	  reported by aves_ramphastos (Seigo Ishigane)
+
 Tue Jul  3 11:56:46 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/zlib/zlib.c (zstream_detach_buffer):  Refactored tainting of
