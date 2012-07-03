@@ -917,7 +917,8 @@ zstream_end(struct zstream *z)
 }
 
 static VALUE
-zstream_run_func(void *ptr) {
+zstream_run_func(void *ptr)
+{
     struct zstream_run_args *args = (struct zstream_run_args *)ptr;
     int err, flush = args->flush;
     struct zstream *z = args->z;
@@ -934,7 +935,7 @@ zstream_run_func(void *ptr) {
 	    break;
 	}
 
-	if (err != Z_OK)
+	if (err != Z_OK && err != Z_BUF_ERROR)
 	    break;
 
 	if (z->stream.avail_out > 0) {
@@ -955,7 +956,8 @@ zstream_run_func(void *ptr) {
  * There is no safe way to interrupt z->run->func().
  */
 static void
-zstream_unblock_func(void *ptr) {
+zstream_unblock_func(void *ptr)
+{
     struct zstream_run_args *args = (struct zstream_run_args *)ptr;
 
     args->interrupt = 1;

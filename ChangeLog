@@ -1,3 +1,9 @@
+Tue Jul  3 14:50:16 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c (zstream_run_func):  Don't exit run loop for buffer
+	  error.  [Feature #6615]
+	* ext/zlib/zlib.c:  Fix style to match existing functions.
+
 Tue Jul  3 12:05:51 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/dl/cfunc.c (rb_dlcfunc_call): also needed the workaround for VC8
