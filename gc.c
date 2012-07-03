@@ -60,6 +60,48 @@
 # define VALGRIND_MAKE_MEM_UNDEFINED(p, n) /* empty */
 #endif
 
+#if defined _WIN32
+# define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd(&(var), (val))
+# define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd(&(var), -(val))
+# define ATOMIC_SIZE_INC(var) InterlockedIncrement(&(var))
+# define ATOMIC_SIZE_DEC(var) InterlockedDecrement(&(var))
+# define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange(&(var), (val))
+#elif defined HAVE_GCC_ATOMIC_BUILTINS
+# define ATOMIC_SIZE_ADD(var, val) __sync_fetch_and_add(&(var), (val))
+# define ATOMIC_SIZE_SUB(var, val) __sync_fetch_and_sub(&(var), (val))
+# define ATOMIC_SIZE_INC(var) __sync_fetch_and_add(&(var), 1)
+# define ATOMIC_SIZE_DEC(var) __sync_fetch_and_sub(&(var), 1)
+# define ATOMIC_SIZE_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
+#elif defined(__sun)
+#include <atomic.h>
+# if SIZEOF_SIZE_T == SIZEOF_LONG
+# define ATOMIC_SIZE_ADD(var, val) atomic_add_long(&(var), (val))
+# define ATOMIC_SIZE_SUB(var, val) atomic_add_long(&(var), -(val))
+# define ATOMIC_SIZE_INC(var) atomic_inc_ulong(&(var))
+# define ATOMIC_SIZE_DEC(var) atomic_dec_ulong(&(var))
+# define ATOMIC_SIZE_EXCHANGE(var, val) atomic_swap_long(&(var), (val))
+# else
+# define ATOMIC_SIZE_ADD(var, val) atomic_add_int(&(var), (val))
+# define ATOMIC_SIZE_SUB(var, val) atomic_add_int(&(var), -(val))
+# define ATOMIC_SIZE_INC(var) atomic_inc_uint(&(var))
+# define ATOMIC_SIZE_DEC(var) atomic_dec_uint(&(var))
+# define ATOMIC_SIZE_EXCHANGE(var, val) atomic_swap_uint(&(var), (val))
+# endif
+#else
+# define ATOMIC_SIZE_ADD(var, val) (void)((var) += (val))
+# define ATOMIC_SIZE_SUB(var, val) (void)((var) -= (val))
+# define ATOMIC_SIZE_INC(var) ((var)++)
+# define ATOMIC_SIZE_DEC(var) ((var)--)
+# define ATOMIC_SIZE_EXCHANGE(var, val) atomic_size_exchange(&(var), (val))
+static inline size_t
+atomic_size_exchange(size_t *ptr, size_t val)
+{
+    size_t old = *ptr;
+    *ptr = val;
+    return old;
+}
+#endif
+
 #define rb_setjmp(env) RUBY_SETJMP(env)
 #define rb_jmp_buf rb_jmpbuf_t
 
@@ -798,11 +840,11 @@ vm_malloc_prepare(rb_objspace_t *objspace, size_t size)
 static inline void *
 vm_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 {
-    malloc_increase += size;
+    ATOMIC_SIZE_ADD(malloc_increase, size);
 
 #if CALC_EXACT_MALLOC_SIZE
-    objspace->malloc_params.allocated_size += size;
-    objspace->malloc_params.allocations++;
+    ATOMIC_SIZE_ADD(objspace->malloc_params.allocated_size, size);
+    ATOMIC_SIZE_INC(objspace->malloc_params.allocations);
     ((size_t *)mem)[0] = size;
     mem = (size_t *)mem + 1;
 #endif
@@ -862,10 +904,10 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
 	    ruby_memerror();
         }
     }
-    malloc_increase += size;
+    ATOMIC_SIZE_ADD(malloc_increase, size);
 
 #if CALC_EXACT_MALLOC_SIZE
-    objspace->malloc_params.allocated_size += size - oldsize;
+    ATOMIC_SIZE_ADD(objspace->malloc_params.allocated_size, size - oldsize);
     ((size_t *)mem)[0] = size;
     mem = (size_t *)mem + 1;
 #endif
@@ -881,8 +923,8 @@ vm_xfree(rb_objspace_t *objspace, void *ptr)
     ptr = ((size_t *)ptr) - 1;
     size = ((size_t*)ptr)[0];
     if (size) {
-	objspace->malloc_params.allocated_size -= size;
-	objspace->malloc_params.allocations--;
+	ATOMIC_SIZE_SUB(objspace->malloc_params.allocated_size, size);
+	ATOMIC_SIZE_DEC(objspace->malloc_params.allocations);
     }
 #endif
 
@@ -2325,6 +2367,7 @@ before_gc_sweep(rb_objspace_t *objspace)
 static void
 after_gc_sweep(rb_objspace_t *objspace)
 {
+    size_t inc;
     GC_PROF_SET_MALLOC_INFO;
 
     if (objspace->heap.free_num < objspace->heap.free_min) {
@@ -2332,11 +2375,11 @@ after_gc_sweep(rb_objspace_t *objspace)
         heaps_increment(objspace);
     }
 
-    if (malloc_increase > malloc_limit) {
-	malloc_limit += (size_t)((malloc_increase - malloc_limit) * (double)objspace->heap.live_num / (heaps_used * HEAP_OBJ_LIMIT));
+    inc = ATOMIC_SIZE_EXCHANGE(malloc_increase, 0);
+    if (inc > malloc_limit) {
+	malloc_limit += (size_t)((inc - malloc_limit) * (double)objspace->heap.live_num / (heaps_used * HEAP_OBJ_LIMIT));
 	if (malloc_limit < initial_malloc_limit) malloc_limit = initial_malloc_limit;
     }
-    malloc_increase = 0;
 
     free_unused_heaps(objspace);
 }

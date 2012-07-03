@@ -1,3 +1,8 @@
+Tue Jul  3 16:07:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (vm_malloc_fixup, vm_xrealloc, vm_xfree, after_gc_sweep): use
+	  atomic operations to update malloc_params.
+
 Tue Jul  3 14:50:16 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/zlib/zlib.c (zstream_run_func):  Don't exit run loop for buffer
