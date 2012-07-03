@@ -212,6 +212,25 @@ if defined? Zlib
       z << "foo" # ???
     end
 
+    def test_inflate_partial_input
+      deflated = Zlib::Deflate.deflate "\0"
+
+      a = deflated[0...2]
+      b = deflated[2..-1]
+
+      z = Zlib::Inflate.new
+
+      inflated = ""
+
+      deflated.each_char do |byte|
+        inflated << z.inflate(byte)
+      end
+
+      inflated << z.finish
+
+      assert_equal "\0", inflated
+    end
+
     def test_inflate_dictionary
       dictionary = "foo"
 
