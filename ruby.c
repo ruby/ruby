@@ -920,6 +920,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 		    opt->src.enc.name = rb_str_new2(enc_name);
 		    if (!opt->ext.enc.name)
 			opt->ext.enc.name = opt->src.enc.name;
+		    rb_warn("-K%c is specified; it is for 1.8 compatibility and may cause odd behavior", rb_tolower(*s));
 		}
 		s++;
 	    }

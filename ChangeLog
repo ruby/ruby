@@ -1,3 +1,7 @@
+Tue Jul  3 10:46:06 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ruby.c (proc_options): warn if -K option is specified. [Feature #5206]
+
 Tue Jul  3 06:12:13 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* object.c (Init_Object):  Added RDoc location pointers for
