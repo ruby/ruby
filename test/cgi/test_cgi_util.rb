@@ -53,4 +53,8 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal("<HTML>\n\t<BODY>\n\t</BODY>\n</HTML>\n",CGI::pretty("<HTML><BODY></BODY></HTML>","\t"))
   end
 
+  def test_cgi_unescapeHTML
+    assert_equal(CGI::unescapeHTML("&apos;&amp;&quot;&gt;&lt;"),"'&\"><")
+  end
+
 end
