@@ -1011,13 +1011,14 @@ rb_ary_subseq(VALUE ary, long beg, long len)
  *     ary.slice(start, length)  -> new_ary or nil
  *     ary.slice(range)          -> new_ary or nil
  *
- *  Element Reference---Returns the element at +index+,
- *  or returns a subarray starting at +start+ and
- *  continuing for +length+ elements, or returns a subarray
- *  specified by +range+.
- *  Negative indices count backward from the end of the
- *  array (-1 is the last element). Returns +nil+ if the index
- *  (or starting index) are out of range.
+ *  Element Reference --- Returns the element at +index+, or returns a
+ *  subarray starting at the +start+ index and continuing for +length+
+ *  elements, or returns a subarray specified by +range+ of indices.
+ *
+ *  Negative indices count backward from the end of the array (-1 is the last
+ *  element).
+ *
+ *  Returns +nil+ if the index (or starting index) are out of range.
  *
  *     a = [ "a", "b", "c", "d", "e" ]
  *     a[2] +  a[0] + a[1]    #=> "cab"
@@ -1029,6 +1030,7 @@ rb_ary_subseq(VALUE ary, long beg, long len)
  *     a[-3, 3]               #=> [ "c", "d", "e" ]
  *     # special cases
  *     a[5]                   #=> nil
+ *     a[6]                   #=> nil
  *     a[5, 1]                #=> []
  *     a[5..10]               #=> []
  *
@@ -1430,8 +1432,8 @@ rb_ary_resize(VALUE ary, long len)
  *     ary[range]         = obj or other_ary or nil  ->  obj or other_ary or nil
  *
  *  Element Assignment --- Sets the element at +index+, or replaces a subarray
- *  from +start+ for +length+ elements, or replaces a subarray specified by
- *  +range+.
+ *  from the +start+ index for +length+ elements, or replaces a subarray
+ *  specified by the +range+ of indices.
  *
  *  If indices are greater than the current capacity of the array, the array
  *  grows automatically. Negative indices will count backward from the end of
@@ -1451,6 +1453,8 @@ rb_ary_resize(VALUE ary, long len)
  *     a[-1]   = "Z"               #=> ["A", "Z"]
  *     a[1..-1] = nil              #=> ["A", nil]
  *     a[1..-1] = []               #=> ["A"]
+ *     a[0, 0] = [ 1, 2 ]          #=> [1, 2, "A"]
+ *     a[3, 0] = "B"               #=> [1, 2, "A", "B"]
  */
 
 static VALUE

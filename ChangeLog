@@ -1,3 +1,13 @@
+Wed Jul  4 08:29:31 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* array.c (rb_ary_aref):  Updated documentation to indicate the
+	  starting index is an index into the array or string.  Updated
+	  examples to show behavior of indexes at the end of an array or
+	  string.  Based on patch by Marcus Stollsteimer.  [Bug #6680]
+	* array.c (rb_ary_aset):  ditto.
+	* string.c (rb_str_aref):  ditto.  Also added descriptive argument
+	  names to call-seq section.
+
 Wed Jul  4 07:05:59 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* test/zlib/test_zlib.rb (test_inflate_partial_input):  Added test for
