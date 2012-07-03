@@ -832,6 +832,9 @@ static void *
 vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
 {
     void *mem;
+#if CALC_EXACT_MALLOC_SIZE
+    size_t oldsize;
+#endif
 
     if ((ssize_t)size < 0) {
 	negative_size_allocation_error("negative re-allocation size");
@@ -846,8 +849,8 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
 
 #if CALC_EXACT_MALLOC_SIZE
     size += sizeof(size_t);
-    objspace->malloc_params.allocated_size -= size;
     ptr = (size_t *)ptr - 1;
+    oldsize = ((size_t *)ptr)[0];
 #endif
 
     mem = realloc(ptr, size);
@@ -862,7 +865,7 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
     malloc_increase += size;
 
 #if CALC_EXACT_MALLOC_SIZE
-    objspace->malloc_params.allocated_size += size;
+    objspace->malloc_params.allocated_size += size - oldsize;
     ((size_t *)mem)[0] = size;
     mem = (size_t *)mem + 1;
 #endif
