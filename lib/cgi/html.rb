@@ -63,8 +63,8 @@ class CGI
   #   cgi.a("http://www.example.com") { "Example" }
   #     # => "<A HREF=\"http://www.example.com\">Example</A>"
   #
-  # Modules Http3, Http4, etc., contain more basic HTML-generation methods
-  # (:title, :center, etc.).
+  # Modules Html3, Html4, etc., contain more basic HTML-generation methods
+  # (+#title+, +#h1+, etc.).
   #
   # See class CGI for a detailed example.
   #

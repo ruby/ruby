@@ -67,8 +67,8 @@ class CGI
   # Create an HTTP header block as a string.
   #
   # :call-seq:
-  #   headers(content_type_string="text/html")
-  #   headers(headers_hash)
+  #   header(content_type_string="text/html")
+  #   header(headers_hash)
   #
   # Includes the empty line that ends the header block.
   #
@@ -452,10 +452,10 @@ class CGI
     end
 
     ##
-    # Parses multipart form elements according to 
+    # Parses multipart form elements according to
     #   http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2
     #
-    # Returns a hash of multipart form parameters with bodies of type StringIO or 
+    # Returns a hash of multipart form parameters with bodies of type StringIO or
     # Tempfile depending on whether the multipart form element exceeds 10 KB
     #
     #   params[name => body]
