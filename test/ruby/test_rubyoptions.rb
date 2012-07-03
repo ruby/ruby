@@ -121,9 +121,9 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-KU), "p '\u3042'") do |r, e|
       assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
     end
-    assert_in_out_err(%w(-KE -e) + [""], "", [], [])
-    assert_in_out_err(%w(-KS -e) + [""], "", [], [])
-    assert_in_out_err(%w(-KN -e) + [""], "", [], [])
+    assert_in_out_err(%w(-KE -e) + [""], "", [], /-Ke/)
+    assert_in_out_err(%w(-KS -e) + [""], "", [], /-Ks/)
+    assert_in_out_err(%w(-KN -e) + [""], "", [], /-Kn/)
   end
 
   def test_version
@@ -235,7 +235,7 @@ class TestRubyOptions < Test::Unit::TestCase
     ENV['RUBYOPT'] = '-Eus-ascii -KN'
     assert_in_out_err(%w(-Eutf-8 -KU), "p '\u3042'") do |r, e|
       assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
-      assert_equal([], e)
+      assert_match(/-Ku/, e.join)
     end
 
   ensure
@@ -289,7 +289,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
     assert_in_out_err([], "#!ruby -KU -Eutf-8\r\np \"\u3042\"\r\n") do |r, e|
       assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
-      assert_equal([], e)
+      assert_match(/-Ku/, e.join)
     end
 
     bug4118 = '[ruby-dev:42680]'
