@@ -1,3 +1,19 @@
+Tue Jul  3 11:44:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_enc_path_next, rb_enc_path_skip_prefix)
+	  (rb_enc_path_last_separator, rb_enc_path_end)
+	  (ruby_enc_find_basename, ruby_enc_find_extname): encoding-aware
+	  path handling functions.
+
+	* file.c (rb_home_dir, file_expand_path, rb_realpath_internal)
+	  (rb_file_s_basename, rb_file_dirname, rb_file_s_extname)
+	  (rb_file_join): should respect the encodings of arguments than
+	  file system encoding.  [ruby-dev:45145] [Bug #5919]
+
+	* dir.c (check_dirname, ruby_glob0): ditto.
+
+	* ext/pathname/pathname.c (path_sub_ext): ditto.
+
 Tue Jul  3 11:43:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_chdir, check_dirname): get rid of optimization-out.
