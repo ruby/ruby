@@ -1,3 +1,8 @@
+Tue Jul  3 19:18:27 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* proc.c (rb_vm_rewrite_dfp_in_errinfo): Fix `unexpected return'
+	occurs when a proc is called in ensure. [Backport #6460]
+
 Tue Jul  3 11:44:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_enc_path_next, rb_enc_path_skip_prefix)
