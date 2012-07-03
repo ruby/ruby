@@ -848,8 +848,8 @@ class CGI
       methods = ""
       # - -
       for element in %w[ A TT I B U STRIKE BIG SMALL SUB SUP EM STRONG
-          DFN CODE SAMP KBD VAR CITE FONT ADDRESS DIV center MAP
-          APPLET PRE XMP LISTING DL OL UL DIR MENU SELECT table TITLE
+          DFN CODE SAMP KBD VAR CITE FONT ADDRESS DIV CENTER MAP
+          APPLET PRE XMP LISTING DL OL UL DIR MENU SELECT TABLE TITLE
           STYLE SCRIPT H1 H2 H3 H4 H5 H6 TEXTAREA FORM BLOCKQUOTE
           CAPTION ]
         methods += <<-BEGIN + nn_element_def(element) + <<-END
@@ -870,8 +870,8 @@ class CGI
       end
 
       # O O or - O
-      for element in %w[ HTML HEAD BODY P PLAINTEXT DT DD LI OPTION tr
-          th td ]
+      for element in %w[ HTML HEAD BODY P PLAINTEXT DT DD LI OPTION TR
+          TH TD ]
         methods += <<-BEGIN + nO_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
