@@ -1,4 +1,6 @@
-Tue Jul  3 19:18:27 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+Tue Jul  3 19:37:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rmext): no extension to strip if empty string.
 
 	* proc.c (rb_vm_rewrite_dfp_in_errinfo): Fix `unexpected return'
 	occurs when a proc is called in ensure. [Backport #6460]

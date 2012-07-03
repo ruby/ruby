@@ -3522,7 +3522,7 @@ rmext(const char *p, long l0, long l1, const char *e, long l2, rb_encoding *enc)
     unsigned int c;
     const char *s, *last;
 
-    if (!e) return 0;
+    if (!e || !l2) return 0;
 
     c = rb_enc_codepoint_len(e, e + l2, &len1, enc);
     if (rb_enc_ascget(e + len1, e + l2, &len2, enc) == '*' && len1 + len2 == l2) {
