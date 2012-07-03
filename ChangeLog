@@ -1,3 +1,13 @@
+Tue Jul  3 11:56:46 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c (zstream_detach_buffer):  Refactored tainting of
+	  output string, moving it from the callee to zstream_detach_buffer.
+	* ext/zlib/zlib.c (rb_zstream_finish):  ditto
+	* ext/zlib/zlib.c (rb_zstream_flush_next_out):  ditto
+	* ext/zlib/zlib.c (rb_deflate_deflate):  ditto
+	* ext/zlib/zlib.c (rb_deflate_flush):  ditto
+	* ext/zlib/zlib.c (rb_inflate_inflate):  ditto
+
 Tue Jul  3 11:16:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (runnable): make symbolic links to run in build directory.

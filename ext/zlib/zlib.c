@@ -734,7 +734,7 @@ zstream_append_buffer(struct zstream *z, const Bytef *src, long len)
 static VALUE
 zstream_detach_buffer(struct zstream *z)
 {
-    VALUE dst;
+    VALUE dst, self = (VALUE)z->stream.opaque;
 
     if (NIL_P(z->buf)) {
 	dst = rb_str_new(0, 0);
@@ -744,6 +744,8 @@ zstream_detach_buffer(struct zstream *z)
 	rb_str_resize(dst, z->buf_filled);
 	RBASIC(dst)->klass = rb_cString;
     }
+
+    OBJ_INFECT(dst, self);
 
     z->buf = Qnil;
     z->buf_filled = 0;
@@ -1209,13 +1211,10 @@ static VALUE
 rb_zstream_finish(VALUE obj)
 {
     struct zstream *z = get_zstream(obj);
-    VALUE dst;
 
     zstream_run(z, (Bytef*)"", 0, Z_FINISH);
-    dst = zstream_detach_buffer(z);
 
-    OBJ_INFECT(dst, obj);
-    return dst;
+    return zstream_detach_buffer(z);
 }
 
 /*
@@ -1240,12 +1239,10 @@ static VALUE
 rb_zstream_flush_next_out(VALUE obj)
 {
     struct zstream *z;
-    VALUE dst;
 
     Data_Get_Struct(obj, struct zstream, z);
-    dst = zstream_detach_buffer(z);
-    OBJ_INFECT(dst, obj);
-    return dst;
+
+    return zstream_detach_buffer(z);
 }
 
 /*
@@ -1590,15 +1587,13 @@ static VALUE
 rb_deflate_deflate(int argc, VALUE *argv, VALUE obj)
 {
     struct zstream *z = get_zstream(obj);
-    VALUE src, flush, dst;
+    VALUE src, flush;
 
     rb_scan_args(argc, argv, "11", &src, &flush);
     OBJ_INFECT(obj, src);
     do_deflate(z, src, ARG_FLUSH(flush));
-    dst = zstream_detach_buffer(z);
 
-    OBJ_INFECT(dst, obj);
-    return dst;
+    return zstream_detach_buffer(z);
 }
 
 /*
@@ -1634,7 +1629,7 @@ static VALUE
 rb_deflate_flush(int argc, VALUE *argv, VALUE obj)
 {
     struct zstream *z = get_zstream(obj);
-    VALUE v_flush, dst;
+    VALUE v_flush;
     int flush;
 
     rb_scan_args(argc, argv, "01", &v_flush);
@@ -1642,10 +1637,8 @@ rb_deflate_flush(int argc, VALUE *argv, VALUE obj)
     if (flush != Z_NO_FLUSH) {  /* prevent Z_BUF_ERROR */
 	zstream_run(z, (Bytef*)"", 0, flush);
     }
-    dst = zstream_detach_buffer(z);
 
-    OBJ_INFECT(dst, obj);
-    return dst;
+    return zstream_detach_buffer(z);
 }
 
 /*
@@ -1938,6 +1931,7 @@ rb_inflate_inflate(VALUE obj, VALUE src)
 	    StringValue(src);
 	    zstream_append_buffer2(z, src);
 	    dst = rb_str_new(0, 0);
+	    OBJ_INFECT(dst, obj);
 	}
     }
     else {
@@ -1948,7 +1942,6 @@ rb_inflate_inflate(VALUE obj, VALUE src)
 	}
     }
 
-    OBJ_INFECT(dst, obj);
     return dst;
 }
 
