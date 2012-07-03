@@ -223,8 +223,9 @@ end
 
 def assert_check(testsrc, message = '', opt = '')
   show_progress(message) {
-    result = get_result_string(testsrc, opt)
+    result, errout = with_stderr {get_result_string(testsrc, opt)}
     check_coredump
+    error "stderr output is not empty\n", adjust_indent(errout) unless errout.empty?
     yield(result)
   }
 end
@@ -394,6 +395,23 @@ def get_result_string(src, opt = '')
   else
     eval(src).to_s
   end
+end
+
+def with_stderr
+  out = err = nil
+  IO.pipe do |r, w|
+    stderr = $stderr.dup
+    $stderr.reopen(w)
+    w.close
+    reader = Thread.start {r.read}
+    begin
+      out = yield
+    ensure
+      $stderr.reopen(stderr)
+      err = reader.value
+    end
+  end
+  return out, err
 end
 
 def newtest
