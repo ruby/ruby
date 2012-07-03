@@ -1,3 +1,7 @@
+Tue Jul  3 11:16:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (runnable): make symbolic links to run in build directory.
+
 Tue Jul  3 10:46:06 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ruby.c (proc_options): warn if -K option is specified. [Feature #5206]

@@ -2655,6 +2655,9 @@ AS_CASE("$enable_shared", [yes], [
 	],
     [interix*], [
 	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
+	],
+    [mingw*|cygwin*|mswin*], [
+	LIBRUBY_RELATIVE=yes
 	])
 ], [
   LIBRUBYARG_SHARED=

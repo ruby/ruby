@@ -521,6 +521,11 @@ test-rubyspec-precheck:
 test-rubyspec: test-rubyspec-precheck
 	$(RUNRUBY) $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec $(MSPECOPT)
 
+RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
+runnable: $(RUNNABLE) prog $(srcdir)/tool/mkrunnable.rb PHONY
+	$(Q) $(MINIRUBY) $(srcdir)/tool/mkrunnable.rb -v $(EXTOUT)
+yes-runnable: PHONY
+
 encs: enc trans
 libencs: libenc libtrans
 encs enc trans libencs libenc libtrans: showflags $(ENC_MK) $(LIBRUBY) $(PREP)
