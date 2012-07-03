@@ -163,6 +163,7 @@ if $0 == __FILE__
   module Test
     module Unit
       class TestCase < MiniTest::Unit::TestCase
+        undef on_parallel_worker?
         def on_parallel_worker?
           true
         end
