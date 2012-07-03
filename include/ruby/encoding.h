@@ -211,12 +211,6 @@ void rb_enc_set_default_external(VALUE encoding);
 void rb_enc_set_default_internal(VALUE encoding);
 VALUE rb_locale_charmap(VALUE klass);
 long rb_memsearch(const void*,long,const void*,long,rb_encoding*);
-char *rb_enc_path_next(const char *,const char *,rb_encoding*);
-char *rb_enc_path_skip_prefix(const char *,const char *,rb_encoding*);
-char *rb_enc_path_last_separator(const char *,const char *,rb_encoding*);
-char *rb_enc_path_end(const char *,const char *,rb_encoding*);
-const char *ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encoding *enc);
-const char *ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc);
 
 RUBY_EXTERN VALUE rb_cEncoding;
 #define ENC_DUMMY_FLAG (1<<24)

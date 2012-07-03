@@ -1,5 +1,4 @@
 #include "ruby.h"
-#include "ruby/encoding.h"
 
 static VALUE rb_cPathname;
 static ID id_at_path, id_to_path;
@@ -185,15 +184,15 @@ path_sub_ext(VALUE self, VALUE repl)
 
     StringValue(repl);
     p = RSTRING_PTR(str);
-    extlen = RSTRING_LEN(str);
-    ext = ruby_enc_find_extname(p, &extlen, rb_enc_get(str));
+    ext = ruby_find_extname(p, &extlen);
     if (ext == NULL) {
         ext = p + RSTRING_LEN(str);
     }
     else if (extlen <= 1) {
         ext += extlen;
     }
-    str2 = rb_str_subseq(str, 0, ext-p);
+    str2 = rb_str_dup(str);
+    rb_str_resize(str2, ext-p);
     rb_str_append(str2, repl);
     OBJ_INFECT(str2, str);
     return rb_class_new_instance(1, &str2, rb_obj_class(self));

@@ -910,16 +910,11 @@ check_dirname(volatile VALUE *dir)
 {
     VALUE d = *dir;
     char *path, *pend;
-    long len;
-    rb_encoding *enc;
 
     rb_secure(2);
     FilePathValue(d);
-    enc = rb_enc_get(d);
-    RSTRING_GETMEM(d, path, len);
-    pend = path + len;
-    pend = rb_enc_path_end(rb_enc_path_skip_prefix(path, pend, enc), pend, enc);
-    if (pend - path < len) {
+    path = RSTRING_PTR(d);
+    if (path && *(pend = rb_path_end(rb_path_skip_prefix(path)))) {
 	d = rb_str_subseq(d, 0, pend - path);
     }
     *dir = rb_str_encode_ospath(d);
@@ -1499,7 +1494,7 @@ ruby_glob0(const char *path, int flags, ruby_glob_func *func, VALUE arg, rb_enco
     start = root = path;
     flags |= FNM_SYSCASE;
 #if defined DOSISH
-    root = rb_enc_path_skip_prefix(root, root + strlen(root), enc);
+    root = rb_path_skip_prefix(root);
 #endif
 
     if (root && *root == '/') root++;

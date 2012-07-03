@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+
 require 'test/unit'
 require 'pathname'
 
@@ -183,8 +185,10 @@ class TestPathname < Test::Unit::TestCase
 
   if DOSISH
     defassert(:del_trailing_separator, "a", "a\\")
-    defassert(:del_trailing_separator, "\225\\".force_encoding("cp932"), "\225\\\\".force_encoding("cp932"))
-    defassert(:del_trailing_separator, "\225".force_encoding("cp437"), "\225\\\\".force_encoding("cp437"))
+    require 'Win32API'
+    if Win32API.new('kernel32', 'GetACP', nil, 'L').call == 932
+      defassert(:del_trailing_separator, "\225\\", "\225\\\\") # SJIS
+    end
   end
 
   def test_plus
