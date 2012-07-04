@@ -920,7 +920,6 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 		    opt->src.enc.name = rb_str_new2(enc_name);
 		    if (!opt->ext.enc.name)
 			opt->ext.enc.name = opt->src.enc.name;
-		    rb_warn("-K%c is specified; it is for 1.8 compatibility and may cause odd behavior", rb_tolower(*s));
 		}
 		s++;
 	    }
@@ -1276,6 +1275,9 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	if (int_enc_name)
 	    opt->intern.enc.name = int_enc_name;
     }
+
+    if (opt->src.enc.name)
+	rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
     if (opt->dump & DUMP_BIT(version)) {
 	ruby_show_version();

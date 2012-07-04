@@ -121,9 +121,17 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-KU), "p '\u3042'") do |r, e|
       assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
     end
-    assert_in_out_err(%w(-KE -e) + [""], "", [], /-Ke/)
-    assert_in_out_err(%w(-KS -e) + [""], "", [], /-Ks/)
-    assert_in_out_err(%w(-KN -e) + [""], "", [], /-Kn/)
+    line = '-eputs"\xc2\xa1".encoding'
+    env = {'RUBYOPT' => nil}
+    assert_in_out_err([env, '-Ke', line], "", ["EUC-JP"], [])
+    assert_in_out_err([env, '-KE', line], "", ["EUC-JP"], [])
+    assert_in_out_err([env, '-Ks', line], "", ["Windows-31J"], [])
+    assert_in_out_err([env, '-KS', line], "", ["Windows-31J"], [])
+    assert_in_out_err([env, '-Ku', line], "", ["UTF-8"], [])
+    assert_in_out_err([env, '-KU', line], "", ["UTF-8"], [])
+    assert_in_out_err([env, '-Kn', line], "", ["ASCII-8BIT"], [])
+    assert_in_out_err([env, '-KN', line], "", ["ASCII-8BIT"], [])
+    assert_in_out_err([env, '-wKe', line], "", ["EUC-JP"], /-K/)
   end
 
   def test_version
@@ -235,7 +243,7 @@ class TestRubyOptions < Test::Unit::TestCase
     ENV['RUBYOPT'] = '-Eus-ascii -KN'
     assert_in_out_err(%w(-Eutf-8 -KU), "p '\u3042'") do |r, e|
       assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
-      assert_match(/-Ku/, e.join)
+      assert_equal([], e)
     end
 
   ensure
@@ -287,9 +295,9 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([], "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux -foo -bar\r\np 1\r\n",
                       [], /: no Ruby script found in input/)
 
-    assert_in_out_err([], "#!ruby -KU -Eutf-8\r\np \"\u3042\"\r\n") do |r, e|
+    assert_in_out_err([{'RUBYOPT' => nil}], "#!ruby -KU -Eutf-8\r\np \"\u3042\"\r\n") do |r, e|
       assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
-      assert_match(/-Ku/, e.join)
+      assert_equal([], e)
     end
 
     bug4118 = '[ruby-dev:42680]'
