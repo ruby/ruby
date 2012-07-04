@@ -1,3 +1,7 @@
+Wed Jul  4 11:52:12 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* gc.c (ATOMIC_SIZE_*): 64bit Windows support.
+
 Wed Jul  4 11:11:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_frame_callee, rb_f_callee_name): fix to return the called

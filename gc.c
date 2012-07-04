@@ -61,11 +61,19 @@
 #endif
 
 #if defined _WIN32
-# define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd(&(var), (val))
-# define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd(&(var), -(val))
-# define ATOMIC_SIZE_INC(var) InterlockedIncrement(&(var))
-# define ATOMIC_SIZE_DEC(var) InterlockedDecrement(&(var))
-# define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange(&(var), (val))
+# ifdef _M_AMD64
+#  define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd64(&(var), (val))
+#  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd64(&(var), -(val))
+#  define ATOMIC_SIZE_INC(var) InterlockedIncrement64(&(var))
+#  define ATOMIC_SIZE_DEC(var) InterlockedDecrement64(&(var))
+#  define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange64(&(var), (val))
+# else
+#  define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd(&(var), (val))
+#  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd(&(var), -(val))
+#  define ATOMIC_SIZE_INC(var) InterlockedIncrement(&(var))
+#  define ATOMIC_SIZE_DEC(var) InterlockedDecrement(&(var))
+#  define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange(&(var), (val))
+# endif
 #elif defined HAVE_GCC_ATOMIC_BUILTINS
 # define ATOMIC_SIZE_ADD(var, val) __sync_fetch_and_add(&(var), (val))
 # define ATOMIC_SIZE_SUB(var, val) __sync_fetch_and_sub(&(var), (val))
