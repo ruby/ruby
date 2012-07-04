@@ -3456,9 +3456,10 @@ rmext(const char *p, long l0, long l1, const char *e)
 {
     long l2;
 
-    if (!e || !l2) return 0;
+    if (!e) return 0;
 
     l2 = strlen(e);
+    if (!l2) return 0;
     if (l2 == 2 && e[1] == '*') {
 	unsigned char c = *e;
 	e = p + l1;
