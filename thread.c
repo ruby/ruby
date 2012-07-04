@@ -1110,8 +1110,9 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
  *
  *   Safe C API:
  *     * rb_thread_interrupted() - check interrupt flag
- *     * ruby_xalloc(), ruby_xrealloc(), ruby_xfree() -
- *         if they called without GVL, acquire GVL automatically.
+ *     * ruby_xmalloc(), ruby_xrealloc(), ruby_xfree() -
+ *         they will work without GVL, and may acquire GVL
+ *         when GC is needed.
  */
 VALUE
 rb_thread_blocking_region(
