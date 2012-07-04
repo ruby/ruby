@@ -1,3 +1,10 @@
+Wed Jul  4 11:11:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_frame_callee, rb_f_callee_name): fix to return the called
+	  id.
+
+	* vm_insnhelper.c (vm_push_frame): set proper method entry.
+
 Wed Jul  4 08:29:31 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* array.c (rb_ary_aref):  Updated documentation to indicate the

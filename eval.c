@@ -874,27 +874,66 @@ frame_func_id(rb_control_frame_t *cfp)
     return 0;
 }
 
+static ID
+frame_called_id(rb_control_frame_t *cfp)
+{
+    const rb_method_entry_t *me_local;
+    rb_iseq_t *iseq = cfp->iseq;
+    if (cfp->me) {
+	return cfp->me->called_id;
+    }
+    while (iseq) {
+	if (RUBY_VM_IFUNC_P(iseq)) {
+	    NODE *ifunc = (NODE *)iseq;
+	    if (ifunc->nd_aid) return ifunc->nd_aid;
+	    return rb_intern("<ifunc>");
+	}
+	me_local = method_entry_of_iseq(cfp, iseq);
+	if (me_local) {
+	    cfp->me = me_local;
+	    return me_local->called_id;
+	}
+	if (iseq->defined_method_id) {
+	    return iseq->defined_method_id;
+	}
+	if (iseq->local_iseq == iseq) {
+	    break;
+	}
+	iseq = iseq->parent_iseq;
+    }
+    return 0;
+}
+
 ID
 rb_frame_this_func(void)
 {
     return frame_func_id(GET_THREAD()->cfp);
 }
 
-ID
-rb_frame_callee(void)
+static rb_control_frame_t *
+previous_frame(rb_thread_t *th)
 {
-    return frame_func_id(GET_THREAD()->cfp);
-}
-
-static ID
-rb_frame_caller(void)
-{
-    rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
     /* check if prev_cfp can be accessible */
     if ((void *)(th->stack + th->stack_size) == (void *)(prev_cfp)) {
         return 0;
     }
+    return prev_cfp;
+}
+
+ID
+rb_frame_callee(void)
+{
+    rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
+    if (!prev_cfp) return 0;
+    return frame_called_id(prev_cfp);
+}
+
+static ID
+rb_frame_caller(void)
+{
+    rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
+    if (!prev_cfp) return 0;
     return frame_func_id(prev_cfp);
 }
 
@@ -1248,6 +1287,19 @@ rb_f_method_name(void)
     }
 }
 
+static VALUE
+rb_f_callee_name(void)
+{
+    ID fname = rb_frame_callee(); /* need *callee* ID */
+
+    if (fname) {
+	return ID2SYM(fname);
+    }
+    else {
+	return Qnil;
+    }
+}
+
 void
 Init_eval(void)
 {
@@ -1260,7 +1312,7 @@ Init_eval(void)
     rb_define_global_function("global_variables", rb_f_global_variables, 0);	/* in variable.c */
 
     rb_define_global_function("__method__", rb_f_method_name, 0);
-    rb_define_global_function("__callee__", rb_f_method_name, 0);
+    rb_define_global_function("__callee__", rb_f_callee_name, 0);
 
     rb_define_private_method(rb_cModule, "append_features", rb_mod_append_features, 1);
     rb_define_private_method(rb_cModule, "extend_object", rb_mod_extend_object, 1);

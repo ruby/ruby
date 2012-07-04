@@ -71,7 +71,7 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	    rb_control_frame_t *reg_cfp = th->cfp;
 	    rb_control_frame_t *cfp =
 		vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
-			      recv, VM_ENVVAL_BLOCK_PTR(blockptr), 0, reg_cfp->sp, 1);
+			      recv, VM_ENVVAL_BLOCK_PTR(blockptr), 0, reg_cfp->sp, 1, me);
 
 	    cfp->me = me;
 	    val = call_cfunc(def->body.cfunc.func, recv, def->body.cfunc.argc, argc, argv);

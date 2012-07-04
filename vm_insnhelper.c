@@ -30,7 +30,8 @@ vm_push_frame(rb_thread_t *th,
 	      VALUE specval,
 	      const VALUE *pc,
 	      VALUE *sp,
-	      int local_size)
+	      int local_size,
+	      const rb_method_entry_t *me)
 {
     rb_control_frame_t *const cfp = th->cfp - 1;
     int i;
@@ -62,7 +63,7 @@ vm_push_frame(rb_thread_t *th,
     cfp->self = self;
     cfp->block_iseq = 0;
     cfp->proc = 0;
-    cfp->me = 0;
+    cfp->me = me;
 
     if (VMDEBUG == 2) {
 	SDR();
@@ -423,9 +424,8 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->called_id, me->klass);
 
     cfp = vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, recv,
-			VM_ENVVAL_BLOCK_PTR(blockptr), 0, th->cfp->sp, 1);
+			VM_ENVVAL_BLOCK_PTR(blockptr), 0, th->cfp->sp, 1, me);
 
-    cfp->me = me;
     reg_cfp->sp -= num + 1;
 
     val = call_cfunc(def->body.cfunc.func, recv, (int)def->body.cfunc.argc, num, reg_cfp->sp + 1);
@@ -508,7 +508,7 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 
 	vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, recv,
 		      VM_ENVVAL_BLOCK_PTR(blockptr),
-		      iseq->iseq_encoded + opt_pc, sp, 0);
+		      iseq->iseq_encoded + opt_pc, sp, 0, me);
 
 	cfp->sp = rsp - 1 /* recv */;
     }
@@ -531,7 +531,7 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 
 	vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, recv,
 		      VM_ENVVAL_BLOCK_PTR(blockptr),
-		      iseq->iseq_encoded + opt_pc, sp, 0);
+		      iseq->iseq_encoded + opt_pc, sp, 0, me);
     }
 }
 
@@ -760,7 +760,7 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
     }
 
     cfp = vm_push_frame(th, (rb_iseq_t *)ifunc, VM_FRAME_MAGIC_IFUNC, self,
-			VM_ENVVAL_PREV_EP_PTR(block->ep), 0, th->cfp->sp, 1);
+			VM_ENVVAL_PREV_EP_PTR(block->ep), 0, th->cfp->sp, 1, 0);
 
     if (blockargptr) {
 	VM_CF_LEP(cfp)[0] = VM_ENVVAL_BLOCK_PTR(blockargptr);
@@ -980,7 +980,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
 		      VM_ENVVAL_PREV_EP_PTR(block->ep),
 		      iseq->iseq_encoded + opt_pc,
 		      rsp + arg_size,
-		      iseq->local_size - arg_size);
+		      iseq->local_size - arg_size, 0);
 
 	return Qundef;
     }
