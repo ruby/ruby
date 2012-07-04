@@ -1,3 +1,9 @@
+Wed Jul  4 19:36:17 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/cfunc.c (rb_dlcfunc_call): also needed the workaround for VC8
+	  for x64.  [ruby-dev:45875] [Bug #6676]
+	  reported by aves_ramphastos (Seigo Ishigane)
+
 Tue Jul  3 19:37:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rmext): no extension to strip if empty string.
