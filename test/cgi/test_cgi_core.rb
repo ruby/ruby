@@ -38,7 +38,7 @@ class CGICoreTest < Test::Unit::TestCase
   def test_cgi_core_params_GET
     @environ = {
       'REQUEST_METHOD'  => 'GET',
-      'QUERY_STRING'    => 'id=123&id=456&id=&str=%40h+%3D%7E+%2F%5E%24%2F',
+      'QUERY_STRING'    => 'id=123&id=456&id=&id&str=%40h+%3D%7E+%2F%5E%24%2F',
       'HTTP_COOKIE'     => '_session_id=12345; name1=val1&val2;',
       'SERVER_SOFTWARE' => 'Apache 2.2.0',
       'SERVER_PROTOCOL' => 'HTTP/1.1',
