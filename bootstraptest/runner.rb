@@ -399,7 +399,8 @@ end
 
 def with_stderr
   out = err = nil
-  IO.pipe do |r, w|
+  begin
+    r, w = IO.pipe
     stderr = $stderr.dup
     $stderr.reopen(w)
     w.close
@@ -410,6 +411,9 @@ def with_stderr
       $stderr.reopen(stderr)
       err = reader.value
     end
+  ensure
+    w.close rescue nil
+    r.close rescue nil
   end
   return out, err
 end
