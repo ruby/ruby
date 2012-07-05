@@ -1,4 +1,4 @@
-"exec" "${RUBY-ruby}" "-x" "$0" "$@"; true # -*- mode: ruby; coding: utf-8 -*-
+"exec" "${RUBY-ruby}" "-x" "$0" "$@" || true # -*- mode: ruby; coding: utf-8 -*-
 #!./ruby
 # $Id$
 
@@ -123,21 +123,21 @@ End
 
   @progress = %w[- \\ | /]
   @progress_bs = "\b" * @progress[0].size
-  @tty = !@verbose && $stderr.tty?
+  @tty = $stderr.tty?
   case @color
   when nil
     @color = @tty && /dumb/ !~ ENV["TERM"]
-  when true
-    @tty = true
   end
+  @tty &&= !@verbose
   if @color
     # dircolors-like style
     colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:]*)/)] : {}
     @passed = "\e[#{colors["pass"] || "32"}m"
     @failed = "\e[#{colors["fail"] || "31"}m"
     @reset = "\e[m"
+    @erase = "\r\e[2K\r"
   else
-    @passed = @failed = @reset = ""
+    @passed = @failed = @reset = @erase = ""
   end
   unless quiet
     puts Time.now
@@ -164,8 +164,8 @@ def exec_test(pathes)
   @errbuf = []
   @location = nil
   pathes.each do |path|
-    $stderr.print "#{File.basename(path)} "
-    $stderr.print @progress[@count % @progress.size] if @tty
+    @basename = File.basename(path)
+    $stderr.print @basename, " "
     $stderr.puts if @verbose
     count = @count
     error = @error
@@ -173,7 +173,7 @@ def exec_test(pathes)
     if @tty
       if @error == error
         $stderr.print "#{@progress_bs}#{@passed}PASS #{@count-count}#{@reset}"
-        $stderr.print "\r\e[2K\r" if @quiet
+        $stderr.print @erase if @quiet
       else
         $stderr.print "#{@progress_bs}#{@failed}FAIL #{@error-error}/#{@count-count}#{@reset}"
       end
@@ -199,8 +199,10 @@ end
 def show_progress(message = '')
   if @verbose
     $stderr.print "\##{@count} #{@location} "
+  elsif @tty
+    $stderr.print @progress[@count % @progress.size]
   end
-  faildesc = yield
+  faildesc, errout = with_stderr {yield}
   if !faildesc
     if @tty
       $stderr.print "#{@progress_bs}#{@progress[@count % @progress.size]}"
@@ -209,9 +211,15 @@ def show_progress(message = '')
     end
     $stderr.puts if @verbose
   else
-    $stderr.print 'F'
+    $stderr.print "#{@failed}F#{@reset}"
     $stderr.puts if @verbose
     error faildesc, message
+    unless errout.empty?
+      $stderr.print "#{@failed}stderr output is not empty#{@reset}\n", adjust_indent(errout)
+    end
+    if @tty and !@verbose
+      $stderr.print @basename, " ", @progress[@count % @progress.size]
+    end
   end
 rescue Interrupt
   raise Interrupt
@@ -223,9 +231,8 @@ end
 
 def assert_check(testsrc, message = '', opt = '')
   show_progress(message) {
-    result, errout = with_stderr {get_result_string(testsrc, opt)}
+    result = get_result_string(testsrc, opt)
     check_coredump
-    error "stderr output is not empty\n", adjust_indent(errout) unless errout.empty?
     yield(result)
   }
 end
@@ -425,7 +432,12 @@ def newtest
 end
 
 def error(msg, additional_message)
-  @errbuf.push "\##{@count} #{@location}: #{msg}  #{additional_message}"
+  msg = "#{@failed}\##{@count} #{@location}#{@reset}: #{msg}  #{additional_message}"
+  if @tty
+    $stderr.puts "#{@erase}#{msg}"
+  else
+    @errbuf.push msg
+  end
   @error += 1
 end
 

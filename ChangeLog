@@ -1,3 +1,10 @@
+Thu Jul  5 15:14:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bootstraptest/runner.rb (show_progress): refine error output. do not
+	  count non-empty error message, but just warn.
+
+	* bootstraptest/runner.rb (error): show errors immediately if tty.
+
 Thu Jul  5 12:28:11 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/net/http/test_httpresponses.rb: Add a test file for
