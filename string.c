@@ -3223,9 +3223,14 @@ rb_str_aref(VALUE str, VALUE indx)
  *  Element Reference --- If passed a single +index+, returns a substring of
  *  one character at that index. If passed a +start+ index and a +length+,
  *  returns a substring containing +length+ characters starting at the
- *  +index+. If passed a range, its beginning and end are interpreted as
- *  offsets delimiting the substring to be returned. In these three cases, if
- *  an index is negative, it is counted from the end of the string.
+ *  +index+. If passed a +range+, its beginning and end are interpreted as
+ *  offsets delimiting the substring to be returned.
+ *
+ *  In these three cases, if an index is negative, it is counted from the end
+ *  of the string.  For the +start+ and +range+ cases the starting index
+ *  is just before a character and an index matching the string's size.
+ *  Additionally, an empty string is returned when the starting index for a
+ *  character range is at the end of the string.
  *
  *  Returns +nil+ if the initial index falls outside the string or the length
  *  is negative.

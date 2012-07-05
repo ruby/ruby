@@ -1,3 +1,11 @@
+Fri Jul  6 06:49:50 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* array.c (rb_ary_aref):  Added a description of the behavior of
+	  index positioning.  [Bug #6680]
+	* array.c (rb_ary_aset):  ditto.  Reordered sentences for clarity.
+	* string.c (rb_str_aref_m):  Added a description of the behavior of
+	  index positioning
+
 Fri Jul  6 05:38:44 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* string.c (rb_str_bytesize):  Improve documentation.  Patch by Oscar

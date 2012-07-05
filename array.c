@@ -1016,7 +1016,9 @@ rb_ary_subseq(VALUE ary, long beg, long len)
  *  elements, or returns a subarray specified by +range+ of indices.
  *
  *  Negative indices count backward from the end of the array (-1 is the last
- *  element).
+ *  element).  For +start+ and +range+ cases the starting index is just before
+ *  an element.  Additionally, an empty array is returned when the starting
+ *  index for an element range is at the end of the array.
  *
  *  Returns +nil+ if the index (or starting index) are out of range.
  *
@@ -1030,7 +1032,7 @@ rb_ary_subseq(VALUE ary, long beg, long len)
  *     a[-3, 3]               #=> [ "c", "d", "e" ]
  *     # special cases
  *     a[5]                   #=> nil
- *     a[6]                   #=> nil
+ *     a[6, 1]                #=> nil
  *     a[5, 1]                #=> []
  *     a[5..10]               #=> []
  *
@@ -1436,8 +1438,11 @@ rb_ary_resize(VALUE ary, long len)
  *  specified by the +range+ of indices.
  *
  *  If indices are greater than the current capacity of the array, the array
- *  grows automatically. Negative indices will count backward from the end of
- *  the array. Inserts elements if +length+ is zero.
+ *  grows automatically.  Elements are inserted into the array at +start+ if
+ *  +length+ is zero.
+ *
+ *  Negative indices will count backward from the end of the array.  For
+ *  +start+ and +range+ cases the starting index is just before an element.
  *
  *  An IndexError is raised if a negative index points past the beginning of
  *  the array.
