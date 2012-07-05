@@ -497,7 +497,10 @@ rb_f_require_relative(VALUE obj, VALUE fname)
 {
     VALUE base = rb_current_realfilepath();
     if (NIL_P(base)) {
-	rb_loaderror("cannot infer basepath");
+      VALUE path = rb_find_file(FilePathValue(fname));
+      if (!path)
+        path = fname;
+      return rb_require_safe(rb_realpath_internal(Qnil, path, 0), rb_safe_level());
     }
     base = rb_file_dirname(base);
     return rb_require_safe(rb_file_absolute_path(fname, base), rb_safe_level());
