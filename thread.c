@@ -3770,7 +3770,7 @@ rb_thread_shield_wait(VALUE self)
 }
 
 /*
- * Release a barrrier, and return true if it has waiting threads.
+ * Release a thread shield, and return true if it has waiting threads.
  */
 VALUE
 rb_thread_shield_release(VALUE self)
@@ -3781,7 +3781,7 @@ rb_thread_shield_release(VALUE self)
 }
 
 /*
- * Release and destroy a barrrier, and return true if it has waiting threads.
+ * Release and destroy a thread shield, and return true if it has waiting threads.
  */
 VALUE
 rb_thread_shield_destroy(VALUE self)
