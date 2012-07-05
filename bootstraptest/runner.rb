@@ -200,7 +200,7 @@ def show_progress(message = '')
   if @verbose
     $stderr.print "\##{@count} #{@location} "
   elsif @tty
-    $stderr.print @progress[@count % @progress.size]
+    $stderr.print "#{@progress_bs}#{@progress[@count % @progress.size]}"
   end
   faildesc, errout = with_stderr {yield}
   if !faildesc
