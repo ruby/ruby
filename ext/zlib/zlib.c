@@ -679,7 +679,7 @@ zstream_expand_buffer_without_gvl(struct zstream *z)
 
 	len = z->buf_filled + inc;
 
-	new_str = realloc(RSTRING(z->buf)->as.heap.ptr, len + 1);
+	new_str = ruby_xrealloc(RSTRING(z->buf)->as.heap.ptr, len + 1);
 
 	if (!new_str)
 	    return 0;

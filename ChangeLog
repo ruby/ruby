@@ -1,3 +1,8 @@
+Fri Jul  6 04:05:59 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c (zstream_expand_buffer_without_gvl):  Use
+	  ruby_xrealloc() to avoid crash with CALC_EXACT_MALLOC_SIZE.
+
 Thu Jul  5 17:32:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h: move ThreadShield declarations from intern.h.
