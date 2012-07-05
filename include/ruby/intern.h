@@ -835,10 +835,6 @@ VALUE rb_mutex_lock(VALUE mutex);
 VALUE rb_mutex_unlock(VALUE mutex);
 VALUE rb_mutex_sleep(VALUE self, VALUE timeout);
 VALUE rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg);
-VALUE rb_thread_shield_new(void);
-VALUE rb_thread_shield_wait(VALUE self);
-VALUE rb_thread_shield_release(VALUE self);
-VALUE rb_thread_shield_destroy(VALUE self);
 /* time.c */
 VALUE rb_time_new(time_t, long);
 VALUE rb_time_nano_new(time_t, long);

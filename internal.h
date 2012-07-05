@@ -243,6 +243,10 @@ VALUE ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always);
 void rb_thread_execute_interrupts(VALUE th);
 void rb_clear_trace_func(void);
 VALUE rb_get_coverages(void);
+VALUE rb_thread_shield_new(void);
+VALUE rb_thread_shield_wait(VALUE self);
+VALUE rb_thread_shield_release(VALUE self);
+VALUE rb_thread_shield_destroy(VALUE self);
 
 /* thread_pthread.c, thread_win32.c */
 void Init_native_thread(void);

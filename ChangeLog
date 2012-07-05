@@ -1,3 +1,7 @@
+Thu Jul  5 17:32:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h: move ThreadShield declarations from intern.h.
+
 Thu Jul  5 16:00:24 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (ThreadShield): rename from Barrier.
