@@ -1,3 +1,8 @@
+Thu Jul  5 06:33:52 2012  Mark Dodwell <mark@mkdynamic.co.uk>
+
+	* lib/net/http/responses.rb: Fix 4xx classes to inherit correctly
+	  from Net::HTTPClientError. [Bug #6700]
+
 Wed Jul  4 21:55:35 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ruby.c (proc_options): warn only if -K and -w option is specified.
