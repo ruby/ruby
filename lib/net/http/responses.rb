@@ -142,17 +142,17 @@ class Net::HTTPExpectationFailed < Net::HTTPClientError             # 417
 end
 # 418 I'm a teapot - RFC 2324; a joke RFC
 # 420 Enhance Your Calm - Twitter
-class Net::HTTPUnprocessableEntity < Net::HTTPSuccess               # 422 - RFC 4918
+class Net::HTTPUnprocessableEntity < Net::HTTPClientError           # 422 - RFC 4918
   HAS_BODY = true
 end
-class Net::HTTPLocked < Net::HTTPSuccess                            # 423 - RFC 4918
+class Net::HTTPLocked < Net::HTTPClientError                        # 423 - RFC 4918
   HAS_BODY = true
 end
-class Net::HTTPFailedDependency < Net::HTTPSuccess                  # 424 - RFC 4918
+class Net::HTTPFailedDependency < Net::HTTPClientError              # 424 - RFC 4918
   HAS_BODY = true
 end
 # 425 Unordered Collection - existed only in draft
-class Net::HTTPUpgradeRequired < Net::HTTPSuccess                   # 426 - RFC 2817
+class Net::HTTPUpgradeRequired < Net::HTTPClientError               # 426 - RFC 2817
   HAS_BODY = true
 end
 class Net::HTTPPreconditionRequired < Net::HTTPClientError          # 428 - RFC 6585
