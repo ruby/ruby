@@ -1,3 +1,8 @@
+Thu Jul  5 12:28:11 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/net/http/test_httpresponses.rb: Add a test file for
+	  Net::HTTPResponses and put a test case for the previous bug.
+
 Thu Jul  5 06:33:52 2012  Mark Dodwell <mark@mkdynamic.co.uk>
 
 	* lib/net/http/responses.rb: Fix 4xx classes to inherit correctly
