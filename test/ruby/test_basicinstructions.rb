@@ -85,7 +85,9 @@ class TestBasicInstructions < Test::Unit::TestCase
     s = "OK"
     prev = nil
     3.times do
-      assert_equal prev.object_id, (prev ||= /#{s}/o).object_id  if prev
+      re = /#{s}/o
+      assert_same prev, re if prev
+      prev = re
     end
   end
 
