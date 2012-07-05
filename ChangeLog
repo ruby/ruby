@@ -1,3 +1,12 @@
+Fri Jul  6 05:38:44 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* string.c (rb_str_bytesize):  Improve documentation.  Patch by Oscar
+	  Del Ben from github issue #138.
+	* string.c (rb_str_empty):  ditto.
+	* string.c (rb_str_times):  ditto.
+	* string.c (rb_str_dump):  ditto.
+	* string.c (rb_str_center):  ditto.
+
 Fri Jul  6 04:05:59 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/zlib/zlib.c (zstream_expand_buffer_without_gvl):  Use

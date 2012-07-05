@@ -1147,7 +1147,10 @@ rb_str_length(VALUE str)
  *  call-seq:
  *     str.bytesize  -> integer
  *
- *  Returns the length of <i>str</i> in bytes.
+ *  Returns the length of +str+ in bytes.
+ *
+ *    "\x80\u3042".bytesize  #=> 4
+ *    "hello".bytesize       #=> 5
  */
 
 static VALUE
@@ -1163,6 +1166,7 @@ rb_str_bytesize(VALUE str)
  *  Returns <code>true</code> if <i>str</i> has a length of zero.
  *
  *     "hello".empty?   #=> false
+ *     " ".empty?       #=> false
  *     "".empty?        #=> true
  */
 
@@ -1209,10 +1213,11 @@ rb_str_plus(VALUE str1, VALUE str2)
  *  call-seq:
  *     str * integer   -> new_str
  *
- *  Copy---Returns a new <code>String</code> containing <i>integer</i> copies of
- *  the receiver.
+ *  Copy --- Returns a new String containing +integer+ copies of the receiver.
+ *  +integer+ must be greater than or equal to 0.
  *
  *     "Ho! " * 3   #=> "Ho! Ho! Ho! "
+ *     "Ho! " * 0   #=> ""
  */
 
 VALUE
@@ -4532,8 +4537,10 @@ rb_str_inspect(VALUE str)
  *  call-seq:
  *     str.dump   -> new_str
  *
- *  Produces a version of <i>str</i> with all nonprinting characters replaced by
+ *  Produces a version of +str+ with all non-printing characters replaced by
  *  <code>\nnn</code> notation and all special characters escaped.
+ *
+ *    "hello \n ''".dump  #=> "\"hello \\n ''\"
  */
 
 VALUE
@@ -7126,11 +7133,11 @@ rb_str_rjust(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.center(integer, padstr)   -> new_str
+ *     str.center(width, padstr=' ')   -> new_str
  *
- *  If <i>integer</i> is greater than the length of <i>str</i>, returns a new
- *  <code>String</code> of length <i>integer</i> with <i>str</i> centered and
- *  padded with <i>padstr</i>; otherwise, returns <i>str</i>.
+ *  Centers +str+ in +width+.  If +width+ is greater than the length of +str+,
+ *  returns a new String of length +width+ with +str+ centered and padded with
+ *  +padstr+; otherwise, returns +str+.
  *
  *     "hello".center(4)         #=> "hello"
  *     "hello".center(20)        #=> "       hello        "
