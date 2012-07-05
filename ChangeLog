@@ -1,3 +1,7 @@
+Thu Jul  5 16:00:24 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (ThreadShield): rename from Barrier.
+
 Thu Jul  5 15:14:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bootstraptest/runner.rb (show_progress): refine error output. do not

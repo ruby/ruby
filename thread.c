@@ -60,7 +60,7 @@
 #endif
 
 VALUE rb_cMutex;
-VALUE rb_cBarrier;
+VALUE rb_cThreadShield;
 
 static void sleep_timeval(rb_thread_t *th, struct timeval time);
 static void sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec);
@@ -3700,96 +3700,96 @@ rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg)
 }
 
 /*
- * Document-class: Barrier
+ * Document-class: ThreadShield
  */
 static void
-barrier_mark(void *ptr)
+thread_shield_mark(void *ptr)
 {
     rb_gc_mark((VALUE)ptr);
 }
 
-static const rb_data_type_t barrier_data_type = {
-    "barrier",
-    {barrier_mark, 0, 0,},
+static const rb_data_type_t thread_shield_data_type = {
+    "thread_shield",
+    {thread_shield_mark, 0, 0,},
 };
 
 static VALUE
-barrier_alloc(VALUE klass)
+thread_shield_alloc(VALUE klass)
 {
-    return TypedData_Wrap_Struct(klass, &barrier_data_type, (void *)mutex_alloc(0));
+    return TypedData_Wrap_Struct(klass, &thread_shield_data_type, (void *)mutex_alloc(0));
 }
 
-#define GetBarrierPtr(obj) ((VALUE)rb_check_typeddata((obj), &barrier_data_type))
-#define BARRIER_WAITING_MASK (FL_USER0|FL_USER1|FL_USER2|FL_USER3|FL_USER4|FL_USER5|FL_USER6|FL_USER7|FL_USER8|FL_USER9|FL_USER10|FL_USER11|FL_USER12|FL_USER13|FL_USER14|FL_USER15|FL_USER16|FL_USER17|FL_USER18|FL_USER19)
-#define BARRIER_WAITING_SHIFT (FL_USHIFT)
-#define rb_barrier_waiting(b) (int)((RBASIC(b)->flags&BARRIER_WAITING_MASK)>>BARRIER_WAITING_SHIFT)
-#define rb_barrier_waiting_inc(b) do { \
-    int w = rb_barrier_waiting(b); \
+#define GetThreadShieldPtr(obj) ((VALUE)rb_check_typeddata((obj), &thread_shield_data_type))
+#define THREAD_SHIELD_WAITING_MASK (FL_USER0|FL_USER1|FL_USER2|FL_USER3|FL_USER4|FL_USER5|FL_USER6|FL_USER7|FL_USER8|FL_USER9|FL_USER10|FL_USER11|FL_USER12|FL_USER13|FL_USER14|FL_USER15|FL_USER16|FL_USER17|FL_USER18|FL_USER19)
+#define THREAD_SHIELD_WAITING_SHIFT (FL_USHIFT)
+#define rb_thread_shield_waiting(b) (int)((RBASIC(b)->flags&THREAD_SHIELD_WAITING_MASK)>>THREAD_SHIELD_WAITING_SHIFT)
+#define rb_thread_shield_waiting_inc(b) do { \
+    int w = rb_thread_shield_waiting(b); \
     w++; \
-    RBASIC(b)->flags &= ~BARRIER_WAITING_MASK; \
-    RBASIC(b)->flags |= ((VALUE)w << BARRIER_WAITING_SHIFT);	\
+    RBASIC(b)->flags &= ~THREAD_SHIELD_WAITING_MASK; \
+    RBASIC(b)->flags |= ((VALUE)w << THREAD_SHIELD_WAITING_SHIFT);	\
 } while (0)
-#define rb_barrier_waiting_dec(b) do { \
-    int w = rb_barrier_waiting(b); \
+#define rb_thread_shield_waiting_dec(b) do { \
+    int w = rb_thread_shield_waiting(b); \
     w--; \
-    RBASIC(b)->flags &= ~BARRIER_WAITING_MASK; \
-    RBASIC(b)->flags |= ((VALUE)w << BARRIER_WAITING_SHIFT); \
+    RBASIC(b)->flags &= ~THREAD_SHIELD_WAITING_MASK; \
+    RBASIC(b)->flags |= ((VALUE)w << THREAD_SHIELD_WAITING_SHIFT); \
 } while (0)
 
 VALUE
-rb_barrier_new(void)
+rb_thread_shield_new(void)
 {
-    VALUE barrier = barrier_alloc(rb_cBarrier);
-    rb_mutex_lock((VALUE)DATA_PTR(barrier));
-    return barrier;
+    VALUE thread_shield = thread_shield_alloc(rb_cThreadShield);
+    rb_mutex_lock((VALUE)DATA_PTR(thread_shield));
+    return thread_shield;
 }
 
 /*
- * Wait a barrier.
+ * Wait a thread shield.
  *
  * Returns
- *  true:  acquired the barrier
- *  false: the barrier was destroyed and no other threads waiting
- *  nil:   the barrier was destroyed but still in use
+ *  true:  acquired the thread shield
+ *  false: the thread shield was destroyed and no other threads waiting
+ *  nil:   the thread shield was destroyed but still in use
  */
 VALUE
-rb_barrier_wait(VALUE self)
+rb_thread_shield_wait(VALUE self)
 {
-    VALUE mutex = GetBarrierPtr(self);
+    VALUE mutex = GetThreadShieldPtr(self);
     rb_mutex_t *m;
 
     if (!mutex) return Qfalse;
     GetMutexPtr(mutex, m);
     if (m->th == GET_THREAD()) return Qnil;
-    rb_barrier_waiting_inc(self);
+    rb_thread_shield_waiting_inc(self);
     rb_mutex_lock(mutex);
-    rb_barrier_waiting_dec(self);
+    rb_thread_shield_waiting_dec(self);
     if (DATA_PTR(self)) return Qtrue;
     rb_mutex_unlock(mutex);
-    return rb_barrier_waiting(self) > 0 ? Qnil : Qfalse;
+    return rb_thread_shield_waiting(self) > 0 ? Qnil : Qfalse;
 }
 
 /*
  * Release a barrrier, and return true if it has waiting threads.
  */
 VALUE
-rb_barrier_release(VALUE self)
+rb_thread_shield_release(VALUE self)
 {
-    VALUE mutex = GetBarrierPtr(self);
+    VALUE mutex = GetThreadShieldPtr(self);
     rb_mutex_unlock(mutex);
-    return rb_barrier_waiting(self) > 0 ? Qtrue : Qfalse;
+    return rb_thread_shield_waiting(self) > 0 ? Qtrue : Qfalse;
 }
 
 /*
  * Release and destroy a barrrier, and return true if it has waiting threads.
  */
 VALUE
-rb_barrier_destroy(VALUE self)
+rb_thread_shield_destroy(VALUE self)
 {
-    VALUE mutex = GetBarrierPtr(self);
+    VALUE mutex = GetThreadShieldPtr(self);
     DATA_PTR(self) = 0;
     rb_mutex_unlock(mutex);
-    return rb_barrier_waiting(self) > 0 ? Qtrue : Qfalse;
+    return rb_thread_shield_waiting(self) > 0 ? Qtrue : Qfalse;
 }
 
 /* variables for recursive traversals */

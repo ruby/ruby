@@ -398,7 +398,7 @@ load_lock(const char *ftptr)
 	}
 	/* partial state */
 	ftptr = ruby_strdup(ftptr);
-	data = (st_data_t)rb_barrier_new();
+	data = (st_data_t)rb_thread_shield_new();
 	st_insert(loading_tbl, (st_data_t)ftptr, data);
 	return (char *)ftptr;
     }
@@ -406,7 +406,7 @@ load_lock(const char *ftptr)
 	rb_warning("loading in progress, circular require considered harmful - %s", ftptr);
 	rb_backtrace();
     }
-    switch (rb_barrier_wait((VALUE)data)) {
+    switch (rb_thread_shield_wait((VALUE)data)) {
       case Qfalse:
 	data = (st_data_t)ftptr;
 	st_delete(loading_tbl, &data, 0);
@@ -418,11 +418,11 @@ load_lock(const char *ftptr)
 }
 
 static int
-release_barrier(st_data_t *key, st_data_t *value, st_data_t done, int existing)
+release_thread_shield(st_data_t *key, st_data_t *value, st_data_t done, int existing)
 {
-    VALUE barrier = (VALUE)*value;
+    VALUE thread_shield = (VALUE)*value;
     if (!existing) return ST_STOP;
-    if (done ? rb_barrier_destroy(barrier) : rb_barrier_release(barrier)) {
+    if (done ? rb_thread_shield_destroy(thread_shield) : rb_thread_shield_release(thread_shield)) {
 	/* still in-use */
 	return ST_CONTINUE;
     }
@@ -437,7 +437,7 @@ load_unlock(const char *ftptr, int done)
 	st_data_t key = (st_data_t)ftptr;
 	st_table *loading_tbl = get_loading_table();
 
-	st_update(loading_tbl, key, release_barrier, done);
+	st_update(loading_tbl, key, release_thread_shield, done);
     }
 }
 
