@@ -55,7 +55,7 @@ with all sufficient information, see the ChangeLog file.
   * Module
     * added method:
       * added Module#prepend which is similar to Module#include,
-        however a mehtod in the prepended module overrides the
+        however a method in the prepended module overrides the
         corresponding method in the prepending module.
     * extended method:
       * Module#define_method accepts a UnboundMethod from a Module.
