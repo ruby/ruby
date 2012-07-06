@@ -497,10 +497,8 @@ rb_f_require_relative(VALUE obj, VALUE fname)
 {
     VALUE base = rb_current_realfilepath();
     if (NIL_P(base)) {
-      VALUE path = FilePathValue(fname);
-      if (!path)
-        path = fname;
-      return rb_require_safe(path, rb_safe_level());
+      if(!NIL_P(fname))
+        return rb_require_safe(fname, rb_safe_level());
     }
     base = rb_file_dirname(base);
     return rb_require_safe(rb_file_absolute_path(fname, base), rb_safe_level());
