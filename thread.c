@@ -3727,9 +3727,9 @@ thread_shield_alloc(VALUE klass)
 static inline void
 rb_thread_shield_waiting_inc(VALUE b)
 {
-    int w = rb_thread_shield_waiting(b);
+    unsigned int w = rb_thread_shield_waiting(b);
     w++;
-    if (w > (THREAD_SHIELD_WAITING_MASK>>THREAD_SHIELD_WAITING_SHIFT))
+    if (w > (unsigned int)(THREAD_SHIELD_WAITING_MASK>>THREAD_SHIELD_WAITING_SHIFT))
 	rb_raise(rb_eRuntimeError, "waiting count overflow");
     RBASIC(b)->flags &= ~THREAD_SHIELD_WAITING_MASK;
     RBASIC(b)->flags |= ((VALUE)w << THREAD_SHIELD_WAITING_SHIFT);
@@ -3738,7 +3738,7 @@ rb_thread_shield_waiting_inc(VALUE b)
 static inline void
 rb_thread_shield_waiting_dec(VALUE b)
 {
-    int w = rb_thread_shield_waiting(b);
+    unsigned int w = rb_thread_shield_waiting(b);
     if (!w) rb_raise(rb_eRuntimeError, "waiting count underflow");
     w--;
     RBASIC(b)->flags &= ~THREAD_SHIELD_WAITING_MASK;
