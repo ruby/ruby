@@ -382,7 +382,7 @@ module Test
       end
 
       def terminal_width
-        unless @terminal_width
+        unless @terminal_width ||= nil
           begin
             require 'io/console'
             width = $stdout.winsize[1]
