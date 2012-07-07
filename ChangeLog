@@ -1,3 +1,8 @@
+Sun Jul  8 07:36:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (shadowing_lvar_gen, warn_unused_var): no warnings for
+	  variables starting with _.  [ruby-core:46160][Feature #6693]
+
 Sat Jul  7 23:07:30 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/csv/test_features.rb: add require for Tempfile.

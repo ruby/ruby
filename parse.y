@@ -8595,12 +8595,23 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 #undef parser_yyerror
 }
 
+static int
+is_private_local_id(ID name)
+{
+    VALUE s;
+    if (name == idUScore) return 1;
+    if (!is_local_id(name)) return 0;
+    s = rb_id2str(name);
+    if (!s) return 0;
+    return RSTRING_PTR(s)[0] == '_';
+}
+
 #define LVAR_USED ((int)1 << (sizeof(int) * CHAR_BIT - 1))
 
 static ID
 shadowing_lvar_gen(struct parser_params *parser, ID name)
 {
-    if (idUScore == name) return name;
+    if (is_private_local_id(name)) return name;
     if (dyna_in_block()) {
 	if (dvar_curr(name)) {
 	    yyerror("duplicated argument name");
@@ -9324,7 +9335,7 @@ warn_unused_var(struct parser_params *parser, struct local_vars *local)
     }
     for (i = 0; i < cnt; ++i) {
 	if (!v[i] || (u[i] & LVAR_USED)) continue;
-	if (idUScore == v[i]) continue;
+	if (is_private_local_id(v[i])) continue;
 	rb_compile_warn(ruby_sourcefile, (int)u[i], "assigned but unused variable - %s", rb_id2name(v[i]));
     }
 }

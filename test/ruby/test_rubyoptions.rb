@@ -497,7 +497,8 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(["-we", "1.times do\n  a=1\nend"], "", [], [], feature3446)
     assert_in_out_err(["-we", "def foo\n  1.times do\n    a=1\n  end\nend"], "", [], ["-e:3: warning: assigned but unused variable - a"], feature3446)
     assert_in_out_err(["-we", "def foo\n""  1.times do |a| end\n""end"], "", [], [])
-    assert_in_out_err(["-we", "def foo\n  _a=1\nend"], "", [], ["-e:2: warning: assigned but unused variable - _a"], feature3446)
+    feature6693 = '[ruby-core:46160]'
+    assert_in_out_err(["-we", "def foo\n  _a=1\nend"], "", [], [], feature6693)
   end
 
   def test_shadowing_variable
@@ -509,11 +510,9 @@ class TestRubyOptions < Test::Unit::TestCase
                       ["-e:3: warning: shadowing outer local variable - a",
                        "-e:2: warning: assigned but unused variable - a",
                       ], bug4130)
+    feature6693 = '[ruby-core:46160]'
     assert_in_out_err(["-we", "def foo\n""  _a=1\n""  1.times do |_a| end\n""end"],
-                      "", [],
-                      ["-e:3: warning: shadowing outer local variable - _a",
-                       "-e:2: warning: assigned but unused variable - _a",
-                      ], bug4130)
+                      "", [], [], feature6693)
   end
 
   def test_script_from_stdin
