@@ -8,6 +8,7 @@
 #  under the terms of Ruby's license.
 
 require_relative "base"
+require "tempfile"
 
 # An example of how to provide custom CSV serialization.
 class Hash

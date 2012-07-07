@@ -1,3 +1,8 @@
+Sat Jul  7 23:07:30 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/csv/test_features.rb: add require for Tempfile.
+	* test/csv/test_serialization.rb: ditto.
+
 Fri Jul  6 06:49:50 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* array.c (rb_ary_aref):  Added a description of the behavior of

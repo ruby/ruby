@@ -13,6 +13,7 @@ rescue LoadError
 end
 
 require_relative "base"
+require "tempfile"
 
 class TestCSV::Features < TestCSV
   extend DifferentOFS
