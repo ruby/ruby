@@ -12,18 +12,170 @@ end
 require 'tracer'
 require 'pp'
 
-class Tracer
+class Tracer # :nodoc:
   def Tracer.trace_func(*vars)
     Single.trace_func(*vars)
   end
 end
 
-SCRIPT_LINES__ = {} unless defined? SCRIPT_LINES__
+SCRIPT_LINES__ = {} unless defined? SCRIPT_LINES__ # :nodoc:
 
-class DEBUGGER__
-  MUTEX = Mutex.new
+##
+# This library provides debugging functionality to Ruby.
+#
+# To add a debugger to your code, start by requiring +debug+ in your
+# program:
+#
+#   def say(word)
+#     require 'debug'
+#     puts word
+#   end
+#
+# This will cause Ruby to interrupt execution and show a prompt when the +say+ method is
+# run.
+#
+# Once you're inside the prompt, you can start debugging your program.
+#
+#   (rdb:1) p word
+#   "hello"
+#
+# == Getting help
+#
+# You can get help at any time by pressing +h+.
+#
+#   (rdb:1) h
+#   Debugger help v.-0.002b
+#   Commands
+#     b[reak] [file:|class:]<line|method>
+#     b[reak] [class.]<line|method>
+#                                set breakpoint to some position
+#     wat[ch] <expression>       set watchpoint to some expression
+#     cat[ch] (<exception>|off)  set catchpoint to an exception
+#     b[reak]                    list breakpoints
+#     cat[ch]                    show catchpoint
+#     del[ete][ nnn]             delete some or all breakpoints
+#     disp[lay] <expression>     add expression into display expression list
+#     undisp[lay][ nnn]          delete one particular or all display expressions
+#     c[ont]                     run until program ends or hit breakpoint
+#     s[tep][ nnn]               step (into methods) one line or till line nnn
+#     n[ext][ nnn]               go over one line or till line nnn
+#     w[here]                    display frames
+#     f[rame]                    alias for where
+#     l[ist][ (-|nn-mm)]         list program, - lists backwards
+#                                nn-mm lists given lines
+#     up[ nn]                    move to higher frame
+#     down[ nn]                  move to lower frame
+#     fin[ish]                   return to outer frame
+#     tr[ace] (on|off)           set trace mode of current thread
+#     tr[ace] (on|off) all       set trace mode of all threads
+#     q[uit]                     exit from debugger
+#     v[ar] g[lobal]             show global variables
+#     v[ar] l[ocal]              show local variables
+#     v[ar] i[nstance] <object>  show instance variables of object
+#     v[ar] c[onst] <object>     show constants of object
+#     m[ethod] i[nstance] <obj>  show methods of object
+#     m[ethod] <class|module>    show instance methods of class or module
+#     th[read] l[ist]            list all threads
+#     th[read] c[ur[rent]]       show current thread
+#     th[read] [sw[itch]] <nnn>  switch thread context to nnn
+#     th[read] stop <nnn>        stop thread nnn
+#     th[read] resume <nnn>      resume thread nnn
+#     p expression               evaluate expression and print its value
+#     h[elp]                     print this help
+#     <everything else>          evaluate
+#
+# == Usage
+#
+# The following is a list of common functionalities that the Debugger
+# library provides.
+#
+# === Navigating through your code
+#
+# In general, a debugger is used to find bugs in your program, which
+# often means pausing execution and inspecting variables at some point
+# in time.
+#
+# Let's look at an example:
+#
+#   def my_method(foo)
+#     require 'debug'
+#     foo = get_foo if foo.nil?
+#     raise if foo.nil?
+#   end
+#
+# When you run this program, the debugger will kick in just before the
+# +foo+ assignment.
+#
+#   (rdb:1) p foo
+#   nil
+#
+# In this example, it'd be interesting to move to the next line and
+# inspect the value of +foo+ again. You can do that by pressing +n+:
+#
+#   (rdb:1) n # goes to next line
+#   (rdb:1) p foo
+#   nil
+#
+# You now know that the original value of +foo+ was nil, and that it
+# still was nil after calling +get_foo+.
+#
+# Other useful commands for navigating through your code are:
+#
+# * +c+: runs the program until it either exists or encouters another breakpoint. You usually press +c+ when you are finished debugging your program and want to resume its execution.
+# * +s+: steps into method definition. In the previous example, +s+ would take you inside the method definition of +get_foo+.
+# * +r+: restart the program.
+# * +q+: quit the progam.
+#
+# === Inspecting variables
+#
+# You can use the Debug library to easily inspect both local and global
+# variables. We've seen how to inspect local variables before:
+#
+#   (rdb:1) p my_arg
+#   42
+#
+# You can also pretty print the result of variables or expressions:
+#
+#   (rdb:1) pp %w{a very long long array containing many words}
+#   ["a",
+#    "very",
+#    "long",
+#    ...
+#   ]
+#
+# You can list all local variables with +v l+:
+#
+#   (rdb:1) v l
+#     foo => "hello"
+#
+# Similarly, you can show all global variables with +v g+:
+#
+#   (rdb:1) v g
+#     all global variables
+#
+# Finally, you can omit +p+ if you simply want to evaluate a variable or
+# expression
+#
+#   (rdb:1) 5**2
+#   25
+#
+# === Going beyond basics
+#
+# Ruby Debug provides more advanced functionalities like switching
+# between threads, setting breakpoints and watch expressions, and more.
+# The full list of commands is available at any time by pressing +h+.
+#
+# == Staying out of trouble
+#
+# Make sure you remove every instance of +require 'debug'+ before
+# shipping your code. Failing to do so may result in your program
+# hanging unpredictably.
+#
+# Debug is not available in safe mode.
+class Debugger
+  MUTEX = Mutex.new # :nodoc:
 
-  class Context
+  class Context # :nodoc:
     DEBUG_LAST_CMD = []
 
     begin
@@ -73,17 +225,17 @@ class DEBUGGER__
     end
 
     def suspend_all
-      DEBUGGER__.suspend
+      Debugger.suspend
     end
 
     def resume_all
-      DEBUGGER__.resume
+      Debugger.resume
     end
 
     def check_suspend
       while MUTEX.synchronize {
           if @suspend_next
-            DEBUGGER__.waiting.push Thread.current
+            Debugger.waiting.push Thread.current
             @suspend_next = false
             true
           end
@@ -91,39 +243,39 @@ class DEBUGGER__
       end
     end
 
-    def trace?
+    def trace? # :nodoc:
       @trace
     end
 
-    def set_trace(arg)
+    def set_trace(arg) # :nodoc:
       @trace = arg
     end
 
-    def stdout
-      DEBUGGER__.stdout
+    def stdout # :nodoc:
+      Debugger.stdout
     end
 
-    def break_points
-      DEBUGGER__.break_points
+    def break_points # :nodoc:
+      Debugger.break_points
     end
 
-    def display
-      DEBUGGER__.display
+    def display # :nodoc:
+      Debugger.display
     end
 
-    def context(th)
-      DEBUGGER__.context(th)
+    def context(th) # :nodoc:
+      Debugger.context(th)
     end
 
-    def set_trace_all(arg)
-      DEBUGGER__.set_trace(arg)
+    def set_trace_all(arg) # :nodoc:
+      Debugger.set_trace(arg)
     end
 
-    def set_last_thread(th)
-      DEBUGGER__.set_last_thread(th)
+    def set_last_thread(th) # :nodoc:
+      Debugger.set_last_thread(th)
     end
 
-    def debug_eval(str, binding)
+    def debug_eval(str, binding) # :nodoc:
       begin
         eval(str, binding)
       rescue StandardError, ScriptError => e
@@ -136,7 +288,7 @@ class DEBUGGER__
       end
     end
 
-    def debug_silent_eval(str, binding)
+    def debug_silent_eval(str, binding) # :nodoc:
       begin
         eval(str, binding)
       rescue StandardError, ScriptError
@@ -144,14 +296,14 @@ class DEBUGGER__
       end
     end
 
-    def var_list(ary, binding)
+    def var_list(ary, binding) # :nodoc:
       ary.sort!
       for v in ary
         stdout.printf "  %s => %s\n", v, eval(v.to_s, binding).inspect
       end
     end
 
-    def debug_variable_info(input, binding)
+    def debug_variable_info(input, binding) # :nodoc:
       case input
       when /^\s*g(?:lobal)?\s*$/
         var_list(global_variables, binding)
@@ -173,7 +325,7 @@ class DEBUGGER__
       end
     end
 
-    def debug_method_info(input, binding)
+    def debug_method_info(input, binding) # :nodoc:
       case input
       when /^i(:?nstance)?\s+/
         obj = debug_eval($', binding)
@@ -208,16 +360,16 @@ class DEBUGGER__
       end
     end
 
-    def thnum
-      num = DEBUGGER__.instance_eval{@thread_list[Thread.current]}
+    def thnum # :nodoc:
+      num = Debugger.instance_eval{@thread_list[Thread.current]}
       unless num
-        DEBUGGER__.make_thread_list
-        num = DEBUGGER__.instance_eval{@thread_list[Thread.current]}
+        Debugger.make_thread_list
+        num = Debugger.instance_eval{@thread_list[Thread.current]}
       end
       num
     end
 
-    def debug_command(file, line, id, binding)
+    def debug_command(file, line, id, binding) # :nodoc:
       MUTEX.lock
       unless defined?($debugger_restart) and $debugger_restart
         callcc{|c| $debugger_restart = c}
@@ -481,7 +633,7 @@ class DEBUGGER__
             debug_method_info($', binding)
 
           when /^\s*th(?:read)?\s+/
-            if DEBUGGER__.debug_thread_info($', binding) == :cont
+            if Debugger.debug_thread_info($', binding) == :cont
               prompt = false
             end
 
@@ -507,7 +659,7 @@ class DEBUGGER__
       resume_all
     end
 
-    def debug_print_help
+    def debug_print_help # :nodoc:
       stdout.print <<EOHELP
 Debugger help v.-0.002b
 Commands
@@ -553,7 +705,7 @@ Commands
 EOHELP
     end
 
-    def display_expressions(binding)
+    def display_expressions(binding) # :nodoc:
       n = 1
       for d in display
         if d[0]
@@ -564,18 +716,18 @@ EOHELP
       end
     end
 
-    def display_expression(exp, binding)
+    def display_expression(exp, binding) # :nodoc:
       stdout.printf "%s = %s\n", exp, debug_silent_eval(exp, binding).to_s
     end
 
-    def frame_set_pos(file, line)
+    def frame_set_pos(file, line) # :nodoc:
       if @frames[0]
         @frames[0][1] = file
         @frames[0][2] = line
       end
     end
 
-    def display_frames(pos)
+    def display_frames(pos) # :nodoc:
       0.upto(@frames.size - 1) do |n|
         if n == pos
           stdout.print "--> "
@@ -586,13 +738,13 @@ EOHELP
       end
     end
 
-    def format_frame(pos)
+    def format_frame(pos) # :nodoc:
       _, file, line, id = @frames[pos]
       sprintf "#%d %s:%s%s\n", pos + 1, file, line,
         (id ? ":in `#{id.id2name}'" : "")
     end
 
-    def display_list(b, e, file, line)
+    def display_list(b, e, file, line) # :nodoc:
       stdout.printf "[%d, %d] in %s\n", b, e, file
       if lines = SCRIPT_LINES__[file] and lines != true
         b.upto(e) do |n|
@@ -609,7 +761,7 @@ EOHELP
       end
     end
 
-    def line_at(file, line)
+    def line_at(file, line) # :nodoc:
       lines = SCRIPT_LINES__[file]
       if lines
         return "\n" if lines == true
@@ -620,7 +772,7 @@ EOHELP
       return "\n"
     end
 
-    def debug_funcname(id)
+    def debug_funcname(id) # :nodoc:
       if id.nil?
         "toplevel"
       else
@@ -628,7 +780,7 @@ EOHELP
       end
     end
 
-    def check_break_points(file, klass, pos, binding, id)
+    def check_break_points(file, klass, pos, binding, id) # :nodoc:
       return false if break_points.empty?
       n = 1
       for b in break_points
@@ -651,7 +803,7 @@ EOHELP
       return false
     end
 
-    def excn_handle(file, line, id, binding)
+    def excn_handle(file, line, id, binding) # :nodoc:
       if $!.class <= SystemExit
         set_trace_func nil
         exit
@@ -671,7 +823,7 @@ EOHELP
       end
     end
 
-    def trace_func(event, file, line, id, binding, klass)
+    def trace_func(event, file, line, id, binding, klass) # :nodoc:
       Tracer.trace_func(event, file, line, id, binding, klass) if trace?
       context(Thread.current).check_suspend
       @file = file
@@ -721,7 +873,7 @@ EOHELP
     end
   end
 
-  trap("INT") { DEBUGGER__.interrupt }
+  trap("INT") { Debugger.interrupt }
   @last_thread = Thread::main
   @max_thread = 1
   @thread_list = {Thread::main => 1}
@@ -730,28 +882,28 @@ EOHELP
   @waiting = []
   @stdout = STDOUT
 
-  class << DEBUGGER__
-    def stdout
+  class << Debugger
+    def stdout # :nodoc:
       @stdout
     end
 
-    def stdout=(s)
+    def stdout=(s) # :nodoc:
       @stdout = s
     end
 
-    def display
+    def display # :nodoc:
       @display
     end
 
-    def break_points
+    def break_points # :nodoc:
       @break_points
     end
 
-    def waiting
+    def waiting # :nodoc:
       @waiting
     end
 
-    def set_trace( arg )
+    def set_trace( arg ) # :nodoc:
       MUTEX.synchronize do
         make_thread_list
         for th, in @thread_list
@@ -761,11 +913,11 @@ EOHELP
       arg
     end
 
-    def set_last_thread(th)
+    def set_last_thread(th) # :nodoc:
       @last_thread = th
     end
 
-    def suspend
+    def suspend # :nodoc:
       MUTEX.synchronize do
         make_thread_list
         for th, in @thread_list
@@ -777,7 +929,7 @@ EOHELP
       Thread.pass
     end
 
-    def resume
+    def resume # :nodoc:
       MUTEX.synchronize do
         make_thread_list
         @thread_list.each do |th,|
@@ -793,7 +945,7 @@ EOHELP
       Thread.pass
     end
 
-    def context(thread=Thread.current)
+    def context(thread=Thread.current) # :nodoc:
       c = thread[:__debugger_data__]
       unless c
         thread[:__debugger_data__] = c = Context.new
@@ -801,11 +953,11 @@ EOHELP
       c
     end
 
-    def interrupt
+    def interrupt # :nodoc:
       context(@last_thread).stop_next
     end
 
-    def get_thread(num)
+    def get_thread(num) # :nodoc:
       th = @thread_list.key(num)
       unless th
         @stdout.print "No thread ##{num}\n"
@@ -814,7 +966,7 @@ EOHELP
       th
     end
 
-    def thread_list(num)
+    def thread_list(num) # :nodoc:
       th = get_thread(num)
       if th == Thread.current
         @stdout.print "+"
@@ -830,13 +982,13 @@ EOHELP
       @stdout.print "\n"
     end
 
-    def thread_list_all
+    def thread_list_all # :nodoc:
       for th in @thread_list.values.sort
         thread_list(th)
       end
     end
 
-    def make_thread_list
+    def make_thread_list # :nodoc:
       hash = {}
       for th in Thread::list
         if @thread_list.key? th
@@ -849,7 +1001,7 @@ EOHELP
       @thread_list = hash
     end
 
-    def debug_thread_info(input, binding)
+    def debug_thread_info(input, binding) # :nodoc:
       case input
       when /^l(?:ist)?/
         make_thread_list
@@ -904,6 +1056,6 @@ EOHELP
     trace_instruction: true
   }
   set_trace_func proc { |event, file, line, id, binding, klass, *rest|
-    DEBUGGER__.context.trace_func event, file, line, id, binding, klass
+    Debugger.context.trace_func event, file, line, id, binding, klass
   }
 end
