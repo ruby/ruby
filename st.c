@@ -120,8 +120,9 @@ st_free_bins(st_table_entry **bins, st_index_t size)
 static inline st_table_entry**
 st_realloc_bins(st_table_entry **bins, st_index_t newsize, st_index_t oldsize)
 {
+    st_table_entry **new_bins = st_alloc_bins(newsize);
     st_free_bins(bins, oldsize);
-    return st_alloc_bins(newsize);
+    return new_bins;
 }
 #else
 #define st_alloc_entry() (st_table_entry *)malloc(sizeof(st_table_entry))
