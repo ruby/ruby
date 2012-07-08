@@ -206,6 +206,27 @@ class TestClass < Test::Unit::TestCase
     INPUT
   end
 
+  def test_singleton_instance
+    o = Object.new
+    c = o.singleton_class
+    assert_equal(o, c.singleton_instance)
+  end
+
+  def test_no_singleton_instance
+    assert_raise(TypeError) { String.singleton_instance }
+  end
+
+  def test_class_singleton_instance
+    c = Object.singleton_class
+    assert_equal(Object, c.singleton_instance)
+  end
+
+  def test_immediate_singleton_instance
+    assert_equal(true, TrueClass.singleton_instance)
+    assert_equal(false, FalseClass.singleton_instance)
+    assert_equal(nil, NilClass.singleton_instance)
+  end
+
   def test_uninitialized
     assert_raise(TypeError) { Class.allocate.new }
     assert_raise(TypeError) { Class.allocate.superclass }

@@ -62,6 +62,7 @@ VALUE rb_obj_private_methods(int argc, VALUE *argv, VALUE obj);
 VALUE rb_obj_public_methods(int argc, VALUE *argv, VALUE obj);
 int rb_obj_basic_to_s_p(VALUE);
 VALUE rb_special_singleton_class(VALUE);
+VALUE rb_special_singleton_instance(VALUE);
 void Init_class_hierarchy(void);
 
 /* compile.c */

@@ -1744,6 +1744,29 @@ rb_class_superclass(VALUE klass)
     return super;
 }
 
+/*
+ *  call-seq:
+ *     class.singleton_instance -> an_object
+ *
+ *  Returns the attached singleton instance of <i>class</i>.
+ *
+ *     klass = "Hello".singleton_class
+ *     klass.singleton_instance => "Hello"
+ *
+ *  If the given class isn't a singleton class, it raises a TypeError.
+ *
+ */
+
+VALUE
+rb_class_singleton_instance(VALUE klass)
+{
+    if(FL_TEST(klass, FL_SINGLETON)) {
+	return rb_iv_get(klass, "__attached__");
+    } else {
+	return rb_special_singleton_instance(klass);
+    }
+}
+
 VALUE
 rb_class_get_superclass(VALUE klass)
 {
@@ -2989,6 +3012,7 @@ Init_Object(void)
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "initialize_copy", rb_class_init_copy, 1); /* in class.c */
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
+    rb_define_method(rb_cClass, "singleton_instance", rb_class_singleton_instance, 0);
     rb_define_alloc_func(rb_cClass, rb_class_s_alloc);
     rb_undef_method(rb_cClass, "extend_object");
     rb_undef_method(rb_cClass, "append_features");

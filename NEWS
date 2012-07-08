@@ -62,6 +62,12 @@ with all sufficient information, see the ChangeLog file.
     * extended method:
       * Module#define_method accepts a UnboundMethod from a Module.
 
+  * Class
+    * added method:
+      * added Class#singleton_instance returning the attached instance from a
+        singleton Class. This is the reversed version of the
+        Kernel#singleton_class getter method.
+
   * NilClass
     * added method:
       * added nil.to_h which returns {}
