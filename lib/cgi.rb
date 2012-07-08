@@ -10,8 +10,6 @@
 # Documentation: Wakou Aoyama (RDoc'd and embellished by William Webber)
 #
 
-raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
-
 # == Overview
 #
 # The Common Gateway Interface (CGI) is a simple protocol for passing an HTTP

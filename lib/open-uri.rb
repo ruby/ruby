@@ -249,11 +249,6 @@ module OpenURI
       raise "Non-HTTP proxy URI: #{proxy_uri}" if proxy_uri.class != URI::HTTP
     end
 
-    if target.userinfo && "1.9.0" <= RUBY_VERSION
-      # don't raise for 1.8 because compatibility.
-      raise ArgumentError, "userinfo not supported.  [RFC3986]"
-    end
-
     header = {}
     options.each {|k, v| header[k] = v if String === k }
 

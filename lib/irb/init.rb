@@ -122,8 +122,6 @@ module IRB
     @CONF[:LC_MESSAGES].load("irb/error.rb")
   end
 
-  FEATURE_IOPT_CHANGE_VERSION = "1.9.0"
-
   # option analyzing
   def IRB.parse_opts
     load_path = []
@@ -220,10 +218,8 @@ module IRB
 	break
       end
     end
-    if RUBY_VERSION >= FEATURE_IOPT_CHANGE_VERSION
-      load_path.collect! do |path|
-	/\A\.\// =~ path ? path : File.expand_path(path)
-      end
+    load_path.collect! do |path|
+/\A\.\// =~ path ? path : File.expand_path(path)
     end
     $LOAD_PATH.unshift(*load_path)
 
