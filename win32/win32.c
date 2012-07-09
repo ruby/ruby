@@ -4595,7 +4595,6 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
 
     return 0;
 }
-#define win95_stat(path, st) -1
 
 /* License: Ruby's */
 int
