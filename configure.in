@@ -2294,7 +2294,7 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes],
         [aix*], [	: ${LDSHARED='$(CC)'}
 			LDSHARED="$LDSHARED ${linker_flag}-G"
-			DLDFLAGS='-eInit_$(TARGET)'
+			DLDFLAGS='-e$(TARGET_ENTRY)'
 			XLDFLAGS="${linker_flag}"'-bE:$(ARCHFILE)'" ${linker_flag}-brtl"
 			XLDFLAGS="$XLDFLAGS ${linker_flag}-blibpath:${prefix}/lib:${LIBPATH:-/usr/lib:/lib}"
 			: ${ARCHFILE="ruby.imp"}
@@ -2306,7 +2306,7 @@ if test "$with_dln_a_out" != yes; then
 	[beos*], [	AS_CASE(["$target_cpu"],
 			  [powerpc*], [
 			    : ${LDSHARED='$(LD) -xms'}
-			    DLDFLAGS="$DLDFLAGS "'-export Init_$(TARGET) -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o'
+			    DLDFLAGS="$DLDFLAGS "'-export $(TARGET_ENTRY) -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o'
 			    LDFLAGS="$LDFLAGS -L/boot/home/config/lib -lbe -lroot"
 			    ],
 			  [i586*], [
@@ -2319,7 +2319,7 @@ if test "$with_dln_a_out" != yes; then
 	[haiku*], [	AS_CASE(["$target_cpu"],
 			  [powerpc*], [
 			    : ${LDSHARED='$(LD) -xms'}
-			    DLDFLAGS="$DLDFLAGS "'-export Init_$(TARGET) -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o'
+			    DLDFLAGS="$DLDFLAGS "'-export $(TARGET_ENTRY) -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o'
                             ],
 			  [i586*], [
 			    : ${LDSHARED='$(LD) -shared'}

@@ -1,3 +1,11 @@
+Mon Jul  9 13:28:34 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (DLDFLAGS): use TARGET_ENTRY to specify an entry point
+	  instead of TARGET which may contain non-identifer characters.
+
+	* lib/mkmf.rb (create_makefile): add TARGET_NAME which is the first
+	  part consists of only word characters.  [ruby-core:46248][Bug #6709]
+
 Sun Jul  8 07:36:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (shadowing_lvar_gen, warn_unused_var): no warnings for
