@@ -924,6 +924,7 @@ zstream_run_func(void *ptr)
     struct zstream *z = args->z;
     uInt n;
 
+    err = Z_OK;
     while (!args->interrupt) {
 	n = z->stream.avail_out;
 	err = z->func->run(&z->stream, flush);
