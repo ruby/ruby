@@ -1,3 +1,10 @@
+Tue Jul 10 00:44:41 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/ruby.h: Removed RUBY_GLOBAL_SETUP complely. It is
+	  no meaning definition since r24894.
+	* main.c: ditto.
+	* nacl/pepper_main.c: ditto.
+
 Mon Jul  9 23:59:36 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* dln.c: Simplify and make consistent an ifdef for Mac OS X.
