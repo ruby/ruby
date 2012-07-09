@@ -221,9 +221,7 @@ public
   #   FileUtils.uptodate?('hello.o', %w(hello.c hello.h)) or \
   #       system 'make hello.o'
   #
-  def uptodate?(new, old_list, options = nil)
-    raise ArgumentError, 'uptodate? does not accept any option' if options
-
+  def uptodate?(new, old_list)
     return false unless File.exist?(new)
     new_time = File.mtime(new)
     old_list.each do |old|
