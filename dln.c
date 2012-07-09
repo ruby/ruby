@@ -75,7 +75,7 @@ void *xrealloc();
 char *getenv();
 #endif
 
-#if defined(__APPLE__) && defined(__MACH__)   /* Mac OS X */
+#ifdef __APPLE__
 # if defined(HAVE_DLOPEN)
    /* Mac OS X with dlopen (10.3 or later) */
 #  define MACOSX_DLOPEN

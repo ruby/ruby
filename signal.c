@@ -567,7 +567,7 @@ sigbus(int sig SIGINFO_ARG)
  * and it's delivered as SIGBUS instaed of SIGSEGV to userland. It's crazy
  * wrong IMHO. but anyway we have to care it. Sigh.
  */
-#if defined __MACH__ && defined __APPLE__ && defined USE_SIGALTSTACK
+#if defined __APPLE__ && defined USE_SIGALTSTACK
     int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
     NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
     rb_thread_t *th = GET_THREAD();

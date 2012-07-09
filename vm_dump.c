@@ -761,7 +761,7 @@ rb_vm_bugreport(void)
 	    "-------------------------------------------\n");
 
     {
-#if defined __MACH__ && defined __APPLE__
+#if defined __APPLE__
 	fprintf(stderr, "\n");
 	fprintf(stderr, "   See Crash Report log file under "
 		"~/Library/Logs/CrashReporter or\n");

@@ -96,7 +96,7 @@ _nativethread_consistency_check(ip)
 # define TK_INDEX 7
 # define TCL_NAME "libtcl8.9%s"
 # define TK_NAME "libtk8.9%s"
-# if defined(__APPLE__) && defined(__MACH__)   /* Mac OS X */
+# ifdef __APPLE__
 #  undef DLEXT
 #  define DLEXT ".dylib"
 # endif
@@ -329,7 +329,7 @@ ruby_tk_stubs_init(tcl_ip)
         if (!p_Tk_Init)
             return NO_Tk_Init;
 
-#if defined USE_TK_STUBS && defined TK_FRAMEWORK && defined(__APPLE__) && defined(__MACH__)
+#if defined USE_TK_STUBS && defined TK_FRAMEWORK && defined(__APPLE__)
 	/*
 	  FIX ME : dirty hack for Mac OS X frameworks.
 	  With stubs, fails to find Resource/Script directory of Tk.framework.

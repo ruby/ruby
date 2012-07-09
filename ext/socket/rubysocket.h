@@ -139,7 +139,7 @@ struct sockaddr_storage {
 };
 #endif
 
-#if defined __APPLE__ && defined __MACH__
+#ifdef __APPLE__
 /*
  * CMSG_ macros are broken on 64bit darwin, because __DARWIN_ALIGN
  * aligns up to __darwin_size_t which is 64bit, but CMSG_DATA is

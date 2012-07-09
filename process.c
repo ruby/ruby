@@ -104,10 +104,6 @@ static VALUE rb_cProcessTms;
 #define WSTOPSIG        WEXITSTATUS
 #endif
 
-#if defined(__APPLE__) && ( defined(__MACH__) || defined(__DARWIN__) ) && !defined(__MacOS_X__)
-#define __MacOS_X__ 1
-#endif
-
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__)
 #define HAVE_44BSD_SETUID 1
 #define HAVE_44BSD_SETGID 1
@@ -127,7 +123,7 @@ int setreuid(rb_uid_t ruid, rb_uid_t euid);
 int setregid(rb_gid_t rgid, rb_gid_t egid);
 #endif
 
-#if defined(HAVE_44BSD_SETUID) || defined(__MacOS_X__)
+#if defined(HAVE_44BSD_SETUID) || defined(__APPLE__)
 #if !defined(USE_SETREUID) && !defined(BROKEN_SETREUID)
 #define OBSOLETE_SETREUID 1
 #endif
@@ -2305,7 +2301,7 @@ rb_f_exec(int argc, VALUE *argv)
     rb_execarg_fixup(execarg_obj);
     fail_str = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
 
-#ifdef __MacOS_X__
+#ifdef __APPLE__
     rb_exec_without_timer_thread(eargp, errmsg, sizeof(errmsg));
 #else
     rb_exec_async_signal_safe(eargp, errmsg, sizeof(errmsg));
