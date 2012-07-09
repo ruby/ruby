@@ -271,14 +271,6 @@ rb_w32_osver(void)
     return osver.dwMajorVersion;
 }
 
-#define IsWinNT() rb_w32_iswinnt()
-#define IsWin95() rb_w32_iswin95()
-#ifdef WIN95
-#define IfWin95(win95, winnt) (IsWin95() ? (win95) : (winnt))
-#else
-#define IfWin95(win95, winnt) (winnt)
-#endif
-
 /* simulate flock by locking a range on the file */
 
 /* License: Artistic or GPL */
@@ -335,54 +327,13 @@ flock_winnt(uintptr_t self, int argc, uintptr_t* argv)
     return i;
 }
 
-#ifdef WIN95
-/* License: Artistic or GPL */
-static uintptr_t
-flock_win95(uintptr_t self, int argc, uintptr_t* argv)
-{
-    int i = -1;
-    const HANDLE fh = (HANDLE)self;
-    const int oper = argc;
-
-    switch(oper) {
-      case LOCK_EX:
-	do {
-	    LK_ERR(LockFile(fh, 0, 0, LK_LEN, LK_LEN), i);
-	} while (i && errno == EWOULDBLOCK);
-	break;
-      case LOCK_EX|LOCK_NB:
-	LK_ERR(LockFile(fh, 0, 0, LK_LEN, LK_LEN), i);
-	break;
-      case LOCK_UN:
-      case LOCK_UN|LOCK_NB:
-	LK_ERR(UnlockFile(fh, 0, 0, LK_LEN, LK_LEN), i);
-	break;
-      default:
-	errno = EINVAL;
-	break;
-    }
-    return i;
-}
-#endif
-
 #undef LK_ERR
 
 /* License: Artistic or GPL */
 int
 flock(int fd, int oper)
 {
-#ifdef WIN95
-    static asynchronous_func_t locker = NULL;
-
-    if (!locker) {
-	if (IsWinNT())
-	    locker = flock_winnt;
-	else
-	    locker = flock_win95;
-    }
-#else
     const asynchronous_func_t locker = flock_winnt;
-#endif
 
     return rb_w32_asynchronize(locker,
 			      (VALUE)_get_osfhandle(fd), oper, NULL,
@@ -1193,11 +1144,6 @@ CreateChild(const WCHAR *cmd, const WCHAR *prog, SECURITY_ATTRIBUTES *psa,
 
     child->hProcess = aProcessInformation.hProcess;
     child->pid = (rb_pid_t)aProcessInformation.dwProcessId;
-
-    if (!IsWinNT()) {
-	/* On Win9x, make pid positive similarly to cygwin and perl */
-	child->pid = -child->pid;
-    }
 
     return child;
 }
@@ -4116,7 +4062,6 @@ kill(int pid, int sig)
 	return -1;
     }
 
-    (void)IfWin95(pid = -pid, 0);
     if ((unsigned int)pid == GetCurrentProcessId() &&
 	(sig != 0 && sig != SIGKILL)) {
 	if ((ret = raise(sig)) != 0) {
@@ -4382,20 +4327,8 @@ wrename(const WCHAR *oldpath, const WCHAR *newpath)
 	    switch (GetLastError()) {
 	      case ERROR_ALREADY_EXISTS:
 	      case ERROR_FILE_EXISTS:
-		if (IsWinNT()) {
-		    if (MoveFileExW(oldpath, newpath, MOVEFILE_REPLACE_EXISTING))
-			res = 0;
-		}
-		else {
-		    for (;;) {
-			if (!DeleteFileW(newpath) && GetLastError() != ERROR_FILE_NOT_FOUND)
-			    break;
-			else if (MoveFileW(oldpath, newpath)) {
-			    res = 0;
-			    break;
-			}
-		    }
-		}
+		if (MoveFileExW(oldpath, newpath, MOVEFILE_REPLACE_EXISTING))
+		    res = 0;
 	    }
 	}
 
@@ -4662,22 +4595,7 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
 
     return 0;
 }
-
-#ifdef WIN95
-/* License: Ruby's */
-static int
-win95_stat(const WCHAR *path, struct stati64 *st)
-{
-    int ret = _wstati64(path, st);
-    if (ret) return ret;
-    if (st->st_mode & S_IFDIR) {
-	return check_valid_dir(path);
-    }
-    return 0;
-}
-#else
 #define win95_stat(path, st) -1
-#endif
 
 /* License: Ruby's */
 int
@@ -4729,7 +4647,7 @@ wstati64(const WCHAR *path, struct stati64 *st)
     else if (*end == L'\\' || (buf1 + 1 == end && *end == L':'))
 	lstrcatW(buf1, L".");
 
-    ret = IsWinNT() ? winnt_stat(buf1, st) : win95_stat(buf1, st);
+    ret = winnt_stat(buf1, st);
     if (ret == 0) {
 	st->st_mode &= ~(S_IWGRP | S_IWOTH);
     }
@@ -4832,17 +4750,6 @@ rb_w32_truncate(const char *path, off_t length)
 {
     HANDLE h;
     int ret;
-#ifdef WIN95
-    if (IsWin95()) {
-	int fd = open(path, O_WRONLY), e = 0;
-	if (fd == -1) return -1;
-	ret = chsize(fd, (unsigned long)length);
-	if (ret == -1) e = errno;
-	close(fd);
-	if (ret == -1) errno = e;
-	return ret;
-    }
-#endif
     h = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, 0);
     if (h == INVALID_HANDLE_VALUE) {
 	errno = map_errno(GetLastError());
@@ -4859,11 +4766,6 @@ rb_w32_ftruncate(int fd, off_t length)
 {
     HANDLE h;
 
-#ifdef WIN95
-    if (IsWin95()) {
-	return chsize(fd, (unsigned long)length);
-    }
-#endif
     h = (HANDLE)_get_osfhandle(fd);
     if (h == (HANDLE)-1) return -1;
     return rb_chsize(h, length);
@@ -5177,13 +5079,7 @@ rb_w32_free_environ(char **env)
 rb_pid_t
 rb_w32_getpid(void)
 {
-    rb_pid_t pid;
-
-    pid = GetCurrentProcessId();
-
-    (void)IfWin95(pid = -pid, 0);
-
-    return pid;
+    return GetCurrentProcessId();
 }
 
 
@@ -5195,7 +5091,7 @@ rb_w32_getppid(void)
     static query_func *pNtQueryInformationProcess = NULL;
     rb_pid_t ppid = 0;
 
-    if (!IsWin95() && rb_w32_osver() >= 5) {
+    if (rb_w32_osver() >= 5) {
 	if (!pNtQueryInformationProcess)
 	    pNtQueryInformationProcess = (query_func *)get_proc_address("ntdll.dll", "NtQueryInformationProcess", NULL);
 	if (pNtQueryInformationProcess) {
@@ -6291,7 +6187,7 @@ wutime(const WCHAR *path, const struct utimbuf *times)
 	if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY))
 	    SetFileAttributesW(path, attr & ~FILE_ATTRIBUTE_READONLY);
 	hFile = CreateFileW(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING,
-			    IsWin95() ? 0 : FILE_FLAG_BACKUP_SEMANTICS, 0);
+			    FILE_FLAG_BACKUP_SEMANTICS, 0);
 	if (hFile == INVALID_HANDLE_VALUE) {
 	    errno = map_errno(GetLastError());
 	    ret = -1;

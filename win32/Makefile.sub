@@ -228,9 +228,6 @@ EXTSOLIBS =
 !if !defined(LIBS)
 LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib imagehlp.lib $(EXTLIBS)
 !endif
-!if "$(ENABLE_WIN95)" == "yes"
-LIBS = unicows.lib $(LIBS)
-!endif
 !if !defined(MISSING)
 MISSING = acosh.obj cbrt.obj crypt.obj erf.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj tgamma.obj win32/win32.obj win32/file.obj setproctitle.obj
 !endif
@@ -477,9 +474,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #if _MSC_VER != $(MSC_VER)
 #error MSC version unmatch: _MSC_VER: $(MSC_VER) is expected.
 #endif
-!if "$(ENABLE_WIN95)" == "yes" && "$(MACHINE)" == "x86"
-#define WIN95 1
-!endif
 #define RUBY_MSVCRT_VERSION $(RT_VER)
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1

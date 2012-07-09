@@ -105,14 +105,9 @@ typedef unsigned int uintptr_t;
 # include <unistd.h>
 #endif
 
-#ifdef WIN95
 extern DWORD rb_w32_osid(void);
 #define rb_w32_iswinnt()  (rb_w32_osid() == VER_PLATFORM_WIN32_NT)
 #define rb_w32_iswin95()  (rb_w32_osid() == VER_PLATFORM_WIN32_WINDOWS)
-#else
-#define rb_w32_iswinnt()  TRUE
-#define rb_w32_iswin95()  FALSE
-#endif
 
 #define WNOHANG -1
 

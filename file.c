@@ -857,8 +857,7 @@ w32_io_info(VALUE *file, BY_HANDLE_FILE_INFORMATION *st)
 	MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, ptr, len);
 	f = CreateFileW(ptr, 0,
 			FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
-			rb_w32_iswin95() ? 0 : FILE_FLAG_BACKUP_SEMANTICS,
-			NULL);
+			FILE_FLAG_BACKUP_SEMANTICS, NULL);
 	ALLOCV_END(v);
 	if (f == INVALID_HANDLE_VALUE) return f;
 	ret = f;
@@ -1672,7 +1671,6 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
 	st1.nFileIndexLow == st2.nFileIndexLow)
 	return Qtrue;
     if (!f1 || !f2) return Qfalse;
-    if (rb_w32_iswin95()) return Qfalse;
 # else
     FilePathValue(fname1);
     fname1 = rb_str_new4(fname1);

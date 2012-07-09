@@ -4,9 +4,9 @@
 
 == Requirement
 
-(1) Windows 2000 or later (NT based kernel).
+(1) Windows XP or later.
 
-(2) Visual C++ 6.0 or later.
+(2) Visual C++ 6.0 or later. (strongly recommended VC++ 10)
 
     Note: if you want to build x64 or ia64 version, use native compiler for
           x64/ia64.
@@ -28,10 +28,6 @@
 (5) Enable Command Extension of your command line.  It's the default behavior
     of cmd.exe.  If you want to enable it explicitly, run cmd.exe with /E:ON
     option.
-
-(6) If you want built binaries to run on Windows 95 series (including
-    98 and Me), you need unicows.lib at compile time, and unicows.dll
-    at run time.
 
 == How to compile and install
 
