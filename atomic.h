@@ -37,11 +37,11 @@ rb_w32_atomic_or(volatile rb_atomic_t *var, rb_atomic_t val)
 #  define ATOMIC_SIZE_DEC(var) InterlockedDecrement64(&(var))
 #  define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange64(&(var), (val))
 # else
-#  define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd(&(var), (val))
-#  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd(&(var), -(val))
-#  define ATOMIC_SIZE_INC(var) InterlockedIncrement(&(var))
-#  define ATOMIC_SIZE_DEC(var) InterlockedDecrement(&(var))
-#  define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange(&(var), (val))
+#  define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd((LONG *)&(var), (val))
+#  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd((LONG *)&(var), -(val))
+#  define ATOMIC_SIZE_INC(var) InterlockedIncrement((LONG *)&(var))
+#  define ATOMIC_SIZE_DEC(var) InterlockedDecrement((LONG *)&(var))
+#  define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange((LONG *)&(var), (val))
 # endif
 
 #elif defined HAVE_GCC_ATOMIC_BUILTINS
