@@ -44,8 +44,6 @@ extern "C++" {			/* template without extern "C++" */
 #endif
 #endif
 
-#define NT 1			/* deprecated */
-
 /*
  * We're not using Microsoft's "extensions" to C for
  * Structured Exception Handling (SEH) so we can nuke these
@@ -224,7 +222,6 @@ struct msghdr {
     int msg_flags;
 };
 
-#define NtInitialize ruby_sysinit
 extern DWORD  rb_w32_osid(void);
 extern int    rb_w32_cmdvector(const char *, char ***);
 extern rb_pid_t  rb_w32_pipe_exec(const char *, const char *, int, int *, int *);
