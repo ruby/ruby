@@ -4,69 +4,87 @@
 $testnum=0
 $ntest=0
 $failed = 0
-PROGRESS = Object.new
-PROGRESS.instance_eval do
-  @color = nil
-  @quiet = nil
-  ARGV.each do |arg|
-    case arg
-    when /\A--color(?:=(?:always|(auto)|(never)|(.*)))?\z/
-      warn "unknown --color argument: #$3" if $3
-      @color = $1 ? nil : !$2
-    when /\A-(q|-quiet)\z/
-      @quiet = true
+class Progress
+  def initialize
+    @color = nil
+    @quiet = nil
+    ARGV.each do |arg|
+      case arg
+      when /\A--color(?:=(?:always|(auto)|(never)|(.*)))?\z/
+        warn "unknown --color argument: #$3" if $3
+        @color = $1 ? nil : !$2
+      when /\A-(q|-quiet)\z/
+        @quiet = true
+      end
     end
-  end
-  @count = 0
-  @rotator = %w[- \\ | /]
-  @bs = "\b" * @rotator[0].size
-  @tty = STDERR.tty? && /dumb/ !~ ENV["TERM"]
-  case @color
-  when nil
-    @color = @tty
-  when true
-    @tty = true
-  end
-  if @color
-    # dircolors-like style
-    colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:]*)/)] : {}
-    @passed = "\e[#{colors["pass"] || "32"}m"
-    @failed = "\e[#{colors["fail"] || "31"}m"
-    @reset = "\e[m"
-  else
-    @passed = @failed = @reset = ""
+    @tty = STDERR.tty? && /dumb/ !~ ENV["TERM"]
+    case @color
+    when nil
+      @color = @tty
+    end
+    if @color
+      # dircolors-like style
+      colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:]*)/)] : {}
+      @passed = "\e[#{colors["pass"] || "32"}m"
+      @failed = "\e[#{colors["fail"] || "31"}m"
+      @reset = "\e[m"
+    else
+      @passed = @failed = @reset = ""
+    end
+    extend(Rotator) if @tty
   end
 
-  if @tty
-    def self.pass
-      STDERR.print "#{@bs}#{@rotator[(@count += 1) % @rotator.size]}"
+  def passed_string
+    "."
+  end
+  def failed_string
+    "#{@failed}F#{@reset}"
+  end
+  def init_string
+  end
+  def finish_string
+    if @quiet
+      "\n"
+    else
+      "#{@passed}#{@ok ? 'OK' : ''} #{$testnum}#{@reset}\n"
     end
-    def self.fail
-      @ok = false
-      STDERR.print "#{@bs}#{@failed}F#{@reset}#{@rotator[@count % @rotator.size]}"
+  end
+  def pass
+    STDERR.print passed_string
+  end
+  def fail
+    @ok = false
+    STDERR.print failed_string
+  end
+  def init
+    @ok = true
+    STDERR.print init_string
+  end
+  def finish
+    STDERR.print finish_string
+  end
+
+  module Rotator
+    ROTATOR = %w[- \\ | /]
+    BS = "\b" * ROTATOR[0].size
+    def passed_string
+      "#{BS}#{ROTATOR[(@count += 1) % ROTATOR.size]}"
     end
-    def self.init
-      @ok = true
-      STDERR.print " "
+    def failed_string
+      "#{BS}#{super}#{ROTATOR[@count % ROTATOR.size]}"
     end
-    def self.finish
-      STDERR.print "#{@bs}#{' ' * @bs.size}#{@bs}#{@passed}#{@ok ? 'OK' : ''} #{$testnum}#{@reset}"
-      STDERR.print @quiet ? "\r\e[2K\r" : "\n"
+    def init_string
+      @count = 0
+      " "
     end
-  else
-    def self.pass
-      STDERR.print "."
-    end
-    def self.fail
-      STDERR.print "F"
-    end
-    def self.init
-    end
-    def self.finish
-      STDERR.puts
+    def finish_string
+      s = "#{BS}#{' ' * BS.size}#{BS}#{super}"
+      s.gsub!(/\n/, "\r\e[2K\r") if @quiet
+      s
     end
   end
 end
+PROGRESS = Progress.new
 
 def test_check(what)
   unless $ntest.zero?
