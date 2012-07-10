@@ -123,8 +123,6 @@ with all sufficient information, see the ChangeLog file.
       accessible from other users.
 
 * zlib
-  * Added streaming support for Zlib::Inflate and Zlib::Deflate.  This allows
-    processing of a stream without the use of large amounts of memory.
   * Added support for the new deflate strategies Zlib::RLE and Zlib::FIXED.
   * Zlib streams are now processed without the GVL.  This allows gzip, zlib and
     deflate streams to be processed in parallel.

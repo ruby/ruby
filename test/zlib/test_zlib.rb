@@ -39,62 +39,6 @@ if defined? Zlib
       assert_raise(Zlib::StreamError) { Zlib::Deflate.deflate("foo", 10000) }
     end
 
-    def test_deflate_chunked
-      original = ''
-      chunks = []
-      r = Random.new 0
-
-      z = Zlib::Deflate.new
-
-      2.times do
-        input = r.bytes(20000)
-        original << input
-        z.deflate(input) do |chunk|
-          chunks << chunk
-        end
-      end
-
-      assert_equal [16384, 16384],
-                   chunks.map { |chunk| chunk.length }
-
-      final = z.finish
-
-      assert_equal 7253, final.length
-
-      chunks << final
-      all = chunks.join
-
-      inflated = Zlib.inflate all
-
-      assert_equal original, inflated
-    end
-
-    def test_deflate_chunked_break
-      chunks = []
-      r = Random.new 0
-
-      z = Zlib::Deflate.new
-
-      input = r.bytes(20000)
-      z.deflate(input) do |chunk|
-        chunks << chunk
-        break
-      end
-
-      assert_equal [16384], chunks.map { |chunk| chunk.length }
-
-      final = z.finish
-
-      assert_equal 3632, final.length
-
-      all = chunks.join
-      all << final
-
-      original = Zlib.inflate all
-
-      assert_equal input, original
-    end
-
     def test_addstr
       z = Zlib::Deflate.new
       z << "foo"
@@ -258,38 +202,6 @@ if defined? Zlib
       assert_equal "foofoofoo", out
     end
 
-    def test_finish_chunked
-      # zeros = Zlib::Deflate.deflate("0" * 100_000)
-      zeros = "x\234\355\3011\001\000\000\000\302\240J\353\237\316\032\036@" \
-              "\001\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\257\006\351\247BH"
-
-      chunks = []
-
-      z = Zlib::Inflate.new
-
-      z.inflate(zeros) do |chunk|
-        chunks << chunk
-        break
-      end
-
-      z.finish do |chunk|
-        chunks << chunk
-      end
-
-      assert_equal [16384, 16384, 16384, 16384, 16384, 16384, 1696],
-                   chunks.map { |chunk| chunk.size }
-
-      assert chunks.all? { |chunk|
-        chunk =~ /\A0+\z/
-      }
-    end
-
     def test_inflate
       s = Zlib::Deflate.deflate("foo")
       z = Zlib::Inflate.new
@@ -317,58 +229,6 @@ if defined? Zlib
       inflated << z.finish
 
       assert_equal "\0", inflated
-    end
-
-    def test_inflate_chunked
-      # s = Zlib::Deflate.deflate("0" * 100_000)
-      zeros = "x\234\355\3011\001\000\000\000\302\240J\353\237\316\032\036@" \
-              "\001\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\257\006\351\247BH"
-
-      chunks = []
-
-      z = Zlib::Inflate.new
-
-      z.inflate(zeros) do |chunk|
-        chunks << chunk
-      end
-
-      assert_equal [16384, 16384, 16384, 16384, 16384, 16384, 1696],
-                   chunks.map { |chunk| chunk.size }
-
-      assert chunks.all? { |chunk|
-        chunk =~ /\A0+\z/
-      }
-    end
-
-    def test_inflate_chunked_break
-      # zeros = Zlib::Deflate.deflate("0" * 100_000)
-      zeros = "x\234\355\3011\001\000\000\000\302\240J\353\237\316\032\036@" \
-              "\001\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
-              "\000\000\000\000\000\000\000\257\006\351\247BH"
-
-      chunks = []
-
-      z = Zlib::Inflate.new
-
-      z.inflate(zeros) do |chunk|
-        chunks << chunk
-        break
-      end
-
-      out = z.inflate nil
-
-      assert_equal 100_000 - chunks.first.length, out.length
     end
 
     def test_inflate_dictionary
@@ -1036,18 +896,5 @@ if defined? Zlib
     def test_deflate
       TestZlibDeflate.new(__name__).test_deflate
     end
-
-    def test_deflate_stream
-      r = Random.new 0
-
-      deflated = ''
-
-      Zlib.deflate(r.bytes(20000)) do |chunk|
-        deflated << chunk
-      end
-
-      assert_equal 20016, deflated.length
-    end
-
   end
 end

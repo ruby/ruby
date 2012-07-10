@@ -10,7 +10,6 @@
 #include <zlib.h>
 #include <time.h>
 #include <ruby/io.h>
-#include "internal.h"
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 # include <valgrind/memcheck.h>
@@ -545,17 +544,12 @@ struct zstream {
 #define ZSTREAM_FLAG_IN_STREAM  0x2
 #define ZSTREAM_FLAG_FINISHED   0x4
 #define ZSTREAM_FLAG_CLOSING    0x8
-#define ZSTREAM_FLAG_GZFILE     0x10 /* disallows yield from expand_buffer for
-                                        gzip*/
-#define ZSTREAM_FLAG_UNUSED     0x20
+#define ZSTREAM_FLAG_UNUSED     0x10
 
 #define ZSTREAM_READY(z)       ((z)->flags |= ZSTREAM_FLAG_READY)
 #define ZSTREAM_IS_READY(z)    ((z)->flags & ZSTREAM_FLAG_READY)
 #define ZSTREAM_IS_FINISHED(z) ((z)->flags & ZSTREAM_FLAG_FINISHED)
 #define ZSTREAM_IS_CLOSING(z)  ((z)->flags & ZSTREAM_FLAG_CLOSING)
-#define ZSTREAM_IS_GZFILE(z)   ((z)->flags & ZSTREAM_FLAG_GZFILE)
-
-#define ZSTREAM_EXPAND_BUFFER_OK          0
 
 /* I think that more better value should be found,
    but I gave up finding it. B) */
@@ -574,9 +568,8 @@ static const struct zstream_funcs inflate_funcs = {
 
 struct zstream_run_args {
     struct zstream * z;
-    int flush;      /* stream flush value for inflate() or deflate() */
-    int interrupt;  /* stop processing the stream and return to ruby */
-    int jump_state; /* for buffer expansion block break or exception */
+    int flush;
+    int interrupt;
 };
 
 static voidpf
@@ -621,50 +614,33 @@ zstream_init(struct zstream *z, const struct zstream_funcs *func)
 static void
 zstream_expand_buffer(struct zstream *z)
 {
+    long inc;
+
     if (NIL_P(z->buf)) {
-	zstream_expand_buffer_into(z, ZSTREAM_INITIAL_BUFSIZE);
+	    /* I uses rb_str_new here not rb_str_buf_new because
+	       rb_str_buf_new makes a zero-length string. */
+	z->buf = rb_str_new(0, ZSTREAM_INITIAL_BUFSIZE);
+	z->buf_filled = 0;
+	z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf);
+	z->stream.avail_out = ZSTREAM_INITIAL_BUFSIZE;
+	RBASIC(z->buf)->klass = 0;
 	return;
     }
 
-    if (!ZSTREAM_IS_GZFILE(z) && rb_block_given_p()) {
-	if (z->buf_filled >= ZSTREAM_AVAIL_OUT_STEP_MAX) {
-	    int state = 0;
-	    VALUE self = (VALUE)z->stream.opaque;
-
-	    rb_str_resize(z->buf, z->buf_filled);
-	    RBASIC(z->buf)->klass = rb_cString;
-	    OBJ_INFECT(z->buf, self);
-
-	    rb_protect(rb_yield, z->buf, &state);
-
-	    z->buf = Qnil;
-	    zstream_expand_buffer_into(z, ZSTREAM_AVAIL_OUT_STEP_MAX);
-
-	    if (state)
-		rb_jump_tag(state);
-
-	    return;
-	}
-	else {
-	    zstream_expand_buffer_into(z,
-		    ZSTREAM_AVAIL_OUT_STEP_MAX - z->buf_filled);
-	}
+    if (RSTRING_LEN(z->buf) - z->buf_filled >= ZSTREAM_AVAIL_OUT_STEP_MAX) {
+	/* to keep other threads from freezing */
+	z->stream.avail_out = ZSTREAM_AVAIL_OUT_STEP_MAX;
     }
     else {
-	if (RSTRING_LEN(z->buf) - z->buf_filled >= ZSTREAM_AVAIL_OUT_STEP_MAX) {
-	    z->stream.avail_out = ZSTREAM_AVAIL_OUT_STEP_MAX;
+	inc = z->buf_filled / 2;
+	if (inc < ZSTREAM_AVAIL_OUT_STEP_MIN) {
+	    inc = ZSTREAM_AVAIL_OUT_STEP_MIN;
 	}
-	else {
-	    long inc = z->buf_filled / 2;
-	    if (inc < ZSTREAM_AVAIL_OUT_STEP_MIN) {
-		inc = ZSTREAM_AVAIL_OUT_STEP_MIN;
-	    }
-	    rb_str_resize(z->buf, z->buf_filled + inc);
-	    z->stream.avail_out = (inc < ZSTREAM_AVAIL_OUT_STEP_MAX) ?
-		(int)inc : ZSTREAM_AVAIL_OUT_STEP_MAX;
-	}
-	z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf) + z->buf_filled;
+	rb_str_resize(z->buf, z->buf_filled + inc);
+	z->stream.avail_out = (inc < ZSTREAM_AVAIL_OUT_STEP_MAX) ?
+	    (int)inc : ZSTREAM_AVAIL_OUT_STEP_MAX;
     }
+    z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf) + z->buf_filled;
 }
 
 static void
@@ -686,27 +662,13 @@ zstream_expand_buffer_into(struct zstream *z, unsigned long size)
     }
 }
 
-static void *
-zstream_expand_buffer_protect(void *ptr)
-{
-    struct zstream *z = (struct zstream *)ptr;
-    int state = 0;
-
-    rb_protect((VALUE (*)(VALUE))zstream_expand_buffer, (VALUE)z, &state);
-
-    return (void *)state;
-}
-
 static int
 zstream_expand_buffer_without_gvl(struct zstream *z)
 {
     char * new_str;
     long inc, len;
 
-    if (rb_block_given_p()) {
-	return (int)rb_thread_call_with_gvl(zstream_expand_buffer_protect, (void *)z);
-    }
-    else if (RSTRING_LEN(z->buf) - z->buf_filled >= ZSTREAM_AVAIL_OUT_STEP_MAX) {
+    if (RSTRING_LEN(z->buf) - z->buf_filled >= ZSTREAM_AVAIL_OUT_STEP_MAX) {
 	z->stream.avail_out = ZSTREAM_AVAIL_OUT_STEP_MAX;
     }
     else {
@@ -719,6 +681,9 @@ zstream_expand_buffer_without_gvl(struct zstream *z)
 
 	new_str = ruby_xrealloc(RSTRING(z->buf)->as.heap.ptr, len + 1);
 
+	if (!new_str)
+	    return 0;
+
 	/* from rb_str_resize */
 	RSTRING(z->buf)->as.heap.ptr = new_str;
 	RSTRING(z->buf)->as.heap.ptr[len] = '\0'; /* sentinel */
@@ -730,7 +695,7 @@ zstream_expand_buffer_without_gvl(struct zstream *z)
     }
     z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf) + z->buf_filled;
 
-    return ZSTREAM_EXPAND_BUFFER_OK;
+    return 1;
 }
 
 static void
@@ -771,13 +736,6 @@ zstream_detach_buffer(struct zstream *z)
 {
     VALUE dst, self = (VALUE)z->stream.opaque;
 
-    if (!ZSTREAM_IS_FINISHED(z) && !ZSTREAM_IS_GZFILE(z) &&
-	    rb_block_given_p()) {
-	/* prevent tiny yields mid-stream, save for next
-	 * zstream_expand_buffer() or stream end */
-	return Qnil;
-    }
-
     if (NIL_P(z->buf)) {
 	dst = rb_str_new(0, 0);
     }
@@ -793,12 +751,6 @@ zstream_detach_buffer(struct zstream *z)
     z->buf_filled = 0;
     z->stream.next_out = 0;
     z->stream.avail_out = 0;
-
-    if (!ZSTREAM_IS_GZFILE(z) && rb_block_given_p()) {
-	rb_yield(dst);
-	dst = Qnil;
-    }
-
     return dst;
 }
 
@@ -968,7 +920,7 @@ static VALUE
 zstream_run_func(void *ptr)
 {
     struct zstream_run_args *args = (struct zstream_run_args *)ptr;
-    int err, state, flush = args->flush;
+    int err, flush = args->flush;
     struct zstream *z = args->z;
     uInt n;
 
@@ -992,11 +944,8 @@ zstream_run_func(void *ptr)
 	    break;
 	}
 
-	state = zstream_expand_buffer_without_gvl(z);
-
-	if (state) {
-	    err = Z_OK; /* buffer expanded but stream processing was stopped */
-	    args->jump_state = state;
+	if (!zstream_expand_buffer_without_gvl(z)) {
+	    err = Z_MEM_ERROR; /* realloc failed */
 	    break;
 	}
     }
@@ -1025,7 +974,6 @@ zstream_run(struct zstream *z, Bytef *src, long len, int flush)
     args.z = z;
     args.flush = flush;
     args.interrupt = 0;
-    args.jump_state = 0;
 
     if (NIL_P(z->input) && len == 0) {
 	z->stream.next_in = (Bytef*)"";
@@ -1077,9 +1025,6 @@ loop:
 	zstream_append_input(z, z->stream.next_in, z->stream.avail_in);
         guard = Qnil; /* prevent tail call to make guard effective */
     }
-
-    if (args.jump_state)
-	rb_jump_tag(args.jump_state);
 }
 
 static VALUE
@@ -1262,13 +1207,8 @@ rb_zstream_reset(VALUE obj)
 }
 
 /*
- * call-seq:
- *   finish                 -> String
- *   finish { |chunk| ... } -> nil
- *
- * Finishes the stream and flushes output buffer.  If a block is given each
- * chunk is yielded to the block until the input buffer has been flushed to
- * the output buffer.
+ * Finishes the stream and flushes output buffer. See Zlib::Deflate#finish and
+ * Zlib::Inflate#finish for details of this behavior.
  */
 static VALUE
 rb_zstream_finish(VALUE obj)
@@ -1281,13 +1221,7 @@ rb_zstream_finish(VALUE obj)
 }
 
 /*
- * call-seq:
- *   flush_next_out                 -> String
- *   flush_next_out { |chunk| ... } -> nil
- *
- * Flushes output buffer and returns all data in that buffer.  If a block is
- * given each chunk is yielded to the block until the current output buffer
- * has been flushed.
+ * Flushes input buffer and returns all data in that buffer.
  */
 static VALUE
 rb_zstream_flush_next_in(VALUE obj)
@@ -1569,13 +1503,13 @@ deflate_run(VALUE args)
 /*
  * Document-method: Zlib::Deflate.deflate
  *
- * call-seq:
- *   Zlib.deflate(string[, level])
- *   Zlib::Deflate.deflate(string[, level])
+ * call-seq: Zlib.deflate(string[, level])
+ *           Zlib::Deflate.deflate(string[, level])
  *
  * Compresses the given +string+. Valid values of level are
- * Zlib::NO_COMPRESSION, Zlib::BEST_SPEED, Zlib::BEST_COMPRESSION,
- * Zlib::DEFAULT_COMPRESSION, or an integer from 0 to 9 (the default is 6).
+ * <tt>NO_COMPRESSION</tt>, <tt>BEST_SPEED</tt>,
+ * <tt>BEST_COMPRESSION</tt>, <tt>DEFAULT_COMPRESSION</tt>, and an
+ * integer from 0 to 9 (the default is 6).
  *
  * This method is almost equivalent to the following code:
  *
@@ -1629,19 +1563,17 @@ do_deflate(struct zstream *z, VALUE src, int flush)
 }
 
 /*
- * Document-method: Zlib::Deflate#deflate
+ * Document-method: Zlib#deflate
  *
  * call-seq:
- *   z.deflate(string, flush = Zlib::NO_FLUSH)                 -> String
- *   z.deflate(string, flush = Zlib::NO_FLUSH) { |chunk| ... } -> nil
+ *   deflate(string, flush = Zlib::NO_FLUSH)
  *
  * Inputs +string+ into the deflate stream and returns the output from the
  * stream.  On calling this method, both the input and the output buffers of
- * the stream are flushed.  If +string+ is nil, this method finishes the
- * stream, just like Zlib::ZStream#finish.
+ * the stream are flushed.
  *
- * If a block is given consecutive deflated chunks from the +string+ are
- * yielded to the block and +nil+ is returned.
+ * If +string+ is nil, this method finishes the stream, just like
+ * Zlib::ZStream#finish.
  *
  * The +flush+ parameter specifies the flush mode.  The following constants
  * may be used:
@@ -1688,13 +1620,10 @@ rb_deflate_addstr(VALUE obj, VALUE src)
  * Document-method: Zlib::Deflate#flush
  *
  * call-seq:
- *   flush(flush = Zlib::SYNC_FLUSH)                 -> String
- *   flush(flush = Zlib::SYNC_FLUSH) { |chunk| ... } -> nil
+ *   flush(flush = Zlib::SYNC_FLUSH)
  *
  * This method is equivalent to <tt>deflate('', flush)</tt>. This method is
- * just provided to improve the readability of your Ruby program.  If a block
- * is given chunks of deflate output are yielded to the block until the buffer
- * is flushed.
+ * just provided to improve the readability of your Ruby program.
  *
  * See Zlib::Deflate#deflate for detail on the +flush+ constants NO_FLUSH,
  * SYNC_FLUSH, FULL_FLUSH and FINISH.
@@ -1882,11 +1811,9 @@ inflate_run(VALUE args)
 }
 
 /*
- * Document-method: Zlib::inflate
+ * Document-method: Zlib::Inflate.inflate
  *
- * call-seq:
- *   Zlib.inflate(string)
- *   Zlib::Inflate.inflate(string)
+ * call-seq: Zlib::Inflate.inflate(string)
  *
  * Decompresses +string+. Raises a Zlib::NeedDict exception if a preset
  * dictionary is needed for decompression.
@@ -1962,17 +1889,12 @@ rb_inflate_add_dictionary(VALUE obj, VALUE dictionary) {
 /*
  * Document-method: Zlib::Inflate#inflate
  *
- * call-seq:
- *   inflate(deflate_string)                 -> String
- *   inflate(deflate_string) { |chunk| ... } -> nil
+ * call-seq: inflate(string)
  *
- * Inputs +deflate_string+ into the inflate stream and returns the output from
- * the stream.  Calling this method, both the input and the output buffer of
- * the stream are flushed.  If string is +nil+, this method finishes the
- * stream, just like Zlib::ZStream#finish.
- *
- * If a block is given consecutive inflated chunks from the +deflate_string+
- * are yielded to the block and +nil+ is returned.
+ * Inputs +string+ into the inflate stream and returns the output from the
+ * stream.  Calling this method, both the input and the output buffer of the
+ * stream are flushed.  If string is +nil+, this method finishes the stream,
+ * just like Zlib::ZStream#finish.
  *
  * Raises a Zlib::NeedDict exception if a preset dictionary is needed to
  * decompress.  Set the dictionary by Zlib::Inflate#set_dictionary and then
@@ -2246,7 +2168,6 @@ gzfile_new(klass, funcs, endfunc)
 
     obj = Data_Make_Struct(klass, struct gzfile, gzfile_mark, gzfile_free, gz);
     zstream_init(&gz->z, funcs);
-    gz->z.flags |= ZSTREAM_FLAG_GZFILE;
     gz->io = Qnil;
     gz->level = 0;
     gz->mtime = 0;
