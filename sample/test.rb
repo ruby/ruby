@@ -63,6 +63,7 @@ PROGRESS.instance_eval do
     def self.init
     end
     def self.finish
+      STDERR.puts
     end
   end
 end
