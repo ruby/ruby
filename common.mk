@@ -616,7 +616,7 @@ addr2line.$(OBJEXT): {$(VPATH)}addr2line.c {$(VPATH)}addr2line.h {$(VPATH)}confi
 array.$(OBJEXT): {$(VPATH)}array.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
   $(ENCODING_H_INCLUDES) {$(VPATH)}internal.h
 bignum.$(OBJEXT): {$(VPATH)}bignum.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
-  {$(VPATH)}internal.h
+  {$(VPATH)}thread.h {$(VPATH)}internal.h
 class.$(OBJEXT): {$(VPATH)}class.c $(RUBY_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h {$(VPATH)}internal.h \
   {$(VPATH)}constant.h
@@ -658,13 +658,15 @@ file.$(OBJEXT): {$(VPATH)}file.c $(RUBY_H_INCLUDES) {$(VPATH)}io.h \
 gc.$(OBJEXT): {$(VPATH)}gc.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h \
   {$(VPATH)}regex.h $(ENCODING_H_INCLUDES) $(VM_CORE_H_INCLUDES) \
   {$(VPATH)}gc.h {$(VPATH)}io.h {$(VPATH)}eval_intern.h {$(VPATH)}util.h \
-  {$(VPATH)}debug.h {$(VPATH)}internal.h {$(VPATH)}constant.h
+  {$(VPATH)}debug.h {$(VPATH)}internal.h {$(VPATH)}constant.h \
+  {$(VPATH)}thread.h
 hash.$(OBJEXT): {$(VPATH)}hash.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
   $(ENCODING_H_INCLUDES)
 inits.$(OBJEXT): {$(VPATH)}inits.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}internal.h
 io.$(OBJEXT): {$(VPATH)}io.c $(RUBY_H_INCLUDES) {$(VPATH)}io.h \
-  {$(VPATH)}util.h $(ENCODING_H_INCLUDES) {$(VPATH)}dln.h {$(VPATH)}internal.h
+  {$(VPATH)}util.h $(ENCODING_H_INCLUDES) {$(VPATH)}dln.h \
+  {$(VPATH)}internal.h {$(VPATH)}thread.h
 main.$(OBJEXT): {$(VPATH)}main.c $(RUBY_H_INCLUDES) {$(VPATH)}debug.h \
   {$(VPATH)}node.h
 marshal.$(OBJEXT): {$(VPATH)}marshal.c $(RUBY_H_INCLUDES) {$(VPATH)}io.h \
@@ -690,7 +692,8 @@ proc.$(OBJEXT): {$(VPATH)}proc.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}debug.h {$(VPATH)}internal.h {$(VPATH)}iseq.h
 process.$(OBJEXT): {$(VPATH)}process.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}util.h {$(VPATH)}io.h $(ENCODING_H_INCLUDES) {$(VPATH)}dln.h \
-  $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h {$(VPATH)}internal.h
+  $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h {$(VPATH)}internal.h \
+  {$(VPATH)}thread.h
 random.$(OBJEXT): {$(VPATH)}random.c $(RUBY_H_INCLUDES)
 range.$(OBJEXT): {$(VPATH)}range.c $(RUBY_H_INCLUDES) \
   $(ENCODING_H_INCLUDES) {$(VPATH)}internal.h
@@ -730,7 +733,7 @@ struct.$(OBJEXT): {$(VPATH)}struct.c $(RUBY_H_INCLUDES) {$(VPATH)}internal.h
 thread.$(OBJEXT): {$(VPATH)}thread.c {$(VPATH)}eval_intern.h \
   $(RUBY_H_INCLUDES) {$(VPATH)}gc.h $(VM_CORE_H_INCLUDES) \
   {$(VPATH)}debug.h {$(VPATH)}thread_$(THREAD_MODEL).c $(ENCODING_H_INCLUDES) \
-  {$(VPATH)}internal.h {$(VPATH)}io.h
+  {$(VPATH)}internal.h {$(VPATH)}io.h {$(VPATH)}thread.h
 transcode.$(OBJEXT): {$(VPATH)}transcode.c $(RUBY_H_INCLUDES) \
   $(ENCODING_H_INCLUDES) {$(VPATH)}transcode_data.h {$(VPATH)}internal.h
 cont.$(OBJEXT): {$(VPATH)}cont.c $(RUBY_H_INCLUDES) \

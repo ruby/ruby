@@ -48,6 +48,7 @@
 #include "gc.h"
 #include "internal.h"
 #include "ruby/io.h"
+#include "ruby/thread.h"
 
 #ifndef USE_NATIVE_THREAD_PRIORITY
 #define USE_NATIVE_THREAD_PRIORITY 0
@@ -1114,12 +1115,11 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
  *         they will work without GVL, and may acquire GVL
  *         when GC is needed.
  */
-VALUE
-rb_thread_blocking_region(
-    rb_blocking_function_t *func, void *data1,
-    rb_unblock_function_t *ubf, void *data2)
+void *
+rb_thread_call_without_gvl(void *(*func)(void *), void *data1,
+			   rb_unblock_function_t *ubf, void *data2)
 {
-    VALUE val;
+    void *val;
     rb_thread_t *th = GET_THREAD();
     int saved_errno = 0;
 
@@ -1156,14 +1156,13 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     return val;
 }
 
-/* alias of rb_thread_blocking_region() */
-
 VALUE
-rb_thread_call_without_gvl(
+rb_thread_blocking_region(
     rb_blocking_function_t *func, void *data1,
     rb_unblock_function_t *ubf, void *data2)
 {
-    return rb_thread_blocking_region(func, data1, ubf, data2);
+    void *(*f)(void*) = (void *(*)(void*))func;
+    return (VALUE)rb_thread_call_without_gvl(f, data1, ubf, data2);
 }
 
 /*

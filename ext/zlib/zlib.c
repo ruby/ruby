@@ -10,6 +10,7 @@
 #include <zlib.h>
 #include <time.h>
 #include <ruby/io.h>
+#include <ruby/thread.h>
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 # include <valgrind/memcheck.h>
@@ -916,7 +917,7 @@ zstream_end(struct zstream *z)
     return Qnil;
 }
 
-static VALUE
+static void *
 zstream_run_func(void *ptr)
 {
     struct zstream_run_args *args = (struct zstream_run_args *)ptr;
@@ -950,7 +951,7 @@ zstream_run_func(void *ptr)
 	}
     }
 
-    return (VALUE)err;
+    return (void *)err;
 }
 
 /*
@@ -994,7 +995,7 @@ zstream_run(struct zstream *z, Bytef *src, long len, int flush)
     }
 
 loop:
-    err = (int)rb_thread_blocking_region(
+    err = (int)rb_thread_call_without_gvl(
 	    zstream_run_func, (void *)&args,
 	    zstream_unblock_func, (void *)&args);
 

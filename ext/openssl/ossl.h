@@ -30,6 +30,7 @@ extern "C" {
 #endif
 #include <ruby.h>
 #include <ruby/io.h>
+#include <ruby/thread.h>
 
 /*
  * Check the OpenSSL version

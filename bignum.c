@@ -10,6 +10,7 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
+#include "ruby/thread.h"
 #include "ruby/util.h"
 #include "internal.h"
 
@@ -2591,7 +2592,7 @@ struct big_div_struct {
     VALUE stop;
 };
 
-static VALUE
+static void *
 bigdivrem1(void *ptr)
 {
     struct big_div_struct *bds = (struct big_div_struct*)ptr;
@@ -2605,7 +2606,7 @@ bigdivrem1(void *ptr)
     j = nx==ny?nx+1:nx;
     for (nyzero = 0; !yds[nyzero]; nyzero++);
     do {
-	if (bds->stop) return Qnil;
+	if (bds->stop) return 0;
 	if (zds[j] ==  yds[ny-1]) q = (BDIGIT)BIGRAD-1;
 	else q = (BDIGIT)((BIGUP(zds[j]) + zds[j-1])/yds[ny-1]);
 	if (q) {
@@ -2633,7 +2634,7 @@ bigdivrem1(void *ptr)
 	}
 	zds[j] = q;
     } while (--j >= ny);
-    return Qnil;
+    return 0;
 }
 
 static void
@@ -2725,7 +2726,7 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
     bds.yds = yds;
     bds.stop = Qfalse;
     if (nx > 10000 || ny > 10000) {
-	rb_thread_blocking_region(bigdivrem1, &bds, rb_big_stop, &bds.stop);
+	rb_thread_call_without_gvl(bigdivrem1, &bds, rb_big_stop, &bds.stop);
     }
     else {
 	bigdivrem1(&bds);

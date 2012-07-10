@@ -18,6 +18,7 @@
 
 #include "ruby.h"
 #include "ruby/io.h"
+#include "ruby/thread.h"
 
 #if defined(HAVE_NCURSES_H)
 # include <ncurses.h>
@@ -634,12 +635,12 @@ curses_addstr(VALUE obj, VALUE str)
     return Qnil;
 }
 
-static VALUE
+static void *
 getch_func(void *arg)
 {
     int *ip = (int *)arg;
     *ip = getch();
-    return Qnil;
+    return 0;
 }
 
 /*
@@ -656,7 +657,7 @@ curses_getch(VALUE obj)
     int c;
 
     curses_stdscr();
-    rb_thread_blocking_region(getch_func, (void *)&c, RUBY_UBF_IO, 0);
+    rb_thread_call_without_gvl(getch_func, &c, RUBY_UBF_IO, 0);
     if (c == EOF) return Qnil;
     if (rb_isprint(c)) {
 	char ch = (char)c;
@@ -669,7 +670,7 @@ curses_getch(VALUE obj)
 /* This should be big enough.. I hope */
 #define GETSTR_BUF_SIZE 1024
 
-static VALUE
+static void *
 getstr_func(void *arg)
 {
     char *rtn = (char *)arg;
@@ -678,7 +679,7 @@ getstr_func(void *arg)
 #else
     getstr(rtn);
 #endif
-    return Qnil;
+    return 0;
 }
 
 /*
@@ -693,7 +694,7 @@ curses_getstr(VALUE obj)
     char rtn[GETSTR_BUF_SIZE];
 
     curses_stdscr();
-    rb_thread_blocking_region(getstr_func, (void *)rtn, RUBY_UBF_IO, 0);
+    rb_thread_call_without_gvl(getstr_func, rtn, RUBY_UBF_IO, 0);
     return rb_locale_str_new_cstr(rtn);
 }
 
@@ -1955,12 +1956,12 @@ struct wgetch_arg {
     int c;
 };
 
-static VALUE
+static void *
 wgetch_func(void *_arg)
 {
     struct wgetch_arg *arg = (struct wgetch_arg *)_arg;
     arg->c = wgetch(arg->win);
-    return Qnil;
+    return 0;
 }
 
 /*
@@ -1980,7 +1981,7 @@ window_getch(VALUE obj)
 
     GetWINDOW(obj, winp);
     arg.win = winp->window;
-    rb_thread_blocking_region(wgetch_func, (void *)&arg, RUBY_UBF_IO, 0);
+    rb_thread_call_without_gvl(wgetch_func, (void *)&arg, RUBY_UBF_IO, 0);
     c = arg.c;
     if (c == EOF) return Qnil;
     if (rb_isprint(c)) {
@@ -1996,7 +1997,7 @@ struct wgetstr_arg {
     char rtn[GETSTR_BUF_SIZE];
 };
 
-static VALUE
+static void *
 wgetstr_func(void *_arg)
 {
     struct wgetstr_arg *arg = (struct wgetstr_arg *)_arg;
@@ -2005,7 +2006,7 @@ wgetstr_func(void *_arg)
 #else
     wgetstr(arg->win, arg->rtn);
 #endif
-    return Qnil;
+    return 0;
 }
 
 /*
@@ -2022,7 +2023,7 @@ window_getstr(VALUE obj)
 
     GetWINDOW(obj, winp);
     arg.win = winp->window;
-    rb_thread_blocking_region(wgetstr_func, (void *)&arg, RUBY_UBF_IO, 0);
+    rb_thread_call_without_gvl(wgetstr_func, (void *)&arg, RUBY_UBF_IO, 0);
     return rb_locale_str_new_cstr(arg.rtn);
 }
 

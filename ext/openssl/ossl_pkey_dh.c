@@ -90,12 +90,12 @@ struct dh_blocking_gen_arg {
     int result;
 };
 
-static VALUE
+static void *
 dh_blocking_gen(void *arg)
 {
     struct dh_blocking_gen_arg *gen = (struct dh_blocking_gen_arg *)arg;
     gen->result = DH_generate_parameters_ex(gen->dh, gen->size, gen->gen, gen->cb);
-    return Qnil;
+    return 0;
 }
 #endif
 
@@ -123,7 +123,7 @@ dh_generate(int size, int gen)
 	dh_blocking_gen(&gen_arg);
     } else {
 	/* there's a chance to unblock */
-	rb_thread_blocking_region(dh_blocking_gen, &gen_arg, ossl_generate_cb_stop, &cb_arg);
+	rb_thread_call_without_gvl(dh_blocking_gen, &gen_arg, ossl_generate_cb_stop, &cb_arg);
     }
 
     if (!gen_arg.result) {

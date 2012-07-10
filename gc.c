@@ -15,6 +15,7 @@
 #include "ruby/st.h"
 #include "ruby/re.h"
 #include "ruby/io.h"
+#include "ruby/thread.h"
 #include "ruby/util.h"
 #include "eval_intern.h"
 #include "vm_core.h"

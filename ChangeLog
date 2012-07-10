@@ -1,3 +1,12 @@
+Tue Jul 10 22:57:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/thread.h: new header file for thread stuff.
+
+	* thread.c (rb_thread_call_without_gvl): export.  [Feature#4328]
+	  returns void* instead of VALUE.  [Feature #5543]
+
+	* thread.c (rb_thread_blocking_region): deprecate.  [ruby-core:46295]
+
 Tue Jul 10 10:48:59 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/win32.h (NT, NtInitialize): removed unused old macros.

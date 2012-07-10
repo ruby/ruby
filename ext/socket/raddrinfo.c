@@ -154,12 +154,12 @@ struct getaddrinfo_arg
     struct addrinfo **res;
 };
 
-static VALUE
+static void *
 nogvl_getaddrinfo(void *arg)
 {
     struct getaddrinfo_arg *ptr = arg;
-    return getaddrinfo(ptr->node, ptr->service,
-                       ptr->hints, ptr->res);
+    return (void *)getaddrinfo(ptr->node, ptr->service,
+			       ptr->hints, ptr->res);
 }
 #endif
 
@@ -178,7 +178,7 @@ rb_getaddrinfo(const char *node, const char *service,
     arg.service = service;
     arg.hints = hints;
     arg.res = res;
-    ret = (int)BLOCKING_REGION(nogvl_getaddrinfo, &arg);
+    ret = (int)rb_thread_call_without_gvl(nogvl_getaddrinfo, &arg, RUBY_UBF_IO, 0);
     return ret;
 #endif
 }
@@ -195,14 +195,14 @@ struct getnameinfo_arg
     int flags;
 };
 
-static VALUE
+static void *
 nogvl_getnameinfo(void *arg)
 {
     struct getnameinfo_arg *ptr = arg;
-    return getnameinfo(ptr->sa, ptr->salen,
-                       ptr->host, (socklen_t)ptr->hostlen,
-                       ptr->serv, (socklen_t)ptr->servlen,
-                       ptr->flags);
+    return (void *)getnameinfo(ptr->sa, ptr->salen,
+			       ptr->host, (socklen_t)ptr->hostlen,
+			       ptr->serv, (socklen_t)ptr->servlen,
+			       ptr->flags);
 }
 #endif
 
@@ -223,7 +223,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     arg.serv = serv;
     arg.servlen = servlen;
     arg.flags = flags;
-    ret = (int)BLOCKING_REGION(nogvl_getnameinfo, &arg);
+    ret = (int)rb_thread_call_without_gvl(nogvl_getnameinfo, &arg, RUBY_UBF_IO, 0);
     return ret;
 #endif
 }

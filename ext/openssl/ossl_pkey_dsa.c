@@ -87,12 +87,12 @@ struct dsa_blocking_gen_arg {
     int result;
 };
 
-static VALUE
+static void *
 dsa_blocking_gen(void *arg)
 {
     struct dsa_blocking_gen_arg *gen = (struct dsa_blocking_gen_arg *)arg;
     gen->result = DSA_generate_parameters_ex(gen->dsa, gen->size, gen->seed, gen->seed_len, gen->counter, gen->h, gen->cb);
-    return Qnil;
+    return 0;
 }
 #endif
 
@@ -130,7 +130,7 @@ dsa_generate(int size)
 	dsa_blocking_gen(&gen_arg);
     } else {
 	/* there's a chance to unblock */
-	rb_thread_blocking_region(dsa_blocking_gen, &gen_arg, ossl_generate_cb_stop, &cb_arg);
+	rb_thread_call_without_gvl(dsa_blocking_gen, &gen_arg, ossl_generate_cb_stop, &cb_arg);
     }
     if (!gen_arg.result) {
 	DSA_free(dsa);

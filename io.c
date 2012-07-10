@@ -13,6 +13,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/io.h"
+#include "ruby/thread.h"
 #include "dln.h"
 #include "internal.h"
 #include <ctype.h>
@@ -5009,19 +5010,19 @@ struct sysopen_struct {
     mode_t perm;
 };
 
-static VALUE
+static void *
 sysopen_func(void *ptr)
 {
     const struct sysopen_struct *data = ptr;
     const char *fname = RSTRING_PTR(data->fname);
-    return (VALUE)rb_cloexec_open(fname, data->oflags, data->perm);
+    return (void *)rb_cloexec_open(fname, data->oflags, data->perm);
 }
 
 static inline int
 rb_sysopen_internal(struct sysopen_struct *data)
 {
     int fd;
-    fd = (int)rb_thread_blocking_region(sysopen_func, data, RUBY_UBF_IO, 0);
+    fd = (int)rb_thread_call_without_gvl(sysopen_func, data, RUBY_UBF_IO, 0);
     if (0 <= fd)
         rb_update_max_fd(fd);
     return fd;
@@ -9733,7 +9734,7 @@ nogvl_copy_stream_read_write(struct copy_stream_struct *stp)
     }
 }
 
-static VALUE
+static void *
 nogvl_copy_stream_func(void *arg)
 {
     struct copy_stream_struct *stp = (struct copy_stream_struct *)arg;
@@ -9752,7 +9753,7 @@ nogvl_copy_stream_func(void *arg)
 #ifdef USE_SENDFILE
   finish:
 #endif
-    return Qnil;
+    return 0;
 }
 
 static VALUE
@@ -9938,7 +9939,8 @@ copy_stream_body(VALUE arg)
     rb_fd_set(src_fd, &stp->fds);
     rb_fd_set(dst_fd, &stp->fds);
 
-    return rb_thread_blocking_region(nogvl_copy_stream_func, (void*)stp, RUBY_UBF_IO, 0);
+    rb_thread_call_without_gvl(nogvl_copy_stream_func, (void*)stp, RUBY_UBF_IO, 0);
+    return Qnil;
 }
 
 static VALUE

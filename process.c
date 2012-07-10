@@ -13,6 +13,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/io.h"
+#include "ruby/thread.h"
 #include "ruby/util.h"
 #include "internal.h"
 #include "vm_core.h"
@@ -628,7 +629,7 @@ struct waitpid_arg {
 };
 #endif
 
-static VALUE
+static void *
 rb_waitpid_blocking(void *data)
 {
     rb_pid_t result;
@@ -644,7 +645,7 @@ rb_waitpid_blocking(void *data)
     result = wait4(arg->pid, arg->st, arg->flags, NULL);
 #endif
 
-    return (VALUE)result;
+    return (void *)result;
 }
 
 rb_pid_t
@@ -658,8 +659,8 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
     arg.pid = pid;
     arg.st = st;
     arg.flags = flags;
-    result = (rb_pid_t)rb_thread_blocking_region(rb_waitpid_blocking, &arg,
-						 RUBY_UBF_PROCESS, 0);
+    result = (rb_pid_t)rb_thread_call_without_gvl(rb_waitpid_blocking, &arg,
+						  RUBY_UBF_PROCESS, 0);
     if (result < 0) {
 	if (errno == EINTR) {
             RUBY_VM_CHECK_INTS();

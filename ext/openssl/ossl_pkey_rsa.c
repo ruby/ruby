@@ -85,12 +85,12 @@ struct rsa_blocking_gen_arg {
     int result;
 };
 
-static VALUE
+static void *
 rsa_blocking_gen(void *arg)
 {
     struct rsa_blocking_gen_arg *gen = (struct rsa_blocking_gen_arg *)arg;
     gen->result = RSA_generate_key_ex(gen->rsa, gen->size, gen->e, gen->cb);
-    return Qnil;
+    return 0;
 }
 #endif
 
@@ -133,7 +133,7 @@ rsa_generate(int size, unsigned long exp)
 	rsa_blocking_gen(&gen_arg);
     } else {
 	/* there's a chance to unblock */
-	rb_thread_blocking_region(rsa_blocking_gen, &gen_arg, ossl_generate_cb_stop, &cb_arg);
+	rb_thread_call_without_gvl(rsa_blocking_gen, &gen_arg, ossl_generate_cb_stop, &cb_arg);
     }
     if (!gen_arg.result) {
 	BN_free(e);
