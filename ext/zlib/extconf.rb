@@ -7,8 +7,9 @@
 require 'mkmf'
 require 'rbconfig'
 
-dir_config 'zlib'
+$INCFLAGS << " -I$(topdir) -I$(top_srcdir)"
 
+dir_config 'zlib'
 
 if %w'z libz zlib1 zlib zdll'.find {|z| have_library(z, 'deflateReset')} and
     have_header('zlib.h') then

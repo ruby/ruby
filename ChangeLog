@@ -1,3 +1,24 @@
+Tue Jul 10 08:56:17 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/zlib/zlib.c:  Added streaming support to inflate processing.
+	  This allows zlib streams to be processed without huge memory growth.
+	  [Feature #6612]
+	* NEWS:  ditto
+	* ext/zlib/zlib.c (zstream_expand_buffer):  Uses rb_yield when a block
+	  is given for streaming support.  Refactored to use
+	  zstream_expand_buffer_into to remove duplicate code.
+	* ext/zlib/zlib.c (zstream_expand_buffer_protect):  Added wrapper
+	  function to pass jump state back through GVL-free section to allow
+          zstream clean-up before terminating the ruby call.
+	* ext/zlib/zlib.c (zstream_expand_buffer_without_gvl):  Acquire GVL to
+	  yield processed chunk of output stream.
+	* ext/zlib/zlib.c (zstream_detach_buffer):  When a block is given,
+	  returns Qnil mid-stream and yields the output buffer at the end of
+	  the stream.
+	* ext/zlib/extconf.rb:  Update INCFLAGS to find internal.h for
+	  rb_thread_call_with_gvl
+	* test/zlib/test_zlib.rb:  Added tests for streaming processing
+
 Tue Jul 10 00:44:41 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/ruby.h: Removed RUBY_GLOBAL_SETUP complely. It is
