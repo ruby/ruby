@@ -1,3 +1,8 @@
+Wed Jul 11 10:16:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby.h (HAVE_RUBY_THREAD_H): to show ruby/thread.h to be
+	  available.  fixup of r36355.
+
 Wed Jul 11 03:26:47 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/zlib/zlib.c:  Added streaming support to inflate processing.
