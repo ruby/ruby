@@ -83,6 +83,15 @@ with all sufficient information, see the ChangeLog file.
     * incompatible changes:
       * Fiber#resume cannot resume a fiber which invokes "Fiber#transfer".
 
+* net/http
+  * new methods:
+    * Net::HTTP#local_host
+    * Net::HTTP#local_host=
+    * Net::HTTP#local_port
+    * Net::HTTP#local_port=
+  * extended method:
+    * Net::HTTP#connect uses local_host and local_port if specified.
+
 * net/imap
   * new methods:
     * Net::IMAP.default_port

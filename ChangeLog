@@ -1,3 +1,8 @@
+Thu Jul 12 01:49:07 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP#connect): use local_host and local_port
+	  if specified. patched by Ricardo Amorim [Feature #6617]
+
 Wed Jul 11 17:36:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: append ENCOBJS to DLDOBJS but not EXTSOLIBS which is

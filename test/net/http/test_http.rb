@@ -616,3 +616,45 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
     }
   end
 end
+
+class TestNetHTTPLocalBind < Test::Unit::TestCase
+  CONFIG = {
+    'host' => '127.0.0.1',
+    'port' => 10081,
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+  }
+
+  include TestNetHTTPUtils
+
+  def test_bind_to_local_host
+    @server.mount_proc('/show_ip') { |req, res| res.body = req.remote_ip }
+
+    http = Net::HTTP.new(config('host'), config('port'))
+    http.local_host = _select_local_ip_address
+    assert_not_nil(http.local_host)
+    assert_nil(http.local_port)
+
+    res = http.get('/show_ip')
+    assert_equal(http.local_host, res.body)
+  end
+
+  def test_bind_to_local_port
+    @server.mount_proc('/show_port') { |req, res| res.body = req.peeraddr[1].to_s }
+
+    http = Net::HTTP.new(config('host'), config('port'))
+    http.local_host = _select_local_ip_address
+    http.local_port = [*10000..20000].shuffle.first.to_s
+    assert_not_nil(http.local_host)
+    assert_not_nil(http.local_port)
+
+    res = http.get('/show_port')
+    assert_equal(http.local_port, res.body)
+  end
+
+  def _select_local_ip_address
+    Socket.ip_address_list.find { |addr|
+      not addr.ipv4_loopback? and not addr.ipv4_multicast?
+    }.ip_address
+  end
+end

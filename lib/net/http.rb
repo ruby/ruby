@@ -587,6 +587,8 @@ module Net   #:nodoc:
     def initialize(address, port = nil)
       @address = address
       @port    = (port || HTTP.default_port)
+      @local_host = nil
+      @local_port = nil
       @curr_http_version = HTTPVersion
       @keep_alive_timeout = 2
       @last_communicated = nil
@@ -630,6 +632,12 @@ module Net   #:nodoc:
 
     # The port number to connect to.
     attr_reader :port
+
+    # The local host used to estabilish the connection.
+    attr_accessor :local_host
+
+    # The local port used to estabilish the connection.
+    attr_accessor :local_port
 
     # Number of seconds to wait for the connection to open. Any number
     # may be used, including Floats for fractional seconds. If the HTTP
@@ -799,7 +807,7 @@ module Net   #:nodoc:
     def connect
       D "opening connection to #{conn_address()}..."
       s = Timeout.timeout(@open_timeout, Net::OpenTimeout) {
-        TCPSocket.open(conn_address(), conn_port())
+        TCPSocket.open(conn_address(), conn_port(), @local_host, @local_port)
       }
       D "opened"
       if use_ssl?
