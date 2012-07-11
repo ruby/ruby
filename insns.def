@@ -826,16 +826,11 @@ defined
 	}
 	break;
       case DEFINED_ZSUPER:{
-	rb_iseq_t *iseq = GET_ISEQ();
-	while (iseq) {
-	    if (iseq->defined_method_id) {
-		break;
-	    }
-	    iseq = iseq->parent_iseq;
-	}
-	if (iseq) {
-	    VALUE klass = vm_search_normal_superclass(iseq->klass, GET_SELF());
-	    if (rb_method_boundp(klass, iseq->defined_method_id, 0)) {
+	const rb_method_entry_t *me = GET_CFP()->me;
+	if (me) {
+	    VALUE klass = vm_search_normal_superclass(me->klass, GET_SELF());
+	    ID id = me->def ? me->def->original_id : me->called_id;
+	    if (rb_method_boundp(klass, id, 0)) {
 		expr_type = "super";
 	    }
 	}

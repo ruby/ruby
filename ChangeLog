@@ -1,3 +1,9 @@
+Thu Jul 12 05:11:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (defined): use method entry and id in cfp for proper
+	  superclass, since klass in iseq is shared by dynamically defined
+	  methods from the same block.  [ruby-core:45831][Bug #6644]
+
 Thu Jul 12 01:49:07 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP#connect): use local_host and local_port
@@ -10,7 +16,7 @@ Wed Jul 11 17:36:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Jul 11 12:38:20 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* ext/openssl/ossl_pkey_ec.c (ossl_ec_point_mul): nonstatic initializer 
+	* ext/openssl/ossl_pkey_ec.c (ossl_ec_point_mul): nonstatic initializer
 	  of an aggregate type is a C99ism.
 
 	* ext/openssl/ossl_pkey_ec.c (ossl_ec_point_mul): get rid of VC++
