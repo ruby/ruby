@@ -1482,7 +1482,6 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
     EC_POINT *point1, *point2;
     const EC_GROUP *group;
     VALUE group_v = rb_iv_get(self, "@group");
-    VALUE args[1] = {group_v};
     VALUE bn_v1, bn_v2, r, points_v;
     BIGNUM *bn1 = NULL, *bn2 = NULL;
 
@@ -1490,7 +1489,7 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
     SafeRequire_EC_GROUP(group_v, group);
 
     r = rb_obj_alloc(cEC_POINT);
-    ossl_ec_point_initialize(1, args, r);
+    ossl_ec_point_initialize(1, &group_v, r);
     Require_EC_POINT(r, point2);
 
     argc = rb_scan_args(argc, argv, "12", &bn_v1, &points_v, &bn_v2);
@@ -1516,7 +1515,7 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
         }
 
         if (!rb_obj_is_kind_of(points_v, rb_cArray)) {
-            OPENSSL_free(bignums);
+            OPENSSL_free((void *)bignums);
             rb_raise(rb_eTypeError, "Argument2 must be an array");
         }
 
@@ -1532,12 +1531,12 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
             bn2 = GetBNPtr(bn_v2);
         }
         if (EC_POINTs_mul(group, point2, bn2, points_len, points, bignums, ossl_bn_ctx) != 1) {
-            OPENSSL_free(bignums);
-            OPENSSL_free(points);
+            OPENSSL_free((void *)bignums);
+            OPENSSL_free((void *)points);
             ossl_raise(eEC_POINT, "Multiplication failed");
         }
-        OPENSSL_free(bignums);
-        OPENSSL_free(points);
+        OPENSSL_free((void *)bignums);
+        OPENSSL_free((void *)points);
     }
 
     return r;

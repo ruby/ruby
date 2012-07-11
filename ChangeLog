@@ -1,3 +1,11 @@
+Wed Jul 11 12:38:20 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/openssl/ossl_pkey_ec.c (ossl_ec_point_mul): nonstatic initializer 
+	  of an aggregate type is a C99ism.
+
+	* ext/openssl/ossl_pkey_ec.c (ossl_ec_point_mul): get rid of VC++
+	  warnings.
+
 Mon Jul  9 16:11:30 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* vm_eval.c (rb_eval_string_from_file,
