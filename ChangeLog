@@ -32,7 +32,7 @@ Tue Jul 10 10:48:59 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Tue Jul 10 10:43:37 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* configure.in: removed --enable/disable-win95 options. (see r36432)
+	* configure.in: removed --enable/disable-win95 options. (see r36342)
 
 Tue Jul 10 00:44:41 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
