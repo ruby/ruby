@@ -41,7 +41,7 @@ Tue Jul 10 10:43:37 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Tue Jul 10 00:44:41 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* include/ruby/ruby.h: Removed RUBY_GLOBAL_SETUP complely. It is
+	* include/ruby/ruby.h: Removed RUBY_GLOBAL_SETUP completely. It is
 	  no meaning definition since r24894.
 	* main.c: ditto.
 	* nacl/pepper_main.c: ditto.
