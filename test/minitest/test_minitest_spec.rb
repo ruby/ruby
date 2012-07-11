@@ -645,8 +645,8 @@ class TestMeta < MiniTest::Unit::TestCase
     assert_equal "inner thingy", y.desc
     assert_equal "very inner thingy", z.desc
 
-    top_methods = %w(test_0001_top_level_it)
-    inner_methods1 = %w(test_0001_inner_it)
+    top_methods = %w(test_0001_top-level-it)
+    inner_methods1 = %w(test_0001_inner-it)
     inner_methods2 = inner_methods1 +
       %w(test_0002_anonymous test_0003_anonymous)
 
@@ -690,13 +690,13 @@ class TestMeta < MiniTest::Unit::TestCase
     x = describe "top-level thingy" do
       y = describe "first thingy" do end
 
-      x1 = it "top-level-it" do end
+      x1 = it "top level it" do end
       x2 = it "не латинские буквы-и-спецсимволы&いった α, β, γ, δ, ε hello!!! world" do end
 
       z = describe "second thingy" do end
     end
 
-    test_methods = ['test_0001_top_level_it', 'test_0002_не_латинские_буквы_и_спецсимволы_いった_α_β_γ_δ_ε_hello_world'].sort 
+    test_methods = ['test_0001_top level it', 'test_0002_не латинские буквы-и-спецсимволы&いった α, β, γ, δ, ε hello!!! world'].sort 
 
     assert_equal test_methods, [x1, x2]
     assert_equal test_methods,

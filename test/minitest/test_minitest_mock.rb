@@ -211,7 +211,7 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
   end
 end
 
-require "metametameta"
+require "minitest/metametameta"
 
 class TestMiniTestStub < MiniTest::Unit::TestCase
   def setup
@@ -267,5 +267,15 @@ class TestMiniTestStub < MiniTest::Unit::TestCase
     end
 
     assert_stub obj
+  end
+
+  def test_stub_yield_self
+    obj = "foo"
+
+    val = obj.stub :to_s, "bar" do |s|
+      s.to_s
+    end
+
+    @tc.assert_equal "bar", val
   end
 end

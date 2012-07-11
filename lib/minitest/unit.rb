@@ -652,7 +652,7 @@ module MiniTest
   end
 
   class Unit # :nodoc:
-    VERSION = "3.0.0" # :nodoc:
+    VERSION = "3.2.0" # :nodoc:
 
     attr_accessor :report, :failures, :errors, :skips # :nodoc:
     attr_accessor :test_count, :assertion_count       # :nodoc:
@@ -711,16 +711,6 @@ module MiniTest
 
     def self.output
       @@out
-    end
-
-    ##
-    # Returns the stream to use for output.
-    #
-    # DEPRECATED: use ::output instead.
-
-    def self.out
-      warn "::out deprecated, use ::output instead." if $VERBOSE
-      output
     end
 
     ##

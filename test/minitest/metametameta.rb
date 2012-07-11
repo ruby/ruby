@@ -27,6 +27,8 @@ class MetaMetaMetaTestCase < MiniTest::Unit::TestCase
     output.sub!(/Finished tests in .*/, "Finished tests in 0.00")
     output.sub!(/Loaded suite .*/, 'Loaded suite blah')
 
+    output.gsub!(/ = \d+.\d\d s = /, ' = 0.00 s = ')
+
     if windows? then
       output.gsub!(/\[(?:[A-Za-z]:)?[^\]:]+:\d+\]/, '[FILE:LINE]')
       output.gsub!(/^(\s+)(?:[A-Za-z]:)?[^:]+:\d+:in/, '\1FILE:LINE:in')

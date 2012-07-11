@@ -1,3 +1,8 @@
+Thu Jul 12 08:48:33 2012  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*: Imported minitest 3.2.0 (r7598)
+	* test/minitest/*: ditto
+
 Thu Jul 12 05:11:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (defined): use method entry and id in cfp for proper

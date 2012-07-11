@@ -181,12 +181,6 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
     add_teardown_hook {|tc| tc.instance_eval(&block) }
   end
 
-  NAME_RE = if RUBY_VERSION >= "1.9"
-              Regexp.new("[^[[:word:]]]+")
-            else
-              /\W+/u
-            end
-
   ##
   # Define an expectation with name +desc+. Name gets morphed to a
   # proper test method name. For some freakish reason, people who
@@ -204,7 +198,7 @@ class MiniTest::Spec < MiniTest::Unit::TestCase
     @specs ||= 0
     @specs += 1
 
-    name = "test_%04d_%s" % [ @specs, desc.gsub(NAME_RE, '_').downcase ]
+    name = "test_%04d_%s" % [ @specs, desc ]
 
     define_method name, &block
 

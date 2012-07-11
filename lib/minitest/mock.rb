@@ -57,12 +57,12 @@ module MiniTest
       self
     end
 
-    def call name, data
+    def __call name, data
       case data
       when Hash then
         "#{name}(#{data[:args].inspect[1..-2]}) => #{data[:retval].inspect}"
       else
-        data.map { |d| call name, d }.join ", "
+        data.map { |d| __call name, d }.join ", "
       end
     end
 
@@ -74,15 +74,16 @@ module MiniTest
     def verify
       @expected_calls.each do |name, calls|
         calls.each do |expected|
-          msg1 = "expected #{call name, expected}"
-          msg2 = "#{msg1}, got [#{call name, @actual_calls[name]}]"
+          msg1 = "expected #{__call name, expected}"
+          msg2 = "#{msg1}, got [#{__call name, @actual_calls[name]}]"
 
           raise MockExpectationError, msg2 if
-            @actual_calls.has_key? name and
+            @actual_calls.has_key?(name) and
             not @actual_calls[name].include?(expected)
 
           raise MockExpectationError, msg1 unless
-            @actual_calls.has_key? name and @actual_calls[name].include?(expected)
+            @actual_calls.has_key?(name) and
+            @actual_calls[name].include?(expected)
         end
       end
       true
@@ -163,7 +164,7 @@ class Object # :nodoc:
       end
     end
 
-    yield
+    yield self
   ensure
     metaclass.send :undef_method, name
     metaclass.send :alias_method, name, new_name
