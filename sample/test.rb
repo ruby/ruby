@@ -17,7 +17,7 @@ class Progress
         @quiet = true
       end
     end
-    @tty = STDERR.tty? && /dumb/ !~ ENV["TERM"]
+    @tty = STDERR.tty? && !STDOUT.tty? && /dumb/ !~ ENV["TERM"]
     case @color
     when nil
       @color = @tty
