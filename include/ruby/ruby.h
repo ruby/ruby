@@ -1478,13 +1478,6 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
  * @{
  */
 
-/*! Opaque pointer to an inner data structure.
- *
- * You do not have to know what the actual data type this pointer points.
- * It often changes for internal improvements.
- */
-typedef void *ruby_opaque_t;
-
 /** @defgroup ruby1 ruby(1) implementation
  * A part of the implementation of ruby(1) command.
  * Other programs that embed Ruby interpreter do not always need to use these
@@ -1494,9 +1487,9 @@ typedef void *ruby_opaque_t;
 
 void ruby_sysinit(int *argc, char ***argv);
 void ruby_init(void);
-ruby_opaque_t ruby_options(int argc, char** argv);
-int ruby_executable_node(ruby_opaque_t n, int *status);
-int ruby_run_node(ruby_opaque_t n);
+void* ruby_options(int argc, char** argv);
+int ruby_executable_node(void *n, int *status);
+int ruby_run_node(void *n);
 
 /* version.c */
 void ruby_show_version(void);
@@ -1528,10 +1521,7 @@ void ruby_set_stack_size(size_t);
 int ruby_stack_check(void);
 size_t ruby_stack_length(VALUE**);
 
-ruby_opaque_t ruby_compile_main_from_file(VALUE fname, const char* path, VALUE* error);
-ruby_opaque_t ruby_compile_main_from_string(VALUE fname, VALUE string, VALUE* error);
-int ruby_exec_node(ruby_opaque_t n);
-int ruby_eval_main(ruby_opaque_t n, VALUE *result);
+int ruby_exec_node(void *n);
 
 void ruby_script(const char* name);
 void ruby_set_script_name(VALUE name);

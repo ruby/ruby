@@ -1,3 +1,19 @@
+Mon Jul  9 14:05:42 2012  Yuki Yugui Sonoda  <yugui@google.com>
+
+	Reverts a half of r36079. As we discussed on ruby-dev@ and IRC,
+	we do not need to disclose intermediate representation of program.
+	The program embedding CRuby should use rb_eval_string family.
+	* include/ruby/ruby.h (ruby_opaque_t): removed.
+	  (ruby_compile_main_from_file, ruby_compile_main_from_string,
+	   ruby_eval_main): removed.
+
+	* eval.c (ruby_eval_main_internal): became ruby_exec_internal() again.
+	  (ruby_eval_main): removed.
+
+	* ruby.c (PREPARE_PARSE_MAIN) reverted.
+	  (parse_and_compile_main, ruby_compile_main_from_file,
+	   ruby_compile_main_from_string): removed
+
 Wed Jul 11 10:16:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby.h (HAVE_RUBY_THREAD_H): to show ruby/thread.h to be
