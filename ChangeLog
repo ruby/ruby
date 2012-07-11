@@ -1,3 +1,11 @@
+Mon Jul  9 16:11:30 2012  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* vm_eval.c (rb_eval_string_from_file,
+	  rb_eval_string_from_file_protect): new functions to replace
+	  rb_compile_main_from_string() and ruby_eval_main().
+
+	* nacl/pepper_ruby.c: Follows the change in vm_eval.c
+
 Mon Jul  9 14:05:42 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	Reverts a half of r36079. As we discussed on ruby-dev@ and IRC,

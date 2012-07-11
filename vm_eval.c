@@ -1157,18 +1157,73 @@ rb_f_eval(int argc, VALUE *argv, VALUE self)
     return eval_string(self, src, scope, file, line);
 }
 
+/** @note This function name is not stable. */
+VALUE
+ruby_eval_string_from_file(const char *str, const char *filename) {
+    return eval_string(rb_vm_top_self(), rb_str_new2(str), Qnil, filename, 1);
+}
+
+struct eval_string_from_file_arg {
+    const char *str;
+    const char *filename;
+};
+static VALUE
+eval_string_from_file_helper(void *data) {
+    const struct eval_string_from_file_arg *const arg = (struct eval_string_from_file_arg*)data;
+    return eval_string(rb_vm_top_self(), rb_str_new2(arg->str), Qnil, arg->filename, 1);
+}
+
+VALUE
+ruby_eval_string_from_file_protect(const char *str, const char *filename, int *state) {
+    struct eval_string_from_file_arg arg = { str, filename };
+    return rb_protect((VALUE (*)(VALUE))eval_string_from_file_helper, (VALUE)&arg, state);
+}
+
+/**
+ * Evaluates the given string in an isolated binding.
+ *
+ * Here "isolated" means the binding does not inherit any other binding. This
+ * behaves same as the binding for required libraries.
+ *
+ * __FILE__ will be "(eval)", and __LINE__ starts from 1 in the evaluation.
+ *
+ * @param str Ruby code to evaluate.
+ * @return The evaluated result.
+ * @throw Exception   Raises an exception on error.
+ */
 VALUE
 rb_eval_string(const char *str)
 {
-    return eval_string(rb_vm_top_self(), rb_str_new2(str), Qnil, "(eval)", 1);
+    return ruby_eval_string_from_file(str, "eval");
 }
 
+/**
+ * Evaluates the given string in an isolated binding.
+ *
+ * __FILE__ will be "(eval)", and __LINE__ starts from 1 in the evaluation.
+ *
+ * @sa rb_eval_string
+ * @param str Ruby code to evaluate.
+ * @param state Being set to zero if succeeded. Nonzero if an error occurred.
+ * @return The evaluated result if succeeded, an undefined value if otherwise.
+ */
 VALUE
 rb_eval_string_protect(const char *str, int *state)
 {
     return rb_protect((VALUE (*)(VALUE))rb_eval_string, (VALUE)str, state);
 }
 
+/**
+ * Evaluates the given string under a module binding in an isolated binding.
+ * This is same as the binding for required libraries on "require('foo', true)".
+ *
+ * __FILE__ will be "(eval)", and __LINE__ starts from 1 in the evaluation.
+ *
+ * @sa rb_eval_string
+ * @param str Ruby code to evaluate.
+ * @param state Being set to zero if succeeded. Nonzero if an error occurred.
+ * @return The evaluated result if succeeded, an undefined value if otherwise.
+ */
 VALUE
 rb_eval_string_wrap(const char *str, int *state)
 {

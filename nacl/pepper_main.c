@@ -374,7 +374,7 @@ init_libraries(void* data)
     volatile VALUE err = rb_errinfo();
     err = rb_obj_as_string(err);
   } else {
-    instance->async_call_args = "rubyReady";
+    instance->async_call_args = (void*)"rubyReady";
     core_interface->CallOnMainThread(
         0, PP_MakeCompletionCallback(pruby_post_cstr, instance), 0);
   }
@@ -419,11 +419,10 @@ pruby_init(void)
 static void*
 pruby_eval(void* data)
 {
+  extern VALUE ruby_eval_string_from_file_protect(const char* src, const char* path, int* state);
   struct PepperInstance* const instance = (struct PepperInstance*)data;
-  volatile VALUE path;
   volatile VALUE src = (VALUE)instance->async_call_args;
   volatile VALUE result = Qnil;
-  ruby_opaque_t prog;
   volatile int state;
 
   RUBY_INIT_STACK;
@@ -432,13 +431,8 @@ pruby_eval(void* data)
     perror("pepper-ruby:pthread_mutex_lock");
     return 0;
   }
-
-  path = rb_usascii_str_new_cstr("(pepper-ruby)");
-  prog = ruby_compile_main_from_string(path, src, (VALUE*)&result);
-  if (prog) {
-    state = ruby_eval_main(prog, (VALUE*)&result);
-  }
-
+  result = ruby_eval_string_from_file_protect(
+      RSTRING_PTR(src), "(pepper-ruby)", &state);
   pthread_mutex_unlock(&instance->mutex);
 
   if (!state) {
