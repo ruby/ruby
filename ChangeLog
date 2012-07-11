@@ -1,3 +1,8 @@
+Wed Jul 11 17:36:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: append ENCOBJS to DLDOBJS but not EXTSOLIBS which is
+	  not a target, to compile enc/encinit.c.
+
 Wed Jul 11 12:38:20 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/openssl/ossl_pkey_ec.c (ossl_ec_point_mul): nonstatic initializer 

@@ -666,7 +666,7 @@ if $configure_only and $command_output
       mf.print "#{tgt}:\n\t$(Q)$(MAKE) "
       mf.print "$(MFLAGS) "
       if enable_config("shared", $enable_shared)
-        mf.print %[DLDOBJS="$(EXTOBJS)" EXTSOLIBS="$(ENCOBJS) $(EXTLIBS)" ]
+        mf.print %[DLDOBJS="$(EXTOBJS) $(ENCOBJS)" EXTSOLIBS="$(EXTLIBS)" ]
         mf.print 'LIBRUBY_SO_UPDATE=$(LIBRUBY_EXTS) '
       else
         mf.print %[EXTOBJS="$(EXTOBJS) $(ENCOBJS)" EXTLIBS="$(EXTLIBS)" ]
