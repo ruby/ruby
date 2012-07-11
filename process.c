@@ -645,7 +645,7 @@ rb_waitpid_blocking(void *data)
     result = wait4(arg->pid, arg->st, arg->flags, NULL);
 #endif
 
-    return (void *)result;
+    return (void *)(VALUE)result;
 }
 
 rb_pid_t
@@ -659,8 +659,8 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
     arg.pid = pid;
     arg.st = st;
     arg.flags = flags;
-    result = (rb_pid_t)rb_thread_call_without_gvl(rb_waitpid_blocking, &arg,
-						  RUBY_UBF_PROCESS, 0);
+    result = (rb_pid_t)(VALUE)rb_thread_call_without_gvl(rb_waitpid_blocking, &arg,
+							 RUBY_UBF_PROCESS, 0);
     if (result < 0) {
 	if (errno == EINTR) {
             RUBY_VM_CHECK_INTS();
@@ -692,8 +692,8 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
     }
 
     for (;;) {
-	result = (rb_pid_t)rb_thread_blocking_region(rb_waitpid_blocking,
-						     st, RUBY_UBF_PROCESS, 0);
+	result = (rb_pid_t)(VALUE)rb_thread_blocking_region(rb_waitpid_blocking,
+							    st, RUBY_UBF_PROCESS, 0);
 	if (result < 0) {
 	    if (errno == EINTR) {
 		rb_thread_schedule();

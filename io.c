@@ -5015,14 +5015,14 @@ sysopen_func(void *ptr)
 {
     const struct sysopen_struct *data = ptr;
     const char *fname = RSTRING_PTR(data->fname);
-    return (void *)rb_cloexec_open(fname, data->oflags, data->perm);
+    return (void *)(VALUE)rb_cloexec_open(fname, data->oflags, data->perm);
 }
 
 static inline int
 rb_sysopen_internal(struct sysopen_struct *data)
 {
     int fd;
-    fd = (int)rb_thread_call_without_gvl(sysopen_func, data, RUBY_UBF_IO, 0);
+    fd = (int)(VALUE)rb_thread_call_without_gvl(sysopen_func, data, RUBY_UBF_IO, 0);
     if (0 <= fd)
         rb_update_max_fd(fd);
     return fd;

@@ -1509,7 +1509,7 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 
         Check_Type(bn_v1, T_ARRAY);
         bignums_len = RARRAY_LEN(bn_v1);
-        bignums = (const BIGNUM **)OPENSSL_malloc(bignums_len * sizeof(BIGNUM *));
+        bignums = (const BIGNUM **)OPENSSL_malloc(bignums_len * (int)sizeof(BIGNUM *));
 
         for (i = 0; i < bignums_len; ++i) {
             bignums[i] = GetBNPtr(rb_ary_entry(bn_v1, i));
@@ -1522,7 +1522,7 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 
         rb_ary_unshift(points_v, self);
         points_len = RARRAY_LEN(points_v);
-        points = (const EC_POINT **)OPENSSL_malloc(points_len * sizeof(EC_POINT *));
+        points = (const EC_POINT **)OPENSSL_malloc(points_len * (int)sizeof(EC_POINT *));
 
         for (i = 0; i < points_len; ++i) {
             Get_EC_POINT(rb_ary_entry(points_v, i), points[i]);
