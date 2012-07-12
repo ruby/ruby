@@ -789,7 +789,7 @@ module Test
           runner.new_test($1)
         when /\A(.* s) = \z/
           runner.add_status(" = "+$1.chomp)
-        when /\A\.\z/
+        when /\A\.+\z/
           runner.succeed
         when /\A[EFS]\z/
           runner.failed(s)
