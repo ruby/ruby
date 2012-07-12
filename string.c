@@ -681,7 +681,7 @@ rb_str_new_frozen(VALUE orig)
 	assert(OBJ_FROZEN(str));
 	ofs = RSTRING_LEN(str) - RSTRING_LEN(orig);
 	if ((ofs > 0) || (klass != RBASIC(str)->klass) ||
-	    (!OBJ_TAINTED(str) && OBJ_TAINTED(orig)) ||
+	    ((RBASIC(str)->flags ^ RBASIC(orig)->flags) & (FL_TAINT|FL_UNTRUSTED)) ||
 	    ENCODING_GET(str) != ENCODING_GET(orig)) {
 	    str = str_new3(klass, str);
 	    RSTRING(str)->as.heap.ptr += ofs;

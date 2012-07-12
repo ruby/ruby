@@ -1,3 +1,9 @@
+Thu Jul 12 11:44:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_new_frozen): since the result object should have
+	  same tainted/untrusted bits with the original object, return new
+	  object if the shared object unmatch.  [ruby-core:39745][Bug #5374]
+
 Thu Jul 12 10:46:39 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/net/http/test_http.rb (TestNetHTTPLocalBind#test_bind_to_local*):
