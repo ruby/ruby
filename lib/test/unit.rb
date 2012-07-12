@@ -397,7 +397,10 @@ module Test
 
       def del_status_line
         @status_line_size ||= 0
-        return unless @options[:job_status] == :replace
+        unless @options[:job_status] == :replace
+          $stdout.puts
+          return
+        end
         print "\r"+" "*@status_line_size+"\r"
         $stdout.flush
         @status_line_size = 0
