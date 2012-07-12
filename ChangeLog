@@ -1,3 +1,9 @@
+Thu Jul 12 10:46:39 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/net/http/test_http.rb (TestNetHTTPLocalBind#test_bind_to_local*):
+	  cannot cross between network interfaces on Windows, so skip this test
+	  until we find better test.
+
 Thu Jul 12 08:48:33 2012  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*: Imported minitest 3.2.0 (r7598)
