@@ -1,3 +1,8 @@
+Thu Jul 12 12:32:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/runner.rb: skip default gems to get rid of loading old versions
+	  before installation.
+
 Thu Jul 12 11:44:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_new_frozen): since the result object should have
