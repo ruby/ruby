@@ -654,7 +654,7 @@ class TestNetHTTPLocalBind < Test::Unit::TestCase
 
   def _select_local_ip_address
     Socket.ip_address_list.find { |addr|
-      not addr.ipv4_loopback? and not addr.ipv4_multicast?
+      addr.ipv4? and not addr.ipv4_loopback? and not addr.ipv4_multicast?
     }.ip_address
   end
 end
