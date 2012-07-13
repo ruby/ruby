@@ -1,3 +1,8 @@
+Sat Jul 14 02:31:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_thread_blocking_region): fix declarations
+	  prototypes without arguments in C++ have different meanings than C.
+
 Thu Jul 12 12:32:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/runner.rb: skip default gems to get rid of loading old versions
