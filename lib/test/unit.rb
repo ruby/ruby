@@ -452,6 +452,19 @@ module Test
         @ios = @workers.map(&:io)
       end
 
+      def launch_worker
+        begin
+          worker = Worker.launch(@options[:ruby],@args)
+        rescue => e
+          abort "ERROR: Failed to launch job process - #{e.class}: #{e.message}"
+        end
+        worker.hook(:dead) do |w,info|
+          after_worker_quit w
+          after_worker_down w, *info if !info.empty? && !worker.quit_called
+        end
+        worker
+      end
+
       def start_watchdog
         Thread.new do
           while stat = Process.wait2
@@ -487,20 +500,7 @@ module Test
 
         begin
           # Array of workers.
-          launch_worker = Proc.new {
-            begin
-              worker = Worker.launch(@options[:ruby],@args)
-            rescue => e
-              warn "ERROR: Failed to launch job process - #{e.class}: #{e.message}"
-              exit 1
-            end
-            worker.hook(:dead) do |w,info|
-              after_worker_quit w
-              after_worker_down w, *info if !info.empty? && !worker.quit_called
-            end
-            worker
-          }
-          @workers = @options[:parallel].times.map(&launch_worker)
+          @workers = @options[:parallel].times.map {launch_worker}
 
           # Thread: watchdog
           watchdog = start_watchdog
@@ -527,7 +527,7 @@ module Test
                     @workers_hash.delete worker.io
                     @workers.delete worker
                     @ios.delete worker.io
-                    new_worker = launch_worker.call()
+                    new_worker = launch_worker
                     worker.quit
                     @workers << new_worker
                     @ios << new_worker.io
