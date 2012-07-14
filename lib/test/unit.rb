@@ -462,6 +462,9 @@ module Test
           after_worker_quit w
           after_worker_down w, *info if !info.empty? && !worker.quit_called
         end
+        @workers << worker
+        @ios << worker.io
+        @workers_hash[worker.io] = worker
         worker
       end
 
@@ -498,14 +501,14 @@ module Test
         shutting_down = false
         rep = [] # FIXME: more good naming
 
+        @workers      = [] # Array of workers.
+        @workers_hash = {} # out-IO => worker
+        @ios          = [] # Array of worker IOs
         begin
-          # Array of workers.
-          @workers = @options[:parallel].times.map {launch_worker}
-
           # Thread: watchdog
           watchdog = start_watchdog
-          @workers_hash = Hash[@workers.map {|w| [w.io,w] }] # out-IO => worker
-          @ios = @workers.map{|w| w.io } # Array of worker IOs
+
+          @options[:parallel].times {launch_worker}
 
           while _io = IO.select(@ios)[0]
             break unless _io.each do |io|
@@ -527,12 +530,8 @@ module Test
                     @workers_hash.delete worker.io
                     @workers.delete worker
                     @ios.delete worker.io
-                    new_worker = launch_worker
                     worker.quit
-                    @workers << new_worker
-                    @ios << new_worker.io
-                    @workers_hash[new_worker.io] = new_worker
-                    worker = new_worker
+                    worker = launch_worker
                   end
                   worker.run(@tasks.shift, type)
                   @test_count += 1
