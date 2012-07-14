@@ -458,18 +458,18 @@ module Test
           return
         end
 
-        begin
-          # Require needed things for parallel running
-          require 'thread'
-          require 'timeout'
-          @tasks = @files.dup # Array of filenames.
-          @need_quit = false
-          @dead_workers = []  # Array of dead workers.
-          @warnings = []
-          @total_tests = @tasks.size.to_s(10)
-          shutting_down = false
-          rep = [] # FIXME: more good naming
+        # Require needed things for parallel running
+        require 'thread'
+        require 'timeout'
+        @tasks = @files.dup # Array of filenames.
+        @need_quit = false
+        @dead_workers = []  # Array of dead workers.
+        @warnings = []
+        @total_tests = @tasks.size.to_s(10)
+        shutting_down = false
+        rep = [] # FIXME: more good naming
 
+        begin
           # Array of workers.
           launch_worker = Proc.new {
             begin
