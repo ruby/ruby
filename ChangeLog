@@ -21,27 +21,6 @@ Sat Jul 14 16:16:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/test/unit.rb (Test::Unit::Runner#_run_parallel): move
 	  initializations with nothing to release outside begin/ensure.
 
-	* lib/test/unit.rb (Test::Unit::Runner#_run_parallel): use
-	  Array#uniq!.
-
-	* lib/test/unit.rb (Test::Unit::Runner#deal): deal tasks to workers.
-
-	* lib/test/unit.rb (Test::Unit::Runner#quit_workers): close and kill
-	  all workers.
-
-	* lib/test/unit.rb (Test::Unit::Runner#delete_worker): delete dead
-	  worker from working set.
-
-	* lib/test/unit.rb (Test::Unit::Runner#launch_worker): add new worker
-	  to working set.
-
-	* lib/test/unit.rb (Test::Unit::Runner#launch_worker): extract.
-
-	* lib/test/unit.rb (Test::Unit::Runner#start_watchdog): extract.
-
-	* lib/test/unit.rb (Test::Unit::Runner#_run_parallel): move
-	  initializations with nothing to release outside begin/ensure.
-
 Sat Jul 14 16:04:24 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_join): should not infected by separator if it is not
