@@ -1,4 +1,6 @@
-Sat Jul 14 16:16:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jul 14 16:16:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner#deal): deal tasks to workers.
 
 	* lib/test/unit.rb (Test::Unit::Runner#quit_workers): close and kill
 	  all workers.
