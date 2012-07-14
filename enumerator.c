@@ -859,93 +859,6 @@ enumerator_rewind(VALUE obj)
     return obj;
 }
 
-static VALUE
-inspect_enumerator(VALUE obj, VALUE dummy, int recur)
-{
-    struct enumerator *e;
-    const char *cname;
-    VALUE eobj, eargs, str, method;
-    int tainted, untrusted;
-
-    TypedData_Get_Struct(obj, struct enumerator, &enumerator_data_type, e);
-
-    cname = rb_obj_classname(obj);
-
-    if (!e || e->obj == Qundef) {
-	return rb_sprintf("#<%s: uninitialized>", cname);
-    }
-
-    if (recur) {
-	str = rb_sprintf("#<%s: ...>", cname);
-	OBJ_TAINT(str);
-	return str;
-    }
-
-    eobj = rb_attr_get(obj, id_receiver);
-    if (NIL_P(eobj)) {
-	eobj = e->obj;
-    }
-
-    tainted   = OBJ_TAINTED(eobj);
-    untrusted = OBJ_UNTRUSTED(eobj);
-
-    /* (1..100).each_cons(2) => "#<Enumerator: 1..100:each_cons(2)>" */
-    str = rb_sprintf("#<%s: ", cname);
-    rb_str_concat(str, rb_inspect(eobj));
-    method = rb_attr_get(obj, id_method);
-    if (NIL_P(method)) {
-	rb_str_buf_cat2(str, ":");
-	rb_str_buf_cat2(str, rb_id2name(e->meth));
-    }
-    else if (method != Qfalse) {
-	Check_Type(method, T_SYMBOL);
-	rb_str_buf_cat2(str, ":");
-	rb_str_buf_cat2(str, rb_id2name(SYM2ID(method)));
-    }
-
-    eargs = rb_attr_get(obj, id_arguments);
-    if (NIL_P(eargs)) {
-	eargs = e->args;
-    }
-    if (eargs != Qfalse) {
-	long   argc = RARRAY_LEN(eargs);
-	VALUE *argv = RARRAY_PTR(eargs);
-
-	if (argc > 0) {
-	    rb_str_buf_cat2(str, "(");
-
-	    while (argc--) {
-		VALUE arg = *argv++;
-
-		rb_str_concat(str, rb_inspect(arg));
-		rb_str_buf_cat2(str, argc > 0 ? ", " : ")");
-
-		if (OBJ_TAINTED(arg)) tainted = TRUE;
-		if (OBJ_UNTRUSTED(arg)) untrusted = TRUE;
-	    }
-	}
-    }
-
-    rb_str_buf_cat2(str, ">");
-
-    if (tainted) OBJ_TAINT(str);
-    if (untrusted) OBJ_UNTRUST(str);
-    return str;
-}
-
-/*
- * call-seq:
- *   e.inspect  -> string
- *
- * Creates a printable version of <i>e</i>.
- */
-
-static VALUE
-enumerator_inspect(VALUE obj)
-{
-    return rb_exec_recursive(inspect_enumerator, obj, 0);
-}
-
 /*
  * Yielder
  */
@@ -1359,16 +1272,17 @@ lazy_init_block(VALUE val, VALUE m, int argc, VALUE *argv)
 }
 
 static VALUE
-lazy_generator_init(VALUE old_generator, VALUE procs)
+lazy_generator_init(VALUE enumerator, VALUE procs)
 {
     VALUE generator;
     VALUE obj;
     struct generator *gen_ptr;
     struct generator *old_gen_ptr;
+    struct enumerator *e = enumerator_ptr(enumerator);
 
-    old_gen_ptr = generator_ptr(old_generator);
+    old_gen_ptr = generator_ptr(e->obj);
     if (old_gen_ptr->hybrid) {
-        obj = old_generator;
+        obj = enumerator;
     } else {
         obj = old_gen_ptr->obj;
     }
@@ -1411,7 +1325,7 @@ lazy_add_proc(VALUE enum_obj, enum proc_entry_type proc_type, VALUE memo)
     ptr = enumerator_ptr(enum_obj);
     rb_ary_push(ptr->procs, entry);
 
-    return enum_obj;
+    return entry;
 }
 
 static VALUE
@@ -1466,17 +1380,23 @@ lazy_mark_as_hybrid(VALUE obj)
 }
 
 static VALUE
-lazy_set_method(VALUE lazy, VALUE args)
-{
+lazy_obj_set_method(VALUE obj, VALUE args) {
     ID id = rb_frame_this_func();
-    rb_ivar_set(lazy, id_method, ID2SYM(id));
+    rb_ivar_set(obj, id_method, ID2SYM(id));
     if (NIL_P(args)) {
 	/* Qfalse indicates that the arguments are empty */
-	rb_ivar_set(lazy, id_arguments, Qfalse);
+	rb_ivar_set(obj, id_arguments, Qfalse);
     }
     else {
-	rb_ivar_set(lazy, id_arguments, args);
+	rb_ivar_set(obj, id_arguments, args);
     }
+    return obj;
+}
+
+static VALUE
+lazy_set_method(VALUE lazy, VALUE args)
+{
+    lazy_obj_set_method(lazy, args);
     lazy_mark_as_hybrid(lazy);
     return lazy;
 }
@@ -1535,7 +1455,7 @@ lazy_copy(int argc, VALUE *argv, VALUE obj)
 
     e = enumerator_ptr(obj);
     new_procs = rb_ary_new4(RARRAY_LEN(e->procs), RARRAY_PTR(e->procs));
-    new_generator = lazy_generator_init(e->obj, new_procs);
+    new_generator = lazy_generator_init(obj, new_procs);
 
     new_obj = enumerator_init_copy(enumerator_allocate(rb_cLazy), obj);
     new_e = enumerator_ptr(new_obj);
@@ -1554,13 +1474,15 @@ static VALUE
 lazy_map(VALUE obj)
 {
     VALUE new_enum;
+    VALUE entry;
 
     if (!rb_block_given_p()) {
 	rb_raise(rb_eArgError, "tried to call lazy map without a block");
     }
 
     new_enum = lazy_copy(0, 0, obj);
-    lazy_add_proc(new_enum, T_PROC_MAP, Qnil);
+    entry = lazy_add_proc(new_enum, T_PROC_MAP, Qnil);
+    lazy_obj_set_method(entry, Qnil);
 
     return new_enum;
 }
@@ -1633,13 +1555,15 @@ static VALUE
 lazy_select(VALUE obj)
 {
     VALUE new_enum;
+    VALUE entry;
 
     if (!rb_block_given_p()) {
 	rb_raise(rb_eArgError, "tried to call lazy select without a block");
     }
 
     new_enum = lazy_copy(0, 0, obj);
-    lazy_add_proc(new_enum, T_PROC_SELECT, Qnil);
+    entry = lazy_add_proc(new_enum, T_PROC_SELECT, Qnil);
+    lazy_obj_set_method(entry, Qnil);
 
     return new_enum;
 }
@@ -1647,14 +1571,15 @@ lazy_select(VALUE obj)
 static VALUE
 lazy_reject(VALUE obj)
 {
-    VALUE new_enum;
+    VALUE new_enum, entry;
 
     if (!rb_block_given_p()) {
 	rb_raise(rb_eArgError, "tried to call lazy reject without a block");
     }
 
     new_enum = lazy_copy(0, 0, obj);
-    lazy_add_proc(new_enum, T_PROC_REJECT, Qnil);
+    entry = lazy_add_proc(new_enum, T_PROC_REJECT, Qnil);
+    lazy_obj_set_method(entry, Qnil);
 
     return new_enum;
 }
@@ -1662,10 +1587,11 @@ lazy_reject(VALUE obj)
 static VALUE
 lazy_grep(VALUE obj, VALUE pattern)
 {
-    VALUE new_enum;
+    VALUE new_enum, entry;
 
     new_enum = lazy_copy(0, 0, obj);
-    lazy_add_proc(new_enum, T_PROC_GREP, pattern);
+    entry = lazy_add_proc(new_enum, T_PROC_GREP, pattern);
+    lazy_obj_set_method(entry, rb_ary_new3(1, pattern));
 
     return new_enum;
 }
@@ -1727,6 +1653,7 @@ lazy_take(VALUE obj, VALUE n)
     VALUE new_enum;
     int argc = 0;
     VALUE argv[2];
+    VALUE entry;
 
     if (len < 0) {
 	rb_raise(rb_eArgError, "attempt to take negative size");
@@ -1740,7 +1667,8 @@ lazy_take(VALUE obj, VALUE n)
 
     memo = NEW_MEMO(0, len, len);
     new_enum = lazy_copy(argc, argv, obj);
-    lazy_add_proc(new_enum, T_PROC_TAKE, (VALUE) memo);
+    entry = lazy_add_proc(new_enum, T_PROC_TAKE, (VALUE) memo);
+    lazy_obj_set_method(entry, rb_ary_new3(1, n));
 
     return new_enum;
 }
@@ -1748,10 +1676,11 @@ lazy_take(VALUE obj, VALUE n)
 static VALUE
 lazy_take_while(VALUE obj)
 {
-    VALUE new_enum;
+    VALUE new_enum, entry;
 
     new_enum = lazy_copy(0, 0, obj);
-    lazy_add_proc(new_enum, T_PROC_TAKE_WHILE, Qnil);
+    entry = lazy_add_proc(new_enum, T_PROC_TAKE_WHILE, Qnil);
+    lazy_obj_set_method(entry, Qnil);
 
     return new_enum;
 }
@@ -1761,7 +1690,7 @@ lazy_drop(VALUE obj, VALUE n)
 {
     NODE *memo;
     long len = NUM2LONG(n);
-    VALUE new_enum;
+    VALUE new_enum, entry;
 
     if (len < 0) {
 	rb_raise(rb_eArgError, "attempt to drop negative size");
@@ -1769,7 +1698,8 @@ lazy_drop(VALUE obj, VALUE n)
 
     memo = NEW_MEMO(0, 0, len);
     new_enum = lazy_copy(0, 0, obj);
-    lazy_add_proc(new_enum, T_PROC_DROP, (VALUE) memo);
+    entry = lazy_add_proc(new_enum, T_PROC_DROP, (VALUE) memo);
+    lazy_obj_set_method(entry, rb_ary_new3(1, n));
 
     return new_enum;
 }
@@ -1778,11 +1708,12 @@ static VALUE
 lazy_drop_while(VALUE obj)
 {
     NODE *memo;
-    VALUE new_enum;
+    VALUE new_enum, entry;
 
     memo = NEW_MEMO(0, 0, FALSE);
     new_enum = lazy_copy(0, 0, obj);
-    lazy_add_proc(new_enum, T_PROC_DROP_WHILE, (VALUE) memo);
+    entry = lazy_add_proc(new_enum, T_PROC_DROP_WHILE, (VALUE) memo);
+    lazy_obj_set_method(entry, Qnil);
 
     return new_enum;
 }
@@ -1820,6 +1751,141 @@ lazy_lazy(VALUE obj)
     return obj;
 }
 
+static VALUE
+append_method(VALUE obj, VALUE str, ID default_method)
+{
+    VALUE method;
+
+    method = rb_attr_get(obj, id_method);
+    if (NIL_P(method)) {
+        rb_str_buf_cat2(str, ":");
+        rb_str_buf_cat2(str, rb_id2name(default_method));
+    }
+    else if (method != Qfalse) {
+        Check_Type(method, T_SYMBOL);
+        rb_str_buf_cat2(str, ":");
+        rb_str_buf_cat2(str, rb_id2name(SYM2ID(method)));
+    }
+    return str;
+}
+
+static VALUE
+append_args(VALUE obj, VALUE str, VALUE default_args)
+{
+    VALUE eargs;
+    int tainted, untrusted;
+
+    eargs = rb_attr_get(obj, id_arguments);
+    if (NIL_P(eargs)) {
+        eargs = default_args;
+    }
+    if (eargs != Qfalse) {
+        long   argc = RARRAY_LEN(eargs);
+        VALUE *argv = RARRAY_PTR(eargs);
+
+        if (argc > 0) {
+            rb_str_buf_cat2(str, "(");
+
+            while (argc--) {
+                VALUE arg = *argv++;
+
+                rb_str_concat(str, rb_inspect(arg));
+                rb_str_buf_cat2(str, argc > 0 ? ", " : ")");
+
+                if (OBJ_TAINTED(arg)) tainted = TRUE;
+                if (OBJ_UNTRUSTED(arg)) untrusted = TRUE;
+            }
+        }
+    }
+
+    if (tainted) { OBJ_TAINT(str); }
+    if (untrusted) { OBJ_UNTRUST(str); }
+    return str;
+}
+
+static VALUE
+inspect_enumerator(VALUE obj, VALUE dummy, int recur)
+{
+    struct enumerator *e;
+    struct generator *g;
+    const char *cname;
+    VALUE eobj, str;
+    int tainted, untrusted;
+    VALUE *procs;
+    int i;
+
+    TypedData_Get_Struct(obj, struct enumerator, &enumerator_data_type, e);
+
+    cname = rb_obj_classname(obj);
+
+    if (!e || e->obj == Qundef) {
+	return rb_sprintf("#<%s: uninitialized>", cname);
+    }
+
+    if (recur) {
+	str = rb_sprintf("#<%s: ...>", cname);
+	OBJ_TAINT(str);
+	return str;
+    }
+
+    if (e->procs && RARRAY_LEN(e->procs) > 0) {
+        g = generator_ptr(e->obj);
+        eobj = g->obj;
+    } else {
+        eobj = rb_attr_get(obj, id_receiver);
+        if (NIL_P(eobj)) {
+            eobj = e->obj;
+        }
+    }
+
+    tainted   = OBJ_TAINTED(eobj);
+    untrusted = OBJ_UNTRUSTED(eobj);
+
+    /* (1..100).each_cons(2) => "#<Enumerator: 1..100:each_cons(2)>"
+     * In case procs chained enumerator traversing all proc entries manually 
+     */
+    if (e->procs && RARRAY_LEN(e->procs) > 0) {
+        if (strcmp(rb_obj_classname(eobj), cname) == 0) {
+            str = rb_inspect(eobj);
+        } else {
+            str = rb_sprintf("#<%s: ", cname);
+            rb_str_concat(str, rb_inspect(eobj));
+            rb_str_buf_cat2(str, ">");
+        }
+        procs = RARRAY_PTR(e->procs);
+        for (i = 0; i < RARRAY_LEN(e->procs); i++) {
+            str = rb_str_concat(rb_sprintf("#<%s: ", cname), str);
+            append_method(procs[i], str, e->meth);
+            append_args(procs[i], str, e->args);
+            rb_str_buf_cat2(str, ">");
+        }
+    } else {
+        str = rb_sprintf("#<%s: ", cname);
+        rb_str_concat(str, rb_inspect(eobj));
+        append_method(obj, str, e->meth);
+        append_args(obj, str, e->args);
+
+        rb_str_buf_cat2(str, ">");
+    }
+
+
+    if (tainted) OBJ_TAINT(str);
+    if (untrusted) OBJ_UNTRUST(str);
+    return str;
+}
+
+/*
+ * call-seq:
+ *   e.inspect  -> string
+ *
+ * Creates a printable version of <i>e</i>.
+ */
+
+static VALUE
+enumerator_inspect(VALUE obj)
+{
+    return rb_exec_recursive(inspect_enumerator, obj, 0);
+}
 /*
  * Document-class: StopIteration
  *
