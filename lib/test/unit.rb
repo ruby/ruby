@@ -452,6 +452,22 @@ module Test
         @ios = @workers.map(&:io)
       end
 
+      def start_watchdog
+        Thread.new do
+          while stat = Process.wait2
+            break if @interrupt # Break when interrupt
+            pid, stat = stat
+            w = (@workers + @dead_workers).find{|x| pid == x.pid }
+            next unless w
+            w = w.dup
+            if w.status != :quit && !w.quit_called?
+              # Worker down
+              w.died(nil, !stat.signaled? && stat.exitstatus)
+            end
+          end
+        end
+      end
+
       def _run_parallel suites, type, result
         if @options[:parallel] < 1
           warn "Error: parameter of -j option should be greater than 0."
@@ -487,20 +503,7 @@ module Test
           @workers = @options[:parallel].times.map(&launch_worker)
 
           # Thread: watchdog
-          watchdog = Thread.new do
-            while stat = Process.wait2
-              break if @interrupt # Break when interrupt
-              pid, stat = stat
-              w = (@workers + @dead_workers).find{|x| pid == x.pid }
-              next unless w
-              w = w.dup
-              if w.status != :quit && !w.quit_called?
-                # Worker down
-                w.died(nil, !stat.signaled? && stat.exitstatus)
-              end
-            end
-          end
-
+          watchdog = start_watchdog
           @workers_hash = Hash[@workers.map {|w| [w.io,w] }] # out-IO => worker
           @ios = @workers.map{|w| w.io } # Array of worker IOs
 
