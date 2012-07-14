@@ -6,7 +6,7 @@ Sat Jul 14 18:18:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Jul 14 17:17:55 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* cont.c (cont_restore_0): improve docs. [Bug #6706][ruby-core:46243]
-    patched by Oscar Del Ben via https://github.com/ruby/ruby/pull/140
+	  patched by Oscar Del Ben via https://github.com/ruby/ruby/pull/140
 
 Sat Jul 14 17:08:13 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
