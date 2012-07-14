@@ -920,6 +920,19 @@ class TestArray < Test::Unit::TestCase
     assert_equal(true, s.tainted?)
     assert_equal(true, s.untrusted?)
 
+    bug5902 = '[ruby-core:42161]'
+    sep = ":".taint.untrust
+
+    s = @cls[].join(sep)
+    assert_equal(false, s.tainted?, bug5902)
+    assert_equal(false, s.untrusted?, bug5902)
+    s = @cls[1].join(sep)
+    assert_equal(false, s.tainted?, bug5902)
+    assert_equal(false, s.untrusted?, bug5902)
+    s = @cls[1, 2].join(sep)
+    assert_equal(true, s.tainted?, bug5902)
+    assert_equal(true, s.untrusted?, bug5902)
+
     e = ''.force_encoding('EUC-JP')
     u = ''.force_encoding('UTF-8')
     assert_equal(Encoding::US_ASCII, [[]].join.encoding)

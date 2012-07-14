@@ -1,3 +1,8 @@
+Sat Jul 14 16:04:24 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_join): should not infected by separator if it is not
+	  used.  [ruby-core:42161][Bug #5902]
+
 Sat Jul 14 02:31:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_thread_blocking_region): fix declarations
