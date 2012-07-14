@@ -1,3 +1,8 @@
+Sat Jul 14 18:18:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_get_values_at): fill with nil out of range.
+	  [ruby-core:43678] [Bug #6203]
+
 Sat Jul 14 17:17:55 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* cont.c (cont_restore_0): improve docs. [Bug #6706][ruby-core:46243]

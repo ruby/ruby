@@ -1831,7 +1831,9 @@ class TestArray < Test::Unit::TestCase
   def test_values_at2
     a = [0, 1, 2, 3, 4, 5]
     assert_equal([1, 2, 3], a.values_at(1..3))
-    assert_equal([], a.values_at(7..8))
+    assert_equal([nil, nil], a.values_at(7..8))
+    bug6203 = '[ruby-core:43678]'
+    assert_equal([4, 5, nil, nil], a.values_at(4..7), bug6203)
     assert_equal([nil], a.values_at(2**31-1))
   end
 

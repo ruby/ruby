@@ -2362,15 +2362,13 @@ rb_get_values_at(VALUE obj, long olen, int argc, VALUE *argv, VALUE (*func) (VAL
 	    continue;
 	}
 	/* check if idx is Range */
-	switch (rb_range_beg_len(argv[i], &beg, &len, olen, 0)) {
-	  case Qfalse:
-	    break;
-	  case Qnil:
-	    continue;
-	  default:
-	    for (j=0; j<len; j++) {
-		rb_ary_push(result, (*func)(obj, j+beg));
+	if (rb_range_beg_len(argv[i], &beg, &len, olen, 1)) {
+	    long end = olen < beg+len ? olen : beg+len;
+	    for (j = beg; j < end; j++) {
+		rb_ary_push(result, (*func)(obj, j));
 	    }
+	    if (beg + len > j)
+		rb_ary_resize(result, RARRAY_LEN(result) + (beg + len) - j);
 	    continue;
 	}
 	rb_ary_push(result, (*func)(obj, NUM2LONG(argv[i])));
