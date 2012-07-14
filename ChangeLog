@@ -1,3 +1,8 @@
+Sat Jul 14 17:08:13 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_s_create): raise an exception, when input elements
+	  are not one or two elements arrays.  [ruby-core:39945] [Bug #5406]
+
 Sat Jul 14 16:16:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb (Test::Unit::Runner#_run_parallel): use

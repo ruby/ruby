@@ -712,6 +712,9 @@ class TestHash < Test::Unit::TestCase
   def test_create
     assert_equal({1=>2, 3=>4}, Hash[[[1,2],[3,4]]])
     assert_raise(ArgumentError) { Hash[0, 1, 2] }
+    bug5406 = '[ruby-core:39945]'
+    assert_raise(ArgumentError, bug5406) { Hash[[[1, 2], 3]] }
+    assert_raise(ArgumentError, bug5406) { Hash[[[1, 2], [3, 4, 5]]] }
     assert_equal({1=>2, 3=>4}, Hash[1,2,3,4])
     o = Object.new
     def o.to_hash() {1=>2} end
