@@ -632,12 +632,7 @@ module Test
           end
           unless @warnings.empty?
             warn ""
-            ary = []
-            @warnings.reject! do |w|
-              r = ary.include?(w[1].message)
-              ary << w[1].message
-              r
-            end
+            @warnings.uniq! {|w| w[1].message}
             @warnings.each do |w|
               warn "#{w[0]}: #{w[1].message} (#{w[1].class})"
             end
