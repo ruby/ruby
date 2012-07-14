@@ -310,10 +310,9 @@ module Test
         end
 
         def close
-          begin
-            @io.close unless @io.closed?
-          rescue IOError; end
+          @io.close unless @io.closed?
           self
+        rescue IOError
         end
 
         def quit
@@ -321,6 +320,11 @@ module Test
           @quit_called = true
           @io.puts "quit"
           @io.close
+        end
+
+        def kill
+          Process.kill(:KILL, @pid)
+        rescue Errno::ESRCH
         end
 
         def died(*additional)
@@ -474,6 +478,32 @@ module Test
         @ios.delete worker.io
       end
 
+      def quit_workers
+        return if @workers.empty?
+        @workers.reject! do |worker|
+          begin
+            timeout(1) do
+              worker.quit
+            end
+          rescue Errno::EPIPE
+          rescue Timeout::Error
+          end
+          worker.close
+        end
+
+        return if @workers.empty?
+        begin
+          timeout(0.2 * @workers.size) do
+            Process.waitall
+          end
+        rescue Timeout::Error
+          @workers.each do |worker|
+            worker.kill
+          end
+          @worker.clear
+        end
+      end
+
       def start_watchdog
         Thread.new do
           while stat = Process.wait2
@@ -592,32 +622,9 @@ module Test
             end
           end
 
-          if @workers
-            @workers.each do |worker|
-              begin
-                timeout(1) do
-                  worker.quit
-                end
-              rescue Errno::EPIPE
-              rescue Timeout::Error
-              end
-              worker.close
-            end
+          quit_workers
 
-            begin
-              timeout(0.2*@workers.size) do
-                Process.waitall
-              end
-            rescue Timeout::Error
-              @workers.each do |worker|
-                begin
-                  Process.kill(:KILL,worker.pid)
-                rescue Errno::ESRCH; end
-              end
-            end
-          end
-
-          if !(@interrupt || !@options[:retry] || @need_quit) && @workers
+          unless @interrupt || !@options[:retry] || @need_quit
             @options[:parallel] = false
             suites, rep = rep.partition {|r| r[:testcase] && r[:file] && !r[:report].empty?}
             suites.map {|r| r[:file]}.uniq.each {|file| require file}
