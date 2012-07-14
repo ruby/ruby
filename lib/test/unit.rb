@@ -520,6 +520,49 @@ module Test
         end
       end
 
+      def deal(io, type, result, rep, shutting_down = false)
+        worker = @workers_hash[io]
+        case worker.read
+        when /^okay$/
+          worker.status = :running
+          jobs_status
+        when /^ready(!)?$/
+          bang = $1
+          worker.status = :ready
+
+          return nil unless task = @tasks.shift
+          if @options[:separate] and not bang
+            worker.quit
+            worker = add_worker
+          end
+          worker.run(task, type)
+          @test_count += 1
+
+          jobs_status
+        when /^done (.+?)$/
+          r = Marshal.load($1.unpack("m")[0])
+          result << r[0..1] unless r[0..1] == [nil,nil]
+          rep    << {file: worker.real_file, report: r[2], result: r[3], testcase: r[5]}
+          $:.push(*r[4]).uniq!
+          return true
+        when /^p (.+?)$/
+          del_jobs_status
+          print $1.unpack("m")[0]
+          jobs_status if @options[:job_status] == :replace
+        when /^after (.+?)$/
+          @warnings << Marshal.load($1.unpack("m")[0])
+        when /^bye (.+?)$/
+          after_worker_down worker, Marshal.load($1.unpack("m")[0])
+        when /^bye$/, nil
+          if shutting_down || worker.quit_called
+            after_worker_quit worker
+          else
+            after_worker_down worker
+          end
+        end
+        return false
+      end
+
       def _run_parallel suites, type, result
         if @options[:parallel] < 1
           warn "Error: parameter of -j option should be greater than 0."
@@ -534,7 +577,6 @@ module Test
         @dead_workers = []  # Array of dead workers.
         @warnings = []
         @total_tests = @tasks.size.to_s(10)
-        shutting_down = false
         rep = [] # FIXME: more good naming
 
         @workers      = [] # Array of workers.
@@ -547,78 +589,21 @@ module Test
           @options[:parallel].times {launch_worker}
 
           while _io = IO.select(@ios)[0]
-            break unless _io.each do |io|
-              break if @need_quit
-              worker = @workers_hash[io]
-              case worker.read
-              when /^okay$/
-                worker.status = :running
-                jobs_status
-              when /^ready(!?)$/
-                bang = $1
-                worker.status = :ready
-                if @tasks.empty?
-                  unless @workers.find{|x| [:running, :prepare].include? x.status}
-                    break
-                  end
-                else
-                  if @options[:separate] && bang.empty?
-                    delete_worker(workers)
-                    worker.quit
-                    worker = launch_worker
-                  end
-                  worker.run(@tasks.shift, type)
-                  @test_count += 1
-                end
-
-                jobs_status
-              when /^done (.+?)$/
-                r = Marshal.load($1.unpack("m")[0])
-                result << r[0..1] unless r[0..1] == [nil,nil]
-                rep    << {file: worker.real_file,
-                           report: r[2], result: r[3], testcase: r[5]}
-                $:.push(*r[4]).uniq!
-              when /^p (.+?)$/
-                del_jobs_status
-                print $1.unpack("m")[0]
-                jobs_status if @options[:job_status] == :replace
-              when /^after (.+?)$/
-                @warnings << Marshal.load($1.unpack("m")[0])
-              when /^bye (.+?)$/
-                after_worker_down worker, Marshal.load($1.unpack("m")[0])
-              when /^bye$/, nil
-                if shutting_down || worker.quit_called
-                  after_worker_quit worker
-                else
-                  after_worker_down worker
-                end
-              end
-              break if @need_quit
+            break if _io.any? do |io|
+              @need_quit or
+                (deal(io, type, result, rep).nil? and
+                 !@workers.any? {|x| [:running, :prepare].include? x.status})
             end
           end
         rescue Interrupt => e
           @interrupt = e
           return result
         ensure
-          shutting_down = true
-
           watchdog.kill if watchdog
           if @interrupt
             @ios.select!{|x| @workers_hash[x].status == :running }
             while !@ios.empty? && (__io = IO.select(@ios,[],[],10))
-                _io = __io[0]
-                _io.each do |io|
-                  worker = @workers_hash[io]
-                  case worker.read
-                  when /^done (.+?)$/
-                    r = Marshal.load($1.unpack("m")[0])
-                    result << r[0..1] unless r[0..1] == [nil,nil]
-                    rep    << {file: worker.real_file,
-                               report: r[2], result: r[3], testcase: r[5]}
-                    $:.push(*r[4]).uniq!
-                    @ios.delete(io)
-                  end
-                end
+              __io[0].reject! {|io| deal(io, type, result, rep, true)}
             end
           end
 
