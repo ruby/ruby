@@ -1,4 +1,7 @@
-Sat Jul 14 16:16:32 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jul 14 16:16:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner#quit_workers): close and kill
+	  all workers.
 
 	* lib/test/unit.rb (Test::Unit::Runner#delete_worker): delete dead
 	  worker from working set.
