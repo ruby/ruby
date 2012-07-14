@@ -1,4 +1,6 @@
-Sat Jul 14 16:16:17 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jul 14 16:16:22 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner#launch_worker): extract.
 
 	* lib/test/unit.rb (Test::Unit::Runner#start_watchdog): extract.
 
