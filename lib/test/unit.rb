@@ -468,6 +468,12 @@ module Test
         worker
       end
 
+      def delete_worker(worker)
+        @workers_hash.delete worker.io
+        @workers.delete worker
+        @ios.delete worker.io
+      end
+
       def start_watchdog
         Thread.new do
           while stat = Process.wait2
@@ -527,9 +533,7 @@ module Test
                   end
                 else
                   if @options[:separate] && bang.empty?
-                    @workers_hash.delete worker.io
-                    @workers.delete worker
-                    @ios.delete worker.io
+                    delete_worker(workers)
                     worker.quit
                     worker = launch_worker
                   end
