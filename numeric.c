@@ -1054,11 +1054,8 @@ flo_eq(VALUE x, VALUE y)
 
     switch (TYPE(y)) {
       case T_FIXNUM:
-	b = (double)FIX2LONG(y);
-	break;
       case T_BIGNUM:
-	b = rb_big2dbl(y);
-	break;
+        return rb_big_float_cmp(y, x) == INT2FIX(0) ? Qtrue : Qfalse;
       case T_FLOAT:
 	b = RFLOAT_VALUE(y);
 #if defined(_MSC_VER) && _MSC_VER < 1300
@@ -1124,9 +1121,6 @@ flo_cmp(VALUE x, VALUE y)
     if (isnan(a)) return Qnil;
     switch (TYPE(y)) {
       case T_FIXNUM:
-	b = (double)FIX2LONG(y);
-	break;
-
       case T_BIGNUM:
       {
         VALUE rel = rb_big_float_cmp(y, x);
@@ -1169,9 +1163,6 @@ flo_gt(VALUE x, VALUE y)
     a = RFLOAT_VALUE(x);
     switch (TYPE(y)) {
       case T_FIXNUM:
-	b = (double)FIX2LONG(y);
-	break;
-
       case T_BIGNUM:
       {
         VALUE rel = rb_big_float_cmp(y, x);
@@ -1212,9 +1203,6 @@ flo_ge(VALUE x, VALUE y)
     a = RFLOAT_VALUE(x);
     switch (TYPE(y)) {
       case T_FIXNUM:
-	b = (double)FIX2LONG(y);
-	break;
-
       case T_BIGNUM:
       {
         VALUE rel = rb_big_float_cmp(y, x);
@@ -1254,9 +1242,6 @@ flo_lt(VALUE x, VALUE y)
     a = RFLOAT_VALUE(x);
     switch (TYPE(y)) {
       case T_FIXNUM:
-	b = (double)FIX2LONG(y);
-	break;
-
       case T_BIGNUM:
       {
         VALUE rel = rb_big_float_cmp(y, x);
@@ -1297,9 +1282,6 @@ flo_le(VALUE x, VALUE y)
     a = RFLOAT_VALUE(x);
     switch (TYPE(y)) {
       case T_FIXNUM:
-	b = (double)FIX2LONG(y);
-	break;
-
       case T_BIGNUM:
       {
         VALUE rel = rb_big_float_cmp(y, x);
@@ -2965,7 +2947,7 @@ fix_equal(VALUE x, VALUE y)
       case T_BIGNUM:
 	return rb_big_eq(y, x);
       case T_FLOAT:
-	return (double)FIX2LONG(x) == RFLOAT_VALUE(y) ? Qtrue : Qfalse;
+        return rb_big_float_cmp(x, y) == INT2FIX(0) ? Qtrue : Qfalse;
       default:
 	return num_equal(x, y);
     }
@@ -2993,7 +2975,7 @@ fix_cmp(VALUE x, VALUE y)
       case T_BIGNUM:
 	return rb_big_cmp(rb_int2big(FIX2LONG(x)), y);
       case T_FLOAT:
-	return rb_dbl_cmp((double)FIX2LONG(x), RFLOAT_VALUE(y));
+        return rb_big_float_cmp(x, y);
       default:
 	return rb_num_coerce_cmp(x, y, rb_intern("<=>"));
     }
@@ -3018,7 +3000,7 @@ fix_gt(VALUE x, VALUE y)
       case T_BIGNUM:
 	return FIX2INT(rb_big_cmp(rb_int2big(FIX2LONG(x)), y)) > 0 ? Qtrue : Qfalse;
       case T_FLOAT:
-	return (double)FIX2LONG(x) > RFLOAT_VALUE(y) ? Qtrue : Qfalse;
+        return rb_big_float_cmp(x, y) == INT2FIX(1) ? Qtrue : Qfalse;
       default:
 	return rb_num_coerce_relop(x, y, '>');
     }
@@ -3043,7 +3025,10 @@ fix_ge(VALUE x, VALUE y)
       case T_BIGNUM:
 	return FIX2INT(rb_big_cmp(rb_int2big(FIX2LONG(x)), y)) >= 0 ? Qtrue : Qfalse;
       case T_FLOAT:
-	return (double)FIX2LONG(x) >= RFLOAT_VALUE(y) ? Qtrue : Qfalse;
+        {
+          VALUE rel = rb_big_float_cmp(x, y);
+          return rel == INT2FIX(1) || rel == INT2FIX(0) ? Qtrue : Qfalse;
+        }
       default:
 	return rb_num_coerce_relop(x, y, rb_intern(">="));
     }
@@ -3068,7 +3053,7 @@ fix_lt(VALUE x, VALUE y)
       case T_BIGNUM:
 	return FIX2INT(rb_big_cmp(rb_int2big(FIX2LONG(x)), y)) < 0 ? Qtrue : Qfalse;
       case T_FLOAT:
-	return (double)FIX2LONG(x) < RFLOAT_VALUE(y) ? Qtrue : Qfalse;
+        return rb_big_float_cmp(x, y) == INT2FIX(-1) ? Qtrue : Qfalse;
       default:
 	return rb_num_coerce_relop(x, y, '<');
     }
@@ -3093,7 +3078,10 @@ fix_le(VALUE x, VALUE y)
       case T_BIGNUM:
 	return FIX2INT(rb_big_cmp(rb_int2big(FIX2LONG(x)), y)) <= 0 ? Qtrue : Qfalse;
       case T_FLOAT:
-	return (double)FIX2LONG(x) <= RFLOAT_VALUE(y) ? Qtrue : Qfalse;
+        {
+          VALUE rel = rb_big_float_cmp(x, y);
+          return rel == INT2FIX(-1) || rel == INT2FIX(0) ? Qtrue : Qfalse;
+        }
       default:
 	return rb_num_coerce_relop(x, y, rb_intern("<="));
     }

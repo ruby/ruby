@@ -1436,9 +1436,19 @@ rb_big_float_cmp(VALUE x, VALUE y)
 {
     double a = RFLOAT_VALUE(y);
 
+    if (isnan(a))
+        return Qnil;
     if (isinf(a)) {
         if (a > 0.0) return INT2FIX(-1);
         else return INT2FIX(1);
+    }
+    if (FIXNUM_P(x)) {
+        double xd = (double)FIX2LONG(x);
+        if (xd < a)
+            return INT2FIX(-1);
+        if (xd > a)
+            return INT2FIX(1);
+        return INT2FIX(0);
     }
     return rb_dbl_cmp(rb_big2dbl(x), a);
 }

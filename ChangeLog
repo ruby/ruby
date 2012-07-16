@@ -1,3 +1,20 @@
+Mon Jul 16 17:29:45 2012  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_float_cmp): support fixnum for argument x.
+
+	* numeric.c (fix_equal): use rb_big_float_cmp.
+	  (fix_cmp): ditto.
+	  (fix_gt): ditto.
+	  (fix_ge): ditto.
+	  (fix_lt): ditto.
+	  (fix_le): ditto.
+	  (flo_eq): ditto.
+	  (flo_cmp): use rb_big_float_cmp for fixnum argument.
+	  (flo_gt): ditto.
+	  (flo_ge): ditto.
+	  (flo_lt): ditto.
+	  (flo_le): ditto.
+
 Mon Jul 16 17:05:53 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/fileutils/test_fileutils.rb: add test for FileUtils#uptodate?
