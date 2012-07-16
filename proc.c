@@ -622,14 +622,14 @@ rb_proc_call_with_block(VALUE self, int argc, VALUE *argv, VALUE pass_procval)
  *  arguments. A <code>proc</code> with no argument declarations
  *  is the same a block declaring <code>||</code> as its arguments.
  *
- *     Proc.new {}.arity             #=>  0
- *     Proc.new {||}.arity           #=>  0
- *     Proc.new {|a|}.arity          #=>  1
- *     Proc.new {|a, b|}.arity       #=>  2
- *     Proc.new {|a, b, c|}.arity    #=>  3
- *     Proc.new {|*a|}.arity         #=> -1
- *     Proc.new {|a, b=42|}.arity    #=> -2
- *     Proc.new {|a, *b, c|}.arity   #=> -3
+ *     Proc.new {}.arity          #=>  0
+ *     Proc.new {||}.arity        #=>  0
+ *     Proc.new {|a|}.arity       #=>  1
+ *     Proc.new {|a,b|}.arity     #=>  2
+ *     Proc.new {|a,b,c|}.arity   #=>  3
+ *     Proc.new {|*a|}.arity      #=> -1
+ *     Proc.new {|a,*b|}.arity    #=> -2
+ *     Proc.new {|a,*b, c|}.arity    #=> -3
  */
 
 static VALUE
@@ -648,7 +648,7 @@ rb_proc_arity(VALUE self)
     iseq = proc->block.iseq;
     if (iseq) {
 	if (BUILTIN_TYPE(iseq) != T_NODE) {
-	    if (iseq->arg_rest < 0 && iseq->arg_opts == 0) {
+	    if (iseq->arg_rest < 0) {
 		return iseq->argc;
 	    }
 	    else {

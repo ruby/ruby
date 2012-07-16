@@ -1,11 +1,3 @@
-Tue Jul 17 00:18:41 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
-
-	Revert r33924.
-
-	* proc.c (rb_proc_arity): Fix Proc#arity in case of optional
-	  arguments
-	  [bug #5694] [rubyspec:b8b259] [rubyspec:184c8100f]
-
 Mon Jul 16 23:20:24 2012  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_integer_float_cmp): use FIXNUM_MIN and FIXNUM_MAX,
