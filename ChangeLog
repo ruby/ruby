@@ -1,3 +1,7 @@
+Mon Jul 16 15:37:56 2012  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_eq): use rb_big_float_cmp.
+
 Mon Jul 16 15:00:45 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_big_float_cmp): declared.

@@ -1616,14 +1616,7 @@ rb_big_eq(VALUE x, VALUE y)
       case T_BIGNUM:
 	break;
       case T_FLOAT:
-	{
-	    volatile double a, b;
-
-	    a = RFLOAT_VALUE(y);
-	    if (isnan(a) || isinf(a)) return Qfalse;
-	    b = rb_big2dbl(x);
-	    return (a == b)?Qtrue:Qfalse;
-	}
+        return rb_big_float_cmp(x, y) == INT2FIX(0) ? Qtrue : Qfalse;
       default:
 	return rb_equal(y, x);
     }
