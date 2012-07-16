@@ -1,3 +1,8 @@
+Mon Jul 16 17:57:54 2012  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_float_cmp): compare an integer and float precisely.
+	  [ruby-core:31376] [Bug #3589] reported by Tomasz Wegrzanowski.
+
 Mon Jul 16 17:29:45 2012  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_float_cmp): support fixnum for argument x.

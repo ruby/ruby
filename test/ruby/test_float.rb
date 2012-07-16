@@ -57,6 +57,55 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(a == b, b == a)
   end
 
+  def test_cmp_int
+    100.times {|i|
+      int0 = 1 << i
+      [int0, -int0].each {|int|
+        flt = int.to_f
+        bigger = int + 1
+        smaller = int - 1
+        assert_operator(flt, :==, int)
+        assert_operator(flt, :>, smaller)
+        assert_operator(flt, :>=, smaller)
+        assert_operator(flt, :<, bigger)
+        assert_operator(flt, :<=, bigger)
+        assert_equal(0, flt <=> int)
+        assert_equal(-1, flt <=> bigger)
+        assert_equal(1, flt <=> smaller)
+        assert_operator(int, :==, flt)
+        assert_operator(bigger, :>, flt)
+        assert_operator(bigger, :>=, flt)
+        assert_operator(smaller, :<, flt)
+        assert_operator(smaller, :<=, flt)
+        assert_equal(0, int <=> flt)
+        assert_equal(-1, smaller <=> flt)
+        assert_equal(1, bigger <=> flt)
+        [
+          [int, flt + 0.5, bigger],
+          [smaller, flt - 0.5, int]
+        ].each {|smaller2, flt2, bigger2|
+          next if flt2 == flt2.round
+          assert_operator(flt2, :!=, smaller2)
+          assert_operator(flt2, :!=, bigger2)
+          assert_operator(flt2, :>, smaller2)
+          assert_operator(flt2, :>=, smaller2)
+          assert_operator(flt2, :<, bigger2)
+          assert_operator(flt2, :<=, bigger2)
+          assert_equal(-1, flt2 <=> bigger2)
+          assert_equal(1, flt2 <=> smaller2)
+          assert_operator(smaller2, :!=, flt2)
+          assert_operator(bigger2, :!=, flt2)
+          assert_operator(bigger2, :>, flt2)
+          assert_operator(bigger2, :>=, flt2)
+          assert_operator(smaller2, :<, flt2)
+          assert_operator(smaller2, :<=, flt2)
+          assert_equal(-1, smaller2 <=> flt2)
+          assert_equal(1, bigger2 <=> flt2)
+        }
+      }
+    }
+  end
+
   def test_strtod
     a = Float("0")
     assert(a.abs < Float::EPSILON)

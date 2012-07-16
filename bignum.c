@@ -1435,6 +1435,8 @@ VALUE
 rb_big_float_cmp(VALUE x, VALUE y)
 {
     double a = RFLOAT_VALUE(y);
+    double yi, yf;
+    VALUE rel;
 
     if (isnan(a))
         return Qnil;
@@ -1442,15 +1444,41 @@ rb_big_float_cmp(VALUE x, VALUE y)
         if (a > 0.0) return INT2FIX(-1);
         else return INT2FIX(1);
     }
+    yf = modf(a, &yi);
     if (FIXNUM_P(x)) {
+#if SIZEOF_LONG * CHAR_BIT < DBL_MANT_DIG /* assume FLT_RADIX == 2 */
         double xd = (double)FIX2LONG(x);
         if (xd < a)
             return INT2FIX(-1);
         if (xd > a)
             return INT2FIX(1);
         return INT2FIX(0);
+#else
+        long xl, yl;
+        if (yi < LONG_MIN)
+            return INT2FIX(1);
+        if (LONG_MAX < yi)
+            return INT2FIX(-1);
+        xl = FIX2LONG(x);
+        yl = (long)yi;
+        if (xl < yl)
+            return INT2FIX(-1);
+        if (xl > yl)
+            return INT2FIX(1);
+        if (yf < 0.0)
+            return INT2FIX(1);
+        if (0.0 < yf)
+            return INT2FIX(-1);
+        return INT2FIX(0);
+#endif
     }
-    return rb_dbl_cmp(rb_big2dbl(x), a);
+    y = rb_dbl2big(yi);
+    rel = rb_big_cmp(x, y);
+    if (yf == 0.0 || rel != INT2FIX(0))
+        return rel;
+    if (yf < 0.0)
+        return INT2FIX(1);
+    return INT2FIX(-1);
 }
 
 /*
