@@ -1,3 +1,7 @@
+Mon Jul 16 17:05:53 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/fileutils/test_fileutils.rb: add test for FileUtils#uptodate?
+
 Mon Jul 16 16:56:12 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* lib/fileutils.rb (public): remove useless parameter.
