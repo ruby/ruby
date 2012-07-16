@@ -1,3 +1,8 @@
+Mon Jul 16 22:01:00 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* ext/readline/readline.c: fixed docs. [Bug #6740][ruby-core:46501]
+	  patched by Nobuhiro IMAI.
+
 Mon Jul 16 19:24:01 2012  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_integer_float_eq): new function.

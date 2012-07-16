@@ -1078,7 +1078,7 @@ readline_s_get_completion_append_character(VALUE self)
  *
  * Sets the basic list of characters that signal a break between words
  * for the completer routine. The default is the characters which
- * break words for completion in Bash: "\t\n\"\\'`@$><=;|&{(".
+ * break words for completion in Bash: " \t\n\"\\'`@$><=;|&{(".
  *
  * Raises NotImplementedError if the using readline library does not support.
  *
