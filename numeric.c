@@ -1055,7 +1055,7 @@ flo_eq(VALUE x, VALUE y)
     switch (TYPE(y)) {
       case T_FIXNUM:
       case T_BIGNUM:
-        return rb_integer_float_cmp(y, x) == INT2FIX(0) ? Qtrue : Qfalse;
+        return rb_integer_float_eq(y, x);
       case T_FLOAT:
 	b = RFLOAT_VALUE(y);
 #if defined(_MSC_VER) && _MSC_VER < 1300
@@ -2947,7 +2947,7 @@ fix_equal(VALUE x, VALUE y)
       case T_BIGNUM:
 	return rb_big_eq(y, x);
       case T_FLOAT:
-        return rb_integer_float_cmp(x, y) == INT2FIX(0) ? Qtrue : Qfalse;
+        return rb_integer_float_eq(x, y);
       default:
 	return num_equal(x, y);
     }

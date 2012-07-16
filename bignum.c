@@ -1481,6 +1481,38 @@ rb_integer_float_cmp(VALUE x, VALUE y)
     return INT2FIX(-1);
 }
 
+VALUE
+rb_integer_float_eq(VALUE x, VALUE y)
+{
+    double yd = RFLOAT_VALUE(y);
+    double yi, yf;
+
+    if (isnan(yd) || isinf(yd))
+        return Qfalse;
+    yf = modf(yd, &yi);
+    if (yf != 0)
+        return Qfalse;
+    if (FIXNUM_P(x)) {
+#if SIZEOF_LONG * CHAR_BIT < DBL_MANT_DIG /* assume FLT_RADIX == 2 */
+        double xd = (double)FIX2LONG(x);
+        if (xd != yd)
+            return Qfalse;
+        return Qtrue;
+#else
+        long xl, yl;
+        if (yi < LONG_MIN || LONG_MAX < yi)
+            return Qfalse;
+        xl = FIX2LONG(x);
+        yl = (long)yi;
+        if (xl != yl)
+            return Qfalse;
+        return Qtrue;
+#endif
+    }
+    y = rb_dbl2big(yi);
+    return rb_big_eq(x, y);
+}
+
 /*
  *  call-seq:
  *     big <=> numeric   -> -1, 0, +1 or nil
@@ -1654,7 +1686,7 @@ rb_big_eq(VALUE x, VALUE y)
       case T_BIGNUM:
 	break;
       case T_FLOAT:
-        return rb_integer_float_cmp(x, y) == INT2FIX(0) ? Qtrue : Qfalse;
+        return rb_integer_float_eq(x, y);
       default:
 	return rb_equal(y, x);
     }

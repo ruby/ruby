@@ -1,3 +1,13 @@
+Mon Jul 16 19:24:01 2012  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_integer_float_eq): new function.
+	  (rb_big_eq): use rb_integer_float_eq.
+
+	* internal.h (rb_integer_float_eq): declared.
+
+	* numeric.c (flo_eq): use rb_integer_float_eq.
+	  (fix_equal): ditto.
+
 Mon Jul 16 19:02:31 2012  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_integer_float_cmp): rename a local variable.

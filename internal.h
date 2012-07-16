@@ -50,6 +50,7 @@ VALUE rb_ary_cat(VALUE, const VALUE *, long);
 VALUE rb_big_fdiv(VALUE x, VALUE y);
 VALUE rb_big_uminus(VALUE x);
 VALUE rb_integer_float_cmp(VALUE x, VALUE y);
+VALUE rb_integer_float_eq(VALUE x, VALUE y);
 
 /* class.c */
 VALUE rb_obj_methods(int argc, VALUE *argv, VALUE obj);
