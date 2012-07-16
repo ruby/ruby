@@ -1431,6 +1431,18 @@ rb_big_to_f(VALUE x)
     return DBL2NUM(rb_big2dbl(x));
 }
 
+VALUE
+rb_big_float_cmp(VALUE x, VALUE y)
+{
+    double a = RFLOAT_VALUE(y);
+
+    if (isinf(a)) {
+        if (a > 0.0) return INT2FIX(-1);
+        else return INT2FIX(1);
+    }
+    return rb_dbl_cmp(rb_big2dbl(x), a);
+}
+
 /*
  *  call-seq:
  *     big <=> numeric   -> -1, 0, +1 or nil
@@ -1456,15 +1468,7 @@ rb_big_cmp(VALUE x, VALUE y)
 	break;
 
       case T_FLOAT:
-	{
-	    double a = RFLOAT_VALUE(y);
-
-	    if (isinf(a)) {
-		if (a > 0.0) return INT2FIX(-1);
-		else return INT2FIX(1);
-	    }
-	    return rb_dbl_cmp(rb_big2dbl(x), a);
-	}
+        return rb_big_float_cmp(x, y);
 
       default:
 	return rb_num_coerce_cmp(x, y, rb_intern("<=>"));
@@ -1507,17 +1511,8 @@ big_op(VALUE x, VALUE y, enum big_op_t op)
 	break;
 
       case T_FLOAT:
-	{
-	    double a = RFLOAT_VALUE(y);
-
-	    if (isinf(a)) {
-		if (a > 0.0) rel = INT2FIX(-1);
-		else rel = INT2FIX(1);
-		break;
-	    }
-	    rel = rb_dbl_cmp(rb_big2dbl(x), a);
-	    break;
-	}
+        rel = rb_big_float_cmp(x, y);
+        break;
 
       default:
 	{

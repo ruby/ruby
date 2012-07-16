@@ -49,6 +49,7 @@ VALUE rb_ary_cat(VALUE, const VALUE *, long);
 /* bignum.c */
 VALUE rb_big_fdiv(VALUE x, VALUE y);
 VALUE rb_big_uminus(VALUE x);
+VALUE rb_big_float_cmp(VALUE x, VALUE y);
 
 /* class.c */
 VALUE rb_obj_methods(int argc, VALUE *argv, VALUE obj);

@@ -1,3 +1,17 @@
+Mon Jul 16 15:00:45 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_big_float_cmp): declared.
+
+	* bignum.c (rb_big_float_cmp): extracted from rb_big_cmp and big_op.
+	  (rb_big_cmp): use rb_big_float_cmp.
+	  (big_op): ditto.
+
+	* numeric.c (flo_cmp): use rb_big_float_cmp.
+	  (flo_gt): ditto.
+	  (flo_ge): ditto.
+	  (flo_lt): ditto.
+	  (flo_le): ditto.
+
 Mon Jul 16 14:14:21 2012  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (enum big_op_t): new type.
