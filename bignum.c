@@ -1455,9 +1455,9 @@ rb_integer_float_cmp(VALUE x, VALUE y)
         return INT2FIX(0);
 #else
         long xl, yl;
-        if (yi < LONG_MIN)
+        if (yi < FIXNUM_MIN)
             return INT2FIX(1);
-        if (LONG_MAX < yi)
+        if (FIXNUM_MAX+1 <= yi)
             return INT2FIX(-1);
         xl = FIX2LONG(x);
         yl = (long)yi;

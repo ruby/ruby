@@ -1,3 +1,8 @@
+Mon Jul 16 23:20:24 2012  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_integer_float_cmp): use FIXNUM_MIN and FIXNUM_MAX,
+	  instead of LONG_MIN and LONG_MAX.
+
 Mon Jul 16 22:50:41 2012  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (flo_to_s): use the exponential form if the integer part
