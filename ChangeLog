@@ -1,3 +1,11 @@
+Mon Jul 16 18:40:26 2012  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_integer_float_cmp): renamed from rb_big_float_cmp.
+
+	* internal.h: follow the above change.
+
+	* numeric.c: ditto.
+
 Mon Jul 16 17:57:54 2012  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_float_cmp): compare an integer and float precisely.

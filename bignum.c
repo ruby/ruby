@@ -1432,7 +1432,7 @@ rb_big_to_f(VALUE x)
 }
 
 VALUE
-rb_big_float_cmp(VALUE x, VALUE y)
+rb_integer_float_cmp(VALUE x, VALUE y)
 {
     double a = RFLOAT_VALUE(y);
     double yi, yf;
@@ -1506,7 +1506,7 @@ rb_big_cmp(VALUE x, VALUE y)
 	break;
 
       case T_FLOAT:
-        return rb_big_float_cmp(x, y);
+        return rb_integer_float_cmp(x, y);
 
       default:
 	return rb_num_coerce_cmp(x, y, rb_intern("<=>"));
@@ -1549,7 +1549,7 @@ big_op(VALUE x, VALUE y, enum big_op_t op)
 	break;
 
       case T_FLOAT:
-        rel = rb_big_float_cmp(x, y);
+        rel = rb_integer_float_cmp(x, y);
         break;
 
       default:
@@ -1654,7 +1654,7 @@ rb_big_eq(VALUE x, VALUE y)
       case T_BIGNUM:
 	break;
       case T_FLOAT:
-        return rb_big_float_cmp(x, y) == INT2FIX(0) ? Qtrue : Qfalse;
+        return rb_integer_float_cmp(x, y) == INT2FIX(0) ? Qtrue : Qfalse;
       default:
 	return rb_equal(y, x);
     }
