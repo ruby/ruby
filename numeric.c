@@ -662,7 +662,7 @@ flo_to_s(VALUE flt)
 	    buf[decpt] = '.';
 	    rb_str_cat(s, buf, digs + 1);
 	}
-	else if (decpt - digs < float_dig) {
+	else if (decpt <= DBL_DIG) {
 	    long len;
 	    char *ptr;
 	    rb_str_cat(s, buf, digs);

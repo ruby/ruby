@@ -1,3 +1,9 @@
+Mon Jul 16 22:50:41 2012  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (flo_to_s): use the exponential form if the integer part
+	  is longer than or equal DBL_DIG.
+	  [ruby-dev:45960] [ruby-trunk - Bug #6741]
+
 Mon Jul 16 22:01:00 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* ext/readline/readline.c: fixed docs. [Bug #6740][ruby-core:46501]
