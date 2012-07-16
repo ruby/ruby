@@ -1487,8 +1487,15 @@ rb_big_cmp(VALUE x, VALUE y)
 	    (RBIGNUM_SIGN(x) ? INT2FIX(-1) : INT2FIX(1));
 }
 
+enum big_op_t {
+    big_op_gt,
+    big_op_ge,
+    big_op_lt,
+    big_op_le
+};
+
 static VALUE
-big_op(VALUE x, VALUE y, int op)
+big_op(VALUE x, VALUE y, enum big_op_t op)
 {
     VALUE rel;
     int n;
@@ -1516,10 +1523,10 @@ big_op(VALUE x, VALUE y, int op)
 	{
 	    ID id = 0;
 	    switch (op) {
-		case 0: id = '>'; break;
-		case 1: id = rb_intern(">="); break;
-		case 2: id = '<'; break;
-		case 3: id = rb_intern("<="); break;
+		case big_op_gt: id = '>'; break;
+		case big_op_ge: id = rb_intern(">="); break;
+		case big_op_lt: id = '<'; break;
+		case big_op_le: id = rb_intern("<="); break;
 	    }
 	    return rb_num_coerce_relop(x, y, id);
 	}
@@ -1529,10 +1536,10 @@ big_op(VALUE x, VALUE y, int op)
     n = FIX2INT(rel);
 
     switch (op) {
-	case 0: return n >  0 ? Qtrue : Qfalse;
-	case 1: return n >= 0 ? Qtrue : Qfalse;
-	case 2: return n <  0 ? Qtrue : Qfalse;
-	case 3: return n <= 0 ? Qtrue : Qfalse;
+	case big_op_gt: return n >  0 ? Qtrue : Qfalse;
+	case big_op_ge: return n >= 0 ? Qtrue : Qfalse;
+	case big_op_lt: return n <  0 ? Qtrue : Qfalse;
+	case big_op_le: return n <= 0 ? Qtrue : Qfalse;
     }
     return Qundef;
 }
@@ -1548,7 +1555,7 @@ big_op(VALUE x, VALUE y, int op)
 static VALUE
 big_gt(VALUE x, VALUE y)
 {
-    return big_op(x, y, 0);
+    return big_op(x, y, big_op_gt);
 }
 
 /*
@@ -1562,7 +1569,7 @@ big_gt(VALUE x, VALUE y)
 static VALUE
 big_ge(VALUE x, VALUE y)
 {
-    return big_op(x, y, 1);
+    return big_op(x, y, big_op_ge);
 }
 
 /*
@@ -1576,7 +1583,7 @@ big_ge(VALUE x, VALUE y)
 static VALUE
 big_lt(VALUE x, VALUE y)
 {
-    return big_op(x, y, 2);
+    return big_op(x, y, big_op_lt);
 }
 
 /*
@@ -1590,7 +1597,7 @@ big_lt(VALUE x, VALUE y)
 static VALUE
 big_le(VALUE x, VALUE y)
 {
-    return big_op(x, y, 3);
+    return big_op(x, y, big_op_le);
 }
 
 /*
