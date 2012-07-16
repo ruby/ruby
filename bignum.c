@@ -1434,23 +1434,23 @@ rb_big_to_f(VALUE x)
 VALUE
 rb_integer_float_cmp(VALUE x, VALUE y)
 {
-    double a = RFLOAT_VALUE(y);
+    double yd = RFLOAT_VALUE(y);
     double yi, yf;
     VALUE rel;
 
-    if (isnan(a))
+    if (isnan(yd))
         return Qnil;
-    if (isinf(a)) {
-        if (a > 0.0) return INT2FIX(-1);
+    if (isinf(yd)) {
+        if (yd > 0.0) return INT2FIX(-1);
         else return INT2FIX(1);
     }
-    yf = modf(a, &yi);
+    yf = modf(yd, &yi);
     if (FIXNUM_P(x)) {
 #if SIZEOF_LONG * CHAR_BIT < DBL_MANT_DIG /* assume FLT_RADIX == 2 */
         double xd = (double)FIX2LONG(x);
-        if (xd < a)
+        if (xd < yd)
             return INT2FIX(-1);
-        if (xd > a)
+        if (xd > yd)
             return INT2FIX(1);
         return INT2FIX(0);
 #else

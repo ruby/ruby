@@ -1,3 +1,7 @@
+Mon Jul 16 19:02:31 2012  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_integer_float_cmp): rename a local variable.
+
 Mon Jul 16 18:40:26 2012  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_integer_float_cmp): renamed from rb_big_float_cmp.
