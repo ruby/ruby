@@ -1,3 +1,8 @@
+Mon Jul 16 16:56:12 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/fileutils.rb (public): remove useless parameter.
+	  patched by Oscar Del Ben.[Bug #6708][ruby-core:46256]
+
 Mon Jul 16 15:37:56 2012  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_eq): use rb_big_float_cmp.
