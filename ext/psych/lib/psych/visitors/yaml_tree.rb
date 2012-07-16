@@ -254,7 +254,7 @@ module Psych
           maptag = '!ruby/string'
           maptag << ":#{o.class}" unless o.class == ::String
 
-          @emitter.start_mapping nil, maptag, false, Nodes::Mapping::BLOCK
+          register o, @emitter.start_mapping(nil, maptag, false, Nodes::Mapping::BLOCK)
           @emitter.scalar 'str', nil, nil, true, false, Nodes::Scalar::ANY
           @emitter.scalar str, nil, tag, plain, quote, style
 

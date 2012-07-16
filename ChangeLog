@@ -1,3 +1,11 @@
+Tue Jul 17 03:56:34 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: strings with YAML anchors
+	  are properly referenced. Patched by Joe Rafaniello via Github:
+	    https://github.com/tenderlove/psych/pull/69
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: ditto
+	* test/psych/test_alias_and_anchor.rb: test for change
+
 Mon Jul 16 23:20:24 2012  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_integer_float_cmp): use FIXNUM_MIN and FIXNUM_MAX,

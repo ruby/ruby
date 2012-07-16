@@ -148,6 +148,7 @@ module Psych
 
           if klass
             string = klass.allocate.replace string
+            register(o, string)
           end
 
           init_with(string, members.map { |k,v| [k.to_s.sub(/^@/, ''),v] }, o)
