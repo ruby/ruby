@@ -630,6 +630,10 @@ rb_proc_call_with_block(VALUE self, int argc, VALUE *argv, VALUE pass_procval)
  *     Proc.new {|*a|}.arity      #=> -1
  *     Proc.new {|a,*b|}.arity    #=> -2
  *     Proc.new {|a,*b, c|}.arity    #=> -3
+ *     lambda { |a = 0| }.arity      #=> -1
+ *     lambda { |a, b = 0| }.arity   #=> -2
+ *     lambda { |a, b = 0, c = 0| }.arity #=> -2
+ *     lambda { |(a, b), c = 0| }.arity   #=> -2
  */
 
 static VALUE
@@ -648,7 +652,7 @@ rb_proc_arity(VALUE self)
     iseq = proc->block.iseq;
     if (iseq) {
 	if (BUILTIN_TYPE(iseq) != T_NODE) {
-	    if (iseq->arg_rest < 0) {
+	    if (iseq->arg_rest < 0 && (!proc->is_lambda || iseq->arg_opts == 0)) {
 		return iseq->argc;
 	    }
 	    else {

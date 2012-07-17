@@ -1,3 +1,8 @@
+Tue Jul 17 16:41:32 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* proc.c (rb_proc_arity): return normal value (not -n-1) if it is not
+	  a labmda, or it is a labmda and no arg_opts. [Bug #5694]
+
 Tue Jul 17 03:56:34 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: strings with YAML anchors
