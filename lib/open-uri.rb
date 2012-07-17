@@ -149,7 +149,11 @@ module OpenURI
       begin
         yield io
       ensure
-        io.close
+        if io.kind_of? Tempfile
+          io.close! 
+        else
+          io.close
+        end
       end
     else
       io
