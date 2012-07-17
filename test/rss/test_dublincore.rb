@@ -149,14 +149,8 @@ EOR
 
           plural_suffix = dc_plural_suffix(name, check_backward_compatibility)
           plural_reader = "dc_#{name}#{plural_suffix}"
-          values = parent.__send__(plural_reader).collect do |x|
-            val = x.value
-            if val.kind_of?(String)
-              CGI.escapeHTML(val)
-            else
-              val
-            end
-          end
+          values = parent.__send__(plural_reader).collect(&:value)
+          value = CGI.unescapeHTML(value) if value.kind_of?(String)
           assert_equal([value, value], values)
         end
       end
@@ -170,9 +164,7 @@ EOR
         parent = chain_reader(feed, parent_readers)
         DC_ELEMENTS.each do |name, value|
           parsed_value = parent.__send__("dc_#{name}")
-          if parsed_value.kind_of?(String)
-            parsed_value = CGI.escapeHTML(parsed_value)
-          end
+          value = CGI.unescapeHTML(value) if value.kind_of?(String)
           assert_equal(value, parsed_value)
           if name == :date
             t = Time.iso8601("2003-01-01T02:30:23+09:00")
@@ -206,9 +198,7 @@ EOR
         parents.each do |parent_readers|
           parent = chain_reader(feed, parent_readers)
           parsed_value = parent.__send__("dc_#{name}")
-          if parsed_value.kind_of?(String)
-            parsed_value = CGI.escapeHTML(parsed_value)
-          end
+          value = CGI.unescapeHTML(value) if value.kind_of?(String)
           assert_equal(value, parsed_value)
 
           plural_suffix = dc_plural_suffix(name, check_backward_compatibility)
@@ -269,8 +259,8 @@ EOR
         parent = feed_root.elements[target_xpath]
         parent.each_element do |elem|
           if elem.namespace == DC_URI
-            assert_equal(CGI.escapeHTML(elem.text),
-                         DC_ELEMENTS[elem.name.intern].to_s)
+            assert_equal(elem.text,
+                         CGI.unescapeHTML(DC_ELEMENTS[elem.name.intern].to_s))
           end
         end
       end
