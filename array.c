@@ -1808,6 +1808,8 @@ rb_ary_join(VALUE ary, VALUE sep)
  *
  *  Returns a string created by converting each element of the array to
  *  a string, separated by the given +separator+.
+ *  If the +separator+ is +nil+, it uses current $,.
+ *  If both the +separator+ and $, are nil, it uses empty string.
  *
  *     [ "a", "b", "c" ].join        #=> "abc"
  *     [ "a", "b", "c" ].join("-")   #=> "a-b-c"
