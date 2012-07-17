@@ -632,7 +632,7 @@ class TestNetHTTPLocalBind < Test::Unit::TestCase
     @server.mount_proc('/show_ip') { |req, res| res.body = req.remote_ip }
 
     http = Net::HTTP.new(config('host'), config('port'))
-    http.local_host = _select_local_ip_address
+    http.local_host = _select_local_ip_address(config('host'), config('port'))
     assert_not_nil(http.local_host)
     assert_nil(http.local_port)
 
@@ -645,7 +645,7 @@ class TestNetHTTPLocalBind < Test::Unit::TestCase
     @server.mount_proc('/show_port') { |req, res| res.body = req.peeraddr[1].to_s }
 
     http = Net::HTTP.new(config('host'), config('port'))
-    http.local_host = _select_local_ip_address
+    http.local_host = _select_local_ip_address(config('host'), config('port'))
     http.local_port = [*10000..20000].shuffle.first.to_s
     assert_not_nil(http.local_host)
     assert_not_nil(http.local_port)
@@ -654,9 +654,11 @@ class TestNetHTTPLocalBind < Test::Unit::TestCase
     assert_equal(http.local_port, res.body)
   end
 
-  def _select_local_ip_address
+  def _select_local_ip_address(saddr, sport)
     Socket.ip_address_list.find { |addr|
-      addr.ipv4? and not addr.ipv4_loopback? and not addr.ipv4_multicast?
+      next if Addrinfo.tcp(saddr, sport).afamily != addr.afamily
+      addr.ipv4? ? !addr.ipv4_loopback? && !addr.ipv4_multicast? \
+                 : !addr.ipv6_loopback? && !addr.ipv6_multicast?
     }.ip_address
   end
 end
