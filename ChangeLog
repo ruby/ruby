@@ -1,3 +1,8 @@
+Wed Jul 18 07:59:29 2012  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/util.rb (CGI.escapeHTML,unescapeHTML): Add &apos; for HTML5 escaping.
+	[Feature #6620]
+
 Tue Jul 17 22:17:13 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb: call io.close! for Tempfile.
