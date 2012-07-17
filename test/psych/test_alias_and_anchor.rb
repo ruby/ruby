@@ -24,8 +24,8 @@ EOYAML
 
    def test_mri_compatibility_object_with_ivars
   yaml = <<EOYAML
---- 
-- &id001 !ruby/object:ObjectWithInstanceVariables 
+---
+- &id001 !ruby/object:ObjectWithInstanceVariables
   var1: test1
   var2: test2
 - *id001
@@ -33,7 +33,7 @@ EOYAML
 EOYAML
 
      result = Psych.load yaml
-     result.each do |el| 
+     result.each do |el|
       assert_same(result[0], el)
       assert_equal('test1', el.var1)
       assert_equal('test2', el.var2)
@@ -42,8 +42,8 @@ EOYAML
 
    def test_mri_compatibility_substring_with_ivars
     yaml = <<EOYAML
---- 
-- &id001 !str:SubStringWithInstanceVariables 
+---
+- &id001 !str:SubStringWithInstanceVariables
   str: test
   "@var1": test
 - *id001

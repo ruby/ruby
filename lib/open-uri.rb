@@ -150,7 +150,7 @@ module OpenURI
         yield io
       ensure
         if io.kind_of? Tempfile
-          io.close! 
+          io.close!
         else
           io.close
         end
