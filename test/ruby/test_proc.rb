@@ -62,12 +62,38 @@ class TestProc < Test::Unit::TestCase
     assert_equal(0, proc{}.arity)
     assert_equal(0, proc{||}.arity)
     assert_equal(1, proc{|x|}.arity)
+    assert_equal(0, proc{|x=1|}.arity)
     assert_equal(2, proc{|x, y|}.arity)
+    assert_equal(0, proc{|x=0, y|}.arity)
+    assert_equal(0, proc{|x=0, y=0|}.arity)
+    assert_equal(1, proc{|x, y=0|}.arity)
     assert_equal(-2, proc{|x, *y|}.arity)
+    assert_equal(-1, proc{|x=0, *y|}.arity)
     assert_equal(-1, proc{|*x|}.arity)
     assert_equal(-1, proc{|*|}.arity)
     assert_equal(-3, proc{|x, *y, z|}.arity)
+    assert_equal(-2, proc{|x=0, *y, z|}.arity)
+    assert_equal(2, proc{|(x, y), z|}.arity)
+    assert_equal(1, proc{|(x, y), z=0|}.arity)
     assert_equal(-4, proc{|x, *y, z, a|}.arity)
+
+    assert_equal(0, lambda{}.arity)
+    assert_equal(0, lambda{||}.arity)
+    assert_equal(1, lambda{|x|}.arity)
+    assert_equal(-1, lambda{|x=1|}.arity) # different from proc
+    assert_equal(2, lambda{|x, y|}.arity)
+    assert_equal(-2, lambda{|x=0, y|}.arity) # different from proc
+    assert_equal(-1, lambda{|x=0, y=0|}.arity) # different from proc
+    assert_equal(-2, lambda{|x, y=0|}.arity) # different from proc
+    assert_equal(-2, lambda{|x, *y|}.arity)
+    assert_equal(-1, lambda{|x=0, *y|}.arity)
+    assert_equal(-1, lambda{|*x|}.arity)
+    assert_equal(-1, lambda{|*|}.arity)
+    assert_equal(-3, lambda{|x, *y, z|}.arity)
+    assert_equal(-2, lambda{|x=0, *y, z|}.arity)
+    assert_equal(2, lambda{|(x, y), z|}.arity)
+    assert_equal(-2, lambda{|(x, y), z=0|}.arity)
+    assert_equal(-4, lambda{|x, *y, z, a|}.arity)
 
     assert_arity(0) {}
     assert_arity(0) {||}
