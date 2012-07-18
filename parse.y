@@ -2710,6 +2710,14 @@ primary		: literal
 			$$ = dispatch1(begin, $3);
 		    %*/
 		    }
+		| tLPAREN_ARG {lex_state = EXPR_ENDARG;} rparen
+		    {
+		    /*%%%*/
+			$$ = 0;
+		    /*%
+			$$ = dispatch1(paren, 0);
+		    %*/
+		    }
 		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} rparen
 		    {
 		    /*%%%*/
@@ -7671,7 +7679,6 @@ parser_yylex(struct parser_params *parser)
 	}
 	else if (IS_SPCARG(-1)) {
 	    c = tLPAREN_ARG;
-	    rb_warning0("(...) interpreted as grouped expression");
 	}
 	paren_nest++;
 	COND_PUSH(0);
