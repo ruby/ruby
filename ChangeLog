@@ -1,3 +1,7 @@
+Wed Jul 18 19:41:19 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/openssl/test_config.rb: remove temporally files early.
+
 Wed Jul 18 17:45:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_builtin_type_name): map by index.

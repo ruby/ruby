@@ -12,7 +12,12 @@ dir = ./demoCA
 certs                =                  ./certs
 __EOD__
     file.close
+    @tmpfile = file
     @it = OpenSSL::Config.new(file.path)
+  end
+
+  def teardown
+    @tmpfile.unlink
   end
 
   def test_constants
@@ -119,6 +124,8 @@ __EOC__
     c = OpenSSL::Config.load(file.path)
     assert_equal("[ default ]\n\n", c.to_s)
     assert_equal(['default'], c.sections)
+  ensure
+    file.unlink if file
   end
 
   def test_initialize
@@ -133,6 +140,8 @@ __EOC__
     c = OpenSSL::Config.new(file.path)
     assert_equal("[ default ]\n\n", c.to_s)
     assert_equal(['default'], c.sections)
+  ensure
+    file.unlink if file
   end
 
   def test_initialize_with_example_file
