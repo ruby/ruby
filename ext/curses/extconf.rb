@@ -33,7 +33,7 @@ header_library = nil
   ["ncurses.h", ["ncursesw", "ncurses"]],
   ["ncurses/curses.h", ["ncurses"]],
   ["curses_colr/curses.h", ["cur_colr"]],
-  ["curses.h", ["curses"]],
+  ["curses.h", ["curses", "pdcurses"]],
   # ["xcurses.h", ["XCurses"]], # XCurses (PDCurses for X11)
 ].each {|hdr, libs|
   header_library = have_all(

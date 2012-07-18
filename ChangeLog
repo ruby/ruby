@@ -1,3 +1,8 @@
+Wed Jul 18 16:09:10 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/curses/extconf.rb: support PDCurses.  patched by Luis Lavena.
+	  [ruby-core:46485] [Feature #6735]
+
 Wed Jul 18 15:50:25 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* parse.y (primary): allow an empty grouped expression as the
