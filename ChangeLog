@@ -1,3 +1,8 @@
+Wed Jul 18 09:26:45 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/logger.rb:  Updated typos and output to match modern Logger
+	  output.  Patch by Marcus Stollsteimer.  [Bug #6738]
+
 Wed Jul 18 07:59:29 2012  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/util.rb (CGI.escapeHTML,unescapeHTML): Add &apos; for HTML5 escaping.
