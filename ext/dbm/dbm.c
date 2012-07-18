@@ -689,21 +689,20 @@ fdbm_empty_p(VALUE obj)
     datum key;
     struct dbmdata *dbmp;
     DBM *dbm;
-    int i = 0;
 
     GetDBM2(obj, dbmp, dbm);
     if (dbmp->di_size < 0) {
 	dbm = dbmp->di_dbm;
 
 	for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
-	    i++;
+	    return Qfalse;
 	}
     }
     else {
-	i = (int)dbmp->di_size;
+	if (!dbmp->di_size)
+	    return Qfalse;
     }
-    if (i == 0) return Qtrue;
-    return Qfalse;
+    return Qtrue;
 }
 
 /*
