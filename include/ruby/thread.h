@@ -28,6 +28,9 @@ extern "C" {
 void *rb_thread_call_with_gvl(void *(*func)(void *), void *data1);
 void *rb_thread_call_without_gvl(void *(*func)(void *), void *data1,
 				 rb_unblock_function_t *ubf, void *data2);
+void *rb_thread_call_without_gvl2(void *(*func)(void *, int *), void *data1,
+                                  rb_unblock_function_t *ubf, void *data2);
+
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop

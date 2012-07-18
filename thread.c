@@ -1081,25 +1081,64 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
 }
 
 /*
- * rb_thread_blocking_region - permit concurrent/parallel execution.
+ * rb_thread_call_without_gvl - permit concurrent/parallel execution.
+ * rb_thread_call_without_gvl2 - permit concurrent/parallel execution with care of interrupt checking.
  *
- * This function does:
+ * rb_thread_call_without_gvl() does:
  *   (1) release GVL.
  *       Other Ruby threads may run in parallel.
- *   (2) call func with data1.
+ *   (2) call func with data1
  *   (3) acquire GVL.
  *       Other Ruby threads can not run in parallel any more.
+ *   (4) Check interrupts.
+ *
+ * rb_thread_call_without_gvl2() does:
+ *   (1) release GVL.
+ *   (2) call func with data1 with pointer of skip_interrupt flag.
+ *   (3) acquire GVL.
+ *   (4) Check interrupts if skip_interrupt flag is not set.
  *
  *   If another thread interrupts this thread (Thread#kill, signal delivery,
  *   VM-shutdown request, and so on), `ubf()' is called (`ubf()' means
  *   "un-blocking function").  `ubf()' should interrupt `func()' execution.
  *
  *   There are built-in ubfs and you can specify these ubfs.
- *   However, we can not guarantee our built-in ubfs interrupt
- *   your `func()' correctly.  Be careful to use rb_thread_blocking_region().
  *
  *     * RUBY_UBF_IO: ubf for IO operation
  *     * RUBY_UBF_PROCESS: ubf for process operation
+ *
+ *   However, we can not guarantee our built-in ubfs interrupt
+ *   your `func()' correctly. Be careful to use rb_thread_call_without_gvl().
+ *   If you don't provide proper ubf(), your program do not stop with Control+C.
+ *
+ *   "Check interrupts" on above list (4) means that check asynchronous
+ *   interrupt events (such as Thread#kill, signal delivery, VM-shutdown
+ *   request, and so on) and call corresponding procedures
+ *   (such as `trap' for signals, raise an exception for Thread#raise).
+ *   If `func()' finished and receive interrupts, you may skip interrupt
+ *   checking.  For example, assume the following func() it read data from file.
+ *
+ *     read_func(...) {
+ *                     // (a) before read
+ *       read(buffer); // (b) reading
+ *                     // (c) after read
+ *     }
+ *
+ *   If interrupts are occure on (a) and (b), then `ubf()' cancels this `read_func()'
+ *   and interrupts are checked.  No problem on it.
+ *   However, the interrupts are occure on (c), after *read* operation is completed,
+ *   check intterrupts is harmful because it causes irrevocable side-effect,
+ *   especially read data will be vanished.  To avoid such problem, the `read_func()'
+ *   should be:
+ *
+ *     read_func(void *data, int *skip_check_flag) {
+ *                     // (a) before read
+ *       read(buffer); // (b) reading
+ *                     // (c) after read
+ *       if (read was cpmpleted) {
+ *         *skip_check_flag = 1;
+ *       }
+ *     }
  *
  *   NOTE: You can not execute most of Ruby C API and touch Ruby
  *         objects in `func()' and `ubf()', including raising an
@@ -1111,6 +1150,10 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
  *         use other ways if you have.  We lack experiences to use this API.
  *         Please report your problem related on it.
  *
+ *   NOTE: Releasing GVL and re-acquiring GVL are costful operation
+ *         for short running `func()'.
+ *         Use this mechanism if `func()' consumes long time enough.
+ *
  *   Safe C API:
  *     * rb_thread_interrupted() - check interrupt flag
  *     * ruby_xmalloc(), ruby_xrealloc(), ruby_xfree() -
@@ -1118,12 +1161,13 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
  *         when GC is needed.
  */
 void *
-rb_thread_call_without_gvl(void *(*func)(void *), void *data1,
-			   rb_unblock_function_t *ubf, void *data2)
+rb_thread_call_without_gvl2(void *(*func)(void *data, int *skip_checkints), void *data1,
+			    rb_unblock_function_t *ubf, void *data2)
 {
     void *val;
     rb_thread_t *th = GET_THREAD();
     int saved_errno = 0;
+    int skip_checkints = 0;
 
     th->waiting_fd = -1;
     if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
@@ -1132,16 +1176,39 @@ rb_thread_call_without_gvl(void *(*func)(void *), void *data1,
     }
 
     BLOCKING_REGION({
-	val = func(data1);
+	val = func(data1, &skip_checkints);
 	saved_errno = errno;
     }, ubf, data2);
 
-    /* TODO: check */
-    RUBY_VM_CHECK_INTS();
+    if (!skip_checkints) {
+	RUBY_VM_CHECK_INTS();
+    }
 
     errno = saved_errno;
 
     return val;
+}
+
+struct without_gvl_wrapper_arg {
+    void *(*func)(void *data);
+    void *data;
+};
+
+static void *
+without_gvl_wrapper(void *data, int *skip_checkints)
+{
+    struct without_gvl_wrapper_arg *arg = (struct without_gvl_wrapper_arg*)data;
+    return arg->func(arg->data);
+}
+
+void *
+rb_thread_call_without_gvl(void *(*func)(void *data), void *data1,
+			    rb_unblock_function_t *ubf, void *data2)
+{
+    struct without_gvl_wrapper_arg arg;
+    arg.func = func;
+    arg.data = data1;
+    return rb_thread_call_without_gvl2(without_gvl_wrapper, &arg, ubf, data2);
 }
 
 VALUE
@@ -1188,11 +1255,6 @@ rb_thread_blocking_region(
 
 /*
  * rb_thread_call_with_gvl - re-enter into Ruby world while releasing GVL.
- *
- ***
- *** This API is EXPERIMENTAL!
- *** We do not guarantee that this API remains in ruby 1.9.2 or later.
- ***
  *
  * While releasing GVL using rb_thread_blocking_region() or
  * rb_thread_call_without_gvl(), you can not access Ruby values or invoke methods.
