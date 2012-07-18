@@ -69,6 +69,8 @@ p Foo::Bar
     ensure
       remove_autoload_constant
     end
+  ensure
+    file.unlink
   end
 
   def test_threaded_accessing_constant
@@ -85,6 +87,8 @@ p Foo::Bar
     ensure
       remove_autoload_constant
     end
+  ensure
+    file.unlink
   end
 
   def test_threaded_accessing_inner_constant
@@ -101,6 +105,8 @@ p Foo::Bar
     ensure
       remove_autoload_constant
     end
+  ensure
+    file.unlink
   end
 
   def test_nameerror_when_autoload_did_not_define_the_constant
@@ -115,6 +121,8 @@ p Foo::Bar
     ensure
       remove_autoload_constant
     end
+  ensure
+    file.unlink
   end
 
   def test_override_autoload
@@ -128,6 +136,8 @@ p Foo::Bar
     ensure
       remove_autoload_constant
     end
+  ensure
+    file.unlink
   end
 
   def test_override_while_autoloading
@@ -148,6 +158,8 @@ p Foo::Bar
     ensure
       remove_autoload_constant
     end
+  ensure
+    file.unlink
   end
 
   def add_autoload(path)

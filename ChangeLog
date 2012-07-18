@@ -1,3 +1,7 @@
+Wed Jul 18 22:43:02 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_autoload.rb: remove temporally files early.
+
 Wed Jul 18 21:59:46 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_argf.rb: use temporally directory.
