@@ -1,3 +1,9 @@
+Wed Jul 18 16:17:40 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (have_framework): get rid of separating -framework
+	  option and its argument and dealing with the argument as a library
+	  or an object name.  if $LDFLAGS were an array...
+
 Wed Jul 18 16:09:10 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/curses/extconf.rb: support PDCurses.  patched by Luis Lavena.

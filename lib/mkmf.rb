@@ -1017,9 +1017,12 @@ SRC
   def have_framework(fw, &b)
     checking_for fw do
       src = cpp_include("#{fw}/#{fw}.h") << "\n" "int main(void){return 0;}"
-      if try_link(src, opt = "-ObjC -framework #{fw}", &b)
+      if try_link(src, "-ObjC -framework #{fw}", &b)
         $defs.push(format("-DHAVE_FRAMEWORK_%s", fw.tr_cpp))
-        $LDFLAGS << " " << opt
+	# TODO: non-worse way than this hack, to get rid of separating
+	# option and its argument.
+	opt = " -ObjC -framework\0#{fw}"
+        $LDFLAGS << opt
         true
       else
         false
@@ -1794,7 +1797,7 @@ INCFLAGS = -I. #$INCFLAGS
 DEFS     = #{CONFIG['DEFS']}
 CPPFLAGS = #{extconf_h}#{$CPPFLAGS}
 CXXFLAGS = $(CFLAGS) #{CONFIG['CXXFLAGS']}
-ldflags  = #{$LDFLAGS}
+ldflags  = #{$LDFLAGS.tr!("\0", " ")}
 dldflags = #{$DLDFLAGS} #{CONFIG['EXTDLDFLAGS']}
 ARCH_FLAG = #{$ARCH_FLAG}
 DLDFLAGS = $(ldflags) $(dldflags) $(ARCH_FLAG)
