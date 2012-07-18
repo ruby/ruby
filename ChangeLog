@@ -1,3 +1,9 @@
+Wed Jul 18 23:04:18 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/dbm/dbm.c (fdbm_empty_p): fix wrong condtion introduced in r36438.
+
+	* ext/sdbm/init.c (fsdbm_empty_p): ditto.
+
 Wed Jul 18 23:08:57 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_beginendblock.rb: remove temporally files early.

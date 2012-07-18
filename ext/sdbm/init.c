@@ -724,7 +724,7 @@ fsdbm_empty_p(VALUE obj)
 	}
     }
     else {
-	if (!dbmp->di_size)
+	if (dbmp->di_size)
 	    return Qfalse;
     }
     return Qtrue;
