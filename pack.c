@@ -927,6 +927,8 @@ pack_pack(VALUE ary, VALUE fmt)
 	    }
 	    if (len <= 2)
 		len = 45;
+	    else if (len > 63 && type == 'u')
+		len = 63;
 	    else
 		len = len / 3 * 3;
 	    while (plen > 0) {

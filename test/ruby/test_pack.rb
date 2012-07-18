@@ -496,6 +496,10 @@ class TestPack < Test::Unit::TestCase
     assert_equal("M86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A\n!80``\n", ["a"*46].pack("u0"))
     assert_equal("M86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A\n!80``\n", ["a"*46].pack("u1"))
     assert_equal("M86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A\n!80``\n", ["a"*46].pack("u2"))
+    assert_equal(<<EXPECTED, ["a"*80].pack("u68"))
+_86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A
+186%A86%A86%A86%A86%A86$`
+EXPECTED
 
     assert_equal([""], "".unpack("u"))
     assert_equal(["a"], "!80``\n".unpack("u"))

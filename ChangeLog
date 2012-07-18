@@ -1,3 +1,8 @@
+Wed Jul 18 23:57:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (pack_pack): round down too long uuencode width.  folding
+	  width in uuencode format cannot be longer than 63 bytes.
+
 Wed Jul 18 23:04:18 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/dbm/dbm.c (fdbm_empty_p): fix wrong condtion introduced in r36438.
