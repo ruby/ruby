@@ -1,3 +1,8 @@
+Wed Jul 18 14:25:55 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* pack.c: (ditto) bitwise operations are not char.  Apply explicit
+	  casts on them.
+
 Wed Jul 18 12:59:50 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* encoding.c (load_encoding): explicit cast  to suppress  warning.
