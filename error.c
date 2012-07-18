@@ -416,7 +416,7 @@ static const char builtin_types[][10] = {
     "",				/* 0x17 */
     "",				/* 0x18 */
     "",				/* 0x19 */
-    {},				/* 0x1a */
+    "",				/* 0x1a */
     "undef",			/* internal use: #undef; should not happen */
     "Node",			/* internal use: syntax tree node */
     "iClass",			/* internal use: mixed-in module holder */
@@ -426,7 +426,7 @@ const char *
 rb_builtin_type_name(int t)
 {
     const char *name;
-    if ((unsigned int)t > numberof(builtin_types)) return 0;
+    if ((unsigned int)t >= numberof(builtin_types)) return 0;
     name = builtin_types[t];
     if (*name) return name;
     return 0;
