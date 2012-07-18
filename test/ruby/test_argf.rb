@@ -2,43 +2,44 @@ require 'test/unit'
 require 'timeout'
 require 'tmpdir'
 require 'tempfile'
+require 'fileutils'
 require_relative 'envutil'
 
 class TestArgf < Test::Unit::TestCase
   def setup
-    @t1 = Tempfile.new("argf-foo")
+    @tmpdir = Dir.mktmpdir
+    @tmp_count = 0
+    @t1 = make_tempfile0("argf-foo")
     @t1.binmode
     @t1.puts "1"
     @t1.puts "2"
     @t1.close
-    @t2 = Tempfile.new("argf-bar")
+    @t2 = make_tempfile0("argf-bar")
     @t2.binmode
     @t2.puts "3"
     @t2.puts "4"
     @t2.close
-    @t3 = Tempfile.new("argf-baz")
+    @t3 = make_tempfile0("argf-baz")
     @t3.binmode
     @t3.puts "5"
     @t3.puts "6"
     @t3.close
-    @tmps = [@t1, @t2, @t3]
   end
 
   def teardown
-    @tmps.each {|t|
-      bak = t.path + ".bak"
-      File.unlink bak if File.file? bak
-      t.close(true)
-    }
+    FileUtils.rmtree(@tmpdir)
+  end
+
+  def make_tempfile0(basename)
+    open("#{@tmpdir}/#{basename}-#{@tmp_count}", "w")
   end
 
   def make_tempfile
-    t = Tempfile.new("argf-qux")
+    t = make_tempfile0("argf-qux")
     t.puts "foo"
     t.puts "bar"
     t.puts "baz"
     t.close
-    @tmps << t
     t
   end
 
@@ -417,11 +418,11 @@ class TestArgf < Test::Unit::TestCase
       end
     end
 
-    t1 = Tempfile.new("argf-foo")
+    t1 = open("#{@tmpdir}/argf-hoge", "w")
     t1.binmode
     t1.puts "foo"
     t1.close
-    t2 = Tempfile.new("argf-bar")
+    t2 = open("#{@tmpdir}/argf-moge", "w")
     t2.binmode
     t2.puts "bar"
     t2.close

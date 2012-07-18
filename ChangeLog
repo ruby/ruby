@@ -1,3 +1,7 @@
+Wed Jul 18 21:59:46 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_argf.rb: use temporally directory.
+
 Wed Jul 18 19:41:19 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/openssl/test_config.rb: remove temporally files early.
