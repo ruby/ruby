@@ -1426,9 +1426,6 @@ rb_threadptr_async_errinfo_active_p(rb_thread_t *th)
     }
 }
 
-VALUE
-rb_thread
-
 static void
 rb_threadptr_ready(rb_thread_t *th)
 {
