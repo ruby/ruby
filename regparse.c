@@ -5684,8 +5684,8 @@ countbits(unsigned int bits)
 static int
 is_onechar_cclass(CClassNode* cc, OnigCodePoint* code)
 {
-  OnigCodePoint c; /* c is used iff found == 1 */
-  int found = 0;
+  const OnigCodePoint not_found = (OnigCodePoint)-1;
+  OnigCodePoint c = not_found;
   int i;
   BBuf *bbuf = cc->mbuf;
 
@@ -5699,9 +5699,9 @@ is_onechar_cclass(CClassNode* cc, OnigCodePoint* code)
     if ((n == 1) && (data[0] == data[1])) {
       /* only one char found in the bbuf, save the code point. */
       c = data[0];
-      if ((c >= SINGLE_BYTE_SIZE) || !BITSET_AT(cc->bs, c)) {
-        /* set found=1 if c is not included in the bitset */
-        found = 1;
+      if (((c < SINGLE_BYTE_SIZE) && BITSET_AT(cc->bs, c))) {
+        /* skip if c is included in the bitset */
+	c = not_found;
       }
     }
     else {
@@ -5713,8 +5713,7 @@ is_onechar_cclass(CClassNode* cc, OnigCodePoint* code)
   for (i = 0; i < (int )BITSET_SIZE; i++) {
     Bits b1 = cc->bs[i];
     if (b1 != 0) {
-      if (((b1 & (b1 - 1)) == 0) && (found == 0)) {
-        found = 1;
+      if (((b1 & (b1 - 1)) == 0) && (c == not_found)) {
         c = BITS_IN_ROOM * i + countbits(b1 - 1);
       } else {
         return 0;  /* the character class contains multiple chars */
@@ -5722,7 +5721,7 @@ is_onechar_cclass(CClassNode* cc, OnigCodePoint* code)
     }
   }
 
-  if (found) {
+  if (c != not_found) {
     *code = c;
     return 1;
   }
