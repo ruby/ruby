@@ -22,12 +22,12 @@ def ado_installed?
 end
 
 if defined?(WIN32OLE_EVENT)
-  dotest = ado_installed?
-  if !dotest
-    STDERR.puts("\n#{__FILE__} skipped(ActiveX Data Object Library not found.)")
-  end
-  if dotest
-    class TestWIN32OLE_EVENT < Test::Unit::TestCase
+  class TestWIN32OLE_EVENT < Test::Unit::TestCase
+    unless ado_installed?
+      def test_dummy_for_skip_message
+        skip "ActiveX Data Object Library not found"
+      end
+    else
       CONNSTR="Driver={Microsoft Text Driver (*.txt; *.csv)};DefaultDir=.;"
       module ADO
       end

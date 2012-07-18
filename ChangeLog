@@ -1,3 +1,8 @@
+Wed Jul 18 09:33:59 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/win32ole/test_win32ole_event.rb (TestWIN32OLE_EVENT): use
+	  standard skip method to skip tests.
+
 Wed Jul 18 09:26:45 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/logger.rb:  Updated typos and output to match modern Logger
@@ -5,8 +10,9 @@ Wed Jul 18 09:26:45 2012  Eric Hodel  <drbrain@segment7.net>
 
 Wed Jul 18 07:59:29 2012  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
-	* lib/cgi/util.rb (CGI.escapeHTML,unescapeHTML): Add &apos; for HTML5 escaping.
-	[Feature #6620]
+	* lib/cgi/util.rb (CGI.escapeHTML,unescapeHTML): Add &apos; for HTML5
+	  escaping.
+	  [Feature #6620]
 
 Tue Jul 17 22:17:13 2012  Tanaka Akira  <akr@fsij.org>
 
