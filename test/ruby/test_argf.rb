@@ -31,6 +31,7 @@ class TestArgf < Test::Unit::TestCase
   end
 
   def make_tempfile0(basename)
+    @tmp_count += 1
     open("#{@tmpdir}/#{basename}-#{@tmp_count}", "w")
   end
 
