@@ -1,3 +1,10 @@
+Wed Jul 18 14:53:21 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (EXTDLDFLAGS): split options for each extension
+	  libraries, and unused in ruby.pc.  [Bug #6734]
+
+	* lib/mkmf.rb (MakeMakefile#configuration): add EXTDLDFLAGS.
+
 Wed Jul 18 14:47:23 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c: fix last commit miss.
