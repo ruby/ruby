@@ -25,6 +25,8 @@
 #include <unistd.h>
 #endif
 
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS 0
 #endif
@@ -387,45 +389,46 @@ rb_compile_bug(const char *file, int line, const char *fmt, ...)
     abort();
 }
 
-static const struct types {
-    int type;
-    const char *name;
-} builtin_types[] = {
-    {T_NIL,	"nil"},
-    {T_OBJECT,	"Object"},
-    {T_CLASS,	"Class"},
-    {T_ICLASS,	"iClass"},	/* internal use: mixed-in module holder */
-    {T_MODULE,	"Module"},
-    {T_FLOAT,	"Float"},
-    {T_STRING,	"String"},
-    {T_REGEXP,	"Regexp"},
-    {T_ARRAY,	"Array"},
-    {T_FIXNUM,	"Fixnum"},
-    {T_HASH,	"Hash"},
-    {T_STRUCT,	"Struct"},
-    {T_BIGNUM,	"Bignum"},
-    {T_FILE,	"File"},
-    {T_RATIONAL,"Rational"},
-    {T_COMPLEX, "Complex"},
-    {T_TRUE,	"true"},
-    {T_FALSE,	"false"},
-    {T_SYMBOL,	"Symbol"},	/* :symbol */
-    {T_DATA,	"Data"},	/* internal use: wrapped C pointers */
-    {T_MATCH,	"MatchData"},	/* data of $~ */
-    {T_NODE,	"Node"},	/* internal use: syntax tree node */
-    {T_UNDEF,	"undef"},	/* internal use: #undef; should not happen */
+static const char builtin_types[][10] = {
+    "", 			/* 0x00, */
+    "Object",
+    "Class",
+    "Module",
+    "Float",
+    "String",
+    "Regexp",
+    "Array",
+    "Hash",
+    "Struct",
+    "Bignum",
+    "File",
+    "Data",			/* internal use: wrapped C pointers */
+    "MatchData",		/* data of $~ */
+    "Complex",
+    "Rational",
+    "",				/* 0x10 */
+    "nil",
+    "true",
+    "false",
+    "Symbol",			/* :symbol */
+    "Fixnum",
+    "",				/* 0x16 */
+    "",				/* 0x17 */
+    "",				/* 0x18 */
+    "",				/* 0x19 */
+    {},				/* 0x1a */
+    "undef",			/* internal use: #undef; should not happen */
+    "Node",			/* internal use: syntax tree node */
+    "iClass",			/* internal use: mixed-in module holder */
 };
 
 const char *
 rb_builtin_type_name(int t)
 {
-    const struct types *type = builtin_types;
-    const struct types *const typeend = builtin_types +
-	sizeof(builtin_types) / sizeof(builtin_types[0]);
-    while (type < typeend) {
-	if (type->type == t) return type->name;
-	type++;
-    }
+    const char *name;
+    if ((unsigned int)t > numberof(builtin_types)) return 0;
+    name = builtin_types[t];
+    if (*name) return name;
     return 0;
 }
 
