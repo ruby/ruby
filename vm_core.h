@@ -446,8 +446,13 @@ typedef struct rb_thread_struct {
     VALUE thgroup;
     VALUE value;
 
+    /* temporary place of errinfo */
     VALUE errinfo;
-    VALUE thrown_errinfo;
+
+    /* async errinfo queue */
+    VALUE async_errinfo_queue;
+    int async_errinfo_queue_checked;
+    VALUE async_errinfo_mask_stack;
 
     rb_atomic_t interrupt_flag;
     rb_thread_lock_t interrupt_lock;
@@ -767,6 +772,10 @@ void rb_threadptr_signal_exit(rb_thread_t *th);
 void rb_threadptr_execute_interrupts(rb_thread_t *);
 void rb_threadptr_interrupt(rb_thread_t *th);
 void rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th);
+void rb_threadptr_async_errinfo_clear(rb_thread_t *th);
+void rb_threadptr_async_errinfo_enque(rb_thread_t *th, VALUE v);
+VALUE rb_threadptr_async_errinfo_deque(rb_thread_t *th);
+int rb_threadptr_async_errinfo_active_p(rb_thread_t *th);
 
 void rb_thread_lock_unlock(rb_thread_lock_t *);
 void rb_thread_lock_destroy(rb_thread_lock_t *);

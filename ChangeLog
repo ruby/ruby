@@ -1,3 +1,27 @@
+Wed Jul 18 14:16:51 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_threadptr_async_errinfo_*): manage async errors queue.
+	  Async events such as an exception throwed by Thread#raise,
+	  Thread#kill and thread termination (after main thread termination)
+	  will be queued to th->async_errinfo_queue.
+	  - clear: clear the queue.
+	  - enque: enque err object into queue.
+	  - deque: deque err object from queue.
+	  - active_p: return 1 if the queue should be checked.
+	  rb_thread_t#thrown_errinfo was removed.
+
+	* vm_core.h: add declarations of rb_threadptr_async_errinfo_*.
+	  remove rb_thread_t#thrown_errinfo field and
+	  add rb_thread_t#async_errinfo_queue (queue body: Array),
+	      rb_thread_t#async_errinfo_queue_checked (flag),
+	      rb_thread_t#async_errinfo_mask_stack(Array, not used yet).
+
+	* vm.c (rb_thread_mark): fix a mark function.
+
+	* cont.c (rb_fiber_start): enque an error.
+
+	* process.c (after_fork): clear async errinfo queue.
+
 Wed Jul 18 14:25:55 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* pack.c: (ditto) bitwise operations are not char.  Apply explicit

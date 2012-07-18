@@ -1164,11 +1164,11 @@ rb_fiber_start(void)
 
     if (state) {
 	if (state == TAG_RAISE) {
-	    th->thrown_errinfo = th->errinfo;
+	    rb_threadptr_async_errinfo_enque(th, th->errinfo);
 	}
 	else {
-	    th->thrown_errinfo =
-	      rb_vm_make_jump_tag_but_local_jump(state, th->errinfo);
+	    VALUE err = rb_vm_make_jump_tag_but_local_jump(state, th->errinfo);
+	    rb_threadptr_async_errinfo_enque(th, err);
 	}
 	RUBY_VM_SET_INTERRUPT(th);
     }

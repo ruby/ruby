@@ -1055,7 +1055,7 @@ after_exec(void)
 }
 
 #define before_fork() before_exec()
-#define after_fork() (GET_THREAD()->thrown_errinfo = 0, after_exec())
+#define after_fork() (rb_threadptr_async_errinfo_clear(GET_THREAD()), after_exec())
 
 #include "dln.h"
 
