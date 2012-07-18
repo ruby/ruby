@@ -110,7 +110,8 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_warn_grouped_expression
-    assert_warn("test:2: warning: (...) interpreted as grouped expression\n") do
+    bug5214 = '[ruby-core:39050]'
+    assert_warn("", bug5214) do
       assert_valid_syntax("foo \\\n(\n  true)", "test") {$VERBOSE = true}
     end
   end
