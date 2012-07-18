@@ -1,3 +1,8 @@
+Wed Jul 18 12:55:54 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/benchmark.rb: Fix Benchmark.benchmark output with an empty
+	  caption.  patched by Benoit Daloze. [ruby-core:45719] [Bug #6610]
+
 Wed Jul 18 10:00:54 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/debug.rb:  Added toplevel documentation.  Based on patch by Oscar

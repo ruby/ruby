@@ -169,7 +169,7 @@ module Benchmark
     label_width ||= 0
     label_width += 1
     format ||= FORMAT
-    print ' '*label_width + caption
+    print ' '*label_width + caption unless caption.empty?
     report = Report.new(label_width, format)
     results = yield(report)
     Array === results and results.grep(Tms).each {|t|
@@ -284,7 +284,7 @@ module Benchmark
                        t1.stime  - t0.stime,
                        t1.cutime - t0.cutime,
                        t1.cstime - t0.cstime,
-                       r1.to_f - r0.to_f,
+                       r1 - r0,
                        label)
   end
 
@@ -485,13 +485,13 @@ module Benchmark
     #
     def format(format = nil, *args)
       str = (format || FORMAT).dup
-      str.gsub!(/(%[-+\.\d]*)n/) { "#{$1}s" % label }
-      str.gsub!(/(%[-+\.\d]*)u/) { "#{$1}f" % utime }
-      str.gsub!(/(%[-+\.\d]*)y/) { "#{$1}f" % stime }
-      str.gsub!(/(%[-+\.\d]*)U/) { "#{$1}f" % cutime }
-      str.gsub!(/(%[-+\.\d]*)Y/) { "#{$1}f" % cstime }
-      str.gsub!(/(%[-+\.\d]*)t/) { "#{$1}f" % total }
-      str.gsub!(/(%[-+\.\d]*)r/) { "(#{$1}f)" % real }
+      str.gsub!(/(%[-+.\d]*)n/) { "#{$1}s" % label }
+      str.gsub!(/(%[-+.\d]*)u/) { "#{$1}f" % utime }
+      str.gsub!(/(%[-+.\d]*)y/) { "#{$1}f" % stime }
+      str.gsub!(/(%[-+.\d]*)U/) { "#{$1}f" % cutime }
+      str.gsub!(/(%[-+.\d]*)Y/) { "#{$1}f" % cstime }
+      str.gsub!(/(%[-+.\d]*)t/) { "#{$1}f" % total }
+      str.gsub!(/(%[-+.\d]*)r/) { "(#{$1}f)" % real }
       format ? str % args : str
     end
 
@@ -554,7 +554,7 @@ if __FILE__ == $0
 
   n = ARGV[0].to_i.nonzero? || 50000
   puts %Q([#{n} times iterations of `a = "1"'])
-  benchmark("       " + CAPTION, 7, FORMAT) do |x|
+  benchmark(CAPTION, 7, FORMAT) do |x|
     x.report("for:")   {for _ in 1..n; _ = "1"; end} # Benchmark.measure
     x.report("times:") {n.times do   ; _ = "1"; end}
     x.report("upto:")  {1.upto(n) do ; _ = "1"; end}
