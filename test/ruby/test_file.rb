@@ -33,6 +33,8 @@ class TestFile < Test::Unit::TestCase
     f << content
     f.rewind
     yield f
+  ensure
+    f.close(true)
   end
   alias open_file_rw open_file
 
@@ -96,7 +98,7 @@ class TestFile < Test::Unit::TestCase
     f.print "def"
     f.flush
     assert_equal("\0\0\0def", File.read(f.path), "[ruby-dev:24191]")
-    f.close
+    f.close(true)
   end
 
   def test_truncate_rbuf
@@ -108,6 +110,7 @@ class TestFile < Test::Unit::TestCase
     assert_equal("abc\n", f.gets)
     f.truncate(3)
     assert_equal(nil, f.gets, "[ruby-dev:24197]")
+    f.close(true)
   end
 
   def test_truncate_beyond_eof
@@ -115,6 +118,7 @@ class TestFile < Test::Unit::TestCase
     f.print "abc"
     f.truncate 10
     assert_equal("\0" * 7, f.read(100), "[ruby-dev:24532]")
+    f.close(true)
   end
 
   def test_read_all_extended_file
@@ -124,6 +128,7 @@ class TestFile < Test::Unit::TestCase
       f.print "a"
       f.rewind
       assert_equal("a", f.read, "mode = <#{mode}>")
+      f.close(true)
     end
   end
 
@@ -134,6 +139,7 @@ class TestFile < Test::Unit::TestCase
       f.print "a"
       f.rewind
       assert_equal("a", f.gets("a"), "mode = <#{mode}>")
+      f.close(true)
     end
   end
 
@@ -144,6 +150,7 @@ class TestFile < Test::Unit::TestCase
       f.print "\na"
       f.rewind
       assert_equal("a", f.gets(""), "mode = <#{mode}>")
+      f.close(true)
     end
   end
 
@@ -156,6 +163,7 @@ class TestFile < Test::Unit::TestCase
       result = []
       f.each_char {|b| result << b }
       assert_equal([?a], result, "mode = <#{mode}>")
+      f.close(true)
     end
   end
 
@@ -168,6 +176,7 @@ class TestFile < Test::Unit::TestCase
       result = []
       f.each_byte {|b| result << b.chr }
       assert_equal([?a], result, "mode = <#{mode}>")
+      f.close(true)
     end
   end
 
@@ -178,6 +187,7 @@ class TestFile < Test::Unit::TestCase
       f.print "a"
       f.rewind
       assert_equal(?a, f.getc, "mode = <#{mode}>")
+      f.close(true)
     end
   end
 
@@ -188,6 +198,7 @@ class TestFile < Test::Unit::TestCase
       f.print "a"
       f.rewind
       assert_equal(?a, f.getbyte.chr, "mode = <#{mode}>")
+      f.close(true)
     end
   end
 
@@ -250,6 +261,8 @@ class TestFile < Test::Unit::TestCase
         f = Tempfile.new('test_utime_with_minus_time_segv')
         File.utime(t, t, f)
       rescue
+      ensure
+        f.close(true)
       end
       puts '#{bug5596}'
     EOS
