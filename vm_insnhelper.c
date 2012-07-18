@@ -419,12 +419,11 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 {
     volatile VALUE val = 0;
     const rb_method_definition_t *def = me->def;
-    rb_control_frame_t *cfp;
 
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->called_id, me->klass);
 
-    cfp = vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, recv,
-			VM_ENVVAL_BLOCK_PTR(blockptr), 0, th->cfp->sp, 1, me);
+    vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, recv,
+		  VM_ENVVAL_BLOCK_PTR(blockptr), 0, th->cfp->sp, 1, me);
 
     reg_cfp->sp -= num + 1;
 

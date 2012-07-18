@@ -581,7 +581,6 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
     else if (BUILTIN_TYPE(block->iseq) != T_NODE) {
 	const rb_iseq_t *iseq = block->iseq;
 	const rb_control_frame_t *cfp;
-	rb_control_frame_t *ncfp;
 	int i, opt_pc, arg_size = iseq->arg_size;
 	int type = block_proc_is_lambda(block->proc) ?
 	  VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK;
@@ -596,10 +595,10 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 	opt_pc = vm_yield_setup_args(th, iseq, argc, cfp->sp, blockptr,
 				     type == VM_FRAME_MAGIC_LAMBDA);
 
-	ncfp = vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH,
-			     self, VM_ENVVAL_PREV_EP_PTR(block->ep),
-			     iseq->iseq_encoded + opt_pc, cfp->sp + arg_size, iseq->local_size - arg_size,
-			     th->passed_me);
+	vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH,
+		      self, VM_ENVVAL_PREV_EP_PTR(block->ep),
+		      iseq->iseq_encoded + opt_pc, cfp->sp + arg_size, iseq->local_size - arg_size,
+		      th->passed_me);
 	th->passed_me = 0;
 	th->passed_block = blockptr;
 
