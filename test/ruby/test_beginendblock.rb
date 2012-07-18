@@ -30,6 +30,8 @@ class TestBeginEndBlock < Test::Unit::TestCase
     assert_equal(%w(:begin :end), result.split)
     result = IO.popen([ruby, "-p", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
     assert_equal(%w(:begin foo bar :end), result.split)
+  ensure
+    input.unlink
   end
 
   def test_begininmethod
@@ -76,6 +78,9 @@ endblockwarn_rb:2: warning: END in method; use at_exit
 EOW
     assert_equal(expected, File.read(erroutpath))
     # expecting Tempfile to unlink launcher and errout file.
+  ensure
+    launcher.unlink
+    errout.unlink
   end
 
   def test_raise_in_at_exit
@@ -146,7 +151,8 @@ EOW
                  "outer0" ]
 
     assert_in_out_err(t.path, "", expected, [], "[ruby-core:35237]")
-    t.close
+  ensure
+    t.close(true)
   end
 
   def test_rescue_at_exit

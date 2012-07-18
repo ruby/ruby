@@ -1,3 +1,7 @@
+Wed Jul 18 23:08:57 2012  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_beginendblock.rb: remove temporally files early.
+
 Wed Jul 18 22:43:02 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_autoload.rb: remove temporally files early.
