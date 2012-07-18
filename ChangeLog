@@ -1,3 +1,8 @@
+Wed Jul 18 10:00:54 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/debug.rb:  Added toplevel documentation.  Based on patch by Oscar
+	  Del Ben.  [Bug #6743], fixes #146 on github.
+
 Wed Jul 18 09:33:59 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/win32ole/test_win32ole_event.rb (TestWIN32OLE_EVENT): use
