@@ -1,3 +1,7 @@
+Thu Jul 19 07:37:41 2012  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/drb/drbtest.rb: fixed: can't delete unix domain sockets problem.
+
 Thu Jul 19 03:41:20 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* bignum.c: Added #include <strings.h> for ffs(). Patch by Perry
