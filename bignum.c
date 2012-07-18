@@ -731,7 +731,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 		if (badcheck) goto bad;
 		break;
 	    }
-	    nondigit = c;
+	    nondigit = (char) c;
 	    continue;
 	}
 	else if ((c = conv_digit(c)) < 0) {
@@ -1036,7 +1036,8 @@ big2str_find_n1(VALUE x, int base)
 	bits = BITSPERDIG*RBIGNUM_LEN(x);
     }
 
-    return (long)ceil(bits/log_2[base - 2]);
+    /* @shyouhei note: vvvvvvvvvvvvv this cast is suspicious.  But I believe it is OK, because if that cast loses data, this x value is too big, and should have raised RangeError. */
+    return (long)ceil(((double)bits)/log_2[base - 2]);
 }
 
 static long

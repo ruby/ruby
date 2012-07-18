@@ -582,7 +582,7 @@ load_encoding(const char *name)
 
     while (s < e) {
 	if (!ISALNUM(*s)) *s = '_';
-	else if (ISUPPER(*s)) *s = TOLOWER(*s);
+	else if (ISUPPER(*s)) *s = (char)TOLOWER(*s);
 	++s;
     }
     FL_UNSET(enclib, FL_TAINT|FL_UNTRUSTED);
