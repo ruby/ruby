@@ -1,3 +1,8 @@
+Thu Jul 19 03:41:20 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* bignum.c: Added #include <strings.h> for ffs(). Patch by Perry
+	  Smith. Thank you. [Bug #6748]
+
 Thu Jul 19 01:56:02 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/intern.h (rb_num_zerodiv): Added NORETURN.

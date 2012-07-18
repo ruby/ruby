@@ -14,6 +14,9 @@
 #include "ruby/util.h"
 #include "internal.h"
 
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
 #include <math.h>
 #include <float.h>
 #include <ctype.h>
