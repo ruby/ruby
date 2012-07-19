@@ -14,6 +14,18 @@ class Net::HTTPGenericRequest
     raise ArgumentError, "no HTTP request path given" unless path
     raise ArgumentError, "HTTP request path is empty" if path.empty?
     @path = path
+
+    if @response_has_body and Net::HTTP::HAVE_ZLIB then
+      if !initheader ||
+         !initheader.keys.any? { |k|
+           %w[accept-encoding range].include? k.downcase
+         } then
+        initheader = initheader ? initheader.dup : {}
+        initheader["accept-encoding"] =
+          "gzip;q=1.0,deflate;q=0.6,identity;q=0.3"
+      end
+    end
+
     initialize_http_header initheader
     self['Accept'] ||= '*/*'
     self['User-Agent'] ||= 'Ruby'

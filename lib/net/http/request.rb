@@ -4,7 +4,12 @@
 # subclasses: Net::HTTP::Get, Net::HTTP::Post, Net::HTTP::Head.
 #
 class Net::HTTPRequest < Net::HTTPGenericRequest
-  # Creates HTTP request object.
+  # Creates an HTTP request object for +path+.
+  #
+  # +initheader+ are the default headers to use.  Net::HTTP adds
+  # Accept-Encoding to enable compression of the response body unless
+  # Accept-Encoding or Range are supplied in +initheader+.
+
   def initialize(path, initheader = nil)
     super self.class::METHOD,
           self.class::REQUEST_HAS_BODY,

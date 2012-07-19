@@ -4,7 +4,7 @@ require 'stringio'
 
 class HTTPResponseTest < Test::Unit::TestCase
   def test_singleline_header
-    io = dummy_io(<<EOS.gsub(/\n/, "\r\n"))
+    io = dummy_io(<<EOS)
 HTTP/1.1 200 OK
 Content-Length: 5
 Connection: close
@@ -17,7 +17,7 @@ EOS
   end
 
   def test_multiline_header
-    io = dummy_io(<<EOS.gsub(/\n/, "\r\n"))
+    io = dummy_io(<<EOS)
 HTTP/1.1 200 OK
 X-Foo: XXX
    YYY
@@ -32,9 +32,163 @@ EOS
     assert_equal('XXX YYY', res.header['x-bar'])
   end
 
+  def test_read_body
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: 5
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal 'hello', body
+  end
+
+  def test_read_body_block
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: 5
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = ''
+
+    res.reading_body io, true do
+      res.read_body do |chunk|
+        body << chunk
+      end
+    end
+
+    assert_equal 'hello', body
+  end
+
+  def test_read_body_content_encoding_deflate
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Encoding: deflate
+Content-Length: 13
+
+x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal 'hello', body
+  end
+
+  def test_read_body_content_encoding_deflate_chunked
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Encoding: deflate
+Transfer-Encoding: chunked
+
+6
+x\x9C\xCBH\xCD\xC9
+7
+\xC9\a\x00\x06,\x02\x15
+0
+
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal 'hello', body
+  end
+
+  def test_read_body_content_encoding_deflate_no_length
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Encoding: deflate
+
+x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal 'hello', body
+  end
+
+  def test_read_body_content_encoding_deflate_content_range
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Connection: close
+Content-Encoding: gzip
+Content-Length: 10
+Content-Range: bytes 0-9/55
+
+\x1F\x8B\b\x00\x00\x00\x00\x00\x00\x03
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal "\x1F\x8B\b\x00\x00\x00\x00\x00\x00\x03", body
+  end
+
+  def test_read_body_string
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: 5
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = ''
+
+    res.reading_body io, true do
+      res.read_body body
+    end
+
+    assert_equal 'hello', body
+  end
+
 private
 
   def dummy_io(str)
+    str = str.gsub(/\n/, "\r\n")
+
     Net::BufferedIO.new(StringIO.new(str))
   end
 end

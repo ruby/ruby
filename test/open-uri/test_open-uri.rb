@@ -488,12 +488,12 @@ class TestOpenURI < Test::Unit::TestCase
       srv.mount_proc("/data2/") {|req, res| res.body = content_gz; res['content-encoding'] = 'gzip'; res.chunked = true }
       srv.mount_proc("/noce/") {|req, res| res.body = content_gz }
       open("#{url}/data/") {|f|
-        assert_equal ['gzip'], f.content_encoding
-        assert_equal(content_gz, f.read.force_encoding("ascii-8bit"))
+        assert_equal [], f.content_encoding
+        assert_equal(content, f.read)
       }
       open("#{url}/data2/") {|f|
-        assert_equal ['gzip'], f.content_encoding
-        assert_equal(content_gz, f.read.force_encoding("ascii-8bit"))
+        assert_equal [], f.content_encoding
+        assert_equal(content, f.read)
       }
       open("#{url}/noce/") {|f|
         assert_equal [], f.content_encoding

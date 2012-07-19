@@ -222,25 +222,70 @@ class Net::HTTPResponse
 
   private
 
-  def read_body_0(dest)
-    if chunked?
-      read_chunked dest
-      return
+  ##
+  # Checks for a supported Content-Encoding header and yields an Inflate
+  # wrapper for this response's socket when zlib is present.  If the
+  # Content-Encoding is unsupported or zlib is missing the plain socket is
+  # yielded.
+  #
+  # If a Content-Range header is present a plain socket is yielded as the
+  # bytes in the range may not be a complete deflate block.
+
+  def inflater # :nodoc:
+    return yield @socket unless Net::HTTP::HAVE_ZLIB
+    return yield @socket if self['content-range']
+
+    case self['content-encoding']
+    when 'deflate', 'gzip', 'x-gzip' then
+      self.delete 'content-encoding'
+
+      inflate_body_io = Inflater.new(@socket)
+
+      begin
+        yield inflate_body_io
+      ensure
+        inflate_body_io.finish
+      end
+    when 'none', 'identity' then
+      self.delete 'content-encoding'
+
+      yield @socket
+    else
+      yield @socket
     end
-    clen = content_length()
-    if clen
-      @socket.read clen, dest, true   # ignore EOF
-      return
-    end
-    clen = range_length()
-    if clen
-      @socket.read clen, dest
-      return
-    end
-    @socket.read_all dest
   end
 
-  def read_chunked(dest)
+  def read_body_0(dest)
+    inflater do |inflate_body_io|
+      if chunked?
+        read_chunked dest, inflate_body_io
+        return
+      end
+
+      @socket = inflate_body_io
+
+      clen = content_length()
+      if clen
+        @socket.read clen, dest, true   # ignore EOF
+        return
+      end
+      clen = range_length()
+      if clen
+        @socket.read clen, dest
+        return
+      end
+      @socket.read_all dest
+    end
+  end
+
+  ##
+  # read_chunked reads from +@socket+ for chunk-size, chunk-extension, CRLF,
+  # etc. and +chunk_data_io+ for chunk-data which may be deflate or gzip
+  # encoded.
+  #
+  # See RFC 2616 section 3.6.1 for definitions
+
+  def read_chunked(dest, chunk_data_io) # :nodoc:
     len = nil
     total = 0
     while true
@@ -250,7 +295,7 @@ class Net::HTTPResponse
       len = hexlen.hex
       break if len == 0
       begin
-        @socket.read len, dest
+        chunk_data_io.read len, dest
       ensure
         total += len
         @socket.read 2   # \r\n
@@ -266,13 +311,79 @@ class Net::HTTPResponse
   end
 
   def procdest(dest, block)
-    raise ArgumentError, 'both arg and block given for HTTP method' \
-        if dest and block
+    raise ArgumentError, 'both arg and block given for HTTP method' if
+      dest and block
     if block
       Net::ReadAdapter.new(block)
     else
       dest || ''
     end
+  end
+
+  ##
+  # Inflater is a wrapper around Net::BufferedIO that transparently inflates
+  # zlib and gzip streams.
+
+  class Inflater # :nodoc:
+
+    ##
+    # Creates a new Inflater wrapping +socket+
+
+    def initialize socket
+      @socket = socket
+      # zlib with automatic gzip detection
+      @inflate = Zlib::Inflate.new(32 + Zlib::MAX_WBITS)
+    end
+
+    ##
+    # Finishes the inflate stream.
+
+    def finish
+      @inflate.finish
+    end
+
+    ##
+    # Returns a Net::ReadAdapter that inflates each read chunk into +dest+.
+    #
+    # This allows a large response body to be inflated without storing the
+    # entire body in memory.
+
+    def inflate_adapter(dest)
+      block = proc do |compressed_chunk|
+        @inflate.inflate(compressed_chunk) do |chunk|
+          dest << chunk
+        end
+      end
+
+      Net::ReadAdapter.new(block)
+    end
+
+    ##
+    # Reads +clen+ bytes from the socket, inflates them, then writes them to
+    # +dest+.  +ignore_eof+ is passed down to Net::BufferedIO#read
+    #
+    # Unlike Net::BufferedIO#read, this method returns more than +clen+ bytes.
+    # At this time there is no way for a user of Net::HTTPResponse to read a
+    # specific number of bytes from the HTTP response body, so this internal
+    # API does not return the same number of bytes as were requested.
+    #
+    # See https://bugs.ruby-lang.org/issues/6492 for further discussion.
+
+    def read clen, dest, ignore_eof = false
+      temp_dest = inflate_adapter(dest)
+
+      data = @socket.read clen, temp_dest, ignore_eof
+    end
+
+    ##
+    # Reads the rest of the socket, inflates it, then writes it to +dest+.
+
+    def read_all dest
+      temp_dest = inflate_adapter(dest)
+
+      @socket.read_all temp_dest
+    end
+
   end
 
 end

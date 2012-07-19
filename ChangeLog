@@ -1,3 +1,17 @@
+Fri Jul 20 07:40:32 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http/response.rb:  Automatically inflate gzip and
+	  deflate-encoded response bodies.  [Feature #6942]
+	* lib/net/http/generic_request.rb:  Automatically accept gzip and
+	  deflate content-encoding for requests.  [Feature #6494]
+	* lib/net/http/request.rb:  Updated documentation for #6494.
+	* lib/net/http.rb:  Updated documentation for #6492 and #6494, removed
+	  Content-Encoding handling now present in Net::HTTPResponse.
+	* test/net/http/test_httpresponse.rb:  Tests for #6492
+	* test/net/http/test_http_request.rb:  Tests for #6494
+	* test/open-uri/test_open-uri.rb (test_content_encoding):  Updated test
+	  for automatic content-encoding handling.
+
 Fri Jul 20 03:42:54 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread_pthread.c: use #ifdef, not #if.

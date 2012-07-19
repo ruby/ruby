@@ -283,6 +283,14 @@ module Net   #:nodoc:
   # See Net::HTTP::Proxy for further details and examples such as proxies that
   # require a username and password.
   #
+  # === Compression
+  #
+  # Net::HTTP automatically adds Accept-Encoding for compression of response
+  # bodies and automatically decompresses gzip and deflate responses unless a
+  # Range header was sent.
+  #
+  # Compression can be disabled through the Accept-Encoding: identity header.
+  #
   # == HTTP Request Classes
   #
   # Here is the HTTP request class hierarchy.
@@ -602,7 +610,6 @@ module Net   #:nodoc:
       @use_ssl = false
       @ssl_context = nil
       @enable_post_connection_check = true
-      @compression = nil
       @sspi_enabled = false
       SSL_IVNAMES.each do |ivname|
         instance_variable_set ivname, nil
@@ -1052,28 +1059,10 @@ module Net   #:nodoc:
           initheader = initheader.merge({
             "accept-encoding" => "gzip;q=1.0,deflate;q=0.6,identity;q=0.3"
           })
-          @compression = true
         end
       end
       request(Get.new(path, initheader)) {|r|
-        if r.key?("content-encoding") and @compression
-          @compression = nil # Clear it till next set.
-          the_body = r.read_body dest, &block
-          case r["content-encoding"]
-          when "gzip"
-            r.body= Zlib::GzipReader.new(StringIO.new(the_body), encoding: "ASCII-8BIT").read
-            r.delete("content-encoding")
-          when "deflate"
-            r.body= Zlib::Inflate.inflate(the_body);
-            r.delete("content-encoding")
-          when "identity"
-            ; # nothing needed
-          else
-            ; # Don't do anything dramatic, unless we need to later
-          end
-        else
-          r.read_body dest, &block
-        end
+        r.read_body dest, &block
         res = r
       }
       res
