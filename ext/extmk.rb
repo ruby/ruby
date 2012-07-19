@@ -636,6 +636,7 @@ if $configure_only and $command_output
       w = w0 = name.size + 2
       h = " \\\n" + "\t" * (w / 8) + " " * (w % 8)
       values.each do |s|
+        s = s.tr("\0", " ")
         if s.size + w > max
           print h
           w = w0
