@@ -628,7 +628,6 @@ class TestNetHTTPLocalBind < Test::Unit::TestCase
   include TestNetHTTPUtils
 
   def test_bind_to_local_host
-    skip "cannot cross between network interfaces on Windows, so skip this test until we find better test." if /mswin|mingw/ =~ RUBY_PLATFORM
     @server.mount_proc('/show_ip') { |req, res| res.body = req.remote_ip }
 
     http = Net::HTTP.new(config('host'), config('port'))
@@ -641,7 +640,6 @@ class TestNetHTTPLocalBind < Test::Unit::TestCase
   end
 
   def test_bind_to_local_port
-    skip "cannot cross between network interfaces on Windows, so skip this test until we find better test." if /mswin|mingw/ =~ RUBY_PLATFORM
     @server.mount_proc('/show_port') { |req, res| res.body = req.peeraddr[1].to_s }
 
     http = Net::HTTP.new(config('host'), config('port'))

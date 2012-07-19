@@ -1,3 +1,8 @@
+Thu Jul 19 13:28:03 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/net/http/test_http.rb (TestNetHTTPLocalBind#test_bind_to_local*):
+	  re-enable the tests because now it's OK on windows.
+
 Thu Jul 19 13:26:25 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/extconf.rb: now enable IPv6 by default on mswin.
