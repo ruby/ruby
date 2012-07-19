@@ -103,7 +103,7 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	if (!klass || !(me = rb_method_entry(klass, id))) {
 	    return method_missing(recv, id, argc, argv, NOEX_SUPER);
 	}
-	RUBY_VM_CHECK_INTS();
+	RUBY_VM_CHECK_INTS(th);
 	if (!(def = me->def)) return Qnil;
 	goto again;
       }
@@ -138,7 +138,7 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	rb_bug("vm_call0: unsupported method type (%d)", def->type);
 	val = Qundef;
     }
-    RUBY_VM_CHECK_INTS();
+    RUBY_VM_CHECK_INTS(th);
     return val;
 }
 

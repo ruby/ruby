@@ -1328,7 +1328,7 @@ fiber_switch(VALUE fibval, int argc, VALUE *argv, int is_resume)
 	rb_bug("rb_fiber_resume: unreachable");
     }
 #endif
-    RUBY_VM_CHECK_INTS();
+    RUBY_VM_CHECK_INTS(th);
 
     return value;
 }

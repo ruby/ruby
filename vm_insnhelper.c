@@ -706,7 +706,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	}
     }
 
-    RUBY_VM_CHECK_INTS();
+    RUBY_VM_CHECK_INTS(th);
     return val;
 }
 

@@ -615,6 +615,72 @@ class TestThread < Test::Unit::TestCase
     end
     assert_equal("Can't call on top of Fiber or Thread", error.message, bug5083)
   end
+
+  def make_control_interrupt_test_thread1 flag
+    r = []
+    q = Queue.new
+    th = Thread.new{
+      begin
+        Thread.control_interrupt(RuntimeError => flag){
+          q << :go
+          begin
+            sleep 0.5
+          rescue
+            r << :c1
+          end
+        }
+        sleep 0.5
+      rescue
+        r << :c2
+      end
+    }
+    q.pop # wait
+    th.raise
+    begin
+      th.join
+    rescue
+      r << :c3
+    end
+    r
+  end
+
+  def test_control_interrupt
+    [[:never, :c2],
+     [:immediate, :c1],
+     [:on_blocking, :c1]].each{|(flag, c)|
+      assert_equal([flag, c], [flag] + make_control_interrupt_test_thread1(flag))
+    }
+    # TODO: complex cases are needed.
+  end
+
+  def test_check_interrupt
+    q = Queue.new
+    Thread.control_interrupt(RuntimeError => :never){
+      th = Thread.new{
+        q.push :e
+        begin
+          begin
+            sleep 0.5
+          rescue => e
+            q.push :ng1
+          end
+          begin
+            Thread.check_interrupt
+          rescue => e
+            q.push :ok
+          end
+        rescue => e
+          q.push :ng2
+        ensure
+          q.push :ng3
+        end
+      }
+      q.pop
+      th.raise
+      th.join
+      assert_equal(:ok, q.pop)
+    }
+  end
 end
 
 class TestThreadGroup < Test::Unit::TestCase

@@ -769,25 +769,27 @@ void rb_signal_exec(rb_thread_t *th, int sig);
 void rb_threadptr_check_signal(rb_thread_t *mth);
 void rb_threadptr_signal_raise(rb_thread_t *th, int sig);
 void rb_threadptr_signal_exit(rb_thread_t *th);
-void rb_threadptr_execute_interrupts(rb_thread_t *);
+void rb_threadptr_execute_interrupts(rb_thread_t *, int);
 void rb_threadptr_interrupt(rb_thread_t *th);
 void rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th);
 void rb_threadptr_async_errinfo_clear(rb_thread_t *th);
 void rb_threadptr_async_errinfo_enque(rb_thread_t *th, VALUE v);
-VALUE rb_threadptr_async_errinfo_deque(rb_thread_t *th);
 int rb_threadptr_async_errinfo_active_p(rb_thread_t *th);
 
 void rb_thread_lock_unlock(rb_thread_lock_t *);
 void rb_thread_lock_destroy(rb_thread_lock_t *);
 
-#define RUBY_VM_CHECK_INTS_TH(th) do { \
+#define RUBY_VM_CHECK_INTS_BLOCKING(th) do { \
     if (UNLIKELY((th)->interrupt_flag)) { \
-	rb_threadptr_execute_interrupts(th); \
+	rb_threadptr_execute_interrupts(th, 1); \
     } \
 } while (0)
 
-#define RUBY_VM_CHECK_INTS() \
-  RUBY_VM_CHECK_INTS_TH(GET_THREAD())
+#define RUBY_VM_CHECK_INTS(th) do { \
+    if (UNLIKELY((th)->interrupt_flag)) { \
+	rb_threadptr_execute_interrupts(th, 0); \
+    } \
+} while (0)
 
 /* tracer */
 void

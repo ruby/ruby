@@ -160,7 +160,7 @@ ruby_cleanup(volatile int ex)
     rb_threadptr_check_signal(th);
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
-	SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(); });
+	SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(th); });
     }
     POP_TAG();
 

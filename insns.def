@@ -1086,7 +1086,7 @@ leave
 	}
     }
 
-    RUBY_VM_CHECK_INTS();
+    RUBY_VM_CHECK_INTS(th);
 
     if (UNLIKELY(VM_FRAME_TYPE_FINISH_P(GET_CFP()))) {
 #if OPT_CALL_THREADED_CODE
@@ -1117,7 +1117,7 @@ throw
 (VALUE throwobj)
 (VALUE val)
 {
-    RUBY_VM_CHECK_INTS();
+    RUBY_VM_CHECK_INTS(th);
     val = vm_throw(th, GET_CFP(), throw_state, throwobj);
     THROW_EXCEPTION(val);
     /* unreachable */
@@ -1138,7 +1138,7 @@ jump
 ()
 ()
 {
-    RUBY_VM_CHECK_INTS();
+    RUBY_VM_CHECK_INTS(th);
     JUMP(dst);
 }
 
@@ -1154,7 +1154,7 @@ branchif
 ()
 {
     if (RTEST(val)) {
-	RUBY_VM_CHECK_INTS();
+	RUBY_VM_CHECK_INTS(th);
 	JUMP(dst);
     }
 }
@@ -1171,7 +1171,7 @@ branchunless
 ()
 {
     if (!RTEST(val)) {
-	RUBY_VM_CHECK_INTS();
+	RUBY_VM_CHECK_INTS(th);
 	JUMP(dst);
     }
 }
@@ -1220,7 +1220,7 @@ onceinlinecache
     }
     else if (ic->ic_value.value == Qundef)
     {
-    	RUBY_VM_CHECK_INTS();
+    	RUBY_VM_CHECK_INTS(th);
     	rb_thread_schedule();
 	goto retry;
     }

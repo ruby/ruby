@@ -1,3 +1,36 @@
+Thu Jul 19 15:08:40 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_thread_s_control_interrupt,
+	            rb_thread_s_check_interrupt): added for
+	  Thread.control_intgerrupt and Thread.check_interrupt.
+	  See details on rdoc.
+	  I'll make an ticket for this feature.
+
+	* test/ruby/test_thread.rb: add a test for Thread.control_intgerrupt.
+
+	* thread.c (rb_threadptr_raise): make a new exception object
+	  even if argc is 0.
+
+	* thread.c (rb_thread_kill): kill thread immediately if target thread
+	  is current thread.
+
+	* vm_core.h (RUBY_VM_CHECK_INTS_BLOCKING): added.
+	  CHECK_INTS while/after blocking operation.
+
+	* vm_core.h (RUBY_VM_CHECK_INTS): require rb_thread_t ptr.
+
+	* cont.c (fiber_switch): use replaced RUBY_VM_CHECK_INTS().
+
+	* eval.c (ruby_cleanup): ditto.
+
+	* insns.def: ditto.
+
+	* process.c (rb_waitpid): ditto.
+
+	* vm_eval.c (vm_call0): ditto.
+
+	* vm_insnhelper.c (vm_call_method): ditto.
+
 Thu Jul 19 22:46:48 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_io.rb: remove temporally files early.
