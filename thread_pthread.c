@@ -24,7 +24,7 @@
 #elif HAVE_SYS_FCNTL_H
 #include <sys/fcntl.h>
 #endif
-#if HAVE_SYS_PRCTL_H
+#ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif
 #if defined(__native_client__) && defined(NACL_NEWLIB)
@@ -1430,7 +1430,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 int
 rb_reserved_fd_p(int fd)
 {
-#if USE_SLEEPY_TIMER_THRAED
+#ifdef USE_SLEEPY_TIMER_THRAED
     if (fd == timer_thread_pipe[0] ||
 	fd == timer_thread_pipe[1]) {
 	return 1;

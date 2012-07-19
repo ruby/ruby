@@ -1,3 +1,7 @@
+Fri Jul 20 03:42:54 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c: use #ifdef, not #if.
+
 Thu Jul 19 15:08:40 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_s_control_interrupt,
