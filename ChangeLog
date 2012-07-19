@@ -1,3 +1,8 @@
+Thu Jul 19 14:18:22 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/init.c (rsock_init_sock): need to update max fd on all
+	  platforms.
+
 Thu Jul 19 14:15:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_gc_mark_threads): remove deprecated function.

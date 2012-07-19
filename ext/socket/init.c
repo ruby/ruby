@@ -52,6 +52,7 @@ rsock_init_sock(VALUE sock, int fd)
     if (!S_ISSOCK(sbuf.st_mode))
         rb_raise(rb_eArgError, "not a socket file descriptor");
 #else
+    rb_update_max_fd(fd);
     if (!rb_w32_is_socket(fd))
         rb_raise(rb_eArgError, "not a socket file descriptor");
 #endif
