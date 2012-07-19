@@ -1356,4 +1356,16 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:m1], Class.new{ prepend Module.new; def m1; end }.instance_methods(false), bug6660)
     assert_equal([:m1], Class.new(Class.new{def m2;end}){ prepend Module.new; def m1; end }.instance_methods(false), bug6660)
   end
+
+  def test_class_variables
+    m = Module.new
+    m.class_variable_set(:@@foo, 1)
+    m2 = Module.new
+    m2.send(:include, m)
+    m2.class_variable_set(:@@bar, 2)
+    assert_equal([:@@foo], m.class_variables)
+    assert_equal([:@@bar, :@@foo], m2.class_variables)
+    assert_equal([:@@bar, :@@foo], m2.class_variables(true))
+    assert_equal([:@@bar], m2.class_variables(false))
+  end
 end

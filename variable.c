@@ -1939,7 +1939,7 @@ rb_const_list(void *data)
  *
  *  Returns an array of the names of the constants accessible in
  *  <i>mod</i>. This includes the names of constants in any included
- *  modules (example at start of section), unless the <i>all</i>
+ *  modules (example at start of section), unless the <i>inherit</i>
  *  parameter is set to <code>false</code>.
  *
  *    IO.constants.include?(:SYNC)        #=> true
@@ -2323,22 +2323,71 @@ static int
 cv_i(st_data_t k, st_data_t v, st_data_t a)
 {
     ID key = (ID)k;
-    VALUE ary = (VALUE)a;
+    st_table *tbl = (st_table *)a;
 
     if (rb_is_class_id(key)) {
-	VALUE kval = ID2SYM(key);
-	if (!rb_ary_includes(ary, kval)) {
-	    rb_ary_push(ary, kval);
+	if (!st_lookup(tbl, (st_data_t)key, 0)) {
+	    st_insert(tbl, (st_data_t)key, 0);
 	}
     }
     return ST_CONTINUE;
 }
+ 
+static void*
+mod_cvar_at(VALUE mod, void *data)
+{
+    st_table *tbl = data;
+    if (!tbl) {
+	tbl = st_init_numtable();
+    }
+    if (RCLASS_IV_TBL(mod)) {
+	st_foreach_safe(RCLASS_IV_TBL(mod), cv_i, (st_data_t)tbl);
+    }
+    return tbl;
+}
+
+static void*
+mod_cvar_of(VALUE mod, void *data)
+{
+    VALUE tmp = mod;
+    for (;;) {
+	data = mod_cvar_at(tmp, data);
+	tmp = RCLASS_SUPER(tmp);
+	if (!tmp) break;
+    }
+    return data;
+}
+
+static int
+cv_list_i(st_data_t key, st_data_t value, VALUE ary)
+{
+    ID sym = (ID)key;
+    rb_ary_push(ary, ID2SYM(sym));
+    return ST_CONTINUE;
+}
+
+static VALUE
+cvar_list(void *data)
+{
+    st_table *tbl = data;
+    VALUE ary;
+
+    if (!tbl) return rb_ary_new2(0);
+    ary = rb_ary_new2(tbl->num_entries);
+    st_foreach_safe(tbl, cv_list_i, ary);
+    st_free_table(tbl);
+
+    return ary;
+}
 
 /*
  *  call-seq:
- *     mod.class_variables   -> array
+ *     mod.class_variables(inherit=true)    -> array
  *
  *  Returns an array of the names of class variables in <i>mod</i>.
+ *  This includes the names of class variables in any included
+ *  modules, unless the <i>inherit</i> parameter is set to
+ *  <code>false</code>.
  *
  *     class One
  *       @@var1 = 1
@@ -2347,18 +2396,28 @@ cv_i(st_data_t k, st_data_t v, st_data_t a)
  *       @@var2 = 2
  *     end
  *     One.class_variables   #=> [:@@var1]
- *     Two.class_variables   #=> [:@@var2]
+ *     Two.class_variables   #=> [:@@var2, :@@var1]
  */
 
 VALUE
-rb_mod_class_variables(VALUE obj)
+rb_mod_class_variables(int argc, VALUE *argv, VALUE mod)
 {
-    VALUE ary = rb_ary_new();
+    VALUE inherit;
+    st_table *tbl;
 
-    if (RCLASS_IV_TBL(obj)) {
-	st_foreach_safe(RCLASS_IV_TBL(obj), cv_i, (st_data_t)ary);
+    if (argc == 0) {
+	inherit = Qtrue;
     }
-    return ary;
+    else {
+	rb_scan_args(argc, argv, "01", &inherit);
+    }
+    if (RTEST(inherit)) {
+	tbl = mod_cvar_of(mod, 0);
+    }
+    else {
+	tbl = mod_cvar_at(mod, 0);
+    }
+    return cvar_list(tbl);
 }
 
 /*

@@ -886,7 +886,7 @@ VALUE rb_cvar_get(VALUE, ID);
 void rb_cv_set(VALUE, const char*, VALUE);
 VALUE rb_cv_get(VALUE, const char*);
 void rb_define_class_variable(VALUE, const char*, VALUE);
-VALUE rb_mod_class_variables(VALUE);
+VALUE rb_mod_class_variables(int, VALUE*, VALUE);
 VALUE rb_mod_remove_cvar(VALUE, VALUE);
 
 ID rb_frame_callee(void);

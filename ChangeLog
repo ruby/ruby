@@ -1,3 +1,11 @@
+Thu Jul 19 15:38:35 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* variable.c (rb_mod_class_variables): return inherited variables
+	  except when the optional argument is set to false.
+	  [ruby-dev:44034] [Bug #4971]
+
+	* variable.c (rb_mod_constants): fix typo in documentation.
+
 Thu Jul 19 14:30:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h: move mark function declarations that should be private.

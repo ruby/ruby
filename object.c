@@ -2979,7 +2979,7 @@ Init_Object(void)
     rb_define_method(rb_cModule, "const_missing",
 		     rb_mod_const_missing, 1); /* in variable.c */
     rb_define_method(rb_cModule, "class_variables",
-		     rb_mod_class_variables, 0); /* in variable.c */
+		     rb_mod_class_variables, -1); /* in variable.c */
     rb_define_method(rb_cModule, "remove_class_variable",
 		     rb_mod_remove_cvar, 1); /* in variable.c */
     rb_define_method(rb_cModule, "class_variable_get", rb_mod_cvar_get, 1);
