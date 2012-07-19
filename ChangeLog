@@ -1,3 +1,7 @@
+Thu Jul 19 13:26:25 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/extconf.rb: now enable IPv6 by default on mswin.
+
 Thu Jul 19 09:33:46 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/emitter.c (initialize): allow a configuration object to be
