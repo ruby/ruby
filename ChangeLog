@@ -1,3 +1,7 @@
+Thu Jul 19 14:15:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_gc_mark_threads): remove deprecated function.
+
 Thu Jul 19 13:28:03 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/net/http/test_http.rb (TestNetHTTPLocalBind#test_bind_to_local*):

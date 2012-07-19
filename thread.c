@@ -1430,12 +1430,6 @@ rb_thread_execute_interrupts(VALUE thval)
     rb_threadptr_execute_interrupts_common(th);
 }
 
-void
-rb_gc_mark_threads(void)
-{
-    rb_bug("deprecated function rb_gc_mark_threads is called");
-}
-
 /*****************************************************/
 
 /*

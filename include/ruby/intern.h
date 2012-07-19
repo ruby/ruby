@@ -387,7 +387,6 @@ VALUE rb_protect(VALUE (*)(VALUE), VALUE, int*);
 void rb_set_end_proc(void (*)(VALUE), VALUE);
 void rb_mark_end_proc(void);
 void rb_exec_end_proc(void);
-DEPRECATED(void rb_gc_mark_threads(void));
 void rb_thread_schedule(void);
 void rb_thread_wait_fd(int);
 int rb_thread_fd_writable(int);
