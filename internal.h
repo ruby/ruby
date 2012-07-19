@@ -95,6 +95,7 @@ VALUE rb_get_backtrace(VALUE info);
 
 /* eval_jump.c */
 void rb_call_end_proc(VALUE data);
+void rb_mark_end_proc(void);
 
 /* file.c */
 VALUE rb_home_dir(const char *user, VALUE result);
@@ -156,6 +157,8 @@ int rb_is_attrset_name(VALUE name);
 int rb_is_local_name(VALUE name);
 int rb_is_method_name(VALUE name);
 int rb_is_junk_name(VALUE name);
+void rb_gc_mark_parser(void);
+void rb_gc_mark_symbols(void);
 
 /* proc.c */
 VALUE rb_proc_location(VALUE self);
@@ -310,6 +313,11 @@ void rb_execarg_fixup(VALUE execarg_obj);
 int rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char* errmsg, size_t errmsg_buflen);
 VALUE rb_execarg_extract_options(VALUE execarg_obj, VALUE opthash);
 void rb_execarg_setenv(VALUE execarg_obj, VALUE env);
+
+/* variable.c */
+void rb_gc_mark_global_tbl(void);
+void rb_mark_generic_ivar(VALUE);
+void rb_mark_generic_ivar_tbl(void);
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
