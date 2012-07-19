@@ -2,6 +2,9 @@
 
 VALUE cPsychEmitter;
 static ID id_write;
+static ID id_line_width;
+static ID id_indentation;
+static ID id_canonical;
 
 static void emit(yaml_emitter_t * emitter, yaml_event_t * event)
 {
@@ -39,14 +42,29 @@ static VALUE allocate(VALUE klass)
     return Data_Wrap_Struct(klass, 0, dealloc, emitter);
 }
 
-/* call-seq: Psych::Emitter.new(io)
+/* call-seq: Psych::Emitter.new(io, options = Psych::Emitter::OPTIONS)
  *
  * Create a new Psych::Emitter that writes to +io+.
  */
-static VALUE initialize(VALUE self, VALUE io)
+static VALUE initialize(int argc, VALUE *argv, VALUE self)
 {
     yaml_emitter_t * emitter;
+    VALUE io, options;
+    VALUE line_width;
+    VALUE indent;
+    VALUE canonical;
+
     Data_Get_Struct(self, yaml_emitter_t, emitter);
+
+    if (rb_scan_args(argc, argv, "11", &io, &options) == 2) {
+	line_width = rb_funcall(options, id_line_width, 0);
+	indent     = rb_funcall(options, id_indentation, 0);
+	canonical  = rb_funcall(options, id_canonical, 0);
+
+	yaml_emitter_set_width(emitter, NUM2INT(line_width));
+	yaml_emitter_set_indent(emitter, NUM2INT(indent));
+	yaml_emitter_set_canonical(emitter, Qtrue == canonical ? 1 : 0);
+    }
 
     yaml_emitter_set_output(emitter, writer, (void *)io);
 
@@ -494,7 +512,7 @@ void Init_psych_emitter()
 
     rb_define_alloc_func(cPsychEmitter, allocate);
 
-    rb_define_method(cPsychEmitter, "initialize", initialize, 1);
+    rb_define_method(cPsychEmitter, "initialize", initialize, -1);
     rb_define_method(cPsychEmitter, "start_stream", start_stream, 1);
     rb_define_method(cPsychEmitter, "end_stream", end_stream, 0);
     rb_define_method(cPsychEmitter, "start_document", start_document, 3);
@@ -512,6 +530,9 @@ void Init_psych_emitter()
     rb_define_method(cPsychEmitter, "line_width", line_width, 0);
     rb_define_method(cPsychEmitter, "line_width=", set_line_width, 1);
 
-    id_write = rb_intern("write");
+    id_write       = rb_intern("write");
+    id_line_width  = rb_intern("line_width");
+    id_indentation = rb_intern("indentation");
+    id_canonical   = rb_intern("canonical");
 }
 /* vim: set noet sws=4 sw=4: */

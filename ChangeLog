@@ -1,3 +1,14 @@
+Thu Jul 19 09:33:46 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/emitter.c (initialize): allow a configuration object to be
+	  passed to the constructor so that mutation isn't required after
+	  instantiation.
+
+	* ext/psych/lib/psych/handler.rb: add configuration object
+
+	* ext/psych/lib/psych/visitors/emitter.rb: use configuration object if
+	  extra configuration is present.
+
 Thu Jul 19 08:20:25 2012  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_file.rb: remove temporally files early.
