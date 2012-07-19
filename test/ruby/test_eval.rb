@@ -127,19 +127,16 @@ class TestEval < Test::Unit::TestCase
     }
   end
 
-  def forall_TYPE(mid)
+  def forall_TYPE
     objects = [Object.new, [], nil, true, false, 77, :sym] # TODO: check
     objects.each do |obj|
       obj.instance_variable_set :@ivar, 12
-      send mid, obj
+      yield obj
     end
   end
 
   def test_instance_eval_string_basic
-    forall_TYPE :instance_eval_string_basic_i
-  end
-
-  def instance_eval_string_basic_i(o)
+    forall_TYPE do |o|
     assert_equal nil,   o.instance_eval("nil")
     assert_equal true,  o.instance_eval("true")
     assert_equal false, o.instance_eval("false")
@@ -163,13 +160,11 @@ class TestEval < Test::Unit::TestCase
       assert_equal 14,  o.instance_eval("$gvar__eval")
       assert_equal 15,  o.instance_eval("Const")
     }
+    end
   end
 
   def test_instance_eval_block_basic
-    forall_TYPE :instance_eval_block_basic_i
-  end
-
-  def instance_eval_block_basic_i(o)
+    forall_TYPE do |o|
     assert_equal nil,   o.instance_eval { nil }
     assert_equal true,  o.instance_eval { true }
     assert_equal false, o.instance_eval { false }
@@ -193,6 +188,7 @@ class TestEval < Test::Unit::TestCase
       assert_equal 14,  o.instance_eval { $gvar__eval }
       assert_equal 15,  o.instance_eval { Const }
     }
+    end
   end
 
   def test_instance_eval_cvar
