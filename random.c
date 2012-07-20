@@ -932,7 +932,10 @@ rb_random_real(VALUE obj)
     if (!rnd) {
 	VALUE v = rb_funcall2(obj, id_rand, 0, 0);
 	double d = NUM2DBL(v);
-	if (d < 0.0 || d >= 1.0) {
+	if (d < 0.0) {
+	    rb_raise(rb_eRangeError, "random number too small %g", d);
+	}
+	else if (d >= 1.0) {
 	    rb_raise(rb_eRangeError, "random number too big %g", d);
 	}
 	return d;
