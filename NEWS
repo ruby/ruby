@@ -84,6 +84,11 @@ with all sufficient information, see the ChangeLog file.
       * Fiber#resume cannot resume a fiber which invokes "Fiber#transfer".
 
 * net/http
+  * new features:
+    * Proxies are now automatically detected from the http_proxy environment
+      variable.  See Net::HTTP::new for details.
+    * gzip and deflate compression are now requested for all requests by
+      default.  See Net::HTTP for details.
   * new methods:
     * Net::HTTP#local_host
     * Net::HTTP#local_host=
