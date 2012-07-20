@@ -5,6 +5,167 @@ require 'net/http'
 require 'stringio'
 require_relative 'utils'
 
+class TestNetHTTP < Test::Unit::TestCase
+
+  def test_class_Proxy
+    no_proxy_class = Net::HTTP.Proxy nil
+
+    assert_equal Net::HTTP, no_proxy_class
+
+    proxy_class = Net::HTTP.Proxy 'proxy.example', 8000, 'user', 'pass'
+
+    refute_equal Net::HTTP, proxy_class
+
+    assert_operator proxy_class, :<, Net::HTTP
+
+    assert_equal 'proxy.example', proxy_class.proxy_address
+    assert_equal 8000,            proxy_class.proxy_port
+    assert_equal 'user',          proxy_class.proxy_user
+    assert_equal 'pass',          proxy_class.proxy_pass
+
+    http = proxy_class.new 'example'
+
+    refute http.proxy_from_env?
+  end
+
+  def test_class_Proxy_from_ENV
+    clean_http_proxy_env do
+      ENV['http_proxy']      = 'http://proxy.example:8000'
+
+      # These are ignored on purpose.  See Bug 4388 and Feature 6546
+      ENV['http_proxy_user'] = 'user'
+      ENV['http_proxy_pass'] = 'pass'
+
+      proxy_class = Net::HTTP.Proxy :ENV
+
+      refute_equal Net::HTTP, proxy_class
+
+      assert_operator proxy_class, :<, Net::HTTP
+
+      assert_nil proxy_class.proxy_address
+      assert_nil proxy_class.proxy_user
+      assert_nil proxy_class.proxy_pass
+
+      refute_equal 8000, proxy_class.proxy_port
+
+      http = proxy_class.new 'example'
+
+      assert http.proxy_from_env?
+    end
+  end
+
+  def test_edit_path
+    http = Net::HTTP.new 'example', nil, nil
+
+    edited = http.send :edit_path, '/path'
+
+    assert_equal '/path', edited
+
+    http.use_ssl = true
+
+    edited = http.send :edit_path, '/path'
+
+    assert_equal '/path', edited
+  end
+
+  def test_edit_path_proxy
+    http = Net::HTTP.new 'example', nil, 'proxy.example'
+
+    edited = http.send :edit_path, '/path'
+
+    assert_equal 'http://example/path', edited
+
+    http.use_ssl = true
+
+    edited = http.send :edit_path, '/path'
+
+    assert_equal '/path', edited
+  end
+
+  def test_proxy_address
+    http = Net::HTTP.new 'example', nil, 'proxy.example'
+
+    assert_equal 'proxy.example', http.proxy_address
+  end
+
+  def test_proxy_address_ENV
+    clean_http_proxy_env do
+      ENV['http_proxy'] = 'http://proxy.example:8000'
+
+      http = Net::HTTP.new 'example'
+
+      assert_equal 'proxy.example', http.proxy_address
+    end
+  end
+
+  def test_proxy_eh_no_proxy
+    clean_http_proxy_env do
+      refute Net::HTTP.new('example', nil, nil).proxy?
+    end
+  end
+
+  def test_proxy_eh_ENV
+    clean_http_proxy_env do
+      ENV['http_proxy'] = 'http://proxy.example:8000'
+
+      http = Net::HTTP.new 'example'
+
+      assert http.proxy?
+    end
+  end
+
+  def test_proxy_eh_ENV_none_set
+    clean_http_proxy_env do
+      refute Net::HTTP.new('example').proxy?
+    end
+  end
+
+  def test_proxy_eh_ENV_no_proxy
+    clean_http_proxy_env do
+      ENV['http_proxy'] = 'http://proxy.example:8000'
+      ENV['no_proxy']   = 'example'
+
+      refute Net::HTTP.new('example').proxy?
+    end
+  end
+
+  def test_proxy_port
+    http = Net::HTTP.new 'exmaple', nil, 'proxy.example', 8000
+
+    assert_equal 8000, http.proxy_port
+  end
+
+  def test_proxy_port_ENV
+    clean_http_proxy_env do
+      ENV['http_proxy'] = 'http://proxy.example:8000'
+
+      http = Net::HTTP.new 'example'
+
+      assert_equal 8000, http.proxy_port
+    end
+  end
+
+  def clean_http_proxy_env
+    orig = {
+      'http_proxy'      => ENV['http_proxy'],
+      'http_proxy_user' => ENV['http_proxy_user'],
+      'http_proxy_pass' => ENV['http_proxy_pass'],
+      'no_proxy'        => ENV['no_proxy'],
+    }
+
+    orig.each_key do |key|
+      ENV.delete key
+    end
+
+    yield
+  ensure
+    orig.each do |key, value|
+      ENV[key] = value
+    end
+  end
+
+end
+
 module TestNetHTTP_version_1_1_methods
 
   def test_s_get

@@ -732,4 +732,53 @@ class URI::TestGeneric < Test::Unit::TestCase
     URI::Generic.build2(path: "/foo bar/baz")
     URI::Generic.build2(['http', nil, 'example.com', 80, nil, '/foo bar' , nil, nil, nil])
   end
+
+  # 192.0.2.0/24 is TEST-NET.  [RFC3330]
+
+  def test_find_proxy
+    assert_nil(URI("http://192.0.2.1/").find_proxy)
+    assert_nil(URI("ftp://192.0.2.1/").find_proxy)
+    with_env('http_proxy'=>'http://127.0.0.1:8080') {
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
+      assert_nil(URI("ftp://192.0.2.1/").find_proxy)
+    }
+    with_env('ftp_proxy'=>'http://127.0.0.1:8080') {
+      assert_nil(URI("http://192.0.2.1/").find_proxy)
+      assert_equal(URI('http://127.0.0.1:8080'), URI("ftp://192.0.2.1/").find_proxy)
+    }
+    with_env('REQUEST_METHOD'=>'GET') {
+      assert_nil(URI("http://192.0.2.1/").find_proxy)
+    }
+    with_env('CGI_HTTP_PROXY'=>'http://127.0.0.1:8080', 'REQUEST_METHOD'=>'GET') {
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
+    }
+    with_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'192.0.2.2') {
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
+      assert_nil(URI("http://192.0.2.2/").find_proxy)
+    }
+  end
+
+  def test_find_proxy_case_sensitive_env
+    with_env('http_proxy'=>'http://127.0.0.1:8080', 'REQUEST_METHOD'=>'GET') {
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
+    }
+    with_env('HTTP_PROXY'=>'http://127.0.0.1:8081', 'REQUEST_METHOD'=>'GET') {
+      assert_nil(nil, URI("http://192.0.2.1/").find_proxy)
+    }
+    with_env('http_proxy'=>'http://127.0.0.1:8080', 'HTTP_PROXY'=>'http://127.0.0.1:8081', 'REQUEST_METHOD'=>'GET') {
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
+    }
+  end unless RUBY_PLATFORM =~ /mswin|mingw/
+
+  def with_env(h)
+    begin
+      old = {}
+      h.each_key {|k| old[k] = ENV[k] }
+      h.each {|k, v| ENV[k] = v }
+      yield
+    ensure
+      h.each_key {|k| ENV[k] = old[k] }
+    end
+  end
+
 end

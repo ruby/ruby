@@ -1,3 +1,23 @@
+Fri Jul 20 10:55:38 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb:  Net::HTTP now automatically detects and uses
+	  proxies from the environment.  A proxy may also be specified as
+	  before.
+
+	  Net::HTTP::Proxy still creates anonymous classes, but these classes
+	  are only used to store configuration information.  When an HTTP
+	  instance is created the configuration is now copied.
+
+	  Additionally, Net::HTTP::ProxyDelta is no longer used by Net::HTTP
+
+	  [Feature #6546]
+	* lib/open-uri.rb:  Moved URI::Generic#find_proxy to uri/generic.
+	* lib/uri/generic.rb:  Imported find_proxy from open-uri.
+	* test/open-uri/test_open-uri.rb:  Moved proxy-discovery tests to URI.
+	* test/uri/test_generic.rb:  Imported proxy-discovery tests from
+	  open-uri.
+	* test/net/http/test_http.rb:  Added tests for proxy behavior.
+
 Fri Jul 20 09:34:11 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* test/socket/test_socket.rb:  Ignore IPv6 unique local addresses on OS

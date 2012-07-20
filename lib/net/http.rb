@@ -267,20 +267,20 @@ module Net   #:nodoc:
   #
   # === Proxies
   #
-  # Net::HTTP::Proxy has the same methods as Net::HTTP but its instances always
-  # connect via the proxy instead of directly to the given host.
+  # Net::HTTP will automatically create a proxy from the +http_proxy+
+  # environment variable if it is present.  To disable use of +http_proxy+,
+  # pass +nil+ for the proxy address.
+  #
+  # You may also create a custom proxy:
   #
   #   proxy_addr = 'your.proxy.host'
   #   proxy_port = 8080
   #
-  #   Net::HTTP::Proxy(proxy_addr, proxy_port).start('www.example.com') {|http|
-  #     # always connect to your.proxy.addr:8080
+  #   Net::HTTP.new('example.com', nil, proxy_addr, proxy_port).start { |http|
+  #     # always proxy via your.proxy.addr:8080
   #   }
   #
-  # Net::HTTP::Proxy returns a Net::HTTP instance when proxy_addr is nil so
-  # there is no need for conditional code.
-  #
-  # See Net::HTTP::Proxy for further details and examples such as proxies that
+  # See Net::HTTP.new for further details and examples such as proxies that
   # require a username and password.
   #
   # === Compression
@@ -577,16 +577,44 @@ module Net   #:nodoc:
       http.start(&block)
     end
 
-    class << HTTP
-      alias newobj new
-    end
-
     # Creates a new Net::HTTP object without opening a TCP connection or
     # HTTP session.
-    # The +address+ should be a DNS hostname or IP address.
-    # If +p_addr+ is given, creates a Net::HTTP object with proxy support.
-    def HTTP.new(address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil)
-      Proxy(p_addr, p_port, p_user, p_pass).newobj(address, port)
+    #
+    # The +address+ should be a DNS hostname or IP address, the +port+ is the
+    # port the server operates on.  If no +port+ is given the default port for
+    # HTTP or HTTPS is used.
+    #
+    # If none of the +p_+ arguments are given, the proxy host and port are
+    # taken from the +http_proxy+ environment variable (or its uppercase
+    # equivalent) if present.  If the proxy requires authentication you must
+    # supply it by hand.  See URI::Generic#find_proxy for details of proxy
+    # detection from the environment.  To disable proxy detection set +p_addr+
+    # to nil.
+    #
+    # If you are connecting to a custom proxy, +p_addr+ the DNS name or IP
+    # address of the proxy host, +p_port+ the port to use to access the proxy,
+    # and +p_user+ and +p_pass+ the username and password if authorization is
+    # required to use the proxy.
+    #
+    def HTTP.new(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil)
+      http = super address, port
+
+      if proxy_class? then # from Net::HTTP::Proxy()
+        http.proxy_from_env = @proxy_from_env
+        http.proxy_address  = @proxy_address
+        http.proxy_port     = @proxy_port
+        http.proxy_user     = @proxy_user
+        http.proxy_pass     = @proxy_pass
+      elsif p_addr == :ENV then
+        http.proxy_from_env = true
+      else
+        http.proxy_address = p_addr
+        http.proxy_port    = p_port
+        http.proxy_user    = p_user
+        http.proxy_pass    = p_pass
+      end
+
+      http
     end
 
     # Creates a new Net::HTTP object for the specified server address,
@@ -607,6 +635,14 @@ module Net   #:nodoc:
       @read_timeout = 60
       @continue_timeout = nil
       @debug_output = nil
+
+      @proxy_from_env = false
+      @proxy_uri      = nil
+      @proxy_address  = nil
+      @proxy_port     = nil
+      @proxy_user     = nil
+      @proxy_pass     = nil
+
       @use_ssl = false
       @ssl_context = nil
       @enable_post_connection_check = true
@@ -645,6 +681,12 @@ module Net   #:nodoc:
 
     # The local port used to estabilish the connection.
     attr_accessor :local_port
+
+    attr_writer :proxy_from_env
+    attr_writer :proxy_address
+    attr_writer :proxy_port
+    attr_writer :proxy_user
+    attr_writer :proxy_pass
 
     # Number of seconds to wait for the connection to open. Any number
     # may be used, including Floats for fractional seconds. If the HTTP
@@ -812,9 +854,17 @@ module Net   #:nodoc:
     private :do_start
 
     def connect
-      D "opening connection to #{conn_address()}..."
+      if proxy? then
+        conn_address = proxy_address
+        conn_port    = proxy_port
+      else
+        conn_address = address
+        conn_port    = port
+      end
+
+      D "opening connection to #{conn_address}..."
       s = Timeout.timeout(@open_timeout, Net::OpenTimeout) {
-        TCPSocket.open(conn_address(), conn_port(), @local_host, @local_port)
+        TCPSocket.open(conn_address, conn_port, @local_host, @local_port)
       }
       D "opened"
       if use_ssl?
@@ -891,6 +941,7 @@ module Net   #:nodoc:
 
     # no proxy
     @is_proxy_class = false
+    @proxy_from_env = false
     @proxy_addr = nil
     @proxy_port = nil
     @proxy_user = nil
@@ -899,52 +950,26 @@ module Net   #:nodoc:
     # Creates an HTTP proxy class which behaves like Net::HTTP, but
     # performs all access via the specified proxy.
     #
-    # The arguments are the DNS name or IP address of the proxy host,
-    # the port to use to access the proxy, and a username and password
-    # if authorization is required to use the proxy.
-    #
-    # You can replace any use of the Net::HTTP class with use of the
-    # proxy class created.
-    #
-    # If +p_addr+ is nil, this method returns self (a Net::HTTP object).
-    #
-    #   # Example
-    #   proxy_class = Net::HTTP::Proxy('proxy.example.com', 8080)
-    #
-    #   proxy_class.start('www.ruby-lang.org') {|http|
-    #     # connecting proxy.foo.org:8080
-    #   }
-    #
-    # You may use them to work with authorization-enabled proxies:
-    #
-    #   proxy_host = 'your.proxy.example'
-    #   proxy_port = 8080
-    #   proxy_user = 'user'
-    #   proxy_pass = 'pass'
-    #
-    #   proxy = Net::HTTP::Proxy(proxy_host, proxy_port, proxy_user, proxy_pass)
-    #   proxy.start('www.example.com') { |http|
-    #     # always connect to your.proxy.example:8080 using specified username
-    #     # and password
-    #   }
-    #
-    # Note that net/http does not use the HTTP_PROXY environment variable.
-    # If you want to use a proxy, you must set it explicitly.
-    #
-    def HTTP.Proxy(p_addr, p_port = nil, p_user = nil, p_pass = nil)
+    # This class is obsolete.  You may pass these same parameters directly to
+    # Net::HTTP.new.  See Net::HTTP.new for details of the arguments.
+    def HTTP.Proxy(p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil)
       return self unless p_addr
-      delta = ProxyDelta
-      proxyclass = Class.new(self)
-      proxyclass.module_eval {
-        include delta
-        # with proxy
+
+      Class.new(self) {
         @is_proxy_class = true
-        @proxy_address = p_addr
-        @proxy_port    = p_port || default_port()
-        @proxy_user    = p_user
-        @proxy_pass    = p_pass
+
+        if p_addr == :ENV then
+          @proxy_from_env = true
+          @proxy_address = nil
+          @proxy_port    = nil
+        else
+          @proxy_address = p_addr
+          @proxy_port    = p_port
+        end
+
+        @proxy_user = p_user
+        @proxy_pass = p_pass
       }
-      proxyclass
     end
 
     class << HTTP
@@ -967,29 +992,51 @@ module Net   #:nodoc:
       attr_reader :proxy_pass
     end
 
-    # True if self is a HTTP proxy class.
+    # True if requests for this connection will be proxied
     def proxy?
-      self.class.proxy_class?
+      if @proxy_from_env then
+        proxy_uri
+      else
+        @proxy_address
+      end
     end
 
-    # A convenience method for accessing value of proxy_address from Net::HTTP.
+    # True if the proxy for this connection is determined from the environment
+    def proxy_from_env?
+      @proxy_from_env
+    end
+
+    # The proxy URI determined from the environment for this connection.
+    def proxy_uri # :nodoc:
+      @proxy_uri ||= URI("http://#{address}:#{port}").find_proxy
+    end
+
+    # The address of the proxy server, if one is configured.
     def proxy_address
-      self.class.proxy_address
+      if @proxy_from_env then
+        proxy_uri.hostname
+      else
+        @proxy_address
+      end
     end
 
-    # A convenience method for accessing value of proxy_port from Net::HTTP.
+    # The port of the proxy server, if one is configured.
     def proxy_port
-      self.class.proxy_port
+      if @proxy_from_env then
+        proxy_uri.port
+      else
+        @proxy_port
+      end
     end
 
-    # A convenience method for accessing value of proxy_user from Net::HTTP.
+    # The proxy username, if one is configured
     def proxy_user
-      self.class.proxy_user
+      @proxy_user
     end
 
-    # A convenience method for accessing value of proxy_pass from Net::HTTP.
+    # The proxy password, if one is configured
     def proxy_pass
-      self.class.proxy_pass
+      @proxy_pass
     end
 
     alias proxyaddr proxy_address   #:nodoc: obsolete
@@ -997,18 +1044,22 @@ module Net   #:nodoc:
 
     private
 
-    # without proxy
+    # without proxy, obsolete
 
-    def conn_address
+    def conn_address # :nodoc:
       address()
     end
 
-    def conn_port
+    def conn_port # :nodoc:
       port()
     end
 
     def edit_path(path)
-      path
+      if proxy? and not use_ssl? then
+        "http://#{addr_port}#{path}"
+      else
+        path
+      end
     end
 
     #
