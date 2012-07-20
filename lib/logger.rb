@@ -57,22 +57,24 @@ require 'monitor'
 #
 #   require 'logger'
 #
-#   log = Logger.new(STDOUT)
-#   log.level = Logger::WARN
+#   logger = Logger.new(STDOUT)
+#   logger.level = Logger::WARN
 #
-#   log.debug("Created logger")
-#   log.info("Program started")
-#   log.warn("Nothing to do!")
+#   logger.debug("Created logger")
+#   logger.info("Program started")
+#   logger.warn("Nothing to do!")
+#
+#   path = "a_non_existent_file"
 #
 #   begin
-#     File.each_line(path) do |line|
+#     File.foreach(path) do |line|
 #       unless line =~ /^(\w+) = (.*)$/
-#         log.error("Line in wrong format: #{line}")
+#         logger.error("Line in wrong format: #{line.chomp}")
 #       end
 #     end
 #   rescue => err
-#     log.fatal("Caught exception; exiting")
-#     log.fatal(err)
+#     logger.fatal("Caught exception; exiting")
+#     logger.fatal(err)
 #   end
 #
 # Because the Logger's level is set to +WARN+, only the warning, error, and

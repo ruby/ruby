@@ -1,3 +1,9 @@
+Sat Jul 21 08:41:14 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/logger.rb:  Updated example in Logger comment to match other
+	  examples and fixed a bug.  Patch by Marcus Stollsteimer.
+	  [Bug #6759]
+
 Fri Jul 20 17:20:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (rb_random_real): refine error message.
