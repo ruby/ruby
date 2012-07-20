@@ -3405,7 +3405,8 @@ opt_block_args_tail : ',' block_args_tail
 		    {
 			$$ = new_args_tail(Qnone, Qnone, Qnone);
 		    }
- 		;
+		;
+
 block_param	: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
 		    {
 			$$ = new_args($1, $3, $5, Qnone, $6);
@@ -4490,7 +4491,7 @@ opt_args_tail	: ',' args_tail
 		    {
 			$$ = new_args_tail(Qnone, Qnone, Qnone);
 		    }
- 		;
+		;
 
 f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_args_tail
 		    {
@@ -10063,7 +10064,7 @@ sym_check_asciionly(VALUE str)
     if (!rb_enc_asciicompat(rb_enc_get(str))) return FALSE;
     switch (rb_enc_str_coderange(str)) {
       case ENC_CODERANGE_BROKEN:
-    	rb_raise(rb_eEncodingError, "invalid encoding symbol");
+	rb_raise(rb_eEncodingError, "invalid encoding symbol");
       case ENC_CODERANGE_7BIT:
 	return TRUE;
     }

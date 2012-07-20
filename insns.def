@@ -1220,8 +1220,8 @@ onceinlinecache
     }
     else if (ic->ic_value.value == Qundef)
     {
-    	RUBY_VM_CHECK_INTS(th);
-    	rb_thread_schedule();
+	RUBY_VM_CHECK_INTS(th);
+	rb_thread_schedule();
 	goto retry;
     }
     else {
