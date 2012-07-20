@@ -40,7 +40,7 @@ Fri Jul 20 09:32:14 2012  Eric Hodel  <drbrain@segment7.net>
 	  addresses.  Part of #6692
 	* ext/socket/rubysocket.h:  Add IN6_IS_ADDR_UNIQUE_LOCAL macro if
 	  missing.
-	* test/socket/test_addrinfo.rb:  Test for ipv6_unqiue_local?
+	* test/socket/test_addrinfo.rb:  Test for ipv6_unique_local?
 
 Fri Jul 20 07:40:32 2012  Eric Hodel  <drbrain@segment7.net>
 
@@ -64,11 +64,11 @@ Thu Jul 19 15:08:40 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_s_control_interrupt,
 	            rb_thread_s_check_interrupt): added for
-	  Thread.control_intgerrupt and Thread.check_interrupt.
+	  Thread.control_interrupt and Thread.check_interrupt.
 	  See details on rdoc.
 	  I'll make an ticket for this feature.
 
-	* test/ruby/test_thread.rb: add a test for Thread.control_intgerrupt.
+	* test/ruby/test_thread.rb: add a test for Thread.control_interrupt.
 
 	* thread.c (rb_threadptr_raise): make a new exception object
 	  even if argc is 0.
@@ -163,7 +163,7 @@ Wed Jul 18 23:57:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Jul 18 23:04:18 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* ext/dbm/dbm.c (fdbm_empty_p): fix wrong condtion introduced in r36438.
+	* ext/dbm/dbm.c (fdbm_empty_p): fix wrong condition introduced in r36438.
 
 	* ext/sdbm/init.c (fsdbm_empty_p): ditto.
 
