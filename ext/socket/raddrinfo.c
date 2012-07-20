@@ -1793,6 +1793,18 @@ addrinfo_ipv6_sitelocal_p(VALUE self)
 }
 
 /*
+ * Returns true for IPv6 unique local address (fc00::/7, RFC4193).
+ * It returns false otherwise.
+ */
+static VALUE
+addrinfo_ipv6_unique_local_p(VALUE self)
+{
+    struct in6_addr *addr = extract_in6_addr(self);
+    if (addr && IN6_IS_ADDR_UNIQUE_LOCAL(addr)) return Qtrue;
+    return Qfalse;
+}
+
+/*
  * Returns true for IPv4-mapped IPv6 address (::ffff:0:0/80).
  * It returns false otherwise.
  */
@@ -2207,6 +2219,7 @@ rsock_init_addrinfo(void)
     rb_define_method(rb_cAddrinfo, "ipv6_multicast?", addrinfo_ipv6_multicast_p, 0);
     rb_define_method(rb_cAddrinfo, "ipv6_linklocal?", addrinfo_ipv6_linklocal_p, 0);
     rb_define_method(rb_cAddrinfo, "ipv6_sitelocal?", addrinfo_ipv6_sitelocal_p, 0);
+    rb_define_method(rb_cAddrinfo, "ipv6_unique_local?", addrinfo_ipv6_unique_local_p, 0);
     rb_define_method(rb_cAddrinfo, "ipv6_v4mapped?", addrinfo_ipv6_v4mapped_p, 0);
     rb_define_method(rb_cAddrinfo, "ipv6_v4compat?", addrinfo_ipv6_v4compat_p, 0);
     rb_define_method(rb_cAddrinfo, "ipv6_mc_nodelocal?", addrinfo_ipv6_mc_nodelocal_p, 0);

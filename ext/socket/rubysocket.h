@@ -117,6 +117,10 @@
 # define IS_IP_FAMILY(af) ((af) == AF_INET)
 #endif
 
+#ifndef IN6_IS_ADDR_UNIQUE_LOCAL
+# define IN6_IS_ADDR_UNIQUE_LOCAL(a) (((a)->s6_addr[0] == 0xfc) || ((a)->s6_addr[0] == 0xfd))
+#endif
+
 #ifndef HAVE_SOCKADDR_STORAGE
 /*
  * RFC 2553: protocol-independent placeholder for socket addresses

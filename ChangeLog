@@ -1,3 +1,12 @@
+Fri Jul 20 09:32:14 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/socket/raddrinfo.c (addrinfo_ipv6_unique_local_p):  Added
+	  Addrinfo#ipv6_unique_local? to detect RFC 4193 unique local
+	  addresses.  Part of #6692
+	* ext/socket/rubysocket.h:  Add IN6_IS_ADDR_UNIQUE_LOCAL macro if
+	  missing.
+	* test/socket/test_addrinfo.rb:  Test for ipv6_unqiue_local?
+
 Fri Jul 20 07:40:32 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http/response.rb:  Automatically inflate gzip and

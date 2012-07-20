@@ -512,7 +512,8 @@ class TestSocketAddrinfo < Test::Unit::TestCase
         [:ipv6_v4mapped?, "::ffff:0.0.0.0", "::ffff:255.255.255.255"],
         [:ipv6_linklocal?, "fe80::", "febf::"],
         [:ipv6_sitelocal?, "fec0::", "feef::"],
-        [:ipv6_multicast?, "ff00::", "ffff::"]
+        [:ipv6_multicast?, "ff00::", "ffff::"],
+        [:ipv6_unique_local?, "fc00::", "fd00::"],
       ]
       mlist = [
         [:ipv6_mc_nodelocal?, "ff01::", "ff11::"],
