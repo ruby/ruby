@@ -270,17 +270,17 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_EQUAL # '=='
-    assert(@cls[] == @cls[])
-    assert(@cls[1] == @cls[1])
-    assert(@cls[1, 1, 2, 2] == @cls[1, 1, 2, 2])
-    assert(@cls[1.0, 1.0, 2.0, 2.0] == @cls[1, 1, 2, 2])
+    assert_operator(@cls[], :==, @cls[])
+    assert_operator(@cls[1], :==, @cls[1])
+    assert_operator(@cls[1, 1, 2, 2], :==, @cls[1, 1, 2, 2])
+    assert_operator(@cls[1.0, 1.0, 2.0, 2.0], :==, @cls[1, 1, 2, 2])
   end
 
   def test_VERY_EQUAL # '==='
-    assert(@cls[] === @cls[])
-    assert(@cls[1] === @cls[1])
-    assert(@cls[1, 1, 2, 2] === @cls[1, 1, 2, 2])
-    assert(@cls[1.0, 1.0, 2.0, 2.0] === @cls[1, 1, 2, 2])
+    assert_operator(@cls[], :===, @cls[])
+    assert_operator(@cls[1], :===, @cls[1])
+    assert_operator(@cls[1, 1, 2, 2], :===, @cls[1, 1, 2, 2])
+    assert_operator(@cls[1.0, 1.0, 2.0, 2.0], :===, @cls[1, 1, 2, 2])
   end
 
   def test_AREF # '[]'
@@ -461,7 +461,7 @@ class TestArray < Test::Unit::TestCase
           b = a.clone
 
           assert_equal(a, b)
-          assert(a.__id__ != b.__id__)
+          assert_not_equal(a.__id__, b.__id__)
           assert_equal(a.frozen?, b.frozen?)
           assert_equal(a.untrusted?, b.untrusted?)
           assert_equal(a.tainted?, b.tainted?)
@@ -623,7 +623,7 @@ class TestArray < Test::Unit::TestCase
         b = a.dup
 
         assert_equal(a, b)
-        assert(a.__id__ != b.__id__)
+        assert_not_equal(a.__id__, b.__id__)
         assert_equal(false, b.frozen?)
         assert_equal(a.tainted?, b.tainted?)
       end
@@ -671,15 +671,15 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_empty?
-    assert(@cls[].empty?)
-    assert(!@cls[1].empty?)
+    assert_empty(@cls[])
+    assert_not_empty(@cls[1])
   end
 
   def test_eql?
-    assert(@cls[].eql?(@cls[]))
-    assert(@cls[1].eql?(@cls[1]))
-    assert(@cls[1, 1, 2, 2].eql?(@cls[1, 1, 2, 2]))
-    assert(!@cls[1.0, 1.0, 2.0, 2.0].eql?(@cls[1, 1, 2, 2]))
+    assert_send([@cls[], :eql?, @cls[]])
+    assert_send([@cls[1], :eql?, @cls[1]])
+    assert_send([@cls[1, 1, 2, 2], :eql?, @cls[1, 1, 2, 2]])
+    assert_not_send([@cls[1.0, 1.0, 2.0, 2.0], :eql?, @cls[1, 1, 2, 2]])
   end
 
   def test_fill
@@ -858,18 +858,18 @@ class TestArray < Test::Unit::TestCase
     a1 = @cls[ 'cat', 'dog' ]
     a2 = @cls[ 'cat', 'dog' ]
     a3 = @cls[ 'dog', 'cat' ]
-    assert(a1.hash == a2.hash)
-    assert(a1.hash != a3.hash)
+    assert_equal(a1.hash, a2.hash)
+    assert_not_equal(a1.hash, a3.hash)
   end
 
   def test_include?
     a = @cls[ 'cat', 99, /a/, @cls[ 1, 2, 3] ]
-    assert(a.include?('cat'))
-    assert(a.include?(99))
-    assert(a.include?(/a/))
-    assert(a.include?([1,2,3]))
-    assert(!a.include?('ca'))
-    assert(!a.include?([1,2]))
+    assert_include(a, 'cat')
+    assert_include(a, 99)
+    assert_include(a, /a/)
+    assert_include(a, [1,2,3])
+    assert_not_include(a, 'ca')
+    assert_not_include(a, [1,2])
   end
 
   def test_index
@@ -1966,10 +1966,10 @@ class TestArray < Test::Unit::TestCase
 
   def test_sample
     100.times do
-      assert([0, 1, 2].include?([2, 1, 0].sample))
+      assert_include([0, 1, 2], [2, 1, 0].sample)
       samples = [2, 1, 0].sample(2)
       samples.each{|sample|
-        assert([0, 1, 2].include?(sample))
+        assert_include([0, 1, 2], sample)
       }
     end
 
