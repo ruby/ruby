@@ -1,3 +1,9 @@
+Fri Jul 20 09:34:11 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* test/socket/test_socket.rb:  Ignore IPv6 unique local addresses on OS
+	  X (iCloud Back to my Mac addresses) for test_udp_socket since they do
+	  not act as loopback addresses.  [Bug #6692]
+
 Fri Jul 20 09:32:14 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/socket/raddrinfo.c (addrinfo_ipv6_unique_local_p):  Added
