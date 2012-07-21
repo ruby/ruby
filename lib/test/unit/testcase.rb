@@ -20,6 +20,17 @@ module Test
       def self.test_order
         :sorted
       end
+
+      Methods = {}
+
+      def self.method_added(name)
+       return unless name.to_s[/\Atest_/]
+       Methods[self] ||= {}
+       if Methods[self][name]
+         warn("test/unit warning: method #{ self }##{ name } is redefined")
+       end
+       Methods[self][name] = true
+      end
     end
   end
 end

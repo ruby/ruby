@@ -1,3 +1,12 @@
+Sat Jul 21 14:06:41 2012  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb: warn when test_* method is redefined.
+	  Patch by mame (Yusuke Endoh). [Feature #2643] [ruby-core:27790]
+
+	* test/testunit/test_redefinition.rb: Test for above.
+
+	* test/testunit/test4test_redefinition.rb: Ditto.
+
 Sat Jul 21 08:41:14 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/logger.rb:  Updated example in Logger comment to match other
