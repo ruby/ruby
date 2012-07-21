@@ -21,15 +21,13 @@ module Test
         :sorted
       end
 
-      Methods = {}
-
       def self.method_added(name)
-       return unless name.to_s[/\Atest_/]
-       Methods[self] ||= {}
-       if Methods[self][name]
-         warn("test/unit warning: method #{ self }##{ name } is redefined")
-       end
-       Methods[self][name] = true
+        return unless name.to_s.start_with?("test_")
+        @test_methods ||= {}
+        if @test_methods[name]
+          warn "test/unit warning: method #{ self }##{ name } is redefined"
+        end
+        @test_methods[name] = true
       end
     end
   end
