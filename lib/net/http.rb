@@ -577,6 +577,10 @@ module Net   #:nodoc:
       http.start(&block)
     end
 
+    class << HTTP
+      alias newobj new # :nodoc:
+    end
+
     # Creates a new Net::HTTP object without opening a TCP connection or
     # HTTP session.
     #
@@ -609,7 +613,7 @@ module Net   #:nodoc:
         http.proxy_from_env = true
       else
         http.proxy_address = p_addr
-        http.proxy_port    = p_port
+        http.proxy_port    = p_port || default_port
         http.proxy_user    = p_user
         http.proxy_pass    = p_pass
       end
@@ -964,7 +968,7 @@ module Net   #:nodoc:
           @proxy_port    = nil
         else
           @proxy_address = p_addr
-          @proxy_port    = p_port
+          @proxy_port    = p_port || default_port
         end
 
         @proxy_user = p_user
@@ -994,7 +998,7 @@ module Net   #:nodoc:
 
     # True if requests for this connection will be proxied
     def proxy?
-      if @proxy_from_env then
+      !!if @proxy_from_env then
         proxy_uri
       else
         @proxy_address
@@ -1014,7 +1018,7 @@ module Net   #:nodoc:
     # The address of the proxy server, if one is configured.
     def proxy_address
       if @proxy_from_env then
-        proxy_uri.hostname
+        proxy_uri && proxy_uri.hostname
       else
         @proxy_address
       end
@@ -1023,7 +1027,7 @@ module Net   #:nodoc:
     # The port of the proxy server, if one is configured.
     def proxy_port
       if @proxy_from_env then
-        proxy_uri.port
+        proxy_uri && proxy_uri.port
       else
         @proxy_port
       end

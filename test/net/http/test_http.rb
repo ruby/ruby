@@ -26,6 +26,11 @@ class TestNetHTTP < Test::Unit::TestCase
     http = proxy_class.new 'example'
 
     refute http.proxy_from_env?
+
+
+    proxy_class = Net::HTTP.Proxy 'proxy.example'
+    assert_equal 'proxy.example', proxy_class.proxy_address
+    assert_equal 80,              proxy_class.proxy_port
   end
 
   def test_class_Proxy_from_ENV
@@ -84,8 +89,10 @@ class TestNetHTTP < Test::Unit::TestCase
 
   def test_proxy_address
     http = Net::HTTP.new 'example', nil, 'proxy.example'
-
     assert_equal 'proxy.example', http.proxy_address
+
+    http = Net::HTTP.new 'example', nil
+    assert_equal nil, http.proxy_address
   end
 
   def test_proxy_address_ENV
@@ -100,7 +107,7 @@ class TestNetHTTP < Test::Unit::TestCase
 
   def test_proxy_eh_no_proxy
     clean_http_proxy_env do
-      refute Net::HTTP.new('example', nil, nil).proxy?
+      assert_equal false, Net::HTTP.new('example', nil, nil).proxy?
     end
   end
 
@@ -110,13 +117,13 @@ class TestNetHTTP < Test::Unit::TestCase
 
       http = Net::HTTP.new 'example'
 
-      assert http.proxy?
+      assert_equal true, http.proxy?
     end
   end
 
   def test_proxy_eh_ENV_none_set
     clean_http_proxy_env do
-      refute Net::HTTP.new('example').proxy?
+      assert_equal false, Net::HTTP.new('example').proxy?
     end
   end
 
@@ -125,14 +132,18 @@ class TestNetHTTP < Test::Unit::TestCase
       ENV['http_proxy'] = 'http://proxy.example:8000'
       ENV['no_proxy']   = 'example'
 
-      refute Net::HTTP.new('example').proxy?
+      assert_equal false, Net::HTTP.new('example').proxy?
     end
   end
 
   def test_proxy_port
+    http = Net::HTTP.new 'exmaple', nil, 'proxy.example'
+    assert_equal 'proxy.example', http.proxy_address
+    assert_equal 80, http.proxy_port
     http = Net::HTTP.new 'exmaple', nil, 'proxy.example', 8000
-
     assert_equal 8000, http.proxy_port
+    http = Net::HTTP.new 'exmaple', nil
+    assert_equal nil, http.proxy_port
   end
 
   def test_proxy_port_ENV
@@ -142,6 +153,16 @@ class TestNetHTTP < Test::Unit::TestCase
       http = Net::HTTP.new 'example'
 
       assert_equal 8000, http.proxy_port
+    end
+  end
+
+  def test_newobj
+    clean_http_proxy_env do
+      ENV['http_proxy'] = 'http://proxy.example:8000'
+
+      http = Net::HTTP.newobj 'example'
+
+      assert_equal false, http.proxy?
     end
   end
 

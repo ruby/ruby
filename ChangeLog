@@ -1,3 +1,21 @@
+Sat Jul 21 06:21:45 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb: fixes for r36476. [Feature #6546]
+	  http://u64.rubyci.org/~chkbuild/ruby-trunk/log/20120720T030101Z.diff.html.gz
+
+	* lib/net/http.rb (Net::HTTP.newobj): return back for compatibility.
+
+	* lib/net/http.rb (Net::HTTP.new): set default_port if proxy port is
+	  not given.
+
+	* lib/net/http.rb (Net::HTTP#initialize): ditto.
+
+	* lib/net/http.rb (Net::HTTP#proxy?): return true or false.
+
+	* lib/net/http.rb (Net::HTTP#proxy_address): check proxy_uri is not nil.
+
+	* lib/net/http.rb (Net::HTTP#proxy_port): ditto.
+
 Sat Jul 21 23:12:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (ruby_init_stack): STACK_GROW_DIR_DETECTION is
