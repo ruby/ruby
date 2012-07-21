@@ -967,6 +967,7 @@ module Net   #:nodoc:
           @proxy_address = nil
           @proxy_port    = nil
         else
+          @proxy_from_env = false
           @proxy_address = p_addr
           @proxy_port    = p_port || default_port
         end
