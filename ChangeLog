@@ -1,3 +1,8 @@
+Sat Jul 21 23:12:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (ruby_init_stack): STACK_GROW_DIR_DETECTION is
+	  necessary on platforms with unknown stack direction.  [Bug #6761]
+
 Sat Jul 21 15:13:42 2012  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit/testcase.rb(method_added): refactoring.

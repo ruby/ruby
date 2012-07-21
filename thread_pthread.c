@@ -616,6 +616,7 @@ ruby_init_stack(volatile VALUE *addr
 	size_t space = 0;
 #if defined(STACKADDR_AVAILABLE)
 	void* stackaddr;
+	STACK_GROW_DIR_DETECTION;
 	get_stack(&stackaddr, &size);
 	space = STACK_DIR_UPPER((char *)addr - (char *)stackaddr, (char *)stackaddr - (char *)addr);
 #elif defined(HAVE_GETRLIMIT)
