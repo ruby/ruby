@@ -774,4 +774,22 @@ class TestThreadGroup < Test::Unit::TestCase
     end
     assert_in_delta(t1 - t0, 1, 1)
   end
+
+  def test_thread_timer_and_ensure
+    exit = false
+    t = Thread.new do
+      begin
+        sleep
+      ensure
+        1 until exit # Ruby 1.8 won't switch threads here
+      end
+    end
+
+    Thread.pass until t.status == "sleep"
+
+    t.kill
+    t.alive? == true
+    exit = true
+    t.join
+  end
 end
