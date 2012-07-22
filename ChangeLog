@@ -1,3 +1,8 @@
+Mon Jul 23 01:55:08 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/uri/test_generic.rb (URI#test_find_proxy): add tests with
+	  empty *_proxy env variables.
+
 Mon Jul 23 01:47:26 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/uri/test_generic.rb (URI#with_env): unset proxy related env
