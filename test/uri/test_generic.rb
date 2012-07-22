@@ -736,8 +736,10 @@ class URI::TestGeneric < Test::Unit::TestCase
   # 192.0.2.0/24 is TEST-NET.  [RFC3330]
 
   def test_find_proxy
-    assert_nil(URI("http://192.0.2.1/").find_proxy)
-    assert_nil(URI("ftp://192.0.2.1/").find_proxy)
+    with_env({}) {
+      assert_nil(URI("http://192.0.2.1/").find_proxy)
+      assert_nil(URI("ftp://192.0.2.1/").find_proxy)
+    }
     with_env('http_proxy'=>'http://127.0.0.1:8080') {
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
       assert_nil(URI("ftp://192.0.2.1/").find_proxy)
@@ -771,6 +773,11 @@ class URI::TestGeneric < Test::Unit::TestCase
   end unless RUBY_PLATFORM =~ /mswin|mingw/
 
   def with_env(h)
+    ['http', 'https', 'ftp'].each do |scheme|
+      name = "#{scheme}_proxy"
+      h[name] ||= nil
+      h["CGI_#{name.upcase}"] ||= nil
+    end
     begin
       old = {}
       h.each_key {|k| old[k] = ENV[k] }

@@ -1,3 +1,11 @@
+Mon Jul 23 01:47:26 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/uri/test_generic.rb (URI#with_env): unset proxy related env
+	  variables.  [Bug #6774]
+
+	* test/uri/test_generic.rb (URI#test_find_proxy): fix failures
+	  when proxy related env variables already set.  [Bug #6774]
+
 Sun Jul 22 23:58:48 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread.c (rb_threadptr_execute_interrupts_common): increase
