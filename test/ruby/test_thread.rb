@@ -216,7 +216,7 @@ class TestThread < Test::Unit::TestCase
     require 'envutil'
     $:.shift
     3.times {
-      result = `#{EnvUtil.rubybin} #{lbtest}`
+      `#{EnvUtil.rubybin} #{lbtest}`
       assert(!$?.coredump?, '[ruby-dev:30653]')
     }
   end
@@ -777,7 +777,7 @@ class TestThreadGroup < Test::Unit::TestCase
     cmd = 'r,=IO.pipe; Thread.start {Thread.pass until Thread.main.stop?; puts; STDOUT.flush}; r.read'
     opt = {}
     opt[:new_pgroup] = true if /mswin|mingw/ =~ RUBY_PLATFORM
-    s, err = EnvUtil.invoke_ruby(['-e', cmd], "", true, true, opt) do |in_p, out_p, err_p, cpid|
+    s, _err = EnvUtil.invoke_ruby(['-e', cmd], "", true, true, opt) do |in_p, out_p, err_p, cpid|
       out_p.gets
       pid = cpid
       Process.kill(:SIGINT, pid)
@@ -785,13 +785,13 @@ class TestThreadGroup < Test::Unit::TestCase
       [$?, err_p.read]
     end
     t1 = Time.now.to_f
-    assert_equal(pid, s.pid)
+    assert_equal(pid, s.pid, bug5757)
     unless /mswin|mingw/ =~ RUBY_PLATFORM
       # status of signal is not supported on Windows
       assert_equal([false, true, false, Signal.list["INT"]],
                    [s.exited?, s.signaled?, s.stopped?, s.termsig],
                    "[s.exited?, s.signaled?, s.stopped?, s.termsig]")
     end
-    assert_in_delta(t1 - t0, 1, 1)
+    assert_in_delta(t1 - t0, 1, 1, bug5757)
   end
 end
