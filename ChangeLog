@@ -2,7 +2,7 @@ Sun Jul 22 23:58:48 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread.c (rb_threadptr_execute_interrupts_common): increase
 	  running_time_us on THREAD_TO_KILL like on THREAD_RUNNABLE.
-	  This cause not to siwtch from a thread which is to be killed
+	  This cause not to switch from a thread which is to be killed
 	  on FreeBSD and Mac OS X. see also the test.
 	  This issue maybe exist for long time but happens after r36430.
 
