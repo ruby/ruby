@@ -1,3 +1,9 @@
+Tue Jul 24 08:09:30 2012  Luis Lavena  <luislavena@gmail.com>
+
+	* test/win32ole/test_win32ole_method.rb (is_ruby64?): Correct platform
+	  used to identify mingw-w64 (x64-mingw32). Patch by Hiroshi Shirosaki.
+	  [ruby-core:46651][Bug #6782]
+
 Tue Jul 24 07:22:58 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* time.c (time_sec):  Updated description of leap seconds for accuracy.
