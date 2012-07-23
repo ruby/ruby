@@ -3620,9 +3620,10 @@ get_pat(VALUE pat, int quote)
  *     str.sub!(pattern, replacement)          -> str or nil
  *     str.sub!(pattern) {|match| block }      -> str or nil
  *
- *  Performs the substitutions of <code>String#sub</code> in place,
- *  returning <i>str</i>, or <code>nil</code> if no substitutions were
- *  performed.
+ *  Performs the same substitution as String#sub in-place.
+ *
+ *  Returns +str+ if a substitution was performed or +nil+ if no substitution
+ *  was performed.
  */
 
 static VALUE
@@ -3731,23 +3732,22 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *     str.sub(pattern, hash)                -> new_str
  *     str.sub(pattern) {|match| block }     -> new_str
  *
- *  Returns a copy of <i>str</i> with the <em>first</em> occurrence of
- *  <i>pattern</i> substituted for the second argument. The <i>pattern</i> is
- *  typically a <code>Regexp</code>; if given as a <code>String</code>, any
- *  regular expression metacharacters it contains will be interpreted
- *  literally, e.g. <code>'\\\d'</code> will match a backlash followed by 'd',
- *  instead of a digit.
+ *  Returns a copy of +str+ with the _first_ occurrence of +pattern+
+ *  replaced by the second argument. The +pattern+ is typically a Regexp; if
+ *  given as a String, any regular expression metacharacters it contains will
+ *  be interpreted literally, e.g. <code>'\\\d'</code> will match a backlash
+ *  followed by 'd', instead of a digit.
  *
- *  If <i>replacement</i> is a <code>String</code> it will be substituted for
- *  the matched text. It may contain back-references to the pattern's capture
- *  groups of the form <code>\\\d</code>, where <i>d</i> is a group number, or
- *  <code>\\\k<n></code>, where <i>n</i> is a group name. If it is a
+ *  If +replacement+ is a String it will be substituted for the matched text.
+ *  It may contain back-references to the pattern's capture groups of the form
+ *  <code>"\\d"</code>, where <i>d</i> is a group number, or
+ *  <code>"\\k<n>"</code>, where <i>n</i> is a group name. If it is a
  *  double-quoted string, both back-references must be preceded by an
- *  additional backslash. However, within <i>replacement</i> the special match
+ *  additional backslash. However, within +replacement+ the special match
  *  variables, such as <code>&$</code>, will not refer to the current match.
  *
- *  If the second argument is a <code>Hash</code>, and the matched text is one
- *  of its keys, the corresponding value is the replacement string.
+ *  If the second argument is a Hash, and the matched text is one of its keys,
+ *  the corresponding value is the replacement string.
  *
  *  In the block form, the current match string is passed in as a parameter,
  *  and variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,

@@ -1,3 +1,10 @@
+Tue Jul 24 07:03:11 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* string.c (rb_str_sub):  Fixed wording of documentation to match the
+	  replacement operation.  Minor cleanup of markup.  [Bug #6719]
+	* string.c (rb_str_sub_bang):  Minor wording change for clarity, minor
+	  cleanup of markup.
+
 Mon Jul 23 23:58:40 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/Makefile.in (TARGET_NAME, TARGET_ENTRY): needed for EXTDLDFLAGS
