@@ -149,8 +149,8 @@ module OpenURI
       begin
         yield io
       ensure
-        if io.kind_of? Tempfile
-          io.close!
+        if io.respond_to? :close!
+          io.close! # Tempfile
         else
           io.close
         end

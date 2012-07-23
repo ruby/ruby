@@ -1,3 +1,8 @@
+Mon Jul 23 22:48:19 2012  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb: use respond_to? to test Tempfile.
+	  [ruby-dev:45995] [Bug #6781] reported by hsbt (Hiroshi SHIBATA).
+
 Mon Jul 23 14:43:34 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LIBPATHENV): LIBPATH is used on AIX, but not
