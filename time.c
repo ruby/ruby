@@ -3883,10 +3883,12 @@ time_round(int argc, VALUE *argv, VALUE time)
  *  call-seq:
  *     time.sec -> fixnum
  *
- *  Returns the second of the minute (0..60)<em>[Yes, seconds really can
- *  range from zero to 60. This allows the system to inject leap seconds
- *  every now and then to correct for the fact that years are not really
- *  a convenient number of hours long.]</em> for <i>time</i>.
+ *  Returns the second of the minute (0..60) for <i>time</i>.
+ *  <em>[Yes, seconds really can range from zero to 60. This allows the
+ *  system to inject leap seconds every now and then to correct for the
+ *  fact that UTC is based on solar time so days are not exactly 86400
+ *  seconds or 24 hours long.  See http://en.wikipedia.org/wiki/Leap_second
+ *  for further details.]</em>
  *
  *     t = Time.now   #=> 2007-11-19 08:25:02 -0600
  *     t.sec          #=> 2
