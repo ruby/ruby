@@ -1,3 +1,9 @@
+Mon Jul 23 14:43:34 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBPATHENV): LIBPATH is used on AIX, but not
+	  SHLIB_PATH which was carelessly copied from HP/UX.  suggested by
+	  Perry Smith at [ruby-core:46397].  [Bug #6728]
+
 Mon Jul 23 01:55:08 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/uri/test_generic.rb (URI#test_find_proxy): add tests with

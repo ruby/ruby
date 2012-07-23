@@ -2288,7 +2288,7 @@ if test "$with_dln_a_out" != yes; then
 			: ${ARCHFILE="ruby.imp"}
                         TRY_LINK='$(CC) $(LDFLAGS) -oconftest $(INCFLAGS) -I$(hdrdir) $(CPPFLAGS)'
                         TRY_LINK="$TRY_LINK"' $(CFLAGS) $(src) $(LIBPATH) $(LOCAL_LIBS) $(LIBS)'
-			: ${LIBPATHENV=SHLIB_PATH}
+			: ${LIBPATHENV=LIBPATH}
 			RPATHFLAG=" ${linker_flag}-blibpath:%1\$-s:${prefix}/lib:${LIBPATH:-/usr/lib:/lib}"
 			rb_cv_dlopen=yes],
 	[beos*], [	AS_CASE(["$target_cpu"],
