@@ -1,8 +1,6 @@
 % inplace = File.identical?($srcdir, ".")
 % workdirs = %w"$(ENCSODIR) $(TRANSSODIR) enc enc/trans"
 % CONFIG["WORKDIRS"] = workdirs.join(' ')
-% CONFIG["DLDFLAGS"].sub!(/(\A|\s)(-\S+(?:\s*\w*)?\$\(TARGET\)\S*)/, '\1')
-% dldflags = $2
 % enable_shared = CONFIG['ENABLE_SHARED'] == 'yes'
 % deffile = (true if /\$\(DEFFILE\)/ =~ CONFIG["LINK_SO"])
 % dependencies = ENCS + TRANS
@@ -115,7 +113,6 @@ $(TRANSOBJS): ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.
 	$(ECHO) linking <%=mesg%> $(@F)
 %   cmd = link_so.sub(/\$\(OBJS\)/) {obj}
 %   base = File.basename(e)
-%   cmd.sub!(/(?=\$\(DLDFLAGS\))/) {dldflags.sub(/\$\(TARGET\)/) {base} + " "} if dldflags
 %   if df
 	$(Q)echo> <%=df%> EXPORTS
 	$(Q)echo>> <%=df%> <%=EXPORT_PREFIX%>Init_<%=base%>

@@ -51,9 +51,13 @@ LDFLAGS = @LDFLAGS@
 LDSHARED = @LDSHARED@
 ldflags  = $(LDFLAGS)
 dldflags = @DLDFLAGS@
+extdldflags = @EXTDLDFLAGS@
 archflag = @ARCH_FLAG@
-DLDFLAGS = $(ldflags) $(dldflags) $(archflag)
+DLDFLAGS = $(ldflags) $(dldflags) $(extdldflags) $(archflag)
 RUBY     = $(MINIRUBY)
+TARGET_NAME_ = $(@F) # BSD make seems unable to deal with @F with substitution
+TARGET_NAME = $(TARGET_NAME_:.@DLEXT@=)
+TARGET_ENTRY = @EXPORT_PREFIX@Init_$(TARGET_NAME)
 
 WORKDIRS = @WORKDIRS@
 

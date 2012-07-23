@@ -777,6 +777,7 @@ s,@OBJEXT@,$(OBJEXT),;t t
 s,@XCFLAGS@,$(XCFLAGS),;t t
 s,@XLDFLAGS@,$(XLDFLAGS),;t t
 s,@DLDFLAGS@,$(DLDFLAGS) $$(LIBPATH),;t t
+s,@EXTDLDFLAGS@,$(EXTDLDFLAGS),;t t
 s,@ARCH_FLAG@,$(ARCH_FLAG),;t t
 s,@STATIC@,$(STATIC),;t t
 s,@CCDLFLAGS@,,;t t
