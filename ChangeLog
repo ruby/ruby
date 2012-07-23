@@ -55,7 +55,7 @@ Sat Jul 21 23:12:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Jul 21 15:13:42 2012  Shota Fukumori  <sorah@tubusu.net>
 
-	* lib/test/unit/testcase.rb(method_added): refactoring.
+	* lib/test/unit/testcase.rb (method_added): refactoring.
 
 Sat Jul 21 14:06:41 2012  Shota Fukumori  <sorah@tubusu.net>
 
