@@ -11,6 +11,33 @@ class TestDir_M17N < Test::Unit::TestCase
     }
   end
 
+  def create_and_check_raw_file_name(code, encoding)
+    with_tmpdir { |dir|
+      create_file_program = %Q[
+        filename = #{code}.chr('UTF-8').force_encoding("#{encoding}")
+        File.open(filename, "w") {}
+        opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
+        ents = Dir.entries(".", opts)
+        exit ents.include?(filename)
+      ]
+      assert_ruby_status(["-E#{encoding}"], create_file_program, nil, :chdir=>dir)
+
+      test_file_program = %Q[
+        filename = #{code}.chr('UTF-8').force_encoding("ASCII-8BIT")
+        opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
+        ents = Dir.entries(".", opts)
+        expected_filename = #{code}.chr('UTF-8').encode(Encoding.find("filesystem")) rescue expected_filename = "?"
+        expected_filename = expected_filename.force_encoding("ASCII-8BIT")
+        result = ents.include?(filename) || ((RUBY_PLATFORM =~ /mswin|mingw/) != nil && ents.include?(expected_filename))
+        if !result &&  ((RUBY_PLATFORM =~ /mswin|mingw/) != nil)
+          exit Dir.entries(".", {:encoding => Encoding.find("filesystem")}).include?(expected_filename)
+        end
+        exit result
+      ]
+      assert_ruby_status(%w[-EASCII-8BIT], test_file_program, nil, :chdir=>dir)
+    }
+  end
+
   ## UTF-8 default_external, no default_internal
 
   def test_filename_extutf8
@@ -168,32 +195,31 @@ class TestDir_M17N < Test::Unit::TestCase
         exit ents.include?(filename) || ((RUBY_PLATFORM =~ /darwin/) != nil && ents.include?("%A4%A2".force_encoding("euc-jp")))
       EOS
       assert_ruby_status(%w[-EASCII-8BIT], <<-'EOS', nil, :chdir=>d)
-        filename = "\xA4\xA2"
+        filename = "\xA4\xA2".force_encoding('ASCII-8BIT')
+        win_expected_filename = filename.encode(Encoding.find("filesystem")) rescue "?"
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
         ents = Dir.entries(".", opts)
-        exit ents.include?(filename) ||
+        result = ents.include?(filename) ||
                ((RUBY_PLATFORM =~ /darwin/) != nil && ents.include?("%A4%A2".force_encoding("ASCII-8BIT"))) ||
-               ((RUBY_PLATFORM =~ /mswin|mingw/) != nil && ents.include?("\x82\xA0".force_encoding("ASCII-8BIT")))
+               ((RUBY_PLATFORM =~ /mswin|mingw/) != nil && ents.include?(win_expected_filename.force_encoding("ASCII-8BIT")))
+        if !result &&  ((RUBY_PLATFORM =~ /mswin|mingw/) != nil)
+          exit Dir.entries(".", {:encoding => Encoding.find("filesystem")}).include?(win_expected_filename)
+        end
+        exit result
       EOS
     }
   end
 
-  def test_filename_utf8_raw_name
-    with_tmpdir {|d|
-      assert_ruby_status(%w[-EUTF-8], <<-'EOS', nil, :chdir=>d)
-        filename = "\u3042".force_encoding("utf-8")
-        File.open(filename, "w") {}
-        opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
-        exit ents.include?(filename)
-      EOS
-      assert_ruby_status(%w[-EASCII-8BIT], <<-'EOS', nil, :chdir=>d)
-        filename = "\u3042".force_encoding("ASCII-8BIT")
-        opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
-        ents = Dir.entries(".", opts)
-        exit ents.include?(filename) || ((RUBY_PLATFORM =~ /mswin|mingw/) != nil && ents.include?("\x82\xA0".force_encoding("ASCII-8BIT")))
-      EOS
-    }
+  def test_filename_utf8_raw_jp_name
+    create_and_check_raw_file_name(0x3042, "UTF-8")
+  end
+
+  def test_filename_utf8_raw_windows_1251_name
+    create_and_check_raw_file_name(0x0424, "UTF-8")
+  end
+
+  def test_filename_utf8_raw_windows_1252_name
+    create_and_check_raw_file_name(0x00c7, "UTF-8")
   end
 
   def test_filename_ext_euc_jp_and_int_utf_8

@@ -1,3 +1,16 @@
+Tue Jul 24 08:30:15 2012  Luis Lavena  <luislavena@gmail.com>
+
+	* test/ruby/test_dir_m17n.rb (create_and_check_raw_file_name): add new
+	  helper method to ease encoding testing. Patch by Oleg Sukhodolsky.
+	  [ruby-core:46589][Bug #6765]
+
+	* test/ruby/test_dir_m17n.rb (test_filename_extutf8): use filesystem
+	  encoding when reading entries and comparing.
+
+	* test/ruby/test_dir_m17n.rb (test_filename_utf8_raw_name): removed.
+
+	* test/ruby/test_dir_m17n.rb (test_filename_utf8_raw_jp_name): split test.
+
 Tue Jul 24 08:09:30 2012  Luis Lavena  <luislavena@gmail.com>
 
 	* test/win32ole/test_win32ole_method.rb (is_ruby64?): Correct platform
