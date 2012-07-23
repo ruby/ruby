@@ -618,23 +618,22 @@ class TestThread < Test::Unit::TestCase
 
   def make_control_interrupt_test_thread1 flag
     r = []
-    q = Queue.new
+    ready_p = false
     th = Thread.new{
       begin
         Thread.control_interrupt(RuntimeError => flag){
-          q << :go
           begin
+            ready_p = true
             sleep 0.5
           rescue
             r << :c1
           end
         }
-        sleep 0.5
       rescue
         r << :c2
       end
     }
-    q.pop # wait
+    Thread.pass until ready_p
     th.raise
     begin
       th.join
