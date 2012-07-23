@@ -33,7 +33,7 @@ class PullParserTester < Test::Unit::TestCase
     source = "<a><b></a>"
     parser = REXML::Parsers::PullParser.new(source)
     assert_raise(ParseException, "Parsing should have failed") {
-      results = parser.pull while parser.has_next?
+      parser.pull while parser.has_next?
     }
   end
 
@@ -63,7 +63,7 @@ class PullParserTester < Test::Unit::TestCase
 
   def test_peek_unshift
     source = "<a><b/></a>"
-    pp = REXML::Parsers::PullParser.new(source)
+    REXML::Parsers::PullParser.new(source)
     # FINISH ME!
   end
 

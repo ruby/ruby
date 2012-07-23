@@ -972,7 +972,7 @@ EOA
                                      feed_readers) do |maker|
             yield maker
             targets = chain_reader(maker, maker_readers)
-            target = targets.new_child
+            targets.new_child
           end
         end
 

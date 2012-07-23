@@ -7,6 +7,6 @@ class LightParserTester < Test::Unit::TestCase
   def test_parsing
     f = File.new(fixture_path("documentation.xml"))
     parser = REXML::Parsers::LightParser.new( f )
-    root = parser.parse
+    parser.parse
   end
 end

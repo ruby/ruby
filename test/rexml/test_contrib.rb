@@ -221,7 +221,7 @@ DELIMITER
     <type>Book</type>
     <year>2000</year>
   </entry>"
-    desired_result_tree = Document.new desired_result_string
+    Document.new desired_result_string
     xpath = "/biblio/entry[not(author)]"
     result = XPath.first(doc, xpath)
     assert_equal desired_result_string, result.to_s
@@ -438,7 +438,7 @@ EOF
   end
 
   def test_whitespace_after_xml_decl
-    d = Document.new <<EOL
+    Document.new <<EOL
 <?xml version='1.0'?>
   <blo>
     <wak>
@@ -506,7 +506,7 @@ EOL
     b << c
     a << b
 
-    REXML::Formatters::Pretty.new.write(a,s="")
+    REXML::Formatters::Pretty.new.write(a,"")
   end
 
   def test_pos
@@ -523,7 +523,7 @@ EOL
     testfile.puts testdata
     testfile.rewind
     assert_nothing_raised do
-      d = REXML::Document.new(testfile)
+      REXML::Document.new(testfile)
     end
     testfile.close(true)
   end

@@ -53,16 +53,22 @@ module RSS
     end
 
     def test_channel
-      title = "fugafuga"
-      link = "http://hoge.com"
-      description = "fugafugafugafuga"
+      h = {
+        'title' => "fugafuga",
+        'link' => "http://hoge.com",
+        'description' => "fugafugafugafuga",
 
-      language = "en-us"
-      copyright = "Copyright 2002, Spartanburg Herald-Journal"
-      managingEditor = "geo@herald.com (George Matesky)"
-      webMaster = "betty@herald.com (Betty Guernsey)"
-      pubDate = Time.parse("Sat, 07 Sep 2002 00:00:01 GMT")
-      lastBuildDate = Time.parse("Sat, 07 Sep 2002 09:42:31 GMT")
+        'language' => "en-us",
+        'copyright' => "Copyright 2002, Spartanburg Herald-Journal",
+        'managingEditor' => "geo@herald.com (George Matesky)",
+        'webMaster' => "betty@herald.com (Betty Guernsey)",
+        'pubDate' => Time.parse("Sat, 07 Sep 2002 00:00:01 GMT"),
+        'lastBuildDate' => Time.parse("Sat, 07 Sep 2002 09:42:31 GMT"),
+        'generator' => "MightyInHouse Content System v2.3",
+        'docs' => "http://blogs.law.harvard.edu/tech/rss",
+        'ttl' => "60",
+        'rating' => '(PICS-1.1 "http://www.rsac.org/ratingsv01.html" l gen true comment "RSACi North America Server" for "http://www.rsac.org" on "1996.04.16T08:15-0500" r (n 0 s 0 v 0 l 0))',
+      }
       categories = [
         {
           :content => "Newspapers",
@@ -72,12 +78,6 @@ module RSS
           :content => "1765",
         }
       ]
-      generator = "MightyInHouse Content System v2.3"
-      docs = "http://blogs.law.harvard.edu/tech/rss"
-
-      ttl = "60"
-
-      rating = '(PICS-1.1 "http://www.rsac.org/ratingsv01.html" l gen true comment "RSACi North America Server" for "http://www.rsac.org" on "1996.04.16T08:15-0500" r (n 0 s 0 v 0 l 0))'
 
       channel = Rss::Channel.new
 
@@ -85,7 +85,7 @@ module RSS
                  managingEditor webMaster pubDate lastBuildDate
                  generator docs ttl rating)
       elems.each do |x|
-        value = instance_eval(x)
+        value = h[x]
         value = value.rfc822 if %w(pubDate lastBuildDate).include?(x)
         channel.__send__("#{x}=", value)
       end
@@ -101,7 +101,7 @@ module RSS
         elem = c.elements[x]
         assert_equal(x, elem.name)
         assert_equal("", elem.namespace)
-        expected = instance_eval(x)
+        expected = h[x]
         case x
         when "pubDate", "lastBuildDate"
           assert_equal(expected, Time.parse(elem.text))
@@ -236,10 +236,14 @@ module RSS
     end
 
     def test_item
-      title = "fugafuga"
-      link = "http://hoge.com/"
-      description = "text hoge fuga"
-      author = "oprah@oxygen.net"
+      h = {
+        'title' => "fugafuga",
+        'link' => "http://hoge.com/",
+        'description' => "text hoge fuga",
+        'author' => "oprah@oxygen.net",
+        'comments' => "http://www.myblog.org/cgi-local/mt/mt-comments.cgi?entry_id=290",
+        'pubDate' => Time.parse("Sat, 07 Sep 2002 00:00:01 GMT"),
+      }
       categories = [
         {
           :content => "Newspapers",
@@ -249,8 +253,6 @@ module RSS
           :content => "1765",
         }
       ]
-      comments = "http://www.myblog.org/cgi-local/mt/mt-comments.cgi?entry_id=290"
-      pubDate = Time.parse("Sat, 07 Sep 2002 00:00:01 GMT")
 
       channel = Rss::Channel.new
       channel.title = "title"
@@ -262,7 +264,7 @@ module RSS
 
       elems = %w(title link description author comments pubDate)
       elems.each do |x|
-        value = instance_eval(x)
+        value = h[x]
         value = value.rfc822 if x == "pubDate"
         item.__send__("#{x}=", value)
       end
@@ -279,7 +281,7 @@ module RSS
         elem = item_elem.elements[x]
         assert_equal(x, elem.name)
         assert_equal("", elem.namespace)
-        expected = instance_eval(x)
+        expected = h[x]
         case x
         when "pubDate"
           assert_equal(expected, Time.parse(elem.text))

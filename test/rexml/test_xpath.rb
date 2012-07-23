@@ -219,7 +219,7 @@ class XPathTester < Test::Unit::TestCase
     for line in File.new(xpathtests)
       line.strip!
       begin
-        rt = doc.root
+        doc.root
         #puts "#"*80
         #print "\nDoing #{line} " ; $stdout.flush
         doc.elements.each(line) do |el|
@@ -332,7 +332,7 @@ class XPathTester < Test::Unit::TestCase
       </foo>
     EOF
     doc = Document.new source
-    result = XPath.each( doc, "//bar" ) {
+    XPath.each( doc, "//bar" ) {
       fail "'bar' should match nothing in this case"
     }
 
@@ -523,7 +523,7 @@ class XPathTester < Test::Unit::TestCase
     # examples from http://www.w3.org/TR/xpath#function-substring
     doc = Document.new('<test string="12345" />')
 
-    d = Document.new("<a b='1'/>")
+    Document.new("<a b='1'/>")
     #puts XPath.first(d, 'node()[0 + 1]')
     #d = Document.new("<a b='1'/>")
     #puts XPath.first(d, 'a[0 mod 0]')
@@ -589,7 +589,7 @@ class XPathTester < Test::Unit::TestCase
 
   def test_name
     assert_raise( UndefinedNamespaceException, "x should be undefined" ) {
-      d = REXML::Document.new("<a x='foo'><b/><x:b/></a>")
+      REXML::Document.new("<a x='foo'><b/><x:b/></a>")
     }
     d = REXML::Document.new("<a xmlns:x='foo'><b/><x:b/></a>")
     assert_equal 1, d.root.elements.to_a('*[name() = "b"]').size

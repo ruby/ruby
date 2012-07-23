@@ -14,7 +14,7 @@ class XpathTestCase < Test::Unit::TestCase
   def test_text_as_element
     node1 = REXML::Element.new('a', @doc)
     node2 = REXML::Element.new('b', node1)
-    textnode = REXML::Text.new('test', false, node2)
+    REXML::Text.new('test', false, node2)
     assert_equal(1, @doc.elements.size, "doc owns 1 element node1")
     assert_same(node1, @doc.elements[1], "doc owns 1 element node1")
     assert_equal(1, node1.elements.size, "node1 owns 1 element node2")

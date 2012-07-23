@@ -445,7 +445,7 @@ module RSS
     def test_pubDate_without_description
       title = "TITLE"
       link = "http://hoge.com/"
-      description = "text hoge fuga"
+      # description = "text hoge fuga"
       author = "oprah@oxygen.net"
       pubDate = Time.now
 
@@ -529,13 +529,13 @@ module RSS
     end
 
     def test_not_valid_guid
-      content = "http://inessential.com/2002/09/01.php#a2"
+      # content = "http://inessential.com/2002/09/01.php#a2"
 
       rss = RSS::Maker.make("2.0") do |maker|
         setup_dummy_channel(maker)
         setup_dummy_item(maker)
 
-        guid = maker.items.last.guid
+        # guid = maker.items.last.guid
         # guid.content = content
       end
       assert_nil(rss.channel.items.last.guid)
@@ -662,7 +662,7 @@ module RSS
     end
 
     def test_not_valid_category
-      content = "Grateful Dead"
+      # content = "Grateful Dead"
 
       rss = RSS::Maker.make("2.0") do |maker|
         setup_dummy_channel(maker)
