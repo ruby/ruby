@@ -1,3 +1,7 @@
+Tue Jul 24 09:31:18 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems:  Updated to RubyGems 1.8.24, a bugfix release.
+
 Tue Jul 24 08:30:15 2012  Luis Lavena  <luislavena@gmail.com>
 
 	* test/ruby/test_dir_m17n.rb (create_and_check_raw_file_name): add new

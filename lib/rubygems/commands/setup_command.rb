@@ -209,7 +209,10 @@ TEXT
     say "Installing RubyGems" if @verbose
 
     Dir.chdir 'lib' do
-      lib_files = Dir[File.join('**', '*rb')]
+      lib_files =  Dir[File.join('**', '*rb')]
+
+      # Be sure to include our SSL ca bundles
+      lib_files += Dir[File.join('**', '*pem')]
 
       lib_files.each do |lib_file|
         dest_file = File.join lib_dir, lib_file
