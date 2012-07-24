@@ -250,7 +250,7 @@ quantified as one <i>atomic</i> whole.
 The <tt>(?:</tt>...<tt>)</tt> construct provides grouping without
 capturing. That is, it combines the terms it contains into an atomic whole
 without creating a backreference. This benefits performance at the slight
-expense of readabilty.
+expense of readability.
 
     # The group of parentheses captures 'n' and the second 'ti'. The
     # second group is referred to later with the backreference \2
@@ -271,7 +271,7 @@ it matches becomes fixed for the remainder of the match, unless the entire
 subexpression must be abandoned and subsequently revisited. In this
 way <i>pat</i> is treated as a non-divisible whole. Atomic grouping is
 typically used to optimise patterns so as to prevent the regular
-expression engine from backtracking needlesly.
+expression engine from backtracking needlessly.
 
     # The <tt>"</tt> in the pattern below matches the first character of
     # the string, then <tt>.*</tt> matches <i>Quote"</i>. This causes the
@@ -594,7 +594,7 @@ Example:
     $+      #=> "c"
             # same as m[-1]
 
-These global variables are thread-local and method-local varaibles.
+These global variables are thread-local and method-local variables.
 
 == Performance
 
