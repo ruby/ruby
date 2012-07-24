@@ -1,3 +1,8 @@
+Tue Jul 24 11:35:20 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_pack.rb (test_pack_unpack_M): was redefined
+	  accidentally.
+
 Tue Jul 24 09:31:18 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems:  Updated to RubyGems 1.8.24, a bugfix release.
