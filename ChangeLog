@@ -1,3 +1,8 @@
+Wed Jul 25 06:49:12 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* re.c (rb_reg_s_last_match):  Update $~ to reference Regexp
+	  documentation about "special global variables".  [Bug #6723]
+
 Wed Jul 25 06:28:56 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* iseq.c:  Added documentation.  Patch by David Albert.  [Bug #6785]
