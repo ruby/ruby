@@ -572,8 +572,7 @@ EXPECTED
     assert_equal(["a"*1023], (("a"*73+"=\n")*14+"a=\n").unpack("M"))
     assert_equal(["\x0a"], "=0a=\n".unpack("M"))
     assert_equal(["\x0a"], "=0A=\n".unpack("M"))
-    assert_equal([""], "=0Z=\n".unpack("M"))
-    assert_equal([""], "=\r\n".unpack("M"))
+    assert_equal(["=0Z=\n"], "=0Z=\n".unpack("M"))
     assert_equal([""], "=\r\n".unpack("M"))
     assert_equal(["\xC6\xF7"], "=C6=F7".unpack('M*'))
 
