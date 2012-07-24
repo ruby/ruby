@@ -1,3 +1,10 @@
+Tue Jul 24 12:35:13 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_dir_m17n.rb: remove a garbage.
+
+	* test/ruby/test_dir_m17n.rb: convert from ascii-8bit to other encoding
+	  with 8bit bytes always fails.
+
 Tue Jul 24 12:32:18 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_dir_m17n.rb: sorry, typo.
