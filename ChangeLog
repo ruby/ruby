@@ -1,3 +1,7 @@
+Wed Jul 25 06:28:56 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* iseq.c:  Added documentation.  Patch by David Albert.  [Bug #6785]
+
 Wed Jul 25 03:05:06 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* parse.y: added symbols and qsymbols productions for %i and %I

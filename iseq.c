@@ -539,6 +539,9 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
     return iseqval;
 }
 
+/*
+ * :nodoc:
+ */
 static VALUE
 iseq_s_load(int argc, VALUE *argv, VALUE self)
 {
@@ -618,6 +621,26 @@ rb_iseq_compile_on_base(VALUE src, VALUE file, VALUE line, rb_block_t *base_bloc
     return rb_iseq_compile_with_option(src, file, Qnil, line, base_block, Qnil);
 }
 
+/*
+ *  call-seq:
+ *     InstructionSequence.compile(source[, file[, path[, line[, options]]]]) -> iseq
+ *     InstructionSequence.new(source[, file[, path[, line[, options]]]]) -> iseq
+ *
+ *  Takes +source+, a String of Ruby code and compiles it to an
+ *  InstructionSequence.
+ *
+ *  Optionally takes +file+, +path+, and +line+ which describe the filename,
+ *  absolute path and first line number of the ruby code in +source+ which are
+ *  metadata attached to the returned +iseq+.
+ *
+ *  +options+, which can be +true+, +false+ or a +Hash+, is used to
+ *  modify the default behavior of the Ruby iseq compiler.  For details
+ *  regarding valid compile options see InstructionSequence.compile_option=.
+ *
+ *     RubyVM::InstructionSequence.compile("a = 1 + 2")
+ *     #=> <RubyVM::InstructionSequence:<compiled>@<compiled>>
+ *
+ */
 static VALUE
 iseq_s_compile(int argc, VALUE *argv, VALUE self)
 {
@@ -632,6 +655,25 @@ iseq_s_compile(int argc, VALUE *argv, VALUE self)
     return rb_iseq_compile_with_option(src, file, path, line, 0, opt);
 }
 
+/*
+ *  call-seq:
+ *      InstructionSequence.compile_file(file[, options]) -> iseq
+ *
+ *  Takes +file+, a String with the location of a Ruby source file, reads,
+ *  parses and compiles the file, and returns +iseq+, the compiled
+ *  InstructionSequence with source location metadata set.
+ *
+ *  Optionally takes +options+, which can be +true+, +false+ or a +Hash+, to
+ *  modify the default behavior of the Ruby iseq compiler (for details see
+ *  InstructionSequence.compile_option=).
+ *
+ *      # /tmp/hello.rb
+ *      puts "Hello, world!"
+ *
+ *      # elsewhere
+ *      RubyVM::InstructionSequence.compile_file("/tmp/hello.rb")
+ *      #=> <RubyVM::InstructionSequence:<main>@/tmp/hello.rb>
+ */
 static VALUE
 iseq_s_compile_file(int argc, VALUE *argv, VALUE self)
 {
@@ -657,6 +699,35 @@ iseq_s_compile_file(int argc, VALUE *argv, VALUE self)
 				ISEQ_TYPE_TOP, &option);
 }
 
+/*
+ *  call-seq:
+ *     InstructionSequence.compile_option = options
+ *
+ *  Sets the default values for various optimizations in the Ruby iseq
+ *  compiler.  Possible values for +options+ include +true+, which enables all
+ *  options, +false+ which disables all options, a +Hash+ of options that you
+ *  want to change (options not present in the hash will be left unchanged),
+ *  and +nil+ which leaves all options unchanged.
+ *
+ *  Possible option names (which are keys in +options+) which can be set to
+ *  +true+ or +false+ include:
+ *
+ *  * +:inline_const_cache+
+ *  * +:instructions_unification+
+ *  * +:operands_unification+
+ *  * +:peephole_optimization+
+ *  * +:specialized_instruction+
+ *  * +:stack_caching+
+ *  * +:tailcall_optimization+
+ *  * +:trace_instruction+
+ *
+ *  Additionally, +:debug_level+ can be set to an integer.
+ *
+ *  These default options can be overwritten for a single run of the iseq
+ *  compiler by passing any of the above values as the +options+ parameter to
+ *  InstructionSequence.new, InstructionSequence.compile and
+ *  InstructionSequence.compile_file.
+ */
 static VALUE
 iseq_s_compile_option_set(VALUE self, VALUE opt)
 {
@@ -667,6 +738,13 @@ iseq_s_compile_option_set(VALUE self, VALUE opt)
     return opt;
 }
 
+/*
+ *  call-seq:
+ *     InstructionSequence.compile_option -> options
+ *
+ *  Returns a hash of default options used by the Ruby iseq compiler.
+ *  For details, see InstructionSequence.compile_option=.
+ */
 static VALUE
 iseq_s_compile_option_get(VALUE self)
 {
@@ -684,6 +762,14 @@ iseq_check(VALUE val)
     return iseq;
 }
 
+/*
+ *  call-seq:
+ *     iseq.eval -> obj
+ *
+ *  Evaluates the instruction sequence and returns the result.
+ *
+ *      RubyVM::InstructionSequence.compile("1 + 2").eval #=> 3
+ */
 static VALUE
 iseq_eval(VALUE self)
 {
@@ -691,6 +777,9 @@ iseq_eval(VALUE self)
     return rb_iseq_eval(self);
 }
 
+/*
+ *  :nodoc:
+ */
 static VALUE
 iseq_inspect(VALUE self)
 {
@@ -708,6 +797,79 @@ iseq_inspect(VALUE self)
 static
 VALUE iseq_data_to_ary(rb_iseq_t *iseq);
 
+/*
+ *  call-seq:
+ *     iseq.to_a -> ary
+ *
+ *  Returns an Array of size 14 representing the instruction sequence with
+ *  the following data:
+ *
+ *  [magic]
+ *    A string identifying the data format. Always
+ *    "YARVInstructionSequence/SimpleDataFormat".
+ *
+ *  [major_version]
+ *    The major version of the instruction sequence.
+ *
+ *  [minor_version]
+ *    The minor version of the instruction sequence.
+ *
+ *  [format_type]
+ *    A number identifying the data format. Always 1.
+ *
+ *  [misc]
+ *    A hash containing +:arg_size+, the total number of arguments taken by
+ *    the method or the block (0 if _iseq_ doesn't represent a method or
+ *    block), +:local_size+, the number of local variables + 1, and
+ *    +:stack_max+, used in calculating the stack depth at which a
+ *    +SystemStackError+ is thrown.
+ *
+ *  [name]
+ *    The name of the context (block, method, class, module, etc.) that this
+ *    instruction sequence belongs to. <code><main></code> if it's at the top
+ *    level, <code><compiled></code> if it was evaluated from a string.
+ *
+ *  [path]
+ *    The relative path to the Ruby file where the instruction sequence was
+ *    loaded from. <code><compiled></code> if the iseq was evaluated from a
+ *    string.
+ *
+ *  [absolute_path]
+ *    The absolute path to the Ruby file where the instruction sequence was
+ *    loaded from. +nil+ if the iseq was evaluated from a string.
+ *
+ *  [start_lineno]
+ *    The number of the first source line where the instruction sequence was
+ *    loaded from.
+ *
+ *  [type]
+ *    The type of the instruction sequence. Valid values are +:top+,
+ *    +:method+, +:block+, +:class+, +:rescue+, +:ensure+, +:eval+, +:main+,
+ *    and +:defined_guard+.
+ *
+ *  [locals]
+ *    An array containing the names of all arguments and local variables as
+ *    symbols.
+ *
+ *  [args]
+ *    The arity if the method or block only has required arguments.  Otherwise
+ *    an array of:
+ *
+ *      [required_argc, [optional_arg_labels, ...],
+ *       splat_index, post_splat_argc, post_splat_index,
+ *       block_index, simple]
+ *
+ *    More info about these values can be found in +vm_core.h+.
+ *
+ *  [catch_table]
+ *    A list of exceptions and control flow operators (rescue, next, redo,
+ *    break, etc.).
+ *
+ *  [bytecode]
+ *    An array of arrays containing the instruction names and operands that
+ *    make up the body of the instruction sequence.
+ *
+ */
 static VALUE
 iseq_to_a(VALUE self)
 {
@@ -965,6 +1127,24 @@ catch_type(int type)
     }
 }
 
+/*
+ *  call-seq:
+ *     iseq.disasm -> str
+ *     iseq.disassemble -> str
+ *
+ *  Returns the instruction sequence as a +String+ in human readable form.
+ *
+ *    puts RubyVM::InstructionSequence.compile('1 + 2').disasm
+ *
+ *  Produces:
+ *
+ *    == disasm: <RubyVM::InstructionSequence:<compiled>@<compiled>>==========
+ *    0000 trace            1                                               (   1)
+ *    0002 putobject        1
+ *    0004 putobject        2
+ *    0006 opt_plus         <ic:1>
+ *    0008 leave
+ */
 VALUE
 rb_iseq_disasm(VALUE self)
 {
@@ -1072,6 +1252,58 @@ rb_iseq_disasm(VALUE self)
     return str;
 }
 
+/*
+ *  call-seq:
+ *     InstructionSequence.disasm(body) -> str
+ *     InstructionSequence.disassemble(body) -> str
+ *
+ *  Takes +body+, a Method or Proc object, and returns a String with the
+ *  human readable instructions for +body+.
+ *
+ *  For a Method object:
+ *
+ *    # /tmp/method.rb
+ *    def hello
+ *      puts "hello, world"
+ *    end
+ *
+ *    puts RubyVM::InstructionSequence.disasm(method(:hello))
+ *
+ *  Produces:
+ *
+ *    == disasm: <RubyVM::InstructionSequence:hello@/tmp/method.rb>============
+ *    0000 trace            8                                               (   1)
+ *    0002 trace            1                                               (   2)
+ *    0004 putself
+ *    0005 putstring        "hello, world"
+ *    0007 send             :puts, 1, nil, 8, <ic:0>
+ *    0013 trace            16                                              (   3)
+ *    0015 leave                                                            (   2)
+ *
+ *  For a Proc:
+ *
+ *    # /tmp/proc.rb
+ *    p = proc { num = 1 + 2 }
+ *    puts RubyVM::InstructionSequence.disasm(p)
+ *
+ *  Produces:
+ *
+ *    == disasm: <RubyVM::InstructionSequence:block in <main>@/tmp/proc.rb>===
+ *    == catch table
+ *    | catch type: redo   st: 0000 ed: 0012 sp: 0000 cont: 0000
+ *    | catch type: next   st: 0000 ed: 0012 sp: 0000 cont: 0012
+ *    |------------------------------------------------------------------------
+ *    local table (size: 2, argc: 0 [opts: 0, rest: -1, post: 0, block: -1] s1)
+ *    [ 2] num
+ *    0000 trace            1                                               (   1)
+ *    0002 putobject        1
+ *    0004 putobject        2
+ *    0006 opt_plus         <ic:1>
+ *    0008 dup
+ *    0009 setdynamic       num, 0
+ *    0012 leave
+ *
+ */
 static VALUE
 iseq_s_disasm(VALUE klass, VALUE body)
 {
@@ -1567,6 +1799,23 @@ rb_iseq_build_for_ruby2cext(
 
     return iseqval;
 }
+
+/*
+ *  Document-class: RubyVM::InstructionSequence
+ *
+ *  The InstructionSequence class represents a compiled sequence of
+ *  instructions for the Ruby Virtual Machine. With it, you can get a handle
+ *  to the instructions that make up a method or a proc, compile strings of
+ *  Ruby code down to VM instructions, and disassemble instruction sequences
+ *  to strings for easy inspection. It is mostly useful if you want to learn
+ *  how the Ruby VM works, but it also lets you control various settings for
+ *  the Ruby iseq compiler. You can find the source for the VM instructions in
+ *  +insns.def+ in the Ruby source.
+ *
+ *  The instruction sequence that results from a given piece of Ruby code will
+ *  almost certainly change as Ruby changes, so example output in this
+ *  documentation may be different from what you see.
+ */
 
 void
 Init_ISeq(void)
