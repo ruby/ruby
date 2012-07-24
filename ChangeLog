@@ -1,3 +1,7 @@
+Tue Jul 24 12:32:18 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_dir_m17n.rb: sorry, typo.
+
 Tue Jul 24 12:13:26 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_dir_m17n.rb: refactoring. RE should be in the left side

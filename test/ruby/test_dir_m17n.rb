@@ -201,7 +201,7 @@ class TestDir_M17N < Test::Unit::TestCase
         ents = Dir.entries(".", opts)
         p ents
         result = ents.include?(filename) ||
-               (/darwin/ =~ RUBY_PLATFORM =~ /darwin/ && ents.include?("%A4%A2".force_encoding("ASCII-8BIT"))) ||
+               (/darwin/ =~ RUBY_PLATFORM && ents.include?("%A4%A2".force_encoding("ASCII-8BIT"))) ||
                (/mswin|mingw/ =~ RUBY_PLATFORM && ents.include?(win_expected_filename.force_encoding("ASCII-8BIT")))
         if !result && /mswin|mingw/ =~ RUBY_PLATFORM
           exit Dir.entries(".", {:encoding => Encoding.find("filesystem")}).include?(win_expected_filename)
