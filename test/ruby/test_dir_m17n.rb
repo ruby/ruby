@@ -221,7 +221,7 @@ class TestDir_M17N < Test::Unit::TestCase
   end
 
   def test_filename_utf8_raw_windows_1252_name
-    create_and_check_raw_file_name(0x00c7, "UTF-8")
+    create_and_check_raw_file_name(0x00c6, "UTF-8")
   end
 
   def test_filename_ext_euc_jp_and_int_utf_8
