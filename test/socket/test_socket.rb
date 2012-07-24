@@ -309,6 +309,7 @@ class TestSocket < Test::Unit::TestCase
     Socket.udp_server_sockets(0) {|sockets|
       famlies = {}
       sockets.each {|s| famlies[s.local_address.afamily] = s }
+      nd6 = {}
       ip_addrs.reject! {|ai|
         s = famlies[ai.afamily]
         next true unless s
@@ -330,7 +331,9 @@ class TestSocket < Test::Unit::TestCase
             ulND6_IFF_IFDISABLED = 8
             in6_ondireq = ifr_name
             s.ioctl(ulSIOCGIFINFO_IN6, in6_ondireq)
-            next true if in6_ondireq.unpack('A16L6').last & ulND6_IFF_IFDISABLED != 0
+            flag = in6_ondireq.unpack('A16L6').last
+            next true if flag & ulND6_IFF_IFDISABLED != 0
+            nd6[ai] = flag
           end
         when /darwin/
           if !ai.ipv6?
@@ -345,7 +348,9 @@ class TestSocket < Test::Unit::TestCase
             ulND6_IFF_IFDISABLED = 8
             in6_ondireq = ifr_name
             s.ioctl(ulSIOCGIFINFO_IN6, in6_ondireq)
-            next true if in6_ondireq.unpack('A16L6').last & ulND6_IFF_IFDISABLED != 0
+            flag = in6_ondireq.unpack('A16L6').last
+            next true if (flag & ulND6_IFF_IFDISABLED) != 0
+            nd6[ai] = flag
             in6_ifreq = [ifr_name,ai.to_sockaddr].pack('a16A*')
             s.ioctl(ulSIOCGIFFLAGS, in6_ifreq)
             next true if in6_ifreq.unpack('A16L1').last & ulIFF_POINTOPOINT != 0
@@ -356,25 +361,30 @@ class TestSocket < Test::Unit::TestCase
             end
           end
         end
+        false
       }
       skipped = false
       begin
         port = sockets.first.local_address.ip_port
 
+        ping_p = false
         th = Thread.new {
           Socket.udp_server_loop_on(sockets) {|msg, msg_src|
             break if msg == "exit"
             rmsg = Marshal.dump([msg, msg_src.remote_address, msg_src.local_address])
+            ping_p = true
             msg_src.reply rmsg
           }
         }
 
         ip_addrs.each {|ai|
           Addrinfo.udp(ai.ip_address, port).connect {|s|
+            ping_p = false
             msg1 = "<<<#{ai.inspect}>>>"
             s.sendmsg msg1
             unless IO.select([s], nil, nil, 10)
-              raise "no response from #{ai.inspect}"
+              nd6options = nd6.key?(ai) ? "nd6=%x " % nd6[ai] : ''
+              raise "no response from #{ai.inspect} #{nd6options}ping=#{ping_p}"
             end
             msg2, addr = s.recvmsg
             msg2, remote_address, local_address = Marshal.load(msg2)
