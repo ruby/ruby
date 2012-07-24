@@ -608,6 +608,28 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('qwords_beg', '%w( w w w )')
   end
 
+  def test_qsymbols_beg
+    assert_equal [],
+                 scan('qsymbols_beg', '')
+    assert_equal ['%i('],
+                 scan('qsymbols_beg', '%i()')
+    assert_equal ['%i('],
+                 scan('qsymbols_beg', '%i(w w w)')
+    assert_equal ['%i( '],
+                 scan('qsymbols_beg', '%i( w w w )')
+  end
+
+  def test_symbols_beg
+    assert_equal [],
+                 scan('symbols_beg', '')
+    assert_equal ['%I('],
+                 scan('symbols_beg', '%I()')
+    assert_equal ['%I('],
+                 scan('symbols_beg', '%I(w w w)')
+    assert_equal ['%I( '],
+                 scan('symbols_beg', '%I( w w w )')
+  end
+
   # FIXME: Close paren must not present (`words_end' scanner event?).
   def test_words_sep
     assert_equal [],

@@ -12,6 +12,17 @@ class TestArray < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def test_percent_i
+    assert_equal([:foo, :bar], %i[foo bar])
+    assert_equal([:"\"foo"], %i["foo])
+  end
+
+  def test_percent_I
+    x = 10
+    assert_equal([:foo, :b10], %I[foo b#{x}])
+    assert_equal([:"\"foo10"], %I["foo#{x}])
+  end
+
   def test_0_literal
     assert_equal([1, 2, 3, 4], [1, 2] + [3, 4])
     assert_equal([1, 2, 1, 2], [1, 2] * 2)

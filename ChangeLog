@@ -1,3 +1,18 @@
+Wed Jul 25 03:05:06 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* parse.y: added symbols and qsymbols productions for %i and %I
+	  support. %i{ .. } returns a list of symbols without interpolation,
+	  %I{ .. } returns a list of symbols with interpolation.  Thanks to
+	  Josh Susser for inspiration of this feature. [Feature #4985]
+
+	* ext/ripper/eventids2.c: added ripper events for %i and %I.
+
+	* test/ripper/test_parser_events.rb: ripper tests
+
+	* test/ripper/test_scanner_events.rb: ditto
+
+	* test/ruby/test_array.rb: test for %i and %I behavior
+
 Tue Jul 24 23:34:43 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* include/ruby/win32.h (rb_w32_pow): add new function.

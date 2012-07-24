@@ -169,6 +169,9 @@ with all sufficient information, see the ChangeLog file.
     long.
 
 === Language changes
+
+  * Added %i and %I for symbol list creation (similar to %w and %W).
+
 === Compatibility issues (excluding feature bug fixes)
 
   * Signal.trap

@@ -755,10 +755,34 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal true, thru_qwords_add
   end
 
+  def test_qsymbols_add
+    thru_qsymbols_add = false
+    parse('%i[a]', :on_qsymbols_add) {thru_qsymbols_add = true}
+    assert_equal true, thru_qsymbols_add
+  end
+
+  def test_symbols_add
+    thru_symbols_add = false
+    parse('%I[a]', :on_symbols_add) {thru_symbols_add = true}
+    assert_equal true, thru_symbols_add
+  end
+
   def test_qwords_new
     thru_qwords_new = false
     parse('%w[]', :on_qwords_new) {thru_qwords_new = true}
     assert_equal true, thru_qwords_new
+  end
+
+  def test_qsymbols_new
+    thru_qsymbols_new = false
+    parse('%i[]', :on_qsymbols_new) {thru_qsymbols_new = true}
+    assert_equal true, thru_qsymbols_new
+  end
+
+  def test_symbols_new
+    thru_symbols_new = false
+    parse('%I[]', :on_symbols_new) {thru_symbols_new = true}
+    assert_equal true, thru_symbols_new
   end
 
   def test_redo

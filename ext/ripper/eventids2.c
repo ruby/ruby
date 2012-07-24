@@ -38,6 +38,8 @@ static ID ripper_id_tstring_content;
 static ID ripper_id_tstring_end;
 static ID ripper_id_words_beg;
 static ID ripper_id_qwords_beg;
+static ID ripper_id_qsymbols_beg;
+static ID ripper_id_symbols_beg;
 static ID ripper_id_words_sep;
 static ID ripper_id_regexp_beg;
 static ID ripper_id_regexp_end;
@@ -91,6 +93,8 @@ ripper_init_eventids2(void)
     ripper_id_tstring_end = rb_intern_const("on_tstring_end");
     ripper_id_words_beg = rb_intern_const("on_words_beg");
     ripper_id_qwords_beg = rb_intern_const("on_qwords_beg");
+    ripper_id_qsymbols_beg = rb_intern_const("on_qsymbols_beg");
+    ripper_id_symbols_beg = rb_intern_const("on_symbols_beg");
     ripper_id_words_sep = rb_intern_const("on_words_sep");
     ripper_id_regexp_beg = rb_intern_const("on_regexp_beg");
     ripper_id_regexp_end = rb_intern_const("on_regexp_end");
@@ -228,6 +232,8 @@ static const struct token_assoc {
     {tOROP,		&ripper_id_op},
     {tPOW,		&ripper_id_op},
     {tQWORDS_BEG,	&ripper_id_qwords_beg},
+    {tQSYMBOLS_BEG,	&ripper_id_qsymbols_beg},
+    {tSYMBOLS_BEG,	&ripper_id_symbols_beg},
     {tREGEXP_BEG,	&ripper_id_regexp_beg},
     {tREGEXP_END,	&ripper_id_regexp_end},
     {tRPAREN,		&ripper_id_rparen},
