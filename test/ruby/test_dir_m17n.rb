@@ -196,9 +196,7 @@ class TestDir_M17N < Test::Unit::TestCase
       EOS
       assert_ruby_status(%w[-EASCII-8BIT], <<-'EOS', nil, :chdir=>d)
         filename = "\xA4\xA2".force_encoding('ASCII-8BIT')
-        win_expected_filename =
-          [Encoding::US_ASCII, Encoding::ASCII_8BIT].include?(Encoding.find("filesystem")) \
-          ? filename : filename.encode(Encoding.find("filesystem"), "euc-jp") rescue "?"
+        win_expected_filename = filename.encode(Encoding.find("filesystem"), "euc-jp") rescue "?"
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
         ents = Dir.entries(".", opts)
         result = ents.include?(filename) ||
