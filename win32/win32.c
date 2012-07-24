@@ -663,6 +663,10 @@ StartSockets(void)
     NtSocketsInitialized = 1;
 }
 
+#define MAKE_SOCKDATA(af, fl)	((int)((((int)af)<<4)|((fl)&0xFFFF)))
+#define GET_FAMILY(v)		((int)(((v)>>4)&0xFFFF))
+#define GET_FLAGS(v)		((int)((v)&0xFFFF))
+
 /* License: Ruby's */
 static inline int
 socklist_insert(SOCKET sock, int flag)
@@ -2994,16 +2998,31 @@ rb_w32_getpeername(int s, struct sockaddr *addr, int *addrlen)
 
 /* License: Artistic or GPL */
 int WSAAPI
-rb_w32_getsockname(int s, struct sockaddr *addr, int *addrlen)
+rb_w32_getsockname(int fd, struct sockaddr *addr, int *addrlen)
 {
+    int sock;
     int r;
     if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
-	r = getsockname(TO_SOCKET(s), addr, addrlen);
-	if (r == SOCKET_ERROR)
-	    errno = map_errno(WSAGetLastError());
+	sock = TO_SOCKET(fd);
+	r = getsockname(sock, addr, addrlen);
+	if (r == SOCKET_ERROR) {
+	    DWORD wsaerror = WSAGetLastError();
+	    if (wsaerror == WSAEINVAL) {
+		int flags;
+		if (socklist_lookup(sock, &flags)) {
+		    int af = GET_FAMILY(flags);
+		    if (af) {
+			memset(addr, 0, *addrlen);
+			addr->sa_family = af;
+			return 0;
+		    }
+		}
+	    }
+	    errno = map_errno(wsaerror);
+	}
     });
     return r;
 }
@@ -3130,7 +3149,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 
     s = TO_SOCKET(fd);
     socklist_lookup(s, &mode);
-    if (!cancel_io || (mode & O_NONBLOCK)) {
+    if (!cancel_io || (GET_FLAGS(mode) & O_NONBLOCK)) {
 	RUBY_CRITICAL({
 	    if (input) {
 		if (addr && addrlen)
@@ -3281,7 +3300,7 @@ recvmsg(int fd, struct msghdr *msg, int flags)
     wsamsg.dwFlags |= flags;
 
     socklist_lookup(s, &mode);
-    if (!cancel_io || (mode & O_NONBLOCK)) {
+    if (!cancel_io || (GET_FLAGS(mode) & O_NONBLOCK)) {
 	RUBY_CRITICAL({
 	    if ((ret = pWSARecvMsg(s, &wsamsg, &len, NULL, NULL)) == SOCKET_ERROR) {
 		errno = map_errno(WSAGetLastError());
@@ -3338,7 +3357,7 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
     msghdr_to_wsamsg(msg, &wsamsg);
 
     socklist_lookup(s, &mode);
-    if (!cancel_io || (mode & O_NONBLOCK)) {
+    if (!cancel_io || (GET_FLAGS(mode) & O_NONBLOCK)) {
 	RUBY_CRITICAL({
 	    if ((ret = pWSASendMsg(s, &wsamsg, flags, &len, NULL, NULL)) == SOCKET_ERROR) {
 		errno = map_errno(WSAGetLastError());
@@ -3466,7 +3485,7 @@ rb_w32_socket(int af, int type, int protocol)
 	else {
 	    fd = rb_w32_open_osfhandle(s, O_RDWR|O_BINARY|O_NOINHERIT);
 	    if (fd != -1)
-		socklist_insert(s, 0);
+		socklist_insert(s, MAKE_SOCKDATA(af, 0));
 	    else
 		closesocket(s);
 	}
@@ -3711,8 +3730,8 @@ rb_w32_socketpair(int af, int type, int protocol, int *sv)
 	closesocket(pair[1]);
 	return -1;
     }
-    socklist_insert(pair[0], 0);
-    socklist_insert(pair[1], 0);
+    socklist_insert(pair[0], MAKE_SOCKDATA(af, 0));
+    socklist_insert(pair[1], MAKE_SOCKDATA(af, 0));
 
     return 0;
 }
@@ -3749,10 +3768,13 @@ static int
 setfl(SOCKET sock, int arg)
 {
     int ret;
+    int af = 0;
     int flag = 0;
     u_long ioctlArg;
 
     socklist_lookup(sock, &flag);
+    af = GET_FAMILY(flag);
+    flag = GET_FLAGS(flag);
     if (arg & O_NONBLOCK) {
 	flag |= O_NONBLOCK;
 	ioctlArg = 1;
@@ -3764,7 +3786,7 @@ setfl(SOCKET sock, int arg)
     RUBY_CRITICAL({
 	ret = ioctlsocket(sock, FIONBIO, &ioctlArg);
 	if (ret == 0)
-	    socklist_insert(sock, flag);
+	    socklist_insert(sock, MAKE_SOCKDATA(af, flag));
 	else
 	    errno = map_errno(WSAGetLastError());
     });

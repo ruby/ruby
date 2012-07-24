@@ -1,3 +1,14 @@
+Tue Jul 24 15:01:24 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_socket, rb_w32_socketpair): remember the family
+	  in the high word of socklist value.
+
+	* win32/win32.c (overlapped_socket_io, recvmsg, sendmsg, setfl): follow
+	  above changes.
+
+	* win32/win32.c (rb_w32_getsockname): set remembered family to the
+	  argument when OS's function fails.
+
 Tue Jul 24 12:35:13 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_dir_m17n.rb: remove a garbage.
