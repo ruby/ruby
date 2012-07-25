@@ -1,3 +1,9 @@
+Thu Jul 26 00:42:23 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* thread.c (thread_create_core, Init_Thread): hide
+	  th->async_errinfo_queue and th->async_errinfo_mask_stack from
+	  ObjectSpace.each_object.
+
 Wed Jul 25 17:41:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* complex.c, rational.c: compatible marshal loader for compatibilities
