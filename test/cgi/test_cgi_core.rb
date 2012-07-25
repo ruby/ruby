@@ -183,7 +183,7 @@ class CGICoreTest < Test::Unit::TestCase
     }
     ENV.update(@environ)
     ex = assert_raise(StandardError) do
-      cgi = CGI.new
+      CGI.new
     end
     assert_equal("too large post data.", ex.message)
   end if CGI.const_defined?(:MAX_CONTENT_LENGTH)
@@ -304,7 +304,7 @@ class CGICoreTest < Test::Unit::TestCase
         HTTP_ACCEPT_LANGUAGE HTTP_CACHE_CONTROL HTTP_FROM HTTP_HOST
         HTTP_NEGOTIATE HTTP_PRAGMA HTTP_REFERER HTTP_USER_AGENT
     ]
-    list2 = %w[ CONTENT_LENGTH SERVER_PORT ]
+    # list2 = %w[ CONTENT_LENGTH SERVER_PORT ]
     ## string expected
     list1.each do |name|
       @environ[name] = "**#{name}**"

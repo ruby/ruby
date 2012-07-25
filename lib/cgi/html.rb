@@ -845,6 +845,7 @@ class CGI
     # Initialise the HTML generation methods for this version.
     def element_init
       extend TagMaker
+      return if defined?(html)
       methods = ""
       # - -
       for element in %w[ A TT I B U STRIKE BIG SMALL SUB SUP EM STRONG
@@ -895,6 +896,7 @@ class CGI
     # Initialise the HTML generation methods for this version.
     def element_init
       extend TagMaker
+      return if defined?(html)
       methods = ""
       # - -
       for element in %w[ TT I B BIG SMALL EM STRONG DFN CODE SAMP KBD
@@ -944,6 +946,7 @@ class CGI
     # Initialise the HTML generation methods for this version.
     def element_init
       extend TagMaker
+      return if defined?(html)
       methods = ""
       # - -
       for element in %w[ TT I B U S STRIKE BIG SMALL EM STRONG DFN
@@ -994,6 +997,7 @@ class CGI
 
     # Initialise the HTML generation methods for this version.
     def element_init
+      return if defined?(frameset)
       methods = ""
       # - -
       for element in %w[ FRAMESET ]
