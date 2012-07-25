@@ -911,16 +911,19 @@ class TestArray < Test::Unit::TestCase
     $, = ""
     a = @cls[1, 2]
     assert_equal("12", a.join)
+    assert_equal("12", a.join(nil))
     assert_equal("1,2", a.join(','))
 
     $, = ""
     a = @cls[1, 2, 3]
     assert_equal("123", a.join)
+    assert_equal("123", a.join(nil))
     assert_equal("1,2,3", a.join(','))
 
     $, = ":"
     a = @cls[1, 2, 3]
     assert_equal("1:2:3", a.join)
+    assert_equal("1:2:3", a.join(nil))
     assert_equal("1,2,3", a.join(','))
 
     $, = ""
