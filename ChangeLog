@@ -1,3 +1,8 @@
+Wed Jul 25 17:17:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* atomic.h: prefer GCC atomic builtins than Windows APIs, if possible,
+	  since they are generic.
+
 Wed Jul 25 11:16:57 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/.document:  Removed.  All files in net/ should be included in

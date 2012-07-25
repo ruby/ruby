@@ -1,7 +1,26 @@
 #ifndef RUBY_ATOMIC_H
 #define RUBY_ATOMIC_H
 
-#ifdef _WIN32
+#if 0
+#elif defined HAVE_GCC_ATOMIC_BUILTINS
+/* @shyouhei hack to support atomic operations in case of gcc. Gcc
+ * has its own pseudo-insns to support them.  See info, or
+ * http://gcc.gnu.org/onlinedocs/gcc/Atomic-Builtins.html */
+
+typedef unsigned int rb_atomic_t; /* Anything OK */
+# define ATOMIC_SET(var, val)  (void)__sync_lock_test_and_set(&(var), (val))
+# define ATOMIC_INC(var) __sync_fetch_and_add(&(var), 1)
+# define ATOMIC_DEC(var) __sync_fetch_and_sub(&(var), 1)
+# define ATOMIC_OR(var, val) __sync_or_and_fetch(&(var), (val))
+# define ATOMIC_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
+
+# define ATOMIC_SIZE_ADD(var, val) __sync_fetch_and_add(&(var), (val))
+# define ATOMIC_SIZE_SUB(var, val) __sync_fetch_and_sub(&(var), (val))
+# define ATOMIC_SIZE_INC(var) __sync_fetch_and_add(&(var), 1)
+# define ATOMIC_SIZE_DEC(var) __sync_fetch_and_sub(&(var), 1)
+# define ATOMIC_SIZE_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
+
+#elif defined _WIN32
 #if defined _MSC_VER && _MSC_VER > 1200
 #pragma intrinsic(_InterlockedOr)
 #endif
@@ -43,24 +62,6 @@ rb_w32_atomic_or(volatile rb_atomic_t *var, rb_atomic_t val)
 #  define ATOMIC_SIZE_DEC(var) InterlockedDecrement((LONG *)&(var))
 #  define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange((LONG *)&(var), (val))
 # endif
-
-#elif defined HAVE_GCC_ATOMIC_BUILTINS
-/* @shyouhei hack to support atomic operations in case of gcc. Gcc
- * has its own pseudo-insns to support them.  See info, or
- * http://gcc.gnu.org/onlinedocs/gcc/Atomic-Builtins.html */
-
-typedef unsigned int rb_atomic_t; /* Anything OK */
-# define ATOMIC_SET(var, val)  (void)__sync_lock_test_and_set(&(var), (val))
-# define ATOMIC_INC(var) __sync_fetch_and_add(&(var), 1)
-# define ATOMIC_DEC(var) __sync_fetch_and_sub(&(var), 1)
-# define ATOMIC_OR(var, val) __sync_or_and_fetch(&(var), (val))
-# define ATOMIC_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
-
-# define ATOMIC_SIZE_ADD(var, val) __sync_fetch_and_add(&(var), (val))
-# define ATOMIC_SIZE_SUB(var, val) __sync_fetch_and_sub(&(var), (val))
-# define ATOMIC_SIZE_INC(var) __sync_fetch_and_add(&(var), 1)
-# define ATOMIC_SIZE_DEC(var) __sync_fetch_and_sub(&(var), 1)
-# define ATOMIC_SIZE_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
 
 #elif defined(__sun)
 #include <atomic.h>
