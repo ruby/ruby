@@ -334,7 +334,7 @@ class CGI
         body = ""
       end
       if @output_hidden
-        body += @output_hidden.collect{|k,v|
+        body << @output_hidden.collect{|k,v|
           "<INPUT TYPE=\"HIDDEN\" NAME=\"#{k}\" VALUE=\"#{v}\">"
         }.join
       end
@@ -420,18 +420,18 @@ class CGI
 
       if attributes.has_key?("DOCTYPE")
         if attributes["DOCTYPE"]
-          buf += attributes.delete("DOCTYPE")
+          buf << attributes.delete("DOCTYPE")
         else
           attributes.delete("DOCTYPE")
         end
       else
-        buf += doctype
+        buf << doctype
       end
 
       if block_given?
-        buf += super(attributes){ yield }
+        buf << super(attributes){ yield }
       else
-        buf += super(attributes)
+        buf << super(attributes)
       end
 
       if pretty
@@ -853,7 +853,7 @@ class CGI
           APPLET PRE XMP LISTING DL OL UL DIR MENU SELECT TABLE TITLE
           STYLE SCRIPT H1 H2 H3 H4 H5 H6 TEXTAREA FORM BLOCKQUOTE
           CAPTION ]
-        methods += <<-BEGIN + nn_element_def(element) + <<-END
+        methods << <<-BEGIN + nn_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -863,7 +863,7 @@ class CGI
       # - O EMPTY
       for element in %w[ IMG BASE BASEFONT BR AREA LINK PARAM HR INPUT
           ISINDEX META ]
-        methods += <<-BEGIN + nOE_element_def(element) + <<-END
+        methods << <<-BEGIN + nOE_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -873,7 +873,7 @@ class CGI
       # O O or - O
       for element in %w[ HTML HEAD BODY P PLAINTEXT DT DD LI OPTION TR
           TH TD ]
-        methods += <<-BEGIN + nO_element_def(element) + <<-END
+        methods << <<-BEGIN + nO_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -904,7 +904,7 @@ class CGI
         H1 H2 H3 H4 H5 H6 PRE Q INS DEL DL OL UL LABEL SELECT OPTGROUP
         FIELDSET LEGEND BUTTON TABLE TITLE STYLE SCRIPT NOSCRIPT
         TEXTAREA FORM A BLOCKQUOTE CAPTION ]
-        methods += <<-BEGIN + nn_element_def(element) + <<-END
+        methods << <<-BEGIN + nn_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -913,7 +913,7 @@ class CGI
 
       # - O EMPTY
       for element in %w[ IMG BASE BR AREA LINK PARAM HR INPUT COL META ]
-        methods += <<-BEGIN + nOE_element_def(element) + <<-END
+        methods << <<-BEGIN + nOE_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -923,7 +923,7 @@ class CGI
       # O O or - O
       for element in %w[ HTML BODY P DT DD LI OPTION THEAD TFOOT TBODY
           COLGROUP TR TH TD HEAD]
-        methods += <<-BEGIN + nO_element_def(element) + <<-END
+        methods << <<-BEGIN + nO_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -955,7 +955,7 @@ class CGI
           INS DEL DL OL UL DIR MENU LABEL SELECT OPTGROUP FIELDSET
           LEGEND BUTTON TABLE IFRAME NOFRAMES TITLE STYLE SCRIPT
           NOSCRIPT TEXTAREA FORM A BLOCKQUOTE CAPTION ]
-        methods += <<-BEGIN + nn_element_def(element) + <<-END
+        methods << <<-BEGIN + nn_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -965,7 +965,7 @@ class CGI
       # - O EMPTY
       for element in %w[ IMG BASE BASEFONT BR AREA LINK PARAM HR INPUT
           COL ISINDEX META ]
-        methods += <<-BEGIN + nOE_element_def(element) + <<-END
+        methods << <<-BEGIN + nOE_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -975,7 +975,7 @@ class CGI
       # O O or - O
       for element in %w[ HTML BODY P DT DD LI OPTION THEAD TFOOT TBODY
           COLGROUP TR TH TD HEAD ]
-        methods += <<-BEGIN + nO_element_def(element) + <<-END
+        methods << <<-BEGIN + nO_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -1001,7 +1001,7 @@ class CGI
       methods = ""
       # - -
       for element in %w[ FRAMESET ]
-        methods += <<-BEGIN + nn_element_def(element) + <<-END
+        methods << <<-BEGIN + nn_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -1010,7 +1010,7 @@ class CGI
 
       # - O EMPTY
       for element in %w[ FRAME ]
-        methods += <<-BEGIN + nOE_element_def(element) + <<-END
+        methods << <<-BEGIN + nOE_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end

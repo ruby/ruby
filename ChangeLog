@@ -1,3 +1,9 @@
+Wed Jul 25 09:26:32 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/cgi/html.rb: Use << instead of +=.
+	  `a += b` is syntax sugar of `a = a + b`; it creates a new string
+	  object. `a << b` is concatenation and doesn't create new object.
+
 Wed Jul 25 09:16:26 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/cgi/html.rb (element_init): suppress redefine warning.
