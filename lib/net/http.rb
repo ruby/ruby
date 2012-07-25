@@ -649,6 +649,7 @@ module Net   #:nodoc:
 
       @use_ssl = false
       @ssl_context = nil
+      @ssl_session = nil
       @enable_post_connection_check = true
       @sspi_enabled = false
       SSL_IVNAMES.each do |ivname|
@@ -903,12 +904,14 @@ module Net   #:nodoc:
             @socket.write(buf)
             HTTPResponse.read_new(@socket).value
           end
+          s.session = @ssl_session if @ssl_session
           # Server Name Indication (SNI) RFC 3546
           s.hostname = @address if s.respond_to? :hostname=
           Timeout.timeout(@open_timeout, Net::OpenTimeout) { s.connect }
           if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
             s.post_connection_check(@address)
           end
+          @ssl_session = s.session
         rescue => exception
           D "Conn close because of connect error #{exception}"
           @socket.close if @socket and not @socket.closed?

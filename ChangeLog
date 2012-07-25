@@ -1,3 +1,10 @@
+Wed Jul 25 09:05:38 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb:  Added SSL session reuse across connections for a
+	  single instance to speed up connection.  [Feature #5341]
+	* NEWS:  ditto
+	* test/net/http/test_https.rb:  Tests for #5341
+
 Wed Jul 25 06:54:24 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* doc/re.rdoc:  Fix spelling

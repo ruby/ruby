@@ -59,6 +59,29 @@ class TestNetHTTPS < Test::Unit::TestCase
     skip $!
   end
 
+  def test_session_reuse
+    http = Net::HTTP.new("localhost", config("port"))
+    http.use_ssl = true
+    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
+      store_ctx.current_cert.to_der == config('ssl_certificate').to_der
+    end
+
+    http.start
+    http.get("/")
+    http.finish
+
+    http.start
+    http.get("/")
+    http.finish # three times due to possible bug in OpenSSL 0.9.8
+
+    http.start
+    http.get("/")
+
+    socket = http.instance_variable_get(:@socket).io
+
+    assert socket.session_reused?
+  end
+
   if ENV["RUBY_OPENSSL_TEST_ALL"]
     def test_verify
       http = Net::HTTP.new("ssl.netlab.jp", 443)

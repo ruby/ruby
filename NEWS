@@ -89,6 +89,8 @@ with all sufficient information, see the ChangeLog file.
       variable.  See Net::HTTP::new for details.
     * gzip and deflate compression are now requested for all requests by
       default.  See Net::HTTP for details.
+    * SSL sessions are now reused across connections for a single instance.
+      This speeds up connection by using a previously negotiated session.
   * new methods:
     * Net::HTTP#local_host
     * Net::HTTP#local_host=
