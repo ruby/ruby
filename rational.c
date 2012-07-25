@@ -25,7 +25,7 @@ VALUE rb_cRational;
 
 static ID id_abs, id_cmp, id_convert, id_eqeq_p, id_expt, id_fdiv,
     id_floor, id_idiv, id_inspect, id_integer_p, id_negate, id_to_f,
-    id_to_i, id_to_s, id_truncate;
+    id_to_i, id_to_s, id_truncate, id_i_num, id_i_den;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -1590,13 +1590,31 @@ nurat_inspect(VALUE self)
 
 /* :nodoc: */
 static VALUE
+nurat_dumper(VALUE self)
+{
+    return self;
+}
+
+/* :nodoc: */
+static VALUE
+nurat_loader(VALUE self, VALUE a)
+{
+    get_dat1(self);
+
+    dat->num = rb_ivar_get(a, id_i_num);
+    dat->den = rb_ivar_get(a, id_i_den);
+
+    return self;
+}
+
+/* :nodoc: */
+static VALUE
 nurat_marshal_dump(VALUE self)
 {
     VALUE a;
     get_dat1(self);
 
     a = rb_assoc_new(dat->num, dat->den);
-    rb_copy_generic_ivar(a, self);
     return a;
 }
 
@@ -1604,20 +1622,17 @@ nurat_marshal_dump(VALUE self)
 static VALUE
 nurat_marshal_load(VALUE self, VALUE a)
 {
-    get_dat1(self);
-
     rb_check_frozen(self);
     rb_check_trusted(self);
 
     Check_Type(a, T_ARRAY);
     if (RARRAY_LEN(a) != 2)
 	rb_raise(rb_eArgError, "marshaled rational must have an array whose length is 2 but %ld", RARRAY_LEN(a));
-    dat->num = RARRAY_PTR(a)[0];
-    dat->den = RARRAY_PTR(a)[1];
-    rb_copy_generic_ivar(self, a);
-
-    if (f_zero_p(dat->den))
+    if (f_zero_p(RARRAY_PTR(a)[1]))
 	rb_raise_zerodiv();
+
+    rb_ivar_set(self, id_i_num, RARRAY_PTR(a)[0]);
+    rb_ivar_set(self, id_i_den, RARRAY_PTR(a)[1]);
 
     return self;
 }
@@ -2295,6 +2310,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 void
 Init_Rational(void)
 {
+    VALUE compat;
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
@@ -2315,6 +2331,8 @@ Init_Rational(void)
     id_to_i = rb_intern("to_i");
     id_to_s = rb_intern("to_s");
     id_truncate = rb_intern("truncate");
+    id_i_num = rb_intern("@numerator");
+    id_i_den = rb_intern("@denominator");
 
     rb_cRational = rb_define_class("Rational", rb_cNumeric);
 
@@ -2375,7 +2393,9 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "inspect", nurat_inspect, 0);
 
     rb_define_method(rb_cRational, "marshal_dump", nurat_marshal_dump, 0);
-    rb_define_method(rb_cRational, "marshal_load", nurat_marshal_load, 1);
+    compat = rb_define_class_under(rb_cRational, "compatible", rb_cObject);
+    rb_define_method(compat, "marshal_load", nurat_marshal_load, 1);
+    rb_marshal_define_compat(rb_cRational, compat, nurat_dumper, nurat_loader);
 
     /* --- */
 

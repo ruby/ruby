@@ -1,3 +1,8 @@
+Wed Jul 25 17:41:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c, rational.c: compatible marshal loader for compatibilities
+	  with 1.8.  [ruby-core:45775] [Bug #6625]
+
 Wed Jul 25 17:17:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* atomic.h: prefer GCC atomic builtins than Windows APIs, if possible,

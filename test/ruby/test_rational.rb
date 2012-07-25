@@ -828,14 +828,15 @@ class Rational_Test < Test::Unit::TestCase
     }
 
     bug3656 = '[ruby-core:31622]'
-    assert_raise(TypeError, bug3656) {
-      Rational(1,2).marshal_load(0)
-    }
+    assert_not_respond_to(Rational(1,2), :marshal_load, bug3656)
+  end
 
-    c = Rational(1,2)
-    c.freeze
-    assert(c.frozen?)
-    assert_raise(RuntimeError){c.marshal_load([2,3])}
+  def test_marshal_compatibility
+    bug6625 = '[ruby-core:45775]'
+    dump = "\x04\x08o:\x0dRational\x07:\x11@denominatori\x07:\x0f@numeratori\x06"
+    assert_nothing_raised(bug6625) do
+      assert_equal(Rational(1, 2), Marshal.load(dump), bug6625)
+    end
   end
 
   def test_parse
