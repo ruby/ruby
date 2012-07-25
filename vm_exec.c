@@ -14,10 +14,10 @@
 #if VMDEBUG > 0
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 
-#elif __GNUC__ && __x86_64__
+#elif defined(__GNUC__) && defined(_x86_64__)
 #define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("r" reg)
 
-#elif __GNUC__ && __i386__
+#elif defined(__GNUC__) && defined(__i386__)
 #define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("e" reg)
 
 #else
@@ -41,12 +41,12 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 #endif
 #endif
 
-#if __GNUC__ && __i386__
+#if defined(__GNUC__) && defined(__i386__)
     DECL_SC_REG(VALUE *, pc, "di");
     DECL_SC_REG(rb_control_frame_t *, cfp, "si");
 #define USE_MACHINE_REGS 1
 
-#elif __GNUC__ && __x86_64__
+#elif defined(__GNUC__) && defined(__x86_64__)
     DECL_SC_REG(VALUE *, pc, "14");
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
 #define USE_MACHINE_REGS 1

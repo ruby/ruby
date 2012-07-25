@@ -60,7 +60,7 @@ typedef rb_iseq_t *ISEQ;
 /* #define throwdebug printf */
 
 /************************************************/
-#if   DISPATCH_XXX
+#if defined(DISPATCH_XXX)
 error !
 /************************************************/
 #elif OPT_CALL_THREADED_CODE
@@ -95,7 +95,7 @@ error !
   INSN_ENTRY_SIG(insn); \
 
 /* dispather */
-#if __GNUC__ && (__i386__ || __x86_64__) && __GNUC__ == 3
+#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__)) && __GNUC__ == 3
 #define DISPATCH_ARCH_DEPEND_WAY(addr) \
   asm volatile("jmp *%0;\t# -- inseted by vm.h\t[length = 2]" : : "r" (addr))
 

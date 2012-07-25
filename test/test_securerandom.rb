@@ -87,7 +87,13 @@ end
           f << 'raise LoadError'
         }
         $LOAD_PATH.unshift(dir)
-        require 'securerandom'
+        v = $VERBOSE
+        begin
+          $VERBOSE = false
+          require 'securerandom'
+        ensure
+          $VERBOSE = v
+        end
         test_s_random_bytes
       end
     ensure

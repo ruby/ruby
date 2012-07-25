@@ -147,14 +147,14 @@ if defined? GDBM
     def test_s_open_lock
       return unless have_fork?	# snip this test
       pid = fork() {
-        assert_instance_of(GDBM, gdbm  = GDBM.open("#{@tmpdir}/#{@prefix}", 0644))
+        assert_instance_of(GDBM, GDBM.open("#{@tmpdir}/#{@prefix}", 0644))
         sleep 2
       }
       begin
         sleep 1
         assert_raise(Errno::EWOULDBLOCK) {
           begin
-            assert_instance_of(GDBM, gdbm2 = GDBM.open("#{@tmpdir}/#{@prefix}", 0644))
+            assert_instance_of(GDBM, GDBM.open("#{@tmpdir}/#{@prefix}", 0644))
           rescue Errno::EAGAIN, Errno::EACCES
             raise Errno::EWOULDBLOCK
           end
@@ -187,7 +187,7 @@ if defined? GDBM
       return unless have_fork?	# snip this test
 
       pid = fork() {
-        assert_instance_of(GDBM, gdbm  = GDBM.open("#{@tmpdir}/#{@prefix}", 0644,
+        assert_instance_of(GDBM, GDBM.open("#{@tmpdir}/#{@prefix}", 0644,
                                                   GDBM::NOLOCK))
         sleep 2
       }
@@ -202,10 +202,10 @@ if defined? GDBM
         gdbm2.close if gdbm2
       end
 
-      p Dir.glob("#{@tmpdir}/#{@prefix}*") if $DEBUG
+      STDERR.puts Dir.glob("#{@tmpdir}/#{@prefix}*") if $DEBUG
 
       pid = fork() {
-        assert_instance_of(GDBM, gdbm  = GDBM.open("#{@tmpdir}/#{@prefix}", 0644))
+        assert_instance_of(GDBM, GDBM.open("#{@tmpdir}/#{@prefix}", 0644))
         sleep 2
       }
       begin
