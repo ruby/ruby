@@ -1,3 +1,7 @@
+Wed Jul 25 10:00:23 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/testunit/test_redefinition.rb: broken class/method names.
+
 Wed Jul 25 09:26:32 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/cgi/html.rb: Use << instead of +=.

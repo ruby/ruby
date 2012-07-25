@@ -1,7 +1,7 @@
 require 'test/unit'
 
-class TestHideSkip < Test::Unit::TestCase
-  def test_hideskip
+class TestRedefinition < Test::Unit::TestCase
+  def test_redefinition
     test_out, o = IO.pipe
     spawn(*@options[:ruby], "#{File.dirname(__FILE__)}/test4test_redefinition.rb", out: File::NULL, err: o)
     o.close
