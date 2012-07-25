@@ -1,3 +1,8 @@
+Thu Jul 26 07:18:38 2012    <kanemoto@ruby-lang.org>
+
+	* ext/json/fbuffer/fbuffer.h: avoid compilation error on AIX by
+	   -ansi -std=iso9899:199409 (r36038). [ruby-core:46744] [Bug #6791].
+
 Thu Jul 26 00:42:23 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* thread.c (thread_create_core, Init_Thread): hide

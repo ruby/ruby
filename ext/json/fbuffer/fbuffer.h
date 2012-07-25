@@ -2,8 +2,8 @@
 #ifndef _FBUFFER_H_
 #define _FBUFFER_H_
 
-#include <assert.h>
 #include "ruby.h"
+#include <assert.h>
 
 #ifdef HAVE_RUBY_ENCODING_H
 #include "ruby/encoding.h"
