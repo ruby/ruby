@@ -13,10 +13,29 @@ else
   include FileUtils
 end
 
+module Mswin
+  def ln_safe(src, dest, *opt)
+    cmd = ["mklink", dest.tr("/", "\\"), src.tr("/", "\\")]
+    cmd[1, 0] = opt
+    # TODO: use RUNAS or something
+    puts cmd.join(" ")
+  end
+
+  def ln_dir_safe(src, dest)
+    ln_safe(src, dest, "/d")
+  end
+end
+
 def ln_safe(src, dest)
   link = File.readlink(dest) rescue nil
   return if link == src
   ln_sf(src, dest)
+end
+
+alias ln_dir_safe ln_safe
+
+if /mingw|mswin/ =~ RUBY_PLATFORM
+  extend Mswin
 end
 
 config = RbConfig::CONFIG
@@ -41,9 +60,9 @@ libruby = config.values_at("LIBRUBY_A", "LIBRUBY_SO")
 libruby.concat(config["LIBRUBY_ALIASES"].split)
 libruby.each {|lib|ln_safe("../#{lib}", "lib/#{lib}")}
 if File.expand_path(extout) == extout
-  ln_safe(extout, "lib/ruby")
+  ln_dir_safe(extout, "lib/ruby")
 else
-  ln_safe(File.join("..", extout), "lib/ruby")
+  ln_dir_safe(File.join("..", extout), "lib/ruby")
   cur = "#{extout}/".gsub(/(\A|\/)(?:\.\/)+/, '\1').tr_s('/', '/')
   nil while cur.sub!(/[^\/]+\/\.\.\//, '')
   if /(\A|\/)\.\.\// =~ cur
@@ -57,6 +76,6 @@ if cur
 else
   ln_safe(File.expand_path("rbconfig.rb"), File.join(extout, arch, "rbconfig.rb"))
 end
-ln_safe("common", File.join(extout, version))
-ln_safe(File.join("..", arch), File.join(extout, "common", arch))
-ln_safe(relative_from(File.join(File.dirname(config["srcdir"]), "lib"), ".."), File.join(extout, "vendor_ruby"))
+ln_dir_safe("common", File.join(extout, version))
+ln_dir_safe(File.join("..", arch), File.join(extout, "common", arch))
+ln_dir_safe(relative_from(File.join(File.dirname(config["srcdir"]), "lib"), ".."), File.join(extout, "vendor_ruby"))
