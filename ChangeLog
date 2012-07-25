@@ -1,3 +1,8 @@
+Wed Jul 25 11:16:57 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/.document:  Removed.  All files in net/ should be included in
+	  RDoc.
+
 Wed Jul 25 10:00:23 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/testunit/test_redefinition.rb: broken class/method names.
