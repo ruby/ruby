@@ -1,3 +1,8 @@
+Thu Jul 26 14:51:29 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* test/net/http/test_https.rb (TestNetHTTPS#test_session_reuse):
+	  localhost is not (always) 127.0.0.1.  Don't expect that.
+
 Thu Jul 26 07:18:38 2012    <kanemoto@ruby-lang.org>
 
 	* ext/json/fbuffer/fbuffer.h: avoid compilation error on AIX by

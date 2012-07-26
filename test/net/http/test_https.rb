@@ -80,6 +80,8 @@ class TestNetHTTPS < Test::Unit::TestCase
     socket = http.instance_variable_get(:@socket).io
 
     assert socket.session_reused?
+  rescue SystemCallError
+    skip $!
   end
 
   if ENV["RUBY_OPENSSL_TEST_ALL"]
