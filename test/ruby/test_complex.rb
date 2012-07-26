@@ -658,7 +658,12 @@ class Complex_Test < Test::Unit::TestCase
     end
 
     bug3656 = '[ruby-core:31622]'
-    assert_not_respond_to(Complex(1,2), :marshal_load, bug3656)
+    c = Complex(1,2)
+    c.freeze
+    assert(c.frozen?)
+    result = c.marshal_load([2,3]) rescue :fail
+    assert_equal(:fail, result, bug3656)
+    assert_equal(Complex(1,2), c)
   end
 
   def test_marshal_compatibility

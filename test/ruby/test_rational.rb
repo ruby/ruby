@@ -828,7 +828,11 @@ class Rational_Test < Test::Unit::TestCase
     }
 
     bug3656 = '[ruby-core:31622]'
-    assert_not_respond_to(Rational(1,2), :marshal_load, bug3656)
+    c = Rational(1,2)
+    c.freeze
+    assert(c.frozen?)
+    result = c.marshal_load([2,3]) rescue :fail
+    assert_equal(:fail, result, bug3656)
   end
 
   def test_marshal_compatibility
