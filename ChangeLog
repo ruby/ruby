@@ -1,3 +1,8 @@
+Sat Jul 28 04:04:01 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/intern.h (rb_num_zerodiv): Added NORETURN.
+	  Patched by Xi Wang. [Bug #6736]
+
 Wed Jul  4 19:36:17 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/dl/cfunc.c (rb_dlcfunc_call): also needed the workaround for VC8
