@@ -590,7 +590,7 @@ rb_io_get_io(VALUE io)
     return rb_convert_type(io, T_FILE, "IO", "to_io");
 }
 
-static VALUE
+VALUE
 rb_io_check_io(VALUE io)
 {
     return rb_check_convert_type(io, T_FILE, "IO", "to_io");

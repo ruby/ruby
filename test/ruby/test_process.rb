@@ -1,5 +1,5 @@
 require 'test/unit'
-require 'tmpdir'
+require 'tempfile'
 require 'pathname'
 require 'timeout'
 require_relative 'envutil'
@@ -803,6 +803,18 @@ class TestProcess < Test::Unit::TestCase
       }
     rescue NotImplementedError
       skip "IO#close_on_exec= is not supported"
+    end
+  end
+
+  def test_execopts_redirect_tempfile
+    bug6269 = '[ruby-core:44181]'
+    Tempfile.open("execopts") do |tmp|
+      pid = assert_nothing_raised(ArgumentError, bug6269) do
+        break spawn(RUBY, "-e", "print $$", out: tmp)
+      end
+      Process.wait(pid)
+      tmp.rewind
+      assert_equal(pid.to_s, tmp.read)
     end
   end
 

@@ -1456,6 +1456,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
 {
     VALUE param;
     VALUE path, flags, perm;
+    VALUE tmp;
     ID id;
 
     switch (TYPE(val)) {
@@ -1484,6 +1485,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
         break;
 
       case T_FILE:
+      io:
         val = check_exec_redirect_fd(val, 0);
         /* fall through */
       case T_FIXNUM:
@@ -1531,6 +1533,9 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
         break;
 
       default:
+	tmp = val;
+	val = rb_io_check_io(tmp);
+	if (!NIL_P(val)) goto io;
         rb_raise(rb_eArgError, "wrong exec redirect action");
     }
 

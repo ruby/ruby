@@ -1,3 +1,10 @@
+Fri Jul 27 18:25:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_check_io): make public.
+
+	* process.c (check_exec_redirect): try conversion to IO on redirect
+	  parameters.  [ruby-core:44181] [Bug #6269]
+
 Fri Jul 27 17:58:12 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_CPPOUTFILE): get rid of variable conflict so

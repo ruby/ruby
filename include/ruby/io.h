@@ -168,6 +168,7 @@ void rb_io_synchronized(rb_io_t*);
 void rb_io_check_initialized(rb_io_t*);
 void rb_io_check_closed(rb_io_t*);
 VALUE rb_io_get_io(VALUE io);
+VALUE rb_io_check_io(VALUE io);
 VALUE rb_io_get_write_io(VALUE io);
 VALUE rb_io_set_write_io(VALUE io, VALUE w);
 int rb_io_wait_readable(int);
