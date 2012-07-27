@@ -1,3 +1,8 @@
+Fri Jul 27 17:58:12 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CPPOUTFILE): get rid of variable conflict so
+	  CPPFLAGS is not duplicated.  [ruby-core:43097] [Bug #6119]
+
 Fri Jul 27 12:12:36 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/mkexports.rb: should not export DllMain().
