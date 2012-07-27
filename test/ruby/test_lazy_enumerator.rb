@@ -286,7 +286,8 @@ class TestLazyEnumerator < Test::Unit::TestCase
   end
 
   def test_cycle_chain
-    a = Step.new(1..3)
+    a = 1..3
+    assert_equal([1,2,3,1,2,3,1,2,3,1], a.lazy.cycle.take(10).force)
     assert_equal([2,2,2,2,2,2,2,2,2,2], a.lazy.cycle.select {|x| x == 2}.take(10).force)
     assert_equal([2,2,2,2,2,2,2,2,2,2], a.lazy.select {|x| x == 2}.cycle.take(10).force)
   end
