@@ -1,3 +1,8 @@
+Fri Jul 27 13:04:31 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* numeric.c (int_pow, fix_mul): Avoid optimization bugs of
+	  clang.  Submitted by Wataru Kimura [Bug #6796].
+
 Fri Jun 29 21:19:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (stack_extend): prevent ALLOCA_N, which reserves a memory
