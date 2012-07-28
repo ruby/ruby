@@ -82,9 +82,7 @@ fc_i(st_data_t k, st_data_t v, st_data_t a)
 	res->path = fc_path(res, key);
 	return ST_STOP;
     }
-    switch (TYPE(value)) {
-      case T_MODULE:
-      case T_CLASS:
+    if (RB_TYPE_P(value, T_MODULE) || RB_TYPE_P(value, T_CLASS)) {
 	if (!RCLASS_CONST_TBL(value)) return ST_CONTINUE;
 	else {
 	    struct fc_result arg;
@@ -107,10 +105,6 @@ fc_i(st_data_t k, st_data_t v, st_data_t a)
 		return ST_STOP;
 	    }
 	}
-	break;
-
-      default:
-	break;
     }
     return ST_CONTINUE;
 }
@@ -280,11 +274,7 @@ rb_path_to_class(VALUE pathname)
 	    rb_raise(rb_eArgError, "undefined class/module %.*s", (int)(p-path), path);
 	}
 	c = rb_const_get_at(c, id);
-	switch (TYPE(c)) {
-	  case T_MODULE:
-	  case T_CLASS:
-	    break;
-	  default:
+	if (!RB_TYPE_P(c, T_MODULE) && !RB_TYPE_P(c, T_CLASS)) {
 	    rb_raise(rb_eTypeError, "%s does not refer to class/module", path);
 	}
     }
@@ -1007,7 +997,8 @@ ivar_get(VALUE obj, ID id, int warn)
     long len;
     st_data_t index;
 
-    switch (TYPE(obj)) {
+    if (SPECIAL_CONST_P(obj)) goto generic;
+    switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         len = ROBJECT_NUMIV(obj);
         ptr = ROBJECT_IVPTR(obj);
@@ -1025,6 +1016,7 @@ ivar_get(VALUE obj, ID id, int warn)
 	    return (VALUE)index;
 	break;
       default:
+      generic:
 	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj))
 	    return generic_ivar_get(obj, id, warn);
 	break;
@@ -1058,7 +1050,8 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
     if (!OBJ_UNTRUSTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
     rb_check_frozen(obj);
-    switch (TYPE(obj)) {
+    if (SPECIAL_CONST_P(obj)) goto generic;
+    switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
         if (!iv_index_tbl) {
@@ -1115,6 +1108,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
 	st_insert(RCLASS_IV_TBL(obj), (st_data_t)id, val);
         break;
       default:
+      generic:
 	generic_ivar_set(obj, id, val);
 	break;
     }
@@ -1127,7 +1121,8 @@ rb_ivar_defined(VALUE obj, ID id)
     VALUE val;
     struct st_table *iv_index_tbl;
     st_data_t index;
-    switch (TYPE(obj)) {
+    if (SPECIAL_CONST_P(obj)) goto generic;
+    switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
         if (!iv_index_tbl) break;
@@ -1143,6 +1138,7 @@ rb_ivar_defined(VALUE obj, ID id)
 	    return Qtrue;
 	break;
       default:
+      generic:
 	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj))
 	    return generic_ivar_defined(obj, id);
 	break;
@@ -1189,7 +1185,8 @@ obj_ivar_each(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
 void
 rb_ivar_foreach(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
 {
-    switch (TYPE(obj)) {
+    if (SPECIAL_CONST_P(obj)) goto generic;
+    switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         obj_ivar_each(obj, func, arg);
 	break;
@@ -1200,6 +1197,7 @@ rb_ivar_foreach(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
 	}
 	break;
       default:
+      generic:
 	if (!generic_iv_tbl) break;
 	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj)) {
 	    st_data_t tbl;
@@ -1216,7 +1214,8 @@ st_index_t
 rb_ivar_count(VALUE obj)
 {
     st_table *tbl;
-    switch (TYPE(obj)) {
+    if (SPECIAL_CONST_P(obj)) goto generic;
+    switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
 	if ((tbl = ROBJECT_IV_INDEX_TBL(obj)) != 0) {
 	    st_index_t i, count, num = tbl->num_entries;
@@ -1236,6 +1235,7 @@ rb_ivar_count(VALUE obj)
 	}
 	break;
       default:
+      generic:
 	if (!generic_iv_tbl) break;
 	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj)) {
 	    st_data_t data;
@@ -1335,7 +1335,8 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
     }
 
-    switch (TYPE(obj)) {
+    if (SPECIAL_CONST_P(obj)) goto generic;
+    switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
         if (!iv_index_tbl) break;
@@ -1355,6 +1356,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 	}
 	break;
       default:
+      generic:
 	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj)) {
 	    v = val;
 	    if (generic_ivar_remove(obj, (st_data_t)id, &v)) {
@@ -2199,14 +2201,11 @@ original_module(VALUE c)
     }\
     if (FL_TEST(klass, FL_SINGLETON) ) {\
 	VALUE obj = rb_iv_get(klass, "__attached__");\
-	switch (TYPE(obj)) {\
-	  case T_MODULE:\
-	  case T_CLASS:\
+	if (RB_TYPE_P(obj, T_MODULE) || RB_TYPE_P(obj, T_CLASS)) {\
 	    klass = obj;\
-	    break;\
-	  default:\
+	}\
+	else {\
 	    klass = RCLASS_SUPER(klass);\
-	    break;\
 	}\
     }\
     else {\
