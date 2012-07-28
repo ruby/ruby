@@ -1,3 +1,12 @@
+Sat Jul 28 16:26:09 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* win32/win32.c (gmtime_r): use _gmtime64_s() with x86_64-w64-mingw32.
+
+	* win32/win32.c (localtime_r): use _localtime64_s() with
+	  x86_64-w64-mingw32. Since FileTimeToSystemTime() seems not work with
+	  large value under x64. Mingw-w64 doesn't have these declaration.
+	  [ruby-core:46780] [Bug #6794]
+
 Fri Jul 27 18:25:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_check_io): make public.

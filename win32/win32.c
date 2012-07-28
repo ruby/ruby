@@ -6555,7 +6555,7 @@ rb_w32_fd_is_text(int fd) {
     return _osfile(fd) & FTEXT;
 }
 
-#if RUBY_MSVCRT_VERSION < 80
+#if RUBY_MSVCRT_VERSION < 80 && !defined(__MINGW64__)
 /* License: Ruby's */
 static int
 unixtime_to_systemtime(const time_t t, SYSTEMTIME *st)
@@ -6617,6 +6617,17 @@ systemtime_to_localtime(TIME_ZONE_INFORMATION *tz, SYSTEMTIME *gst, SYSTEMTIME *
 }
 #endif
 
+#ifdef __MINGW64__
+#ifndef gmtime_s
+# define gmtime_s _gmtime64_s
+  errno_t gmtime_s(struct tm* _tm, const time_t *time);
+#endif
+#ifndef localtime_s
+# define localtime_s _localtime64_s
+  errno_t localtime_s(struct tm* _tm, const time_t *time);
+#endif
+#endif
+
 /* License: Ruby's */
 struct tm *
 gmtime_r(const time_t *tp, struct tm *rp)
@@ -6627,7 +6638,7 @@ gmtime_r(const time_t *tp, struct tm *rp)
 	errno = e;
 	return NULL;
     }
-#if RUBY_MSVCRT_VERSION >= 80
+#if RUBY_MSVCRT_VERSION >= 80 || defined(__MINGW64__)
     e = gmtime_s(rp, tp);
     if (e != 0) goto error;
 #else
@@ -6651,7 +6662,7 @@ localtime_r(const time_t *tp, struct tm *rp)
 	errno = e;
 	return NULL;
     }
-#if RUBY_MSVCRT_VERSION >= 80
+#if RUBY_MSVCRT_VERSION >= 80 || defined(__MINGW64__)
     e = localtime_s(rp, tp);
     if (e) goto error;
 #else
