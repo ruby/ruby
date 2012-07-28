@@ -1,3 +1,7 @@
+Sun Jul 29 04:32:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ruby_pc): make configurable.  [Bug #6051]
+
 Sun Jul 29 04:32:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/ruby.pc.in: added rubylibprefix, {rubylib,vendor,site}dir

@@ -3038,7 +3038,10 @@ AC_CONFIG_FILES(Makefile, [{
     }],
 [EXEEXT='$EXEEXT' gnumake='$gnumake'])
 
-ruby_pc="${RUBY_BASE_NAME}-${MAJOR}.${MINOR}.pc"
+AC_ARG_WITH([ruby-pc],
+	    AC_HELP_STRING([pc file basename]),
+	    [ruby_pc="$withval"],
+	    [ruby_pc="${RUBY_BASE_NAME}-${MAJOR}.${MINOR}.pc"])
 AC_SUBST(ruby_pc)
 AC_SUBST(exec, [exec])
 
