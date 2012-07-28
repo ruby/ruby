@@ -1114,7 +1114,7 @@ static void *
 nogvl_sendmsg_func(void *ptr)
 {
     struct sendmsg_args_struct *args = ptr;
-    return (void *)sendmsg(args->fd, args->msg, args->flags);
+    return (void *)(VALUE)sendmsg(args->fd, args->msg, args->flags);
 }
 
 static ssize_t

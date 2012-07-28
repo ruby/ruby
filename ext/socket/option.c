@@ -452,6 +452,8 @@ inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 #endif
     return numaddr;
 }
+#elif !defined HAVE_ARPA_INET_H
+extern char *inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len);
 #endif
 
 /* Although the buffer size needed depends on the prefixes, "%u" may generate "4294967295".  */
