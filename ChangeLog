@@ -1,3 +1,9 @@
+Sun Jul 29 06:21:04 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* win32/win32.c: suppress warning redeclared on mingw64.
+	  *_s functions are declared if MINGW_HAS_SECURE_API is defined.
+	  Follow up r36556.
+
 Sun Jul 29 00:28:46 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: remove unused initialization.

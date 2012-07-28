@@ -6618,14 +6618,12 @@ systemtime_to_localtime(TIME_ZONE_INFORMATION *tz, SYSTEMTIME *gst, SYSTEMTIME *
 #endif
 
 #ifdef __MINGW64__
-#ifndef gmtime_s
+# ifndef MINGW_HAS_SECURE_API
+   _CRTIMP errno_t __cdecl _gmtime64_s(struct tm* tm, const __time64_t *time);
+   _CRTIMP errno_t __cdecl _localtime64_s(struct tm* tm, const __time64_t *time);
+# endif
 # define gmtime_s _gmtime64_s
-  errno_t gmtime_s(struct tm* _tm, const time_t *time);
-#endif
-#ifndef localtime_s
 # define localtime_s _localtime64_s
-  errno_t localtime_s(struct tm* _tm, const time_t *time);
-#endif
 #endif
 
 /* License: Ruby's */
