@@ -452,7 +452,7 @@ inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 #endif
     return numaddr;
 }
-#elif defined _WIN32
+#elif defined __MINGW64__
 # define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
 #endif
 
