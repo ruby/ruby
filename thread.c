@@ -5126,7 +5126,6 @@ Init_Thread(void)
 	    th->async_errinfo_queue = rb_ary_tmp_new(0);
 	    th->async_errinfo_queue_checked = 0;
 	    th->async_errinfo_mask_stack = rb_ary_tmp_new(0);
-	    RBASIC(th->async_errinfo_mask_stack)->klass = 0;
 	}
     }
 

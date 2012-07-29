@@ -1,3 +1,8 @@
+Sun Jul 29 14:20:34 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* thread.c (Init_Thread): does not need to set klass
+	  explicitly.
+
 Sun Jul 29 06:21:04 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* win32/win32.c: suppress warning redeclared on mingw64.
