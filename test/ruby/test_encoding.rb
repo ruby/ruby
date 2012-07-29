@@ -17,17 +17,6 @@ class TestEncoding < Test::Unit::TestCase
     end
   end
 
-  def test_encoding_of_ascii_originating_from_binary
-    binary_string = "\x82foo"
-    ascii_string  = binary_string.bytes.to_a.pack('c*')[1..-1]
-    assert_equal "foo", ascii_string
-    assert_equal "ASCII-8BIT", ascii_string.encoding.name
-    utf8_string   = ascii_string.encode("UTF-8")
-    assert_equal "foo", utf8_string
-    assert_equal "UTF-8", utf8_string.encoding.name
-    puts "End"
-  end
-
   def test_enc_names
     aliases = Encoding.aliases
     aliases.each do |a, en|

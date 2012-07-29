@@ -60,6 +60,30 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal(str2.force_encoding(enc2), str1.encode(enc2, enc1))
   end
 
+  def test_encoding_of_ascii_originating_from_binary
+    binary_string = [0x82, 0x66, 0x6f, 0x6f]
+    class << binary_string
+      # create a copy on write substring that contains
+      # just the ascii characters (i.e. foo), in JRuby
+      # the underlying string have the same buffer backing
+      # it up, but the offset of the string will be 1 instead
+      # of 0.
+      def make_cow_substring
+        pack('C4').slice(1, 3)
+      end
+    end
+
+    ascii_string  = binary_string.make_cow_substring
+    assert_equal("foo", ascii_string)
+    assert_equal(Encoding::ASCII_8BIT, ascii_string.encoding)
+    utf8_string = nil
+    assert_nothing_raised("JRUBY-6764") do
+      utf8_string = ascii_string.encode(Encoding::UTF_8)
+    end
+    assert_equal("foo", utf8_string)
+    assert_equal(Encoding::UTF_8, utf8_string.encoding)
+  end
+
   def test_encodings
     check_both_ways("\u307E\u3064\u3082\u3068 \u3086\u304D\u3072\u308D",
         "\x82\xdc\x82\xc2\x82\xe0\x82\xc6 \x82\xe4\x82\xab\x82\xd0\x82\xeb", 'shift_jis') # まつもと ゆきひろ
