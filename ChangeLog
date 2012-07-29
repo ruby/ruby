@@ -1,3 +1,7 @@
+Mon Jul 30 01:30:10 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* common.mk: add a dependency. [ruby-core:46741] [Bug #6789]
+
 Sun Jul 29 15:44:47 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* thread.c (thread_create_core): hide th->async_errinfo_mask_stack from
