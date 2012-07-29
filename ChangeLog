@@ -1,3 +1,8 @@
+Sun Jul 29 15:44:47 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* thread.c (thread_create_core): hide th->async_errinfo_mask_stack from
+	  ObjectSpace.each_object. refix of r36539.
+
 Sun Jul 29 23:57:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/option.c (inet_ntop): use rb_w32_inet_ntop, instead of

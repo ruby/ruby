@@ -565,6 +565,7 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     th->async_errinfo_queue = rb_ary_tmp_new(0);
     th->async_errinfo_queue_checked = 0;
     th->async_errinfo_mask_stack = rb_ary_dup(current_th->async_errinfo_mask_stack);
+    RBASIC(th->async_errinfo_mask_stack)->klass = 0;
 
     native_mutex_initialize(&th->interrupt_lock);
     if (GET_VM()->event_hooks != NULL)
