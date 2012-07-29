@@ -452,8 +452,8 @@ inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 #endif
     return numaddr;
 }
-#elif !defined HAVE_ARPA_INET_H
-extern char *inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len);
+#elif defined _WIN32
+# define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
 #endif
 
 /* Although the buffer size needed depends on the prefixes, "%u" may generate "4294967295".  */

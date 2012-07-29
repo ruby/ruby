@@ -1,4 +1,7 @@
-Sun Jul 29 23:56:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jul 29 23:57:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/option.c (inet_ntop): use rb_w32_inet_ntop, instead of
+	  inet_ntop directly, which is unavailable on older version Windows.
 
 	* win32/win32.c (rb_w32_inet_ntop): type should be const.
 
