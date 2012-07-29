@@ -6532,7 +6532,7 @@ signbit(double x)
 #endif
 
 /* License: Ruby's */
-char * WSAAPI
+const char * WSAAPI
 rb_w32_inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 {
     typedef char *(WSAAPI inet_ntop_t)(int, void *, char *, size_t);

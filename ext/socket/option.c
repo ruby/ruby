@@ -437,7 +437,7 @@ inspect_timeval_as_interval(int level, int optname, VALUE data, VALUE ret)
  */
 
 #ifndef HAVE_INET_NTOP
-static char *
+static const char *
 inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 {
 #ifdef HAVE_INET_NTOA
