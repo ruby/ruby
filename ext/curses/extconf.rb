@@ -16,7 +16,7 @@ elsif have_header(*curses=%w"ncurses/curses.h") and have_library("ncurses", "ini
 elsif have_header(*curses=%w"curses_colr/curses.h") and have_library("cur_colr", "initscr")
   curses.unshift("varargs.h")
   make=true
-elsif have_header(*curses=%w"curses.h") and have_library("curses", "initscr")
+elsif have_header(*curses=%w"curses.h") and (have_library("curses", "initscr") || have_library("pdcurses", "initscr"))
   make=true
 end
 
