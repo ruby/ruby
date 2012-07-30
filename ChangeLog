@@ -1,3 +1,9 @@
+Tue Jul 31 06:18:06 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* time.c (time_sec):  Remove extra wording about leap seconds and refer
+	  directly to Wikipedia's leap second page for further information.
+	  [Bug #6749]
+
 Mon Jul 30 23:01:47 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rubygems/platform.rb (Gem::Platform#initialize): Support pattern
