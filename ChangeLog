@@ -1,3 +1,9 @@
+Mon Jul 30 13:11:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBRUBY_RELATIVE): libruby_so is not made when
+	  disable-shared, so no absolute path is used for it and executable
+	  file is runnable anywhere.
+
 Mon Jul 30 01:30:10 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* common.mk: add a dependency. [ruby-core:46741] [Bug #6789]
