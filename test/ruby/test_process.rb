@@ -1448,7 +1448,7 @@ class TestProcess < Test::Unit::TestCase
       assert_equal("ok?\n", data)
     end
 
-    if File.directory?("/proc/self/task") && /netbsdelf[1-6]/ !~ RUBY_PLATFORM
+    if File.directory?("/proc/self/task") && /netbsd[a-z]*[1-6]/ !~ RUBY_PLATFORM
       def test_daemon_no_threads
         pid, data = IO.popen("-", "r+") do |f|
           break f.pid, f.readlines if f
