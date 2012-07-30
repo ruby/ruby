@@ -547,8 +547,8 @@ class TestProcess < Test::Unit::TestCase
           h = {}
           ios.length.times {|i| h[ios[i]] = ios[(i-1)%ios.length] }
           h2 = h.invert
-          rios = pipes.map {|r, w| r }
-          wios = pipes.map {|r, w| w }
+          _rios = pipes.map {|r, w| r }
+          wios  = pipes.map {|r, w| w }
           child_wfds = wios.map {|w| h2[w].fileno }
           pid = spawn(RUBY, "-e",
                   "[#{child_wfds.join(',')}].each {|fd| IO.new(fd, 'w').puts fd }", h)
@@ -563,8 +563,8 @@ class TestProcess < Test::Unit::TestCase
           h = {}
           ios.length.times {|i| h[ios[i]] = ios[(i+1)%ios.length] }
           h2 = h.invert
-          rios = pipes.map {|r, w| r }
-          wios = pipes.map {|r, w| w }
+          _rios = pipes.map {|r, w| r }
+          wios  = pipes.map {|r, w| w }
           child_wfds = wios.map {|w| h2[w].fileno }
           pid = spawn(RUBY, "-e",
                   "[#{child_wfds.join(',')}].each {|fd| IO.new(fd, 'w').puts fd }", h)
