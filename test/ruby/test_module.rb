@@ -363,6 +363,23 @@ class TestModule < Test::Unit::TestCase
     assert_equal("TestModule::User",   User.name)
   end
 
+  def test_classpath
+    m = Module.new
+    n = Module.new
+    m.const_set(:N, n)
+    assert_nil(m.name)
+    assert_nil(n.name)
+    assert_equal([:N], m.constants)
+    m.module_eval("module O end")
+    assert_equal([:N, :O], m.constants)
+    assert_nil(m::N.name)
+    assert_match(/\A(?:#<Module:.*>::)?O\z/, m::O.name)
+    self.class.const_set(:M, m)
+    prefix = self.class.name + "::M::"
+    assert_equal(prefix+"N", m.const_get(:N).name)
+    assert_equal(prefix+"O", m.const_get(:O).name)
+  end
+
   def test_private_class_method
     assert_raise(ExpectedException) { AClass.cm1 }
     assert_raise(ExpectedException) { AClass.cm3 }

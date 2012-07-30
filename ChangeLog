@@ -1,3 +1,8 @@
+Mon Jul 30 14:24:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c: store anonymous class path in tmp_classpath but not in
+	  classpath.  [ruby-core:42865][Bug #6078]
+
 Mon Jul 30 13:11:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (DLDFLAGS): on Darwin, deprecate -flat_namespace to get

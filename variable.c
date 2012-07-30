@@ -35,7 +35,7 @@ Init_var_tables(void)
 }
 
 struct fc_result {
-    ID name;
+    ID name, preferred;
     VALUE klass;
     VALUE path;
     VALUE track;
@@ -78,7 +78,7 @@ fc_i(st_data_t k, st_data_t v, st_data_t a)
     VALUE value = ce->value;
     if (!rb_is_const_id(key)) return ST_CONTINUE;
 
-    if (value == res->klass) {
+    if (value == res->klass && (!res->preferred || key == res->preferred)) {
 	res->path = fc_path(res, key);
 	return ST_STOP;
     }
@@ -95,6 +95,7 @@ fc_i(st_data_t k, st_data_t v, st_data_t a)
 	    }
 
 	    arg.name = key;
+	    arg.preferred = res->preferred;
 	    arg.path = 0;
 	    arg.klass = res->klass;
 	    arg.track = value;
@@ -110,10 +111,12 @@ fc_i(st_data_t k, st_data_t v, st_data_t a)
 }
 
 static VALUE
-find_class_path(VALUE klass)
+find_class_path(VALUE klass, ID preferred)
 {
     struct fc_result arg;
 
+  find:
+    arg.preferred = preferred;
     arg.name = 0;
     arg.path = 0;
     arg.klass = klass;
@@ -134,6 +137,10 @@ find_class_path(VALUE klass)
 	st_delete(RCLASS_IV_TBL(klass), &tmp, 0);
 	return arg.path;
     }
+    if (preferred) {
+	preferred = 0;
+	goto find;
+    }
     return Qnil;
 }
 
@@ -147,9 +154,14 @@ classname(VALUE klass)
     if (RCLASS_IV_TBL(klass)) {
 	if (!st_lookup(RCLASS_IV_TBL(klass), (st_data_t)classpath, &n)) {
 	    if (!st_lookup(RCLASS_IV_TBL(klass), (st_data_t)classid, &n)) {
-		return find_class_path(klass);
+		return find_class_path(klass, (ID)0);
 	    }
-	    path = rb_str_dup(rb_id2str(SYM2ID((VALUE)n)));
+	    path = find_class_path(klass, SYM2ID(n));
+	    if (NIL_P(path)) {
+		path = rb_str_dup(rb_id2str(SYM2ID((VALUE)n)));
+		OBJ_FREEZE(path);
+		return path;
+	    }
 	    OBJ_FREEZE(path);
 	    st_insert(RCLASS_IV_TBL(klass), (st_data_t)classpath, (st_data_t)path);
 	    n = classid;
@@ -163,7 +175,7 @@ classname(VALUE klass)
 	}
 	return path;
     }
-    return find_class_path(klass);
+    return find_class_path(klass, (ID)0);
 }
 
 /*
@@ -182,15 +194,19 @@ rb_mod_name(VALUE mod)
     return path;
 }
 
-VALUE
-rb_class_path(VALUE klass)
+static VALUE
+rb_tmp_class_path(VALUE klass, int *permanent)
 {
     VALUE path = classname(klass);
     st_data_t n = (st_data_t)path;
 
-    if (!NIL_P(path)) return path;
+    if (!NIL_P(path)) {
+	*permanent = 1;
+	return path;
+    }
     if (RCLASS_IV_TBL(klass) && st_lookup(RCLASS_IV_TBL(klass),
 					  (st_data_t)tmp_classpath, &n)) {
+	*permanent = 0;
 	return (VALUE)n;
     }
     else {
@@ -207,9 +223,17 @@ rb_class_path(VALUE klass)
 	path = rb_sprintf("#<%s:%p>", s, (void*)klass);
 	OBJ_FREEZE(path);
 	rb_ivar_set(klass, tmp_classpath, path);
+	*permanent = 0;
 
 	return path;
     }
+}
+
+VALUE
+rb_class_path(VALUE klass)
+{
+    int permanent;
+    return rb_tmp_class_path(klass, &permanent);
 }
 
 void
@@ -221,10 +245,12 @@ rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
 	str = rb_str_new_frozen(name);
     }
     else {
-	str = rb_str_dup(rb_class_path(under));
+	int permanent;
+	str = rb_str_dup(rb_tmp_class_path(under, &permanent));
 	rb_str_cat2(str, "::");
 	rb_str_append(str, name);
 	OBJ_FREEZE(str);
+	if (!permanent) return;
     }
     rb_ivar_set(klass, classpath, str);
 }
@@ -233,16 +259,18 @@ void
 rb_set_class_path(VALUE klass, VALUE under, const char *name)
 {
     VALUE str;
+    int permanent = 1;
 
     if (under == rb_cObject) {
 	str = rb_str_new2(name);
     }
     else {
-	str = rb_str_dup(rb_class_path(under));
+	str = rb_str_dup(rb_tmp_class_path(under, &permanent));
 	rb_str_cat2(str, "::");
 	rb_str_cat2(str, name);
     }
     OBJ_FREEZE(str);
+    if (!permanent) return;
     rb_ivar_set(klass, classpath, str);
 }
 
