@@ -1,4 +1,7 @@
-Mon Jul 30 13:11:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jul 30 13:11:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (DLDFLAGS): on Darwin, deprecate -flat_namespace to get
+	  rid of huge imported symbols table.
 
 	* configure.in (LIBRUBY_RELATIVE): libruby_so is not made when
 	  disable-shared, so no absolute path is used for it and executable
