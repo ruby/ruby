@@ -81,7 +81,7 @@ class Gem::Platform
                         os, version = $1, $3
                         @cpu = 'x86' if @cpu.nil? and os =~ /32$/
                         [os, version]
-                      when /netbsdelf/ then            [ 'netbsdelf', nil ]
+                      when /(netbsd[a-z]*)(\d+)/ then [ $1,          $2  ]
                       when /openbsd(\d+\.\d+)/ then    [ 'openbsd',   $1  ]
                       when /solaris(\d+\.\d+)/ then    [ 'solaris',   $1  ]
                       # test

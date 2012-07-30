@@ -1,3 +1,8 @@
+Mon Jul 30 23:01:47 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rubygems/platform.rb (Gem::Platform#initialize): Support pattern
+	  like x86_64-netbsd6.99.7.
+
 Mon Jul 30 21:00:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (find_class_path): no retry when preferred is given.
