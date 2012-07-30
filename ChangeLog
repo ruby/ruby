@@ -1,3 +1,15 @@
+Mon Jul 30 21:00:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (find_class_path): no retry when preferred is given.
+
+	* variable.c (classname): if classid is set try it to find full
+	  qualified class path, and then try arbitrary class path.  try
+	  tmp_classpath at last even if enclosing namespace is anonymous.
+	  fix r36574.  [ruby-core:42865][Bug #6078]
+
+	* variable.c (rb_set_class_path_string, rb_set_class_path): set
+	  tmp_classpath instead of classpath if the name is not permanent.
+
 Mon Jul 30 14:24:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c: store anonymous class path in tmp_classpath but not in

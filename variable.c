@@ -115,7 +115,6 @@ find_class_path(VALUE klass, ID preferred)
 {
     struct fc_result arg;
 
-  find:
     arg.preferred = preferred;
     arg.name = 0;
     arg.path = 0;
@@ -137,10 +136,6 @@ find_class_path(VALUE klass, ID preferred)
 	st_delete(RCLASS_IV_TBL(klass), &tmp, 0);
 	return arg.path;
     }
-    if (preferred) {
-	preferred = 0;
-	goto find;
-    }
     return Qnil;
 }
 
@@ -153,12 +148,17 @@ classname(VALUE klass)
     if (!klass) klass = rb_cObject;
     if (RCLASS_IV_TBL(klass)) {
 	if (!st_lookup(RCLASS_IV_TBL(klass), (st_data_t)classpath, &n)) {
-	    if (!st_lookup(RCLASS_IV_TBL(klass), (st_data_t)classid, &n)) {
-		return find_class_path(klass, (ID)0);
+	    if (st_lookup(RCLASS_IV_TBL(klass), (st_data_t)classid, &n)) {
+		path = find_class_path(klass, SYM2ID(n));
 	    }
-	    path = find_class_path(klass, SYM2ID(n));
 	    if (NIL_P(path)) {
-		path = rb_str_dup(rb_id2str(SYM2ID((VALUE)n)));
+		path = find_class_path(klass, (ID)0);
+	    }
+	    if (NIL_P(path)) {
+		if (!st_lookup(RCLASS_IV_TBL(klass), (st_data_t)tmp_classpath, &n)) {
+		    return Qnil;
+		}
+		path = rb_str_dup((VALUE)n);
 		OBJ_FREEZE(path);
 		return path;
 	    }
@@ -240,6 +240,7 @@ void
 rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
 {
     VALUE str;
+    ID pathid = classpath;
 
     if (under == rb_cObject) {
 	str = rb_str_new_frozen(name);
@@ -250,28 +251,29 @@ rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
 	rb_str_cat2(str, "::");
 	rb_str_append(str, name);
 	OBJ_FREEZE(str);
-	if (!permanent) return;
+	if (!permanent) pathid = tmp_classpath;
     }
-    rb_ivar_set(klass, classpath, str);
+    rb_ivar_set(klass, pathid, str);
 }
 
 void
 rb_set_class_path(VALUE klass, VALUE under, const char *name)
 {
     VALUE str;
-    int permanent = 1;
+    ID pathid = classpath;
 
     if (under == rb_cObject) {
 	str = rb_str_new2(name);
     }
     else {
+	int permanent;
 	str = rb_str_dup(rb_tmp_class_path(under, &permanent));
 	rb_str_cat2(str, "::");
 	rb_str_cat2(str, name);
+	if (!permanent) pathid = tmp_classpath;
     }
     OBJ_FREEZE(str);
-    if (!permanent) return;
-    rb_ivar_set(klass, classpath, str);
+    rb_ivar_set(klass, pathid, str);
 }
 
 VALUE
