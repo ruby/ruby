@@ -1,3 +1,9 @@
+Tue Jul 31 10:36:12 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: updated to released version.
+
+	* ext/psych/psych.gemspec: ditto
+
 Tue Jul 31 06:18:06 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* time.c (time_sec):  Remove extra wording about leap seconds and refer
