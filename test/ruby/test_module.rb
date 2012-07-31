@@ -372,11 +372,11 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:N], m.constants)
     m.module_eval("module O end")
     assert_equal([:N, :O], m.constants)
-    m.module_eval("class C end")
+    m.module_eval("class C; end")
     assert_equal([:N, :O, :C], m.constants)
     assert_nil(m::N.name)
     assert_match(/\A#<Module:.*>::O\z/, m::O.name)
-    assert_match(/\A#<Class:.*>::O\z/, m::C.name)
+    assert_match(/\A#<Module:.*>::C\z/, m::C.name)
     self.class.const_set(:M, m)
     prefix = self.class.name + "::M::"
     assert_equal(prefix+"N", m.const_get(:N).name)
