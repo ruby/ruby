@@ -1,3 +1,12 @@
+Wed Aug  1 05:50:53 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_encoding):
+	  Fix test_encoding failure on Windows.
+	  With chcp 65001, 1252 and 437, test_encoding failed. Test result
+	  depends on locale because LANG environment variable doesn't affect
+	  locale on Windows.
+	  [ruby-core:46872] [Bug #6813]
+
 Wed Aug  1 00:33:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (include_class_new): fix duplication of prepended module.

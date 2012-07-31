@@ -199,14 +199,21 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_encoding
-    assert_in_out_err(%w(-Eutf-8), "p '\u3042'", [], /invalid multibyte char/)
-
     assert_in_out_err(%w(--encoding), "", [], /missing argument for --encoding/)
 
     assert_in_out_err(%w(--encoding test_ruby_test_rubyoptions_foobarbazqux), "", [],
                       /unknown encoding name - test_ruby_test_rubyoptions_foobarbazqux \(RuntimeError\)/)
 
-    assert_in_out_err(%w(--encoding utf-8), "p '\u3042'", [], /invalid multibyte char/)
+    if /mswin|mingw/ =~ RUBY_PLATFORM &&
+      (str = "\u3042".force_encoding(Encoding.find("locale"))).valid_encoding?
+      # This result depends on locale because LANG=C doesn't affect locale
+      # on Windows.
+      out, err = [str], []
+    else
+      out, err = [], /invalid multibyte char/
+    end
+    assert_in_out_err(%w(-Eutf-8), "puts '\u3042'", out, err)
+    assert_in_out_err(%w(--encoding utf-8), "puts '\u3042'", out, err)
   end
 
   def test_syntax_check
