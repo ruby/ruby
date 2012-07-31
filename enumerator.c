@@ -1160,12 +1160,10 @@ process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
         if (RTEST(move_next)) {
             switch ((enum proc_entry_type) entry->type) {
                 case T_PROC_MAP:
-                    result = rb_funcall(entry->proc, rb_intern("call"),
-                            1, result);
+                    result = rb_proc_call_with_block(entry->proc, 1, &result, Qnil);
                     break;
                 case T_PROC_SELECT:
-                    move_next = rb_funcall(entry->proc, rb_intern("call"),
-                            1, result);
+                    move_next = rb_proc_call_with_block(entry->proc, 1, &result, Qnil);
                     break;
                 case T_PROC_TAKE:
                     memo = RNODE(entry->memo);
@@ -1184,28 +1182,24 @@ process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
                     }
                     break;
                 case T_PROC_TAKE_WHILE:
-                    move_next = rb_funcall(entry->proc, rb_intern("call"),
-                            1, result);
+                    move_next = rb_proc_call_with_block(entry->proc, 1, &result, Qnil);
                     if (!RTEST(move_next)) result = Qundef;
                     break;
                 case T_PROC_DROP_WHILE:
                     memo = RNODE(entry->memo);
                     if (!memo->u3.state) {
-                        move_next = !RTEST(rb_funcall(entry->proc,
-                                    rb_intern("call"), 1, result));
+                        move_next = !RTEST(rb_proc_call_with_block(entry->proc, 1, &result, Qnil));
                         if (move_next) memo->u3.state = TRUE;
                     }
                     break;
                 case T_PROC_REJECT:
-                    move_next = !RTEST(rb_funcall(entry->proc, rb_intern("call"),
-                                1, result));
+                    move_next = !RTEST(rb_proc_call_with_block(entry->proc, 1, &result, Qnil));
                     break;
                 case T_PROC_GREP:
                     move_next = rb_funcall(entry->memo, id_eqq, 1, result);
 
                     if (RTEST(move_next) && entry->proc) {
-                        result = rb_funcall(entry->proc,
-                                    rb_intern("call"), 1, result);
+                        result = rb_proc_call_with_block(entry->proc, 1, &result, Qnil);
                     }
                     break;
             }
