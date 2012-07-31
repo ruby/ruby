@@ -1030,7 +1030,7 @@ generator_init(VALUE obj, VALUE proc)
     }
 
     ptr->proc = proc;
-    ptr->hybrid = Qfalse;
+    ptr->hybrid = Qtrue;
 
     return obj;
 }
@@ -1215,7 +1215,9 @@ process_element(VALUE procs_array, VALUE yielder, int argc, VALUE* argv)
     if (RTEST(move_next)) {
         rb_funcall2(yielder, id_yield, 1, &result);
     }
-    if (break_point) rb_iter_break();
+    if (RTEST(break_point)) {
+        rb_iter_break();
+    }
     return result;
 }
 static VALUE
@@ -1333,7 +1335,6 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE obj, meth;
     VALUE generator;
-    struct generator *g_ptr;
     VALUE procs;
     struct enumerator *ptr;
     int offset;
@@ -1358,8 +1359,6 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
     rb_block_call(generator, id_initialize, 0, 0,
 		  (rb_block_given_p() ? lazy_init_block_i : lazy_init_block),
                   rb_ary_new3(2, obj, procs));
-    g_ptr = generator_ptr(generator);
-    g_ptr->obj = obj;
     enumerator_init(self, generator, meth, argc - offset, argv + offset);
     ptr = enumerator_ptr(self);
     ptr->procs = procs;
@@ -1369,35 +1368,17 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-lazy_mark_as_hybrid(VALUE obj)
-{
-    struct enumerator *e;
-    struct generator *g;
-    e = enumerator_ptr(obj);
-    g = generator_ptr(e->obj);
-    g->hybrid = Qtrue;
-    return obj;
-}
-
-static VALUE
-lazy_obj_set_method(VALUE obj, VALUE args) {
-    ID id = rb_frame_this_func();
-    rb_ivar_set(obj, id_method, ID2SYM(id));
-    if (NIL_P(args)) {
-	/* Qfalse indicates that the arguments are empty */
-	rb_ivar_set(obj, id_arguments, Qfalse);
-    }
-    else {
-	rb_ivar_set(obj, id_arguments, args);
-    }
-    return obj;
-}
-
-static VALUE
 lazy_set_method(VALUE lazy, VALUE args)
 {
-    lazy_obj_set_method(lazy, args);
-    lazy_mark_as_hybrid(lazy);
+    ID id = rb_frame_this_func();
+    rb_ivar_set(lazy, id_method, ID2SYM(id));
+    if (NIL_P(args)) {
+	/* Qfalse indicates that the arguments are empty */
+	rb_ivar_set(lazy, id_arguments, Qfalse);
+    }
+    else {
+	rb_ivar_set(lazy, id_arguments, args);
+    }
     return lazy;
 }
 
@@ -1449,6 +1430,7 @@ lazy_copy(int argc, VALUE *argv, VALUE obj)
 {
     struct enumerator *e;
     struct enumerator *new_e;
+    struct generator *g;
     VALUE new_obj;
     VALUE new_generator;
     VALUE new_procs;
@@ -1456,15 +1438,21 @@ lazy_copy(int argc, VALUE *argv, VALUE obj)
     e = enumerator_ptr(obj);
     new_procs = rb_ary_new4(RARRAY_LEN(e->procs), RARRAY_PTR(e->procs));
     new_generator = lazy_generator_init(obj, new_procs);
+    g = generator_ptr(new_generator);
+    g->hybrid = Qfalse;
 
     new_obj = enumerator_init_copy(enumerator_allocate(rb_cLazy), obj);
     new_e = enumerator_ptr(new_obj);
     new_e->obj = new_generator;
     new_e->procs = new_procs;
+    new_e->meth = rb_to_id(sym_each);
 
     if (argc > 0) {
         new_e->meth = rb_to_id(*argv++);
         new_e->args = rb_ary_new4(argc - 1, argv);
+    } else {
+        new_e->meth = id_each;
+        new_e->args = rb_ary_new4(argc, argv);
     }
 
     return new_obj;
@@ -1482,7 +1470,7 @@ lazy_map(VALUE obj)
 
     new_enum = lazy_copy(0, 0, obj);
     entry = lazy_add_proc(new_enum, T_PROC_MAP, Qnil);
-    lazy_obj_set_method(entry, Qnil);
+    lazy_set_method(entry, Qnil);
 
     return new_enum;
 }
@@ -1563,7 +1551,7 @@ lazy_select(VALUE obj)
 
     new_enum = lazy_copy(0, 0, obj);
     entry = lazy_add_proc(new_enum, T_PROC_SELECT, Qnil);
-    lazy_obj_set_method(entry, Qnil);
+    lazy_set_method(entry, Qnil);
 
     return new_enum;
 }
@@ -1579,7 +1567,7 @@ lazy_reject(VALUE obj)
 
     new_enum = lazy_copy(0, 0, obj);
     entry = lazy_add_proc(new_enum, T_PROC_REJECT, Qnil);
-    lazy_obj_set_method(entry, Qnil);
+    lazy_set_method(entry, Qnil);
 
     return new_enum;
 }
@@ -1591,7 +1579,7 @@ lazy_grep(VALUE obj, VALUE pattern)
 
     new_enum = lazy_copy(0, 0, obj);
     entry = lazy_add_proc(new_enum, T_PROC_GREP, pattern);
-    lazy_obj_set_method(entry, rb_ary_new3(1, pattern));
+    lazy_set_method(entry, rb_ary_new3(1, pattern));
 
     return new_enum;
 }
@@ -1668,7 +1656,7 @@ lazy_take(VALUE obj, VALUE n)
     memo = NEW_MEMO(0, len, len);
     new_enum = lazy_copy(argc, argv, obj);
     entry = lazy_add_proc(new_enum, T_PROC_TAKE, (VALUE) memo);
-    lazy_obj_set_method(entry, rb_ary_new3(1, n));
+    lazy_set_method(entry, rb_ary_new3(1, n));
 
     return new_enum;
 }
@@ -1680,7 +1668,7 @@ lazy_take_while(VALUE obj)
 
     new_enum = lazy_copy(0, 0, obj);
     entry = lazy_add_proc(new_enum, T_PROC_TAKE_WHILE, Qnil);
-    lazy_obj_set_method(entry, Qnil);
+    lazy_set_method(entry, Qnil);
 
     return new_enum;
 }
@@ -1699,7 +1687,7 @@ lazy_drop(VALUE obj, VALUE n)
     memo = NEW_MEMO(0, 0, len);
     new_enum = lazy_copy(0, 0, obj);
     entry = lazy_add_proc(new_enum, T_PROC_DROP, (VALUE) memo);
-    lazy_obj_set_method(entry, rb_ary_new3(1, n));
+    lazy_set_method(entry, rb_ary_new3(1, n));
 
     return new_enum;
 }
@@ -1713,7 +1701,7 @@ lazy_drop_while(VALUE obj)
     memo = NEW_MEMO(0, 0, FALSE);
     new_enum = lazy_copy(0, 0, obj);
     entry = lazy_add_proc(new_enum, T_PROC_DROP_WHILE, (VALUE) memo);
-    lazy_obj_set_method(entry, Qnil);
+    lazy_set_method(entry, Qnil);
 
     return new_enum;
 }
