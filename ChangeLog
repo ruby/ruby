@@ -1,3 +1,9 @@
+Wed Aug  1 00:33:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (include_class_new): fix duplication of prepended module.
+	  since m_tbl of prepended module is always zero, copy from its
+	  copy iclass of original.
+
 Tue Jul 31 18:22:34 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (classname): tell if found name is permanent.  search

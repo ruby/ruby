@@ -636,7 +636,7 @@ include_class_new(VALUE module, VALUE super)
     }
     RCLASS_IV_TBL(klass) = RCLASS_IV_TBL(module);
     RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
-    RCLASS_M_TBL(klass) = RCLASS_M_TBL(module);
+    RCLASS_M_TBL(klass) = RCLASS_M_TBL(RCLASS_ORIGIN(module));
     RCLASS_SUPER(klass) = super;
     if (RB_TYPE_P(module, T_ICLASS)) {
 	RBASIC(klass)->klass = RBASIC(module)->klass;

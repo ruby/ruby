@@ -1356,6 +1356,15 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:m0, :m1, :m2, :c1], c1.new.x)
     assert_equal([c2, m0, m1, m2, c0], c2.ancestors[0, 5], bug6662)
     assert_equal([:c2, :m0, :m1, :m2, :c0], c2.new.x)
+
+    m3 = labeled_module("m3") {include m1; prepend m1}
+    assert_equal([m3, m0, m1], m3.ancestors)
+    m3 = labeled_module("m3") {prepend m1; include m1}
+    assert_equal([m0, m1, m3], m3.ancestors)
+    m3 = labeled_module("m3") {prepend m1; prepend m1}
+    assert_equal([m0, m1, m3], m3.ancestors)
+    m3 = labeled_module("m3") {include m1; include m1}
+    assert_equal([m3, m0, m1], m3.ancestors)
   end
 
   def labeled_module(name, &block)
