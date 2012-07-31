@@ -29,8 +29,11 @@ Init_var_tables(void)
     rb_global_tbl = st_init_numtable();
     rb_class_tbl = st_init_numtable();
     CONST_ID(autoload, "__autoload__");
+    /* __classpath__: fully qualified class path */
     CONST_ID(classpath, "__classpath__");
+    /* __tmp_classpath__: temporary class path which contains anonymous names */
     CONST_ID(tmp_classpath, "__tmp_classpath__");
+    /* __classid__: name given to class/module under an anonymous namespace */
     CONST_ID(classid, "__classid__");
 }
 
@@ -110,6 +113,13 @@ fc_i(st_data_t k, st_data_t v, st_data_t a)
     return ST_CONTINUE;
 }
 
+/**
+ * Traverse constant namespace and find +classpath+ for _klass_.  If
+ * _preferred_ is not 0, choice the path whose base name is set to it.
+ * If +classpath+ is found, the hidden instance variable __classpath__
+ * is set to the found path, and __tmp_classpath__ is removed.
+ * The path is frozen.
+ */
 static VALUE
 find_class_path(VALUE klass, ID preferred)
 {
@@ -139,33 +149,39 @@ find_class_path(VALUE klass, ID preferred)
     return Qnil;
 }
 
+/**
+ * Returns +classpath+ of _klass_, if it is named, or +nil+ for
+ * anonymous +class+/+module+.  The last part of named +classpath+ is
+ * never anonymous, but anonymous +class+/+module+ names may be
+ * contained.  If the path is "permanent", that means it has no
+ * anonymous names, <code>*permanent</code> is set to 1.
+ */
 static VALUE
-classname(VALUE klass)
+classname(VALUE klass, int *permanent)
 {
     VALUE path = Qnil;
     st_data_t n;
 
     if (!klass) klass = rb_cObject;
+    *permanent = 1;
     if (RCLASS_IV_TBL(klass)) {
 	if (!st_lookup(RCLASS_IV_TBL(klass), (st_data_t)classpath, &n)) {
+	    ID cid = 0;
 	    if (st_lookup(RCLASS_IV_TBL(klass), (st_data_t)classid, &n)) {
-		path = find_class_path(klass, SYM2ID(n));
+		cid = SYM2ID(n);
+		path = find_class_path(klass, cid);
 	    }
 	    if (NIL_P(path)) {
 		path = find_class_path(klass, (ID)0);
 	    }
 	    if (NIL_P(path)) {
-		if (!st_lookup(RCLASS_IV_TBL(klass), (st_data_t)tmp_classpath, &n)) {
+		if (!cid || !st_lookup(RCLASS_IV_TBL(klass), (st_data_t)tmp_classpath, &n)) {
 		    return Qnil;
 		}
-		path = rb_str_dup((VALUE)n);
-		OBJ_FREEZE(path);
+		*permanent = 0;
+		path = (VALUE)n;
 		return path;
 	    }
-	    OBJ_FREEZE(path);
-	    st_insert(RCLASS_IV_TBL(klass), (st_data_t)classpath, (st_data_t)path);
-	    n = classid;
-	    st_delete(RCLASS_IV_TBL(klass), &n, 0);
 	}
 	else {
 	    path = (VALUE)n;
@@ -188,7 +204,8 @@ classname(VALUE klass)
 VALUE
 rb_mod_name(VALUE mod)
 {
-    VALUE path = classname(mod);
+    int permanent;
+    VALUE path = classname(mod, &permanent);
 
     if (!NIL_P(path)) return rb_str_dup(path);
     return path;
@@ -197,11 +214,10 @@ rb_mod_name(VALUE mod)
 static VALUE
 rb_tmp_class_path(VALUE klass, int *permanent)
 {
-    VALUE path = classname(klass);
+    VALUE path = classname(klass, permanent);
     st_data_t n = (st_data_t)path;
 
     if (!NIL_P(path)) {
-	*permanent = 1;
 	return path;
     }
     if (RCLASS_IV_TBL(klass) && st_lookup(RCLASS_IV_TBL(klass),
@@ -233,7 +249,9 @@ VALUE
 rb_class_path(VALUE klass)
 {
     int permanent;
-    return rb_tmp_class_path(klass, &permanent);
+    VALUE path = rb_tmp_class_path(klass, &permanent);
+    if (!NIL_P(path)) path = rb_str_dup(path);
+    return path;
 }
 
 void
@@ -251,7 +269,10 @@ rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
 	rb_str_cat2(str, "::");
 	rb_str_append(str, name);
 	OBJ_FREEZE(str);
-	if (!permanent) pathid = tmp_classpath;
+	if (!permanent) {
+	    pathid = tmp_classpath;
+	    rb_ivar_set(klass, classid, ID2SYM(rb_intern_str(name)));
+	}
     }
     rb_ivar_set(klass, pathid, str);
 }
@@ -270,7 +291,10 @@ rb_set_class_path(VALUE klass, VALUE under, const char *name)
 	str = rb_str_dup(rb_tmp_class_path(under, &permanent));
 	rb_str_cat2(str, "::");
 	rb_str_cat2(str, name);
-	if (!permanent) pathid = tmp_classpath;
+	if (!permanent) {
+	    pathid = tmp_classpath;
+	    rb_ivar_set(klass, classid, ID2SYM(rb_intern(name)));
+	}
     }
     OBJ_FREEZE(str);
     rb_ivar_set(klass, pathid, str);

@@ -1,3 +1,13 @@
+Tue Jul 31 18:22:34 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (classname): tell if found name is permanent.  search
+	  tmp_classpath only if class id is set.  [ruby-core:42865][Bug #6078]
+
+	* variable.c (rb_class_path): duplicate found temporary path.
+
+	* variable.c (rb_set_class_path_string, rb_set_class_path): set class
+	  id to find classpath.
+
 Tue Jul 31 10:36:12 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: updated to released version.
