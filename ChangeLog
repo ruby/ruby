@@ -1,3 +1,10 @@
+Wed Aug  1 22:29:12 2012  Benoit Daloze  <eregontp@gmail.com>
+
+	ext/digest/digest.c (hexencode_str_new): return an ASCII string
+
+	* test/digest: tests for all kind of digests encodings
+	  [ruby-core:46792][Bug #6799]
+
 Wed Aug  1 05:50:53 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_encoding):

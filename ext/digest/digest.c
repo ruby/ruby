@@ -99,7 +99,7 @@ hexencode_str_new(VALUE str_digest)
         rb_raise(rb_eRuntimeError, "digest string too long");
     }
 
-    str = rb_str_new(0, digest_len * 2);
+    str = rb_usascii_str_new(0, digest_len * 2);
 
     for (i = 0, p = RSTRING_PTR(str); i < digest_len; i++) {
         unsigned char byte = digest[i];

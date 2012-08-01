@@ -49,6 +49,7 @@ class TestDigestExtend < Test::Unit::TestCase
       (0..0xff).to_a.map { |c| sprintf("%02x", c ) }.join(''),
       Digest.hexencode((0..0xff).to_a.map { |c| c.chr }.join(''))
     )
+    assert_equal(Encoding::US_ASCII, Digest.hexencode("\1\2").encoding)
   end
 
   def test_class_reset

@@ -25,21 +25,27 @@ module TestDigest
 
   def test_s_hexdigest
     self.class::DATA.each do |str, hexdigest|
-      assert_equal(hexdigest, self.class::ALGO.hexdigest(str))
+      actual = self.class::ALGO.hexdigest(str)
+      assert_equal(hexdigest, actual)
+      assert_equal(Encoding::US_ASCII, actual.encoding)
     end
   end
 
   def test_s_base64digest
     self.class::DATA.each do |str, hexdigest|
       digest = [hexdigest].pack("H*")
-      assert_equal([digest].pack("m0"), self.class::ALGO.base64digest(str))
+      actual = self.class::ALGO.base64digest(str)
+      assert_equal([digest].pack("m0"), actual)
+      assert_equal(Encoding::US_ASCII, actual.encoding)
     end
   end
 
   def test_s_digest
     self.class::DATA.each do |str, hexdigest|
       digest = [hexdigest].pack("H*")
-      assert_equal(digest, self.class::ALGO.digest(str))
+      actual = self.class::ALGO.digest(str)
+      assert_equal(digest, actual)
+      assert_equal(Encoding::BINARY, actual.encoding)
     end
   end
 
