@@ -2539,7 +2539,8 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 	}
     }
 
-    switch (TYPE(sub)) {
+    if (SPECIAL_CONST_P(sub)) goto generic;
+    switch (BUILTIN_TYPE(sub)) {
       case T_REGEXP:
 	if (pos > str_strlen(str, STR_ENC_GET(str)))
 	    return Qnil;
@@ -2550,6 +2551,7 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 	pos = rb_str_sublen(str, pos);
 	break;
 
+      generic:
       default: {
 	VALUE tmp;
 
@@ -2653,7 +2655,8 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 	pos = len;
     }
 
-    switch (TYPE(sub)) {
+    if (SPECIAL_CONST_P(sub)) goto generic;
+    switch (BUILTIN_TYPE(sub)) {
       case T_REGEXP:
 	/* enc = rb_get_check(str, sub); */
 	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
@@ -2666,6 +2669,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 	if (pos >= 0) return LONG2NUM(pos);
 	break;
 
+      generic:
       default: {
 	VALUE tmp;
 
@@ -2702,13 +2706,15 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_match(VALUE x, VALUE y)
 {
-    switch (TYPE(y)) {
+    if (SPECIAL_CONST_P(y)) goto generic;
+    switch (BUILTIN_TYPE(y)) {
       case T_STRING:
 	rb_raise(rb_eTypeError, "type mismatch: String given");
 
       case T_REGEXP:
 	return rb_reg_match(y, x);
 
+      generic:
       default:
 	return rb_funcall(y, rb_intern("=~"), 1, x);
     }
@@ -3163,15 +3169,17 @@ rb_str_aref(VALUE str, VALUE indx)
 {
     long idx;
 
-    switch (TYPE(indx)) {
-      case T_FIXNUM:
+    if (FIXNUM_P(indx)) {
 	idx = FIX2LONG(indx);
 
       num_index:
 	str = rb_str_substr(str, idx, 1);
 	if (!NIL_P(str) && RSTRING_LEN(str) == 0) return Qnil;
 	return str;
+    }
 
+    if (SPECIAL_CONST_P(indx)) goto generic;
+    switch (BUILTIN_TYPE(indx)) {
       case T_REGEXP:
 	return rb_str_subpat(str, indx, INT2FIX(0));
 
@@ -3180,6 +3188,7 @@ rb_str_aref(VALUE str, VALUE indx)
 	    return rb_str_dup(indx);
 	return Qnil;
 
+      generic:
       default:
 	/* check if indx is Range */
 	{
@@ -3440,13 +3449,15 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 {
     long idx, beg;
 
-    switch (TYPE(indx)) {
-      case T_FIXNUM:
+    if (FIXNUM_P(indx)) {
 	idx = FIX2LONG(indx);
       num_index:
 	rb_str_splice(str, idx, 1, val);
 	return val;
+    }
 
+    if (SPECIAL_CONST_P(indx)) goto generic;
+    switch (TYPE(indx)) {
       case T_REGEXP:
 	rb_str_subpat_set(str, indx, INT2FIX(0), val);
 	return val;
@@ -3460,6 +3471,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 	rb_str_splice(str, beg, str_strlen(indx, 0), val);
 	return val;
 
+      generic:
       default:
 	/* check if indx is Range */
 	{

@@ -1175,11 +1175,7 @@ static inline void
 vm_check_if_namespace(VALUE klass)
 {
     VALUE str;
-    switch (TYPE(klass)) {
-      case T_CLASS:
-      case T_MODULE:
-	break;
-      default:
+    if (!RB_TYPE_P(klass, T_CLASS) && !RB_TYPE_P(klass, T_MODULE)) {
 	str = rb_inspect(klass);
 	rb_raise(rb_eTypeError, "%s is not a class/module",
 		 StringValuePtr(str));

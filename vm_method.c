@@ -653,9 +653,7 @@ rb_undef(VALUE klass, ID id)
 	if (FL_TEST(c, FL_SINGLETON)) {
 	    VALUE obj = rb_ivar_get(klass, attached);
 
-	    switch (TYPE(obj)) {
-	      case T_MODULE:
-	      case T_CLASS:
+	    if (RB_TYPE_P(obj, T_MODULE) || RB_TYPE_P(obj, T_CLASS)) {
 		c = obj;
 		s0 = "";
 	    }
