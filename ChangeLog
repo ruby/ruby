@@ -1,3 +1,9 @@
+Thu Aug  2 11:39:25 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: return true or false. Patch by Dirkjan Bussink. [Bug #6821]
+
+	* test/ruby/test_gc.rb: add test-case for this bug.
+
 Thu Aug  2 10:51:12 2012  Martin Bosslet  <Martin.Bosslet@gmail.com>
 
 	* ext/openssl/lib/openssl/digest.rb

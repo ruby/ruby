@@ -109,4 +109,13 @@ class TestGc < Test::Unit::TestCase
     assert_in_out_err([env, "-W1", "-e", "exit"], "", [], [], "[ruby-core:39795]")
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /heap_min_slots=100000/, "[ruby-core:39795]")
   end
+
+  def test_profiler_enabled
+    GC::Profiler.enable
+    assert_equal(true, GC::Profiler.enabled?)
+    GC::Profiler.disable
+    assert_equal(false, GC::Profiler.enabled?)
+  ensure
+    GC::Profiler.disable
+  end
 end

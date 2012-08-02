@@ -672,7 +672,7 @@ static VALUE
 gc_profile_enable_get(VALUE self)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    return objspace->profile.run;
+    return objspace->profile.run ? Qtrue : Qfalse;
 }
 
 /*
