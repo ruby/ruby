@@ -1,3 +1,8 @@
+Thu Aug  2 13:23:08 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (AC_PROG_CC): AC_PROG_CC tries clang at first on
+	  darwin. [Bug #6816]
+
 Thu Aug  2 11:39:25 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: return true or false. Patch by Dirkjan Bussink. [Bug #6821]

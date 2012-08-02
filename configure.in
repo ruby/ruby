@@ -373,7 +373,9 @@ if test x"${build}" != x"${host}"; then
   AC_CHECK_TOOL(CC, gcc)
 fi
 RUBY_MINGW32
-AC_PROG_CC
+AS_CASE(["$build_os"],
+[darwin*], [ AC_PROG_CC(clang gcc cc) ],
+           [ AC_PROG_CC ])
 AC_PROG_CXX
 AC_PROG_GCC_TRADITIONAL
 AC_SUBST(GCC)
