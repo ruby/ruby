@@ -61,26 +61,28 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_encoding_of_ascii_originating_from_binary
-    binary_string = [0x82, 0x66, 0x6f, 0x6f]
+    binary_string = [0x82, 0x74, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20,
+                     0x61, 0x20, 0x76, 0x65, 0x72, 0x79, 0x20, 0x6c, 0x6f,
+                     0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67]
     class << binary_string
       # create a copy on write substring that contains
-      # just the ascii characters (i.e. foo), in JRuby
+      # just the ascii characters (i.e. this is...), in JRuby
       # the underlying string have the same buffer backing
       # it up, but the offset of the string will be 1 instead
       # of 0.
       def make_cow_substring
-        pack('C4').slice(1, 3)
+        pack('C27').slice(1, 26)
       end
     end
 
     ascii_string  = binary_string.make_cow_substring
-    assert_equal("foo", ascii_string)
+    assert_equal("this is a very long string", ascii_string)
     assert_equal(Encoding::ASCII_8BIT, ascii_string.encoding)
     utf8_string = nil
     assert_nothing_raised("JRUBY-6764") do
       utf8_string = ascii_string.encode(Encoding::UTF_8)
     end
-    assert_equal("foo", utf8_string)
+    assert_equal("this is a very long string", utf8_string)
     assert_equal(Encoding::UTF_8, utf8_string.encoding)
   end
 
