@@ -190,6 +190,8 @@ enum node_type {
 #define NODE_COLON2      NODE_COLON2
     NODE_COLON3,
 #define NODE_COLON3      NODE_COLON3
+    NODE_CREF,
+#define NODE_CREF        NODE_CREF
     NODE_DOT2,
 #define NODE_DOT2        NODE_DOT2
     NODE_DOT3,
@@ -263,9 +265,10 @@ typedef struct RNode {
 
 #define RNODE(obj)  (R_CAST(RNode)(obj))
 
-/* 0..4:T_TYPES, 5:reserved, 6:reserved, 7:NODE_FL_NEWLINE */
+/* 0..4:T_TYPES, 5:reserved, 6:NODE_FL_CREF_OMOD_SHARED, 7:NODE_FL_NEWLINE */
 #define NODE_FL_NEWLINE (((VALUE)1)<<7)
 #define NODE_FL_CREF_PUSHED_BY_EVAL NODE_FL_NEWLINE
+#define NODE_FL_CREF_OMOD_SHARED (((VALUE)1)<<6)
 
 #define NODE_TYPESHIFT 8
 #define NODE_TYPEMASK  (((VALUE)0x7f)<<NODE_TYPESHIFT)
@@ -279,6 +282,8 @@ typedef struct RNode {
 #define nd_line(n) (int)(RNODE(n)->flags>>NODE_LSHIFT)
 #define nd_set_line(n,l) \
     RNODE(n)->flags=((RNODE(n)->flags&~(-1<<NODE_LSHIFT))|(((l)&NODE_LMASK)<<NODE_LSHIFT))
+
+#define nd_omod  nd_reserved
 
 #define nd_head  u1.node
 #define nd_alen  u2.argc
@@ -437,6 +442,7 @@ typedef struct RNode {
 #define NEW_MODULE(n,b) NEW_NODE(NODE_MODULE,n,NEW_SCOPE(0,b),0)
 #define NEW_COLON2(c,i) NEW_NODE(NODE_COLON2,c,i,0)
 #define NEW_COLON3(i) NEW_NODE(NODE_COLON3,0,i,0)
+#define NEW_CREF(a) NEW_NODE(NODE_CREF,a,0,0)
 #define NEW_DOT2(b,e) NEW_NODE(NODE_DOT2,b,e,0)
 #define NEW_DOT3(b,e) NEW_NODE(NODE_DOT3,b,e,0)
 #define NEW_SELF() NEW_NODE(NODE_SELF,0,0,0)

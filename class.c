@@ -620,8 +620,8 @@ rb_define_module_id_under(VALUE outer, ID id)
     return module;
 }
 
-static VALUE
-include_class_new(VALUE module, VALUE super)
+VALUE
+rb_include_class_new(VALUE module, VALUE super)
 {
     VALUE klass = class_alloc(T_ICLASS, rb_cClass);
 
@@ -703,7 +703,7 @@ include_modules_at(VALUE klass, VALUE c, VALUE module)
 		break;
 	    }
 	}
-	c = RCLASS_SUPER(c) = include_class_new(module, RCLASS_SUPER(c));
+	c = RCLASS_SUPER(c) = rb_include_class_new(module, RCLASS_SUPER(c));
 	if (RMODULE_M_TBL(module) && RMODULE_M_TBL(module)->num_entries)
 	    changed = 1;
       skip:

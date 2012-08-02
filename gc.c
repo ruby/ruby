@@ -1994,6 +1994,12 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	    ptr = (VALUE)obj->as.node.u2.node;
 	    goto again;
 
+	  case NODE_CREF:
+	    gc_mark(objspace, obj->as.node.nd_omod, lev);
+	    gc_mark(objspace, (VALUE)obj->as.node.u1.node, lev);
+	    ptr = (VALUE)obj->as.node.u3.node;
+	    goto again;
+
 	  default:		/* unlisted NODE */
 	    if (is_pointer_to_heap(objspace, obj->as.node.u1.node)) {
 		gc_mark(objspace, (VALUE)obj->as.node.u1.node, lev);

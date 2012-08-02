@@ -391,7 +391,7 @@ rb_search_method_entry(VALUE recv, ID mid, VALUE *defined_class_ptr)
                          rb_id2name(mid), type, (void *)recv, flags, klass);
         }
     }
-    return rb_method_entry(klass, mid, defined_class_ptr);
+    return rb_method_entry_get_with_omod(Qnil, klass, mid, defined_class_ptr);
 }
 
 static inline int
@@ -1310,6 +1310,7 @@ yield_under(VALUE under, VALUE self, VALUE values)
     }
     cref = vm_cref_push(th, under, NOEX_PUBLIC, blockptr);
     cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL;
+    rb_vm_using_modules(cref, under);
 
     if (values == Qundef) {
 	return vm_yield_with_cref(th, 1, &self, cref);
@@ -1331,6 +1332,7 @@ eval_under(VALUE under, VALUE self, VALUE src, const char *file, int line)
     else {
 	SafeStringValue(src);
     }
+    rb_vm_using_modules(cref, under);
 
     return eval_string_with_cref(self, src, Qnil, cref, file, line);
 }

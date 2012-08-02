@@ -160,8 +160,17 @@ enum vm_regan_acttype {
 /* deal with control flow 2: method/iterator              */
 /**********************************************************/
 
+#define COPY_CREF_OMOD(c1, c2) do {  \
+  (c1)->nd_omod = (c2)->nd_omod; \
+  if (!NIL_P((c2)->nd_omod)) { \
+      (c1)->flags |= NODE_FL_CREF_OMOD_SHARED; \
+      (c2)->flags |= NODE_FL_CREF_OMOD_SHARED; \
+  } \
+} while (0)
+
 #define COPY_CREF(c1, c2) do {  \
   NODE *__tmp_c2 = (c2); \
+  COPY_CREF_OMOD(c1, __tmp_c2); \
   (c1)->nd_clss = __tmp_c2->nd_clss; \
   (c1)->nd_visi = __tmp_c2->nd_visi;\
   (c1)->nd_next = __tmp_c2->nd_next; \

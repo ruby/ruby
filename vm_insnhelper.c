@@ -1128,13 +1128,13 @@ vm_get_cref0(const rb_iseq_t *iseq, const VALUE *ep)
     }
 }
 
-static NODE *
-vm_get_cref(const rb_iseq_t *iseq, const VALUE *ep)
+NODE *
+rb_vm_get_cref(const rb_iseq_t *iseq, const VALUE *ep)
 {
     NODE *cref = vm_get_cref0(iseq, ep);
 
     if (cref == 0) {
-	rb_bug("vm_get_cref: unreachable");
+	rb_bug("rb_vm_get_cref: unreachable");
     }
     return cref;
 }
@@ -1143,7 +1143,8 @@ static NODE *
 vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr)
 {
     rb_control_frame_t *cfp = vm_get_ruby_level_caller_cfp(th, th->cfp);
-    NODE *cref = NEW_BLOCK(klass);
+    NODE *cref = NEW_CREF(klass);
+    cref->nd_omod = Qnil;
     cref->nd_visi = noex;
 
     if (blockptr) {
@@ -1152,6 +1153,11 @@ vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr)
     else if (cfp) {
 	cref->nd_next = vm_get_cref0(cfp->iseq, cfp->ep);
     }
+    /* TODO: why cref->nd_next is 1? */
+    if (cref->nd_next && cref->nd_next != (void *) 1 &&
+	!NIL_P(cref->nd_next->nd_omod)) {
+	COPY_CREF_OMOD(cref, cref->nd_next);
+    }
 
     return cref;
 }
@@ -1159,7 +1165,7 @@ vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr)
 static inline VALUE
 vm_get_cbase(const rb_iseq_t *iseq, const VALUE *ep)
 {
-    NODE *cref = vm_get_cref(iseq, ep);
+    NODE *cref = rb_vm_get_cref(iseq, ep);
     VALUE klass = Qundef;
 
     while (cref) {
@@ -1175,7 +1181,7 @@ vm_get_cbase(const rb_iseq_t *iseq, const VALUE *ep)
 static inline VALUE
 vm_get_const_base(const rb_iseq_t *iseq, const VALUE *ep)
 {
-    NODE *cref = vm_get_cref(iseq, ep);
+    NODE *cref = rb_vm_get_cref(iseq, ep);
     VALUE klass = Qundef;
 
     while (cref) {
@@ -1201,6 +1207,20 @@ vm_check_if_namespace(VALUE klass)
 }
 
 static inline VALUE
+vm_get_iclass(rb_control_frame_t *cfp, VALUE klass)
+{
+    if (TYPE(klass) == T_MODULE &&
+	FL_TEST(klass, RMODULE_IS_OVERLAYED) &&
+	TYPE(cfp->klass) == T_ICLASS &&
+	RBASIC(cfp->klass)->klass == klass) {
+	return cfp->klass;
+    }
+    else {
+	return klass;
+    }
+}
+
+static inline VALUE
 vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 		VALUE orig_klass, ID id, int is_defined)
 {
@@ -1208,7 +1228,7 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 
     if (orig_klass == Qnil) {
 	/* in current lexical scope */
-	const NODE *root_cref = vm_get_cref(iseq, th->cfp->ep);
+	const NODE *root_cref = rb_vm_get_cref(iseq, th->cfp->ep);
 	const NODE *cref;
 	VALUE klass = orig_klass;
 
@@ -1254,7 +1274,7 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 
 	/* search self */
 	if (root_cref && !NIL_P(root_cref->nd_clss)) {
-	    klass = root_cref->nd_clss;
+	    klass = vm_get_iclass(th->cfp, root_cref->nd_clss);
 	}
 	else {
 	    klass = CLASS_OF(th->cfp->self);
@@ -1279,7 +1299,7 @@ vm_get_ev_const(rb_thread_t *th, const rb_iseq_t *iseq,
 }
 
 static inline VALUE
-vm_get_cvar_base(NODE *cref)
+vm_get_cvar_base(NODE *cref, rb_control_frame_t *cfp)
 {
     VALUE klass;
 
@@ -1296,7 +1316,7 @@ vm_get_cvar_base(NODE *cref)
 	rb_warn("class variable access from toplevel");
     }
 
-    klass = cref->nd_clss;
+    klass = vm_get_iclass(cfp, cref->nd_clss);
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class variables available");
@@ -1803,5 +1823,45 @@ opt_eq_func(VALUE recv, VALUE obj, IC ic)
     }
 
     return Qundef;
+}
+
+void rb_using_module(NODE *cref, VALUE module);
+
+static int
+vm_using_module_i(VALUE module, VALUE value, VALUE arg)
+{
+    NODE *cref = (NODE *) arg;
+
+    rb_using_module(cref, module);
+    return ST_CONTINUE;
+}
+
+static void
+rb_vm_using_modules(NODE *cref, VALUE klass)
+{
+    ID id_using_modules;
+    VALUE using_modules;
+
+    CONST_ID(id_using_modules, "__using_modules__");
+    using_modules = rb_attr_get(klass, id_using_modules);
+    switch (TYPE(klass)) {
+    case T_CLASS:
+	if (NIL_P(using_modules)) {
+	    VALUE super = rb_class_real(RCLASS_SUPER(klass));
+	    using_modules = rb_attr_get(super, id_using_modules);
+	    if (!NIL_P(using_modules)) {
+		using_modules = rb_hash_dup(using_modules);
+		rb_ivar_set(klass, id_using_modules, using_modules);
+	    }
+	}
+	break;
+    case T_MODULE:
+	rb_using_module(cref, klass);
+	break;
+    }
+    if (!NIL_P(using_modules)) {
+	rb_hash_foreach(using_modules, vm_using_module_i,
+		       	(VALUE) cref);
+    }
 }
 

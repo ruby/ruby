@@ -1,3 +1,11 @@
+Thu Aug  2 20:32:29 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_mod_using): new method Module#using. [experimental]
+
+	* eval.c (rb_mod_refine): new method Module#refine. [experimental]
+
+	* eval.c (f_using): new method Kernel#using. [experimental]
+
 Thu Aug  2 20:08:02 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* class.c, insns.def, method.h, proc.c, vm.c, vm_core.h, vm_eval.c,

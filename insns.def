@@ -183,8 +183,8 @@ getclassvariable
 ()
 (VALUE val)
 {
-    NODE *cref = vm_get_cref(GET_ISEQ(), GET_EP());
-    val = rb_cvar_get(vm_get_cvar_base(cref), id);
+    NODE *cref = rb_vm_get_cref(GET_ISEQ(), GET_EP());
+    val = rb_cvar_get(vm_get_cvar_base(cref, GET_CFP()), id);
 }
 
 /**
@@ -198,8 +198,8 @@ setclassvariable
 (VALUE val)
 ()
 {
-    NODE *cref = vm_get_cref(GET_ISEQ(), GET_EP());
-    rb_cvar_set(vm_get_cvar_base(cref), id, val);
+    NODE *cref = rb_vm_get_cref(GET_ISEQ(), GET_EP());
+    rb_cvar_set(vm_get_cvar_base(cref, GET_CFP()), id, val);
 }
 
 /**
@@ -777,8 +777,8 @@ defined
 	break;
       case DEFINED_CVAR:
 	{
-	NODE *cref = vm_get_cref(GET_ISEQ(), GET_EP());
-	klass = vm_get_cvar_base(cref);
+	NODE *cref = rb_vm_get_cref(GET_ISEQ(), GET_EP());
+	klass = vm_get_cvar_base(cref, GET_CFP());
 	if (rb_cvar_defined(klass, SYM2ID(obj))) {
 	    expr_type = "class variable";
 	}
@@ -970,6 +970,7 @@ defineclass
 		  klass, 0, VM_ENVVAL_BLOCK_PTR(GET_BLOCK_PTR()),
 		  class_iseq->iseq_encoded, GET_SP(),
 		  class_iseq->local_size, 0);
+    rb_vm_using_modules(class_iseq->cref_stack, klass);
     RESTORE_REGS();
 
     INC_VM_STATE_VERSION();
@@ -1044,12 +1045,11 @@ invokesuper
     while (ip && !ip->klass) {
 	ip = ip->parent_iseq;
     }
-  again:
     me = rb_method_entry(klass, id, &klass);
     if (me && me->def->type == VM_METHOD_TYPE_ISEQ &&
 	me->def->body.iseq == ip) {
 	klass = RCLASS_SUPER(klass);
-	goto again;
+	me = rb_method_entry_get_with_omod(Qnil, klass, id, &klass);
     }
 
     CALL_METHOD(num, blockptr, flag, id, me, recv, klass);
