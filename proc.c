@@ -17,6 +17,7 @@
 struct METHOD {
     VALUE recv;
     VALUE rclass;
+    VALUE defined_class;
     ID id;
     rb_method_entry_t *me;
     struct unlinked_method_entry_list_entry *ume;
@@ -889,6 +890,7 @@ static void
 bm_mark(void *ptr)
 {
     struct METHOD *data = ptr;
+    rb_gc_mark(data->defined_class);
     rb_gc_mark(data->rclass);
     rb_gc_mark(data->recv);
     if (data->me) rb_mark_method_entry(data->me);
@@ -935,7 +937,7 @@ static VALUE
 mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 {
     VALUE method;
-    VALUE rclass = klass;
+    VALUE rclass = klass, defined_class;
     ID rid = id;
     struct METHOD *data;
     rb_method_entry_t *me, meb;
@@ -943,7 +945,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     rb_method_flag_t flag = NOEX_UNDEF;
 
   again:
-    me = rb_method_entry(klass, id);
+    me = rb_method_entry(klass, id, &defined_class);
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	ID rmiss = rb_intern("respond_to_missing?");
 	VALUE sym = ID2SYM(id);
@@ -985,12 +987,12 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 	}
     }
     if (def && def->type == VM_METHOD_TYPE_ZSUPER) {
-	klass = RCLASS_SUPER(me->klass);
+	klass = RCLASS_SUPER(defined_class);
 	id = def->original_id;
 	goto again;
     }
 
-    klass = me->klass;
+    klass = defined_class;
 
     while (rclass != klass &&
 	   (FL_TEST(rclass, FL_SINGLETON) || RB_TYPE_P(rclass, T_ICLASS))) {
@@ -1006,6 +1008,7 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 
     data->recv = obj;
     data->rclass = rclass;
+    data->defined_class = defined_class;
     data->id = rid;
     data->me = ALLOC(rb_method_entry_t);
     *data->me = *me;
@@ -1119,6 +1122,7 @@ method_unbind(VALUE obj)
     *data->me = *orig->me;
     if (orig->me->def) orig->me->def->alias_count++;
     data->rclass = orig->rclass;
+    data->defined_class = orig->defined_class;
     data->ume = ALLOC(struct unlinked_method_entry_list_entry);
     OBJ_INFECT(method, obj);
 
@@ -1394,6 +1398,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	    proc->block.iseq->klass = mod;
 	    proc->is_lambda = TRUE;
 	    proc->is_from_method = TRUE;
+	    proc->block.klass = mod;
 	}
 	rb_add_method(mod, id, VM_METHOD_TYPE_BMETHOD, (void *)body, noex);
     }
@@ -1498,7 +1503,7 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
 	rb_thread_t *th = GET_THREAD();
 
 	PASS_PASSED_BLOCK_TH(th);
-	result = rb_vm_call(th, data->recv, data->id,  argc, argv, data->me);
+	result = rb_vm_call(th, data->recv, data->id,  argc, argv, data->me, data->defined_class);
     }
     POP_TAG();
     if (safe >= 0)
@@ -1727,7 +1732,7 @@ method_arity(VALUE method)
 int
 rb_mod_method_arity(VALUE mod, ID id)
 {
-    rb_method_entry_t *me = rb_method_entry(mod, id);
+    rb_method_entry_t *me = rb_method_entry(mod, id, 0);
     return rb_method_entry_arity(me);
 }
 

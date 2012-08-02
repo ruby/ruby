@@ -137,6 +137,9 @@ struct iseq_inline_cache_entry {
 	rb_method_entry_t *method;
 	long index;
     } ic_value;
+    union {
+	VALUE defined_class;
+    } ic_value2;
 };
 
 #if 1
@@ -349,14 +352,16 @@ typedef struct {
     rb_iseq_t *iseq;		/* cfp[3] */
     VALUE flag;			/* cfp[4] */
     VALUE self;			/* cfp[5] / block[0] */
-    VALUE *ep;			/* cfp[6] / block[1] */
-    rb_iseq_t *block_iseq;	/* cfp[7] / block[2] */
-    VALUE proc;			/* cfp[8] / block[3] */
-    const rb_method_entry_t *me;/* cfp[9] */
+    VALUE klass;		/* cfp[6] / block[1] */
+    VALUE *ep;			/* cfp[7] / block[2] */
+    rb_iseq_t *block_iseq;	/* cfp[8] / block[3] */
+    VALUE proc;			/* cfp[9] / block[4] */
+    const rb_method_entry_t *me;/* cfp[10] */
 } rb_control_frame_t;
 
 typedef struct rb_block_struct {
     VALUE self;			/* share with method frame if it's only block */
+    VALUE klass;		/* share with method frame if it's only block */
     VALUE *ep;			/* share with method frame if it's only block */
     rb_iseq_t *iseq;
     VALUE proc;
@@ -714,7 +719,8 @@ void rb_vm_rewrite_ep_in_errinfo(rb_thread_t *th, rb_control_frame_t *cfp);
 void rb_vm_inc_const_missing_count(void);
 void rb_vm_gvl_destroy(rb_vm_t *vm);
 VALUE rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc,
-                 const VALUE *argv, const rb_method_entry_t *me);
+		 const VALUE *argv, const rb_method_entry_t *me,
+		 VALUE defined_class);
 void rb_unlink_method_entry(rb_method_entry_t *me);
 void rb_gc_mark_unlinked_live_method_entries(void *pvm);
 

@@ -33,11 +33,11 @@ static VALUE send_internal(int argc, const VALUE *argv, VALUE recv, call_type sc
 
 static inline VALUE
 vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
-	 const rb_method_entry_t *me)
+	 const rb_method_entry_t *me, VALUE defined_class)
 {
     const rb_method_definition_t *def = me->def;
     VALUE val;
-    VALUE klass = me->klass;
+    VALUE klass = defined_class;
     const rb_block_t *blockptr = 0;
 
     if (!def) return Qnil;
@@ -59,7 +59,8 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	    *reg_cfp->sp++ = argv[i];
 	}
 
-	vm_setup_method(th, reg_cfp, recv, argc, blockptr, 0 /* flag */, me);
+	vm_setup_method(th, reg_cfp, recv, argc, blockptr, 0 /* flag */,
+			me, klass);
 	th->cfp->flag |= VM_FRAME_FLAG_FINISH;
 	val = vm_exec(th);
 	break;
@@ -71,7 +72,8 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	    rb_control_frame_t *reg_cfp = th->cfp;
 	    rb_control_frame_t *cfp =
 		vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
-			      recv, VM_ENVVAL_BLOCK_PTR(blockptr), 0, reg_cfp->sp, 1, me);
+			      recv, klass, VM_ENVVAL_BLOCK_PTR(blockptr),
+			      0, reg_cfp->sp, 1, me);
 
 	    cfp->me = me;
 	    val = call_cfunc(def->body.cfunc.func, recv, def->body.cfunc.argc, argc, argv);
@@ -95,12 +97,12 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	break;
       }
       case VM_METHOD_TYPE_BMETHOD: {
-	val = vm_call_bmethod(th, recv, argc, argv, blockptr, me);
+	val = vm_call_bmethod(th, recv, argc, argv, blockptr, me, klass);
 	break;
       }
       case VM_METHOD_TYPE_ZSUPER: {
 	klass = RCLASS_SUPER(klass);
-	if (!klass || !(me = rb_method_entry(klass, id))) {
+	if (!klass || !(me = rb_method_entry(klass, id, &klass))) {
 	    return method_missing(recv, id, argc, argv, NOEX_SUPER);
 	}
 	RUBY_VM_CHECK_INTS(th);
@@ -144,9 +146,9 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 
 VALUE
 rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc, const VALUE *argv,
-	   const rb_method_entry_t *me)
+	   const rb_method_entry_t *me, VALUE defined_class)
 {
-    return vm_call0(th, recv, id, argc, argv, me);
+    return vm_call0(th, recv, id, argc, argv, me, defined_class);
 }
 
 static inline VALUE
@@ -158,9 +160,8 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
     rb_method_entry_t *me;
     rb_control_frame_t *cfp = th->cfp;
 
-    if (!cfp->iseq) {
-	klass = cfp->me->klass;
-	klass = RCLASS_SUPER(klass);
+    if (!cfp->iseq && !NIL_P(cfp->klass)) {
+	klass = RCLASS_SUPER(cfp->klass);
 
 	if (klass == 0) {
 	    klass = vm_search_normal_superclass(cfp->me->klass, recv);
@@ -171,12 +172,12 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
 	rb_bug("vm_call_super: should not be reached");
     }
 
-    me = rb_method_entry(klass, id);
+    me = rb_method_entry(klass, id, &klass);
     if (!me) {
 	return method_missing(recv, id, argc, argv, NOEX_SUPER);
     }
 
-    return vm_call0(th, recv, id, argc, argv, me);
+    return vm_call0(th, recv, id, argc, argv, me, klass);
 }
 
 VALUE
@@ -197,7 +198,8 @@ stack_check(void)
     }
 }
 
-static inline rb_method_entry_t *rb_search_method_entry(VALUE recv, ID mid);
+static inline rb_method_entry_t *
+    rb_search_method_entry(VALUE recv, ID mid, VALUE *defined_class_ptr);
 static inline int rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type scope, VALUE self);
 #define NOEX_OK NOEX_NOSUPER
 
@@ -219,7 +221,8 @@ static inline VALUE
 rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 	 call_type scope, VALUE self)
 {
-    rb_method_entry_t *me = rb_search_method_entry(recv, mid);
+    VALUE defined_class;
+    rb_method_entry_t *me = rb_search_method_entry(recv, mid, &defined_class);
     rb_thread_t *th = GET_THREAD();
     int call_status = rb_method_call_status(th, me, scope, self);
 
@@ -227,7 +230,7 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 	return method_missing(recv, mid, argc, argv, call_status);
     }
     stack_check();
-    return vm_call0(th, recv, mid, argc, argv, me);
+    return vm_call0(th, recv, mid, argc, argv, me, defined_class);
 }
 
 struct rescue_funcall_args {
@@ -264,8 +267,9 @@ check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
     const rb_method_entry_t *me;
     rb_thread_t *th = GET_THREAD();
     int call_status;
+    VALUE defined_class;
 
-    me = rb_method_entry(klass, idRespond_to);
+    me = rb_method_entry(klass, idRespond_to, &defined_class);
     if (me && !(me->flag & NOEX_BASIC)) {
 	VALUE args[2];
 	int arity = rb_method_entry_arity(me);
@@ -277,12 +281,13 @@ check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
 
 	args[0] = ID2SYM(mid);
 	args[1] = Qtrue;
-	if (!RTEST(vm_call0(th, recv, idRespond_to, arity, args, me))) {
+	if (!RTEST(vm_call0(th, recv, idRespond_to, arity, args, me,
+			    defined_class))) {
 	    return Qundef;
 	}
     }
 
-    me = rb_search_method_entry(recv, mid);
+    me = rb_search_method_entry(recv, mid, &defined_class);
     call_status = rb_method_call_status(th, me, CALL_FCALL, Qundef);
     if (call_status != NOEX_OK) {
 	if (rb_method_basic_definition_p(klass, idMethodMissing)) {
@@ -302,7 +307,7 @@ check_funcall(VALUE recv, ID mid, int argc, VALUE *argv)
 	}
     }
     stack_check();
-    return vm_call0(th, recv, mid, argc, argv, me);
+    return vm_call0(th, recv, mid, argc, argv, me, defined_class);
 }
 
 VALUE
@@ -347,7 +352,7 @@ rb_type_str(enum ruby_value_type type)
 }
 
 static inline rb_method_entry_t *
-rb_search_method_entry(VALUE recv, ID mid)
+rb_search_method_entry(VALUE recv, ID mid, VALUE *defined_class_ptr)
 {
     VALUE klass = CLASS_OF(recv);
 
@@ -386,7 +391,7 @@ rb_search_method_entry(VALUE recv, ID mid)
                          rb_id2name(mid), type, (void *)recv, flags, klass);
         }
     }
-    return rb_method_entry(klass, mid);
+    return rb_method_entry(klass, mid, defined_class_ptr);
 }
 
 static inline int

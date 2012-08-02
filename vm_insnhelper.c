@@ -27,6 +27,7 @@ vm_push_frame(rb_thread_t *th,
 	      const rb_iseq_t *iseq,
 	      VALUE type,
 	      VALUE self,
+	      VALUE klass,
 	      VALUE specval,
 	      const VALUE *pc,
 	      VALUE *sp,
@@ -64,6 +65,18 @@ vm_push_frame(rb_thread_t *th,
     cfp->block_iseq = 0;
     cfp->proc = 0;
     cfp->me = me;
+    if (klass) {
+	cfp->klass = klass;
+    }
+    else {
+	rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+	if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, prev_cfp)) {
+	    cfp->klass = Qnil;
+	}
+	else {
+	    cfp->klass = prev_cfp->klass;
+	}
+    }
 
     if (VMDEBUG == 2) {
 	SDR();
@@ -415,14 +428,14 @@ call_cfunc(VALUE (*func)(), VALUE recv,
 static inline VALUE
 vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	      int num, volatile VALUE recv, const rb_block_t *blockptr,
-	      const rb_method_entry_t *me)
+	      const rb_method_entry_t *me, VALUE defined_class)
 {
     volatile VALUE val = 0;
     const rb_method_definition_t *def = me->def;
 
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->called_id, me->klass);
 
-    vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, recv,
+    vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, recv, defined_class,
 		  VM_ENVVAL_BLOCK_PTR(blockptr), 0, th->cfp->sp, 1, me);
 
     reg_cfp->sp -= num + 1;
@@ -442,7 +455,8 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 
 static inline VALUE
 vm_call_bmethod(rb_thread_t *th, VALUE recv, int argc, const VALUE *argv,
-		const rb_block_t *blockptr, const rb_method_entry_t *me)
+		const rb_block_t *blockptr, const rb_method_entry_t *me,
+		VALUE defined_class)
 {
     rb_proc_t *proc;
     VALUE val;
@@ -483,7 +497,7 @@ vm_method_missing(rb_thread_t *th, ID id, VALUE recv,
 static inline void
 vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		VALUE recv, int argc, const rb_block_t *blockptr, VALUE flag,
-		const rb_method_entry_t *me)
+		const rb_method_entry_t *me, VALUE defined_class)
 {
     int opt_pc, i;
     VALUE *sp, *rsp = cfp->sp - argc;
@@ -505,7 +519,7 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	    *sp++ = Qnil;
 	}
 
-	vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, recv,
+	vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, recv, defined_class,
 		      VM_ENVVAL_BLOCK_PTR(blockptr),
 		      iseq->iseq_encoded + opt_pc, sp, 0, me);
 
@@ -528,7 +542,7 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	    *sp++ = Qnil;
 	}
 
-	vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, recv,
+	vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, recv, defined_class,
 		      VM_ENVVAL_BLOCK_PTR(blockptr),
 		      iseq->iseq_encoded + opt_pc, sp, 0, me);
     }
@@ -537,7 +551,8 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 static inline VALUE
 vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	       int num, const rb_block_t *blockptr, VALUE flag,
-	       ID id, const rb_method_entry_t *me, VALUE recv)
+	       ID id, const rb_method_entry_t *me,
+	       VALUE recv, VALUE defined_class)
 {
     VALUE val;
 
@@ -548,12 +563,14 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	  normal_method_dispatch:
 	    switch (me->def->type) {
 	      case VM_METHOD_TYPE_ISEQ:{
-		vm_setup_method(th, cfp, recv, num, blockptr, flag, me);
+		vm_setup_method(th, cfp, recv, num, blockptr, flag, me,
+			       	defined_class);
 		return Qundef;
 	      }
 	      case VM_METHOD_TYPE_NOTIMPLEMENTED:
 	      case VM_METHOD_TYPE_CFUNC:{
-		val = vm_call_cfunc(th, cfp, num, recv, blockptr, me);
+		val = vm_call_cfunc(th, cfp, num, recv, blockptr, me,
+				    defined_class);
 		break;
 	      }
 	      case VM_METHOD_TYPE_ATTRSET:{
@@ -581,12 +598,13 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		VALUE *argv = ALLOCA_N(VALUE, num);
 		MEMCPY(argv, cfp->sp - num, VALUE, num);
 		cfp->sp += - num - 1;
-		val = vm_call_bmethod(th, recv, num, argv, blockptr, me);
+		val = vm_call_bmethod(th, recv, num, argv, blockptr, me,
+				      defined_class);
 		break;
 	      }
 	      case VM_METHOD_TYPE_ZSUPER:{
 		VALUE klass = RCLASS_SUPER(me->klass);
-		me = rb_method_entry(klass, id);
+		me = rb_method_entry(klass, id, &defined_class);
 
 		if (me != 0) {
 		    goto normal_method_dispatch;
@@ -622,7 +640,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		    if (i > 0) {
 			MEMMOVE(&TOPN(i), &TOPN(i-1), VALUE, i);
 		    }
-		    me = rb_method_entry(CLASS_OF(recv), id);
+		    me = rb_method_entry(CLASS_OF(recv), id, &defined_class);
 		    num -= 1;
 		    DEC_SP(1);
 		    flag |= VM_CALL_FCALL_BIT | VM_CALL_OPT_SEND_BIT;
@@ -665,8 +683,6 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		val = vm_method_missing(th, id, recv, num, blockptr, stat);
 	    }
 	    else if (!(flag & VM_CALL_OPT_SEND_BIT) && (me->flag & NOEX_MASK) & NOEX_PROTECTED) {
-		VALUE defined_class = me->klass;
-
 		if (RB_TYPE_P(defined_class, T_ICLASS)) {
 		    defined_class = RBASIC(defined_class)->klass;
 		}
@@ -759,7 +775,8 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
     }
 
     cfp = vm_push_frame(th, (rb_iseq_t *)ifunc, VM_FRAME_MAGIC_IFUNC, self,
-			VM_ENVVAL_PREV_EP_PTR(block->ep), 0, th->cfp->sp, 1, 0);
+			0, VM_ENVVAL_PREV_EP_PTR(block->ep), 0,
+			th->cfp->sp, 1, 0);
 
     if (blockargptr) {
 	VM_CF_LEP(cfp)[0] = VM_ENVVAL_BLOCK_PTR(blockargptr);
@@ -976,6 +993,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
 				     block_proc_is_lambda(block->proc));
 
 	vm_push_frame(th, iseq, VM_FRAME_MAGIC_BLOCK, block->self,
+		      block->klass,
 		      VM_ENVVAL_PREV_EP_PTR(block->ep),
 		      iseq->iseq_encoded + opt_pc,
 		      rsp + arg_size,
@@ -1396,22 +1414,28 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
 }
 
 static inline const rb_method_entry_t *
-vm_method_search(VALUE id, VALUE klass, IC ic)
+vm_method_search(VALUE id, VALUE klass, IC ic, VALUE *defined_class_ptr)
 {
     rb_method_entry_t *me;
 #if OPT_INLINE_METHOD_CACHE
     if (LIKELY(klass == ic->ic_class &&
 	GET_VM_STATE_VERSION() == ic->ic_vmstat)) {
 	me = ic->ic_value.method;
+	if (defined_class_ptr)
+	    *defined_class_ptr = ic->ic_value2.defined_class;
     }
     else {
-	me = rb_method_entry(klass, id);
+	VALUE defined_class;
+	me = rb_method_entry(klass, id, &defined_class);
+	if (defined_class_ptr)
+	    *defined_class_ptr = defined_class;
 	ic->ic_class = klass;
 	ic->ic_value.method = me;
+	ic->ic_value2.defined_class = defined_class;
 	ic->ic_vmstat = GET_VM_STATE_VERSION();
     }
 #else
-    me = rb_method_entry(klass, id);
+    me = rb_method_entry(klass, id, defined_class_ptr);
 #endif
     return me;
 }
@@ -1419,7 +1443,7 @@ vm_method_search(VALUE id, VALUE klass, IC ic)
 static inline VALUE
 vm_search_normal_superclass(VALUE klass, VALUE recv)
 {
-    if (BUILTIN_TYPE(klass) == T_CLASS) {
+    if (BUILTIN_TYPE(klass) == T_CLASS || BUILTIN_TYPE(klass) == T_ICLASS) {
 	klass = RCLASS_ORIGIN(klass);
 	return RCLASS_SUPER(klass);
     }
@@ -1488,10 +1512,10 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq,
 	}
 
 	id = lcfp->me->def->original_id;
-	klass = vm_search_normal_superclass(lcfp->me->klass, recv);
+	klass = vm_search_normal_superclass(lcfp->klass, recv);
     }
     else {
-	klass = vm_search_normal_superclass(iseq->klass, recv);
+	klass = vm_search_normal_superclass(reg_cfp->klass, recv);
     }
 
     *idp = id;
@@ -1771,7 +1795,7 @@ opt_eq_func(VALUE recv, VALUE obj, IC ic)
     }
 
     {
-	const rb_method_entry_t *me = vm_method_search(idEq, CLASS_OF(recv), ic);
+	const rb_method_entry_t *me = vm_method_search(idEq, CLASS_OF(recv), ic, 0);
 
 	if (check_cfunc(me, rb_obj_equal)) {
 	    return recv == obj ? Qtrue : Qfalse;

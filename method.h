@@ -89,9 +89,9 @@ struct unlinked_method_entry_list_entry {
 
 void rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex);
 rb_method_entry_t *rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_flag_t noex);
-rb_method_entry_t *rb_method_entry(VALUE klass, ID id);
+rb_method_entry_t *rb_method_entry(VALUE klass, ID id, VALUE *define_class_ptr);
 
-rb_method_entry_t *rb_method_entry_get_without_cache(VALUE klass, ID id);
+rb_method_entry_t *rb_method_entry_get_without_cache(VALUE klass, ID id, VALUE *define_class_ptr);
 rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_flag_t noex);
 
 int rb_method_entry_arity(const rb_method_entry_t *me);
