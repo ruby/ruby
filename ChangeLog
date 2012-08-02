@@ -32,7 +32,7 @@ Thu Aug  2 10:51:12 2012  Martin Bosslet  <Martin.Bosslet@gmail.com>
 
 Wed Aug  1 22:29:12 2012  Benoit Daloze  <eregontp@gmail.com>
 
-	ext/digest/digest.c (hexencode_str_new): return an ASCII string
+	* ext/digest/digest.c (hexencode_str_new): return an ASCII string
 
 	* test/digest: tests for all kind of digests encodings
 	  [ruby-core:46792][Bug #6799]
