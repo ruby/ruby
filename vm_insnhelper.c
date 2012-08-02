@@ -564,7 +564,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	    switch (me->def->type) {
 	      case VM_METHOD_TYPE_ISEQ:{
 		vm_setup_method(th, cfp, recv, num, blockptr, flag, me,
-			       	defined_class);
+				defined_class);
 		return Qundef;
 	      }
 	      case VM_METHOD_TYPE_NOTIMPLEMENTED:
