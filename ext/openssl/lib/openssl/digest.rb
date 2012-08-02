@@ -68,5 +68,22 @@ module OpenSSL
     end
 
   end # Digest
+
+  # Returns a Digest subclass by +name+.
+  #
+  #   require 'openssl'
+  #
+  #   OpenSSL::Digest("MD5")
+  #   # => OpenSSL::Digest::MD5
+  #
+  #   Digest("Foo")
+  #   # => NameError: wrong constant name Foo
+
+  def Digest(name)
+    OpenSSL::Digest.const_get(name)
+  end
+
+  module_function :Digest
+
 end # OpenSSL
 
