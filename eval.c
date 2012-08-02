@@ -1163,9 +1163,11 @@ refinement_module_include(int argc, VALUE *argv, VALUE module)
 
 /*
  *  call-seq:
- *     refine(klass) { block }   -> self
+ *     refine(klass) { block }   -> module
  *
  *  Refine <i>klass</i> in the receiver.
+ *
+ *  Returns an overlayed module.
  */
 
 static VALUE
