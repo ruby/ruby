@@ -1861,7 +1861,7 @@ rb_vm_using_modules(NODE *cref, VALUE klass)
     }
     if (!NIL_P(using_modules)) {
 	rb_hash_foreach(using_modules, vm_using_module_i,
-		       	(VALUE) cref);
+			(VALUE) cref);
     }
 }
 
