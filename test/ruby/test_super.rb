@@ -184,4 +184,32 @@ class TestSuper < Test::Unit::TestCase
       mid.subseq
     end
   end
+
+  module DoubleInclude
+    class Base
+      def foo
+        [:Base]
+      end
+    end
+
+    module Override
+      def foo
+        super << :Override
+      end
+    end
+
+    class A < Base
+    end
+
+    class B < A
+    end
+
+    B.send(:include, Override)
+    A.send(:include, Override)
+  end
+
+  # [Bug #3351]
+  def test_double_include
+    assert_equal([:Base, :Override, :Override], DoubleInclude::B.new.foo)
+  end
 end
