@@ -1461,32 +1461,15 @@ vm_method_search(VALUE id, VALUE klass, IC ic, VALUE *defined_class_ptr)
 }
 
 static inline VALUE
-vm_search_normal_superclass(VALUE klass, VALUE recv)
+vm_search_normal_superclass(VALUE klass)
 {
-    if (BUILTIN_TYPE(klass) == T_CLASS || BUILTIN_TYPE(klass) == T_ICLASS) {
-	klass = RCLASS_ORIGIN(klass);
-	return RCLASS_SUPER(klass);
-    }
-    else if (BUILTIN_TYPE(klass) == T_MODULE) {
-	VALUE k = CLASS_OF(recv);
-	while (k) {
-	    if (BUILTIN_TYPE(k) == T_ICLASS && RBASIC(k)->klass == klass) {
-		return RCLASS_SUPER(k);
-	    }
-	    k = RCLASS_SUPER(k);
-	}
-	return rb_cObject;
-    }
-    else {
-	rb_bug("vm_search_normal_superclass: should not be reach here");
-    }
-
-    UNREACHABLE;
+    klass = RCLASS_ORIGIN(klass);
+    return RCLASS_SUPER(klass);
 }
 
 static void
 vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq,
-		     VALUE recv, VALUE sigval,
+		     VALUE sigval,
 		     ID *idp, VALUE *klassp)
 {
     ID id;
@@ -1532,10 +1515,10 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq,
 	}
 
 	id = lcfp->me->def->original_id;
-	klass = vm_search_normal_superclass(lcfp->klass, recv);
+	klass = vm_search_normal_superclass(lcfp->klass);
     }
     else {
-	klass = vm_search_normal_superclass(reg_cfp->klass, recv);
+	klass = vm_search_normal_superclass(reg_cfp->klass);
     }
 
     *idp = id;

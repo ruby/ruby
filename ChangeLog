@@ -1,3 +1,8 @@
+Sat Aug  4 01:56:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_search_normal_superclass): no longer needs
+	  receiver, klass is always unique in the ancestors now.
+
 Sat Aug  4 01:27:40 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* insns.def (invokesuper): reverted r36612 so that super in an

@@ -828,7 +828,7 @@ defined
       case DEFINED_ZSUPER:{
 	const rb_method_entry_t *me = GET_CFP()->me;
 	if (me) {
-	    VALUE klass = vm_search_normal_superclass(me->klass, GET_SELF());
+	    VALUE klass = vm_search_normal_superclass(me->klass);
 	    ID id = me->def ? me->def->original_id : me->called_id;
 	    if (rb_method_boundp(klass, id, 0)) {
 		expr_type = "super";
@@ -1039,7 +1039,7 @@ invokesuper
     flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;
 
     recv = GET_SELF();
-    vm_search_superclass(GET_CFP(), GET_ISEQ(), recv, TOPN(num), &id, &klass);
+    vm_search_superclass(GET_CFP(), GET_ISEQ(), TOPN(num), &id, &klass);
 
     ip = GET_ISEQ();
     while (ip && !ip->klass) {

@@ -164,7 +164,7 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
 	klass = RCLASS_SUPER(cfp->klass);
 
 	if (klass == 0) {
-	    klass = vm_search_normal_superclass(cfp->me->klass, recv);
+	    klass = vm_search_normal_superclass(cfp->me->klass);
 	}
 	id = cfp->me->def->original_id;
     }
