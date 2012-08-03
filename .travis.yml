@@ -9,3 +9,11 @@ branches:
   only:
     - trunk
     - ruby_1_9_3
+
+notifications:
+  irc:
+    channels:
+      - "irc.freenode.org#ruby-core"
+      - "irc.freenode.org#ruby-ja"
+    on_success: change # [always|never|change] # default: always
+    on_failure: change # [always|never|change] # default: always

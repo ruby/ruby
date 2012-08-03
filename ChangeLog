@@ -1,3 +1,7 @@
+Fri Aug  3 16:40:01 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* .travis.yml (notifications): [experimental] IRC notificatoins.
+
 Thu Aug  2 20:32:29 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_mod_using): new method Module#using. [experimental]
