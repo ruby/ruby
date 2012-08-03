@@ -1,3 +1,8 @@
+Sat Aug  4 01:27:40 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* insns.def (invokesuper): reverted r36612 so that super in an
+	  aliased method will not call the same method.
+
 Fri Aug  3 19:26:10 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* insns.def (invokesuper): don't skip the same class.  instead, use

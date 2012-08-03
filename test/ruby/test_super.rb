@@ -210,6 +210,42 @@ class TestSuper < Test::Unit::TestCase
 
   # [Bug #3351]
   def test_double_include
-    assert_equal([:Base, :Override, :Override], DoubleInclude::B.new.foo)
+    assert_equal([:Base, :Override], DoubleInclude::B.new.foo)
+    # should be changed as follows?
+    # assert_equal([:Base, :Override, :Override], DoubleInclude::B.new.foo)
+  end
+
+  module DoubleInclude2
+    class Base
+      def foo
+        [:Base]
+      end
+    end
+
+    module Override
+      def foo
+        super << :Override
+      end
+    end
+
+    class A < Base
+      def foo
+        super << :A
+      end
+    end
+
+    class B < A
+      def foo
+        super << :B
+      end
+    end
+
+    B.send(:include, Override)
+    A.send(:include, Override)
+  end
+
+  def test_double_include
+    assert_equal([:Base, :Override, :A, :Override, :B],
+                 DoubleInclude2::B.new.foo)
   end
 end
