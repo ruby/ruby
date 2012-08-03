@@ -18,6 +18,7 @@ File.foreach(srcdir + "/defs/default_gems") do |line|
 end
 default_gems |= (ENV["GEM_SKIP"] || '').split(/:/)
 ENV["GEM_SKIP"] = default_gems.join(':')
+ENV["GEM_HOME"] = ENV["GEM_PATH"] = "".freeze
 
 require_relative 'profile_test_all' if ENV['RUBY_TEST_ALL_PROFILE'] == 'true'
 

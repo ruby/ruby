@@ -1,3 +1,8 @@
+Fri Aug  3 17:21:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/runner.rb: get rid of loading previously installed gems.
+	  [ruby-dev:46025]
+
 Fri Aug  3 16:40:01 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* .travis.yml (notifications): [experimental] IRC notifications.
