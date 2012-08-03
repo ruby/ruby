@@ -311,9 +311,10 @@ def httpd
     [:Port, :MaxClients].each do |name|
       opt = options[name] and (options[name] = Integer(opt)) rescue nil
     end
-    unless argv.empty?
-      options[:DocumentRoot] = argv.shift
+    unless argv.size == 1
+      raise ArgumentError, "DocumentRoot is mandatory"
     end
+    options[:DocumentRoot] = argv.shift
     s = WEBrick::HTTPServer.new(options)
     shut = proc {s.shutdown}
     Signal.trap("TERM", shut)
