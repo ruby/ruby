@@ -317,11 +317,11 @@ def httpd
     options[:DocumentRoot] = argv.shift
     s = WEBrick::HTTPServer.new(options)
     shut = proc {s.shutdown}
-    Signal.trap("TERM", shut)
-    Signal.trap("QUIT", shut) if Signal.list.has_key?("QUIT")
-    if STDIN.tty?
-      Signal.trap("HUP", shut) if Signal.list.has_key?("HUP")
-      Signal.trap("INT", shut)
+    siglist = %w"TERM QUIT"
+    siglist.concat(%w"HUP INT") if STDIN.tty?
+    siglist &= Signal.list.keys
+    siglist.each do |sig|
+      Signal.trap(sig, shut)
     end
     s.start
   end
