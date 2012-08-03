@@ -1,3 +1,10 @@
+Fri Aug  3 17:25:49 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: move RUBY_MINGW32 after AC_PROG_CC.
+	  RUBY_MINGW32 uses AC_TRY_CPP and it sets CC and CPP. [Bug #6816]
+
+	* configure.in: don't use AC_PROG_CC in AS_CASE.
+
 Fri Aug  3 17:21:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/runner.rb: get rid of loading previously installed gems.
