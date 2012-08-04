@@ -104,4 +104,29 @@ class TestAlias < Test::Unit::TestCase
     end
     assert_equal(:ok, d.new.bar)
   end
+
+  module SuperInAliasedModuleMethod
+    module M
+      def foo
+        super << :M
+      end
+
+      alias bar foo
+    end
+
+    class Base
+      def foo
+        [:Base]
+      end
+    end
+
+    class Derived < Base
+      include M
+    end
+  end
+
+  # [ruby-dev:46028]
+  def test_super_in_aliased_module_method # fails in 1.8
+    assert_equal([:Base, :M], SuperInAliasedModuleMethod::Derived.new.bar)
+  end
 end

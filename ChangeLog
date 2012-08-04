@@ -1,3 +1,8 @@
+Sat Aug  4 10:02:03 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/ruby/test_alias.rb (test_super_in_aliased_module_method):
+	  add a test case for [ruby-dev:46028], which fails in 1.8.
+
 Sat Aug  4 01:56:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_search_normal_superclass): no longer needs
