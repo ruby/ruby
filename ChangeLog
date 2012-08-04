@@ -1,3 +1,8 @@
+Sat Aug  4 20:37:56 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (gc_mark_children): use gc_mark_ptr instead of marking
+	  a object directly.
+
 Sat Aug  4 10:02:03 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/ruby/test_alias.rb (test_super_in_aliased_module_method):

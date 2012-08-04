@@ -1839,7 +1839,6 @@ static void
 gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 {
     register RVALUE *obj = RANY(ptr);
-    register uintptr_t *bits;
 
     goto marking;		/* skip */
 
@@ -1847,10 +1846,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
     obj = RANY(ptr);
     if (rb_special_const_p(ptr)) return; /* special const not marked */
     if (obj->as.basic.flags == 0) return;       /* free cell */
-    bits = GET_HEAP_BITMAP(ptr);
-    if (MARKED_IN_BITMAP(bits, ptr)) return;  /* already marked */
-    MARK_IN_BITMAP(bits, ptr);
-    objspace->heap.live_num++;
+    if (!gc_mark_ptr(objspace, ptr)) return;  /* already marked */
 
   marking:
     if (FL_TEST(obj, FL_EXIVAR)) {
