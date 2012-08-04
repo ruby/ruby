@@ -474,7 +474,6 @@ class TestSH < Test::Unit::TestCase
     period2_iter(+cm_period * (1 << 64) - 3, +cm_period * (1 << 64) + 3)
   end
 
-=begin
   def test_marshal14
     s = "\x04\x03u:\x01\x04Date\x01\v\x04\x03[\x01\x02i\x03\xE8i%T"
     d = Marshal.load(s)
@@ -504,7 +503,6 @@ class TestSH < Test::Unit::TestCase
     assert_equal(Rational(9,24), d.offset)
     assert_equal(Date::GREGORIAN, d.start)
   end
-=end
 
   def test_marshal192
     s = "\x04\bU:\tDate[\bU:\rRational[\ai\x03\xCF\xD3Ji\ai\x00o:\x13Date::Infinity\x06:\a@di\xFA"
