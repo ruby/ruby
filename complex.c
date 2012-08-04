@@ -1877,7 +1877,7 @@ Init_Complex(void)
     id_to_r = rb_intern("to_r");
     id_to_s = rb_intern("to_s");
     id_i_real = rb_intern("@real");
-    id_i_imag = rb_intern("@image");
+    id_i_imag = rb_intern("@image"); /* @image, not @imag */
 
     rb_cComplex = rb_define_class("Complex", rb_cNumeric);
 
