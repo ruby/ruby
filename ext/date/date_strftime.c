@@ -346,7 +346,7 @@ date_strftime_with_tmx(char *s, size_t maxsize, const char *format,
 	    i = 2;
 	    break;
 
-	  case 'Q':	/* microseconds since Unix epoch */
+	  case 'Q':	/* milliseconds since Unix epoch */
 	    FMTV('0', 1, "d", tmx_msecs);
 	    continue;
 

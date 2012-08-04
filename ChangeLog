@@ -1,3 +1,7 @@
+Sun Aug  5 06:55:10 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_{core,strftime}.c: [ruby-core:46990].
+
 Sat Aug  4 22:56:20 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: use inline functions instead of macros, and close up

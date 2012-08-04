@@ -7008,7 +7008,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  *
  *    Seconds since the Unix Epoch:
  *      %s - Number of seconds since 1970-01-01 00:00:00 UTC.
- *      %Q - Number of microseconds since 1970-01-01 00:00:00 UTC.
+ *      %Q - Number of milliseconds since 1970-01-01 00:00:00 UTC.
  *
  *    Literal string:
  *      %n - Newline character (\n)
@@ -8469,7 +8469,7 @@ dt_lite_to_s(VALUE self)
  *
  *    Seconds since the Unix Epoch:
  *      %s - Number of seconds since 1970-01-01 00:00:00 UTC.
- *      %Q - Number of microseconds since 1970-01-01 00:00:00 UTC.
+ *      %Q - Number of milliseconds since 1970-01-01 00:00:00 UTC.
  *
  *    Literal string:
  *      %n - Newline character (\n)
