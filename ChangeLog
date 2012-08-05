@@ -1,4 +1,8 @@
-Mon Aug  6 00:38:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Aug  6 00:39:24 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (NUM2ULONG): optimize by inline as well as
+	  NUM2LONG, and cast to unsigned long explicitly for the platforms
+	  where SIZEOF_VALUE is larger than SIZEOF_LONG.
 
 	* include/ruby/ruby.h (NUM2SSIZET): fix type to cast.
 

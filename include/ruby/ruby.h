@@ -514,7 +514,15 @@ rb_num2long_inline(VALUE x)
 	return (long)rb_num2long(x);
 }
 #define NUM2LONG(x) rb_num2long_inline(x)
-#define NUM2ULONG(x) rb_num2ulong(x)
+static inline unsigned long
+rb_num2ulong_inline(VALUE x)
+{
+    if (FIXNUM_P(x))
+	return (unsigned long)FIX2LONG(x);
+    else
+	return (unsigned long)rb_num2ulong(x);
+}
+#define NUM2ULONG(x) rb_num2ulong_inline(x)
 #if SIZEOF_INT < SIZEOF_LONG
 long rb_num2int(VALUE);
 long rb_fix2int(VALUE);
