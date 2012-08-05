@@ -1,3 +1,7 @@
+Mon Aug  6 00:40:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigMath_s_log): fix format specifier.
+
 Mon Aug  6 00:39:24 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (NUM2ULONG): optimize by inline as well as

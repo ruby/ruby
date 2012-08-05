@@ -2704,7 +2704,7 @@ get_vp_value:
     expo = VpExponent10(vx);
     if (expo < 0 || expo >= 3) {
 	char buf[16];
-	snprintf(buf, 16, "1E%ld", -expo);
+	snprintf(buf, 16, "1E%"PRIdVALUE, -expo);
 	x = BigDecimal_mult2(x, ToValue(VpCreateRbObject(1, buf)), vn);
     }
     else {
