@@ -1,7 +1,7 @@
 Sun Aug  5 21:10:36 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c : if ENABLE_VM_OBJSPACE is 1, rest_sweep is not defined.
-	  remove unused declarations.
+	  remove unused declarations. [ruby-core:47004] [Bug #6837]
 
 Sun Aug  5 19:31:57 2012  Narihiro Nakamura  <authornari@gmail.com>
 
