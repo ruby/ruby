@@ -5506,8 +5506,10 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 				      spawnv(P_NOWAIT, (cmd), (args)) : \
 				      spawn(P_NOWAIT, (cmd)))
 # endif
+# if !defined(HAVE_FORK)
     char **args = NULL;
     char **envp = NULL;
+# endif
 #endif
 #if !defined(HAVE_FORK)
     struct rb_execarg sarg, *sargp = &sarg;
