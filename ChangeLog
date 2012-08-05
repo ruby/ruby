@@ -1,3 +1,8 @@
+Sun Aug  5 13:22:29 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: use gcc-4.2 prior to clang, gcc, and cc if exist for
+	  the use of Snow Leopard's old clang. see also r36594, r36610, r36611.
+
 Sun Aug  5 06:55:10 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_{core,strftime}.c: [ruby-core:46990].

@@ -371,7 +371,7 @@ fi
 RUBY_NACL
 AS_CASE(["$host_os:$build_os"],
 [darwin*:darwin*], [
-    AC_CHECK_TOOLS(CC, [clang gcc cc])
+    AC_CHECK_TOOLS(CC, [gcc-4.2 clang gcc cc])
 ])
 if test x"${build}" != x"${host}"; then
   AC_CHECK_TOOL(CC, gcc)
