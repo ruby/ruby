@@ -346,6 +346,7 @@ static VALUE lazy_sweep_enable(void);
 static int garbage_collect(rb_objspace_t *);
 static int gc_lazy_sweep(rb_objspace_t *);
 static void mark_tbl(rb_objspace_t *, st_table *, int);
+static void rest_sweep(rb_objspace_t *);
 
 static double getrusage_time(void);
 static inline void gc_prof_timer_start(rb_objspace_t *);
@@ -377,9 +378,6 @@ rb_objspace_alloc(void)
 #endif
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
-static void gc_sweep(rb_objspace_t *);
-static void slot_sweep(rb_objspace_t *, struct heaps_slot *);
-static void rest_sweep(rb_objspace_t *);
 static void aligned_free(void *);
 
 void
