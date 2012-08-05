@@ -581,7 +581,7 @@ rb_num2ll_inline(VALUE x)
 
 #if defined(HAVE_LONG_LONG) && SIZEOF_SIZE_T > SIZEOF_LONG
 # define NUM2SIZET(x) ((size_t)NUM2ULL(x))
-# define NUM2SSIZET(x) ((size_t)NUM2LL(x))
+# define NUM2SSIZET(x) ((ssize_t)NUM2LL(x))
 #else
 # define NUM2SIZET(x) NUM2ULONG(x)
 # define NUM2SSIZET(x) NUM2LONG(x)

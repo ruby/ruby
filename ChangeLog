@@ -1,3 +1,7 @@
+Mon Aug  6 00:38:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (NUM2SSIZET): fix type to cast.
+
 Sun Aug  5 21:10:36 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c : if ENABLE_VM_OBJSPACE is 1, rest_sweep is not defined.
