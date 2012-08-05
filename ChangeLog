@@ -1,3 +1,8 @@
+Sun Aug  5 19:31:57 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: just move functions and so on. I don't touch any internal
+	  implementation.
+
 Sun Aug  5 13:22:29 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: use gcc-4.2 prior to clang, gcc, and cc if exist for
