@@ -28,11 +28,18 @@ class TestEtc < Test::Unit::TestCase
   end
 
   def test_getpwuid
-    passwd = {}
-    Etc.passwd {|s| passwd[s.uid] ||= s }
-    passwd.each_value do |s|
-      assert_equal(s, Etc.getpwuid(s.uid))
-      assert_equal(s, Etc.getpwuid) if Process.euid == s.uid
+    # password database is not unique on UID, and which entry will be
+    # returned by getpwuid() is not specified.
+    passwd = Hash.new {[]}
+    # on MacOSX, same entries are returned from /etc/passwd and Open
+    # Directory.
+    Etc.passwd {|s| passwd[s.uid] |= [s]}
+    passwd.each_pair do |uid, s|
+      assert_include(s, Etc.getpwuid(uid))
+    end
+    s = passwd[Process.euid]
+    if s
+      assert_include(s, Etc.getpwuid)
     end
   end
 
