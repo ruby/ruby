@@ -38,7 +38,7 @@ class TestEtc < Test::Unit::TestCase
       assert_include(s, Etc.getpwuid(uid))
     end
     s = passwd[Process.euid]
-    if s
+    unless s.empty?
       assert_include(s, Etc.getpwuid)
     end
   end

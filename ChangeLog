@@ -1,3 +1,7 @@
+Mon Aug  6 11:19:19 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/etc/test_etc.rb (TestEtc#test_getpwuid): `s' is never set to nil.
+
 Mon Aug  6 11:08:48 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/syslog/test_syslog_logger.rb: skip unless Syslog module is
