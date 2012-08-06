@@ -7,6 +7,14 @@ require "test/unit"
 if defined?(WIN32OLE_VARIANT)
 
   class TestWIN32OLE_VARIANT < Test::Unit::TestCase
+    def setup
+      @orglocale = WIN32OLE.locale
+      WIN32OLE.locale = 0x0409 # set locale  US-Eng
+    end
+
+    def teardown
+      WIN32OLE.locale = @orglocale
+    end
 
     def test_s_new
       obj = WIN32OLE_VARIANT.new('foo')
@@ -390,17 +398,13 @@ if defined?(WIN32OLE_VARIANT)
 
     def test_conversion_str2cy
       begin
-        begin
-          WIN32OLE.locale = 0x0411 # set locale Japanese
-        rescue WIN32OLERuntimeError
-          skip("Japanese locale is not installed")
-        end
-        if WIN32OLE.locale == 0x0411
-          obj = WIN32OLE_VARIANT.new("\\10,000", WIN32OLE::VARIANT::VT_CY)
-          assert_equal("10000", obj.value)
-        end
-      ensure
-        WIN32OLE.locale = WIN32OLE::LOCALE_SYSTEM_DEFAULT
+        WIN32OLE.locale = 0x0411 # set locale Japanese
+      rescue WIN32OLERuntimeError
+        skip("Japanese locale is not installed")
+      end
+      if WIN32OLE.locale == 0x0411
+        obj = WIN32OLE_VARIANT.new("\\10,000", WIN32OLE::VARIANT::VT_CY)
+        assert_equal("10000", obj.value)
       end
     end
 

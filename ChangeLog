@@ -1,3 +1,9 @@
+Mon Aug  6 19:15:11 2012  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_variant.rb: setting WIN32OLE.locale
+	  to pass some assertion.  Thanks to Hiroshi Shirosaki.
+	  [ruby-core:46873][Bug #6814]
+
 Mon Aug  6 15:54:50 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* internal.h, class.c, eval.c, insns.def: find the appropriate
