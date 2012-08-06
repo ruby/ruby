@@ -2249,28 +2249,35 @@ original_module(VALUE c)
     return c;
 }
 
+static int
+cvar_lookup_at(VALUE klass, ID id, st_data_t *v)
+{
+    if (!RCLASS_IV_TBL(klass)) return 0;
+    return st_lookup(RCLASS_IV_TBL(klass), (st_data_t)id, v);
+}
+
+static VALUE
+cvar_front_klass(VALUE klass)
+{
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	VALUE obj = rb_iv_get(klass, "__attached__");
+	if (RB_TYPE_P(obj, T_MODULE) || RB_TYPE_P(obj, T_CLASS)) {
+	    return obj;
+	}
+    }
+    return RCLASS_SUPER(klass);
+}
+
+#define CVAR_FOREACH_ANCESTORS(klass, v, r) \
+    for (klass = cvar_front_klass(klass); klass; klass = RCLASS_SUPER(klass)) { \
+	if (cvar_lookup_at(klass, id, (v))) { \
+	    r; \
+	} \
+    }
+
 #define CVAR_LOOKUP(v,r) do {\
-    if (RCLASS_IV_TBL(klass) && st_lookup(RCLASS_IV_TBL(klass),(st_data_t)id,(v))) {\
-	r;\
-    }\
-    if (FL_TEST(klass, FL_SINGLETON) ) {\
-	VALUE obj = rb_iv_get(klass, "__attached__");\
-	if (RB_TYPE_P(obj, T_MODULE) || RB_TYPE_P(obj, T_CLASS)) {\
-	    klass = obj;\
-	}\
-	else {\
-	    klass = RCLASS_SUPER(klass);\
-	}\
-    }\
-    else {\
-	klass = RCLASS_SUPER(klass);\
-    }\
-    while (klass) {\
-	if (RCLASS_IV_TBL(klass) && st_lookup(RCLASS_IV_TBL(klass),(st_data_t)id,(v))) {\
-	    r;\
-	}\
-	klass = RCLASS_SUPER(klass);\
-    }\
+    if (cvar_lookup_at(klass, id, (v))) {r;}\
+    CVAR_FOREACH_ANCESTORS(klass, v, r);\
 } while(0)
 
 void
