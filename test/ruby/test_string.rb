@@ -637,6 +637,13 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("hello!"), res[0])
     assert_equal(S("world"),  res[1])
 
+    $/ = "ab"
+
+    res=[]
+    S("a").lines.each {|x| res << x}
+    assert_equal(1, res.size)
+    assert_equal(S("a"), res[0])
+
     $/ = save
 
     s = nil
