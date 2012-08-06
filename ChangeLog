@@ -1,4 +1,7 @@
-Mon Aug  6 11:34:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Aug  6 13:13:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (vm_call_super): since cfp->klass is always class or
+	  iclass, no search from method entry.
 
 	* insns.def (defined): now should use klass in the current control
 	  frame to search superclass, not me->klass.  reported by naruse.
