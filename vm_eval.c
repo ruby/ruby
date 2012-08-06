@@ -1320,6 +1320,9 @@ eval_under(VALUE under, VALUE self, VALUE src, const char *file, int line)
 {
     NODE *cref = vm_cref_push(GET_THREAD(), under, NOEX_PUBLIC, NULL);
 
+    if (FL_TEST(under, FL_SINGLETON) || (SPECIAL_CONST_P(self) && !NIL_P(under))) {
+	cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL;
+    }
     if (rb_safe_level() >= 4) {
 	StringValue(src);
     }
@@ -1387,7 +1390,7 @@ rb_obj_instance_eval(int argc, VALUE *argv, VALUE self)
     VALUE klass;
 
     if (SPECIAL_CONST_P(self)) {
-	klass = Qnil;
+	klass = rb_special_singleton_class(self);
     }
     else {
 	klass = rb_singleton_class(self);
@@ -1419,7 +1422,7 @@ rb_obj_instance_exec(int argc, VALUE *argv, VALUE self)
     VALUE klass;
 
     if (SPECIAL_CONST_P(self)) {
-	klass = Qnil;
+	klass = rb_special_singleton_class(self);
     }
     else {
 	klass = rb_singleton_class(self);

@@ -264,24 +264,18 @@ assert_equal 'ok', %q{
 }, '[ruby-core:16794]'
 
 assert_equal 'ok', %q{
-  begin
-    nil.instance_eval {
-      def a() :a end
-    }
-  rescue TypeError
-    :ok
-  end
-}, '[ruby-core:16796]'
+  nil.instance_eval {
+    def defd_using_instance_eval() :ok end
+  }
+  nil.defd_using_instance_eval
+}, '[ruby-core:28324]'
 
 assert_equal 'ok', %q{
-  begin
-    nil.instance_exec {
-      def a() :a end
-    }
-  rescue TypeError
-    :ok
-  end
-}, '[ruby-core:16796]'
+  nil.instance_exec {
+    def defd_using_instance_exec() :ok end
+  }
+  nil.defd_using_instance_exec
+}, '[ruby-core:28324]'
 
 assert_normal_exit %q{
   eval("", method(:proc).call {}.binding)

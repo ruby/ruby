@@ -1286,6 +1286,20 @@ rb_undef_method(VALUE klass, const char *name)
     }\
 } while (0)
 
+static inline VALUE
+special_singleton_class_of(VALUE obj)
+{
+    SPECIAL_SINGLETON(Qnil, rb_cNilClass);
+    SPECIAL_SINGLETON(Qfalse, rb_cFalseClass);
+    SPECIAL_SINGLETON(Qtrue, rb_cTrueClass);
+    return Qnil;
+}
+
+VALUE
+rb_special_singleton_class(VALUE obj)
+{
+    return special_singleton_class_of(obj);
+}
 
 /*!
  * \internal
@@ -1304,11 +1318,11 @@ singleton_class_of(VALUE obj)
     if (FIXNUM_P(obj) || SYMBOL_P(obj)) {
 	rb_raise(rb_eTypeError, "can't define singleton");
     }
-    if (rb_special_const_p(obj)) {
-	SPECIAL_SINGLETON(Qnil, rb_cNilClass);
-	SPECIAL_SINGLETON(Qfalse, rb_cFalseClass);
-	SPECIAL_SINGLETON(Qtrue, rb_cTrueClass);
-	rb_bug("unknown immediate %p", (void *)obj);
+    if (SPECIAL_CONST_P(obj)) {
+	klass = special_singleton_class_of(obj);
+	if (NIL_P(klass))
+	    rb_bug("unknown immediate %p", (void *)obj);
+	return klass;
     }
 
     if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON) &&

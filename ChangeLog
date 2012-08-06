@@ -1,3 +1,14 @@
+Tue Aug  7 00:31:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_special_singleton_class_of): utility function.
+
+	* vm_eval.c (eval_under): special deal for class variable scope with
+	  instance_eval.
+
+	* vm_eval.c (rb_obj_instance_eval, rb_obj_instance_exec): allow method
+	  definition in instance_eval of special constants.  [ruby-core:28324]
+	  [Bug #2788]
+
 Tue Aug  7 00:23:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (CVAR_LOOKUP): split into helper functions.

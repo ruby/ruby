@@ -200,6 +200,21 @@ class TestEval < Test::Unit::TestCase
     end
   end
 
+  def test_instance_eval_method
+    bug2788 = '[ruby-core:28324]'
+    [Object.new, [], nil, true, false].each do |o|
+      assert_nothing_raised(TypeError, "#{bug2788} (#{o.inspect})") do
+        o.instance_eval {
+          def defd_using_instance_eval() :ok end
+        }
+      end
+      assert_equal(:ok, o.defd_using_instance_eval)
+      class << o
+        remove_method :defd_using_instance_eval
+      end
+    end
+  end
+
   #
   # From ruby/test/ruby/test_eval.rb
   #
