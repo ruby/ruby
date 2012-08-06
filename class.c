@@ -58,6 +58,7 @@ class_alloc(VALUE flags, VALUE klass)
     RCLASS_SUPER(obj) = 0;
     RCLASS_ORIGIN(obj) = (VALUE)obj;
     RCLASS_IV_INDEX_TBL(obj) = 0;
+    RCLASS_REFINED_CLASS(obj) = Qnil;
     return (VALUE)obj;
 }
 

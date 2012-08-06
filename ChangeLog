@@ -1,3 +1,9 @@
+Mon Aug  6 15:54:50 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* internal.h, class.c, eval.c, insns.def: find the appropriate
+	  receiver for super called in instance_eval.  If such a receiver is
+	  not found, raise NoMethodError. [ruby-dev:39772] [Bug #2402]
+
 Mon Aug  6 14:54:38 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* include/ruby/ruby.h, eval.c, vm_insnhelper.c: fix typo.

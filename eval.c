@@ -1055,10 +1055,12 @@ rb_overlay_module(NODE *cref, VALUE klass, VALUE module)
     }
     FL_SET(module, RMODULE_IS_OVERLAID);
     c = iclass = rb_include_class_new(module, superclass);
+    RCLASS_REFINED_CLASS(c) = klass;
     module = RCLASS_SUPER(module);
     while (module) {
 	FL_SET(module, RMODULE_IS_OVERLAID);
 	c = RCLASS_SUPER(c) = rb_include_class_new(module, RCLASS_SUPER(c));
+	RCLASS_REFINED_CLASS(c) = klass;
 	module = RCLASS_SUPER(module);
     }
     rb_hash_aset(cref->nd_omod, klass, iclass);

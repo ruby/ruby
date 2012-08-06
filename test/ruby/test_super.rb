@@ -132,9 +132,9 @@ class TestSuper < Test::Unit::TestCase
     assert_equal("A#tt", a.tt(12), "[ruby-core:3856]")
     e = assert_raise(RuntimeError, "[ruby-core:24244]") {
       lambda {
-        Class.new do
-          define_method(:a) {super}.call
-        end
+        Class.new {
+          define_method(:a) {super}
+        }.new.a
       }.call
     }
     assert_match(/implicit argument passing of super from method defined by define_method/, e.message)
@@ -247,5 +247,79 @@ class TestSuper < Test::Unit::TestCase
   def test_double_include2
     assert_equal([:Base, :Override, :A, :Override, :B],
                  DoubleInclude2::B.new.foo)
+  end
+
+  def test_super_in_instance_eval
+    super_class = Class.new {
+      def foo
+        return [:super, self]
+      end
+    }
+    sub_class = Class.new(super_class) {
+      def foo
+        x = Object.new
+        x.instance_eval do
+          super()
+        end
+      end
+    }
+    obj = sub_class.new
+    assert_equal [:super, obj], obj.foo
+  end
+
+  def test_super_in_instance_eval_with_define_method
+    super_class = Class.new {
+      def foo
+        return [:super, self]
+      end
+    }
+    sub_class = Class.new(super_class) {
+      define_method(:foo) do
+        x = Object.new
+        x.instance_eval do
+          super()
+        end
+      end
+    }
+    obj = sub_class.new
+    assert_equal [:super, obj], obj.foo
+  end
+
+  def test_super_in_orphan_block
+    super_class = Class.new {
+      def foo
+        return [:super, self]
+      end
+    }
+    sub_class = Class.new(super_class) {
+      def foo
+        x = Object.new
+        lambda { super() }
+      end
+    }
+    obj = sub_class.new
+    assert_raise(NoMethodError) do
+      obj.foo.call
+    end
+  end
+
+  def test_super_in_orphan_block_with_instance_eval
+    super_class = Class.new {
+      def foo
+        return [:super, self]
+      end
+    }
+    sub_class = Class.new(super_class) {
+      def foo
+        x = Object.new
+        x.instance_eval do
+          lambda { super() }
+        end
+      end
+    }
+    obj = sub_class.new
+    assert_raise(NoMethodError) do
+      obj.foo.call
+    end
   end
 end

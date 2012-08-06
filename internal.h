@@ -28,6 +28,7 @@ struct rb_classext_struct {
     struct st_table *iv_tbl;
     struct st_table *const_tbl;
     VALUE origin;
+    VALUE refined_class;
 };
 
 #undef RCLASS_SUPER
@@ -38,6 +39,7 @@ struct rb_classext_struct {
 #define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
 #define RCLASS_IV_INDEX_TBL(c) (RCLASS(c)->iv_index_tbl)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT(c)->origin)
+#define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
 
 struct vtm; /* defined by timev.h */
 
