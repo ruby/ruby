@@ -6238,6 +6238,17 @@ rb_str_each_byte(VALUE str)
     return str;
 }
 
+static VALUE
+rb_str_bytes(VALUE str)
+{
+    long i;
+    VALUE ary = rb_ary_new();
+
+    for (i=0; i<RSTRING_LEN(str); i++) {
+	rb_ary_push(ary, INT2FIX(RSTRING_PTR(str)[i] & 0xff));
+    }
+    return ary;
+}
 
 /*
  *  call-seq:
@@ -7916,7 +7927,7 @@ Init_String(void)
     rb_define_method(rb_cString, "oct", rb_str_oct, 0);
     rb_define_method(rb_cString, "split", rb_str_split_m, -1);
     rb_define_method(rb_cString, "lines", rb_str_each_line, -1);
-    rb_define_method(rb_cString, "bytes", rb_str_each_byte, 0);
+    rb_define_method(rb_cString, "bytes", rb_str_bytes, 0);
     rb_define_method(rb_cString, "chars", rb_str_each_char, 0);
     rb_define_method(rb_cString, "codepoints", rb_str_each_codepoint, 0);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
