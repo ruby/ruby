@@ -1046,18 +1046,18 @@ rb_overlay_module(NODE *cref, VALUE klass, VALUE module)
 	    superclass = c;
 	    while (c && TYPE(c) == T_ICLASS) {
 		if (RBASIC(c)->klass == module) {
-		    /* already overlayed module */
+		    /* already overlaid module */
 		    return;
 		}
 		c = RCLASS_SUPER(c);
 	    }
 	}
     }
-    FL_SET(module, RMODULE_IS_OVERLAYED);
+    FL_SET(module, RMODULE_IS_OVERLAID);
     c = iclass = rb_include_class_new(module, superclass);
     module = RCLASS_SUPER(module);
     while (module) {
-	FL_SET(module, RMODULE_IS_OVERLAYED);
+	FL_SET(module, RMODULE_IS_OVERLAID);
 	c = RCLASS_SUPER(c) = rb_include_class_new(module, RCLASS_SUPER(c));
 	module = RCLASS_SUPER(module);
     }
@@ -1077,14 +1077,14 @@ using_module_i(VALUE klass, VALUE module, VALUE arg)
 void
 rb_using_module(NODE *cref, VALUE module)
 {
-    ID id_overlayed_modules;
-    VALUE overlayed_modules;
+    ID id_overlaid_modules;
+    VALUE overlaid_modules;
 
     Check_Type(module, T_MODULE);
-    CONST_ID(id_overlayed_modules, "__overlayed_modules__");
-    overlayed_modules = rb_attr_get(module, id_overlayed_modules);
-    if (NIL_P(overlayed_modules)) return;
-    rb_hash_foreach(overlayed_modules, using_module_i, (VALUE) cref);
+    CONST_ID(id_overlaid_modules, "__overlaid_modules__");
+    overlaid_modules = rb_attr_get(module, id_overlaid_modules);
+    if (NIL_P(overlaid_modules)) return;
+    rb_hash_foreach(overlaid_modules, using_module_i, (VALUE) cref);
 }
 
 /*
@@ -1167,7 +1167,7 @@ refinement_module_include(int argc, VALUE *argv, VALUE module)
  *
  *  Refine <i>klass</i> in the receiver.
  *
- *  Returns an overlayed module.
+ *  Returns an overlaid module.
  */
 
 static VALUE
@@ -1175,18 +1175,18 @@ rb_mod_refine(VALUE module, VALUE klass)
 {
     NODE *cref = rb_vm_cref();
     VALUE mod;
-    ID id_overlayed_modules, id_refined_class;
-    VALUE overlayed_modules;
+    ID id_overlaid_modules, id_refined_class;
+    VALUE overlaid_modules;
 
     Check_Type(klass, T_CLASS);
-    CONST_ID(id_overlayed_modules, "__overlayed_modules__");
-    overlayed_modules = rb_attr_get(module, id_overlayed_modules);
-    if (NIL_P(overlayed_modules)) {
-	overlayed_modules = rb_hash_new();
-	rb_funcall(overlayed_modules, rb_intern("compare_by_identity"), 0);
-	rb_ivar_set(module, id_overlayed_modules, overlayed_modules);
+    CONST_ID(id_overlaid_modules, "__overlaid_modules__");
+    overlaid_modules = rb_attr_get(module, id_overlaid_modules);
+    if (NIL_P(overlaid_modules)) {
+	overlaid_modules = rb_hash_new();
+	rb_funcall(overlaid_modules, rb_intern("compare_by_identity"), 0);
+	rb_ivar_set(module, id_overlaid_modules, overlaid_modules);
     }
-    mod = rb_hash_aref(overlayed_modules, klass);
+    mod = rb_hash_aref(overlaid_modules, klass);
     if (NIL_P(mod)) {
 	mod = rb_module_new();
 	CONST_ID(id_refined_class, "__refined_class__");
@@ -1196,7 +1196,7 @@ rb_mod_refine(VALUE module, VALUE klass)
 	rb_define_singleton_method(mod, "include",
 				   refinement_module_include, -1);
 	rb_overlay_module(cref, klass, mod);
-	rb_hash_aset(overlayed_modules, klass, mod);
+	rb_hash_aset(overlaid_modules, klass, mod);
     }
     rb_mod_module_eval(0, NULL, mod);
     return mod;

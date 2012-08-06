@@ -1210,7 +1210,7 @@ static inline VALUE
 vm_get_iclass(rb_control_frame_t *cfp, VALUE klass)
 {
     if (TYPE(klass) == T_MODULE &&
-	FL_TEST(klass, RMODULE_IS_OVERLAYED) &&
+	FL_TEST(klass, RMODULE_IS_OVERLAID) &&
 	TYPE(cfp->klass) == T_ICLASS &&
 	RBASIC(cfp->klass)->klass == klass) {
 	return cfp->klass;
