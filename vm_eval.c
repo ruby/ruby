@@ -160,14 +160,12 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
     rb_method_entry_t *me;
     rb_control_frame_t *cfp = th->cfp;
 
-    if (!cfp->iseq && !NIL_P(cfp->klass)) {
-	klass = RCLASS_SUPER(cfp->klass);
-	id = cfp->me->def->original_id;
-    }
-    else {
+    if (cfp->iseq || NIL_P(cfp->klass)) {
 	rb_bug("vm_call_super: should not be reached");
     }
 
+    klass = RCLASS_SUPER(cfp->klass);
+    id = cfp->me->def->original_id;
     me = rb_method_entry(klass, id, &klass);
     if (!me) {
 	return method_missing(recv, id, argc, argv, NOEX_SUPER);
