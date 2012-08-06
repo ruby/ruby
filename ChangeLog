@@ -1,3 +1,8 @@
+Mon Aug  6 11:08:48 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/syslog/test_syslog_logger.rb: skip unless Syslog module is
+	  available.
+
 Mon Aug  6 00:40:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigMath_s_log): fix format specifier.

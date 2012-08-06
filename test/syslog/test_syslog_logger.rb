@@ -1,6 +1,10 @@
 require 'test/unit'
 require 'tempfile'
-require 'syslog/logger'
+begin
+  require 'syslog/logger'
+rescue LoadError
+  # skip.  see the bottom of this file.
+end
 
 # These tests ensure Syslog::Logger works like Logger
 
@@ -504,4 +508,4 @@ class TestSyslogLogger < TestSyslogRootLogger
     assert_equal false, @logger.unknown?
   end
 
-end
+end if defined?(Syslog)
