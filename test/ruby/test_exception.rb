@@ -3,14 +3,16 @@ require 'tempfile'
 require_relative 'envutil'
 
 class TestException < Test::Unit::TestCase
-  def test_exception
+  def test_exception_rescued
     begin
       raise "this must be handled"
       assert(false)
     rescue
       assert(true)
     end
+  end
 
+  def test_exception_retry
     bad = true
     begin
       raise "this must be handled no.2"
@@ -22,8 +24,9 @@ class TestException < Test::Unit::TestCase
       end
     end
     assert(true)
+  end
 
-    # exception in rescue clause
+  def test_exception_in_rescue
     string = "this must be handled no.3"
     e = assert_raise(RuntimeError) do
       begin
@@ -34,8 +37,9 @@ class TestException < Test::Unit::TestCase
       assert(false)
     end
     assert_equal(string, e.message)
+  end
 
-    # exception in ensure clause
+  def test_exception_in_ensure
     string = "exception in ensure clause"
     e = assert_raise(RuntimeError) do
       begin
@@ -48,7 +52,9 @@ class TestException < Test::Unit::TestCase
       assert(false)
     end
     assert_equal(string, e.message)
+  end
 
+  def test_exception_ensure
     bad = true
     begin
       begin
@@ -59,7 +65,9 @@ class TestException < Test::Unit::TestCase
     rescue
     end
     assert(!bad)
+  end
 
+  def test_exception_ensure_2   # just duplication?
     bad = true
     begin
       begin
@@ -70,7 +78,9 @@ class TestException < Test::Unit::TestCase
     rescue
     end
     assert(!bad)
+  end
 
+  def test_break_ensure
     bad = true
     while true
       begin
@@ -80,7 +90,9 @@ class TestException < Test::Unit::TestCase
       end
     end
     assert(!bad)
+  end
 
+  def test_catch_throw
     assert(catch(:foo) {
              loop do
                loop do
@@ -95,7 +107,7 @@ class TestException < Test::Unit::TestCase
 
   end
 
-  def test_else
+  def test_else_no_exception
     begin
       assert(true)
     rescue
@@ -103,7 +115,9 @@ class TestException < Test::Unit::TestCase
     else
       assert(true)
     end
+  end
 
+  def test_else_raised
     begin
       assert(true)
       raise
@@ -113,7 +127,9 @@ class TestException < Test::Unit::TestCase
     else
       assert(false)
     end
+  end
 
+  def test_else_nested_no_exception
     begin
       assert(true)
       begin
@@ -129,7 +145,9 @@ class TestException < Test::Unit::TestCase
     else
       assert(true)
     end
+  end
 
+  def test_else_nested_rescued
     begin
       assert(true)
       begin
@@ -147,7 +165,9 @@ class TestException < Test::Unit::TestCase
     else
       assert(true)
     end
+  end
 
+  def test_else_nested_unrescued
     begin
       assert(true)
       begin
@@ -165,7 +185,9 @@ class TestException < Test::Unit::TestCase
     else
       assert(false)
     end
+  end
 
+  def test_else_nested_rescued_reraise
     begin
       assert(true)
       begin
