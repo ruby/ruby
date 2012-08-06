@@ -458,7 +458,7 @@ class TestSyslogRootLogger < Test::Unit::TestCase
     assert_equal false, @logger.debug?
   end
 
-end
+end if defined?(Syslog)
 
 class TestSyslogLogger < TestSyslogRootLogger
 
