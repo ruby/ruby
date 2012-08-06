@@ -828,7 +828,7 @@ defined
       case DEFINED_ZSUPER:{
 	const rb_method_entry_t *me = GET_CFP()->me;
 	if (me) {
-	    VALUE klass = vm_search_normal_superclass(me->klass);
+	    VALUE klass = vm_search_normal_superclass(GET_CFP()->klass);
 	    ID id = me->def ? me->def->original_id : me->called_id;
 	    if (rb_method_boundp(klass, id, 0)) {
 		expr_type = "super";

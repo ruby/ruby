@@ -152,4 +152,22 @@ class TestDefined < Test::Unit::TestCase
     assert_equal("super", aa.f, bug6644)
     assert_nil(a.f, bug6644)
   end
+
+  def test_super_in_included_method
+    c0 = Class.new do
+      def m
+      end
+    end
+    m1 = Module.new do
+      def m
+        defined?(super)
+      end
+    end
+    c = Class.new(c0) do include m1
+      def m
+        super
+      end
+    end
+    assert_equal("super", c.new.m)
+  end
 end
