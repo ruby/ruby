@@ -1,3 +1,8 @@
+Wed Aug  8 05:51:20 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* proc.c (method_clone):  Added documentation.  Patch by Robin Dupret.
+	  Fixes #152 on github.
+
 Tue Aug  7 20:19:29 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/readline.c (Init_readline): rl_catch_signals=0 returns
