@@ -6252,7 +6252,12 @@ rb_str_enumerate_bytes(VALUE str, VALUE return_enumerator_p)
 	    rb_ary_push(ary, INT2FIX(RSTRING_PTR(str)[i] & 0xff));
 	}
     }
-    return ary;
+    if (yieldp) {
+	return str;
+    }
+    else {
+	return ary;
+    }
 }
 
 static VALUE

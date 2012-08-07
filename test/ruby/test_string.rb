@@ -621,7 +621,8 @@ class TestString < Test::Unit::TestCase
 
   def test_each_byte
     res = []
-    S("ABC").each_byte {|x| res << x }
+    s = S("ABC")
+    assert_equal s.object_id, s.each_byte {|x| res << x }.object_id
     assert_equal(65, res[0])
     assert_equal(66, res[1])
     assert_equal(67, res[2])
@@ -631,7 +632,8 @@ class TestString < Test::Unit::TestCase
 
   def test_bytes
     res = []
-    S("ABC").bytes {|x| res << x }
+    s = S("ABC")
+    assert_equal s.object_id, s.bytes {|x| res << x }.object_id
     assert_equal(65, res[0])
     assert_equal(66, res[1])
     assert_equal(67, res[2])
