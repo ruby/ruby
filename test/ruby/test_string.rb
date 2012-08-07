@@ -625,6 +625,18 @@ class TestString < Test::Unit::TestCase
     assert_equal(65, res[0])
     assert_equal(66, res[1])
     assert_equal(67, res[2])
+
+    assert_equal 65, S("ABC").each_byte.next
+  end
+
+  def test_bytes
+    res = []
+    S("ABC").bytes {|x| res << x }
+    assert_equal(65, res[0])
+    assert_equal(66, res[1])
+    assert_equal(67, res[2])
+
+    assert_equal [65, 66, 67], S("ABC").bytes
   end
 
   def test_each_line

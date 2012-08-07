@@ -6227,27 +6227,44 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
  */
 
 static VALUE
-rb_str_each_byte(VALUE str)
+rb_str_enumerate_bytes(VALUE str, VALUE return_enumerator_p)
 {
     long i;
+    VALUE ary, yieldp;
 
-    RETURN_ENUMERATOR(str, 0, 0);
-    for (i=0; i<RSTRING_LEN(str); i++) {
-	rb_yield(INT2FIX(RSTRING_PTR(str)[i] & 0xff));
+    if (return_enumerator_p) {
+	RETURN_ENUMERATOR(str, 0, 0);
     }
-    return str;
+
+    if (rb_block_given_p()) {
+	yieldp = Qtrue;
+    }
+    else {
+	yieldp = Qfalse;
+	ary = rb_ary_new2(RSTRING_LEN(str));
+    }
+
+    for (i=0; i<RSTRING_LEN(str); i++) {
+	if (yieldp) {
+	    rb_yield(INT2FIX(RSTRING_PTR(str)[i] & 0xff));
+	}
+	else {
+	    rb_ary_push(ary, INT2FIX(RSTRING_PTR(str)[i] & 0xff));
+	}
+    }
+    return ary;
+}
+
+static VALUE
+rb_str_each_byte(VALUE str)
+{
+    return rb_str_enumerate_bytes(str, Qtrue);
 }
 
 static VALUE
 rb_str_bytes(VALUE str)
 {
-    long i;
-    VALUE ary = rb_ary_new();
-
-    for (i=0; i<RSTRING_LEN(str); i++) {
-	rb_ary_push(ary, INT2FIX(RSTRING_PTR(str)[i] & 0xff));
-    }
-    return ary;
+    return rb_str_enumerate_bytes(str, Qfalse);
 }
 
 /*
