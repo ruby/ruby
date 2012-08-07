@@ -1,3 +1,9 @@
+Tue Aug  7 10:46:37 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_file_exhaustive.rb
+	  (TestFileExhaustive#test_expand_path*): refactoring.  split the method
+	  into some chunks of the same kind of tests.
+
 Tue Aug  7 00:31:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_special_singleton_class_of): utility function.

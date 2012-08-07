@@ -409,6 +409,9 @@ class TestFileExhaustive < Test::Unit::TestCase
     else
       assert_equal("/foo", File.expand_path('/foo'))
     end
+  end
+
+  def test_expand_path_encoding
     drive = (DRIVE ? 'C:' : '')
     if Encoding.find("filesystem") == Encoding::CP1251
       a = "#{drive}/\u3042\u3044\u3046\u3048\u304a".encode("cp932")
@@ -425,6 +428,10 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(expected.force_encoding(cp), File.expand_path(a.dup.force_encoding(cp)), cp)
     end
 
+    assert_incompatible_encoding {|d| File.expand_path(d)}
+  end
+
+  def test_expand_path_home
     assert_kind_of(String, File.expand_path("~")) if ENV["HOME"]
     assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha") }
     assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha", "/") }
@@ -440,7 +447,6 @@ class TestFileExhaustive < Test::Unit::TestCase
     ensure
       ENV["HOME"] = home
     end
-    assert_incompatible_encoding {|d| File.expand_path(d)}
   end
 
   def test_basename
