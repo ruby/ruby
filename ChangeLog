@@ -1,3 +1,8 @@
+Tue Aug  7 11:35:37 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_method.c (rb_redefine_opt_method): use RCLASS_ORIGIN to avoid
+	  SEGV when a module-prepended class is refined.
+
 Tue Aug  7 10:46:37 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_file_exhaustive.rb

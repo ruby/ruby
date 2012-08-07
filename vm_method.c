@@ -1415,13 +1415,14 @@ rb_redefine_opt_method(VALUE klass, ID mid)
 {
     st_data_t data;
     rb_method_entry_t *me = 0;
+    VALUE origin = RCLASS_ORIGIN(klass);
 
-    if (!st_lookup(RCLASS_M_TBL(klass), mid, &data) ||
+    if (!st_lookup(RCLASS_M_TBL(origin), mid, &data) ||
 	!(me = (rb_method_entry_t *)data) ||
 	(!me->def || me->def->type == VM_METHOD_TYPE_UNDEF)) {
 	return;
     }
-    rb_vm_check_redefinition_opt_method(me, klass);
+    rb_vm_check_redefinition_opt_method(me, origin);
 }
 
 void
