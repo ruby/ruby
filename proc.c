@@ -1446,7 +1446,20 @@ rb_obj_define_method(int argc, VALUE *argv, VALUE obj)
 
 
 /*
- * MISSING: documentation
+ *  call-seq:
+ *     method.clone -> new_method
+ *
+ *  Just return a method object which is a clone of the receiver.
+ *
+ *     class A
+ *       def foo
+ *         return "bar"
+ *       end
+ *     end
+ *
+ *     m = A.new.method(:foo)
+ *     m.call # => "bar"
+ *     n = m.clone.call # => "bar" 
  */
 
 static VALUE
