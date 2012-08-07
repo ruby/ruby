@@ -2,6 +2,13 @@ require 'psych/helper'
 
 module Psych
   class TestOmap < TestCase
+    def test_parse_as_map
+      o = Psych.load "--- !!omap\na: 1\nb: 2"
+      assert_kind_of Psych::Omap, o
+      assert_equal 1, o['a']
+      assert_equal 2, o['b']
+    end
+
     def test_self_referential
       map = Psych::Omap.new
       map['foo'] = 'bar'

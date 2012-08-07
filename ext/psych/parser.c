@@ -79,8 +79,8 @@ static VALUE make_exception(yaml_parser_t * parser, VALUE path)
 static VALUE transcode_string(VALUE src, int * parser_encoding)
 {
     int utf8    = rb_utf8_encindex();
-    int utf16le = rb_enc_find_index("UTF16_LE");
-    int utf16be = rb_enc_find_index("UTF16_BE");
+    int utf16le = rb_enc_find_index("UTF-16LE");
+    int utf16be = rb_enc_find_index("UTF-16BE");
     int source_encoding = rb_enc_get_index(src);
 
     if (source_encoding == utf8) {

@@ -20,6 +20,7 @@ module Psych
         @st       = {}
         @ss       = ss
         @options  = options
+        @coders   = []
 
         @dispatch_cache = Hash.new do |h,klass|
           method = "visit_#{(klass.name || '').split('::').join('_')}"
@@ -253,7 +254,7 @@ module Psych
           maptag = '!ruby/string'
           maptag << ":#{o.class}" unless o.class == ::String
 
-          @emitter.start_mapping nil, maptag, false, Nodes::Mapping::BLOCK
+          register o, @emitter.start_mapping(nil, maptag, false, Nodes::Mapping::BLOCK)
           @emitter.scalar 'str', nil, nil, true, false, Nodes::Scalar::ANY
           @emitter.scalar str, nil, tag, plain, quote, style
 
@@ -406,6 +407,7 @@ module Psych
       end
 
       def dump_coder o
+        @coders << o
         tag = Psych.dump_tags[o.class]
         unless tag
           klass = o.class == Object ? nil : o.class.name
