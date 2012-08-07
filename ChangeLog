@@ -1,3 +1,9 @@
+Tue Aug  7 20:19:29 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/readline/readline.c (Init_readline): rl_catch_signals=0 returns
+	  back. Without this, on FreeBSD9 and readline 6.2 irb can't catch ^C.
+	  [Bug #5423]
+
 Tue Aug 07 20:12:39 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_exec.c, insns.def (leave): solve problems on
