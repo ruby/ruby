@@ -454,6 +454,11 @@ typedef struct rb_thread_struct {
     /* temporary place of errinfo */
     VALUE errinfo;
 
+    /* temporary place of retval on OPT_CALL_THREADED_CODE */
+#if OPT_CALL_THREADED_CODE
+    VALUE retval;
+#endif
+
     /* async errinfo queue */
     VALUE async_errinfo_queue;
     int async_errinfo_queue_checked;

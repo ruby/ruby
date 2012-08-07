@@ -1,3 +1,16 @@
+Tue Aug 07 20:12:39 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_exec.c, insns.def (leave): solve problems on
+	  OPT_CALL_THREADED_CODE.
+	  Catch up finish frame structure on OPT_CALL_THREADED_CODE.
+
+	* vm_core.h: add rb_thread_t#retval for temporary space on
+	  OPT_CALL_THREADED_CODE.
+
+	* vm.c (th_init): clear rb_thread_t#retval as Qundef.
+
+	* vm_dump.c (rb_vmdebug_debug_print_pre): fix debug print format.
+
 Tue Aug  7 11:58:27 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_require.rb (TestRequire#test_require_twice): added.

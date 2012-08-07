@@ -105,39 +105,39 @@ rb_vm_get_insns_address_table(void)
     return (const void **)vm_exec_core(0, 0);
 }
 
-#else
+#else /* OPT_CALL_THREADED_CODE */
 
 #include "vm.inc"
 #include "vmtc.inc"
 
-const void *const *
+const void **
 rb_vm_get_insns_address_table(void)
 {
-    return insns_address_table;
+    return (const void **)insns_address_table;
 }
 
 static VALUE
 vm_exec_core(rb_thread_t *th, VALUE initial)
 {
     register rb_control_frame_t *reg_cfp = th->cfp;
-    VALUE ret;
 
-    while (*GET_PC()) {
+    while (1) {
 	reg_cfp = ((rb_insn_func_t) (*GET_PC()))(th, reg_cfp);
 
-	if (reg_cfp == 0) {
-	    VALUE err = th->errinfo;
-	    th->errinfo = Qnil;
-	    return err;
+	if (UNLIKELY(reg_cfp == 0)) {
+	    break;
 	}
     }
 
-    if (VM_FRAME_TYPE_FINISH_P(th->cfp)) {
-	rb_bug("cfp consistency error");
+    if (th->retval != Qundef) {
+	VALUE ret = th->retval;
+	th->retval = Qundef;
+	return ret;
     }
-
-    ret = *(th->cfp->sp-1); /* pop */
-    th->cfp++; /* pop cf */
-    return ret;
+    else {
+	VALUE err = th->errinfo;
+	th->errinfo = Qnil;
+	return err;
+    }
 }
 #endif

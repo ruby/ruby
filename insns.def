@@ -1116,10 +1116,12 @@ leave
     RUBY_VM_CHECK_INTS(th);
 
     if (UNLIKELY(VM_FRAME_TYPE_FINISH_P(GET_CFP()))) {
-#if OPT_CALL_THREADED_CODE
-	rb_bug("unused instruction on OPT_CALL_THREADED_CODE");
-#else
 	vm_pop_frame(th);
+
+#if OPT_CALL_THREADED_CODE
+	th->retval = val;
+	return 0;
+#else
 	return val;
 #endif
     }

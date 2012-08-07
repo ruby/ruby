@@ -1796,6 +1796,10 @@ th_init(rb_thread_t *th, VALUE self)
     th->errinfo = Qnil;
     th->last_status = Qnil;
     th->waiting_fd = -1;
+
+#if OPT_CALL_THREADED_CODE
+    th->retval = Qundef;
+#endif
 }
 
 static VALUE
