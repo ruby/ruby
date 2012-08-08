@@ -414,3 +414,18 @@ assert_equal 'exception class/object expected', %q{
     e.message
   end
 }, '[ruby-core:24767]'
+
+assert_equal 'ok', %q{
+  class C
+    def ===(o)
+      true
+    end
+  end
+  begin
+    begin
+    rescue C.new
+    end
+  rescue TypeError
+    :ok
+  end
+}

@@ -1,3 +1,23 @@
+Wed Aug  8 16:27:58 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c, insns.def (checkmatch):
+	  remove checkincludearray instruction and
+	  add new instruction checkmatch.
+	  This change is to solve
+	  [Bug #4438] "rescue args type check omitted".
+
+	* iseq.c: increment ISEQ_MAJOR_VERSION because removal of
+	  checkincludearray instruction.
+
+	* vm_core.h: add several definitions for
+	  the checkmatch instruction.
+
+	* vm_insnhelper.c (check_match): added.
+
+	* bootstraptest/test_exception.rb: add a test.
+
+	* test/ruby/test_exception.rb: ditto.
+
 Wed Aug  8 05:51:20 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* proc.c (method_clone):  Added documentation.  Patch by Robin Dupret.

@@ -431,4 +431,24 @@ end.join
   ensure
     t.close(true) if t
   end
+
+  Bug4438 = '[ruby-core:35364]'
+
+  def test_rescue_single_argument
+    assert_raise(TypeError, Bug4438) do
+      begin
+        raise
+      rescue 1
+      end
+    end
+  end
+
+  def test_rescue_splat_argument
+    assert_raise(TypeError, Bug4438) do
+      begin
+        raise
+      rescue *Array(1)
+      end
+    end
+  end
 end

@@ -1848,3 +1848,22 @@ rb_vm_using_modules(NODE *cref, VALUE klass)
     }
 }
 
+static VALUE
+check_match(VALUE pattern, VALUE target, enum vm_check_match_type type)
+{
+    switch (type) {
+      case VM_CHECKMATCH_TYPE_WHEN:
+	return pattern;
+      case VM_CHECKMATCH_TYPE_CASE:
+	return rb_funcall2(pattern, idEqq, 1, &target);
+      case VM_CHECKMATCH_TYPE_RESCUE: {
+	  if (!rb_obj_is_kind_of(pattern, rb_cModule)) {
+	      rb_raise(rb_eTypeError, "class or module required for rescue clause");
+	  }
+	  return RTEST(rb_funcall2(pattern, idEqq, 1, &target));
+      }
+      default:
+	rb_bug("check_match: unreachable");
+    }
+}
+
