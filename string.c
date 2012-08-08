@@ -7931,7 +7931,9 @@ Init_String(void)
 
     rb_define_method(rb_cString, "include?", rb_str_include, 1);
     rb_define_method(rb_cString, "start_with?", rb_str_start_with, -1);
+    rb_define_method(rb_cString, "starts_with?", rb_str_start_with, -1);
     rb_define_method(rb_cString, "end_with?", rb_str_end_with, -1);
+    rb_define_method(rb_cString, "ends_with?", rb_str_end_with, -1);
 
     rb_define_method(rb_cString, "scan", rb_str_scan, 1);
 
