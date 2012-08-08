@@ -423,6 +423,7 @@ assert_equal 'ok', %q{
   end
   begin
     begin
+      raise
     rescue C.new
     end
   rescue TypeError
