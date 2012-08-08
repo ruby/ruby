@@ -12,7 +12,7 @@ Wed Aug  8 22:45:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Aug  8 17:11:20 2012  Koichi Sasada  <ko1@atdot.net>
 
-	* compile.c (ADD_INSNL): make ADD_INSNSL as alias of ADD_INSN1.
+	* compile.c (ADD_INSNL): make ADD_INSNL as alias of ADD_INSN1.
 
 Wed Aug  8 17:08:14 2012  Koichi Sasada  <ko1@atdot.net>
 
