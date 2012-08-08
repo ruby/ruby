@@ -229,9 +229,9 @@ class TestEval < Test::Unit::TestCase
 
   def test_eval_orig
     assert_nil(eval(""))
-    $bad=false
-    eval 'while false; $bad = true; print "foo\n" end'
-    assert(!$bad)
+    bad=false
+    eval 'while false; bad = true; print "foo\n" end'
+    assert(!bad)
 
     assert(eval('TRUE'))
     assert(eval('true'))
@@ -254,34 +254,34 @@ class TestEval < Test::Unit::TestCase
     assert_equal(5, eval("i"))
     assert(eval("defined? i"))
 
-    $x = test_ev
-    assert_equal("local1", eval("local1", $x)) # normal local var
-    assert_equal("local2", eval("local2", $x)) # nested local var
-    $bad = true
+    x = test_ev
+    assert_equal("local1", eval("local1", x)) # normal local var
+    assert_equal("local2", eval("local2", x)) # nested local var
+    bad = true
     begin
       p eval("local1")
     rescue NameError		# must raise error
-      $bad = false
+      bad = false
     end
-    assert(!$bad)
+    assert(!bad)
 
     # !! use class_eval to avoid nested definition
-    self.class.class_eval %q(
+    x = self.class.class_eval %q(
       module EvTest
 	EVTEST1 = 25
 	evtest2 = 125
-	$x = binding
+	binding
       end
     )
-    assert_equal(25, eval("EVTEST1", $x))	# constant in module
-    assert_equal(125, eval("evtest2", $x))	# local var in module
-    $bad = true
+    assert_equal(25, eval("EVTEST1", x))	# constant in module
+    assert_equal(125, eval("evtest2", x))	# local var in module
+    bad = true
     begin
       eval("EVTEST1")
     rescue NameError		# must raise error
-      $bad = false
+      bad = false
     end
-    assert(!$bad)
+    assert(!bad)
 
     if false
       # Ruby 2.0 doesn't see Proc as Binding
@@ -291,10 +291,10 @@ class TestEval < Test::Unit::TestCase
       x = proc{proc{}}.call
       eval "i4 = 22", x
       assert_equal(22, eval("i4", x))
-      $x = []
+      t = []
       x = proc{proc{}}.call
-      eval "(0..9).each{|i5| $x[i5] = proc{i5*2}}", x
-      assert_equal(8, $x[4].call)
+      eval "(0..9).each{|i5| t[i5] = proc{i5*2}}", x
+      assert_equal(8, t[4].call)
     end
 
     x = binding
@@ -303,10 +303,10 @@ class TestEval < Test::Unit::TestCase
     x = proc{binding}.call
     eval "i = 22", x
     assert_equal(22, eval("i", x))
-    $x = []
+    t = []
     x = proc{binding}.call
-    eval "(0..9).each{|i5| $x[i5] = proc{i5*2}}", x
-    assert_equal(8, $x[4].call)
+    eval "(0..9).each{|i5| t[i5] = proc{i5*2}}", x
+    assert_equal(8, t[4].call)
     x = proc{binding}.call
     eval "for i6 in 1..1; j6=i6; end", x
     assert(eval("defined? i6", x))

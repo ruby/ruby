@@ -30,12 +30,12 @@ class TestStringchar < Test::Unit::TestCase
     assert(/(\s+\d+){2}/ =~ " 1 2"); assert_equal(" 1 2", $&)
     assert(/(?:\s+\d+){2}/ =~ " 1 2"); assert_equal(" 1 2", $&)
 
-    $x = <<END;
+    x = <<END;
 ABCD
 ABCD
 END
-    $x.gsub!(/((.|\n)*?)B((.|\n)*?)D/m ,'\1\3')
-    assert_equal("AC\nAC\n", $x)
+    x.gsub!(/((.|\n)*?)B((.|\n)*?)D/m ,'\1\3')
+    assert_equal("AC\nAC\n", x)
 
     assert_match(/foo(?=(bar)|(baz))/, "foobar")
     assert_match(/foo(?=(bar)|(baz))/, "foobaz")
@@ -56,12 +56,12 @@ END
     assert_equal('-', foo * 1)
     assert_equal('', foo * 0)
 
-    $x = "a.gif"
-    assert_equal("gif", $x.sub(/.*\.([^\.]+)$/, '\1'))
-    assert_equal("b.gif", $x.sub(/.*\.([^\.]+)$/, 'b.\1'))
-    assert_equal("", $x.sub(/.*\.([^\.]+)$/, '\2'))
-    assert_equal("ab", $x.sub(/.*\.([^\.]+)$/, 'a\2b'))
-    assert_equal("<a.gif>", $x.sub(/.*\.([^\.]+)$/, '<\&>'))
+    x = "a.gif"
+    assert_equal("gif", x.sub(/.*\.([^\.]+)$/, '\1'))
+    assert_equal("b.gif", x.sub(/.*\.([^\.]+)$/, 'b.\1'))
+    assert_equal("", x.sub(/.*\.([^\.]+)$/, '\2'))
+    assert_equal("ab", x.sub(/.*\.([^\.]+)$/, 'a\2b'))
+    assert_equal("<a.gif>", x.sub(/.*\.([^\.]+)$/, '<\&>'))
   end
 
   def test_char
@@ -78,16 +78,16 @@ END
     assert_equal("abc", "abcc".squeeze!("a-z"))
     assert_equal("ad", "abcd".delete!("bc"))
 
-    $x = "abcdef"
-    $y = [ ?a, ?b, ?c, ?d, ?e, ?f ]
-    $bad = false
-    $x.each_byte {|i|
-      if i.chr != $y.shift
-        $bad = true
+    x = "abcdef"
+    y = [ ?a, ?b, ?c, ?d, ?e, ?f ]
+    bad = false
+    x.each_byte {|i|
+      if i.chr != y.shift
+        bad = true
         break
       end
     }
-    assert(!$bad)
+    assert(!bad)
 
     s = "a string"
     s[0..s.size]="another string"
