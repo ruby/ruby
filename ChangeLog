@@ -1,3 +1,10 @@
+Wed Aug  8 22:45:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (.y.h): split from .y.c rule to manage dependency on
+	  parse.h.  [ruby-core:46741] [Bug #6789]
+
+	* common.mk (id.h): keep old file unless changed.
+
 Wed Aug  8 17:11:20 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (ADD_INSNL): make ADD_INSNSL as alias of ADD_INSN1.
