@@ -215,6 +215,18 @@ class TestEval < Test::Unit::TestCase
     end
   end
 
+  class Foo
+    Bar = 2
+  end
+
+  def test_instance_eval_const
+    bar = nil
+    assert_nothing_raised(NameError) do
+      bar = Foo.new.instance_eval("Bar")
+    end
+    assert_equal(2, bar)
+  end
+
   #
   # From ruby/test/ruby/test_eval.rb
   #

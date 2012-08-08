@@ -1320,7 +1320,7 @@ eval_under(VALUE under, VALUE self, VALUE src, const char *file, int line)
 {
     NODE *cref = vm_cref_push(GET_THREAD(), under, NOEX_PUBLIC, NULL);
 
-    if (FL_TEST(under, FL_SINGLETON) || (SPECIAL_CONST_P(self) && !NIL_P(under))) {
+    if (SPECIAL_CONST_P(self) && !NIL_P(under)) {
 	cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL;
     }
     if (rb_safe_level() >= 4) {
