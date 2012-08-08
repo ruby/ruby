@@ -6291,14 +6291,25 @@ rb_str_bytes(VALUE str)
  */
 
 static VALUE
-rb_str_each_char(VALUE str)
+rb_str_enumerate_chars(VALUE str, VALUE return_enumerator_p)
 {
     VALUE orig = str;
     long i, len, n;
     const char *ptr;
     rb_encoding *enc;
+    VALUE ary, yieldp;
 
-    RETURN_ENUMERATOR(str, 0, 0);
+    if (return_enumerator_p) {
+	RETURN_ENUMERATOR(str, 0, 0);
+    }
+
+    if (rb_block_given_p()) {
+	yieldp = Qtrue;
+    }
+    else {
+	yieldp = Qfalse;
+	ary = rb_ary_new();
+    }
     str = rb_str_new4(str);
     ptr = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
@@ -6308,16 +6319,43 @@ rb_str_each_char(VALUE str)
       case ENC_CODERANGE_7BIT:
 	for (i = 0; i < len; i += n) {
 	    n = rb_enc_fast_mbclen(ptr + i, ptr + len, enc);
-	    rb_yield(rb_str_subseq(str, i, n));
+	    if (yieldp) {
+		rb_yield(rb_str_subseq(str, i, n));
+	    }
+	    else {
+		rb_ary_push(ary, rb_str_subseq(str, i, n));
+	    }
 	}
 	break;
       default:
 	for (i = 0; i < len; i += n) {
 	    n = rb_enc_mbclen(ptr + i, ptr + len, enc);
-	    rb_yield(rb_str_subseq(str, i, n));
+	    if (yieldp) {
+		rb_yield(rb_str_subseq(str, i, n));
+	    }
+	    else {
+		rb_ary_push(ary, rb_str_subseq(str, i, n));
+	    }
 	}
     }
-    return orig;
+    if (yieldp) {
+	return orig;
+    }
+    else {
+	return ary;
+    }
+}
+
+static VALUE
+rb_str_each_char(VALUE str)
+{
+    return rb_str_enumerate_chars(str, Qtrue);
+}
+
+static VALUE
+rb_str_chars(VALUE str)
+{
+    return rb_str_enumerate_chars(str, Qfalse);
 }
 
 /*
@@ -7950,7 +7988,7 @@ Init_String(void)
     rb_define_method(rb_cString, "split", rb_str_split_m, -1);
     rb_define_method(rb_cString, "lines", rb_str_each_line, -1);
     rb_define_method(rb_cString, "bytes", rb_str_bytes, 0);
-    rb_define_method(rb_cString, "chars", rb_str_each_char, 0);
+    rb_define_method(rb_cString, "chars", rb_str_chars, 0);
     rb_define_method(rb_cString, "codepoints", rb_str_each_codepoint, 0);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);

@@ -641,6 +641,28 @@ class TestString < Test::Unit::TestCase
     assert_equal [65, 66, 67], S("ABC").bytes
   end
 
+  def test_each_char
+    res = []
+    s = S("ABC")
+    assert_equal s.object_id, s.each_char {|x| res << x }.object_id
+    assert_equal("A", res[0])
+    assert_equal("B", res[1])
+    assert_equal("C", res[2])
+
+    assert_equal "A", S("ABC").each_char.next
+  end
+
+  def test_chars
+    res = []
+    s = S("ABC")
+    assert_equal s.object_id, s.chars {|x| res << x }.object_id
+    assert_equal("A", res[0])
+    assert_equal("B", res[1])
+    assert_equal("C", res[2])
+
+    assert_equal ["A", "B", "C"], S("ABC").chars
+  end
+
   def test_each_line
     save = $/
     $/ = "\n"
