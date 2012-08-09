@@ -6208,24 +6208,6 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 }
 
 
-/*
- *  call-seq:
- *     str.bytes {|fixnum| block }        -> str
- *     str.bytes                          -> an_enumerator
- *
- *     str.each_byte {|fixnum| block }    -> str
- *     str.each_byte                      -> an_enumerator
- *
- *  Passes each byte in <i>str</i> to the given block, or returns
- *  an enumerator if no block is given.
- *
- *     "hello".each_byte {|c| print c, ' ' }
- *
- *  <em>produces:</em>
- *
- *     104 101 108 108 111
- */
-
 static VALUE
 rb_str_enumerate_bytes(VALUE str, VALUE return_enumerator_p)
 {
@@ -6260,6 +6242,24 @@ rb_str_enumerate_bytes(VALUE str, VALUE return_enumerator_p)
     }
 }
 
+/*
+ *  call-seq:
+ *     str.bytes {|fixnum| block }        -> str
+ *     str.bytes                          -> an_enumerator
+ *
+ *     str.each_byte {|fixnum| block }    -> str
+ *     str.each_byte                      -> an_enumerator
+ *
+ *  Passes each byte in <i>str</i> to the given block, or returns
+ *  an enumerator if no block is given.
+ *
+ *     "hello".each_byte {|c| print c, ' ' }
+ *
+ *  <em>produces:</em>
+ *
+ *     104 101 108 108 111
+ */
+
 static VALUE
 rb_str_each_byte(VALUE str)
 {
@@ -6272,23 +6272,6 @@ rb_str_bytes(VALUE str)
     return rb_str_enumerate_bytes(str, Qfalse);
 }
 
-/*
- *  call-seq:
- *     str.chars {|cstr| block }        -> str
- *     str.chars                        -> an_enumerator
- *
- *     str.each_char {|cstr| block }    -> str
- *     str.each_char                    -> an_enumerator
- *
- *  Passes each character in <i>str</i> to the given block, or returns
- *  an enumerator if no block is given.
- *
- *     "hello".each_char {|c| print c, ' ' }
- *
- *  <em>produces:</em>
- *
- *     h e l l o
- */
 
 static VALUE
 rb_str_enumerate_chars(VALUE str, VALUE return_enumerator_p)
@@ -6346,6 +6329,24 @@ rb_str_enumerate_chars(VALUE str, VALUE return_enumerator_p)
     }
 }
 
+/*
+ *  call-seq:
+ *     str.chars {|cstr| block }        -> str
+ *     str.chars                        -> an_enumerator
+ *
+ *     str.each_char {|cstr| block }    -> str
+ *     str.each_char                    -> an_enumerator
+ *
+ *  Passes each character in <i>str</i> to the given block, or returns
+ *  an enumerator if no block is given.
+ *
+ *     "hello".each_char {|c| print c, ' ' }
+ *
+ *  <em>produces:</em>
+ *
+ *     h e l l o
+ */
+
 static VALUE
 rb_str_each_char(VALUE str)
 {
@@ -6357,6 +6358,7 @@ rb_str_chars(VALUE str)
 {
     return rb_str_enumerate_chars(str, Qfalse);
 }
+
 
 static VALUE
 rb_str_enumerate_codepoints(VALUE str, VALUE return_enumerator_p)
