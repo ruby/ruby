@@ -1,4 +1,6 @@
-Thu Aug  9 23:46:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug  9 23:46:47 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (MINIRUBY): use real path for include path.
 
 	* template/fake.rb.in (builddir): remove duplications
 
