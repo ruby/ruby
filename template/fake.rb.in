@@ -22,10 +22,11 @@ if RUBY_PLATFORM =~ /mswin|bccwin|mingw/
   end
 end
 
-$:.unshift(File.expand_path("..", __FILE__))
+builddir = File.expand_path(File.dirname(__FILE__))
+$:.unshift(builddir)
 posthook = proc do
   mkconfig = RbConfig::MAKEFILE_CONFIG
-  extout = File.expand_path(mkconfig["EXTOUT"], mkconfig["builddir"])
+  extout = File.expand_path(mkconfig["EXTOUT"], builddir)
   $arch_hdrdir = "#{extout}/include/$(arch)"
   $ruby = baseruby
   untrace_var(:$ruby, posthook)
@@ -34,7 +35,6 @@ prehook = proc do |extmk|
   unless extmk
     config = RbConfig::CONFIG
     mkconfig = RbConfig::MAKEFILE_CONFIG
-    builddir = File.expand_path(File.dirname(__FILE__))
     mkconfig["top_srcdir"] = $top_srcdir = File.expand_path("@top_srcdir@", builddir)
     mkconfig["rubyhdrdir"] = "$(top_srcdir)/include"
     mkconfig["builddir"] = config["builddir"] = builddir

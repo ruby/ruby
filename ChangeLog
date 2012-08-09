@@ -1,3 +1,8 @@
+Thu Aug  9 23:46:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/fake.rb.in (builddir): remove duplications
+
+
 Thu Aug  9 20:03:11 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/ruby/test_file_exhaustive.rb
