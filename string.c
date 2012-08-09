@@ -6358,6 +6358,53 @@ rb_str_chars(VALUE str)
     return rb_str_enumerate_chars(str, Qfalse);
 }
 
+static VALUE
+rb_str_enumerate_codepoints(VALUE str, VALUE return_enumerator_p)
+{
+    VALUE orig = str;
+    int n;
+    unsigned int c;
+    const char *ptr, *end;
+    rb_encoding *enc;
+    VALUE ary, yieldp;
+
+    if (single_byte_optimizable(str))
+	return rb_str_enumerate_bytes(str, return_enumerator_p);
+
+    if (return_enumerator_p) {
+	RETURN_ENUMERATOR(str, 0, 0);
+    }
+
+    if (rb_block_given_p()) {
+	yieldp = Qtrue;
+    }
+    else {
+	yieldp = Qfalse;
+	ary = rb_ary_new();
+    }
+
+    str = rb_str_new4(str);
+    ptr = RSTRING_PTR(str);
+    end = RSTRING_END(str);
+    enc = STR_ENC_GET(str);
+    while (ptr < end) {
+	c = rb_enc_codepoint_len(ptr, end, &n, enc);
+	if (yieldp) {
+	    rb_yield(UINT2NUM(c));
+	}
+	else {
+	    rb_ary_push(ary, UINT2NUM(c));
+	}
+	ptr += n;
+    }
+    if (yieldp) {
+	return orig;
+    }
+    else {
+	return ary;
+    }
+}
+
 /*
  *  call-seq:
  *     str.codepoints {|integer| block }        -> str
@@ -6382,24 +6429,13 @@ rb_str_chars(VALUE str)
 static VALUE
 rb_str_each_codepoint(VALUE str)
 {
-    VALUE orig = str;
-    int n;
-    unsigned int c;
-    const char *ptr, *end;
-    rb_encoding *enc;
+    return rb_str_enumerate_codepoints(str, Qtrue);
+}
 
-    if (single_byte_optimizable(str)) return rb_str_each_byte(str);
-    RETURN_ENUMERATOR(str, 0, 0);
-    str = rb_str_new4(str);
-    ptr = RSTRING_PTR(str);
-    end = RSTRING_END(str);
-    enc = STR_ENC_GET(str);
-    while (ptr < end) {
-	c = rb_enc_codepoint_len(ptr, end, &n, enc);
-	rb_yield(UINT2NUM(c));
-	ptr += n;
-    }
-    return orig;
+static VALUE
+rb_str_codepoints(VALUE str)
+{
+    return rb_str_enumerate_codepoints(str, Qfalse);
 }
 
 static long
@@ -7989,7 +8025,7 @@ Init_String(void)
     rb_define_method(rb_cString, "lines", rb_str_each_line, -1);
     rb_define_method(rb_cString, "bytes", rb_str_bytes, 0);
     rb_define_method(rb_cString, "chars", rb_str_chars, 0);
-    rb_define_method(rb_cString, "codepoints", rb_str_each_codepoint, 0);
+    rb_define_method(rb_cString, "codepoints", rb_str_codepoints, 0);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat, 1);

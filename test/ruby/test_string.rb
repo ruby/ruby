@@ -663,6 +663,34 @@ class TestString < Test::Unit::TestCase
     assert_equal ["A", "B", "C"], S("ABC").chars
   end
 
+  def test_each_codepoint
+    # Single byte optimization
+    assert_equal 65, S("ABC").each_codepoint.next
+
+    res = []
+    s = S("\u3042\u3044\u3046")
+    assert_equal s.object_id, s.each_codepoint {|x| res << x }.object_id
+    assert_equal(0x3042, res[0])
+    assert_equal(0x3044, res[1])
+    assert_equal(0x3046, res[2])
+
+    assert_equal 0x3042, S("\u3042\u3044\u3046").each_codepoint.next
+  end
+
+  def test_codepoints
+    # Single byte optimization
+    assert_equal [65, 66, 67], S("ABC").codepoints
+
+    res = []
+    s = S("\u3042\u3044\u3046")
+    assert_equal s.object_id, s.codepoints {|x| res << x }.object_id
+    assert_equal(0x3042, res[0])
+    assert_equal(0x3044, res[1])
+    assert_equal(0x3046, res[2])
+
+    assert_equal [0x3042, 0x3044, 0x3046], S("\u3042\u3044\u3046").codepoints
+  end
+
   def test_each_line
     save = $/
     $/ = "\n"
