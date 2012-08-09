@@ -1,3 +1,10 @@
+Fri Aug 10 08:41:28 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* gc.c (gc_malloc_allocated_size):  RDoc does not process macros, so
+	  mention this method is only available when ruby is built with
+	  CALC_EXACT_MALLOC_SIZE
+	* gc.c (gc_malloc_allocations):  ditto
+
 Thu Aug  9 23:46:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/mkrunnable.rb: see build_os instead of target arch for
