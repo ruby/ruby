@@ -34,7 +34,7 @@ end
 
 alias ln_dir_safe ln_safe
 
-if /mingw|mswin/ =~ RUBY_PLATFORM
+if /mingw|mswin/ =~ RbConfig::CONFIG["build_os"]
   extend Mswin
 end
 

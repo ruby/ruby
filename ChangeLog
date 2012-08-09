@@ -1,4 +1,7 @@
-Thu Aug  9 23:46:47 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug  9 23:46:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/mkrunnable.rb: see build_os instead of target arch for
+	  cross-compiling.
 
 	* configure.in (MINIRUBY): use real path for include path.
 
