@@ -1,3 +1,9 @@
+Thu Aug  9 18:33:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options): show version only once even if -v and
+	  --verbose are given together.
+	  http://twitter.com/d6rkaiz/status/233491797085671424
+
 Thu Aug  9 12:37:22 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/openssl/test_config.rb (OpenSSL#test_constants): skip this
