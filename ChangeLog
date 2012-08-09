@@ -1,3 +1,18 @@
+Thu Aug  9 20:03:11 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_file_exhaustive.rb
+	  (TestFileExhaustive#test_stat_special_file): add a test.
+	  GetFileAttributesExW fails to get attributes of special files
+	  such as pagefile.sys.
+
+	* win32/win32.c (check_valid_dir): for performance, check the path
+	  by FindFirstFileW only if the path containts "..."
+
+	* win32/win32.c (winnt_stat): use GetFileAttributesExW instead of
+	  FindFirstFileW since GetFileAttributesExW is faster.
+	  Based on the patch by Dusan D. Majkic.
+	  [ruby-core:47083] [Feature #6845]
+
 Thu Aug  9 18:33:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options): show version only once even if -v and

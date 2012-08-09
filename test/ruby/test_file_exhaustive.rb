@@ -819,6 +819,13 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(0, File::Stat.new(@zerofile).size)
   end
 
+  def test_stat_special_file
+    # test for special files such as pagefile.sys on Windows
+    assert_nothing_raised do
+      Dir::glob("C:/*.sys") {|f| File::Stat.new(f) }
+    end
+  end if DRIVE
+
   def test_path_check
     assert_nothing_raised { ENV["PATH"] }
   end
