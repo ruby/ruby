@@ -12,8 +12,8 @@ Connection: close
 hello
 EOS
     res = Net::HTTPResponse.read_new(io)
-    assert_equal('5', res.header['content-length'])
-    assert_equal('close', res.header['connection'])
+    assert_equal('5', res['content-length'])
+    assert_equal('close', res['connection'])
   end
 
   def test_multiline_header
@@ -28,8 +28,8 @@ X-Bar:
 hello
 EOS
     res = Net::HTTPResponse.read_new(io)
-    assert_equal('XXX YYY', res.header['x-foo'])
-    assert_equal('XXX YYY', res.header['x-bar'])
+    assert_equal('XXX YYY', res['x-foo'])
+    assert_equal('XXX YYY', res['x-bar'])
   end
 
   def test_read_body
