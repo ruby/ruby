@@ -93,7 +93,7 @@ EOS
     end
 
     assert_equal 'hello', body
-  end
+  end if Net::HTTP::HAVE_ZLIB
 
   def test_read_body_content_encoding_deflate_chunked
     io = dummy_io(<<EOS)
@@ -119,7 +119,7 @@ EOS
     end
 
     assert_equal 'hello', body
-  end
+  end if Net::HTTP::HAVE_ZLIB
 
   def test_read_body_content_encoding_deflate_no_length
     io = dummy_io(<<EOS)
@@ -139,7 +139,7 @@ EOS
     end
 
     assert_equal 'hello', body
-  end
+  end if Net::HTTP::HAVE_ZLIB
 
   def test_read_body_content_encoding_deflate_content_range
     io = dummy_io(<<EOS)
