@@ -92,8 +92,14 @@ EOS
       body = res.read_body
     end
 
-    assert_equal 'hello', body
-  end if Net::HTTP::HAVE_ZLIB
+    if Net::HTTP::HAVE_ZLIB
+      assert_equal nil, res['content-encoding']
+      assert_equal 'hello', body
+    else
+      assert_equal 'deflate', res['content-encoding']
+      assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body
+    end
+  end
 
   def test_read_body_content_encoding_deflate_chunked
     io = dummy_io(<<EOS)
@@ -118,8 +124,14 @@ EOS
       body = res.read_body
     end
 
-    assert_equal 'hello', body
-  end if Net::HTTP::HAVE_ZLIB
+    if Net::HTTP::HAVE_ZLIB
+      assert_equal nil, res['content-encoding']
+      assert_equal 'hello', body
+    else
+      assert_equal 'deflate', res['content-encoding']
+      assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body
+    end
+  end
 
   def test_read_body_content_encoding_deflate_no_length
     io = dummy_io(<<EOS)
@@ -138,8 +150,14 @@ EOS
       body = res.read_body
     end
 
-    assert_equal 'hello', body
-  end if Net::HTTP::HAVE_ZLIB
+    if Net::HTTP::HAVE_ZLIB
+      assert_equal nil, res['content-encoding']
+      assert_equal 'hello', body
+    else
+      assert_equal 'deflate', res['content-encoding']
+      assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15\r\n", body
+    end
+  end
 
   def test_read_body_content_encoding_deflate_content_range
     io = dummy_io(<<EOS)
