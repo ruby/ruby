@@ -896,6 +896,16 @@ class ERB
   # A utility module for conversion routines, often handy in HTML generation.
   module Util
     public
+
+    # The set of special characters and their escaped values
+    TABLE_FOR_ESCAPE_HTML__ = {
+      "'" => '&#x27;',
+      '&' => '&amp;',
+      '"' => '&quot;',
+      '<' => '&lt;',
+      '>' => '&gt;',
+    }
+
     #
     # A utility method for escaping HTML tag characters in _s_.
     #
@@ -909,7 +919,7 @@ class ERB
     #   is a &gt; 0 &amp; a &lt; 10?
     #
     def html_escape(s)
-      s.to_s.gsub(/&/, "&amp;").gsub(/\"/, "&quot;").gsub(/>/, "&gt;").gsub(/</, "&lt;")
+      s.to_s.gsub(/['&\"<>]/, TABLE_FOR_ESCAPE_HTML__)
     end
     alias h html_escape
     module_function :h
