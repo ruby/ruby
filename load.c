@@ -4,6 +4,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/util.h"
+#include "ruby/encoding.h"
 #include "internal.h"
 #include "dln.h"
 #include "eval_intern.h"
@@ -27,28 +28,45 @@ static const char *const loadable_ext[] = {
     0
 };
 
-VALUE
-rb_get_load_path(void)
-{
-    VALUE load_path = GET_VM()->load_path;
-    return load_path;
-}
+static VALUE rb_checked_expanded_cache(int*);
+static void rb_set_expanded_cache(VALUE, int);
+static VALUE rb_expand_load_paths(long, VALUE*, int*);
+static int cached_expanded_load_path = 1;
+VALUE rb_cExpandedPath;
 
 VALUE
 rb_get_expanded_load_path(void)
 {
-    VALUE load_path = rb_get_load_path();
-    VALUE ary;
-    long i;
+    VALUE expanded = rb_checked_expanded_cache(NULL);
 
-    ary = rb_ary_new2(RARRAY_LEN(load_path));
-    for (i = 0; i < RARRAY_LEN(load_path); ++i) {
-	VALUE path = rb_file_expand_path(RARRAY_PTR(load_path)[i], Qnil);
-	rb_str_freeze(path);
-	rb_ary_push(ary, path);
+    if ( !RTEST(expanded) ) {
+	VALUE load_path = GET_VM()->load_path;
+	int has_relative = 0;
+
+	if (!load_path) return 0;
+
+	expanded = rb_expand_load_paths(
+			RARRAY_LEN(load_path), RARRAY_PTR(load_path),
+			&has_relative);
+	RB_GC_GUARD(load_path);
+
+	if (cached_expanded_load_path) {
+	    rb_set_expanded_cache(expanded, has_relative);
+	}
+    } else {
+	expanded = rb_ary_dup(expanded);
     }
-    rb_obj_freeze(ary);
-    return ary;
+    return expanded;
+}
+
+VALUE
+rb_get_load_path(void)
+{
+    VALUE load_path =
+	cached_expanded_load_path ?
+	    rb_get_expanded_load_path():
+	    GET_VM()->load_path;
+    return load_path;
 }
 
 static VALUE
@@ -782,6 +800,230 @@ rb_f_autoload_p(VALUE obj, VALUE sym)
     return rb_mod_autoload_p(klass, sym);
 }
 
+/* $LOAD_PATH methods which invalidates cache */
+static const char *load_path_reset_cache_methods[] = {
+    "[]=", "collect!", "compact!", "delete",
+    "delete_if", "fill", "flatten!", "insert", "keep_if",
+    "map!", "reject!", "replace", "select!", "shuffle!",
+    "sort!", "sort_by!", "uniq!", NULL
+};
+
+/* $LOAD_PATH methods which sends also to cache */
+static const char *load_path_apply_to_cache_methods[] = {
+    "clear", "delete_at", "pop", "reverse!", "rotate!",
+    "shift", "slice!", NULL
+};
+
+/* $LOAD_PATH methods which sends to cache whith expanded arguments */
+static const char *load_path_apply_expanded_methods[] = {
+    "<<", "push", "unshift", NULL
+};
+
+void
+rb_reset_expanded_cache()
+{
+    GET_VM()->load_path_expanded_cache = 0;
+}
+
+static VALUE
+rb_load_path_expanded_cache()
+{
+    VALUE cache = GET_VM()->load_path_expanded_cache;
+    VALUE expanded = Qnil;
+    if (RTEST(cache)) {
+	expanded = RARRAY_PTR(cache)[2];
+    }
+    return expanded;
+}
+
+/* Return cache only if we still in the same working directory
+ * and filesystem_encoding didn't change
+ * Invalidate cache otherwise
+ */
+static VALUE
+rb_checked_expanded_cache(int *has_relative)
+{
+    VALUE cache = GET_VM()->load_path_expanded_cache;
+    VALUE expanded = Qnil;
+    if (RTEST(cache)) {
+	VALUE curwd = RARRAY_PTR(cache)[0];
+	VALUE encindex = RARRAY_PTR(cache)[1];
+	int cache_valid = rb_filesystem_encindex() == FIX2INT(encindex);
+
+	if ( cache_valid ) {
+	    cache_valid = curwd == Qtrue;
+	    if (has_relative) {
+		*has_relative = cache_valid;
+	    }
+	    if (!cache_valid ) {
+		char *cwd = my_getcwd();
+		cache_valid = !strcmp(RSTRING_PTR(curwd), cwd);
+		xfree(cwd);
+	    }
+	}
+
+	if ( !cache_valid ) {
+	    rb_reset_expanded_cache();
+	} else {
+	    expanded = RARRAY_PTR(cache)[2];
+	}
+    }
+    RB_GC_GUARD(cache);
+    return expanded;
+}
+
+static void
+rb_set_expanded_cache(VALUE expanded, int has_relative)
+{
+    VALUE cache = rb_ary_new2(3);
+
+    if (has_relative) {
+	char *cwd = my_getcwd();
+	rb_ary_push(cache, rb_str_new_cstr(cwd));
+	xfree(cwd);
+    } else {
+	rb_ary_push(cache, Qtrue);
+    }
+
+    rb_ary_push(cache, INT2FIX(rb_filesystem_encindex()));
+    rb_ary_push(cache, rb_ary_dup(expanded));
+    GET_VM()->load_path_expanded_cache = cache;
+}
+
+static VALUE
+rb_expand_load_paths(long pathc, VALUE* paths, int *has_relative)
+{
+    long i;
+    const char *p;
+    VALUE path, expanded = rb_ary_new2(pathc);
+
+    for(i = 0; i < pathc; i++) {
+	path = rb_get_path(paths[i]);
+	p = RSTRING_PTR(path);
+	*has_relative = *has_relative || !rb_is_absolute_path(p);
+	path = rb_file_expand_path(path, Qnil);
+	RBASIC(path)->klass = rb_cExpandedPath;
+	rb_str_freeze(path);
+	rb_ary_push(expanded, path);
+    }
+
+    return expanded;
+}
+
+/* Invalidating $LOAD_PATH methods implementation */
+static VALUE
+rb_load_path_reset_cache_method(int argc, VALUE *argv, VALUE self)
+{
+    rb_reset_expanded_cache();
+    return rb_call_super(argc, argv);
+}
+
+/* Proxying $LOAD_PATH methods implementation */
+static VALUE
+rb_load_path_apply_to_cache_method(int argc, VALUE *argv, VALUE self)
+{
+    VALUE load_path_expanded = rb_load_path_expanded_cache();
+    if (RTEST(load_path_expanded)) {
+	ID func = rb_frame_this_func();
+	rb_funcall2(load_path_expanded, func, argc, argv);
+    }
+    return rb_call_super(argc, argv);
+}
+
+/* Proxying with expansion $LOAD_PATH methods implementation */
+static VALUE
+rb_load_path_apply_expanded_method(int argc, VALUE *argv, VALUE self)
+{
+    int old_has_relative = 0;
+    /* We call methods on cache only if we still in the same working directory */
+    VALUE load_path_expanded = rb_checked_expanded_cache(&old_has_relative);
+    if (RTEST(load_path_expanded)) {
+	int has_relative = 0;
+	ID func = rb_frame_this_func();
+	VALUE expanded = rb_expand_load_paths(argc, argv, &has_relative);
+
+	rb_funcall2(load_path_expanded, func, argc, RARRAY_PTR(expanded));
+
+	if (!old_has_relative && has_relative) {
+	    rb_set_expanded_cache(load_path_expanded, has_relative);
+	}
+	RB_GC_GUARD(expanded);
+    }
+    return rb_call_super(argc, argv);
+}
+/* $LOAD_PATH.concat(ary) - special, we call push(*ary) instead
+ * cause I'm lazy a bit and wish not to rewrite method above second time :)
+ */
+static VALUE
+rb_load_path_concat(VALUE self, VALUE ary)
+{
+    ID push;
+    CONST_ID(push, "push");
+    RB_GC_GUARD(ary);
+    return rb_funcall2(self, push, (int)RARRAY_LEN(ary), RARRAY_PTR(ary));
+}
+
+void
+rb_load_path_ary_push(VALUE path)
+{
+    int old_has_relative = 0;
+    VALUE load_path_expanded = rb_checked_expanded_cache(&old_has_relative);
+    if (RTEST(load_path_expanded)) {
+	int has_relative = 0;
+	VALUE expanded = rb_expand_load_paths(1, &path, &has_relative);
+
+	rb_ary_push(load_path_expanded, RARRAY_PTR(expanded)[0]);
+
+	if (!old_has_relative && has_relative) {
+	    rb_set_expanded_cache(load_path_expanded, has_relative);
+	}
+	RB_GC_GUARD(expanded);
+    }
+
+    rb_ary_push(GET_VM()->load_path, path);
+}
+
+static VALUE
+rb_load_path_init(void)
+{
+    const char **name;
+    VALUE load_path = rb_ary_new();
+    char *cached_flag;
+
+    cached_flag = getenv("RUBY_CACHED_LOAD_PATH");
+    if (cached_flag != NULL) {
+	cached_expanded_load_path = atoi(cached_flag);
+    }
+
+    rb_cExpandedPath = rb_class_new(rb_cString); /* XXX could GC collect it before next line is executed? */
+    rb_iv_set(rb_cFile, "expanded_path", rb_cExpandedPath); /* prevent from GC */
+
+    /* Do all the magick if user did not disable it
+     * with RUBY_CACHED_LOAD_PATH=0 environment variable
+     */
+    if (cached_expanded_load_path) {
+	VALUE load_path_c = rb_singleton_class(load_path);
+
+	for(name = load_path_reset_cache_methods; *name; name++ ) {
+	    rb_define_method(load_path_c, *name, rb_load_path_reset_cache_method, -1);
+	}
+
+	for(name = load_path_apply_to_cache_methods; *name; name++ ) {
+	    rb_define_method(load_path_c, *name, rb_load_path_apply_to_cache_method, -1);
+	}
+
+	for(name = load_path_apply_expanded_methods; *name; name++ ) {
+	    rb_define_method(load_path_c, *name, rb_load_path_apply_expanded_method, -1);
+	}
+
+	rb_define_method(load_path_c, "concat", rb_load_path_concat, 1);
+    }
+
+    rb_reset_expanded_cache();
+
+    return load_path;
+}
+
 void
 Init_load()
 {
@@ -794,7 +1036,7 @@ Init_load()
     rb_define_hooked_variable(var_load_path, (VALUE*)vm, load_path_getter, rb_gvar_readonly_setter);
     rb_alias_variable(rb_intern("$-I"), id_load_path);
     rb_alias_variable(rb_intern("$LOAD_PATH"), id_load_path);
-    vm->load_path = rb_ary_new();
+    vm->load_path = rb_load_path_init();
 
     rb_define_virtual_variable("$\"", get_loaded_features, 0);
     rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);
