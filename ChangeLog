@@ -1,3 +1,8 @@
+Sun Aug 12 11:57:20 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm.c (invoke_block_from_c): fix unintentional block passing.
+	  [ruby-dev:45071] [Bug #5832]
+
 Fri Aug 10 08:41:28 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* gc.c (gc_malloc_allocated_size):  RDoc does not process macros, so
