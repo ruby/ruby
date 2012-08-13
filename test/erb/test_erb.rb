@@ -39,7 +39,7 @@ class TestERB < Test::Unit::TestCase
   end
 
   def test_html_escape
-    # TODO: &apos; should be chaged to &#x27;
+    # TODO: &apos; should be changed to &#x27;
     assert_equal(" !&quot;\#$%&amp;&apos;()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~",
                  ERB::Util.html_escape(" !\"\#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"))
 
