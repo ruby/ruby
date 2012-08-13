@@ -10,6 +10,8 @@
 #
 # You can redistribute it and/or modify it under the same terms as Ruby.
 
+require "cgi/util"
+
 #
 # = ERB -- Ruby Templating
 #
@@ -909,7 +911,7 @@ class ERB
     #   is a &gt; 0 &amp; a &lt; 10?
     #
     def html_escape(s)
-      s.to_s.gsub(/&/, "&amp;").gsub(/\"/, "&quot;").gsub(/>/, "&gt;").gsub(/</, "&lt;")
+      CGI.escapeHTML(s)
     end
     alias h html_escape
     module_function :h

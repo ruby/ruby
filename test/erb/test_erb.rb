@@ -37,6 +37,16 @@ class TestERB < Test::Unit::TestCase
     }
     assert_match(/\Atest filename:1\b/, e.backtrace[0])
   end
+
+  def test_html_escape
+    # TODO: &apos; should be chaged to &#x27;
+    assert_equal(" !&quot;\#$%&amp;&apos;()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~",
+                 ERB::Util.html_escape(" !\"\#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"))
+
+    assert_equal("", ERB::Util.html_escape(""))
+    assert_equal("abc", ERB::Util.html_escape("abc"))
+    assert_equal("&lt;&lt;", ERB::Util.html_escape("<<"))
+  end
 end
 
 class TestERBCore < Test::Unit::TestCase
