@@ -22,7 +22,7 @@ class CGI
 
   # The set of special characters and their escaped values
   TABLE_FOR_ESCAPE_HTML__ = {
-    "'" => '&apos;',
+    "'" => '&#x27;',
     '&' => '&amp;',
     '"' => '&quot;',
     '<' => '&lt;',
