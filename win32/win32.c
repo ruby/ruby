@@ -4556,11 +4556,18 @@ check_valid_dir(const WCHAR *path)
     HANDLE fh;
     WCHAR full[MAX_PATH];
     WCHAR *dmy;
+    WCHAR *p, *q;
 
     /* GetFileAttributes() determines "..." as directory. */
     /* We recheck it by FindFirstFile(). */
-    if (wcsstr(path, L"...") == NULL)
+    if (!(p = wcsstr(path, L"...")))
 	return 0;
+    q = p + wcsspn(p, L".");
+    if ((p == path || wcschr(L":/\\", *(p - 1))) &&
+	(!*q || wcschr(L":/\\", *q))) {
+	errno = ENOENT;
+	return -1;
+    }
 
     /* if the specified path is the root of a drive and the drive is empty, */
     /* FindFirstFile() returns INVALID_HANDLE_VALUE. */

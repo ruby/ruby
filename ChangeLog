@@ -1,3 +1,8 @@
+Tue Aug 14 16:03:31 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (check_valid_dir): reject "..." as directory name.
+	  [Bug #6851]
+
 Tue Aug 14 16:02:51 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_file_exhaustive.rb
