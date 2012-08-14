@@ -114,6 +114,20 @@ class TestFileExhaustive < Test::Unit::TestCase
     # want to test the root of empty drive, but there is no method to test it...
   end if DRIVE
 
+  def test_stat_dotted_prefix
+    Dir.mktmpdir do |dir|
+      prefix = File.join(dir, "...a")
+      Dir.mkdir(prefix)
+      assert File.exist?(prefix)
+
+      assert_nothing_raised { File.stat(prefix) }
+
+      Dir.chdir(dir) do
+        assert_nothing_raised { File.stat(File.basename(prefix)) }
+      end
+    end
+  end if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
+
   def test_directory_p
     assert(File.directory?(@dir))
     assert(!(File.directory?(@dir+"/...")))
