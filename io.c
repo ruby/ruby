@@ -11505,6 +11505,7 @@ Init_IO(void)
     rb_define_method(rb_cARGF, "initialize", argf_initialize, -2);
     rb_define_method(rb_cARGF, "initialize_copy", argf_initialize_copy, 1);
     rb_define_method(rb_cARGF, "to_s", argf_to_s, 0);
+    rb_define_alias(rb_cARGF, "inspect", "to_s");
     rb_define_method(rb_cARGF, "argv", argf_argv, 0);
 
     rb_define_method(rb_cARGF, "fileno", argf_fileno, 0);
