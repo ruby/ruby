@@ -59,7 +59,13 @@ class TestERBCore < Test::Unit::TestCase
     _test_core(0)
     _test_core(1)
     _test_core(2)
-    _test_core(3)
+    orig = $VERBOSE
+    begin
+      $VERBOSE = false
+      _test_core(3)
+    ensure
+      $VERBOSE = orig
+    end
   end
 
   def _test_core(safe)
@@ -192,26 +198,26 @@ EOS
 %n = 1
 <%= n%>
 EOS
-    assert_equal("1\n", ERB.new(src, nil, '%').result)
+    assert_equal("1\n", ERB.new(src, nil, '%').result(binding))
 
     src = <<EOS
 <%
 %>
 EOS
     ans = "\n"
-    assert_equal(ans, ERB.new(src, nil, '%').result)
+    assert_equal(ans, ERB.new(src, nil, '%').result(binding))
 
     src = "<%\n%>"
     # ans = "\n"
     ans = ""
-    assert_equal(ans, ERB.new(src, nil, '%').result)
+    assert_equal(ans, ERB.new(src, nil, '%').result(binding))
 
     src = <<EOS
 <%
 n = 1
 %><%= n%>
 EOS
-    assert_equal("1\n", ERB.new(src, nil, '%').result)
+    assert_equal("1\n", ERB.new(src, nil, '%').result(binding))
 
     src = <<EOS
 %n = 1
@@ -227,7 +233,7 @@ EOS
 % %%><%1
 %%
 EOS
-    assert_equal(ans, ERB.new(src, nil, '%').result)
+    assert_equal(ans, ERB.new(src, nil, '%').result(binding))
   end
 
   def test_def_erb_method

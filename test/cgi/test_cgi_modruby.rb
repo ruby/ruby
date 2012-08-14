@@ -71,7 +71,7 @@ class CGIModrubyTest < Test::Unit::TestCase
       'status'   => '200 OK',
       'location' => 'http://www.example.com/',
     }
-    actual = cgi.header(options)
+    cgi.header(options)
     assert_equal('200 OK', req.status_line)  # should be '302 Found' ?
     assert_equal(302, req.status)
     assert_equal('http://www.example.com/', req.headers_out['location'])
@@ -113,6 +113,7 @@ class Apache  #:nodoc:
       def hash.add(name, value)
         (self[name] ||= []) << value
       end
+      @http_header = nil
       @headers_out  = hash
       @status_line  = nil
       @status       = nil

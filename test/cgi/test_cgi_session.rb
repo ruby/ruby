@@ -110,7 +110,7 @@ class CGISessionTest < Test::Unit::TestCase
     assert_equal(value1,session["key1"])
     assert_equal(value2,session["key2"])
     assert_equal("foo",session.session_id)
-    session_id=session.session_id
+    #session_id=session.session_id
     session.close
     $stdout = StringIO.new
     cgi.out{""}

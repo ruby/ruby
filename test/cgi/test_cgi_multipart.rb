@@ -119,7 +119,7 @@ class CGIMultipartTest < Test::Unit::TestCase
 
   def _prepare(data)
     ## create multipart input
-    multipart = MultiPart.new(@boundary)
+    multipart = MultiPart.new(defined?(@boundary) ? @boundary : nil)
     data.each do |hash|
       multipart.append(hash[:name], hash[:value], hash[:filename])
     end
@@ -141,7 +141,7 @@ class CGIMultipartTest < Test::Unit::TestCase
 
   def _test_multipart
     caller(0).find {|s| s =~ /in `test_(.*?)'/ }
-    testname = $1
+    #testname = $1
     #$stderr.puts "*** debug: testname=#{testname.inspect}"
     _prepare(@data)
     cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
@@ -270,7 +270,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       input2
     end
     ex = assert_raise(EOFError) do
-      cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
+      RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
     end
     assert_equal("bad content body", ex.message)
     #
@@ -281,7 +281,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       input2
     end
     ex = assert_raise(EOFError) do
-      cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
+      RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
     end
     assert_equal("bad content body", ex.message)
   end
