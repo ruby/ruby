@@ -1,3 +1,8 @@
+Tue Aug 14 10:38:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/erb.rb (ERB::Util.html_escape): fix r36687: call to_s before
+	  passing it to CGI.escapeHTML.
+
 Mon Aug 13 13:13:19 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/erb.rb (ERB::Util.html_escape): use CGI.escape to escape

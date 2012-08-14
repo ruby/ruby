@@ -911,7 +911,7 @@ class ERB
     #   is a &gt; 0 &amp; a &lt; 10?
     #
     def html_escape(s)
-      CGI.escapeHTML(s)
+      CGI.escapeHTML(s.to_s)
     end
     alias h html_escape
     module_function :h
