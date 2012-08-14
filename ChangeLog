@@ -20,7 +20,7 @@ Tue Aug 14 10:38:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Mon Aug 13 13:13:19 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* lib/erb.rb (ERB::Util.html_escape): use CGI.escape to escape
+	* lib/erb.rb (ERB::Util.html_escape): use CGI.escapeHTML to escape
 	  single quotes. [ruby-core:47138] [Bug #6861]
 
 Sun Aug 12 11:57:20 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
