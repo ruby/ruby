@@ -1,3 +1,11 @@
+Tue Aug 14 19:19:10 2012  Benoit Daloze  <eregontp@gmail.com>
+
+	update PP with recent Kernel#inspect change. Patch by Yusuke Endoh.
+
+	* lib/pp.rb (class PP): do not call #to_s anymore, as #inspect no more does.
+	* test/test_pp.rb (class PPInspectTest): remove related assertion.
+	  [ruby-core:43238][Feature #6130]
+
 Tue Aug 14 19:09:38 2012  Benoit Daloze  <eregontp@gmail.com>
 
 	Kernel#inspect: improve consistency and do not call #to_s.
