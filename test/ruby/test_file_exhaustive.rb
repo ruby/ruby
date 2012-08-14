@@ -106,6 +106,14 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_kind_of(File::Stat, File.open(@file) {|f| f.lstat})
   end
 
+  def test_stat_drive_root
+    assert_nothing_raised { File.stat(DRIVE + "/") }
+    assert_nothing_raised { File.stat(DRIVE + "/.") }
+    assert_nothing_raised { File.stat(DRIVE + "/..") }
+    assert_raise(Errno::ENOENT) { File.stat(DRIVE + "/...") }
+    # want to test the root of empty drive, but there is no method to test it...
+  end if DRIVE
+
   def test_directory_p
     assert(File.directory?(@dir))
     assert(!(File.directory?(@dir+"/...")))
