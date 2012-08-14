@@ -46,6 +46,9 @@ class TestERB < Test::Unit::TestCase
     assert_equal("", ERB::Util.html_escape(""))
     assert_equal("abc", ERB::Util.html_escape("abc"))
     assert_equal("&lt;&lt;", ERB::Util.html_escape("<<"))
+
+    assert_equal("", ERB::Util.html_escape(nil))
+    assert_equal("123", ERB::Util.html_escape(123))
   end
 end
 
