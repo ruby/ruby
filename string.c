@@ -6101,7 +6101,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE return_enumerator
     }
     else {
 	yieldp = Qfalse;
-	ary = rb_ary_new2(RSTRING_LEN(str));
+	ary = rb_ary_new();
     }
 
     if (NIL_P(rs)) {
