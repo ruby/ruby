@@ -6210,18 +6210,18 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE return_enumerator
 
 /*
  *  call-seq:
+ *     str.lines(separator=$/) {|substr| block }       -> str
+ *     str.lines(separator=$/)                         -> an_array
+ *
  *     str.each_line(separator=$/) {|substr| block }   -> str
  *     str.each_line(separator=$/)                     -> an_enumerator
- *
- *     str.lines(separator=$/) {|substr| block }       -> str
- *     str.lines(separator=$/)                         -> an_enumerator
  *
  *  Splits <i>str</i> using the supplied parameter as the record separator
  *  (<code>$/</code> by default), passing each substring in turn to the supplied
  *  block. If a zero-length record separator is supplied, the string is split
  *  into paragraphs delimited by multiple successive newlines.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If no block is given, an array or enumerator is returned instead.
  *
  *     print "Example one\n"
  *     "hello\nworld".each_line {|s| p s}
@@ -6294,13 +6294,13 @@ rb_str_enumerate_bytes(VALUE str, VALUE return_enumerator_p)
 /*
  *  call-seq:
  *     str.bytes {|fixnum| block }        -> str
- *     str.bytes                          -> an_enumerator
+ *     str.bytes                          -> an_array
  *
  *     str.each_byte {|fixnum| block }    -> str
  *     str.each_byte                      -> an_enumerator
  *
  *  Passes each byte in <i>str</i> to the given block, or returns
- *  an enumerator if no block is given.
+ *  an array or enumerator if no block is given.
  *
  *     "hello".each_byte {|c| print c, ' ' }
  *
@@ -6381,13 +6381,13 @@ rb_str_enumerate_chars(VALUE str, VALUE return_enumerator_p)
 /*
  *  call-seq:
  *     str.chars {|cstr| block }        -> str
- *     str.chars                        -> an_enumerator
+ *     str.chars                        -> an_array
  *
  *     str.each_char {|cstr| block }    -> str
  *     str.each_char                    -> an_enumerator
  *
  *  Passes each character in <i>str</i> to the given block, or returns
- *  an enumerator if no block is given.
+ *  an array or enumerator if no block is given.
  *
  *     "hello".each_char {|c| print c, ' ' }
  *
@@ -6458,7 +6458,7 @@ rb_str_enumerate_codepoints(VALUE str, VALUE return_enumerator_p)
 /*
  *  call-seq:
  *     str.codepoints {|integer| block }        -> str
- *     str.codepoints                           -> an_enumerator
+ *     str.codepoints                           -> an_array
  *
  *     str.each_codepoint {|integer| block }    -> str
  *     str.each_codepoint                       -> an_enumerator
@@ -6467,7 +6467,7 @@ rb_str_enumerate_codepoints(VALUE str, VALUE return_enumerator_p)
  *  also known as a <i>codepoint</i> when applied to Unicode strings to the
  *  given block.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If no block is given, an array or enumerator is returned instead.
  *
  *     "hello\u0639".each_codepoint {|c| print c, ' ' }
  *
