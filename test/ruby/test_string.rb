@@ -695,19 +695,19 @@ class TestString < Test::Unit::TestCase
     save = $/
     $/ = "\n"
     res=[]
-    S("hello\nworld").lines.each {|x| res << x}
+    S("hello\nworld").each_line {|x| res << x}
     assert_equal(S("hello\n"), res[0])
     assert_equal(S("world"),   res[1])
 
     res=[]
-    S("hello\n\n\nworld").lines(S('')).each {|x| res << x}
+    S("hello\n\n\nworld").each_line(S('')) {|x| res << x}
     assert_equal(S("hello\n\n\n"), res[0])
     assert_equal(S("world"),       res[1])
 
     $/ = "!"
 
     res=[]
-    S("hello!world").lines.each {|x| res << x}
+    S("hello!world").each_line {|x| res << x}
     assert_equal(S("hello!"), res[0])
     assert_equal(S("world"),  res[1])
 
@@ -716,6 +716,19 @@ class TestString < Test::Unit::TestCase
     s = nil
     "foo\nbar".each_line(nil) {|s2| s = s2 }
     assert_equal("foo\nbar", s)
+
+    assert_equal "hello\n", S("hello\nworld").each_line.next
+    assert_equal "hello\nworld", S("hello\nworld").each_line(nil).next
+  end
+  
+  def test_lines
+    res=[]
+    S("hello\nworld").lines {|x| res << x}
+    assert_equal(S("hello\n"), res[0])
+    assert_equal(S("world"),  res[1])
+
+    assert_equal ["hello\n", "world"], S("hello\nworld").lines
+    assert_equal ["hello\nworld"], S("hello\nworld").lines(nil)
   end
 
   def test_empty?
