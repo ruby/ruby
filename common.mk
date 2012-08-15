@@ -27,7 +27,7 @@ REVISION_H    = ./.revision.time
 PLATFORM_D    = ./$(PLATFORM_DIR)/.time
 RDOCOUT       = $(EXTOUT)/rdoc
 CAPIOUT       = doc/capi
-ID_H_TARGET   = -id.h-
+ID_H_TARGET   = ./.id.h.time
 
 DMYEXT	      = dmyext.$(OBJEXT)
 NORMALMAINOBJ = main.$(OBJEXT)
@@ -105,6 +105,7 @@ EXPORTOBJS    = dln.$(OBJEXT) \
 		$(COMMONOBJS)
 
 OBJS          = $(EXPORTOBJS) prelude.$(OBJEXT)
+ALLOBJS       = $(ID_H_TARGET) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT)
 
 GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
 
@@ -189,7 +190,9 @@ loadpath: $(PREP) PHONY
 
 $(PREP): $(MKFILES)
 
-miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(ARCHFILE)
+miniruby$(EXEEXT): config.status $(ALLOBJS) $(ARCHFILE)
+
+objs: $(ALLOBJS)
 
 GORUBY = go$(RUBY_INSTALL_NAME)
 golf: $(LIBRUBY) $(GOLFOBJS) PHONY
@@ -849,9 +852,10 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(
 
 insns: $(INSNS)
 
-id.h: parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
-	$(ECHO) generating $@
-	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb --if-change --output=$@ \
+$(ID_H_TARGET): parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
+	$(ECHO) generating id.h
+	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb --if-change --output=id.h \
+		--timestamp=$@ \
 		$(srcdir)/template/id.h.tmpl --vpath=$(VPATH) parse.h
 
 node_name.inc: {$(VPATH)}node.h

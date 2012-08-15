@@ -1,3 +1,8 @@
+Wed Aug 15 16:20:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (ID_H_TARGET): make timestamp file of id.h so that the
+	  header will not be remade repetitively.
+
 Wed Aug 15 11:39:53 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c: separate trace_func related functions from
