@@ -73,7 +73,7 @@ module DRbCore
   def teardown
     @ext.stop_service if defined?(@ext) && @ext
     DRbService.manager.unregist(@service_name)
-    while (@there.inspect rescue nil)
+    while (@there.to_s rescue nil)
       # nop
     end
     signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :INT : :TERM
@@ -294,7 +294,7 @@ module DRbAry
   def teardown
     @ext.stop_service if defined?(@ext) && @ext
     DRbService.manager.unregist(@service_name)
-    while (@there.inspect rescue nil)
+    while (@there.to_s rescue nil)
       # nop
     end
     signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :INT : :TERM

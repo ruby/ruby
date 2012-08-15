@@ -46,6 +46,8 @@ with all sufficient information, see the ChangeLog file.
       * __callee__ has returned to the original behavior, and now
         returns the called name but not the original name in an
         aliased method.
+      * Kernel#inspect does not call #to_s anymore
+        (it used to call redefined #to_s).
 
   * LoadError
     * added method:
