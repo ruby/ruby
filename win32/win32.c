@@ -4556,6 +4556,18 @@ check_valid_dir(const WCHAR *path)
     HANDLE fh;
     WCHAR full[MAX_PATH];
     WCHAR *dmy;
+    WCHAR *p, *q;
+
+    /* GetFileAttributes() determines "..." as directory. */
+    /* We recheck it by FindFirstFile(). */
+    if (!(p = wcsstr(path, L"...")))
+	return 0;
+    q = p + wcsspn(p, L".");
+    if ((p == path || wcschr(L":/\\", *(p - 1))) &&
+	(!*q || wcschr(L":/\\", *q))) {
+	errno = ENOENT;
+	return -1;
+    }
 
     /* if the specified path is the root of a drive and the drive is empty, */
     /* FindFirstFile() returns INVALID_HANDLE_VALUE. */
@@ -4579,6 +4591,7 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
 {
     HANDLE h;
     WIN32_FIND_DATAW wfd;
+    WIN32_FILE_ATTRIBUTE_DATA wfa;
     const WCHAR *p = path;
 
     memset(st, 0, sizeof(*st));
@@ -4589,27 +4602,43 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
 	errno = ENOENT;
 	return -1;
     }
-    h = FindFirstFileW(path, &wfd);
-    if (h != INVALID_HANDLE_VALUE) {
-	FindClose(h);
-	st->st_mode  = fileattr_to_unixmode(wfd.dwFileAttributes, path);
-	st->st_atime = filetime_to_unixtime(&wfd.ftLastAccessTime);
-	st->st_mtime = filetime_to_unixtime(&wfd.ftLastWriteTime);
-	st->st_ctime = filetime_to_unixtime(&wfd.ftCreationTime);
-	st->st_size = ((__int64)wfd.nFileSizeHigh << 32) | wfd.nFileSizeLow;
+    if (GetFileAttributesExW(path, GetFileExInfoStandard, (void*)&wfa)) {
+	if (wfa.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+	    if (check_valid_dir(path)) return -1;
+	    st->st_size = 0;
+	}
+	else {
+	    st->st_size = ((__int64)wfa.nFileSizeHigh << 32) | wfa.nFileSizeLow;
+	}
+	st->st_mode  = fileattr_to_unixmode(wfa.dwFileAttributes, path);
+	st->st_atime = filetime_to_unixtime(&wfa.ftLastAccessTime);
+	st->st_mtime = filetime_to_unixtime(&wfa.ftLastWriteTime);
+	st->st_ctime = filetime_to_unixtime(&wfa.ftCreationTime);
     }
     else {
-	// If runtime stat(2) is called for network shares, it fails on WinNT.
-	// Because GetDriveType returns 1 for network shares. (Win98 returns 4)
-	DWORD attr = GetFileAttributesW(path);
-	if (attr == (DWORD)-1L) {
+	/* GetFileAttributesEx failed; check why. */
+	int e = GetLastError();
+
+	if ((e == ERROR_FILE_NOT_FOUND) || (e == ERROR_INVALID_NAME)
+	    || (e == ERROR_PATH_NOT_FOUND || (e == ERROR_BAD_NETPATH))) {
+	    errno = map_errno(e);
+	    return -1;
+	}
+
+	/* Fall back to FindFirstFile for ERROR_SHARING_VIOLATION */
+	h = FindFirstFileW(path, &wfd);
+	if (h != INVALID_HANDLE_VALUE) {
+	    FindClose(h);
+	    st->st_mode  = fileattr_to_unixmode(wfd.dwFileAttributes, path);
+	    st->st_atime = filetime_to_unixtime(&wfd.ftLastAccessTime);
+	    st->st_mtime = filetime_to_unixtime(&wfd.ftLastWriteTime);
+	    st->st_ctime = filetime_to_unixtime(&wfd.ftCreationTime);
+	    st->st_size = ((__int64)wfd.nFileSizeHigh << 32) | wfd.nFileSizeLow;
+	}
+	else {
 	    errno = map_errno(GetLastError());
 	    return -1;
 	}
-	if (attr & FILE_ATTRIBUTE_DIRECTORY) {
-	    if (check_valid_dir(path)) return -1;
-	}
-	st->st_mode  = fileattr_to_unixmode(attr, path);
     }
 
     st->st_dev = st->st_rdev = (iswalpha(path[0]) && path[1] == L':') ?

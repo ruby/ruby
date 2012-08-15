@@ -788,7 +788,7 @@ class CGI
   # cookies and other parameters are parsed automatically from the standard
   # CGI locations, which varies according to the REQUEST_METHOD.
   def initialize(options = {}, &block) # :yields: name, value
-    @accept_charset_error_block=block if block_given?
+    @accept_charset_error_block = block_given? ? block : nil
     @options={:accept_charset=>@@accept_charset}
     case options
     when Hash

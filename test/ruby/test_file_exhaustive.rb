@@ -106,6 +106,28 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_kind_of(File::Stat, File.open(@file) {|f| f.lstat})
   end
 
+  def test_stat_drive_root
+    assert_nothing_raised { File.stat(DRIVE + "/") }
+    assert_nothing_raised { File.stat(DRIVE + "/.") }
+    assert_nothing_raised { File.stat(DRIVE + "/..") }
+    assert_raise(Errno::ENOENT) { File.stat(DRIVE + "/...") }
+    # want to test the root of empty drive, but there is no method to test it...
+  end if DRIVE
+
+  def test_stat_dotted_prefix
+    Dir.mktmpdir do |dir|
+      prefix = File.join(dir, "...a")
+      Dir.mkdir(prefix)
+      assert File.exist?(prefix)
+
+      assert_nothing_raised { File.stat(prefix) }
+
+      Dir.chdir(dir) do
+        assert_nothing_raised { File.stat(File.basename(prefix)) }
+      end
+    end
+  end if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
+
   def test_directory_p
     assert(File.directory?(@dir))
     assert(!(File.directory?(@dir+"/...")))
@@ -409,6 +431,9 @@ class TestFileExhaustive < Test::Unit::TestCase
     else
       assert_equal("/foo", File.expand_path('/foo'))
     end
+  end
+
+  def test_expand_path_encoding
     drive = (DRIVE ? 'C:' : '')
     if Encoding.find("filesystem") == Encoding::CP1251
       a = "#{drive}/\u3042\u3044\u3046\u3048\u304a".encode("cp932")
@@ -425,6 +450,10 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(expected.force_encoding(cp), File.expand_path(a.dup.force_encoding(cp)), cp)
     end
 
+    assert_incompatible_encoding {|d| File.expand_path(d)}
+  end
+
+  def test_expand_path_home
     assert_kind_of(String, File.expand_path("~")) if ENV["HOME"]
     assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha") }
     assert_raise(ArgumentError) { File.expand_path("~foo_bar_baz_unknown_user_wahaha", "/") }
@@ -440,7 +469,6 @@ class TestFileExhaustive < Test::Unit::TestCase
     ensure
       ENV["HOME"] = home
     end
-    assert_incompatible_encoding {|d| File.expand_path(d)}
   end
 
   def test_basename
@@ -812,6 +840,13 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(3, File::Stat.new(@file).size)
     assert_equal(0, File::Stat.new(@zerofile).size)
   end
+
+  def test_stat_special_file
+    # test for special files such as pagefile.sys on Windows
+    assert_nothing_raised do
+      Dir::glob("C:/*.sys") {|f| File::Stat.new(f) }
+    end
+  end if DRIVE
 
   def test_path_check
     assert_nothing_raised { ENV["PATH"] }

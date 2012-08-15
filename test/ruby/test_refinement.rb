@@ -300,5 +300,29 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("m2#bar", m.call_bar("abc"))
     assert_equal("m3#baz", m.call_baz("abc"))
   end
+
+  def test_refine_prepended_class
+    m1 = Module.new {
+      def foo
+        super << :m1
+      end
+    }
+    c = Class.new {
+      prepend m1
+
+      def foo
+        [:c]
+      end
+    }
+    m2 = Module.new {
+      refine c do
+        def foo
+          super << :m2
+        end
+      end
+    }
+    obj = c.new
+    assert_equal([:c, :m1, :m2], m2.module_eval { obj.foo })
+  end
 end
 

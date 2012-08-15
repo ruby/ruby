@@ -454,6 +454,11 @@ typedef struct rb_thread_struct {
     /* temporary place of errinfo */
     VALUE errinfo;
 
+    /* temporary place of retval on OPT_CALL_THREADED_CODE */
+#if OPT_CALL_THREADED_CODE
+    VALUE retval;
+#endif
+
     /* async errinfo queue */
     VALUE async_errinfo_queue;
     int async_errinfo_queue_checked;
@@ -593,6 +598,16 @@ typedef struct {
 } rb_binding_t;
 
 /* used by compile time and send insn */
+
+enum vm_check_match_type {
+    VM_CHECKMATCH_TYPE_WHEN = 1,
+    VM_CHECKMATCH_TYPE_CASE = 2,
+    VM_CHECKMATCH_TYPE_RESCUE = 3
+};
+
+#define VM_CHECKMATCH_TYPE_MASK   0x03
+#define VM_CHECKMATCH_ARRAY       0x04
+
 #define VM_CALL_ARGS_SPLAT_BIT     (0x01 << 1)
 #define VM_CALL_ARGS_BLOCKARG_BIT  (0x01 << 2)
 #define VM_CALL_FCALL_BIT          (0x01 << 3)

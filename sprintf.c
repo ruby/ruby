@@ -1174,6 +1174,7 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
 	len -= n;
     }
     fp->_p = (unsigned char *)buf;
+    rb_str_set_len(result, buf - RSTRING_PTR(result));
     return 0;
 }
 
@@ -1209,6 +1210,7 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
     StringValueCStr(value);
     RSTRING_GETMEM(value, cp, *sz);
     ((rb_printf_buffer_extra *)fp)->value = value;
+    OBJ_INFECT(result, value);
     return cp;
 }
 

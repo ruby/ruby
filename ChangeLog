@@ -1,3 +1,203 @@
+Wed Aug 15 18:05:37 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner#failed): need to delete the
+	  status line if the status is skipped and -q is specified.
+
+Wed Aug 15 16:26:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (ruby__sfvextra): the result should be infected by the
+	  given strings.
+
+	* sprintf.c (ruby__sfvwrite): set buffer length and exclude
+	  uninitialized garbage to get correct coderange.
+
+Wed Aug 15 16:20:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (ID_H_TARGET): make timestamp file of id.h so that the
+	  header will not be remade repetitively.
+
+Wed Aug 15 11:39:53 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c: separate trace_func related functions from
+	  thread.c.
+
+	* thread.c: ditto.
+
+	* common.mk: add vm_trace.o.
+
+	* inits.c: call Init_vm_trace().
+
+Tue Aug 14 16:25:46 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/erb/test_erb.rb (test_html_escape): add assertions for the
+	  cases where the argument is not a String.
+
+Tue Aug 14 16:03:31 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (check_valid_dir): reject "..." as directory name.
+	  [Bug #6851]
+
+Tue Aug 14 16:02:51 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_file_exhaustive.rb
+	  (TestFileExhaustive#test_stat_dotted_prefix): added.
+
+Tue Aug 14 15:39:09 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_file_exhaustive.rb
+	  (TestFileExhaustive#test_stat_drive_root): added.
+
+Tue Aug 14 10:38:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/erb.rb (ERB::Util.html_escape): fix r36687: call to_s before
+	  passing it to CGI.escapeHTML.
+
+Mon Aug 13 13:13:19 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/erb.rb (ERB::Util.html_escape): use CGI.escapeHTML to escape
+	  single quotes. [ruby-core:47138] [Bug #6861]
+
+Sun Aug 12 11:57:20 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm.c (invoke_block_from_c): fix unintentional block passing.
+	  [ruby-dev:45071] [Bug #5832]
+
+Fri Aug 10 08:41:28 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* gc.c (gc_malloc_allocated_size):  RDoc does not process macros, so
+	  mention this method is only available when ruby is built with
+	  CALC_EXACT_MALLOC_SIZE
+	* gc.c (gc_malloc_allocations):  ditto
+
+Thu Aug  9 23:46:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/mkrunnable.rb: see build_os instead of target arch for
+	  cross-compiling.
+
+	* configure.in (MINIRUBY): use real path for include path.
+
+	* template/fake.rb.in (builddir): remove duplications
+
+Thu Aug  9 20:03:11 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_file_exhaustive.rb
+	  (TestFileExhaustive#test_stat_special_file): add a test.
+	  GetFileAttributesExW fails to get attributes of special files
+	  such as pagefile.sys.
+
+	* win32/win32.c (check_valid_dir): for performance, check the path
+	  by FindFirstFileW only if the path contains "..."
+
+	* win32/win32.c (winnt_stat): use GetFileAttributesExW instead of
+	  FindFirstFileW since GetFileAttributesExW is faster.
+	  Based on the patch by Dusan D. Majkic.
+	  [ruby-core:47083] [Feature #6845]
+
+Thu Aug  9 18:33:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options): show version only once even if -v and
+	  --version are given together.
+	  http://twitter.com/d6rkaiz/status/233491797085671424
+
+Thu Aug  9 12:37:22 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/openssl/test_config.rb (OpenSSL#test_constants): skip this
+	  test if platform is Mac OS X or Windows. [Bug #6830]
+
+Wed Aug  8 22:51:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (eval_under): singletons other than special constants
+	  don't need cref-scope hack.
+
+Wed Aug  8 22:45:38 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (.y.h): split from .y.c rule to manage dependency on
+	  parse.h.  [ruby-core:46741] [Bug #6789]
+
+	* common.mk (id.h): keep old file unless changed.
+
+Wed Aug  8 17:11:20 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (ADD_INSNL): make ADD_INSNL as alias of ADD_INSN1.
+
+Wed Aug  8 17:08:14 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstrap/test_exception.rb: fix a last committed test.
+
+Wed Aug  8 16:27:58 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c, insns.def (checkmatch):
+	  remove checkincludearray instruction and
+	  add new instruction checkmatch.
+	  This change is to solve
+	  [Bug #4438] "rescue args type check omitted".
+
+	* iseq.c: increment ISEQ_MAJOR_VERSION because removal of
+	  checkincludearray instruction.
+
+	* vm_core.h: add several definitions for
+	  the checkmatch instruction.
+
+	* vm_insnhelper.c (check_match): added.
+
+	* bootstraptest/test_exception.rb: add a test.
+
+	* test/ruby/test_exception.rb: ditto.
+
+Wed Aug  8 05:51:20 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* proc.c (method_clone):  Added documentation.  Patch by Robin Dupret.
+	  Fixes #152 on github.
+
+Tue Aug  7 20:19:29 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/readline/readline.c (Init_readline): rl_catch_signals=0 returns
+	  back. Without this, on FreeBSD9 and readline 6.2 irb can't catch ^C.
+	  [Bug #5423]
+
+Tue Aug 07 20:12:39 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_exec.c, insns.def (leave): solve problems on
+	  OPT_CALL_THREADED_CODE.
+	  Catch up finish frame structure on OPT_CALL_THREADED_CODE.
+
+	* vm_core.h: add rb_thread_t#retval for temporary space on
+	  OPT_CALL_THREADED_CODE.
+
+	* vm.c (th_init): clear rb_thread_t#retval as Qundef.
+
+	* vm_dump.c (rb_vmdebug_debug_print_pre): fix debug print format.
+
+Tue Aug  7 11:58:27 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_require.rb (TestRequire#test_require_twice): added.
+
+Tue Aug  7 11:35:37 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_method.c (rb_redefine_opt_method): use RCLASS_ORIGIN to avoid
+	  SEGV when a module-prepended class is refined.
+
+Tue Aug  7 10:46:37 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_file_exhaustive.rb
+	  (TestFileExhaustive#test_expand_path*): refactoring.  split the method
+	  into some chunks of the same kind of tests.
+
+Tue Aug  7 00:31:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_special_singleton_class_of): utility function.
+
+	* vm_eval.c (eval_under): special deal for class variable scope with
+	  instance_eval.
+
+	* vm_eval.c (rb_obj_instance_eval, rb_obj_instance_exec): allow method
+	  definition in instance_eval of special constants.  [ruby-core:28324]
+	  [Bug #2788]
+
+Tue Aug  7 00:23:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (CVAR_LOOKUP): split into helper functions.
+
 Mon Aug  6 19:15:11 2012  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_variant.rb: setting WIN32OLE.locale

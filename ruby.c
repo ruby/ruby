@@ -62,6 +62,7 @@ enum disable_flag_bits {
 #define DUMP_BIT(bit) (1U << dump_##bit)
 enum dump_flag_bits {
     dump_version,
+    dump_version_v,
     dump_copyright,
     dump_usage,
     dump_yydebug,
@@ -748,7 +749,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 		s++;
 		goto reswitch;
 	    }
-	    ruby_show_version();
+	    opt->dump |= DUMP_BIT(version_v);
 	    opt->verbose = 1;
 	  case 'w':
 	    ruby_verbose = Qtrue;
@@ -1271,9 +1272,9 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     if (opt->src.enc.name)
 	rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
-    if (opt->dump & DUMP_BIT(version)) {
+    if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
 	ruby_show_version();
-	return Qtrue;
+	if (opt->dump & DUMP_BIT(version)) return Qtrue;
     }
     if (opt->dump & DUMP_BIT(copyright)) {
 	ruby_show_copyright();

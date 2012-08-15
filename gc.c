@@ -3471,9 +3471,8 @@ ruby_mimmalloc(size_t size)
  *  call-seq:
  *     GC.malloc_allocated_size -> Integer
  *
- *  The allocated size by malloc().
- *
- *  It returns the allocated size by malloc().
+ *  Returns the size of memory allocated by malloc().  Only available if ruby
+ *  was built with CALC_EXACT_MALLOC_SIZE.
  */
 
 static VALUE
@@ -3486,9 +3485,8 @@ gc_malloc_allocated_size(VALUE self)
  *  call-seq:
  *     GC.malloc_allocations -> Integer
  *
- *  The number of allocated memory object by malloc().
- *
- *  It returns the number of allocated memory object by malloc().
+ *  Returns the number of malloc() allocations.  Only available if ruby was
+ *  built with CALC_EXACT_MALLOC_SIZE.
  */
 
 static VALUE

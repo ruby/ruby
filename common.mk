@@ -27,7 +27,7 @@ REVISION_H    = ./.revision.time
 PLATFORM_D    = ./$(PLATFORM_DIR)/.time
 RDOCOUT       = $(EXTOUT)/rdoc
 CAPIOUT       = doc/capi
-ID_H_TARGET   = -id.h-
+ID_H_TARGET   = ./.id.h.time
 
 DMYEXT	      = dmyext.$(OBJEXT)
 NORMALMAINOBJ = main.$(OBJEXT)
@@ -92,6 +92,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		vm.$(OBJEXT) \
 		vm_dump.$(OBJEXT) \
 		vm_backtrace.$(OBJEXT) \
+		vm_trace.$(OBJEXT) \
 		thread.$(OBJEXT) \
 		cont.$(OBJEXT) \
 		$(BUILTIN_ENCOBJS) \
@@ -104,6 +105,7 @@ EXPORTOBJS    = dln.$(OBJEXT) \
 		$(COMMONOBJS)
 
 OBJS          = $(EXPORTOBJS) prelude.$(OBJEXT)
+ALLOBJS       = $(ID_H_TARGET) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT)
 
 GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
 
@@ -188,7 +190,9 @@ loadpath: $(PREP) PHONY
 
 $(PREP): $(MKFILES)
 
-miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(ARCHFILE)
+miniruby$(EXEEXT): config.status $(ALLOBJS) $(ARCHFILE)
+
+objs: $(ALLOBJS)
 
 GORUBY = go$(RUBY_INSTALL_NAME)
 golf: $(LIBRUBY) $(GOLFOBJS) PHONY
@@ -565,6 +569,11 @@ parse.h {$(VPATH)}parse.h: {$(VPATH)}parse.c
 	$(Q)$(YACC) -d $(YFLAGS) -o y.tab.c $(SRC_FILE)
 	$(Q)sed -f $(srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@.new
 	$(Q)$(MV) $@.new $@
+	$(Q)$(RM) y.tab.c y.tab.h
+
+{$(srcdir)}.y.h:
+	$(ECHO) generating $@
+	$(Q)$(YACC) -d $(YFLAGS) -o y.tab.c $(SRC_FILE)
 	$(Q)sed -e "/^#line.*y\.tab\.h/d;/^#line.*parse\.y/d" y.tab.h > $(@:.c=.h).new
 	$(Q)$(IFCHANGE) $(@:.c=.h) $(@:.c=.h).new
 	$(Q)$(RM) y.tab.c y.tab.h
@@ -686,7 +695,7 @@ parse.$(OBJEXT): {$(VPATH)}parse.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h \
   {$(VPATH)}regex.h {$(VPATH)}util.h {$(VPATH)}lex.c \
   {$(VPATH)}defs/keywords {$(VPATH)}id.c {$(VPATH)}parse.y \
   {$(VPATH)}parse.h \
-  {$(VPATH)}internal.h {$(VPATH)}id.h
+  {$(VPATH)}internal.h
 proc.$(OBJEXT): {$(VPATH)}proc.c {$(VPATH)}eval_intern.h \
   $(RUBY_H_INCLUDES) {$(VPATH)}gc.h $(VM_CORE_H_INCLUDES) \
   {$(VPATH)}debug.h {$(VPATH)}internal.h {$(VPATH)}iseq.h
@@ -776,6 +785,9 @@ id.$(OBJEXT): {$(VPATH)}id.c $(RUBY_H_INCLUDES) $(ID_H_INCLUDES)
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_backtrace.c \
   $(VM_CORE_H_INCLUDES) $(RUBY_H_INCLUDES) \
   {$(VPATH)}internal.h {$(VPATH)}iseq.h
+vm_trace.$(OBJEXT): {$(VPATH)}vm_trace.c \
+  $(VM_CORE_H_INCLUDES) $(RUBY_H_INCLUDES) \
+  {$(VPATH)}internal.h
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c $(RUBY_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h {$(VPATH)}internal.h
 prelude.$(OBJEXT): {$(VPATH)}prelude.c $(RUBY_H_INCLUDES) \
@@ -840,9 +852,10 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(
 
 insns: $(INSNS)
 
-id.h: parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
-	$(ECHO) generating $@
-	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb --output=$@ \
+$(ID_H_TARGET): parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
+	$(ECHO) generating id.h
+	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb --if-change --output=id.h \
+		--timestamp=$@ \
 		$(srcdir)/template/id.h.tmpl --vpath=$(VPATH) parse.h
 
 node_name.inc: {$(VPATH)}node.h

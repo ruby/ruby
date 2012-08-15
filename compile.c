@@ -185,15 +185,13 @@ r_value(VALUE value)
 #define ADD_INSN(seq, line, insn) \
   ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
 
-/* add an instruction with label operand */
-#define ADD_INSNL(seq, line, insn, label) \
-  ADD_ELEM((seq), (LINK_ELEMENT *) \
-           new_insn_body(iseq, (line), BIN(insn), 1, (VALUE)(label)))
-
 /* add an instruction with some operands (1, 2, 3, 5) */
 #define ADD_INSN1(seq, line, insn, op1) \
   ADD_ELEM((seq), (LINK_ELEMENT *) \
            new_insn_body(iseq, (line), BIN(insn), 1, (VALUE)(op1)))
+
+/* add an instruction with label operand (alias of ADD_INSN1) */
+#define ADD_INSNL(seq, line, insn, label) ADD_INSN1(seq, line, insn, label)
 
 #define ADD_INSN2(seq, line, insn, op1, op2) \
   ADD_ELEM((seq), (LINK_ELEMENT *) \
@@ -2458,6 +2456,8 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *cond_seq, NODE *vals, LABEL *l1, int onl
 	    }
 	}
 
+	ADD_INSN(cond_seq, nd_line(val), dup); /* dup target */
+
 	if (nd_type(val) == NODE_STR) {
 	    debugp_param("nd_lit", val->nd_lit);
 	    OBJ_FREEZE(val->nd_lit);
@@ -2466,8 +2466,8 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *cond_seq, NODE *vals, LABEL *l1, int onl
 	else {
 	    COMPILE(cond_seq, "when cond", val);
 	}
-	ADD_INSN1(cond_seq, nd_line(val), topn, INT2FIX(1));
-	ADD_SEND(cond_seq, nd_line(val), ID2SYM(idEqq), INT2FIX(1));
+
+	ADD_INSN1(cond_seq, nd_line(vals), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE));
 	ADD_INSNL(cond_seq, nd_line(val), branchif, l1);
 	vals = vals->nd_next;
     }
@@ -3207,8 +3207,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		  case NODE_ARGSCAT:
 		  case NODE_ARGSPUSH:
 		    only_special_literals = 0;
+		    ADD_INSN (cond_seq, nd_line(vals), dup);
 		    COMPILE(cond_seq, "when/cond splat", vals);
-		    ADD_INSN1(cond_seq, nd_line(vals), checkincludearray, Qtrue);
+		    ADD_INSN1(cond_seq, nd_line(vals), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
 		    ADD_INSNL(cond_seq, nd_line(vals), branchif, l1);
 		    break;
 		  default:
@@ -3289,8 +3290,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	      case NODE_ARGSPUSH:
 		ADD_INSN(ret, nd_line(vals), putnil);
 		COMPILE(ret, "when2/cond splat", vals);
-		ADD_INSN1(ret, nd_line(vals), checkincludearray, Qfalse);
-		ADD_INSN(ret, nd_line(vals), pop);
+		ADD_INSN1(ret, nd_line(vals), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_WHEN | VM_CHECKMATCH_ARRAY));
 		ADD_INSNL(ret, nd_line(vals), branchif, l1);
 		break;
 	      default:
@@ -3687,9 +3687,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		switch (nd_type(narg)) {
 		  case NODE_ARRAY:
 		    while (narg) {
-			COMPILE(ret, "rescue arg", narg->nd_head);
 			ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(2), INT2FIX(0));
-			ADD_SEND(ret, nd_line(node), ID2SYM(idEqq), INT2FIX(1));
+			COMPILE(ret, "rescue arg", narg->nd_head);
+			ADD_INSN1(ret, nd_line(node), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
 			ADD_INSNL(ret, nd_line(node), branchif, label_hit);
 			narg = narg->nd_next;
 		    }
@@ -3699,9 +3699,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		  case NODE_ARGSPUSH:
 		    ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(2), INT2FIX(0));
 		    COMPILE(ret, "rescue/cond splat", narg);
-		    ADD_INSN1(ret, nd_line(node), checkincludearray, Qtrue);
-		    ADD_INSN(ret, nd_line(node), swap);
-		    ADD_INSN(ret, nd_line(node), pop);
+		    ADD_INSN1(ret, nd_line(node), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE | VM_CHECKMATCH_ARRAY));
 		    ADD_INSNL(ret, nd_line(node), branchif, label_hit);
 		    break;
 		  default:
@@ -3710,10 +3708,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		}
 	    }
 	    else {
-		ADD_INSN1(ret, nd_line(node), putobject,
-			  rb_eStandardError);
 		ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(2), INT2FIX(0));
-		ADD_SEND(ret, nd_line(node), ID2SYM(idEqq), INT2FIX(1));
+		ADD_INSN1(ret, nd_line(node), putobject, rb_eStandardError);
+		ADD_INSN1(ret, nd_line(node), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
 		ADD_INSNL(ret, nd_line(node), branchif, label_hit);
 	    }
 	    ADD_INSNL(ret, nd_line(node), jump, label_miss);

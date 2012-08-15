@@ -105,6 +105,19 @@ class TestRequire < Test::Unit::TestCase
     assert(system(File.expand_path(EnvUtil.rubybin).sub(/\A(\w):/, '//127.0.0.1/\1$/'), "-rabbrev", "-e0"))
   end if /mswin|mingw/ =~ RUBY_PLATFORM
 
+  def test_require_twice
+    Dir.mktmpdir do |tmp|
+      req = File.join(tmp, "very_long_file_name.rb")
+      File.write(req, "p :ok\n")
+      assert(File.exist?(req))
+      req[/.rb$/i] = ""
+      assert_in_out_err(['--disable-gems'], <<-INPUT, %w(:ok), [])
+        require "#{req}"
+        require "#{req}"
+      INPUT
+    end
+  end
+
   def test_define_class
     begin
       require "socket"

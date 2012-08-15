@@ -1444,9 +1444,21 @@ rb_obj_define_method(int argc, VALUE *argv, VALUE obj)
     return rb_mod_define_method(argc, argv, klass);
 }
 
-
 /*
- * MISSING: documentation
+ *  call-seq:
+ *    method.clone -> new_method
+ *
+ *  Returns a clone of this method.
+ *
+ *    class A
+ *      def foo
+ *        return "bar"
+ *      end
+ *    end
+ *
+ *    m = A.new.method(:foo)
+ *    m.call # => "bar"
+ *    n = m.clone.call # => "bar"
  */
 
 static VALUE

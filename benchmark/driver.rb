@@ -103,7 +103,7 @@ class BenchmarkDriver
       message
       message PP.pp(@results, "", 79)
       message
-      message "Elapesed time: #{Time.now - @start_time} (sec)"
+      message "Elapsed time: #{Time.now - @start_time} (sec)"
     end
 
     output '-----------------------------------------------------------'
@@ -241,7 +241,7 @@ if __FILE__ == $0
 
   parser = OptionParser.new{|o|
     o.on('-e', '--executables [EXECS]',
-         "Specify benchmark one or more targets. (exec1; exec2; exec3, ...)"){|e|
+         "Specify benchmark one or more targets. (exec1; exec2; exec3; ...)"){|e|
       opt[:execs] = e.split(/;/)
     }
     o.on('-d', '--directory [DIRECTORY]', "Benchmark suites directory"){|d|

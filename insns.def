@@ -541,46 +541,6 @@ splatarray
 
 /**
   @c put
-  @e check value is included in ary
-  @j 配列 ary に要素 obj が入っているかどうかチェック。case/when で利用する。
- */
-DEFINE_INSN
-checkincludearray
-(VALUE flag)
-(VALUE obj, VALUE ary)
-(VALUE obj, VALUE result)
-{
-    int i;
-    result = Qfalse;
-
-    if (!RB_TYPE_P(ary, T_ARRAY)) {
-	ary = rb_Array(ary);
-    }
-
-    if (flag == Qtrue) {
-	/* NODE_CASE */
-	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	    /* TODO: fix me (use another method dispatch) */
-	    if (RTEST(rb_funcall2(RARRAY_PTR(ary)[i], idEqq, 1, &obj))) {
-		result = Qtrue;
-		break;
-	    }
-	}
-    }
-    else {
-	obj = Qfalse;
-	/* NODE_WHEN */
-	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	    if (RTEST(RARRAY_PTR(ary)[i])) {
-		obj = result = Qtrue;
-		break;
-	    }
-	}
-    }
-}
-
-/**
-  @c put
   @e put new Hash.
   @j 新しいハッシュをスタックトップの n 個を初期値として生成する。
      n はキーと値のペアなので 2 の倍数でなければならない。
@@ -859,6 +819,40 @@ defined
 
 /**
   @c setting
+  @e check `target' matches `pattern'.
+     `flag & VM_CHECKMATCH_TYPE_MASK' describe how to check pattern.
+      VM_CHECKMATCH_TYPE_WHEN: ignore target and check pattern is truthy.
+      VM_CHECKMATCH_TYPE_CASE: check `patten === target'.
+      VM_CHECKMATCH_TYPE_RESCUE: check `pattern.kind_op?(Module) && pattern == target'.
+     if `flag & VM_CHECKMATCH_ARRAY' is not 0, then `patten' is array of patterns.
+  @j see above comments.
+ */
+DEFINE_INSN
+checkmatch
+(rb_num_t flag)
+(VALUE target, VALUE pattern)
+(VALUE result)
+{
+    result = Qfalse;
+
+    if (flag & VM_CHECKMATCH_ARRAY) {
+	int i;
+	for (i = 0; i < RARRAY_LEN(pattern); i++) {
+	    if (RTEST(check_match(RARRAY_PTR(pattern)[i], target, flag & VM_CHECKMATCH_TYPE_MASK))) {
+		result = Qtrue;
+		break;
+	    }
+	}
+    }
+    else {
+	if (RTEST(check_match(pattern, target, flag & VM_CHECKMATCH_TYPE_MASK))) {
+	    result = Qtrue;
+	}
+    }
+}
+
+/**
+  @c setting
   @e trace
   @j trace 用の命令。
  */
@@ -1116,10 +1110,12 @@ leave
     RUBY_VM_CHECK_INTS(th);
 
     if (UNLIKELY(VM_FRAME_TYPE_FINISH_P(GET_CFP()))) {
-#if OPT_CALL_THREADED_CODE
-	rb_bug("unused instruction on OPT_CALL_THREADED_CODE");
-#else
 	vm_pop_frame(th);
+
+#if OPT_CALL_THREADED_CODE
+	th->retval = val;
+	return 0;
+#else
 	return val;
 #endif
     }

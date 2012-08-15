@@ -21,6 +21,8 @@ __EOD__
   end
 
   def test_constants
+    skip "DEFAULT_CONFIG_FILE may return a wrong path on your platforms. [Bug #6830]" if /mswin|mingw|darwin/ =~ RUBY_PLATFORM
+
     assert(defined?(OpenSSL::Config::DEFAULT_CONFIG_FILE))
     assert_nothing_raised do
       OpenSSL::Config.load(OpenSSL::Config::DEFAULT_CONFIG_FILE)

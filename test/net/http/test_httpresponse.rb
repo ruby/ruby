@@ -12,8 +12,8 @@ Connection: close
 hello
 EOS
     res = Net::HTTPResponse.read_new(io)
-    assert_equal('5', res.header['content-length'])
-    assert_equal('close', res.header['connection'])
+    assert_equal('5', res['content-length'])
+    assert_equal('close', res['connection'])
   end
 
   def test_multiline_header
@@ -28,8 +28,8 @@ X-Bar:
 hello
 EOS
     res = Net::HTTPResponse.read_new(io)
-    assert_equal('XXX YYY', res.header['x-foo'])
-    assert_equal('XXX YYY', res.header['x-bar'])
+    assert_equal('XXX YYY', res['x-foo'])
+    assert_equal('XXX YYY', res['x-bar'])
   end
 
   def test_read_body
@@ -92,7 +92,13 @@ EOS
       body = res.read_body
     end
 
-    assert_equal 'hello', body
+    if Net::HTTP::HAVE_ZLIB
+      assert_equal nil, res['content-encoding']
+      assert_equal 'hello', body
+    else
+      assert_equal 'deflate', res['content-encoding']
+      assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body
+    end
   end
 
   def test_read_body_content_encoding_deflate_chunked
@@ -118,7 +124,13 @@ EOS
       body = res.read_body
     end
 
-    assert_equal 'hello', body
+    if Net::HTTP::HAVE_ZLIB
+      assert_equal nil, res['content-encoding']
+      assert_equal 'hello', body
+    else
+      assert_equal 'deflate', res['content-encoding']
+      assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body
+    end
   end
 
   def test_read_body_content_encoding_deflate_no_length
@@ -138,7 +150,13 @@ EOS
       body = res.read_body
     end
 
-    assert_equal 'hello', body
+    if Net::HTTP::HAVE_ZLIB
+      assert_equal nil, res['content-encoding']
+      assert_equal 'hello', body
+    else
+      assert_equal 'deflate', res['content-encoding']
+      assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15\r\n", body
+    end
   end
 
   def test_read_body_content_encoding_deflate_content_range

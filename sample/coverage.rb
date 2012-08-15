@@ -17,7 +17,7 @@ at_exit do
         File.writable?(f) || File.writable?(File.dirname(f))
       end
       unless writable[cfile]
-        cfile = cfile.gsub(File.PATH_SEPARATOR, "#")
+        cfile = cfile.gsub(File::PATH_SEPARATOR, "#")
         next unless writable[cfile]
       end
 

@@ -21,8 +21,8 @@
 #include "insns.inc"
 #include "insns_info.inc"
 
-#define ISEQ_MAJOR_VERSION 1
-#define ISEQ_MINOR_VERSION 2
+#define ISEQ_MAJOR_VERSION 2
+#define ISEQ_MINOR_VERSION 0
 
 VALUE rb_cISeq;
 

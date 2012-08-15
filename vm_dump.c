@@ -345,7 +345,7 @@ rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     rb_iseq_t *iseq = cfp->iseq;
 
-    if (iseq != 0 && !VM_FRAME_TYPE_FINISH_P(cfp)) {
+    if (iseq != 0) {
 	VALUE *seq = iseq->iseq;
 	ptrdiff_t pc = cfp->pc - iseq->iseq_encoded;
 	int i;

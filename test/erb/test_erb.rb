@@ -37,6 +37,19 @@ class TestERB < Test::Unit::TestCase
     }
     assert_match(/\Atest filename:1\b/, e.backtrace[0])
   end
+
+  def test_html_escape
+    # TODO: &apos; should be changed to &#x27;
+    assert_equal(" !&quot;\#$%&amp;&#x27;()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~",
+                 ERB::Util.html_escape(" !\"\#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"))
+
+    assert_equal("", ERB::Util.html_escape(""))
+    assert_equal("abc", ERB::Util.html_escape("abc"))
+    assert_equal("&lt;&lt;", ERB::Util.html_escape("<<"))
+
+    assert_equal("", ERB::Util.html_escape(nil))
+    assert_equal("123", ERB::Util.html_escape(123))
+  end
 end
 
 class TestERBCore < Test::Unit::TestCase
@@ -49,7 +62,13 @@ class TestERBCore < Test::Unit::TestCase
     _test_core(0)
     _test_core(1)
     _test_core(2)
-    _test_core(3)
+    orig = $VERBOSE
+    begin
+      $VERBOSE = false
+      _test_core(3)
+    ensure
+      $VERBOSE = orig
+    end
   end
 
   def _test_core(safe)
@@ -182,26 +201,26 @@ EOS
 %n = 1
 <%= n%>
 EOS
-    assert_equal("1\n", ERB.new(src, nil, '%').result)
+    assert_equal("1\n", ERB.new(src, nil, '%').result(binding))
 
     src = <<EOS
 <%
 %>
 EOS
     ans = "\n"
-    assert_equal(ans, ERB.new(src, nil, '%').result)
+    assert_equal(ans, ERB.new(src, nil, '%').result(binding))
 
     src = "<%\n%>"
     # ans = "\n"
     ans = ""
-    assert_equal(ans, ERB.new(src, nil, '%').result)
+    assert_equal(ans, ERB.new(src, nil, '%').result(binding))
 
     src = <<EOS
 <%
 n = 1
 %><%= n%>
 EOS
-    assert_equal("1\n", ERB.new(src, nil, '%').result)
+    assert_equal("1\n", ERB.new(src, nil, '%').result(binding))
 
     src = <<EOS
 %n = 1
@@ -217,7 +236,7 @@ EOS
 % %%><%1
 %%
 EOS
-    assert_equal(ans, ERB.new(src, nil, '%').result)
+    assert_equal(ans, ERB.new(src, nil, '%').result(binding))
   end
 
   def test_def_erb_method
