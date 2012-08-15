@@ -3835,7 +3835,6 @@ Init_Bignum(void)
     rb_cBignum = rb_define_class("Bignum", rb_cInteger);
 
     rb_define_method(rb_cBignum, "to_s", rb_big_to_s, -1);
-    rb_define_alias(rb_cBignum, "inspect", "to_s");
     rb_define_method(rb_cBignum, "coerce", rb_big_coerce, 1);
     rb_define_method(rb_cBignum, "-@", rb_big_uminus, 0);
     rb_define_method(rb_cBignum, "+", rb_big_plus, 1);

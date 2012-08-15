@@ -118,6 +118,7 @@ class PPInspectTest < Test::Unit::TestCase
     def a.to_s() "aaa" end
     result = PP.pp(a, '')
     assert_equal("#{a.inspect}\n", result)
+    assert_equal("aaa\n", result)
   end
 end
 

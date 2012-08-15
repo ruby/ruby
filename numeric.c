@@ -3660,7 +3660,6 @@ Init_Numeric(void)
     rb_cFixnum = rb_define_class("Fixnum", rb_cInteger);
 
     rb_define_method(rb_cFixnum, "to_s", fix_to_s, -1);
-    rb_define_alias(rb_cFixnum, "inspect", "to_s");
 
     rb_define_method(rb_cFixnum, "-@", fix_uminus, 0);
     rb_define_method(rb_cFixnum, "+", fix_plus, 1);
@@ -3721,7 +3720,6 @@ Init_Numeric(void)
     rb_define_const(rb_cFloat, "NAN", DBL2NUM(NAN));
 
     rb_define_method(rb_cFloat, "to_s", flo_to_s, 0);
-    rb_define_alias(rb_cFloat, "inspect", "to_s");
     rb_define_method(rb_cFloat, "coerce", flo_coerce, 1);
     rb_define_method(rb_cFloat, "-@", flo_uminus, 0);
     rb_define_method(rb_cFloat, "+", flo_plus, 1);

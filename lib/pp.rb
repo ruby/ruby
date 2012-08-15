@@ -265,7 +265,8 @@ class PP < PrettyPrint
   module ObjectMixin
     # 1. specific pretty_print
     # 2. specific inspect
-    # 3. generic pretty_print
+    # 3. specific to_s
+    # 4. generic pretty_print
 
     # A default pretty printing method for general objects.
     # It calls #pretty_print_instance_variables to list instance variables.
@@ -282,10 +283,18 @@ class PP < PrettyPrint
         inspect_method = method_method.call(:inspect)
       rescue NameError
       end
+      begin
+        to_s_method = method_method.call(:to_s)
+      rescue NameError
+      end
       if inspect_method && /\(Kernel\)#/ !~ inspect_method.inspect
         q.text self.inspect
       elsif !inspect_method && self.respond_to?(:inspect)
         q.text self.inspect
+      elsif to_s_method && /\(Kernel\)#/ !~ to_s_method.inspect
+        q.text self.to_s
+      elsif !to_s_method && self.respond_to?(:to_s)
+        q.text self.to_s
       else
         q.pp_object(self)
       end

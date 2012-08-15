@@ -1,26 +1,3 @@
-Tue Aug 14 19:19:10 2012  Benoit Daloze  <eregontp@gmail.com>
-
-	update PP with recent Kernel#inspect change. Patch by Yusuke Endoh.
-
-	* lib/pp.rb (class PP): do not call #to_s anymore, as #inspect no more does.
-	* test/test_pp.rb (class PPInspectTest): remove related assertion.
-	  [ruby-core:43238][Feature #6130]
-
-Tue Aug 14 19:09:38 2012  Benoit Daloze  <eregontp@gmail.com>
-
-	Kernel#inspect: improve consistency and do not call #to_s.
-
-	A class can now benefit from the nice default #inspect even if it
-	defines #to_s. Also, there is no more unexpected change in #inspect
-	result. Internal structures have been adapted so they don't rely
-	on the removed behavior (#inspect calling overridden #to_s).
-
-	* object.c (rb_obj_inspect): Kernel#inspect: do not call #to_s.
-	* test/ruby/test_object.rb (test_inspect): add tests for Kernel#inspect.
-	* bignum.c, io.c, numeric.c, object.c, proc.c, vm.c (Init_*):
-	  alias #inspect to #to_s where it was expected.
-	  [ruby-core:43238][Feature #6130]
-
 Tue Aug 14 16:25:46 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/erb/test_erb.rb (test_html_escape): add assertions for the

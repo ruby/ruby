@@ -690,31 +690,6 @@ class TestObject < Test::Unit::TestCase
     assert_equal(true, s.tainted?)
   end
 
-  def test_inspect
-    x = Object.new
-    assert_match(/\A#<Object:0x\h+>\z/, x.inspect)
-
-    x.instance_variable_set(:@ivar, :value)
-    assert_match(/\A#<Object:0x\h+ @ivar=:value>\z/, x.inspect)
-
-    x = Object.new
-    x.instance_variable_set(:@recur, x)
-    assert_match(/\A#<Object:0x\h+ @recur=#<Object:0x\h+ \.\.\.>>\z/, x.inspect)
-
-    x = Object.new
-    x.instance_variable_set(:@foo, "value")
-    x.instance_variable_set(:@bar, 42)
-    assert_match(/\A#<Object:0x\h+ (?:@foo="value", @bar=42|@bar=42, @foo="value")>\z/, x.inspect)
-
-    # #inspect does not call #to_s anymore
-    feature6130 = '[ruby-core:43238]'
-    x = Object.new
-    def x.to_s
-      "to_s"
-    end
-    assert_match(/\A#<Object:0x\h+>\z/, x.inspect, feature6130)
-  end
-
   def test_exec_recursive
     Thread.current[:__recursive_key__] = nil
     a = [[]]

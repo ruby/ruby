@@ -450,8 +450,11 @@ inspect_obj(VALUE obj, VALUE str, int recur)
  *     obj.inspect   -> string
  *
  * Returns a string containing a human-readable representation of <i>obj</i>.
- * By default, show the class name and the list of the instance variables and
- * their values (by calling #inspect on each of them).
+ * By default, if the <i>obj</i> has instance variables, show the class name
+ * and instance variable details which is the list of the name and the result
+ * of <i>inspect</i> method for each instance variable.
+ * Otherwise uses the <i>to_s</i> method to generate the string.
+ * If the <i>to_s</i> method is overridden, uses it.
  * User defined classes should override this method to make better
  * representation of <i>obj</i>.  When overriding this method, it should
  * return a string whose encoding is compatible with the default external
@@ -476,21 +479,35 @@ inspect_obj(VALUE obj, VALUE str, int recur)
  *         "baz"
  *       end
  *     end
- *     Baz.new.inspect                  #=> "#<Baz:0x0300c868>"
+ *     Baz.new.inspect                  #=> "baz"
  */
 
 static VALUE
 rb_obj_inspect(VALUE obj)
 {
-    if (rb_ivar_count(obj) > 0) {
-	VALUE str;
-	const char *c = rb_obj_classname(obj);
+    if (RB_TYPE_P(obj, T_OBJECT) && rb_obj_basic_to_s_p(obj)) {
+        int has_ivar = 0;
+        VALUE *ptr = ROBJECT_IVPTR(obj);
+        long len = ROBJECT_NUMIV(obj);
+        long i;
 
-	str = rb_sprintf("-<%s:%p", c, (void*)obj);
-	return rb_exec_recursive(inspect_obj, obj, str);
-    } else {
+        for (i = 0; i < len; i++) {
+            if (ptr[i] != Qundef) {
+                has_ivar = 1;
+                break;
+            }
+        }
+
+        if (has_ivar) {
+            VALUE str;
+            const char *c = rb_obj_classname(obj);
+
+            str = rb_sprintf("-<%s:%p", c, (void*)obj);
+            return rb_exec_recursive(inspect_obj, obj, str);
+        }
 	return rb_any_to_s(obj);
     }
+    return rb_funcall(obj, rb_intern("to_s"), 0, 0);
 }
 
 static VALUE
@@ -2934,7 +2951,6 @@ Init_Object(void)
     rb_define_method(rb_cModule, ">=", rb_mod_ge, 1);
     rb_define_method(rb_cModule, "initialize_copy", rb_mod_init_copy, 1); /* in class.c */
     rb_define_method(rb_cModule, "to_s", rb_mod_to_s, 0);
-    rb_define_alias(rb_cModule, "inspect", "to_s");
     rb_define_method(rb_cModule, "included_modules", rb_mod_included_modules, 0); /* in class.c */
     rb_define_method(rb_cModule, "include?", rb_mod_include_p, 1); /* in class.c */
     rb_define_method(rb_cModule, "name", rb_mod_name, 0);  /* in variable.c */
@@ -2987,7 +3003,6 @@ Init_Object(void)
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_define_method(rb_cTrueClass, "to_s", true_to_s, 0);
-    rb_define_alias(rb_cTrueClass, "inspect", "to_s");
     rb_define_method(rb_cTrueClass, "&", true_and, 1);
     rb_define_method(rb_cTrueClass, "|", true_or, 1);
     rb_define_method(rb_cTrueClass, "^", true_xor, 1);
@@ -3000,7 +3015,6 @@ Init_Object(void)
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
     rb_define_method(rb_cFalseClass, "to_s", false_to_s, 0);
-    rb_define_alias(rb_cFalseClass, "inspect", "to_s");
     rb_define_method(rb_cFalseClass, "&", false_and, 1);
     rb_define_method(rb_cFalseClass, "|", false_or, 1);
     rb_define_method(rb_cFalseClass, "^", false_xor, 1);
