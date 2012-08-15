@@ -92,6 +92,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		vm.$(OBJEXT) \
 		vm_dump.$(OBJEXT) \
 		vm_backtrace.$(OBJEXT) \
+		vm_trace.$(OBJEXT) \
 		thread.$(OBJEXT) \
 		cont.$(OBJEXT) \
 		$(BUILTIN_ENCOBJS) \
@@ -781,6 +782,9 @@ id.$(OBJEXT): {$(VPATH)}id.c $(RUBY_H_INCLUDES) $(ID_H_INCLUDES)
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_backtrace.c \
   $(VM_CORE_H_INCLUDES) $(RUBY_H_INCLUDES) \
   {$(VPATH)}internal.h {$(VPATH)}iseq.h
+vm_trace.$(OBJEXT): {$(VPATH)}vm_trace.c \
+  $(VM_CORE_H_INCLUDES) $(RUBY_H_INCLUDES) \
+  {$(VPATH)}internal.h
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c $(RUBY_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h {$(VPATH)}internal.h
 prelude.$(OBJEXT): {$(VPATH)}prelude.c $(RUBY_H_INCLUDES) \

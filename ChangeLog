@@ -1,3 +1,14 @@
+Wed Aug 15 11:39:53 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c: separate trace_func related functions from
+	  thread.c.
+
+	* thread.c: ditto.
+
+	* common.mk: add vm_trace.o.
+
+	* inits.c: call Init_vm_trace().
+
 Tue Aug 14 16:25:46 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/erb/test_erb.rb (test_html_escape): add assertions for the
