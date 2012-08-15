@@ -6092,14 +6092,13 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE return_enumerator
 	rb_scan_args(argc, argv, "01", &rs);
     }
 
-    if (return_enumerator_p) {
-	RETURN_ENUMERATOR(str, argc, argv);
-    }
-
     if (rb_block_given_p()) {
 	yieldp = Qtrue;
     }
     else {
+	if (return_enumerator_p)
+	    RETURN_ENUMERATOR(str, argc, argv);
+
 	yieldp = Qfalse;
 	ary = rb_ary_new();
     }
@@ -6265,14 +6264,13 @@ rb_str_enumerate_bytes(VALUE str, VALUE return_enumerator_p)
     long i;
     VALUE ary, yieldp;
 
-    if (return_enumerator_p) {
-	RETURN_ENUMERATOR(str, 0, 0);
-    }
-
     if (rb_block_given_p()) {
 	yieldp = Qtrue;
     }
     else {
+	if (return_enumerator_p)
+	    RETURN_ENUMERATOR(str, 0, 0);
+
 	yieldp = Qfalse;
 	ary = rb_ary_new2(RSTRING_LEN(str));
     }
@@ -6333,17 +6331,17 @@ rb_str_enumerate_chars(VALUE str, VALUE return_enumerator_p)
     rb_encoding *enc;
     VALUE ary, yieldp;
 
-    if (return_enumerator_p) {
-	RETURN_ENUMERATOR(str, 0, 0);
-    }
-
     if (rb_block_given_p()) {
 	yieldp = Qtrue;
     }
     else {
+	if (return_enumerator_p)
+	    RETURN_ENUMERATOR(str, 0, 0);
+
 	yieldp = Qfalse;
 	ary = rb_ary_new();
     }
+
     str = rb_str_new4(str);
     ptr = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
@@ -6424,14 +6422,13 @@ rb_str_enumerate_codepoints(VALUE str, VALUE return_enumerator_p)
     if (single_byte_optimizable(str))
 	return rb_str_enumerate_bytes(str, return_enumerator_p);
 
-    if (return_enumerator_p) {
-	RETURN_ENUMERATOR(str, 0, 0);
-    }
-
     if (rb_block_given_p()) {
 	yieldp = Qtrue;
     }
     else {
+	if (return_enumerator_p)
+	    RETURN_ENUMERATOR(str, 0, 0);
+
 	yieldp = Qfalse;
 	ary = rb_ary_new();
     }
@@ -6490,6 +6487,7 @@ rb_str_codepoints(VALUE str)
 {
     return rb_str_enumerate_codepoints(str, Qfalse);
 }
+
 
 static long
 chopped_length(VALUE str)
