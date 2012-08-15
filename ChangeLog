@@ -1,3 +1,14 @@
+Wed Aug 15 16:23:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (ruby__sfvwrite): set buffer length and exclude
+	  uninitialized garbage to get correct coderange.
+
+	* sprintf.c (ruby__sfvextra): the result should be infected by the
+	  given strings.
+
+	* sprintf.c (ruby__sfvwrite): set buffer length and exclude
+	  uninitialized garbage to get correct coderange.
+
 Wed Aug 15 16:20:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (ID_H_TARGET): make timestamp file of id.h so that the

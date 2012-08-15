@@ -1174,6 +1174,7 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
 	len -= n;
     }
     fp->_p = (unsigned char *)buf;
+    rb_str_set_len(result, buf - RSTRING_PTR(result));
     return 0;
 }
 
