@@ -1210,6 +1210,7 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
     StringValueCStr(value);
     RSTRING_GETMEM(value, cp, *sz);
     ((rb_printf_buffer_extra *)fp)->value = value;
+    OBJ_INFECT(result, value);
     return cp;
 }
 
