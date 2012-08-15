@@ -1,3 +1,8 @@
+Wed Aug 15 18:05:37 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/test/unit.rb (Test::Unit::Runner#failed): need to delete the
+	  status line if the status is skipped and -q is specified.
+
 Wed Aug 15 16:26:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (ruby__sfvextra): the result should be infected by the

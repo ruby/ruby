@@ -725,7 +725,10 @@ module Test
         @report_count ||= 0
         report.each do |msg|
           if msg.start_with? "Skipped:"
-            next if @options[:hide_skip]
+            if @options[:hide_skip]
+              del_status_line
+              next
+            end
             color = @skipped_color
           else
             color = @failed_color
