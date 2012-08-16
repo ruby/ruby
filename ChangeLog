@@ -1,3 +1,9 @@
+Thu Aug 16 19:15:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_class_initialize): forbid inheriting uninitialized
+	  class.  another class tree not based on BasicObject cannot exist.
+	  [ruby-core:47148][Bug #6863]
+
 Thu Aug 16 11:52:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/-ext-/test_printf.rb (Test_SPrintf#test_{taint,untrust}): use

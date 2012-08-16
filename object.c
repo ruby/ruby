@@ -1616,6 +1616,9 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
     else {
 	rb_scan_args(argc, argv, "01", &super);
 	rb_check_inheritable(super);
+	if (super != rb_cBasicObject && !RCLASS_SUPER(super)) {
+	    rb_raise(rb_eTypeError, "can't inherit uninitialized class");
+	}
     }
     RCLASS_SUPER(klass) = super;
     rb_make_metaclass(klass, RBASIC(super)->klass);

@@ -203,6 +203,8 @@ class TestClass < Test::Unit::TestCase
   def test_uninitialized
     assert_raise(TypeError) { Class.allocate.new }
     assert_raise(TypeError) { Class.allocate.superclass }
+    bug6863 = '[ruby-core:47148]'
+    assert_raise(TypeError, bug6863) { Class.new(Class.allocate) }
   end
 
   def test_nonascii_name
