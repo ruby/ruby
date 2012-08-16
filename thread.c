@@ -568,8 +568,6 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     RBASIC(th->async_errinfo_mask_stack)->klass = 0;
 
     native_mutex_initialize(&th->interrupt_lock);
-    if (GET_VM()->event_hooks != NULL)
-	th->event_flags |= RUBY_EVENT_VM;
 
     /* kick thread */
     st_insert(th->vm->living_threads, thval, (st_data_t) th->thread_id);

@@ -30,60 +30,79 @@
 
 /* (1) trace mechanisms */
 
-#define RUBY_EVENT_REMOVED 0x1000000
+typedef enum {
+    RUBY_HOOK_FLAG_SAFE    = 0x01,
+    RUBY_HOOK_FLAG_DELETED = 0x02,
+} rb_hook_flag_t;
 
-enum {
-    EVENT_RUNNING_NOTHING,
-    EVENT_RUNNING_TRACE = 1,
-    EVENT_RUNNING_THREAD = 2,
-    EVENT_RUNNING_VM = 4,
-    EVENT_RUNNING_EVENT_MASK = EVENT_RUNNING_VM|EVENT_RUNNING_THREAD
-};
+typedef struct rb_event_hook_struct {
+    rb_hook_flag_t hook_flags;
+    rb_event_flag_t events;
+    rb_event_hook_func_t func;
+    VALUE data;
+    struct rb_event_hook_struct *next;
+} rb_event_hook_t;
 
-static VALUE thread_suppress_tracing(rb_thread_t *th, int ev, VALUE (*func)(VALUE, int), VALUE arg, int always);
+#define MAX_EVENT_NUM 32
 
-struct event_call_args {
-    rb_thread_t *th;
-    VALUE klass;
-    VALUE self;
-    VALUE proc;
-    ID id;
-    rb_event_flag_t event;
-};
+static int ruby_event_flag_count[MAX_EVENT_NUM] = {0};
 
-static rb_event_hook_t *
-alloc_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
+/* Safe API.  Callback will be called under PUSH_TAG() */
+void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data);
+int rb_remove_event_hook(rb_event_hook_func_t func);
+void rb_thread_add_event_hook(VALUE thval, rb_event_hook_func_t func, rb_event_flag_t events, VALUE data);
+int rb_thread_remove_event_hook(VALUE thval, rb_event_hook_func_t func);
+
+/* Raw API.  Callback will be called without PUSH_TAG() */
+void rb_add_raw_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data);
+int rb_remove_raw_event_hook(rb_event_hook_func_t func);
+void rb_thread_add_raw_event_hook(VALUE thval, rb_event_hook_func_t func, rb_event_flag_t events, VALUE data);
+int rb_thread_remove_raw_event_hook(VALUE thval, rb_event_hook_func_t func);
+
+/* called from vm.c */
+
+void
+vm_trace_mark_event_hooks(rb_hook_list_t *hooks)
 {
-    rb_event_hook_t *hook = ALLOC(rb_event_hook_t);
-    hook->func = func;
-    hook->flag = events;
-    hook->data = data;
-    return hook;
-}
-
-static void
-thread_reset_event_flags(rb_thread_t *th)
-{
-    rb_event_hook_t *hook = th->event_hooks;
-    rb_event_flag_t flag = th->event_flags & RUBY_EVENT_VM;
+    rb_event_hook_t *hook = hooks->hooks;
 
     while (hook) {
-	if (!(flag & RUBY_EVENT_REMOVED))
-	    flag |= hook->flag;
+	rb_gc_mark(hook->data);
 	hook = hook->next;
     }
-    th->event_flags = flag;
+}
+
+/* ruby_vm_event_flags management */
+
+static void
+recalc_add_ruby_vm_event_flags(rb_event_flag_t events)
+{
+    int i;
+    ruby_vm_event_flags = 0;
+
+    for (i=0; i<MAX_EVENT_NUM; i++) {
+	if (events & (1 << i)) {
+	    ruby_event_flag_count[i]++;
+	}
+	ruby_vm_event_flags |= ruby_event_flag_count[i] ? (1<<i) : 0;
+    }
 }
 
 static void
-rb_threadptr_add_event_hook(rb_thread_t *th,
-			 rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
+recalc_remove_ruby_vm_event_flags(rb_event_flag_t events)
 {
-    rb_event_hook_t *hook = alloc_event_hook(func, events, data);
-    hook->next = th->event_hooks;
-    th->event_hooks = hook;
-    thread_reset_event_flags(th);
+    int i;
+    ruby_vm_event_flags = 0;
+
+    for (i=0; i<MAX_EVENT_NUM; i++) {
+	if (events & (1 << i)) {
+	    ruby_event_flag_count[i]--;
+	}
+	ruby_vm_event_flags |= ruby_event_flag_count[i] ? (1<<i) : 0;
+    }
 }
+
+/* add/remove hooks */
 
 static rb_thread_t *
 thval2thread_t(VALUE thval)
@@ -93,180 +112,82 @@ thval2thread_t(VALUE thval)
     return th;
 }
 
-void
-rb_thread_add_event_hook(VALUE thval,
-			 rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
+static rb_event_hook_t *
+alloc_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, rb_hook_flag_t hook_flags)
 {
-    rb_threadptr_add_event_hook(thval2thread_t(thval), func, events, data);
-}
-
-static int
-set_threads_event_flags_i(st_data_t key, st_data_t val, st_data_t flag)
-{
-    VALUE thval = key;
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
-
-    if (flag) {
-	th->event_flags |= RUBY_EVENT_VM;
-    }
-    else {
-	th->event_flags &= (~RUBY_EVENT_VM);
-    }
-    return ST_CONTINUE;
+    rb_event_hook_t *hook = ALLOC(rb_event_hook_t);
+    hook->hook_flags = hook_flags;
+    hook->events = events;
+    hook->func = func;
+    hook->data = data;
+    return hook;
 }
 
 static void
-set_threads_event_flags(int flag)
+connect_event_hook(rb_hook_list_t *list, rb_event_hook_t *hook)
 {
-    st_foreach(GET_VM()->living_threads, set_threads_event_flags_i, (st_data_t) flag);
+    hook->next = list->hooks;
+    list->hooks = hook;
+    recalc_add_ruby_vm_event_flags(hook->events);
+    list->events |= hook->events;
 }
 
-static inline int
-exec_event_hooks(const rb_event_hook_t *hook, rb_event_flag_t flag, VALUE self, ID id, VALUE klass)
+static void
+rb_threadptr_add_event_hook(rb_thread_t *th, rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, rb_hook_flag_t hook_flags)
 {
-    int removed = 0;
-    for (; hook; hook = hook->next) {
-	if (hook->flag & RUBY_EVENT_REMOVED) {
-	    removed++;
-	    continue;
-	}
-	if (flag & hook->flag) {
-	    (*hook->func)(flag, hook->data, self, id, klass);
-	}
-    }
-    return removed;
-}
-
-static int remove_defered_event_hook(rb_event_hook_t **root);
-
-static VALUE
-thread_exec_event_hooks(VALUE args, int running)
-{
-    struct event_call_args *argp = (struct event_call_args *)args;
-    rb_thread_t *th = argp->th;
-    rb_event_flag_t flag = argp->event;
-    VALUE self = argp->self;
-    ID id = argp->id;
-    VALUE klass = argp->klass;
-    const rb_event_flag_t wait_event = th->event_flags;
-    int removed;
-
-    if (self == rb_mRubyVMFrozenCore) return 0;
-
-    if ((wait_event & flag) && !(running & EVENT_RUNNING_THREAD)) {
-	th->tracing |= EVENT_RUNNING_THREAD;
-	removed = exec_event_hooks(th->event_hooks, flag, self, id, klass);
-	th->tracing &= ~EVENT_RUNNING_THREAD;
-	if (removed) {
-	    remove_defered_event_hook(&th->event_hooks);
-	}
-    }
-    if (wait_event & RUBY_EVENT_VM) {
-	if (th->vm->event_hooks == NULL) {
-	    th->event_flags &= (~RUBY_EVENT_VM);
-	}
-	else if (!(running & EVENT_RUNNING_VM)) {
-	    th->tracing |= EVENT_RUNNING_VM;
-	    removed = exec_event_hooks(th->vm->event_hooks, flag, self, id, klass);
-	    th->tracing &= ~EVENT_RUNNING_VM;
-	    if (removed) {
-		remove_defered_event_hook(&th->vm->event_hooks);
-	    }
-	}
-    }
-    return 0;
+    rb_event_hook_t *hook = alloc_event_hook(func, events, data, hook_flags);
+    connect_event_hook(&th->event_hooks, hook);
 }
 
 void
-rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t flag, VALUE self, ID id, VALUE klass)
+rb_thread_add_event_hook(VALUE thval, rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 {
-    const VALUE errinfo = th->errinfo;
-    struct event_call_args args;
-    args.th = th;
-    args.event = flag;
-    args.self = self;
-    args.id = id;
-    args.klass = klass;
-    args.proc = 0;
-    thread_suppress_tracing(th, EVENT_RUNNING_EVENT_MASK, thread_exec_event_hooks, (VALUE)&args, FALSE);
-    th->errinfo = errinfo;
+    rb_threadptr_add_event_hook(thval2thread_t(thval), func, events, data, RUBY_HOOK_FLAG_SAFE);
 }
 
 void
 rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 {
-    rb_event_hook_t *hook = alloc_event_hook(func, events, data);
-    rb_vm_t *vm = GET_VM();
-
-    hook->next = vm->event_hooks;
-    vm->event_hooks = hook;
-
-    set_threads_event_flags(1);
+    rb_event_hook_t *hook = alloc_event_hook(func, events, data, RUBY_HOOK_FLAG_SAFE);
+    connect_event_hook(&GET_VM()->event_hooks, hook);
 }
 
-static int
-defer_remove_event_hook(rb_event_hook_t *hook, rb_event_hook_func_t func)
+void
+rb_thread_add_raw_event_hook(VALUE thval, rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 {
+    rb_threadptr_add_event_hook(thval2thread_t(thval), func, events, data, 0);
+}
+
+void
+rb_add_raw_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
+{
+    rb_event_hook_t *hook = alloc_event_hook(func, events, data, 0);
+    connect_event_hook(&GET_VM()->event_hooks, hook);
+}
+
+/* if func is 0, then clear all funcs */
+static int
+remove_event_hook_by_func(rb_hook_list_t *list, rb_event_hook_func_t func)
+{
+    int ret = 0;
+    rb_event_hook_t *hook = list->hooks;
+
     while (hook) {
 	if (func == 0 || hook->func == func) {
-	    hook->flag |= RUBY_EVENT_REMOVED;
+	    hook->hook_flags |= RUBY_HOOK_FLAG_DELETED;
+	    ret+=1;
+	    list->need_clean++;
 	}
 	hook = hook->next;
     }
-    return -1;
-}
 
-static int
-remove_event_hook(rb_event_hook_t **root, rb_event_hook_func_t func)
-{
-    rb_event_hook_t *hook = *root, *next;
-
-    while (hook) {
-	next = hook->next;
-	if (func == 0 || hook->func == func || (hook->flag & RUBY_EVENT_REMOVED)) {
-	    *root = next;
-	    xfree(hook);
-	}
-	else {
-	    root = &hook->next;
-	}
-	hook = next;
-    }
-    return -1;
-}
-
-static int
-remove_defered_event_hook(rb_event_hook_t **root)
-{
-    rb_event_hook_t *hook = *root, *next;
-
-    while (hook) {
-	next = hook->next;
-	if (hook->flag & RUBY_EVENT_REMOVED) {
-	    *root = next;
-	    xfree(hook);
-	}
-	else {
-	    root = &hook->next;
-	}
-	hook = next;
-    }
-    return -1;
+    return ret;
 }
 
 static int
 rb_threadptr_remove_event_hook(rb_thread_t *th, rb_event_hook_func_t func)
 {
-    int ret;
-    if (th->tracing & EVENT_RUNNING_THREAD) {
-	ret = defer_remove_event_hook(th->event_hooks, func);
-    }
-    else {
-	ret = remove_event_hook(&th->event_hooks, func);
-    }
-    thread_reset_event_flags(th);
-    return ret;
+    return remove_event_hook_by_func(&th->event_hooks, func);
 }
 
 int
@@ -275,53 +196,10 @@ rb_thread_remove_event_hook(VALUE thval, rb_event_hook_func_t func)
     return rb_threadptr_remove_event_hook(thval2thread_t(thval), func);
 }
 
-static rb_event_hook_t *
-search_live_hook(rb_event_hook_t *hook)
-{
-    while (hook) {
-	if (!(hook->flag & RUBY_EVENT_REMOVED))
-	    return hook;
-	hook = hook->next;
-    }
-    return NULL;
-}
-
-static int
-running_vm_event_hooks(st_data_t key, st_data_t val, st_data_t data)
-{
-    rb_thread_t *th = thval2thread_t((VALUE)key);
-    if (!(th->tracing & EVENT_RUNNING_VM)) return ST_CONTINUE;
-    *(rb_thread_t **)data = th;
-    return ST_STOP;
-}
-
-static rb_thread_t *
-vm_event_hooks_running_thread(rb_vm_t *vm)
-{
-    rb_thread_t *found = NULL;
-    st_foreach(vm->living_threads, running_vm_event_hooks, (st_data_t)&found);
-    return found;
-}
-
 int
 rb_remove_event_hook(rb_event_hook_func_t func)
 {
-    rb_vm_t *vm = GET_VM();
-    rb_event_hook_t *hook = search_live_hook(vm->event_hooks);
-    int ret;
-
-    if (vm_event_hooks_running_thread(vm)) {
-	ret = defer_remove_event_hook(vm->event_hooks, func);
-    }
-    else {
-	ret = remove_event_hook(&vm->event_hooks, func);
-    }
-
-    if (hook && !search_live_hook(vm->event_hooks)) {
-	set_threads_event_flags(0);
-    }
-
-    return ret;
+    return remove_event_hook_by_func(&GET_VM()->event_hooks, func);
 }
 
 static int
@@ -338,6 +216,147 @@ rb_clear_trace_func(void)
 {
     st_foreach(GET_VM()->living_threads, clear_trace_func_i, (st_data_t) 0);
     rb_remove_event_hook(0);
+}
+
+/* invoke hooks */
+
+static void
+clean_hooks(rb_hook_list_t *list)
+{
+    rb_event_hook_t *hook = list->hooks, *prev = 0;
+
+    list->events = 0;
+    list->need_clean = 0;
+
+    while (hook) {
+	if (hook->hook_flags & RUBY_HOOK_FLAG_DELETED) {
+	    if (prev == 0) {
+		/* start of list */
+		list->hooks = hook->next;
+	    }
+	    else {
+		prev->next = hook->next;
+	    }
+
+	    recalc_remove_ruby_vm_event_flags(hook->events);
+	    xfree(hook);
+	    goto next_iter;
+	}
+	else {
+	    list->events |= hook->events; /* update active events */
+	}
+	prev = hook;
+      next_iter:
+	hook = hook->next;
+    }
+}
+
+static inline int
+exec_hooks(rb_thread_t *th, rb_hook_list_t *list, rb_event_flag_t event, VALUE self, ID id, VALUE klass)
+{
+    rb_event_hook_t *hook;
+    int state;
+    volatile int raised;
+
+    if (UNLIKELY(list->need_clean > 0)) {
+	clean_hooks(list);
+    }
+
+    raised = rb_threadptr_reset_raised(th);
+
+    hook = list->hooks;
+
+    /* TODO: Support !RUBY_HOOK_FLAG_SAFE hooks */
+
+    TH_PUSH_TAG(th);
+    if ((state = TH_EXEC_TAG()) == 0) {
+	while (hook) {
+	    if (LIKELY(!(hook->hook_flags & RUBY_HOOK_FLAG_DELETED)) && (event & hook->events)) {
+		(*hook->func)(event, hook->data, self, id, klass);
+	    }
+	    hook = hook->next;
+	}
+    }
+    TH_POP_TAG();
+
+    if (raised) {
+	rb_threadptr_set_raised(th);
+    }
+
+    return state;
+}
+
+void
+rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t event, VALUE self, ID id, VALUE klass)
+{
+    if (th->trace_running == 0 &&
+	self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
+	int state;
+	int outer_state = th->state;
+	th->state = 0;
+
+	th->trace_running = 1;
+	{
+	    const VALUE errinfo = th->errinfo;
+	    rb_hook_list_t *list;
+
+	    /* thread local traces */
+	    list = &th->event_hooks;
+	    if (list->events & event) {
+		state = exec_hooks(th, list, event, self, id, klass);
+		if (state) goto terminate;
+	    }
+
+	    /* vm global traces */
+	    list = &th->vm->event_hooks;
+	    if (list->events & event) {
+		state = exec_hooks(th, list, event, self, id, klass);
+		if (state) goto terminate;
+	    }
+	    th->errinfo = errinfo;
+	}
+      terminate:
+	th->trace_running = 0;
+
+	if (state) {
+	    TH_JUMP_TAG(th, state);
+	}
+	th->state = outer_state;
+    }
+}
+
+VALUE
+rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
+{
+    volatile int raised;
+    volatile int outer_state;
+    VALUE result = Qnil;
+    rb_thread_t *th = GET_THREAD();
+    int state;
+    int tracing = th->trace_running;
+
+    th->trace_running = 1;
+    raised = rb_threadptr_reset_raised(th);
+    outer_state = th->state;
+    th->state = 0;
+
+    PUSH_TAG();
+    if ((state = EXEC_TAG()) == 0) {
+	result = (*func)(arg);
+    }
+    POP_TAG();
+
+    if (raised) {
+	rb_threadptr_set_raised(th);
+    }
+    th->trace_running = tracing;
+
+    if (state) {
+	JUMP_TAG(state);
+    }
+
+    th->state = outer_state;
+    return result;
 }
 
 static void call_trace_func(rb_event_flag_t, VALUE data, VALUE self, ID id, VALUE klass);
@@ -393,7 +412,6 @@ set_trace_func(VALUE obj, VALUE trace)
     rb_remove_event_hook(call_trace_func);
 
     if (NIL_P(trace)) {
-	GET_THREAD()->tracing = EVENT_RUNNING_NOTHING;
 	return Qnil;
     }
 
@@ -412,7 +430,7 @@ thread_add_trace_func(rb_thread_t *th, VALUE trace)
 	rb_raise(rb_eTypeError, "trace_func needs to be Proc");
     }
 
-    rb_threadptr_add_event_hook(th, call_trace_func, RUBY_EVENT_ALL, trace);
+    rb_threadptr_add_event_hook(th, call_trace_func, RUBY_EVENT_ALL, trace, RUBY_HOOK_FLAG_SAFE);
 }
 
 /*
@@ -450,9 +468,9 @@ thread_set_trace_func_m(VALUE obj, VALUE trace)
     rb_threadptr_remove_event_hook(th, call_trace_func);
 
     if (NIL_P(trace)) {
-	th->tracing = EVENT_RUNNING_NOTHING;
 	return Qnil;
     }
+
     thread_add_trace_func(th, trace);
     return trace;
 }
@@ -482,27 +500,27 @@ get_event_name(rb_event_flag_t event)
     }
 }
 
-static VALUE
-call_trace_proc(VALUE args, int tracing)
+static void
+call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
 {
-    struct event_call_args *p = (struct event_call_args *)args;
     const char *srcfile = rb_sourcefile();
-    VALUE eventname = rb_str_new2(get_event_name(p->event));
+    VALUE eventname = rb_str_new2(get_event_name(event));
     VALUE filename = srcfile ? rb_str_new2(srcfile) : Qnil;
     VALUE argv[6];
     int line = rb_sourceline();
-    ID id = 0;
-    VALUE klass = 0;
+    rb_thread_t *th = GET_THREAD();
 
-    if (p->klass != 0) {
-	id = p->id;
-	klass = p->klass;
+    if (klass != 0) {
+	id = id;
+	klass = klass;
     }
     else {
-	rb_thread_method_id_and_class(p->th, &id, &klass);
+	rb_thread_method_id_and_class(th, &id, &klass);
     }
+
     if (id == ID_ALLOCATOR)
-      return Qnil;
+      return;
+
     if (klass) {
 	if (RB_TYPE_P(klass, T_ICLASS)) {
 	    klass = RBASIC(klass)->klass;
@@ -516,69 +534,10 @@ call_trace_proc(VALUE args, int tracing)
     argv[1] = filename;
     argv[2] = INT2FIX(line);
     argv[3] = id ? ID2SYM(id) : Qnil;
-    argv[4] = (p->self && srcfile) ? rb_binding_new() : Qnil;
+    argv[4] = (self && srcfile) ? rb_binding_new() : Qnil;
     argv[5] = klass ? klass : Qnil;
 
-    return rb_proc_call_with_block(p->proc, 6, argv, Qnil);
-}
-
-static void
-call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
-{
-    struct event_call_args args;
-
-    args.th = GET_THREAD();
-    args.event = event;
-    args.proc = proc;
-    args.self = self;
-    args.id = id;
-    args.klass = klass;
-    ruby_suppress_tracing(call_trace_proc, (VALUE)&args, FALSE);
-}
-
-VALUE
-ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
-{
-    rb_thread_t *th = GET_THREAD();
-    return thread_suppress_tracing(th, EVENT_RUNNING_TRACE, func, arg, always);
-}
-
-static VALUE
-thread_suppress_tracing(rb_thread_t *th, int ev, VALUE (*func)(VALUE, int), VALUE arg, int always)
-{
-    int state, tracing = th->tracing, running = tracing & ev;
-    volatile int raised;
-    volatile int outer_state;
-    VALUE result = Qnil;
-
-    if (running == ev && !always) {
-	return Qnil;
-    }
-    else {
-	th->tracing |= ev;
-    }
-
-    raised = rb_threadptr_reset_raised(th);
-    outer_state = th->state;
-    th->state = 0;
-
-    PUSH_TAG();
-    if ((state = EXEC_TAG()) == 0) {
-	result = (*func)(arg, running);
-    }
-
-    if (raised) {
-	rb_threadptr_set_raised(th);
-    }
-    POP_TAG();
-
-    th->tracing = tracing;
-    if (state) {
-	JUMP_TAG(state);
-    }
-    th->state = outer_state;
-
-    return result;
+    rb_proc_call_with_block(proc, 6, argv, Qnil);
 }
 
 /* (2-2) TracePoint API (not yet) */

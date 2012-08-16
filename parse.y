@@ -5418,7 +5418,7 @@ e_option_supplied(struct parser_params *parser)
 }
 
 static VALUE
-yycompile0(VALUE arg, int tracing)
+yycompile0(VALUE arg)
 {
     int n;
     NODE *tree;
@@ -5470,7 +5470,7 @@ yycompile(struct parser_params *parser, const char *f, int line)
 {
     ruby_sourcefile = ruby_strdup(f);
     ruby_sourceline = line - 1;
-    return (NODE *)ruby_suppress_tracing(yycompile0, (VALUE)parser, TRUE);
+    return (NODE *)rb_suppress_tracing(yycompile0, (VALUE)parser);
 }
 #endif /* !RIPPER */
 

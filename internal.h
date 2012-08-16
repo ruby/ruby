@@ -247,7 +247,7 @@ struct timeval rb_time_timeval(VALUE);
 
 /* thread.c */
 VALUE rb_obj_is_mutex(VALUE obj);
-VALUE ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always);
+VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
 void rb_thread_execute_interrupts(VALUE th);
 void rb_clear_trace_func(void);
 VALUE rb_get_coverages(void);

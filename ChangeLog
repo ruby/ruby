@@ -1,3 +1,47 @@
+Thu Aug 16 19:54:24 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c, vm_core.h: simplify tracing mechanism.
+
+	  (1) add rb_hook_list_t data structure which includes
+	      hooks, events (flag) and `need_clean' flag.
+	      If the last flag is true, then clean the hooks list.
+	      In other words, deleted hooks are contained by `hooks'.
+	      Cleanup process should run before traversing the list.
+	  (2) Change check mechanism
+	      See EXEC_EVENT_HOOK() in vm_core.h.
+	  (3) Add `raw' hooks APIs
+	      Normal hooks are guarded from exception by rb_protect().
+	      However, this protection is overhead for too simple
+	      functions which never cause exceptions.  `raw' hooks
+	      are executed without protection and faster.
+	      Now, we only provide registration APIs.  All `raw'
+	      hooks are kicked under protection (same as normal hooks).
+
+	* include/ruby/ruby.h: remove internal data definition and
+	  macros.
+
+	* internal.h (ruby_suppress_tracing), vm_trace.c: rename
+	  ruby_suppress_tracing() to rb_suppress_tracing()
+	  and remove unused function parameter.
+
+	* parse.y: fix to use renamed rb_suppress_tracing().
+
+	* thread.c (thread_create_core): no need to set RUBY_VM_VM.
+
+	* vm.c (mark_event_hooks): move definition to vm_trace.c.
+
+	* vm.c (ruby_vm_event_flags): add a global variable.
+	  This global variable represents all of Threads and VM's
+	  event masks (T1#events | T2#events | ... | VM#events).
+	  You can check the possibility kick trace func or not
+	  with ruby_vm_event_flags.
+	  ruby_vm_event_flags is maintained by vm_trace.c.
+
+	* cont.c (fiber_switch, rb_cont_call): restore tracing status.
+	  [Feature #4347]
+
+	* test/ruby/test_continuation.rb: ditto.
+
 Thu Aug 16 19:15:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_class_initialize): forbid inheriting uninitialized

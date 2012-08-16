@@ -290,6 +290,12 @@ struct rb_objspace;
 void rb_objspace_free(struct rb_objspace *);
 #endif
 
+typedef struct rb_hook_list_struct {
+    struct rb_event_hook_struct *hooks;
+    rb_event_flag_t events;
+    int need_clean;
+} rb_hook_list_t;
+
 typedef struct rb_vm_struct {
     VALUE self;
 
@@ -325,7 +331,7 @@ typedef struct rb_vm_struct {
     } trap_list[RUBY_NSIG];
 
     /* hook */
-    rb_event_hook_t *event_hooks;
+    rb_hook_list_t event_hooks;
 
     int src_encoding_index;
 
@@ -513,9 +519,8 @@ typedef struct rb_thread_struct {
     VALUE stat_insn_usage;
 
     /* tracer */
-    rb_event_hook_t *event_hooks;
-    rb_event_flag_t event_flags;
-    int tracing;
+    rb_hook_list_t event_hooks;
+    int trace_running;
 
     /* fiber */
     VALUE fiber;
@@ -764,6 +769,7 @@ int rb_autoloading_value(VALUE mod, ID id, VALUE* value);
 #if RUBY_VM_THREAD_MODEL == 2
 extern rb_thread_t *ruby_current_thread;
 extern rb_vm_t *ruby_current_vm;
+extern rb_event_flag_t ruby_vm_event_flags;
 
 #define GET_VM() ruby_current_vm
 #define GET_THREAD() ruby_current_thread
@@ -817,9 +823,8 @@ void
 rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t flag, VALUE self, ID id, VALUE klass);
 
 #define EXEC_EVENT_HOOK(th, flag, self, id, klass) do { \
-    rb_event_flag_t wait_event__ = (th)->event_flags; \
-    if (UNLIKELY(wait_event__)) { \
-	if (wait_event__ & ((flag) | RUBY_EVENT_VM)) { \
+    if (UNLIKELY(ruby_vm_event_flags & (flag))) { \
+	if (((th)->event_hooks.events | (th)->vm->event_hooks.events) & (flag)) { \
 	    rb_threadptr_exec_event_hooks((th), (flag), (self), (id), (klass)); \
 	} \
     } \

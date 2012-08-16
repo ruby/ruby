@@ -83,6 +83,7 @@ VALUE ruby_vm_const_missing_count = 0;
 char ruby_vm_redefined_flag[BOP_LAST_];
 rb_thread_t *ruby_current_thread = 0;
 rb_vm_t *ruby_current_vm = 0;
+rb_event_flag_t ruby_vm_event_flags;
 
 static void thread_free(void *ptr);
 
@@ -1462,14 +1463,7 @@ vm_mark_each_thread_func(st_data_t key, st_data_t value, st_data_t dummy)
     return ST_CONTINUE;
 }
 
-static void
-mark_event_hooks(rb_event_hook_t *hook)
-{
-    while (hook) {
-	rb_gc_mark(hook->data);
-	hook = hook->next;
-    }
-}
+void vm_trace_mark_event_hooks(rb_hook_list_t *hooks);
 
 void
 rb_vm_mark(void *ptr)
@@ -1495,7 +1489,7 @@ rb_vm_mark(void *ptr)
 	    rb_mark_tbl(vm->loading_table);
 	}
 
-	mark_event_hooks(vm->event_hooks);
+	vm_trace_mark_event_hooks(&vm->event_hooks);
 
 	for (i = 0; i < RUBY_NSIG; i++) {
 	    if (vm->trap_list[i].cmd)
@@ -1671,7 +1665,7 @@ rb_thread_mark(void *ptr)
 				 sizeof(th->machine_regs) / sizeof(VALUE));
 	}
 
-	mark_event_hooks(th->event_hooks);
+	vm_trace_mark_event_hooks(&th->event_hooks);
     }
 
     RUBY_MARK_LEAVE("thread");
