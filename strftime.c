@@ -127,14 +127,8 @@ extern char *strchr();
 
 /* min --- return minimum of two numbers */
 
-#ifndef __STDC__
-static inline int
-min(a, b)
-int a, b;
-#else
 static inline int
 min(int a, int b)
-#endif
 {
 	return (a < b ? a : b);
 }
@@ -143,14 +137,8 @@ min(int a, int b)
 
 /* max --- return maximum of two numbers */
 
-#ifndef __STDC__
-static inline int
-max(a, b)
-int a, b;
-#else
 static inline int
 max(int a, int b)
-#endif
 {
 	return (a > b ? a : b);
 }
@@ -852,14 +840,8 @@ rb_strftime_timespec(char *s, size_t maxsize, const char *format, rb_encoding *e
 
 /* isleap --- is a year a leap year? */
 
-#ifndef __STDC__
-static int
-isleap(year)
-long year;
-#else
 static int
 isleap(long year)
-#endif
 {
 	return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);
 }
@@ -893,14 +875,8 @@ vtm2tm_noyear(const struct vtm *vtm, struct tm *result)
 #ifdef POSIX2_DATE
 /* iso8601wknum --- compute week number according to ISO 8601 */
 
-#ifndef __STDC__
-static int
-iso8601wknum(timeptr)
-const struct tm *timeptr;
-#else
 static int
 iso8601wknum(const struct tm *timeptr)
-#endif
 {
 	/*
 	 * From 1003.2:
@@ -1020,15 +996,8 @@ iso8601wknum_v(const struct vtm *vtm)
 
 /* With thanks and tip of the hatlo to ado@elsie.nci.nih.gov */
 
-#ifndef __STDC__
-static int
-weeknumber(timeptr, firstweekday)
-const struct tm *timeptr;
-int firstweekday;
-#else
 static int
 weeknumber(const struct tm *timeptr, int firstweekday)
-#endif
 {
 	int wday = timeptr->tm_wday;
 	int ret;
@@ -1164,9 +1133,7 @@ static char *array[] =
 /* main routine. */
 
 int
-main(argc, argv)
-int argc;
-char **argv;
+main(int argc, char **argv)
 {
 	long time();
 

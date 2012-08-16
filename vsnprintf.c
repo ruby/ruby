@@ -243,9 +243,7 @@ struct __suio {
  * This routine is large and unsightly, but most of the ugliness due
  * to the three different kinds of output buffering is handled here.
  */
-static int BSD__sfvwrite(fp, uio)
-	register FILE *fp;
-	register struct __suio *uio;
+static int BSD__sfvwrite( register FILE *fp, register struct __suio *uio)
 {
 	register size_t len;
 	register const char *p;
@@ -1207,10 +1205,7 @@ extern char *BSD__dtoa __P((double, int, int, int *, int *, char **));
 extern char *BSD__hdtoa(double, const char *, int, int *, int *, char **);
 
 static char *
-cvt(value, ndigits, flags, sign, decpt, ch, length, buf)
-	double value;
-	int ndigits, flags, *decpt, ch, *length;
-	char *sign, *buf;
+cvt(double value, int ndigits, int flags, char *sign, int *decpt, int ch, int *length, char *buf)
 {
 	int mode, dsgn;
 	char *digits, *bp, *rve;
@@ -1256,9 +1251,7 @@ cvt(value, ndigits, flags, sign, decpt, ch, length, buf)
 }
 
 static int
-exponent(p0, exp, fmtch)
-	char *p0;
-	int exp, fmtch;
+exponent(char *p0, int exp, int fmtch)
 {
 	register char *p, *t;
 	char expbuf[MAXEXP];
