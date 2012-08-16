@@ -30,24 +30,20 @@ class Test_SPrintf < Test::Unit::TestCase
   end
 
   def test_taint
-    def self.to_s
-      super.taint
-    end
+    obj = Object.new.taint
     assert_equal({to_s: true, inspect: true},
                  {
-                   to_s: Bug::Printf.s(self).tainted?,
-                   inspect: Bug::Printf.v(self).tainted?,
+                   to_s: Bug::Printf.s(obj).tainted?,
+                   inspect: Bug::Printf.v(obj).tainted?,
                  })
   end
 
-  def test_trust
-    def self.to_s
-      super.untrust
-    end
+  def test_untrust
+    obj = Object.new.untrust
     assert_equal({to_s: true, inspect: true},
                  {
-                   to_s: Bug::Printf.s(self).untrusted?,
-                   inspect: Bug::Printf.v(self).untrusted?,
+                   to_s: Bug::Printf.s(obj).untrusted?,
+                   inspect: Bug::Printf.v(obj).untrusted?,
                  })
   end
 end

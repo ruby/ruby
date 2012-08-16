@@ -1,3 +1,9 @@
+Thu Aug 16 11:52:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/-ext-/test_printf.rb (Test_SPrintf#test_{taint,untrust}): use
+	  plain object so that the results of to_s and inspect are infected.
+	  [ruby-dev:46053] [Bug #6881]
+
 Thu Aug 16 09:46:07 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* strftime.c: remove unnecessary macros to check traditional C.
