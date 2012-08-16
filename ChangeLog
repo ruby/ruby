@@ -1,3 +1,10 @@
+Thu Aug 16 09:46:07 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c: remove unnecessary macros to check traditional C.
+	  https://github.com/ruby/ruby/pull/46 by lateau (Daehyub Kim).
+
+	* vsnprintf.c: remove K&R.
+
 Wed Aug 15 20:47:49 2012  Benoit Daloze  <eregontp@gmail.com>
 
 	* object.c (rb_obj_inspect): Kernel#inspect: do not call #to_s. A class
