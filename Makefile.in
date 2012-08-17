@@ -261,8 +261,6 @@ reconfig config.status:	$(srcdir)/configure $(srcdir)/enc/Makefile.in \
 $(srcdir)/configure: $(srcdir)/configure.in
 	$(CHDIR) $(srcdir) && exec $(AUTOCONF)
 
-incs: id.h
-
 # Things which should be considered:
 # * with gperf v.s. without gperf
 # * committers may have various versions of gperf

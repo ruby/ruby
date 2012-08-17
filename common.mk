@@ -848,7 +848,7 @@ srcs-enc: $(ENC_MK)
 	$(Q) $(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
 
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(VPATH)}known_errors.inc \
-      $(srcdir)/revision.h $(REVISION_H) enc/unicode/name2ctype.h
+      $(srcdir)/revision.h $(REVISION_H) enc/unicode/name2ctype.h $(ID_H_TARGET)
 
 insns: $(INSNS)
 
