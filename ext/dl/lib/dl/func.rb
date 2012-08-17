@@ -90,6 +90,9 @@ module DL
         if( !block )
           raise(RuntimeError, "block must be given.")
         end
+        unless block.lambda?
+          block = Class.new{define_method(:call, block)}.new.method(:call)
+        end
         if( @cfunc.ptr == 0 )
           cb = Proc.new{|*args|
             ary = @stack.unpack(args)
