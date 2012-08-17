@@ -48,7 +48,7 @@ static ID register_symid_str(ID, VALUE);
 #include "id.c"
 #endif
 
-#define is_notop_id(id) ((id)>tLAST_TOKEN)
+#define is_notop_id(id) ((id)>tLAST_OP_ID)
 #define is_local_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_LOCAL)
 #define is_global_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_GLOBAL)
 #define is_instance_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_INSTANCE)
@@ -799,21 +799,6 @@ static void token_info_pop(struct parser_params*, const char *token);
 %right tUMINUS_NUM tUMINUS
 %right tPOW
 %right '!' '~' tUPLUS
-
-%nonassoc idNULL
-%nonassoc idRespond_to
-%nonassoc idIFUNC
-%nonassoc idCFUNC
-%nonassoc id_core_set_method_alias
-%nonassoc id_core_set_variable_alias
-%nonassoc id_core_undef_method
-%nonassoc id_core_define_method
-%nonassoc id_core_define_singleton_method
-%nonassoc id_core_set_postexe
-%nonassoc id_core_hash_from_ary
-%nonassoc id_core_hash_merge_ary
-%nonassoc id_core_hash_merge_ptr
-%nonassoc id_core_hash_merge_kwd
 
 %token tLAST_TOKEN
 
