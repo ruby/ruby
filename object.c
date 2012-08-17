@@ -370,10 +370,10 @@ rb_obj_init_dup_clone(VALUE obj, VALUE orig)
 VALUE
 rb_any_to_s(VALUE obj)
 {
-    const char *cname = rb_obj_classname(obj);
     VALUE str;
+    VALUE cname = rb_class_name(CLASS_OF(obj));
 
-    str = rb_sprintf("#<%s:%p>", cname, (void*)obj);
+    str = rb_sprintf("#<%"PRIsVALUE":%p>", cname, (void*)obj);
     OBJ_INFECT(str, obj);
 
     return str;
@@ -484,11 +484,12 @@ rb_obj_inspect(VALUE obj)
 {
     if (rb_ivar_count(obj) > 0) {
 	VALUE str;
-	const char *c = rb_obj_classname(obj);
+	VALUE c = rb_class_name(CLASS_OF(obj));
 
-	str = rb_sprintf("-<%s:%p", c, (void*)obj);
+	str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void*)obj);
 	return rb_exec_recursive(inspect_obj, obj, str);
-    } else {
+    }
+    else {
 	return rb_any_to_s(obj);
     }
 }

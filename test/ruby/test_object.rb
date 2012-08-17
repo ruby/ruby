@@ -688,6 +688,13 @@ class TestObject < Test::Unit::TestCase
     s = x.to_s
     assert_equal(true, s.untrusted?)
     assert_equal(true, s.tainted?)
+
+    x = eval(<<-EOS)
+      class ToS\u{3042}
+        new.to_s
+      end
+    EOS
+    assert_match(/\bToS\u{3042}:/, x)
   end
 
   def test_inspect
@@ -713,6 +720,23 @@ class TestObject < Test::Unit::TestCase
       "to_s"
     end
     assert_match(/\A#<Object:0x\h+>\z/, x.inspect, feature6130)
+
+    x = eval(<<-EOS)
+      class Inspect\u{3042}
+        new.inspect
+      end
+    EOS
+    assert_match(/\bInspect\u{3042}:/, x)
+
+    x = eval(<<-EOS)
+      class Inspect\u{3042}
+        def initialize
+          @\u{3044} = 42
+        end
+        new.inspect
+      end
+    EOS
+    assert_match(/\bInspect\u{3042}:.* @\u{3044}=42\b/, x)
   end
 
   def test_exec_recursive

@@ -1,3 +1,8 @@
+Fri Aug 17 23:28:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_any_to_s, rb_obj_inspect): preserve encodings of class
+	  name and instance variable names.
+
 Fri Aug 17 12:39:33 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/dl/lib/dl/func.rb (DL::Function#bind): allow to return/break from
