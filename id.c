@@ -13,6 +13,8 @@
 
 #include "id.h"
 
+#include "vm_opts.h" /* for SUPPORT_JOKE */
+
 static void
 Init_id(void)
 {

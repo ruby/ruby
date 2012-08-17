@@ -65,8 +65,6 @@ method_ids = %w[
 #include "parse.h"
 #endif
 
-#include "vm_opts.h" /* for SUPPORT_JOKE */
-
 #define symIFUNC ID2SYM(idIFUNC)
 #define symCFUNC ID2SYM(idCFUNC)
 
@@ -109,16 +107,12 @@ enum ruby_method_ids {
 % method_ids.each do |token|
     t<%=token%>,
 % end
-#if SUPPORT_JOKE
     tBitblt,
     tAnswer,
-#endif
     tLAST_ID,
 #define TOKEN2ID(n) id##n = ((t##n<<ID_SCOPE_SHIFT)|ID_LOCAL)
-#if SUPPORT_JOKE
     TOKEN2ID(Bitblt),
     TOKEN2ID(Answer),
-#endif
 % method_ids.each do |token|
     TOKEN2ID(<%=token%>),
 % end

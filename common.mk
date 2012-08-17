@@ -616,7 +616,7 @@ RUBY_H_INCLUDES    = {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
 		     {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}st.h \
 		     {$(VPATH)}subst.h
 ENCODING_H_INCLUDES= {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
-ID_H_INCLUDES      = {$(VPATH)}id.h {$(VPATH)}vm_opts.h
+ID_H_INCLUDES      = {$(VPATH)}id.h
 VM_CORE_H_INCLUDES = {$(VPATH)}vm_core.h {$(VPATH)}thread_$(THREAD_MODEL).h \
 		     {$(VPATH)}node.h {$(VPATH)}method.h {$(VPATH)}atomic.h \
 		     $(ID_H_INCLUDES)
@@ -694,7 +694,7 @@ parse.$(OBJEXT): {$(VPATH)}parse.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h \
   $(ENCODING_H_INCLUDES) $(ID_H_INCLUDES) {$(VPATH)}regenc.h \
   {$(VPATH)}regex.h {$(VPATH)}util.h {$(VPATH)}lex.c \
   {$(VPATH)}defs/keywords {$(VPATH)}id.c {$(VPATH)}parse.y \
-  {$(VPATH)}parse.h \
+  {$(VPATH)}parse.h {$(VPATH)}vm_opts.h \
   {$(VPATH)}internal.h
 proc.$(OBJEXT): {$(VPATH)}proc.c {$(VPATH)}eval_intern.h \
   $(RUBY_H_INCLUDES) {$(VPATH)}gc.h $(VM_CORE_H_INCLUDES) \
@@ -781,7 +781,7 @@ vm_dump.$(OBJEXT): {$(VPATH)}vm_dump.c $(RUBY_H_INCLUDES) \
 debug.$(OBJEXT): {$(VPATH)}debug.c $(RUBY_H_INCLUDES) \
   $(ENCODING_H_INCLUDES) $(VM_CORE_H_INCLUDES) {$(VPATH)}eval_intern.h \
   {$(VPATH)}util.h {$(VPATH)}debug.h
-id.$(OBJEXT): {$(VPATH)}id.c $(RUBY_H_INCLUDES) $(ID_H_INCLUDES)
+id.$(OBJEXT): {$(VPATH)}id.c $(RUBY_H_INCLUDES) $(ID_H_INCLUDES) {$(VPATH)}vm_opts.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_backtrace.c \
   $(VM_CORE_H_INCLUDES) $(RUBY_H_INCLUDES) \
   {$(VPATH)}internal.h {$(VPATH)}iseq.h
