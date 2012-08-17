@@ -510,11 +510,7 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     int line = rb_sourceline();
     rb_thread_t *th = GET_THREAD();
 
-    if (klass != 0) {
-	id = id;
-	klass = klass;
-    }
-    else {
+    if (!klass) {
 	rb_thread_method_id_and_class(th, &id, &klass);
     }
 
