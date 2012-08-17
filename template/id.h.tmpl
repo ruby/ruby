@@ -45,6 +45,8 @@ method_ids = %w[
   __send__
   Initialize
   UScore
+  Bitblt
+  Answer
 ]
 %>
 #ifndef RUBY_ID_H
@@ -107,12 +109,8 @@ enum ruby_method_ids {
 % method_ids.each do |token|
     t<%=token%>,
 % end
-    tBitblt,
-    tAnswer,
     tLAST_ID,
 #define TOKEN2ID(n) id##n = ((t##n<<ID_SCOPE_SHIFT)|ID_LOCAL)
-    TOKEN2ID(Bitblt),
-    TOKEN2ID(Answer),
 % method_ids.each do |token|
     TOKEN2ID(<%=token%>),
 % end
