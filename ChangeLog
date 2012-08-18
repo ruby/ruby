@@ -1,3 +1,8 @@
+Sun Aug 19 01:24:32 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* enum.c: fix docs. https://github.com/ruby/ruby/pull/129 by
+	  richardkmichael (Richard Michael).
+
 Sun Aug 19 00:47:26 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* lib/fileutils.rb: fix typo.
