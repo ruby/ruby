@@ -621,29 +621,93 @@ class TestString < Test::Unit::TestCase
 
   def test_each_byte
     res = []
-    S("ABC").each_byte {|x| res << x }
+    s = S("ABC")
+    assert_equal s.object_id, s.each_byte {|x| res << x }.object_id
     assert_equal(65, res[0])
     assert_equal(66, res[1])
     assert_equal(67, res[2])
+
+    assert_equal 65, S("ABC").each_byte.next
+  end
+
+  def test_bytes
+    res = []
+    s = S("ABC")
+    assert_equal s.object_id, s.bytes {|x| res << x }.object_id
+    assert_equal(65, res[0])
+    assert_equal(66, res[1])
+    assert_equal(67, res[2])
+
+    assert_equal [65, 66, 67], S("ABC").bytes
+  end
+
+  def test_each_char
+    res = []
+    s = S("ABC")
+    assert_equal s.object_id, s.each_char {|x| res << x }.object_id
+    assert_equal("A", res[0])
+    assert_equal("B", res[1])
+    assert_equal("C", res[2])
+
+    assert_equal "A", S("ABC").each_char.next
+  end
+
+  def test_chars
+    res = []
+    s = S("ABC")
+    assert_equal s.object_id, s.chars {|x| res << x }.object_id
+    assert_equal("A", res[0])
+    assert_equal("B", res[1])
+    assert_equal("C", res[2])
+
+    assert_equal ["A", "B", "C"], S("ABC").chars
+  end
+
+  def test_each_codepoint
+    # Single byte optimization
+    assert_equal 65, S("ABC").each_codepoint.next
+
+    res = []
+    s = S("\u3042\u3044\u3046")
+    assert_equal s.object_id, s.each_codepoint {|x| res << x }.object_id
+    assert_equal(0x3042, res[0])
+    assert_equal(0x3044, res[1])
+    assert_equal(0x3046, res[2])
+
+    assert_equal 0x3042, S("\u3042\u3044\u3046").each_codepoint.next
+  end
+
+  def test_codepoints
+    # Single byte optimization
+    assert_equal [65, 66, 67], S("ABC").codepoints
+
+    res = []
+    s = S("\u3042\u3044\u3046")
+    assert_equal s.object_id, s.codepoints {|x| res << x }.object_id
+    assert_equal(0x3042, res[0])
+    assert_equal(0x3044, res[1])
+    assert_equal(0x3046, res[2])
+
+    assert_equal [0x3042, 0x3044, 0x3046], S("\u3042\u3044\u3046").codepoints
   end
 
   def test_each_line
     save = $/
     $/ = "\n"
     res=[]
-    S("hello\nworld").lines.each {|x| res << x}
+    S("hello\nworld").each_line {|x| res << x}
     assert_equal(S("hello\n"), res[0])
     assert_equal(S("world"),   res[1])
 
     res=[]
-    S("hello\n\n\nworld").lines(S('')).each {|x| res << x}
+    S("hello\n\n\nworld").each_line(S('')) {|x| res << x}
     assert_equal(S("hello\n\n\n"), res[0])
     assert_equal(S("world"),       res[1])
 
     $/ = "!"
 
     res=[]
-    S("hello!world").lines.each {|x| res << x}
+    S("hello!world").each_line {|x| res << x}
     assert_equal(S("hello!"), res[0])
     assert_equal(S("world"),  res[1])
 
@@ -659,6 +723,19 @@ class TestString < Test::Unit::TestCase
     s = nil
     "foo\nbar".each_line(nil) {|s2| s = s2 }
     assert_equal("foo\nbar", s)
+
+    assert_equal "hello\n", S("hello\nworld").each_line.next
+    assert_equal "hello\nworld", S("hello\nworld").each_line(nil).next
+  end
+  
+  def test_lines
+    res=[]
+    S("hello\nworld").lines {|x| res << x}
+    assert_equal(S("hello\n"), res[0])
+    assert_equal(S("world"),  res[1])
+
+    assert_equal ["hello\n", "world"], S("hello\nworld").lines
+    assert_equal ["hello\nworld"], S("hello\nworld").lines(nil)
   end
 
   def test_empty?

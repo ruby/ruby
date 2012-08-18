@@ -6072,45 +6072,8 @@ rb_str_split(VALUE str, const char *sep0)
 }
 
 
-/*
- *  call-seq:
- *     str.each_line(separator=$/) {|substr| block }   -> str
- *     str.each_line(separator=$/)                     -> an_enumerator
- *
- *     str.lines(separator=$/) {|substr| block }       -> str
- *     str.lines(separator=$/)                         -> an_enumerator
- *
- *  Splits <i>str</i> using the supplied parameter as the record separator
- *  (<code>$/</code> by default), passing each substring in turn to the supplied
- *  block. If a zero-length record separator is supplied, the string is split
- *  into paragraphs delimited by multiple successive newlines.
- *
- *  If no block is given, an enumerator is returned instead.
- *
- *     print "Example one\n"
- *     "hello\nworld".each_line {|s| p s}
- *     print "Example two\n"
- *     "hello\nworld".each_line('l') {|s| p s}
- *     print "Example three\n"
- *     "hello\n\n\nworld".each_line('') {|s| p s}
- *
- *  <em>produces:</em>
- *
- *     Example one
- *     "hello\n"
- *     "world"
- *     Example two
- *     "hel"
- *     "l"
- *     "o\nworl"
- *     "d"
- *     Example three
- *     "hello\n\n\n"
- *     "world"
- */
-
 static VALUE
-rb_str_each_line(int argc, VALUE *argv, VALUE str)
+rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE return_enumerator_p)
 {
     rb_encoding *enc;
     VALUE rs;
@@ -6120,6 +6083,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     VALUE line;
     int n;
     VALUE orig = str;
+    VALUE ary, yieldp;
 
     if (argc == 0) {
 	rs = rb_rs;
@@ -6127,10 +6091,27 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     else {
 	rb_scan_args(argc, argv, "01", &rs);
     }
-    RETURN_ENUMERATOR(str, argc, argv);
+
+    if (rb_block_given_p()) {
+	yieldp = Qtrue;
+    }
+    else {
+	if (return_enumerator_p)
+	    RETURN_ENUMERATOR(str, argc, argv);
+
+	yieldp = Qfalse;
+	ary = rb_ary_new();
+    }
+
     if (NIL_P(rs)) {
-	rb_yield(str);
-	return orig;
+	if (yieldp) {
+	    rb_yield(str);
+	    return orig;
+	}
+	else {
+	    rb_ary_push(ary, str);
+	    return ary;
+	}
     }
     str = rb_str_new4(str);
     ptr = p = s = RSTRING_PTR(str);
@@ -6153,7 +6134,12 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	    line = rb_str_new5(str, s, p - s);
 	    OBJ_INFECT(line, str);
 	    rb_enc_cr_str_copy_for_substr(line, str);
-	    rb_yield(line);
+	    if (yieldp) {
+		rb_yield(line);
+	    }
+	    else {
+		rb_ary_push(ary, line);
+	    }
 	    str_mod_check(str, ptr, len);
 	    s = p;
 	}
@@ -6189,7 +6175,12 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	    line = rb_str_new5(str, s, p - s + (rslen ? rslen : n));
 	    OBJ_INFECT(line, str);
 	    rb_enc_cr_str_copy_for_substr(line, str);
-	    rb_yield(line);
+	    if (yieldp) {
+		rb_yield(line);
+	    }
+	    else {
+		rb_ary_push(ary, line);
+	    }
 	    str_mod_check(str, ptr, len);
 	    s = p + (rslen ? rslen : n);
 	}
@@ -6201,23 +6192,115 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	line = rb_str_new5(str, s, pend - s);
 	OBJ_INFECT(line, str);
 	rb_enc_cr_str_copy_for_substr(line, str);
-	rb_yield(line);
+	if (yieldp) {
+	    rb_yield(line);
+	}
+	else {
+	    rb_ary_push(ary, line);
+	}
     }
 
-    return orig;
+    if (yieldp) {
+	return orig;
+    }
+    else {
+	return ary;
+    }
 }
 
+/*
+ *  call-seq:
+ *     str.lines(separator=$/) {|substr| block }       -> str
+ *     str.lines(separator=$/)                         -> an_array
+ *
+ *     str.each_line(separator=$/) {|substr| block }   -> str
+ *     str.each_line(separator=$/)                     -> an_enumerator
+ *
+ *  Splits <i>str</i> using the supplied parameter as the record separator
+ *  (<code>$/</code> by default), passing each substring in turn to the supplied
+ *  block. If a zero-length record separator is supplied, the string is split
+ *  into paragraphs delimited by multiple successive newlines.
+ *
+ *  If no block is given, an array or enumerator is returned instead.
+ *
+ *     print "Example one\n"
+ *     "hello\nworld".each_line {|s| p s}
+ *     print "Example two\n"
+ *     "hello\nworld".each_line('l') {|s| p s}
+ *     print "Example three\n"
+ *     "hello\n\n\nworld".each_line('') {|s| p s}
+ *
+ *  <em>produces:</em>
+ *
+ *     Example one
+ *     "hello\n"
+ *     "world"
+ *     Example two
+ *     "hel"
+ *     "l"
+ *     "o\nworl"
+ *     "d"
+ *     Example three
+ *     "hello\n\n\n"
+ *     "world"
+ */
+
+static VALUE
+rb_str_each_line(int argc, VALUE *argv, VALUE str)
+{
+    return rb_str_enumerate_lines(argc, argv, str, Qtrue);
+}
+
+static VALUE
+rb_str_lines(int argc, VALUE *argv, VALUE str)
+{
+    return rb_str_enumerate_lines(argc, argv, str, Qfalse);
+}
+
+
+static VALUE
+rb_str_enumerate_bytes(VALUE str, VALUE return_enumerator_p)
+{
+    long i;
+    VALUE ary, yieldp;
+
+    if (rb_block_given_p()) {
+	yieldp = Qtrue;
+    }
+    else {
+	if (return_enumerator_p)
+	    RETURN_ENUMERATOR(str, 0, 0);
+
+	yieldp = Qfalse;
+	ary = rb_ary_new2(RSTRING_LEN(str));
+    }
+
+    for (i=0; i<RSTRING_LEN(str); i++) {
+	if (yieldp) {
+	    rb_yield(INT2FIX(RSTRING_PTR(str)[i] & 0xff));
+	}
+	else {
+	    rb_ary_push(ary, INT2FIX(RSTRING_PTR(str)[i] & 0xff));
+	}
+    }
+    if (yieldp) {
+	return str;
+    }
+    else {
+	return ary;
+    }
+}
 
 /*
  *  call-seq:
  *     str.bytes {|fixnum| block }        -> str
- *     str.bytes                          -> an_enumerator
+ *     str.bytes                          -> an_array
  *
  *     str.each_byte {|fixnum| block }    -> str
  *     str.each_byte                      -> an_enumerator
  *
  *  Passes each byte in <i>str</i> to the given block, or returns
- *  an enumerator if no block is given.
+ *  an array or enumerator if no block is given.
  *
  *     "hello".each_byte {|c| print c, ' ' }
  *
@@ -6229,26 +6312,82 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_each_byte(VALUE str)
 {
-    long i;
-
-    RETURN_ENUMERATOR(str, 0, 0);
-    for (i=0; i<RSTRING_LEN(str); i++) {
-	rb_yield(INT2FIX(RSTRING_PTR(str)[i] & 0xff));
-    }
-    return str;
+    return rb_str_enumerate_bytes(str, Qtrue);
 }
 
+static VALUE
+rb_str_bytes(VALUE str)
+{
+    return rb_str_enumerate_bytes(str, Qfalse);
+}
+
+
+static VALUE
+rb_str_enumerate_chars(VALUE str, VALUE return_enumerator_p)
+{
+    VALUE orig = str;
+    long i, len, n;
+    const char *ptr;
+    rb_encoding *enc;
+    VALUE ary, yieldp;
+
+    if (rb_block_given_p()) {
+	yieldp = Qtrue;
+    }
+    else {
+	if (return_enumerator_p)
+	    RETURN_ENUMERATOR(str, 0, 0);
+
+	yieldp = Qfalse;
+	ary = rb_ary_new();
+    }
+
+    str = rb_str_new4(str);
+    ptr = RSTRING_PTR(str);
+    len = RSTRING_LEN(str);
+    enc = rb_enc_get(str);
+    switch (ENC_CODERANGE(str)) {
+      case ENC_CODERANGE_VALID:
+      case ENC_CODERANGE_7BIT:
+	for (i = 0; i < len; i += n) {
+	    n = rb_enc_fast_mbclen(ptr + i, ptr + len, enc);
+	    if (yieldp) {
+		rb_yield(rb_str_subseq(str, i, n));
+	    }
+	    else {
+		rb_ary_push(ary, rb_str_subseq(str, i, n));
+	    }
+	}
+	break;
+      default:
+	for (i = 0; i < len; i += n) {
+	    n = rb_enc_mbclen(ptr + i, ptr + len, enc);
+	    if (yieldp) {
+		rb_yield(rb_str_subseq(str, i, n));
+	    }
+	    else {
+		rb_ary_push(ary, rb_str_subseq(str, i, n));
+	    }
+	}
+    }
+    if (yieldp) {
+	return orig;
+    }
+    else {
+	return ary;
+    }
+}
 
 /*
  *  call-seq:
  *     str.chars {|cstr| block }        -> str
- *     str.chars                        -> an_enumerator
+ *     str.chars                        -> an_array
  *
  *     str.each_char {|cstr| block }    -> str
  *     str.each_char                    -> an_enumerator
  *
  *  Passes each character in <i>str</i> to the given block, or returns
- *  an enumerator if no block is given.
+ *  an array or enumerator if no block is given.
  *
  *     "hello".each_char {|c| print c, ' ' }
  *
@@ -6260,37 +6399,66 @@ rb_str_each_byte(VALUE str)
 static VALUE
 rb_str_each_char(VALUE str)
 {
-    VALUE orig = str;
-    long i, len, n;
-    const char *ptr;
-    rb_encoding *enc;
+    return rb_str_enumerate_chars(str, Qtrue);
+}
 
-    RETURN_ENUMERATOR(str, 0, 0);
+static VALUE
+rb_str_chars(VALUE str)
+{
+    return rb_str_enumerate_chars(str, Qfalse);
+}
+
+
+static VALUE
+rb_str_enumerate_codepoints(VALUE str, VALUE return_enumerator_p)
+{
+    VALUE orig = str;
+    int n;
+    unsigned int c;
+    const char *ptr, *end;
+    rb_encoding *enc;
+    VALUE ary, yieldp;
+
+    if (single_byte_optimizable(str))
+	return rb_str_enumerate_bytes(str, return_enumerator_p);
+
+    if (rb_block_given_p()) {
+	yieldp = Qtrue;
+    }
+    else {
+	if (return_enumerator_p)
+	    RETURN_ENUMERATOR(str, 0, 0);
+
+	yieldp = Qfalse;
+	ary = rb_ary_new();
+    }
+
     str = rb_str_new4(str);
     ptr = RSTRING_PTR(str);
-    len = RSTRING_LEN(str);
-    enc = rb_enc_get(str);
-    switch (ENC_CODERANGE(str)) {
-      case ENC_CODERANGE_VALID:
-      case ENC_CODERANGE_7BIT:
-	for (i = 0; i < len; i += n) {
-	    n = rb_enc_fast_mbclen(ptr + i, ptr + len, enc);
-	    rb_yield(rb_str_subseq(str, i, n));
+    end = RSTRING_END(str);
+    enc = STR_ENC_GET(str);
+    while (ptr < end) {
+	c = rb_enc_codepoint_len(ptr, end, &n, enc);
+	if (yieldp) {
+	    rb_yield(UINT2NUM(c));
 	}
-	break;
-      default:
-	for (i = 0; i < len; i += n) {
-	    n = rb_enc_mbclen(ptr + i, ptr + len, enc);
-	    rb_yield(rb_str_subseq(str, i, n));
+	else {
+	    rb_ary_push(ary, UINT2NUM(c));
 	}
+	ptr += n;
     }
-    return orig;
+    if (yieldp) {
+	return orig;
+    }
+    else {
+	return ary;
+    }
 }
 
 /*
  *  call-seq:
  *     str.codepoints {|integer| block }        -> str
- *     str.codepoints                           -> an_enumerator
+ *     str.codepoints                           -> an_array
  *
  *     str.each_codepoint {|integer| block }    -> str
  *     str.each_codepoint                       -> an_enumerator
@@ -6299,7 +6467,7 @@ rb_str_each_char(VALUE str)
  *  also known as a <i>codepoint</i> when applied to Unicode strings to the
  *  given block.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If no block is given, an array or enumerator is returned instead.
  *
  *     "hello\u0639".each_codepoint {|c| print c, ' ' }
  *
@@ -6311,25 +6479,15 @@ rb_str_each_char(VALUE str)
 static VALUE
 rb_str_each_codepoint(VALUE str)
 {
-    VALUE orig = str;
-    int n;
-    unsigned int c;
-    const char *ptr, *end;
-    rb_encoding *enc;
-
-    if (single_byte_optimizable(str)) return rb_str_each_byte(str);
-    RETURN_ENUMERATOR(str, 0, 0);
-    str = rb_str_new4(str);
-    ptr = RSTRING_PTR(str);
-    end = RSTRING_END(str);
-    enc = STR_ENC_GET(str);
-    while (ptr < end) {
-	c = rb_enc_codepoint_len(ptr, end, &n, enc);
-	rb_yield(UINT2NUM(c));
-	ptr += n;
-    }
-    return orig;
+    return rb_str_enumerate_codepoints(str, Qtrue);
 }
+
+static VALUE
+rb_str_codepoints(VALUE str)
+{
+    return rb_str_enumerate_codepoints(str, Qfalse);
+}
+
 
 static long
 chopped_length(VALUE str)
@@ -7915,10 +8073,10 @@ Init_String(void)
     rb_define_method(rb_cString, "hex", rb_str_hex, 0);
     rb_define_method(rb_cString, "oct", rb_str_oct, 0);
     rb_define_method(rb_cString, "split", rb_str_split_m, -1);
-    rb_define_method(rb_cString, "lines", rb_str_each_line, -1);
-    rb_define_method(rb_cString, "bytes", rb_str_each_byte, 0);
-    rb_define_method(rb_cString, "chars", rb_str_each_char, 0);
-    rb_define_method(rb_cString, "codepoints", rb_str_each_codepoint, 0);
+    rb_define_method(rb_cString, "lines", rb_str_lines, -1);
+    rb_define_method(rb_cString, "bytes", rb_str_bytes, 0);
+    rb_define_method(rb_cString, "chars", rb_str_chars, 0);
+    rb_define_method(rb_cString, "codepoints", rb_str_codepoints, 0);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat, 1);
