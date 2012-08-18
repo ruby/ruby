@@ -435,7 +435,7 @@ public
   # Options: noop verbose
   #
   # Same as
-  #   #ln_s(src, dest, :force)
+  #   #ln_s(src, dest, :force => true)
   #
   def ln_sf(src, dest, options = {})
     fu_check_options options, OPT_TABLE['ln_sf']

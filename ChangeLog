@@ -1,3 +1,8 @@
+Sun Aug 19 00:47:26 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/fileutils.rb: fix typo.
+	  https://github.com/ruby/ruby/pull/155 by simonc (Simon COURTOIS).
+
 Sat Aug 18 09:57:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/depend: fix inplace-build condition.  enc.mk is generated with
