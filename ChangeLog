@@ -1,3 +1,9 @@
+Sat Aug 18 09:57:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend: fix inplace-build condition.  enc.mk is generated with
+	  setting $srcdir to enc, but pwd is still top build direcory.
+	  [ruby-core:47236] [Bug #6888]
+
 Fri Aug 17 23:28:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_any_to_s, rb_obj_inspect): preserve encodings of class

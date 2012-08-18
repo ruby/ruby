@@ -1,4 +1,4 @@
-% inplace = File.identical?($srcdir, ".")
+% inplace = File.identical?($top_srcdir, ".")
 % workdirs = %w"$(ENCSODIR) $(TRANSSODIR) enc enc/trans"
 % CONFIG["WORKDIRS"] = workdirs.join(' ')
 % enable_shared = CONFIG['ENABLE_SHARED'] == 'yes'
