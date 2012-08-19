@@ -190,7 +190,7 @@ module Test
         assert_warn(*args) {$VERBOSE = false; yield}
       end
 
-      def assert_no_memory_leak(args, prepare, code, message=nil, limit: 1.5)
+      def assert_no_memory_leak(args, prepare, code, message=nil, limit = 1.5)
         token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
         token_dump = token.dump
         token_re = Regexp.quote(token)
