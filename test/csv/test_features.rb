@@ -267,32 +267,36 @@ class TestCSV::Features < TestCSV
     assert_match(/\A\d\.\d\.\d\Z/, CSV::VERSION)
   end
   
-  def test_accepts_comment_marker_option
+  def test_accepts_comment_skip_lines_option
     assert_nothing_raised(ArgumentError) do
-      CSV.new nil, :comment_marker => "#"
+      CSV.new nil, :skip_lines => /\A\s*#/
     end
   end
   
   def test_accepts_comment_defaults_to_nil
     c = CSV.new nil
-    assert_equal c.comment_marker, nil
+    assert_equal c.skip_lines, nil
   end
 
-  def test_requires_comment_markers_to_be_single_characters
-    assert_raises(ArgumentError) do
-      CSV.new :comment_marker, :comment_marker => "foo"
+  class RegexStub
+  end
+
+  def test_requires_skip_lines_to_call_match
+    regex_stub = RegexStub.new
+    assert_raise(ArgumentError) do
+      CSV.new nil, :skip_lines => regex_stub
     end
   end
 
   def test_comment_rows_are_ignored
-    sample_data = "line,1,a\n#not,a,line\nline,2,b"
-    c = CSV.new sample_data, :comment_marker => "#"
+    sample_data = "line,1,a\n#not,a,line\nline,2,b\n   #also,no,line"
+    c = CSV.new sample_data, :skip_lines => /\A\s*#/
     assert_equal c.each.to_a, [["line", "1", "a"], ["line", "2", "b"]]
   end
 
-  def test_quoted_comment_markers_are_ignored
+  def test_quoted_skip_line_markers_are_ignored
     sample_data = "line,1,a\n\"#not\",a,line\nline,2,b"
-    c = CSV.new sample_data, :comment_marker => "#"
+    c = CSV.new sample_data, :skip_lines => /\A\s*#/
     assert_equal c.each.to_a, [["line", "1", "a"], ["#not", "a", "line"], ["line", "2", "b"]]
   end
 end

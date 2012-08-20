@@ -973,7 +973,7 @@ class CSV
   # <b><tt>:header_converters</tt></b>::  +nil+
   # <b><tt>:skip_blanks</tt></b>::        +false+
   # <b><tt>:force_quotes</tt></b>::       +false+
-  # <b><tt>:comment_marker</tt></b>::     +nil+
+  # <b><tt>:skip_lines</tt></b>::         +nil+
   #
   DEFAULT_OPTIONS = { col_sep:            ",",
                       row_sep:            :auto,
@@ -986,7 +986,7 @@ class CSV
                       header_converters:  nil,
                       skip_blanks:        false,
                       force_quotes:       false,
-                      comment_marker:     nil }.freeze
+                      skip_lines:         nil }.freeze
 
   #
   # This method will return a CSV instance, just like CSV::new(), but the
@@ -1556,11 +1556,14 @@ class CSV
   #                                       skip over any rows with no content.
   # <b><tt>:force_quotes</tt></b>::       When set to a +true+ value, CSV will
   #                                       quote all CSV fields it creates.
-  # <b><tt>:comment_marker</tt></b>::     When set to a character every line
-  #                                       beginning with that character is
-  #                                       considered a comment and ignored
+  # <b><tt>:skip_lines</tt></b>::         When set to an object responding to
+  #                                       <tt>match</tt>, every line matching
+  #                                       it is considered a comment and ignored
   #                                       during parsing. When set to +nil+
   #                                       no line is considered a comment.
+  #                                       If the passed object does not respond
+  #                                       to <tt>match</tt>, <tt>ArgumentError</tt>
+  #                                       is thrown.
   #
   # See CSV::DEFAULT_OPTIONS for the default settings.
   #
@@ -1629,8 +1632,8 @@ class CSV
   # The limit for field size, if any.  See CSV::new for details.
   attr_reader :field_size_limit
 
-  # The character marking a line as a comment. See CSV::new for details
-  attr_reader :comment_marker
+  # The regex marking a line as a comment. See CSV::new for details
+  attr_reader :skip_lines
 
   #
   # Returns the current list of converters in effect.  See CSV::new for details.
@@ -1885,7 +1888,7 @@ class CSV
         end
       end
 
-      next if @comment_marker and parse.start_with? @comment_marker
+      next if @skip_lines and @skip_lines.match parse
 
       parts =  parse.split(@col_sep, -1)
       if parts.empty?
@@ -2204,9 +2207,9 @@ class CSV
   end
 
   def init_comments(options)
-    @comment_marker = options.delete(:comment_marker)
-    if @comment_marker and @comment_marker.length != 1
-      raise ArgumentError, ":comment_marker has to be a single character String"
+    @skip_lines = options.delete(:skip_lines)
+    if @skip_lines and not @skip_lines.respond_to?(:match)
+      raise ArgumentError, ":skip_lines has to respond to matches"
     end
   end
   #
