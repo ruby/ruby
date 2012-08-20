@@ -184,7 +184,7 @@ module Observable
   # Notify observers of a change in state *if* this object's changed state is
   # +true+.
   #
-  # This will invoke the method named in #add_observer, pasing <tt>*arg</tt>.
+  # This will invoke the method named in #add_observer, passing <tt>*arg</tt>.
   # The changed state is then set to +false+.
   #
   # <tt>*arg</tt>:: Any arguments to pass to the observers.
