@@ -1,3 +1,7 @@
+Mon Aug 20 23:02:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y: more descriptive token names in syntax error messages.
+
 Mon Aug 20 20:36:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_call_method): follow iclasses as klass in cfp

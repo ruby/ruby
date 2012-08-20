@@ -741,34 +741,40 @@ static void token_info_pop(struct parser_params*, const char *token);
 /*%
 %type <val> program reswords then do dot_or_colon
 %*/
-%token tUPLUS		/* unary+ */
-%token tUMINUS		/* unary- */
-%token tPOW		/* ** */
-%token tCMP		/* <=> */
-%token tEQ		/* == */
-%token tEQQ		/* === */
-%token tNEQ		/* != */
-%token tGEQ		/* >= */
-%token tLEQ		/* <= */
-%token tANDOP tOROP	/* && and || */
-%token tMATCH tNMATCH	/* =~ and !~ */
-%token tDOT2 tDOT3	/* .. and ... */
-%token tAREF tASET	/* [] and []= */
-%token tLSHFT tRSHFT	/* << and >> */
-%token tCOLON2		/* :: */
-%token tCOLON3		/* :: at EXPR_BEG */
+%token END_OF_INPUT 0	"end-of-input"
+%token tUPLUS		"unary+"
+%token tUMINUS		"unary-"
+%token tPOW		"**"
+%token tCMP		"<=>"
+%token tEQ		"=="
+%token tEQQ		"==="
+%token tNEQ		"!="
+%token tGEQ		">="
+%token tLEQ		"<="
+%token tANDOP		"&&"
+%token tOROP		"||"
+%token tMATCH		"=~"
+%token tNMATCH		"!~"
+%token tDOT2		".."
+%token tDOT3		"..."
+%token tAREF		"[]"
+%token tASET		"[]="
+%token tLSHFT		"<<"
+%token tRSHFT		">>"
+%token tCOLON2		"::"
+%token tCOLON3		":: at EXPR_BEG"
 %token <id> tOP_ASGN	/* +=, -=  etc. */
-%token tASSOC		/* => */
-%token tLPAREN		/* ( */
-%token tLPAREN_ARG	/* ( */
-%token tRPAREN		/* ) */
-%token tLBRACK		/* [ */
-%token tLBRACE		/* { */
-%token tLBRACE_ARG	/* { */
-%token tSTAR		/* * */
-%token tDSTAR		/* ** */
-%token tAMPER		/* & */
-%token tLAMBDA		/* -> */
+%token tASSOC		"=>"
+%token tLPAREN		"("
+%token tLPAREN_ARG	"( arg"
+%token tRPAREN		")"
+%token tLBRACK		"["
+%token tLBRACE		"{"
+%token tLBRACE_ARG	"{ arg"
+%token tSTAR		"*"
+%token tDSTAR		"**arg"
+%token tAMPER		"&"
+%token tLAMBDA		"->"
 %token tSYMBEG tSTRING_BEG tXSTRING_BEG tREGEXP_BEG tWORDS_BEG tQWORDS_BEG tSYMBOLS_BEG tQSYMBOLS_BEG
 %token tSTRING_DBEG tSTRING_DEND tSTRING_DVAR tSTRING_END tLAMBEG
 

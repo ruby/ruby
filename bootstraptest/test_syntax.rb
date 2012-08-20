@@ -529,7 +529,7 @@ def assert_syntax_error expected, code, message = ''
 end
 assert_syntax_error "unterminated string meets end of file", '().."', '[ruby-dev:29732]'
 assert_equal %q{[]}, %q{$&;[]}, '[ruby-dev:31068]'
-assert_syntax_error "syntax error, unexpected tSTAR, expecting '}'", %q{{*0}}, '[ruby-dev:31072]'
+assert_syntax_error "syntax error, unexpected *, expecting '}'", %q{{*0}}, '[ruby-dev:31072]'
 assert_syntax_error "`@0' is not allowed as an instance variable name", %q{@0..0}, '[ruby-dev:31095]'
 assert_syntax_error "identifier $00 is not valid to get", %q{$00..0}, '[ruby-dev:31100]'
 assert_syntax_error "identifier $00 is not valid to set", %q{0..$00=1}
