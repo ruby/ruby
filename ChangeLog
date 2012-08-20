@@ -1,3 +1,8 @@
+Tue Aug 21 05:18:03 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* re.c (rb_reg_initialize_m):  Update example to show that regexp
+	  options use | an not || to avoid confusion.
+
 Mon Aug 20 23:02:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y: more descriptive token names in syntax error messages.

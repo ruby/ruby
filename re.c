@@ -2877,20 +2877,21 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
  *     Regexp.compile(string, [options [, lang]])    -> regexp
  *     Regexp.compile(regexp)                        -> regexp
  *
- *  Constructs a new regular expression from <i>pattern</i>, which can be either
- *  a <code>String</code> or a <code>Regexp</code> (in which case that regexp's
- *  options are propagated, and new options may not be specified (a change as of
- *  Ruby 1.8). If <i>options</i> is a <code>Fixnum</code>, it should be one or
- *  more of the constants <code>Regexp::EXTENDED</code>,
- *  <code>Regexp::IGNORECASE</code>, and <code>Regexp::MULTILINE</code>,
- *  <em>or</em>-ed together. Otherwise, if <i>options</i> is not
- *  <code>nil</code>, the regexp will be case insensitive.
- *  When the <i>lang</i> parameter is `n' or `N' sets the regexp no encoding.
+ *  Constructs a new regular expression from +pattern+, which can be either a
+ *  String or a Regexp (in which case that regexp's options are propagated),
+ *  and new options may not be specified (a change as of Ruby 1.8).
+ *
+ *  If +options+ is a Fixnum, it should be one or more of the constants
+ *  Regexp::EXTENDED, Regexp::IGNORECASE, and Regexp::MULTILINE,
+ *  <em>or</em>-ed together.  Otherwise, if +options+ is not
+ *  +nil+ or +false+, the regexp will be case insensitive.
+ *
+ *  When the +lang+ parameter is `n' or `N' sets the regexp no encoding.
  *
  *     r1 = Regexp.new('^a-z+:\\s+\w+')           #=> /^a-z+:\s+\w+/
  *     r2 = Regexp.new('cat', true)               #=> /cat/i
- *     r3 = Regexp.new('dog', Regexp::EXTENDED)   #=> /dog/x
- *     r4 = Regexp.new(r2)                        #=> /cat/i
+ *     r3 = Regexp.new(r2)                        #=> /cat/i
+ *     r4 = Regexp.new('dog', Regexp::EXTENDED | Regexp::IGNORECASE) #=> /dog/x
  */
 
 static VALUE
