@@ -1398,4 +1398,58 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:@@bar, :@@foo], m2.class_variables(true))
     assert_equal([:@@bar], m2.class_variables(false))
   end
+
+  Bug6891 = '[ruby-core:47241]'
+
+  def test_extend_module_with_protected_method
+    list = []
+
+    x = Class.new {
+      @list = list
+
+      extend Module.new {
+        protected
+
+        def inherited(klass)
+          @list << "protected"
+          super(klass)
+        end
+      }
+
+      extend Module.new {
+        def inherited(klass)
+          @list << "public"
+          super(klass)
+        end
+      }
+    }
+
+    assert_nothing_raised(NoMethodError, Bug6891) {Class.new(x)}
+    assert_equal(['public', 'protected'], list)
+  end
+
+  def test_extend_module_with_protected_bmethod
+    list = []
+
+    x = Class.new {
+      extend Module.new {
+        protected
+
+        define_method(:inherited) do |klass|
+          list << "protected"
+          super(klass)
+        end
+      }
+
+      extend Module.new {
+        define_method(:inherited) do |klass|
+          list << "public"
+          super(klass)
+        end
+      }
+    }
+
+    assert_nothing_raised(NoMethodError, Bug6891) {Class.new(x)}
+    assert_equal(['public', 'protected'], list)
+  end
 end

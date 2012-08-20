@@ -466,7 +466,7 @@ vm_call_bmethod(rb_thread_t *th, VALUE recv, int argc, const VALUE *argv,
     /* control block frame */
     th->passed_me = me;
     GetProcPtr(me->def->body.proc, proc);
-    val = rb_vm_invoke_proc(th, proc, recv, argc, argv, blockptr);
+    val = vm_invoke_proc(th, proc, recv, defined_class, argc, argv, blockptr);
 
     EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, recv, me->called_id, me->klass);
 
@@ -655,7 +655,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		    MEMCPY(argv, cfp->sp - num, VALUE, num);
 		    cfp->sp -= num + 1;
 
-		    val = rb_vm_invoke_proc(th, proc, proc->block.self, argc, argv, blockptr);
+		    val = rb_vm_invoke_proc(th, proc, argc, argv, blockptr);
 		    break;
 		  }
 		  default:
@@ -683,10 +683,6 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		val = vm_method_missing(th, id, recv, num, blockptr, stat);
 	    }
 	    else if (!(flag & VM_CALL_OPT_SEND_BIT) && (me->flag & NOEX_MASK) & NOEX_PROTECTED) {
-		if (RB_TYPE_P(defined_class, T_ICLASS)) {
-		    defined_class = RBASIC(defined_class)->klass;
-		}
-
 		if (!rb_obj_is_kind_of(cfp->self, defined_class)) {
 		    val = vm_method_missing(th, id, recv, num, blockptr, NOEX_PROTECTED);
 		}

@@ -455,7 +455,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 		    th->errinfo = Qnil;
 		    th->root_lep = rb_vm_ep_local_ep(proc->block.ep);
 		    th->root_svar = Qnil;
-		    th->value = rb_vm_invoke_proc(th, proc, proc->block.self,
+		    th->value = rb_vm_invoke_proc(th, proc,
 						  (int)RARRAY_LEN(args), RARRAY_PTR(args), 0);
 		}
 		else {
