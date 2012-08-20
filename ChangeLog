@@ -1,3 +1,9 @@
+Mon Aug 20 10:51:01 2012  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb, lib/test/unit/parallel.rb:
+	  generate error message (String) in parallel.rb instead of
+	  marshalling Exception. Fixes [Bug #6882] [ruby-dev:46054]
+
 Sun Aug 19 01:24:32 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* enum.c: fix docs. https://github.com/ruby/ruby/pull/129 by

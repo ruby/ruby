@@ -370,11 +370,7 @@ module Test
       def after_worker_down(worker, e=nil, c=false)
         return unless @options[:parallel]
         return if @interrupt
-        if e
-          b = e.backtrace
-          warn "#{b.shift}: #{e.message} (#{e.class})"
-          STDERR.print b.map{|s| "\tfrom #{s}"}.join("\n")
-        end
+        warn e if e
         @need_quit = true
         warn ""
         warn "Some worker was crashed. It seems ruby interpreter's bug"
