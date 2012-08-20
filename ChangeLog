@@ -1,7 +1,14 @@
+Tue Aug 21 05:43:00 2012  James Edward Gray II  <james@graysoftinc.com>
+
+  * lib/csv.rb:  Fixes #161 on github
+  * lib/csv.rb:  You can now specify a pattern for :skip_lines.
+    Matching lines will not be passed to the CSV parser.
+  * lib/csv.rb:  Patch by Christian Schwartz.
+
 Tue Aug 21 05:25:41 2012  Eric Hodel  <drbrain@segment7.net>
 
-	* re.c (rb_reg_initialize_m):  Forgot to update output for or'd-options
-	  example.
+  * re.c (rb_reg_initialize_m):  Forgot to update output for or'd-options
+    example.
 
 Tue Aug 21 05:18:03 2012  Eric Hodel  <drbrain@segment7.net>
 

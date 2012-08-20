@@ -274,4 +274,37 @@ class TestCSV::Features < TestCSV
     assert(CSV::VERSION.frozen?)
     assert_match(/\A\d\.\d\.\d\Z/, CSV::VERSION)
   end
+  
+  def test_accepts_comment_skip_lines_option
+    assert_nothing_raised(ArgumentError) do
+      CSV.new nil, :skip_lines => /\A\s*#/
+    end
+  end
+  
+  def test_accepts_comment_defaults_to_nil
+    c = CSV.new nil
+    assert_equal c.skip_lines, nil
+  end
+
+  class RegexStub
+  end
+
+  def test_requires_skip_lines_to_call_match
+    regex_stub = RegexStub.new
+    assert_raise(ArgumentError) do
+      CSV.new nil, :skip_lines => regex_stub
+    end
+  end
+
+  def test_comment_rows_are_ignored
+    sample_data = "line,1,a\n#not,a,line\nline,2,b\n   #also,no,line"
+    c = CSV.new sample_data, :skip_lines => /\A\s*#/
+    assert_equal c.each.to_a, [["line", "1", "a"], ["line", "2", "b"]]
+  end
+
+  def test_quoted_skip_line_markers_are_ignored
+    sample_data = "line,1,a\n\"#not\",a,line\nline,2,b"
+    c = CSV.new sample_data, :skip_lines => /\A\s*#/
+    assert_equal c.each.to_a, [["line", "1", "a"], ["#not", "a", "line"], ["line", "2", "b"]]
+  end
 end
