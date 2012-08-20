@@ -2888,10 +2888,10 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
  *
  *  When the +lang+ parameter is `n' or `N' sets the regexp no encoding.
  *
- *     r1 = Regexp.new('^a-z+:\\s+\w+')           #=> /^a-z+:\s+\w+/
- *     r2 = Regexp.new('cat', true)               #=> /cat/i
- *     r3 = Regexp.new(r2)                        #=> /cat/i
- *     r4 = Regexp.new('dog', Regexp::EXTENDED | Regexp::IGNORECASE) #=> /dog/x
+ *    r1 = Regexp.new('^a-z+:\\s+\w+') #=> /^a-z+:\s+\w+/
+ *    r2 = Regexp.new('cat', true)     #=> /cat/i
+ *    r3 = Regexp.new(r2)              #=> /cat/i
+ *    r4 = Regexp.new('dog', Regexp::EXTENDED | Regexp::IGNORECASE) #=> /dog/ix
  */
 
 static VALUE
