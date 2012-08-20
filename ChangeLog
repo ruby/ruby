@@ -17,7 +17,7 @@ Sun Aug 19 00:47:26 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 Sat Aug 18 09:57:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/depend: fix inplace-build condition.  enc.mk is generated with
-	  setting $srcdir to enc, but pwd is still top build direcory.
+	  setting $srcdir to enc, but pwd is still top build directory.
 	  [ruby-core:47236] [Bug #6888]
 
 Fri Aug 17 23:28:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
