@@ -675,7 +675,7 @@ class TestModule < Test::Unit::TestCase
     end
 
     %w(object_id __send__ initialize).each do |n|
-      assert_in_out_err([], <<-INPUT, [], /warning: undefining `#{n}' may cause serious problems$/)
+      assert_in_out_err([], <<-INPUT, [], %r"warning: undefining `#{n}' may cause serious problems$")
         $VERBOSE = false
         Class.new.instance_eval { undef_method(:#{n}) }
       INPUT
