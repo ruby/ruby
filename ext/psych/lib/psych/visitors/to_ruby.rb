@@ -147,8 +147,8 @@ module Psych
           string = members.delete 'str'
 
           if klass
-            string = klass.allocate
-            string.replace string
+            string = klass.allocate.replace string
+            register(o, string)
           end
 
           init_with(string, members.map { |k,v| [k.to_s.sub(/^@/, ''),v] }, o)
@@ -221,6 +221,13 @@ module Psych
 
         when /^!map:(.*)$/, /^!ruby\/hash:(.*)$/
           revive_hash resolve_class($1).new, o
+
+        when '!omap', 'tag:yaml.org,2002:omap'
+          map = register(o, Psych::Omap.new)
+          o.children.each_slice(2) do |l,r|
+            map[accept(l)] = accept r
+          end
+          map
 
         else
           revive_hash({}, o)

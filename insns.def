@@ -533,6 +533,9 @@ splatarray
     if (NIL_P(tmp)) {
 	tmp = rb_ary_new3(1, ary);
     }
+    else if (RTEST(flag)) {
+	tmp = rb_ary_dup(tmp);
+    }
     obj = tmp;
 }
 

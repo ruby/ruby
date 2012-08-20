@@ -578,12 +578,6 @@ init_env(void)
 typedef BOOL (WINAPI *cancel_io_t)(HANDLE);
 static cancel_io_t cancel_io = NULL;
 
-int
-rb_w32_has_cancel_io(void)
-{
-    return cancel_io != NULL;
-}
-
 static void
 init_func(void)
 {
@@ -674,6 +668,8 @@ rb_w32_sysinit(int *argc, char ***argv)
     _set_invalid_parameter_handler(invalid_parameter);
     _RTC_SetErrorFunc(rtc_error_handler);
     set_pioinfo_extra();
+#else
+    SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOGPFAULTERRORBOX);
 #endif
 
     get_version();
@@ -2085,6 +2081,15 @@ set_pioinfo_extra(void)
 #define FAPPEND			0x20	/* file handle opened O_APPEND */
 #define FDEV			0x40	/* file handle refers to device */
 #define FTEXT			0x80	/* file handle is in text mode */
+
+static int is_socket(SOCKET);
+static int is_console(SOCKET);
+
+int
+rb_w32_io_cancelable_p(int fd)
+{
+    return cancel_io != NULL && (is_socket(TO_SOCKET(fd)) || !is_console(TO_SOCKET(fd)));
+}
 
 static int
 rb_w32_open_osfhandle(intptr_t osfhandle, int flags)

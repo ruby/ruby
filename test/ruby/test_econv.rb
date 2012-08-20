@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'envutil'
 
 class TestEncodingConverter < Test::Unit::TestCase
   def check_ec(edst, esrc, eres, dst, src, ec, off, len, opts=nil)
@@ -907,5 +908,24 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec1 = Encoding::Converter.new("", "", universal_newline: true)
     ec2 = Encoding::Converter.new("", "", newline: :universal)
     assert_equal(ec1, ec2)
+  end
+
+  def test_default_external
+    cmd = <<EOS
+    Encoding.default_external = ext = ARGV[0]
+    Encoding.default_internal = int ='utf-8'
+    begin
+      Encoding::Converter.new(ext, int)
+    ensure
+      Marshal.dump($!, STDOUT)
+      STDOUT.flush
+    end
+EOS
+    Encoding.list.grep(->(enc) {/^ISO-8859-\d(?:[0-5])?\z/i =~ enc.name}) do |enc|
+      error = IO.popen([EnvUtil.rubybin, "-e", cmd, enc.name]) do |child|
+        Marshal.load(child)
+      end
+      assert_nil(error)
+    end
   end
 end

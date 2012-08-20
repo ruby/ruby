@@ -1,3 +1,156 @@
+Mon Aug 20 17:11:01 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (file_path_convert): don't convert it when the path string is
+	  ascii only. [ruby-core:41556] [Bug #5733]
+	  tests are contributed by nobu.
+
+Thu Aug  9 22:48:58 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* pack.c (pack_unpack): when unpack('M') occurs an illegal byte
+	  sequence, output the "=" character and the following character in
+	  the decoded data without any transformation.
+	  [ruby-dev:44875] [Bug #5635]
+
+Tue Jul 31 10:36:12 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: updated to released version.
+
+	* ext/psych/psych.gemspec: ditto
+
+Thu Jul 19 09:33:46 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/emitter.c (initialize): allow a configuration object to be
+	  passed to the constructor so that mutation isn't required after
+	  instantiation.
+
+	* ext/psych/lib/psych/handler.rb: add configuration object
+
+	* ext/psych/lib/psych/visitors/emitter.rb: use configuration object if
+	  extra configuration is present.
+
+Tue Jul 17 03:56:34 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: strings with YAML anchors
+	  are properly referenced. Patched by Joe Rafaniello via Github:
+	    https://github.com/tenderlove/psych/pull/69
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: ditto
+	* test/psych/test_alias_and_anchor.rb: test for change
+
+Sat Jun 16 01:27:14 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: bumping psych to 1.3.3
+	* ext/psych/psych.gemspec: ditto
+
+Fri May 18 15:53:05 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/psych/extconf.rb: Use an exception instaed of bare abort.
+
+Fri May 18 01:28:21 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c (transcode_string): fix encoding index names.
+	  Thanks markizko for reporting.
+
+Wed May 16 05:11:29 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: fix a bug with string
+	  subclass dumping and loading.
+
+	* test/psych/test_array.rb: pertinent tests
+
+	* test/psych/test_string.rb: ditto
+
+Wed May 16 01:31:21 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/to_ruby.rb: convert omap tagged maps to
+	  Psych::Omap objects rather than hashes. [Bug #6425]
+
+	* test/psych/test_omap.rb: pertinent test.
+
+Wed May 16 01:15:45 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: keep a reference to
+	  custom coders so that GC does not impact dumped yaml reference ids.
+
+Mon Apr 30 04:43:53 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/json/yaml_events.rb: implicit styles should not
+	  be changeable for JSON events.
+
+Sun Jul 29 04:32:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ruby_pc): make configurable.  [Bug #6051]
+
+Sun Jul 29 04:32:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/ruby.pc.in: added rubylibprefix, {rubylib,vendor,site}dir
+	  and {ruby,vendor,site}archdir.  [ruby-core:42766][Feature #6052]
+
+Sun Jul 29 04:31:01 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* bignum.c: Added #include <strings.h> for ffs(). Patch by Perry
+	  Smith. Thank you. [Bug #6748]
+
+Sat Jul 28 04:04:01 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/intern.h (rb_num_zerodiv): Added NORETURN.
+	  Patched by Xi Wang. [Bug #6736]
+
+Wed Jul  4 19:36:17 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/cfunc.c (rb_dlcfunc_call): also needed the workaround for VC8
+	  for x64.  [ruby-dev:45875] [Bug #6676]
+	  reported by aves_ramphastos (Seigo Ishigane)
+
+Tue Jul  3 19:37:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rmext): no extension to strip if empty string.
+
+	* proc.c (rb_vm_rewrite_dfp_in_errinfo): Fix `unexpected return'
+	occurs when a proc is called in ensure. [Backport #6460]
+
+Tue Jul  3 11:44:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_enc_path_next, rb_enc_path_skip_prefix)
+	  (rb_enc_path_last_separator, rb_enc_path_end)
+	  (ruby_enc_find_basename, ruby_enc_find_extname): encoding-aware
+	  path handling functions.
+
+	* file.c (rb_home_dir, file_expand_path, rb_realpath_internal)
+	  (rb_file_s_basename, rb_file_dirname, rb_file_s_extname)
+	  (rb_file_join): should respect the encodings of arguments than
+	  file system encoding.  [ruby-dev:45145] [Bug #5919]
+
+	* dir.c (check_dirname, ruby_glob0): ditto.
+
+	* ext/pathname/pathname.c (path_sub_ext): ditto.
+
+Tue Jul  3 11:43:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_chdir, check_dirname): get rid of optimization-out.
+
+Thu Jun 28 17:57:49 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (is_socket, is_console): add prototypes to fix compile
+	  problem with gcc introduced at r32549.
+
+Wed Jun 27 08:31:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (splatarray): make new array if flag is set.
+
+	* compile.c (iseq_compile_each): make new array with
+	  splat. [ruby-core:21901][Feature #1125]
+
+Wed Jun 27 04:23:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_sysinit): let the system not display the
+	  critical-error-handler message box and the Windows Error Reporting
+	  dialog.  [ruby-core:45389] [Bug #6535]
+
+Wed Jun 27 04:20:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_pow): estimate result bit size more precisely.
+	  [ruby-core:30735][Feature #3429]
+
 Tue Jun 26 20:36:53 2012  Tanaka Akira  <akr@fsij.org>
 
 	* lib/drb/ssl.rb: generate 1024 bits RSA key instead of 512 bits.

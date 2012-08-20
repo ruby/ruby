@@ -2,10 +2,17 @@ module Psych
   module Visitors
     class Emitter < Psych::Visitors::Visitor
       def initialize io, options = {}
-        @handler = Psych::Emitter.new io
-        @handler.indentation = options[:indentation] if options[:indentation]
-        @handler.canonical = options[:canonical] if options[:canonical]
-        @handler.line_width = options[:line_width] if options[:line_width]
+        opts = [:indentation, :canonical, :line_width].find_all { |opt|
+          options.key?(opt)
+        }
+
+        if opts.empty?
+          @handler = Psych::Emitter.new io
+        else
+          du = Handler::DumperOptions.new
+          opts.each { |option| du.send :"#{option}=", options[option] }
+          @handler = Psych::Emitter.new io, du
+        end
       end
 
       def visit_Psych_Nodes_Stream o

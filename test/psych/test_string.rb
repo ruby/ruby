@@ -9,6 +9,13 @@ module Psych
       attr_accessor :val
     end
 
+    def test_another_subclass_with_attributes
+      y = Psych.load Psych.dump Y.new("foo").tap {|y| y.val = 1}
+      assert_equal "foo", y
+      assert_equal Y, y.class
+      assert_equal 1, y.val
+    end
+
     def test_backwards_with_syck
       x = Psych.load "--- !str:#{X.name} foo\n\n"
       assert_equal X, x.class

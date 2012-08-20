@@ -324,7 +324,7 @@ rb_dlcfunc_inspect(VALUE self)
 }
 
 
-#if defined(_MSC_VER) && defined(_M_AMD64) && _MSC_VER == 1500
+#if defined(_MSC_VER) && defined(_M_AMD64) && _MSC_VER >= 1400 && _MSC_VER < 1600
 # pragma optimize("", off)
 #endif
 /*
@@ -594,7 +594,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 
     return result;
 }
-#if defined(_MSC_VER) && defined(_M_AMD64) && _MSC_VER == 1500
+#if defined(_MSC_VER) && defined(_M_AMD64) && _MSC_VER >= 1400 && _MSC_VER < 1600
 # pragma optimize("", on)
 #endif
 
