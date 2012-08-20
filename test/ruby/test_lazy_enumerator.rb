@@ -296,6 +296,11 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal([1, 2, 3], (1..Float::INFINITY).lazy.take(3).force)
   end
 
+  def test_hybrid_chaining
+    assert_equal([2], [1,2,3].lazy.cycle(1).select { |x| x == 2 }.force)
+    assert_equal([2], [1,2,3].lazy.select { |x| x == 2 }.cycle(1).force)
+  end
+
   def test_inspect
     assert_equal("#<Enumerator::Lazy: 1..10:each>",
                  Enumerator::Lazy.new(1..10).inspect)
