@@ -1,3 +1,8 @@
+Mon Aug 20 11:40:27 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* common.mk: fix failed to make with -j2.
+	  https://gist.github.com/3397935
+
 Mon Aug 20 10:51:01 2012  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb, lib/test/unit/parallel.rb:
