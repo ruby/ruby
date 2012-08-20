@@ -1,3 +1,9 @@
+Mon Aug 20 17:11:01 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (file_path_convert): don't convert it when the path string is
+	  ascii only. [ruby-core:41556] [Bug #5733]
+	  tests are contributed by nobu.
+
 Thu Aug  9 22:48:58 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* pack.c (pack_unpack): when unpack('M') occurs an illegal byte
