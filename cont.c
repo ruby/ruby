@@ -1161,7 +1161,7 @@ rb_fiber_start(void)
 	th->root_svar = Qnil;
 
 	fib->status = RUNNING;
-	cont->value = rb_vm_invoke_proc(th, proc, proc->block.self, argc, argv, 0);
+	cont->value = rb_vm_invoke_proc(th, proc, argc, argv, 0);
     }
     TH_POP_TAG();
 

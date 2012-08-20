@@ -1,3 +1,19 @@
+Mon Aug 20 20:36:30 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method): follow iclasses as klass in cfp
+	  but not included modules.  [ruby-core:47241] [Bug #6891]
+
+	* vm_insnhelper.c (vm_call_bmethod): pass defined_class to follow
+	  proper ancestors.  [ruby-core:47241] [Bug #6891]
+
+Mon Aug 20 20:36:13 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method): follow iclasses as klass in cfp
+	  but not included modules.  [ruby-core:47241] [Bug #6891]
+
+	* vm_insnhelper.c (vm_call_bmethod): pass defined_class to follow
+	  proper ancestors.  [ruby-core:47241] [Bug #6891]
+
 Mon Aug 20 11:40:27 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* common.mk: fix failed to make with -j2.

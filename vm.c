@@ -61,6 +61,10 @@ rb_vm_control_frame_block_ptr(rb_control_frame_t *cfp)
     return VM_CF_BLOCK_PTR(cfp);
 }
 
+static VALUE
+vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class,
+	       int argc, const VALUE *argv, const rb_block_t *blockptr);
+
 #include "vm_insnhelper.h"
 #include "vm_insnhelper.c"
 #include "vm_exec.h"
@@ -577,7 +581,8 @@ rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
 static inline VALUE
 invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 		    VALUE self, int argc, const VALUE *argv,
-		    const rb_block_t *blockptr, const NODE *cref)
+		    const rb_block_t *blockptr, const NODE *cref,
+		    VALUE defined_class)
 {
     if (SPECIAL_CONST_P(block->iseq))
 	return Qnil;
@@ -599,7 +604,7 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 				     type == VM_FRAME_MAGIC_LAMBDA);
 
 	vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH,
-		      self, block->klass, /* th->passed_defined_class, */
+		      self, defined_class,
 		      VM_ENVVAL_PREV_EP_PTR(block->ep),
 		      iseq->iseq_encoded + opt_pc,
 		      cfp->sp + arg_size, iseq->local_size - arg_size,
@@ -633,19 +638,21 @@ static inline VALUE
 vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const NODE *cref)
 {
     const rb_block_t *blockptr = check_block(th);
-    return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, 0, cref);
+    return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, 0, cref,
+			       blockptr->klass);
 }
 
 static inline VALUE
 vm_yield(rb_thread_t *th, int argc, const VALUE *argv)
 {
     const rb_block_t *blockptr = check_block(th);
-    return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, 0, 0);
+    return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, 0, 0,
+			       blockptr->klass);
 }
 
-VALUE
-rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
-		  int argc, const VALUE *argv, const rb_block_t * blockptr)
+static VALUE
+vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class,
+	       int argc, const VALUE *argv, const rb_block_t *blockptr)
 {
     VALUE val = Qundef;
     int state;
@@ -656,7 +663,8 @@ rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 	if (!proc->is_from_method) {
 	    th->safe_level = proc->safe_level;
 	}
-	val = invoke_block_from_c(th, &proc->block, self, argc, argv, blockptr, 0);
+	val = invoke_block_from_c(th, &proc->block, self, argc, argv, blockptr, 0,
+				  defined_class);
     }
     TH_POP_TAG();
 
@@ -668,6 +676,14 @@ rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 	JUMP_TAG(state);
     }
     return val;
+}
+
+VALUE
+rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
+		  int argc, const VALUE *argv, const rb_block_t *blockptr)
+{
+    return vm_invoke_proc(th, proc, proc->block.self, proc->block.klass,
+			  argc, argv, blockptr);
 }
 
 /* special variable */

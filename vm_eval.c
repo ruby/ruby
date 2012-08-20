@@ -126,7 +126,7 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	  case OPTIMIZED_METHOD_TYPE_CALL: {
 	    rb_proc_t *proc;
 	    GetProcPtr(recv, proc);
-	    val = rb_vm_invoke_proc(th, proc, proc->block.self, argc, argv, blockptr);
+	    val = rb_vm_invoke_proc(th, proc, argc, argv, blockptr);
 	    break;
 	  }
 	  default:

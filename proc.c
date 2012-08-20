@@ -558,8 +558,7 @@ proc_call(int argc, VALUE *argv, VALUE procval)
 	}
     }
 
-    vret = rb_vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
-			     argc, argv, blockptr);
+    vret = rb_vm_invoke_proc(GET_THREAD(), proc, argc, argv, blockptr);
     RB_GC_GUARD(procval);
     return vret;
 }
@@ -584,7 +583,7 @@ rb_proc_call(VALUE self, VALUE args)
     VALUE vret;
     rb_proc_t *proc;
     GetProcPtr(self, proc);
-    vret = rb_vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
+    vret = rb_vm_invoke_proc(GET_THREAD(), proc,
 			     check_argc(RARRAY_LEN(args)), RARRAY_PTR(args), 0);
     RB_GC_GUARD(self);
     RB_GC_GUARD(args);
@@ -605,8 +604,7 @@ rb_proc_call_with_block(VALUE self, int argc, VALUE *argv, VALUE pass_procval)
 	block = &pass_proc->block;
     }
 
-    vret = rb_vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
-			     argc, argv, block);
+    vret = rb_vm_invoke_proc(GET_THREAD(), proc, argc, argv, block);
     RB_GC_GUARD(self);
     RB_GC_GUARD(pass_procval);
     return vret;
