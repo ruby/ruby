@@ -17,7 +17,7 @@ class TestISeq < Test::Unit::TestCase
   end if defined?(RubyVM::InstructionSequence.load)
 
   def test_disasm_encoding
-    src = "\u{3042} = 1"
+    src = "\u{3042} = 1; \u{3042}"
     enc, Encoding.default_internal = Encoding.default_internal, src.encoding
     assert_equal(src.encoding, RubyVM::InstructionSequence.compile(src).disasm.encoding)
     src.encode!(Encoding::Shift_JIS)

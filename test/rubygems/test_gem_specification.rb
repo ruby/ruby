@@ -39,6 +39,8 @@ end
 
   def setup
     super
+    @orig_yamler = YAML::ENGINE.yamler
+    YAML::ENGINE.yamler = 'psych'
 
     @a1 = quick_spec 'a', '1' do |s|
       s.executable = 'exec'
@@ -63,6 +65,11 @@ end
     @current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
 
     load 'rubygems/syck_hack.rb'
+  end
+
+  def teardown
+    super
+    YAML::ENGINE.yamler = @orig_yamler
   end
 
   def test_self_attribute_names

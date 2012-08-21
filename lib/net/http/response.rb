@@ -372,7 +372,7 @@ class Net::HTTPResponse
     def read clen, dest, ignore_eof = false
       temp_dest = inflate_adapter(dest)
 
-      data = @socket.read clen, temp_dest, ignore_eof
+      @socket.read clen, temp_dest, ignore_eof
     end
 
     ##
