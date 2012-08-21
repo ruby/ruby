@@ -27,7 +27,7 @@ REVISION_H    = ./.revision.time
 PLATFORM_D    = ./$(PLATFORM_DIR)/.time
 RDOCOUT       = $(EXTOUT)/rdoc
 CAPIOUT       = doc/capi
-ID_H_TARGET   = {$(VPATH)}./.id.h.time
+ID_H_TARGET   = {$(VPATH)}id.h
 
 DMYEXT	      = dmyext.$(OBJEXT)
 NORMALMAINOBJ = main.$(OBJEXT)
@@ -852,11 +852,9 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(
 
 insns: $(INSNS)
 
-$(ID_H_INCLUDES): $(ID_H_TARGET)
 $(ID_H_TARGET): {$(VPATH)}parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
 	$(ECHO) generating id.h
-	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb --if-change --output=id.h \
-		--timestamp=$@ \
+	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb --if-change --output=$@ \
 		$(srcdir)/template/id.h.tmpl --vpath=$(VPATH) parse.h
 
 node_name.inc: {$(VPATH)}node.h
