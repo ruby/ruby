@@ -120,7 +120,7 @@ class TestContinuation < Test::Unit::TestCase
     if cont
       Thread.current.set_trace_func(func)
     else
-      set_trace_func(nil)
+      Thread.current.set_trace_func(nil)
     end
   end
 

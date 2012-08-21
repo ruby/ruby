@@ -1,3 +1,8 @@
+Tue Aug 21 10:40:06 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* test_continuation.rb (tracing_with_thread_set_trace_func): 
+	  fix to use Thread#set_trace_func(nil), not set_trace_func(nil).
+
 Tue Aug 21 09:32:41 2012  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*: Imported minitest 3.3.0 (r7676)
