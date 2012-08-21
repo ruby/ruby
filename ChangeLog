@@ -1,3 +1,8 @@
+Tue Aug 21 21:59:22 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/observer.rb: fix typo. https://github.com/ruby/ruby/pull/162 by
+	  unsymbol (Philip Cunningham).
+
 Tue Aug 21 20:30:06 2012  Benoit Daloze  <eregontp@gmail.com>
 
 	* test/fileutils/test_fileutils.rb (TestFileUtils#teardown):
