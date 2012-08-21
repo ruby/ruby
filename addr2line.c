@@ -458,11 +458,13 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	fprintf(stderr, "lseek: %s\n", strerror(e));
 	return;
     }
-    if (filesize > SIZE_MAX) {
+#if SIZEOF_OFF_T > SIZEOF_SIZE_T
+    if (filesize > (off_t)SIZE_MAX) {
 	close(fd);
 	fprintf(stderr, "Too large file %s\n", binary_filename);
 	return;
     }
+#endif
     lseek(fd, 0, SEEK_SET);
     /* async-signal unsafe */
     file = (char *)mmap(NULL, (size_t)filesize, PROT_READ, MAP_SHARED, fd, 0);
