@@ -881,12 +881,12 @@ if test "$rb_cv_have_prototypes" = yes; then
 fi
 
 AC_CACHE_CHECK(token paste string, rb_cv_tokenpaste,
-  [AC_TRY_COMPILE([#define paste(a,b) a##b],
+  [AC_TRY_COMPILE([@%:@define paste(a,b) a@%:@@%:@b],
 		  [int xy = 1; return paste(x,y);],
 		  rb_cv_tokenpaste=ansi,
 		  rb_cv_tokenpaste=knr)])
 if test "$rb_cv_tokenpaste" = ansi; then
-  AC_DEFINE(TOKEN_PASTE(x,y),[x##y])
+  AC_DEFINE(TOKEN_PASTE(x,y),[x@%:@@%:@y])
 else
   AC_DEFINE(TOKEN_PASTE(x,y),[x/**/y])
 fi
@@ -1071,7 +1071,7 @@ dnl header and library section {
 
 dnl Check whether we need to define sys_nerr locally
 AC_CHECK_DECLS([sys_nerr], [], [], [$ac_includes_default
-#include <errno.h>])
+@%:@include <errno.h>])
 
 AC_ARG_WITH(winnt-ver,
   AS_HELP_STRING([--with-winnt-ver=0xXXXX], [target Windows NT version (default to 0x0501)]),
@@ -1627,7 +1627,7 @@ if test "$use_setreuid" = yes; then
 fi
 AC_STRUCT_TIMEZONE
 AC_CACHE_CHECK(for struct tm.tm_gmtoff, rb_cv_member_struct_tm_tm_gmtoff,
-  [AC_TRY_COMPILE([#include <time.h>],
+  [AC_TRY_COMPILE([@%:@include <time.h>],
     [struct tm t; t.tm_gmtoff = 3600;],
   [rb_cv_member_struct_tm_tm_gmtoff=yes],
   [rb_cv_member_struct_tm_tm_gmtoff=no])])
@@ -2895,7 +2895,7 @@ if test "${universal_binary-no}" = yes ; then
     archflagpat=`eval echo '"'"${ARCH_FLAG}"'"' | sed 's/[[][|.*]]/\\&/g'`
     new_cflags=`echo "$CFLAGS" | sed "s|$archflagpat"'||'`
     for archs in ${universal_archnames}; do
-	cpu=${archs#*=}
+	cpu=${archs@%:@*=}
 	archs=${archs%=*}
 	CFLAGS="$new_cflags -arch $archs"
 	archs="__${archs}__"
