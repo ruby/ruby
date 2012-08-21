@@ -191,9 +191,12 @@ module MiniTest
 
     ##
     # Fails unless the block returns a true value.
+    #
+    # NOTE: This method is deprecated, use assert. It will be removed
+    # on 2013-01-01."
 
     def assert_block msg = nil
-      warn "NOTE: MiniTest::Unit::TestCase#assert_block is deprecated, use assert. It will be removed on or after 2012-06-01. Called from #{caller.first}"
+      warn "NOTE: MiniTest::Unit::TestCase#assert_block is deprecated, use assert. It will be removed on 2013-01-01. Called from #{caller.first}"
       msg = message(msg) { "Expected block to return true value" }
       assert yield, msg
     end
@@ -652,7 +655,7 @@ module MiniTest
   end
 
   class Unit # :nodoc:
-    VERSION = "3.2.0" # :nodoc:
+    VERSION = "3.3.0" # :nodoc:
 
     attr_accessor :report, :failures, :errors, :skips # :nodoc:
     attr_accessor :test_count, :assertion_count       # :nodoc:
@@ -674,8 +677,8 @@ module MiniTest
     @@after_tests = []
 
     ##
-    # A simple hook allowing you to run a block of code after the
-    # tests are done. Eg:
+    # A simple hook allowing you to run a block of code after _all_ of
+    # the tests are done. Eg:
     #
     #   MiniTest::Unit.after_tests { p $debugging_info }
 
@@ -1026,12 +1029,151 @@ module MiniTest
     end
 
     ##
+    # Provides before/after hooks for setup and teardown. These are
+    # meant for library writers, NOT for regular test authors. See
+    # #before_setup for an example.
+
+    module LifecycleHooks
+      ##
+      # Runs before every test, after setup. This hook is meant for
+      # libraries to extend minitest. It is not meant to be used by
+      # test developers.
+      #
+      # See #before_setup for an example.
+
+      def after_setup; end
+
+      ##
+      # Runs before every test, before setup. This hook is meant for
+      # libraries to extend minitest. It is not meant to be used by
+      # test developers.
+      #
+      # As a simplistic example:
+      #
+      #   module MyMinitestPlugin
+      #     def before_setup
+      #       super
+      #       # ... stuff to do before setup is run
+      #     end
+      #
+      #     def after_setup
+      #       # ... stuff to do after setup is run
+      #       super
+      #     end
+      #
+      #     def before_teardown
+      #       super
+      #       # ... stuff to do before teardown is run
+      #     end
+      #
+      #     def after_teardown
+      #       # ... stuff to do after teardown is run
+      #       super
+      #     end
+      #   end
+      #
+      #   class MiniTest::Unit::TestCase
+      #     include MyMinitestPlugin
+      #   end
+
+      def before_setup; end
+
+      ##
+      # Runs after every test, before teardown. This hook is meant for
+      # libraries to extend minitest. It is not meant to be used by
+      # test developers.
+      #
+      # See #before_setup for an example.
+
+      def before_teardown; end
+
+      ##
+      # Runs after every test, after teardown. This hook is meant for
+      # libraries to extend minitest. It is not meant to be used by
+      # test developers.
+      #
+      # See #before_setup for an example.
+
+      def after_teardown; end
+    end
+
+    module Deprecated # :nodoc:
+
+    ##
+    # This entire module is deprecated and slated for removal on 2013-01-01.
+
+      module Hooks
+        ##
+        # Adds a block of code that will be executed before every
+        # TestCase is run.
+        #
+        # NOTE: This method is deprecated, use before/after_setup. It
+        # will be removed on 2013-01-01.
+
+        def self.add_setup_hook arg=nil, &block
+          warn "NOTE: MiniTest::Unit::TestCase.add_setup_hook is deprecated, use before/after_setup via a module (and call super!). It will be removed on 2013-01-01. Called from #{caller.first}"
+          hook = arg || block
+          @setup_hooks << hook
+        end
+
+        def self.setup_hooks # :nodoc:
+          if superclass.respond_to? :setup_hooks then
+            superclass.setup_hooks
+          else
+            []
+          end + @setup_hooks
+        end
+
+        def run_setup_hooks # :nodoc:
+          _run_hooks self.class.setup_hooks
+        end
+
+        def _run_hooks hooks # :nodoc:
+          hooks.each do |hook|
+            if hook.respond_to?(:arity) && hook.arity == 1
+              hook.call(self)
+            else
+              hook.call
+            end
+          end
+        end
+
+        ##
+        # Adds a block of code that will be executed after every
+        # TestCase is run.
+        #
+        # NOTE: This method is deprecated, use before/after_teardown. It
+        # will be removed on 2013-01-01.
+
+        def self.add_teardown_hook arg=nil, &block
+          warn "NOTE: MiniTest::Unit::TestCase#add_teardown_hook is deprecated, use before/after_teardown. It will be removed on 2013-01-01. Called from #{caller.first}"
+          hook = arg || block
+          @teardown_hooks << hook
+        end
+
+        def self.teardown_hooks # :nodoc:
+          if superclass.respond_to? :teardown_hooks then
+            superclass.teardown_hooks
+          else
+            []
+          end + @teardown_hooks
+        end
+
+        def run_teardown_hooks # :nodoc:
+          _run_hooks self.class.teardown_hooks.reverse
+        end
+      end
+    end
+
+    ##
     # Subclass TestCase to create your own tests. Typically you'll want a
     # TestCase subclass per implementation class.
     #
     # See MiniTest::Assertions
 
     class TestCase
+      include LifecycleHooks
+      include Deprecated::Hooks
       include Guard
       extend Guard
 
@@ -1077,6 +1219,7 @@ module MiniTest
             rescue *PASSTHROUGH_EXCEPTIONS
               raise
             rescue Exception => e
+              @passed = false
               result = runner.puke self.class, self.__name__, e
             end
           end
@@ -1167,148 +1310,31 @@ module MiniTest
       end
 
       ##
-      # Runs before every test. Use this to refactor test initialization.
+      # Runs before every test. Use this to set up before each test
+      # run.
 
       def setup; end
 
       ##
-      # Runs before every test after setup. Use this to refactor test
-      # initialization.
-
-      def after_setup; end
-
-      ##
-      # Runs before every setup. Use this to refactor test initialization.
-
-      def before_setup; end
-
-      ##
-      # Runs after every test. Use this to refactor test cleanup.
+      # Runs after every test. Use this to clean up after each test
+      # run.
 
       def teardown; end
 
-      ##
-      # Runs after every test before teardown. Use this to refactor test
-      # initialization.
-
-      def before_teardown; end
-
-      ##
-      # Runs after every teardown. Use this to refactor test cleanup.
-
-      def after_teardown; end
-
       def self.reset_setup_teardown_hooks # :nodoc:
+        # also deprecated... believe it.
         @setup_hooks = []
         @teardown_hooks = []
       end
 
       reset_setup_teardown_hooks
 
-      ##
-      # Adds a block of code that will be executed before every TestCase is
-      # run. Equivalent to +setup+, but usable multiple times and without
-      # re-opening any classes.
-      #
-      # All of the setup hooks will run in order after the +setup+ method, if
-      # one is defined.
-      #
-      # The argument can be any object that responds to #call or a block.
-      # That means that this call,
-      #
-      #     MiniTest::Unit::TestCase.add_setup_hook { puts "foo" }
-      #
-      # ... is equivalent to:
-      #
-      #     module MyTestSetup
-      #       def self.call
-      #         puts "foo"
-      #       end
-      #     end
-      #
-      #     MiniTest::Unit::TestCase.add_setup_hook MyTestSetup
-      #
-      # The blocks passed to +add_setup_hook+ take an optional parameter that
-      # will be the TestCase instance that is executing the block.
-
-      def self.add_setup_hook arg=nil, &block
-        hook = arg || block
-        @setup_hooks << hook
-      end
-
-      def self.setup_hooks # :nodoc:
-        if superclass.respond_to? :setup_hooks then
-          superclass.setup_hooks
-        else
-          []
-        end + @setup_hooks
-      end
-
-      def run_setup_hooks # :nodoc:
-        self.class.setup_hooks.each do |hook|
-          if hook.respond_to?(:arity) && hook.arity == 1
-            hook.call(self)
-          else
-            hook.call
-          end
-        end
-      end
-
-      ##
-      # Adds a block of code that will be executed after every TestCase is
-      # run. Equivalent to +teardown+, but usable multiple times and without
-      # re-opening any classes.
-      #
-      # All of the teardown hooks will run in reverse order after the
-      # +teardown+ method, if one is defined.
-      #
-      # The argument can be any object that responds to #call or a block.
-      # That means that this call,
-      #
-      #     MiniTest::Unit::TestCase.add_teardown_hook { puts "foo" }
-      #
-      # ... is equivalent to:
-      #
-      #     module MyTestTeardown
-      #       def self.call
-      #         puts "foo"
-      #       end
-      #     end
-      #
-      #     MiniTest::Unit::TestCase.add_teardown_hook MyTestTeardown
-      #
-      # The blocks passed to +add_teardown_hook+ take an optional parameter
-      # that will be the TestCase instance that is executing the block.
-
-      def self.add_teardown_hook arg=nil, &block
-        hook = arg || block
-        @teardown_hooks << hook
-      end
-
-      def self.teardown_hooks # :nodoc:
-        if superclass.respond_to? :teardown_hooks then
-          superclass.teardown_hooks
-        else
-          []
-        end + @teardown_hooks
-      end
-
-      def run_teardown_hooks # :nodoc:
-        self.class.teardown_hooks.reverse.each do |hook|
-          if hook.respond_to?(:arity) && hook.arity == 1
-            hook.call(self)
-          else
-            hook.call
-          end
-        end
-      end
-
       include MiniTest::Assertions
     end # class TestCase
   end # class Unit
 end # module MiniTest
 
-Minitest = MiniTest # because ugh... I typo this all the time
+Minitest = MiniTest # :nodoc: because ugh... I typo this all the time
 
 if $DEBUG then
   module Test                # :nodoc:

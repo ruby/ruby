@@ -13,8 +13,8 @@ class AnError < StandardError; include MyModule; end
 class ImmutableString < String; def inspect; super.freeze; end; end
 
 class TestMiniTestUnit < MetaMetaMetaTestCase
-  pwd = Pathname.new(File.expand_path(Dir.pwd))
-  basedir = Pathname.new(File.expand_path("lib/minitest")) + 'mini'
+  pwd = Pathname.new File.expand_path Dir.pwd
+  basedir = Pathname.new(File.expand_path "lib/minitest") + 'mini'
   basedir = basedir.relative_path_from(pwd).to_s
   MINITEST_BASE_DIR = basedir[/\A\./] ? basedir : "./#{basedir}"
   BT_MIDDLE = ["#{MINITEST_BASE_DIR}/test.rb:161:in `each'",
@@ -152,12 +152,12 @@ class TestMiniTestUnit < MetaMetaMetaTestCase
     bt = util_expand_bt bt
 
     ex = ["-e:1"]
-    fu = MiniTest::filter_backtrace(bt)
+    fu = MiniTest::filter_backtrace bt
     assert_equal ex, fu
   end
 
   def test_run_test
-    tc = Class.new(MiniTest::Unit::TestCase) do
+    Class.new MiniTest::Unit::TestCase do
       attr_reader :foo
 
       def run_test name
@@ -171,25 +171,19 @@ class TestMiniTestUnit < MetaMetaMetaTestCase
       end
     end
 
-    Object.const_set(:ATestCase, tc)
+    expected = clean <<-EOM
+      .
 
-    @tu.run %w[--seed 42]
+      Finished tests in 0.00
 
-    expected = "Run options: --seed 42
+      1 tests, 1 assertions, 0 failures, 0 errors, 0 skips
+    EOM
 
-# Running tests:
-
-.
-
-Finished tests in 0.00
-
-1 tests, 1 assertions, 0 failures, 0 errors, 0 skips
-"
     assert_report expected
   end
 
   def test_run_error
-    tc = Class.new(MiniTest::Unit::TestCase) do
+    Class.new MiniTest::Unit::TestCase do
       def test_something
         assert true
       end
@@ -199,21 +193,13 @@ Finished tests in 0.00
       end
     end
 
-    Object.const_set(:ATestCase, tc)
-
-    @tu.run %w[--seed 42]
-
-    expected = <<-EOM.gsub(/^ {6}/, '')
-      Run options: --seed 42
-
-      # Running tests:
-
+    expected = clean <<-EOM
       E.
 
       Finished tests in 0.00
 
         1) Error:
-      test_error(ATestCase):
+      test_error(#<Class:0xXXX>):
       RuntimeError: unhandled exception
           FILE:LINE:in `test_error'
 
@@ -224,7 +210,7 @@ Finished tests in 0.00
   end
 
   def test_run_error_teardown
-    tc = Class.new(MiniTest::Unit::TestCase) do
+    Class.new MiniTest::Unit::TestCase do
       def test_something
         assert true
       end
@@ -234,30 +220,24 @@ Finished tests in 0.00
       end
     end
 
-    Object.const_set(:ATestCase, tc)
+    expected = clean <<-EOM
+      E
 
-    @tu.run %w[--seed 42]
+      Finished tests in 0.00
 
-    expected = "Run options: --seed 42
+        1) Error:
+      test_something(#<Class:0xXXX>):
+      RuntimeError: unhandled exception
+          FILE:LINE:in `teardown'
 
-# Running tests:
+      1 tests, 1 assertions, 0 failures, 1 errors, 0 skips
+    EOM
 
-E
-
-Finished tests in 0.00
-
-  1) Error:
-test_something(ATestCase):
-RuntimeError: unhandled exception
-    FILE:LINE:in `teardown'
-
-1 tests, 1 assertions, 0 failures, 1 errors, 0 skips
-"
     assert_report expected
   end
 
   def test_run_failing
-    tc = Class.new(MiniTest::Unit::TestCase) do
+    Class.new MiniTest::Unit::TestCase do
       def test_something
         assert true
       end
@@ -267,29 +247,23 @@ RuntimeError: unhandled exception
       end
     end
 
-    Object.const_set(:ATestCase, tc)
+    expected = clean <<-EOM
+      F.
 
-    @tu.run %w[--seed 42]
+      Finished tests in 0.00
 
-    expected = "Run options: --seed 42
+        1) Failure:
+      test_failure(#<Class:0xXXX>) [FILE:LINE]:
+      Failed assertion, no message given.
 
-# Running tests:
+      2 tests, 2 assertions, 1 failures, 0 errors, 0 skips
+    EOM
 
-F.
-
-Finished tests in 0.00
-
-  1) Failure:
-test_failure(ATestCase) [FILE:LINE]:
-Failed assertion, no message given.
-
-2 tests, 2 assertions, 1 failures, 0 errors, 0 skips
-"
     assert_report expected
   end
 
   def test_run_failing_filtered
-    tc = Class.new(MiniTest::Unit::TestCase) do
+    Class.new MiniTest::Unit::TestCase do
       def test_something
         assert true
       end
@@ -299,39 +273,37 @@ Failed assertion, no message given.
       end
     end
 
-    Object.const_set(:ATestCase, tc)
+    expected = clean <<-EOM
+      .
 
-    @tu.run %w[--name /some|thing/ --seed 42]
+      Finished tests in 0.00
 
-    expected = "Run options: --name \"/some|thing/\" --seed 42
+      1 tests, 1 assertions, 0 failures, 0 errors, 0 skips
+    EOM
 
-# Running tests:
-
-.
-
-Finished tests in 0.00
-
-1 tests, 1 assertions, 0 failures, 0 errors, 0 skips
-"
-    assert_report expected
+    assert_report expected, %w[--name /some|thing/ --seed 42]
   end
 
   def test_run_passing
-    tc = Class.new(MiniTest::Unit::TestCase) do
+    Class.new MiniTest::Unit::TestCase do
       def test_something
         assert true
       end
     end
 
-    Object.const_set(:ATestCase, tc)
+    expected = clean <<-EOM
+      .
 
-    @tu.run %w[--seed 42]
+      Finished tests in 0.00
 
-    assert_report
+      1 tests, 1 assertions, 0 failures, 0 errors, 0 skips
+    EOM
+
+    assert_report expected
   end
 
   def test_run_skip
-    tc = Class.new(MiniTest::Unit::TestCase) do
+    Class.new MiniTest::Unit::TestCase do
       def test_something
         assert true
       end
@@ -341,25 +313,19 @@ Finished tests in 0.00
       end
     end
 
-    Object.const_set(:ATestCase, tc)
+    expected = clean <<-EOM
+      S.
 
-    @tu.run %w[--seed 42]
+      Finished tests in 0.00
 
-    expected = "Run options: --seed 42
+      2 tests, 1 assertions, 0 failures, 0 errors, 1 skips
+    EOM
 
-# Running tests:
-
-S.
-
-Finished tests in 0.00
-
-2 tests, 1 assertions, 0 failures, 0 errors, 1 skips
-"
     assert_report expected
   end
 
   def test_run_skip_verbose
-    tc = Class.new(MiniTest::Unit::TestCase) do
+    Class.new MiniTest::Unit::TestCase do
       def test_something
         assert true
       end
@@ -369,27 +335,21 @@ Finished tests in 0.00
       end
     end
 
-    Object.const_set(:ATestCase, tc)
-
-    @tu.run %w[--seed 42 --verbose]
-
-    expected = "Run options: --seed 42 --verbose
-
-# Running tests:
-
-ATestCase#test_skip = 0.00 s = S
-ATestCase#test_something = 0.00 s = .
+    expected = clean <<-EOM
+      #<Class:0xXXX>#test_skip = 0.00 s = S
+      #<Class:0xXXX>#test_something = 0.00 s = .
 
 
-Finished tests in 0.00
+      Finished tests in 0.00
 
-  1) Skipped:
-test_skip(ATestCase) [FILE:LINE]:
-not yet
+        1) Skipped:
+      test_skip(#<Class:0xXXX>) [FILE:LINE]:
+      not yet
 
-2 tests, 1 assertions, 0 failures, 0 errors, 1 skips
-"
-    assert_report expected
+      2 tests, 1 assertions, 0 failures, 0 errors, 1 skips
+    EOM
+
+    assert_report expected, %w[--seed 42 --verbose]
   end
 
   def test_default_runner_is_minitest_unit
@@ -397,18 +357,15 @@ not yet
   end
 
   def test_run_with_other_runner
-
-    runner = Class.new(MiniTest::Unit) do
-      # Run once before each suite
-      def _run_suite(suite, type)
-        begin
-          suite.before_suite
-          super(suite, type)
-        end
+    MiniTest::Unit.runner = Class.new MiniTest::Unit do
+      def _run_suite suite, type
+        suite.before_suite # Run once before each suite
+        super suite, type
       end
-    end
+    end.new
 
-    tc = Class.new(MiniTest::Unit::TestCase) do
+    Class.new MiniTest::Unit::TestCase do
+      def self.name; "wacky!" end
 
       def self.before_suite
         MiniTest::Unit.output.puts "Running #{self.name} tests"
@@ -424,22 +381,15 @@ not yet
       end
     end
 
-    Object.const_set(:ATestCase, tc)
-    MiniTest::Unit.runner = runner.new
-    @tu.run %w[--seed 42]
+    expected = clean <<-EOM
+      Running wacky! tests
+      ..
 
-    # We should only see 'running ATestCase tests' once
-    expected = "Run options: --seed 42
+      Finished tests in 0.00
 
-# Running tests:
+      2 tests, 2 assertions, 0 failures, 0 errors, 0 skips
+    EOM
 
-Running ATestCase tests
-..
-
-Finished tests in 0.00
-
-2 tests, 2 assertions, 0 failures, 0 errors, 0 skips
-"
     assert_report expected
   end
 
@@ -455,7 +405,6 @@ Finished tests in 0.00
     end
 
     yield
-
   ensure
     Class.class_eval do
       alias inherited inherited_without_hacks
@@ -478,7 +427,7 @@ Finished tests in 0.00
 
   def test_before_setup
     call_order = []
-    Class.new(MiniTest::Unit::TestCase) do
+    Class.new MiniTest::Unit::TestCase do
       define_method :setup do
         super()
         call_order << :setup
@@ -497,9 +446,31 @@ Finished tests in 0.00
     assert_equal expected, call_order
   end
 
+  def test_passed_eh_teardown_good
+    test_class = Class.new MiniTest::Unit::TestCase do
+      def teardown; assert true; end
+      def test_omg; assert true; end
+    end
+
+    test = test_class.new :test_omg
+    test.run @tu
+    assert test.passed?
+  end
+
+  def test_passed_eh_teardown_flunked
+    test_class = Class.new MiniTest::Unit::TestCase do
+      def teardown; flunk;       end
+      def test_omg; assert true; end
+    end
+
+    test = test_class.new :test_omg
+    test.run @tu
+    refute test.passed?
+  end
+
   def test_after_teardown
     call_order = []
-    Class.new(MiniTest::Unit::TestCase) do
+    Class.new MiniTest::Unit::TestCase do
       define_method :teardown do
         super()
         call_order << :teardown
@@ -520,7 +491,7 @@ Finished tests in 0.00
 
   def test_all_teardowns_are_guaranteed_to_run
     call_order = []
-    Class.new(MiniTest::Unit::TestCase) do
+    Class.new MiniTest::Unit::TestCase do
       define_method :after_teardown do
         super()
         call_order << :after_teardown
@@ -548,91 +519,15 @@ Finished tests in 0.00
     assert_equal expected, call_order
   end
 
-  def test_setup_hooks
+  def test_setup_and_teardown_survive_inheritance
     call_order = []
 
-    tc = Class.new(MiniTest::Spec) do
-      define_method :setup do
-        super()
-        call_order << :method
-      end
-
-      define_method :test2 do
-        call_order << :test2
-      end
-
-      define_method :test1 do
-        call_order << :test1
-      end
-    end
-
-    tc.add_setup_hook lambda { call_order << :proc }
-
-    argument = nil
-
-    tc.add_setup_hook do |arg|
-      argument = arg
-      call_order << :block
-    end
-
-    @tu.run %w[--seed 42]
-
-    assert_kind_of tc, argument
-
-    expected = [:method, :proc, :block, :test1,
-                :method, :proc, :block, :test2]
-
-    assert_equal expected, call_order
-  end
-
-  def test_teardown_hooks
-    call_order = []
-
-    tc = Class.new(MiniTest::Spec) do
-      define_method :teardown do
-        super()
-        call_order << :method
-      end
-
-      define_method :test2 do
-        call_order << :test2
-      end
-
-      define_method :test1 do
-        call_order << :test1
-      end
-    end
-
-    tc.add_teardown_hook lambda { call_order << :proc }
-
-    argument = nil
-
-    tc.add_teardown_hook do |arg|
-      argument = arg
-      call_order << :block
-    end
-
-    @tu.run %w[--seed 42]
-
-    assert_kind_of tc, argument
-
-    expected = [:test1, :block, :proc, :method,
-                :test2, :block, :proc, :method]
-
-    assert_equal expected, call_order
-  end
-
-  def test_setup_and_teardown_hooks_survive_inheritance
-    call_order = []
-
-    parent = Class.new(MiniTest::Spec) do
-      define_method :setup do
-        super()
+    parent = Class.new MiniTest::Spec do
+      before do
         call_order << :setup_method
       end
 
-      define_method :teardown do
-        super()
+      after do
         call_order << :teardown_method
       end
 
@@ -641,19 +536,12 @@ Finished tests in 0.00
       end
     end
 
-    parent.add_setup_hook     { call_order << :setup_hook }
-    parent.add_teardown_hook  { call_order << :teardown_hook }
-
     _ = Class.new parent
-
-    parent.add_setup_hook     { call_order << :setup_after }
-    parent.add_teardown_hook  { call_order << :teardown_after }
 
     @tu.run %w[--seed 42]
 
     # Once for the parent class, once for the child
-    expected = [:setup_method, :setup_hook, :setup_after, :test,
-                :teardown_after, :teardown_hook, :teardown_method] * 2
+    expected = [:setup_method, :test, :teardown_method] * 2
 
     assert_equal expected, call_order
   end
@@ -683,7 +571,6 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
   def teardown
     assert_equal(@assertion_count, @tc._assertions,
                  "expected #{@assertion_count} assertions to be fired during the test, not #{@tc._assertions}") if @tc._assertions
-    Object.send :remove_const, :ATestCase if defined? ATestCase
   end
 
   def test_assert
@@ -706,7 +593,7 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
 
   def test_assert_block
     exp = ["NOTE: MiniTest::Unit::TestCase#assert_block is deprecated,",
-           "use assert. It will be removed on or after 2012-06-01."].join " "
+           "use assert. It will be removed on 2013-01-01."].join " "
 
     out, err = capture_io do
       @tc.assert_block do
@@ -1104,12 +991,14 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
       end
     end
 
-    expected = "[RuntimeError] exception expected, not
-Class: <SyntaxError>
-Message: <\"icky\">
----Backtrace---
-FILE:LINE:in `test_assert_raises_triggered_different'
----------------"
+    expected = clean <<-EOM.chomp
+      [RuntimeError] exception expected, not
+      Class: <SyntaxError>
+      Message: <\"icky\">
+      ---Backtrace---
+      FILE:LINE:in `test_assert_raises_triggered_different'
+      ---------------
+    EOM
 
     actual = e.message.gsub(/^.+:\d+/, 'FILE:LINE')
     actual.gsub!(/block \(\d+ levels\) in /, '') if RUBY_VERSION >= '1.9.0'
@@ -1124,7 +1013,7 @@ FILE:LINE:in `test_assert_raises_triggered_different'
       end
     end
 
-    expected = <<-EOM.gsub(/^ {6}/, '').chomp
+    expected = clean <<-EOM
       XXX.
       [RuntimeError] exception expected, not
       Class: <SyntaxError>
@@ -1137,7 +1026,7 @@ FILE:LINE:in `test_assert_raises_triggered_different'
     actual = e.message.gsub(/^.+:\d+/, 'FILE:LINE')
     actual.gsub!(/block \(\d+ levels\) in /, '') if RUBY_VERSION >= '1.9.0'
 
-    assert_equal expected, actual
+    assert_equal expected.chomp, actual
   end
 
   def test_assert_raises_triggered_none
@@ -1171,12 +1060,14 @@ FILE:LINE:in `test_assert_raises_triggered_different'
       end
     end
 
-    expected = "[StandardError] exception expected, not
-Class: <AnError>
-Message: <\"AnError\">
----Backtrace---
-FILE:LINE:in `test_assert_raises_triggered_subclass'
----------------"
+    expected = clean <<-EOM.chomp
+      [StandardError] exception expected, not
+      Class: <AnError>
+      Message: <\"AnError\">
+      ---Backtrace---
+      FILE:LINE:in `test_assert_raises_triggered_subclass'
+      ---------------
+    EOM
 
     actual = e.message.gsub(/^.+:\d+/, 'FILE:LINE')
     actual.gsub!(/block \(\d+ levels\) in /, '') if RUBY_VERSION >= '1.9.0'
@@ -1255,14 +1146,14 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
   end
 
   def test_assert_throws
-    @tc.assert_throws(:blah) do
+    @tc.assert_throws :blah do
       throw :blah
     end
   end
 
   def test_assert_throws_different
     util_assert_triggered 'Expected :blah to have been thrown, not :not_blah.' do
-      @tc.assert_throws(:blah) do
+      @tc.assert_throws :blah do
         throw :not_blah
       end
     end
@@ -1270,7 +1161,7 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
 
   def test_assert_throws_unthrown
     util_assert_triggered 'Expected :blah to have been thrown.' do
-      @tc.assert_throws(:blah) do
+      @tc.assert_throws :blah do
         # do nothing
       end
     end
@@ -1315,21 +1206,13 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
     assert_empty asserts.map { |n| n.sub(/^assert/, 'refute') } - refutes
   end
 
-  def test_class_inherited
-    @assertion_count = 0
-
-    Object.const_set(:ATestCase, Class.new(MiniTest::Unit::TestCase))
-
-    assert_equal [ATestCase], MiniTest::Unit::TestCase.test_suites
-  end
-
   def test_class_test_suites
     @assertion_count = 0
 
-    Object.const_set(:ATestCase, Class.new(MiniTest::Unit::TestCase))
+    tc = Class.new(MiniTest::Unit::TestCase)
 
     assert_equal 1, MiniTest::Unit::TestCase.test_suites.size
-    assert_equal [ATestCase], MiniTest::Unit::TestCase.test_suites
+    assert_equal [tc], MiniTest::Unit::TestCase.test_suites
   end
 
   def test_expectation
@@ -1565,7 +1448,7 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
   def test_test_methods_random
     @assertion_count = 0
 
-    sample_test_case = Class.new(MiniTest::Unit::TestCase) do
+    sample_test_case = Class.new MiniTest::Unit::TestCase do
       def test_test1; assert "does not matter" end
       def test_test2; assert "does not matter" end
       def test_test3; assert "does not matter" end
@@ -1579,7 +1462,7 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
   def test_test_methods_sorted
     @assertion_count = 0
 
-    sample_test_case = Class.new(MiniTest::Unit::TestCase) do
+    sample_test_case = Class.new MiniTest::Unit::TestCase do
       def self.test_order; :sorted end
       def test_test3; assert "does not matter" end
       def test_test2; assert "does not matter" end
@@ -1613,7 +1496,7 @@ FILE:LINE:in `test_assert_raises_triggered_subclass'
   end
 
   def util_assert_triggered expected, klass = MiniTest::Assertion
-    e = assert_raises(klass) do
+    e = assert_raises klass do
       yield
     end
 

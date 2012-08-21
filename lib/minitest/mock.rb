@@ -57,7 +57,7 @@ module MiniTest
       self
     end
 
-    def __call name, data
+    def __call name, data # :nodoc:
       case data
       when Hash then
         "#{name}(#{data[:args].inspect[1..-2]}) => #{data[:retval].inspect}"

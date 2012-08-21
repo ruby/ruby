@@ -637,20 +637,20 @@ class TestMeta < MiniTest::Unit::TestCase
   def test_structure
     x, y, z, * = util_structure
 
-    assert_equal "top-level thingy", x.to_s
-    assert_equal "top-level thingy::inner thingy", y.to_s
+    assert_equal "top-level thingy",                                  x.to_s
+    assert_equal "top-level thingy::inner thingy",                    y.to_s
     assert_equal "top-level thingy::inner thingy::very inner thingy", z.to_s
 
-    assert_equal "top-level thingy", x.desc
-    assert_equal "inner thingy", y.desc
+    assert_equal "top-level thingy",  x.desc
+    assert_equal "inner thingy",      y.desc
     assert_equal "very inner thingy", z.desc
 
-    top_methods = %w(test_0001_top-level-it)
-    inner_methods1 = %w(test_0001_inner-it)
+    top_methods = %w(setup teardown test_0001_top-level-it)
+    inner_methods1 = %w(setup teardown test_0001_inner-it)
     inner_methods2 = inner_methods1 +
       %w(test_0002_anonymous test_0003_anonymous)
 
-    assert_equal top_methods,   x.instance_methods(false).sort.map(&:to_s)
+    assert_equal top_methods,    x.instance_methods(false).sort.map(&:to_s)
     assert_equal inner_methods1, y.instance_methods(false).sort.map(&:to_s)
     assert_equal inner_methods2, z.instance_methods(false).sort.map(&:to_s)
   end
@@ -658,13 +658,18 @@ class TestMeta < MiniTest::Unit::TestCase
   def test_setup_teardown_behavior
     _, _, z, before_list, after_list = util_structure
 
-    tc = z.new(nil)
+    @tu = MiniTest::Unit.new
+    @output = StringIO.new("")
+    MiniTest::Unit.runner = nil # protect the outer runner from the inner tests
+    MiniTest::Unit.output = @output
 
-    tc.run_setup_hooks
-    tc.run_teardown_hooks
+    tc = z.new :test_0002_anonymous
+    tc.run @tu
 
     assert_equal [1, 2, 3], before_list
     assert_equal [3, 2, 1], after_list
+  ensure
+    MiniTest::Unit.output = $stdout
   end
 
   def test_children
@@ -696,7 +701,7 @@ class TestMeta < MiniTest::Unit::TestCase
       z = describe "second thingy" do end
     end
 
-    test_methods = ['test_0001_top level it', 'test_0002_не латинские буквы-и-спецсимволы&いった α, β, γ, δ, ε hello!!! world'].sort 
+    test_methods = ['test_0001_top level it', 'test_0002_не латинские буквы-и-спецсимволы&いった α, β, γ, δ, ε hello!!! world'].sort
 
     assert_equal test_methods, [x1, x2]
     assert_equal test_methods,
