@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
-dnl {
 AC_INIT()
+{
 AC_CONFIG_AUX_DIR(tool)
 
 AC_PREREQ(2.60)
@@ -9,7 +9,7 @@ AC_DEFUN([RUBY_PREREQ_AC],
 	[m4_if(m4_version_compare(m4_defn([m4_PACKAGE_VERSION]), [$1]), [-1],
 		AC_MSG_ERROR([Autoconf version ]$1[ or higher is required]$2))])
 
-dnl environment section {
+{ # environment section
 
 AC_ARG_WITH(baseruby,
 	AS_HELP_STRING([--with-baseruby=RUBY], [use RUBY as baseruby; RUBY is the pathname of ruby]),
@@ -506,8 +506,8 @@ rm -fr conf$$.dir
 AC_MSG_RESULT([$CHDIR])
 AC_SUBST(CHDIR)
 
-dnl }
-dnl compiler section {
+}
+{ # compiler section
 
 AC_DEFUN([RUBY_WERROR_FLAG], [dnl
 save_CFLAGS="$CFLAGS"
@@ -1066,8 +1066,8 @@ fi
 
 RUBY_APPEND_OPTION(XCFLAGS, -DRUBY_EXPORT)
 
-dnl }
-dnl header and library section {
+}
+{ # header and library section
 
 dnl Check whether we need to define sys_nerr locally
 AC_CHECK_DECLS([sys_nerr], [], [], [$ac_includes_default
@@ -2117,8 +2117,8 @@ AC_ARG_WITH(valgrind,
 AS_IF([test x$with_valgrind != xno],
         [AC_CHECK_HEADERS(valgrind/memcheck.h)])
 
-dnl }
-dnl runtime section {
+}
+{ # runtime section
 
 dnl wheather use dln_a_out or not
 AC_ARG_WITH(dln-a-out,
@@ -2690,8 +2690,8 @@ if test "$EXEEXT" = .exe; then
     AC_SUBST(EXECUTABLE_EXTS)
 fi
 
-dnl }
-dnl build section {
+}
+{ # build section
 
 dnl build rdoc index if requested
 RDOCTARGET=""
@@ -3302,5 +3302,5 @@ AC_CONFIG_FILES($ruby_pc:template/ruby.pc.in,
     [ruby_pc='$ruby_pc' PKG_CONFIG='$PKG_CONFIG'])
 
 AC_OUTPUT
-dnl }
-dnl }
+}
+}
