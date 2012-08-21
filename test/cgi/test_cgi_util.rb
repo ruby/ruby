@@ -54,11 +54,11 @@ class CGIUtilTest < Test::Unit::TestCase
   end
 
   def test_cgi_escapeHTML
-    assert_equal(CGI::escapeHTML("'&\"><"),"&#x27;&amp;&quot;&gt;&lt;")
+    assert_equal(CGI::escapeHTML("'&\"><"),"&#39;&amp;&quot;&gt;&lt;")
   end
 
   def test_cgi_unescapeHTML
-    assert_equal(CGI::unescapeHTML("&apos;&amp;&quot;&gt;&lt;"),"'&\"><")
+    assert_equal(CGI::unescapeHTML("&#39;&amp;&quot;&gt;&lt;"),"'&\"><")
   end
 
 end
