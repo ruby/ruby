@@ -200,7 +200,7 @@ class  OpenSSL::TestASN1 < Test::Unit::TestCase
 
   def test_encode_nil
     m = OpenSSL::ASN1
-    [ 
+    [
       m::Boolean, m::Integer, m::BitString, m::OctetString,
       m::ObjectId, m::Enumerated, m::UTF8String, m::UTCTime,
       m::GeneralizedTime, m::Sequence, m::Set

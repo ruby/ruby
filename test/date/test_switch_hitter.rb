@@ -292,7 +292,7 @@ class TestSH < Test::Unit::TestCase
       Date.today.strftime('%100000z')
     end
     assert_raise(Errno::ERANGE) do
-      Date.new(1 << 10000).strftime('%Y') 
+      Date.new(1 << 10000).strftime('%Y')
     end
     assert_equal('-3786825600', Date.new(1850).strftime('%s'))
     assert_equal('-3786825600000', Date.new(1850).strftime('%Q'))

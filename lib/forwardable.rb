@@ -177,7 +177,7 @@ module Forwardable
 
   # Define +method+ as delegator instance method with an optional
   # alias name +ali+. Method calls to +ali+ will be delegated to
-  # +accessor.method+. 
+  # +accessor.method+.
   #
   #   class MyQueue
   #     extend Forwardable
@@ -185,7 +185,7 @@ module Forwardable
   #     def initialize
   #       @queue = []
   #     end
-  #     
+  #
   #     def_delegator :@queue, :push, :mypush
   #   end
   #

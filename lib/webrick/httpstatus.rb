@@ -27,13 +27,13 @@ module WEBrick
       class << self
         attr_reader :code, :reason_phrase # :nodoc:
       end
-      
+
       # Returns the HTTP status code
       def code() self::class::code end
-      
+
       # Returns the HTTP status description
       def reason_phrase() self::class::reason_phrase end
-      
+
       alias to_i code # :nodoc:
     end
 
@@ -146,31 +146,31 @@ module WEBrick
     def info?(code)
       code.to_i >= 100 and code.to_i < 200
     end
-    
+
     ##
     # Is +code+ a successful status?
     def success?(code)
       code.to_i >= 200 and code.to_i < 300
     end
-    
+
     ##
     # Is +code+ a redirection status?
     def redirect?(code)
       code.to_i >= 300 and code.to_i < 400
     end
-    
+
     ##
     # Is +code+ an error status?
     def error?(code)
       code.to_i >= 400 and code.to_i < 600
     end
-    
+
     ##
     # Is +code+ a client error status?
     def client_error?(code)
       code.to_i >= 400 and code.to_i < 500
     end
-    
+
     ##
     # Is +code+ a server error status?
     def server_error?(code)

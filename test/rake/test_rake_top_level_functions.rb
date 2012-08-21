@@ -23,7 +23,7 @@ class TestRakeTopLevelFunctions < Rake::TestCase
   def test_namespace
     block = proc do end
 
-    namespace("xyz", &block) 
+    namespace("xyz", &block)
 
     expected = [
       [[:in_namespace, 'xyz'], block]

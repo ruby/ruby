@@ -91,7 +91,7 @@ class CGI
   def CGI::escape_html(str)
     escapeHTML(str)
   end
-  
+
   # Synonym for CGI::unescapeHTML(str)
   def CGI::unescape_html(str)
     unescapeHTML(str)
@@ -145,7 +145,7 @@ class CGI
   def CGI::escape_element(str)
     escapeElement(str)
   end
-  
+
   # Synonym for CGI::unescapeElement(str)
   def CGI::unescape_element(str)
     unescapeElement(str)

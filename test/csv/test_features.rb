@@ -274,13 +274,13 @@ class TestCSV::Features < TestCSV
     assert(CSV::VERSION.frozen?)
     assert_match(/\A\d\.\d\.\d\Z/, CSV::VERSION)
   end
-  
+
   def test_accepts_comment_skip_lines_option
     assert_nothing_raised(ArgumentError) do
       CSV.new nil, :skip_lines => /\A\s*#/
     end
   end
-  
+
   def test_accepts_comment_defaults_to_nil
     c = CSV.new nil
     assert_equal c.skip_lines, nil

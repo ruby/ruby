@@ -299,7 +299,7 @@ module Net
     def self.default_port
       return PORT
     end
-    
+
     # The default port for IMAPS connections, port 993
     def self.default_tls_port
       return SSL_PORT
@@ -1140,7 +1140,7 @@ module Net
         @tagged_response_arrival.broadcast
         @continuation_request_arrival.broadcast
         if @idle_done_cond
-          @idle_done_cond.signal 
+          @idle_done_cond.signal
         end
       end
     end

@@ -56,7 +56,7 @@ class OpenSSL::TestEngine < Test::Unit::TestCase
       $stderr.reopen(err_back)
       err_back.close
     end
-  end 
+  end
 
   private
 

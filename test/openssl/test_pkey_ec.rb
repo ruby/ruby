@@ -119,7 +119,7 @@ class OpenSSL::TestEC < Test::Unit::TestCase
       assert_equal(a, b)
     end
   end
-  
+
   def test_read_private_key_der
     ec = OpenSSL::TestUtils::TEST_KEY_EC_P256V1
     der = ec.to_der

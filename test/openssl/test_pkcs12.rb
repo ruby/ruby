@@ -16,7 +16,7 @@ module OpenSSL
         ["subjectKeyIdentifier","hash",false],
         ["authorityKeyIdentifier","keyid:always",false],
       ]
-      
+
       @cacert = issue_cert(ca, TEST_KEY_RSA2048, 1, now, now+3600, ca_exts,
                             nil, nil, OpenSSL::Digest::SHA1.new)
 
@@ -108,7 +108,7 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
       assert_equal chain.size, decoded.ca_certs.size
       assert_include_cert @cacert, decoded.ca_certs
       assert_include_cert @inter_cacert, decoded.ca_certs
-      assert_cert @mycert, decoded.certificate 
+      assert_cert @mycert, decoded.certificate
       assert_equal TEST_KEY_RSA1024.to_der, decoded.key.to_der
     end
 

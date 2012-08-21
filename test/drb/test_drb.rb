@@ -310,7 +310,7 @@ class TestBug4409 < Test::Unit::TestCase
   def teardown
     @ext.stop_service if @ext
   end
-  
+
   def test_bug4409
     foo = @there.foo
     assert(@there.foo?(foo))

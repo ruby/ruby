@@ -16,7 +16,7 @@ class TestRipper::Generic < Test::Unit::TestCase
     SCANNER_EVENTS.each {|n| eval "def on_#{n}(*args) r = [:#{n}, *args]; r.inspect; Object.new end" }
   end
 
-  TEST_RATIO = 0.05 # testing all files needs too long time... 
+  TEST_RATIO = 0.05 # testing all files needs too long time...
 
   def capture_stderr
     err = StringIO.new

@@ -329,7 +329,7 @@ class TestCSV::Encodings < TestCSV
       yield encoding
     end
   end
-  
+
   def no_warnings
     old_verbose, $VERBOSE = $VERBOSE, nil
     yield

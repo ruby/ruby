@@ -392,7 +392,7 @@ class IPAddr
     return self
   end
 
-  # Set current netmask to given mask. 
+  # Set current netmask to given mask.
   def mask!(mask)
     if mask.kind_of?(String)
       if mask =~ /^\d+$/
@@ -626,7 +626,7 @@ unless Socket.const_defined? "AF_INET6"
 
     # Returns a +String+ based representation of a valid DNS hostname,
     # IPv4 or IPv6 address.
-    # 
+    #
     #   IPSocket.getaddress 'localhost'         #=> "::1"
     #   IPSocket.getaddress 'broadcasthost'     #=> "255.255.255.255"
     #   IPSocket.getaddress 'www.ruby-lang.org' #=> "221.186.184.68"

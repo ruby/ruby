@@ -2342,8 +2342,8 @@ class CSV
 
   private
 
-  # 
-  # Returns the encoding of the internal IO object or the +default+ if the 
+  #
+  # Returns the encoding of the internal IO object or the +default+ if the
   # encoding cannot be determined.
   #
   def raw_encoding(default = Encoding::ASCII_8BIT)

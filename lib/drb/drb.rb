@@ -1382,7 +1382,7 @@ module DRb
     def alive?
       @thread.alive?
     end
-    
+
     def here?(uri)
       @exported_uri.include?(uri)
     end
