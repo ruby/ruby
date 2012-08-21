@@ -105,9 +105,8 @@ class TestFileUtils
   end
 
   def teardown
-    tmproot = Dir.pwd
     Dir.chdir @prevdir
-    my_rm_rf tmproot
+    my_rm_rf TMPROOT
   end
 
 

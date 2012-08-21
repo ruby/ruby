@@ -1,3 +1,9 @@
+Tue Aug 21 20:30:06 2012  Benoit Daloze  <eregontp@gmail.com>
+
+	* test/fileutils/test_fileutils.rb (TestFileUtils#teardown):
+	  do not assume cwd is TMPROOT and never remove current directory.
+	  [ruby-core:47224][Bug #6884]
+
 Tue Aug 21 17:29:56 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* addr2line.c (fill_lines): need check and cast of the file size of
