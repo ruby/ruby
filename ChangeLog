@@ -1,3 +1,12 @@
+Tue Aug 21 10:52:08 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/unit/test.rb (Test::Unit::ProxyError): new exception class to
+	  wrap exceptions raised in workers in parallel test mode.
+
+	* test/unit/parallel.rb (Test::Unit::Worker#puke): use above warpper
+	  exception.
+	  [Bug #6882] [ruby-dev:46054]
+
 Tue Aug 21 10:40:06 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* test_continuation.rb (tracing_with_thread_set_trace_func): 

@@ -155,7 +155,7 @@ module Test
       end
 
       def puke(klass, meth, e)
-        @partial_report << [klass.name, meth, e]
+        @partial_report << [klass.name, meth, e.is_a?(MiniTest::Assertion) ? e : ProxyError.new(e)]
         super
       end
     end

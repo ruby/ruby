@@ -824,6 +824,15 @@ module Test
         new(*args).run
       end
     end
+
+    class ProxyError < StandardError
+      def initialize(ex)
+        @message = ex.message
+        @backtrace = ex.backtrace
+      end
+
+      attr_accessor :message, :backtrace
+    end
   end
 end
 
