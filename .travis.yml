@@ -1,15 +1,56 @@
-# no installation...
+# Copyright (C) 2011 Urabe, Shyouhei.  All rights reserved.
+#
+# This file is  a part of the programming language  Ruby.  Permission is hereby
+# granted,  to either  redistribute  or  modify this  file,  provided that  the
+# conditions  mentioned in  the file  COPYING are  met.  Consult  the  file for
+# details.
 
-# 1.9.1 is OK, since it is the most adopted version
-install: "sudo apt-get build-dep ruby1.9.1"
-before_script: autoconf
-script: "./configure && make all test"
+# This is  a Travis-CI  build configuration file.   The list  of configurations
+# available is located in
+#
+#     http://about.travis-ci.org/docs/user/build-configuration/
+#
+# and as Ruby itself is a project written in C language,
+#
+#     http://about.travis-ci.org/docs/user/languages/c/
+#
+# is also a good place to look at.
 
+# Language specification.
+language: c
+
+# Compilers.  Several  compilers are  provided in Travis,  so we try  them all.
+# The value set here is visible via $CC environment variable.
+compiler:
+  - gcc
+  - clang
+
+# Dependencies.  Some  header files are missing  in a Travis' worker  VM, so we
+# have  to install  them.  The  "1.9.1" here  is OK.   It is  the  most adopted
+# version string  for Debian/Ubuntu, and  no dependencies have been  changed so
+# far since the 1.9.1 release.
+before_install:
+  - "sudo apt-get -qq update"
+  - "sudo apt-get -qq install $CC" # upgrade if any
+install: "sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null"
+
+# Script is where the test runs.  Note  we just do "make test", not other tests
+# like  test-all, test-rubyspec.   This is  because  they take  too much  time,
+# enough for Travis to shut down the VM as being stalled.
+before_script:
+  - "autoconf"
+  - "./configure --with-gcc=$CC"
+  - "make -sj miniruby"
+  - "make -sj all"
+script: "make test"
+
+# Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
   only:
     - trunk
     - ruby_1_9_3
 
+# We want to be notified when something happens.
 notifications:
   irc:
     channels:
@@ -17,3 +58,12 @@ notifications:
       - "irc.freenode.org#ruby-ja"
     on_success: change # [always|never|change] # default: always
     on_failure: change # [always|never|change] # default: always
+
+# Local Variables:
+# mode: YAML
+# coding: utf-8-unix
+# indent-tabs-mode: nil
+# tab-width: 4
+# fill-column: 79
+# default-justification: full
+# End:

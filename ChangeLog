@@ -1,3 +1,7 @@
+Tue Aug 21 17:07:58 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* .travis.yml (compiler): [experimental] clang support.
+
 Tue Aug 21 15:44:27 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/dl/lib/dl/func.rb (DL::Function#bind): fixes an error in
