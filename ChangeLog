@@ -1,3 +1,8 @@
+Tue Aug 21 17:29:56 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* addr2line.c (fill_lines): need check and cast of the file size of
+	  target binary because there are some platforms which off_t > size_t.
+
 Tue Aug 21 17:07:58 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* .travis.yml (compiler): [experimental] clang support.

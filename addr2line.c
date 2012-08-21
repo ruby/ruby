@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  addr2line.h -
+  addr2line.c -
 
   $Author$
 
@@ -458,9 +458,14 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 	fprintf(stderr, "lseek: %s\n", strerror(e));
 	return;
     }
+    if (filesize > SIZE_MAX) {
+	close(fd);
+	fprintf(stderr, "Too large file %s\n", binary_filename);
+	return;
+    }
     lseek(fd, 0, SEEK_SET);
     /* async-signal unsafe */
-    file = (char *)mmap(NULL, filesize, PROT_READ, MAP_SHARED, fd, 0);
+    file = (char *)mmap(NULL, (size_t)filesize, PROT_READ, MAP_SHARED, fd, 0);
     if (file == MAP_FAILED) {
 	int e = errno;
 	close(fd);
@@ -470,7 +475,7 @@ fill_lines(int num_traces, void **traces, char **syms, int check_debuglink,
 
     current_line->fd = fd;
     current_line->mapped = file;
-    current_line->mapped_size = filesize;
+    current_line->mapped_size = (size_t)filesize;
 
     for (i = 0; i < num_traces; i++) {
 	const char *path;
