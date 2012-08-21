@@ -91,7 +91,7 @@ module DL
           raise(RuntimeError, "block must be given.")
         end
         unless block.lambda?
-          block = Class.new{define_method(:call, block)}.new.method(:call)
+          block = Class.new(self.class){define_method(:call, block); def initialize(obj); obj.instance_variables.each{|s| instance_variable_set(s, obj.instance_variable_get(s))}; end}.new(self).method(:call)
         end
         if( @cfunc.ptr == 0 )
           cb = Proc.new{|*args|

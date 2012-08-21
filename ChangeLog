@@ -1,3 +1,11 @@
+Tue Aug 21 15:44:27 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/lib/dl/func.rb (DL::Function#bind): fixes an error in
+	  test/dl/test_import.rb (DL::TestImport#test_carried_function)
+	  introduced by r36718.
+	  the instance of the anonymous class which wraps the block should have
+	  same methods and instance variables of self.
+
 Tue Aug 21 14:29:22 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (scriptbin.mk): no need to include twice.
