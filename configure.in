@@ -736,11 +736,8 @@ static ac__type_sizeof_ *rbcv_ptr;
 	done
     done
     }])
-    m4_ifval([$2][$3], [case "${AS_TR_SH(ac_cv_sizeof_$1)}" in
-    #(
-    [SIZEOF_*]);;
-    #(
-    *)])
+    m4_ifval([$2][$3],
+	[test "${AS_TR_SH(ac_cv_sizeof_$1)@%:@SIZEOF_}" = "${AS_TR_SH(ac_cv_sizeof_$1)}" && ]){
     test "$universal_binary" = yes && cross_compiling=yes
     AC_COMPUTE_INT([t], AS_TR_CPP(SIZEOF_$1), [AC_INCLUDES_DEFAULT([$4])]
 [${cond+$cond
@@ -754,7 +751,7 @@ ${cond+@%:@endif}
     if test ${t-0} != 0; then
 	AS_TR_SH(ac_cv_sizeof_$1)="${AS_TR_SH(ac_cv_sizeof_$1)+${AS_TR_SH(ac_cv_sizeof_$1)-} }${t}"
     fi
-    m4_ifval([$2][$3], [;; esac])
+    }
     : ${AS_TR_SH(ac_cv_sizeof_$1)=0}
 ])
 {
