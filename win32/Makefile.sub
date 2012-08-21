@@ -391,8 +391,6 @@ MINIPRELUDE_C = miniprelude.c
 !else if [for %I in ($(srcdir:/=\)\bin\*) do @echo>>scriptbin.mk %~nI.exe \]
 !else if [echo.>>scriptbin.mk]
 !else if [echo.>>scriptbin.mk]
-!else
-!include scriptbin.mk
 !endif
 !if [for %I in ($(srcdir:/=\)\bin\*) do @for %J in (\
 "%~nI.exe: $$(srcdir)/bin/%~nI" \
