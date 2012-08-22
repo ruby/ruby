@@ -172,6 +172,10 @@ with all sufficient information, see the ChangeLog file.
     private key to PEM with a password - it has to be at least four characters
     long.
 
+* yaml
+  * Syck has been removed.  YAML now completely depends on libyaml being
+    installed.
+
 === Language changes
 
   * Added %i and %I for symbol list creation (similar to %w and %W).

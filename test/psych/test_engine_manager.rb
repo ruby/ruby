@@ -3,10 +3,6 @@ require 'yaml'
 
 module Psych
  class TestEngineManager < TestCase
-   def teardown
-     YAML::ENGINE.yamler = 'syck'
-   end
-
    def test_bad_engine
      assert_raises(ArgumentError) do
        YAML::ENGINE.yamler = 'foooo'
@@ -17,12 +13,6 @@ module Psych
      YAML::ENGINE.yamler = 'psych'
      assert_equal Psych, YAML
      assert_equal 'psych', YAML::ENGINE.yamler
-   end
-
-   def test_set_syck
-     YAML::ENGINE.yamler = 'syck'
-     assert_equal ::Syck, YAML
-     assert_equal 'syck', YAML::ENGINE.yamler
    end
 
    A = Struct.new(:name)

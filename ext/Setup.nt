@@ -25,7 +25,6 @@ sdbm
 socket
 stringio
 strscan
-syck
 #syslog
 #tk
 win32ole

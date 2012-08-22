@@ -1,3 +1,12 @@
+Thu Aug 23 02:37:35 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/syck: removed. Fixes [ruby-core:43360]
+
+	* test/syck: removed.
+
+	* lib/yaml.rb: only require psych, show a warning if people try to set
+	  the engine to syck.
+
 Thu Aug 23 01:46:53 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* insns.def: search up the cf stack for an object that is an instance
