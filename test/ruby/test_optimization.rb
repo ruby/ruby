@@ -160,4 +160,25 @@ class TestRubyOptimization < Test::Unit::TestCase
     EOF
     assert_equal(9131, Tailcall.new.fact(3000).to_s.size, bug4082)
   end
+
+  def test_tailcall_with_block
+    bug6901 = '[ruby-dev:46065]'
+
+    option = {
+      tailcall_optimization: true,
+      trace_instruction: false,
+    }
+    iseq = RubyVM::InstructionSequence.new(<<-EOF, "Bug#6901", bug6901, nil, option).eval
+  def identity(val)
+    val
+  end
+
+  def delay
+    -> {
+      identity(yield)
+    }
+  end
+    EOF
+    assert_equal(123, delay { 123 }.call, bug6901)
+  end
 end

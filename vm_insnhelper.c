@@ -510,7 +510,8 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 
     sp = rsp + iseq->arg_size;
 
-    if (LIKELY(!(flag & VM_CALL_TAILCALL_BIT))) {
+    if (LIKELY(!(flag & VM_CALL_TAILCALL_BIT) ||
+	       VM_FRAME_TYPE_FINISH_P(th->cfp))) {
 	if (0) printf("local_size: %d, arg_size: %d\n",
 		      iseq->local_size, iseq->arg_size);
 
