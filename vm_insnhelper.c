@@ -510,8 +510,7 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 
     sp = rsp + iseq->arg_size;
 
-    if (LIKELY(!(flag & VM_CALL_TAILCALL_BIT) ||
-	       VM_FRAME_TYPE_FINISH_P(th->cfp))) {
+    if (LIKELY(!(flag & VM_CALL_TAILCALL_BIT))) {
 	if (0) printf("local_size: %d, arg_size: %d\n",
 		      iseq->local_size, iseq->arg_size);
 
@@ -528,6 +527,8 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
     }
     else {
 	VALUE *p_rsp;
+	int is_finish_frame = VM_FRAME_TYPE_FINISH_P(cfp);
+
 	th->cfp++; /* pop cf */
 	p_rsp = th->cfp->sp;
 
@@ -543,8 +544,8 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	    *sp++ = Qnil;
 	}
 
-	vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, recv, defined_class,
-		      VM_ENVVAL_BLOCK_PTR(blockptr),
+	vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD | (is_finish_frame ? VM_FRAME_FLAG_FINISH : 0),
+		      recv, defined_class, VM_ENVVAL_BLOCK_PTR(blockptr),
 		      iseq->iseq_encoded + opt_pc, sp, 0, me);
     }
 }

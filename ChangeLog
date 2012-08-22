@@ -1,3 +1,8 @@
+Wed Aug 22 15:27:50 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_setup_method): fix last commit.
+	  [ruby-dev:46065] [Bug #6901]
+
 Wed Aug 22 14:05:23 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c: support TracePoint. [ruby-trunk - Feature #6895]
