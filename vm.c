@@ -1392,10 +1392,8 @@ rb_iseq_eval_main(VALUE iseqval)
 }
 
 int
-rb_thread_method_id_and_class(rb_thread_t *th,
-			      ID *idp, VALUE *klassp)
+rb_vm_control_frame_id_and_class(rb_control_frame_t *cfp, ID *idp, VALUE *klassp)
 {
-    rb_control_frame_t *cfp = th->cfp;
     rb_iseq_t *iseq = cfp->iseq;
     if (!iseq && cfp->me) {
 	if (idp) *idp = cfp->me->def->original_id;
@@ -1419,6 +1417,12 @@ rb_thread_method_id_and_class(rb_thread_t *th,
 	iseq = iseq->parent_iseq;
     }
     return 0;
+}
+
+int
+rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, VALUE *klassp)
+{
+    return rb_vm_control_frame_id_and_class(th->cfp, idp, klassp);
 }
 
 int

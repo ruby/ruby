@@ -310,10 +310,9 @@ binding_clone(VALUE self)
 }
 
 VALUE
-rb_binding_new(void)
+rb_binding_new_with_cfp(rb_thread_t *th, rb_control_frame_t *src_cfp)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, src_cfp);
     VALUE bindval = binding_alloc(rb_cBinding);
     rb_binding_t *bind;
 
@@ -326,6 +325,13 @@ rb_binding_new(void)
     bind->path = cfp->iseq->location.path;
     bind->first_lineno = rb_vm_get_sourceline(cfp);
     return bindval;
+}
+
+VALUE
+rb_binding_new(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    return rb_binding_new_with_cfp(th, th->cfp);
 }
 
 /*

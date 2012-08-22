@@ -397,4 +397,222 @@ class TestSetTraceFunc < Test::Unit::TestCase
   class << self
     define_method(:method_added, Module.method(:method_added))
   end
+
+  def test_tracepoint
+    events = []
+    trace = nil
+    xyzzy = nil
+    local_var = :outer
+    eval <<-EOF.gsub(/^.*?: /, ""), nil, 'xyzzy'
+    1: trace = TracePoint.trace(){|tp|
+    2:   events << [tp.event, tp.line, tp.file, tp.klass, tp.id, tp.self, tp.binding.eval("local_var")]
+    3: }
+    4: 1.times{|;local_var| local_var = :inner
+    5:   tap{}
+    6: }
+    7: class XYZZY
+    8:   local_var = :XYZZY_outer
+    9:   def foo
+   10:     local_var = :XYZZY_foo
+   11:     bar
+   12:   end
+   13:   def bar
+   14:     local_var = :XYZZY_bar
+   15:     tap{}
+   16:   end
+   17: end
+   18: xyzzy = XYZZY.new
+   19: xyzzy.foo
+   20: trace.untrace
+    EOF
+
+    events.each{|ev|
+      STDERR.puts [ev[0], ev[1]].inspect
+      STDERR.puts ev.inspect
+    }
+    
+    [
+     #
+     [:c_return, 1, "xyzzy", self.class, :trace,           TracePoint, :outer],
+     [:line,     4, 'xyzzy', self.class, :test_tracepoint, self, :outer],
+     [:c_call,   4, 'xyzzy', Integer,    :times,           1,    :outer],
+     [:line,     4, 'xyzzy', self.class, :test_tracepoint, self, nil],
+     [:line,     5, 'xyzzy', self.class, :test_tracepoint, self, :inner],
+     [:c_call,   5, 'xyzzy', Kernel,     :tap,             self, :inner],
+     [:line,     7, 'xyzzy', self.class, :test_tracepoint, self, :outer],
+     [:c_call,   7, "xyzzy", Class,       :new,            TestSetTraceFunc::XYZZY, :outer],
+     [:c_call,   7, "xyzzy", BasicObject, :initialize,     xyzzy, :outer],
+     [:line,     8, 'xyzzy', self.class, :test_tracepoint, self, :outer],
+     [:c_call,   9, 'xyzzy', TracePoint, :untrace,         trace,:outer],
+     ].each{|e|
+      assert_equal e, events.shift
+    }
+    assert_equal [], events
+  end
+
+
+  def trace_by_tracepoint *trace_events
+    events = []
+    trace = nil
+    xyzzy = nil
+    local_var = :outer
+    method = :trace_by_tracepoint
+
+    eval <<-EOF.gsub(/^.*?: /, ""), nil, 'xyzzy'
+    1: trace = TracePoint.trace(*trace_events){|tp|
+    2:   events << [tp.event, tp.line, tp.file, tp.klass, tp.id, tp.self, tp.binding.eval("local_var")]
+    3: }
+    4: 1.times{|;local_var| local_var = :inner
+    5:   tap{}
+    6: }
+    7: class XYZZY
+    8:   local_var = :XYZZY_outer
+    9:   def foo
+   10:     local_var = :XYZZY_foo
+   11:     bar
+   12:   end
+   13:   def bar
+   14:     local_var = :XYZZY_bar
+   15:     tap{}
+   16:   end
+   17: end
+   18: xyzzy = XYZZY.new
+   19: xyzzy.foo
+   20: trace.untrace
+    EOF
+    self.class.class_eval{remove_const(:XYZZY)}
+
+    answer_events = [
+     #
+     [:c_return, 1, "xyzzy", TracePoint,  :trace,           TracePoint, :outer],
+     [:line,     4, 'xyzzy', self.class,  method,           self, :outer],
+     [:c_call,   4, 'xyzzy', Integer,     :times,           1,    :outer],
+     [:line,     4, 'xyzzy', self.class,  method,           self, nil],
+     [:line,     5, 'xyzzy', self.class,  method,           self, :inner],
+     [:c_call,   5, 'xyzzy', Kernel,      :tap,             self, :inner],
+     [:c_return, 5, "xyzzy", Kernel,      :tap,             self, :inner],
+     [:c_return, 4, "xyzzy", Integer,     :times,           1,    :outer],
+     [:line,     7, 'xyzzy', self.class,  method,           self, :outer],
+     [:c_call,   7, "xyzzy", Class,       :inherited,       Object, :outer],
+     [:c_return, 7, "xyzzy", Class,       :inherited,       Object, :outer],
+     [:class,    7, "xyzzy", nil,         nil,              xyzzy.class, nil],
+     [:line,     8, "xyzzy", nil,         nil,              xyzzy.class, nil],
+     [:line,     9, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer],
+     [:c_call,   9, "xyzzy", Module,      :method_added,    xyzzy.class, :XYZZY_outer],
+     [:c_return, 9, "xyzzy", Module,      :method_added,    xyzzy.class, :XYZZY_outer],
+     [:line,    13, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer],
+     [:c_call,  13, "xyzzy", Module,      :method_added,    xyzzy.class, :XYZZY_outer],
+     [:c_return,13, "xyzzy", Module,      :method_added,    xyzzy.class, :XYZZY_outer],
+     [:end,     17, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer],
+     [:line,    18, "xyzzy", TestSetTraceFunc, method,      self, :outer],
+     [:c_call,  18, "xyzzy", Class,       :new,             xyzzy.class, :outer],
+     [:c_call,  18, "xyzzy", BasicObject, :initialize,      xyzzy, :outer],
+     [:c_return,18, "xyzzy", BasicObject, :initialize,      xyzzy, :outer],
+     [:c_return,18, "xyzzy", Class,       :new,             xyzzy.class, :outer],
+     [:line,    19, "xyzzy", TestSetTraceFunc, method,      self, :outer],
+     [:call,     9, "xyzzy", xyzzy.class, :foo,             xyzzy, nil],
+     [:line,    10, "xyzzy", xyzzy.class, :foo,             xyzzy, nil],
+     [:line,    11, "xyzzy", xyzzy.class, :foo,             xyzzy, :XYZZY_foo],
+     [:call,    13, "xyzzy", xyzzy.class, :bar,             xyzzy, nil],
+     [:line,    14, "xyzzy", xyzzy.class, :bar,             xyzzy, nil],
+     [:line,    15, "xyzzy", xyzzy.class, :bar,             xyzzy, :XYZZY_bar],
+     [:c_call,  15, "xyzzy", Kernel,      :tap,             xyzzy, :XYZZY_bar],
+     [:c_return,15, "xyzzy", Kernel,      :tap,             xyzzy, :XYZZY_bar],
+     [:return,  16, "xyzzy", xyzzy.class, :bar,             xyzzy, :XYZZY_bar],
+     [:return,  12, "xyzzy", xyzzy.class, :foo,             xyzzy, :XYZZY_foo],
+     [:line,    20, "xyzzy", TestSetTraceFunc, method,      self, :outer],
+     [:c_call,  20, "xyzzy", TracePoint,  :untrace,         trace, :outer],
+     ]
+
+    return events, answer_events
+  end
+
+  def trace_by_set_trace_func
+    events = []
+    trace = nil
+    xyzzy = nil
+    local_var = :outer
+    eval <<-EOF.gsub(/^.*?: /, ""), nil, 'xyzzy'
+    1: set_trace_func(lambda{|event, file, line, id, binding, klass|
+    2:   events << [event, line, file, klass, id, binding.eval('self'), binding.eval("local_var")]
+    3: })
+    4: 1.times{|;local_var| local_var = :inner
+    5:   tap{}
+    6: }
+    7: class XYZZY
+    8:   local_var = :XYZZY_outer
+    9:   def foo
+   10:     local_var = :XYZZY_foo
+   11:     bar
+   12:   end
+   13:   def bar
+   14:     local_var = :XYZZY_bar
+   15:     tap{}
+   16:   end
+   17: end
+   18: xyzzy = XYZZY.new
+   19: xyzzy.foo
+   20: set_trace_func(nil)
+    EOF
+    self.class.class_eval{remove_const(:XYZZY)}
+    return events
+  end
+  
+  def test_tracepoint
+    events1, answer_events = *trace_by_tracepoint()
+    answer_events.zip(events1){|answer, event|
+      assert_equal answer, event
+    }
+
+    events2 = trace_by_set_trace_func
+    events1.zip(events2){|ev1, ev2|
+      ev2[0] = ev2[0].sub('-', '_').to_sym
+      assert_equal ev1[0..2], ev2[0..2], ev1.inspect
+
+      # event, line, file, klass, id, binding.eval('self'), binding.eval("local_var")
+      assert_equal ev1[3].nil?, ev2[3].nil? # klass
+      assert_equal ev1[4].nil?, ev2[4].nil? # id
+      assert_equal ev1[6], ev2[6]           # local_var
+    }
+
+    [:line, :class, :end, :call, :return, :c_call, :c_return, :raise].each{|event|
+      events1, answer_events = *trace_by_tracepoint(event)
+      answer_events.find_all{|e| e[0] == event}.zip(events1){|answer_line, event_line|
+        assert_equal answer_line, event_line
+      }
+    }
+  end
+
+  def test_tracepoint_object_id
+    tps = []
+    trace = TracePoint.trace(){|tp|
+      tps << tp
+    }
+    tap{}
+    tap{}
+    tap{}
+    trace.untrace
+
+    # passed tp is unique, `trace' object which is genereted by TracePoint.trace
+    tps.each{|tp|
+      assert_equal trace, tp
+    }
+  end
+
+  def test_tracepoint_access_from_outside
+    tp_store = nil
+    trace = TracePoint.trace(){|tp|
+      tp_store = tp
+    }
+    tap{}
+    trace.untrace
+
+    assert_raise(RuntimeError){tp_store.line}
+    assert_raise(RuntimeError){tp_store.event}
+    assert_raise(RuntimeError){tp_store.file}
+    assert_raise(RuntimeError){tp_store.id}
+    assert_raise(RuntimeError){tp_store.klass}
+    assert_raise(RuntimeError){tp_store.binding}
+    assert_raise(RuntimeError){tp_store.self}
+  end
 end

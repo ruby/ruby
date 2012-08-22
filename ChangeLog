@@ -1,3 +1,16 @@
+Wed Aug 22 14:05:23 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c: support TracePoint. [ruby-trunk - Feature #6895]
+
+	* test/ruby/test_settracefunc.rb: add tests for above.
+
+	* proc.c (rb_binding_new_with_cfp): add an internal function.
+
+	* vm.c (rb_vm_control_frame_id_and_class): add an internal function.
+
+	* vm_trace.c: add rb_add_event_hook2() and rb_thread_add_event_hook2().
+	  Give us the good name for them!
+
 Wed Aug 22 11:38:16 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* .travis.yml (before_script): Turned out that make -j is broken.
