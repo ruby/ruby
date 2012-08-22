@@ -1,3 +1,7 @@
+Wed Aug 22 11:20:47 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rubygems/test_case.rb: run test with psych if exist.
+
 Thu Aug 16 12:09:51 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* nacl/pepper_main.c (init_loadpath): Pushes the correct load path on

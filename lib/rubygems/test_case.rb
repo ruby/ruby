@@ -207,6 +207,9 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     Gem.pre_uninstall do |uninstaller|
       @pre_uninstall_hook_arg = uninstaller
     end
+
+    @orig_yamler = YAML::ENGINE.yamler
+    YAML::ENGINE.yamler = 'psych' rescue nil
   end
 
   ##
@@ -238,6 +241,8 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     else
       ENV.delete 'HOME'
     end
+
+    YAML::ENGINE.yamler = @orig_yamler
   end
 
   ##
