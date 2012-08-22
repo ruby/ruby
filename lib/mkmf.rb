@@ -1775,6 +1775,12 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
     end
     possible_command = (proc {|s| s if /top_srcdir/ !~ s} unless $extmk)
     extconf_h = $extconf_h ? "-DRUBY_EXTCONF_H=\\\"$(RUBY_EXTCONF_H)\\\" " : $defs.join(" ") << " "
+    headers = %w[$(hdrdir)/ruby.h $(hdrdir)/ruby/defines.h]
+    if RULE_SUBST
+      headers.each {|h| h.sub!(/.*/, &RULE_SUBST.method(:%))}
+    end
+    headers << $config_h
+    headers << '$(RUBY_EXTCONF_H)' if $extconf_h
     mk << %{
 
 CC = #{CONFIG['CC']}
@@ -1814,6 +1820,8 @@ sitearch = #{CONFIG['sitearch']}
 ruby_version = #{RbConfig::CONFIG['ruby_version']}
 ruby = #{$ruby}
 RUBY = $(ruby#{sep})
+ruby_headers = #{headers.join(' ')}
+
 RM = #{config_string('RM', &possible_command) || '$(RUBY) -run -e rm -- -f'}
 RM_RF = #{'$(RUBY) -run -e rm -- -rf'}
 RMDIRS = #{config_string('RMDIRS', &possible_command) || '$(RUBY) -run -e rmdir -- -p'}
@@ -2220,13 +2228,7 @@ site-install-rb: install-rb
     if File.exist?(depend)
       mfile.print("###\n", *depend_rules(File.read(depend)))
     else
-      headers = %w[$(hdrdir)/ruby.h $(hdrdir)/ruby/defines.h]
-      if RULE_SUBST
-        headers.each {|h| h.sub!(/.*/, &RULE_SUBST.method(:%))}
-      end
-      headers << $config_h
-      headers << '$(RUBY_EXTCONF_H)' if $extconf_h
-      mfile.print "$(OBJS): ", headers.join(' '), "\n"
+      mfile.print "$(OBJS): $(ruby_headers)\n"
     end
 
     $makefile_created = true
