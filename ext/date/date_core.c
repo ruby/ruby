@@ -7976,7 +7976,7 @@ dt_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
 	    set_hash("min", INT2FIX(0));
 	if (NIL_P(ref_hash("sec")))
 	    set_hash("sec", INT2FIX(0));
-	else if (f_gt_p(ref_hash("sec"), INT2FIX(59)))
+	else if (f_eqeq_p(ref_hash("sec"), INT2FIX(60)))
 	    set_hash("sec", INT2FIX(59));
     }
     else {

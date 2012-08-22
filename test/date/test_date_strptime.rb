@@ -467,6 +467,12 @@ class TestDateStrptime < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       DateTime.strptime('2001-02-29T23:59:60', '%FT%T')
     end
+    assert_nothing_raised(ArgumentError) do
+      DateTime.strptime('2001-03-01T23:59:60', '%FT%T')
+    end
+    assert_raise(ArgumentError) do
+      DateTime.strptime('2001-03-01T23:59:61', '%FT%T')
+    end
     assert_raise(ArgumentError) do
       Date.strptime('23:55', '%H:%M')
     end

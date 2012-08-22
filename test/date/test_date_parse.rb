@@ -664,6 +664,12 @@ class TestDateParse < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       DateTime.parse('2001-02-29T23:59:60')
     end
+    assert_nothing_raised(ArgumentError) do
+      DateTime.parse('2001-03-01T23:59:60')
+    end
+    assert_raise(ArgumentError) do
+      DateTime.parse('2001-03-01T23:59:61')
+    end
     assert_raise(ArgumentError) do
       Date.parse('23:55')
     end

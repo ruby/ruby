@@ -1,3 +1,7 @@
+Wed Aug 22 19:41:19 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: [ruby-core:47226].
+
 Wed Aug 22 16:57:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (configuration): extact least ruby headers list as
