@@ -311,14 +311,16 @@ find_all_i(VALUE i, VALUE ary, int argc, VALUE *argv)
  *     enum.find_all                 -> an_enumerator
  *     enum.select                   -> an_enumerator
  *
- *  Returns an array containing all elements of <i>enum</i> for which
- *  <em>block</em> is not <code>false</code> (see also
- *  <code>Enumerable#reject</code>).
+ *  Returns an array containing all elements of <i>enum</i>
+ *  for which <em>block</em> does not return <code>false</code> 
+ *  (see also <code>Enumerable#reject</code>).
  *
  *  If no block is given, an enumerator is returned instead.
  *
  *
  *     (1..10).find_all { |i|  i % 3 == 0 }   #=> [3, 6, 9]
+ *
+ *     [1,2,3,4,5].select { |num|  num.even?  }   #=> [2, 4]
  *
  */
 
@@ -352,11 +354,13 @@ reject_i(VALUE i, VALUE ary, int argc, VALUE *argv)
  *     enum.reject                 -> an_enumerator
  *
  *  Returns an array for all elements of <i>enum</i> for which
- *  <em>block</em> is false (see also <code>Enumerable#find_all</code>).
+ *  <em>block</em> returns false (see also <code>Enumerable#find_all</code>).
  *
  *  If no block is given, an enumerator is returned instead.
  *
  *     (1..10).reject { |i|  i % 3 == 0 }   #=> [1, 2, 4, 5, 7, 8, 10]
+ *
+ *     [1, 2, 3, 4, 5].reject { |num| num.even? } #=> [1, 3, 5]
  *
  */
 
