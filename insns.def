@@ -1034,11 +1034,17 @@ invokesuper
 
     flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;
 
+    klass = GET_CFP()->klass;
+    if (!NIL_P(RCLASS_REFINED_CLASS(klass))) {
+	klass = RCLASS_REFINED_CLASS(klass);
+    }
+
     recv = Qundef;
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
-	if ((VM_EP_LEP_P(cfp->ep) && cfp->iseq &&
+	if (((VM_EP_LEP_P(cfp->ep) && cfp->iseq &&
 	     cfp->iseq->type == ISEQ_TYPE_METHOD) ||
-	    (cfp->me && cfp->me->def->type == VM_METHOD_TYPE_BMETHOD)) {
+	    (cfp->me && cfp->me->def->type == VM_METHOD_TYPE_BMETHOD)) &&
+            rb_obj_is_kind_of(cfp->self, klass)) {
 	    recv = cfp->self;
 	    break;
 	}
@@ -1046,13 +1052,6 @@ invokesuper
     }
     if (recv == Qundef) {
 	rb_raise(rb_eNoMethodError, "super called outside of method");
-    }
-    klass = GET_CFP()->klass;
-    if (!NIL_P(RCLASS_REFINED_CLASS(klass))) {
-	klass = RCLASS_REFINED_CLASS(klass);
-    }
-    if (!rb_obj_is_kind_of(recv, klass)) {
-	rb_raise(rb_eNoMethodError, "can't find the method for super, which may be called in an orphan block");
     }
     vm_search_superclass(GET_CFP(), GET_ISEQ(), TOPN(num), &id, &klass);
 

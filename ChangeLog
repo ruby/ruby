@@ -1,3 +1,10 @@
+Thu Aug 23 01:46:53 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* insns.def: search up the cf stack for an object that is an instance
+	  of the recipient class.  Fixes [ruby-core:47186]
+
+	* test/ruby/test_super.rb: related test.
+
 Wed Aug 22 19:46:24 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_core.c: [ruby-core:47266].

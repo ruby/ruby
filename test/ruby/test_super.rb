@@ -322,4 +322,16 @@ class TestSuper < Test::Unit::TestCase
       obj.foo.call
     end
   end
+
+  def test_yielding_super
+    a = Class.new { def yielder; yield; end }
+    x = Class.new { define_singleton_method(:hello) { 'hi' } }
+    y = Class.new(x) {
+      define_singleton_method(:hello) {
+        m = a.new
+        m.yielder { super() }
+      }
+    }
+    assert_equal 'hi', y.hello
+  end
 end
