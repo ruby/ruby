@@ -783,7 +783,7 @@ debug.$(OBJEXT): {$(VPATH)}debug.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}util.h {$(VPATH)}debug.h
 id.$(OBJEXT): {$(VPATH)}id.c $(RUBY_H_INCLUDES) $(ID_H_INCLUDES) {$(VPATH)}vm_opts.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_backtrace.c \
-  $(VM_CORE_H_INCLUDES) $(RUBY_H_INCLUDES) \
+  $(VM_CORE_H_INCLUDES) $(RUBY_H_INCLUDES) $(ENCODING_H_INCLUDES) \
   {$(VPATH)}internal.h {$(VPATH)}iseq.h
 vm_trace.$(OBJEXT): {$(VPATH)}vm_trace.c \
   $(VM_CORE_H_INCLUDES) $(RUBY_H_INCLUDES) \

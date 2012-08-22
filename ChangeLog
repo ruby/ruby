@@ -1,3 +1,11 @@
+Wed Aug 15 19:29:29 2012  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* common.mk (vm_backtrace.o): Added missing dependencies.
+
+	* ext/nkf/depend (nkf.o): ditto.
+
+	* ext/ripper/depend (ripper.o) ditto.
+
 Wed Aug 22 07:27:00 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/cgi/util.rb (CGI.escapeHTML): use &#39;
