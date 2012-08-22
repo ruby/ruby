@@ -9429,11 +9429,11 @@ Init_date_core(void)
      * zero (equals to UTC).
      *
      *     DateTime.new(2001,2,3,4,5,6,Rational(3,24))
-     *				#=> #<DateTime: 2001-02-03T03:04:05+03:00 ...>
+     *				#=> #<DateTime: 2001-02-03T04:05:06+03:00 ...>
      * also accepts string form.
      *
      *     DateTime.new(2001,2,3,4,5,6,'+03:00')
-     *				#=> #<DateTime: 2001-02-03T03:04:05+03:00 ...>
+     *				#=> #<DateTime: 2001-02-03T04:05:06+03:00 ...>
      *
      * An optional argument the day of calendar reform (start) denotes
      * a Julian day number, which should be 2298874 to 2426355 or
