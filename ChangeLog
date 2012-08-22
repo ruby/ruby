@@ -1,3 +1,8 @@
+Thu Aug 16 12:09:51 2012  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* nacl/pepper_main.c (init_loadpath): Pushes the correct load path on
+	  other architectures than x86_64. Fixes #6873.
+
 Wed Aug 15 19:37:33 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* configure.in (ac_cv_func_shutdown): shutdown(2) has a dummy

@@ -26,7 +26,9 @@
 #include "ppapi/c/ppp_instance.h"
 #include "ppapi/c/ppp_messaging.h"
 
+#include "verconf.h"
 #include "ruby/ruby.h"
+#include "version.h"
 #include "gc.h"
 
 #ifdef HAVE_STRUCT_PPB_CORE
@@ -339,8 +341,8 @@ pruby_post_value(void* data)
 static void
 init_loadpath(void)
 {
-  ruby_incpush("lib/ruby/2.0.0");
-  ruby_incpush("lib/ruby/2.0.0/x86_64-nacl");
+  ruby_incpush("lib/ruby/"RUBY_LIB_VERSION);
+  ruby_incpush("lib/ruby/"RUBY_LIB_VERSION"/"RUBY_PLATFORM);
   ruby_incpush(".");
 }
 
