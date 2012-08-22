@@ -40,8 +40,8 @@ install: "sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null"
 before_script:
   - "autoconf"
   - "./configure --with-gcc=$CC"
-  - "make -sj miniruby"
-  - "make -sj all"
+  - "make -s miniruby"
+  - "make -s all"
 script: "make test"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.

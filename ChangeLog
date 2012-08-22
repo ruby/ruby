@@ -1,3 +1,7 @@
+Wed Aug 22 11:38:16 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* .travis.yml (before_script): Turned out that make -j is broken.
+
 Wed Aug 22 11:23:35 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_setup_method): should not enable tail call
