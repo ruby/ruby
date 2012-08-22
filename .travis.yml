@@ -41,7 +41,7 @@ before_script:
   - "autoconf"
   - "./configure --with-gcc=$CC"
   - "make -s encs"
-  - "make -sj exts V=1"
+  - "make -j exts V=1"
 script: "make test"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
