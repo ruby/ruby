@@ -463,8 +463,12 @@ ruby_signal(int signum, sighandler_t handler)
 	sigact.sa_flags |= SA_NOCLDWAIT;
 #endif
 #if defined(SA_ONSTACK) && defined(USE_SIGALTSTACK)
-    if (signum == SIGSEGV || signum == SIGBUS)
+    if (signum == SIGSEGV)
 	sigact.sa_flags |= SA_ONSTACK;
+#ifdef SIGBUS
+    if (signum == SIGBUS)
+	sigact.sa_flags |= SA_ONSTACK;
+#endif
 #endif
     if (sigaction(signum, &sigact, &old) < 0) {
 	if (errno != 0 && errno != EINVAL) {
