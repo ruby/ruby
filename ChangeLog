@@ -1,3 +1,8 @@
+Fri Aug 24 07:35:24 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http/backward.rb (class Net):  Restored Net::HTTPSession to
+	  fix backwards-compatibility with ancient Net::HTTP.  [Bug #6889]
+
 Thu Aug 23 20:58:55 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* common.mk: support `make id.h` without `rm .id.h.time` after

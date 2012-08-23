@@ -4,7 +4,10 @@
 
 class Net::HTTP
   ProxyMod = ProxyDelta
-  HTTPSession = self
+end
+
+module Net
+  HTTPSession = Net::HTTP
 end
 
 module Net::NetPrivate
