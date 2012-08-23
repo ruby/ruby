@@ -32,11 +32,19 @@ if "%1" == "--path" goto :path
 if "%1" == "--with-baseruby" goto :baseruby
 if "%1" == "--with-ntver" goto :ntver
 echo %1| findstr "^--with-.*-dir$" > nul
-if not errorlevel 1 goto :withdir
+if not errorlevel 1 goto :witharg
 echo %1| findstr "^--with-.*-include$" > nul
-if not errorlevel 1 goto :withdir
+if not errorlevel 1 goto :witharg
 echo %1| findstr "^--with-.*-lib$" > nul
-if not errorlevel 1 goto :withdir
+if not errorlevel 1 goto :witharg
+echo %1| findstr "^--with-ext$" > nul
+if not errorlevel 1 goto :witharg
+echo %1| findstr "^--with-extensions$" > nul
+if not errorlevel 1 goto :witharg
+echo %1| findstr "^--without-ext$" > nul
+if not errorlevel 1 goto :witharg
+echo %1| findstr "^--without-extensions$" > nul
+if not errorlevel 1 goto :witharg
 if "%1" == "-h" goto :help
 if "%1" == "--help" goto :help
   echo>>confargs.tmp %1 \
@@ -148,7 +156,7 @@ goto :loop
   shift
   shift
 goto :loop
-:withdir
+:witharg
   echo>>confargs.tmp %1=%2 \
   shift
   shift
