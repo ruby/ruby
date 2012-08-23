@@ -516,7 +516,7 @@ search_required(VALUE fname, volatile VALUE *path, int safe_level)
     if (ext && !strchr(ext, '/')) {
 	if (IS_RBEXT(ext)) {
 	    if (rb_feature_p(ftptr, ext, TRUE, FALSE, &loading)) {
-		if (loading) *path = rb_str_new2(loading);
+		if (loading) *path = rb_filesystem_str_new_cstr(loading);
 		return 'r';
 	    }
 	    if ((tmp = rb_find_file_safe(fname, safe_level)) != 0) {
@@ -529,10 +529,10 @@ search_required(VALUE fname, volatile VALUE *path, int safe_level)
 	}
 	else if (IS_SOEXT(ext)) {
 	    if (rb_feature_p(ftptr, ext, FALSE, FALSE, &loading)) {
-		if (loading) *path = rb_str_new2(loading);
+		if (loading) *path = rb_filesystem_str_new_cstr(loading);
 		return 's';
 	    }
-	    tmp = rb_str_new(RSTRING_PTR(fname), ext - RSTRING_PTR(fname));
+	    tmp = rb_str_subseq(fname, 0, ext - RSTRING_PTR(fname));
 #ifdef DLEXT2
 	    OBJ_FREEZE(tmp);
 	    if (rb_find_file_ext_safe(&tmp, loadable_ext + 1, safe_level)) {
@@ -554,7 +554,7 @@ search_required(VALUE fname, volatile VALUE *path, int safe_level)
 	}
 	else if (IS_DLEXT(ext)) {
 	    if (rb_feature_p(ftptr, ext, FALSE, FALSE, &loading)) {
-		if (loading) *path = rb_str_new2(loading);
+		if (loading) *path = rb_filesystem_str_new_cstr(loading);
 		return 's';
 	    }
 	    if ((tmp = rb_find_file_safe(fname, safe_level)) != 0) {
@@ -566,7 +566,7 @@ search_required(VALUE fname, volatile VALUE *path, int safe_level)
 	}
     }
     else if ((ft = rb_feature_p(ftptr, 0, FALSE, FALSE, &loading)) == 'r') {
-	if (loading) *path = rb_str_new2(loading);
+	if (loading) *path = rb_filesystem_str_new_cstr(loading);
 	return 'r';
     }
     tmp = fname;

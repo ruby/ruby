@@ -418,4 +418,21 @@ class TestRequire < Test::Unit::TestCase
     $".delete(path)
     tmp.close(true) if tmp
   end
+
+  def test_loaded_features_encoding
+    bug6377 = '[ruby-core:44750]'
+    loadpath = $:.dup
+    features = $".dup
+    $".clear
+    $:.clear
+    Dir.mktmpdir {|tmp|
+      $: << tmp
+      open(File.join(tmp, "foo.rb"), "w") {}
+      require "foo"
+      assert_equal(tmp.encoding, $"[0].encoding, bug6377)
+    }
+  ensure
+    $:.replace(loadpath)
+    $".replace(features)
+  end
 end

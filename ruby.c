@@ -465,12 +465,15 @@ static void
 add_modules(VALUE *req_list, const char *mod)
 {
     VALUE list = *req_list;
+    VALUE feature;
 
     if (!list) {
 	*req_list = list = rb_ary_new();
 	RBASIC(list)->klass = 0;
     }
-    rb_ary_push(list, rb_obj_freeze(rb_str_new2(mod)));
+    feature = rb_str_new2(mod);
+    RBASIC(feature)->klass = 0;
+    rb_ary_push(list, feature);
 }
 
 static void
@@ -480,6 +483,7 @@ require_libraries(VALUE *req_list)
     VALUE self = rb_vm_top_self();
     ID require;
     rb_thread_t *th = GET_THREAD();
+    rb_encoding *extenc = rb_default_external_encoding();
     int prev_parse_in_eval = th->parse_in_eval;
     th->parse_in_eval = 0;
 
@@ -487,6 +491,9 @@ require_libraries(VALUE *req_list)
     CONST_ID(require, "require");
     while (list && RARRAY_LEN(list) > 0) {
 	VALUE feature = rb_ary_shift(list);
+	rb_enc_associate(feature, extenc);
+	RBASIC(feature)->klass = rb_cString;
+	OBJ_FREEZE(feature);
 	rb_funcall2(self, require, 1, &feature);
     }
     *req_list = 0;

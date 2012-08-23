@@ -1,3 +1,14 @@
+Thu Aug 23 16:46:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_find_file_ext_safe, rb_find_file_safe): default to
+	  US-ASCII for encdb and transdb.
+
+	* load.c (search_required): keep encoding of feature name.  set
+	  loading path to filesystem encoding.  [Bug #6377][ruby-core:44750]
+
+	* ruby.c (add_modules, require_libraries): assume default external
+	  encoding as well as ARGV.
+
 Thu Aug 23 16:20:04 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: introduce flonum technique for
