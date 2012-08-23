@@ -1,3 +1,8 @@
+Thu Aug 23 20:58:55 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* common.mk: support `make id.h` without `rm .id.h.time` after
+	  `rm id.h`.
+
 Thu Aug 23 20:48:45 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_fixnum.rb (TestFixnum#test_singleton_method): new test.
