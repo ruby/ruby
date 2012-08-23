@@ -1,3 +1,18 @@
+Thu Aug 23 12:08:25 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_file_exhaustive.rb
+	  (TestFileExhaustive#test_stat_special_file): add a test.
+	  GetFileAttributesExW fails to get attributes of special files
+	  such as pagefile.sys.
+
+	* win32/win32.c (check_valid_dir): for performance, check the path
+	  by FindFirstFileW only if the path contains "...".
+
+	* win32/win32.c (winnt_stat): use GetFileAttributesExW instead of
+	  FindFirstFileW since GetFileAttributesExW is faster.
+	  Based on the patch by Dusan D. Majkic.
+	  [ruby-core:47083] [Feature #6845]
+
 Thu Aug 23 11:19:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (ruby_init_stack): STACK_GROW_DIR_DETECTION is
