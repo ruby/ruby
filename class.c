@@ -1315,7 +1315,7 @@ singleton_class_of(VALUE obj)
 {
     VALUE klass;
 
-    if (FIXNUM_P(obj) || SYMBOL_P(obj)) {
+    if (FIXNUM_P(obj) || FLONUM_P(obj) || SYMBOL_P(obj)) {
 	rb_raise(rb_eTypeError, "can't define singleton");
     }
     if (SPECIAL_CONST_P(obj)) {
