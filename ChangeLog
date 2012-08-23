@@ -1,3 +1,8 @@
+Thu Aug 23 19:16:20 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub: refactoring.  remove unused rules, and update
+	  some rules which are not used usually to fit current macros.
+
 Thu Aug 23 16:46:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_find_file_ext_safe, rb_find_file_safe): default to

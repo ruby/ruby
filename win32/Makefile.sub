@@ -1006,13 +1006,7 @@ $(ruby_pc): $(RBCONFIG)
 {$(srcdir)/missing}.c.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
-{$(srcdir)/win32}.c.obj:
-	$(ECHO) compiling $(<:\=/)
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 {$(win_srcdir)}.c.obj:
-	$(ECHO) compiling $(<:\=/)
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
-{$(win_srcdir)/sys}.c.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 {$(srcdir)}.c{}.obj:
@@ -1025,10 +1019,10 @@ $(ruby_pc): $(RBCONFIG)
 {$(srcdir)/missing}.c.asm:
 	$(ECHO) translating $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
-{$(srcdir)/win32}.c.asm:
+{$(win_srcdir)}.c.asm:
 	$(ECHO) translating $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
-{$(srcdir)}.c.asm:
+{$(srcdir)}.c{}.asm:
 	$(ECHO) translating $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
 .c.asm:
@@ -1038,10 +1032,10 @@ $(ruby_pc): $(RBCONFIG)
 {$(srcdir)/missing}.c.i:
 	$(ECHO) preprocessing $(<:\=/)
 	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P -Tc$(<:\=/) > $@
-{$(srcdir)/win32}.c.i:
+{$(win_srcdir)}.c.i:
 	$(ECHO) preprocessing $(<:\=/)
 	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P -Tc$(<:\=/)
-{$(srcdir)}.c.i:
+{$(srcdir)}.c{}.i:
 	$(ECHO) preprocessing $(<:\=/)
 	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P -Tc$(<:\=/)
 .c.i:
