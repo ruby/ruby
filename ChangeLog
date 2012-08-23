@@ -1,3 +1,9 @@
+Thu Aug 23 16:12:40 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): add dependency to header files when
+	  depend files don't exist.  now we can remove simple (and often
+	  wrong) depend files in most cases.
+
 Thu Aug 23 16:02:20 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/date/depend: add dependency to $(ruby_headers).

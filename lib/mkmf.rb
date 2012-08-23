@@ -50,6 +50,7 @@ module MakeMakefile
     CXX_EXT.concat(%w[C])
   end
   SRC_EXT = C_EXT + CXX_EXT
+  HDR_EXT = %w[h hpp]
   $static = nil
   $config_h = '$(arch_hdrdir)/ruby/config.h'
   $default_static = $static
@@ -2016,6 +2017,8 @@ RULES
     end
     $srcs = srcs
 
+    hdrs = Dir[File.join(srcdir, "*.{#{HDR_EXT.join(%q{,})}}")]
+
     target = nil if $objs.empty?
 
     if target and EXPORT_PREFIX
@@ -2069,6 +2072,7 @@ LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
 ORIG_SRCS = #{orig_srcs.collect(&File.method(:basename)).join(' ')}
 SRCS = $(ORIG_SRCS) #{(srcs - orig_srcs).collect(&File.method(:basename)).join(' ')}
 OBJS = #{$objs.join(" ")}
+HDRS = #{hdrs.map{|h| '$(srcdir)/' + File.basename(h)}.join(' ')}
 TARGET = #{target}
 TARGET_NAME = #{target && target[/\A\w+/]}
 TARGET_ENTRY = #{EXPORT_PREFIX || ''}Init_$(TARGET_NAME)
@@ -2228,7 +2232,7 @@ site-install-rb: install-rb
     if File.exist?(depend)
       mfile.print("###\n", *depend_rules(File.read(depend)))
     else
-      mfile.print "$(OBJS): $(ruby_headers)\n"
+      mfile.print "$(OBJS): $(HDRS) $(ruby_headers)\n"
     end
 
     $makefile_created = true
