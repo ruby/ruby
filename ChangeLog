@@ -1,3 +1,8 @@
+Thu Aug 23 19:18:33 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (win32/*): macro RUBY_H_INCLUDES is not defined there,
+	  so need to move denendency rules under the definition of it.
+
 Thu Aug 23 19:16:20 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub: refactoring.  remove unused rules, and update
