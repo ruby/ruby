@@ -17,7 +17,7 @@ Thu Aug 23 20:34:32 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 Thu Aug 23 19:18:33 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk (win32/*): macro RUBY_H_INCLUDES is not defined there,
-	  so need to move denendency rules under the definition of it.
+	  so need to move dependency rules under the definition of it.
 
 Thu Aug 23 19:16:20 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -143,7 +143,7 @@ Wed Aug 22 19:41:19 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Wed Aug 22 16:57:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* lib/mkmf.rb (configuration): extact least ruby headers list as
+	* lib/mkmf.rb (configuration): extract least ruby headers list as
 	  ruby_headers, so depend files can use default dependency
 	  explicitly.
 
