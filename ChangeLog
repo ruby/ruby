@@ -1,3 +1,27 @@
+Thu Aug 23 11:19:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (ruby_init_stack): STACK_GROW_DIR_DETECTION is
+	  necessary on platforms with unknown stack direction.  [Bug #6761]
+
+Thu Aug 23 11:19:51 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c (get_stack): Linux is the only OS which includes
+	  the size of guard page into the stack size.
+
+Thu Aug 23 11:19:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.h (IS_STACK_DIR_UPPER): utility macro.
+
+	* thread_pthread.c (get_stack): seems stack size does not include
+	  guard size on Mac OS X.
+
+	* thread_pthread.c (ruby_init_stack): adjust stack size for offset of
+	  addr from the bottom.
+
+Thu Aug 23 11:19:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (ruby_init_stack): use stack info if possible.
+
 Mon Aug 20 17:11:01 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (file_path_convert): don't convert it when the path string is
