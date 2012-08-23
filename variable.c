@@ -2392,7 +2392,7 @@ cv_i(st_data_t k, st_data_t v, st_data_t a)
     }
     return ST_CONTINUE;
 }
- 
+
 static void*
 mod_cvar_at(VALUE mod, void *data)
 {

@@ -1873,7 +1873,7 @@ check_match(VALUE pattern, VALUE target, enum vm_check_match_type type)
 #if defined(_MSC_VER) && _MSC_VER < 1300
 #define CHECK_CMP_NAN(a, b) if (isnan(a) || isnan(b)) return Qfalse;
 #else
-#define CHECK_CMP_NAN(a, b) 
+#define CHECK_CMP_NAN(a, b) /* do nothing */
 #endif
 
 static inline VALUE

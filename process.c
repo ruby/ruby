@@ -2726,7 +2726,7 @@ run_exec_rlimit(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg
                                        RLIM2NUM(rlim.rlim_max)));
             if (sargp->rlimit_limits == Qfalse)
                 newary = sargp->rlimit_limits = hide_obj(rb_ary_new());
-            else 
+            else
                 newary = sargp->rlimit_limits;
             rb_ary_push(newary, tmp);
         }
