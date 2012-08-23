@@ -1606,6 +1606,7 @@ id2ref(VALUE obj, VALUE objid)
     if (ptr == Qfalse) return Qfalse;
     if (ptr == Qnil) return Qnil;
     if (FIXNUM_P(ptr)) return (VALUE)ptr;
+    if (FLONUM_P(ptr)) return (VALUE)ptr;
     ptr = objid ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
 
     if ((ptr % sizeof(RVALUE)) == (4 << 2)) {
@@ -1685,8 +1686,15 @@ rb_obj_id(VALUE obj)
     if (SYMBOL_P(obj)) {
         return (SYM2ID(obj) * sizeof(RVALUE) + (4 << 2)) | FIXNUM_FLAG;
     }
-    if (SPECIAL_CONST_P(obj)) {
-        return LONG2NUM((SIGNED_VALUE)obj);
+    else if (FLONUM_P(obj)) {
+#if SIZEOF_LONG == SIZEOF_VOIDP
+	return LONG2NUM((SIGNED_VALUE)obj);
+#else
+	return LL2NUM((SIGNED_VALUE)obj);
+#endif
+    }
+    else if (SPECIAL_CONST_P(obj)) {
+	return LONG2NUM((SIGNED_VALUE)obj);
     }
     return nonspecial_obj_id(obj);
 }

@@ -350,11 +350,59 @@ rb_long2int_inline(long n)
 #define ID2SYM(x) (((VALUE)(x)<<RUBY_SPECIAL_SHIFT)|SYMBOL_FLAG)
 #define SYM2ID(x) RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT)
 
+#ifndef USE_FLONUM
+#if SIZEOF_VALUE >= SIZEOF_DOUBLE
+#define USE_FLONUM 1
+#else
+#define USE_FLONUM 0
+#endif
+#endif
+
+#if USE_FLONUM
+#define FLONUM_P(x) ((((int)(SIGNED_VALUE)(x))&FLONUM_MASK) == FLONUM_FLAG)
+#else
+#define FLONUM_P(x) 0
+#endif
+
 /* Module#methods, #singleton_methods and so on return Symbols */
 #define USE_SYMBOL_AS_METHOD_NAME 1
 
+/*
+!USE_FLONUM
+-------------------------
+...xxxx xxx1 Fixnum
+...0000 1110 Symbol
+...0000 0000 Qfalse
+...0000 0010 Qtrue
+...0000 0100 Qnil
+...0000 0110 Qundef
+
+USE_FLONUM
+-------------------------
+...xxxx xxx1 Fixnum
+...xxxx xx10 Flonum
+...0000 1100 Symbol
+...0000 0000 Qfalse  0x00 =  0
+...0000 1000  Qnil   0x08 =  8
+...0001 0100 Qtrue   0x14 = 20
+...0011 0100 Qundef  0x34 = 52
+ */
+
 /* special constants - i.e. non-zero and non-fixnum constants */
 enum ruby_special_consts {
+#if USE_FLONUM
+    RUBY_Qfalse = 0x00,
+    RUBY_Qtrue  = 0x14,
+    RUBY_Qnil   = 0x08,
+    RUBY_Qundef = 0x34,
+
+    RUBY_IMMEDIATE_MASK = 0x07,
+    RUBY_FIXNUM_FLAG    = 0x01,
+    RUBY_FLONUM_MASK    = 0x03,
+    RUBY_FLONUM_FLAG    = 0x02,
+    RUBY_SYMBOL_FLAG    = 0x0c,
+    RUBY_SPECIAL_SHIFT  = 8
+#else
     RUBY_Qfalse = 0,
     RUBY_Qtrue  = 2,
     RUBY_Qnil   = 4,
@@ -364,6 +412,7 @@ enum ruby_special_consts {
     RUBY_FIXNUM_FLAG    = 0x01,
     RUBY_SYMBOL_FLAG    = 0x0e,
     RUBY_SPECIAL_SHIFT  = 8
+#endif
 };
 
 #define Qfalse ((VALUE)RUBY_Qfalse)
@@ -372,6 +421,10 @@ enum ruby_special_consts {
 #define Qundef ((VALUE)RUBY_Qundef)	/* undefined value for placeholder */
 #define IMMEDIATE_MASK RUBY_IMMEDIATE_MASK
 #define FIXNUM_FLAG RUBY_FIXNUM_FLAG
+#if USE_FLONUM
+#define FLONUM_MASK RUBY_FLONUM_MASK
+#define FLONUM_FLAG RUBY_FLONUM_FLAG
+#endif
 #define SYMBOL_FLAG RUBY_SYMBOL_FLAG
 
 #define RTEST(v) (((VALUE)(v) & ~Qnil) != 0)
@@ -669,7 +722,87 @@ struct RFloat {
     struct RBasic basic;
     double float_value;
 };
-#define RFLOAT_VALUE(v) (RFLOAT(v)->float_value)
+
+VALUE rb_float_new_in_heap(double);
+
+#if USE_FLONUM
+#define RUBY_BIT_ROTL(v, n) (((v) << (n)) | ((v) >> ((sizeof(v) * 8) - n)))
+#define RUBY_BIT_ROTR(v, n) (((v) >> (n)) | ((v) << ((sizeof(v) * 8) - n)))
+
+static inline double
+rb_float_value(VALUE v)
+{
+    if (FLONUM_P(v)) {
+	if (v == (VALUE)0x8000000000000002) {
+	    return 0.0;
+	}
+	else {
+	    union {
+		double d;
+		VALUE v;
+	    } t;
+
+	    VALUE b63 = (v >> 63);
+	    /* e: xx1... -> 011... */
+	    /*    xx0... -> 100... */
+	    /*      ^b63           */
+	    t.v = RUBY_BIT_ROTR(((b63 ^ 1) << 1) | b63 | (v & ~0x03), 3);
+	    return t.d;
+	}
+    }
+    else {
+	return ((struct RFloat *)v)->float_value;
+    }
+}
+
+static inline VALUE
+rb_float_new(double d)
+{
+    union {
+	double d;
+	VALUE v;
+    } t;
+    int bits;
+
+    t.d = d;
+    bits = (int)((VALUE)(t.v >> 60) & 0x7);
+    /* bits contains 3 bits of b62..b60. */
+    /* bits - 3 = */
+    /*   b011 -> b000 */
+    /*   b100 -> b001 */
+
+    if (t.v != 0x3000000000000000 /* 1.72723e-77 */ &&
+	!((bits-3) & ~0x01)) {
+	return (RUBY_BIT_ROTL(t.v, 3) & ~0x01 | 0x02);
+    }
+    else {
+	if (t.v == (VALUE)0) {
+	    /* +0.0 */
+	    return 0x8000000000000002;
+	}
+	else {
+	    /* out of range */
+	    return rb_float_new_in_heap(d);
+	}
+    }
+}
+
+#else /* USE_FLONUM */
+
+static inline double
+rb_float_value(VALUE v)
+{
+    return ((struct RFloat *)v)->float_value;
+}
+
+static inline VALUE
+rb_float_new(double d)
+{
+    return rb_float_new_in_heap(d);
+}
+#endif
+
+#define RFLOAT_VALUE(v) rb_float_value(v)
 #define DBL2NUM(dbl)  rb_float_new(dbl)
 
 #define ELTS_SHARED FL_USER2
@@ -990,7 +1123,11 @@ struct RBignum {
 #define OBJ_TAINT(x) FL_SET((x), FL_TAINT)
 #define OBJ_UNTRUSTED(x) (!!FL_TEST((x), FL_UNTRUSTED))
 #define OBJ_UNTRUST(x) FL_SET((x), FL_UNTRUSTED)
-#define OBJ_INFECT(x,s) do {if (FL_ABLE(x) && FL_ABLE(s)) RBASIC(x)->flags |= RBASIC(s)->flags & (FL_TAINT | FL_UNTRUSTED);} while (0)
+#define OBJ_INFECT(x,s) do { \
+  if (FL_ABLE(x) && FL_ABLE(s)) \
+    RBASIC(x)->flags |= RBASIC(s)->flags & \
+                        (FL_TAINT | FL_UNTRUSTED); \
+} while (0)
 
 #define OBJ_FROZEN(x) (!!FL_TEST((x), FL_FREEZE))
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
@@ -1332,6 +1469,7 @@ rb_class_of(VALUE obj)
 {
     if (IMMEDIATE_P(obj)) {
 	if (FIXNUM_P(obj)) return rb_cFixnum;
+	if (FLONUM_P(obj)) return rb_cFloat;
 	if (obj == Qtrue)  return rb_cTrueClass;
 	if (SYMBOL_P(obj)) return rb_cSymbol;
     }
@@ -1347,16 +1485,23 @@ rb_type(VALUE obj)
 {
     if (IMMEDIATE_P(obj)) {
 	if (FIXNUM_P(obj)) return T_FIXNUM;
-	if (obj == Qtrue) return T_TRUE;
+        if (FLONUM_P(obj)) return T_FLOAT;
+        if (obj == Qtrue)  return T_TRUE;
 	if (SYMBOL_P(obj)) return T_SYMBOL;
 	if (obj == Qundef) return T_UNDEF;
     }
     else if (!RTEST(obj)) {
-	if (obj == Qnil) return T_NIL;
+	if (obj == Qnil)   return T_NIL;
 	if (obj == Qfalse) return T_FALSE;
     }
     return BUILTIN_TYPE(obj);
 }
+
+#if USE_FLONUM
+#define RB_FLOAT_TYPE_P(obj) (FLONUM_P(obj) || TYPE(obj) == T_FLOAT)
+#else
+#define RB_FLOAT_TYPE_P(obj) (!SPECIAL_CONST_P(obj) && BUILTIN_TYPE(obj) == T_FLOAT)
+#endif
 
 #define RB_TYPE_P(obj, type) ( \
 	((type) == T_FIXNUM) ? FIXNUM_P(obj) : \
@@ -1365,6 +1510,7 @@ rb_type(VALUE obj)
 	((type) == T_NIL) ? ((obj) == Qnil) : \
 	((type) == T_UNDEF) ? ((obj) == Qundef) : \
 	((type) == T_SYMBOL) ? SYMBOL_P(obj) : \
+        ((type) == T_FLOAT) ? RB_FLOAT_TYPE_P(obj) : \
 	(!SPECIAL_CONST_P(obj) && BUILTIN_TYPE(obj) == (type)))
 
 #ifdef __GNUC__

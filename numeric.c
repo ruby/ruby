@@ -615,7 +615,7 @@ num_to_int(VALUE num)
  */
 
 VALUE
-rb_float_new(double d)
+rb_float_new_in_heap(double d)
 {
     NEWOBJ(flt, struct RFloat);
     OBJSETUP(flt, rb_cFloat, T_FLOAT);

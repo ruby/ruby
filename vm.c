@@ -990,22 +990,22 @@ vm_init_redefined_flag(void)
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
     OP(PLUS, PLUS), (C(Fixnum), C(Float), C(String), C(Array));
-    OP(MINUS, MINUS), (C(Fixnum));
+    OP(MINUS, MINUS), (C(Fixnum), C(Float));
     OP(MULT, MULT), (C(Fixnum), C(Float));
     OP(DIV, DIV), (C(Fixnum), C(Float));
     OP(MOD, MOD), (C(Fixnum), C(Float));
     OP(Eq, EQ), (C(Fixnum), C(Float), C(String));
     OP(Eqq, EQQ), (C(Fixnum), C(Bignum), C(Float), C(Symbol), C(String));
-    OP(LT, LT), (C(Fixnum));
-    OP(LE, LE), (C(Fixnum));
+    OP(LT, LT), (C(Fixnum), C(Float));
+    OP(LE, LE), (C(Fixnum), C(Float));
+    OP(GT, GT), (C(Fixnum), C(Float));
+    OP(GE, GE), (C(Fixnum), C(Float));
     OP(LTLT, LTLT), (C(String), C(Array));
     OP(AREF, AREF), (C(Array), C(Hash));
     OP(ASET, ASET), (C(Array), C(Hash));
     OP(Length, LENGTH), (C(Array), C(String), C(Hash));
     OP(Size, SIZE), (C(Array), C(String), C(Hash));
     OP(Succ, SUCC), (C(Fixnum), C(String), C(Time));
-    OP(GT, GT), (C(Fixnum));
-    OP(GE, GE), (C(Fixnum));
 #undef C
 #undef OP
 }

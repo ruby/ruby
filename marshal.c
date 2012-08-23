@@ -636,6 +636,10 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     else if (SYMBOL_P(obj)) {
 	w_symbol(SYM2ID(obj), arg);
     }
+    else if (FLONUM_P(obj)) {
+	w_byte(TYPE_FLOAT, arg);
+	w_float(RFLOAT_VALUE(obj), arg);
+    }
     else {
 	arg->infection |= (int)FL_TEST(obj, MARSHAL_INFECTION);
 

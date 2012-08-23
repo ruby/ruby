@@ -516,7 +516,6 @@ NORETURN(void rb_num_zerodiv(void));
 VALUE rb_num_coerce_bin(VALUE, VALUE, ID);
 VALUE rb_num_coerce_cmp(VALUE, VALUE, ID);
 VALUE rb_num_coerce_relop(VALUE, VALUE, ID);
-VALUE rb_float_new(double);
 VALUE rb_num2fix(VALUE);
 VALUE rb_fix2str(VALUE, int);
 VALUE rb_dbl_cmp(double, double);

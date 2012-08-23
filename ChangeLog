@@ -1,3 +1,37 @@
+Thu Aug 23 16:20:04 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: introduce flonum technique for
+	  64bit CPU environment (sizeof(double) == sizeof(VALUE)).
+	  flonum technique enables to avoid double object creation
+	  if the double value d is in range about between
+	  1.72723e-77 < |d| <= 1.15792e+77 or 0.0.
+	  flonum Float value is immediate and their lowest two bits
+	  are b10.
+	  If flonum is activated, then USE_FLONUM macro is 1.
+	  I'll write detailed in this technique on
+	  https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/Flonum_tech
+
+	* benchmark/bmx_temp.rb: add an benchmark for simple
+	  Float calculation.
+
+	* gc.c (id2ref, rb_obj_id): add flonum Float support.
+
+	* include/ruby/intern.h: move decl of rb_float_new(double)
+	  to include/ruby/ruby.h.
+
+	* insns.def, vm.c, vm_insnhelper.c: add flonum optimization
+	  and simplify source code.
+
+	* vm_insnhelper.h (FLONUM_2_P): added.
+
+	* marshal.c: support flonum output.
+
+	* numeric.c (rb_float_new_in_heap): added.
+
+	* parse.y: support flonum.
+
+	* random.c: ditto.
+
 Thu Aug 23 16:12:40 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): add dependency to header files when

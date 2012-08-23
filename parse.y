@@ -9346,7 +9346,16 @@ negate_lit(NODE *node)
 	node->nd_lit = rb_funcall(node->nd_lit,tUMINUS,0,0);
 	break;
       case T_FLOAT:
+#if USE_FLONUM
+	if (FLONUM_P(node->nd_lit)) {
+	    node->nd_lit = DBL2NUM(-RFLOAT_VALUE(node->nd_lit));
+	}
+	else {
+	    RFLOAT(node->nd_lit)->float_value = -RFLOAT_VALUE(node->nd_lit);
+	}
+#else
 	RFLOAT(node->nd_lit)->float_value = -RFLOAT_VALUE(node->nd_lit);
+#endif
 	break;
       default:
 	break;

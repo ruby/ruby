@@ -211,9 +211,15 @@ enum vm_regan_acttype {
 #define SYMBOL_REDEFINED_OP_FLAG (1 << 6)
 #define TIME_REDEFINED_OP_FLAG   (1 << 7)
 
-#define FIXNUM_2_P(a, b) ((a) & (b) & 1)
 #define BASIC_OP_UNREDEFINED_P(op, klass) (LIKELY((ruby_vm_redefined_flag[(op)]&(klass)) == 0))
-#define HEAP_CLASS_OF(obj) RBASIC(obj)->klass
+
+#define FIXNUM_2_P(a, b) ((a) & (b) & 1)
+#if USE_FLONUM
+#define FLONUM_2_P(a, b) (((((a)^2) | ((b)^2)) & 3) == 0) /* (FLONUM_P(a) && FLONUM_P(b)) */
+#else
+#define FLONUM_2_P(a, b) 0
+#endif
+#define HEAP_CLASS_OF(obj) (RBASIC(obj)->klass)
 
 #ifndef USE_IC_FOR_SPECIALIZED_METHOD
 #define USE_IC_FOR_SPECIALIZED_METHOD 1

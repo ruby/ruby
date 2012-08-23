@@ -1333,12 +1333,8 @@ opt_plus
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    if (0) {
-
-    }
-#if 1
-    else if (FIXNUM_2_P(recv, obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_PLUS,FIXNUM_REDEFINED_OP_FLAG)) {
+    if (FIXNUM_2_P(recv, obj) &&
+	BASIC_OP_UNREDEFINED_P(BOP_PLUS,FIXNUM_REDEFINED_OP_FLAG)) {
 	/* fixnum + fixnum */
 #ifndef LONG_LONG_VALUE
 	val = (recv + (obj & (~1)));
@@ -1360,38 +1356,29 @@ opt_plus
 	}
 #endif
     }
-#endif
-
+    else if (FLONUM_2_P(recv, obj) &&
+	     BASIC_OP_UNREDEFINED_P(BOP_PLUS, FLOAT_REDEFINED_OP_FLAG)) {
+	val = DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
+    }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
-	if (0) {
-	}
-#if 1
-	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
-		 HEAP_CLASS_OF(obj) == rb_cFloat &&
-		 BASIC_OP_UNREDEFINED_P(BOP_PLUS, FLOAT_REDEFINED_OP_FLAG)) {
+	if (HEAP_CLASS_OF(recv) == rb_cFloat && HEAP_CLASS_OF(obj) == rb_cFloat &&
+	    BASIC_OP_UNREDEFINED_P(BOP_PLUS, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
 	}
-#endif
-
-#if 1
-	else if (HEAP_CLASS_OF(recv) == rb_cString &&
-		 HEAP_CLASS_OF(obj) == rb_cString &&
+	else if (HEAP_CLASS_OF(recv) == rb_cString && HEAP_CLASS_OF(obj) == rb_cString &&
 		 BASIC_OP_UNREDEFINED_P(BOP_PLUS, STRING_REDEFINED_OP_FLAG)) {
 	    val = rb_str_plus(recv, obj);
 	}
-#endif
-#if 1
 	else if (HEAP_CLASS_OF(recv) == rb_cArray &&
 		 BASIC_OP_UNREDEFINED_P(BOP_PLUS, ARRAY_REDEFINED_OP_FLAG)) {
 	    val = rb_ary_plus(recv, obj);
 	}
-#endif
 	else {
 	    goto INSN_LABEL(normal_dispatch);
 	}
     }
     else {
-      INSN_LABEL(normal_dispatch):
+	INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	PUSH(obj);
 	CALL_SIMPLE_METHOD(1, idPLUS, recv);
@@ -1424,16 +1411,15 @@ opt_minus
 	    val = rb_big_minus(rb_int2big(a), rb_int2big(b));
 	}
     }
+    else if (FLONUM_2_P(recv, obj) &&
+	     BASIC_OP_UNREDEFINED_P(BOP_MINUS, FLOAT_REDEFINED_OP_FLAG)) {
+	val = DBL2NUM(RFLOAT_VALUE(recv) - RFLOAT_VALUE(obj));
+    }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
-	if (0) {
-	}
-#if 1
-	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
-		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
-		 BASIC_OP_UNREDEFINED_P(BOP_MINUS, FLOAT_REDEFINED_OP_FLAG)) {
+	if (HEAP_CLASS_OF(recv) == rb_cFloat && HEAP_CLASS_OF(obj) == rb_cFloat  &&
+	    BASIC_OP_UNREDEFINED_P(BOP_MINUS, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = DBL2NUM(RFLOAT_VALUE(recv) - RFLOAT_VALUE(obj));
 	}
-#endif
 	else {
 	    goto INSN_LABEL(normal_dispatch);
 	}
@@ -1479,16 +1465,15 @@ opt_mult
 	    }
 	}
     }
+    else if (FLONUM_2_P(recv, obj) &&
+	     BASIC_OP_UNREDEFINED_P(BOP_MULT, FLOAT_REDEFINED_OP_FLAG)) {
+	val = DBL2NUM(RFLOAT_VALUE(recv) * RFLOAT_VALUE(obj));
+    }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
-	if (0) {
-	}
-#if 1
-	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
-		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
-		 BASIC_OP_UNREDEFINED_P(BOP_MULT, FLOAT_REDEFINED_OP_FLAG)) {
+	if (HEAP_CLASS_OF(recv) == rb_cFloat && HEAP_CLASS_OF(obj) == rb_cFloat  &&
+	    BASIC_OP_UNREDEFINED_P(BOP_MULT, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = DBL2NUM(RFLOAT_VALUE(recv) * RFLOAT_VALUE(obj));
 	}
-#endif
 	else {
 	    goto INSN_LABEL(normal_dispatch);
 	}
@@ -1543,16 +1528,15 @@ opt_div
 	}
 	val = LONG2NUM(div);
     }
+    else if (FLONUM_2_P(recv, obj) &&
+	     BASIC_OP_UNREDEFINED_P(BOP_MULT, FLOAT_REDEFINED_OP_FLAG)) {
+	val = DBL2NUM(RFLOAT_VALUE(recv) / RFLOAT_VALUE(obj));
+    }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
-	if (0) {
-	}
-#if 1
-	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
-		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
-		 BASIC_OP_UNREDEFINED_P(BOP_DIV, FLOAT_REDEFINED_OP_FLAG)) {
+	if (HEAP_CLASS_OF(recv) == rb_cFloat && HEAP_CLASS_OF(obj) == rb_cFloat  &&
+	    BASIC_OP_UNREDEFINED_P(BOP_DIV, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = DBL2NUM(RFLOAT_VALUE(recv) / RFLOAT_VALUE(obj));
 	}
-#endif
 	else {
 	    goto INSN_LABEL(normal_dispatch);
 	}
@@ -1608,12 +1592,13 @@ opt_mod
 	}
 	val = LONG2FIX(mod);
     }
+    else if (FLONUM_2_P(recv, obj) &&
+	     BASIC_OP_UNREDEFINED_P(BOP_MOD, FLOAT_REDEFINED_OP_FLAG)) {
+	val = DBL2NUM(ruby_float_mod(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj)));
+    }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
-	if (0) {
-	}
-	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
-		 HEAP_CLASS_OF(obj) == rb_cFloat &&
-		 BASIC_OP_UNREDEFINED_P(BOP_MOD, FLOAT_REDEFINED_OP_FLAG)) {
+	if (HEAP_CLASS_OF(recv) == rb_cFloat && HEAP_CLASS_OF(obj) == rb_cFloat &&
+	    BASIC_OP_UNREDEFINED_P(BOP_MOD, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = DBL2NUM(ruby_float_mod(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj)));
 	}
 	else {
@@ -1702,22 +1687,16 @@ opt_lt
 	    val = Qfalse;
 	}
     }
+    else if (FLONUM_2_P(recv, obj) &&
+	     BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
+	/* flonum is not NaN */
+	val = RFLOAT_VALUE(recv) < RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
+    }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
-	if (0) {
+	if (HEAP_CLASS_OF(recv) == rb_cFloat && HEAP_CLASS_OF(obj) == rb_cFloat  &&
+	    BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
+	    val = double_cmp_lt(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
 	}
-#if 1
-	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
-		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
-		 BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
-	    double a = RFLOAT_VALUE(recv);
-	    double b = RFLOAT_VALUE(obj);
-#if defined(_MSC_VER) && _MSC_VER < 1300
-	    if (isnan(a) || isnan(b)) val = Qfalse;
-	    else
-#endif
-	    val = a < b ? Qtrue : Qfalse;
-	}
-#endif
 	else {
 	    goto INSN_LABEL(normal_dispatch);
 	}
@@ -1752,6 +1731,11 @@ opt_le
 	    val = Qfalse;
 	}
     }
+    else if (FLONUM_2_P(recv, obj) &&
+	     BASIC_OP_UNREDEFINED_P(BOP_LE, FLOAT_REDEFINED_OP_FLAG)) {
+	/* flonum is not NaN */
+	val = RFLOAT_VALUE(recv) <= RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
+    }
     else {
 	/* other */
 	PUSH(recv);
@@ -1782,22 +1766,16 @@ opt_gt
 	    val = Qfalse;
 	}
     }
+    else if (FLONUM_2_P(recv, obj) &&
+	     BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
+	/* flonum is not NaN */
+	val = RFLOAT_VALUE(recv) > RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
+    }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
-	if (0) {
+	if (HEAP_CLASS_OF(recv) == rb_cFloat && HEAP_CLASS_OF(obj) == rb_cFloat  &&
+	    BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
+	    val = double_cmp_gt(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
 	}
-#if 1
-	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
-		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
-		 BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
-	    double a = RFLOAT_VALUE(recv);
-	    double b = RFLOAT_VALUE(obj);
-#if defined(_MSC_VER) && _MSC_VER < 1300
-	    if (isnan(a) || isnan(b)) val = Qfalse;
-	    else
-#endif
-	    val = a > b ? Qtrue : Qfalse;
-	}
-#endif
 	else {
 	    goto INSN_LABEL(normal_dispatch);
 	}
@@ -1832,6 +1810,11 @@ opt_ge
 	    val = Qfalse;
 	}
     }
+    else if (FLONUM_2_P(recv, obj) &&
+	     BASIC_OP_UNREDEFINED_P(BOP_GE, FLOAT_REDEFINED_OP_FLAG)) {
+	/* flonum is not NaN */
+	val = RFLOAT_VALUE(recv) >= RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
+    }
     else {
 	PUSH(recv);
 	PUSH(obj);
@@ -1851,10 +1834,8 @@ opt_ltlt
 (VALUE val)
 {
     if (!SPECIAL_CONST_P(recv)) {
-	if (0) {
-	}
-	else if (HEAP_CLASS_OF(recv) == rb_cString &&
-		 BASIC_OP_UNREDEFINED_P(BOP_LTLT, STRING_REDEFINED_OP_FLAG)) {
+	if (HEAP_CLASS_OF(recv) == rb_cString &&
+	    BASIC_OP_UNREDEFINED_P(BOP_LTLT, STRING_REDEFINED_OP_FLAG)) {
 	    val = rb_str_concat(recv, obj);
 	}
 	else if (HEAP_CLASS_OF(recv) == rb_cArray &&
