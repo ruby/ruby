@@ -2104,19 +2104,6 @@ main(int argc, char *argv[])
     test x$rb_cv_fork_with_pthread = xyes || AC_DEFINE(CANNOT_FORK_WITH_PTHREAD)
 fi
 
-AS_CASE(["$target_cpu-$target_os"],
-[*-freebsd*|x86_64-netbsd*], [
-    AC_CHECK_HEADERS([execinfo.h])
-    if test "x$ac_cv_header_execinfo_h" = xyes; then
-	AC_CHECK_LIB([execinfo], [backtrace])
-    fi])
-AC_CHECK_FUNCS(backtrace)
-
-AC_ARG_WITH(valgrind,
-        AS_HELP_STRING([--without-valgrind],[disable valgrind memcheck support]),
-        [], with_valgrind=yes)
-AS_IF([test x$with_valgrind != xno],
-        [AC_CHECK_HEADERS(valgrind/memcheck.h)])
 
 }
 { # runtime section
@@ -2359,6 +2346,28 @@ AC_SUBST(LIBPATHFLAG)
 AC_SUBST(RPATHFLAG)
 AC_SUBST(LIBPATHENV, "${LIBPATHENV-LD_LIBRARY_PATH}")
 AC_SUBST(TRY_LINK)
+
+AC_ARG_WITH(opt-dir,
+	AS_HELP_STRING([--with-opt-dir=DIR], [add optional headers and libraries DIR]),
+	[
+		CPPFLAGS="$CPPFLAGS -I$withval/include"
+		val=`echo $withval|sed 's/\\//\\\\\\//g'`
+		LDFLAGS="$LDFLAGS "`echo ${LIBPATHFLAG} ${RPATHFLAG}|sed -E 's/%1\\$-s|%s/'${val}'\/lib/g'`
+	])
+
+AS_CASE(["$target_cpu-$target_os"],
+[*-freebsd*|x86_64-netbsd*], [
+    AC_CHECK_HEADERS([execinfo.h])
+    if test "x$ac_cv_header_execinfo_h" = xyes; then
+	AC_CHECK_LIB([execinfo], [backtrace])
+    fi])
+AC_CHECK_FUNCS(backtrace)
+
+AC_ARG_WITH(valgrind,
+        AS_HELP_STRING([--without-valgrind],[disable valgrind memcheck support]),
+        [], with_valgrind=yes)
+AS_IF([test x$with_valgrind != xno],
+        [AC_CHECK_HEADERS(valgrind/memcheck.h)])
 
 dln_a_out_works=no
 if test "$ac_cv_header_a_out_h" = yes; then
@@ -3164,9 +3173,6 @@ AC_ARG_WITH(vendorhdrdir,
 AC_SUBST(rubyhdrdir)dnl
 AC_SUBST(sitehdrdir)dnl
 AC_SUBST(vendorhdrdir)dnl
-
-AC_ARG_WITH(opt-dir,
-	AS_HELP_STRING([--with-opt-dir=DIR], [add optional headers and libraries DIR]))
 
 AC_ARG_WITH(mantype,
 	AS_HELP_STRING([--with-mantype=TYPE], [specify man page type; TYPE is one of man and doc]),

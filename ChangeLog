@@ -1,3 +1,8 @@
+Thu Aug 23 10:49:28 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: use the value of --with-opt-dir on building ruby
+	  itself. [ruby-dev:46064] [Bug #6900]
+
 Thu Aug 23 10:36:35 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk (ID_H_TARGET): revert a part of r36724 and r36751.  they
