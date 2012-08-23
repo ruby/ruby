@@ -1,3 +1,8 @@
+Thu Aug 23 10:36:35 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (ID_H_TARGET): revert a part of r36724 and r36751.  they
+	  break mswin build from clean source.
+
 Thu Aug 23 02:37:35 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/syck: removed. Fixes [ruby-core:43360]
