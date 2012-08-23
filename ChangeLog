@@ -1,3 +1,7 @@
+Thu Aug 23 16:02:20 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/date/depend: add dependency to $(ruby_headers).
+
 Thu Aug 23 12:51:39 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* insns.def (invokesuper): reverted r36640 partially to make super
