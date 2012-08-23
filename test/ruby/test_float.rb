@@ -600,4 +600,11 @@ class TestFloat < Test::Unit::TestCase
       assert_operator(n, :<=, e)
     end
   end
+
+  def test_singleton_method
+    # flonum on 64bit platform
+    assert_raise(TypeError) { a = 1.0; def a.foo; end }
+    # always not flonum
+    assert_raise(TypeError) { a = Float::INFINITY; def a.foo; end }
+  end
 end

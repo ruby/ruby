@@ -1,3 +1,13 @@
+Thu Aug 23 20:48:45 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_fixnum.rb (TestFixnum#test_singleton_method): new test.
+
+	* test/ruby/test_bignum.rb (TestBignum#test_singleton_method): ditto.
+
+	* test/ruby/test_float.rb (TestFloat#test_singleton_method): ditto.
+
+	* test/ruby/test_symbol.rb (TestSymbol#test_singleton_method): ditto.
+
 Thu Aug 23 20:34:32 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* class.c (singleton_class_of): flonum can't have singleton class.

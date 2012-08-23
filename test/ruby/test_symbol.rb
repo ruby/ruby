@@ -168,4 +168,8 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(Encoding::UTF_8, "\u{2192}".intern.encoding)
     assert_raise(EncodingError) {"\xb0a".force_encoding("utf-8").intern}
   end
+
+  def test_singleton_method
+    assert_raise(TypeError) { a = :foo; def a.foo; end }
+  end
 end

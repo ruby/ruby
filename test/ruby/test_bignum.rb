@@ -505,4 +505,9 @@ class TestBignum < Test::Unit::TestCase
     def o.coerce(x); [x, 2**100]; end
     assert_equal((2**200).to_f, (2**300).fdiv(o))
   end
+
+  def test_singleton_method
+    # this test assumes 32bit/64bit platform
+    assert_raise(TypeError) { a = 1 << 64; def a.foo; end }
+  end
 end
