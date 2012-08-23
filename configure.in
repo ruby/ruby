@@ -601,7 +601,7 @@ if test "$GCC" = yes; then
 
     # -fstack-protector
     AS_CASE(["$target_os"],
-    [mingw*|nacl], [
+    [mingw*|nacl|haiku], [
 	stack_protector=no
     ],
     [
@@ -2289,8 +2289,8 @@ if test "$with_dln_a_out" != yes; then
 			    ],
 			  [i586*], [
 			    : ${LDSHARED='$(LD) -shared'}
-			    DLDFLAGS="$DLDFLAGS -L/boot/develop/lib/x86 -L/boot/home/config/lib \$(topdir)/_APP_ -lbe -lroot"
-			    LDFLAGS="$LDFLAGS -L/boot/develop/lib/x86 -L/boot/home/config/lib -lbe -lroot"
+			    DLDFLAGS="$DLDFLAGS -L/boot/develop/lib/x86 -L/boot/home/config/lib \$(topdir)/_APP_ -lroot"
+			    LDFLAGS="$LDFLAGS -L/boot/develop/lib/x86 -L/boot/home/config/lib -lroot"
 			    ])
 			: ${LIBPATHENV=LIBRARY_PATH}
 			rb_cv_dlopen=yes],
