@@ -187,6 +187,7 @@ class TestClass < Test::Unit::TestCase
 
   def test_singleton_class
     assert_raise(TypeError) { 1.extend(Module.new) }
+    assert_raise(TypeError) { 1.0.extend(Module.new) }
     assert_raise(TypeError) { :foo.extend(Module.new) }
 
     assert_in_out_err([], <<-INPUT, %w(:foo :foo true true), [])
