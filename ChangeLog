@@ -1,3 +1,10 @@
+Thu Aug 23 12:51:39 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* insns.def (invokesuper): reverted r36640 partially to make super
+	  in a thread work correctly. [ruby-core:47284] [Bug #6907]
+
+	* test/ruby/test_super.rb: related test.
+
 Thu Aug 23 12:30:20 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/configure.bat: support --with(out)?-ext(ensions) options.

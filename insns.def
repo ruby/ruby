@@ -1026,8 +1026,6 @@ invokesuper
     int num = caller_setup_args(th, GET_CFP(), flag,
 				(int)op_argc, blockiseq, &blockptr);
     VALUE recv, klass;
-    rb_control_frame_t *cfp = GET_CFP();
-    rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
     ID id;
     const rb_method_entry_t *me;
     rb_iseq_t *ip;
@@ -1038,20 +1036,9 @@ invokesuper
     if (!NIL_P(RCLASS_REFINED_CLASS(klass))) {
 	klass = RCLASS_REFINED_CLASS(klass);
     }
-
-    recv = Qundef;
-    while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
-	if (((VM_EP_LEP_P(cfp->ep) && cfp->iseq &&
-	     cfp->iseq->type == ISEQ_TYPE_METHOD) ||
-	    (cfp->me && cfp->me->def->type == VM_METHOD_TYPE_BMETHOD)) &&
-            rb_obj_is_kind_of(cfp->self, klass)) {
-	    recv = cfp->self;
-	    break;
-	}
-	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    }
-    if (recv == Qundef) {
-	rb_raise(rb_eNoMethodError, "super called outside of method");
+    recv = GET_SELF();
+    if (!rb_obj_is_kind_of(recv, klass)) {
+	rb_raise(rb_eNotImpError, "super from singleton method that is defined to multiple classes is not supported; this will be fixed in 2.0.0 or later");
     }
     vm_search_superclass(GET_CFP(), GET_ISEQ(), TOPN(num), &id, &klass);
 

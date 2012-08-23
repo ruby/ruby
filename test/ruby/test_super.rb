@@ -264,7 +264,9 @@ class TestSuper < Test::Unit::TestCase
       end
     }
     obj = sub_class.new
-    assert_equal [:super, obj], obj.foo
+    assert_raise(NotImplementedError) do
+      obj.foo
+    end
   end
 
   def test_super_in_instance_eval_with_define_method
@@ -282,7 +284,9 @@ class TestSuper < Test::Unit::TestCase
       end
     }
     obj = sub_class.new
-    assert_equal [:super, obj], obj.foo
+    assert_raise(NotImplementedError) do
+      obj.foo
+    end
   end
 
   def test_super_in_orphan_block
@@ -298,9 +302,7 @@ class TestSuper < Test::Unit::TestCase
       end
     }
     obj = sub_class.new
-    assert_raise(NoMethodError) do
-      obj.foo.call
-    end
+    assert_equal([:super, obj], obj.foo.call)
   end
 
   def test_super_in_orphan_block_with_instance_eval
@@ -318,7 +320,7 @@ class TestSuper < Test::Unit::TestCase
       end
     }
     obj = sub_class.new
-    assert_raise(NoMethodError) do
+    assert_raise(NotImplementedError) do
       obj.foo.call
     end
   end
@@ -333,5 +335,16 @@ class TestSuper < Test::Unit::TestCase
       }
     }
     assert_equal 'hi', y.hello
+  end
+
+  def test_super_in_thread
+    hoge = Class.new {
+      def bar; 'hoge'; end
+    }
+    foo = Class.new(hoge) {
+      def bar; Thread.new { super }.join.value; end
+    }
+
+    assert_equal 'hoge', foo.new.bar
   end
 end
