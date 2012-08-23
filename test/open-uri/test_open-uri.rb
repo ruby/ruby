@@ -116,7 +116,7 @@ class TestOpenURI < Test::Unit::TestCase
         end
       }
       begin
-        assert_raise(Net::ReadTimeout) { URI("http://127.0.0.1:#{port}/foo/bar").read(:read_timeout=>0.01) }
+        assert_raise(Net::ReadTimeout) { URI("http://127.0.0.1:#{port}/foo/bar").read(:read_timeout=>0.1) }
       ensure
         Thread.kill(th)
         th.join

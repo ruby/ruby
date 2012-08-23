@@ -1,3 +1,9 @@
+Thu Aug 23 11:32:44 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/open-uri/test_open-uri.rb (TestOpenURI#test_read_timeout): this
+	  test expects that the server thread will be killed in sleep, but 0.01
+	  sec is too short to reach there.
+
 Thu Aug 23 10:49:28 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: use the value of --with-opt-dir on building ruby
