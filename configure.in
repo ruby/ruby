@@ -626,6 +626,11 @@ if test "$GCC" = yes; then
     [cygwin*|darwin*|netbsd*], [
       # need lgamma_r(), finite()
     ],
+    [haiku], [
+      # Haiku R1/alpha3 uses gcc-4.4.4 which can not handle anonymous union
+      # with ANSI standard flags. Anonumous union is required to compile
+      # socket extension where <net/if.h> uses anonymous union.
+    ],
     [
       # ANSI (no XCFLAGS because this is C only)
       RUBY_TRY_CFLAGS(-ansi -std=iso9899:199409, [
@@ -2298,11 +2303,11 @@ if test "$with_dln_a_out" != yes; then
 			  [powerpc*], [
 			    : ${LDSHARED='$(LD) -xms'}
 			    EXTDLDFLAGS='-export $(TARGET_ENTRY)'
-			    DLDFLAGS="$DLDFLAGS -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o"
+			    DLDFLAGS="$DLDFLAGS -lroot glue-noinit.a init_term_dyn.o start_dyn.o"
                             ],
 			  [i586*], [
 			    : ${LDSHARED='$(LD) -shared'}
-			    DLDFLAGS="$DLDFLAGS -L/boot/develop/lib/x86 -lbe -lroot"
+			    DLDFLAGS="$DLDFLAGS -L/boot/develop/lib/x86 -lroot"
 			    ])
 			: ${LIBPATHENV=LIBRARY_PATH}
 			rb_cv_dlopen=yes ],
