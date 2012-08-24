@@ -1,3 +1,8 @@
+Fri Aug 24 15:42:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): use timestamp for destination
+	  directories.  [ruby-dev:46067] [Bug #6904]
+
 Fri Aug 24 12:40:15 2012  Luis Lavena  <luislavena@gmail.com>
 
 	* configure.in (mingw): add shlwapi to the list of dependency

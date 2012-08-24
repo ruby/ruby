@@ -1831,6 +1831,7 @@ INSTALL = #{config_string('INSTALL', &possible_command) || '@$(RUBY) -run -e ins
 INSTALL_PROG = #{config_string('INSTALL_PROG') || '$(INSTALL) -m 0755'}
 INSTALL_DATA = #{config_string('INSTALL_DATA') || '$(INSTALL) -m 0644'}
 COPY = #{config_string('CP', &possible_command) || '@$(RUBY) -run -e cp -- -v'}
+TOUCH = exit >
 
 #### End of system configuration section. ####
 
@@ -1846,6 +1847,11 @@ preload = #{defined?($preload) && $preload ? $preload.join(' ') : ''}
       end
     end
     mk
+  end
+
+  def timestamp_file(name)
+    name = name.gsub(/(\$[({]|[})])|(\/+)|[^-.\w]+/) {$1 ? "@" : $2 ? "%" : "_"}
+    "./.#{name}.time"
   end
   # :startdoc:
 
@@ -2142,7 +2148,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       for dir, *files in files
         unless dirs.include?(dir)
           dirs << dir
-          mfile.print "pre-install-rb#{sfx}: #{dir}\n"
+          mfile.print "pre-install-rb#{sfx}: #{timestamp_file(dir)}\n"
         end
         for f in files
           dest = "#{dir}/#{File.basename(f)}"
@@ -2171,7 +2177,10 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
       end
     end
     dirs.unshift(sodir) if target and !dirs.include?(sodir)
-    dirs.each {|d| mfile.print "#{d}:\n\t$(Q) $(MAKEDIRS) $@\n"}
+    dirs.each do |d|
+      t = timestamp_file(d)
+      mfile.print "#{t}:\n\t$(Q) $(MAKEDIRS) #{d}\n\t$(Q) $(TOUCH) $@\n"
+    end
 
     mfile.print <<-SITEINSTALL
 
@@ -2204,10 +2213,11 @@ site-install-rb: install-rb
     mfile.print "$(RUBYARCHDIR)/" if $extout
     mfile.print "$(DLLIB): "
     mfile.print "$(DEFFILE) " if makedef
-    mfile.print "$(OBJS) Makefile\n"
+    mfile.print "$(OBJS) Makefile"
+    mfile.print " #{timestamp_file('$(RUBYARCHDIR)')}\n" if $extout
+    mfile.print "\n"
     mfile.print "\t$(ECHO) linking shared-object #{target_prefix.sub(/\A\/(.*)/, '\1/')}$(DLLIB)\n"
     mfile.print "\t-$(Q)$(RM) $(@#{sep})\n"
-    mfile.print "\t-$(Q)$(MAKEDIRS) $(@D)\n" if $extout
     link_so = LINK_SO.gsub(/^/, "\t$(Q) ")
     if srcs.any?(&%r"\.(?:#{CXX_EXT.join('|')})\z".method(:===))
       link_so = link_so.sub(/\bLDSHARED\b/, '\&XX')
