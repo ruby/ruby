@@ -773,7 +773,7 @@ rb_float_new(double d)
 
     if (t.v != 0x3000000000000000 /* 1.72723e-77 */ &&
 	!((bits-3) & ~0x01)) {
-	return (RUBY_BIT_ROTL(t.v, 3) & ~0x01 | 0x02);
+	return (RUBY_BIT_ROTL(t.v, 3) & ~(VALUE)0x01) | 0x02;
     }
     else {
 	if (t.v == (VALUE)0) {
