@@ -2122,7 +2122,7 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
     if target
       f = "$(DLLIB)"
       dest = "#{dir}/#{f}"
-      mfile.puts dir, "install-so: #{dest}"
+      mfile.puts dest
       if $extout
         mfile.print "clean-so::\n"
         mfile.print "\t-$(Q)$(RM) #{fseprepl[dest]}\n"
@@ -2214,7 +2214,7 @@ site-install-rb: install-rb
     mfile.print "$(DLLIB): "
     mfile.print "$(DEFFILE) " if makedef
     mfile.print "$(OBJS) Makefile"
-    mfile.print " #{timestamp_file('$(RUBYARCHDIR)')}\n" if $extout
+    mfile.print " #{timestamp_file('$(RUBYARCHDIR)')}" if $extout
     mfile.print "\n"
     mfile.print "\t$(ECHO) linking shared-object #{target_prefix.sub(/\A\/(.*)/, '\1/')}$(DLLIB)\n"
     mfile.print "\t-$(Q)$(RM) $(@#{sep})\n"
