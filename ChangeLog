@@ -1,3 +1,44 @@
+Fri Aug 24 12:40:15 2012  Luis Lavena  <luislavena@gmail.com>
+
+	* configure.in (mingw): add shlwapi to the list of dependency
+	  libs for Windows.
+	* win32/Makefile.sub (EXTSOLIBS): ditto.
+
+	* internal.h: declare internal functions rb_w32_init_file,
+	  rb_file_expand_path_internal and rb_file_expand_path_fast.
+
+	* file.c (Init_File): invoke Windows initialization rb_w32_init_file
+
+	* win32/file.c (rb_file_load_path_internal): new function.
+	  Windows-specific implementation that replaces file_expand_path.
+	  [Bug #6836][ruby-core:46996]
+
+	* win32/file.c (rb_w32_init_file): new function. Initialize codepage
+	  cache for faster conversion encodings lookup.
+
+	* file.c (file_expand_path): rename to rb_file_expand_path_internal.
+	  Conditionally exclude from Windows.
+
+	* file.c (rb_file_expand_path_fast): new function. delegates to
+	  rb_file_expand_path_internal without performing a hit to the
+	  filesystem.
+
+	* file.c (file_expand_path_1): use rb_file_expand_path_internal without
+	  path expansion (used by require).
+	* file.c (rb_find_file_ext_safe): ditto.
+	* file.c (rb_find_file_safe): ditto.
+
+	* load.c (rb_get_expanded_load_path): use rb_file_expand_path_fast.
+	* load.c (rb_feature_provided): ditto.
+
+	* file.c (rb_file_expand_path): use rb_file_expand_path_internal with
+	  path expansion.
+	* file.c (rb_file_absolute_path): ditto.
+
+	* test/ruby/test_file_exhaustive.rb: new tests to exercise
+	  rb_file_expand_path_internal implementation and compliance with
+	  existing behaviors.
+
 Fri Aug 24 07:35:24 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http/backward.rb (class Net):  Restored Net::HTTPSession to
