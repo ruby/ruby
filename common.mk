@@ -855,8 +855,8 @@ insns: $(INSNS)
 $(ID_H_INCLUDES) $(ID_H_TARGET): {$(VPATH)}parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
 	$(ECHO) generating id.h
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb --if-change --output=id.h \
-		--timestamp=$@ \
-		$(srcdir)/template/id.h.tmpl --vpath=$(VPATH) parse.h
+		--vpath=$(VPATH) --timestamp \
+		$(srcdir)/template/id.h.tmpl parse.h
 
 node_name.inc: {$(VPATH)}node.h
 	$(ECHO) generating $@

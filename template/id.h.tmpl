@@ -12,24 +12,13 @@
 **********************************************************************/
 <%
 require 'optparse'
-vpath = ["."]
-input = nil
 
-opt = OptionParser.new do |o|
-  o.on('-v', '--vpath=DIR') {|dirs| vpath.concat dirs.split(File::PATH_SEPARATOR)}
-  input, = o.order!(ARGV)
-end or abort opt.opt_s
+input = ARGV.shift or abort opt.opt_s
 
 tokens = nil
-vpath.find do |dir|
-  begin
-    if line = File.read(File.join(dir, input))[/^\s*enum\s+yytokentype\s*\{([^{}]*)\s*\};/m, 1]
-      tokens = line.scan(/\b(t(?:LAST_TOKEN|U(?:PLUS|MINUS)|POW|CMP|EQQ?|[NGL]EQ|(?:AND|OR)OP|N?MATCH|DOT\d|AREF|ASET|[LR]SHFT|LAMBDA)|id\w+)\s*=\s*(\d+),?/m)
-    end
-  rescue Errno::ENOENT
-    nil
-  else
-    true
+vpath.open(input) do |f|
+  if line = f.read[/^\s*enum\s+yytokentype\s*\{([^{}]*)\s*\};/m, 1]
+    tokens = line.scan(/\b(t(?:LAST_TOKEN|U(?:PLUS|MINUS)|POW|CMP|EQQ?|[NGL]EQ|(?:AND|OR)OP|N?MATCH|DOT\d|AREF|ASET|[LR]SHFT|LAMBDA)|id\w+)\s*=\s*(\d+),?/m)
   end
 end
 
