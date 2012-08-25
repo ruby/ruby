@@ -2409,7 +2409,7 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
  *     ary.select                  -> Enumerator
  *
  *  Returns a new array containing all elements of <i>ary</i>
- *  for which <em>block</em> returns true.
+ *  for which <em>block</em> returns a true value.
  *  (see also <code>Enumerable#select</code>).
  *
  *  If no block is given, an enumerator is returned instead.
