@@ -393,6 +393,8 @@ static NODE *ret_args_gen(struct parser_params*,NODE*);
 static NODE *arg_blk_pass(NODE*,NODE*);
 static NODE *new_yield_gen(struct parser_params*,NODE*);
 #define new_yield(node) new_yield_gen(parser, (node))
+static NODE *dsym_node_gen(struct parser_params*,NODE*);
+#define dsym_node(node) dsym_node_gen(parser, (node))
 
 static NODE *gettable_gen(struct parser_params*,ID);
 #define gettable(id) gettable_gen(parser,(id))
@@ -4384,26 +4386,7 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 		    {
 			lex_state = EXPR_END;
 		    /*%%%*/
-			if (!($$ = $2)) {
-			    $$ = NEW_LIT(ID2SYM(rb_intern("")));
-			}
-			else {
-			    VALUE lit;
-
-			    switch (nd_type($$)) {
-			      case NODE_DSTR:
-				nd_set_type($$, NODE_DSYM);
-				break;
-			      case NODE_STR:
-				lit = $$->nd_lit;
-				$$->nd_lit = ID2SYM(rb_intern_str(lit));
-				nd_set_type($$, NODE_LIT);
-				break;
-			      default:
-				$$ = NEW_NODE(NODE_DSYM, Qnil, 1, NEW_LIST($$));
-				break;
-			    }
-			}
+			$$ = dsym_node($2);
 		    /*%
 			$$ = dispatch1(dyna_symbol, $2);
 		    %*/
@@ -9418,6 +9401,31 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
     args->kw_rest_arg    = kw_rest_arg;
 
     ruby_sourceline = saved_line;
+    return node;
+}
+
+static NODE*
+dsym_node_gen(struct parser_params *parser, NODE *node)
+{
+    VALUE lit;
+
+    if (!node) {
+	return NEW_LIT(ID2SYM(idNULL));
+    }
+
+    switch (nd_type(node)) {
+      case NODE_DSTR:
+	nd_set_type(node, NODE_DSYM);
+	break;
+      case NODE_STR:
+	lit = node->nd_lit;
+	node->nd_lit = ID2SYM(rb_intern_str(lit));
+	nd_set_type(node, NODE_LIT);
+	break;
+      default:
+	node = NEW_NODE(NODE_DSYM, Qnil, 1, NEW_LIST(node));
+	break;
+    }
     return node;
 }
 #endif /* !RIPPER */
