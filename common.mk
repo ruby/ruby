@@ -562,7 +562,7 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 PHONY:
 
 {$(VPATH)}parse.c: {$(VPATH)}parse.y $(srcdir)/tool/ytab.sed
-parse.h {$(VPATH)}parse.h: {$(VPATH)}parse.c
+{$(VPATH)}parse.h: {$(VPATH)}parse.c
 
 {$(srcdir)}.y.c:
 	$(ECHO) generating $@
@@ -574,8 +574,7 @@ parse.h {$(VPATH)}parse.h: {$(VPATH)}parse.c
 {$(srcdir)}.y.h:
 	$(ECHO) generating $@
 	$(Q)$(YACC) -d $(YFLAGS) -o y.tab.c $(SRC_FILE)
-	$(Q)sed -e "/^#line.*y\.tab\.h/d;/^#line.*parse\.y/d" y.tab.h > $(@:.c=.h).new
-	$(Q)$(IFCHANGE) $(@:.c=.h) $(@:.c=.h).new
+	$(Q)sed -e "/^#line.*y\.tab\.h/d;/^#line.*parse\.y/d" y.tab.h > $(@:.c=.h)
 	$(Q)$(RM) y.tab.c y.tab.h
 
 acosh.$(OBJEXT): {$(VPATH)}acosh.c
