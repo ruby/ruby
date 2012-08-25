@@ -2114,7 +2114,7 @@ stack_check(int water_mark)
     int ret;
     rb_thread_t *th = GET_THREAD();
     SET_STACK_END;
-    ret = STACK_LENGTH > STACK_LEVEL_MAX - water_mark;
+    ret = STACK_LENGTH/sizeof(VALUE) > STACK_LEVEL_MAX - water_mark;
 #ifdef __ia64
     if (!ret) {
         ret = (VALUE*)rb_ia64_bsp() - th->machine_register_stack_start >
