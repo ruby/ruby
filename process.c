@@ -1017,6 +1017,8 @@ before_exec_non_async_signal_safe(void)
 	 * On Mac OS X 10.5.x (Leopard) or earlier, exec() may return ENOTSUPP
 	 * if the process have multiple threads. Therefore we have to kill
 	 * internal threads temporary. [ruby-core:10583]
+	 * This is also true on Haiku. It returns Errno::EPERM against exec()
+	 * in multiple threads.
 	 */
 	rb_thread_stop_timer_thread(0);
     }
@@ -2307,7 +2309,7 @@ rb_f_exec(int argc, VALUE *argv)
     rb_execarg_fixup(execarg_obj);
     fail_str = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__HAIKU__)
     rb_exec_without_timer_thread(eargp, errmsg, sizeof(errmsg));
 #else
     rb_exec_async_signal_safe(eargp, errmsg, sizeof(errmsg));
