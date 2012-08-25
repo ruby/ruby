@@ -312,7 +312,7 @@ find_all_i(VALUE i, VALUE ary, int argc, VALUE *argv)
  *     enum.select                   -> an_enumerator
  *
  *  Returns an array containing all elements of <i>enum</i>
- *  for which <em>block</em> does not return <code>false</code> 
+ *  for which <em>block</em> returns true.
  *  (see also <code>Enumerable#reject</code>).
  *
  *  If no block is given, an enumerator is returned instead.
