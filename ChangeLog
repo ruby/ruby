@@ -1,3 +1,10 @@
+Sun Aug 26 16:53:00 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (checkmatch): suppress warnings.  [ruby-core:47310]
+	  [Bug #6930]
+
+	* vm_core.h (VM_FRAME_TYPE_FINISH_P): ditto.
+
 Fri Aug 24 15:42:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): use timestamp for destination

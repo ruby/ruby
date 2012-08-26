@@ -645,7 +645,7 @@ enum vm_special_object_type {
 /* other frame flag */
 #define VM_FRAME_FLAG_PASSED 0x0100
 #define VM_FRAME_FLAG_FINISH 0x0200
-#define VM_FRAME_TYPE_FINISH_P(cfp) ((cfp)->flag & VM_FRAME_FLAG_FINISH)
+#define VM_FRAME_TYPE_FINISH_P(cfp) (((cfp)->flag & VM_FRAME_FLAG_FINISH) != 0)
 
 #define RUBYVM_CFUNC_FRAME_P(cfp) \
   (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_CFUNC)

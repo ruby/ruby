@@ -838,7 +838,9 @@ checkmatch
     if (flag & VM_CHECKMATCH_ARRAY) {
 	int i;
 	for (i = 0; i < RARRAY_LEN(pattern); i++) {
-	    if (RTEST(check_match(RARRAY_PTR(pattern)[i], target, flag & VM_CHECKMATCH_TYPE_MASK))) {
+	    enum vm_check_match_type checkmatch_type =
+		(enum vm_check_match_type)(flag & VM_CHECKMATCH_TYPE_MASK);
+	    if (RTEST(check_match(RARRAY_PTR(pattern)[i], target, checkmatch_type))) {
 		result = Qtrue;
 		break;
 	    }
