@@ -414,6 +414,9 @@ ruby_init_loadpath_safe(int safe_level)
 	if (p - libpath > 3 && !(STRCASECMP(p - 4, "/bin") && strcmp(p - 4, "/lib"))) {
 	    p -= 4;
 	    *p = 0;
+	} else if (p - libpath > 5 && !(STRCASECMP(p - 4, "/bin") && strcmp(p - 6, "/lib64"))) {
+	    p -= 6;
+	    *p = 0;
 	}
     }
 #if !VARIABLE_LIBPATH
