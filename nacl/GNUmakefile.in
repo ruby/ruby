@@ -7,7 +7,14 @@ include Makefile
 NACL_SDK_ROOT=@NACL_SDK_ROOT@
 NACL_TOOLCHAIN=@NACL_TOOLCHAIN@
 NACL_TOOLCHAIN_DIR=$(NACL_SDK_ROOT)/toolchain/$(NACL_TOOLCHAIN)
-PATH+=:$(NACL_TOOLCHAIN_DIR)/bin
+CC:=$(NACL_TOOLCHAIN_DIR)/bin/$(CC)
+LD:=$(NACL_TOOLCHAIN_DIR)/bin/$(LD)
+NM:=$(NACL_TOOLCHAIN_DIR)/bin/$(NM)
+AR:=$(NACL_TOOLCHAIN_DIR)/bin/$(AR)
+AS:=$(NACL_TOOLCHAIN_DIR)/bin/$(AS)
+RANLIB:=$(NACL_TOOLCHAIN_DIR)/bin/$(RANLIB)
+OBJDUMP:=$(NACL_TOOLCHAIN_DIR)/bin/$(OBJDUMP)
+OBJCOPY:=$(NACL_TOOLCHAIN_DIR)/bin/$(OBJCOPY)
 PYTHON=@PYTHON@
 
 PPROGRAM=pepper-$(PROGRAM)
@@ -40,6 +47,19 @@ file.$(OBJEXT):
 	$(Q) $(OBJCOPY) --weaken-symbol=rb_file_load_ok $@.tmp $@
 	@-$(RM) $@.tmp
 
+$(RBCONFIG):
+	@sed \
+	  -e 's!CONFIG\["CC"\] = .*!CONFIG\["CC"\] = "$(CC)"!' \
+	  -e 's!CONFIG\["LD"\] = .*!CONFIG\["LD"\] = "$(LD)"!' \
+	  -e 's!CONFIG\["NM"\] = .*!CONFIG\["NM"\] = "$(NM)"!' \
+	  -e 's!CONFIG\["AR"\] = .*!CONFIG\["AR"\] = "$(AR)"!' \
+	  -e 's!CONFIG\["AS"\] = .*!CONFIG\["AS"\] = "$(AS)"!' \
+	  -e 's!CONFIG\["RANLIB"\] = .*!CONFIG\["RANLIB"\] = "$(RANLIB)"!' \
+	  -e 's!CONFIG\["OBJDUMP"\] = .*!CONFIG\["OBJDUMP"\] = "$(OBJDUMP)"!' \
+	  -e 's!CONFIG\["OBJCOPY"\] = .*!CONFIG\["OBJCOPY"\] = "$(OBJCOPY)"!' \
+	-i.bak rbconfig.rb
+	@touch .rbconfig.time
+
 all: pprogram
 main: $(PROGRAM_NMF)
 pprogram: showflags $(PPROGRAM) $(PPROGRAM_NMF)
@@ -53,8 +73,13 @@ package: pprogram install-lib install-ext-comm install-ext-arch
 showflags: show_naclflags
 
 show_naclflags:
-	@echo "      PATH = $(PATH)"
-	@echo "      NACL_SDK_ROOT = $(NACL_SDK_ROOT)"
+	@echo "        NACL_SDK_ROOT = $(NACL_SDK_ROOT)"
+	@echo "        NM = $(NM)"
+	@echo "        AR = $(AR)"
+	@echo "        AS = $(AS)"
+	@echo "        RANLIB = $(RANLIB)"
+	@echo "        OBJDUMP = $(OBJDUMP)"
+	@echo "        OBJCOPY = $(OBJCOPY)"
 
 clean-local::
 	-$(RM) $(PPROGRAM) pepper_main.$(OBJEXT) $(PROGRAM_NMF) $(PPRGORAM_NMF)

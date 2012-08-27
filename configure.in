@@ -111,11 +111,7 @@ AC_DEFUN([RUBY_NACL],
   AC_MSG_RESULT(${NACL_TOOLCHAIN})
 
   AC_MSG_CHECKING([path to SDK])
-  if echo -- "${PATH}" | grep -F "${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin" > /dev/null; then
-    AC_MSG_RESULT([set])
-  else
-    AC_MSG_RESULT([no])
-    AC_MSG_WARN([Add "${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin" to \$PATH])
+  if ! echo -- "${PATH}" | grep -F "${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin" > /dev/null; then
     PATH="${PATH}:${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin"
   fi
 

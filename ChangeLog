@@ -1,3 +1,17 @@
+Sun Aug 26 09:22:33 2012  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* nacl/GNUmakefile.in (CC, LD, NM, AR, AS, RANLIB, OBJDUMP, OBJCOPY)
+	  Rewrites these variables instead of PATH.
+	  NaCl port uses a toolchain which is specified by NACL_SDK_ROOT
+	  environment variable. Originally, NaCl build added the toolchain
+	  under the NACL_SDK_ROOT to the PATH. But updating PATH doesn't work
+	  on Mac.
+	  (RBCONFIG): Replaces configs with the variable updates above.
+
+	* configure.in: Thus it is no longer necessary to check $PATH.
+
+	Based on a patch by Takashi Toyoshima <toyoshim AT gmail.com>.
+
 Sun Aug 26 16:53:00 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (checkmatch): suppress warnings.  [ruby-core:47310]
