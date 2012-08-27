@@ -1,3 +1,10 @@
+Sun Aug 26 09:29:32 2012  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* nacl/GNUmakefile.in (package): make package should install
+	  example.html for nacl build
+
+	Patch by Takashi Toyoshima <toyoshim AT gmail.com>.
+
 Sun Aug 26 09:22:33 2012  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* nacl/GNUmakefile.in (CC, LD, NM, AR, AS, RANLIB, OBJDUMP, OBJCOPY)

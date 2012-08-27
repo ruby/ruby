@@ -67,6 +67,7 @@ program: $(PROGRAM_NMF)
 prog: pprogram
 
 package: pprogram install-lib install-ext-comm install-ext-arch
+	$(INSTALL_DATA) $(srcdir)/nacl/example.html $(prefix)
 	$(ECHO) generating manifest $@
 	$(Q)$(MINIRUBY) $(srcdir)/nacl/package.rb $(prefix)
 
