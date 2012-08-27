@@ -1,3 +1,7 @@
+Mon Aug 27 15:08:25 2012  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* common.mk (vm_trace.o): Added a missing dependency.
+
 Sun Aug 26 09:29:32 2012  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* nacl/GNUmakefile.in (package): make package should install

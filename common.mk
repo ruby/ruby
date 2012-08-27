@@ -781,7 +781,7 @@ id.$(OBJEXT): {$(VPATH)}id.c $(RUBY_H_INCLUDES) $(ID_H_INCLUDES) {$(VPATH)}vm_op
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_backtrace.c \
   $(VM_CORE_H_INCLUDES) $(RUBY_H_INCLUDES) $(ENCODING_H_INCLUDES) \
   {$(VPATH)}internal.h {$(VPATH)}iseq.h
-vm_trace.$(OBJEXT): {$(VPATH)}vm_trace.c \
+vm_trace.$(OBJEXT): {$(VPATH)}vm_trace.c $(ENCODING_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) $(RUBY_H_INCLUDES) \
   {$(VPATH)}internal.h
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c $(RUBY_H_INCLUDES) \
