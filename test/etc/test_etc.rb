@@ -76,13 +76,18 @@ class TestEtc < Test::Unit::TestCase
   end
 
   def test_getgrgid
-    groups = {}
-    Etc.group do |s|
-      groups[s.gid] ||= s
+    # group database is not unique on GID, and which entry will be
+    # returned by getgrgid() is not specified.
+    groups = Hash.new {[]}
+    # on MacOSX, same entries are returned from /etc/group and Open
+    # Directory.
+    Etc.group {|s| groups[s.gid] |= [s]}
+    groups.each_pair do |gid, s|
+      assert_include(s, Etc.getgrgid(gid))
     end
-    groups.each_value do |s|
-      assert_equal(s, Etc.getgrgid(s.gid))
-      assert_equal(s, Etc.getgrgid) if Process.egid == s.gid
+    s = groups[Process.egid]
+    unless s.empty?
+      assert_include(s, Etc.getgrgid)
     end
   end
 
