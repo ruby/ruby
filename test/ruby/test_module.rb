@@ -1452,4 +1452,17 @@ class TestModule < Test::Unit::TestCase
     assert_nothing_raised(NoMethodError, Bug6891) {Class.new(x)}
     assert_equal(['public', 'protected'], list)
   end
+
+  def test_invalid_attr
+    %w[
+      foo?
+      @foo
+      @@foo
+      $foo
+    ].each do |name|
+      assert_raises(NameError) do
+        Module.new { attr_accessor name.to_sym }
+      end
+    end
+  end
 end
