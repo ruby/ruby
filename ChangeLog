@@ -1,3 +1,12 @@
+Tue Aug 28 00:40:14 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/webrick/test_cgi.rb (TestWEBrickCGI#start_cgi_server): there are
+	  no guarantee of existance of RbConfig::CONFIG['LIBPATHENV'].
+	  it only exists in Unix-like environments.
+
+	* test/webrick/test_filehandler.rb
+	  (WEBrick::TestFileHandler#test_script_disclosure): ditto.
+
 Thu Aug 23 12:08:25 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/ruby/test_file_exhaustive.rb
