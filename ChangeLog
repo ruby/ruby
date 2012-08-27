@@ -1,3 +1,9 @@
+Mon Aug 27 18:19:36 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h (rb_float_value): optimize it.
+	  This technique was pointed by shinichiro.hamaji
+	  <http://shinh.skr.jp/m/?date=20120825#p02>.
+
 Mon Aug 27 15:08:25 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* common.mk (vm_trace.o): Added a missing dependency.

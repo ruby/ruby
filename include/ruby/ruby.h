@@ -733,10 +733,7 @@ static inline double
 rb_float_value(VALUE v)
 {
     if (FLONUM_P(v)) {
-	if (v == (VALUE)0x8000000000000002) {
-	    return 0.0;
-	}
-	else {
+	if (v != (VALUE)0x8000000000000002) { /* LIKELY */
 	    union {
 		double d;
 		VALUE v;
@@ -746,8 +743,11 @@ rb_float_value(VALUE v)
 	    /* e: xx1... -> 011... */
 	    /*    xx0... -> 100... */
 	    /*      ^b63           */
-	    t.v = RUBY_BIT_ROTR(((b63 ^ 1) << 1) | b63 | (v & ~0x03), 3);
+	    t.v = RUBY_BIT_ROTR(2 - b63 | (v & ~0x03), 3);
 	    return t.d;
+	}
+	else {
+	    return 0.0;
 	}
     }
     else {
