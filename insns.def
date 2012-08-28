@@ -833,6 +833,8 @@ checkmatch
 (VALUE target, VALUE pattern)
 (VALUE result)
 {
+    enum vm_check_match_type checkmatch_type =
+      (enum vm_check_match_type)(flag & VM_CHECKMATCH_TYPE_MASK);
     result = Qfalse;
 
     if (flag & VM_CHECKMATCH_ARRAY) {
@@ -847,7 +849,7 @@ checkmatch
 	}
     }
     else {
-	if (RTEST(check_match(pattern, target, flag & VM_CHECKMATCH_TYPE_MASK))) {
+	if (RTEST(check_match(pattern, target, checkmatch_type))) {
 	    result = Qtrue;
 	}
     }

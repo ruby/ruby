@@ -1,3 +1,8 @@
+Tue Aug 28 22:31:49 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* insns.def (checkmatch): suppress warnings. [ruby-core:47339]
+	  [Bug #6930]
+
 Tue Aug 28 20:03:54 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: Fixing Haiku R1/alpha3 build with gcc-4.4.4.
