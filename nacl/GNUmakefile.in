@@ -47,7 +47,8 @@ file.$(OBJEXT):
 	$(Q) $(OBJCOPY) --weaken-symbol=rb_file_load_ok $@.tmp $@
 	@-$(RM) $@.tmp
 
-$(RBCONFIG):
+.rbconfig.time:
+	@$(MAKE) .rbconfig.raw.time RBCONFIG=.rbconfig.raw.time
 	@sed \
 	  -e 's!CONFIG\["CC"\] = .*!CONFIG\["CC"\] = "$(CC)"!' \
 	  -e 's!CONFIG\["LD"\] = .*!CONFIG\["LD"\] = "$(LD)"!' \

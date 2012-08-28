@@ -1,3 +1,8 @@
+Tue Aug 28 11:32:37 2012  Yuki Yugui Sonoda  <yugui@google.com>
+
+	* nacl/GNUmakefile.in (.rbconfig.time): r36828 was incomplete.
+	  It did not run correctly on clean build.
+
 Tue Aug 28 09:25:20 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (Makefile): make to depend on common.mk, to
