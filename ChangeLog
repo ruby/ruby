@@ -1,3 +1,12 @@
+Tue Aug 28 20:03:54 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: Fixing Haiku R1/alpha3 build with gcc-4.4.4.
+	  - omit ANSI standard flags to compile socket extension where
+	    anonymous union is required.
+	  - remove redundant -be flags.
+	  by Takashi Toyoshima <toyoshim@gmail.com>
+	  https://github.com/ruby/ruby/pull/168
+
 Tue Aug 28 11:32:37 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* nacl/GNUmakefile.in (.rbconfig.time): r36828 was incomplete.
