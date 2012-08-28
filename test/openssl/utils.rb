@@ -92,12 +92,15 @@ CeBUl+MahZtn9fO1JKdF4qJmS39dXnpENg==
 
 end
 
-  TEST_KEY_DH512 = OpenSSL::PKey::DH.new <<-_end_of_pem_
+  TEST_KEY_DH512_PUB = OpenSSL::PKey::DH.new <<-_end_of_pem_
 -----BEGIN DH PARAMETERS-----
 MEYCQQDmWXGPqk76sKw/edIOdhAQD4XzjJ+AR/PTk2qzaGs+u4oND2yU5D2NN4wr
 aPgwHyJBiK1/ebK3tYcrSKrOoRyrAgEC
 -----END DH PARAMETERS-----
   _end_of_pem_
+
+
+  TEST_KEY_DH1024 = OpenSSL::PKey::DH.new(1024)
 
   module_function
 
@@ -238,7 +241,6 @@ aPgwHyJBiK1/ebK3tYcrSKrOoRyrAgEC
     rescue Errno::EBADF, IOError, Errno::EINVAL, Errno::ECONNABORTED, Errno::ENOTSOCK, Errno::ECONNRESET
     end
 
-    DHParam = OpenSSL::PKey::DH.new(128)
     def start_server(port0, verify_mode, start_immediately, args = {}, &block)
       ctx_proc = args[:ctx_proc]
       server_proc = args[:server_proc]
@@ -252,7 +254,7 @@ aPgwHyJBiK1/ebK3tYcrSKrOoRyrAgEC
       #ctx.extra_chain_cert = [ ca_cert ]
       ctx.cert = @svr_cert
       ctx.key = @svr_key
-      ctx.tmp_dh_callback = proc { DHParam }
+      ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
       ctx.verify_mode = verify_mode
       ctx_proc.call(ctx) if ctx_proc
 

@@ -4,19 +4,19 @@ if defined?(OpenSSL)
 
 class OpenSSL::TestPKeyDH < Test::Unit::TestCase
   def test_new
-    dh = OpenSSL::PKey::DH.new(256)
+    dh = OpenSSL::PKey::DH.new(1024)
     assert_key(dh)
   end
 
   def test_new_break
-    assert_nil(OpenSSL::PKey::DH.new(256) { break })
+    assert_nil(OpenSSL::PKey::DH.new(1024) { break })
     assert_raises(RuntimeError) do
-      OpenSSL::PKey::DH.new(256) { raise }
+      OpenSSL::PKey::DH.new(1024) { raise }
     end
   end
 
   def test_to_der
-    dh = OpenSSL::PKey::DH.new(256)
+    dh = OpenSSL::TestUtils::TEST_KEY_DH1024
     der = dh.to_der
     dh2 = OpenSSL::PKey::DH.new(der)
     assert_equal_params(dh, dh2)
@@ -24,7 +24,7 @@ class OpenSSL::TestPKeyDH < Test::Unit::TestCase
   end
 
   def test_to_pem
-    dh = OpenSSL::PKey::DH.new(256)
+    dh = OpenSSL::TestUtils::TEST_KEY_DH1024
     pem = dh.to_pem
     dh2 = OpenSSL::PKey::DH.new(pem)
     assert_equal_params(dh, dh2)
@@ -32,7 +32,7 @@ class OpenSSL::TestPKeyDH < Test::Unit::TestCase
   end
 
   def test_public_key
-    dh = OpenSSL::PKey::DH.new(256)
+    dh = OpenSSL::TestUtils::TEST_KEY_DH1024
     public_key = dh.public_key
     assert_no_key(public_key) #implies public_key.public? is false!
     assert_equal(dh.to_der, public_key.to_der)
@@ -40,14 +40,14 @@ class OpenSSL::TestPKeyDH < Test::Unit::TestCase
   end
 
   def test_generate_key
-    dh = OpenSSL::TestUtils::TEST_KEY_DH512.public_key # creates a copy
+    dh = OpenSSL::TestUtils::TEST_KEY_DH512_PUB.public_key # creates a copy
     assert_no_key(dh)
     dh.generate_key!
     assert_key(dh)
   end
 
   def test_key_exchange
-    dh = OpenSSL::TestUtils::TEST_KEY_DH512
+    dh = OpenSSL::TestUtils::TEST_KEY_DH512_PUB
     dh2 = dh.public_key
     dh.generate_key!
     dh2.generate_key!

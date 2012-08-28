@@ -1,3 +1,11 @@
+Wed Aug 29 04:50:04 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/utils.rb
+	  test/openssl/test_pair.rb
+	  test/openssl/test_pkey_dh.rb: Use 1024 bit DH parameters to satisfy
+	  OpenSSL FIPS requirements. Patch by Vit Ondruch.
+	  [Bug #6938] [ruby-core:47326]
+
 Tue Aug 28 22:31:49 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* insns.def (checkmatch): suppress warnings. [ruby-core:47339]
