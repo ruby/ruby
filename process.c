@@ -226,7 +226,7 @@ rb_last_status_set(int status, rb_pid_t pid)
     rb_iv_set(th->last_status, "pid", PIDT2NUM(pid));
 }
 
-static void
+void
 rb_last_status_clear(void)
 {
     GET_THREAD()->last_status = Qnil;
@@ -3656,6 +3656,7 @@ rb_f_system(int argc, VALUE *argv)
 #ifdef SIGCHLD
     RETSIGTYPE (*chfunc)(int);
 
+    rb_last_status_clear();
     chfunc = signal(SIGCHLD, SIG_DFL);
 #endif
     pid = rb_spawn_internal(argc, argv, NULL, 0);

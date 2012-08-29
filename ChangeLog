@@ -1,3 +1,12 @@
+Wed Aug 29 23:42:59 2012  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_last_status_clear): declared.
+
+	* process.c (rb_last_status_clear): exported.
+	  (rb_f_system): call rb_last_status_clear.
+
+	* io.c (rb_f_backquote): call rb_last_status_clear.
+
 Wed Aug 29 22:01:15 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_f_system): check failures of waitpid.

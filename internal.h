@@ -222,6 +222,7 @@ struct rb_execarg {
 #define ARGVSTR2ARGV(argv_str) ((char **)RSTRING_PTR(argv_str) + 1)
 
 rb_pid_t rb_fork_ruby(int *status);
+void rb_last_status_clear(void);
 
 /* rational.c */
 VALUE rb_lcm(VALUE x, VALUE y);
