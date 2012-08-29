@@ -3661,7 +3661,10 @@ rb_f_system(int argc, VALUE *argv)
     pid = rb_spawn_internal(argc, argv, NULL, 0);
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
     if (pid > 0) {
-	rb_syswait(pid);
+        int ret, status;
+        ret = rb_waitpid(pid, &status, 0);
+        if (ret == (rb_pid_t)-1)
+            rb_sys_fail("Another thread waited the process started by system().");
     }
 #endif
 #ifdef SIGCHLD

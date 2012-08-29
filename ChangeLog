@@ -1,3 +1,8 @@
+Wed Aug 29 22:01:15 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_f_system): check failures of waitpid.
+	  [ruby-talk:398687]
+
 Wed Aug 29 15:03:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LIBDIR_BASENAME): use configured libdir value to fix
