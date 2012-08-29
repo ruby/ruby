@@ -1,3 +1,11 @@
+Wed Aug 29 15:03:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBDIR_BASENAME): use configured libdir value to fix
+	  --enable-load-relative on systems where libdir is not default value,
+	  overridden in config.site files.  [ruby-core:47267] [Bug #6903]
+
+	* ruby.c (ruby_init_loadpath_safe): ditto.
+
 Wed Aug 29 14:34:41 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c: SIZE_MAX is defined in stdint.h, so r36755 breaks

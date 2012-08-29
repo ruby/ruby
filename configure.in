@@ -2569,6 +2569,13 @@ AS_CASE("$enable_shared", [yes], [
     SOLIBS='$(LIBS)'
   fi
 
+  # libdir can be overridden in config.site file (on OpenSUSE at least).
+  libdir_basename=lib
+  if test "$bindir" = '${exec_prefix}/bin'; then
+    AS_CASE(["$libdir"], ['${exec_prefix}/'*], [libdir_basename=`basename "$libdir"`])
+  fi
+  AC_DEFINE(LIBDIR_BASENAME, ["${libdir_basename}"])
+
   AS_CASE(["$target_os"],
     [freebsd*|dragonfly*], [],
     [
@@ -2588,7 +2595,7 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	if test "$load_relative" = yes; then
-	    LIBRUBY_RPATHFLAGS="'-Wl,-rpath,\$\${ORIGIN}/../lib'"
+	    LIBRUBY_RPATHFLAGS="'-Wl,-rpath,\$\${ORIGIN}/../${libdir_basename}'"
 	    LIBRUBY_RELATIVE=yes
 	fi
 	],
@@ -2645,7 +2652,7 @@ AS_CASE("$enable_shared", [yes], [
 	RUBY_SO_NAME="$RUBY_SO_NAME"'.$(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_LDSHARED='$(CC) -dynamiclib'
 	if test "$load_relative" = yes; then
-	    libprefix='@executable_path/../lib'
+	    libprefix="@executable_path/../${libdir_basename}"
 	    LIBRUBY_RELATIVE=yes
 	fi
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-install_name '${libprefix}'/$(LIBRUBY_SO)'
