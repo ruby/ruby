@@ -411,9 +411,17 @@ ruby_init_loadpath_safe(int safe_level)
 #endif
     p = strrchr(libpath, '/');
     if (p) {
+	static const char bindir[] = "/bin";
+	static const char libdir[] = "/lib";
+	const ptrdiff_t bindir_len = (ptrdiff_t)sizeof(bindir) - 1;
+	const ptrdiff_t libdir_len = (ptrdiff_t)sizeof(libdir) - 1;
 	*p = 0;
-	if (p - libpath > 3 && !(STRCASECMP(p - 4, "/bin") && strcmp(p - 4, "/lib"))) {
-	    p -= 4;
+	if (p - libpath >= bindir_len && !STRCASECMP(p - bindir_len, bindir)) {
+	    p -= bindir_len;
+	    *p = 0;
+	}
+	else if (p - libpath >= libdir_len && !strcmp(p - libdir_len, libdir)) {
+	    p -= libdir_len;
 	    *p = 0;
 	}
     }
