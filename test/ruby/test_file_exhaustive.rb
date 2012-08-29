@@ -461,12 +461,17 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_expand_path_encoding_filesystem
+    home = ENV["HOME"]
+    ENV["HOME"] = "#{DRIVE}/UserHome"
+
     path = "~".encode("US-ASCII")
     dir = "C:/".encode("IBM437")
     fs = Encoding.find("filesystem")
 
     assert_equal fs, File.expand_path(path).encoding
     assert_equal fs, File.expand_path(path, dir).encoding
+  ensure
+    ENV["HOME"] = home
   end
 
   def test_expand_path_home
@@ -595,7 +600,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(true, File.expand_path('foo', 'bar').tainted?)
     assert_equal(true, File.expand_path('foo', '/bar'.taint).tainted?)
     assert_equal(true, File.expand_path('foo'.taint, '/bar').tainted?)
-    assert_equal(true, File.expand_path('~').tainted?)
+    assert_equal(true, File.expand_path('~').tainted?) if ENV["HOME"]
 
     if DRIVE
       assert_equal(true, File.expand_path('/foo').tainted?)

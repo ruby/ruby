@@ -1,3 +1,8 @@
+Thu Aug 30 07:45:12 2012  Luis Lavena  <luislavena@gmail.com>
+
+	* test/ruby/test_file_exhaustive.rb: fix test introduced in r36811 for
+	  posix environments where HOME is not defined.  [ruby-core:47322]
+
 Wed Aug 29 23:42:59 2012  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_last_status_clear): declared.
