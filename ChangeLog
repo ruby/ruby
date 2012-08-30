@@ -1,3 +1,7 @@
+Thu Aug 30 18:21:51 2012  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_close): call rb_last_status_clear.
+
 Thu Aug 30 16:17:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_f): check underflow since

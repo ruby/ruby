@@ -4020,6 +4020,7 @@ rb_io_close(VALUE io)
     rb_thread_fd_close(fd);
 
     if (fptr->pid) {
+        rb_last_status_clear();
 	rb_syswait(fptr->pid);
 	fptr->pid = 0;
     }
