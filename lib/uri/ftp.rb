@@ -135,6 +135,7 @@ module URI
     # +opaque+, +query+ and +fragment+, in that order.
     #
     def initialize(*arg)
+      raise InvalidURIError unless arg[5]
       arg[5] = arg[5].sub(/^\//,'').sub(/^%2F/,'/')
       super(*arg)
       @typecode = nil
