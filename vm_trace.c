@@ -280,7 +280,6 @@ clean_hooks(rb_hook_list_t *list)
 static int
 exec_hooks(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
 {
-    rb_event_hook_t *hook;
     int state;
     volatile int raised;
 
@@ -290,13 +289,13 @@ exec_hooks(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_ar
 
     raised = rb_threadptr_reset_raised(th);
 
-    hook = list->hooks;
-
     /* TODO: Support !RUBY_HOOK_FLAG_SAFE hooks */
 
     TH_PUSH_TAG(th);
     if ((state = TH_EXEC_TAG()) == 0) {
-	while (hook) {
+	rb_event_hook_t *hook;
+
+	for (hook = list->hooks; hook; hook = hook->next) {
 	    if (LIKELY(!(hook->hook_flags & RUBY_HOOK_FLAG_DELETED)) && (trace_arg->event & hook->events)) {
 		if (!(hook->hook_flags & RUBY_HOOK_FLAG_RAW_ARG)) {
 		    (*hook->func)(trace_arg->event, hook->data, trace_arg->self, trace_arg->id, trace_arg->klass);
@@ -305,7 +304,6 @@ exec_hooks(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_ar
 		    (*((rb_event_hook_raw_arg_func_t)hook->func))(hook->data, trace_arg);
 		}
 	    }
-	    hook = hook->next;
 	}
     }
     TH_POP_TAG();
