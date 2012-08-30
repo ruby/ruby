@@ -36,6 +36,13 @@
 # Enumerable objects besides sets and arrays.  An Enumerable object
 # can be converted to Set using the +to_set+ method.
 #
+# == Comparison
+#
+# The comparison operators <, >, <= and >= are implemented as
+# shorthand for the {proper_,}{subset?,superset?} methods.  However,
+# the <=> operator is intentionally left out because not every pair of
+# sets is comparable. ({x,y} vs. {x,z} for example)
+#
 # == Example
 #
 #   require 'set'
@@ -192,6 +199,7 @@ class Set
     return false if size < set.size
     set.all? { |o| include?(o) }
   end
+  alias >= superset?
 
   # Returns true if the set is a proper superset of the given set.
   def proper_superset?(set)
@@ -199,6 +207,7 @@ class Set
     return false if size <= set.size
     set.all? { |o| include?(o) }
   end
+  alias > proper_superset?
 
   # Returns true if the set is a subset of the given set.
   def subset?(set)
@@ -206,6 +215,7 @@ class Set
     return false if set.size < size
     all? { |o| set.include?(o) }
   end
+  alias <= subset?
 
   # Returns true if the set is a proper subset of the given set.
   def proper_subset?(set)
@@ -213,6 +223,7 @@ class Set
     return false if set.size <= size
     all? { |o| set.include?(o) }
   end
+  alias < proper_subset?
 
   # Calls the given block once for each element in the set, passing
   # the element as parameter.  Returns an enumerator if no block is
@@ -937,6 +948,9 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(false, set.superset?(Set[1,2,3,4]))
     assert_equal(false, set.superset?(Set[1,4]))
 
+    assert_equal(true, set >= Set[1,2,3])
+    assert_equal(true, set >= Set[1,2])
+
     assert_equal(true, Set[].superset?(Set[]))
   end
 
@@ -961,6 +975,9 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(false, set.proper_superset?(Set[1,2,3,4]))
     assert_equal(false, set.proper_superset?(Set[1,4]))
 
+    assert_equal(false, set > Set[1,2,3])
+    assert_equal(true, set > Set[1,2])
+
     assert_equal(false, Set[].proper_superset?(Set[]))
   end
 
@@ -983,6 +1000,9 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(true, set.subset?(Set[1,2,3]))
     assert_equal(false, set.subset?(Set[1,2]))
     assert_equal(false, set.subset?(Set[]))
+
+    assert_equal(true, set <= Set[1,2,3])
+    assert_equal(true, set <= Set[1,2,3,4])
 
     assert_equal(true, Set[].subset?(Set[1]))
     assert_equal(true, Set[].subset?(Set[]))
@@ -1007,6 +1027,9 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(false, set.proper_subset?(Set[1,2,3]))
     assert_equal(false, set.proper_subset?(Set[1,2]))
     assert_equal(false, set.proper_subset?(Set[]))
+
+    assert_equal(false, set < Set[1,2,3])
+    assert_equal(true, set < Set[1,2,3,4])
 
     assert_equal(false, Set[].proper_subset?(Set[]))
   end

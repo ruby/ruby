@@ -1,3 +1,9 @@
+Thu Aug 30 12:44:43 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#{<,>,<=,>=}): Define comparison operators as
+	  shorthand for the {proper_}{subset?,superset?} methods (finally).
+	  Given a push by Alexander E. Fischer.
+
 Thu Aug 30 09:21:01 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/ftp.rb (URI::FTP#initialize): raise InvalidURIError if "//"
