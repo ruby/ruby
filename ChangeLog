@@ -1,3 +1,9 @@
+Thu Aug 30 16:17:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_f): check underflow since
+	  strtod() sets errno to ERANGE at underflow too.  [ruby-core:47342]
+	  [Bug #6944]
+
 Thu Aug 30 12:44:43 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (Set#{<,>,<=,>=}): Define comparison operators as

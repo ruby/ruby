@@ -696,8 +696,10 @@ BigDecimal_to_f(VALUE self)
     VpToString(p, buf, 0, 0);
     errno = 0;
     d = strtod(buf, 0);
-    if (errno == ERANGE)
-	goto overflow;
+    if (errno == ERANGE) {
+	if (d == 0.0) goto underflow;
+	if (fabs(d) >= HUGE_VAL) goto overflow;
+    }
     return rb_float_new(d);
 
 overflow:

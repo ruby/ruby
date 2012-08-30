@@ -540,15 +540,35 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_kind_of(Float,   x .to_f)
     assert_kind_of(Float, (-x).to_f)
 
+    bug6944 = '[ruby-core:47342]'
+
     BigDecimal.mode(BigDecimal::EXCEPTION_UNDERFLOW, true)
-    assert_raise(FloatDomainError) {
-      BigDecimal("1e#{Float::MIN_10_EXP - 2*Float::DIG}").to_f }
-    assert_raise(FloatDomainError) {
-      BigDecimal("-1e#{Float::MIN_10_EXP - 2*Float::DIG}").to_f }
+    x = "1e#{Float::MIN_10_EXP - 2*Float::DIG}"
+    assert_raise(FloatDomainError, x) {BigDecimal(x).to_f}
+    x = "-#{x}"
+    assert_raise(FloatDomainError, x) {BigDecimal(x).to_f}
+    x = "1e#{Float::MIN_10_EXP - Float::DIG}"
+    assert_nothing_raised(FloatDomainError, x) {
+      assert_in_delta(0.0, BigDecimal(x).to_f, 10**Float::MIN_10_EXP, bug6944)
+    }
+    x = "-#{x}"
+    assert_nothing_raised(FloatDomainError, x) {
+      assert_in_delta(0.0, BigDecimal(x).to_f, 10**Float::MIN_10_EXP, bug6944)
+    }
 
     BigDecimal.mode(BigDecimal::EXCEPTION_UNDERFLOW, false)
-    assert_equal( 0.0, BigDecimal("1e#{Float::MIN_10_EXP - 2*Float::DIG}").to_f)
-    assert_equal(-0.0, BigDecimal("-1e#{Float::MIN_10_EXP - 2*Float::DIG}").to_f)
+    x = "1e#{Float::MIN_10_EXP - 2*Float::DIG}"
+    assert_equal( 0.0, BigDecimal(x).to_f, x)
+    x = "-#{x}"
+    assert_equal(-0.0, BigDecimal(x).to_f, x)
+    x = "1e#{Float::MIN_10_EXP - Float::DIG}"
+    assert_nothing_raised(FloatDomainError, x) {
+      assert_in_delta(0.0, BigDecimal(x).to_f, 10**Float::MIN_10_EXP, bug6944)
+    }
+    x = "-#{x}"
+    assert_nothing_raised(FloatDomainError, x) {
+      assert_in_delta(0.0, BigDecimal(x).to_f, 10**Float::MIN_10_EXP, bug6944)
+    }
   end
 
   def test_coerce
