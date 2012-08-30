@@ -1,3 +1,8 @@
+Thu Aug 30 09:21:01 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/ftp.rb (URI::FTP#initialize): raise InvalidURIError if "//"
+	  is not present [ruby-core:47344] [Bug #6945]
+
 Thu Aug 30 07:45:12 2012  Luis Lavena  <luislavena@gmail.com>
 
 	* test/ruby/test_file_exhaustive.rb: fix test introduced in r36811 for
