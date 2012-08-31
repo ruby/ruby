@@ -228,9 +228,9 @@ class Set
   # Calls the given block once for each element in the set, passing
   # the element as parameter.  Returns an enumerator if no block is
   # given.
-  def each
-    block_given? or return enum_for(__method__)
-    @hash.each_key { |o| yield(o) }
+  def each(&block)
+    block or return enum_for(__method__)
+    @hash.each_key(&block)
     self
   end
 
@@ -296,19 +296,19 @@ class Set
 
   # Equivalent to Set#delete_if, but returns nil if no changes were
   # made.
-  def reject!
-    block_given? or return enum_for(__method__)
+  def reject!(&block)
+    block or return enum_for(__method__)
     n = size
-    delete_if { |o| yield(o) }
+    delete_if(&block)
     size == n ? nil : self
   end
 
   # Equivalent to Set#keep_if, but returns nil if no changes were
   # made.
-  def select!
-    block_given? or return enum_for(__method__)
+  def select!(&block)
+    block or return enum_for(__method__)
     n = size
-    keep_if { |o| yield(o) }
+    keep_if(&block)
     size == n ? nil : self
   end
 
@@ -603,9 +603,9 @@ class SortedSet < Set
             super
           end
 
-          def each
-            block_given? or return enum_for(__method__)
-            to_a.each { |o| yield(o) }
+          def each(&block)
+            block or return enum_for(__method__)
+            to_a.each(&block)
             self
           end
 

@@ -1,3 +1,9 @@
+Fri Aug 31 17:38:43 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#{each,reject!,select!}, SortedSet#each): Pass
+	  the original block through instead of creating one that only
+	  yields the passed argument.
+
 Fri Aug 31 16:23:20 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/ipaddr.rb: Introduce several new error classes where only
