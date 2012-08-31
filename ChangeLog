@@ -1,3 +1,8 @@
+Fri Aug 31 14:02:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_trace.c (rb_threadptr_exec_event_hooks): fix uninitialized state
+	  when no events is excuted.
+
 Thu Aug 30 18:21:51 2012  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_close): call rb_last_status_clear.
