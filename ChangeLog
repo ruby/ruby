@@ -1,3 +1,9 @@
+Fri Aug 31 14:32:05 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_f): use self's sign to
+	  determine 0.0 and Inf's sign instead of internal double value's.
+	  Reported by phasis68 (Heesob Park) at [ruby-core:47381] [Bug #6955]
+
 Fri Aug 31 14:31:17 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/id.h.tmpl, tool/id2token.rb: make id.h independent from

@@ -704,14 +704,14 @@ BigDecimal_to_f(VALUE self)
 
 overflow:
     VpException(VP_EXCEPTION_OVERFLOW, "BigDecimal to Float conversion", 0);
-    if (d > 0.0)
+    if (p->sign >= 0)
 	return rb_float_new(VpGetDoublePosInf());
     else
 	return rb_float_new(VpGetDoubleNegInf());
 
 underflow:
     VpException(VP_EXCEPTION_UNDERFLOW, "BigDecimal to Float conversion", 0);
-    if (d > 0.0)
+    if (p->sign >= 0)
 	return rb_float_new(0.0);
     else
 	return rb_float_new(-0.0);
