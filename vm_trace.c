@@ -249,31 +249,21 @@ rb_clear_trace_func(void)
 static void
 clean_hooks(rb_hook_list_t *list)
 {
-    rb_event_hook_t *hook = list->hooks, *prev = 0;
+    rb_event_hook_t *hook, **nextp = &list->hooks;
 
     list->events = 0;
     list->need_clean = 0;
 
-    while (hook) {
+    while ((hook = *nextp) != 0) {
 	if (hook->hook_flags & RUBY_HOOK_FLAG_DELETED) {
-	    if (prev == 0) {
-		/* start of list */
-		list->hooks = hook->next;
-	    }
-	    else {
-		prev->next = hook->next;
-	    }
-
+	    *nextp = hook->next;
 	    recalc_remove_ruby_vm_event_flags(hook->events);
 	    xfree(hook);
-	    goto next_iter;
 	}
 	else {
 	    list->events |= hook->events; /* update active events */
+	    nextp = &hook->next;
 	}
-	prev = hook;
-      next_iter:
-	hook = hook->next;
     }
 }
 

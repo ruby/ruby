@@ -1,4 +1,6 @@
-Fri Aug 31 14:02:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug 31 14:03:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_trace.c (clean_hooks): do not access freed memory.
 
 	* vm_trace.c (rb_threadptr_exec_event_hooks): fix uninitialized state
 	  when no events is excuted.
