@@ -569,6 +569,11 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_nothing_raised(FloatDomainError, x) {
       assert_in_delta(0.0, BigDecimal(x).to_f, 10**Float::MIN_10_EXP, bug6944)
     }
+
+    assert_equal( 0.0, BigDecimal(  '9e-325').to_f)
+    assert_equal( 0.0, BigDecimal( '10e-325').to_f)
+    assert_equal(-0.0, BigDecimal( '-9e-325').to_f)
+    assert_equal(-0.0, BigDecimal('-10e-325').to_f)
   end
 
   def test_coerce
