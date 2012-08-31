@@ -411,7 +411,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   # different OpenSSL versions react differently when being faced with a
   # SSL/TLS version that has been marked as forbidden, therefore either of
   # these may be raised
-  FORBIDDEN_PROTOCOL_ERRORS = [OpenSSL::SSL::SSLError, Errno::ECONNRESET]
+  HANDSHAKE_ERRORS = [OpenSSL::SSL::SSLError, Errno::ECONNRESET]
 
 if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1
 
@@ -420,7 +420,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1
     start_server_version(:SSLv23, ctx_proc) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.ssl_version = :SSLv3
-      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
+      assert_raise(*HANDSHAKE_ERRORS) { server_connect(port, ctx) }
     }
   end
 
@@ -428,7 +428,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1
     start_server_version(:SSLv3) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_SSLv3
-      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
+      assert_raise(*HANDSHAKE_ERRORS) { server_connect(port, ctx) }
     }
   end
 
@@ -447,7 +447,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_1
     start_server_version(:SSLv23, ctx_proc) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.ssl_version = :TLSv1
-      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
+      assert_raise(*HANDSHAKE_ERRORS) { server_connect(port, ctx) }
     }
   end
 
@@ -455,7 +455,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_1
     start_server_version(:TLSv1) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_TLSv1
-      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
+      assert_raise(*HANDSHAKE_ERRORS) { server_connect(port, ctx) }
     }
   end
 
@@ -474,7 +474,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
     start_server_version(:SSLv23, ctx_proc) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.ssl_version = :TLSv1_1
-      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
+      assert_raise(*HANDSHAKE_ERRORS) { server_connect(port, ctx) }
     }
   end if defined?(OpenSSL::SSL::OP_NO_TLSv1_1)
 
@@ -482,7 +482,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
     start_server_version(:TLSv1_1) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_TLSv1_1
-      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
+      assert_raise(*HANDSHAKE_ERRORS) { server_connect(port, ctx) }
     }
   end if defined?(OpenSSL::SSL::OP_NO_TLSv1_1)
 
@@ -491,7 +491,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
     start_server_version(:SSLv23, ctx_proc) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.ssl_version = :TLSv1_2
-      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
+      assert_raise(*HANDSHAKE_ERRORS) { server_connect(port, ctx) }
     }
   end if defined?(OpenSSL::SSL::OP_NO_TLSv1_2)
 
@@ -499,7 +499,7 @@ if OpenSSL::SSL::SSLContext::METHODS.include? :TLSv1_2
     start_server_version(:TLSv1_2) { |server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_TLSv1_2
-      assert_raise(*FORBIDDEN_PROTOCOL_ERRORS) { server_connect(port, ctx) }
+      assert_raise(*HANDSHAKE_ERRORS) { server_connect(port, ctx) }
     }
   end if defined?(OpenSSL::SSL::OP_NO_TLSv1_2)
 
@@ -515,6 +515,73 @@ end
       }
     }
   end
+
+if OpenSSL::OPENSSL_VERSION_NUMBER > 0x10001000
+
+  def test_npn_protocol_selection_ary
+    advertised = ["http/1.1", "spdy/2"]
+    ctx_proc = Proc.new { |ctx| ctx.npn_protocols = advertised }
+    start_server_version(:SSLv23, ctx_proc) { |server, port|
+      selector = lambda { |which|
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.npn_select_cb = -> (protocols) { protocols.send(which) }
+        server_connect(port, ctx) { |ssl|
+          assert_equal(advertised.send(which), ssl.npn_protocol)
+        }
+      }
+      selector.call(:first)
+      selector.call(:last)
+    }
+  end
+
+  def test_npn_protocol_selection_enum
+    advertised = Object.new
+    def advertised.each
+      yield "http/1.1"
+      yield "spdy/2"
+    end
+    ctx_proc = Proc.new { |ctx| ctx.npn_protocols = advertised }
+    start_server_version(:SSLv23, ctx_proc) { |server, port|
+      selector = lambda { |selected, which|
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.npn_select_cb = -> (protocols) { protocols.to_a.send(which) }
+        server_connect(port, ctx) { |ssl|
+          assert_equal(selected, ssl.npn_protocol)
+        }
+      }
+      selector.call("http/1.1", :first)
+      selector.call("spdy/2", :last)
+    }
+  end
+
+  def test_npn_protocol_selection_cancel
+    ctx_proc = Proc.new { |ctx| ctx.npn_protocols = ["http/1.1"] }
+    start_server_version(:SSLv23, ctx_proc) { |server, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.npn_select_cb = -> (protocols) { raise RuntimeError.new }
+      assert_raise(RuntimeError) { server_connect(port, ctx) }
+    }
+  end
+
+  def test_npn_advertised_protocol_too_long
+    ctx_proc = Proc.new { |ctx| ctx.npn_protocols = ["a" * 256] }
+    start_server_version(:SSLv23, ctx_proc) { |server, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.npn_select_cb = -> (protocols) { protocols.first }
+      assert_raise(*HANDSHAKE_ERRORS) { server_connect(port, ctx) }
+    }
+  end
+
+  def test_npn_selected_protocol_too_long
+    ctx_proc = Proc.new { |ctx| ctx.npn_protocols = ["http/1.1"] }
+    start_server_version(:SSLv23, ctx_proc) { |server, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.npn_select_cb = -> (protocols) { "a" * 256 }
+      assert_raise(*HANDSHAKE_ERRORS) { server_connect(port, ctx) }
+    }
+    end
+
+end
 
   private
 

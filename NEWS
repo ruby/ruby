@@ -171,6 +171,8 @@ with all sufficient information, see the ChangeLog file.
     OpenSSL::PKey::EC therefore now enforce the same check when exporting a
     private key to PEM with a password - it has to be at least four characters
     long.
+  * SSL/TLS support for the Next Protocol Negotiation extension. Supported 
+    with OpenSSL 1.0.1 and higher.
 
 * yaml
   * Syck has been removed.  YAML now completely depends on libyaml being

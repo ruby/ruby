@@ -70,6 +70,9 @@ static const char *ossl_sslctx_attrs[] = {
 #ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
     "servername_cb",
 #endif
+#ifdef HAVE_OPENSSL_NPN_NEGOTIATED
+    "npn_protocols",
+#endif
 };
 
 #define ossl_ssl_get_io(o)           rb_iv_get((o),"@io")
@@ -560,6 +563,66 @@ ssl_renegotiation_cb(const SSL *ssl)
     (void) rb_funcall(cb, rb_intern("call"), 1, ssl_obj);
 }
 
+#ifdef HAVE_OPENSSL_NPN_NEGOTIATED
+static VALUE
+ssl_npn_encode_protocol_i(VALUE cur, VALUE encoded)
+{
+    int len = RSTRING_LENINT(cur);
+    if (len < 1 || len > 255)
+	ossl_raise(eSSLError, "Advertised protocol must have length 1..255");
+    /* Encode the length byte */
+    rb_str_buf_cat(encoded, (const char *) &len, 1);
+    rb_str_buf_cat(encoded, RSTRING_PTR(cur), len);
+    return Qnil;
+}
+
+static void
+ssl_npn_encode_protocols(VALUE sslctx, VALUE protocols)
+{
+    VALUE encoded = rb_str_new2("");
+    rb_iterate(rb_each, protocols, ssl_npn_encode_protocol_i, encoded);
+    StringValueCStr(encoded);
+    rb_iv_set(sslctx, "@_protocols", encoded);
+}
+
+static int
+ssl_npn_advertise_cb(SSL *ssl, const unsigned char **out, unsigned int *outlen, void *arg) 
+{
+    VALUE sslctx_obj = (VALUE) arg;
+    VALUE protocols = rb_iv_get(sslctx_obj, "@_protocols");
+
+    *out = (const unsigned char *) RSTRING_PTR(protocols);
+    *outlen = RSTRING_LENINT(protocols);
+
+    return SSL_TLSEXT_ERR_OK;
+}
+
+static int
+ssl_npn_select_cb(SSL *s, unsigned char **out, unsigned char *outlen, const unsigned char *in, unsigned int inlen, void *arg)
+{
+    int i = 0;
+    VALUE sslctx_obj, cb, protocols, selected;
+   
+    sslctx_obj = (VALUE) arg;
+    cb = rb_iv_get(sslctx_obj, "@npn_select_cb");
+    protocols = rb_ary_new();
+
+    /* The format is len_1|proto_1|...|len_n|proto_n\0 */
+    while (in[i]) {
+	VALUE protocol = rb_str_new((const char *) &in[i + 1], in[i]);
+	rb_ary_push(protocols, protocol);
+	i += in[i] + 1;
+    }
+
+    selected = rb_funcall(cb, rb_intern("call"), 1, protocols);
+    StringValue(selected);
+    *out = (unsigned char *) StringValuePtr(selected);
+    *outlen = RSTRING_LENINT(selected);
+
+    return SSL_TLSEXT_ERR_OK;
+}
+#endif
+
 /* This function may serve as the entry point to support further 
  * callbacks. */
 static void
@@ -690,6 +753,20 @@ ossl_sslctx_setup(VALUE self)
     } else {
 	SSL_CTX_set_options(ctx, SSL_OP_ALL);
     }
+
+#ifdef HAVE_OPENSSL_NPN_NEGOTIATED
+    val = rb_iv_get(self, "@npn_protocols");
+    if (!NIL_P(val)) {
+	ssl_npn_encode_protocols(self, val);
+	SSL_CTX_set_next_protos_advertised_cb(ctx, ssl_npn_advertise_cb, (void *) self);
+	OSSL_Debug("SSL NPN advertise callback added");
+    }
+    if (RTEST(rb_iv_get(self, "@npn_select_cb"))) {
+	SSL_CTX_set_next_proto_select_cb(ctx, ssl_npn_select_cb, (void *) self);
+	OSSL_Debug("SSL NPN select callback added");
+    }
+#endif
+
     rb_obj_freeze(self);
 
     val = ossl_sslctx_get_sess_id_ctx(self);
@@ -1137,6 +1214,15 @@ ossl_ssl_setup(VALUE self)
 #define ssl_get_error(ssl, ret) SSL_get_error((ssl), (ret))
 #endif
 
+#define ossl_ssl_data_get_struct(v, ssl)		\
+do {							\
+    Data_Get_Struct((v), SSL, (ssl));			\
+    if (!(ssl)) {					\
+        rb_warning("SSL session is not started yet.");  \
+        return Qnil;					\
+    }							\
+} while (0)
+
 static void
 write_would_block(int nonblock)
 {
@@ -1167,7 +1253,8 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, int nonblock)
 
     rb_ivar_set(self, ID_callback_state, Qnil);
 
-    Data_Get_Struct(self, SSL, ssl);
+    ossl_ssl_data_get_struct(self, ssl);
+
     GetOpenFile(ossl_ssl_get_io(self), fptr);
     for(;;){
 	ret = func(ssl);
@@ -1445,7 +1532,8 @@ ossl_ssl_close(VALUE self)
 {
     SSL *ssl;
 
-    Data_Get_Struct(self, SSL, ssl);
+    ossl_ssl_data_get_struct(self, ssl);
+
     ossl_ssl_shutdown(ssl);
     if (RTEST(ossl_ssl_get_sync_close(self)))
 	rb_funcall(ossl_ssl_get_io(self), rb_intern("close"), 0);
@@ -1465,11 +1553,7 @@ ossl_ssl_get_cert(VALUE self)
     SSL *ssl;
     X509 *cert = NULL;
 
-    Data_Get_Struct(self, SSL, ssl);
-    if (!ssl) {
-        rb_warning("SSL session is not started yet.");
-        return Qnil;
-    }
+    ossl_ssl_data_get_struct(self, ssl);
 
     /*
      * Is this OpenSSL bug? Should add a ref?
@@ -1496,12 +1580,7 @@ ossl_ssl_get_peer_cert(VALUE self)
     X509 *cert = NULL;
     VALUE obj;
 
-    Data_Get_Struct(self, SSL, ssl);
-
-    if (!ssl){
-        rb_warning("SSL session is not started yet.");
-        return Qnil;
-    }
+    ossl_ssl_data_get_struct(self, ssl);
 
     cert = SSL_get_peer_certificate(ssl); /* Adds a ref => Safe to FREE. */
 
@@ -1529,11 +1608,8 @@ ossl_ssl_get_peer_cert_chain(VALUE self)
     VALUE ary;
     int i, num;
 
-    Data_Get_Struct(self, SSL, ssl);
-    if(!ssl){
-	rb_warning("SSL session is not started yet.");
-	return Qnil;
-    }
+    ossl_ssl_data_get_struct(self, ssl);
+
     chain = SSL_get_peer_cert_chain(ssl);
     if(!chain) return Qnil;
     num = sk_X509_num(chain);
@@ -1558,11 +1634,8 @@ ossl_ssl_get_version(VALUE self)
 {
     SSL *ssl;
 
-    Data_Get_Struct(self, SSL, ssl);
-    if (!ssl) {
-        rb_warning("SSL session is not started yet.");
-        return Qnil;
-    }
+    ossl_ssl_data_get_struct(self, ssl);
+
     return rb_str_new2(SSL_get_version(ssl));
 }
 
@@ -1578,11 +1651,8 @@ ossl_ssl_get_cipher(VALUE self)
     SSL *ssl;
     SSL_CIPHER *cipher;
 
-    Data_Get_Struct(self, SSL, ssl);
-    if (!ssl) {
-        rb_warning("SSL session is not started yet.");
-        return Qnil;
-    }
+    ossl_ssl_data_get_struct(self, ssl);
+
     cipher = (SSL_CIPHER *)SSL_get_current_cipher(ssl);
 
     return ossl_ssl_cipher_to_ary(cipher);
@@ -1600,11 +1670,8 @@ ossl_ssl_get_state(VALUE self)
     SSL *ssl;
     VALUE ret;
 
-    Data_Get_Struct(self, SSL, ssl);
-    if (!ssl) {
-        rb_warning("SSL session is not started yet.");
-        return Qnil;
-    }
+    ossl_ssl_data_get_struct(self, ssl);
+
     ret = rb_str_new2(SSL_state_string(ssl));
     if (ruby_verbose) {
         rb_str_cat2(ret, ": ");
@@ -1624,11 +1691,7 @@ ossl_ssl_pending(VALUE self)
 {
     SSL *ssl;
 
-    Data_Get_Struct(self, SSL, ssl);
-    if (!ssl) {
-        rb_warning("SSL session is not started yet.");
-        return Qnil;
-    }
+    ossl_ssl_data_get_struct(self, ssl);
 
     return INT2NUM(SSL_pending(ssl));
 }
@@ -1644,11 +1707,7 @@ ossl_ssl_session_reused(VALUE self)
 {
     SSL *ssl;
 
-    Data_Get_Struct(self, SSL, ssl);
-    if (!ssl) {
-        rb_warning("SSL session is not started yet.");
-        return Qnil;
-    }
+    ossl_ssl_data_get_struct(self, ssl);
 
     switch(SSL_session_reused(ssl)) {
     case 1:	return Qtrue;
@@ -1674,11 +1733,7 @@ ossl_ssl_set_session(VALUE self, VALUE arg1)
 /* why is ossl_ssl_setup delayed? */
     ossl_ssl_setup(self);
 
-    Data_Get_Struct(self, SSL, ssl);
-    if (!ssl) {
-        rb_warning("SSL session is not started yet.");
-        return Qnil;
-    }
+    ossl_ssl_data_get_struct(self, ssl);
 
     SafeGetSSLSession(arg1, sess);
 
@@ -1702,11 +1757,7 @@ ossl_ssl_get_verify_result(VALUE self)
 {
     SSL *ssl;
 
-    Data_Get_Struct(self, SSL, ssl);
-    if (!ssl) {
-        rb_warning("SSL session is not started yet.");
-        return Qnil;
-    }
+    ossl_ssl_data_get_struct(self, ssl);
 
     return INT2FIX(SSL_get_verify_result(ssl));
 }
@@ -1728,15 +1779,36 @@ ossl_ssl_get_client_ca_list(VALUE self)
     SSL *ssl;
     STACK_OF(X509_NAME) *ca;
 
-    Data_Get_Struct(self, SSL, ssl);
-    if (!ssl) {
-	rb_warning("SSL session is not started yet.");
-	return Qnil;
-    }
+    ossl_ssl_data_get_struct(self, ssl);
 
     ca = SSL_get_client_CA_list(ssl);
     return ossl_x509name_sk2ary(ca);
 }
+
+#ifdef HAVE_OPENSSL_NPN_NEGOTIATED
+/*
+ * call-seq:
+ *    ssl.npn_protocol => String
+ *
+ * Returns the protocol string that was finally selected by the client
+ * during the handshake.
+ */
+static VALUE
+ossl_ssl_npn_protocol(VALUE self)
+{
+    SSL *ssl;
+    const unsigned char *out;
+    unsigned int outlen;
+
+    ossl_ssl_data_get_struct(self, ssl);
+    
+    SSL_get0_next_proto_negotiated(ssl, &out, &outlen);
+    if (!outlen)
+	return Qnil;
+    else
+	return rb_str_new((const char *) out, outlen);
+}
+#endif
 
 void
 Init_ossl_ssl()
@@ -1950,6 +2022,37 @@ Init_ossl_ssl()
      *   end  
      */
     rb_attr(cSSLContext, rb_intern("renegotiation_cb"), 1, 1, Qfalse);
+#ifdef HAVE_OPENSSL_NPN_NEGOTIATED
+    /*
+     * An Enumerable of Strings. Each String represents a protocol to be
+     * advertised as the list of supported protocols for Next Protocol
+     * Negotiation. Supported in OpenSSL 1.0.1 and higher. Has no effect
+     * on the client side. If not set explicitly, the NPN extension will
+     * not be sent by the server in the handshake.
+     *
+     * === Example
+     *
+     *   ctx.npn_protocols = ["http/1.1", "spdy/2"]
+     */
+    rb_attr(cSSLContext, rb_intern("npn_protocols"), 1, 1, Qfalse);
+    /*
+     * A callback invoked on the client side when the client needs to select
+     * a protocol from the list sent by the server. Supported in OpenSSL 1.0.1
+     * and higher. The client MUST select a protocol of those advertised by
+     * the server. If none is acceptable, raising an error in the callback
+     * will cause the handshake to fail. Not setting this callback explicitly
+     * means not supporting the NPN extension on the client - any protocols
+     * advertised by the server will be ignored.   
+     *
+     * === Example
+     *
+     *   ctx.npn_select_cb = lambda do |protocols|
+     *     #inspect the protocols and select one
+     *     protocols.first
+     *   end
+     */
+    rb_attr(cSSLContext, rb_intern("npn_select_cb"), 1, 1, Qfalse);
+#endif
 
     rb_define_alias(cSSLContext, "ssl_timeout", "timeout");
     rb_define_alias(cSSLContext, "ssl_timeout=", "timeout=");
@@ -1959,7 +2062,6 @@ Init_ossl_ssl()
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
 
     rb_define_method(cSSLContext, "setup", ossl_sslctx_setup, 0);
-
 
     /*
      * No session caching for client or server
@@ -2061,6 +2163,9 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "session=",    ossl_ssl_set_session, 1);
     rb_define_method(cSSLSocket, "verify_result", ossl_ssl_get_verify_result, 0);
     rb_define_method(cSSLSocket, "client_ca", ossl_ssl_get_client_ca_list, 0);
+#ifdef HAVE_OPENSSL_NPN_NEGOTIATED
+    rb_define_method(cSSLSocket, "npn_protocol", ossl_ssl_npn_protocol, 0);
+#endif
 
 #define ossl_ssl_def_const(x) rb_define_const(mSSL, #x, INT2NUM(SSL_##x))
 

@@ -1,3 +1,16 @@
+Fri 31 Aug 2012 18:35:02 AM CEST  BOSSLET, Martin  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/extconf.rb: Check existence of OPENSSL_NPN_NEGOTIATED.
+	  ext/ossl_ssl.c: Support Next Protocol Negotiation. Protocols to be
+	  advertised by the server can be set in the SSLContext by using
+	  SSLContext#npn_protocols=, protocol selection on the client is
+	  supported by providing a selection callback with
+	  SSLContext#npn_select_cb. The protocol that was finally negotiated
+	  is available through SSL#npn_protocol.
+	  test/openssl/test_ssl.rb: Add tests for Next Protocol Negotiation.
+	  NEWS: add news about NPN support.
+	  [Feature #6503] [ruby-core:45272]
+
 Fri Aug 31 17:38:43 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (Set#{each,reject!,select!}, SortedSet#each): Pass

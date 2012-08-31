@@ -108,6 +108,7 @@ have_func("TLSv1_1_client_method")
 have_func("TLSv1_2_method")
 have_func("TLSv1_2_server_method")
 have_func("TLSv1_2_client_method")
+have_func("OPENSSL_NPN_NEGOTIATED", ['openssl/ssl.h'])
 unless have_func("SSL_set_tlsext_host_name", ['openssl/ssl.h'])
   have_macro("SSL_set_tlsext_host_name", ['openssl/ssl.h']) && $defs.push("-DHAVE_SSL_SET_TLSEXT_HOST_NAME")
 end
