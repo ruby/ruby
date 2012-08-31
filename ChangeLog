@@ -1,3 +1,9 @@
+Fri Aug 31 14:27:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): fix race conditions at install-ext.
+	  target files need to depend on destination directory timestamp
+	  files, not phony trgets.
+
 Fri Aug 31 14:03:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_trace.c (clean_hooks): do not access freed memory.
