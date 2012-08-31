@@ -27,7 +27,6 @@ REVISION_H    = ./.revision.time
 PLATFORM_D    = ./$(PLATFORM_DIR)/.time
 RDOCOUT       = $(EXTOUT)/rdoc
 CAPIOUT       = doc/capi
-ID_H_TARGET   = ./.id.h.time
 
 DMYEXT	      = dmyext.$(OBJEXT)
 NORMALMAINOBJ = main.$(OBJEXT)
@@ -105,7 +104,7 @@ EXPORTOBJS    = dln.$(OBJEXT) \
 		$(COMMONOBJS)
 
 OBJS          = $(EXPORTOBJS) prelude.$(OBJEXT)
-ALLOBJS       = $(ID_H_TARGET) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT)
+ALLOBJS       = $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT)
 
 GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
 
@@ -561,20 +560,17 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 
 PHONY:
 
-{$(VPATH)}parse.c: {$(VPATH)}parse.y $(srcdir)/tool/ytab.sed
+{$(VPATH)}parse.c: {$(VPATH)}parse.y $(srcdir)/tool/ytab.sed {$(VPATH)}id.h
 {$(VPATH)}parse.h: {$(VPATH)}parse.c
 
 {$(srcdir)}.y.c:
 	$(ECHO) generating $@
-	$(Q)$(YACC) -d $(YFLAGS) -o y.tab.c $(SRC_FILE)
-	$(Q)sed -f $(srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@.new
+	$(Q)$(BASERUBY) $(srcdir)/tool/id2token.rb --vpath=$(VPATH) id.h $(SRC_FILE) > parse.tmp.y
+	$(Q)$(YACC) -d $(YFLAGS) -o y.tab.c parse.tmp.y
+	$(Q)$(RM) parse.tmp.y
+	$(Q)sed -f $(srcdir)/tool/ytab.sed -e "/^#/s!parse\.tmp\.[iy]!parse.y!" -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@.new
 	$(Q)$(MV) $@.new $@
-	$(Q)$(RM) y.tab.c y.tab.h
-
-{$(srcdir)}.y.h:
-	$(ECHO) generating $@
-	$(Q)$(YACC) -d $(YFLAGS) -o y.tab.c $(SRC_FILE)
-	$(Q)sed -e "/^#line.*y\.tab\.h/d;/^#line.*parse\.y/d" y.tab.h > $(@:.c=.h)
+	$(Q)sed -e "/^#line.*y\.tab\.h/d;/^#line.*parse.*\.y/d" y.tab.h > $(@:.c=.h)
 	$(Q)$(RM) y.tab.c y.tab.h
 
 acosh.$(OBJEXT): {$(VPATH)}acosh.c
@@ -847,15 +843,14 @@ srcs-enc: $(ENC_MK)
 	$(Q) $(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
 
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(VPATH)}known_errors.inc \
-      $(srcdir)/revision.h $(REVISION_H) enc/unicode/name2ctype.h $(ID_H_TARGET)
+      $(srcdir)/revision.h $(REVISION_H) enc/unicode/name2ctype.h {$(VPATH)}id.h
 
 insns: $(INSNS)
 
-$(ID_H_INCLUDES) $(ID_H_TARGET): {$(VPATH)}parse.h $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
-	$(ECHO) generating id.h
-	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb --if-change --output=id.h \
-		--vpath=$(VPATH) --timestamp \
-		$(srcdir)/template/id.h.tmpl parse.h
+{$(VPATH)}id.h: $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
+	$(ECHO) generating $@
+	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb --output=$@ \
+		$(srcdir)/template/$@.tmpl
 
 node_name.inc: {$(VPATH)}node.h
 	$(ECHO) generating $@
@@ -904,7 +899,7 @@ $(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastr
 $(srcdir)/ext/ripper/ripper.c: parse.y
 	$(ECHO) generating $@
 	$(Q) $(CHDIR) $(@D) && $(exec) $(MAKE) -f depend $(MFLAGS) \
-		Q=$(Q) ECHO=$(ECHO) top_srcdir=../.. srcdir=. RUBY="$(BASERUBY)"
+		Q=$(Q) ECHO=$(ECHO) top_srcdir=../.. srcdir=. VPATH=../.. RUBY="$(BASERUBY)"
 
 $(srcdir)/ext/json/parser/parser.c: $(srcdir)/ext/json/parser/parser.rl
 	$(ECHO) generating $@

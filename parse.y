@@ -744,25 +744,25 @@ static void token_info_pop(struct parser_params*, const char *token);
 %type <val> program reswords then do dot_or_colon
 %*/
 %token END_OF_INPUT 0	"end-of-input"
-%token tUPLUS		"unary+"
-%token tUMINUS		"unary-"
-%token tPOW		"**"
-%token tCMP		"<=>"
-%token tEQ		"=="
-%token tEQQ		"==="
-%token tNEQ		"!="
-%token tGEQ		">="
-%token tLEQ		"<="
+%token tUPLUS		RUBY_TOKEN(UPLUS)  "unary+"
+%token tUMINUS		RUBY_TOKEN(UMINUS) "unary-"
+%token tPOW		RUBY_TOKEN(POW)    "**"
+%token tCMP		RUBY_TOKEN(CMP)    "<=>"
+%token tEQ		RUBY_TOKEN(EQ)     "=="
+%token tEQQ		RUBY_TOKEN(EQQ)    "==="
+%token tNEQ		RUBY_TOKEN(NEQ)    "!="
+%token tGEQ		RUBY_TOKEN(GEQ)    ">="
+%token tLEQ		RUBY_TOKEN(LEQ)    "<="
 %token tANDOP		"&&"
 %token tOROP		"||"
-%token tMATCH		"=~"
-%token tNMATCH		"!~"
-%token tDOT2		".."
-%token tDOT3		"..."
-%token tAREF		"[]"
-%token tASET		"[]="
-%token tLSHFT		"<<"
-%token tRSHFT		">>"
+%token tMATCH		RUBY_TOKEN(MATCH)  "=~"
+%token tNMATCH		RUBY_TOKEN(NMATCH) "!~"
+%token tDOT2		RUBY_TOKEN(DOT2)   ".."
+%token tDOT3		RUBY_TOKEN(DOT3)   "..."
+%token tAREF		RUBY_TOKEN(AREF)   "[]"
+%token tASET		RUBY_TOKEN(ASET)   "[]="
+%token tLSHFT		RUBY_TOKEN(LSHFT)  "<<"
+%token tRSHFT		RUBY_TOKEN(RSHFT)  ">>"
 %token tCOLON2		"::"
 %token tCOLON3		":: at EXPR_BEG"
 %token <id> tOP_ASGN	/* +=, -=  etc. */
@@ -9918,8 +9918,8 @@ static struct symbols {
     st_table *ivar2_id;
     st_table *id_ivar2;
 #endif
-    VALUE op_sym[tLAST_TOKEN];
-} global_symbols = {tLAST_ID};
+    VALUE op_sym[tLAST_OP_ID];
+} global_symbols = {tLAST_TOKEN};
 
 static const struct st_hash_type symhash = {
     rb_str_hash_cmp,
@@ -9977,7 +9977,7 @@ rb_gc_mark_symbols(void)
 {
     rb_mark_tbl(global_symbols.id_str);
     rb_gc_mark_locations(global_symbols.op_sym,
-			 global_symbols.op_sym + tLAST_TOKEN);
+			 global_symbols.op_sym + numberof(global_symbols.op_sym));
 }
 #endif /* !RIPPER */
 
@@ -10264,7 +10264,7 @@ intern_str(VALUE str)
 	if (m[last] == '=') {
 	    /* attribute assignment */
 	    id = rb_intern3(name, last, enc);
-	    if (id > tLAST_TOKEN && !is_attrset_id(id)) {
+	    if (id > tLAST_OP_ID && !is_attrset_id(id)) {
 		enc = rb_enc_get(rb_id2str(id));
 		id = rb_id_attrset(id);
 		goto id_register;

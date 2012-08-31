@@ -1,3 +1,8 @@
+Fri Aug 31 14:31:17 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/id.h.tmpl, tool/id2token.rb: make id.h independent from
+	  parse.h, and make parse.c dependent on it instead.
+
 Fri Aug 31 14:27:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): fix race conditions at install-ext.
