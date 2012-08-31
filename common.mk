@@ -560,8 +560,8 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 
 PHONY:
 
-{$(VPATH)}parse.c: {$(VPATH)}parse.y $(srcdir)/tool/ytab.sed {$(VPATH)}id.h
-{$(VPATH)}parse.h: {$(VPATH)}parse.c
+parse.c: {$(VPATH)}parse.y $(srcdir)/tool/ytab.sed id.h
+parse.h: {$(VPATH)}parse.c
 
 {$(srcdir)}.y.c:
 	$(ECHO) generating $@
@@ -847,7 +847,7 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(
 
 insns: $(INSNS)
 
-{$(VPATH)}id.h: $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
+id.h: $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb --output=$@ \
 		$(srcdir)/template/$@.tmpl
