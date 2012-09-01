@@ -59,6 +59,7 @@ module TestNetHTTPUtils
         :SSLEnable      => true,
         :SSLCertificate => config('ssl_certificate'),
         :SSLPrivateKey  => config('ssl_private_key'),
+        :SSLTmpDhCallback => proc { OpenSSL::TestUtils::TEST_KEY_DH1024 },
       })
     end
     @server = WEBrick::HTTPServer.new(server_config)

@@ -22,6 +22,7 @@ module WEBrick
       :SSLCACertificateFile => nil,
       :SSLCACertificatePath => nil,
       :SSLCertificateStore  => nil,
+      :SSLTmpDhCallback     => nil.
       :SSLVerifyClient      => ::OpenSSL::SSL::VERIFY_NONE,
       :SSLVerifyDepth       => nil,
       :SSLVerifyCallback    => nil,   # custom verification
@@ -116,6 +117,7 @@ module WEBrick
       ctx.ca_file = config[:SSLCACertificateFile]
       ctx.ca_path = config[:SSLCACertificatePath]
       ctx.cert_store = config[:SSLCertificateStore]
+      ctx.tmp_dh_callback = config[:SSLTmpDhCallback]
       ctx.verify_mode = config[:SSLVerifyClient]
       ctx.verify_depth = config[:SSLVerifyDepth]
       ctx.verify_callback = config[:SSLVerifyCallback]

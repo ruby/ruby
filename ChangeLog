@@ -1,3 +1,11 @@
+Sun Sep  2 05:41:28 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/ssl.rb (WEBrick::Config::SSL): add new key
+	  SSLTmpDhCallback to set SSLContext#tmp_dh_calback.
+
+	* lib/webrick/ssl.rb (WEBrick::GenericServer#setup_ssl_context):
+	  follow above.
+
 Sat Sep  1 18:50:50 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (#initialize_copy, #eql): Use instance_variable_get
