@@ -2574,7 +2574,7 @@ AS_CASE("$enable_shared", [yes], [
   if test "$bindir" = '${exec_prefix}/bin'; then
     AS_CASE(["$libdir"], ['${exec_prefix}/'*], [libdir_basename=`basename "$libdir"`])
   fi
-  AC_DEFINE(LIBDIR_BASENAME, ["${libdir_basename}"])
+  AC_DEFINE_UNQUOTED(LIBDIR_BASENAME, ["${libdir_basename}"])
 
   AS_CASE(["$target_os"],
     [freebsd*|dragonfly*], [],
