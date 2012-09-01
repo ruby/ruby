@@ -11294,7 +11294,7 @@ argf_write(VALUE argf, VALUE str)
  *
  *    require 'io/console'
  *    rows, columns = $stdin.winsize
- *    puts "You screen is #{columns} wide and #{rows} tall"
+ *    puts "Your screen is #{columns} wide and #{rows} tall"
  */
 
 void
