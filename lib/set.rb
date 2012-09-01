@@ -96,7 +96,7 @@ class Set
 
   # Copy internal hash.
   def initialize_copy(orig)
-    @hash = orig.instance_eval{@hash}.dup
+    @hash = orig.instance_variable_get(:@hash).dup
   end
 
   def freeze    # :nodoc:
@@ -384,7 +384,7 @@ class Set
 
   def eql?(o)   # :nodoc:
     return false unless o.is_a?(Set)
-    @hash.eql?(o.instance_eval{@hash})
+    @hash.eql?(o.instance_variable_get(:@hash))
   end
 
   # Classifies the set by the return value of the given block and
