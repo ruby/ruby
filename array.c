@@ -1374,15 +1374,12 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	rpl = rb_ary_to_ary(rpl);
 	rlen = RARRAY_LEN(rpl);
     }
-    rb_ary_modify(ary);
     if (beg >= RARRAY_LEN(ary)) {
 	if (beg > ARY_MAX_SIZE - rlen) {
 	    rb_raise(rb_eIndexError, "index %ld too big", beg);
 	}
+	ary_ensure_room_for_push(ary, rlen);
 	len = beg + rlen;
-	if (len >= ARY_CAPA(ary)) {
-	    ary_double_capa(ary, len);
-	}
 	rb_mem_clear(RARRAY_PTR(ary) + RARRAY_LEN(ary), beg - RARRAY_LEN(ary));
 	if (rlen > 0) {
 	    MEMCPY(RARRAY_PTR(ary) + beg, RARRAY_PTR(rpl), VALUE, rlen);
@@ -1392,6 +1389,7 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
     else {
 	long alen;
 
+	rb_ary_modify(ary);
 	alen = RARRAY_LEN(ary) + rlen - len;
 	if (alen >= ARY_CAPA(ary)) {
 	    ary_double_capa(ary, alen);
