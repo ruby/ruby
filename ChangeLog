@@ -6,7 +6,7 @@ Sun Sep  2 21:46:28 2012  BOSSLET, Martin  <Martin.Bosslet@googlemail.com>
 Sun Sep  2 05:41:28 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/ssl.rb (WEBrick::Config::SSL): add new key
-	  SSLTmpDhCallback to set SSLContext#tmp_dh_calback.
+	  SSLTmpDhCallback to set SSLContext#tmp_dh_callback.
 
 	* lib/webrick/ssl.rb (WEBrick::GenericServer#setup_ssl_context):
 	  follow above.
@@ -68,14 +68,14 @@ Fri Aug 31 14:27:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): fix race conditions at install-ext.
 	  target files need to depend on destination directory timestamp
-	  files, not phony trgets.
+	  files, not phony targets.
 
 Fri Aug 31 14:03:45 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_trace.c (clean_hooks): do not access freed memory.
 
 	* vm_trace.c (rb_threadptr_exec_event_hooks): fix uninitialized state
-	  when no events is excuted.
+	  when no events is executed.
 
 Thu Aug 30 18:21:51 2012  Tanaka Akira  <akr@fsij.org>
 
