@@ -1,3 +1,8 @@
+Sun Sep  2 21:46:28 2012  BOSSLET, Martin  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/utils.rb: Use a cached DH key instead of generating a
+	  new one each time.
+
 Sun Sep  2 05:41:28 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/ssl.rb (WEBrick::Config::SSL): add new key
