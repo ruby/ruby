@@ -22,7 +22,7 @@ module WEBrick
       :SSLCACertificateFile => nil,
       :SSLCACertificatePath => nil,
       :SSLCertificateStore  => nil,
-      :SSLTmpDhCallback     => nil.
+      :SSLTmpDhCallback     => nil,
       :SSLVerifyClient      => ::OpenSSL::SSL::VERIFY_NONE,
       :SSLVerifyDepth       => nil,
       :SSLVerifyCallback    => nil,   # custom verification
