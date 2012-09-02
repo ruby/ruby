@@ -970,6 +970,55 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
+static void
+ary_ensure_room_for_unshift(VALUE ary, int argc)
+{
+    long len = RARRAY_LEN(ary);
+    long new_len = len + argc;
+    long capa;
+    VALUE *head, *sharedp;
+
+    if (ARY_SHARED_P(ary)) {
+	VALUE shared = ARY_SHARED(ary);
+	capa = RARRAY_LEN(shared);
+	if (ARY_SHARED_NUM(shared) == 1 && capa > new_len) {
+	    head = RARRAY_PTR(ary);
+	    sharedp = RARRAY_PTR(shared);
+	    goto makeroom_if_need;
+	}
+    }
+
+    rb_ary_modify(ary);
+    capa = ARY_CAPA(ary);
+    if (capa - (capa >> 6) <= new_len) {
+	ary_double_capa(ary, new_len);
+    }
+
+    /* use shared array for big "queues" */
+    if (new_len > ARY_DEFAULT_SIZE * 4) {
+	/* make a room for unshifted items */
+	capa = ARY_CAPA(ary);
+	ary_make_shared(ary);
+
+	head = sharedp = RARRAY_PTR(ary);
+	goto makeroom;
+makeroom_if_need:
+	if (head - sharedp < argc) {
+	    long room;
+makeroom:
+	    room = capa - new_len;
+	    room -= room >> 4;
+	    MEMMOVE(sharedp + argc + room, head, VALUE, len);
+	    head = sharedp + argc + room;
+	}
+	ARY_SET_PTR(ary, head - argc);
+    }
+    else {
+	/* sliding items */
+	MEMMOVE(RARRAY_PTR(ary) + argc, RARRAY_PTR(ary), VALUE, len);
+    }
+}
+
 /*
  *  call-seq:
  *     ary.unshift(obj, ...)  -> ary
@@ -985,19 +1034,16 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
 {
-    long len;
+    long len = RARRAY_LEN(ary);
 
-    rb_ary_modify(ary);
-    if (argc == 0) return ary;
-    if (ARY_CAPA(ary) <= (len = RARRAY_LEN(ary)) + argc) {
-	ary_double_capa(ary, len + argc);
+    if (argc == 0) {
+	rb_ary_modify_check(ary);
+	return ary;
     }
 
-    /* sliding items */
-    MEMMOVE(RARRAY_PTR(ary) + argc, RARRAY_PTR(ary), VALUE, len);
+    ary_ensure_room_for_unshift(ary, argc);
     MEMCPY(RARRAY_PTR(ary), argv, VALUE, argc);
-    ARY_INCREASE_LEN(ary, argc);
-
+    ARY_SET_LEN(ary, len + argc);
     return ary;
 }
 
