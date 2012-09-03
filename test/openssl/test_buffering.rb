@@ -70,7 +70,6 @@ class OpenSSL::TestBuffering < Test::Unit::TestCase
 
   def test_getc
     @io.syswrite('abc')
-    res = []
     assert_equal(?a, @io.getc)
     assert_equal(?b, @io.getc)
     assert_equal(?c, @io.getc)

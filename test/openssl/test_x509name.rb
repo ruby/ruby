@@ -339,7 +339,7 @@ class OpenSSL::TestX509Name < Test::Unit::TestCase
     n1 = OpenSSL::X509::Name.parse 'CN=a'
     n2 = OpenSSL::X509::Name.parse 'CN=b'
 
-    assert_equal -1, n1 <=> n2
+    assert_equal(-1, n1 <=> n2)
   end
 
   def name_hash(name)

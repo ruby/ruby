@@ -135,7 +135,7 @@ __EOS__
   def test_session_timeout
     sess = OpenSSL::SSL::Session.new(DUMMY_SESSION_NO_EXT)
     assert_raise(TypeError) do
-      sess.timeout = (now = Time.now)
+      sess.timeout = Time.now
     end
     sess.timeout = 1
     assert_equal(1, sess.timeout.to_i)
@@ -337,8 +337,8 @@ __EOS__
     }
 
     server_proc = Proc.new { |c, ssl|
-      session = ssl.session
-      stats = c.session_cache_stats
+      ssl.session
+      c.session_cache_stats
       readwrite_loop(c, ssl)
     }
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, :ctx_proc => ctx_proc, :server_proc => server_proc) do |server, port|

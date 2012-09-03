@@ -1,3 +1,13 @@
+Tue Sep  4 07:48:35 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* test/openssl/test_asn1_rb:
+	  test/openssl/test_ssl_session.rb:
+	  test/openssl/test_x509name.rb:
+	  test/openssl/test_buffering.rb:
+	  test/openssl/test_x509cert.rb:
+	  test/openssl/test_ssl.rb: Refactor code that leads to warnings on
+	  Ruby CI.
+
 Tue Sep  4 07:02:56 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/utils.rb: Use DSS1 as DSA signature digest for all

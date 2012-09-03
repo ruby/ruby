@@ -247,7 +247,7 @@ rEzBQ0F9dUyqQ9gyRg8KHhDfv9HzT1d/rnUZMkoombwYBRIUChGCYV0GnJcan2Zm
       assert_equal(false, prim.infinite_length)
       prim.infinite_length = true
       flunk('Could set infinite length on primitive value')
-    rescue NoMethodError => e
+    rescue NoMethodError
       #ok
     end
   end

@@ -579,7 +579,7 @@ if OpenSSL::OPENSSL_VERSION_NUMBER > 0x10001000
       ctx.npn_select_cb = -> (protocols) { "a" * 256 }
       assert_raise(*HANDSHAKE_ERRORS) { server_connect(port, ctx) }
     }
-    end
+  end
 
 end
 
