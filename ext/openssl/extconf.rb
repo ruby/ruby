@@ -108,7 +108,7 @@ have_func("TLSv1_1_client_method")
 have_func("TLSv1_2_method")
 have_func("TLSv1_2_server_method")
 have_func("TLSv1_2_client_method")
-have_func("OPENSSL_NPN_NEGOTIATED", ['openssl/ssl.h'])
+have_macro("OPENSSL_NPN_NEGOTIATED", ['openssl/ssl.h']) && $defs.push("-DHAVE_OPENSSL_NPN_NEGOTIATED")
 unless have_func("SSL_set_tlsext_host_name", ['openssl/ssl.h'])
   have_macro("SSL_set_tlsext_host_name", ['openssl/ssl.h']) && $defs.push("-DHAVE_SSL_SET_TLSEXT_HOST_NAME")
 end
@@ -146,6 +146,7 @@ end
 have_struct_member("EVP_CIPHER_CTX", "flags", "openssl/evp.h")
 have_struct_member("EVP_CIPHER_CTX", "engine", "openssl/evp.h")
 have_struct_member("X509_ATTRIBUTE", "single", "openssl/x509.h")
+have_macro("OPENSSL_FIPS", ['openssl/opensslconf.h']) && $defs.push("-DHAVE_OPENSSL_FIPS")
 
 Logging::message "=== Checking done. ===\n"
 

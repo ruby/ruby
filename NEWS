@@ -173,6 +173,9 @@ with all sufficient information, see the ChangeLog file.
     long.
   * SSL/TLS support for the Next Protocol Negotiation extension. Supported 
     with OpenSSL 1.0.1 and higher.
+  * OpenSSL::OPENSSL_FIPS allows client applications to detect whether OpenSSL
+    is running in FIPS mode and to react to the special requirements this
+    might impy.
 
 * yaml
   * Syck has been removed.  YAML now completely depends on libyaml being

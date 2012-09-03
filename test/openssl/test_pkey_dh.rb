@@ -3,15 +3,19 @@ require_relative 'utils'
 if defined?(OpenSSL)
 
 class OpenSSL::TestPKeyDH < Test::Unit::TestCase
+
+  # improve test performance for non-FIPS installations
+  NEW_KEYLEN = OpenSSL::OPENSSL_FIPS ? 1024 : 256
+
   def test_new
-    dh = OpenSSL::PKey::DH.new(1024)
+    dh = OpenSSL::PKey::DH.new(NEW_KEYLEN)
     assert_key(dh)
   end
 
   def test_new_break
-    assert_nil(OpenSSL::PKey::DH.new(1024) { break })
+    assert_nil(OpenSSL::PKey::DH.new(NEW_KEYLEN) { break })
     assert_raises(RuntimeError) do
-      OpenSSL::PKey::DH.new(1024) { raise }
+      OpenSSL::PKey::DH.new(NEW_KEYLEN) { raise }
     end
   end
 

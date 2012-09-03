@@ -1,3 +1,25 @@
+Mon Sep  3 10:09:36 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
+
+	* ext/openssl/extconf.rb: Detect OpenSSL_FIPS macro
+	  ext/openssl/ossl.c: Expose OpenSSL::OPENSSL_FIPS constant to
+	  indicate whether OpenSSL runs in FIPS mode.
+	  test/openssl/test_pkey_dh.rb: Generate 256 bit keys for
+	  non-FIPS installations to improve test performance (e.g. for
+	  rubyci).
+	  test/openssl/utils.rb: Replace DSS1 as certificate signature
+	  digest with SHA1 for FIPS installations when using DSA by
+	  introducing TestUtils::DSA_SIGNATURE_DIGEST.
+	  test/openssl/test_x509cert.rb: 
+	  test/openssl/test_x509crl.rb:
+	  test/openssl/test_x509req.rb: Use DSA_SIGNATURE_DIGEST
+	  NEWS: Introduce OpenSSL::OPENSSL_FIPS
+	  
+	  These changes allow running the OpenSSL tests in FIPS mode
+	  while keeping a high performance for non-FIPS installations.
+	  Introduction of OpenSSL::OPENSSL_FIPS allows for applications
+	  to react to special requirements when using OpenSSL in FIPS mode.
+	  [Feature #6946] [ruby-core:47345]
+
 Sun Sep  2 21:46:28 2012  BOSSLET, Martin  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/utils.rb: Use a cached DH key instead of generating a

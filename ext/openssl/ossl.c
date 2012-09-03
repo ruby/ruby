@@ -936,11 +936,21 @@ Init_openssl()
      * Version of OpenSSL the ruby OpenSSL extension was built with
      */
     rb_define_const(mOSSL, "OPENSSL_VERSION", rb_str_new2(OPENSSL_VERSION_TEXT));
+
     /*
      * Version number of OpenSSL the ruby OpenSSL extension was built with
      * (base 16)
      */
     rb_define_const(mOSSL, "OPENSSL_VERSION_NUMBER", INT2NUM(OPENSSL_VERSION_NUMBER));
+
+    /*
+     * Boolean indicating whether OpenSSL runs in FIPS mode or not  
+     */
+#ifdef HAVE_OPENSSL_FIPS
+    rb_define_const(mOSSL, "OPENSSL_FIPS", Qtrue);
+#else
+    rb_define_const(mOSSL, "OPENSSL_FIPS", Qfalse);
+#endif
 
     /*
      * Generic error,

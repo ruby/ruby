@@ -198,9 +198,9 @@ class OpenSSL::TestX509CRL < Test::Unit::TestCase
     assert_equal(false, crl.verify(@rsa2048))
 
     cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
-                      nil, nil, OpenSSL::Digest::DSS1.new)
+                      nil, nil, OpenSSL::TestUtils::DSA_SIGNATURE_DIGEST.new)
     crl = issue_crl([], 1, Time.now, Time.now+1600, [],
-                    cert, @dsa512, OpenSSL::Digest::DSS1.new)
+                    cert, @dsa512, OpenSSL::TestUtils::DSA_SIGNATURE_DIGEST.new)
     assert_equal(false, crl_error_returns_false { crl.verify(@rsa1024) })
     assert_equal(false, crl_error_returns_false { crl.verify(@rsa2048) })
     assert_equal(false, crl.verify(@dsa256))
