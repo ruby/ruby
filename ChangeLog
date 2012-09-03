@@ -1,3 +1,8 @@
+Mon Sep  3 21:22:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_float_value): suppress warnings.
+	  [ruby-core:47406][Bug #6971]
+
 Mon Sep  3 14:49:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/matrix.rb (Vector#magnitude): accumulate squares of absolute
