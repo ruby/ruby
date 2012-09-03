@@ -9,11 +9,11 @@ Mon Sep  3 10:09:36 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 	  test/openssl/utils.rb: Replace DSS1 as certificate signature
 	  digest with SHA1 for FIPS installations when using DSA by
 	  introducing TestUtils::DSA_SIGNATURE_DIGEST.
-	  test/openssl/test_x509cert.rb: 
+	  test/openssl/test_x509cert.rb:
 	  test/openssl/test_x509crl.rb:
 	  test/openssl/test_x509req.rb: Use DSA_SIGNATURE_DIGEST
 	  NEWS: Introduce OpenSSL::OPENSSL_FIPS
-	  
+
 	  These changes allow running the OpenSSL tests in FIPS mode
 	  while keeping a high performance for non-FIPS installations.
 	  Introduction of OpenSSL::OPENSSL_FIPS allows for applications

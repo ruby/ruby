@@ -944,7 +944,7 @@ Init_openssl()
     rb_define_const(mOSSL, "OPENSSL_VERSION_NUMBER", INT2NUM(OPENSSL_VERSION_NUMBER));
 
     /*
-     * Boolean indicating whether OpenSSL runs in FIPS mode or not  
+     * Boolean indicating whether OpenSSL runs in FIPS mode or not
      */
 #ifdef HAVE_OPENSSL_FIPS
     rb_define_const(mOSSL, "OPENSSL_FIPS", Qtrue);
