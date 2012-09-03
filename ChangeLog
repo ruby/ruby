@@ -20,7 +20,7 @@ Mon Sep  3 10:09:36 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 	  to react to special requirements when using OpenSSL in FIPS mode.
 	  [Feature #6946] [ruby-core:47345]
 
-Sun Sep  2 21:46:28 2012  BOSSLET, Martin  <Martin.Bosslet@googlemail.com>
+Sun Sep  2 21:46:28 2012  Martin Bosslet <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/utils.rb: Use a cached DH key instead of generating a
 	  new one each time.
@@ -43,7 +43,7 @@ Fri Aug 31 21:47:56 2012  Kouhei Sutou  <kou@cozmixng.org>
 	* lib/test/unit/test-unit.gemspec: Make test/unit default gem.
 	  [Feature #6875] [ruby-dev:46051]
 
-Fri 31 Aug 2012 18:35:02 AM CEST  BOSSLET, Martin  <Martin.Bosslet@googlemail.com>
+Fri Aug 31 18:35:02 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/extconf.rb: Check existence of OPENSSL_NPN_NEGOTIATED.
 	  ext/ossl_ssl.c: Support Next Protocol Negotiation. Protocols to be
