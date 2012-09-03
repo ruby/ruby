@@ -2,7 +2,7 @@ Tue Sep  4 07:02:56 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/utils.rb: Use DSS1 as DSA signature digest for all
 	  OpenSSL versions < 1.0.0.
-	  [ruby-core:47405]
+	  [Feature #6946] [ruby-core:47405]
 
 Mon Sep  3 21:22:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
