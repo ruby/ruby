@@ -131,4 +131,19 @@ class TestVector < Test::Unit::TestCase
     assert_equal("Vector[1, 2, 3]", @v1.inspect)
   end
 
+  def test_magnitude
+    assert_in_epsilon(3.7416573867739413, @v1.norm)
+    assert_in_epsilon(3.7416573867739413, @v4.norm)
+  end
+
+  def test_complex_magnitude
+    bug6966 = '[ruby-dev:46100]'
+    v = Vector[Complex(0,1), 0]
+    assert_equal(1.0, v.norm, bug6966)
+  end
+
+  def test_rational_magnitude
+    v = Vector[Rational(1,2), 0]
+    assert_equal(0.5, v.norm)
+  end
 end

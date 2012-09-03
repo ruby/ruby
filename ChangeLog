@@ -1,3 +1,8 @@
+Mon Sep  3 14:49:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/matrix.rb (Vector#magnitude): accumulate squares of absolute
+	  values to fix for complex vector.  [ruby-dev:46100] [Bug #6966]
+
 Mon Sep  3 10:09:36 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* ext/openssl/extconf.rb: Detect OpenSSL_FIPS macro

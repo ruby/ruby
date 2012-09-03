@@ -1770,7 +1770,7 @@ class Vector
   #   Vector[5,8,2].r => 9.643650761
   #
   def magnitude
-    Math.sqrt(@elements.inject(0) {|v, e| v + e*e})
+    Math.sqrt(@elements.inject(0) {|v, e| v + e.abs2})
   end
   alias r magnitude
   alias norm magnitude
