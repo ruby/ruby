@@ -74,11 +74,14 @@ module EnvUtil
       return stdout, stderr, status
     end
   ensure
+    [th_stdout, th_stderr].each do |th|
+      th.kill if th
+    end
     [in_c, in_p, out_c, out_p, err_c, err_p].each do |io|
       io.close if io && !io.closed?
     end
     [th_stdout, th_stderr].each do |th|
-      (th.kill; th.join) if th
+      th.join if th
     end
   end
   module_function :invoke_ruby
