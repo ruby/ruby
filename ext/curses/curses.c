@@ -2789,7 +2789,7 @@ Init_curses(void)
         RUBY_EXTERN char *curses_version;
         version = rb_sprintf("curses (%s)", curses_version);
 #else
-        /* BSD curses, perhaps.  NetBSD 5 still use it. */ 
+        /* BSD curses, perhaps.  NetBSD 5 still use it. */
         version = rb_str_new2("curses (unknown)");
 #endif
         /*

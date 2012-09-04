@@ -130,7 +130,7 @@ end
 # A photo is an image whose pixels can display any color or be transparent.
 # At present, only GIF and PPM/PGM formats are supported, but an interface
 # exists to allow additional image file formats to be added easily.
-# 
+#
 # This class documentation is a copy from the original Tcl/Tk at
 # http://www.tcl.tk/man/tcl8.5/TkCmd/photo.htm with some rewrited parts.
 class TkPhotoImage<TkImage
@@ -162,13 +162,13 @@ class TkPhotoImage<TkImage
   #		image = TkPhotoImage.new(:file: => 'my_image.gif')
   #
   # == Options
-  # Photos support the following options: 
+  # Photos support the following options:
   # * :data
   #   Specifies the contents of the image as a string.
   # * :format
   #   Specifies the name of the file format for the data.
   # * :file
-  #   Gives the name of a file that is to be read to supply data for the image. 
+  #   Gives the name of a file that is to be read to supply data for the image.
   # * :gamma
   #   Specifies that the colors allocated for displaying this image in a window
   #   should be corrected for a non-linear display with the specified gamma
@@ -185,7 +185,7 @@ class TkPhotoImage<TkImage
   #   Specifies the width of the image, in pixels. This option is useful
   #   primarily in situations where the user wishes to build up the contents of
   #   the image piece by piece. A value of zero (the default) allows the image
-  #   to expand or shrink horizontally to fit the data stored in it. 
+  #   to expand or shrink horizontally to fit the data stored in it.
   def initialize(*args)
     @type = 'photo'
     super(*args)
@@ -193,7 +193,7 @@ class TkPhotoImage<TkImage
 
   # Blank the image; that is, set the entire image to have no data, so it will
   # be displayed as transparent, and the background of whatever window it is
-  # displayed in will show through. 
+  # displayed in will show through.
   def blank
     tk_send_without_enc('blank')
     self
@@ -233,7 +233,7 @@ class TkPhotoImage<TkImage
   # destination, possibly with pixel zooming and/or subsampling. If no options
   # are specified, this method copies the whole of source into destination,
   # starting at coordinates (0,0) in destination. The following options may be
-  # specified: 
+  # specified:
   #
   # * :from [x1, y1, x2, y2]
   #   Specifies a rectangular sub-region of the source image to be copied.
@@ -250,30 +250,30 @@ class TkPhotoImage<TkImage
   #   specified). If x2 and  y2 are specified, the source region will be
   #   replicated if necessary to fill the destination region in a tiled fashion.
   # * :shrink
-  #   Specifies that the size of the destination image should be reduced, if 
-  #   necessary, so that the region being copied into is at the bottom-right 
-  #   corner of the image. This option will not affect the width or height of 
+  #   Specifies that the size of the destination image should be reduced, if
+  #   necessary, so that the region being copied into is at the bottom-right
+  #   corner of the image. This option will not affect the width or height of
   #   the image if the user has specified a non-zero value for the :width or
   #   :height configuration option, respectively.
   # * :zoom [x, y]
-  #   Specifies that the source region should be magnified by a factor of x 
+  #   Specifies that the source region should be magnified by a factor of x
   #   in the X direction and y in the Y direction. If y is not given, the
   #   default value is the same as x. With this option, each pixel in the
   #   source image will be expanded into a block of x x y pixels in the
   #   destination image, all the same color. x and y must be greater than 0.
   # * :subsample [x, y]
   #   Specifies that the source image should be reduced in size by using only
-  #   every xth pixel in the X direction and yth pixel in the Y direction. 
-  #   Negative values will cause the image to be flipped about the Y or X axes, 
+  #   every xth pixel in the X direction and yth pixel in the Y direction.
+  #   Negative values will cause the image to be flipped about the Y or X axes,
   #   respectively. If y is not given, the default value is the same as x.
   # * :compositingrule rule
-  #   Specifies how transparent pixels in the source image are combined with 
+  #   Specifies how transparent pixels in the source image are combined with
   #   the destination image. When a compositing rule of <tt>overlay</tt> is set,
   #   the old  contents of the destination image are visible, as if the source
   #   image were  printed on a piece of transparent film and placed over the
   #   top of the  destination. When a compositing rule of <tt>set</tt> is set,
   #   the old contents of  the destination image are discarded and the source
-  #   image is used as-is. The default compositing rule is <tt>overlay</tt>. 
+  #   image is used as-is. The default compositing rule is <tt>overlay</tt>.
   def copy(src, *opts)
     if opts.size == 0
       tk_send('copy', src)
@@ -314,14 +314,14 @@ class TkPhotoImage<TkImage
   #   whole image.
   # * :grayscale
   #   If this options is specified, the data will not contain color information.
-  #   All pixel data will be transformed into grayscale. 
+  #   All pixel data will be transformed into grayscale.
   def data(keys={})
     tk_split_list(tk_send('data', *_photo_hash_kv(keys)))
   end
 
-  # Returns the color of the pixel at coordinates (x,y) in the image as a list 
+  # Returns the color of the pixel at coordinates (x,y) in the image as a list
   # of three integers between 0 and 255, representing the red, green and blue
-  # components respectively. 
+  # components respectively.
   def get(x, y)
     tk_send('get', x, y).split.collect{|n| n.to_i}
   end
@@ -362,13 +362,13 @@ class TkPhotoImage<TkImage
     self
   end
 
-  # Returns a boolean indicating if the pixel at (x,y) is transparent. 
+  # Returns a boolean indicating if the pixel at (x,y) is transparent.
   def get_transparency(x, y)
     bool(tk_send('transparency', 'get', x, y))
   end
-	
+
   # Makes the pixel at (x,y) transparent if <tt>state</tt> is true, and makes
-  # that pixel opaque otherwise. 
+  # that pixel opaque otherwise.
   def set_transparency(x, y, state)
     tk_send('transparency', 'set', x, y, state)
     self

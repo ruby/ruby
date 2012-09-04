@@ -148,7 +148,7 @@ def headers.db_check2(db, hdr)
   end
 
   # Berkeley DB's ndbm.h (since 1.85 at least) defines DBM_SUFFIX.
-  # Note that _DB_H_ is not defined on Mac OS X because 
+  # Note that _DB_H_ is not defined on Mac OS X because
   # it uses Berkeley DB 1 but ndbm.h doesn't include db.h.
   have_db_header = have_macro('DBM_SUFFIX', hdr, hsearch)
 
@@ -200,7 +200,7 @@ def headers.db_check2(db, hdr)
     if /\Agdbm/ !~ db && have_gdbm_header
       return false
     end
-    
+
     if have_ndbm_header
       return false
     end

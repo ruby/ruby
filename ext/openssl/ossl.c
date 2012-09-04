@@ -497,9 +497,9 @@ ossl_debug_set(VALUE self, VALUE val)
  *
  * Asymmetric public/private key encryption is slow and victim to attack in
  * cases where it is used without padding or directly to encrypt larger chunks
- * of data. Typical use cases for RSA encryption involve "wrapping" a symmetric 
+ * of data. Typical use cases for RSA encryption involve "wrapping" a symmetric
  * key with the public key of the recipient who would "unwrap" that symmetric
- * key again using their private key.  
+ * key again using their private key.
  * The following illustrates a simplified example of such a key transport
  * scheme. It shouldn't be used in practice, though, standardized protocols
  * should always be preferred.
@@ -519,7 +519,7 @@ ossl_debug_set(VALUE self, VALUE val)
  * Using "private_encrypt" to encrypt some data with the private key is
  * equivalent to applying a digital signature to the data. A verifying
  * party may validate the signature by comparing the result of decrypting
- * the signature with "public_decrypt" to the original data. However, 
+ * the signature with "public_decrypt" to the original data. However,
  * OpenSSL::PKey already has methods "sign" and "verify" that handle
  * digital signatures in a standardized way - "private_encrypt" and
  * "public_decrypt" shouldn't be used in practice.
@@ -543,20 +543,20 @@ ossl_debug_set(VALUE self, VALUE val)
  *   end
  *
  * == PBKDF2 Password-based Encryption
- * 
+ *
  * If supported by the underlying OpenSSL version used, Password-based
  * Encryption should use the features of PKCS5. If not supported or if
  * required by legacy applications, the older, less secure methods specified
  * in RFC 2898 are also supported (see below).
- * 
- * PKCS5 supports PBKDF2 as it was specified in PKCS#5 
+ *
+ * PKCS5 supports PBKDF2 as it was specified in PKCS#5
  * v2.0[http://www.rsa.com/rsalabs/node.asp?id=2127]. It still uses a
  * password, a salt, and additionally a number of iterations that will
  * slow the key derivation process down. The slower this is, the more work
  * it requires being able to brute-force the resulting key.
  *
  * === Encryption
- *   
+ *
  * The strategy is to first instantiate a Cipher for encryption, and
  * then to generate a random IV plus a key derived from the password
  * using PBKDF2. PKCS #5 v2.0 recommends at least 8 bytes for the salt,

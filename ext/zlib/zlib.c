@@ -1830,7 +1830,7 @@ rb_inflate_s_allocate(VALUE klass)
  * Greater than 15::
  *   Add 32 to window_bits to enable zlib and gzip decoding with automatic
  *   header detection, or add 16 to decode only the gzip format (a
- *   Zlib::DataError will be raised for a non-gzip stream). 
+ *   Zlib::DataError will be raised for a non-gzip stream).
  *
  * (-8..-15)::
  *   Enables raw deflate mode which will not generate a check value, and will

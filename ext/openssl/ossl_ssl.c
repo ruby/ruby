@@ -586,7 +586,7 @@ ssl_npn_encode_protocols(VALUE sslctx, VALUE protocols)
 }
 
 static int
-ssl_npn_advertise_cb(SSL *ssl, const unsigned char **out, unsigned int *outlen, void *arg) 
+ssl_npn_advertise_cb(SSL *ssl, const unsigned char **out, unsigned int *outlen, void *arg)
 {
     VALUE sslctx_obj = (VALUE) arg;
     VALUE protocols = rb_iv_get(sslctx_obj, "@_protocols");
@@ -602,7 +602,7 @@ ssl_npn_select_cb(SSL *s, unsigned char **out, unsigned char *outlen, const unsi
 {
     int i = 0;
     VALUE sslctx_obj, cb, protocols, selected;
-   
+
     sslctx_obj = (VALUE) arg;
     cb = rb_iv_get(sslctx_obj, "@npn_select_cb");
     protocols = rb_ary_new();
@@ -623,14 +623,14 @@ ssl_npn_select_cb(SSL *s, unsigned char **out, unsigned char *outlen, const unsi
 }
 #endif
 
-/* This function may serve as the entry point to support further 
+/* This function may serve as the entry point to support further
  * callbacks. */
 static void
 ssl_info_cb(const SSL *ssl, int where, int val)
 {
     int state = SSL_state(ssl);
 
-    if ((where & SSL_CB_HANDSHAKE_START) && 
+    if ((where & SSL_CB_HANDSHAKE_START) &&
 	(state & SSL_ST_ACCEPT)) {
 	ssl_renegotiation_cb(ssl);
     }
@@ -1801,7 +1801,7 @@ ossl_ssl_npn_protocol(VALUE self)
     unsigned int outlen;
 
     ossl_ssl_data_get_struct(self, ssl);
-    
+
     SSL_get0_next_proto_negotiated(ssl, &out, &outlen);
     if (!outlen)
 	return Qnil;
@@ -1836,7 +1836,7 @@ Init_ossl_ssl()
      * connection. Both client and server TLS connections are supported,
      * SSLSocket and SSLServer may be used in conjunction with an instance
      * of SSLContext to set up connections.
-     */  
+     */
     mSSL = rb_define_module_under(mOSSL, "SSL");
     /* Document-class: OpenSSL::SSL::SSLError
      *
@@ -2010,7 +2010,7 @@ Init_ossl_ssl()
      * and to cancel the process, an Error may be raised within the callback.
      *
      * === Disable client renegotiation
-     * 
+     *
      * When running a server, it is often desirable to disable client
      * renegotiation entirely. You may use a callback as follows to implement
      * this feature:
@@ -2019,7 +2019,7 @@ Init_ossl_ssl()
      *   ctx.renegotiation_cb = lambda do |ssl|
      *     num_handshakes += 1
      *     raise RuntimeError.new("Client renegotiation disabled") if num_handshakes > 1
-     *   end  
+     *   end
      */
     rb_attr(cSSLContext, rb_intern("renegotiation_cb"), 1, 1, Qfalse);
 #ifdef HAVE_OPENSSL_NPN_NEGOTIATED
@@ -2042,7 +2042,7 @@ Init_ossl_ssl()
      * the server. If none is acceptable, raising an error in the callback
      * will cause the handshake to fail. Not setting this callback explicitly
      * means not supporting the NPN extension on the client - any protocols
-     * advertised by the server will be ignored.   
+     * advertised by the server will be ignored.
      *
      * === Example
      *

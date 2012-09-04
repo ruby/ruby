@@ -495,7 +495,7 @@ readline_s_set_output(VALUE self, VALUE output)
  * characters.
  *
  * See GNU Readline's rl_pre_input_hook variable.
- * 
+ *
  * Raises ArgumentError if +proc+ does not respond to the call method.
  *
  * Raises SecurityError if $SAFE is 4.

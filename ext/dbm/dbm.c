@@ -1126,7 +1126,7 @@ Init_dbm(void)
          * - "Berkeley DB (unknown)" (4.4BSD, maybe)
          * - "GDBM version 1.8.3. 10/15/2002 (built Jul  1 2011 12:32:45)"
          * - "QDBM 1.8.78"
-         *   
+         *
          */
         rb_define_const(rb_cDBM, "VERSION", version);
     }
