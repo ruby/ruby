@@ -227,9 +227,11 @@ def install_recursive(srcdir, dest, options = {})
       Dir.foreach(file) do |f|
         src = File.join(file, f)
         d = File.join(dest, dir = src[subpath])
-        stat = File.stat(src) rescue next
+        stat = File.lstat(src) rescue next
         if stat.directory?
           files << [src, d, true] if /\A\./ !~ f and !prune[dir]
+        elsif stat.symlink?
+          # skip
         else
           files << [src, d, false] if File.fnmatch?(glob, f) and !skip[f]
         end
