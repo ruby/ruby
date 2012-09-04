@@ -1174,7 +1174,9 @@ eval_string_from_file_helper(void *data) {
 
 VALUE
 ruby_eval_string_from_file_protect(const char *str, const char *filename, int *state) {
-    struct eval_string_from_file_arg arg = { str, filename };
+    struct eval_string_from_file_arg arg;
+    arg.str = str;
+    arg.filename = filename;
     return rb_protect((VALUE (*)(VALUE))eval_string_from_file_helper, (VALUE)&arg, state);
 }
 

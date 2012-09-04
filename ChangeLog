@@ -1,3 +1,8 @@
+Tue Sep  4 11:28:57 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* vm_eval.c (ruby_eval_string_from_file_protect): initializer
+	  element is not computable at load time.
+
 Tue Sep  4 07:48:35 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 
 	* test/openssl/test_asn1_rb:
