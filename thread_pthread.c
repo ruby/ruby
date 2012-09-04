@@ -1229,7 +1229,8 @@ static pthread_mutex_t timer_thread_lock;
 static rb_thread_cond_t timer_thread_cond;
 
 static inline void
-timer_thread_sleep(rb_global_vm_lock_t* unused) {
+timer_thread_sleep(rb_global_vm_lock_t* unused)
+{
     struct timespec ts;
     ts.tv_sec = 0;
     ts.tv_nsec = TIME_QUANTUM_USEC * 1000;

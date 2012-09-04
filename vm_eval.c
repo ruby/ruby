@@ -1158,7 +1158,8 @@ rb_f_eval(int argc, VALUE *argv, VALUE self)
 
 /** @note This function name is not stable. */
 VALUE
-ruby_eval_string_from_file(const char *str, const char *filename) {
+ruby_eval_string_from_file(const char *str, const char *filename)
+{
     return eval_string(rb_vm_top_self(), rb_str_new2(str), Qnil, filename, 1);
 }
 
@@ -1166,14 +1167,17 @@ struct eval_string_from_file_arg {
     const char *str;
     const char *filename;
 };
+
 static VALUE
-eval_string_from_file_helper(void *data) {
+eval_string_from_file_helper(void *data)
+{
     const struct eval_string_from_file_arg *const arg = (struct eval_string_from_file_arg*)data;
     return eval_string(rb_vm_top_self(), rb_str_new2(arg->str), Qnil, arg->filename, 1);
 }
 
 VALUE
-ruby_eval_string_from_file_protect(const char *str, const char *filename, int *state) {
+ruby_eval_string_from_file_protect(const char *str, const char *filename, int *state)
+{
     struct eval_string_from_file_arg arg;
     arg.str = str;
     arg.filename = filename;
