@@ -136,6 +136,55 @@ int setregid(rb_gid_t rgid, rb_gid_t egid);
 #define preserving_errno(stmts) \
 	do {int saved_errno = errno; stmts; errno = saved_errno;} while (0)
 
+static void check_uid_switch(void);
+static void check_gid_switch(void);
+
+#if 1
+#define p_uid_from_name p_uid_from_name
+#define p_gid_from_name p_gid_from_name
+#endif
+
+#if defined(HAVE_PWD_H)
+# ifdef HAVE_GETPWNAM_R
+#   define PREPARE_GETPWNAM \
+    long getpw_buf_len = sysconf(_SC_GETPW_R_SIZE_MAX); \
+    char *getpw_buf = ALLOCA_N(char, (getpw_buf_len < 0 ? (getpw_buf_len = 4096) : getpw_buf_len));
+#   define OBJ2UID(id) obj2uid((id), getpw_buf, getpw_buf_len)
+static rb_uid_t obj2uid(VALUE id, char *getpw_buf, size_t getpw_buf_len);
+# else
+#   define PREPARE_GETPWNAM	/* do nothing */
+#   define OBJ2UID(id) obj2uid((id))
+static rb_uid_t obj2uid(VALUE id);
+# endif
+#else
+# define PREPARE_GETPWNAM	/* do nothing */
+# define OBJ2UID(id) NUM2UIDT(id)
+# ifdef p_uid_from_name
+#   undef p_uid_from_name
+#   define p_uid_from_name rb_f_notimplement
+# endif
+#endif
+
+#if defined(HAVE_GRP_H)
+# ifdef HAVE_GETGRNAM_R
+#   define PREPARE_GETGRNAM \
+    long getgr_buf_len = sysconf(_SC_GETGR_R_SIZE_MAX); \
+    char *getgr_buf = ALLOCA_N(char, (getgr_buf_len < 0 ? (getgr_buf_len = 4096) : getgr_buf_len));
+#   define OBJ2GID(id) obj2gid((id), getgr_buf, getgr_buf_len)
+static rb_gid_t obj2gid(VALUE id, char *getgr_buf, size_t getgr_buf_len);
+# else
+#   define PREPARE_GETGRNAM	/* do nothing */
+#   define OBJ2GID(id) obj2gid((id))
+static rb_gid_t obj2gid(VALUE id);
+# endif
+#else
+# define PREPARE_GETGRNAM	/* do nothing */
+# define OBJ2GID(id) NUM2GIDT(id)
+# ifdef p_gid_from_name
+#   undef p_gid_from_name
+#   define p_gid_from_name rb_f_notimplement
+# endif
+#endif
 
 /*
  *  call-seq:
@@ -1662,6 +1711,32 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
             key = INT2FIX(2);
             goto redirect;
         }
+#ifdef HAVE_SETUID
+	else if (id == rb_intern("uid")) {
+	    if (eargp->uid_given) {
+		rb_raise(rb_eArgError, "uid option specified twice");
+	    }
+	    check_uid_switch();
+	    {
+		PREPARE_GETPWNAM;
+		eargp->uid = OBJ2UID(val);
+		eargp->uid_given = 1;
+	    }
+	}
+#endif
+#ifdef HAVE_SETGID
+	else if (id == rb_intern("gid")) {
+	    if (eargp->gid_given) {
+		rb_raise(rb_eArgError, "gid option specified twice");
+	    }
+	    check_gid_switch();
+	    {
+		PREPARE_GETGRNAM;
+		eargp->gid = OBJ2GID(val);
+		eargp->gid_given = 1;
+	    }
+	}
+#endif
         else {
 	    return ST_STOP;
         }
@@ -2872,6 +2947,23 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
             return -1;
         }
     }
+
+#ifdef HAVE_SETGID
+    if (eargp->gid_given) {
+	if (setgid(eargp->gid) < 0) {
+	    ERRMSG("setgid");
+	    return -1;
+	}
+    }
+#endif
+#ifdef HAVE_SETUID
+    if (eargp->uid_given) {
+	if (setuid(eargp->uid) < 0) {
+	    ERRMSG("setuid");
+	    return -1;
+	}
+    }
+#endif
 
     if (sargp) {
         VALUE ary = sargp->fd_dup2;
@@ -4579,22 +4671,7 @@ check_gid_switch(void)
  *  <code>Process::UID</code>, and <code>Process::GID</code> modules.
  */
 
-#if 1
-#define p_uid_from_name p_uid_from_name
-#define p_gid_from_name p_gid_from_name
-#endif
-
 #if defined(HAVE_PWD_H)
-# ifdef HAVE_GETPWNAM_R
-#   define PREPARE_GETPWNAM \
-    long getpw_buf_len = sysconf(_SC_GETPW_R_SIZE_MAX); \
-    char *getpw_buf = ALLOCA_N(char, (getpw_buf_len < 0 ? (getpw_buf_len = 4096) : getpw_buf_len));
-#   define OBJ2UID(id) obj2uid((id), getpw_buf, getpw_buf_len)
-# else
-#   define PREPARE_GETPWNAM	/* do nothing */
-#   define OBJ2UID(id) obj2uid((id))
-# endif
-
 static rb_uid_t
 obj2uid(VALUE id
 # ifdef HAVE_GETPWNAM_R
@@ -4640,26 +4717,9 @@ p_uid_from_name(VALUE self, VALUE id)
     return UIDT2NUM(OBJ2UID(id));
 }
 # endif
-#else
-# define PREPARE_GETPWNAM	/* do nothing */
-# define OBJ2UID(id) NUM2UIDT(id)
-# ifdef p_uid_from_name
-#   undef p_uid_from_name
-#   define p_uid_from_name rb_f_notimplement
-# endif
 #endif
 
 #if defined(HAVE_GRP_H)
-# ifdef HAVE_GETGRNAM_R
-#   define PREPARE_GETGRNAM \
-    long getgr_buf_len = sysconf(_SC_GETGR_R_SIZE_MAX); \
-    char *getgr_buf = ALLOCA_N(char, (getgr_buf_len < 0 ? (getgr_buf_len = 4096) : getgr_buf_len));
-#   define OBJ2GID(id) obj2gid((id), getgr_buf, getgr_buf_len)
-# else
-#   define PREPARE_GETGRNAM	/* do nothing */
-#   define OBJ2GID(id) obj2gid((id))
-# endif
-
 static rb_gid_t
 obj2gid(VALUE id
 # ifdef HAVE_GETGRNAM_R
@@ -4704,13 +4764,6 @@ p_gid_from_name(VALUE self, VALUE id)
     PREPARE_GETGRNAM;
     return GIDT2NUM(OBJ2GID(id));
 }
-# endif
-#else
-# define PREPARE_GETGRNAM	/* do nothing */
-# define OBJ2GID(id) NUM2GIDT(id)
-# ifdef p_gid_from_name
-#   undef p_gid_from_name
-#   define p_gid_from_name rb_f_notimplement
 # endif
 #endif
 
