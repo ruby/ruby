@@ -813,8 +813,8 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_rescue = false
     parsed = parse('begin; 1; rescue => e; 2; end', :on_rescue) {thru_rescue = true}
     assert_equal true, thru_rescue
-    assert_match /1.*rescue/, parsed
-    assert_match /rescue\(,var_field\(e\),\[2\]\)/, parsed
+    assert_match(/1.*rescue/, parsed)
+    assert_match(/rescue\(,var_field\(e\),\[2\]\)/, parsed)
   end
 
   def test_rescue_mod
@@ -1146,7 +1146,6 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   def test_local_variables
     cmd = 'command(w,[regexp_literal(regexp_add(regexp_new(),25 # ),/)])'
     div = 'binary(ref(w),/,25)'
-    var = '[w]'
     bug1939 = '[ruby-core:24923]'
 
     assert_equal("[#{cmd}]", parse('w /25 # /'), bug1939)
