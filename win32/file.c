@@ -63,14 +63,14 @@ convert_wchar_to_mb(const wchar_t *wstr, char **str, size_t *str_len, UINT code_
 
 /*
   Return user's home directory using environment variables combinations.
-  Memory allocated by this function should be manually freeded afterwards.
+  Memory allocated by this function should be manually freed afterwards.
 
   Try:
   HOME, HOMEDRIVE + HOMEPATH and USERPROFILE environment variables
   TODO: Special Folders - Profile and Personal
 */
 static wchar_t *
-home_dir()
+home_dir(void)
 {
     wchar_t *buffer = NULL;
     size_t buffer_len = 0, len = 0;
@@ -106,22 +106,22 @@ home_dir()
 	buffer = (wchar_t *)xmalloc(buffer_len * sizeof(wchar_t));
 
     switch (home_env) {
-	case 1:
-	    /* HOME */
-	    GetEnvironmentVariableW(L"HOME", buffer, buffer_len);
-	    break;
-	case 2:
-	    /* HOMEDRIVE + HOMEPATH */
-	    len = GetEnvironmentVariableW(L"HOMEDRIVE", buffer, buffer_len);
-	    GetEnvironmentVariableW(L"HOMEPATH", buffer + len, buffer_len - len);
-	    break;
-	case 3:
-	    /* USERPROFILE */
-	    GetEnvironmentVariableW(L"USERPROFILE", buffer, buffer_len);
-	    break;
-	default:
-	    break;
-	}
+      case 1:
+	/* HOME */
+	GetEnvironmentVariableW(L"HOME", buffer, buffer_len);
+	break;
+      case 2:
+	/* HOMEDRIVE + HOMEPATH */
+	len = GetEnvironmentVariableW(L"HOMEDRIVE", buffer, buffer_len);
+	GetEnvironmentVariableW(L"HOMEPATH", buffer + len, buffer_len - len);
+	break;
+      case 3:
+	/* USERPROFILE */
+	GetEnvironmentVariableW(L"USERPROFILE", buffer, buffer_len);
+	break;
+      default:
+	break;
+    }
 
     if (home_env) {
 	/* sanitize backslashes with forwardslashes */
@@ -135,7 +135,8 @@ home_dir()
 
 /* Remove trailing invalid ':$DATA' of the path. */
 static inline size_t
-remove_invalid_alternative_data(wchar_t *wfullpath, size_t size) {
+remove_invalid_alternative_data(wchar_t *wfullpath, size_t size)
+{
     static const wchar_t prime[] = L":$DATA";
     enum { prime_len = (sizeof(prime) / sizeof(wchar_t)) -1 };
 
@@ -166,7 +167,8 @@ remove_invalid_alternative_data(wchar_t *wfullpath, size_t size) {
 
 /* Return system code page. */
 static inline UINT
-system_code_page() {
+system_code_page(void)
+{
     return AreFileApisANSI() ? CP_ACP : CP_OEMCP;
 }
 
@@ -250,7 +252,8 @@ fix_string_encoding(VALUE str, rb_encoding *encoding)
   We try to avoid to call FindFirstFileW() since it takes long time.
 */
 static inline size_t
-replace_to_long_name(wchar_t **wfullpath, size_t size, int heap) {
+replace_to_long_name(wchar_t **wfullpath, size_t size, int heap)
+{
     WIN32_FIND_DATAW find_data;
     HANDLE find_handle;
 
@@ -480,7 +483,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	wdir_len = 0;
     }
     else if (!ignore_dir && wpath_len >= 1 && IS_DIR_SEPARATOR_P(wpath[0]) &&
-	!dir_drive && !(wdir_len >= 2 && IS_DIR_UNC_P(wdir))) {
+	     !dir_drive && !(wdir_len >= 2 && IS_DIR_UNC_P(wdir))) {
 	/* ignore dir since path has root slash and dir doesn't have drive or UNC root */
 	ignore_dir = 1;
 	wdir_len = 0;
