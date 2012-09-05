@@ -1,3 +1,10 @@
+Wed Sep  5 15:21:12 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* parse.y (rb_warn4): added as a rb_warn variant to warn with explicit
+	  source file name and line in parse.y.
+
+	* parse.y (warn_unused_var): use rb_warn4 to suppress warning on ripper.
+
 Wed Sep  5 13:30:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_make_pattern): names under recursive need to be single
