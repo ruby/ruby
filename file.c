@@ -2629,6 +2629,7 @@ has_drive_letter(const char *buf)
     }
 }
 
+#ifndef _WIN32
 static char*
 getcwdofdrv(int drv)
 {
@@ -2655,6 +2656,7 @@ getcwdofdrv(int drv)
     }
     return drvcwd;
 }
+#endif
 
 static inline int
 not_same_drive(VALUE path, int drive)
@@ -2857,6 +2859,7 @@ rb_home_dir(const char *user, VALUE result)
     return result;
 }
 
+#ifndef _WIN32
 static char *
 append_fspath(VALUE result, VALUE fname, char *dir, rb_encoding **enc, rb_encoding *fsenc)
 {
@@ -2882,7 +2885,6 @@ append_fspath(VALUE result, VALUE fname, char *dir, rb_encoding **enc, rb_encodi
     return buf + dirlen;
 }
 
-#ifndef _WIN32
 VALUE
 rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_name, VALUE result)
 {
