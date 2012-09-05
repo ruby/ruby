@@ -1260,7 +1260,7 @@ join_path(const char *path, int dirsep, const char *name)
     return buf;
 }
 
-enum answer { YES, NO, UNKNOWN };
+enum answer {UNKNOWN = -1, NO, YES};
 
 #ifndef S_ISDIR
 #   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
