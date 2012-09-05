@@ -897,6 +897,15 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
     end
   end
 
+  def test_assert_output_both_regexps
+    @assertion_count = 4
+
+    @tc.assert_output(/y.y/, /bl.h/) do
+      print "yay"
+      $stderr.print "blah"
+    end
+  end
+
   def test_assert_output_err
     @tc.assert_output nil, "blah" do
       $stderr.print "blah"

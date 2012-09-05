@@ -311,7 +311,8 @@ module MiniTest
     ##
     # Fails if stdout or stderr do not output the expected results.
     # Pass in nil if you don't care about that streams output. Pass in
-    # "" if you require it to be silent.
+    # "" if you require it to be silent. Pass in a regexp if you want
+    # to pattern match.
     #
     # See also: #assert_silent
 
@@ -320,8 +321,11 @@ module MiniTest
         yield
       end
 
-      y = assert_equal stderr, err, "In stderr" if stderr
-      x = assert_equal stdout, out, "In stdout" if stdout
+      err_msg = Regexp === stderr ? :assert_match : :assert_equal if stderr
+      out_msg = Regexp === stdout ? :assert_match : :assert_equal if stdout
+
+      y = send err_msg, stderr, err, "In stderr" if err_msg
+      x = send out_msg, stdout, out, "In stdout" if out_msg
 
       (!stdout || x) && (!stderr || y)
     end
@@ -655,7 +659,7 @@ module MiniTest
   end
 
   class Unit # :nodoc:
-    VERSION = "3.3.0" # :nodoc:
+    VERSION = "3.4.0" # :nodoc:
 
     attr_accessor :report, :failures, :errors, :skips # :nodoc:
     attr_accessor :test_count, :assertion_count       # :nodoc:

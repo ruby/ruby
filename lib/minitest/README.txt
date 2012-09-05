@@ -315,6 +315,13 @@ the gem, but you'll need to activate the gem explicitly to use it:
   
   # ... usual testing stuffs ...
 
+DO NOTE: There is a serious problem with the way that ruby 1.9/2.0
+packages their own gems. They install a gem specification file, but
+don't install the gem contents in the gem path. This messes up
+Gem.find_files and many other things (gem which, gem contents, etc).
+
+Just install minitest as a gem for real and you'll be happier.
+
 == LICENSE:
 
 (The MIT License)

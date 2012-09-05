@@ -1,3 +1,8 @@
+Thu Sep  6 08:20:55 2012  Ryan Davis  <ryand-ruby@zenspider.com>
+
+	* lib/minitest/*: Imported minitest 3.4.0 (r7762)
+	* test/minitest/*: ditto
+
 Wed Sep  5 19:20:53 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* parse.y (rb_warn4S): renamed from rb_warn4(), because the case in
