@@ -58,6 +58,8 @@ notifications:
       - "irc.freenode.org#ruby-ja"
     on_success: change # [always|never|change] # default: always
     on_failure: change # [always|never|change] # default: always
+    template:
+      - "%{message} by @%{author}: See %{build_url}"
 
 # Local Variables:
 # mode: YAML
