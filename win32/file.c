@@ -354,8 +354,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     /* determine if we need the user's home directory */
     /* expand '~' only if NOT rb_file_absolute_path() where `abs_mode` is 1 */
-    if (abs_mode == 0 && ((wpath_len == 1 && wpath_pos[0] == L'~') ||
-	(wpath_len >= 2 && wpath_pos[0] == L'~' && IS_DIR_SEPARATOR_P(wpath_pos[1])))) {
+    if (abs_mode == 0 && wpath_len > 0 && wpath_pos[0] == L'~' &&
+	(wpath_len == 1 || IS_DIR_SEPARATOR_P(wpath_pos[1]))) {
 	/* tainted if expanding '~' */
 	tainted = 1;
 
