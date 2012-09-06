@@ -89,7 +89,11 @@ define rp
     echo undef\n
   else
   if (VALUE)($arg0) & RUBY_IMMEDIATE_MASK
-    echo immediate\n
+    if ((VALUE)($arg0) & RUBY_FLONUM_MASK) == RUBY_FLONUM_FLAG
+      printf "FLONUM: %g\n", (double)rb_float_value($arg0)
+    else
+      echo immediate\n
+    end
   else
   set $flags = ((struct RBasic*)($arg0))->flags
   if ($flags & RUBY_T_MASK) == RUBY_T_NONE

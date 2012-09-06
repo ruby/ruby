@@ -1,4 +1,9 @@
-Thu Sep  6 14:48:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Sep  6 14:49:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* .gdbinit (rp): FLONUM support.
+
+	* include/ruby/ruby.h (ruby_special_consts): define FLONUM constants
+	  always, so that they are available from gdb.
 
 	* include/ruby/ruby.h (RB_FLOAT_TYPE_P): merge FLONUM and non-FLONUM
 	  versions.  inline TYPE() comparison and FLONUM_P() should be

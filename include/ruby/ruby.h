@@ -410,6 +410,8 @@ enum ruby_special_consts {
 
     RUBY_IMMEDIATE_MASK = 0x03,
     RUBY_FIXNUM_FLAG    = 0x01,
+    RUBY_FLONUM_MASK    = 0x00,	/* any values ANDed with FLONUM_MASK cannot be FLONUM_FLAG */
+    RUBY_FLONUM_FLAG    = 0x02,
     RUBY_SYMBOL_FLAG    = 0x0e,
     RUBY_SPECIAL_SHIFT  = 8
 #endif
