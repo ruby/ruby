@@ -1,3 +1,9 @@
+Fri Sep  7 01:21:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake), lib/mkmf.rb (have_framework): fix splitting
+	  options with an argument, not using NUL as special character.
+	  [ruby-core:47447] [Bug #6987]
+
 Thu Sep  6 14:49:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* .gdbinit (rp): FLONUM support.

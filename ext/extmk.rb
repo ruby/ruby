@@ -258,9 +258,9 @@ def extmake(target)
       $extlibs ||= []
       $extpath ||= []
       unless $mswin
-        $extflags = ($extflags.split | $DLDFLAGS.split | $LDFLAGS.split).join(" ")
+        $extflags = split_libs($extflags, $DLDFLAGS, $LDFLAGS).uniq.join(" ")
       end
-      $extlibs = merge_libs($extlibs, $libs.split(/\s+(?=-|\z)/), $LOCAL_LIBS.split(/\s+(?=-|\z)/))
+      $extlibs = merge_libs($extlibs, split_libs($libs), split_libs($LOCAL_LIBS))
       $extpath |= $LIBPATH
     end
   ensure

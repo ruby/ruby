@@ -234,6 +234,10 @@ module MakeMakefile
     t if times.all? {|n| n <= t}
   end
 
+  def split_libs(*strs)
+    strs.map {|s| s.split(/\s+(?=-|\z)/)}.flatten
+  end
+
   def merge_libs(*libs)
     libs.inject([]) do |x, y|
       xy = x & y
@@ -1018,11 +1022,10 @@ SRC
   def have_framework(fw, &b)
     checking_for fw do
       src = cpp_include("#{fw}/#{fw}.h") << "\n" "int main(void){return 0;}"
-      if try_link(src, "-ObjC -framework #{fw}", &b)
+      if try_link(src, opt = "-ObjC -framework #{fw}", &b)
         $defs.push(format("-DHAVE_FRAMEWORK_%s", fw.tr_cpp))
 	# TODO: non-worse way than this hack, to get rid of separating
 	# option and its argument.
-	opt = " -ObjC -framework\0#{fw}"
         $LDFLAGS << opt
         true
       else
@@ -1804,7 +1807,7 @@ INCFLAGS = -I. #$INCFLAGS
 DEFS     = #{CONFIG['DEFS']}
 CPPFLAGS = #{extconf_h}#{$CPPFLAGS}
 CXXFLAGS = $(CFLAGS) #{CONFIG['CXXFLAGS']}
-ldflags  = #{$LDFLAGS.tr("\0", " ")}
+ldflags  = #{$LDFLAGS}
 dldflags = #{$DLDFLAGS} #{CONFIG['EXTDLDFLAGS']}
 ARCH_FLAG = #{$ARCH_FLAG}
 DLDFLAGS = $(ldflags) $(dldflags) $(ARCH_FLAG)
