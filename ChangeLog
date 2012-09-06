@@ -1,3 +1,9 @@
+Thu Sep  6 14:48:31 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RB_FLOAT_TYPE_P): merge FLONUM and non-FLONUM
+	  versions.  inline TYPE() comparison and FLONUM_P() should be
+	  optimized away on non-FLONUM.
+
 Thu Sep  6 08:20:55 2012  Ryan Davis  <ryand-ruby@zenspider.com>
 
 	* lib/minitest/*: Imported minitest 3.4.0 (r7762)

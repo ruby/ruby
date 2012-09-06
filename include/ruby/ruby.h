@@ -1497,11 +1497,7 @@ rb_type(VALUE obj)
     return BUILTIN_TYPE(obj);
 }
 
-#if USE_FLONUM
-#define RB_FLOAT_TYPE_P(obj) (FLONUM_P(obj) || TYPE(obj) == T_FLOAT)
-#else
-#define RB_FLOAT_TYPE_P(obj) (!SPECIAL_CONST_P(obj) && BUILTIN_TYPE(obj) == T_FLOAT)
-#endif
+#define RB_FLOAT_TYPE_P(obj) (FLONUM_P(obj) || (!SPECIAL_CONST_P(obj) && BUILTIN_TYPE(obj) == T_FLOAT))
 
 #define RB_TYPE_P(obj, type) ( \
 	((type) == T_FIXNUM) ? FIXNUM_P(obj) : \
