@@ -59,6 +59,7 @@ class_alloc(VALUE flags, VALUE klass)
     RCLASS_ORIGIN(obj) = (VALUE)obj;
     RCLASS_IV_INDEX_TBL(obj) = 0;
     RCLASS_REFINED_CLASS(obj) = Qnil;
+    RCLASS_EXT(obj)->allocator = 0;
     return (VALUE)obj;
 }
 
@@ -169,6 +170,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 	rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);
     }
     RCLASS_SUPER(clone) = RCLASS_SUPER(orig);
+    RCLASS_EXT(clone)->allocator = RCLASS_EXT(orig)->allocator;
     if (RCLASS_IV_TBL(orig)) {
 	st_data_t id;
 
@@ -236,6 +238,7 @@ rb_singleton_class_clone(VALUE obj)
 	}
 
 	RCLASS_SUPER(clone) = RCLASS_SUPER(klass);
+	RCLASS_EXT(clone)->allocator = RCLASS_EXT(klass)->allocator;
 	if (RCLASS_IV_TBL(klass)) {
 	    RCLASS_IV_TBL(clone) = st_copy(RCLASS_IV_TBL(klass));
 	}
@@ -896,10 +899,6 @@ method_entry_i(st_data_t key, st_data_t value, st_data_t data)
     const rb_method_entry_t *me = (const rb_method_entry_t *)value;
     st_table *list = (st_table *)data;
     long type;
-
-    if ((ID)key == ID_ALLOCATOR) {
-	return ST_CONTINUE;
-    }
 
     if (!st_lookup(list, key, 0)) {
 	if (UNDEFINED_METHOD_ENTRY_P(me)) {

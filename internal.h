@@ -29,6 +29,7 @@ struct rb_classext_struct {
     struct st_table *const_tbl;
     VALUE origin;
     VALUE refined_class;
+    rb_alloc_func_t allocator;
 };
 
 #undef RCLASS_SUPER

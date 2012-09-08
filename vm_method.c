@@ -190,13 +190,6 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	(mid == rb_intern("initialize") || mid == rb_intern("initialize_copy"))) {
 	noex = NOEX_PRIVATE | noex;
     }
-    else if (FL_TEST(klass, FL_SINGLETON) &&
-	     type == VM_METHOD_TYPE_CFUNC &&
-	     mid == rb_intern("allocate")) {
-	rb_warn("defining %s.allocate is deprecated; use rb_define_alloc_func()",
-		rb_class2name(rb_ivar_get(klass, attached)));
-	mid = ID_ALLOCATOR;
-    }
 
     rb_check_frozen(klass);
 #if NOEX_NOREDEF
@@ -289,7 +282,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 static void
 method_added(VALUE klass, ID mid)
 {
-    if (mid != ID_ALLOCATOR && ruby_running) {
+    if (ruby_running) {
 	CALL_METHOD_HOOK(klass, added, mid);
     }
 }
@@ -355,34 +348,32 @@ rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_
     return newme;
 }
 
+#define UNDEF_ALLOC_FUNC ((rb_alloc_func_t)-1)
+
 void
 rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
 {
     Check_Type(klass, T_CLASS);
-    rb_add_method_cfunc(rb_singleton_class(klass), ID_ALLOCATOR,
-			func, 0, NOEX_PRIVATE);
+    RCLASS_EXT(klass)->allocator = func;
 }
 
 void
 rb_undef_alloc_func(VALUE klass)
 {
-    Check_Type(klass, T_CLASS);
-    rb_add_method(rb_singleton_class(klass), ID_ALLOCATOR, VM_METHOD_TYPE_UNDEF, 0, NOEX_UNDEF);
+    rb_define_alloc_func(klass, UNDEF_ALLOC_FUNC);
 }
 
 rb_alloc_func_t
 rb_get_alloc_func(VALUE klass)
 {
-    rb_method_entry_t *me;
     Check_Type(klass, T_CLASS);
-    me = rb_method_entry(CLASS_OF(klass), ID_ALLOCATOR, 0);
 
-    if (me && me->def && me->def->type == VM_METHOD_TYPE_CFUNC) {
-	return (rb_alloc_func_t)me->def->body.cfunc.func;
+    for (; klass; klass = RCLASS_SUPER(klass)) {
+	rb_alloc_func_t allocator = RCLASS_EXT(klass)->allocator;
+	if (allocator == UNDEF_ALLOC_FUNC) break;
+	if (allocator) return allocator;
     }
-    else {
-	return 0;
-    }
+    return 0;
 }
 
 static rb_method_entry_t*

@@ -42,7 +42,6 @@ extern "C" {
  * the kernel.
  */
 
-#define ID_ALLOCATOR 1
 #define UNLIMITED_ARGUMENTS (-1)
 
 /* array.c */

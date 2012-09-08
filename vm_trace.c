@@ -554,9 +554,6 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
 	rb_thread_method_id_and_class(th, &id, &klass);
     }
 
-    if (id == ID_ALLOCATOR)
-      return;
-
     if (klass) {
 	if (RB_TYPE_P(klass, T_ICLASS)) {
 	    klass = RBASIC(klass)->klass;
@@ -777,10 +774,6 @@ tp_call_trace(VALUE tpval, rb_trace_arg_t *trace_arg)
     rb_tp_t *tp = tpptr(tpval);
     rb_thread_t *th = GET_THREAD();
     int state;
-
-    if (UNLIKELY(trace_arg->id == ID_ALLOCATOR)) {
-	return;
-    }
 
     tp->trace_arg = trace_arg;
 

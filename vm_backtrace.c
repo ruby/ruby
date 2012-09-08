@@ -401,9 +401,7 @@ backtrace_each(rb_thread_t *th,
 	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
 	    ID mid = cfp->me->def ? cfp->me->def->original_id : cfp->me->called_id;
 
-	    if (mid != ID_ALLOCATOR) {
-		iter_cfunc(arg, mid);
-	    }
+	    iter_cfunc(arg, mid);
 	}
     }
 }
