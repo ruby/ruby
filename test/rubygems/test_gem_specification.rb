@@ -117,6 +117,7 @@ end
   end
 
   def test_self_from_yaml_syck_date_bug
+    return unless have_syck     # No meanings if no syck
     # This is equivalent to (and totally valid) psych 1.0 output and
     # causes parse errors on syck.
     yaml = @a1.to_yaml
@@ -131,6 +132,7 @@ end
   end
 
   def test_self_from_yaml_syck_default_key_bug
+    return unless have_syck     # No meanings if no syck
     # This is equivalent to (and totally valid) psych 1.0 output and
     # causes parse errors on syck.
     yaml = <<-YAML
@@ -1728,5 +1730,17 @@ end
     yield
   ensure
     $VERBOSE = old_verbose
+  end
+
+  def have_syck
+    unless defined?(@@have_syck)
+      begin
+        old_verbose, $VERBOSE = $VERBOSE, nil
+        @@have_syck = with_syck {YAML::ENGINE.syck?}
+      ensure
+        $VERBOSE = old_verbose
+      end
+    end
+    @@have_syck
   end
 end
