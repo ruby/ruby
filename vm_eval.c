@@ -571,10 +571,6 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
     if (id == idMethodMissing) {
 	raise_method_missing(th, argc, argv, obj, call_status | NOEX_MISSING);
     }
-    else if (id == ID_ALLOCATOR) {
-	rb_raise(rb_eTypeError, "allocator undefined for %s",
-		 rb_class2name(obj));
-    }
 
     if (argc < 0x100) {
 	nargv = ALLOCA_N(VALUE, argc + 1);

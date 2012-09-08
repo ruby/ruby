@@ -1655,6 +1655,7 @@ VALUE
 rb_obj_alloc(VALUE klass)
 {
     VALUE obj;
+    rb_alloc_func_t allocator;
 
     if (RCLASS_SUPER(klass) == 0 && klass != rb_cBasicObject) {
 	rb_raise(rb_eTypeError, "can't instantiate uninitialized class");
@@ -1662,7 +1663,13 @@ rb_obj_alloc(VALUE klass)
     if (FL_TEST(klass, FL_SINGLETON)) {
 	rb_raise(rb_eTypeError, "can't create instance of singleton class");
     }
-    obj = rb_funcall(klass, ID_ALLOCATOR, 0, 0);
+    allocator = rb_get_alloc_func(klass);
+    if (!allocator) {
+	rb_raise(rb_eTypeError, "allocator undefined for %"PRIsVALUE,
+		 klass);
+    }
+
+    obj = (*allocator)(klass);
     if (rb_obj_class(obj) != rb_class_real(klass)) {
 	rb_raise(rb_eTypeError, "wrong instance allocation");
     }

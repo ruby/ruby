@@ -1,3 +1,14 @@
+Sat Sep  8 18:52:22 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (struct rb_classext_struct): move allocator function into
+	  rb_classext_t from ordinary method table.  [ruby-dev:46121]
+	  [Feature #6993]
+
+	* object.c (rb_obj_alloc): call allocator function directly.
+
+	* vm_method.c (rb_define_alloc_func, rb_undef_alloc_func)
+	  (rb_get_alloc_func): use allocator function in rb_classext_t.
+
 Fri Sep  7 01:21:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake), lib/mkmf.rb (have_framework): fix splitting
