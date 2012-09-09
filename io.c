@@ -975,9 +975,7 @@ io_fflush(rb_io_t *fptr)
     rb_io_check_closed(fptr);
     if (fptr->wbuf.len == 0)
         return 0;
-    if (!rb_thread_fd_writable(fptr->fd)) {
-        rb_io_check_closed(fptr);
-    }
+    rb_io_check_closed(fptr);
     while (fptr->wbuf.len > 0 && io_flush_buffer(fptr) != 0) {
 	if (!rb_io_wait_writable(fptr->fd))
 	    return -1;
@@ -1132,7 +1130,12 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
         (fptr->wbuf.ptr && fptr->wbuf.capa <= fptr->wbuf.len + len)) {
 	struct binwrite_arg arg;
 
-        /* xxx: use writev to avoid double write if available */
+	/*
+	 * xxx: use writev to avoid double write if available
+	 * writev may help avoid context switch between "a" and "\n" in
+	 * STDERR.puts "a" [ruby-dev:25080] (rebroken since native threads
+	 * introduced in 1.9)
+	 */
         if (fptr->wbuf.len && fptr->wbuf.len+len <= fptr->wbuf.capa) {
             if (fptr->wbuf.capa < fptr->wbuf.off+fptr->wbuf.len+len) {
                 MEMMOVE(fptr->wbuf.ptr, fptr->wbuf.ptr+fptr->wbuf.off, char, fptr->wbuf.len);
@@ -1146,11 +1149,8 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
             return -1L;
         if (n == 0)
             return len;
-        /* avoid context switch between "a" and "\n" in STDERR.puts "a".
-           [ruby-dev:25080] */
-	if (fptr->stdio_file != stderr && !rb_thread_fd_writable(fptr->fd)) {
-	    rb_io_check_closed(fptr);
-	}
+
+	rb_io_check_closed(fptr);
 	arg.fptr = fptr;
 	arg.str = str;
       retry:
@@ -4322,9 +4322,6 @@ rb_io_syswrite(VALUE io, VALUE str)
 
     if (fptr->wbuf.len) {
 	rb_warn("syswrite for buffered IO");
-    }
-    if (!rb_thread_fd_writable(fptr->fd)) {
-        rb_io_check_closed(fptr);
     }
 
     n = rb_write_internal(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));

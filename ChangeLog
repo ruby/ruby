@@ -1,3 +1,15 @@
+Sun Sep  9 22:02:50 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/socket/basicsocket.c (rsock_bsock_send):
+	  avoid unnecessary select() calls before doing I/O
+	  Patch by Eric Wong. [Feature #4538] [ruby-core:35586]
+	* ext/socket/init.c (rsock_s_recvfrom): ditto.
+	* ext/socket/init.c (rsock_s_accept): ditto.
+	* ext/socket/udpsocket.c (udp_send): ditto.
+	* io.c (io_fflush): ditto.
+	* io.c (io_binwrite): ditto.
+	* io.c (rb_io_syswrite): ditto.
+
 Mon Sep 10 01:38:51 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (nogvl_close, maygvl_close, nogvl_fclose, maygvl_fclose):
