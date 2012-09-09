@@ -2436,4 +2436,15 @@ End
     assert_equal(data, buf, bug6099)
   rescue RuntimeError # can't modify string; temporarily locked
   end
+
+  def test_advise_pipe
+    # we don't know if other platforms have a real posix_fadvise()
+    return if /linux/ !~ RUBY_PLATFORM
+    with_pipe do |r,w|
+      # Linux 2.6.15 and earlier returned EINVAL instead of ESPIPE
+      assert_raise(Errno::ESPIPE, Errno::EINVAL) { r.advise(:willneed) }
+      assert_raise(Errno::ESPIPE, Errno::EINVAL) { w.advise(:willneed) }
+    end
+  end
 end
+

@@ -1,3 +1,9 @@
+Sun Sep  9 18:21:03 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_io.rb (test_advise_pipe): new test to check
+	  io.advise() against anonymous io object don't make crash.
+	  made by Eric Wong. [Bug #6081] [ruby-core:42880]
+
 Sun Sep  9 16:47:12 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (nogvl_close, maygvl_close, nogvl_fclose, maygvl_fclose):
