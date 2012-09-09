@@ -1,3 +1,10 @@
+Sun Sep  9 16:47:12 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (nogvl_close, maygvl_close, nogvl_fclose, maygvl_fclose):
+	  new functions.
+	* io.c (fptr_finalize): release GVL if possible.
+	  Patched by Eric Wong. [Feature #4570] [ruby-core:35711]
+
 Sun Sep  9 16:08:48 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (io_bufread): removed unnecessary rb_thread_wait_fd().
