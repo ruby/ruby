@@ -1,3 +1,9 @@
+Mon Sep 10 01:38:51 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (nogvl_close, maygvl_close, nogvl_fclose, maygvl_fclose):
+	  suppress integer <-> pointer cast warnings.
+	  [Feature #4570] [ruby-core:35711]
+
 Mon Sep 10 01:36:00 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (rb_io_close): notify fd close before releasing gvl.

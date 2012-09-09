@@ -3858,7 +3858,7 @@ nogvl_close(void *ptr)
 {
     int *fd = ptr;
 
-    return (void*)close(*fd);
+    return (void*)(intptr_t)close(*fd);
 }
 
 static int
@@ -3871,7 +3871,7 @@ maygvl_close(int fd, int keepgvl)
      * close() may block for certain file types (NFS, SO_LINGER sockets,
      * inotify), so let other threads run.
      */
-    return (int)rb_thread_call_without_gvl(nogvl_close, &fd, RUBY_UBF_IO, 0);
+    return (int)(intptr_t)rb_thread_call_without_gvl(nogvl_close, &fd, RUBY_UBF_IO, 0);
 }
 
 static void*
@@ -3879,7 +3879,7 @@ nogvl_fclose(void *ptr)
 {
     FILE *file = ptr;
 
-    return (void*)fclose(file);
+    return (void*)(intptr_t)fclose(file);
 }
 
 static int
@@ -3888,7 +3888,7 @@ maygvl_fclose(FILE *file, int keepgvl)
     if (keepgvl)
 	return fclose(file);
 
-    return (int)rb_thread_call_without_gvl(nogvl_fclose, file, RUBY_UBF_IO, 0);
+    return (int)(intptr_t)rb_thread_call_without_gvl(nogvl_fclose, file, RUBY_UBF_IO, 0);
 }
 
 static void
