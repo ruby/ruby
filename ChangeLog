@@ -1,3 +1,10 @@
+Sun Sep  9 23:01:43 2012  Tanaka Akira  <akr@fsij.org>
+
+	* ext/zlib/extconf.rb: detect z_crc_t type which will be defined
+	  since zlib-1.2.7.
+
+	* ext/zlib/zlib.c (rb_zlib_crc_table): use z_crc_t if available.
+
 Sun Sep  9 02:44:21 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/zlib/extconf.rb: Use an exception instaed of bare puts.
