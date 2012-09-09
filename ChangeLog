@@ -1,3 +1,10 @@
+Sun Sep  9 16:08:48 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (io_bufread): removed unnecessary rb_thread_wait_fd().
+	  Patch by Eric Wong. [Bug #6629] [ruby-core:45789]
+	* io.c (rb_io_sysread): ditto.
+	* io.c (copy_stream_fallback_body): ditto.
+
 Sun Sep  9 15:21:52 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_mutex_lock): stop multiple threads use

@@ -1912,7 +1912,6 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
 	    }
 	    offset += c;
 	    if ((n -= c) <= 0) break;
-	    rb_thread_wait_fd(fptr->fd);
 	}
 	return len - n;
     }
@@ -1923,7 +1922,6 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
 	    offset += c;
 	    if ((n -= c) <= 0) break;
 	}
-	rb_thread_wait_fd(fptr->fd);
 	rb_io_check_closed(fptr);
 	if (io_fillbuf(fptr) < 0) {
 	    break;
@@ -4338,7 +4336,16 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     }
 
     n = fptr->fd;
+
+    /*
+     * FIXME: removing rb_thread_wait_fd() here changes sysread semantics
+     * on non-blocking IOs.  However, it's still currently possible
+     * for sysread to raise Errno::EAGAIN if another thread read()s
+     * the IO after we return from rb_thread_wait_fd() but before
+     * we call read()
+     */
     rb_thread_wait_fd(fptr->fd);
+
     rb_io_check_closed(fptr);
 
     io_setstrbuf(&str, ilen);
@@ -9796,7 +9803,6 @@ copy_stream_fallback_body(VALUE arg)
         }
         else {
             ssize_t ss;
-            rb_thread_wait_fd(stp->src_fd);
             rb_str_resize(buf, buflen);
             ss = maygvl_copy_stream_read(1, stp, RSTRING_PTR(buf), l, off);
             if (ss == -1)
