@@ -52,10 +52,9 @@ branches:
 notifications:
   irc:
     channels:
-      - "irc.freenode.org#ruby-core"
       - "irc.freenode.org#ruby-ja"
-    on_success: change # [always|never|change] # default: always
-    on_failure: change # [always|never|change] # default: always
+    on_success: always # [always|never|change] # default: always
+    on_failure: always # [always|never|change] # default: always
     template:
       - "%{message} by @%{author}: See %{build_url}"
 
