@@ -3922,8 +3922,8 @@ fptr_finalize(rb_io_t *fptr, int noraise)
 
     fptr->fd = -1;
     fptr->stdio_file = 0;
-    if (!noraise)
-	rb_thread_fd_close(fd);
+    fptr->mode &= ~(FMODE_READABLE|FMODE_WRITABLE);
+
     if (IS_PREP_STDIO(fptr) || fd <= 2) {
 	/* need to keep FILE objects of stdin, stdout and stderr */
     }
@@ -3940,7 +3940,6 @@ fptr_finalize(rb_io_t *fptr, int noraise)
 	if ((maygvl_close(fd, noraise) < 0) && NIL_P(err))
 	    err = noraise ? Qtrue : INT2NUM(errno);
     }
-    fptr->mode &= ~(FMODE_READABLE|FMODE_WRITABLE);
 
     if (!NIL_P(err) && !noraise) {
         switch(TYPE(err)) {
@@ -4052,13 +4051,8 @@ rb_io_close(VALUE io)
     if (fptr->fd < 0) return Qnil;
 
     fd = fptr->fd;
-#if defined __APPLE__ && (!defined(MAC_OS_X_VERSION_MIN_ALLOWED) || MAC_OS_X_VERSION_MIN_ALLOWED <= 1050)
-    /* close(2) on a fd which is being read by another thread causes
-     * deadlock on Mac OS X 10.5 */
     rb_thread_fd_close(fd);
-#endif
     rb_io_fptr_cleanup(fptr, FALSE);
-    rb_thread_fd_close(fd);
 
     if (fptr->pid) {
         rb_last_status_clear();

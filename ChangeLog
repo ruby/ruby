@@ -1,3 +1,10 @@
+Mon Sep 10 01:36:00 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (rb_io_close): notify fd close before releasing gvl.
+	* io.c (fptr_finalize): modify fptr->mode before releasing gvl.
+	  remove unnecessary rb_thread_fd_close().
+	  [Feature #4570] [ruby-core:35711]
+
 Mon Sep 10 00:16:34 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* process.c: exec() requires to be single threaded also on Haiku.
