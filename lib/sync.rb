@@ -138,16 +138,22 @@ module Sync_m
 
     while true
       @sync_mutex.synchronize do
-        if sync_try_lock_sub(m)
-          return self
-        else
-          if sync_sh_locker[Thread.current]
-            sync_upgrade_waiting.push [Thread.current, sync_sh_locker[Thread.current]]
-            sync_sh_locker.delete(Thread.current)
+        begin
+          if sync_try_lock_sub(m)
+            return self
           else
-            sync_waiting.push Thread.current
+            if sync_sh_locker[Thread.current]
+              sync_upgrade_waiting.push [Thread.current, sync_sh_locker[Thread.current]]
+              sync_sh_locker.delete(Thread.current)
+            else
+              unless sync_waiting.include?(Thread.current) || sync_upgrade_waiting.reverse_each.any?{|w| w.first == Thread.current }
+                sync_waiting.push Thread.current
+              end
+            end
+            @sync_mutex.sleep
           end
-          @sync_mutex.sleep
+        ensure
+          sync_waiting.delete(Thread.current)
         end
       end
     end

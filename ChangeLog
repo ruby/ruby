@@ -1,3 +1,12 @@
+Sun Sep  9 20:20:31 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/sync.rb (Sync_m#sync_lock): Fixed wakeup/raise unsafe code.
+	  Patched by Masaki Matsushita. [Bug #5355] [ruby-dev:44521]
+
+	* test/thread/test_sync.rb (test_sync_lock_and_wakeup,
+	  test_sync_upgrade_and_wakeup, test_sync_lock_and_raise):
+	  new test.
+
 Sun Sep  9 18:39:46 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/intern.h (rb_thread_blocking_region): Added
