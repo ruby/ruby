@@ -1,3 +1,9 @@
+Mon Sep 10 00:16:34 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* process.c: exec() requires to be single threaded also on Haiku.
+	  by Takashi Toyoshima <toyoshim@gmail.com>
+	  https://github.com/ruby/ruby/pull/178
+
 Sun Sep  9 21:21:15 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/thread.rb (Queue#pop): Fixed double registration issue when
