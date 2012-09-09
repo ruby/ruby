@@ -1,3 +1,8 @@
+Sun Sep  9 18:39:46 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/intern.h (rb_thread_blocking_region): Added
+	  a comment of recommended alternative way.
+
 Sun Sep  9 18:37:05 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/sync.rb (Sync_m): Removed RCS_ID.
