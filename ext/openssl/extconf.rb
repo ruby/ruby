@@ -58,8 +58,7 @@ unless result
 end
 
 unless have_header("openssl/conf_api.h")
-  message "OpenSSL 0.9.6 or later required.\n"
-  exit 1
+  raise "OpenSSL 0.9.6 or later required."
 end
 
 %w"rb_str_set_len rb_block_call".each {|func| have_func(func, "ruby.h")}

@@ -1,3 +1,10 @@
+Sun Sep  9 02:34:39 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/extmk.rb: Show a message when extconf.rb raised an exception.
+	* ext/openssl/extconf.rb: Use exception raising instead of message
+	  and/or abort. We want to display error message to console _and_
+	  logging into mkmf.log.
+
 Sun Sep  9 02:30:20 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_mutex_lock): stop multiple threads use

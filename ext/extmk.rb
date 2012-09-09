@@ -183,6 +183,8 @@ def extmake(target)
 	end
       rescue SystemExit
 	# ignore
+      rescue => error
+        ok = false
       ensure
 	rm_f "conftest*"
 	config = $0
@@ -194,7 +196,15 @@ def extmake(target)
       open(makefile, "w") do |f|
 	f.print(*dummy_makefile(CONFIG["srcdir"]))
       end
-      print "Failed to configure #{target}. It will not be installed.\n"
+
+      mess = "Failed to configure #{target}. It will not be installed.\n"
+      if error
+        mess.prepend(error.to_s + "\n")
+      end
+
+      Logging::message(mess)
+      print(mess)
+      $stdout.flush
       return true
     end
     args = sysquote($mflags)
