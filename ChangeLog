@@ -1,3 +1,8 @@
+Sun Sep  9 15:21:52 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_mutex_lock): stop multiple threads use
+	  pthread_cond_timedwait() concurrently. [Bug #6278] [ruby-core:44275]
+
 Sat Sep  8 18:52:22 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h (struct rb_classext_struct): move allocator function into
