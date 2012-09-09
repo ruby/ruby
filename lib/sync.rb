@@ -45,8 +45,6 @@ end
 # A module that provides a two-phase lock with a counter.
 
 module Sync_m
-  RCS_ID='-$Id$-'
-
   # lock mode
   UN = :UN
   SH = :SH

@@ -1,3 +1,7 @@
+Sun Sep  9 18:37:05 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/sync.rb (Sync_m): Removed RCS_ID.
+
 Sun Sep  9 18:21:03 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_io.rb (test_advise_pipe): new test to check
