@@ -182,16 +182,20 @@ class Queue
   #
   def pop(non_block=false)
     @mutex.synchronize{
-      while true
-        if @que.empty?
-          raise ThreadError, "queue empty" if non_block
-          # @waiting.include? check is necessary for avoiding a race against
-          # Thread.wakeup [Bug 5195]
-          @waiting.push Thread.current unless @waiting.include?(Thread.current)
-          @mutex.sleep
-        else
-          return @que.shift
+      begin
+        while true
+          if @que.empty?
+            raise ThreadError, "queue empty" if non_block
+            # @waiting.include? check is necessary for avoiding a race against
+            # Thread.wakeup [Bug 5195]
+            @waiting.push Thread.current unless @waiting.include?(Thread.current)
+            @mutex.sleep
+          else
+            return @que.shift
+          end
         end
+      ensure
+        @waiting.delete(Thread.current)
       end
     }
   end
@@ -298,10 +302,14 @@ class SizedQueue < Queue
   #
   def push(obj)
     @mutex.synchronize{
-      while true
-        break if @que.length < @max
-        @queue_wait.push Thread.current
-        @mutex.sleep
+      begin
+        while true
+          break if @que.length < @max
+          @queue_wait.push Thread.current unless @queue_wait.include?(Thread.current)
+          @mutex.sleep
+        end
+      ensure
+        @queue_wait.delete(Thread.current)
       end
 
       @que.push obj

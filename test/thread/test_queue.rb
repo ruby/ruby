@@ -56,6 +56,48 @@ class TestQueue < Test::Unit::TestCase
     assert_equal(1, q.max)
   end
 
+  def test_sized_queue_and_wakeup
+    sq = SizedQueue.new(1)
+    sq.push(0)
+
+    t1 = Thread.start { sq.push(1) ; sleep }
+
+    sleep 0.1 until t1.stop?
+    t1.wakeup
+    sleep 0.1 until t1.stop?
+
+    t2 = Thread.start { sq.push(2) }
+    sleep 0.1 until t1.stop? && t2.stop?
+
+    queue_wait = sq.instance_eval{ @queue_wait }
+    assert_equal(queue_wait.uniq, queue_wait)
+  end
+
+  def test_queue_pop_interrupt
+    q = Queue.new
+    t1 = Thread.new { q.pop }
+    sleep 0.01 until t1.stop?
+    t1.kill.join
+    assert_equal(0, q.num_waiting)
+  end
+
+  def test_sized_queue_pop_interrupt
+    q = SizedQueue.new(1)
+    t1 = Thread.new { q.pop }
+    sleep 0.01 until t1.stop?
+    t1.kill.join
+    assert_equal(0, q.num_waiting)
+  end
+
+  def test_sized_queue_push_interrupt
+    q = SizedQueue.new(1)
+    q.push(1)
+    t1 = Thread.new { q.push(2) }
+    sleep 0.01 until t1.stop?
+    t1.kill.join
+    assert_equal(0, q.num_waiting)
+  end
+
   def test_thr_kill
     bug5343 = '[ruby-core:39634]'
     Dir.mktmpdir {|d|

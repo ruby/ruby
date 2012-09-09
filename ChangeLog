@@ -1,3 +1,13 @@
+Sun Sep  9 21:21:15 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/thread.rb (Queue#pop): Fixed double registration issue when
+	  mutex.sleep is interrupted. [Bug #5258] [ruby-dev:44448]
+	* lib/thread.rb (SizedQueue#push): ditto.
+
+	* test/thread/test_queue.rb (test_sized_queue_and_wakeup,
+	test_queue_pop_interrupt, test_sized_queue_pop_interrupt,
+	test_sized_queue_push_interrupt): new tests.
+
 Sun Sep  9 20:20:31 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/sync.rb (Sync_m#sync_lock): Fixed wakeup/raise unsafe code.
