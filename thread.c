@@ -3532,6 +3532,13 @@ lock_interrupt(void *ptr)
 }
 
 /*
+ * At maximum, only one thread can use cond_timedwait and watch deadlock
+ * periodically. Multiple polling thread (i.e. concurrent deadlock check)
+ * introduces new race conditions. [Bug #6278] [ruby-core:44275]
+ */
+rb_thread_t *patrol_thread = NULL;
+
+/*
  * call-seq:
  *    mutex.lock  -> self
  *
@@ -3568,13 +3575,19 @@ rb_mutex_lock(VALUE self)
 	     * vm->sleepr is unstable value. we have to avoid both deadlock
 	     * and busy loop.
 	     */
-	    if (vm_living_thread_num(th->vm) == th->vm->sleeper) {
+	    if ((vm_living_thread_num(th->vm) == th->vm->sleeper) &&
+		!patrol_thread) {
 		timeout_ms = 100;
+		patrol_thread = th;
 	    }
+
 	    GVL_UNLOCK_BEGIN();
 	    interrupted = lock_func(th, mutex, timeout_ms);
 	    native_mutex_unlock(&mutex->lock);
 	    GVL_UNLOCK_END();
+
+	    if (patrol_thread == th)
+		patrol_thread = NULL;
 
 	    reset_unblock_function(th, &oldubf);
 
@@ -4780,6 +4793,7 @@ rb_check_deadlock(rb_vm_t *vm)
 
     if (vm_living_thread_num(vm) > vm->sleeper) return;
     if (vm_living_thread_num(vm) < vm->sleeper) rb_bug("sleeper must not be more than vm_living_thread_num(vm)");
+    if (patrol_thread && patrol_thread != GET_THREAD()) return;
 
     st_foreach(vm->living_threads, check_deadlock_i, (st_data_t)&found);
 
