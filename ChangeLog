@@ -1,3 +1,19 @@
+Sun Sep  9 02:44:21 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/zlib/extconf.rb: Use an exception instaed of bare puts.
+
+Sun Sep  9 02:44:21 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/psych/extconf.rb: Use an exception instaed of bare abort.
+
+Sun Sep  9 02:44:21 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/fiddle/extconf.rb: Use an exception instaed of bare abort.
+
+Sun Sep  9 02:44:21 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/readline/extconf.rb: Use an exception instead of bare exit.
+
 Sun Sep  9 02:34:39 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/extmk.rb: Show a message when extconf.rb raised an exception.
