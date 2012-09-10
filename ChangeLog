@@ -1,3 +1,7 @@
+Mon Sep 10 10:19:34 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* enc/depend: fixed wrong change in a part of r34802.
+
 Sun Sep  9 22:02:50 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/socket/basicsocket.c (rsock_bsock_send):
