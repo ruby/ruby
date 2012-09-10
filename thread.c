@@ -3915,7 +3915,7 @@ lock_interrupt(void *ptr)
  * periodically. Multiple polling thread (i.e. concurrent deadlock check)
  * introduces new race conditions. [Bug #6278] [ruby-core:44275]
  */
-rb_thread_t *patrol_thread = NULL;
+static const rb_thread_t *patrol_thread = NULL;
 
 /*
  * call-seq:
