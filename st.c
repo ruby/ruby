@@ -35,7 +35,7 @@ typedef struct st_packed_entry {
 #define ST_DEFAULT_MAX_DENSITY 5
 #define ST_DEFAULT_INIT_TABLE_SIZE 11
 #define ST_DEFAULT_SECOND_TABLE_SIZE 19
-#define ST_DEFAULT_PACKED_TABLE_SIZE 18
+#define ST_DEFAULT_PACKED_TABLE_SIZE 19
 #define PACKED_UNIT (int)(sizeof(st_packed_entry) / sizeof(st_table_entry*))
 #define MAX_PACKED_HASH (int)(ST_DEFAULT_PACKED_TABLE_SIZE * sizeof(st_table_entry*) / sizeof(st_packed_entry))
 
