@@ -1,26 +1,60 @@
 ##
-# = Manipulates strings like the UNIX Bourne shell
+# == Manipulates strings like the UNIX Bourne shell
 #
 # This module manipulates strings according to the word parsing rules
 # of the UNIX Bourne shell.
 #
 # The shellwords() function was originally a port of shellwords.pl,
-# but modified to conform to POSIX / SUSv3 (IEEE Std 1003.1-2001).
+# but modified to conform to POSIX / SUSv3 (IEEE Std 1003.1-2001 [1]).
 #
-# == Example
+# === Usage
 #
-#   argv = Shellwords.split('here are "two words"') # or String#shellsplit
-#   argv #=> ["here", "are", "two words"]
+# You can use shellwords to parse a string into a Bourne shell friendly Array.
 #
-#   argv = Shellwords.escape("special's.txt") # or String#shellescape
+#   require 'shellwords'
+#
+#   argv = Shellwords.split('three blind "mice"')
+#   argv #=> ["three", "blind", "mice"]
+#
+# Once you've required Shellwords, you can use the #split alias
+# String#shellsplit.
+#
+#   argv = "see how they run".shellsplit
+#   argv #=> ["see", "how", "they", "run"]
+#
+# Be careful you don't leave a quote unmatched.
+#
+#   argv = "they all ran after the farmer's wife".shellsplit
+#        #=> ArgumentError: Unmatched double quote: ...
+#
+# In this case, you might want to use Shellwords.escape, or it's alias
+# String#shellescape.
+#
+# This method will escape the String for you to safely use with a Bourne shell.
+#
+#   argv = Shellwords.escape("special's.txt")
+#   argv #=> "special\\s.txt"
 #   system("cat " + argv)
 #
-# == Authors:
+# Shellwords also comes with a core extension for Array, Array#shelljoin.
+#
+#   argv = %w{ls -lta lib}
+#   system(argv.shelljoin)
+#
+# You can use this method to create an escaped string out of an array of tokens
+# separated by a space. In this example we'll use the literal shortcut for
+# Array.new.
+#
+# === Authors
 # * Wakou Aoyama
 # * Akinori MUSHA <knu@iDaemons.org>
 #
-# == Contact:
+# === Contact
 # * Akinori MUSHA <knu@iDaemons.org> (current maintainer)
+#
+# === Resources
+#
+# 1: {IEEE Std 1003.1-2004}[http://pubs.opengroup.org/onlinepubs/009695399/toc.htm]
 
 module Shellwords
   # Splits a string into an array of tokens in the same way the UNIX
@@ -29,7 +63,7 @@ module Shellwords
   #   argv = Shellwords.split('here are "two words"')
   #   argv #=> ["here", "are", "two words"]
   #
-  # String#shellsplit is a shorthand for this function.
+  # String#shellsplit is a shortcut for this function.
   #
   #   argv = 'here are "two words"'.shellsplit
   #   argv #=> ["here", "are", "two words"]
@@ -63,20 +97,20 @@ module Shellwords
   # Note that a resulted string should be used unquoted and is not
   # intended for use in double quotes nor in single quotes.
   #
-  #   open("| grep #{Shellwords.escape(pattern)} file") { |pipe|
-  #     # ...
-  #   }
+  #   argv = Shellwords.escape("It's better to give than to receive")
+  #   argv #=> "It\\'s\\ better\\ to\\ give\\ than\\ to\\ receive"
   #
   # String#shellescape is a shorthand for this function.
   #
-  #   open("| grep #{pattern.shellescape} file") { |pipe|
-  #     # ...
-  #   }
+  #   argv = "It's better to give than to receive".shellescape
+  #   argv #=> "It\\'s\\ better\\ to\\ give\\ than\\ to\\ receive"
   #
-  # It is caller's responsibility to encode the string in the right
+  # It is the caller's responsibility to encode the string in the right
   # encoding for the shell environment where this string is used.
-  # Multibyte characters are treated as multibyte characters, not
-  # bytes.
+  #
+  # Multibyte characters are treated as multibyte characters, not bytes.
+  #
+  # Returns an empty quoted String if +str+ has a length of zero.
   def shellescape(str)
     str = str.to_s
 
@@ -103,25 +137,27 @@ module Shellwords
     alias escape shellescape
   end
 
-  # Builds a command line string from an argument list +array+ joining
-  # all elements escaped for Bourne shell into a single string with
-  # fields separated by a space, where each element is stringified
-  # using +to_s+.
+  # Builds a command line string from an argument list, +array+.
   #
-  #   open('|' + Shellwords.join(['grep', pattern, *files])) { |pipe|
-  #     # ...
-  #   }
+  # All elements are joined into a single string with fields separated by a
+  # space, where each element is escaped for Bourne shell and stringified using
+  # +to_s+.
   #
-  # Array#shelljoin is a shorthand for this function.
+  #   ary = ["There's", "a", "time", "and", "place", "for", "everything"]
+  #   argv = Shellwords.join(ary)
+  #   argv #=> "There\\'s a time and place for everything"
   #
-  #   open('|' + ['grep', pattern, *files].shelljoin) { |pipe|
-  #     # ...
-  #   }
+  # Array#shelljoin is a shortcut for this function.
   #
-  # It is allowed to mix non-string objects in the elements as allowed
-  # in Array#join.
+  #   ary = ["Don't", "rock", "the", "boat"]
+  #   argv = ary.shelljoin
+  #   argv #=> "Don\\'t rock the boat"
   #
-  #   output = `#{['ps', '-p', $$].shelljoin}`
+  # You can also mix non-string objects in the elements as allowed in Array#join.
+  #
+  #   ary = ["All", "work", "and", "no", "play", "makes", $0, "a", "dull", "boy"]
+  #   argv = ary.shelljoin
+  #   argv #=> "All work and no play makes irb a dull boy"
   #
   def shelljoin(array)
     array.map { |arg| shellescape(arg) }.join(' ')
@@ -139,7 +175,9 @@ class String
   #   str.shellsplit => array
   #
   # Splits +str+ into an array of tokens in the same way the UNIX
-  # Bourne shell does.  See Shellwords::shellsplit for details.
+  # Bourne shell does.
+  #
+  # See Shellwords.shellsplit for details.
   def shellsplit
     Shellwords.split(self)
   end
@@ -148,7 +186,9 @@ class String
   #   str.shellescape => string
   #
   # Escapes +str+ so that it can be safely used in a Bourne shell
-  # command line.  See Shellwords::shellescape for details.
+  # command line.
+  #
+  # See Shellwords.shellescape for details.
   def shellescape
     Shellwords.escape(self)
   end
@@ -160,7 +200,8 @@ class Array
   #
   # Builds a command line string from an argument list +array+ joining
   # all elements escaped for Bourne shell and separated by a space.
-  # See Shellwords::shelljoin for details.
+  #
+  # See Shellwords.shelljoin for details.
   def shelljoin
     Shellwords.join(self)
   end
