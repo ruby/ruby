@@ -1,3 +1,12 @@
+Thu Sep 13 08:00:00 2012  Zachary Scott  <zzak@ruby-lang.org>
+
+	* ext/ripper/lib/ripper.rb: Documentation for Ripper.
+	* ext/ripper/lib/ripper/lexer.rb: ditto.
+	* ext/ripper/lib/ripper/sexp.rb: ditto.
+	* ext/ripper/lib/ripper/filter.rb: ditto.
+	* ext/ripper/lib/ripper/core.rb: ditto.
+	  [Bug #6929] [ruby-core:47309]
+
 Wed Sep 12 22:59:07 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_method_missing, vm_call_method): reuse arguments

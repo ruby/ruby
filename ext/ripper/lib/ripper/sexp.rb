@@ -15,7 +15,7 @@ class Ripper
   # [EXPERIMENTAL]
   # Parses +src+ and create S-exp tree.
   # Returns more readable tree rather than Ripper.sexp_raw.
-  # This method is for mainly developer use.
+  # This method is mainly for developer use.
   #
   #   require 'ripper'
   #   require 'pp'
@@ -33,7 +33,7 @@ class Ripper
 
   # [EXPERIMENTAL]
   # Parses +src+ and create S-exp tree.
-  # This method is for mainly developer use.
+  # This method is mainly for developer use.
   #
   #   require 'ripper'
   #   require 'pp'
