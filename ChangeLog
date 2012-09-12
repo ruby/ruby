@@ -1,3 +1,8 @@
+Wed Sep 12 22:59:07 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_method_missing, vm_call_method): reuse arguments
+	  on the VM stack and get rid of ALLOCA.
+
 Wed Sep 12 22:45::00 2012  Zachary Scott  <zzak@ruby-lang.org>
 
 	* ext/pathname/lib/pathname.rb: Documentation for Pathname.

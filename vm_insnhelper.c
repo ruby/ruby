@@ -473,25 +473,19 @@ vm_call_bmethod(rb_thread_t *th, VALUE recv, int argc, const VALUE *argv,
     return val;
 }
 
-static inline void
-vm_method_missing_args(rb_thread_t *th, VALUE *argv,
-		       int num, const rb_block_t *blockptr, int opt)
-{
-    rb_control_frame_t * const reg_cfp = th->cfp;
-    MEMCPY(argv, STACK_ADDR_FROM_TOP(num + 1), VALUE, num + 1);
-    th->method_missing_reason = opt;
-    th->passed_block = blockptr;
-    POPN(num + 1);
-}
-
 static inline VALUE
-vm_method_missing(rb_thread_t *th, ID id, VALUE recv,
+vm_method_missing(rb_thread_t *th, rb_control_frame_t *const reg_cfp,
+		  ID id, VALUE recv,
 		  int num, const rb_block_t *blockptr, int opt)
 {
-    VALUE *argv = ALLOCA_N(VALUE, num + 1);
-    vm_method_missing_args(th, argv, num, blockptr, opt);
+    VALUE ret, *argv = STACK_ADDR_FROM_TOP(num + 1);
+
+    th->method_missing_reason = opt;
+    th->passed_block = blockptr;
     argv[0] = ID2SYM(id);
-    return rb_funcall2(recv, idMethodMissing, num + 1, argv);
+    ret = rb_funcall2(recv, idMethodMissing, num + 1, argv);
+    POPN(num + 1);
+    return ret;
 }
 
 static inline void
@@ -682,11 +676,11 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		if (flag & VM_CALL_VCALL_BIT) {
 		    stat |= NOEX_VCALL;
 		}
-		val = vm_method_missing(th, id, recv, num, blockptr, stat);
+		val = vm_method_missing(th, cfp, id, recv, num, blockptr, stat);
 	    }
 	    else if (!(flag & VM_CALL_OPT_SEND_BIT) && (me->flag & NOEX_MASK) & NOEX_PROTECTED) {
 		if (!rb_obj_is_kind_of(cfp->self, defined_class)) {
-		    val = vm_method_missing(th, id, recv, num, blockptr, NOEX_PROTECTED);
+		    val = vm_method_missing(th, cfp, id, recv, num, blockptr, NOEX_PROTECTED);
 		}
 		else {
 		    goto normal_method_dispatch;
@@ -711,12 +705,12 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	    stat |= NOEX_SUPER;
 	}
 	if (id == idMethodMissing) {
-	    VALUE *argv = ALLOCA_N(VALUE, num);
-	    vm_method_missing_args(th, argv, num - 1, 0, stat);
+	    rb_control_frame_t *reg_cfp = cfp;
+	    VALUE *argv = STACK_ADDR_FROM_TOP(num);
 	    rb_raise_method_missing(th, num, argv, recv, stat);
 	}
 	else {
-	    val = vm_method_missing(th, id, recv, num, blockptr, stat);
+	    val = vm_method_missing(th, cfp, id, recv, num, blockptr, stat);
 	}
     }
 
