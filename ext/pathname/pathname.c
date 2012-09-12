@@ -22,7 +22,7 @@ set_strpath(VALUE obj, VALUE val)
 
 /*
  * Create a Pathname object from the given String (or String-like object).
- * If +path+ contains a NUL character (<tt>\0</tt>), an ArgumentError is raised.
+ * If +path+ contains a NULL character (<tt>\0</tt>), an ArgumentError is raised.
  */
 static VALUE
 path_initialize(VALUE self, VALUE arg)
@@ -46,6 +46,14 @@ path_initialize(VALUE self, VALUE arg)
     return self;
 }
 
+/*
+ * call-seq:
+ *   pathname.freeze -> obj
+ *
+ * Freezes this Pathname.
+ *
+ * See Object.freeze.
+ */
 static VALUE
 path_freeze(VALUE self)
 {
@@ -54,6 +62,14 @@ path_freeze(VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *   pathname.taint -> obj
+ *
+ * Taints this Pathname.
+ *
+ * See Object.taint.
+ */
 static VALUE
 path_taint(VALUE self)
 {
@@ -62,6 +78,14 @@ path_taint(VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *   pathname.untaint -> obj
+ *
+ * Untaints this Pathname.
+ *
+ * See Object.untaint.
+ */
 static VALUE
 path_untaint(VALUE self)
 {
@@ -84,7 +108,18 @@ path_eq(VALUE self, VALUE other)
 }
 
 /*
- *  Provides for comparing pathnames, case-sensitively.
+ *  Provides a case-sensitive comparison operator for pathnames.
+ *
+ *	Pathname.new('/usr') <=> Pathname.new('/usr/bin')
+ *	    #=> -1
+ *	Pathname.new('/usr/bin') <=> Pathname.new('/usr/bin')
+ *	    #=> 0
+ *	Pathname.new('/usr/bin') <=> Pathname.new('/USR/BIN')
+ *	    #=> 1
+ *
+ *  It will return +-1+, +0+ or +1+ depending on the value of the left argument
+ *  relative to the right argument. Or it will return +nil+ if the arguments
+ *  are not comparable.
  */
 static VALUE
 path_cmp(VALUE self, VALUE other)
@@ -153,6 +188,10 @@ path_inspect(VALUE self)
 
 /*
  * Return a pathname which is substituted by String#sub.
+ *
+ *	path1 = Pathname.new('/usr/bin/perl')
+ *	path1.sub('perl', 'ruby')
+ *	    #=> #<Pathname:/usr/bin/ruby>
  */
 static VALUE
 path_sub(int argc, VALUE *argv, VALUE self)
@@ -169,10 +208,12 @@ path_sub(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * Return a pathname which the extension of the basename is substituted by
- * <i>repl</i>.
+ * Return a pathname with +repl+ added as a suffix to the basename.
  *
- * If self has no extension part, <i>repl</i> is appended.
+ * If self has no extension part, +repl+ is appended.
+ *
+ *	Pathname.new('/usr/bin/shutdown').sub_ext('.rb')
+ *	    #=> #<Pathname:/usr/bin/shutdown.rb>
  */
 static VALUE
 path_sub_ext(VALUE self, VALUE repl)
@@ -202,8 +243,10 @@ path_sub_ext(VALUE self, VALUE repl)
 /* Facade for File */
 
 /*
- * Returns the real (absolute) pathname of +self+ in the actual
- * filesystem not containing symlinks or useless dots.
+ * Returns the real (absolute) pathname for +self+ in the actual
+ * filesystem.
+ *
+ * Does not contain symlinks or useless dots, +..+ and +.+.
  *
  * All components of the pathname must exist when this method is
  * called.
@@ -220,7 +263,8 @@ path_realpath(int argc, VALUE *argv, VALUE self)
 
 /*
  * Returns the real (absolute) pathname of +self+ in the actual filesystem.
- * The real pathname doesn't contain symlinks or useless dots.
+ *
+ * Does not contain symlinks or useless dots, +..+ and +.+.
  *
  * The last component of the real pathname can be nonexistent.
  */
@@ -241,10 +285,7 @@ path_realdirpath(int argc, VALUE *argv, VALUE self)
  *   pathname.each_line(sep, limit [, open_args]) {|line| block } -> nil
  *   pathname.each_line(...)                                      -> an_enumerator
  *
- * #each_line iterates over the line in the file.  It yields a String object
- * for each line.
- *
- * This method is availabel since 1.8.1.
+ * Iterates over each line in the file and yields a String object for each.
  */
 static VALUE
 path_each_line(int argc, VALUE *argv, VALUE self)
@@ -267,8 +308,9 @@ path_each_line(int argc, VALUE *argv, VALUE self)
  *   pathname.read([length [, offset]]) -> string
  *   pathname.read([length [, offset]], open_args) -> string
  *
- * See <tt>IO.read</tt>.  Returns all data from the file, or the first +N+ bytes
- * if specified.
+ * Returns all data from the file, or the first +N+ bytes if specified.
+ *
+ * See IO.read.
  *
  */
 static VALUE
@@ -286,8 +328,9 @@ path_read(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   pathname.binread([length [, offset]]) -> string
  *
- * See <tt>IO.binread</tt>.  Returns all the bytes from the file, or the first +N+
- * if specified.
+ * Returns all the bytes from the file, or the first +N+ if specified.
+ *
+ * See IO.binread.
  *
  */
 static VALUE
@@ -307,7 +350,9 @@ path_binread(int argc, VALUE *argv, VALUE self)
  *   pathname.readlines(limit [, open_args])      -> array
  *   pathname.readlines(sep, limit [, open_args]) -> array
  *
- * See <tt>IO.readlines</tt>.  Returns all the lines from the file.
+ * Returns all the lines from the file.
+ *
+ * See IO.readlines.
  *
  */
 static VALUE
@@ -325,7 +370,7 @@ path_readlines(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   pathname.sysopen([mode, [perm]])  -> fixnum
  *
- * See <tt>IO.sysopen</tt>.
+ * See IO.sysopen.
  *
  */
 static VALUE
@@ -340,7 +385,12 @@ path_sysopen(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * See <tt>File.atime</tt>.  Returns last access time.
+ * call-seq:
+ *   pathname.atime	-> time
+ *
+ * Returns the last access time for the file.
+ *
+ * See File.atime.
  */
 static VALUE
 path_atime(VALUE self)
@@ -349,7 +399,12 @@ path_atime(VALUE self)
 }
 
 /*
- * See <tt>File.ctime</tt>.  Returns last (directory entry, not file) change time.
+ * call-seq:
+ *   pathname.ctime	-> time
+ *
+ * Returns the last change time, using directory information, not the file itself.
+ *
+ * See File.ctime.
  */
 static VALUE
 path_ctime(VALUE self)
@@ -358,7 +413,12 @@ path_ctime(VALUE self)
 }
 
 /*
- * See <tt>File.mtime</tt>.  Returns last modification time.
+ * call-seq:
+ *   pathname.mtime	-> time
+ *
+ * Returns the last modified time of the file.
+ *
+ * See File.mtime.
  */
 static VALUE
 path_mtime(VALUE self)
@@ -367,7 +427,12 @@ path_mtime(VALUE self)
 }
 
 /*
- * See <tt>File.chmod</tt>.  Changes permissions.
+ * call-seq:
+ *   pathname.chmod	-> integer
+ *
+ * Changes file permissions.
+ *
+ * See File.chmod.
  */
 static VALUE
 path_chmod(VALUE self, VALUE mode)
@@ -376,7 +441,12 @@ path_chmod(VALUE self, VALUE mode)
 }
 
 /*
- * See <tt>File.lchmod</tt>.
+ * call-seq:
+ *   pathname.lchmod	-> integer
+ *
+ * Same as Pathname.chmod, but does not follow symbolic links.
+ *
+ * See File.lchmod.
  */
 static VALUE
 path_lchmod(VALUE self, VALUE mode)
@@ -385,7 +455,12 @@ path_lchmod(VALUE self, VALUE mode)
 }
 
 /*
- * See <tt>File.chown</tt>.  Change owner and group of file.
+ * call-seq:
+ *   pathname.chown	-> integer
+ *
+ * Change owner and group of the file.
+ *
+ * See File.chown.
  */
 static VALUE
 path_chown(VALUE self, VALUE owner, VALUE group)
@@ -394,7 +469,12 @@ path_chown(VALUE self, VALUE owner, VALUE group)
 }
 
 /*
- * See <tt>File.lchown</tt>.
+ * call-seq:
+ *   pathname.lchown	-> integer
+ *
+ * Same as Pathname.chown, but does not follow symbolic links.
+ *
+ * See File.lchown.
  */
 static VALUE
 path_lchown(VALUE self, VALUE owner, VALUE group)
@@ -407,8 +487,9 @@ path_lchown(VALUE self, VALUE owner, VALUE group)
  *    pathname.fnmatch(pattern, [flags])        -> string
  *    pathname.fnmatch?(pattern, [flags])       -> string
  *
- * See <tt>File.fnmatch</tt>.  Return +true+ if the receiver matches the given
- * pattern.
+ * Return +true+ if the receiver matches the given pattern.
+ *
+ * See File.fnmatch.
  */
 static VALUE
 path_fnmatch(int argc, VALUE *argv, VALUE self)
@@ -422,8 +503,12 @@ path_fnmatch(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * See <tt>File.ftype</tt>.  Returns "type" of file ("file", "directory",
- * etc).
+ * call-seq:
+ *   pathname.ftype	-> string
+ *
+ * Returns "type" of file ("file", "directory", etc).
+ *
+ * See File.ftype.
  */
 static VALUE
 path_ftype(VALUE self)
@@ -435,7 +520,9 @@ path_ftype(VALUE self)
  * call-seq:
  *   pathname.make_link(old)
  *
- * See <tt>File.link</tt>.  Creates a hard link at _pathname_.
+ * Creates a hard link at _pathname_.
+ *
+ * See File.link.
  */
 static VALUE
 path_make_link(VALUE self, VALUE old)
@@ -444,7 +531,9 @@ path_make_link(VALUE self, VALUE old)
 }
 
 /*
- * See <tt>File.open</tt>.  Opens the file for reading or writing.
+ * Opens the file for reading or writing.
+ *
+ * See File.open.
  */
 static VALUE
 path_open(int argc, VALUE *argv, VALUE self)
@@ -463,7 +552,9 @@ path_open(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * See <tt>File.readlink</tt>.  Read symbolic link.
+ * Read symbolic link.
+ *
+ * See File.readlink.
  */
 static VALUE
 path_readlink(VALUE self)
@@ -474,7 +565,9 @@ path_readlink(VALUE self)
 }
 
 /*
- * See <tt>File.rename</tt>.  Rename the file.
+ * Rename the file.
+ *
+ * See File.rename.
  */
 static VALUE
 path_rename(VALUE self, VALUE to)
@@ -483,7 +576,9 @@ path_rename(VALUE self, VALUE to)
 }
 
 /*
- * See <tt>File.stat</tt>.  Returns a <tt>File::Stat</tt> object.
+ * Returns a File::Stat object.
+ *
+ * See File.stat.
  */
 static VALUE
 path_stat(VALUE self)
@@ -492,7 +587,7 @@ path_stat(VALUE self)
 }
 
 /*
- * See <tt>File.lstat</tt>.
+ * See File.lstat.
  */
 static VALUE
 path_lstat(VALUE self)
@@ -504,7 +599,9 @@ path_lstat(VALUE self)
  * call-seq:
  *   pathname.make_symlink(old)
  *
- * See <tt>File.symlink</tt>.  Creates a symbolic link.
+ * Creates a symbolic link.
+ *
+ * See File.symlink.
  */
 static VALUE
 path_make_symlink(VALUE self, VALUE old)
@@ -513,7 +610,9 @@ path_make_symlink(VALUE self, VALUE old)
 }
 
 /*
- * See <tt>File.truncate</tt>.  Truncate the file to +length+ bytes.
+ * Truncates the file to +length+ bytes.
+ *
+ * See File.truncate.
  */
 static VALUE
 path_truncate(VALUE self, VALUE length)
@@ -522,7 +621,9 @@ path_truncate(VALUE self, VALUE length)
 }
 
 /*
- * See <tt>File.utime</tt>.  Update the access and modification times.
+ * Update the access and modification times of the file.
+ *
+ * See File.utime.
  */
 static VALUE
 path_utime(VALUE self, VALUE atime, VALUE mtime)
@@ -531,7 +632,9 @@ path_utime(VALUE self, VALUE atime, VALUE mtime)
 }
 
 /*
- * See <tt>File.basename</tt>.  Returns the last component of the path.
+ * Returns the last component of the path.
+ *
+ * See File.basename.
  */
 static VALUE
 path_basename(int argc, VALUE *argv, VALUE self)
@@ -546,7 +649,9 @@ path_basename(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * See <tt>File.dirname</tt>.  Returns all but the last component of the path.
+ * Returns all but the last component of the path.
+ *
+ * See File.dirname.
  */
 static VALUE
 path_dirname(VALUE self)
@@ -557,7 +662,9 @@ path_dirname(VALUE self)
 }
 
 /*
- * See <tt>File.extname</tt>.  Returns the file's extension.
+ * Returns the file's extension.
+ *
+ * See File.extname.
  */
 static VALUE
 path_extname(VALUE self)
@@ -567,7 +674,9 @@ path_extname(VALUE self)
 }
 
 /*
- * See <tt>File.expand_path</tt>.
+ * Returns the absolute path for the file.
+ *
+ * See File.expand_path.
  */
 static VALUE
 path_expand_path(int argc, VALUE *argv, VALUE self)
@@ -582,7 +691,9 @@ path_expand_path(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * See <tt>File.split</tt>.  Returns the #dirname and the #basename in an Array.
+ * Returns the #dirname and the #basename in an Array.
+ *
+ * See File.split.
  */
 static VALUE
 path_split(VALUE self)
@@ -599,7 +710,7 @@ path_split(VALUE self)
 }
 
 /*
- * See <tt>FileTest.blockdev?</tt>.
+ * See FileTest.blockdev?.
  */
 static VALUE
 path_blockdev_p(VALUE self)
@@ -608,7 +719,7 @@ path_blockdev_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.chardev?</tt>.
+ * See FileTest.chardev?.
  */
 static VALUE
 path_chardev_p(VALUE self)
@@ -617,7 +728,7 @@ path_chardev_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.executable?</tt>.
+ * See FileTest.executable?.
  */
 static VALUE
 path_executable_p(VALUE self)
@@ -626,7 +737,7 @@ path_executable_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.executable_real?</tt>.
+ * See FileTest.executable_real?.
  */
 static VALUE
 path_executable_real_p(VALUE self)
@@ -635,7 +746,7 @@ path_executable_real_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.exist?</tt>.
+ * See FileTest.exist?.
  */
 static VALUE
 path_exist_p(VALUE self)
@@ -644,7 +755,7 @@ path_exist_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.grpowned?</tt>.
+ * See FileTest.grpowned?.
  */
 static VALUE
 path_grpowned_p(VALUE self)
@@ -653,7 +764,7 @@ path_grpowned_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.directory?</tt>.
+ * See FileTest.directory?.
  */
 static VALUE
 path_directory_p(VALUE self)
@@ -662,7 +773,7 @@ path_directory_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.file?</tt>.
+ * See FileTest.file?.
  */
 static VALUE
 path_file_p(VALUE self)
@@ -671,7 +782,7 @@ path_file_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.pipe?</tt>.
+ * See FileTest.pipe?.
  */
 static VALUE
 path_pipe_p(VALUE self)
@@ -680,7 +791,7 @@ path_pipe_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.socket?</tt>.
+ * See FileTest.socket?.
  */
 static VALUE
 path_socket_p(VALUE self)
@@ -689,7 +800,7 @@ path_socket_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.owned?</tt>.
+ * See FileTest.owned?.
  */
 static VALUE
 path_owned_p(VALUE self)
@@ -698,7 +809,7 @@ path_owned_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.readable?</tt>.
+ * See FileTest.readable?.
  */
 static VALUE
 path_readable_p(VALUE self)
@@ -707,7 +818,7 @@ path_readable_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.world_readable?</tt>.
+ * See FileTest.world_readable?.
  */
 static VALUE
 path_world_readable_p(VALUE self)
@@ -716,7 +827,7 @@ path_world_readable_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.readable_real?</tt>.
+ * See FileTest.readable_real?.
  */
 static VALUE
 path_readable_real_p(VALUE self)
@@ -725,7 +836,7 @@ path_readable_real_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.setuid?</tt>.
+ * See FileTest.setuid?.
  */
 static VALUE
 path_setuid_p(VALUE self)
@@ -734,7 +845,7 @@ path_setuid_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.setgid?</tt>.
+ * See FileTest.setgid?.
  */
 static VALUE
 path_setgid_p(VALUE self)
@@ -743,7 +854,7 @@ path_setgid_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.size</tt>.
+ * See FileTest.size.
  */
 static VALUE
 path_size(VALUE self)
@@ -752,7 +863,7 @@ path_size(VALUE self)
 }
 
 /*
- * See <tt>FileTest.size?</tt>.
+ * See FileTest.size?.
  */
 static VALUE
 path_size_p(VALUE self)
@@ -761,7 +872,7 @@ path_size_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.sticky?</tt>.
+ * See FileTest.sticky?.
  */
 static VALUE
 path_sticky_p(VALUE self)
@@ -770,7 +881,7 @@ path_sticky_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.symlink?</tt>.
+ * See FileTest.symlink?.
  */
 static VALUE
 path_symlink_p(VALUE self)
@@ -779,7 +890,7 @@ path_symlink_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.writable?</tt>.
+ * See FileTest.writable?.
  */
 static VALUE
 path_writable_p(VALUE self)
@@ -788,7 +899,7 @@ path_writable_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.world_writable?</tt>.
+ * See FileTest.world_writable?.
  */
 static VALUE
 path_world_writable_p(VALUE self)
@@ -797,7 +908,7 @@ path_world_writable_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.writable_real?</tt>.
+ * See FileTest.writable_real?.
  */
 static VALUE
 path_writable_real_p(VALUE self)
@@ -806,7 +917,7 @@ path_writable_real_p(VALUE self)
 }
 
 /*
- * See <tt>FileTest.zero?</tt>.
+ * See FileTest.zero?.
  */
 static VALUE
 path_zero_p(VALUE self)
@@ -821,7 +932,12 @@ glob_i(VALUE elt, VALUE klass, int argc, VALUE *argv)
 }
 
 /*
- * See <tt>Dir.glob</tt>.  Returns or yields Pathname objects.
+ * Returns or yields Pathname objects.
+ *
+ *  Pathname.glob("config/*.rb")
+ *	#=> [#<Pathname:config/environment.rb>, #<Pathname:config/routes.rb>, ..]
+ *
+ * See Dir.glob.
  */
 static VALUE
 path_s_glob(int argc, VALUE *argv, VALUE klass)
@@ -848,7 +964,12 @@ path_s_glob(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
- * See <tt>Dir.getwd</tt>.  Returns the current working directory as a Pathname.
+ * Returns the current working directory as a Pathname.
+ *
+ *	Pathname.getwd
+ *	    #=> #<Pathname:/home/zzak/projects/ruby>
+ *
+ * See Dir.getwd.
  */
 static VALUE
 path_s_getwd(VALUE klass)
@@ -862,13 +983,8 @@ path_s_getwd(VALUE klass)
  * Return the entries (files and subdirectories) in the directory, each as a
  * Pathname object.
  *
- * The result contains just a filename which has no directory.
- *
- * The result may contain the current directory #<Pathname:.> and the parent
- * directory #<Pathname:..>.
- *
- * If you don't want #<Pathname:.> and #<Pathname:..> and
- * want directory, consider Pathname#children.
+ * The results contains just the names in the directory, without any trailing
+ * slashes or recursive look-up.
  *
  *   pp Pathname.new('/usr/local').entries
  *   #=> [#<Pathname:share>,
@@ -883,6 +999,11 @@ path_s_getwd(VALUE klass)
  *   #    #<Pathname:sbin>,
  *   #    #<Pathname:src>]
  *
+ * The result may contain the current directory <code>#<Pathname:.></code> and
+ * the parent directory <code>#<Pathname:..></code>.
+ *
+ * If you don't want +.+ and +..+ and
+ * want directories, consider Pathname#children.
  */
 static VALUE
 path_entries(VALUE self)
@@ -902,7 +1023,9 @@ path_entries(VALUE self)
 }
 
 /*
- * See <tt>Dir.mkdir</tt>.  Create the referenced directory.
+ * Create the referenced directory.
+ *
+ * See Dir.mkdir.
  */
 static VALUE
 path_mkdir(int argc, VALUE *argv, VALUE self)
@@ -916,7 +1039,9 @@ path_mkdir(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * See <tt>Dir.rmdir</tt>.  Remove the referenced directory.
+ * Remove the referenced directory.
+ *
+ * See Dir.rmdir.
  */
 static VALUE
 path_rmdir(VALUE self)
@@ -925,7 +1050,9 @@ path_rmdir(VALUE self)
 }
 
 /*
- * See <tt>Dir.open</tt>.
+ * Opens the referenced directory.
+ *
+ * See Dir.open.
  */
 static VALUE
 path_opendir(VALUE self)
@@ -943,10 +1070,8 @@ each_entry_i(VALUE elt, VALUE klass, int argc, VALUE *argv)
 }
 
 /*
- * Iterates over the entries (files and subdirectories) in the directory.  It
- * yields a Pathname object for each entry.
- *
- * This method has available since 1.8.1.
+ * Iterates over the entries (files and subdirectories) in the directory,
+ * yielding a Pathname object for each entry.
  */
 static VALUE
 path_each_entry(VALUE self)
@@ -970,8 +1095,8 @@ unlink_rescue(VALUE str, VALUE errinfo)
 }
 
 /*
- * Removes a file or directory, using <tt>File.unlink</tt> or
- * <tt>Dir.unlink</tt> as necessary.
+ * Removes a file or directory, using File.unlink if +self+ is a file, or
+ * Dir.unlink as necessary.
  */
 static VALUE
 path_unlink(VALUE self)
@@ -982,9 +1107,7 @@ path_unlink(VALUE self)
 }
 
 /*
- * create a pathname object.
- *
- * This method is available since 1.8.5.
+ * Creates a new Pathname object.
  */
 static VALUE
 path_f_pathname(VALUE self, VALUE str)
@@ -993,24 +1116,26 @@ path_f_pathname(VALUE self, VALUE str)
 }
 
 /*
- * == Pathname
  *
- * Pathname represents a pathname which locates a file in a filesystem.
- * The pathname depends on OS: Unix, Windows, etc.
- * Pathname library works with pathnames of local OS.
- * However non-Unix pathnames are supported experimentally.
+ * Pathname represents the name of a file or directory on the filesystem,
+ * but not the file itself.
  *
- * It does not represent the file itself.
+ * The pathname depends on the Operating System: Unix, Windows, etc.
+ * This library works with pathnames of local OS, however non-Unix pathnames
+ * are supported experimentally.
+ *
  * A Pathname can be relative or absolute.  It's not until you try to
  * reference the file that it even matters whether the file exists or not.
  *
  * Pathname is immutable.  It has no method for destructive update.
  *
- * The value of this class is to manipulate file path information in a neater
+ * The goal of this class is to manipulate file path information in a neater
  * way than standard Ruby provides.  The examples below demonstrate the
- * difference.  *All* functionality from File, FileTest, and some from Dir and
- * FileUtils is included, in an unsurprising way.  It is essentially a facade for
- * all of these, and more.
+ * difference.
+ *
+ * *All* functionality from File, FileTest, and some from Dir and FileUtils is
+ * included, in an unsurprising way.  It is essentially a facade for all of
+ * these, and more.
  *
  * == Examples
  *
@@ -1058,8 +1183,8 @@ path_f_pathname(VALUE self, VALUE str)
  * === Core methods
  *
  * These methods are effectively manipulating a String, because that's
- * all a path is.  Except for #mountpoint?, #children, #each_child,
- * #realdirpath and #realpath, they don't access the filesystem.
+ * all a path is.  None of these access the file system except for
+ * #mountpoint?, #children, #each_child, #realdirpath and #realpath.
  *
  * - +
  * - #join
