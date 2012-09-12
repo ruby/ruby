@@ -2676,19 +2676,25 @@ AS_CASE("$enable_shared", [yes], [
   LIBRUBYARG_SHARED=
 
   # enable PIE if possible
-  if test "$GCC" = yes -a -z "$EXTSTATIC"; then
-    RUBY_TRY_CFLAGS(-fPIE, [pie=yes], [pie=no])
-    if test "$pie" = yes; then
-      RUBY_APPEND_OPTION(XCFLAGS, -fPIE)
-      for pie in -pie -Wl,-pie; do
-	RUBY_TRY_LDFLAGS([$pie], [], [pie=])
-	if test "x$pie" != x; then
-	  RUBY_APPEND_OPTION(XLDFLAGS, $pie)
-	  break
-	fi
-      done
+  AS_CASE(["$target_os"],
+  [haiku], [
+    # gcc supports PIE, but doesn't work correctly in Haiku
+  ],
+  [
+    if test "$GCC" = yes -a -z "$EXTSTATIC"; then
+      RUBY_TRY_CFLAGS(-fPIE, [pie=yes], [pie=no])
+      if test "$pie" = yes; then
+	RUBY_APPEND_OPTION(XCFLAGS, -fPIE)
+	for pie in -pie -Wl,-pie; do
+	  RUBY_TRY_LDFLAGS([$pie], [], [pie=])
+	  if test "x$pie" != x; then
+	    RUBY_APPEND_OPTION(XLDFLAGS, $pie)
+	    break
+	  fi
+	done
+      fi
     fi
-  fi
+  ])
 ])
 if test "$enable_rpath" = yes; then
     test -z "$LIBRUBY_RPATHFLAGS" || LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS "
