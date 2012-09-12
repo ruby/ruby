@@ -934,7 +934,7 @@ glob_i(VALUE elt, VALUE klass, int argc, VALUE *argv)
 /*
  * Returns or yields Pathname objects.
  *
- *  Pathname.glob("config/*.rb")
+ *  Pathname.glob("config/" "*.rb")
  *	#=> [#<Pathname:config/environment.rb>, #<Pathname:config/routes.rb>, ..]
  *
  * See Dir.glob.
