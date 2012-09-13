@@ -2408,13 +2408,13 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
  *     ary.select { |item| block } -> new_ary
  *     ary.select                  -> Enumerator
  *
- *  Invokes the given block passing in successive elements from +self+,
- *  returning an array containing those elements for which the block returns
- *  a +true+ value.
+ *  Returns a new array containing all elements of <i>ary</i>
+ *  for which <em>block</em> returns a true value.
+ *  (see also <code>Enumerable#select</code>).
  *
- *  See also Enumerable#select.
+ *  If no block is given, an enumerator is returned instead.
  *
- *  If no block is given, an Enumerator is returned instead.
+ *     [1,2,3,4,5].select { |num|  num.even?  }   #=> [2, 4]
  *
  *     a = %w{ a b c d e f }
  *     a.select { |v| v =~ /[aeiou]/ }  #=> ["a", "e"]
