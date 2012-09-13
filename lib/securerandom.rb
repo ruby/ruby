@@ -94,16 +94,17 @@ module SecureRandom
         require 'Win32API'
 
         crypt_acquire_context = Win32API.new("advapi32", "CryptAcquireContext", 'PPPII', 'L')
-        @crypt_gen_random = Win32API.new("advapi32", "CryptGenRandom", 'LIP', 'L')
+        @crypt_gen_random = Win32API.new("advapi32", "CryptGenRandom", 'VIP', 'L')
 
-        hProvStr = " " * 4
+        hProvStr = " " * DL::SIZEOF_VOIDP
         prov_rsa_full = 1
         crypt_verifycontext = 0xF0000000
 
         if crypt_acquire_context.call(hProvStr, nil, nil, prov_rsa_full, crypt_verifycontext) == 0
           raise SystemCallError, "CryptAcquireContext failed: #{lastWin32ErrorMessage}"
         end
-        @hProv, = hProvStr.unpack('L')
+        type = DL::SIZEOF_VOIDP == DL::SIZEOF_LONG_LONG ? 'q' : 'l'
+        @hProv, = hProvStr.unpack(type)
 
         @has_win32 = true
       rescue LoadError
@@ -260,6 +261,6 @@ module SecureRandom
     code = get_last_error.call
     msg = "\0" * 1024
     len = format_message.call(format_message_ignore_inserts + format_message_from_system, 0, code, 0, msg, 1024, nil, nil, nil, nil, nil, nil, nil, nil)
-    msg[0, len].tr("\r", '').chomp
+    msg[0, len].force_encoding("filesystem").tr("\r", '').chomp
   end
 end
