@@ -1,3 +1,8 @@
+Thu Sep 13 10:22:11 2012  Takashi Toyoshima  <toyoshim@gmail.com>
+
+	* configure.in: Don't use PIE on Haiku because loader support is not
+	  enough.
+
 Thu Sep 13 08:20:00 2012  Zachary Scott  <zzak@ruby-lang.org>
 
 	* lib/shellwords.rb: Documentation for Shellwords.

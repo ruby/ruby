@@ -2676,7 +2676,13 @@ AS_CASE("$enable_shared", [yes], [
   LIBRUBYARG_SHARED=
 
   # enable PIE if possible
-  if test "$GCC" = yes -a -z "$EXTSTATIC"; then
+  pie=
+  AS_CASE(["$target_os"],
+  [haiku], [
+    # gcc supports PIE, but doesn't work correctly in Haiku
+    pie=no
+  ])
+  if test "$GCC" = yes -a -z "$EXTSTATIC" -a "x$pie" != xno; then
     RUBY_TRY_CFLAGS(-fPIE, [pie=yes], [pie=no])
     if test "$pie" = yes; then
       RUBY_APPEND_OPTION(XCFLAGS, -fPIE)
