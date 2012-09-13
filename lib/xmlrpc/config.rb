@@ -3,26 +3,28 @@
 # Configuration file for XML-RPC for Ruby
 #
 
-module XMLRPC
+module XMLRPC # :nodoc:
 
   module Config
 
-    DEFAULT_WRITER = XMLWriter::Simple            # or XMLWriter::XMLParser
+    # or XMLWriter::XMLParser
+    DEFAULT_WRITER = XMLWriter::Simple
 
-    # available parser:
-    #   * XMLParser::NQXMLTreeParser
-    #   * XMLParser::NQXMLStreamParser
-    #   * XMLParser::XMLTreeParser
-    #   * XMLParser::XMLStreamParser (fastest)
-    #   * XMLParser::REXMLStreamParser
-    #   * XMLParser::XMLScanStreamParser
+    # === Available parsers
+    #
+    # * XMLParser::NQXMLTreeParser
+    # * XMLParser::NQXMLStreamParser
+    # * XMLParser::XMLTreeParser
+    # * XMLParser::XMLStreamParser (fastest)
+    # * XMLParser::REXMLStreamParser
+    # * XMLParser::XMLScanStreamParser
     DEFAULT_PARSER = XMLParser::REXMLStreamParser
 
-    # enable <nil/> tag
+    # enable <code><nil/></code> tag
     ENABLE_NIL_CREATE    = false
     ENABLE_NIL_PARSER    = false
 
-    # allows integers greater than 32-bit if true
+    # allows integers greater than 32-bit if +true+
     ENABLE_BIGINT        = false
 
     # enable marshalling ruby objects which include XMLRPC::Marshallable

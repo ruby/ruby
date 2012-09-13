@@ -1,7 +1,3 @@
-#
-# Implements a simple HTTP-server by using John W. Small's (jsmall@laser.net)
-# ruby-generic-server.
-#
 # Copyright (C) 2001, 2002, 2003 by Michael Neumann (mneumann@ntecs.de)
 #
 # $Id$
@@ -10,11 +6,13 @@
 
 require "gserver"
 
+# Implements a simple HTTP-server by using John W. Small's (jsmall@laser.net)
+# ruby-generic-server: GServer.
 class HttpServer < GServer
 
   ##
-  # handle_obj specifies the object, that receives calls to request_handler
-  # and ip_auth_handler
+  # +handle_obj+ specifies the object, that receives calls from +request_handler+
+  # and +ip_auth_handler+
   def initialize(handle_obj, port = 8080, host = DEFAULT_HOST, maxConnections = 4,
                  stdlog = $stdout, audit = true, debug = true)
     @handler = handle_obj
@@ -23,19 +21,16 @@ class HttpServer < GServer
 
 private
 
-  # Constants -----------------------------------------------
-
   CRLF        = "\r\n"
   HTTP_PROTO  = "HTTP/1.0"
   SERVER_NAME = "HttpServer (Ruby #{RUBY_VERSION})"
 
+  # Default header for the server name
   DEFAULT_HEADER = {
     "Server" => SERVER_NAME
   }
 
-  ##
-  # Mapping of status code and error message
-  #
+  # Mapping of status codes and error messages
   StatusCodeMapping = {
     200 => "OK",
     400 => "Bad Request",
@@ -44,8 +39,6 @@ private
     411 => "Length Required",
     500 => "Internal Server Error"
   }
-
-  # Classes -------------------------------------------------
 
   class Request
     attr_reader :data, :header, :method, :path, :proto
@@ -74,10 +67,7 @@ private
     end
   end
 
-
-  ##
-  # a case-insensitive Hash class for HTTP header
-  #
+  # A case-insensitive Hash class for HTTP header
   class Table
     include Enumerable
 
@@ -103,15 +93,15 @@ private
       @hash.each {|k,v| yield k.capitalize, v }
     end
 
+    # Output the Hash table for the HTTP header
     def writeTo(port)
       each { |k,v| port << "#{k}: #{v}" << CRLF }
     end
   end # class Table
 
 
-  # Helper Methods ------------------------------------------
-
-  def http_header(header=nil)
+  # Generates a Hash with the HTTP headers
+  def http_header(header=nil) # :doc:
     new_header = Table.new(DEFAULT_HEADER)
     new_header.update(header) unless header.nil?
 
@@ -121,11 +111,14 @@ private
     new_header
   end
 
-  def http_date( aTime )
+  # Returns a string which represents the time as rfc1123-date of HTTP-date
+  def http_date( aTime ) # :doc:
     aTime.gmtime.strftime( "%a, %d %b %Y %H:%M:%S GMT" )
   end
 
-  def http_resp(status_code, status_message=nil, header=nil, body=nil)
+  # Returns a string which includes the status code message as,
+  # http headers, and body for the response.
+  def http_resp(status_code, status_message=nil, header=nil, body=nil) # :doc:
     status_message ||= StatusCodeMapping[status_code]
 
     str = ""
@@ -136,9 +129,11 @@ private
     str
   end
 
-  # Main Serve Loop -----------------------------------------
-
-  def serve(io)
+  # Handles the HTTP request and writes the response back to the client, +io+.
+  #
+  # If an Exception is raised while handling the request, the client will receive
+  # a 500 "Internal Server Error" message.
+  def serve(io) # :doc:
     # perform IP authentification
     unless @handler.ip_auth_handler(io)
       io << http_resp(403, "Forbidden")
