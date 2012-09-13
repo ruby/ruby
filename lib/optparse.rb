@@ -204,8 +204,7 @@
 # === Further documentation
 #
 # The above examples should be enough to learn how to use this class.  If you
-# have any questions, email me (gsinclair@soyabean.com.au) and I will update
-# this document.
+# have any questions, file a ticket at http://bugs.ruby-lang.org.
 #
 class OptionParser
   # :stopdoc:

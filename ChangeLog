@@ -1,5 +1,10 @@
 Thu Sep 13 11:20:00 2012  Zachary Scott  <zzak@ruby-lang.org>
 
+	* lib/optparse.rb: Remove unreachable email address from documentation
+	  [Bug #6996] [ruby-core:47459]
+
+Thu Sep 13 11:20:00 2012  Zachary Scott  <zzak@ruby-lang.org>
+
 	* lib/xmlrpc.rb: Documentation for XMLRPC
 	* lib/xmlrpc/datetime.rb: ditto.
 	* lib/xmlrpc/parser.rb: ditto.
