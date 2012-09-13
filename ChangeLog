@@ -1,3 +1,12 @@
+Fri Sep 14 03:30:00 2012  Zachary Scott  <zzak@ruby-lang.org>
+
+	* array.c (rb_ary_select):
+	  Update documentation for Array#select
+	* enum.c (enum_find_all, enum_reject):
+	  Update documentation for Enumerable#find_all and Enumerable#reject
+	  Based on a patch by Jeff Saracco
+	  [Bug #6908] [ruby-core:47285] [Fixes #166 on github]
+
 Fri Sep 14 00:20:00 2012  Zachary Scott  <zzak@ruby-lang.org>
 
 	* signal.c (rb_f_kill):
