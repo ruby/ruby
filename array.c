@@ -3090,6 +3090,8 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
  *     a = [ "a", "b", "c" ]
  *     a + [ "d", "e", "f" ]
  *     a                         #=> [ "a", "b", "c", "d", "e", "f" ]
+ *
+ *  See also Array#concat.
  */
 
 VALUE
@@ -3117,6 +3119,8 @@ rb_ary_plus(VALUE x, VALUE y)
  *     a = [ 1, 2, 3 ]
  *     a.concat( [ 4, 5 ] )
  *     a                                 #=> [ 1, 2, 3, 4, 5 ]
+ *
+ *  See also Array#+.
  */
 
 VALUE
@@ -3518,11 +3522,16 @@ ary_recycle_hash(VALUE hash)
  *  call-seq:
  *     ary - other_ary    -> new_ary
  *
- *  Array Difference --- Returns a new array that is a copy of the original
- *  array, removing any items that also appear in +other_ary+. (If you need
- *  set-like behavior, see the library class Set.)
+ *  Array Difference
+ *
+ *  Returns a new array that is a copy of the original array, removing any
+ *  items that also appear in +other_ary+.
+ *
+ *  It compares elements using their hash (returned by the Object#hash method).   
  *
  *     [ 1, 1, 2, 2, 3, 3, 4, 5 ] - [ 1, 2, 4 ]  #=>  [ 3, 3, 5 ]
+ *
+ *  If you need set-like behavior, see the library class Set.
  */
 
 static VALUE
@@ -3552,6 +3561,8 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *
  *     [ 1, 1, 3, 5 ] & [ 1, 2, 3 ]                 #=> [ 1, 3 ]
  *     [ 'a', 'b', 'b', 'z' ] & [ 'a', 'b', 'c' ]   #=> [ 'a', 'b' ]
+ *
+ *  See also Array#uniq.
  */
 
 
@@ -3589,6 +3600,8 @@ rb_ary_and(VALUE ary1, VALUE ary2)
  *  excluding any duplicates.
  *
  *     [ "a", "b", "c" ] | [ "c", "d", "a" ]    #=> [ "a", "b", "c", "d" ]
+ *
+ *  See also Array#uniq.
  */
 
 static VALUE
@@ -3693,8 +3706,12 @@ rb_ary_uniq_bang(VALUE ary)
  *     ary.uniq                -> ary or nil
  *     ary.uniq { |item| ... } -> ary or nil
  *
- *  Returns a new array by removing duplicate values in +self+. If a block
- *  is given, it will use the return value of the block for comparison.
+ *  Returns a new array by removing duplicate values in +self+.
+ *
+ *  If a block is given, it will use the return value of the block for comparison.
+ *
+ *  It compares elements using their hash (provided by the Object#hash method)
+ *  then compares hashes with Object#eql?.
  *
  *     a = [ "a", "a", "b", "b", "c" ]
  *     a.uniq   # => ["a", "b", "c"]

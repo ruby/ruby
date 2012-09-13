@@ -1,3 +1,10 @@
+Fri Sep 14 04:05:00 2012  Zachary Scott  <zzak@ruby-lang.org>
+
+	* array.c (rb_ary_diff, rb_ary_uniq):
+	  Enhance documentation for array uniqueness
+	  Based on a patch by Robin Dupret
+	  [Bug #6872] [ruby-core:47209]
+
 Fri Sep 14 03:30:00 2012  Zachary Scott  <zzak@ruby-lang.org>
 
 	* array.c (rb_ary_select):
