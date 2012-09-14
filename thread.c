@@ -4056,18 +4056,36 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
 }
 
 static VALUE
-rb_mutex_sleep_forever(VALUE time)
+wrap_thread_sleep_deadly()
 {
     rb_thread_sleep_deadly();
     return Qnil;
 }
 
 static VALUE
-rb_mutex_wait_for(VALUE time)
+rb_mutex_sleep_forever(VALUE time)
+{
+    if (rb_block_given_p()) {
+	return rb_ensure(wrap_thread_sleep_deadly, Qnil, rb_yield, Qnil);
+    }
+    return wrap_thread_sleep_deadly();
+}
+
+static VALUE
+wrap_rb_thread_wait_for(VALUE time)
 {
     const struct timeval *t = (struct timeval *)time;
     rb_thread_wait_for(*t);
     return Qnil;
+}
+
+static VALUE
+rb_mutex_wait_for(VALUE time)
+{
+    if (rb_block_given_p()) {
+	return rb_ensure(wrap_rb_thread_wait_for, time, rb_yield, Qnil);
+    }
+    return wrap_rb_thread_wait_for(time);
 }
 
 VALUE

@@ -63,13 +63,11 @@ class ConditionVariable
   # even if no other thread doesn't signal.
   #
   def wait(mutex, timeout=nil)
-    begin
-      # TODO: mutex should not be used
-      @waiters_mutex.synchronize do
-        @waiters.push(Thread.current)
-      end
-      mutex.sleep timeout
-    ensure
+    # TODO: mutex should not be used
+    @waiters_mutex.synchronize do
+      @waiters.push(Thread.current)
+    end
+    mutex.sleep timeout do
       @waiters_mutex.synchronize do
         @waiters.delete(Thread.current)
       end
