@@ -1,3 +1,8 @@
+Sat Sep 15 01:56:40 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: Merge upstream: 50a383c84.
+	  [ruby-dev:46128] [Bug #7005]
+
 Sat Sep 15 00:20:04 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf.c (rb_nkf_convert): suppress warning.

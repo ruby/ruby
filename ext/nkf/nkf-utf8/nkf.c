@@ -20,11 +20,11 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  */
-#define NKF_VERSION "2.1.2"
-#define NKF_RELEASE_DATE "2011-09-08"
+#define NKF_VERSION "2.1.3"
+#define NKF_RELEASE_DATE "2012-09-13"
 #define COPY_RIGHT \
     "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa).\n" \
-    "Copyright (C) 1996-2011, The nkf Project."
+    "Copyright (C) 1996-2012, The nkf Project."
 
 #include "config.h"
 #include "nkf.h"
@@ -356,6 +356,7 @@ static  int     no_cp932ext_f = FALSE;
 /* ignore ZERO WIDTH NO-BREAK SPACE */
 static  int     no_best_fit_chars_f = FALSE;
 static  int     input_endian = ENDIAN_BIG;
+static  int     input_bom_f = FALSE;
 static  nkf_char     unicode_subchar = '?'; /* the regular substitution character */
 static  void    (*encode_fallback)(nkf_char c) = NULL;
 static  void    w_status(struct input_code *, nkf_char);
@@ -3202,6 +3203,7 @@ check_bom(FILE *f)
 			set_iconv(TRUE, w_iconv32);
 		    }
 		    if (iconv == w_iconv32) {
+			input_bom_f = TRUE;
 			input_endian = ENDIAN_BIG;
 			return;
 		    }
@@ -3232,6 +3234,7 @@ check_bom(FILE *f)
 		    set_iconv(TRUE, w_iconv);
 		}
 		if (iconv == w_iconv) {
+		    input_bom_f = TRUE;
 		    return;
 		}
 		(*i_ungetc)(0xBF,f);
@@ -3260,6 +3263,7 @@ check_bom(FILE *f)
 	    }
 	    if (iconv == w_iconv16) {
 		input_endian = ENDIAN_BIG;
+		input_bom_f = TRUE;
 		return;
 	    }
 	    (*i_ungetc)(0xFF,f);
@@ -3275,6 +3279,7 @@ check_bom(FILE *f)
 		    }
 		    if (iconv == w_iconv32) {
 			input_endian = ENDIAN_LITTLE;
+			input_bom_f = TRUE;
 			return;
 		    }
 		    (*i_ungetc)(0x00,f);
@@ -3286,6 +3291,7 @@ check_bom(FILE *f)
 	    }
 	    if (iconv == w_iconv16) {
 		input_endian = ENDIAN_LITTLE;
+		input_bom_f = TRUE;
 		return;
 	    }
 	    (*i_ungetc)(0xFE,f);
@@ -3494,7 +3500,7 @@ fold_conv(nkf_char c2, nkf_char c1)
 	f_prev = c1;
 	if (c2 || c2 == JIS_X_0201_1976_K)
 	    f_prev |= 0x80;  /* this is Japanese */
-	f_line += char_size(c2,c1);
+	f_line += c2 == JIS_X_0201_1976_K ? 1: char_size(c2,c1);
 	if (f_line<=fold_len) {   /* normal case */
 	    fold_state = 1;
 	} else {
@@ -4190,8 +4196,13 @@ print_guessed_code(char *filename)
 	if (guess_f == 1) {
 	    printf("%s\n", input_codename);
 	} else {
-	    printf("%s%s\n",
+	    printf("%s%s%s%s\n",
 		   input_codename,
+		   iconv != w_iconv16 && iconv != w_iconv32 ? "" :
+		   input_endian == ENDIAN_LITTLE ? " LE" :
+		   input_endian == ENDIAN_BIG ? " BE" :
+		   "[BUG]",
+		   input_bom_f ? " (BOM)" : "",
 		   input_eol == CR   ? " (CR)" :
 		   input_eol == LF   ? " (LF)" :
 		   input_eol == CRLF ? " (CRLF)" :
@@ -5480,7 +5491,7 @@ kanji_convert(FILE *f)
 	    code_status(c1);
 	if (c2) {
 	    /* second byte */
-	    if (c2 > DEL) {
+	    if (c2 > ((input_encoding && nkf_enc_cp5022x_p(input_encoding)) ? 0x92 : DEL)) {
 		/* in case of 8th bit is on */
 		if (!estab_f&&!mime_decode_mode) {
 		    /* in case of not established yet */
