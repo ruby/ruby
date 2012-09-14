@@ -3383,14 +3383,37 @@ rb_threadptr_check_signal(rb_thread_t *mth)
 }
 
 static void
+clear_timer_interrupt(rb_thread_t *th)
+{
+    rb_atomic_t interrupt;
+    rb_atomic_t old;
+
+    do {
+	interrupt = th->interrupt_flag;
+	old = ATOMIC_EXCHANGE(th->interrupt_flag, interrupt & ~0x01);
+    } while (interrupt != old);
+
+}
+
+
+static void
 timer_thread_function(void *arg)
 {
     rb_vm_t *vm = GET_VM(); /* TODO: fix me for Multi-VM */
 
-    /* for time slice */
-    if (!vm->running_thread->yielding) {
-	RUBY_VM_SET_TIMER_INTERRUPT(vm->running_thread);
+    while (1) {
+	rb_thread_t *running = vm->running_thread;
+
+	/* for time slice */
+	if (!vm->running_thread->yielding)
+	    RUBY_VM_SET_TIMER_INTERRUPT(running);
+
+	if ((volatile rb_thread_t*)vm->running_thread == running)
+	    break;
+
+	clear_timer_interrupt(running);
     }
+
 
     /* check signal */
     rb_threadptr_check_signal(vm->main_thread);

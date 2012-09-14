@@ -1,3 +1,9 @@
+Fri Sep 14 17:30:14 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (timer_thread_function): fixed a race against thread
+	  context switch.
+	* thread.c (clear_timer_interrupt): new helper function.
+
 Mon Sep 10 10:19:34 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* enc/depend: fixed wrong change in a part of r34802.
