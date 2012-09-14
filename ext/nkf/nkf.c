@@ -135,7 +135,7 @@ int nkf_split_options(const char *arg)
 static VALUE
 rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
 {
-    volatile VALUE tmp;
+    VALUE tmp;
     reinit();
     StringValue(opt);
     nkf_split_options(RSTRING_PTR(opt));
@@ -156,23 +156,28 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     StringValue(src);
     input = (unsigned char *)RSTRING_PTR(src);
     i_len = RSTRING_LENINT(src);
-    tmp = result = rb_str_new(0, i_len*3 + 10);
+    tmp = rb_str_new(0, i_len*3 + 10);
 
     output_ctr = 0;
-    output     = (unsigned char *)RSTRING_PTR(result);
-    o_len      = RSTRING_LENINT(result);
+    output     = (unsigned char *)RSTRING_PTR(tmp);
+    o_len      = RSTRING_LENINT(tmp);
     *output    = '\0';
 
+    /* use _result_ begin*/
+    result = tmp;
     kanji_convert(NULL);
-    rb_str_set_len(result, output_ctr);
-    OBJ_INFECT(result, src);
+    result = Qnil;
+    /* use _result_ end */
+
+    rb_str_set_len(tmp, output_ctr);
+    OBJ_INFECT(tmp, src);
 
     if (mimeout_f)
-	rb_enc_associate(result, rb_usascii_encoding());
+	rb_enc_associate(tmp, rb_usascii_encoding());
     else
-	rb_enc_associate(result, rb_nkf_enc_get(nkf_enc_name(output_encoding)));
+	rb_enc_associate(tmp, rb_nkf_enc_get(nkf_enc_name(output_encoding)));
 
-    return result;
+    return tmp;
 }
 
 
