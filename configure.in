@@ -2863,7 +2863,7 @@ AC_ARG_ENABLE(debug-env,
        [AC_DEFINE(RUBY_DEBUG_ENV)])
 
 AS_CASE(["$FIRSTMAKEFILE"], [*GNUmakefile:*], [gnumake=yes], [
-    AC_MSG_CHECKING([for if ${MAKE-make} is GNU make])
+    AC_MSG_CHECKING([if ${MAKE-make} is GNU make])
     mkdir conftest.dir
     echo "all:; @echo yes" > conftest.dir/GNUmakefile
     echo "all:; @echo no" > conftest.dir/Makefile
