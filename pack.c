@@ -1731,7 +1731,7 @@ pack_unpack(VALUE str, VALUE fmt)
 
               default:
                 if (integer_size > MAX_INTEGER_PACK_SIZE)
-                    rb_bug("unexpected intger size for pack: %d", integer_size);
+                    rb_bug("unexpected integer size for pack: %d", integer_size);
                 PACK_LENGTH_ADJUST_SIZE(integer_size);
                 while (len-- > 0) {
                     union {
