@@ -641,7 +641,7 @@ fi
 test $ac_cv_prog_cc_g = yes && : ${debugflags=-g}
 
 if test "$GCC" = ""; then
-    AS_CASE(["$target_os"],[aix*],[warnflags="-qinfo=por"])
+    AS_CASE(["$target_os"],[aix*],[warnflags="$warnflags -qinfo=por" rb_cv_warnflags="$rb_cv_warnflags -qinfo=por"])
 fi
 if test "$GCC" = yes; then
     RUBY_TRY_CFLAGS(-fvisibility=hidden, [RUBY_APPEND_OPTION(XCFLAGS, -fvisibility=hidden)])
