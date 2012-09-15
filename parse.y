@@ -8571,20 +8571,14 @@ id_is_var_gen(struct parser_params *parser, ID id)
 static const char *
 lex_state_name(enum lex_state_e state)
 {
-    switch (state) {
-      case EXPR_BEG:    return "EXPR_BEG";
-      case EXPR_END:    return "EXPR_END";
-      case EXPR_ENDARG: return "EXPR_ENDARG";
-      case EXPR_ENDFN:  return "EXPR_ENDFN";
-      case EXPR_ARG:    return "EXPR_ARG";
-      case EXPR_CMDARG: return "EXPR_CMDARG";
-      case EXPR_MID:    return "EXPR_MID";
-      case EXPR_FNAME:  return "EXPR_FNAME";
-      case EXPR_DOT:    return "EXPR_DOT";
-      case EXPR_CLASS: 	return "EXPR_CLASS";
-      case EXPR_VALUE: 	return "EXPR_VALUE";
-      case EXPR_MAX_STATE: break;
-    }
+    static const char names[][12] = {
+	"EXPR_BEG",    "EXPR_END",    "EXPR_ENDARG", "EXPR_ENDFN",  "EXPR_ARG",
+	"EXPR_CMDARG", "EXPR_MID",    "EXPR_FNAME",  "EXPR_DOT",    "EXPR_CLASS",
+	"EXPR_VALUE",
+    };
+
+    if ((unsigned)state < EXPR_MAX_STATE)
+	return names[state];
     return NULL;
 }
 #endif
