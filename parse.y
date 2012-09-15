@@ -412,6 +412,8 @@ static void rb_backref_error_gen(struct parser_params*,NODE*);
 static NODE *node_assign_gen(struct parser_params*,NODE*,NODE*);
 #define node_assign(node1, node2) node_assign_gen(parser, (node1), (node2))
 
+static NODE *new_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs);
+
 static NODE *match_op_gen(struct parser_params*,NODE*,NODE*);
 #define match_op(node1,node2) match_op_gen(parser, (node1), (node2))
 
@@ -432,6 +434,7 @@ static NODE *reg_named_capture_assign_gen(struct parser_params* parser, VALUE re
 #define get_id(id) (id)
 #define get_value(val) (val)
 #else
+#define value_expr(node) ((void)(node))
 #define remove_begin(node) (node)
 #define rb_dvar_defined(id) 0
 #define rb_local_defined(id) 0
@@ -443,7 +446,14 @@ static VALUE assignable_gen(struct parser_params*,VALUE);
 #define assignable(lhs,node) assignable_gen(parser, (lhs))
 static int id_is_var_gen(struct parser_params *parser, ID id);
 #define id_is_var(id) id_is_var_gen(parser, (id))
+
+#define node_assign(node1, node2) dispatch2(assign, (node1), (node2))
+
+static VALUE new_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE op, VALUE rhs);
+
 #endif /* !RIPPER */
+
+#define new_op_assign(lhs, op, rhs) new_op_assign_gen(parser, (lhs), (op), (rhs))
 
 static ID formal_argument_gen(struct parser_params*, ID);
 #define formal_argument(id) formal_argument_gen(parser, (id))
@@ -1130,32 +1140,8 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| var_lhs tOP_ASGN command_call
 		    {
-		    /*%%%*/
 			value_expr($3);
-			if ($1) {
-			    ID vid = $1->nd_vid;
-			    if ($2 == tOROP) {
-				$1->nd_value = $3;
-				$$ = NEW_OP_ASGN_OR(gettable(vid), $1);
-				if (is_asgn_or_id(vid)) {
-				    $$->nd_aid = vid;
-				}
-			    }
-			    else if ($2 == tANDOP) {
-				$1->nd_value = $3;
-				$$ = NEW_OP_ASGN_AND(gettable(vid), $1);
-			    }
-			    else {
-				$$ = $1;
-				$$->nd_value = NEW_CALL(gettable(vid), $2, NEW_LIST($3));
-			    }
-			}
-			else {
-			    $$ = NEW_BEGIN(0);
-			}
-		    /*%
-			$$ = dispatch3(opassign, $1, $2, $3);
-		    %*/
+			$$ = new_op_assign($1, $2, $3);
 		    }
 		| primary_value '[' opt_call_args rbracket tOP_ASGN command_call
 		    {
@@ -1966,63 +1952,18 @@ arg		: lhs '=' arg
 		    }
 		| var_lhs tOP_ASGN arg
 		    {
-		    /*%%%*/
 			value_expr($3);
-			if ($1) {
-			    ID vid = $1->nd_vid;
-			    if ($2 == tOROP) {
-				$1->nd_value = $3;
-				$$ = NEW_OP_ASGN_OR(gettable(vid), $1);
-				if (is_asgn_or_id(vid)) {
-				    $$->nd_aid = vid;
-				}
-			    }
-			    else if ($2 == tANDOP) {
-				$1->nd_value = $3;
-				$$ = NEW_OP_ASGN_AND(gettable(vid), $1);
-			    }
-			    else {
-				$$ = $1;
-				$$->nd_value = NEW_CALL(gettable(vid), $2, NEW_LIST($3));
-			    }
-			}
-			else {
-			    $$ = NEW_BEGIN(0);
-			}
-		    /*%
-			$$ = dispatch3(opassign, $1, $2, $3);
-		    %*/
+			$$ = new_op_assign($1, $2, $3);
 		    }
 		| var_lhs tOP_ASGN arg modifier_rescue arg
 		    {
 		    /*%%%*/
 			value_expr($3);
 		        $3 = NEW_RESCUE($3, NEW_RESBODY(0,$5,0), 0);
-			if ($1) {
-			    ID vid = $1->nd_vid;
-			    if ($2 == tOROP) {
-				$1->nd_value = $3;
-				$$ = NEW_OP_ASGN_OR(gettable(vid), $1);
-				if (is_asgn_or_id(vid)) {
-				    $$->nd_aid = vid;
-				}
-			    }
-			    else if ($2 == tANDOP) {
-				$1->nd_value = $3;
-				$$ = NEW_OP_ASGN_AND(gettable(vid), $1);
-			    }
-			    else {
-				$$ = $1;
-				$$->nd_value = NEW_CALL(gettable(vid), $2, NEW_LIST($3));
-			    }
-			}
-			else {
-			    $$ = NEW_BEGIN(0);
-			}
 		    /*%
 			$3 = dispatch2(rescue_mod, $3, $5);
-			$$ = dispatch3(opassign, $1, $2, $3);
 		    %*/
+			$$ = new_op_assign($1, $2, $3);
 		    }
 		| primary_value '[' opt_call_args rbracket tOP_ASGN arg
 		    {
@@ -9416,6 +9357,43 @@ dsym_node_gen(struct parser_params *parser, NODE *node)
     return node;
 }
 #endif /* !RIPPER */
+
+#ifndef RIPPER
+static NODE *
+new_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs)
+{
+    NODE *asgn;
+
+    if (lhs) {
+	ID vid = lhs->nd_vid;
+	if (op == tOROP) {
+	    lhs->nd_value = rhs;
+	    asgn = NEW_OP_ASGN_OR(gettable(vid), lhs);
+	    if (is_asgn_or_id(vid)) {
+		asgn->nd_aid = vid;
+	    }
+	}
+	else if (op == tANDOP) {
+	    lhs->nd_value = rhs;
+	    asgn = NEW_OP_ASGN_AND(gettable(vid), lhs);
+	}
+	else {
+	    asgn = lhs;
+	    asgn->nd_value = NEW_CALL(gettable(vid), op, NEW_LIST(rhs));
+	}
+    }
+    else {
+	asgn = NEW_BEGIN(0);
+    }
+    return asgn;
+}
+#else
+static VALUE
+new_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE op, VALUE rhs)
+{
+    return dispatch3(opassign, lhs, op, rhs);
+}
+#endif
 
 static void
 warn_unused_var(struct parser_params *parser, struct local_vars *local)
