@@ -56,6 +56,7 @@ static ID register_symid_str(ID, VALUE);
 #define is_const_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CONST)
 #define is_class_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CLASS)
 #define is_junk_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_JUNK)
+#define id_type(id) (is_notop_id(id) ? ((id)&ID_SCOPE_MASK) : -1)
 
 #define is_asgn_or_id(id) ((is_notop_id(id)) && \
 	(((id)&ID_SCOPE_MASK) == ID_GLOBAL || \
@@ -8504,44 +8505,36 @@ match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2)
 static NODE*
 gettable_gen(struct parser_params *parser, ID id)
 {
-    if (id == keyword_self) {
+    switch (id) {
+      case keyword_self:
 	return NEW_SELF();
-    }
-    else if (id == keyword_nil) {
+      case keyword_nil:
 	return NEW_NIL();
-    }
-    else if (id == keyword_true) {
+      case keyword_true:
 	return NEW_TRUE();
-    }
-    else if (id == keyword_false) {
+      case keyword_false:
 	return NEW_FALSE();
-    }
-    else if (id == keyword__FILE__) {
+      case keyword__FILE__:
 	return NEW_STR(rb_external_str_new_with_enc(ruby_sourcefile, strlen(ruby_sourcefile),
 						    rb_filesystem_encoding()));
-    }
-    else if (id == keyword__LINE__) {
+      case keyword__LINE__:
 	return NEW_LIT(INT2FIX(ruby_sourceline));
-    }
-    else if (id == keyword__ENCODING__) {
+      case keyword__ENCODING__:
 	return NEW_LIT(rb_enc_from_encoding(parser->enc));
     }
-    else if (is_local_id(id)) {
+    switch (id_type(id)) {
+      case ID_LOCAL:
 	if (dyna_in_block() && dvar_defined(id)) return NEW_DVAR(id);
 	if (local_id(id)) return NEW_LVAR(id);
 	/* method call without arguments */
 	return NEW_VCALL(id);
-    }
-    else if (is_global_id(id)) {
+      case ID_GLOBAL:
 	return NEW_GVAR(id);
-    }
-    else if (is_instance_id(id)) {
+      case ID_INSTANCE:
 	return NEW_IVAR(id);
-    }
-    else if (is_const_id(id)) {
+      case ID_CONST:
 	return NEW_CONST(id);
-    }
-    else if (is_class_id(id)) {
+      case ID_CLASS:
 	return NEW_CVAR(id);
     }
     compile_error(PARSER_ARG "identifier %s is not valid to get", rb_id2name(id));
@@ -8599,28 +8592,31 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 # define assignable_result(x) (x)
 #endif
     if (!id) return assignable_result(0);
-    if (id == keyword_self) {
+    switch (id) {
+      case keyword_self:
 	yyerror("Can't change the value of self");
-    }
-    else if (id == keyword_nil) {
+	break;
+      case keyword_nil:
 	yyerror("Can't assign to nil");
-    }
-    else if (id == keyword_true) {
+	break;
+      case keyword_true:
 	yyerror("Can't assign to true");
-    }
-    else if (id == keyword_false) {
+	break;
+      case keyword_false:
 	yyerror("Can't assign to false");
-    }
-    else if (id == keyword__FILE__) {
+	break;
+      case keyword__FILE__:
 	yyerror("Can't assign to __FILE__");
-    }
-    else if (id == keyword__LINE__) {
+	break;
+      case keyword__LINE__:
 	yyerror("Can't assign to __LINE__");
-    }
-    else if (id == keyword__ENCODING__) {
+	break;
+      case keyword__ENCODING__:
 	yyerror("Can't assign to __ENCODING__");
+	break;
     }
-    else if (is_local_id(id)) {
+    switch (id_type(id)) {
+      case ID_LOCAL:
 	if (dyna_in_block()) {
 	    if (dvar_curr(id)) {
 		return assignable_result(NEW_DASGN_CURR(id, val));
@@ -8642,22 +8638,19 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 	    }
 	    return assignable_result(NEW_LASGN(id, val));
 	}
-    }
-    else if (is_global_id(id)) {
+	break;
+      case ID_GLOBAL:
 	return assignable_result(NEW_GASGN(id, val));
-    }
-    else if (is_instance_id(id)) {
+      case ID_INSTANCE:
 	return assignable_result(NEW_IASGN(id, val));
-    }
-    else if (is_const_id(id)) {
+      case ID_CONST:
 	if (!in_def && !in_single)
 	    return assignable_result(NEW_CDECL(id, val, 0));
 	yyerror("dynamic constant assignment");
-    }
-    else if (is_class_id(id)) {
+	break;
+      case ID_CLASS:
 	return assignable_result(NEW_CVASGN(id, val));
-    }
-    else {
+      default:
 	compile_error(PARSER_ARG "identifier %s is not valid to set", rb_id2name(id));
     }
     return assignable_result(0);
