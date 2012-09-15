@@ -1,3 +1,8 @@
+Sun Sep 16 08:57:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (strict_warnflags): separate strict flags from
+	  warnflags only for core.  [ruby-dev:46105]
+
 Sun Sep 16 08:16:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* .editorconfig: add.  [ruby-core:47548] [Feature #7030]

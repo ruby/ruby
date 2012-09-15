@@ -630,8 +630,7 @@ if test "$GCC" = yes; then
     [
       # ANSI (no XCFLAGS because this is C only)
       RUBY_TRY_CFLAGS(-ansi -std=iso9899:199409, [
-        RUBY_APPEND_OPTION(warnflags, -ansi -std=iso9899:199409)
-        RUBY_APPEND_OPTION(rb_cv_warnflags, -ansi -std=iso9899:199409)
+        RUBY_APPEND_OPTION(strict_warnflags, -ansi -std=iso9899:199409)
       ])
     ])
 
@@ -2956,6 +2955,7 @@ AC_SUBST(cxxflags, ["$orig_cxxflags "'${optflags} ${debugflags} ${warnflags}'])d
 AC_SUBST(optflags)dnl
 AC_SUBST(debugflags)dnl
 AC_SUBST(warnflags)dnl
+AC_SUBST(strict_warnflags)dnl
 AC_SUBST(XCFLAGS)dnl
 AC_SUBST(XLDFLAGS)dnl
 AC_SUBST(EXTLDFLAGS)dnl
