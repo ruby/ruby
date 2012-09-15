@@ -413,6 +413,8 @@ static NODE *node_assign_gen(struct parser_params*,NODE*,NODE*);
 #define node_assign(node1, node2) node_assign_gen(parser, (node1), (node2))
 
 static NODE *new_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs);
+static NODE *new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs, ID attr, ID op, NODE *rhs);
+#define new_attr_op_assign(lhs, type, attr, op, rhs) new_attr_op_assign_gen(parser, (lhs), (attr), (op), (rhs))
 
 static NODE *match_op_gen(struct parser_params*,NODE*,NODE*);
 #define match_op(node1,node2) match_op_gen(parser, (node1), (node2))
@@ -450,6 +452,8 @@ static int id_is_var_gen(struct parser_params *parser, ID id);
 #define node_assign(node1, node2) dispatch2(assign, (node1), (node2))
 
 static VALUE new_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE op, VALUE rhs);
+static VALUE new_attr_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE type, VALUE attr, VALUE op, VALUE rhs);
+#define new_attr_op_assign(lhs, type, attr, op, rhs) new_attr_op_assign_gen(parser, (lhs), (type), (attr), (op), (rhs))
 
 #endif /* !RIPPER */
 
@@ -1166,37 +1170,13 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| primary_value '.' tIDENTIFIER tOP_ASGN command_call
 		    {
-		    /*%%%*/
 			value_expr($5);
-			if ($4 == tOROP) {
-			    $4 = 0;
-			}
-			else if ($4 == tANDOP) {
-			    $4 = 1;
-			}
-			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
-			fixpos($$, $1);
-		    /*%
-			$$ = dispatch3(field, $1, ripper_id2sym('.'), $3);
-			$$ = dispatch3(opassign, $$, $4, $5);
-		    %*/
+			$$ = new_attr_op_assign($1, ripper_id2sym('.'), $3, $4, $5);
 		    }
 		| primary_value '.' tCONSTANT tOP_ASGN command_call
 		    {
-		    /*%%%*/
 			value_expr($5);
-			if ($4 == tOROP) {
-			    $4 = 0;
-			}
-			else if ($4 == tANDOP) {
-			    $4 = 1;
-			}
-			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
-			fixpos($$, $1);
-		    /*%
-			$$ = dispatch3(field, $1, ripper_id2sym('.'), $3);
-			$$ = dispatch3(opassign, $$, $4, $5);
-		    %*/
+			$$ = new_attr_op_assign($1, ripper_id2sym('.'), $3, $4, $5);
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN command_call
 		    {
@@ -1211,20 +1191,8 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_call
 		    {
-		    /*%%%*/
 			value_expr($5);
-			if ($4 == tOROP) {
-			    $4 = 0;
-			}
-			else if ($4 == tANDOP) {
-			    $4 = 1;
-			}
-			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
-			fixpos($$, $1);
-		    /*%
-			$$ = dispatch3(field, $1, ripper_intern("::"), $3);
-			$$ = dispatch3(opassign, $$, $4, $5);
-		    %*/
+			$$ = new_attr_op_assign($1, ripper_intern("::"), $3, $4, $5);
 		    }
 		| backref tOP_ASGN command_call
 		    {
@@ -1993,54 +1961,18 @@ arg		: lhs '=' arg
 		    }
 		| primary_value '.' tIDENTIFIER tOP_ASGN arg
 		    {
-		    /*%%%*/
 			value_expr($5);
-			if ($4 == tOROP) {
-			    $4 = 0;
-			}
-			else if ($4 == tANDOP) {
-			    $4 = 1;
-			}
-			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
-			fixpos($$, $1);
-		    /*%
-			$1 = dispatch3(field, $1, ripper_id2sym('.'), $3);
-			$$ = dispatch3(opassign, $1, $4, $5);
-		    %*/
+			$$ = new_attr_op_assign($1, ripper_id2sym('.'), $3, $4, $5);
 		    }
 		| primary_value '.' tCONSTANT tOP_ASGN arg
 		    {
-		    /*%%%*/
 			value_expr($5);
-			if ($4 == tOROP) {
-			    $4 = 0;
-			}
-			else if ($4 == tANDOP) {
-			    $4 = 1;
-			}
-			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
-			fixpos($$, $1);
-		    /*%
-			$1 = dispatch3(field, $1, ripper_id2sym('.'), $3);
-			$$ = dispatch3(opassign, $1, $4, $5);
-		    %*/
+			$$ = new_attr_op_assign($1, ripper_id2sym('.'), $3, $4, $5);
 		    }
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN arg
 		    {
-		    /*%%%*/
 			value_expr($5);
-			if ($4 == tOROP) {
-			    $4 = 0;
-			}
-			else if ($4 == tANDOP) {
-			    $4 = 1;
-			}
-			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
-			fixpos($$, $1);
-		    /*%
-			$1 = dispatch3(field, $1, ripper_intern("::"), $3);
-			$$ = dispatch3(opassign, $1, $4, $5);
-		    %*/
+			$$ = new_attr_op_assign($1, ripper_intern("::"), $3, $4, $5);
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg
 		    {
@@ -9387,11 +9319,34 @@ new_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs)
     }
     return asgn;
 }
+
+static NODE *
+new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs, ID attr, ID op, NODE *rhs)
+{
+    NODE *asgn;
+
+    if (op == tOROP) {
+	op = 0;
+    }
+    else if (op == tANDOP) {
+	op = 1;
+    }
+    asgn = NEW_OP_ASGN2(lhs, attr, op, rhs);
+    fixpos(asgn, lhs);
+    return asgn;
+}
 #else
 static VALUE
 new_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE op, VALUE rhs)
 {
     return dispatch3(opassign, lhs, op, rhs);
+}
+
+static VALUE
+new_attr_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE type, VALUE attr, VALUE op, VALUE rhs)
+{
+    VALUE recv = dispatch3(field, lhs, type, attr);
+    return dispatch3(opassign, recv, op, rhs);
 }
 #endif
 
