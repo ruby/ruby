@@ -1,3 +1,8 @@
+Sun Sep 16 17:47:00 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* tool/change_maker.rb:  Update svn detection for subversion 1.7's
+	  single .svn directory.
+
 Sun Sep 16 11:39:12 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_set_read_length): if the read length equals to the buffer

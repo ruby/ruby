@@ -18,7 +18,7 @@ def diff2index(cmd, *argv)
   lines.empty? ? nil : lines
 end
 
-if File.directory?(".svn")
+if `svnversion` =~ /^\d+/
   cmd = "svn diff --diff-cmd=diff -x-pU0"
   change = diff2index(cmd, ARGV)
 elsif File.directory?(".git")
