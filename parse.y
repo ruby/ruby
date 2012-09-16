@@ -56,7 +56,7 @@ static ID register_symid_str(ID, VALUE);
 #define is_const_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CONST)
 #define is_class_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CLASS)
 #define is_junk_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_JUNK)
-#define id_type(id) (is_notop_id(id) ? ((id)&ID_SCOPE_MASK) : -1)
+#define id_type(id) (is_notop_id(id) ? (int)((id)&ID_SCOPE_MASK) : -1)
 
 #define is_asgn_or_id(id) ((is_notop_id(id)) && \
 	(((id)&ID_SCOPE_MASK) == ID_GLOBAL || \
