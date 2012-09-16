@@ -630,6 +630,7 @@ if test "$GCC" = yes; then
     [
       # ANSI (no XCFLAGS because this is C only)
       RUBY_TRY_CFLAGS(-ansi -std=iso9899:199409, [
+        RUBY_APPEND_OPTION(warnflags, -ansi -std=iso9899:199409)
         RUBY_APPEND_OPTION(strict_warnflags, -ansi -std=iso9899:199409)
       ])
     ])
