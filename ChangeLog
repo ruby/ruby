@@ -1,3 +1,11 @@
+Sun Sep 16 11:39:12 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_set_read_length): if the read length equals to the buffer
+	  string size then nothing to do.  or ensure the string modifiable
+	  before setting the length only when the former is shorter.  based on
+	  the patch in [ruby-core:47541] by Hiroshi Shirosaki.
+	  [ruby-core:46586] [Bug #6764]
+
 Sun Sep 16 08:57:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (strict_warnflags): separate strict flags from

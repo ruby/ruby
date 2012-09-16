@@ -2446,5 +2446,54 @@ End
       assert_raise(Errno::ESPIPE, Errno::EINVAL) { w.advise(:willneed) }
     end
   end
+
+  def assert_buffer_not_raise_shared_string_error
+    bug6764 = '[ruby-core:46586]'
+    size = 28
+    data = [*"a".."z", *"A".."Z"].shuffle.join("")
+    t = Tempfile.new("test_io")
+    t.write(data)
+    t.close
+    w = Tempfile.new("test_io")
+    assert_nothing_raised(RuntimeError, bug6764) do
+      File.open(t.path, "r") do |r|
+        buf = ''
+        while yield(r, size, buf)
+          w << buf
+        end
+      end
+    end
+    w.close
+    assert_equal(data, w.open.read, bug6764)
+  ensure
+    t.close!
+    w.close!
+  end
+
+  def test_read_buffer_not_raise_shared_string_error
+    assert_buffer_not_raise_shared_string_error do |r, size, buf|
+      r.read(size, buf)
+    end
+  end
+
+  def test_sysread_buffer_not_raise_shared_string_error
+    assert_buffer_not_raise_shared_string_error do |r, size, buf|
+      begin
+        r.sysread(size, buf)
+      rescue EOFError
+        nil
+      end
+    end
+  end
+
+  def test_readpartial_buffer_not_raise_shared_string_error
+    assert_buffer_not_raise_shared_string_error do |r, size, buf|
+      begin
+        r.readpartial(size, buf)
+      rescue EOFError
+        nil
+      end
+    end
+  end
 end
 

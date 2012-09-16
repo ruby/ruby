@@ -2158,6 +2158,15 @@ io_setstrbuf(VALUE *str, long len)
     rb_str_modify_expand(*str, len);
 }
 
+static void
+io_set_read_length(VALUE str, long n)
+{
+    if (RSTRING_LEN(str) != n) {
+	rb_str_modify(str);
+	rb_str_set_len(str, n);
+    }
+}
+
 static VALUE
 read_all(rb_io_t *fptr, long siz, VALUE str)
 {
@@ -2281,7 +2290,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
             rb_sys_fail_path(fptr->pathv);
         }
     }
-    rb_str_set_len(str, n);
+    io_set_read_length(str, n);
 
     if (n == 0)
         return Qnil;
@@ -2602,7 +2611,7 @@ io_read(int argc, VALUE *argv, VALUE io)
     previous_mode = set_binary_mode_with_seek_cur(fptr);
 #endif
     n = io_fread(str, 0, len, fptr);
-    rb_str_set_len(str, n);
+    io_set_read_length(str, n);
 #if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
     if (previous_mode == O_TEXT) {
 	setmode(fptr->fd, O_TEXT);
@@ -4390,7 +4399,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     if (n == -1) {
 	rb_sys_fail_path(fptr->pathv);
     }
-    rb_str_set_len(str, n);
+    io_set_read_length(str, n);
     if (n == 0 && ilen > 0) {
 	rb_eof_error();
     }
