@@ -2443,7 +2443,6 @@ rb_file_s_readlink(VALUE klass, VALUE path)
 static VALUE
 rb_readlink(VALUE path)
 {
-    char *buf;
     int size = 100;
     ssize_t rv;
     VALUE v;
@@ -2451,21 +2450,20 @@ rb_readlink(VALUE path)
     rb_secure(2);
     FilePathValue(path);
     path = rb_str_encode_ospath(path);
-    buf = xmalloc(size);
-    while ((rv = readlink(RSTRING_PTR(path), buf, size)) == size
+    v = rb_enc_str_new(0, size, rb_filesystem_encoding());
+    while ((rv = readlink(RSTRING_PTR(path), RSTRING_PTR(v), size)) == size
 #ifdef _AIX
 	    || (rv < 0 && errno == ERANGE) /* quirky behavior of GPFS */
 #endif
 	) {
+	rb_str_modify_expand(v, size);
 	size *= 2;
-	buf = xrealloc(buf, size);
     }
     if (rv < 0) {
-	xfree(buf);
+	rb_str_resize(v, 0);
 	rb_sys_fail_path(path);
     }
-    v = rb_filesystem_str_new(buf, rv);
-    xfree(buf);
+    rb_str_resize(v, rv);
 
     return v;
 }
