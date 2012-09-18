@@ -1,3 +1,8 @@
+Tue Sep 18 17:51:29 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_attrs): add npn_select_db to
+	  suppress warning: instance variable @npn_select_cb not initialized
+
 Sun Sep 16 17:47:00 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* tool/change_maker.rb:  Update svn detection for subversion 1.7's

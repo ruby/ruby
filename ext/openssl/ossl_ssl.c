@@ -72,6 +72,7 @@ static const char *ossl_sslctx_attrs[] = {
 #endif
 #ifdef HAVE_OPENSSL_NPN_NEGOTIATED
     "npn_protocols",
+    "npn_select_cb",
 #endif
 };
 
