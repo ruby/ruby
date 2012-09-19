@@ -1,3 +1,9 @@
+Thu Sep 20 07:20:00 2012  Zachary Scott  <zzak@ruby-lang.org>
+
+	* complex.c: Examples for Complex Documentation.
+	  Patch by Robin Dupret.
+	  Fixes #184 on github.
+
 Thu Sep 20 07:15:00 2012  Zachary Scott  <zzak@ruby-lang.org>
 
 	* ext/ripper/lib/ripper.rb: Documentation for Ripper.
