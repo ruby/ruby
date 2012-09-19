@@ -20,19 +20,18 @@ require 'ripper/sexp'
 #   require 'ripper'
 #   require 'pp'
 #
-#   pp Ripper.sexp('def hello(world); "Hello, #{world}!"; end')
+#   pp Ripper.sexp('def hello(world) "Hello, #{world}!"; end')
 #     #=> [:program,
 #          [[:def,
 #            [:@ident, "hello", [1, 4]],
 #            [:paren,
-#             [:params, [[:@ident, "world", [1, 10]]], nil, nil, nil, nil, nil, nil]],
+#             [:params, [[:@ident, "world", [1, 10]]], nil, nil, nil, nil]],
 #            [:bodystmt,
-#             [[:void_stmt],
-#              [:string_literal,
+#             [[:string_literal,
 #               [:string_content,
-#                [:@tstring_content, "Hello, ", [1, 19]],
-#                [:string_embexpr, [[:var_ref, [:@ident, "world", [1, 28]]]]],
-#                [:@tstring_content, "!", [1, 34]]]]],
+#                [:@tstring_content, "Hello, ", [1, 18]],
+#                [:string_embexpr, [[:var_ref, [:@ident, "world", [1, 27]]]]],
+#                [:@tstring_content, "!", [1, 33]]]]],
 #             nil,
 #             nil,
 #             nil]]]]
@@ -47,7 +46,7 @@ require 'ripper/sexp'
 # which contains the full definition of the method.
 #
 # In our case, we're simply returning a String, so next we have the
-# +:void_stmt+ followed by a +:string_literal+.
+# +:string_literal+ expression.
 #
 # Within our +:string_literal+ you'll notice two <code>@tstring_content</code>,
 # this is the literal part for <code>Hello, </code> and <code>!</code>. Between
