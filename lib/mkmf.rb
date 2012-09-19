@@ -2399,7 +2399,7 @@ MESSAGE
       "$(LDSHARED) #{OUTFLAG}$@ $(OBJS) " \
       "$(LIBPATH) $(DLDFLAGS) $(LOCAL_LIBS) $(LIBS)"
     end
-  LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L"%s"'
+  LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L%s'
   RPATHFLAG = config_string('RPATHFLAG') || ''
   LIBARG = config_string('LIBARG') || '-l%s'
   MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main(void) {return 0;}'
