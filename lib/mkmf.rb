@@ -12,6 +12,11 @@ class String
     /\s/ =~ self ? "\"#{self}\"" : "#{self}"
   end
 
+  # Escape whitespaces for Makefile.
+  def unspace
+    gsub(/\s/, '\\\\\\&')
+  end
+
   # Generates a string used as cpp macro name.
   def tr_cpp
     strip.upcase.tr_s("^A-Z0-9_*", "_").tr_s("*", "P")
@@ -1723,7 +1728,7 @@ SRC
   end
   unless defined?(mkintpath)
     def mkintpath(path)
-      path
+      path.unspace
     end
   end
 
@@ -1751,9 +1756,9 @@ ECHO = $(ECHO1:0=@echo)
 
 #### Start of system configuration section. ####
 #{"top_srcdir = " + $top_srcdir.sub(%r"\A#{Regexp.quote($topdir)}/", "$(topdir)/") if $extmk}
-srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {mkintpath(CONFIG[$1||$2])}.quote}
-topdir = #{mkintpath($extmk ? CONFIG["topdir"] : $topdir).quote}
-hdrdir = #{mkintpath(CONFIG["hdrdir"]).quote}
+srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {mkintpath(CONFIG[$1||$2])}}
+topdir = #{mkintpath($extmk ? CONFIG["topdir"] : $topdir)}
+hdrdir = #{mkintpath(CONFIG["hdrdir"])}
 arch_hdrdir = #{$arch_hdrdir.quote}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
@@ -1765,7 +1770,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
     end
     CONFIG.each do |key, var|
       next unless /prefix$/ =~ key
-      mk << "#{key} = #{with_destdir(var)}\n"
+      mk << "#{key} = #{with_destdir(var).unspace}\n"
     end
     CONFIG.each do |key, var|
       next if /^abs_/ =~ key
