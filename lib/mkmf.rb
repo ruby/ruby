@@ -2127,14 +2127,14 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
     if target
       f = "$(DLLIB)"
       dest = "#{dir}/#{f}"
-      mfile.puts dest
       if $extout
+        mfile.puts dest
         mfile.print "clean-so::\n"
         mfile.print "\t-$(Q)$(RM) #{fseprepl[dest]}\n"
         mfile.print "\t-$(Q)$(RMDIRS) #{fseprepl[dir]}#{$ignore_error}\n"
       else
-        mfile.print "#{dest}: #{f}\n\t-$(Q)$(MAKEDIRS) $(@D#{sep})\n"
-        mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} $(@D#{sep})\n"
+        mfile.print "#{f} #{timestamp_file(dir)}\n"
+        mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} #{dir}\n"
         if defined?($installed_list)
           mfile.print "\t@echo #{dir}/#{File.basename(f)}>>$(INSTALLED_LIST)\n"
         end
