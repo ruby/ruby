@@ -1,3 +1,9 @@
+Thu Sep 20 07:05:00 2012  Zachary Scott  <zzak@ruby-lang.org>
+
+	* lib/csv.rb (Object#CSV, Array#to_csv, String#parse_csv): 
+	  Examples and documentation for CSV.
+	  [Bug #6880] [ruby-core:47218]
+
 Thu Sep 20 00:42:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (take_items), enum.c (enum_zip): raise TypeError at

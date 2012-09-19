@@ -2359,20 +2359,41 @@ class CSV
   end
 end
 
-# Another name for CSV::instance().
+# Passes +args+ to CSV::instance.
+#
+#   CSV("CSV,data").read
+#     #=> [["CSV", "data"]]
+#
+# If a block is given, the instance is passed the block and the return value
+# becomes the return value of the block.
+#
+#   CSV("CSV,data") { |c|
+#     c.read.any? { |a| a.include?("data") }
+#   } #=> true
+#
+#   CSV("CSV,data") { |c|
+#     c.read.any? { |a| a.include?("zombies") }
+#   } #=> false 
+#
 def CSV(*args, &block)
   CSV.instance(*args, &block)
 end
 
-class Array
-  # Equivalent to <tt>CSV::generate_line(self, options)</tt>.
+class Array # :nodoc:
+  # Equivalent to CSV::generate_line(self, options)
+  #
+  #   ["CSV", "data"].to_csv
+  #     #=> "CSV,data\n"
   def to_csv(options = Hash.new)
     CSV.generate_line(self, options)
   end
 end
 
-class String
-  # Equivalent to <tt>CSV::parse_line(self, options)</tt>.
+class String # :nodoc:
+  # Equivalent to CSV::parse_line(self, options)
+  #
+  #   "CSV,data".parse_csv
+  #     #=> ["CSV", "data"]
   def parse_csv(options = Hash.new)
     CSV.parse_line(self, options)
   end
