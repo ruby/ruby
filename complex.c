@@ -440,6 +440,10 @@ nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
  *    Complex.rectangular(real[, imag])  ->  complex
  *
  * Returns a complex object which denotes the given rectangular form.
+ * 
+ * For example:
+ *   Complex.rect(12, 2) # => (12+2i)
+ *   Complex.rect(0, 17) # => (0+17i)
  */
 static VALUE
 nucomp_s_new(int argc, VALUE *argv, VALUE klass)
@@ -679,7 +683,11 @@ f_addsub(VALUE self, VALUE other,
  * call-seq:
  *    cmp + numeric  ->  complex
  *
- * Performs addition.
+ * Performs addition on the first member of the Complex.
+ *
+ *   Complex(5, 2) + 3 # => (8+2i)
+ *   Complex(11, 3) + 4 # => (15+3i)
+ *
  */
 static VALUE
 nucomp_add(VALUE self, VALUE other)
@@ -691,7 +699,10 @@ nucomp_add(VALUE self, VALUE other)
  * call-seq:
  *    cmp - numeric  ->  complex
  *
- * Performs subtraction.
+ * Performs subtraction on the first member of the Complex.
+ *
+ *   Complex(33, 12) - 10 # => (23+12i)
+ *   Complex(12.4, 3.5) - 5 # => (7.4+3.5i)
  */
 static VALUE
 nucomp_sub(VALUE self, VALUE other)
@@ -703,7 +714,10 @@ nucomp_sub(VALUE self, VALUE other)
  * call-seq:
  *    cmp * numeric  ->  complex
  *
- * Performs multiplication.
+ * Performs multiplication on the two members.
+ *
+ *   Complex(78, 58) * 10 # => (780+580i)
+ *   Complex(5.6, 3.4) * 10 # => (56+34i)
  */
 static VALUE
 nucomp_mul(VALUE self, VALUE other)
