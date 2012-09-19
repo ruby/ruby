@@ -1,4 +1,3 @@
-# -*- indent-tabs-mode: t -*-
 # module to create Makefile for extension modules
 # invoke like: ruby -r mkmf extconf.rb
 
@@ -645,13 +644,13 @@ int conftest_const = (int)(#{const});
 int main() {printf("%d\\n", conftest_const); return 0;}
 }
       begin
-	if try_link0(src, opt, &b)
-	  xpopen("./conftest") do |f|
-	    return Integer(f.gets)
-	  end
-	end
+        if try_link0(src, opt, &b)
+          xpopen("./conftest") do |f|
+            return Integer(f.gets)
+          end
+        end
       ensure
-	MakeMakefile.rm_f "conftest*"
+        MakeMakefile.rm_f "conftest*"
       end
     end
     nil
@@ -1031,9 +1030,9 @@ SRC
       opt = " -framework #{fw}"
       if try_link(src, "-ObjC#{opt}", &b)
         $defs.push(format("-DHAVE_FRAMEWORK_%s", fw.tr_cpp))
-	# TODO: non-worse way than this hack, to get rid of separating
-	# option and its argument.
-	$LDFLAGS << " -ObjC" unless /(\A|\s)-ObjC(\s|\z)/ =~ $LDFLAGS
+        # TODO: non-worse way than this hack, to get rid of separating
+        # option and its argument.
+        $LDFLAGS << " -ObjC" unless /(\A|\s)-ObjC(\s|\z)/ =~ $LDFLAGS
         $LDFLAGS << opt
         true
       else
