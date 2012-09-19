@@ -2010,6 +2010,7 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
     if (!allary) {
 	CONST_ID(conv, "to_enum");
 	for (i=0; i<argc; i++) {
+	    if (!rb_respond_to(argv[i], id_each)) Check_Type(argv[i], T_ARRAY);
 	    argv[i] = rb_funcall(argv[i], conv, 1, ID2SYM(id_each));
 	}
     }

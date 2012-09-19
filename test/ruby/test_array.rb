@@ -1890,7 +1890,7 @@ class TestArray < Test::Unit::TestCase
 
     ary = Object.new
     def ary.to_a;   [1, 2]; end
-    assert_raise(NoMethodError){ %w(a b).zip(ary) }
+    assert_raise(TypeError, NoMethodError) {%w(a b).zip(ary)}
     def ary.each; [3, 4].each{|e|yield e}; end
     assert_equal([['a', 3], ['b', 4]], %w(a b).zip(ary))
     def ary.to_ary; [5, 6]; end

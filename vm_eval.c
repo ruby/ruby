@@ -976,6 +976,28 @@ rb_block_call(VALUE obj, ID mid, int argc, VALUE * argv,
     return rb_iterate(iterate_method, (VALUE)&arg, bl_proc, data2);
 }
 
+static VALUE
+iterate_check_method(VALUE obj)
+{
+    const struct iter_method_arg * arg =
+      (struct iter_method_arg *) obj;
+
+    return rb_check_funcall(arg->obj, arg->mid, arg->argc, arg->argv);
+}
+
+VALUE
+rb_check_block_call(VALUE obj, ID mid, int argc, VALUE * argv,
+		    VALUE (*bl_proc) (ANYARGS), VALUE data2)
+{
+    struct iter_method_arg arg;
+
+    arg.obj = obj;
+    arg.mid = mid;
+    arg.argc = argc;
+    arg.argv = argv;
+    return rb_iterate(iterate_check_method, (VALUE)&arg, bl_proc, data2);
+}
+
 VALUE
 rb_each(VALUE obj)
 {

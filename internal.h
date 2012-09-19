@@ -286,6 +286,7 @@ void rb_vm_bugreport(void);
 /* vm_eval.c */
 void Init_vm_eval(void);
 VALUE rb_current_realfilepath(void);
+VALUE rb_check_block_call(VALUE, ID, int, VALUE *, VALUE (*)(ANYARGS), VALUE);
 
 /* vm_method.c */
 void Init_eval_method(void);

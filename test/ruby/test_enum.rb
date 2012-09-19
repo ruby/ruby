@@ -277,7 +277,7 @@ class TestEnumerable < Test::Unit::TestCase
 
     ary = Object.new
     def ary.to_a;   [1, 2]; end
-    assert_raise(NoMethodError){ %w(a b).zip(ary) }
+    assert_raise(TypeError, NoMethodError) {%w(a b).zip(ary)}
     def ary.each; [3, 4].each{|e|yield e}; end
     assert_equal([[1, 3], [2, 4], [3, nil], [1, nil], [2, nil]], @obj.zip(ary))
     def ary.to_ary; [5, 6]; end
