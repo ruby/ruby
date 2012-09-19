@@ -252,7 +252,7 @@ class TestM17N < Test::Unit::TestCase
     Encoding.default_external = Encoding::UTF_8
     o = Object.new
     [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].each do |e|
-      o.instance_eval "def inspect;'abc'.encode('#{e}');end"
+      o.instance_eval "undef inspect;def inspect;'abc'.encode('#{e}');end"
       assert_raise(Encoding::CompatibilityError) { [o].inspect }
     end
   ensure
