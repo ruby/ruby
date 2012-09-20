@@ -1,4 +1,3 @@
-# -*- indent-tabs-mode: t -*-
 # module to create Makefile for extension modules
 # invoke like: ruby -r mkmf extconf.rb
 
@@ -11,6 +10,11 @@ class String
   # Wraps a string in escaped quotes if it contains whitespace.
   def quote
     /\s/ =~ self ? "\"#{self}\"" : "#{self}"
+  end
+
+  # Escape whitespaces for Makefile.
+  def unspace
+    gsub(/\s/, '\\\\\\&')
   end
 
   # Generates a string used as cpp macro name.
@@ -197,10 +201,11 @@ module MakeMakefile
   $extmk = path[0, topdir.size+1] == topdir+"/"
   $extmk &&= %r"\A(?:ext|enc|tool|test(?:/.+)?)\z" =~ File.dirname(path[topdir.size+1..-1])
   $extmk &&= true
-  if not $extmk and File.exist?(($hdrdir = RbConfig::CONFIG["rubyhdrdir"]) + "/ruby/ruby.h")
+  if not $extmk and File.exist?(RbConfig::CONFIG["rubyhdrdir"] + "/ruby/ruby.h")
+    $hdrdir = CONFIG["rubyhdrdir"]
     $topdir = $hdrdir
     $top_srcdir = $hdrdir
-    $arch_hdrdir = $hdrdir + "/$(arch)"
+    $arch_hdrdir = "$(hdrdir)/$(arch)"
   elsif File.exist?(($hdrdir = ($top_srcdir ||= topdir) + "/include")  + "/ruby.h")
     $topdir ||= RbConfig::CONFIG["topdir"]
     $arch_hdrdir = "$(extout)/include/$(arch)"
@@ -639,13 +644,13 @@ int conftest_const = (int)(#{const});
 int main() {printf("%d\\n", conftest_const); return 0;}
 }
       begin
-	if try_link0(src, opt, &b)
-	  xpopen("./conftest") do |f|
-	    return Integer(f.gets)
-	  end
-	end
+        if try_link0(src, opt, &b)
+          xpopen("./conftest") do |f|
+            return Integer(f.gets)
+          end
+        end
       ensure
-	MakeMakefile.rm_f "conftest*"
+        MakeMakefile.rm_f "conftest*"
       end
     end
     nil
@@ -1025,9 +1030,9 @@ SRC
       opt = " -framework #{fw}"
       if try_link(src, "-ObjC#{opt}", &b)
         $defs.push(format("-DHAVE_FRAMEWORK_%s", fw.tr_cpp))
-	# TODO: non-worse way than this hack, to get rid of separating
-	# option and its argument.
-	$LDFLAGS << " -ObjC" unless /(\A|\s)-ObjC(\s|\z)/ =~ $LDFLAGS
+        # TODO: non-worse way than this hack, to get rid of separating
+        # option and its argument.
+        $LDFLAGS << " -ObjC" unless /(\A|\s)-ObjC(\s|\z)/ =~ $LDFLAGS
         $LDFLAGS << opt
         true
       else
@@ -1723,7 +1728,7 @@ SRC
   end
   unless defined?(mkintpath)
     def mkintpath(path)
-      path
+      path.unspace
     end
   end
 
@@ -1751,9 +1756,9 @@ ECHO = $(ECHO1:0=@echo)
 
 #### Start of system configuration section. ####
 #{"top_srcdir = " + $top_srcdir.sub(%r"\A#{Regexp.quote($topdir)}/", "$(topdir)/") if $extmk}
-srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {mkintpath(CONFIG[$1||$2])}.quote}
-topdir = #{mkintpath($extmk ? CONFIG["topdir"] : $topdir).quote}
-hdrdir = #{mkintpath(CONFIG["hdrdir"]).quote}
+srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {mkintpath(CONFIG[$1||$2])}}
+topdir = #{mkintpath($extmk ? CONFIG["topdir"] : $topdir)}
+hdrdir = #{mkintpath(CONFIG["hdrdir"])}
 arch_hdrdir = #{$arch_hdrdir.quote}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
@@ -1765,7 +1770,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
     end
     CONFIG.each do |key, var|
       next unless /prefix$/ =~ key
-      mk << "#{key} = #{with_destdir(var)}\n"
+      mk << "#{key} = #{with_destdir(var).unspace}\n"
     end
     CONFIG.each do |key, var|
       next if /^abs_/ =~ key
@@ -2127,14 +2132,14 @@ static: $(STATIC_LIB)#{$extout ? " install-rb" : ""}
     if target
       f = "$(DLLIB)"
       dest = "#{dir}/#{f}"
-      mfile.puts dest
       if $extout
+        mfile.puts
         mfile.print "clean-so::\n"
         mfile.print "\t-$(Q)$(RM) #{fseprepl[dest]}\n"
         mfile.print "\t-$(Q)$(RMDIRS) #{fseprepl[dir]}#{$ignore_error}\n"
       else
-        mfile.print "#{dest}: #{f}\n\t-$(Q)$(MAKEDIRS) $(@D#{sep})\n"
-        mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} $(@D#{sep})\n"
+        mfile.print "#{f} #{timestamp_file(dir)}\n"
+        mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} #{dir}\n"
         if defined?($installed_list)
           mfile.print "\t@echo #{dir}/#{File.basename(f)}>>$(INSTALLED_LIST)\n"
         end
@@ -2399,7 +2404,7 @@ MESSAGE
       "$(LDSHARED) #{OUTFLAG}$@ $(OBJS) " \
       "$(LIBPATH) $(DLDFLAGS) $(LOCAL_LIBS) $(LIBS)"
     end
-  LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L"%s"'
+  LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L%s'
   RPATHFLAG = config_string('RPATHFLAG') || ''
   LIBARG = config_string('LIBARG') || '-l%s'
   MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main(void) {return 0;}'
