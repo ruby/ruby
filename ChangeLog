@@ -1,3 +1,9 @@
+Thu Sep 20 23:05:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (native_cond_initialize): destroy condattr
+	  after using it. Patch by Stanislav Sedov. Thank you.
+	  [Bug #7041] [ruby-core:47619]
+
 Thu Sep 20 22:53:02 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (native_cond_initialize): clean up #ifdef condition.
