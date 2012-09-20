@@ -248,6 +248,7 @@ native_cond_initialize(rb_thread_cond_t *cond, int flags)
 #endif
 
     r = pthread_cond_init(&cond->cond, &attr);
+    pthread_condattr_destroy(&attr);
     if (r != 0) {
 	rb_bug_errno("pthread_cond_init", r);
     }
