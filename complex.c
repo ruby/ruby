@@ -440,7 +440,7 @@ nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
  *    Complex.rectangular(real[, imag])  ->  complex
  *
  * Returns a complex object which denotes the given rectangular form.
- * 
+ *
  * For example:
  *   Complex.rect(12, 2) # => (12+2i)
  *   Complex.rect(0, 17) # => (0+17i)

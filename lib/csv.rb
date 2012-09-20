@@ -2373,7 +2373,7 @@ end
 #
 #   CSV("CSV,data") { |c|
 #     c.read.any? { |a| a.include?("zombies") }
-#   } #=> false 
+#   } #=> false
 #
 def CSV(*args, &block)
   CSV.instance(*args, &block)

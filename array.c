@@ -3528,7 +3528,7 @@ ary_recycle_hash(VALUE hash)
  *  Returns a new array that is a copy of the original array, removing any
  *  items that also appear in +other_ary+.
  *
- *  It compares elements using their hash (returned by the Object#hash method).   
+ *  It compares elements using their hash (returned by the Object#hash method).
  *
  *     [ 1, 1, 2, 2, 3, 3, 4, 5 ] - [ 1, 2, 4 ]  #=>  [ 3, 3, 5 ]
  *
