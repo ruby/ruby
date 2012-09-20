@@ -1,3 +1,7 @@
+Thu Sep 20 22:53:02 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (native_cond_initialize): clean up #ifdef condition.
+
 Thu Sep 20 16:42:44 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/drb/ssl.rb (DRb::DRbSSLSocket::SSLConfig::DEFAULT): add

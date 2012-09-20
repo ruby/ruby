@@ -46,7 +46,8 @@ static pthread_t timer_thread_id;
 #define RB_CONDATTR_CLOCK_MONOTONIC 1
 
 #if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK) && defined(HAVE_CLOCKID_T) && \
-    defined(CLOCK_REALTIME) && defined(CLOCK_MONOTONIC) && defined(HAVE_CLOCK_GETTIME)
+    defined(CLOCK_REALTIME) && defined(CLOCK_MONOTONIC) && \
+    defined(HAVE_CLOCK_GETTIME) && defined(HAVE_PTHREAD_CONDATTR_INIT)
 #define USE_MONOTONIC_COND 1
 #else
 #define USE_MONOTONIC_COND 0
@@ -248,12 +249,11 @@ native_cond_initialize(rb_thread_cond_t *cond, int flags)
 {
 #ifdef HAVE_PTHREAD_COND_INIT
     int r;
-# ifdef HAVE_PTHREAD_CONDATTR_INIT
+# if USE_MONOTONIC_COND
     pthread_condattr_t attr;
 
     pthread_condattr_init(&attr);
 
-#  if USE_MONOTONIC_COND
     cond->clockid = CLOCK_REALTIME;
     if (flags & RB_CONDATTR_CLOCK_MONOTONIC) {
 	r = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
@@ -261,7 +261,6 @@ native_cond_initialize(rb_thread_cond_t *cond, int flags)
 	    cond->clockid = CLOCK_MONOTONIC;
 	}
     }
-#  endif
 
     r = pthread_cond_init(&cond->cond, &attr);
 # else
