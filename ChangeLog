@@ -1,3 +1,8 @@
+Thu Sep 20 10:30:00 2012  Zachary Scott  <zzak@ruby-lang.org>
+
+	* lib/find.rb: Error in documentation example
+	  Found by Herwin Weststrate, thank you!
+
 Thu Sep 20 07:20:00 2012  Zachary Scott  <zzak@ruby-lang.org>
 
 	* complex.c: Examples for Complex Documentation.
