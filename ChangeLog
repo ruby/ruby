@@ -1,3 +1,14 @@
+Thu Sep 20 16:42:44 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/drb/ssl.rb (DRb::DRbSSLSocket::SSLConfig::DEFAULT): add
+	  SSLTmpDhCallback for configuration option.
+
+	* lib/drb/ssl.rb (setup_ssl_context): copy the value of tmp_dh_callback.
+
+	* test/drb/ut_array_drbssl.rb: set tmp_dh_callback to suppress warning.
+
+	* test/drb/ut_drb_drbssl.rb: ditto.
+
 Thu Sep 20 10:56:08 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/drb/ut_drb.rb: revert a part of r36987, and get rid of a warning

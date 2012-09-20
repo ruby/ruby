@@ -15,6 +15,7 @@ module DRb
         :SSLClientCA          => nil,
         :SSLCACertificatePath => nil,
         :SSLCACertificateFile => nil,
+        :SSLTmpDhCallback     => nil,
         :SSLVerifyMode        => ::OpenSSL::SSL::VERIFY_NONE,
         :SSLVerifyDepth       => nil,
         :SSLVerifyCallback    => nil,   # custom verification
@@ -101,6 +102,7 @@ module DRb
         ctx.client_ca       = self[:SSLClientCA]
         ctx.ca_path         = self[:SSLCACertificatePath]
         ctx.ca_file         = self[:SSLCACertificateFile]
+        ctx.tmp_dh_callback = self[:SSLTmpDhCallback]
         ctx.verify_mode     = self[:SSLVerifyMode]
         ctx.verify_depth    = self[:SSLVerifyDepth]
         ctx.verify_callback = self[:SSLVerifyCallback]
