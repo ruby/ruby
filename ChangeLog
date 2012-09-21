@@ -1,3 +1,9 @@
+Sat Sep 22 07:15:00 2012  Zachary Scott  <zzak@ruby-lang.org>
+
+	* ext/ripper/lib/ripper.rb:
+	  Match sample output to Ripper.sexp from current trunk version.
+	  [Bug #6929]
+
 Thu Sep 20 23:05:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (native_cond_initialize): destroy condattr

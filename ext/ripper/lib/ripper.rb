@@ -25,7 +25,7 @@ require 'ripper/sexp'
 #          [[:def,
 #            [:@ident, "hello", [1, 4]],
 #            [:paren,
-#             [:params, [[:@ident, "world", [1, 10]]], nil, nil, nil, nil]],
+#             [:params, [[:@ident, "world", [1, 10]]], nil, nil, nil, nil, nil, nil]],
 #            [:bodystmt,
 #             [[:string_literal,
 #               [:string_content,
