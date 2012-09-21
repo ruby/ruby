@@ -1,3 +1,7 @@
+Fri Sep 21 17:54:54 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: add -Wall always.
+
 Thu Sep 20 10:23:37 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (native_cond_initialize): destroy condattr
