@@ -3761,6 +3761,48 @@ rb_file_dirname(VALUE fname)
 }
 
 /*
+ *  call-seq:
+ *     File.rootname(file_name )  ->  root_name
+ *
+ *  Returns root part of the filename given in <i>file_name</i>.
+ *  Returns an empty string if <i>file_name</i> is not an absolute
+ *  path.
+ *
+ *  * On Unix
+ *     File.rootname("/home/gumby/work/ruby.rb")        #=> "/"
+ *     File.rootname("home/gumby/work/ruby.rb")         #=> ""
+ *
+ *  * On Windows
+ *     File.rootname("c:/Users/gumby/work/ruby.rb")     #=> "c:/"
+ *     File.rootname("//host/share/gumby/work/ruby.rb") #=> "//host/share/"
+ *     File.rootname("home/gumby/work/ruby.rb")         #=> ""
+ */
+
+static VALUE
+rb_file_s_rootname(VALUE klass, VALUE fname)
+{
+    const char *name, *root, *end;
+    VALUE rootname;
+    rb_encoding *enc;
+
+    FilePathStringValue(fname);
+    name = StringValueCStr(fname);
+    end = name + RSTRING_LEN(fname);
+    enc = rb_enc_get(fname);
+    root = skipprefix(name, end, enc);
+    if (root < end && isdirsep(*root)) root++;
+#if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER)
+    if (root == name + 2 && name[1] == ':') root = name;
+# ifndef __CYGWIN__
+    else if (root == name + 1) root = name;
+# endif
+#endif
+    rootname = rb_enc_str_new(name, root - name, enc);
+    OBJ_INFECT(rootname, fname);
+    return rootname;
+}
+
+/*
  * accept a String, and return the pointer of the extension.
  * if len is passed, set the length of extension to it.
  * returned pointer is in ``name'' or NULL.
@@ -5457,6 +5499,7 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "basename", rb_file_s_basename, -1);
     rb_define_singleton_method(rb_cFile, "dirname", rb_file_s_dirname, 1);
     rb_define_singleton_method(rb_cFile, "extname", rb_file_s_extname, 1);
+    rb_define_singleton_method(rb_cFile, "rootname", rb_file_s_rootname, 1);
     rb_define_singleton_method(rb_cFile, "path", rb_file_s_path, 1);
 
     separator = rb_obj_freeze(rb_usascii_str_new2("/"));
