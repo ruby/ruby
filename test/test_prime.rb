@@ -141,8 +141,8 @@ class TestPrime < Test::Unit::TestCase
 
       # negative
       assert !-1.prime?
-      assert(-2.prime?)
-      assert(-3.prime?)
+      assert !-2.prime?
+      assert !-3.prime?
       assert !-4.prime?
     end
   end
