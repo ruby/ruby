@@ -126,6 +126,7 @@ extern DWORD rb_w32_osid(void);
 #undef fputchar
 #undef utime
 #undef lseek
+#undef stat
 #undef fstat
 #define getc(_stream)		rb_w32_getc(_stream)
 #define getchar()		rb_w32_getc(stdin)
