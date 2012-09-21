@@ -193,8 +193,10 @@ find_i(VALUE i, VALUE memop, int argc, VALUE *argv)
  *
  *  Passes each entry in <i>enum</i> to <em>block</em>. Returns the
  *  first for which <em>block</em> is not false.  If no
- *  object matches, calls <i>ifnone</i> and returns its result when it
- *  is specified, or returns <code>nil</code> otherwise.
+ *  object matches, and <i>ifnone</i> is callable, then it is called
+ *  and its result is returned.  If there are no matches, and
+ *  <i>ifnone</i> is not callable, then <i>ifnone</i> is returned.
+ *  Returns <code>nil</code> otherwise.
  *
  *  If no block is given, an enumerator is returned instead.
  *
@@ -217,7 +219,10 @@ enum_find(int argc, VALUE *argv, VALUE obj)
 	return memo->u1.value;
     }
     if (!NIL_P(if_none)) {
-	return rb_funcall(if_none, rb_intern("call"), 0, 0);
+      if (rb_respond_to(if_none, rb_intern("call"))) {
+         return rb_funcall(if_none, rb_intern("call"), 0, 0);
+      }
+      return if_none;
     }
     return Qnil;
 }
