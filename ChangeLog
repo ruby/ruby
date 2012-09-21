@@ -1,3 +1,9 @@
+Fri Sep 21 19:53:38 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/cfunc.c (rb_dlcfunc_call): should convert a Bignum value to
+	  unsigned long long on Win64.
+	  [ruby-core:44636][Bug #6364] reported by raylinn@gmail.com (ray linn)
+
 Fri Sep 21 18:45:20 2012  Luis Lavena  <luislavena@gmail.com>
 
 	* include/ruby/win32.h: undef stat to silence mingw-w64 stat

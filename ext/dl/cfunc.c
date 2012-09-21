@@ -366,7 +366,11 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 	    stack[i] = (DLSTACK_TYPE)FIX2LONG(arg);
 	}
 	else if (RB_TYPE_P(arg, T_BIGNUM)) {
+#if SIZEOF_VOIDP == SIZEOF_LONG
 	    stack[i] = (DLSTACK_TYPE)rb_big2ulong_pack(arg);
+#else
+	    stack[i] = (DLSTACK_TYPE)rb_big2ull(arg);
+#endif
 	}
 	else {
 	    Check_Type(arg, T_FIXNUM);
