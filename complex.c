@@ -683,7 +683,7 @@ f_addsub(VALUE self, VALUE other,
  * call-seq:
  *    cmp + numeric  ->  complex
  *
- * Performs addition on the first member of the Complex.
+ * Performs addition.
  *
  *   Complex(5, 2) + 3 # => (8+2i)
  *   Complex(11, 3) + 4 # => (15+3i)
@@ -699,10 +699,9 @@ nucomp_add(VALUE self, VALUE other)
  * call-seq:
  *    cmp - numeric  ->  complex
  *
- * Performs subtraction on the first member of the Complex.
+ * Performs subtraction.
  *
  *   Complex(33, 12) - 10 # => (23+12i)
- *   Complex(12.4, 3.5) - 5 # => (7.4+3.5i)
  */
 static VALUE
 nucomp_sub(VALUE self, VALUE other)
@@ -714,10 +713,9 @@ nucomp_sub(VALUE self, VALUE other)
  * call-seq:
  *    cmp * numeric  ->  complex
  *
- * Performs multiplication on the two members.
+ * Performs multiplication.
  *
  *   Complex(78, 58) * 10 # => (780+580i)
- *   Complex(5.6, 3.4) * 10 # => (56+34i)
  */
 static VALUE
 nucomp_mul(VALUE self, VALUE other)
