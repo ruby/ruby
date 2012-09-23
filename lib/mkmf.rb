@@ -196,10 +196,11 @@ module MakeMakefile
   $extmk = path[0, topdir.size+1] == topdir+"/"
   $extmk &&= %r"\A(?:ext|enc|tool|test(?:/.+)?)\z" =~ File.dirname(path[topdir.size+1..-1])
   $extmk &&= true
-  if not $extmk and File.exist?(($hdrdir = RbConfig::CONFIG["rubyhdrdir"]) + "/ruby/ruby.h")
+  if not $extmk and File.exist?(RbConfig::CONFIG["rubyhdrdir"] + "/ruby/ruby.h")
+    $hdrdir = CONFIG["rubyhdrdir"]
     $topdir = $hdrdir
     $top_srcdir = $hdrdir
-    $arch_hdrdir = $hdrdir + "/$(arch)"
+    $arch_hdrdir = "$(hdrdir)/$(arch)"
   elsif File.exist?(($hdrdir = ($top_srcdir ||= topdir) + "/include")  + "/ruby.h")
     $topdir ||= RbConfig::CONFIG["topdir"]
     $arch_hdrdir = "$(extout)/include/$(arch)"
@@ -1822,7 +1823,7 @@ RUBY_SO_NAME = #{CONFIG['RUBY_SO_NAME']}
 arch = #{CONFIG['arch']}
 sitearch = #{CONFIG['sitearch']}
 ruby_version = #{RbConfig::CONFIG['ruby_version']}
-ruby = #{$ruby}
+ruby = #{$ruby.sub(%r[\A#{Regexp.quote(RbConfig::CONFIG['bindir'])}(?=/|\z)]) {'$(bindir)'}}
 RUBY = $(ruby#{sep})
 ruby_headers = #{headers.join(' ')}
 
