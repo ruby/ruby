@@ -1,4 +1,6 @@
-Sun Sep 23 21:44:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Sep 23 21:45:14 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (LIBPATHFLAG): no needs to escape library path here.
 
 	* lib/mkmf.rb (MakeMakefile#configuration): make prefix paths
 	  internal to deal with in Makefile.
