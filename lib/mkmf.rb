@@ -1718,6 +1718,12 @@ SRC
         path.sub!(/\A([A-Za-z]):(?=\/)/, '/\1')
         path
       end
+    when 'cygwin'
+      if CONFIG['target_os'] != 'cygwin'
+        def mkintpath(path)
+          IO.popen(["cygpath", "-u", path], &:read).chomp
+        end
+      end
     end
   end
   unless method_defined?(:mkintpath)
@@ -1729,14 +1735,6 @@ SRC
   def configuration(srcdir)
     mk = []
     vpath = $VPATH.dup
-    if !CROSS_COMPILING
-      case CONFIG['build_os']
-      when 'cygwin'
-        if CONFIG['target_os'] != 'cygwin'
-          vpath = vpath.map {|p| p.sub(/.*/, '$(shell cygpath -u \&)')}
-        end
-      end
-    end
     CONFIG["hdrdir"] ||= $hdrdir
     mk << %{
 SHELL = /bin/sh
@@ -1759,12 +1757,13 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
     if $extmk
       mk << "RUBYLIB =\n""RUBYOPT = -\n"
     end
-    if destdir = CONFIG["prefix"][$dest_prefix_pattern, 1]
+    prefix = mkintpath(CONFIG["prefix"])
+    if destdir = prefix[$dest_prefix_pattern, 1]
       mk << "\nDESTDIR = #{destdir}\n"
     end
+    mk << "prefix = #{with_destdir(prefix)}\n"
     CONFIG.each do |key, var|
-      next unless /prefix$/ =~ key
-      mk << "#{key} = #{with_destdir(var)}\n"
+      mk << "#{key} = #{with_destdir(mkintpath(var))}\n" if /.prefix$/ =~ key
     end
     CONFIG.each do |key, var|
       next if /^abs_/ =~ key
