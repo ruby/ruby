@@ -1,4 +1,7 @@
-Sun Sep 23 21:46:12 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Sep 23 21:48:08 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): use timestamp file dependencies for
+	  directories.
 
 	* lib/mkmf.rb: unexpand macros.
 
