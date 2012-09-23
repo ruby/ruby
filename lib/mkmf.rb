@@ -1720,7 +1720,7 @@ SRC
       end
     end
   end
-  unless defined?(mkintpath)
+  unless method_defined?(:mkintpath)
     def mkintpath(path)
       path
     end
