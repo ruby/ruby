@@ -219,7 +219,7 @@ enum_find(int argc, VALUE *argv, VALUE obj)
 	return memo->u1.value;
     }
     if (!NIL_P(if_none)) {
-      if (rb_respond_to(if_none, rb_intern("call"))) {
+      if (rb_check_funcall(if_none, rb_intern("call"), 0, 0) != Qundef) {
          return rb_funcall(if_none, rb_intern("call"), 0, 0);
       }
       return if_none;
