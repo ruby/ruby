@@ -19,6 +19,7 @@
 
 VALUE rb_mEnumerable;
 static ID id_next;
+static ID id_call;
 #define id_each idEach
 #define id_eqq  idEqq
 #define id_cmp  idCmp
@@ -2264,9 +2265,9 @@ chunk_ii(VALUE i, VALUE _argp, int argc, VALUE *argv)
     ENUM_WANT_SVALUE();
 
     if (NIL_P(argp->state))
-        v = rb_funcall(argp->categorize, rb_intern("call"), 1, i);
+        v = rb_funcall(argp->categorize, id_call, 1, i);
     else
-        v = rb_funcall(argp->categorize, rb_intern("call"), 2, i, argp->state);
+        v = rb_funcall(argp->categorize, id_call, 2, i, argp->state);
 
     if (v == alone) {
         if (!NIL_P(argp->prev_value)) {
@@ -2462,9 +2463,9 @@ slicebefore_ii(VALUE i, VALUE _argp, int argc, VALUE *argv)
     if (!NIL_P(argp->sep_pat))
         header_p = rb_funcall(argp->sep_pat, id_eqq, 1, i);
     else if (NIL_P(argp->state))
-        header_p = rb_funcall(argp->sep_pred, rb_intern("call"), 1, i);
+        header_p = rb_funcall(argp->sep_pred, id_call, 1, i);
     else
-        header_p = rb_funcall(argp->sep_pred, rb_intern("call"), 2, i, argp->state);
+        header_p = rb_funcall(argp->sep_pred, id_call, 2, i, argp->state);
     if (RTEST(header_p)) {
         if (!NIL_P(argp->prev_elts))
             rb_funcall(argp->yielder, id_lshift, 1, argp->prev_elts);
@@ -2733,4 +2734,5 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "slice_before", enum_slice_before, -1);
 
     id_next = rb_intern("next");
+    id_call = rb_intern("call");
 }
