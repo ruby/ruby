@@ -152,6 +152,10 @@ if $0 == __FILE__
       end
     end
   end
+  require 'rubygems'
+  class Gem::TestCase < MiniTest::Unit::TestCase
+    @@project_dir = File.expand_path('../../../..', __FILE__)
+  end
 
   Test::Unit::Worker.new.run(ARGV)
 end
