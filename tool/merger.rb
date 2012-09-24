@@ -128,6 +128,11 @@ when nil, "-h", "--help"
 else
   system 'svn up'
 
+  if /--ticket=(.*)/ =~ ARGV[0]
+    tickets = $1.split(/,/).map{|num| " [Backport ##{num}]"}
+    ARGV.shift
+  end
+
   q = $repos + (ARGV[1] || default_merge_branch)
   revs = ARGV[0].split /,\s*/
   log = ''
@@ -178,7 +183,7 @@ else
 
   version_up
   f = Tempfile.new 'merger.rb'
-  f.printf "merge revision(s) %s:\n", ARGV[0]
+  f.printf "merge revision(s) %s:%s\n", ARGV[0], tickets.join
   f.write log_svn
   f.flush
   f.close

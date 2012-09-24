@@ -1,3 +1,7 @@
+Mon Sep 24 11:22:36 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/merger.rb: add --ticket option to add ticket number.
+
 Sun Sep 23 21:51:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (String#unspace): unescape with backslashes.  normal
