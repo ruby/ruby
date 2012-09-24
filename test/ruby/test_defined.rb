@@ -88,7 +88,7 @@ class TestDefined < Test::Unit::TestCase
 
   def test_defined_impl_specific
     feature7035 = '[ruby-core:47558]' # not spec
-    assert_operator(defined?(Foo), :frozen?, feature7035)
+    assert_predicate(defined?(Foo), :frozen?, feature7035)
     assert_same(defined?(Foo), defined?(Array), feature7035)
   end
 
