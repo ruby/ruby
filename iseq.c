@@ -1779,11 +1779,11 @@ rb_iseq_defined_string(enum defined_type type)
 	defs = ruby_xcalloc(numberof(expr_names), sizeof(VALUE));
 	GET_VM()->defined_strings = defs;
     }
-    str = defs[type];
+    str = defs[type-1];
     if (!str) {
 	str = rb_str_new_cstr(estr);;
 	OBJ_FREEZE(str);
-	defs[type] = str;
+	defs[type-1] = str;
     }
     return str;
 }

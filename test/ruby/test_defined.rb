@@ -84,6 +84,11 @@ class TestDefined < Test::Unit::TestCase
     assert_equal 'global-variable', defined?($+)
     assert_equal 'global-variable', defined?($1)
     assert_equal nil, defined?($2)
+
+    assert_equal("nil", defined?(nil))
+    assert_equal("true", defined?(true))
+    assert_equal("false", defined?(false))
+    assert_equal("expression", defined?(1))
   end
 
   def test_defined_impl_specific
