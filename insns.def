@@ -716,7 +716,7 @@ defined
 (VALUE val)
 {
     VALUE klass;
-    const char *expr_type = 0;
+    enum defined_type expr_type = 0;
     enum defined_type type = (enum defined_type)op_type;
 
     val = Qnil;
@@ -724,7 +724,7 @@ defined
     switch (type) {
       case DEFINED_IVAR:
 	if (rb_ivar_defined(GET_SELF(), SYM2ID(obj))) {
-	    expr_type = "instance-variable";
+	    expr_type = DEFINED_IVAR;
 	}
 	break;
       case DEFINED_IVAR2:
@@ -732,7 +732,7 @@ defined
 	break;
       case DEFINED_GVAR:
 	if (rb_gvar_defined(rb_global_entry(SYM2ID(obj)))) {
-	    expr_type = "global-variable";
+	    expr_type = DEFINED_GVAR;
 	}
 	break;
       case DEFINED_CVAR:
@@ -740,20 +740,20 @@ defined
 	NODE *cref = rb_vm_get_cref(GET_ISEQ(), GET_EP());
 	klass = vm_get_cvar_base(cref, GET_CFP());
 	if (rb_cvar_defined(klass, SYM2ID(obj))) {
-	    expr_type = "class variable";
+	    expr_type = DEFINED_CVAR;
 	}
 	break;
 	}
       case DEFINED_CONST:
 	klass = v;
 	if (vm_get_ev_const(th, GET_ISEQ(), klass, SYM2ID(obj), 1)) {
-	    expr_type = "constant";
+	    expr_type = DEFINED_CONST;
 	}
 	break;
       case DEFINED_FUNC:
 	klass = CLASS_OF(v);
 	if (rb_method_boundp(klass, SYM2ID(obj), 0)) {
-	    expr_type = "method";
+	    expr_type = DEFINED_METHOD;
 	}
 	break;
       case DEFINED_METHOD:{
@@ -765,7 +765,7 @@ defined
 		if (!((me->flag & NOEX_PROTECTED) &&
 		      !rb_obj_is_kind_of(GET_SELF(),
 					 rb_class_real(klass)))) {
-		    expr_type = "method";
+		    expr_type = DEFINED_METHOD;
 		}
 	    }
 	}
@@ -776,13 +776,13 @@ defined
 	    args[0] = obj; args[1] = Qfalse;
 	    r = rb_check_funcall(v, rb_intern("respond_to_missing?"), 2, args);
 	    if (r != Qundef && RTEST(r))
-		expr_type = "method";
+		expr_type = DEFINED_METHOD;
 	}
 	break;
       }
       case DEFINED_YIELD:
 	if (GET_BLOCK_PTR()) {
-	    expr_type = "yield";
+	    expr_type = DEFINED_YIELD;
 	}
 	break;
       case DEFINED_ZSUPER:{
@@ -791,7 +791,7 @@ defined
 	    VALUE klass = vm_search_normal_superclass(GET_CFP()->klass);
 	    ID id = me->def ? me->def->original_id : me->called_id;
 	    if (rb_method_boundp(klass, id, 0)) {
-		expr_type = "super";
+		expr_type = DEFINED_ZSUPER;
 	    }
 	}
 	break;
@@ -799,7 +799,7 @@ defined
       case DEFINED_REF:{
 	val = vm_getspecial(th, GET_LEP(), Qfalse, FIX2INT(obj));
 	if (val != Qnil) {
-	    expr_type = "global-variable";
+	    expr_type = DEFINED_GVAR;
 	}
 	break;
       }
@@ -809,7 +809,7 @@ defined
     }
     if (expr_type != 0) {
 	if (needstr != Qfalse) {
-	    val = rb_str_new2(expr_type);
+	    val = rb_iseq_defined_string(expr_type);
 	}
 	else {
 	    val = Qtrue;

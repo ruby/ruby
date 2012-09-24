@@ -2701,23 +2701,23 @@ static int
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	     NODE *node, LABEL **lfinish, VALUE needstr)
 {
-    const char *estr = 0;
+    enum defined_type expr_type = 0;
     enum node_type type;
 
     switch (type = nd_type(node)) {
 
 	/* easy literals */
       case NODE_NIL:
-	estr = "nil";
+	expr_type = DEFINED_NIL;
 	break;
       case NODE_SELF:
-	estr = "self";
+	expr_type = DEFINED_SELF;
 	break;
       case NODE_TRUE:
-	estr = "true";
+	expr_type = DEFINED_TRUE;
 	break;
       case NODE_FALSE:
-	estr = "false";
+	expr_type = DEFINED_FALSE;
 	break;
 
       case NODE_ARRAY:{
@@ -2738,13 +2738,13 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
       case NODE_AND:
       case NODE_OR:
       default:
-	estr = "expression";
+	expr_type = DEFINED_EXPR;
 	break;
 
 	/* variables */
       case NODE_LVAR:
       case NODE_DVAR:
-	estr = "local-variable";
+	expr_type = DEFINED_LVAR;
 	break;
 
       case NODE_IVAR:
@@ -2866,16 +2866,14 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
       case NODE_CDECL:
       case NODE_CVDECL:
       case NODE_CVASGN:
-	estr = "assignment";
+	expr_type = DEFINED_ASGN;
 	break;
     }
 
-    if (estr != 0) {
+    if (expr_type) {
 	if (needstr != Qfalse) {
-	    VALUE str = rb_str_new2(estr);
-	    hide_obj(str);
-	    ADD_INSN1(ret, nd_line(node), putstring, str);
-	    iseq_add_mark_object_compile_time(iseq, str);
+	    VALUE str = rb_iseq_defined_string(expr_type);
+	    ADD_INSN1(ret, nd_line(node), putobject, str);
 	}
 	else {
 	    ADD_INSN1(ret, nd_line(node), putobject, Qtrue);

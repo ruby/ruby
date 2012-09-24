@@ -18,6 +18,8 @@
 #include "vm_core.h"
 #include "iseq.h"
 
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+
 #include "insns.inc"
 #include "insns_info.inc"
 
@@ -1745,6 +1747,45 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 	rb_ary_push(args, PARAM(iseq->arg_block, block));
     }
     return args;
+}
+
+VALUE
+rb_iseq_defined_string(enum defined_type type)
+{
+    static const char expr_names[][18] = {
+	"nil",
+	"instance-variable",
+	"local-variable",
+	"global-variable",
+	"class variable",
+	"constant",
+	"method",
+	"yield",
+	"super",
+	"self",
+	"true",
+	"false",
+	"assignment",
+	"expression",
+    };
+    const char *estr;
+    VALUE *defs, str;
+
+    if ((unsigned)(type - 1) >= (unsigned)numberof(expr_names)) return 0;
+    estr = expr_names[type - 1];
+    if (!estr[0]) return 0;
+    defs = GET_VM()->defined_strings;
+    if (!defs) {
+	defs = ruby_xcalloc(numberof(expr_names), sizeof(VALUE));
+	GET_VM()->defined_strings = defs;
+    }
+    str = defs[type];
+    if (!str) {
+	str = rb_str_new_cstr(estr);;
+	OBJ_FREEZE(str);
+	defs[type] = str;
+    }
+    return str;
 }
 
 /* ruby2cext */

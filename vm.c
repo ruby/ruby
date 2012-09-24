@@ -1515,6 +1515,9 @@ rb_vm_mark(void *ptr)
 	    if (vm->trap_list[i].cmd)
 		rb_gc_mark(vm->trap_list[i].cmd);
 	}
+	if (vm->defined_strings) {
+	    rb_gc_mark_locations(vm->defined_strings, vm->defined_strings + DEFINED_EXPR);
+	}
     }
 
     RUBY_MARK_LEAVE("vm");
@@ -1560,7 +1563,12 @@ vm_memsize(const void *ptr)
 {
     if (ptr) {
 	const rb_vm_t *vmobj = ptr;
-	return sizeof(rb_vm_t) + st_memsize(vmobj->living_threads);
+	size_t size = sizeof(rb_vm_t);
+	size += st_memsize(vmobj->living_threads);
+	if (vmobj->defined_strings) {
+	    size += DEFINED_EXPR * sizeof(VALUE);
+	}
+	return size;
     }
     else {
 	return 0;

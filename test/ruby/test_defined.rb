@@ -86,6 +86,12 @@ class TestDefined < Test::Unit::TestCase
     assert_equal nil, defined?($2)
   end
 
+  def test_defined_impl_specific
+    feature7035 = '[ruby-core:47558]' # not spec
+    assert_operator(defined?(Foo), :frozen?, feature7035)
+    assert_same(defined?(Foo), defined?(Array), feature7035)
+  end
+
   class TestAutoloadedSuperclass
     autoload :A, "a"
   end

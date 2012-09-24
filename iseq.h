@@ -106,17 +106,26 @@ struct iseq_compile_data {
 /* defined? */
 
 enum defined_type {
-    DEFINED_IVAR = 1,
-    DEFINED_IVAR2,
+    DEFINED_NIL = 1,
+    DEFINED_IVAR,
+    DEFINED_LVAR,
     DEFINED_GVAR,
     DEFINED_CVAR,
     DEFINED_CONST,
     DEFINED_METHOD,
     DEFINED_YIELD,
-    DEFINED_REF,
     DEFINED_ZSUPER,
+    DEFINED_SELF,
+    DEFINED_TRUE,
+    DEFINED_FALSE,
+    DEFINED_ASGN,
+    DEFINED_EXPR,
+    DEFINED_IVAR2,
+    DEFINED_REF,
     DEFINED_FUNC
 };
+
+VALUE rb_iseq_defined_string(enum defined_type type);
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility pop
