@@ -1,3 +1,10 @@
+Mon Sep 24 16:34:07 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* include/ruby/win32.h (rb_w32_pow): add new function.
+	  We use powl() instead of broken pow() for x64-mingw32. This workaround
+	  fixes test failures related to floating point numeric.
+	  [ruby-core:46686] [Bug #6784]
+
 Mon Sep 24 10:38:55 2012  Luis Lavena  <luislavena@gmail.com>
 
 	* test/win32ole/test_win32ole_method.rb (is_ruby64?): Correct platform
