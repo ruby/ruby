@@ -218,7 +218,7 @@ enum_find(int argc, VALUE *argv, VALUE obj)
 	return memo->u1.value;
     }
     if (!NIL_P(if_none)) {
-	return rb_funcall(if_none, rb_intern("call"), 0, 0);
+	return rb_funcall(if_none, id_call, 0, 0);
     }
     return Qnil;
 }
