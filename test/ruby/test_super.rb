@@ -349,13 +349,19 @@ class TestSuper < Test::Unit::TestCase
     assert_equal 'hoge', foo.new.bar
   end
 
-  def test_super_in_at_exit
+  def assert_super_in_block(type)
     bug7064 = '[ruby-core:47680]'
-    assert_normal_exit "at_exit {super}", bug7064
+    assert_normal_exit "#{type} {super}", bug7064
   end
 
+  def test_super_in_at_exit
+    assert_super_in_block("at_exit")
+  end
   def test_super_in_END
-    bug7064 = '[ruby-core:47680]'
-    assert_normal_exit "END {super}", bug7064
+    assert_super_in_block("END")
+  end
+
+  def test_super_in_BEGIN
+    assert_super_in_block("BEGIN")
   end
 end
