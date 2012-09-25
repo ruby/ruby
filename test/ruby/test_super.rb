@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestSuper < Test::Unit::TestCase
   class Base
@@ -346,5 +347,15 @@ class TestSuper < Test::Unit::TestCase
     }
 
     assert_equal 'hoge', foo.new.bar
+  end
+
+  def test_super_in_at_exit
+    bug7064 = '[ruby-core:47680]'
+    assert_normal_exit "at_exit {super}", bug7064
+  end
+
+  def test_super_in_END
+    bug7064 = '[ruby-core:47680]'
+    assert_normal_exit "END {super}", bug7064
   end
 end

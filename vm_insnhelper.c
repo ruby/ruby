@@ -1460,6 +1460,12 @@ vm_search_normal_superclass(VALUE klass)
 }
 
 static void
+vm_super_outside(void)
+{
+    rb_raise(rb_eNoMethodError, "super called outside of method");
+}
+
+static void
 vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq,
 		     VALUE sigval,
 		     ID *idp, VALUE *klassp)
@@ -1472,7 +1478,7 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq,
     }
 
     if (iseq == 0) {
-	rb_raise(rb_eNoMethodError, "super called outside of method");
+	vm_super_outside();
     }
 
     id = iseq->defined_method_id;
@@ -1492,8 +1498,7 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq,
 	    while (1) {
 		lcfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(lcfp);
 		if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, lcfp)) {
-		    rb_raise(rb_eNoMethodError,
-			     "super called outside of method");
+		    vm_super_outside();
 		}
 		if (lcfp->ep == tep) {
 		    break;
@@ -1503,7 +1508,7 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq,
 
 	/* temporary measure for [Bug #2420] [Bug #3136] */
 	if (!lcfp->me) {
-	    rb_raise(rb_eNoMethodError, "super called outside of method");
+	    vm_super_outside();
 	}
 
 	id = lcfp->me->def->original_id;

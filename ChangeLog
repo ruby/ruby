@@ -1,3 +1,8 @@
+Tue Sep 25 09:59:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (invokesuper): klass in cfp is not valid in at_exit and
+	  END blocks.  [ruby-core:47680] [Bug #7064]
+
 Tue Sep 25 08:11:11 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* iseq.c (rb_iseq_defined_string): the index of defined_strings must

@@ -1035,6 +1035,9 @@ invokesuper
     flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;
 
     klass = GET_CFP()->klass;
+    if (NIL_P(klass)) {
+	vm_super_outside();
+    }
     if (!NIL_P(RCLASS_REFINED_CLASS(klass))) {
 	klass = RCLASS_REFINED_CLASS(klass);
     }
