@@ -1,3 +1,9 @@
+Tue Sep 25 09:30:36 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/mkexports.rb: should not export DllMain().
+	  reported by luis at [ruby-core:46743] [Bug #6790], solved by
+	  Heesob Park, and confirmed by nobu.
+
 Mon Sep 24 16:34:07 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* include/ruby/win32.h (rb_w32_pow): add new function.
