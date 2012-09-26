@@ -337,7 +337,7 @@ class TestSocket < Test::Unit::TestCase
           end
         when /darwin/
           if !ai.ipv6?
-          elsif ai.ipv6_unique_local? && /darwin1[01]\./ =~ RUBY_PLATFORM
+          elsif ai.ipv6_unique_local? && /darwin1[012]\./ =~ RUBY_PLATFORM
             next true # iCloud addresses do not work, see Bug #6692
           elsif ifr_name = ai.ip_address[/%(.*)/, 1]
             # Mac OS X may sets IFDISABLED as FreeBSD does
