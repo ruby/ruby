@@ -1994,6 +1994,44 @@ opt_size
 
 /**
   @c optimize
+  @e optimized empty?
+  @j 最適化された recv.empty?()。
+ */
+DEFINE_INSN
+opt_empty_p
+(IC ic)
+(VALUE recv)
+(VALUE val)
+{
+    if (!SPECIAL_CONST_P(recv)) {
+	if (HEAP_CLASS_OF(recv) == rb_cString &&
+	    BASIC_OP_UNREDEFINED_P(BOP_EMPTY_P, STRING_REDEFINED_OP_FLAG)) {
+	    if (RSTRING_LEN(recv) == 0) val = Qtrue;
+	    else val = Qfalse;
+	}
+	else if (HEAP_CLASS_OF(recv) == rb_cArray &&
+		 BASIC_OP_UNREDEFINED_P(BOP_EMPTY_P, ARRAY_REDEFINED_OP_FLAG)) {
+	    if (RARRAY_LEN(recv) == 0) val = Qtrue;
+	    else val = Qfalse;
+	}
+	else if (HEAP_CLASS_OF(recv) == rb_cHash &&
+		 BASIC_OP_UNREDEFINED_P(BOP_EMPTY_P, HASH_REDEFINED_OP_FLAG)) {
+	    if (RHASH_EMPTY_P(recv)) val = Qtrue;
+	    else val = Qfalse;
+	}
+	else {
+	    goto INSN_LABEL(normal_dispatch);
+	}
+    }
+    else {
+      INSN_LABEL(normal_dispatch):
+	PUSH(recv);
+	CALL_SIMPLE_METHOD(0, idEmptyP, recv);
+    }
+}
+
+/**
+  @c optimize
   @e optimized succ
   @j 最適化された recv.succ()。
  */

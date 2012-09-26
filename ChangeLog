@@ -1,3 +1,16 @@
+Wed Sep 26 16:39:57 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def: add new instruction `opt_empty_p' for optimize `empty?'
+	  method.  Apply a patch proposed at [ruby-dev:46120]
+	  [ruby-trunk - Feature #6972] by Glass_saga (Masaki Matsushita).
+
+	* compile.c (iseq_specialized_instruction), vm.c, vm_insnhelper.h:
+	  ditto.
+
+	* id.c, template/id.h.tmpl: ditto.
+
+	* test/ruby/test_optimization.rb: test for this changes.
+
 Tue Sep 25 09:59:26 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (invokesuper): klass in cfp is not valid in at_exit and

@@ -85,6 +85,14 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal 6, "string".length
   end
 
+  def test_string_empty?
+    assert_equal true, "".empty?
+    assert_equal false, "string".empty?
+    assert_nil redefine_method('String', 'empty?') { "string".empty? }
+    assert_equal true, "".empty?
+    assert_equal false, "string".empty?
+  end
+
   def test_string_plus
     assert_equal "", "" + ""
     assert_equal "x", "x" + ""
@@ -116,9 +124,19 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal 3, [1,2,3].length
   end
 
+  def test_array_empty?
+    assert_equal true, [].empty?
+    assert_equal false, [1,2,3].empty?
+  end
+
   def test_hash_length
     assert_equal 0, {}.length
     assert_equal 1, {1=>1}.length
+  end
+
+  def test_hash_empty?
+    assert_equal true, {}.empty?
+    assert_equal false, {1=>1}.empty?
   end
 
   class MyObj

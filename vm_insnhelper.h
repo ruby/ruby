@@ -49,6 +49,7 @@ enum {
   BOP_ASET,
   BOP_LENGTH,
   BOP_SIZE,
+  BOP_EMPTY_P,
   BOP_SUCC,
   BOP_GT,
   BOP_GE,
