@@ -964,12 +964,16 @@ static VALUE
 rb_mod_include(int argc, VALUE *argv, VALUE module)
 {
     int i;
+    ID id_append_features, id_included;
+
+    CONST_ID(id_append_features, "append_features");
+    CONST_ID(id_included, "included");
 
     for (i = 0; i < argc; i++)
 	Check_Type(argv[i], T_MODULE);
     while (argc--) {
-	rb_funcall(argv[argc], rb_intern("append_features"), 1, module);
-	rb_funcall(argv[argc], rb_intern("included"), 1, module);
+	rb_funcall(argv[argc], id_append_features, 1, module);
+	rb_funcall(argv[argc], id_included, 1, module);
     }
     return module;
 }
@@ -1280,13 +1284,17 @@ static VALUE
 rb_obj_extend(int argc, VALUE *argv, VALUE obj)
 {
     int i;
+    ID id_extend_object, id_extended;
+
+    CONST_ID(id_extend_object, "extend_object");
+    CONST_ID(id_extended, "extended");
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     for (i = 0; i < argc; i++)
 	Check_Type(argv[i], T_MODULE);
     while (argc--) {
-	rb_funcall(argv[argc], rb_intern("extend_object"), 1, obj);
-	rb_funcall(argv[argc], rb_intern("extended"), 1, obj);
+	rb_funcall(argv[argc], id_extend_object, 1, obj);
+	rb_funcall(argv[argc], id_extended, 1, obj);
     }
     return obj;
 }
