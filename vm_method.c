@@ -385,10 +385,20 @@ search_method(VALUE klass, ID id, VALUE omod, VALUE *defined_class_ptr)
     for (body = 0; klass; klass = RCLASS_SUPER(klass)) {
 	st_table *m_tbl;
 
-	if (!NIL_P(omod) && klass != skipped_class &&
-	    !NIL_P(iclass = rb_hash_lookup(omod, klass))) {
-	    skipped_class = klass;
-	    klass = iclass;
+	if (!NIL_P(omod) && klass != skipped_class) {
+	    VALUE c;
+
+	    if (BUILTIN_TYPE(klass) == T_ICLASS) {
+		c = RBASIC(klass)->klass;
+	    }
+	    else {
+		c = klass;
+	    }
+	    iclass = rb_hash_lookup(omod, c);
+	    if (!NIL_P(iclass)) {
+		skipped_class = klass;
+		klass = iclass;
+	    }
 	}
 	m_tbl = RCLASS_M_TBL(klass);
 	if (!m_tbl) {

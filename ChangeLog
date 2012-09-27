@@ -1,3 +1,14 @@
+Thu Sep 27 18:36:51 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_overlay_module, rb_mod_refine): accept a module as the
+	  argument of Module#refine.
+
+	* vm_method.c (search_method): if klass is an iclass, lookup the
+	  original module of the iclass in omod in order to allow
+	  refinements of modules.
+
+	* test/ruby/test_refinement.rb: add tests for the above changes.
+
 Thu Sep 27 18:12:20 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/syslog/lib/syslog/logger.rb: add a formatter to the

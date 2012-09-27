@@ -324,5 +324,61 @@ class TestRefinement < Test::Unit::TestCase
     obj = c.new
     assert_equal([:c, :m1, :m2], m2.module_eval { obj.foo })
   end
-end
 
+  def test_refine_module_without_overriding
+    m1 = Module.new
+    c = Class.new {
+      include m1
+    }
+    m2 = Module.new {
+      refine m1 do
+        def foo
+          :m2
+        end
+      end
+    }
+    obj = c.new
+    assert_equal(:m2, m2.module_eval { obj.foo })
+  end
+
+  def test_refine_module_with_overriding
+    m1 = Module.new {
+      def foo
+        [:m1]
+      end
+    }
+    c = Class.new {
+      include m1
+    }
+    m2 = Module.new {
+      refine m1 do
+        def foo
+          super << :m2
+        end
+      end
+    }
+    obj = c.new
+    assert_equal([:m1, :m2], m2.module_eval { obj.foo })
+  end
+
+  def test_refine_neither_class_nor_module
+    assert_raise(TypeError) do
+      Module.new {
+        refine Object.new do
+        end
+      }
+    end
+    assert_raise(TypeError) do
+      Module.new {
+        refine 123 do
+        end
+      }
+    end
+    assert_raise(TypeError) do
+      Module.new {
+        refine "foo" do
+        end
+      }
+    end
+  end
+end

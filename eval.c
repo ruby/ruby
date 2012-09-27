@@ -1030,12 +1030,22 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
     return module;
 }
 
+static
+void check_class_or_module(VALUE obj)
+{
+    if (!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE)) {
+	VALUE str = rb_inspect(obj);
+	rb_raise(rb_eTypeError, "%s is not a class/module",
+		 StringValuePtr(str));
+    }
+}
+
 void
 rb_overlay_module(NODE *cref, VALUE klass, VALUE module)
 {
     VALUE iclass, c, superclass = klass;
 
-    Check_Type(klass, T_CLASS);
+    check_class_or_module(klass);
     Check_Type(module, T_MODULE);
     if (NIL_P(cref->nd_omod)) {
 	cref->nd_omod = rb_hash_new();
@@ -1184,7 +1194,7 @@ rb_mod_refine(VALUE module, VALUE klass)
     ID id_overlaid_modules, id_refined_class;
     VALUE overlaid_modules;
 
-    Check_Type(klass, T_CLASS);
+    check_class_or_module(klass);
     CONST_ID(id_overlaid_modules, "__overlaid_modules__");
     overlaid_modules = rb_attr_get(module, id_overlaid_modules);
     if (NIL_P(overlaid_modules)) {
