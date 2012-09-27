@@ -1,3 +1,9 @@
+Thu Sep 27 18:12:20 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/syslog/lib/syslog/logger.rb: add a formatter to the
+	  Syslog::Logger object. [Bug #7065]
+	* test/syslog/test_syslog_logger.rb: ditto.
+
 Wed Sep 26 16:39:57 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def: add new instruction `opt_empty_p' for optimize `empty?'

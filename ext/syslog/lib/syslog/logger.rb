@@ -37,6 +37,23 @@ require 'logger'
 # newsyslog.conf(5) and newsyslog(8) man pages.
 
 class Syslog::Logger
+  # Default formatter for log messages.
+  class Formatter
+    def call severity, time, progname, msg
+      clean msg
+    end
+
+    private
+
+    ##
+    # Clean up messages so they're nice and pretty.
+
+    def clean message
+      message = message.to_s.strip
+      message.gsub!(/\e\[[0-9;]*m/, '') # remove useless ansi color codes
+      return message
+    end
+  end
 
   ##
   # The version of Syslog::Logger you are using.
@@ -136,6 +153,20 @@ class Syslog::Logger
 
   attr_accessor :level
 
+  # Logging formatter, as a +Proc+ that will take four arguments and
+  # return the formatted message. The arguments are:
+  #
+  # +severity+:: The Severity of the log message.
+  # +time+:: A Time instance representing when the message was logged.
+  # +progname+:: The #progname configured, or passed to the logger method.
+  # +msg+:: The _Object_ the user passed to the log message; not necessarily a
+  #         String.
+  #
+  # The block should return an Object that can be written to the logging
+  # device via +write+.  The default formatter is used when no formatter is
+  # set.
+  attr_accessor :formatter
+
   ##
   # Fills in variables for Logger compatibility.  If this is the first
   # instance of Syslog::Logger, +program_name+ may be set to change the logged
@@ -145,6 +176,7 @@ class Syslog::Logger
 
   def initialize program_name = 'ruby'
     @level = ::Logger::DEBUG
+    @formatter = Formatter.new
 
     @@syslog ||= Syslog.open(program_name)
   end
@@ -155,20 +187,8 @@ class Syslog::Logger
   def add severity, message = nil, progname = nil, &block
     severity ||= ::Logger::UNKNOWN
     @level <= severity and
-      @@syslog.log LEVEL_MAP[severity], '%s', clean(message || block.call)
+      @@syslog.log LEVEL_MAP[severity], '%s', formatter.call(severity, Time.now, progname, (message || block.call))
     true
   end
-
-  private
-
-  ##
-  # Clean up messages so they're nice and pretty.
-
-  def clean message
-    message = message.to_s.strip
-    message.gsub!(/\e\[[0-9;]*m/, '') # remove useless ansi color codes
-    return message
-  end
-
 end
 

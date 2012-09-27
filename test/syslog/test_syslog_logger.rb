@@ -29,7 +29,7 @@ class TestSyslogRootLogger < Test::Unit::TestCase
       end
 
       def log(level, format, *args)
-        @line = "#{LEVEL_LABEL_MAP[level]} - \#{format % args}"
+        @line = "#{LEVEL_LABEL_MAP[level]} - #{format % args}"
       end
 
       attr_reader :line
@@ -90,6 +90,16 @@ class TestSyslogRootLogger < Test::Unit::TestCase
 
   def test_initialize
     assert_equal Logger::DEBUG, @logger.level
+  end
+
+  def test_custom_formatter
+    @logger.formatter = Class.new {
+      def call severity, time, progname, msg
+        "hi mom!"
+      end
+    }.new
+
+    assert_match(/hi mom!/, log_raw(:fatal, 'fatal level message'))
   end
 
   def test_add
