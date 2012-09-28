@@ -1,3 +1,7 @@
+Fri Sep 28 13:14:34 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: now VM_DEBUG_BP_CHECK should be 1.
+
 Fri Sep 28 12:51:54 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: remove rb_control_frame_t::bp (bp: base pointer).

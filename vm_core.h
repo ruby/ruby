@@ -354,7 +354,7 @@ typedef struct rb_vm_struct {
 } rb_vm_t;
 
 #ifndef VM_DEBUG_BP_CHECK
-#define VM_DEBUG_BP_CHECK 0
+#define VM_DEBUG_BP_CHECK 1
 #endif
 
 typedef struct {
