@@ -1,3 +1,10 @@
+Fri Sep 28 15:44:45 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_method.c (search_method): copy refinement iclasses to search
+	  superclasses correctly.
+
+	* test/ruby/test_refinement.rb: related test.
+
 Fri Sep 28 15:15:41 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (opt_checkenv): remove unused instruction `opt_checkenv'.

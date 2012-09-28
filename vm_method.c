@@ -376,6 +376,24 @@ rb_get_alloc_func(VALUE klass)
     return 0;
 }
 
+static VALUE
+copy_refinement_iclass(VALUE iclass, VALUE superclass)
+{
+    VALUE result, c;
+
+    Check_Type(iclass, T_ICLASS);
+    c = result = rb_include_class_new(RBASIC(iclass)->klass, superclass);
+    RCLASS_REFINED_CLASS(c) = RCLASS_REFINED_CLASS(iclass);
+    iclass = RCLASS_SUPER(iclass);
+    while (iclass && BUILTIN_TYPE(iclass) == T_ICLASS) {
+	c = RCLASS_SUPER(c) = rb_include_class_new(RBASIC(iclass)->klass,
+						   RCLASS_SUPER(c));
+	RCLASS_REFINED_CLASS(c) = RCLASS_REFINED_CLASS(iclass);
+	iclass = RCLASS_SUPER(iclass);
+    }
+    return result;
+}
+
 static rb_method_entry_t*
 search_method(VALUE klass, ID id, VALUE omod, VALUE *defined_class_ptr)
 {
@@ -386,15 +404,12 @@ search_method(VALUE klass, ID id, VALUE omod, VALUE *defined_class_ptr)
 	st_table *m_tbl;
 
 	if (!NIL_P(omod) && klass != skipped_class) {
-	    VALUE c;
-
-	    if (BUILTIN_TYPE(klass) == T_ICLASS) {
-		c = RBASIC(klass)->klass;
+	    iclass = rb_hash_lookup(omod, klass);
+	    if (NIL_P(iclass) && BUILTIN_TYPE(klass) == T_ICLASS) {
+		iclass = rb_hash_lookup(omod, RBASIC(klass)->klass);
+		if (!NIL_P(iclass))
+		    iclass = copy_refinement_iclass(iclass, klass);
 	    }
-	    else {
-		c = klass;
-	    }
-	    iclass = rb_hash_lookup(omod, c);
 	    if (!NIL_P(iclass)) {
 		skipped_class = klass;
 		klass = iclass;

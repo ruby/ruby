@@ -361,6 +361,24 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal([:m1, :m2], m2.module_eval { obj.foo })
   end
 
+  def test_refine_module_and_call_superclass_method
+    m1 = Module.new
+    c1 = Class.new {
+      def foo
+        "c1#foo"
+      end
+    }
+    c2 = Class.new(c1) {
+      include m1
+    }
+    m2 = Module.new {
+      refine m1 do
+      end
+    }
+    obj = c2.new
+    assert_equal("c1#foo", m2.module_eval { obj.foo })
+  end
+
   def test_refine_neither_class_nor_module
     assert_raise(TypeError) do
       Module.new {
