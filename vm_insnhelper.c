@@ -521,7 +521,7 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
     else {
 	VALUE *src_argv = argv;
 	VALUE *sp_orig;
-	int src_argc = sp - src_argv;
+	const int src_argc = iseq->arg_size;
 	VALUE finish_flag = VM_FRAME_TYPE_FINISH_P(cfp) ? VM_FRAME_FLAG_FINISH : 0;
 	cfp = th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp); /* pop cf */
 
@@ -1921,9 +1921,9 @@ vm_base_ptr(rb_control_frame_t *cfp)
 
 #if VM_DEBUG_BP_CHECK
     if (bp != cfp->bp_check) {
-	fprintf(stderr, "bp_check: %d, bp: %d\n",
-		cfp->bp_check - GET_THREAD()->stack,
-		bp - GET_THREAD()->stack);
+	fprintf(stderr, "bp_check: %ld, bp: %ld\n",
+		(long)(cfp->bp_check - GET_THREAD()->stack),
+		(long)(bp - GET_THREAD()->stack));
 	rb_bug("vm_base_ptr: unreachable");
     }
 #endif
