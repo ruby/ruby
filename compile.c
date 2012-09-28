@@ -5131,20 +5131,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	break;
       }
-      case NODE_OPTBLOCK:{
-	/* for optimize */
-	LABEL *redo_label = NEW_LABEL(0);
-	LABEL *next_label = NEW_LABEL(0);
-
-	iseq->compile_data->start_label = next_label;
-	iseq->compile_data->redo_label = redo_label;
-
-	ADD_LABEL(ret, redo_label);
-	COMPILE_(ret, "optblock body", node->nd_head, 1 /* pop */ );
-	ADD_LABEL(ret, next_label);
-	ADD_INSN(ret, 0, opt_checkenv);
-	break;
-      }
       case NODE_PRELUDE:{
 	COMPILE_POPED(ret, "prelude", node->nd_head);
 	COMPILE_(ret, "body", node->nd_body, poped);

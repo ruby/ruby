@@ -2459,7 +2459,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	    gc_mark(objspace, (VALUE)obj->as.node.u2.node, lev);
 	    /* fall through */
 	  case NODE_BLOCK:	/* 1,3 */
-	  case NODE_OPTBLOCK:
 	  case NODE_ARRAY:
 	  case NODE_DSTR:
 	  case NODE_DXSTR:

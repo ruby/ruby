@@ -1,3 +1,13 @@
+Fri Sep 28 15:15:41 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def (opt_checkenv): remove unused instruction `opt_checkenv'.
+
+	* compile.c (iseq_compile_each): ditto.
+
+	* node.h: remove unused node `NODE_OPTBLOCK'.
+
+	* ext/objspace/objspace.c, gc.c (gc_mark_children): ditto.
+
 Fri Sep 28 13:14:34 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: now VM_DEBUG_BP_CHECK should be 1.

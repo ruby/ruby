@@ -1305,26 +1305,6 @@ opt_case_dispatch
     }
 }
 
-/**
-  @c optimize
-  @e check environment
-  @j 将来の拡張用。
- */
-DEFINE_INSN
-opt_checkenv
-()
-()
-()
-{
-    if (vm_base_ptr(reg_cfp) != GET_EP() + 1) {
-	VALUE *ep = vm_base_ptr(reg_cfp) - 1;
-	/* TODO: copy env and clean stack at creating env? */
-	*ep = *GET_EP();
-	SET_EP(ep);
-    }
-}
-
-
 /** simple functions */
 
 /**

@@ -230,8 +230,6 @@ enum node_type {
 #define NODE_PRELUDE     NODE_PRELUDE
     NODE_LAMBDA,
 #define NODE_LAMBDA      NODE_LAMBDA
-    NODE_OPTBLOCK,
-#define NODE_OPTBLOCK    NODE_OPTBLOCK
     NODE_LAST
 #define NODE_LAST        NODE_LAST
 };
@@ -456,7 +454,6 @@ typedef struct RNode {
 #define NEW_BMETHOD(b) NEW_NODE(NODE_BMETHOD,0,0,b)
 #define NEW_ATTRASGN(r,m,a) NEW_NODE(NODE_ATTRASGN,r,m,a)
 #define NEW_PRELUDE(p,b) NEW_NODE(NODE_PRELUDE,p,b,0)
-#define NEW_OPTBLOCK(a) NEW_NODE(NODE_OPTBLOCK,a,0,0)
 #define NEW_MEMO(a,b,c) NEW_NODE(NODE_MEMO,a,b,c)
 
 #define roomof(x, y) ((sizeof(x) + sizeof(y) - 1) / sizeof(y))
