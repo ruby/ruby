@@ -1,3 +1,9 @@
+Sat Sep 29 02:18:57 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_unicode_escape.rb (TestUnicodeEscape#test_basic):
+	  Use ruby only on Windows since the test fails on Unix with LANG=C.
+	  [ruby-core:47709] [Bug #7076]
+
 Fri Sep 28 22:19:31 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/ruby/test_unicode_escape.rb (TestUnicodeEscape#test_basic):

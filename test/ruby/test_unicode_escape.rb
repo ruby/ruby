@@ -48,7 +48,11 @@ EOS
     # \u in %x strings
     assert_match(/^("?)A\1$/, `echo "\u0041"`) #"
     assert_match(/^("?)A\1$/, %x{echo "\u0041"}) #"
-    assert_match(/^("?)ü\1$/, `#{EnvUtil.rubybin} -e "puts \\"\u{FC}\\""`.force_encoding("utf-8")) #"
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_match(/^("?)ü\1$/, `#{EnvUtil.rubybin} -e "puts \\"\u{FC}\\""`.force_encoding("utf-8")) #"
+    else
+      assert_match(/^("?)ü\1$/, `echo "\u{FC}"`.force_encoding("utf-8")) #"
+    end
 
     # \u in quoted symbols
     assert_equal(:A, :"\u0041")
