@@ -1,3 +1,12 @@
+Fri Sep 28 17:26:27 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rubygems/installer.rb (check_that_user_bin_dir_is_in_path):
+	  test_generate_bin_bindir_with_user_install_warning(TestGemInstaller)
+	  fails on Windows with msys bash. It makes comparing paths
+	  case-insensitive.
+	  pick from upstream to fix a failure of test-all [ruby-core:47711]
+	  https://github.com/rubygems/rubygems/commit/c474edb2f3704206f04da1c8c6cf9fb079d84abe
+
 Fri Sep 28 15:44:45 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_method.c (search_method): copy refinement iclasses to search
