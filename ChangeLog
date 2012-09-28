@@ -1,3 +1,25 @@
+Fri Sep 28 12:51:54 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove rb_control_frame_t::bp (bp: base pointer).
+	  `bp' can be calculate by `sp' (stack pointer) of previous frame.
+	  Now, `bp_check' field is remained for debug.  You can eliminate
+	  this field by setting  VM_DEBUG_BP_CHECK as 0.
+
+	* vm_insnhelper.c (vm_base_ptr): add `vm_base_ptr(cfp).
+	  This function calculates base pointer from cfp.
+
+	* vm_insnhelper.c (vm_setup_method): push `recv' value on top of
+	  value stack (before method parameters).
+	  This change is for keeping consistency with normal method dispatch.
+
+	* insns.def: fix to use vm_base_ptr().
+
+	* vm.c (vm_exec): ditto.
+
+	* vm_dump.c: remove `bp' related dumps.
+
+	* cont.c (fiber_init): fix to check VM_DEBUG_BP_CHECK.
+
 Fri Sep 28 10:40:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_reopen): accept File::Constants as well as mode string.

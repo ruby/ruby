@@ -1092,9 +1092,9 @@ leave
 (VALUE val)
 {
     if (OPT_CHECKED_RUN) {
-	if (reg_cfp->sp != reg_cfp->bp) {
+	if (reg_cfp->sp != vm_base_ptr(reg_cfp)) {
 	    rb_bug("Stack consistency error (sp: %"PRIdPTRDIFF", bp: %"PRIdPTRDIFF")",
-		   VM_SP_CNT(th, reg_cfp->sp), VM_SP_CNT(th, reg_cfp->bp));
+		   VM_SP_CNT(th, reg_cfp->sp), VM_SP_CNT(th, vm_base_ptr(reg_cfp)));
 	}
     }
 
@@ -1316,8 +1316,8 @@ opt_checkenv
 ()
 ()
 {
-    if (GET_CFP()->bp != GET_EP() + 1) {
-	VALUE *ep = GET_CFP()->bp - 1;
+    if (vm_base_ptr(reg_cfp) != GET_EP() + 1) {
+	VALUE *ep = vm_base_ptr(reg_cfp) - 1;
 	/* TODO: copy env and clean stack at creating env? */
 	*ep = *GET_EP();
 	SET_EP(ep);

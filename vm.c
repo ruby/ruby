@@ -1272,7 +1272,7 @@ vm_exec(rb_thread_t *th)
 		    }
 		    else if (entry->type == type) {
 			cfp->pc = cfp->iseq->iseq_encoded + entry->cont;
-			cfp->sp = cfp->bp + entry->sp;
+			cfp->sp = vm_base_ptr(cfp) + entry->sp;
 
 			if (state != TAG_REDO) {
 #if OPT_STACK_CACHING
@@ -1317,7 +1317,7 @@ vm_exec(rb_thread_t *th)
 
 	    /* enter catch scope */
 	    GetISeqPtr(catch_iseqval, catch_iseq);
-	    cfp->sp = cfp->bp + cont_sp;
+	    cfp->sp = vm_base_ptr(cfp) + cont_sp;
 	    cfp->pc = cfp->iseq->iseq_encoded + cont_pc;
 
 	    /* push block frame */

@@ -353,18 +353,25 @@ typedef struct rb_vm_struct {
     VALUE *defined_strings;
 } rb_vm_t;
 
+#ifndef VM_DEBUG_BP_CHECK
+#define VM_DEBUG_BP_CHECK 0
+#endif
+
 typedef struct {
     VALUE *pc;			/* cfp[0] */
     VALUE *sp;			/* cfp[1] */
-    VALUE *bp;			/* cfp[2] */
-    rb_iseq_t *iseq;		/* cfp[3] */
-    VALUE flag;			/* cfp[4] */
-    VALUE self;			/* cfp[5] / block[0] */
-    VALUE klass;		/* cfp[6] / block[1] */
-    VALUE *ep;			/* cfp[7] / block[2] */
-    rb_iseq_t *block_iseq;	/* cfp[8] / block[3] */
-    VALUE proc;			/* cfp[9] / block[4] */
-    const rb_method_entry_t *me;/* cfp[10] */
+    rb_iseq_t *iseq;		/* cfp[2] */
+    VALUE flag;			/* cfp[3] */
+    VALUE self;			/* cfp[4] / block[0] */
+    VALUE klass;		/* cfp[5] / block[1] */
+    VALUE *ep;			/* cfp[6] / block[2] */
+    rb_iseq_t *block_iseq;	/* cfp[7] / block[3] */
+    VALUE proc;			/* cfp[8] / block[4] */
+    const rb_method_entry_t *me;/* cfp[9] */
+
+#if VM_DEBUG_BP_CHECK
+    VALUE *bp_check;		/* cfp[10] */
+#endif
 } rb_control_frame_t;
 
 typedef struct rb_block_struct {
@@ -707,7 +714,8 @@ rb_block_t *rb_vm_control_frame_block_ptr(rb_control_frame_t *cfp);
 
 #define RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp) ((rb_block_t *)(&(cfp)->self))
 #define RUBY_VM_GET_CFP_FROM_BLOCK_PTR(b) \
-  ((rb_control_frame_t *)((VALUE *)(b) - 5))
+  ((rb_control_frame_t *)((VALUE *)(b) - 4))
+/* magic number `4' is depend on rb_control_frame_t layout. */
 
 /* VM related object allocate functions */
 VALUE rb_thread_alloc(VALUE klass);

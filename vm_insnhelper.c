@@ -57,7 +57,9 @@ vm_push_frame(rb_thread_t *th,
 
     cfp->pc = (VALUE *)pc;
     cfp->sp = sp + 1;
-    cfp->bp = sp + 1;
+#if VM_DEBUG_BP_CHECK
+    cfp->bp_check = sp + 1;
+#endif
     cfp->ep = sp;
     cfp->iseq = (rb_iseq_t *) iseq;
     cfp->flag = type;
@@ -494,19 +496,16 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		const rb_method_entry_t *me, VALUE defined_class)
 {
     int opt_pc, i;
-    VALUE *sp, *rsp = cfp->sp - argc;
+    VALUE *sp, *argv = cfp->sp - argc;
     rb_iseq_t *iseq = me->def->body.iseq;
 
-    VM_CALLEE_SETUP_ARG(opt_pc, th, iseq, argc, rsp, &blockptr);
+    VM_CALLEE_SETUP_ARG(opt_pc, th, iseq, argc, argv, &blockptr);
 
     /* stack overflow check */
     CHECK_STACK_OVERFLOW(cfp, iseq->stack_max);
-
-    sp = rsp + iseq->arg_size;
+    sp = argv + iseq->arg_size;
 
     if (LIKELY(!(flag & VM_CALL_TAILCALL_BIT))) {
-	if (0) printf("local_size: %d, arg_size: %d\n",
-		      iseq->local_size, iseq->arg_size);
 
 	/* clear local variables */
 	for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
@@ -517,30 +516,36 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		      VM_ENVVAL_BLOCK_PTR(blockptr),
 		      iseq->iseq_encoded + opt_pc, sp, 0, me);
 
-	cfp->sp = rsp - 1 /* recv */;
+	cfp->sp = argv - 1 /* recv */;
     }
     else {
-	VALUE *p_rsp;
-	int is_finish_frame = VM_FRAME_TYPE_FINISH_P(cfp);
+	VALUE *src_argv = argv;
+	VALUE *sp_orig;
+	int src_argc = sp - src_argv;
+	VALUE finish_flag = VM_FRAME_TYPE_FINISH_P(cfp) ? VM_FRAME_FLAG_FINISH : 0;
+	cfp = th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp); /* pop cf */
 
-	th->cfp++; /* pop cf */
-	p_rsp = th->cfp->sp;
+	sp = sp_orig = cfp->sp;
+
+	/* push self */
+	sp[0] = recv;
+	sp++;
 
 	/* copy arguments */
-	for (i=0; i < (sp - rsp); i++) {
-	    p_rsp[i] = rsp[i];
+	for (i=0; i < src_argc; i++) {
+	    *sp++ = src_argv[i];
 	}
-
-	sp -= rsp - p_rsp;
 
 	/* clear local variables */
 	for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
 	    *sp++ = Qnil;
 	}
 
-	vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD | (is_finish_frame ? VM_FRAME_FLAG_FINISH : 0),
+	vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD | finish_flag,
 		      recv, defined_class, VM_ENVVAL_BLOCK_PTR(blockptr),
 		      iseq->iseq_encoded + opt_pc, sp, 0, me);
+
+	cfp->sp = sp_orig;
     }
 }
 
@@ -1902,3 +1907,27 @@ double_cmp_ge(double a, double b)
     CHECK_CMP_NAN(a, b);
     return a >= b ? Qtrue : Qfalse;
 }
+
+static VALUE *
+vm_base_ptr(rb_control_frame_t *cfp)
+{
+    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    VALUE *bp = prev_cfp->sp + cfp->iseq->local_size + 1;
+
+    if (cfp->iseq->type == ISEQ_TYPE_METHOD) {
+	/* adjust `self' */
+	bp += 1;
+    }
+
+#if VM_DEBUG_BP_CHECK
+    if (bp != cfp->bp_check) {
+	fprintf(stderr, "bp_check: %d, bp: %d\n",
+		cfp->bp_check - GET_THREAD()->stack,
+		bp - GET_THREAD()->stack);
+	rb_bug("vm_base_ptr: unreachable");
+    }
+#endif
+
+    return bp;
+}
+

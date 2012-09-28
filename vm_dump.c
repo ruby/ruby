@@ -27,7 +27,7 @@
 static void
 control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 {
-    ptrdiff_t pc = -1, bp = -1;
+    ptrdiff_t pc = -1;
     ptrdiff_t ep = cfp->ep - th->stack;
     char ep_in_heap = ' ';
     char posbuf[MAX_POSBUF+1];
@@ -43,9 +43,6 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     if (ep < 0 || (size_t)ep > th->stack_size) {
 	ep = (ptrdiff_t)cfp->ep;
 	ep_in_heap = 'p';
-    }
-    if (cfp->bp) {
-	bp = cfp->bp - th->stack;
     }
 
     switch (VM_FRAME_TYPE(cfp)) {
@@ -119,7 +116,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     else {
 	fprintf(stderr, "p:%04"PRIdPTRDIFF" ", pc);
     }
-    fprintf(stderr, "s:%04"PRIdPTRDIFF" b:%04"PRIdPTRDIFF" ", (cfp->sp - th->stack), bp);
+    fprintf(stderr, "s:%04"PRIdPTRDIFF" ", cfp->sp - th->stack);
     fprintf(stderr, ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "e:%06"PRIxPTRDIFF" ", ep % 10000);
     fprintf(stderr, "%-6s", magic);
     if (line) {
@@ -141,7 +138,7 @@ void
 rb_vmdebug_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
 {
 #if 0
-    VALUE *sp = cfp->sp, *bp = cfp->bp, *ep = cfp->ep;
+    VALUE *sp = cfp->sp, *ep = cfp->ep;
     VALUE *p, *st, *t;
 
     fprintf(stderr, "-- stack frame ------------\n");
@@ -155,8 +152,6 @@ rb_vmdebug_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
 
 	if (p == ep)
 	    fprintf(stderr, " <- ep");
-	if (p == bp)
-	    fprintf(stderr, " <- bp");	/* should not be */
 
 	fprintf(stderr, "\n");
     }
