@@ -496,16 +496,16 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 		const rb_method_entry_t *me, VALUE defined_class)
 {
     int opt_pc, i;
-    VALUE *sp, *argv = cfp->sp - argc;
+    VALUE *argv = cfp->sp - argc;
     rb_iseq_t *iseq = me->def->body.iseq;
 
     VM_CALLEE_SETUP_ARG(opt_pc, th, iseq, argc, argv, &blockptr);
 
     /* stack overflow check */
     CHECK_STACK_OVERFLOW(cfp, iseq->stack_max);
-    sp = argv + iseq->arg_size;
 
     if (LIKELY(!(flag & VM_CALL_TAILCALL_BIT))) {
+	VALUE *sp = argv + iseq->arg_size;
 
 	/* clear local variables */
 	for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
@@ -520,19 +520,18 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
     }
     else {
 	VALUE *src_argv = argv;
-	VALUE *sp_orig;
-	const int src_argc = iseq->arg_size;
+	VALUE *sp_orig, *sp;
 	VALUE finish_flag = VM_FRAME_TYPE_FINISH_P(cfp) ? VM_FRAME_FLAG_FINISH : 0;
-	cfp = th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp); /* pop cf */
 
-	sp = sp_orig = cfp->sp;
+	cfp = th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp); /* pop cf */
+	sp_orig = sp = cfp->sp;
 
 	/* push self */
 	sp[0] = recv;
 	sp++;
 
 	/* copy arguments */
-	for (i=0; i < src_argc; i++) {
+	for (i=0; i < iseq->arg_size; i++) {
 	    *sp++ = src_argv[i];
 	}
 

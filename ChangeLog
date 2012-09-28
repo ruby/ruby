@@ -1,3 +1,8 @@
+Fri Sep 28 17:54:31 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_setup_method): refactoring.
+	  Remove src_argc and use iseq->arg_size directly.
+
 Fri Sep 28 17:26:27 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rubygems/installer.rb (check_that_user_bin_dir_is_in_path):
