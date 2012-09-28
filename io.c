@@ -6365,7 +6365,17 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     }
 
     if (!NIL_P(nmode)) {
-	int fmode = rb_io_modestr_fmode(StringValueCStr(nmode));
+	VALUE intmode = rb_check_to_int(nmode);
+	int fmode;
+
+	if (!NIL_P(intmode)) {
+	    oflags = NUM2INT(intmode);
+	    fmode = rb_io_oflags_fmode(oflags);
+	}
+	else {
+	    fmode = rb_io_modestr_fmode(StringValueCStr(nmode));
+	}
+
 	if (IS_PREP_STDIO(fptr) &&
             ((fptr->mode & FMODE_READWRITE) & (fmode & FMODE_READWRITE)) !=
             (fptr->mode & FMODE_READWRITE)) {
@@ -6375,7 +6385,9 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 		     rb_io_fmode_modestr(fmode));
 	}
 	fptr->mode = fmode;
-	rb_io_mode_enc(fptr, StringValueCStr(nmode));
+	if (NIL_P(intmode)) {
+	    rb_io_mode_enc(fptr, StringValueCStr(nmode));
+	}
         fptr->encs.ecflags = 0;
         fptr->encs.ecopts = Qnil;
     }

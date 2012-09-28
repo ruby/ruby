@@ -1,3 +1,9 @@
+Fri Sep 28 10:40:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_reopen): accept File::Constants as well as mode string.
+	  based on the patch by Glass_saga (Masaki Matsushita) in
+	  [ruby-core:47694].  [Feature #7067]
+
 Thu Sep 27 18:36:51 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_overlay_module, rb_mod_refine): accept a module as the
