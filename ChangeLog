@@ -1,3 +1,11 @@
+Sat Sep 29 19:41:33 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/net/http/test_http.rb (TestNetHTTP#test_proxy_address):
+	  clear environment variables. If http_proxy environment variable was
+	  set, the test failed.
+
+	* test/net/http/test_http.rb (TestNetHTTP#test_proxy_port): ditto.
+
 Sat Sep 29 19:41:11 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/drb/drbtest.rb (DRbCore#teardown):
