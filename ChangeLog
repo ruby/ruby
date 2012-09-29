@@ -1,3 +1,9 @@
+Sat Sep 29 19:40:32 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_unicode_escape.rb (TestUnicodeEscape#test_basic):
+	  set script encoding to work with LANG=C. It would work on both
+	  Windows and Unix. Refix of r37051.
+
 Sat Sep 29 11:21:06 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_insnhelper.c (rb_vm_using_modules): use using_modules before
