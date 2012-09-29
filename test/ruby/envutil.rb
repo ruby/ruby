@@ -65,6 +65,11 @@ module EnvUtil
         stdout = th_stdout.value if capture_stdout
         stderr = th_stderr.value if capture_stderr && capture_stderr != :merge_to_stdout
       else
+        signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM
+        begin
+          Process.kill signal, pid
+        rescue Errno::ESRCH
+        end
         raise Timeout::Error
       end
       out_p.close if capture_stdout

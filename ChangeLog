@@ -1,3 +1,12 @@
+Sat Sep 29 19:41:53 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/envutil.rb (EnvUtil#invoke_ruby): kill child process
+	  before Timeout::Error is raised. rmdir of mktmpdir fails with
+	  EACCES if child process is alive on Windows.
+
+	* test/thread/test_queue.rb (TestQueue): increase timeout.
+	  This test takes long time on Windows XP.
+
 Sat Sep 29 19:41:33 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/net/http/test_http.rb (TestNetHTTP#test_proxy_address):
