@@ -1,3 +1,17 @@
+Sat Sep 29 11:21:06 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c (rb_vm_using_modules): use using_modules before
+	  klass to fix method lookup order, and use klass even if klass is
+	  not a module to make refinements in class_eval invoked on classes
+	  work.
+
+	* eval.c (rb_using_module): accept a class as the second argument.
+
+	* eval.c (rb_mod_using, f_using): raise a TypeError if the argument
+	  is not a module.
+
+	* test/ruby/test_refinement.rb: add new tests for the above changes.
+
 Sat Sep 29 02:18:57 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/ruby/test_unicode_escape.rb (TestUnicodeEscape#test_basic):

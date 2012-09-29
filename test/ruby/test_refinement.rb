@@ -361,6 +361,34 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal([:m1, :m2], m2.module_eval { obj.foo })
   end
 
+  def test_refine_module_with_double_overriding
+    m1 = Module.new {
+      def foo
+        [:m1]
+      end
+    }
+    c = Class.new {
+      include m1
+    }
+    m2 = Module.new {
+      refine m1 do
+        def foo
+          super << :m2
+        end
+      end
+    }
+    m3 = Module.new {
+      using m2
+      refine m1 do
+        def foo
+          super << :m3
+        end
+      end
+    }
+    obj = c.new
+    assert_equal([:m1, :m2, :m3], m3.module_eval { obj.foo })
+  end
+
   def test_refine_module_and_call_superclass_method
     m1 = Module.new
     c1 = Class.new {
@@ -397,6 +425,34 @@ class TestRefinement < Test::Unit::TestCase
         refine "foo" do
         end
       }
+    end
+  end
+
+  def test_refine_in_class_and_class_eval
+    c = Class.new {
+      refine Fixnum do
+        def foo
+          "c"
+        end
+      end
+    }
+    assert_equal("c", c.class_eval { 123.foo })
+  end
+
+  def test_kernel_using_class
+    c = Class.new
+    assert_raise(TypeError) do
+      using c
+    end
+  end
+
+  def test_module_using_class
+    c = Class.new
+    m = Module.new
+    assert_raise(TypeError) do
+      m.module_eval do
+        using c
+      end
     end
   end
 end

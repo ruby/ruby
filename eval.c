@@ -1096,7 +1096,7 @@ rb_using_module(NODE *cref, VALUE module)
     ID id_overlaid_modules;
     VALUE overlaid_modules;
 
-    Check_Type(module, T_MODULE);
+    check_class_or_module(module);
     CONST_ID(id_overlaid_modules, "__overlaid_modules__");
     overlaid_modules = rb_attr_get(module, id_overlaid_modules);
     if (NIL_P(overlaid_modules)) return;
@@ -1117,6 +1117,7 @@ rb_mod_using(VALUE self, VALUE module)
     ID id_using_modules;
     VALUE using_modules;
 
+    Check_Type(module, T_MODULE);
     CONST_ID(id_using_modules, "__using_modules__");
     using_modules = rb_attr_get(self, id_using_modules);
     if (NIL_P(using_modules)) {
@@ -1345,6 +1346,7 @@ f_using(VALUE self, VALUE module)
 {
     NODE *cref = rb_vm_cref();
 
+    Check_Type(module, T_MODULE);
     rb_using_module(cref, module);
     return self;
 }

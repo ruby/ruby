@@ -1830,27 +1830,22 @@ rb_vm_using_modules(NODE *cref, VALUE klass)
     ID id_using_modules;
     VALUE using_modules;
 
+    if (NIL_P(klass)) return;
     CONST_ID(id_using_modules, "__using_modules__");
     using_modules = rb_attr_get(klass, id_using_modules);
-    switch (TYPE(klass)) {
-    case T_CLASS:
-	if (NIL_P(using_modules)) {
-	    VALUE super = rb_class_real(RCLASS_SUPER(klass));
-	    using_modules = rb_attr_get(super, id_using_modules);
-	    if (!NIL_P(using_modules)) {
-		using_modules = rb_hash_dup(using_modules);
-		rb_ivar_set(klass, id_using_modules, using_modules);
-	    }
+    if (NIL_P(using_modules) && BUILTIN_TYPE(klass) == T_CLASS) {
+	VALUE super = rb_class_real(RCLASS_SUPER(klass));
+	using_modules = rb_attr_get(super, id_using_modules);
+	if (!NIL_P(using_modules)) {
+	    using_modules = rb_hash_dup(using_modules);
+	    rb_ivar_set(klass, id_using_modules, using_modules);
 	}
-	break;
-    case T_MODULE:
-	rb_using_module(cref, klass);
-	break;
     }
     if (!NIL_P(using_modules)) {
 	rb_hash_foreach(using_modules, vm_using_module_i,
 			(VALUE) cref);
     }
+    rb_using_module(cref, klass);
 }
 
 static VALUE
