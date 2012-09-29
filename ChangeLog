@@ -1,3 +1,12 @@
+Sat Sep 29 19:41:11 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/drb/drbtest.rb (DRbCore#teardown):
+	  Use Process.kill :KILL on Windows because Process.kill :INT silently
+	  fails on Windows 7 and raises EINVAL on Windows XP for spawned
+	  process with new_pgroup: false.
+
+	* test/drb/drbtest.rb (DRbAry#teardown): ditto.
+
 Sat Sep 29 19:40:32 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/ruby/test_unicode_escape.rb (TestUnicodeEscape#test_basic):
