@@ -473,6 +473,12 @@ class TestString < Test::Unit::TestCase
   def test_concat
     assert_equal(S("world!"), S("world").concat(33))
     assert_equal(S("world!"), S("world").concat(S('!')))
+
+    bug7090 = '[ruby-core:47751]'
+    result = S("").force_encoding(Encoding::UTF_16LE)
+    result << 0x0300
+    expected = S("\u0300".encode(Encoding::UTF_16LE))
+    assert_equal(expected, result, bug7090)
   end
 
   def test_count

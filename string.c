@@ -2158,7 +2158,7 @@ rb_str_concat(VALUE str1, VALUE str2)
 	    rb_raise(rb_eRangeError, "invalid codepoint 0x%X in %s", code, rb_enc_name(enc));
 	}
 	rb_str_resize(str1, pos+len);
-	strncpy(RSTRING_PTR(str1) + pos, buf, len);
+	memcpy(RSTRING_PTR(str1) + pos, buf, len);
 	if (cr == ENC_CODERANGE_7BIT && code > 127)
 	    cr = ENC_CODERANGE_VALID;
 	ENC_CODERANGE_SET(str1, cr);
