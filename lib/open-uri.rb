@@ -341,7 +341,9 @@ module OpenURI
          Net::HTTPSeeOther, # 303
          Net::HTTPTemporaryRedirect # 307
       begin
-        loc_uri = URI.parse(resp['location'])
+        # Some bad formed sites responds location with unescaped special chars.
+        # Just a new URI.encode solve this.
+        loc_uri = URI.parse(URI.encode(resp['location']))
       rescue URI::InvalidURIError
         raise OpenURI::HTTPError.new(io.status.join(' ') + ' (Invalid Location URI)', io)
       end
