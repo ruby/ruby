@@ -1,3 +1,9 @@
+Mon Oct  1 02:34:53 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in (--with-opt-dir): Make this also work on DLDFLAGS
+	  so LIBRUBY_SO links fine with libexecinfo installed in a
+	  non-system directory.
+
 Sun Sep 30 23:32:00 2012  Kenta Murata  <mrkn@mrkn.jp>
 
 	* vm_dump.c (rb_vm_bugreport): add /Library/Logs/DiagnosticReports

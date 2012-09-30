@@ -2353,7 +2353,9 @@ AC_ARG_WITH(opt-dir,
 	[
 		CPPFLAGS="$CPPFLAGS -I$withval/include"
 		val=`echo $withval|sed 's/\\//\\\\\\//g'`
-		LDFLAGS="$LDFLAGS "`echo ${LIBPATHFLAG} ${RPATHFLAG}|sed -E 's/%1\\$-s|%s/'${val}'\/lib/g'`
+		val=`echo ${LIBPATHFLAG} ${RPATHFLAG}|sed -E 's/%1\\$-s|%s/'${val}'\/lib/g'`
+		LDFLAGS="$LDFLAGS $val"
+		DLDFLAGS="$DLDFLAGS $val"
 	])
 
 AS_CASE(["$target_cpu-$target_os"],
