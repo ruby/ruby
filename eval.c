@@ -1040,6 +1040,20 @@ void check_class_or_module(VALUE obj)
     }
 }
 
+static VALUE
+identity_hash_new()
+{
+    VALUE hash = rb_hash_new();
+
+    rb_funcall(hash, rb_intern("compare_by_identity"), 0);
+#if 0
+    /* FIXME: The following code hides hash, but causes "method `default'
+     * called on hidden T_HASH object" error. */
+    RBASIC(hash)->klass = 0;
+#endif
+    return hash;
+}
+
 void
 rb_overlay_module(NODE *cref, VALUE klass, VALUE module)
 {
@@ -1048,8 +1062,7 @@ rb_overlay_module(NODE *cref, VALUE klass, VALUE module)
     check_class_or_module(klass);
     Check_Type(module, T_MODULE);
     if (NIL_P(cref->nd_omod)) {
-	cref->nd_omod = rb_hash_new();
-	rb_funcall(cref->nd_omod, rb_intern("compare_by_identity"), 0);
+	cref->nd_omod = identity_hash_new();
     }
     else {
 	if (cref->flags & NODE_FL_CREF_OMOD_SHARED) {
@@ -1121,8 +1134,7 @@ rb_mod_using(VALUE self, VALUE module)
     CONST_ID(id_using_modules, "__using_modules__");
     using_modules = rb_attr_get(self, id_using_modules);
     if (NIL_P(using_modules)) {
-	using_modules = rb_hash_new();
-	rb_funcall(using_modules, rb_intern("compare_by_identity"), 0);
+	using_modules = identity_hash_new();
 	rb_ivar_set(self, id_using_modules, using_modules);
     }
     rb_hash_aset(using_modules, module, Qtrue);
@@ -1199,8 +1211,7 @@ rb_mod_refine(VALUE module, VALUE klass)
     CONST_ID(id_overlaid_modules, "__overlaid_modules__");
     overlaid_modules = rb_attr_get(module, id_overlaid_modules);
     if (NIL_P(overlaid_modules)) {
-	overlaid_modules = rb_hash_new();
-	rb_funcall(overlaid_modules, rb_intern("compare_by_identity"), 0);
+	overlaid_modules = identity_hash_new();
 	rb_ivar_set(module, id_overlaid_modules, overlaid_modules);
     }
     mod = rb_hash_aref(overlaid_modules, klass);
