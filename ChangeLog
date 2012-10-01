@@ -1,10 +1,10 @@
 Mon Oct  1 22:54:02 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* eval.c (identify_hash_new): new function to create a new identity
+	* eval.c (identity_hash_new): new function to create a new identity
 	  hash.
 
 	* eval.c (rb_overlay_module, rb_mod_using, rb_mod_refine): use
-	  identify_hash_new().
+	  identity_hash_new().
 
 Mon Oct  1 02:34:53 2012  Akinori MUSHA  <knu@iDaemons.org>
 
