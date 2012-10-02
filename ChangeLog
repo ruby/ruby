@@ -1,3 +1,9 @@
+Tue Oct  2 16:47:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (identity_hash_new): hide internal hashes for refinements.
+
+	* eval.c (rb_mod_refine): no default value.
+
 Mon Oct  1 22:54:02 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (identity_hash_new): new function to create a new identity

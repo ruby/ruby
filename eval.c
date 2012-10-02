@@ -1046,11 +1046,7 @@ identity_hash_new()
     VALUE hash = rb_hash_new();
 
     rb_funcall(hash, rb_intern("compare_by_identity"), 0);
-#if 0
-    /* FIXME: The following code hides hash, but causes "method `default'
-     * called on hidden T_HASH object" error. */
     RBASIC(hash)->klass = 0;
-#endif
     return hash;
 }
 
@@ -1214,7 +1210,7 @@ rb_mod_refine(VALUE module, VALUE klass)
 	overlaid_modules = identity_hash_new();
 	rb_ivar_set(module, id_overlaid_modules, overlaid_modules);
     }
-    mod = rb_hash_aref(overlaid_modules, klass);
+    mod = rb_hash_lookup(overlaid_modules, klass);
     if (NIL_P(mod)) {
 	mod = rb_module_new();
 	CONST_ID(id_refined_class, "__refined_class__");
