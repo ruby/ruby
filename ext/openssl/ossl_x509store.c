@@ -204,6 +204,15 @@ ossl_x509store_set_time(VALUE self, VALUE time)
     return time;
 }
 
+/*
+ * call-seq:
+ *   store.add_file(file) -> store
+ *
+ *
+ * Adds the certificates in +file+ to the certificate store.  The +file+ can
+ * contain multiple PEM-encoded certificates.
+ */
+
 static VALUE
 ossl_x509store_add_file(VALUE self, VALUE file)
 {
@@ -246,6 +255,16 @@ ossl_x509store_add_path(VALUE self, VALUE dir)
     return self;
 }
 
+/*
+ * call-seq:
+ *   store.set_default_path
+ *
+ * Adds the default certificates to the certificate store.  These certificates
+ * are loaded from the default configuration directory which can usually be
+ * determined by:
+ *
+ *   File.dirname OpenSSL::Config::DEFAULT_CONFIG_FILE
+ */
 static VALUE
 ossl_x509store_set_default_paths(VALUE self)
 {
@@ -258,6 +277,13 @@ ossl_x509store_set_default_paths(VALUE self)
 
     return Qnil;
 }
+
+/*
+ * call-seq:
+ *   store.add_cert(cert)
+ *
+ * Adds the OpenSSL::X509::Certificate +cert+ to the certificate store.
+ */
 
 static VALUE
 ossl_x509store_add_cert(VALUE self, VALUE arg)

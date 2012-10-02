@@ -1,3 +1,11 @@
+Wed Oct  3 04:36:11 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl_x509store.c (ossl_x509store_add_file):  Added
+	  documentation
+	* ext/openssl/ossl_x509store.c (ossl_x509store_set_default_paths):
+	  ditto
+	* ext/openssl/ossl_x509store.c (ossl_x509store_add_cert):  ditto
+
 Wed Oct  3 02:23:37 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* error.c (exc_to_s, name_err_to_s, name_err_mesg_to_str): do not
