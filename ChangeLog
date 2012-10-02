@@ -1,3 +1,8 @@
+Wed Oct  3 02:23:37 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* error.c (exc_to_s, name_err_to_s, name_err_mesg_to_str): do not
+	  taint messages.
+
 Tue Oct  2 16:47:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (identity_hash_new): hide internal hashes for refinements.
