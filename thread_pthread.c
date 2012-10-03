@@ -492,12 +492,22 @@ static rb_thread_t *register_cached_thread_and_wait(void);
 #define STACKADDR_AVAILABLE 1
 #elif defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP
 #define STACKADDR_AVAILABLE 1
+#undef MAINSTACKADDR_AVAILABLE
+#define MAINSTACKADDR_AVAILABLE 0
 void *pthread_get_stackaddr_np(pthread_t);
 size_t pthread_get_stacksize_np(pthread_t);
 #elif defined HAVE_THR_STKSEGMENT || defined HAVE_PTHREAD_STACKSEG_NP
 #define STACKADDR_AVAILABLE 1
 #elif defined HAVE_PTHREAD_GETTHRDS_NP
 #define STACKADDR_AVAILABLE 1
+#endif
+
+#ifndef MAINSTACKADDR_AVAILABLE
+# ifdef STACKADDR_AVAILABLE
+#   define MAINSTACKADDR_AVAILABLE 1
+# else
+#   define MAINSTACKADDR_AVAILABLE 0
+# endif
 #endif
 
 #ifdef STACKADDR_AVAILABLE
@@ -614,7 +624,7 @@ ruby_init_stack(volatile VALUE *addr
     {
 	size_t size = 0;
 	size_t space = 0;
-#if defined(STACKADDR_AVAILABLE)
+#if MAINSTACKADDR_AVAILABLE
 	void* stackaddr;
 	STACK_GROW_DIR_DETECTION;
 	get_stack(&stackaddr, &size);
