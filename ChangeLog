@@ -1,7 +1,7 @@
 Wed Oct  3 15:33:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (ruby_init_stack): use getrlimit() for the main
-	  thread on Mac OS X, since pthread_get_stack{addr,size}_np() and
+	  thread on Mac OS X, since pthread_get_stack{addr,size}_np()
 	  return the default value always, but not the ulimit value.
 	  [ruby-dev:46174] [Bug #7084]
 
