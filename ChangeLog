@@ -1,3 +1,16 @@
+Wed Oct  3 19:51:57 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: Use the non-recursive marking instead of recursion. The
+	  recursion marking of CRuby needs checking stack overflow and the
+	  fail-safe system, but these systems not good at partial points,
+	  for example, marking deep tree structures. [ruby-dev:46184]
+	  [Feature #7095]
+
+	* configure.in (GC_MARK_STACKFRAME_WORD): removed. It's used by
+	  checking stack overflow of marking.
+
+	* win32/Makefile.sub (GC_MARK_STACKFRAME_WORD): ditto.
+
 Wed Oct  3 15:33:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (ruby_init_stack): use getrlimit() for the main
