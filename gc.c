@@ -350,7 +350,6 @@ static void *aligned_malloc(size_t, size_t);
 static void aligned_free(void *);
 
 static void init_mark_stack(mark_stack_t *stack);
-static void free_stack_chunks(mark_stack_t *);
 
 static VALUE lazy_sweep_enable(void);
 static int garbage_collect(rb_objspace_t *);
@@ -388,7 +387,7 @@ rb_objspace_alloc(void)
 #endif
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
-static void aligned_free(void *);
+static void free_stack_chunks(mark_stack_t *);
 
 void
 rb_objspace_free(rb_objspace_t *objspace)
@@ -2151,6 +2150,7 @@ pop_mark_stack_chunk(mark_stack_t *stack)
     stack->index = stack->limit;
 }
 
+#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 static void
 free_stack_chunks(mark_stack_t *stack)
 {
@@ -2163,6 +2163,7 @@ free_stack_chunks(mark_stack_t *stack)
         chunk = next;
     }
 }
+#endif
 
 static void
 push_mark_stack(mark_stack_t *stack, VALUE data)
