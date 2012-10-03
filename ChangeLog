@@ -1,3 +1,9 @@
+Wed Oct  3 11:43:15 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_reopen): improvement to accept optional arguments.
+	  a patch by Glass_saga (Masaki Matsushita) in [ruby-core:47806].
+	  [Feature #7103]
+
 Wed Oct  3 04:36:11 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/openssl/ossl_x509store.c (ossl_x509store_add_file):  Added

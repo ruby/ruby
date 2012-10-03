@@ -4792,23 +4792,6 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
     rb_io_ext_int_to_encs(ext_enc, int_enc, enc_p, enc2_p);
 }
 
-static void
-mode_enc(rb_io_t *fptr, const char *estr)
-{
-    clear_codeconv(fptr);
-
-    parse_mode_enc(estr, &fptr->encs.enc, &fptr->encs.enc2, NULL);
-}
-
-static void
-rb_io_mode_enc(rb_io_t *fptr, const char *modestr)
-{
-    const char *p = strchr(modestr, ':');
-    if (p) {
-	mode_enc(fptr, p+1);
-    }
-}
-
 int
 rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p)
 {
@@ -6344,12 +6327,12 @@ io_reopen(VALUE io, VALUE nfile)
 static VALUE
 rb_io_reopen(int argc, VALUE *argv, VALUE file)
 {
-    VALUE fname, nmode;
+    VALUE fname, nmode, opt;
     int oflags;
     rb_io_t *fptr;
 
     rb_secure(4);
-    if (rb_scan_args(argc, argv, "11", &fname, &nmode) == 1) {
+    if (rb_scan_args(argc, argv, "11:", &fname, &nmode, &opt) == 1) {
 	VALUE tmp = rb_io_check_io(fname);
 	if (!NIL_P(tmp)) {
 	    return io_reopen(file, tmp);
@@ -6364,18 +6347,11 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 	MEMZERO(fptr, rb_io_t, 1);
     }
 
-    if (!NIL_P(nmode)) {
-	VALUE intmode = rb_check_to_int(nmode);
+    if (!NIL_P(nmode) || !NIL_P(opt)) {
 	int fmode;
+	convconfig_t convconfig;
 
-	if (!NIL_P(intmode)) {
-	    oflags = NUM2INT(intmode);
-	    fmode = rb_io_oflags_fmode(oflags);
-	}
-	else {
-	    fmode = rb_io_modestr_fmode(StringValueCStr(nmode));
-	}
-
+	rb_io_extract_modeenc(&nmode, 0, opt, &oflags, &fmode, &convconfig);
 	if (IS_PREP_STDIO(fptr) &&
             ((fptr->mode & FMODE_READWRITE) & (fmode & FMODE_READWRITE)) !=
             (fptr->mode & FMODE_READWRITE)) {
@@ -6385,15 +6361,13 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 		     rb_io_fmode_modestr(fmode));
 	}
 	fptr->mode = fmode;
-	if (NIL_P(intmode)) {
-	    rb_io_mode_enc(fptr, StringValueCStr(nmode));
-	}
-        fptr->encs.ecflags = 0;
-        fptr->encs.ecopts = Qnil;
+	fptr->encs = convconfig;
+    }
+    else {
+	oflags = rb_io_fmode_oflags(fptr->mode);
     }
 
     fptr->pathv = rb_str_new_frozen(fname);
-    oflags = rb_io_fmode_oflags(fptr->mode);
     if (fptr->fd < 0) {
         fptr->fd = rb_sysopen(fptr->pathv, oflags, 0666);
 	fptr->stdio_file = 0;

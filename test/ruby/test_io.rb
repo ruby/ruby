@@ -1732,6 +1732,74 @@ End
     }
   end
 
+  def test_reopen_opt
+    feature7103 = '[ruby-core:47806]'
+    make_tempfile {|t|
+      open(__FILE__) do |f|
+        assert_nothing_raised(feature7103) {
+          f.reopen(t.path, "r", binmode: true)
+        }
+        assert_equal("foo\n", f.gets)
+      end
+
+      open(__FILE__) do |f|
+        assert_nothing_raised(feature7103) {
+          f.reopen(t.path, autoclose: false)
+        }
+        assert_equal("foo\n", f.gets)
+      end
+    }
+  end
+
+  def make_tempfile_for_encoding
+    t = make_tempfile
+    open(t.path, "rb+:utf-8") {|f| f.puts "\u7d05\u7389bar\n"}
+    if block_given?
+      yield t
+    else
+      t
+    end
+  ensure
+    t.close(true) if t and block_given?
+  end
+
+  def test_reopen_encoding
+    make_tempfile_for_encoding {|t|
+      open(__FILE__) {|f|
+        f.reopen(t.path, "r:utf-8")
+        s = f.gets
+        assert_equal(Encoding::UTF_8, s.encoding)
+        assert_equal("\u7d05\u7389bar\n", s)
+      }
+
+      open(__FILE__) {|f|
+        f.reopen(t.path, "r:UTF-8:EUC-JP")
+        s = f.gets
+        assert_equal(Encoding::EUC_JP, s.encoding)
+        assert_equal("\xB9\xC8\xB6\xCCbar\n".force_encoding(Encoding::EUC_JP), s)
+      }
+    }
+  end
+
+  def test_reopen_opt_encoding
+    feature7103 = '[ruby-core:47806]'
+    make_tempfile_for_encoding {|t|
+      open(__FILE__) {|f|
+        assert_nothing_raised(feature7103) {f.reopen(t.path, encoding: "ASCII-8BIT")}
+        s = f.gets
+        assert_equal(Encoding::ASCII_8BIT, s.encoding)
+        assert_equal("\xe7\xb4\x85\xe7\x8e\x89bar\n", s)
+      }
+
+      open(__FILE__) {|f|
+        assert_nothing_raised(feature7103) {f.reopen(t.path, encoding: "UTF-8:EUC-JP")}
+        s = f.gets
+        assert_equal(Encoding::EUC_JP, s.encoding)
+        assert_equal("\xB9\xC8\xB6\xCCbar\n".force_encoding(Encoding::EUC_JP), s)
+      }
+    }
+  end
+
   def test_foreach
     a = []
     IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :foo; puts :bar; puts :baz'") {|x| a << x }
