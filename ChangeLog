@@ -1,3 +1,9 @@
+Thu Oct  4 21:44:17 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (vm_analysis_insn|operand|register): use st_insert
+	  instead of using rb_hash_aset() because rb_hash_aset()
+	  check $SAFE.
+
 Thu Oct  4 21:15:26 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (VM_COLLECT_USAGE_DETAILS): make new VM usage analysis

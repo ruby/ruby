@@ -2304,6 +2304,8 @@ rb_ruby_debug_ptr(void)
 
 #if VM_COLLECT_USAGE_DETAILS
 
+#define HASH_ASET(h, k, v) st_insert(RHASH_TBL(h), (st_data_t)(k), (st_data_t)(v))
+
 /* uh = {
  *   insn(Fixnum) => ihash(Hash)
  * }
@@ -2331,12 +2333,12 @@ vm_analysis_insn(int insn)
     uh = rb_const_get(rb_cRubyVM, usage_hash);
     if ((ihash = rb_hash_aref(uh, INT2FIX(insn))) == Qnil) {
 	ihash = rb_hash_new();
-	rb_hash_aset(uh, INT2FIX(insn), ihash);
+	HASH_ASET(uh, INT2FIX(insn), ihash);
     }
     if ((cv = rb_hash_aref(ihash, INT2FIX(-1))) == Qnil) {
 	cv = INT2FIX(0);
     }
-    rb_hash_aset(ihash, INT2FIX(-1), INT2FIX(FIX2INT(cv) + 1));
+    HASH_ASET(ihash, INT2FIX(-1), INT2FIX(FIX2INT(cv) + 1));
 
     /* calc bigram */
     if (prev_insn != -1) {
@@ -2352,7 +2354,7 @@ vm_analysis_insn(int insn)
 	if ((cv = rb_hash_aref(uh, bi)) == Qnil) {
 	    cv = INT2FIX(0);
 	}
-	rb_hash_aset(uh, bi, INT2FIX(FIX2INT(cv) + 1));
+	HASH_ASET(uh, bi, INT2FIX(FIX2INT(cv) + 1));
     }
     prev_insn = insn;
 }
@@ -2378,11 +2380,11 @@ vm_analysis_operand(int insn, int n, VALUE op)
     uh = rb_const_get(rb_cRubyVM, usage_hash);
     if ((ihash = rb_hash_aref(uh, INT2FIX(insn))) == Qnil) {
 	ihash = rb_hash_new();
-	rb_hash_aset(uh, INT2FIX(insn), ihash);
+	HASH_ASET(uh, INT2FIX(insn), ihash);
     }
     if ((ophash = rb_hash_aref(ihash, INT2FIX(n))) == Qnil) {
 	ophash = rb_hash_new();
-	rb_hash_aset(ihash, INT2FIX(n), ophash);
+	HASH_ASET(ihash, INT2FIX(n), ophash);
     }
     /* intern */
     valstr = insn_operand_intern(GET_THREAD()->cfp->iseq, insn, n, op, 0, 0, 0, 0);
@@ -2391,7 +2393,7 @@ vm_analysis_operand(int insn, int n, VALUE op)
     if ((cv = rb_hash_aref(ophash, valstr)) == Qnil) {
 	cv = INT2FIX(0);
     }
-    rb_hash_aset(ophash, valstr, INT2FIX(FIX2INT(cv) + 1));
+    HASH_ASET(ophash, valstr, INT2FIX(FIX2INT(cv) + 1));
 }
 
 static void
@@ -2435,8 +2437,10 @@ vm_analysis_register(int reg, int isset)
     if ((cv = rb_hash_aref(uh, valstr)) == Qnil) {
 	cv = INT2FIX(0);
     }
-    rb_hash_aset(uh, valstr, INT2FIX(FIX2INT(cv) + 1));
+    HASH_ASET(uh, valstr, INT2FIX(FIX2INT(cv) + 1));
 }
+
+#undef HASH_ASET
 
 void (*ruby_vm_collect_usage_func_insn)(int insn) = vm_analysis_insn;
 void (*ruby_vm_collect_usage_func_operand)(int insn, int n, VALUE op) = vm_analysis_operand;
