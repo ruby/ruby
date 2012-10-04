@@ -353,6 +353,14 @@ class CGICoreTest < Test::Unit::TestCase
     cgi = CGI.new('html4Fr')
     expected = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">'
     assert_equal(expected, cgi.doctype)
+    ## html5
+    cgi = CGI.new('html5')
+    expected = '<!DOCTYPE HTML>'
+    assert_equal(expected, cgi.doctype)
+    # cgi.header not broken
+    expected = "Content-Type: text/html\r\n\r\n"
+    actual = cgi.header
+    assert_equal(expected, actual)
   end
 
 
