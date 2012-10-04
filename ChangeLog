@@ -1,3 +1,8 @@
+Thu Oct  4 17:24:51 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (rb_objspace_call_finalizer): call gc_mark_stacked_objects
+	  at suitable point.
+
 Thu Oct  4 16:31:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_objspace_call_finalizer): mark self-referencing finalizers

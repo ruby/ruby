@@ -1484,9 +1484,6 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     RVALUE *final_list = 0;
     size_t i;
 
-    mark_tbl(objspace, finalizer_table);
-    gc_mark_stacked_objects(objspace);
-
     /* run finalizers */
     rest_sweep(objspace);
 
@@ -1497,6 +1494,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 	/* because mark will not be removed */
 	finalize_deferred(objspace);
 	mark_tbl(objspace, finalizer_table);
+	gc_mark_stacked_objects(objspace);
 	st_foreach(finalizer_table, chain_finalized_object,
 		   (st_data_t)&deferred_final_list);
     } while (deferred_final_list);
