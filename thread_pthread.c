@@ -588,6 +588,26 @@ static struct {
 #endif
 } native_main_thread;
 
+
+enum {
+#ifdef __SYMBIAN32__
+    RUBY_STACK_MIN_LIMIT = 64 * 1024,  /* 64KB: Let's be slightly more frugal on mobile platform */
+#else
+    RUBY_STACK_MIN_LIMIT = 512 * 1024, /* 512KB */
+#endif
+    RUBY_STACK_SPACE_LIMIT = 1024 * 1024,
+#ifdef PTHREAD_STACK_MIN
+    RUBY_STACK_MIN = ((RUBY_STACK_MIN_LIMIT < PTHREAD_STACK_MIN) ?
+		      PTHREAD_STACK_MIN * 2 : RUBY_STACK_MIN_LIMIT),
+#else
+    RUBY_STACK_MIN = (RUBY_STACK_MIN_LIMIT),
+#endif
+    RUBY_STACK_SPACE_RATIO = 5,
+    RUBY_STACK_MIN_SPACE = RUBY_STACK_MIN/RUBY_STACK_SPACE_RATIO,
+    RUBY_STACK_SPACE = ((RUBY_STACK_MIN_SPACE > RUBY_STACK_SPACE_LIMIT) ?
+			RUBY_STACK_SPACE_LIMIT : RUBY_STACK_MIN_SPACE)
+};
+
 #ifdef STACK_END_ADDRESS
 extern void *STACK_END_ADDRESS;
 #endif
@@ -805,24 +825,6 @@ use_cached_thread(rb_thread_t *th)
 #endif
     return result;
 }
-
-enum {
-#ifdef __SYMBIAN32__
-    RUBY_STACK_MIN_LIMIT = 64 * 1024,  /* 64KB: Let's be slightly more frugal on mobile platform */
-#else
-    RUBY_STACK_MIN_LIMIT = 512 * 1024, /* 512KB */
-#endif
-    RUBY_STACK_SPACE_LIMIT = 1024 * 1024
-};
-
-#ifdef PTHREAD_STACK_MIN
-#define RUBY_STACK_MIN ((RUBY_STACK_MIN_LIMIT < PTHREAD_STACK_MIN) ? \
-			PTHREAD_STACK_MIN * 2 : RUBY_STACK_MIN_LIMIT)
-#else
-#define RUBY_STACK_MIN (RUBY_STACK_MIN_LIMIT)
-#endif
-#define RUBY_STACK_SPACE (RUBY_STACK_MIN/5 > RUBY_STACK_SPACE_LIMIT ? \
-			  RUBY_STACK_SPACE_LIMIT : RUBY_STACK_MIN/5)
 
 static int
 native_thread_create(rb_thread_t *th)
@@ -1425,7 +1427,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
     else {
 	return 0;
     }
-    size /= 5;
+    size /= RUBY_STACK_SPACE_RATIO;
     if (size > water_mark) size = water_mark;
     if (IS_STACK_DIR_UPPER()) {
 	if (size > ~(size_t)base+1) size = ~(size_t)base+1;
