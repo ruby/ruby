@@ -1,3 +1,9 @@
+Thu Oct  4 23:40:04 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (init_heap): call init_mark_stack before to allocate
+	  altstack. This change avoid the stack overflow at the signal
+	  handler on 32bit, but I don't understand reason... [Feature #7095]
+
 Thu Oct  4 22:39:27 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (getlocal, setlocal): remove old getlocal/setlocal

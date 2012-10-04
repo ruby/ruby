@@ -587,6 +587,8 @@ static void
 init_heap(rb_objspace_t *objspace)
 {
     add_heap_slots(objspace, HEAP_MIN_SLOTS / HEAP_OBJ_LIMIT);
+    init_mark_stack(&objspace->mark_stack);
+
 #ifdef USE_SIGALTSTACK
     {
 	/* altstack of another threads are allocated in another place */
@@ -599,7 +601,6 @@ init_heap(rb_objspace_t *objspace)
 
     objspace->profile.invoke_time = getrusage_time();
     finalizer_table = st_init_numtable();
-    init_mark_stack(&objspace->mark_stack);
 }
 
 static void
