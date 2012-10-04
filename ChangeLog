@@ -1,3 +1,9 @@
+Thu Oct  4 18:59:14 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_settracefunc.rb (test_tracepoint):
+	  remove unused test case.
+	  (this test case is redefined by newer tests)
+
 Thu Oct  4 17:24:51 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (rb_objspace_call_finalizer): call gc_mark_stacked_objects
