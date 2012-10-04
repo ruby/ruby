@@ -315,8 +315,8 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define GET_HEAP_SLOT(x) (GET_HEAP_HEADER(x)->base)
 #define GET_HEAP_BITMAP(x) (GET_HEAP_HEADER(x)->bits)
 #define NUM_IN_SLOT(p) (((uintptr_t)(p) & HEAP_ALIGN_MASK)/sizeof(RVALUE))
-#define BITMAP_INDEX(p) (NUM_IN_SLOT(p) / (sizeof(uintptr_t) * 8))
-#define BITMAP_OFFSET(p) (NUM_IN_SLOT(p) & ((sizeof(uintptr_t) * 8)-1))
+#define BITMAP_INDEX(p) (NUM_IN_SLOT(p) / (sizeof(uintptr_t) * CHAR_BIT))
+#define BITMAP_OFFSET(p) (NUM_IN_SLOT(p) & ((sizeof(uintptr_t) * CHAR_BIT)-1))
 #define MARKED_IN_BITMAP(bits, p) (bits[BITMAP_INDEX(p)] & ((uintptr_t)1 << BITMAP_OFFSET(p)))
 
 #ifndef HEAP_ALIGN_LOG
@@ -324,14 +324,16 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define HEAP_ALIGN_LOG 14
 #endif
 
-#define HEAP_ALIGN (1UL << HEAP_ALIGN_LOG)
-#define HEAP_ALIGN_MASK (~(~0UL << HEAP_ALIGN_LOG))
-#define REQUIRED_SIZE_BY_MALLOC (sizeof(size_t) * 5)
-#define HEAP_SIZE (HEAP_ALIGN - REQUIRED_SIZE_BY_MALLOC)
 #define CEILDIV(i, mod) (((i) + (mod) - 1)/(mod))
 
-#define HEAP_OBJ_LIMIT (unsigned int)((HEAP_SIZE - sizeof(struct heaps_header))/sizeof(struct RVALUE))
-#define HEAP_BITMAP_LIMIT CEILDIV(CEILDIV(HEAP_SIZE, sizeof(struct RVALUE)), sizeof(uintptr_t)*8)
+enum {
+    HEAP_ALIGN = (1UL << HEAP_ALIGN_LOG),
+    HEAP_ALIGN_MASK = (~(~0UL << HEAP_ALIGN_LOG)),
+    REQUIRED_SIZE_BY_MALLOC = (sizeof(size_t) * 5),
+    HEAP_SIZE = (HEAP_ALIGN - REQUIRED_SIZE_BY_MALLOC),
+    HEAP_OBJ_LIMIT = (unsigned int)((HEAP_SIZE - sizeof(struct heaps_header))/sizeof(struct RVALUE)),
+    HEAP_BITMAP_LIMIT = CEILDIV(CEILDIV(HEAP_SIZE, sizeof(struct RVALUE)), sizeof(uintptr_t) * CHAR_BIT)
+};
 
 int ruby_gc_debug_indent = 0;
 VALUE rb_mGC;
@@ -2544,7 +2546,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 {
     register RVALUE *obj = RANY(ptr);
 
-    goto marking;              /* skip */
+    goto marking;		/* skip */
 
   again:
     obj = RANY(ptr);
@@ -2574,7 +2576,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	  case NODE_RESBODY:
 	  case NODE_CLASS:
 	  case NODE_BLOCK_PASS:
-            gc_mark(objspace, (VALUE)obj->as.node.u2.node);
+	    gc_mark(objspace, (VALUE)obj->as.node.u2.node);
 	    /* fall through */
 	  case NODE_BLOCK:	/* 1,3 */
 	  case NODE_ARRAY:
@@ -2586,14 +2588,14 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	  case NODE_CALL:
 	  case NODE_DEFS:
 	  case NODE_OP_ASGN1:
-            gc_mark(objspace, (VALUE)obj->as.node.u1.node);
+	    gc_mark(objspace, (VALUE)obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_SUPER:	/* 3 */
 	  case NODE_FCALL:
 	  case NODE_DEFN:
 	  case NODE_ARGS_AUX:
-            ptr = (VALUE)obj->as.node.u3.node;
-            goto again;
+	    ptr = (VALUE)obj->as.node.u3.node;
+	    goto again;
 
 	  case NODE_WHILE:	/* 1,2 */
 	  case NODE_UNTIL:
@@ -2613,7 +2615,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	  case NODE_ALIAS:
 	  case NODE_VALIAS:
 	  case NODE_ARGSCAT:
-            gc_mark(objspace, (VALUE)obj->as.node.u1.node);
+	    gc_mark(objspace, (VALUE)obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_GASGN:	/* 2 */
 	  case NODE_LASGN:
@@ -2627,8 +2629,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	  case NODE_EVSTR:
 	  case NODE_UNDEF:
 	  case NODE_POSTEXE:
-            ptr = (VALUE)obj->as.node.u2.node;
-            goto again;
+	    ptr = (VALUE)obj->as.node.u2.node;
+	    goto again;
 
 	  case NODE_HASH:	/* 1 */
 	  case NODE_LIT:
@@ -2643,15 +2645,15 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	  case NODE_COLON2:
 	  case NODE_SPLAT:
 	  case NODE_TO_ARY:
-            ptr = (VALUE)obj->as.node.u1.node;
-            goto again;
+	    ptr = (VALUE)obj->as.node.u1.node;
+	    goto again;
 
 	  case NODE_SCOPE:	/* 2,3 */
 	  case NODE_CDECL:
 	  case NODE_OPT_ARG:
-            gc_mark(objspace, (VALUE)obj->as.node.u3.node);
-            ptr = (VALUE)obj->as.node.u2.node;
-            goto again;
+	    gc_mark(objspace, (VALUE)obj->as.node.u3.node);
+	    ptr = (VALUE)obj->as.node.u2.node;
+	    goto again;
 
 	  case NODE_ARGS:	/* custom */
 	    {
@@ -2664,8 +2666,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 		    if (args->kw_rest_arg) gc_mark(objspace, (VALUE)args->kw_rest_arg);
 		}
 	    }
-            ptr = (VALUE)obj->as.node.u2.node;
-            goto again;
+	    ptr = (VALUE)obj->as.node.u2.node;
+	    goto again;
 
 	  case NODE_ZARRAY:	/* - */
 	  case NODE_ZSUPER:
@@ -2690,24 +2692,24 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	    mark_locations_array(objspace,
 				 (VALUE*)obj->as.node.u1.value,
 				 obj->as.node.u3.cnt);
-            gc_mark(objspace, (VALUE)obj->as.node.u2.node);
+	    gc_mark(objspace, (VALUE)obj->as.node.u2.node);
 	    break;
 
 	  case NODE_CREF:
-            gc_mark(objspace, obj->as.node.nd_omod);
-            gc_mark(objspace, (VALUE)obj->as.node.u1.node);
-            ptr = (VALUE)obj->as.node.u3.node;
-            goto again;
+	    gc_mark(objspace, obj->as.node.nd_omod);
+	    gc_mark(objspace, (VALUE)obj->as.node.u1.node);
+	    ptr = (VALUE)obj->as.node.u3.node;
+	    goto again;
 
 	  default:		/* unlisted NODE */
 	    if (is_pointer_to_heap(objspace, obj->as.node.u1.node)) {
-                gc_mark(objspace, (VALUE)obj->as.node.u1.node);
+		gc_mark(objspace, (VALUE)obj->as.node.u1.node);
 	    }
 	    if (is_pointer_to_heap(objspace, obj->as.node.u2.node)) {
-                gc_mark(objspace, (VALUE)obj->as.node.u2.node);
+		gc_mark(objspace, (VALUE)obj->as.node.u2.node);
 	    }
 	    if (is_pointer_to_heap(objspace, obj->as.node.u3.node)) {
-                gc_mark(objspace, (VALUE)obj->as.node.u3.node);
+		gc_mark(objspace, (VALUE)obj->as.node.u3.node);
 	    }
 	}
 	return;			/* no need to mark class. */
@@ -2720,35 +2722,35 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
       case T_MODULE:
 	mark_m_tbl(objspace, RCLASS_M_TBL(obj));
 	if (!RCLASS_EXT(obj)) break;
-        mark_tbl(objspace, RCLASS_IV_TBL(obj));
-        mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
-        ptr = RCLASS_SUPER(obj);
-        goto again;
+	mark_tbl(objspace, RCLASS_IV_TBL(obj));
+	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
+	ptr = RCLASS_SUPER(obj);
+	goto again;
 
       case T_ARRAY:
 	if (FL_TEST(obj, ELTS_SHARED)) {
-            ptr = obj->as.array.as.heap.aux.shared;
-            goto again;
+	    ptr = obj->as.array.as.heap.aux.shared;
+	    goto again;
 	}
 	else {
 	    long i, len = RARRAY_LEN(obj);
 	    VALUE *ptr = RARRAY_PTR(obj);
 	    for (i=0; i < len; i++) {
-                gc_mark(objspace, *ptr++);
+		gc_mark(objspace, *ptr++);
 	    }
 	}
 	break;
 
       case T_HASH:
 	mark_hash(objspace, obj->as.hash.ntbl);
-        ptr = obj->as.hash.ifnone;
-        goto again;
+	ptr = obj->as.hash.ifnone;
+	goto again;
 
       case T_STRING:
 #define STR_ASSOC FL_USER3   /* copied from string.c */
 	if (FL_TEST(obj, RSTRING_NOEMBED) && FL_ANY(obj, ELTS_SHARED|STR_ASSOC)) {
-            ptr = obj->as.string.as.heap.aux.shared;
-            goto again;
+	    ptr = obj->as.string.as.heap.aux.shared;
+	    goto again;
 	}
 	break;
 
@@ -2767,7 +2769,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
             long i, len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
             for (i  = 0; i < len; i++) {
-                gc_mark(objspace, *ptr++);
+		gc_mark(objspace, *ptr++);
             }
         }
 	break;
@@ -2793,22 +2795,22 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	break;
 
       case T_MATCH:
-        gc_mark(objspace, obj->as.match.regexp);
+	gc_mark(objspace, obj->as.match.regexp);
 	if (obj->as.match.str) {
-            ptr = obj->as.match.str;
-            goto again;
+	    ptr = obj->as.match.str;
+	    goto again;
 	}
 	break;
 
       case T_RATIONAL:
-        gc_mark(objspace, obj->as.rational.num);
-        ptr = obj->as.rational.den;
-        goto again;
+	gc_mark(objspace, obj->as.rational.num);
+	ptr = obj->as.rational.den;
+	goto again;
 
       case T_COMPLEX:
-        gc_mark(objspace, obj->as.complex.real);
-        ptr = obj->as.complex.imag;
-        goto again;
+	gc_mark(objspace, obj->as.complex.real);
+	ptr = obj->as.complex.imag;
+	goto again;
 
       case T_STRUCT:
 	{
@@ -2816,7 +2818,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	    VALUE *ptr = RSTRUCT_PTR(obj);
 
 	    while (len--) {
-                gc_mark(objspace, *ptr++);
+		gc_mark(objspace, *ptr++);
 	    }
 	}
 	break;
