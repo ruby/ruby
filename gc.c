@@ -358,6 +358,7 @@ static int garbage_collect(rb_objspace_t *);
 static int gc_lazy_sweep(rb_objspace_t *);
 static void mark_tbl(rb_objspace_t *, st_table *);
 static void rest_sweep(rb_objspace_t *);
+static void gc_mark_stacked_objects(rb_objspace_t *);
 
 static double getrusage_time(void);
 static inline void gc_prof_timer_start(rb_objspace_t *);
@@ -1482,6 +1483,9 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     RVALUE *p, *pend;
     RVALUE *final_list = 0;
     size_t i;
+
+    mark_tbl(objspace, finalizer_table);
+    gc_mark_stacked_objects(objspace);
 
     /* run finalizers */
     rest_sweep(objspace);
@@ -2831,12 +2835,24 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 }
 
 static void
+gc_mark_stacked_objects(rb_objspace_t *objspace)
+{
+    mark_stack_t *mstack = &objspace->mark_stack;
+    VALUE obj = 0;
+
+    if (!mstack->index) return;
+    while (pop_mark_stack(mstack, &obj)) {
+        gc_mark_children(objspace, obj);
+    }
+    shrink_stack_chunk_cache(mstack);
+}
+
+static void
 gc_marks(rb_objspace_t *objspace)
 {
     struct gc_list *list;
     rb_thread_t *th = GET_THREAD();
-    mark_stack_t *mstack = &objspace->mark_stack;
-    VALUE obj = 0;
+
     gc_prof_mark_timer_start(objspace);
 
     objspace->heap.live_num = 0;
@@ -2870,10 +2886,7 @@ gc_marks(rb_objspace_t *objspace)
     rb_gc_mark_unlinked_live_method_entries(th->vm);
 
     /* marking-loop */
-    while (pop_mark_stack(mstack, &obj)) {
-        gc_mark_children(objspace, obj);
-    }
-    shrink_stack_chunk_cache(mstack);
+    gc_mark_stacked_objects(objspace);
 
     gc_prof_mark_timer_stop(objspace);
 }

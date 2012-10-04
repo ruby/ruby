@@ -1,3 +1,10 @@
+Thu Oct  4 16:31:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_objspace_call_finalizer): mark self-referencing finalizers
+	  before run finalizers, to fix SEGV from btest on 32bit.
+
+	* gc.c (gc_mark_stacked_objects): extract from gc_marks().
+
 Thu Oct  4 11:43:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (ruby_init_stack): round stack limit to page size
