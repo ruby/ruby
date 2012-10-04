@@ -61,6 +61,16 @@ rb_vm_control_frame_block_ptr(rb_control_frame_t *cfp)
     return VM_CF_BLOCK_PTR(cfp);
 }
 
+#ifndef VM_COLLECT_USAGE_DETAILS
+#define VM_COLLECT_USAGE_DETAILS 0
+#endif
+
+#if VM_COLLECT_USAGE_DETAILS
+static void vm_collect_usage_operand(int insn, int n, VALUE op);
+static void vm_collect_usage_register(int reg, int isset);
+static void vm_collect_usage_insn(int insn);
+#endif
+
 static VALUE
 vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class,
 	       int argc, const VALUE *argv, const rb_block_t *blockptr);
@@ -90,10 +100,6 @@ rb_vm_t *ruby_current_vm = 0;
 rb_event_flag_t ruby_vm_event_flags;
 
 static void thread_free(void *ptr);
-
-void vm_analysis_operand(int insn, int n, VALUE op);
-void vm_analysis_register(int reg, int isset);
-void vm_analysis_insn(int insn);
 
 void
 rb_vm_change_state(void)
@@ -2070,6 +2076,12 @@ nsdr(void)
     return ary;
 }
 
+#if VM_COLLECT_USAGE_DETAILS
+static VALUE usage_analysis_insn_stop(VALUE self);
+static VALUE usage_analysis_operand_stop(VALUE self);
+static VALUE usage_analysis_register_stop(VALUE self);
+#endif
+
 void
 Init_VM(void)
 {
@@ -2109,10 +2121,18 @@ Init_VM(void)
     rb_cThread = rb_define_class("Thread", rb_cObject);
     rb_undef_alloc_func(rb_cThread);
 
+#if VM_COLLECT_USAGE_DETAILS
     /* ::RubyVM::USAGE_ANALYSIS_* */
     rb_define_const(rb_cRubyVM, "USAGE_ANALYSIS_INSN", rb_hash_new());
     rb_define_const(rb_cRubyVM, "USAGE_ANALYSIS_REGS", rb_hash_new());
     rb_define_const(rb_cRubyVM, "USAGE_ANALYSIS_INSN_BIGRAM", rb_hash_new());
+
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_INSN_STOP", usage_analysis_insn_stop, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_OPERAND_STOP", usage_analysis_operand_stop, 0);
+    rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_REGISTER_STOP", usage_analysis_register_stop, 0);
+#endif
+
+    /* ::RubyVM::OPTS, which shows vm build options */
     rb_define_const(rb_cRubyVM, "OPTS", opts = rb_ary_new());
 
 #if   OPT_DIRECT_THREADED_CODE
@@ -2281,3 +2301,197 @@ rb_ruby_debug_ptr(void)
 {
     return ruby_vm_debug_ptr(GET_VM());
 }
+
+#if VM_COLLECT_USAGE_DETAILS
+
+/* uh = {
+ *   insn(Fixnum) => ihash(Hash)
+ * }
+ * ihash = {
+ *   -1(Fixnum) => count,      # insn usage
+ *    0(Fixnum) => ophash,     # operand usage
+ * }
+ * ophash = {
+ *   val(interned string) => count(Fixnum)
+ * }
+ */
+static void
+vm_analysis_insn(int insn)
+{
+    ID usage_hash;
+    ID bigram_hash;
+    static int prev_insn = -1;
+
+    VALUE uh;
+    VALUE ihash;
+    VALUE cv;
+
+    CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
+    CONST_ID(bigram_hash, "USAGE_ANALYSIS_INSN_BIGRAM");
+    uh = rb_const_get(rb_cRubyVM, usage_hash);
+    if ((ihash = rb_hash_aref(uh, INT2FIX(insn))) == Qnil) {
+	ihash = rb_hash_new();
+	rb_hash_aset(uh, INT2FIX(insn), ihash);
+    }
+    if ((cv = rb_hash_aref(ihash, INT2FIX(-1))) == Qnil) {
+	cv = INT2FIX(0);
+    }
+    rb_hash_aset(ihash, INT2FIX(-1), INT2FIX(FIX2INT(cv) + 1));
+
+    /* calc bigram */
+    if (prev_insn != -1) {
+	VALUE bi;
+	VALUE ary[2];
+	VALUE cv;
+
+	ary[0] = INT2FIX(prev_insn);
+	ary[1] = INT2FIX(insn);
+	bi = rb_ary_new4(2, &ary[0]);
+
+	uh = rb_const_get(rb_cRubyVM, bigram_hash);
+	if ((cv = rb_hash_aref(uh, bi)) == Qnil) {
+	    cv = INT2FIX(0);
+	}
+	rb_hash_aset(uh, bi, INT2FIX(FIX2INT(cv) + 1));
+    }
+    prev_insn = insn;
+}
+
+/* iseq.c */
+VALUE insn_operand_intern(rb_iseq_t *iseq,
+			  VALUE insn, int op_no, VALUE op,
+			  int len, size_t pos, VALUE *pnop, VALUE child);
+
+static void
+vm_analysis_operand(int insn, int n, VALUE op)
+{
+    ID usage_hash;
+
+    VALUE uh;
+    VALUE ihash;
+    VALUE ophash;
+    VALUE valstr;
+    VALUE cv;
+
+    CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
+
+    uh = rb_const_get(rb_cRubyVM, usage_hash);
+    if ((ihash = rb_hash_aref(uh, INT2FIX(insn))) == Qnil) {
+	ihash = rb_hash_new();
+	rb_hash_aset(uh, INT2FIX(insn), ihash);
+    }
+    if ((ophash = rb_hash_aref(ihash, INT2FIX(n))) == Qnil) {
+	ophash = rb_hash_new();
+	rb_hash_aset(ihash, INT2FIX(n), ophash);
+    }
+    /* intern */
+    valstr = insn_operand_intern(GET_THREAD()->cfp->iseq, insn, n, op, 0, 0, 0, 0);
+
+    /* set count */
+    if ((cv = rb_hash_aref(ophash, valstr)) == Qnil) {
+	cv = INT2FIX(0);
+    }
+    rb_hash_aset(ophash, valstr, INT2FIX(FIX2INT(cv) + 1));
+}
+
+static void
+vm_analysis_register(int reg, int isset)
+{
+    ID usage_hash;
+    VALUE uh;
+    VALUE valstr;
+    static const char regstrs[][5] = {
+	"pc",			/* 0 */
+	"sp",			/* 1 */
+	"ep",                   /* 2 */
+	"cfp",			/* 3 */
+	"self",			/* 4 */
+	"iseq",			/* 5 */
+    };
+    static const char getsetstr[][4] = {
+	"get",
+	"set",
+    };
+    static VALUE syms[sizeof(regstrs) / sizeof(regstrs[0])][2];
+
+    VALUE cv;
+
+    CONST_ID(usage_hash, "USAGE_ANALYSIS_REGS");
+    if (syms[0] == 0) {
+	char buff[0x10];
+	int i;
+
+	for (i = 0; i < (int)(sizeof(regstrs) / sizeof(regstrs[0])); i++) {
+	    int j;
+	    for (j = 0; j < 2; j++) {
+		snprintf(buff, 0x10, "%d %s %-4s", i, getsetstr[j], regstrs[i]);
+		syms[i][j] = ID2SYM(rb_intern(buff));
+	    }
+	}
+    }
+    valstr = syms[reg][isset];
+
+    uh = rb_const_get(rb_cRubyVM, usage_hash);
+    if ((cv = rb_hash_aref(uh, valstr)) == Qnil) {
+	cv = INT2FIX(0);
+    }
+    rb_hash_aset(uh, valstr, INT2FIX(FIX2INT(cv) + 1));
+}
+
+void (*ruby_vm_collect_usage_func_insn)(int insn) = vm_analysis_insn;
+void (*ruby_vm_collect_usage_func_operand)(int insn, int n, VALUE op) = vm_analysis_operand;
+void (*ruby_vm_collect_usage_func_register)(int reg, int isset) = vm_analysis_register;
+
+/* :nodoc: */
+static VALUE
+usage_analysis_insn_stop(VALUE self)
+{
+    ruby_vm_collect_usage_func_insn = 0;
+    return Qnil;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_operand_stop(VALUE self)
+{
+    ruby_vm_collect_usage_func_operand = 0;
+    return Qnil;
+}
+
+/* :nodoc: */
+static VALUE
+usage_analysis_register_stop(VALUE self)
+{
+    ruby_vm_collect_usage_func_register = 0;
+    return Qnil;
+}
+
+/* @param insn instruction number */
+static void
+vm_collect_usage_insn(int insn)
+{
+    if (ruby_vm_collect_usage_func_insn)
+      (*ruby_vm_collect_usage_func_insn)(insn);
+}
+
+/* @param insn instruction number
+ * @param n    n-th operand
+ * @param op   operand value
+ */
+static void
+vm_collect_usage_operand(int insn, int n, VALUE op)
+{
+    if (ruby_vm_collect_usage_func_operand)
+      (*ruby_vm_collect_usage_func_operand)(insn, n, op);
+}
+
+/* @param reg register id. see code of vm_analysis_register() */
+/* @param iseset 0: read, 1: write */
+static void
+vm_collect_usage_register(int reg, int isset)
+{
+    if (ruby_vm_collect_usage_func_register)
+      (*ruby_vm_collect_usage_func_register)(reg, isset);
+}
+
+#endif

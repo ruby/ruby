@@ -963,7 +963,7 @@ id_to_name(ID id, VALUE default_value)
     return str;
 }
 
-static VALUE
+VALUE
 insn_operand_intern(rb_iseq_t *iseq,
 		    VALUE insn, int op_no, VALUE op,
 		    int len, size_t pos, VALUE *pnop, VALUE child)
@@ -991,13 +991,18 @@ insn_operand_intern(rb_iseq_t *iseq,
 	}
       case TS_DINDEX:{
 	if (insn == BIN(getdynamic) || insn == BIN(setdynamic)) {
-	    rb_iseq_t *diseq = iseq;
-	    VALUE level = *pnop, i;
+	    if (pnop) {
+		rb_iseq_t *diseq = iseq;
+		VALUE level = *pnop, i;
 
-	    for (i = 0; i < level; i++) {
-		diseq = diseq->parent_iseq;
+		for (i = 0; i < level; i++) {
+		    diseq = diseq->parent_iseq;
+		}
+		ret = id_to_name(diseq->local_table[diseq->local_size - op], INT2FIX('*'));
 	    }
-	    ret = id_to_name(diseq->local_table[diseq->local_size - op], INT2FIX('*'));
+	    else {
+		ret = rb_sprintf("%"PRIuVALUE, op);
+	    }
 	}
 	else {
 	    ret = rb_inspect(INT2FIX(op));
@@ -1011,7 +1016,9 @@ insn_operand_intern(rb_iseq_t *iseq,
 	op = obj_resurrect(op);
 	ret = rb_inspect(op);
 	if (CLASS_OF(op) == rb_cISeq) {
-	    rb_ary_push(child, op);
+	    if (child) {
+		rb_ary_push(child, op);
+	    }
 	}
 	break;
 
@@ -1049,7 +1056,7 @@ insn_operand_intern(rb_iseq_t *iseq,
 	break;
 
       default:
-	rb_bug("rb_iseq_disasm: unknown operand type: %c", type);
+	rb_bug("insn_operand_intern: unknown operand type: %c", type);
     }
     return ret;
 }

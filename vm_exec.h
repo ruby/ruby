@@ -18,16 +18,6 @@ typedef unsigned long dindex_t;
 typedef rb_num_t GENTRY;
 typedef rb_iseq_t *ISEQ;
 
-#ifdef  COLLECT_USAGE_ANALYSIS
-#define USAGE_ANALYSIS_INSN(insn)           vm_analysis_insn(insn)
-#define USAGE_ANALYSIS_OPERAND(insn, n, op) vm_analysis_operand((insn), (n), (VALUE)(op))
-#define USAGE_ANALYSIS_REGISTER(reg, s)     vm_analysis_register((reg), (s))
-#else
-#define USAGE_ANALYSIS_INSN(insn)		/* none */
-#define USAGE_ANALYSIS_OPERAND(insn, n, op)	/* none */
-#define USAGE_ANALYSIS_REGISTER(reg, s)		/* none */
-#endif
-
 #ifdef __GCC__
 /* TODO: machine dependent prefetch instruction */
 #define PREFETCH(pc)

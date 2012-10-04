@@ -791,9 +791,9 @@ class RubyVM
     end
 
     def make_header_analysis insn
-      commit "  USAGE_ANALYSIS_INSN(BIN(#{insn.name}));"
+      commit "  COLLECT_USAGE_INSN(BIN(#{insn.name}));"
       insn.opes.each_with_index{|op, i|
-        commit "  USAGE_ANALYSIS_OPERAND(BIN(#{insn.name}), #{i}, #{op[1]});"
+        commit "  COLLECT_USAGE_OPERAND(BIN(#{insn.name}), #{i}, #{op[1]});"
       }
     end
 
