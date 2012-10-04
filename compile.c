@@ -535,7 +535,7 @@ rb_iseq_compile_node(VALUE self, NODE *node)
     }
 
     if (iseq->type == ISEQ_TYPE_RESCUE || iseq->type == ISEQ_TYPE_ENSURE) {
-	ADD_INSN2(ret, 0, getdynamic, INT2FIX(2), INT2FIX(0));
+	ADD_INSN2(ret, 0, getlocal, INT2FIX(2), INT2FIX(0));
 	ADD_INSN1(ret, 0, throw, INT2FIX(0) /* continue throw */ );
     }
     else {
@@ -1032,6 +1032,17 @@ iseq_set_exception_local_table(rb_iseq_t *iseq)
 }
 
 static int
+get_lvar_level(rb_iseq_t *iseq)
+{
+    int lev = 0;
+    while (iseq != iseq->local_iseq) {
+	lev++;
+	iseq = iseq->parent_iseq;
+    }
+    return lev;
+}
+
+static int
 get_dyna_var_idx_at_raw(rb_iseq_t *iseq, ID id)
 {
     int i;
@@ -1458,7 +1469,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    break;
 			}
 		      case TS_LINDEX:
-		      case TS_DINDEX:
 		      case TS_NUM:	/* ulong */
 			generated_iseq[pos + 1 + j] = FIX2INT(operands[j]);
 			break;
@@ -3686,7 +3696,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		switch (nd_type(narg)) {
 		  case NODE_ARRAY:
 		    while (narg) {
-			ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(2), INT2FIX(0));
+			ADD_INSN2(ret, nd_line(node), getlocal, INT2FIX(2), INT2FIX(0));
 			COMPILE(ret, "rescue arg", narg->nd_head);
 			ADD_INSN1(ret, nd_line(node), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
 			ADD_INSNL(ret, nd_line(node), branchif, label_hit);
@@ -3696,7 +3706,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		  case NODE_SPLAT:
 		  case NODE_ARGSCAT:
 		  case NODE_ARGSPUSH:
-		    ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(2), INT2FIX(0));
+		    ADD_INSN2(ret, nd_line(node), getlocal, INT2FIX(2), INT2FIX(0));
 		    COMPILE(ret, "rescue/cond splat", narg);
 		    ADD_INSN1(ret, nd_line(node), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE | VM_CHECKMATCH_ARRAY));
 		    ADD_INSNL(ret, nd_line(node), branchif, label_hit);
@@ -3707,7 +3717,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		}
 	    }
 	    else {
-		ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(2), INT2FIX(0));
+		ADD_INSN2(ret, nd_line(node), getlocal, INT2FIX(2), INT2FIX(0));
 		ADD_INSN1(ret, nd_line(node), putobject, rb_eStandardError);
 		ADD_INSN1(ret, nd_line(node), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
 		ADD_INSNL(ret, nd_line(node), branchif, label_hit);
@@ -3804,7 +3814,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	if (!poped) {
 	    ADD_INSN(ret, nd_line(node), dup);
 	}
-	ADD_INSN1(ret, nd_line(node), setlocal, INT2FIX(idx));
+	ADD_INSN2(ret, nd_line(node), setlocal, INT2FIX(idx), INT2FIX(get_lvar_level(iseq)));
 
 	break;
       }
@@ -3824,8 +3834,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    rb_bug("NODE_DASGN(_CURR): unknown id (%s)", rb_id2name(node->nd_vid));
 	}
 
-	ADD_INSN2(ret, nd_line(node), setdynamic,
-		  INT2FIX(ls - idx), INT2FIX(lv));
+	ADD_INSN2(ret, nd_line(node), setlocal, INT2FIX(ls - idx), INT2FIX(lv));
 	break;
       }
       case NODE_GASGN:{
@@ -4277,13 +4286,14 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    /* NODE_ZSUPER */
 	    int i;
 	    rb_iseq_t *liseq = iseq->local_iseq;
+	    int lvar_level = get_lvar_level(iseq);
 
 	    argc = INT2FIX(liseq->argc);
 
 	    /* normal arguments */
 	    for (i = 0; i < liseq->argc; i++) {
 		int idx = liseq->local_size - i;
-		ADD_INSN1(args, nd_line(node), getlocal, INT2FIX(idx));
+		ADD_INSN2(args, nd_line(node), getlocal, INT2FIX(idx), INT2FIX(lvar_level));
 	    }
 
 	    if (!liseq->arg_simple) {
@@ -4292,7 +4302,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    int j;
 		    for (j = 0; j < liseq->arg_opts - 1; j++) {
 			int idx = liseq->local_size - (i + j);
-			ADD_INSN1(args, nd_line(node), getlocal, INT2FIX(idx));
+			ADD_INSN2(args, nd_line(node), getlocal, INT2FIX(idx), INT2FIX(lvar_level));
 		    }
 		    i += j;
 		    argc = INT2FIX(i);
@@ -4301,7 +4311,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		if (liseq->arg_rest != -1) {
 		    /* rest argument */
 		    int idx = liseq->local_size - liseq->arg_rest;
-		    ADD_INSN1(args, nd_line(node), getlocal, INT2FIX(idx));
+		    ADD_INSN2(args, nd_line(node), getlocal, INT2FIX(idx), INT2FIX(lvar_level));
 		    argc = INT2FIX(liseq->arg_rest + 1);
 		    flag |= VM_CALL_ARGS_SPLAT_BIT;
 		}
@@ -4315,7 +4325,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 			int j;
 			for (j=0; j<post_len; j++) {
 			    int idx = liseq->local_size - (post_start + j);
-			    ADD_INSN1(args, nd_line(node), getlocal, INT2FIX(idx));
+			    ADD_INSN2(args, nd_line(node), getlocal, INT2FIX(idx), INT2FIX(lvar_level));
 			}
 			ADD_INSN1(args, nd_line(node), newarray, INT2FIX(j));
 			ADD_INSN (args, nd_line(node), concatarray);
@@ -4325,7 +4335,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 			int j;
 			for (j=0; j<post_len; j++) {
 			    int idx = liseq->local_size - (post_start + j);
-			    ADD_INSN1(args, nd_line(node), getlocal, INT2FIX(idx));
+			    ADD_INSN2(args, nd_line(node), getlocal, INT2FIX(idx), INT2FIX(lvar_level));
 			}
 			argc = INT2FIX(post_len + post_start);
 		    }
@@ -4460,7 +4470,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    int idx = iseq->local_iseq->local_size - get_local_var_idx(iseq, id);
 
 	    debugs("id: %s idx: %d\n", rb_id2name(id), idx);
-	    ADD_INSN1(ret, nd_line(node), getlocal, INT2FIX(idx));
+	    ADD_INSN2(ret, nd_line(node), getlocal, INT2FIX(idx), INT2FIX(get_lvar_level(iseq)));
 	}
 	break;
       }
@@ -4472,7 +4482,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    if (idx < 0) {
 		rb_bug("unknown dvar (%s)", rb_id2name(node->nd_vid));
 	    }
-	    ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(ls - idx), INT2FIX(lv));
+	    ADD_INSN2(ret, nd_line(node), getlocal, INT2FIX(ls - idx), INT2FIX(lv));
 	}
 	break;
       }
@@ -4976,7 +4986,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_ERRINFO:{
 	if (!poped) {
 	    if (iseq->type == ISEQ_TYPE_RESCUE) {
-		ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(2), INT2FIX(0));
+		ADD_INSN2(ret, nd_line(node), getlocal, INT2FIX(2), INT2FIX(0));
 	    }
 	    else {
 		rb_iseq_t *ip = iseq;
@@ -4989,7 +4999,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    level++;
 		}
 		if (ip) {
-		    ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(2), INT2FIX(level));
+		    ADD_INSN2(ret, nd_line(node), getlocal, INT2FIX(2), INT2FIX(level));
 		}
 		else {
 		    ADD_INSN(ret, nd_line(node), putnil);
@@ -5050,12 +5060,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	switch (nd_type(node->nd_body)) {
 	  case NODE_LASGN:
 	    idx = iseq->local_iseq->local_size - get_local_var_idx(iseq, id);
-	    ADD_INSN1(ret, nd_line(node), setlocal, INT2FIX(idx));
+	    ADD_INSN2(ret, nd_line(node), setlocal, INT2FIX(idx), INT2FIX(get_lvar_level(iseq)));
 	    break;
 	  case NODE_DASGN:
 	  case NODE_DASGN_CURR:
 	    idx = get_dyna_var_idx(iseq, id, &lv, &ls);
-	    ADD_INSN2(ret, nd_line(node), setdynamic, INT2FIX(ls - idx), INT2FIX(lv));
+	    ADD_INSN2(ret, nd_line(node), setlocal, INT2FIX(ls - idx), INT2FIX(lv));
 	    break;
 	  default:
 	    rb_bug("iseq_compile_each (NODE_KW_ARG): unknown node: %s", ruby_node_name(nd_type(node->nd_body)));
@@ -5211,7 +5221,6 @@ insn_data_to_s_detail(INSN *iobj)
 		}
 		break;
 	      case TS_LINDEX:
-	      case TS_DINDEX:
 	      case TS_NUM:	/* ulong */
 	      case TS_VALUE:	/* VALUE */
 		rb_str_concat(str, rb_inspect(OPERAND_AT(iobj, j)));
@@ -5458,7 +5467,6 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			break;
 		      }
 		      case TS_LINDEX:
-		      case TS_DINDEX:
 		      case TS_NUM:
 			(void)NUM2INT(op);
 			argv[j] = op;

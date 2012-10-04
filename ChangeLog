@@ -1,3 +1,17 @@
+Thu Oct  4 22:39:27 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def (getlocal, setlocal): remove old getlocal/setlocal
+	  instructions and rename getdaynmic/setdynamic instructions
+	  to getlocal/setlocal.
+
+	* compile.c: ditto.
+
+	* iseq.c: remove TS_DINDEX.
+
+	* vm_exec.h (dindex_t): remove type definition of `dindex_t'.
+
+	* tool/instruction.rb: ditto.
+
 Thu Oct  4 21:44:17 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (vm_analysis_insn|operand|register): use st_insert

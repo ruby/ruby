@@ -46,30 +46,44 @@ nop
 
 /**
   @c variable
-  @e Get value of local variable (pointed to by idx).
-  @j idx で指定されたローカル変数をスタックに置く。
+  @e Get local variable (pointed by `idx' and `level').
+     'level' indicates the nesting depth from the current block.
+  @j level, idx で指定されたローカル変数の値をスタックに置く。
+     level はブロックのネストレベルで、何段上かを示す。
  */
 DEFINE_INSN
 getlocal
-(lindex_t idx)
+(lindex_t idx, rb_num_t level)
 ()
 (VALUE val)
 {
-    val = *(GET_LEP() - idx);
+    rb_num_t i;
+    VALUE *ep = GET_EP();
+    for (i = 0; i < level; i++) {
+	ep = GET_PREV_EP(ep);
+    }
+    val = *(ep - idx);
 }
 
 /**
   @c variable
-  @e Set value of local variable (pointed to by idx) to val.
-  @j idx で指定されたローカル変数を val に設定する。
+  @e Set a local variable (pointed to by 'idx') as val.
+     'level' indicates the nesting depth from the current block.
+  @j level, idx で指定されたローカル変数の値を val にする。
+     level はブロックのネストレベルで、何段上かを示す。
  */
 DEFINE_INSN
 setlocal
-(lindex_t idx)
+(lindex_t idx, rb_num_t level)
 (VALUE val)
 ()
 {
-    *(GET_LEP() - idx) = val;
+    rb_num_t i;
+    VALUE *ep = GET_EP();
+    for (i = 0; i < level; i++) {
+	ep = GET_PREV_EP(ep);
+    }
+    *(ep - idx) = val;
 }
 
 /**
@@ -98,48 +112,6 @@ setspecial
 ()
 {
     lep_svar_set(th, GET_LEP(), key, obj);
-}
-
-/**
-  @c variable
-  @e Get value of block local variable (pointed to by idx and level).
-     'level' indicates the nesting depth from the current block.
-  @j level, idx で指定されたブロックローカル変数の値をスタックに置く。
-     level はブロックのネストレベルで、何段上かを示す。
- */
-DEFINE_INSN
-getdynamic
-(dindex_t idx, rb_num_t level)
-()
-(VALUE val)
-{
-    rb_num_t i;
-    VALUE *ep = GET_EP();
-    for (i = 0; i < level; i++) {
-	ep = GET_PREV_EP(ep);
-    }
-    val = *(ep - idx);
-}
-
-/**
-  @c variable
-  @e Set block local variable (pointed to by 'idx') as val.
-     'level' indicates the nesting depth from the current block.
-  @j level, idx で指定されたブロックローカル変数の値を val にする。
-     level はブロックのネストレベルで、何段上かを示す。
- */
-DEFINE_INSN
-setdynamic
-(dindex_t idx, rb_num_t level)
-(VALUE val)
-()
-{
-    rb_num_t i;
-    VALUE *ep = GET_EP();
-    for (i = 0; i < level; i++) {
-	ep = GET_PREV_EP(ep);
-    }
-    *(ep - idx) = val;
 }
 
 /**

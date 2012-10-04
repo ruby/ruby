@@ -930,8 +930,6 @@ class RubyVM
         "TS_NUM"
       when /^lindex_t/
         "TS_LINDEX"
-      when /^dindex_t/
-        "TS_DINDEX"
       when /^VALUE/
         "TS_VALUE"
       when /^ID/
@@ -957,7 +955,6 @@ class RubyVM
       'TS_OFFSET'    => 'O',
       'TS_NUM'       => 'N',
       'TS_LINDEX'    => 'L',
-      'TS_DINDEX'    => 'D',
       'TS_VALUE'     => 'V',
       'TS_ID'        => 'I',
       'TS_GENTRY'    => 'G',
@@ -1064,7 +1061,7 @@ class RubyVM
       val  = op[1]
 
       case type
-      when /^long/, /^rb_num_t/, /^lindex_t/, /^dindex_t/
+      when /^long/, /^rb_num_t/, /^lindex_t/
         "INT2FIX(#{val})"
       when /^VALUE/
         val

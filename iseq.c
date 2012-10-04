@@ -981,16 +981,8 @@ insn_operand_intern(rb_iseq_t *iseq,
 	ret = rb_sprintf("%"PRIuVALUE, op);
 	break;
 
-      case TS_LINDEX:
-	{
-	    rb_iseq_t *liseq = iseq->local_iseq;
-	    int lidx = liseq->local_size - (int)op;
-
-	    ret = id_to_name(liseq->local_table[lidx], INT2FIX('*'));
-	    break;
-	}
-      case TS_DINDEX:{
-	if (insn == BIN(getdynamic) || insn == BIN(setdynamic)) {
+      case TS_LINDEX:{
+	if (insn == BIN(getlocal) || insn == BIN(setlocal)) {
 	    if (pnop) {
 		rb_iseq_t *diseq = iseq;
 		VALUE level = *pnop, i;
@@ -1312,7 +1304,7 @@ rb_iseq_disasm(VALUE self)
  *    0004 putobject        2
  *    0006 opt_plus         <ic:1>
  *    0008 dup
- *    0009 setdynamic       num, 0
+ *    0009 setlocal         num, 0
  *    0012 leave
  *
  */
@@ -1516,7 +1508,6 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 		break;
 	      }
 	      case TS_LINDEX:
-	      case TS_DINDEX:
 	      case TS_NUM:
 		rb_ary_push(ary, INT2FIX(*seq));
 		break;
