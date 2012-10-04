@@ -649,14 +649,22 @@ ruby_init_stack(volatile VALUE *addr
 	STACK_GROW_DIR_DETECTION;
 	get_stack(&stackaddr, &size);
 	space = STACK_DIR_UPPER((char *)addr - (char *)stackaddr, (char *)stackaddr - (char *)addr);
+	native_main_thread.stack_maxsize = size - space;
 #elif defined(HAVE_GETRLIMIT)
+	int pagesize = getpagesize();
 	struct rlimit rlim;
 	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
 	    size = (size_t)rlim.rlim_cur;
 	}
-	space = size > 5 * 1024 * 1024 ? 1024 * 1024 : size / 5;
+	addr = native_main_thread.stack_start;
+	if (IS_STACK_DIR_UPPER()) {
+	    space = ((size_t)((char *)addr + size) / pagesize) * pagesize - (size_t)addr;
+	}
+	else {
+	    space = (size_t)addr - ((size_t)((char *)addr - size) / pagesize + 1) * pagesize;
+	}
+	native_main_thread.stack_maxsize = space;
 #endif
-	native_main_thread.stack_maxsize = size - space;
     }
 }
 
