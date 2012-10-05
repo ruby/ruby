@@ -1442,8 +1442,7 @@ static int
 chain_finalized_object(st_data_t key, st_data_t val, st_data_t arg)
 {
     RVALUE *p = (RVALUE *)key, **final_list = (RVALUE **)arg;
-    if ((p->as.basic.flags & FL_FINALIZE) == FL_FINALIZE &&
-        !MARKED_IN_BITMAP(GET_HEAP_BITMAP(p), p)) {
+    if ((p->as.basic.flags & FL_FINALIZE) == FL_FINALIZE) {
 	if (BUILTIN_TYPE(p) != T_ZOMBIE) {
 	    p->as.free.flags = T_ZOMBIE;
 	    RDATA(p)->dfree = 0;
@@ -1485,20 +1484,17 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     RVALUE *final_list = 0;
     size_t i;
 
-    /* run finalizers */
     rest_sweep(objspace);
 
     if (ATOMIC_EXCHANGE(finalizing, 1)) return;
 
+    /* run finalizers */
     do {
-	/* XXX: this loop will make no sense */
-	/* because mark will not be removed */
 	finalize_deferred(objspace);
-	mark_tbl(objspace, finalizer_table);
-	gc_mark_stacked_objects(objspace);
 	st_foreach(finalizer_table, chain_finalized_object,
 		   (st_data_t)&deferred_final_list);
     } while (deferred_final_list);
+
     /* force to run finalizer */
     while (finalizer_table->num_entries) {
 	struct force_finalize_list *list = 0;

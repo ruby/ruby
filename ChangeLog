@@ -1,3 +1,12 @@
+Fri Oct  5 16:04:33 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (chain_finalized_object): remove to check a mark flag and
+	  marking since all objects are certainly unmarked with rest_sweep.
+
+	* gc.c (rb_objspace_call_finalizer): remove to mark finalizable
+	  objects. The sweeping doesn't push T_ZOMBIE objects to the
+	  freelist.
+
 Thu Oct  4 23:40:04 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (init_heap): call init_mark_stack before to allocate
