@@ -457,8 +457,7 @@ enc_ascii_compatible_p(VALUE enc)
 int
 rb_enc_unicode_p(rb_encoding *enc)
 {
-    const char *name = rb_enc_name(enc);
-    return name[0] == 'U' && name[1] == 'T' && name[2] == 'F' && name[4] != '7';
+    return ONIGENC_IS_UNICODE(enc);
 }
 
 static st_data_t
