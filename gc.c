@@ -1500,15 +1500,15 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     RVALUE *final_list = 0;
     size_t i;
 
-    /* run finalizers */
     rest_sweep(objspace);
 
     if (ATOMIC_EXCHANGE(finalizing, 1)) return;
 
+    /* run finalizers */
     do {
-	/* XXX: this loop will make no sense */
-	/* because mark will not be removed */
 	finalize_deferred(objspace);
+	/* mark reachable objects from finalizers */
+	/* They might be not referred from any place here */
 	mark_tbl(objspace, finalizer_table);
 	gc_mark_stacked_objects(objspace);
 	st_foreach(finalizer_table, chain_finalized_object,
