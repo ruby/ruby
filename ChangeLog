@@ -1,3 +1,9 @@
+Fri Oct  5 17:18:42 JST 2012  TAKANO Mitsuhiro  <tak@no32.tk>
+
+	* template/Doxyfile.tmpl: remove SHOW_DIRECTORIES and
+	  HTML_ALIGN_MEMBERS lines. They have been obsolete in
+	  Doxygen version 1.8.2.
+
 Fri Oct 05 15:26:18 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c: add ObjectSpace#reachable_objects_from.
