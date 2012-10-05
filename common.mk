@@ -954,7 +954,7 @@ gdb: miniruby$(EXEEXT) run.gdb PHONY
 	gdb -x run.gdb --quiet --args $(MINIRUBY) $(TESTRUN_SCRIPT)
 
 gdb-ruby: $(PROGRAM) run.gdb PHONY
-	gdb -x run.gdb --quiet --args $(PROGRAM) $(TESTRUN_SCRIPT)
+	$(Q) $(RUNRUBY_COMMAND) $(RUNRUBY_DEBUGGER) -- $(TESTRUN_SCRIPT)
 
 dist:
 	$(BASERUBY) $(srcdir)/tool/make-snapshot tmp $(RELNAME)
