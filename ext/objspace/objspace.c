@@ -37,6 +37,7 @@ size_t rb_ary_memsize(VALUE);
 size_t rb_io_memsize(const rb_io_t *);
 size_t rb_generic_ivar_memsize(VALUE);
 size_t rb_objspace_data_type_memsize(VALUE obj);
+VALUE rb_objspace_reachable_objects_from(VALUE obj);
 
 static size_t
 memsize_of(VALUE obj)
@@ -626,6 +627,47 @@ count_tdata_objects(int argc, VALUE *argv, VALUE self)
     return hash;
 }
 
+/*
+ *  call-seq:
+ *     ObjectSpace.reachable_objects_from(obj) -> array or nil
+ *
+ *  [MRI specific feature] Return all reachable objects from `obj'.
+ *
+ *  This method returns all reachable objects from `obj'.
+ *  If `obj' has references two or more references to same object `x',
+ *  them returned array only include one `x' object.
+ *  If `obj' is non-markable (non-heap management) object such as
+ *  true, false, nil, symbols and Fixnums (and Flonum) them it simply
+ *  returns nil.
+ *
+ *  With this method, you can find memory leaks.
+ *
+ *  This method is not expected to work except C Ruby.
+ *
+ *  Example:
+ *    ObjectSpace.reachable_objects_from(['a', 'b', 'c'])
+ *    #=> [Array, 'a', 'b', 'c']
+ *
+ *    ObjectSpace.reachable_objects_from(['a', 'a', 'a'])
+ *    #=> [Array, 'a', 'a', 'a'] # all 'a' strings have different object id
+ *
+ *    ObjectSpace.reachable_objects_from([v = 'a', v, v])
+ *    #=> [Array, 'a']
+ *
+ *    ObjectSpace.reachable_objects_from(1)
+ *    #=> nil # 1 is not markable (heap managed) object
+ *
+ *  Limitation: Current implementation can't acquire internal objects.
+ *              This means that you can't acquire complete object graph
+ *              (heap snapshot).  This is future work.
+ *
+ */
+static VALUE
+reachable_objects_from(VALUE self, VALUE obj)
+{
+    return rb_objspace_reachable_objects_from(obj);
+}
+
 /* objspace library extends ObjectSpace module and add several
  * methods to get internal statistic information about
  * object/memory management.
@@ -642,10 +684,11 @@ Init_objspace(void)
     VALUE rb_mObjSpace = rb_const_get(rb_cObject, rb_intern("ObjectSpace"));
 
     rb_define_module_function(rb_mObjSpace, "memsize_of", memsize_of_m, 1);
-    rb_define_module_function(rb_mObjSpace, "memsize_of_all",
-			      memsize_of_all_m, -1);
+    rb_define_module_function(rb_mObjSpace, "memsize_of_all", memsize_of_all_m, -1);
 
     rb_define_module_function(rb_mObjSpace, "count_objects_size", count_objects_size, -1);
     rb_define_module_function(rb_mObjSpace, "count_nodes", count_nodes, -1);
     rb_define_module_function(rb_mObjSpace, "count_tdata_objects", count_tdata_objects, -1);
+
+    rb_define_module_function(rb_mObjSpace, "reachable_objects_from", reachable_objects_from, 1);
 }

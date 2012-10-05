@@ -1,3 +1,20 @@
+Fri Oct 05 15:26:18 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c: add ObjectSpace#reachable_objects_from.
+	  This method returns an array of objects referenced by given object.
+	  If given object is special objects such as true/false/nil/Fixnum etc
+	  then it returns nil. See rdoc for details.
+	  [ruby-core:39772]
+
+	* test/objspace/test_objspace.rb: add a test for this method.
+
+	* gc.c: add rb_objspace_reachable_objects_from().
+	  To make this function, add several member `mark_func_data'
+	  to rb_objspace_t.  If mark_func_data is not null, then
+	  gc_mark() calls mark_func_data::mark_func.
+
+	* gc.h: export rb_objspace_reachable_objects_from().
+
 Fri Oct  5 16:04:33 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (chain_finalized_object): remove to check a mark flag since
