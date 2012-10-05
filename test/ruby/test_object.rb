@@ -21,6 +21,17 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  def test_init_dupclone
+    cls = Class.new do
+      def initialize_clone(orig); throw :initialize_clone; end
+      def initialize_dup(orig); throw :initialize_dup; end
+    end
+
+    obj = cls.new
+    assert_throws(:initialize_clone) {obj.clone}
+    assert_throws(:initialize_dup) {obj.dup}
+  end
+
   def test_instance_of
     assert_raise(TypeError) { 1.instance_of?(1) }
   end
