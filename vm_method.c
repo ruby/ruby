@@ -497,6 +497,7 @@ rb_method_entry_t *
 rb_method_entry_get_with_omod(VALUE omod, VALUE klass, ID id,
 			      VALUE *defined_class_ptr)
 {
+#if OPT_GLOBAL_METHOD_CACHE
     struct cache_entry *ent;
 
     ent = cache + EXPR1(klass, omod, id);
@@ -506,6 +507,7 @@ rb_method_entry_get_with_omod(VALUE omod, VALUE klass, ID id,
 	    *defined_class_ptr = ent->defined_class;
 	return ent->me;
     }
+#endif
 
     return rb_method_entry_get_without_cache(klass, omod, id,
 					     defined_class_ptr);

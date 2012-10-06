@@ -1,3 +1,11 @@
+Sat Oct  6 18:31:36 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_opts.h (OPT_GLOBAL_METHOD_CACHE): new build option to
+	  enable/disable global method caching. [ruby-dev:46203] [Bug #7111]
+
+	* vm_method.c (rb_method_entry_get_with_omod): don't use global
+	  method cache if OPT_GLOBAL_METHOD_CACHE is 0.
+
 Sat Oct  6 16:32:04 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_method.c (search_method): check omod only once for performance.
