@@ -2699,6 +2699,10 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
  *  <i>obj.=~</i>, passing <i>str</i> as an argument. The default
  *  <code>=~</code> in <code>Object</code> returns <code>nil</code>.
  *
+ *  Note: <code>str =~ regexp</code> is not the same as
+ *  <code>regexp =~ str</code>. Strings captured from named capture groups
+ *  are assigned to local variables only in the second case.
+ *
  *     "cat o' 9 tails" =~ /\d/   #=> 7
  *     "cat o' 9 tails" =~ 9      #=> nil
  */
