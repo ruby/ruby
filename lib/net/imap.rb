@@ -1519,7 +1519,7 @@ module Net
 
       def format_internal(data)
         case data
-        when "*"
+        when String
           return data
         when Integer
           if data == -1
@@ -1541,6 +1541,7 @@ module Net
       def validate_internal(data)
         case data
         when "*"
+        when String
         when Integer
           ensure_nz_number(data)
         when Range
