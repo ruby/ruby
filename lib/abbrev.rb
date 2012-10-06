@@ -26,21 +26,45 @@
 #     "rule"  =>  "rules",
 #     "rules" =>  "rules" }
 #
-# It also adds an +abbrev+ method to class Array.
+# It also provides an array core extension, Array#abbrev.
+#
+#   pp %w{april may}.abbrev
+#   #=> {"summe"=>"summer",
+#        "summ"=>"summer",
+#        "sum"=>"summer",
+#        "su"=>"summer",
+#        "s"=>"summer",
+#        "winte"=>"winter",
+#        "wint"=>"winter",
+#        "win"=>"winter",
+#        "wi"=>"winter",
+#        "w"=>"winter",
+#        "summer"=>"summer",
+#        "winter"=>"winter"}
 
 module Abbrev
 
   # Given a set of strings, calculate the set of unambiguous
   # abbreviations for those strings, and return a hash where the keys
   # are all the possible abbreviations and the values are the full
-  # strings. Thus, given input of "car" and "cone", the keys pointing
-  # to "car" would be "ca" and "car", while those pointing to "cone"
-  # would be "co", "con", and "cone".
+  # strings.
+  #
+  # Thus, given input of "car" and "cone", the keys pointing to "car" would be
+  # "ca" and "car", while those pointing to "cone" would be "co", "con", and
+  # "cone".
+  #
+  #   require 'abbrev'
+  #   require 'pp'
+  #
+  #   pp Abbrev.abbrev(['car', 'cone'])
+  #   #=> {"ca"=>"car", "con"=>"cone", "co"=>"cone", "car"=>"car", "cone"=>"cone"}
   #
   # The optional +pattern+ parameter is a pattern or a string. Only
   # input strings that match the pattern or start with the string
   # are included in the output hash.
-
+  #
+  #   pp %w{car box cone}.abbrev(/b/)
+  #   #=> {"bo"=>"box", "b"=>"box", "box"=>"box"}
   def abbrev(words, pattern = nil)
     table = {}
     seen = Hash.new(0)
@@ -83,15 +107,20 @@ class Array
   # Calculates the set of unambiguous abbreviations for the strings in
   # +self+.
   #
+  #   abbr = %w{ car cone }.abbrev
+  #   abbr #=> { "ca" => "car", "car" => "car",
+  #           "co" => "cone", "con" => "cone",
+  #           "cone" => "cone" }
+  #
   # The optional +pattern+ parameter is a pattern or a string. Only
   # input strings that match the pattern or start with the string
   # are included in the output hash.
   #
-  #   %w{ car cone }.abbrev   #=> { "ca" => "car", "car" => "car",
-  #                                 "co" => "cone", "con" => "cone",
-  #                                 "cone" => "cone" }
+  #   abbr = %w{ fast boat day }.abbrev(/^.a.*$/)
+  #   abbr #=> {"fas"=>"fast","fa"=>"fast",
+  #             "da"=>"day", "fast"=>"fast", "day"=>"day"}
   #
-  # See also Abbrev#abbrev
+  # See also Abbrev.abbrev
   def abbrev(pattern = nil)
     Abbrev::abbrev(self, pattern)
   end
