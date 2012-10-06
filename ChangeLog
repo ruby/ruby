@@ -1,5 +1,10 @@
 Sun Oct  7 04:50:00 2012  Zachary Scott  <zzak@ruby-lang.org>
 
+	* lib/abbrev.rb: Documentation examples for Abbrev.
+	[ruby-dev:47442] [Bug #6985]
+
+Sun Oct  7 04:50:00 2012  Zachary Scott  <zzak@ruby-lang.org>
+
 	* thread.c (rb_thread_aref):
 	  Grammar in Thread documentation.
 	  Patch by Steve Klabnik [ruby-dev:47799] [Bug #7099]
