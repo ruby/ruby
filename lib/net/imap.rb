@@ -2382,6 +2382,17 @@ module Net
                                        desc, enc, size)
         end
 
+        # Also, sometimes a message/rfc822 is included as a large
+        # attachment instead of having all of the other details
+        # (e.g. attaching a .eml file to an email)
+
+        token = lookahead
+        if token.symbol == T_RPAR then
+          return BodyTypeMessage.new(mtype, msubtype, param, content_id,
+                                     desc, enc, size, nil, nil, nil, nil,
+                                     nil, nil, nil)
+        end
+
         match(T_SPACE)
         env = envelope
         match(T_SPACE)
