@@ -2583,8 +2583,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
   again:
     if (LIKELY(objspace->mark_func_data == 0)) {
 	obj = RANY(ptr);
-	if (rb_special_const_p(ptr)) return; /* special const not marked */
-	if (obj->as.basic.flags == 0) return;       /* free cell */
+	if (!markable_object_p(objspace, ptr)) return;
 	if (!gc_mark_ptr(objspace, ptr)) return;  /* already marked */
     }
     else {
