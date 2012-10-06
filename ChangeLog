@@ -1,3 +1,14 @@
+Sat Oct  6 09:42:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/encdb.c, enc/utf_16_32.h (ENC_DUMMY_UNICODE): endian-less wide
+	  UTF encodings are dummy but Unicode.
+
+	* encoding.c (rb_encdb_set_unicode): set Unicode flag.
+
+	* template/encdb.h.tmpl: allow ENC_DUMMY variants.
+
+	* encoding.c (rb_enc_unicode_p): oniguruma provides Unicode flag.
+
 Fri Oct  5 17:18:42 JST 2012  TAKANO Mitsuhiro  <tak@no32.tk>
 
 	* template/Doxyfile.tmpl: remove SHOW_DIRECTORIES and
