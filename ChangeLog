@@ -1,3 +1,7 @@
+Sat Oct  6 16:32:04 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_method.c (search_method): check omod only once for performance.
+
 Sat Oct  6 09:42:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/encdb.c, enc/utf_16_32.h (ENC_DUMMY_UNICODE): endian-less wide

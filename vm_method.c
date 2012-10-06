@@ -394,16 +394,24 @@ copy_refinement_iclass(VALUE iclass, VALUE superclass)
     return result;
 }
 
-static rb_method_entry_t*
-search_method(VALUE klass, ID id, VALUE omod, VALUE *defined_class_ptr)
+static inline int
+lookup_method_table(VALUE klass, ID id, st_data_t *body)
+{
+    st_table *m_tbl = RCLASS_M_TBL(klass);
+    if (!m_tbl) {
+	m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(RBASIC(klass)->klass));
+    }
+    return st_lookup(m_tbl, id, body);
+}
+
+static inline rb_method_entry_t*
+search_method_with_omod(VALUE klass, ID id, VALUE omod, VALUE *defined_class_ptr)
 {
     st_data_t body;
     VALUE iclass, skipped_class = Qnil;
 
     for (body = 0; klass; klass = RCLASS_SUPER(klass)) {
-	st_table *m_tbl;
-
-	if (!NIL_P(omod) && klass != skipped_class) {
+	if (klass != skipped_class) {
 	    iclass = rb_hash_lookup(omod, klass);
 	    if (NIL_P(iclass) && BUILTIN_TYPE(klass) == T_ICLASS) {
 		iclass = rb_hash_lookup(omod, RBASIC(klass)->klass);
@@ -415,16 +423,37 @@ search_method(VALUE klass, ID id, VALUE omod, VALUE *defined_class_ptr)
 		klass = iclass;
 	    }
 	}
-	m_tbl = RCLASS_M_TBL(klass);
-	if (!m_tbl) {
-	    m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(RBASIC(klass)->klass));
-	}
-	if (st_lookup(m_tbl, id, &body)) break;
+	if (lookup_method_table(klass, id, &body)) break;
     }
 
     if (defined_class_ptr)
 	*defined_class_ptr = klass;
     return (rb_method_entry_t *)body;
+}
+
+static inline rb_method_entry_t*
+search_method_without_omod(VALUE klass, ID id, VALUE *defined_class_ptr)
+{
+    st_data_t body;
+
+    for (body = 0; klass; klass = RCLASS_SUPER(klass)) {
+	if (lookup_method_table(klass, id, &body)) break;
+    }
+
+    if (defined_class_ptr)
+	*defined_class_ptr = klass;
+    return (rb_method_entry_t *)body;
+}
+
+static rb_method_entry_t*
+search_method(VALUE klass, ID id, VALUE omod, VALUE *defined_class_ptr)
+{
+    if (NIL_P(omod)) {
+	return search_method_without_omod(klass, id, defined_class_ptr);
+    }
+    else {
+	return search_method_with_omod(klass, id, omod, defined_class_ptr);
+    }
 }
 
 /*
