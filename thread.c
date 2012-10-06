@@ -2486,8 +2486,8 @@ rb_thread_local_aref(VALUE thread, ID id)
  *     #<Thread:0x00000002a54130 dead>: C
  *
  *  Thread#[] and Thread#[]= are not thread-local but fiber-local.
- *  This confusion was not exist until Ruby 1.8 because
- *  fiber is available since Ruby 1.9.
+ *  This confusion did not exist in Ruby 1.8 because
+ *  fibers were only available since Ruby 1.9.
  *  Ruby 1.9 chooses that the methods behaves fiber-local to save
  *  following idiom for dynamic scope.
  *
