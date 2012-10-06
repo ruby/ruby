@@ -85,13 +85,11 @@ class TestObjSpace < Test::Unit::TestCase
       max = [refs.size, max].max
 
       unless refs.nil?
-        refs.each{|ro|
-          # check this referenced object is not internal object
-          assert_equal(false, ro.nil?)
+        refs.each_with_index {|ro, i|
+          assert_not_nil(ro, "#{i}: this referenced object is internal object")
         }
       end
     }
-    STDERR.puts max
-    assert_equal(true, max >= 1_001) # 1000 elems + Array class
+    assert_operator(max, :>=, 1_001, "1000 elems + Array class")
   end
 end
