@@ -95,7 +95,7 @@ Thu Oct  4 21:15:26 2012  Koichi Sasada  <ko1@atdot.net>
 	  `VM developers' (the plural form) in this sentence).
 	  If VM_COLLECT_USAGE_DETAILS is not 0, VM enables the following
 	  usage collection features:
-	    (1) insntruction: collect intruction usages.
+	    (1) instruction: collect instruction usages.
 	    (2) operand: collect operand usages.
 	    (3) register: collect register usages.
 	  The results are stored in
