@@ -1226,6 +1226,37 @@ rb_mod_refine(VALUE module, VALUE klass)
     return mod;
 }
 
+static int
+refinements_i(VALUE key, VALUE value, VALUE arg)
+{
+    rb_hash_aset(arg, key, value);
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     refinements -> hash
+ *
+ *  Returns refinements in the receiver as a hash table, whose key is a
+ *  refined class and whose value is a refinement module.
+ */
+
+static VALUE
+rb_mod_refinements(VALUE module)
+{
+    ID id_refinements;
+    VALUE refinements, result;
+
+    CONST_ID(id_refinements, "__refinements__");
+    refinements = rb_attr_get(module, id_refinements);
+    if (NIL_P(refinements)) {
+	return rb_hash_new();
+    }
+    result = rb_hash_new();
+    rb_hash_foreach(refinements, refinements_i, result);
+    return result;
+}
+
 void
 rb_obj_call_init(VALUE obj, int argc, VALUE *argv)
 {
@@ -1524,6 +1555,7 @@ Init_eval(void)
     rb_define_private_method(rb_cModule, "prepend", rb_mod_prepend, -1);
     rb_define_private_method(rb_cModule, "using", rb_mod_using, 1);
     rb_define_private_method(rb_cModule, "refine", rb_mod_refine, 1);
+    rb_define_method(rb_cModule, "refinements", rb_mod_refinements, 0);
 
     rb_undef_method(rb_cClass, "module_function");
 

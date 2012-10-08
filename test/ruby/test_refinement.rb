@@ -455,4 +455,69 @@ class TestRefinement < Test::Unit::TestCase
       end
     end
   end
+
+  def test_refinements_empty
+    m = Module.new
+    assert(m.refinements.empty?)
+  end
+
+  def test_refinements_one
+    c = Class.new
+    c_ext = nil
+    m = Module.new {
+      refine c do
+        c_ext = self
+      end
+    }
+    assert_equal({c => c_ext}, m.refinements)
+  end
+
+  def test_refinements_two
+    c1 = Class.new
+    c1_ext = nil
+    c2 = Class.new
+    c2_ext = nil
+    m = Module.new {
+      refine c1 do
+        c1_ext = self
+      end
+
+      refine c2 do
+        c2_ext = self
+      end
+    }
+    assert_equal({c1 => c1_ext, c2 => c2_ext}, m.refinements)
+  end
+
+  def test_refinements_duplicate_refine
+    c = Class.new
+    c_ext = nil
+    m = Module.new {
+      refine c do
+        c_ext = self
+      end
+      refine c do
+      end
+    }
+    assert_equal({c => c_ext}, m.refinements)
+  end
+
+  def test_refinements_no_recursion
+    c1 = Class.new
+    c1_ext = nil
+    m1 = Module.new {
+      refine c1 do
+        c1_ext = self
+      end
+    }
+    c2 = Class.new
+    c2_ext = nil
+    m2 = Module.new {
+      using m1
+      refine c2 do
+        c2_ext = self
+      end
+    }
+    assert_equal({c2 => c2_ext}, m2.refinements)
+  end
 end
