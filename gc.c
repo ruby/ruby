@@ -2733,7 +2733,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 	    break;
 
 	  case NODE_CREF:
-	    gc_mark(objspace, obj->as.node.nd_omod);
+	    gc_mark(objspace, obj->as.node.nd_refinements);
 	    gc_mark(objspace, (VALUE)obj->as.node.u1.node);
 	    ptr = (VALUE)obj->as.node.u3.node;
 	    goto again;

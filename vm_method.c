@@ -21,7 +21,7 @@ struct cache_entry {		/* method hash table. */
     VALUE filled_version;        /* filled state version */
     ID mid;			/* method's id */
     VALUE klass;		/* receiver's class */
-    VALUE omod;			/* overlay modules */
+    VALUE refinements;		/* refinements */
     rb_method_entry_t *me;
     VALUE defined_class;
 };
@@ -405,16 +405,17 @@ lookup_method_table(VALUE klass, ID id, st_data_t *body)
 }
 
 static inline rb_method_entry_t*
-search_method_with_omod(VALUE klass, ID id, VALUE omod, VALUE *defined_class_ptr)
+search_method_with_refinements(VALUE klass, ID id, VALUE refinements,
+			       VALUE *defined_class_ptr)
 {
     st_data_t body;
     VALUE iclass, skipped_class = Qnil;
 
     for (body = 0; klass; klass = RCLASS_SUPER(klass)) {
 	if (klass != skipped_class) {
-	    iclass = rb_hash_lookup(omod, klass);
+	    iclass = rb_hash_lookup(refinements, klass);
 	    if (NIL_P(iclass) && BUILTIN_TYPE(klass) == T_ICLASS) {
-		iclass = rb_hash_lookup(omod, RBASIC(klass)->klass);
+		iclass = rb_hash_lookup(refinements, RBASIC(klass)->klass);
 		if (!NIL_P(iclass))
 		    iclass = copy_refinement_iclass(iclass, klass);
 	    }
@@ -432,7 +433,7 @@ search_method_with_omod(VALUE klass, ID id, VALUE omod, VALUE *defined_class_ptr
 }
 
 static inline rb_method_entry_t*
-search_method_without_omod(VALUE klass, ID id, VALUE *defined_class_ptr)
+search_method_without_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
     st_data_t body;
 
@@ -446,13 +447,14 @@ search_method_without_omod(VALUE klass, ID id, VALUE *defined_class_ptr)
 }
 
 static rb_method_entry_t*
-search_method(VALUE klass, ID id, VALUE omod, VALUE *defined_class_ptr)
+search_method(VALUE klass, ID id, VALUE refinements, VALUE *defined_class_ptr)
 {
-    if (NIL_P(omod)) {
-	return search_method_without_omod(klass, id, defined_class_ptr);
+    if (NIL_P(refinements)) {
+	return search_method_without_refinements(klass, id, defined_class_ptr);
     }
     else {
-	return search_method_with_omod(klass, id, omod, defined_class_ptr);
+	return search_method_with_refinements(klass, id, refinements,
+					      defined_class_ptr);
     }
 }
 
@@ -463,18 +465,19 @@ search_method(VALUE klass, ID id, VALUE omod, VALUE *defined_class_ptr)
  * rb_method_entry() simply.
  */
 rb_method_entry_t *
-rb_method_entry_get_without_cache(VALUE klass, VALUE omod, ID id,
+rb_method_entry_get_without_cache(VALUE klass, VALUE refinements, ID id,
 				  VALUE *defined_class_ptr)
 {
     VALUE defined_class;
-    rb_method_entry_t *me = search_method(klass, id, omod, &defined_class);
+    rb_method_entry_t *me = search_method(klass, id, refinements,
+					  &defined_class);
 
     if (ruby_running) {
 	struct cache_entry *ent;
-	ent = cache + EXPR1(klass, omod, id);
+	ent = cache + EXPR1(klass, refinements, id);
 	ent->filled_version = GET_VM_STATE_VERSION();
 	ent->klass = klass;
-	ent->omod = omod;
+	ent->refinements = refinements;
 	ent->defined_class = defined_class;
 
 	if (UNDEFINED_METHOD_ENTRY_P(me)) {
@@ -494,22 +497,23 @@ rb_method_entry_get_without_cache(VALUE klass, VALUE omod, ID id,
 }
 
 rb_method_entry_t *
-rb_method_entry_get_with_omod(VALUE omod, VALUE klass, ID id,
-			      VALUE *defined_class_ptr)
+rb_method_entry_get_with_refinements(VALUE refinements, VALUE klass, ID id,
+				     VALUE *defined_class_ptr)
 {
 #if OPT_GLOBAL_METHOD_CACHE
     struct cache_entry *ent;
 
-    ent = cache + EXPR1(klass, omod, id);
+    ent = cache + EXPR1(klass, refinements, id);
     if (ent->filled_version == GET_VM_STATE_VERSION() &&
-	ent->mid == id && ent->klass == klass && ent->omod == omod) {
+	ent->mid == id && ent->klass == klass &&
+       	ent->refinements == refinements) {
 	if (defined_class_ptr)
 	    *defined_class_ptr = ent->defined_class;
 	return ent->me;
     }
 #endif
 
-    return rb_method_entry_get_without_cache(klass, omod, id,
+    return rb_method_entry_get_without_cache(klass, refinements, id,
 					     defined_class_ptr);
 }
 
@@ -517,12 +521,13 @@ rb_method_entry_t *
 rb_method_entry(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
     NODE *cref = rb_vm_cref();
-    VALUE omod = Qnil;
+    VALUE refinements = Qnil;
 
-    if (cref && !NIL_P(cref->nd_omod)) {
-	omod = cref->nd_omod;
+    if (cref && !NIL_P(cref->nd_refinements)) {
+	refinements = cref->nd_refinements;
     }
-    return rb_method_entry_get_with_omod(omod, klass, id, defined_class_ptr);
+    return rb_method_entry_get_with_refinements(refinements, klass, id,
+					       	defined_class_ptr);
 }
 
 static void
@@ -712,8 +717,8 @@ rb_undef(VALUE klass, ID id)
 {
     rb_method_entry_t *me;
     NODE *cref = rb_vm_cref();
-    VALUE omod = Qnil;
-    void rb_overlay_module(NODE *cref, VALUE klass, VALUE module);
+    VALUE refinements = Qnil;
+    void rb_using_refinement(NODE *cref, VALUE klass, VALUE module);
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class to undef method");
@@ -729,10 +734,10 @@ rb_undef(VALUE klass, ID id)
 	rb_warn("undefining `%s' may cause serious problems", rb_id2name(id));
     }
 
-    if (cref && !NIL_P(cref->nd_omod)) {
-	omod = cref->nd_omod;
+    if (cref && !NIL_P(cref->nd_refinements)) {
+	refinements = cref->nd_refinements;
     }
-    me = search_method(klass, id, omod, 0);
+    me = search_method(klass, id, refinements, 0);
 
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	const char *s0 = " class";
@@ -755,7 +760,7 @@ rb_undef(VALUE klass, ID id)
 
     if (!RTEST(rb_class_inherited_p(klass, me->klass))) {
 	VALUE mod = rb_module_new();
-	rb_overlay_module(cref, klass, mod);
+	rb_using_refinement(cref, klass, mod);
 	klass = mod;
     }
     rb_add_method(klass, id, VM_METHOD_TYPE_UNDEF, 0, NOEX_PUBLIC);

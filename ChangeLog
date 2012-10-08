@@ -1,3 +1,10 @@
+Mon Oct  8 23:02:19 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c, gc.c, iseq.c, node.h, vm_insnhelper.c, vm_insnhelper.h,
+	  vm_method.c: rename omod and overlaid modules to refinements.
+
+	* eval.c (hidden_identity_hash_new): renamed from identity_hash_new.
+
 Sun Oct  7 04:50:00 2012  Zachary Scott  <zzak@ruby-lang.org>
 
 	* lib/abbrev.rb: Documentation examples for Abbrev.

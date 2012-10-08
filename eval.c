@@ -1041,35 +1041,35 @@ void check_class_or_module(VALUE obj)
 }
 
 static VALUE
-identity_hash_new()
+hidden_identity_hash_new()
 {
     VALUE hash = rb_hash_new();
 
     rb_funcall(hash, rb_intern("compare_by_identity"), 0);
-    RBASIC(hash)->klass = 0;
+    RBASIC(hash)->klass = 0;  /* hide from ObjectSpace */
     return hash;
 }
 
 void
-rb_overlay_module(NODE *cref, VALUE klass, VALUE module)
+rb_using_refinement(NODE *cref, VALUE klass, VALUE module)
 {
     VALUE iclass, c, superclass = klass;
 
     check_class_or_module(klass);
     Check_Type(module, T_MODULE);
-    if (NIL_P(cref->nd_omod)) {
-	cref->nd_omod = identity_hash_new();
+    if (NIL_P(cref->nd_refinements)) {
+	cref->nd_refinements = hidden_identity_hash_new();
     }
     else {
 	if (cref->flags & NODE_FL_CREF_OMOD_SHARED) {
-	    cref->nd_omod = rb_hash_dup(cref->nd_omod);
+	    cref->nd_refinements = rb_hash_dup(cref->nd_refinements);
 	    cref->flags &= ~NODE_FL_CREF_OMOD_SHARED;
 	}
-	if (!NIL_P(c = rb_hash_lookup(cref->nd_omod, klass))) {
+	if (!NIL_P(c = rb_hash_lookup(cref->nd_refinements, klass))) {
 	    superclass = c;
 	    while (c && TYPE(c) == T_ICLASS) {
 		if (RBASIC(c)->klass == module) {
-		    /* already overlaid module */
+		    /* already used refinement */
 		    return;
 		}
 		c = RCLASS_SUPER(c);
@@ -1086,7 +1086,7 @@ rb_overlay_module(NODE *cref, VALUE klass, VALUE module)
 	RCLASS_REFINED_CLASS(c) = klass;
 	module = RCLASS_SUPER(module);
     }
-    rb_hash_aset(cref->nd_omod, klass, iclass);
+    rb_hash_aset(cref->nd_refinements, klass, iclass);
     rb_clear_cache_by_class(klass);
 }
 
@@ -1095,21 +1095,21 @@ using_module_i(VALUE klass, VALUE module, VALUE arg)
 {
     NODE *cref = (NODE *) arg;
 
-    rb_overlay_module(cref, klass, module);
+    rb_using_refinement(cref, klass, module);
     return ST_CONTINUE;
 }
 
 void
 rb_using_module(NODE *cref, VALUE module)
 {
-    ID id_overlaid_modules;
-    VALUE overlaid_modules;
+    ID id_refinements;
+    VALUE refinements;
 
     check_class_or_module(module);
-    CONST_ID(id_overlaid_modules, "__overlaid_modules__");
-    overlaid_modules = rb_attr_get(module, id_overlaid_modules);
-    if (NIL_P(overlaid_modules)) return;
-    rb_hash_foreach(overlaid_modules, using_module_i, (VALUE) cref);
+    CONST_ID(id_refinements, "__refinements__");
+    refinements = rb_attr_get(module, id_refinements);
+    if (NIL_P(refinements)) return;
+    rb_hash_foreach(refinements, using_module_i, (VALUE) cref);
 }
 
 /*
@@ -1130,7 +1130,7 @@ rb_mod_using(VALUE self, VALUE module)
     CONST_ID(id_using_modules, "__using_modules__");
     using_modules = rb_attr_get(self, id_using_modules);
     if (NIL_P(using_modules)) {
-	using_modules = identity_hash_new();
+	using_modules = hidden_identity_hash_new();
 	rb_ivar_set(self, id_using_modules, using_modules);
     }
     rb_hash_aset(using_modules, module, Qtrue);
@@ -1170,8 +1170,8 @@ refinement_module_include(int argc, VALUE *argv, VALUE module)
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq) &&
 	    (cref = rb_vm_get_cref(cfp->iseq, cfp->ep)) &&
-	    !NIL_P(cref->nd_omod) &&
-	    !NIL_P(c = rb_hash_lookup(cref->nd_omod, klass))) {
+	    !NIL_P(cref->nd_refinements) &&
+	    !NIL_P(c = rb_hash_lookup(cref->nd_refinements, klass))) {
 	    while (argc--) {
 		VALUE mod = argv[argc];
 		if (rb_class_inherited_p(module, mod)) {
@@ -1200,17 +1200,17 @@ rb_mod_refine(VALUE module, VALUE klass)
 {
     NODE *cref = rb_vm_cref();
     VALUE mod;
-    ID id_overlaid_modules, id_refined_class;
-    VALUE overlaid_modules;
+    ID id_refinements, id_refined_class;
+    VALUE refinements;
 
     check_class_or_module(klass);
-    CONST_ID(id_overlaid_modules, "__overlaid_modules__");
-    overlaid_modules = rb_attr_get(module, id_overlaid_modules);
-    if (NIL_P(overlaid_modules)) {
-	overlaid_modules = identity_hash_new();
-	rb_ivar_set(module, id_overlaid_modules, overlaid_modules);
+    CONST_ID(id_refinements, "__refinements__");
+    refinements = rb_attr_get(module, id_refinements);
+    if (NIL_P(refinements)) {
+	refinements = hidden_identity_hash_new();
+	rb_ivar_set(module, id_refinements, refinements);
     }
-    mod = rb_hash_lookup(overlaid_modules, klass);
+    mod = rb_hash_lookup(refinements, klass);
     if (NIL_P(mod)) {
 	mod = rb_module_new();
 	CONST_ID(id_refined_class, "__refined_class__");
@@ -1219,8 +1219,8 @@ rb_mod_refine(VALUE module, VALUE klass)
 				   refinement_module_method_added, 1);
 	rb_define_singleton_method(mod, "include",
 				   refinement_module_include, -1);
-	rb_overlay_module(cref, klass, mod);
-	rb_hash_aset(overlaid_modules, klass, mod);
+	rb_using_refinement(cref, klass, mod);
+	rb_hash_aset(refinements, klass, mod);
     }
     rb_mod_module_eval(0, NULL, mod);
     return mod;
