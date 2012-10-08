@@ -1,3 +1,11 @@
+Sun Oct  7 23:54:33 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/zlib/zlib.c (zstream_run_func): don't call inflate() when
+	  z->stream.avail_in == 0. it return Z_BUF_ERROR.
+	  but deflate() could be called with z->stream->avail_in == 0 because
+	  it has hidden buffer in z->stream->state (opaque structure).
+	  fix for gem install error. [ruby-dev:46149] [Bug #7040]
+
 Mon Oct  8 23:55:41 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_mod_refinements): new method Module#refinements.
