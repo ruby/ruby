@@ -990,6 +990,14 @@ zstream_run_func(void *ptr)
 	    break;
 	}
 
+	if (z->stream.avail_in == 0 && z->func == &inflate_funcs) {
+	    /* break here because inflate() return Z_BUF_ERROR when avail_in == 0. */
+	    /* but deflate() could be called with avail_in == 0 (there's hidden buffer
+	       in zstream->state) */
+	    z->flags |= ZSTREAM_FLAG_IN_STREAM;
+	    break;
+	}
+
 	if (args->stream_output) {
 	    state = (int)(VALUE)rb_thread_call_with_gvl(zstream_expand_buffer_protect,
 							(void *)z);
