@@ -202,11 +202,11 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
     if (type == ISEQ_TYPE_TOP) {
 	/* toplevel is private */
 	iseq->cref_stack = NEW_CREF(rb_cObject);
-	iseq->cref_stack->nd_omod = Qnil;
+	iseq->cref_stack->nd_refinements = Qnil;
 	iseq->cref_stack->nd_visi = NOEX_PRIVATE;
 	if (th->top_wrapper) {
 	    NODE *cref = NEW_CREF(th->top_wrapper);
-	    cref->nd_omod = Qnil;
+	    cref->nd_refinements = Qnil;
 	    cref->nd_visi = NOEX_PRIVATE;
 	    cref->nd_next = iseq->cref_stack;
 	    iseq->cref_stack = cref;
@@ -214,7 +214,7 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
     }
     else if (type == ISEQ_TYPE_METHOD || type == ISEQ_TYPE_CLASS) {
 	iseq->cref_stack = NEW_CREF(0); /* place holder */
-	iseq->cref_stack->nd_omod = Qnil;
+	iseq->cref_stack->nd_refinements = Qnil;
     }
     else if (RTEST(parent)) {
 	rb_iseq_t *piseq;
@@ -1657,7 +1657,7 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
     }
     if (newcbase) {
 	iseq1->cref_stack = NEW_CREF(newcbase);
-	iseq1->cref_stack->nd_omod = iseq0->cref_stack->nd_omod;
+	iseq1->cref_stack->nd_refinements = iseq0->cref_stack->nd_refinements;
 	iseq1->cref_stack->nd_visi = iseq0->cref_stack->nd_visi;
 	if (iseq0->cref_stack->nd_next) {
 	    iseq1->cref_stack->nd_next = iseq0->cref_stack->nd_next;

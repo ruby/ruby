@@ -385,7 +385,8 @@ rb_search_method_entry(VALUE recv, ID mid, VALUE *defined_class_ptr)
                          rb_id2name(mid), type, (void *)recv, flags, klass);
         }
     }
-    return rb_method_entry_get_with_omod(Qnil, klass, mid, defined_class_ptr);
+    return rb_method_entry_get_with_refinements(Qnil, klass, mid,
+					       	defined_class_ptr);
 }
 
 static inline int
