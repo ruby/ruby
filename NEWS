@@ -17,6 +17,11 @@ with all sufficient information, see the ChangeLog file.
 
 * builtin classes
 
+  * Array
+    * incompatible changes:
+      * random parameter of Array#shuffle! and Array#sample now
+        will be called with one argument, maximum value.
+
   * Enumerable
     * added method:
       * added Enumerable#lazy method for lazy enumeration.

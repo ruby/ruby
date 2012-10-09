@@ -3996,7 +3996,7 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
     (argc > 0 && !NIL_P((opts) = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
 static VALUE sym_random;
 
-#define RAND_UPTO(max) (long)(rb_random_real(randgen)*(max))
+#define RAND_UPTO(max) (long)rb_random_ulong_limited((randgen), (max)-1)
 
 /*
  *  call-seq:
@@ -4091,7 +4091,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     VALUE nv, result, *ptr;
     VALUE opts, randgen = rb_cRandom;
     long n, len, i, j, k, idx[10];
-    double rnds[numberof(idx)];
+    long rnds[numberof(idx)];
 
     if (OPTHASH_GIVEN_P(opts)) {
 	randgen = rb_hash_lookup2(opts, sym_random, randgen);
@@ -4104,11 +4104,11 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	    i = 0;
 	}
 	else {
-	    double x = rb_random_real(randgen);
-	    if ((len = RARRAY_LEN(ary)) == 0) return Qnil;
-	    i = (long)(x * len);
+	    i = RAND_UPTO(len);
+	    if ((len = RARRAY_LEN(ary)) <= i) return Qnil;
+	    ptr = RARRAY_PTR(ary);
 	}
-	return RARRAY_PTR(ary)[i];
+	return ptr[i];
     }
     rb_scan_args(argc, argv, "1", &nv);
     n = NUM2LONG(nv);
@@ -4116,27 +4116,37 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     if (n > len) n = len;
     if (n <= numberof(idx)) {
 	for (i = 0; i < n; ++i) {
-	    rnds[i] = rb_random_real(randgen);
+	    rnds[i] = RAND_UPTO(len - i);
 	}
     }
+    k = len;
     len = RARRAY_LEN(ary);
     ptr = RARRAY_PTR(ary);
+    if (len < k) {
+	if (n <= numberof(idx)) {
+	    for (i = 0; i < n; ++i) {
+		if (rnds[i] >= len) {
+		    return rb_ary_new2(0);
+		}
+	    }
+	}
+    }
     if (n > len) n = len;
     switch (n) {
       case 0:
 	return rb_ary_new2(0);
       case 1:
-	i = (long)(rnds[0] * len);
+	i = rnds[0];
 	return rb_ary_new4(1, &ptr[i]);
       case 2:
-	i = (long)(rnds[0] * len);
-	j = (long)(rnds[1] * (len-1));
+	i = rnds[0];
+	j = rnds[1];
 	if (j >= i) j++;
 	return rb_ary_new3(2, ptr[i], ptr[j]);
       case 3:
-	i = (long)(rnds[0] * len);
-	j = (long)(rnds[1] * (len-1));
-	k = (long)(rnds[2] * (len-2));
+	i = rnds[0];
+	j = rnds[1];
+	k = rnds[2];
 	{
 	    long l = j, g = i;
 	    if (j >= i) l = i, g = ++j;
@@ -4147,9 +4157,9 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     if (n <= numberof(idx)) {
 	VALUE *ptr_result;
 	long sorted[numberof(idx)];
-	sorted[0] = idx[0] = (long)(rnds[0] * len);
+	sorted[0] = idx[0] = rnds[0];
 	for (i=1; i<n; i++) {
-	    k = (long)(rnds[i] * --len);
+	    k = rnds[i];
 	    for (j = 0; j < i; ++j) {
 		if (k < sorted[j]) break;
 		++k;

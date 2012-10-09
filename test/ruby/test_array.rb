@@ -2019,15 +2019,15 @@ class TestArray < Test::Unit::TestCase
   def test_sample_random
     ary = (0...10000).to_a
     assert_raise(ArgumentError) {ary.sample(1, 2, random: nil)}
-    gen0 = proc do
-      0.5
+    gen0 = proc do |max|
+      (max+1)/2
     end
     class << gen0
       alias rand call
     end
-    gen1 = proc do
+    gen1 = proc do |max|
       ary.replace([])
-      0.5
+      (max+1)/2
     end
     class << gen1
       alias rand call
