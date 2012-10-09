@@ -1430,25 +1430,27 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
 }
 
 static inline const rb_method_entry_t *
-vm_method_search(VALUE id, VALUE klass, IC ic, VALUE *defined_class_ptr)
+vm_method_search(VALUE id, VALUE klass, CALL_INFO ci, VALUE *defined_class_ptr)
 {
     rb_method_entry_t *me;
 #if OPT_INLINE_METHOD_CACHE
-    if (LIKELY(klass == ic->ic_class &&
-	GET_VM_STATE_VERSION() == ic->ic_vmstat)) {
-	me = ic->ic_value.method;
-	if (defined_class_ptr)
-	    *defined_class_ptr = ic->ic_value2.defined_class;
+    if (LIKELY(klass == ci->ic_class &&
+	GET_VM_STATE_VERSION() == ci->ic_vmstat)) {
+	me = ci->method;
+	if (defined_class_ptr) {
+	    *defined_class_ptr = ci->defined_class;
+	}
     }
     else {
 	VALUE defined_class;
 	me = rb_method_entry(klass, id, &defined_class);
-	if (defined_class_ptr)
+	if (defined_class_ptr) {
 	    *defined_class_ptr = defined_class;
-	ic->ic_class = klass;
-	ic->ic_value.method = me;
-	ic->ic_value2.defined_class = defined_class;
-	ic->ic_vmstat = GET_VM_STATE_VERSION();
+	}
+	ci->ic_class = klass;
+	ci->method = me;
+	ci->defined_class = defined_class;
+	ci->ic_vmstat = GET_VM_STATE_VERSION();
     }
 #else
     me = rb_method_entry(klass, id, defined_class_ptr);
@@ -1773,7 +1775,7 @@ static
 inline
 #endif
 VALUE
-opt_eq_func(VALUE recv, VALUE obj, IC ic)
+opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci)
 {
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_EQ, FIXNUM_REDEFINED_OP_FLAG)) {
@@ -1803,7 +1805,7 @@ opt_eq_func(VALUE recv, VALUE obj, IC ic)
     }
 
     {
-	const rb_method_entry_t *me = vm_method_search(idEq, CLASS_OF(recv), ic, 0);
+	const rb_method_entry_t *me = vm_method_search(idEq, CLASS_OF(recv), ci, 0);
 
 	if (check_cfunc(me, rb_obj_equal)) {
 	    return recv == obj ? Qtrue : Qfalse;

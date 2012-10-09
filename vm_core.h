@@ -134,13 +134,20 @@ struct iseq_inline_cache_entry {
     VALUE ic_class;
     union {
 	VALUE value;
-	rb_method_entry_t *method;
 	long index;
     } ic_value;
-    union {
-	VALUE defined_class;
-    } ic_value2;
 };
+
+/* rb_call_info_t contains calling information including inline cache */
+typedef struct rb_call_info_struct {
+    /* inline cache: keys */
+    VALUE ic_vmstat;
+    VALUE ic_class;
+
+    /* inline cache: values */
+    rb_method_entry_t *method;
+    VALUE defined_class;
+} rb_call_info_t;
 
 #if 1
 #define GetCoreDataFromValue(obj, type, ptr) do { \
@@ -200,6 +207,9 @@ struct rb_iseq_struct {
 
     struct iseq_inline_cache_entry *ic_entries;
     int ic_size;
+
+    rb_call_info_t *callinfo_entries;
+    int callinfo_size;
 
     /**
      * argument information
@@ -661,6 +671,7 @@ enum vm_special_object_type {
 
 /* inline cache */
 typedef struct iseq_inline_cache_entry *IC;
+typedef rb_call_info_t *CALL_INFO;
 
 void rb_vm_change_state(void);
 
