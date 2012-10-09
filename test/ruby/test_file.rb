@@ -44,7 +44,7 @@ class TestFile < Test::Unit::TestCase
     bug6487 = '[ruby-core:45203]'
     f = Tempfile.new(__method__.to_s)
     f.close
-    assert File.exist? f.path
+    assert_file(:exist?, f.path)
     assert_nothing_raised(bug6487) {File.read(f.path, mode: 'r:utf-8')}
     assert_nothing_raised(bug6487) {File.read(f.path, mode: 'r:bom|utf-8')}
     f.close(true)

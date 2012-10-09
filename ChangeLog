@@ -1,3 +1,8 @@
+Tue Oct  9 23:18:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/envutil.rb (assert_file, assert_file_not): more
+	  descriptive assertions for File predicates.
+
 Tue Oct  9 18:01:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_sample): use rb_random_ulong_limited, since

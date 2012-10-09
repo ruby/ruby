@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'tmpdir'
+require_relative 'envutil'
 
 class TestWhileuntil < Test::Unit::TestCase
   def test_while
@@ -68,7 +69,7 @@ class TestWhileuntil < Test::Unit::TestCase
       tmp.close
 
       File.unlink tmpfilename or `/bin/rm -f "#{tmpfilename}"`
-      assert(!File.exist?(tmpfilename))
+      assert_file_not(:exist?, tmpfilename)
     }
   end
 

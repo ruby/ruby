@@ -1,6 +1,7 @@
 require "test/unit"
 require "fileutils"
 require "tmpdir"
+require_relative "envutil"
 
 class TestFileExhaustive < Test::Unit::TestCase
   DRIVE = Dir.pwd[%r'\A(?:[a-z]:|//[^/]+/[^/]+)'i]
@@ -119,7 +120,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     Dir.mktmpdir do |dir|
       prefix = File.join(dir, "...a")
       Dir.mkdir(prefix)
-      assert File.exist?(prefix)
+      assert_file(:exist?, prefix)
 
       assert_nothing_raised { File.stat(prefix) }
 
@@ -169,9 +170,9 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_exist_p
-    assert(File.exist?(@dir))
-    assert(File.exist?(@file))
-    assert(!(File.exist?(@nofile)))
+    assert_file(:exist?, @dir)
+    assert_file(:exist?, @file)
+    assert_file_not(:exist?, @nofile)
   end
 
   def test_readable_p
@@ -398,8 +399,8 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_rename
     assert_equal(0, File.rename(@file, @nofile))
-    assert(!(File.exist?(@file)))
-    assert(File.exist?(@nofile))
+    assert_file_not(:exist?, @file)
+    assert_file(:exist?, @nofile)
     assert_equal(0, File.rename(@nofile, @file))
     assert_raise(Errno::ENOENT) { File.rename(@nofile, @file) }
   end
@@ -786,21 +787,21 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_truncate
     assert_equal(0, File.truncate(@file, 1))
-    assert(File.exist?(@file))
+    assert_file(:exist?, @file)
     assert_equal(1, File.size(@file))
     assert_equal(0, File.truncate(@file, 0))
-    assert(File.exist?(@file))
-    assert(File.zero?(@file))
+    assert_file(:exist?, @file)
+    assert_file(:zero?, @file)
     make_file("foo", @file)
     assert_raise(Errno::ENOENT) { File.truncate(@nofile, 0) }
 
     f = File.new(@file, "w")
     assert_equal(0, f.truncate(2))
-    assert(File.exist?(@file))
+    assert_file(:exist?, @file)
     assert_equal(2, File.size(@file))
     assert_equal(0, f.truncate(0))
-    assert(File.exist?(@file))
-    assert(File.zero?(@file))
+    assert_file(:exist?, @file)
+    assert_file(:zero?, @file)
     f.close
     make_file("foo", @file)
 

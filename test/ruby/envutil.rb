@@ -224,6 +224,14 @@ module Test
       def assert_is_minus_zero(f)
         assert(1.0/f == -Float::INFINITY, "#{f} is not -0.0")
       end
+
+      def assert_file(predicate, path)
+        assert(File.__send__(predicate, path), "Expected file #{path.inspect} to be #{predicate}")
+      end
+
+      def assert_file_not(predicate, path)
+        assert(!File.__send__(predicate, path), "Expected file #{path.inspect} not to be #{predicate}")
+      end
     end
   end
 end

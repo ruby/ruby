@@ -109,7 +109,7 @@ class TestRequire < Test::Unit::TestCase
     Dir.mktmpdir do |tmp|
       req = File.join(tmp, "very_long_file_name.rb")
       File.write(req, "p :ok\n")
-      assert(File.exist?(req))
+      assert_file(:exist?, req)
       req[/.rb$/i] = ""
       assert_in_out_err(['--disable-gems'], <<-INPUT, %w(:ok), [])
         require "#{req}"
