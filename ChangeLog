@@ -1,4 +1,4 @@
-Tue Oct  9 17:09:51 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct  9 17:13:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_execarg_addopt, rb_execarg_run_options): add :uid and
 	  :gid options.  [ruby-core:47414] [Feature #6975]
