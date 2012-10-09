@@ -1,3 +1,8 @@
+Tue Oct  9 14:36:11 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_free): fix memory leak.
+	  rb_iseq_t::callinfo_entries should be freed.
+
 Tue Oct  9 14:28:18 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h (rb_call_info_t): add new type `rb_call_inf_t'.
