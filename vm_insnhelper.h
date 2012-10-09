@@ -239,7 +239,7 @@ enum vm_regan_acttype {
 
 #define CALL_SIMPLE_METHOD(num, id, recv) do { \
     VALUE klass = CLASS_OF(recv), defined_class; \
-    const rb_method_entry_t *me = vm_method_search((id), klass, ic, &defined_class); \
+    const rb_method_entry_t *me = vm_method_search((id), klass, ci, &defined_class); \
     CALL_METHOD((num), 0, 0, (id), me, (recv), defined_class); \
 } while (0)
 

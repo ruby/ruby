@@ -1,3 +1,20 @@
+Tue Oct  9 14:28:18 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h (rb_call_info_t): add new type `rb_call_inf_t'.
+	  This data structure contains information including inline method
+	  cache. After that, `struct iseq_inline_cache_entry' does not 
+	  need to contain inline cache for method invocation.
+	  Other information will be added to this data structure.
+
+	* vm_core.h (rb_iseq_t): add `callinfo_entries' and `callinfo_size'
+	  members to `rb_iseq_t'.
+
+	* insns.def, compile.c: Use CALL_INFO instead of IC.
+
+	* tool/instruction.rb: support CALL_INFO as operand type.
+
+	* vm_insnhelper.c, vm_insnhelper.h: ditto.
+
 Sun Oct  7 23:54:33 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/zlib/zlib.c (zstream_run_func): don't call inflate() when

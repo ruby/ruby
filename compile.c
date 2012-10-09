@@ -946,7 +946,7 @@ new_insn_send(rb_iseq_t *iseq, int line_no,
     operands[1] = argc;
     operands[2] = block;
     operands[3] = flag;
-    operands[4] = INT2FIX(iseq->ic_size++);
+    operands[4] = INT2FIX(iseq->callinfo_size++);
     iobj = new_insn_core(iseq, line_no, BIN(send), 5, operands);
     return iobj;
 }
@@ -1398,6 +1398,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     line_info_table = ALLOC_N(struct iseq_line_info_entry, k);
     iseq->ic_entries = ALLOC_N(struct iseq_inline_cache_entry, iseq->ic_size);
     MEMZERO(iseq->ic_entries, struct iseq_inline_cache_entry, iseq->ic_size);
+    iseq->callinfo_entries = ALLOC_N(rb_call_info_t, iseq->callinfo_size);
+    MEMZERO(iseq->callinfo_entries, rb_call_info_t, iseq->callinfo_size);
 
     list = FIRST_ELEMENT(anchor);
     k = pos = sp = 0;
@@ -1495,10 +1497,19 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    int ic_index = FIX2INT(operands[j]);
 			    IC ic = &iseq->ic_entries[ic_index];
 			    if (UNLIKELY(ic_index >= iseq->ic_size)) {
-				rb_bug("iseq_set_sequence: ic_index overflow: index: %d, size: %d",
-				       ic_index, iseq->ic_size);
+				rb_bug("iseq_set_sequence: ic_index overflow: index: %d, size: %d", ic_index, iseq->ic_size);
 			    }
 			    generated_iseq[pos + 1 + j] = (VALUE)ic;
+			    break;
+			}
+		      case TS_CALLINFO: /* call info */
+			{
+			    int ci_index = FIX2INT(operands[j]);
+			    CALL_INFO ci = &iseq->callinfo_entries[ci_index];
+			    if (UNLIKELY(ci_index >= iseq->callinfo_size)) {
+				rb_bug("iseq_set_sequence: ci_index overflow: index: %d, size: %d", ci_index, iseq->callinfo_size);
+			    }
+			    generated_iseq[pos + 1 + j] = (VALUE)ci;
 			    break;
 			}
 		      case TS_ID: /* ID */
@@ -1859,7 +1870,7 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
     }
 
     for (i=0; i<iobj->operand_size; i++) {
-	iobj->operands[i] = INT2FIX(iseq->ic_size++);
+	iobj->operands[i] = INT2FIX(iseq->callinfo_size++);
     }
 
     return COMPILE_OK;
@@ -5234,8 +5245,11 @@ insn_data_to_s_detail(INSN *iobj)
 		      (OPERAND_AT(iobj, j) & (~1));
 		    rb_str_cat2(str, rb_id2name(entry->id));
 		}
-	      case TS_IC:	/* method cache */
+	      case TS_IC:	/* inline cache */
 		rb_str_catf(str, "<ic:%d>", FIX2INT(OPERAND_AT(iobj, j)));
+		break;
+	      case TS_CALLINFO: /* call info */
+		rb_str_catf(str, "<callinfo:%d>", FIX2INT(OPERAND_AT(iobj, j)));
 		break;
 	      case TS_CDHASH:	/* case/when condition cache */
 		rb_str_cat2(str, "<ch>");
@@ -5500,9 +5514,15 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			break;
 		      case TS_IC:
 			argv[j] = op;
-			if (NUM2INT(op) >= iseq->ic_size)
+			if (NUM2INT(op) >= iseq->ic_size) {
 			    iseq->ic_size = NUM2INT(op) + 1;
+			}
 			break;
+		      case TS_CALLINFO:
+			argv[j] = op;
+			if (NUM2INT(op) >= iseq->callinfo_size) {
+			    iseq->callinfo_size = NUM2INT(op) + 1;
+			}
 		      case TS_ID:
 			argv[j] = rb_convert_type(op, T_SYMBOL,
 						  "Symbol", "to_sym");
