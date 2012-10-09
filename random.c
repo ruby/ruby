@@ -943,6 +943,22 @@ rb_random_real(VALUE obj)
     return genrand_real(&rnd->mt);
 }
 
+unsigned long
+rb_random_ulong_limited(VALUE obj, unsigned long limit)
+{
+    rb_random_t *rnd = try_get_rnd(obj);
+    if (!rnd) {
+	VALUE lim = ULONG2NUM(limit);
+	VALUE v = rb_funcall2(obj, id_rand, 1, &lim);
+	unsigned long r = NUM2ULONG(v);
+	if (r > limit) {
+	    rb_raise(rb_eRangeError, "random number too big %ld", r);
+	}
+	return r;
+    }
+    return limited_rand(&rnd->mt, limit);
+}
+
 /*
  * call-seq: prng.bytes(size) -> a_string
  *

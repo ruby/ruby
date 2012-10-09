@@ -610,6 +610,7 @@ VALUE rb_random_bytes(VALUE rnd, long n);
 VALUE rb_random_int(VALUE rnd, VALUE max);
 unsigned int rb_random_int32(VALUE rnd);
 double rb_random_real(VALUE rnd);
+unsigned long rb_random_ulong_limited(VALUE rnd, unsigned long limit);
 unsigned long rb_genrand_ulong_limited(unsigned long i);
 /* re.c */
 #define rb_memcmp memcmp
