@@ -76,7 +76,7 @@ module DRbCore
     while (@there&&@there.to_s rescue nil)
       # nop
     end
-    signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :INT : :TERM
+    signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM
     Thread.list.each {|th|
       if th.respond_to?(:pid) && th[:drb_service] == @service_name
         begin
@@ -297,7 +297,7 @@ module DRbAry
     while (@there&&@there.to_s rescue nil)
       # nop
     end
-    signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :INT : :TERM
+    signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM
     Thread.list.each {|th|
       if th.respond_to?(:pid) && th[:drb_service] == @service_name
         begin

@@ -771,6 +771,7 @@ class CGI
   #     "html4":: HTML 4.0
   #     "html4Tr":: HTML 4.0 Transitional
   #     "html4Fr":: HTML 4.0 with Framesets
+  #     "html5":: HTML 5
   #
   # <tt>block</tt>::
   #   If provided, the block is called when an invalid encoding is
@@ -829,6 +830,11 @@ class CGI
       extend Html4Tr
       element_init()
       extend Html4Fr
+      element_init()
+      extend HtmlExtension
+    when "html5"
+      require 'cgi/html'
+      extend Html5
       element_init()
       extend HtmlExtension
     end

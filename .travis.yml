@@ -23,7 +23,6 @@ language: c
 # The value set here is visible via $CC environment variable.
 compiler:
   - gcc
-  - clang
 
 # Dependencies.  Some  header files are missing  in a Travis' worker  VM, so we
 # have  to install  them.  The  "1.9.1" here  is OK.   It is  the  most adopted
@@ -41,8 +40,7 @@ before_script:
   - "autoconf"
   - "./configure --with-gcc=$CC"
   - "make -sj encs"
-  - "make -sj exts"
-script: "make test"
+script: "make test TESTOPTS='-v --sets=thread'"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
@@ -54,10 +52,9 @@ branches:
 notifications:
   irc:
     channels:
-      - "irc.freenode.org#ruby-core"
       - "irc.freenode.org#ruby-ja"
-    on_success: change # [always|never|change] # default: always
-    on_failure: change # [always|never|change] # default: always
+    on_success: always # [always|never|change] # default: always
+    on_failure: always # [always|never|change] # default: always
     template:
       - "%{message} by @%{author}: See %{build_url}"
 

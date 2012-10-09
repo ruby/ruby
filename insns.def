@@ -46,30 +46,44 @@ nop
 
 /**
   @c variable
-  @e Get value of local variable (pointed to by idx).
-  @j idx で指定されたローカル変数をスタックに置く。
+  @e Get local variable (pointed by `idx' and `level').
+     'level' indicates the nesting depth from the current block.
+  @j level, idx で指定されたローカル変数の値をスタックに置く。
+     level はブロックのネストレベルで、何段上かを示す。
  */
 DEFINE_INSN
 getlocal
-(lindex_t idx)
+(lindex_t idx, rb_num_t level)
 ()
 (VALUE val)
 {
-    val = *(GET_LEP() - idx);
+    rb_num_t i;
+    VALUE *ep = GET_EP();
+    for (i = 0; i < level; i++) {
+	ep = GET_PREV_EP(ep);
+    }
+    val = *(ep - idx);
 }
 
 /**
   @c variable
-  @e Set value of local variable (pointed to by idx) to val.
-  @j idx で指定されたローカル変数を val に設定する。
+  @e Set a local variable (pointed to by 'idx') as val.
+     'level' indicates the nesting depth from the current block.
+  @j level, idx で指定されたローカル変数の値を val にする。
+     level はブロックのネストレベルで、何段上かを示す。
  */
 DEFINE_INSN
 setlocal
-(lindex_t idx)
+(lindex_t idx, rb_num_t level)
 (VALUE val)
 ()
 {
-    *(GET_LEP() - idx) = val;
+    rb_num_t i;
+    VALUE *ep = GET_EP();
+    for (i = 0; i < level; i++) {
+	ep = GET_PREV_EP(ep);
+    }
+    *(ep - idx) = val;
 }
 
 /**
@@ -98,48 +112,6 @@ setspecial
 ()
 {
     lep_svar_set(th, GET_LEP(), key, obj);
-}
-
-/**
-  @c variable
-  @e Get value of block local variable (pointed to by idx and level).
-     'level' indicates the nesting depth from the current block.
-  @j level, idx で指定されたブロックローカル変数の値をスタックに置く。
-     level はブロックのネストレベルで、何段上かを示す。
- */
-DEFINE_INSN
-getdynamic
-(dindex_t idx, rb_num_t level)
-()
-(VALUE val)
-{
-    rb_num_t i;
-    VALUE *ep = GET_EP();
-    for (i = 0; i < level; i++) {
-	ep = GET_PREV_EP(ep);
-    }
-    val = *(ep - idx);
-}
-
-/**
-  @c variable
-  @e Set block local variable (pointed to by 'idx') as val.
-     'level' indicates the nesting depth from the current block.
-  @j level, idx で指定されたブロックローカル変数の値を val にする。
-     level はブロックのネストレベルで、何段上かを示す。
- */
-DEFINE_INSN
-setdynamic
-(dindex_t idx, rb_num_t level)
-(VALUE val)
-()
-{
-    rb_num_t i;
-    VALUE *ep = GET_EP();
-    for (i = 0; i < level; i++) {
-	ep = GET_PREV_EP(ep);
-    }
-    *(ep - idx) = val;
 }
 
 /**
@@ -991,7 +963,7 @@ defineclass
  */
 DEFINE_INSN
 send
-(ID op_id, rb_num_t op_argc, ISEQ blockiseq, rb_num_t op_flag, IC ic)
+(ID op_id, rb_num_t op_argc, ISEQ blockiseq, rb_num_t op_flag, CALL_INFO ci)
 (...)
 (VALUE val) // inc += - (int)(op_argc + ((op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? 1 : 0));
 {
@@ -1006,7 +978,7 @@ send
     /* get receiver */
     recv = TOPN(num);
     klass = CLASS_OF(recv);
-    me = vm_method_search(id, klass, ic, &defined_class);
+    me = vm_method_search(id, klass, ci, &defined_class);
     CALL_METHOD(num, blockptr, flag, id, me, recv, defined_class);
 }
 
@@ -1055,7 +1027,7 @@ invokesuper
     if (me && me->def->type == VM_METHOD_TYPE_ISEQ &&
 	me->def->body.iseq == ip) {
 	klass = RCLASS_SUPER(klass);
-	me = rb_method_entry_get_with_omod(Qnil, klass, id, &klass);
+	me = rb_method_entry_get_with_refinements(Qnil, klass, id, &klass);
     }
 
     CALL_METHOD(num, blockptr, flag, id, me, recv, klass);
@@ -1314,7 +1286,7 @@ opt_case_dispatch
  */
 DEFINE_INSN
 opt_plus
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1377,7 +1349,7 @@ opt_plus
  */
 DEFINE_INSN
 opt_minus
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1425,7 +1397,7 @@ opt_minus
  */
 DEFINE_INSN
 opt_mult
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1478,7 +1450,7 @@ opt_mult
  */
 DEFINE_INSN
 opt_div
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1541,7 +1513,7 @@ opt_div
  */
 DEFINE_INSN
 opt_mod
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1605,11 +1577,11 @@ opt_mod
  */
 DEFINE_INSN
 opt_eq
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = opt_eq_func(recv, obj, ic);
+    val = opt_eq_func(recv, obj, ci);
 
     if (val == Qundef) {
 	/* other */
@@ -1626,16 +1598,16 @@ opt_eq
  */
 DEFINE_INSN
 opt_neq
-(IC ic, IC ic_eq)
+(CALL_INFO ci, CALL_INFO ci_eq)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
     extern VALUE rb_obj_not_equal(VALUE obj1, VALUE obj2);
-    const rb_method_entry_t *me = vm_method_search(idNeq, CLASS_OF(recv), ic, 0);
+    const rb_method_entry_t *me = vm_method_search(idNeq, CLASS_OF(recv), ci, 0);
     val = Qundef;
 
     if (check_cfunc(me, rb_obj_not_equal)) {
-	val = opt_eq_func(recv, obj, ic_eq);
+	val = opt_eq_func(recv, obj, ci_eq);
 
 	if (val != Qundef) {
 	    val = RTEST(val) ? Qfalse : Qtrue;
@@ -1657,7 +1629,7 @@ opt_neq
  */
 DEFINE_INSN
 opt_lt
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1701,7 +1673,7 @@ opt_lt
  */
 DEFINE_INSN
 opt_le
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1736,7 +1708,7 @@ opt_le
  */
 DEFINE_INSN
 opt_gt
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1780,7 +1752,7 @@ opt_gt
  */
 DEFINE_INSN
 opt_ge
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1814,7 +1786,7 @@ opt_ge
  */
 DEFINE_INSN
 opt_ltlt
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1846,7 +1818,7 @@ opt_ltlt
  */
 DEFINE_INSN
 opt_aref
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
@@ -1876,7 +1848,7 @@ opt_aref
  */
 DEFINE_INSN
 opt_aset
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv, VALUE obj, VALUE set)
 (VALUE val)
 {
@@ -1909,7 +1881,7 @@ opt_aset
  */
 DEFINE_INSN
 opt_length
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv)
 (VALUE val)
 {
@@ -1944,7 +1916,7 @@ opt_length
  */
 DEFINE_INSN
 opt_size
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv)
 (VALUE val)
 {
@@ -1979,7 +1951,7 @@ opt_size
  */
 DEFINE_INSN
 opt_empty_p
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv)
 (VALUE val)
 {
@@ -2017,7 +1989,7 @@ opt_empty_p
  */
 DEFINE_INSN
 opt_succ
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv)
 (VALUE val)
 {
@@ -2064,12 +2036,12 @@ opt_succ
  */
 DEFINE_INSN
 opt_not
-(IC ic)
+(CALL_INFO ci)
 (VALUE recv)
 (VALUE val)
 {
     extern VALUE rb_obj_not(VALUE obj);
-    const rb_method_entry_t *me = vm_method_search(idNot, CLASS_OF(recv), ic, 0);
+    const rb_method_entry_t *me = vm_method_search(idNot, CLASS_OF(recv), ci, 0);
 
     if (check_cfunc(me, rb_obj_not)) {
 	val = RTEST(recv) ? Qfalse : Qtrue;

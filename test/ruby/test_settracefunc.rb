@@ -398,59 +398,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
     define_method(:method_added, Module.method(:method_added))
   end
 
-  def test_tracepoint
-    events = []
-    trace = nil
-    xyzzy = nil
-    local_var = :outer
-    eval <<-EOF.gsub(/^.*?: /, ""), nil, 'xyzzy'
-    1: trace = TracePoint.trace(){|tp|
-    2:   events << [tp.event, tp.line, tp.file, tp.klass, tp.id, tp.self, tp.binding.eval("local_var")]
-    3: }
-    4: 1.times{|;local_var| local_var = :inner
-    5:   tap{}
-    6: }
-    7: class XYZZY
-    8:   local_var = :XYZZY_outer
-    9:   def foo
-   10:     local_var = :XYZZY_foo
-   11:     bar
-   12:   end
-   13:   def bar
-   14:     local_var = :XYZZY_bar
-   15:     tap{}
-   16:   end
-   17: end
-   18: xyzzy = XYZZY.new
-   19: xyzzy.foo
-   20: trace.untrace
-    EOF
-
-    events.each{|ev|
-      STDERR.puts [ev[0], ev[1]].inspect
-      STDERR.puts ev.inspect
-    }
-    
-    [
-     #
-     [:c_return, 1, "xyzzy", self.class, :trace,           TracePoint, :outer],
-     [:line,     4, 'xyzzy', self.class, :test_tracepoint, self, :outer],
-     [:c_call,   4, 'xyzzy', Integer,    :times,           1,    :outer],
-     [:line,     4, 'xyzzy', self.class, :test_tracepoint, self, nil],
-     [:line,     5, 'xyzzy', self.class, :test_tracepoint, self, :inner],
-     [:c_call,   5, 'xyzzy', Kernel,     :tap,             self, :inner],
-     [:line,     7, 'xyzzy', self.class, :test_tracepoint, self, :outer],
-     [:c_call,   7, "xyzzy", Class,       :new,            TestSetTraceFunc::XYZZY, :outer],
-     [:c_call,   7, "xyzzy", BasicObject, :initialize,     xyzzy, :outer],
-     [:line,     8, 'xyzzy', self.class, :test_tracepoint, self, :outer],
-     [:c_call,   9, 'xyzzy', TracePoint, :untrace,         trace,:outer],
-     ].each{|e|
-      assert_equal e, events.shift
-    }
-    assert_equal [], events
-  end
-
-
   def trace_by_tracepoint *trace_events
     events = []
     trace = nil

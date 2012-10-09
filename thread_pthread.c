@@ -492,12 +492,22 @@ static rb_thread_t *register_cached_thread_and_wait(void);
 #define STACKADDR_AVAILABLE 1
 #elif defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP
 #define STACKADDR_AVAILABLE 1
+#undef MAINSTACKADDR_AVAILABLE
+#define MAINSTACKADDR_AVAILABLE 0
 void *pthread_get_stackaddr_np(pthread_t);
 size_t pthread_get_stacksize_np(pthread_t);
 #elif defined HAVE_THR_STKSEGMENT || defined HAVE_PTHREAD_STACKSEG_NP
 #define STACKADDR_AVAILABLE 1
 #elif defined HAVE_PTHREAD_GETTHRDS_NP
 #define STACKADDR_AVAILABLE 1
+#endif
+
+#ifndef MAINSTACKADDR_AVAILABLE
+# ifdef STACKADDR_AVAILABLE
+#   define MAINSTACKADDR_AVAILABLE 1
+# else
+#   define MAINSTACKADDR_AVAILABLE 0
+# endif
 #endif
 
 #ifdef STACKADDR_AVAILABLE
@@ -578,6 +588,26 @@ static struct {
 #endif
 } native_main_thread;
 
+
+enum {
+#ifdef __SYMBIAN32__
+    RUBY_STACK_MIN_LIMIT = 64 * 1024,  /* 64KB: Let's be slightly more frugal on mobile platform */
+#else
+    RUBY_STACK_MIN_LIMIT = 512 * 1024, /* 512KB */
+#endif
+    RUBY_STACK_SPACE_LIMIT = 1024 * 1024,
+#ifdef PTHREAD_STACK_MIN
+    RUBY_STACK_MIN = ((RUBY_STACK_MIN_LIMIT < PTHREAD_STACK_MIN) ?
+		      PTHREAD_STACK_MIN * 2 : RUBY_STACK_MIN_LIMIT),
+#else
+    RUBY_STACK_MIN = (RUBY_STACK_MIN_LIMIT),
+#endif
+    RUBY_STACK_SPACE_RATIO = 5,
+    RUBY_STACK_MIN_SPACE = RUBY_STACK_MIN/RUBY_STACK_SPACE_RATIO,
+    RUBY_STACK_SPACE = ((RUBY_STACK_MIN_SPACE > RUBY_STACK_SPACE_LIMIT) ?
+			RUBY_STACK_SPACE_LIMIT : RUBY_STACK_MIN_SPACE)
+};
+
 #ifdef STACK_END_ADDRESS
 extern void *STACK_END_ADDRESS;
 #endif
@@ -614,19 +644,27 @@ ruby_init_stack(volatile VALUE *addr
     {
 	size_t size = 0;
 	size_t space = 0;
-#if defined(STACKADDR_AVAILABLE)
+#if MAINSTACKADDR_AVAILABLE
 	void* stackaddr;
 	STACK_GROW_DIR_DETECTION;
 	get_stack(&stackaddr, &size);
 	space = STACK_DIR_UPPER((char *)addr - (char *)stackaddr, (char *)stackaddr - (char *)addr);
+	native_main_thread.stack_maxsize = size - space;
 #elif defined(HAVE_GETRLIMIT)
+	int pagesize = getpagesize();
 	struct rlimit rlim;
 	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
 	    size = (size_t)rlim.rlim_cur;
 	}
-	space = size > 5 * 1024 * 1024 ? 1024 * 1024 : size / 5;
+	addr = native_main_thread.stack_start;
+	if (IS_STACK_DIR_UPPER()) {
+	    space = ((size_t)((char *)addr + size) / pagesize) * pagesize - (size_t)addr;
+	}
+	else {
+	    space = (size_t)addr - ((size_t)((char *)addr - size) / pagesize + 1) * pagesize;
+	}
+	native_main_thread.stack_maxsize = space;
 #endif
-	native_main_thread.stack_maxsize = size - space;
     }
 }
 
@@ -795,24 +833,6 @@ use_cached_thread(rb_thread_t *th)
 #endif
     return result;
 }
-
-enum {
-#ifdef __SYMBIAN32__
-    RUBY_STACK_MIN_LIMIT = 64 * 1024,  /* 64KB: Let's be slightly more frugal on mobile platform */
-#else
-    RUBY_STACK_MIN_LIMIT = 512 * 1024, /* 512KB */
-#endif
-    RUBY_STACK_SPACE_LIMIT = 1024 * 1024
-};
-
-#ifdef PTHREAD_STACK_MIN
-#define RUBY_STACK_MIN ((RUBY_STACK_MIN_LIMIT < PTHREAD_STACK_MIN) ? \
-			PTHREAD_STACK_MIN * 2 : RUBY_STACK_MIN_LIMIT)
-#else
-#define RUBY_STACK_MIN (RUBY_STACK_MIN_LIMIT)
-#endif
-#define RUBY_STACK_SPACE (RUBY_STACK_MIN/5 > RUBY_STACK_SPACE_LIMIT ? \
-			  RUBY_STACK_SPACE_LIMIT : RUBY_STACK_MIN/5)
 
 static int
 native_thread_create(rb_thread_t *th)
@@ -1415,7 +1435,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
     else {
 	return 0;
     }
-    size /= 5;
+    size /= RUBY_STACK_SPACE_RATIO;
     if (size > water_mark) size = water_mark;
     if (IS_STACK_DIR_UPPER()) {
 	if (size > ~(size_t)base+1) size = ~(size_t)base+1;

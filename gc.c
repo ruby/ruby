@@ -112,8 +112,6 @@ static ruby_gc_params_t initial_params = {
 
 #define nomem_error GET_VM()->special_exceptions[ruby_error_nomemory]
 
-#define MARK_STACK_MAX 1024
-
 #ifndef GC_PROFILE_MORE_DETAIL
 #define GC_PROFILE_MORE_DETAIL 0
 #endif
@@ -208,6 +206,22 @@ struct gc_list {
     struct gc_list *next;
 };
 
+#define STACK_CHUNK_SIZE 500
+
+typedef struct stack_chunk {
+    VALUE data[STACK_CHUNK_SIZE];
+    struct stack_chunk *next;
+} stack_chunk_t;
+
+typedef struct mark_stack {
+    stack_chunk_t *chunk;
+    stack_chunk_t *cache;
+    size_t index;
+    size_t limit;
+    size_t cache_size;
+    size_t unused_cache_size;
+} mark_stack_t;
+
 #ifndef CALC_EXACT_MALLOC_SIZE
 #define CALC_EXACT_MALLOC_SIZE 0
 #endif
@@ -248,11 +262,7 @@ typedef struct rb_objspace {
 	st_table *table;
 	RVALUE *deferred;
     } final;
-    struct {
-	VALUE buffer[MARK_STACK_MAX];
-	VALUE *ptr;
-	int overflow;
-    } markstack;
+    mark_stack_t mark_stack;
     struct {
 	int run;
 	gc_profile_record *record;
@@ -263,6 +273,11 @@ typedef struct rb_objspace {
     struct gc_list *global_list;
     size_t count;
     int gc_stress;
+
+    struct mark_func_data_struct {
+	VALUE data;
+	void (*mark_func)(struct rb_objspace *objspace, VALUE v);
+    } *mark_func_data;
 } rb_objspace_t;
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
@@ -287,9 +302,6 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define finalizing		objspace->flags.finalizing
 #define finalizer_table 	objspace->final.table
 #define deferred_final_list	objspace->final.deferred
-#define mark_stack		objspace->markstack.buffer
-#define mark_stack_ptr		objspace->markstack.ptr
-#define mark_stack_overflow	objspace->markstack.overflow
 #define global_List		objspace->global_list
 #define ruby_gc_stress		objspace->gc_stress
 #define initial_malloc_limit	initial_params.initial_malloc_limit
@@ -308,8 +320,8 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define GET_HEAP_SLOT(x) (GET_HEAP_HEADER(x)->base)
 #define GET_HEAP_BITMAP(x) (GET_HEAP_HEADER(x)->bits)
 #define NUM_IN_SLOT(p) (((uintptr_t)(p) & HEAP_ALIGN_MASK)/sizeof(RVALUE))
-#define BITMAP_INDEX(p) (NUM_IN_SLOT(p) / (sizeof(uintptr_t) * 8))
-#define BITMAP_OFFSET(p) (NUM_IN_SLOT(p) & ((sizeof(uintptr_t) * 8)-1))
+#define BITMAP_INDEX(p) (NUM_IN_SLOT(p) / (sizeof(uintptr_t) * CHAR_BIT))
+#define BITMAP_OFFSET(p) (NUM_IN_SLOT(p) & ((sizeof(uintptr_t) * CHAR_BIT)-1))
 #define MARKED_IN_BITMAP(bits, p) (bits[BITMAP_INDEX(p)] & ((uintptr_t)1 << BITMAP_OFFSET(p)))
 
 #ifndef HEAP_ALIGN_LOG
@@ -317,14 +329,16 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define HEAP_ALIGN_LOG 14
 #endif
 
-#define HEAP_ALIGN (1UL << HEAP_ALIGN_LOG)
-#define HEAP_ALIGN_MASK (~(~0UL << HEAP_ALIGN_LOG))
-#define REQUIRED_SIZE_BY_MALLOC (sizeof(size_t) * 5)
-#define HEAP_SIZE (HEAP_ALIGN - REQUIRED_SIZE_BY_MALLOC)
 #define CEILDIV(i, mod) (((i) + (mod) - 1)/(mod))
 
-#define HEAP_OBJ_LIMIT (unsigned int)((HEAP_SIZE - sizeof(struct heaps_header))/sizeof(struct RVALUE))
-#define HEAP_BITMAP_LIMIT CEILDIV(CEILDIV(HEAP_SIZE, sizeof(struct RVALUE)), sizeof(uintptr_t)*8)
+enum {
+    HEAP_ALIGN = (1UL << HEAP_ALIGN_LOG),
+    HEAP_ALIGN_MASK = (~(~0UL << HEAP_ALIGN_LOG)),
+    REQUIRED_SIZE_BY_MALLOC = (sizeof(size_t) * 5),
+    HEAP_SIZE = (HEAP_ALIGN - REQUIRED_SIZE_BY_MALLOC),
+    HEAP_OBJ_LIMIT = (unsigned int)((HEAP_SIZE - sizeof(struct heaps_header))/sizeof(struct RVALUE)),
+    HEAP_BITMAP_LIMIT = CEILDIV(CEILDIV(HEAP_SIZE, sizeof(struct RVALUE)), sizeof(uintptr_t) * CHAR_BIT)
+};
 
 int ruby_gc_debug_indent = 0;
 VALUE rb_mGC;
@@ -342,11 +356,14 @@ static void negative_size_allocation_error(const char *);
 static void *aligned_malloc(size_t, size_t);
 static void aligned_free(void *);
 
+static void init_mark_stack(mark_stack_t *stack);
+
 static VALUE lazy_sweep_enable(void);
 static int garbage_collect(rb_objspace_t *);
 static int gc_lazy_sweep(rb_objspace_t *);
-static void mark_tbl(rb_objspace_t *, st_table *, int);
+static void mark_tbl(rb_objspace_t *, st_table *);
 static void rest_sweep(rb_objspace_t *);
+static void gc_mark_stacked_objects(rb_objspace_t *);
 
 static double getrusage_time(void);
 static inline void gc_prof_timer_start(rb_objspace_t *);
@@ -378,7 +395,7 @@ rb_objspace_alloc(void)
 #endif
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
-static void aligned_free(void *);
+static void free_stack_chunks(mark_stack_t *);
 
 void
 rb_objspace_free(rb_objspace_t *objspace)
@@ -413,6 +430,7 @@ rb_objspace_free(rb_objspace_t *objspace)
 	heaps_used = 0;
 	heaps = 0;
     }
+    free_stack_chunks(&objspace->mark_stack);
     free(objspace);
 }
 #endif
@@ -574,6 +592,8 @@ static void
 init_heap(rb_objspace_t *objspace)
 {
     add_heap_slots(objspace, HEAP_MIN_SLOTS / HEAP_OBJ_LIMIT);
+    init_mark_stack(&objspace->mark_stack);
+
 #ifdef USE_SIGALTSTACK
     {
 	/* altstack of another threads are allocated in another place */
@@ -734,8 +754,8 @@ rb_objspace_data_type_name(VALUE obj)
     }
 }
 
-static void gc_mark(rb_objspace_t *objspace, VALUE ptr, int lev);
-static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev);
+static void gc_mark(rb_objspace_t *objspace, VALUE ptr);
+static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
 
 static inline int
 is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
@@ -1123,30 +1143,40 @@ struct os_each_struct {
 };
 
 static int
+internal_object_p(VALUE obj)
+{
+    RVALUE *p = (RVALUE *)obj;
+
+    if (p->as.basic.flags) {
+	switch (BUILTIN_TYPE(p)) {
+	  case T_NONE:
+	  case T_ICLASS:
+	  case T_NODE:
+	  case T_ZOMBIE:
+	    break;
+	  case T_CLASS:
+	    if (FL_TEST(p, FL_SINGLETON))
+	      break;
+	  default:
+	    if (!p->as.basic.klass) break;
+	    return 0;
+	}
+    }
+    return 1;
+}
+
+static int
 os_obj_of_i(void *vstart, void *vend, size_t stride, void *data)
 {
     struct os_each_struct *oes = (struct os_each_struct *)data;
     RVALUE *p = (RVALUE *)vstart, *pend = (RVALUE *)vend;
-    volatile VALUE v;
 
     for (; p != pend; p++) {
-	if (p->as.basic.flags) {
-	    switch (BUILTIN_TYPE(p)) {
-	      case T_NONE:
-	      case T_ICLASS:
-	      case T_NODE:
-	      case T_ZOMBIE:
-		continue;
-	      case T_CLASS:
-		if (FL_TEST(p, FL_SINGLETON))
-		    continue;
-	      default:
-		if (!p->as.basic.klass) continue;
-		v = (VALUE)p;
-		if (!oes->of || rb_obj_is_kind_of(v, oes->of)) {
-		    rb_yield(v);
-		    oes->num++;
-		}
+	volatile VALUE v = (VALUE)p;
+	if (!internal_object_p(v)) {
+	    if (!oes->of || rb_obj_is_kind_of(v, oes->of)) {
+		rb_yield(v);
+		oes->num++;
 	    }
 	}
     }
@@ -1470,16 +1500,17 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     RVALUE *final_list = 0;
     size_t i;
 
-    /* run finalizers */
     rest_sweep(objspace);
 
     if (ATOMIC_EXCHANGE(finalizing, 1)) return;
 
+    /* run finalizers */
     do {
-	/* XXX: this loop will make no sense */
-	/* because mark will not be removed */
 	finalize_deferred(objspace);
-	mark_tbl(objspace, finalizer_table, 0);
+	/* mark reachable objects from finalizers */
+	/* They might be not referred from any place here */
+	mark_tbl(objspace, finalizer_table);
+	gc_mark_stacked_objects(objspace);
 	st_foreach(finalizer_table, chain_finalized_object,
 		   (st_data_t)&deferred_final_list);
     } while (deferred_final_list);
@@ -2060,6 +2091,139 @@ gc_sweep(rb_objspace_t *objspace)
     during_gc = 0;
 }
 
+/* Marking stack */
+
+static void push_mark_stack(mark_stack_t *, VALUE);
+static int pop_mark_stack(mark_stack_t *, VALUE *);
+static void shrink_stack_chunk_cache(mark_stack_t *stack);
+
+static stack_chunk_t *
+stack_chunk_alloc(void)
+{
+    stack_chunk_t *res;
+
+    res = malloc(sizeof(stack_chunk_t));
+    if (!res)
+        rb_memerror();
+
+    return res;
+}
+
+static inline int
+is_mark_stask_empty(mark_stack_t *stack)
+{
+    return stack->chunk == NULL;
+}
+
+static void
+add_stack_chunk_cache(mark_stack_t *stack, stack_chunk_t *chunk)
+{
+    chunk->next = stack->cache;
+    stack->cache = chunk;
+    stack->cache_size++;
+}
+
+static void
+shrink_stack_chunk_cache(mark_stack_t *stack)
+{
+    stack_chunk_t *chunk;
+
+    if (stack->unused_cache_size > (stack->cache_size/2)) {
+        chunk = stack->cache;
+        stack->cache = stack->cache->next;
+        stack->cache_size--;
+        free(chunk);
+    }
+    stack->unused_cache_size = stack->cache_size;
+}
+
+static void
+push_mark_stack_chunk(mark_stack_t *stack)
+{
+    stack_chunk_t *next;
+
+    assert(stack->index == stack->limit);
+    if (stack->cache_size > 0) {
+        next = stack->cache;
+        stack->cache = stack->cache->next;
+        stack->cache_size--;
+        if (stack->unused_cache_size > stack->cache_size)
+            stack->unused_cache_size = stack->cache_size;
+    }
+    else {
+        next = stack_chunk_alloc();
+    }
+    next->next = stack->chunk;
+    stack->chunk = next;
+    stack->index = 0;
+}
+
+static void
+pop_mark_stack_chunk(mark_stack_t *stack)
+{
+    stack_chunk_t *prev;
+
+    prev = stack->chunk->next;
+    assert(stack->index == 0);
+    add_stack_chunk_cache(stack, stack->chunk);
+    stack->chunk = prev;
+    stack->index = stack->limit;
+}
+
+#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
+static void
+free_stack_chunks(mark_stack_t *stack)
+{
+    stack_chunk_t *chunk = stack->chunk;
+    stack_chunk_t *next = NULL;
+
+    while (chunk != NULL) {
+        next = chunk->next;
+        free(chunk);
+        chunk = next;
+    }
+}
+#endif
+
+static void
+push_mark_stack(mark_stack_t *stack, VALUE data)
+{
+    if (stack->index == stack->limit) {
+        push_mark_stack_chunk(stack);
+    }
+    stack->chunk->data[stack->index++] = data;
+}
+
+static int
+pop_mark_stack(mark_stack_t *stack, VALUE *data)
+{
+    if (is_mark_stask_empty(stack)) {
+        return FALSE;
+    }
+    if (stack->index == 1) {
+        *data = stack->chunk->data[--stack->index];
+        pop_mark_stack_chunk(stack);
+        return TRUE;
+    }
+    *data = stack->chunk->data[--stack->index];
+    return TRUE;
+}
+
+static void
+init_mark_stack(mark_stack_t *stack)
+{
+    int i;
+
+    push_mark_stack_chunk(stack);
+    stack->limit = STACK_CHUNK_SIZE;
+
+    for(i=0; i < 4; i++) {
+        add_stack_chunk_cache(stack, stack_chunk_alloc());
+    }
+    stack->unused_cache_size = stack->cache_size;
+}
+
+
 /* Marking */
 
 #define MARK_IN_BITMAP(bits, p) (bits[BITMAP_INDEX(p)] = bits[BITMAP_INDEX(p)] | ((uintptr_t)1 << BITMAP_OFFSET(p)))
@@ -2096,9 +2260,6 @@ ruby_get_stack_grow_direction(volatile VALUE *addr)
 }
 #endif
 
-#define GC_LEVEL_MAX 250
-#define STACKFRAME_FOR_GC_MARK (GC_LEVEL_MAX * GC_MARK_STACKFRAME_WORD)
-
 size_t
 ruby_stack_length(VALUE **p)
 {
@@ -2108,6 +2269,7 @@ ruby_stack_length(VALUE **p)
     return STACK_LENGTH;
 }
 
+#if !(defined(POSIX_SIGNAL) && defined(SIGSEGV) && defined(HAVE_SIGALTSTACK))
 static int
 stack_check(int water_mark)
 {
@@ -2123,6 +2285,7 @@ stack_check(int water_mark)
 #endif
     return ret;
 }
+#endif
 
 #define STACKFRAME_FOR_CALL_CFUNC 512
 
@@ -2137,13 +2300,6 @@ ruby_stack_check(void)
 }
 
 static void
-init_mark_stack(rb_objspace_t *objspace)
-{
-    mark_stack_overflow = 0;
-    mark_stack_ptr = mark_stack;
-}
-
-static void
 mark_locations_array(rb_objspace_t *objspace, register VALUE *x, register long n)
 {
     VALUE v;
@@ -2151,7 +2307,7 @@ mark_locations_array(rb_objspace_t *objspace, register VALUE *x, register long n
         v = *x;
         VALGRIND_MAKE_MEM_DEFINED(&v, sizeof(v));
 	if (is_pointer_to_heap(objspace, (void *)v)) {
-	    gc_mark(objspace, v, 0);
+	    gc_mark(objspace, v);
 	}
 	x++;
     }
@@ -2177,24 +2333,22 @@ rb_gc_mark_locations(VALUE *start, VALUE *end)
 
 struct mark_tbl_arg {
     rb_objspace_t *objspace;
-    int lev;
 };
 
 static int
 mark_entry(st_data_t key, st_data_t value, st_data_t data)
 {
     struct mark_tbl_arg *arg = (void*)data;
-    gc_mark(arg->objspace, (VALUE)value, arg->lev);
+    gc_mark(arg->objspace, (VALUE)value);
     return ST_CONTINUE;
 }
 
 static void
-mark_tbl(rb_objspace_t *objspace, st_table *tbl, int lev)
+mark_tbl(rb_objspace_t *objspace, st_table *tbl)
 {
     struct mark_tbl_arg arg;
     if (!tbl || tbl->num_entries == 0) return;
     arg.objspace = objspace;
-    arg.lev = lev;
     st_foreach(tbl, mark_entry, (st_data_t)&arg);
 }
 
@@ -2202,68 +2356,66 @@ static int
 mark_key(st_data_t key, st_data_t value, st_data_t data)
 {
     struct mark_tbl_arg *arg = (void*)data;
-    gc_mark(arg->objspace, (VALUE)key, arg->lev);
+    gc_mark(arg->objspace, (VALUE)key);
     return ST_CONTINUE;
 }
 
 static void
-mark_set(rb_objspace_t *objspace, st_table *tbl, int lev)
+mark_set(rb_objspace_t *objspace, st_table *tbl)
 {
     struct mark_tbl_arg arg;
     if (!tbl) return;
     arg.objspace = objspace;
-    arg.lev = lev;
     st_foreach(tbl, mark_key, (st_data_t)&arg);
 }
 
 void
 rb_mark_set(st_table *tbl)
 {
-    mark_set(&rb_objspace, tbl, 0);
+    mark_set(&rb_objspace, tbl);
 }
 
 static int
 mark_keyvalue(st_data_t key, st_data_t value, st_data_t data)
 {
     struct mark_tbl_arg *arg = (void*)data;
-    gc_mark(arg->objspace, (VALUE)key, arg->lev);
-    gc_mark(arg->objspace, (VALUE)value, arg->lev);
+    gc_mark(arg->objspace, (VALUE)key);
+    gc_mark(arg->objspace, (VALUE)value);
     return ST_CONTINUE;
 }
 
 static void
-mark_hash(rb_objspace_t *objspace, st_table *tbl, int lev)
+mark_hash(rb_objspace_t *objspace, st_table *tbl)
 {
     struct mark_tbl_arg arg;
     if (!tbl) return;
     arg.objspace = objspace;
-    arg.lev = lev;
     st_foreach(tbl, mark_keyvalue, (st_data_t)&arg);
 }
 
 void
 rb_mark_hash(st_table *tbl)
 {
-    mark_hash(&rb_objspace, tbl, 0);
+    mark_hash(&rb_objspace, tbl);
 }
 
 static void
-mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me, int lev)
+mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
 {
     const rb_method_definition_t *def = me->def;
 
-    gc_mark(objspace, me->klass, lev);
+    gc_mark(objspace, me->klass);
     if (!def) return;
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
-	gc_mark(objspace, def->body.iseq->self, lev);
+	gc_mark(objspace, def->body.iseq->self);
 	break;
       case VM_METHOD_TYPE_BMETHOD:
-	gc_mark(objspace, def->body.proc, lev);
+	gc_mark(objspace, def->body.proc);
 	break;
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
-	gc_mark(objspace, def->body.attr.location, lev);
+	gc_mark(objspace, def->body.attr.location);
 	break;
       default:
 	break; /* ignore */
@@ -2273,24 +2425,23 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me, int lev)
 void
 rb_mark_method_entry(const rb_method_entry_t *me)
 {
-    mark_method_entry(&rb_objspace, me, 0);
+    mark_method_entry(&rb_objspace, me);
 }
 
 static int
 mark_method_entry_i(ID key, const rb_method_entry_t *me, st_data_t data)
 {
     struct mark_tbl_arg *arg = (void*)data;
-    mark_method_entry(arg->objspace, me, arg->lev);
+    mark_method_entry(arg->objspace, me);
     return ST_CONTINUE;
 }
 
 static void
-mark_m_tbl(rb_objspace_t *objspace, st_table *tbl, int lev)
+mark_m_tbl(rb_objspace_t *objspace, st_table *tbl)
 {
     struct mark_tbl_arg arg;
     if (!tbl) return;
     arg.objspace = objspace;
-    arg.lev = lev;
     st_foreach(tbl, mark_method_entry_i, (st_data_t)&arg);
 }
 
@@ -2298,18 +2449,17 @@ static int
 mark_const_entry_i(ID key, const rb_const_entry_t *ce, st_data_t data)
 {
     struct mark_tbl_arg *arg = (void*)data;
-    gc_mark(arg->objspace, ce->value, arg->lev);
-    gc_mark(arg->objspace, ce->file, arg->lev);
+    gc_mark(arg->objspace, ce->value);
+    gc_mark(arg->objspace, ce->file);
     return ST_CONTINUE;
 }
 
 static void
-mark_const_tbl(rb_objspace_t *objspace, st_table *tbl, int lev)
+mark_const_tbl(rb_objspace_t *objspace, st_table *tbl)
 {
     struct mark_tbl_arg arg;
     if (!tbl) return;
     arg.objspace = objspace;
-    arg.lev = lev;
     st_foreach(tbl, mark_const_entry_i, (st_data_t)&arg);
 }
 
@@ -2369,14 +2519,14 @@ rb_gc_mark_machine_stack(rb_thread_t *th)
 void
 rb_mark_tbl(st_table *tbl)
 {
-    mark_tbl(&rb_objspace, tbl, 0);
+    mark_tbl(&rb_objspace, tbl);
 }
 
 void
 rb_gc_mark_maybe(VALUE obj)
 {
     if (is_pointer_to_heap(&rb_objspace, (void *)obj)) {
-	gc_mark(&rb_objspace, obj, 0);
+	gc_mark(&rb_objspace, obj);
     }
 }
 
@@ -2390,49 +2540,56 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr)
     return 1;
 }
 
-static void
-gc_mark(rb_objspace_t *objspace, VALUE ptr, int lev)
+static int
+markable_object_p(rb_objspace_t *objspace, VALUE ptr)
 {
-    register RVALUE *obj;
+    register RVALUE *obj = RANY(ptr);
 
-    obj = RANY(ptr);
-    if (rb_special_const_p(ptr)) return; /* special const not marked */
-    if (obj->as.basic.flags == 0) return;       /* free cell */
-    if (!gc_mark_ptr(objspace, ptr)) return;	/* already marked */
+    if (rb_special_const_p(ptr)) return 0; /* special const not marked */
+    if (obj->as.basic.flags == 0) return 0 ;       /* free cell */
 
-    if (lev > GC_LEVEL_MAX || (lev == 0 && stack_check(STACKFRAME_FOR_GC_MARK))) {
-	if (!mark_stack_overflow) {
-	    if (mark_stack_ptr - mark_stack < MARK_STACK_MAX) {
-		*mark_stack_ptr = ptr;
-		mark_stack_ptr++;
-	    }
-	    else {
-		mark_stack_overflow = 1;
-	    }
-	}
+    return 1;
+}
+
+static void
+gc_mark(rb_objspace_t *objspace, VALUE ptr)
+{
+    if (!markable_object_p(objspace, ptr)) {
 	return;
     }
-    gc_mark_children(objspace, ptr, lev+1);
+
+    if (LIKELY(objspace->mark_func_data == 0)) {
+	if (!gc_mark_ptr(objspace, ptr)) return; /* already marked */
+	push_mark_stack(&objspace->mark_stack, ptr);
+    }
+    else {
+	objspace->mark_func_data->mark_func(objspace, ptr);
+    }
 }
 
 void
 rb_gc_mark(VALUE ptr)
 {
-    gc_mark(&rb_objspace, ptr, 0);
+    gc_mark(&rb_objspace, ptr);
 }
 
 static void
-gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
+gc_mark_children(rb_objspace_t *objspace, VALUE ptr)
 {
     register RVALUE *obj = RANY(ptr);
 
     goto marking;		/* skip */
 
   again:
-    obj = RANY(ptr);
-    if (rb_special_const_p(ptr)) return; /* special const not marked */
-    if (obj->as.basic.flags == 0) return;       /* free cell */
-    if (!gc_mark_ptr(objspace, ptr)) return;  /* already marked */
+    if (LIKELY(objspace->mark_func_data == 0)) {
+	obj = RANY(ptr);
+	if (!markable_object_p(objspace, ptr)) return;
+	if (!gc_mark_ptr(objspace, ptr)) return;  /* already marked */
+    }
+    else {
+	gc_mark(objspace, ptr);
+	return;
+    }
 
   marking:
     if (FL_TEST(obj, FL_EXIVAR)) {
@@ -2456,7 +2613,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	  case NODE_RESBODY:
 	  case NODE_CLASS:
 	  case NODE_BLOCK_PASS:
-	    gc_mark(objspace, (VALUE)obj->as.node.u2.node, lev);
+	    gc_mark(objspace, (VALUE)obj->as.node.u2.node);
 	    /* fall through */
 	  case NODE_BLOCK:	/* 1,3 */
 	  case NODE_ARRAY:
@@ -2468,7 +2625,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	  case NODE_CALL:
 	  case NODE_DEFS:
 	  case NODE_OP_ASGN1:
-	    gc_mark(objspace, (VALUE)obj->as.node.u1.node, lev);
+	    gc_mark(objspace, (VALUE)obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_SUPER:	/* 3 */
 	  case NODE_FCALL:
@@ -2495,7 +2652,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	  case NODE_ALIAS:
 	  case NODE_VALIAS:
 	  case NODE_ARGSCAT:
-	    gc_mark(objspace, (VALUE)obj->as.node.u1.node, lev);
+	    gc_mark(objspace, (VALUE)obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_GASGN:	/* 2 */
 	  case NODE_LASGN:
@@ -2531,7 +2688,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	  case NODE_SCOPE:	/* 2,3 */
 	  case NODE_CDECL:
 	  case NODE_OPT_ARG:
-	    gc_mark(objspace, (VALUE)obj->as.node.u3.node, lev);
+	    gc_mark(objspace, (VALUE)obj->as.node.u3.node);
 	    ptr = (VALUE)obj->as.node.u2.node;
 	    goto again;
 
@@ -2539,11 +2696,11 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	    {
 		struct rb_args_info *args = obj->as.node.u3.args;
 		if (args) {
-		    if (args->pre_init)    gc_mark(objspace, (VALUE)args->pre_init, lev);
-		    if (args->post_init)   gc_mark(objspace, (VALUE)args->post_init, lev);
-		    if (args->opt_args)    gc_mark(objspace, (VALUE)args->opt_args, lev);
-		    if (args->kw_args)     gc_mark(objspace, (VALUE)args->kw_args, lev);
-		    if (args->kw_rest_arg) gc_mark(objspace, (VALUE)args->kw_rest_arg, lev);
+		    if (args->pre_init)    gc_mark(objspace, (VALUE)args->pre_init);
+		    if (args->post_init)   gc_mark(objspace, (VALUE)args->post_init);
+		    if (args->opt_args)    gc_mark(objspace, (VALUE)args->opt_args);
+		    if (args->kw_args)     gc_mark(objspace, (VALUE)args->kw_args);
+		    if (args->kw_rest_arg) gc_mark(objspace, (VALUE)args->kw_rest_arg);
 		}
 	    }
 	    ptr = (VALUE)obj->as.node.u2.node;
@@ -2572,38 +2729,38 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	    mark_locations_array(objspace,
 				 (VALUE*)obj->as.node.u1.value,
 				 obj->as.node.u3.cnt);
-	    ptr = (VALUE)obj->as.node.u2.node;
-	    goto again;
+	    gc_mark(objspace, (VALUE)obj->as.node.u2.node);
+	    break;
 
 	  case NODE_CREF:
-	    gc_mark(objspace, obj->as.node.nd_omod, lev);
-	    gc_mark(objspace, (VALUE)obj->as.node.u1.node, lev);
+	    gc_mark(objspace, obj->as.node.nd_refinements);
+	    gc_mark(objspace, (VALUE)obj->as.node.u1.node);
 	    ptr = (VALUE)obj->as.node.u3.node;
 	    goto again;
 
 	  default:		/* unlisted NODE */
 	    if (is_pointer_to_heap(objspace, obj->as.node.u1.node)) {
-		gc_mark(objspace, (VALUE)obj->as.node.u1.node, lev);
+		gc_mark(objspace, (VALUE)obj->as.node.u1.node);
 	    }
 	    if (is_pointer_to_heap(objspace, obj->as.node.u2.node)) {
-		gc_mark(objspace, (VALUE)obj->as.node.u2.node, lev);
+		gc_mark(objspace, (VALUE)obj->as.node.u2.node);
 	    }
 	    if (is_pointer_to_heap(objspace, obj->as.node.u3.node)) {
-		gc_mark(objspace, (VALUE)obj->as.node.u3.node, lev);
+		gc_mark(objspace, (VALUE)obj->as.node.u3.node);
 	    }
 	}
 	return;			/* no need to mark class. */
     }
 
-    gc_mark(objspace, obj->as.basic.klass, lev);
+    gc_mark(objspace, obj->as.basic.klass);
     switch (BUILTIN_TYPE(obj)) {
       case T_ICLASS:
       case T_CLASS:
       case T_MODULE:
-	mark_m_tbl(objspace, RCLASS_M_TBL(obj), lev);
+	mark_m_tbl(objspace, RCLASS_M_TBL(obj));
 	if (!RCLASS_EXT(obj)) break;
-	mark_tbl(objspace, RCLASS_IV_TBL(obj), lev);
-	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj), lev);
+	mark_tbl(objspace, RCLASS_IV_TBL(obj));
+	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
 	ptr = RCLASS_SUPER(obj);
 	goto again;
 
@@ -2616,13 +2773,13 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	    long i, len = RARRAY_LEN(obj);
 	    VALUE *ptr = RARRAY_PTR(obj);
 	    for (i=0; i < len; i++) {
-		gc_mark(objspace, *ptr++, lev);
+		gc_mark(objspace, *ptr++);
 	    }
 	}
 	break;
 
       case T_HASH:
-	mark_hash(objspace, obj->as.hash.ntbl, lev);
+	mark_hash(objspace, obj->as.hash.ntbl);
 	ptr = obj->as.hash.ifnone;
 	goto again;
 
@@ -2649,25 +2806,25 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
             long i, len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
             for (i  = 0; i < len; i++) {
-		gc_mark(objspace, *ptr++, lev);
+		gc_mark(objspace, *ptr++);
             }
         }
 	break;
 
       case T_FILE:
         if (obj->as.file.fptr) {
-            gc_mark(objspace, obj->as.file.fptr->pathv, lev);
-            gc_mark(objspace, obj->as.file.fptr->tied_io_for_writing, lev);
-            gc_mark(objspace, obj->as.file.fptr->writeconv_asciicompat, lev);
-            gc_mark(objspace, obj->as.file.fptr->writeconv_pre_ecopts, lev);
-            gc_mark(objspace, obj->as.file.fptr->encs.ecopts, lev);
-            gc_mark(objspace, obj->as.file.fptr->write_lock, lev);
+            gc_mark(objspace, obj->as.file.fptr->pathv);
+            gc_mark(objspace, obj->as.file.fptr->tied_io_for_writing);
+            gc_mark(objspace, obj->as.file.fptr->writeconv_asciicompat);
+            gc_mark(objspace, obj->as.file.fptr->writeconv_pre_ecopts);
+            gc_mark(objspace, obj->as.file.fptr->encs.ecopts);
+            gc_mark(objspace, obj->as.file.fptr->write_lock);
         }
         break;
 
       case T_REGEXP:
-        gc_mark(objspace, obj->as.regexp.src, lev);
-        break;
+        ptr = obj->as.regexp.src;
+        goto again;
 
       case T_FLOAT:
       case T_BIGNUM:
@@ -2675,7 +2832,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	break;
 
       case T_MATCH:
-	gc_mark(objspace, obj->as.match.regexp, lev);
+	gc_mark(objspace, obj->as.match.regexp);
 	if (obj->as.match.str) {
 	    ptr = obj->as.match.str;
 	    goto again;
@@ -2683,14 +2840,14 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	break;
 
       case T_RATIONAL:
-	gc_mark(objspace, obj->as.rational.num, lev);
-	gc_mark(objspace, obj->as.rational.den, lev);
-	break;
+	gc_mark(objspace, obj->as.rational.num);
+	ptr = obj->as.rational.den;
+	goto again;
 
       case T_COMPLEX:
-	gc_mark(objspace, obj->as.complex.real, lev);
-	gc_mark(objspace, obj->as.complex.imag, lev);
-	break;
+	gc_mark(objspace, obj->as.complex.real);
+	ptr = obj->as.complex.imag;
+	goto again;
 
       case T_STRUCT:
 	{
@@ -2698,7 +2855,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	    VALUE *ptr = RSTRUCT_PTR(obj);
 
 	    while (len--) {
-		gc_mark(objspace, *ptr++, lev);
+		gc_mark(objspace, *ptr++);
 	    }
 	}
 	break;
@@ -2711,47 +2868,24 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 }
 
 static void
-gc_mark_all(rb_objspace_t *objspace)
+gc_mark_stacked_objects(rb_objspace_t *objspace)
 {
-    RVALUE *p, *pend;
-    size_t i;
+    mark_stack_t *mstack = &objspace->mark_stack;
+    VALUE obj = 0;
 
-    init_mark_stack(objspace);
-    for (i = 0; i < heaps_used; i++) {
-	p = objspace->heap.sorted[i].start; pend = objspace->heap.sorted[i].end;
-	while (p < pend) {
-	    if (MARKED_IN_BITMAP(GET_HEAP_BITMAP(p), p) &&
-		p->as.basic.flags) {
-		gc_mark_children(objspace, (VALUE)p, 0);
-	    }
-	    p++;
-	}
+    if (!mstack->index) return;
+    while (pop_mark_stack(mstack, &obj)) {
+        gc_mark_children(objspace, obj);
     }
+    shrink_stack_chunk_cache(mstack);
 }
-
-static void
-gc_mark_rest(rb_objspace_t *objspace)
-{
-    VALUE tmp_arry[MARK_STACK_MAX];
-    VALUE *p;
-
-    p = (mark_stack_ptr - mark_stack) + tmp_arry;
-    MEMCPY(tmp_arry, mark_stack, VALUE, p - tmp_arry);
-
-    init_mark_stack(objspace);
-    while (p != tmp_arry) {
-	p--;
-	gc_mark_children(objspace, *p, 0);
-    }
-}
-
-#define MARK_STACK_EMPTY (mark_stack_ptr == mark_stack)
 
 static void
 gc_marks(rb_objspace_t *objspace)
 {
     struct gc_list *list;
     rb_thread_t *th = GET_THREAD();
+
     gc_prof_mark_timer_start(objspace);
 
     objspace->heap.live_num = 0;
@@ -2760,11 +2894,9 @@ gc_marks(rb_objspace_t *objspace)
 
     SET_STACK_END;
 
-    init_mark_stack(objspace);
-
     th->vm->self ? rb_gc_mark(th->vm->self) : rb_vm_mark(th->vm);
 
-    mark_tbl(objspace, finalizer_table, 0);
+    mark_tbl(objspace, finalizer_table);
     mark_current_machine_context(objspace, th);
 
     rb_gc_mark_symbols();
@@ -2777,7 +2909,7 @@ gc_marks(rb_objspace_t *objspace)
     rb_mark_end_proc();
     rb_gc_mark_global_tbl();
 
-    mark_tbl(objspace, rb_class_tbl, 0);
+    mark_tbl(objspace, rb_class_tbl);
 
     /* mark generic instance variables for special constants */
     rb_mark_generic_ivar_tbl();
@@ -2786,15 +2918,9 @@ gc_marks(rb_objspace_t *objspace)
 
     rb_gc_mark_unlinked_live_method_entries(th->vm);
 
-    /* gc_mark objects whose marking are not completed*/
-    while (!MARK_STACK_EMPTY) {
-	if (mark_stack_overflow) {
-	    gc_mark_all(objspace);
-	}
-	else {
-	    gc_mark_rest(objspace);
-	}
-    }
+    /* marking-loop */
+    gc_mark_stacked_objects(objspace);
+
     gc_prof_mark_timer_stop(objspace);
 }
 
@@ -2865,6 +2991,8 @@ rb_gc_unregister_address(VALUE *addr)
 static int
 garbage_collect(rb_objspace_t *objspace)
 {
+    struct mark_func_data_struct *prev_mark_func_data;
+
     if (GC_NOTIFY) printf("start garbage_collect()\n");
 
     if (!heaps) {
@@ -2876,6 +3004,9 @@ garbage_collect(rb_objspace_t *objspace)
 
     gc_prof_timer_start(objspace);
 
+    prev_mark_func_data = objspace->mark_func_data;
+    objspace->mark_func_data = 0;
+
     rest_sweep(objspace);
 
     during_gc++;
@@ -2884,6 +3015,8 @@ garbage_collect(rb_objspace_t *objspace)
     gc_prof_sweep_timer_start(objspace);
     gc_sweep(objspace);
     gc_prof_sweep_timer_stop(objspace);
+
+    objspace->mark_func_data = prev_mark_func_data;
 
     gc_prof_timer_stop(objspace, Qtrue);
     if (GC_NOTIFY) printf("end garbage_collect()\n");
@@ -3150,6 +3283,46 @@ rb_gc_set_params(void)
 	if (free_min_i > 0) {
 	    initial_free_min = free_min_i;
 	}
+    }
+}
+
+static void
+collect_refs(rb_objspace_t *objspace, VALUE obj)
+{
+    if (markable_object_p(objspace, obj) && !internal_object_p(obj)) {
+	st_insert((st_table *)objspace->mark_func_data->data, obj, Qtrue);
+    }
+}
+
+static int
+collect_keys(st_data_t key, st_data_t value, st_data_t data)
+{
+    VALUE ary = (VALUE)data;
+    rb_ary_push(ary, (VALUE)key);
+    return ST_CONTINUE;
+}
+
+VALUE
+rb_objspace_reachable_objects_from(VALUE obj)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    if (markable_object_p(objspace, obj)) {
+	st_table *refs = st_init_numtable();
+	struct mark_func_data_struct mfd;
+	VALUE ret = rb_ary_new();
+	mfd.mark_func = collect_refs;
+	mfd.data = (VALUE)refs;
+	objspace->mark_func_data = &mfd;
+
+	gc_mark_children(objspace, obj);
+
+	objspace->mark_func_data = 0;
+	st_foreach(refs, collect_keys, (st_data_t)ret);
+	return ret;
+    }
+    else {
+	return Qnil;
     }
 }
 

@@ -706,10 +706,13 @@ class RubyVM
           break
         end
 
+        # skip make operands when body has no reference to this operand
+        # TODO: really needed?
         re = /\b#{var}\b/n
-        if re =~ insn.body or re =~ insn.sp_inc or insn.rets.any?{|t, v| re =~ v} or re =~ 'ic'
+        if re =~ insn.body or re =~ insn.sp_inc or insn.rets.any?{|t, v| re =~ v} or re =~ 'ic' or re =~ 'ci'
           ops << "  #{type} #{var} = (#{type})GET_OPERAND(#{i+1});"
         end
+
         n   += 1
       }
       @opn = n
@@ -791,9 +794,9 @@ class RubyVM
     end
 
     def make_header_analysis insn
-      commit "  USAGE_ANALYSIS_INSN(BIN(#{insn.name}));"
+      commit "  COLLECT_USAGE_INSN(BIN(#{insn.name}));"
       insn.opes.each_with_index{|op, i|
-        commit "  USAGE_ANALYSIS_OPERAND(BIN(#{insn.name}), #{i}, #{op[1]});"
+        commit "  COLLECT_USAGE_OPERAND(BIN(#{insn.name}), #{i}, #{op[1]});"
       }
     end
 
@@ -930,8 +933,6 @@ class RubyVM
         "TS_NUM"
       when /^lindex_t/
         "TS_LINDEX"
-      when /^dindex_t/
-        "TS_DINDEX"
       when /^VALUE/
         "TS_VALUE"
       when /^ID/
@@ -940,6 +941,8 @@ class RubyVM
         "TS_GENTRY"
       when /^IC/
         "TS_IC"
+      when /^CALL_INFO/
+        "TS_CALLINFO"
       when /^\.\.\./
         "TS_VARIABLE"
       when /^CDHASH/
@@ -957,11 +960,11 @@ class RubyVM
       'TS_OFFSET'    => 'O',
       'TS_NUM'       => 'N',
       'TS_LINDEX'    => 'L',
-      'TS_DINDEX'    => 'D',
       'TS_VALUE'     => 'V',
       'TS_ID'        => 'I',
       'TS_GENTRY'    => 'G',
-      'TS_IC'        => 'C',
+      'TS_IC'        => 'K',
+      'TS_CALLINFO'  => 'C',
       'TS_CDHASH'    => 'H',
       'TS_ISEQ'      => 'S',
       'TS_VARIABLE'  => '.',
@@ -1064,7 +1067,7 @@ class RubyVM
       val  = op[1]
 
       case type
-      when /^long/, /^rb_num_t/, /^lindex_t/, /^dindex_t/
+      when /^long/, /^rb_num_t/, /^lindex_t/
         "INT2FIX(#{val})"
       when /^VALUE/
         val

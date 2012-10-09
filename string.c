@@ -2158,7 +2158,7 @@ rb_str_concat(VALUE str1, VALUE str2)
 	    rb_raise(rb_eRangeError, "invalid codepoint 0x%X in %s", code, rb_enc_name(enc));
 	}
 	rb_str_resize(str1, pos+len);
-	strncpy(RSTRING_PTR(str1) + pos, buf, len);
+	memcpy(RSTRING_PTR(str1) + pos, buf, len);
 	if (cr == ENC_CODERANGE_7BIT && code > 127)
 	    cr = ENC_CODERANGE_VALID;
 	ENC_CODERANGE_SET(str1, cr);
@@ -2698,6 +2698,10 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
  *  <code>nil</code> if there is no match. Otherwise, invokes
  *  <i>obj.=~</i>, passing <i>str</i> as an argument. The default
  *  <code>=~</code> in <code>Object</code> returns <code>nil</code>.
+ *
+ *  Note: <code>str =~ regexp</code> is not the same as
+ *  <code>regexp =~ str</code>. Strings captured from named capture groups
+ *  are assigned to local variables only in the second case.
  *
  *     "cat o' 9 tails" =~ /\d/   #=> 7
  *     "cat o' 9 tails" =~ 9      #=> nil

@@ -1,3 +1,329 @@
+Tue Oct  9 17:13:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_execarg_addopt, rb_execarg_run_options): add :uid and
+	  :gid options.  [ruby-core:47414] [Feature #6975]
+
+Tue Oct  9 14:36:11 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_free): fix memory leak.
+	  rb_iseq_t::callinfo_entries should be freed.
+
+Tue Oct  9 14:28:18 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h (rb_call_info_t): add new type `rb_call_info_t'.
+	  This data structure contains information including inline method
+	  cache. After that, `struct iseq_inline_cache_entry' does not
+	  need to contain inline cache for method invocation.
+	  Other information will be added to this data structure.
+
+	* vm_core.h (rb_iseq_t): add `callinfo_entries' and `callinfo_size'
+	  members to `rb_iseq_t'.
+
+	* insns.def, compile.c: Use CALL_INFO instead of IC.
+
+	* tool/instruction.rb: support CALL_INFO as operand type.
+
+	* vm_insnhelper.c, vm_insnhelper.h: ditto.
+
+Sun Oct  7 23:54:33 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/zlib/zlib.c (zstream_run_func): don't call inflate() when
+	  z->stream.avail_in == 0. it return Z_BUF_ERROR.
+	  but deflate() could be called with z->stream->avail_in == 0 because
+	  it has hidden buffer in z->stream->state (opaque structure).
+	  fix for gem install error. [ruby-dev:46149] [Bug #7040]
+
+Mon Oct  8 23:55:41 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_mod_refinements): new method Module#refinements.
+
+	* test/ruby/test_refinement.rb: add new tests for the above changes.
+
+Mon Oct  8 23:02:19 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c, gc.c, iseq.c, node.h, vm_insnhelper.c, vm_insnhelper.h,
+	  vm_method.c: rename omod and overlaid modules to refinements.
+
+	* eval.c (hidden_identity_hash_new): renamed from identity_hash_new.
+
+Sun Oct  7 04:50:00 2012  Zachary Scott  <zzak@ruby-lang.org>
+
+	* lib/abbrev.rb: Documentation examples for Abbrev.
+	  [ruby-core:47442] [Bug #6985]
+
+Sun Oct  7 04:50:00 2012  Zachary Scott  <zzak@ruby-lang.org>
+
+	* thread.c (rb_thread_aref):
+	  Grammar in Thread documentation.
+	  Patch by Steve Klabnik [ruby-core:47799] [Bug #7099]
+
+Sun Oct  7 04:37:00 2012  Zachary Scott  <zzak@ruby-lang.org>
+
+	* string.c (rb_str_match):
+	  Clarify behavior for captured strings and local variable assignment
+	  Patch by Marcus Stollsteimer [ruby-core:47668] [Bug #7062]
+
+Sat Oct  6 18:31:36 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_opts.h (OPT_GLOBAL_METHOD_CACHE): new build option to
+	  enable/disable global method caching. [ruby-dev:46203] [Bug #7111]
+
+	* vm_method.c (rb_method_entry_get_with_omod): don't use global
+	  method cache if OPT_GLOBAL_METHOD_CACHE is 0.
+
+Sat Oct  6 16:32:04 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_method.c (search_method): check omod only once for performance.
+
+Sat Oct  6 09:42:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/encdb.c, enc/utf_16_32.h (ENC_DUMMY_UNICODE): endian-less wide
+	  UTF encodings are dummy but Unicode.
+
+	* encoding.c (rb_encdb_set_unicode): set Unicode flag.
+
+	* template/encdb.h.tmpl: allow ENC_DUMMY variants.
+
+	* encoding.c (rb_enc_unicode_p): oniguruma provides Unicode flag.
+
+Fri Oct  5 17:18:42 JST 2012  TAKANO Mitsuhiro  <tak@no32.tk>
+
+	* template/Doxyfile.tmpl: remove SHOW_DIRECTORIES and
+	  HTML_ALIGN_MEMBERS lines. They have been obsolete in
+	  Doxygen version 1.8.2.
+
+Fri Oct 05 15:26:18 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c: add ObjectSpace#reachable_objects_from.
+	  This method returns an array of objects referenced by given object.
+	  If given object is special objects such as true/false/nil/Fixnum etc
+	  then it returns nil. See rdoc for details.
+	  [ruby-core:39772]
+
+	* test/objspace/test_objspace.rb: add a test for this method.
+
+	* gc.c: add rb_objspace_reachable_objects_from().
+	  To make this function, add several member `mark_func_data'
+	  to rb_objspace_t.  If mark_func_data is not null, then
+	  gc_mark() calls mark_func_data::mark_func.
+
+	* gc.h: export rb_objspace_reachable_objects_from().
+
+Thu Oct  4 23:40:04 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (init_heap): call init_mark_stack before to allocate
+	  altstack. This change avoid the stack overflow at the signal
+	  handler on 32bit, but I don't understand reason... [Feature #7095]
+
+Thu Oct  4 22:39:27 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def (getlocal, setlocal): remove old getlocal/setlocal
+	  instructions and rename getdaynmic/setdynamic instructions
+	  to getlocal/setlocal.
+
+	* compile.c: ditto.
+
+	* iseq.c: remove TS_DINDEX.
+
+	* vm_exec.h (dindex_t): remove type definition of `dindex_t'.
+
+	* tool/instruction.rb: ditto.
+
+Thu Oct  4 21:44:17 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (vm_analysis_insn|operand|register): use st_insert
+	  instead of using rb_hash_aset() because rb_hash_aset()
+	  check $SAFE.
+
+Thu Oct  4 21:15:26 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (VM_COLLECT_USAGE_DETAILS): make new VM usage analysis
+	  hooks (old macro name is COLLECT_USAGE_ANALYSIS).
+	  This feature is only for VM developers.  (I'm not sure I can use
+	  `VM developers' (the plural form) in this sentence).
+	  If VM_COLLECT_USAGE_DETAILS is not 0, VM enables the following
+	  usage collection features:
+	    (1) instruction: collect instruction usages.
+	    (2) operand: collect operand usages.
+	    (3) register: collect register usages.
+	  The results are stored in
+	    RubyVM::USAGE_ANALYSIS_INSN for (1, 2),
+	    RubyVM::USAGE_ANALYSIS_INSN_BIGRAM for (1) and
+	    RubyVM::USAGE_ANALYSIS_REGS for (3).
+	  You can stop collecting usages with
+	    RubyVM::USAGE_ANALYSIS_INSN_STOP(),
+	    RubyVM::USAGE_ANALYSIS_OPERAND_STOP(),
+	    RubyVM::USAGE_ANALYSIS_REGISTER_STOP()
+	  for (1), (2), (3) respectively.
+	  You can also change the hook functions by setting
+	  C level global variables
+	    `ruby_vm_collect_usage_func_(insn|operand|register)'
+	  for (1), (2), (3) respectively.
+	  See codes for more details.
+
+	* tool/instruction.rb: fix macro names.
+
+	* iseq.c (insn_operand_intern): make it export (used in vm.c).
+	  fix to skip several processes if not needed (pointer is 0).
+
+	* vm_dump.c: move codes for collection features to vm.c.
+
+	* vm_exec.h: rename macro and function names.
+
+	* vm_insnhelper.h: ditto.
+
+Thu Oct  4 18:59:14 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_settracefunc.rb (test_tracepoint):
+	  remove unused test case.
+	  (this test case is redefined by newer tests)
+
+Thu Oct  4 17:24:51 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (rb_objspace_call_finalizer): call gc_mark_stacked_objects
+	  at suitable point.
+
+Thu Oct  4 16:31:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_objspace_call_finalizer): mark self-referencing finalizers
+	  before run finalizers, to fix SEGV from btest on 32bit.
+
+	* gc.c (gc_mark_stacked_objects): extract from gc_marks().
+
+Thu Oct  4 11:43:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (ruby_init_stack): round stack limit to page size
+	  boundary to calculate stack size more precisely.  [ruby-dev:46174]
+	  [Bug #7084]
+
+Wed Oct  3 19:51:57 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: Use the non-recursive marking instead of recursion. The
+	  recursion marking of CRuby needs checking stack overflow and the
+	  fail-safe system, but these systems not good at partial points,
+	  for example, marking deep tree structures. [ruby-dev:46184]
+	  [Feature #7095]
+
+	* configure.in (GC_MARK_STACKFRAME_WORD): removed. It's used by
+	  checking stack overflow of marking.
+
+	* win32/Makefile.sub (GC_MARK_STACKFRAME_WORD): ditto.
+
+Wed Oct  3 15:33:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (ruby_init_stack): use getrlimit() for the main
+	  thread on Mac OS X, since pthread_get_stack{addr,size}_np()
+	  return the default value always, but not the ulimit value.
+	  [ruby-dev:46174] [Bug #7084]
+
+Wed Oct  3 11:43:15 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_reopen): improvement to accept optional arguments.
+	  a patch by Glass_saga (Masaki Matsushita) in [ruby-core:47806].
+	  [Feature #7103]
+
+Wed Oct  3 04:36:11 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* ext/openssl/ossl_x509store.c (ossl_x509store_add_file):  Added
+	  documentation
+	* ext/openssl/ossl_x509store.c (ossl_x509store_set_default_paths):
+	  ditto
+	* ext/openssl/ossl_x509store.c (ossl_x509store_add_cert):  ditto
+
+Wed Oct  3 02:23:37 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* error.c (exc_to_s, name_err_to_s, name_err_mesg_to_str): do not
+	  taint messages.
+
+Tue Oct  2 16:47:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (identity_hash_new): hide internal hashes for refinements.
+
+	* eval.c (rb_mod_refine): no default value.
+
+Mon Oct  1 22:54:02 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (identity_hash_new): new function to create a new identity
+	  hash.
+
+	* eval.c (rb_overlay_module, rb_mod_using, rb_mod_refine): use
+	  identity_hash_new().
+
+Mon Oct  1 02:34:53 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in (--with-opt-dir): Make this also work on DLDFLAGS
+	  so LIBRUBY_SO links fine with libexecinfo installed in a
+	  non-system directory.
+
+Sun Sep 30 23:32:00 2012  Kenta Murata  <mrkn@mrkn.jp>
+
+	* vm_dump.c (rb_vm_bugreport): add /Library/Logs/DiagnosticReports
+	  in the list of locations of crash reports.
+
+Sun Sep 30 21:18:03 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_concat): use memcpy to copy a string which contains
+	  NUL characters. [ruby-core:47751] [Bug #7090]
+
+Sat Sep 29 19:41:53 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/envutil.rb (EnvUtil#invoke_ruby): kill child process
+	  before Timeout::Error is raised. rmdir of mktmpdir fails with
+	  EACCES if child process is alive on Windows.
+
+	* test/thread/test_queue.rb (TestQueue): increase timeout.
+	  This test takes long time on Windows XP.
+
+Sat Sep 29 19:41:33 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/net/http/test_http.rb (TestNetHTTP#test_proxy_address):
+	  clear environment variables. If http_proxy environment variable was
+	  set, the test failed.
+
+	* test/net/http/test_http.rb (TestNetHTTP#test_proxy_port): ditto.
+
+Sat Sep 29 19:41:11 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/drb/drbtest.rb (DRbCore#teardown):
+	  Use Process.kill :KILL on Windows because Process.kill :INT silently
+	  fails on Windows 7 and raises EINVAL on Windows XP for spawned
+	  process with new_pgroup: false.
+
+	* test/drb/drbtest.rb (DRbAry#teardown): ditto.
+
+Sat Sep 29 19:40:32 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_unicode_escape.rb (TestUnicodeEscape#test_basic):
+	  set script encoding to work with LANG=C. It would work on both
+	  Windows and Unix. Refix of r37051.
+
+Sat Sep 29 11:21:06 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c (rb_vm_using_modules): use using_modules before
+	  klass to fix method lookup order, and use klass even if klass is
+	  not a module to make refinements in class_eval invoked on classes
+	  work.
+
+	* eval.c (rb_using_module): accept a class as the second argument.
+
+	* eval.c (rb_mod_using, f_using): raise a TypeError if the argument
+	  is not a module.
+
+	* test/ruby/test_refinement.rb: add new tests for the above changes.
+
+Sat Sep 29 02:18:57 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_unicode_escape.rb (TestUnicodeEscape#test_basic):
+	  Use ruby only on Windows since the test fails on Unix with LANG=C.
+	  [ruby-core:47709] [Bug #7076]
+
+Fri Sep 28 22:19:31 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_unicode_escape.rb (TestUnicodeEscape#test_basic):
+	  echo command doesn't work properly against non-ascii character on
+	  Windows with chcp 437. Instead we use ruby.
+	  [ruby-core:47709] [Bug #7076]
+
 Fri Sep 28 17:54:31 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_setup_method): refactoring.

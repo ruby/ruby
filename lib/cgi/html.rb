@@ -922,7 +922,7 @@ class CGI
 
       # O O or - O
       for element in %w[ HTML BODY P DT DD LI OPTION THEAD TFOOT TBODY
-          COLGROUP TR TH TD HEAD]
+          COLGROUP TR TH TD HEAD ]
         methods << <<-BEGIN + nO_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
@@ -1020,6 +1020,57 @@ class CGI
     end
 
   end # Html4Fr
+
+
+  # Mixin module for HTML version 5 generation methods.
+  module Html5 # :nodoc:
+
+    # The DOCTYPE declaration for this version of HTML
+    def doctype
+      %|<!DOCTYPE HTML>|
+    end
+
+    # Initialise the HTML generation methods for this version.
+    def element_init
+      extend TagMaker
+      methods = ""
+      # - -
+      for element in %w[ SECTION NAV ARTICLE ASIDE HGROUP
+        FOOTER FIGURE FIGCAPTION S TIME U MARK RUBY BDI IFRAME
+        VIDEO AUDIO CANVAS DATALIST OUTPUT PROGRESS METER DETAILS
+        SUMMARY MENU DIALOG I B SMALL EM STRONG DFN CODE SAMP KBD
+        VAR CITE ABBR SUB SUP SPAN BDO ADDRESS DIV MAP OBJECT
+        H1 H2 H3 H4 H5 H6 PRE Q INS DEL DL OL UL LABEL SELECT
+        FIELDSET LEGEND BUTTON TABLE TITLE STYLE SCRIPT NOSCRIPT
+        TEXTAREA FORM A BLOCKQUOTE CAPTION ]
+        methods += <<-BEGIN + nn_element_def(element) + <<-END
+          def #{element.downcase}(attributes = {})
+        BEGIN
+          end
+        END
+      end
+
+      # - O EMPTY
+      for element in %w[ IMG BASE BR AREA LINK PARAM HR INPUT COL META
+        COMMAND EMBED KEYGEN SOURCE TRACK WBR ]
+        methods += <<-BEGIN + nOE_element_def(element) + <<-END
+          def #{element.downcase}(attributes = {})
+        BEGIN
+          end
+        END
+      end
+
+      # O O or - O
+      for element in %w[ HTML HEAD BODY P DT DD LI OPTION THEAD TFOOT TBODY
+          OPTGROUP COLGROUP RT RP TR TH TD ]
+        methods += <<-BEGIN + nO_element_def(element) + <<-END
+          def #{element.downcase}(attributes = {})
+        BEGIN
+          end
+        END
+      end
+      eval(methods)
+    end
+
+  end # Html5
 end
-
-

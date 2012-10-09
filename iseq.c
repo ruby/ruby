@@ -84,6 +84,7 @@ iseq_free(void *ptr)
 	    RUBY_FREE_UNLESS_NULL(iseq->line_info_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->local_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->ic_entries);
+	    RUBY_FREE_UNLESS_NULL(iseq->callinfo_entries);
 	    RUBY_FREE_UNLESS_NULL(iseq->catch_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->arg_opt_table);
 	    RUBY_FREE_UNLESS_NULL(iseq->arg_keyword_table);
@@ -202,11 +203,11 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
     if (type == ISEQ_TYPE_TOP) {
 	/* toplevel is private */
 	iseq->cref_stack = NEW_CREF(rb_cObject);
-	iseq->cref_stack->nd_omod = Qnil;
+	iseq->cref_stack->nd_refinements = Qnil;
 	iseq->cref_stack->nd_visi = NOEX_PRIVATE;
 	if (th->top_wrapper) {
 	    NODE *cref = NEW_CREF(th->top_wrapper);
-	    cref->nd_omod = Qnil;
+	    cref->nd_refinements = Qnil;
 	    cref->nd_visi = NOEX_PRIVATE;
 	    cref->nd_next = iseq->cref_stack;
 	    iseq->cref_stack = cref;
@@ -214,7 +215,7 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
     }
     else if (type == ISEQ_TYPE_METHOD || type == ISEQ_TYPE_CLASS) {
 	iseq->cref_stack = NEW_CREF(0); /* place holder */
-	iseq->cref_stack->nd_omod = Qnil;
+	iseq->cref_stack->nd_refinements = Qnil;
     }
     else if (RTEST(parent)) {
 	rb_iseq_t *piseq;
@@ -963,7 +964,7 @@ id_to_name(ID id, VALUE default_value)
     return str;
 }
 
-static VALUE
+VALUE
 insn_operand_intern(rb_iseq_t *iseq,
 		    VALUE insn, int op_no, VALUE op,
 		    int len, size_t pos, VALUE *pnop, VALUE child)
@@ -981,23 +982,20 @@ insn_operand_intern(rb_iseq_t *iseq,
 	ret = rb_sprintf("%"PRIuVALUE, op);
 	break;
 
-      case TS_LINDEX:
-	{
-	    rb_iseq_t *liseq = iseq->local_iseq;
-	    int lidx = liseq->local_size - (int)op;
+      case TS_LINDEX:{
+	if (insn == BIN(getlocal) || insn == BIN(setlocal)) {
+	    if (pnop) {
+		rb_iseq_t *diseq = iseq;
+		VALUE level = *pnop, i;
 
-	    ret = id_to_name(liseq->local_table[lidx], INT2FIX('*'));
-	    break;
-	}
-      case TS_DINDEX:{
-	if (insn == BIN(getdynamic) || insn == BIN(setdynamic)) {
-	    rb_iseq_t *diseq = iseq;
-	    VALUE level = *pnop, i;
-
-	    for (i = 0; i < level; i++) {
-		diseq = diseq->parent_iseq;
+		for (i = 0; i < level; i++) {
+		    diseq = diseq->parent_iseq;
+		}
+		ret = id_to_name(diseq->local_table[diseq->local_size - op], INT2FIX('*'));
 	    }
-	    ret = id_to_name(diseq->local_table[diseq->local_size - op], INT2FIX('*'));
+	    else {
+		ret = rb_sprintf("%"PRIuVALUE, op);
+	    }
 	}
 	else {
 	    ret = rb_inspect(INT2FIX(op));
@@ -1011,7 +1009,9 @@ insn_operand_intern(rb_iseq_t *iseq,
 	op = obj_resurrect(op);
 	ret = rb_inspect(op);
 	if (CLASS_OF(op) == rb_cISeq) {
-	    rb_ary_push(child, op);
+	    if (child) {
+		rb_ary_push(child, op);
+	    }
 	}
 	break;
 
@@ -1049,7 +1049,7 @@ insn_operand_intern(rb_iseq_t *iseq,
 	break;
 
       default:
-	rb_bug("rb_iseq_disasm: unknown operand type: %c", type);
+	rb_bug("insn_operand_intern: unknown operand type: %c", type);
     }
     return ret;
 }
@@ -1305,7 +1305,7 @@ rb_iseq_disasm(VALUE self)
  *    0004 putobject        2
  *    0006 opt_plus         <ic:1>
  *    0008 dup
- *    0009 setdynamic       num, 0
+ *    0009 setlocal         num, 0
  *    0012 leave
  *
  */
@@ -1509,7 +1509,6 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 		break;
 	      }
 	      case TS_LINDEX:
-	      case TS_DINDEX:
 	      case TS_NUM:
 		rb_ary_push(ary, INT2FIX(*seq));
 		break;
@@ -1659,7 +1658,7 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
     }
     if (newcbase) {
 	iseq1->cref_stack = NEW_CREF(newcbase);
-	iseq1->cref_stack->nd_omod = iseq0->cref_stack->nd_omod;
+	iseq1->cref_stack->nd_refinements = iseq0->cref_stack->nd_refinements;
 	iseq1->cref_stack->nd_visi = iseq0->cref_stack->nd_visi;
 	if (iseq0->cref_stack->nd_next) {
 	    iseq1->cref_stack->nd_next = iseq0->cref_stack->nd_next;

@@ -1140,7 +1140,7 @@ vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr)
 {
     rb_control_frame_t *cfp = vm_get_ruby_level_caller_cfp(th, th->cfp);
     NODE *cref = NEW_CREF(klass);
-    cref->nd_omod = Qnil;
+    cref->nd_refinements = Qnil;
     cref->nd_visi = noex;
 
     if (blockptr) {
@@ -1151,7 +1151,7 @@ vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr)
     }
     /* TODO: why cref->nd_next is 1? */
     if (cref->nd_next && cref->nd_next != (void *) 1 &&
-	!NIL_P(cref->nd_next->nd_omod)) {
+	!NIL_P(cref->nd_next->nd_refinements)) {
 	COPY_CREF_OMOD(cref, cref->nd_next);
     }
 
@@ -1430,25 +1430,27 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
 }
 
 static inline const rb_method_entry_t *
-vm_method_search(VALUE id, VALUE klass, IC ic, VALUE *defined_class_ptr)
+vm_method_search(VALUE id, VALUE klass, CALL_INFO ci, VALUE *defined_class_ptr)
 {
     rb_method_entry_t *me;
 #if OPT_INLINE_METHOD_CACHE
-    if (LIKELY(klass == ic->ic_class &&
-	GET_VM_STATE_VERSION() == ic->ic_vmstat)) {
-	me = ic->ic_value.method;
-	if (defined_class_ptr)
-	    *defined_class_ptr = ic->ic_value2.defined_class;
+    if (LIKELY(klass == ci->ic_class &&
+	GET_VM_STATE_VERSION() == ci->ic_vmstat)) {
+	me = ci->method;
+	if (defined_class_ptr) {
+	    *defined_class_ptr = ci->defined_class;
+	}
     }
     else {
 	VALUE defined_class;
 	me = rb_method_entry(klass, id, &defined_class);
-	if (defined_class_ptr)
+	if (defined_class_ptr) {
 	    *defined_class_ptr = defined_class;
-	ic->ic_class = klass;
-	ic->ic_value.method = me;
-	ic->ic_value2.defined_class = defined_class;
-	ic->ic_vmstat = GET_VM_STATE_VERSION();
+	}
+	ci->ic_class = klass;
+	ci->method = me;
+	ci->defined_class = defined_class;
+	ci->ic_vmstat = GET_VM_STATE_VERSION();
     }
 #else
     me = rb_method_entry(klass, id, defined_class_ptr);
@@ -1773,7 +1775,7 @@ static
 inline
 #endif
 VALUE
-opt_eq_func(VALUE recv, VALUE obj, IC ic)
+opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci)
 {
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_EQ, FIXNUM_REDEFINED_OP_FLAG)) {
@@ -1803,7 +1805,7 @@ opt_eq_func(VALUE recv, VALUE obj, IC ic)
     }
 
     {
-	const rb_method_entry_t *me = vm_method_search(idEq, CLASS_OF(recv), ic, 0);
+	const rb_method_entry_t *me = vm_method_search(idEq, CLASS_OF(recv), ci, 0);
 
 	if (check_cfunc(me, rb_obj_equal)) {
 	    return recv == obj ? Qtrue : Qfalse;
@@ -1830,27 +1832,22 @@ rb_vm_using_modules(NODE *cref, VALUE klass)
     ID id_using_modules;
     VALUE using_modules;
 
+    if (NIL_P(klass)) return;
     CONST_ID(id_using_modules, "__using_modules__");
     using_modules = rb_attr_get(klass, id_using_modules);
-    switch (TYPE(klass)) {
-    case T_CLASS:
-	if (NIL_P(using_modules)) {
-	    VALUE super = rb_class_real(RCLASS_SUPER(klass));
-	    using_modules = rb_attr_get(super, id_using_modules);
-	    if (!NIL_P(using_modules)) {
-		using_modules = rb_hash_dup(using_modules);
-		rb_ivar_set(klass, id_using_modules, using_modules);
-	    }
+    if (NIL_P(using_modules) && BUILTIN_TYPE(klass) == T_CLASS) {
+	VALUE super = rb_class_real(RCLASS_SUPER(klass));
+	using_modules = rb_attr_get(super, id_using_modules);
+	if (!NIL_P(using_modules)) {
+	    using_modules = rb_hash_dup(using_modules);
+	    rb_ivar_set(klass, id_using_modules, using_modules);
 	}
-	break;
-    case T_MODULE:
-	rb_using_module(cref, klass);
-	break;
     }
     if (!NIL_P(using_modules)) {
 	rb_hash_foreach(using_modules, vm_using_module_i,
 			(VALUE) cref);
     }
+    rb_using_module(cref, klass);
 }
 
 static VALUE

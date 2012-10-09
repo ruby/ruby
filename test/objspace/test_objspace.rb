@@ -68,4 +68,28 @@ class TestObjSpace < Test::Unit::TestCase
     ObjectSpace.count_tdata_objects(arg)
     assert_equal(false, arg.empty?)
   end
+
+  def test_reachable_objects_from
+    assert_equal(nil, ObjectSpace.reachable_objects_from(nil))
+    assert_equal([Array, 'a', 'b', 'c'], ObjectSpace.reachable_objects_from(['a', 'b', 'c']))
+
+    assert_equal([Array, 'a', 'a', 'a'], ObjectSpace.reachable_objects_from(['a', 'a', 'a']))
+    assert_equal([Array, 'a', 'a'], ObjectSpace.reachable_objects_from(['a', v = 'a', v]))
+    assert_equal([Array, 'a'], ObjectSpace.reachable_objects_from([v = 'a', v, v]))
+
+    long_ary = Array.new(1_000){''}
+    max = 0
+
+    ObjectSpace.each_object{|o|
+      refs = ObjectSpace.reachable_objects_from(o)
+      max = [refs.size, max].max
+
+      unless refs.nil?
+        refs.each_with_index {|ro, i|
+          assert_not_nil(ro, "#{i}: this referenced object is internal object")
+        }
+      end
+    }
+    assert_operator(max, :>=, 1_001, "1000 elems + Array class")
+  end
 end

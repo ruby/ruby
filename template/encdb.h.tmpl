@@ -61,7 +61,7 @@ encdirs.each do |encdir|
             raise ArgumentError,
             '%s:%d: ENC_ALIAS: %s is not defined yet. (alias %s)' %
               [fn, $., $2, $1] unless defs[$2.upcase]
-          when /^ENC_DUMMY\(\s*"([^"]+)"/
+          when /^ENC_DUMMY\w*\(\s*"([^"]+)"/
             count += 1
           else
             next

@@ -32,6 +32,7 @@ void rb_encdb_declare(const char *name);
 int rb_encdb_replicate(const char *name, const char *orig);
 int rb_encdb_dummy(const char *name);
 int rb_encdb_alias(const char *alias, const char *orig);
+void rb_encdb_set_unicode(int index);
 #pragma GCC visibility pop
 #endif
 
@@ -457,8 +458,7 @@ enc_ascii_compatible_p(VALUE enc)
 int
 rb_enc_unicode_p(rb_encoding *enc)
 {
-    const char *name = rb_enc_name(enc);
-    return name[0] == 'U' && name[1] == 'T' && name[2] == 'F' && name[4] != '7';
+    return ONIGENC_IS_UNICODE(enc);
 }
 
 static st_data_t
@@ -511,6 +511,12 @@ rb_encdb_alias(const char *alias, const char *orig)
 	idx = enc_register(orig, 0);
     }
     return enc_alias(alias, idx);
+}
+
+void
+rb_encdb_set_unicode(int index)
+{
+    rb_enc_from_index(index)->flags |= ONIGENC_FLAG_UNICODE;
 }
 
 enum {

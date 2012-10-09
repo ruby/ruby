@@ -1478,6 +1478,50 @@ class TestProcess < Test::Unit::TestCase
     assert_nothing_raised { IO.popen([*TRUECOMMAND, :new_pgroup=>true]) {} }
   end
 
+  def test_execopts_uid
+    feature6975 = '[ruby-core:47414]'
+
+    [30000, [ENV["USER"], Process.uid]].each do |user, uid|
+      assert_nothing_raised(feature6975) do
+        begin
+          system(*TRUECOMMAND, uid: user)
+        rescue Errno::EPERM, NotImplementedError
+        end
+      end
+
+      uid = "#{uid || user}"
+      assert_nothing_raised(feature6975) do
+        begin
+          u = IO.popen([RUBY, "-e", "print Process.uid", uid: user], &:read)
+          assert_equal(uid, u, feature6975)
+        rescue Errno::EPERM, NotImplementedError
+        end
+      end
+    end
+  end
+
+  def test_execopts_gid
+    feature6975 = '[ruby-core:47414]'
+
+    [30000, *Process.groups.map {|g| g = Etc.getgrgid(g); [g.name, g.gid]}].each do |group, gid|
+      assert_nothing_raised(feature6975) do
+        begin
+          system(*TRUECOMMAND, gid: group)
+        rescue Errno::EPERM, NotImplementedError
+        end
+      end
+
+      gid = "#{gid || group}"
+      assert_nothing_raised(feature6975) do
+        begin
+          g = IO.popen([RUBY, "-e", "print Process.gid", gid: group], &:read)
+          assert_equal(gid, g, feature6975)
+        rescue Errno::EPERM, NotImplementedError
+        end
+      end
+    end
+  end
+
   def test_sigpipe
     system(RUBY, "-e", "")
     with_pipe {|r, w|
