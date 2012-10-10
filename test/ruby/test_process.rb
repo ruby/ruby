@@ -1482,9 +1482,18 @@ class TestProcess < Test::Unit::TestCase
     feature6975 = '[ruby-core:47414]'
 
     [30000, [ENV["USER"], Process.uid]].each do |user, uid|
+      if user
+        assert_nothing_raised(feature6975) do
+          begin
+            system(*TRUECOMMAND, uid: user)
+          rescue Errno::EPERM, NotImplementedError
+          end
+        end
+      end
+
       assert_nothing_raised(feature6975) do
         begin
-          system(*TRUECOMMAND, uid: user)
+          system(*TRUECOMMAND, uid: uid)
         rescue Errno::EPERM, NotImplementedError
         end
       end
