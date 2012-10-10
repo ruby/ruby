@@ -1041,7 +1041,7 @@ insn_operand_intern(rb_iseq_t *iseq,
 	break;
 
       case TS_CALLINFO:
-	ret = rb_sprintf("<ci:%"PRIdPTRDIFF">", (struct iseq_inline_cache_entry *)op - iseq->callinfo_entries);
+	ret = rb_sprintf("<ci:%"PRIdPTRDIFF">", (rb_call_info_t *)op - iseq->callinfo_entries);
 	break;
 
       case TS_CDHASH:

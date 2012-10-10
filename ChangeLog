@@ -1,3 +1,8 @@
+Thu Oct 11 07:40:50 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* iseq.c (insn_operand_intern): cast op to rb_call_info_t* before
+	  compare with iseq->callinfo_entries whose type is rb_call_info_t*.
+
 Thu Oct 11 03:37:08 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_block.rb: add tests for block with super.
