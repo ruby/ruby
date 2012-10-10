@@ -1501,6 +1501,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopts_gid
+    skip "Process.groups not implemented on Windows platform" if windows?
     feature6975 = '[ruby-core:47414]'
 
     [30000, *Process.groups.map {|g| g = Etc.getgrgid(g); [g.name, g.gid]}].each do |group, gid|

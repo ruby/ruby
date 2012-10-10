@@ -1,3 +1,9 @@
+Wed Oct 10 15:12:48 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_process.rb (TestProcess#test_execopts_gid): skip on
+	  windows because the platform does not have Process.group method.
+	  patched by Jon Forums in [ruby-core:47878] [Bug #7133].
+
 Tue Oct  9 23:18:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (assert_file, assert_file_not): more
