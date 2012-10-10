@@ -1481,7 +1481,7 @@ class TestProcess < Test::Unit::TestCase
   def test_execopts_uid
     feature6975 = '[ruby-core:47414]'
 
-    [30000, [ENV["USER"], Process.uid]].each do |user, uid|
+    [30000, [Process.uid, ENV["USER"]]].each do |uid, user|
       if user
         assert_nothing_raised(feature6975) do
           begin
@@ -1498,11 +1498,10 @@ class TestProcess < Test::Unit::TestCase
         end
       end
 
-      uid = "#{uid || user}"
       assert_nothing_raised(feature6975) do
         begin
-          u = IO.popen([RUBY, "-e", "print Process.uid", uid: user], &:read)
-          assert_equal(uid, u, feature6975)
+          u = IO.popen([RUBY, "-e", "print Process.uid", uid: user||uid], &:read)
+          assert_equal(uid.to_s, u, feature6975)
         rescue Errno::EPERM, NotImplementedError
         end
       end
