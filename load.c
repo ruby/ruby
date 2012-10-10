@@ -18,6 +18,7 @@ VALUE ruby_dln_librefs;
 #define IS_DLEXT(e) (strcmp((e), DLEXT) == 0)
 #endif
 
+static int sorted_loaded_features = 1;
 
 static const char *const loadable_ext[] = {
     ".rb", DLEXT,
@@ -129,6 +130,9 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
     return ST_STOP;
 }
 
+static long rb_feature_first_equal_or_greater(VALUE, const char *, long);
+static int  rb_stop_search_feature(VALUE, const char *, long);
+
 static int
 rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const char **fn)
 {
@@ -151,8 +155,10 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	type = 0;
     }
     features = get_loaded_features();
-    for (i = 0; i < RARRAY_LEN(features); ++i) {
+    i = rb_feature_first_equal_or_greater(features, feature, len);
+    for (; i < RARRAY_LEN(features); ++i) {
 	v = RARRAY_PTR(features)[i];
+	if (rb_stop_search_feature(v, feature, len)) break;
 	f = StringValuePtr(v);
 	if ((n = RSTRING_LEN(v)) < len) continue;
 	if (strncmp(f, feature, len) != 0) {
@@ -176,7 +182,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	}
     }
     loading_tbl = get_loading_table();
-    if (loading_tbl) {
+    if (loading_tbl && loading_tbl->num_entries > 0) {
 	f = 0;
 	if (!expanded) {
 	    struct loaded_feature_searching fs;
@@ -251,6 +257,170 @@ rb_feature_provided(const char *feature, const char **loading)
     return FALSE;
 }
 
+static long
+feature_basename_length(const char *feature, long flen)
+{
+    if (sorted_loaded_features) {
+	const char *ext = strrchr(feature, '.');
+	return ext && !strchr(ext, '/') ? ext - feature : flen;
+    } else {
+	return 0;
+    }
+}
+
+static int
+compare_feature_name(const char *left, long llen, const char *right, long rlen)
+{
+    int diff = 0;
+    while (llen-- && rlen--) {
+	diff = left[llen] - right[rlen];
+	if (diff) break;
+	if (left[llen] == '/') break;
+    }
+    return diff;
+}
+
+static int
+rb_compare_feature_name(VALUE loaded, const char *feature, long flen)
+{
+    const char *loaded_name = StringValuePtr(loaded);
+    long loaded_len = feature_basename_length(loaded_name, RSTRING_LEN(loaded));
+    return compare_feature_name(loaded_name, loaded_len, feature, flen);
+}
+
+/* used to find when equal features run out */
+static int
+rb_stop_search_feature(VALUE loaded, const char *feature, long flen)
+{
+    if (sorted_loaded_features)
+	return rb_compare_feature_name(loaded, feature, flen) > 0;
+    else
+	return FALSE;
+}
+
+/* returns first position to search feature from */
+static long
+rb_feature_first_equal_or_greater(VALUE features, const char *feature, long flen)
+{
+    if (sorted_loaded_features) {
+	long before = 0, first = RARRAY_LEN(features);
+	VALUE *values = RARRAY_PTR(features);
+	if (first == 0)
+	    return 0;
+	if (rb_compare_feature_name(values[0], feature, flen) >= 0)
+	    return 0;
+
+	while (first - before > 1) {
+	    long mid = (first + before) / 2;
+	    long cmp = rb_compare_feature_name(values[mid], feature, flen);
+	    if (cmp >= 0)
+		first = mid;
+	    else
+		before = mid;
+	}
+	return first;
+    } else {
+	return 0;
+    }
+}
+
+/* returns position to insert new feature in */
+static long
+rb_feature_first_greater(VALUE features, const char *feature, long flen)
+{
+    if (sorted_loaded_features) {
+	long before = 0, first = RARRAY_LEN(features);
+	VALUE *values = RARRAY_PTR(features);
+	if (first == 0)
+	    return 0;
+	if (rb_compare_feature_name(values[0], feature, flen) > 0)
+	    return 0;
+	if (rb_compare_feature_name(values[first-1], feature, flen) <= 0)
+	    return first;
+
+	while (first - before > 1) {
+	    long mid = (first + before) / 2;
+	    long cmp = rb_compare_feature_name(values[mid], feature, flen);
+	    if (cmp > 0)
+		first = mid;
+	    else
+		before = mid;
+	}
+	return first;
+    } else {
+	return RARRAY_LEN(features);
+    }
+}
+
+
+static VALUE
+rb_push_feature_1(VALUE features, VALUE feature)
+{
+    const char *fname = StringValuePtr(feature);
+    long flen = feature_basename_length(fname, RSTRING_LEN(feature));
+    long i = rb_feature_first_greater(features, fname, flen);
+    rb_ary_push(features, feature);
+    if ( i < RARRAY_LEN(features) - 1 ) {
+	MEMMOVE(RARRAY_PTR(features) + i + 1, RARRAY_PTR(features) + i,
+		VALUE, RARRAY_LEN(features) - i - 1);
+	RARRAY_PTR(features)[i] = feature;
+    }
+    return features;
+}
+
+static VALUE
+rb_push_feature_m(long argc, VALUE *argv, VALUE features)
+{
+    while (argc--) {
+	rb_push_feature_1(features, *argv++);
+    }
+    return features;
+}
+
+static VALUE
+rb_concat_features(VALUE features, VALUE add)
+{
+    add = rb_convert_type(add, T_ARRAY, "Array", "to_ary");
+    if (RARRAY_LEN(add)) {
+	rb_push_feature_m(RARRAY_LEN(add), RARRAY_PTR(add), features);
+    }
+    return features;
+}
+static const char *load_features_undefined_methods[] = {
+    "[]=", "reverse!", "rotate!", "sort!", "sort_by!",
+    "collect!", "map!", "shuffle!", "fill", "insert",
+    NULL
+};
+
+static VALUE
+rb_loaded_features_init(void)
+{
+    char *sorted_flag;
+    const char **name;
+    VALUE loaded_features = rb_ary_new();
+    VALUE loaded_features_c = rb_singleton_class(loaded_features);
+
+    sorted_flag = getenv("RUBY_LOADED_FEATURES_SORTED");
+    if (sorted_flag != NULL) {
+	int sorted_set = atoi(sorted_flag);
+	if (RTEST(ruby_verbose))
+	    fprintf(stderr, "sorted_loaded_features=%d (%d)\n", sorted_set, sorted_loaded_features);
+	sorted_loaded_features = sorted_set;
+    }
+
+    for(name = load_features_undefined_methods; *name; name++) {
+	rb_undef_method(loaded_features_c, *name);
+    }
+
+    if (sorted_loaded_features) {
+	rb_define_method(loaded_features_c, "<<", rb_push_feature_1, 1);
+	rb_define_method(loaded_features_c, "push", rb_push_feature_m, -1);
+	rb_define_method(loaded_features_c, "concat", rb_concat_features, 1);
+	rb_define_method(loaded_features_c, "unshift", rb_push_feature_m, -1);
+    }
+    return loaded_features;
+}
+
 static void
 rb_provide_feature(VALUE feature)
 {
@@ -258,7 +428,7 @@ rb_provide_feature(VALUE feature)
 	rb_raise(rb_eRuntimeError,
 		 "$LOADED_FEATURES is frozen; cannot append feature");
     }
-    rb_ary_push(get_loaded_features(), feature);
+    rb_push_feature_1(get_loaded_features(), feature);
 }
 
 void
@@ -798,7 +968,7 @@ Init_load()
 
     rb_define_virtual_variable("$\"", get_loaded_features, 0);
     rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);
-    vm->loaded_features = rb_ary_new();
+    vm->loaded_features = rb_loaded_features_init();
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);
