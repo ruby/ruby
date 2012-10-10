@@ -1040,6 +1040,10 @@ insn_operand_intern(rb_iseq_t *iseq,
 	ret = rb_sprintf("<ic:%"PRIdPTRDIFF">", (struct iseq_inline_cache_entry *)op - iseq->ic_entries);
 	break;
 
+      case TS_CALLINFO:
+	ret = rb_sprintf("<ci:%"PRIdPTRDIFF">", (struct iseq_inline_cache_entry *)op - iseq->callinfo_entries);
+	break;
+
       case TS_CDHASH:
 	ret = rb_str_new2("<cdhash>");
 	break;
