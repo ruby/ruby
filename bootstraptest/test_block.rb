@@ -565,3 +565,35 @@ assert_normal_exit %q{
   t.test_for_bug
 }, '[ruby-core:14395]'
 
+assert_equal 'true', %q{
+  class C0
+    def foo
+      block_given?
+    end
+  end
+
+  class C1 < C0
+    def foo
+      super
+    end
+  end
+
+  C1.new.foo{}
+}
+
+assert_equal 'true', %q{
+  class C0
+    def foo
+      block_given?
+    end
+  end
+
+  class C1 < C0
+    def foo
+      super()
+    end
+  end
+
+  C1.new.foo{}
+}
+

@@ -1,3 +1,7 @@
+Thu Oct 11 03:37:08 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_block.rb: add tests for block with super.
+
 Thu Oct 11 02:54:07 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_dump.c: fix debug prints to catch up recent changes
