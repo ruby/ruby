@@ -222,6 +222,20 @@ rb_vmdebug_stack_dump_th(VALUE thval)
 }
 
 #if VMDEBUG > 2
+
+/* copy from vm.c */
+static VALUE *
+vm_base_ptr(rb_control_frame_t *cfp)
+{
+    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    VALUE *bp = prev_cfp->sp + cfp->iseq->local_size + 1;
+
+    if (cfp->iseq->type == ISEQ_TYPE_METHOD) {
+	bp += 1;
+    }
+    return bp;
+}
+
 static void
 vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 {
@@ -237,7 +251,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 
     if (iseq == 0) {
 	if (RUBYVM_CFUNC_FRAME_P(cfp)) {
-	    name = rb_id2name(cfp->me->original_id);
+	    name = rb_id2name(cfp->me->called_id);
 	}
 	else {
 	    name = "?";
@@ -266,7 +280,6 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 
 	VALUE *ptr = ep - local_size;
 
-	vm_stack_dump_each(th, cfp + 1);
 	control_frame_dump(th, cfp);
 
 	for (i = 0; i < argc; i++) {
@@ -280,7 +293,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 		   (void *)ptr++);
 	}
 
-	ptr = cfp->bp;
+	ptr = vm_base_ptr(cfp);
 	for (; ptr < sp; ptr++, i++) {
 	    if (*ptr == Qundef) {
 		rstr = rb_str_new2("undef");
@@ -292,7 +305,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 		    (ptr - th->stack));
 	}
     }
-    else if (VM_FRAME_TYPE_FINISH_P(VM_FRAME_TYPE(cfp))) {
+    else if (VM_FRAME_TYPE_FINISH_P(cfp)) {
 	if ((th)->stack + (th)->stack_size > (VALUE *)(cfp + 1)) {
 	    vm_stack_dump_each(th, cfp + 1);
 	}
@@ -381,6 +394,7 @@ rb_vmdebug_debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp
 #if VMDEBUG > 2
     /* stack_dump_thobj(th); */
     vm_stack_dump_each(th, th->cfp);
+
 #if OPT_STACK_CACHING
     {
 	VALUE rstr;
