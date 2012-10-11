@@ -633,6 +633,12 @@ class TestString < Test::Unit::TestCase
     assert_equal(67, res[2])
   end
 
+  def test_each_codepoint
+    res = []
+    S("ABC").codepoints.each {|x| res << x}
+    assert_equal([65, 66, 67], res)
+  end
+
   def test_each_line
     save = $/
     $/ = "\n"
