@@ -1632,6 +1632,7 @@ rb_str_subseq(VALUE str, long beg, long len)
     }
     else {
         str2 = rb_str_new5(str, RSTRING_PTR(str)+beg, len);
+	RB_GC_GUARD(str);
     }
 
     rb_enc_cr_str_copy_for_substr(str2, str);
@@ -1721,6 +1722,7 @@ rb_str_subpos(VALUE str, long beg, long *lenp)
     }
   end:
     *lenp = len;
+    RB_GC_GUARD(str);
     return p;
 }
 
@@ -1741,6 +1743,7 @@ rb_str_substr(VALUE str, long beg, long len)
 	str2 = rb_str_new5(str, p, len);
 	rb_enc_cr_str_copy_for_substr(str2, str);
 	OBJ_INFECT(str2, str);
+	RB_GC_GUARD(str);
     }
 
     return str2;
@@ -6206,6 +6209,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	OBJ_INFECT(line, str);
 	rb_enc_cr_str_copy_for_substr(line, str);
 	rb_yield(line);
+	RB_GC_GUARD(str);
     }
 
     return orig;
@@ -6332,6 +6336,7 @@ rb_str_each_codepoint(VALUE str)
 	rb_yield(UINT2NUM(c));
 	ptr += n;
     }
+    RB_GC_GUARD(str);
     return orig;
 }
 

@@ -1,3 +1,8 @@
+Thu Oct 11 23:09:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_sub{seq,pos,str}, rb_str_each_{line,codepoint}):
+	  prevent String copies from GC.  [ruby-core:47881] [Bug #7135]
+
 Thu Oct 11 07:40:50 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* iseq.c (insn_operand_intern): cast op to rb_call_info_t* before
