@@ -1,3 +1,9 @@
+Fri Oct 12 05:25:00 2012  Zachary Scott	<zzak@ruby-lang.org>
+
+	* lib/timeout.rb (timeout):
+	  Remove paragraph on wrong implementation detail.
+	  [ruby-core:47739] [Bug #7088]
+
 Thu Oct 11 23:09:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_sub{seq,pos,str}, rb_str_each_{line,codepoint}):

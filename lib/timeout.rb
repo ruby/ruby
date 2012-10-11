@@ -41,9 +41,6 @@ module Timeout
   # +klass+:: Exception Class to raise if the block fails to terminate
   #           in +sec+ seconds.  Omitting will use the default, Timeout::Error
   #
-  # The block will be executed on another thread and will be given one
-  # argument: +sec+.
-  #
   # Returns the result of the block *if* the block completed before
   # +sec+ seconds, otherwise throws an exception, based on the value of +klass+.
   #
