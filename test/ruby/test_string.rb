@@ -1827,7 +1827,7 @@ class TestString < Test::Unit::TestCase
   def test_match_method
     assert_equal("bar", "foobarbaz".match(/bar/).to_s)
 
-    o = /foo/
+    o = Regexp.new('foo')
     def o.match(x, y, z); x + y + z; end
     assert_equal("foobarbaz", "foo".match(o, "bar", "baz"))
     x = nil
@@ -1983,11 +1983,15 @@ class TestString < Test::Unit::TestCase
       assert_equal('"ab\\"c"', "ab\"c".encode(e).inspect, bug4081)
     end
     begin
+      verbose, $VERBOSE = $VERBOSE, nil
       ext = Encoding.default_external
       Encoding.default_external = "us-ascii"
+      $VERBOSE = verbose
       i = "abc\"\\".force_encoding("utf-8").inspect
     ensure
+      $VERBOSE = nil
       Encoding.default_external = ext
+      $VERBOSE = verbose
     end
     assert_equal('"abc\\"\\\\"', i, bug4081)
   end
