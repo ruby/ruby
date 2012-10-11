@@ -209,7 +209,7 @@ class TestString < Test::Unit::TestCase
 
   def test_LSHIFT # '<<'
     assert_equal(S("world!"), S("world") << 33)
-    assert_equal(S("world!"), S("world") << S('!'))
+    assert_equal(S("world!"), S("world") << S("!"))
 
     s = "a"
     10.times {|i|
@@ -1371,7 +1371,7 @@ class TestString < Test::Unit::TestCase
 
     assert_equal("abce", "abcd".succ)
     assert_equal("THX1139", "THX1138".succ)
-    assert_equal("<<koalb>>", "<<koala>>".succ)
+    assert_equal("<\<koalb>>", "<\<koala>>".succ)
     assert_equal("2000aaa", "1999zzz".succ)
     assert_equal("AAAA0000", "ZZZ9999".succ)
     assert_equal("**+", "***".succ)
