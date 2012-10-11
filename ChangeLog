@@ -1,3 +1,21 @@
+Fri Oct 12 00:30:17 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (ioctl_narg_len, linux_iocparm_len): reinstantiate linux
+	  specific narg length calculation.
+	* test/ruby/test_io.rb (test_ioctl_linux2): add new test for old and
+	  unstructured ioctl.
+
+Fri Oct 12 00:30:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (ioctl_narg_len): don't use _IOC_SIZE macro on Linux.
+	  On Linux some constants for ioctl(2) doesn't include the size of
+	  its return value and 16bit value; for example FIONREAD 0x541B.
+	  Moreover the manual, ioctl_list(2),  says "Note  that  the  size
+	  bits  are  very unreliable: in lots of cases they are wrong,
+	  either because of buggy macros using sizeof(sizeof(struct)),
+	  or because of legacy values."
+	  So we shouldn't use it.
+
 Tue Sep 25 09:30:36 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/mkexports.rb: should not export DllMain().

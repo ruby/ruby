@@ -8019,6 +8019,29 @@ do_ioctl(int fd, ioctl_req_t cmd, long narg)
     return retval;
 }
 
+#define DEFULT_IOCTL_NARG_LEN (256)
+
+#ifdef __linux__
+static long
+linux_iocparm_len(ioctl_req_t cmd)
+{
+    long len;
+
+    if ((cmd & 0xFFFF0000) == 0) {
+	/* legacy and unstructured ioctl number. */
+	return DEFULT_IOCTL_NARG_LEN;
+    }
+
+    len = _IOC_SIZE(cmd);
+
+    /* paranoia check for silly drivers which don't keep ioctl convention */
+    if (len < DEFULT_IOCTL_NARG_LEN)
+	len = DEFULT_IOCTL_NARG_LEN;
+
+    return len;
+}
+#endif
+
 static long
 ioctl_narg_len(ioctl_req_t cmd)
 {
@@ -8031,10 +8054,11 @@ ioctl_narg_len(ioctl_req_t cmd)
 #endif
 #ifdef IOCPARM_LEN
     len = IOCPARM_LEN(cmd);	/* on BSDish systems we're safe */
-#elif defined(_IOC_SIZE)
-    len = _IOC_SIZE(cmd);
+#elif defined(__linux__)
+    len = linux_iocparm_len(cmd);
 #else
-    len = 256;		/* otherwise guess at what's safe */
+    /* otherwise guess at what's safe */
+    len = DEFULT_IOCTL_NARG_LEN;
 #endif
 
     return len;
