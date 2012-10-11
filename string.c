@@ -6133,6 +6133,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	return orig;
     }
     str = rb_str_new4(str);
+    RB_GC_GUARD(str);
     ptr = p = s = RSTRING_PTR(str);
     pend = p + RSTRING_LEN(str);
     len = RSTRING_LEN(str);
@@ -6267,6 +6268,7 @@ rb_str_each_char(VALUE str)
 
     RETURN_ENUMERATOR(str, 0, 0);
     str = rb_str_new4(str);
+    RB_GC_GUARD(str);
     ptr = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
     enc = rb_enc_get(str);
@@ -6320,6 +6322,7 @@ rb_str_each_codepoint(VALUE str)
     if (single_byte_optimizable(str)) return rb_str_each_byte(str);
     RETURN_ENUMERATOR(str, 0, 0);
     str = rb_str_new4(str);
+    RB_GC_GUARD(str);
     ptr = RSTRING_PTR(str);
     end = RSTRING_END(str);
     enc = STR_ENC_GET(str);
