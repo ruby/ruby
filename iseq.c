@@ -581,7 +581,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE li
     int state;
     rb_thread_t *th = GET_THREAD();
     rb_block_t *prev_base_block = th->base_block;
-    VALUE iseqval;
+    VALUE iseqval = Qundef;
 
     th->base_block = base_block;
 
