@@ -6204,6 +6204,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	rb_yield(line);
     }
 
+    RB_GC_GUARD(str);
     return orig;
 }
 
@@ -6284,6 +6285,7 @@ rb_str_each_char(VALUE str)
 	    rb_yield(rb_str_subseq(str, i, n));
 	}
     }
+    RB_GC_GUARD(str);
     return orig;
 }
 
@@ -6328,6 +6330,7 @@ rb_str_each_codepoint(VALUE str)
 	rb_yield(UINT2NUM(c));
 	ptr += n;
     }
+    RB_GC_GUARD(str);
     return orig;
 }
 
