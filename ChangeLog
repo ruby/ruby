@@ -1,3 +1,8 @@
+Fri Oct 12 17:51:43 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* error.c (exc_to_s, name_err_to_s, name_err_mesg_to_str): do not
+	  taint messages.
+
 Fri Oct 12 16:11:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LIBDIR_BASENAME): use configured libdir value to fix

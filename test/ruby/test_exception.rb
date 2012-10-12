@@ -333,4 +333,54 @@ end.join
       load(t.path)
     end
   end
+
+  def test_to_s_taintness_propagation
+    for exc in [Exception, NameError]
+      m = "abcdefg"
+      e = exc.new(m)
+      e.taint
+      s = e.to_s
+      assert_equal(false, m.tainted?,
+                   "#{exc}#to_s should not propagate taintness")
+      assert_equal(false, s.tainted?,
+                   "#{exc}#to_s should not propagate taintness")
+    end
+    
+    o = Object.new
+    def o.to_str
+      "foo"
+    end
+    o.taint
+    e = NameError.new(o)
+    s = e.to_s
+    assert_equal(false, s.tainted?)
+  end
+
+  def test_exception_to_s_should_not_propagate_untrustedness
+    favorite_lang = "Ruby"
+
+    for exc in [Exception, NameError]
+      assert_raise(SecurityError) do
+        lambda {
+          $SAFE = 4
+          exc.new(favorite_lang).to_s
+          favorite_lang.replace("Python")
+        }.call
+      end
+    end
+
+    assert_raise(SecurityError) do
+      lambda {
+        $SAFE = 4
+        o = Object.new
+        o.singleton_class.send(:define_method, :to_str) {
+          favorite_lang
+        }
+        NameError.new(o).to_s
+        favorite_lang.replace("Python")
+      }.call
+    end
+
+    assert_equal("Ruby", favorite_lang)
+  end
 end
