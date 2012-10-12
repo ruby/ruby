@@ -1,3 +1,11 @@
+Fri Oct 12 16:11:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBDIR_BASENAME): use configured libdir value to fix
+	  --enable-load-relative on systems where libdir is not default value,
+	  overridden in config.site files.  [ruby-core:47267] [Bug #6903]
+
+	* ruby.c (ruby_init_loadpath_safe): ditto.
+
 Fri Oct 12 13:56:01 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* test/rexml/test_encoding.rb:
