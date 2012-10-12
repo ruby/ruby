@@ -2036,9 +2036,9 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
 	static const char posix_sh_cmds[][9] = {
 	    "!",		/* reserved */
 	    ".",		/* special built-in */
+	    ":",		/* special built-in */
 	    "break",		/* special built-in */
 	    "case",		/* reserved */
-	    "colon",		/* special built-in */
 	    "continue",		/* special built-in */
 	    "do",		/* reserved */
 	    "done",		/* reserved */

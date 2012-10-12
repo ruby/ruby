@@ -1,3 +1,7 @@
+Fri Oct 12 20:40:29 2012  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (posix_sh_cmds): the command name of colon is ":".
+
 Fri Oct 12 18:18:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_get_path_check): path name must not contain NUL bytes.
