@@ -1,3 +1,10 @@
+Sat Oct 13 01:41:38 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* regparse.c (parse_char_class): also need to check the type of token
+	  after raw hyphen in regexp class, because the charcter code area
+	  is union'ed with the property of TK_CHAR_TYPE.
+	  reported by Bushi Zhang at [ruby-core:47115] [Backport #6853].
+
 Sat Oct 13 01:39:46 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_regexp.rb
