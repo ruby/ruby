@@ -1,3 +1,9 @@
+Sat Oct 13 01:39:46 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_regexp.rb
+	  (TestRegexp#test_raw_hyphen_and_type_char_after_range): added new
+	  test. ref [ruby-core:47115] [Backport #6853]
+
 Fri Oct 12 18:19:35 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_get_path_check): path name must not contain NUL bytes.
