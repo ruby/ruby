@@ -196,7 +196,7 @@ class TestFloat < Test::Unit::TestCase
   end
 
   def test_modulo3
-    bug6048 = '[ruby-core:42726]'
+    bug6044 = '[ruby-core:42726]'
     assert_equal(4.2, 4.2.send(:%, Float::INFINITY))
     assert_equal(4.2, 4.2 % Float::INFINITY)
     assert_is_minus_zero(-0.0 % 4.2)
