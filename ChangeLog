@@ -1,3 +1,8 @@
+Fri Oct 12 14:10:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (dir_config, init_mkmf): use configured libdir value as
+	  default library path.  [ruby-core:43726] [Bug #6207]
+
 Fri Oct 12 05:25:00 2012  Zachary Scott	<zzak@ruby-lang.org>
 
 	* lib/timeout.rb (timeout):

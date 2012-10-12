@@ -1633,7 +1633,7 @@ SRC
     idir = with_config(target + "-include", idefault)
     $arg_config.last[1] ||= "${#{target}-dir}/include"
     ldir = with_config(target + "-lib", ldefault)
-    $arg_config.last[1] ||= "${#{target}-dir}/lib"
+    $arg_config.last[1] ||= "${#{target}-dir}/#{@libdir_basename}"
 
     idirs = idir ? Array === idir ? idir.dup : idir.split(File::PATH_SEPARATOR) : []
     if defaults
@@ -1650,7 +1650,7 @@ SRC
 
     ldirs = ldir ? Array === ldir ? ldir.dup : ldir.split(File::PATH_SEPARATOR) : []
     if defaults
-      ldirs.concat(defaults.collect {|d| d + "/lib"})
+      ldirs.concat(defaults.collect {|d| "#{d}/#{@libdir_basename}"})
       ldir = ([ldir] + ldirs).compact.join(File::PATH_SEPARATOR)
     end
     $LIBPATH = ldirs | $LIBPATH
@@ -2314,6 +2314,8 @@ site-install-rb: install-rb
 
     $extout ||= nil
     $extout_prefix ||= nil
+
+    @libdir_basename = config["libdir"][/\A\$\(exec_prefix\)\/(.*)/, 1] || "lib"
 
     $arg_config.clear
     dir_config("opt")
