@@ -184,6 +184,9 @@ rb_get_path_check(VALUE obj, int level)
 	rb_raise(rb_eEncCompatError, "path name must be ASCII-compatible (%s): %s",
 		 rb_enc_name(enc), RSTRING_PTR(tmp));
     }
+
+    StringValueCStr(tmp);
+
     return rb_str_new4(tmp);
 }
 

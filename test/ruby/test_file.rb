@@ -349,4 +349,14 @@ class TestFile < Test::Unit::TestCase
       end
     end
   end
+
+  def test_open_nul
+    Dir.mktmpdir(__method__.to_s) do |tmpdir|
+      path = File.join(tmpdir, "foo")
+      assert_raise(ArgumentError) do
+        open(path + "\0bar", "w") {}
+      end
+      assert_file_not(:exist?, path)
+    end
+  end
 end
