@@ -260,4 +260,14 @@ class TestFile < Test::Unit::TestCase
       assert_equal(File.chmod(0666, file), 1, bug5671)
     end
   end
+
+  def test_open_nul
+    Dir.mktmpdir(__method__.to_s) do |tmpdir|
+      path = File.join(tmpdir, "foo")
+      assert_raise(ArgumentError) do
+        open(path + "\0bar", "w") {}
+      end
+      refute File.exist?(path)
+    end
+  end
 end
