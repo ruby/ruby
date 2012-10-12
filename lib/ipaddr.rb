@@ -607,7 +607,7 @@ class IPAddr
 
 end
 
-unless Socket.const_defined? "AF_INET6"
+unless Socket.const_defined? :AF_INET6
   class Socket < BasicSocket
     # IPv6 protocol family
     AF_INET6 = Object.new

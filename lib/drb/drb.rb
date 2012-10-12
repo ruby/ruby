@@ -1010,8 +1010,8 @@ module DRb
 
     def self.new_with(uri, ref)
       it = self.allocate
-      it.instance_variable_set('@uri', uri)
-      it.instance_variable_set('@ref', ref)
+      it.instance_variable_set(:@uri, uri)
+      it.instance_variable_set(:@ref, ref)
       it
     end
 

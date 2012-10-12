@@ -650,10 +650,10 @@ module XMLRPC # :nodoc:
         if defined? XML::DOM::Builder
           return if defined? XML::DOM::Node::DOCUMENT # code below has been already executed
           klass = XML::DOM::Node
-          klass.const_set("DOCUMENT", klass::DOCUMENT_NODE)
-          klass.const_set("TEXT", klass::TEXT_NODE)
-          klass.const_set("COMMENT", klass::COMMENT_NODE)
-          klass.const_set("ELEMENT", klass::ELEMENT_NODE)
+          klass.const_set(:DOCUMENT, klass::DOCUMENT_NODE)
+          klass.const_set(:TEXT, klass::TEXT_NODE)
+          klass.const_set(:COMMENT, klass::COMMENT_NODE)
+          klass.const_set(:ELEMENT, klass::ELEMENT_NODE)
         end
       end
 

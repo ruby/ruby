@@ -107,7 +107,7 @@ module MonitorMixin
       @monitor.__send__(:mon_check_owner)
       count = @monitor.__send__(:mon_exit_for_cond)
       begin
-        @cond.wait(@monitor.instance_variable_get("@mon_mutex"), timeout)
+        @cond.wait(@monitor.instance_variable_get(:@mon_mutex), timeout)
         return true
       ensure
         @monitor.__send__(:mon_enter_for_cond, count)
