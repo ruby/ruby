@@ -209,8 +209,11 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
     else {
       ret = fcntl(fd, F_DUPFD, minfd);
     }
-#else
+#elif defined(F_DUPFD)
     ret = fcntl(fd, F_DUPFD, minfd);
+#else
+    ret = -1;
+    errno = EINVAL;
 #endif
     if (ret == -1) return -1;
     rb_maygvl_fd_fix_cloexec(ret);

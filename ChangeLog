@@ -1,3 +1,9 @@
+Fri Oct 12 13:28:37 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_cloexec_fcntl_dupfd): get rid of compile error on windows.
+	  reported by Donovan Lampa at [ruby-core:43152] [Backport #6127],
+	  based on a patch by Hiroshi Shirosaki at [ruby-core:47917].
+
 Fri Oct 12 00:30:17 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (ioctl_narg_len, linux_iocparm_len): reinstantiate linux
