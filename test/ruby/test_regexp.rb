@@ -911,4 +911,14 @@ class TestRegexp < Test::Unit::TestCase
     assert_match(/invalid hex escape/, error.message)
     assert_equal(1, error.message.scan(/.*invalid .*escape.*/i).size, bug3539)
   end
+
+  def test_raw_hyphen_and_type_char_after_range
+    bug6853 = '[ruby-core:47115]'
+    begin
+      verbose, $VERBOSE = $VERBOSE, nil
+      assert_match(/[0-1-\s]/, ' ', bug6853)
+    ensure
+      $VERBOSE = verbose
+    end
+  end
 end
