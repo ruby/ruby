@@ -1,3 +1,8 @@
+Fri Oct 12 13:56:01 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* test/rexml/test_encoding.rb:
+	  Add require 'require 'rexml/document'
+
 Fri Oct 12 13:36:32 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (flodivmod): must through the same pass if HAVE_FMOD or not.
