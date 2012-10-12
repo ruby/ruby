@@ -131,6 +131,8 @@ else
   if /--ticket=(.*)/ =~ ARGV[0]
     tickets = $1.split(/,/).map{|num| " [Backport ##{num}]"}
     ARGV.shift
+  else
+    tickets = []
   end
 
   q = $repos + (ARGV[1] || default_merge_branch)
