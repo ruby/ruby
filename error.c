@@ -665,9 +665,6 @@ name_err_to_s(exc)
 
     if (NIL_P(mesg)) return rb_class_name(CLASS_OF(exc));
     StringValue(str);
-    if (str != mesg) {
-	OBJ_INFECT(str, mesg);
-    }
     return str;
 }
 

@@ -1,3 +1,9 @@
+Fri Oct 12 12:25:15 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* error.c (name_err_to_s): we need not infect msg.
+
+	* test/ruby/test_exception.rb (TestException#test_exception_to_s_should_not_propagate_untrustedness): test for it.
+
 Fri Jun 29 21:26:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (stack_extend): prevent ALLOCA_N, which reserves a memory
