@@ -1,3 +1,10 @@
+Fri Oct 12 21:37:25 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/webrick/test_cgi.rb (TestWEBrickCGI#test_cgi): skip a test
+	  depending on locale on Windows. ENV[] doesn't work properly if
+	  console code page is not equal to file system encoding.
+	  [ruby-core:47910] [Bug #7140]
+
 Fri Oct 12 20:40:29 2012  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (posix_sh_cmds): the command name of colon is ":".
