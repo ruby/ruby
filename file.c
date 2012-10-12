@@ -3389,6 +3389,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
 #ifdef HAVE_READLINK
                 if (S_ISLNK(sbuf.st_mode)) {
 		    VALUE link;
+		    volatile VALUE link_orig = Qnil;
 		    const char *link_prefix, *link_names;
                     long link_prefixlen;
                     rb_hash_aset(loopcheck, testpath, ID2SYM(resolving));
@@ -3398,6 +3399,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
 		    link_prefixlen = link_names - link_prefix;
 		    if (link_prefixlen > 0) {
 			rb_encoding *enc, *linkenc = rb_enc_get(link);
+			link_orig = link;
 			link = rb_str_subseq(link, 0, link_prefixlen);
 			enc = rb_enc_check(*resolvedp, link);
 			if (enc != linkenc) link = rb_str_conv_enc(link, linkenc, enc);
@@ -3405,6 +3407,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
 			*prefixlenp = link_prefixlen;
 		    }
 		    realpath_rec(prefixlenp, resolvedp, link_names, loopcheck, strict, *unresolved_firstsep == '\0');
+		    RB_GC_GUARD(link_orig);
 		    rb_hash_aset(loopcheck, testpath, rb_str_dup_frozen(*resolvedp));
                 }
                 else
