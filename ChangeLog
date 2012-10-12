@@ -1,3 +1,10 @@
+Fri Oct 12 21:55:08 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* include/ruby/win32.h (rb_w32_pow): set floating point precision
+	  for mingw-w64 x86 pow(). This improves the precision of pow() on
+	  Windows XP for TestFloat#test_round_with_precision failure.
+	  [ruby-core:47911] [Bug #7142]
+
 Fri Oct 12 21:37:25 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/webrick/test_cgi.rb (TestWEBrickCGI#test_cgi): skip a test
