@@ -2429,8 +2429,8 @@ End
   def test_ioctl_linux2
     return if /linux/ !~ RUBY_PLATFORM
     return if /^i.?86|^x86_64/ !~ RUBY_PLATFORM
-    return unless File.exist?('/dev/tty')
 
+    return unless system('tty', '-s') # stdin is not a terminal
     File.open('/dev/tty') { |f|
       tiocgwinsz=0x5413
       winsize=""
