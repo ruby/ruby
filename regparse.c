@@ -4491,10 +4491,7 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
 
 	if (IS_SYNTAX_BV(env->syntax, ONIG_SYN_ALLOW_DOUBLE_RANGE_OP_IN_CC)) {
 	  CC_ESC_WARN(env, (UChar* )"-");
-	  if (tok->type == TK_CHAR_TYPE)
-	    goto next_class;   /* [0-9-\s] is allowed as [0-9\-\s] */
-	  else
-	    goto sb_char;   /* [0-9-a] is allowed as [0-9\-a] */
+	  goto range_end_val; /* [0-9-a] is allowed as [0-9\-a] */
 	}
 	r = ONIGERR_UNMATCHED_RANGE_SPECIFIER_IN_CHAR_CLASS;
 	goto err;
