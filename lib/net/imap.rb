@@ -2476,6 +2476,10 @@ module Net
 
       def media_type
         mtype = case_insensitive_string
+        token = lookahead
+        if token.symbol != T_SPACE
+          return mtype, nil
+        end
         match(T_SPACE)
         msubtype = case_insensitive_string
         return mtype, msubtype

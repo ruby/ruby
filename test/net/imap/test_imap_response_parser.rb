@@ -171,4 +171,10 @@ EOF
 * 5441 FETCH (BODY ((("TEXT" "PLAIN" ("CHARSET" "iso-8859-1") NIL NIL "QUOTED-PRINTABLE" 69 1)("TEXT" "HTML" ("CHARSET" "iso-8859-1") NIL NIL "QUOTED-PRINTABLE" 455 12) "ALTERNATIVE")("MESSAGE" "RFC822" ("NAME" "ATT00026.eml") NIL NIL "7BIT" 4079755) "MIXED"))
 EOF
   end
+
+  def test_msg_body_mixed
+    assert_parseable <<EOF
+* 1038 FETCH (BODY ("MIXED"))
+EOF
+  end
 end
