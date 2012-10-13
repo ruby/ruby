@@ -138,7 +138,7 @@ See the file +COPYING+.
 Feel free to send comments and bug reports to the author.  Here is the
 author's latest mail address:
 
-<mailto:matz@ruby-lang.org>
+mailto:matz@ruby-lang.org
 
 -------------------------------------------------------
 created at: Thu Aug  3 11:57:36 JST 1995
