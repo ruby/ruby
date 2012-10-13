@@ -172,6 +172,7 @@ EOF
 EOF
   end
 
+  # [Bug #7153]
   def test_msg_body_mixed
     assert_parseable <<EOF
 * 1038 FETCH (BODY ("MIXED"))
