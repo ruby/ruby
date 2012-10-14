@@ -111,7 +111,7 @@ Tue Oct  9 18:01:37 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  precision of long may be larger than double.
 
 	* random.c (rb_random_ulong_limited): new function to return a random
-	  value from 0 upto limit as unsigned long, simillary to
+	  value from 0 upto limit as unsigned long, similarly to
 	  rb_genrand_ulong_limited but with arbitrary RNG object.
 
 Tue Oct  9 17:13:27 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
