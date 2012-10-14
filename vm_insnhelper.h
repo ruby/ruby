@@ -200,6 +200,13 @@ enum vm_regan_acttype {
     } \
 } while (0)
 
+/* set fastpath when cached method is *NOT* protected
+ * because inline method cache does not care about receiver.
+ */
+#define CI_SET_FASTPATH(ci, func) do { \
+    if (!(((ci)->me->flag & NOEX_MASK) & NOEX_PROTECTED)) ((ci)->call = (func)); \
+} while (0)
+
 #define GET_BLOCK_PTR() ((rb_block_t *)(GC_GUARDED_PTR_REF(GET_LEP()[0])))
 
 /**********************************************************/

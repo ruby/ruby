@@ -1,3 +1,20 @@
+Mon Oct 15 05:20:13 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.h CI_SET_FASTPATH: introduce new macro
+	  `CI_SET_FASTPATH(ci, func)'. This macro set `ci->call' as `func'.
+	  `func' (ci->call) is called at the last of `send'
+	  (and `invokesuper') instruction.
+	  `CI_SET_FASTPATH' does not set `ci->call' when the method
+	  (stored in `ci->me') is `protected'.
+
+	* vm_insnhelper.c (vm_call_method): use `CI_SET_FASTPATH'.
+	  After several checking (visibility, argc checking), the result of
+	  checking can be reused until re-definition of this method
+	  with inline method cache.
+
+	  Note that this optimization is now experimental.
+	  If you find any problem about it, please tell us.
+
 Mon Oct 15 04:51:55 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c: refactoring.

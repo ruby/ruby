@@ -1066,18 +1066,6 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
     }
 }
 
-#define VM_CALLEE_SETUP_ARG(th, ci, iseq, argv) \
-    if (LIKELY((iseq)->arg_simple & 0x01)) { \
-	/* simple check */ \
-	if ((ci)->argc != (iseq)->argc) { \
-	    argument_error((iseq), ((ci)->argc), (iseq)->argc, (iseq)->argc); \
-	} \
-	(ci)->opt_pc = 0; \
-    } \
-    else { \
-	(ci)->opt_pc = vm_callee_setup_arg_complex((th), (ci), (iseq), (argv)); \
-    }
-
 static int
 vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq, VALUE *orig_argv)
 {
@@ -1187,6 +1175,19 @@ vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t
 }
 
 static VALUE vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci);
+
+#define VM_CALLEE_SETUP_ARG(th, ci, iseq, argv) \
+    if (LIKELY((iseq)->arg_simple & 0x01)) { \
+	/* simple check */ \
+	if ((ci)->argc != (iseq)->argc) { \
+	    argument_error((iseq), ((ci)->argc), (iseq)->argc, (iseq)->argc); \
+	} \
+	(ci)->opt_pc = 0; \
+	CI_SET_FASTPATH((ci), vm_call_iseq_setup_2); \
+    } \
+    else { \
+	(ci)->opt_pc = vm_callee_setup_arg_complex((th), (ci), (iseq), (argv)); \
+    }
 
 static VALUE
 vm_call_iseq_setup(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
@@ -1365,9 +1366,7 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 static VALUE
 vm_call_ivar(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
-    VALUE val;
-    rb_check_arity(ci->argc, 0, 0);
-    val = rb_attr_get(ci->recv, ci->me->def->body.attr.id);
+    VALUE val = rb_attr_get(ci->recv, ci->me->def->body.attr.id);
     cfp->sp -= 1;
     return val;
 }
@@ -1375,9 +1374,7 @@ vm_call_ivar(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 static VALUE
 vm_call_attrset(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
-    VALUE val;
-    rb_check_arity(ci->argc, 1, 1);
-    val = rb_ivar_set(ci->recv, ci->me->def->body.attr.id, *(cfp->sp - 1));
+    VALUE val = rb_ivar_set(ci->recv, ci->me->def->body.attr.id, *(cfp->sp - 1));
     cfp->sp -= 2;
     return val;
 }
@@ -1499,26 +1496,34 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	  normal_method_dispatch:
 	    switch (ci->me->def->type) {
 	      case VM_METHOD_TYPE_ISEQ:{
+		CI_SET_FASTPATH(ci, vm_call_iseq_setup);
 		return vm_call_iseq_setup(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_NOTIMPLEMENTED:
 	      case VM_METHOD_TYPE_CFUNC:{
+		CI_SET_FASTPATH(ci, vm_call_cfunc);
 		val = vm_call_cfunc(th, cfp, ci);
 		break;
 	      }
 	      case VM_METHOD_TYPE_ATTRSET:{
+		rb_check_arity(ci->argc, 0, 1);
+		CI_SET_FASTPATH(ci, vm_call_attrset);
 		val = vm_call_attrset(th, cfp, ci);
 		break;
 	      }
 	      case VM_METHOD_TYPE_IVAR:{
+		rb_check_arity(ci->argc, 0, 0);
+		CI_SET_FASTPATH(ci, vm_call_ivar);
 		val = vm_call_ivar(th, cfp, ci);
 		break;
 	      }
 	      case VM_METHOD_TYPE_MISSING:{
+		CI_SET_FASTPATH(ci, vm_call_missing);
 		val = vm_call_missing(th, cfp, ci);
 		break;
 	      }
 	      case VM_METHOD_TYPE_BMETHOD:{
+		CI_SET_FASTPATH(ci, vm_call_bmethod);
 		val = vm_call_bmethod(th, cfp, ci);
 		break;
 	      }
@@ -1539,10 +1544,12 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	      case VM_METHOD_TYPE_OPTIMIZED:{
 		switch (ci->me->def->body.optimize_type) {
 		  case OPTIMIZED_METHOD_TYPE_SEND: {
+		    CI_SET_FASTPATH(ci, vm_call_opt_send);
 		    val = vm_call_opt_send(th, cfp, ci);
 		    break;
 		  }
 		  case OPTIMIZED_METHOD_TYPE_CALL: {
+		    CI_SET_FASTPATH(ci, vm_call_opt_call);
 		    val = vm_call_opt_call(th, cfp, ci);
 		    break;
 		  }
