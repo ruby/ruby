@@ -578,4 +578,14 @@ class TestRubyOptions < Test::Unit::TestCase
     feature2408 = '[ruby-core:26925]'
     assert_in_out_err(%w[.], "", [], /Is a directory -- \./, feature2408)
   end
+
+  def test_pflag_gsub
+    bug7157 = '[ruby-core:47967]'
+    assert_in_out_err(['-p', '-e', 'gsub(/t.*/){"TEST"}'], %[test], %w[TEST], [], bug7157)
+  end
+
+  def test_pflag_sub
+    bug7157 = '[ruby-core:47967]'
+    assert_in_out_err(['-p', '-e', 'sub(/t.*/){"TEST"}'], %[test], %w[TEST], [], bug7157)
+  end
 end

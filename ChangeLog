@@ -1,3 +1,8 @@
+Sun Oct 14 12:30:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (rb_f_sub, rb_f_gsub): pass the given block.
+	  [ruby-core:47967] [Bug #7157]
+
 Sat Oct 13 23:15:39 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* regparse.c (parse_char_class): should match with a hyphen after a
