@@ -72,7 +72,6 @@ class RubyVM
           elsif (t == 'CALL_INFO' && ((re = /\b#{v}\b/n) =~ @sp_inc))
             ret << "        CALL_INFO #{v} = (CALL_INFO)(opes[#{i}]);\n"
           end
-          
         }
 
         @defopes.each_with_index{|((t, var), val), i|
