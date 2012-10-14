@@ -189,8 +189,8 @@ enum vm_regan_acttype {
   } \
 } while (0)
 
-#define CALL_METHOD(num, blockptr, flag, id, me, recv, defined_class) do { \
-    VALUE v = vm_call_method(th, GET_CFP(), (num), (blockptr), (flag), (id), (me), (recv), (defined_class)); \
+#define CALL_METHOD(ci) do { \
+    VALUE v = (*(ci)->call)(th, GET_CFP(), (ci)); \
     if (v == Qundef) { \
 	RESTORE_REGS(); \
 	NEXT_INSN(); \
@@ -235,22 +235,11 @@ enum vm_regan_acttype {
 #define USE_IC_FOR_SPECIALIZED_METHOD 1
 #endif
 
-#if USE_IC_FOR_SPECIALIZED_METHOD
-
-#define CALL_SIMPLE_METHOD(num, id, recv) do { \
-    VALUE klass = CLASS_OF(recv), defined_class; \
-    const rb_method_entry_t *me = vm_method_search((id), klass, ci, &defined_class); \
-    CALL_METHOD((num), 0, 0, (id), me, (recv), defined_class); \
+#define CALL_SIMPLE_METHOD(recv) do { \
+    ci->blockptr = 0; ci->argc = ci->orig_argc; \
+    vm_search_method(ci, ci->recv = (recv)); \
+    CALL_METHOD(ci); \
 } while (0)
-
-#else
-
-#define CALL_SIMPLE_METHOD(num, id, recv) do { \
-    VALUE klass = CLASS_OF(recv); \
-    CALL_METHOD((num), 0, 0, (id), rb_method_entry(klass, (id)), (recv)); \
-} while (0)
-
-#endif
 
 static VALUE ruby_vm_global_state_version = 1;
 

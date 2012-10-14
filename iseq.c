@@ -149,6 +149,7 @@ iseq_memsize(const void *ptr)
 	    size += iseq->catch_table_size * sizeof(struct iseq_catch_table_entry);
 	    size += iseq->arg_opts * sizeof(VALUE);
 	    size += iseq->ic_size * sizeof(struct iseq_inline_cache_entry);
+	    size += iseq->callinfo_size * sizeof(rb_call_info_t);
 
 	    if (iseq->compile_data) {
 		struct iseq_compile_data_storage *cur;
@@ -1041,7 +1042,37 @@ insn_operand_intern(rb_iseq_t *iseq,
 	break;
 
       case TS_CALLINFO:
-	ret = rb_sprintf("<ci:%"PRIdPTRDIFF">", (rb_call_info_t *)op - iseq->callinfo_entries);
+	{
+	    rb_call_info_t *ci = (rb_call_info_t *)op;
+	    VALUE ary = rb_ary_new();
+
+	    if (ci->mid) {
+		rb_ary_push(ary, rb_sprintf("mid:%s", rb_id2name(ci->mid)));
+	    }
+
+	    rb_ary_push(ary, rb_sprintf("argc:%d", ci->orig_argc));
+
+	    if (ci->blockiseq) {
+		if (child) {
+		    rb_ary_push(child, ci->blockiseq->self);
+		}
+		rb_ary_push(ary, rb_sprintf("block:%"PRIsVALUE, ci->blockiseq->location.label));
+	    }
+
+	    if (ci->flag) {
+		VALUE flags = rb_ary_new();
+		if (ci->flag & VM_CALL_ARGS_SPLAT_BIT) rb_ary_push(flags, rb_str_new2("ARGS_SPLAT"));
+		if (ci->flag & VM_CALL_ARGS_BLOCKARG_BIT) rb_ary_push(flags, rb_str_new2("ARGS_BLOCKARG"));
+		if (ci->flag & VM_CALL_FCALL_BIT) rb_ary_push(flags, rb_str_new2("FCALL"));
+		if (ci->flag & VM_CALL_VCALL_BIT) rb_ary_push(flags, rb_str_new2("VCALL"));
+		if (ci->flag & VM_CALL_TAILCALL_BIT) rb_ary_push(flags, rb_str_new2("TAILCALL"));
+		if (ci->flag & VM_CALL_SUPER_BIT) rb_ary_push(flags, rb_str_new2("SUPER"));
+		if (ci->flag & VM_CALL_OPT_SEND_BIT) rb_ary_push(flags, rb_str_new2("SNED")); /* maybe not reachable */
+		if (ci->flag & VM_CALL_ARGS_SKIP_SETUP) rb_ary_push(flags, rb_str_new2("ARGS_SKIP"));
+		rb_ary_push(ary, rb_ary_join(flags, rb_str_new2("|")));
+	    }
+	    ret = rb_sprintf("<callinfo!%"PRIsVALUE">", rb_ary_join(ary, rb_str_new2(", ")));
+	}
 	break;
 
       case TS_CDHASH:
@@ -1540,6 +1571,17 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 	      case TS_IC: {
 		  struct iseq_inline_cache_entry *ic = (struct iseq_inline_cache_entry *)*seq;
 		    rb_ary_push(ary, INT2FIX(ic - iseq->ic_entries));
+	        }
+		break;
+	      case TS_CALLINFO:
+		{
+		    rb_call_info_t *ci = (rb_call_info_t *)*seq;
+		    VALUE e = rb_hash_new();
+		    rb_hash_aset(e, ID2SYM(rb_intern("mid")), ci->mid ? ID2SYM(ci->mid) : Qnil);
+		    rb_hash_aset(e, ID2SYM(rb_intern("flag")), ULONG2NUM(ci->flag));
+		    rb_hash_aset(e, ID2SYM(rb_intern("orig_argc")), INT2FIX(ci->orig_argc));
+		    rb_hash_aset(e, ID2SYM(rb_intern("blockptr")), ci->blockiseq ? iseq_data_to_ary(ci->blockiseq) : Qnil);
+		    rb_ary_push(ary, e);
 	        }
 		break;
 	      case TS_ID:

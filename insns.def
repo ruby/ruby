@@ -952,100 +952,62 @@ defineclass
 
 /**
   @c method/iterator
-  @e obj.send(id, args..) # args.size => num
-  @j メソッド呼び出しを行う。
-  obj.send(id, args..) # args.size => num
-    flag & VM_CALL_ARGS_SPLAT_BIT    != 0 -> splat last arg
-    flag & VM_CALL_ARGS_BLOCKARG_BIT != 0 -> Proc as Block
-    flag & VM_CALL_FCALL_BIT         != 0 -> FCALL ( func() )
-    flag & VM_CALL_VCALL_BIT         != 0 -> VCALL ( func   )
-    ...
+  @e invoke method.
+  @j メソッド呼び出しを行う。ci に必要な情報が格納されている。
  */
 DEFINE_INSN
 send
-(ID op_id, rb_num_t op_argc, ISEQ blockiseq, rb_num_t op_flag, CALL_INFO ci)
+(CALL_INFO ci)
 (...)
-(VALUE val) // inc += - (int)(op_argc + ((op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? 1 : 0));
+(VALUE val) // inc += - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG_BIT) ? 1 : 0));
 {
-    const rb_method_entry_t *me;
-    VALUE recv, klass, defined_class;
-    rb_block_t *blockptr = 0;
-    VALUE flag = op_flag;
-    int num = caller_setup_args(th, GET_CFP(), flag, (int)op_argc,
-				(rb_iseq_t *)blockiseq, &blockptr);
-    ID id = op_id;
+    ci->argc = ci->orig_argc;
+    ci->blockptr = 0;
 
-    /* get receiver */
-    recv = TOPN(num);
-    klass = CLASS_OF(recv);
-    me = vm_method_search(id, klass, ci, &defined_class);
-    CALL_METHOD(num, blockptr, flag, id, me, recv, defined_class);
+    if (!LIKELY(ci->flag & VM_CALL_ARGS_SKIP_SETUP)) {
+	vm_caller_setup_args(th, reg_cfp, ci);
+    }
+    vm_search_method(ci, ci->recv = TOPN(ci->argc));
+    CALL_METHOD(ci);
 }
 
 /**
   @c method/iterator
   @e super(args) # args.size => num
-  @j super を実行する。
-     super(args) # args.size => num
-     flag 等オペランドの意味は send と同じ。
+  @j super を実行する。ci に必要な情報が格納されている。
  */
 DEFINE_INSN
 invokesuper
-(rb_num_t op_argc, ISEQ blockiseq, rb_num_t op_flag)
+(CALL_INFO ci)
 (...)
-(VALUE val) // inc += - (int)(op_argc + ((op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? 1 : 0));
+(VALUE val) // inc += - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG_BIT) ? 1 : 0));
 {
-    rb_block_t *blockptr = !(op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? GET_BLOCK_PTR() : 0;
-    VALUE flag = op_flag;
-    int num = caller_setup_args(th, GET_CFP(), flag,
-				(int)op_argc, blockiseq, &blockptr);
-    VALUE recv, klass;
-    ID id;
-    const rb_method_entry_t *me;
-    rb_iseq_t *ip;
+    ci->argc = ci->orig_argc;
+    ci->blockptr = !(ci->flag & VM_CALL_ARGS_BLOCKARG_BIT) ? GET_BLOCK_PTR() : 0;
 
-    flag = VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT;
-
-    klass = GET_CFP()->klass;
-    if (NIL_P(klass)) {
-	vm_super_outside();
+    if (!LIKELY(ci->flag & VM_CALL_ARGS_SKIP_SETUP)) {
+	vm_caller_setup_args(th, reg_cfp, ci);
     }
-    if (!NIL_P(RCLASS_REFINED_CLASS(klass))) {
-	klass = RCLASS_REFINED_CLASS(klass);
-    }
-    recv = GET_SELF();
-    if (!rb_obj_is_kind_of(recv, klass)) {
-	rb_raise(rb_eNotImpError, "super from singleton method that is defined to multiple classes is not supported; this will be fixed in 2.0.0 or later");
-    }
-    vm_search_superclass(GET_CFP(), GET_ISEQ(), TOPN(num), &id, &klass);
-
-    ip = GET_ISEQ();
-    while (ip && !ip->klass) {
-	ip = ip->parent_iseq;
-    }
-    me = rb_method_entry(klass, id, &klass);
-    if (me && me->def->type == VM_METHOD_TYPE_ISEQ &&
-	me->def->body.iseq == ip) {
-	klass = RCLASS_SUPER(klass);
-	me = rb_method_entry_get_with_refinements(Qnil, klass, id, &klass);
-    }
-
-    CALL_METHOD(num, blockptr, flag, id, me, recv, klass);
+    ci->recv = GET_SELF();
+    vm_search_super_method(th, GET_CFP(), ci);
+    CALL_METHOD(ci);
 }
 
 /**
   @c method/iterator
-  @e yield(args) # args.size => num, flag shows expand argument or not
+  @e yield(args)
   @j yield を実行する。
-     yield(args) # args.size => num
  */
 DEFINE_INSN
 invokeblock
-(rb_num_t num, rb_num_t flag)
+(CALL_INFO ci)
 (...)
-(VALUE val)  // inc += 1 - num;
+(VALUE val)  // inc += 1 - ci->orig_argc;
 {
-    val = vm_invoke_block(th, GET_CFP(), num, flag);
+    ci->argc = ci->orig_argc;
+    ci->blockptr = 0;
+    ci->recv = GET_SELF();
+    val = vm_invoke_block(th, GET_CFP(), ci);
     if (val == Qundef) {
 	RESTORE_REGS();
 	NEXT_INSN();
@@ -1338,7 +1300,7 @@ opt_plus
 	INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	PUSH(obj);
-	CALL_SIMPLE_METHOD(1, idPLUS, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1386,7 +1348,7 @@ opt_minus
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	PUSH(obj);
-	CALL_SIMPLE_METHOD(1, idMINUS, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1439,7 +1401,7 @@ opt_mult
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	PUSH(obj);
-	CALL_SIMPLE_METHOD(1, idMULT, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1502,7 +1464,7 @@ opt_div
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	PUSH(obj);
-	CALL_SIMPLE_METHOD(1, idDIV, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1566,7 +1528,7 @@ opt_mod
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	PUSH(obj);
-	CALL_SIMPLE_METHOD(1, idMOD, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1587,7 +1549,7 @@ opt_eq
 	/* other */
 	PUSH(recv);
 	PUSH(obj);
-	CALL_SIMPLE_METHOD(1, idEq, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1603,10 +1565,10 @@ opt_neq
 (VALUE val)
 {
     extern VALUE rb_obj_not_equal(VALUE obj1, VALUE obj2);
-    const rb_method_entry_t *me = vm_method_search(idNeq, CLASS_OF(recv), ci, 0);
+    vm_search_method(ci, recv);
     val = Qundef;
 
-    if (check_cfunc(me, rb_obj_not_equal)) {
+    if (check_cfunc(ci->me, rb_obj_not_equal)) {
 	val = opt_eq_func(recv, obj, ci_eq);
 
 	if (val != Qundef) {
@@ -1618,7 +1580,7 @@ opt_neq
 	/* other */
 	PUSH(recv);
 	PUSH(obj);
-	CALL_SIMPLE_METHOD(1, idNeq, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1662,7 +1624,7 @@ opt_lt
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	PUSH(obj);
-	CALL_SIMPLE_METHOD(1, idLT, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1697,7 +1659,7 @@ opt_le
 	/* other */
 	PUSH(recv);
 	PUSH(obj);
-	CALL_SIMPLE_METHOD(1, idLE, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1741,7 +1703,7 @@ opt_gt
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	PUSH(obj);
-	CALL_SIMPLE_METHOD(1, idGT, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1775,7 +1737,7 @@ opt_ge
     else {
 	PUSH(recv);
 	PUSH(obj);
-	CALL_SIMPLE_METHOD(1, idGE, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1807,7 +1769,7 @@ opt_ltlt
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	PUSH(obj);
-	CALL_SIMPLE_METHOD(1, idLTLT, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1837,7 +1799,7 @@ opt_aref
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	PUSH(obj);
-	CALL_SIMPLE_METHOD(1, idAREF, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1870,7 +1832,7 @@ opt_aset
 	PUSH(recv);
 	PUSH(obj);
 	PUSH(set);
-	CALL_SIMPLE_METHOD(2, idASET, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1905,7 +1867,7 @@ opt_length
     else {
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
-	CALL_SIMPLE_METHOD(0, idLength, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1940,7 +1902,7 @@ opt_size
     else {
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
-	CALL_SIMPLE_METHOD(0, idSize, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -1978,7 +1940,7 @@ opt_empty_p
     else {
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
-	CALL_SIMPLE_METHOD(0, idEmptyP, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -2025,7 +1987,7 @@ opt_succ
     if (0) {
       INSN_LABEL(normal_dispatch):
 	PUSH(recv);
-	CALL_SIMPLE_METHOD(0, idSucc, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 
@@ -2041,14 +2003,14 @@ opt_not
 (VALUE val)
 {
     extern VALUE rb_obj_not(VALUE obj);
-    const rb_method_entry_t *me = vm_method_search(idNot, CLASS_OF(recv), ci, 0);
+    vm_search_method(ci, recv);
 
-    if (check_cfunc(me, rb_obj_not)) {
+    if (check_cfunc(ci->me, rb_obj_not)) {
 	val = RTEST(recv) ? Qfalse : Qtrue;
     }
     else {
 	PUSH(recv);
-	CALL_SIMPLE_METHOD(0, idNot, recv);
+	CALL_SIMPLE_METHOD(recv);
     }
 }
 

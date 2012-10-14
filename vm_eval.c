@@ -37,13 +37,22 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 {
     const rb_method_definition_t *def = me->def;
     VALUE val;
-    VALUE klass = defined_class;
-    const rb_block_t *blockptr = 0;
+    rb_call_info_t ci_entry, *ci = &ci_entry;
+
+    ci->flag = 0;
+    ci->mid = id;
+    ci->recv = recv;
+    ci->defined_class = defined_class;
+    ci->argc = argc;
+    ci->me = me;
 
     if (!def) return Qnil;
     if (th->passed_block) {
-	blockptr = th->passed_block;
+	ci->blockptr = (rb_block_t *)th->passed_block;
 	th->passed_block = 0;
+    }
+    else {
+	ci->blockptr = 0;
     }
 
   again:
@@ -59,20 +68,19 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	    *reg_cfp->sp++ = argv[i];
 	}
 
-	vm_setup_method(th, reg_cfp, recv, argc, blockptr, 0 /* flag */,
-			me, klass);
+	vm_setup_method(th, reg_cfp, ci);
 	th->cfp->flag |= VM_FRAME_FLAG_FINISH;
 	val = vm_exec(th);
 	break;
       }
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_CFUNC: {
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, ci->recv, ci->mid, ci->defined_class);
 	{
 	    rb_control_frame_t *reg_cfp = th->cfp;
 	    rb_control_frame_t *cfp =
 		vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
-			      recv, klass, VM_ENVVAL_BLOCK_PTR(blockptr),
+			      ci->recv, ci->defined_class, VM_ENVVAL_BLOCK_PTR(ci->blockptr),
 			      0, reg_cfp->sp, 1, me);
 
 	    cfp->me = me;
@@ -83,7 +91,7 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	    }
 	    vm_pop_frame(th);
 	}
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, id, klass);
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, ci->recv, ci->mid, ci->defined_class);
 	break;
       }
       case VM_METHOD_TYPE_ATTRSET: {
@@ -97,13 +105,13 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	break;
       }
       case VM_METHOD_TYPE_BMETHOD: {
-	val = vm_call_bmethod(th, recv, argc, argv, blockptr, me, klass);
+	val = vm_call_bmethod(th, recv, argc, argv, ci->blockptr, me, ci->defined_class);
 	break;
       }
       case VM_METHOD_TYPE_ZSUPER: {
-	klass = RCLASS_SUPER(klass);
-	if (!klass || !(me = rb_method_entry(klass, id, &klass))) {
-	    return method_missing(recv, id, argc, argv, NOEX_SUPER);
+	ci->defined_class = RCLASS_SUPER(ci->defined_class);
+	if (!ci->defined_class || !(ci->me = rb_method_entry(ci->defined_class, id, &ci->defined_class))) {
+	    return method_missing(recv, ci->mid, ci->argc, argv, NOEX_SUPER);
 	}
 	RUBY_VM_CHECK_INTS(th);
 	if (!(def = me->def)) return Qnil;
@@ -113,10 +121,9 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	VALUE new_args = rb_ary_new4(argc, argv);
 
 	RB_GC_GUARD(new_args);
-	rb_ary_unshift(new_args, ID2SYM(id));
-	th->passed_block = blockptr;
-	return rb_funcall2(recv, idMethodMissing,
-			   argc+1, RARRAY_PTR(new_args));
+	rb_ary_unshift(new_args, ID2SYM(ci->mid));
+	th->passed_block = ci->blockptr;
+	return rb_funcall2(ci->recv, idMethodMissing, argc+1, RARRAY_PTR(new_args));
       }
       case VM_METHOD_TYPE_OPTIMIZED: {
 	switch (def->body.optimize_type) {
@@ -126,7 +133,7 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
 	  case OPTIMIZED_METHOD_TYPE_CALL: {
 	    rb_proc_t *proc;
 	    GetProcPtr(recv, proc);
-	    val = rb_vm_invoke_proc(th, proc, argc, argv, blockptr);
+	    val = rb_vm_invoke_proc(th, proc, argc, argv, ci->blockptr);
 	    break;
 	  }
 	  default:

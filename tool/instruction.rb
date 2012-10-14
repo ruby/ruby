@@ -66,11 +66,15 @@ class RubyVM
         ret = "int inc = 0;\n"
 
         @opes.each_with_index{|(t, v), i|
-          if t == 'rb_num_t' && ((re = /\b#{v}\b/n) =~ @sp_inc ||
-                                 @defopes.any?{|t, val| re =~ val})
+          if (t == 'rb_num_t' && ((re = /\b#{v}\b/n) =~ @sp_inc)) ||
+             (@defopes.any?{|t, val| re =~ val})
             ret << "        int #{v} = FIX2INT(opes[#{i}]);\n"
+          elsif (t == 'CALL_INFO' && ((re = /\b#{v}\b/n) =~ @sp_inc))
+            ret << "        CALL_INFO #{v} = (CALL_INFO)(opes[#{i}]);\n"
           end
+          
         }
+
         @defopes.each_with_index{|((t, var), val), i|
           if t == 'rb_num_t' && val != '*' && /\b#{var}\b/ =~ @sp_inc
             ret << "        #{t} #{var} = #{val};\n"

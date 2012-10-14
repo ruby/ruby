@@ -138,15 +138,31 @@ struct iseq_inline_cache_entry {
     } ic_value;
 };
 
+/* to avoid warning */
+struct rb_thread_struct;
+struct rb_control_frame_struct;
+
 /* rb_call_info_t contains calling information including inline cache */
 typedef struct rb_call_info_struct {
+    /* fixed at compile time */
+    ID mid;
+    VALUE flag;
+    int orig_argc;
+    rb_iseq_t *blockiseq;
+
     /* inline cache: keys */
-    VALUE ic_vmstat;
-    VALUE ic_class;
+    VALUE vmstat;
+    VALUE klass;
 
     /* inline cache: values */
-    rb_method_entry_t *method;
+    const rb_method_entry_t *me;
     VALUE defined_class;
+
+    /* temporary values for method calling */
+    int argc;
+    struct rb_block_struct *blockptr;
+    VALUE recv;
+    VALUE (*call)(struct rb_thread_struct *th, struct rb_control_frame_struct *cfp, struct rb_call_info_struct *ci);
 } rb_call_info_t;
 
 #if 1
@@ -367,7 +383,7 @@ typedef struct rb_vm_struct {
 #define VM_DEBUG_BP_CHECK 1
 #endif
 
-typedef struct {
+typedef struct rb_control_frame_struct {
     VALUE *pc;			/* cfp[0] */
     VALUE *sp;			/* cfp[1] */
     rb_iseq_t *iseq;		/* cfp[2] */
@@ -640,6 +656,7 @@ enum vm_check_match_type {
 #define VM_CALL_TAILRECURSION_BIT  (0x01 << 6)
 #define VM_CALL_SUPER_BIT          (0x01 << 7)
 #define VM_CALL_OPT_SEND_BIT       (0x01 << 8)
+#define VM_CALL_ARGS_SKIP_SETUP    (0x01 << 9)
 
 enum vm_special_object_type {
     VM_SPECIAL_OBJECT_VMCORE = 1,
