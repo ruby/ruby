@@ -1,3 +1,9 @@
+Mon Oct 15 03:51:46 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm1_attr_ivar(_set).rb: added (for method dispatch speed).
+
+	* benchmark/bm_vm1_float_simple.rb: added (for flonum/float).
+
 Mon Oct 15 02:51:16 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_eval.c (vm_call0_body): add new function.
