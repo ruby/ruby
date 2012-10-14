@@ -1,3 +1,15 @@
+Mon Oct 15 04:51:55 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c: refactoring.
+	  - move all `call' related functions to the last of file.
+	  - make functions for respective method types in vm_call_method().
+	    (all functions have same function parameters)
+
+	* vm_core.h: add `opt_pc' filed in `rb_call_info_t'
+	  as temporal variable.
+
+	* vm_eval.c (vm_call0_body): catch up above cahnges.
+
 Mon Oct 15 03:51:46 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_vm1_attr_ivar(_set).rb: added (for method dispatch speed).

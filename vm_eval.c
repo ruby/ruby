@@ -78,7 +78,7 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	    *reg_cfp->sp++ = argv[i];
 	}
 
-	vm_setup_method(th, reg_cfp, ci);
+	vm_call_iseq_setup(th, reg_cfp, ci);
 	th->cfp->flag |= VM_FRAME_FLAG_FINISH;
 	val = vm_exec(th);
 	break;
@@ -115,7 +115,7 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	break;
       }
       case VM_METHOD_TYPE_BMETHOD: {
-	val = vm_call_bmethod(th, ci->recv, ci->argc, argv, ci->blockptr, ci->me, ci->defined_class);
+	val = vm_call_bmethod_body(th, ci, argv);
 	break;
       }
       case VM_METHOD_TYPE_ZSUPER:
