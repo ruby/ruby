@@ -1,3 +1,10 @@
+Mon Oct 15 02:51:16 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_eval.c (vm_call0_body): add new function.
+	  `vm_call0()' makes call_info struct and calls `vm_call0_body()'
+	  with this struct. In near future, `vm_call0()' will be removed
+	  because all of `vm_call0()' users setup call_info struct by itself.
+
 Mon Oct 15 01:38:06 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (send, invokesuper, invokeblock, opt_*), vm_core.h:
