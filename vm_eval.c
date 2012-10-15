@@ -49,7 +49,7 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
     return vm_call0_body(th, ci, argv);
 }
 
-/* `ci' should pointe temporal value (on stack value) */
+/* `ci' should point temporal value (on stack value) */
 static VALUE
 vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 {
