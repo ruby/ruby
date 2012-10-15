@@ -1,3 +1,8 @@
+Mon Oct 15 09:41:17 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (VM_CALLEE_SETUP_ARG): skip CI_SET_FASTPATH() if
+	  it was called from vm_yield_setup_args().
+
 Mon Oct 15 05:20:13 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.h CI_SET_FASTPATH: introduce new macro
