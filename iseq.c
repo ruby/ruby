@@ -1061,14 +1061,14 @@ insn_operand_intern(rb_iseq_t *iseq,
 
 	    if (ci->flag) {
 		VALUE flags = rb_ary_new();
-		if (ci->flag & VM_CALL_ARGS_SPLAT_BIT) rb_ary_push(flags, rb_str_new2("ARGS_SPLAT"));
-		if (ci->flag & VM_CALL_ARGS_BLOCKARG_BIT) rb_ary_push(flags, rb_str_new2("ARGS_BLOCKARG"));
-		if (ci->flag & VM_CALL_FCALL_BIT) rb_ary_push(flags, rb_str_new2("FCALL"));
-		if (ci->flag & VM_CALL_VCALL_BIT) rb_ary_push(flags, rb_str_new2("VCALL"));
-		if (ci->flag & VM_CALL_TAILCALL_BIT) rb_ary_push(flags, rb_str_new2("TAILCALL"));
-		if (ci->flag & VM_CALL_SUPER_BIT) rb_ary_push(flags, rb_str_new2("SUPER"));
-		if (ci->flag & VM_CALL_OPT_SEND_BIT) rb_ary_push(flags, rb_str_new2("SNED")); /* maybe not reachable */
-		if (ci->flag & VM_CALL_ARGS_SKIP_SETUP) rb_ary_push(flags, rb_str_new2("ARGS_SKIP"));
+		if (ci->flag & VM_CALL_ARGS_SPLAT) rb_ary_push(flags, rb_str_new2("ARGS_SPLAT"));
+		if (ci->flag & VM_CALL_ARGS_BLOCKARG) rb_ary_push(flags, rb_str_new2("ARGS_BLOCKARG"));
+		if (ci->flag & VM_CALL_FCALL) rb_ary_push(flags, rb_str_new2("FCALL"));
+		if (ci->flag & VM_CALL_VCALL) rb_ary_push(flags, rb_str_new2("VCALL"));
+		if (ci->flag & VM_CALL_TAILCALL) rb_ary_push(flags, rb_str_new2("TAILCALL"));
+		if (ci->flag & VM_CALL_SUPER) rb_ary_push(flags, rb_str_new2("SUPER"));
+		if (ci->flag & VM_CALL_OPT_SEND) rb_ary_push(flags, rb_str_new2("SNED")); /* maybe not reachable */
+		if (ci->flag & VM_CALL_ARGS_SKIP_SETUP) rb_ary_push(flags, rb_str_new2("ARGS_SKIP")); /* maybe not reachable */
 		rb_ary_push(ary, rb_ary_join(flags, rb_str_new2("|")));
 	    }
 	    ret = rb_sprintf("<callinfo!%"PRIsVALUE">", rb_ary_join(ary, rb_str_new2(", ")));

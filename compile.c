@@ -209,10 +209,10 @@ r_value(VALUE value)
   ADD_INSN((seq), (line), putself)
 
 #define ADD_CALL(seq, line, id, argc) \
-  ADD_SEND_R((seq), (line), (id), (argc), (VALUE)Qfalse, (VALUE)INT2FIX(VM_CALL_FCALL_BIT))
+  ADD_SEND_R((seq), (line), (id), (argc), (VALUE)Qfalse, (VALUE)INT2FIX(VM_CALL_FCALL))
 
 #define ADD_CALL_WITH_BLOCK(seq, line, id, argc, block) \
-  ADD_SEND_R((seq), (line), (id), (argc), (block), (VALUE)INT2FIX(VM_CALL_FCALL_BIT))
+  ADD_SEND_R((seq), (line), (id), (argc), (block), (VALUE)INT2FIX(VM_CALL_FCALL))
 
 #define ADD_SEND_R(seq, line, id, argc, block, flag) \
   ADD_ELEM((seq), (LINK_ELEMENT *) \
@@ -948,7 +948,7 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, VALUE block, unsigned long flag)
     }
     else {
 	ci->blockiseq = 0;
-	if (!(ci->flag & (VM_CALL_ARGS_BLOCKARG_BIT | VM_CALL_ARGS_SPLAT_BIT))) {
+	if (!(ci->flag & (VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG))) {
 	    ci->flag |= VM_CALL_ARGS_SKIP_SETUP;
 	}
     }
@@ -1859,7 +1859,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	 *  send ...
 	 *  leave
 	 * =>
-	 *  send ..., ... | VM_CALL_TAILCALL_BIT, ...
+	 *  send ..., ... | VM_CALL_TAILCALL, ...
 	 *  leave # unreachable
 	 */
 	INSN *piobj = (INSN *)get_prev_insn((INSN *)list);
@@ -1867,7 +1867,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	if (piobj->insn_id == BIN(send)) {
 	    rb_call_info_t *ci = (rb_call_info_t *)piobj->operands[0];
 	    if (ci->blockiseq == 0) {
-		ci->flag |= VM_CALL_TAILCALL_BIT;
+		ci->flag |= VM_CALL_TAILCALL;
 	    }
 	}
     }
@@ -3045,7 +3045,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, VALUE *flag)
     INIT_ANCHOR(args_splat);
     if (argn && nd_type(argn) == NODE_BLOCK_PASS) {
 	COMPILE(arg_block, "block", argn->nd_body);
-	*flag |= VM_CALL_ARGS_BLOCKARG_BIT;
+	*flag |= VM_CALL_ARGS_BLOCKARG;
 	argn = argn->nd_head;
     }
 
@@ -3056,7 +3056,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, VALUE *flag)
 	    COMPILE(args, "args (splat)", argn->nd_head);
 	    argc = INT2FIX(1);
 	    nsplat++;
-	    *flag |= VM_CALL_ARGS_SPLAT_BIT;
+	    *flag |= VM_CALL_ARGS_SPLAT;
 	    break;
 	  }
 	  case NODE_ARGSCAT:
@@ -3079,7 +3079,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, VALUE *flag)
 	    }
 	    INSERT_LIST(args_splat, tmp);
 	    nsplat++;
-	    *flag |= VM_CALL_ARGS_SPLAT_BIT;
+	    *flag |= VM_CALL_ARGS_SPLAT;
 
 	    if (next_is_array) {
 		argc = INT2FIX(compile_array(iseq, args, argn->nd_head, COMPILE_ARRAY_TYPE_ARGS) + 1);
@@ -3111,7 +3111,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, VALUE *flag)
 	ADD_SEQ(args, args_splat);
     }
 
-    if (*flag & VM_CALL_ARGS_BLOCKARG_BIT) {
+    if (*flag & VM_CALL_ARGS_BLOCKARG) {
 	ADD_SEQ(args, arg_block);
     }
     return argc;
@@ -3987,7 +3987,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    if (!poped) {
 		ADD_INSN1(ret, nd_line(node), setn, FIXNUM_INC(argc, 2+boff));
 	    }
-	    if (flag & VM_CALL_ARGS_SPLAT_BIT) {
+	    if (flag & VM_CALL_ARGS_SPLAT) {
 		ADD_INSN1(ret, nd_line(node), newarray, INT2FIX(1));
 		if (boff > 0) {
 		    ADD_INSN1(ret, nd_line(node), dupn, INT2FIX(3));
@@ -4024,7 +4024,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    if (!poped) {
 		ADD_INSN1(ret, nd_line(node), setn, FIXNUM_INC(argc, 2+boff));
 	    }
-	    if (flag & VM_CALL_ARGS_SPLAT_BIT) {
+	    if (flag & VM_CALL_ARGS_SPLAT) {
 		ADD_INSN1(ret, nd_line(node), newarray, INT2FIX(1));
 		if (boff > 0) {
 		    ADD_INSN1(ret, nd_line(node), dupn, INT2FIX(3));
@@ -4283,10 +4283,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	switch (nd_type(node)) {
 	  case NODE_VCALL:
-	    flag |= VM_CALL_VCALL_BIT;
+	    flag |= VM_CALL_VCALL;
 	    /* VCALL is funcall, so fall through */
 	  case NODE_FCALL:
-	    flag |= VM_CALL_FCALL_BIT;
+	    flag |= VM_CALL_FCALL;
 	}
 
 	ADD_SEND_R(ret, nd_line(node), ID2SYM(mid),
@@ -4340,7 +4340,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    int idx = liseq->local_size - liseq->arg_rest;
 		    ADD_INSN2(args, nd_line(node), getlocal, INT2FIX(idx), INT2FIX(lvar_level));
 		    argc = INT2FIX(liseq->arg_rest + 1);
-		    flag |= VM_CALL_ARGS_SPLAT_BIT;
+		    flag |= VM_CALL_ARGS_SPLAT;
 		}
 
 		if (liseq->arg_post_len) {
@@ -4374,7 +4374,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	ADD_INSN1(ret, nd_line(node), putobject, nd_type(node) == NODE_ZSUPER ? Qfalse : Qtrue);
 	ADD_SEQ(ret, args);
 	ADD_INSN1(ret, nd_line(node), invokesuper, new_callinfo(iseq, 0, FIX2INT(argc), parent_block,
-								flag | VM_CALL_SUPER_BIT | VM_CALL_FCALL_BIT));
+								flag | VM_CALL_SUPER | VM_CALL_FCALL));
 
 	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);
@@ -5123,7 +5123,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	argc = setup_args(iseq, args, node->nd_args, &flag);
 
 	if (node->nd_recv == (NODE *) 1) {
-	    flag |= VM_CALL_FCALL_BIT;
+	    flag |= VM_CALL_FCALL;
 	    ADD_INSN(recv, nd_line(node), putself);
 	}
 	else {
@@ -5138,16 +5138,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_SEQ(ret, recv);
 	    ADD_SEQ(ret, args);
 
-	    if (flag & VM_CALL_ARGS_BLOCKARG_BIT) {
+	    if (flag & VM_CALL_ARGS_BLOCKARG) {
 		ADD_INSN1(ret, nd_line(node), topn, INT2FIX(1));
-		if (flag & VM_CALL_ARGS_SPLAT_BIT) {
+		if (flag & VM_CALL_ARGS_SPLAT) {
 		    ADD_INSN1(ret, nd_line(node), putobject, INT2FIX(-1));
 		    ADD_SEND(ret, nd_line(node), ID2SYM(idAREF), INT2FIX(1));
 		}
 		ADD_INSN1(ret, nd_line(node), setn, FIXNUM_INC(argc, 3));
 		ADD_INSN (ret, nd_line(node), pop);
 	    }
-	    else if (flag & VM_CALL_ARGS_SPLAT_BIT) {
+	    else if (flag & VM_CALL_ARGS_SPLAT) {
 		ADD_INSN(ret, nd_line(node), dup);
 		ADD_INSN1(ret, nd_line(node), putobject, INT2FIX(-1));
 		ADD_SEND(ret, nd_line(node), ID2SYM(idAREF), INT2FIX(1));

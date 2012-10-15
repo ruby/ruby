@@ -959,12 +959,12 @@ DEFINE_INSN
 send
 (CALL_INFO ci)
 (...)
-(VALUE val) // inc += - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG_BIT) ? 1 : 0));
+(VALUE val) // inc += - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     ci->argc = ci->orig_argc;
     ci->blockptr = 0;
 
-    if (!LIKELY(ci->flag & VM_CALL_ARGS_SKIP_SETUP)) {
+    if (UNLIKELY(!(ci->flag & VM_CALL_ARGS_SKIP_SETUP))) {
 	vm_caller_setup_args(th, reg_cfp, ci);
     }
     vm_search_method(ci, ci->recv = TOPN(ci->argc));
@@ -980,12 +980,12 @@ DEFINE_INSN
 invokesuper
 (CALL_INFO ci)
 (...)
-(VALUE val) // inc += - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG_BIT) ? 1 : 0));
+(VALUE val) // inc += - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     ci->argc = ci->orig_argc;
-    ci->blockptr = !(ci->flag & VM_CALL_ARGS_BLOCKARG_BIT) ? GET_BLOCK_PTR() : 0;
+    ci->blockptr = !(ci->flag & VM_CALL_ARGS_BLOCKARG) ? GET_BLOCK_PTR() : 0;
 
-    if (!LIKELY(ci->flag & VM_CALL_ARGS_SKIP_SETUP)) {
+    if (UNLIKELY(!(ci->flag & VM_CALL_ARGS_SKIP_SETUP))) {
 	vm_caller_setup_args(th, reg_cfp, ci);
     }
     ci->recv = GET_SELF();

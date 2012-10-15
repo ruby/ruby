@@ -1,3 +1,12 @@
+Tue Oct 16 02:17:35 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h (VM_CALL_*): rename VM_CALL_*_BIT
+	  to VM_CALL_* (remove `_BIT' suffix).
+	  Add comments on each macros.
+	  Remove unused macro VM_CALL_TAILRECURSION_BIT.
+
+	* compile.c, iseq.c, insns.def, vm_insnhelper.c: ditto.
+
 Mon Oct 15 22:14:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/envutil.rb (Test::Unit::Assertions#file_assertion):

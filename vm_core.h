@@ -650,15 +650,14 @@ enum vm_check_match_type {
 #define VM_CHECKMATCH_TYPE_MASK   0x03
 #define VM_CHECKMATCH_ARRAY       0x04
 
-#define VM_CALL_ARGS_SPLAT_BIT     (0x01 << 1)
-#define VM_CALL_ARGS_BLOCKARG_BIT  (0x01 << 2)
-#define VM_CALL_FCALL_BIT          (0x01 << 3)
-#define VM_CALL_VCALL_BIT          (0x01 << 4)
-#define VM_CALL_TAILCALL_BIT       (0x01 << 5)
-#define VM_CALL_TAILRECURSION_BIT  (0x01 << 6)
-#define VM_CALL_SUPER_BIT          (0x01 << 7)
-#define VM_CALL_OPT_SEND_BIT       (0x01 << 8)
-#define VM_CALL_ARGS_SKIP_SETUP    (0x01 << 9)
+#define VM_CALL_ARGS_SPLAT      (0x01 << 1) /* m(*args) */
+#define VM_CALL_ARGS_BLOCKARG   (0x01 << 2) /* m(&block) */
+#define VM_CALL_FCALL           (0x01 << 3) /* m(...) */
+#define VM_CALL_VCALL           (0x01 << 4) /* m */
+#define VM_CALL_TAILCALL        (0x01 << 5) /* located at tail position */
+#define VM_CALL_SUPER           (0x01 << 6) /* super */
+#define VM_CALL_OPT_SEND        (0x01 << 7) /* internal flag */
+#define VM_CALL_ARGS_SKIP_SETUP (0x01 << 8) /* (flag & (SPLAT|BLOCKARG)) && blockiseq == 0 */
 
 enum vm_special_object_type {
     VM_SPECIAL_OBJECT_VMCORE = 1,

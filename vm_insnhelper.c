@@ -1013,7 +1013,7 @@ vm_base_ptr(rb_control_frame_t *cfp)
 static void
 vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
-    if (UNLIKELY(ci->flag & VM_CALL_ARGS_BLOCKARG_BIT)) {
+    if (UNLIKELY(ci->flag & VM_CALL_ARGS_BLOCKARG)) {
 	rb_proc_t *po;
 	VALUE proc;
 
@@ -1042,7 +1042,7 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 
     /* expand top of stack? */
 
-    if (UNLIKELY(ci->flag & VM_CALL_ARGS_SPLAT_BIT)) {
+    if (UNLIKELY(ci->flag & VM_CALL_ARGS_SPLAT)) {
 	VALUE ary = *(cfp->sp - 1);
 	VALUE *ptr;
 	int i;
@@ -1206,7 +1206,7 @@ vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *c
     /* stack overflow check */
     CHECK_STACK_OVERFLOW(cfp, iseq->stack_max);
 
-    if (LIKELY(!(ci->flag & VM_CALL_TAILCALL_BIT))) {
+    if (LIKELY(!(ci->flag & VM_CALL_TAILCALL))) {
 	VALUE *sp = argv + iseq->arg_size;
 
 	/* clear local variables */
@@ -1443,7 +1443,7 @@ vm_call_opt_send(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *c
     ci->argc -= 1;
     DEC_SP(1);
 
-    ci->flag |= VM_CALL_FCALL_BIT | VM_CALL_OPT_SEND_BIT;
+    ci->flag |= VM_CALL_FCALL | VM_CALL_OPT_SEND;
 
     return vm_call_method(th, reg_cfp, ci);
 }
@@ -1567,15 +1567,15 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	}
 	else {
 	    int noex_safe;
-	    if (!(ci->flag & VM_CALL_FCALL_BIT) && (ci->me->flag & NOEX_MASK) & NOEX_PRIVATE) {
+	    if (!(ci->flag & VM_CALL_FCALL) && (ci->me->flag & NOEX_MASK) & NOEX_PRIVATE) {
 		int stat = NOEX_PRIVATE;
 
-		if (ci->flag & VM_CALL_VCALL_BIT) {
+		if (ci->flag & VM_CALL_VCALL) {
 		    stat |= NOEX_VCALL;
 		}
 		val = vm_method_missing(th, cfp, ci, stat);
 	    }
-	    else if (!(ci->flag & VM_CALL_OPT_SEND_BIT) && (ci->me->flag & NOEX_MASK) & NOEX_PROTECTED) {
+	    else if (!(ci->flag & VM_CALL_OPT_SEND) && (ci->me->flag & NOEX_MASK) & NOEX_PROTECTED) {
 		if (!rb_obj_is_kind_of(cfp->self, ci->defined_class)) {
 		    val = vm_method_missing(th, cfp, ci, NOEX_PROTECTED);
 		}
@@ -1594,10 +1594,10 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
     else {
 	/* method missing */
 	int stat = 0;
-	if (ci->flag & VM_CALL_VCALL_BIT) {
+	if (ci->flag & VM_CALL_VCALL) {
 	    stat |= NOEX_VCALL;
 	}
-	if (ci->flag & VM_CALL_SUPER_BIT) {
+	if (ci->flag & VM_CALL_SUPER) {
 	    stat |= NOEX_SUPER;
 	}
 	if (ci->mid == idMethodMissing) {
