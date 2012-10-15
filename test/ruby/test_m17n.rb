@@ -1460,6 +1460,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_combchar_codepoint
     assert_equal([0x30BB, 0x309A], "\u30BB\u309A".codepoints.to_a)
+    assert_equal([0x30BB, 0x309A], "\u30BB\u309A".codepoints.to_a)
   end
 
   def each_encoding(*strings)

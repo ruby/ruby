@@ -225,12 +225,25 @@ module Test
         assert(1.0/f == -Float::INFINITY, "#{f} is not -0.0")
       end
 
-      def assert_file(predicate, path)
-        assert(File.__send__(predicate, path), "Expected file #{path.inspect} to be #{predicate}")
+      def file_assertion
+        FileAssertion
       end
 
-      def assert_file_not(predicate, path)
-        assert(!File.__send__(predicate, path), "Expected file #{path.inspect} not to be #{predicate}")
+      class << (FileAssertion = Object.new)
+        include Assertions
+        def assert_file_predicate(predicate, *args)
+          if /\Anot_/ =~ predicate
+            predicate = $'
+            neg = " not"
+          end
+          result = File.__send__(predicate, *args)
+          result = !result if neg
+          mesg = "Expected file " << args.shift.inspect
+          mesg << mu_pp(args) unless args.empty?
+          mesg << "#{neg} to be #{predicate}"
+          assert(result, mesg)
+        end
+        alias method_missing assert_file_predicate
       end
     end
   end
