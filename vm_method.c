@@ -96,6 +96,20 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_me
 }
 
 void
+rb_add_method_cfunc_fast(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex)
+{
+    if (func != rb_f_notimplement) {
+	rb_method_cfunc_t opt;
+	opt.func = func;
+	opt.argc = argc;
+	rb_add_method(klass, mid, VM_METHOD_TYPE_CFUNC_FAST, &opt, noex);
+    }
+    else {
+	rb_define_notimplement_method_id(klass, mid, noex);
+    }
+}
+
+void
 rb_unlink_method_entry(rb_method_entry_t *me)
 {
     struct unlinked_method_entry_list_entry *ume = ALLOC(struct unlinked_method_entry_list_entry);
@@ -304,6 +318,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 	def->body.iseq = (rb_iseq_t *)opts;
 	break;
       case VM_METHOD_TYPE_CFUNC:
+      case VM_METHOD_TYPE_CFUNC_FAST:
 	def->body.cfunc = *(rb_method_cfunc_t *)opts;
 	break;
       case VM_METHOD_TYPE_ATTRSET:

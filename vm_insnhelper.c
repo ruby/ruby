@@ -1462,6 +1462,21 @@ vm_call_opt_call(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 }
 
 static VALUE
+vm_call_cfunc_fast_unary(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
+{
+    cfp->sp -= 1;
+    return (*ci->me->def->body.cfunc.func)(ci->recv);
+}
+
+static VALUE
+vm_call_cfunc_fast_binary(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
+{
+    VALUE obj = *cfp->sp;
+    cfp->sp -= 2;
+    return (*ci->me->def->body.cfunc.func)(ci->recv, obj);
+}
+
+static VALUE
 vm_call_missing(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
     VALUE *argv = ALLOCA_N(VALUE, ci->argc+1);
@@ -1544,24 +1559,38 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	      }
 	      case VM_METHOD_TYPE_OPTIMIZED:{
 		switch (ci->me->def->body.optimize_type) {
-		  case OPTIMIZED_METHOD_TYPE_SEND: {
+		  case OPTIMIZED_METHOD_TYPE_SEND:
 		    CI_SET_FASTPATH(ci, vm_call_opt_send, enable_fastpath);
 		    val = vm_call_opt_send(th, cfp, ci);
 		    break;
-		  }
-		  case OPTIMIZED_METHOD_TYPE_CALL: {
+		  case OPTIMIZED_METHOD_TYPE_CALL:
 		    CI_SET_FASTPATH(ci, vm_call_opt_call, enable_fastpath);
 		    val = vm_call_opt_call(th, cfp, ci);
 		    break;
-		  }
 		  default:
-		    rb_bug("eval_invoke_method: unsupported optimized method type (%d)",
+		    rb_bug("vm_call_method: unsupported optimized method type (%d)",
 			   ci->me->def->body.optimize_type);
 		}
 		break;
 	      }
+	      case VM_METHOD_TYPE_CFUNC_FAST:
+		switch (ci->me->def->body.cfunc.argc) {
+		  case 0:
+		    rb_check_arity(ci->argc, 0, 0);
+		    CI_SET_FASTPATH(ci, vm_call_cfunc_fast_unary, enable_fastpath);
+		    val = vm_call_cfunc_fast_unary(th, cfp, ci);
+		    break;
+		  case 1:
+		    rb_check_arity(ci->argc, 0, 1);
+		    CI_SET_FASTPATH(ci, vm_call_cfunc_fast_binary, enable_fastpath);
+		    val = vm_call_cfunc_fast_binary(th, cfp, ci);
+		    break;
+		  default:
+		    rb_bug("vm_call_method: unsupported cfunc_fast argc (%d)", ci->me->def->body.cfunc.argc);
+		}
+		break;
 	      default:{
-		rb_bug("eval_invoke_method: unsupported method type (%d)", ci->me->def->type);
+		rb_bug("vm_call_method: unsupported method type (%d)", ci->me->def->type);
 		break;
 	      }
 	    }

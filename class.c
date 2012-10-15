@@ -1254,6 +1254,12 @@ rb_define_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc
 }
 
 void
+rb_define_method_fast(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
+{
+    rb_add_method_cfunc_fast(klass, rb_intern(name), func, argc, NOEX_PUBLIC);
+}
+
+void
 rb_define_protected_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
     rb_add_method_cfunc(klass, rb_intern(name), func, argc, NOEX_PROTECTED);

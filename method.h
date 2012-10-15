@@ -41,7 +41,8 @@ typedef enum {
     VM_METHOD_TYPE_UNDEF,
     VM_METHOD_TYPE_NOTIMPLEMENTED,
     VM_METHOD_TYPE_OPTIMIZED, /* Kernel#send, Proc#call, etc */
-    VM_METHOD_TYPE_MISSING   /* wrapper for method_missing(id) */
+    VM_METHOD_TYPE_MISSING,   /* wrapper for method_missing(id) */
+    VM_METHOD_TYPE_CFUNC_FAST
 } rb_method_type_t;
 
 typedef struct rb_method_cfunc_struct {
@@ -66,7 +67,7 @@ typedef struct rb_method_definition_struct {
 	VALUE proc;                 /* should be mark */
 	enum method_optimized_type {
 	    OPTIMIZED_METHOD_TYPE_SEND,
-	    OPTIMIZED_METHOD_TYPE_CALL
+	    OPTIMIZED_METHOD_TYPE_CALL,
 	} optimize_type;
     } body;
     int alias_count;
@@ -88,6 +89,7 @@ struct unlinked_method_entry_list_entry {
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
 
 void rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex);
+void rb_add_method_cfunc_fast(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex);
 rb_method_entry_t *rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_flag_t noex);
 rb_method_entry_t *rb_method_entry(VALUE klass, ID id, VALUE *define_class_ptr);
 

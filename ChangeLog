@@ -1,3 +1,24 @@
+Tue Oct 16 06:15:44 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: introduce new method type VM_METHOD_TYPE_CFUNC_FAST.
+	  This method is similar to VM_METHOD_TYPE_CFUNC methods, but
+	  called cfunc without building new frame (does not push new control
+	  frame). If error is occured in cfunc, the backtrace only shows
+	  caller frame and upper.
+	  This kind of methods can be added by rb_define_method_fast().
+	  This feature is similar to specialized instructions (opt_plus, etc),
+	  but more flexible (but a bit slower).
+
+	* class.c (rb_define_method_fast): added.
+	  Maybe it will be renamed soon.
+
+	* vm_insnhelper.c (vm_call_method): support method type
+	  VM_METHOD_TYPE_CFUNC_FAST.
+
+	* proc.c (rb_method_entry_arity): catch up new method type.
+
+	* vm_method.c (rb_add_method_cfunc_fast): added.
+
 Tue Oct 16 02:32:29 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.h (CI_SET_FASTPATH): add new parameter `enabled'.
