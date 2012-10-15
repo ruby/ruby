@@ -1183,7 +1183,7 @@ static VALUE vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_c
 	    argument_error((iseq), ((ci)->argc), (iseq)->argc, (iseq)->argc); \
 	} \
 	(ci)->opt_pc = 0; \
-	if (!is_lambda) CI_SET_FASTPATH((ci), vm_call_iseq_setup_2); \
+	CI_SET_FASTPATH((ci), vm_call_iseq_setup_2, !(is_lambda) && ((ci)->me->flag & NOEX_PROTECTED)); \
     } \
     else { \
 	(ci)->opt_pc = vm_callee_setup_arg_complex((th), (ci), (iseq), (argv)); \
@@ -1489,6 +1489,7 @@ static VALUE
 vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
     VALUE val;
+    int enable_fastpath = 1;
 
   start_method_dispatch:
     if (ci->me != 0) {
@@ -1496,34 +1497,34 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	  normal_method_dispatch:
 	    switch (ci->me->def->type) {
 	      case VM_METHOD_TYPE_ISEQ:{
-		CI_SET_FASTPATH(ci, vm_call_iseq_setup);
+		CI_SET_FASTPATH(ci, vm_call_iseq_setup, enable_fastpath);
 		return vm_call_iseq_setup(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_NOTIMPLEMENTED:
 	      case VM_METHOD_TYPE_CFUNC:{
-		CI_SET_FASTPATH(ci, vm_call_cfunc);
+		CI_SET_FASTPATH(ci, vm_call_cfunc, enable_fastpath);
 		val = vm_call_cfunc(th, cfp, ci);
 		break;
 	      }
 	      case VM_METHOD_TYPE_ATTRSET:{
 		rb_check_arity(ci->argc, 0, 1);
-		CI_SET_FASTPATH(ci, vm_call_attrset);
+		CI_SET_FASTPATH(ci, vm_call_attrset, enable_fastpath);
 		val = vm_call_attrset(th, cfp, ci);
 		break;
 	      }
 	      case VM_METHOD_TYPE_IVAR:{
 		rb_check_arity(ci->argc, 0, 0);
-		CI_SET_FASTPATH(ci, vm_call_ivar);
+		CI_SET_FASTPATH(ci, vm_call_ivar, enable_fastpath);
 		val = vm_call_ivar(th, cfp, ci);
 		break;
 	      }
 	      case VM_METHOD_TYPE_MISSING:{
-		CI_SET_FASTPATH(ci, vm_call_missing);
+		CI_SET_FASTPATH(ci, vm_call_missing, enable_fastpath);
 		val = vm_call_missing(th, cfp, ci);
 		break;
 	      }
 	      case VM_METHOD_TYPE_BMETHOD:{
-		CI_SET_FASTPATH(ci, vm_call_bmethod);
+		CI_SET_FASTPATH(ci, vm_call_bmethod, enable_fastpath);
 		val = vm_call_bmethod(th, cfp, ci);
 		break;
 	      }
@@ -1544,12 +1545,12 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	      case VM_METHOD_TYPE_OPTIMIZED:{
 		switch (ci->me->def->body.optimize_type) {
 		  case OPTIMIZED_METHOD_TYPE_SEND: {
-		    CI_SET_FASTPATH(ci, vm_call_opt_send);
+		    CI_SET_FASTPATH(ci, vm_call_opt_send, enable_fastpath);
 		    val = vm_call_opt_send(th, cfp, ci);
 		    break;
 		  }
 		  case OPTIMIZED_METHOD_TYPE_CALL: {
-		    CI_SET_FASTPATH(ci, vm_call_opt_call);
+		    CI_SET_FASTPATH(ci, vm_call_opt_call, enable_fastpath);
 		    val = vm_call_opt_call(th, cfp, ci);
 		    break;
 		  }
@@ -1576,6 +1577,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		val = vm_method_missing(th, cfp, ci, stat);
 	    }
 	    else if (!(ci->flag & VM_CALL_OPT_SEND) && (ci->me->flag & NOEX_MASK) & NOEX_PROTECTED) {
+		enable_fastpath = 0;
 		if (!rb_obj_is_kind_of(cfp->self, ci->defined_class)) {
 		    val = vm_method_missing(th, cfp, ci, NOEX_PROTECTED);
 		}

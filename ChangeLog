@@ -1,3 +1,13 @@
+Tue Oct 16 02:32:29 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.h (CI_SET_FASTPATH): add new parameter `enabled'.
+	  If `enable' is 0 then CI_SET_FASTPATH() doesn't work.
+	  And add new configuration option OPT_CALL_FASTPATH. If this macro
+	  was defined by 0, then CI_SET_FASTPATH() doesn't work any more.
+
+	* vm_insnhelper.c (vm_call_method): Pass `0' for `enabled' parameter
+	  of CI_SET_FASTPATH if this method is protected.
+
 Tue Oct 16 02:17:35 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h (VM_CALL_*): rename VM_CALL_*_BIT
