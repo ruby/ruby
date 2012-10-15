@@ -1184,3 +1184,23 @@ assert_equal 'ok', %q{
   'ok'
 }, '[ruby-core:30534]'
 
+# should not cache when splat
+assert_equal 'ok', %q{
+  class C
+    attr_reader :a
+    def initialize
+      @a = 1
+    end
+  end
+
+  def m *args
+    C.new.a(*args)
+  end
+
+  m()
+  begin
+    m(1)
+  rescue ArgumentError
+    'ok'
+  end
+}

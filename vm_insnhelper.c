@@ -1523,13 +1523,13 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	      }
 	      case VM_METHOD_TYPE_ATTRSET:{
 		rb_check_arity(ci->argc, 0, 1);
-		CI_SET_FASTPATH(ci, vm_call_attrset, enable_fastpath);
+		CI_SET_FASTPATH(ci, vm_call_attrset, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT));
 		val = vm_call_attrset(th, cfp, ci);
 		break;
 	      }
 	      case VM_METHOD_TYPE_IVAR:{
 		rb_check_arity(ci->argc, 0, 0);
-		CI_SET_FASTPATH(ci, vm_call_ivar, enable_fastpath);
+		CI_SET_FASTPATH(ci, vm_call_ivar, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT));
 		val = vm_call_ivar(th, cfp, ci);
 		break;
 	      }
@@ -1577,12 +1577,12 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		switch (ci->me->def->body.cfunc.argc) {
 		  case 0:
 		    rb_check_arity(ci->argc, 0, 0);
-		    CI_SET_FASTPATH(ci, vm_call_cfunc_fast_unary, enable_fastpath);
+		    CI_SET_FASTPATH(ci, vm_call_cfunc_fast_unary, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT));
 		    val = vm_call_cfunc_fast_unary(th, cfp, ci);
 		    break;
 		  case 1:
 		    rb_check_arity(ci->argc, 0, 1);
-		    CI_SET_FASTPATH(ci, vm_call_cfunc_fast_binary, enable_fastpath);
+		    CI_SET_FASTPATH(ci, vm_call_cfunc_fast_binary, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT));
 		    val = vm_call_cfunc_fast_binary(th, cfp, ci);
 		    break;
 		  default:
