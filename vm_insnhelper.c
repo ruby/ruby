@@ -1183,7 +1183,7 @@ static VALUE vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_c
 	    argument_error((iseq), ((ci)->argc), (iseq)->argc, (iseq)->argc); \
 	} \
 	(ci)->opt_pc = 0; \
-	CI_SET_FASTPATH((ci), vm_call_iseq_setup_2, !(is_lambda) && ((ci)->me->flag & NOEX_PROTECTED)); \
+	CI_SET_FASTPATH((ci), vm_call_iseq_setup_2, !(is_lambda) && !((ci)->me->flag & NOEX_PROTECTED)); \
     } \
     else { \
 	(ci)->opt_pc = vm_callee_setup_arg_complex((th), (ci), (iseq), (argv)); \
