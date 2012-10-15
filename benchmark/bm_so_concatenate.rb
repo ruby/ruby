@@ -7,7 +7,7 @@
 STUFF = "hello\n"
 i = 0
 while i<10
-  i+=1
+  i += 1
   hello = ''
   4_000_000.times do |e|
     hello << STUFF

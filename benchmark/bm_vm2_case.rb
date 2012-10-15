@@ -8,7 +8,7 @@ while i<6_000_000 # while loop 2
   when :boo
     raise
   when :foo
-    i+=1
+    i += 1
   end
 end
 

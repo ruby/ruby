@@ -16,5 +16,5 @@ i = 0
 while i<6_000_000 # benchmark loop 2
   o = (i % 2 == 0) ? o1 : o2
 #  o.m; o.m; o.m; o.m; o.m; o.m; o.m; o.m
-  i+=1
+  i += 1
 end

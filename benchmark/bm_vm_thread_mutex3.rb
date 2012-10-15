@@ -8,7 +8,7 @@ max = 2000
   Thread.new{
     i = 0
     while i<max
-      i+=1
+      i += 1
       m.synchronize{
         r += 1
       }

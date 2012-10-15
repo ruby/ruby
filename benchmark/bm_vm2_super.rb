@@ -16,5 +16,5 @@ obj = CC.new
 i = 0
 while i<6_000_000 # benchmark loop 2
   obj.m
-  i+=1
+  i += 1
 end

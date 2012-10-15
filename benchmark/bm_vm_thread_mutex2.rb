@@ -9,7 +9,7 @@ lmax = (max * max)/2
   Thread.new{
     i = 0
     while i<lmax
-      i+=1
+      i += 1
       m.synchronize{
         r += 1
       }

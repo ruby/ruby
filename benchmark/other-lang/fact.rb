@@ -6,8 +6,8 @@ def fact(n)
   end
 end
 
-i=0
+i = 0
 while i<10000
-  i+=1
+  i += 1
   fact(100)
 end

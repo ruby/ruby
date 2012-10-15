@@ -40,7 +40,7 @@ end
 
 i = 0
 while i<NUM
-  i+=1
+  i += 1
   result = test_lists()
 end
 
