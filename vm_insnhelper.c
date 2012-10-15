@@ -1077,7 +1077,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t
     int argc = orig_argc;
     VALUE *argv = orig_argv;
     VALUE keyword_hash = Qnil;
-    int opt_pc = 0;
+    rb_num_t opt_pc = 0;
 
     th->mark_stack_len = argc + iseq->arg_size;
 
