@@ -30,7 +30,7 @@ Mon Oct 15 04:51:55 2012  Koichi Sasada  <ko1@atdot.net>
 	* vm_core.h: add `opt_pc' filed in `rb_call_info_t'
 	  as temporal variable.
 
-	* vm_eval.c (vm_call0_body): catch up above cahnges.
+	* vm_eval.c (vm_call0_body): catch up above changes.
 
 Mon Oct 15 03:51:46 2012  Koichi Sasada  <ko1@atdot.net>
 
@@ -52,8 +52,8 @@ Mon Oct 15 01:38:06 2012  Koichi Sasada  <ko1@atdot.net>
 	  parameters such as `op_id', 'op_argc', `blockiseq' and flag.
 	  These information are stored in rb_call_info_t at the compile
 	  time.
-	  This technique simplifies parameter passings at related
-	  function calls (~10% speedups for simple mehtod invocation at
+	  This technique simplifies parameter passing at related
+	  function calls (~10% speedups for simple method invocation at
 	  my machine).
 	  `rb_call_info_t' also has new function pointer variable `call'.
 	  This `call' variable enables to customize method (block)
@@ -70,12 +70,12 @@ Mon Oct 15 01:38:06 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c: catch up above changes (especially for TS_CALLINFO).
 
-	* tool/instruction.rb: catch up above chagnes.
+	* tool/instruction.rb: catch up above changes.
 
 	* vm_insnhelper.c, vm_insnhelper.h: ditto. Macros and functions
 	  parameters are changed.
 
-	* vm_eval.c (vm_call0): ditto (it will be rewriten soon).
+	* vm_eval.c (vm_call0): ditto (it will be rewritten soon).
 
 Sun Oct 14 12:30:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
