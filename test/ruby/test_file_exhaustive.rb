@@ -772,10 +772,14 @@ class TestFileExhaustive < Test::Unit::TestCase
     s = "foo" + File::SEPARATOR + "bar" + File::SEPARATOR + "baz"
     assert_equal(s, File.join("foo", "bar", "baz"))
     assert_equal(s, File.join(["foo", "bar", "baz"]))
+
     o = Object.new
     def o.to_path; "foo"; end
     assert_equal(s, File.join(o, "bar", "baz"))
     assert_equal(s, File.join("foo" + File::SEPARATOR, "bar", File::SEPARATOR + "baz"))
+  end
+
+  def test_join_alt_separator
     if File::ALT_SEPARATOR == '\\'
       a = "\225\\"
       b = "foo"
@@ -783,6 +787,12 @@ class TestFileExhaustive < Test::Unit::TestCase
         assert_equal(expected.force_encoding(cp), File.join(a.dup.force_encoding(cp), b.dup.force_encoding(cp)), cp)
       end
     end
+  end
+
+  def test_join_ascii_incompatible
+    bug7168 = '[ruby-core:48012]'
+    names = %w"a b".map {|s| s.encode(Encoding::UTF_16LE)}
+    assert_raise(Encoding::CompatibilityError, bug7168) {File.join(*names)}
   end
 
   def test_truncate

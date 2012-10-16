@@ -1,4 +1,7 @@
-Tue Oct 16 10:53:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 16 10:54:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_join): path names must be ASCII-compatible.
+	  [ruby-core:48012] [Bug #7168]
 
 	* file.c (check_path_encoding): new function to ensure path name
 	  encoding to be ASCII-compatible.

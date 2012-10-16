@@ -3924,6 +3924,7 @@ rb_file_join(VALUE ary, VALUE sep)
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	tmp = RARRAY_PTR(ary)[i];
 	if (RB_TYPE_P(tmp, T_STRING)) {
+	    check_path_encoding(tmp);
 	    len += RSTRING_LEN(tmp);
 	}
 	else {
