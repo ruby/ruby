@@ -1,3 +1,8 @@
+Tue Oct 16 17:53:44 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/bigdecimal/test_bigdecimal.rb (TestBigDecimal#test_gc): Fix
+	  a bogus test that would have never passed.
+
 Tue Oct 16 17:35:41 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/-ext-/test_threadswitch_hook.rb
