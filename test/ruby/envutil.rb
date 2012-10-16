@@ -225,11 +225,11 @@ module Test
         assert(1.0/f == -Float::INFINITY, "#{f} is not -0.0")
       end
 
-      def file_assertion
-        FileAssertion
+      def assert_file
+        AssertFile
       end
 
-      class << (FileAssertion = Object.new)
+      class << (AssertFile = Object.new)
         include Assertions
         def assert_file_predicate(predicate, *args)
           if /\Anot_/ =~ predicate

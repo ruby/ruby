@@ -1,3 +1,8 @@
+Tue Oct 16 12:52:14 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_file):
+	  rename from file_assertion.
+
 Tue Oct 16 11:30:18 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_join): hide the result under construction until

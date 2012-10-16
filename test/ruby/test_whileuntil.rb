@@ -69,7 +69,7 @@ class TestWhileuntil < Test::Unit::TestCase
       tmp.close
 
       File.unlink tmpfilename or `/bin/rm -f "#{tmpfilename}"`
-      file_assertion.not_exist?(tmpfilename)
+      assert_file.not_exist?(tmpfilename)
     }
   end
 

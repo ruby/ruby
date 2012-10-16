@@ -403,8 +403,8 @@ class TestProcess < Test::Unit::TestCase
     with_tmpchdir {|d|
       Dir.mkdir "foo"
       system(*PWD, :chdir => "foo", :out => "open_chdir_test")
-      file_assertion.exist?("open_chdir_test")
-      file_assertion.not_exist?("foo/open_chdir_test")
+      assert_file.exist?("open_chdir_test")
+      assert_file.not_exist?("foo/open_chdir_test")
       assert_equal("#{d}/foo", File.read("open_chdir_test").chomp)
     }
   end

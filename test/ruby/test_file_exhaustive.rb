@@ -120,7 +120,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     Dir.mktmpdir do |dir|
       prefix = File.join(dir, "...a")
       Dir.mkdir(prefix)
-      file_assertion.exist?(prefix)
+      assert_file.exist?(prefix)
 
       assert_nothing_raised { File.stat(prefix) }
 
@@ -170,9 +170,9 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_exist_p
-    file_assertion.exist?(@dir)
-    file_assertion.exist?(@file)
-    file_assertion.not_exist?(@nofile)
+    assert_file.exist?(@dir)
+    assert_file.exist?(@file)
+    assert_file.not_exist?(@nofile)
   end
 
   def test_readable_p
@@ -399,8 +399,8 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_rename
     assert_equal(0, File.rename(@file, @nofile))
-    file_assertion.not_exist?(@file)
-    file_assertion.exist?(@nofile)
+    assert_file.not_exist?(@file)
+    assert_file.exist?(@nofile)
     assert_equal(0, File.rename(@nofile, @file))
     assert_raise(Errno::ENOENT) { File.rename(@nofile, @file) }
   end
@@ -809,21 +809,21 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_truncate
     assert_equal(0, File.truncate(@file, 1))
-    file_assertion.exist?(@file)
+    assert_file.exist?(@file)
     assert_equal(1, File.size(@file))
     assert_equal(0, File.truncate(@file, 0))
-    file_assertion.exist?(@file)
-    file_assertion.zero?(@file)
+    assert_file.exist?(@file)
+    assert_file.zero?(@file)
     make_file("foo", @file)
     assert_raise(Errno::ENOENT) { File.truncate(@nofile, 0) }
 
     f = File.new(@file, "w")
     assert_equal(0, f.truncate(2))
-    file_assertion.exist?(@file)
+    assert_file.exist?(@file)
     assert_equal(2, File.size(@file))
     assert_equal(0, f.truncate(0))
-    file_assertion.exist?(@file)
-    file_assertion.zero?(@file)
+    assert_file.exist?(@file)
+    assert_file.zero?(@file)
     f.close
     make_file("foo", @file)
 
