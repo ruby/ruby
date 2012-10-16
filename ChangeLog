@@ -1,3 +1,8 @@
+Tue Oct 16 10:47:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (random_s_rand): ensure default PRNG is re-initialized
+	  after fork.  patched by Eric Wong.  [ruby-core:41209][Bug #5661]
+
 Tue Oct 16 10:21:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (rb_f_sub, rb_f_gsub): pass the given block.

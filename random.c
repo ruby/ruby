@@ -1255,6 +1255,7 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
 static VALUE
 random_s_rand(int argc, VALUE *argv, VALUE obj)
 {
+    rand_start(&default_rand);
     return random_rand(argc, argv, rb_Random_DEFAULT);
 }
 
