@@ -1546,7 +1546,6 @@ vm_method_missing(rb_thread_t *th, rb_control_frame_t *const reg_cfp, rb_call_in
 static VALUE
 vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
-    VALUE val;
     int enable_fastpath = 1;
 
   start_method_dispatch:
@@ -1561,32 +1560,27 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	      case VM_METHOD_TYPE_NOTIMPLEMENTED:
 	      case VM_METHOD_TYPE_CFUNC:{
 		CI_SET_FASTPATH(ci, vm_call_cfunc, enable_fastpath);
-		val = vm_call_cfunc(th, cfp, ci);
-		break;
+		return vm_call_cfunc(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_ATTRSET:{
 		rb_check_arity(ci->argc, 0, 1);
 		ci->aux.index = 0;
 		CI_SET_FASTPATH(ci, vm_call_attrset, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT));
-		val = vm_call_attrset(th, cfp, ci);
-		break;
+		return vm_call_attrset(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_IVAR:{
 		rb_check_arity(ci->argc, 0, 0);
 		ci->aux.index = 0;
 		CI_SET_FASTPATH(ci, vm_call_ivar, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT));
-		val = vm_call_ivar(th, cfp, ci);
-		break;
+		return vm_call_ivar(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_MISSING:{
 		CI_SET_FASTPATH(ci, vm_call_missing, enable_fastpath);
-		val = vm_call_missing(th, cfp, ci);
-		break;
+		return vm_call_missing(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_BMETHOD:{
 		CI_SET_FASTPATH(ci, vm_call_bmethod, enable_fastpath);
-		val = vm_call_bmethod(th, cfp, ci);
-		break;
+		return vm_call_bmethod(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_ZSUPER:{
 		VALUE klass = RCLASS_SUPER(ci->me->klass);
@@ -1606,12 +1600,10 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		switch (ci->me->def->body.optimize_type) {
 		  case OPTIMIZED_METHOD_TYPE_SEND:
 		    CI_SET_FASTPATH(ci, vm_call_opt_send, enable_fastpath);
-		    val = vm_call_opt_send(th, cfp, ci);
-		    break;
+		    return vm_call_opt_send(th, cfp, ci);
 		  case OPTIMIZED_METHOD_TYPE_CALL:
 		    CI_SET_FASTPATH(ci, vm_call_opt_call, enable_fastpath);
-		    val = vm_call_opt_call(th, cfp, ci);
-		    break;
+		    return vm_call_opt_call(th, cfp, ci);
 		  default:
 		    rb_bug("vm_call_method: unsupported optimized method type (%d)",
 			   ci->me->def->body.optimize_type);
@@ -1623,13 +1615,11 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		  case 0:
 		    rb_check_arity(ci->argc, 0, 0);
 		    CI_SET_FASTPATH(ci, vm_call_cfunc_fast_unary, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT));
-		    val = vm_call_cfunc_fast_unary(th, cfp, ci);
-		    break;
+		    return vm_call_cfunc_fast_unary(th, cfp, ci);
 		  case 1:
 		    rb_check_arity(ci->argc, 0, 1);
 		    CI_SET_FASTPATH(ci, vm_call_cfunc_fast_binary, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT));
-		    val = vm_call_cfunc_fast_binary(th, cfp, ci);
-		    break;
+		    return vm_call_cfunc_fast_binary(th, cfp, ci);
 		  default:
 		    rb_bug("vm_call_method: unsupported cfunc_fast argc (%d)", ci->me->def->body.cfunc.argc);
 		}
@@ -1648,12 +1638,12 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		if (ci->flag & VM_CALL_VCALL) {
 		    stat |= NOEX_VCALL;
 		}
-		val = vm_method_missing(th, cfp, ci, stat);
+		return vm_method_missing(th, cfp, ci, stat);
 	    }
 	    else if (!(ci->flag & VM_CALL_OPT_SEND) && (ci->me->flag & NOEX_MASK) & NOEX_PROTECTED) {
 		enable_fastpath = 0;
 		if (!rb_obj_is_kind_of(cfp->self, ci->defined_class)) {
-		    val = vm_method_missing(th, cfp, ci, NOEX_PROTECTED);
+		    return vm_method_missing(th, cfp, ci, NOEX_PROTECTED);
 		}
 		else {
 		    goto normal_method_dispatch;
@@ -1682,12 +1672,11 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	    rb_raise_method_missing(th, ci->argc, argv, ci->recv, stat);
 	}
 	else {
-	    val = vm_method_missing(th, cfp, ci, stat);
+	    return vm_method_missing(th, cfp, ci, stat);
 	}
     }
 
-    RUBY_VM_CHECK_INTS(th);
-    return val;
+    rb_bug("vm_call_method: unreachable");
 }
 
 static VALUE

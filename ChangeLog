@@ -1,3 +1,8 @@
+Wed Oct 17 06:42:47 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_call_method): fix to return value immediately.
+	  Remove CHECK_INTS() after that method dispatch.
+
 Wed Oct 17 06:25:56 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* hash.c (initialize_copy): copy the underlying st_table on dup,
