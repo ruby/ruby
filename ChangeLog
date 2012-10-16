@@ -31,7 +31,7 @@ Tue Oct 16 06:44:06 2012  Koichi Sasada  <ko1@atdot.net>
 Tue Oct 16 06:29:18 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_call_method): disable CI_SET_FASTPATH() if
-	  this method call needs splat argument because cahced functions
+	  this method call needs splat argument because cached functions
 	  (vm_call_attrset, vm_call_ivar, vm_call_cfunc_fast_(unary|binary))
 	  do not check an arity.
 
@@ -42,7 +42,7 @@ Tue Oct 16 06:15:44 2012  Koichi Sasada  <ko1@atdot.net>
 	* method.h: introduce new method type VM_METHOD_TYPE_CFUNC_FAST.
 	  This method is similar to VM_METHOD_TYPE_CFUNC methods, but
 	  called cfunc without building new frame (does not push new control
-	  frame). If error is occured in cfunc, the backtrace only shows
+	  frame). If error is occurred in cfunc, the backtrace only shows
 	  caller frame and upper.
 	  This kind of methods can be added by rb_define_method_fast().
 	  This feature is similar to specialized instructions (opt_plus, etc),
