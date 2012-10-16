@@ -1,3 +1,8 @@
+Wed Oct 17 08:02:57 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_threadptr_interrupt_mask): fix to check interrupt
+	  after interrupt_mask changed.
+
 Wed Oct 17 06:42:47 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_call_method): fix to return value immediately.

@@ -1508,6 +1508,8 @@ rb_threadptr_interrupt_mask(rb_thread_t *th, VALUE mask, VALUE (*func)(rb_thread
 	JUMP_TAG(state);
     }
 
+    RUBY_VM_CHECK_INTS(th);
+
     return r;
 }
 
