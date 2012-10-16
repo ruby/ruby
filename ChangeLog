@@ -1,3 +1,13 @@
+Wed Oct 17 08:32:46 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (compile_dstr_fragments): use `putobject' instead of
+	  `putstring' for all of strings used by NODE_DSTR because
+	  ruby users can not grab this string.
+	  For example, the string object of "baz" in "foo#{bar}baz"
+	  is located by `putobject' (users can not touch "baz" object
+	  directly). This change reduces GC pressure.
+	  This improvement is suggested by Aaron Patterson.
+
 Wed Oct 17 08:02:57 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_threadptr_interrupt_mask): fix to check interrupt

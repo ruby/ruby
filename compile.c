@@ -2215,10 +2215,8 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     return COMPILE_OK;
 }
 
-
-
 static int
-compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int *cntp)
+compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int *cntp)
 {
     NODE *list = node->nd_next;
     VALUE lit = node->nd_lit;
@@ -2232,7 +2230,14 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int *cntp
     }
 
     while (list) {
-	COMPILE(ret, "each string", list->nd_head);
+	node = list->nd_head;
+	if (nd_type(node) == NODE_STR) {
+	    hide_obj(node->nd_lit);
+	    ADD_INSN1(ret, nd_line(node), putobject, node->nd_lit);
+	}
+	else {
+	    COMPILE(ret, "each string", node);
+	}
 	cnt++;
 	list = list->nd_next;
     }
