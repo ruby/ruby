@@ -1,3 +1,9 @@
+Tue Oct 16 09:40:04 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_regexp.rb
+	  (TextRegexp#test_raw_hyphen_and_tk_char_type_after_range): use
+	  Regexp.new instead of literal to ignore a parser warning.
+
 Tue Oct 16 09:30:30 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_regexp.rb
