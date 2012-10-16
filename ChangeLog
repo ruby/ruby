@@ -1,3 +1,9 @@
+Tue Oct 16 16:26:15 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/tk/extconf.rb: copy from trunk, as requested by Hidetoshi NAGAI.
+
+	* ext/tk/extconf.rb (intptr_t, uintptr_t): support for the latest ActiveTcl with mingw.
+
 Fri Jul 27 13:04:31 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* numeric.c (int_pow, fix_mul): Avoid optimization bugs of
