@@ -2032,7 +2032,9 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
     }
     iseq = block->iseq;
 
-    vm_caller_setup_args(th, GET_CFP(), ci);
+    if (UNLIKELY(ci->flag & VM_CALL_ARGS_SPLAT)) {
+	vm_caller_setup_args(th, GET_CFP(), ci);
+    }
 
     if (BUILTIN_TYPE(iseq) != T_NODE) {
 	int opt_pc;

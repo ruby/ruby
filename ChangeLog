@@ -1,3 +1,8 @@
+Wed Oct 17 05:05:07 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_invoke_block): vm_caller_setup_args() can skip
+	  when splat flag is not set.
+
 Wed Oct 17 01:53:47 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_getivar, vm_setivar): support index inline cache
