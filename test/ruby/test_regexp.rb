@@ -914,11 +914,6 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_raw_hyphen_and_tk_char_type_after_range
     bug6853 = '[ruby-core:47115]'
-    begin
-      verbose, $VERBOSE = $VERBOSE, nil
-      check(/[0-1-\s]/, [' ', '-'], [], bug6853)
-    ensure
-      $VERBOSE = verbose
-    end
+    check(/[0-1-\s]/, [' ', '-'], ['2', 'a'], bug6853)
   end
 end
