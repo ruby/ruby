@@ -1,3 +1,8 @@
+Tue Oct 16 11:18:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (dir_config, init_mkmf): use configured libdir value as
+	  default library path.  [ruby-core:43726] [Bug #6207]
+
 Tue Oct 16 10:56:55 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_find_file_ext_safe, rb_find_file_safe): default to
