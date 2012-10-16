@@ -1,3 +1,16 @@
+Tue Oct 16 21:59:01 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: some refactoring.
+	  (1) Remove `average differential'.
+	      In this benchmark driver, We should not care about `average'.
+	      We use fastest score because this score should not include
+	      any disturbances (affections of background process, etc).
+	      If you care about timing affect, I recommend `median'
+	      score with more than 5 examinations rather than simple
+	      `average' score (`average' score was affected by error scores).
+	  (2) Show log file name.
+	  (3) Change default directory from './' to driver's directory.
+
 Tue Oct 16 14:56:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_join): need to check again after any conversion run.

@@ -113,10 +113,7 @@ class BenchmarkDriver
       output "minimum results in each #{@repeat} measurements."
     end
 
-    difference = "\taverage difference" if @execs.length == 2
-    total_difference = 0
-
-    output "name\t#{@execs.map{|(_, v)| v}.join("\t")}#{difference}"
+    output "name\t#{@execs.map{|(_, v)| v}.join("\t")}"
     @results.each{|v, result|
       rets = []
       s = nil
@@ -137,18 +134,12 @@ class BenchmarkDriver
         rets << sprintf("%.3f", r)
       }
 
-      if difference
-        diff = average(result.last) - average(result.first)
-        total_difference += diff
-        rets << sprintf("%.3f", diff)
-      end
-
       output "#{v}#{s}\t#{rets.join("\t")}"
     }
 
-    if difference and @verbose
-      output '-----------------------------------------------------------'
-      output "average total difference is #{total_difference}"
+    if @opt[:output]
+      output
+      output "Log file: #{@opt[:output]}"
     end
   end
 
@@ -234,7 +225,7 @@ end
 if __FILE__ == $0
   opt = {
     :execs => ['ruby'],
-    :dir => './',
+    :dir => File.dirname(__FILE__),
     :repeat => 1,
     :output => "bmlog-#{Time.now.strftime('%Y%m%d-%H%M%S')}.#{$$}",
   }
