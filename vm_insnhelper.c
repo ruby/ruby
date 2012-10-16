@@ -492,17 +492,17 @@ vm_search_const_defined_class(const VALUE cbase, ID id)
 #define USE_IC_FOR_IVAR 1
 #endif
 
-static VALUE
-vm_getivar(VALUE obj, ID id, IC ic)
+static inline VALUE
+vm_getivar(VALUE obj, ID id, IC ic, rb_call_info_t *ci, int is_attr)
 {
 #if USE_IC_FOR_IVAR
     if (RB_TYPE_P(obj, T_OBJECT)) {
 	VALUE val = Qundef;
 	VALUE klass = RBASIC(obj)->klass;
 
-	if (LIKELY(ic->ic_class == klass &&
-		   ic->ic_vmstat == GET_VM_STATE_VERSION())) {
-	    long index = ic->ic_value.index;
+	if (LIKELY((!is_attr && (ic->ic_class == klass && ic->ic_vmstat == GET_VM_STATE_VERSION())) ||
+		   (is_attr && ci->aux.index > 0))) {
+	    long index = !is_attr ? ic->ic_value.index : ci->aux.opt_pc - 1;
 	    long len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
 
@@ -521,14 +521,20 @@ vm_getivar(VALUE obj, ID id, IC ic)
 		    if ((long)index < len) {
 			val = ptr[index];
 		    }
-		    ic->ic_class = klass;
-		    ic->ic_value.index = index;
-		    ic->ic_vmstat = GET_VM_STATE_VERSION();
+		    if (!is_attr) {
+			ic->ic_class = klass;
+			ic->ic_value.index = index;
+			ic->ic_vmstat = GET_VM_STATE_VERSION();
+		    }
+		    else { /* call_info */
+			ci->aux.opt_pc = index + 1;
+		    }
 		}
 	    }
 	}
+
 	if (UNLIKELY(val == Qundef)) {
-	    rb_warning("instance variable %s not initialized", rb_id2name(id));
+	    if (!is_attr) rb_warning("instance variable %s not initialized", rb_id2name(id));
 	    val = Qnil;
 	}
 	return val;
@@ -541,8 +547,8 @@ vm_getivar(VALUE obj, ID id, IC ic)
 #endif
 }
 
-static void
-vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
+static inline void
+vm_setivar(VALUE obj, ID id, VALUE val, IC ic, rb_call_info_t *ci, int is_attr)
 {
 #if USE_IC_FOR_IVAR
     if (!OBJ_UNTRUSTED(obj) && rb_safe_level() >= 4) {
@@ -555,9 +561,10 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
 	VALUE klass = RBASIC(obj)->klass;
 	st_data_t index;
 
-	if (LIKELY(ic->ic_class == klass &&
-		   ic->ic_vmstat == GET_VM_STATE_VERSION())) {
-	    long index = ic->ic_value.index;
+	if (LIKELY(
+	    (!is_attr && ic->ic_class == klass && ic->ic_vmstat == GET_VM_STATE_VERSION()) ||
+	    (is_attr && ci->aux.index > 0))) {
+	    long index = !is_attr ? ic->ic_value.index : ci->aux.index-1;
 	    long len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
 
@@ -570,9 +577,14 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
 	    struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
 
 	    if (iv_index_tbl && st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
-		ic->ic_class = klass;
-		ic->ic_value.index = index;
-		ic->ic_vmstat = GET_VM_STATE_VERSION();
+		if (!is_attr) {
+		    ic->ic_class = klass;
+		    ic->ic_value.index = index;
+		    ic->ic_vmstat = GET_VM_STATE_VERSION();
+		}
+		else {
+		    ci->aux.index = index + 1;
+		}
 	    }
 	    /* fall through */
 	}
@@ -581,6 +593,18 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic)
 #else
     rb_ivar_set(obj, id, val);
 #endif
+}
+
+static VALUE
+vm_getinstancevariable(VALUE obj, ID id, IC ic)
+{
+    return vm_getivar(obj, id, ic, 0, 0);
+}
+
+static void
+vm_setinstancevariable(VALUE obj, ID id, VALUE val, IC ic)
+{
+    vm_setivar(obj, id, val, ic, 0, 0);
 }
 
 static VALUE
@@ -1182,11 +1206,11 @@ static VALUE vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_c
 	if ((ci)->argc != (iseq)->argc) { \
 	    argument_error((iseq), ((ci)->argc), (iseq)->argc, (iseq)->argc); \
 	} \
-	(ci)->opt_pc = 0; \
+	(ci)->aux.opt_pc = 0; \
 	CI_SET_FASTPATH((ci), vm_call_iseq_setup_2, !(is_lambda) && !((ci)->me->flag & NOEX_PROTECTED)); \
     } \
     else { \
-	(ci)->opt_pc = vm_callee_setup_arg_complex((th), (ci), (iseq), (argv)); \
+	(ci)->aux.opt_pc = vm_callee_setup_arg_complex((th), (ci), (iseq), (argv)); \
     }
 
 static VALUE
@@ -1216,7 +1240,7 @@ vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *c
 
 	vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, ci->recv, ci->defined_class,
 		      VM_ENVVAL_BLOCK_PTR(ci->blockptr),
-		      iseq->iseq_encoded + ci->opt_pc, sp, 0, ci->me);
+		      iseq->iseq_encoded + ci->aux.opt_pc, sp, 0, ci->me);
 
 	cfp->sp = argv - 1 /* recv */;
     }
@@ -1244,7 +1268,7 @@ vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *c
 
 	vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD | finish_flag,
 		      ci->recv, ci->defined_class, VM_ENVVAL_BLOCK_PTR(ci->blockptr),
-		      iseq->iseq_encoded + ci->opt_pc, sp, 0, ci->me);
+		      iseq->iseq_encoded + ci->aux.opt_pc, sp, 0, ci->me);
 
 	cfp->sp = sp_orig;
     }
@@ -1366,7 +1390,7 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 static VALUE
 vm_call_ivar(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
-    VALUE val = rb_attr_get(ci->recv, ci->me->def->body.attr.id);
+    VALUE val = vm_getivar(ci->recv, ci->me->def->body.attr.id, 0, ci, 1);
     cfp->sp -= 1;
     return val;
 }
@@ -1374,9 +1398,9 @@ vm_call_ivar(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 static VALUE
 vm_call_attrset(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
-    VALUE val = rb_ivar_set(ci->recv, ci->me->def->body.attr.id, *(cfp->sp - 1));
+    vm_setivar(ci->recv, ci->me->def->body.attr.id, *(cfp->sp - 1), 0, ci, 1);
     cfp->sp -= 2;
-    return val;
+    return Qnil;
 }
 
 static VALUE
@@ -1523,12 +1547,14 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	      }
 	      case VM_METHOD_TYPE_ATTRSET:{
 		rb_check_arity(ci->argc, 0, 1);
+		ci->aux.index = 0;
 		CI_SET_FASTPATH(ci, vm_call_attrset, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT));
 		val = vm_call_attrset(th, cfp, ci);
 		break;
 	      }
 	      case VM_METHOD_TYPE_IVAR:{
 		rb_check_arity(ci->argc, 0, 0);
+		ci->aux.index = 0;
 		CI_SET_FASTPATH(ci, vm_call_ivar, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT));
 		val = vm_call_ivar(th, cfp, ci);
 		break;
@@ -1987,7 +2013,7 @@ vm_yield_setup_args(rb_thread_t * const th, const rb_iseq_t *iseq,
 	ci_entry.argc = argc;
 	ci_entry.blockptr = (rb_block_t *)blockptr;
 	VM_CALLEE_SETUP_ARG(th, &ci_entry, iseq, argv, 1);
-	return ci_entry.opt_pc;
+	return ci_entry.aux.opt_pc;
     }
     else {
 	return vm_yield_setup_block_args(th, iseq, argc, argv, blockptr);

@@ -160,9 +160,12 @@ typedef struct rb_call_info_struct {
 
     /* temporary values for method calling */
     int argc;
-    int opt_pc;
     struct rb_block_struct *blockptr;
     VALUE recv;
+    union {
+	int opt_pc; /* used by iseq */
+	long index; /* used by ivar */
+    } aux;
 
     VALUE (*call)(struct rb_thread_struct *th, struct rb_control_frame_struct *cfp, struct rb_call_info_struct *ci);
 } rb_call_info_t;

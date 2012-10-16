@@ -126,7 +126,7 @@ getinstancevariable
 ()
 (VALUE val)
 {
-    val = vm_getivar(GET_SELF(), id, ic);
+    val = vm_getinstancevariable(GET_SELF(), id, ic);
 }
 
 /**
@@ -141,7 +141,7 @@ setinstancevariable
 (VALUE val)
 ()
 {
-    vm_setivar(GET_SELF(), id, val, ic);
+    vm_setinstancevariable(GET_SELF(), id, val, ic);
 }
 
 /**

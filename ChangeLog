@@ -1,3 +1,17 @@
+Wed Oct 17 01:53:47 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_getivar, vm_setivar): support index inline cache
+	  with rb_call_info_t to speedup `attr' getter and setter.
+	  Cached index is stored in rb_call_info_t::aux::index.
+	  `index' == 0 means not cached. `index' > 0 means cached and cached
+	  index is `index - 1'.
+
+	* insns.def ((get|set)instancevariable): use new wrapper functions
+	  vm_(get|set)instancevariable() defined in vm_insnhelper.c.
+
+	* vm_core.h (rb_call_info_t::aux): introduce new union data because
+	  opt_pc can share with index.
+
 Tue Oct 16 22:24:44 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb (show_results): Show speedup ratio
