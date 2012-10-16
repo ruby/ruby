@@ -1,3 +1,9 @@
+Tue Oct 16 17:00:36 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* error.c (name_err_to_s): we need not infect msg.
+
+	* test/ruby/test_exception.rb (TestException#test_exception_to_s_should_not_propagate_untrustedness): test for it.
+
 Tue Oct 16 16:51:08 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/bigdecimal/bigdecimal.c (VpMemAlloc): Fixes a bug reported
