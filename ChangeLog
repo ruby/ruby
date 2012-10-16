@@ -1,3 +1,8 @@
+Tue Oct 16 16:51:08 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/bigdecimal/bigdecimal.c (VpMemAlloc): Fixes a bug reported
+	  by Drew Yao <ayao at apple.com>
+
 Tue Oct 16 16:30:50 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/openssl/ossl_x509store.c (ossl_x509store_initialize): initialize
