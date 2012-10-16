@@ -1199,6 +1199,8 @@ vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t
 }
 
 static VALUE vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci);
+static VALUE vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci);
+static VALUE vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci);
 
 #define VM_CALLEE_SETUP_ARG(th, ci, iseq, argv, is_lambda) \
     if (LIKELY((iseq)->arg_simple & 0x01)) { \
@@ -1207,7 +1209,7 @@ static VALUE vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_c
 	    argument_error((iseq), ((ci)->argc), (iseq)->argc, (iseq)->argc); \
 	} \
 	(ci)->aux.opt_pc = 0; \
-	CI_SET_FASTPATH((ci), vm_call_iseq_setup_2, !(is_lambda) && !((ci)->me->flag & NOEX_PROTECTED)); \
+	CI_SET_FASTPATH((ci), UNLIKELY((ci)->flag & VM_CALL_TAILCALL) ? vm_call_iseq_setup_tailcall : vm_call_iseq_setup_normal, !(is_lambda) && !((ci)->me->flag & NOEX_PROTECTED)); \
     } \
     else { \
 	(ci)->aux.opt_pc = vm_callee_setup_arg_complex((th), (ci), (iseq), (argv)); \
@@ -1223,56 +1225,73 @@ vm_call_iseq_setup(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 static VALUE
 vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
+    if (LIKELY(!(ci->flag & VM_CALL_TAILCALL))) {
+	return vm_call_iseq_setup_normal(th, cfp, ci);
+    }
+    else {
+	return vm_call_iseq_setup_tailcall(th, cfp, ci);
+    }
+}
+
+static VALUE
+vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
+{
     int i;
     VALUE *argv = cfp->sp - ci->argc;
     rb_iseq_t *iseq = ci->me->def->body.iseq;
+    VALUE *sp = argv + iseq->arg_size;
 
-    /* stack overflow check */
     CHECK_STACK_OVERFLOW(cfp, iseq->stack_max);
 
-    if (LIKELY(!(ci->flag & VM_CALL_TAILCALL))) {
-	VALUE *sp = argv + iseq->arg_size;
-
-	/* clear local variables */
-	for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
-	    *sp++ = Qnil;
-	}
-
-	vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, ci->recv, ci->defined_class,
-		      VM_ENVVAL_BLOCK_PTR(ci->blockptr),
-		      iseq->iseq_encoded + ci->aux.opt_pc, sp, 0, ci->me);
-
-	cfp->sp = argv - 1 /* recv */;
-    }
-    else {
-	VALUE *src_argv = argv;
-	VALUE *sp_orig, *sp;
-	VALUE finish_flag = VM_FRAME_TYPE_FINISH_P(cfp) ? VM_FRAME_FLAG_FINISH : 0;
-
-	cfp = th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp); /* pop cf */
-	sp_orig = sp = cfp->sp;
-
-	/* push self */
-	sp[0] = ci->recv;
-	sp++;
-
-	/* copy arguments */
-	for (i=0; i < iseq->arg_size; i++) {
-	    *sp++ = src_argv[i];
-	}
-
-	/* clear local variables */
-	for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
-	    *sp++ = Qnil;
-	}
-
-	vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD | finish_flag,
-		      ci->recv, ci->defined_class, VM_ENVVAL_BLOCK_PTR(ci->blockptr),
-		      iseq->iseq_encoded + ci->aux.opt_pc, sp, 0, ci->me);
-
-	cfp->sp = sp_orig;
+    /* clear local variables */
+    for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
+	*sp++ = Qnil;
     }
 
+    vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, ci->recv, ci->defined_class,
+		  VM_ENVVAL_BLOCK_PTR(ci->blockptr),
+		  iseq->iseq_encoded + ci->aux.opt_pc, sp, 0, ci->me);
+
+    cfp->sp = argv - 1 /* recv */;
+    return Qundef;
+}
+
+static VALUE
+vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
+{
+    int i;
+    VALUE *argv = cfp->sp - ci->argc;
+    rb_iseq_t *iseq = ci->me->def->body.iseq;
+    VALUE *src_argv = argv;
+    VALUE *sp_orig, *sp;
+    VALUE finish_flag = VM_FRAME_TYPE_FINISH_P(cfp) ? VM_FRAME_FLAG_FINISH : 0;
+
+    cfp = th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp); /* pop cf */
+
+    CHECK_STACK_OVERFLOW(cfp, iseq->stack_max);
+    RUBY_VM_CHECK_INTS(th);
+
+    sp_orig = sp = cfp->sp;
+
+    /* push self */
+    sp[0] = ci->recv;
+    sp++;
+
+    /* copy arguments */
+    for (i=0; i < iseq->arg_size; i++) {
+	*sp++ = src_argv[i];
+    }
+
+    /* clear local variables */
+    for (i = 0; i < iseq->local_size - iseq->arg_size; i++) {
+	*sp++ = Qnil;
+    }
+
+    vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD | finish_flag,
+		  ci->recv, ci->defined_class, VM_ENVVAL_BLOCK_PTR(ci->blockptr),
+		  iseq->iseq_encoded + ci->aux.opt_pc, sp, 0, ci->me);
+
+    cfp->sp = sp_orig;
     return Qundef;
 }
 

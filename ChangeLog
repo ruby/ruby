@@ -1,3 +1,9 @@
+Wed Oct 17 06:17:44 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_call_iseq_setup_2): separate tailcall and normal
+	  method frame setup functions.
+	  Add checking interrupts at the tailcall setup function.
+
 Wed Oct 17 05:35:37 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_vm1_yield.rb: add a benchmark to measure `yield'
