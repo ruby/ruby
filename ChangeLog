@@ -1,3 +1,8 @@
+Wed Oct 17 08:46:47 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm2_dstr.rb: add a benchmark to measure
+	  performance of dynamic generated string ("foo#{bar}baz").
+
 Wed Oct 17 08:32:46 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (compile_dstr_fragments): use `putobject' instead of
