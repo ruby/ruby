@@ -1,3 +1,8 @@
+Tue Oct 16 10:53:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (check_path_encoding): new function to ensure path name
+	  encoding to be ASCII-compatible.
+
 Tue Oct 16 09:40:04 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_regexp.rb

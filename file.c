@@ -156,12 +156,22 @@ file_path_convert(VALUE name)
     return name;
 }
 
+static rb_encoding *
+check_path_encoding(VALUE str)
+{
+    rb_encoding *enc = rb_enc_get(str);
+    if (!rb_enc_asciicompat(enc)) {
+	rb_raise(rb_eEncCompatError, "path name must be ASCII-compatible (%s): %"PRIsVALUE,
+		 rb_enc_name(enc), rb_str_inspect(str));
+    }
+    return enc;
+}
+
 static VALUE
 rb_get_path_check(VALUE obj, int level)
 {
     VALUE tmp;
     ID to_path;
-    rb_encoding *enc;
 
     if (insecure_obj_p(obj, level)) {
 	rb_insecure_operation();
@@ -178,13 +188,8 @@ rb_get_path_check(VALUE obj, int level)
     if (obj != tmp && insecure_obj_p(tmp, level)) {
 	rb_insecure_operation();
     }
-    enc = rb_enc_get(tmp);
-    if (!rb_enc_asciicompat(enc)) {
-	tmp = rb_str_inspect(tmp);
-	rb_raise(rb_eEncCompatError, "path name must be ASCII-compatible (%s): %s",
-		 rb_enc_name(enc), RSTRING_PTR(tmp));
-    }
 
+    check_path_encoding(tmp);
     StringValueCStr(tmp);
 
     return rb_str_new4(tmp);
@@ -3669,11 +3674,7 @@ rb_file_s_basename(int argc, VALUE *argv)
 
     if (rb_scan_args(argc, argv, "11", &fname, &fext) == 2) {
 	StringValue(fext);
-	enc = rb_enc_get(fext);
-	if (!rb_enc_asciicompat(enc)) {
-	    rb_raise(rb_eEncCompatError, "ascii incompatible character encodings: %s",
-		     rb_enc_name(enc));
-	}
+	enc = check_path_encoding(fext);
     }
     FilePathStringValue(fname);
     if (NIL_P(fext) || !(enc = rb_enc_compatible(fname, fext))) {
