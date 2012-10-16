@@ -793,6 +793,18 @@ class TestFileExhaustive < Test::Unit::TestCase
     bug7168 = '[ruby-core:48012]'
     names = %w"a b".map {|s| s.encode(Encoding::UTF_16LE)}
     assert_raise(Encoding::CompatibilityError, bug7168) {File.join(*names)}
+    assert_raise(Encoding::CompatibilityError, bug7168) {File.join(names)}
+
+    a = Object.new
+    b = names[1]
+    names = [a, "b"]
+    a.singleton_class.class_eval do
+      define_method(:to_path) do
+        names[1] = b
+        "a"
+      end
+    end
+    assert_raise(Encoding::CompatibilityError, bug7168) {File.join(names)}
   end
 
   def test_truncate

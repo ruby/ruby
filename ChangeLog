@@ -1,4 +1,7 @@
-Tue Oct 16 10:54:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 16 11:27:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_join): check nul-byte only for strings, since
+	  FilePathStringValue() does it.  [ruby-core:48012] [Bug #7168]
 
 	* file.c (rb_file_join): path names must be ASCII-compatible.
 	  [ruby-core:48012] [Bug #7168]

@@ -3941,6 +3941,7 @@ rb_file_join(VALUE ary, VALUE sep)
 	tmp = RARRAY_PTR(ary)[i];
 	switch (TYPE(tmp)) {
 	  case T_STRING:
+	    StringValueCStr(tmp);
 	    break;
 	  case T_ARRAY:
 	    if (ary == tmp) {
@@ -3957,8 +3958,7 @@ rb_file_join(VALUE ary, VALUE sep)
 	  default:
 	    FilePathStringValue(tmp);
 	}
-	name = StringValueCStr(result);
-	len = RSTRING_LEN(result);
+	RSTRING_GETMEM(result, name, len);
 	if (i == 0) {
 	    rb_enc_copy(result, tmp);
 	}
