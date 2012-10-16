@@ -1182,6 +1182,21 @@ replace_i(VALUE key, VALUE val, VALUE hash)
     return ST_CONTINUE;
 }
 
+static VALUE
+rb_hash_initialize_copy(VALUE hash, VALUE hash2)
+{
+    Check_Type(hash2, T_HASH);
+
+    if (!RHASH_EMPTY_P(hash2))
+        RHASH(hash)->ntbl = st_copy(RHASH(hash2)->ntbl);
+    if (FL_TEST(hash2, HASH_PROC_DEFAULT)) {
+        FL_SET(hash, HASH_PROC_DEFAULT);
+    }
+    RHASH_IFNONE(hash) = RHASH_IFNONE(hash2);
+
+    return hash;
+}
+
 /*
  *  call-seq:
  *     hsh.replace(other_hash) -> hsh
@@ -3359,7 +3374,7 @@ Init_Hash(void)
     rb_define_singleton_method(rb_cHash, "[]", rb_hash_s_create, -1);
     rb_define_singleton_method(rb_cHash, "try_convert", rb_hash_s_try_convert, 1);
     rb_define_method(rb_cHash,"initialize", rb_hash_initialize, -1);
-    rb_define_method(rb_cHash,"initialize_copy", rb_hash_replace, 1);
+    rb_define_method(rb_cHash,"initialize_copy", rb_hash_initialize_copy, 1);
     rb_define_method(rb_cHash,"rehash", rb_hash_rehash, 0);
 
     rb_define_method(rb_cHash,"to_hash", rb_hash_to_hash, 0);

@@ -1,3 +1,10 @@
+Wed Oct 17 06:25:56 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* hash.c (initialize_copy): copy the underlying st_table on dup,
+	  rather than copying the hash key by key. [ruby-core:48009]
+
+	* test/ruby/test_hash.rb: relevant tests for initialize_copy
+
 Wed Oct 17 06:17:44 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_call_iseq_setup_2): separate tailcall and normal

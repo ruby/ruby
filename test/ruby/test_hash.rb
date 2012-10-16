@@ -91,6 +91,15 @@ class TestHash < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def test_bad_initialize_copy
+    h = Class.new(Hash) {
+      def initialize_copy(h)
+        super(Object.new)
+      end
+    }.new
+    assert_raises(TypeError) { h.dup }
+  end
+
   def test_s_AREF
     h = @cls["a" => 100, "b" => 200]
     assert_equal(100, h['a'])
