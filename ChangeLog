@@ -1,3 +1,10 @@
+Tue Oct 16 17:35:41 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/-ext-/test_threadswitch_hook.rb
+	  (Test_ThreadSwitch#test_threadswitch_init): This test does not
+	  pass because the hook method actually calls rb_add_event_hook()
+	  which does not emit a warning.
+
 Tue Oct 16 17:00:36 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* error.c (name_err_to_s): we need not infect msg.
