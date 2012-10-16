@@ -67,7 +67,7 @@ typedef struct rb_method_definition_struct {
 	VALUE proc;                 /* should be mark */
 	enum method_optimized_type {
 	    OPTIMIZED_METHOD_TYPE_SEND,
-	    OPTIMIZED_METHOD_TYPE_CALL,
+	    OPTIMIZED_METHOD_TYPE_CALL
 	} optimize_type;
     } body;
     int alias_count;
