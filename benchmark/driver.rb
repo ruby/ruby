@@ -90,8 +90,27 @@ class BenchmarkDriver
     end
   end
 
-  def average results
-    results.inject(:+) / results.length
+  def adjusted_results name, results
+    s = nil
+    results.each_with_index{|e, i|
+      r = e.min
+      case name
+      when /^vm1_/
+        if @loop_wl1
+          r -= @loop_wl1[i]
+          r = 0 if r < 0
+          s = '*'
+        end
+      when /^vm2_/
+        if @loop_wl2
+          r -= @loop_wl2[i]
+          r = 0 if r < 0
+          s = '*'
+        end
+      end
+      yield r
+    }
+    s
   end
 
   def show_results
@@ -113,29 +132,37 @@ class BenchmarkDriver
       output "minimum results in each #{@repeat} measurements."
     end
 
+    output "Execution time (sec)"
     output "name\t#{@execs.map{|(_, v)| v}.join("\t")}"
     @results.each{|v, result|
       rets = []
-      s = nil
-      result.each_with_index{|e, i|
-        r = e.min
-        case v
-        when /^vm1_/
-          if @loop_wl1
-            r -= @loop_wl1[i]
-            s = '*'
-          end
-        when /^vm2_/
-          if @loop_wl2
-            r -= @loop_wl2[i]
-            s = '*'
-          end
-        end
+      s = adjusted_results(v, result){|r|
         rets << sprintf("%.3f", r)
       }
-
       output "#{v}#{s}\t#{rets.join("\t")}"
     }
+
+    if @execs.size > 1
+      output
+      output "Speedup ratio comare with the result of `#{@execs[0]}' (greater is better)"
+      output "name\t#{@execs[1..-1].map{|(_, v)| v}.join("\t")}"
+      @results.each{|v, result|
+        rets = []
+        first_value = nil
+        s = adjusted_results(v, result){|r|
+          if first_value
+            if r == 0
+              rets << sprintf("%.3f", "Error")
+            else
+              rets << sprintf("%.3f", first_value/r)
+            end
+          else
+            first_value = r
+          end
+        }
+        output "#{v}#{s}\t#{rets.join("\t")}"
+      }
+    end
 
     if @opt[:output]
       output

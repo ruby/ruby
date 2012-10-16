@@ -1,3 +1,9 @@
+Tue Oct 16 22:24:44 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb (show_results): Show speedup ratio
+	  with first executables score at last of results
+	  if two or more executrables are given.
+
 Tue Oct 16 21:59:01 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb: some refactoring.
