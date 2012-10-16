@@ -1,3 +1,9 @@
+Tue Oct 16 16:30:50 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/openssl/ossl_x509store.c (ossl_x509store_initialize): initialize
+	  store->ex_data.sk.  [ruby-core:28907] [ruby-core:23971]
+	  [ruby-core:18121]
+
 Tue Oct 16 16:26:15 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/tk/extconf.rb: copy from trunk, as requested by Hidetoshi NAGAI.
