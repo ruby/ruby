@@ -1,4 +1,7 @@
-Tue Oct 16 11:27:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 16 11:30:18 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_join): hide the result under construction until
+	  return.
 
 	* file.c (rb_file_join): check nul-byte only for strings, since
 	  FilePathStringValue() does it.  [ruby-core:48012] [Bug #7168]

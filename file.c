@@ -3936,6 +3936,7 @@ rb_file_join(VALUE ary, VALUE sep)
 	len += RSTRING_LEN(sep) * (RARRAY_LEN(ary) - 1);
     }
     result = rb_str_buf_new(len);
+    RBASIC(result)->klass = 0;
     OBJ_INFECT(result, ary);
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	tmp = RARRAY_PTR(ary)[i];
@@ -3973,6 +3974,7 @@ rb_file_join(VALUE ary, VALUE sep)
 	}
 	rb_str_buf_append(result, tmp);
     }
+    RBASIC(result)->klass = rb_cString;
 
     return result;
 }
