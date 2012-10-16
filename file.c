@@ -3917,6 +3917,7 @@ rb_file_join(VALUE ary, VALUE sep)
     long len, i;
     VALUE result, tmp;
     const char *name, *tail;
+    int checked = TRUE;
 
     if (RARRAY_LEN(ary) == 0) return rb_str_new(0, 0);
 
@@ -3942,6 +3943,7 @@ rb_file_join(VALUE ary, VALUE sep)
 	tmp = RARRAY_PTR(ary)[i];
 	switch (TYPE(tmp)) {
 	  case T_STRING:
+	    if (!checked) check_path_encoding(tmp);
 	    StringValueCStr(tmp);
 	    break;
 	  case T_ARRAY:
@@ -3958,6 +3960,7 @@ rb_file_join(VALUE ary, VALUE sep)
 	    break;
 	  default:
 	    FilePathStringValue(tmp);
+	    checked = FALSE;
 	}
 	RSTRING_GETMEM(result, name, len);
 	if (i == 0) {

@@ -1,3 +1,8 @@
+Tue Oct 16 14:56:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_join): need to check again after any conversion run.
+	  [ruby-core:48012] [Bug #7168]
+
 Tue Oct 16 12:52:14 2012  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_file):
