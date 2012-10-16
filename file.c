@@ -5150,6 +5150,7 @@ rb_find_file_ext_safe(VALUE *filep, const char *const *ext, int safe_level)
     RBASIC(fname)->klass = 0;
     fnlen = RSTRING_LEN(fname);
     tmp = rb_str_tmp_new(MAXPATHLEN + 2);
+    rb_enc_associate_index(tmp, rb_usascii_encindex());
     for (j=0; ext[j]; j++) {
 	rb_str_cat2(fname, ext[j]);
 	for (i = 0; i < RARRAY_LEN(load_path); i++) {
@@ -5212,6 +5213,7 @@ rb_find_file_safe(VALUE path, int safe_level)
 	long i;
 
 	tmp = rb_str_tmp_new(MAXPATHLEN + 2);
+	rb_enc_associate_index(tmp, rb_usascii_encindex());
 	for (i = 0; i < RARRAY_LEN(load_path); i++) {
 	    VALUE str = RARRAY_PTR(load_path)[i];
 	    RB_GC_GUARD(str) = rb_get_path_check(str, safe_level);
