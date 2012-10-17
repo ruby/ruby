@@ -6,7 +6,7 @@ Wed Oct 17 11:04:48 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 Wed Oct 17 10:48:40 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_search_method): fix a build error that occurs 
-          when OPT_INLINE_METHOD_CACHE is 0.
+	  when OPT_INLINE_METHOD_CACHE is 0.
 
 Wed Oct 17 08:46:47 2012  Koichi Sasada  <ko1@atdot.net>
 
