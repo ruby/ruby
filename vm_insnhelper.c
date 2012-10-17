@@ -502,7 +502,7 @@ vm_getivar(VALUE obj, ID id, IC ic, rb_call_info_t *ci, int is_attr)
 
 	if (LIKELY((!is_attr && (ic->ic_class == klass && ic->ic_vmstat == GET_VM_STATE_VERSION())) ||
 		   (is_attr && ci->aux.index > 0))) {
-	    long index = !is_attr ? ic->ic_value.index : ci->aux.opt_pc - 1;
+	    long index = !is_attr ? ic->ic_value.index : ci->aux.index - 1;
 	    long len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
 
@@ -527,7 +527,7 @@ vm_getivar(VALUE obj, ID id, IC ic, rb_call_info_t *ci, int is_attr)
 			ic->ic_vmstat = GET_VM_STATE_VERSION();
 		    }
 		    else { /* call_info */
-			ci->aux.opt_pc = index + 1;
+			ci->aux.index = index + 1;
 		    }
 		}
 	    }

@@ -1,3 +1,8 @@
+Wed Oct 17 16:23:17 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_getivar): fix to use `aux.index' instead of
+	  `aux.opt_pc'.
+
 Wed Oct 17 16:03:54 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_call_method_missing): make a refactoring
