@@ -4,6 +4,7 @@ Wed Oct 17 15:08:13 2012  Shugo Maeda  <shugo@ruby-lang.org>
 	  message/delivery-status ([ruby-core:47920] [Bug #7146]),
 	  message/rfc822 attachments ([ruby-core:47921] [Bug #7147]), and
 	  (BODY ("MIXED")) ([ruby-core:47951] [Bug #7153]).
+	  patched by Tony Arkles.
 
 	* test/net/imap/test_imap_response_parser.rb: related test.
 
