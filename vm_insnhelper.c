@@ -857,7 +857,7 @@ vm_search_method(rb_call_info_t *ci, VALUE recv)
 	ci->call = vm_call_general;
     }
 #else
-    ci->method = rb_method_entry(klass, id, &ci->defined_class);
+    ci->me = rb_method_entry(klass, ci->mid, &ci->defined_class);
     ci->call = vm_call_general;
     ci->klass = klass;
 #endif
