@@ -1,3 +1,9 @@
+Wed Oct 17 15:33:12 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (opt-dir): allow multiple directories separated by
+	  $PATH_SEPARATOR as well as dir_config in mkmf.rb. [ruby-core:47868]
+	  [Bug #7120]
+
 Wed Oct 17 15:08:13 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: fix Net::IMAP::ResponseParser to accept

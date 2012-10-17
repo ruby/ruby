@@ -2293,13 +2293,19 @@ AC_SUBST(LIBPATHENV, "${LIBPATHENV-LD_LIBRARY_PATH}")
 AC_SUBST(TRY_LINK)
 
 AC_ARG_WITH(opt-dir,
-	AS_HELP_STRING([--with-opt-dir=DIR], [add optional headers and libraries DIR]),
+	AS_HELP_STRING([--with-opt-dir=DIR-LIST],
+		       [add optional headers and libraries directories separated by $PATH_SEPARATOR]),
 	[
-		CPPFLAGS="$CPPFLAGS -I$withval/include"
-		val=`echo $withval|sed 's/\\//\\\\\\//g'`
-		val=`echo ${LIBPATHFLAG} ${RPATHFLAG}|sed -E 's/%1\\$-s|%s/'${val}'\/lib/g'`
-		LDFLAGS="$LDFLAGS $val"
-		DLDFLAGS="$DLDFLAGS $val"
+		CPPFLAGS="$CPPFLAGS `echo \"$PATH_SEPARATOR$withval\" | sed \"s|$PATH_SEPARATOR\([[^$PATH_SEPARATOR]*]\)| -I\1/include|g;s/^ //\"`"
+		set -x
+		val=`IFS="$PATH_SEPARATOR"
+		    for dir in $withval; do
+			echo x ${LIBPATHFLAG} ${RPATHFLAG} |
+			sed -E 's/^x *//;s'"${PATH_SEPARATOR}"'%1\\$-s|%s'"${IFS}${dir}/lib${IFS}g"
+		    done | tr '\012' ' '`
+		set +x
+		LDFLAGS="$LDFLAGS${LDFLAGS:+ }$val"
+		DLDFLAGS="$DLDFLAGS${DLDFLAGS:+ }$val"
 	])
 
 AS_CASE(["$target_cpu-$target_os"],
