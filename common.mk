@@ -212,7 +212,7 @@ Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb
 program: showflags $(PROGRAM)
 wprogram: showflags $(WPROGRAM)
 
-$(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
+$(PROGRAM) $(WPROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
 
 $(LIBRUBY_A):	$(OBJS) $(MAINOBJ) $(DMYEXT) $(ARCHFILE)
 

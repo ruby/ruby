@@ -656,13 +656,11 @@ if $configure_only and $command_output
       mf.puts "#{tgt}: $(extensions:/.=/#{tgt})"
     end
     mf.puts
-    mf.puts "all: #{rubies.join(' ')}"
-    mf.puts "static: #{rubies.join(' ')}"
     mf.puts "clean:\n\t-$(Q)$(RM) ext/extinit.#{$OBJEXT}"
     mf.puts "distclean:\n\t-$(Q)$(RM) ext/extinit.c"
     mf.puts
     mf.puts "#{rubies.join(' ')}: $(extensions:/.=/#{$force_static ? 'static' : 'all'})"
-    rubies.each do |tgt|
+    (["all static"] + rubies).each_with_index do |tgt, i|
       mf.print "#{tgt}:\n\t$(Q)$(MAKE) "
       mf.print "$(MFLAGS) "
       if enable_config("shared", $enable_shared)
@@ -671,7 +669,12 @@ if $configure_only and $command_output
       else
         mf.print %[EXTOBJS="$(EXTOBJS) $(ENCOBJS)" EXTLIBS="$(EXTLIBS)" ]
       end
-      mf.puts 'EXTLDFLAGS="$(EXTLDFLAGS)" $@'
+      mf.print 'EXTLDFLAGS="$(EXTLDFLAGS)" '
+      if i == 0
+        mf.puts rubies.join(' ')
+      else
+        mf.puts '$@'
+      end
     end
     mf.puts
     exec = config_string("exec") {|str| str + " "}
