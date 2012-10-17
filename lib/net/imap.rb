@@ -2033,6 +2033,14 @@ module Net
       end
     end
 
+    class BodyTypeExtension < Struct.new(:media_type, :subtype, 
+                                         :params, :content_id,
+                                         :description, :encoding, :size)
+      def multipart?
+        return false
+      end
+    end
+
     class ResponseParser # :nodoc:
       def initialize
         @str = nil
@@ -2402,6 +2410,30 @@ module Net
         mtype, msubtype = media_type
         match(T_SPACE)
         param, content_id, desc, enc, size = body_fields
+
+        # If this is not message/rfc822, we shouldn't apply the RFC822 spec
+        # to it.
+        # We should handle anything other than message/rfc822 using
+        # multipart extension data [rfc3501] (i.e. the data itself won't be 
+        # returned, we would have to retrieve it with BODYSTRUCTURE instead
+        # of with BODY
+        if "#{mtype}/#{msubtype}" != 'MESSAGE/RFC822' then
+          return BodyTypeExtension.new(mtype, msubtype, 
+                                       param, content_id,
+                                       desc, enc, size)
+        end
+
+        # Also, sometimes a message/rfc822 is included as a large
+        # attachment instead of having all of the other details
+        # (e.g. attaching a .eml file to an email)
+
+        token = lookahead
+        if token.symbol == T_RPAR then
+          return BodyTypeMessage.new(mtype, msubtype, param, content_id,
+                                     desc, enc, size, nil, nil, nil, nil,
+                                     nil, nil, nil)
+        end
+
         match(T_SPACE)
         env = envelope
         match(T_SPACE)
@@ -2443,6 +2475,10 @@ module Net
 
       def media_type
         mtype = case_insensitive_string
+        token = lookahead
+        if token.symbol != T_SPACE
+          return mtype, nil
+        end
         match(T_SPACE)
         msubtype = case_insensitive_string
         return mtype, msubtype

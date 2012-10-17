@@ -152,4 +152,32 @@ EOF
     assert_equal("Fw_ ____ _____ ____.eml",
       response.data.attr["BODYSTRUCTURE"].parts[1].body.param["FILENAME"])
   end
+
+  def assert_parseable(s)
+    parser = Net::IMAP::ResponseParser.new
+    parser.parse(s.gsub(/\n/, "\r\n").taint)
+  end
+
+  # [Bug #7146]
+  def test_msg_delivery_status
+    # This was part of a larger response that caused crashes, but this was the
+    # minimal test case to demonstrate it
+    assert_parseable <<EOF
+* 4902 FETCH (BODY (("MESSAGE" "DELIVERY-STATUS" NIL NIL NIL "7BIT" 324) "REPORT"))
+EOF
+  end
+
+  # [Bug #7147]
+  def test_msg_with_message_rfc822_attachment
+    assert_parseable <<EOF
+* 5441 FETCH (BODY ((("TEXT" "PLAIN" ("CHARSET" "iso-8859-1") NIL NIL "QUOTED-PRINTABLE" 69 1)("TEXT" "HTML" ("CHARSET" "iso-8859-1") NIL NIL "QUOTED-PRINTABLE" 455 12) "ALTERNATIVE")("MESSAGE" "RFC822" ("NAME" "ATT00026.eml") NIL NIL "7BIT" 4079755) "MIXED"))
+EOF
+  end
+
+  # [Bug #7153]
+  def test_msg_body_mixed
+    assert_parseable <<EOF
+* 1038 FETCH (BODY ("MIXED"))
+EOF
+  end
 end

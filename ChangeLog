@@ -1,3 +1,12 @@
+Wed Oct 17 15:08:13 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: fix Net::IMAP::ResponseParser to accept
+	  message/delivery-status ([ruby-core:47920] [Bug #7146]),
+	  message/rfc822 attachments ([ruby-core:47921] [Bug #7147]), and
+	  (BODY ("MIXED")) ([ruby-core:47951] [Bug #7153]).
+
+	* test/net/imap/test_imap_response_parser.rb: related test.
+
 Wed Oct 17 11:04:48 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_hash.rb (TestHash#test_dup_equality): added a new test
