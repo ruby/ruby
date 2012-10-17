@@ -30,7 +30,7 @@ Wed Oct 17 16:03:54 2012  Koichi Sasada  <ko1@atdot.net>
 	  if it can be cached.
 
 	* vm_core.h (rb_call_info_t): add new field
-	  `rb_call_info_t::aux::missing_reasion' to pass the reason to
+	  `rb_call_info_t::aux::missing_reason' to pass the reason to
 	  `vm_call_method_missing()'.
 
 Wed Oct 17 15:33:12 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
