@@ -1478,6 +1478,7 @@ vm_call_opt_send(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *c
 	}
 	ci->mid = rb_to_id(sym);
     }
+
     /* shift arguments */
     if (i > 0) {
 	MEMMOVE(&TOPN(i), &TOPN(i-1), VALUE, i);
@@ -1486,7 +1487,7 @@ vm_call_opt_send(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *c
     ci->argc -= 1;
     DEC_SP(1);
 
-    ci->flag |= VM_CALL_FCALL | VM_CALL_OPT_SEND;
+    ci->flag = VM_CALL_FCALL | VM_CALL_OPT_SEND;
 
     return vm_call_method(th, reg_cfp, ci);
 }
@@ -1520,27 +1521,28 @@ vm_call_cfunc_fast_binary(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info
 }
 
 static VALUE
-vm_call_missing(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
+vm_call_method_missing(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 {
-    VALUE *argv = ALLOCA_N(VALUE, ci->argc+1);
-    argv[0] = ID2SYM(ci->me->def->original_id);
-    MEMCPY(argv+1, cfp->sp - ci->argc, VALUE, ci->argc);
-    cfp->sp += - ci->argc - 1;
-    th->passed_block = ci->blockptr;
-    return rb_funcall2(ci->recv, rb_intern("method_missing"), ci->argc+1, argv);
-}
+    VALUE *argv = STACK_ADDR_FROM_TOP(ci->argc);
+    rb_call_info_t ci_entry;
 
-static VALUE
-vm_method_missing(rb_thread_t *th, rb_control_frame_t *const reg_cfp, rb_call_info_t *ci, int opt)
-{
-    VALUE ret, *argv = STACK_ADDR_FROM_TOP(ci->argc + 1);
+    ci_entry.flag = VM_CALL_FCALL | VM_CALL_OPT_SEND;
+    ci_entry.argc = ci->argc+1;
+    ci_entry.mid = idMethodMissing;
+    ci_entry.blockptr = ci->blockptr;
+    ci_entry.recv = ci->recv;
+    ci_entry.me = rb_method_entry(CLASS_OF(ci_entry.recv), idMethodMissing, &ci_entry.defined_class);
 
-    th->method_missing_reason = opt;
-    th->passed_block = ci->blockptr;
+    /* shift arguments: m(a, b, c) #=> method_missing(:m, a, b, c) */
+    CHECK_STACK_OVERFLOW(reg_cfp, 1);
+    if (ci->argc > 0) {
+	MEMMOVE(argv+1, argv, VALUE, ci->argc);
+    }
     argv[0] = ID2SYM(ci->mid);
-    ret = rb_funcall2(ci->recv, idMethodMissing, ci->argc + 1, argv);
-    POPN(ci->argc + 1);
-    return ret;
+    INC_SP(1);
+
+    th->method_missing_reason = ci->aux.missing_reason;
+    return vm_call_method(th, reg_cfp, &ci_entry);
 }
 
 static VALUE
@@ -1575,8 +1577,9 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		return vm_call_ivar(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_MISSING:{
-		CI_SET_FASTPATH(ci, vm_call_missing, enable_fastpath);
-		return vm_call_missing(th, cfp, ci);
+		ci->aux.missing_reason = 0;
+		CI_SET_FASTPATH(ci, vm_call_method_missing, enable_fastpath);
+		return vm_call_method_missing(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_BMETHOD:{
 		CI_SET_FASTPATH(ci, vm_call_bmethod, enable_fastpath);
@@ -1638,12 +1641,15 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		if (ci->flag & VM_CALL_VCALL) {
 		    stat |= NOEX_VCALL;
 		}
-		return vm_method_missing(th, cfp, ci, stat);
+		ci->aux.missing_reason = stat;
+		CI_SET_FASTPATH(ci, vm_call_method_missing, 1);
+		return vm_call_method_missing(th, cfp, ci);
 	    }
 	    else if (!(ci->flag & VM_CALL_OPT_SEND) && (ci->me->flag & NOEX_MASK) & NOEX_PROTECTED) {
 		enable_fastpath = 0;
 		if (!rb_obj_is_kind_of(cfp->self, ci->defined_class)) {
-		    return vm_method_missing(th, cfp, ci, NOEX_PROTECTED);
+		    ci->aux.missing_reason = NOEX_PROTECTED;
+		    return vm_call_method_missing(th, cfp, ci);
 		}
 		else {
 		    goto normal_method_dispatch;
@@ -1672,7 +1678,9 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	    rb_raise_method_missing(th, ci->argc, argv, ci->recv, stat);
 	}
 	else {
-	    return vm_method_missing(th, cfp, ci, stat);
+	    ci->aux.missing_reason = stat;
+	    CI_SET_FASTPATH(ci, vm_call_method_missing, 1);
+	    return vm_call_method_missing(th, cfp, ci);
 	}
     }
 
