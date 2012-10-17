@@ -1,3 +1,8 @@
+Wed Oct 17 16:25:34 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm2_method_missing.rb: add a benchmark to measure
+	  performance of invoking `method_missing'.
+
 Wed Oct 17 16:23:17 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_getivar): fix to use `aux.index' instead of
