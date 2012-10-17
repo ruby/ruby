@@ -1,3 +1,8 @@
+Wed Oct 17 11:04:48 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_hash.rb (TestHash#test_dup_equality): added a new test
+	  to show the problem of r37232.
+
 Wed Oct 17 10:48:40 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_search_method): fix a build error that occurs 

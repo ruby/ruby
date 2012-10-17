@@ -325,6 +325,15 @@ class TestHash < Test::Unit::TestCase
     end
   end
 
+  def test_dup_equality
+    h = {'k' => 'v'}
+    assert_equal(h, h.dup)
+    h1 = {h => 1}
+    assert_equal(h1, h1.dup)
+    h[1] = 2
+    assert_equal(h1, h1.dup)
+  end
+
   def test_each
     count = 0
     @cls[].each { |k, v| count + 1 }
