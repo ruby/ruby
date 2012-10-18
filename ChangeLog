@@ -11,9 +11,9 @@ Thu Oct 18 15:01:15 2012  Koichi Sasada  <ko1@atdot.net>
 Thu Oct 18 14:31:17 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (new_callinfo): set a temporary index of callinfo
-	 (used in `iseq_set_sequence()') to rb_call_info_t::aux::index.
-	 rb_call_info_t::argc is initialiesed by same value of
-	 rb_call_info_t::orig_argc.
+	  (used in `iseq_set_sequence()') to rb_call_info_t::aux::index.
+	  rb_call_info_t::argc is initialiesed by same value of
+	  rb_call_info_t::orig_argc.
 
 Thu Oct 18 14:11:08 2012  Koichi Sasada  <ko1@atdot.net>
 
@@ -98,7 +98,7 @@ Wed Oct 17 11:04:48 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Wed Oct 17 10:48:40 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* vm_insnhelper.c (vm_search_method): fix a build error that occurs 
+	* vm_insnhelper.c (vm_search_method): fix a build error that occurs
 	  when OPT_INLINE_METHOD_CACHE is 0.
 
 Wed Oct 17 08:46:47 2012  Koichi Sasada  <ko1@atdot.net>
