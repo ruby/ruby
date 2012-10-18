@@ -954,6 +954,10 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, VALUE block, unsigned long flag)
 	}
     }
     ci->vmstat = 0;
+    ci->blockptr = 0;
+    ci->recv = Qundef;
+    ci->call = 0; /* TODO: should set default function? */
+
     ci->aux.index = iseq->callinfo_size++;
 
     return ci;
@@ -1865,7 +1869,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	 */
 	INSN *piobj = (INSN *)get_prev_insn((INSN *)list);
 
-	if (piobj->insn_id == BIN(send)) {
+	if (piobj->insn_id == BIN(send) || piobj->insn_id == BIN(opt_send_simple)) {
 	    rb_call_info_t *ci = (rb_call_info_t *)piobj->operands[0];
 	    if (ci->blockiseq == 0) {
 		ci->flag |= VM_CALL_TAILCALL;
@@ -1906,31 +1910,32 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 	    switch (ci->orig_argc) {
 	      case 0:
 		switch (ci->mid) {
-		  case idLength: SP_INSN(length); break;
-		  case idSize:	 SP_INSN(size);	  break;
-		  case idEmptyP: SP_INSN(empty_p);break;
-		  case idSucc:	 SP_INSN(succ);	  break;
-		  case idNot:	 SP_INSN(not);	  break;
+		  case idLength: SP_INSN(length); return COMPILE_OK;
+		  case idSize:	 SP_INSN(size);	  return COMPILE_OK;
+		  case idEmptyP: SP_INSN(empty_p);return COMPILE_OK;
+		  case idSucc:	 SP_INSN(succ);	  return COMPILE_OK;
+		  case idNot:	 SP_INSN(not);	  return COMPILE_OK;
 		}
 		break;
 	      case 1:
 		switch (ci->mid) {
-		  case idPLUS:	 SP_INSN(plus);	  break;
-		  case idMINUS:	 SP_INSN(minus);  break;
-		  case idMULT:	 SP_INSN(mult);	  break;
-		  case idDIV:	 SP_INSN(div);	  break;
-		  case idMOD:	 SP_INSN(mod);	  break;
-		  case idEq:	 SP_INSN(eq);	  break;
-		  case idNeq:	 SP_INSN(neq);	  break;
-		  case idLT:	 SP_INSN(lt);	  break;
-		  case idLE:	 SP_INSN(le);	  break;
-		  case idGT:	 SP_INSN(gt);	  break;
-		  case idGE:	 SP_INSN(ge);	  break;
-		  case idLTLT:	 SP_INSN(ltlt);	  break;
-		  case idAREF:	 SP_INSN(aref);	  break;
+		  case idPLUS:	 SP_INSN(plus);	  return COMPILE_OK;
+		  case idMINUS:	 SP_INSN(minus);  return COMPILE_OK;
+		  case idMULT:	 SP_INSN(mult);	  return COMPILE_OK;
+		  case idDIV:	 SP_INSN(div);	  return COMPILE_OK;
+		  case idMOD:	 SP_INSN(mod);	  return COMPILE_OK;
+		  case idEq:	 SP_INSN(eq);	  return COMPILE_OK;
+		  case idNeq:	 SP_INSN(neq);	  return COMPILE_OK;
+		  case idLT:	 SP_INSN(lt);	  return COMPILE_OK;
+		  case idLE:	 SP_INSN(le);	  return COMPILE_OK;
+		  case idGT:	 SP_INSN(gt);	  return COMPILE_OK;
+		  case idGE:	 SP_INSN(ge);	  return COMPILE_OK;
+		  case idLTLT:	 SP_INSN(ltlt);	  return COMPILE_OK;
+		  case idAREF:	 SP_INSN(aref);	  return COMPILE_OK;
 		}
 		break;
 	    }
+	    iobj->insn_id = BIN(opt_send_simple);
 	}
     }
 #undef SP_INSN
@@ -2531,7 +2536,7 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
 	POP_ELEMENT(ret);        /* pop pop insn */
 	iobj = (INSN *)POP_ELEMENT(ret); /* pop send insn */
 	ci = (rb_call_info_t *)iobj->operands[0];
-	ci->orig_argc += 1;
+	ci->orig_argc += 1; ci->argc = ci->orig_argc;
 	dupidx = INT2FIX(ci->orig_argc);
 
 	ADD_INSN1(ret, nd_line(node), topn, dupidx);

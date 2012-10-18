@@ -2050,6 +2050,21 @@ opt_regexpmatch2
 
 /**
   @c optimize
+  @e Invoke method without block, splat
+  @j Invoke method without block, splat
+ */
+DEFINE_INSN
+opt_send_simple
+(CALL_INFO ci)
+(...)
+(VALUE val) // inc += -ci->orig_argc;
+{
+    vm_search_method(ci, ci->recv = TOPN(ci->argc));
+    CALL_METHOD(ci);
+}
+
+/**
+  @c optimize
   @e call native compiled method
   @j ネイティブコンパイルしたメソッドを起動。
  */
