@@ -1254,9 +1254,9 @@ rb_define_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc
 }
 
 void
-rb_define_method_fast(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
+rb_define_frameless_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
-    rb_add_method_cfunc_fast(klass, rb_intern(name), func, argc, NOEX_PUBLIC);
+    rb_add_method_cfunc_frameless(klass, rb_intern(name), func, argc, NOEX_PUBLIC);
 }
 
 void

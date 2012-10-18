@@ -1,3 +1,17 @@
+Thu Oct 18 14:11:08 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c (rb_define_frameless_method): rename from
+	  rb_define_method_fast(). Defined method with this C API
+	  does not make a method frame. It is bit lightweight than
+	  ordinal C functions. Now only 0 or 1 argc are permitted.
+
+	* method.h (VM_METHOD_TYPE_CFUNC_FRAMELESS): rename macro name
+	  from VM_METHOD_TYPE_CFUNC_FAST.
+
+	* vm_insnhelper.c, vm_method.c: rename related functions.
+
+	* proc.c (rb_method_entry_arity): catch up above changes.
+
 Thu Oct 18 10:30:34 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (assignable_gen): fail if yyerror occurred.  fix a bug in

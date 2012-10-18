@@ -1656,7 +1656,7 @@ rb_method_entry_arity(const rb_method_entry_t *me)
     const rb_method_definition_t *def = me->def;
     if (!def) return 0;
     switch (def->type) {
-      case VM_METHOD_TYPE_CFUNC_FAST:
+      case VM_METHOD_TYPE_CFUNC_FRAMELESS:
       case VM_METHOD_TYPE_CFUNC:
 	if (def->body.cfunc.argc < 0)
 	    return -1;

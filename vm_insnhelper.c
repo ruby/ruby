@@ -1506,14 +1506,14 @@ vm_call_opt_call(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 }
 
 static VALUE
-vm_call_cfunc_fast_unary(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
+vm_call_cfunc_frameless_unary(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
     cfp->sp -= 1;
     return (*ci->me->def->body.cfunc.func)(ci->recv);
 }
 
 static VALUE
-vm_call_cfunc_fast_binary(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
+vm_call_cfunc_frameless_binary(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
     VALUE obj = *cfp->sp;
     cfp->sp -= 2;
@@ -1613,16 +1613,16 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		}
 		break;
 	      }
-	      case VM_METHOD_TYPE_CFUNC_FAST:
+	      case VM_METHOD_TYPE_CFUNC_FRAMELESS:
 		switch (ci->me->def->body.cfunc.argc) {
 		  case 0:
 		    rb_check_arity(ci->argc, 0, 0);
-		    CI_SET_FASTPATH(ci, vm_call_cfunc_fast_unary, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT));
-		    return vm_call_cfunc_fast_unary(th, cfp, ci);
+		    CI_SET_FASTPATH(ci, vm_call_cfunc_frameless_unary, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT));
+		    return vm_call_cfunc_frameless_unary(th, cfp, ci);
 		  case 1:
 		    rb_check_arity(ci->argc, 0, 1);
-		    CI_SET_FASTPATH(ci, vm_call_cfunc_fast_binary, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT));
-		    return vm_call_cfunc_fast_binary(th, cfp, ci);
+		    CI_SET_FASTPATH(ci, vm_call_cfunc_frameless_binary, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT));
+		    return vm_call_cfunc_frameless_binary(th, cfp, ci);
 		  default:
 		    rb_bug("vm_call_method: unsupported cfunc_fast argc (%d)", ci->me->def->body.cfunc.argc);
 		}
