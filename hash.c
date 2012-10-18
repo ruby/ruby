@@ -1187,8 +1187,11 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
 {
     Check_Type(hash2, T_HASH);
 
-    if (!RHASH_EMPTY_P(hash2))
+    if (!RHASH_EMPTY_P(hash2)) {
         RHASH(hash)->ntbl = st_copy(RHASH(hash2)->ntbl);
+	rb_hash_rehash(hash);
+    }
+
     if (FL_TEST(hash2, HASH_PROC_DEFAULT)) {
         FL_SET(hash, HASH_PROC_DEFAULT);
     }

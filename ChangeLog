@@ -1,3 +1,9 @@
+Thu Oct 18 09:23:03 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* hash.c (initialize_copy): duping should rehash the hash.
+
+	* test/ruby/test_hash.rb: added a test to ensure rehash.
+
 Wed Oct 17 21:16:47 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* common.mk (WPROGRAM): need same dependencies as PROGRAM.

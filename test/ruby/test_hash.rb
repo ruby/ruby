@@ -100,6 +100,15 @@ class TestHash < Test::Unit::TestCase
     assert_raises(TypeError) { h.dup }
   end
 
+  def test_dup_will_rehash
+    set1 = { }
+    set2 = { set1 => true}
+
+    set1[set1] = true
+
+    assert_equal set2, set2.dup
+  end
+
   def test_s_AREF
     h = @cls["a" => 100, "b" => 200]
     assert_equal(100, h['a'])
