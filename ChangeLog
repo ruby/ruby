@@ -1,3 +1,9 @@
+Thu Oct 18 18:42:35 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def (opt_send_simple): move the location of
+	  `opt_send_simple' to the place near `send' definition.
+	  (to take care about icache locality).
+
 Thu Oct 18 18:29:25 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (send): remove unused condition.

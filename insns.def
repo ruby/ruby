@@ -969,6 +969,21 @@ send
 }
 
 /**
+  @c optimize
+  @e Invoke method without block, splat
+  @j Invoke method without block, splat
+ */
+DEFINE_INSN
+opt_send_simple
+(CALL_INFO ci)
+(...)
+(VALUE val) // inc += -ci->orig_argc;
+{
+    vm_search_method(ci, ci->recv = TOPN(ci->argc));
+    CALL_METHOD(ci);
+}
+
+/**
   @c method/iterator
   @e super(args) # args.size => num
   @j super を実行する。ci に必要な情報が格納されている。
@@ -2043,21 +2058,6 @@ opt_regexpmatch2
     else {
 	val = rb_funcall(obj2, idEqTilde, 1, obj1);
     }
-}
-
-/**
-  @c optimize
-  @e Invoke method without block, splat
-  @j Invoke method without block, splat
- */
-DEFINE_INSN
-opt_send_simple
-(CALL_INFO ci)
-(...)
-(VALUE val) // inc += -ci->orig_argc;
-{
-    vm_search_method(ci, ci->recv = TOPN(ci->argc));
-    CALL_METHOD(ci);
 }
 
 /**
