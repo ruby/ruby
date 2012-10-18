@@ -1058,7 +1058,7 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 	    RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp)->proc = proc;
 	}
     }
-    else if (UNLIKELY(ci->blockiseq != 0)) {
+    else if (ci->blockiseq != 0) { /* likely */
 	ci->blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
 	ci->blockptr->iseq = ci->blockiseq;
 	ci->blockptr->proc = 0;

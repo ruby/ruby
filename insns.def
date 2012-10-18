@@ -963,10 +963,7 @@ send
 {
     ci->argc = ci->orig_argc;
     ci->blockptr = 0;
-
-    if (UNLIKELY(!(ci->flag & VM_CALL_ARGS_SKIP_SETUP))) {
-	vm_caller_setup_args(th, reg_cfp, ci);
-    }
+    vm_caller_setup_args(th, reg_cfp, ci);
     vm_search_method(ci, ci->recv = TOPN(ci->argc));
     CALL_METHOD(ci);
 }
