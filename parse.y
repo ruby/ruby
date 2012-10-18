@@ -8468,25 +8468,25 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
     switch (id) {
       case keyword_self:
 	yyerror("Can't change the value of self");
-	break;
+	goto error;
       case keyword_nil:
 	yyerror("Can't assign to nil");
-	break;
+	goto error;
       case keyword_true:
 	yyerror("Can't assign to true");
-	break;
+	goto error;
       case keyword_false:
 	yyerror("Can't assign to false");
-	break;
+	goto error;
       case keyword__FILE__:
 	yyerror("Can't assign to __FILE__");
-	break;
+	goto error;
       case keyword__LINE__:
 	yyerror("Can't assign to __LINE__");
-	break;
+	goto error;
       case keyword__ENCODING__:
 	yyerror("Can't assign to __ENCODING__");
-	break;
+	goto error;
     }
     switch (id_type(id)) {
       case ID_LOCAL:
@@ -8526,6 +8526,7 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
       default:
 	compile_error(PARSER_ARG "identifier %s is not valid to set", rb_id2name(id));
     }
+  error:
     return assignable_result(0);
 #undef assignable_result
 #undef parser_yyerror

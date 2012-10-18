@@ -187,8 +187,10 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_unassignable
+    gvar = global_variables
     %w[self nil true false __FILE__ __LINE__ __ENCODING__].each do |kwd|
       assert_raise(SyntaxError) {eval("#{kwd} = nil")}
+      assert_equal(gvar, global_variables)
     end
   end
 
