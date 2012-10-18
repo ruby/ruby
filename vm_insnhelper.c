@@ -1090,7 +1090,7 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
     }
 }
 
-static int
+static inline int
 vm_callee_setup_arg_complex(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq, VALUE *orig_argv)
 {
     const int m = iseq->argc;
@@ -1233,7 +1233,7 @@ vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *c
     }
 }
 
-static VALUE
+static inline VALUE
 vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
     int i;
@@ -1256,7 +1256,7 @@ vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info
     return Qundef;
 }
 
-static VALUE
+static inline VALUE
 vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
     int i;
@@ -1422,7 +1422,7 @@ vm_call_attrset(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
     return Qnil;
 }
 
-static VALUE
+static inline VALUE
 vm_call_bmethod_body(rb_thread_t *th, rb_call_info_t *ci, const VALUE *argv)
 {
     rb_proc_t *proc;
@@ -1545,7 +1545,7 @@ vm_call_method_missing(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
     return vm_call_method(th, reg_cfp, &ci_entry);
 }
 
-static VALUE
+static inline VALUE
 vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
     int enable_fastpath = 1;
