@@ -84,6 +84,7 @@ rb_define_notimplement_method_id(VALUE mod, ID id, rb_method_flag_t noex)
 void
 rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex)
 {
+    if (argc < -2 || 15 < argc) rb_raise(rb_eArgError, "arity out of range: %d for -2..15", argc);
     if (func != rb_f_notimplement) {
 	rb_method_cfunc_t opt;
 	opt.func = func;
@@ -98,6 +99,7 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_me
 void
 rb_add_method_cfunc_frameless(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex)
 {
+    if (argc < 0 || 1 < argc) rb_raise(rb_eArgError, "arity out of range: %d for 0..1", argc);
     if (func != rb_f_notimplement) {
 	rb_method_cfunc_t opt;
 	opt.func = func;
