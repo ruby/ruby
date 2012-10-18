@@ -942,6 +942,7 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, VALUE block, unsigned long flag)
     ci->mid = mid;
     ci->flag = flag;
     ci->orig_argc = argc;
+    ci->argc = argc;
 
     if (block) {
 	GetISeqPtr(block, ci->blockiseq);
@@ -953,7 +954,7 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, VALUE block, unsigned long flag)
 	}
     }
     ci->vmstat = 0;
-    ci->argc = iseq->callinfo_size++; /* index of callinfo in this iseq */
+    ci->aux.index = iseq->callinfo_size++;
 
     return ci;
 }
@@ -1520,10 +1521,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		      case TS_CALLINFO: /* call info */
 			{
 			    rb_call_info_t *base_ci = (rb_call_info_t *)operands[j];
-			    rb_call_info_t *ci = &iseq->callinfo_entries[base_ci->argc];
+			    rb_call_info_t *ci = &iseq->callinfo_entries[base_ci->aux.index];
 			    *ci = *base_ci;
 
-			    if (UNLIKELY(base_ci->argc >= iseq->callinfo_size)) {
+			    if (UNLIKELY(base_ci->aux.index >= iseq->callinfo_size)) {
 				rb_bug("iseq_set_sequence: ci_index overflow: index: %d, size: %d", base_ci->argc, iseq->callinfo_size);
 			    }
 			    generated_iseq[pos + 1 + j] = (VALUE)ci;

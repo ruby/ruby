@@ -1,3 +1,10 @@
+Thu Oct 18 14:31:17 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (new_callinfo): set a temporary index of callinfo
+	 (used in `iseq_set_sequence()') to rb_call_info_t::aux::index.
+	 rb_call_info_t::argc is initialiesed by same value of
+	 rb_call_info_t::orig_argc.
+
 Thu Oct 18 14:11:08 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* class.c (rb_define_frameless_method): rename from
