@@ -238,7 +238,6 @@ class BenchmarkDriver
   def measure executable, file
     cmd = "#{executable} #{@ruby_arg} #{file}"
 
-    output cmd
     m = Benchmark.measure{
       `#{cmd}`
     }

@@ -1,3 +1,8 @@
+Fri Oct 19 11:13:55 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: remove unexpected `output'.
+	  (commit miss)
+
 Fri Oct 19 10:24:03 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_search_method): remove needless local variable.
