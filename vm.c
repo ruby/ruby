@@ -916,7 +916,7 @@ rb_vm_jump_tag_but_local_jump(int state, VALUE val)
 {
     if (val != Qnil) {
 	VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, val);
-	rb_exc_raise(exc);
+	if (!NIL_P(exc)) rb_exc_raise(exc);
     }
     JUMP_TAG(state);
 }

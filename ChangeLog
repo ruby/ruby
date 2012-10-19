@@ -1,3 +1,11 @@
+Fri Oct 19 22:22:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (rb_vm_jump_tag_but_local_jump): pass through thrown objects.
+	  [ruby-dev:46234] [Bug #7185]
+
+	* vm_eval.c (rb_eval_cmd): if state is non-zero, val should be nil and
+	  rb_vm_jump_tag_but_local_jump() just jump tag.
+
 Fri Oct 19 22:11:55 2012  Benoit Daloze  <eregontp@gmail.com>
 
 	* pack.c (pack_unpack): set encoding of the

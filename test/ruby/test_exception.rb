@@ -104,7 +104,16 @@ class TestException < Test::Unit::TestCase
              end
              false
            })
+  end
 
+  def test_catch_throw_in_require
+    bug7185 = '[ruby-dev:46234]'
+    t = Tempfile.open(["dep", ".rb"])
+    t.puts("throw :extdep, 42")
+    t.close
+    assert_equal(42, catch(:extdep) {require t.path}, bug7185)
+  ensure
+    t.close! if t
   end
 
   def test_else_no_exception
