@@ -1,3 +1,30 @@
+Fri Oct 19 19:29:11 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h (rb_method_cfunc_t::invoker): add new field (func ptr)
+	  `invoker'. `invoker' function invoke cfunc body
+	  (rb_method_cfunc_t::func).
+	  `invoker' is set at method definition timing.
+	  With this change, the big `switch' (branch) in `call_cfunc()'
+	  is no longer needed.
+	  However, the performance benefit is only a bit.
+
+	* vm_core.h (rb_call_info_t::aux::func): add a new field to store
+	  cfunc body function pointer.
+
+	* vm_method.c (call_cfunc_invoker_func): add a new function which
+	  returns a suitable invoke function.
+
+	* vm_method.c (setup_method_cfunc_struct): added.
+
+	* vm_method.c (rb_add_method): fix to set `invoker'.
+
+	* vm_eval.c (vm_call0_body): catch up above changes.
+
+	* vm_insnhelper.c (call_cfunc): removed.
+
+	* vm_insnhelper.c (vm_call_cfunc): fix to call cfunc body
+	  with `invoker' function.
+
 Fri Oct 19 16:55:58 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c, vm_eval.c: use TH_PUSH_TAG() instead of PUSH_TAG().

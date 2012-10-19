@@ -303,6 +303,41 @@ method_added(VALUE klass, ID mid)
     }
 }
 
+static VALUE
+(*call_cfunc_invoker_func(int argc))(const rb_call_info_t *, const VALUE *)
+{
+    switch (argc) {
+      case -2: return call_cfunc_m2;
+      case -1: return call_cfunc_m1;
+      case 0: return call_cfunc_0;
+      case 1: return call_cfunc_1;
+      case 2: return call_cfunc_2;
+      case 3: return call_cfunc_3;
+      case 4: return call_cfunc_4;
+      case 5: return call_cfunc_5;
+      case 6: return call_cfunc_6;
+      case 7: return call_cfunc_7;
+      case 8: return call_cfunc_8;
+      case 9: return call_cfunc_9;
+      case 10: return call_cfunc_10;
+      case 11: return call_cfunc_11;
+      case 12: return call_cfunc_12;
+      case 13: return call_cfunc_13;
+      case 14: return call_cfunc_14;
+      case 15: return call_cfunc_15;
+      default:
+	rb_bug("call_cfunc_func: unsupported length: %d", argc);
+    }
+}
+
+static void
+setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(), int argc)
+{
+    cfunc->func = func;
+    cfunc->argc = argc;
+    cfunc->invoker = call_cfunc_invoker_func(argc);
+}
+
 rb_method_entry_t *
 rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_flag_t noex)
 {
@@ -321,7 +356,10 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 	break;
       case VM_METHOD_TYPE_CFUNC:
       case VM_METHOD_TYPE_CFUNC_FRAMELESS:
-	def->body.cfunc = *(rb_method_cfunc_t *)opts;
+	{
+	    rb_method_cfunc_t *cfunc = (rb_method_cfunc_t *)opts;
+	    setup_method_cfunc_struct(&def->body.cfunc, cfunc->func, cfunc->argc);
+	}
 	break;
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
@@ -338,8 +376,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 	def->body.proc = (VALUE)opts;
 	break;
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
-	def->body.cfunc.func = rb_f_notimplement;
-	def->body.cfunc.argc = -1;
+	setup_method_cfunc_struct(&def->body.cfunc, rb_f_notimplement, -1);
 	break;
       case VM_METHOD_TYPE_OPTIMIZED:
 	def->body.optimize_type = (enum method_optimized_type)opts;

@@ -166,6 +166,7 @@ typedef struct rb_call_info_struct {
 	int opt_pc; /* used by iseq */
 	long index; /* used by ivar */
 	int missing_reason; /* used by method_missing */
+	VALUE (*func)(ANYARGS); /* used by cfunc */
     } aux;
 
     VALUE (*call)(struct rb_thread_struct *th, struct rb_control_frame_struct *cfp, struct rb_call_info_struct *ci);

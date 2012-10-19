@@ -93,8 +93,17 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 						    0, reg_cfp->sp, 1, ci->me);
 
 	    cfp->me = ci->me;
-	    val = call_cfunc(ci->me->def->body.cfunc.func, ci->recv,
-			     ci->me->def->body.cfunc.argc, ci->argc, argv);
+
+	    {
+		const rb_method_entry_t *me = ci->me;
+		const rb_method_definition_t *def = me->def;
+		int len = def->body.cfunc.argc;
+
+		if (len >= 0) rb_check_arity(ci->argc, len, len);
+
+		ci->aux.func = def->body.cfunc.func;
+		val = (*def->body.cfunc.invoker)(ci, argv);
+	    }
 
 	    if (reg_cfp != th->cfp + 1) {
 		rb_bug("cfp consistency error - call0");
