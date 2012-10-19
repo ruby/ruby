@@ -1,3 +1,9 @@
+Fri Oct 19 13:28:29 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (opt-dir): allow multiple directories separated by
+	  $PATH_SEPARATOR as well as dir_config in mkmf.rb. [ruby-core:47868]
+	  [Bug #7120]
+
 Tue Oct 16 11:18:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (dir_config, init_mkmf): use configured libdir value as
