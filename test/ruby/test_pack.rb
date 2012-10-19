@@ -280,6 +280,9 @@ class TestPack < Test::Unit::TestCase
     assert_equal(["1"], "\x80".unpack("B1"))
     assert_equal(["10"], "\x80".unpack("B2"))
     assert_equal(["100"], "\x80".unpack("B3"))
+
+    assert_equal(Encoding::US_ASCII, "\xff\x00".unpack("b*")[0].encoding)
+    assert_equal(Encoding::US_ASCII, "\xff\x00".unpack("B*")[0].encoding)
   end
 
   def test_pack_unpack_hH
@@ -320,6 +323,9 @@ class TestPack < Test::Unit::TestCase
     assert_equal(["10e"], "\x10\xef".unpack("H3"))
     assert_equal(["10ef"], "\x10\xef".unpack("H4"))
     assert_equal(["10ef"], "\x10\xef".unpack("H5"))
+
+    assert_equal(Encoding::US_ASCII, "\x10\xef".unpack("h*")[0].encoding)
+    assert_equal(Encoding::US_ASCII, "\x10\xef".unpack("H*")[0].encoding)
   end
 
   def test_pack_unpack_cC

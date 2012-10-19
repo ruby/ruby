@@ -111,6 +111,10 @@ end
     end
   end
 
+  def test_hex_encoding
+    assert_equal(Encoding::US_ASCII, @it.hex.encoding)
+  end
+
   def test_s_base64
     assert_equal(16, @it.base64.unpack('m*')[0].size)
     17.times do |idx|

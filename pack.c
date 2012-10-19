@@ -1459,7 +1459,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 8)
 		    len = (send - s) * 8;
 		bits = 0;
-		UNPACK_PUSH(bitstr = rb_str_new(0, len));
+		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits >>= 1;
@@ -1479,7 +1479,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 8)
 		    len = (send - s) * 8;
 		bits = 0;
-		UNPACK_PUSH(bitstr = rb_str_new(0, len));
+		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits <<= 1;
@@ -1499,7 +1499,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 2)
 		    len = (send - s) * 2;
 		bits = 0;
-		UNPACK_PUSH(bitstr = rb_str_new(0, len));
+		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -1521,7 +1521,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 2)
 		    len = (send - s) * 2;
 		bits = 0;
-		UNPACK_PUSH(bitstr = rb_str_new(0, len));
+		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 1)

@@ -1,3 +1,14 @@
+Fri Oct 19 22:11:55 2012  Benoit Daloze  <eregontp@gmail.com>
+
+	* pack.c (pack_unpack): set encoding of the
+	  'H','h','B' and 'B' modifiers to US-ASCII.
+
+	* test/ruby/test_pack.rb: tests for the above.
+	  [ruby-core:47653][Bug #7050]
+
+	* test/test_securerandom.rb: tests for SecureRandom.hex
+	  from tenderlove. [ruby-core:46792][Bug #6799]
+
 Fri Oct 19 19:29:11 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h (rb_method_cfunc_t::invoker): add new field (func ptr)
