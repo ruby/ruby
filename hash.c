@@ -1185,6 +1185,9 @@ replace_i(VALUE key, VALUE val, VALUE hash)
 static VALUE
 rb_hash_initialize_copy(VALUE hash, VALUE hash2)
 {
+    rb_hash_modify_check(hash);
+    hash2 = to_hash(hash2);
+
     Check_Type(hash2, T_HASH);
 
     if (!RHASH_EMPTY_P(hash2)) {
@@ -1194,6 +1197,9 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
 
     if (FL_TEST(hash2, HASH_PROC_DEFAULT)) {
         FL_SET(hash, HASH_PROC_DEFAULT);
+    }
+    else {
+	FL_UNSET(hash, HASH_PROC_DEFAULT);
     }
     RHASH_IFNONE(hash) = RHASH_IFNONE(hash2);
 

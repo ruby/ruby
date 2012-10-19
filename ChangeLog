@@ -1,3 +1,8 @@
+Sat Oct 20 06:18:34 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* hash.c (initialize_copy): unset the default proc if there isn't one
+	  for the target hash, call to_hash, check frozen status.
+
 Fri Oct 19 22:22:01 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (rb_vm_jump_tag_but_local_jump): pass through thrown objects.
