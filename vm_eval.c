@@ -1652,11 +1652,11 @@ rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *saved_cfp = th->cfp;
 
-    PUSH_TAG();
+    TH_PUSH_TAG(th);
 
     th->tag->tag = tag;
 
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = TH_EXEC_TAG()) == 0) {
 	/* call with argc=1, argv = [tag], block = Qnil to insure compatibility */
 	val = (*func)(tag, data, 1, &tag, Qnil);
     }
@@ -1666,7 +1666,7 @@ rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
 	th->errinfo = Qnil;
 	state = 0;
     }
-    POP_TAG();
+    TH_POP_TAG();
     if (state)
 	JUMP_TAG(state);
 

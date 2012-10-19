@@ -699,8 +699,8 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
     volatile VALUE e_info = th->errinfo;
     va_list args;
 
-    PUSH_TAG();
-    if ((state = EXEC_TAG()) == 0) {
+    TH_PUSH_TAG(th);
+    if ((state = TH_EXEC_TAG()) == 0) {
       retry_entry:
 	result = (*b_proc) (data1);
     }
@@ -743,7 +743,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	    }
 	}
     }
-    POP_TAG();
+    TH_POP_TAG();
     if (state)
 	JUMP_TAG(state);
 
@@ -770,15 +770,15 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
 
     protect_tag.prev = th->protect_tag;
 
-    PUSH_TAG();
+    TH_PUSH_TAG(th);
     th->protect_tag = &protect_tag;
     MEMCPY(&org_jmpbuf, &(th)->root_jmpbuf, rb_jmpbuf_t, 1);
-    if ((status = EXEC_TAG()) == 0) {
+    if ((status = TH_EXEC_TAG()) == 0) {
 	SAVE_ROOT_JMPBUF(th, result = (*proc) (data));
     }
     MEMCPY(&(th)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
     th->protect_tag = protect_tag.prev;
-    POP_TAG();
+    TH_POP_TAG();
 
     if (state) {
 	*state = status;

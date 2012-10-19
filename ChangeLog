@@ -1,3 +1,7 @@
+Fri Oct 19 16:55:58 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c, vm_eval.c: use TH_PUSH_TAG() instead of PUSH_TAG().
+
 Fri Oct 19 11:13:55 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb: remove unexpected `output'.
