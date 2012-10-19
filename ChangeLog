@@ -1,3 +1,9 @@
+Fri Oct 19 10:20:10 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: add new option `--ruby-arg [ARG]'
+	  which is passed as a launch parameter for each ruby's execution.
+	  ($ ruby [ARG] [File])
+
 Thu Oct 18 18:42:35 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (opt_send_simple): move the location of

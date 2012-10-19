@@ -76,6 +76,7 @@ class BenchmarkDriver
     @verbose = opt[:quiet] ? false : (opt[:verbose] || false)
     @output = opt[:output] ? open(opt[:output], 'w') : nil
     @loop_wl1 = @loop_wl2 = nil
+    @ruby_arg = opt[:ruby_arg] || nil
     @opt = opt
 
     # [[name, [[r-1-1, r-1-2, ...], [r-2-1, r-2-2, ...]]], ...]
@@ -235,7 +236,9 @@ class BenchmarkDriver
   end
 
   def measure executable, file
-    cmd = "#{executable} #{file}"
+    cmd = "#{executable} #{@ruby_arg} #{file}"
+
+    output cmd
     m = Benchmark.measure{
       `#{cmd}`
     }
@@ -273,6 +276,9 @@ if __FILE__ == $0
     }
     o.on('-o', '--output-file [FILE]', "Output file"){|f|
       opt[:output] = f
+    }
+    o.on('--ruby-arg [ARG]', "Optional argument for ruby"){|a|
+      opt[:ruby_arg] = a
     }
     o.on('-q', '--quiet', "Run without notify information except result table."){|q|
       opt[:quiet] = q
