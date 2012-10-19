@@ -1,3 +1,7 @@
+Fri Oct 19 10:24:03 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_search_method): remove needless local variable.
+
 Fri Oct 19 10:22:26 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bmx_temp.rb: removed.

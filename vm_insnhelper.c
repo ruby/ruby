@@ -843,15 +843,13 @@ static void
 vm_search_method(rb_call_info_t *ci, VALUE recv)
 {
     VALUE klass = CLASS_OF(recv);
-    rb_method_entry_t *me;
 
 #if OPT_INLINE_METHOD_CACHE
     if (LIKELY(GET_VM_STATE_VERSION() == ci->vmstat && klass == ci->klass)) {
 	/* cache hit! */
     }
     else {
-	me = rb_method_entry(klass, ci->mid, &ci->defined_class);
-	ci->me = me;
+	ci->me = rb_method_entry(klass, ci->mid, &ci->defined_class);
 	ci->klass = klass;
 	ci->vmstat = GET_VM_STATE_VERSION();
 	ci->call = vm_call_general;
