@@ -20,10 +20,11 @@ module Kernel
   #
   # Otherwise, the original Kernel#open is called.
   #
-  # Since open-uri.rb provides URI::HTTP#open, URI::HTTPS#open and
-  # URI::FTP#open, Kernel[#.]open can accept URIs and strings that begin with
-  # http://, https:// and ftp://.  In these cases, the opened file object is
-  # extended by OpenURI::Meta.
+  # OpenURI::OpenRead#open provides URI::HTTP#open, URI::HTTPS#open and
+  # URI::FTP#open, Kernel#open.
+  #
+  # We can accept URIs and strings that begin with http://, https:// and
+  # ftp://. In these cases, the opened file object is extended by OpenURI::Meta.
   def open(name, *rest, &block) # :doc:
     if name.respond_to?(:open)
       name.open(*rest, &block)
@@ -38,9 +39,9 @@ module Kernel
   module_function :open
 end
 
-# OpenURI is an easy-to-use wrapper for net/http, net/https and net/ftp.
+# OpenURI is an easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP.
 #
-#== Example
+# == Example
 #
 # It is possible to open an http, https or ftp URL as though it were a file:
 #
@@ -70,11 +71,13 @@ end
 #   }
 #
 # The environment variables such as http_proxy, https_proxy and ftp_proxy
-# are in effect by default.  :proxy => nil disables proxy.
+# are in effect by default. Here we disable proxy:
 #
 #   open("http://www.ruby-lang.org/en/raa.html", :proxy => nil) {|f|
 #     # ...
 #   }
+#
+# See OpenURI::OpenRead.open and Kernel#open for more on available options.
 #
 # URI objects can be opened in a similar way.
 #
@@ -359,6 +362,8 @@ module OpenURI
     attr_reader :io
   end
 
+  # Raised on redirection,
+  # only occurs when +redirect+ option for HTTP is +false+.
   class HTTPRedirect < HTTPError
     def initialize(message, io, uri)
       super(message, io)
@@ -367,7 +372,7 @@ module OpenURI
     attr_reader :uri
   end
 
-  class Buffer # :nodoc:
+  class Buffer # :nodoc: all
     def initialize
       @io = StringIO.new
       @size = 0
@@ -456,10 +461,12 @@ module OpenURI
       end
     end
 
+    # :stopdoc:
     RE_LWS = /[\r\n\t ]+/n
     RE_TOKEN = %r{[^\x00- ()<>@,;:\\"/\[\]?={}\x7f]+}n
     RE_QUOTED_STRING = %r{"(?:[\r\n\t !#-\[\]-~\x80-\xff]|\\[\x00-\x7f])*"}n
     RE_PARAMETERS = %r{(?:;#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?=#{RE_LWS}?(?:#{RE_TOKEN}|#{RE_QUOTED_STRING})#{RE_LWS}?)*}n
+    # :startdoc:
 
     def content_type_parse # :nodoc:
       v = @meta['content-type']

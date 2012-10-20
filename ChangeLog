@@ -1,3 +1,7 @@
+Sat Oct 20 11:00:00 2012  Zachary Scott	<zachary@zacharyscott.net>
+
+	* lib/open-uri.rb: Documentation for OpenURI
+
 Sat Oct 20 06:18:34 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* hash.c (initialize_copy): unset the default proc if there isn't one
