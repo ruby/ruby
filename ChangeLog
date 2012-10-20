@@ -1,3 +1,9 @@
+Sat Oct 20 12:50:00 2012  Zachary Scott	<zachary@zacharyscott.net>
+
+	* ext/socket/socket.c: Documentation for Socket
+	  Based on a patch by David Albert
+	  [Bug #7105] [ruby-core:47828]
+
 Sat Oct 20 11:00:00 2012  Zachary Scott	<zachary@zacharyscott.net>
 
 	* lib/open-uri.rb: Documentation for OpenURI

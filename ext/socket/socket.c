@@ -27,9 +27,8 @@ setup_domain_and_type(VALUE domain, int *dv, VALUE type, int *tv)
  *
  * _socktype_ should be a socket type such as: :STREAM, :DGRAM, :RAW, etc.
  *
- * _protocol_ should be a protocol defined in the domain.
- * This is optional.
- * If it is not given, 0 is used internally.
+ * _protocol_ is optional and should be a protocol defined in the domain.
+ * If protocol is not given, 0 is used internally.
  *
  *   Socket.new(:INET, :STREAM) # TCP socket
  *   Socket.new(:INET, :DGRAM)  # UDP socket
@@ -140,8 +139,8 @@ rsock_socketpair(int domain, int type, int protocol, int sv[2])
  *
  * _socktype_ should be a socket type such as: :STREAM, :DGRAM, :RAW, etc.
  *
- * _protocol_ should be a protocol defined in the domain.
- * 0 is default protocol for the domain.
+ * _protocol_ should be a protocol defined in the domain,
+ * defaults to 0 for the domain.
  *
  *   s1, s2 = Socket.pair(:UNIX, :DGRAM, 0)
  *   s1.send "a", 0
@@ -1134,8 +1133,8 @@ sock_s_getservbyport(int argc, VALUE *argv)
  *
  * _socktype_ should be a socket type such as: :STREAM, :DGRAM, :RAW, etc.
  *
- * _protocol_ should be a protocol defined in the family.
- * 0 is default protocol for the family.
+ * _protocol_ should be a protocol defined in the family,
+ * and defaults to 0 for the family.
  *
  * _flags_ should be bitwise OR of Socket::AI_* constants.
  *
@@ -1148,8 +1147,7 @@ sock_s_getservbyport(int argc, VALUE *argv)
  *   #    ["AF_INET", 0, "localhost", "127.0.0.1", 2, 3, 0]]  # PF_INET/SOCK_RAW/IPPROTO_IP
  *
  * _reverse_lookup_ directs the form of the third element, and has to
- * be one of below.
- * If it is ommitted, the default value is +nil+.
+ * be one of below.  If _reverse_lookup_ is omitted, the default value is +nil+.
  *
  *   +true+, +:hostname+:  hostname is obtained from numeric address using reverse lookup, which may take a time.
  *   +false+, +:numeric+:  hostname is same as numeric address.
@@ -1201,7 +1199,8 @@ sock_s_getaddrinfo(int argc, VALUE *argv)
  *
  * _flags_ should be bitwise OR of Socket::NI_* constants.
  *
- * Note that the last form is compatible with IPSocket#{addr,peeraddr}.
+ * Note:
+ * The last form is compatible with IPSocket#addr and IPSocket#peeraddr.
  *
  *   Socket.getnameinfo(Socket.sockaddr_in(80, "127.0.0.1"))       #=> ["localhost", "www"]
  *   Socket.getnameinfo(["AF_INET", 80, "127.0.0.1"])              #=> ["localhost", "www"]
@@ -1859,35 +1858,45 @@ Init_socket()
      * TCPSocket, UDPSocket or UNIXSocket for example.
      *
      * Sockets have their own vocabulary:
-     * domain::
-     *   The family of protocols:  Socket::PF_INET, Socket::PF_INET6,
-     *   Socket::PF_UNIX, etc.
-     * type::
-     *   The type of communications between the two endpoints, typically
-     *   Socket::SOCK_STREAM or Socket::SOCK_DGRAM.
-     * protocol::
-     *   Typically zero.  This may be used to identify a variant of a
-     *   protocol.
-     * hostname::
-     *   The identifier of a network interface:
-     *     * a string (hostname, IPv4 or IPv6 adress or <tt><broadcast></tt>
-     *       which specifies a broadcast address)
-     *     * a zero-length string which specifies INADDR_ANY
-     *     * an integer (interpreted as binary address in host byte order).
+     *
+     * *domain:*
+     * The family of protocols:
+     * *    Socket::PF_INET
+     * *    Socket::PF_INET6
+     * *    Socket::PF_UNIX
+     * *    etc.
+     *
+     * *type:*
+     * The type of communications between the two endpoints, typically
+     * *    Socket::SOCK_STREAM
+     * *    Socket::SOCK_DGRAM.
+     *
+     * *protocol:*
+     * Typically _zero_.
+     * This may be used to identify a variant of a protocol.
+     *
+     * *hostname:*
+     * The identifier of a network interface:
+     * *    a string (hostname, IPv4 or IPv6 adress or +broadcast+
+     *	    which specifies a broadcast address)
+     * *    a zero-length string which specifies INADDR_ANY
+     * *    an integer (interpreted as binary address in host byte order).
      *
      * === Quick start
      *
-     * Some classes such as TCPSocket, UDPSocket or UNIXSocket ease use of
-     * sockets of these types compared to C programming.
+     * Many of the classes, such as TCPSocket, UDPSocket or UNIXSocket,
+     * ease the use of sockets comparatively to the equivalent C programming interface.
      *
-     *   # Creating a TCP socket in a C-like manner
-     *   s = Socket.new Socket::INET, Socket::SOCK_STREAM
+     * Let's create an internet socket using the IPv4 protocol in a C-like manner:
+     *
+     *   s = Socket.new Socket::AF_INET, Socket::SOCK_STREAM
      *   s.connect Socket.pack_sockaddr_in(80, 'example.com')
      *
-     *   # Using TCPSocket
+     * You could also use the TCPSocket class:
+     *
      *   s = TCPSocket.new 'example.com', 80
      *
-     * A simple server would look like:
+     * A simple server might look like this:
      *
      *   require 'socket'
      *
@@ -1900,7 +1909,7 @@ Init_socket()
      *     client.close
      *   end
      *
-     * A simple client may look like:
+     * A simple client may look like this:
      *
      *   require 'socket'
      *
@@ -1917,14 +1926,14 @@ Init_socket()
      * Ruby's Socket implementation raises exceptions based on the error
      * generated by the system dependent implementation.  This is why the
      * methods are documented in a way that isolate Unix-based system
-     * exceptions from Windows based exceptions. If more information on
-     * particular exception is needed please refer to the Unix manual pages or
+     * exceptions from Windows based exceptions. If more information on a
+     * particular exception is needed, please refer to the Unix manual pages or
      * the Windows WinSock reference.
      *
-     * === Convenient methods
+     * === Convenience methods
      *
      * Although the general way to create socket is Socket.new,
-     * there are several methods for socket creation for most cases.
+     * there are several methods of socket creation for most cases.
      *
      * TCP client socket::
      *   Socket.tcp, TCPSocket.open
