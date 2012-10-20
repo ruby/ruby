@@ -826,8 +826,7 @@ VALUE rb_cMatch;
 static VALUE
 match_alloc(VALUE klass)
 {
-    NEWOBJ(match, struct RMatch);
-    OBJSETUP(match, klass, T_MATCH);
+    NEWOBJ_OF(match, struct RMatch, klass, T_MATCH);
 
     match->str = 0;
     match->rmatch = 0;
@@ -2453,8 +2452,7 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
 static VALUE
 rb_reg_s_alloc(VALUE klass)
 {
-    NEWOBJ(re, struct RRegexp);
-    OBJSETUP(re, klass, T_REGEXP);
+    NEWOBJ_OF(re, struct RRegexp, klass, T_REGEXP);
 
     re->ptr = 0;
     re->src = 0;

@@ -1459,8 +1459,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    BDIGIT *digits;
 	    volatile VALUE data;
 
-	    NEWOBJ(big, struct RBignum);
-	    OBJSETUP(big, rb_cBignum, T_BIGNUM);
+	    NEWOBJ_OF(big, struct RBignum, rb_cBignum, T_BIGNUM);
 	    RBIGNUM_SET_SIGN(big, (r_byte(arg) == '+'));
 	    len = r_long(arg);
 	    data = r_bytes0(len * 2, arg);

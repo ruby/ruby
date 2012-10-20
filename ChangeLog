@@ -1,3 +1,32 @@
+Sat Oct 20 15:35:06 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* include/ruby/ruby.h: add C APIs.
+	  VALUE rb_newobj_of(VALUE klass, VALUE flags)
+	  #define NEWOBJ_OF(obj,type,klass,flags)
+	  These allow to change a allocation strategy depending on klass
+	  or flags.
+
+	* gc.c: ditto
+
+	* array.c: use new C API.
+	* bignum.c: ditto
+	* class.c: ditto
+	* complex.c: ditto
+	* ext/socket/ancdata.c: ditto
+	* ext/socket/option.c: ditto
+	* hash.c: ditto
+	* io.c: ditto
+	* marshal.c: ditto
+	* numeric.c: ditto
+	* object.c: ditto
+	* random.c: ditto
+	* range.c: ditto
+	* rational.c: ditto
+	* re.c: ditto
+	* string.c: ditto
+	* struct.c: ditto
+	  [Feature #7177][Feature #7047]
+
 Sat Oct 20 12:50:00 2012  Zachary Scott	<zachary@zacharyscott.net>
 
 	* ext/socket/socket.c: Documentation for Socket

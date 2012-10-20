@@ -1679,8 +1679,7 @@ rb_obj_alloc(VALUE klass)
 static VALUE
 rb_class_allocate_instance(VALUE klass)
 {
-    NEWOBJ(obj, struct RObject);
-    OBJSETUP(obj, klass, T_OBJECT);
+    NEWOBJ_OF(obj, struct RObject, klass, T_OBJECT);
     return (VALUE)obj;
 }
 

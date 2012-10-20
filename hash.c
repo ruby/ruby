@@ -207,8 +207,7 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
 static VALUE
 hash_alloc(VALUE klass)
 {
-    NEWOBJ(hash, struct RHash);
-    OBJSETUP(hash, klass, T_HASH);
+    NEWOBJ_OF(hash, struct RHash, klass, T_HASH);
 
     RHASH_IFNONE(hash) = Qnil;
 
@@ -224,8 +223,11 @@ rb_hash_new(void)
 VALUE
 rb_hash_dup(VALUE hash)
 {
-    NEWOBJ(ret, struct RHash);
-    DUPSETUP(ret, hash);
+    NEWOBJ_OF(ret, struct RHash,
+                rb_obj_class(hash),
+                (RBASIC(hash)->flags)&(T_MASK|FL_EXIVAR|FL_TAINT|FL_UNTRUSTED));
+    if (FL_TEST((hash), FL_EXIVAR))
+        rb_copy_generic_ivar((VALUE)(ret),(VALUE)(hash));
 
     if (!RHASH_EMPTY_P(hash))
         ret->ntbl = st_copy(RHASH(hash)->ntbl);

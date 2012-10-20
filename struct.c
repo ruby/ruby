@@ -384,8 +384,7 @@ static VALUE
 struct_alloc(VALUE klass)
 {
     long n;
-    NEWOBJ(st, struct RStruct);
-    OBJSETUP(st, klass, T_STRUCT);
+    NEWOBJ_OF(st, struct RStruct, klass, T_STRUCT);
 
     n = num_members(klass);
 

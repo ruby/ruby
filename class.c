@@ -49,8 +49,7 @@ static ID id_attached;
 static VALUE
 class_alloc(VALUE flags, VALUE klass)
 {
-    NEWOBJ(obj, struct RClass);
-    OBJSETUP(obj, klass, flags);
+    NEWOBJ_OF(obj, struct RClass, klass, flags);
     obj->ptr = ALLOC(rb_classext_t);
     RCLASS_IV_TBL(obj) = 0;
     RCLASS_CONST_TBL(obj) = 0;

@@ -166,8 +166,7 @@ rb_big_resize(VALUE big, long len)
 static VALUE
 bignew_1(VALUE klass, long len, int sign)
 {
-    NEWOBJ(big, struct RBignum);
-    OBJSETUP(big, klass, T_BIGNUM);
+    NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM);
     RBIGNUM_SET_SIGN(big, sign?1:0);
     if (len <= RBIGNUM_EMBED_LEN_MAX) {
 	RBASIC(big)->flags |= RBIGNUM_EMBED_FLAG;

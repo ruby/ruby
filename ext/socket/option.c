@@ -61,8 +61,7 @@ sockopt_initialize(VALUE self, VALUE vfamily, VALUE vlevel, VALUE voptname, VALU
 VALUE
 rsock_sockopt_new(int family, int level, int optname, VALUE data)
 {
-    NEWOBJ(obj, struct RObject);
-    OBJSETUP(obj, rb_cSockOpt, T_OBJECT);
+    NEWOBJ_OF(obj, struct RObject, rb_cSockOpt, T_OBJECT);
     StringValue(data);
     sockopt_initialize((VALUE)obj, INT2NUM(family), INT2NUM(level), INT2NUM(optname), data);
     return (VALUE)obj;

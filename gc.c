@@ -646,8 +646,8 @@ heaps_increment(rb_objspace_t *objspace)
     return FALSE;
 }
 
-VALUE
-rb_newobj(void)
+static VALUE
+newobj(VALUE klass, VALUE flags)
 {
     rb_objspace_t *objspace = &rb_objspace;
     VALUE obj;
@@ -684,6 +684,23 @@ rb_newobj(void)
     RANY(obj)->line = rb_sourceline();
 #endif
     gc_prof_inc_live_num(objspace);
+
+    return obj;
+}
+
+VALUE
+rb_newobj(void)
+{
+    return newobj(0, T_NONE);
+}
+
+VALUE
+rb_newobj_of(VALUE klass, VALUE flags)
+{
+    VALUE obj;
+
+    obj = newobj(klass, flags);
+    OBJSETUP(obj, klass, flags);
 
     return obj;
 }

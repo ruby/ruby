@@ -956,8 +956,7 @@ static VALUE
 range_dumper(VALUE range)
 {
     VALUE v;
-    NEWOBJ(m, struct RObject);
-    OBJSETUP(m, rb_cObject, T_OBJECT);
+    NEWOBJ_OF(m, struct RObject, rb_cObject, T_OBJECT);
 
     v = (VALUE)m;
 

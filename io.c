@@ -837,8 +837,7 @@ ruby_dup(int orig)
 static VALUE
 io_alloc(VALUE klass)
 {
-    NEWOBJ(io, struct RFile);
-    OBJSETUP(io, klass, T_FILE);
+    NEWOBJ_OF(io, struct RFile, klass, T_FILE);
 
     io->fptr = 0;
 

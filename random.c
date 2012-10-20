@@ -537,8 +537,7 @@ make_seed_value(const void *ptr)
 {
     const long len = DEFAULT_SEED_LEN/SIZEOF_BDIGITS;
     BDIGIT *digits;
-    NEWOBJ(big, struct RBignum);
-    OBJSETUP(big, rb_cBignum, T_BIGNUM);
+    NEWOBJ_OF(big, struct RBignum, rb_cBignum, T_BIGNUM);
 
     RBIGNUM_SET_SIGN(big, 1);
     rb_big_resize((VALUE)big, len + 1);

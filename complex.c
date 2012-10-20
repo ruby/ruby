@@ -313,8 +313,7 @@ k_complex_p(VALUE x)
 inline static VALUE
 nucomp_s_new_internal(VALUE klass, VALUE real, VALUE imag)
 {
-    NEWOBJ(obj, struct RComplex);
-    OBJSETUP(obj, klass, T_COMPLEX);
+    NEWOBJ_OF(obj, struct RComplex, klass, T_COMPLEX);
 
     obj->real = real;
     obj->imag = imag;
