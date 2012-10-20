@@ -4110,7 +4110,7 @@ gc_profile_clear(void)
  *
  *  The keys mean:
  *
- *  +:GC_TIME+:: Time taken for this run in milliseconds
+ *  +:GC_TIME+:: Time taken for this run in seconds
  *  +:GC_INVOKE_TIME+:: Time the GC was invoked since startup in seconds
  *  +:HEAP_USE_SIZE+:: Bytes of heap used
  *  +:HEAP_TOTAL_SIZE+:: Size of heap in bytes
@@ -4247,7 +4247,7 @@ gc_profile_report(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     GC::Profiler.total_time -> float
  *
- *  The total time used for garbage collection in milliseconds
+ *  The total time used for garbage collection in seconds
  */
 
 static VALUE
@@ -4267,7 +4267,7 @@ gc_profile_total_time(VALUE self)
 
 /*
  *  call-seq:
- *    GC::Profiler.enable?                 -> true or false
+ *    GC::Profiler.enabled?                 -> true or false
  *
  *  The current status of GC profile mode.
  */
