@@ -1,3 +1,9 @@
+Sun Oct 21 18:34:27 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_parse.c (date__parse): uses more tight parser if
+	  defined TIGHT_PARSER.  now inactivated; because it introduces
+	  incompatibilities and it is a bit slow.
+
 Sat Oct 20 15:35:06 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* include/ruby/ruby.h: add C APIs.
