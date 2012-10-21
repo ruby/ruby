@@ -1,3 +1,8 @@
+Sun Oct 21 19:12:42 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_core.h (rb_vm_t::trace_flag): remove `trace_flag'
+	  which is no longer used.
+
 Sun Oct 21 18:34:27 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_parse.c (date__parse): uses more tight parser if
