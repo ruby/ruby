@@ -1,3 +1,12 @@
+Sun Oct 21 19:12:59 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_core.h (rb_vm_t::trace_running): add a new field
+	  `trace_running' to store vm global tracing status.
+
+	* vm_trace.c: fix SEGV bug. event_hook was free'd
+	  even when the hook is still used in another thread.
+	  [ruby-dev:46141] [Bug #7032]
+
 Sun Oct 21 19:12:42 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_core.h (rb_vm_t::trace_flag): remove `trace_flag'

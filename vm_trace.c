@@ -268,12 +268,12 @@ clean_hooks(rb_hook_list_t *list)
 }
 
 static int
-exec_hooks(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
+exec_hooks(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg, int can_clean_hooks)
 {
     int state;
     volatile int raised;
 
-    if (UNLIKELY(list->need_clean > 0)) {
+    if (UNLIKELY(list->need_clean > 0) && can_clean_hooks) {
 	clean_hooks(list);
     }
 
@@ -310,10 +310,12 @@ rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t event, VALUE self
 {
     if (th->trace_running == 0 &&
 	self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
+	int vm_tracing = th->vm->trace_running;
 	int state = 0;
 	int outer_state = th->state;
 	th->state = 0;
 
+	th->vm->trace_running = 1;
 	th->trace_running = 1;
 	{
 	    const VALUE errinfo = th->errinfo;
@@ -330,20 +332,21 @@ rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t event, VALUE self
 	    /* thread local traces */
 	    list = &th->event_hooks;
 	    if (list->events & event) {
-		state = exec_hooks(th, list, &ta);
+		state = exec_hooks(th, list, &ta, TRUE);
 		if (state) goto terminate;
 	    }
 
 	    /* vm global traces */
 	    list = &th->vm->event_hooks;
 	    if (list->events & event) {
-		state = exec_hooks(th, list, &ta);
+		state = exec_hooks(th, list, &ta, !vm_tracing);
 		if (state) goto terminate;
 	    }
 	    th->errinfo = errinfo;
 	}
       terminate:
 	th->trace_running = 0;
+	th->vm->trace_running = vm_tracing;
 
 	if (state) {
 	    TH_JUMP_TAG(th, state);
@@ -360,8 +363,10 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     VALUE result = Qnil;
     rb_thread_t *th = GET_THREAD();
     int state;
+    int vm_tracing = th->vm->trace_running;
     int tracing = th->trace_running;
 
+    th->vm->trace_running = 1;
     th->trace_running = 1;
     raised = rb_threadptr_reset_raised(th);
     outer_state = th->state;
@@ -377,6 +382,7 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 	rb_threadptr_set_raised(th);
     }
     th->trace_running = tracing;
+    th->vm->trace_running = vm_tracing;
 
     if (state) {
 	JUMP_TAG(state);

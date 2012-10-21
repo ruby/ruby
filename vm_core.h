@@ -343,6 +343,7 @@ typedef struct rb_vm_struct {
     int running;
     int inhibit_thread_creation;
     int thread_abort_on_exception;
+    int trace_running;
     volatile int sleeper;
 
     /* object management */
