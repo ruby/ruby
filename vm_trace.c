@@ -310,7 +310,7 @@ rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t event, VALUE self
 {
     if (th->trace_running == 0 &&
 	self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
-	int vm_tracing = th->vm->trace_running;
+	const int vm_tracing = th->vm->trace_running;
 	int state = 0;
 	int outer_state = th->state;
 	th->state = 0;
@@ -363,8 +363,8 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     VALUE result = Qnil;
     rb_thread_t *th = GET_THREAD();
     int state;
-    int vm_tracing = th->vm->trace_running;
-    int tracing = th->trace_running;
+    const int vm_tracing = th->vm->trace_running;
+    const int tracing = th->trace_running;
 
     th->vm->trace_running = 1;
     th->trace_running = 1;
