@@ -504,7 +504,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     self.class.class_eval{remove_const(:XYZZY)}
     return events
   end
-  
+
   def test_tracepoint
     events1, answer_events = *trace_by_tracepoint()
     answer_events.zip(events1){|answer, event|
