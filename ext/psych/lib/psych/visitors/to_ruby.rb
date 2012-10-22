@@ -118,6 +118,8 @@ module Psych
         end
 
         case o.tag
+        when nil
+          register_empty(o)
         when '!omap', 'tag:yaml.org,2002:omap'
           map = register(o, Psych::Omap.new)
           o.children.each { |a|
@@ -130,9 +132,7 @@ module Psych
           o.children.each { |c| list.push accept c }
           list
         else
-          list = register(o, [])
-          o.children.each { |c| list.push accept c }
-          list
+          register_empty(o)
         end
       end
 
@@ -250,6 +250,12 @@ module Psych
       def register node, object
         @st[node.anchor] = object if node.anchor
         object
+      end
+
+      def register_empty object
+        list = register(object, [])
+        object.children.each { |c| list.push accept c }
+        list
       end
 
       def revive_hash hash, o
