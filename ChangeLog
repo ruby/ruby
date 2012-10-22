@@ -1,3 +1,12 @@
+Tue Oct 23 06:21:05 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/parser.c: just get the constant defined in Ruby.
+
+	* ext/psych/lib/psych/syntax_error.rb: Psych::SyntaxError now inherits
+	  from StandardError rather than SyntaxError.  Thanks Eric Hodel!
+
+	* test/psych/test_exception.rb: tests for change.
+
 Tue Oct 23 06:17:36 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: Cache symbols while

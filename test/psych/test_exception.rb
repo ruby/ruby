@@ -126,5 +126,26 @@ module Psych
       assert_equal 1, w.foo
       assert_nil w.bar
     end
+
+    def test_psych_syntax_error
+      Tempfile.open(['parsefile', 'yml']) do |t|
+        t.binmode
+        t.write '--- `'
+        t.close
+
+        begin
+          Psych.parse_file t.path
+        rescue StandardError
+          assert true # count assertion
+        ensure
+          return unless $!
+
+          ancestors = $!.class.ancestors.inspect
+
+          flunk "Psych::SyntaxError not rescued by StandardError: #{ancestors}"
+        end
+      end
+    end
+
   end
 end

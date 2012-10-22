@@ -1,5 +1,8 @@
 module Psych
-  class SyntaxError < ::SyntaxError
+  class Error < RuntimeError
+  end
+
+  class SyntaxError < Error
     attr_reader :file, :line, :column, :offset, :problem, :context
 
     def initialize file, line, col, offset, problem, context

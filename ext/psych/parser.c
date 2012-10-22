@@ -557,7 +557,7 @@ void Init_psych_parser()
     rb_define_const(cPsychParser, "UTF16BE", INT2NUM(YAML_UTF16BE_ENCODING));
 
     rb_require("psych/syntax_error");
-    ePsychSyntaxError = rb_define_class_under(mPsych, "SyntaxError", rb_eSyntaxError);
+    ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
 
     rb_define_method(cPsychParser, "parse", parse, -1);
     rb_define_method(cPsychParser, "mark", mark, 0);
