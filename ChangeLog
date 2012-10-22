@@ -1,3 +1,8 @@
+Tue Oct 23 06:17:36 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: Cache symbols while
+	  tokenizing.  Thanks Kevin Menard!
+
 Tue Oct 23 06:15:40 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: Updated the RegExp to catch

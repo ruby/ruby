@@ -16,12 +16,14 @@ module Psych
     # Create a new scanner
     def initialize
       @string_cache = {}
+      @symbol_cache = {}
     end
 
     # Tokenize +string+ returning the ruby object
     def tokenize string
       return nil if string.empty?
       return string if @string_cache.key?(string)
+      return @symbol_cache[string] if @symbol_cache.key?(string)
 
       case string
       # Check for a String type, being careful not to get caught by hash keys, hex values, and
@@ -67,9 +69,9 @@ module Psych
         0.0 / 0.0
       when /^:./
         if string =~ /^:(["'])(.*)\1/
-          $2.sub(/^:/, '').to_sym
+          @symbol_cache[string] = $2.sub(/^:/, '').to_sym
         else
-          string.sub(/^:/, '').to_sym
+          @symbol_cache[string] = string.sub(/^:/, '').to_sym
         end
       when /^[-+]?[0-9][0-9_]*(:[0-5]?[0-9])+$/
         i = 0
