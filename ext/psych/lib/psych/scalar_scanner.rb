@@ -24,7 +24,7 @@ module Psych
       return string if @string_cache.key?(string)
 
       case string
-      when /^[A-Za-z~]/
+      when /^[A-Za-z_~]/
         if string.length > 5
           @string_cache[string] = true
           return string

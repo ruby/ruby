@@ -87,5 +87,9 @@ module Psych
     def test_scan_true
       assert_equal true, ss.tokenize('true')
     end
+
+    def test_scan_strings_starting_with_underscores
+      assert_equal "_100", ss.tokenize('_100')
+    end
   end
 end

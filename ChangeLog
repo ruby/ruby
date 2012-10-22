@@ -1,3 +1,11 @@
+Tue Oct 23 06:04:07 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: Fix scalar_scanner to
+	  understand strings starting with an underscore and containing only
+	  digits.  Thanks Kelley Reynolds.
+
+	* test/psych/test_scalar_scanner.rb: test for fix
+
 Tue Oct 23 06:00:41 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych.rb: Changed comment in psych.rb to update new
