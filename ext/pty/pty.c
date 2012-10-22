@@ -223,7 +223,6 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     int masterfd = -1, slavefd = -1;
     char *slavedevice;
     struct sigaction dfl, old;
-    int flags;
 
     dfl.sa_handler = SIG_DFL;
     dfl.sa_flags = 0;
@@ -238,14 +237,16 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if (grantpt(masterfd) == -1) goto grantpt_error;
     rb_fd_fix_cloexec(masterfd);
 #else
-    flags = O_RDWR|O_NOCTTY;
+    {
+	int flags = O_RDWR|O_NOCTTY;
 # if defined(O_CLOEXEC)
-    /* glibc posix_openpt() in GNU/Linux calls open("/dev/ptmx", flags) internally.
-     * So version dependency on GNU/Linux is same as O_CLOEXEC with open().
-     * O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
-    flags |= O_CLOEXEC;
+	/* glibc posix_openpt() in GNU/Linux calls open("/dev/ptmx", flags) internally.
+	 * So version dependency on GNU/Linux is same as O_CLOEXEC with open().
+	 * O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
+	flags |= O_CLOEXEC;
 # endif
-    if ((masterfd = posix_openpt(flags)) == -1) goto error;
+	if ((masterfd = posix_openpt(flags)) == -1) goto error;
+    }
     rb_fd_fix_cloexec(masterfd);
     if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
     if (grantpt(masterfd) == -1) goto grantpt_error;

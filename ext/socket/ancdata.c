@@ -1163,8 +1163,10 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #if defined(HAVE_ST_MSG_CONTROL)
 	int i;
 	size_t last_pad = 0;
+#if defined(__NetBSD__)
         int last_level = 0;
         int last_type = 0;
+#endif
         controls_str = rb_str_tmp_new(0);
         for (i = 0; i < controls_num; i++) {
             VALUE elt = controls_ptr[i], v;
@@ -1203,8 +1205,10 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             cmh.cmsg_len = (socklen_t)CMSG_LEN(RSTRING_LEN(cdata));
             MEMCPY(cmsg, &cmh, char, sizeof(cmh));
             MEMCPY(cmsg+((char*)CMSG_DATA(&cmh)-(char*)&cmh), RSTRING_PTR(cdata), char, RSTRING_LEN(cdata));
+#if defined(__NetBSD__)
             last_level = cmh.cmsg_level;
             last_type = cmh.cmsg_type;
+#endif
 	    last_pad = cspace - cmh.cmsg_len;
         }
 	if (last_pad) {
