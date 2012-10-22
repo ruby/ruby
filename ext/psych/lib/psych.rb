@@ -18,10 +18,12 @@ require 'psych/handlers/document_stream'
 ###
 # = Overview
 #
-# Psych is a YAML parser and emitter.  Psych leverages
-# libyaml[http://libyaml.org] for it's YAML parsing and emitting capabilities.
-# In addition to wrapping libyaml, Psych also knows how to serialize and
-# de-serialize most Ruby objects to and from the YAML format.
+# Psych is a YAML parser and emitter. 
+# Psych leverages libyaml [Home page: http://pyyaml.org/wiki/LibYAML] 
+# or [Git repo: https://github.com/zerotao/libyaml] for its YAML parsing
+# and emitting capabilities. In addition to wrapping libyaml, Psych also
+# knows how to serialize and de-serialize most Ruby objects to and from
+# the YAML format.
 #
 # = I NEED TO PARSE OR EMIT YAML RIGHT NOW!
 #

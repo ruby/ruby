@@ -1,3 +1,8 @@
+Tue Oct 23 06:00:41 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych.rb: Changed comment in psych.rb to update new
+	  home page for libyaml.  Thanks to Carolyn Ann.
+
 Sun Oct 21 19:12:59 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_core.h (rb_vm_t::trace_running): add a new field
