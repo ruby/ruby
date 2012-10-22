@@ -1,3 +1,12 @@
+Tue Oct 23 06:07:57 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: Ignore bad timestamps.  If
+	  something looks like a timestamp but has an invalid component, treat
+	  it as a string instead of throwing an ArgumentError.
+	  Thanks Rhett Sutphin!
+
+	* test/psych/test_scalar_scanner.rb: appropriate tests.
+
 Tue Oct 23 06:04:07 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: Fix scalar_scanner to

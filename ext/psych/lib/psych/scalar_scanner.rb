@@ -45,7 +45,11 @@ module Psych
           string
         end
       when TIME
-        parse_time string
+        begin
+          parse_time string
+        rescue ArgumentError
+          string
+        end
       when /^\d{4}-(?:1[012]|0\d|\d)-(?:[12]\d|3[01]|0\d|\d)$/
         require 'date'
         begin
