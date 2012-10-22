@@ -1,3 +1,8 @@
+Tue Oct 23 06:15:40 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/scalar_scanner.rb: Updated the RegExp to catch
+	  Strings earlier in the tokenization process.  Thanks Kevin Menard!
+
 Tue Oct 23 06:12:39 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/to_ruby.rb: Handle nil tags specially
