@@ -261,6 +261,15 @@ class TestProc < Test::Unit::TestCase
       end, 'moved from btest/knownbug, [ruby-core:15551]')
   end
 
+  def test_curry_instance_exec
+    a = lambda { |x, y| [x + y, self] }
+    b = a.curry.call(1)
+    result = instance_exec 2, &b
+
+    assert_equal(3, result[0])
+    assert_equal(self, result[1])
+  end
+
   def test_dup_clone
     b = proc {|x| x + "bar" }
     class << b; attr_accessor :foo; end
