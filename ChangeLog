@@ -1,3 +1,14 @@
+Wed Oct 24 05:17:52 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_eval.c (vm_call0_body): remove RUBY_VM_CHECK_INTS()
+	  after method invocation using rb_call0().
+
+	* vm_eval.c (vm_call0_body): remove default section on top of
+	  switch statement and add cases for `VM_METHOD_TYPE_CFUNC_FRAMELESS'
+	  and `VM_METHOD_TYPE_UNDEF'.
+
+	* vm_eval.c (vm_call0_body): remove useless brackets.
+
 Tue Oct 23 22:34:49 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (thread_raise_m):  check interrupts after Thread#raise

@@ -131,8 +131,6 @@ vm_call0_cfunc(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 static VALUE
 vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 {
-    VALUE val;
-
     if (!ci->me->def) return Qnil;
 
     if (th->passed_block) {
@@ -145,40 +143,33 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 
   again:
     switch (ci->me->def->type) {
-      case VM_METHOD_TYPE_ISEQ: {
-	rb_control_frame_t *reg_cfp = th->cfp;
-	int i;
+      case VM_METHOD_TYPE_ISEQ:
+	{
+	    rb_control_frame_t *reg_cfp = th->cfp;
+	    int i;
 
-	CHECK_STACK_OVERFLOW(reg_cfp, ci->argc + 1);
+	    CHECK_STACK_OVERFLOW(reg_cfp, ci->argc + 1);
 
-	*reg_cfp->sp++ = ci->recv;
-	for (i = 0; i < ci->argc; i++) {
-	    *reg_cfp->sp++ = argv[i];
+	    *reg_cfp->sp++ = ci->recv;
+	    for (i = 0; i < ci->argc; i++) {
+		*reg_cfp->sp++ = argv[i];
+	    }
+
+	    vm_call_iseq_setup(th, reg_cfp, ci);
+	    th->cfp->flag |= VM_FRAME_FLAG_FINISH;
+	    return vm_exec(th);
 	}
-
-	vm_call_iseq_setup(th, reg_cfp, ci);
-	th->cfp->flag |= VM_FRAME_FLAG_FINISH;
-	val = vm_exec(th);
-	break;
-      }
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_CFUNC:
-	val = vm_call0_cfunc(th, ci, argv);
-	break;
-      case VM_METHOD_TYPE_ATTRSET: {
+	return vm_call0_cfunc(th, ci, argv);
+      case VM_METHOD_TYPE_ATTRSET:
 	rb_check_arity(ci->argc, 1, 1);
-	val = rb_ivar_set(ci->recv, ci->me->def->body.attr.id, argv[0]);
-	break;
-      }
-      case VM_METHOD_TYPE_IVAR: {
+	return rb_ivar_set(ci->recv, ci->me->def->body.attr.id, argv[0]);
+      case VM_METHOD_TYPE_IVAR:
 	rb_check_arity(ci->argc, 0, 0);
-	val = rb_attr_get(ci->recv, ci->me->def->body.attr.id);
-	break;
-      }
-      case VM_METHOD_TYPE_BMETHOD: {
-	val = vm_call_bmethod_body(th, ci, argv);
-	break;
-      }
+	return rb_attr_get(ci->recv, ci->me->def->body.attr.id);
+      case VM_METHOD_TYPE_BMETHOD:
+	return vm_call_bmethod_body(th, ci, argv);
       case VM_METHOD_TYPE_ZSUPER:
 	{
 	    ci->defined_class = RCLASS_SUPER(ci->defined_class);
@@ -190,38 +181,40 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	    if (!ci->me->def) return Qnil;
 	    goto again;
 	}
-      case VM_METHOD_TYPE_MISSING: {
-	VALUE new_args = rb_ary_new4(ci->argc, argv);
+      case VM_METHOD_TYPE_MISSING:
+	{
+	    VALUE new_args = rb_ary_new4(ci->argc, argv);
 
-	RB_GC_GUARD(new_args);
-	rb_ary_unshift(new_args, ID2SYM(ci->mid));
-	th->passed_block = ci->blockptr;
-	return rb_funcall2(ci->recv, idMethodMissing, ci->argc+1, RARRAY_PTR(new_args));
-      }
-      case VM_METHOD_TYPE_OPTIMIZED: {
+	    RB_GC_GUARD(new_args);
+	    rb_ary_unshift(new_args, ID2SYM(ci->mid));
+	    th->passed_block = ci->blockptr;
+	    return rb_funcall2(ci->recv, idMethodMissing, ci->argc+1, RARRAY_PTR(new_args));
+	}
+      case VM_METHOD_TYPE_OPTIMIZED:
 	switch (ci->me->def->body.optimize_type) {
 	  case OPTIMIZED_METHOD_TYPE_SEND:
-	    val = send_internal(ci->argc, argv, ci->recv, CALL_FCALL);
-	    break;
-	  case OPTIMIZED_METHOD_TYPE_CALL: {
-	    rb_proc_t *proc;
-	    GetProcPtr(ci->recv, proc);
-	    val = rb_vm_invoke_proc(th, proc, ci->argc, argv, ci->blockptr);
-	    break;
-	  }
+	    return send_internal(ci->argc, argv, ci->recv, CALL_FCALL);
+	  case OPTIMIZED_METHOD_TYPE_CALL:
+	    {
+		rb_proc_t *proc;
+		GetProcPtr(ci->recv, proc);
+		return rb_vm_invoke_proc(th, proc, ci->argc, argv, ci->blockptr);
+	    }
 	  default:
 	    rb_bug("vm_call0: unsupported optimized method type (%d)", ci->me->def->body.optimize_type);
-	    val = Qundef;
-	    break;
 	}
 	break;
-      }
-      default:
-	rb_bug("vm_call0: unsupported method type (%d)", ci->me->def->type);
-	val = Qundef;
+      case VM_METHOD_TYPE_CFUNC_FRAMELESS:
+	{
+	    /* TODO: can optimize it */
+	    const rb_method_cfunc_t *cfunc = &ci->me->def->body.cfunc;
+	    return cfunc->invoker(cfunc->func, ci, argv);
+	}
+      case VM_METHOD_TYPE_UNDEF:
+	break;
     }
-    RUBY_VM_CHECK_INTS(th);
-    return val;
+    rb_bug("vm_call0: unsupported method type (%d)", ci->me->def->type);
+    return Qundef;
 }
 
 VALUE
