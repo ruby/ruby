@@ -1,3 +1,10 @@
+Tue Oct 23 22:34:49 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (thread_raise_m):  check interrupts after Thread#raise
+	  if a target thread is the current thread because the behavior
+	  of Thread.current.raise is expected to perform same as
+	  Kernel.raise (by rubyspec).
+
 Tue Oct 23 17:08:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (usage, process_options): show more info in --help.

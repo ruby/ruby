@@ -1894,9 +1894,15 @@ rb_thread_fd_close(int fd)
 static VALUE
 thread_raise_m(int argc, VALUE *argv, VALUE self)
 {
-    rb_thread_t *th;
-    GetThreadPtr(self, th);
-    rb_threadptr_raise(th, argc, argv);
+    rb_thread_t *target_th;
+    rb_thread_t *th = GET_THREAD();
+    GetThreadPtr(self, target_th);
+    rb_threadptr_raise(target_th, argc, argv);
+
+    /* To perform Thread.current.raise as Kernel.raise */
+    if (th == target_th) {
+	RUBY_VM_CHECK_INTS(th);
+    }
     return Qnil;
 }
 
