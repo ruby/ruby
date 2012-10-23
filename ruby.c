@@ -52,6 +52,14 @@
 char *getenv();
 #endif
 
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+
+#if defined DISABLE_RUBYGEMS && DISABLE_RUBYGEMS
+#define DEFAULT_RUBYGEMS_ENABLED "disabled"
+#else
+#define DEFAULT_RUBYGEMS_ENABLED "enabled"
+#endif
+
 #define DISABLE_BIT(bit) (1U << disable_##bit)
 enum disable_flag_bits {
     disable_gems,
@@ -65,6 +73,7 @@ enum dump_flag_bits {
     dump_version_v,
     dump_copyright,
     dump_usage,
+    dump_help,
     dump_yydebug,
     dump_syntax,
     dump_parsetree,
@@ -123,42 +132,73 @@ static struct {
 } origarg;
 
 static void
-usage(const char *name)
+usage(const char *name, int help)
 {
     /* This message really ought to be max 23 lines.
      * Removed -h because the user already knows that option. Others? */
 
-    static const char *const usage_msg[] = {
-	"-0[octal]       specify record separator (\\0, if no argument)",
-	"-a              autosplit mode with -n or -p (splits $_ into $F)",
-	"-c              check syntax only",
-	"-Cdirectory     cd to directory, before executing your script",
-	"-d              set debugging flags (set $DEBUG to true)",
-	"-e 'command'    one line of script. Several -e's allowed. Omit [programfile]",
-	"-Eex[:in]       specify the default external and internal character encodings",
-	"-Fpattern       split() pattern for autosplit (-a)",
-	"-i[extension]   edit ARGV files in place (make backup if extension supplied)",
-	"-Idirectory     specify $LOAD_PATH directory (may be used more than once)",
-	"-l              enable line ending processing",
-	"-n              assume 'while gets(); ... end' loop around your script",
-	"-p              assume loop like -n but print line also like sed",
-	"-rlibrary       require the library, before executing your script",
-	"-s              enable some switch parsing for switches after script name",
-	"-S              look for the script using PATH environment variable",
-	"-T[level=1]     turn on tainting checks",
-	"-v              print version number, then turn on verbose mode",
-	"-w              turn warnings on for your script",
-	"-W[level=2]     set warning level; 0=silence, 1=medium, 2=verbose",
-	"-x[directory]   strip off text before #!ruby line and perhaps cd to directory",
-	"--copyright     print the copyright",
-	"--version       print the version",
-	NULL
+    struct message {
+	const char *str;
+	unsigned short namelen, secondlen;
     };
-    const char *const *p = usage_msg;
+#define M(shortopt, longopt, desc) { \
+    shortopt " " longopt " " desc, \
+    (unsigned short)sizeof(shortopt), \
+    (unsigned short)sizeof(longopt), \
+}
+    static const struct message usage_msg[] = {
+	M("-0[octal]",	   "",			   "specify record separator (\\0, if no argument)"),
+	M("-a",		   "",			   "autosplit mode with -n or -p (splits $_ into $F)"),
+	M("-c",		   "",			   "check syntax only"),
+	M("-Cdirectory",   "",			   "cd to directory, before executing your script"),
+	M("-d",		   ", --debug",		   "set debugging flags (set $DEBUG to true)"),
+	M("-e 'command'",  "",			   "one line of script. Several -e's allowed. Omit [programfile]"),
+	M("-Eex[:in]",     ", --encoding=ex[:in]", "specify the default external and internal character encodings"),
+	M("-Fpattern",	   "",			   "split() pattern for autosplit (-a)"),
+	M("-i[extension]", "",			   "edit ARGV files in place (make backup if extension supplied)"),
+	M("-Idirectory",   "",			   "specify $LOAD_PATH directory (may be used more than once)"),
+	M("-l",		   "",			   "enable line ending processing"),
+	M("-n",		   "",			   "assume 'while gets(); ... end' loop around your script"),
+	M("-p",		   "",			   "assume loop like -n but print line also like sed"),
+	M("-rlibrary",	   "",			   "require the library, before executing your script"),
+	M("-s",		   "",			   "enable some switch parsing for switches after script name"),
+	M("-S",		   "",			   "look for the script using PATH environment variable"),
+	M("-T[level=1]",   "",			   "turn on tainting checks"),
+	M("-v",		   ", --verbose",	   "print version number, then turn on verbose mode"),
+	M("-w",		   "",			   "turn warnings on for your script"),
+	M("-W[level=2]",   "",			   "set warning level; 0=silence, 1=medium, 2=verbose"),
+	M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
+	M("-h",		   "",			   "show this message, --help for more info"),
+    };
+    static const struct message help_msg[] = {
+	M("--copyright",                   "", "print the copyright"),
+	M("--enable=feature[,...]",        "", "enable features"),
+	M("--disable=feature[,...]",       "", "disable features"),
+	M("--internal-encoding=encoding",  "", "specify the default internal character encoding"),
+	M("--external-encoding=encoding",  "", "specify the default external character encoding"),
+	M("--version",                     "", "print the version"),
+	M("--help",			   "", "show this message, -h for short message"),
+    };
+    static const struct message features[] = {
+	M("gems",    "",        "rubygems (default: "DEFAULT_RUBYGEMS_ENABLED")"),
+	M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
+    };
+    int i, w = help ? 32 : 16, num = numberof(usage_msg) - (help ? 1 : 0);
+#define SHOW(m) printf("  %.*s%-*.*s%s\n", (m).namelen-1, (m).str, \
+		       w - (m).namelen + 1, (help ? (m).secondlen-1 : 0), (m).str + (m).namelen, \
+		       (m).str + (m).namelen + (m).secondlen)
 
     printf("Usage: %s [switches] [--] [programfile] [arguments]\n", name);
-    while (*p)
-	printf("  %s\n", *p++);
+    for (i = 0; i < num; ++i)
+	SHOW(usage_msg[i]);
+
+    if (!help) return;
+
+    for (i = 0; i < numberof(help_msg); ++i)
+	SHOW(help_msg[i]);
+    puts("Features:");
+    for (i = 0; i < numberof(features); ++i)
+	SHOW(features[i]);
 }
 
 #ifdef MANGLED_PATH
@@ -686,6 +726,7 @@ dump_option(const char *str, int len, void *arg)
     SET_WHEN_DUMP(version);
     SET_WHEN_DUMP(copyright);
     SET_WHEN_DUMP(usage);
+    SET_WHEN_DUMP(help);
     SET_WHEN_DUMP(yydebug);
     SET_WHEN_DUMP(syntax);
     SET_WHEN_DUMP(parsetree);
@@ -1070,7 +1111,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    }
 	    else if (strcmp("help", s) == 0) {
 		if (envopt) goto noenvopt_long;
-		opt->dump |= DUMP_BIT(usage);
+		opt->dump |= DUMP_BIT(help);
 		goto switch_end;
 	    }
 	    else {
@@ -1267,8 +1308,8 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     argc -= i;
     argv += i;
 
-    if (opt->dump & DUMP_BIT(usage)) {
-	usage(origarg.argv[0]);
+    if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
+	usage(origarg.argv[0], (opt->dump & DUMP_BIT(help)));
 	return Qtrue;
     }
 

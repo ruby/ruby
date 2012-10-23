@@ -1,3 +1,8 @@
+Tue Oct 23 17:08:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (usage, process_options): show more info in --help.
+	  [EXPREIMENTAL] [ruby-core:48072] [Bug #7184]
+
 Tue Oct 23 14:20:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-electric.el using variable `last-command-event' instead of
