@@ -2210,6 +2210,7 @@ Init_VM(void)
 
     /* vm_backtrace.c */
     Init_vm_backtrace();
+    VM_PROFILE_ATEXIT();
 }
 
 void

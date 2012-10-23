@@ -49,6 +49,84 @@ vm_call0(rb_thread_t* th, VALUE recv, VALUE id, int argc, const VALUE *argv,
     return vm_call0_body(th, ci, argv);
 }
 
+#if OPT_CALL_CFUNC_WITHOUT_FRAME
+static VALUE
+vm_call0_cfunc(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
+{
+    VALUE val;
+
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, ci->recv, ci->mid, ci->defined_class);
+    {
+	rb_control_frame_t *reg_cfp = th->cfp;
+	const rb_method_entry_t *me = ci->me;
+	const rb_method_cfunc_t *cfunc = &me->def->body.cfunc;
+	int len = cfunc->argc;
+
+	if (len >= 0) rb_check_arity(ci->argc, len, len);
+
+	th->passed_ci = ci;
+	ci->aux.inc_sp = 0;
+	VM_PROFILE_UP(2);
+	val = (*cfunc->invoker)(cfunc->func, ci, argv);
+
+	if (reg_cfp == th->cfp) {
+	    if (UNLIKELY(th->passed_ci != ci)) {
+		rb_bug("vm_call0_cfunc: passed_ci error (ci: %p, passed_ci: %p)", ci, th->passed_ci);
+	    }
+	    th->passed_ci = 0;
+	}
+	else {
+	    if (reg_cfp != th->cfp + 1) {
+		rb_bug("vm_call0_cfunc: cfp consistency error");
+	    }
+	    VM_PROFILE_UP(3);
+	    vm_pop_frame(th);
+	}
+    }
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, ci->recv, ci->mid, ci->defined_class);
+
+    return val;
+}
+#else
+static VALUE
+vm_call0_cfunc_with_frame(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
+{
+    VALUE val;
+
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, ci->recv, ci->mid, ci->defined_class);
+    {
+	rb_control_frame_t *reg_cfp = th->cfp;
+	const rb_method_entry_t *me = ci->me;
+	const rb_method_cfunc_t *cfunc = &me->def->body.cfunc;
+	int len = cfunc->argc;
+
+	vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
+		      ci->recv, ci->defined_class, VM_ENVVAL_BLOCK_PTR(ci->blockptr),
+		      0, reg_cfp->sp, 1, ci->me);
+
+	if (len >= 0) rb_check_arity(ci->argc, len, len);
+
+	VM_PROFILE_UP(2);
+	val = (*cfunc->invoker)(cfunc->func, ci, argv);
+
+	if (UNLIKELY(reg_cfp != th->cfp + 1)) {
+		rb_bug("vm_call0_cfunc_with_frame: cfp consistency error");
+	}
+	VM_PROFILE_UP(3);
+	vm_pop_frame(th);
+    }
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, ci->recv, ci->mid, ci->defined_class);
+
+    return val;
+}
+
+static VALUE
+vm_call0_cfunc(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
+{
+    return vm_call0_cfunc_with_frame(th, ci, argv);
+}
+#endif
+
 /* `ci' should point temporal value (on stack value) */
 static VALUE
 vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
@@ -84,35 +162,9 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	break;
       }
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
-      case VM_METHOD_TYPE_CFUNC: {
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, ci->recv, ci->mid, ci->defined_class);
-	{
-	    rb_control_frame_t *reg_cfp = th->cfp;
-	    rb_control_frame_t *cfp = vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
-						    ci->recv, ci->defined_class, VM_ENVVAL_BLOCK_PTR(ci->blockptr),
-						    0, reg_cfp->sp, 1, ci->me);
-
-	    cfp->me = ci->me;
-
-	    {
-		const rb_method_entry_t *me = ci->me;
-		const rb_method_definition_t *def = me->def;
-		int len = def->body.cfunc.argc;
-
-		if (len >= 0) rb_check_arity(ci->argc, len, len);
-
-		ci->aux.func = def->body.cfunc.func;
-		val = (*def->body.cfunc.invoker)(ci, argv);
-	    }
-
-	    if (reg_cfp != th->cfp + 1) {
-		rb_bug("cfp consistency error - call0");
-	    }
-	    vm_pop_frame(th);
-	}
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, ci->recv, ci->mid, ci->defined_class);
+      case VM_METHOD_TYPE_CFUNC:
+	val = vm_call0_cfunc(th, ci, argv);
 	break;
-      }
       case VM_METHOD_TYPE_ATTRSET: {
 	rb_check_arity(ci->argc, 1, 1);
 	val = rb_ivar_set(ci->recv, ci->me->def->body.attr.id, argv[0]);

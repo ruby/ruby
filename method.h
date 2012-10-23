@@ -49,7 +49,7 @@ struct rb_call_info_struct;
 
 typedef struct rb_method_cfunc_struct {
     VALUE (*func)(ANYARGS);
-    VALUE (*invoker)(const struct rb_call_info_struct *ci, const VALUE *argv);
+    VALUE (*invoker)(VALUE (*func)(ANYARGS), const struct rb_call_info_struct *ci, const VALUE *argv);
     int argc;
 } rb_method_cfunc_t;
 

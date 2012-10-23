@@ -1294,137 +1294,152 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_in
 }
 
 static VALUE
-call_cfunc_m2(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_m2(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, rb_ary_new4(ci->argc, argv));
+    return (*func)(ci->recv, rb_ary_new4(ci->argc, argv));
 }
 
 static VALUE
-call_cfunc_m1(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_m1(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->argc, argv, ci->recv);
+    return (*func)(ci->argc, argv, ci->recv);
 }
 
 static VALUE
-call_cfunc_0(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_0(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv);
+    return (*func)(ci->recv);
 }
 
 static VALUE
-call_cfunc_1(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_1(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, argv[0]);
+    return (*func)(ci->recv, argv[0]);
 }
 
 static VALUE
-call_cfunc_2(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_2(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, argv[0], argv[1]);
+    return (*func)(ci->recv, argv[0], argv[1]);
 }
 
 static VALUE
-call_cfunc_3(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_3(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, argv[0], argv[1], argv[2]);
+    return (*func)(ci->recv, argv[0], argv[1], argv[2]);
 }
 
 static VALUE
-call_cfunc_4(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_4(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, argv[0], argv[1], argv[2], argv[3]);
+    return (*func)(ci->recv, argv[0], argv[1], argv[2], argv[3]);
 }
 
 static VALUE
-call_cfunc_5(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_5(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4]);
+    return (*func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4]);
 }
 
 static VALUE
-call_cfunc_6(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_6(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
+    return (*func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }
 
 static VALUE
-call_cfunc_7(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_7(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
+    return (*func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
 }
 
 static VALUE
-call_cfunc_8(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_8(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7]);
+    return (*func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7]);
 }
 
 static VALUE
-call_cfunc_9(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_9(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8]);
+    return (*func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8]);
 }
 
 static VALUE
-call_cfunc_10(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_10(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9]);
+    return (*func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9]);
 }
 
 static VALUE
-call_cfunc_11(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_11(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10]);
+    return (*func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10]);
 }
 
 static VALUE
-call_cfunc_12(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_12(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11]);
+    return (*func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11]);
 }
 
 static VALUE
-call_cfunc_13(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_13(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11], argv[12]);
+    return (*func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11], argv[12]);
 }
 
 static VALUE
-call_cfunc_14(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_14(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11], argv[12], argv[13]);
+    return (*func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11], argv[12], argv[13]);
 }
 
 static VALUE
-call_cfunc_15(const rb_call_info_t *ci, const VALUE *argv)
+call_cfunc_15(VALUE (*func)(ANYARGS), const rb_call_info_t *ci, const VALUE *argv)
 {
-    return (ci->aux.func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11], argv[12], argv[13], argv[14]);
+    return (*func)(ci->recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11], argv[12], argv[13], argv[14]);
 }
 
-static VALUE
-vm_call_cfunc_call(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
-{
-    reg_cfp->sp -= ci->argc + 1;
-    return (*ci->me->def->body.cfunc.invoker)(ci, reg_cfp->sp + 1);
+#ifndef VM_PROFILE
+#define VM_PROFILE 0
+#endif
+
+#if VM_PROFILE
+static int vm_profile_counter[4];
+#define VM_PROFILE_UP(x) (vm_profile_counter[x]++)
+#define VM_PROFILE_ATEXIT() atexit(vm_profile_show_result)
+static void vm_profile_show_result(void) {
+    fprintf(stderr, "VM Profile results: \n");
+    fprintf(stderr, "r->c call: %d\n", vm_profile_counter[0]);
+    fprintf(stderr, "r->c popf: %d\n", vm_profile_counter[1]);
+    fprintf(stderr, "c->c call: %d\n", vm_profile_counter[2]);
+    fprintf(stderr, "r->c popf: %d\n", vm_profile_counter[3]);
 }
+#else
+#define VM_PROFILE_UP(x)
+#define VM_PROFILE_ATEXIT()
+#endif
 
 static VALUE
-vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
+vm_call_cfunc_with_frame(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 {
-    volatile VALUE val = 0;
+    VALUE val;
     const rb_method_entry_t *me = ci->me;
-    const rb_method_definition_t *def = me->def;
-    int len = def->body.cfunc.argc;
+    const rb_method_cfunc_t *cfunc = &me->def->body.cfunc;
+    int len = cfunc->argc;
+    VALUE recv = ci->recv;
 
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, ci->recv, me->called_id, me->klass);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->called_id, me->klass);
 
-    vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, ci->recv, ci->defined_class,
+    vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, recv, ci->defined_class,
 		  VM_ENVVAL_BLOCK_PTR(ci->blockptr), 0, th->cfp->sp, 1, me);
 
     if (len >= 0) rb_check_arity(ci->argc, len, len);
 
-    ci->aux.func = def->body.cfunc.func;
-    val = vm_call_cfunc_call(th, reg_cfp, ci);
+    reg_cfp->sp -= ci->argc + 1;
+    VM_PROFILE_UP(0);
+    val = (*cfunc->invoker)(cfunc->func, ci, reg_cfp->sp + 1);
 
     if (reg_cfp != th->cfp + 1) {
 	rb_bug("vm_call_cfunc - cfp consistency error");
@@ -1432,10 +1447,88 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 
     vm_pop_frame(th);
 
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, ci->recv, me->called_id, me->klass);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->called_id, me->klass);
 
     return val;
 }
+
+#if OPT_CALL_CFUNC_WITHOUT_FRAME
+static VALUE
+vm_call_cfunc_latter(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
+{
+    VALUE val;
+    int argc = ci->argc;
+    VALUE *argv = STACK_ADDR_FROM_TOP(argc);
+    const rb_method_cfunc_t *cfunc = &ci->me->def->body.cfunc;
+
+    th->passed_ci = ci;
+    reg_cfp->sp -= argc + 1;
+    ci->aux.inc_sp = argc + 1;
+    VM_PROFILE_UP(0);
+    val = (*cfunc->invoker)(cfunc->func, ci, argv);
+
+    /* check */
+    if (reg_cfp == th->cfp) { /* no frame push */
+	if (UNLIKELY(th->passed_ci != ci)) {
+	    rb_bug("vm_call_cfunc_latter: passed_ci error (ci: %p, passed_ci: %p)", ci, th->passed_ci);
+	}
+	th->passed_ci = 0;
+    }
+    else {
+	if (UNLIKELY(reg_cfp != RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp))) {
+	    rb_bug("vm_call_cfunc_latter: cfp consistency error (%p, %p)", reg_cfp, th->cfp+1);
+	}
+	vm_pop_frame(th);
+	VM_PROFILE_UP(1);
+    }
+
+    return val;
+}
+
+static VALUE
+vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
+{
+    VALUE val;
+    const rb_method_entry_t *me = ci->me;
+    int len = me->def->body.cfunc.argc;
+    VALUE recv = ci->recv;
+
+    if (len >= 0) rb_check_arity(ci->argc, len, len);
+
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->called_id, me->klass);
+
+    if (!(ci->me->flag & NOEX_PROTECTED) &&
+	!(ci->flag & VM_CALL_ARGS_SPLAT)) {
+	CI_SET_FASTPATH(ci, vm_call_cfunc_latter, 1);
+    }
+    val = vm_call_cfunc_latter(th, reg_cfp, ci);
+
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->called_id, me->klass);
+
+    return val;
+}
+
+void
+vm_call_cfunc_push_frame(rb_thread_t *th)
+{
+    rb_call_info_t *ci = th->passed_ci;
+    const rb_method_entry_t *me = ci->me;
+    th->passed_ci = 0;
+
+    vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, ci->recv, ci->defined_class,
+		  VM_ENVVAL_BLOCK_PTR(ci->blockptr), 0, th->cfp->sp + ci->aux.inc_sp, 1, me);
+
+    if (ci->call != vm_call_general) {
+	ci->call = vm_call_cfunc_with_frame;
+    }
+}
+#else /* OPT_CALL_CFUNC_WITHOUT_FRAME */
+static VALUE
+vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
+{
+    return vm_call_cfunc_with_frame(th, reg_cfp, ci);
+}
+#endif
 
 static VALUE
 vm_call_ivar(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
@@ -1591,10 +1684,9 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		return vm_call_iseq_setup(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_NOTIMPLEMENTED:
-	      case VM_METHOD_TYPE_CFUNC:{
+	      case VM_METHOD_TYPE_CFUNC:
 		CI_SET_FASTPATH(ci, vm_call_cfunc, enable_fastpath);
 		return vm_call_cfunc(th, cfp, ci);
-	      }
 	      case VM_METHOD_TYPE_ATTRSET:{
 		rb_check_arity(ci->argc, 0, 1);
 		ci->aux.index = 0;

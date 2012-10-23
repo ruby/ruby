@@ -166,7 +166,7 @@ typedef struct rb_call_info_struct {
 	int opt_pc; /* used by iseq */
 	long index; /* used by ivar */
 	int missing_reason; /* used by method_missing */
-	VALUE (*func)(ANYARGS); /* used by cfunc */
+	int inc_sp; /* used by cfunc */
     } aux;
 
     VALUE (*call)(struct rb_thread_struct *th, struct rb_control_frame_struct *cfp, struct rb_call_info_struct *ci);
@@ -477,6 +477,9 @@ typedef struct rb_thread_struct {
 
     /* for bmethod */
     const rb_method_entry_t *passed_me;
+
+    /* for cfunc */
+    rb_call_info_t *passed_ci;
 
     /* for load(true) */
     VALUE top_self;
@@ -816,7 +819,24 @@ extern rb_vm_t *ruby_current_vm;
 extern rb_event_flag_t ruby_vm_event_flags;
 
 #define GET_VM() ruby_current_vm
-#define GET_THREAD() ruby_current_thread
+
+#ifndef OPT_CALL_CFUNC_WITHOUT_FRAME
+#define OPT_CALL_CFUNC_WITHOUT_FRAME 0
+#endif
+
+static inline rb_thread_t *
+GET_THREAD(void)
+{
+    rb_thread_t *th = ruby_current_thread;
+#if OPT_CALL_CFUNC_WITHOUT_FRAME
+    if (UNLIKELY(th->passed_ci != 0)) {
+	void vm_call_cfunc_push_frame(rb_thread_t *th);
+	vm_call_cfunc_push_frame(th);
+    }
+#endif
+    return th;
+}
+
 #define rb_thread_set_current_raw(th) (void)(ruby_current_thread = (th))
 #define rb_thread_set_current(th) do { \
     if ((th)->vm->running_thread != (th)) { \

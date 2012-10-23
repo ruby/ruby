@@ -1,3 +1,32 @@
+Tue Oct 23 12:57:29 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h, vm_insnhelper.c, vm_eval.c (OPT_CALL_CFUNC_WITHOUT_FRAME):
+	  add a new otpimization and its macro `OPT_CALL_CFUNC_WITHOUT_FRAME'.
+	  This optimization makes all cfunc method calls `frameless', which
+	  is fster than ordinal cfunc method call.
+	  If `frame' is needed (for example, it calls another method with
+	  `rb_funcall()'), then build a frame. In other words, this
+	  optimization delays frame building. 
+	  However, to delay the frame building, we need additional overheads:
+	    (1) Store the last call information.
+	    (2) Check the delayed frame buidling before the frame is needed.
+	    (3) Overhead to build a delayed frame.
+	  rb_thread_t::passed_ci is storage of delayed cfunc call information.
+	  (1) is lightweight because it is only 1 assignment to `passed_ci'.
+	  To achieve (2), we modify GET_THREAD() to check `passed_ci' every
+	  time. It causes 10% overhead on my envrionment.
+	  This optimization only works for cfunc methods which do not need
+	  their `frame'.
+	  After evaluation on my environment, this optimization does not
+	  effective every time. Because of this evaluation results, this
+	  optimization is disabled at default.
+
+	* vm_insnhelper.c, vm.c: add VM_PROFILE* macros to measure behaviour
+	  of VM internals. I will extend this feature.
+
+	* vm_method.c, method.h: change parameters of the `invoker' function.
+	  Receive `func' pointer as the first parameter.
+
 Tue Oct 23 06:21:05 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/parser.c: just get the constant defined in Ruby.
