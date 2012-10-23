@@ -1,3 +1,9 @@
+Tue Oct 23 14:20:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-electric.el using variable `last-command-event' instead of
+	  obsolete `last-command-char', so that work with Emacs trunk.
+	  a patch by Victor Deryagin <vderyagin AT gmail.com>.
+
 Tue Oct 23 14:06:47 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (visibility_option): visibility attribute is not
