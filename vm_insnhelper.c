@@ -1750,11 +1750,10 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		    rb_bug("vm_call_method: unsupported cfunc_fast argc (%d)", ci->me->def->body.cfunc.argc);
 		}
 		break;
-	      default:{
-		rb_bug("vm_call_method: unsupported method type (%d)", ci->me->def->type);
+	      case VM_METHOD_TYPE_UNDEF:
 		break;
-	      }
 	    }
+	    rb_bug("vm_call_method: unsupported method type (%d)", ci->me->def->type);
 	}
 	else {
 	    int noex_safe;

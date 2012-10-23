@@ -1,3 +1,8 @@
+Wed Oct 24 05:52:36 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_call_method): remove `default' and
+	  add a case for `VM_METHOD_TYPE_UNDEF'.
+
 Wed Oct 24 05:41:18 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_error.c (error_print), vm_eval.c (eval_string_with_cref),
