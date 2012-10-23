@@ -1,3 +1,9 @@
+Wed Oct 24 05:41:18 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_error.c (error_print), vm_eval.c (eval_string_with_cref),
+	  vm_trace.c (rb_suppress_tracing): use TH_PUSH_TAG() instead of
+	  PUSH_TAG().
+
 Wed Oct 24 05:17:52 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_eval.c (vm_call0_body): remove RUBY_VM_CHECK_INTS()

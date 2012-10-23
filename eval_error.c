@@ -89,14 +89,14 @@ error_print(void)
 	return;
     rb_thread_raised_clear(th);
 
-    PUSH_TAG();
-    if (EXEC_TAG() == 0) {
+    TH_PUSH_TAG(th);
+    if (TH_EXEC_TAG() == 0) {
 	errat = get_backtrace(errinfo);
     }
     else {
 	errat = Qnil;
     }
-    if (EXEC_TAG())
+    if (TH_EXEC_TAG())
 	goto error;
     if (NIL_P(errat)) {
 	const char *file = rb_sourcefile();
@@ -122,7 +122,7 @@ error_print(void)
     }
 
     eclass = CLASS_OF(errinfo);
-    if (EXEC_TAG() == 0) {
+    if (TH_EXEC_TAG() == 0) {
 	e = rb_funcall(errinfo, rb_intern("message"), 0, 0);
 	StringValue(e);
 	einfo = RSTRING_PTR(e);
@@ -132,7 +132,7 @@ error_print(void)
 	einfo = "";
 	elen = 0;
     }
-    if (EXEC_TAG())
+    if (TH_EXEC_TAG())
 	goto error;
     if (eclass == rb_eRuntimeError && elen == 0) {
 	warn_print(": unhandled exception\n");
@@ -192,7 +192,7 @@ error_print(void)
 	}
     }
   error:
-    POP_TAG();
+    TH_POP_TAG();
     rb_thread_raised_set(th, raised_flag);
 }
 

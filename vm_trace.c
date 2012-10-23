@@ -372,11 +372,11 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     outer_state = th->state;
     th->state = 0;
 
-    PUSH_TAG();
-    if ((state = EXEC_TAG()) == 0) {
+    TH_PUSH_TAG(th);
+    if ((state = TH_EXEC_TAG()) == 0) {
 	result = (*func)(arg);
     }
-    POP_TAG();
+    TH_POP_TAG();
 
     if (raised) {
 	rb_threadptr_set_raised(th);

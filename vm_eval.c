@@ -1096,8 +1096,8 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 
     parse_in_eval = th->parse_in_eval;
     mild_compile_error = th->mild_compile_error;
-    PUSH_TAG();
-    if ((state = EXEC_TAG()) == 0) {
+    TH_PUSH_TAG(th);
+    if ((state = TH_EXEC_TAG()) == 0) {
 	rb_iseq_t *iseq;
 	volatile VALUE iseqval;
 
@@ -1156,7 +1156,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	CHECK_STACK_OVERFLOW(th->cfp, iseq->stack_max);
 	result = vm_exec(th);
     }
-    POP_TAG();
+    TH_POP_TAG();
     th->mild_compile_error = mild_compile_error;
     th->parse_in_eval = parse_in_eval;
 
