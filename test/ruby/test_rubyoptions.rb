@@ -31,11 +31,6 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_operator(r.size, :<=, 24)
       assert_equal([], e)
     end
-
-    assert_in_out_err(%w(--help)) do |r, e|
-      assert_operator(r.size, :<=, 24)
-      assert_equal([], e)
-    end
   end
 
   def test_option_variables
