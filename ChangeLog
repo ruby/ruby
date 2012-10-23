@@ -1,3 +1,9 @@
+Tue Oct 23 13:27:51 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_threadptr_raise): check interrupts after
+	  Thread#raise because the behavior of Thread.current.raise is
+	  expected to perform same as Kernel.raise (by rubyspec).
+
 Tue Oct 23 12:57:29 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h, vm_insnhelper.c, vm_eval.c (OPT_CALL_CFUNC_WITHOUT_FRAME):

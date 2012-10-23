@@ -1790,6 +1790,10 @@ rb_threadptr_raise(rb_thread_t *th, int argc, VALUE *argv)
     }
     rb_threadptr_async_errinfo_enque(th, exc);
     rb_threadptr_interrupt(th);
+
+    /* To perform Thread.current.raise as Kernel.raise */
+    RUBY_VM_CHECK_INTS(th);
+
     return Qnil;
 }
 
