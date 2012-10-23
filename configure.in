@@ -644,7 +644,15 @@ if test "$GCC" = ""; then
     AS_CASE(["$target_os"],[aix*],[warnflags="$warnflags -qinfo=por" rb_cv_warnflags="$rb_cv_warnflags -qinfo=por"])
 fi
 if test "$GCC" = yes; then
-    RUBY_TRY_CFLAGS(-fvisibility=hidden, [RUBY_APPEND_OPTION(XCFLAGS, -fvisibility=hidden)])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+	@%:@if !(defined __GNUC__ && __GNUC__ >= 4)
+	@%:@error not GCC 4 or later
+	>>>not GCC 4 or later<<<
+	@%:@endif])],
+	[visibility_option=yes], [visibility_option=no])
+    if test "$visibility_option" = yes; then
+	RUBY_TRY_CFLAGS(-fvisibility=hidden, [visibility_option=yes], [visibility_option=no])
+    fi
     AC_SUBST(WERRORFLAG, "-Werror")
     if test "$visibility_option" = yes; then
 	RUBY_APPEND_OPTION(XCFLAGS, -fvisibility=hidden)

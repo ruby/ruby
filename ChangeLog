@@ -1,3 +1,9 @@
+Tue Oct 23 14:06:47 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (visibility_option): visibility attribute is not
+	  available before GCC 4, so do not use -fvisibility option in that
+	  case.  [ruby-core:48147] [Bug #7205]
+
 Tue Oct 23 12:57:29 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h, vm_insnhelper.c, vm_eval.c (OPT_CALL_CFUNC_WITHOUT_FRAME):
