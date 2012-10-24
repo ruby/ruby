@@ -2914,6 +2914,10 @@ gc_marks(rb_objspace_t *objspace)
 {
     struct gc_list *list;
     rb_thread_t *th = GET_THREAD();
+    struct mark_func_data_struct *prev_mark_func_data;
+
+    prev_mark_func_data = objspace->mark_func_data;
+    objspace->mark_func_data = 0;
 
     gc_prof_mark_timer_start(objspace);
 
@@ -2951,6 +2955,8 @@ gc_marks(rb_objspace_t *objspace)
     gc_mark_stacked_objects(objspace);
 
     gc_prof_mark_timer_stop(objspace);
+
+    objspace->mark_func_data = prev_mark_func_data;
 }
 
 /* GC */
@@ -3020,8 +3026,6 @@ rb_gc_unregister_address(VALUE *addr)
 static int
 garbage_collect(rb_objspace_t *objspace)
 {
-    struct mark_func_data_struct *prev_mark_func_data;
-
     if (GC_NOTIFY) printf("start garbage_collect()\n");
 
     if (!heaps) {
@@ -3033,9 +3037,6 @@ garbage_collect(rb_objspace_t *objspace)
 
     gc_prof_timer_start(objspace);
 
-    prev_mark_func_data = objspace->mark_func_data;
-    objspace->mark_func_data = 0;
-
     rest_sweep(objspace);
 
     during_gc++;
@@ -3044,8 +3045,6 @@ garbage_collect(rb_objspace_t *objspace)
     gc_prof_sweep_timer_start(objspace);
     gc_sweep(objspace);
     gc_prof_sweep_timer_stop(objspace);
-
-    objspace->mark_func_data = prev_mark_func_data;
 
     gc_prof_timer_stop(objspace, Qtrue);
     if (GC_NOTIFY) printf("end garbage_collect()\n");

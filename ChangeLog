@@ -1,3 +1,9 @@
+Wed Oct 24 10:33:09 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (garbage_collect, gc_marks): move the location of
+	  clear and restore rb_objspace_t::mark_func_data
+	  from garbage_collect() to gc_marks().
+
 Wed Oct 24 10:17:45 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c (Init_objspace): add a new method
