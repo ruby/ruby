@@ -275,8 +275,8 @@ typedef struct rb_objspace {
     int gc_stress;
 
     struct mark_func_data_struct {
-	VALUE data;
-	void (*mark_func)(struct rb_objspace *objspace, VALUE v);
+	void *data;
+	void (*mark_func)(VALUE v, void *data);
     } *mark_func_data;
 } rb_objspace_t;
 
@@ -1180,6 +1180,12 @@ internal_object_p(VALUE obj)
 	}
     }
     return 1;
+}
+
+int
+rb_objspace_internal_object_p(VALUE obj)
+{
+    return internal_object_p(obj);
 }
 
 static int
@@ -2568,6 +2574,12 @@ markable_object_p(rb_objspace_t *objspace, VALUE ptr)
     return 1;
 }
 
+int
+rb_objspace_markable_object_p(VALUE obj)
+{
+    return markable_object_p(/* now it doesn't use &rb_objspace */ 0, obj);
+}
+
 static void
 gc_mark(rb_objspace_t *objspace, VALUE ptr)
 {
@@ -2580,7 +2592,7 @@ gc_mark(rb_objspace_t *objspace, VALUE ptr)
 	push_mark_stack(&objspace->mark_stack, ptr);
     }
     else {
-	objspace->mark_func_data->mark_func(objspace, ptr);
+	objspace->mark_func_data->mark_func(ptr, objspace->mark_func_data->data);
     }
 }
 
@@ -3303,43 +3315,18 @@ rb_gc_set_params(void)
     }
 }
 
-static void
-collect_refs(rb_objspace_t *objspace, VALUE obj)
-{
-    if (markable_object_p(objspace, obj) && !internal_object_p(obj)) {
-	st_insert((st_table *)objspace->mark_func_data->data, obj, Qtrue);
-    }
-}
-
-static int
-collect_keys(st_data_t key, st_data_t value, st_data_t data)
-{
-    VALUE ary = (VALUE)data;
-    rb_ary_push(ary, (VALUE)key);
-    return ST_CONTINUE;
-}
-
-VALUE
-rb_objspace_reachable_objects_from(VALUE obj)
+void
+rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
     if (markable_object_p(objspace, obj)) {
-	st_table *refs = st_init_numtable();
 	struct mark_func_data_struct mfd;
-	VALUE ret = rb_ary_new();
-	mfd.mark_func = collect_refs;
-	mfd.data = (VALUE)refs;
+	mfd.mark_func = func;
+	mfd.data = data;
 	objspace->mark_func_data = &mfd;
-
 	gc_mark_children(objspace, obj);
-
 	objspace->mark_func_data = 0;
-	st_foreach(refs, collect_keys, (st_data_t)ret);
-	return ret;
-    }
-    else {
-	return Qnil;
     }
 }
 

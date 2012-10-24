@@ -37,7 +37,6 @@ size_t rb_ary_memsize(VALUE);
 size_t rb_io_memsize(const rb_io_t *);
 size_t rb_generic_ivar_memsize(VALUE);
 size_t rb_objspace_data_type_memsize(VALUE obj);
-VALUE rb_objspace_reachable_objects_from(VALUE obj);
 
 static size_t
 memsize_of(VALUE obj)
@@ -271,6 +270,43 @@ cos_i(void *vstart, void *vend, size_t stride, void *data)
     return 0;
 }
 
+static VALUE
+type2sym(int i)
+{
+    VALUE type;
+    switch (i) {
+#define CASE_TYPE(t) case t: type = ID2SYM(rb_intern(#t)); break;
+	CASE_TYPE(T_NONE);
+	CASE_TYPE(T_OBJECT);
+	CASE_TYPE(T_CLASS);
+	CASE_TYPE(T_MODULE);
+	CASE_TYPE(T_FLOAT);
+	CASE_TYPE(T_STRING);
+	CASE_TYPE(T_REGEXP);
+	CASE_TYPE(T_ARRAY);
+	CASE_TYPE(T_HASH);
+	CASE_TYPE(T_STRUCT);
+	CASE_TYPE(T_BIGNUM);
+	CASE_TYPE(T_FILE);
+	CASE_TYPE(T_DATA);
+	CASE_TYPE(T_MATCH);
+	CASE_TYPE(T_COMPLEX);
+	CASE_TYPE(T_RATIONAL);
+	CASE_TYPE(T_NIL);
+	CASE_TYPE(T_TRUE);
+	CASE_TYPE(T_FALSE);
+	CASE_TYPE(T_SYMBOL);
+	CASE_TYPE(T_FIXNUM);
+	CASE_TYPE(T_UNDEF);
+	CASE_TYPE(T_NODE);
+	CASE_TYPE(T_ICLASS);
+	CASE_TYPE(T_ZOMBIE);
+#undef CASE_TYPE
+      default: rb_bug("type2sym: unknown type (%d)", (int)type);
+    }
+    return type;
+}
+
 /*
  *  call-seq:
  *    ObjectSpace.count_objects_size([result_hash]) -> hash
@@ -322,37 +358,7 @@ count_objects_size(int argc, VALUE *argv, VALUE os)
 
     for (i = 0; i <= T_MASK; i++) {
 	if (counts[i]) {
-	    VALUE type;
-	    switch (i) {
-#define COUNT_TYPE(t) case t: type = ID2SYM(rb_intern(#t)); break;
-		COUNT_TYPE(T_NONE);
-		COUNT_TYPE(T_OBJECT);
-		COUNT_TYPE(T_CLASS);
-		COUNT_TYPE(T_MODULE);
-		COUNT_TYPE(T_FLOAT);
-		COUNT_TYPE(T_STRING);
-		COUNT_TYPE(T_REGEXP);
-		COUNT_TYPE(T_ARRAY);
-		COUNT_TYPE(T_HASH);
-		COUNT_TYPE(T_STRUCT);
-		COUNT_TYPE(T_BIGNUM);
-		COUNT_TYPE(T_FILE);
-		COUNT_TYPE(T_DATA);
-		COUNT_TYPE(T_MATCH);
-		COUNT_TYPE(T_COMPLEX);
-		COUNT_TYPE(T_RATIONAL);
-		COUNT_TYPE(T_NIL);
-		COUNT_TYPE(T_TRUE);
-		COUNT_TYPE(T_FALSE);
-		COUNT_TYPE(T_SYMBOL);
-		COUNT_TYPE(T_FIXNUM);
-		COUNT_TYPE(T_UNDEF);
-		COUNT_TYPE(T_NODE);
-		COUNT_TYPE(T_ICLASS);
-		COUNT_TYPE(T_ZOMBIE);
-#undef COUNT_TYPE
-	      default: type = INT2NUM(i); break;
-	    }
+	    VALUE type = type2sym(i);
 	    total += counts[i];
 	    rb_hash_aset(hash, type, SIZET2NUM(counts[i]));
 	}
@@ -627,6 +633,68 @@ count_tdata_objects(int argc, VALUE *argv, VALUE self)
     return hash;
 }
 
+static void
+iow_mark(void *ptr)
+{
+    rb_gc_mark((VALUE)ptr);
+}
+
+static const rb_data_type_t iow_data_type = {
+    "ObjectSpace::InternalObjectWrapper",
+    {iow_mark, 0, 0,},
+};
+
+static VALUE rb_mInternalObjectWrapper;
+
+static VALUE
+iow_newobj(VALUE obj)
+{
+    return rb_data_typed_object_alloc(rb_mInternalObjectWrapper, (void *)obj, &iow_data_type);
+}
+
+static VALUE
+iow_type(VALUE self)
+{
+    VALUE obj = (VALUE)DATA_PTR(self);
+    return type2sym(BUILTIN_TYPE(obj));
+}
+
+static VALUE
+iow_inspect(VALUE self)
+{
+    VALUE obj = (VALUE)DATA_PTR(self);
+    VALUE type = type2sym(BUILTIN_TYPE(obj));
+
+    return rb_sprintf("#<InternalObject:%p %s>", (void *)obj, rb_id2name(SYM2ID(type)));
+}
+
+struct rof_data {
+    st_table *refs;
+    VALUE internals;
+};
+
+static void
+reachable_object_from_i(VALUE obj, void *data_ptr)
+{
+    struct rof_data *data = (struct rof_data *)data_ptr;
+
+    if (rb_objspace_markable_object_p(obj)) {
+	if (rb_objspace_internal_object_p(obj)) {
+	    obj = iow_newobj(obj);
+	    rb_ary_push(data->internals, obj);
+	}
+	st_insert(data->refs, obj, Qtrue);
+    }
+}
+
+static int
+collect_keys(st_data_t key, st_data_t value, st_data_t data)
+{
+    VALUE ary = (VALUE)data;
+    rb_ary_push(ary, (VALUE)key);
+    return ST_CONTINUE;
+}
+
 /*
  *  call-seq:
  *     ObjectSpace.reachable_objects_from(obj) -> array or nil
@@ -639,6 +707,15 @@ count_tdata_objects(int argc, VALUE *argv, VALUE self)
  *  If `obj' is non-markable (non-heap management) object such as
  *  true, false, nil, symbols and Fixnums (and Flonum) them it simply
  *  returns nil.
+ *
+ *  If `obj' has references to internal object, then it returns
+ *  instances of `ObjectSpace::InternalObjectWrapper' class.
+ *  This object contains a reference to an internal object and
+ *  you can check the type of internal object with `type' method.
+ *
+ *  If `obj' is instance of `ObjectSpace::InternalObjectWrapper'
+ *  class, then this method retuns all reachalbe object from
+ *  an interna object, which is pointed by `obj'.
  *
  *  With this method, you can find memory leaks.
  *
@@ -657,15 +734,30 @@ count_tdata_objects(int argc, VALUE *argv, VALUE self)
  *    ObjectSpace.reachable_objects_from(1)
  *    #=> nil # 1 is not markable (heap managed) object
  *
- *  Limitation: Current implementation can't acquire internal objects.
- *              This means that you can't acquire complete object graph
- *              (heap snapshot).  This is future work.
- *
  */
+
 static VALUE
 reachable_objects_from(VALUE self, VALUE obj)
 {
-    return rb_objspace_reachable_objects_from(obj);
+    if (rb_objspace_markable_object_p(obj)) {
+	VALUE ret = rb_ary_new();
+	struct rof_data data;
+
+	if (rb_typeddata_is_kind_of(obj, &iow_data_type)) {
+	    obj = (VALUE)DATA_PTR(obj);
+	}
+
+	data.refs = st_init_numtable();
+	data.internals = rb_ary_new();
+
+	rb_objspace_reachable_objects_from(obj, reachable_object_from_i, &data);
+
+	st_foreach(data.refs, collect_keys, (st_data_t)ret);
+	return ret;
+    }
+    else {
+	return Qnil;
+    }
 }
 
 /* objspace library extends ObjectSpace module and add several
@@ -691,4 +783,8 @@ Init_objspace(void)
     rb_define_module_function(rb_mObjSpace, "count_tdata_objects", count_tdata_objects, -1);
 
     rb_define_module_function(rb_mObjSpace, "reachable_objects_from", reachable_objects_from, 1);
+
+    rb_mInternalObjectWrapper = rb_define_class_under(rb_mObjSpace, "InternalObjectWrapper", rb_cObject);
+    rb_define_method(rb_mInternalObjectWrapper, "type", iow_type, 0);
+    rb_define_method(rb_mInternalObjectWrapper, "inspect", iow_inspect, 0);
 }

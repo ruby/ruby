@@ -1,3 +1,22 @@
+Wed Oct 24 08:55:04 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c (ObjectSpace.reachable_objects_from):
+	  internal object support.
+	  If given object `obj' has references to internal objects
+	  (such as T_NODE objects), then this method returns instances of
+	  `ObjectSpace::InternalObjectWrapper' instead of that internal objects.
+	  This instance contains a refereance to an internal object and you can
+	  check the type of internal object using
+	  `ObjectSpace::InternalObjectWrapper#type' method.
+	  Rdoc of `InternalObjectWrapper' is not prepared yet.
+
+	* gc.c (rb_objspace_reachable_objects_from), gc.h: change
+	  an interface of 'rb_objspace_reachable_objects_from()'
+
+	* gc.c, gc.h: add two APIs
+	  - rb_objspace_markable_object_p(obj): check markable or not.
+	  - rb_objspace_internal_object_p(obj): check internal or not.
+
 Wed Oct 24 05:52:36 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_call_method): remove `default' and
