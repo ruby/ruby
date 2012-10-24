@@ -668,6 +668,13 @@ iow_inspect(VALUE self)
     return rb_sprintf("#<InternalObject:%p %s>", (void *)obj, rb_id2name(SYM2ID(type)));
 }
 
+static VALUE
+iow_internal_object_id(VALUE self)
+{
+    VALUE obj = (VALUE)DATA_PTR(self);
+    return rb_obj_id(obj);
+}
+
 struct rof_data {
     st_table *refs;
     VALUE internals;
@@ -787,4 +794,5 @@ Init_objspace(void)
     rb_mInternalObjectWrapper = rb_define_class_under(rb_mObjSpace, "InternalObjectWrapper", rb_cObject);
     rb_define_method(rb_mInternalObjectWrapper, "type", iow_type, 0);
     rb_define_method(rb_mInternalObjectWrapper, "inspect", iow_inspect, 0);
+    rb_define_method(rb_mInternalObjectWrapper, "internal_object_id", iow_internal_object_id, 0);
 }

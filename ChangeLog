@@ -1,3 +1,9 @@
+Wed Oct 24 10:17:45 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c (Init_objspace): add a new method
+	  `ObjectSpace::InternalObjectWrapper#internal_object_id' which returns
+	  an object id of a wrapped internal object.
+
 Wed Oct 24 08:55:04 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c (ObjectSpace.reachable_objects_from):
