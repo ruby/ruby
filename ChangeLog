@@ -1,3 +1,10 @@
+Wed Oct 24 17:41:24 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: add `-x' or `--exclude' option
+	  to specify exclude benchmark name pattern.
+	  You can specify "-x foo" if you want to exclude the benchmarks
+	  if the name of benchmark contains `foo'.
+
 Wed Oct 24 11:57:24 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (gc_prepare_free_objects): rename to match the behavior of
