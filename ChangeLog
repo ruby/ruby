@@ -1,7 +1,7 @@
 Wed Oct 24 11:57:24 2012  Narihiro Nakamura  <authornari@gmail.com>
 
-	* gc.c (free_object_aquire): rename to match the behavior of this
-	  function.
+	* gc.c (gc_aquire_free_object): rename to match the behavior of
+	  this function.
 
 Wed Oct 24 11:55:19 2012  Koichi Sasada  <ko1@atdot.net>
 

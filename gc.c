@@ -360,7 +360,7 @@ static void init_mark_stack(mark_stack_t *stack);
 
 static VALUE lazy_sweep_enable(void);
 static int garbage_collect(rb_objspace_t *);
-static int free_object_aquire(rb_objspace_t *);
+static int gc_aquire_free_object(rb_objspace_t *);
 static void mark_tbl(rb_objspace_t *, st_table *);
 static void rest_sweep(rb_objspace_t *);
 static void gc_mark_stacked_objects(rb_objspace_t *);
@@ -666,7 +666,7 @@ newobj(VALUE klass, VALUE flags)
     }
 
     if (UNLIKELY(!has_free_object)) {
-	if (!free_object_aquire(objspace)) {
+	if (!gc_aquire_free_object(objspace)) {
 	    during_gc = 0;
 	    rb_memerror();
 	}
@@ -2044,7 +2044,7 @@ rest_sweep(rb_objspace_t *objspace)
 static void gc_marks(rb_objspace_t *objspace);
 
 static int
-free_object_aquire(rb_objspace_t *objspace)
+gc_aquire_free_object(rb_objspace_t *objspace)
 {
     int res;
 
