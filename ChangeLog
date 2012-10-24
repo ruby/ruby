@@ -1,3 +1,14 @@
+Wed Oct 24 11:55:19 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c (reachable_object_from_i): change data
+	  structure of the result of reachable objects. Keys of table
+	  contains object_id of each reachable objects. Value of table
+	  is an object itself or an instance of InternalObjectWrapper.
+	  To avoid duplication, we use st_table and object_id keys.
+
+	* ext/objspace/objspace.c (type2sym): bug fix.
+	  Should use `i' instead of `type'.
+
 Wed Oct 24 10:33:09 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (garbage_collect, gc_marks): move the location of

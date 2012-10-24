@@ -302,7 +302,7 @@ type2sym(int i)
 	CASE_TYPE(T_ICLASS);
 	CASE_TYPE(T_ZOMBIE);
 #undef CASE_TYPE
-      default: rb_bug("type2sym: unknown type (%d)", (int)type);
+      default: rb_bug("type2sym: unknown type (%d)", i);
     }
     return type;
 }
@@ -684,21 +684,23 @@ static void
 reachable_object_from_i(VALUE obj, void *data_ptr)
 {
     struct rof_data *data = (struct rof_data *)data_ptr;
+    VALUE key = obj;
+    VALUE val = obj;
 
     if (rb_objspace_markable_object_p(obj)) {
 	if (rb_objspace_internal_object_p(obj)) {
-	    obj = iow_newobj(obj);
-	    rb_ary_push(data->internals, obj);
+	    val = iow_newobj(obj);
+	    rb_ary_push(data->internals, val);
 	}
-	st_insert(data->refs, obj, Qtrue);
+	st_insert(data->refs, key, val);
     }
 }
 
 static int
-collect_keys(st_data_t key, st_data_t value, st_data_t data)
+collect_values(st_data_t key, st_data_t value, st_data_t data)
 {
     VALUE ary = (VALUE)data;
-    rb_ary_push(ary, (VALUE)key);
+    rb_ary_push(ary, (VALUE)value);
     return ST_CONTINUE;
 }
 
@@ -759,7 +761,7 @@ reachable_objects_from(VALUE self, VALUE obj)
 
 	rb_objspace_reachable_objects_from(obj, reachable_object_from_i, &data);
 
-	st_foreach(data.refs, collect_keys, (st_data_t)ret);
+	st_foreach(data.refs, collect_values, (st_data_t)ret);
 	return ret;
     }
     else {
