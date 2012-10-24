@@ -1,3 +1,8 @@
+Wed Oct 24 18:49:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/objspace/objspace.c (type2sym, count_objects_size): use enum
+	  instead of size_t which may be larger than actual values.
+
 Wed Oct 24 17:41:24 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb: add `-x' or `--exclude' option

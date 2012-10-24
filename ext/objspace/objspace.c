@@ -271,7 +271,7 @@ cos_i(void *vstart, void *vend, size_t stride, void *data)
 }
 
 static VALUE
-type2sym(int i)
+type2sym(enum ruby_value_type i)
 {
     VALUE type;
     switch (i) {
@@ -335,7 +335,7 @@ count_objects_size(int argc, VALUE *argv, VALUE os)
 {
     size_t counts[T_MASK+1];
     size_t total = 0;
-    size_t i;
+    enum ruby_value_type i;
     VALUE hash;
 
     if (rb_scan_args(argc, argv, "01", &hash) == 1) {
