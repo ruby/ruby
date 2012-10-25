@@ -3810,6 +3810,7 @@ string		: tCHAR
 		| string string1
 		    {
 		    /*%%%*/
+			rb_warning0("string concatenation syntax will be deprecated");
 			$$ = literal_concat($1, $2);
 		    /*%
 			$$ = dispatch2(string_concat, $1, $2);
