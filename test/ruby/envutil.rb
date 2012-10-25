@@ -209,9 +209,9 @@ module Test
           "-v", "-",
         ]
         cmd = [
-          %Q[END {STDERR.puts #{token_dump}+"FINAL=\#{Memory::Status.new.size}"}],
+          'END {STDERR.puts '"#{token_dump}"'"FINAL=#{Memory::Status.new.size}"}',
           prepare,
-          %Q[STDERR.puts(#{token_dump}+"START=\#{$initial_size = Memory::Status.new.size}")],
+          'STDERR.puts('"#{token_dump}"'"START=#{$initial_size = Memory::Status.new.size}")',
           code,
         ].join("\n")
         _, err, status = EnvUtil.invoke_ruby(args, cmd, true, true)

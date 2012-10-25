@@ -5,6 +5,10 @@ class TestStringchar < Test::Unit::TestCase
     assert_equal("abcd", "abcd")
     assert_match(/abcd/, "abcd")
     assert("abcd" === "abcd")
+    # compile time string concatenation
+    assert_equal("abcd", "ab" "cd")
+    assert_equal("22aacd44", "#{22}aa" "cd#{44}")
+    assert_equal("22aacd445566", "#{22}aa" "cd#{44}" "55" "#{66}")
     assert("abc" !~ /^$/)
     assert("abc\n" !~ /^$/)
     assert("abc" !~ /^d*$/)

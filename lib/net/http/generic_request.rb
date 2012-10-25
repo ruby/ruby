@@ -186,7 +186,9 @@ class Net::HTTPGenericRequest
       if filename
         filename = quote_string(filename, charset)
         type = h[:content_type] || 'application/octet-stream'
-        buf << "Content-Disposition: form-data; name=\"#{key}\"; filename=\"#{filename}\"\r\nContent-Type: #{type}\r\n\r\n"
+        buf << "Content-Disposition: form-data; " \
+          "name=\"#{key}\"; filename=\"#{filename}\"\r\n" \
+          "Content-Type: #{type}\r\n\r\n"
         if !out.respond_to?(:write) || !value.respond_to?(:read)
           # if +out+ is not an IO or +value+ is not an IO
           buf << (value.respond_to?(:read) ? value.read : value)
