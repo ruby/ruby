@@ -1,3 +1,12 @@
+Thu Oct 25 18:16:25 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rubygems/installer.rb (check_that_user_bin_dir_is_in_path):
+	  test_generate_bin_bindir_with_user_install_warning(TestGemInstaller)
+	  fails on Windows with msys bash. It makes comparing paths
+	  case-insensitive.
+	  pick from upstream to fix a failure of test-all [ruby-core:47711]
+	  https://github.com/rubygems/rubygems/commit/c474edb2f3704206f04da1c8c6cf9fb079d84abe
+
 Thu Oct 25 17:55:01 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/etc/test_etc.rb (TestEtc#test_getpwuid): `s' is never set to nil.
