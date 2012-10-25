@@ -19,13 +19,6 @@ Thu Oct 25 13:35:07 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/mkconfig.rb: remove string literal concatenation.
 
-Thu Oct 25 13:09:01 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
-
-	* parse.y: show a warning for concatenating string literals because
-	  it will be deprecated in the future.
-	  patched by mame (Yusuke Endoh) at [ruby-core:44207].
-	  [ruby-core:44156] [Feature #6265]
-
 Wed Oct 24 18:49:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/objspace/objspace.c (type2sym, count_objects_size): use enum
