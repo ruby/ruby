@@ -97,21 +97,6 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_me
 }
 
 void
-rb_add_method_cfunc_frameless(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex)
-{
-    if (argc < 0 || 1 < argc) rb_raise(rb_eArgError, "arity out of range: %d for 0..1", argc);
-    if (func != rb_f_notimplement) {
-	rb_method_cfunc_t opt;
-	opt.func = func;
-	opt.argc = argc;
-	rb_add_method(klass, mid, VM_METHOD_TYPE_CFUNC_FRAMELESS, &opt, noex);
-    }
-    else {
-	rb_define_notimplement_method_id(klass, mid, noex);
-    }
-}
-
-void
 rb_unlink_method_entry(rb_method_entry_t *me)
 {
     struct unlinked_method_entry_list_entry *ume = ALLOC(struct unlinked_method_entry_list_entry);

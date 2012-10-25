@@ -1,3 +1,13 @@
+Thu Oct 25 15:00:08 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h, class.c: remove (revert)
+	  `rb_add_method_cfunc_frameless()' API.
+	  This API is not mature to become an offical API.
+	  For example, we can not use this API with
+	  `rb_define_private_method()'.
+
+	* method.h, vm_method.c (rb_add_method_cfunc_frameless): removed.
+
 Thu Oct 25 13:35:07 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/mkconfig.rb: remove string literal concatenation.
