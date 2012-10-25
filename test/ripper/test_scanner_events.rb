@@ -656,13 +656,13 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     assert_equal ['<<-EOS'],
                  scan('heredoc_beg', "<<-EOS\nheredoc\n\tEOS \n")
     assert_equal ['<<"EOS"'],
-                 scan('heredoc_beg', '<<"EOS"'"\nheredoc\nEOS")
+                 scan('heredoc_beg', "<<\"EOS\"\nheredoc\nEOS")
     assert_equal ["<<'EOS'"],
                  scan('heredoc_beg', "<<'EOS'\nheredoc\nEOS")
     assert_equal ['<<`EOS`'],
                  scan('heredoc_beg', "<<`EOS`\nheredoc\nEOS")
     assert_equal ['<<" "'],
-                 scan('heredoc_beg', '<<" "'"\nheredoc\nEOS")
+                 scan('heredoc_beg', "<<\" \"\nheredoc\nEOS")
   end
 
   def test_tstring_content_HEREDOC

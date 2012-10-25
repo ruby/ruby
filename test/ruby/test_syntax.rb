@@ -118,7 +118,7 @@ class TestSyntax < Test::Unit::TestCase
 
   def test_warn_unreachable
     assert_warn("test:3: warning: statement not reached\n") do
-      code = "loop do\n" "break\n" "foo\n" "end"
+      code = "loop do\nbreak\nfoo\nend"
       assert_valid_syntax(code, "test") {$VERBOSE = true}
     end
   end

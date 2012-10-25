@@ -19,10 +19,10 @@ class TestRubyMode
   EVAL_OPT = "--eval"
   EXPR_SAVE = "(save-buffer)"
   EXPR_RUBYMODE = "(ruby-mode)"
-  EXPR_NOBACKUP = "(progn" \
-  " (set (make-local-variable \'backup-inhibited) t)" \
-  " (set-buffer-modified-p t)" \
-  ")"
+  EXPR_NOBACKUP = "(progn" <<
+    " (set (make-local-variable \'backup-inhibited) t)" <<
+    " (set-buffer-modified-p t)" <<
+    ")"
 
   def run_emacs(src, *exprs)
     tmp = Tempfile.new(%w"ruby-mode.test. .rb")

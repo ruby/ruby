@@ -1404,8 +1404,7 @@ class Matrix
       begin
         ret = obj.__send__(meth)
       rescue Exception => e
-        raise TypeError, "Coercion error: #{obj.inspect}.#{meth} => #{cls} failed:\n" \
-                         "(#{e.message})"
+        raise TypeError, "Coercion error: #{obj.inspect}.#{meth} => #{cls} failed:\n(#{e.message})"
       end
       raise TypeError, "Coercion error: obj.#{meth} did NOT return a #{cls} (was #{ret.class})" unless ret.kind_of? cls
       ret

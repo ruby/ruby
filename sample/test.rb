@@ -1612,10 +1612,6 @@ test_check "string & char"
 test_ok("abcd" == "abcd")
 test_ok("abcd" =~ /abcd/)
 test_ok("abcd" === "abcd")
-# compile time string concatenation
-test_ok("ab" "cd" == "abcd")
-test_ok("#{22}aa" "cd#{44}" == "22aacd44")
-test_ok("#{22}aa" "cd#{44}" "55" "#{66}" == "22aacd445566")
 test_ok("abc" !~ /^$/)
 test_ok("abc\n" !~ /^$/)
 test_ok("abc" !~ /^d*$/)

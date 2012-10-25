@@ -1026,7 +1026,7 @@ SRC
   #
   def have_framework(fw, &b)
     checking_for fw do
-      src = cpp_include("#{fw}/#{fw}.h") << "\n" "int main(void){return 0;}"
+      src = cpp_include("#{fw}/#{fw}.h") << "\n#{''}int main(void){return 0;}"
       opt = " -framework #{fw}"
       if try_link(src, "-ObjC#{opt}", &b)
         $defs.push(format("-DHAVE_FRAMEWORK_%s", fw.tr_cpp))
@@ -1761,7 +1761,7 @@ arch_hdrdir = #{$arch_hdrdir.quote}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
     if $extmk
-      mk << "RUBYLIB =\n""RUBYOPT = -\n"
+      mk << "RUBYLIB =\n#{''}RUBYOPT = -\n"
     end
     prefix = mkintpath(CONFIG["prefix"])
     if destdir = prefix[$dest_prefix_pattern, 1]
@@ -2376,7 +2376,7 @@ MESSAGE
 
   EXPORT_PREFIX = config_string('EXPORT_PREFIX') {|s| s.strip}
 
-  hdr = ['#include "ruby.h"' "\n"]
+  hdr = ["#include \"ruby.h\"\n"]
   config_string('COMMON_MACROS') do |s|
     Shellwords.shellwords(s).each do |w|
       w, v = w.split(/=/, 2)
@@ -2396,13 +2396,13 @@ MESSAGE
   COMPILE_C = config_string('COMPILE_C') || '$(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) $(COUTFLAG)$@ -c $<'
   COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $<'
   TRY_LINK = config_string('TRY_LINK') ||
-    "$(CC) #{OUTFLAG}conftest#{$EXEEXT} $(INCFLAGS) $(CPPFLAGS) " \
+    "$(CC) #{OUTFLAG}conftest#{$EXEEXT} $(INCFLAGS) $(CPPFLAGS) " <<
     "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
   LINK_SO = config_string('LINK_SO') ||
     if CONFIG["DLEXT"] == $OBJEXT
       "ld $(DLDFLAGS) -r -o $@ $(OBJS)\n"
     else
-      "$(LDSHARED) #{OUTFLAG}$@ $(OBJS) " \
+      "$(LDSHARED) #{OUTFLAG}$@ $(OBJS) " <<
       "$(LIBPATH) $(DLDFLAGS) $(LOCAL_LIBS) $(LIBS)"
     end
   LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L%s'

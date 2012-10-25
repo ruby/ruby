@@ -42,8 +42,7 @@ class TestJSON < Test::Unit::TestCase
       'h' => 1000.0,
       'i' => 0.001
     }
-    @json = '{"a":2,"b":3.141,"c":"c","d":[1,"b",3.14],"e":{"foo":"bar"},'\
-      '"g":"\\"\\u0000\\u001f","h":1.0E3,"i":1.0E-3}'
+    @json = '{"a":2,"b":3.141,"c":"c","d":[1,"b",3.14],"e":{"foo":"bar"},"g":"\\"\\u0000\\u001f","h":1.0E3,"i":1.0E-3}'
   end
 
   def test_construction
@@ -190,8 +189,7 @@ class TestJSON < Test::Unit::TestCase
     assert_equal([1], parse('[1]'))
     assert_equal([1], parse('  [ 1  ]  '))
     assert_equal(@ary,
-      parse('[[1],["foo"],[3.14],[47.11e+2],[2718.0E-3],[null],[[1,-2,3]]'\
-      ',[false],[true]]'))
+      parse('[[1],["foo"],[3.14],[47.11e+2],[2718.0E-3],[null],[[1,-2,3]],[false],[true]]'))
     assert_equal(@ary, parse(%Q{   [   [1] , ["foo"]  ,  [3.14] \t ,  [47.11e+2]\s
       , [2718.0E-3 ],\r[ null] , [[1, -2, 3 ]], [false ],[ true]\n ]  }))
   end

@@ -560,7 +560,7 @@ FOO
     end
 
     assert_nothing_raised do
-      eval "x = <<""FOO\r\n1\r\nFOO"
+      eval "x = <\<FOO\r\n1\r\nFOO"
     end
     assert_equal("1\n", x)
   end
