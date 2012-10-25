@@ -1,3 +1,10 @@
+Thu Oct 25 17:48:54 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (has_redirection): should use shell (cmd.exe) when
+	  the commandline containts '&'.
+	  reported by Roger Pack at [ruby-core:47912] [Bug #7143], and
+	  patched by Heesob Park at [ruby-core:47931].
+
 Thu Oct 25 15:00:08 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h, class.c: remove (revert)

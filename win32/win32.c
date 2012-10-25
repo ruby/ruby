@@ -1446,6 +1446,7 @@ has_redirection(const char *cmd)
 	  case '>':
 	  case '<':
 	  case '|':
+	  case '&':
 	  case '\n':
 	    if (!quote)
 		return TRUE;
