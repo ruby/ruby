@@ -1,3 +1,7 @@
+Thu Oct 25 13:35:07 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/mkconfig.rb: remove string literal concatenation.
+
 Thu Oct 25 13:09:01 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* parse.y: show a warning for concatenating string literals because
