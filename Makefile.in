@@ -10,6 +10,7 @@ NULL = /dev/null
 srcdir = @srcdir@
 top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
+PLATFORM_DIR = @PLATFORM_DIR@
 
 CC = @CC@
 CPP = @CPP@
@@ -342,6 +343,9 @@ clean-capi distclean-capi realclean-capi:
 	@echo $(@:-capi=ing) capi
 	$(Q)$(RMALL) $(CAPIOUT)
 
+clean-platform:
+	@$(RM) $(PLATFORM_D)
+	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> /dev/null || true
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(ECHO) compiling $@

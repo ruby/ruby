@@ -43,7 +43,7 @@ rb_get_expanded_load_path(void)
 
     ary = rb_ary_new2(RARRAY_LEN(load_path));
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
-	VALUE path = rb_file_expand_path(RARRAY_PTR(load_path)[i], Qnil);
+	VALUE path = rb_file_expand_path_fast(RARRAY_PTR(load_path)[i], Qnil);
 	rb_str_freeze(path);
 	rb_ary_push(ary, path);
     }
@@ -233,7 +233,7 @@ rb_feature_provided(const char *feature, const char **loading)
 
     if (*feature == '.' &&
 	(feature[1] == '/' || strncmp(feature+1, "./", 2) == 0)) {
-	fullpath = rb_file_expand_path(rb_str_new2(feature), Qnil);
+	fullpath = rb_file_expand_path_fast(rb_str_new2(feature), Qnil);
 	feature = RSTRING_PTR(fullpath);
     }
     if (ext && !strchr(ext, '/')) {

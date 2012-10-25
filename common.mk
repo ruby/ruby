@@ -26,6 +26,7 @@ EXTCONF       = extconf.rb
 RBCONFIG      = ./.rbconfig.time
 LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
+PLATFORM_D    = ./$(PLATFORM_DIR)/.time
 RDOCOUT       = $(EXTOUT)/rdoc
 CAPIOUT       = doc/capi
 ID_H_TARGET   = -id.h-
@@ -426,7 +427,7 @@ install-prereq: $(CLEAR_INSTALLED_LIST) PHONY
 clear-installed-list: PHONY
 	@> $(INSTALLED_LIST) set MAKE="$(MAKE)"
 
-clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-capi clean-extout
+clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-capi clean-extout clean-platform
 clean-local:: PHONY
 	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
@@ -436,10 +437,11 @@ clean-golf: PHONY
 	@$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
 clean-rdoc: PHONY
 clean-capi: PHONY
+clean-platform: PHONY
 clean-extout: PHONY
 clean-docs: clean-rdoc clean-capi
 
-distclean: distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
+distclean: distclean-ext distclean-local distclean-enc distclean-golf distclean-extout distclean-platform
 distclean-local:: clean-local
 	@$(RM) $(MKFILES) yasmdata.rb *.inc
 	@$(RM) config.cache config.status config.status.lineno $(PRELUDES)
@@ -450,6 +452,7 @@ distclean-golf: clean-golf
 distclean-rdoc: PHONY
 distclean-capi: PHONY
 distclean-extout: clean-extout
+distclean-platform: clean-platform
 
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 realclean-local:: distclean-local
@@ -573,7 +576,12 @@ dl_os2.$(OBJEXT): {$(VPATH)}dl_os2.c
 ia64.$(OBJEXT): {$(VPATH)}ia64.s
 	$(CC) $(CFLAGS) -c $<
 
-win32.$(OBJEXT): {$(VPATH)}win32.c $(RUBY_H_INCLUDES)
+$(PLATFORM_D):
+	$(Q) $(MAKEDIRS) $(PLATFORM_DIR)
+	@exit > $@
+
+win32/win32.$(OBJEXT): {$(VPATH)}win32/win32.c $(RUBY_H_INCLUDES) $(PLATFORM_D)
+win32/file.$(OBJEXT): {$(VPATH)}win32/file.c $(RUBY_H_INCLUDES) $(PLATFORM_D)
 
 ###
 
