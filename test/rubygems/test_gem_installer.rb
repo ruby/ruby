@@ -747,7 +747,8 @@ load Gem.bin_path('a', 'executable', version)
 
     exe = File.join @gemhome, 'bin', 'executable'
 
-    ARGV.unshift "\xE4pfel".force_encoding("UTF-8")
+    extra_arg = "\xE4pfel".force_encoding("UTF-8")
+    ARGV.unshift extra_arg
 
     begin
       Gem::Specification.reset
@@ -756,7 +757,7 @@ load Gem.bin_path('a', 'executable', version)
         instance_eval File.read(exe)
       end
     ensure
-      ARGV.shift if ARGV.first == "\xE4pfel"
+      ARGV.shift if ARGV.first == extra_arg
     end
 
     assert_match(/ran executable/, e.message)
