@@ -1,3 +1,8 @@
+Fri Oct 26 13:24:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (literal_concat_gen): merge fixed strings across
+	  concatenated literals, after an interpolation.
+
 Thu Oct 25 17:48:54 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (has_redirection): should use shell (cmd.exe) when

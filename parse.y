@@ -8246,6 +8246,8 @@ static NODE *
 literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
 {
     enum node_type htype;
+    NODE *headlast;
+    VALUE lit;
 
     if (!head) return tail;
     if (!tail) return head;
@@ -8254,11 +8256,20 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
     if (htype == NODE_EVSTR) {
 	NODE *node = NEW_DSTR(Qnil);
 	head = list_append(node, head);
+	htype = NODE_DSTR;
     }
     switch (nd_type(tail)) {
       case NODE_STR:
+	if (htype == NODE_DSTR && (headlast = head->nd_next->nd_end->nd_head) &&
+	    nd_type(headlast) == NODE_STR) {
+	    htype = NODE_STR;
+	    lit = headlast->nd_lit;
+	}
+	else {
+	    lit = head->nd_lit;
+	}
 	if (htype == NODE_STR) {
-	    if (!literal_concat0(parser, head->nd_lit, tail->nd_lit)) {
+	    if (!literal_concat0(parser, lit, tail->nd_lit)) {
 	      error:
 		rb_gc_force_recycle((VALUE)head);
 		rb_gc_force_recycle((VALUE)tail);
@@ -8280,10 +8291,19 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
 	    head = tail;
 	}
 	else if (NIL_P(tail->nd_lit)) {
+	  append:
 	    head->nd_alen += tail->nd_alen - 1;
 	    head->nd_next->nd_end->nd_next = tail->nd_next;
 	    head->nd_next->nd_end = tail->nd_next->nd_end;
 	    rb_gc_force_recycle((VALUE)tail);
+	}
+	else if (htype == NODE_DSTR && (headlast = head->nd_next->nd_end->nd_head) &&
+		 nd_type(headlast) == NODE_STR) {
+	    lit = headlast->nd_lit;
+	    if (!literal_concat0(parser, lit, tail->nd_lit))
+		goto error;
+	    tail->nd_lit = Qnil;
+	    goto append;
 	}
 	else {
 	    nd_set_type(tail, NODE_ARRAY);
