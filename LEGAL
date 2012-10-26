@@ -148,7 +148,6 @@ util.c (partly):
     REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
     OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
 
-util.c (partly):
 win32/win32.[ch]:
 
   You can apply the Artistic License to these files. (or GPL,

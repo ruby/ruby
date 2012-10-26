@@ -1,3 +1,39 @@
+Fri Oct 26 11:03:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_enc_path_next, rb_enc_path_skip_prefix)
+	  (rb_enc_path_last_separator, rb_enc_path_end)
+	  (ruby_enc_find_basename, ruby_enc_find_extname): encoding-aware
+	  path handling functions.
+
+	* file.c (rb_home_dir, file_expand_path, rb_realpath_internal)
+	  (rb_file_s_basename, rb_file_dirname, rb_file_s_extname)
+	  (rb_file_join): should respect the encodings of arguments than
+	  file system encoding.  [ruby-dev:45145] [Bug #5919]
+
+	* dir.c (check_dirname, ruby_glob0): ditto.
+
+	* ext/pathname/pathname.c (path_sub_ext): ditto.
+
+Fri Oct 26 11:03:46 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* util.c, include/ruby/util.h (ruby_add_suffix): remove the function.
+	  [Bug #5153] [ruby-core:38736]
+
+	* io.c (argf_next_argv): remove the call of above function.
+
+	* ext/-test-/add_suffix, test/-ext-/test_add_suffix.rb: remove the test
+	  extension module because this is only for testsing ruby_add_suffix().
+
+	* LEGAL: remove the mention about a part of util.c, because now we
+	  removed the part.
+
+	* io.c (argf_next_argv): now the new filename is not guranteed to
+	  use, so should check the return value of rename(2).
+
+	* test/ruby/test_argf.rb (TestArgf#test_inplace_rename_impossible):
+	  now we expect same result with other platforms on no_safe_rename
+	  platforms (=Windows).
+
 Thu Oct 25 18:16:25 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rubygems/installer.rb (check_that_user_bin_dir_is_in_path):
