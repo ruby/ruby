@@ -66,6 +66,8 @@ with all sufficient information, see the ChangeLog file.
         corresponding method in the prepending module.
     * extended method:
       * Module#define_method accepts a UnboundMethod from a Module.
+      * Module#const_get accepts a qualified constant string, e.g.
+        Object.const_get("Foo::Bar::Baz")
 
   * NilClass
     * added method:

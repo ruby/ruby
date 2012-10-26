@@ -1826,33 +1826,11 @@ rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
     return Qnil;
 }
 
-/*
- *  call-seq:
- *     mod.const_get(sym, inherit=true)    -> obj
- *
- *  Checks for a constant with the given name in <i>mod</i>
- *  If +inherit+ is set, the lookup will also search
- *  the ancestors (and +Object+ if <i>mod</i> is a +Module+.)
- *
- *  The value of the constant is returned if a definition is found,
- *  otherwise a +NameError+ is raised.
- *
- *     Math.const_get(:PI)   #=> 3.14159265358979
- */
-
 static VALUE
-rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
+rb_mod_single_const_get(VALUE mod, VALUE name, VALUE recur)
 {
-    VALUE name, recur;
     ID id;
 
-    if (argc == 1) {
-	name = argv[0];
-	recur = Qtrue;
-    }
-    else {
-	rb_scan_args(argc, argv, "11", &name, &recur);
-    }
     id = rb_check_id(&name);
     if (!id) {
 	if (!rb_is_const_name(name)) {
@@ -1874,6 +1852,89 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	rb_name_error(id, "wrong constant name %s", rb_id2name(id));
     }
     return RTEST(recur) ? rb_const_get(mod, id) : rb_const_get_at(mod, id);
+}
+
+/*
+ *  call-seq:
+ *     mod.const_get(sym, inherit=true)    -> obj
+ *     mod.const_get(str, inherit=true)    -> obj
+ *
+ *  Checks for a constant with the given name in <i>mod</i>
+ *  If +inherit+ is set, the lookup will also search
+ *  the ancestors (and +Object+ if <i>mod</i> is a +Module+.)
+ *
+ *  The value of the constant is returned if a definition is found,
+ *  otherwise a +NameError+ is raised.
+ *
+ *     Math.const_get(:PI)   #=> 3.14159265358979
+ *
+ *  This method will recursively look up constant names if a namespaced
+ *  class name is provided.  For example:
+ *
+ *     module Foo; class Bar; end end
+ *     Object.const_get 'Foo::Bar'
+ *
+ *  The +inherit+ flag is respected on each lookup.  For example:
+ *
+ *     module Foo
+ *       class Bar
+ *         VAL = 10
+ *       end
+ *
+ *       class Baz < Bar; end
+ *     end
+ *
+ *     Object.const_get 'Foo::Baz::VAL'         # => 10
+ *     Object.const_get 'Foo::Baz::VAL', false  # => NameError
+ */
+
+static VALUE
+rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
+{
+    VALUE name, recur;
+    rb_encoding *enc;
+    const char *pbeg, *p, *path;
+    ID id;
+
+    if (argc == 1) {
+	name = argv[0];
+	recur = Qtrue;
+    }
+    else {
+	rb_scan_args(argc, argv, "11", &name, &recur);
+    }
+
+    if (SYMBOL_P(name)) {
+      name = rb_sym_to_s(name);
+    }
+
+    enc = rb_enc_get(name);
+    path = RSTRING_PTR(name);
+
+    if (!rb_enc_asciicompat(enc)) {
+	rb_raise(rb_eArgError, "invalid class path encoding (non ASCII)");
+    }
+
+    pbeg = p = path;
+    while (*p) {
+	while (*p && *p != ':') p++;
+	id = rb_intern3(pbeg, p-pbeg, enc);
+	if (p[0] == ':') {
+	    if (p[1] != ':') {
+              rb_raise(rb_eArgError, "undefined class/module %.*s", (int)(p-path), path);
+            }
+	    p += 2;
+	    pbeg = p;
+	}
+
+	if (!RB_TYPE_P(mod, T_MODULE) && !RB_TYPE_P(mod, T_CLASS)) {
+	    rb_raise(rb_eTypeError, "%s does not refer to class/module", path);
+	}
+
+        mod = rb_mod_single_const_get(mod, ID2SYM(id), recur);
+    }
+
+    return mod;
 }
 
 /*

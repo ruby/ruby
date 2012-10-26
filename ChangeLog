@@ -1,3 +1,10 @@
+Sat Oct 27 06:28:33 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* object.c (rb_mod_const_get): const_get accepts qualified constant
+	  strings.  e.g. Object.const_get("Foo::Bar::Baz") [ruby-core:41404]
+
+	* test/ruby/test_module.rb: tests for new behavior
+
 Fri Oct 26 13:24:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (literal_concat_gen): merge fixed strings across

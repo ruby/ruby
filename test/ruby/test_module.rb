@@ -245,6 +245,36 @@ class TestModule < Test::Unit::TestCase
     assert_equal(Math::PI, Math.const_get(:PI))
   end
 
+  def test_nested_get
+    assert_equal Other, Object.const_get([self.class, Other].join('::'))
+    assert_equal User::USER, self.class.const_get([User, 'USER'].join('::'))
+  end
+
+  def test_nested_get_symbol
+    const = [self.class, Other].join('::').to_sym
+
+    assert_equal Other, Object.const_get(const)
+    assert_equal User::USER, self.class.const_get([User, 'USER'].join('::'))
+  end
+
+  def test_nested_get_const_missing
+    classes = []
+    klass = Class.new {
+      define_singleton_method(:const_missing) { |name|
+	classes << name
+	klass
+      }
+    }
+    klass.const_get("Foo::Bar::Baz")
+    assert_equal [:Foo, :Bar, :Baz], classes
+  end
+
+  def test_nested_bad_class
+    assert_raises(TypeError) do
+      self.class.const_get([User, 'USER', 'Foo'].join('::'))
+    end
+  end
+
   def test_const_set
     assert(!Other.const_defined?(:KOALA))
     Other.const_set(:KOALA, 99)
