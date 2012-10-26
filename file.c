@@ -2881,7 +2881,6 @@ append_fspath(VALUE result, VALUE fname, char *dir, rb_encoding **enc, rb_encodi
 	    RSTRING_GETMEM(dirname, cwdp, dirlen);
 	}
 	*enc = direnc;
-	rb_enc_associate(result, direnc);
     }
     do {buflen *= 2;} while (dirlen > buflen);
     rb_str_resize(result, buflen);
@@ -2889,6 +2888,7 @@ append_fspath(VALUE result, VALUE fname, char *dir, rb_encoding **enc, rb_encodi
     memcpy(buf, cwdp, dirlen);
     xfree(dir);
     if (!NIL_P(dirname)) rb_str_resize(dirname, 0);
+    rb_enc_associate(result, *enc);
     return buf + dirlen;
 }
 
