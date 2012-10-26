@@ -1,12 +1,14 @@
 if $mingw or $mswin
   $objs = ["dlntest.o"]
-  $cleanfiles << "$(topdir)/dlntest.dll"
+  testdll = "$(topdir)/dlntest.dll"
+  $cleanfiles << testdll
   config_string('cleanobjs') {|t| $cleanfiles.concat(t.gsub(/\$\*/, 'dlntest').split)}
 
   create_makefile("-test-/win32/dln")
   m = File.read("Makefile")
   dlntestlib = "dlntest.#{$LIBEXT}"
   m.sub!(/^OBJS =.*/) {"#{$&} #{dlntestlib}"}
+  FileUtils.rm_f(RbConfig.expand(testdll.dup))
   open("Makefile", "wb") do |mf|
     mf.puts m, "\n"
     sodir = $extout ? "$(RUBYARCHDIR)/" : ''
