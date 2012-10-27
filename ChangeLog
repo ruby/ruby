@@ -1,3 +1,21 @@
+Sat Oct 27 11:01:10 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* numeric.c (rb_float_new_in_heap), include/ruby/ruby.h: 
+	  make all Float objects frozen.
+	  [ruby-dev:46081] [ruby-trunk - Feature #6936]
+	  Most part of patch by NARUSE, Yui  <naruse@ruby-lang.org>.
+
+	* class.c (singleton_class_of): raise TypeError when
+	  trying to define a singleton method on Float objects.
+
+	* vm.c (vm_define_method): ditto.
+
+	* test/ruby/marshaltestlib.rb: catch up above changes.
+
+	* test/ruby/test_class.rb: ditto.
+
+	* test/test_pp.rb: ditto.
+
 Sat Oct 27 10:50:53 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* object.c (rb_mod_const_get): make sure the constant name is

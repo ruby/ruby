@@ -1133,7 +1133,7 @@ struct RBignum {
                         (FL_TAINT | FL_UNTRUSTED); \
 } while (0)
 
-#define OBJ_FROZEN(x) (!!FL_TEST((x), FL_FREEZE))
+#define OBJ_FROZEN(x) (!!(FL_ABLE(x)?(RBASIC(x)->flags&(FL_FREEZE)):FLONUM_P(x)))
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
 
 #if SIZEOF_INT < SIZEOF_LONG

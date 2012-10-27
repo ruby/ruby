@@ -207,30 +207,6 @@ module MarshalTestLib
     marshal_equal(NegativeZero) {|o| 1.0/o}
   end
 
-  def test_float_ivar
-    o1 = 1.23
-    o1.instance_eval { @iv = 1 }
-    marshal_equal(o1) {|o| o.instance_eval { @iv }}
-  end
-
-  def test_float_ivar_self
-    o1 = 5.5
-    o1.instance_eval { @iv = o1 }
-    marshal_equal(o1) {|o| o.instance_eval { @iv }}
-  end
-
-  def test_float_extend
-    o1 = 0.0/0.0
-    o1.extend(Mod1)
-    marshal_equal(o1) { |o|
-      (class << self; self; end).ancestors
-    }
-    o1.extend(Mod2)
-    marshal_equal(o1) { |o|
-      (class << self; self; end).ancestors
-    }
-  end
-
   class MyRange < Range; def initialize(v, *args) super(*args); @v = v; end end
   def test_range
     marshal_equal(1..2)

@@ -187,12 +187,8 @@ class TestClass < Test::Unit::TestCase
 
   def test_singleton_class
     assert_raise(TypeError) { 1.extend(Module.new) }
-    if 1.0.equal? 1.0 # flonum?
-      assert_raise(TypeError) { 1.0.extend(Module.new) }
-    else
-      assert_nothing_raised { 1.0.extend(Module.new) }
-    end
-    assert_nothing_raised { (2.0**1000).extend(Module.new) }
+    assert_raise(TypeError) { 1.0.extend(Module.new) }
+    assert_raise(TypeError) { (2.0**1000).extend(Module.new) }
     assert_raise(TypeError) { :foo.extend(Module.new) }
 
     assert_in_out_err([], <<-INPUT, %w(:foo :foo true true), [])

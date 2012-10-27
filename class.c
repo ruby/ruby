@@ -1322,6 +1322,10 @@ singleton_class_of(VALUE obj)
 	    rb_bug("unknown immediate %p", (void *)obj);
 	return klass;
     }
+    else {
+       if (BUILTIN_TYPE(obj) == T_FLOAT)
+           rb_raise(rb_eTypeError, "can't define singleton");
+    }
 
     if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON) &&
 	rb_ivar_get(RBASIC(obj)->klass, id_attached) == obj) {
