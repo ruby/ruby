@@ -541,7 +541,6 @@ static int lvar_defined_gen(struct parser_params*, ID);
 
 #include "eventids1.c"
 #include "eventids2.c"
-static ID ripper_id_gets;
 
 static VALUE ripper_dispatch0(struct parser_params*,ID);
 static VALUE ripper_dispatch1(struct parser_params*,ID,VALUE);
@@ -11083,7 +11082,7 @@ ripper_warningS(struct parser_params *parser, const char *fmt, const char *str)
 static VALUE
 ripper_lex_get_generic(struct parser_params *parser, VALUE src)
 {
-    return rb_funcall(src, ripper_id_gets, 0);
+    return rb_io_gets(src);
 }
 
 static VALUE
@@ -11119,7 +11118,7 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
 
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, parser);
     rb_scan_args(argc, argv, "12", &src, &fname, &lineno);
-    if (rb_obj_respond_to(src, ripper_id_gets, 0)) {
+    if (RB_TYPE_P(src, T_FILE)) {
         parser->parser_lex_gets = ripper_lex_get_generic;
     }
     else {
@@ -11283,7 +11282,6 @@ Init_ripper(void)
 {
     parser_data_type.parent = RTYPEDDATA_TYPE(rb_parser_new());
 
-    ripper_id_gets = rb_intern("gets");
     ripper_init_eventids1();
     ripper_init_eventids2();
     /* ensure existing in symbol table */

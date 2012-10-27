@@ -1,3 +1,12 @@
+Sat Oct 27 10:12:13 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* iseq.c (rb_iseq_compile_with_option): Instead of testing
+	  respond_to, just check if the argument is actually a file,
+	  because by calling user-defined gets something weired can
+	  happen.  Patch by Glass_saga. [ruby-dev:40202] [Bug #2861]
+
+	* parse.y (ripper_initialize): ditto.
+
 Sat Oct 27 10:07:57 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (enum lex_state_e): [EXPERIMENTAL] lex_state as bit field /
