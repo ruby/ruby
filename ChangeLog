@@ -1,3 +1,8 @@
+Sat Oct 27 23:33:41 2012  Benoit Daloze  <eregontp@gmail.com>
+
+	* gc.c (gc_profile_result, gc_profile_report): use internal structures
+	  to avoid allocations and progressively print the output for #report.
+
 Sat Oct 27 11:01:10 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* numeric.c (rb_float_new_in_heap), include/ruby/ruby.h: 

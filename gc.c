@@ -4141,6 +4141,46 @@ gc_profile_record_get(void)
     return gc_profile;
 }
 
+static void
+gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    size_t count = objspace->profile.count;
+
+    if (objspace->profile.run && count) {
+	int index = 1;
+	size_t i;
+	gc_profile_record r;
+	append(out, rb_sprintf("GC %zu invokes.\n", objspace->count));
+	append(out, rb_str_new_cstr("Index    Invoke Time(sec)       Use Size(byte)     Total Size(byte)         Total Object                    GC Time(ms)\n"));
+	for (i = 0; i < count; i++) {
+	    r = objspace->profile.record[i];
+#if !GC_PROFILE_MORE_DETAIL
+            if (r.is_marked) {
+#endif
+		append(out, rb_sprintf("%5d %19.3f %20zu %20zu %20zu %30.20f\n",
+			index++, r.gc_invoke_time, r.heap_use_size,
+			r.heap_total_size, r.heap_total_objects, r.gc_time*1000));
+#if !GC_PROFILE_MORE_DETAIL
+            }
+#endif
+	}
+#if GC_PROFILE_MORE_DETAIL
+	append(out, rb_str_new_cstr("\n\n" \
+		"More detail.\n" \
+		"Index Allocate Increase    Allocate Limit  Use Slot  Have Finalize             Mark Time(ms)            Sweep Time(ms)\n"));
+        index = 1;
+	for (i = 0; i < count; i++) {
+	    r = objspace->profile.record[i];
+	    append(out, rb_sprintf("%5d %17zu %17zu %9zu %14s %25.20f %25.20f\n",
+			index++, r.allocate_increase, r.allocate_limit,
+			r.heap_use_slots, (r.have_finalize ? "true" : "false"),
+			r.gc_mark_time*1000, r.gc_sweep_time*1000));
+	}
+#endif
+    }
+}
+
 /*
  *  call-seq:
  *     GC::Profiler.result -> String
@@ -4155,54 +4195,10 @@ gc_profile_record_get(void)
 static VALUE
 gc_profile_result(void)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-    VALUE record;
-    VALUE result;
-    int i, index;
-
-    record = gc_profile_record_get();
-    if (objspace->profile.run && objspace->profile.count) {
-	result = rb_sprintf("GC %d invokes.\n", NUM2INT(gc_count(0)));
-        index = 1;
-	rb_str_cat2(result, "Index    Invoke Time(sec)       Use Size(byte)     Total Size(byte)         Total Object                    GC Time(ms)\n");
-	for (i = 0; i < (int)RARRAY_LEN(record); i++) {
-	    VALUE r = RARRAY_PTR(record)[i];
-#if !GC_PROFILE_MORE_DETAIL
-            if (rb_hash_aref(r, ID2SYM(rb_intern("GC_IS_MARKED")))) {
-#endif
-	    rb_str_catf(result, "%5d %19.3f %20"PRIuSIZE" %20"PRIuSIZE" %20"PRIuSIZE" %30.20f\n",
-			index++, NUM2DBL(rb_hash_aref(r, ID2SYM(rb_intern("GC_INVOKE_TIME")))),
-			(size_t)NUM2SIZET(rb_hash_aref(r, ID2SYM(rb_intern("HEAP_USE_SIZE")))),
-			(size_t)NUM2SIZET(rb_hash_aref(r, ID2SYM(rb_intern("HEAP_TOTAL_SIZE")))),
-			(size_t)NUM2SIZET(rb_hash_aref(r, ID2SYM(rb_intern("HEAP_TOTAL_OBJECTS")))),
-			NUM2DBL(rb_hash_aref(r, ID2SYM(rb_intern("GC_TIME"))))*1000);
-#if !GC_PROFILE_MORE_DETAIL
-            }
-#endif
-	}
-#if GC_PROFILE_MORE_DETAIL
-	rb_str_cat2(result, "\n\n");
-	rb_str_cat2(result, "More detail.\n");
-	rb_str_cat2(result, "Index Allocate Increase    Allocate Limit  Use Slot  Have Finalize             Mark Time(ms)            Sweep Time(ms)\n");
-        index = 1;
-	for (i = 0; i < (int)RARRAY_LEN(record); i++) {
-	    VALUE r = RARRAY_PTR(record)[i];
-	    rb_str_catf(result, "%5d %17"PRIuSIZE" %17"PRIuSIZE" %9"PRIuSIZE" %14s %25.20f %25.20f\n",
-			index++, (size_t)NUM2SIZET(rb_hash_aref(r, ID2SYM(rb_intern("ALLOCATE_INCREASE")))),
-			(size_t)NUM2SIZET(rb_hash_aref(r, ID2SYM(rb_intern("ALLOCATE_LIMIT")))),
-			(size_t)NUM2SIZET(rb_hash_aref(r, ID2SYM(rb_intern("HEAP_USE_SLOTS")))),
-			rb_hash_aref(r, ID2SYM(rb_intern("HAVE_FINALIZE")))? "true" : "false",
-			NUM2DBL(rb_hash_aref(r, ID2SYM(rb_intern("GC_MARK_TIME"))))*1000,
-			NUM2DBL(rb_hash_aref(r, ID2SYM(rb_intern("GC_SWEEP_TIME"))))*1000);
-	}
-#endif
-    }
-    else {
-	result = rb_str_new2("");
-    }
-    return result;
+	VALUE str = rb_str_buf_new(0);
+	gc_profile_dump_on(str, rb_str_buf_append);
+	return str;
 }
-
 
 /*
  *  call-seq:
@@ -4224,7 +4220,7 @@ gc_profile_report(int argc, VALUE *argv, VALUE self)
     else {
 	rb_scan_args(argc, argv, "01", &out);
     }
-    rb_io_write(out, gc_profile_result());
+    gc_profile_dump_on(out, rb_io_write);
 
     return Qnil;
 }
