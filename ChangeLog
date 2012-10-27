@@ -1,3 +1,8 @@
+Sun Oct 28 04:38:06 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (vm_define_method): remove type and frozen checking.
+	  Checking is done in `rb_singleton_class()'.
+
 Sun Oct 28 00:49:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (assign_in_cond): warn for static content object asignments

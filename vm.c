@@ -1872,14 +1872,7 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
     }
 
     if (is_singleton) {
-	if (FIXNUM_P(obj) || SYMBOL_P(obj) || CLASS_OF(obj) == rb_cFloat) {
-	    rb_raise(rb_eTypeError,
-		     "can't define singleton method \"%s\" for %s",
-		     rb_id2name(id), rb_obj_classname(obj));
-	}
-
-	rb_check_frozen(obj);
-	klass = rb_singleton_class(obj);
+	klass = rb_singleton_class(obj); /* class and frozen checked in this API */
 	noex = NOEX_PUBLIC;
     }
 
