@@ -63,20 +63,39 @@ static ID register_symid_str(ID, VALUE);
 	 ((id)&ID_SCOPE_MASK) == ID_INSTANCE || \
 	 ((id)&ID_SCOPE_MASK) == ID_CLASS))
 
-enum lex_state_e {
-    EXPR_BEG,			/* ignore newline, +/- is a sign. */
-    EXPR_END,			/* newline significant, +/- is an operator. */
-    EXPR_ENDARG,		/* ditto, and unbound braces. */
-    EXPR_ENDFN, 		/* ditto, and unbound braces. */
-    EXPR_ARG,			/* newline significant, +/- is an operator. */
-    EXPR_CMDARG,		/* newline significant, +/- is an operator. */
-    EXPR_MID,			/* newline significant, +/- is an operator. */
-    EXPR_FNAME,			/* ignore newline, no reserved words. */
-    EXPR_DOT,			/* right after `.' or `::', no reserved words. */
-    EXPR_CLASS,			/* immediate after `class', no here document. */
-    EXPR_VALUE,			/* alike EXPR_BEG but label is disallowed. */
+enum lex_state_bits {
+    EXPR_BEG_bit,		/* ignore newline, +/- is a sign. */
+    EXPR_END_bit,		/* newline significant, +/- is an operator. */
+    EXPR_ENDARG_bit,		/* ditto, and unbound braces. */
+    EXPR_ENDFN_bit,		/* ditto, and unbound braces. */
+    EXPR_ARG_bit,		/* newline significant, +/- is an operator. */
+    EXPR_CMDARG_bit,		/* newline significant, +/- is an operator. */
+    EXPR_MID_bit,		/* newline significant, +/- is an operator. */
+    EXPR_FNAME_bit,		/* ignore newline, no reserved words. */
+    EXPR_DOT_bit,		/* right after `.' or `::', no reserved words. */
+    EXPR_CLASS_bit,		/* immediate after `class', no here document. */
+    EXPR_VALUE_bit,		/* alike EXPR_BEG but label is disallowed. */
     EXPR_MAX_STATE
 };
+/* examine combinations */
+enum lex_state_e {
+#define DEF_EXPR(n) EXPR_##n = (1 << EXPR_##n##_bit)
+    DEF_EXPR(BEG),
+    DEF_EXPR(END),
+    DEF_EXPR(ENDARG),
+    DEF_EXPR(ENDFN),
+    DEF_EXPR(ARG),
+    DEF_EXPR(CMDARG),
+    DEF_EXPR(MID),
+    DEF_EXPR(FNAME),
+    DEF_EXPR(DOT),
+    DEF_EXPR(CLASS),
+    DEF_EXPR(VALUE),
+    EXPR_BEG_ANY  =  (EXPR_BEG | EXPR_VALUE | EXPR_MID | EXPR_CLASS),
+    EXPR_ARG_ANY  =  (EXPR_ARG | EXPR_CMDARG),
+    EXPR_END_ANY  =  (EXPR_END | EXPR_ENDARG | EXPR_ENDFN)
+};
+#define IS_lex_state(ls)	(lex_state & ( ls ))
 
 #if PARSER_DEBUG
 static const char *lex_state_name(enum lex_state_e state);
@@ -6705,12 +6724,13 @@ parser_prepare(struct parser_params *parser)
     parser->enc = rb_enc_get(lex_lastline);
 }
 
-#define IS_ARG() (lex_state == EXPR_ARG || lex_state == EXPR_CMDARG)
-#define IS_END() (lex_state == EXPR_END || lex_state == EXPR_ENDARG || lex_state == EXPR_ENDFN)
-#define IS_BEG() (lex_state == EXPR_BEG || lex_state == EXPR_MID || lex_state == EXPR_VALUE || lex_state == EXPR_CLASS)
+#define IS_ARG() IS_lex_state(EXPR_ARG_ANY)
+#define IS_END() IS_lex_state(EXPR_END_ANY)
+#define IS_BEG() IS_lex_state(EXPR_BEG_ANY)
 #define IS_SPCARG(c) (IS_ARG() && space_seen && !ISSPACE(c))
-#define IS_LABEL_POSSIBLE() ((lex_state == EXPR_BEG && !cmd_state) || IS_ARG())
+#define IS_LABEL_POSSIBLE() ((IS_lex_state(EXPR_BEG) && !cmd_state) || IS_ARG())
 #define IS_LABEL_SUFFIX(n) (peek_n(':',(n)) && !peek_n(':', (n)+1))
+#define IS_AFTER_OPERATOR() IS_lex_state(EXPR_FNAME | EXPR_DOT)
 
 #ifndef RIPPER
 #define ambiguous_operator(op, syn) ( \
@@ -6803,12 +6823,7 @@ parser_yylex(struct parser_params *parser)
 #endif
 	/* fall through */
       case '\n':
-	switch (lex_state) {
-	  case EXPR_BEG:
-	  case EXPR_FNAME:
-	  case EXPR_DOT:
-	  case EXPR_CLASS:
-	  case EXPR_VALUE:
+	if (IS_lex_state(EXPR_BEG | EXPR_VALUE | EXPR_CLASS | EXPR_FNAME | EXPR_DOT)) {
 #ifdef RIPPER
             if (!fallthru) {
                 ripper_dispatch_scan_event(parser, tIGNORED_NL);
@@ -6816,8 +6831,6 @@ parser_yylex(struct parser_params *parser)
             fallthru = FALSE;
 #endif
 	    goto retry;
-	  default:
-	    break;
 	}
 	while ((c = nextc())) {
 	    switch (c) {
@@ -6889,17 +6902,12 @@ parser_yylex(struct parser_params *parser)
 		c = '*';
 	    }
 	}
-	switch (lex_state) {
-	  case EXPR_FNAME: case EXPR_DOT:
-	    lex_state = EXPR_ARG; break;
-	  default:
-	    lex_state = EXPR_BEG; break;
-	}
+	lex_state = IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG;
 	return c;
 
       case '!':
 	c = nextc();
-	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
+	if (IS_AFTER_OPERATOR()) {
 	    lex_state = EXPR_ARG;
 	    if (c == '@') {
 		return '!';
@@ -6954,12 +6962,7 @@ parser_yylex(struct parser_params *parser)
 	    }
 	}
 
-	switch (lex_state) {
-	  case EXPR_FNAME: case EXPR_DOT:
-	    lex_state = EXPR_ARG; break;
-	  default:
-	    lex_state = EXPR_BEG; break;
-	}
+	lex_state = IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG;
 	if ((c = nextc()) == '=') {
 	    if ((c = nextc()) == '=') {
 		return tEQQ;
@@ -6980,20 +6983,19 @@ parser_yylex(struct parser_params *parser)
 	last_state = lex_state;
 	c = nextc();
 	if (c == '<' &&
-	    lex_state != EXPR_DOT &&
-	    lex_state != EXPR_CLASS &&
+	    !IS_lex_state(EXPR_DOT | EXPR_CLASS) &&
 	    !IS_END() &&
 	    (!IS_ARG() || space_seen)) {
 	    int token = heredoc_identifier();
 	    if (token) return token;
 	}
-	switch (lex_state) {
-	  case EXPR_FNAME: case EXPR_DOT:
-	    lex_state = EXPR_ARG; break;
-	  case EXPR_CLASS:
-	    command_start = TRUE;
-	  default:
-	    lex_state = EXPR_BEG; break;
+	if (IS_AFTER_OPERATOR()) {
+	    lex_state = EXPR_ARG;
+	}
+	else {
+	    if (IS_lex_state(EXPR_CLASS))
+		command_start = TRUE;
+	    lex_state = EXPR_BEG;
 	}
 	if (c == '=') {
 	    if ((c = nextc()) == '>') {
@@ -7016,12 +7018,7 @@ parser_yylex(struct parser_params *parser)
 	return '<';
 
       case '>':
-	switch (lex_state) {
-	  case EXPR_FNAME: case EXPR_DOT:
-	    lex_state = EXPR_ARG; break;
-	  default:
-	    lex_state = EXPR_BEG; break;
-	}
+	lex_state = IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG;
 	if ((c = nextc()) == '=') {
 	    return tGEQ;
 	}
@@ -7042,11 +7039,11 @@ parser_yylex(struct parser_params *parser)
 	return tSTRING_BEG;
 
       case '`':
-	if (lex_state == EXPR_FNAME) {
+	if (IS_lex_state(EXPR_FNAME)) {
 	    lex_state = EXPR_ENDFN;
 	    return c;
 	}
-	if (lex_state == EXPR_DOT) {
+	if (IS_lex_state(EXPR_DOT)) {
 	    if (cmd_state)
 		lex_state = EXPR_CMDARG;
 	    else
@@ -7167,12 +7164,7 @@ parser_yylex(struct parser_params *parser)
 	    warn_balanced("&", "argument prefix");
 	    c = '&';
 	}
-	switch (lex_state) {
-	  case EXPR_FNAME: case EXPR_DOT:
-	    lex_state = EXPR_ARG; break;
-	  default:
-	    lex_state = EXPR_BEG;
-	}
+	lex_state = IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG;
 	return c;
 
       case '|':
@@ -7191,18 +7183,13 @@ parser_yylex(struct parser_params *parser)
 	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
-	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
-	    lex_state = EXPR_ARG;
-	}
-	else {
-	    lex_state = EXPR_BEG;
-	}
+	lex_state = IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG;
 	pushback(c);
 	return '|';
 
       case '+':
 	c = nextc();
-	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
+	if (IS_AFTER_OPERATOR()) {
 	    lex_state = EXPR_ARG;
 	    if (c == '@') {
 		return tUPLUS;
@@ -7231,7 +7218,7 @@ parser_yylex(struct parser_params *parser)
 
       case '-':
 	c = nextc();
-	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
+	if (IS_AFTER_OPERATOR()) {
 	    lex_state = EXPR_ARG;
 	    if (c == '@') {
 		return tUMINUS;
@@ -7516,7 +7503,7 @@ parser_yylex(struct parser_params *parser)
       case ':':
 	c = nextc();
 	if (c == ':') {
-	    if (IS_BEG() || lex_state == EXPR_CLASS || IS_SPCARG(-1)) {
+	    if (IS_BEG() || IS_lex_state(EXPR_CLASS) || IS_SPCARG(-1)) {
 		lex_state = EXPR_BEG;
 		return tCOLON3;
 	    }
@@ -7544,7 +7531,7 @@ parser_yylex(struct parser_params *parser)
 	return tSYMBEG;
 
       case '/':
-	if (IS_BEG()) {
+	if (IS_lex_state(EXPR_BEG_ANY)) {
 	    lex_strterm = NEW_STRTERM(str_regexp, '/', 0);
 	    return tREGEXP_BEG;
 	}
@@ -7559,12 +7546,7 @@ parser_yylex(struct parser_params *parser)
 	    lex_strterm = NEW_STRTERM(str_regexp, '/', 0);
 	    return tREGEXP_BEG;
 	}
-	switch (lex_state) {
-	  case EXPR_FNAME: case EXPR_DOT:
-	    lex_state = EXPR_ARG; break;
-	  default:
-	    lex_state = EXPR_BEG; break;
-	}
+	lex_state = IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG;
 	warn_balanced("/", "regexp literal");
 	return '/';
 
@@ -7574,12 +7556,7 @@ parser_yylex(struct parser_params *parser)
 	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
-	switch (lex_state) {
-	  case EXPR_FNAME: case EXPR_DOT:
-	    lex_state = EXPR_ARG; break;
-	  default:
-	    lex_state = EXPR_BEG; break;
-	}
+	lex_state = IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG;
 	pushback(c);
 	return '^';
 
@@ -7593,7 +7570,7 @@ parser_yylex(struct parser_params *parser)
 	return ',';
 
       case '~':
-	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
+	if (IS_AFTER_OPERATOR()) {
 	    if ((c = nextc()) != '@') {
 		pushback(c);
 	    }
@@ -7619,7 +7596,7 @@ parser_yylex(struct parser_params *parser)
 
       case '[':
 	paren_nest++;
-	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
+	if (IS_AFTER_OPERATOR()) {
 	    lex_state = EXPR_ARG;
 	    if ((c = nextc()) == ']') {
 		if ((c = nextc()) == '=') {
@@ -7652,9 +7629,9 @@ parser_yylex(struct parser_params *parser)
 	    CMDARG_PUSH(0);
 	    return tLAMBEG;
 	}
-	if (IS_ARG() || lex_state == EXPR_END || lex_state == EXPR_ENDFN)
+	if (IS_ARG() || IS_lex_state(EXPR_END | EXPR_ENDFN))
 	    c = '{';          /* block (primary) */
-	else if (lex_state == EXPR_ENDARG)
+	else if (IS_lex_state(EXPR_ENDARG))
 	    c = tLBRACE_ARG;  /* block (expr) */
 	else
 	    c = tLBRACE;      /* hash */
@@ -7677,7 +7654,7 @@ parser_yylex(struct parser_params *parser)
 	return '\\';
 
       case '%':
-	if (IS_BEG()) {
+	if (IS_lex_state(EXPR_BEG_ANY)) {
 	    int term;
 	    int paren;
 
@@ -7764,12 +7741,7 @@ parser_yylex(struct parser_params *parser)
 	if (IS_SPCARG(c)) {
 	    goto quotation;
 	}
-	switch (lex_state) {
-	  case EXPR_FNAME: case EXPR_DOT:
-	    lex_state = EXPR_ARG; break;
-	  default:
-	    lex_state = EXPR_BEG; break;
-	}
+	lex_state = IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG;
 	pushback(c);
 	warn_balanced("%%", "string literal");
 	return '%';
@@ -7952,7 +7924,7 @@ parser_yylex(struct parser_params *parser)
 		result = tFID;
 	    }
 	    else {
-		if (lex_state == EXPR_FNAME) {
+		if (IS_lex_state(EXPR_FNAME)) {
 		    if ((c = nextc()) == '=' && !peek('~') && !peek('>') &&
 			(!peek('=') || (peek_n('>', 1)))) {
 			result = tIDENTIFIER;
@@ -7979,7 +7951,7 @@ parser_yylex(struct parser_params *parser)
 		    return tLABEL;
 		}
 	    }
-	    if (mb == ENC_CODERANGE_7BIT && lex_state != EXPR_DOT) {
+	    if (mb == ENC_CODERANGE_7BIT && !IS_lex_state(EXPR_DOT)) {
 		const struct kwtable *kw;
 
 		/* See if it is a reserved word.  */
@@ -8003,11 +7975,11 @@ parser_yylex(struct parser_params *parser)
 			if (COND_P()) return keyword_do_cond;
 			if (CMDARG_P() && state != EXPR_CMDARG)
 			    return keyword_do_block;
-			if (state == EXPR_ENDARG || state == EXPR_BEG)
+			if (state & (EXPR_BEG | EXPR_ENDARG))
 			    return keyword_do_block;
 			return keyword_do;
 		    }
-		    if (state == EXPR_BEG || state == EXPR_VALUE)
+		    if (state & (EXPR_BEG | EXPR_VALUE))
 			return kw->id[0];
 		    else {
 			if (kw->id[0] != kw->id[1])
@@ -8017,9 +7989,7 @@ parser_yylex(struct parser_params *parser)
 		}
 	    }
 
-	    if (IS_BEG() ||
-		lex_state == EXPR_DOT ||
-		IS_ARG()) {
+	    if (IS_lex_state(EXPR_BEG_ANY | EXPR_ARG_ANY | EXPR_DOT)) {
 		if (cmd_state) {
 		    lex_state = EXPR_CMDARG;
 		}
@@ -8463,8 +8433,8 @@ lex_state_name(enum lex_state_e state)
 	"EXPR_VALUE",
     };
 
-    if ((unsigned)state < EXPR_MAX_STATE)
-	return names[state];
+    if ((unsigned)state & ~(~0u << EXPR_MAX_STATE))
+	return names[ffs(state)];
     return NULL;
 }
 #endif
