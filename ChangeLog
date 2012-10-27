@@ -1,3 +1,7 @@
+Sat Oct 27 17:32:23 2012  Nathan Broadbent <nathan.f77@gmail.com>
+
+	* lib/set.rb: Added #join method as a shortcut for to_a.join
+
 Fri Oct 12 18:18:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_get_path_check): path name must not contain NUL bytes.

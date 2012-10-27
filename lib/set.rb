@@ -152,6 +152,10 @@ class Set
     @hash.keys
   end
 
+  def join(sep = nil)
+    to_a.join(sep)
+  end
+
   def flatten_merge(set, seen = Set.new) # :nodoc:
     set.each { |e|
       if e.is_a?(Set)
