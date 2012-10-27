@@ -1,3 +1,8 @@
+Sun Oct 28 00:49:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (assign_in_cond): warn for static content object asignments
+	  in conditional statements.  [ruby-dev:43083] [Feature #4299]
+
 Sat Oct 27 23:33:41 2012  Benoit Daloze  <eregontp@gmail.com>
 
 	* gc.c (gc_profile_result, gc_profile_report): use internal structures

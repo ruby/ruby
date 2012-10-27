@@ -331,12 +331,33 @@ class TestRubyOptions < Test::Unit::TestCase
     t.puts "  end"
     t.puts "end"
     t.close
-    err = ["#{t.path}:1: warning: found = in conditional, should be ==",
-           "#{t.path}:4: warning: found = in conditional, should be =="]
-    err = /\A(#{Regexp.quote(t.path)}):1(: warning: found = in conditional, should be ==)\n\1:4\2\Z/
+    warning = ' warning: found = in conditional, should be =='
+    err = ["#{t.path}:1:#{warning}",
+           "#{t.path}:4:#{warning}",
+          ]
     bug2136 = '[ruby-dev:39363]'
     assert_in_out_err(["-w", t.path], "", [], err, bug2136)
     assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err, bug2136)
+
+    t.open
+    t.truncate(0)
+    t.puts "if a = ''; end"
+    t.puts "if a = []; end"
+    t.puts "if a = [1]; end"
+    t.puts "if a = [a]; end"
+    t.puts "if a = {}; end"
+    t.puts "if a = {1=>2}; end"
+    t.puts "if a = {3=>a}; end"
+    t.close
+    err = ["#{t.path}:1:#{warning}",
+           "#{t.path}:2:#{warning}",
+           "#{t.path}:3:#{warning}",
+           "#{t.path}:5:#{warning}",
+           "#{t.path}:6:#{warning}",
+          ]
+    feature4299 = '[ruby-dev:43083]'
+    assert_in_out_err(["-w", t.path], "", [], err, feature4299)
+    assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err, feature4299)
   ensure
     t.close(true) if t
   end

@@ -8936,6 +8936,30 @@ reduce_nodes_gen(struct parser_params *parser, NODE **body)
 }
 
 static int
+is_static_content(NODE *node)
+{
+    if (!node) return 1;
+    switch (nd_type(node)) {
+      case NODE_HASH:
+	if (!(node = node->nd_head)) break;
+      case NODE_ARRAY:
+	do {
+	    if (!is_static_content(node->nd_head)) return 0;
+	} while ((node = node->nd_next) != 0);
+      case NODE_LIT:
+      case NODE_STR:
+      case NODE_NIL:
+      case NODE_TRUE:
+      case NODE_FALSE:
+      case NODE_ZARRAY:
+	break;
+      default:
+	return 0;
+    }
+    return 1;
+}
+
+static int
 assign_in_cond(struct parser_params *parser, NODE *node)
 {
     switch (nd_type(node)) {
@@ -8955,23 +8979,9 @@ assign_in_cond(struct parser_params *parser, NODE *node)
     }
 
     if (!node->nd_value) return 1;
-    switch (nd_type(node->nd_value)) {
-      case NODE_LIT:
-      case NODE_STR:
-      case NODE_NIL:
-      case NODE_TRUE:
-      case NODE_FALSE:
+    if (is_static_content(node->nd_value)) {
 	/* reports always */
 	parser_warn(node->nd_value, "found = in conditional, should be ==");
-	return 1;
-
-      case NODE_DSTR:
-      case NODE_XSTR:
-      case NODE_DXSTR:
-      case NODE_EVSTR:
-      case NODE_DREGX:
-      default:
-	break;
     }
     return 1;
 }
