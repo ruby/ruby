@@ -1,3 +1,8 @@
+Sat Oct 27 10:50:53 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* object.c (rb_mod_const_get): make sure the constant name is
+	  converted to a string before searching. [ruby-core:48405]
+
 Sat Oct 27 10:12:13 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* iseq.c (rb_iseq_compile_with_option): Instead of testing

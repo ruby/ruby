@@ -1905,8 +1905,11 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
     }
 
     if (SYMBOL_P(name)) {
-      name = rb_sym_to_s(name);
+	name = rb_sym_to_s(name);
     }
+
+    name = rb_check_string_type(name);
+    Check_Type(name, T_STRING);
 
     enc = rb_enc_get(name);
     path = RSTRING_PTR(name);
