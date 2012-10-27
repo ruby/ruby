@@ -151,6 +151,73 @@ class OpenSSL::TestPKCS7 < Test::Unit::TestCase
     contents = File.read(__FILE__)
     assert_raise(ArgumentError) { OpenSSL::PKCS7.new(contents) }
   end
+
+  def test_set_type_signed
+    p7 = OpenSSL::PKCS7.new
+    p7.type = "signed"
+    assert_equal(p7.type, :signed)
+  end
+  
+  def test_set_type_data
+    p7 = OpenSSL::PKCS7.new
+    p7.type = "data"
+    assert_equal(p7.type, :data)
+  end
+  
+  def test_set_type_signed_and_enveloped
+    p7 = OpenSSL::PKCS7.new
+    p7.type = "signedAndEnveloped"
+    assert_equal(p7.type, :signedAndEnveloped)
+  end
+  
+  def test_set_type_enveloped
+    p7 = OpenSSL::PKCS7.new
+    p7.type = "enveloped"
+    assert_equal(p7.type, :enveloped)
+  end
+  
+  def test_set_type_encrypted
+    p7 = OpenSSL::PKCS7.new
+    p7.type = "encrypted"
+    assert_equal(p7.type, :encrypted)
+  end
+
+  def test_degenerate_pkcs7
+    ca_cert_pem = <<END
+-----BEGIN CERTIFICATE-----
+MIID4DCCAsigAwIBAgIJAL1oVI72wmQwMA0GCSqGSIb3DQEBBQUAMFMxCzAJBgNV
+BAYTAkFVMQ4wDAYDVQQIEwVTdGF0ZTENMAsGA1UEBxMEQ2l0eTEQMA4GA1UEChMH
+RXhhbXBsZTETMBEGA1UEAxMKRXhhbXBsZSBDQTAeFw0xMjEwMTgwOTE2NTBaFw0y
+MjEwMTYwOTE2NTBaMFMxCzAJBgNVBAYTAkFVMQ4wDAYDVQQIEwVTdGF0ZTENMAsG
+A1UEBxMEQ2l0eTEQMA4GA1UEChMHRXhhbXBsZTETMBEGA1UEAxMKRXhhbXBsZSBD
+QTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMTSPNxOkd5NN19XO0fJ
+tGVlWN4DWuvVL9WbWnXJXX9rU6X8sSOL9RrRA64eEZf2UBFjz9fMHZj/OGcxZpus
+4YtzfSrMU6xfvsIHeqX+mT60ms2RfX4UXab50MQArBin3JVKHGnOi25uyAOylVFU
+TuzzQJvKyB67vjuRPMlVAgVAZAP07ru9gW0ajt/ODxvUfvXxp5SFF68mVP2ipMBr
+4fujUwQC6cVHmnuL6p87VFoo9uk87TSQVDOQGL8MK4moMFtEW9oUTU22CgnxnCsS
+sCCELYhy9BdaTWQH26LzMfhnwSuIRHZyprW4WZtU0akrYXNiCj8o92rZmQWXJDbl
+qNECAwEAAaOBtjCBszAdBgNVHQ4EFgQUNtVw4jvkZZbkdQbkYi2/F4QN79owgYMG
+A1UdIwR8MHqAFDbVcOI75GWW5HUG5GItvxeEDe/aoVekVTBTMQswCQYDVQQGEwJB
+VTEOMAwGA1UECBMFU3RhdGUxDTALBgNVBAcTBENpdHkxEDAOBgNVBAoTB0V4YW1w
+bGUxEzARBgNVBAMTCkV4YW1wbGUgQ0GCCQC9aFSO9sJkMDAMBgNVHRMEBTADAQH/
+MA0GCSqGSIb3DQEBBQUAA4IBAQBvJIsY9bIqliZ3WD1KoN4cvAQeRAPsoLXQkkHg
+P6Nrcw9rJ5JvoHfYbo5aNlwbnkbt/B2xlVEXUYpJoBZFXafgxG2gJleioIgnaDS4
+FPPwZf1C5ZrOgUBfxTGjHex4ghSAoNGOd35jQzin5NGKOvZclPjZ2vQ++LP3aA2l
+9Fn2qASS46IzMGJlC75mlTOTQwDM16UunMAK26lNG9J6q02o4d/oU2a7x0fD80yF
+64kNA1wDAwaVCYiUH541qKp+b4iDqer8nf8HqzYDFlpje18xYZMEd1hj8dVOharM
+pISJ+D52hV/BGEYF8r5k3hpC5d76gSP2oCcaY0XvLBf97qik
+-----END CERTIFICATE-----
+END
+    p7 = OpenSSL::PKCS7.new
+    p7.type = "signed"
+    ca_cert = OpenSSL::X509::Certificate.new(ca_cert_pem)
+    p7.add_certificate ca_cert
+    p7.add_data ""
+    
+    assert_nothing_raised do
+      p7.to_pem
+    end
+  end
 end
 
 end
