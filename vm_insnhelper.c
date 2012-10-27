@@ -2057,72 +2057,72 @@ vm_yield_setup_block_args(rb_thread_t *th, const rb_iseq_t * iseq,
      *  => {|a, b|} => a, b = [1, 2]
      */
     arg0 = argv[0];
-    if (!(iseq->arg_simple & 0x02) &&          /* exclude {|a|} */
-            (m + iseq->arg_opts + iseq->arg_post_len) > 0 &&    /* this process is meaningful */
-            argc == 1 && !NIL_P(ary = rb_check_array_type(arg0))) { /* rhs is only an array */
-        th->mark_stack_len = argc = RARRAY_LENINT(ary);
+    if (!(iseq->arg_simple & 0x02) &&                           /* exclude {|a|} */
+	(m + iseq->arg_opts + iseq->arg_post_len) > 0 &&        /* this process is meaningful */
+	argc == 1 && !NIL_P(ary = rb_check_array_type(arg0))) { /* rhs is only an array */
+	th->mark_stack_len = argc = RARRAY_LENINT(ary);
 
-        CHECK_STACK_OVERFLOW(th->cfp, argc);
+	CHECK_STACK_OVERFLOW(th->cfp, argc);
 
-        MEMCPY(argv, RARRAY_PTR(ary), VALUE, argc);
+	MEMCPY(argv, RARRAY_PTR(ary), VALUE, argc);
     }
     else {
-        argv[0] = arg0;
+	argv[0] = arg0;
     }
 
     for (i=argc; i<m; i++) {
-        argv[i] = Qnil;
+	argv[i] = Qnil;
     }
 
     if (iseq->arg_rest == -1 && iseq->arg_opts == 0) {
-        const int arg_size = iseq->arg_size;
-        if (arg_size < argc) {
-            /*
-             * yield 1, 2
-             * => {|a|} # truncate
-             */
-            th->mark_stack_len = argc = arg_size;
-        }
+	const int arg_size = iseq->arg_size;
+	if (arg_size < argc) {
+	    /*
+	     * yield 1, 2
+	     * => {|a|} # truncate
+	     */
+	    th->mark_stack_len = argc = arg_size;
+	}
     }
     else {
-        int r = iseq->arg_rest;
+	int r = iseq->arg_rest;
 
-        if (iseq->arg_post_len ||
-                iseq->arg_opts) { /* TODO: implement simple version for (iseq->arg_post_len==0 && iseq->arg_opts > 0) */
+	if (iseq->arg_post_len ||
+	    iseq->arg_opts) { /* TODO: implement simple version for (iseq->arg_post_len==0 && iseq->arg_opts > 0) */
 	    opt_pc = vm_yield_setup_block_args_complex(th, iseq, argc, argv);
-        }
-        else {
-            if (argc < r) {
-                /* yield 1
-                 * => {|a, b, *r|}
-                 */
-                for (i=argc; i<r; i++) {
-                    argv[i] = Qnil;
-                }
-                argv[r] = rb_ary_new();
-            }
-            else {
-                argv[r] = rb_ary_new4(argc-r, &argv[r]);
-            }
-        }
+	}
+	else {
+	    if (argc < r) {
+		/* yield 1
+		 * => {|a, b, *r|}
+		 */
+		for (i=argc; i<r; i++) {
+		    argv[i] = Qnil;
+		}
+		argv[r] = rb_ary_new();
+	    }
+	    else {
+		argv[r] = rb_ary_new4(argc-r, &argv[r]);
+	    }
+	}
 
-        th->mark_stack_len = iseq->arg_size;
+	th->mark_stack_len = iseq->arg_size;
     }
 
     /* {|&b|} */
     if (iseq->arg_block != -1) {
-        VALUE procval = Qnil;
+	VALUE procval = Qnil;
 
-        if (blockptr) {
+	if (blockptr) {
 	    if (blockptr->proc == 0) {
 		procval = rb_vm_make_proc(th, blockptr, rb_cProc);
 	    }
 	    else {
 		procval = blockptr->proc;
 	    }
-        }
+	}
 
-        argv[iseq->arg_block] = procval;
+	argv[iseq->arg_block] = procval;
     }
 
     th->mark_stack_len = 0;
