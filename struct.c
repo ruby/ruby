@@ -900,7 +900,7 @@ recursive_eql(VALUE s, VALUE s2, int recur)
 }
 
 /*
- * code-seq:
+ * call-seq:
  *   struct.eql?(other)   -> true or false
  *
  * Two structures are equal if they are the same object, or if all their
