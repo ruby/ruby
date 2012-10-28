@@ -159,6 +159,19 @@ EOX
         document.write(output, indent, transitive, ie_hack)
         assert_equal("<empty />", output)
       end
+
+      def test_encoding
+        output = ""
+        indent = -1
+        transitive = false
+        ie_hack = false
+        encoding = "Shift_JIS"
+        @document.write(output, indent, transitive, ie_hack, encoding)
+        assert_equal(<<-EOX, output)
+<?xml version='1.0' encoding='SHIFT_JIS'?>
+<message>Hello world!</message>
+EOX
+      end
     end
 
     class OptionsTest < self
@@ -198,6 +211,15 @@ EOX
         document = REXML::Document.new("<empty/>")
         document.write(:output => output, :ie_hack => true)
         assert_equal("<empty />", output)
+      end
+
+      def test_encoding
+        output = ""
+        @document.write(:output => output, :encoding => "Shift_JIS")
+        assert_equal(<<-EOX, output)
+<?xml version='1.0' encoding='SHIFT_JIS'?>
+<message>Hello world!</message>
+EOX
       end
     end
   end

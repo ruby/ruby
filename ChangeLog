@@ -1,3 +1,10 @@
+Sun Oct 28 15:41:50 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/document.rb (REXML::Document#write): Add :encoding option
+	  to support custom XML encoding.
+	  [Feature #4872] (work in progress)
+	* test/rexml/test_document.rb: Add tests for the above change.
+
 Sun Oct 28 15:00:19 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/document.rb (REXML::Document#write): Remove needless

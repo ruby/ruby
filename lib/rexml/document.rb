@@ -207,17 +207,19 @@ module REXML
         indent     = options[:indent]
         transitive = options[:transitive]
         ie_hack    = options[:ie_hack]
+        encoding   = options[:encoding]
       else
-        output, indent, transitive, ie_hack, = *arguments
+        output, indent, transitive, ie_hack, encoding, = *arguments
       end
 
-      output ||= $stdout
-      indent ||= -1
+      output   ||= $stdout
+      indent   ||= -1
       transitive = false if transitive.nil?
       ie_hack    = false if ie_hack.nil?
+      encoding ||= xml_decl.encoding
 
-      if xml_decl.encoding != 'UTF-8' && !output.kind_of?(Output)
-        output = Output.new( output, xml_decl.encoding )
+      if encoding != 'UTF-8' && !output.kind_of?(Output)
+        output = Output.new( output, encoding )
       end
       formatter = if indent > -1
           if transitive
