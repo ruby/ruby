@@ -1,3 +1,8 @@
+Sun Oct 28 19:12:11 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_parse.c (iso8601_{ext,bas}_time): should not match
+	  empty string.
+
 Sun Oct 28 18:51:33 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_parse.c (date__parse): revised the tight parser.

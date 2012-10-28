@@ -541,6 +541,9 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal([2006, 333], h.values_at(:year, :yday))
     h = Date._parse('333')
     assert_equal([nil, 333], h.values_at(:year, :yday))
+
+    h = Date._parse('')
+    assert_equal({}, h)
   end
 
   def test_parse
@@ -822,6 +825,8 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal([nil, nil, nil, 4, 5, 6, 3600],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
 
+    h = Date._iso8601('')
+    assert_equal({}, h)
   end
 
   def test__rfc3339
@@ -834,6 +839,9 @@ class TestDateParse < Test::Unit::TestCase
     h = Date._rfc3339('2001-02-03T04:05:06.07+01:00')
     assert_equal([2001, 2, 3, 4, 5, 6, 3600],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
+
+    h = Date._rfc3339('')
+    assert_equal({}, h)
   end
 
   def test__xmlschema
@@ -913,6 +921,9 @@ class TestDateParse < Test::Unit::TestCase
     h = Date._xmlschema('-92001-02-03T04:05:06.07+01:00')
     assert_equal([-92001, 2, 3, 4, 5, 6, 3600],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
+
+    h = Date._xmlschema('')
+    assert_equal({}, h)
   end
 
   def test__rfc2822
@@ -942,6 +953,9 @@ class TestDateParse < Test::Unit::TestCase
     h1 = Date._rfc2822('Sat, 3 Feb 2001 04:05:06 UT')
     h2 = Date._rfc822('Sat, 3 Feb 2001 04:05:06 UT')
     assert_equal(h1, h2)
+
+    h = Date._rfc2822('')
+    assert_equal({}, h)
   end
 
   def test__httpdate
@@ -959,6 +973,9 @@ class TestDateParse < Test::Unit::TestCase
     h = Date._httpdate('Sat Feb 03 04:05:06 2001')
     assert_equal([2001, 2, 3, 4, 5, 6, nil],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
+
+    h = Date._httpdate('')
+    assert_equal({}, h)
   end
 
   def test__jisx0301
@@ -984,6 +1001,9 @@ class TestDateParse < Test::Unit::TestCase
     h = Date._jisx0301('H13.02.03T04:05:06.07+0100')
     assert_equal([2001, 2, 3, 4, 5, 6, 3600],
 		 h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
+
+    h = Date._jisx0301('')
+    assert_equal({}, h)
   end
 
   def test_iso8601

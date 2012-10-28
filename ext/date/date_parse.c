@@ -2440,7 +2440,7 @@ static int
 iso8601_ext_time(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
-	"\\A\\s*(?:(\\d{2}):(\\d{2})(?::(\\d{2})(?:[,.](\\d+))?)?"
+	"\\A\\s*(\\d{2}):(\\d{2})(?::(\\d{2})(?:[,.](\\d+))?"
 	"(z|[-+]\\d{2}(:?\\d{2})?)?)?\\s*\\z";
     static VALUE pat = Qnil;
 
@@ -2452,7 +2452,7 @@ static int
 iso8601_bas_time(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
-	"\\A\\s*(?:(\\d{2})(\\d{2})(?:(\\d{2})(?:[,.](\\d+))?)?"
+	"\\A\\s*(\\d{2})(\\d{2})(?:(\\d{2})(?:[,.](\\d+))?"
 	"(z|[-+]\\d{2}(\\d{2})?)?)?\\s*\\z";
     static VALUE pat = Qnil;
 
