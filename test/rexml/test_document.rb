@@ -226,6 +226,16 @@ EOX
 
   class BomTest < self
     class HaveEncodingTest < self
+      def test_utf_8
+        xml = <<-EOX.force_encoding("ASCII-8BIT")
+<?xml version="1.0" encoding="UTF-8"?>
+<message>Hello world!</message>
+EOX
+        bom = "\ufeff".force_encoding("ASCII-8BIT")
+        document = REXML::Document.new(bom + xml)
+        assert_equal("UTF-8", document.encoding)
+      end
+
       def test_utf_16le
         xml = <<-EOX.encode("UTF-16LE").force_encoding("ASCII-8BIT")
 <?xml version="1.0" encoding="UTF-16"?>
@@ -248,6 +258,16 @@ EOX
     end
 
     class NoEncodingTest < self
+      def test_utf_8
+        xml = <<-EOX.force_encoding("ASCII-8BIT")
+<?xml version="1.0"?>
+<message>Hello world!</message>
+EOX
+        bom = "\ufeff".force_encoding("ASCII-8BIT")
+        document = REXML::Document.new(bom + xml)
+        assert_equal("UTF-8", document.encoding)
+      end
+
       def test_utf_16le
         xml = <<-EOX.encode("UTF-16LE").force_encoding("ASCII-8BIT")
 <?xml version="1.0"?>
