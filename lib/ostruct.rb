@@ -114,32 +114,14 @@ class OpenStruct
   end
 
   #
-  # Provides marshalling support for use by the Marshal library. Returning the
-  # underlying Hash table that contains the functions defined as the keys and
-  # the values assigned to them.
-  #
-  #    require 'ostruct'
-  #
-  #    person = OpenStruct.new
-  #    person.name = 'John Smith'
-  #    person.age  = 70
-  #
-  #    person.marshal_dump # => { :name => 'John Smith', :age => 70 }
+  # Provides marshalling support for use by the Marshal library.
   #
   def marshal_dump
     @table
   end
 
   #
-  # Provides marshalling support for use by the Marshal library. Accepting
-  # a Hash of keys and values which will be used to populate the internal table
-  #
-  #    require 'ostruct'
-  #
-  #    event = OpenStruct.new
-  #    hash = { 'time' => Time.now, 'title' => 'Birthday Party' }
-  #    event.marshal_load(hash)
-  #    event.title # => 'Birthday Party'
+  # Provides marshalling support for use by the Marshal library.
   #
   def marshal_load(x)
     @table = x
@@ -147,7 +129,7 @@ class OpenStruct
   end
 
   #
-  # #modifiable is used internally to check if the OpenStruct is able to be
+  # Used internally to check if the OpenStruct is able to be
   # modified before granting access to the internal Hash table to be modified.
   #
   def modifiable
@@ -240,7 +222,7 @@ class OpenStruct
 
   #
   # Compares this object and +other+ for equality.  An OpenStruct is equal to
-  # +other+ when +other+ is an OpenStruct and the two object's Hash tables are
+  # +other+ when +other+ is an OpenStruct and the two objects' Hash tables are
   # equal.
   #
   def ==(other)
