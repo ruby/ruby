@@ -122,6 +122,8 @@ with all sufficient information, see the ChangeLog file.
     * OpenStruct#eql?
     * OpenStruct#hash
     * OpenStruct#to_h converts the struct to a hash.
+  * extended method:
+    * OpenStruct.new also accepts an OpenStruct / Struct.
 
 * pathname
   * extended method:

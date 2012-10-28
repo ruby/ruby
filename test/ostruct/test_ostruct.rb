@@ -2,6 +2,13 @@ require 'test/unit'
 require 'ostruct'
 
 class TC_OpenStruct < Test::Unit::TestCase
+  def test_initialize
+    h = {name: "John Smith", age: 70, pension: 300}
+    assert_equal h, OpenStruct.new(h).to_h
+    assert_equal h, OpenStruct.new(OpenStruct.new(h)).to_h
+    assert_equal h, OpenStruct.new(Struct.new(*h.keys).new(*h.values)).to_h
+  end
+
   def test_equality
     o1 = OpenStruct.new
     o2 = OpenStruct.new

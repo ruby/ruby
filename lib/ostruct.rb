@@ -74,7 +74,8 @@ class OpenStruct
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
   # object will have no attributes.
   #
-  # The optional +hash+, if given, will generate attributes and values.
+  # The optional +hash+, if given, will generate attributes and values
+  # (can be a Hash, an OpenStruct or a Struct).
   # For example:
   #
   #   require 'ostruct'
@@ -86,8 +87,9 @@ class OpenStruct
   def initialize(hash=nil)
     @table = {}
     if hash
-      for k,v in hash
-        @table[k.to_sym] = v
+      hash.each_pair do |k, v|
+        k = k.to_sym
+        @table[k] = v
         new_ostruct_member(k)
       end
     end
