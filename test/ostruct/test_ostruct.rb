@@ -21,6 +21,14 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_not_equal(o1, o2)
   end
 
+  def test_eql
+    o1 = OpenStruct.new(:a=>'a')
+    o2 = OpenStruct.new(:a=>'a')
+    o3 = OpenStruct.new(:a=>'b')
+    assert o1.eql?(o2)
+    assert !o1.eql?(o3)
+  end
+
   def test_inspect
     foo = OpenStruct.new
     assert_equal("#<OpenStruct>", foo.inspect)
@@ -63,14 +71,22 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal(a, 'a')
   end
 
-  def test_method_missing_handles_square_bracket_equals
+  def test_square_bracket_equals
     o = OpenStruct.new
-    assert_raise(NoMethodError) { o[:foo] = :bar }
+    o[:foo] = 40
+    assert_equal(o[:foo], 40)
   end
 
-  def test_method_missing_handles_square_brackets
-    o = OpenStruct.new
-    assert_raise(NoMethodError) { o[:foo] }
+  def test_square_brackets
+    o = OpenStruct.new(:foo=>4)
+    assert_equal(o[:foo], 4)
+  end
+
+  def test_merge
+    o = OpenStruct.new(:foo=>4)
+    o.merge!(:bar=>5)
+    assert_equal(o.bar, 5)
+    assert_equal(o.foo, 4)
   end
 
   def test_to_h
