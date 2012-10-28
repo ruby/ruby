@@ -107,6 +107,7 @@ Sat Oct 27 23:33:41 2012  Benoit Daloze  <eregontp@gmail.com>
 
 	* gc.c (gc_profile_result, gc_profile_report): use internal structures
 	  to avoid allocations and progressively print the output for #report.
+	  [ruby-core:47163] [Bug #6865]
 
 Sat Oct 27 11:01:10 2012  Koichi Sasada  <ko1@atdot.net>
 
