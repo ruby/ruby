@@ -1,3 +1,10 @@
+Mon Oct 29 05:48:52 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/ostruct.rb: Add [] and []=, base on a patch by Thomas Sawyer.
+	  Also accept {Open}Struct as argument to new.
+	  Add #eql?, #hash & #each_pair
+	  Protect new_ostruct_member
+
 Mon Oct 29 03:20:58 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/matrix.rb: Fix determinant_e [ruby-dev:46305] [Bug #7228]
@@ -125,7 +132,7 @@ Sat Oct 27 23:33:41 2012  Benoit Daloze  <eregontp@gmail.com>
 
 Sat Oct 27 11:01:10 2012  Koichi Sasada  <ko1@atdot.net>
 
-	* numeric.c (rb_float_new_in_heap), include/ruby/ruby.h: 
+	* numeric.c (rb_float_new_in_heap), include/ruby/ruby.h:
 	  make all Float objects frozen.
 	  [ruby-dev:46081] [ruby-trunk - Feature #6936]
 	  Most part of patch by NARUSE, Yui  <naruse@ruby-lang.org>.
@@ -312,7 +319,7 @@ Tue Oct 23 12:57:29 2012  Koichi Sasada  <ko1@atdot.net>
 	  is faster than ordinal cfunc method call.
 	  If `frame' is needed (for example, it calls another method with
 	  `rb_funcall()'), then build a frame. In other words, this
-	  optimization delays frame building. 
+	  optimization delays frame building.
 	  However, to delay the frame building, we need additional overheads:
 	    (1) Store the last call information.
 	    (2) Check the delayed frame building before the frame is needed.
