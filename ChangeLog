@@ -1,3 +1,10 @@
+Sun Oct 28 10:12:15 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: `tree` should return the
+	  same thing on every call.
+
+	* test/psych/visitors/test_yaml_tree.rb: related test.
+
 Sun Oct 28 10:05:03 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: YAML Tree object should

@@ -47,6 +47,7 @@ module Psych
 
       def tree
         finish unless finished?
+        @emitter.root
       end
 
       def push object

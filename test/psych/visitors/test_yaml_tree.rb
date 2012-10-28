@@ -8,6 +8,13 @@ module Psych
         @v = Visitors::YAMLTree.new
       end
 
+      def test_tree_can_be_called_twice
+        @v.start
+        @v << Object.new
+        t = @v.tree
+        assert_equal t, @v.tree
+      end
+
       def test_yaml_tree_can_take_an_emitter
         io = StringIO.new
         e  = Psych::Emitter.new io
