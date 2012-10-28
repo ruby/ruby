@@ -161,8 +161,8 @@ module REXML
     #   Document.new("<a><b/></a>").write
     #
     #   output_string = ""
-    #   tr = Transitive.new( output_string )
-    #   Document.new("<a><b/></a>").write( tr )
+    #   tr = Transitive.new
+    #   tr.write(Document.new("<a><b/></a>"), output_string)
     #
     # output::
     #     output an object which supports '<< string'; this is where the

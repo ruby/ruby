@@ -1,3 +1,8 @@
+Sun Oct 28 14:09:44 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/document.rb (REXML::Document#write): Fix wrong usage
+	  in document.
+
 Sun Oct 28 14:03:48 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/document.rb (REXML::Document#write): Fix wrong method
