@@ -176,16 +176,36 @@ class OpenStruct
   def method_missing(mid, *args) # :nodoc:
     mname = mid.id2name
     len = args.length
-    if mname.chomp!('=') && mid != :[]=
+    if mname.chomp!('=')
       if len != 1
         raise ArgumentError, "wrong number of arguments (#{len} for 1)", caller(1)
       end
       modifiable[new_ostruct_member(mname)] = args[0]
-    elsif len == 0 && mid != :[]
+    elsif len == 0
       @table[mid]
     else
       raise NoMethodError, "undefined method `#{mid}' for #{self}", caller(1)
     end
+  end
+
+  # Returns the value of a member.
+  #
+  #   person = OpenStruct.new('name' => 'John Smith', 'age' => 70)
+  #   person[:age] # => 70, same as ostruct.age
+  #
+  def [](name)
+    @table[name.to_sym]
+  end
+
+  #
+  # Sets the value of a member.
+  #
+  #   person = OpenStruct.new('name' => 'John Smith', 'age' => 70)
+  #   person[:age] = 42 # => equivalent to ostruct.age = 42
+  #   person.age # => 42
+  #
+  def []=(name, value)
+    modifiable[new_ostruct_member(name)] = value
   end
 
   #

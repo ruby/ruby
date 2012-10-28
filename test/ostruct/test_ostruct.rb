@@ -70,14 +70,19 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal(a, 'a')
   end
 
-  def test_method_missing_handles_square_bracket_equals
-    o = OpenStruct.new
-    assert_raise(NoMethodError) { o[:foo] = :bar }
+  def test_setter
+    os = OpenStruct.new
+    os[:foo] = :bar
+    assert_equal :bar, os.foo
+    os['foo'] = :baz
+    assert_equal :baz, os.foo
   end
 
-  def test_method_missing_handles_square_brackets
-    o = OpenStruct.new
-    assert_raise(NoMethodError) { o[:foo] }
+  def test_getter
+    os = OpenStruct.new
+    os.foo = :bar
+    assert_equal :bar, os[:foo]
+    assert_equal :bar, os['foo']
   end
 
   def test_to_h
