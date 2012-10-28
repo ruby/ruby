@@ -57,7 +57,8 @@ static const char *abbr_months[] = {
 #define issign(c) ((c) == '-' || (c) == '+')
 #define asp_string() rb_str_new(" ", 1)
 #ifdef TIGHT_PARSER
-#define asub_string() rb_str_new("\032", 1)
+#define asubw_string() rb_str_new("\027", 1)
+#define asubt_string() rb_str_new("\024", 1)
 #endif
 
 static void
@@ -223,13 +224,17 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 #define ABBR_MONTHS "jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec"
 
 #ifdef TIGHT_PARSER
-#define VALID_DAYS DAYS "|tues|wednes|thur|thurs|" ABBR_DAYS
-#define VALID_MONTHS MONTHS "|sept|" ABBR_MONTHS
+#define VALID_DAYS "(?:" DAYS ")\\b" "|(?:tues|wednes|thur|thurs|" ABBR_DAYS ")\\b\\.?"
+#define VALID_MONTHS "(?:" MONTHS ")\\b" "|(?:sept|" ABBR_MONTHS ")\\b\\.?"
+#define DOTLESS_VALID_MONTHS "(?:" MONTHS ")\\b" "|(?:sept|" ABBR_MONTHS ")\\b"
 #define BOS "\\A\\s*"
-#define FP_CODE "\\032"
-#define FP_COM "\\s*(?:" FP_CODE "\\s*,?)?\\s*"
-#define COM_FP "\\s*(?:,?\\s*" FP_CODE ")?\\s*"
-#define FP_ISO "\\s*(?:[tT]?" FP_CODE ")?"
+#define FPW "\\027"
+#define FPT "\\024"
+#define FPW_COM "\\s*(?:" FPW "\\s*,?)?\\s*"
+#define FPT_COM "\\s*(?:" FPT "\\s*,?)?\\s*"
+#define COM_FPW "\\s*(?:,?\\s*" FPW ")?\\s*"
+#define COM_FPT "\\s*(?:,?\\s*(?:@|\\b[aA][tT]\\b)?\\s*" FPT ")?\\s*"
+#define TEE_FPT "\\s*(?:[tT]?" FPT ")?"
 #define EOS "\\s*\\z"
 #endif
 
@@ -272,13 +277,8 @@ match(VALUE str, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
     return 1;
 }
 
-#define SUBS(s,p,c) \
-{ \
-    return subs(s, p, hash, c);	\
-}
-
 static int
-subs(VALUE str, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
+subx(VALUE str, VALUE rep, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
 {
     VALUE m;
 
@@ -292,39 +292,27 @@ subs(VALUE str, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
 
 	be = f_begin(m, INT2FIX(0));
 	en = f_end(m, INT2FIX(0));
-	f_aset2(str, be, LONG2NUM(NUM2LONG(en) - NUM2LONG(be)), asp_string());
+	f_aset2(str, be, LONG2NUM(NUM2LONG(en) - NUM2LONG(be)), rep);
 	(*cb)(m, hash);
     }
 
     return 1;
+}
+
+#define SUBS(s,p,c) \
+{ \
+    return subx(s, asp_string(), p, hash, c); \
 }
 
 #ifdef TIGHT_PARSER
-#define SUBC(s,p,c) \
+#define SUBW(s,p,c) \
 { \
-    return subc(s, p, hash, c);	\
+    return subx(s, asubw_string(), p, hash, c); \
 }
 
-static int
-subc(VALUE str, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
-{
-    VALUE m;
-
-    m = f_match(pat, str);
-
-    if (NIL_P(m))
-	return 0;
-
-    {
-	VALUE be, en;
-
-	be = f_begin(m, INT2FIX(0));
-	en = f_end(m, INT2FIX(0));
-	f_aset2(str, be, LONG2NUM(NUM2LONG(en) - NUM2LONG(be)), asub_string());
-	(*cb)(m, hash);
-    }
-
-    return 1;
+#define SUBT(s,p,c) \
+{ \
+    return subx(s, asubt_string(), p, hash, c); \
 }
 #endif
 
@@ -642,14 +630,17 @@ parse_day(VALUE str, VALUE hash)
 #ifndef TIGHT_PARSER
 	"\\b(" ABBR_DAYS ")[^-/\\d\\s]*"
 #else
-	BOS "(" VALID_DAYS ")\\b\\.?"
-	"(?:,(?=\\s*\\S))?" /* , ... */
+	"(" VALID_DAYS ")"
 #endif
 	;
     static VALUE pat = Qnil;
 
     REGCOMP_I(pat);
+#ifndef TIGHT_PARSER
     SUBS(str, pat, parse_day_cb);
+#else
+    SUBW(str, pat, parse_day_cb);
+#endif
 }
 
 static int
@@ -736,7 +727,11 @@ parse_time(VALUE str, VALUE hash)
 		   "(?:"
 		     "\\d+\\s*:\\s*\\d+"
 		     "(?:"
+#ifndef TIGHT_PARSER
 		       "\\s*:\\s*\\d+(?:[,.]\\d*)?"
+#else
+		       "\\s*:\\s*\\d+(?:[,.]\\d+)?"
+#endif
 		     ")?"
 		   "|"
 		     "\\d+\\s*h(?:\\s*\\d+m?(?:\\s*\\d+s?)?)?"
@@ -764,7 +759,7 @@ parse_time(VALUE str, VALUE hash)
 #ifndef TIGHT_PARSER
     SUBS(str, pat, parse_time_cb);
 #else
-    SUBC(str, pat, parse_time_cb);
+    SUBT(str, pat, parse_time_cb);
 #endif
 }
 
@@ -804,18 +799,18 @@ parse_eu(VALUE str, VALUE hash)
     static const char pat_source[] =
 #ifdef TIGHT_PARSER
 		BOS
-		FP_COM
+		FPW_COM FPT_COM
 #endif
 #ifndef TIGHT_PARSER
 		"'?(\\d+)[^-\\d\\s]*"
 #else
-		"'?(\\d+)(?:st|nd|rd|th)?\\b"
+		"(\\d+)(?:st|nd|rd|th)?\\b"
 #endif
 		 "\\s*"
 #ifndef TIGHT_PARSER
 		 "(" ABBR_MONTHS ")[^-\\d\\s']*"
 #else
-		 "(" VALID_MONTHS ")\\b\\.?"
+		 "(" VALID_MONTHS ")"
 #endif
 		 "(?:"
 		   "\\s*"
@@ -828,7 +823,7 @@ parse_eu(VALUE str, VALUE hash)
 #endif
 		")?"
 #ifdef TIGHT_PARSER
-		COM_FP
+		COM_FPT COM_FPW
 		EOS
 #endif
 		;
@@ -875,19 +870,19 @@ parse_us(VALUE str, VALUE hash)
     static const char pat_source[] =
 #ifdef TIGHT_PARSER
 		BOS
-		FP_COM
+		FPW_COM FPT_COM
 #endif
 #ifndef TIGHT_PARSER
 		"\\b(" ABBR_MONTHS ")[^-\\d\\s']*"
 #else
-		"\\b(" VALID_MONTHS ")\\b\\.?"
+		"\\b(" VALID_MONTHS ")"
 #endif
 		 "\\s*"
 #ifndef TIGHT_PARSER
 		 "('?\\d+)[^-\\d\\s']*"
 #else
-		 "('?\\d+)(?:st|nd|rd|th)?\\b"
-		COM_FP
+		 "(\\d+)(?:st|nd|rd|th)?\\b"
+		COM_FPT
 #endif
 		 "(?:"
 		   "\\s*,?"
@@ -899,7 +894,7 @@ parse_us(VALUE str, VALUE hash)
 		   "('?-?\\d+)"
 		")?"
 #ifdef TIGHT_PARSER
-		COM_FP
+		COM_FPT COM_FPW
 		EOS
 #endif
 		;
@@ -918,6 +913,11 @@ parse_iso_cb(VALUE m, VALUE hash)
     mon = rb_reg_nth_match(2, m);
     d = rb_reg_nth_match(3, m);
 
+#ifdef TIGHT_PARSER
+    if (*RSTRING_PTR(y) == '\'' && *RSTRING_PTR(d) == '\'')
+	return 0;
+#endif
+
     s3e(hash, y, mon, d, 0);
     return 1;
 }
@@ -930,8 +930,9 @@ parse_iso(VALUE str, VALUE hash)
 	"('?[-+]?\\d+)-(\\d+)-('?-?\\d+)"
 #else
 	BOS
+	FPW_COM FPT_COM
 	"('?[-+]?\\d+)-(\\d+)-('?-?\\d+)"
-	FP_ISO
+	TEE_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -967,8 +968,9 @@ parse_iso21(VALUE str, VALUE hash)
 	"\\b(\\d{2}|\\d{4})?-?w(\\d{2})(?:-?(\\d))?\\b"
 #else
 	BOS
+	FPW_COM FPT_COM
 	"(\\d{2}|\\d{4})?-?w(\\d{2})(?:-?(\\d))?"
-	FP_ISO
+	TEE_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -996,8 +998,9 @@ parse_iso22(VALUE str, VALUE hash)
 	"-w-(\\d)\\b"
 #else
 	BOS
+	FPW_COM FPT_COM
 	"-w-(\\d)"
-	FP_ISO
+	TEE_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -1030,8 +1033,9 @@ parse_iso23(VALUE str, VALUE hash)
 	"--(\\d{2})?-(\\d{2})\\b"
 #else
 	BOS
+	FPW_COM FPT_COM
 	"--(\\d{2})?-(\\d{2})"
-	FP_ISO
+	TEE_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -1064,8 +1068,9 @@ parse_iso24(VALUE str, VALUE hash)
 	"--(\\d{2})(\\d{2})?\\b"
 #else
 	BOS
+	FPW_COM FPT_COM
 	"--(\\d{2})(\\d{2})?"
-	FP_ISO
+	TEE_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -1097,8 +1102,9 @@ parse_iso25(VALUE str, VALUE hash)
 	"[,.](\\d{2}|\\d{4})-\\d{3}\\b"
 #else
 	BOS
+	FPW_COM FPT_COM
 	"[,.](\\d{2}|\\d{4})-\\d{3}"
-	FP_ISO
+	TEE_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -1108,8 +1114,9 @@ parse_iso25(VALUE str, VALUE hash)
 	"\\b(\\d{2}|\\d{4})-(\\d{3})\\b"
 #else
 	BOS
+	FPW_COM FPT_COM
 	"(\\d{2}|\\d{4})-(\\d{3})"
-	FP_ISO
+	TEE_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -1141,8 +1148,9 @@ parse_iso26(VALUE str, VALUE hash)
 	"\\d-\\d{3}\\b"
 #else
 	BOS
+	FPW_COM FPT_COM
 	"\\d-\\d{3}"
-	FP_ISO
+	TEE_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -1152,8 +1160,9 @@ parse_iso26(VALUE str, VALUE hash)
 	"\\b-(\\d{3})\\b"
 #else
 	BOS
+	FPW_COM FPT_COM
 	"-(\\d{3})"
-	FP_ISO
+	TEE_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -1231,8 +1240,9 @@ parse_jis(VALUE str, VALUE hash)
 	"\\b([mtsh])(\\d+)\\.(\\d+)\\.(\\d+)"
 #else
 	BOS
+	FPW_COM FPT_COM
 	"([mtsh])(\\d+)\\.(\\d+)\\.(\\d+)"
-	FP_ISO
+	TEE_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -1251,6 +1261,11 @@ parse_vms11_cb(VALUE m, VALUE hash)
     mon = rb_reg_nth_match(2, m);
     y = rb_reg_nth_match(3, m);
 
+#ifdef TIGHT_PARSER
+    if (*RSTRING_PTR(d) == '\'' && !NIL_P(y) && *RSTRING_PTR(y) == '\'')
+	return 0;
+#endif
+
     mon = INT2FIX(mon_num(mon));
 
     s3e(hash, y, mon, d, 0);
@@ -1266,9 +1281,10 @@ parse_vms11(VALUE str, VALUE hash)
 	"-('?-?\\d+)"
 #else
 	BOS
-	"('?-?\\d+)-(" VALID_MONTHS ")"
+	FPW_COM FPT_COM
+	"('?-?\\d+)-(" DOTLESS_VALID_MONTHS ")"
 	"-('?-?\\d+)"
-	COM_FP
+	COM_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -1287,6 +1303,11 @@ parse_vms12_cb(VALUE m, VALUE hash)
     d = rb_reg_nth_match(2, m);
     y = rb_reg_nth_match(3, m);
 
+#ifdef TIGHT_PARSER
+    if (*RSTRING_PTR(d) == '\'' && !NIL_P(y))
+	return 0;
+#endif
+
     mon = INT2FIX(mon_num(mon));
 
     s3e(hash, y, mon, d, 0);
@@ -1302,9 +1323,10 @@ parse_vms12(VALUE str, VALUE hash)
 	"-('?-?\\d+)(?:-('?-?\\d+))?"
 #else
 	BOS
-	"(" VALID_MONTHS ")"
+	FPW_COM FPT_COM
+	"(" DOTLESS_VALID_MONTHS ")"
 	"-('?-?\\d+)(?:-('?-?\\d+))?"
-	COM_FP
+	COM_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -1336,6 +1358,15 @@ parse_sla_cb(VALUE m, VALUE hash)
     mon = rb_reg_nth_match(2, m);
     d = rb_reg_nth_match(3, m);
 
+#ifdef TIGHT_PARSER
+    if (*RSTRING_PTR(y) == '\'' &&
+	(*RSTRING_PTR(mon) == '\'' ||
+	 !NIL_P(d) && *RSTRING_PTR(d) == '\''))
+	return 0;
+    if (*RSTRING_PTR(mon) == '\'' && !NIL_P(d))
+	return 0;
+#endif
+
     s3e(hash, y, mon, d, 0);
     return 1;
 }
@@ -1348,8 +1379,9 @@ parse_sla(VALUE str, VALUE hash)
 	"('?-?\\d+)/\\s*('?\\d+)(?:\\D\\s*('?-?\\d+))?"
 #else
 	BOS
+	FPW_COM FPT_COM
 	"('?-?\\d+)/\\s*('?\\d+)(?:(?:[-/]|\\s+)\\s*('?-?\\d+))?"
-	COM_FP
+	COM_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -1369,6 +1401,11 @@ parse_sla2_cb(VALUE m, VALUE hash)
     mon = rb_reg_nth_match(2, m);
     y = rb_reg_nth_match(3, m);
 
+#ifdef TIGHT_PARSER
+    if (*RSTRING_PTR(d) == '\'' && !NIL_P(y) && *RSTRING_PTR(y) == '\'')
+	return 0;
+#endif
+
     mon = INT2FIX(mon_num(mon));
 
     s3e(hash, y, mon, d, 0);
@@ -1380,8 +1417,9 @@ parse_sla2(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 	BOS
-	"('?-?\\d+)/\\s*(" VALID_MONTHS ")(?:(?:[-/]|\\s+)\\s*('?-?\\d+))?"
-	COM_FP
+	FPW_COM FPT_COM
+	"('?-?\\d+)/\\s*(" DOTLESS_VALID_MONTHS ")(?:(?:[-/]|\\s+)\\s*('?-?\\d+))?"
+	COM_FPT COM_FPW
 	EOS
 	;
     static VALUE pat = Qnil;
@@ -1399,6 +1437,11 @@ parse_sla3_cb(VALUE m, VALUE hash)
     d = rb_reg_nth_match(2, m);
     y = rb_reg_nth_match(3, m);
 
+#ifdef TIGHT_PARSER
+    if (*RSTRING_PTR(d) == '\'' && !NIL_P(y))
+	return 0;
+#endif
+
     mon = INT2FIX(mon_num(mon));
 
     s3e(hash, y, mon, d, 0);
@@ -1410,8 +1453,9 @@ parse_sla3(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 	BOS
-	"(" VALID_MONTHS ")/\\s*('?\\d+)(?:(?:[-/]|\\s+)\\s*('?-?\\d+))?"
-	COM_FP
+	FPW_COM FPT_COM
+	"(" DOTLESS_VALID_MONTHS ")/\\s*('?\\d+)(?:(?:[-/]|\\s+)\\s*('?-?\\d+))?"
+	COM_FPT COM_FPW
 	EOS
 	;
     static VALUE pat = Qnil;
@@ -1430,6 +1474,11 @@ parse_dot_cb(VALUE m, VALUE hash)
     mon = rb_reg_nth_match(2, m);
     d = rb_reg_nth_match(3, m);
 
+#ifdef TIGHT_PARSER
+    if (*RSTRING_PTR(y) == '\'' && *RSTRING_PTR(d) == '\'')
+	return 0;
+#endif
+
     s3e(hash, y, mon, d, 0);
     return 1;
 }
@@ -1442,8 +1491,9 @@ parse_dot(VALUE str, VALUE hash)
 	"('?-?\\d+)\\.\\s*('?\\d+)\\.\\s*('?-?\\d+)"
 #else
 	BOS
-	"('?-?\\d+)\\.\\s*('?\\d+)\\.\\s*('?-?\\d+)"
-	COM_FP
+	FPW_COM FPT_COM
+	"('?-?\\d+)\\.\\s*(\\d+)\\.\\s*('?-?\\d+)"
+	COM_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -1463,6 +1513,11 @@ parse_dot2_cb(VALUE m, VALUE hash)
     mon = rb_reg_nth_match(2, m);
     y = rb_reg_nth_match(3, m);
 
+#ifdef TIGHT_PARSER
+    if (*RSTRING_PTR(d) == '\'' && !NIL_P(y) && *RSTRING_PTR(y) == '\'')
+	return 0;
+#endif
+
     mon = INT2FIX(mon_num(mon));
 
     s3e(hash, y, mon, d, 0);
@@ -1474,8 +1529,9 @@ parse_dot2(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 	BOS
-	"('?-?\\d+)\\.\\s*(" VALID_MONTHS ")(?:(?:[./]|\\s+)\\s*('?-?\\d+))?"
-	COM_FP
+	FPW_COM FPT_COM
+	"('?-?\\d+)\\.\\s*(" DOTLESS_VALID_MONTHS ")(?:(?:[./])\\s*('?-?\\d+))?"
+	COM_FPT COM_FPW
 	EOS
 	;
     static VALUE pat = Qnil;
@@ -1493,6 +1549,11 @@ parse_dot3_cb(VALUE m, VALUE hash)
     d = rb_reg_nth_match(2, m);
     y = rb_reg_nth_match(3, m);
 
+#ifdef TIGHT_PARSER
+    if (*RSTRING_PTR(d) == '\'' && !NIL_P(y))
+	return 0;
+#endif
+
     mon = INT2FIX(mon_num(mon));
 
     s3e(hash, y, mon, d, 0);
@@ -1504,8 +1565,9 @@ parse_dot3(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 	BOS
-	"(" VALID_MONTHS ")\\.\\s*('?\\d+)(?:(?:[./]|\\s+)\\s*('?-?\\d+))?"
-	COM_FP
+	FPW_COM FPT_COM
+	"(" DOTLESS_VALID_MONTHS ")\\.\\s*('?\\d+)(?:(?:[./])\\s*('?-?\\d+))?"
+	COM_FPT COM_FPW
 	EOS
 	;
     static VALUE pat = Qnil;
@@ -1533,8 +1595,9 @@ parse_year(VALUE str, VALUE hash)
 	"'(\\d+)\\b"
 #else
 	BOS
+	FPW_COM FPT_COM
 	"'(\\d+)"
-	COM_FP
+	COM_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -1562,8 +1625,9 @@ parse_mon(VALUE str, VALUE hash)
 	"\\b(" ABBR_MONTHS ")\\S*"
 #else
 	BOS
-	"(" VALID_MONTHS ")\\.?"
-	COM_FP
+	FPW_COM FPT_COM
+	"(" VALID_MONTHS ")"
+	COM_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -1591,8 +1655,9 @@ parse_mday(VALUE str, VALUE hash)
 	"(\\d+)(st|nd|rd|th)\\b"
 #else
 	BOS
+	FPW_COM FPT_COM
 	"(\\d+)(st|nd|rd|th)"
-	COM_FP
+	COM_FPT COM_FPW
 	EOS
 #endif
 	;
@@ -1914,15 +1979,51 @@ parse_frag(VALUE str, VALUE hash)
 
 #ifdef TIGHT_PARSER
 static int
-check_leftover(VALUE str, VALUE hash)
+parse_dummy_cb(VALUE m, VALUE hash)
 {
-    static const char pat_source[] = "\\A\\s*" FP_CODE "?\\s*\\z";
+    return 1;
+}
+
+static int
+parse_wday_only(VALUE str, VALUE hash)
+{
+    static const char pat_source[] = "\\A\\s*" FPW "\\s*\\z";
     static VALUE pat = Qnil;
 
     REGCOMP_0(pat);
-    if (NIL_P(f_match(pat, str)))
-	return 0;
-    return 1;
+    SUBS(str, pat, parse_dummy_cb);
+}
+
+static int
+parse_time_only(VALUE str, VALUE hash)
+{
+    static const char pat_source[] = "\\A\\s*" FPT "\\s*\\z";
+    static VALUE pat = Qnil;
+
+    REGCOMP_0(pat);
+    SUBS(str, pat, parse_dummy_cb);
+}
+
+static int
+parse_wday_and_time(VALUE str, VALUE hash)
+{
+    static const char pat_source[] = "\\A\\s*(" FPW "\\s+" FPT "|" FPT "\\s+" FPW ")\\s*\\z";
+    static VALUE pat = Qnil;
+
+    REGCOMP_0(pat);
+    SUBS(str, pat, parse_dummy_cb);
+}
+
+static unsigned
+have_invalid_char_p(VALUE s)
+{
+    long i;
+
+    for (i = 0; i < RSTRING_LEN(s); i++)
+	if (iscntrl((unsigned char)RSTRING_PTR(s)[i]) &&
+	    !isspace((unsigned char)RSTRING_PTR(s)[i]))
+	    return 1;
+    return 0;
 }
 #endif
 
@@ -1956,10 +2057,19 @@ check_class(VALUE s)
 
 #define HAVE_ELEM_P(x) ((check_class(str) & (x)) == (x))
 
+#ifdef TIGHT_PARSER
+#define PARSER_ERROR return rb_hash_new()
+#endif
+
 VALUE
 date__parse(VALUE str, VALUE comp)
 {
     VALUE backref, hash;
+
+#ifdef TIGHT_PARSER
+    if (have_invalid_char_p(str))
+	PARSER_ERROR;
+#endif
 
     backref = rb_backref_get();
     rb_match_busy(backref);
@@ -2040,17 +2150,23 @@ date__parse(VALUE str, VALUE comp)
 	if (parse_ddd(str, hash))
 	    goto ok;
 
+#ifdef TIGHT_PARSER
+    if (parse_wday_only(str, hash))
+	goto ok;
+    if (parse_time_only(str, hash))
+	    goto ok;
+    if (parse_wday_and_time(str, hash))
+	goto ok;
+
+    PARSER_ERROR; /* not found */
+#endif
+
   ok:
 #ifndef TIGHT_PARSER
     if (HAVE_ELEM_P(HAVE_ALPHA))
 	parse_bc(str, hash);
     if (HAVE_ELEM_P(HAVE_DIGIT))
 	parse_frag(str, hash);
-#endif
-
-#ifdef TIGHT_PARSER
-    if (!check_leftover(str, hash))
-	return rb_hash_new();
 #endif
 
     {
