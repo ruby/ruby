@@ -1,3 +1,8 @@
+Sun Oct 28 21:18:37 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_document.rb: Add tests for parsing XML encoded
+	  by UTF-16 with BOM.
+
 Sun Oct 28 19:12:11 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_parse.c (iso8601_{ext,bas}_time): should not match
