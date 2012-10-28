@@ -65,7 +65,7 @@ module Psych
 
         @emitter.start_document version, [], false
         accept object
-        @emitter.end_document
+        @emitter.end_document !@emitter.streaming?
       end
       alias :<< :push
 
