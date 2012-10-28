@@ -215,6 +215,9 @@ module REXML
             if need_source_encoding_update?(encoding)
               @source.encoding = encoding
             end
+            if encoding.nil? and /\AUTF-16(?:BE|LE)\z/i =~ @source.encoding
+              encoding = "UTF-16"
+            end
             standalone = STANDALONE.match(results)
             standalone = standalone[1] unless standalone.nil?
             return [ :xmldecl, version, encoding, standalone ]
