@@ -1,3 +1,9 @@
+Sun Oct 28 19:54:43 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/source.rb (REXML::IOSource#initialize): Use
+	  encode("UTF-16XX") instead of UTF-16XX encoded byte string by
+	  hand.
+
 Sun Oct 28 19:12:11 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_parse.c (iso8601_{ext,bas}_time): should not match

@@ -149,9 +149,9 @@ module REXML
       if encoding
         self.encoding = encoding
       elsif str[0,2] == "\xfe\xff"
-        @line_break = "\000>"
+        @line_break = ">".encode("UTF-16BE")
       elsif str[0,2] == "\xff\xfe"
-        @line_break = ">\000"
+        @line_break = ">".encode("UTF-16LE")
       elsif str[0,2] == "\xef\xbb"
         str += @source.read(1)
         str = '' if (str[2,1] == "\xBF")
