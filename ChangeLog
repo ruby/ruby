@@ -1,3 +1,13 @@
+Sun Oct 28 21:25:11 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/source.rb (REXML::IOSource#initialize): Reduce
+	  @line_break initialize code. It should be done only in #encoding=.
+	* lib/rexml/parsers/baseparser.rb: Don't set UTF-16 encoding to
+	  source by encoding="UTF-16" in XML declaration because UTF-16XX
+	  source encoding should be set in Source#initialize or
+	  IOSource#intialize. They should handle BOM. Parser should not
+	  consider about it.
+
 Sun Oct 28 21:18:37 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_document.rb: Add tests for parsing XML encoded

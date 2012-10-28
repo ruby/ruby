@@ -144,22 +144,39 @@ module REXML
       # if there is one.  If there isn't one, the file MUST be UTF-8, as per
       # the XML spec.  If there is one, we can determine the encoding from
       # it.
-      @buffer = ""
-      str = @source.read( 2 ) || ''
       if encoding
-        self.encoding = encoding
-      elsif str[0,2] == "\xfe\xff"
-        @line_break = "\000>"
-      elsif str[0,2] == "\xff\xfe"
-        @line_break = ">\000"
-      elsif str[0,2] == "\xef\xbb"
-        str += @source.read(1)
-        str = '' if (str[2,1] == "\xBF")
-        @line_break = ">"
+        super("", encoding)
       else
-        @line_break = ">"
+        need_super_with_line = false
+        str = @source.read( 2 ) || ''
+        str.force_encoding("ASCII-8BIT")
+        if str[0, 2] == "\xfe\xff"
+          @source.binmode
+          @source.set_encoding("UTF-16BE")
+          super("", "UTF-16BE")
+        elsif str[0, 2] == "\xff\xfe"
+          @source.binmode
+          @source.set_encoding("UTF-16LE")
+          super("", "UTF-16LE")
+        elsif str[0, 2] == "\xef\xbb"
+          str += @source.read(1)
+          if str[2, 1] == "\xBF"
+            @source.set_encoding("UTF-8")
+            super("", "UTF-8")
+          else
+            need_super_with_line = true
+          end
+        else
+          need_super_with_line = true
+        end
+        if need_super_with_line
+          if @source.eof?
+            super(str)
+          else
+            super(str + @source.readline(">"))
+          end
+        end
       end
-      super( @source.eof? ? str : str+@source.readline( @line_break ) )
 
       if !@to_utf and
           @buffer.respond_to?(:force_encoding) and

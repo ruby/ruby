@@ -212,7 +212,9 @@ module REXML
             version = version[1] unless version.nil?
             encoding = ENCODING.match(results)
             encoding = encoding[1] unless encoding.nil?
-            @source.encoding = encoding
+            if need_source_encoding_update?(encoding)
+              @source.encoding = encoding
+            end
             standalone = STANDALONE.match(results)
             standalone = standalone[1] unless standalone.nil?
             return [ :xmldecl, version, encoding, standalone ]
@@ -492,6 +494,13 @@ module REXML
           rv.gsub!( /&amp;/, '&' )
         end
         rv
+      end
+
+      private
+      def need_source_encoding_update?(xml_declaration_encoding)
+        return false if xml_declaration_encoding.nil?
+        return false if /\AUTF-16\z/i =~ xml_declaration_encoding
+        true
       end
     end
   end
