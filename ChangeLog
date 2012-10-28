@@ -1,3 +1,8 @@
+Sun Oct 28 15:00:19 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/document.rb (REXML::Document#write): Remove needless
+	  indent in document.
+
 Sun Oct 28 14:59:14 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/document.rb (REXML::Document#write): Accept options
