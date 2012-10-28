@@ -1,3 +1,8 @@
+Sun Oct 28 21:37:34 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_document.rb: Group tests that they parse
+	  UTF-16XX encoded XML that has encoding="UTF-16" in XML declaration.
+
 Sun Oct 28 21:25:11 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/source.rb (REXML::IOSource#initialize): Reduce

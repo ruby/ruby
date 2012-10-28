@@ -225,24 +225,26 @@ EOX
   end
 
   class BomTest < self
-    def test_utf_16le
-      xml = <<-EOX.encode("UTF-16LE").force_encoding("ASCII-8BIT")
+    class HaveEncodingTest < self
+      def test_utf_16le
+        xml = <<-EOX.encode("UTF-16LE").force_encoding("ASCII-8BIT")
 <?xml version="1.0" encoding="UTF-16"?>
 <message>Hello world!</message>
 EOX
-      bom = "\ufeff".encode("UTF-16LE").force_encoding("ASCII-8BIT")
-      document = REXML::Document.new(bom + xml)
-      assert_equal("UTF-16", document.encoding)
-    end
+        bom = "\ufeff".encode("UTF-16LE").force_encoding("ASCII-8BIT")
+        document = REXML::Document.new(bom + xml)
+        assert_equal("UTF-16", document.encoding)
+      end
 
-    def test_utf_16be
-      xml = <<-EOX.encode("UTF-16BE").force_encoding("ASCII-8BIT")
-<?xml version="1.0" encoding="UTF-16"?>
-<message>Hello world!</message>
-EOX
-      bom = "\ufeff".encode("UTF-16BE").force_encoding("ASCII-8BIT")
-      document = REXML::Document.new(bom + xml)
-      assert_equal("UTF-16", document.encoding)
+      def test_utf_16be
+        xml = <<-EOX.encode("UTF-16BE").force_encoding("ASCII-8BIT")
+  <?xml version="1.0" encoding="UTF-16"?>
+  <message>Hello world!</message>
+  EOX
+        bom = "\ufeff".encode("UTF-16BE").force_encoding("ASCII-8BIT")
+        document = REXML::Document.new(bom + xml)
+        assert_equal("UTF-16", document.encoding)
+      end
     end
   end
 end
