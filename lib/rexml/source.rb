@@ -43,7 +43,7 @@ module REXML
       if encoding
         self.encoding = encoding
       else
-        self.encoding = check_encoding( @buffer )
+        detect_encoding
       end
       @line = 0
     end
@@ -53,14 +53,7 @@ module REXML
     # Overridden to support optimized en/decoding
     def encoding=(enc)
       return unless super
-      @line_break = encode( '>' )
-      if @encoding != 'UTF-8'
-        @buffer = decode(@buffer)
-        @to_utf = true
-      else
-        @to_utf = false
-        @buffer.force_encoding ::Encoding::UTF_8
-      end
+      encoding_updated
     end
 
     # Scans the source for a given pattern.  Note, that this is not your
@@ -125,6 +118,38 @@ module REXML
       res = res[-1] if res.kind_of? Array
       lines.index( res ) if res
     end
+
+    private
+    def detect_encoding
+      buffer_encoding = @buffer.encoding
+      detected_encoding = "UTF-8"
+      begin
+        @buffer.force_encoding("ASCII-8BIT")
+        if @buffer[0, 2] == "\xfe\xff"
+          @buffer[0, 2] = ""
+          detected_encoding = "UTF-16BE"
+        elsif @buffer[0, 2] == "\xff\xfe"
+          @buffer[0, 2] = ""
+          detected_encoding = "UTF-16LE"
+        elsif @buffer[0, 3] == "\xef\xbb\xbf"
+          @buffer[0, 3] = ""
+          detected_encoding = "UTF-8"
+        end
+      ensure
+        @buffer.force_encoding(buffer_encoding)
+      end
+      self.encoding = detected_encoding
+    end
+
+    def encoding_updated
+      if @encoding != 'UTF-8'
+        @buffer = decode(@buffer)
+        @to_utf = true
+      else
+        @to_utf = false
+        @buffer.force_encoding ::Encoding::UTF_8
+      end
+    end
   end
 
   # A Source that wraps an IO.  See the Source class for method
@@ -136,46 +161,12 @@ module REXML
     def initialize(arg, block_size=500, encoding=nil)
       @er_source = @source = arg
       @to_utf = false
+      @pending_buffer = nil
 
-      # Determining the encoding is a deceptively difficult issue to resolve.
-      # First, we check the first two bytes for UTF-16.  Then we
-      # assume that the encoding is at least ASCII enough for the '>', and
-      # we read until we get one of those.  This gives us the XML declaration,
-      # if there is one.  If there isn't one, the file MUST be UTF-8, as per
-      # the XML spec.  If there is one, we can determine the encoding from
-      # it.
       if encoding
         super("", encoding)
       else
-        need_super_with_line = false
-        str = @source.read( 2 ) || ''
-        str.force_encoding("ASCII-8BIT")
-        if str[0, 2] == "\xfe\xff"
-          @source.binmode
-          @source.set_encoding("UTF-16BE")
-          super("", "UTF-16BE")
-        elsif str[0, 2] == "\xff\xfe"
-          @source.binmode
-          @source.set_encoding("UTF-16LE")
-          super("", "UTF-16LE")
-        elsif str[0, 2] == "\xef\xbb"
-          str += @source.read(1)
-          if str[2, 1] == "\xBF"
-            @source.set_encoding("UTF-8")
-            super("", "UTF-8")
-          else
-            need_super_with_line = true
-          end
-        else
-          need_super_with_line = true
-        end
-        if need_super_with_line
-          if @source.eof?
-            super(str)
-          else
-            super(str + @source.readline(">"))
-          end
-        end
+        super(@source.read(3) || "")
       end
 
       if !@to_utf and
@@ -271,6 +262,14 @@ module REXML
     private
     def readline
       str = @source.readline(@line_break)
+      if @pending_buffer
+        if str.nil?
+          str = @pending_buffer
+        else
+          str = @pending_buffer + str
+        end
+        @pending_buffer = nil
+      end
       return nil if str.nil?
 
       if @to_utf
@@ -279,6 +278,18 @@ module REXML
         str.force_encoding(::Encoding::UTF_8) if @force_utf8
         str
       end
+    end
+
+    def encoding_updated
+      case @encoding
+      when "UTF-16BE", "UTF-16LE"
+        @source.binmode
+        @source.set_encoding(@encoding)
+      end
+      @line_break = encode(">")
+      @pending_buffer, @buffer = @buffer, ""
+      @pending_buffer.force_encoding(@encoding)
+      super
     end
   end
 end

@@ -1,3 +1,8 @@
+Sun Oct 28 23:47:09 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/source.rb: Move encoding detection code to base class.
+	* lib/rexml/encoding.rb: Remove needless encoding detection code.
+
 Sun Oct 28 21:40:13 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/baseparser.rb: Fix a bug that UTF-8 is used
