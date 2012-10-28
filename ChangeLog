@@ -1,3 +1,8 @@
+Sun Oct 28 14:03:48 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/document.rb (REXML::Document#write): Fix wrong method
+	  names in document.
+
 Sun Oct 28 10:12:15 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: `tree` should return the

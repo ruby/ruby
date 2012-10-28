@@ -158,11 +158,11 @@ module REXML
     # to change the default formatting of XML output
     #
     # _Examples_
-    #   Document.new("<a><b/></a>").serialize
+    #   Document.new("<a><b/></a>").write
     #
     #   output_string = ""
     #   tr = Transitive.new( output_string )
-    #   Document.new("<a><b/></a>").serialize( tr )
+    #   Document.new("<a><b/></a>").write( tr )
     #
     # output::
     #     output an object which supports '<< string'; this is where the
