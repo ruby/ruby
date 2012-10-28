@@ -248,9 +248,9 @@ EOX
 
       def test_utf_16be
         xml = <<-EOX.encode("UTF-16BE").force_encoding("ASCII-8BIT")
-  <?xml version="1.0" encoding="UTF-16"?>
-  <message>Hello world!</message>
-  EOX
+<?xml version="1.0" encoding="UTF-16"?>
+<message>Hello world!</message>
+EOX
         bom = "\ufeff".encode("UTF-16BE").force_encoding("ASCII-8BIT")
         document = REXML::Document.new(bom + xml)
         assert_equal("UTF-16", document.encoding)
