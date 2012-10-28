@@ -159,15 +159,13 @@ class OpenStruct
   #
   # Used internally to defined properties on the
   # OpenStruct. It does this by using the metaprogramming function
-  # define_method for both the getter method and the setter method.
+  # define_singleton_method for both the getter method and the setter method.
   #
   def new_ostruct_member(name)
     name = name.to_sym
-    unless self.respond_to?(name)
-      class << self; self; end.class_eval do
-        define_method(name) { @table[name] }
-        define_method("#{name}=") { |x| modifiable[name] = x }
-      end
+    unless respond_to?(name)
+      define_singleton_method(name) { @table[name] }
+      define_singleton_method("#{name}=") { |x| modifiable[name] = x }
     end
     name
   end
