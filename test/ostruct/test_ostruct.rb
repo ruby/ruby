@@ -92,4 +92,14 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal '#<Enumerator: #<OpenStruct name="John Smith", age=70, pension=300>:each_pair>', os.each_pair.inspect
     assert_equal [[:name, "John Smith"], [:age, 70], [:pension, 300]], os.each_pair.to_a
   end
+
+  def test_eql_and_hash
+    os1 = OpenStruct.new age: 70
+    os2 = OpenStruct.new age: 70.0
+    assert_equal os1, os2
+    assert_equal false, os1.eql?(os2)
+    assert_not_equal os1.hash, os2.hash
+    assert_equal true, os1.eql?(os1.dup)
+    assert_equal os1.hash, os1.dup.hash
+  end
 end

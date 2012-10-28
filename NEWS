@@ -119,6 +119,8 @@ with all sufficient information, see the ChangeLog file.
 * ostruct
   * new methods:
     * OpenStruct#each_pair
+    * OpenStruct#eql?
+    * OpenStruct#hash
     * OpenStruct#to_h converts the struct to a hash.
 
 * pathname
@@ -213,3 +215,6 @@ with all sufficient information, see the ChangeLog file.
   * Dir.mktmpdir in lib/tmpdir.rb
 
     See above.
+
+  * OpenStruct new methods can conflict with custom attributes named
+    "each_pair", "eql?", "hash" or "to_h".

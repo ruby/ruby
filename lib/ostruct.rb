@@ -241,7 +241,24 @@ class OpenStruct
   # equal.
   #
   def ==(other)
-    return false unless(other.kind_of?(OpenStruct))
-    return @table == other.table
+    return false unless other.kind_of?(OpenStruct)
+    @table == other.table
+  end
+
+  #
+  # Compares this object and +other+ for equality.  An OpenStruct is eql? to
+  # +other+ when +other+ is an OpenStruct and the two objects' Hash tables are
+  # eql?.
+  #
+  def eql?(other)
+    return false unless other.kind_of?(OpenStruct)
+    @table.eql?(other.table)
+  end
+
+  # Compute a hash-code for this OpenStruct.
+  # Two hashes with the same content will have the same hash code
+  # (and will be eql?).
+  def hash
+    @table.hash
   end
 end
