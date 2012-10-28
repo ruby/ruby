@@ -114,6 +114,20 @@ class OpenStruct
   end
 
   #
+  # Yields all attributes (as a symbol) along with the corresponding values
+  # or returns an enumerator if not block is given.
+  # Example:
+  #
+  #   require 'ostruct'
+  #   data = OpenStruct.new("country" => "Australia", :population => 20_000_000)
+  #   data.each_pair.to_a  # => [[:country, "Australia"], [:population, 20000000]]
+  #
+  def each_pair
+    return to_enum __method__ unless block_given?
+    @table.each_pair{|p| yield p}
+  end
+
+  #
   # Provides marshalling support for use by the Marshal library.
   #
   def marshal_dump

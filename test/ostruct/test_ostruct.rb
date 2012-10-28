@@ -85,4 +85,11 @@ class TC_OpenStruct < Test::Unit::TestCase
 
     assert_equal(h, OpenStruct.new("name" => "John Smith", "age" => 70, pension: 300).to_h)
   end
+
+  def test_each_pair
+    h = {name: "John Smith", age: 70, pension: 300}
+    os = OpenStruct.new(h)
+    assert_equal '#<Enumerator: #<OpenStruct name="John Smith", age=70, pension=300>:each_pair>', os.each_pair.inspect
+    assert_equal [[:name, "John Smith"], [:age, 70], [:pension, 300]], os.each_pair.to_a
+  end
 end
