@@ -1,3 +1,7 @@
+Mon Oct 29 03:20:58 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Fix determinant_e [ruby-dev:46305] [Bug #7228]
+
 Sun Oct 28 23:52:25 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_document.rb: Add tests for parsing XML encoded

@@ -1089,7 +1089,7 @@ class Matrix
   #
   def determinant_e
     warn "#{caller(1)[0]}: warning: Matrix#determinant_e is deprecated; use #determinant"
-    rank
+    determinant
   end
   alias det_e determinant_e
 
