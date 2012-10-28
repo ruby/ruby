@@ -510,4 +510,8 @@ class TestBignum < Test::Unit::TestCase
     # this test assumes 32bit/64bit platform
     assert_raise(TypeError) { a = 1 << 64; def a.foo; end }
   end
+
+  def test_frozen
+    assert_equal(true, (2**100).frozen?)
+  end
 end

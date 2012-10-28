@@ -1323,8 +1323,10 @@ singleton_class_of(VALUE obj)
 	return klass;
     }
     else {
-       if (BUILTIN_TYPE(obj) == T_FLOAT)
+	enum ruby_value_type type = BUILTIN_TYPE(obj);
+	if (type == T_FLOAT || type == T_BIGNUM) {
            rb_raise(rb_eTypeError, "can't define singleton");
+	}
     }
 
     if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON) &&

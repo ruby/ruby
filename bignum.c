@@ -176,7 +176,7 @@ bignew_1(VALUE klass, long len, int sign)
 	RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
 	RBIGNUM(big)->as.heap.len = len;
     }
-
+    OBJ_FREEZE(big);
     return (VALUE)big;
 }
 

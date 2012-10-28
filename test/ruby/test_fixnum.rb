@@ -275,4 +275,8 @@ class TestFixnum < Test::Unit::TestCase
   def test_singleton_method
     assert_raise(TypeError) { a = 1; def a.foo; end }
   end
+
+  def test_frozen
+    assert_equal(true, 1.frozen?)
+  end
 end

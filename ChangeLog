@@ -1,3 +1,20 @@
+Sun Oct 28 08:23:16 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* bignum.c (bignew_1): Bignum instances are frozen.
+	  Feature #3222
+
+	* include/ruby/ruby.h: Fixnum instances are also frozen.
+
+	* class.c (singleton_class_of): check Bignum before
+	  singleton cheking.
+
+	* test/ruby/test_bignum.rb: add a test.
+
+	* test/ruby/test_fixnum.rb: ditto.
+
+	* test/ruby/marshaltestlib.rb, test/ruby/test_eval.rb,
+	  test/ruby/test_object.rb: catch up above changes.
+
 Sun Oct 28 04:38:06 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (vm_define_method): remove type and frozen checking.

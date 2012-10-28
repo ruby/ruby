@@ -178,22 +178,6 @@ module MarshalTestLib
     marshal_equal(0x3fff_ffff)
   end
 
-  def test_fixnum_ivar
-    o1 = 1
-    o1.instance_eval { @iv = 2 }
-    marshal_equal(o1) {|o| o.instance_eval { @iv }}
-  ensure
-    1.instance_eval { remove_instance_variable("@iv") }
-  end
-
-  def test_fixnum_ivar_self
-    o1 = 1
-    o1.instance_eval { @iv = 1 }
-    marshal_equal(o1) {|o| o.instance_eval { @iv }}
-  ensure
-    1.instance_eval { remove_instance_variable("@iv") }
-  end
-
   def test_float
     marshal_equal(-1.0)
     marshal_equal(0.0)

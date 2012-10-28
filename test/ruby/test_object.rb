@@ -62,10 +62,10 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_freeze_immediate
-    assert_equal(false, 1.frozen?)
+    assert_equal(true, 1.frozen?)
     1.freeze
     assert_equal(true, 1.frozen?)
-    assert_equal(false, 2.frozen?)
+    assert_equal(true, 2.frozen?)
   end
 
   def test_nil_to_f
