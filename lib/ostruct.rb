@@ -143,7 +143,7 @@ class OpenStruct
   protected :modifiable
 
   #
-  # new_ostruct_member is used internally to defined properties on the
+  # Used internally to defined properties on the
   # OpenStruct. It does this by using the metaprogramming function
   # define_method for both the getter method and the setter method.
   #
@@ -157,6 +157,7 @@ class OpenStruct
     end
     name
   end
+  protected :new_ostruct_member
 
   def method_missing(mid, *args) # :nodoc:
     mname = mid.id2name
