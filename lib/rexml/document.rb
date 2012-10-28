@@ -144,6 +144,10 @@ module REXML
       xml_decl().stand_alone?
     end
 
+    # :call-seq:
+    #    doc.write(output=$stdout, indent=-1, transtive=false, ie_hack=false)
+    #    doc.write(options={:output => $stdout, :indent => -1, :transtive => false, :ie_hack => false})
+    #
     # Write the XML tree out, optionally with indent.  This writes out the
     # entire XML document, including XML declarations, doctype declarations,
     # and processing instructions (if any are given).
@@ -154,15 +158,27 @@ module REXML
     # specified, because it adds unnecessary bandwidth to applications such
     # as XML-RPC.
     #
-    # See also the classes in the rexml/formatters package for the proper way
-    # to change the default formatting of XML output
+    # Accept Nth argument style and options Hash style as argument.
+    # The recommended style is options Hash style for one or more
+    # arguments case.
     #
     # _Examples_
     #   Document.new("<a><b/></a>").write
     #
-    #   output_string = ""
+    #   output = ""
+    #   Document.new("<a><b/></a>").write(output)
+    #
+    #   output = ""
+    #   Document.new("<a><b/></a>").write(:output => output, :indent => 2)
+    #
+    # See also the classes in the rexml/formatters package for the proper way
+    # to change the default formatting of XML output.
+    #
+    # _Examples_
+    #
+    #   output = ""
     #   tr = Transitive.new
-    #   tr.write(Document.new("<a><b/></a>"), output_string)
+    #   tr.write(Document.new("<a><b/></a>"), output)
     #
     # output::
     #     output an object which supports '<< string'; this is where the
@@ -183,7 +199,23 @@ module REXML
     #   unable to parse proper XML, we have to provide a hack to generate XML
     #   that IE's limited abilities can handle.  This hack inserts a space
     #   before the /> on empty tags.  Defaults to false
-    def write( output=$stdout, indent=-1, transitive=false, ie_hack=false )
+    def write(*arguments)
+      if arguments.size == 1 and arguments[0].class == Hash
+        options = arguments[0]
+
+        output     = options[:output]
+        indent     = options[:indent]
+        transitive = options[:transitive]
+        ie_hack    = options[:ie_hack]
+      else
+        output, indent, transitive, ie_hack, = *arguments
+      end
+
+      output ||= $stdout
+      indent ||= -1
+      transitive = false if transitive.nil?
+      ie_hack    = false if ie_hack.nil?
+
       if xml_decl.encoding != 'UTF-8' && !output.kind_of?(Output)
         output = Output.new( output, xml_decl.encoding )
       end

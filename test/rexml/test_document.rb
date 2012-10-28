@@ -106,4 +106,99 @@ EOX
     doc = REXML::Document.new('<?xml version="1.0" standalone=  "no" ?>')
     assert_equal('no', doc.stand_alone?, bug2539)
   end
+
+  class WriteTest < Test::Unit::TestCase
+    def setup
+      @document = REXML::Document.new(<<-EOX)
+<?xml version="1.0" encoding="UTF-8"?>
+<message>Hello world!</message>
+EOX
+    end
+
+    class ArgumentsTest < self
+      def test_output
+        output = ""
+        @document.write(output)
+        assert_equal(<<-EOX, output)
+<?xml version='1.0' encoding='UTF-8'?>
+<message>Hello world!</message>
+EOX
+      end
+
+      def test_indent
+        output = ""
+        indent = 2
+        @document.write(output, indent)
+        assert_equal(<<-EOX.chomp, output)
+<?xml version='1.0' encoding='UTF-8'?>
+<message>
+  Hello world!
+</message>
+EOX
+      end
+
+      def test_transitive
+        output = ""
+        indent = 2
+        transitive = true
+        @document.write(output, indent, transitive)
+        assert_equal(<<-EOX, output)
+<?xml version='1.0' encoding='UTF-8'?>
+<message
+>Hello world!</message
+>
+EOX
+      end
+
+      def test_ie_hack
+        output = ""
+        indent = -1
+        transitive = false
+        ie_hack = true
+        document = REXML::Document.new("<empty/>")
+        document.write(output, indent, transitive, ie_hack)
+        assert_equal("<empty />", output)
+      end
+    end
+
+    class OptionsTest < self
+      def test_output
+        output = ""
+        @document.write(:output => output)
+        assert_equal(<<-EOX, output)
+<?xml version='1.0' encoding='UTF-8'?>
+<message>Hello world!</message>
+EOX
+      end
+
+      def test_indent
+        output = ""
+        @document.write(:output => output, :indent => 2)
+        assert_equal(<<-EOX.chomp, output)
+<?xml version='1.0' encoding='UTF-8'?>
+<message>
+  Hello world!
+</message>
+EOX
+      end
+
+      def test_transitive
+        output = ""
+        @document.write(:output => output, :indent => 2, :transitive => true)
+        assert_equal(<<-EOX, output)
+<?xml version='1.0' encoding='UTF-8'?>
+<message
+>Hello world!</message
+>
+EOX
+      end
+
+      def test_ie_hack
+        output = ""
+        document = REXML::Document.new("<empty/>")
+        document.write(:output => output, :ie_hack => true)
+        assert_equal("<empty />", output)
+      end
+    end
+  end
 end
