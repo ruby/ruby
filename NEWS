@@ -83,6 +83,16 @@ with all sufficient information, see the ChangeLog file.
       * added Struct#to_h returning values with keys corresponding to the
         instance variable names.
 
+  * Thread
+    * added method:
+      * added Thread#thread_variable_get for getting thread local variables
+        (these are different than Fiber local variables).
+      * added Thread#thread_variable_set for setting thread local variables.
+      * added Thread#thread_variables for getting a list of the thread local
+        variable keys.
+      * added Thread#thread_variable? for testing to see if a particular thread
+        variable has been set.
+
   * Time
     * change return value:
       * Time#to_s returned encoding defaults to US-ASCII but automatically

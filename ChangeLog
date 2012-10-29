@@ -1,3 +1,13 @@
+Tue Oct 30 02:20:10 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* thread.c: added Thread#thread_variable_(get|set),
+	  Thread#thread_variable?, and Thread#thread_variables for operating
+	  on variables that are local to threads. [ruby-core:47790]
+
+	* vm.c: ditto
+
+	* test/ruby/test_thread.rb: tests for thread variables.
+
 Mon Oct 29 18:22:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_close): close separatedly per each

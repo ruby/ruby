@@ -2525,6 +2525,9 @@ rb_thread_local_aref(VALUE thread, ID id)
  *    #=> nil if fiber-local
  *    #=> 2 if thread-local (The value 2 is leaked to outside of meth method.)
  *
+ *  For thread-local variables, please see <code>Thread#thread_local_get</code>
+ *  and <code>Thread#thread_local_set</code>.
+ *
  */
 
 static VALUE
@@ -2561,13 +2564,89 @@ rb_thread_local_aset(VALUE thread, ID id, VALUE val)
  *      thr[sym] = obj   -> obj
  *
  *  Attribute Assignment---Sets or creates the value of a fiber-local variable,
- *  using either a symbol or a string. See also <code>Thread#[]</code>.
+ *  using either a symbol or a string. See also <code>Thread#[]</code>.  For
+ *  thread-local variables, please see <code>Thread#thread_variable_set</code>
+ *  and <code>Thread#thread_variable_get</code>.
  */
 
 static VALUE
 rb_thread_aset(VALUE self, VALUE id, VALUE val)
 {
     return rb_thread_local_aset(self, rb_to_id(id), val);
+}
+
+/*
+ *  call-seq:
+ *      thr.thread_variable_get(key)  -> obj or nil
+ *
+ *  Returns the value of a thread local variable that has been set.  Note that
+ *  these are different than fiber local values.  For fiber local values,
+ *  please see Thread#[] and Thread#[]=.
+ *
+ *  Thread local values are carried along with threads, and do not respect
+ *  fibers.  For example:
+ *
+ *    Thread.new {
+ *      Thread.current.thread_variable_set("foo", "bar") # set a thread local
+ *      Thread.current["foo"] = "bar"                    # set a fiber local
+ *
+ *      Fiber.new {
+ *        Fiber.yield [
+ *          Thread.current.thread_variable_get("foo"), # get the thread local
+ *          Thread.current["foo"],                     # get the fiber local
+ *        ]
+ *      }.resume
+ *    }.join.value # => ['bar', nil]
+ *
+ *  The value "bar" is returned for the thread local, where nil is returned
+ *  for the fiber local.  The fiber is executed in the same thread, so the
+ *  thread local values are available.
+ *
+ *  See also Thread#[]
+ */
+
+static VALUE
+rb_thread_variable_get(VALUE thread, VALUE id)
+{
+    VALUE locals;
+    rb_thread_t *th;
+
+    GetThreadPtr(thread, th);
+
+    if (rb_safe_level() >= 4 && th != GET_THREAD()) {
+	rb_raise(rb_eSecurityError, "Insecure: can't modify thread locals");
+    }
+
+    locals = rb_iv_get(thread, "locals");
+    return rb_hash_aref(locals, ID2SYM(rb_to_id(id)));
+}
+
+/*
+ *  call-seq:
+ *      thr.thread_variable_set(key, value)
+ *
+ *  Sets a thread local with +key+ to +value+.  Note that these are local to
+ *  threads, and not to fibers.  Please see Thread#thread_variable_get and
+ *  Thread#[] for more information.
+ */
+
+static VALUE
+rb_thread_variable_set(VALUE thread, VALUE id, VALUE val)
+{
+    VALUE locals;
+    rb_thread_t *th;
+
+    GetThreadPtr(thread, th);
+
+    if (rb_safe_level() >= 4 && th != GET_THREAD()) {
+	rb_raise(rb_eSecurityError, "Insecure: can't modify thread locals");
+    }
+    if (OBJ_FROZEN(thread)) {
+	rb_error_frozen("thread locals");
+    }
+
+    locals = rb_iv_get(thread, "locals");
+    return rb_hash_aset(locals, ID2SYM(rb_to_id(id)), val);
 }
 
 /*
@@ -2649,6 +2728,76 @@ rb_thread_keys(VALUE self)
 	st_foreach(th->local_storage, thread_keys_i, ary);
     }
     return ary;
+}
+
+static int
+keys_i(VALUE key, VALUE value, VALUE ary)
+{
+    rb_ary_push(ary, key);
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     thr.thread_variables   -> array
+ *
+ *  Returns an an array of the names of the thread-local variables (as Symbols).
+ *
+ *     thr = Thread.new do
+ *       Thread.current.thread_variable_set(:cat, 'meow')
+ *       Thread.current.thread_variable_set("dog", 'woof')
+ *     end
+ *     thr.join               #=> #<Thread:0x401b3f10 dead>
+ *     thr.thread_variables   #=> [:dog, :cat]
+ *
+ *  Note that these are not fiber local variables.  Please see Thread#[] and
+ *  Thread#thread_variable_get for more details.
+ */
+
+static VALUE
+rb_thread_variables(VALUE thread)
+{
+    VALUE locals;
+    VALUE ary;
+
+    locals = rb_iv_get(thread, "locals");
+    ary = rb_ary_new();
+    rb_hash_foreach(locals, keys_i, ary);
+
+    return ary;
+}
+
+/*
+ *  call-seq:
+ *     thr.thread_variable?(key)   -> true or false
+ *
+ *  Returns <code>true</code> if the given string (or symbol) exists as a
+ *  thread-local variable.
+ *
+ *     me = Thread.current
+ *     me.thread_variable_set(:oliver, "a")
+ *     me.thread_variable?(:oliver)    #=> true
+ *     me.thread_variable?(:stanley)   #=> false
+ *
+ *  Note that these are not fiber local variables.  Please see Thread#[] and
+ *  Thread#thread_variable_get for more details.
+ */
+
+static VALUE
+rb_thread_variable_p(VALUE thread, VALUE key)
+{
+    VALUE locals;
+
+    locals = rb_iv_get(thread, "locals");
+
+    if (!RHASH(locals)->ntbl)
+        return Qfalse;
+
+    if (st_lookup(RHASH(locals)->ntbl, ID2SYM(rb_to_id(key)), 0)) {
+	return Qtrue;
+    }
+
+    return Qfalse;
 }
 
 /*
@@ -4541,6 +4690,10 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "priority", rb_thread_priority, 0);
     rb_define_method(rb_cThread, "priority=", rb_thread_priority_set, 1);
     rb_define_method(rb_cThread, "status", rb_thread_status, 0);
+    rb_define_method(rb_cThread, "thread_variable_get", rb_thread_variable_get, 1);
+    rb_define_method(rb_cThread, "thread_variable_set", rb_thread_variable_set, 2);
+    rb_define_method(rb_cThread, "thread_variables", rb_thread_variables, 0);
+    rb_define_method(rb_cThread, "thread_variable?", rb_thread_variable_p, 1);
     rb_define_method(rb_cThread, "alive?", rb_thread_alive_p, 0);
     rb_define_method(rb_cThread, "stop?", rb_thread_stop_p, 0);
     rb_define_method(rb_cThread, "abort_on_exception", rb_thread_abort_exc, 0);
