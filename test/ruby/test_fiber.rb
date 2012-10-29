@@ -47,20 +47,21 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_many_fibers_with_threads
-    max = 1000
-    @cnt = 0
-    (1..100).map{|ti|
-      Thread.new{
-        max.times{|i|
-          Fiber.new{
-            @cnt += 1
-          }.resume
+    assert_normal_exit %q{
+      max = 1000
+      @cnt = 0
+      (1..100).map{|ti|
+        Thread.new{
+          max.times{|i|
+            Fiber.new{
+              @cnt += 1
+            }.resume
+          }
         }
+      }.each{|t|
+        t.join
       }
-    }.each{|t|
-      t.join
     }
-    assert_equal(:ok, :ok)
   end
 
   def test_error
