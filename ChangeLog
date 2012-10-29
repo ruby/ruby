@@ -1,3 +1,8 @@
+Tue Oct 30 03:08:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rbconfig/obsolete.rb (Config): re-introduce warnings for a
+	  lame-duck.  [ruby-core:46836] [Bug #6809]
+
 Tue Oct 30 02:20:10 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* thread.c: added Thread#thread_variable_(get|set),
