@@ -1,3 +1,8 @@
+Mon Oct 29 18:22:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_close): close separatedly per each
+	  instances, as well as IO.
+
 Mon Oct 29 10:22:00 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/handlers/recorder.rb: added a class for

@@ -28,7 +28,7 @@ struct StringIO {
     int count;
 };
 
-static void strio_init(int, VALUE *, struct StringIO *);
+static void strio_init(int, VALUE *, struct StringIO *, VALUE);
 
 #define IS_STRIO(obj) (rb_typeddata_is_kind_of((obj), &strio_data_type))
 #define error_inval(msg) (errno = EINVAL, rb_sys_fail(msg))
@@ -107,23 +107,32 @@ strio_substr(struct StringIO *ptr, long pos, long len)
 
 #define StringIO(obj) get_strio(obj)
 
-#define CLOSED(ptr) (!((ptr)->flags & FMODE_READWRITE))
-#define READABLE(ptr) ((ptr)->flags & FMODE_READABLE)
-#define WRITABLE(ptr) ((ptr)->flags & FMODE_WRITABLE)
+#define STRIO_READABLE FL_USER4
+#define STRIO_WRITABLE FL_USER5
+#define STRIO_READWRITE (STRIO_READABLE|STRIO_WRITABLE)
+typedef char strio_flags_check[(STRIO_READABLE/FMODE_READABLE == STRIO_WRITABLE/FMODE_WRITABLE) * 2 - 1];
+#define STRIO_MODE_SET_P(strio, mode) \
+    ((RBASIC(strio)->flags & STRIO_##mode) && \
+     ((struct StringIO*)DATA_PTR(strio))->flags & FMODE_##mode)
+#define CLOSED(strio) (!STRIO_MODE_SET_P(strio, READWRITE))
+#define READABLE(strio) STRIO_MODE_SET_P(strio, READABLE)
+#define WRITABLE(strio) STRIO_MODE_SET_P(strio, WRITABLE)
 
 static struct StringIO*
-readable(struct StringIO *ptr)
+readable(VALUE strio)
 {
-    if (!READABLE(ptr)) {
+    struct StringIO *ptr = StringIO(strio);
+    if (!READABLE(strio)) {
 	rb_raise(rb_eIOError, "not opened for reading");
     }
     return ptr;
 }
 
 static struct StringIO*
-writable(struct StringIO *ptr)
+writable(VALUE strio)
 {
-    if (!WRITABLE(ptr)) {
+    struct StringIO *ptr = StringIO(strio);
+    if (!WRITABLE(strio)) {
 	rb_raise(rb_eIOError, "not opened for writing");
     }
     if (!OBJ_TAINTED(ptr->string)) {
@@ -160,12 +169,12 @@ strio_initialize(int argc, VALUE *argv, VALUE self)
 	DATA_PTR(self) = ptr = strio_alloc();
     }
     rb_call_super(0, 0);
-    strio_init(argc, argv, ptr);
+    strio_init(argc, argv, ptr, self);
     return self;
 }
 
 static void
-strio_init(int argc, VALUE *argv, struct StringIO *ptr)
+strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
 {
     VALUE string, mode;
     int trunc = 0;
@@ -203,6 +212,7 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr)
     ptr->string = string;
     ptr->pos = 0;
     ptr->lineno = 0;
+    RBASIC(self)->flags |= (ptr->flags & FMODE_READWRITE) * (STRIO_READABLE / FMODE_READABLE);
 }
 
 static VALUE
@@ -332,11 +342,11 @@ strio_set_string(VALUE self, VALUE string)
 static VALUE
 strio_close(VALUE self)
 {
-    struct StringIO *ptr = StringIO(self);
-    if (CLOSED(ptr)) {
+    StringIO(self);
+    if (CLOSED(self)) {
 	rb_raise(rb_eIOError, "closed stream");
     }
-    ptr->flags &= ~FMODE_READWRITE;
+    RBASIC(self)->flags &= ~STRIO_READWRITE;
     return Qnil;
 }
 
@@ -350,11 +360,11 @@ strio_close(VALUE self)
 static VALUE
 strio_close_read(VALUE self)
 {
-    struct StringIO *ptr = StringIO(self);
-    if (!READABLE(ptr)) {
+    StringIO(self);
+    if (!READABLE(self)) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for reading");
     }
-    ptr->flags &= ~FMODE_READABLE;
+    RBASIC(self)->flags &= ~STRIO_READABLE;
     return Qnil;
 }
 
@@ -368,11 +378,11 @@ strio_close_read(VALUE self)
 static VALUE
 strio_close_write(VALUE self)
 {
-    struct StringIO *ptr = StringIO(self);
-    if (!WRITABLE(ptr)) {
+    StringIO(self);
+    if (!WRITABLE(self)) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for writing");
     }
-    ptr->flags &= ~FMODE_WRITABLE;
+    RBASIC(self)->flags &= ~STRIO_WRITABLE;
     return Qnil;
 }
 
@@ -385,8 +395,8 @@ strio_close_write(VALUE self)
 static VALUE
 strio_closed(VALUE self)
 {
-    struct StringIO *ptr = StringIO(self);
-    if (!CLOSED(ptr)) return Qfalse;
+    StringIO(self);
+    if (!CLOSED(self)) return Qfalse;
     return Qtrue;
 }
 
@@ -399,8 +409,8 @@ strio_closed(VALUE self)
 static VALUE
 strio_closed_read(VALUE self)
 {
-    struct StringIO *ptr = StringIO(self);
-    if (READABLE(ptr)) return Qfalse;
+    StringIO(self);
+    if (READABLE(self)) return Qfalse;
     return Qtrue;
 }
 
@@ -413,8 +423,8 @@ strio_closed_read(VALUE self)
 static VALUE
 strio_closed_write(VALUE self)
 {
-    struct StringIO *ptr = StringIO(self);
-    if (WRITABLE(ptr)) return Qfalse;
+    StringIO(self);
+    if (WRITABLE(self)) return Qfalse;
     return Qtrue;
 }
 
@@ -429,7 +439,7 @@ strio_closed_write(VALUE self)
 static VALUE
 strio_eof(VALUE self)
 {
-    struct StringIO *ptr = readable(StringIO(self));
+    struct StringIO *ptr = readable(self);
     if (ptr->pos < RSTRING_LEN(ptr->string)) return Qfalse;
     return Qtrue;
 }
@@ -448,6 +458,8 @@ strio_copy(VALUE copy, VALUE orig)
     }
     DATA_PTR(copy) = ptr;
     OBJ_INFECT(copy, orig);
+    RBASIC(copy)->flags &= ~STRIO_READWRITE;
+    RBASIC(copy)->flags |= RBASIC(orig)->flags & STRIO_READWRITE;
     ++ptr->count;
     return copy;
 }
@@ -509,7 +521,7 @@ strio_reopen(int argc, VALUE *argv, VALUE self)
     if (argc == 1 && !RB_TYPE_P(*argv, T_STRING)) {
 	return strio_copy(self, *argv);
     }
-    strio_init(argc, argv, StringIO(self));
+    strio_init(argc, argv, StringIO(self), self);
     return self;
 }
 
@@ -576,7 +588,7 @@ strio_seek(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "11", NULL, &whence);
     offset = NUM2LONG(argv[0]);
-    if (CLOSED(ptr)) {
+    if (CLOSED(self)) {
 	rb_raise(rb_eIOError, "closed stream");
     }
     switch (NIL_P(whence) ? 0 : NUM2LONG(whence)) {
@@ -629,7 +641,7 @@ strio_get_sync(VALUE self)
 static VALUE
 strio_each_byte(VALUE self)
 {
-    struct StringIO *ptr = readable(StringIO(self));
+    struct StringIO *ptr = readable(self);
 
     RETURN_ENUMERATOR(self, 0, 0);
 
@@ -649,7 +661,7 @@ strio_each_byte(VALUE self)
 static VALUE
 strio_getc(VALUE self)
 {
-    struct StringIO *ptr = readable(StringIO(self));
+    struct StringIO *ptr = readable(self);
     rb_encoding *enc = rb_enc_get(ptr->string);
     int len;
     char *p;
@@ -672,7 +684,7 @@ strio_getc(VALUE self)
 static VALUE
 strio_getbyte(VALUE self)
 {
-    struct StringIO *ptr = readable(StringIO(self));
+    struct StringIO *ptr = readable(self);
     int c;
     if (ptr->pos >= RSTRING_LEN(ptr->string)) {
 	return Qnil;
@@ -710,7 +722,7 @@ strio_extend(struct StringIO *ptr, long pos, long len)
 static VALUE
 strio_ungetc(VALUE self, VALUE c)
 {
-    struct StringIO *ptr = readable(StringIO(self));
+    struct StringIO *ptr = readable(self);
     long lpos, clen;
     char *p, *pend;
     rb_encoding *enc, *enc2;
@@ -765,7 +777,7 @@ strio_ungetc(VALUE self, VALUE c)
 static VALUE
 strio_ungetbyte(VALUE self, VALUE c)
 {
-    struct StringIO *ptr = readable(StringIO(self));
+    struct StringIO *ptr = readable(self);
     char buf[1], *cp = buf;
     long pos = ptr->pos, cl = 1;
     VALUE str = ptr->string;
@@ -869,7 +881,7 @@ strio_each_codepoint(VALUE self)
 
     RETURN_ENUMERATOR(self, 0, 0);
 
-    ptr = readable(StringIO(self));
+    ptr = readable(self);
     enc = rb_enc_get(ptr->string);
     for (;;) {
 	if (ptr->pos >= RSTRING_LEN(ptr->string)) {
@@ -1021,7 +1033,7 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 static VALUE
 strio_gets(int argc, VALUE *argv, VALUE self)
 {
-    VALUE str = strio_getline(argc, argv, readable(StringIO(self)));
+    VALUE str = strio_getline(argc, argv, readable(self));
 
     rb_lastline_set(str);
     return str;
@@ -1065,9 +1077,9 @@ strio_readline(int argc, VALUE *argv, VALUE self)
 static VALUE
 strio_each(int argc, VALUE *argv, VALUE self)
 {
-    struct StringIO *ptr = StringIO(self);
     VALUE line;
 
+    StringIO(self);
     RETURN_ENUMERATOR(self, argc, argv);
 
     if (argc > 0 && !NIL_P(argv[argc-1]) && NIL_P(rb_check_string_type(argv[argc-1])) &&
@@ -1075,7 +1087,7 @@ strio_each(int argc, VALUE *argv, VALUE self)
 	rb_raise(rb_eArgError, "invalid limit: 0 for each_line");
     }
 
-    while (!NIL_P(line = strio_getline(argc, argv, readable(ptr)))) {
+    while (!NIL_P(line = strio_getline(argc, argv, readable(self)))) {
 	rb_yield(line);
     }
     return self;
@@ -1092,15 +1104,16 @@ strio_each(int argc, VALUE *argv, VALUE self)
 static VALUE
 strio_readlines(int argc, VALUE *argv, VALUE self)
 {
-    struct StringIO *ptr = StringIO(self);
-    VALUE ary = rb_ary_new(), line;
+    VALUE ary, line;
 
+    StringIO(self);
+    ary = rb_ary_new();
     if (argc > 0 && !NIL_P(argv[argc-1]) && NIL_P(rb_check_string_type(argv[argc-1])) &&
 	NUM2LONG(argv[argc-1]) == 0) {
 	rb_raise(rb_eArgError, "invalid limit: 0 for readlines");
     }
 
-    while (!NIL_P(line = strio_getline(argc, argv, readable(ptr)))) {
+    while (!NIL_P(line = strio_getline(argc, argv, readable(self)))) {
 	rb_ary_push(ary, line);
     }
     return ary;
@@ -1119,7 +1132,7 @@ strio_readlines(int argc, VALUE *argv, VALUE self)
 static VALUE
 strio_write(VALUE self, VALUE str)
 {
-    struct StringIO *ptr = writable(StringIO(self));
+    struct StringIO *ptr = writable(self);
     long len, olen;
     rb_encoding *enc, *enc2;
 
@@ -1185,7 +1198,7 @@ strio_write(VALUE self, VALUE str)
 static VALUE
 strio_putc(VALUE self, VALUE ch)
 {
-    struct StringIO *ptr = writable(StringIO(self));
+    struct StringIO *ptr = writable(self);
     int c = NUM2CHR(ch);
     long olen;
 
@@ -1217,7 +1230,7 @@ strio_putc(VALUE self, VALUE ch)
 static VALUE
 strio_read(int argc, VALUE *argv, VALUE self)
 {
-    struct StringIO *ptr = readable(StringIO(self));
+    struct StringIO *ptr = readable(self);
     VALUE str = Qnil;
     long len;
     int binary = 0;
@@ -1338,7 +1351,7 @@ strio_size(VALUE self)
 static VALUE
 strio_truncate(VALUE self, VALUE len)
 {
-    VALUE string = writable(StringIO(self))->string;
+    VALUE string = writable(self)->string;
     long l = NUM2LONG(len);
     long plen = RSTRING_LEN(string);
     if (l < 0) {

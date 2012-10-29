@@ -234,7 +234,7 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(nil, f1.getc)
     assert_equal(true, f2.eof?)
     f1.close
-    assert_equal(true, f2.closed?)
+    assert_equal(false, f2.closed?, '[ruby-core:48443]')
   ensure
     f1.close unless f1.closed?
     f2.close unless f2.closed?
