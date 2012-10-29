@@ -1,3 +1,13 @@
+Mon Oct 29 10:22:00 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/handlers/recorder.rb: added a class for
+	  recording YAML parse and emit events.
+
+	* ext/psych/lib/psych/handler.rb: adding a list of events so that
+	  handler classes can more easily be meta-programmed.
+
+	* test/psych/handlers/test_recorder.rb: tests for the change.
+
 Mon Oct 29 05:48:52 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/ostruct.rb: Add [] and []=, base on a patch by Thomas Sawyer.

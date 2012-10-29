@@ -25,6 +25,19 @@ module Psych
     # Default dumping options
     OPTIONS = DumperOptions.new
 
+    # Events that a Handler should respond to.
+    EVENTS = [ :alias,
+               :empty,
+               :end_document,
+               :end_mapping,
+               :end_sequence,
+               :end_stream,
+               :scalar,
+               :start_document,
+               :start_mapping,
+               :start_sequence,
+               :start_stream ]
+
     ###
     # Called with +encoding+ when the YAML stream starts.  This method is
     # called once per stream.  A stream may contain multiple documents.
