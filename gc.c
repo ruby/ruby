@@ -4151,14 +4151,14 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 	int index = 1;
 	size_t i;
 	gc_profile_record r;
-	append(out, rb_sprintf("GC %zu invokes.\n", objspace->count));
+	append(out, rb_sprintf("GC %"PRIuSIZE" invokes.\n", objspace->count));
 	append(out, rb_str_new_cstr("Index    Invoke Time(sec)       Use Size(byte)     Total Size(byte)         Total Object                    GC Time(ms)\n"));
 	for (i = 0; i < count; i++) {
 	    r = objspace->profile.record[i];
 #if !GC_PROFILE_MORE_DETAIL
             if (r.is_marked) {
 #endif
-		append(out, rb_sprintf("%5d %19.3f %20zu %20zu %20zu %30.20f\n",
+		append(out, rb_sprintf("%5d %19.3f %20"PRIuSIZE" %20"PRIuSIZE" %20"PRIuSIZE" %30.20f\n",
 			index++, r.gc_invoke_time, r.heap_use_size,
 			r.heap_total_size, r.heap_total_objects, r.gc_time*1000));
 #if !GC_PROFILE_MORE_DETAIL
@@ -4172,7 +4172,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
         index = 1;
 	for (i = 0; i < count; i++) {
 	    r = objspace->profile.record[i];
-	    append(out, rb_sprintf("%5d %17zu %17zu %9zu %14s %25.20f %25.20f\n",
+	    append(out, rb_sprintf("%5d %17"PRIuSIZE" %17"PRIuSIZE" %9"PRIuSIZE" %14s %25.20f %25.20f\n",
 			index++, r.allocate_increase, r.allocate_limit,
 			r.heap_use_slots, (r.have_finalize ? "true" : "false"),
 			r.gc_mark_time*1000, r.gc_sweep_time*1000));
