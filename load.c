@@ -77,14 +77,15 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
     long plen;
     const char *e;
 
-    if(vlen < len) return 0;
-    if (!strncmp(name+(vlen-len),feature,len)){
+    if (vlen < len) return 0;
+    if (!strncmp(name+(vlen-len), feature, len)) {
 	plen = vlen - len - 1;
-    } else {
+    }
+    else {
 	for (e = name + vlen; name != e && *e != '.' && *e != '/'; --e);
-	if (*e!='.' ||
+	if (*e != '.' ||
 	    e-name < len ||
-	    strncmp(e-len,feature,len) )
+	    strncmp(e-len, feature, len))
 	    return 0;
 	plen = e - name - len - 1;
     }
@@ -93,7 +94,7 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
 	const char *s = StringValuePtr(p);
 	long n = RSTRING_LEN(p);
 
-	if (n != plen ) continue;
+	if (n != plen) continue;
 	if (n && (strncmp(name, s, n) || name[n] != '/')) continue;
 	switch (type) {
 	  case 's':
