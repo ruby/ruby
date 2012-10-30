@@ -25,7 +25,7 @@ Tue Oct 30 02:20:10 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 Mon Oct 29 18:22:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* ext/stringio/stringio.c (strio_close): close separatedly per each
+	* ext/stringio/stringio.c (strio_close): close separately per each
 	  instances, as well as IO.
 
 Mon Oct 29 10:22:00 2012  Aaron Patterson <aaron@tenderlovemaking.com>
@@ -63,7 +63,7 @@ Sun Oct 28 21:40:13 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/baseparser.rb: Fix a bug that UTF-8 is used
 	  for UTF-16XX encoded XML that doesn't have encoding="UTF-16" in
-	  XML declration.
+	  XML declaration.
 	* test/rexml/test_document.rb: Add tests for the above change.
 
 Sun Oct 28 21:37:34 2012  Kouhei Sutou  <kou@cozmixng.org>
@@ -78,7 +78,7 @@ Sun Oct 28 21:25:11 2012  Kouhei Sutou  <kou@cozmixng.org>
 	* lib/rexml/parsers/baseparser.rb: Don't set UTF-16 encoding to
 	  source by encoding="UTF-16" in XML declaration because UTF-16XX
 	  source encoding should be set in Source#initialize or
-	  IOSource#intialize. They should handle BOM. Parser should not
+	  IOSource#initialize. They should handle BOM. Parser should not
 	  consider about it.
 
 Sun Oct 28 21:18:37 2012  Kouhei Sutou  <kou@cozmixng.org>
@@ -145,7 +145,7 @@ Sun Oct 28 08:23:16 2012  Koichi Sasada  <ko1@atdot.net>
 	* include/ruby/ruby.h: Fixnum instances are also frozen.
 
 	* class.c (singleton_class_of): check Bignum before
-	  singleton cheking.
+	  singleton checking.
 
 	* test/ruby/test_bignum.rb: add a test.
 
@@ -161,7 +161,7 @@ Sun Oct 28 04:38:06 2012  Koichi Sasada  <ko1@atdot.net>
 
 Sun Oct 28 00:49:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* parse.y (assign_in_cond): warn for static content object asignments
+	* parse.y (assign_in_cond): warn for static content object assignments
 	  in conditional statements.  [ruby-dev:43083] [Feature #4299]
 
 Sat Oct 27 23:33:41 2012  Benoit Daloze  <eregontp@gmail.com>
@@ -228,7 +228,7 @@ Fri Oct 26 13:24:20 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Oct 25 17:48:54 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (has_redirection): should use shell (cmd.exe) when
-	  the commandline containts '&'.
+	  the commandline contains '&'.
 	  reported by Roger Pack at [ruby-core:47912] [Bug #7143], and
 	  patched by Heesob Park at [ruby-core:47931].
 
@@ -236,7 +236,7 @@ Thu Oct 25 15:00:08 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h, class.c: remove (revert)
 	  `rb_add_method_cfunc_frameless()' API.
-	  This API is not mature to become an offical API.
+	  This API is not mature to become an official API.
 	  For example, we can not use this API with
 	  `rb_define_private_method()'.
 
@@ -293,7 +293,7 @@ Wed Oct 24 08:55:04 2012  Koichi Sasada  <ko1@atdot.net>
 	  If given object `obj' has references to internal objects
 	  (such as T_NODE objects), then this method returns instances of
 	  `ObjectSpace::InternalObjectWrapper' instead of that internal objects.
-	  This instance contains a refereance to an internal object and you can
+	  This instance contains a reference to an internal object and you can
 	  check the type of internal object using
 	  `ObjectSpace::InternalObjectWrapper#type' method.
 	  Rdoc of `InternalObjectWrapper' is not prepared yet.
@@ -337,7 +337,7 @@ Tue Oct 23 22:34:49 2012  Koichi Sasada  <ko1@atdot.net>
 Tue Oct 23 17:08:39 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (usage, process_options): show more info in --help.
-	  [EXPREIMENTAL] [ruby-core:48072] [Bug #7184]
+	  [EXPERIMENTAL] [ruby-core:48072] [Bug #7184]
 
 Tue Oct 23 14:20:43 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -600,7 +600,7 @@ Thu Oct 18 14:31:17 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (new_callinfo): set a temporary index of callinfo
 	  (used in `iseq_set_sequence()') to rb_call_info_t::aux::index.
-	  rb_call_info_t::argc is initialiesed by same value of
+	  rb_call_info_t::argc is initialized by same value of
 	  rb_call_info_t::orig_argc.
 
 Thu Oct 18 14:11:08 2012  Koichi Sasada  <ko1@atdot.net>
@@ -758,7 +758,7 @@ Tue Oct 16 22:24:44 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb (show_results): Show speedup ratio
 	  with first executables score at last of results
-	  if two or more executrables are given.
+	  if two or more executables are given.
 
 Tue Oct 16 21:59:01 2012  Koichi Sasada  <ko1@atdot.net>
 
