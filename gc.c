@@ -1622,6 +1622,7 @@ rb_gc_mark_maybe(VALUE obj)
     }
 }
 
+/* CS194 TODO: */
 static void
 gc_mark(rb_objspace_t *objspace, VALUE ptr, int lev)
 {
@@ -1655,6 +1656,12 @@ rb_gc_mark(VALUE ptr)
     gc_mark(&rb_objspace, ptr, 0);
 }
 
+
+/* Marks all children of ptr. The children are found by the giant switch statement.
+ * CS194 TODO: switch this to something that enqueues children, instead of calling
+ * mark directly on them.
+ *
+ */
 static void
 gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 {
@@ -2428,6 +2435,7 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 #endif
 }
 
+/* CS194 TODO: */
 static void
 gc_marks(rb_objspace_t *objspace)
 {
