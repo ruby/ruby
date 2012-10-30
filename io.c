@@ -244,6 +244,10 @@ rb_cloexec_dup2(int oldfd, int newfd)
         }
 #else
         ret = dup2(oldfd, newfd);
+# ifdef _WIN32
+	if (newfd >= 0 && newfd <= 2)
+	    SetStdHandle(newfd == 0 ? STD_INPUT_HANDLE : newfd == 1 ? STD_OUTPUT_HANDLE : STD_ERROR_HANDLE, (HANDLE)rb_w32_get_osfhandle(newfd));
+# endif
 #endif
         if (ret == -1) return -1;
     }

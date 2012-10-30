@@ -1,3 +1,13 @@
+Tue Oct 30 19:27:48 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (redirect_dup2): set standard handles when new fd is stdio,
+	  because if there is no allocated console at the moment Windows does
+	  not automatically associate it for child process's standard handle.
+	  this is adhoc workaround.
+	  reported by Martin Thiede at [ruby-core:48542] [Bug #7239].
+
+	* io.c (rb_cloexec_dup2): ditto.
+
 Tue Oct 30 03:08:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rbconfig/obsolete.rb (Config): re-introduce warnings for a
