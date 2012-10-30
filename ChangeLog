@@ -1,3 +1,10 @@
+Tue Oct 30 23:59:32 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_mod_refine): fix the error message when no block is
+	  given.  [ruby-dev:46319] [Bug #7244]
+
+	* test/ruby/test_refinement.rb: related test.
+
 Tue Oct 30 19:27:48 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* process.c (redirect_dup2): set standard handles when new fd is stdio,

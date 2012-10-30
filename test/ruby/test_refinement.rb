@@ -520,4 +520,14 @@ class TestRefinement < Test::Unit::TestCase
     }
     assert_equal({c2 => c2_ext}, m2.refinements)
   end
+
+  def test_refine_without_block
+    c1 = Class.new
+    e = assert_raise(ArgumentError) {
+      Module.new do
+        refine c1
+      end
+    }
+    assert_equal("no block given", e.message)
+  end
 end

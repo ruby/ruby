@@ -1203,6 +1203,9 @@ rb_mod_refine(VALUE module, VALUE klass)
     ID id_refinements, id_refined_class;
     VALUE refinements;
 
+    if (!rb_block_given_p()) {
+        rb_raise(rb_eArgError, "no block given");
+    }
     check_class_or_module(klass);
     CONST_ID(id_refinements, "__refinements__");
     refinements = rb_attr_get(module, id_refinements);
