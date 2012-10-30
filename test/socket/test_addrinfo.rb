@@ -159,6 +159,8 @@ class TestSocketAddrinfo < Test::Unit::TestCase
       s2.connect_nonblock(ai)
     rescue IO::WaitWritable
       IO.select(nil, [s2])
+      r = s2.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR)
+      assert_equal(0, r.int, "NOERROR is expected but #{r.inspect}")
       begin
         s2.connect_nonblock(ai)
       rescue Errno::EISCONN
