@@ -1,3 +1,14 @@
+Wed Oct 31 02:53:07 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/dl/lib/dl/struct.rb: fix strange require order. [ruby-dev:45702]
+
+	* ext/dl/lib/dl/value.rb: ditto
+
+	* test/dl/test_c_struct_entry.rb: remove strange require order from
+	  tests.
+
+	* test/dl/test_c_union_entity.rb: ditto
+
 Tue Oct 30 23:59:32 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_mod_refine): fix the error message when no block is

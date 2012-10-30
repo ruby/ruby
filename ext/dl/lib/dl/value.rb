@@ -46,6 +46,8 @@ module DL
     end
 
     def wrap_arg(arg, ty, funcs = [], &block)
+        require 'dl/func'
+
         funcs ||= []
         case arg
         when nil

@@ -1,7 +1,5 @@
 require_relative 'test_base'
 
-require 'dl/func'
-require 'dl/value'
 require 'dl/struct'
 
 class DL::TestCStructEntity < DL::TestBase

@@ -1,4 +1,5 @@
 require 'dl'
+require 'dl/value'
 require 'dl/pack.rb'
 
 module DL
