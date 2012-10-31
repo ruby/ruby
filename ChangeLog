@@ -1,3 +1,9 @@
+Wed Oct 31 09:06:54 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* thread.c (rb_thread_call_without_gvl2):  Update documentation to
+	  natural English.
+	* thread.c (rb_thread_call_with_gvl):  ditto.
+
 Wed Oct 31 02:53:07 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/dl/lib/dl/struct.rb: fix strange require order. [ruby-dev:45702]

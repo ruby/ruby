@@ -1081,7 +1081,8 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
 
 /*
  * rb_thread_call_without_gvl - permit concurrent/parallel execution.
- * rb_thread_call_without_gvl2 - permit concurrent/parallel execution with care of interrupt checking.
+ * rb_thread_call_without_gvl2 - permit concurrent/parallel execution with
+ * optional interrupt checking.
  *
  * rb_thread_call_without_gvl() does:
  *   (1) release GVL.
@@ -1093,71 +1094,70 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
  *
  * rb_thread_call_without_gvl2() does:
  *   (1) release GVL.
- *   (2) call func with data1 with pointer of skip_interrupt flag.
+ *   (2) call func with data1 and a pointer to the skip_interrupt flag.
  *   (3) acquire GVL.
  *   (4) Check interrupts if skip_interrupt flag is not set.
  *
- *   If another thread interrupts this thread (Thread#kill, signal delivery,
- *   VM-shutdown request, and so on), `ubf()' is called (`ubf()' means
- *   "un-blocking function").  `ubf()' should interrupt `func()' execution.
+ * If another thread interrupts this thread (Thread#kill, signal delivery,
+ * VM-shutdown request, and so on), `ubf()' is called (`ubf()' means
+ * "un-blocking function").  `ubf()' should interrupt `func()' execution.
  *
- *   There are built-in ubfs and you can specify these ubfs.
+ * There are built-in ubfs and you can specify these ubfs:
  *
- *     * RUBY_UBF_IO: ubf for IO operation
- *     * RUBY_UBF_PROCESS: ubf for process operation
+ * * RUBY_UBF_IO: ubf for IO operation
+ * * RUBY_UBF_PROCESS: ubf for process operation
  *
- *   However, we can not guarantee our built-in ubfs interrupt
- *   your `func()' correctly. Be careful to use rb_thread_call_without_gvl().
- *   If you don't provide proper ubf(), your program do not stop with Control+C.
+ * However, we can not guarantee our built-in ubfs interrupt your `func()'
+ * correctly. Be careful to use rb_thread_call_without_gvl(). If you don't
+ * provide proper ubf(), your program will not stop for Control+C or other
+ * shutdown events.
  *
- *   "Check interrupts" on above list (4) means that check asynchronous
- *   interrupt events (such as Thread#kill, signal delivery, VM-shutdown
- *   request, and so on) and call corresponding procedures
- *   (such as `trap' for signals, raise an exception for Thread#raise).
- *   If `func()' finished and receive interrupts, you may skip interrupt
- *   checking.  For example, assume the following func() it read data from file.
+ * "Check interrupts" on above list (4) means that check asynchronous
+ * interrupt events (such as Thread#kill, signal delivery, VM-shutdown
+ * request, and so on) and call corresponding procedures
+ * (such as `trap' for signals, raise an exception for Thread#raise).
+ * If `func()' finished and receive interrupts, you may skip interrupt
+ * checking.  For example, assume the following func() it read data from file.
  *
- *     read_func(...) {
- *                     // (a) before read
- *       read(buffer); // (b) reading
- *                     // (c) after read
+ *   read_func(...) {
+ *                   // (a) before read
+ *     read(buffer); // (b) reading
+ *                   // (c) after read
+ *   }
+ *
+ * If an interrupt occurs at (a) or (b), then `ubf()' cancels this
+ * `read_func()' and interrupts are checked. However, if an interrupt occurs
+ * at (c), after *read* operation is completed, check intterrupts is harmful
+ * because it causes irrevocable side-effect, the read data will vanish.  To
+ * avoid such problem, the `read_func()' should be:
+ *
+ *   read_func(void *data, int *skip_check_flag) {
+ *                   // (a) before read
+ *     read(buffer); // (b) reading
+ *                   // (c) after read
+ *     if (read is complete) {
+ *       *skip_check_flag = 1;
  *     }
+ *   }
  *
- *   If interrupts are occure on (a) and (b), then `ubf()' cancels this `read_func()'
- *   and interrupts are checked.  No problem on it.
- *   However, the interrupts are occure on (c), after *read* operation is completed,
- *   check intterrupts is harmful because it causes irrevocable side-effect,
- *   especially read data will be vanished.  To avoid such problem, the `read_func()'
- *   should be:
+ * NOTE: You can not execute most of Ruby C API and touch Ruby
+ *       objects in `func()' and `ubf()', including raising an
+ *       exception, because current thread doesn't acquire GVL
+ *       (cause synchronization problem).  If you need to do it,
+ *       read source code of C APIs and confirm by yourself.
  *
- *     read_func(void *data, int *skip_check_flag) {
- *                     // (a) before read
- *       read(buffer); // (b) reading
- *                     // (c) after read
- *       if (read was cpmpleted) {
- *         *skip_check_flag = 1;
- *       }
- *     }
+ * NOTE: In short, this API is difficult to use safely.  I recommend you
+ *       use other ways if you have.  We lack experiences to use this API.
+ *       Please report your problem related on it.
  *
- *   NOTE: You can not execute most of Ruby C API and touch Ruby
- *         objects in `func()' and `ubf()', including raising an
- *         exception, because current thread doesn't acquire GVL
- *         (cause synchronization problem).  If you need to do it,
- *         read source code of C APIs and confirm by yourself.
+ * NOTE: Releasing GVL and re-acquiring GVL may be expensive operations
+ *       for short running `func()'. Be sure to benchmark and use this
+ *       mechanism when `func()' consumes enough time.
  *
- *   NOTE: In short, this API is difficult to use safely.  I recommend you
- *         use other ways if you have.  We lack experiences to use this API.
- *         Please report your problem related on it.
- *
- *   NOTE: Releasing GVL and re-acquiring GVL are costful operation
- *         for short running `func()'.
- *         Use this mechanism if `func()' consumes long time enough.
- *
- *   Safe C API:
- *     * rb_thread_interrupted() - check interrupt flag
- *     * ruby_xmalloc(), ruby_xrealloc(), ruby_xfree() -
- *         they will work without GVL, and may acquire GVL
- *         when GC is needed.
+ * Safe C API:
+ * * rb_thread_interrupted() - check interrupt flag
+ * * ruby_xmalloc(), ruby_xrealloc(), ruby_xfree() -
+ *   they will work without GVL, and may acquire GVL when GC is needed.
  */
 void *
 rb_thread_call_without_gvl2(void *(*func)(void *data, int *skip_checkints), void *data1,
@@ -1253,11 +1253,12 @@ rb_thread_blocking_region(
 }
 
 /*
- * rb_thread_call_with_gvl - re-enter into Ruby world while releasing GVL.
+ * rb_thread_call_with_gvl - re-enter the Ruby world after GVL release.
  *
- * While releasing GVL using rb_thread_blocking_region() or
- * rb_thread_call_without_gvl(), you can not access Ruby values or invoke methods.
- * If you need to access it, you must use this function rb_thread_call_with_gvl().
+ * After releasing GVL using rb_thread_blocking_region() or
+ * rb_thread_call_without_gvl() you can not access Ruby values or invoke
+ * methods. If you need to access Ruby you must use this function
+ * rb_thread_call_with_gvl().
  *
  * This function rb_thread_call_with_gvl() does:
  * (1) acquire GVL.
@@ -1268,16 +1269,16 @@ rb_thread_blocking_region(
  * NOTE: You should not return Ruby object at (2) because such Object
  *       will not marked.
  *
- * NOTE: If an exception is raised in `func', this function "DOES NOT"
+ * NOTE: If an exception is raised in `func', this function DOES NOT
  *       protect (catch) the exception.  If you have any resources
  *       which should free before throwing exception, you need use
  *       rb_protect() in `func' and return a value which represents
  *       exception is raised.
  *
- * NOTE: This functions should not be called by a thread which
- *       is not created as Ruby thread (created by Thread.new or so).
- *       In other words, this function *DOES NOT* associate
- *       NON-Ruby thread to Ruby thread.
+ * NOTE: This function should not be called by a thread which was not
+ *       created as Ruby thread (created by Thread.new or so).  In other
+ *       words, this function *DOES NOT* associate or convert a NON-Ruby
+ *       thread to a Ruby thread.
  */
 void *
 rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
