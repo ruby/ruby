@@ -118,22 +118,27 @@ static ruby_gc_params_t initial_params = {
 
 typedef struct gc_profile_record {
     double gc_time;
-    double gc_mark_time;
-    double gc_sweep_time;
     double gc_invoke_time;
 
-    size_t heap_use_slots;
-    size_t heap_live_objects;
-    size_t heap_free_objects;
     size_t heap_total_objects;
     size_t heap_use_size;
     size_t heap_total_size;
 
-    int have_finalize;
     int is_marked;
+
+#if GC_PROFILE_MORE_DETAIL
+    double gc_mark_time;
+    double gc_sweep_time;
+
+    size_t heap_use_slots;
+    size_t heap_live_objects;
+    size_t heap_free_objects;
+
+    int have_finalize;
 
     size_t allocate_increase;
     size_t allocate_limit;
+#endif
 } gc_profile_record;
 
 

@@ -1,3 +1,8 @@
+Wed Oct 31 18:17:38 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (gc_profile_record): don't define unused variables when
+	  GC_PROFILE_MORE_DETAIL is 0.
+
 Wed Oct 31 18:10:53 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (gc_prof_mark_timer_stop): count is not initialized.
