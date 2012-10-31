@@ -129,4 +129,18 @@ END
     assert_equal(10, keys.size)
     assert_equal(true, keys.include?("CN"))
   end
+
+  # jruby/jruby#152
+  def test_cert_init_from_file
+    cert_file = File.expand_path('fixture/ca-bundle.crt', File.dirname(__FILE__))
+    cert = OpenSSL::X509::Certificate.new(File.open(cert_file))
+
+    expected = [["C", "US", 19],
+                ["ST", "DC", 19],
+                ["L", "Washington", 19],
+                ["O", "ABA.ECOM, INC.", 19],
+                ["CN", "ABA.ECOM Root CA", 19]]
+
+    assert_equal expected, cert.subject.to_a[0..4]
+  end
 end
