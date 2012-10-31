@@ -1100,7 +1100,9 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
  *
  * If another thread interrupts this thread (Thread#kill, signal delivery,
  * VM-shutdown request, and so on), `ubf()' is called (`ubf()' means
- * "un-blocking function").  `ubf()' should interrupt `func()' execution.
+ * "un-blocking function").  `ubf()' should interrupt `func()' execution by
+ * toggling a cancellation flag, canceling the invocation of a call inside
+ * `func()' or similar.  Note that `ubf()' may not be called with the GVL.
  *
  * There are built-in ubfs and you can specify these ubfs:
  *
@@ -1143,15 +1145,17 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
  * NOTE: You can not execute most of Ruby C API and touch Ruby
  *       objects in `func()' and `ubf()', including raising an
  *       exception, because current thread doesn't acquire GVL
- *       (cause synchronization problem).  If you need to do it,
- *       read source code of C APIs and confirm by yourself.
+ *       (it causes synchronization problems).  If you need to
+ *       call ruby functions either use rb_thread_call_with_gvl()
+ *       or read source code of C APIs and confirm safety by
+ *       yourself.
  *
  * NOTE: In short, this API is difficult to use safely.  I recommend you
  *       use other ways if you have.  We lack experiences to use this API.
  *       Please report your problem related on it.
  *
  * NOTE: Releasing GVL and re-acquiring GVL may be expensive operations
- *       for short running `func()'. Be sure to benchmark and use this
+ *       for a short running `func()'. Be sure to benchmark and use this
  *       mechanism when `func()' consumes enough time.
  *
  * Safe C API:
