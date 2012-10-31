@@ -1,3 +1,7 @@
+Wed Oct 31 18:10:53 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (gc_prof_mark_timer_stop): count is not initialized.
+
 Wed Oct 31 09:28:24 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* thread.c (rb_thread_call_without_gvl2):  Note that ubf() may or may

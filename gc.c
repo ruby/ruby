@@ -3986,7 +3986,7 @@ gc_prof_mark_timer_stop(rb_objspace_t *objspace)
 {
     if (objspace->profile.run) {
         double mark_time = 0;
-        size_t count = count;
+        size_t count = objspace->profile.count;
         gc_profile_record *record = &objspace->profile.record[count];
 
         mark_time = getrusage_time() - record->gc_mark_time;
