@@ -1,3 +1,9 @@
+Thu Nov  1 21:57:00 2012  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_new),
+	  test/bigdecimal/test_bigdecimal.rb:
+	  Fix exception message of BigDecimal constructor with a Float.
+
 Thu Nov  1 21:52:20 2012  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_add),

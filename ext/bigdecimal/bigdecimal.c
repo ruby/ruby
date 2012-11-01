@@ -2354,7 +2354,9 @@ BigDecimal_new(int argc, VALUE *argv)
 	/* fall through */
       case T_RATIONAL:
 	if (NIL_P(nFig)) {
-	    rb_raise(rb_eArgError, "can't omit precision for a Rational.");
+	    rb_raise(rb_eArgError,
+		     "can't omit precision for a %s.",
+		     rb_class2name(CLASS_OF(iniValue)));
 	}
 	return GetVpValueWithPrec(iniValue, mf, 1);
 
