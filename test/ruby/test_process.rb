@@ -348,7 +348,7 @@ class TestProcess < Test::Unit::TestCase
     with_tmpchdir {|d|
       write_file 's', <<-"End"
         ENV["mgg"] = nil
-        prog = "/nonexistent"
+        prog = "./nonexistent"
         begin
           Process.exec({"mgg" => "mggoo"}, [prog, prog])
         rescue Errno::ENOENT

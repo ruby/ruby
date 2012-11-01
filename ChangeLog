@@ -1,3 +1,8 @@
+Fri Nov  2 04:40:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_process.rb (test_execopts_preserve_env_on_exec_failure):
+	  use never existing file in the current temporary directory.
+
 Fri Nov  2 04:23:20 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/merger.rb: add feature to tag preview/rc.
