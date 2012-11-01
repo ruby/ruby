@@ -1,3 +1,8 @@
+Thu Nov  1 22:27:11 2012  Koichi Sasada <ko1@atdot.net>
+
+	* NEWS: add a news about objspace,
+	  ObjectSpace.reachable_objects_from.
+
 Thu Nov  1 21:57:00 2012  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_new),

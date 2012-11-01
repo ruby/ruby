@@ -212,6 +212,10 @@ with all sufficient information, see the ChangeLog file.
   * Syck has been removed.  YAML now completely depends on libyaml being
     installed.
 
+* objspace
+  * new method:
+    * ObjectSpace.reachable_objects_from(obj)
+
 === Language changes
 
   * Added %i and %I for symbol list creation (similar to %w and %W).
