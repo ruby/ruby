@@ -351,7 +351,7 @@ class TestProcess < Test::Unit::TestCase
         prog = "/nonexistent"
         begin
           Process.exec({"mgg" => "mggoo"}, [prog, prog])
-        rescue Errno::ENOENT, Errno::EACCES
+        rescue Errno::ENOENT
         end
         open('out', 'w') {|f|
           f.print ENV["mgg"].inspect

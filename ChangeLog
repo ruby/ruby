@@ -1,3 +1,8 @@
+Thu Nov  1 21:42:20 2012  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_process.rb: Revert r37404.  My ubuntu box has
+	  actually the directory named "/nonexistent"...  Sorry.
+
 Thu Nov  1 21:28:28 2012  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_process.rb: Process.exec raised EACCES on Linux
