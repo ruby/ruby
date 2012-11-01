@@ -1,3 +1,8 @@
+Fri Nov  2 04:41:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#timestamp_file): use ! instead of %, a GNU
+	  make special character.
+
 Fri Nov  2 04:40:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_process.rb (test_execopts_preserve_env_on_exec_failure):
