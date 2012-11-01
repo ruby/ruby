@@ -1,3 +1,8 @@
+Thu Nov  1 19:47:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (RUBY_STACK_MIN): may not a compile time constant.
+	  fix r37079.  [ruby-dev:46322] [Bug #7247]
+
 Thu Nov  1 16:44:36 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* NEWS: add note for Module#refine, Module#refinements,
