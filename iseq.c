@@ -213,30 +213,18 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
 	    cref->nd_next = iseq->cref_stack;
 	    iseq->cref_stack = cref;
 	}
+	iseq->local_iseq = iseq;
     }
     else if (type == ISEQ_TYPE_METHOD || type == ISEQ_TYPE_CLASS) {
 	iseq->cref_stack = NEW_CREF(0); /* place holder */
 	iseq->cref_stack->nd_refinements = Qnil;
-    }
-    else if (RTEST(parent)) {
-	rb_iseq_t *piseq;
-	GetISeqPtr(parent, piseq);
-	iseq->cref_stack = piseq->cref_stack;
-    }
-
-    if (type == ISEQ_TYPE_TOP ||
-	type == ISEQ_TYPE_METHOD || type == ISEQ_TYPE_CLASS) {
 	iseq->local_iseq = iseq;
     }
     else if (RTEST(parent)) {
 	rb_iseq_t *piseq;
 	GetISeqPtr(parent, piseq);
+	iseq->cref_stack = piseq->cref_stack;
 	iseq->local_iseq = piseq->local_iseq;
-    }
-
-    if (RTEST(parent)) {
-	rb_iseq_t *piseq;
-	GetISeqPtr(parent, piseq);
 	iseq->parent_iseq = piseq;
     }
 }
