@@ -1,3 +1,7 @@
+Fri Nov  2 04:23:20 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/merger.rb: add feature to tag preview/rc.
+
 Fri Nov  2 03:23:37 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/mkmf.rb: fix for if config["libdir"] is nil.

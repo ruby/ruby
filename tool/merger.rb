@@ -22,8 +22,11 @@ backport from other branch
 revision increment
   ruby #$0 revisionup
 
-tagging
+tagging patch release
   ruby #$0 tag
+
+tagging preview/RC
+  ruby #$0 tag 2.0.0-preview1
 
 * all operations shall be applied to the working directory.
 end
@@ -99,17 +102,35 @@ def version_up
   File.unlink fn
 end
 
-def tag intv_p = false
-  v, p = version
+def tag intv_p = false, relname=nil
+  # relname:
+  #   * 2.0.0-preview1
+  #   * 2.0.0-rc1
+  #   * 2.0.0-p0
+  #   * 2.0.0-p100
+  v, pl = version
   x = v.join('_')
-  y = $repos + 'branches/ruby_' + x
-  z = 'v' + x + '_' + p
-  w = $repos + 'tags/' + z
+  if relname
+    abort "patch level is not -1 but '#{pl}' even if this is new release" if pl != '-1'
+    pl = relname[/-(.*)\z/, 1]
+    curver = v.join('.') + '-' + pl
+    if relname != curver
+      abort "geiven relname '#{relname}' conflicts current version '#{curver}'"
+    end
+    branch_url = `svn info`[/URL: (.*)/, 1]
+  else
+    if pl == '-1'
+      abort "no relname is given and not in a release branch even if this is patch release"
+    end
+    branch_url = $repos + 'branches/ruby_' + x
+  end
+  tagname = 'v' + x + '_' + pl
+  tag_url = $repos + 'tags/' + tagname
   if intv_p
-    interactive "OK? svn cp -m \"add tag #{z}\" #{y} #{w}" do
+    interactive "OK? svn cp -m \"add tag #{tagname}\" #{branch_url} #{tag_url}" do
     end
   end
-  system *%w'svn cp -m' + ["add tag #{z}"] + [y, w]
+  system *%w'svn cp -m' + ["add tag #{tagname}"] + [branch_url, tag_urlw]
 end
 
 def default_merge_branch
@@ -121,7 +142,7 @@ when "up", /\A(ver|version|rev|revision|lv|level|patch\s*level)\s*up/
   version_up
   system 'svn diff version.h'
 when "tag"
-  tag :interactive
+  tag :interactive, ARGV[1]
 when nil, "-h", "--help"
   help
   exit
