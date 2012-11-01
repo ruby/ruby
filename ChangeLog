@@ -1,3 +1,8 @@
+Fri Nov  2 08:23:17 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (top_include): fix a warning message, main is not a class or
+	  module.
+
 Fri Nov  2 04:41:33 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#timestamp_file): use ! instead of %, a GNU
