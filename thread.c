@@ -1217,7 +1217,7 @@ rb_thread_call_without_gvl(void *(*func)(void *data), void *data1,
 VALUE
 rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
 {
-    VALUE val;
+    VALUE val = Qundef; /* shouldn't be used */
     rb_thread_t *th = GET_THREAD();
     int saved_errno = 0;
     int state;
