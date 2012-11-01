@@ -110,6 +110,10 @@ with all sufficient information, see the ChangeLog file.
     * incompatible changes:
       * Fiber#resume cannot resume a fiber which invokes "Fiber#transfer".
 
+  * toplevel
+    * added method:
+      * added main.define_method which defines a global function.
+
 * net/http
   * new features:
     * Proxies are now automatically detected from the http_proxy environment

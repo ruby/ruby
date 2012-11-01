@@ -1,4 +1,7 @@
-Fri Nov  2 08:23:17 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov  2 08:24:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (top_define_method): new method, main.define_method.
+	  [ruby-core:45715] [Feature #6609]
 
 	* eval.c (top_include): fix a warning message, main is not a class or
 	  module.

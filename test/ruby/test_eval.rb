@@ -407,6 +407,24 @@ class TestEval < Test::Unit::TestCase
     assert_equal("ok", x)
   end
 
+  def test_define_method_toplevel
+    feature6609 = '[ruby-core:45715]'
+    main = eval("self", TOPLEVEL_BINDING)
+    assert_nothing_raised(NoMethodError, feature6609) do
+      main.instance_eval do
+        define_method("feature6609_block") {feature6609}
+      end
+    end
+    assert_equal(feature6609, feature6609_block)
+
+    assert_nothing_raised(NoMethodError, feature6609) do
+      main.instance_eval do
+        define_method("feature6609_method", Object.instance_method(:feature6609_block))
+      end
+    end
+    assert_equal(feature6609, feature6609_method)
+  end
+
   def test_eval_using_integer_as_binding
     assert_raise(TypeError) { eval("", 1) }
   end

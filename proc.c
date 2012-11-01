@@ -1449,6 +1449,30 @@ rb_obj_define_method(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
+ *     define_method(symbol, method)     -> new_method
+ *     define_method(symbol) { block }   -> proc
+ *
+ *  Defines a global function by _method_ or the block.
+ */
+
+static VALUE
+top_define_method(int argc, VALUE *argv, VALUE obj)
+{
+    rb_thread_t *th = GET_THREAD();
+    VALUE klass;
+
+    rb_secure(4);
+    klass = th->top_wrapper;
+    if (klass) {
+	rb_warning("main.define_method in the wrapped load is effective only in wrapper module");
+    }
+    else {
+	klass = rb_cObject;
+    }
+    return rb_mod_define_method(argc, argv, klass);
+}
+
+/*
  *  call-seq:
  *    method.clone -> new_method
  *
@@ -2290,6 +2314,8 @@ Init_Proc(void)
 
     /* Kernel */
     rb_define_method(rb_mKernel, "define_singleton_method", rb_obj_define_method, -1);
+
+    rb_define_singleton_method(rb_vm_top_self(), "define_method", top_define_method, -1);
 }
 
 /*
