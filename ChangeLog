@@ -1,3 +1,10 @@
+Thu Nov  1 21:52:20 2012  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_add),
+	  test/bigdecimal/test_bigdecimal.rb:
+	  need to specify precision for converting Rational and Float.
+	  [ruby-core:48045] [Bug #7176]
+
 Thu Nov  1 21:42:20 2012  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_process.rb: Revert r37404.  My ubuntu box has

@@ -587,6 +587,10 @@ class TestBigDecimal < Test::Unit::TestCase
 
     a, b = BigDecimal("0.11111").coerce(1.quo(3))
     assert_equal(BigDecimal("0." + "3"*a.precs[0]), a)
+
+    assert_nothing_raised(TypeError, '#7176') do
+      BigDecimal.new('1') + Rational(1)
+    end
   end
 
   def test_uplus
