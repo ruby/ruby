@@ -199,6 +199,7 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
 {
     const VALUE type = iseq->type;
     rb_thread_t *th = GET_THREAD();
+    rb_iseq_t *piseq;
 
     /* set class nest stack */
     if (type == ISEQ_TYPE_TOP) {
@@ -221,10 +222,13 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
 	iseq->local_iseq = iseq;
     }
     else if (RTEST(parent)) {
-	rb_iseq_t *piseq;
 	GetISeqPtr(parent, piseq);
 	iseq->cref_stack = piseq->cref_stack;
 	iseq->local_iseq = piseq->local_iseq;
+    }
+
+    if (RTEST(parent)) {
+	GetISeqPtr(parent, piseq);
 	iseq->parent_iseq = piseq;
     }
 }

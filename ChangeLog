@@ -1,3 +1,8 @@
+Thu Nov  1 21:19:56 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (set_relation): parent_iseq need to be set regardless iseq
+	  type.  fix r37397.
+
 Thu Nov  1 19:47:23 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (RUBY_STACK_MIN): may not a compile time constant.
