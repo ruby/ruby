@@ -16,7 +16,7 @@ Wed Oct 31 09:28:24 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* thread.c (rb_thread_call_without_gvl2):  Note that ubf() may or may
 	  not be called with the GVL.  Hinted that rb_thread_call_with_gvl()
-          can be used to access ruby functionality.
+	  can be used to access ruby functionality.
 
 Wed Oct 31 09:06:54 2012  Eric Hodel  <drbrain@segment7.net>
 
