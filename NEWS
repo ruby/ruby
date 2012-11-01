@@ -39,6 +39,8 @@ with all sufficient information, see the ChangeLog file.
   * Kernel
     * added method:
       * added Kernel#Hash conversion method like Array() or Float().
+      * added Kernel#using, which imports refinements into the current scope.
+        [experimental]
     * extended method:
       * Kernel#warn accepts multiple args in like puts.
       * Kernel#caller accepts second optional argument `n' which specify
@@ -64,6 +66,12 @@ with all sufficient information, see the ChangeLog file.
       * added Module#prepend which is similar to Module#include,
         however a method in the prepended module overrides the
         corresponding method in the prepending module.
+      * added Module#refine, which extends a class or module locally.
+        [experimental]
+      * added Module#refinements, which returns refinements defined in the
+        receiver. [experimental]
+      * added Module#using, which imports refinements into the receiver.
+        [experimental]
     * extended method:
       * Module#define_method accepts a UnboundMethod from a Module.
       * Module#const_get accepts a qualified constant string, e.g.

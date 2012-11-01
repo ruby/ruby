@@ -1,3 +1,8 @@
+Thu Nov  1 16:44:36 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* NEWS: add note for Module#refine, Module#refinements,
+	  Module#using, and Kernel#using.
+
 Thu Nov  1 14:41:47 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_using_module): using should be used indirectly.
