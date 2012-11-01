@@ -2315,7 +2315,7 @@ site-install-rb: install-rb
     $extout ||= nil
     $extout_prefix ||= nil
 
-    @libdir_basename = config["libdir"][/\A\$\(exec_prefix\)\/(.*)/, 1] || "lib"
+    @libdir_basename = config["libdir"] && config["libdir"][/\A\$\(exec_prefix\)\/(.*)/, 1] or "lib"
 
     $arg_config.clear
     dir_config("opt")

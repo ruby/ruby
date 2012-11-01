@@ -1,7 +1,11 @@
+Fri Nov  2 03:23:37 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/mkmf.rb: fix for if config["libdir"] is nil.
+
 Thu Nov  1 23:06:01 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
-       * tool/make-snapshot: fix wrong regexp for releasing preview.
-         patched by mame.
+	* tool/make-snapshot: fix wrong regexp for releasing preview.
+	  patched by mame.
 
 Thu Nov  1 22:27:11 2012  Koichi Sasada <ko1@atdot.net>
 
