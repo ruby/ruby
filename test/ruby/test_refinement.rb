@@ -530,4 +530,74 @@ class TestRefinement < Test::Unit::TestCase
     }
     assert_equal("no block given", e.message)
   end
+
+  module IndirectUsing
+    class C
+    end
+
+    module M1
+      refine C do
+        def m1
+          :m1
+        end
+      end
+    end
+
+    module M2
+      refine C do
+        def m2
+          :m2
+        end
+      end
+    end
+
+    module M3
+      using M1
+      using M2
+    end
+
+    module M
+      using M3
+
+      def self.call_m1
+        C.new.m1
+      end
+
+      def self.call_m2
+        C.new.m2
+      end
+    end
+  end
+
+  def test_indirect_using
+    assert_equal(:m1, IndirectUsing::M.call_m1)
+    assert_equal(:m2, IndirectUsing::M.call_m2)
+  end
+
+  def test_indirect_using_module_eval
+    c = Class.new
+    m1 = Module.new {
+      refine c do
+        def m1
+          :m1
+        end
+      end
+    }
+    m2 = Module.new {
+      refine c do
+        def m2
+          :m2
+        end
+      end
+    }
+    m3 = Module.new {
+      using m1
+      using m2
+    }
+    m = Module.new {
+      using m3
+    }
+    assert_equal(:m1, m.module_eval { c.new.m1 })
+    assert_equal(:m2, m.module_eval { c.new.m2 })
+  end
 end

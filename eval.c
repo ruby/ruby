@@ -1090,8 +1090,19 @@ rb_using_refinement(NODE *cref, VALUE klass, VALUE module)
     rb_clear_cache_by_class(klass);
 }
 
+void rb_using_module(NODE *cref, VALUE module);
+
 static int
-using_module_i(VALUE klass, VALUE module, VALUE arg)
+using_module_i(VALUE module, VALUE val, VALUE arg)
+{
+    NODE *cref = (NODE *) arg;
+
+    rb_using_module(cref, module);
+    return ST_CONTINUE;
+}
+
+static int
+using_refinement(VALUE klass, VALUE module, VALUE arg)
 {
     NODE *cref = (NODE *) arg;
 
@@ -1104,12 +1115,19 @@ rb_using_module(NODE *cref, VALUE module)
 {
     ID id_refinements;
     VALUE refinements;
+    ID id_using_modules;
+    VALUE using_modules;
 
     check_class_or_module(module);
+    CONST_ID(id_using_modules, "__using_modules__");
+    using_modules = rb_attr_get(module, id_using_modules);
+    if (!NIL_P(using_modules)) {
+	rb_hash_foreach(using_modules, using_module_i, (VALUE) cref);
+    }
     CONST_ID(id_refinements, "__refinements__");
     refinements = rb_attr_get(module, id_refinements);
     if (NIL_P(refinements)) return;
-    rb_hash_foreach(refinements, using_module_i, (VALUE) cref);
+    rb_hash_foreach(refinements, using_refinement, (VALUE) cref);
 }
 
 /*

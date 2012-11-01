@@ -1,3 +1,8 @@
+Thu Nov  1 14:41:47 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_using_module): using should be used indirectly.
+	  [ruby-dev:46326] [Feature #7251]
+
 Wed Oct 31 18:17:38 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (gc_profile_record): don't define unused variables when
