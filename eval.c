@@ -1218,7 +1218,7 @@ rb_mod_refine(VALUE module, VALUE klass)
 {
     NODE *cref = rb_vm_cref();
     VALUE mod;
-    ID id_refinements, id_refined_class;
+    ID id_refinements, id_refined_class, id_defined_at;
     VALUE refinements;
 
     if (!rb_block_given_p()) {
@@ -1236,6 +1236,8 @@ rb_mod_refine(VALUE module, VALUE klass)
 	mod = rb_module_new();
 	CONST_ID(id_refined_class, "__refined_class__");
 	rb_ivar_set(mod, id_refined_class, klass);
+	CONST_ID(id_defined_at, "__defined_at__");
+	rb_ivar_set(mod, id_defined_at, module);
 	rb_define_singleton_method(mod, "method_added",
 				   refinement_module_method_added, 1);
 	rb_define_singleton_method(mod, "include",

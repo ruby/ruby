@@ -1,3 +1,15 @@
+Fri Nov  2 17:52:12 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* object.c (rb_mod_to_s): Module#{to_s,inspect}, when invoked on
+	  a refinement, returns a string in the format #<refinement:C@M>,
+	  where C is a refined class and M is a module at which the refinemet
+	  is defined.
+	
+	* eval.c (rb_mod_refine): store information on a refinement for the
+	  above change.
+
+	* test/ruby/test_refinement.rb: related test.
+
 Fri Nov  2 16:57:52 2012  Shota Fukumori  <sorah@tubusu.net>
 
 	* vm_dump.c (rb_vm_bugreport): Because of many log directories,

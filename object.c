@@ -1336,6 +1336,9 @@ rb_obj_cmp(VALUE obj1, VALUE obj2)
 static VALUE
 rb_mod_to_s(VALUE klass)
 {
+    ID id_refined_class, id_defined_at;
+    VALUE refined_class, defined_at;
+
     if (FL_TEST(klass, FL_SINGLETON)) {
 	VALUE s = rb_usascii_str_new2("#<");
 	VALUE v = rb_iv_get(klass, "__attached__");
@@ -1351,6 +1354,19 @@ rb_mod_to_s(VALUE klass)
 	}
 	rb_str_cat2(s, ">");
 
+	return s;
+    }
+    CONST_ID(id_refined_class, "__refined_class__");
+    refined_class = rb_attr_get(klass, id_refined_class);
+    if (!NIL_P(refined_class)) {
+	VALUE s = rb_usascii_str_new2("#<refinement:");
+
+	rb_str_concat(s, rb_inspect(refined_class));
+	rb_str_cat2(s, "@");
+	CONST_ID(id_defined_at, "__defined_at__");
+	defined_at = rb_attr_get(klass, id_defined_at);
+	rb_str_concat(s, rb_inspect(defined_at));
+	rb_str_cat2(s, ">");
 	return s;
     }
     return rb_str_dup(rb_class_name(klass));

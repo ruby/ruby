@@ -622,4 +622,28 @@ class TestRefinement < Test::Unit::TestCase
   def test_symbol_to_proc
     assert_equal("foo", SymbolToProc::M.call_foo)
   end
+
+  module Inspect
+    module M
+      refine Fixnum do
+      end
+    end
+  end
+
+  def test_inspect
+    assert_equal("#<refinement:Fixnum@TestRefinement::Inspect::M>",
+                 Inspect::M.refinements[Fixnum].inspect)
+
+    c = Class.new
+    m = Module.new {
+      refine String do
+      end
+      refine c do
+      end
+    }
+    assert_equal("#<refinement:String@#{m.inspect}>",
+                 m.refinements[String].inspect)
+    assert_equal("#<refinement:#{c.inspect}@#{m.inspect}>",
+                 m.refinements[c].inspect)
+  end
 end
