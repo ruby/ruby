@@ -1,3 +1,8 @@
+Fri Nov  2 20:02:22 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#timestamp_file): use .-. instead of !, a
+	  special character of NMAKE and BSD make.  [Bug #7265]
+
 Fri Nov  2 17:55:39 2012  Shota Fukumori  <sorah@tubusu.net>
 
 	* lib/test/unit.rb (_run_parallel): Delete status line before showing

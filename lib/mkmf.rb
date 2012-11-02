@@ -1859,7 +1859,7 @@ preload = #{defined?($preload) && $preload ? $preload.join(' ') : ''}
   end
 
   def timestamp_file(name)
-    name = name.gsub(/(\$[({]|[})])|(\/+)|[^-.\w]+/) {$1 ? "@" : $2 ? "!" : "_"}
+    name = name.gsub(/(\$[({]|[})])|(\/+)|[^-.\w]+/) {$1 ? "@" : $2 ? ".-." : "_"}
     "./.#{name}.time"
   end
   # :startdoc:
