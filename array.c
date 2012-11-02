@@ -3270,11 +3270,27 @@ static VALUE
 recursive_equal(VALUE ary1, VALUE ary2, int recur)
 {
     long i;
+    VALUE *p1, *p2;
 
     if (recur) return Qtrue; /* Subtle! */
-    for (i=0; i<RARRAY_LEN(ary1); i++) {
-	if (!rb_equal(rb_ary_elt(ary1, i), rb_ary_elt(ary2, i)))
-	    return Qfalse;
+
+    p1 = RARRAY_PTR(ary1);
+    p2 = RARRAY_PTR(ary2);
+
+    for (i = 0; i < RARRAY_LEN(ary1); i++) {
+	if (*p1 != *p2) {
+	    if (rb_equal(*p1, *p2)) {
+		if (RARRAY_LEN(ary1) != RARRAY_LEN(ary2))
+		    return Qfalse;
+		p1 = RARRAY_PTR(ary1) + i;
+		p2 = RARRAY_PTR(ary2) + i;
+	    }
+	    else {
+		return Qfalse;
+	    }
+	}
+	p1++;
+	p2++;
     }
     return Qtrue;
 }

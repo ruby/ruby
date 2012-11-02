@@ -1,3 +1,8 @@
+Fri Nov  2 14:52:52 2012  Masaki Matsushita <glass.saga@gmail.com>
+
+	* array.c (recursive_equal): performance improvement.
+	  [ruby-dev:45412] [Feature #6177]
+
 Fri Nov  2 14:47:53 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* string.c (sym_to_proc, sym_call): A Proc created by Symbol#to_proc
