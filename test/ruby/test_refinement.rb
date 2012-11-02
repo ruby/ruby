@@ -600,4 +600,26 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal(:m1, m.module_eval { c.new.m1 })
     assert_equal(:m2, m.module_eval { c.new.m2 })
   end
+
+  module SymbolToProc
+    class C
+    end
+
+    module M
+      refine C do
+        def foo
+          "foo"
+        end
+      end
+
+      def self.call_foo
+        c = C.new
+        :foo.to_proc.call(c)
+      end
+    end
+  end
+
+  def test_symbol_to_proc
+    assert_equal("foo", SymbolToProc::M.call_foo)
+  end
 end

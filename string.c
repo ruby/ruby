@@ -14,6 +14,8 @@
 #include "ruby/ruby.h"
 #include "ruby/re.h"
 #include "ruby/encoding.h"
+#include "node.h"
+#include "eval_intern.h"
 #include "internal.h"
 #include <assert.h>
 
@@ -7605,15 +7607,18 @@ sym_to_sym(VALUE sym)
 }
 
 static VALUE
-sym_call(VALUE args, VALUE sym, int argc, VALUE *argv)
+sym_call(VALUE args, VALUE p, int argc, VALUE *argv)
 {
     VALUE obj;
+    NODE *memo = RNODE(p);
 
     if (argc < 1) {
 	rb_raise(rb_eArgError, "no receiver given");
     }
     obj = argv[0];
-    return rb_funcall_passing_block(obj, (ID)sym, argc - 1, argv + 1);
+    return rb_funcall_passing_block_with_refinements(obj, (ID) memo->u1.id,
+						     argc - 1, argv + 1,
+						     memo->u2.value);
 }
 
 /*
@@ -7633,25 +7638,32 @@ sym_to_proc(VALUE sym)
     VALUE proc;
     long id, index;
     VALUE *aryp;
-
-    if (!sym_proc_cache) {
-	sym_proc_cache = rb_ary_tmp_new(SYM_PROC_CACHE_SIZE * 2);
-	rb_gc_register_mark_object(sym_proc_cache);
-	rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE*2 - 1, Qnil);
-    }
+    const NODE *cref = rb_vm_cref();
 
     id = SYM2ID(sym);
-    index = (id % SYM_PROC_CACHE_SIZE) << 1;
+    if (NIL_P(cref->nd_refinements)) {
+	if (!sym_proc_cache) {
+	    sym_proc_cache = rb_ary_tmp_new(SYM_PROC_CACHE_SIZE * 2);
+	    rb_gc_register_mark_object(sym_proc_cache);
+	    rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE*2 - 1, Qnil);
+	}
 
-    aryp = RARRAY_PTR(sym_proc_cache);
-    if (aryp[index] == sym) {
-	return aryp[index + 1];
+	index = (id % SYM_PROC_CACHE_SIZE) << 1;
+	aryp = RARRAY_PTR(sym_proc_cache);
+	if (aryp[index] == sym) {
+	    return aryp[index + 1];
+	}
+	else {
+	    proc = rb_proc_new(sym_call,
+			       (VALUE) NEW_MEMO(id, Qnil, 0));
+	    aryp[index] = sym;
+	    aryp[index + 1] = proc;
+	    return proc;
+	}
     }
     else {
-	proc = rb_proc_new(sym_call, (VALUE)id);
-	aryp[index] = sym;
-	aryp[index + 1] = proc;
-	return proc;
+	return rb_proc_new(sym_call,
+			   (VALUE) NEW_MEMO(id, cref->nd_refinements, 0));
     }
 }
 
