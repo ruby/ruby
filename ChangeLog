@@ -1,3 +1,8 @@
+Fri Nov  2 16:57:52 2012  Shota Fukumori  <sorah@tubusu.net>
+
+	* vm_dump.c (rb_vm_bugreport): Because of many log directories,
+	  making directory lists readable.
+
 Fri Nov  2 16:44:00 2012  Kenta Murata  <mrkn@mrkn.jp>
 
 	* vm_dump.c (rb_vm_bugreport): add ~/Library/Logs/DiagnosticReports

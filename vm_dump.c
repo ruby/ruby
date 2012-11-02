@@ -633,12 +633,13 @@ rb_vm_bugreport(void)
     {
 #if defined __APPLE__
 	fprintf(stderr, "\n");
-	fprintf(stderr, "   See Crash Report log file under "
-		"~/Library/Logs/CrashReporter,\n");
-	fprintf(stderr, "   ~/Library/Logs/DiagnosticReports, "
-		"/Library/Logs/CrashReporter,\n");
-	fprintf(stderr, "   or /Library/Logs/DiagnosticReports "
-		"for the more detail of.\n");
+	fprintf(stderr,
+		"   See Crash Report log file under the one of following:\n"
+		"     * ~/Library/Logs/CrashReporter\n"
+		"     * /Library/Logs/CrashReporter\n"
+		"     * ~/Library/Logs/DiagnosticReports\n"
+		"     * /Library/Logs/DiagnosticReports\n"
+		"   the more detail of.\n");
 #elif HAVE_BACKTRACE
 #define MAX_NATIVE_TRACE 1024
 	static void *trace[MAX_NATIVE_TRACE];
