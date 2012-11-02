@@ -1,3 +1,11 @@
+Fri Nov  2 17:55:39 2012  Shota Fukumori  <sorah@tubusu.net>
+
+	* lib/test/unit.rb (_run_parallel): Delete status line before showing
+	  results. Patch by Hiroshi Shirosaki. [Bug #6897] [ruby-core:47250]
+
+	* lib/test/unit.rb (_run_parallel): Fix strange result when disabled retrying.
+	  Patch by Hiroshi Shirosaki. [Bug #6897] [ruby-core:47250]
+
 Fri Nov  2 17:52:12 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* object.c (rb_mod_to_s): Module#{to_s,inspect}, when invoked on

@@ -616,15 +616,20 @@ module Test
               _run_suites(suites, type)
             end
           end
+          unless @options[:retry]
+            del_status_line or puts
+          end
           unless rep.empty?
             rep.each do |r|
               r[:report].each do |f|
-                report.push(puke(*f)) if f
+                puke(*f) if f
               end
             end
-            @errors   += rep.map{|x| x[:result][0] }.inject(:+)
-            @failures += rep.map{|x| x[:result][1] }.inject(:+)
-            @skips    += rep.map{|x| x[:result][2] }.inject(:+)
+            if @options[:retry]
+              @errors   += rep.map{|x| x[:result][0] }.inject(:+)
+              @failures += rep.map{|x| x[:result][1] }.inject(:+)
+              @skips    += rep.map{|x| x[:result][2] }.inject(:+)
+            end
           end
           unless @warnings.empty?
             warn ""
