@@ -434,7 +434,8 @@ vm_make_env_each(rb_thread_t * const th, rb_control_frame_t * const cfp,
     if (!RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	/* TODO */
 	env->block.iseq = 0;
-    } else {
+    }
+    else {
 	rb_vm_rewrite_ep_in_errinfo(th, cfp);
     }
     return envval;
@@ -493,8 +494,19 @@ rb_vm_make_env_object(rb_thread_t * th, rb_control_frame_t *cfp)
     return envval;
 }
 
+static void vm_rewrite_ep_in_errinfo(rb_thread_t *th, rb_control_frame_t *cfp);
+
 void
 rb_vm_rewrite_ep_in_errinfo(rb_thread_t *th, rb_control_frame_t *cfp)
+{
+    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
+	vm_rewrite_ep_in_errinfo(th, cfp);
+	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
+}
+
+static void
+vm_rewrite_ep_in_errinfo(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     /* rewrite ep in errinfo to point to heap */
     if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq) &&
@@ -505,7 +517,7 @@ rb_vm_rewrite_ep_in_errinfo(rb_thread_t *th, rb_control_frame_t *cfp)
 	    VALUE *escape_ep = GET_THROWOBJ_CATCH_POINT(errinfo);
 	    if (! ENV_IN_HEAP_P(th, escape_ep)) {
 		VALUE epval = *escape_ep;
-		if (CLASS_OF(epval) == rb_cEnv) {
+		if (!SPECIAL_CONST_P(epval) && RBASIC(epval)->klass == rb_cEnv) {
 		    rb_env_t *epenv;
 		    GetEnvPtr(epval, epenv);
 		    SET_THROWOBJ_CATCH_POINT(errinfo, (VALUE)(epenv->env + epenv->local_size));
