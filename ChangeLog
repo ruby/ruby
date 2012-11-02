@@ -38,7 +38,8 @@ Fri Nov  2 16:44:00 2012  Kenta Murata  <mrkn@mrkn.jp>
 
 Fri Nov  2 14:52:52 2012  Masaki Matsushita  <glass.saga@gmail.com>
 
-	* array.c (recursive_equal): performance improvement.
+	* array.c (recursive_equal): performance improvement by avoiding
+	  overhead to call rb_ary_elt().
 	  [ruby-dev:45412] [Feature #6177]
 
 Fri Nov  2 14:47:53 2012  Shugo Maeda  <shugo@ruby-lang.org>
