@@ -1,3 +1,8 @@
+Fri Nov  2 16:44:00 2012  Kenta Murata  <mrkn@mrkn.jp>
+
+	* vm_dump.c (rb_vm_bugreport): add ~/Library/Logs/DiagnosticReports
+	  in the locations list of crash reports.
+
 Fri Nov  2 14:52:52 2012  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (recursive_equal): performance improvement.

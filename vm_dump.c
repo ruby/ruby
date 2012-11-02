@@ -635,9 +635,10 @@ rb_vm_bugreport(void)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "   See Crash Report log file under "
 		"~/Library/Logs/CrashReporter,\n");
-	fprintf(stderr, "   /Library/Logs/CrashReporter, or "
-		"/Library/Logs/DiagnosticReports, for\n");
-	fprintf(stderr, "   the more detail of.\n");
+	fprintf(stderr, "   ~/Library/Logs/DiagnosticReports, "
+		"/Library/Logs/CrashReporter,\n");
+	fprintf(stderr, "   or /Library/Logs/DiagnosticReports "
+		"for the more detail of.\n");
 #elif HAVE_BACKTRACE
 #define MAX_NATIVE_TRACE 1024
 	static void *trace[MAX_NATIVE_TRACE];
