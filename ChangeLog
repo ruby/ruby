@@ -1,4 +1,4 @@
-Fri Nov  2 14:52:52 2012  Masaki Matsushita <glass.saga@gmail.com>
+Fri Nov  2 14:52:52 2012  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (recursive_equal): performance improvement.
 	  [ruby-dev:45412] [Feature #6177]
