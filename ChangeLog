@@ -1,4 +1,7 @@
-Fri Nov  2 20:02:22 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov  2 20:11:17 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#timestamp_file): remove @ which looks like
+	  configure variables.
 
 	* lib/mkmf.rb (MakeMakefile#timestamp_file): use .-. instead of !, a
 	  special character of NMAKE and BSD make.  [Bug #7265]
@@ -17,7 +20,7 @@ Fri Nov  2 17:52:12 2012  Shugo Maeda  <shugo@ruby-lang.org>
 	  a refinement, returns a string in the format #<refinement:C@M>,
 	  where C is a refined class and M is a module at which the refinemet
 	  is defined.
-	
+
 	* eval.c (rb_mod_refine): store information on a refinement for the
 	  above change.
 
