@@ -1,3 +1,7 @@
+Sat Nov  3 22:38:55 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_core.c: modified doc.
+
 Sat Nov  3 18:35:55 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm.c (rb_vm_rewrite_ep_in_errinfo, vm_rewrite_ep_in_errinfo):
