@@ -1782,7 +1782,7 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
  *                          <code>/ .* /x</code> in regexp. Note, this
  *                          will not match Unix-like hidden files (dotfiles).
  *                          In order to include those in the match results,
- *                          you must use something like "{*,.*}".
+ *                          you must use something like <code>"{*,.*}"</code>.
  *  <code>**</code>::       Matches directories recursively.
  *  <code>?</code>::        Matches any one character. Equivalent to
  *                          <code>/.{1}/</code> in regexp.
@@ -1796,10 +1796,11 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
  *                          More than two literals may be specified.
  *                          Equivalent to pattern alternation in
  *                          regexp.
- *  <code> \ </code>::      Escapes the next metacharacter.
- *                          Note that this means you cannot use backslash in windows
- *                          as part of a glob, i.e. Dir["c:\\foo*"] will not work
- *                          use Dir["c:/foo*"] instead
+ *  <code> \\ </code>::     Escapes the next metacharacter.
+ *                          Note that this means you cannot use backslash
+ *                          in windows as part of a glob,
+ *                          i.e. <code>Dir["c:\\foo*"]</code> will not work,
+ *                          use <code>Dir["c:/foo*"]</code> instead.
  *
  *     Dir["config.?"]                     #=> ["config.h"]
  *     Dir.glob("config.?")                #=> ["config.h"]
