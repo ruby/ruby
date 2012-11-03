@@ -62,13 +62,13 @@ Sat Nov  3 13:26:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 	* dir.c (Dir#glob):
 	  Documentation for pattern section, backslash subsection
 	  Patch by Eric Bouchut
-	  [ruby-core#48528] [Bug #7230]
+	  [ruby-core:48528] [Bug #7230]
 
 Sat Nov  3 13:26:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* io.c (IO#new):
 	  Documentation for IO#open modes and formatting
-	  [ruby-core#48052] [Bug #7179]
+	  [ruby-core:48052] [Bug #7179]
 
 Sat Nov  3 13:01:02 2012  Kouhei Sutou  <kou@cozmixng.org>
 
