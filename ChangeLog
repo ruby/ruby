@@ -19,7 +19,7 @@ Sat Nov  3 12:49:45 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/document.rb (REXML::Document#write): Document encoding
 	  option. Now different encoding between XML file's encoding and
-	  XML declaration's encodiong is support.
+	  XML declaration's encoding is support.
 	  [Feature #4872] (work in progress)
 	* lib/rexml/xmldecl.rb (REXML::XMLDecl#write): Always use XMLDecl's
 	  encoding.
@@ -67,7 +67,7 @@ Sat Nov  3 11:01:32 2012  Narihiro Nakamura  <authornari@gmail.com>
 Sat Nov  3 10:17:41 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* eval.c (f_current_dirname): add the new method for Kernel.
-	  This method almotst same as File.dirname(__FILE__). One
+	  This method almost same as File.dirname(__FILE__). One
 	  different behavior is it returns nil when __FILE__ returns nil.
 	  [Feature #3346]
 
@@ -111,7 +111,7 @@ Fri Nov  2 17:52:12 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* object.c (rb_mod_to_s): Module#{to_s,inspect}, when invoked on
 	  a refinement, returns a string in the format #<refinement:C@M>,
-	  where C is a refined class and M is a module at which the refinemet
+	  where C is a refined class and M is a module at which the refinement
 	  is defined.
 
 	* eval.c (rb_mod_refine): store information on a refinement for the
