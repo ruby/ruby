@@ -440,8 +440,7 @@ nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
  *
  * Returns a complex object which denotes the given rectangular form.
  *
- * For example:
- *   Complex.rect(12, 2) # => (12+2i)
+ *    Complex.rectangular(1, 2)  #=> (1+2i)
  */
 static VALUE
 nucomp_s_new(int argc, VALUE *argv, VALUE klass)
@@ -481,6 +480,8 @@ f_complex_new2(VALUE klass, VALUE x, VALUE y)
  *    Complex(x[, y])  ->  numeric
  *
  * Returns x+i*y;
+ *
+ *    Complex(1, 2)  #=> (1+2i)
  */
 static VALUE
 nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
@@ -590,10 +591,10 @@ f_complex_polar(VALUE klass, VALUE x, VALUE y)
  *
  * Returns a complex object which denotes the given polar form.
  *
- *   Complex.polar(3, 0)           #=> (3.0+0.0i)
- *   Complex.polar(3, Math::PI/2)  #=> (1.836909530733566e-16+3.0i)
- *   Complex.polar(3, Math::PI)    #=> (-3.0+3.673819061467132e-16i)
- *   Complex.polar(3, -Math::PI/2) #=> (1.836909530733566e-16-3.0i)
+ *    Complex.polar(3, 0)            #=> (3.0+0.0i)
+ *    Complex.polar(3, Math::PI/2)   #=> (1.836909530733566e-16+3.0i)
+ *    Complex.polar(3, Math::PI)     #=> (-3.0+3.673819061467132e-16i)
+ *    Complex.polar(3, -Math::PI/2)  #=> (1.836909530733566e-16-3.0i)
  */
 static VALUE
 nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
@@ -618,6 +619,9 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
  *    cmp.real  ->  real
  *
  * Returns the real part.
+ *
+ *    Complex(7).real      #=> 7
+ *    Complex(9, -4).real  #=> 9
  */
 static VALUE
 nucomp_real(VALUE self)
@@ -632,6 +636,9 @@ nucomp_real(VALUE self)
  *    cmp.imaginary  ->  real
  *
  * Returns the imaginary part.
+ *
+ *    Complex(7).imaginary      #=> 0
+ *    Complex(9, -4).imaginary  #=> -4
  */
 static VALUE
 nucomp_imag(VALUE self)
@@ -645,6 +652,8 @@ nucomp_imag(VALUE self)
  *    -cmp  ->  complex
  *
  * Returns negation of the value.
+ *
+ *    -Complex(1, 2)  #=> (-1-2i)
  */
 static VALUE
 nucomp_negate(VALUE self)
@@ -683,10 +692,11 @@ f_addsub(VALUE self, VALUE other,
  *
  * Performs addition.
  *
- *   Complex(5, 2) + 3 # => (8+2i)
- *   Complex(5, 2) + 3.i # => (5+5i)
- *   Complex(5, 2) + Complex(3, 4) # => (8+6i)
- *
+ *    Complex(2, 3)  + Complex(2, 3)   #=> (4+6i)
+ *    Complex(900)   + Complex(1)      #=> (901+0i)
+ *    Complex(-2, 9) + Complex(-9, 2)  #=> (-11+11i)
+ *    Complex(9, 8)  + 4               #=> (13+8i)
+ *    Complex(20, 9) + 9.8             #=> (29.8+9i)
  */
 static VALUE
 nucomp_add(VALUE self, VALUE other)
@@ -700,7 +710,11 @@ nucomp_add(VALUE self, VALUE other)
  *
  * Performs subtraction.
  *
- *   Complex(33, 12) - 10 # => (23+12i)
+ *    Complex(2, 3)  - Complex(2, 3)   #=> (0+0i)
+ *    Complex(900)   - Complex(1)      #=> (899+0i)
+ *    Complex(-2, 9) - Complex(-9, 2)  #=> (7+7i)
+ *    Complex(9, 8)  - 4               #=> (5+8i)
+ *    Complex(20, 9) - 9.8             #=> (10.2+9i)
  */
 static VALUE
 nucomp_sub(VALUE self, VALUE other)
@@ -714,7 +728,11 @@ nucomp_sub(VALUE self, VALUE other)
  *
  * Performs multiplication.
  *
- *   Complex(78, 58) * 10 # => (780+580i)
+ *    Complex(2, 3)  * Complex(2, 3)   #=> (-5+12i)
+ *    Complex(900)   * Complex(1)      #=> (900+0i)
+ *    Complex(-2, 9) * Complex(-9, 2)  #=> (0-85i)
+ *    Complex(9, 8)  * 4               #=> (36+32i)
+ *    Complex(20, 9) * 9.8             #=> (196.0+88.2i)
  */
 static VALUE
 nucomp_mul(VALUE self, VALUE other)
@@ -802,10 +820,11 @@ f_divide(VALUE self, VALUE other,
  *
  * Performs division.
  *
- * For example:
- *
- *     Complex(10.0) / 3  #=> (3.3333333333333335+(0/1)*i)
- *     Complex(10)   / 3  #=> ((10/3)+(0/1)*i)  # not (3+0i)
+ *    Complex(2, 3)  / Complex(2, 3)   #=> ((1/1)+(0/1)*i)
+ *    Complex(900)   / Complex(1)      #=> ((900/1)+(0/1)*i)
+ *    Complex(-2, 9) / Complex(-9, 2)  #=> ((36/85)-(77/85)*i)
+ *    Complex(9, 8)  / 4               #=> ((9/4)+(2/1)*i)
+ *    Complex(20, 9) / 9.8             #=> (2.0408163265306123+0.9183673469387754i)
  */
 static VALUE
 nucomp_div(VALUE self, VALUE other)
@@ -821,9 +840,7 @@ nucomp_div(VALUE self, VALUE other)
  *
  * Performs division as each part is a float, never returns a float.
  *
- * For example:
- *
- *     Complex(11,22).fdiv(3)  #=> (3.6666666666666665+7.333333333333333i)
+ *    Complex(11, 22).fdiv(3)  #=> (3.6666666666666665+7.333333333333333i)
  */
 static VALUE
 nucomp_fdiv(VALUE self, VALUE other)
@@ -843,10 +860,8 @@ f_reciprocal(VALUE x)
  *
  * Performs exponentiation.
  *
- * For example:
- *
- *     Complex('i') ** 2             #=> (-1+0i)
- *     Complex(-8) ** Rational(1,3)  #=> (1.0000000000000002+1.7320508075688772i)
+ *    Complex('i') ** 2              #=> (-1+0i)
+ *    Complex(-8) ** Rational(1, 3)  #=> (1.0000000000000002+1.7320508075688772i)
  */
 static VALUE
 nucomp_expt(VALUE self, VALUE other)
@@ -932,6 +947,12 @@ nucomp_expt(VALUE self, VALUE other)
  *    cmp == object  ->  true or false
  *
  * Returns true if cmp equals object numerically.
+ *
+ *    Complex(2, 3)  == Complex(2, 3)   #=> true
+ *    Complex(5)     == 5               #=> true
+ *    Complex(0)     == 0.0             #=> true
+ *    Complex('1/3') == 0.33            #=> false
+ *    Complex('1/2') == '1/2'           #=> false
  */
 static VALUE
 nucomp_eqeq_p(VALUE self, VALUE other)
@@ -970,6 +991,9 @@ nucomp_coerce(VALUE self, VALUE other)
  *    cmp.magnitude  ->  real
  *
  * Returns the absolute part of its polar form.
+ *
+ *    Complex(-1).abs         #=> 1
+ *    Complex(3.0, -4.0).abs  #=> 5.0
  */
 static VALUE
 nucomp_abs(VALUE self)
@@ -996,6 +1020,9 @@ nucomp_abs(VALUE self)
  *    cmp.abs2  ->  real
  *
  * Returns square of the absolute value.
+ *
+ *    Complex(-1).abs2         #=> 1
+ *    Complex(3.0, -4.0).abs2  #=> 25.0
  */
 static VALUE
 nucomp_abs2(VALUE self)
@@ -1013,8 +1040,7 @@ nucomp_abs2(VALUE self)
  *
  * Returns the angle part of its polar form.
  *
- *   Complex.polar(3, Math::PI/2).arg #=> 1.5707963267948966
- *
+ *    Complex.polar(3, Math::PI/2).arg  #=> 1.5707963267948966
  */
 static VALUE
 nucomp_arg(VALUE self)
@@ -1029,6 +1055,8 @@ nucomp_arg(VALUE self)
  *    cmp.rectangular  ->  array
  *
  * Returns an array; [cmp.real, cmp.imag].
+ *
+ *    Complex(1, 2).rectangular  #=> [1, 2]
  */
 static VALUE
 nucomp_rect(VALUE self)
@@ -1042,6 +1070,8 @@ nucomp_rect(VALUE self)
  *    cmp.polar  ->  array
  *
  * Returns an array; [cmp.abs, cmp.arg].
+ *
+ *    Complex(1, 2).polar  #=> [2.23606797749979, 1.1071487177940904]
  */
 static VALUE
 nucomp_polar(VALUE self)
@@ -1055,6 +1085,8 @@ nucomp_polar(VALUE self)
  *    cmp.conjugate  ->  complex
  *
  * Returns the complex conjugate.
+ *
+ *    Complex(1, 2).conjugate  #=> (1-2i)
  */
 static VALUE
 nucomp_conj(VALUE self)
@@ -1121,8 +1153,6 @@ nucomp_denominator(VALUE self)
  *    cmp.numerator  ->  numeric
  *
  * Returns the numerator.
- *
- * For example:
  *
  *        1   2       3+4i  <-  numerator
  *        - + -i  ->  ----
@@ -1229,6 +1259,12 @@ f_format(VALUE self, VALUE (*func)(VALUE))
  *    cmp.to_s  ->  string
  *
  * Returns the value as a string.
+ *
+ *    Complex(2).to_s                       #=> "2+0i"
+ *    Complex('-8/6').to_s                  #=> "-4/3+0i"
+ *    Complex('1/2i').to_s                  #=> "0+1/2i"
+ *    Complex(0, Float::INFINITY).to_s      #=> "0+Infinity*i"
+ *    Complex(Float::NAN, Float::NAN).to_s  #=> "NaN+NaN*i"
  */
 static VALUE
 nucomp_to_s(VALUE self)
@@ -1241,6 +1277,12 @@ nucomp_to_s(VALUE self)
  *    cmp.inspect  ->  string
  *
  * Returns the value as a string for inspection.
+ *
+ *    Complex(2).inspect                       #=> "(2+0i)"
+ *    Complex('-8/6').inspect                  #=> "((-4/3)+0i)"
+ *    Complex('1/2i').inspect                  #=> "(0+(1/2)*i)"
+ *    Complex(0, Float::INFINITY).inspect      #=> "(0+Infinity*i)"
+ *    Complex(Float::NAN, Float::NAN).inspect  #=> "(NaN+NaN*i)"
  */
 static VALUE
 nucomp_inspect(VALUE self)
@@ -1331,7 +1373,12 @@ rb_Complex(VALUE x, VALUE y)
  * call-seq:
  *    cmp.to_i  ->  integer
  *
- * Returns the value as an integer if possible.
+ * Returns the value as an integer if possible (the imaginary part
+ * should be exactly zero).
+ *
+ *    Complex(1, 0).to_i    #=> 1
+ *    Complex(1, 0.0).to_i  # RangeError
+ *    Complex(1, 2).to_i    # RangeError
  */
 static VALUE
 nucomp_to_i(VALUE self)
@@ -1350,7 +1397,12 @@ nucomp_to_i(VALUE self)
  * call-seq:
  *    cmp.to_f  ->  float
  *
- * Returns the value as a float if possible.
+ * Returns the value as a float if possible (the imaginary part should
+ * be exactly zero).
+ *
+ *    Complex(1, 0).to_f    #=> 1.0
+ *    Complex(1, 0.0).to_f  # RangeError
+ *    Complex(1, 2).to_f    # RangeError
  */
 static VALUE
 nucomp_to_f(VALUE self)
@@ -1369,8 +1421,12 @@ nucomp_to_f(VALUE self)
  * call-seq:
  *    cmp.to_r  ->  rational
  *
- * If the imaginary part is exactly 0, returns the real part as a Rational,
- * otherwise a RangeError is raised.
+ * Returns the value as a rational if possible (the imaginary part
+ * should be exactly zero).
+ *
+ *    Complex(1, 0).to_r    #=> (1/1)
+ *    Complex(1, 0.0).to_r  # RangeError
+ *    Complex(1, 2).to_r    # RangeError
  */
 static VALUE
 nucomp_to_r(VALUE self)
@@ -1389,8 +1445,13 @@ nucomp_to_r(VALUE self)
  * call-seq:
  *    cmp.rationalize([eps])  ->  rational
  *
- * If the imaginary part is exactly 0, returns the real part as a Rational,
- * otherwise a RangeError is raised.
+ * Returns the value as a rational if possible (the imaginary part
+ * should be exactly zero).  The optional argument eps is always
+ * ignored.
+ *
+ *    Complex(1.0/3, 0).rationalize  #=> (1/3)
+ *    Complex(1, 0.0).rationalize    # RangeError
+ *    Complex(1, 2).rationalize      # RangeError
  */
 static VALUE
 nucomp_rationalize(int argc, VALUE *argv, VALUE self)
@@ -1593,8 +1654,6 @@ string_to_c_strict(VALUE self)
  * ignores leading whitespaces and trailing garbage.  Any digit
  * sequences can be separated by an underscore.  Returns zero for null
  * or garbage string.
- *
- * For example:
  *
  *    '9'.to_c           #=> (9+0i)
  *    '2.5'.to_c         #=> (2.5+0i)

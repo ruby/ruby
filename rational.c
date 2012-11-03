@@ -548,6 +548,8 @@ f_rational_new_no_reduce2(VALUE klass, VALUE x, VALUE y)
  *    Rational(x[, y])  ->  numeric
  *
  * Returns x/y;
+ *
+ *    Rational(1, 2)  #=> (1/2)
  */
 static VALUE
 nurat_f_rational(int argc, VALUE *argv, VALUE klass)
@@ -560,8 +562,6 @@ nurat_f_rational(int argc, VALUE *argv, VALUE klass)
  *    rat.numerator  ->  integer
  *
  * Returns the numerator.
- *
- * For example:
  *
  *    Rational(7).numerator        #=> 7
  *    Rational(7, 1).numerator     #=> 7
@@ -580,8 +580,6 @@ nurat_numerator(VALUE self)
  *    rat.denominator  ->  integer
  *
  * Returns the denominator (always positive).
- *
- * For example:
  *
  *    Rational(7).denominator             #=> 1
  *    Rational(7, 1).denominator          #=> 1
@@ -687,8 +685,6 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
  *
  * Performs addition.
  *
- * For example:
- *
  *    Rational(2, 3)  + Rational(2, 3)   #=> (4/3)
  *    Rational(900)   + Rational(1)      #=> (900/1)
  *    Rational(-2, 9) + Rational(-9, 2)  #=> (-85/18)
@@ -728,8 +724,6 @@ nurat_add(VALUE self, VALUE other)
  *    rat - numeric  ->  numeric
  *
  * Performs subtraction.
- *
- * For example:
  *
  *    Rational(2, 3)  - Rational(2, 3)   #=> (0/1)
  *    Rational(900)   - Rational(1)      #=> (899/1)
@@ -810,8 +804,6 @@ f_muldiv(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
  *
  * Performs multiplication.
  *
- * For example:
- *
  *    Rational(2, 3)  * Rational(2, 3)   #=> (4/9)
  *    Rational(900)   * Rational(1)      #=> (900/1)
  *    Rational(-2, 9) * Rational(-9, 2)  #=> (1/1)
@@ -852,8 +844,6 @@ nurat_mul(VALUE self, VALUE other)
  *    rat.quo(numeric)  ->  numeric
  *
  * Performs division.
- *
- * For example:
  *
  *    Rational(2, 3)  / Rational(2, 3)   #=> (1/1)
  *    Rational(900)   / Rational(1)      #=> (900/1)
@@ -913,8 +903,6 @@ nurat_div(VALUE self, VALUE other)
  *
  * Performs division and returns the value as a float.
  *
- * For example:
- *
  *    Rational(2, 3).fdiv(1)       #=> 0.6666666666666666
  *    Rational(2, 3).fdiv(0.5)     #=> 1.3333333333333333
  *    Rational(2).fdiv(3)          #=> 0.6666666666666666
@@ -932,8 +920,6 @@ nurat_fdiv(VALUE self, VALUE other)
  *    rat ** numeric  ->  numeric
  *
  * Performs exponentiation.
- *
- * For example:
  *
  *    Rational(2)    ** Rational(3)    #=> (8/1)
  *    Rational(10)   ** -2             #=> (1/100)
@@ -995,8 +981,6 @@ nurat_expt(VALUE self, VALUE other)
  *
  * Performs comparison and returns -1, 0, or +1.
  *
- * For example:
- *
  *    Rational(2, 3)  <=> Rational(2, 3)  #=> 0
  *    Rational(5)     <=> 5               #=> 0
  *    Rational(2,3)   <=> Rational(1,3)   #=> 1
@@ -1045,8 +1029,6 @@ nurat_cmp(VALUE self, VALUE other)
  *    rat == object  ->  true or false
  *
  * Returns true if rat equals object numerically.
- *
- * For example:
  *
  *    Rational(2, 3)  == Rational(2, 3)   #=> true
  *    Rational(5)     == 5                #=> true
@@ -1172,8 +1154,6 @@ nurat_ceil(VALUE self)
  * Equivalent to
  *    rat.truncate.
  *
- * For example:
- *
  *    Rational(2, 3).to_i   #=> 0
  *    Rational(3).to_i      #=> 3
  *    Rational(300.6).to_i  #=> 300
@@ -1246,8 +1226,6 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
  *
  * Returns the truncated value (toward negative infinity).
  *
- * For example:
- *
  *    Rational(3).floor      #=> 3
  *    Rational(2, 3).floor   #=> 0
  *    Rational(-3, 2).floor  #=> -1
@@ -1272,8 +1250,6 @@ nurat_floor_n(int argc, VALUE *argv, VALUE self)
  *
  * Returns the truncated value (toward positive infinity).
  *
- * For example:
- *
  *    Rational(3).ceil      #=> 3
  *    Rational(2, 3).ceil   #=> 1
  *    Rational(-3, 2).ceil  #=> -1
@@ -1297,8 +1273,6 @@ nurat_ceil_n(int argc, VALUE *argv, VALUE self)
  *    rat.truncate(precision=0)  ->  rational
  *
  * Returns the truncated value (toward zero).
- *
- * For example:
  *
  *    Rational(3).truncate      #=> 3
  *    Rational(2, 3).truncate   #=> 0
@@ -1325,8 +1299,6 @@ nurat_truncate_n(int argc, VALUE *argv, VALUE self)
  * Returns the truncated value (toward the nearest integer;
  * 0.5 => 1; -0.5 => -1).
  *
- * For example:
- *
  *    Rational(3).round      #=> 3
  *    Rational(2, 3).round   #=> 1
  *    Rational(-3, 2).round  #=> -2
@@ -1350,8 +1322,6 @@ nurat_round_n(int argc, VALUE *argv, VALUE self)
  *
  * Return the value as a float.
  *
- * For example:
- *
  *    Rational(2).to_f      #=> 2.0
  *    Rational(9, 4).to_f   #=> 2.25
  *    Rational(-3, 4).to_f  #=> -0.75
@@ -1369,8 +1339,6 @@ nurat_to_f(VALUE self)
  *    rat.to_r  ->  self
  *
  * Returns self.
- *
- * For example:
  *
  *    Rational(2).to_r      #=> (2/1)
  *    Rational(-8, 6).to_r  #=> (-4/3)
@@ -1486,8 +1454,6 @@ nurat_rationalize_internal(VALUE a, VALUE b, VALUE *p, VALUE *q)
  * argument eps is given (rat-|eps| <= result <= rat+|eps|), self
  * otherwise.
  *
- * For example:
- *
  *    r = Rational(5033165, 16777216)
  *    r.rationalize                    #=> (5033165/16777216)
  *    r.rationalize(Rational('0.01'))  #=> (3/10)
@@ -1551,11 +1517,9 @@ f_format(VALUE self, VALUE (*func)(VALUE))
  *
  * Returns the value as a string.
  *
- * For example:
- *
  *    Rational(2).to_s      #=> "2/1"
  *    Rational(-8, 6).to_s  #=> "-4/3"
- *    Rational('0.5').to_s  #=> "1/2"
+ *    Rational('1/2').to_s  #=> "1/2"
  */
 static VALUE
 nurat_to_s(VALUE self)
@@ -1569,11 +1533,9 @@ nurat_to_s(VALUE self)
  *
  * Returns the value as a string for inspection.
  *
- * For example:
- *
  *    Rational(2).inspect      #=> "(2/1)"
  *    Rational(-8, 6).inspect  #=> "(-4/3)"
- *    Rational('0.5').inspect  #=> "(1/2)"
+ *    Rational('1/2').inspect  #=> "(1/2)"
  */
 static VALUE
 nurat_inspect(VALUE self)
@@ -1652,8 +1614,6 @@ rb_rational_reciprocal(VALUE x)
  * Returns the greatest common divisor (always positive).  0.gcd(x)
  * and x.gcd(0) return abs(x).
  *
- * For example:
- *
  *    2.gcd(2)                    #=> 2
  *    3.gcd(-7)                   #=> 1
  *    ((1<<31)-1).gcd((1<<61)-1)  #=> 1
@@ -1672,8 +1632,6 @@ rb_gcd(VALUE self, VALUE other)
  * Returns the least common multiple (always positive).  0.lcm(x) and
  * x.lcm(0) return zero.
  *
- * For example:
- *
  *    2.lcm(2)                    #=> 2
  *    3.lcm(-7)                   #=> 21
  *    ((1<<31)-1).lcm((1<<61)-1)  #=> 4951760154835678088235319297
@@ -1690,8 +1648,6 @@ rb_lcm(VALUE self, VALUE other)
  *    int.gcdlcm(int2)  ->  array
  *
  * Returns an array; [int.gcd(int2), int.lcm(int2)].
- *
- * For example:
  *
  *    2.gcdlcm(2)                    #=> [2, 2]
  *    3.gcdlcm(-7)                   #=> [1, 21]
@@ -1790,8 +1746,6 @@ integer_denominator(VALUE self)
  *
  * Returns the numerator.  The result is machine dependent.
  *
- * For example:
- *
  *    n = 0.3.numerator    #=> 5404319552844595
  *    d = 0.3.denominator  #=> 18014398509481984
  *    n.fdiv(d)            #=> 0.3
@@ -1855,8 +1809,6 @@ nilclass_rationalize(int argc, VALUE *argv, VALUE self)
  *
  * Returns the value as a rational.
  *
- * For example:
- *
  *    1.to_r        #=> (1/1)
  *    (1<<64).to_r  #=> (18446744073709551616/1)
  */
@@ -1916,8 +1868,6 @@ float_decode(VALUE self)
  * NOTE: 0.3.to_r isn't the same as '0.3'.to_r.  The latter is
  * equivalent to '3/10'.to_r, but the former isn't so.
  *
- * For example:
- *
  *    2.0.to_r    #=> (2/1)
  *    2.5.to_r    #=> (5/2)
  *    -0.75.to_r  #=> (-3/4)
@@ -1952,8 +1902,6 @@ float_to_r(VALUE self)
  * Returns a simpler approximation of the value (flt-|eps| <= result
  * <= flt+|eps|).  if eps is not given, it will be chosen
  * automatically.
- *
- * For example:
  *
  *    0.3.rationalize          #=> (3/10)
  *    1.333.rationalize        #=> (1333/1000)
@@ -2154,8 +2102,6 @@ string_to_r_strict(VALUE self)
  *
  * NOTE: '0.3'.to_r isn't the same as 0.3.to_r.  The former is
  * equivalent to '3/10'.to_r, but the latter isn't so.
- *
- * For example:
  *
  *    '  2  '.to_r       #=> (2/1)
  *    '300/2'.to_r       #=> (150/1)
