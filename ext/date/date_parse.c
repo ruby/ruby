@@ -802,7 +802,7 @@ parse_eu(VALUE str, VALUE hash)
 		FPW_COM FPT_COM
 #endif
 #ifndef TIGHT_PARSER
-		"'?(\\d+)[^-\\d\\s]*"
+		"('?\\d+)[^-\\d\\s]*"
 #else
 		"(\\d+)(?:(?:st|nd|rd|th)\\b)?"
 #endif

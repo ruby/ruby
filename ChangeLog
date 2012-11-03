@@ -1,3 +1,7 @@
+Sat Nov  3 14:56:21 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_parse.c (parse_eu): should capture apostrophe too.
+
 Sat Nov  3 14:46:15 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_parse.c (date__parse): revised the tight parser.
