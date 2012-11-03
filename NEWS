@@ -112,6 +112,10 @@ with all sufficient information, see the ChangeLog file.
     * incompatible changes:
       * Fiber#resume cannot resume a fiber which invokes "Fiber#transfer".
 
+  * GC::Profiler
+    * added method:
+      * added GC::Profiler.raw_data which returns raw profile data for GC.
+
   * toplevel
     * added method:
       * added main.define_method which defines a global function.

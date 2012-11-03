@@ -1,3 +1,7 @@
+Sat Nov  3 11:28:28 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* NEWS: add a news about GC::Profiler.raw_data.
+
 Sat Nov  3 11:01:32 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* NEWS: add a news about rb_newobj_of() and NEWOBJ_OF().
