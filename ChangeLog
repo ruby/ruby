@@ -1,3 +1,8 @@
+Sat Nov  3 14:42:55 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/output.rb (REXML::Output#initialize): Use normalized
+	  encoding name.
+
 Sat Nov  3 14:41:17 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/output.rb (REXML::Output): Don't output BOM in middle
