@@ -296,5 +296,24 @@ EOX
         assert_equal("UTF-16", document.encoding)
       end
     end
+
+    class WriteTest < self
+      def test_utf_16
+        xml = <<-EOX.encode("UTF-16LE").force_encoding("ASCII-8BIT")
+<?xml version="1.0"?>
+<message>Hello world!</message>
+EOX
+        bom = "\ufeff".encode("UTF-16LE").force_encoding("ASCII-8BIT")
+        document = REXML::Document.new(bom + xml)
+
+        actual_xml = ""
+        document.write(actual_xml)
+        expected_xml = <<-EOX.encode("UTF-16BE")
+\ufeff<?xml version='1.0' encoding='UTF-16'?>
+<message>Hello world!</message>
+EOX
+        assert_equal(expected_xml, actual_xml)
+      end
+    end
   end
 end
