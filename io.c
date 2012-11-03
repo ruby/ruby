@@ -6962,31 +6962,32 @@ rb_io_stdio_file(rb_io_t *fptr)
  *
  *  Ruby allows the following open modes:
  *
- *  "r"  :: Read-only, starts at beginning of file  (default mode).
+ *	"r"  Read-only, starts at beginning of file  (default mode).
  *
- *  "r+" :: Read-write, starts at beginning of file.
+ *  	"r+" Read-write, starts at beginning of file.
  *
- *  "w"  :: Write-only, truncates existing file
- *          to zero length or creates a new file for writing.
+ *  	"w"  Write-only, truncates existing file
+ *  	     to zero length or creates a new file for writing.
  *
- *  "w+" :: Read-write, truncates existing file to zero length
- *          or creates a new file for reading and writing.
+ *  	"w+" Read-write, truncates existing file to zero length
+ *  	     or creates a new file for reading and writing.
  *
- *  "a"  :: Write-only, starts at end of file if file exists,
- *          otherwise creates a new file for writing.
+ *  	"a"  Write-only, starts at end of file if file exists,
+ *  	     otherwise creates a new file for writing.
  *
- *  "a+" :: Read-write, starts at end of file if file exists,
- *          otherwise creates a new file for reading and
- *          writing.
+ *  	"a+" Read-write, starts at end of file if file exists,
+ *	     otherwise creates a new file for reading and
+ *  	     writing.
  *
- *  "b"  :: Binary file mode (may appear with
- *          any of the key letters listed above).
- *          Suppresses EOL <-> CRLF conversion on Windows. And
- *          sets external encoding to ASCII-8BIT unless explicitly
- *          specified.
+ *  The following modes must be used separately, and along with one or more of
+ *  the modes seen above.
  *
- *  "t"  :: Text file mode (may appear with
- *          any of the key letters listed above except "b").
+ *	"b"  Binary file mode
+ *  	     Suppresses EOL <-> CRLF conversion on Windows. And
+ *  	     sets external encoding to ASCII-8BIT unless explicitly
+ *  	     specified.
+ *
+ *  	"t"  Text file mode
  *
  *  When the open mode of original IO is read only, the mode cannot be
  *  changed to be writable.  Similarly, the open mode cannot be changed from
