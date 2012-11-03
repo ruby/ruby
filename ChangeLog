@@ -1,3 +1,9 @@
+Sat Nov  3 13:26:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* io.c (IO#new):
+	  Documentation for IO#open modes and formatting
+	  [ruby-core#48052] [Bug #7179]
+
 Sat Nov  3 13:01:02 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_encoding.rb (EncodingTester#test_in_different_out):
