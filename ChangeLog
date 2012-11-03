@@ -1,3 +1,14 @@
+Sat Nov  3 10:17:41 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* eval.c (f_current_dirname): add the new method for Kernel.
+	  This method almotst same as File.dirname(__FILE__). One
+	  different behavior is it returns nil when __FILE__ returns nil.
+	  [Feature #3346]
+
+	* NEWS:  ditto
+
+	* test/ruby/test_method.rb: related test.
+
 Sat Nov  3 09:03:34 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/ruby/test_refinement.rb (test_new_method_by_send,

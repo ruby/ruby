@@ -1556,6 +1556,25 @@ rb_f_callee_name(void)
     }
 }
 
+/*
+ *  call-seq:
+ *     __dir__         -> string
+ *
+ *  Returns the value of <code>File.dirname(__FILE__)</code>
+ *  If <code>__FILE__</code> is <code>nil</code>, it returns <code>nil</code>.
+ *
+ */
+static VALUE
+f_current_dirname(void)
+{
+    VALUE base = rb_current_realfilepath();
+    if (NIL_P(base)) {
+	return Qnil;
+    }
+    base = rb_file_dirname(base);
+    return base;
+}
+
 void
 Init_eval(void)
 {
@@ -1569,6 +1588,7 @@ Init_eval(void)
 
     rb_define_global_function("__method__", rb_f_method_name, 0);
     rb_define_global_function("__callee__", rb_f_callee_name, 0);
+    rb_define_global_function("__dir__", f_current_dirname, 0);
 
     rb_define_private_method(rb_cModule, "append_features", rb_mod_append_features, 1);
     rb_define_private_method(rb_cModule, "extend_object", rb_mod_extend_object, 1);

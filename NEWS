@@ -41,6 +41,7 @@ with all sufficient information, see the ChangeLog file.
       * added Kernel#Hash conversion method like Array() or Float().
       * added Kernel#using, which imports refinements into the current scope.
         [experimental]
+      * added Kernel#__dir__ which returns a current dirname.
     * extended method:
       * Kernel#warn accepts multiple args in like puts.
       * Kernel#caller accepts second optional argument `n' which specify
