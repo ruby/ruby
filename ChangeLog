@@ -1,3 +1,12 @@
+Sat Nov  3 12:36:35 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/xmldecl.rb (REXML::XMLDecl): Stop using REXML::Encoding
+	  module because XMLDecl doesn't convert encoding. This causes
+	  removing XML encoding name normalization (encoding.upcase).
+	  Encoding name in XML declaration is what user specifies.
+	  I think this is reasonable change.
+	* test/rexml/test_xml_declaration.rb: Add tests for the above change.
+
 Sat Nov  3 12:18:35 2012  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* array.c (recursive_equal): fix not to make invalid pointers when

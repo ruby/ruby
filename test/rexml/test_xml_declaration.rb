@@ -31,4 +31,16 @@ class TestXmlDeclaration < Test::Unit::TestCase
     assert_kind_of(REXML::XMLDecl, @root.previous_sibling.previous_sibling)
     assert_kind_of(REXML::Element, @xml_declaration.next_sibling.next_sibling)
   end
+
+  def test_equal
+    lower_encoding_xml_decl = REXML::XMLDecl.new("1.0", "utf-8")
+    upper_encoding_xml_decl = REXML::XMLDecl.new("1.0", "UTF-8")
+    assert_equal(lower_encoding_xml_decl, upper_encoding_xml_decl)
+  end
+
+  def test_encoding_is_not_normalized
+    lower_encoding_xml_decl = REXML::XMLDecl.new("1.0", "utf-8")
+    assert_equal("<?xml version='1.0' encoding='utf-8'?>",
+                 lower_encoding_xml_decl.to_s)
+  end
 end
