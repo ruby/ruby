@@ -421,7 +421,6 @@ proc_new(VALUE klass, int is_lambda)
     }
 
     procval = rb_vm_make_proc(th, block, klass);
-    rb_vm_rewrite_ep_in_errinfo(th, cfp);
 
     if (is_lambda) {
 	rb_proc_t *proc;

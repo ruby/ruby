@@ -435,9 +435,6 @@ vm_make_env_each(rb_thread_t * const th, rb_control_frame_t * const cfp,
 	/* TODO */
 	env->block.iseq = 0;
     }
-    else {
-	rb_vm_rewrite_ep_in_errinfo(th, cfp);
-    }
     return envval;
 }
 
@@ -486,6 +483,7 @@ rb_vm_make_env_object(rb_thread_t * th, rb_control_frame_t *cfp)
     VALUE envval;
 
     envval = vm_make_env_each(th, cfp, cfp->ep, VM_CF_LEP(cfp));
+    rb_vm_rewrite_ep_in_errinfo(th, th->cfp);
 
     if (PROCDEBUG) {
 	check_env_value(envval);

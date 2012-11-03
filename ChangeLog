@@ -1,3 +1,8 @@
+Sat Nov  3 18:15:24 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm.c, proc.c: avoid unnecessary `rb_vm_rewrite_ep_in_errinfo'
+	  calls.
+
 Sat Nov  3 17:53:43 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* bin/testrb: Use only Test::Unit::AutoRunner in test-unit gem
