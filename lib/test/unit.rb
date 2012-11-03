@@ -804,6 +804,7 @@ module Test
       attr_accessor :to_run, :options
 
       def initialize(force_standalone = false, default_dir = nil, argv = ARGV)
+        @force_standalone = force_standalone
         @runner = Runner.new do |files, options|
           options[:base_directory] ||= default_dir
           files << default_dir if files.empty? and default_dir
@@ -813,6 +814,9 @@ module Test
         end
         Runner.runner = @runner
         @options = @runner.option_parser
+        if @force_standalone
+          @options.banner.sub!(/\[options\]/, '\& tests...')
+        end
         @argv = argv
       end
 
@@ -822,6 +826,9 @@ module Test
       end
 
       def run
+        if @force_standalone and not process_args(@argv)
+          abort @options.banner
+        end
         @runner.run(@argv) || true
       end
 

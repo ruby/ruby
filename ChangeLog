@@ -1,3 +1,12 @@
+Sat Nov  3 17:55:07 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+Sat Nov  3 17:53:43 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* bin/testrb: Use only Test::Unit::AutoRunner in test-unit gem
+	  compatible API to be available by both test/unit bundled in Ruby
+	  and test-unit gem.
+	* lib/test/unit.rb (Test::Unit::AutoRunner): Move codes from testrb.
+
 Sat Nov  3 14:56:21 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* ext/date/date_parse.c (parse_eu): should capture apostrophe too.
