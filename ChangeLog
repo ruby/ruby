@@ -1,3 +1,8 @@
+Sat Nov  3 12:54:13 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_core.rb (Tester#test_ticket_88): Follow the
+	  change that encoding name in XML declaration isn't normalized.
+
 Sat Nov  3 12:49:45 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/document.rb (REXML::Document#write): Document encoding
