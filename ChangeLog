@@ -1,3 +1,7 @@
+Sat Nov  3 11:01:32 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* NEWS: add a news about rb_newobj_of() and NEWOBJ_OF().
+
 Sat Nov  3 10:17:41 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* eval.c (f_current_dirname): add the new method for Kernel.
