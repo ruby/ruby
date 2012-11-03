@@ -44,11 +44,7 @@ module REXML
     def write(writer, indent=-1, transitive=false, ie_hack=false)
       return nil unless @writethis or writer.kind_of? Output
       writer << START.sub(/\\/u, '')
-      if writer.kind_of? Output
-        writer << " #{content writer.encoding}"
-      else
-        writer << " #{content encoding}"
-      end
+      writer << " #{content encoding}"
       writer << STOP.sub(/\\/u, '')
     end
 

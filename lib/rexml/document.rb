@@ -145,8 +145,8 @@ module REXML
     end
 
     # :call-seq:
-    #    doc.write(output=$stdout, indent=-1, transtive=false, ie_hack=false)
-    #    doc.write(options={:output => $stdout, :indent => -1, :transtive => false, :ie_hack => false})
+    #    doc.write(output=$stdout, indent=-1, transtive=false, ie_hack=false, encoding=nil)
+    #    doc.write(options={:output => $stdout, :indent => -1, :transtive => false, :ie_hack => false, :encoding => nil})
     #
     # Write the XML tree out, optionally with indent.  This writes out the
     # entire XML document, including XML declarations, doctype declarations,
@@ -199,6 +199,10 @@ module REXML
     #   unable to parse proper XML, we have to provide a hack to generate XML
     #   that IE's limited abilities can handle.  This hack inserts a space
     #   before the /> on empty tags.  Defaults to false
+    # encoding::
+    #   Encoding name as String. Change output encoding to specified encoding
+    #   instead of encoding in XML declaration.
+    #   Defaults to nil. It means encoding in XML declaration is used.
     def write(*arguments)
       if arguments.size == 1 and arguments[0].class == Hash
         options = arguments[0]
