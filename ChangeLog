@@ -1,3 +1,8 @@
+Sat Nov  3 12:06:15 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rexml/test_xml_declaration.rb (TestXmlDeclaration#test_*):
+	  Remove needless prefix from test names.
+
 Sat Nov  3 12:04:52 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_xml_declaration_parent_child.rb: Rename to ...
