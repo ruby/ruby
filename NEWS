@@ -226,6 +226,12 @@ with all sufficient information, see the ChangeLog file.
   * new method:
     * ObjectSpace.reachable_objects_from(obj)
 
+* rexml
+  * REXML::Document#write supports Hash arguments.
+  * REXML::Document#write supports new :encoding option. It changes
+    XML document encoding. Without :encoding option, encoding in
+    XML declaration is used for XML document encoding.
+
 === Language changes
 
   * Added %i and %I for symbol list creation (similar to %w and %W).
