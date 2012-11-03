@@ -3269,18 +3269,20 @@ rb_ary_rassoc(VALUE ary, VALUE value)
 static VALUE
 recursive_equal(VALUE ary1, VALUE ary2, int recur)
 {
-    long i;
+    long i, len1;
     VALUE *p1, *p2;
 
     if (recur) return Qtrue; /* Subtle! */
 
     p1 = RARRAY_PTR(ary1);
     p2 = RARRAY_PTR(ary2);
+    len1 = RARRAY_LEN(ary1);
 
-    for (i = 0; i < RARRAY_LEN(ary1); i++) {
+    for (i = 0; i < len1; i++) {
 	if (*p1 != *p2) {
 	    if (rb_equal(*p1, *p2)) {
-		if (RARRAY_LEN(ary1) != RARRAY_LEN(ary2))
+		len1 = RARRAY_LEN(ary1);
+		if (len1 != RARRAY_LEN(ary2) || len1 < i)
 		    return Qfalse;
 		p1 = RARRAY_PTR(ary1) + i;
 		p2 = RARRAY_PTR(ary2) + i;

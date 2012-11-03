@@ -1,3 +1,9 @@
+Sat Nov  3 12:18:35 2012  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (recursive_equal): fix not to make invalid pointers when
+	  self and other are resized to same size in #== of their elements.
+	  [ruby-dev:46373] [Feature #6177]
+
 Sat Nov  3 12:06:15 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rexml/test_xml_declaration.rb (TestXmlDeclaration#test_*):
