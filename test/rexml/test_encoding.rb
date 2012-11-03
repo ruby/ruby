@@ -10,8 +10,9 @@ class EncodingTester < Test::Unit::TestCase
   include REXML
 
   def setup
+    @encoded_root = "<a><b>\346</b></a>"
     @encoded = "<?xml version='1.0' encoding='ISO-8859-3'?>"+
-    "<a><b>\346</b></a>"
+      @encoded_root
     @not_encoded = "<a><b>ĉ</b></a>"
   end
 
@@ -59,7 +60,7 @@ class EncodingTester < Test::Unit::TestCase
     doc = Document.new( @not_encoded )
     doc.write( Output.new( out="", "ISO-8859-3" ) )
     out.force_encoding(::Encoding::ASCII_8BIT)
-    assert_equal( @encoded, out )
+    assert_equal( "<?xml version='1.0'?>#{@encoded_root}", out )
   end
 
   # * Given an encoded document, accessing text and attribute nodes
