@@ -1312,9 +1312,9 @@ EOL
 
   def test_ticket_88
     doc = REXML::Document.new("<?xml version=\"1.0\" encoding=\"shift_jis\"?>")
-    assert_equal("<?xml version='1.0' encoding='shift_jis'?>", doc.to_s)
+    assert_equal("<?xml version='1.0' encoding='SHIFT_JIS'?>", doc.to_s)
     doc = REXML::Document.new("<?xml version = \"1.0\" encoding = \"shift_jis\"?>")
-    assert_equal("<?xml version='1.0' encoding='shift_jis'?>", doc.to_s)
+    assert_equal("<?xml version='1.0' encoding='SHIFT_JIS'?>", doc.to_s)
   end
 
   def test_ticket_85

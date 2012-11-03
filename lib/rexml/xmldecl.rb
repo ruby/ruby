@@ -4,6 +4,8 @@ require 'rexml/source'
 module REXML
   # NEEDS DOCUMENTATION
   class XMLDecl < Child
+    include Encoding
+
     DEFAULT_VERSION = "1.0";
     DEFAULT_ENCODING = "UTF-8";
     DEFAULT_STANDALONE = "no";
@@ -11,7 +13,7 @@ module REXML
     STOP = '\?>';
 
     attr_accessor :version, :standalone
-    attr_reader :encoding, :writeencoding, :writethis
+    attr_reader :writeencoding, :writethis
 
     def initialize(version=DEFAULT_VERSION, encoding=nil, standalone=nil)
       @writethis = true
@@ -51,7 +53,7 @@ module REXML
     def ==( other )
       other.kind_of?(XMLDecl) and
       other.version == @version and
-      other.encoding.upcase == self.encoding.upcase and
+      other.encoding == self.encoding and
       other.standalone == @standalone
     end
 
@@ -66,13 +68,14 @@ module REXML
     end
 
     alias :stand_alone? :standalone
+    alias :old_enc= :encoding=
 
     def encoding=( enc )
       if enc.nil?
-        @encoding = "UTF-8"
+        self.old_enc = "UTF-8"
         @writeencoding = false
       else
-        @encoding = enc
+        self.old_enc = enc
         @writeencoding = true
       end
       self.dowrite
