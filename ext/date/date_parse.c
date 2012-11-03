@@ -224,9 +224,9 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 #define ABBR_MONTHS "jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec"
 
 #ifdef TIGHT_PARSER
-#define VALID_DAYS "(?:" DAYS ")\\b" "|(?:tues|wednes|thur|thurs|" ABBR_DAYS ")\\b\\.?"
-#define VALID_MONTHS "(?:" MONTHS ")\\b" "|(?:sept|" ABBR_MONTHS ")\\b\\.?"
-#define DOTLESS_VALID_MONTHS "(?:" MONTHS ")\\b" "|(?:sept|" ABBR_MONTHS ")\\b"
+#define VALID_DAYS "(?:" DAYS ")" "|(?:tues|wednes|thurs|thur|" ABBR_DAYS ")\\.?"
+#define VALID_MONTHS "(?:" MONTHS ")" "|(?:sept|" ABBR_MONTHS ")\\.?"
+#define DOTLESS_VALID_MONTHS "(?:" MONTHS ")" "|(?:sept|" ABBR_MONTHS ")"
 #define BOS "\\A\\s*"
 #define FPW "\\027"
 #define FPT "\\024"
@@ -804,7 +804,7 @@ parse_eu(VALUE str, VALUE hash)
 #ifndef TIGHT_PARSER
 		"'?(\\d+)[^-\\d\\s]*"
 #else
-		"(\\d+)(?:st|nd|rd|th)?\\b"
+		"(\\d+)(?:(?:st|nd|rd|th)\\b)?"
 #endif
 		 "\\s*"
 #ifndef TIGHT_PARSER
@@ -881,7 +881,7 @@ parse_us(VALUE str, VALUE hash)
 #ifndef TIGHT_PARSER
 		 "('?\\d+)[^-\\d\\s']*"
 #else
-		 "(\\d+)(?:st|nd|rd|th)?\\b"
+		 "(\\d+)(?:(?:st|nd|rd|th)\\b)?"
 		COM_FPT
 #endif
 		 "(?:"

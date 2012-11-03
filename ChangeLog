@@ -1,3 +1,7 @@
+Sat Nov  3 14:46:15 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ext/date/date_parse.c (date__parse): revised the tight parser.
+
 Sat Nov  3 14:43:42 2012  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/xmldecl.rb (REXML::XMLDecl#content): Add missing \A
