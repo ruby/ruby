@@ -72,6 +72,14 @@ class TestRefinement < Test::Unit::TestCase
       return foo.z
     end
 
+    def self.send_z_on(foo)
+      return foo.send(:z)
+    end
+
+    def self.method_z(foo)
+      return foo.method(:z)
+    end
+
     def self.invoke_call_x_on(foo)
       return foo.call_x
     end
@@ -112,6 +120,20 @@ class TestRefinement < Test::Unit::TestCase
     assert_raise(NoMethodError) { foo.z }
     assert_equal("FooExt#z", FooExtClient.invoke_z_on(foo))
     assert_raise(NoMethodError) { foo.z }
+  end
+
+  def test_new_method_by_send
+    foo = Foo.new
+    assert_raise(NoMethodError) { foo.send(:z) }
+    assert_equal("FooExt#z", FooExtClient.send_z_on(foo))
+    assert_raise(NoMethodError) { foo.send(:z) }
+  end
+
+  def test_new_method_by_method_object
+    foo = Foo.new
+    assert_raise(NoMethodError) { foo.send(:z) }
+    assert_equal("FooExt#z", FooExtClient.method_z(foo).call)
+    assert_raise(NoMethodError) { foo.send(:z) }
   end
 
   def test_no_local_rebinding
@@ -616,11 +638,16 @@ class TestRefinement < Test::Unit::TestCase
         c = C.new
         :foo.to_proc.call(c)
       end
+
+      def self.foo_proc
+        :foo.to_proc
+      end
     end
   end
 
   def test_symbol_to_proc
     assert_equal("foo", SymbolToProc::M.call_foo)
+    assert_equal("foo", SymbolToProc::M.foo_proc.call(SymbolToProc::C.new))
   end
 
   module Inspect

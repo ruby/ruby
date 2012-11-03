@@ -1,3 +1,13 @@
+Sat Nov  3 09:03:34 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/ruby/test_refinement.rb (test_new_method_by_send,
+	  test_new_method_by_method_object): add tests for Kernel#send and
+	  Kernel#method with refinements.
+
+	* test/ruby/test_refinement.rb (test_symbol_to_proc): add a test
+	  calling a proc created by Symbol#to_proc outside the scope where
+	  a refinement is closed over.
+
 Sat Nov  3 04:14:19 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (rb_vm_rewrite_ep_in_errinfo): rewrite all catch points in
