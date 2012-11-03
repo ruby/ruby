@@ -167,13 +167,12 @@ EOX
         ie_hack = false
         encoding = "Windows-31J"
 
-        xml_declaration_encoding = "Shift_JIS"
-        @document.xml_decl.encoding = xml_declaration_encoding
+        @document.xml_decl.encoding = "Shift_JIS"
         japanese_text = "こんにちは"
         @document.root.text = japanese_text
         @document.write(output, indent, transitive, ie_hack, encoding)
         assert_equal(<<-EOX.encode(encoding), output)
-<?xml version='1.0' encoding='#{xml_declaration_encoding}'?>
+<?xml version='1.0' encoding='SHIFT_JIS'?>
 <message>#{japanese_text}</message>
 EOX
       end
@@ -221,13 +220,12 @@ EOX
       def test_encoding
         output = ""
         encoding = "Windows-31J"
-        xml_declaration_encoding = "Shift_JIS"
-        @document.xml_decl.encoding = xml_declaration_encoding
+        @document.xml_decl.encoding = "Shift_JIS"
         japanese_text = "こんにちは"
         @document.root.text = japanese_text
         @document.write(:output => output, :encoding => encoding)
         assert_equal(<<-EOX.encode(encoding), output)
-<?xml version='1.0' encoding='#{xml_declaration_encoding}'?>
+<?xml version='1.0' encoding='SHIFT_JIS'?>
 <message>#{japanese_text}</message>
 EOX
       end
