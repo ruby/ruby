@@ -1,3 +1,12 @@
+<<<<<<< HEAD
+=======
+Sun Nov  4 20:29:46 2012  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi.rb, lib/cgi/*/rb: rename CGI#header to CGI#http_header,
+	  add  and update HTML5 tag generater.  [Bug #7110]
+	  Patch provided by Marcus Stollsteimer, thank you !
+
+>>>>>>> * lib/fileutils.rb (module FileUtils): repatch [ruby-core:39622]
 Sun Nov  4 11:47:39 2012  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* lib/fileutils.rb (module FileUtils): repatch [ruby-core:39622]

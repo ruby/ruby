@@ -338,4 +338,17 @@ class CGITagHelperTest < Test::Unit::TestCase
   end
 =end
 
+  def test_cgi_tag_helper_html5
+    @environ = {
+      'REQUEST_METHOD' => 'GET',
+    }
+    ENV.update(@environ)
+    ## html5
+    cgi = CGI.new('html5')
+    assert_equal('<HEADER></HEADER>',cgi.header)
+    assert_equal('<FOOTER></FOOTER>',cgi.footer)
+    assert_equal('<ARTICLE></ARTICLE>',cgi.article)
+    assert_equal('<SECTION></SECTION>',cgi.section)
+  end
+
 end

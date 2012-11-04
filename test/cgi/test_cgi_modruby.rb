@@ -30,7 +30,7 @@ class CGIModrubyTest < Test::Unit::TestCase
     cgi = CGI.new
     assert(req._setup_cgi_env_invoked?)
     assert(! req._send_http_header_invoked?)
-    actual = cgi.header
+    actual = cgi.http_header
     assert_equal('', actual)
     assert_equal('text/html', req.content_type)
     assert(req._send_http_header_invoked?)
@@ -51,7 +51,7 @@ class CGIModrubyTest < Test::Unit::TestCase
     }
     assert(req._setup_cgi_env_invoked?)
     assert(! req._send_http_header_invoked?)
-    actual = cgi.header(options)
+    actual = cgi.http_header(options)
     assert_equal('', actual)
     assert_equal('image/gif', req.content_type)
     assert_equal('403 Forbidden', req.status_line)
@@ -71,7 +71,7 @@ class CGIModrubyTest < Test::Unit::TestCase
       'status'   => '200 OK',
       'location' => 'http://www.example.com/',
     }
-    cgi.header(options)
+    cgi.http_header(options)
     assert_equal('200 OK', req.status_line)  # should be '302 Found' ?
     assert_equal(302, req.status)
     assert_equal('http://www.example.com/', req.headers_out['location'])

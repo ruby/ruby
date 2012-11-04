@@ -21,28 +21,28 @@ class CGIHeaderTest < Test::Unit::TestCase
   end
 
 
-  def test_cgi_header_simple
+  def test_cgi_http_header_simple
     cgi = CGI.new
     ## default content type
     expected = "Content-Type: text/html\r\n\r\n"
-    actual = cgi.header
+    actual = cgi.http_header
     assert_equal(expected, actual)
     ## content type specified as string
     expected = "Content-Type: text/xhtml; charset=utf8\r\n\r\n"
-    actual = cgi.header('text/xhtml; charset=utf8')
+    actual = cgi.http_header('text/xhtml; charset=utf8')
     assert_equal(expected, actual)
     ## content type specified as hash
     expected = "Content-Type: image/png\r\n\r\n"
-    actual = cgi.header('type'=>'image/png')
+    actual = cgi.http_header('type'=>'image/png')
     assert_equal(expected, actual)
     ## charset specified
     expected = "Content-Type: text/html; charset=utf8\r\n\r\n"
-    actual = cgi.header('charset'=>'utf8')
+    actual = cgi.http_header('charset'=>'utf8')
     assert_equal(expected, actual)
   end
 
 
-  def test_cgi_header_complex
+  def test_cgi_http_header_complex
     cgi = CGI.new
     options = {
       'type'       => 'text/xhtml',
@@ -64,12 +64,12 @@ class CGIHeaderTest < Test::Unit::TestCase
     expected << "Expires: Sun, 23 Jan 2000 12:34:56 GMT\r\n"
     expected << "location: http://www.ruby-lang.org/\r\n"
     expected << "\r\n"
-    actual = cgi.header(options)
+    actual = cgi.http_header(options)
     assert_equal(expected, actual)
   end
 
 
-  def test_cgi_header_argerr
+  def test_cgi_http_header_argerr
     cgi = CGI.new
     #expected = NoMethodError  # must be ArgumentError
     if RUBY_VERSION>="1.9.0"
@@ -78,12 +78,12 @@ class CGIHeaderTest < Test::Unit::TestCase
       expected = NoMethodError   # for Ruby1.8
     end
     assert_raise(expected) do
-      cgi.header(nil)
+      cgi.http_header(nil)
     end
   end
 
 
-  def test_cgi_header_cookie
+  def test_cgi_http_header_cookie
     cgi = CGI.new
     cookie1 = CGI::Cookie.new('name1', 'abc', '123')
     cookie2 = CGI::Cookie.new('name'=>'name2', 'value'=>'value2', 'secure'=>true)
@@ -92,25 +92,25 @@ class CGIHeaderTest < Test::Unit::TestCase
     c1    = "Set-Cookie: name1=abc&123; path=\r\n"
     c2    = "Set-Cookie: name2=value2; path=; secure\r\n"
     ## CGI::Cookie object
-    actual = cgi.header('cookie'=>cookie1)
+    actual = cgi.http_header('cookie'=>cookie1)
     expected = ctype + c1 + sep
     assert_equal(expected, actual)
     ## String
-    actual = cgi.header('cookie'=>cookie2.to_s)
+    actual = cgi.http_header('cookie'=>cookie2.to_s)
     expected = ctype + c2 + sep
     assert_equal(expected, actual)
     ## Array
-    actual = cgi.header('cookie'=>[cookie1, cookie2])
+    actual = cgi.http_header('cookie'=>[cookie1, cookie2])
     expected = ctype + c1 + c2 + sep
     assert_equal(expected, actual)
     ## Hash
-    actual = cgi.header('cookie'=>{'name1'=>cookie1, 'name2'=>cookie2})
+    actual = cgi.http_header('cookie'=>{'name1'=>cookie1, 'name2'=>cookie2})
     expected = ctype + c1 + c2 + sep
     assert_equal(expected, actual)
   end
 
 
-  def test_cgi_header_output_cookies
+  def test_cgi_http_header_output_cookies
     cgi = CGI.new
     ## output cookies
     cookies = [ CGI::Cookie.new('name1', 'abc', '123'),
@@ -122,28 +122,28 @@ class CGIHeaderTest < Test::Unit::TestCase
     expected << "Set-Cookie: name2=value2; path=; secure\r\n"
     expected << "\r\n"
     ## header when string
-    actual = cgi.header('text/html; charset=utf8')
+    actual = cgi.http_header('text/html; charset=utf8')
     assert_equal(expected, actual)
     ## _header_for_string
-    actual = cgi.header('type'=>'text/html', 'charset'=>'utf8')
+    actual = cgi.http_header('type'=>'text/html', 'charset'=>'utf8')
     assert_equal(expected, actual)
   end
 
 
-  def test_cgi_header_nph
+  def test_cgi_http_header_nph
     time_start = Time.now.to_i
     cgi = CGI.new
     ## 'nph' is true
     ENV['SERVER_SOFTWARE'] = 'Apache 2.2.0'
-    actual1 = cgi.header('nph'=>true)
+    actual1 = cgi.http_header('nph'=>true)
     ## when old IIS, NPH-mode is forced
     ENV['SERVER_SOFTWARE'] = 'IIS/4.0'
-    actual2 = cgi.header
-    actual3 = cgi.header('status'=>'REDIRECT', 'location'=>'http://www.example.com/')
+    actual2 = cgi.http_header
+    actual3 = cgi.http_header('status'=>'REDIRECT', 'location'=>'http://www.example.com/')
     ## newer IIS doesn't require NPH-mode   ## [ruby-dev:30537]
     ENV['SERVER_SOFTWARE'] = 'IIS/5.0'
-    actual4 = cgi.header
-    actual5 = cgi.header('status'=>'REDIRECT', 'location'=>'http://www.example.com/')
+    actual4 = cgi.http_header
+    actual5 = cgi.http_header('status'=>'REDIRECT', 'location'=>'http://www.example.com/')
     time_end = Time.now.to_i
     date = /^Date: ([A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d\d:\d\d:\d\d GMT)\r\n/
     [actual1, actual2, actual3].each do |actual|

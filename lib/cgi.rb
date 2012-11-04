@@ -122,7 +122,7 @@ raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
 #
 # The simplest way to send output to the HTTP client is using the #out() method.
 # This takes the HTTP headers as a hash parameter, and the body content
-# via a block.  The headers can be generated as a string using the #header()
+# via a block.  The headers can be generated as a string using the #http_header()
 # method.  The output stream can be written directly to using the #print()
 # method.
 #
@@ -262,6 +262,7 @@ raise "Please, use ruby 1.9.0 or later." if RUBY_VERSION < "1.9.0"
 #   CGI.new("html4")    # html4.01 (Strict)
 #   CGI.new("html4Tr")  # html4.01 Transitional
 #   CGI.new("html4Fr")  # html4.01 Frameset
+#   CGI.new("html5")    # html5
 #
 
 class CGI

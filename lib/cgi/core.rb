@@ -67,8 +67,8 @@ class CGI
   # Create an HTTP header block as a string.
   #
   # :call-seq:
-  #   header(content_type_string="text/html")
-  #   header(headers_hash)
+  #   http_header(content_type_string="text/html")
+  #   http_header(headers_hash)
   #
   # Includes the empty line that ends the header block.
   #
@@ -127,29 +127,29 @@ class CGI
   #
   # Examples:
   #
-  #   header
+  #   http_header
   #     # Content-Type: text/html
   #
-  #   header("text/plain")
+  #   http_header("text/plain")
   #     # Content-Type: text/plain
   #
-  #   header("nph"        => true,
-  #          "status"     => "OK",  # == "200 OK"
-  #            # "status"     => "200 GOOD",
-  #          "server"     => ENV['SERVER_SOFTWARE'],
-  #          "connection" => "close",
-  #          "type"       => "text/html",
-  #          "charset"    => "iso-2022-jp",
-  #            # Content-Type: text/html; charset=iso-2022-jp
-  #          "length"     => 103,
-  #          "language"   => "ja",
-  #          "expires"    => Time.now + 30,
-  #          "cookie"     => [cookie1, cookie2],
-  #          "my_header1" => "my_value"
-  #          "my_header2" => "my_value")
+  #   http_header("nph"        => true,
+  #               "status"     => "OK",  # == "200 OK"
+  #                 # "status"     => "200 GOOD",
+  #               "server"     => ENV['SERVER_SOFTWARE'],
+  #               "connection" => "close",
+  #               "type"       => "text/html",
+  #               "charset"    => "iso-2022-jp",
+  #                 # Content-Type: text/html; charset=iso-2022-jp
+  #               "length"     => 103,
+  #               "language"   => "ja",
+  #               "expires"    => Time.now + 30,
+  #               "cookie"     => [cookie1, cookie2],
+  #               "my_header1" => "my_value"
+  #               "my_header2" => "my_value")
   #
   # This method does not perform charset conversion.
-  def header(options='text/html')
+  def http_header(options='text/html')
     if options.is_a?(String)
       content_type = options
       buf = _header_for_string(content_type)
@@ -170,7 +170,7 @@ class CGI
       buf << EOL    # empty line of separator
       return buf
     end
-  end # header()
+  end # http_header()
 
   def _header_for_string(content_type) #:nodoc:
     buf = ''
@@ -283,7 +283,7 @@ class CGI
   # +content_type_string+::
   #   If a string is passed, it is assumed to be the content type.
   # +headers_hash+::
-  #   This is a Hash of headers, similar to that used by #header.
+  #   This is a Hash of headers, similar to that used by #http_header.
   # +block+::
   #   A block is required and should evaluate to the body of the response.
   #
@@ -344,7 +344,7 @@ class CGI
     options["length"] = content.bytesize.to_s
     output = stdoutput
     output.binmode if defined? output.binmode
-    output.print header(options)
+    output.print http_header(options)
     output.print content unless "HEAD" == env_table['REQUEST_METHOD']
   end
 
