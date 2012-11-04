@@ -1923,6 +1923,20 @@ class TestArray < Test::Unit::TestCase
     assert_not_equal([0, 1, 2], [0, 1, 3])
   end
 
+  A = Array.new(3, &:to_s)
+  B = A.dup
+
+  def test_equal_resize
+    o = Object.new
+    def o.==(o)
+      A.clear
+      B.clear
+      true
+    end
+    A[1] = o
+    assert_equal(A, B)
+  end
+
   def test_hash2
     a = []
     a << a

@@ -3282,8 +3282,10 @@ recursive_equal(VALUE ary1, VALUE ary2, int recur)
 	if (*p1 != *p2) {
 	    if (rb_equal(*p1, *p2)) {
 		len1 = RARRAY_LEN(ary1);
-		if (len1 != RARRAY_LEN(ary2) || len1 < i)
+		if (len1 != RARRAY_LEN(ary2))
 		    return Qfalse;
+		if (len1 < i)
+		    return Qtrue;
 		p1 = RARRAY_PTR(ary1) + i;
 		p2 = RARRAY_PTR(ary2) + i;
 	    }

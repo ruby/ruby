@@ -1,3 +1,11 @@
+Sun Nov  4 11:27:54 2012  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* array.c (recursive_equal): fix to return true when self and other
+	  are resized to same size and the current index become out of
+	  range.
+
+	* test/ruby/test_array.rb: add a test for the above.
+
 Sun Nov  4 10:19:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (file_s_fnmatch): match with expanding braces if FNM_EXTGLOB
