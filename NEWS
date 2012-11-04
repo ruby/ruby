@@ -31,6 +31,11 @@ with all sufficient information, see the ChangeLog file.
     * aliased method:
       * ENV.to_h is a new alias for ENV.to_hash
 
+  * File:
+    * extended method:
+      * File.fnmatch? now expands braces in the pattern if
+        File::FNM_EXTGLOB option is given.
+
   * Hash
     * added method:
       * added Hash#to_h as explicit conversion method, like Array#to_a.

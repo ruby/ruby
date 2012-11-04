@@ -85,6 +85,7 @@ char *strchr(char*,char);
 #define FNM_PATHNAME	0x02
 #define FNM_DOTMATCH	0x04
 #define FNM_CASEFOLD	0x08
+#define FNM_EXTGLOB	0x10
 #if CASEFOLD_FILESYSTEM
 #define FNM_SYSCASE	FNM_CASEFOLD
 #else
@@ -1912,6 +1913,15 @@ dir_entries(int argc, VALUE *argv, VALUE io)
     return rb_ensure(rb_Array, dir, dir_close, dir);
 }
 
+static int
+fnmatch_brace(const char *pattern, VALUE val, void *enc)
+{
+    struct brace_args *arg = (struct brace_args *)val;
+    VALUE path = arg->value;
+
+    return (fnmatch(pattern, enc, RSTRING_PTR(path), arg->flags) == 0);
+}
+
 /*
  *  call-seq:
  *     File.fnmatch( pattern, path, [flags] ) -> (true or false)
@@ -2008,9 +2018,21 @@ file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
     StringValue(pattern);
     FilePathStringValue(path);
 
-    if (fnmatch(RSTRING_PTR(pattern), rb_enc_get(pattern), RSTRING_PTR(path),
-		flags) == 0)
-	return Qtrue;
+    if (flags & FNM_EXTGLOB) {
+	struct brace_args args;
+
+	args.value = path;
+	args.flags = flags;
+	if (ruby_brace_expand(RSTRING_PTR(pattern), flags, fnmatch_brace,
+			      (VALUE)&args, rb_enc_get(pattern)) > 0)
+	    return Qtrue;
+    }
+    else {
+	if (fnmatch(RSTRING_PTR(pattern), rb_enc_get(pattern), RSTRING_PTR(path),
+		    flags) == 0)
+	    return Qtrue;
+    }
+    RB_GC_GUARD(pattern);
 
     return Qfalse;
 }
@@ -2111,5 +2133,6 @@ Init_Dir(void)
     rb_file_const("FNM_PATHNAME", INT2FIX(FNM_PATHNAME));
     rb_file_const("FNM_DOTMATCH", INT2FIX(FNM_DOTMATCH));
     rb_file_const("FNM_CASEFOLD", INT2FIX(FNM_CASEFOLD));
+    rb_file_const("FNM_EXTGLOB", INT2FIX(FNM_EXTGLOB));
     rb_file_const("FNM_SYSCASE", INT2FIX(FNM_SYSCASE));
 }

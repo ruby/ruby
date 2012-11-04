@@ -229,7 +229,7 @@ module Test
         AssertFile
       end
 
-      class << (AssertFile = Object.new)
+      class << (AssertFile = Struct.new(:message).new)
         include Assertions
         def assert_file_predicate(predicate, *args)
           if /\Anot_/ =~ predicate
@@ -241,9 +241,14 @@ module Test
           mesg = "Expected file " << args.shift.inspect
           mesg << mu_pp(args) unless args.empty?
           mesg << "#{neg} to be #{predicate}"
+          mesg << " #{message}" if message
           assert(result, mesg)
         end
         alias method_missing assert_file_predicate
+
+        def for(message)
+          clone.tap {|a| a.message = message}
+        end
       end
     end
   end

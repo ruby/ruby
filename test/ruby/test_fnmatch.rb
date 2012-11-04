@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestFnmatch < Test::Unit::TestCase
 
@@ -103,4 +104,9 @@ class TestFnmatch < Test::Unit::TestCase
     assert(File.fnmatch('**/foo', 'c:/root/foo', File::FNM_PATHNAME))
   end
 
+  def test_extglob
+    feature5422 = '[ruby-core:40037]'
+    assert_file.for(feature5422).not_fnmatch?( "{.g,t}*", ".gem")
+    assert_file.for(feature5422).fnmatch?("{.g,t}*", ".gem", File::FNM_EXTGLOB)
+  end
 end

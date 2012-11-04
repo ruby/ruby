@@ -1,3 +1,8 @@
+Sun Nov  4 10:19:03 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (file_s_fnmatch): match with expanding braces if FNM_EXTGLOB
+	  is set.  [ruby-core:40037] [Feature #5422]
+
 Sat Nov  3 23:38:15 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: modified doc.
