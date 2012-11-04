@@ -1033,6 +1033,7 @@ class CGI
     # Initialise the HTML generation methods for this version.
     def element_init
       extend TagMaker
+      return if defined?(html)
       methods = ""
       # - -
       for element in %w[ SECTION NAV ARTICLE ASIDE HGROUP HEADER
