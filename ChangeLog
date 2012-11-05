@@ -1,3 +1,10 @@
+Mon Nov  5 22:45:03 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* ext/dl/win32/lib/Win32API.rb (Win32API#call): use 64bit pointer for x64
+	  Windows. This would fix
+	  TestSecureRandom#test_s_random_bytes_without_openssl error.
+	  [ruby-core:47451] [Bug #6990]
+
 Mon Nov  5 22:09:26 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* cygwin/GNUmakefile.in (uncommon.mk): link *.res.o.
