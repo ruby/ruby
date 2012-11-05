@@ -1,3 +1,9 @@
+Mon Nov  5 12:17:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/uri/http.rb (URI::HTTP.build): Fix example
+	  Patch by Carina C. Zona
+	  [Fixes #209 Github]
+
 Sun Nov  4 20:29:46 2012  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi.rb, lib/cgi/*/rb: rename CGI#header to CGI#http_header,
