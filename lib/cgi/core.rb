@@ -484,7 +484,7 @@ class CGI
         (n += 1) < max_count or raise StandardError.new("too many parameters.")
         ## create body (StringIO or Tempfile)
         body = create_body(bufsize < content_length)
-        tempfiles << body if body.kind_of? Tempfile
+        tempfiles << body if defined?(Tempfile) && body.kind_of?(Tempfile)
         class << body
           if method_defined?(:path)
             alias local_path path
@@ -542,7 +542,7 @@ class CGI
         name = $1 || $2 || ''
         if body.original_filename.empty?
           value=body.read.dup.force_encoding(@accept_charset)
-          body.unlink if body.kind_of? Tempfile
+          body.unlink if defined?(Tempfile) && body.kind_of?(Tempfile)
           (params[name] ||= []) << value
           unless value.valid_encoding?
             if @accept_charset_error_block
@@ -567,7 +567,7 @@ class CGI
       params.default = []
       params
     ensure
-      if $!
+      if $! && tempfiles
         tempfiles.each {|t|
           if t.path
             t.unlink

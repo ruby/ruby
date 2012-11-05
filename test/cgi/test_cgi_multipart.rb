@@ -2,6 +2,7 @@ require 'test/unit'
 require 'cgi'
 require 'tempfile'
 require 'stringio'
+require_relative '../ruby/envutil'
 
 
 ##
@@ -330,6 +331,34 @@ class CGIMultipartTest < Test::Unit::TestCase
     assert_equal(cgi['foo'], 'bar')
     assert_equal(cgi['file'].read, 'b'*10134)
     cgi['file'].unlink if cgi['file'].kind_of? Tempfile
+  end
+
+  def test_cgi_multipart_without_tempfile
+    assert_in_out_err([], <<-'EOM')
+      require 'cgi'
+      require 'stringio'
+      ENV['REQUEST_METHOD'] = 'POST'
+      ENV['CONTENT_TYPE'] = 'multipart/form-data; boundary=foobar1234'
+      body = <<-BODY
+--foobar1234
+Content-Disposition: form-data: name=\"name1\"
+
+value1
+--foobar1234
+Content-Disposition: form-data: name=\"file1\"; filename=\"file1.html\"
+Content-Type: text/html
+
+<html>
+<body><p>Hello</p></body>
+</html>
+
+--foobar1234--
+BODY
+      body.gsub!(/\n/, "\r\n")
+      ENV['CONTENT_LENGTH'] = body.size.to_s
+      $stdin = StringIO.new(body)
+      CGI.new
+    EOM
   end
 
   ###

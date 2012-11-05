@@ -1,8 +1,18 @@
+Mon Nov  5 10:57:59 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/cgi/core.rb: check if Tempfile is defined before use it.
+
+	* lib/cgi/core.rb: remove tempfiles only if tempfiles exist
+
 Mon Nov  5 12:17:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/uri/http.rb (URI::HTTP.build): Fix example
 	  Patch by Carina C. Zona
 	  [Fixes #209 Github]
+
+Mon Nov  5 09:55:05 2012  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/core.rb: remove tempfile more early.
 
 Sun Nov  4 20:29:46 2012  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
