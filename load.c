@@ -88,7 +88,7 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
     long plen;
     const char *e;
 
-    if (vlen < len+1) return 0
+    if (vlen < len+1) return 0;
     if (!strncmp(name+(vlen-len), feature, len)) {
 	plen = vlen - len - 1;
     }

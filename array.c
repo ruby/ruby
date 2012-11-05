@@ -305,6 +305,22 @@ rb_ary_frozen_p(VALUE ary)
     return Qfalse;
 }
 
+/* This can be used to take a snapshot of an array (with
+   e.g. rb_ary_replace) and check later whether the array has been
+   modified from the snapshot.  The snapshot is cheap, though if
+   something does modify the array it will pay the cost of copying
+   it. */
+VALUE
+rb_ary_shared_with_p(VALUE ary1, VALUE ary2)
+{
+    if (!ARY_EMBED_P(ary1) && ARY_SHARED_P(ary1)
+     && !ARY_EMBED_P(ary2) && ARY_SHARED_P(ary2)
+     && RARRAY(ary1)->as.heap.aux.shared == RARRAY(ary2)->as.heap.aux.shared) {
+	return Qtrue;
+    }
+    return Qfalse;
+}
+
 static VALUE
 ary_alloc(VALUE klass)
 {
