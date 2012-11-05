@@ -1,3 +1,56 @@
+Mon Nov  5 23:28:57 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* file.c (rb_get_path_check_to_string): extract from
+	  rb_get_path_check(). We change the spec not to call to_path of
+	  String object.
+
+	* file.c (rb_get_path_check_convert): extract from rb_get_path_check().
+
+	* file.c (rb_get_path_check): follow the above change.
+
+	* file.c (rb_file_expand_path_fast): remove check_expand_path_args().
+	  Instead we call it in load.c.
+
+	* file.c (rb_find_file_ext_safe): use rb_get_expanded_load_path() to
+	  reduce expand cost.
+
+	* file.c (rb_find_file_safe): ditto.
+
+	* internal.h (rb_get_expanded_load_path): add a declaration.
+
+	* internal.h (rb_get_path_check_to_string, rb_get_path_check_convert):
+	  add declarations.
+
+	* load.c (rb_construct_expanded_load_path): fix for compatibility.
+	  Same checks in rb_get_path_check() are added. We don't replace
+	  $LOAD_PATH and ensure that String object of $LOAD_PATH are frozen.
+	  We don't freeze non String object and expand it every times. We add
+	  arguments for expanding load path partially and checking if load path
+	  have relative paths or non String objects.
+
+	* load.c (load_path_getcwd): get current working directory for checking
+	  if it's changed when getting load path.
+
+	* load.c (rb_get_expanded_load_path): fix for rebuilding cache properly.
+	  We check if current working directory is changed and rebuild expanded
+	  load path cache. We expand paths which start with ~ (User HOME) and
+	  non String objects every times for compatibility. We make this
+	  accessible from other source files.
+
+	* load.c (rb_feature_provided): call rb_get_path() since we changed
+	  rb_file_expand_path_fast() not to call it.
+
+	* load.c (Init_load): initialize vm->load_path_check_cache.
+
+	* vm.c (rb_vm_mark): mark vm->load_path_check_cache for GC.
+
+	* vm_core.h (rb_vm_struct): add vm->load_path_check_cache to store data
+	  to check load path cache validity.
+
+	* test/ruby/test_require.rb (TestRequire): add tests for require
+	  compatibility related to cached expanded load path.
+	  [ruby-core:47970] [Bug #7158]
+
 Mon Nov  5 23:26:05 2012  Greg Price  <price@mit.edu>
 
 	* load.c (rb_get_expanded_load_path): cache the expanded load

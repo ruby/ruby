@@ -33,22 +33,58 @@ rb_get_load_path(void)
     return load_path;
 }
 
+enum expand_type {
+    EXPAND_ALL,
+    EXPAND_RELATIVE,
+    EXPAND_HOME,
+    EXPAND_NON_CACHE
+};
+
+/* Construct expanded load path and store it to cache.
+   We rebuild load path partially if the cache is invalid.
+   We don't cache non string object and expand it every times. We ensure that
+   string objects in $LOAD_PATH are frozen.
+ */
 static void
-rb_construct_expanded_load_path(void)
+rb_construct_expanded_load_path(int type, int *has_relative, int *has_non_cache)
 {
     rb_vm_t *vm = GET_VM();
     VALUE load_path = vm->load_path;
+    VALUE expanded_load_path = vm->expanded_load_path;
     VALUE ary;
     long i;
+    int level = rb_safe_level();
 
     ary = rb_ary_new2(RARRAY_LEN(load_path));
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 	VALUE path, as_str, expanded_path;
+	int is_string, non_cache;
+	char *as_cstr;
 	as_str = path = RARRAY_PTR(load_path)[i];
-	StringValue(as_str);
-	if (as_str != path)
-	    rb_ary_store(load_path, i, as_str);
-	rb_str_freeze(as_str);
+	is_string = RB_TYPE_P(path, T_STRING) ? 1 : 0;
+	non_cache = !is_string ? 1 : 0;
+	as_str = rb_get_path_check_to_string(path, level);
+	as_cstr = RSTRING_PTR(as_str);
+
+	if (!non_cache) {
+	    if ((type == EXPAND_RELATIVE &&
+		    rb_is_absolute_path(as_cstr)) ||
+		(type == EXPAND_HOME &&
+		    (!as_cstr[0] || as_cstr[0] != '~')) ||
+		(type == EXPAND_NON_CACHE)) {
+		    /* Use cached expanded path. */
+		    rb_ary_push(ary, RARRAY_PTR(expanded_load_path)[i]);
+		    continue;
+	    }
+	}
+	if (!*has_relative && !rb_is_absolute_path(as_cstr))
+	    *has_relative = 1;
+	if (!*has_non_cache && non_cache)
+	    *has_non_cache = 1;
+	/* Freeze only string object. We expand other objects every times. */
+	if (is_string)
+	    rb_str_freeze(path);
+	as_str = rb_get_path_check_convert(path, as_str, level);
 	expanded_path = rb_file_expand_path_fast(as_str, Qnil);
 	rb_str_freeze(expanded_path);
 	rb_ary_push(ary, expanded_path);
@@ -59,12 +95,56 @@ rb_construct_expanded_load_path(void)
 }
 
 static VALUE
+load_path_getcwd(void)
+{
+    char *cwd = my_getcwd();
+    VALUE cwd_str = rb_filesystem_str_new_cstr(cwd);
+    xfree(cwd);
+    return cwd_str;
+}
+
+VALUE
 rb_get_expanded_load_path(void)
 {
     rb_vm_t *vm = GET_VM();
+    const VALUE non_cache = Qtrue;
+
     if (!rb_ary_shared_with_p(vm->load_path_snapshot, vm->load_path)) {
-	/* The load path was modified.	Rebuild the expanded load path. */
-	rb_construct_expanded_load_path();
+	/* The load path was modified. Rebuild the expanded load path. */
+	int has_relative = 0, has_non_cache = 0;
+	rb_construct_expanded_load_path(EXPAND_ALL, &has_relative, &has_non_cache);
+	if (has_relative) {
+	    vm->load_path_check_cache = load_path_getcwd();
+	}
+	else if (has_non_cache) {
+	    /* Non string object. */
+	    vm->load_path_check_cache = non_cache;
+	}
+	else {
+	    vm->load_path_check_cache = 0;
+	}
+    }
+    else if (vm->load_path_check_cache == non_cache) {
+	int has_relative = 1, has_non_cache = 1;
+	/* Expand only non-cacheable objects. */
+	rb_construct_expanded_load_path(EXPAND_NON_CACHE,
+					&has_relative, &has_non_cache);
+    }
+    else if (vm->load_path_check_cache) {
+	int has_relative = 1, has_non_cache = 1;
+	VALUE cwd = load_path_getcwd();
+	if (!rb_str_equal(vm->load_path_check_cache, cwd)) {
+	    /* Current working directory or filesystem encoding was changed.
+	       Expand relative load path and non-cacheable objects again. */
+	    vm->load_path_check_cache = cwd;
+	    rb_construct_expanded_load_path(EXPAND_RELATIVE,
+					    &has_relative, &has_non_cache);
+	}
+	else {
+	    /* Expand only tilde (User HOME) and non-cacheable objects. */
+	    rb_construct_expanded_load_path(EXPAND_HOME,
+					    &has_relative, &has_non_cache);
+	}
     }
     return vm->expanded_load_path;
 }
@@ -392,7 +472,7 @@ rb_feature_provided(const char *feature, const char **loading)
 
     if (*feature == '.' &&
 	(feature[1] == '/' || strncmp(feature+1, "./", 2) == 0)) {
-	fullpath = rb_file_expand_path_fast(rb_str_new2(feature), Qnil);
+	fullpath = rb_file_expand_path_fast(rb_get_path(rb_str_new2(feature)), Qnil);
 	feature = RSTRING_PTR(fullpath);
     }
     if (ext && !strchr(ext, '/')) {
@@ -963,6 +1043,7 @@ Init_load()
     vm->load_path = rb_ary_new();
     vm->expanded_load_path = rb_ary_new();
     vm->load_path_snapshot = rb_ary_new();
+    vm->load_path_check_cache = 0;
 
     rb_define_virtual_variable("$\"", get_loaded_features, 0);
     rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);

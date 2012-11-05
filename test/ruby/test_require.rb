@@ -435,4 +435,114 @@ class TestRequire < Test::Unit::TestCase
     $:.replace(loadpath)
     $".replace(features)
   end
+
+  def test_require_changed_current_dir
+    bug7158 = '[ruby-core:47970]'
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        Dir.mkdir("a")
+        Dir.mkdir("b")
+        open(File.join("a", "foo.rb"), "w") {}
+        open(File.join("b", "bar.rb"), "w") {|f|
+          f.puts "p :ok"
+        }
+        assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7158)
+          $: << "."
+          Dir.chdir("a")
+          require "foo"
+          Dir.chdir("../b")
+          p :ng unless require "bar"
+          Dir.chdir("..")
+          p :ng if require "b/bar"
+        INPUT
+      }
+    }
+  end
+
+  def test_require_not_modified_load_path
+    bug7158 = '[ruby-core:47970]'
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        open("foo.rb", "w") {}
+        assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7158)
+          a = Object.new
+          def a.to_str
+            "#{tmp}"
+          end
+          $: << a
+          require "foo"
+          last_path = $:.pop
+          p :ok if last_path == a && last_path.class == Object
+        INPUT
+      }
+    }
+  end
+
+  def test_require_changed_home
+    bug7158 = '[ruby-core:47970]'
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        open("foo.rb", "w") {}
+        Dir.mkdir("a")
+        open(File.join("a", "bar.rb"), "w") {}
+        assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7158)
+          $: << '~'
+          ENV['HOME'] = "#{tmp}"
+          require "foo"
+          ENV['HOME'] = "#{tmp}/a"
+          p :ok if require "bar"
+        INPUT
+      }
+    }
+  end
+
+  def test_require_to_path_redefined_in_load_path
+    bug7158 = '[ruby-core:47970]'
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        open("foo.rb", "w") {}
+        assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7158)
+          a = Object.new
+          def a.to_path
+            "bar"
+          end
+          $: << a
+          begin
+            require "foo"
+            p :ng
+          rescue LoadError
+          end
+          def a.to_path
+            "#{tmp}"
+          end
+          p :ok if require "foo"
+        INPUT
+      }
+    }
+  end
+
+  def test_require_to_str_redefined_in_load_path
+    bug7158 = '[ruby-core:47970]'
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        open("foo.rb", "w") {}
+        assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7158)
+          a = Object.new
+          def a.to_str
+            "foo"
+          end
+          $: << a
+          begin
+            require "foo"
+            p :ng
+          rescue LoadError
+          end
+          def a.to_str
+            "#{tmp}"
+          end
+          p :ok if require "foo"
+        INPUT
+      }
+    }
+  end
 end
