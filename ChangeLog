@@ -1,3 +1,10 @@
+Tue Nov  6 05:48:06 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_require.rb
+	  (TestRequire#test_require_to_path_redefined_in_load_path,
+	   TestRequire#test_require_to_str_redefined_in_load_path):
+	  Suppress method redefined warning when test-all with RUBYOPT=-w.
+
 Mon Nov  5 11:40:00 2012  Mark Somerville  <mark@scottishclmibs.com>
 
 	* thread_pthread.c (rb_reserved_fd_p): fix typo in macro check

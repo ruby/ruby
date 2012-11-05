@@ -501,7 +501,7 @@ class TestRequire < Test::Unit::TestCase
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         open("foo.rb", "w") {}
-        assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7158)
+        assert_in_out_err(["RUBYOPT"=>nil], <<-INPUT, %w(:ok), [], bug7158)
           a = Object.new
           def a.to_path
             "bar"
@@ -526,7 +526,7 @@ class TestRequire < Test::Unit::TestCase
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         open("foo.rb", "w") {}
-        assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7158)
+        assert_in_out_err(["RUBYOPT"=>nil], <<-INPUT, %w(:ok), [], bug7158)
           a = Object.new
           def a.to_str
             "foo"
