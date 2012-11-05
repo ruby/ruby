@@ -1,3 +1,9 @@
+Mon Nov  5 11:40:00 2012  Mark Somerville  <mark@scottishclmibs.com>
+
+	* thread_pthread.c (rb_reserved_fd_p): fix typo in macro check
+	  that prevented the ifdef ever being true.
+	  [Bug #7281] [ruby-core:48940]
+
 Mon Nov  5 23:28:57 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* file.c (rb_get_path_check_to_string): extract from

@@ -1448,7 +1448,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 int
 rb_reserved_fd_p(int fd)
 {
-#ifdef USE_SLEEPY_TIMER_THRAED
+#ifdef USE_SLEEPY_TIMER_THREAD
     if (fd == timer_thread_pipe[0] ||
 	fd == timer_thread_pipe[1]) {
 	return 1;
