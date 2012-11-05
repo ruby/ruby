@@ -1,3 +1,10 @@
+Mon Nov  5 22:09:26 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* cygwin/GNUmakefile.in (uncommon.mk): link *.res.o.
+	  EXTOBJES is defined in uncommon.mk. *.res.o setting should be below
+	  uncommon.mk.
+	  [ruby-core:48858] [Bug #7277]
+
 Mon Nov  5 11:35:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (native_thread_init, native_thread_destroy):
