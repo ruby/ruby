@@ -69,6 +69,17 @@ get_loading_table(void)
     return GET_VM()->loading_table;
 }
 
+/* This searches `load_path` for a value such that
+     name == "#{load_path[i]}/#{feature}"
+   if `feature` is a suffix of `name`, or otherwise
+     name == "#{load_path[i]}/#{feature}#{ext}"
+   for an acceptable string `ext`.  It returns
+   `load_path[i].to_str` if found, else 0.
+
+   If type is 's', then `ext` is acceptable only if IS_DLEXT(ext);
+   if 'r', then only if IS_RBEXT(ext); otherwise `ext` may be absent
+   or have any value matching `%r{^\.[^./]*$}`.
+*/
 static VALUE
 loaded_feature_path(const char *name, long vlen, const char *feature, long len,
 		    int type, VALUE load_path)
@@ -77,7 +88,7 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
     long plen;
     const char *e;
 
-    if (vlen < len) return 0;
+    if (vlen < len+1) return 0
     if (!strncmp(name+(vlen-len), feature, len)) {
 	plen = vlen - len - 1;
     }
@@ -89,23 +100,22 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
 	    return 0;
 	plen = e - name - len - 1;
     }
+    if (type == 's' && !IS_DLEXT(&name[plen+len+1])
+     || type == 'r' && !IS_RBEXT(&name[plen+len+1])
+     || name[plen] != '/') {
+       return 0;
+    }
+    /* Now name == "#{prefix}/#{feature}#{ext}" where ext is acceptable
+       (possibly empty) and prefix is some string of length plen. */
+
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 	VALUE p = RARRAY_PTR(load_path)[i];
 	const char *s = StringValuePtr(p);
 	long n = RSTRING_LEN(p);
 
 	if (n != plen) continue;
-	if (n && (strncmp(name, s, n) || name[n] != '/')) continue;
-	switch (type) {
-	  case 's':
-	    if (IS_DLEXT(&name[n+len+1])) return p;
-	    break;
-	  case 'r':
-	    if (IS_RBEXT(&name[n+len+1])) return p;
-	    break;
-	  default:
-	    return p;
-	}
+	if (n && strncmp(name, s, n)) continue;
+	return p;
     }
     return 0;
 }
@@ -153,6 +163,25 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
     }
     features = get_loaded_features();
     for (i = 0; i < RARRAY_LEN(features); ++i) {
+	/* This loop searches `features` for an entry such that either
+	     "#{features[i]}" == "#{load_path[j]}/#{feature}#{e}"
+	   for some j, or
+	     "#{features[i]}" == "#{feature}#{e}"
+	   Here `e` is an "allowed" extension -- either empty or one
+	   of the extensions accepted by IS_RBEXT, IS_SOEXT, or
+	   IS_DLEXT.  Further, if `ext && rb` then `IS_RBEXT(e)`,
+	   and if `ext && !rb` then `IS_SOEXT(e) || IS_DLEXT(e)`.
+
+	   If `expanded`, then only the latter form (without
+	   load_path[j]) is accepted.  Otherwise either form is
+	   accepted, *unless* `ext` is false and an otherwise-matching
+	   entry of the first form is preceded by an entry of the form
+	     "#{features[i2]}" == "#{load_path[j2]}/#{feature}#{e2}"
+	   where `e2` matches /^\.[^./]*$/ but is not an allowed extension.
+	   After a "distractor" entry of this form, only entries of the
+	   form "#{feature}#{e}" are accepted.
+	*/
+
 	v = RARRAY_PTR(features)[i];
 	f = StringValuePtr(v);
 	if ((n = RSTRING_LEN(v)) < len) continue;
