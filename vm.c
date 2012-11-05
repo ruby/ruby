@@ -1513,6 +1513,8 @@ rb_vm_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(vm->mark_object_ary);
 	RUBY_MARK_UNLESS_NULL(vm->load_path);
 	RUBY_MARK_UNLESS_NULL(vm->loaded_features);
+	RUBY_MARK_UNLESS_NULL(vm->loaded_features_snapshot);
+	RUBY_MARK_UNLESS_NULL(vm->loaded_features_index);
 	RUBY_MARK_UNLESS_NULL(vm->top_self);
 	RUBY_MARK_UNLESS_NULL(vm->coverages);
 	rb_gc_mark_locations(vm->special_exceptions, vm->special_exceptions + ruby_special_error_count);
