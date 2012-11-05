@@ -107,6 +107,7 @@ class CGIMultipartTest < Test::Unit::TestCase
 
   def setup
     ENV['REQUEST_METHOD'] = 'POST'
+    @tempfiles = []
   end
 
   def teardown
@@ -115,6 +116,9 @@ class CGIMultipartTest < Test::Unit::TestCase
     end
     $stdin.close() if $stdin.is_a?(Tempfile)
     $stdin = STDIN
+    @tempfiles.each {|t|
+      t.unlink
+    }
   end
 
   def _prepare(data)
@@ -133,6 +137,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     ENV['REQUEST_METHOD'] = 'POST'
     ## set $stdin
     tmpfile = Tempfile.new('test_cgi_multipart')
+    @tempfiles << tmpfile
     tmpfile.binmode
     tmpfile << input
     tmpfile.rewind()
@@ -167,6 +172,16 @@ class CGIMultipartTest < Test::Unit::TestCase
       assert_equal(expected, cgi[name].read())
       assert_equal(hash[:filename] || '', cgi[name].original_filename)  #if hash[:filename]
       assert_equal(hash[:content_type] || '', cgi[name].content_type)  #if hash[:content_type]
+    end
+  ensure
+    if cgi
+      cgi.params.each {|name, vals|
+        vals.each {|val|
+          if val.kind_of?(Tempfile) && val.path
+            val.unlink
+          end
+        }
+      }
     end
   end
 
@@ -314,6 +329,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     cgi = RUBY_VERSION>="1.9" ? CGI.new(:accept_charset=>"UTF-8") : CGI.new
     assert_equal(cgi['foo'], 'bar')
     assert_equal(cgi['file'].read, 'b'*10134)
+    cgi['file'].unlink if cgi['file'].kind_of? Tempfile
   end
 
   ###
