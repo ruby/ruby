@@ -237,6 +237,13 @@ with all sufficient information, see the ChangeLog file.
     XML document encoding. Without :encoding option, encoding in
     XML declaration is used for XML document encoding.
 
+* cgi
+  * Add HTML5 tag maker.
+  * incompatible changes:
+    * CGI#header has been renamed to CGI#http_header.
+      CGI#header is now used by the HTML5 tag maker to
+      create a <header> element.
+
 === Language changes
 
   * Added %i and %I for symbol list creation (similar to %w and %W).
