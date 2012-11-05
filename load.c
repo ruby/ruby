@@ -33,21 +33,40 @@ rb_get_load_path(void)
     return load_path;
 }
 
-VALUE
-rb_get_expanded_load_path(void)
+static void
+rb_construct_expanded_load_path(void)
 {
-    VALUE load_path = rb_get_load_path();
+    rb_vm_t *vm = GET_VM();
+    VALUE load_path = vm->load_path;
     VALUE ary;
     long i;
 
     ary = rb_ary_new2(RARRAY_LEN(load_path));
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
-	VALUE path = rb_file_expand_path_fast(RARRAY_PTR(load_path)[i], Qnil);
-	rb_str_freeze(path);
-	rb_ary_push(ary, path);
+	VALUE path, as_str, expanded_path;
+	as_str = path = RARRAY_PTR(load_path)[i];
+	StringValue(as_str);
+	if (as_str != path)
+	    rb_ary_store(load_path, i, as_str);
+	rb_str_freeze(as_str);
+	expanded_path = rb_file_expand_path_fast(as_str, Qnil);
+	rb_str_freeze(expanded_path);
+	rb_ary_push(ary, expanded_path);
     }
     rb_obj_freeze(ary);
-    return ary;
+    vm->expanded_load_path = ary;
+    rb_ary_replace(vm->load_path_snapshot, vm->load_path);
+}
+
+static VALUE
+rb_get_expanded_load_path(void)
+{
+    rb_vm_t *vm = GET_VM();
+    if (!rb_ary_shared_with_p(vm->load_path_snapshot, vm->load_path)) {
+	/* The load path was modified.	Rebuild the expanded load path. */
+	rb_construct_expanded_load_path();
+    }
+    return vm->expanded_load_path;
 }
 
 static VALUE
@@ -942,6 +961,8 @@ Init_load()
     rb_alias_variable(rb_intern("$-I"), id_load_path);
     rb_alias_variable(rb_intern("$LOAD_PATH"), id_load_path);
     vm->load_path = rb_ary_new();
+    vm->expanded_load_path = rb_ary_new();
+    vm->load_path_snapshot = rb_ary_new();
 
     rb_define_virtual_variable("$\"", get_loaded_features, 0);
     rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);

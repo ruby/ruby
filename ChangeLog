@@ -1,3 +1,23 @@
+Mon Nov  5 23:26:05 2012  Greg Price  <price@mit.edu>
+
+	* load.c (rb_get_expanded_load_path): cache the expanded load
+	  path.  This saves 4KB of allocation and some stats for every
+	  element of the load path (so nearly a MB in my Rails app)
+	  on every require.
+
+	* load.c (rb_construct_expanded_load_path): ensure that $LOAD_PATH
+	  entries are frozen strings.  The user must mutate $LOAD_PATH
+	  itself rather than its individual entries.
+
+	* vm_core.h (rb_vm_struct): add fields.
+
+	* vm.c (rb_vm_mark): mark new fields.
+
+	* ruby.c (process_options): modify $LOAD_PATH directly rather than
+	  its elements.
+	  Patch by Greg Price.
+	  [ruby-core:47970] [Bug #7158]
+
 Mon Nov  5 23:24:42 2012  Greg Price  <price@mit.edu>
 
 	* load.c (rb_feature_p, rb_provide_feature): index $LOADED_FEATURES
