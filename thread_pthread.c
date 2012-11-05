@@ -466,18 +466,14 @@ Init_native_thread(void)
 static void
 native_thread_init(rb_thread_t *th)
 {
-#ifdef HAVE_PTHREAD_CONDATTR_INIT
     native_cond_initialize(&th->native_thread_data.sleep_cond, RB_CONDATTR_CLOCK_MONOTONIC);
-#endif
     ruby_thread_set_native(th);
 }
 
 static void
 native_thread_destroy(rb_thread_t *th)
 {
-#ifdef HAVE_PTHREAD_CONDATTR_INIT
     native_cond_destroy(&th->native_thread_data.sleep_cond);
-#endif
 }
 
 #ifndef USE_THREAD_CACHE

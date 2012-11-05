@@ -1,3 +1,11 @@
+Mon Nov  5 11:35:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (native_thread_init, native_thread_destroy):
+	  removed HAVE_PTHREAD_CONDATTR_INIT check because this silly
+	  #ifdef makes use-uninitialized-var issue and (2) native_cond_initialize()
+	  already have a right platform and caller don't need any additional care.
+	  [Bug #6825]
+
 Mon Nov  5 10:57:59 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/cgi/core.rb: check if Tempfile is defined before use it.
