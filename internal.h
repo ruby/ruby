@@ -154,6 +154,7 @@ void Init_newline(void);
 
 /* numeric.c */
 int rb_num_to_uint(VALUE val, unsigned int *ret);
+VALUE num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl);
 int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl);
 double ruby_float_mod(double x, double y);
 

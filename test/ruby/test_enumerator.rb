@@ -522,5 +522,20 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal 0, @sized.each_cons(70).size
     assert_raise(ArgumentError){ @obj.each_cons(0).size }
   end
+
+  def test_size_for_step
+    assert_equal 42, 5.step(46).size
+    assert_equal 4, 1.step(10, 3).size
+    assert_equal 3, 1.step(9, 3).size
+    assert_equal 0, 1.step(-11).size
+    assert_equal 0, 1.step(-11, 2).size
+    assert_equal 7, 1.step(-11, -2).size
+    assert_equal 7, 1.step(-11.1, -2).size
+    assert_equal 0, 42.step(Float::INFINITY, -2).size
+    assert_equal 1, 42.step(55, Float::INFINITY).size
+    assert_equal 1, 42.step(Float::INFINITY, Float::INFINITY).size
+    assert_equal 14, 0.1.step(4.2, 0.3).size
+    assert_equal Float::INFINITY, 42.step(Float::INFINITY, 2).size
+  end
 end
 

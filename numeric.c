@@ -100,7 +100,7 @@ static VALUE fix_uminus(VALUE num);
 static VALUE fix_mul(VALUE x, VALUE y);
 static VALUE int_pow(long x, unsigned long y);
 
-static ID id_coerce, id_to_i, id_eq;
+static ID id_coerce, id_to_i, id_eq, id_div;
 
 VALUE rb_cNumeric;
 VALUE rb_cFloat;
@@ -1764,6 +1764,43 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
     return FALSE;
 }
 
+VALUE
+num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl) {
+    if (FIXNUM_P(from) && FIXNUM_P(to) && FIXNUM_P(step)) {
+	long delta, diff, result;
+
+	diff = FIX2LONG(step);
+	delta = FIX2LONG(to) - FIX2LONG(from);
+	if (excl) {
+	    delta += (diff > 0 ? -1 : +1);
+	}
+	result = delta / diff;
+	return LONG2FIX(result >= 0 ? result + 1 : 0);
+    }
+    else if (TYPE(from) == T_FLOAT || TYPE(to) == T_FLOAT || TYPE(step) == T_FLOAT) {
+	double n = ruby_float_step_size(NUM2DBL(from), NUM2DBL(to), NUM2DBL(step), excl);
+
+	if (isinf(n)) return DBL2NUM(n);
+	return LONG2FIX(n);
+    }
+    else {
+	VALUE result;
+	ID cmp = RTEST(rb_funcall(step, '>', 1, INT2FIX(0))) ? '>' : '<';
+	if (RTEST(rb_funcall(from, cmp, 1, to))) return INT2FIX(0);
+	result = rb_funcall(rb_funcall(to, '-', 1, from), id_div, 1, step);
+	if (!excl || RTEST(rb_funcall(rb_funcall(from, '+', 1, rb_funcall(result, '*', 1, step)), cmp, 1, to))) {
+	    result = rb_funcall(result, '+', 1, INT2FIX(1));
+	}
+	return result;
+    }
+}
+
+static VALUE
+num_step_size(VALUE from, VALUE args) {
+    VALUE to = RARRAY_PTR(args)[0];
+    VALUE step = (RARRAY_LEN(args) > 1) ? RARRAY_PTR(args)[1] : INT2FIX(1);
+    return num_interval_step_size(from, to, step, FALSE);
+}
 /*
  *  call-seq:
  *     num.step(limit[, step]) {|i| block }  ->  self
@@ -1799,7 +1836,7 @@ num_step(int argc, VALUE *argv, VALUE from)
 {
     VALUE to, step;
 
-    RETURN_ENUMERATOR(from, argc, argv);
+    RETURN_SIZED_ENUMERATOR(from, argc, argv, num_step_size);
     if (argc == 1) {
 	to = argv[0];
 	step = INT2FIX(1);
@@ -3602,6 +3639,7 @@ Init_Numeric(void)
     id_coerce = rb_intern("coerce");
     id_to_i = rb_intern("to_i");
     id_eq = rb_intern("==");
+    id_div = rb_intern("div");
 
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);
