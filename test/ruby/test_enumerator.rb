@@ -443,6 +443,13 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal 42, @sized.each_with_object(nil).size
   end
 
+  def test_size_for_enum_created_from_hash
+    h = {a: 1, b: 2, c: 3}
+    %i[delete_if reject! select select! keep_if each each_key each_pair].each do |method|
+      assert_equal 3, h.send(method).size
+    end
+  end
+
   def check_consistency_for_combinatorics(method)
     [ [], [:a, :b, :c, :d, :e] ].product([-2, 0, 2, 5, 6]) do |array, arg|
       assert_equal array.send(method, arg).to_a.size, array.send(method, arg).size,
