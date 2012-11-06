@@ -10,6 +10,10 @@ class TestEnumerator < Test::Unit::TestCase
         a.each {|x| yield x }
       end
     end
+    @sized = @obj.clone
+    def @sized.size
+      42
+    end
   end
 
   def enum_test obj
@@ -427,6 +431,16 @@ class TestEnumerator < Test::Unit::TestCase
       keep_if reject! reject select! select delete_if].each do |method|
       assert_equal arr.size, arr.send(method).size
     end
+  end
+
+  def test_size_for_enum_created_from_enumerable
+    %i[find_all reject map flat_map partition group_by sort_by min_by max_by
+      minmax_by each_with_index reverse_each each_entry].each do |method|
+      assert_equal nil, @obj.send(method).size
+      assert_equal 42, @sized.send(method).size
+    end
+    assert_equal nil, @obj.each_with_object(nil).size
+    assert_equal 42, @sized.each_with_object(nil).size
   end
 
   def check_consistency_for_combinatorics(method)

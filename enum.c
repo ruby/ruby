@@ -305,6 +305,14 @@ find_all_i(VALUE i, VALUE ary, int argc, VALUE *argv)
     return Qnil;
 }
 
+static VALUE
+enum_size(VALUE self, VALUE args)
+{
+    VALUE r;
+    r = rb_check_funcall(self, id_size, 0, 0);
+    return (r == Qundef) ? Qnil : r;
+}
+
 /*
  *  call-seq:
  *     enum.find_all { |obj| block } -> array
@@ -330,7 +338,7 @@ enum_find_all(VALUE obj)
 {
     VALUE ary;
 
-    RETURN_ENUMERATOR(obj, 0, 0);
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
 
     ary = rb_ary_new();
     rb_block_call(obj, id_each, 0, 0, find_all_i, ary);
@@ -371,7 +379,7 @@ enum_reject(VALUE obj)
 {
     VALUE ary;
 
-    RETURN_ENUMERATOR(obj, 0, 0);
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
 
     ary = rb_ary_new();
     rb_block_call(obj, id_each, 0, 0, reject_i, ary);
@@ -418,7 +426,7 @@ enum_collect(VALUE obj)
 {
     VALUE ary;
 
-    RETURN_ENUMERATOR(obj, 0, 0);
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
 
     ary = rb_ary_new();
     rb_block_call(obj, id_each, 0, 0, collect_i, ary);
@@ -465,7 +473,7 @@ enum_flat_map(VALUE obj)
 {
     VALUE ary;
 
-    RETURN_ENUMERATOR(obj, 0, 0);
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
 
     ary = rb_ary_new();
     rb_block_call(obj, id_each, 0, 0, flat_map_i, ary);
@@ -640,7 +648,7 @@ enum_partition(VALUE obj)
 {
     NODE *memo;
 
-    RETURN_ENUMERATOR(obj, 0, 0);
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
 
     memo = NEW_MEMO(rb_ary_new(), rb_ary_new(), 0);
     rb_block_call(obj, id_each, 0, 0, partition_i, (VALUE)memo);
@@ -688,7 +696,7 @@ enum_group_by(VALUE obj)
 {
     VALUE hash;
 
-    RETURN_ENUMERATOR(obj, 0, 0);
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
 
     hash = rb_hash_new();
     rb_block_call(obj, id_each, 0, 0, group_by_i, hash);
@@ -897,7 +905,7 @@ enum_sort_by(VALUE obj)
     long i;
     struct sort_by_data *data;
 
-    RETURN_ENUMERATOR(obj, 0, 0);
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
 
     if (RB_TYPE_P(obj, T_ARRAY) && RARRAY_LEN(obj) <= LONG_MAX/2) {
 	ary = rb_ary_new2(RARRAY_LEN(obj)*2);
@@ -1437,7 +1445,7 @@ enum_min_by(VALUE obj)
 {
     NODE *memo;
 
-    RETURN_ENUMERATOR(obj, 0, 0);
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
 
     memo = NEW_MEMO(Qundef, Qnil, 0);
     rb_block_call(obj, id_each, 0, 0, min_by_i, (VALUE)memo);
@@ -1483,7 +1491,7 @@ enum_max_by(VALUE obj)
 {
     NODE *memo;
 
-    RETURN_ENUMERATOR(obj, 0, 0);
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
 
     memo = NEW_MEMO(Qundef, Qnil, 0);
     rb_block_call(obj, id_each, 0, 0, max_by_i, (VALUE)memo);
@@ -1581,7 +1589,7 @@ enum_minmax_by(VALUE obj)
     VALUE memo;
     struct minmax_by_t *m = NEW_MEMO_FOR(struct minmax_by_t, memo);
 
-    RETURN_ENUMERATOR(obj, 0, 0);
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
 
     m->min_bv = Qundef;
     m->max_bv = Qundef;
@@ -1662,7 +1670,7 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 {
     NODE *memo;
 
-    RETURN_ENUMERATOR(obj, argc, argv);
+    RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
 
     memo = NEW_MEMO(0, 0, 0);
     rb_block_call(obj, id_each, argc, argv, each_with_index_i, (VALUE)memo);
@@ -1694,7 +1702,7 @@ enum_reverse_each(int argc, VALUE *argv, VALUE obj)
     VALUE ary;
     long i;
 
-    RETURN_ENUMERATOR(obj, argc, argv);
+    RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
 
     ary = enum_to_a(argc, argv, obj);
 
@@ -1746,7 +1754,7 @@ each_val_i(VALUE i, VALUE p, int argc, VALUE *argv)
 static VALUE
 enum_each_entry(int argc, VALUE *argv, VALUE obj)
 {
-    RETURN_ENUMERATOR(obj, argc, argv);
+    RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
     rb_block_call(obj, id_each, argc, argv, each_val_i, 0);
     return obj;
 }
@@ -1882,7 +1890,7 @@ each_with_object_i(VALUE i, VALUE memo, int argc, VALUE *argv)
 static VALUE
 enum_each_with_object(VALUE obj, VALUE memo)
 {
-    RETURN_ENUMERATOR(obj, 1, &memo);
+    RETURN_SIZED_ENUMERATOR(obj, 1, &memo, enum_size);
 
     rb_block_call(obj, id_each, 0, 0, each_with_object_i, memo);
 
