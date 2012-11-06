@@ -458,6 +458,25 @@ sym_each_i(VALUE v, void *arg)
 
 /*
  *  call-seq:
+ *     rng.size                   -> num
+ *
+ *  Returns the number of elements in the range.
+ *
+ *    (10..20).size    #=> 11
+ */
+
+static VALUE
+range_size(VALUE range)
+{
+    VALUE b = RANGE_BEG(range), e = RANGE_END(range);
+    if (rb_obj_is_kind_of(b, rb_cNumeric) && rb_obj_is_kind_of(e, rb_cNumeric)) {
+	return num_interval_step_size(b, e, INT2FIX(1), EXCL(range));
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
  *     rng.each {| i | block } -> rng
  *     rng.each                -> an_enumerator
  *
@@ -482,7 +501,7 @@ range_each(VALUE range)
 {
     VALUE beg, end;
 
-    RETURN_ENUMERATOR(range, 0, 0);
+    RETURN_SIZED_ENUMERATOR(range, 0, 0, range_size);
 
     beg = RANGE_BEG(range);
     end = RANGE_END(range);
@@ -1076,6 +1095,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "last", range_last, -1);
     rb_define_method(rb_cRange, "min", range_min, 0);
     rb_define_method(rb_cRange, "max", range_max, 0);
+    rb_define_method(rb_cRange, "size", range_size, 0);
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);
 

@@ -347,4 +347,12 @@ class TestRange < Test::Unit::TestCase
       assert !x.eql?(z)
     }
   end
+
+  def test_size
+    assert_equal 42, (1..42).size
+    assert_equal 41, (1...42).size
+    assert_equal 6, (1...6.3).size
+    assert_equal 5, (1.1...6).size
+    assert_equal 42, (1..42).each.size
+  end
 end
