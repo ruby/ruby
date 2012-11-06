@@ -464,5 +464,9 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal 0,  [].cycle.size
     assert_equal 0,  [].cycle(5).size
   end
+
+  def test_size_for_loops
+    assert_equal Float::INFINITY, loop.size
+  end
 end
 

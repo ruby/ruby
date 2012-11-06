@@ -920,6 +920,11 @@ loop_i(void)
     return Qnil;
 }
 
+static VALUE
+rb_f_loop_size(VALUE self, VALUE args) {
+    return DBL2NUM(INFINITY);
+}
+
 /*
  *  call-seq:
  *     loop { block }
@@ -942,7 +947,7 @@ loop_i(void)
 static VALUE
 rb_f_loop(VALUE self)
 {
-    RETURN_ENUMERATOR(self, 0, 0);
+    RETURN_SIZED_ENUMERATOR(self, 0, 0, rb_f_loop_size);
     rb_rescue2(loop_i, (VALUE)0, 0, 0, rb_eStopIteration, (VALUE)0);
     return Qnil;		/* dummy */
 }
