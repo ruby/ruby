@@ -379,7 +379,7 @@ if defined?(WIN32OLE)
           open(fname, "r:ascii-8bit") {|ifs|
             str = ifs.read
           }
-          assert_equal("\244\242", str)
+          assert_equal("\244\242".b, str)
         end
 
       ensure
