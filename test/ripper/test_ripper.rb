@@ -17,7 +17,7 @@ class TestRipper::Ripper < Test::Unit::TestCase
   end
 
   def test_encoding
-    assert_equal Encoding::US_ASCII, @ripper.encoding
+    assert_equal Encoding::UTF_8, @ripper.encoding
   end
 
   def test_end_seen_eh

@@ -1,4 +1,4 @@
-# -*- mode: ruby; ruby-indent-level: 4; tab-width: 4 -*-
+# -*- coding: us-ascii; mode: ruby; ruby-indent-level: 4; tab-width: 4 -*-
 #												vim:sw=4:ts=4
 # $Id$
 #

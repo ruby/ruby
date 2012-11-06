@@ -1,3 +1,4 @@
+# coding: US-ASCII
 require_relative 'test_base'
 require 'dl/import'
 

@@ -1,3 +1,4 @@
+# coding: US-ASCII
 require_relative 'utils'
 
 if defined?(OpenSSL)

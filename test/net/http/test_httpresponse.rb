@@ -1,3 +1,4 @@
+# coding: US-ASCII
 require 'net/http'
 require 'test/unit'
 require 'stringio'

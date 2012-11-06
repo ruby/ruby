@@ -1,3 +1,4 @@
+# coding: US-ASCII
 module REXML
   module Encoding
     # ID ---> Encoding name

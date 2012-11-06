@@ -1,3 +1,4 @@
+# coding: US-ASCII
 require_relative "utils"
 require "webrick"
 require "test/unit"

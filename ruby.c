@@ -1692,7 +1692,7 @@ load_file_internal(VALUE arg)
 	enc = rb_locale_encoding();
     }
     else {
-	enc = rb_usascii_encoding();
+	enc = rb_utf8_encoding();
     }
     if (NIL_P(f)) {
 	f = rb_str_new(0, 0);

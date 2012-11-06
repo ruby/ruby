@@ -1,3 +1,11 @@
+Tue Nov  6 09:37:57 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ruby.c (load_file_internal): set default source encoding as
+	  UTF-8 instead of US-ASCII. [ruby-core:46021] [Feature #6679]
+
+	* parse.y (parser_initialize): set default parser encoding as
+	  UTF-8 instead of US-ASCII.
+
 Tue Nov  6 05:48:06 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/ruby/test_require.rb

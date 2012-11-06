@@ -1,3 +1,4 @@
+# coding: US-ASCII
 require 'rexml/encoding'
 
 module REXML

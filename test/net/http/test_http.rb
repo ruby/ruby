@@ -1,5 +1,4 @@
-# $Id$
-
+# coding: US-ASCII
 require 'test/unit'
 require 'net/http'
 require 'stringio'

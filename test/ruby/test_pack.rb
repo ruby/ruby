@@ -1,3 +1,4 @@
+# coding: US-ASCII
 require 'test/unit'
 
 class TestPack < Test::Unit::TestCase

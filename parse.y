@@ -10580,7 +10580,7 @@ parser_initialize(struct parser_params *parser)
 #ifdef YYMALLOC
     parser->heap = NULL;
 #endif
-    parser->enc = rb_usascii_encoding();
+    parser->enc = rb_utf8_encoding();
 }
 
 #ifdef RIPPER
