@@ -357,6 +357,7 @@ enumerator_initialize(int argc, VALUE *argv, VALUE obj)
 	recv = generator_init(generator_allocate(rb_cGenerator), rb_block_proc());
     }
     else {
+	rb_warn("Enumerator.new without a block is deprecated; use Object#to_enum");
 	recv = *argv++;
 	if (--argc) {
 	    meth = *argv++;
