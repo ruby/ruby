@@ -1674,6 +1674,19 @@ lazy_take_while(VALUE obj)
 }
 
 static VALUE
+lazy_drop_size(VALUE lazy) {
+    long len = NUM2LONG(RARRAY_PTR(rb_ivar_get(lazy, id_arguments))[0]);
+    VALUE receiver = lazy_receiver_size(lazy);
+    if (NIL_P(receiver))
+	return receiver;
+    if (FIXNUM_P(receiver)) {
+	len = FIX2LONG(receiver) - len;
+	return LONG2FIX(len < 0 ? 0 : len);
+    }
+    return rb_funcall(receiver, '-', 1, LONG2NUM(len));
+}
+
+static VALUE
 lazy_drop_func(VALUE val, VALUE args, int argc, VALUE *argv)
 {
     NODE *memo = RNODE(args);
@@ -1699,7 +1712,7 @@ lazy_drop(VALUE obj, VALUE n)
     memo = NEW_MEMO(0, 0, len);
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
 					 lazy_drop_func, (VALUE) memo),
-			   rb_ary_new3(1, n), 0);
+			   rb_ary_new3(1, n), lazy_drop_size);
 }
 
 static VALUE

@@ -341,5 +341,10 @@ EOS
     assert_equal 3, lazy.take(4).size
     assert_equal 4, loop.lazy.take(4).size
     assert_equal nil, lazy.select{}.take(4).size
+
+    assert_equal 1, lazy.drop(2).size
+    assert_equal 0, lazy.drop(4).size
+    assert_equal Float::INFINITY, loop.lazy.drop(4).size
+    assert_equal nil, lazy.select{}.drop(4).size
   end
 end
