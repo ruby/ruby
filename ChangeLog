@@ -1,3 +1,8 @@
+Tue Nov  6 14:25:09 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/protocol.rb (Net::InternetMessageIO#each_crlf_line):
+	  don't use /n in universal regexp. [ruby-dev:46394] [Bug #7278]
+
 Tue Nov  6 09:42:26 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_b): Add String#b, returning a copied string

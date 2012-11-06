@@ -322,7 +322,7 @@ module Net # :nodoc:
 
     def each_crlf_line(src)
       buffer_filling(@wbuf, src) do
-        while line = @wbuf.slice!(/\A.*(?:\n|\r\n|\r(?!\z))/n)
+        while line = @wbuf.slice!(/\A.*(?:\n|\r\n|\r(?!\z))/)
           yield line.chomp("\n") + "\r\n"
         end
       end
