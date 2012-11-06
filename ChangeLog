@@ -12,6 +12,8 @@ Tue Nov  6 16:50:00 2012  Masaki Matsushita  <glass.saga@gmail.com>
 	    t = Tempfile.new("foo")
 	    #=> #<Tempfile:/tmp/foo20121106-31970-1ffbum0>
 
+	  [ruby-core:47544] [Bug #7027]
+
 Tue Nov  6 16:22:30 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* atomic.h: add #include <sys/atomic.h> for the workaround of
