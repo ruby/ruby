@@ -4645,6 +4645,17 @@ rcombinate0(long n, long r, long *p, long index, long rest, VALUE values)
     }
 }
 
+static VALUE
+rb_ary_repeated_combination_size(VALUE ary, VALUE args)
+{
+    long n = RARRAY_LEN(ary);
+    long k = NUM2LONG(RARRAY_PTR(args)[0]);
+    if (k == 0) {
+	return LONG2FIX(1);
+    }
+    return binomial_coefficient(k, n + k - 1);
+}
+
 /*
  *  call-seq:
  *     ary.repeated_combination(n) { |c| block } -> ary
@@ -4678,7 +4689,7 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
     long n, i, len;
 
     n = NUM2LONG(num);                 /* Combination size from argument */
-    RETURN_ENUMERATOR(ary, 1, &num);   /* Return Enumerator if no block */
+    RETURN_SIZED_ENUMERATOR(ary, 1, &num, rb_ary_repeated_combination_size);   /* Return enumerator if no block */
     len = RARRAY_LEN(ary);
     if (n < 0) {
 	/* yield nothing */
