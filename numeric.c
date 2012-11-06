@@ -1721,7 +1721,8 @@ num_truncate(VALUE num)
 }
 
 static double
-ruby_float_step_size(double beg, double end, double unit, int excl) {
+ruby_float_step_size(double beg, double end, double unit, int excl)
+{
     const double epsilon = DBL_EPSILON;
     double n = (end - beg)/unit;
     double err = (fabs(beg) + fabs(end) + fabs(end-beg)) / fabs(unit) * epsilon;
@@ -1765,7 +1766,8 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
 }
 
 VALUE
-num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl) {
+num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
+{
     if (FIXNUM_P(from) && FIXNUM_P(to) && FIXNUM_P(step)) {
 	long delta, diff, result;
 
@@ -1796,7 +1798,8 @@ num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl) {
 }
 
 static VALUE
-num_step_size(VALUE from, VALUE args) {
+num_step_size(VALUE from, VALUE args)
+{
     VALUE to = RARRAY_PTR(args)[0];
     VALUE step = (RARRAY_LEN(args) > 1) ? RARRAY_PTR(args)[1] : INT2FIX(1);
     return num_interval_step_size(from, to, step, FALSE);
@@ -3381,7 +3384,8 @@ fix_size(VALUE fix)
 }
 
 static VALUE
-int_upto_size(VALUE from, VALUE args) {
+int_upto_size(VALUE from, VALUE args)
+{
     return num_interval_step_size(from, RARRAY_PTR(args)[0], INT2FIX(1), FALSE);
 }
 
@@ -3427,7 +3431,8 @@ int_upto(VALUE from, VALUE to)
 }
 
 static VALUE
-int_downto_size(VALUE from, VALUE args) {
+int_downto_size(VALUE from, VALUE args)
+{
     return num_interval_step_size(from, RARRAY_PTR(args)[0], INT2FIX(-1), FALSE);
 }
 

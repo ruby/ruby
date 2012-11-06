@@ -1625,7 +1625,8 @@ lazy_take_func(VALUE val, VALUE args, int argc, VALUE *argv)
 }
 
 static VALUE
-lazy_take_size(VALUE lazy) {
+lazy_take_size(VALUE lazy)
+{
     long len = NUM2LONG(RARRAY_PTR(rb_ivar_get(lazy, id_arguments))[0]);
     VALUE receiver = lazy_receiver_size(lazy);
     if (NIL_P(receiver) || (FIXNUM_P(receiver) && FIX2LONG(receiver) < len))
@@ -1674,7 +1675,8 @@ lazy_take_while(VALUE obj)
 }
 
 static VALUE
-lazy_drop_size(VALUE lazy) {
+lazy_drop_size(VALUE lazy)
+{
     long len = NUM2LONG(RARRAY_PTR(rb_ivar_get(lazy, id_arguments))[0]);
     VALUE receiver = lazy_receiver_size(lazy);
     if (NIL_P(receiver))
@@ -1741,7 +1743,8 @@ lazy_drop_while(VALUE obj)
 }
 
 static VALUE
-lazy_cycle_size(VALUE lazy) {
+lazy_cycle_size(VALUE lazy)
+{
     return enum_cycle_size(rb_ivar_get(lazy, id_receiver), rb_ivar_get(lazy, id_arguments));
 }
 
