@@ -315,6 +315,29 @@ discrete_object_p(VALUE obj)
     return rb_respond_to(obj, id_succ);
 }
 
+static VALUE
+range_step_size(VALUE range, VALUE args)
+{
+    VALUE b = RANGE_BEG(range), e = RANGE_END(range);
+    VALUE step = INT2FIX(1);
+    if (args) {
+	step = RARRAY_PTR(args)[0];
+	if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
+	    step = rb_to_int(step);
+	}
+    }
+    if (rb_funcall(step, '<', 1, INT2FIX(0))) {
+	rb_raise(rb_eArgError, "step can't be negative");
+    }
+    else if (!rb_funcall(step, '>', 1, INT2FIX(0))) {
+	rb_raise(rb_eArgError, "step can't be 0");
+    }
+
+    if (rb_obj_is_kind_of(b, rb_cNumeric) && rb_obj_is_kind_of(e, rb_cNumeric)) {
+	return num_interval_step_size(b, e, step, EXCL(range));
+    }
+    return Qnil;
+}
 
 /*
  *  call-seq:
@@ -355,7 +378,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 {
     VALUE b, e, step, tmp;
 
-    RETURN_ENUMERATOR(range, argc, argv);
+    RETURN_SIZED_ENUMERATOR(range, argc, argv, range_step_size);
 
     b = RANGE_BEG(range);
     e = RANGE_END(range);
