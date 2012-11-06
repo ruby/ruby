@@ -1,3 +1,17 @@
+Tue Nov  6 16:50:00 2012  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* lib/tempfile.rb (Tempfile#inspect): fix confusing #inspect.
+	  previous Tempfile#inspect says it is a File, but actually
+	  it is not a File.
+
+	    t = Tempfile.new("foo") #=> #<File:/tmp/foo20121106-31970-1ffbum0>
+	    t.is_a? File #=> false
+
+	  now Tempfile#inspect returns like:
+
+	    t = Tempfile.new("foo")
+	    #=> #<Tempfile:/tmp/foo20121106-31970-1ffbum0>
+
 Tue Nov  6 16:22:30 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* atomic.h: add #include <sys/atomic.h> for the workaround of
