@@ -456,6 +456,13 @@ class TestEnumerator < Test::Unit::TestCase
     end
   end
 
+  def test_size_for_enum_created_from_struct
+    s = Struct.new(:foo, :bar, :baz).new(1, 2)
+    %i[each each_pair select].each do |method|
+      assert_equal 3, s.send(method).size
+    end
+  end
+
   def check_consistency_for_combinatorics(method)
     [ [], [:a, :b, :c, :d, :e] ].product([-2, 0, 2, 5, 6]) do |array, arg|
       assert_equal array.send(method, arg).to_a.size, array.send(method, arg).size,
