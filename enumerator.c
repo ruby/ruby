@@ -1337,9 +1337,10 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-lazy_set_method(VALUE lazy, VALUE args)
+lazy_set_method(VALUE lazy, VALUE args, VALUE (*size_fn)(ANYARGS))
 {
     ID id = rb_frame_this_func();
+    struct enumerator *e = enumerator_ptr(lazy);
     rb_ivar_set(lazy, id_method, ID2SYM(id));
     if (NIL_P(args)) {
 	/* Qfalse indicates that the arguments are empty */
@@ -1348,6 +1349,7 @@ lazy_set_method(VALUE lazy, VALUE args)
     else {
 	rb_ivar_set(lazy, id_arguments, args);
     }
+    e->size_fn = size_fn;
     return lazy;
 }
 
@@ -1411,7 +1413,7 @@ lazy_map(VALUE obj)
 
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
 					 lazy_map_func, 0),
-			   Qnil);
+			   Qnil, lazy_receiver_size);
 }
 
 static VALUE
@@ -1475,7 +1477,7 @@ lazy_flat_map(VALUE obj)
 
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
 					 lazy_flat_map_func, 0),
-			   Qnil);
+			   Qnil, lazy_receiver_size);
 }
 
 static VALUE
@@ -1498,7 +1500,7 @@ lazy_select(VALUE obj)
 
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
 					 lazy_select_func, 0),
-			   Qnil);
+			   Qnil, 0);
 }
 
 static VALUE
@@ -1521,7 +1523,7 @@ lazy_reject(VALUE obj)
 
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
 					 lazy_reject_func, 0),
-			   Qnil);
+			   Qnil, 0);
 }
 
 static VALUE
@@ -1555,7 +1557,7 @@ lazy_grep(VALUE obj, VALUE pattern)
 					 rb_block_given_p() ?
 					 lazy_grep_iter : lazy_grep_func,
 					 pattern),
-			   rb_ary_new3(1, pattern));
+			   rb_ary_new3(1, pattern), 0);
 }
 
 static VALUE
@@ -1604,7 +1606,7 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
 
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
 					 lazy_zip_func, ary),
-			   rb_ary_new4(argc, argv));
+			   rb_ary_new4(argc, argv), lazy_receiver_size);
 }
 
 static VALUE
@@ -1642,7 +1644,7 @@ lazy_take(VALUE obj, VALUE n)
     memo = NEW_MEMO(0, len, len);
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, argc, argv,
 					 lazy_take_func, (VALUE) memo),
-			   rb_ary_new3(1, n));
+			   rb_ary_new3(1, n), 0);
 }
 
 static VALUE
@@ -1659,7 +1661,7 @@ lazy_take_while(VALUE obj)
 {
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
 					 lazy_take_while_func, 0),
-			   Qnil);
+			   Qnil, 0);
 }
 
 static VALUE
@@ -1688,7 +1690,7 @@ lazy_drop(VALUE obj, VALUE n)
     memo = NEW_MEMO(0, 0, len);
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
 					 lazy_drop_func, (VALUE) memo),
-			   rb_ary_new3(1, n));
+			   rb_ary_new3(1, n), 0);
 }
 
 static VALUE
@@ -1713,7 +1715,7 @@ lazy_drop_while(VALUE obj)
     memo = NEW_MEMO(0, 0, FALSE);
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
 					 lazy_drop_while_func, (VALUE) memo),
-			   Qnil);
+			   Qnil, 0);
 }
 
 static VALUE
@@ -1740,7 +1742,7 @@ lazy_cycle(int argc, VALUE *argv, VALUE obj)
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, len,
 					 RARRAY_PTR(args), lazy_cycle_func,
 					 args /* prevent from GC */),
-			   rb_ary_new4(argc, argv));
+			   rb_ary_new4(argc, argv), 0);
 }
 
 static VALUE

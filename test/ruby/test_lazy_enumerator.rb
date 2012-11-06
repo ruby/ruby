@@ -328,5 +328,13 @@ EOS
     lazy = [1, 2, 3].lazy
     assert_equal 3, lazy.size
     assert_equal 42, Enumerator.new(42){}.lazy.size
+    %i[map collect flat_map collect_concat].each do |m|
+      assert_equal 3, lazy.send(m){}.size
+    end
+    assert_equal 3, lazy.zip([4]).size
+    %i[select find_all reject take_while drop_while].each do |m|
+      assert_equal nil, lazy.send(m){}.size
+    end
+    assert_equal nil, lazy.grep(//).size
   end
 end
