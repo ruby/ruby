@@ -414,5 +414,11 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal nil, @obj.to_enum(:foo, 0, 1).size
     assert_equal 2, @obj.to_enum(:foo, 0, 1){ 2 }.size
   end
+
+  def test_size_for_enum_created_by_enumerators
+    enum = to_enum{ 42 }
+    assert_equal 42, enum.with_index.size
+    assert_equal 42, enum.with_object(:foo).size
+  end
 end
 

@@ -489,6 +489,9 @@ enumerator_with_index_i(VALUE val, VALUE m, int argc, VALUE *argv)
     return rb_yield_values(2, rb_ary_new4(argc, argv), idx);
 }
 
+static VALUE
+enumerator_size(VALUE obj);
+
 /*
  * call-seq:
  *   e.with_index(offset = 0) {|(*args), idx| ... }
@@ -507,7 +510,7 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
     VALUE memo;
 
     rb_scan_args(argc, argv, "01", &memo);
-    RETURN_ENUMERATOR(obj, argc, argv);
+    RETURN_SIZED_ENUMERATOR(obj, argc, argv, enumerator_size);
     memo = NIL_P(memo) ? 0 : (VALUE)NUM2LONG(memo);
     return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)&memo);
 }
@@ -567,7 +570,7 @@ enumerator_with_object_i(VALUE val, VALUE memo, int argc, VALUE *argv)
 static VALUE
 enumerator_with_object(VALUE obj, VALUE memo)
 {
-    RETURN_ENUMERATOR(obj, 1, &memo);
+    RETURN_SIZED_ENUMERATOR(obj, 1, &memo, enumerator_size);
     enumerator_block_call(obj, enumerator_with_object_i, memo);
 
     return memo;
