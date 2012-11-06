@@ -420,6 +420,26 @@ rb_objspace_alloc(void)
 
 static void initial_expand_heap(rb_objspace_t *objspace);
 
+
+typedef struct mark_queue_node_struct mark_queue_node_t;
+struct mark_queue_node_struct {
+    rb_objspace_t* objspace;
+    VALUE ptr;
+    int lev;
+    mark_queue_node_t* next;
+};
+
+typedef struct mark_queue_struct {
+    mark_queue_node_t* head;
+    mark_queue_node_t* tail;
+    unsigned int size;
+} mark_queue_t;
+
+mark_queue_t mark_queue = {NULL, NULL, 0};
+
+void gc_mark_defer(rb_objspace_t *objspace, VALUE ptr, int lev);
+int gc_mark_pop();
+
 void
 rb_gc_set_params(void)
 {
@@ -1647,6 +1667,45 @@ gc_mark(rb_objspace_t *objspace, VALUE ptr, int lev)
 	return;
     }
     gc_mark_children(objspace, ptr, lev+1);
+}
+
+void
+gc_mark_defer(rb_objspace_t *objspace, VALUE ptr, int lev) {
+    mark_queue_node_t* node =
+	(mark_queue_node_t*) malloc(sizeof(mark_queue_node_t));
+    node->objspace = objspace;
+    node->ptr = ptr;
+    node->lev = lev;
+    node->next = NULL;
+    //lock
+    if (mark_queue.tail == NULL) {
+	mark_queue.head = mark_queue.tail = node;
+    } else {
+	mark_queue.tail->next = node;
+	mark_queue.tail = node;
+    }
+    mark_queue.size++;
+    //unlock
+}
+
+int
+gc_mark_pop() {
+    mark_queue_node_t* node;
+    //lock
+    node = mark_queue.head;
+    if (node != NULL) {
+	mark_queue.head = node->next;
+	if (mark_queue.head == NULL) {
+	    mark_queue.tail = NULL;
+	}
+	mark_queue.size--;
+    }
+    //unlock
+    if (node != NULL) {
+	gc_mark(node->objspace, node->ptr, node->lev);
+	free(node);
+    }
+    return node != NULL;
 }
 
 void
