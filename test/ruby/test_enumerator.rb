@@ -401,5 +401,15 @@ class TestEnumerator < Test::Unit::TestCase
 
     assert_raise(LocalJumpError) { Enumerator::Yielder.new }
   end
+
+  def test_size
+    assert_equal nil, Enumerator.new{}.size
+    assert_equal 42, Enumerator.new(->{42}){}.size
+    assert_equal 42, Enumerator.new(42){}.size
+    assert_equal 1 << 70, Enumerator.new(1 << 70){}.size
+    assert_equal Float::INFINITY, Enumerator.new(Float::INFINITY){}.size
+    assert_equal nil, Enumerator.new(nil){}.size
+    assert_raise(TypeError) { Enumerator.new("42"){} }
+  end
 end
 

@@ -201,12 +201,13 @@ VALUE rb_fiber_alive_p(VALUE);
 /* enum.c */
 VALUE rb_enum_values_pack(int, VALUE*);
 /* enumerator.c */
-VALUE rb_enumeratorize(VALUE, VALUE, int, VALUE *);
-#define RETURN_ENUMERATOR(obj, argc, argv) do {				\
+VALUE rb_enumeratorize(VALUE, VALUE, int, VALUE *, VALUE (*)(ANYARGS));
+#define RETURN_SIZED_ENUMERATOR(obj, argc, argv, size_fn) do {		\
 	if (!rb_block_given_p())					\
 	    return rb_enumeratorize((obj), ID2SYM(rb_frame_this_func()),\
-				    (argc), (argv));			\
+				    (argc), (argv), (size_fn));		\
     } while (0)
+#define RETURN_ENUMERATOR(obj, argc, argv) RETURN_SIZED_ENUMERATOR(obj, argc, argv, 0)
 /* error.c */
 VALUE rb_exc_new(VALUE, const char*, long);
 VALUE rb_exc_new2(VALUE, const char*);
