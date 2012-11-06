@@ -1720,40 +1720,44 @@ num_truncate(VALUE num)
     return flo_truncate(rb_Float(num));
 }
 
+static double
+ruby_float_step_size(double beg, double end, double unit, int excl) {
+    const double epsilon = DBL_EPSILON;
+    double n = (end - beg)/unit;
+    double err = (fabs(beg) + fabs(end) + fabs(end-beg)) / fabs(unit) * epsilon;
+
+    if (isinf(unit)) {
+	return unit > 0 ? beg <= end : beg >= end;
+    }
+    if (err>0.5) err=0.5;
+    if (excl) {
+	if (n<=0) return 0;
+	if (n<1)
+	    n = 0;
+	else
+	    n = floor(n - err);
+    }
+    else {
+	if (n<0) return 0;
+	n = floor(n + err);
+    }
+    return n+1;
+}
 
 int
 ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
 {
     if (RB_TYPE_P(from, T_FLOAT) || RB_TYPE_P(to, T_FLOAT) || RB_TYPE_P(step, T_FLOAT)) {
-	const double epsilon = DBL_EPSILON;
 	double beg = NUM2DBL(from);
 	double end = NUM2DBL(to);
 	double unit = NUM2DBL(step);
-	double n = (end - beg)/unit;
-	double err = (fabs(beg) + fabs(end) + fabs(end-beg)) / fabs(unit) * epsilon;
+	double n = ruby_float_step_size(beg, end, unit, excl);
 	long i;
 
-	if (isinf(unit)) {
-	    if (unit > 0 ? beg <= end : beg >= end) rb_yield(DBL2NUM(beg));
-	}
-	else {
-	    if (err>0.5) err=0.5;
-	    if (excl) {
-		if (n<=0) return TRUE;
-		if (n<1)
-		    n = 0;
-		else
-		    n = floor(n - err);
-	    }
-	    else {
-		if (n<0) return TRUE;
-		n = floor(n + err);
-	    }
-	    for (i=0; i<=n; i++) {
-		double d = i*unit+beg;
-		if (unit >= 0 ? end < d : d < end) d = end;
-		rb_yield(DBL2NUM(d));
-	    }
+	for (i=0; i<n; i++) {
+	    double d = i*unit+beg;
+	    if (unit >= 0 ? end < d : d < end) d = end;
+	    rb_yield(DBL2NUM(d));
 	}
 	return TRUE;
     }
