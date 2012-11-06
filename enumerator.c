@@ -186,6 +186,8 @@ enumerator_ptr(VALUE obj)
  * call-seq:
  *   obj.to_enum(method = :each, *args)
  *   obj.enum_for(method = :each, *args)
+ *   obj.to_enum(method = :each, *args) {|obj, *args| block}
+ *   obj.enum_for(method = :each, *args){|obj, *args| block}
  *
  * Creates a new Enumerator which will enumerate by on calling +method+ on
  * +obj+.
@@ -194,6 +196,9 @@ enumerator_ptr(VALUE obj)
  * +args+:: arguments that will be passed in +method+ <i>in addition</i>
  *          to the item itself.  Note that the number of args
  *          must not exceed the number expected by +method+
+ *
+ *  If a block is given, it will be used to calculate the size of
+ *  the enumerator (see Enumerator#size=).
  *
  * === Example
  *
@@ -213,13 +218,17 @@ enumerator_ptr(VALUE obj)
 static VALUE
 obj_to_enum(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE meth = sym_each;
+    VALUE enumerator, meth = sym_each;
 
     if (argc > 0) {
 	--argc;
 	meth = *argv++;
     }
-    return rb_enumeratorize(obj, meth, argc, argv, 0);
+    enumerator = rb_enumeratorize(obj, meth, argc, argv, 0);
+    if (rb_block_given_p()) {
+	enumerator_ptr(enumerator)->size = rb_block_proc();
+    }
+    return enumerator;
 }
 
 static VALUE

@@ -410,6 +410,9 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal Float::INFINITY, Enumerator.new(Float::INFINITY){}.size
     assert_equal nil, Enumerator.new(nil){}.size
     assert_raise(TypeError) { Enumerator.new("42"){} }
+
+    assert_equal nil, @obj.to_enum(:foo, 0, 1).size
+    assert_equal 2, @obj.to_enum(:foo, 0, 1){ 2 }.size
   end
 end
 
