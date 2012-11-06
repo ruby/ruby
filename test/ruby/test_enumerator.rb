@@ -550,5 +550,11 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal 102, 1.downto(-100).size
     assert_equal Float::INFINITY, 42.upto(Float::INFINITY).size
   end
+
+  def test_size_for_string
+    assert_equal 5, 'hello'.each_byte.size
+    assert_equal 5, 'hello'.each_char.size
+    assert_equal 5, 'hello'.each_codepoint.size
+  end
 end
 

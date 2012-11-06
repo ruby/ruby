@@ -6222,6 +6222,11 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     return orig;
 }
 
+static VALUE
+rb_str_each_byte_size(VALUE str, VALUE args)
+{
+    return LONG2FIX(RSTRING_LEN(str));
+}
 
 /*
  *  call-seq:
@@ -6246,13 +6251,27 @@ rb_str_each_byte(VALUE str)
 {
     long i;
 
-    RETURN_ENUMERATOR(str, 0, 0);
+    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_byte_size);
     for (i=0; i<RSTRING_LEN(str); i++) {
 	rb_yield(INT2FIX(RSTRING_PTR(str)[i] & 0xff));
     }
     return str;
 }
 
+static VALUE
+rb_str_each_char_size(VALUE str)
+{
+    long len = RSTRING_LEN(str);
+    if (!single_byte_optimizable(str)) {
+	const char *ptr = RSTRING_PTR(str);
+	rb_encoding *enc = rb_enc_get(str);
+	const char *end_ptr = ptr + len;
+	for (len = 0; ptr < end_ptr; ++len) {
+	    ptr += rb_enc_mbclen(ptr, end_ptr, enc);
+	}
+    }
+    return LONG2FIX(len);
+}
 
 /*
  *  call-seq:
@@ -6280,7 +6299,7 @@ rb_str_each_char(VALUE str)
     const char *ptr;
     rb_encoding *enc;
 
-    RETURN_ENUMERATOR(str, 0, 0);
+    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
     str = rb_str_new4(str);
     ptr = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
@@ -6333,7 +6352,7 @@ rb_str_each_codepoint(VALUE str)
     rb_encoding *enc;
 
     if (single_byte_optimizable(str)) return rb_str_each_byte(str);
-    RETURN_ENUMERATOR(str, 0, 0);
+    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
     str = rb_str_new4(str);
     ptr = RSTRING_PTR(str);
     end = RSTRING_END(str);
