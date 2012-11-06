@@ -1,3 +1,11 @@
+Tue Nov  6 20:40:28 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* object.c (rb_mod_const_get): Fix constant missing exception class
+	  and message to maintain backwards compatibility. Constant search
+	  should start at Object when constant starts with '::'
+
+	* test/ruby/test_module.rb: test for fixes
+
 Tue Nov  6 16:50:00 2012  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* lib/tempfile.rb (Tempfile#inspect): fix confusing #inspect.

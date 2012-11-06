@@ -1935,12 +1935,28 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
     }
 
     pbeg = p = path;
+
+    if (!*p) {
+	rb_raise(rb_eNameError, "wrong constant name %s", path);
+    }
+
+    if (p[0] == ':' && p[1] == ':') {
+	mod = rb_cObject;
+	p += 2;
+	pbeg = p;
+    }
+
     while (*p) {
 	while (*p && *p != ':') p++;
+
+	if (pbeg == p) {
+	    rb_raise(rb_eNameError, "wrong constant name %s", path);
+	}
+
 	id = rb_intern3(pbeg, p-pbeg, enc);
 	if (p[0] == ':') {
 	    if (p[1] != ':') {
-              rb_raise(rb_eArgError, "undefined class/module %.*s", (int)(p-path), path);
+		rb_raise(rb_eNameError, "wrong constant name %s", path);
             }
 	    p += 2;
 	    pbeg = p;

@@ -240,6 +240,24 @@ class TestModule < Test::Unit::TestCase
     assert(!Math.const_defined?("IP"))
   end
 
+  def test_bad_constants
+    [
+      "#<Class:0x7b8b718b>",
+      ":Object",
+      "",
+      ":",
+    ].each do |name|
+      e = assert_raises(NameError) {
+        Object.const_get name
+      }
+      assert_equal("wrong constant name %s" % name, e.message)
+    end
+  end
+
+  def test_leading_colons
+    assert_equal Object, AClass.const_get('::Object')
+  end
+
   def test_const_get
     assert_equal(Math::PI, Math.const_get("PI"))
     assert_equal(Math::PI, Math.const_get(:PI))
