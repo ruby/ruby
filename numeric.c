@@ -3473,6 +3473,18 @@ int_downto(VALUE from, VALUE to)
     return from;
 }
 
+static VALUE
+int_dotimes_size(VALUE num)
+{
+    if (FIXNUM_P(num)) {
+	if (NUM2LONG(num) <= 0) return INT2FIX(0);
+    }
+    else {
+	if (RTEST(rb_funcall(num, '<', 1, INT2FIX(0)))) return INT2FIX(0);
+    }
+    return num;
+}
+
 /*
  *  call-seq:
  *     int.times {|i| block }  ->  self
@@ -3495,7 +3507,7 @@ int_downto(VALUE from, VALUE to)
 static VALUE
 int_dotimes(VALUE num)
 {
-    RETURN_ENUMERATOR(num, 0, 0);
+    RETURN_SIZED_ENUMERATOR(num, 0, 0, int_dotimes_size);
 
     if (FIXNUM_P(num)) {
 	long i, end;

@@ -506,6 +506,7 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_size_for_loops
     assert_equal Float::INFINITY, loop.size
+    assert_equal 42, 42.times.size
   end
 
   def test_size_for_each_slice
