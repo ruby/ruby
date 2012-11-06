@@ -2235,6 +2235,24 @@ cycle_i(VALUE i, VALUE ary, int argc, VALUE *argv)
     return Qnil;
 }
 
+static VALUE
+enum_cycle_size(VALUE self, VALUE args)
+{
+    long mul;
+    VALUE n = Qnil;
+    VALUE size = enum_size(self, args);
+
+    if (size == Qnil) return Qnil;
+
+    if (args && (RARRAY_LEN(args) > 0)) {
+	n = RARRAY_PTR(args)[0];
+    }
+    if (n == Qnil) return DBL2NUM(INFINITY);
+    mul = NUM2LONG(n);
+    if (mul <= 0) return INT2FIX(0);
+    return rb_funcall(size, '*', 1, LONG2FIX(mul));
+}
+
 /*
  *  call-seq:
  *     enum.cycle(n=nil) { |obj| block }  ->  nil
@@ -2265,7 +2283,7 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
 
     rb_scan_args(argc, argv, "01", &nv);
 
-    RETURN_ENUMERATOR(obj, argc, argv);
+    RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_cycle_size);
     if (NIL_P(nv)) {
         n = -1;
     }

@@ -477,6 +477,11 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal 0,  [:foo, :bar].cycle(-10).size
     assert_equal 0,  [].cycle.size
     assert_equal 0,  [].cycle(5).size
+
+    assert_equal nil, @obj.cycle.size
+    assert_equal nil, @obj.cycle(5).size
+    assert_equal Float::INFINITY, @sized.cycle.size
+    assert_equal 126, @sized.cycle(3).size
   end
 
   def test_size_for_loops
