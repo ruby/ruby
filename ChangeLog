@@ -1,3 +1,10 @@
+Wed Nov  7 03:45:12 2012  Luis Lavena  <luislavena@gmail.com>
+
+	* ext/zlib/extconf.rb: Recognize zlibwapi as linking library.
+	  Patch by Daniel Berger.
+
+	  [ruby-core:44979] [Feature #6421]
+
 Wed Nov  7 02:06:40 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* enumerator.c: New method #size; constructor accepts size.
