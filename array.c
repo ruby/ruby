@@ -26,7 +26,7 @@
 
 VALUE rb_cArray;
 
-static ID id_cmp, id_div;
+static ID id_cmp, id_div, id_power;
 
 #define ARY_DEFAULT_SIZE 16
 #define ARY_MAX_SIZE (LONG_MAX / (int)sizeof(VALUE))
@@ -4552,6 +4552,19 @@ rpermute0(long n, long r, long *p, long index, VALUE values)
     }
 }
 
+static VALUE
+rb_ary_repeated_permutation_size(VALUE ary, VALUE args)
+{
+    long n = RARRAY_LEN(ary);
+    long k = NUM2LONG(RARRAY_PTR(args)[0]);
+
+    if (k < 0) {
+	return LONG2FIX(0);
+    }
+
+    return rb_funcall(LONG2NUM(n), id_power, 1, LONG2NUM(k));
+}
+
 /*
  *  call-seq:
  *     ary.repeated_permutation(n) { |p| block } -> ary
@@ -4581,7 +4594,7 @@ rb_ary_repeated_permutation(VALUE ary, VALUE num)
     long r, n, i;
 
     n = RARRAY_LEN(ary);                  /* Array length */
-    RETURN_ENUMERATOR(ary, 1, &num);      /* Return Enumerator if no block */
+    RETURN_SIZED_ENUMERATOR(ary, 1, &num, rb_ary_repeated_permutation_size);      /* Return Enumerator if no block */
     r = NUM2LONG(num);                    /* Permutation size from argument */
 
     if (r < 0) {
@@ -5262,4 +5275,5 @@ Init_Array(void)
     id_cmp = rb_intern("<=>");
     sym_random = ID2SYM(rb_intern("random"));
     id_div = rb_intern("div");
+    id_power = rb_intern("**");
 }
