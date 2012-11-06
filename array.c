@@ -4324,6 +4324,29 @@ permute0(long n, long r, long *p, long index, char *used, VALUE values)
 }
 
 /*
+ * Returns the product of from, from-1, ..., from - how_many + 1.
+ * http://en.wikipedia.org/wiki/Pochhammer_symbol
+ */
+static VALUE
+descending_factorial(long from, long how_many)
+{
+    VALUE cnt = LONG2FIX(how_many >= 0);
+    while(how_many-- > 0) {
+        cnt = rb_funcall(cnt, '*', 1, LONG2FIX(from--));
+    }
+    return cnt;
+}
+
+static VALUE
+rb_ary_permutation_size(VALUE ary, VALUE args)
+{
+    long n = RARRAY_LEN(ary);
+    long k = (args && (RARRAY_LEN(args) > 0)) ? NUM2LONG(RARRAY_PTR(args)[0]) : n;
+
+    return descending_factorial(n, k);
+}
+
+/*
  *  call-seq:
  *     ary.permutation { |p| block }          -> ary
  *     ary.permutation                        -> Enumerator
@@ -4358,7 +4381,7 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
     long r, n, i;
 
     n = RARRAY_LEN(ary);                  /* Array length */
-    RETURN_ENUMERATOR(ary, argc, argv);   /* Return Enumerator if no block */
+    RETURN_SIZED_ENUMERATOR(ary, argc, argv, rb_ary_permutation_size);   /* Return enumerator if no block */
     rb_scan_args(argc, argv, "01", &num);
     r = NIL_P(num) ? n : NUM2LONG(num);   /* Permutation size from argument */
 

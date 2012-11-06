@@ -429,5 +429,18 @@ class TestEnumerator < Test::Unit::TestCase
     end
   end
 
+  def check_consistency_for_combinatorics(method)
+    [ [], [:a, :b, :c, :d, :e] ].product([-2, 0, 2, 5, 6]) do |array, arg|
+      assert_equal array.send(method, arg).to_a.size, array.send(method, arg).size,
+        "inconsistent size for #{array}.#{method}(#{arg})"
+    end
+  end
+
+  def test_size_for_array_combinatorics
+    check_consistency_for_combinatorics(:permutation)
+    assert_equal 24, [0, 1, 2, 4].permutation.size
+    assert_equal 2933197128679486453788761052665610240000000,
+      (1..42).to_a.permutation(30).size # 1.upto(42).inject(:*) / 1.upto(12).inject(:*)
+  end
 end
 
