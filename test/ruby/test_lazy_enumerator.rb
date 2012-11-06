@@ -336,5 +336,10 @@ EOS
       assert_equal nil, lazy.send(m){}.size
     end
     assert_equal nil, lazy.grep(//).size
+
+    assert_equal 2, lazy.take(2).size
+    assert_equal 3, lazy.take(4).size
+    assert_equal 4, loop.lazy.take(4).size
+    assert_equal nil, lazy.select{}.take(4).size
   end
 end

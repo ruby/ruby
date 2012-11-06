@@ -1625,6 +1625,15 @@ lazy_take_func(VALUE val, VALUE args, int argc, VALUE *argv)
 }
 
 static VALUE
+lazy_take_size(VALUE lazy) {
+    long len = NUM2LONG(RARRAY_PTR(rb_ivar_get(lazy, id_arguments))[0]);
+    VALUE receiver = lazy_receiver_size(lazy);
+    if (NIL_P(receiver) || (FIXNUM_P(receiver) && FIX2LONG(receiver) < len))
+	return receiver;
+    return LONG2NUM(len);
+}
+
+static VALUE
 lazy_take(VALUE obj, VALUE n)
 {
     NODE *memo;
@@ -1644,7 +1653,7 @@ lazy_take(VALUE obj, VALUE n)
     memo = NEW_MEMO(0, len, len);
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, argc, argv,
 					 lazy_take_func, (VALUE) memo),
-			   rb_ary_new3(1, n), 0);
+			   rb_ary_new3(1, n), lazy_take_size);
 }
 
 static VALUE
