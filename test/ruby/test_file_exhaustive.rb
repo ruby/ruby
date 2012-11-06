@@ -538,7 +538,6 @@ class TestFileExhaustive < Test::Unit::TestCase
     if DRIVE
       # cleanup dots only on Windows
       assert_equal(File.join(Dir.pwd, "a"), File.expand_path("a."), bug)
-      skip "FIXME"
       assert_equal(File.join(Dir.pwd, "a"), File.expand_path("a.."), bug)
     else
       assert_equal(File.join(Dir.pwd, "a."), File.expand_path("a."), bug)
