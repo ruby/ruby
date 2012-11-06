@@ -104,7 +104,7 @@
  */
 VALUE rb_cEnumerator;
 VALUE rb_cLazy;
-static ID id_rewind, id_each, id_new, id_initialize, id_yield, id_call;
+static ID id_rewind, id_each, id_new, id_initialize, id_yield, id_call, id_size;
 static ID id_eqq, id_next, id_result, id_lazy, id_receiver, id_arguments, id_method;
 static VALUE sym_each, sym_cycle;
 
@@ -1240,6 +1240,23 @@ generator_each(int argc, VALUE *argv, VALUE obj)
 
 /* Lazy Enumerator methods */
 static VALUE
+lazy_receiver_size(VALUE self)
+{
+    VALUE r = rb_check_funcall(rb_ivar_get(self, id_receiver), id_size, 0, 0);
+    return (r == Qundef) ? Qnil : r;
+}
+
+static VALUE
+lazy_size(VALUE self)
+{
+    struct enumerator *e = enumerator_ptr(self);
+    if (e->size_fn) {
+	return (*e->size_fn)(self);
+    }
+    return Qnil;
+}
+
+static VALUE
 lazy_init_iterator(VALUE val, VALUE m, int argc, VALUE *argv)
 {
     VALUE result;
@@ -1313,7 +1330,7 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
     rb_block_call(generator, id_initialize, 0, 0,
 		  (rb_block_given_p() ? lazy_init_block_i : lazy_init_block),
 		  obj);
-    enumerator_init(self, generator, meth, argc - offset, argv + offset, 0, Qnil);
+    enumerator_init(self, generator, meth, argc - offset, argv + offset, lazy_receiver_size, Qnil);
     rb_ivar_set(self, id_receiver, obj);
 
     return self;
@@ -1820,6 +1837,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "flat_map", lazy_flat_map, 0);
     rb_define_method(rb_cLazy, "collect_concat", lazy_flat_map, 0);
     rb_define_method(rb_cLazy, "select", lazy_select, 0);
+    rb_define_method(rb_cLazy, "size", lazy_size, 0);
     rb_define_method(rb_cLazy, "find_all", lazy_select, 0);
     rb_define_method(rb_cLazy, "reject", lazy_reject, 0);
     rb_define_method(rb_cLazy, "grep", lazy_grep, 1);
@@ -1860,6 +1878,7 @@ Init_Enumerator(void)
     id_rewind = rb_intern("rewind");
     id_each = rb_intern("each");
     id_call = rb_intern("call");
+    id_size = rb_intern("size");
     id_yield = rb_intern("yield");
     id_new = rb_intern("new");
     id_initialize = rb_intern("initialize");

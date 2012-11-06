@@ -323,4 +323,10 @@ class TestLazyEnumerator < Test::Unit::TestCase
 #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:map>:collect>:flat_map>:collect_concat>:select>:find_all>:reject>:grep(1)>:zip("a".."c")>:take(10)>:take_while>:drop(3)>:drop_while>:cycle(3)>
 EOS
   end
+
+  def test_size
+    lazy = [1, 2, 3].lazy
+    assert_equal 3, lazy.size
+    assert_equal 42, Enumerator.new(42){}.lazy.size
+  end
 end
