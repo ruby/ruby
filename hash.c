@@ -2549,12 +2549,30 @@ env_keys(void)
  * An Enumerator is returned if no block is given.
  */
 static VALUE
+rb_env_size(VALUE ehash)
+{
+    char **env;
+    long cnt = 0;
+
+    rb_secure(4);
+
+    env = GET_ENVIRON(environ);
+    for (; *env ; ++env) {
+	if (strchr(*env, '=')) {
+	    cnt++;
+	}
+    }
+    FREE_ENVIRON(environ);
+    return LONG2FIX(cnt);
+}
+
+static VALUE
 env_each_key(VALUE ehash)
 {
     VALUE keys;
     long i;
 
-    RETURN_ENUMERATOR(ehash, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
     keys = env_keys();	/* rb_secure(4); */
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	rb_yield(RARRAY_PTR(keys)[i]);
@@ -2603,7 +2621,7 @@ env_each_value(VALUE ehash)
     VALUE values;
     long i;
 
-    RETURN_ENUMERATOR(ehash, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
     values = env_values();	/* rb_secure(4); */
     for (i=0; i<RARRAY_LEN(values); i++) {
 	rb_yield(RARRAY_PTR(values)[i]);
@@ -2629,7 +2647,7 @@ env_each_pair(VALUE ehash)
     VALUE ary;
     long i;
 
-    RETURN_ENUMERATOR(ehash, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
 
     rb_secure(4);
     ary = rb_ary_new();
@@ -2666,7 +2684,7 @@ env_reject_bang(VALUE ehash)
     long i;
     int del = 0;
 
-    RETURN_ENUMERATOR(ehash, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
     keys = env_keys();	/* rb_secure(4); */
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	VALUE val = rb_f_getenv(Qnil, RARRAY_PTR(keys)[i]);
@@ -2694,7 +2712,7 @@ env_reject_bang(VALUE ehash)
 static VALUE
 env_delete_if(VALUE ehash)
 {
-    RETURN_ENUMERATOR(ehash, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
     env_reject_bang(ehash);
     return envtbl;
 }
@@ -2735,7 +2753,7 @@ env_select(VALUE ehash)
     VALUE result;
     char **env;
 
-    RETURN_ENUMERATOR(ehash, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
     rb_secure(4);
     result = rb_hash_new();
     env = GET_ENVIRON(environ);
@@ -2769,7 +2787,7 @@ env_select_bang(VALUE ehash)
     long i;
     int del = 0;
 
-    RETURN_ENUMERATOR(ehash, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
     keys = env_keys();	/* rb_secure(4); */
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	VALUE val = rb_f_getenv(Qnil, RARRAY_PTR(keys)[i]);
@@ -2797,7 +2815,7 @@ env_select_bang(VALUE ehash)
 static VALUE
 env_keep_if(VALUE ehash)
 {
-    RETURN_ENUMERATOR(ehash, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
     env_select_bang(ehash);
     return envtbl;
 }

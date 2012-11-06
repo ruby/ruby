@@ -450,6 +450,12 @@ class TestEnumerator < Test::Unit::TestCase
     end
   end
 
+  def test_size_for_enum_created_from_env
+    %i[each_pair reject! delete_if select select! keep_if].each do |method|
+      assert_equal ENV.size, ENV.send(method).size
+    end
+  end
+
   def check_consistency_for_combinatorics(method)
     [ [], [:a, :b, :c, :d, :e] ].product([-2, 0, 2, 5, 6]) do |array, arg|
       assert_equal array.send(method, arg).to_a.size, array.send(method, arg).size,
