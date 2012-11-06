@@ -4229,6 +4229,20 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
+static VALUE
+rb_ary_cycle_size(VALUE self, VALUE args)
+{
+    long mul;
+    VALUE n = Qnil;
+    if (args && (RARRAY_LEN(args) > 0)) {
+	n = RARRAY_PTR(args)[0];
+    }
+    if (RARRAY_LEN(self) == 0) return INT2FIX(0);
+    if (n == Qnil) return DBL2NUM(INFINITY);
+    mul = NUM2LONG(n);
+    if (mul <= 0) return INT2FIX(0);
+    return rb_funcall(rb_ary_length(self), '*', 1, LONG2FIX(mul));
+}
 
 /*
  *  call-seq:
@@ -4258,7 +4272,7 @@ rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
 
     rb_scan_args(argc, argv, "01", &nv);
 
-    RETURN_ENUMERATOR(ary, argc, argv);
+    RETURN_SIZED_ENUMERATOR(ary, argc, argv, rb_ary_cycle_size);
     if (NIL_P(nv)) {
         n = -1;
     }

@@ -456,5 +456,13 @@ class TestEnumerator < Test::Unit::TestCase
       (1..59).to_a.repeated_combination(42).size
       # 1.upto(100).inject(:*) / 1.upto(42).inject(:*) / 1.upto(58).inject(:*)
   end
+
+  def test_size_for_cycle
+    assert_equal Float::INFINITY, [:foo].cycle.size
+    assert_equal 10, [:foo, :bar].cycle(5).size
+    assert_equal 0,  [:foo, :bar].cycle(-10).size
+    assert_equal 0,  [].cycle.size
+    assert_equal 0,  [].cycle(5).size
+  end
 end
 
