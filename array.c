@@ -26,7 +26,7 @@
 
 VALUE rb_cArray;
 
-static ID id_cmp;
+static ID id_cmp, id_div;
 
 #define ARY_DEFAULT_SIZE 16
 #define ARY_MAX_SIZE (LONG_MAX / (int)sizeof(VALUE))
@@ -1538,6 +1538,9 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
     rb_ary_splice(ary, pos, 0, rb_ary_new4(argc - 1, argv + 1));
     return ary;
 }
+
+static VALUE
+rb_ary_length(VALUE ary);
 
 /*
  *  call-seq:
@@ -4338,6 +4341,18 @@ descending_factorial(long from, long how_many)
 }
 
 static VALUE
+binomial_coefficient(long comb, long size)
+{
+    if (comb > size-comb) {
+	comb = size-comb;
+    }
+    if (comb < 0) {
+	return LONG2FIX(0);
+    }
+    return rb_funcall(descending_factorial(size, comb), id_div, 1, descending_factorial(comb, comb));
+}
+
+static VALUE
 rb_ary_permutation_size(VALUE ary, VALUE args)
 {
     long n = RARRAY_LEN(ary);
@@ -4414,6 +4429,15 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
     return ary;
 }
 
+static VALUE
+rb_ary_combination_size(VALUE ary, VALUE args)
+{
+    long n = RARRAY_LEN(ary);
+    long k = NUM2LONG(RARRAY_PTR(args)[0]);
+
+    return binomial_coefficient(k, n);
+}
+
 /*
  *  call-seq:
  *     ary.combination(n) { |c| block }    -> ary
@@ -4445,7 +4469,7 @@ rb_ary_combination(VALUE ary, VALUE num)
     long n, i, len;
 
     n = NUM2LONG(num);
-    RETURN_ENUMERATOR(ary, 1, &num);
+    RETURN_SIZED_ENUMERATOR(ary, 1, &num, rb_ary_combination_size);
     len = RARRAY_LEN(ary);
     if (n < 0 || len < n) {
 	/* yield nothing */
@@ -5237,4 +5261,5 @@ Init_Array(void)
 
     id_cmp = rb_intern("<=>");
     sym_random = ID2SYM(rb_intern("random"));
+    id_div = rb_intern("div");
 }

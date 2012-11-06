@@ -441,6 +441,11 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal 24, [0, 1, 2, 4].permutation.size
     assert_equal 2933197128679486453788761052665610240000000,
       (1..42).to_a.permutation(30).size # 1.upto(42).inject(:*) / 1.upto(12).inject(:*)
+
+    check_consistency_for_combinatorics(:combination)
+    assert_equal 28258808871162574166368460400,
+      (1..100).to_a.combination(42).size
+      # 1.upto(100).inject(:*) / 1.upto(42).inject(:*) / 1.upto(58).inject(:*)
   end
 end
 
