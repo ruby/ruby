@@ -1745,7 +1745,7 @@ lazy_drop_while(VALUE obj)
 static VALUE
 lazy_cycle_size(VALUE lazy)
 {
-    return enum_cycle_size(rb_ivar_get(lazy, id_receiver), rb_ivar_get(lazy, id_arguments));
+    return rb_enum_cycle_size(rb_ivar_get(lazy, id_receiver), rb_ivar_get(lazy, id_arguments));
 }
 
 static VALUE

@@ -1,3 +1,7 @@
+Wed Nov  7 07:52:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (rb_enum_cycle_size): prefix with rb.
+
 Wed Nov  7 04:32:15 2012  Luis Lavena  <luislavena@gmail.com>
 
 	* test/ruby/test_file_exhaustive.rb: Remove FIXME skip on Windows
