@@ -3380,6 +3380,11 @@ fix_size(VALUE fix)
     return INT2FIX(sizeof(long));
 }
 
+static VALUE
+int_upto_size(VALUE from, VALUE args) {
+    return num_interval_step_size(from, RARRAY_PTR(args)[0], INT2FIX(1), FALSE);
+}
+
 /*
  *  call-seq:
  *     int.upto(limit) {|i| block }  ->  self
@@ -3400,7 +3405,7 @@ fix_size(VALUE fix)
 static VALUE
 int_upto(VALUE from, VALUE to)
 {
-    RETURN_ENUMERATOR(from, 1, &to);
+    RETURN_SIZED_ENUMERATOR(from, 1, &to, int_upto_size);
     if (FIXNUM_P(from) && FIXNUM_P(to)) {
 	long i, end;
 
@@ -3419,6 +3424,11 @@ int_upto(VALUE from, VALUE to)
 	if (NIL_P(c)) rb_cmperr(i, to);
     }
     return from;
+}
+
+static VALUE
+int_downto_size(VALUE from, VALUE args) {
+    return num_interval_step_size(from, RARRAY_PTR(args)[0], INT2FIX(-1), FALSE);
 }
 
 /*
@@ -3442,7 +3452,7 @@ int_upto(VALUE from, VALUE to)
 static VALUE
 int_downto(VALUE from, VALUE to)
 {
-    RETURN_ENUMERATOR(from, 1, &to);
+    RETURN_SIZED_ENUMERATOR(from, 1, &to, int_downto_size);
     if (FIXNUM_P(from) && FIXNUM_P(to)) {
 	long i, end;
 

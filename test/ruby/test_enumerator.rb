@@ -543,5 +543,11 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal Float::INFINITY, (42..Float::INFINITY).step(2).size
     assert_raise(ArgumentError){ (1..10).step(-2).size }
   end
+
+  def test_size_for_downup_to
+    assert_equal 0, 1.upto(-100).size
+    assert_equal 102, 1.downto(-100).size
+    assert_equal Float::INFINITY, 42.upto(Float::INFINITY).size
+  end
 end
 
