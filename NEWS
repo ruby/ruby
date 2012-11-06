@@ -27,6 +27,12 @@ with all sufficient information, see the ChangeLog file.
     * added method:
       * added Enumerable#lazy method for lazy enumeration.
 
+  * Enumerator
+    * added method:
+      * added Enumerator#size for lazy size evaluation.
+    * extended method:
+      * Enumerator.new accept an argument for lazy size evaluation.
+
   * ENV
     * aliased method:
       * ENV.to_h is a new alias for ENV.to_hash
@@ -52,6 +58,7 @@ with all sufficient information, see the ChangeLog file.
       * Kernel#warn accepts multiple args in like puts.
       * Kernel#caller accepts second optional argument `n' which specify
         required caller size.
+      * Kernel#to_enum and enum_for accept a block for lazy size evaluation.
     * incompatible changes:
       * system() and exec() closes non-standard file descriptors
         (The default of :close_others option is changed to true by default.)
@@ -87,6 +94,10 @@ with all sufficient information, see the ChangeLog file.
   * NilClass
     * added method:
       * added nil.to_h which returns {}
+
+  * Range
+    * added method:
+      * added Range#size for lazy size evaluation.
 
   * Signal
     * incompatible changes:

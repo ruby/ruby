@@ -1,3 +1,30 @@
+Wed Nov  7 02:06:40 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* enumerator.c: New method #size; constructor accepts size.
+	                Have #to_enum accept a block
+	                Warn when using deprecated form of constructor
+	                Support #size for enumerators created from enumerators
+	                Support for lazy.{map|flat_map|...}.size.
+
+	* include/ruby/intern.h: RETURN_SIZED_ENUMERATOR for support of
+	  sized enumerators.
+
+	* array.c: Support for various enumerator.size.
+
+	* enum.c: ditto.
+
+	* hash.c: ditto.
+
+	* numeric.c: ditto.
+
+	* range.c: ditto.
+
+	* string.c: ditto.
+
+	* struct.c: ditto.
+
+	* vm_eval.c: ditto.
+
 Tue Nov  6 20:40:28 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* object.c (rb_mod_const_get): Fix constant missing exception class
