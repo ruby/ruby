@@ -602,7 +602,7 @@ rb_str_export_to_enc(VALUE str, rb_encoding *enc)
 }
 
 static VALUE
-str_replace_shared(VALUE str2, VALUE str)
+str_replace_shared_without_enc(VALUE str2, VALUE str)
 {
     if (RSTRING_LEN(str) <= RSTRING_EMBED_LEN_MAX) {
 	STR_SET_EMBED(str2);
@@ -617,8 +617,14 @@ str_replace_shared(VALUE str2, VALUE str)
 	RSTRING(str2)->as.heap.aux.shared = str;
 	FL_SET(str2, ELTS_SHARED);
     }
-    rb_enc_cr_str_exact_copy(str2, str);
+    return str2;
+}
 
+static VALUE
+str_replace_shared(VALUE str2, VALUE str)
+{
+    str_replace_shared_without_enc(str2, str);
+    rb_enc_cr_str_exact_copy(str2, str);
     return str2;
 }
 
@@ -7362,6 +7368,23 @@ rb_str_force_encoding(VALUE str, VALUE enc)
 
 /*
  *  call-seq:
+ *     str.b   -> str
+ *
+ *  Returns a copied string whose encoding is ASCII-8BIT.
+ */
+
+static VALUE
+rb_str_b(VALUE str)
+{
+    VALUE str2 = str_alloc(rb_cString);
+    str_replace_shared_without_enc(str2, str);
+    OBJ_INFECT(str2, str);
+    ENC_CODERANGE_SET(str2, ENC_CODERANGE_VALID);
+    return str2;
+}
+
+/*
+ *  call-seq:
  *     str.valid_encoding?  -> true or false
  *
  *  Returns true for a string which encoded correctly.
@@ -8001,6 +8024,7 @@ Init_String(void)
 
     rb_define_method(rb_cString, "encoding", rb_obj_encoding, 0); /* in encoding.c */
     rb_define_method(rb_cString, "force_encoding", rb_str_force_encoding, 1);
+    rb_define_method(rb_cString, "b", rb_str_b, 0);
     rb_define_method(rb_cString, "valid_encoding?", rb_str_valid_encoding_p, 0);
     rb_define_method(rb_cString, "ascii_only?", rb_str_is_ascii_only_p, 0);
 

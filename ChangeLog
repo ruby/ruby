@@ -1,3 +1,8 @@
+Tue Nov  6 09:42:26 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_b): Add String#b, returning a copied string
+	  whose encoding is ASCII-8BIT. [ruby-dev:45992] [Feature #6767]
+
 Tue Nov  6 09:37:57 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ruby.c (load_file_internal): set default source encoding as

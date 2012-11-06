@@ -93,6 +93,10 @@ with all sufficient information, see the ChangeLog file.
       * Signal.trap raises ArgumentError when :SEGV, :BUS, :ILL, :FPE, :VTALRM
         are specified.
 
+  *String
+    * added method:
+      * added String#b returning a copied string whose encoding is ASCII-8BIT.
+
   * Struct
     * added method:
       * added Struct#to_h returning values with keys corresponding to the

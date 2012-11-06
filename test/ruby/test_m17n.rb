@@ -1471,4 +1471,14 @@ class TestM17N < Test::Unit::TestCase
       yield(*strs)
     end
   end
+
+  def test_str_b
+    s = "\u3042"
+    assert_equal(a("\xE3\x81\x82"), s.b)
+    assert_equal(Encoding::ASCII_8BIT, s.b.encoding)
+    s.taint
+    assert_equal(true, s.b.tainted?)
+    s.untrust
+    assert_equal(true, s.b.untrusted?)
+  end
 end
