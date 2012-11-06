@@ -1849,6 +1849,20 @@ each_cons_i(VALUE i, VALUE args, int argc, VALUE *argv)
     return v;
 }
 
+static VALUE
+enum_each_cons_size(VALUE obj, VALUE args)
+{
+    VALUE n, size;
+    long cons_size = NUM2LONG(RARRAY_PTR(args)[0]);
+    if (cons_size <= 0) rb_raise(rb_eArgError, "invalid size");
+
+    size = enum_size(obj, 0);
+    if (size == Qnil) return Qnil;
+
+    n = rb_funcall(size, '+', 1, LONG2NUM(1 - cons_size));
+    return (rb_cmpint(rb_funcall(n, id_cmp, 1, LONG2FIX(0)), n, LONG2FIX(0)) == -1) ? LONG2FIX(0) : n;
+}
+
 /*
  *  call-seq:
  *    enum.each_cons(n) { ... } ->  nil
@@ -1877,7 +1891,7 @@ enum_each_cons(VALUE obj, VALUE n)
     NODE *memo;
 
     if (size <= 0) rb_raise(rb_eArgError, "invalid size");
-    RETURN_ENUMERATOR(obj, 1, &n);
+    RETURN_SIZED_ENUMERATOR(obj, 1, &n, enum_each_cons_size);
     memo = NEW_MEMO(rb_ary_new2(size), 0, size);
     rb_block_call(obj, id_each, 0, 0, each_cons_i, (VALUE)memo);
 

@@ -490,5 +490,12 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal 1, @sized.each_slice(70).size
     assert_raise(ArgumentError){ @obj.each_slice(0).size }
   end
+
+  def test_size_for_each_cons
+    assert_equal nil, @obj.each_cons(3).size
+    assert_equal 33, @sized.each_cons(10).size
+    assert_equal 0, @sized.each_cons(70).size
+    assert_raise(ArgumentError){ @obj.each_cons(0).size }
+  end
 end
 
