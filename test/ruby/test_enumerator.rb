@@ -482,5 +482,13 @@ class TestEnumerator < Test::Unit::TestCase
   def test_size_for_loops
     assert_equal Float::INFINITY, loop.size
   end
+
+  def test_size_for_each_slice
+    assert_equal nil, @obj.each_slice(3).size
+    assert_equal 6, @sized.each_slice(7).size
+    assert_equal 5, @sized.each_slice(10).size
+    assert_equal 1, @sized.each_slice(70).size
+    assert_raise(ArgumentError){ @obj.each_slice(0).size }
+  end
 end
 

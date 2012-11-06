@@ -18,8 +18,12 @@
 #define STATIC_ASSERT(name, expr) typedef int static_assert_##name##_check[1 - 2*!(expr)]
 
 VALUE rb_mEnumerable;
+
 static ID id_next;
+static ID id_div;
 static ID id_call;
+static ID id_size;
+
 #define id_each idEach
 #define id_eqq  idEqq
 #define id_cmp  idCmp
@@ -1778,6 +1782,20 @@ each_slice_i(VALUE i, VALUE m, int argc, VALUE *argv)
     return v;
 }
 
+static VALUE
+enum_each_slice_size(VALUE obj, VALUE args)
+{
+    VALUE n, size;
+    long slice_size = NUM2LONG(RARRAY_PTR(args)[0]);
+    if (slice_size <= 0) rb_raise(rb_eArgError, "invalid slice size");
+
+    size = enum_size(obj, 0);
+    if (size == Qnil) return Qnil;
+
+    n = rb_funcall(size, '+', 1, LONG2NUM(slice_size-1));
+    return rb_funcall(n, id_div, 1, LONG2FIX(slice_size));
+}
+
 /*
  *  call-seq:
  *    enum.each_slice(n) { ... }  ->  nil
@@ -1802,7 +1820,7 @@ enum_each_slice(VALUE obj, VALUE n)
     NODE *memo;
 
     if (size <= 0) rb_raise(rb_eArgError, "invalid slice size");
-    RETURN_ENUMERATOR(obj, 1, &n);
+    RETURN_SIZED_ENUMERATOR(obj, 1, &n, enum_each_slice_size);
     ary = rb_ary_new2(size);
     memo = NEW_MEMO(ary, 0, size);
     rb_block_call(obj, id_each, 0, 0, each_slice_i, (VALUE)memo);
@@ -2743,4 +2761,6 @@ Init_Enumerable(void)
 
     id_next = rb_intern("next");
     id_call = rb_intern("call");
+    id_size = rb_intern("size");
+    id_div = rb_intern("div");
 }
