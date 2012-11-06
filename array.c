@@ -1563,7 +1563,7 @@ rb_ary_each(VALUE array)
     long i;
     volatile VALUE ary = array;
 
-    RETURN_ENUMERATOR(ary, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	rb_yield(RARRAY_PTR(ary)[i]);
     }
@@ -1592,7 +1592,7 @@ static VALUE
 rb_ary_each_index(VALUE ary)
 {
     long i;
-    RETURN_ENUMERATOR(ary, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
 
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	rb_yield(LONG2NUM(i));
@@ -1620,7 +1620,7 @@ rb_ary_reverse_each(VALUE ary)
 {
     long len;
 
-    RETURN_ENUMERATOR(ary, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
     len = RARRAY_LEN(ary);
     while (len--) {
 	rb_yield(RARRAY_PTR(ary)[len]);
@@ -2291,7 +2291,7 @@ rb_ary_sort_by_bang(VALUE ary)
 {
     VALUE sorted;
 
-    RETURN_ENUMERATOR(ary, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
     rb_ary_modify(ary);
     sorted = rb_block_call(ary, rb_intern("sort_by"), 0, 0, sort_by_i, 0);
     rb_ary_replace(ary, sorted);
@@ -2325,7 +2325,7 @@ rb_ary_collect(VALUE ary)
     long i;
     VALUE collect;
 
-    RETURN_ENUMERATOR(ary, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
     collect = rb_ary_new2(RARRAY_LEN(ary));
     for (i = 0; i < RARRAY_LEN(ary); i++) {
 	rb_ary_push(collect, rb_yield(RARRAY_PTR(ary)[i]));
@@ -2358,7 +2358,7 @@ rb_ary_collect_bang(VALUE ary)
 {
     long i;
 
-    RETURN_ENUMERATOR(ary, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
     rb_ary_modify(ary);
     for (i = 0; i < RARRAY_LEN(ary); i++) {
 	rb_ary_store(ary, i, rb_yield(RARRAY_PTR(ary)[i]));
@@ -2441,7 +2441,7 @@ rb_ary_select(VALUE ary)
     VALUE result;
     long i;
 
-    RETURN_ENUMERATOR(ary, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
     result = rb_ary_new2(RARRAY_LEN(ary));
     for (i = 0; i < RARRAY_LEN(ary); i++) {
 	if (RTEST(rb_yield(RARRAY_PTR(ary)[i]))) {
@@ -2472,7 +2472,7 @@ rb_ary_select_bang(VALUE ary)
 {
     long i1, i2;
 
-    RETURN_ENUMERATOR(ary, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
     rb_ary_modify(ary);
     for (i1 = i2 = 0; i1 < RARRAY_LEN(ary); i1++) {
 	VALUE v = RARRAY_PTR(ary)[i1];
@@ -2508,7 +2508,7 @@ rb_ary_select_bang(VALUE ary)
 static VALUE
 rb_ary_keep_if(VALUE ary)
 {
-    RETURN_ENUMERATOR(ary, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
     rb_ary_select_bang(ary);
     return ary;
 }
@@ -2737,7 +2737,7 @@ ary_reject_bang(VALUE ary)
 static VALUE
 rb_ary_reject_bang(VALUE ary)
 {
-    RETURN_ENUMERATOR(ary, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
     return ary_reject_bang(ary);
 }
 
@@ -2759,7 +2759,7 @@ rb_ary_reject(VALUE ary)
 {
     VALUE rejected_ary;
 
-    RETURN_ENUMERATOR(ary, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
     rejected_ary = rb_ary_new();
     ary_reject(ary, rejected_ary);
     return rejected_ary;
@@ -2786,7 +2786,7 @@ rb_ary_reject(VALUE ary)
 static VALUE
 rb_ary_delete_if(VALUE ary)
 {
-    RETURN_ENUMERATOR(ary, 0, 0);
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, rb_ary_length);
     ary_reject_bang(ary);
     return ary;
 }
