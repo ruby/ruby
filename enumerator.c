@@ -1741,6 +1741,11 @@ lazy_drop_while(VALUE obj)
 }
 
 static VALUE
+lazy_cycle_size(VALUE lazy) {
+    return enum_cycle_size(rb_ivar_get(lazy, id_receiver), rb_ivar_get(lazy, id_arguments));
+}
+
+static VALUE
 lazy_cycle_func(VALUE val, VALUE m, int argc, VALUE *argv)
 {
     return rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
@@ -1764,7 +1769,7 @@ lazy_cycle(int argc, VALUE *argv, VALUE obj)
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, len,
 					 RARRAY_PTR(args), lazy_cycle_func,
 					 args /* prevent from GC */),
-			   rb_ary_new4(argc, argv), 0);
+			   rb_ary_new4(argc, argv), lazy_cycle_size);
 }
 
 static VALUE

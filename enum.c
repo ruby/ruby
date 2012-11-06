@@ -2235,7 +2235,7 @@ cycle_i(VALUE i, VALUE ary, int argc, VALUE *argv)
     return Qnil;
 }
 
-static VALUE
+VALUE
 enum_cycle_size(VALUE self, VALUE args)
 {
     long mul;

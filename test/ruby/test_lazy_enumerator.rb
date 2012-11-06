@@ -346,5 +346,14 @@ EOS
     assert_equal 0, lazy.drop(4).size
     assert_equal Float::INFINITY, loop.lazy.drop(4).size
     assert_equal nil, lazy.select{}.drop(4).size
+
+    assert_equal 0, lazy.cycle(0).size
+    assert_equal 6, lazy.cycle(2).size
+    assert_equal 3 << 80, 4.times.inject(lazy){|enum| enum.cycle(1 << 20)}.size
+    assert_equal Float::INFINITY, lazy.cycle.size
+    assert_equal Float::INFINITY, loop.lazy.cycle(4).size
+    assert_equal Float::INFINITY, loop.lazy.cycle.size
+    assert_equal nil, lazy.select{}.cycle(4).size
+    assert_equal nil, lazy.select{}.cycle.size
   end
 end
