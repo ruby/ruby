@@ -1,3 +1,9 @@
+Tue Nov  6 16:22:30 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* atomic.h: add #include <sys/atomic.h> for the workaround of
+	  header file name conflict of atomic.h with /usr/include/atomic.h
+	  on Solaris 10. [ruby-dev:46414] [Bug #7287]
+
 Tue Nov  6 14:38:00 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/win32ole/test_win32ole.rb: now source encoding is UTF-8, so

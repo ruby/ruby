@@ -65,6 +65,7 @@ rb_w32_atomic_or(volatile rb_atomic_t *var, rb_atomic_t val)
 
 #elif defined(__sun)
 #include <atomic.h>
+#include <sys/atomic.h>
 typedef unsigned int rb_atomic_t;
 
 # define ATOMIC_SET(var, val) (void)atomic_swap_uint(&(var), (val))
