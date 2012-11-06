@@ -129,7 +129,7 @@ Mon Nov  5 23:28:57 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 	* load.c (rb_construct_expanded_load_path): fix for compatibility.
 	  Same checks in rb_get_path_check() are added. We don't replace
 	  $LOAD_PATH and ensure that String object of $LOAD_PATH are frozen.
-	  We don't freeze non String object and expand it every times. We add
+	  We don't freeze non String object and expand it every time. We add
 	  arguments for expanding load path partially and checking if load path
 	  have relative paths or non String objects.
 
@@ -139,7 +139,7 @@ Mon Nov  5 23:28:57 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 	* load.c (rb_get_expanded_load_path): fix for rebuilding cache properly.
 	  We check if current working directory is changed and rebuild expanded
 	  load path cache. We expand paths which start with ~ (User HOME) and
-	  non String objects every times for compatibility. We make this
+	  non String objects every time for compatibility. We make this
 	  accessible from other source files.
 
 	* load.c (rb_feature_provided): call rb_get_path() since we changed

@@ -42,7 +42,7 @@ enum expand_type {
 
 /* Construct expanded load path and store it to cache.
    We rebuild load path partially if the cache is invalid.
-   We don't cache non string object and expand it every times. We ensure that
+   We don't cache non string object and expand it every time. We ensure that
    string objects in $LOAD_PATH are frozen.
  */
 static void
@@ -81,7 +81,7 @@ rb_construct_expanded_load_path(int type, int *has_relative, int *has_non_cache)
 	    *has_relative = 1;
 	if (!*has_non_cache && non_cache)
 	    *has_non_cache = 1;
-	/* Freeze only string object. We expand other objects every times. */
+	/* Freeze only string object. We expand other objects every time. */
 	if (is_string)
 	    rb_str_freeze(path);
 	as_str = rb_get_path_check_convert(path, as_str, level);
