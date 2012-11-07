@@ -3741,8 +3741,8 @@ rb_ary_uniq_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.uniq                -> ary or nil
- *     ary.uniq { |item| ... } -> ary or nil
+ *     ary.uniq                -> new_ary
+ *     ary.uniq { |item| ... } -> new_ary
  *
  *  Returns a new array by removing duplicate values in +self+.
  *
