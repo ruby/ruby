@@ -40,7 +40,7 @@ while TRUE
   while i < lines
     setpos(i, 0)
     #clrtoeol
-    addstr(data_lines[lptr + i]) #if data_lines[lptr + i]
+    addstr(data_lines[lptr + i] || '')
     i += 1
   end
   refresh
