@@ -254,10 +254,10 @@ with all sufficient information, see the ChangeLog file.
 
 * cgi
   * Add HTML5 tag maker.
-  * incompatible changes:
-    * CGI#header has been renamed to CGI#http_header.
-      CGI#header is now used by the HTML5 tag maker to
-      create a <header> element.
+  * CGI#header has been renamed to CGI#http_header and
+    aliased to CGI#header.
+  * When HTML5 tagmaker called, overwrite CGI#header,
+    CGI#header function is to create a <header> element.
 
 === Language changes
 

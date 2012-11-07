@@ -171,6 +171,7 @@ class CGI
       return buf
     end
   end # http_header()
+  alias :header :http_header
 
   def _header_for_string(content_type) #:nodoc:
     buf = ''

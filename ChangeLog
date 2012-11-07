@@ -1,3 +1,7 @@
+Wed Nov  7 15:34:12 2012  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
+
+	* lib/cgi/core.rb: alias CGI#http_header to CGI#header.
+
 Wed Nov  7 12:49:39 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_mod_refine): set RMODULE_IS_REFINEMENT to a created
