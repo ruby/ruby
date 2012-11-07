@@ -1,3 +1,14 @@
+Wed Nov  7 12:49:39 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_mod_refine): set RMODULE_IS_REFINEMENT to a created
+	  refinement module, and don't override method_added.
+	
+	* vm_method.c (rb_method_entry_make): check redefinition of
+	  optimized methods when a method is added to a refinement module.
+	  [ruby-core:48970] [Bug #7290]
+
+	* test/ruby/test_refinement.rb: related test.
+
 Wed Nov  7 11:48:14 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-additional.el (ruby-mode-set-encoding): now encoding needs

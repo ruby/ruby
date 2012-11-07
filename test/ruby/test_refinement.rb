@@ -191,6 +191,18 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal(0, 1 / 2)
   end
 
+  def test_override_builtin_method_with_method_added
+    m = Module.new {
+      refine Fixnum do
+        def self.method_added(*args); end
+        def +(other) "overriden" end
+      end
+    }
+    assert_equal(3, 1 + 2)
+    assert_equal("overriden", m.module_eval { 1 + 2 })
+    assert_equal(3, 1 + 2)
+  end
+
   def test_return_value_of_refine
     mod = nil
     result = nil

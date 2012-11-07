@@ -1157,21 +1157,6 @@ rb_mod_using(VALUE self, VALUE module)
     return self;
 }
 
-void rb_redefine_opt_method(VALUE, ID);
-
-static VALUE
-refinement_module_method_added(VALUE mod, VALUE mid)
-{
-    ID id = SYM2ID(mid);
-    ID id_refined_class;
-    VALUE klass;
-
-    CONST_ID(id_refined_class, "__refined_class__");
-    klass = rb_ivar_get(mod, id_refined_class);
-    rb_redefine_opt_method(klass, id);
-    return Qnil;
-}
-
 static VALUE
 refinement_module_include(int argc, VALUE *argv, VALUE module)
 {
@@ -1234,12 +1219,11 @@ rb_mod_refine(VALUE module, VALUE klass)
     mod = rb_hash_lookup(refinements, klass);
     if (NIL_P(mod)) {
 	mod = rb_module_new();
+	FL_SET(mod, RMODULE_IS_REFINEMENT);
 	CONST_ID(id_refined_class, "__refined_class__");
 	rb_ivar_set(mod, id_refined_class, klass);
 	CONST_ID(id_defined_at, "__defined_at__");
 	rb_ivar_set(mod, id_defined_at, module);
-	rb_define_singleton_method(mod, "method_added",
-				   refinement_module_method_added, 1);
 	rb_define_singleton_method(mod, "include",
 				   refinement_module_include, -1);
 	rb_using_refinement(cref, klass, mod);

@@ -167,6 +167,8 @@ rb_free_method_entry(rb_method_entry_t *me)
 
 static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 
+void rb_redefine_opt_method(VALUE, ID);
+
 static rb_method_entry_t *
 rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 		     rb_method_definition_t *def, rb_method_flag_t noex)
@@ -196,6 +198,14 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 #if NOEX_NOREDEF
     rklass = klass;
 #endif
+    if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
+	ID id_refined_class;
+	VALUE refined_class;
+
+	CONST_ID(id_refined_class, "__refined_class__");
+	refined_class = rb_ivar_get(klass, id_refined_class);
+	rb_redefine_opt_method(refined_class, mid);
+    }
     klass = RCLASS_ORIGIN(klass);
     mtbl = RCLASS_M_TBL(klass);
 
