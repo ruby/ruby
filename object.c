@@ -1947,13 +1947,21 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
     }
 
     while (*p) {
+	VALUE part;
+
 	while (*p && *p != ':') p++;
 
 	if (pbeg == p) {
 	    rb_raise(rb_eNameError, "wrong constant name %s", path);
 	}
 
-	id = rb_intern3(pbeg, p-pbeg, enc);
+	id = rb_check_id_cstr(pbeg, p-pbeg, enc);
+	if (id) {
+	    part = ID2SYM(id);
+	}
+	else {
+	    part = rb_str_subseq(name, pbeg-path, p-pbeg);
+	}
 	if (p[0] == ':') {
 	    if (p[1] != ':') {
 		rb_raise(rb_eNameError, "wrong constant name %s", path);
@@ -1966,7 +1974,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	    rb_raise(rb_eTypeError, "%s does not refer to class/module", path);
 	}
 
-        mod = rb_mod_single_const_get(mod, ID2SYM(id), recur);
+        mod = rb_mod_single_const_get(mod, part, recur);
     }
 
     return mod;
