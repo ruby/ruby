@@ -1,3 +1,8 @@
+Wed Nov  7 15:46:12 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
+
+	* lib/webrick.rb: fix typo. reported by Rohit Arondekar.
+	  https://github.com/ruby/ruby/pull/211
+
 Wed Nov  7 15:34:12 2012  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb: alias CGI#http_header to CGI#header.
