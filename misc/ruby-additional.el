@@ -56,4 +56,45 @@
       (interactive)
       (or (ruby-brace-to-do-end)
 	  (ruby-do-end-to-brace)))
+
+    (defun ruby-mode-set-encoding ()
+      "Insert a magic comment header with the proper encoding always.
+Now encoding needs to be set always explicitly actually."
+      (save-excursion
+	(let ((coding-system))
+	  (widen)
+	  (goto-char (point-min))
+	  (if (re-search-forward "[^\0-\177]" nil t)
+	      (progn
+		(goto-char (point-min))
+		(set coding-system
+		     (or coding-system-for-write
+			 buffer-file-coding-system))
+		(if coding-system
+		    (setq coding-system
+			  (or (coding-system-get coding-system 'mime-charset)
+			      (coding-system-change-eol-conversion coding-system nil))))
+		(setq coding-system
+		      (if coding-system
+			  (symbol-name
+			   (or (and ruby-use-encoding-map
+				    (cdr (assq coding-system ruby-encoding-map)))
+			       coding-system))
+			"ascii-8bit")))
+	    (setq coding-system "us-ascii"))
+	  (if (looking-at "^#!") (beginning-of-line 2))
+	  (cond ((looking-at "\\s *#.*-\*-\\s *\\(en\\)?coding\\s *:\\s *\\([-a-z0-9_]*\\)\\s *\\(;\\|-\*-\\)")
+		 (unless (string= (match-string 2) coding-system)
+		   (goto-char (match-beginning 2))
+		   (delete-region (point) (match-end 2))
+		   (and (looking-at "-\*-")
+			(let ((n (skip-chars-backward " ")))
+			  (cond ((= n 0) (insert "  ") (backward-char))
+				((= n -1) (insert " "))
+				((forward-char)))))
+		   (insert coding-system)))
+		((looking-at "\\s *#.*coding\\s *[:=]"))
+		(t (when ruby-insert-encoding-magic-comment
+		     (insert "# -*- coding: " coding-system " -*-\n")))))))
+
     ))
