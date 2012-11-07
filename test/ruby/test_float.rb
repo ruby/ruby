@@ -585,6 +585,10 @@ class TestFloat < Test::Unit::TestCase
     assert_equal([5.0, 4.0, 3.0, 2.0], 5.0.step(1.5, -1).to_a)
   end
 
+  def test_step2
+    assert_equal([0.0], 0.0.step(1.0, Float::INFINITY).to_a)
+  end
+
   def test_step_excl
     1000.times do
       a = rand

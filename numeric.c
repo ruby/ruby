@@ -1755,10 +1755,16 @@ ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
 	double n = ruby_float_step_size(beg, end, unit, excl);
 	long i;
 
-	for (i=0; i<n; i++) {
-	    double d = i*unit+beg;
-	    if (unit >= 0 ? end < d : d < end) d = end;
-	    rb_yield(DBL2NUM(d));
+	if (isinf(unit)) {
+	    /* if unit is infinity, i*unit+beg is NaN */
+	    if (n) rb_yield(DBL2NUM(beg));
+	}
+	else {
+	    for (i=0; i<n; i++) {
+		double d = i*unit+beg;
+		if (unit >= 0 ? end < d : d < end) d = end;
+		rb_yield(DBL2NUM(d));
+	    }
 	}
 	return TRUE;
     }

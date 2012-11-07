@@ -1,3 +1,8 @@
+Wed Nov  7 15:22:37 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (ruby_float_step): fix r37514: it yielded with NaN
+	  if the unit is infinity.
+
 Wed Nov  7 15:46:12 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* lib/webrick.rb: fix typo. reported by Rohit Arondekar.
