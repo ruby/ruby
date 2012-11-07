@@ -6,7 +6,7 @@
 # logging of both server operations and HTTP access.  WEBrick supports both
 # basic and digest authentication in addition to algorithms not in RFC 2617.
 #
-# A WEBrick servers can be composed of multiple WEBrick servers or servlets to
+# A WEBrick server can be composed of multiple WEBrick servers or servlets to
 # provide differing behavior on a per-host or per-path basis.  WEBrick
 # includes servlets for handling CGI scripts, ERb pages, ruby blocks and
 # directory listings.
