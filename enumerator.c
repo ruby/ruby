@@ -224,7 +224,7 @@ obj_to_enum(int argc, VALUE *argv, VALUE obj)
 	--argc;
 	meth = *argv++;
     }
-    enumerator = rb_enumeratorize(obj, meth, argc, argv, 0);
+    enumerator = rb_enumeratorize_with_size(obj, meth, argc, argv, 0);
     if (rb_block_given_p()) {
 	enumerator_ptr(enumerator)->size = rb_block_proc();
     }
@@ -426,8 +426,17 @@ enumerator_init_copy(VALUE obj, VALUE orig)
     return obj;
 }
 
+/*
+ * For backwards compatibility; use rb_enumeratorize_with_size
+ */
 VALUE
-rb_enumeratorize(VALUE obj, VALUE meth, int argc, VALUE *argv, VALUE (*size_fn)(ANYARGS))
+rb_enumeratorize(VALUE obj, VALUE meth, int argc, VALUE *argv)
+{
+    return rb_enumeratorize_with_size(obj, meth, argc, argv, 0);
+}
+
+VALUE
+rb_enumeratorize_with_size(VALUE obj, VALUE meth, int argc, VALUE *argv, VALUE (*size_fn)(ANYARGS))
 {
     return enumerator_init(enumerator_allocate(rb_cEnumerator), obj, meth, argc, argv, size_fn, Qnil);
 }

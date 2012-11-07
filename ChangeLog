@@ -1,3 +1,10 @@
+Thu Nov  8 04:45:21 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* include/ruby/intern.h: Restore rb_enumeratorize as it was before
+	  r37497 and introduce rb_enumeratorize_with_size instead. [#7302]
+
+	* enumerator.c: ditto.
+
 Wed Nov  7 15:22:37 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric.c (ruby_float_step): fix r37514: it yielded with NaN
@@ -16,7 +23,7 @@ Wed Nov  7 12:49:39 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_mod_refine): set RMODULE_IS_REFINEMENT to a created
 	  refinement module, and don't override method_added.
-	
+
 	* vm_method.c (rb_method_entry_make): check redefinition of
 	  optimized methods when a method is added to a refinement module.
 	  [ruby-core:48970] [Bug #7290]
