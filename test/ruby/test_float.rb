@@ -155,10 +155,12 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(31.0*2**1019, Float("0x0."+("0"*600)+"1fp3427"))
     assert_equal(-31.0*2**1019, Float("-0x0."+("0"*268)+"1fp2099"))
     assert_equal(-31.0*2**1019, Float("-0x0."+("0"*600)+"1fp3427"))
-    assert_equal(31.0*2**-1027, Float("0x1f"+("0"*268)+".0p-2099"))
-    assert_equal(31.0*2**-1027, Float("0x1f"+("0"*600)+".0p-3427"))
-    assert_equal(-31.0*2**-1027, Float("-0x1f"+("0"*268)+".0p-2099"))
-    assert_equal(-31.0*2**-1027, Float("-0x1f"+("0"*600)+".0p-3427"))
+    suppress_warning do
+      assert_equal(31.0*2**-1027, Float("0x1f"+("0"*268)+".0p-2099"))
+      assert_equal(31.0*2**-1027, Float("0x1f"+("0"*600)+".0p-3427"))
+      assert_equal(-31.0*2**-1027, Float("-0x1f"+("0"*268)+".0p-2099"))
+      assert_equal(-31.0*2**-1027, Float("-0x1f"+("0"*600)+".0p-3427"))
+    end
   end
 
   def test_divmod
