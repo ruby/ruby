@@ -1,3 +1,10 @@
+Thu Nov  8 14:05:31 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (has_redirection): should use shell (cmd.exe) when
+	  the commandline containts '&'.
+	  reported by Roger Pack at [ruby-core:47912] [Bug #7143], and
+	  patched by Heesob Park at [ruby-core:47931].
+
 Fri Oct 26 17:22:18 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (append_fspath): need to set the encoding to result always.
