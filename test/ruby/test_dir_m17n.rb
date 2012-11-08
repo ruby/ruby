@@ -199,7 +199,6 @@ class TestDir_M17N < Test::Unit::TestCase
         win_expected_filename = filename.encode(Encoding.find("filesystem"), "euc-jp") rescue "?"
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
         ents = Dir.entries(".", opts)
-        p ents
         result = ents.include?(filename) ||
                (/darwin/ =~ RUBY_PLATFORM && ents.include?("%A4%A2".force_encoding("ASCII-8BIT"))) ||
                (/mswin|mingw/ =~ RUBY_PLATFORM && ents.include?(win_expected_filename.force_encoding("ASCII-8BIT")))
