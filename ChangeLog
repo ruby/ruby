@@ -2,11 +2,11 @@ Thu Nov  8 11:32:11 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in (--with-opt-dir): Avoid nesting of double quotes
 	  inside backquotes, since some traditional shells like PD KSH
-	  (which OpenBSD's /bin/sh bases on) fails to parse them.
+	  (which OpenBSD's /bin/sh bases on) fail to parse them.
 
 Thu Nov  8 09:34:00 2012  Kenta Murata  <mrkn@cookpad.com>
 
-	* numeric.c: Add description of that the results of the comparing
+	* numeric.c: Add a caution that the results of the comparing
 	  operations of two NaNs are undefined.
 	  [#1720] [ruby-dev:38725] [ruby-core:36966]
 
