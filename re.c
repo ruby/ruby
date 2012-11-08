@@ -220,12 +220,12 @@ rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
 	return 0;
     }
     else if (m == 1) {
-	const unsigned char *ys = y, *ye = ys + n;
-	for (; y < ye; ++y) {
-	    if (*x == *y)
-		return y - ys;
-	}
-	return -1;
+	const unsigned char *ys;
+
+	if (ys = memchr(y, *x, n))
+	    return ys - y;
+	else
+	    return -1;
     }
     else if (m <= SIZEOF_VALUE) {
 	return rb_memsearch_ss(x0, m, y0, n);

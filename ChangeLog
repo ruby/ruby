@@ -1,3 +1,8 @@
+Thu Nov  8 21:57:59 2012  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* re.c (rb_memsearch): performance improvement by using memchr().
+	  [ruby-dev:45397] [Feature #6173]
+
 Thu Nov  8 19:02:50 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/protocol.rb (Net::InternetMessageIO#each_crlf_line):
