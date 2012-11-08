@@ -329,7 +329,7 @@ class CGICoreTest < Test::Unit::TestCase
   end
 
 
-  def test_cgi_core_htmltype
+  def test_cgi_core_htmltype_header
     @environ = {
       'REQUEST_METHOD' => 'GET',
     }
@@ -337,26 +337,32 @@ class CGICoreTest < Test::Unit::TestCase
     ## no htmltype
     cgi = CGI.new
     assert_raise(NoMethodError) do cgi.doctype end
+    assert_equal("Content-Type: text/html\r\n\r\n",cgi.header)
     ## html3
     cgi = CGI.new('html3')
     expected = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">'
     assert_equal(expected, cgi.doctype)
+    assert_equal("Content-Type: text/html\r\n\r\n",cgi.header)
     ## html4
     cgi = CGI.new('html4')
     expected = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">'
     assert_equal(expected, cgi.doctype)
+    assert_equal("Content-Type: text/html\r\n\r\n",cgi.header)
     ## html4 transitional
     cgi = CGI.new('html4Tr')
     expected = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">'
     assert_equal(expected, cgi.doctype)
+    assert_equal("Content-Type: text/html\r\n\r\n",cgi.header)
     ## html4 frameset
     cgi = CGI.new('html4Fr')
     expected = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">'
     assert_equal(expected, cgi.doctype)
+    assert_equal("Content-Type: text/html\r\n\r\n",cgi.header)
     ## html5
     cgi = CGI.new('html5')
     expected = '<!DOCTYPE HTML>'
     assert_equal(expected, cgi.doctype)
+    assert_match(/^<HEADER><\/HEADER>$/i,cgi.header)
   end
 
 
