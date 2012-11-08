@@ -1,3 +1,8 @@
+Thu Nov  8 19:02:50 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/protocol.rb (Net::InternetMessageIO#each_crlf_line):
+	  treat \r as newline as mame pointed. [ruby-dev:46425] [Bug #7278]
+
 Thu Nov  8 11:32:11 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in (--with-opt-dir): Avoid nesting of double quotes
