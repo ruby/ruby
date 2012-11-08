@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 require "test/unit"
 require "fileutils"
 require "tmpdir"
@@ -410,46 +411,6 @@ class TestFileExhaustive < Test::Unit::TestCase
     else
       assert_equal("/foo", File.expand_path('/foo'))
     end
-  end
-
-  def test_expand_path_encoding
-    drive = (DRIVE ? 'C:' : '')
-    if Encoding.find("filesystem") == Encoding::CP1251
-      a = "#{drive}/\u3042\u3044\u3046\u3048\u304a".encode("cp932")
-    else
-      a = "#{drive}/\u043f\u0440\u0438\u0432\u0435\u0442".encode("cp1251")
-    end
-    assert_equal(a, File.expand_path(a))
-    a = "#{drive}/\225\\\\"
-    if File::ALT_SEPARATOR == '\\'
-      [%W"cp437 #{drive}/\225", %W"cp932 #{drive}/\225\\"]
-    else
-      [["cp437", a], ["cp932", a]]
-    end.each do |cp, expected|
-      assert_equal(expected.force_encoding(cp), File.expand_path(a.dup.force_encoding(cp)), cp)
-    end
-
-    path = "\u3042\u3044\u3046\u3048\u304a".encode("EUC-JP")
-    assert_equal("#{Dir.pwd}/#{path}".encode("CP932"), File.expand_path(path).encode("CP932"))
-
-    path = "\u3042\u3044\u3046\u3048\u304a".encode("CP51932")
-    assert_equal("#{Dir.pwd}/#{path}", File.expand_path(path))
-
-    assert_incompatible_encoding {|d| File.expand_path(d)}
-  end
-
-  def test_expand_path_encoding_filesystem
-    home = ENV["HOME"]
-    ENV["HOME"] = "#{DRIVE}/UserHome"
-
-    path = "~".encode("US-ASCII")
-    dir = "C:/".encode("IBM437")
-    fs = Encoding.find("filesystem")
-
-    assert_equal fs, File.expand_path(path).encoding
-    assert_equal fs, File.expand_path(path, dir).encoding
-  ensure
-    ENV["HOME"] = home
   end
 
   def test_expand_path_home

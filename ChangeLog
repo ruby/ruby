@@ -1,3 +1,14 @@
+Thu Nov  8 17:37:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (append_fspath): filesystem encoding is prior to the encoding
+	  of argument.
+
+	* file.c (rb_file_expand_path_internal, EXPAND_PATH_BUFFER): ignore
+	  the encoding of the given path name, use filesystem encoding always
+	  instead.  [ruby-dev:39393] [Bug #2154]
+
+	* test/ruby/test_file_exhaustive.rb: removed 2.0 spec tests.
+
 Thu Nov  8 17:33:53 2012  Luis Lavena  <luislavena@gmail.com>
 
 	* ext/zlib/extconf.rb: Recognize zlibwapi as linking library.

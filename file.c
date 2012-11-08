@@ -2875,7 +2875,7 @@ append_fspath(VALUE result, VALUE fname, char *dir, rb_encoding **enc, rb_encodi
     size_t dirlen = strlen(dir), buflen = rb_str_capacity(result);
 
     if (*enc != fsenc) {
-	rb_encoding *direnc = rb_enc_check(fname, dirname = rb_enc_str_new(dir, dirlen, fsenc));
+	rb_encoding *direnc = rb_enc_check(dirname = rb_enc_str_new(dir, dirlen, fsenc), fname);
 	if (direnc != fsenc) {
 	    dirname = rb_str_conv_enc(dirname, fsenc, direnc);
 	    RSTRING_GETMEM(dirname, cwdp, dirlen);
@@ -2980,7 +2980,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     else if (!rb_is_absolute_path(s)) {
 	if (!NIL_P(dname)) {
 	    rb_file_expand_path_internal(dname, Qnil, abs_mode, long_name, result);
-	    rb_enc_associate(result, rb_enc_check(result, fname));
+	    rb_enc_check(result, fname);
 	    BUFINIT();
 	    p = pend;
 	}
@@ -3009,7 +3009,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	BUFCHECK(bdiff >= buflen);
 	memset(buf, '/', len);
 	rb_str_set_len(result, len);
-	rb_enc_associate(result, rb_enc_check(result, fname));
+	rb_enc_check(result, fname);
     }
     if (p > buf && p[-1] == '/')
 	--p;
@@ -3228,13 +3228,12 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     if (tainted) OBJ_TAINT(result);
     rb_str_set_len(result, p - buf);
-    rb_enc_check(fname, result);
     ENC_CODERANGE_CLEAR(result);
     return result;
 }
 #endif /* _WIN32 */
 
-#define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, MAXPATHLEN + 2)
+#define EXPAND_PATH_BUFFER() rb_enc_str_new(0, MAXPATHLEN + 2, rb_filesystem_encoding())
 
 #define check_expand_path_args(fname, dname) \
     (((fname) = rb_get_path(fname)), \
