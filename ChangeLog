@@ -1,3 +1,9 @@
+Thu Nov  8 09:34:00 2012  Kenta Murata  <mrkn@cookpad.com>
+
+	* numeric.c: Add description of that the results of the comparing
+	  operations of two NaNs are undefined.
+	  [#1720] [ruby-dev:38725] [ruby-core:36966]
+
 Thu Nov  8 04:45:21 2012  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* include/ruby/intern.h: Restore rb_enumeratorize as it was before

@@ -1042,6 +1042,8 @@ num_equal(VALUE x, VALUE y)
  *  Returns <code>true</code> only if <i>obj</i> has the same value
  *  as <i>flt</i>. Contrast this with <code>Float#eql?</code>, which
  *  requires <i>obj</i> to be a <code>Float</code>.
+ *  The result of <code>NaN == NaN</code> is undefined, so the
+ *  implementation-dependent value is returned.
  *
  *     1.0 == 1   #=> true
  *
@@ -1109,6 +1111,8 @@ rb_dbl_cmp(double a, double b)
  *  Returns -1, 0, +1 or nil depending on whether <i>flt</i> is less
  *  than, equal to, or greater than <i>real</i>. This is the basis for
  *  the tests in <code>Comparable</code>.
+ *  The result of <code>NaN <=> NaN</code> is undefined, so the
+ *  implementation-dependent value is returned.
  */
 
 static VALUE
@@ -1153,6 +1157,8 @@ flo_cmp(VALUE x, VALUE y)
  *   flt > real  ->  true or false
  *
  * <code>true</code> if <code>flt</code> is greater than <code>real</code>.
+ * The result of <code>NaN > NaN</code> is undefined, so the
+ * implementation-dependent value is returned.
  */
 
 static VALUE
@@ -1193,6 +1199,8 @@ flo_gt(VALUE x, VALUE y)
  *
  * <code>true</code> if <code>flt</code> is greater than
  * or equal to <code>real</code>.
+ * The result of <code>NaN >= NaN</code> is undefined, so the
+ * implementation-dependent value is returned.
  */
 
 static VALUE
@@ -1232,6 +1240,8 @@ flo_ge(VALUE x, VALUE y)
  *   flt < real  ->  true or false
  *
  * <code>true</code> if <code>flt</code> is less than <code>real</code>.
+ * The result of <code>NaN < NaN</code> is undefined, so the
+ * implementation-dependent value is returned.
  */
 
 static VALUE
@@ -1272,6 +1282,8 @@ flo_lt(VALUE x, VALUE y)
  *
  * <code>true</code> if <code>flt</code> is less than
  * or equal to <code>real</code>.
+ * The result of <code>NaN <= NaN</code> is undefined, so the
+ * implementation-dependent value is returned.
  */
 
 static VALUE
@@ -1313,6 +1325,8 @@ flo_le(VALUE x, VALUE y)
  *  Returns <code>true</code> only if <i>obj</i> is a
  *  <code>Float</code> with the same value as <i>flt</i>. Contrast this
  *  with <code>Float#==</code>, which performs type conversions.
+ *  The result of <code>NaN.eql?(NaN)</code> is undefined, so the
+ *  implementation-dependent value is returned.
  *
  *     1.0.eql?(1)   #=> false
  */
