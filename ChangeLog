@@ -1,3 +1,9 @@
+Thu Nov  8 14:50:02 2012  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_variant.rb: setting WIN32OLE.locale
+	  to pass some assertion.  Thanks to Hiroshi Shirosaki.
+	  [ruby-core:46873][Bug #6814]
+
 Thu Nov  8 14:46:17 2012  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole.rb (test_s_codepage_changed):
