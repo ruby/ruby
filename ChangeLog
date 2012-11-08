@@ -1,3 +1,19 @@
+Thu Nov  8 14:16:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#timestamp_file): use .-. instead of !, a
+	  special character of NMAKE and BSD make.  [Bug #7265]
+
+Thu Nov  8 14:16:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#timestamp_file): use ! instead of %, a GNU
+	  make special character.
+
+Thu Nov  8 14:16:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): use timestamp for destination
+	  directories to make them before making or copying files there.
+	  [ruby-dev:46067] [Bug #6904]
+
 Thu Nov  8 14:13:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (visibility_option): visibility attribute is not
