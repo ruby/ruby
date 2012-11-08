@@ -10,7 +10,7 @@ require 'rbconfig'
 dir_config 'zlib'
 
 
-if %w'z libz zlib1 zlib zdll'.find {|z| have_library(z, 'deflateReset')} and
+if %w'z libz zlib1 zlib zdll zlibwapi'.find {|z| have_library(z, 'deflateReset')} and
     have_header('zlib.h') then
 
   defines = []
