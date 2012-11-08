@@ -1,3 +1,9 @@
+Thu Nov  8 14:13:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (visibility_option): visibility attribute is not
+	  available before GCC 4, so do not use -fvisibility option in that
+	  case.  [ruby-core:48147] [Bug #7205]
+
 Thu Nov  8 14:11:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (rb_vm_jump_tag_but_local_jump): pass through thrown objects.
