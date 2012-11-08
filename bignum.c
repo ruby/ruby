@@ -2617,13 +2617,8 @@ bigmul0(VALUE x, VALUE y)
     /* balance multiplication by slicing y when x is much smaller than y */
     if (2 * xn <= yn) return bigmul1_balance(x, y);
 
-    if (xn < TOOM3_MUL_DIGITS) {
-	/* multiplication by karatsuba method */
-	return bigmul1_karatsuba(x, y);
-    }
-    else if (3*xn <= 2*(yn + 2))
-	return bigmul1_balance(x, y);
-    return bigmul1_toom3(x, y);
+    /* multiplication by karatsuba method */
+    return bigmul1_karatsuba(x, y);
 }
 
 /*

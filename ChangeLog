@@ -1,3 +1,11 @@
+Thu Nov  9 05:33:99 2012  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (bigmul0): disable big_mul_toom3_temporalily.
+	  [ruby-core:48552] [Bug #7242]
+
+	* test/ruby/test_bignum.rb (test_mul_large_numbers):
+	  add a test for bigmul1_toom3 suggested in [Bug #7242].
+
 Thu Nov  8 21:57:59 2012  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* re.c (rb_memsearch): performance improvement by using memchr().
