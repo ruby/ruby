@@ -1,3 +1,21 @@
+Thu Nov  8 14:43:17 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_dir_m17n.rb: refactoring. RE should be in the left side
+	  of the =~ operator, and compare the result with nil is meaningless.
+
+Thu Nov  8 14:43:17 2012  Luis Lavena  <luislavena@gmail.com>
+
+	* test/ruby/test_dir_m17n.rb (create_and_check_raw_file_name): add new
+	  helper method to ease encoding testing. Patch by Oleg Sukhodolsky.
+	  [ruby-core:46589][Bug #6765]
+
+	* test/ruby/test_dir_m17n.rb (test_filename_extutf8): use filesystem
+	  encoding when reading entries and comparing.
+
+	* test/ruby/test_dir_m17n.rb (test_filename_utf8_raw_name): removed.
+
+	* test/ruby/test_dir_m17n.rb (test_filename_utf8_raw_jp_name): split test.
+
 Thu Nov  8 14:16:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#timestamp_file): use .-. instead of !, a
