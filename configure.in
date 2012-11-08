@@ -2304,7 +2304,8 @@ AC_ARG_WITH(opt-dir,
 	AS_HELP_STRING([--with-opt-dir=DIR-LIST],
 		       [add optional headers and libraries directories separated by $PATH_SEPARATOR]),
 	[
-		CPPFLAGS="$CPPFLAGS `echo \"$PATH_SEPARATOR$withval\" | sed \"s|$PATH_SEPARATOR\([[^$PATH_SEPARATOR]*]\)| -I\1/include|g;s/^ //\"`"
+		val=`echo "$PATH_SEPARATOR$withval" | sed "s|$PATH_SEPARATOR\([[^$PATH_SEPARATOR]*]\)| -I\1/include|g;s/^ //"`
+		CPPFLAGS="$CPPFLAGS $val"
 		set -x
 		val=`IFS="$PATH_SEPARATOR"
 		    for dir in $withval; do
