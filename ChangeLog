@@ -4,7 +4,7 @@ Fri Nov  9 09:30:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 	  Fix indentation from r37444
 	  [ruby-core:48052] [Bug #7179]
 
-Thu Nov  9 07:36:00 2012  Kenta Murata  <mrkn@mrkn.jp>
+Fri Nov  9 07:36:00 2012  Kenta Murata  <mrkn@mrkn.jp>
 
 	* bignum.c (bigmul0): enable big_mul_toom3.
 	  [ruby-core:48552] [Bug #7242]
@@ -13,9 +13,9 @@ Thu Nov  9 07:36:00 2012  Kenta Murata  <mrkn@mrkn.jp>
 	  the patch is made by Heesob Park.
 	  [ruby-core:48552] [Bug #7242]
 
-Thu Nov  9 05:33:00 2012  Kenta Murata  <mrkn@mrkn.jp>
+Fri Nov  9 05:33:00 2012  Kenta Murata  <mrkn@mrkn.jp>
 
-	* bignum.c (bigmul0): disable big_mul_toom3 temporalily.
+	* bignum.c (bigmul0): disable big_mul_toom3 temporarily.
 	  [ruby-core:48552] [Bug #7242]
 
 	* test/ruby/test_bignum.rb (test_mul_large_numbers):
