@@ -1259,7 +1259,15 @@ random_s_rand(int argc, VALUE *argv, VALUE obj)
     return random_rand(argc, argv, rb_Random_DEFAULT);
 }
 
+#define SIP_HASH_STREAMING 0
+#define sip_hash24 ruby_sip_hash24
+#include "siphash.c"
+
 static st_index_t hashseed;
+static union {
+    uint8_t key[16];
+    uint32_t u32[(16 * sizeof(uint8_t) - 1) / sizeof(uint32_t)];
+} sipseed;
 
 static VALUE
 init_randomseed(struct MT *mt, unsigned int initial[DEFAULT_SEED_CNT])
@@ -1279,6 +1287,7 @@ Init_RandomSeed(void)
     unsigned int initial[DEFAULT_SEED_CNT];
     struct MT *mt = &r->mt;
     VALUE seed = init_randomseed(mt, initial);
+    int i;
 
     hashseed = genrand_int32(mt);
 #if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
@@ -1294,6 +1303,9 @@ Init_RandomSeed(void)
     hashseed |= genrand_int32(mt);
 #endif
 
+    for (i = 0; i < numberof(sipseed.u32); ++i)
+	sipseed.u32[i] = genrand_int32(mt);
+
     rb_global_variable(&r->seed);
     r->seed = seed;
 }
@@ -1302,6 +1314,17 @@ st_index_t
 rb_hash_start(st_index_t h)
 {
     return st_hash_start(hashseed + h);
+}
+
+st_index_t
+rb_memhash(const void *ptr, long len)
+{
+    sip_uint64_t h = sip_hash24(sipseed.key, ptr, len);
+#ifdef HAVE_UINT64_T
+    return (st_index_t)h;
+#else
+    return (st_index_t)(h.u32[0] ^ h.u32[1]);
+#endif
 }
 
 static void

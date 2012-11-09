@@ -1,3 +1,16 @@
+Sat Nov 10 00:37:02 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* siphash.h: check configure macros before include newer headers.
+
+Sat Nov 10 00:37:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* siphash.c (sip_init_state): use union to suppress warnings by gcc
+	  4.7.
+
+Sat Nov 10 00:37:02 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (rb_memhash): use siphash.
+
 Fri Nov  9 16:17:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (append_fspath): revert a part of r37562.

@@ -671,7 +671,8 @@ proc.$(OBJEXT): {$(VPATH)}proc.c {$(VPATH)}eval_intern.h \
 process.$(OBJEXT): {$(VPATH)}process.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}util.h {$(VPATH)}io.h $(ENCODING_H_INCLUDES) {$(VPATH)}dln.h \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h {$(VPATH)}internal.h
-random.$(OBJEXT): {$(VPATH)}random.c $(RUBY_H_INCLUDES)
+random.$(OBJEXT): {$(VPATH)}random.c $(RUBY_H_INCLUDES) \
+  {$(VPATH)}siphash.c {$(VPATH)}siphash.h
 range.$(OBJEXT): {$(VPATH)}range.c $(RUBY_H_INCLUDES) \
   $(ENCODING_H_INCLUDES) {$(VPATH)}internal.h
 rational.$(OBJEXT): {$(VPATH)}rational.c $(RUBY_H_INCLUDES) {$(VPATH)}internal.h
