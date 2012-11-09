@@ -1,6 +1,6 @@
 Fri Nov  9 19:40:03 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* array.c (rb_ary_splice): fix r37583 doesn't condier the case when
+	* array.c (rb_ary_splice): fix r37583 doesn't consider the case when
 	  beg > array length.
 
 Fri Nov  9 16:11:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -67,10 +67,8 @@ Fri Nov  9 16:08:46 2012  Sokolov Yura funny-falcon  <funny.falcon@gmail.com>
 
 Fri Nov  9 16:00:00 2012  Zachary Scott  <zzak@zacharyscott.net>
 
-	* ext/bigdecimal/bigdecimal.c:
-	  Documentation for BigDecimal
-	  Based on a patch from Vincent Batts
-	  [ruby-core:49047] [Bug #7305]
+	* ext/bigdecimal/bigdecimal.c: Documentation for BigDecimal
+	  Based on a patch from Vincent Batts [ruby-core:49047] [Bug #7305]
 
 Fri Nov  9 15:25:42 2012  Akinori MUSHA  <knu@iDaemons.org>
 
