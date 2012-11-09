@@ -372,14 +372,14 @@ if defined?(WIN32OLE)
           WIN32OLE.codepage = cp
           file = fso.opentextfile(fname, 2, true)
           begin
-            file.write [164, 162].pack("c*").force_encoding("EUC-JP")
+            file.write [164, 162].pack("c*").force_encoding("UTF-16")
           ensure
             file.close
           end
           open(fname, "r:ascii-8bit") {|ifs|
             str = ifs.read
           }
-          assert_equal("\202\240", str)
+          assert_equal("\244\242", str)
         end
 
       ensure

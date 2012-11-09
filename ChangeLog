@@ -1,3 +1,9 @@
+Fri Nov  9 13:47:45 2012  Luis Lavena  <luislavena@gmail.com>
+
+	* test/win32ole/test_win32ole.rb (test_s_codepage_changed):
+	  FileSystemObject only supports ANSI or UTF-16LE encoding.
+	  Patch by bosko (Bosko Ivanisevic) [ruby-trunk - Bug #6650]
+
 Fri Nov  9 13:16:16 2012  Kenta Murata  <mrkn@mrkn.jp>
 
 	* bignum.c (bigmul0): enable big_mul_toom3.
