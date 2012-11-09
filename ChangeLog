@@ -1,3 +1,7 @@
+Sat Nov 10 00:46:57 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* atomic.h: Revert r37491 which is a temporary workaroud.
+
 Sat Nov 10 00:33:31 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* siphash.h: check configure macros before include newer headers.
