@@ -1,3 +1,9 @@
+Fri Nov  9 09:30:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* io.c (IO#new):
+	  Fix indentation from r37444
+	  [ruby-core:48052] [Bug #7179]
+
 Thu Nov  9 07:36:00 2012  Kenta Murata  <mrkn@mrkn.jp>
 
 	* bignum.c (bigmul0): enable big_mul_toom3.

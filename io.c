@@ -6962,7 +6962,7 @@ rb_io_stdio_file(rb_io_t *fptr)
  *
  *  Ruby allows the following open modes:
  *
- *	"r"  Read-only, starts at beginning of file  (default mode).
+ *  	"r"  Read-only, starts at beginning of file  (default mode).
  *
  *  	"r+" Read-write, starts at beginning of file.
  *
@@ -6982,7 +6982,7 @@ rb_io_stdio_file(rb_io_t *fptr)
  *  The following modes must be used separately, and along with one or more of
  *  the modes seen above.
  *
- *	"b"  Binary file mode
+ *  	"b"  Binary file mode
  *  	     Suppresses EOL <-> CRLF conversion on Windows. And
  *  	     sets external encoding to ASCII-8BIT unless explicitly
  *  	     specified.
