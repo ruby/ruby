@@ -130,7 +130,7 @@ def tag intv_p = false, relname=nil
     interactive "OK? svn cp -m \"add tag #{tagname}\" #{branch_url} #{tag_url}" do
     end
   end
-  system *%w'svn cp -m' + ["add tag #{tagname}"] + [branch_url, tag_urlw]
+  system *%w'svn cp -m' + ["add tag #{tagname}"] + [branch_url, tag_url]
 end
 
 def default_merge_branch
