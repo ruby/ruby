@@ -2419,7 +2419,7 @@ bigmul1_toom3(VALUE x, VALUE y)
     z2 = bigtrunc(bigadd(u2, u0, 0));
 
     /* z3 <- (z2 - z3) / 2 + 2 * z(inf) == (z2 - z3) / 2 + 2 * u4 */
-    z3 = bigadd(z2, z3, 0);
+    z3 = bigtrunc(bigadd(z2, z3, 0));
     bigrsh_bang(BDIGITS(z3), RBIGNUM_LEN(z3), 1);
     t = big_lshift(u4, 1); /* TODO: combining with next addition */
     z3 = bigtrunc(bigadd(z3, t, 1));
@@ -2535,8 +2535,13 @@ bigmul0(VALUE x, VALUE y)
     /* balance multiplication by slicing y when x is much smaller than y */
     if (2 * xn <= yn) return bigmul1_balance(x, y);
 
-    /* multiplication by karatsuba method */
-    return bigmul1_karatsuba(x, y);
+    if (xn < TOOM3_MUL_DIGITS) {
+	/* multiplication by karatsuba method */
+	return bigmul1_karatsuba(x, y);
+    }
+    else if (3*xn <= 2*(yn + 2))
+	return bigmul1_balance(x, y);
+    return bigmul1_toom3(x, y);
 }
 
 /*
