@@ -155,9 +155,7 @@ module Shellwords
   #
   # You can also mix non-string objects in the elements as allowed in Array#join.
   #
-  #   ary = ["All", "work", "and", "no", "play", "makes", $0, "a", "dull", "boy"]
-  #   argv = ary.shelljoin
-  #   argv #=> "All work and no play makes irb a dull boy"
+  #   output = `#{['ps', '-p', $$].shelljoin}`
   #
   def shelljoin(array)
     array.map { |arg| shellescape(arg) }.join(' ')

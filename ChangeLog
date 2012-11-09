@@ -1,3 +1,9 @@
+Fri Nov  9 15:13:16 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/shellwords.rb (Shellwords#shellescape): Undo part of the
+	  previous rdoc change.  This new example using a string-only
+	  array was not in line with the description.
+
 Fri Nov  9 12:58:13 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_crypt): crypt(3) may return NULL.
