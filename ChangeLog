@@ -1,3 +1,8 @@
+Fri Nov  9 23:33:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/erb.rb (ERB#run, ERB#result): eval under isolated bindings for
+	  safe concurrent use.  [ruby-core:47638] [Bug #7046]
+
 Fri Nov  9 23:05:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (BYTE_ORDER): define using configured WORDS_BIGENDIAN.

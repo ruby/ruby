@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 # = ERB -- Ruby Templating
 #
 # Author:: Masatoshi SEKI
@@ -818,7 +819,7 @@ class ERB
   end
 
   # Generate results and print them. (see ERB#result)
-  def run(b=TOPLEVEL_BINDING)
+  def run(b=new_toplevel)
     print self.result(b)
   end
 
@@ -830,7 +831,7 @@ class ERB
   # _b_ accepts a Binding or Proc object which is used to set the context of
   # code evaluation.
   #
-  def result(b=TOPLEVEL_BINDING)
+  def result(b=new_toplevel)
     if @safe_level
       proc {
         $SAFE = @safe_level
@@ -840,6 +841,12 @@ class ERB
       eval(@src, b, (@filename || '(erb)'), 0)
     end
   end
+
+  def new_toplevel
+    # New binding each time *near* toplevel for unspecified runs
+    TOPLEVEL_BINDING.dup
+  end
+  private :new_toplevel
 
   # Define _methodname_ as instance method of _mod_ from compiled ruby source.
   #

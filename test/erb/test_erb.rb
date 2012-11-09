@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 require 'test/unit'
 require 'erb'
 
@@ -44,10 +45,19 @@ class TestERB < Test::Unit::TestCase
 
     assert_equal("", ERB::Util.html_escape(""))
     assert_equal("abc", ERB::Util.html_escape("abc"))
-    assert_equal("&lt;&lt;", ERB::Util.html_escape("<<"))
+    assert_equal("&lt;&lt;", ERB::Util.html_escape("<\<"))
 
     assert_equal("", ERB::Util.html_escape(nil))
     assert_equal("123", ERB::Util.html_escape(123))
+  end
+
+  def test_concurrent_default_binding
+    template1 = 'one <%= ERB.new(template2).result %>'
+
+    eval 'template2 = "two"', TOPLEVEL_BINDING
+
+    bug7046 = '[ruby-core:47638]'
+    assert_equal("one two", ERB.new(template1).result, bug7046)
   end
 end
 
