@@ -278,7 +278,7 @@ static inline void
 int_sip_pad_final_block(sip_state *state)
 {
     int i;
-    //pad with 0's and finalize with msg_len mod 256
+    /* pad with 0's and finalize with msg_len mod 256 */
     for (i = state->buflen; i < sizeof(uint64_t); i++) {
 	state->buf[i] = 0x00;
     }
