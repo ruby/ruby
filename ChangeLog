@@ -1,4 +1,13 @@
-Fri Nov  9 16:08:43 2012  Sokolov Yura funny-falcon  <funny.falcon@gmail.com>
+Fri Nov  9 16:08:46 2012  Sokolov Yura funny-falcon  <funny.falcon@gmail.com>
+
+	* array.c: speedup Array#unshift by using space in shared array.
+	  [Feature #6638]
+	  - when array owns its shared array (ARY_SHARED_NUM == 1), and there
+	    is enough space then try unshift values directly into shared
+	    array.
+	  - when resulting array is big (~>64 items) then make it shared with
+	    enough room for future #unshifts, and then insert into shared
+	    array.
 
 	* array.c (rb_ary_splice): use shared array in rb_ary_slice.
 	  [Feature #6638]
