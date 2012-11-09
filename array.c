@@ -283,6 +283,38 @@ rb_ary_modify(VALUE ary)
     }
 }
 
+static void
+ary_ensure_room_for_push(VALUE ary, long add_len)
+{
+    long new_len = RARRAY_LEN(ary) + add_len;
+    long capa;
+
+    if (ARY_SHARED_P(ary)) {
+	if (new_len > RARRAY_EMBED_LEN_MAX) {
+	    VALUE shared = ARY_SHARED(ary);
+	    if (ARY_SHARED_NUM(shared) == 1) {
+		if (RARRAY_PTR(ary) - RARRAY_PTR(shared) + new_len <= RARRAY_LEN(shared)) {
+		    rb_ary_modify_check(ary);
+		}
+		else {
+		    /* if array is shared, than it is likely it participate in push/shift pattern */
+		    rb_ary_modify(ary);
+		    capa = ARY_CAPA(ary);
+		    if (new_len > capa - (capa >> 6)) {
+			ary_double_capa(ary, new_len);
+		    }
+		}
+		return;
+	    }
+	}
+    }
+    rb_ary_modify(ary);
+    capa = ARY_CAPA(ary);
+    if (new_len > capa) {
+	ary_double_capa(ary, new_len);
+    }
+}
+
 /*
  *  call-seq:
  *      ary.freeze -> ary
@@ -754,8 +786,6 @@ ary_take_first_or_last(int argc, VALUE *argv, VALUE ary, enum ary_take_pos_flags
     return ary_make_partial(ary, rb_cArray, offset, n);
 }
 
-static VALUE rb_ary_push_1(VALUE ary, VALUE item);
-
 /*
  *  call-seq:
  *     ary << obj            -> ary
@@ -772,8 +802,12 @@ static VALUE rb_ary_push_1(VALUE ary, VALUE item);
 VALUE
 rb_ary_push(VALUE ary, VALUE item)
 {
-    rb_ary_modify(ary);
-    return rb_ary_push_1(ary, item);
+    long idx = RARRAY_LEN(ary);
+
+    ary_ensure_room_for_push(ary, 1);
+    RARRAY_PTR(ary)[idx] = item;
+    ARY_SET_LEN(ary, idx + 1);
+    return ary;
 }
 
 static VALUE
@@ -792,11 +826,9 @@ rb_ary_push_1(VALUE ary, VALUE item)
 VALUE
 rb_ary_cat(VALUE ary, const VALUE *ptr, long len)
 {
-    long oldlen;
+    long oldlen = RARRAY_LEN(ary);
 
-    rb_ary_modify(ary);
-    oldlen = RARRAY_LEN(ary);
-    ary_resize_capa(ary, oldlen + len);
+    ary_ensure_room_for_push(ary, len);
     MEMCPY(RARRAY_PTR(ary) + oldlen, ptr, VALUE, len);
     ARY_SET_LEN(ary, oldlen + len);
     return ary;

@@ -1,4 +1,10 @@
-Fri Nov  9 16:08:35 2012  Sokolov Yura funny-falcon  <funny.falcon@gmail.com>
+Fri Nov  9 16:08:39 2012  Sokolov Yura funny-falcon  <funny.falcon@gmail.com>
+
+	* array.c (ary_ensure_room_for_push): make array really suitable for
+	  queue.  [Feature #6638]
+	  when array is shared (which happens after Array#shift), and
+	  ARY_SHARED_NUM == 1 (which is very often when array used as queue),
+	  then make rb_ary_push push directly into shared array.
 
 	* array.c (rb_ary_modify): steal shared array's container when
 	  ARY_SHARED_NUM == 1.  [Feature #6638]
