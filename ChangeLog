@@ -1,3 +1,8 @@
+Fri Nov  9 23:02:25 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* siphash.c (sip_init_state): use union to suppress warnings by gcc
+	  4.7.
+
 Fri Nov  9 19:40:03 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* array.c (rb_ary_splice): fix r37583 doesn't consider the case when
