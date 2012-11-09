@@ -1,4 +1,6 @@
-Fri Nov  9 23:02:25 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov  9 23:05:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (BYTE_ORDER): define using configured WORDS_BIGENDIAN.
 
 	* siphash.c (sip_init_state): use union to suppress warnings by gcc
 	  4.7.
