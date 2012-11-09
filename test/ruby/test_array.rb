@@ -426,6 +426,18 @@ class TestArray < Test::Unit::TestCase
     a = @cls[1, 2, 3]
     a[-1, 0] = a
     assert_equal([1, 2, 1, 2, 3, 3], a)
+
+    a = @cls[]
+    a[5,0] = [5]
+    assert_equal([nil, nil, nil, nil, nil, 5], a)
+
+    a = @cls[1]
+    a[1,0] = [2]
+    assert_equal([1, 2], a)
+
+    a = @cls[1]
+    a[1,1] = [2]
+    assert_equal([1, 2], a)
   end
 
   def test_assoc

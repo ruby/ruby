@@ -1438,7 +1438,7 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	if (beg > ARY_MAX_SIZE - rlen) {
 	    rb_raise(rb_eIndexError, "index %ld too big", beg);
 	}
-	ary_ensure_room_for_push(ary, rlen);
+	ary_ensure_room_for_push(ary, rlen-len); /* len is 0 or negative */
 	len = beg + rlen;
 	rb_mem_clear(RARRAY_PTR(ary) + RARRAY_LEN(ary), beg - RARRAY_LEN(ary));
 	if (rlen > 0) {
