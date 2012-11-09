@@ -1,3 +1,10 @@
+Fri Nov  9 16:00:00 2012  Zachary Scott  <zzak@zacharyscott.net>
+
+	* ext/bigdecimal/bigdecimal.c:
+	  Documentation for BigDecimal
+	  Based on a patch from Vincent Batts
+	  [ruby-core:49047] [Bug #7305]
+
 Fri Nov  9 15:25:42 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/shellwords.rb (Shellwords#shellescape): Add back my original
