@@ -255,15 +255,24 @@ rb_ary_modify(VALUE ary)
     rb_ary_modify_check(ary);
     if (ARY_SHARED_P(ary)) {
         long len = RARRAY_LEN(ary);
+	VALUE shared = ARY_SHARED(ary);
         if (len <= RARRAY_EMBED_LEN_MAX) {
             VALUE *ptr = ARY_HEAP_PTR(ary);
-            VALUE shared = ARY_SHARED(ary);
             FL_UNSET_SHARED(ary);
             FL_SET_EMBED(ary);
             MEMCPY(ARY_EMBED_PTR(ary), ptr, VALUE, len);
             rb_ary_decrement_share(shared);
             ARY_SET_EMBED_LEN(ary, len);
         }
+	else if (ARY_SHARED_NUM(shared) == 1 && len > (RARRAY_LEN(shared)>>1)) {
+	    long shift = RARRAY_PTR(ary) - RARRAY_PTR(shared);
+	    ARY_SET_PTR(ary, RARRAY_PTR(shared));
+	    ARY_SET_CAPA(ary, RARRAY_LEN(shared));
+	    MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+shift, VALUE, len);
+	    FL_UNSET_SHARED(ary);
+	    FL_SET_EMBED(shared);
+	    rb_ary_decrement_share(shared);
+	}
         else {
             VALUE *ptr = ALLOC_N(VALUE, len);
             MEMCPY(ptr, RARRAY_PTR(ary), VALUE, len);
@@ -454,8 +463,9 @@ ary_make_shared(VALUE ary)
 	NEWOBJ_OF(shared, struct RArray, 0, T_ARRAY);
         FL_UNSET_EMBED(shared);
 
-        ARY_SET_LEN((VALUE)shared, RARRAY_LEN(ary));
+        ARY_SET_LEN((VALUE)shared, ARY_CAPA(ary));
         ARY_SET_PTR((VALUE)shared, RARRAY_PTR(ary));
+	rb_mem_clear(RARRAY_PTR(shared) + RARRAY_LEN(ary), ARY_CAPA(ary) - RARRAY_LEN(ary));
 	FL_SET_SHARED_ROOT(shared);
 	ARY_SET_SHARED_NUM((VALUE)shared, 1);
 	FL_SET_SHARED(ary);
@@ -2188,12 +2198,13 @@ rb_ary_sort_bang(VALUE ary)
     if (RARRAY_LEN(ary) > 1) {
 	VALUE tmp = ary_make_substitution(ary); /* only ary refers tmp */
 	struct ary_sort_data data;
+	long len = RARRAY_LEN(ary);
 
 	RBASIC(tmp)->klass = 0;
 	data.ary = tmp;
 	data.opt_methods = 0;
 	data.opt_inited = 0;
-	ruby_qsort(RARRAY_PTR(tmp), RARRAY_LEN(tmp), sizeof(VALUE),
+	ruby_qsort(RARRAY_PTR(tmp), len, sizeof(VALUE),
 		   rb_block_given_p()?sort_1:sort_2, &data);
 
         if (ARY_EMBED_P(tmp)) {
@@ -2210,7 +2221,7 @@ rb_ary_sort_bang(VALUE ary)
             if (ARY_HEAP_PTR(ary) == ARY_HEAP_PTR(tmp)) {
                 assert(!ARY_EMBED_P(ary));
                 FL_UNSET_SHARED(ary);
-                ARY_SET_CAPA(ary, ARY_CAPA(tmp));
+                ARY_SET_CAPA(ary, RARRAY_LEN(tmp));
             }
             else {
                 assert(!ARY_SHARED_P(tmp));
@@ -2225,8 +2236,8 @@ rb_ary_sort_bang(VALUE ary)
                     xfree(ARY_HEAP_PTR(ary));
                 }
                 ARY_SET_PTR(ary, RARRAY_PTR(tmp));
-                ARY_SET_HEAP_LEN(ary, RARRAY_LEN(tmp));
-                ARY_SET_CAPA(ary, ARY_CAPA(tmp));
+                ARY_SET_HEAP_LEN(ary, len);
+                ARY_SET_CAPA(ary, RARRAY_LEN(tmp));
             }
             /* tmp was lost ownership for the ptr */
             FL_UNSET(tmp, FL_FREEZE);
