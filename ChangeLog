@@ -1,3 +1,7 @@
+Fri Nov  9 16:11:58 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (rb_memhash): use siphash.
+
 Fri Nov  9 16:08:46 2012  Sokolov Yura funny-falcon  <funny.falcon@gmail.com>
 
 	* array.c: speedup Array#unshift by using space in shared array.

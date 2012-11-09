@@ -2197,12 +2197,6 @@ rb_str_prepend(VALUE str, VALUE str2)
 }
 
 st_index_t
-rb_memhash(const void *ptr, long len)
-{
-    return st_hash(ptr, len, rb_hash_start((st_index_t)len));
-}
-
-st_index_t
 rb_str_hash(VALUE str)
 {
     int e = ENCODING_GET(str);
