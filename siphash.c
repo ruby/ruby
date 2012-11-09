@@ -130,8 +130,11 @@ xor64_to(uint64_t *v, const uint64_t s)
 #define XOR64_INT(v, x) ((v).lo ^= (x))
 #endif
 
-static const char sip_init_state_bin[] = "uespemos""modnarod""arenegyl""setybdet";
-#define sip_init_state (*(uint64_t (*)[4])sip_init_state_bin)
+static const union {
+    char bin[32];
+    uint64_t u64[4];
+} sip_init_state_bin = {"uespemos""modnarod""arenegyl""setybdet"};
+#define sip_init_state sip_init_state_bin.u64
 
 #if SIP_HASH_STREAMING
 struct sip_interface_st {
