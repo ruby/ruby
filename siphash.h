@@ -1,7 +1,9 @@
 #ifndef SIPHASH_H
 #define SIPHASH_H 1
 #include <stdlib.h>
+#ifdef HAVE_STDINT_H
 #include <stdint.h>
+#endif
 #ifdef HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
