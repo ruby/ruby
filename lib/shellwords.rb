@@ -105,6 +105,15 @@ module Shellwords
   #   argv = "It's better to give than to receive".shellescape
   #   argv #=> "It\\'s\\ better\\ to\\ give\\ than\\ to\\ receive"
   #
+  #   # Search files in lib for method definitions
+  #   pattern = "^[ \t]*def "
+  #   open("| grep -Ern #{pattern.shellescape} lib") { |grep|
+  #     grep.each_line { |line|
+  #       file, lineno, matched_line = line.split(':', 3)
+  #       # ...
+  #     }
+  #   }
+  #
   # It is the caller's responsibility to encode the string in the right
   # encoding for the shell environment where this string is used.
   #

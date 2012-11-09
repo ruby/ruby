@@ -1,6 +1,9 @@
-Fri Nov  9 15:13:16 2012  Akinori MUSHA  <knu@iDaemons.org>
+Fri Nov  9 15:25:42 2012  Akinori MUSHA  <knu@iDaemons.org>
 
-	* lib/shellwords.rb (Shellwords#shellescape): Undo part of the
+	* lib/shellwords.rb (Shellwords#shellescape): Add back my original
+	  real world example with some enhancement.
+
+	* lib/shellwords.rb (Shellwords#shelljoin): Undo part of the
 	  previous rdoc change.  This new example using a string-only
 	  array was not in line with the description.
 
