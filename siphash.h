@@ -2,7 +2,9 @@
 #define SIPHASH_H 1
 #include <stdlib.h>
 #include <stdint.h>
+#ifdef HAVE_INTTYPES_H
 #include <inttypes.h>
+#endif
 
 #ifndef HAVE_UINT64_T
 typedef struct {

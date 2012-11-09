@@ -1,3 +1,7 @@
+Sat Nov 10 00:19:09 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* siphash.h: include inttypes.h only when HAVE_INTTYPES_H is defined.
+
 Fri Nov  9 23:33:05 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/erb.rb (ERB#run, ERB#result): eval under isolated bindings for
