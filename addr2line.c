@@ -32,9 +32,26 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#if defined(HAVE_ALLOCA_H)
-#include <alloca.h>
-#endif
+/* Make alloca work the best possible way.  */
+#ifdef __GNUC__
+# ifndef atarist
+#  ifndef alloca
+#   define alloca __builtin_alloca
+#  endif
+# endif	/* atarist */
+#else
+# ifdef HAVE_ALLOCA_H
+#  include <alloca.h>
+# else
+#  ifdef _AIX
+#pragma alloca
+#  else
+#   ifndef alloca		/* predefined by HP cc +Olibcalls */
+void *alloca();
+#   endif
+#  endif /* AIX */
+# endif	/* HAVE_ALLOCA_H */
+#endif /* __GNUC__ */
 
 #ifdef HAVE_DL_ITERATE_PHDR
 # ifndef _GNU_SOURCE

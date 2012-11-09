@@ -1,3 +1,17 @@
+Fri Nov  9 12:07:06 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* include/ruby/ruby.h (alloca), eval_intern.h (alloca), gc.c
+	  (alloca): Make alloca() globally available by moving the
+	  ultimate ifdef's to ruby/ruby.h.  Gcc hides its builtin alloca()
+	  when compiling with -ansi, and linking thus fails on platforms
+	  that lack their own alloca() implementation in libc, which
+	  include OpenBSD and some ports of NetBSD.  We use alloca()
+	  everywhere including from within third party C extentions, so
+	  alloca() must be made globally available. [Bug #7307]
+
+	* addr2line.c (alloca): Replace the alloca() part with the
+	  ultimate ifdef's. [Bug #7307]
+
 Fri Nov  9 09:30:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* io.c (IO#new):

@@ -73,13 +73,26 @@ extern "C" {
 #pragma GCC visibility push(default)
 #endif
 
-#if defined(HAVE_ALLOCA_H)
-#include <alloca.h>
+/* Make alloca work the best possible way.  */
+#ifdef __GNUC__
+# ifndef atarist
+#  ifndef alloca
+#   define alloca __builtin_alloca
+#  endif
+# endif	/* atarist */
 #else
+# ifdef HAVE_ALLOCA_H
+#  include <alloca.h>
+# else
 #  ifdef _AIX
 #pragma alloca
-#  endif
-#endif
+#  else
+#   ifndef alloca		/* predefined by HP cc +Olibcalls */
+void *alloca();
+#   endif
+#  endif /* AIX */
+# endif	/* HAVE_ALLOCA_H */
+#endif /* __GNUC__ */
 
 #if defined HAVE_UINTPTR_T && 0
 typedef uintptr_t VALUE;
