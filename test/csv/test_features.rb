@@ -10,6 +10,7 @@
 require "zlib"
 
 require_relative "base"
+require "tempfile"
 
 class TestCSV::Features < TestCSV
   extend DifferentOFS
