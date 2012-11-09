@@ -1,3 +1,14 @@
+Fri Nov  9 16:17:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (append_fspath): revert a part of r37562.
+
+	* file.c (rb_file_expand_path_internal): ditto.
+
+	* file.c (rb_file_expand_path_internal): ignore the encoding of the
+	  given path name and use filesystem encoding, except when the result
+	  is 8bit range and the filesystem encoding is US-ASCII.
+	  [ruby-dev:39393] [Bug #2154]
+
 Fri Nov  9 16:15:50 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/csv/test_features.rb: add require for Tempfile.
