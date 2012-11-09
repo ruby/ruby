@@ -92,7 +92,7 @@ Fri Nov  9 12:07:06 2012  Akinori MUSHA  <knu@iDaemons.org>
 	  when compiling with -ansi, and linking thus fails on platforms
 	  that lack their own alloca() implementation in libc, which
 	  include OpenBSD and some ports of NetBSD.  We use alloca()
-	  everywhere including from within third party C extentions, so
+	  everywhere including from within third party C extensions, so
 	  alloca() must be made globally available. [Bug #7307]
 
 	* addr2line.c (alloca): Replace the alloca() part with the
@@ -465,7 +465,7 @@ Mon Nov  5 09:55:05 2012  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 Sun Nov  4 20:29:46 2012  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi.rb, lib/cgi/*/rb: rename CGI#header to CGI#http_header,
-	  add  and update HTML5 tag generater.  [Bug #7110]
+	  add and update HTML5 tag generator.  [Bug #7110]
 	  Patch provided by Marcus Stollsteimer, thank you !
 
 Sun Nov  4 11:47:39 2012  Masaki Matsushita  <glass.saga@gmail.com>
