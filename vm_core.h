@@ -22,7 +22,7 @@
 #include "vm_opts.h"
 #include "id.h"
 #include "method.h"
-#include "atomic.h"
+#include "ruby_atomic.h"
 
 #if   defined(_WIN32)
 #include "thread_win32.h"

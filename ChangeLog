@@ -1,3 +1,11 @@
+Sat Nov 10 00:49:26 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ruby_atomic.h: renamed from atomic.h to avoid header file name
+	  conflict on Solaris 10. [ruby-dev:46414] [Bug #7287]
+
+	* gc.c, signal.c, vm_core.h, common.mk: reflect the rename from
+	  atomic.h to ruby_atomic.h.
+
 Sat Nov 10 00:46:57 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* atomic.h: Revert r37491 which is a temporary workaroud.

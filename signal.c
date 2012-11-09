@@ -16,7 +16,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <errno.h>
-#include "atomic.h"
+#include "ruby_atomic.h"
 
 #if defined(__native_client__) && defined(NACL_NEWLIB)
 # include "nacl/signal.h"
