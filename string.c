@@ -6909,6 +6909,7 @@ rb_str_crypt(VALUE str, VALUE salt)
     extern char *crypt(const char *, const char *);
     VALUE result;
     const char *s, *saltp;
+    char *res;
 #ifdef BROKEN_CRYPT
     char salt_8bit_clean[3];
 #endif
@@ -6928,7 +6929,11 @@ rb_str_crypt(VALUE str, VALUE salt)
 	saltp = salt_8bit_clean;
     }
 #endif
-    result = rb_str_new2(crypt(s, saltp));
+    res = crypt(s, saltp);
+    if (!res) {
+	rb_sys_fail("crypt");
+    }
+    result = rb_str_new2(res);
     OBJ_INFECT(result, str);
     OBJ_INFECT(result, salt);
     return result;

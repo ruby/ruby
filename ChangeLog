@@ -1,3 +1,8 @@
+Fri Nov  9 12:58:13 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_crypt): crypt(3) may return NULL.
+	  Latest glibc (2.16?) crypt(3) actually returns NULL. [Bug #7312]
+
 Fri Nov  9 12:07:06 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* include/ruby/ruby.h (alloca), eval_intern.h (alloca), gc.c
