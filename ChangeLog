@@ -1,3 +1,7 @@
+Sat Nov 10 01:25:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (append_fspath): no need to do encoding trick here.
+
 Sat Nov 10 00:37:02 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* siphash.h: check configure macros before include newer headers.

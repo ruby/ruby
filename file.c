@@ -2874,14 +2874,7 @@ append_fspath(VALUE result, VALUE fname, char *dir, rb_encoding **enc, rb_encodi
     VALUE dirname = Qnil;
     size_t dirlen = strlen(dir), buflen = rb_str_capacity(result);
 
-    if (*enc != fsenc) {
-	rb_encoding *direnc = rb_enc_check(fname, dirname = rb_enc_str_new(dir, dirlen, fsenc));
-	if (direnc != fsenc) {
-	    dirname = rb_str_conv_enc(dirname, fsenc, direnc);
-	    RSTRING_GETMEM(dirname, cwdp, dirlen);
-	}
-	*enc = direnc;
-    }
+    *enc = fsenc;
     do {buflen *= 2;} while (dirlen > buflen);
     rb_str_resize(result, buflen);
     buf = RSTRING_PTR(result);
