@@ -57,6 +57,8 @@ static const char *abbr_months[] = {
 #define issign(c) ((c) == '-' || (c) == '+')
 #define asp_string() rb_str_new(" ", 1)
 #ifdef TIGHT_PARSER
+#define asuba_string() rb_str_new("\001", 1)
+#define asubb_string() rb_str_new("\002", 1)
 #define asubw_string() rb_str_new("\027", 1)
 #define asubt_string() rb_str_new("\024", 1)
 #endif
@@ -165,10 +167,11 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	    buf[ep - bp] = '\0';
 	    iy = cstr2num(buf);
 	}
-	if (bc)
-	    iy = f_add(f_negate(iy), INT2FIX(1));
 	set_hash("year", iy);
     }
+
+    if (bc)
+	set_hash("_bc", Qtrue);
 
     if (!NIL_P(m)) {
 	const char *s, *bp, *ep;
@@ -228,6 +231,8 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 #define VALID_MONTHS "(?:" MONTHS ")" "|(?:sept|" ABBR_MONTHS ")\\.?"
 #define DOTLESS_VALID_MONTHS "(?:" MONTHS ")" "|(?:sept|" ABBR_MONTHS ")"
 #define BOS "\\A\\s*"
+#define FPA "\\001"
+#define FPB "\\002"
 #define FPW "\\027"
 #define FPT "\\024"
 #define FPW_COM "\\s*(?:" FPW "\\s*,?)?\\s*"
@@ -305,6 +310,16 @@ subx(VALUE str, VALUE rep, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
 }
 
 #ifdef TIGHT_PARSER
+#define SUBA(s,p,c) \
+{ \
+    return subx(s, asuba_string(), p, hash, c); \
+}
+
+#define SUBB(s,p,c) \
+{ \
+    return subx(s, asubb_string(), p, hash, c); \
+}
+
 #define SUBW(s,p,c) \
 { \
     return subx(s, asubw_string(), p, hash, c); \
@@ -763,6 +778,60 @@ parse_time(VALUE str, VALUE hash)
 #endif
 }
 
+#ifdef TIGHT_PARSER
+static int
+parse_era1_cb(VALUE m, VALUE hash)
+{
+    return 1;
+}
+
+static int
+parse_era1(VALUE str, VALUE hash)
+{
+    static const char pat_source[] =
+	"(a(?:d|\\.d\\.))";
+    static VALUE pat = Qnil;
+
+    REGCOMP_I(pat);
+    SUBA(str, pat, parse_era1_cb);
+}
+
+static int
+parse_era2_cb(VALUE m, VALUE hash)
+{
+    VALUE b;
+
+    b = rb_reg_nth_match(1, m);
+    if (*RSTRING_PTR(b) == 'B' ||
+	*RSTRING_PTR(b) == 'b')
+	set_hash("_bc", Qtrue);
+    return 1;
+}
+
+static int
+parse_era2(VALUE str, VALUE hash)
+{
+    static const char pat_source[] =
+	"(c(?:e|\\.e\\.)|b(?:ce|\\.c\\.e\\.)|b(?:c|\\.c\\.))";
+    static VALUE pat = Qnil;
+
+    REGCOMP_I(pat);
+    SUBB(str, pat, parse_era2_cb);
+}
+
+static int
+parse_era(VALUE str, VALUE hash)
+{
+    if (parse_era1(str, hash)) /* pre */
+	goto ok;
+    if (parse_era2(str, hash)) /* post */
+	goto ok;
+    return 0;
+  ok:
+    return 1;
+}
+#endif
+
 static int
 parse_eu_cb(VALUE m, VALUE hash)
 {
@@ -819,7 +888,11 @@ parse_eu(VALUE str, VALUE hash)
 		   "\\s*"
 		   "('?-?\\d+(?:(?:st|nd|rd|th)\\b)?)"
 #else
+		   "(?:" FPA ")?"
+		   "\\s*"
 		   "('?-?\\d+)"
+		   "\\s*"
+		   "(?:" FPA "|" FPB ")?"
 #endif
 		")?"
 #ifdef TIGHT_PARSER
@@ -890,8 +963,14 @@ parse_us(VALUE str, VALUE hash)
 #ifndef TIGHT_PARSER
 		   "(c(?:e|\\.e\\.)|b(?:ce|\\.c\\.e\\.)|a(?:d|\\.d\\.)|b(?:c|\\.c\\.))?"
 		   "\\s*"
-#endif
 		   "('?-?\\d+)"
+#else
+		   "(?:" FPA ")?"
+		   "\\s*"
+		   "('?-?\\d+)"
+		   "\\s*"
+		   "(?:" FPA "|" FPB ")?"
+#endif
 		")?"
 #ifdef TIGHT_PARSER
 		COM_FPT COM_FPW
@@ -1923,12 +2002,7 @@ parse_ddd(VALUE str, VALUE hash)
 static int
 parse_bc_cb(VALUE m, VALUE hash)
 {
-    VALUE y;
-
-    y = ref_hash("year");
-    if (!NIL_P(y))
-	set_hash("year", f_add(f_negate(y), INT2FIX(1)));
-
+    set_hash("_bc", Qtrue);
     return 1;
 }
 
@@ -2097,12 +2171,17 @@ date__parse(VALUE str, VALUE comp)
     if (HAVE_ELEM_P(HAVE_DIGIT))
 	parse_time(str, hash);
 
-    if (HAVE_ELEM_P(HAVE_ALPHA|HAVE_DIGIT))
+#ifdef TIGHT_PARSER
+    if (HAVE_ELEM_P(HAVE_ALPHA))
+	parse_era(str, hash);
+#endif
+
+    if (HAVE_ELEM_P(HAVE_ALPHA|HAVE_DIGIT)) {
 	if (parse_eu(str, hash))
 	    goto ok;
-    if (HAVE_ELEM_P(HAVE_ALPHA|HAVE_DIGIT))
 	if (parse_us(str, hash))
 	    goto ok;
+    }
     if (HAVE_ELEM_P(HAVE_DIGIT|HAVE_DASH))
 	if (parse_iso(str, hash))
 	    goto ok;
@@ -2170,6 +2249,21 @@ date__parse(VALUE str, VALUE comp)
 #endif
 
     {
+	if (RTEST(ref_hash("_bc"))) {
+	    VALUE y;
+
+	    y = ref_hash("cwyear");
+	    if (!NIL_P(y)) {
+		y = f_add(f_negate(y), INT2FIX(1));
+		set_hash("cwyear", y);
+	    }
+	    y = ref_hash("year");
+	    if (!NIL_P(y)) {
+		y = f_add(f_negate(y), INT2FIX(1));
+		set_hash("year", y);
+	    }
+	}
+
 	if (RTEST(ref_hash("_comp"))) {
 	    VALUE y;
 
@@ -2190,8 +2284,10 @@ date__parse(VALUE str, VALUE comp)
 			set_hash("year", f_add(y, INT2FIX(2000)));
 		}
 	}
+
     }
 
+    del_hash("_bc");
     del_hash("_comp");
 
     {
