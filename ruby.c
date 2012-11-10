@@ -150,7 +150,7 @@ usage(const char *name, int help)
 	M("-0[octal]",	   "",			   "specify record separator (\\0, if no argument)"),
 	M("-a",		   "",			   "autosplit mode with -n or -p (splits $_ into $F)"),
 	M("-c",		   "",			   "check syntax only"),
-	M("-Cdirectory",   "",			   "cd to directory, before executing your script"),
+	M("-Cdirectory",   "",			   "cd to directory before executing your script"),
 	M("-d",		   ", --debug",		   "set debugging flags (set $DEBUG to true)"),
 	M("-e 'command'",  "",			   "one line of script. Several -e's allowed. Omit [programfile]"),
 	M("-Eex[:in]",     ", --encoding=ex[:in]", "specify the default external and internal character encodings"),

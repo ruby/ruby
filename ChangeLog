@@ -1,3 +1,7 @@
+Sun Nov 11 08:45:45 2012  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* ruby.c: removed a comma before "before"
+
 Sat Nov 10 23:02:31 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: move immutable fields from struct heaps_slot and struct
