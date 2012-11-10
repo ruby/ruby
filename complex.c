@@ -481,7 +481,8 @@ f_complex_new2(VALUE klass, VALUE x, VALUE y)
  *
  * Returns x+i*y;
  *
- *    Complex(1, 2)  #=> (1+2i)
+ *    Complex(1, 2)    #=> (1+2i)
+ *    Complex('1+2i')  #=> (1+2i)
  */
 static VALUE
 nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
@@ -1427,6 +1428,8 @@ nucomp_to_f(VALUE self)
  *    Complex(1, 0).to_r    #=> (1/1)
  *    Complex(1, 0.0).to_r  # RangeError
  *    Complex(1, 2).to_r    # RangeError
+ *
+ * See rationalize.
  */
 static VALUE
 nucomp_to_r(VALUE self)
@@ -1446,12 +1449,13 @@ nucomp_to_r(VALUE self)
  *    cmp.rationalize([eps])  ->  rational
  *
  * Returns the value as a rational if possible (the imaginary part
- * should be exactly zero).  The optional argument eps is always
- * ignored.
+ * should be exactly zero).
  *
  *    Complex(1.0/3, 0).rationalize  #=> (1/3)
  *    Complex(1, 0.0).rationalize    # RangeError
  *    Complex(1, 2).rationalize      # RangeError
+ *
+ * See to_r.
  */
 static VALUE
 nucomp_rationalize(int argc, VALUE *argv, VALUE self)

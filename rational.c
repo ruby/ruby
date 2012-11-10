@@ -549,7 +549,8 @@ f_rational_new_no_reduce2(VALUE klass, VALUE x, VALUE y)
  *
  * Returns x/y;
  *
- *    Rational(1, 2)  #=> (1/2)
+ *    Rational(1, 2)   #=> (1/2)
+ *    Rational('1/2')  #=> (1/2)
  */
 static VALUE
 nurat_f_rational(int argc, VALUE *argv, VALUE klass)
@@ -1450,7 +1451,7 @@ nurat_rationalize_internal(VALUE a, VALUE b, VALUE *p, VALUE *q)
  *    rat.rationalize       ->  self
  *    rat.rationalize(eps)  ->  rational
  *
- * Returns a simpler approximation of the value if an optional
+ * Returns a simpler approximation of the value if the optional
  * argument eps is given (rat-|eps| <= result <= rat+|eps|), self
  * otherwise.
  *
@@ -1793,7 +1794,7 @@ nilclass_to_r(VALUE self)
  * call-seq:
  *    nil.rationalize([eps])  ->  (0/1)
  *
- * Returns zero as a rational.  An optional argument eps is always
+ * Returns zero as a rational.  The optional argument eps is always
  * ignored.
  */
 static VALUE
@@ -1822,7 +1823,7 @@ integer_to_r(VALUE self)
  * call-seq:
  *    int.rationalize([eps])  ->  rational
  *
- * Returns the value as a rational.  An optional argument eps is
+ * Returns the value as a rational.  The optional argument eps is
  * always ignored.
  */
 static VALUE
@@ -1872,6 +1873,8 @@ float_decode(VALUE self)
  *    2.5.to_r    #=> (5/2)
  *    -0.75.to_r  #=> (-3/4)
  *    0.0.to_r    #=> (0/1)
+ *
+ * See rationalize.
  */
 static VALUE
 float_to_r(VALUE self)
@@ -1900,12 +1903,14 @@ float_to_r(VALUE self)
  *    flt.rationalize([eps])  ->  rational
  *
  * Returns a simpler approximation of the value (flt-|eps| <= result
- * <= flt+|eps|).  if eps is not given, it will be chosen
+ * <= flt+|eps|).  if the optional eps is not given, it will be chosen
  * automatically.
  *
  *    0.3.rationalize          #=> (3/10)
  *    1.333.rationalize        #=> (1333/1000)
  *    1.333.rationalize(0.01)  #=> (4/3)
+ *
+ * See to_r.
  */
 static VALUE
 float_rationalize(int argc, VALUE *argv, VALUE self)
