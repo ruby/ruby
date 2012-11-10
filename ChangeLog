@@ -1,7 +1,7 @@
 Sat Nov 10 19:28:16 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: modified doc.
-	* ratioanl.c: ditto.
+	* rational.c: ditto.
 
 Sat Nov 10 18:20:10 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
