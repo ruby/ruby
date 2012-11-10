@@ -499,7 +499,7 @@ end
 
 install?(:local, :comm, :lib) do
   prepare "library scripts", rubylibdir
-  noinst = %w[README* *.txt *.rdoc]
+  noinst = %w[README* *.txt *.rdoc *.gemspec]
   install_recursive(File.join(srcdir, "lib"), rubylibdir, :no_install => noinst, :mode => $data_mode)
 end
 

@@ -1,3 +1,9 @@
+Sat Nov 10 12:13:41 2012  Kouhei Sutou  <kou@cozmixng.org>
+
+	* tool/rbinstall.rb: Don't install *.gemspec under lib/.
+	  [ruby-core:48966] [Bug #7289]
+	  Reported by Vit Ondruch. Thanks!!!
+
 Sat Nov 10 00:49:26 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ruby_atomic.h: renamed from atomic.h to avoid header file name
