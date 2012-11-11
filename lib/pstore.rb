@@ -309,8 +309,16 @@ class PStore
   #
   def transaction(read_only = false)  # :yields:  pstore
     value = nil
-    raise PStore::Error, "nested transaction" if !@thread_safe && @lock.locked?
-    @lock.synchronize do
+    if !@thread_safe
+      raise PStore::Error, "nested transaction" unless @lock.try_lock
+    else
+      begin
+        @lock.lock
+      rescue ThreadError
+        raise PStore::Error, "nested transaction"
+      end
+    end
+    begin
       @rdonly = read_only
       @abort = false
       file = open_and_lock_file(@filename, read_only)
@@ -335,10 +343,10 @@ class PStore
           value = yield(self)
         end
       end
+    ensure
+      @lock.unlock
     end
     value
-  rescue ThreadError
-    raise PStore::Error, "nested transaction"
   end
 
   private
