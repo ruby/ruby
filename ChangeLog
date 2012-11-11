@@ -1,4 +1,7 @@
-Sun Nov 11 15:38:14 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Nov 11 15:39:04 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_s_create): just warn for wrong elements now.
+	  [ruby-dev:46440] [Bug #7300]
 
 	* hash.c (rb_hash_s_create): refine error messages.
 
@@ -28,7 +31,7 @@ Sun Nov 11 11:36:19 2012  Shugo Maeda  <shugo@ruby-lang.org>
 	* vm_core.h (rb_call_info_t::refinements), compile.c (new_callinfo):
 	  add a new field for inline method cache.
 
-	* vm_insnhelper.c (vm_search_method): check rb_call_info_t::refinements 
+	* vm_insnhelper.c (vm_search_method): check rb_call_info_t::refinements
 	  not to confuse inline method cache when module_eval is used with
 	  refinements.
 
