@@ -63,6 +63,8 @@ static const char *abbr_months[] = {
 #define asubt_string() rb_str_new("\024", 1)
 #endif
 
+#define DECDIGIT "0123456789"
+
 static void
 s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 {
@@ -102,7 +104,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	bp = s;
 	if (issign((unsigned char)*s))
 	    s++;
-	l = strspn(s, "0123456789");
+	l = strspn(s, DECDIGIT);
 	ep = s + l;
 	if (*ep) {
 	    y = d;
@@ -155,7 +157,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	}
 	if (sign)
 	    c = Qfalse;
-	l = strspn(s, "0123456789");
+	l = strspn(s, DECDIGIT);
 	ep = s + l;
 	if (l > 2)
 	    c = Qfalse;
@@ -182,7 +184,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	while (!isdigit((unsigned char)*s))
 	    s++;
 	bp = s;
-	l = strspn(s, "0123456789");
+	l = strspn(s, DECDIGIT);
 	ep = s + l;
 	{
 	    char *buf;
@@ -204,7 +206,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	while (!isdigit((unsigned char)*s))
 	    s++;
 	bp = s;
-	l = strspn(s, "0123456789");
+	l = strspn(s, DECDIGIT);
 	ep = s + l;
 	{
 	    char *buf;
@@ -832,6 +834,50 @@ parse_era(VALUE str, VALUE hash)
 }
 #endif
 
+#ifdef TIGHT_PARSER
+static int
+check_year_width(VALUE y)
+{
+    char *s;
+    size_t l;
+
+    s = RSTRING_PTR(y);
+    l = strcspn(s, DECDIGIT);
+    s += l;
+    l = strspn(s, DECDIGIT);
+    if (l != 2)
+	return 0;
+    return 1;
+}
+
+static int
+check_apost(VALUE a, VALUE b, VALUE c)
+{
+    int f = 0;
+
+    if (!NIL_P(a) && *RSTRING_PTR(a) == '\'') {
+	if (!check_year_width(a))
+	    return 0;
+	f++;
+    }
+    if (!NIL_P(b) && *RSTRING_PTR(b) == '\'') {
+	if (!check_year_width(b))
+	    return 0;
+	if (!NIL_P(c))
+	    return 0;
+	f++;
+    }
+    if (!NIL_P(c) && *RSTRING_PTR(c) == '\'') {
+	if (!check_year_width(c))
+	    return 0;
+	f++;
+    }
+    if (f > 1)
+	return 0;
+    return 1;
+}
+#endif
+
 static int
 parse_eu_cb(VALUE m, VALUE hash)
 {
@@ -854,6 +900,9 @@ parse_eu_cb(VALUE m, VALUE hash)
     d = rb_reg_nth_match(1, m);
     mon = rb_reg_nth_match(2, m);
     y = rb_reg_nth_match(3, m);
+
+    if (!check_apost(d, mon, y))
+	return 0;
 
     mon = INT2FIX(mon_num(mon));
 
@@ -890,7 +939,7 @@ parse_eu(VALUE str, VALUE hash)
 #else
 		   "(?:" FPA ")?"
 		   "\\s*"
-		   "('?-?\\d+)"
+		   "([-']?\\d+)"
 		   "\\s*"
 		   "(?:" FPA "|" FPB ")?"
 #endif
@@ -930,6 +979,9 @@ parse_us_cb(VALUE m, VALUE hash)
     d = rb_reg_nth_match(2, m);
     y = rb_reg_nth_match(3, m);
 
+    if (!check_apost(mon, d, y))
+	return 0;
+
     mon = INT2FIX(mon_num(mon));
 
     s3e(hash, y, mon, d, 0);
@@ -954,7 +1006,7 @@ parse_us(VALUE str, VALUE hash)
 #ifndef TIGHT_PARSER
 		 "('?\\d+)[^-\\d\\s']*"
 #else
-		 "(\\d+)(?:(?:st|nd|rd|th)\\b)?"
+		 "('?\\d+)(?:(?:st|nd|rd|th)\\b)?"
 		COM_FPT
 #endif
 		 "(?:"
@@ -967,7 +1019,7 @@ parse_us(VALUE str, VALUE hash)
 #else
 		   "(?:" FPA ")?"
 		   "\\s*"
-		   "('?-?\\d+)"
+		   "([-']?\\d+)"
 		   "\\s*"
 		   "(?:" FPA "|" FPB ")?"
 #endif
@@ -993,7 +1045,7 @@ parse_iso_cb(VALUE m, VALUE hash)
     d = rb_reg_nth_match(3, m);
 
 #ifdef TIGHT_PARSER
-    if (*RSTRING_PTR(y) == '\'' && *RSTRING_PTR(d) == '\'')
+    if (!check_apost(y, mon, d))
 	return 0;
 #endif
 
@@ -1010,7 +1062,7 @@ parse_iso(VALUE str, VALUE hash)
 #else
 	BOS
 	FPW_COM FPT_COM
-	"('?[-+]?\\d+)-(\\d+)-('?-?\\d+)"
+	"([-+']?\\d+)-(\\d+)-([-']?\\d+)"
 	TEE_FPT COM_FPW
 	EOS
 #endif
@@ -1341,7 +1393,7 @@ parse_vms11_cb(VALUE m, VALUE hash)
     y = rb_reg_nth_match(3, m);
 
 #ifdef TIGHT_PARSER
-    if (*RSTRING_PTR(d) == '\'' && !NIL_P(y) && *RSTRING_PTR(y) == '\'')
+    if (!check_apost(d, mon, y))
 	return 0;
 #endif
 
@@ -1361,8 +1413,8 @@ parse_vms11(VALUE str, VALUE hash)
 #else
 	BOS
 	FPW_COM FPT_COM
-	"('?-?\\d+)-(" DOTLESS_VALID_MONTHS ")"
-	"-('?-?\\d+)"
+	"([-']?\\d+)-(" DOTLESS_VALID_MONTHS ")"
+	"-([-']?\\d+)"
 	COM_FPT COM_FPW
 	EOS
 #endif
@@ -1383,7 +1435,7 @@ parse_vms12_cb(VALUE m, VALUE hash)
     y = rb_reg_nth_match(3, m);
 
 #ifdef TIGHT_PARSER
-    if (*RSTRING_PTR(d) == '\'' && !NIL_P(y))
+    if (!check_apost(mon, d, y))
 	return 0;
 #endif
 
@@ -1404,7 +1456,7 @@ parse_vms12(VALUE str, VALUE hash)
 	BOS
 	FPW_COM FPT_COM
 	"(" DOTLESS_VALID_MONTHS ")"
-	"-('?-?\\d+)(?:-('?-?\\d+))?"
+	"-([-']?\\d+)(?:-([-']?\\d+))?"
 	COM_FPT COM_FPW
 	EOS
 #endif
@@ -1438,11 +1490,7 @@ parse_sla_cb(VALUE m, VALUE hash)
     d = rb_reg_nth_match(3, m);
 
 #ifdef TIGHT_PARSER
-    if (*RSTRING_PTR(y) == '\'' &&
-	(*RSTRING_PTR(mon) == '\'' ||
-	 !NIL_P(d) && *RSTRING_PTR(d) == '\''))
-	return 0;
-    if (*RSTRING_PTR(mon) == '\'' && !NIL_P(d))
+    if (!check_apost(y, mon, d))
 	return 0;
 #endif
 
@@ -1459,7 +1507,7 @@ parse_sla(VALUE str, VALUE hash)
 #else
 	BOS
 	FPW_COM FPT_COM
-	"('?-?\\d+)/\\s*('?\\d+)(?:(?:[-/]|\\s+)\\s*('?-?\\d+))?"
+	"([-']?\\d+)/\\s*('?\\d+)(?:(?:[-/]|\\s+)\\s*([-']?\\d+))?"
 	COM_FPT COM_FPW
 	EOS
 #endif
@@ -1480,10 +1528,8 @@ parse_sla2_cb(VALUE m, VALUE hash)
     mon = rb_reg_nth_match(2, m);
     y = rb_reg_nth_match(3, m);
 
-#ifdef TIGHT_PARSER
-    if (*RSTRING_PTR(d) == '\'' && !NIL_P(y) && *RSTRING_PTR(y) == '\'')
+    if (!check_apost(d, mon, y))
 	return 0;
-#endif
 
     mon = INT2FIX(mon_num(mon));
 
@@ -1497,7 +1543,7 @@ parse_sla2(VALUE str, VALUE hash)
     static const char pat_source[] =
 	BOS
 	FPW_COM FPT_COM
-	"('?-?\\d+)/\\s*(" DOTLESS_VALID_MONTHS ")(?:(?:[-/]|\\s+)\\s*('?-?\\d+))?"
+	"([-']?\\d+)/\\s*(" DOTLESS_VALID_MONTHS ")(?:(?:[-/]|\\s+)\\s*([-']?\\d+))?"
 	COM_FPT COM_FPW
 	EOS
 	;
@@ -1516,10 +1562,8 @@ parse_sla3_cb(VALUE m, VALUE hash)
     d = rb_reg_nth_match(2, m);
     y = rb_reg_nth_match(3, m);
 
-#ifdef TIGHT_PARSER
-    if (*RSTRING_PTR(d) == '\'' && !NIL_P(y))
+    if (!check_apost(mon, d, y))
 	return 0;
-#endif
 
     mon = INT2FIX(mon_num(mon));
 
@@ -1533,7 +1577,7 @@ parse_sla3(VALUE str, VALUE hash)
     static const char pat_source[] =
 	BOS
 	FPW_COM FPT_COM
-	"(" DOTLESS_VALID_MONTHS ")/\\s*('?\\d+)(?:(?:[-/]|\\s+)\\s*('?-?\\d+))?"
+	"(" DOTLESS_VALID_MONTHS ")/\\s*([-']?\\d+)(?:(?:[-/]|\\s+)\\s*([-']?\\d+))?"
 	COM_FPT COM_FPW
 	EOS
 	;
@@ -1554,7 +1598,7 @@ parse_dot_cb(VALUE m, VALUE hash)
     d = rb_reg_nth_match(3, m);
 
 #ifdef TIGHT_PARSER
-    if (*RSTRING_PTR(y) == '\'' && *RSTRING_PTR(d) == '\'')
+    if (!check_apost(y, mon, d))
 	return 0;
 #endif
 
@@ -1571,7 +1615,7 @@ parse_dot(VALUE str, VALUE hash)
 #else
 	BOS
 	FPW_COM FPT_COM
-	"('?-?\\d+)\\.\\s*(\\d+)\\.\\s*('?-?\\d+)"
+	"([-']?\\d+)\\.\\s*(\\d+)\\.\\s*([-']?\\d+)"
 	COM_FPT COM_FPW
 	EOS
 #endif
@@ -1592,10 +1636,8 @@ parse_dot2_cb(VALUE m, VALUE hash)
     mon = rb_reg_nth_match(2, m);
     y = rb_reg_nth_match(3, m);
 
-#ifdef TIGHT_PARSER
-    if (*RSTRING_PTR(d) == '\'' && !NIL_P(y) && *RSTRING_PTR(y) == '\'')
+    if (!check_apost(d, mon, y))
 	return 0;
-#endif
 
     mon = INT2FIX(mon_num(mon));
 
@@ -1609,7 +1651,7 @@ parse_dot2(VALUE str, VALUE hash)
     static const char pat_source[] =
 	BOS
 	FPW_COM FPT_COM
-	"('?-?\\d+)\\.\\s*(" DOTLESS_VALID_MONTHS ")(?:(?:[./])\\s*('?-?\\d+))?"
+	"([-']?\\d+)\\.\\s*(" DOTLESS_VALID_MONTHS ")(?:(?:[./])\\s*([-']?\\d+))?"
 	COM_FPT COM_FPW
 	EOS
 	;
@@ -1628,10 +1670,8 @@ parse_dot3_cb(VALUE m, VALUE hash)
     d = rb_reg_nth_match(2, m);
     y = rb_reg_nth_match(3, m);
 
-#ifdef TIGHT_PARSER
-    if (*RSTRING_PTR(d) == '\'' && !NIL_P(y))
+    if (!check_apost(mon, d, y))
 	return 0;
-#endif
 
     mon = INT2FIX(mon_num(mon));
 
@@ -1645,7 +1685,7 @@ parse_dot3(VALUE str, VALUE hash)
     static const char pat_source[] =
 	BOS
 	FPW_COM FPT_COM
-	"(" DOTLESS_VALID_MONTHS ")\\.\\s*('?\\d+)(?:(?:[./])\\s*('?-?\\d+))?"
+	"(" DOTLESS_VALID_MONTHS ")\\.\\s*([-']?\\d+)(?:(?:[./])\\s*([-']?\\d+))?"
 	COM_FPT COM_FPW
 	EOS
 	;
