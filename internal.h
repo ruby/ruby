@@ -95,6 +95,7 @@ NORETURN(PRINTF_ARGS(void rb_compile_bug(const char*, int, const char*, ...), 3,
 VALUE rb_check_backtrace(VALUE);
 NORETURN(void rb_async_bug_errno(const char *,int));
 const char *rb_builtin_type_name(int t);
+const char *rb_builtin_class_name(VALUE x);
 
 /* eval_error.c */
 void ruby_error_print(void);

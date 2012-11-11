@@ -15,6 +15,7 @@
 #include "ruby/st.h"
 #include "ruby/util.h"
 #include "ruby/encoding.h"
+#include "internal.h"
 #include <errno.h>
 
 #ifdef __APPLE__
@@ -392,11 +393,14 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
 
 	    hash = hash_alloc(klass);
 	    for (i = 0; i < RARRAY_LEN(tmp); ++i) {
-		VALUE v = rb_check_array_type(RARRAY_PTR(tmp)[i]);
+		VALUE e = RARRAY_PTR(tmp)[i];
+		VALUE v = rb_check_array_type(e);
 		VALUE key, val = Qnil;
 
 		if (NIL_P(v)) {
-		    rb_raise(rb_eArgError, "wrong element type (expected array)");
+		    rb_raise(rb_eArgError, "wrong element type %s at %ld (expected array)",
+			     rb_builtin_class_name(e), i);
+
 		}
 		switch (RARRAY_LEN(v)) {
 		  default:

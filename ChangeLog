@@ -1,3 +1,9 @@
+Sun Nov 11 15:38:14 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_s_create): refine error messages.
+
+	* error.c (rb_builtin_class_name): share for above.
+
 Sun Nov 11 15:12:18 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (top_using): remove Kernel#using, and add main.using instead.

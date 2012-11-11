@@ -432,8 +432,9 @@ rb_builtin_type_name(int t)
     return 0;
 }
 
-static const char *
-builtin_class_name(VALUE x)
+#define builtin_class_name rb_builtin_class_name
+const char *
+rb_builtin_class_name(VALUE x)
 {
     const char *etype;
 
