@@ -1087,7 +1087,6 @@ rb_using_refinement(NODE *cref, VALUE klass, VALUE module)
 	module = RCLASS_SUPER(module);
     }
     rb_hash_aset(cref->nd_refinements, klass, iclass);
-    rb_clear_cache_by_class(klass);
 }
 
 void rb_using_module(NODE *cref, VALUE module);
@@ -1153,6 +1152,7 @@ rb_mod_using(VALUE self, VALUE module)
     }
     rb_hash_aset(using_modules, module, Qtrue);
     rb_using_module(cref, module);
+    rb_clear_cache();
     rb_funcall(module, rb_intern("used"), 1, self);
     return self;
 }
@@ -1392,6 +1392,7 @@ f_using(VALUE self, VALUE module)
 
     Check_Type(module, T_MODULE);
     rb_using_module(cref, module);
+    rb_clear_cache();
     return self;
 }
 

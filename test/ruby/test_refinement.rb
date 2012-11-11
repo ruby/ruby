@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestRefinement < Test::Unit::TestCase
   class Foo
@@ -708,5 +709,73 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("original", f.call)
     assert_equal("refined", InlineMethodCache::M.module_eval(&f))
     assert_equal("original", f.call)
+  end
+
+  module UsingMethodCache
+    class C
+      def foo
+        "original"
+      end
+    end
+
+    module M1
+      refine C do
+        def foo
+          "M1"
+        end
+      end
+    end
+
+    module M2
+      refine C do
+        def foo
+          "M2"
+        end
+      end
+    end
+
+    module M
+      c = C.new
+      ORIGINAL_FOO = c.foo
+      using M1
+      c.foo
+      using M2
+      M2_FOO = c.foo
+    end
+  end
+
+  def test_using_method_cache
+    assert_equal("original", UsingMethodCache::M::ORIGINAL_FOO)
+    assert_equal("M2", UsingMethodCache::M::M2_FOO)
+
+    assert_in_out_err([], <<-INPUT, %w(:M1 :M2), [])
+      class C
+        def foo
+          "original"
+        end
+      end
+
+      module M1
+        refine C do
+          def foo
+            :M1
+          end
+        end
+      end
+
+      module M2
+        refine C do
+          def foo
+            :M2
+          end
+        end
+      end
+
+      c = C.new
+      using M1
+      p c.foo
+      using M2
+      p c.foo
+    INPUT
   end
 end
