@@ -685,4 +685,28 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("#<refinement:#{c.inspect}@#{m.inspect}>",
                  m.refinements[c].inspect)
   end
+
+  module InlineMethodCache
+    class C
+      def foo
+        "original"
+      end
+    end
+
+    module M
+      refine C do
+        def foo
+          "refined"
+        end
+      end
+    end
+  end
+
+  def test_inline_method_cache
+    c = InlineMethodCache::C.new
+    f = Proc.new { c.foo }
+    assert_equal("original", f.call)
+    assert_equal("refined", InlineMethodCache::M.module_eval(&f))
+    assert_equal("original", f.call)
+  end
 end

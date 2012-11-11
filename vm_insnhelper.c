@@ -843,19 +843,30 @@ static void
 vm_search_method(rb_call_info_t *ci, VALUE recv)
 {
     VALUE klass = CLASS_OF(recv);
+    NODE *cref = rb_vm_cref();
+    VALUE refinements = Qnil;
+
+    if (cref && !NIL_P(cref->nd_refinements)) {
+	refinements = cref->nd_refinements;
+    }
 
 #if OPT_INLINE_METHOD_CACHE
-    if (LIKELY(GET_VM_STATE_VERSION() == ci->vmstat && klass == ci->klass)) {
+    if (LIKELY(GET_VM_STATE_VERSION() == ci->vmstat && klass == ci->klass &&
+	       refinements == ci->refinements)) {
 	/* cache hit! */
     }
     else {
-	ci->me = rb_method_entry(klass, ci->mid, &ci->defined_class);
+	ci->me = rb_method_entry_get_with_refinements(refinements, klass,
+						      ci->mid,
+						      &ci->defined_class);
 	ci->klass = klass;
+	ci->refinements = refinements;
 	ci->vmstat = GET_VM_STATE_VERSION();
 	ci->call = vm_call_general;
     }
 #else
-    ci->me = rb_method_entry(klass, ci->mid, &ci->defined_class);
+    ci->me = rb_method_entry_get_with_refinements(refinements, klass, ci->mid,
+						  &ci->defined_class);
     ci->call = vm_call_general;
     ci->klass = klass;
 #endif
