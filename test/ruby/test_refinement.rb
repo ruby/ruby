@@ -474,10 +474,32 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("c", c.class_eval { 123.foo })
   end
 
-  def test_kernel_using_class
-    c = Class.new
-    assert_raise(TypeError) do
-      using c
+  def test_main_using
+    assert_in_out_err([], <<-INPUT, %w(:C :M), [])
+      class C
+        def foo
+          :C
+        end
+      end
+
+      module M
+        refine C do
+          def foo
+            :M
+          end
+        end
+      end
+
+      c = C.new
+      p c.foo
+      using M
+      p c.foo
+    INPUT
+  end
+
+  def test_no_kernel_using
+    assert_raise(NoMethodError) do
+      using Module.new
     end
   end
 

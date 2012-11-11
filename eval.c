@@ -1386,7 +1386,7 @@ top_include(int argc, VALUE *argv, VALUE self)
  */
 
 static VALUE
-f_using(VALUE self, VALUE module)
+top_using(VALUE self, VALUE module)
 {
     NODE *cref = rb_vm_cref();
 
@@ -1593,8 +1593,7 @@ Init_eval(void)
     rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_constants, -1);
 
     rb_define_singleton_method(rb_vm_top_self(), "include", top_include, -1);
-
-    rb_define_global_function("using", f_using, 1);
+    rb_define_singleton_method(rb_vm_top_self(), "using", top_using, 1);
 
     rb_define_method(rb_mKernel, "extend", rb_obj_extend, -1);
 
