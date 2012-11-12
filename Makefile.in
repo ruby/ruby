@@ -147,6 +147,7 @@ OBJDUMP       = @OBJDUMP@
 OBJCOPY       = @OBJCOPY@
 VCS           = @VCS@
 VCSUP         = @VCSUP@
+DTRACE        = @DTRACE@
 
 OBJEXT        = @OBJEXT@
 ASMEXT        = S
@@ -263,6 +264,8 @@ reconfig config.status:	$(srcdir)/configure $(srcdir)/enc/Makefile.in \
 $(srcdir)/configure: $(srcdir)/configure.in
 	$(CHDIR) $(srcdir) && exec $(AUTOCONF)
 
+incs: id.h probes.h
+
 # Things which should be considered:
 # * with gperf v.s. without gperf
 # * committers may have various versions of gperf
@@ -317,6 +320,16 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 .c.i:
 	@$(ECHO) preprocessing $<
 	$(Q) $(CPP) $(warnflags) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -E $< > $@
+
+.d.h:
+	@$(ECHO) translating probes $<
+	$(Q)if test -n '$(DTRACE)'; then\
+	  $(DTRACE) -o $@.tmp -h -s $<; \
+	  sed -e 's/RUBY_/RUBY_DTRACE_/g' $@.tmp | sed -e 's/PROBES_H_TMP/PROBES_H/g' >$@; \
+	  rm $@.tmp; \
+	else \
+	  sed -f $(srcdir)/tool/gen_dummy_probes.sed $< > $@; \
+	fi
 
 clean-local::
 	$(Q)$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output \

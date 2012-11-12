@@ -17,6 +17,7 @@
 #include "ruby/encoding.h"
 #include "internal.h"
 #include <errno.h>
+#include "probes.h"
 
 #ifdef __APPLE__
 #include <crt_externs.h>
@@ -213,6 +214,16 @@ hash_alloc(VALUE klass)
     RHASH_IFNONE(hash) = Qnil;
 
     return (VALUE)hash;
+}
+
+static VALUE
+empty_hash_alloc(VALUE klass)
+{
+    if(RUBY_DTRACE_HASH_CREATE_ENABLED()) {
+	RUBY_DTRACE_HASH_CREATE(0, rb_sourcefile(), rb_sourceline());
+    }
+
+    return hash_alloc(klass);
 }
 
 VALUE
@@ -3413,7 +3424,7 @@ Init_Hash(void)
 
     rb_include_module(rb_cHash, rb_mEnumerable);
 
-    rb_define_alloc_func(rb_cHash, hash_alloc);
+    rb_define_alloc_func(rb_cHash, empty_hash_alloc);
     rb_define_singleton_method(rb_cHash, "[]", rb_hash_s_create, -1);
     rb_define_singleton_method(rb_cHash, "try_convert", rb_hash_s_try_convert, 1);
     rb_define_method(rb_cHash,"initialize", rb_hash_initialize, -1);

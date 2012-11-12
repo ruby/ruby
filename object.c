@@ -22,6 +22,7 @@
 #include <float.h>
 #include "constant.h"
 #include "internal.h"
+#include "probes.h"
 
 VALUE rb_cBasicObject;
 VALUE rb_mKernel;
@@ -1685,7 +1686,15 @@ rb_obj_alloc(VALUE klass)
 		 klass);
     }
 
+    if (RUBY_DTRACE_OBJECT_CREATE_ENABLED()) {
+        const char * file = rb_sourcefile();
+        RUBY_DTRACE_OBJECT_CREATE(rb_class2name(klass),
+                                 file ? file : "",
+                                 rb_sourceline());
+    }
+
     obj = (*allocator)(klass);
+
     if (rb_obj_class(obj) != rb_class_real(klass)) {
 	rb_raise(rb_eTypeError, "wrong instance allocation");
     }

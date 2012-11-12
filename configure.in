@@ -372,6 +372,9 @@ AS_CASE(["$host_os:$build_os"],
 if test x"${build}" != x"${host}"; then
   AC_CHECK_TOOL(CC, gcc)
 fi
+
+AC_CHECK_TOOL(DTRACE, dtrace)
+
 AC_PROG_CC
 AC_PROG_CXX
 RUBY_MINGW32

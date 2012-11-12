@@ -524,6 +524,11 @@ newhash
 (VALUE val) // inc += 1 - num;
 {
     rb_num_t i;
+
+    if(RUBY_DTRACE_HASH_CREATE_ENABLED()) {
+	RUBY_DTRACE_HASH_CREATE(num, rb_sourcefile(), rb_sourceline());
+    }
+
     val = rb_hash_new();
 
     for (i = num; i > 0; i -= 2) {
@@ -838,6 +843,34 @@ trace
 {
     rb_event_flag_t flag = (rb_event_flag_t)nf;
 
+    if (RUBY_DTRACE_FUNCTION_ENTRY_ENABLED()) {
+        if (flag == RUBY_EVENT_CALL || flag == RUBY_EVENT_C_CALL) {
+          VALUE klass;
+          ID called_id;
+
+          rb_thread_method_id_and_class(th, &called_id, &klass);
+
+          RUBY_DTRACE_FUNCTION_ENTRY(
+                  RSTRING_PTR(rb_inspect(klass)),
+                  rb_id2name(called_id),
+                  rb_sourcefile(),
+                  rb_sourceline());
+        }
+    }
+    if (RUBY_DTRACE_FUNCTION_RETURN_ENABLED()) {
+        if (flag == RUBY_EVENT_RETURN || flag == RUBY_EVENT_C_RETURN) {
+          VALUE klass;
+          ID called_id;
+
+          rb_thread_method_id_and_class(th, &called_id, &klass);
+
+          RUBY_DTRACE_FUNCTION_RETURN(
+                  RSTRING_PTR(rb_inspect(klass)),
+                  rb_id2name(called_id),
+                  rb_sourcefile(),
+                  rb_sourceline());
+        }
+    }
     EXEC_EVENT_HOOK(th, flag, GET_SELF(), 0, 0 /* TODO: id, klass */);
 }
 

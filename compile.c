@@ -5348,6 +5348,12 @@ dump_disasm_list(struct iseq_link_element *link)
     printf("---------------------\n");
 }
 
+const char *
+rb_insns_name(int i)
+{
+    return insn_name_info[i];
+}
+
 VALUE
 rb_insns_name_array(void)
 {

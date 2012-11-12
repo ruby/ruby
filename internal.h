@@ -69,6 +69,7 @@ int rb_dvar_defined(ID);
 int rb_local_defined(ID);
 int rb_parse_in_eval(void);
 int rb_parse_in_main(void);
+const char * rb_insns_name(int i);
 VALUE rb_insns_name_array(void);
 
 /* cont.c */

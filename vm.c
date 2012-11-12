@@ -18,6 +18,7 @@
 #include "vm_core.h"
 #include "iseq.h"
 #include "eval_intern.h"
+#include "probes.h"
 
 static inline VALUE *
 VM_EP_LEP(VALUE *ep)
@@ -65,10 +66,11 @@ rb_vm_control_frame_block_ptr(rb_control_frame_t *cfp)
 #define VM_COLLECT_USAGE_DETAILS 0
 #endif
 
-#if VM_COLLECT_USAGE_DETAILS
 static void vm_collect_usage_operand(int insn, int n, VALUE op);
-static void vm_collect_usage_register(int reg, int isset);
 static void vm_collect_usage_insn(int insn);
+
+#if VM_COLLECT_USAGE_DETAILS
+static void vm_collect_usage_register(int reg, int isset);
 #endif
 
 static VALUE
@@ -1179,6 +1181,7 @@ vm_exec(rb_thread_t *th)
 	    if (UNLIKELY(VM_FRAME_TYPE(th->cfp) == VM_FRAME_MAGIC_CFUNC)) {
 		const rb_method_entry_t *me = th->cfp->me;
 		EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, th->cfp->self, me->called_id, me->klass);
+		RUBY_DTRACE_FUNC_RETURN_HOOK(me->klass, me->called_id);
 	    }
 	    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
 	}
@@ -1983,6 +1986,10 @@ m_core_hash_from_ary(VALUE self, VALUE ary)
     VALUE hash = rb_hash_new();
     int i;
 
+    if(RUBY_DTRACE_HASH_CREATE_ENABLED()) {
+	RUBY_DTRACE_HASH_CREATE(RARRAY_LEN(ary), rb_sourcefile(), rb_sourceline());
+    }
+
     for (i=0; i<RARRAY_LEN(ary); i+=2) {
 	rb_hash_aset(hash, RARRAY_PTR(ary)[i], RARRAY_PTR(ary)[i+1]);
     }
@@ -2308,6 +2315,11 @@ rb_ruby_debug_ptr(void)
     return ruby_vm_debug_ptr(GET_VM());
 }
 
+/* iseq.c */
+VALUE insn_operand_intern(rb_iseq_t *iseq,
+			  VALUE insn, int op_no, VALUE op,
+			  int len, size_t pos, VALUE *pnop, VALUE child);
+
 #if VM_COLLECT_USAGE_DETAILS
 
 #define HASH_ASET(h, k, v) st_insert(RHASH_TBL(h), (st_data_t)(k), (st_data_t)(v))
@@ -2364,11 +2376,6 @@ vm_analysis_insn(int insn)
     }
     prev_insn = insn;
 }
-
-/* iseq.c */
-VALUE insn_operand_intern(rb_iseq_t *iseq,
-			  VALUE insn, int op_no, VALUE op,
-			  int len, size_t pos, VALUE *pnop, VALUE child);
 
 static void
 vm_analysis_operand(int insn, int n, VALUE op)
@@ -2476,10 +2483,21 @@ usage_analysis_register_stop(VALUE self)
     return Qnil;
 }
 
+#else
+
+void (*ruby_vm_collect_usage_func_insn)(int insn) = NULL;
+void (*ruby_vm_collect_usage_func_operand)(int insn, int n, VALUE op) = NULL;
+void (*ruby_vm_collect_usage_func_register)(int reg, int isset) = NULL;
+
+#endif
+
 /* @param insn instruction number */
 static void
 vm_collect_usage_insn(int insn)
 {
+    if (RUBY_DTRACE_INSN_ENABLED()) {
+	RUBY_DTRACE_INSN(rb_insns_name(insn));
+    }
     if (ruby_vm_collect_usage_func_insn)
       (*ruby_vm_collect_usage_func_insn)(insn);
 }
@@ -2491,10 +2509,18 @@ vm_collect_usage_insn(int insn)
 static void
 vm_collect_usage_operand(int insn, int n, VALUE op)
 {
+    if (RUBY_DTRACE_INSN_OPERAND_ENABLED()) {
+	VALUE valstr;
+
+	valstr = insn_operand_intern(GET_THREAD()->cfp->iseq, insn, n, op, 0, 0, 0, 0);
+
+	RUBY_DTRACE_INSN_OPERAND(RSTRING_PTR(valstr), rb_insns_name(insn));
+    }
     if (ruby_vm_collect_usage_func_operand)
       (*ruby_vm_collect_usage_func_operand)(insn, n, op);
 }
 
+#if VM_COLLECT_USAGE_DETAILS
 /* @param reg register id. see code of vm_analysis_register() */
 /* @param iseset 0: read, 1: write */
 static void
@@ -2503,5 +2529,5 @@ vm_collect_usage_register(int reg, int isset)
     if (ruby_vm_collect_usage_func_register)
       (*ruby_vm_collect_usage_func_register)(reg, isset);
 }
-
 #endif
+

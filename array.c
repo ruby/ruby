@@ -16,6 +16,7 @@
 #include "ruby/st.h"
 #include "ruby/encoding.h"
 #include "internal.h"
+#include "probes.h"
 
 #ifndef ARRAY_DEBUG
 # define NDEBUG
@@ -373,6 +374,16 @@ ary_alloc(VALUE klass)
 }
 
 static VALUE
+empty_ary_alloc(VALUE klass)
+{
+    if(RUBY_DTRACE_ARRAY_CREATE_ENABLED()) {
+	RUBY_DTRACE_ARRAY_CREATE(0, rb_sourcefile(), rb_sourceline());
+    }
+
+    return ary_alloc(klass);
+}
+
+static VALUE
 ary_new(VALUE klass, long capa)
 {
     VALUE ary;
@@ -383,6 +394,11 @@ ary_new(VALUE klass, long capa)
     if (capa > ARY_MAX_SIZE) {
 	rb_raise(rb_eArgError, "array size too big");
     }
+
+    if(RUBY_DTRACE_ARRAY_CREATE_ENABLED()) {
+	RUBY_DTRACE_ARRAY_CREATE(capa, rb_sourcefile(), rb_sourceline());
+    }
+
     ary = ary_alloc(klass);
     if (capa > RARRAY_EMBED_LEN_MAX) {
         FL_UNSET_EMBED(ary);
@@ -5282,7 +5298,7 @@ Init_Array(void)
     rb_cArray  = rb_define_class("Array", rb_cObject);
     rb_include_module(rb_cArray, rb_mEnumerable);
 
-    rb_define_alloc_func(rb_cArray, ary_alloc);
+    rb_define_alloc_func(rb_cArray, empty_ary_alloc);
     rb_define_singleton_method(rb_cArray, "[]", rb_ary_s_create, -1);
     rb_define_singleton_method(rb_cArray, "try_convert", rb_ary_s_try_convert, 1);
     rb_define_method(rb_cArray, "initialize", rb_ary_initialize, -1);

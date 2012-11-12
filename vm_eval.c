@@ -55,6 +55,7 @@ vm_call0_cfunc(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 {
     VALUE val;
 
+    RUBY_DTRACE_FUNC_ENTRY_HOOK(ci->defined_class, ci->mid);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, ci->recv, ci->mid, ci->defined_class);
     {
 	rb_control_frame_t *reg_cfp = th->cfp;
@@ -84,6 +85,7 @@ vm_call0_cfunc(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	}
     }
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, ci->recv, ci->mid, ci->defined_class);
+    RUBY_DTRACE_FUNC_RETURN_HOOK(ci->defined_class, ci->mid);
 
     return val;
 }
@@ -93,6 +95,7 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv
 {
     VALUE val;
 
+    RUBY_DTRACE_FUNC_ENTRY_HOOK(ci->defined_class, ci->mid);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, ci->recv, ci->mid, ci->defined_class);
     {
 	rb_control_frame_t *reg_cfp = th->cfp;
@@ -116,6 +119,7 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv
 	vm_pop_frame(th);
     }
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, ci->recv, ci->mid, ci->defined_class);
+    RUBY_DTRACE_FUNC_RETURN_HOOK(ci->defined_class, ci->mid);
 
     return val;
 }
@@ -1007,6 +1011,7 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 		    if (UNLIKELY(VM_FRAME_TYPE(th->cfp) == VM_FRAME_MAGIC_CFUNC)) {
 			const rb_method_entry_t *me = th->cfp->me;
 			EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, th->cfp->self, me->called_id, me->klass);
+			RUBY_DTRACE_FUNC_RETURN_HOOK(me->klass, me->called_id);
 		    }
 
 		    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);

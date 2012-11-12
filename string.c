@@ -17,6 +17,7 @@
 #include "node.h"
 #include "eval_intern.h"
 #include "internal.h"
+#include "probes.h"
 #include <assert.h>
 
 #define BEG(no) (regs->beg[(no)])
@@ -381,6 +382,15 @@ str_alloc(VALUE klass)
     return (VALUE)str;
 }
 
+static inline VALUE
+empty_str_alloc(VALUE klass)
+{
+    if(RUBY_DTRACE_STRING_CREATE_ENABLED()) {
+	RUBY_DTRACE_STRING_CREATE(0, rb_sourcefile(), rb_sourceline());
+    }
+    return str_alloc(klass);
+}
+
 static VALUE
 str_new(VALUE klass, const char *ptr, long len)
 {
@@ -388,6 +398,10 @@ str_new(VALUE klass, const char *ptr, long len)
 
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
+
+    if(RUBY_DTRACE_STRING_CREATE_ENABLED()) {
+	RUBY_DTRACE_STRING_CREATE(len, rb_sourcefile(), rb_sourceline());
     }
 
     str = str_alloc(klass);
@@ -918,6 +932,10 @@ rb_str_dup(VALUE str)
 VALUE
 rb_str_resurrect(VALUE str)
 {
+    if(RUBY_DTRACE_STRING_CREATE_ENABLED()) {
+	RUBY_DTRACE_STRING_CREATE(
+            RSTRING_LEN(str), rb_sourcefile(), rb_sourceline());
+    }
     return str_replace(str_alloc(rb_cString), str);
 }
 
@@ -7920,7 +7938,7 @@ Init_String(void)
 
     rb_cString  = rb_define_class("String", rb_cObject);
     rb_include_module(rb_cString, rb_mComparable);
-    rb_define_alloc_func(rb_cString, str_alloc);
+    rb_define_alloc_func(rb_cString, empty_str_alloc);
     rb_define_singleton_method(rb_cString, "try_convert", rb_str_s_try_convert, 1);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
     rb_define_method(rb_cString, "initialize_copy", rb_str_replace, 1);

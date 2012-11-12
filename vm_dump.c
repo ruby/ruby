@@ -13,6 +13,7 @@
 #include "addr2line.h"
 #include "vm_core.h"
 #include "internal.h"
+#include "probes.h"
 
 /* see vm_insnhelper.h for the values */
 #ifndef VMDEBUG

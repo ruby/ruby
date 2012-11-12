@@ -23,6 +23,7 @@
 #include "gc.h"
 #include "constant.h"
 #include "ruby_atomic.h"
+#include "probes.h"
 #include <stdio.h>
 #include <setjmp.h>
 #include <sys/types.h>
@@ -119,7 +120,6 @@ typedef struct gc_profile_record {
     size_t allocate_limit;
 #endif
 } gc_profile_record;
-
 
 #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__CYGWIN__)
 #pragma pack(push, 1) /* magic for reducing sizeof(RVALUE): 24 -> 20 */
@@ -1294,6 +1294,7 @@ define_final(int argc, VALUE *argv, VALUE os)
 	rb_raise(rb_eArgError, "wrong type argument %s (should be callable)",
 		 rb_obj_classname(block));
     }
+
     return define_final0(obj, block);
 }
 
@@ -3017,6 +3018,9 @@ garbage_collect(rb_objspace_t *objspace)
     during_gc++;
     gc_marks(objspace);
 
+    if (RUBY_DTRACE_GC_SWEEP_BEGIN_ENABLED()) {
+	RUBY_DTRACE_GC_SWEEP_BEGIN();
+    }
     gc_prof_sweep_timer_start(objspace);
     gc_sweep(objspace);
     gc_prof_sweep_timer_stop(objspace);
@@ -3901,21 +3905,33 @@ gc_prof_timer_stop(rb_objspace_t *objspace, int marked)
 static inline void
 gc_prof_mark_timer_start(rb_objspace_t *objspace)
 {
+    if (RUBY_DTRACE_GC_MARK_BEGIN_ENABLED()) {
+	RUBY_DTRACE_GC_MARK_BEGIN();
+    }
 }
 
 static inline void
 gc_prof_mark_timer_stop(rb_objspace_t *objspace)
 {
+    if (RUBY_DTRACE_GC_MARK_END_ENABLED()) {
+	RUBY_DTRACE_GC_MARK_END();
+    }
 }
 
 static inline void
 gc_prof_sweep_timer_start(rb_objspace_t *objspace)
 {
+    if (RUBY_DTRACE_GC_SWEEP_BEGIN_ENABLED()) {
+	RUBY_DTRACE_GC_SWEEP_BEGIN();
+    }
 }
 
 static inline void
 gc_prof_sweep_timer_stop(rb_objspace_t *objspace)
 {
+    if (RUBY_DTRACE_GC_SWEEP_END_ENABLED()) {
+	RUBY_DTRACE_GC_SWEEP_END();
+    }
 }
 
 static inline void
@@ -3949,6 +3965,9 @@ gc_prof_dec_live_num(rb_objspace_t *objspace)
 static inline void
 gc_prof_mark_timer_start(rb_objspace_t *objspace)
 {
+    if (RUBY_DTRACE_GC_MARK_BEGIN_ENABLED()) {
+	RUBY_DTRACE_GC_MARK_BEGIN();
+    }
     if (objspace->profile.run) {
         size_t count = objspace->profile.count;
 
@@ -3959,6 +3978,9 @@ gc_prof_mark_timer_start(rb_objspace_t *objspace)
 static inline void
 gc_prof_mark_timer_stop(rb_objspace_t *objspace)
 {
+    if (RUBY_DTRACE_GC_MARK_END_ENABLED()) {
+	RUBY_DTRACE_GC_MARK_END();
+    }
     if (objspace->profile.run) {
         double mark_time = 0;
         size_t count = objspace->profile.count;
@@ -3973,6 +3995,9 @@ gc_prof_mark_timer_stop(rb_objspace_t *objspace)
 static inline void
 gc_prof_sweep_timer_start(rb_objspace_t *objspace)
 {
+    if (RUBY_DTRACE_GC_SWEEP_BEGIN_ENABLED()) {
+	RUBY_DTRACE_GC_SWEEP_BEGIN();
+    }
     if (objspace->profile.run) {
         size_t count = objspace->profile.count;
 
@@ -3983,6 +4008,9 @@ gc_prof_sweep_timer_start(rb_objspace_t *objspace)
 static inline void
 gc_prof_sweep_timer_stop(rb_objspace_t *objspace)
 {
+    if (RUBY_DTRACE_GC_SWEEP_END_ENABLED()) {
+	RUBY_DTRACE_GC_SWEEP_END();
+    }
     if (objspace->profile.run) {
         double sweep_time = 0;
         size_t count = objspace->profile.count;

@@ -23,6 +23,7 @@
 #include "id.h"
 #include "method.h"
 #include "ruby_atomic.h"
+#include "probes.h"
 
 #if   defined(_WIN32)
 #include "thread_win32.h"
@@ -897,6 +898,35 @@ rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t flag, VALUE self,
 	} \
     } \
 } while (0)
+
+#define RUBY_DTRACE_FUNC_ENTRY_HOOK(klass, id) \
+    if (RUBY_DTRACE_FUNCTION_ENTRY_ENABLED()) { \
+	const char * classname  = rb_class2name((klass)); \
+	const char * methodname = rb_id2name((id)); \
+	const char * filename   = rb_sourcefile(); \
+	if (classname && methodname && filename) { \
+	    RUBY_DTRACE_FUNCTION_ENTRY( \
+		    classname, \
+		    methodname, \
+		    filename, \
+		    rb_sourceline()); \
+	} \
+    } \
+
+#define RUBY_DTRACE_FUNC_RETURN_HOOK(klass, id) \
+    if (RUBY_DTRACE_FUNCTION_RETURN_ENABLED()) { \
+	const char * classname  = rb_class2name((klass)); \
+	const char * methodname = rb_id2name((id)); \
+	const char * filename   = rb_sourcefile(); \
+	if (classname && methodname && filename) { \
+	    RUBY_DTRACE_FUNCTION_RETURN( \
+		    classname, \
+		    methodname, \
+		    filename, \
+		    rb_sourceline()); \
+	} \
+    } \
+
 
 #if defined __GNUC__ && __GNUC__ >= 4
 #pragma GCC visibility push(default)
