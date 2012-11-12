@@ -153,7 +153,6 @@ typedef struct rb_call_info_struct {
     /* inline cache: keys */
     VALUE vmstat;
     VALUE klass;
-    VALUE refinements;
 
     /* inline cache: values */
     const rb_method_entry_t *me;

@@ -726,6 +726,7 @@ class TestRefinement < Test::Unit::TestCase
   end
 
   def test_inline_method_cache
+    skip "can't implement efficiently with the current implementation of refinements"
     c = InlineMethodCache::C.new
     f = Proc.new { c.foo }
     assert_equal("original", f.call)
