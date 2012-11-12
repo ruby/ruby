@@ -1241,6 +1241,9 @@ main()
 		ac_cv_func_close=no
 		],
 [dragonfly*], [	LIBS="-lm $LIBS"
+		# isinf() and isnan() are macros on DragonFly.
+		ac_cv_func_isinf=yes
+		ac_cv_func_isnan=yes
 		],
 [bow], [	ac_cv_func_setitimer=no
 		],

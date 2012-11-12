@@ -1,3 +1,9 @@
+Mon Nov 12 19:14:50 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in (isinf, isnan): isinf() and isnan() are macros on
+	  DragonFly which cannot be found by AC_REPLACE_FUNCS().  This
+	  workaround enforces the fact that they exist on DragonFly.
+
 Mon Nov 12 15:59:38 2012  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_core.h (rb_call_info_t::refinements), compile.c (new_callinfo),
