@@ -425,37 +425,37 @@ static void initial_expand_heap(rb_objspace_t *objspace);
 
 #define LOCAL_GC_STACK_SIZE 16
 #define GC_STACK_EMPTY -1
-typedef struct Deck {
+typedef struct deck_struct {
   VALUE buffer[LOCAL_GC_STACK_SIZE];
   int max_length; //Should be the same size as buffer
   int length;
   int head;
   int tail;
-} Deck;
+} deck_t;
 
 
-static void init_deck(Deck* deck, int max_length);
+static void deck_init(deck_t* deck, int max_length);
 
 /* Push val onto the front of deck. Returns 1 if successful, 0 if the stack is 
    already full.
 */
-static int push(Deck* deck, VALUE val);
-static VALUE pop(Deck* deck);
-static VALUE pop_back(Deck* deck);
-static int empty_p(Deck* deck);
-static int full_p(Deck* deck);
+static int deck_push(deck_t* deck, VALUE val);
+static VALUE deck_pop(deck_t* deck);
+static VALUE deck_pop_back(deck_t* deck);
+static int deck_empty_p(deck_t* deck);
+static int deck_full_p(deck_t* deck);
 
-static void init_deck(Deck* deck, int max_length) {
+static void deck_init(deck_t* deck, int max_length) {
   deck->max_length = max_length;
   deck->length = 0;
   deck->head = deck->tail = -1;  
 }
 
-static int push(Deck* deck, VALUE val) {
-  if (full_p(deck))
+static int deck_push(deck_t* deck, VALUE val) {
+  if (deck_full_p(deck))
     return 0;
   
-  if (empty_p(deck)) 
+  if (deck_empty_p(deck)) 
     deck->head = 0;
   
   deck->tail = (deck->tail + 1) % deck->max_length;
@@ -464,18 +464,18 @@ static int push(Deck* deck, VALUE val) {
   return 1;
 }
 
-static int empty_p(Deck* deck) {
+static int deck_empty_p(deck_t* deck) {
   return deck->length == 0;
 }
 
-static int full_p(Deck* deck) {
+static int deck_full_p(deck_t* deck) {
   return deck->length == deck->max_length;
 }
 
 
-static VALUE pop(Deck* deck) {
+static VALUE deck_pop(deck_t* deck) {
   VALUE rtn;
-  if (empty_p(deck))
+  if (deck_empty_p(deck))
     return GC_STACK_EMPTY;
   
   rtn = deck->buffer[deck->tail];
@@ -490,10 +490,10 @@ static VALUE pop(Deck* deck) {
   return rtn;
 }
 
-static VALUE pop_back(Deck* deck) {
+static VALUE deck_pop_back(deck_t* deck) {
   VALUE rtn;
 
-  if (empty_p(deck))
+  if (deck_empty_p(deck))
     return GC_STACK_EMPTY;
   
   rtn = deck->buffer[deck->head];
