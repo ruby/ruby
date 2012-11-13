@@ -2900,6 +2900,42 @@ if test "${universal_binary-no}" = yes ; then
     ])])
 fi
 
+AC_CHECK_FUNC(memmem, [
+  AC_CACHE_CHECK(for broken memmem, rb_cv_broken_memmem, [
+    AC_TRY_RUN([
+#include <string.h>
+
+int
+main()
+{
+  char *str = "hogefugafoobar";
+  char *rs = "foo";
+  char *empty = "";
+  char *p;
+
+  p = memmem(str, strlen(str), rs, strlen(rs));
+  if (p == str+8) {
+    p = memmem(str, strlen(str), empty, strlen(empty));
+    if (p == str)
+      return 0;
+    else
+      return 1;
+  }
+  else {
+    return 1;
+  }
+}
+    ],
+    rb_cv_broken_memmem=no,
+    rb_cv_broken_memmem=yes,
+    rb_cv_broken_memmem=yes)
+  ])
+  if test "$rb_cv_broken_memmem" = no; then
+    AC_DEFINE(HAVE_MEMMEM, 1)
+  fi
+])
+
+
 CPPFLAGS="$CPPFLAGS "'$(DEFS)'
 test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
 if test -n "${cflags+set}"; then

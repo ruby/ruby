@@ -97,6 +97,18 @@ rb_memcmp(const void *p1, const void *p2, long len)
     return memcmp(p1, p2, len);
 }
 
+#ifdef HAVE_MEMMEM
+static inline long
+rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n)
+{
+    const unsigned char *y;
+
+    if (y = memmem(ys, n, xs, m))
+	return y - ys;
+    else
+	return -1;
+}
+#else
 static inline long
 rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n)
 {
@@ -132,6 +144,7 @@ rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n
     }
     return y - ys - m;
 }
+#endif
 
 static inline long
 rb_memsearch_qs(const unsigned char *xs, long m, const unsigned char *ys, long n)

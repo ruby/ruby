@@ -1,3 +1,10 @@
+Tue Nov 13 11:03:47 2012  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* re.c (rb_memsearch_ss): performance improvement by using memmem(3) if
+	  possible. [ruby-dev:45530] [Feature #6311]
+
+	* configure.in: check existence of memmem(3) and that it is not broken.
+
 Tue Nov 13 06:50:02 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* probes.d: add DTrace probe declarations. [ruby-core:27448]
