@@ -5282,9 +5282,6 @@ insn_data_to_s_detail(INSN *iobj)
 		{
 		    rb_call_info_t *ci = (rb_call_info_t *)OPERAND_AT(iobj, j);
 		    rb_str_catf(str, "<callinfo:%s, %d>", ci->mid ? rb_id2name(ci->mid) : "", ci->orig_argc);
-		    if (ci->orig_argc > 60) {
-			rb_bug("xyzzy");
-		    }
 		    break;
 		}
 	      case TS_CDHASH:	/* case/when condition cache */
