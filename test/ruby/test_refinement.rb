@@ -801,4 +801,25 @@ class TestRefinement < Test::Unit::TestCase
       p c.foo
     INPUT
   end
+
+  def test_circular_using_is_not_allowed
+    a = Module.new
+    b = Module.new
+
+    assert_raise ArgumentError do
+      a.module_eval do
+        using a
+      end
+    end
+
+    b.module_eval do
+      using a
+    end
+
+    assert_raise ArgumentError do
+      a.module_eval do
+        using b
+      end
+    end
+  end
 end

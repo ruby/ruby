@@ -1135,6 +1135,26 @@ rb_using_module(NODE *cref, VALUE module)
     rb_hash_foreach(refinements, using_refinement, (VALUE) cref);
 }
 
+
+static int
+check_cyclic_using(VALUE mod, VALUE _, VALUE search)
+{
+    VALUE using_modules;
+    ID id_using_modules;
+    CONST_ID(id_using_modules, "__using_modules__");
+
+    if (mod == search) {
+	rb_raise(rb_eArgError, "cyclic using detected");
+    }
+
+    using_modules = rb_attr_get(mod, id_using_modules);
+    if (!NIL_P(using_modules)) {
+	rb_hash_foreach(using_modules, check_cyclic_using, search);
+    }
+
+    return ST_CONTINUE;
+}
+
 /*
  *  call-seq:
  *     using(module)    -> self
@@ -1150,6 +1170,7 @@ rb_mod_using(VALUE self, VALUE module)
     VALUE using_modules;
 
     Check_Type(module, T_MODULE);
+    check_cyclic_using(module, 0, self);
     CONST_ID(id_using_modules, "__using_modules__");
     using_modules = rb_attr_get(self, id_using_modules);
     if (NIL_P(using_modules)) {

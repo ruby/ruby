@@ -1,3 +1,11 @@
+Tue Nov 13 18:01:54 2012  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_mod_using): raise an ArgumentError if cyclic using is
+	  detected.  based on the patch by Charlie Somerville.
+	  [ruby-core:49092] Bug #7308
+
+	* test/ruby/test_refinement.rb: related test.
+
 Tue Nov 13 17:40:04 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (vm_insnhelper.c): this target is useless and causes
