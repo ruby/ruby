@@ -548,7 +548,19 @@ typedef struct global_queue_struct {
     unsigned int complete;
 } global_queue_t;
 
-void global_queue_pop_work(global_queue_t* global_queue) {
+void global_queue_init(global_queue_t* global_queue) {
+    global_queue->waiters = 0;
+    global_queue->count = 0;
+    pthread_mutex_init(&global_queue->lock, NULL);
+    pthread_cond_init(&global_queue->wait_condition, NULL);
+}
+
+void global_queue_destroy(global_queue_t* global_queue) {
+    pthread_mutex_destroy(&global_queue->lock);
+    pthread_cond_destroy(&global_queue->wait_condition);
+}
+
+void global_queue_pop_work(global_queue_t* global_queue, deck_t* local_queue) {
     pthread_mutex_lock(&global_queue->lock);
     while (global_queue->count == 0 && !global_queue->complete) {
         global_queue->waiters++;
@@ -566,7 +578,7 @@ void global_queue_pop_work(global_queue_t* global_queue) {
     pthread_mutex_unlock(&global_queue->lock);
 }
 
-void global_queue_offer_work(global_queue_t* global_queue/*, thread-local queue*/) {
+void global_queue_offer_work(global_queue_t* global_queue, deck_t* local_queue) {
     int localqueuesize = 10;
     if ((global_queue->waiters && localqueuesize > 2) ||
             (global_queue->count < GLOBAL_QUEUE_SIZE_MIN &&
@@ -579,6 +591,55 @@ void global_queue_offer_work(global_queue_t* global_queue/*, thread-local queue*
             pthread_mutex_unlock(&global_queue->lock);
         }
     }
+}
+
+static void gc_mark(rb_objspace_t *objspace, VALUE ptr, int lev);
+static void gc_marks(rb_objspace_t *objspace);
+
+rb_objspace_t* active_objspace;
+global_queue_t* global_queue;
+pthread_key_t thread_local_deck_k;
+void* mark_run_loop(void* arg) {
+    long thread_id = (long) arg;
+    deck_t deck;
+    deck_init(&deck, LOCAL_GC_STACK_SIZE);
+    pthread_setspecific(thread_local_deck_k, &deck);
+    if (thread_id == 0) {
+        gc_marks(active_objspace);
+    }
+    while (!global_queue->complete) {
+        global_queue_offer_work(global_queue, &deck);
+        if (deck_empty_p(&deck)) {
+            global_queue_pop_work(global_queue, &deck);
+        }
+        gc_mark(active_objspace, deck_pop(&deck), 1);
+    }
+}
+
+void gc_mark_parallel(rb_objspace_t* objspace) {
+    active_objspace = objspace;
+    global_queue_t queuedata;
+    global_queue = &queuedata;
+    global_queue_init(global_queue);
+
+    pthread_key_create(&thread_local_deck_k, NULL);
+
+    pthread_attr_t attr;
+    pthread_t threads[NTHREADS];
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    long t;
+    for (t = 0; t < NTHREADS; t++) {
+        pthread_create(&threads[t], &attr, mark_run_loop, (void*)t);
+        //TODO: handle error codes
+    }
+    pthread_attr_destroy(&attr);
+    void* status;
+    for (t = 0; t < NTHREADS; t++) {
+        pthread_join(threads[t], &status);
+        //TODO: handle error codes
+    }
+    global_queue_destroy(global_queue);
 }
 
 void gc_mark_defer(rb_objspace_t *objspace, VALUE ptr, int lev);
@@ -1510,7 +1571,6 @@ init_mark_stack(rb_objspace_t *objspace)
 
 #define MARK_STACK_EMPTY (mark_stack_ptr == mark_stack)
 
-static void gc_mark(rb_objspace_t *objspace, VALUE ptr, int lev);
 static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev);
 
 static void
@@ -1817,41 +1877,9 @@ gc_mark(rb_objspace_t *objspace, VALUE ptr, int lev)
 
 void
 gc_mark_defer(rb_objspace_t *objspace, VALUE ptr, int lev) {
-    mark_queue_node_t* node =
-	(mark_queue_node_t*) malloc(sizeof(mark_queue_node_t));
-    node->objspace = objspace;
-    node->ptr = ptr;
-    node->lev = lev;
-    node->next = NULL;
-    //lock
-    if (mark_queue.tail == NULL) {
-	mark_queue.head = mark_queue.tail = node;
-    } else {
-	mark_queue.tail->next = node;
-	mark_queue.tail = node;
-    }
-    mark_queue.size++;
-    //unlock
-}
-
-int
-gc_mark_pop() {
-    mark_queue_node_t* node;
-    //lock
-    node = mark_queue.head;
-    if (node != NULL) {
-	mark_queue.head = node->next;
-	if (mark_queue.head == NULL) {
-	    mark_queue.tail = NULL;
-	}
-	mark_queue.size--;
-    }
-    //unlock
-    if (node != NULL) {
-	gc_mark(node->objspace, node->ptr, node->lev);
-	free(node);
-    }
-    return node != NULL;
+    deck_t* deck = (deck_t*) pthread_getspecific(thread_local_deck_k);
+    deck_push(deck, ptr);
+    //TODO: Handle push failing due to being full
 }
 
 void
@@ -2367,8 +2395,6 @@ rest_sweep(rb_objspace_t *objspace)
     }
 }
 
-static void gc_marks(rb_objspace_t *objspace);
-
 static int
 gc_lazy_sweep(rb_objspace_t *objspace)
 {
@@ -2639,12 +2665,6 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 #endif
 }
 
-/* CS194 TODO: */
-static void gc_mark_loop() {
-  while(gc_mark_pop()){};
-}
-
-
 static void
 gc_marks(rb_objspace_t *objspace)
 {
@@ -2693,7 +2713,6 @@ gc_marks(rb_objspace_t *objspace)
 	    gc_mark_rest(objspace);
 	}
     }
-    gc_mark_loop();
     GC_PROF_MARK_TIMER_STOP;
 }
 
@@ -2716,7 +2735,8 @@ garbage_collect(rb_objspace_t *objspace)
     rest_sweep(objspace);
 
     during_gc++;
-    gc_marks(objspace);
+    gc_mark_parallel(objspace);
+    //gc_marks(objspace);
 
     GC_PROF_SWEEP_TIMER_START;
     gc_sweep(objspace);
