@@ -1204,3 +1204,61 @@ assert_equal 'ok', %q{
     'ok'
   end
 }
+
+assert_equal 'DC', %q{
+  $result = []
+
+  class C
+    def foo *args
+      $result << 'C'
+    end
+  end
+  class D
+    def foo *args
+      $result << 'D'
+    end
+  end
+
+  o1 = $o1 = C.new
+  o2 = $o2 = D.new
+
+  args = Object.new
+  def args.to_a
+    test1 $o2, nil
+    []
+  end
+  def test1 o, args
+    o.foo(*args)
+  end
+  test1 o1, args
+  $result.join
+}
+
+assert_equal 'DC', %q{
+  $result = []
+
+  class C
+    def foo *args
+      $result << 'C'
+    end
+  end
+  class D
+    def foo *args
+      $result << 'D'
+    end
+  end
+
+  o1 = $o1 = C.new
+  o2 = $o2 = D.new
+
+  block = Object.new
+  def block.to_proc
+    test2 $o2, %w(a, b, c), nil
+    Proc.new{}
+  end
+  def test2 o, args, block
+    o.foo(*args, &block)
+  end
+  test2 o1, [], block
+  $result.join
+}

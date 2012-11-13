@@ -1036,6 +1036,12 @@ vm_base_ptr(rb_control_frame_t *cfp)
 static void
 vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
+#define SAVE_RESTORE_CI(expr, ci) do { \
+    int saved_argc = (ci)->argc; rb_block_t *saved_blockptr = (ci)->blockptr; /* save */ \
+    expr; \
+    (ci)->argc = saved_argc; (ci)->blockptr = saved_blockptr; /* restore */ \
+} while (0)
+
     if (UNLIKELY(ci->flag & VM_CALL_ARGS_BLOCKARG)) {
 	rb_proc_t *po;
 	VALUE proc;
@@ -1044,7 +1050,10 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 
 	if (proc != Qnil) {
 	    if (!rb_obj_is_proc(proc)) {
-		VALUE b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
+		VALUE b;
+
+		SAVE_RESTORE_CI(b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc"), ci);
+
 		if (NIL_P(b) || !rb_obj_is_proc(b)) {
 		    rb_raise(rb_eTypeError,
 			     "wrong argument type %s (expected Proc)",
@@ -1069,7 +1078,9 @@ vm_caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, rb_call_inf
 	VALUE ary = *(cfp->sp - 1);
 	VALUE *ptr;
 	int i;
-	VALUE tmp = rb_check_convert_type(ary, T_ARRAY, "Array", "to_a");
+	VALUE tmp;
+
+	SAVE_RESTORE_CI(tmp = rb_check_convert_type(ary, T_ARRAY, "Array", "to_a"), ci);
 
 	if (NIL_P(tmp)) {
 	    /* do nothing */
