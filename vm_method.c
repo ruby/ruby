@@ -299,7 +299,7 @@ method_added(VALUE klass, ID mid)
 }
 
 static VALUE
-(*call_cfunc_invoker_func(int argc))(VALUE (*func)(ANYARGS), const rb_call_info_t *, const VALUE *)
+(*call_cfunc_invoker_func(int argc))(VALUE (*func)(ANYARGS), VALUE recv, int argc, const VALUE *)
 {
     switch (argc) {
       case -2: return call_cfunc_m2;

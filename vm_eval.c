@@ -94,23 +94,27 @@ static VALUE
 vm_call0_cfunc_with_frame(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 {
     VALUE val;
+    const rb_method_entry_t *me = ci->me;
+    const rb_method_cfunc_t *cfunc = &me->def->body.cfunc;
+    int len = cfunc->argc;
+    VALUE recv = ci->recv;
+    VALUE defined_class = ci->defined_class;
+    int argc = ci->argc;
+    ID mid = ci->mid;
+    rb_block_t *blockptr = ci->blockptr;
 
-    RUBY_DTRACE_FUNC_ENTRY_HOOK(ci->defined_class, ci->mid);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, ci->recv, ci->mid, ci->defined_class);
+    RUBY_DTRACE_FUNC_ENTRY_HOOK(defined_class, mid);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, mid, defined_class);
     {
 	rb_control_frame_t *reg_cfp = th->cfp;
-	const rb_method_entry_t *me = ci->me;
-	const rb_method_cfunc_t *cfunc = &me->def->body.cfunc;
-	int len = cfunc->argc;
 
-	vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
-		      ci->recv, ci->defined_class, VM_ENVVAL_BLOCK_PTR(ci->blockptr),
-		      0, reg_cfp->sp, 1, ci->me);
+	vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, recv, defined_class,
+		      VM_ENVVAL_BLOCK_PTR(blockptr), 0, reg_cfp->sp, 1, me);
 
-	if (len >= 0) rb_check_arity(ci->argc, len, len);
+	if (len >= 0) rb_check_arity(argc, len, len);
 
 	VM_PROFILE_UP(2);
-	val = (*cfunc->invoker)(cfunc->func, ci, argv);
+	val = (*cfunc->invoker)(cfunc->func, recv, argc, argv);
 
 	if (UNLIKELY(reg_cfp != th->cfp + 1)) {
 		rb_bug("vm_call0_cfunc_with_frame: cfp consistency error");
@@ -118,8 +122,8 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv
 	VM_PROFILE_UP(3);
 	vm_pop_frame(th);
     }
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, ci->recv, ci->mid, ci->defined_class);
-    RUBY_DTRACE_FUNC_RETURN_HOOK(ci->defined_class, ci->mid);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, mid, defined_class);
+    RUBY_DTRACE_FUNC_RETURN_HOOK(defined_class, mid);
 
     return val;
 }
@@ -212,7 +216,7 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	{
 	    /* TODO: can optimize it */
 	    const rb_method_cfunc_t *cfunc = &ci->me->def->body.cfunc;
-	    return cfunc->invoker(cfunc->func, ci, argv);
+	    return cfunc->invoker(cfunc->func, ci->recv, ci->argc, argv);
 	}
       case VM_METHOD_TYPE_UNDEF:
 	break;
