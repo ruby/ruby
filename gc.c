@@ -421,21 +421,99 @@ rb_objspace_alloc(void)
 static void initial_expand_heap(rb_objspace_t *objspace);
 
 
-typedef struct mark_queue_node_struct mark_queue_node_t;
-struct mark_queue_node_struct {
-    rb_objspace_t* objspace;
-    VALUE ptr;
-    int lev;
-    mark_queue_node_t* next;
-};
+/* CS194: Marking stack struct and methods */
 
-typedef struct mark_queue_struct {
-    mark_queue_node_t* head;
-    mark_queue_node_t* tail;
-    unsigned int size;
-} mark_queue_t;
+#define LOCAL_GC_STACK_SIZE 16
 
-mark_queue_t mark_queue = {NULL, NULL, 0};
+typedef struct Deck {
+  VALUE buffer[LOCAL_GC_STACK_SIZE];
+  int max_length; //Should be the same size as buffer
+  int length;
+  int head;
+  int tail;
+} Deck;
+
+
+static void init_deck(Deck* deck);
+
+/* Push val onto the front of deck. Returns 1 if successful, 0 if the stack is 
+   already full.
+*/
+static int push(Deck* deck, VALUE val);
+static VALUE pop(Deck* deck);
+static VALUE pop_back(Deck* deck);
+static int empty_p(Deck* deck);
+static int full_p(Deck* deck);
+
+static void init_deck(Deck* deck, int max_length) {
+  deck->max_length = max_length;
+  deck->cur_length = 0;
+  deck->head = deck->tail = -1;  
+}
+
+static int push(Deck* deck, VALUE val) {
+  if (full_p(deck))
+    return false;
+  
+  if (empty_p(deck)) 
+    deck->head = 0;
+  
+  deck->tail = (deck->tail + 1) % deck->max_length;
+  deck->buffer[deck->tail] = val;
+  deck->cur_length++;
+  return true;
+}
+
+static int empty_p(Deck* deck) {
+  return deck->cur_length == 0;
+}
+
+static int full_p(Deck* deck) {
+  return deck->cur_length == deck->max_length;
+}
+
+
+static VALUE pop(Deck* deck) {
+  VALUE rtn;
+  if (empty_p(deck))
+    return NULL;
+  
+  rtn = deck->buffer[tail];
+  if (deck->cur_length - 1 == 0) {
+    //Reset head and tail to beginning
+    deck->head = deck->tail = -1;
+  }
+  else {
+    deck->tail = (deck->tail - 1) % deck->max_length;
+  }
+  deck->cur_length--;
+  return rtn;
+}
+
+static VALUE pop_back(Deck* deck) {
+  VALUE rtn;
+
+  if (empty_p(deck))
+    return NULL;
+  
+  rtn = deck->buffer[head];
+  if (deck->cur_length - 1 == 0) {
+    //Reset head and tail to beginning if this call empties the deck
+    deck->head = deck->tail = -1;
+  }
+  else {
+    deck->head = (deck->head - 1) % deck->max_length;
+  }
+  deck->cur_length--;
+  return rtn;
+}
+/* typedef struct mark_queue_struct { */
+/*     mark_queue_node_t* head; */
+/*     mark_queue_node_t* tail; */
+/*     unsigned int size; */
+/* } mark_queue_t; */
+
+/* mark_queue_t mark_queue = {NULL, NULL, 0}; */
 
 void gc_mark_defer(rb_objspace_t *objspace, VALUE ptr, int lev);
 int gc_mark_pop();
