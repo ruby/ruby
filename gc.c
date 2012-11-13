@@ -443,7 +443,7 @@ mark_queue_t mark_queue = {NULL, NULL, 0};
 
 
 #define GLOBAL_QUEUE_SIZE 100 /*TODO*/
-#define GLOBAL_QUEUE_SIZE_MIN GLOBAL_QUEUE_SIZE / 4
+#define GLOBAL_QUEUE_SIZE_MIN (GLOBAL_QUEUE_SIZE / 4)
 
 #define LOCAL_QUEUE_SIZE 100 /*TODO*/
 
