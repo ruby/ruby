@@ -1,3 +1,7 @@
+Tue Nov 13 15:37:21 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* Makefile.in (.SUFFIX): .SUFFIX is needed here for .d.h on bsd make.
+
 Tue Nov 13 15:34:35 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk Makefile.in win32/Makefile.sub (.d.h): it's not common.
@@ -14,8 +18,6 @@ Tue Nov 13 12:27:11 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/gen_dummy_probes.rb: reimplemented with ruby because sed is not
 	  available on Windows Microsoft VC++ environment.
-
-Tue Nov 13 06:50:02 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 Tue Nov 13 12:30:26 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
