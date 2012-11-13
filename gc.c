@@ -421,7 +421,98 @@ rb_objspace_alloc(void)
 static void initial_expand_heap(rb_objspace_t *objspace);
 
 
+/* CS194: Marking stack struct and methods */
+
+#define LOCAL_GC_STACK_SIZE 16
+#define GC_STACK_EMPTY -1
+typedef struct deck_struct {
+  VALUE buffer[LOCAL_GC_STACK_SIZE];
+  int max_length; //Should be the same size as buffer
+  int length;
+  int head;
+  int tail;
+} deck_t;
+
+
+static void deck_init(deck_t* deck, int max_length);
+
+/* Push val onto the front of deck. Returns 1 if successful, 0 if the stack is 
+   already full.
+*/
+static int deck_push(deck_t* deck, VALUE val);
+static VALUE deck_pop(deck_t* deck);
+static VALUE deck_pop_back(deck_t* deck);
+static int deck_empty_p(deck_t* deck);
+static int deck_full_p(deck_t* deck);
+
+static void deck_init(deck_t* deck, int max_length) {
+  deck->max_length = max_length;
+  deck->length = 0;
+  deck->head = deck->tail = -1;  
+}
+
+static int deck_push(deck_t* deck, VALUE val) {
+  if (deck_full_p(deck))
+    return 0;
+  
+  if (deck_empty_p(deck)) 
+    deck->head = 0;
+  
+  deck->tail = (deck->tail + 1) % deck->max_length;
+  deck->buffer[deck->tail] = val;
+  deck->length++;
+  return 1;
+}
+
+static int deck_empty_p(deck_t* deck) {
+  return deck->length == 0;
+}
+
+static int deck_full_p(deck_t* deck) {
+  return deck->length == deck->max_length;
+}
+
+
+static VALUE deck_pop(deck_t* deck) {
+  VALUE rtn;
+  if (deck_empty_p(deck))
+    return GC_STACK_EMPTY;
+  
+  rtn = deck->buffer[deck->tail];
+  if (deck->length - 1 == 0) {
+    //Reset head and tail to beginning
+    deck->head = deck->tail = -1;
+  }
+  else {
+    deck->tail = (deck->tail - 1) % deck->max_length;
+  }
+  deck->length--;
+  return rtn;
+}
+
+static VALUE deck_pop_back(deck_t* deck) {
+  VALUE rtn;
+
+  if (deck_empty_p(deck))
+    return GC_STACK_EMPTY;
+  
+  rtn = deck->buffer[deck->head];
+  if (deck->length - 1 == 0) {
+    //Reset head and tail to beginning if this call empties the deck
+    deck->head = deck->tail = -1;
+  }
+  else {
+    deck->head = (deck->head - 1) % deck->max_length;
+  }
+  deck->length--;
+  return rtn;
+}
+
+
+/* MARK QUEUE */
+
 typedef struct mark_queue_node_struct mark_queue_node_t;
+
 struct mark_queue_node_struct {
     rb_objspace_t* objspace;
     VALUE ptr;
@@ -435,10 +526,12 @@ typedef struct mark_queue_struct {
     unsigned int size;
 } mark_queue_t;
 
+
 mark_queue_t mark_queue = {NULL, NULL, 0};
 
 void gc_mark_defer(rb_objspace_t *objspace, VALUE ptr, int lev);
 int gc_mark_pop();
+
 
 void
 rb_gc_set_params(void)
@@ -1642,6 +1735,7 @@ rb_gc_mark_maybe(VALUE obj)
     }
 }
 
+/* CS194 TODO: */
 static void
 gc_mark(rb_objspace_t *objspace, VALUE ptr, int lev)
 {
@@ -1714,6 +1808,12 @@ rb_gc_mark(VALUE ptr)
     gc_mark(&rb_objspace, ptr, 0);
 }
 
+
+/* Marks all children of ptr. The children are found by the giant switch statement.
+ * CS194 TODO: switch this to something that enqueues children, instead of calling
+ * mark directly on them.
+ *
+ */
 static void
 gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 {
@@ -2487,9 +2587,11 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 #endif
 }
 
+/* CS194 TODO: */
 static void gc_mark_loop() {
   while(gc_mark_pop()){};
 }
+
 
 static void
 gc_marks(rb_objspace_t *objspace)
