@@ -560,7 +560,7 @@ void global_queue_destroy(global_queue_t* global_queue) {
     pthread_cond_destroy(&global_queue->wait_condition);
 }
 
-void global_queue_pop_work(global_queue_t* global_queue) {
+void global_queue_pop_work(global_queue_t* global_queue, deck_t* local_queue) {
     pthread_mutex_lock(&global_queue->lock);
     while (global_queue->count == 0 && !global_queue->complete) {
         global_queue->waiters++;
@@ -578,7 +578,7 @@ void global_queue_pop_work(global_queue_t* global_queue) {
     pthread_mutex_unlock(&global_queue->lock);
 }
 
-void global_queue_offer_work(global_queue_t* global_queue/*, thread-local queue*/) {
+void global_queue_offer_work(global_queue_t* global_queue, deck_t* local_queue) {
     int localqueuesize = 10;
     if ((global_queue->waiters && localqueuesize > 2) ||
             (global_queue->count < GLOBAL_QUEUE_SIZE_MIN &&
@@ -597,16 +597,22 @@ static void gc_marks(rb_objspace_t *objspace);
 
 rb_objspace_t* active_objspace;
 global_queue_t* global_queue;
-pthread_key_t thread_local_queue_k;
+pthread_key_t thread_local_deck_k;
 void* mark_run_loop(void* arg) {
     long thread_id = (long) arg;
-    //TODO alloc local queue
-    void* thread_local_queue = NULL;
-    pthread_setspecific(thread_local_queue_k, thread_local_queue);
+    deck_t deck;
+    deck_init(&deck, LOCAL_GC_STACK_SIZE);
+    pthread_setspecific(thread_local_deck_k, &deck);
     if (thread_id == 0) {
         gc_marks(active_objspace);
     }
-    //TODO: Run loop
+    while (!global_queue->complete) {
+        global_queue_offer_work(global_queue, &deck);
+        if (deck_empty_p(&deck)) {
+            global_queue_pop_work(global_queue, &deck);
+        }
+        //TODO: Pop work off the local queue to do
+    }
 }
 
 void gc_mark_parallel(rb_objspace_t* objspace) {
@@ -614,7 +620,7 @@ void gc_mark_parallel(rb_objspace_t* objspace) {
     global_queue = malloc(sizeof(global_queue_t*));
     global_queue_init(global_queue);
 
-    pthread_key_create(&thread_local_queue_k, NULL);
+    pthread_key_create(&thread_local_deck_k, NULL);
 
     pthread_attr_t attr;
     pthread_t threads[NTHREADS];
@@ -628,7 +634,7 @@ void gc_mark_parallel(rb_objspace_t* objspace) {
     pthread_attr_destroy(&attr);
     void* status;
     for (t = 0; t < NTHREADS; t++) {
-        pthread_join(threads[t], &status)
+        pthread_join(threads[t], &status);
         //TODO: handle error codes
     }
     global_queue_destroy(global_queue);
