@@ -1,3 +1,7 @@
+Wed Nov 14 00:54:00 2012  Kenta Murata  <mrkn@mrkn.jp>
+
+	* Makefile.in (probes.h): create from probes.d
+
 Tue Nov 13 18:44:01 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_call_cfunc_with_frame): don't use ci after

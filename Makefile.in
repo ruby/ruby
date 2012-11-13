@@ -322,9 +322,9 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	$(Q) $(CPP) $(warnflags) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -E $< > $@
 
 probes.h: dmyprobes.h
-	@$(ECHO) translating probes $<
-	$(Q)if test -n '$(DTRACE)'; then\
-	  $(DTRACE) -o $@.tmp -h -s $<; \
+	@$(ECHO) translating probes $(srcdir)/probes.d
+	$(Q)if test -n '$(DTRACE)'; then \
+	  $(DTRACE) -o $@.tmp -h -s $(srcdir)/probes.d; \
 	  sed -e 's/RUBY_/RUBY_DTRACE_/g' $@.tmp | sed -e 's/PROBES_H_TMP/PROBES_H/g' >$@; \
 	  $(RM) $@.tmp; \
 	else \
