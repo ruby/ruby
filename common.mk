@@ -435,7 +435,7 @@ clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-capi clean-ex
 clean-local:: PHONY
 	$(Q)$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
-	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h prelude.c config.log rbconfig.rb $(ruby_pc)
+	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h prelude.c config.log rbconfig.rb $(ruby_pc) probes.h
 clean-ext:: PHONY
 clean-golf: PHONY
 	$(Q)$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
@@ -614,6 +614,16 @@ VM_CORE_H_INCLUDES = {$(VPATH)}vm_core.h {$(VPATH)}thread_$(THREAD_MODEL).h \
 		     {$(VPATH)}node.h {$(VPATH)}method.h {$(VPATH)}ruby_atomic.h \
 		     $(ID_H_INCLUDES) $(PROBES_H_INCLUDES)
 
+.d.h:
+	@$(ECHO) translating probes $<
+	$(Q)if test -n '$(DTRACE)'; then\
+	  $(DTRACE) -o $@.tmp -h -s $<; \
+	  sed -e 's/RUBY_/RUBY_DTRACE_/g' $@.tmp | sed -e 's/PROBES_H_TMP/PROBES_H/g' >$@; \
+	  $(RM) $@.tmp; \
+	else \
+	  $(BASERUBY) $(srcdir)/tool/gen_dummy_probes.rb $< > $@; \
+	fi
+
 addr2line.$(OBJEXT): {$(VPATH)}addr2line.c {$(VPATH)}addr2line.h {$(VPATH)}config.h
 array.$(OBJEXT): {$(VPATH)}array.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
   $(ENCODING_H_INCLUDES) {$(VPATH)}internal.h $(PROBES_H_INCLUDES)
@@ -688,7 +698,7 @@ parse.$(OBJEXT): {$(VPATH)}parse.c $(RUBY_H_INCLUDES) {$(VPATH)}node.h \
   {$(VPATH)}regex.h {$(VPATH)}util.h {$(VPATH)}lex.c \
   {$(VPATH)}defs/keywords {$(VPATH)}id.c {$(VPATH)}parse.y \
   {$(VPATH)}parse.h {$(VPATH)}vm_opts.h \
-  {$(VPATH)}internal.h
+  {$(VPATH)}internal.h $(PROBES_H_INCLUDES)
 proc.$(OBJEXT): {$(VPATH)}proc.c {$(VPATH)}eval_intern.h \
   $(RUBY_H_INCLUDES) {$(VPATH)}gc.h $(VM_CORE_H_INCLUDES) \
   {$(VPATH)}debug.h {$(VPATH)}internal.h {$(VPATH)}iseq.h

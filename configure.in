@@ -374,6 +374,9 @@ if test x"${build}" != x"${host}"; then
 fi
 
 AC_CHECK_TOOL(DTRACE, dtrace)
+AS_CASE(["$target_os"],
+[freebsd*], [DTRACE=]
+)
 
 AC_PROG_CC
 AC_PROG_CXX

@@ -1,3 +1,18 @@
+Tue Nov 13 12:27:11 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: disable dtrace because it doesn't work on FreeBSD.
+
+	* common.mk (clean-local): rm probes.h.
+
+	* common.mk (parse.o): depend $(PROBES_H_INCLUDES).
+
+	* common.mk (.d.h): moved from Makefile.in and use BASERUBY.
+
+	* tool/gen_dummy_probes.rb: reimplemented with ruby because sed is not
+	  available on Windows Microsoft VC++ environment.
+
+Tue Nov 13 06:50:02 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
 Tue Nov 13 12:30:26 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/README.win32: added mention about build directory.  currently
@@ -28,10 +43,10 @@ Tue Nov 13 06:50:02 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* eval.c (setup_exception): add a probe for when an exception is
 	  raised.
-	
+
 	* gc.c: Add DTrace probes for mark begin and end, and sweep begin and
 	  end.
-	
+
 	* hash.c (empty_hash_alloc): Add a probe for hash allocation.
 
 	* insns.def: Add probes for function entry and return.
@@ -59,12 +74,12 @@ Tue Nov 13 06:50:02 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* vm_eval.c (vm_call0_cfunc, vm_call0_cfunc_with_frame): add probe on
 	  function entry and return.
-	
+
 	* vm_exec.c: expose instruction number to instruction name function.
 
 	* vm_insnshelper.c: add function entry and exit probes for cfunc
 	  methods.
-	
+
 	* vm_insnhelper.h: vm usage information is always collected, so
 	  uncomment the functions.
 
