@@ -1268,63 +1268,6 @@ if test $rb_cv_stack_end_address != no; then
   AC_DEFINE_UNQUOTED(STACK_END_ADDRESS, $rb_cv_stack_end_address)
 fi
 
-AC_CACHE_CHECK(for gc_mark and gc_children stack frame approximate size(word), rb_cv_gc_mark_stackframe_word,
-[save_CFLAGS="$CFLAGS"
-CFLAGS="-O0"
-AC_TRY_RUN([
-int word;
-char *stack_start;
-
-void
-set_stackframe_word()
-{
-    int dumy = 42;
-    int diff;
-
-    if (stack_start < (char *)&dumy) {
-        diff = (int)((char *)&dumy - stack_start);
-    }
-    else {
-        diff = (int)(stack_start - (char *)&dumy);
-    }
-    word = (diff/sizeof(void *));
-    if ((diff % sizeof(void *)) != 0) {
-        word++;
-    }
-}
-
-void
-gc_mark_children(void *p1, void *p2, int lev)
-{
-    void *obj = p2;
-
-    set_stackframe_word(p1,p2,lev);
-}
-
-void
-gc_mark(void *p1, void *p2, int lev)
-{
-    void *obj = p2;
-
-    gc_mark_children(p1,p2,lev++);
-}
-
-int
-main() {
-  int dumy = 42;
-
-  stack_start = (char *)&dumy;
-  gc_mark(0, 0, 255);
-  return word;
-}
-],
-  [rb_cv_gc_mark_stackframe_word="$?"],
-  [rb_cv_gc_mark_stackframe_word="$?"],
-  [rb_cv_gc_mark_stackframe_word="30"])
-CFLAGS="$save_CFLAGS"])
-AC_DEFINE_UNQUOTED(GC_MARK_STACKFRAME_WORD, $rb_cv_gc_mark_stackframe_word)
-
-
 dnl Checks for library functions.
 AC_TYPE_GETGROUPS
 AC_TYPE_SIGNAL

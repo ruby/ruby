@@ -595,7 +595,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define GETGROUPS_T int
 #define RETSIGTYPE void
 #define TYPEOF_TIMEVAL_TV_SEC long
-#define GC_MARK_STACKFRAME_WORD 30
 #define HAVE_ALLOCA 1
 #define HAVE_DUP2 1
 #define HAVE_MEMCMP 1

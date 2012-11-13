@@ -1,3 +1,31 @@
+Tue Nov 13 18:13:10 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c: Use the non-recursive marking instead of recursion. The
+	  recursion marking of CRuby needs checking stack overflow and the
+	  fail-safe system, but these systems not good at partial points,
+	  for example, marking deep tree structures. [ruby-dev:46184]
+	  [Feature #7095]
+
+	* configure.in (GC_MARK_STACKFRAME_WORD): removed. It's used by
+	  checking stack overflow of marking.
+
+	* win32/Makefile.sub (GC_MARK_STACKFRAME_WORD): ditto.
+
+	* gc.c (free_stack_chunks): it is used only when per-VM object space
+	  is enabled.
+
+	* gc.c (rb_objspace_call_finalizer): mark self-referencing finalizers
+	  before run finalizers, to fix SEGV from btest on 32bit.
+
+	* gc.c (gc_mark_stacked_objects): extract from gc_marks().
+
+	* gc.c (rb_objspace_call_finalizer): call gc_mark_stacked_objects
+	  at suitable point.
+
+	* gc.c (init_heap): call init_mark_stack before to allocate
+	  altstack. This change avoid the stack overflow at the signal
+	  handler on 32bit, but I don't understand reason... [Feature #7095]
+
 Sat Nov 10 01:25:52 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (append_fspath): no need to do encoding trick here.
