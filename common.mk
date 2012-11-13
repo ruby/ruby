@@ -614,16 +614,6 @@ VM_CORE_H_INCLUDES = {$(VPATH)}vm_core.h {$(VPATH)}thread_$(THREAD_MODEL).h \
 		     {$(VPATH)}node.h {$(VPATH)}method.h {$(VPATH)}ruby_atomic.h \
 		     $(ID_H_INCLUDES) $(PROBES_H_INCLUDES)
 
-.d.h:
-	@$(ECHO) translating probes $<
-	$(Q)if test -n '$(DTRACE)'; then\
-	  $(DTRACE) -o $@.tmp -h -s $<; \
-	  sed -e 's/RUBY_/RUBY_DTRACE_/g' $@.tmp | sed -e 's/PROBES_H_TMP/PROBES_H/g' >$@; \
-	  $(RM) $@.tmp; \
-	else \
-	  $(BASERUBY) $(srcdir)/tool/gen_dummy_probes.rb $< > $@; \
-	fi
-
 addr2line.$(OBJEXT): {$(VPATH)}addr2line.c {$(VPATH)}addr2line.h {$(VPATH)}config.h
 array.$(OBJEXT): {$(VPATH)}array.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
   $(ENCODING_H_INCLUDES) {$(VPATH)}internal.h $(PROBES_H_INCLUDES)
