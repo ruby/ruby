@@ -25,6 +25,8 @@
 #include <setjmp.h>
 #include <sys/types.h>
 
+#include <pthread.h>
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -528,6 +530,56 @@ typedef struct mark_queue_struct {
 
 
 mark_queue_t mark_queue = {NULL, NULL, 0};
+
+#define NTHREADS 4
+
+
+#define GLOBAL_QUEUE_SIZE 100 /*TODO*/
+#define GLOBAL_QUEUE_SIZE_MIN (GLOBAL_QUEUE_SIZE / 4)
+
+#define LOCAL_QUEUE_SIZE 100 /*TODO*/
+
+typedef struct global_queue_struct {
+    unsigned int waiters;
+    unsigned int count;
+    // elements?
+    pthread_mutex_t lock;
+    pthread_cond_t wait_condition;
+    unsigned int complete;
+} global_queue_t;
+
+void global_queue_pop_work(global_queue_t* global_queue) {
+    pthread_mutex_lock(&global_queue->lock);
+    while (global_queue->count == 0 && !global_queue->complete) {
+        global_queue->waiters++;
+        if (global_queue->waiters == NTHREADS) {
+            global_queue->complete = 1;
+            pthread_cond_broadcast(&global_queue->wait_condition);
+        } else {
+            // Release the lock and go to sleep until someone signals
+            pthread_cond_wait(&global_queue->wait_condition, &global_queue->lock);
+        }
+        global_queue->waiters--;
+    }
+
+    //TODO: Pop work
+    pthread_mutex_unlock(&global_queue->lock);
+}
+
+void global_queue_offer_work(global_queue_t* global_queue/*, thread-local queue*/) {
+    int localqueuesize = 10;
+    if ((global_queue->waiters && localqueuesize > 2) ||
+            (global_queue->count < GLOBAL_QUEUE_SIZE_MIN &&
+             localqueuesize > LOCAL_QUEUE_SIZE / 2)) {
+        if (pthread_mutex_trylock(&global_queue->lock)) {
+            //TODO: push up to queue
+            if (global_queue->waiters) {
+                pthread_cond_broadcast(&global_queue->wait_condition);
+            }
+            pthread_mutex_unlock(&global_queue->lock);
+        }
+    }
+}
 
 void gc_mark_defer(rb_objspace_t *objspace, VALUE ptr, int lev);
 int gc_mark_pop();
