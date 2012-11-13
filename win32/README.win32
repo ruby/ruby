@@ -134,4 +134,8 @@ the ruby source directory, this restriction comes from the behavior of
 (({!INCLUDE})) directives of (({NMAKE})).
 ((- you may call it a bug. -))
 
+You can build ruby in any directory including the source directory,
+except (({win32})) directory in the source directory.
+This is restriction originating in the path search method of (({NMAKE})).
+
 =end

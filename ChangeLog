@@ -1,3 +1,9 @@
+Tue Nov 13 12:30:26 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/README.win32: added mention about build directory.  currently
+	  we can not build ruby in win32 directory.  this problem is reported
+	  by Masahiro Kitajima <katonbo@katontech.com>.
+
 Tue Nov 13 11:03:47 2012  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* re.c (rb_memsearch_ss): performance improvement by using memmem(3) if
