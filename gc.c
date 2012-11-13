@@ -548,6 +548,18 @@ typedef struct global_queue_struct {
     unsigned int complete;
 } global_queue_t;
 
+void global_queue_init(global_queue_t* global_queue) {
+    global_queue->waiters = 0;
+    global_queue->count = 0;
+    pthread_mutex_init(&global_queue->lock, NULL);
+    pthread_cond_init(&global_queue->wait_condition, NULL);
+}
+
+void global_queue_destroy(global_queue_t* global_queue) {
+    pthread_mutex_destroy(&global_queue->lock);
+    pthread_cond_destroy(&global_queue->wait_condition);
+}
+
 void global_queue_pop_work(global_queue_t* global_queue) {
     pthread_mutex_lock(&global_queue->lock);
     while (global_queue->count == 0 && !global_queue->complete) {
