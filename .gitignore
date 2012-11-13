@@ -55,7 +55,6 @@ y.tab.c
 /exts.mk
 /goruby
 /id.h
-/probes.h
 /largefile.h
 /lex.c
 /libruby*.*
@@ -72,6 +71,7 @@ y.tab.c
 /ppack
 /prelude.c
 /preview
+/probes.h
 /rbconfig.rb
 /rename2.h
 /repack
