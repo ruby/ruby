@@ -618,7 +618,8 @@ void* mark_run_loop(void* arg) {
 
 void gc_mark_parallel(rb_objspace_t* objspace) {
     active_objspace = objspace;
-    global_queue = malloc(sizeof(global_queue_t));
+    global_queue_t queuedata;
+    global_queue = &queuedata;
     global_queue_init(global_queue);
 
     pthread_key_create(&thread_local_deck_k, NULL);
