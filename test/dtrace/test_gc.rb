@@ -23,4 +23,4 @@ module DTrace
       "100000.times { Object.new }"
     end
   end
-end
+end if (`dtrace -V` rescue false)

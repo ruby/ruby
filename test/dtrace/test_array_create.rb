@@ -32,4 +32,4 @@ ruby$target:::#{type}-create
       eoprobe
     end
   end
-end
+end if (`dtrace -V` rescue false)

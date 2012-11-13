@@ -55,4 +55,4 @@ ruby$target:::function-return
       eoruby
     end
   end
-end
+end if (`dtrace -V` rescue false)

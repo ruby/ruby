@@ -31,4 +31,4 @@ ruby$target:::require-return
       "10.times { require 'dtrace/dummy' }"
     end
   end
-end
+end if (`dtrace -V` rescue false)
