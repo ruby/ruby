@@ -1,3 +1,8 @@
+Tue Nov 13 17:40:04 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (vm_insnhelper.c): this target is useless and causes
+	  ruby always need rebuild.
+
 Tue Nov 13 17:35:49 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (insn_data_to_s_detail): remove debug lines.
