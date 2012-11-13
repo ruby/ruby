@@ -593,6 +593,7 @@ void global_queue_offer_work(global_queue_t* global_queue, deck_t* local_queue) 
     }
 }
 
+static void gc_mark(rb_objspace_t *objspace, VALUE ptr, int lev);
 static void gc_marks(rb_objspace_t *objspace);
 
 rb_objspace_t* active_objspace;
@@ -611,7 +612,7 @@ void* mark_run_loop(void* arg) {
         if (deck_empty_p(&deck)) {
             global_queue_pop_work(global_queue, &deck);
         }
-        //TODO: Pop work off the local queue to do
+        gc_mark(active_objspace, deck_pop(&deck), 1);
     }
 }
 
@@ -1569,7 +1570,6 @@ init_mark_stack(rb_objspace_t *objspace)
 
 #define MARK_STACK_EMPTY (mark_stack_ptr == mark_stack)
 
-static void gc_mark(rb_objspace_t *objspace, VALUE ptr, int lev);
 static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev);
 
 static void
@@ -1876,41 +1876,9 @@ gc_mark(rb_objspace_t *objspace, VALUE ptr, int lev)
 
 void
 gc_mark_defer(rb_objspace_t *objspace, VALUE ptr, int lev) {
-    mark_queue_node_t* node =
-	(mark_queue_node_t*) malloc(sizeof(mark_queue_node_t));
-    node->objspace = objspace;
-    node->ptr = ptr;
-    node->lev = lev;
-    node->next = NULL;
-    //lock
-    if (mark_queue.tail == NULL) {
-	mark_queue.head = mark_queue.tail = node;
-    } else {
-	mark_queue.tail->next = node;
-	mark_queue.tail = node;
-    }
-    mark_queue.size++;
-    //unlock
-}
-
-int
-gc_mark_pop() {
-    mark_queue_node_t* node;
-    //lock
-    node = mark_queue.head;
-    if (node != NULL) {
-	mark_queue.head = node->next;
-	if (mark_queue.head == NULL) {
-	    mark_queue.tail = NULL;
-	}
-	mark_queue.size--;
-    }
-    //unlock
-    if (node != NULL) {
-	gc_mark(node->objspace, node->ptr, node->lev);
-	free(node);
-    }
-    return node != NULL;
+    deck_t* deck = (deck_t*) pthread_getspecific(thread_local_deck_k);
+    deck_push(deck, ptr);
+    //TODO: Handle push failing due to being full
 }
 
 void
@@ -2696,12 +2664,6 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 #endif
 }
 
-/* CS194 TODO: */
-static void gc_mark_loop() {
-  while(gc_mark_pop()){};
-}
-
-
 static void
 gc_marks(rb_objspace_t *objspace)
 {
@@ -2750,7 +2712,6 @@ gc_marks(rb_objspace_t *objspace)
 	    gc_mark_rest(objspace);
 	}
     }
-    gc_mark_loop();
     GC_PROF_MARK_TIMER_STOP;
 }
 
@@ -2773,7 +2734,8 @@ garbage_collect(rb_objspace_t *objspace)
     rest_sweep(objspace);
 
     during_gc++;
-    gc_marks(objspace);
+    gc_mark_parallel(objspace);
+    //gc_marks(objspace);
 
     GC_PROF_SWEEP_TIMER_START;
     gc_sweep(objspace);
