@@ -2,7 +2,7 @@ Tue Nov 13 17:28:47 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_caller_setup_args): save and restore
 	  ci->argc and ci->blockptr before and after method invocations
-	  because these method dispatches override call_info.
+	  because these method dispatches can override call_info.
 
 	* bootstraptest/test_method.rb: add tests for this fix.
 
