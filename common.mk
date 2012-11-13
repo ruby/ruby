@@ -460,7 +460,7 @@ distclean-platform: clean-platform
 
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 realclean-local:: distclean-local
-	$(Q)$(RM) parse.c parse.h lex.c newline.c revision.h
+	$(Q)$(RM) parse.c parse.h lex.c newline.c revision.h dmyprobes.h
 realclean-ext::
 realclean-golf: distclean-golf
 realclean-capi: PHONY
@@ -886,6 +886,9 @@ prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) \
 golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) $(srcdir)/prelude.rb $(srcdir)/golf_prelude.rb $(PREP)
 	$(ECHO) generating $@
 	$(Q) $(COMPILE_PRELUDE) $(srcdir)/golf_prelude.rb $@
+
+dmyprobes.h: {$(srcdir)}probes.d
+	$(BASERUBY) $(srcdir)/tool/gen_dummy_probes.rb $(srcdir)/probes.d > $@
 
 prereq: incs srcs preludes PHONY
 

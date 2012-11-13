@@ -170,8 +170,6 @@ MESSAGE_END = ; do echo "$$line"; done
 configure_args = @configure_args@
 #### End of variables
 
-.SUFFIXES: .inc .h .c .y .i .d
-
 all:
 
 .DEFAULT: all
@@ -323,14 +321,14 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	@$(ECHO) preprocessing $<
 	$(Q) $(CPP) $(warnflags) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -E $< > $@
 
-.d.h:
+probes.h: dmyprobes.h
 	@$(ECHO) translating probes $<
 	$(Q)if test -n '$(DTRACE)'; then\
 	  $(DTRACE) -o $@.tmp -h -s $<; \
 	  sed -e 's/RUBY_/RUBY_DTRACE_/g' $@.tmp | sed -e 's/PROBES_H_TMP/PROBES_H/g' >$@; \
 	  $(RM) $@.tmp; \
 	else \
-	  $(BASERUBY) $(srcdir)/tool/gen_dummy_probes.rb $< > $@; \
+	  $(CP) dmyprobes.h probes.h; \
 	fi
 
 clean-local::

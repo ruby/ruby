@@ -1048,8 +1048,8 @@ $(ruby_pc): $(RBCONFIG)
 lex.c: {$(srcdir)}lex.c.blt
 	copy $(?:/=\) $@
 
-probes.h: {$(srcdir)}probes.d
-	$(BASERUBY) $(srcdir)/tool/gen_dummy_probes.rb $? > $@
+probes.h: dmyprobes.h
+	copy dmyprobes.h probes.h
 
 enc/unicode/name2ctype.h: {$(srcdir)}enc/unicode/name2ctype.h.blt
 	@if not exist $(@D:/=\) md $(@D:/=\)
