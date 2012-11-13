@@ -593,6 +593,47 @@ void global_queue_offer_work(global_queue_t* global_queue/*, thread-local queue*
     }
 }
 
+static void gc_marks(rb_objspace_t *objspace);
+
+rb_objspace_t* active_objspace;
+global_queue_t* global_queue;
+pthread_key_t thread_local_queue_k;
+void* mark_run_loop(void* arg) {
+    long thread_id = (long) arg;
+    //TODO alloc local queue
+    void* thread_local_queue = NULL;
+    pthread_setspecific(thread_local_queue_k, thread_local_queue);
+    if (thread_id == 0) {
+        gc_marks(active_objspace);
+    }
+    //TODO: Run loop
+}
+
+void gc_mark_parallel(rb_objspace_t* objspace) {
+    active_objspace = objspace;
+    global_queue = malloc(sizeof(global_queue_t*));
+    global_queue_init(global_queue);
+
+    pthread_key_create(&thread_local_queue_k, NULL);
+
+    pthread_attr_t attr;
+    pthread_t threads[NTHREADS];
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    long t;
+    for (t = 0; t < NTHREADS; t++) {
+        pthread_create(&threads[t], &attr, mark_run_loop, (void*)t);
+        //TODO: handle error codes
+    }
+    pthread_attr_destroy(&attr);
+    void* status;
+    for (t = 0; t < NTHREADS; t++) {
+        pthread_join(threads[t], &status)
+        //TODO: handle error codes
+    }
+    global_queue_destroy(global_queue);
+}
+
 void gc_mark_defer(rb_objspace_t *objspace, VALUE ptr, int lev);
 int gc_mark_pop();
 
@@ -2378,8 +2419,6 @@ rest_sweep(rb_objspace_t *objspace)
        after_gc_sweep(objspace);
     }
 }
-
-static void gc_marks(rb_objspace_t *objspace);
 
 static int
 gc_lazy_sweep(rb_objspace_t *objspace)
