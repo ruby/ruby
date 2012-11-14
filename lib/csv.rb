@@ -2206,6 +2206,11 @@ class CSV
     init_converters(options, :header_converters)
   end
 
+  # Stores the pattern of comments to skip from the provided options.
+  #
+  # The pattern must respond to +.match+, else ArgumentError is raised.
+  #
+  # See also CSV.new
   def init_comments(options)
     @skip_lines = options.delete(:skip_lines)
     if @skip_lines and not @skip_lines.respond_to?(:match)

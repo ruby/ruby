@@ -1,3 +1,8 @@
+Wed Nov 14 11:51:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/csv.rb (init_comments): Document private method #init_comments.
+	  Based on a patch from Vincent Batts [ruby-core:49172] [Bug #7319]
+
 Wed Nov 14 00:54:00 2012  Kenta Murata  <mrkn@mrkn.jp>
 
 	* Makefile.in (probes.h): create from probes.d
