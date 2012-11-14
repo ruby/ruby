@@ -13,6 +13,11 @@
 #include "ruby/encoding.h"
 #include "internal.h"
 
+#ifdef HAVE_FLOAT_H
+#include <float.h>
+#endif
+#include <math.h>
+
 VALUE rb_cRange;
 static ID id_cmp, id_succ, id_beg, id_end, id_excl;
 
@@ -463,6 +468,291 @@ range_step(int argc, VALUE *argv, VALUE range)
 	}
     }
     return range;
+}
+
+/*
+ *  call-seq:
+ *     rng.bsearch {|obj| block }  -> value
+ *
+ *  By using binary search, finds a value in range which meets the given
+ *  condition in O(n log n) where n is the size of the array.
+ *
+ *  You can use this method in two use cases: a find-minimum mode and
+ *  a find-any mode.  In either case, the elements of the array must be
+ *  monotone (or sorted) with respect to the block.
+ *
+ *  In find-minimum mode (this is a good choice for typical use case),
+ *  the block must return true or false, and there must be a value x
+ *  so that:
+ *
+ *  - the block returns false for any value which is less than x, and
+ *  - the block returns true for any value which is greater than or
+ *    equal to i.
+ *
+ *  If x is within the range, this method returns the value x. 
+ *  Otherwise, it returns nil.
+ *
+ *     ary = [0, 4, 7, 10, 12]
+ *     (0...ary.size).bsearch {|i| ary[i] >= 4 } #=> 1
+ *     (0...ary.size).bsearch {|i| ary[i] >= 6 } #=> 2
+ *     (0...ary.size).bsearch {|i| ary[i] >= 8 } #=> 3
+ *     (0...ary.size).bsearch {|i| ary[i] >= 100 } #=> nil
+ *
+ *     (0.0...Float::INFINITY).bsearch {|x| Math.log(x) >= 0 } #=> 1.0
+ *
+ *  In find-any mode (this behaves like libc's bsearch(3)), the block
+ *  must return a number, and there must be two values x and y (x <= y)
+ *  so that:
+ *
+ *  - the block returns a positive number for v if v < x,
+ *  - the block returns zero for v if x <= v < y, and
+ *  - the block returns a negative number for v if y <= v.
+ *
+ *  This method returns any value which is within the intersection of
+ *  the given range and x...y (if any).  If there is no value that
+ *  satisfies the condition, it returns nil.
+ *
+ *     ary = [0, 100, 100, 100, 200]
+ *     (0..4).bsearch {|i| 100 - i } #=> 1, 2 or 3
+ *     (0..4).bsearch {|i| 300 - i } #=> nil
+ *     (0..4).bsearch {|i|  50 - i } #=> nil
+ *
+ *  You must not mix the two modes at a time; the block must always
+ *  return either true/false, or always return a number.  It is
+ *  undefined which value is actually picked up at each iteration.
+ */
+
+static VALUE
+range_bsearch(VALUE range)
+{
+    VALUE beg, end;
+    int smaller, satisfied = 0;
+
+#define BSEARCH_CHECK(val) \
+    do { \
+	VALUE v = rb_yield(val); \
+	if (FIXNUM_P(v)) { \
+	    if (FIX2INT(v) == 0) return val; \
+	    smaller = FIX2INT(v) < 0; \
+	} \
+	else if (v == Qtrue) { \
+	    satisfied = 1; \
+	    smaller = 1; \
+	} \
+	else if (v == Qfalse || v == Qnil) { \
+	    smaller = 0; \
+	} \
+	else if (rb_obj_is_kind_of(v, rb_cNumeric)) { \
+	    switch (rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0)) < 0) { \
+		case 0: return val; \
+		case 1: smaller = 1; \
+		case -1: smaller = 0; \
+	    } \
+	} \
+	else { \
+	    smaller = RTEST(v); \
+	} \
+    } while (0)
+
+    beg = RANGE_BEG(range);
+    end = RANGE_END(range);
+
+    if (FIXNUM_P(beg) && FIXNUM_P(end)) {
+	long low = FIX2LONG(beg);
+	long high = FIX2LONG(end);
+	long mid, org_high;
+	if (EXCL(range)) high--;
+	org_high = high;
+
+	while (low < high) {
+	    mid = low + ((high - low) / 2);
+	    BSEARCH_CHECK(INT2FIX(mid));
+	    if (smaller) {
+		high = mid;
+	    }
+	    else {
+		low = mid + 1;
+	    }
+	}
+	if (low == org_high) {
+	    BSEARCH_CHECK(INT2FIX(low));
+	    if (!smaller) return Qnil;
+	}
+	if (!satisfied) return Qnil;
+	return INT2FIX(low);
+    }
+    else if (TYPE(beg) == T_FLOAT || TYPE(end) == T_FLOAT) {
+	double low  = RFLOAT_VALUE(rb_Float(beg));
+	double high = RFLOAT_VALUE(rb_Float(end));
+	double mid, org_high;
+	int count;
+#ifdef FLT_RADIX
+#ifdef DBL_MANT_DIG
+#define BSEARCH_MAXCOUNT (((FLT_RADIX) - 1) * (DBL_MANT_DIG + DBL_MAX_EXP) + 100)
+#else
+#define BSEARCH_MAXCOUNT (53 + 1023 + 100)
+#endif
+#else
+#define BSEARCH_MAXCOUNT (53 + 1023 + 100)
+#endif
+	if (isinf(high) && high > 0) {
+	    /* the range is (low..INFINITY) */
+	    double nhigh = 1.0, inc;
+	    if (nhigh < low) nhigh = low;
+	    count = BSEARCH_MAXCOUNT;
+	    /* find upper bound by checking low, low*2, low*4, ... */
+	    while (count >= 0 && !isinf(nhigh)) {
+		BSEARCH_CHECK(DBL2NUM(nhigh));
+		if (smaller) break;
+		high = nhigh;
+		nhigh *= 2;
+		count--;
+	    }
+	    if (isinf(nhigh) || count < 0) {
+		/* upper bound not found; then, search in very near INFINITY */
+		/* (x..INFINITY where x is not INFINITY but x*2 is INFINITY) */
+		inc = high / 2;
+		count = BSEARCH_MAXCOUNT;
+		while (count >= 0 && inc > 0) {
+		    nhigh = high + inc;
+		    if (!isinf(nhigh)) {
+			BSEARCH_CHECK(DBL2NUM(nhigh));
+			if (smaller) {
+			    /* upper bound found; */
+			    /* the desired value is within high..nhigh */
+			    low = high;
+			    high = nhigh;
+			    goto binsearch;
+			}
+			else {
+			    high = nhigh;
+			}
+		    }
+		    inc /= 2;
+		    count--;
+		}
+		/* lower bound not found; */
+		/* there is no candidate except INFINITY itself */
+		high *= 2; /* generate INFINITY */
+		if (isinf(high) && !EXCL(range)) {
+		    BSEARCH_CHECK(DBL2NUM(high));
+		    if (!satisfied) return Qnil;
+		    if (smaller) return DBL2NUM(high);
+		}
+		return Qnil;
+	    }
+	    /* upper bound found; the desired value is within low..nhigh */
+	    high = nhigh;
+	}
+	if (isinf(low) && low < 0) {
+	    /* the range is (-INFINITY..high) */
+	    double nlow = -1.0, dec;
+	    if (nlow > high) nlow = high;
+	    count = BSEARCH_MAXCOUNT;
+	    /* find lower bound by checking low, low*2, low*4, ... */
+	    while (count >= 0 && !isinf(nlow)) {
+		BSEARCH_CHECK(DBL2NUM(nlow));
+		if (!smaller) break;
+		low = nlow;
+		nlow *= 2;
+		count--;
+	    }
+	    if (isinf(nlow) || count < 0) {
+		/* lower bound not found; then, search in very near -INFINITY */
+		/* (-INFINITY..x where x is not -INFINITY but x*2 is -INFINITY) */
+		dec = low / 2;
+		count = BSEARCH_MAXCOUNT;
+		while (count >= 0 && dec < 0) {
+		    nlow = low + dec;
+		    if (!isinf(nlow)) {
+			BSEARCH_CHECK(DBL2NUM(nlow));
+			if (!smaller) {
+			    /* lower bound found; */
+			    /* the desired value is within nlow..low */
+			    high = low;
+			    low = nlow;
+			    goto binsearch;
+			}
+			else {
+			    low = nlow;
+			}
+		    }
+		    dec /= 2;
+		    count--;
+		}
+		/* lower bound not found; */
+		/* there is no candidate except -INFINITY itself */
+		nlow = low * 2; /* generate -INFINITY */
+		if (isinf(nlow)) {
+		    BSEARCH_CHECK(DBL2NUM(nlow));
+		    if (!satisfied) return Qnil;
+		    if (smaller) return DBL2NUM(nlow);
+		}
+		if (!satisfied) return Qnil;
+		return DBL2NUM(low);
+	    }
+	    low = nlow;
+	}
+
+    binsearch:
+	/* find the desired value within low..high */
+	/* where low is not -INFINITY and high is not INFINITY */
+	org_high = high;
+	count = BSEARCH_MAXCOUNT;
+	while (low < high && count >= 0) {
+	    mid = low + ((high - low) / 2);
+	    BSEARCH_CHECK(DBL2NUM(mid));
+	    if (smaller) {
+		high = mid;
+	    }
+	    else {
+		low = mid;
+	    }
+	    count--;
+	}
+	BSEARCH_CHECK(DBL2NUM(low));
+	if (!smaller) {
+	    BSEARCH_CHECK(DBL2NUM(high));
+	    if (!smaller) {
+		return Qnil;
+	    }
+	    low = high;
+	}
+	if (!satisfied) return Qnil;
+	if (EXCL(range) && low >= org_high) return Qnil;
+	return DBL2NUM(low);
+#undef BSEARCH_MAXCOUNT
+    }
+    else if (!NIL_P(rb_check_to_integer(beg, "to_int")) &&
+	     !NIL_P(rb_check_to_integer(end, "to_int"))) {
+	VALUE low = beg;
+	VALUE high = end;
+	VALUE mid, org_high;
+	if (EXCL(range)) high = rb_funcall(high, '-', 1, INT2FIX(1));
+	org_high = high;
+
+	while (rb_cmpint(rb_funcall(low, id_cmp, 1, high), low, high) < 0) {
+	    mid = rb_funcall(rb_funcall(high, '+', 1, low), '/', 1, INT2FIX(2));
+	    BSEARCH_CHECK(mid);
+	    if (smaller) {
+		high = mid;
+	    }
+	    else {
+		low = rb_funcall(mid, '+', 1, INT2FIX(1));
+	    }
+	}
+	if (rb_equal(low, org_high)) {
+	    BSEARCH_CHECK(low);
+	    if (!smaller) return Qnil;
+	}
+	if (!satisfied) return Qnil;
+	return low;
+    }
+    else {
+	rb_raise(rb_eTypeError, "can't do binary search for %s", rb_obj_classname(beg));
+    }
+    return range;
+    
 }
 
 static VALUE
@@ -1112,6 +1402,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "hash", range_hash, 0);
     rb_define_method(rb_cRange, "each", range_each, 0);
     rb_define_method(rb_cRange, "step", range_step, -1);
+    rb_define_method(rb_cRange, "bsearch", range_bsearch, 0);
     rb_define_method(rb_cRange, "begin", range_begin, 0);
     rb_define_method(rb_cRange, "end", range_end, 0);
     rb_define_method(rb_cRange, "first", range_first, -1);

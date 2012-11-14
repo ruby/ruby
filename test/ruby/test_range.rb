@@ -355,4 +355,82 @@ class TestRange < Test::Unit::TestCase
     assert_equal 5, (1.1...6).size
     assert_equal 42, (1..42).each.size
   end
+
+  def test_bsearch_for_fixnum
+    ary = [3, 4, 7, 9, 12]
+    assert_equal(0, (0...ary.size).bsearch {|i| ary[i] >= 2 })
+    assert_equal(1, (0...ary.size).bsearch {|i| ary[i] >= 4 })
+    assert_equal(2, (0...ary.size).bsearch {|i| ary[i] >= 6 })
+    assert_equal(3, (0...ary.size).bsearch {|i| ary[i] >= 8 })
+    assert_equal(4, (0...ary.size).bsearch {|i| ary[i] >= 10 })
+    assert_equal(nil, (0...ary.size).bsearch {|i| ary[i] >= 100 })
+    assert_equal(0, (0...ary.size).bsearch {|i| true })
+    assert_equal(nil, (0...ary.size).bsearch {|i| false })
+
+    ary = [0, 100, 100, 100, 200]
+    assert_equal(1, (0...ary.size).bsearch {|i| ary[i] >= 100 })
+  end
+
+  def test_bsearch_for_float
+    inf = Float::INFINITY
+    assert_in_delta(10.0, (0.0...100.0).bsearch {|x| x > 0 && Math.log(x / 10) >= 0 }, 0.0001)
+    assert_in_delta(10.0, (0.0...inf).bsearch {|x| x > 0 && Math.log(x / 10) >= 0 }, 0.0001)
+    assert_in_delta(-10.0, (-inf..100.0).bsearch {|x| x >= 0 || Math.log(-x / 10) < 0 }, 0.0001)
+    assert_in_delta(10.0, (-inf..inf).bsearch {|x| x > 0 && Math.log(x / 10) >= 0 }, 0.0001)
+    assert_equal(nil, (-inf..5).bsearch {|x| x > 0 && Math.log(x / 10) >= 0 }, 0.0001)
+
+    assert_in_delta(10.0, (-inf.. 10).bsearch {|x| x > 0 && Math.log(x / 10) >= 0 }, 0.0001)
+    assert_equal(nil,     (-inf...10).bsearch {|x| x > 0 && Math.log(x / 10) >= 0 }, 0.0001)
+
+    assert_equal(nil, (-inf..inf).bsearch { false })
+    assert_equal(-inf, (-inf..inf).bsearch { true })
+
+    assert_equal(inf, (0..inf).bsearch {|x| x == inf })
+    assert_equal(nil, (0...inf).bsearch {|x| x == inf })
+
+    v = (-inf..0).bsearch {|x| x != -inf }
+    assert_operator(-Float::MAX, :>=, v)
+    assert_operator(-inf, :<, v)
+
+    v = (0.0..1.0).bsearch {|x| x > 0 } # the nearest positive value to 0.0
+    assert_in_delta(0, v, 0.0001)
+    assert_operator(0, :<, v)
+    assert_equal(0.0, (-1.0..0.0).bsearch {|x| x >= 0 })
+    assert_equal(nil, (-1.0...0.0).bsearch {|x| x >= 0 })
+
+    v = (0..Float::MAX).bsearch {|x| x >= Float::MAX }
+    assert_in_delta(Float::MAX, v)
+    assert_equal(nil, v.infinite?)
+
+    v = (0..inf).bsearch {|x| x >= Float::MAX }
+    assert_in_delta(Float::MAX, v)
+    assert_equal(nil, v.infinite?)
+
+    v = (-Float::MAX..0).bsearch {|x| x > -Float::MAX }
+    assert_operator(-Float::MAX, :<, v)
+    assert_equal(nil, v.infinite?)
+
+    v = (-inf..0).bsearch {|x| x >= -Float::MAX }
+    assert_in_delta(-Float::MAX, v)
+    assert_equal(nil, v.infinite?)
+
+    v = (-inf..0).bsearch {|x| x > -Float::MAX }
+    assert_operator(-Float::MAX, :<, v)
+    assert_equal(nil, v.infinite?)
+  end
+
+  def test_bsearch_for_bignum
+    bignum = 2**100
+    ary = [3, 4, 7, 9, 12]
+    assert_equal(bignum + 0, (bignum...bignum+ary.size).bsearch {|i| ary[i - bignum] >= 2 })
+    assert_equal(bignum + 1, (bignum...bignum+ary.size).bsearch {|i| ary[i - bignum] >= 4 })
+    assert_equal(bignum + 2, (bignum...bignum+ary.size).bsearch {|i| ary[i - bignum] >= 6 })
+    assert_equal(bignum + 3, (bignum...bignum+ary.size).bsearch {|i| ary[i - bignum] >= 8 })
+    assert_equal(bignum + 4, (bignum...bignum+ary.size).bsearch {|i| ary[i - bignum] >= 10 })
+    assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| ary[i - bignum] >= 100 })
+    assert_equal(bignum + 0, (bignum...bignum+ary.size).bsearch {|i| true })
+    assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| false })
+
+    assert_raise(TypeError) { ("a".."z").bsearch {} }
+  end
 end

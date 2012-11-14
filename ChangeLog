@@ -1,3 +1,17 @@
+Thu Nov 15 00:47:20 2012  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* array.c (rb_ary_bsearch): add Array#bsearch for binary search.
+	  [ruby-core:36390] [Feature #4766]
+
+	* test/ruby/test_array.rb: add a test for above.
+
+	* range.c (range_bsearch): add Range#bsearch for binary search.
+	  [ruby-core:36390] [Feature #4766]
+
+	* test/ruby/test_range.rb: add a test for above
+
+	* NEWS: added the two new methods.
+
 Wed Nov 14 13:25:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/fileutils.rb (chmod): Add "X" to modes, convert format to table

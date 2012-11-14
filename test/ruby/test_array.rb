@@ -2240,4 +2240,31 @@ class TestArray < Test::Unit::TestCase
     a = [1,2,3]
     assert_raise(ArgumentError) { a.rotate!(1, 1) }
   end
+
+  def test_bsearch_in_find_minimum_mode
+    a = [0, 4, 7, 10, 12]
+    assert_equal(4, a.bsearch {|x| x >=   4 })
+    assert_equal(7, a.bsearch {|x| x >=   6 })
+    assert_equal(0, a.bsearch {|x| x >=  -1 })
+    assert_equal(nil, a.bsearch {|x| x >= 100 })
+  end
+
+  def test_bsearch_in_find_any_mode
+    a = [0, 4, 7, 10, 12]
+    assert_include([4, 7], a.bsearch {|x| 1 - x / 4 })
+    assert_equal(nil, a.bsearch {|x| 4 - x / 2 })
+    assert_equal(nil, a.bsearch {|x| 1 })
+    assert_equal(nil, a.bsearch {|x| -1 })
+
+    assert_include([4, 7], a.bsearch {|x| (1 - x / 4) * (2**100) })
+    assert_equal(nil, a.bsearch {|x|   1  * (2**100) })
+    assert_equal(nil, a.bsearch {|x| (-1) * (2**100) })
+
+    assert_include([4, 7], a.bsearch {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
+  end
+
+  def test_bsearch_undefined
+    a = [0, 4, 7, 10, 12]
+    assert_equal(nil, a.bsearch {|x| "foo" }) # undefined behavior
+  end
 end

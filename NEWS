@@ -19,6 +19,8 @@ with all sufficient information, see the ChangeLog file.
 * builtin classes
 
   * Array
+    * added method:
+      * added Array#bsearch for binary search.
     * incompatible changes:
       * random parameter of Array#shuffle! and Array#sample now
         will be called with one argument, maximum value.
@@ -98,6 +100,7 @@ with all sufficient information, see the ChangeLog file.
   * Range
     * added method:
       * added Range#size for lazy size evaluation.
+      * added Range#bsearch for binary search.
 
   * Signal
     * incompatible changes:

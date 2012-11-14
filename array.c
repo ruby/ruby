@@ -2373,6 +2373,103 @@ rb_ary_sort(VALUE ary)
     return ary;
 }
 
+/*
+ *  call-seq:
+ *     ary.bsearch {|x| block }  -> elem
+ *
+ *  By using binary search, finds a value from this array which meets
+ *  the given condition in O(n log n) where n is the size of the array.
+ *
+ *  You can use this method in two use cases: a find-minimum mode and
+ *  a find-any mode.  In either case, the elements of the array must be
+ *  monotone (or sorted) with respect to the block.
+ *
+ *  In find-minimum mode (this is a good choice for typical use case),
+ *  the block must return true or false, and there must be an index i
+ *  (0 <= i <= ary.size) so that:
+ *
+ *  - the block returns false for any element whose index is less than
+ *    i, and
+ *  - the block returns true for any element whose index is greater
+ *    than or equal to i.
+ *
+ *  This method returns the i-th element.  If i is equal to ary.size,
+ *  it returns nil.
+ *
+ *     ary = [0, 4, 7, 10, 12]
+ *     ary.bsearch {|x| x >=   4 } #=> 4
+ *     ary.bsearch {|x| x >=   6 } #=> 7
+ *     ary.bsearch {|x| x >=  -1 } #=> 0
+ *     ary.bsearch {|x| x >= 100 } #=> nil
+ *
+ *  In find-any mode (this behaves like libc's bsearch(3)), the block
+ *  must return a number, and there must be two indices i and j
+ *  (0 <= i <= j <= ary.size) so that:
+ *
+ *  - the block returns a positive number for ary[k] if 0 <= k < i,
+ *  - the block returns zero for ary[k] if i <= k < j, and
+ *  - the block returns a negative number for ary[k] if
+ *    j <= k < ary.size.
+ *
+ *  Under this condition, this method returns any element whose index
+ *  is within i...j.  If i is equal to j (i.e., there is no element
+ *  that satisfies the block), this method returns nil.
+ *
+ *     ary = [0, 4, 7, 10, 12]
+ *     # try to find v such that 4 <= v < 8
+ *     ary.bsearch {|x| 1 - x / 4 } #=> 4 or 7
+ *     # try to find v such that 8 <= v < 10
+ *     ary.bsearch {|x| 4 - x / 2 } #=> nil
+ *
+ *  You must not mix the two modes at a time; the block must always
+ *  return either true/false, or always return a number.  It is
+ *  undefined which value is actually picked up at each iteration.
+ */
+
+static VALUE
+rb_ary_bsearch(VALUE ary)
+{
+    long low = 0, high = RARRAY_LEN(ary), mid;
+    int smaller = 0, satisfied = 0;
+    VALUE v, val;
+
+    while (low < high) {
+	mid = low + ((high - low) / 2);
+	val = rb_ary_entry(ary, mid);
+	v = rb_yield(val);
+	if (FIXNUM_P(v)) {
+	    if (FIX2INT(v) == 0) return val;
+	    smaller = FIX2INT(v) < 0;
+	}
+	else if (v == Qtrue) {
+	    satisfied = 1;
+	    smaller = 1;
+	}
+	else if (v == Qfalse || v == Qnil) {
+	    smaller = 0;
+	}
+	else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
+	    switch (rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0))) {
+		case 0: return val;
+		case 1: smaller = 1;
+		case -1: smaller = 0;
+	    }
+	}
+	else {
+	    smaller = RTEST(v);
+	}
+	if (smaller) {
+	    high = mid;
+	}
+	else {
+	    low = mid + 1;
+	}
+    }
+    if (low == RARRAY_LEN(ary)) return Qnil;
+    if (!satisfied) return Qnil;
+    return rb_ary_entry(ary, low);
+}
+
 
 static VALUE
 sort_by_i(VALUE i)
@@ -5399,6 +5496,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "take_while", rb_ary_take_while, 0);
     rb_define_method(rb_cArray, "drop", rb_ary_drop, 1);
     rb_define_method(rb_cArray, "drop_while", rb_ary_drop_while, 0);
+    rb_define_method(rb_cArray, "bsearch", rb_ary_bsearch, 0);
 
     id_cmp = rb_intern("<=>");
     sym_random = ID2SYM(rb_intern("random"));
