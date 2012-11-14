@@ -21,6 +21,7 @@
 #include "internal.h"
 #include "gc.h"
 #include "constant.h"
+#include "ruby_atomic.h"
 #include <stdio.h>
 #include <setjmp.h>
 #include <sys/types.h>

@@ -591,7 +591,7 @@ RUBY_H_INCLUDES    = {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
 ENCODING_H_INCLUDES= {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
 ID_H_INCLUDES      = {$(VPATH)}id.h {$(VPATH)}vm_opts.h
 VM_CORE_H_INCLUDES = {$(VPATH)}vm_core.h {$(VPATH)}thread_$(THREAD_MODEL).h \
-		     {$(VPATH)}node.h {$(VPATH)}method.h {$(VPATH)}atomic.h \
+		     {$(VPATH)}node.h {$(VPATH)}method.h {$(VPATH)}ruby_atomic.h \
 		     $(ID_H_INCLUDES)
 
 array.$(OBJEXT): {$(VPATH)}array.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \

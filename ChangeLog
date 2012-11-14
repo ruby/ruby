@@ -1,3 +1,11 @@
+Wed Nov 14 20:20:46 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ruby_atomic.h: renamed from atomic.h to avoid header file name
+	  conflict on Solaris 10. [ruby-dev:46414] [Bug #7287]
+
+	* gc.c, signal.c, vm_core.h, common.mk: reflect the rename from
+	  atomic.h to ruby_atomic.h.
+
 Tue Nov 13 18:13:10 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c: Use the non-recursive marking instead of recursion. The

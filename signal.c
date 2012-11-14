@@ -16,7 +16,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <errno.h>
-#include "atomic.h"
+#include "ruby_atomic.h"
 
 #if !defined(_WIN32) && !defined(HAVE_GCC_ATOMIC_BUILTINS)
 rb_atomic_t
