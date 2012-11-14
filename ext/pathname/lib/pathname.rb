@@ -76,14 +76,17 @@ class Pathname
   # Returns clean pathname of +self+ with consecutive slashes and useless dots
   # removed.  The filesystem is not accessed.
   #
-  # If +consider_symlink+ is +true+, then a more conservative algorithm is used
-  # to avoid breaking symbolic linkages.  This may retain more +..+
-  # entries than absolutely necessary, but without accessing the filesystem,
-  # this can't be avoided.
+  # If +consider_symlink+ is +true+ (default), then a strictly correct
+  # algorithm is used to avoid breaking paths which may contain symlinks. The
+  # path returned is guaranteed to be semantically equivalent.
   #
+  # If +consider_symlink+ is +false+, then an algorithm is used which will
+  # remove all ".." sequences, but which may also return semantically different
+  # paths.
+  # 
   # See Pathname#realpath.
   #
-  def cleanpath(consider_symlink=false)
+  def cleanpath(consider_symlink=true)
     if consider_symlink
       cleanpath_conservative
     else
