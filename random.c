@@ -1261,6 +1261,19 @@ random_s_rand(int argc, VALUE *argv, VALUE obj)
 
 #define SIP_HASH_STREAMING 0
 #define sip_hash24 ruby_sip_hash24
+#if !defined _WIN32 && !defined BYTE_ORDER
+# ifdef WORDS_BIGENDIAN
+#   define BYTE_ORDER BIG_ENDIAN
+# else
+#   define BYTE_ORDER LITTLE_ENDIAN
+# endif
+# ifndef LITTLE_ENDIAN
+#   define LITTLE_ENDIAN 1234
+# endif
+# ifndef BIG_ENDIAN
+#   define BIG_ENDIAN    4321
+# endif
+#endif
 #include "siphash.c"
 
 static st_index_t hashseed;
