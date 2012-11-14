@@ -1016,18 +1016,20 @@ public
   #   FileUtils.chmod "u=wr,go=rr", %w(my.rb your.rb his.rb her.rb)
   #   FileUtils.chmod "u=wrx,go=rx", '/usr/bin/ruby', :verbose => true
   #
-  #   "a" is user, group, other mask.
-  #   "u" is user's mask.
-  #   "g" is group's mask.
-  #   "o" is other's mask.
-  #   "w" is write permission.
-  #   "r" is read permission.
-  #   "x" is execute permission.
-  #   "s" is uid, gid.
-  #   "t" is sticky bit.
-  #   "+" is added to a class given the specified mode.
-  #   "-" Is removed from a given class given mode.
-  #   "=" Is the exact nature of the class will be given a specified mode.
+  # "a" :: is user, group, other mask.
+  # "u" :: is user's mask.
+  # "g" :: is group's mask.
+  # "o" :: is other's mask.
+  # "w" :: is write permission.
+  # "r" :: is read permission.
+  # "x" :: is execute permission.
+  # "X" ::
+  #   is execute permission for directories only, must be used in conjunction with "+"
+  # "s" :: is uid, gid.
+  # "t" :: is sticky bit.
+  # "+" :: is added to a class given the specified mode.
+  # "-" :: Is removed from a given class given mode.
+  # "=" :: Is the exact nature of the class will be given a specified mode.
 
   def chmod(mode, list, options = {})
     fu_check_options options, OPT_TABLE['chmod']
