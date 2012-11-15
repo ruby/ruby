@@ -439,6 +439,21 @@ class TestRakeFunctional < Rake::TestCase
     end
   end
 
+  def test_failing_test_sets_exit_status
+    rakefile_failing_test_task
+    rake
+    assert_equal 1, @exit.exitstatus
+  end
+
+  def test_stand_alone_filelist
+    rakefile_stand_alone_filelist
+
+    run_ruby @ruby_options + ["stand_alone_filelist.rb"]
+
+    assert_match(/^stand_alone_filelist\.rb$/, @out)
+    assert_equal 0, @exit.exitstatus
+  end
+
   private
 
   # Run a shell Ruby command with command line options (using the
@@ -458,14 +473,16 @@ class TestRakeFunctional < Rake::TestCase
   def run_ruby(option_list)
     puts "COMMAND: [#{RUBY} #{option_list.join ' '}]" if @verbose
 
-    inn, out, err = Open3.popen3(Gem.ruby, *option_list)
+    inn, out, err, wait = Open3.popen3(Gem.ruby, *option_list)
     inn.close
 
     @out = out.read
     @err = err.read
+    @exit = wait.value
 
     puts "OUTPUT:  [#{@out}]" if @verbose
     puts "ERROR:   [#{@err}]" if @verbose
+    puts "EXIT:    [#{@exit.inspect}]" if @verbose
     puts "PWD:     [#{Dir.pwd}]" if @verbose
   end
 

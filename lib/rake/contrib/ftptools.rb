@@ -5,6 +5,7 @@
 
 require 'date'
 require 'net/ftp'
+require 'rake/file_list'
 
 module Rake # :nodoc:
 
@@ -127,8 +128,7 @@ module Rake # :nodoc:
     # Upload all files matching +wildcard+ to the uploader's root
     # path.
     def upload_files(wildcard)
-      fail "OUCH"
-      Rake.glob(wildcard).each do |fn|
+      FileList.glob(wildcard).each do |fn|
         upload(fn)
       end
     end

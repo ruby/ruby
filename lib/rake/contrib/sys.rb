@@ -10,6 +10,7 @@ begin
 rescue LoadError
 end
 require 'rbconfig'
+require 'rake/file_list'
 
 ######################################################################
 # Sys provides a number of file manipulation tools for the convenience
@@ -27,7 +28,7 @@ module Sys
   # Install all the files matching +wildcard+ into the +dest_dir+
   # directory.  The permission mode is set to +mode+.
   def install(wildcard, dest_dir, mode)
-    Rake.glob(wildcard).each do |fn|
+    FileList.glob(wildcard).each do |fn|
       File.install(fn, dest_dir, mode, $verbose)
     end
   end
@@ -81,7 +82,7 @@ module Sys
   # recursively delete directories.
   def delete(*wildcards)
     wildcards.each do |wildcard|
-      Rake.glob(wildcard).each do |fn|
+      FileList.glob(wildcard).each do |fn|
         if File.directory?(fn)
           log "Deleting directory #{fn}"
           Dir.delete(fn)
@@ -96,10 +97,10 @@ module Sys
   # Recursively delete all files and directories matching +wildcard+.
   def delete_all(*wildcards)
     wildcards.each do |wildcard|
-      Rake.glob(wildcard).each do |fn|
+      FileList.glob(wildcard).each do |fn|
         next if ! File.exist?(fn)
         if File.directory?(fn)
-          Rake.glob("#{fn}/*").each do |subfn|
+          FileList.glob("#{fn}/*").each do |subfn|
             next if subfn=='.' || subfn=='..'
             delete_all(subfn)
           end
@@ -161,7 +162,7 @@ module Sys
   # Perform a block with each file matching a set of wildcards.
   def for_files(*wildcards)
     wildcards.each do |wildcard|
-      Rake.glob(wildcard).each do |fn|
+      FileList.glob(wildcard).each do |fn|
         yield(fn)
       end
     end
@@ -172,7 +173,7 @@ module Sys
   private # ----------------------------------------------------------
 
   def for_matching_files(wildcard, dest_dir)
-    Rake.glob(wildcard).each do |fn|
+    FileList.glob(wildcard).each do |fn|
       dest_file = File.join(dest_dir, fn)
       parent = File.dirname(dest_file)
       makedirs(parent) if ! File.directory?(parent)

@@ -8,6 +8,8 @@ require 'rake'
 
 task :phony
 
-def (Rake::Task[:phony]).timestamp
-  Time.at 0
+Rake::Task[:phony].tap do |task|
+  def task.timestamp # :nodoc:
+    Time.at 0
+  end
 end

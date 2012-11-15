@@ -1,3 +1,11 @@
+Fri Nov 16 07:23:18 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rake*:  Updated to rake 0.9.4
+	  http://rake.rubyforge.org/doc/release_notes/rake-0_9_4_rdoc.html for
+	  a list of changes in 0.9.4.
+	* test/rake*:  ditto
+	* NEWS:  ditto
+
 Fri Nov 16 06:58:52 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rake*:  Updated to rake 0.9.3.  See

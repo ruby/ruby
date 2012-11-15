@@ -96,9 +96,12 @@ module Rake
       desc "Run tests" + (@name==:test ? "" : " for #{@name}")
       task @name do
         FileUtilsExt.verbose(@verbose) do
-          ruby "#{ruby_opts_string} #{run_code} #{file_list_string} #{option_list}" do |ok, status|
+          args = "#{ruby_opts_string} #{run_code} #{file_list_string} #{option_list}"
+          ruby args do |ok, status|
             if !ok && status.respond_to?(:signaled?) && status.signaled?
               raise SignalException.new(status.termsig)
+            elsif !ok
+              fail "Command failed with status (#{status.exitstatus}): [ruby #{args}]"
             end
           end
         end
