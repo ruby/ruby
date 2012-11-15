@@ -5,11 +5,8 @@ module Rake
   #
   class MultiTask < Task
     private
-    def invoke_prerequisites(args, invocation_chain)
-      threads = @prerequisites.collect { |p|
-        Thread.new(p) { |r| application[r, @scope].invoke_with_call_chain(args, invocation_chain) }
-      }
-      threads.each { |t| t.join }
+    def invoke_prerequisites(task_args, invocation_chain) # :nodoc:
+      invoke_prerequisites_concurrently(task_args, invocation_chain)
     end
   end
 

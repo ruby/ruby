@@ -181,6 +181,14 @@ with all sufficient information, see the ChangeLog file.
   * extended method:
     * Pathname#find returns an enumerator if no block is given.
 
+* rake
+  * rake has been updated to version 0.9.3.
+
+    This version is backwards-compatible with previous rake versions and
+    contains many bug fixes.  See
+    http://rake.rubyforge.org/doc/release_notes/rake-0_9_3_rdoc.html for a list
+    of changes in rake 0.9.3
+
 * resolv
   * new methods:
     * Resolv::DNS#timeouts=

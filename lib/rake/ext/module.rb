@@ -36,4 +36,4 @@ class Module
       rake_original_const_missing(const_name)
     end
   end
-end
+end unless defined? Rake::REDUCE_COMPAT

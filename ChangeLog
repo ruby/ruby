@@ -1,3 +1,12 @@
+Fri Nov 16 06:58:52 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rake*:  Updated to rake 0.9.3.  See
+	  http://rake.rubyforge.org/doc/release_notes/rake-0_9_3_rdoc.html for
+	  a list of changes in 0.9.3.
+	* test/rake*:  ditto
+        * bin/rake:  ditto
+	* NEWS:  ditto
+
 Thu Nov 15 22:39:32 2012  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* range.c (range_bsearch): fix some bugs: a documentation bug, a wrong

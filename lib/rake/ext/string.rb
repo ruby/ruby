@@ -4,6 +4,7 @@ require 'rake/ext/core'
 # Rake extension methods for String.
 #
 class String
+
   rake_extension("ext") do
     # Replace the file extension with +newext+.  If there is no extension on
     # the string, append the new extension to the end.  If the new extension
@@ -163,5 +164,5 @@ class String
       result
     end
   end
-end # class String
 
+end

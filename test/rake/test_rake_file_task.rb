@@ -41,6 +41,23 @@ class TestRakeFileTask < Rake::TestCase
     assert ! t1.needed?, "Should not need to rebuild new file because of old"
   end
 
+  def test_file_times_new_depend_on_regular_task_timestamps
+    load_phony
+
+    name = "dummy"
+    task name
+
+    create_timed_files(NEWFILE)
+
+    t1 = Rake.application.intern(FileTask, NEWFILE).enhance([name])
+
+    assert t1.needed?, "depending on non-file task uses Time.now"
+
+    task(name => :phony)
+
+    assert ! t1.needed?, "unless the non-file task has a timestamp"
+  end
+
   def test_file_times_old_depends_on_new
     create_timed_files(OLDFILE, NEWFILE)
 
@@ -98,5 +115,8 @@ class TestRakeFileTask < Rake::TestCase
     assert( ! File.exist?(NEWFILE), "NEWFILE should be deleted")
   end
 
-end
+  def load_phony
+    load File.join(@orig_PWD, "lib/rake/phony.rb")
+  end
 
+end

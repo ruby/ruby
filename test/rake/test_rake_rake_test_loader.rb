@@ -10,7 +10,7 @@ class TestRakeRakeTestLoader < Rake::TestCase
 
     ARGV.replace %w[foo.rb test_*.rb -v]
 
-    load File.expand_path('../../../lib/rake/rake_test_loader.rb', __FILE__)
+    load File.join(@orig_PWD, 'lib/rake/rake_test_loader.rb')
 
     assert_equal %w[-v], ARGV
   ensure

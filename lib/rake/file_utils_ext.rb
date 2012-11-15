@@ -21,12 +21,13 @@ module Rake
     $fileutils_verbose = true
     $fileutils_nowrite = false
 
-    FileUtils::OPT_TABLE.each do |name, opts|
+    FileUtils.commands.each do |name|
+      opts = FileUtils.options_of name
       default_options = []
-      if opts.include?(:verbose) || opts.include?("verbose")
+      if opts.include?("verbose")
         default_options << ':verbose => FileUtilsExt.verbose_flag'
       end
-      if opts.include?(:noop) || opts.include?("noop")
+      if opts.include?("noop")
         default_options << ':noop => FileUtilsExt.nowrite_flag'
       end
 

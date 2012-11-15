@@ -5,8 +5,8 @@ require 'open3'
 class TestRakeFunctional < Rake::TestCase
 
   def setup
-    @rake_path = File.expand_path("../../../bin/rake", __FILE__)
-    lib_path = File.expand_path("../../../lib", __FILE__)
+    @rake_path = File.expand_path("bin/rake")
+    lib_path = File.expand_path("lib")
     @ruby_options = ["-I#{lib_path}", "-I."]
     @verbose = ENV['VERBOSE']
 
@@ -415,6 +415,28 @@ class TestRakeFunctional < Rake::TestCase
   def test_file_list_is_requirable_separately
     ruby '-rrake/file_list', '-e', 'puts Rake::FileList["a"].size'
     assert_equal "1\n", @out
+  end
+
+  def can_detect_signals?
+    system "ruby -e 'Process.kill \"TERM\", $$'"
+    status = $?
+    if @verbose
+      puts "    SIG status = #{$?.inspect}"
+      puts "    SIG status.respond_to?(:signaled?) = #{$?.respond_to?(:signaled?).inspect}"
+      puts "    SIG status.signaled? = #{status.signaled?}" if status.respond_to?(:signaled?)
+    end
+    status.respond_to?(:signaled?) && status.signaled?
+  end
+
+  def test_signal_propagation_in_tests
+    if can_detect_signals?
+      rakefile_test_signal
+      rake
+      assert_match(/ATEST/, @out)
+      refute_match(/BTEST/, @out)
+    else
+      skip "Signal detect seems broken on this system"
+    end
   end
 
   private

@@ -29,10 +29,12 @@ class TestRakeApplicationOptions < Rake::TestCase
 
   def test_default_options
     opts = command_line
+    assert_nil opts.backtrace
     assert_nil opts.classic_namespace
     assert_nil opts.dryrun
     assert_nil opts.ignore_system
     assert_nil opts.load_system
+    assert_nil opts.always_multitask
     assert_nil opts.nosearch
     assert_equal ['rakelib'], opts.rakelib
     assert_nil opts.show_prereqs
@@ -40,6 +42,7 @@ class TestRakeApplicationOptions < Rake::TestCase
     assert_nil opts.show_tasks
     assert_nil opts.silent
     assert_nil opts.trace
+    assert_nil opts.thread_pool_size
     assert_equal ['rakelib'], opts.rakelib
     assert ! Rake::FileUtilsExt.verbose_flag
     assert ! Rake::FileUtilsExt.nowrite_flag
@@ -110,12 +113,30 @@ class TestRakeApplicationOptions < Rake::TestCase
     assert_equal :exit, @exit
   end
 
+  def test_jobs
+    flags(['--jobs', '4'], ['-j', '4']) do |opts|
+      assert_equal 4, opts.thread_pool_size
+    end
+    flags(['--jobs', 'asdas'], ['-j', 'asdas']) do |opts|
+      assert_equal 2, opts.thread_pool_size
+    end
+    flags('--jobs', '-j') do |opts|
+      assert_equal 2, opts.thread_pool_size
+    end
+  end
+
   def test_libdir
     flags(['--libdir', 'xx'], ['-I', 'xx'], ['-Ixx']) do |opts|
       $:.include?('xx')
     end
   ensure
     $:.delete('xx')
+  end
+
+  def test_multitask
+    flags('--multitask', '-m') do |opts|
+      assert_equal opts.always_multitask, true
+    end
   end
 
   def test_rakefile
@@ -125,7 +146,8 @@ class TestRakeApplicationOptions < Rake::TestCase
   end
 
   def test_rakelib
-    flags(['--rakelibdir', 'A:B:C'], ['--rakelibdir=A:B:C'], ['-R', 'A:B:C'], ['-RA:B:C']) do |opts|
+    dirs = %w(A B C).join(File::PATH_SEPARATOR)
+    flags(['--rakelibdir', dirs], ["--rakelibdir=#{dirs}"], ['-R', dirs], ["-R#{dirs}"]) do |opts|
       assert_equal ['A', 'B', 'C'], opts.rakelib
     end
   end
@@ -197,10 +219,74 @@ class TestRakeApplicationOptions < Rake::TestCase
 
   def test_trace
     flags('--trace', '-t') do |opts|
-      assert opts.trace
+      assert opts.trace, "should enable trace option"
+      assert opts.backtrace, "should enabled backtrace option"
+      assert_equal $stderr, opts.trace_output
       assert Rake::FileUtilsExt.verbose_flag
       assert ! Rake::FileUtilsExt.nowrite_flag
     end
+  end
+
+  def test_trace_with_stdout
+    flags('--trace=stdout', '-tstdout', '-t stdout') do |opts|
+      assert opts.trace, "should enable trace option"
+      assert opts.backtrace, "should enabled backtrace option"
+      assert_equal $stdout, opts.trace_output
+      assert Rake::FileUtilsExt.verbose_flag
+      assert ! Rake::FileUtilsExt.nowrite_flag
+    end
+  end
+
+  def test_trace_with_stderr
+    flags('--trace=stderr', '-tstderr', '-t stderr') do |opts|
+      assert opts.trace, "should enable trace option"
+      assert opts.backtrace, "should enabled backtrace option"
+      assert_equal $stderr, opts.trace_output
+      assert Rake::FileUtilsExt.verbose_flag
+      assert ! Rake::FileUtilsExt.nowrite_flag
+    end
+  end
+
+  def test_trace_with_error
+    ex = assert_raises(Rake::CommandLineOptionError) do
+      flags('--trace=xyzzy') do |opts| end
+    end
+    assert_match(/un(known|recognized).*\btrace\b.*xyzzy/i, ex.message)
+  end
+
+
+  def test_backtrace
+    flags('--backtrace') do |opts|
+      assert opts.backtrace, "should enable backtrace option"
+      assert_equal $stderr, opts.trace_output
+      assert ! opts.trace, "should not enable trace option"
+      assert ! Rake::FileUtilsExt.verbose_flag
+    end
+  end
+
+  def test_backtrace_with_stdout
+    flags('--backtrace=stdout') do |opts|
+      assert opts.backtrace, "should enable backtrace option"
+      assert_equal $stdout, opts.trace_output
+      assert ! opts.trace, "should not enable trace option"
+      assert ! Rake::FileUtilsExt.verbose_flag
+    end
+  end
+
+  def test_backtrace_with_stderr
+    flags('--backtrace=stderr') do |opts|
+      assert opts.backtrace, "should enable backtrace option"
+      assert_equal $stderr, opts.trace_output
+      assert ! opts.trace, "should not enable trace option"
+      assert ! Rake::FileUtilsExt.verbose_flag
+    end
+  end
+
+  def test_backtrace_with_error
+    ex = assert_raises(Rake::CommandLineOptionError) do
+      flags('--backtrace=xyzzy') do |opts| end
+    end
+    assert_match(/un(known|recognized).*\bbacktrace\b.*xyzzy/i, ex.message)
   end
 
   def test_trace_rules
@@ -213,10 +299,17 @@ class TestRakeApplicationOptions < Rake::TestCase
     flags('--tasks', '-T') do |opts|
       assert_equal :tasks, opts.show_tasks
       assert_equal(//.to_s, opts.show_task_pattern.to_s)
+      assert_equal nil, opts.show_all_tasks
     end
     flags(['--tasks', 'xyz'], ['-Txyz']) do |opts|
       assert_equal :tasks, opts.show_tasks
       assert_equal(/xyz/.to_s, opts.show_task_pattern.to_s)
+      assert_equal nil, opts.show_all_tasks
+    end
+    flags(['--tasks', 'xyz', '--comments']) do |opts|
+      assert_equal :tasks, opts.show_tasks
+      assert_equal(/xyz/.to_s, opts.show_task_pattern.to_s)
+      assert_equal false, opts.show_all_tasks
     end
   end
 
@@ -224,10 +317,17 @@ class TestRakeApplicationOptions < Rake::TestCase
     flags('--where', '-W') do |opts|
       assert_equal :lines, opts.show_tasks
       assert_equal(//.to_s, opts.show_task_pattern.to_s)
+      assert_equal true, opts.show_all_tasks
     end
     flags(['--where', 'xyz'], ['-Wxyz']) do |opts|
       assert_equal :lines, opts.show_tasks
       assert_equal(/xyz/.to_s, opts.show_task_pattern.to_s)
+      assert_equal true, opts.show_all_tasks
+    end
+    flags(['--where', 'xyz', '--comments'], ['-Wxyz', '--comments']) do |opts|
+      assert_equal :lines, opts.show_tasks
+      assert_equal(/xyz/.to_s, opts.show_task_pattern.to_s)
+      assert_equal false, opts.show_all_tasks
     end
   end
 
@@ -268,7 +368,7 @@ class TestRakeApplicationOptions < Rake::TestCase
         assert_equal opts.trace, $trace
         assert_equal opts.dryrun, $dryrun
         assert_equal opts.silent, $silent
-            end
+      end
     end
 
     assert_match(/deprecated/, err)
@@ -308,6 +408,17 @@ class TestRakeApplicationOptions < Rake::TestCase
     assert '12', ENV['TESTKEY']
   end
 
+  def test_rake_explicit_task_library
+    Rake.add_rakelib 'app/task', 'other'
+
+    libs = Rake.application.options.rakelib
+
+    assert libs.include?("app/task")
+    assert libs.include?("other")
+  end
+
+  private
+
   def flags(*sets)
     sets.each do |set|
       ARGV.clear
@@ -332,4 +443,3 @@ class TestRakeApplicationOptions < Rake::TestCase
     @app.options
   end
 end
-

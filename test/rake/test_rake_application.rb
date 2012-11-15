@@ -385,6 +385,18 @@ class TestRakeApplication < Rake::TestCase
     ARGV.clear
   end
 
+  def test_bad_run_with_backtrace
+    @app.intern(Rake::Task, "default").enhance { fail }
+    ARGV.clear
+    ARGV << '-f' << '-s' << '--backtrace'
+    assert_raises(SystemExit) {
+      _, err = capture_io { @app.run }
+      refute_match(/see full trace/, err)
+    }
+  ensure
+    ARGV.clear
+  end
+
   def test_run_with_bad_options
     @app.intern(Rake::Task, "default").enhance { fail }
     ARGV.clear
@@ -486,4 +498,3 @@ class TestRakeApplication < Rake::TestCase
   end
 
 end
-

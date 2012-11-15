@@ -47,7 +47,7 @@ module Rake
       keys.map { |k| lookup(k) }
     end
 
-    def method_missing(sym, *args, &block)
+    def method_missing(sym, *args)
       lookup(sym.to_sym)
     end
 

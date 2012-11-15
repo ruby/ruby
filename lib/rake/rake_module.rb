@@ -24,6 +24,21 @@ module Rake
     def load_rakefile(path)
       load(path)
     end
+
+    # Add files to the rakelib list
+    def add_rakelib(*files)
+      application.options.rakelib ||= []
+      files.each do |file|
+        application.options.rakelib << file
+      end
+    end
+
+    # Get a sorted list of files matching the pattern. This method
+    # should be prefered to Dir[pattern] and Dir.glob[pattern] because
+    # the files returned are guaranteed to be sorted.
+    def glob(pattern, *args)
+      Dir.glob(pattern, *args).sort
+    end
   end
 
 end

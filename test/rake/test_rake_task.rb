@@ -104,10 +104,12 @@ class TestRakeTask < Rake::TestCase
   end
 
   def test_clear
+    desc "a task"
     t = task("t" => "a") { }
     t.clear
     assert t.prerequisites.empty?, "prerequisites should be empty"
     assert t.actions.empty?, "actions should be empty"
+    assert_nil t.comment, "comments should be empty"
   end
 
   def test_clear_prerequisites
@@ -121,6 +123,22 @@ class TestRakeTask < Rake::TestCase
     t = task("t") { }
     t.clear_actions
     assert t.actions.empty?, "actions should be empty"
+  end
+
+  def test_clear_comments
+    desc "the original foo"
+    task :foo => [:x] do
+      # Dummy action
+    end
+
+    task(:foo).clear_comments
+
+    desc "a slightly different foo"
+    task :foo
+
+    assert_equal "a slightly different foo", task(:foo).comment
+    assert_equal ["x"], task(:foo).prerequisites
+    assert_equal 1, task(:foo).actions.size
   end
 
   def test_find
@@ -223,6 +241,38 @@ class TestRakeTask < Rake::TestCase
     assert_in_delta now + 10, a.timestamp, 0.1, 'computer too slow?'
   end
 
+  def test_always_multitask
+    mx = Mutex.new
+    result = []
+
+    t_a = task(:a) do |t|
+      sleep 0.02
+      mx.synchronize{ result << t.name }
+    end
+
+    t_b = task(:b) do |t|
+      mx.synchronize{ result << t.name }
+    end
+
+    t_c = task(:c => [:a,:b]) do |t|
+      mx.synchronize{ result << t.name }
+    end
+
+    t_c.invoke
+
+    # task should always run in order
+    assert_equal ['a', 'b', 'c'], result
+
+    [t_a, t_b, t_c].each { |t| t.reenable }
+    result.clear
+
+    Rake.application.options.always_multitask = true
+    t_c.invoke
+
+    # with multitask, task 'b' should grab the mutex first
+    assert_equal ['b', 'a', 'c'], result
+  end
+
   def test_investigation_output
     t1 = task(:t1 => [:t2, :t3]) { |t| runlist << t.name; 3321 }
     task(:t2)
@@ -264,4 +314,3 @@ class TestRakeTask < Rake::TestCase
     assert_equal "HI", t.comment
   end
 end
-

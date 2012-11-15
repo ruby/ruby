@@ -123,6 +123,7 @@ module Rake
     def clear
       clear_prerequisites
       clear_actions
+      clear_comments
       self
     end
 
@@ -138,6 +139,13 @@ module Rake
       self
     end
 
+    # Clear the existing comments on a rake task.
+    def clear_comments
+      @full_comment = nil
+      @comment = nil
+      self
+    end
+
     # Invoke the task if it is needed.  Prerequisites are invoked first.
     def invoke(*args)
       task_args = TaskArguments.new(arg_names, args)
@@ -150,7 +158,7 @@ module Rake
       new_chain = InvocationChain.append(self, invocation_chain)
       @lock.synchronize do
         if application.options.trace
-          $stderr.puts "** Invoke #{name} #{format_trace_flags}"
+          application.trace "** Invoke #{name} #{format_trace_flags}"
         end
         return if @already_invoked
         @already_invoked = true
@@ -171,10 +179,24 @@ module Rake
 
     # Invoke all the prerequisites of a task.
     def invoke_prerequisites(task_args, invocation_chain) # :nodoc:
-      prerequisite_tasks.each { |prereq|
-        prereq_args = task_args.new_scope(prereq.arg_names)
-        prereq.invoke_with_call_chain(prereq_args, invocation_chain)
-      }
+      if application.options.always_multitask
+        invoke_prerequisites_concurrently(task_args, invocation_chain)
+      else
+        prerequisite_tasks.each { |prereq|
+          prereq_args = task_args.new_scope(prereq.arg_names)
+          prereq.invoke_with_call_chain(prereq_args, invocation_chain)
+        }
+      end
+    end
+
+    # Invoke all the prerequisites of a task in parallel.
+    def invoke_prerequisites_concurrently(args, invocation_chain) # :nodoc:
+      futures = @prerequisites.collect do |p|
+        application.thread_pool.future(p) do |r|
+          application[r, @scope].invoke_with_call_chain(args, invocation_chain)
+        end
+      end
+      futures.each { |f| f.value }
     end
 
     # Format the trace flags for display.
@@ -190,11 +212,11 @@ module Rake
     def execute(args=nil)
       args ||= EMPTY_TASK_ARGS
       if application.options.dryrun
-        $stderr.puts "** Execute (dry run) #{name}"
+        application.trace "** Execute (dry run) #{name}"
         return
       end
       if application.options.trace
-        $stderr.puts "** Execute #{name}"
+        application.trace "** Execute #{name}"
       end
       application.enhance_with_matching_rule(name) if @actions.empty?
       @actions.each do |act|
