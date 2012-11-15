@@ -1,3 +1,14 @@
+Thu Nov 15 13:20:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* man/erb.1: Fix grammar and copyright dates
+	* man/goruby.1: ditto
+	* man/irb.1: ditto
+	* man/rake.1: ditto
+	* man/ri.1: ditto
+	* man/ruby.1: ditto
+	  Patch by Arthur Gunn
+	  [Fixes Github #210]
+
 Thu Nov 15 11:35:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* man/ruby.1: Grammar edits for man page
