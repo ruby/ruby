@@ -195,7 +195,7 @@ ASCII-8BIT (BINARY)
 .It Fl S
 Makes Ruby use the
 .Ev PATH
-environment variable to search for script, unless if its name begins
+environment variable to search for script, unless its name begins
 with a slash.  This is used to emulate
 .Li #!
 on machines that don't support it, in the following manner:
@@ -213,7 +213,7 @@ Sets the default value for internal encodings
 .Pf ( Li "Encoding.default_internal" ) to UTF-8.
 .Pp
 .It Fl W Ns Op Ar level=2
-Turns on verbose mode at the specified level, without printing version
+Turns on verbose mode at the specified level without printing version
 message at the beginning. The level can be;
 .Bl -hang -offset indent
 .It Sy 0
@@ -334,8 +334,7 @@ On some systems
 .Li "$0"
 does not always contain the full pathname, so you need the
 .Fl S
-switch to tell Ruby to search for the script if necessary.  To handle
-embedded spaces or such.  A better construct than
+switch to tell Ruby to search for the script if necessary (to handle embedded spaces and such).  A better construct than
 .Li "$*"
 would be
 .Li ${1+"$@"} ,
@@ -343,7 +342,7 @@ but it does not work if the script is being interpreted by
 .Xr csh 1 .
 .Pp
 .It Fl v
-Enables verbose mode.  Ruby will print its version at the beginning,
+Enables verbose mode.  Ruby will print its version at the beginning
 and set the variable
 .Li "$VERBOSE"
 to true.  Some methods print extra messages if this variable is true.
@@ -378,7 +377,7 @@ DO NOT USE.
 .Pp
 Turns on compiler debug mode.  Ruby will print a bunch of internal
 state messages during compiling scripts.  You don't have to specify
-this switch, unless you are going to debug the Ruby interpreter.
+this switch unless you are going to debug the Ruby interpreter.
 .Pp
 .It Fl -disable- Ns Ar FEATURE
 .It Fl -enable- Ns Ar FEATURE
@@ -417,7 +416,7 @@ disassembled instructions
 .Pp
 .El
 .Pp
-You don't have to specify this switch, unless you are going to debug the Ruby interpreter.
+You don't have to specify this switch unless you are going to debug the Ruby interpreter.
 .Pp
 .It Fl -verbose
 Enables verbose mode without printing version message at the
