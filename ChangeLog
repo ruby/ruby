@@ -1,3 +1,8 @@
+Thu Nov 15 11:35:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* man/ruby.1: Grammar edits for man page
+	  Based on a patch by Michael Endsley [Fixes Github #183]
+
 Thu Nov 15 00:47:20 2012  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (rb_ary_bsearch): add Array#bsearch for binary search.
