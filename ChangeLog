@@ -1,3 +1,8 @@
+Thu Nov 15 22:41:57 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_exec.h (GENTRY): GENTRY should be pointer size.
+	  A patch by yoshidam (Yoshida Masato) [Bug #7332].
+
 Thu Nov 15 13:20:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* man/erb.1: Fix grammar and copyright dates
