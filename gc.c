@@ -1673,7 +1673,9 @@ mark_m_tbl(rb_objspace_t *objspace, st_table *tbl)
 static int
 free_method_entry_i(ID key, rb_method_entry_t *me, st_data_t data)
 {
-    rb_free_method_entry(me);
+    if (!me->mark) {
+	rb_free_method_entry(me);
+    }
     return ST_CONTINUE;
 }
 
