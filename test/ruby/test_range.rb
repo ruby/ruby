@@ -417,6 +417,9 @@ class TestRange < Test::Unit::TestCase
     v = (-inf..0).bsearch {|x| x > -Float::MAX }
     assert_operator(-Float::MAX, :<, v)
     assert_equal(nil, v.infinite?)
+
+    assert_in_delta(1.0, (0.0..inf).bsearch {|x| Math.log(x) >= 0 })
+    assert_in_delta(7.0, (0.0..10).bsearch {|x| 7.0 - x })
   end
 
   def test_bsearch_for_bignum

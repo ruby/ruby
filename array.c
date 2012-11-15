@@ -2451,7 +2451,7 @@ rb_ary_bsearch(VALUE ary)
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
 	    switch (rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0))) {
 		case 0: return val;
-		case 1: smaller = 1;
+		case 1: smaller = 1; break;
 		case -1: smaller = 0;
 	    }
 	}

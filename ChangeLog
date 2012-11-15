@@ -1,3 +1,14 @@
+Thu Nov 15 22:39:32 2012  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* range.c (range_bsearch): fix some bugs: a documentation bug, a wrong
+	  condition, missed break in switch/case, and workaround for GCC
+	  optimization. See [ruby-core:49364] in detail.  A great patch from
+	  Heesob Park. [Bug #7352] [Feature #4766]
+
+	* array.c (rb_ary_bsearch): fix similar bug (missed break).
+
+	* test/ruby/test_range.rb: add two test cases for above.
+
 Thu Nov 15 22:41:57 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_exec.h (GENTRY): GENTRY should be pointer size.

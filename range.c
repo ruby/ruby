@@ -513,9 +513,9 @@ range_step(int argc, VALUE *argv, VALUE range)
  *  satisfies the condition, it returns nil.
  *
  *     ary = [0, 100, 100, 100, 200]
- *     (0..4).bsearch {|i| 100 - i } #=> 1, 2 or 3
- *     (0..4).bsearch {|i| 300 - i } #=> nil
- *     (0..4).bsearch {|i|  50 - i } #=> nil
+ *     (0..4).bsearch {|i| 100 - ary[i] } #=> 1, 2 or 3
+ *     (0..4).bsearch {|i| 300 - ary[i] } #=> nil
+ *     (0..4).bsearch {|i|  50 - ary[i] } #=> nil
  *
  *  You must not mix the two modes at a time; the block must always
  *  return either true/false, or always return a number.  It is
@@ -543,10 +543,10 @@ range_bsearch(VALUE range)
 	    smaller = 0; \
 	} \
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) { \
-	    switch (rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0)) < 0) { \
+	    switch (rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0))) { \
 		case 0: return val; \
-		case 1: smaller = 1; \
-		case -1: smaller = 0; \
+		case -1: smaller = 1; break; \
+		case 1: smaller = 0; \
 	    } \
 	} \
 	else { \
@@ -586,6 +586,7 @@ range_bsearch(VALUE range)
 	double high = RFLOAT_VALUE(rb_Float(end));
 	double mid, org_high;
 	int count;
+	org_high = high;
 #ifdef FLT_RADIX
 #ifdef DBL_MANT_DIG
 #define BSEARCH_MAXCOUNT (((FLT_RADIX) - 1) * (DBL_MANT_DIG + DBL_MAX_EXP) + 100)
@@ -646,7 +647,7 @@ range_bsearch(VALUE range)
 	}
 	if (isinf(low) && low < 0) {
 	    /* the range is (-INFINITY..high) */
-	    double nlow = -1.0, dec;
+	    volatile double nlow = -1.0, dec;
 	    if (nlow > high) nlow = high;
 	    count = BSEARCH_MAXCOUNT;
 	    /* find lower bound by checking low, low*2, low*4, ... */
@@ -697,7 +698,6 @@ range_bsearch(VALUE range)
     binsearch:
 	/* find the desired value within low..high */
 	/* where low is not -INFINITY and high is not INFINITY */
-	org_high = high;
 	count = BSEARCH_MAXCOUNT;
 	while (low < high && count >= 0) {
 	    mid = low + ((high - low) / 2);
