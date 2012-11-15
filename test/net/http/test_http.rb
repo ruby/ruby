@@ -426,7 +426,7 @@ end
 class TestNetHTTP_v1_2 < Test::Unit::TestCase
   CONFIG = {
     'host' => '127.0.0.1',
-    'port' => 10081,
+    'port' => 0,
     'proxy_host' => nil,
     'proxy_port' => nil,
   }
@@ -444,7 +444,7 @@ end
 class TestNetHTTP_v1_2_chunked < Test::Unit::TestCase
   CONFIG = {
     'host' => '127.0.0.1',
-    'port' => 10081,
+    'port' => 0,
     'proxy_host' => nil,
     'proxy_port' => nil,
     'chunked' => true,
@@ -476,7 +476,7 @@ end
 class TestNetHTTPContinue < Test::Unit::TestCase
   CONFIG = {
     'host' => '127.0.0.1',
-    'port' => 10081,
+    'port' => 0,
     'proxy_host' => nil,
     'proxy_port' => nil,
     'chunked' => true,

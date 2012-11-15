@@ -24,7 +24,7 @@ class TestNetHTTPS < Test::Unit::TestCase
 
   CONFIG = {
     'host' => '127.0.0.1',
-    'port' => 10082, # different from test_http.rb
+    'port' => 0,
     'proxy_host' => nil,
     'proxy_port' => nil,
     'ssl_enable' => true,
