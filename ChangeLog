@@ -266,7 +266,7 @@ Tue Nov 13 06:50:02 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* vm_exec.c: expose instruction number to instruction name function.
 
-	* vm_insnshelper.c: add function entry and exit probes for cfunc
+	* vm_insnhelper.c: add function entry and exit probes for cfunc
 	  methods.
 
 	* vm_insnhelper.h: vm usage information is always collected, so
