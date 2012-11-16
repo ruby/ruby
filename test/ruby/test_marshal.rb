@@ -492,4 +492,11 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(Rational(1, 2), Marshal.load("\x04\bU:\rRational[\ai\x06i\a"))
     assert_raise(ArgumentError){Marshal.load("\x04\bU:\rRational[\bi\x00i\x00i\x00")}
   end
+
+  def test_marshal_flonum_reference
+    bug7348 = '[ruby-core:49323]'
+    e = []
+    ary = [ [2.0, e], [e] ]
+    assert_equal(ary, Marshal.load(Marshal.dump(ary)), bug7348)
+  end
 end

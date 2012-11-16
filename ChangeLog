@@ -1,3 +1,10 @@
+Sat Nov 17 00:50:23 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* marshal.c (w_object): add flonum to arg->data to keep reference index
+	  consistency. [ruby-core:49323] [Bug #7348]
+
+	* test/ruby/test_marshal.rb: add a test for above.
+
 Sat Nov 17 00:40:25 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (incs): dist files need probes.dmyh.

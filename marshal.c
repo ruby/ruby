@@ -637,6 +637,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	w_symbol(SYM2ID(obj), arg);
     }
     else if (FLONUM_P(obj)) {
+	st_add_direct(arg->data, obj, arg->data->num_entries);
 	w_byte(TYPE_FLOAT, arg);
 	w_float(RFLOAT_VALUE(obj), arg);
     }
