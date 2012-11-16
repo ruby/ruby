@@ -1,3 +1,8 @@
+Fri Nov 16 10:22:52 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/rake/helper.rb (Rake::TestCase#setup): @orig_PWD shouldn't be
+	  Dir.pwd when the build directory is different from source directory.
+
 Fri Nov 16 09:41:08 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rake/version.rb:  workaround fix to build. see #7366
