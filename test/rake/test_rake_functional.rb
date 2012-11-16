@@ -5,8 +5,8 @@ require 'open3'
 class TestRakeFunctional < Rake::TestCase
 
   def setup
-    @rake_path = File.expand_path("bin/rake")
-    lib_path = File.expand_path("lib")
+    @rake_path = File.expand_path("../../../bin/rake", __FILE__)
+    lib_path = File.expand_path("../../../lib", __FILE__)
     @ruby_options = ["-I#{lib_path}", "-I."]
     @verbose = ENV['VERBOSE']
 

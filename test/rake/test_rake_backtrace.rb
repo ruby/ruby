@@ -4,8 +4,8 @@ require 'open3'
 class TestRakeBacktrace < Rake::TestCase
   # TODO: factor out similar code in test_rake_functional.rb
   def rake(*args)
-    lib = File.join(@orig_PWD, "lib")
-    bin_rake = File.join(@orig_PWD, "bin", "rake")
+    lib = File.expand_path('../../../lib', __FILE__)
+    bin_rake = File.expand_path('../../../bin/rake', __FILE__)
     Open3.popen3(RUBY, "-I", lib, bin_rake, *args) { |_, _, err, _| err.read }
   end
 

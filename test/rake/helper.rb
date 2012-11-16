@@ -31,7 +31,7 @@ class Rake::TestCase < MiniTest::Unit::TestCase
   def setup
     ARGV.clear
 
-    @orig_PWD = File.expand_path('../../..', __FILE__)
+    @orig_PWD = Dir.pwd
     @orig_APPDATA      = ENV['APPDATA']
     @orig_HOME         = ENV['HOME']
     @orig_HOMEDRIVE    = ENV['HOMEDRIVE']

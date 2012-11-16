@@ -1,3 +1,11 @@
+Fri Nov 16 12:36:47 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/rake/helper.rb (Rake::TestCase#setup): revert r37669.
+	  @orig_PWD should be the original pwd.
+
+	* test/rake/test_*.rb: don't use @orig_PWD to load libraries.
+	  It should be specified with relative path from the file.
+
 Fri Nov 16 10:22:52 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/rake/helper.rb (Rake::TestCase#setup): @orig_PWD shouldn't be
