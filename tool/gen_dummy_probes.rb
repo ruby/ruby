@@ -1,4 +1,5 @@
 #!/usr/bin/ruby
+# -*- coding: us-ascii -*-
 
 text = ARGF.read
 text.upcase!
@@ -7,7 +8,7 @@ text.upcase!
 text.gsub!(/^#PRAGMA.*$/, '')
 
 # replace the provider section with the start of the header file
-text.gsub!(/PROVIDER RUBY \{/, "#ifndef\t_PROBES_H\n#define\t_PROBES_H")
+text.gsub!(/PROVIDER RUBY \{/, "#ifndef\t_PROBES_H\n#define\t_PROBES_H\n#define DTRACE_PROBES_DISABLED 1\n")
 
 # finish up the #ifndef sandwich
 text.gsub!(/\};/, "#endif\t/* _PROBES_H */")

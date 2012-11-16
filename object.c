@@ -1686,12 +1686,14 @@ rb_obj_alloc(VALUE klass)
 		 klass);
     }
 
+#if !defined(DTRACE_PROBES_DISABLED) || !DTRACE_PROBES_DISABLED
     if (RUBY_DTRACE_OBJECT_CREATE_ENABLED()) {
         const char * file = rb_sourcefile();
         RUBY_DTRACE_OBJECT_CREATE(rb_class2name(klass),
 				  file ? file : "",
 				  rb_sourceline());
     }
+#endif
 
     obj = (*allocator)(klass);
 
