@@ -662,6 +662,11 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal("#{DRIVE}/dir", File.expand_path("#{DRIVE}/./dir"))
   end
 
+  def test_expand_path_does_not_expand_wildcard
+    assert_equal("#{DRIVE}/*", File.expand_path("./*", "#{DRIVE}/"))
+    assert_equal("#{Dir.pwd}/*", File.expand_path("./*", Dir.pwd))
+  end if DRIVE
+
   def test_expand_path_does_not_modify_the_string_argument
     str = "./a/b/../c"
     assert_equal("#{Dir.pwd}/a/c", File.expand_path(str, Dir.pwd))

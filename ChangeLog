@@ -1,3 +1,10 @@
+Sat Nov 17 07:35:15 2012  Luis Lavena  <luislavena@gmail.com>
+
+	* win32/file.c (replace_to_long_name): skip automatic path expansion
+	  when wildcard character is used.  [ruby-core:49451] [Bug #7374]
+
+	* test/ruby/test_file_exhaustive.rb: add a test for above.
+
 Sat Nov 17 00:50:23 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* marshal.c (w_object): add flonum to arg->data to keep reference index
