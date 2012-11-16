@@ -170,7 +170,7 @@ showconfig:
 exts: build-ext
 
 EXTS_MK = exts.mk
-$(EXTS_MK): $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)
+$(EXTS_MK): $(MKFILES) all-incs $(PREP) $(RBCONFIG) $(LIBRUBY)
 	$(ECHO) generating makefile $@
 	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$(EXTS_MK) $(EXTMK_ARGS) configure
 
@@ -179,7 +179,7 @@ configure-ext: $(EXTS_MK)
 build-ext: $(EXTS_MK)
 	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS) $(EXTSTATIC) LIBRUBY_EXTS=$(LIBRUBY_EXTS) ENCOBJS="$(ENCOBJS)"
 
-$(MKMAIN_CMD): $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY)
+$(MKMAIN_CMD): $(MKFILES) all-incs $(PREP) $(RBCONFIG) $(LIBRUBY)
 	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$@ $(EXTMK_ARGS)
 
 prog: program wprogram
@@ -844,6 +844,7 @@ srcs-enc: $(ENC_MK)
 	$(ECHO) making srcs under enc
 	$(Q) $(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
 
+all-incs: incs
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(VPATH)}known_errors.inc \
       $(srcdir)/revision.h $(REVISION_H) enc/unicode/name2ctype.h {$(VPATH)}id.h
 

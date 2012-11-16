@@ -1,4 +1,7 @@
-Fri Nov 16 17:30:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov 16 17:56:47 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (incs): probes.h is a platform dependent file, so it
+	  cannot be a part of prereq target.  move it to all-incs.
 
 	* configure.in (DTRACE): move after AC_PROG_CC since cross_compiling
 	  is set in it.
