@@ -1,4 +1,7 @@
-Fri Nov 16 16:24:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov 16 17:30:50 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (DTRACE): move after AC_PROG_CC since cross_compiling
+	  is set in it.
 
 	* configure.in (DTRACE): ignore non-prefixed version if
 	  cross-compiling.
