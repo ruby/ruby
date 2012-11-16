@@ -1,3 +1,8 @@
+Fri Nov 16 15:42:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, win32/Makefile.sub (probes.h): fix copying dmyprobes.h
+	  path when outplace-build.
+
 Fri Nov 16 15:27:36 2012  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* lib/net/pop.rb (POP3.certs): fix typo in comment.

@@ -1049,7 +1049,8 @@ lex.c: {$(srcdir)}lex.c.blt
 	copy $(?:/=\) $@
 
 probes.h: dmyprobes.h
-	copy dmyprobes.h probes.h
+	@$(ECHO) copying probes.h
+	$(Q) $(CP) $(srcdir)\dmyprobes.h probes.h
 
 enc/unicode/name2ctype.h: {$(srcdir)}enc/unicode/name2ctype.h.blt
 	@if not exist $(@D:/=\) md $(@D:/=\)

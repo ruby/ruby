@@ -328,7 +328,7 @@ probes.h: dmyprobes.h
 	  sed -e 's/RUBY_/RUBY_DTRACE_/g' $@.tmp | sed -e 's/PROBES_H_TMP/PROBES_H/g' >$@; \
 	  $(RM) $@.tmp; \
 	else \
-	  $(CP) dmyprobes.h probes.h; \
+	  $(CP) $(srcdir)/dmyprobes.h probes.h; \
 	fi
 
 clean-local::
