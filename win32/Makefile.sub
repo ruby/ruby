@@ -291,6 +291,8 @@ DEFAULT_PRELUDES = $(NO_GEM_PRELUDE)
 DEFAULT_PRELUDES = $(YES_GEM_PRELUDE)
 !endif
 
+DTRACE_EXT = dmyh
+
 !if !defined(STACK)
 !if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
 STACK = 0x400000
@@ -331,6 +333,9 @@ INSTALLED_LIST= .installed.list
 MKMAIN_CMD    = mkmain.bat
 
 SRC_FILE = $(<:\=/)
+OS_SRC_FILE = $(<:/=\)
+DEST_FILE = $(@:\=/)
+OS_DEST_FILE = $(@:/=\)
 
 !if !defined(WINMAINOBJ)
 WINMAINOBJ    = winmain.$(OBJEXT)
@@ -1047,10 +1052,6 @@ $(ruby_pc): $(RBCONFIG)
 
 lex.c: {$(srcdir)}lex.c.blt
 	copy $(?:/=\) $@
-
-probes.h: dmyprobes.h
-	@$(ECHO) copying probes.h
-	$(Q) $(CP) $(srcdir)\dmyprobes.h probes.h
 
 enc/unicode/name2ctype.h: {$(srcdir)}enc/unicode/name2ctype.h.blt
 	@if not exist $(@D:/=\) md $(@D:/=\)

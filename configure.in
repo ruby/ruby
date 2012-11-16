@@ -396,11 +396,11 @@ AS_CASE(["$target_os"],
 [freebsd*], [DTRACE=]
 )
 if test -n "$DTRACE"; then
-    DTRACE_AVAILABLE=yes
+    DTRACE_EXT=d
 else
-    DTRACE_AVAILABLE=no
+    DTRACE_EXT=dmyh
 fi
-AC_SUBST(DTRACE_AVAILABLE)
+AC_SUBST(DTRACE_EXT)
 
 RUBY_PROG_GNU_LD
 RUBY_CPPOUTFILE

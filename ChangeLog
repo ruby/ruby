@@ -1,3 +1,8 @@
+Sat Nov 17 00:22:32 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, common.mk, configure.in, win32/Makefile.sub (probes.h):
+	  select generating with dtrace or copying dummy file by suffix rules.
+
 Fri Nov 16 19:24:10 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_call_without_gvl2): change the parameter of

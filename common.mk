@@ -2,7 +2,7 @@ bin: $(PROGRAM) $(WPROGRAM)
 lib: $(LIBRUBY)
 dll: $(LIBRUBY_SO)
 
-.SUFFIXES: .inc .h .c .y .i .d
+.SUFFIXES: .inc .h .c .y .i .$(DTRACE_EXT)
 
 # V=0 quiet, V=1 verbose.  other values don't work.
 V = 0
@@ -460,7 +460,7 @@ distclean-platform: clean-platform
 
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 realclean-local:: distclean-local
-	$(Q)$(RM) parse.c parse.h lex.c newline.c revision.h dmyprobes.h
+	$(Q)$(RM) parse.c parse.h lex.c newline.c revision.h probes.dmyh
 realclean-ext::
 realclean-golf: distclean-golf
 realclean-capi: PHONY
@@ -887,8 +887,12 @@ golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) $(srcdir)/prelude.
 	$(ECHO) generating $@
 	$(Q) $(COMPILE_PRELUDE) $(srcdir)/golf_prelude.rb $@
 
-$(srcdir)/dmyprobes.h: {$(srcdir)}probes.d
+$(srcdir)/probes.dmyh: {$(srcdir)}probes.d
 	$(BASERUBY) $(srcdir)/tool/gen_dummy_probes.rb $(srcdir)/probes.d > $@
+
+{$(srcdir)}.dmyh.h:
+	@$(ECHO) copying dummy $(DEST_FILE)
+	$(Q) $(CP) $(OS_SRC_FILE) $(OS_DEST_FILE)
 
 prereq: incs srcs preludes PHONY
 
