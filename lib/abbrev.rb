@@ -28,7 +28,7 @@
 #
 # It also provides an array core extension, Array#abbrev.
 #
-#   pp %w{april may}.abbrev
+#   pp %w{summer winter}.abbrev
 #   #=> {"summe"=>"summer",
 #        "summ"=>"summer",
 #        "sum"=>"summer",
@@ -54,16 +54,15 @@ module Abbrev
   # "cone".
   #
   #   require 'abbrev'
-  #   require 'pp'
   #
-  #   pp Abbrev.abbrev(['car', 'cone'])
+  #   Abbrev.abbrev(['car', 'cone'])
   #   #=> {"ca"=>"car", "con"=>"cone", "co"=>"cone", "car"=>"car", "cone"=>"cone"}
   #
   # The optional +pattern+ parameter is a pattern or a string. Only
   # input strings that match the pattern or start with the string
   # are included in the output hash.
   #
-  #   pp %w{car box cone}.abbrev(/b/)
+  #   Abbrev.abbrev(%w{car box cone}, /b/)
   #   #=> {"bo"=>"box", "b"=>"box", "box"=>"box"}
   def abbrev(words, pattern = nil)
     table = {}
@@ -107,18 +106,18 @@ class Array
   # Calculates the set of unambiguous abbreviations for the strings in
   # +self+.
   #
-  #   abbr = %w{ car cone }.abbrev
-  #   abbr #=> { "ca" => "car", "car" => "car",
-  #           "co" => "cone", "con" => "cone",
-  #           "cone" => "cone" }
+  #   require 'abbrev'
+  #   %w{ car cone }.abbrev
+  #   #=> {"ca" => "car", "con"=>"cone", "co" => "cone",
+  #        "car"=>"car", "cone" => "cone"}
   #
   # The optional +pattern+ parameter is a pattern or a string. Only
   # input strings that match the pattern or start with the string
   # are included in the output hash.
   #
-  #   abbr = %w{ fast boat day }.abbrev(/^.a.*$/)
-  #   abbr #=> {"fas"=>"fast","fa"=>"fast",
-  #             "da"=>"day", "fast"=>"fast", "day"=>"day"}
+  #   %w{ fast boat day }.abbrev(/^.a/)
+  #   #=> {"fas"=>"fast", "fa"=>"fast", "da"=>"day",
+  #        "fast"=>"fast", "day"=>"day"}
   #
   # See also Abbrev.abbrev
   def abbrev(pattern = nil)

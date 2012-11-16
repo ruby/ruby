@@ -1,3 +1,8 @@
+Sat Nov 17 08:13:48 2012  Benoit Daloze  <eregontp@gmail.com>
+
+	* lib/abbrev.rb: fix r37113. Correct examples, fix style
+	  and show explicit dependency (require 'abbrev').
+
 Sat Nov 17 07:35:15 2012  Luis Lavena  <luislavena@gmail.com>
 
 	* win32/file.c (replace_to_long_name): skip automatic path expansion
