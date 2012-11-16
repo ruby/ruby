@@ -1,9 +1,16 @@
+Fri Nov 16 09:41:08 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rake/version.rb:  workaround fix to build. see #7366
+	  [ruby-dev:46522]
+
 Fri Nov 16 07:23:18 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rake*:  Updated to rake 0.9.4
 	  http://rake.rubyforge.org/doc/release_notes/rake-0_9_4_rdoc.html for
 	  a list of changes in 0.9.4.
+
 	* test/rake*:  ditto
+
 	* NEWS:  ditto
 
 Fri Nov 16 06:58:52 2012  Eric Hodel  <drbrain@segment7.net>
@@ -11,8 +18,11 @@ Fri Nov 16 06:58:52 2012  Eric Hodel  <drbrain@segment7.net>
 	* lib/rake*:  Updated to rake 0.9.3.  See
 	  http://rake.rubyforge.org/doc/release_notes/rake-0_9_3_rdoc.html for
 	  a list of changes in 0.9.3.
+
 	* test/rake*:  ditto
-        * bin/rake:  ditto
+
+	* bin/rake:  ditto
+
 	* NEWS:  ditto
 
 Thu Nov 15 22:39:32 2012  Yusuke Endoh  <mame@tsg.ne.jp>

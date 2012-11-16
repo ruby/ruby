@@ -6,5 +6,5 @@ module Rake
       BUILD = 4,
     ]
   end
-  VERSION = Version::NUMBERS.join('.')
+  VERSION = "0.9.4"
 end
