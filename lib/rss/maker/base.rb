@@ -23,8 +23,8 @@ module RSS
         end
 
         def inherited(subclass)
-          subclass.const_set("OTHER_ELEMENTS", [])
-          subclass.const_set("NEED_INITIALIZE_VARIABLES", [])
+          subclass.const_set(:OTHER_ELEMENTS, [])
+          subclass.const_set(:NEED_INITIALIZE_VARIABLES, [])
         end
 
         def add_other_element(variable_name)
