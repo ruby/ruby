@@ -327,7 +327,7 @@ probes.h: $(DTRACE_AVAILABLE)-dtrace-probes.h
 
 yes-dtrace-probes.h:
 	@$(ECHO) translating probes $(srcdir)/probes.d
-	$(Q) $(DTRACE) -o probes.h -h -s $(srcdir)/probes.d
+	$(Q) $(DTRACE) -o probes.h.tmp -h -s $(srcdir)/probes.d
 	$(Q) sed -e 's/RUBY_/RUBY_DTRACE_/g' -e 's/PROBES_H_TMP/PROBES_H/g' probes.h.tmp > probes.h
 	$(Q) $(RM) probes.h.tmp
 
