@@ -1,4 +1,8 @@
-Sat Nov 17 00:22:32 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Nov 17 00:40:25 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (incs): dist files need probes.dmyh.
+
+	* common.mk (probes.dmyh): depends on generator script.
 
 	* Makefile.in, common.mk, configure.in, win32/Makefile.sub (probes.h):
 	  select generating with dtrace or copying dummy file by suffix rules.
