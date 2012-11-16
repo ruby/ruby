@@ -373,7 +373,10 @@ if test x"${build}" != x"${host}"; then
   AC_CHECK_TOOL(CC, gcc)
 fi
 
-AC_CHECK_TOOL(DTRACE, dtrace)
+AC_CHECK_PROG([DTRACE], [${ac_tool_prefix}dtrace], [${ac_tool_prefix}dtrace])
+if test "$cross_compiling:$ac_cv_prog_DTRACE" = no: -a -n "$ac_tool_prefix"; then
+    AC_CHECK_PROG([DTRACE], [dtrace], [dtrace])
+fi
 AS_CASE(["$target_os"],
 [freebsd*], [DTRACE=]
 )

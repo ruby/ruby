@@ -1,4 +1,7 @@
-Fri Nov 16 15:42:36 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov 16 16:24:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (DTRACE): ignore non-prefixed version if
+	  cross-compiling.
 
 	* Makefile.in, win32/Makefile.sub (probes.h): fix copying dmyprobes.h
 	  path when outplace-build.
