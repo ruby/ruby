@@ -701,18 +701,18 @@ EOC
       end
 
       def inherited(klass)
-        klass.const_set("MUST_CALL_VALIDATORS", {})
-        klass.const_set("MODELS", [])
-        klass.const_set("GET_ATTRIBUTES", [])
-        klass.const_set("HAVE_CHILDREN_ELEMENTS", [])
-        klass.const_set("TO_ELEMENT_METHODS", [])
-        klass.const_set("NEED_INITIALIZE_VARIABLES", [])
-        klass.const_set("PLURAL_FORMS", {})
+        klass.const_set(:MUST_CALL_VALIDATORS, {})
+        klass.const_set(:MODELS, [])
+        klass.const_set(:GET_ATTRIBUTES, [])
+        klass.const_set(:HAVE_CHILDREN_ELEMENTS, [])
+        klass.const_set(:TO_ELEMENT_METHODS, [])
+        klass.const_set(:NEED_INITIALIZE_VARIABLES, [])
+        klass.const_set(:PLURAL_FORMS, {})
 
         tag_name = klass.name.split(/::/).last
         tag_name[0, 1] = tag_name[0, 1].downcase
-        klass.instance_variable_set("@tag_name", tag_name)
-        klass.instance_variable_set("@have_content", false)
+        klass.instance_variable_set(:@tag_name, tag_name)
+        klass.instance_variable_set(:@have_content, false)
       end
 
       def install_must_call_validator(prefix, uri)
