@@ -2499,7 +2499,7 @@ vm_collect_usage_insn(int insn)
 	RUBY_DTRACE_INSN(rb_insns_name(insn));
     }
     if (ruby_vm_collect_usage_func_insn)
-      (*ruby_vm_collect_usage_func_insn)(insn);
+	(*ruby_vm_collect_usage_func_insn)(insn);
 }
 
 /* @param insn instruction number
@@ -2517,7 +2517,7 @@ vm_collect_usage_operand(int insn, int n, VALUE op)
 	RUBY_DTRACE_INSN_OPERAND(RSTRING_PTR(valstr), rb_insns_name(insn));
     }
     if (ruby_vm_collect_usage_func_operand)
-      (*ruby_vm_collect_usage_func_operand)(insn, n, op);
+	(*ruby_vm_collect_usage_func_operand)(insn, n, op);
 }
 
 #if VM_COLLECT_USAGE_DETAILS
@@ -2527,7 +2527,7 @@ static void
 vm_collect_usage_register(int reg, int isset)
 {
     if (ruby_vm_collect_usage_func_register)
-      (*ruby_vm_collect_usage_func_register)(reg, isset);
+	(*ruby_vm_collect_usage_func_register)(reg, isset);
 }
 #endif
 
