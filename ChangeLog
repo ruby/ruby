@@ -1,3 +1,13 @@
+Fri Nov 16 19:24:10 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_thread_call_without_gvl2): change the parameter of
+	  `func' from `int *skip_interrupt' to `VALUE *flags'.
+	  If (flags & RUBY_CALL_WO_GVL_FLAG_SKIP_CHECK_INTS) is not zero,
+	  then skip checking interrupt.
+	  [ruby-core:46547]
+
+	* include/ruby/thread.h: ditto.
+
 Fri Nov 16 18:59:05 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* Makefile.in (no-dtrace-probes.h): dmyprobes.h is in srcdir.

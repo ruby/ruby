@@ -1094,9 +1094,9 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
  *
  * rb_thread_call_without_gvl2() does:
  *   (1) release GVL.
- *   (2) call func with data1 and a pointer to the skip_interrupt flag.
+ *   (2) call func with data1 and a pointer to the flags.
  *   (3) acquire GVL.
- *   (4) Check interrupts if skip_interrupt flag is not set.
+ *   (4) Check interrupts if (flags & RUBY_CALL_WO_GVL_FLAG_SKIP_CHECK_INTS) is 0.
  *
  * If another thread interrupts this thread (Thread#kill, signal delivery,
  * VM-shutdown request, and so on), `ubf()' is called (`ubf()' means
@@ -1133,12 +1133,12 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
  * because it causes irrevocable side-effect, the read data will vanish.  To
  * avoid such problem, the `read_func()' should be:
  *
- *   read_func(void *data, int *skip_check_flag) {
+ *   read_func(void *data, VALUE *flags) {
  *                   // (a) before read
  *     read(buffer); // (b) reading
  *                   // (c) after read
  *     if (read is complete) {
- *       *skip_check_flag = 1;
+ *       *flags |= RUBY_CALL_WO_GVL_FLAG_SKIP_CHECK_INTS;
  *     }
  *   }
  *
@@ -1164,13 +1164,13 @@ rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
  *   they will work without GVL, and may acquire GVL when GC is needed.
  */
 void *
-rb_thread_call_without_gvl2(void *(*func)(void *data, int *skip_checkints), void *data1,
+rb_thread_call_without_gvl2(void *(*func)(void *data, VALUE *flags), void *data1,
 			    rb_unblock_function_t *ubf, void *data2)
 {
     void *val;
     rb_thread_t *th = GET_THREAD();
     int saved_errno = 0;
-    int skip_checkints = 0;
+    VALUE flags = 0;
 
     th->waiting_fd = -1;
     if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
@@ -1179,11 +1179,11 @@ rb_thread_call_without_gvl2(void *(*func)(void *data, int *skip_checkints), void
     }
 
     BLOCKING_REGION({
-	val = func(data1, &skip_checkints);
+	val = func(data1, &flags);
 	saved_errno = errno;
     }, ubf, data2);
 
-    if (!skip_checkints) {
+    if ((flags & RUBY_CALL_WO_GVL_FLAG_SKIP_CHECK_INTS) == 0) {
 	RUBY_VM_CHECK_INTS_BLOCKING(th);
     }
 
@@ -1198,7 +1198,7 @@ struct without_gvl_wrapper_arg {
 };
 
 static void *
-without_gvl_wrapper(void *data, int *skip_checkints)
+without_gvl_wrapper(void *data, VALUE *flags)
 {
     struct without_gvl_wrapper_arg *arg = (struct without_gvl_wrapper_arg*)data;
     return arg->func(arg->data);
