@@ -1,3 +1,9 @@
+Fri Nov 16 18:59:05 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* Makefile.in (no-dtrace-probes.h): dmyprobes.h is in srcdir.
+
+	* common.mk (dmyprobes.h): ditto.
+
 Fri Nov 16 17:57:15 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (probes.h): split build commands for dtrace-available

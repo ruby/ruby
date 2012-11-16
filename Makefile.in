@@ -331,7 +331,7 @@ yes-dtrace-probes.h:
 	$(Q) sed -e 's/RUBY_/RUBY_DTRACE_/g' -e 's/PROBES_H_TMP/PROBES_H/g' probes.h.tmp > probes.h
 	$(Q) $(RM) probes.h.tmp
 
-no-dtrace-probes.h: dmyprobes.h
+no-dtrace-probes.h: $(srcdir)/dmyprobes.h
 	@$(ECHO) copying dummy probes.h
 	$(Q) $(CP) $(srcdir)/dmyprobes.h probes.h
 

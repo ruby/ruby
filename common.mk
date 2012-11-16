@@ -887,7 +887,7 @@ golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) $(srcdir)/prelude.
 	$(ECHO) generating $@
 	$(Q) $(COMPILE_PRELUDE) $(srcdir)/golf_prelude.rb $@
 
-dmyprobes.h: {$(srcdir)}probes.d
+$(srcdir)/dmyprobes.h: {$(srcdir)}probes.d
 	$(BASERUBY) $(srcdir)/tool/gen_dummy_probes.rb $(srcdir)/probes.d > $@
 
 prereq: incs srcs preludes PHONY
