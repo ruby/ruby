@@ -8,7 +8,7 @@ class TestRakeReduceCompat < Rake::TestCase
     bin_rake =  File.expand_path('../../../bin/rake', __FILE__)
     Open3.popen3(RUBY, "-I", lib, bin_rake, *args) { |_, out, _, _| out.read }
   end
-  
+
   def invoke_normal(task_name)
     rake task_name.to_s
   end
@@ -27,7 +27,7 @@ class TestRakeReduceCompat < Rake::TestCase
         Module.new { p defined?(file) }
       end
     }
-    
+
     assert_equal %{"method"}, invoke_normal(:check_task).chomp
     assert_equal %{"method"}, invoke_normal(:check_file).chomp
 
