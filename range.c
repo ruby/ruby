@@ -543,11 +543,9 @@ range_bsearch(VALUE range)
 	    smaller = 0; \
 	} \
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) { \
-	    switch (rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0))) { \
-		case 0: return val; \
-		case -1: smaller = 1; break; \
-		case 1: smaller = 0; \
-	    } \
+	    int cmp = rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0)); \
+	    if (!cmp) return val; \
+	    smaller = cmp < 0; \
 	} \
 	else { \
 	    smaller = RTEST(v); \
