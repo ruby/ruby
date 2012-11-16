@@ -375,7 +375,7 @@ module Net
       return @ssl_params[:verify_mode]
     end
 
-    # returns the :ca_file or :ca_path from POP3.ssh_params
+    # returns the :ca_file or :ca_path from POP3.ssl_params
     def POP3.certs
       return @ssl_params[:ca_file] || @ssl_params[:ca_path]
     end

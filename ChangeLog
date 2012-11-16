@@ -1,3 +1,9 @@
+Fri Nov 16 15:27:36 2012  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* lib/net/pop.rb (POP3.certs): fix typo in comment.
+	  patch from no6v (Nobuhiro IMAI) <nov@yo.rim.or.jp>.
+	  [ruby-dev:46519] [Bug #7355]
+
 Fri Nov 16 12:36:47 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/rake/helper.rb (Rake::TestCase#setup): revert r37669.
