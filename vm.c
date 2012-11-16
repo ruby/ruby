@@ -2515,6 +2515,7 @@ vm_collect_usage_operand(int insn, int n, VALUE op)
 	valstr = insn_operand_intern(GET_THREAD()->cfp->iseq, insn, n, op, 0, 0, 0, 0);
 
 	RUBY_DTRACE_INSN_OPERAND(RSTRING_PTR(valstr), rb_insns_name(insn));
+	RB_GC_GUARD(valstr);
     }
     if (ruby_vm_collect_usage_func_operand)
 	(*ruby_vm_collect_usage_func_operand)(insn, n, op);
