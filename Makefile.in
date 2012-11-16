@@ -148,6 +148,7 @@ OBJCOPY       = @OBJCOPY@
 VCS           = @VCS@
 VCSUP         = @VCSUP@
 DTRACE        = @DTRACE@
+DTRACE_AVAILABLE = @DTRACE_AVAILABLE@
 
 OBJEXT        = @OBJEXT@
 ASMEXT        = S
@@ -322,15 +323,17 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	@$(ECHO) preprocessing $<
 	$(Q) $(CPP) $(warnflags) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -E $< > $@
 
-probes.h: dmyprobes.h
+probes.h: $(DTRACE_AVAILABLE)-dtrace-probes.h
+
+yes-dtrace-probes.h:
 	@$(ECHO) translating probes $(srcdir)/probes.d
-	$(Q)if test -n '$(DTRACE)'; then \
-	  $(DTRACE) -o $@.tmp -h -s $(srcdir)/probes.d; \
-	  sed -e 's/RUBY_/RUBY_DTRACE_/g' $@.tmp | sed -e 's/PROBES_H_TMP/PROBES_H/g' >$@; \
-	  $(RM) $@.tmp; \
-	else \
-	  $(CP) $(srcdir)/dmyprobes.h probes.h; \
-	fi
+	$(Q) $(DTRACE) -o probes.h -h -s $(srcdir)/probes.d
+	$(Q) sed -e 's/RUBY_/RUBY_DTRACE_/g' -e 's/PROBES_H_TMP/PROBES_H/g' probes.h.tmp > probes.h
+	$(Q) $(RM) probes.h.tmp
+
+no-dtrace-probes.h: dmyprobes.h
+	@$(ECHO) copying dummy probes.h
+	$(Q) $(CP) $(srcdir)/dmyprobes.h probes.h
 
 clean-local::
 	$(Q)$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output \

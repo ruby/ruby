@@ -395,6 +395,12 @@ fi
 AS_CASE(["$target_os"],
 [freebsd*], [DTRACE=]
 )
+if test -n "$DTRACE"; then
+    DTRACE_AVAILABLE=yes
+else
+    DTRACE_AVAILABLE=no
+fi
+AC_SUBST(DTRACE_AVAILABLE)
 
 RUBY_PROG_GNU_LD
 RUBY_CPPOUTFILE
