@@ -49,6 +49,7 @@ y.tab.c
 /config.status
 /config.status.lineno
 /configure
+/dmyprobes.h
 /doc/capi
 /enc.mk
 /encdb.h
