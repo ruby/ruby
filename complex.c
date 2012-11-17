@@ -1496,159 +1496,263 @@ numeric_to_c(VALUE self)
     return rb_complex_new1(self);
 }
 
-static VALUE comp_pat0, comp_pat1, comp_pat2, a_slash, a_dot_and_an_e,
-    null_string, underscores_pat, an_underscore;
+#include <ctype.h>
 
-#define WS "\\s*"
-#define DIGITS "(?:[0-9](?:_[0-9]|[0-9])*)"
-#define NUMERATOR "(?:" DIGITS "?\\.)?" DIGITS "(?:[eE][-+]?" DIGITS ")?"
-#define DENOMINATOR DIGITS
-#define NUMBER "[-+]?" NUMERATOR "(?:\\/" DENOMINATOR ")?"
-#define NUMBERNOS NUMERATOR "(?:\\/" DENOMINATOR ")?"
-#define PATTERN0 "\\A" WS "(" NUMBER ")@(" NUMBER ")" WS
-#define PATTERN1 "\\A" WS "([-+])?(" NUMBERNOS ")?[iIjJ]" WS
-#define PATTERN2 "\\A" WS "(" NUMBER ")(([-+])(" NUMBERNOS ")?[iIjJ])?" WS
-
-static void
-make_patterns(void)
+static int
+read_sign(const char **s,
+	  char **b)
 {
-    static const char comp_pat0_source[] = PATTERN0;
-    static const char comp_pat1_source[] = PATTERN1;
-    static const char comp_pat2_source[] = PATTERN2;
-    static const char underscores_pat_source[] = "_+";
+    int sign = '?';
 
-    if (comp_pat0) return;
-
-    comp_pat0 = rb_reg_new(comp_pat0_source, sizeof comp_pat0_source - 1, 0);
-    rb_gc_register_mark_object(comp_pat0);
-
-    comp_pat1 = rb_reg_new(comp_pat1_source, sizeof comp_pat1_source - 1, 0);
-    rb_gc_register_mark_object(comp_pat1);
-
-    comp_pat2 = rb_reg_new(comp_pat2_source, sizeof comp_pat2_source - 1, 0);
-    rb_gc_register_mark_object(comp_pat2);
-
-    a_slash = rb_usascii_str_new2("/");
-    rb_gc_register_mark_object(a_slash);
-
-    a_dot_and_an_e = rb_usascii_str_new2(".eE");
-    rb_gc_register_mark_object(a_dot_and_an_e);
-
-    null_string = rb_usascii_str_new2("");
-    rb_gc_register_mark_object(null_string);
-
-    underscores_pat = rb_reg_new(underscores_pat_source,
-				 sizeof underscores_pat_source - 1, 0);
-    rb_gc_register_mark_object(underscores_pat);
-
-    an_underscore = rb_usascii_str_new2("_");
-    rb_gc_register_mark_object(an_underscore);
+    if (**s == '-' || **s == '+') {
+	sign = **b = **s;
+	(*s)++;
+	(*b)++;
+    }
+    return sign;
 }
 
-#define id_match rb_intern("match")
-#define f_match(x,y) rb_funcall((x), id_match, 1, (y))
+static int
+read_digits(const char **s, int strict,
+	    char **b)
+{
+    int us = 1;
 
-#define id_gsub_bang rb_intern("gsub!")
-#define f_gsub_bang(x,y,z) rb_funcall((x), id_gsub_bang, 2, (y), (z))
+    if (!isdigit((unsigned char)**s))
+	return 0;
+
+    while (isdigit((unsigned char)**s) || **s == '_') {
+	if (**s == '_') {
+	    if (strict) {
+		if (us)
+		    return 0;
+	    }
+	    us = 1;
+	}
+	else {
+	    **b = **s;
+	    (*b)++;
+	    us = 0;
+	}
+	(*s)++;
+    }
+    if (us)
+	do {
+	    (*s)--;
+	} while (**s == '_');
+    return 1;
+}
+
+static int
+read_num(const char **s, int strict,
+	 char **b)
+{
+    if (**s != '.') {
+	if (!read_digits(s, strict, b))
+	    return 0;
+    }
+
+    if (**s == '.') {
+	**b = **s;
+	(*s)++;
+	(*b)++;
+	if (!read_digits(s, strict, b)) {
+	    (*b)--;
+	    return 0;
+	}
+    }
+
+    if (**s == 'e' || **s == 'E') {
+	**b = **s;
+	(*s)++;
+	(*b)++;
+	read_sign(s, b);
+	if (!read_digits(s, strict, b)) {
+	    (*b)--;
+	    return 0;
+	}
+    }
+    return 1;
+}
+
+static int
+read_den(const char **s, int strict,
+	 char **b)
+{
+    if (!read_digits(s, strict, b))
+	return 0;
+    return 1;
+}
+
+static int
+read_rat_nos(const char **s, int strict,
+	     char **b)
+{
+    if (!read_num(s, strict, b))
+	return 0;
+    if (**s == '/') {
+	**b = **s;
+	(*s)++;
+	(*b)++;
+	if (!read_den(s, strict, b)) {
+	    (*b)--;
+	    return 0;
+	}
+    }
+    return 1;
+}
+
+static int
+read_rat(const char **s, int strict,
+	 char **b)
+{
+    read_sign(s, b);
+    if (!read_rat_nos(s, strict, b))
+	return 0;
+    return 1;
+}
+
+static int
+isimagunit(int c)
+{
+    return (c == 'i' || c == 'I' ||
+	    c == 'j' || c == 'J');
+}
+
+VALUE rb_cstr_to_rat(const char *, int);
 
 static VALUE
-string_to_c_internal(VALUE self)
+str2num(char *s)
 {
-    VALUE s;
-
-    s = self;
-
-    if (RSTRING_LEN(s) == 0)
-	return rb_assoc_new(Qnil, self);
-
-    {
-	VALUE m, sr, si, re, r, i;
-	int po;
-
-	m = f_match(comp_pat0, s);
-	if (!NIL_P(m)) {
-	    sr = rb_reg_nth_match(1, m);
-	    si = rb_reg_nth_match(2, m);
-	    re = rb_reg_match_post(m);
-	    po = 1;
-	}
-	if (NIL_P(m)) {
-	    m = f_match(comp_pat1, s);
-	    if (!NIL_P(m)) {
-		sr = Qnil;
-		si = rb_reg_nth_match(1, m);
-		if (NIL_P(si))
-		    si = rb_usascii_str_new2("");
-		{
-		    VALUE t;
-
-		    t = rb_reg_nth_match(2, m);
-		    if (NIL_P(t))
-			t = rb_usascii_str_new2("1");
-		    rb_str_concat(si, t);
-		}
-		re = rb_reg_match_post(m);
-		po = 0;
-	    }
-	}
-	if (NIL_P(m)) {
-	    m = f_match(comp_pat2, s);
-	    if (NIL_P(m))
-		return rb_assoc_new(Qnil, self);
-	    sr = rb_reg_nth_match(1, m);
-	    if (NIL_P(rb_reg_nth_match(2, m)))
-		si = Qnil;
-	    else {
-		VALUE t;
-
-		si = rb_reg_nth_match(3, m);
-		t = rb_reg_nth_match(4, m);
-		if (NIL_P(t))
-		    t = rb_usascii_str_new2("1");
-		rb_str_concat(si, t);
-	    }
-	    re = rb_reg_match_post(m);
-	    po = 0;
-	}
-	r = INT2FIX(0);
-	i = INT2FIX(0);
-	if (!NIL_P(sr)) {
-	    if (strchr(RSTRING_PTR(sr), '/'))
-		r = f_to_r(sr);
-	    else if (strpbrk(RSTRING_PTR(sr), ".eE"))
-		r = f_to_f(sr);
-	    else
-		r = f_to_i(sr);
-	}
-	if (!NIL_P(si)) {
-	    if (strchr(RSTRING_PTR(si), '/'))
-		i = f_to_r(si);
-	    else if (strpbrk(RSTRING_PTR(si), ".eE"))
-		i = f_to_f(si);
-	    else
-		i = f_to_i(si);
-	}
-	if (po)
-	    return rb_assoc_new(rb_complex_polar(r, i), re);
-	else
-	    return rb_assoc_new(rb_complex_new2(r, i), re);
+    if (strchr(s, '/'))
+	return rb_cstr_to_rat(s, 0);
+    if (strpbrk(s, ".eE")) {
+	double d = rb_cstr_to_dbl(s, 0);
+	return DBL2NUM(d);
     }
+    return rb_cstr_to_inum(s, 10, 0);
+}
+
+static int
+read_comp(const char **s, int strict,
+	  VALUE *ret, char **b)
+{
+    char *bb;
+    int sign;
+    VALUE num, num2;
+
+    bb = *b;
+
+    sign = read_sign(s, b);
+
+    if (isimagunit(**s)) {
+	(*s)++;
+	num = INT2FIX((sign == '-') ? -1 : + 1);
+	*ret = rb_complex_raw2(ZERO, num);
+	return 1; /* e.g. "i" */
+    }
+
+    if (!read_rat_nos(s, strict, b)) {
+	**b = '\0';
+	num = str2num(bb);
+	*ret = rb_complex_raw2(num, ZERO);
+	return 0; /* e.g. "1/" */
+    }
+    **b = '\0';
+    num = str2num(bb);
+
+    if (isimagunit(**s)) {
+	(*s)++;
+	*ret = rb_complex_raw2(ZERO, num);
+	return 1; /* e.g. "3i" */
+    }
+
+    if (**s == '@') {
+	(*s)++;
+	bb = *b;
+	if (!read_rat(s, strict, b)) {
+	    num = rb_complex_raw2(num, ZERO);
+	    return 0; /* e.g. "1@x" */
+	}
+	**b = '\0';
+	num2 = str2num(bb);
+	*ret = rb_complex_polar(num, num2);
+	return 1; /* e.g. "1@2" */
+    }
+
+    if (**s == '-' || **s == '+') {
+	bb = *b;
+	sign = read_sign(s, b);
+	if (isimagunit(**s))
+	    num2 = INT2FIX((sign == '-') ? -1 : + 1);
+	else {
+	    if (!read_rat_nos(s, strict, b)) {
+		*ret = rb_complex_raw2(num, ZERO);
+		return 0; /* e.g. "1+xi" */
+	    }
+	    **b = '\0';
+	    num2 = str2num(bb);
+	}
+	if (!isimagunit(**s)) {
+	    *ret = rb_complex_raw2(num, ZERO);
+	    return 0; /* e.g. "1+3x" */
+	}
+	(*s)++;
+	*ret = rb_complex_raw2(num, num2);
+	return 1; /* e.g. "1+2i" */
+    }
+    /* !(@, - or +) */
+    {
+	*ret = rb_complex_raw2(num, ZERO);
+	return 1; /* e.g. "3" */
+    }
+}
+
+static int
+parse_comp(const char *s, int strict,
+	   VALUE *num)
+{
+    char *buf, *b;
+
+    buf = ALLOCA_N(char, strlen(s) + 1);
+    b = buf;
+
+    while (isspace((unsigned char)*s))
+	s++;
+
+    if (!read_comp(&s, strict, num, &b))
+	return 0;
+
+    while (isspace((unsigned char)*s))
+	s++;
+
+    if (strict)
+	if (*s != '\0')
+	    return 0;
+    return 1;
 }
 
 static VALUE
 string_to_c_strict(VALUE self)
 {
-    VALUE a = string_to_c_internal(self);
-    if (NIL_P(RARRAY_PTR(a)[0]) || RSTRING_LEN(RARRAY_PTR(a)[1]) > 0) {
-	VALUE s = f_inspect(self);
-	rb_raise(rb_eArgError, "invalid value for convert(): %s",
-		 StringValuePtr(s));
-    }
-    return RARRAY_PTR(a)[0];
-}
+    const char *s;
+    VALUE num;
 
-#define id_gsub rb_intern("gsub")
-#define f_gsub(x,y,z) rb_funcall((x), id_gsub, 2, (y), (z))
+    rb_must_asciicompat(self);
+
+    s = RSTRING_PTR(self);
+
+    if (memchr(s, 0, RSTRING_LEN(self)))
+	rb_raise(rb_eArgError, "string contains null byte");
+
+    if (!parse_comp(s, 1, &num)) {
+	VALUE ins = f_inspect(self);
+	rb_raise(rb_eArgError, "invalid value for convert(): %s",
+		 StringValuePtr(ins));
+    }
+
+    return num;
+}
 
 /*
  * call-seq:
@@ -1674,19 +1778,16 @@ string_to_c_strict(VALUE self)
 static VALUE
 string_to_c(VALUE self)
 {
-    VALUE s, a, backref;
+    const char *s;
+    VALUE num;
 
-    backref = rb_backref_get();
-    rb_match_busy(backref);
+    rb_must_asciicompat(self);
 
-    s = f_gsub(self, underscores_pat, an_underscore);
-    a = string_to_c_internal(s);
+    s = RSTRING_PTR(self);
 
-    rb_backref_set(backref);
+    (void)parse_comp(s, 0, &num);
 
-    if (!NIL_P(RARRAY_PTR(a)[0]))
-	return RARRAY_PTR(a)[0];
-    return rb_complex_new1(INT2FIX(0));
+    return num;
 }
 
 static VALUE
@@ -2053,8 +2154,6 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "rationalize", nucomp_rationalize, -1);
     rb_define_method(rb_cNilClass, "to_c", nilclass_to_c, 0);
     rb_define_method(rb_cNumeric, "to_c", numeric_to_c, 0);
-
-    make_patterns();
 
     rb_define_method(rb_cString, "to_c", string_to_c, 0);
 

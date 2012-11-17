@@ -1956,145 +1956,185 @@ float_rationalize(int argc, VALUE *argv, VALUE self)
     return rb_rational_new2(p, q);
 }
 
-static VALUE rat_pat, an_e_pat, a_dot_pat, underscores_pat, an_underscore;
-
-#define WS "\\s*"
-#define DIGITS "(?:[0-9](?:_[0-9]|[0-9])*)"
-#define NUMERATOR "(?:" DIGITS "?\\.)?" DIGITS "(?:[eE][-+]?" DIGITS ")?"
-#define DENOMINATOR DIGITS
-#define PATTERN "\\A" WS "([-+])?(" NUMERATOR ")(?:\\/(" DENOMINATOR "))?" WS
-
-static void
-make_patterns(void)
-{
-    static const char rat_pat_source[] = PATTERN;
-    static const char an_e_pat_source[] = "[eE]";
-    static const char a_dot_pat_source[] = "\\.";
-    static const char underscores_pat_source[] = "_+";
-
-    if (rat_pat) return;
-
-    rat_pat = rb_reg_new(rat_pat_source, sizeof rat_pat_source - 1, 0);
-    rb_gc_register_mark_object(rat_pat);
-
-    an_e_pat = rb_reg_new(an_e_pat_source, sizeof an_e_pat_source - 1, 0);
-    rb_gc_register_mark_object(an_e_pat);
-
-    a_dot_pat = rb_reg_new(a_dot_pat_source, sizeof a_dot_pat_source - 1, 0);
-    rb_gc_register_mark_object(a_dot_pat);
-
-    underscores_pat = rb_reg_new(underscores_pat_source,
-				 sizeof underscores_pat_source - 1, 0);
-    rb_gc_register_mark_object(underscores_pat);
-
-    an_underscore = rb_usascii_str_new2("_");
-    rb_gc_register_mark_object(an_underscore);
-}
-
-#define id_match rb_intern("match")
-#define f_match(x,y) rb_funcall((x), id_match, 1, (y))
-
-#define id_split rb_intern("split")
-#define f_split(x,y) rb_funcall((x), id_split, 1, (y))
-
 #include <ctype.h>
 
-static VALUE
-string_to_r_internal(VALUE self)
+static int
+read_sign(const char **s)
 {
-    VALUE s, m;
+    int sign = '?';
 
-    s = self;
-
-    if (RSTRING_LEN(s) == 0)
-	return rb_assoc_new(Qnil, self);
-
-    m = f_match(rat_pat, s);
-
-    if (!NIL_P(m)) {
-	VALUE v, ifp, exp, ip, fp;
-	VALUE si = rb_reg_nth_match(1, m);
-	VALUE nu = rb_reg_nth_match(2, m);
-	VALUE de = rb_reg_nth_match(3, m);
-	VALUE re = rb_reg_match_post(m);
-
-	{
-	    VALUE a;
-
-	    if (!strpbrk(RSTRING_PTR(nu), "eE")) {
-		ifp = nu; /* not a copy */
-		exp = Qnil;
-	    }
-	    else {
-		a = f_split(nu, an_e_pat);
-		ifp = RARRAY_PTR(a)[0];
-		if (RARRAY_LEN(a) != 2)
-		    exp = Qnil;
-		else
-		    exp = RARRAY_PTR(a)[1];
-	    }
-
-	    if (!strchr(RSTRING_PTR(ifp), '.')) {
-		ip = ifp; /* not a copy */
-		fp = Qnil;
-	    }
-	    else {
-		a = f_split(ifp, a_dot_pat);
-		ip = RARRAY_PTR(a)[0];
-		if (RARRAY_LEN(a) != 2)
-		    fp = Qnil;
-		else
-		    fp = RARRAY_PTR(a)[1];
-	    }
-	}
-
-	v = rb_rational_new1(f_to_i(ip));
-
-	if (!NIL_P(fp)) {
-	    char *p = RSTRING_PTR(fp);
-	    long count = 0;
-	    VALUE l;
-
-	    while (*p) {
-		if (rb_isdigit(*p))
-		    count++;
-		p++;
-	    }
-	    l = f_expt10(LONG2NUM(count));
-	    v = f_mul(v, l);
-	    v = f_add(v, f_to_i(fp));
-	    v = f_div(v, l);
-	}
-	if (!NIL_P(si) && *RSTRING_PTR(si) == '-')
-	    v = f_negate(v);
-	if (!NIL_P(exp))
-	    v = f_mul(v, f_expt10(f_to_i(exp)));
-#if 0
-	if (!NIL_P(de) && (!NIL_P(fp) || !NIL_P(exp)))
-	    return rb_assoc_new(v, rb_usascii_str_new2("dummy"));
-#endif
-	if (!NIL_P(de))
-	    v = f_div(v, f_to_i(de));
-
-	return rb_assoc_new(v, re);
+    if (**s == '-' || **s == '+') {
+	sign = **s;
+	(*s)++;
     }
-    return rb_assoc_new(Qnil, self);
+    return sign;
+}
+
+static int
+read_digits(const char **s, int strict,
+	    VALUE *num, int *count)
+{
+    int us = 1;
+
+    if (!isdigit((unsigned char)**s))
+	return 0;
+
+    *num = ZERO;
+
+    while (isdigit((unsigned char)**s) || **s == '_') {
+	if (**s == '_') {
+	    if (strict) {
+		if (us)
+		    return 0;
+	    }
+	    us = 1;
+	}
+	else {
+	    *num = f_mul(*num, INT2FIX(10));
+	    *num = f_add(*num, INT2FIX(**s - '0'));
+	    if (count)
+		(*count)++;
+	    us = 0;
+	}
+	(*s)++;
+    }
+    if (us)
+	do {
+	    (*s)--;
+	} while (**s == '_');
+    return 1;
+}
+
+static int
+read_num(const char **s, int numsign, int strict,
+	 VALUE *num)
+{
+    VALUE ip, fp, exp;
+
+    *num = rb_rational_raw2(ZERO, ONE);
+    exp = Qnil;
+
+    if (**s != '.') {
+	if (!read_digits(s, strict, &ip, NULL))
+	    return 0;
+	*num = rb_rational_raw2(ip, ONE);
+    }
+
+    if (**s == '.') {
+	int count = 0;
+
+	(*s)++;
+	if (!read_digits(s, strict, &fp, &count))
+	    return 0;
+	{
+	    VALUE l = f_expt10(INT2NUM(count));
+	    *num = f_mul(*num, l);
+	    *num = f_add(*num, fp);
+	    *num = f_div(*num, l);
+	}
+    }
+
+    if (**s == 'e' || **s == 'E') {
+	int expsign;
+
+	(*s)++;
+	expsign = read_sign(s);
+	if (!read_digits(s, strict, &exp, NULL))
+	    return 0;
+	if (expsign == '-')
+	    exp = f_negate(exp);
+    }
+
+    if (numsign == '-')
+	*num = f_negate(*num);
+    if (!NIL_P(exp)) {
+	VALUE l = f_expt10(exp);
+	*num = f_mul(*num, l);
+    }
+    return 1;
+}
+
+static int
+read_den(const char **s, int strict,
+	 VALUE *num)
+{
+    if (!read_digits(s, strict, num, NULL))
+	return 0;
+    return 1;
+}
+
+static int
+read_rat_nos(const char **s, int sign, int strict,
+	     VALUE *num)
+{
+    VALUE den;
+
+    if (!read_num(s, sign, strict, num))
+	return 0;
+    if (**s == '/') {
+	(*s)++;
+	if (!read_den(s, strict, &den))
+	    return 0;
+	if (!(FIXNUM_P(den) && FIX2LONG(den) == 1))
+	    *num = f_div(*num, den);
+    }
+    return 1;
+}
+
+static int
+read_rat(const char **s, int strict,
+	 VALUE *num)
+{
+    int sign;
+
+    sign = read_sign(s);
+    if (!read_rat_nos(s, sign, strict, num))
+	return 0;
+    return 1;
+}
+
+static int
+parse_rat(const char *s, int strict,
+	  VALUE *num)
+{
+    while (isspace((unsigned char)*s))
+	s++;
+
+    if (!read_rat(&s, strict, num))
+	return 0;
+
+    while (isspace((unsigned char)*s))
+	s++;
+
+    if (strict)
+	if (*s != '\0')
+	    return 0;
+    return 1;
 }
 
 static VALUE
 string_to_r_strict(VALUE self)
 {
-    VALUE a = string_to_r_internal(self);
-    if (NIL_P(RARRAY_PTR(a)[0]) || RSTRING_LEN(RARRAY_PTR(a)[1]) > 0) {
-	VALUE s = f_inspect(self);
-	rb_raise(rb_eArgError, "invalid value for convert(): %s",
-		 StringValuePtr(s));
-    }
-    return RARRAY_PTR(a)[0];
-}
+    const char *s;
+    VALUE num;
 
-#define id_gsub rb_intern("gsub")
-#define f_gsub(x,y,z) rb_funcall((x), id_gsub, 2, (y), (z))
+    rb_must_asciicompat(self);
+
+    s = RSTRING_PTR(self);
+
+    if (memchr(s, 0, RSTRING_LEN(self)))
+	rb_raise(rb_eArgError, "string contains null byte");
+
+    if (!parse_rat(s, 1, &num)) {
+	VALUE ins = f_inspect(self);
+	rb_raise(rb_eArgError, "invalid value for convert(): %s",
+		 StringValuePtr(ins));
+    }
+
+    if (RB_TYPE_P(num, T_FLOAT))
+	rb_raise(rb_eFloatDomainError, "Infinity");
+    return num;
+}
 
 /*
  * call-seq:
@@ -2120,27 +2160,31 @@ string_to_r_strict(VALUE self)
 static VALUE
 string_to_r(VALUE self)
 {
-    VALUE s, a, a1, backref;
+    const char *s;
+    VALUE num;
 
-    backref = rb_backref_get();
-    rb_match_busy(backref);
+    rb_must_asciicompat(self);
 
-    s = f_gsub(self, underscores_pat, an_underscore);
-    a = string_to_r_internal(s);
+    s = RSTRING_PTR(self);
 
-    rb_backref_set(backref);
+    (void)parse_rat(s, 0, &num);
 
-    a1 = RARRAY_PTR(a)[0];
-    if (!NIL_P(a1)) {
-	if (RB_TYPE_P(a1, T_FLOAT))
-	    rb_raise(rb_eFloatDomainError, "Infinity");
-	return a1;
-    }
-    return rb_rational_new1(INT2FIX(0));
+    if (RB_TYPE_P(num, T_FLOAT))
+	rb_raise(rb_eFloatDomainError, "Infinity");
+    return num;
 }
 
-#define id_to_r rb_intern("to_r")
-#define f_to_r(x) rb_funcall((x), id_to_r, 0)
+VALUE
+rb_cstr_to_rat(const char *s, int strict) /* for complex's internal */
+{
+    VALUE num;
+
+    (void)parse_rat(s, strict, &num);
+
+    if (RB_TYPE_P(num, T_FLOAT))
+	rb_raise(rb_eFloatDomainError, "Infinity");
+    return num;
+}
 
 static VALUE
 nurat_s_convert(int argc, VALUE *argv, VALUE klass)
@@ -2368,8 +2412,6 @@ Init_Rational(void)
     rb_define_method(rb_cInteger, "rationalize", integer_rationalize, -1);
     rb_define_method(rb_cFloat, "to_r", float_to_r, 0);
     rb_define_method(rb_cFloat, "rationalize", float_rationalize, -1);
-
-    make_patterns();
 
     rb_define_method(rb_cString, "to_r", string_to_r, 0);
 
