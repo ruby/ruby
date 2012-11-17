@@ -8,10 +8,16 @@ module Psych
     TIME = /^\d{4}-\d{1,2}-\d{1,2}([Tt]|\s+)\d{1,2}:\d\d:\d\d(\.\d*)?(\s*Z|[-+]\d{1,2}(:\d\d)?)?/
 
     # Taken from http://yaml.org/type/float.html
-    FLOAT = /^(?:[-+]?([0-9][0-9_,]*)?\.[0-9.]*([eE][-+][0-9]+)?(?# base 10)
+    FLOAT = /^(?:[-+]?([0-9][0-9_,]*)?\.[0-9]*([eE][-+][0-9]+)?(?# base 10)
               |[-+]?[0-9][0-9_,]*(:[0-5]?[0-9])+\.[0-9_]*(?# base 60)
               |[-+]?\.(inf|Inf|INF)(?# infinity)
               |\.(nan|NaN|NAN)(?# not a number))$/x
+
+    # Taken from http://yaml.org/type/int.html
+    INTEGER = /^(?:[-+]?0b[0-1_]+          (?# base 2)
+                  |[-+]?0[0-7_]+           (?# base 8)
+                  |[-+]?(?:0|[1-9][0-9_]*) (?# base 10)
+                  |[-+]?0x[0-9a-fA-F_]+    (?# base 16))$/x
 
     # Create a new scanner
     def initialize
@@ -86,24 +92,26 @@ module Psych
         end
         i
       when FLOAT
-        begin
-          return Float(string.gsub(/[,_]/, ''))
-        rescue ArgumentError
+        if string == '.'
+          @string_cache[string] = true
+          string
+        else
+          Float(string.gsub(/[,_]/, ''))
         end
-
-        @string_cache[string] = true
-        string
       else
-        if string.count('.') < 2
-          begin
-            return Integer(string.gsub(/[,_]/, ''))
-          rescue ArgumentError
-          end
-        end
+        int = parse_int string.gsub(/[,_]/, '')
+        return int if int
 
         @string_cache[string] = true
         string
       end
+    end
+
+    ###
+    # Parse and return an int from +string+
+    def parse_int string
+      return unless INTEGER === string
+      Integer(string)
     end
 
     ###
