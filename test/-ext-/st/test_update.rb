@@ -34,5 +34,17 @@ class Bug::StTable
       assert_equal({a: 3, b: 2}, @tbl, :a)
       assert_equal([:a, 1], args)
     end
+
+    def test_pass_objects_in_st_table
+      bug7330 = '[ruby-core:49220]'
+      key = "abc".freeze
+      value = "def"
+      @tbl[key] = value
+      @tbl.st_update("abc") {|*args|
+        assert_same(key, args[0], bug7330)
+        assert_same(value, args[1], bug7330)
+        nil
+      }
+    end
   end
 end

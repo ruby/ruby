@@ -843,6 +843,7 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
     if (table->entries_packed) {
 	st_index_t i = find_packed_index(table, hash_val, key);
 	if (i < table->real_entries) {
+	    key = PKEY(table, i);
 	    value = PVAL(table, i);
 	    existing = 1;
 	}
@@ -871,6 +872,7 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
     FIND_ENTRY(table, ptr, hash_val, bin_pos);
 
     if (ptr != 0) {
+	key = ptr->key;
 	value = ptr->record;
 	existing = 1;
     }

@@ -1,3 +1,12 @@
+Sat Nov 17 11:34:31 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* st.c (st_update): pass the key in st_table so that we can free
+	  memory of the key in st_table when deleting.
+	  [ruby-core:49220] [Bug #7330]
+
+	* test/-ext-/st/test_update.rb
+	  (Bug::StTable#test_pass_objects_in_st_table): add a test.
+
 Sat Nov 17 11:26:36 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/core_ext.rb: move Kernel#y so that it can
