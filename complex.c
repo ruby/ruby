@@ -1668,16 +1668,24 @@ read_comp(const char **s, int strict,
     }
 
     if (**s == '@') {
+	int st;
+
 	(*s)++;
 	bb = *b;
-	if (!read_rat(s, strict, b)) {
-	    num = rb_complex_raw2(num, ZERO);
+	if (!(isdigit((unsigned char)**s) ||
+	      **s == '-' || **s == '+' ||
+	      **s == '.')) {
+	    *ret = rb_complex_raw2(num, ZERO);
 	    return 0; /* e.g. "1@x" */
 	}
+	st = read_rat(s, strict, b);
 	**b = '\0';
 	num2 = str2num(bb);
 	*ret = rb_complex_polar(num, num2);
-	return 1; /* e.g. "1@2" */
+	if (!st)
+	    return 0; /* e.g. "1@2." */
+	else
+	    return 1; /* e.g. "1@2" */
     }
 
     if (**s == '-' || **s == '+') {
