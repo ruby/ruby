@@ -1,3 +1,7 @@
+Sun Nov 18 02:02:46 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (read_comp): modified handling of polar form.
+
 Sun Nov 18 00:50:44 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (read_comp): fixed handling of polar form.
