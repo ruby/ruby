@@ -1154,6 +1154,7 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal('-1.0-0.0i', Complex(-1.0, -0.0).to_s)
     assert_in_delta(Math::PI, Complex(-0.0).arg, 0.001)
     assert_equal(Complex(2e3, 2e4), '2e3+2e4i'.to_c)
+    assert_raise(ArgumentError){ Complex('--8i')}
   end
 
   def test_known_bug

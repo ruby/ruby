@@ -1,3 +1,7 @@
+Sat Nov 17 23:53:05 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (make_patterns): should not accept extra sign.
+
 Sat Nov 17 21:45:12  Luis Lavena  <luislavena@gmail.com>
 
 	* win32/file.c (replace_to_long_name): skip expansion for all wildcard

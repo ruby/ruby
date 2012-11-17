@@ -1506,7 +1506,7 @@ static VALUE comp_pat0, comp_pat1, comp_pat2, a_slash, a_dot_and_an_e,
 #define NUMBER "[-+]?" NUMERATOR "(?:\\/" DENOMINATOR ")?"
 #define NUMBERNOS NUMERATOR "(?:\\/" DENOMINATOR ")?"
 #define PATTERN0 "\\A" WS "(" NUMBER ")@(" NUMBER ")" WS
-#define PATTERN1 "\\A" WS "([-+])?(" NUMBER ")?[iIjJ]" WS
+#define PATTERN1 "\\A" WS "([-+])?(" NUMBERNOS ")?[iIjJ]" WS
 #define PATTERN2 "\\A" WS "(" NUMBER ")(([-+])(" NUMBERNOS ")?[iIjJ])?" WS
 
 static void
