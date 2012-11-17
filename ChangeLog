@@ -1,3 +1,10 @@
+Sat Nov 17 11:26:36 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/core_ext.rb: move Kernel#y so that it can
+	  manually be required as 'psych/y'.
+
+	* ext/psych/lib/psych/y.rb: ditto
+
 Sat Nov 17 08:13:48 2012  Benoit Daloze  <eregontp@gmail.com>
 
 	* lib/abbrev.rb: fix r37113. Correct examples, fix style
