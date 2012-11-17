@@ -1,3 +1,10 @@
+Sat Nov 17 12:14:50 2012  Aaron Patterson <aaron@tenderlovemaking.com>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb: use literal YAML style
+	  when emitting multi-line strings. Thanks @atambo
+
+	* test/psych/test_yaml.rb: test for change.
+
 Sat Nov 17 12:03:41 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/scalar_scanner.rb: avoid raising exceptions when
