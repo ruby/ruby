@@ -1,3 +1,11 @@
+Sat Nov 17 21:45:12  Luis Lavena  <luislavena@gmail.com>
+
+	* win32/file.c (replace_to_long_name): skip expansion for all wildcard
+	  characters.
+	  [ruby-core:49451] [Bug #7374]
+
+	* test/ruby/test_file_exhaustive.rb: add more assertions to test.
+
 Sat Nov 17 12:14:50 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/psych/lib/psych/visitors/yaml_tree.rb: use literal YAML style

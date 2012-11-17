@@ -276,8 +276,8 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, int heap)
 	return size;
     }
 
-    /* skip long name conversion if last character is a wildcard */
-    if (pos[size - 1] == L'*') {
+    /* skip long name conversion if path contains wildcard characters */
+    if (!wcspbrk(pos, "*?")) {
 	return size;
     }
 
