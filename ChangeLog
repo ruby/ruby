@@ -1,3 +1,9 @@
+Sun Nov 18 02:50:12 2012  Luis Lavena <luislavena@gmail.com>
+
+	* win32/file.c (replace_to_long_name): correct logic around wildcard
+	  characters detection and ensure wide-chars are used as pattern.
+	  [ruby-core:49451] [Bug #7374]
+
 Sun Nov 18 02:02:46 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (read_comp): modified handling of polar form.
