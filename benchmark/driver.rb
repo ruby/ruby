@@ -146,7 +146,7 @@ class BenchmarkDriver
 
     if @execs.size > 1
       output
-      output "Speedup ratio comare with the result of `#{@execs[0]}' (greater is better)"
+      output "Speedup ratio: compare with the result of `#{@execs[0][1]}' (greater is better)"
       output "name\t#{@execs[1..-1].map{|(_, v)| v}.join("\t")}"
       @results.each{|v, result|
         rets = []
@@ -154,7 +154,7 @@ class BenchmarkDriver
         s = adjusted_results(v, result){|r|
           if first_value
             if r == 0
-              rets << sprintf("%.3f", "Error")
+              rets << "Error"
             else
               rets << sprintf("%.3f", first_value/r)
             end
@@ -263,7 +263,7 @@ if __FILE__ == $0
 
   parser = OptionParser.new{|o|
     o.on('-e', '--executables [EXECS]',
-         "Specify benchmark one or more targets. (exec1; exec2; exec3; ...)"){|e|
+         "Specify benchmark one or more targets. (exec1;exec2;exec3;...)"){|e|
       opt[:execs] = e.split(/;/)
     }
     o.on('-d', '--directory [DIRECTORY]', "Benchmark suites directory"){|d|
