@@ -2011,13 +2011,13 @@ read_num(const char **s, int numsign, int strict,
 {
     VALUE ip, fp, exp;
 
-    *num = rb_rational_raw2(ZERO, ONE);
+    *num = rb_rational_new2(ZERO, ONE);
     exp = Qnil;
 
     if (**s != '.') {
 	if (!read_digits(s, strict, &ip, NULL))
 	    return 0;
-	*num = rb_rational_raw2(ip, ONE);
+	*num = rb_rational_new2(ip, ONE);
     }
 
     if (**s == '.') {

@@ -1646,14 +1646,14 @@ read_comp(const char **s, int strict,
     if (isimagunit(**s)) {
 	(*s)++;
 	num = INT2FIX((sign == '-') ? -1 : + 1);
-	*ret = rb_complex_raw2(ZERO, num);
+	*ret = rb_complex_new2(ZERO, num);
 	return 1; /* e.g. "i" */
     }
 
     if (!read_rat_nos(s, strict, b)) {
 	**b = '\0';
 	num = str2num(bb);
-	*ret = rb_complex_raw2(num, ZERO);
+	*ret = rb_complex_new2(num, ZERO);
 	return 0; /* e.g. "1/" */
     }
     **b = '\0';
@@ -1661,7 +1661,7 @@ read_comp(const char **s, int strict,
 
     if (isimagunit(**s)) {
 	(*s)++;
-	*ret = rb_complex_raw2(ZERO, num);
+	*ret = rb_complex_new2(ZERO, num);
 	return 1; /* e.g. "3i" */
     }
 
@@ -1674,7 +1674,7 @@ read_comp(const char **s, int strict,
 	**b = '\0';
 	if (strlen(bb) < 1 ||
 	    !isdigit((unsigned char)*(bb + strlen(bb) - 1))) {
-	    *ret = rb_complex_raw2(num, ZERO);
+	    *ret = rb_complex_new2(num, ZERO);
 	    return 0; /* e.g. "1@x" */
 	}
 	num2 = str2num(bb);
@@ -1692,23 +1692,23 @@ read_comp(const char **s, int strict,
 	    num2 = INT2FIX((sign == '-') ? -1 : + 1);
 	else {
 	    if (!read_rat_nos(s, strict, b)) {
-		*ret = rb_complex_raw2(num, ZERO);
+		*ret = rb_complex_new2(num, ZERO);
 		return 0; /* e.g. "1+xi" */
 	    }
 	    **b = '\0';
 	    num2 = str2num(bb);
 	}
 	if (!isimagunit(**s)) {
-	    *ret = rb_complex_raw2(num, ZERO);
+	    *ret = rb_complex_new2(num, ZERO);
 	    return 0; /* e.g. "1+3x" */
 	}
 	(*s)++;
-	*ret = rb_complex_raw2(num, num2);
+	*ret = rb_complex_new2(num, num2);
 	return 1; /* e.g. "1+2i" */
     }
     /* !(@, - or +) */
     {
-	*ret = rb_complex_raw2(num, ZERO);
+	*ret = rb_complex_new2(num, ZERO);
 	return 1; /* e.g. "3" */
     }
 }
