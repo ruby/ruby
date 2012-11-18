@@ -189,7 +189,7 @@ loadpath: $(PREP) PHONY
 
 $(PREP): $(MKFILES)
 
-miniruby$(EXEEXT): config.status $(ALLOBJS) $(ARCHFILE)
+miniruby$(EXEEXT): config.status $(ALLOBJS) $(ARCHFILE) $(DTRACE_OBJ)
 
 objs: $(ALLOBJS)
 
@@ -214,7 +214,7 @@ wprogram: showflags $(WPROGRAM)
 
 $(PROGRAM) $(WPROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
 
-$(LIBRUBY_A):	$(OBJS) $(MAINOBJ) $(DMYEXT) $(ARCHFILE)
+$(LIBRUBY_A):	$(OBJS) $(MAINOBJ) $(DTRACE_OBJ) $(DTRACE_GLOMMED_OBJ) $(DMYEXT) $(ARCHFILE)
 
 $(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(LIBRUBY_A) $(PREP) $(LIBRUBY_SO_UPDATE) $(BUILTIN_ENCOBJS)
 
@@ -435,7 +435,7 @@ clean: clean-ext clean-local clean-enc clean-golf clean-rdoc clean-capi clean-ex
 clean-local:: PHONY
 	$(Q)$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
-	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h prelude.c config.log rbconfig.rb $(ruby_pc) probes.h
+	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h prelude.c config.log rbconfig.rb $(ruby_pc) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT)
 clean-ext:: PHONY
 clean-golf: PHONY
 	$(Q)$(RM) $(GORUBY)$(EXEEXT) $(GOLFOBJS)
@@ -813,6 +813,19 @@ $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(srcdir)/tool/transcode-tblgen.
 newline.$(OBJEXT): $(NEWLINE_C) {$(VPATH)}defines.h \
   {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}st.h \
   {$(VPATH)}transcode_data.h {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}subst.h
+
+DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
+		eval.$(OBJEXT) \
+		gc.$(OBJEXT) \
+		hash.$(OBJEXT) \
+		load.$(OBJEXT) \
+		object.$(OBJEXT) \
+		parse.$(OBJEXT) \
+		string.$(OBJEXT) \
+		vm.$(OBJEXT)
+
+probes.$(OBJEXT): $(DTRACE_DEPENDENT_OBJS)
+ruby-glommed.$(OBJEXT): $(OBJS) $(DTRACE_OBJ)
 
 $(OBJS):  {$(VPATH)}config.h {$(VPATH)}missing.h
 

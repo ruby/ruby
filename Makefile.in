@@ -119,6 +119,7 @@ LIBRUBYARG    = @LIBRUBYARG@
 LIBRUBYARG_STATIC = @LIBRUBYARG_STATIC@
 LIBRUBYARG_SHARED = @LIBRUBYARG_SHARED@
 LIBRUBY_RELATIVE = @LIBRUBY_RELATIVE@
+LIBRUBY_A_OBJS = @LIBRUBY_A_OBJS@
 
 THREAD_MODEL  = @THREAD_MODEL@
 
@@ -149,6 +150,8 @@ VCS           = @VCS@
 VCSUP         = @VCSUP@
 DTRACE        = @DTRACE@
 DTRACE_EXT    = @DTRACE_EXT@
+DTRACE_OBJ   = @DTRACE_OBJ@
+DTRACE_GLOMMED_OBJ = @DTRACE_GLOMMED_OBJ@
 
 OBJEXT        = @OBJEXT@
 ASMEXT        = S
@@ -184,7 +187,7 @@ all:
 miniruby$(EXEEXT):
 		@-if test -f $@; then $(MV) -f $@ $@.old; $(RM) $@.old; fi
 		$(ECHO) linking $@
-		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) $(OUTFLAG)$@
+		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(DTRACE_OBJ) $(LIBS) $(OUTFLAG)$@
 
 $(PROGRAM):
 		@$(RM) $@
@@ -198,7 +201,7 @@ $(PROGRAM):
 $(LIBRUBY_A):
 		@$(RM) $@
 		$(ECHO) linking static-library $@
-		$(Q) $(AR) $(ARFLAGS) $@ $(OBJS) $(DMYEXT)
+		$(Q) $(AR) $(ARFLAGS) $@ $(LIBRUBY_A_OBJS) $(DMYEXT)
 		@-$(RANLIB) $@ 2> /dev/null || true
 		$(ECHO) verifying static-library $@
 		@$(PURIFY) $(CC) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)conftest$(EXEEXT) $(LDFLAGS)
@@ -207,7 +210,7 @@ $(LIBRUBY_A):
 $(LIBRUBY_SO):
 		@-$(PRE_LIBRUBY_UPDATE)
 		$(ECHO) linking shared-library $@
-		$(Q) $(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(SOLIBS) $(EXTSOLIBS) $(OUTFLAG)$@
+		$(Q) $(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(DTRACE_OBJ) $(SOLIBS) $(EXTSOLIBS) $(OUTFLAG)$@
 		-$(Q) $(OBJCOPY) -w -L '$(SYMBOL_PREFIX)Init_*' -L '$(SYMBOL_PREFIX)*_threadptr_*' $@
 		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
@@ -333,6 +336,25 @@ probes.h: probes.$(DTRACE_EXT)
 	$(Q) $(DTRACE) -o $@.tmp -h -s $<
 	$(Q) sed -e 's/RUBY_/RUBY_DTRACE_/g' -e 's/PROBES_H_TMP/PROBES_H/g' $@.tmp > $@
 	$(Q) $(RM) $@.tmp
+
+probes.@OBJEXT@: $(srcdir)/probes.d
+	@$(ECHO) processing probes in object files
+	$(Q) stamp="$*.stamp"; \
+	  if test -f "$$stamp" -o -f "$@"; then \
+	  $(RM) $(DTRACE_DEPENDENT_OBJS) "$$stamp"; \
+	  for o in $(DTRACE_DEPENDENT_OBJS); do \
+	    echo "rebuilding $$o which was modified by \"dtrace -G\""; \
+	    $(MAKE) "$$o"; \
+	  done; \
+	fi; \
+	touch "$$stamp"
+	$(Q) $(DTRACE) -G -s $(srcdir)/probes.d -o $@ $(DTRACE_DEPENDENT_OBJS)
+
+# DTrace static library hacks described here:
+# http://mail.opensolaris.org/pipermail/dtrace-discuss/2005-August/000207.html
+ruby-glommed.$(OBJEXT):
+	@$(ECHO) generating a glommed object with DTrace probes for static library
+	$(Q) $(LD) -r -o $@ $(OBJS) $(DTRACE_OBJ)
 
 clean-local::
 	$(Q)$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output \

@@ -378,7 +378,9 @@ AC_PROG_CXX
 RUBY_MINGW32
 AC_PROG_GCC_TRADITIONAL
 AC_SUBST(GCC)
-AC_CHECK_TOOL([LD], [ld], [ld])
+AS_CASE(["$target_os"],
+[solaris*], [AC_PATH_TOOL([LD], [ld], [/usr/ccs/bin/ld], [/usr/ccs/bin:$PATH])],
+[AC_CHECK_TOOL([LD], [ld], [ld])])
 AC_SUBST(LD)
 if test "$GCC" = yes; then
     linker_flag=-Wl,
@@ -387,20 +389,6 @@ if test "$GCC" = yes; then
 else
     linker_flag=
 fi
-
-AC_CHECK_PROG([DTRACE], [${ac_tool_prefix}dtrace], [${ac_tool_prefix}dtrace])
-if test "$cross_compiling:$ac_cv_prog_DTRACE" = no: -a -n "$ac_tool_prefix"; then
-    AC_CHECK_PROG([DTRACE], [dtrace], [dtrace])
-fi
-AS_CASE(["$target_os"],
-[freebsd*], [DTRACE=]
-)
-if test -n "$DTRACE"; then
-    DTRACE_EXT=d
-else
-    DTRACE_EXT=dmyh
-fi
-AC_SUBST(DTRACE_EXT)
 
 RUBY_PROG_GNU_LD
 RUBY_CPPOUTFILE
@@ -475,6 +463,54 @@ if test "x$MKDIR_P" = "x -d"; then
 fi
 MAKEDIRS="$MKDIR_P"
 AC_SUBST(MAKEDIRS)
+
+AC_DEFUN([RUBY_DTRACE_POSTPROCESS],
+[AC_CACHE_CHECK(whether $DTRACE needs post processing, rb_cv_prog_dtrace_g,
+[
+ echo "int main(void){ return 0; }" > conftest.c
+ echo "provider conftest{};" > conftest_provider.d
+ $CC $CFLAGS -c -o conftest.o conftest.c
+ if $DTRACE -G -s conftest_provider.d conftest.o 2>/dev/null; then
+   rb_cv_prog_dtrace_g=yes
+   $1
+ else
+   rb_cv_prog_dtrace_g=no
+   $2
+ fi
+ rm -f conftest.o conftest.c conftest_provider.d conftest_provider.o
+])
+])
+
+AC_DEFUN([RUBY_DTRACE_BSD_BROKEN],
+[AC_CACHE_CHECK(whether dtrace USDT is broken, rb_cv_dtrace_bsd_broken,
+[
+    cat <<EOF > conftest.c
+#define _DTRACE_VERSION 1
+#include "conftest_provider.h"
+int main(void)
+{
+    if (CONFTEST_FIRE_ENABLED()) CONFTEST_FIRE();
+    return 0;
+}
+EOF
+    echo "provider conftest{ probe fire(); };" > conftest_provider.d
+    $DTRACE -h -o conftest_provider.h -s conftest_provider.d
+    $CC $CFLAGS -c -o conftest.o conftest.c
+    if $DTRACE -G -o conftest_provider.o -s conftest_provider.d conftest.o >/dev/null 2>/dev/null; then
+        rb_cv_dtrace_bsd_broken=no
+        $2
+    else
+        rb_cv_dtrace_bsd_broken=yes
+        $1
+    fi
+    rm -f conftest.[co] conftest_provider.[dho]
+])
+])
+
+AC_CHECK_PROG([DTRACE], [${ac_tool_prefix}dtrace], [${ac_tool_prefix}dtrace])
+if test "$cross_compiling:$ac_cv_prog_DTRACE" = no: -a -n "$ac_tool_prefix"; then
+    AC_CHECK_PROG([DTRACE], [dtrace], [dtrace])
+fi
 
 AC_CHECK_PROGS(DOT, dot)
 AC_CHECK_PROGS(DOXYGEN, doxygen)
@@ -2692,6 +2728,51 @@ if test "$EXEEXT" = .exe; then
     EXECUTABLE_EXTS=`echo $EXECUTABLE_EXTS | tr -d '"' | tr , ' '`
     AC_SUBST(EXECUTABLE_EXTS)
 fi
+
+AC_ARG_ENABLE(dtrace,
+        AS_HELP_STRING([--enable-dtrace],
+            [enable DTrace for tracing ruby's internal.]),
+            [enable_dtrace=$enableval], [enable_dtrace=auto])
+
+if test "${enable_dtrace}" = "auto"; then
+    if test x"$DTRACE" != x -a x"$cross_compiling" != xyes; then
+        RUBY_DTRACE_POSTPROCESS()
+        if test "$rb_cv_prog_dtrace_g" = 'yes'; then
+            RUBY_DTRACE_BSD_BROKEN([enable_dtrace=no], [enable_dtrace=yes])
+        else
+            enable_dtrace=yes
+            AS_CASE(["$target_os"],
+            [freebsd*], [enable_dtrace=no]
+            )
+        fi
+    else
+        enable_dtrace=no
+    fi
+fi
+
+LIBRUBY_A_OBJS='$(OBJS)'
+if test "${enable_dtrace}" = "yes"; then
+    if test -z "$DTRACE"; then
+        AC_MSG_ERROR([dtrace(1) is missing])
+    elif test "$cross_compiling" = yes; then
+        AC_MSG_ERROR([--enable-dtrace, however, cross compiling])
+    else
+        RUBY_DTRACE_POSTPROCESS()
+        if test "$rb_cv_prog_dtrace_g" = 'yes'; then 
+            RUBY_DTRACE_BSD_BROKEN([AC_MSG_ERROR([--enable-dtrace, however, USDT is broken])], [])
+            DTRACE_OBJ='probes.$(OBJEXT)'
+            DTRACE_GLOMMED_OBJ='ruby-glommed.$(OBJEXT)'
+            LIBRUBY_A_OBJS='$(DTRACE_GLOMMED_OBJ)'
+        fi
+    fi
+    DTRACE_EXT=d
+else
+    DTRACE_EXT=dmyh
+fi
+AC_SUBST(DTRACE_EXT)
+AC_SUBST(DTRACE_OBJ)
+AC_SUBST(DTRACE_GLOMMED_OBJ)
+AC_SUBST(LIBRUBY_A_OBJS)
 
 }
 { # build section
