@@ -93,6 +93,12 @@ with all sufficient information, see the ChangeLog file.
       * Module#const_get accepts a qualified constant string, e.g.
         Object.const_get("Foo::Bar::Baz")
 
+  * Class
+    * added method:
+      * added Class#singleton_instance returning the attached instance from a
+        singleton Class. This is the reversed version of the
+        Kernel#singleton_class getter method.
+
   * NilClass
     * added method:
       * added nil.to_h which returns {}

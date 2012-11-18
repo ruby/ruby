@@ -1293,10 +1293,25 @@ special_singleton_class_of(VALUE obj)
     return Qnil;
 }
 
+static inline VALUE
+special_singleton_instance_of(VALUE obj)
+{
+    SPECIAL_SINGLETON(rb_cNilClass, Qnil);
+    SPECIAL_SINGLETON(rb_cFalseClass, Qfalse);
+    SPECIAL_SINGLETON(rb_cTrueClass, Qtrue);
+    rb_raise(rb_eTypeError, "not singleton class");
+}
+
 VALUE
 rb_special_singleton_class(VALUE obj)
 {
     return special_singleton_class_of(obj);
+}
+
+VALUE
+rb_special_singleton_instance(VALUE obj)
+{
+    return special_singleton_instance_of(obj);
 }
 
 /*!
