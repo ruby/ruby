@@ -733,7 +733,8 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 		if (badcheck) goto bad;
 		break;
 	    }
-	    nondigit = (char) c;
+	    if (badcheck)
+		nondigit = (char) c;
 	    continue;
 	}
 	else if ((c = conv_digit(c)) < 0) {
