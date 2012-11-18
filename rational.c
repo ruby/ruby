@@ -1,5 +1,5 @@
 /*
-  rational.c: Coded by Tadayoshi Funaba 2008-2011
+  rational.c: Coded by Tadayoshi Funaba 2008-2012
 
   This implementation is based on Keiju Ishitsuka's Rational library
   which is written in ruby.
@@ -2093,18 +2093,21 @@ read_rat(const char **s, int strict,
     return 1;
 }
 
+static void
+skip_ws(const char **s)
+{
+    while (isspace((unsigned char)**s))
+	(*s)++;
+}
+
 static int
 parse_rat(const char *s, int strict,
 	  VALUE *num)
 {
-    while (isspace((unsigned char)*s))
-	s++;
-
+    skip_ws(&s);
     if (!read_rat(&s, strict, num))
 	return 0;
-
-    while (isspace((unsigned char)*s))
-	s++;
+    skip_ws(&s);
 
     if (strict)
 	if (*s != '\0')

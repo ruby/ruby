@@ -1,5 +1,5 @@
 /*
-  complex.c: Coded by Tadayoshi Funaba 2008-2011
+  complex.c: Coded by Tadayoshi Funaba 2008-2012
 
   This implementation is based on Keiju Ishitsuka's Complex library
   which is written in ruby.
@@ -1626,10 +1626,8 @@ str2num(char *s)
 {
     if (strchr(s, '/'))
 	return rb_cstr_to_rat(s, 0);
-    if (strpbrk(s, ".eE")) {
-	double d = rb_cstr_to_dbl(s, 0);
-	return DBL2NUM(d);
-    }
+    if (strpbrk(s, ".eE"))
+	return DBL2NUM(rb_cstr_to_dbl(s, 0));
     return rb_cstr_to_inum(s, 10, 0);
 }
 
@@ -1715,6 +1713,13 @@ read_comp(const char **s, int strict,
     }
 }
 
+static void
+skip_ws(const char **s)
+{
+    while (isspace((unsigned char)**s))
+	(*s)++;
+}
+
 static int
 parse_comp(const char *s, int strict,
 	   VALUE *num)
@@ -1724,14 +1729,10 @@ parse_comp(const char *s, int strict,
     buf = ALLOCA_N(char, strlen(s) + 1);
     b = buf;
 
-    while (isspace((unsigned char)*s))
-	s++;
-
+    skip_ws(&s);
     if (!read_comp(&s, strict, num, &b))
 	return 0;
-
-    while (isspace((unsigned char)*s))
-	s++;
+    skip_ws(&s);
 
     if (strict)
 	if (*s != '\0')
