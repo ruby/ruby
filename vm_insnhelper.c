@@ -14,6 +14,7 @@
 #include "constant.h"
 #include "internal.h"
 #include "probes.h"
+#include "probes_helper.h"
 
 /* control stack frame */
 

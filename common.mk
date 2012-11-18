@@ -612,7 +612,7 @@ ID_H_INCLUDES      = {$(VPATH)}id.h
 PROBES_H_INCLUDES  = {$(VPATH)}probes.h
 VM_CORE_H_INCLUDES = {$(VPATH)}vm_core.h {$(VPATH)}thread_$(THREAD_MODEL).h \
 		     {$(VPATH)}node.h {$(VPATH)}method.h {$(VPATH)}ruby_atomic.h \
-		     $(ID_H_INCLUDES) $(PROBES_H_INCLUDES)
+		     $(ID_H_INCLUDES)
 
 addr2line.$(OBJEXT): {$(VPATH)}addr2line.c {$(VPATH)}addr2line.h {$(VPATH)}config.h
 array.$(OBJEXT): {$(VPATH)}array.c $(RUBY_H_INCLUDES) {$(VPATH)}util.h \
@@ -768,7 +768,8 @@ vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}gc.h {$(VPATH)}iseq.h \
   {$(VPATH)}vm_insnhelper.c {$(VPATH)}vm_insnhelper.h {$(VPATH)}vm_exec.c \
   {$(VPATH)}vm_exec.h {$(VPATH)}insns.def {$(VPATH)}vmtc.inc \
   {$(VPATH)}vm.inc {$(VPATH)}insns.inc {$(VPATH)}debug.h \
-  {$(VPATH)}internal.h {$(VPATH)}vm.h {$(VPATH)}constant.h $(PROBES_H_INCLUDES)
+  {$(VPATH)}internal.h {$(VPATH)}vm.h {$(VPATH)}constant.h \
+  $(PROBES_H_INCLUDES) {$(VPATH)}probes_helper.h
 vm_dump.$(OBJEXT): {$(VPATH)}vm_dump.c $(RUBY_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h {$(VPATH)}addr2line.h \
   {$(VPATH)}internal.h

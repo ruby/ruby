@@ -19,6 +19,7 @@
 #include "iseq.h"
 #include "eval_intern.h"
 #include "probes.h"
+#include "probes_helper.h"
 
 static inline VALUE *
 VM_EP_LEP(VALUE *ep)

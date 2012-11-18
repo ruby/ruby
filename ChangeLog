@@ -1,3 +1,12 @@
+Mon Nov 19 01:11:59 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* vm_core.h, probes_helper.h (RUBY_DTRACE_FUNC_ENTRY_HOOK,
+	  RUBY_DTRACE_FUNC_RETURN_HOOK): move from vm_core.h to new file
+	  probes_helper.h for narrowing dependency to probes.h.
+	* common.mk (VM_CORE_H_INCLUDES): remove dependency to probes.h.
+	* common.mk (vm.$(OBJEXT)): add dependency to probes_helper.h.
+	* vm.c, vm_insnhelper.c: include probes_helper.h.
+
 Sun Nov 18 20:46:08 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* bignum.c (rb_cstr_to_inum): should accept underscores of
