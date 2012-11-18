@@ -110,7 +110,7 @@ rb_get_expanded_load_path(void)
     rb_vm_t *vm = GET_VM();
     const VALUE non_cache = Qtrue;
 
-    if (!rb_ary_shared_with_p(vm->load_path_snapshot, vm->load_path)) {
+    if (!rb_ary_dup_of_p(vm->load_path_snapshot, vm->load_path)) {
 	/* The load path was modified. Rebuild the expanded load path. */
 	int has_relative = 0, has_non_cache = 0;
 	rb_construct_expanded_load_path(EXPAND_ALL, &has_relative, &has_non_cache);
@@ -247,7 +247,7 @@ get_loaded_features_index(void)
     int i;
     rb_vm_t *vm = GET_VM();
 
-    if (!rb_ary_shared_with_p(vm->loaded_features_snapshot, vm->loaded_features)) {
+    if (!rb_ary_dup_of_p(vm->loaded_features_snapshot, vm->loaded_features)) {
 	/* The sharing was broken; something (other than us in rb_provide_feature())
 	   modified loaded_features.  Rebuild the index. */
 	rb_hash_clear(vm->loaded_features_index);
