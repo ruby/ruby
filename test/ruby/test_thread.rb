@@ -282,6 +282,77 @@ class TestThread < Test::Unit::TestCase
     end.join
   end
 
+  class Serializer
+    def initialize
+      @mutex = Mutex.new
+      @condvar = ConditionVariable.new
+    end
+    def wait
+      @mutex.synchronize{
+        @condvar.wait(@mutex)
+      }
+    end
+    def signal
+      @mutex.synchronize{ @condvar.signal }
+    end
+  end
+
+  def test_condvar_wait_timeout
+    serialize = Serializer.new
+
+    mutex = Mutex.new
+    condvar = ConditionVariable.new
+    def condvar.waiters
+      @waiters
+    end
+    thread = Thread.new do
+      serialize.signal
+      mutex.synchronize do
+        condvar.wait(mutex, 0.001)
+      end
+    end
+    serialize.wait
+    mutex.synchronize do
+      sleep(0.01)
+      assert_not_includes(condvar.waiters, thread)
+    end
+  end
+
+  def test_condvar_wait_timeout_2
+    serialize = Serializer.new
+
+    mutex = Mutex.new
+    condvar = ConditionVariable.new
+
+    wait_timeout = Thread.new do
+      serialize.signal
+      mutex.synchronize do
+        condvar.wait(mutex, 0.001)
+      end
+    end
+    serialize.wait
+
+    wait_forever = Thread.new do
+      serialize.signal
+      mutex.synchronize do
+        condvar.wait(mutex)
+      end
+    end
+    serialize.wait
+
+    mutex.synchronize do
+      sleep(0.01)
+      condvar.signal
+    end
+    # If wait_timeout thread didn't remove himself
+    # from condvar sleepers, than signale tries to
+    # wakeup wait_timeout instead of wait_forever
+    # and fatal deadlock occures in a line below
+    wait_timeout.join
+    wait_forever.join
+
+  end
+
   def test_local_barrier
     dir = File.dirname(__FILE__)
     lbtest = File.join(dir, "lbtest.rb")
