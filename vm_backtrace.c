@@ -698,14 +698,14 @@ rb_make_backtrace(void)
 }
 
 static VALUE
-vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_deafult, int lev_plus, int to_str)
+vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_default, int lev_plus, int to_str)
 {
     VALUE level, vn;
     int lev, n;
 
     rb_scan_args(argc, argv, "02", &level, &vn);
 
-    lev = NIL_P(level) ? lev_deafult : NUM2INT(level);
+    lev = NIL_P(level) ? lev_default : NUM2INT(level);
 
     if (NIL_P(vn)) {
 	n = 0;
