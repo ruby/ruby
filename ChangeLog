@@ -1,3 +1,8 @@
+Tue Nov 20 09:36:55 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (install_sighandler): added comments why we need
+	  rb_disable_interrupt().
+
 Tue Nov 20 09:31:33 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (rb_disable_interrupt, rb_enable_interrupt): removed

@@ -986,8 +986,10 @@ install_sighandler(int signum, sighandler_t handler)
 {
     sighandler_t old;
 
+    /* At this time, there is no subthread. Then sigmask guarantee atomics. */
     rb_disable_interrupt();
     old = ruby_signal(signum, handler);
+    /* signal handler should be inherited during exec. */
     if (old != SIG_DFL) {
 	ruby_signal(signum, old);
     }
