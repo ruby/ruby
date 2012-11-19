@@ -6,6 +6,7 @@ RUNCMD = $(SHELL)
 CHDIR = @CHDIR@
 exec = exec
 NULL = /dev/null
+PATH_SEPARATOR = @PATH_SEPARATOR@
 
 #### Start of system configuration section. ####
 

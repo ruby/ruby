@@ -6,6 +6,7 @@ RUNCMD = $(COMSPEC) /c
 MKFILES = Makefile
 NULL = nul
 CHDIR = cd
+PATH_SEPARATOR = ;
 
 !ifndef MFLAGS
 MFLAGS=-l

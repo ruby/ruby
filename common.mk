@@ -10,7 +10,7 @@ Q1 = $(V:1=)
 Q = $(Q1:0=@)
 ECHO = $(ECHO1:0=@echo)
 
-RUBYLIB       = -
+RUBYLIB       = $(PATH_SEPARATOR)
 RUBYOPT       = -
 RUN_OPTS      = --disable-gems
 

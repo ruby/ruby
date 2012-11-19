@@ -1,3 +1,10 @@
+Mon Nov 19 16:08:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (RUBYLIB): purelib option in runruby.rb is deprecated
+	  since r28841, so set to an empty list to get rid of a bogus path in
+	  child processes, which caused an insecure operation exception in
+	  test/ruby/test_encoding.rb:test_unsafe.
+
 Mon Nov 19 15:40:50 2012  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* .travis.yml (script): add OPTS=-v, requested by @_ko1.
