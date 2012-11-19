@@ -1012,8 +1012,6 @@ rb_thread_sleep(int sec)
     rb_thread_wait_for(rb_time_timeval(INT2FIX(sec)));
 }
 
-static void rb_threadptr_execute_interrupts_common(rb_thread_t *, int blocking);
-
 static void
 rb_thread_schedule_limits(unsigned long limits_us)
 {
@@ -1039,7 +1037,7 @@ rb_thread_schedule(void)
     rb_thread_schedule_limits(0);
 
     if (UNLIKELY(GET_THREAD()->interrupt_flag)) {
-	rb_threadptr_execute_interrupts_common(GET_THREAD(), 0);
+	rb_threadptr_execute_interrupts(GET_THREAD(), 0);
     }
 }
 
@@ -1696,8 +1694,8 @@ rb_threadptr_to_kill(rb_thread_t *th)
     TH_JUMP_TAG(th, TAG_FATAL);
 }
 
-static void
-rb_threadptr_execute_interrupts_common(rb_thread_t *th, int blocking_timing)
+void
+rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 {
     rb_atomic_t interrupt;
 
@@ -1759,17 +1757,11 @@ rb_threadptr_execute_interrupts_common(rb_thread_t *th, int blocking_timing)
 }
 
 void
-rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
-{
-    rb_threadptr_execute_interrupts_common(th, blocking_timing);
-}
-
-void
 rb_thread_execute_interrupts(VALUE thval)
 {
     rb_thread_t *th;
     GetThreadPtr(thval, th);
-    rb_threadptr_execute_interrupts_common(th, 1);
+    rb_threadptr_execute_interrupts(th, 1);
 }
 
 static void

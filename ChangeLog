@@ -1,3 +1,11 @@
+Tue Nov 20 09:56:15 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_threadptr_execute_interrupts) removed.
+	* thread.c (rb_threadptr_execute_interrupts_common) renamed to
+	  rb_threadptr_execute_interrupts. I.e. unified
+	  rb_threadptr_execute_interrupts and rb_threadptr_execute_interrupts_common.
+	* thread.c (rb_thread_schedule, rb_thread_execute_interrupts) s/_common//.
+
 Tue Nov 20 09:48:34 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (rb_get_next_signal): removed pointless signal
