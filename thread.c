@@ -1682,12 +1682,12 @@ check_interrupt_func(rb_thread_t *cur_th)
 static VALUE
 rb_thread_s_check_interrupt(VALUE self)
 {
-    rb_thread_t *th = GET_THREAD();
+    rb_thread_t *cur_th = GET_THREAD();
 
-    if (!rb_threadptr_async_errinfo_empty_p(th)) {
+    if (!rb_threadptr_async_errinfo_empty_p(cur_th)) {
 	VALUE mask = rb_hash_new();
 	rb_hash_aset(mask, rb_cObject, ID2SYM(rb_intern("immediate")));
-	rb_threadptr_interrupt_mask(GET_THREAD(), mask, check_interrupt_func);
+	rb_threadptr_interrupt_mask(cur_th, mask, check_interrupt_func);
     }
 
     return Qnil;

@@ -1,3 +1,8 @@
+Tue Nov 20 10:14:22 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_s_check_interrupt): removed redundant
+	  GET_THREAD().
+
 Tue Nov 20 10:12:46 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_threadptr_async_errinfo_active_p): added a small
