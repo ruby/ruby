@@ -105,6 +105,9 @@ with all sufficient information, see the ChangeLog file.
       * added Range#bsearch for binary search.
 
   * Signal
+    * added method:
+      * added Signal.signame which returns signal name
+
     * incompatible changes:
       * Signal.trap raises ArgumentError when :SEGV, :BUS, :ILL, :FPE, :VTALRM
         are specified.

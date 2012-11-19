@@ -207,6 +207,26 @@ signo2signm(int no)
     return 0;
 }
 
+/*
+ * call-seq:
+ *     Signal.signame(signo)  ->  string
+ *
+ *  convert signal number to signal name
+ *
+ *     Signal.trap("INT") { |signo| puts Signal.signame(signo) }
+ *     Process.kill("INT", 0)
+ *
+ *  <em>produces:</em>
+ *
+ *     INT
+ */
+static VALUE
+sig_signame(VALUE recv, VALUE signo)
+{
+    const char *signame = signo2signm(NUM2INT(signo));
+    return rb_str_new_cstr(signame);
+}
+
 const char *
 ruby_signal_name(int no)
 {
@@ -1086,6 +1106,7 @@ Init_signal(void)
     rb_define_global_function("trap", sig_trap, -1);
     rb_define_module_function(mSignal, "trap", sig_trap, -1);
     rb_define_module_function(mSignal, "list", sig_list, 0);
+    rb_define_module_function(mSignal, "signame", sig_signame, 1);
 
     rb_define_method(rb_eSignal, "initialize", esignal_init, -1);
     rb_define_method(rb_eSignal, "signo", esignal_signo, 0);

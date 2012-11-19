@@ -240,4 +240,22 @@ EOS
     }
   end
 
+  def test_signame
+    return unless Process.respond_to?(:kill)
+
+    begin
+      10.times do
+        caught = 0
+        signame = "wrong"
+
+        Signal.trap("INT") { |signo| signame = Signal.signame(signo); caught = 1;  }
+        Process.kill("INT", 0)
+
+        sleep 0.01 while caught==0
+        assert_equal(signame, "INT")
+      end
+    ensure
+      Signal.trap("INT", "DEFAULT")
+    end
+  end
 end

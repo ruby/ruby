@@ -1,3 +1,10 @@
+Tue Nov 20 08:36:15 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (sig_signame): implements Signal.signame method
+	[Feature #5613]
+	* test/ruby/test_signal.rb (test_signame): adds test for above
+	* NEWS: add an item about above
+
 Mon Nov 19 16:30:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* struct.c (rb_struct_each_pair): yield associated pairs so that
