@@ -901,8 +901,10 @@ golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) $(srcdir)/prelude.
 	$(ECHO) generating $@
 	$(Q) $(COMPILE_PRELUDE) $(srcdir)/golf_prelude.rb $@
 
-{$(VPATH)}probes.dmyh: {$(srcdir)}probes.d $(srcdir)/tool/gen_dummy_probes.rb
+$(srcdir)/probes.dmyh: {$(srcdir)}probes.d $(srcdir)/tool/gen_dummy_probes.rb
 	$(BASERUBY) $(srcdir)/tool/gen_dummy_probes.rb $(srcdir)/probes.d > $@
+
+probes.h: $(srcdir)/probes.$(DTRACE_EXT)
 
 {$(VPATH)}.dmyh.h:
 	@$(ECHO) copying dummy $(DEST_FILE)

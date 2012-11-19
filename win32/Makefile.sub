@@ -55,7 +55,7 @@ iconinc=-I$(icondirs: = -I)
 !endif
 ###############
 
-.SUFFIXES: .y .def .lib
+.SUFFIXES: .def .lib
 
 !if !defined(CC)
 CC = cl

@@ -331,8 +331,6 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	@$(ECHO) preprocessing $<
 	$(Q) $(CPP) $(warnflags) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -E $< > $@
 
-probes.h: probes.$(DTRACE_EXT)
-
 .d.h:
 	@$(ECHO) translating probes $<
 	$(Q) $(DTRACE) -o $@.tmp -h -s $<
