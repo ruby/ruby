@@ -1,3 +1,11 @@
+Mon Nov 19 10:00:10 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* Makefile.in (.SUFFIX): bsdmake needs .SUFFIX is defined before use.
+
+	* common.mk: fix path of probes.dmyh.
+
+	* configure.in: FreeBSD's USDT requires libelf.
+
 Mon Nov 19 01:11:59 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* vm_core.h, probes_helper.h (RUBY_DTRACE_FUNC_ENTRY_HOOK,

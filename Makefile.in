@@ -177,6 +177,8 @@ MESSAGE_END = ; do echo "$$line"; done
 configure_args = @configure_args@
 #### End of variables
 
+.SUFFIXES: .inc .h .c .y .i .$(DTRACE_EXT)
+
 all:
 
 .DEFAULT: all

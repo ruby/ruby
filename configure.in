@@ -1286,6 +1286,10 @@ main()
 		AC_DEFINE(BROKEN_SETREGID, 1)
                 ac_cv_sizeof_rlim_t=8],
 [freebsd*], [	LIBS="-lm $LIBS"
+		if test "${rb_cv_prog_dtrace_g}" = "yes"; then
+			# FreeBSD's dtrace requires libelf
+			LIBS="-lelf $LIBS"
+		fi
 		ac_cv_func_getpeername=no
 		ac_cv_func_getsockname=no
 		ac_cv_func_shutdown=no
