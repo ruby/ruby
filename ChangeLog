@@ -1,3 +1,12 @@
+Tue Nov 20 09:31:33 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (rb_disable_interrupt, rb_enable_interrupt): removed
+	  USE_TRAP_MASK.
+	* signal.c (trap_arg, trap_ensure): removed.
+	* signal.c (trap, sig_trap): removed pointless signal disabling.
+	  We don't need it bacause we no longer run trap hander on signal
+	  hander context.
+
 Tue Nov 20 09:20:49 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* prelude.rb: Moved Mutex#synchronize to

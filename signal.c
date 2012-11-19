@@ -36,12 +36,6 @@ ruby_atomic_exchange(rb_atomic_t *ptr, rb_atomic_t val)
 #undef SIGBUS
 #endif
 
-#ifdef HAVE_PTHREAD_SIGMASK
-#define USE_TRAP_MASK 1
-#else
-#define USE_TRAP_MASK 0
-#endif
-
 #ifndef NSIG
 # define NSIG (_SIGMAX + 1)      /* For QNX */
 #endif
@@ -543,7 +537,7 @@ rb_signal_buff_size(void)
 static void
 rb_disable_interrupt(void)
 {
-#if USE_TRAP_MASK
+#ifdef HAVE_PTHREAD_SIGMASK
     sigset_t mask;
     sigfillset(&mask);
     pthread_sigmask(SIG_SETMASK, &mask, NULL);
@@ -553,7 +547,7 @@ rb_disable_interrupt(void)
 static void
 rb_enable_interrupt(void)
 {
-#if USE_TRAP_MASK
+#ifdef HAVE_PTHREAD_SIGMASK
     sigset_t mask;
     sigemptyset(&mask);
     pthread_sigmask(SIG_SETMASK, &mask, NULL);
@@ -689,15 +683,6 @@ rb_signal_exec(rb_thread_t *th, int sig)
 	signal_exec(cmd, safe, sig);
     }
 }
-
-struct trap_arg {
-#if USE_TRAP_MASK
-    sigset_t mask;
-#endif
-    int sig;
-    sighandler_t func;
-    VALUE cmd;
-};
 
 static sighandler_t
 default_handler(int sig)
@@ -849,13 +834,17 @@ trap_signm(VALUE vsig)
 }
 
 static VALUE
-trap(struct trap_arg *arg)
+trap(int sig, sighandler_t func, VALUE command)
 {
-    sighandler_t oldfunc, func = arg->func;
-    VALUE oldcmd, command = arg->cmd;
-    int sig = arg->sig;
+    sighandler_t oldfunc;
+    VALUE oldcmd;
     rb_vm_t *vm = GET_VM();
 
+    /*
+     * Be careful. ruby_signal() and trap_list[sig].cmd must be changed
+     * atomically. In current implementation, we only need to don't call
+     * RUBY_VM_CHECK_INTS().
+     */
     oldfunc = ruby_signal(sig, func);
     oldcmd = vm->trap_list[sig].cmd;
     switch (oldcmd) {
@@ -871,22 +860,9 @@ trap(struct trap_arg *arg)
 
     vm->trap_list[sig].cmd = command;
     vm->trap_list[sig].safe = rb_safe_level();
-    /* enable at least specified signal. */
-#if USE_TRAP_MASK
-    sigdelset(&arg->mask, sig);
-#endif
+
     return oldcmd;
 }
-
-#if USE_TRAP_MASK
-static VALUE
-trap_ensure(struct trap_arg *arg)
-{
-    /* enable interrupt */
-    pthread_sigmask(SIG_SETMASK, &arg->mask, NULL);
-    return 0;
-}
-#endif
 
 static int
 reserved_signal_p(int signo)
@@ -952,45 +928,36 @@ reserved_signal_p(int signo)
 static VALUE
 sig_trap(int argc, VALUE *argv)
 {
-    struct trap_arg arg;
+    int sig;
+    sighandler_t func;
+    VALUE cmd;
 
     rb_secure(2);
     rb_check_arity(argc, 1, 2);
 
-    arg.sig = trap_signm(argv[0]);
-    if (reserved_signal_p(arg.sig)) {
-        const char *name = signo2signm(arg.sig);
+    sig = trap_signm(argv[0]);
+    if (reserved_signal_p(sig)) {
+        const char *name = signo2signm(sig);
         if (name)
             rb_raise(rb_eArgError, "can't trap reserved signal: SIG%s", name);
         else
-            rb_raise(rb_eArgError, "can't trap reserved signal: %d", (int)arg.sig);
+            rb_raise(rb_eArgError, "can't trap reserved signal: %d", sig);
     }
 
     if (argc == 1) {
-	arg.cmd = rb_block_proc();
-	arg.func = sighandler;
+	cmd = rb_block_proc();
+	func = sighandler;
     }
     else {
-	arg.cmd = argv[1];
-	arg.func = trap_handler(&arg.cmd, arg.sig);
+	cmd = argv[1];
+	func = trap_handler(&cmd, sig);
     }
 
-    if (OBJ_TAINTED(arg.cmd)) {
+    if (OBJ_TAINTED(cmd)) {
 	rb_raise(rb_eSecurityError, "Insecure: tainted signal trap");
     }
-#if USE_TRAP_MASK
-    {
-      sigset_t fullmask;
 
-      /* disable interrupt */
-      sigfillset(&fullmask);
-      pthread_sigmask(SIG_BLOCK, &fullmask, &arg.mask);
-
-      return rb_ensure(trap, (VALUE)&arg, trap_ensure, (VALUE)&arg);
-    }
-#else
-    return trap(&arg);
-#endif
+    return trap(sig, func, cmd);
 }
 
 /*
