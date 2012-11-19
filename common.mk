@@ -772,7 +772,7 @@ vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}gc.h {$(VPATH)}iseq.h \
   $(PROBES_H_INCLUDES) {$(VPATH)}probes_helper.h
 vm_dump.$(OBJEXT): {$(VPATH)}vm_dump.c $(RUBY_H_INCLUDES) \
   $(VM_CORE_H_INCLUDES) {$(VPATH)}debug.h {$(VPATH)}addr2line.h \
-  {$(VPATH)}internal.h
+  {$(VPATH)}internal.h $(PROBES_H_INCLUDES)
 debug.$(OBJEXT): {$(VPATH)}debug.c $(RUBY_H_INCLUDES) \
   $(ENCODING_H_INCLUDES) $(VM_CORE_H_INCLUDES) {$(VPATH)}eval_intern.h \
   {$(VPATH)}util.h {$(VPATH)}debug.h

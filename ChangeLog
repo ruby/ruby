@@ -4,6 +4,8 @@ Mon Nov 19 10:00:10 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk: fix path of probes.dmyh.
 
+	* common.mk (vm_dump.o): depend probes.h.
+
 	* configure.in: FreeBSD's USDT requires libelf.
 
 Mon Nov 19 01:11:59 2012  Naohisa Goto  <ngotogenome@gmail.com>
