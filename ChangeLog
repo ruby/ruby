@@ -1,3 +1,11 @@
+Mon Nov 19 15:09:07 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: fix didn't enable_dtrace=yes on auto.
+
+	* configure.in: see enable_dtrace for adding libelf on FreeBSD.
+
+	* common.mk: VPATH is not needed.
+
 Mon Nov 19 14:55:51 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c: add `Thread#backtrace_locations' method.
