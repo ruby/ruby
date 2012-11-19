@@ -1,3 +1,8 @@
+Tue Nov 20 09:20:49 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* prelude.rb: Moved Mutex#synchronize to
+	* thread.c (rb_mutex_synchronize_m): here. [Bug #4266]
+
 Tue Nov 20 08:36:15 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (sig_signame): implements Signal.signame method

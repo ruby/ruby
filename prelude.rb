@@ -1,19 +1,3 @@
-class Mutex
-  # call-seq:
-  #    mutex.synchronize { ... }
-  #
-  # Obtains a lock, runs the block, and releases the lock when the
-  # block completes.  See the example under Mutex.
-  def synchronize
-    self.lock
-    begin
-      yield
-    ensure
-      self.unlock rescue nil
-    end
-  end
-end
-
 class Thread
   MUTEX_FOR_THREAD_EXCLUSIVE = Mutex.new # :nodoc:
 

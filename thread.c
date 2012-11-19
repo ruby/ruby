@@ -4286,6 +4286,23 @@ rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg)
 }
 
 /*
+ * call-seq:
+ *    mutex.synchronize { ... }    -> result of the block
+ *
+ * Obtains a lock, runs the block, and releases the lock when the block
+ * completes.  See the example under +Mutex+.
+ */
+static VALUE
+rb_mutex_synchronize_m(VALUE self, VALUE args)
+{
+    if (!rb_block_given_p()) {
+	rb_raise(rb_eThreadError, "must be called with a block");
+    }
+
+    return rb_mutex_synchronize(self, rb_yield, Qnil);
+}
+
+/*
  * Document-class: ThreadShield
  */
 static void
@@ -4740,6 +4757,7 @@ Init_Thread(void)
     rb_define_method(rb_cMutex, "lock", rb_mutex_lock, 0);
     rb_define_method(rb_cMutex, "unlock", rb_mutex_unlock, 0);
     rb_define_method(rb_cMutex, "sleep", mutex_sleep, -1);
+    rb_define_method(rb_cMutex, "synchronize", rb_mutex_synchronize_m, 0);
 
     recursive_key = rb_intern("__recursive_key__");
     rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);
