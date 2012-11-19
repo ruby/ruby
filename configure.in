@@ -2758,7 +2758,7 @@ if test "${enable_dtrace}" = "yes"; then
         AC_MSG_ERROR([--enable-dtrace, however, cross compiling])
     else
         RUBY_DTRACE_POSTPROCESS()
-        if test "$rb_cv_prog_dtrace_g" = 'yes'; then 
+        if test "$rb_cv_prog_dtrace_g" = 'yes'; then
             RUBY_DTRACE_BSD_BROKEN([AC_MSG_ERROR([--enable-dtrace, however, USDT is broken])], [])
             DTRACE_OBJ='probes.$(OBJEXT)'
             DTRACE_GLOMMED_OBJ='ruby-glommed.$(OBJEXT)'
@@ -2774,10 +2774,10 @@ AC_SUBST(DTRACE_OBJ)
 AC_SUBST(DTRACE_GLOMMED_OBJ)
 AC_SUBST(LIBRUBY_A_OBJS)
 
-if test "${enable_dtrace}" = "yes"; then
+AS_CASE("${enable_dtrace}:${target_os}", [yes:freebsd*], [
     # FreeBSD's dtrace requires libelf
     LIBS="-lelf $LIBS"
-fi
+])
 
 }
 { # build section

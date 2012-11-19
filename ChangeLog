@@ -1,3 +1,7 @@
+Mon Nov 19 16:17:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBS): libelf is need on only FreeBSD.
+
 Mon Nov 19 16:08:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (RUBYLIB): purelib option in runruby.rb is deprecated
