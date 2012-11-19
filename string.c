@@ -6231,6 +6231,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	RB_GC_GUARD(str);
     }
 
+    RB_GC_GUARD(str);
     return orig;
 }
 
@@ -6330,6 +6331,7 @@ rb_str_each_char(VALUE str)
 	    rb_yield(rb_str_subseq(str, i, n));
 	}
     }
+    RB_GC_GUARD(str);
     return orig;
 }
 
