@@ -19,10 +19,6 @@ def readline.have_func(func)
   return super(func, headers)
 end
 
-def readline.have_macro(macro)
-  return super(macro, headers)
-end
-
 dir_config('curses')
 dir_config('ncurses')
 dir_config('termcap')
@@ -97,6 +93,4 @@ readline.have_func("remove_history")
 readline.have_func("clear_history")
 readline.have_func("rl_redisplay")
 readline.have_func("rl_insert_text")
-readline.have_macro("RL_PROMPT_START_IGNORE")
-readline.have_macro("RL_PROMPT_END_IGNORE")
 create_makefile("readline")
