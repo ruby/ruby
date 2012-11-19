@@ -3677,15 +3677,16 @@ AddExponent(Real *a, SIGNED_VALUE n)
     SIGNED_VALUE e = a->exponent;
     SIGNED_VALUE m = e+n;
     SIGNED_VALUE eb, mb;
+    /* Use unsigned VALUE to avoid undefined behavior */
     if(e>0) {
         if(n>0) {
-            mb = m*(SIGNED_VALUE)BASE_FIG;
-            eb = e*(SIGNED_VALUE)BASE_FIG;
+            mb = m*(VALUE)BASE_FIG;
+            eb = e*(VALUE)BASE_FIG;
             if(mb<eb) goto overflow;
         }
     } else if(n<0) {
-        mb = m*(SIGNED_VALUE)BASE_FIG;
-        eb = e*(SIGNED_VALUE)BASE_FIG;
+        mb = m*(VALUE)BASE_FIG;
+        eb = e*(VALUE)BASE_FIG;
         if(mb>eb) goto underflow;
     }
     a->exponent = m;
