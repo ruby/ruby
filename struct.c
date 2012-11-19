@@ -495,7 +495,9 @@ rb_struct_each_pair(VALUE s)
     RETURN_SIZED_ENUMERATOR(s, 0, 0, rb_struct_size);
     members = rb_struct_members(s);
     for (i=0; i<RSTRUCT_LEN(s); i++) {
-	rb_yield_values(2, rb_ary_entry(members, i), RSTRUCT_PTR(s)[i]);
+	VALUE key = rb_ary_entry(members, i);
+	VALUE value = RSTRUCT_PTR(s)[i];
+	rb_yield(rb_assoc_new(key, vlaue));
     }
     return s;
 }

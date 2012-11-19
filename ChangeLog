@@ -1,3 +1,9 @@
+Mon Nov 19 16:30:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (rb_struct_each_pair): yield associated pairs so that
+	  an unsplat argument can get both, for consistency with Hash,
+	  OpenStruct, and etc.  [ruby-dev:46533] [Bug #7382]
+
 Mon Nov 19 16:17:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LIBS): libelf is need on only FreeBSD.

@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 require 'test/unit'
 require 'timeout'
 require_relative 'envutil'
@@ -117,6 +118,10 @@ class TestStruct < Test::Unit::TestCase
     klass = Struct.new(:a, :b)
     o = klass.new(1, 2)
     assert_equal([[:a, 1], [:b, 2]], o.each_pair.to_a)
+    bug7382 = '[ruby-dev:46533]'
+    a = []
+    o.each_pair {|x| a << x}
+    assert_equal([[:a, 1], [:b, 2]], a, bug7382)
   end
 
   def test_inspect
