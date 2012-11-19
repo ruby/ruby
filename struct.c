@@ -497,7 +497,7 @@ rb_struct_each_pair(VALUE s)
     for (i=0; i<RSTRUCT_LEN(s); i++) {
 	VALUE key = rb_ary_entry(members, i);
 	VALUE value = RSTRUCT_PTR(s)[i];
-	rb_yield(rb_assoc_new(key, vlaue));
+	rb_yield(rb_assoc_new(key, value));
     }
     return s;
 }
