@@ -116,4 +116,23 @@ EOF
 * 1 FETCH (UID 92285  )
 EOF
   end
+
+  def assert_parseable(s)
+    parser = Net::IMAP::ResponseParser.new
+    parser.parse(s.gsub(/\n/, "\r\n").taint)
+  end
+
+  def test_msg_delivery_status
+    # This was part of a larger response that caused crashes, but this was the
+    # minimal test case to demonstrate it
+    assert_parseable <<EOF
+* 4902 FETCH (BODY (("MESSAGE" "DELIVERY-STATUS" NIL NIL NIL "7BIT" 324) "REPORT"))
+EOF
+  end
+
+  def test_msg_with_message_rfc822_attachment
+    assert_parseable <<EOF
+* 5441 FETCH (BODY ((("TEXT" "PLAIN" ("CHARSET" "iso-8859-1") NIL NIL "QUOTED-PRINTABLE" 69 1)("TEXT" "HTML" ("CHARSET" "iso-8859-1") NIL NIL "QUOTED-PRINTABLE" 455 12) "ALTERNATIVE")("MESSAGE" "RFC822" ("NAME" "ATT00026.eml") NIL NIL "7BIT" 4079755) "MIXED"))
+EOF
+  end
 end
