@@ -1070,7 +1070,7 @@ void
 rb_thread_blocking_region_end(struct rb_blocking_region_buffer *region)
 {
     int saved_errno = errno;
-    rb_thread_t *th = GET_THREAD();
+    rb_thread_t *th = ruby_thread_from_native();
     blocking_region_end(th, region);
     xfree(region);
     RUBY_VM_CHECK_INTS_BLOCKING(th);

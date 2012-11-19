@@ -1,3 +1,8 @@
+Tue Nov 20 10:05:56 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_blocking_region_end): replaced GET_THREAD()
+	  with ruby_thread_from_native(). We don't have GVL here.
+
 Tue Nov 20 09:56:15 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_threadptr_execute_interrupts) removed.
