@@ -1,3 +1,8 @@
+Tue Nov 20 10:12:46 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_threadptr_async_errinfo_active_p): added a small
+	  comment.
+
 Tue Nov 20 10:08:45 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c, vm_core.h: big rename th to cur_th when works only

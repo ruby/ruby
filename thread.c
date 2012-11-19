@@ -1476,12 +1476,20 @@ rb_threadptr_async_errinfo_deque(rb_thread_t *th, enum interrupt_timing timing)
 int
 rb_threadptr_async_errinfo_active_p(rb_thread_t *th)
 {
-    if (th->async_errinfo_queue_checked || rb_threadptr_async_errinfo_empty_p(th)) {
+    /*
+     * For optimization, we don't check async errinfo queue
+     * if it nor a thread interrupt mask were not changed
+     * since last check.
+     */
+    if (th->async_errinfo_queue_checked) {
 	return 0;
     }
-    else {
-	return 1;
+
+    if (rb_threadptr_async_errinfo_empty_p(th)) {
+	return 0;
     }
+
+    return 1;
 }
 
 static VALUE
