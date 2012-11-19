@@ -42,7 +42,7 @@ before_script:
   - "./configure --with-gcc=$CC"
   - "make -sj encs"
   - "make -sj exts"
-script: "make test"
+script: "make test OPTS=-v"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
