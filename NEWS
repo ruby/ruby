@@ -56,6 +56,8 @@ with all sufficient information, see the ChangeLog file.
       * added Kernel#using, which imports refinements into the current scope.
         [experimental]
       * added Kernel#__dir__ which returns a current dirname.
+      * added Kernel#caller_locations which returns an array of
+        frame information objects.
     * extended method:
       * Kernel#warn accepts multiple args in like puts.
       * Kernel#caller accepts second optional argument `n' which specify
@@ -125,6 +127,8 @@ with all sufficient information, see the ChangeLog file.
         variable keys.
       * added Thread#thread_variable? for testing to see if a particular thread
         variable has been set.
+      * added Thread#backtrace_locations which returns similar information of
+        Kernel#caller_locations.
 
   * Time
     * change return value:

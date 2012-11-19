@@ -4623,9 +4623,15 @@ rb_exec_recursive_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
  */
 
 static VALUE
-rb_thread_backtrace_m(VALUE thval)
+rb_thread_backtrace_m(int argc, VALUE *argv, VALUE thval)
 {
-    return rb_thread_backtrace(thval);
+    return vm_thread_backtrace(argc, argv, thval);
+}
+
+static VALUE
+rb_thread_backtrace_locations_m(int argc, VALUE *argv, VALUE thval)
+{
+    return vm_thread_backtrace_locations(argc, argv, thval);
 }
 
 /*
@@ -4705,7 +4711,8 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "abort_on_exception=", rb_thread_abort_exc_set, 1);
     rb_define_method(rb_cThread, "safe_level", rb_thread_safe_level, 0);
     rb_define_method(rb_cThread, "group", rb_thread_group, 0);
-    rb_define_method(rb_cThread, "backtrace", rb_thread_backtrace_m, 0);
+    rb_define_method(rb_cThread, "backtrace", rb_thread_backtrace_m, -1);
+    rb_define_method(rb_cThread, "backtrace_locations", rb_thread_backtrace_locations_m, -1);
 
     rb_define_method(rb_cThread, "inspect", rb_thread_inspect, 0);
 

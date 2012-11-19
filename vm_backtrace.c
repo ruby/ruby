@@ -697,8 +697,43 @@ rb_make_backtrace(void)
     return vm_backtrace_str_ary(GET_THREAD(), 0, 0);
 }
 
-VALUE
-rb_thread_backtrace(VALUE thval)
+static VALUE
+vm_backtrace_to_ary(rb_thread_t *th, int argc, VALUE *argv, int lev_deafult, int lev_plus, int to_str)
+{
+    VALUE level, vn;
+    int lev, n;
+
+    rb_scan_args(argc, argv, "02", &level, &vn);
+
+    lev = NIL_P(level) ? lev_deafult : NUM2INT(level);
+
+    if (NIL_P(vn)) {
+	n = 0;
+    }
+    else {
+	n = NUM2INT(vn);
+	if (n == 0) {
+	    return rb_ary_new();
+	}
+    }
+
+    if (lev < 0) {
+	rb_raise(rb_eArgError, "negative level (%d)", lev);
+    }
+    if (n < 0) {
+	rb_raise(rb_eArgError, "negative n (%d)", n);
+    }
+
+    if (to_str) {
+	return vm_backtrace_str_ary(th, lev+lev_plus, n);
+    }
+    else {
+	return vm_backtrace_frame_ary(th, lev+lev_plus, n);
+    }
+}
+
+static VALUE
+thread_backtrace_to_ary(int argc, VALUE *argv, VALUE thval, int to_str)
 {
     rb_thread_t *th;
     GetThreadPtr(thval, th);
@@ -713,7 +748,19 @@ rb_thread_backtrace(VALUE thval)
 	return Qnil;
     }
 
-    return vm_backtrace_str_ary(th, 0, 0);
+    return vm_backtrace_to_ary(th, argc, argv, 0, 0, to_str);
+}
+
+VALUE
+vm_thread_backtrace(int argc, VALUE *argv, VALUE thval)
+{
+    return thread_backtrace_to_ary(argc, argv, thval, 1);
+}
+
+VALUE
+vm_thread_backtrace_locations(int argc, VALUE *argv, VALUE thval)
+{
+    return thread_backtrace_to_ary(argc, argv, thval, 0);
 }
 
 /*
@@ -749,61 +796,13 @@ rb_thread_backtrace(VALUE thval)
 static VALUE
 rb_f_caller(int argc, VALUE *argv)
 {
-    VALUE level, vn;
-    int lev, n;
-
-    rb_scan_args(argc, argv, "02", &level, &vn);
-
-    lev = NIL_P(level) ? 1 : NUM2INT(level);
-
-    if (NIL_P(vn)) {
-	n = 0;
-    }
-    else {
-	n = NUM2INT(vn);
-	if (n == 0) {
-	    return rb_ary_new();
-	}
-    }
-
-    if (lev < 0) {
-	rb_raise(rb_eArgError, "negative level (%d)", lev);
-    }
-    if (n < 0) {
-	rb_raise(rb_eArgError, "negative n (%d)", n);
-    }
-
-    return vm_backtrace_str_ary(GET_THREAD(), lev+1, n);
+    return vm_backtrace_to_ary(GET_THREAD(), argc, argv, 1, 1, 1);
 }
 
 static VALUE
 rb_f_caller_locations(int argc, VALUE *argv)
 {
-    VALUE level, vn;
-    int lev, n;
-
-    rb_scan_args(argc, argv, "02", &level, &vn);
-
-    lev = NIL_P(level) ? 1 : NUM2INT(level);
-
-    if (NIL_P(vn)) {
-	n = 0;
-    }
-    else {
-	n = NUM2INT(vn);
-	if (n == 0) {
-	    return rb_ary_new();
-	}
-    }
-
-    if (lev < 0) {
-	rb_raise(rb_eArgError, "negative level (%d)", lev);
-    }
-    if (n < 0) {
-	rb_raise(rb_eArgError, "negative n (%d)", n);
-    }
-
-    return vm_backtrace_frame_ary(GET_THREAD(), lev+1, n);
+    return vm_backtrace_to_ary(GET_THREAD(), argc, argv, 1, 1, 0);
 }
 
 /* called from Init_vm() in vm.c */

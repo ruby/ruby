@@ -1,3 +1,22 @@
+Mon Nov 19 14:55:51 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c: add `Thread#backtrace_locations' method.
+	  This method is similart to `caller_locations' method for
+	  specific method.
+	  And fix to accept `level' and `n' parameters for `Thread#backtrace'
+	  and `Thread#backtrace_locations'.
+	  `caller' (and `caller_locations') do not return `caller' method
+	  frame.
+	  However, `Thread#backtrace' (and `Thread#backtrace_locations')
+	  return `Thread#backtrace' method frame itself
+	  if `Thread.current.backtrace' was called.
+
+	* vm_backtrace.c: ditto.
+
+	* internal.h: ditto.
+
+	* test/ruby/test_backtrace.rb: add tests.
+
 Mon Nov 19 14:54:32 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* Makefile.in, common.mk (probes.h): moved to common.mk and changed to

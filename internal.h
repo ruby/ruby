@@ -310,7 +310,9 @@ void Init_prelude(void);
 
 /* vm_backtrace.c */
 void Init_vm_backtrace(void);
-VALUE rb_thread_backtrace(VALUE thval);
+VALUE vm_thread_backtrace(int argc, VALUE *argv, VALUE thval);
+VALUE vm_thread_backtrace_locations(int argc, VALUE *argv, VALUE thval);
+
 VALUE rb_make_backtrace(void);
 void rb_backtrace_print_as_bugreport(void);
 int rb_backtrace_p(VALUE obj);
