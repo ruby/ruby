@@ -1,3 +1,10 @@
+Mon Nov 19 22:55:48 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in (--enable-dtrace): change help message
+	* configure.in (--enable-dtrace): remove ineffective "else AS_CASE ..."
+	  because the variable $rb_cv_prog_dtrace_g is normally "yes" on
+	  FreeBSD and the AS_CASE is not evaluated on FreeBSD.
+
 Mon Nov 19 21:24:18 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* vm_dump.c: not to include probes.h because the code does not depend
