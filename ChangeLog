@@ -1,3 +1,9 @@
+Tue Nov 20 09:48:34 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (rb_get_next_signal): removed pointless signal
+	  disabling. pthread_sigmask() only changes current thread
+	  mask.
+
 Tue Nov 20 09:36:55 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (install_sighandler): added comments why we need

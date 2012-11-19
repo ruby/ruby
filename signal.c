@@ -562,12 +562,8 @@ rb_get_next_signal(void)
     if (signal_buff.size != 0) {
 	for (i=1; i<RUBY_NSIG; i++) {
 	    if (signal_buff.cnt[i] > 0) {
-		rb_disable_interrupt();
-		{
-		    ATOMIC_DEC(signal_buff.cnt[i]);
-		    ATOMIC_DEC(signal_buff.size);
-		}
-		rb_enable_interrupt();
+		ATOMIC_DEC(signal_buff.cnt[i]);
+		ATOMIC_DEC(signal_buff.size);
 		sig = i;
 		break;
 	    }
