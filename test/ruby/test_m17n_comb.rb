@@ -722,7 +722,7 @@ class TestM17NComb < Test::Unit::TestCase
   def test_str_crypt
     begin
       # glibc 2.16 or later denies salt contained other than [0-9A-Za-z./] #7312
-      glibcver = `/lib/libc.so.6`[/\AGNU C Library.*version ([0-9.]+)/, 1].split('.').map(&:to_i)
+      glibcver = `#{RbConfig::CONFIG["libdir"]}/libc.so.6`[/\AGNU C Library.*version ([0-9.]+)/, 1].split('.').map(&:to_i)
       strict_crypt = (glibcver <=> [2, 16]) > -1
     rescue
     end

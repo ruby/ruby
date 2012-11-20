@@ -1,3 +1,8 @@
+Wed Nov 21 00:28:18 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/ruby/test_m17n_comb.rb (test_str_crypt): Use RbConfig to get
+	  libc's directory. Patched by Vit Ondruch [ruby-core:49763] [Bug #7312]
+
 Tue Nov 20 23:28:26 2012  Masaki Matsushita  <glass.saga@gmail.com>
 
 	* marshal.c: add marshal readahead. marshalized Array, Hash and Struct
