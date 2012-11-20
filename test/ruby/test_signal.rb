@@ -251,10 +251,10 @@ EOS
           STDOUT.flush
           exit 0
         end
-        sleep
+        Process.kill("INT", $$)
+        sleep 1  # wait signal deliver
 EOS
-        sleep 0.1
-        Process.kill("INT", child.pid)
+
         signame = Marshal.load(child)
         assert_equal(signame, "INT")
       end

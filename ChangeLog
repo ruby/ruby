@@ -1,3 +1,9 @@
+Tue Nov 20 14:19:20 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_signal.rb (TestSignal#test_signame): fix windows
+	  test failure. Process.kill on windows can't send a signal to
+	  another process.
+
 Tue Nov 20 13:58:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (Init_IO): removed all rb_file_const() into file.c.
