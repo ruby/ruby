@@ -437,7 +437,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
    18: xyzzy = XYZZY.new
    19: xyzzy.foo
    20: begin; raise RuntimeError; rescue RuntimeError => raised_exc; end
-   21: trace.untrace
+   21: trace.disable
     EOF
     self.class.class_eval{remove_const(:XYZZY)}
 
@@ -493,7 +493,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:c_call,  20, "xyzzy", Module,      :===,             RuntimeError,:outer, :nothing],
      [:c_return,20, "xyzzy", Module,      :===,             RuntimeError,:outer, true],
      [:line,    21, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
-     [:c_call,  21, "xyzzy", TracePoint,  :untrace,         trace,       :outer, :nothing],
+     [:c_call,  21, "xyzzy", TracePoint,  :disable,         trace,       :outer, :nothing],
      ]
 
     return events, answer_events
@@ -533,6 +533,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint
     events1, answer_events = *trace_by_tracepoint()
+    
     mesg = events1.map{|e|
       "#{e[0]} - #{e[2]}:#{e[1]} id: #{e[4]}"
     }.join("\n")
@@ -567,7 +568,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     tap{}
     tap{}
     tap{}
-    trace.untrace
+    trace.disable
 
     # passed tp is unique, `trace' object which is genereted by TracePoint.trace
     tps.each{|tp|
@@ -581,7 +582,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
       tp_store = tp
     }
     tap{}
-    trace.untrace
+    trace.disable
 
     assert_raise(RuntimeError){tp_store.line}
     assert_raise(RuntimeError){tp_store.event}
@@ -592,5 +593,50 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_raise(RuntimeError){tp_store.self}
     assert_raise(RuntimeError){tp_store.return_value}
     assert_raise(RuntimeError){tp_store.raised_exception}
+  end
+
+  def foo
+  end
+
+  def test_tracepoint_enable
+    ary = []
+    trace = TracePoint.new(:call){|tp|
+      ary << tp.id
+    }
+    foo
+    trace.enable{
+      foo
+    }
+    foo
+    assert_equal([:foo], ary)
+  end
+
+  def test_tracepoint_disable
+    ary = []
+    trace = TracePoint.trace(:call){|tp|
+      ary << tp.id
+    }
+    foo
+    trace.disable{
+      foo
+    }
+    foo
+    trace.disable
+    assert_equal([:foo, :foo], ary)
+  end
+
+  def test_tracepoint_enabled
+    trace = TracePoint.trace(:call){|tp|
+      # 
+    }
+    assert_equal(true, trace.enabled?)
+    trace.disable{
+      assert_equal(false, trace.enabled?)
+      trace.enable{
+        assert_equal(true, trace.enabled?)
+      }
+    }
+    trace.disable
+    assert_equal(false, trace.enabled?)
   end
 end

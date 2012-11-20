@@ -818,66 +818,95 @@ tp_call_trace(VALUE tpval, rb_trace_arg_t *trace_arg)
 }
 
 static VALUE
-tp_set_trace(VALUE tpval)
+tp_enable(VALUE tpval)
+{
+    rb_tp_t *tp = tpptr(tpval);
+
+    if (tp->target_th) {
+	rb_thread_add_event_hook2(tp->target_th->self, (rb_event_hook_func_t)tp_call_trace, tp->events, tpval, RUBY_HOOK_FLAG_SAFE | RUBY_HOOK_FLAG_RAW_ARG);
+    }
+    else {
+	rb_add_event_hook2((rb_event_hook_func_t)tp_call_trace, tp->events, tpval, RUBY_HOOK_FLAG_SAFE | RUBY_HOOK_FLAG_RAW_ARG);
+    }
+    tp->tracing = 1;
+    return Qundef;
+}
+
+static VALUE
+tp_disable(VALUE tpval)
+{
+    rb_tp_t *tp = tpptr(tpval);
+
+    if (tp->target_th) {
+	rb_thread_remove_event_hook_with_data(tp->target_th->self, (rb_event_hook_func_t)tp_call_trace, tpval);
+    }
+    else {
+	rb_remove_event_hook_with_data((rb_event_hook_func_t)tp_call_trace, tpval);
+    }
+    tp->tracing = 0;
+    return Qundef;
+}
+
+
+
+static VALUE
+tp_enable_m(VALUE tpval)
 {
     rb_tp_t *tp = tpptr(tpval);
 
     if (tp->tracing) {
-	/* already tracing */
-	/* TODO: raise error? */
-    }
-    else {
-	if (tp->target_th) {
-	    rb_thread_add_event_hook2(tp->target_th->self, (rb_event_hook_func_t)tp_call_trace, tp->events, tpval, RUBY_HOOK_FLAG_SAFE | RUBY_HOOK_FLAG_RAW_ARG);
-	}
-	else {
-	    rb_add_event_hook2((rb_event_hook_func_t)tp_call_trace, tp->events, tpval, RUBY_HOOK_FLAG_SAFE | RUBY_HOOK_FLAG_RAW_ARG);
-	}
-	tp->tracing = 1;
+	rb_raise(rb_eRuntimeError, "trace is already enable");
     }
 
-    return tpval;
+    tp_enable(tpval);
+    if (rb_block_given_p()) {
+	return rb_ensure(rb_yield, tpval, tp_disable, tpval);
+    }
+    else {
+	return tpval;
+    }
 }
 
 static VALUE
-tp_unset_trace(VALUE tpval)
+tp_disable_m(VALUE tpval)
 {
     rb_tp_t *tp = tpptr(tpval);
 
     if (!tp->tracing) {
-	/* not tracing */
-	/* TODO: raise error? */
-    }
-    else {
-	if (tp->target_th) {
-	    rb_thread_remove_event_hook_with_data(tp->target_th->self, (rb_event_hook_func_t)tp_call_trace, tpval);
-	}
-	else {
-	    rb_remove_event_hook_with_data((rb_event_hook_func_t)tp_call_trace, tpval);
-	}
-	tp->tracing = 0;
+	rb_raise(rb_eRuntimeError, "trace is not enable");
     }
 
-    return tpval;
+    tp_disable(tpval);
+    if (rb_block_given_p()) {
+	return rb_ensure(rb_yield, tpval, tp_enable, tpval);
+    }
+    else {
+	return tpval;
+    }
 }
 
 static VALUE
-tp_initialize(rb_thread_t *target_th, rb_event_flag_t events, VALUE proc)
+tp_enabled_p(VALUE tpval)
 {
-    VALUE tpval = tp_alloc(rb_cTracePoint);
+    rb_tp_t *tp = tpptr(tpval);
+    return tp->tracing ? Qtrue : Qfalse;
+}
+
+static VALUE
+tp_initialize(VALUE klass, rb_thread_t *target_th, rb_event_flag_t events, VALUE proc)
+{
+    VALUE tpval = tp_alloc(klass);
     rb_tp_t *tp;
     TypedData_Get_Struct(tpval, rb_tp_t, &tp_data_type, tp);
 
     tp->proc = proc;
     tp->events = events;
 
-    tp_set_trace(tpval);
-
     return tpval;
 }
 
 static VALUE
-tp_trace_s(int argc, VALUE *argv)
+tp_new_s(int argc, VALUE *argv, VALUE self)
 {
     rb_event_flag_t events = 0;
     int i;
@@ -895,7 +924,15 @@ tp_trace_s(int argc, VALUE *argv)
 	rb_raise(rb_eThreadError, "must be called with a block");
     }
 
-    return tp_initialize(0, events, rb_block_proc());
+    return tp_initialize(self, 0, events, rb_block_proc());
+}
+
+static VALUE
+tp_trace_s(int argc, VALUE *argv, VALUE self)
+{
+    VALUE trace = tp_new_s(argc, argv, self);
+    tp_enable(trace);
+    return trace;
 }
 
 /* This function is called from inits.c */
@@ -911,10 +948,12 @@ Init_vm_trace(void)
     rb_cTracePoint = rb_define_class("TracePoint", rb_cObject);
     rb_undef_alloc_func(rb_cTracePoint);
     rb_undef_method(CLASS_OF(rb_cTracePoint), "new");
+    rb_define_singleton_method(rb_cTracePoint, "new", tp_new_s, -1);
     rb_define_singleton_method(rb_cTracePoint, "trace", tp_trace_s, -1);
 
-    rb_define_method(rb_cTracePoint, "retrace", tp_set_trace, 0);
-    rb_define_method(rb_cTracePoint, "untrace", tp_unset_trace, 0);
+    rb_define_method(rb_cTracePoint, "enable", tp_enable_m, 0);
+    rb_define_method(rb_cTracePoint, "disable", tp_disable_m, 0);
+    rb_define_method(rb_cTracePoint, "enabled?", tp_enabled_p, 0);
 
     rb_define_method(rb_cTracePoint, "event", tp_attr_event_m, 0);
     rb_define_method(rb_cTracePoint, "line", tp_attr_line_m, 0);

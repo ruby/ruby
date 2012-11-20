@@ -1,3 +1,18 @@
+Tue Nov 20 19:02:44 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c: rename and add TracePoint APIs.
+	  (1) TracePoint.new(...){...} creates a new trace point
+	      but does not make it enable.
+	  (2) TracePoint.trace(...){...} creats a new trace point
+	      and enable it (same as old behavior).
+	  (3) TracePoint#enable make it enable (renamed from TracePoint#retrace).
+	      If block given, when enable only in block.
+	  (4) TracePoint#disable make it disable (renamed from TracePoint#untrace).
+	      If block given, when disable only in block.
+	  (5) TracePoint#enabled? returns this trace is enable or not.
+
+	* test/ruby/test_settracefunc.rb: addd tests.
+
 Tue Nov 20 18:35:05 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c: add two methods:
