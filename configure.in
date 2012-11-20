@@ -2731,8 +2731,8 @@ fi
 
 AC_ARG_ENABLE(dtrace,
         AS_HELP_STRING([--enable-dtrace],
-        [enable DTrace for tracing ruby's internal. enabled by default on systems having dtrace]),
-        [enable_dtrace=$enableval], [enable_dtrace=auto])
+            [enable DTrace for tracing ruby's internal.]),
+            [enable_dtrace=$enableval], [enable_dtrace=auto])
 
 if test "${enable_dtrace}" = "auto"; then
     if test x"$DTRACE" != x -a x"$cross_compiling" != xyes; then
@@ -2740,6 +2740,10 @@ if test "${enable_dtrace}" = "auto"; then
         enable_dtrace=yes
         if test "$rb_cv_prog_dtrace_g" = 'yes'; then
             RUBY_DTRACE_BSD_BROKEN([enable_dtrace=no], [enable_dtrace=yes])
+        else
+            AS_CASE(["$target_os"],
+            [freebsd*], [enable_dtrace=no]
+            )
         fi
     else
         enable_dtrace=no
