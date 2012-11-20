@@ -2607,10 +2607,10 @@ rb_get_values_at(VALUE obj, long olen, int argc, VALUE *argv, VALUE (*func) (VAL
  *  See also Array#select.
  *
  *     a = %w{ a b c d e f }
- *     a.values_at(1, 3, 5)
- *     a.values_at(1, 3, 5, 7)
- *     a.values_at(-1, -3, -5, -7)
- *     a.values_at(1..3, 2...5)
+ *     a.values_at(1, 3, 5)          # => ["b", "d", "f"]
+ *     a.values_at(1, 3, 5, 7)       # => ["b", "d", "f", nil]
+ *     a.values_at(-1, -2, -2, -7)   # => ["f", "e", "e", nil]
+ *     a.values_at(4..6, 3...6)      # => ["e", "f", nil, "d", "e", "f"]
  */
 
 static VALUE
