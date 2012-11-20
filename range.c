@@ -475,7 +475,7 @@ range_step(int argc, VALUE *argv, VALUE range)
  *     rng.bsearch {|obj| block }  -> value
  *
  *  By using binary search, finds a value in range which meets the given
- *  condition in O(n log n) where n is the size of the array.
+ *  condition in O(log n) where n is the size of the array.
  *
  *  You can use this method in two use cases: a find-minimum mode and
  *  a find-any mode.  In either case, the elements of the array must be

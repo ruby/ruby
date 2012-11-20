@@ -2378,7 +2378,7 @@ rb_ary_sort(VALUE ary)
  *     ary.bsearch {|x| block }  -> elem
  *
  *  By using binary search, finds a value from this array which meets
- *  the given condition in O(n log n) where n is the size of the array.
+ *  the given condition in O(log n) where n is the size of the array.
  *
  *  You can use this method in two use cases: a find-minimum mode and
  *  a find-any mode.  In either case, the elements of the array must be
