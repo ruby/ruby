@@ -1498,18 +1498,30 @@ numeric_to_c(VALUE self)
 
 #include <ctype.h>
 
+inline static int
+issign(int c)
+{
+    return (c == '-' || c == '+');
+}
+
 static int
 read_sign(const char **s,
 	  char **b)
 {
     int sign = '?';
 
-    if (**s == '-' || **s == '+') {
+    if (issign(**s)) {
 	sign = **b = **s;
 	(*s)++;
 	(*b)++;
     }
     return sign;
+}
+
+inline static int
+isdecimal(int c)
+{
+    return isdigit((unsigned char)c);
 }
 
 static int
@@ -1518,10 +1530,10 @@ read_digits(const char **s, int strict,
 {
     int us = 1;
 
-    if (!isdigit((unsigned char)**s))
+    if (!isdecimal(**s))
 	return 0;
 
-    while (isdigit((unsigned char)**s) || **s == '_') {
+    while (isdecimal(**s) || **s == '_') {
 	if (**s == '_') {
 	    if (strict) {
 		if (us)
@@ -1543,6 +1555,12 @@ read_digits(const char **s, int strict,
     return 1;
 }
 
+inline static int
+islettere(int c)
+{
+    return (c == 'e' || c == 'E');
+}
+
 static int
 read_num(const char **s, int strict,
 	 char **b)
@@ -1562,7 +1580,7 @@ read_num(const char **s, int strict,
 	}
     }
 
-    if (**s == 'e' || **s == 'E') {
+    if (islettere(**s)) {
 	**b = **s;
 	(*s)++;
 	(*b)++;
@@ -1575,7 +1593,7 @@ read_num(const char **s, int strict,
     return 1;
 }
 
-static int
+inline static int
 read_den(const char **s, int strict,
 	 char **b)
 {
@@ -1612,7 +1630,7 @@ read_rat(const char **s, int strict,
     return 1;
 }
 
-static int
+inline static int
 isimagunit(int c)
 {
     return (c == 'i' || c == 'I' ||
@@ -1654,7 +1672,7 @@ read_comp(const char **s, int strict,
 	**b = '\0';
 	num = str2num(bb);
 	*ret = rb_complex_new2(num, ZERO);
-	return 0; /* e.g. "1/" */
+	return 0; /* e.g. "-" */
     }
     **b = '\0';
     num = str2num(bb);
@@ -1673,9 +1691,9 @@ read_comp(const char **s, int strict,
 	st = read_rat(s, strict, b);
 	**b = '\0';
 	if (strlen(bb) < 1 ||
-	    !isdigit((unsigned char)*(bb + strlen(bb) - 1))) {
+	    !isdecimal(*(bb + strlen(bb) - 1))) {
 	    *ret = rb_complex_new2(num, ZERO);
-	    return 0; /* e.g. "1@x" */
+	    return 0; /* e.g. "1@-" */
 	}
 	num2 = str2num(bb);
 	*ret = rb_complex_polar(num, num2);
@@ -1685,7 +1703,7 @@ read_comp(const char **s, int strict,
 	    return 1; /* e.g. "1@2" */
     }
 
-    if (**s == '-' || **s == '+') {
+    if (issign(**s)) {
 	bb = *b;
 	sign = read_sign(s, b);
 	if (isimagunit(**s))
@@ -1713,7 +1731,7 @@ read_comp(const char **s, int strict,
     }
 }
 
-static void
+inline static void
 skip_ws(const char **s)
 {
     while (isspace((unsigned char)**s))

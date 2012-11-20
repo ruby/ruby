@@ -1958,40 +1958,53 @@ float_rationalize(int argc, VALUE *argv, VALUE self)
 
 #include <ctype.h>
 
+inline static int
+issign(int c)
+{
+    return (c == '-' || c == '+');
+}
+
 static int
 read_sign(const char **s)
 {
     int sign = '?';
 
-    if (**s == '-' || **s == '+') {
+    if (issign(**s)) {
 	sign = **s;
 	(*s)++;
     }
     return sign;
 }
 
+inline static int
+isdecimal(int c)
+{
+    return isdigit((unsigned char)c);
+}
+
 static int
 read_digits(const char **s, int strict,
 	    VALUE *num, int *count)
 {
-    int us = 1;
+    int us = 1, ret = 1;
+    const char *b = *s;
 
-    if (!isdigit((unsigned char)**s))
+    if (!isdecimal(**s)) {
+	*num = ZERO;
 	return 0;
+    }
 
-    *num = ZERO;
-
-    while (isdigit((unsigned char)**s) || **s == '_') {
+    while (isdecimal(**s) || **s == '_') {
 	if (**s == '_') {
 	    if (strict) {
-		if (us)
-		    return 0;
+		if (us) {
+		    ret = 0;
+		    goto conv;
+		}
 	    }
 	    us = 1;
 	}
 	else {
-	    *num = f_mul(*num, INT2FIX(10));
-	    *num = f_add(*num, INT2FIX(**s - '0'));
 	    if (count)
 		(*count)++;
 	    us = 0;
@@ -2002,7 +2015,15 @@ read_digits(const char **s, int strict,
 	do {
 	    (*s)--;
 	} while (**s == '_');
-    return 1;
+  conv:
+    *num = rb_cstr_to_inum(b, 10, 0);
+    return ret;
+}
+
+inline static int
+islettere(int c)
+{
+    return (c == 'e' || c == 'E');
 }
 
 static int
@@ -2034,7 +2055,7 @@ read_num(const char **s, int numsign, int strict,
 	}
     }
 
-    if (**s == 'e' || **s == 'E') {
+    if (islettere(**s)) {
 	int expsign;
 
 	(*s)++;
@@ -2054,7 +2075,7 @@ read_num(const char **s, int numsign, int strict,
     return 1;
 }
 
-static int
+inline static int
 read_den(const char **s, int strict,
 	 VALUE *num)
 {
@@ -2093,7 +2114,7 @@ read_rat(const char **s, int strict,
     return 1;
 }
 
-static void
+inline static void
 skip_ws(const char **s)
 {
     while (isspace((unsigned char)**s))

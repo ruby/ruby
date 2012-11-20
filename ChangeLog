@@ -1,3 +1,8 @@
+Tue Nov 20 21:06:41 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: some improvements.
+	* rational.c: ditto.
+
 Tue Nov 20 21:01:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (incs): BSD make cannot deal with non-prefixed dependency
