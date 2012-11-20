@@ -969,6 +969,9 @@ marshal_dump(int argc, VALUE *argv)
 
 struct load_arg {
     VALUE src;
+    char *buf;
+    long buflen;
+    long readable;
     long offset;
     st_table *symbols;
     st_table *data;
@@ -1022,6 +1025,13 @@ static VALUE r_object(struct load_arg *arg);
 static ID r_symbol(struct load_arg *arg);
 static VALUE path2class(VALUE path);
 
+NORETURN(static void too_short(void));
+static void
+too_short(void)
+{
+    rb_raise(rb_eArgError, "marshal data too short");
+}
+
 static st_index_t
 r_prepare(struct load_arg *arg)
 {
@@ -1029,6 +1039,27 @@ r_prepare(struct load_arg *arg)
 
     st_insert(arg->data, (st_data_t)idx, (st_data_t)Qundef);
     return idx;
+}
+
+static unsigned char
+r_byte1_buffered(struct load_arg *arg)
+{
+    if (arg->buflen == 0) {
+	long readable = arg->readable < BUFSIZ ? arg->readable : BUFSIZ;
+	VALUE str, n = LONG2NUM(readable);
+
+	str = rb_funcall2(arg->src, s_read, 1, &n);
+
+	check_load_arg(arg, s_read);
+	if (NIL_P(str)) too_short();
+	StringValue(str);
+	arg->infection |= (int)FL_TEST(str, MARSHAL_INFECTION);
+	memcpy(arg->buf, RSTRING_PTR(str), RSTRING_LEN(str));
+	arg->offset = 0;
+	arg->buflen = RSTRING_LEN(str);
+    }
+    arg->buflen--;
+    return arg->buf[arg->offset++];
 }
 
 static int
@@ -1041,15 +1072,19 @@ r_byte(struct load_arg *arg)
 	    c = (unsigned char)RSTRING_PTR(arg->src)[arg->offset++];
 	}
 	else {
-	    rb_raise(rb_eArgError, "marshal data too short");
+	    too_short();
 	}
     }
     else {
-	VALUE src = arg->src;
-	VALUE v = rb_funcall2(src, s_getbyte, 0, 0);
-	check_load_arg(arg, s_getbyte);
-	if (NIL_P(v)) rb_eof_error();
-	c = (unsigned char)NUM2CHR(v);
+	if (arg->readable >0 || arg->buflen > 0) {
+	    c = r_byte1_buffered(arg);
+	}
+	else {
+	    VALUE v = rb_funcall2(arg->src, s_getbyte, 0, 0);
+	    check_load_arg(arg, s_getbyte);
+	    if (NIL_P(v)) rb_eof_error();
+	    c = (unsigned char)NUM2CHR(v);
+	}
     }
     return c;
 }
@@ -1102,6 +1137,68 @@ r_long(struct load_arg *arg)
     return x;
 }
 
+static VALUE
+r_bytes1(long len, struct load_arg *arg)
+{
+    VALUE str, n = LONG2NUM(len);
+
+    str = rb_funcall2(arg->src, s_read, 1, &n);
+    check_load_arg(arg, s_read);
+    if (NIL_P(str)) too_short();
+    StringValue(str);
+    if (RSTRING_LEN(str) != len) too_short();
+    arg->infection |= (int)FL_TEST(str, MARSHAL_INFECTION);
+
+    return str;
+}
+
+static VALUE
+r_bytes1_buffered(long len, struct load_arg *arg)
+{
+    VALUE str;
+
+    if (len <= arg->buflen) {
+	str = rb_str_new(arg->buf+arg->offset, len);
+	arg->offset += len;
+	arg->buflen -= len;
+    }
+    else {
+	long buflen = arg->buflen;
+	long readable = arg->readable + 1;
+	long tmp_len, read_len, need_len = len - buflen;
+	VALUE tmp, n;
+
+	readable = readable < BUFSIZ ? readable : BUFSIZ;
+	read_len = need_len > readable ? need_len : readable;
+	n = LONG2NUM(read_len);
+	tmp = rb_funcall2(arg->src, s_read, 1, &n);
+
+	check_load_arg(arg, s_read);
+	if (NIL_P(tmp)) too_short();
+	StringValue(tmp);
+
+	tmp_len = RSTRING_LEN(tmp);
+
+	if (tmp_len < need_len) too_short();
+	arg->infection |= (int)FL_TEST(tmp, MARSHAL_INFECTION);
+
+	str = rb_str_new(arg->buf+arg->offset, buflen);
+	rb_str_cat(str, RSTRING_PTR(tmp), need_len);
+
+	if (tmp_len > need_len) {
+	    buflen = tmp_len - need_len;
+	    memcpy(arg->buf, RSTRING_PTR(tmp)+need_len, buflen);
+	    arg->buflen = buflen;
+	}
+	else {
+	    arg->buflen = 0;
+	}
+	arg->offset = 0;
+    }
+
+    return str;
+}
+
 #define r_bytes(arg) r_bytes0(r_long(arg), (arg))
 
 static VALUE
@@ -1116,19 +1213,16 @@ r_bytes0(long len, struct load_arg *arg)
 	    arg->offset += len;
 	}
 	else {
-	  too_short:
-	    rb_raise(rb_eArgError, "marshal data too short");
+	    too_short();
 	}
     }
     else {
-	VALUE src = arg->src;
-	VALUE n = LONG2NUM(len);
-	str = rb_funcall2(src, s_read, 1, &n);
-	check_load_arg(arg, s_read);
-	if (NIL_P(str)) goto too_short;
-	StringValue(str);
-	if (RSTRING_LEN(str) != len) goto too_short;
-	arg->infection |= (int)FL_TEST(str, MARSHAL_INFECTION);
+	if (arg->readable > 0 || arg->buflen > 0) {
+	    str = r_bytes1_buffered(len, arg);
+	}
+	else {
+	    str = r_bytes1(len, arg);
+	}
     }
     return str;
 }
@@ -1545,10 +1639,13 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
 	    v = rb_ary_new2(len);
 	    v = r_entry(v, arg);
+	    arg->readable += len - 1;
 	    while (len--) {
 		rb_ary_push(v, r_object(arg));
+		arg->readable--;
 	    }
             v = r_leave(v, arg);
+	    arg->readable++;
 	}
 	break;
 
@@ -1559,11 +1656,14 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
 	    v = rb_hash_new();
 	    v = r_entry(v, arg);
+	    arg->readable += (len - 1) * 2;
 	    while (len--) {
 		VALUE key = r_object(arg);
 		VALUE value = r_object(arg);
 		rb_hash_aset(v, key, value);
+		arg->readable -= 2;
 	    }
+	    arg->readable += 2;
 	    if (type == TYPE_HASH_DEF) {
 		RHASH_IFNONE(v) = r_object(arg);
 	    }
@@ -1590,6 +1690,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
                          rb_class2name(klass));
             }
 
+	    arg->readable += (len - 1) * 2;
 	    v = r_entry0(v, idx, arg);
 	    values = rb_ary_new2(len);
 	    for (i=0; i<len; i++) {
@@ -1602,9 +1703,11 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 			     rb_id2name(SYM2ID(RARRAY_PTR(mem)[i])));
 		}
                 rb_ary_push(values, r_object(arg));
+		arg->readable -= 2;
 	    }
             rb_struct_initialize(v, values);
             v = r_leave(v, arg);
+	    arg->readable += 2;
 	}
 	break;
 
@@ -1751,6 +1854,13 @@ r_object(struct load_arg *arg)
 static void
 clear_load_arg(struct load_arg *arg)
 {
+    if (arg->buf) {
+	xfree(arg->buf);
+	arg->buf = 0;
+    }
+    arg->buflen = 0;
+    arg->offset = 0;
+    arg->readable = 0;
     if (!arg->symbols) return;
     st_free_table(arg->symbols);
     arg->symbols = 0;
@@ -1803,6 +1913,12 @@ marshal_load(int argc, VALUE *argv)
     arg->data    = st_init_numtable();
     arg->compat_tbl = st_init_numtable();
     arg->proc = 0;
+    arg->readable = 0;
+
+    if (NIL_P(v))
+	arg->buf = xmalloc(BUFSIZ);
+    else
+	arg->buf = 0;
 
     major = r_byte(arg);
     minor = r_byte(arg);

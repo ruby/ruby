@@ -1,3 +1,12 @@
+Tue Nov 20 23:28:26 2012  Masaki Matsushita  <glass.saga@gmail.com>
+
+	* marshal.c: add marshal readahead. marshalized Array, Hash and Struct
+	  have size at least number of its elements, marshal readahead will
+	  read the certain readable length and buffer when it needs more bytes.
+	  marshal readahead prevents many calls to IO#getbyte and IO#read,
+	  then it enables performace improvement.
+	  [ruby-dev:45637] [Feature #6440]
+
 Tue Nov 20 22:35:02 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* Makefile.in (.d.h): replace char * to const char * because somehow
