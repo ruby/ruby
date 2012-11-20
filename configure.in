@@ -487,6 +487,7 @@ EOF
         rb_cv_prog_dtrace_g=yes
       else
         # darwin doesn't need `dtrace -G`
+        rb_cv_prog_dtrace_g=no
       fi
     else
         # DTrace is not available while dtrace command exists
