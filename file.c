@@ -5601,11 +5601,8 @@ Init_File(void)
     /* non-blocking lock. used with LOCK_SH or LOCK_EX. see File#flock  */
     rb_define_const(rb_mFConst, "LOCK_NB", INT2FIX(LOCK_NB));
 
-    /* Document-const: NULL
-     *
-     * Name of the null device
-     */
-    rb_file_const("NULL", rb_obj_freeze(rb_usascii_str_new2(null_device)));
+    /* Name of the null device */
+    rb_define_const(rb_mFConst, "NULL", rb_obj_freeze(rb_usascii_str_new2(null_device)));
 
     rb_define_method(rb_cFile, "path",  rb_file_path, 0);
     rb_define_method(rb_cFile, "to_path",  rb_file_path, 0);
