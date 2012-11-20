@@ -874,15 +874,15 @@ int rb_threadptr_async_errinfo_active_p(rb_thread_t *th);
 void rb_thread_lock_unlock(rb_thread_lock_t *);
 void rb_thread_lock_destroy(rb_thread_lock_t *);
 
-#define RUBY_VM_CHECK_INTS_BLOCKING(cur_th) do { \
-    if (UNLIKELY((cur_th)->interrupt_flag)) { \
-	rb_threadptr_execute_interrupts(cur_th, 1); \
+#define RUBY_VM_CHECK_INTS_BLOCKING(th) do { \
+    if (UNLIKELY((th)->interrupt_flag)) { \
+	rb_threadptr_execute_interrupts(th, 1); \
     } \
 } while (0)
 
-#define RUBY_VM_CHECK_INTS(cur_th) do { \
-    if (UNLIKELY((cur_th)->interrupt_flag)) { \
-	rb_threadptr_execute_interrupts(cur_th, 0); \
+#define RUBY_VM_CHECK_INTS(th) do { \
+    if (UNLIKELY((th)->interrupt_flag)) { \
+	rb_threadptr_execute_interrupts(th, 0); \
     } \
 } while (0)
 
