@@ -26,7 +26,7 @@ Tue Nov 20 19:02:44 2012  Koichi Sasada  <ko1@atdot.net>
 	* vm_trace.c: rename and add TracePoint APIs.
 	  (1) TracePoint.new(...){...} creates a new trace point
 	      but does not make it enable.
-	  (2) TracePoint.trace(...){...} creats a new trace point
+	  (2) TracePoint.trace(...){...} creates a new trace point
 	      and enable it (same as old behavior).
 	  (3) TracePoint#enable make it enable (renamed from TracePoint#retrace).
 	      If block given, when enable only in block.
@@ -35,7 +35,7 @@ Tue Nov 20 19:02:44 2012  Koichi Sasada  <ko1@atdot.net>
 	  (5) TracePoint#enabled? returns this trace is enable or not.
 	  [Feature #6895]
 
-	* test/ruby/test_settracefunc.rb: addd tests.
+	* test/ruby/test_settracefunc.rb: add tests.
 
 Tue Nov 20 18:35:05 2012  Koichi Sasada  <ko1@atdot.net>
 
@@ -44,7 +44,7 @@ Tue Nov 20 18:35:05 2012  Koichi Sasada  <ko1@atdot.net>
 	      value on the :return and :c_return event.
 	  (2) TracePoint#raised_exception which returns raised exception
 	      value on the :raise event.
-	  Eeach methods raise RuntimeError if it is called at unsupported
+	  Each methods raise RuntimeError if it is called at unsupported
 	  event.
 	  Please review and give us feedback until next preview
 	  release (Dec/2012) of Ruby 2.0.0.
