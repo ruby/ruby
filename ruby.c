@@ -160,7 +160,7 @@ usage(const char *name, int help)
 	M("-l",		   "",			   "enable line ending processing"),
 	M("-n",		   "",			   "assume 'while gets(); ... end' loop around your script"),
 	M("-p",		   "",			   "assume loop like -n but print line also like sed"),
-	M("-rlibrary",	   "",			   "require the library, before executing your script"),
+	M("-rlibrary",	   "",			   "require the library before executing your script"),
 	M("-s",		   "",			   "enable some switch parsing for switches after script name"),
 	M("-S",		   "",			   "look for the script using PATH environment variable"),
 	M("-T[level=1]",   "",			   "turn on tainting checks"),

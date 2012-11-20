@@ -1,5 +1,9 @@
 Tue Nov 20 12:35:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
+	* ruby.c (usage_msg): Fix typo [ruby-core:49205] [Bug #7327]
+
+Tue Nov 20 12:35:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
 	* file.c (File::NULL): Document File::NULL constant
 	  [ruby-core:49384] [Bug #7365]
 
