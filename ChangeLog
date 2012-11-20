@@ -1,3 +1,8 @@
+Tue Nov 20 11:05:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/tracer.rb (Tracer.trace_func): printf to stdout
+	  Patch by Michal Fojtik [ruby-core:45219] [Bug #6490]
+
 Mon Nov 19 21:24:18 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* vm_dump.c: not to include probes.h because the code does not depend
