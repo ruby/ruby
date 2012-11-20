@@ -1,6 +1,6 @@
 Tue Nov 20 21:41:04 2012  Koichi Sasada  <ko1@atdot.net>
 
-	* include/ruby/debug.h: introdudced.
+	* include/ruby/debug.h: introduced.
 	  Debugging/profiling features will be located.
 
 	* vm_trace.c: expose C-level TracePoint APIs.
