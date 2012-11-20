@@ -1,3 +1,20 @@
+Tue Nov 20 11:14:33 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (--enable-dtrace): always call RUBY_DTRACE_BSD_BROKEN
+	  for portability.
+	  As the note, FreeBSD 8 has DTrace as the optional
+	  feature (it is enabled by the build option), but doesn't have USDT.
+	  FreeBSD 9 has USDT but they are still optional. FreeBSD 10 will
+	  enable them by default.
+	  The variable $rb_cv_prog_dtrace_g is "yes" only on FreeBSD 9 with
+	  optional DTrace or FreeBSD 10. If it is "no", you cannnot know
+	  whether it doesn't need -G or DTrace is disabled. (by cheking
+	  error code, you can know)
+
+Mon Nov 19 22:55:48 2012  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in (--enable-dtrace): change help message
+
 Tue Nov 20 11:05:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/tracer.rb (Tracer.trace_func): printf to stdout
