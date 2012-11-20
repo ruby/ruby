@@ -173,7 +173,7 @@ if defined?(WIN32OLE_TYPE)
       ole_types = @ole_type.implemented_ole_types
       assert_instance_of(Array, ole_types)
       assert_equal(1, ole_types.size)
-      assert_match(/^IShellDispatch5{0,1}$/, ole_types[0].name)
+      assert_match(/^IShellDispatch\d{0,1}$/, ole_types[0].name)
 
       ie_otype = WIN32OLE_TYPE.new("Microsoft Internet Controls", "InternetExplorer")
       ole_types = ie_otype.implemented_ole_types

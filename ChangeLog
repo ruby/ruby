@@ -1,3 +1,9 @@
+Tue Nov 20 21:22:44 2012  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_type.rb (test_implemented_ole_types): 
+	  IShellDispatch6 bundled in Windows 8. Thanks to phasis68 (Heesob
+	  Park).  [ruby-core:49580][Bug #7403]
+
 Tue Nov 20 21:06:41 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: some improvements.
