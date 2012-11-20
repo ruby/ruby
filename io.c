@@ -11631,58 +11631,6 @@ Init_IO(void)
 
     rb_define_method(rb_cFile, "initialize",  rb_file_initialize, -1);
 
-    /* open for reading only */
-    rb_file_const("RDONLY", INT2FIX(O_RDONLY));
-    /* open for writing only */
-    rb_file_const("WRONLY", INT2FIX(O_WRONLY));
-    /* open for reading and writing */
-    rb_file_const("RDWR", INT2FIX(O_RDWR));
-    /* append on each write */
-    rb_file_const("APPEND", INT2FIX(O_APPEND));
-    /* create file if it does not exist */
-    rb_file_const("CREAT", INT2FIX(O_CREAT));
-    /* error if CREAT and the file exists */
-    rb_file_const("EXCL", INT2FIX(O_EXCL));
-#if defined(O_NDELAY) || defined(O_NONBLOCK)
-# ifndef O_NONBLOCK
-#   define O_NONBLOCK O_NDELAY
-# endif
-    /* do not block on open or for data to become available */
-    rb_file_const("NONBLOCK", INT2FIX(O_NONBLOCK));
-#endif
-    /* truncate size to 0 */
-    rb_file_const("TRUNC", INT2FIX(O_TRUNC));
-#ifdef O_NOCTTY
-    /* not to make opened IO the controlling terminal device */
-    rb_file_const("NOCTTY", INT2FIX(O_NOCTTY));
-#endif
-#ifndef O_BINARY
-# define  O_BINARY 0
-#endif
-    /* disable line code conversion */
-    rb_file_const("BINARY", INT2FIX(O_BINARY));
-#ifdef O_SYNC
-    rb_file_const("SYNC", INT2FIX(O_SYNC));
-#endif
-#ifdef O_DSYNC
-    rb_file_const("DSYNC", INT2FIX(O_DSYNC));
-#endif
-#ifdef O_RSYNC
-    rb_file_const("RSYNC", INT2FIX(O_RSYNC));
-#endif
-#ifdef O_NOFOLLOW
-    /* do not follow symlinks */
-    rb_file_const("NOFOLLOW", INT2FIX(O_NOFOLLOW)); /* FreeBSD, Linux */
-#endif
-#ifdef O_NOATIME
-    /* do not change atime */
-    rb_file_const("NOATIME", INT2FIX(O_NOATIME)); /* Linux */
-#endif
-#ifdef O_DIRECT
-    /*  Try to minimize cache effects of the I/O to and from this file. */
-    rb_file_const("DIRECT", INT2FIX(O_DIRECT));
-#endif
-
     sym_mode = ID2SYM(rb_intern("mode"));
     sym_perm = ID2SYM(rb_intern("perm"));
     sym_extenc = ID2SYM(rb_intern("external_encoding"));

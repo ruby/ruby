@@ -5513,12 +5513,85 @@ Init_File(void)
 
     rb_define_method(rb_cFile, "flock", rb_file_flock, 1);
 
+    /*
+     * Document-module: File::Constants
+     *
+     * File::Constants provides file-related constants.  All possible
+     * file constants are listed in the documentation but they may not all
+     * be present on your platform.
+     *
+     * If the underlying platform doesn't define a constant the corresponding
+     * Ruby constant is not defined.
+     *
+     * Your platform documentations (e.g. man open(2)) may describe more
+     * detailed information.
+     */
     rb_mFConst = rb_define_module_under(rb_cFile, "Constants");
     rb_include_module(rb_cIO, rb_mFConst);
-    rb_file_const("LOCK_SH", INT2FIX(LOCK_SH));
-    rb_file_const("LOCK_EX", INT2FIX(LOCK_EX));
-    rb_file_const("LOCK_UN", INT2FIX(LOCK_UN));
-    rb_file_const("LOCK_NB", INT2FIX(LOCK_NB));
+
+    /* open for reading only */
+    rb_define_const(rb_mFConst, "RDONLY", INT2FIX(O_RDONLY));
+    /* open for writing only */
+    rb_define_const(rb_mFConst, "WRONLY", INT2FIX(O_WRONLY));
+    /* open for reading and writing */
+    rb_define_const(rb_mFConst, "RDWR", INT2FIX(O_RDWR));
+    /* append on each write */
+    rb_define_const(rb_mFConst, "APPEND", INT2FIX(O_APPEND));
+    /* create file if it does not exist */
+    rb_define_const(rb_mFConst, "CREAT", INT2FIX(O_CREAT));
+    /* error if CREAT and the file exists */
+    rb_define_const(rb_mFConst, "EXCL", INT2FIX(O_EXCL));
+#if defined(O_NDELAY) || defined(O_NONBLOCK)
+# ifndef O_NONBLOCK
+#   define O_NONBLOCK O_NDELAY
+# endif
+    /* do not block on open or for data to become available */
+    rb_define_const(rb_mFConst, "NONBLOCK", INT2FIX(O_NONBLOCK));
+#endif
+    /* truncate size to 0 */
+    rb_define_const(rb_mFConst, "TRUNC", INT2FIX(O_TRUNC));
+#ifdef O_NOCTTY
+    /* not to make opened IO the controlling terminal device */
+    rb_define_const(rb_mFConst, "NOCTTY", INT2FIX(O_NOCTTY));
+#endif
+#ifndef O_BINARY
+# define  O_BINARY 0
+#endif
+    /* disable line code conversion */
+    rb_define_const(rb_mFConst, "BINARY", INT2FIX(O_BINARY));
+#ifdef O_SYNC
+    /* any write operation perform synchronously */
+    rb_define_const(rb_mFConst, "SYNC", INT2FIX(O_SYNC));
+#endif
+#ifdef O_DSYNC
+    /* any write operation perform synchronously except some meta data */
+    rb_define_const(rb_mFConst, "DSYNC", INT2FIX(O_DSYNC));
+#endif
+#ifdef O_RSYNC
+    /* any read operation perform synchronously. used with SYNC or DSYNC. */
+    rb_define_const(rb_mFConst, "RSYNC", INT2FIX(O_RSYNC));
+#endif
+#ifdef O_NOFOLLOW
+    /* do not follow symlinks */
+    rb_define_const(rb_mFConst, "NOFOLLOW", INT2FIX(O_NOFOLLOW)); /* FreeBSD, Linux */
+#endif
+#ifdef O_NOATIME
+    /* do not change atime */
+    rb_define_const(rb_mFConst, "NOATIME", INT2FIX(O_NOATIME)); /* Linux */
+#endif
+#ifdef O_DIRECT
+    /*  Try to minimize cache effects of the I/O to and from this file. */
+    rb_define_const(rb_mFConst, "DIRECT", INT2FIX(O_DIRECT));
+#endif
+
+    /* shared lock. see File#flock */
+    rb_define_const(rb_mFConst, "LOCK_SH", INT2FIX(LOCK_SH));
+    /* exclusive lock. see File#flock */
+    rb_define_const(rb_mFConst, "LOCK_EX", INT2FIX(LOCK_EX));
+    /* unlock. see File#flock */
+    rb_define_const(rb_mFConst, "LOCK_UN", INT2FIX(LOCK_UN));
+    /* non-blocking lock. used with LOCK_SH or LOCK_EX. see File#flock  */
+    rb_define_const(rb_mFConst, "LOCK_NB", INT2FIX(LOCK_NB));
 
     /* Document-const: NULL
      *

@@ -1,3 +1,10 @@
+Tue Nov 20 13:58:11 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (Init_IO): removed all rb_file_const() into file.c.
+	* file.c (Init_File): replace with rb_file_const() with
+	  rb_define_const() because RDoc don't care rb_file_const.
+	  [Bug #5530]
+
 Tue Nov 20 12:35:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ruby.c (usage_msg): Fix typo [ruby-core:49205] [Bug #7327]
