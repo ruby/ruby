@@ -10,6 +10,7 @@ Tue Nov 20 19:02:44 2012  Koichi Sasada  <ko1@atdot.net>
 	  (4) TracePoint#disable make it disable (renamed from TracePoint#untrace).
 	      If block given, when disable only in block.
 	  (5) TracePoint#enabled? returns this trace is enable or not.
+	  [Feature #6895]
 
 	* test/ruby/test_settracefunc.rb: addd tests.
 
@@ -24,6 +25,7 @@ Tue Nov 20 18:35:05 2012  Koichi Sasada  <ko1@atdot.net>
 	  event.
 	  Please review and give us feedback until next preview
 	  release (Dec/2012) of Ruby 2.0.0.
+	  [Feature #6895]
 
 	* insns.def, vm.c, vm_eval.c, vm_insnhelper.c, eval.c, thread.c:
 	  ditto.
