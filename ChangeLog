@@ -1,3 +1,8 @@
+Tue Nov 20 21:01:16 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (incs): BSD make cannot deal with non-prefixed dependency
+	  and prefixed target.
+
 Tue Nov 20 20:10:23 2012  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (rb_ary_bsearch): fix rdoc bug (O(n log n) -> O(log n)).
