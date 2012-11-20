@@ -1,3 +1,9 @@
+Tue Nov 20 21:12:37 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (RUBY_DTRACE_AVAILABLE): only check dtrace availability.
+
+	* configure.in (RUBY_DTRACE_POSTPROCESS): restore.
+
 Tue Nov 20 21:22:44 2012  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_type.rb (test_implemented_ole_types): 

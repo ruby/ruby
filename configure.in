@@ -467,35 +467,31 @@ AC_SUBST(MAKEDIRS)
 AC_DEFUN([RUBY_DTRACE_AVAILABLE],
 [AC_CACHE_CHECK(whether dtrace USDT is available, rb_cv_dtrace_available,
 [
-    cat <<EOF > conftest.c
-#define _DTRACE_VERSION 1
-#include "conftest_provider.h"
-int main(void)
-{
-    if (CONFTEST_FIRE_ENABLED()) CONFTEST_FIRE();
-    return 0;
-}
-EOF
     echo "provider conftest{ probe fire(); };" > conftest_provider.d
-    rb_cv_prog_dtrace_g=no
     if $DTRACE -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null; then
       # DTrace is available on the system
-      enable_dtrace=yes
-      $CC $CFLAGS -c -o conftest.o conftest.c
-      if $DTRACE -G -o conftest_provider.o -s conftest_provider.d conftest.o >/dev/null 2>/dev/null; then
-        # Solaris and FreeBSD need `dtrace -G`
-        rb_cv_prog_dtrace_g=yes
-      else
-        # darwin doesn't need `dtrace -G`
-        rb_cv_prog_dtrace_g=no
-      fi
+      rb_cv_dtrace_available=yes
     else
-        # DTrace is not available while dtrace command exists
-        # for example FreeBSD 8 or FreeBSD 9 without DTrace build option
-        enable_dtrace=no
+      # DTrace is not available while dtrace command exists
+      # for example FreeBSD 8 or FreeBSD 9 without DTrace build option
+      rb_cv_dtrace_available=no
     fi
-    rb_cv_dtrace_available=$enable_dtrace
     rm -f conftest.[co] conftest_provider.[dho]
+])
+])
+
+AC_DEFUN([RUBY_DTRACE_POSTPROCESS],
+[AC_CACHE_CHECK(whether $DTRACE needs post processing, rb_cv_prog_dtrace_g,
+[
+ echo "int main(void){ return 0; }" > conftest.c
+ echo "provider conftest{};" > conftest_provider.d
+ $CC $CFLAGS -c -o conftest.o conftest.c
+ if $DTRACE -G -s conftest_provider.d conftest.o 2>/dev/null; then
+   rb_cv_prog_dtrace_g=yes
+ else
+   rb_cv_prog_dtrace_g=no
+ fi
+ rm -f conftest.o conftest.c conftest_provider.d conftest_provider.o
 ])
 ])
 
@@ -2729,6 +2725,7 @@ AC_ARG_ENABLE(dtrace,
 if test "${enable_dtrace}" = "auto"; then
     if test x"$DTRACE" != x -a x"$cross_compiling" != xyes; then
         RUBY_DTRACE_AVAILABLE()
+        enable_dtrace=$rb_cv_dtrace_available
     else
         enable_dtrace=no
     fi
@@ -2742,14 +2739,20 @@ if test "${enable_dtrace}" = "yes"; then
         AC_MSG_ERROR([--enable-dtrace, however, cross compiling])
     else
         RUBY_DTRACE_AVAILABLE()
+        enable_dtrace=$rb_cv_dtrace_available
         if test "${enable_dtrace}" = "no"; then
             AC_MSG_ERROR([--enable-dtrace, however, USDT is not available])
         fi
+        RUBY_DTRACE_POSTPROCESS()
         if test "$rb_cv_prog_dtrace_g" = 'yes'; then
             DTRACE_OBJ='probes.$(OBJEXT)'
             DTRACE_GLOMMED_OBJ='ruby-glommed.$(OBJEXT)'
             LIBRUBY_A_OBJS='$(DTRACE_GLOMMED_OBJ)'
         fi
+        AS_CASE("${target_os}", [freebsd*], [
+            # FreeBSD's dtrace requires libelf
+            LIBS="-lelf $LIBS"
+        ])
     fi
     DTRACE_EXT=d
 else
@@ -2759,11 +2762,6 @@ AC_SUBST(DTRACE_EXT)
 AC_SUBST(DTRACE_OBJ)
 AC_SUBST(DTRACE_GLOMMED_OBJ)
 AC_SUBST(LIBRUBY_A_OBJS)
-
-AS_CASE("${enable_dtrace}:${target_os}", [yes:freebsd*], [
-    # FreeBSD's dtrace requires libelf
-    LIBS="-lelf $LIBS"
-])
 
 }
 { # build section
