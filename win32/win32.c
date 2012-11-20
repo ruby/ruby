@@ -5902,7 +5902,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     }
 
     ret = 0;
-    isconsole = is_console(_osfhnd(fd));
+    isconsole = is_console(_osfhnd(fd)) && (osver.dwMajorVersion < 6 || (osver.dwMajorVersion == 6 && osver.dwMinorVersion < 2));
     if (isconsole) {
 	DWORD mode;
 	GetConsoleMode((HANDLE)_osfhnd(fd),&mode);
