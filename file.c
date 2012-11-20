@@ -5520,6 +5520,10 @@ Init_File(void)
     rb_file_const("LOCK_UN", INT2FIX(LOCK_UN));
     rb_file_const("LOCK_NB", INT2FIX(LOCK_NB));
 
+    /* Document-const: NULL
+     *
+     * Name of the null device
+     */
     rb_file_const("NULL", rb_obj_freeze(rb_usascii_str_new2(null_device)));
 
     rb_define_method(rb_cFile, "path",  rb_file_path, 0);

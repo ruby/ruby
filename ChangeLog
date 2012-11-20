@@ -1,3 +1,8 @@
+Tue Nov 20 12:35:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* file.c (File::NULL): Document File::NULL constant
+	  [ruby-core:49384] [Bug #7365]
+
 Tue Nov 20 12:05:15 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_read): Windows 8 fixed one of a bug of console
