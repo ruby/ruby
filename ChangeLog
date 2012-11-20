@@ -1,3 +1,10 @@
+Tue Nov 20 17:31:12 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: fix dtrace didn't work on darwin.
+
+	* configure.in (RUBY_DTRACE_AVAILABLE): unify RUBY_DTRACE_POSTPROCESS
+	  and RUBY_DTRACE_BSD_BROKEN.
+
 Tue Nov 20 15:20:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* file.c (File.extname): Documentation for extname on dotfiles and
