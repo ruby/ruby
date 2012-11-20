@@ -2033,7 +2033,7 @@ module Net
       end
     end
 
-    class BodyTypeExtension < Struct.new(:media_type, :subtype, 
+    class BodyTypeExtension < Struct.new(:media_type, :subtype,
                                          :params, :content_id,
                                          :description, :encoding, :size)
       def multipart?
@@ -2414,11 +2414,11 @@ module Net
         # If this is not message/rfc822, we shouldn't apply the RFC822 spec
         # to it.
         # We should handle anything other than message/rfc822 using
-        # multipart extension data [rfc3501] (i.e. the data itself won't be 
+        # multipart extension data [rfc3501] (i.e. the data itself won't be
         # returned, we would have to retrieve it with BODYSTRUCTURE instead
         # of with BODY
         if "#{mtype}/#{msubtype}" != 'MESSAGE/RFC822' then
-          return BodyTypeExtension.new(mtype, msubtype, 
+          return BodyTypeExtension.new(mtype, msubtype,
                                        param, content_id,
                                        desc, enc, size)
         end

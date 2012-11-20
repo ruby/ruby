@@ -533,7 +533,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint
     events1, answer_events = *trace_by_tracepoint()
-    
+
     mesg = events1.map{|e|
       "#{e[0]} - #{e[2]}:#{e[1]} id: #{e[4]}"
     }.join("\n")
@@ -627,7 +627,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_enabled
     trace = TracePoint.trace(:call){|tp|
-      # 
+      #
     }
     assert_equal(true, trace.enabled?)
     trace.disable{

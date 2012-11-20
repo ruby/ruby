@@ -472,7 +472,7 @@ end.join
       assert_equal(false, s.tainted?,
                    "#{exc}#to_s should not propagate taintness")
     end
-    
+
     o = Object.new
     def o.to_str
       "foo"
