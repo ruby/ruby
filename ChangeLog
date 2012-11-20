@@ -1,3 +1,9 @@
+Tue Nov 20 15:20:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* file.c (File.extname): Documentation for extname on dotfiles and
+	files ending with a dot. Also, added example for this.
+	[ruby-core:47852] [Bug #7112]
+
 Tue Nov 20 14:19:20 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_signal.rb (TestSignal#test_signame): fix windows

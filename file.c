@@ -3850,11 +3850,18 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
  *  call-seq:
  *     File.extname(path)  ->  string
  *
- *  Returns the extension (the portion of file name in <i>path</i>
- *  after the period).
+ *  Returns the extension (the portion of file name in +path+
+ *  starting from the last period).
+ *
+ *  If +path+ is a dotfile, or starts with a period, then only an empty string
+ *  will be returned.
+ *
+ *  An empty string will also be returned when the period is the last character
+ *  in +path+.
  *
  *     File.extname("test.rb")         #=> ".rb"
  *     File.extname("a/b/d/test.rb")   #=> ".rb"
+ *     File.extname("foo.")	       #=> ""
  *     File.extname("test")            #=> ""
  *     File.extname(".profile")        #=> ""
  *
