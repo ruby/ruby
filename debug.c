@@ -12,7 +12,7 @@
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
-#include "debug.h"
+#include "vm_debug.h"
 #include "eval_intern.h"
 #include "vm_core.h"
 #include "id.h"

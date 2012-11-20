@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  debug.h - YARV Debug function interface
+  vm_debug.h - YARV Debug function interface
 
   $Author$
   created at: 04/08/25 02:33:49 JST

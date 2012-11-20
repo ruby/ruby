@@ -1,3 +1,22 @@
+Tue Nov 20 21:41:04 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/debug.h: introdudced.
+	  Debugging/profiling features will be located.
+
+	* vm_trace.c: expose C-level TracePoint APIs.
+	  Note that they are experimental.
+
+	* vm_trace.c, include/ruby/debug.h: rename `rb_hook_flag_t'
+	  to `rb_event_hook_flag_t'.
+	  Macro names `RUBY_HOOK_FLAG_*' are also renamed to
+	  `RUBY_EVENT_HOOK_FLAG_*'.
+
+	* debug.h, vm_debug.h: rename debug.h to vm_debug.h.
+
+	* common.mk: ditto.
+
+	* debug.c, main.c, vm_core.h: ditto.
+
 Tue Nov 20 21:12:37 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (RUBY_DTRACE_AVAILABLE): only check dtrace availability.
