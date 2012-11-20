@@ -871,7 +871,8 @@ trace
                   rb_sourceline());
         }
     }
-    EXEC_EVENT_HOOK(th, flag, GET_SELF(), 0, 0 /* TODO: id, klass */);
+    EXEC_EVENT_HOOK(th, flag, GET_SELF(), 0, 0 /* id and klass are resolved at callee */,
+		    flag & RUBY_EVENT_RETURN ? TOPN(0) : Qundef);
 }
 
 /**********************************************************/

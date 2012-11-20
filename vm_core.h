@@ -887,13 +887,30 @@ void rb_thread_lock_destroy(rb_thread_lock_t *);
 } while (0)
 
 /* tracer */
-void
-rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t flag, VALUE self, ID id, VALUE klass);
+typedef struct rb_trace_arg_struct {
+    rb_event_flag_t event;
+    rb_thread_t *th;
+    rb_control_frame_t *cfp;
+    VALUE self;
+    ID id;
+    VALUE klass;
+    VALUE data;
+} rb_trace_arg_t;
 
-#define EXEC_EVENT_HOOK(th, flag, self, id, klass) do { \
-    if (UNLIKELY(ruby_vm_event_flags & (flag))) { \
-	if (((th)->event_hooks.events | (th)->vm->event_hooks.events) & (flag)) { \
-	    rb_threadptr_exec_event_hooks((th), (flag), (self), (id), (klass)); \
+void rb_threadptr_exec_event_hooks(rb_trace_arg_t *trace_arg);
+
+#define EXEC_EVENT_HOOK(th_, flag_, self_, id_, klass_, data_) do { \
+    if (UNLIKELY(ruby_vm_event_flags & (flag_))) { \
+	if (((th)->event_hooks.events | (th)->vm->event_hooks.events) & (flag_)) { \
+	    rb_trace_arg_t trace_arg; \
+	    trace_arg.event = (flag_); \
+	    trace_arg.th = (th_); \
+	    trace_arg.cfp = (trace_arg.th)->cfp; \
+	    trace_arg.self = (self_); \
+	    trace_arg.id = (id_); \
+	    trace_arg.klass = (klass_); \
+	    trace_arg.data = (data_); \
+	    rb_threadptr_exec_event_hooks(&trace_arg); \
 	} \
     } \
 } while (0)

@@ -505,7 +505,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg)
 		    rb_sourcefile(),
 		    rb_sourceline());
 	}
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->cfp->self, 0, 0);
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->cfp->self, 0, 0, mesg);
     }
 }
 
@@ -654,7 +654,7 @@ rb_raise_jump(VALUE mesg)
 
     setup_exception(th, TAG_RAISE, mesg);
 
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, mid, klass);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, mid, klass, Qnil);
     rb_thread_raised_clear(th);
     JUMP_TAG(TAG_RAISE);
 }

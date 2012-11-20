@@ -1,3 +1,24 @@
+Tue Nov 20 18:35:05 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c: add two methods:
+	  (1) TracePoint#return_value which returns return
+	      value on the :return and :c_return event.
+	  (2) TracePoint#raised_exception which returns raised exception
+	      value on the :raise event.
+	  Eeach methods raise RuntimeError if it is called at unsupported
+	  event.
+	  Please review and give us feedback until next preview
+	  release (Dec/2012) of Ruby 2.0.0.
+
+	* insns.def, vm.c, vm_eval.c, vm_insnhelper.c, eval.c, thread.c:
+	  ditto.
+
+	* vm_trace.c, vm_core.h: move definition of rb_trace_arg_t from
+	  vm_trace.c to vm_core.h.
+	  Caller fills rb_trace_arg_t and pass the pointer of this variable.
+
+	* test/ruby/test_settracefunc.rb: fix tests to test this change.
+
 Tue Nov 20 17:31:12 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: fix dtrace didn't work on darwin.

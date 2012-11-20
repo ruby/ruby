@@ -44,15 +44,6 @@ typedef struct rb_event_hook_struct {
     struct rb_event_hook_struct *next;
 } rb_event_hook_t;
 
-typedef struct rb_trace_arg_struct {
-    rb_event_flag_t event;
-    rb_thread_t *th;
-    rb_control_frame_t *cfp;
-    VALUE self;
-    ID id;
-    VALUE klass;
-} rb_trace_arg_t;
-
 typedef void (*rb_event_hook_raw_arg_func_t)(VALUE data, const rb_trace_arg_t *arg);
 
 #define MAX_EVENT_NUM 32
@@ -306,10 +297,11 @@ exec_hooks(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_ar
 }
 
 void
-rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t event, VALUE self, ID id, VALUE klass)
+rb_threadptr_exec_event_hooks(rb_trace_arg_t *targ)
 {
+    rb_thread_t *th = targ->th;
     if (th->trace_running == 0 &&
-	self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
+	targ->self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
 	const int vm_tracing = th->vm->trace_running;
 	int state = 0;
 	int outer_state = th->state;
@@ -320,26 +312,18 @@ rb_threadptr_exec_event_hooks(rb_thread_t *th, rb_event_flag_t event, VALUE self
 	{
 	    const VALUE errinfo = th->errinfo;
 	    rb_hook_list_t *list;
-	    rb_trace_arg_t ta;
-
-	    ta.event = event;
-	    ta.th = th;
-	    ta.cfp = th->cfp;
-	    ta.self = self;
-	    ta.id = id;
-	    ta.klass = klass;
 
 	    /* thread local traces */
 	    list = &th->event_hooks;
-	    if (list->events & event) {
-		state = exec_hooks(th, list, &ta, TRUE);
+	    if (list->events & targ->event) {
+		state = exec_hooks(th, list, targ, TRUE);
 		if (state) goto terminate;
 	    }
 
 	    /* vm global traces */
 	    list = &th->vm->event_hooks;
-	    if (list->events & event) {
-		state = exec_hooks(th, list, &ta, !vm_tracing);
+	    if (list->events & targ->event) {
+		state = exec_hooks(th, list, targ, !vm_tracing);
 		if (state) goto terminate;
 	    }
 	    th->errinfo = errinfo;
@@ -774,6 +758,43 @@ tp_attr_self_m(VALUE tpval)
     return tp->trace_arg->self;
 }
 
+static VALUE
+tp_attr_return_value_m(VALUE tpval)
+{
+    rb_tp_t *tp = tpptr(tpval);
+    tp_attr_check_active(tp);
+
+    if (tp->trace_arg->data == Qundef) {
+	rb_bug("tp_attr_return_value_m: unreachable");
+    }
+    if (tp->trace_arg->event & (RUBY_EVENT_RETURN | RUBY_EVENT_C_RETURN)) {
+	/* ok */
+    }
+    else {
+	rb_raise(rb_eRuntimeError, "not supported by this event");
+    }
+    return tp->trace_arg->data;
+}
+
+static VALUE
+tp_attr_raised_exception_m(VALUE tpval)
+{
+    rb_tp_t *tp = tpptr(tpval);
+    tp_attr_check_active(tp);
+
+    if (tp->trace_arg->data == Qundef) {
+	rb_bug("tp_attr_raised_exception_m: unreachable");
+    }
+    if (tp->trace_arg->event & (RUBY_EVENT_RAISE)) {
+	/* ok */
+    }
+    else {
+	rb_raise(rb_eRuntimeError, "not supported by this event");
+    }
+    return tp->trace_arg->data;
+}
+
+
 static void
 tp_call_trace(VALUE tpval, rb_trace_arg_t *trace_arg)
 {
@@ -902,4 +923,6 @@ Init_vm_trace(void)
     rb_define_method(rb_cTracePoint, "klass", tp_attr_klass_m, 0);
     rb_define_method(rb_cTracePoint, "binding", tp_attr_binding_m, 0);
     rb_define_method(rb_cTracePoint, "self", tp_attr_self_m, 0);
+    rb_define_method(rb_cTracePoint, "return_value", tp_attr_return_value_m, 0);
+    rb_define_method(rb_cTracePoint, "raised_exception", tp_attr_raised_exception_m, 0);
 }
