@@ -24,6 +24,8 @@ with all sufficient information, see the ChangeLog file.
     * incompatible changes:
       * random parameter of Array#shuffle! and Array#sample now
         will be called with one argument, maximum value.
+      * when given Range arguments, Array#values_at now returns nil for each
+        value that is out-of-range.
 
   * Enumerable
     * added method:
@@ -286,6 +288,10 @@ with all sufficient information, see the ChangeLog file.
   * Default source encoding is changed to UTF-8. (was US-ASCII)
 
 === Compatibility issues (excluding feature bug fixes)
+
+  * Array#values_at
+
+    See above.
 
   * Signal.trap
 
