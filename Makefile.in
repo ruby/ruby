@@ -349,6 +349,7 @@ probes.@OBJEXT@: $(srcdir)/probes.d
 	  done; \
 	fi; \
 	touch "$$stamp"
+	$(RM) $@
 	$(Q) $(DTRACE) -G -s $(srcdir)/probes.d -o $@ $(DTRACE_DEPENDENT_OBJS)
 
 # DTrace static library hacks described here:
