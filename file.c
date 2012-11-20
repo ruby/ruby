@@ -3853,8 +3853,8 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
  *  Returns the extension (the portion of file name in +path+
  *  starting from the last period).
  *
- *  If +path+ is a dotfile, or starts with a period, then only an empty string
- *  will be returned.
+ *  If +path+ is a dotfile, or starts with a period, then the starting
+ *  dot is not dealt with the start of the extension.
  *
  *  An empty string will also be returned when the period is the last character
  *  in +path+.
@@ -3864,6 +3864,7 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
  *     File.extname("foo.")	       #=> ""
  *     File.extname("test")            #=> ""
  *     File.extname(".profile")        #=> ""
+ *     File.extname(".profile.sh")     #=> ".sh"
  *
  */
 
