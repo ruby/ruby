@@ -1,3 +1,10 @@
+Wed Nov 21 22:39:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/wait/wait.c (io_wait_writable): this is easier to use than
+	  IO.select for a single IO object and is immune to the
+	  limitations/innefficiency of select() on platforms where poll/ppoll
+	  is available.  patched by Eric Wong.  [Feature #4646]
+
 Wed Nov 21 22:27:52 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (garbage_collect): remove a duplicative probe.

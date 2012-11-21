@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 require 'test/unit'
 require 'timeout'
 require 'socket'
@@ -68,5 +69,40 @@ class TestIOWait < Test::Unit::TestCase
   def test_wait_eof
     Thread.new { sleep 0.01; @w.close }
     assert_nil @r.wait
+  end
+
+  def test_wait_writable
+    assert_equal @w, @w.wait_writable
+  end
+
+  def test_wait_writable_timeout
+    assert_equal @w, @w.wait_writable(0.001)
+    written = fill_pipe
+    assert_nil @w.wait_writable(0.001)
+    @r.read(written)
+    assert_equal @w, @w.wait_writable(0.001)
+  end
+
+  def test_wait_writable_EPIPE
+    fill_pipe
+    @r.close
+    assert_equal @w, @w.wait_writable
+  end
+
+  def test_wait_writable_closed
+    @w.close
+    assert_raises(IOError) { @w.wait_writable }
+  end
+
+private
+
+  def fill_pipe
+    written = 0
+    buf = " " * 4096
+    begin
+      written += @w.write_nonblock(buf)
+    rescue Errno::EAGAIN
+      return written
+    end while true
   end
 end if IO.method_defined?(:wait)
