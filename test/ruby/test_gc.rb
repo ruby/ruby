@@ -124,12 +124,12 @@ class TestGc < Test::Unit::TestCase
 
     GC.start
     assert_equal(1, GC::Profiler.raw_data.size)
-    GC.clear
+    GC::Profiler.clear
     assert_equal(0, GC::Profiler.raw_data.size)
 
     200.times{ GC.start }
     assert_equal(200, GC::Profiler.raw_data.size)
-    GC.clear
+    GC::Profiler.clear
     assert_equal(0, GC::Profiler.raw_data.size)
   ensure
     GC::Profiler.disable

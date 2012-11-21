@@ -1,3 +1,8 @@
+Thu Nov 22 08:06:42 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* test/ruby/test_gc.rb (test_profiler_clear): fix wrong method
+	  calls [Bug #7419] [ruby-core:49828].
+
 Thu Nov 22 02:22:33 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* NEWS: edited (order etc).
