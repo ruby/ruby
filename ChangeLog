@@ -1,3 +1,7 @@
+Wed Nov 21 18:46:37 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c (read_digits): due to a bit tighter rb_cstr_to_inum().
+
 Wed Nov 21 16:13:37 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_so_nsieve_bits.rb: add an encoding pragma because

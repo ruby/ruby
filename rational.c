@@ -1986,13 +1986,15 @@ static int
 read_digits(const char **s, int strict,
 	    VALUE *num, int *count)
 {
+    char *b, *bb;
     int us = 1, ret = 1;
-    const char *b = *s;
 
     if (!isdecimal(**s)) {
 	*num = ZERO;
 	return 0;
     }
+
+    bb = b = ALLOCA_N(char, strlen(*s) + 1);
 
     while (isdecimal(**s) || **s == '_') {
 	if (**s == '_') {
@@ -2007,6 +2009,7 @@ read_digits(const char **s, int strict,
 	else {
 	    if (count)
 		(*count)++;
+	    *b++ = **s;
 	    us = 0;
 	}
 	(*s)++;
@@ -2016,7 +2019,8 @@ read_digits(const char **s, int strict,
 	    (*s)--;
 	} while (**s == '_');
   conv:
-    *num = rb_cstr_to_inum(b, 10, 0);
+    *b = '\0';
+    *num = rb_cstr_to_inum(bb, 10, 0);
     return ret;
 }
 
