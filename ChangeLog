@@ -4,7 +4,7 @@ Wed Nov 21 22:52:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/wait/wait.c (io_wait_writable): this is easier to use than
 	  IO.select for a single IO object and is immune to the
-	  limitations/innefficiency of select() on platforms where poll/ppoll
+	  limitations/inefficiency of select() on platforms where poll/ppoll
 	  is available.  patched by Eric Wong.  [Feature #4646]
 
 Wed Nov 21 22:27:52 2012  Narihiro Nakamura  <authornari@gmail.com>
@@ -56,7 +56,7 @@ Tue Nov 20 23:28:26 2012  Masaki Matsushita  <glass.saga@gmail.com>
 	  have size at least number of its elements, marshal readahead will
 	  read the certain readable length and buffer when it needs more bytes.
 	  marshal readahead prevents many calls to IO#getbyte and IO#read,
-	  then it enables performace improvement.
+	  then it enables performance improvement.
 	  [ruby-dev:45637] [Feature #6440]
 
 Tue Nov 20 22:35:02 2012  NARUSE, Yui  <naruse@ruby-lang.org>
