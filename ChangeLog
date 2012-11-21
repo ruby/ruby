@@ -1,3 +1,7 @@
+Thu Nov 22 02:22:33 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* NEWS: edited (order etc).
+
 Wed Nov 21 22:52:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/wait/wait.c (io_wait_readable): add alias wait_readable.
