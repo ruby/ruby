@@ -62,7 +62,7 @@ void ruby_unsetenv(const char *);
 #undef setenv
 #undef unsetenv
 #define setenv(name,val) ruby_setenv((name),(val))
-#define unsetenv(name,val) ruby_unsetenv(name);
+#define unsetenv(name,val) ruby_unsetenv(name)
 
 char *ruby_strdup(const char *);
 #undef strdup

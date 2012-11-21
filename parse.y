@@ -491,7 +491,7 @@ static void local_push_gen(struct parser_params*,int);
 static void local_pop_gen(struct parser_params*);
 #define local_pop() local_pop_gen(parser)
 static int local_var_gen(struct parser_params*, ID);
-#define local_var(id) local_var_gen(parser, (id));
+#define local_var(id) local_var_gen(parser, (id))
 static int arg_var_gen(struct parser_params*, ID);
 #define arg_var(id) arg_var_gen(parser, (id))
 static int  local_id_gen(struct parser_params*, ID);

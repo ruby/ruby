@@ -31,7 +31,7 @@ VALUE rb_eMathDomainError;
 } while (0)
 
 #define domain_error(msg) \
-    rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " #msg);
+    rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " #msg)
 
 /*
  *  call-seq:

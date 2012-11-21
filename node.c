@@ -17,8 +17,8 @@
 
 #define A_INDENT add_indent(buf, indent)
 #define A_ID(id) add_id(buf, (id))
-#define A_INT(val) rb_str_catf(buf, "%d", (val));
-#define A_LONG(val) rb_str_catf(buf, "%ld", (val));
+#define A_INT(val) rb_str_catf(buf, "%d", (val))
+#define A_LONG(val) rb_str_catf(buf, "%ld", (val))
 #define A_LIT(lit) AR(rb_inspect(lit))
 #define A_NODE_HEADER(node) \
     rb_str_catf(buf, "@ %s (line: %d)", ruby_node_name(nd_type(node)), nd_line(node))

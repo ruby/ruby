@@ -1,3 +1,13 @@
+Wed Nov 21 21:35:38 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* include/ruby/util.h: removed extra semicolon in definition of
+	  macro.
+	* compile.c: ditto.
+	* cont.c: ditto.
+	* math.c: ditto.
+	* node.c: ditto.
+	* parse.y: ditto.
+
 Wed Nov 21 18:46:37 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (read_digits): due to a bit tighter rb_cstr_to_inum().

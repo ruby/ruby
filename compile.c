@@ -128,7 +128,7 @@ struct iseq_compile_data_ensure_node_stack {
    (ruby_debug_print_node(1, CPDEBUG, "", (NODE *)(node)), gl_node_level)), \
    gl_node_level++)
 
-#define debug_node_end()  gl_node_level --;
+#define debug_node_end()  gl_node_level --
 
 #else
 

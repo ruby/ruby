@@ -793,7 +793,7 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
     cont_restore_1(cont);
 }
 #ifdef __ia64
-#define cont_restore_0(cont, vp) register_stack_extend((cont), (vp), (VALUE*)rb_ia64_bsp());
+#define cont_restore_0(cont, vp) register_stack_extend((cont), (vp), (VALUE*)rb_ia64_bsp())
 #endif
 
 /*
