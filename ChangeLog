@@ -2,7 +2,7 @@ Wed Nov 21 16:13:37 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_so_nsieve_bits.rb: add an encoding pragma because
 	  this benchmark using strings (literals) as binary sequence.
-	  Now, they are UTF-8 strings.
+	  Now, they are UTF-8 strings. [ruby-dev:46578]
 
 Wed Nov 21 00:57:43 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
