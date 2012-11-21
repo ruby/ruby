@@ -40,7 +40,8 @@
 #endif
 
 static VALUE io_ready_p _((VALUE io));
-static VALUE io_wait _((int argc, VALUE *argv, VALUE io));
+static VALUE io_wait_readable _((int argc, VALUE *argv, VALUE io));
+static VALUE io_wait_writable _((int argc, VALUE *argv, VALUE io));
 void Init_wait _((void));
 
 /*
@@ -101,7 +102,7 @@ io_ready_p(VALUE io)
  */
 
 static VALUE
-io_wait(int argc, VALUE *argv, VALUE io)
+io_wait_readable(int argc, VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
     int i;
@@ -178,6 +179,7 @@ Init_wait()
 {
     rb_define_method(rb_cIO, "nread", io_nread, 0);
     rb_define_method(rb_cIO, "ready?", io_ready_p, 0);
-    rb_define_method(rb_cIO, "wait", io_wait, -1);
+    rb_define_method(rb_cIO, "wait", io_wait_readable, -1);
+    rb_define_method(rb_cIO, "wait_readable", io_wait_readable, -1);
     rb_define_method(rb_cIO, "wait_writable", io_wait_writable, -1);
 }

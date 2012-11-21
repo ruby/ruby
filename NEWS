@@ -152,6 +152,11 @@ with all sufficient information, see the ChangeLog file.
     * added method:
       * added main.define_method which defines a global function.
 
+* io/wait:
+  * new features:
+    * added IO#wait_writable method.
+    * added IO#wait_readable method as alias of IO#wait.
+
 * net/http
   * new features:
     * Proxies are now automatically detected from the http_proxy environment

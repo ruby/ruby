@@ -1,4 +1,6 @@
-Wed Nov 21 22:39:28 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Nov 21 22:52:59 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/wait/wait.c (io_wait_readable): add alias wait_readable.
 
 	* ext/io/wait/wait.c (io_wait_writable): this is easier to use than
 	  IO.select for a single IO object and is immune to the
