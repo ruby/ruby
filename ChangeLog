@@ -1,3 +1,7 @@
+Wed Nov 21 22:27:52 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (garbage_collect): remove a duplicative probe.
+
 Wed Nov 21 22:08:48 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (gc_profile_clear): realloc profile records if its size is

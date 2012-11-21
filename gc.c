@@ -3018,9 +3018,6 @@ garbage_collect(rb_objspace_t *objspace)
     during_gc++;
     gc_marks(objspace);
 
-    if (RUBY_DTRACE_GC_SWEEP_BEGIN_ENABLED()) {
-	RUBY_DTRACE_GC_SWEEP_BEGIN();
-    }
     gc_prof_sweep_timer_start(objspace);
     gc_sweep(objspace);
     gc_prof_sweep_timer_stop(objspace);
