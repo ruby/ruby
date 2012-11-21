@@ -1474,6 +1474,21 @@ nucomp_rationalize(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
+ *    complex.to_c  ->  self
+ *
+ * Returns self.
+ *
+ *    Complex(2).to_c      #=> (2+0i)
+ *    Complex(-8, 6).to_c  #=> (-8+6i)
+ */
+static VALUE
+nucomp_to_c(VALUE self)
+{
+    return self;
+}
+
+/*
+ * call-seq:
  *    nil.to_c  ->  (0+0i)
  *
  * Returns zero as a complex.
@@ -2178,6 +2193,7 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "to_f", nucomp_to_f, 0);
     rb_define_method(rb_cComplex, "to_r", nucomp_to_r, 0);
     rb_define_method(rb_cComplex, "rationalize", nucomp_rationalize, -1);
+    rb_define_method(rb_cComplex, "to_c", nucomp_to_c, 0);
     rb_define_method(rb_cNilClass, "to_c", nilclass_to_c, 0);
     rb_define_method(rb_cNumeric, "to_c", numeric_to_c, 0);
 

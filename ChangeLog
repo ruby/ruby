@@ -1,3 +1,7 @@
+Wed Nov 21 21:53:29 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_to_c): added.
+
 Wed Nov 21 21:35:38 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* include/ruby/util.h: removed extra semicolon in definition of
