@@ -1,3 +1,7 @@
+Wed Nov 21 16:13:37 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_so_nsieve_bits.rb: add an encoding pragma.
+
 Wed Nov 21 00:57:43 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* file.c (Init_File): null device definition uses rb_define_const

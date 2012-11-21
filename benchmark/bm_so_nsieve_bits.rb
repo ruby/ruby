@@ -1,4 +1,5 @@
 #!/usr/bin/ruby
+#coding: us-ascii
 #
 # The Great Computer Language Shootout
 # http://shootout.alioth.debian.org/
