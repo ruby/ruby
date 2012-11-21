@@ -3822,6 +3822,7 @@ wmap_aref(VALUE self, VALUE wmap)
 */
 
 static inline void gc_prof_set_heap_info(rb_objspace_t *, gc_profile_record *);
+#define GC_PROFILE_RECORD_DEFAULT_SIZE 100
 
 static double
 getrusage_time(void)
@@ -3866,7 +3867,7 @@ gc_prof_timer_start(rb_objspace_t *objspace)
         size_t count = objspace->profile.count;
 
         if (!objspace->profile.record) {
-            objspace->profile.size = 1000;
+            objspace->profile.size = GC_PROFILE_RECORD_DEFAULT_SIZE;
             objspace->profile.record = malloc(sizeof(gc_profile_record) * objspace->profile.size);
         }
         if (count >= objspace->profile.size) {
@@ -4076,6 +4077,14 @@ static VALUE
 gc_profile_clear(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
+
+    if (GC_PROFILE_RECORD_DEFAULT_SIZE * 2 < objspace->profile.size) {
+        objspace->profile.size = GC_PROFILE_RECORD_DEFAULT_SIZE * 2;
+        objspace->profile.record = realloc(objspace->profile.record, sizeof(gc_profile_record) * objspace->profile.size);
+        if (!objspace->profile.record) {
+            rb_memerror();
+        }
+    }
     MEMZERO(objspace->profile.record, gc_profile_record, objspace->profile.size);
     objspace->profile.count = 0;
     return Qnil;

@@ -118,4 +118,20 @@ class TestGc < Test::Unit::TestCase
   ensure
     GC::Profiler.disable
   end
+
+  def test_profiler_clear
+    GC::Profiler.enable
+
+    GC.start
+    assert_equal(1, GC::Profiler.raw_data.size)
+    GC.clear
+    assert_equal(0, GC::Profiler.raw_data.size)
+
+    200.times{ GC.start }
+    assert_equal(200, GC::Profiler.raw_data.size)
+    GC.clear
+    assert_equal(0, GC::Profiler.raw_data.size)
+  ensure
+    GC::Profiler.disable
+  end
 end

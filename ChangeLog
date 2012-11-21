@@ -1,3 +1,8 @@
+Wed Nov 21 22:08:48 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (gc_profile_clear): realloc profile records if its size is
+	  higher than the threshold, GC_PROFILE_RECORD_DEFAULT_SIZE * 2.
+
 Wed Nov 21 21:53:29 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_to_c): added.
