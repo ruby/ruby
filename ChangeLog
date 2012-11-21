@@ -308,11 +308,6 @@ Mon Nov 19 01:11:59 2012  Naohisa Goto  <ngotogenome@gmail.com>
 	* common.mk (vm.$(OBJEXT)): add dependency to probes_helper.h.
 	* vm.c, vm_insnhelper.c: include probes_helper.h.
 
-Sun Nov 18 20:46:08 2012  Tadayoshi Funaba  <tadf@dotrb.org>
-
-	* bignum.c (rb_cstr_to_inum): should accept underscores of
-	  sequence of two or more when unchecked mode.
-
 Sun Nov 18 16:33:00 2012  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* configure.in, Makefile.in, common.mk: support DTrace on Solaris 10,
