@@ -67,10 +67,9 @@ rb_vm_control_frame_block_ptr(rb_control_frame_t *cfp)
 #define VM_COLLECT_USAGE_DETAILS 0
 #endif
 
+#if VM_COLLECT_USAGE_DETAILS
 static void vm_collect_usage_operand(int insn, int n, VALUE op);
 static void vm_collect_usage_insn(int insn);
-
-#if VM_COLLECT_USAGE_DETAILS
 static void vm_collect_usage_register(int reg, int isset);
 #endif
 
@@ -2492,6 +2491,7 @@ void (*ruby_vm_collect_usage_func_register)(int reg, int isset) = NULL;
 
 #endif
 
+#if VM_COLLECT_USAGE_DETAILS
 /* @param insn instruction number */
 static void
 vm_collect_usage_insn(int insn)
@@ -2522,7 +2522,6 @@ vm_collect_usage_operand(int insn, int n, VALUE op)
 	(*ruby_vm_collect_usage_func_operand)(insn, n, op);
 }
 
-#if VM_COLLECT_USAGE_DETAILS
 /* @param reg register id. see code of vm_analysis_register() */
 /* @param iseset 0: read, 1: write */
 static void
