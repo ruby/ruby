@@ -1,3 +1,9 @@
+Fri Nov 23 02:40:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* lib/cgi/core.rb: Documentation for CGI#header alias
+	  Based on a patch by Marcus Stollsteimer
+	  [ruby-core:49585] [Bug #7405]
+
 Thu Nov 22 23:48:10 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* gc.c (is_swept_object): extract from is_dead_object().

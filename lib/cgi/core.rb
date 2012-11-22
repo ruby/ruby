@@ -171,6 +171,13 @@ class CGI
       return buf
     end
   end # http_header()
+
+  # This method is an alias for #http_header, when HTML5 tag maker is inactive.
+  #
+  # NOTE: use #http_header to create HTTP header blocks, this alias is only
+  # provided for backwards compatibility.
+  #
+  # Using #header with the HTML5 tag maker will create a <header> element.
   alias :header :http_header
 
   def _header_for_string(content_type) #:nodoc:
