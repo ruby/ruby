@@ -1,3 +1,10 @@
+Thu Nov 22 15:26:02 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_insnhelper.h: partly revert r37631 (DTrace support).
+	  "vm usage information is always collected, so uncomment the
+	  functions." causes performance impact. [Bug #7370]
+	  Off course this revert disables related probes.
+
 Thu Nov 22 14:14:36 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* re.c (rb_memsearch_ss): Apply performance improvement to short

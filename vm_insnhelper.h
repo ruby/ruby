@@ -62,12 +62,14 @@ enum {
 extern char ruby_vm_redefined_flag[BOP_LAST_];
 extern VALUE ruby_vm_const_missing_count;
 
+#if VM_COLLECT_USAGE_DETAILS
 #define COLLECT_USAGE_INSN(insn)           vm_collect_usage_insn(insn)
 #define COLLECT_USAGE_OPERAND(insn, n, op) vm_collect_usage_operand((insn), (n), ((VALUE)(op)))
 
-#if VM_COLLECT_USAGE_DETAILS
 #define COLLECT_USAGE_REGISTER(reg, s)     vm_collect_usage_register((reg), (s))
 #else
+#define COLLECT_USAGE_INSN(insn)		/* none */
+#define COLLECT_USAGE_OPERAND(insn, n, op)	/* none */
 #define COLLECT_USAGE_REGISTER(reg, s)		/* none */
 #endif
 
