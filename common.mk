@@ -901,10 +901,6 @@ $(srcdir)/probes.dmyh: {$(srcdir)}probes.d $(srcdir)/tool/gen_dummy_probes.rb
 
 probes.h: $(srcdir)/probes.$(DTRACE_EXT)
 
-{$(VPATH)}.dmyh.h:
-	@$(ECHO) copying dummy $(DEST_FILE)
-	$(Q) $(CP) $(OS_SRC_FILE) $(OS_DEST_FILE)
-
 prereq: incs srcs preludes PHONY
 
 preludes: {$(VPATH)}miniprelude.c
