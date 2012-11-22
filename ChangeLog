@@ -1,3 +1,11 @@
+Thu Nov 22 18:01:28 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* Makefile.in (probes.o): add -C to ignore #include in probes.d.
+
+	* probes.d: include vm_opts.h instead of vm_core.h.
+
+	* vm_opts.h (VM_COLLECT_USAGE_DETAILS): move definition from vm_core.h.
+
 Thu Nov 22 17:45:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8: Merge b0a6577a521d1bba5e19853f95d5c4b9be1072b5.

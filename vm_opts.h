@@ -49,4 +49,8 @@
 /* misc */
 #define SUPPORT_JOKE                 0
 
+#ifndef VM_COLLECT_USAGE_DETAILS
+#define VM_COLLECT_USAGE_DETAILS 0
+#endif
+
 #endif /* RUBY_VM_OPTS_H */

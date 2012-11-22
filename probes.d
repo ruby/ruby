@@ -1,4 +1,4 @@
-#include "vm_core.h"
+#include "vm_opts.h"
 
 provider ruby {
   probe function__entry(const char *, const char *, const char *, int);

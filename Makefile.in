@@ -350,7 +350,7 @@ probes.@OBJEXT@: $(srcdir)/probes.d
 	fi; \
 	touch "$$stamp"
 	$(RM) $@
-	$(Q) $(DTRACE) -G -s $(srcdir)/probes.d -o $@ $(DTRACE_DEPENDENT_OBJS)
+	$(Q) $(DTRACE) -G -C $(INCFLAGS) -s $(srcdir)/probes.d -o $@ $(DTRACE_DEPENDENT_OBJS)
 
 # DTrace static library hacks described here:
 # http://mail.opensolaris.org/pipermail/dtrace-discuss/2005-August/000207.html
