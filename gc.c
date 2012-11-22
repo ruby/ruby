@@ -1582,16 +1582,25 @@ is_id_value(rb_objspace_t *objspace, VALUE ptr)
 }
 
 static inline int
-is_dead_object(rb_objspace_t *objspace, VALUE ptr)
+is_swept_object(rb_objspace_t *objspace, VALUE ptr)
 {
     struct heaps_slot *slot = objspace->heap.sweep_slots;
-    if (!is_lazy_sweeping(objspace) || MARKED_IN_BITMAP(GET_HEAP_BITMAP(ptr), ptr))
-	return FALSE;
+
     while (slot) {
 	if ((VALUE)slot->header->start <= ptr && ptr < (VALUE)(slot->header->end))
-	    return TRUE;
+	    return FALSE;
 	slot = slot->next;
     }
+    return TRUE;
+}
+
+static inline int
+is_dead_object(rb_objspace_t *objspace, VALUE ptr)
+{
+    if (!is_lazy_sweeping(objspace) || MARKED_IN_BITMAP(GET_HEAP_BITMAP(ptr), ptr))
+	return FALSE;
+    if (!is_swept_object(objspace, ptr))
+	return TRUE;
     return FALSE;
 }
 
@@ -4303,6 +4312,51 @@ gc_profile_disable(void)
     objspace->profile.run = FALSE;
     return Qnil;
 }
+
+#ifdef GC_DEBUG
+
+/*
+  ------------------------------ DEBUG ------------------------------
+*/
+
+void
+rb_gcdebug_print_obj_condition(VALUE obj)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    if (is_pointer_to_heap(objspace, (void *)obj)) {
+        fprintf(stderr, "pointer to heap?: true\n");
+    }
+    else {
+        fprintf(stderr, "pointer to heap?: false\n");
+        return;
+    }
+    fprintf(stderr, "marked?: %s\n",
+            MARKED_IN_BITMAP(GET_HEAP_BITMAP(obj), obj) ? "true" : "false");
+    if (is_lazy_sweeping(objspace)) {
+        fprintf(stderr, "lazy sweeping?: true\n");
+        fprintf(stderr, "swept?: %s\n",
+                is_swept_object(objspace, obj) ? "done" : "not yet");
+    }
+    else {
+        fprintf(stderr, "lazy sweeping?: false\n");
+    }
+}
+
+static VALUE
+gcdebug_sential(VALUE obj, VALUE name)
+{
+    fprintf(stderr, "WARNING: object %s(%p) is inadvertently collected\n", (char *)name, (void *)obj);
+    return Qnil;
+}
+
+void
+rb_gcdebug_sentinel(VALUE obj, const char *name)
+{
+    rb_define_final(obj, rb_proc_new(gcdebug_sential, (VALUE)name));
+}
+#endif /* GC_DEBUG */
+
 
 /*
  * Document-class: ObjectSpace

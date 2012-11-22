@@ -1,3 +1,14 @@
+Thu Nov 22 23:48:10 2012  Narihiro Nakamura  <authornari@gmail.com>
+
+	* gc.c (is_swept_object): extract from is_dead_object().
+
+	* gc.c (rb_gcdebug_print_obj_condition): add the function for debug.
+	  This function shows some conditions of given object (e.g.,
+	  marked, in heap, swept).
+
+	* gc.c (rb_gcdebug_sentinel): add the function for debug.
+	  This function allow check to inadvertently free up an object.
+
 Thu Nov 22 23:45:18 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* array.c (rb_ary_shared_with_p): fix cache validity check.
