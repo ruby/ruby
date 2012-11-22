@@ -1,3 +1,8 @@
+Thu Nov 22 17:39:37 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* tool/gen_dummy_probes.rb: don't change #include, #if and #endif
+	  lines. [Bug #7370]
+
 Thu Nov 22 16:58:26 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* Makefile.in: run preprocessor when making probe.h
