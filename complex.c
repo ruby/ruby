@@ -1776,15 +1776,24 @@ parse_comp(const char *s, int strict,
 static VALUE
 string_to_c_strict(VALUE self)
 {
-    const char *s;
+    char *s;
     VALUE num;
 
     rb_must_asciicompat(self);
 
     s = RSTRING_PTR(self);
 
-    if (memchr(s, 0, RSTRING_LEN(self)))
+    if (!s || memchr(s, '\0', RSTRING_LEN(self)))
 	rb_raise(rb_eArgError, "string contains null byte");
+
+    if (s && s[RSTRING_LEN(self)]) {
+	rb_str_modify(self);
+	s = RSTRING_PTR(self);
+	s[RSTRING_LEN(self)] = '\0';
+    }
+
+    if (!s)
+	s = (char *)"";
 
     if (!parse_comp(s, 1, &num)) {
 	VALUE ins = f_inspect(self);
@@ -1819,12 +1828,21 @@ string_to_c_strict(VALUE self)
 static VALUE
 string_to_c(VALUE self)
 {
-    const char *s;
+    char *s;
     VALUE num;
 
     rb_must_asciicompat(self);
 
     s = RSTRING_PTR(self);
+
+    if (s && s[RSTRING_LEN(self)]) {
+	rb_str_modify(self);
+	s = RSTRING_PTR(self);
+	s[RSTRING_LEN(self)] = '\0';
+    }
+
+    if (!s)
+	s = (char *)"";
 
     (void)parse_comp(s, 0, &num);
 

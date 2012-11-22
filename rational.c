@@ -2143,15 +2143,24 @@ parse_rat(const char *s, int strict,
 static VALUE
 string_to_r_strict(VALUE self)
 {
-    const char *s;
+    char *s;
     VALUE num;
 
     rb_must_asciicompat(self);
 
     s = RSTRING_PTR(self);
 
-    if (memchr(s, 0, RSTRING_LEN(self)))
+    if (!s || memchr(s, '\0', RSTRING_LEN(self)))
 	rb_raise(rb_eArgError, "string contains null byte");
+
+    if (s && s[RSTRING_LEN(self)]) {
+	rb_str_modify(self);
+	s = RSTRING_PTR(self);
+	s[RSTRING_LEN(self)] = '\0';
+    }
+
+    if (!s)
+	s = (char *)"";
 
     if (!parse_rat(s, 1, &num)) {
 	VALUE ins = f_inspect(self);
@@ -2188,12 +2197,21 @@ string_to_r_strict(VALUE self)
 static VALUE
 string_to_r(VALUE self)
 {
-    const char *s;
+    char *s;
     VALUE num;
 
     rb_must_asciicompat(self);
 
     s = RSTRING_PTR(self);
+
+    if (s && s[RSTRING_LEN(self)]) {
+	rb_str_modify(self);
+	s = RSTRING_PTR(self);
+	s[RSTRING_LEN(self)] = '\0';
+    }
+
+    if (!s)
+	s = (char *)"";
 
     (void)parse_rat(s, 0, &num);
 

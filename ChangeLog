@@ -1,3 +1,8 @@
+Thu Nov 22 20:32:07 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (string_to_c_strict, string_to_c): check NUL.
+	* rational.c (string_to_r_strict, string_to_r): ditto.
+
 Thu Nov 22 20:21:45 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* Makefile.in (.dmyh.h): removed $(VPATH). GNU make don't
