@@ -1,3 +1,8 @@
+Thu Nov 22 20:21:45 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* Makefile.in (.dmyh.h): removed $(VPATH). GNU make don't
+	  recognize suffix rule with VPATH.
+
 Thu Nov 22 18:11:27 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk, Makefile.in, win32/Makefile.sub (.dmyh.h): nmake merges

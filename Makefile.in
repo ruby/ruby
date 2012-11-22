@@ -338,7 +338,7 @@ enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	$(Q) sed -e 's/RUBY_/RUBY_DTRACE_/g' -e 's/PROBES_H_TMP/PROBES_H/g' -e 's/(char \*/(const char */g' -e 's/, char \*/, const char */g' $@.tmp > $@
 	$(Q) $(RM) $@.tmp
 
-{$(VPATH)}.dmyh.h:
+.dmyh.h:
 	@$(ECHO) copying dummy $(DEST_FILE)
 	$(Q) $(CP) $(OS_SRC_FILE) $(OS_DEST_FILE)
 
