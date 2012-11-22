@@ -20,9 +20,9 @@ Thu Nov 22 20:21:45 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Thu Nov 22 18:11:27 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk, Makefile.in, win32/Makefile.sub (.dmyh.h): nmake merges
-	  explicit rules for same target, but not merges exlicit rules and
-	  implicit rules -- always explict rules win.  So, need to add an
-	  explist rule for probes.h.  [Bug #7421] [ruby-core:49839]
+	  explicit rules for same target, but not merges explicit rules and
+	  implicit rules -- always explicit rules win.  So, need to add an
+	  explicit rule for probes.h.  [Bug #7421] [ruby-core:49839]
 
 Thu Nov 22 18:01:28 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
