@@ -1,3 +1,9 @@
+Thu Nov 22 14:14:36 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* re.c (rb_memsearch_ss): Apply performance improvement to short
+	  byte array search for platforms without memmem(3).
+	  [Feature #6311] [ruby-dev:45530]
+
 Thu Nov 22 12:52:19 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/ruby/test_string.rb (TestString#test_index): Add some

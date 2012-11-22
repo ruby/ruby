@@ -126,6 +126,9 @@ rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n
     if (m > SIZEOF_VALUE)
 	rb_bug("!!too long pattern string!!");
 
+    if (!(y = memchr(y, *x, n - m + 1)))
+	return -1;
+
     /* Prepare hash value */
     for (hx = *x++, hy = *y++; x < xe; ++x, ++y) {
 	hx <<= CHAR_BIT;

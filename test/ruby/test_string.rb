@@ -837,6 +837,13 @@ class TestString < Test::Unit::TestCase
     assert_equal(0, S("hello").index(S("")))
     assert_equal(0, S("hello").index(//))
 
+    s = S("long") * 1000 << "x"
+    assert_nil(s.index(S("y")))
+    assert_equal(4 * 1000, s.index(S("x")))
+    s << "yx"
+    assert_equal(4 * 1000, s.index(S("x")))
+    assert_equal(4 * 1000, s.index(S("xyx")))
+
     o = Object.new
     def o.to_str; "bar"; end
     assert_equal(3, "foobarbarbaz".index(o))
