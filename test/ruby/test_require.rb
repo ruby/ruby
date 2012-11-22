@@ -545,4 +545,35 @@ class TestRequire < Test::Unit::TestCase
       }
     }
   end
+
+  def assert_require_with_shared_array_modified(add, del)
+    bug7383 = '[ruby-core:49518]'
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        open("foo.rb", "w") {}
+        Dir.mkdir("a")
+        open(File.join("a", "bar.rb"), "w") {}
+        assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7383)
+          $:.#{add} "#{tmp}"
+          $:.#{add} "#{tmp}/a"
+          require "foo"
+          $:.#{del}
+          # Expanded load path cache should be rebuilt.
+          begin
+            require "bar"
+          rescue LoadError
+            p :ok
+          end
+        INPUT
+      }
+    }
+  end
+
+  def test_require_with_array_pop
+    assert_require_with_shared_array_modified("push", "pop")
+  end
+
+  def test_require_with_array_shift
+    assert_require_with_shared_array_modified("unshift", "shift")
+  end
 end

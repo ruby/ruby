@@ -351,13 +351,16 @@ rb_ary_frozen_p(VALUE ary)
    e.g. rb_ary_replace) and check later whether the array has been
    modified from the snapshot.  The snapshot is cheap, though if
    something does modify the array it will pay the cost of copying
-   it. */
+   it.  If Array#pop or Array#shift has been called, the array will
+   be still shared with the snapshot, but the array length will
+   differ. */
 VALUE
 rb_ary_shared_with_p(VALUE ary1, VALUE ary2)
 {
-    if (!ARY_EMBED_P(ary1) && ARY_SHARED_P(ary1)
-     && !ARY_EMBED_P(ary2) && ARY_SHARED_P(ary2)
-     && RARRAY(ary1)->as.heap.aux.shared == RARRAY(ary2)->as.heap.aux.shared) {
+    if (!ARY_EMBED_P(ary1) && ARY_SHARED_P(ary1) &&
+	!ARY_EMBED_P(ary2) && ARY_SHARED_P(ary2) &&
+	RARRAY(ary1)->as.heap.aux.shared == RARRAY(ary2)->as.heap.aux.shared &&
+	RARRAY(ary1)->as.heap.len == RARRAY(ary2)->as.heap.len) {
 	return Qtrue;
     }
     return Qfalse;

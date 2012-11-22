@@ -1,3 +1,15 @@
+Thu Nov 22 23:45:18 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* array.c (rb_ary_shared_with_p): fix cache validity check.
+	  If #pop or #shift has been called against $: or $", the array will
+	  be still shared with the snapshot. We check array length for cache
+	  validity.
+	  [ruby-core:49518] [Bug #7383]
+
+	* test/ruby/test_require.rb
+	  (TestRequire#test_require_with_array_pop,
+	   TestRequire#test_require_with_array_shift): add tests for above.
+
 Thu Nov 22 21:48:48 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk, win32/Makefile.sub (probes.dmyh): now be made in current
