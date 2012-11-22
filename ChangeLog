@@ -1,3 +1,8 @@
+Thu Nov 22 21:48:48 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk, win32/Makefile.sub (probes.dmyh): now be made in current
+	  (=build) directory if build from the repository.
+
 Thu Nov 22 21:34:51 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/ruby/test_rubyoptions.rb: added a test.

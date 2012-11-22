@@ -855,7 +855,7 @@ srcs-enc: $(ENC_MK)
 
 all-incs: incs
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(VPATH)}known_errors.inc \
-      $(srcdir)/revision.h $(REVISION_H) enc/unicode/name2ctype.h {$(VPATH)}id.h $(srcdir)/probes.dmyh
+      $(srcdir)/revision.h $(REVISION_H) enc/unicode/name2ctype.h {$(VPATH)}id.h {$(VPATH)}probes.dmyh
 
 insns: $(INSNS)
 
@@ -896,10 +896,10 @@ golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(RBCONFIG) $(srcdir)/prelude.
 	$(ECHO) generating $@
 	$(Q) $(COMPILE_PRELUDE) $(srcdir)/golf_prelude.rb $@
 
-$(srcdir)/probes.dmyh: {$(srcdir)}probes.d $(srcdir)/tool/gen_dummy_probes.rb
+probes.dmyh: {$(srcdir)}probes.d $(srcdir)/tool/gen_dummy_probes.rb
 	$(BASERUBY) $(srcdir)/tool/gen_dummy_probes.rb $(srcdir)/probes.d > $@
 
-probes.h: $(srcdir)/probes.$(DTRACE_EXT)
+probes.h: {$(VPATH)}probes.$(DTRACE_EXT)
 
 prereq: incs srcs preludes PHONY
 
