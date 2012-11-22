@@ -1,11 +1,12 @@
 /*
- *
+ * 
  * nkf.h - Header file for nkf
- *
- * $Id$
+ * 
+ * $Id: nkf.h,v 1.6 2008/11/07 02:43:43 naruse Exp $
  */
 
 #ifndef NKF_H
+#define NKF_H
 
 /* Wrapper of configurations */
 
@@ -17,21 +18,9 @@
 #endif
 
 #if DEFAULT_NEWLINE == 0x0D0A
-#define PUT_NEWLINE(func) do {\
-    func(0x0D);\
-    func(0x0A);\
-} while (0)
-#define OCONV_NEWLINE(func) do {\
-    func(0, 0x0D);\
-    func(0, 0x0A);\
-} while (0)
 #elif DEFAULT_NEWLINE == 0x0D
-#define PUT_NEWLINE(func) func(0x0D)
-#define OCONV_NEWLINE(func) func(0, 0x0D)
 #else
 #define DEFAULT_NEWLINE 0x0A
-#define PUT_NEWLINE(func) func(0x0A)
-#define OCONV_NEWLINE(func) func(0, 0x0A)
 #endif
 #ifdef HELP_OUTPUT_STDERR
 #define HELP_OUTPUT stderr
@@ -94,7 +83,7 @@ void  setbinmode(FILE *fp)
 #define setbinmode(fp) setmode(fileno(fp), O_BINARY)
 #endif
 #else /* UNIX */
-#define setbinmode(fp)
+#define setbinmode(fp) (void)(fp)
 #endif
 
 #ifdef _IOFBF /* SysV and MSDOS, Windows */
@@ -184,6 +173,14 @@ void  setbinmode(FILE *fp)
 
 #define         FALSE   0
 #define         TRUE    1
+
+#ifndef ARG_UNUSED
+#if defined(__GNUC__)
+#  define ARG_UNUSED  __attribute__ ((unused))
+#else
+#  define ARG_UNUSED
+#endif
+#endif
 
 #ifdef WIN32DLL
 #include "nkf32.h"

@@ -1,3 +1,8 @@
+Thu Nov 22 17:45:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8: Merge b0a6577a521d1bba5e19853f95d5c4b9be1072b5.
+	  Support JIS X 0213 and some bugfixes.
+
 Thu Nov 22 17:39:37 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* tool/gen_dummy_probes.rb: don't change #include, #if and #endif
@@ -136,7 +141,7 @@ Tue Nov 20 21:12:37 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Tue Nov 20 21:22:44 2012  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
-	* test/win32ole/test_win32ole_type.rb (test_implemented_ole_types): 
+	* test/win32ole/test_win32ole_type.rb (test_implemented_ole_types):
 	  IShellDispatch6 bundled in Windows 8. Thanks to phasis68 (Heesob
 	  Park).  [ruby-core:49580][Bug #7403]
 
@@ -440,7 +445,7 @@ Sun Nov 18 09:31:47 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 	* rational.c (read_num): ditto.
 
 Sun Nov 18 02:50:12 2012  Luis Lavena <luislavena@gmail.com>
- 
+
 	* win32/file.c (replace_to_long_name): correct logic around wildcard
 	  characters detection and ensure wide-chars are used as pattern.
 	  [ruby-core:49451] [Bug #7374]

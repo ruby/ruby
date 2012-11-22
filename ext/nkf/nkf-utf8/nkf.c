@@ -21,7 +21,7 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 #define NKF_VERSION "2.1.3"
-#define NKF_RELEASE_DATE "2012-09-13"
+#define NKF_RELEASE_DATE "2012-11-22"
 #define COPY_RIGHT \
     "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa).\n" \
     "Copyright (C) 1996-2012, The nkf Project."
@@ -431,6 +431,8 @@ static nkf_char (*i_uungetc)(nkf_char c ,FILE *f) = std_ungetc;
 #define nkf_char_unicode_bmp_p(c) ((c & VALUE_MASK) <= UNICODE_BMP_MAX)
 #define nkf_char_unicode_value_p(c) ((c & VALUE_MASK) <= UNICODE_MAX)
 
+#define UTF16_TO_UTF32(lead, trail) (((lead) << 10) + (trail) - NKF_INT32_C(0x35FDC00))
+
 #ifdef NUMCHAR_OPTION
 static int numchar_f = FALSE;
 static nkf_char (*i_ngetc)(FILE *) = std_getc; /* input of ugetc */
@@ -507,7 +509,7 @@ static int             fold_margin  = FOLD_MARGIN;
 /* process default */
 
 static nkf_char
-no_connection2(nkf_char c2, nkf_char c1, nkf_char c0)
+no_connection2(ARG_UNUSED nkf_char c2, ARG_UNUSED nkf_char c1, ARG_UNUSED nkf_char c0)
 {
     fprintf(stderr,"nkf internal module connection failure.\n");
     exit(EXIT_FAILURE);
@@ -615,6 +617,27 @@ static const unsigned char ev[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     0x00,0x00,0x00,0x00,0x25,0x51,0x25,0x54,
     0x25,0x57,0x25,0x5a,0x25,0x5d,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00};
+
+/* X0201 kana to X0213 conversion table for han-daguten */
+/* 90-9F A0-DF */
+static const unsigned char ev_x0213[]= {
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x25,0x77,0x25,0x78,
+    0x25,0x79,0x25,0x7a,0x25,0x7b,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x25,0x7c,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x25,0x7d,0x00,0x00,
+    0x25,0x7e,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -1288,6 +1311,7 @@ set_input_encoding(nkf_encoding *enc)
 	x0213_f = TRUE;
 #ifdef SHIFTJIS_CP932
 	cp51932_f = FALSE;
+	if (cp932inv_f == TRUE) cp932inv_f = FALSE;
 #endif
 	break;
     case EUC_JISX0213:
@@ -1358,6 +1382,7 @@ set_output_encoding(nkf_encoding *enc)
 #endif
 	break;
     case ISO_2022_JP_3:
+    case ISO_2022_JP_2004:
 	x0212_f = TRUE;
 	x0213_f = TRUE;
 #ifdef SHIFTJIS_CP932
@@ -1541,13 +1566,26 @@ x0212_unshift(nkf_char c)
 }
 #endif /* X0212_ENABLE */
 
+static int
+is_x0213_2_in_x0212(nkf_char c1)
+{
+    static const char x0213_2_table[] =
+	{0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1};
+    int ku = c1 - 0x20;
+    if (ku <= 15)
+	return x0213_2_table[ku]; /* 1, 3-5, 8, 12-15 */
+    if (78 <= ku && ku <= 94)
+	return 1;
+    return 0;
+}
+
 static nkf_char
 e2s_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
 {
     nkf_char ndx;
     if (is_eucg3(c2)){
 	ndx = c2 & 0x7f;
-	if (x0213_f){
+	if (x0213_f && is_x0213_2_in_x0212(ndx)){
 	    if((0x21 <= ndx && ndx <= 0x2F)){
 		if (p2) *p2 = ((ndx - 1) >> 1) + 0xec - ndx / 8 * 3;
 		if (p1) *p1 = c1 + ((ndx & 1) ? ((c1 < 0x60) ? 0x1f : 0x20) : 0x7e);
@@ -1593,7 +1631,7 @@ s2e_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
     static const char shift_jisx0213_s1a3_table[5][2] ={ { 1, 8}, { 3, 4}, { 5,12}, {13,14}, {15, 0} };
     if (0xFC < c1) return 1;
 #ifdef SHIFTJIS_CP932
-    if (!cp932inv_f && is_ibmext_in_sjis(c2)){
+    if (!cp932inv_f && !x0213_f && is_ibmext_in_sjis(c2)){
 	val = shiftjis_cp932[c2 - CP932_TABLE_BEGIN][c1 - 0x40];
 	if (val){
 	    c2 = val >> 8;
@@ -1696,7 +1734,7 @@ nkf_utf8_to_unicode(nkf_char c1, nkf_char c2, nkf_char c3, nkf_char c4)
 	/* single byte */
 	wc = c1;
     }
-    else if (c1 <= 0xC3) {
+    else if (c1 <= 0xC1) {
 	/* trail byte or invalid */
 	return -1;
     }
@@ -1836,6 +1874,7 @@ unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *p2, nkf_c
 	    ms_ucs_map_f == UCS_MAP_CP932 ? utf8_to_euc_2bytes_932 :
 	    ms_ucs_map_f == UCS_MAP_MS ? utf8_to_euc_2bytes_ms :
 	    ms_ucs_map_f == UCS_MAP_CP10001 ? utf8_to_euc_2bytes_mac :
+	    x0213_f ? utf8_to_euc_2bytes_x0213 :
 	    utf8_to_euc_2bytes;
 	ret =  unicode_to_jis_common2(c2, c1, pp, sizeof_utf8_to_euc_2bytes, p2, p1);
     }else if(c0 < 0xF0){
@@ -1903,6 +1942,7 @@ unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *p2, nkf_c
 	    ms_ucs_map_f == UCS_MAP_CP932 ? utf8_to_euc_3bytes_932 :
 	    ms_ucs_map_f == UCS_MAP_MS ? utf8_to_euc_3bytes_ms :
 	    ms_ucs_map_f == UCS_MAP_CP10001 ? utf8_to_euc_3bytes_mac :
+	    x0213_f ? utf8_to_euc_3bytes_x0213 :
 	    utf8_to_euc_3bytes;
 	ret = unicode_to_jis_common2(c1, c0, ppp[c2 - 0xE0], sizeof_utf8_to_euc_C2, p2, p1);
     }else return -1;
@@ -1920,6 +1960,15 @@ unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *p2, nkf_c
 }
 
 #ifdef UTF8_OUTPUT_ENABLE
+#define X0213_SURROGATE_FIND(tbl, size, euc) do { \
+	int i; \
+	for (i = 0; i < size; i++) \
+	    if (tbl[i][0] == euc) { \
+		low = tbl[i][2]; \
+		break; \
+	    } \
+    } while (0)
+
 static nkf_char
 e2w_conv(nkf_char c2, nkf_char c1)
 {
@@ -1942,7 +1991,9 @@ e2w_conv(nkf_char c2, nkf_char c1)
 	}
 	c2 = (c2&0x7f) - 0x21;
 	if (0<=c2 && c2<sizeof_euc_to_utf8_2bytes)
-	    p = x0212_to_utf8_2bytes[c2];
+	    p =
+		x0213_f ? x0212_to_utf8_2bytes_x0213[c2] :
+		x0212_to_utf8_2bytes[c2];
 	else
 	    return 0;
 #endif
@@ -1951,6 +2002,7 @@ e2w_conv(nkf_char c2, nkf_char c1)
 	c2 = (c2&0x7f) - 0x21;
 	if (0<=c2 && c2<sizeof_euc_to_utf8_2bytes)
 	    p =
+		x0213_f ? euc_to_utf8_2bytes_x0213[c2] :
 		ms_ucs_map_f == UCS_MAP_ASCII ? euc_to_utf8_2bytes[c2] :
 		ms_ucs_map_f == UCS_MAP_CP10001 ? euc_to_utf8_2bytes_mac[c2] :
 		euc_to_utf8_2bytes_ms[c2];
@@ -1959,8 +2011,39 @@ e2w_conv(nkf_char c2, nkf_char c1)
     }
     if (!p) return 0;
     c1 = (c1 & 0x7f) - 0x21;
-    if (0<=c1 && c1<sizeof_euc_to_utf8_1byte)
-	return p[c1];
+    if (0<=c1 && c1<sizeof_euc_to_utf8_1byte) {
+	nkf_char val = p[c1];
+	if (x0213_f && 0xD800<=val && val<=0xDBFF) {
+	    nkf_char euc = (c2+0x21)<<8 | (c1+0x21);
+	    nkf_char low = 0;
+	    if (p==x0212_to_utf8_2bytes_x0213[c2]) {
+		X0213_SURROGATE_FIND(x0213_2_surrogate_table, sizeof_x0213_2_surrogate_table, euc);
+	    } else {
+		X0213_SURROGATE_FIND(x0213_1_surrogate_table, sizeof_x0213_1_surrogate_table, euc);
+	    }
+	    if (!low) return 0;
+	    return UTF16_TO_UTF32(val, low);
+	} else {
+	    return val;
+	}
+    }
+    return 0;
+}
+
+static nkf_char
+e2w_combining(nkf_char comb, nkf_char c2, nkf_char c1)
+{
+    nkf_char euc;
+    int i;
+    for (i = 0; i < sizeof_x0213_combining_chars; i++)
+	if (x0213_combining_chars[i] == comb)
+	    break;
+    if (i >= sizeof_x0213_combining_chars)
+	return 0;
+    euc = (c2&0x7f)<<8 | (c1&0x7f);
+    for (i = 0; i < sizeof_x0213_combining_table; i++)
+	if (x0213_combining_table[i][0] == euc)
+	    return x0213_combining_table[i][1];
     return 0;
 }
 #endif
@@ -2007,6 +2090,25 @@ w16e_conv(nkf_char val, nkf_char *p2, nkf_char *p1)
 	}
     }
     else {
+	int i;
+	if (x0213_f) {
+	    c1 = (val >> 10) + NKF_INT32_C(0xD7C0);   /* high surrogate */
+	    c2 = (val & 0x3FF) + NKF_INT32_C(0xDC00); /* low surrogate */
+	    for (i = 0; i < sizeof_x0213_1_surrogate_table; i++)
+		if (x0213_1_surrogate_table[i][1] == c1 && x0213_1_surrogate_table[i][2] == c2) {
+		    val = x0213_1_surrogate_table[i][0];
+		    *p2 = val >> 8;
+		    *p1 = val & 0xFF;
+		    return 0;
+		}
+	    for (i = 0; i < sizeof_x0213_2_surrogate_table; i++)
+		if (x0213_2_surrogate_table[i][1] == c1 && x0213_2_surrogate_table[i][2] == c2) {
+		    val = x0213_2_surrogate_table[i][0];
+		    *p2 = PREFIX_EUCG3 | (val >> 8);
+		    *p1 = val & 0xFF;
+		    return 0;
+		}
+	}
 	*p2 = 0;
 	*p1 = nkf_char_unicode_new(val);
     }
@@ -2079,7 +2181,7 @@ e_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
 }
 
 static nkf_char
-s_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
+s_iconv(ARG_UNUSED nkf_char c2, nkf_char c1, ARG_UNUSED nkf_char c0)
 {
     if (c2 == JIS_X_0201_1976_K || (0xA1 <= c2 && c2 <= 0xDF)) {
 	if (iso2022jp_f && !x0201_f) {
@@ -2100,6 +2202,30 @@ s_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
     }
     (*oconv)(c2, c1);
     return 0;
+}
+
+static int
+x0213_wait_combining_p(nkf_char wc)
+{
+    int i;
+    for (i = 0; i < sizeof_x0213_combining_table; i++) {
+	if (x0213_combining_table[i][1] == wc) {
+	    return TRUE;
+	}
+    }
+    return FALSE;
+}
+
+static int
+x0213_combining_p(nkf_char wc)
+{
+    int i;
+    for (i = 0; i < sizeof_x0213_combining_chars; i++) {
+	if (x0213_combining_chars[i] == wc) {
+	    return TRUE;
+	}
+    }
+    return FALSE;
 }
 
 static nkf_char
@@ -2169,6 +2295,8 @@ w_iconv(nkf_char c1, nkf_char c2, nkf_char c3)
 	c2 = nkf_char_unicode_new(nkf_utf8_to_unicode(c1, c2, c3, c4));
 	c1 = 0;
     } else {
+	if (x0213_f && x0213_wait_combining_p(nkf_utf8_to_unicode(c1, c2, c3, c4)))
+	    return -3;
 	ret = w2e_conv(c1, c2, c3, &c1, &c2);
     }
     if (ret == 0){
@@ -2177,9 +2305,22 @@ w_iconv(nkf_char c1, nkf_char c2, nkf_char c3)
     return ret;
 }
 
+static nkf_char
+w_iconv_nocombine(nkf_char c1, nkf_char c2, nkf_char c3)
+{
+    /* continue from the line below 'return -3;' in w_iconv() */
+    nkf_char ret = w2e_conv(c1, c2, c3, &c1, &c2);
+    if (ret == 0){
+	(*oconv)(c1, c2);
+    }
+    return ret;
+}
+
 #define NKF_ICONV_INVALID_CODE_RANGE -13
+#define NKF_ICONV_WAIT_COMBINING_CHAR -14
+#define NKF_ICONV_NOT_COMBINED -15
 static size_t
-unicode_iconv(nkf_char wc)
+unicode_iconv(nkf_char wc, int nocombine)
 {
     nkf_char c1, c2;
     int ret = 0;
@@ -2191,6 +2332,8 @@ unicode_iconv(nkf_char wc)
 	/* unpaired surrogate */
 	return NKF_ICONV_INVALID_CODE_RANGE;
     }else if (wc < 0xFFFF) {
+	if (!nocombine && x0213_f && x0213_wait_combining_p(wc))
+	    return NKF_ICONV_WAIT_COMBINING_CHAR;
 	ret = w16e_conv(wc, &c2, &c1);
 	if (ret) return ret;
     }else if (wc < 0x10FFFF) {
@@ -2203,9 +2346,50 @@ unicode_iconv(nkf_char wc)
     return 0;
 }
 
+static size_t
+unicode_iconv_combine(nkf_char wc, nkf_char wc2)
+{
+    nkf_char c1, c2;
+    int i;
+
+    if (wc2 < 0x80) {
+	return NKF_ICONV_NOT_COMBINED;
+    }else if ((wc2>>11) == 27) {
+	/* unpaired surrogate */
+	return NKF_ICONV_INVALID_CODE_RANGE;
+    }else if (wc2 < 0xFFFF) {
+	if (!x0213_combining_p(wc2))
+	    return NKF_ICONV_NOT_COMBINED;
+	for (i = 0; i < sizeof_x0213_combining_table; i++) {
+	    if (x0213_combining_table[i][1] == wc &&
+		x0213_combining_table[i][2] == wc2) {
+		c2 = x0213_combining_table[i][0] >> 8;
+		c1 = x0213_combining_table[i][0] & 0x7f;
+		(*oconv)(c2, c1);
+		return 0;
+	    }
+	}
+    }else if (wc2 < 0x10FFFF) {
+	return NKF_ICONV_NOT_COMBINED;
+    } else {
+	return NKF_ICONV_INVALID_CODE_RANGE;
+    }
+    return NKF_ICONV_NOT_COMBINED;
+}
+
+static nkf_char
+w_iconv_combine(nkf_char c1, nkf_char c2, nkf_char c3, nkf_char c4, nkf_char c5, nkf_char c6)
+{
+    nkf_char wc, wc2;
+    wc = nkf_utf8_to_unicode(c1, c2, c3, 0);
+    wc2 = nkf_utf8_to_unicode(c4, c5, c6, 0);
+    if (wc2 < 0)
+	return wc2;
+    return unicode_iconv_combine(wc, wc2);
+}
+
 #define NKF_ICONV_NEED_ONE_MORE_BYTE (size_t)-1
 #define NKF_ICONV_NEED_TWO_MORE_BYTES (size_t)-2
-#define UTF16_TO_UTF32(lead, trail) (((lead) << 10) + (trail) - NKF_INT32_C(0x35FDC00))
 static size_t
 nkf_iconv_utf_16(nkf_char c1, nkf_char c2, nkf_char c3, nkf_char c4)
 {
@@ -2234,32 +2418,62 @@ nkf_iconv_utf_16(nkf_char c1, nkf_char c2, nkf_char c3, nkf_char c4)
 	}
     }
 
-    return (*unicode_iconv)(wc);
+    return (*unicode_iconv)(wc, FALSE);
+}
+
+static size_t
+nkf_iconv_utf_16_combine(nkf_char c1, nkf_char c2, nkf_char c3, nkf_char c4)
+{
+    nkf_char wc, wc2;
+
+    if (input_endian == ENDIAN_BIG) {
+	if (0xD8 <= c3 && c3 <= 0xDB) {
+	    return NKF_ICONV_NOT_COMBINED;
+	} else {
+	    wc = c1 << 8 | c2;
+	    wc2 = c3 << 8 | c4;
+	}
+    } else {
+	if (0xD8 <= c2 && c2 <= 0xDB) {
+	    return NKF_ICONV_NOT_COMBINED;
+	} else {
+	    wc = c2 << 8 | c1;
+	    wc2 = c4 << 8 | c3;
+	}
+    }
+
+    return unicode_iconv_combine(wc, wc2);
+}
+
+static size_t
+nkf_iconv_utf_16_nocombine(nkf_char c1, nkf_char c2)
+{
+    nkf_char wc;
+    if (input_endian == ENDIAN_BIG)
+	wc = c1 << 8 | c2;
+    else
+	wc = c2 << 8 | c1;
+    return (*unicode_iconv)(wc, TRUE);
 }
 
 static nkf_char
-w_iconv16(nkf_char c2, nkf_char c1, nkf_char c0)
+w_iconv16(nkf_char c2, nkf_char c1, ARG_UNUSED nkf_char c0)
 {
     (*oconv)(c2, c1);
     return 16; /* different from w_iconv32 */
 }
 
 static nkf_char
-w_iconv32(nkf_char c2, nkf_char c1, nkf_char c0)
+w_iconv32(nkf_char c2, nkf_char c1, ARG_UNUSED nkf_char c0)
 {
     (*oconv)(c2, c1);
     return 32; /* different from w_iconv16 */
 }
 
-static size_t
-nkf_iconv_utf_32(nkf_char c1, nkf_char c2, nkf_char c3, nkf_char c4)
+static nkf_char
+utf32_to_nkf_char(nkf_char c1, nkf_char c2, nkf_char c3, nkf_char c4)
 {
     nkf_char wc;
-
-    if (c1 == EOF) {
-	(*oconv)(EOF, 0);
-	return 0;
-    }
 
     switch(input_endian){
     case ENDIAN_BIG:
@@ -2277,8 +2491,48 @@ nkf_iconv_utf_32(nkf_char c1, nkf_char c2, nkf_char c3, nkf_char c4)
     default:
 	return NKF_ICONV_INVALID_CODE_RANGE;
     }
+    return wc;
+}
 
-    return (*unicode_iconv)(wc);
+static size_t
+nkf_iconv_utf_32(nkf_char c1, nkf_char c2, nkf_char c3, nkf_char c4)
+{
+    nkf_char wc;
+
+    if (c1 == EOF) {
+	(*oconv)(EOF, 0);
+	return 0;
+    }
+
+    wc = utf32_to_nkf_char(c1, c2, c3, c4);
+    if (wc < 0)
+	return wc;
+
+    return (*unicode_iconv)(wc, FALSE);
+}
+
+static size_t
+nkf_iconv_utf_32_combine(nkf_char c1, nkf_char c2, nkf_char c3, nkf_char c4, nkf_char c5, nkf_char c6, nkf_char c7, nkf_char c8)
+{
+    nkf_char wc, wc2;
+
+    wc = utf32_to_nkf_char(c1, c2, c3, c4);
+    if (wc < 0)
+	return wc;
+    wc2 = utf32_to_nkf_char(c5, c6, c7, c8);
+    if (wc2 < 0)
+	return wc2;
+
+    return unicode_iconv_combine(wc, wc2);
+}
+
+static size_t
+nkf_iconv_utf_32_nocombine(nkf_char c1, nkf_char c2, nkf_char c3, nkf_char c4)
+{
+    nkf_char wc;
+
+    wc = utf32_to_nkf_char(c1, c2, c3, c4);
+    return (*unicode_iconv)(wc, TRUE);
 }
 #endif
 
@@ -2533,11 +2787,19 @@ s_oconv(nkf_char c2, nkf_char c1)
 }
 
 #ifdef UTF8_OUTPUT_ENABLE
+#define OUTPUT_UTF8(val) do { \
+	nkf_unicode_to_utf8(val, &c1, &c2, &c3, &c4); \
+	(*o_putc)(c1); \
+	if (c2) (*o_putc)(c2); \
+	if (c3) (*o_putc)(c3); \
+	if (c4) (*o_putc)(c4); \
+    } while (0)
+
 static void
 w_oconv(nkf_char c2, nkf_char c1)
 {
     nkf_char c3, c4;
-    nkf_char val;
+    nkf_char val, val2;
 
     if (output_bom_f) {
 	output_bom_f = FALSE;
@@ -2553,11 +2815,7 @@ w_oconv(nkf_char c2, nkf_char c1)
 
     if (c2 == 0 && nkf_char_unicode_p(c1)){
 	val = c1 & VALUE_MASK;
-	nkf_unicode_to_utf8(val, &c1, &c2, &c3, &c4);
-	(*o_putc)(c1);
-	if (c2) (*o_putc)(c2);
-	if (c3) (*o_putc)(c3);
-	if (c4) (*o_putc)(c4);
+	OUTPUT_UTF8(val);
 	return;
     }
 
@@ -2566,27 +2824,46 @@ w_oconv(nkf_char c2, nkf_char c1)
     } else {
 	val = e2w_conv(c2, c1);
 	if (val){
-	    nkf_unicode_to_utf8(val, &c1, &c2, &c3, &c4);
-	    (*o_putc)(c1);
-	    if (c2) (*o_putc)(c2);
-	    if (c3) (*o_putc)(c3);
-	    if (c4) (*o_putc)(c4);
+	    val2 = e2w_combining(val, c2, c1);
+	    if (val2)
+		OUTPUT_UTF8(val2);
+	    OUTPUT_UTF8(val);
 	}
     }
 }
+
+#define OUTPUT_UTF16_BYTES(c1, c2) do { \
+	if (output_endian == ENDIAN_LITTLE){ \
+	    (*o_putc)(c1); \
+	    (*o_putc)(c2); \
+	}else{ \
+	    (*o_putc)(c2); \
+	    (*o_putc)(c1); \
+	} \
+    } while (0)
+
+#define OUTPUT_UTF16(val) do { \
+	if (nkf_char_unicode_bmp_p(val)) { \
+	    c2 = (val >> 8) & 0xff; \
+	    c1 = val & 0xff; \
+	    OUTPUT_UTF16_BYTES(c1, c2); \
+	} else { \
+	    val &= VALUE_MASK; \
+	    if (val <= UNICODE_MAX) { \
+		c2 = (val >> 10) + NKF_INT32_C(0xD7C0);   /* high surrogate */ \
+		c1 = (val & 0x3FF) + NKF_INT32_C(0xDC00); /* low surrogate */ \
+		OUTPUT_UTF16_BYTES(c2 & 0xff, (c2 >> 8) & 0xff); \
+		OUTPUT_UTF16_BYTES(c1 & 0xff, (c1 >> 8) & 0xff); \
+	    } \
+	} \
+    } while (0)
 
 static void
 w_oconv16(nkf_char c2, nkf_char c1)
 {
     if (output_bom_f) {
 	output_bom_f = FALSE;
-	if (output_endian == ENDIAN_LITTLE){
-	    (*o_putc)(0xFF);
-	    (*o_putc)(0xFE);
-	}else{
-	    (*o_putc)(0xFE);
-	    (*o_putc)(0xFF);
-	}
+	OUTPUT_UTF16_BYTES(0xFF, 0xFE);
     }
 
     if (c2 == EOF) {
@@ -2595,43 +2872,33 @@ w_oconv16(nkf_char c2, nkf_char c1)
     }
 
     if (c2 == 0 && nkf_char_unicode_p(c1)) {
-	if (nkf_char_unicode_bmp_p(c1)) {
-	    c2 = (c1 >> 8) & 0xff;
-	    c1 &= 0xff;
-	} else {
-	    c1 &= VALUE_MASK;
-	    if (c1 <= UNICODE_MAX) {
-		c2 = (c1 >> 10) + NKF_INT32_C(0xD7C0);   /* high surrogate */
-		c1 = (c1 & 0x3FF) + NKF_INT32_C(0xDC00); /* low surrogate */
-		if (output_endian == ENDIAN_LITTLE){
-		    (*o_putc)(c2 & 0xff);
-		    (*o_putc)((c2 >> 8) & 0xff);
-		    (*o_putc)(c1 & 0xff);
-		    (*o_putc)((c1 >> 8) & 0xff);
-		}else{
-		    (*o_putc)((c2 >> 8) & 0xff);
-		    (*o_putc)(c2 & 0xff);
-		    (*o_putc)((c1 >> 8) & 0xff);
-		    (*o_putc)(c1 & 0xff);
-		}
-	    }
-	    return;
-	}
+	OUTPUT_UTF16(c1);
     } else if (c2) {
-	nkf_char val = e2w_conv(c2, c1);
-	c2 = (val >> 8) & 0xff;
-	c1 = val & 0xff;
+	nkf_char val, val2;
+	val = e2w_conv(c2, c1);
 	if (!val) return;
-    }
-
-    if (output_endian == ENDIAN_LITTLE){
-	(*o_putc)(c1);
-	(*o_putc)(c2);
-    }else{
-	(*o_putc)(c2);
-	(*o_putc)(c1);
+	val2 = e2w_combining(val, c2, c1);
+	if (val2)
+	    OUTPUT_UTF16(val2);
+	OUTPUT_UTF16(val);
+    } else {
+	OUTPUT_UTF16_BYTES(c1, c2);
     }
 }
+
+#define OUTPUT_UTF32(c) do { \
+	if (output_endian == ENDIAN_LITTLE){ \
+	    (*o_putc)( (c)        & 0xFF); \
+	    (*o_putc)(((c) >>  8) & 0xFF); \
+	    (*o_putc)(((c) >> 16) & 0xFF); \
+	    (*o_putc)(0); \
+	}else{ \
+	    (*o_putc)(0); \
+	    (*o_putc)(((c) >> 16) & 0xFF); \
+	    (*o_putc)(((c) >>  8) & 0xFF); \
+	    (*o_putc)( (c)        & 0xFF); \
+	} \
+    } while (0)
 
 static void
 w_oconv32(nkf_char c2, nkf_char c1)
@@ -2661,20 +2928,15 @@ w_oconv32(nkf_char c2, nkf_char c1)
     } else if (c2 == 0 && nkf_char_unicode_p(c1)) {
 	c1 &= VALUE_MASK;
     } else if (c2) {
-	c1 = e2w_conv(c2, c1);
-	if (!c1) return;
+	nkf_char val, val2;
+	val = e2w_conv(c2, c1);
+	if (!val) return;
+	val2 = e2w_combining(val, c2, c1);
+	if (val2)
+	    OUTPUT_UTF32(val2);
+	c1 = val;
     }
-    if (output_endian == ENDIAN_LITTLE){
-	(*o_putc)( c1        & 0xFF);
-	(*o_putc)((c1 >>  8) & 0xFF);
-	(*o_putc)((c1 >> 16) & 0xFF);
-	(*o_putc)(0);
-    }else{
-	(*o_putc)(0);
-	(*o_putc)((c1 >> 16) & 0xFF);
-	(*o_putc)((c1 >>  8) & 0xFF);
-	(*o_putc)( c1        & 0xFF);
-    }
+    OUTPUT_UTF32(c1);
 }
 #endif
 
@@ -2683,7 +2945,8 @@ w_oconv32(nkf_char c2, nkf_char c1)
 #define SCORE_DEPEND   (SCORE_KANA << 1)     /* MD Characters */
 #define SCORE_CP932    (SCORE_DEPEND << 1)   /* IBM extended characters */
 #define SCORE_X0212    (SCORE_CP932 << 1)    /* JIS X 0212 */
-#define SCORE_NO_EXIST (SCORE_X0212 << 1)    /* Undefined Characters */
+#define SCORE_X0213    (SCORE_X0212 << 1)    /* JIS X 0213 */
+#define SCORE_NO_EXIST (SCORE_X0213 << 1)    /* Undefined Characters */
 #define SCORE_iMIME    (SCORE_NO_EXIST << 1) /* MIME selected */
 #define SCORE_ERROR    (SCORE_iMIME << 1) /* Error */
 
@@ -2693,14 +2956,35 @@ static const nkf_char score_table_A0[] = {
     0, 0, 0, 0,
     0, 0, 0, 0,
     0, SCORE_DEPEND, SCORE_DEPEND, SCORE_DEPEND,
-    SCORE_DEPEND, SCORE_DEPEND, SCORE_DEPEND, SCORE_NO_EXIST,
+    SCORE_DEPEND, SCORE_DEPEND, SCORE_DEPEND, SCORE_X0213,
 };
 
 static const nkf_char score_table_F0[] = {
     SCORE_L2, SCORE_L2, SCORE_L2, SCORE_L2,
-    SCORE_L2, SCORE_DEPEND, SCORE_NO_EXIST, SCORE_NO_EXIST,
+    SCORE_L2, SCORE_DEPEND, SCORE_X0213, SCORE_X0213,
     SCORE_DEPEND, SCORE_DEPEND, SCORE_CP932, SCORE_CP932,
-    SCORE_CP932, SCORE_NO_EXIST, SCORE_NO_EXIST, SCORE_ERROR,
+    SCORE_CP932, SCORE_X0213, SCORE_X0213, SCORE_ERROR,
+};
+
+static const nkf_char score_table_8FA0[] = {
+    0, SCORE_X0213, SCORE_X0212, SCORE_X0213,
+    SCORE_X0213, SCORE_X0213, SCORE_X0212, SCORE_X0212,
+    SCORE_X0213, SCORE_X0212, SCORE_X0212, SCORE_X0212,
+    SCORE_X0213, SCORE_X0213, SCORE_X0213, SCORE_X0213,
+};
+
+static const nkf_char score_table_8FE0[] = {
+    SCORE_X0212, SCORE_X0212, SCORE_X0212, SCORE_X0212,
+    SCORE_X0212, SCORE_X0212, SCORE_X0212, SCORE_X0212,
+    SCORE_X0212, SCORE_X0212, SCORE_X0212, SCORE_X0212,
+    SCORE_X0212, SCORE_X0212, SCORE_X0213, SCORE_X0213,
+};
+
+static const nkf_char score_table_8FF0[] = {
+    SCORE_X0213, SCORE_X0213, SCORE_X0213, SCORE_X0212,
+    SCORE_X0212, SCORE_X0213, SCORE_X0213, SCORE_X0213,
+    SCORE_X0213, SCORE_X0213, SCORE_X0213, SCORE_X0213,
+    SCORE_X0213, SCORE_X0213, SCORE_X0213, SCORE_X0213,
 };
 
 static void
@@ -2723,15 +3007,21 @@ static void
 code_score(struct input_code *ptr)
 {
     nkf_char c2 = ptr->buf[0];
-#ifdef UTF8_OUTPUT_ENABLE
     nkf_char c1 = ptr->buf[1];
-#endif
     if (c2 < 0){
 	set_code_score(ptr, SCORE_ERROR);
     }else if (c2 == SS2){
 	set_code_score(ptr, SCORE_KANA);
     }else if (c2 == 0x8f){
-	set_code_score(ptr, SCORE_X0212);
+	if ((c1 & 0x70) == 0x20){
+	    set_code_score(ptr, score_table_8FA0[c1 & 0x0f]);
+	}else if ((c1 & 0x70) == 0x60){
+	    set_code_score(ptr, score_table_8FE0[c1 & 0x0f]);
+	}else if ((c1 & 0x70) == 0x70){
+	    set_code_score(ptr, score_table_8FF0[c1 & 0x0f]);
+	}else{
+	    set_code_score(ptr, SCORE_X0212);
+	}
 #ifdef UTF8_OUTPUT_ENABLE
     }else if (!e2w_conv(c2, c1)){
 	set_code_score(ptr, SCORE_NO_EXIST);
@@ -3047,7 +3337,7 @@ std_getc(FILE *f)
 #endif /*WIN32DLL*/
 
 static nkf_char
-std_ungetc(nkf_char c, FILE *f)
+std_ungetc(nkf_char c, ARG_UNUSED FILE *f)
 {
     nkf_buf_push(nkf_state->std_gc_buf, c);
     return c;
@@ -3078,6 +3368,7 @@ h_conv(FILE *f, nkf_char c1, nkf_char c2)
 {
     int ret;
     int hold_index;
+    int fromhold_count;
     nkf_char c3, c4;
 
     /** it must NOT be in the kanji shifte sequence      */
@@ -3139,8 +3430,10 @@ h_conv(FILE *f, nkf_char c1, nkf_char c2)
 	    (*iconv)(JIS_X_0201_1976_K, c1, 0);
 	    continue;
 	}
+	fromhold_count = 1;
 	if (hold_index < hold_count){
 	    c2 = hold_buf[hold_index++];
+	    fromhold_count++;
 	}else{
 	    c2 = (*i_getc)(f);
 	    if (c2 == EOF){
@@ -3169,17 +3462,105 @@ h_conv(FILE *f, nkf_char c1, nkf_char c2)
 	    code_status(c4);
 	    (*iconv)(c1, c2, (c3<<8)|c4);
 	    break;
+	case -3:
+	    /* 4 bytes UTF-8 (check combining character) */
+	    if (hold_index < hold_count){
+		c3 = hold_buf[hold_index++];
+		fromhold_count++;
+	    } else if ((c3 = (*i_getc)(f)) == EOF) {
+		w_iconv_nocombine(c1, c2, 0);
+		break;
+	    }
+	    if (hold_index < hold_count){
+		c4 = hold_buf[hold_index++];
+		fromhold_count++;
+	    } else if ((c4 = (*i_getc)(f)) == EOF) {
+		w_iconv_nocombine(c1, c2, 0);
+		if (fromhold_count <= 2)
+		    (*i_ungetc)(c3,f);
+		else
+		    hold_index--;
+		continue;
+	    }
+	    if (w_iconv_combine(c1, c2, 0, c3, c4, 0)) {
+		w_iconv_nocombine(c1, c2, 0);
+		if (fromhold_count <= 2) {
+		    (*i_ungetc)(c4,f);
+		    (*i_ungetc)(c3,f);
+		} else if (fromhold_count == 3) {
+		    (*i_ungetc)(c4,f);
+		    hold_index--;
+		} else {
+		    hold_index -= 2;
+		}
+	    }
+	    break;
 	case -1:
 	    /* 3 bytes EUC or UTF-8 */
 	    if (hold_index < hold_count){
 		c3 = hold_buf[hold_index++];
+		fromhold_count++;
 	    } else if ((c3 = (*i_getc)(f)) == EOF) {
 		ret = EOF;
 		break;
 	    } else {
 		code_status(c3);
 	    }
-	    (*iconv)(c1, c2, c3);
+	    if ((*iconv)(c1, c2, c3) == -3) {
+		/* 6 bytes UTF-8 (check combining character) */
+		nkf_char c5, c6;
+		if (hold_index < hold_count){
+		    c4 = hold_buf[hold_index++];
+		    fromhold_count++;
+		} else if ((c4 = (*i_getc)(f)) == EOF) {
+		    w_iconv_nocombine(c1, c2, c3);
+		    continue;
+		}
+		if (hold_index < hold_count){
+		    c5 = hold_buf[hold_index++];
+		    fromhold_count++;
+		} else if ((c5 = (*i_getc)(f)) == EOF) {
+		    w_iconv_nocombine(c1, c2, c3);
+		    if (fromhold_count == 4)
+			hold_index--;
+		    else
+			(*i_ungetc)(c4,f);
+		    continue;
+		}
+		if (hold_index < hold_count){
+		    c6 = hold_buf[hold_index++];
+		    fromhold_count++;
+		} else if ((c6 = (*i_getc)(f)) == EOF) {
+		    w_iconv_nocombine(c1, c2, c3);
+		    if (fromhold_count == 5) {
+			hold_index -= 2;
+		    } else if (fromhold_count == 4) {
+			hold_index--;
+			(*i_ungetc)(c5,f);
+		    } else {
+			(*i_ungetc)(c5,f);
+			(*i_ungetc)(c4,f);
+		    }
+		    continue;
+		}
+		if (w_iconv_combine(c1, c2, c3, c4, c5, c6)) {
+		    w_iconv_nocombine(c1, c2, c3);
+		    if (fromhold_count == 6) {
+			hold_index -= 3;
+		    } else if (fromhold_count == 5) {
+			hold_index -= 2;
+			(*i_ungetc)(c6,f);
+		    } else if (fromhold_count == 4) {
+			hold_index--;
+			(*i_ungetc)(c6,f);
+			(*i_ungetc)(c5,f);
+		    } else {
+			(*i_ungetc)(c6,f);
+			(*i_ungetc)(c5,f);
+			(*i_ungetc)(c4,f);
+		    }
+		}
+	    }
 	    break;
 	}
 	if (c3 == EOF) break;
@@ -3344,7 +3725,7 @@ broken_getc(FILE *f)
 }
 
 static nkf_char
-broken_ungetc(nkf_char c, FILE *f)
+broken_ungetc(nkf_char c, ARG_UNUSED FILE *f)
 {
     if (nkf_buf_length(nkf_state->broken_buf) < 2)
 	nkf_buf_push(nkf_state->broken_buf, c);
@@ -3619,13 +4000,17 @@ z_conv(nkf_char c2, nkf_char c1)
 		    z_prev2 = 0;
 		    (*o_zconv)(ev[(z_prev1-SP)*2], ev[(z_prev1-SP)*2+1]);
 		    return;
+		} else if (x0213_f && c1 == (0xdf&0x7f) && ev_x0213[(z_prev1-SP)*2]) {  /* 半濁点 */
+		    z_prev2 = 0;
+		    (*o_zconv)(ev_x0213[(z_prev1-SP)*2], ev_x0213[(z_prev1-SP)*2+1]);
+		    return;
 		}
 	    }
 	    z_prev2 = 0;
 	    (*o_zconv)(cv[(z_prev1-SP)*2], cv[(z_prev1-SP)*2+1]);
 	}
 	if (c2 == JIS_X_0201_1976_K) {
-	    if (dv[(c1-SP)*2] || ev[(c1-SP)*2]) {
+	    if (dv[(c1-SP)*2] || ev[(c1-SP)*2] || (x0213_f && ev_x0213[(c1-SP)*2])) {
 		/* wait for 濁点 or 半濁点 */
 		z_prev1 = c1;
 		z_prev2 = c2;
@@ -3733,8 +4118,8 @@ z_conv(nkf_char c2, nkf_char c1)
 		0x4D00, 0x4D5E, 0x4D5F, 0x4E00, 0x4E5E, 0x4E5F, 0x4F00, 0x5000,
 		0x5100, 0x5200, 0x5300, 0x2C00, 0x5400, 0x2D00, 0x5500, 0x2E00,
 		0x5600, 0x5700, 0x5800, 0x5900, 0x5A00, 0x5B00, 0x0000, 0x5C00,
-		0x0000, 0x0000, 0x2600, 0x5D00, 0x335E, 0x0000, 0x0000, 0x0000,
-		0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000
+		0x0000, 0x0000, 0x2600, 0x5D00, 0x335E, 0x0000, 0x0000, 0x365F,
+		0x375F, 0x385F, 0x395F, 0x3A5F, 0x3E5F, 0x425F, 0x445F, 0x0000
 	    };
 	    if (fullwidth_to_halfwidth[c1-0x20]){
 		c2 = fullwidth_to_halfwidth[c1-0x20];
@@ -3744,6 +4129,10 @@ z_conv(nkf_char c2, nkf_char c1)
 		}
 		return;
 	    }
+	} else if (c2 == 0 && nkf_char_unicode_p(c1) &&
+	    ((c1&VALUE_MASK) == 0x3099 || (c1&VALUE_MASK) == 0x309A)) { /* 合成用濁点・半濁点 */
+	    (*o_zconv)(JIS_X_0201_1976_K, 0x5E + (c1&VALUE_MASK) - 0x3099);
+	    return;
 	}
     }
     (*o_zconv)(c2,c1);
@@ -3932,7 +4321,7 @@ mime_input_buf_unshift(nkf_char c)
 }
 
 static nkf_char
-mime_ungetc(nkf_char c, FILE *f)
+mime_ungetc(nkf_char c, ARG_UNUSED FILE *f)
 {
     mime_input_buf_unshift(c);
     return c;
@@ -4077,7 +4466,7 @@ mime_begin_strict(FILE *f)
 static nkf_char
 mime_begin(FILE *f)
 {
-    nkf_char c1;
+    nkf_char c1 = 0;
     int i,k;
 
     /* In NONSTRICT mode, only =? is checked. In case of failure, we  */
@@ -4133,7 +4522,7 @@ mime_begin(FILE *f)
 
 #ifdef CHECK_OPTION
 static void
-no_putc(nkf_char c)
+no_putc(ARG_UNUSED nkf_char c)
 {
     ;
 }
@@ -4170,7 +4559,9 @@ get_guessed_code(void)
 	    if (p->score & (SCORE_DEPEND|SCORE_CP932))
 		input_codename = "CP932";
 	} else if (strcmp(input_codename, "EUC-JP") == 0) {
-	    if (p->score & (SCORE_X0212))
+	    if (p->score & SCORE_X0213)
+		input_codename = "EUC-JIS-2004";
+	    else if (p->score & (SCORE_X0212))
 		input_codename = "EUCJP-MS";
 	    else if (p->score & (SCORE_DEPEND|SCORE_CP932))
 		input_codename = "CP51932";
@@ -5467,17 +5858,45 @@ kanji_convert(FILE *f)
 	       (c2 = (*i_getc)(f)) != EOF &&
 	       (c3 = (*i_getc)(f)) != EOF &&
 	       (c4 = (*i_getc)(f)) != EOF) {
-	    nkf_iconv_utf_32(c1, c2, c3, c4);
+	    nkf_char c5, c6, c7, c8;
+	    if (nkf_iconv_utf_32(c1, c2, c3, c4) == (size_t)NKF_ICONV_WAIT_COMBINING_CHAR) {
+		if ((c5 = (*i_getc)(f)) != EOF &&
+		    (c6 = (*i_getc)(f)) != EOF &&
+		    (c7 = (*i_getc)(f)) != EOF &&
+		    (c8 = (*i_getc)(f)) != EOF) {
+		    if (nkf_iconv_utf_32_combine(c1, c2, c3, c4, c5, c6, c7, c8)) {
+			(*i_ungetc)(c8, f);
+			(*i_ungetc)(c7, f);
+			(*i_ungetc)(c6, f);
+			(*i_ungetc)(c5, f);
+			nkf_iconv_utf_32_nocombine(c1, c2, c3, c4);
+		    }
+		} else {
+		    nkf_iconv_utf_32_nocombine(c1, c2, c3, c4);
+		}
+	    }
 	}
 	goto finished;
     }
     else if (iconv == w_iconv16) {
 	while ((c1 = (*i_getc)(f)) != EOF &&
 	       (c2 = (*i_getc)(f)) != EOF) {
-	    if (nkf_iconv_utf_16(c1, c2, 0, 0) == NKF_ICONV_NEED_TWO_MORE_BYTES &&
+	    size_t ret = nkf_iconv_utf_16(c1, c2, 0, 0);
+	    if (ret == NKF_ICONV_NEED_TWO_MORE_BYTES &&
 		(c3 = (*i_getc)(f)) != EOF &&
 		(c4 = (*i_getc)(f)) != EOF) {
 		nkf_iconv_utf_16(c1, c2, c3, c4);
+	    } else if (ret == (size_t)NKF_ICONV_WAIT_COMBINING_CHAR) {
+		if ((c3 = (*i_getc)(f)) != EOF &&
+		    (c4 = (*i_getc)(f)) != EOF) {
+		    if (nkf_iconv_utf_16_combine(c1, c2, c3, c4)) {
+			(*i_ungetc)(c4, f);
+			(*i_ungetc)(c3, f);
+			nkf_iconv_utf_16_nocombine(c1, c2);
+		    }
+		} else {
+		    nkf_iconv_utf_16_nocombine(c1, c2);
+		}
 	    }
 	}
 	goto finished;
@@ -5683,6 +6102,7 @@ kanji_convert(FILE *f)
 		    else if (c1 == 'I') {
 			/* JIS X 0201 Katakana */
 			set_input_mode(JIS_X_0201_1976_K);
+			shift_mode = 1;
 			SKIP;
 		    }
 		    else if (c1 == 'B' || c1 == 'J' || c1 == 'H') {
@@ -5824,11 +6244,52 @@ kanji_convert(FILE *f)
 		    }
 		}
 		break;
+	    case -3:
+		/* 4 bytes UTF-8 (check combining character) */
+		if ((c3 = (*i_getc)(f)) != EOF) {
+		    if ((c4 = (*i_getc)(f)) != EOF) {
+			if (w_iconv_combine(c2, c1, 0, c3, c4, 0)) {
+			    (*i_ungetc)(c4, f);
+			    (*i_ungetc)(c3, f);
+			    w_iconv_nocombine(c2, c1, 0);
+			}
+		    } else {
+			(*i_ungetc)(c3, f);
+			w_iconv_nocombine(c2, c1, 0);
+		    }
+		} else {
+		    w_iconv_nocombine(c2, c1, 0);
+		}
+		break;
 	    case -1:
 		/* 3 bytes EUC or UTF-8 */
 		if ((c3 = (*i_getc)(f)) != EOF) {
 		    code_status(c3);
-		    (*iconv)(c2, c1, c3);
+		    if ((*iconv)(c2, c1, c3) == -3) {
+			/* 6 bytes UTF-8 (check combining character) */
+			nkf_char c5, c6;
+			if ((c4 = (*i_getc)(f)) != EOF) {
+			    if ((c5 = (*i_getc)(f)) != EOF) {
+				if ((c6 = (*i_getc)(f)) != EOF) {
+				    if (w_iconv_combine(c2, c1, c3, c4, c5, c6)) {
+					(*i_ungetc)(c6, f);
+					(*i_ungetc)(c5, f);
+					(*i_ungetc)(c4, f);
+					w_iconv_nocombine(c2, c1, c3);
+				    }
+				} else {
+				    (*i_ungetc)(c5, f);
+				    (*i_ungetc)(c4, f);
+				    w_iconv_nocombine(c2, c1, c3);
+				}
+			    } else {
+				(*i_ungetc)(c4, f);
+				w_iconv_nocombine(c2, c1, c3);
+			    }
+			} else {
+			    w_iconv_nocombine(c2, c1, c3);
+			}
+		    }
 		}
 		break;
 	    }
