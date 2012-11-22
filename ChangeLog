@@ -1,3 +1,7 @@
+Thu Nov 22 21:34:51 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/ruby/test_rubyoptions.rb: added a test.
+
 Thu Nov 22 20:32:07 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (string_to_c_strict, string_to_c): check NUL.
