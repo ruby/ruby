@@ -1,3 +1,9 @@
+Thu Nov 22 12:52:19 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/ruby/test_string.rb (TestString#test_index): Add some
+	  corner cases to tests for String#index, which might fail if ruby
+	  directly used a buggy memmem(3) implementation.
+
 Thu Nov 22 08:06:42 2012  Narihiro Nakamura  <authornari@gmail.com>
 
 	* test/ruby/test_gc.rb (test_profiler_clear): fix wrong method

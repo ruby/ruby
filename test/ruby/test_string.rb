@@ -830,6 +830,13 @@ class TestString < Test::Unit::TestCase
     assert_nil(S("hello").index(S("z")))
     assert_nil(S("hello").index(/z./))
 
+    assert_equal(0, S("").index(S("")))
+    assert_equal(0, S("").index(//))
+    assert_nil(S("").index(S("hello")))
+    assert_nil(S("").index(/hello/))
+    assert_equal(0, S("hello").index(S("")))
+    assert_equal(0, S("hello").index(//))
+
     o = Object.new
     def o.to_str; "bar"; end
     assert_equal(3, "foobarbarbaz".index(o))
