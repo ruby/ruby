@@ -1,3 +1,9 @@
+Thu Nov 22 16:58:26 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* Makefile.in: run preprocessor when making probe.h
+	* probes.d: define probe insn and insn__operand only when
+	  VM_COLLECT_USAGE_DETAILS is 1. [Bug #7370]
+
 Thu Nov 22 16:20:49 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm.c: Don't define vm_collect_usage_operand() and

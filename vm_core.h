@@ -14,6 +14,10 @@
 
 #define RUBY_VM_THREAD_MODEL 2
 
+#ifndef VM_COLLECT_USAGE_DETAILS
+#define VM_COLLECT_USAGE_DETAILS 0
+#endif
+
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 

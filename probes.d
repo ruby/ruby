@@ -1,3 +1,5 @@
+#include "vm_core.h"
+
 provider ruby {
   probe function__entry(const char *, const char *, const char *, int);
   probe function__return(const char *, const char *, const char *, int);
@@ -21,8 +23,10 @@ provider ruby {
   probe parse__begin(const char *, int);
   probe parse__end(const char *, int);
 
+#if VM_COLLECT_USAGE_DETAILS
   probe insn(const char *);
   probe insn__operand(const char *, const char *);
+#endif
 
   probe gc__mark__begin();
   probe gc__mark__end();

@@ -63,10 +63,6 @@ rb_vm_control_frame_block_ptr(rb_control_frame_t *cfp)
     return VM_CF_BLOCK_PTR(cfp);
 }
 
-#ifndef VM_COLLECT_USAGE_DETAILS
-#define VM_COLLECT_USAGE_DETAILS 0
-#endif
-
 #if VM_COLLECT_USAGE_DETAILS
 static void vm_collect_usage_operand(int insn, int n, VALUE op);
 static void vm_collect_usage_insn(int insn);
