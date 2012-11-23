@@ -1,4 +1,7 @@
-Fri Nov 23 11:12:06 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov 23 11:13:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_usage2): refine
+	  assertion.
 
 	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_usage2): now
 	  --help option is for modern terminals.
