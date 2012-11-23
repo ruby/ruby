@@ -1,4 +1,5 @@
 #!./miniruby
+# -*- coding: us-ascii -*-
 
 require 'mkmf'
 
@@ -44,7 +45,8 @@ version = config["ruby_version"]
 arch = config["arch"]
 bindir = File.basename(config["bindir"])
 libdir = File.basename(config["libdir"])
-[bindir, libdir].each do |dir|
+archdir = File.join(extout, arch)
+[bindir, libdir, archdir].each do |dir|
   File.directory?(dir) or mkdir_p(dir)
 end
 
@@ -74,9 +76,9 @@ else
   end
 end
 if cur
-  ln_safe(File.join("..", cur, "rbconfig.rb"), File.join(extout, arch, "rbconfig.rb"))
+  ln_safe(File.join("..", cur, "rbconfig.rb"), File.join(archdir, "rbconfig.rb"))
 else
-  ln_safe(File.expand_path("rbconfig.rb"), File.join(extout, arch, "rbconfig.rb"))
+  ln_safe(File.expand_path("rbconfig.rb"), File.join(archdir, "rbconfig.rb"))
 end
 ln_dir_safe("common", File.join(extout, version))
 ln_dir_safe(File.join("..", arch), File.join(extout, "common", arch))
