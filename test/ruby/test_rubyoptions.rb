@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 require 'test/unit'
 
 require 'tmpdir'
@@ -35,11 +36,8 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_usage2
     assert_in_out_err(%w(-h)) do |r, e|
-      assert_operator(r[1..-1].collect{|x| x.size}.max, :<=, 80)
-      assert_equal([], e)
-    end
-    assert_in_out_err(%w(--help)) do |r, e|
-      assert_operator(r[1..-1].collect{|x| x.size}.max, :<=, 80)
+      longer = r[1..-1].select {|x| x.size > 80}
+      assert_equal([], longer)
       assert_equal([], e)
     end
   end
