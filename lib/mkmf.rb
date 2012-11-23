@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 # module to create Makefile for extension modules
 # invoke like: ruby -r mkmf extconf.rb
 
@@ -1668,16 +1669,16 @@ SRC
   def pkg_config(pkg)
     if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
       # iff package specific config command is given
-      get = proc {|opt| `#{pkgconfig} --#{opt}`.chomp}
+      get = proc {|opt| `#{pkgconfig} --#{opt}`.strip}
     elsif ($PKGCONFIG ||=
            (pkgconfig = with_config("pkg-config", ("pkg-config" unless CROSS_COMPILING))) &&
            find_executable0(pkgconfig) && pkgconfig) and
         system("#{$PKGCONFIG} --exists #{pkg}")
       # default to pkg-config command
-      get = proc {|opt| `#{$PKGCONFIG} --#{opt} #{pkg}`.chomp}
+      get = proc {|opt| `#{$PKGCONFIG} --#{opt} #{pkg}`.strip}
     elsif find_executable0(pkgconfig = "#{pkg}-config")
       # default to package specific config command, as a last resort.
-      get = proc {|opt| `#{pkgconfig} --#{opt}`.chomp}
+      get = proc {|opt| `#{pkgconfig} --#{opt}`.strip}
     end
     if get and try_ldflags(ldflags = get['libs'])
       cflags = get['cflags']

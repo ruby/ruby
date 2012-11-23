@@ -1,3 +1,9 @@
+Fri Nov 23 23:44:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (MakeMakefile#pkg_config): strip all white spaces for
+	  mingw64+MSYS pkg-config which errouneously emits extra newlines.
+	  [ruby-core:47998] [Bug #7163]
+
 Fri Nov 23 17:31:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (usage): wrap description lines if options are too long.
