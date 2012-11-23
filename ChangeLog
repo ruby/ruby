@@ -1,3 +1,9 @@
+Sat Nov 24 00:00:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options, process_options, ruby_process_options): take
+	  care of the case argc is 0, and check if argv has NULL.
+	  [ruby-core:49889] [Bug #7423]
+
 Sat Nov 24 00:00:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (--disable-dln): option to disable dynamic linking

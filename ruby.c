@@ -775,7 +775,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 
     for (argc--, argv++; argc > 0; argc--, argv++) {
 	const char *const arg = argv[0];
-	if (arg[0] != '-' || !arg[1])
+	if (!arg || arg[0] != '-' || !arg[1])
 	    break;
 
 	s = arg + 1;
@@ -1358,7 +1358,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	}
 	else {
 	    opt->script = argv[0];
-	    if (opt->script[0] == '\0') {
+	    if (!opt->script || opt->script[0] == '\0') {
 		opt->script = "-";
 	    }
 	    else if (opt->do_search) {
@@ -1896,8 +1896,9 @@ ruby_process_options(int argc, char **argv)
 {
     struct cmdline_options opt;
     VALUE iseq;
+    const char *script_name = (argc > 0 && argv[0]) ? argv[0] : "ruby";
 
-    ruby_script(argv[0]);  /* for the time being */
+    ruby_script(script_name);  /* for the time being */
     rb_argv0 = rb_str_new4(rb_progname);
     rb_gc_register_mark_object(rb_argv0);
     iseq = process_options(argc, argv, cmdline_options_init(&opt));
