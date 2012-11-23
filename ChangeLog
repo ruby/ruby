@@ -1,3 +1,7 @@
+Fri Nov 23 12:33:01 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* ruby.c: revert r37298.
+
 Fri Nov 23 11:40:13 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_usage2):
