@@ -1,3 +1,8 @@
+Fri Nov 23 11:40:13 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_usage2):
+	  revert the previous.
+
 Fri Nov 23 11:13:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_usage2): refine
