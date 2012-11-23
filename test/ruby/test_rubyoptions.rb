@@ -40,6 +40,11 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_equal([], longer)
       assert_equal([], e)
     end
+    assert_in_out_err(%w(--help)) do |r, e|
+      longer = r[1..-1].select {|x| x.size > 80}
+      assert_equal([], longer)
+      assert_equal([], e)
+    end
   end
 
   def test_option_variables

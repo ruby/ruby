@@ -1,3 +1,7 @@
+Fri Nov 23 17:31:54 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (usage): wrap description lines if options are too long.
+
 Fri Nov 23 11:13:46 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_rubyoptions.rb (TestRubyOptions#test_usage2): refine

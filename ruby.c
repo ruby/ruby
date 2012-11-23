@@ -172,10 +172,10 @@ usage(const char *name, int help)
     };
     static const struct message help_msg[] = {
 	M("--copyright",                   "", "print the copyright"),
-	M("--enable=feature[,...]",        "", "enable features"),
-	M("--disable=feature[,...]",       "", "disable features"),
-	M("--internal-encoding=encoding",  "", "specify the default internal character encoding"),
-	M("--external-encoding=encoding",  "", "specify the default external character encoding"),
+	M("--enable=feature[,...]",	   ", --disable=feature[,...]",
+	  "enable or disable features"),
+	M("--internal-encoding=encoding",  ", --external-encoding=encoding",
+	  "specify the default internal and external character encoding"),
 	M("--version",                     "", "print the version"),
 	M("--help",			   "", "show this message, -h for short message"),
     };
@@ -183,10 +183,15 @@ usage(const char *name, int help)
 	M("gems",    "",        "rubygems (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
     };
-    int i, w = help ? 32 : 16, num = numberof(usage_msg) - (help ? 1 : 0);
-#define SHOW(m) printf("  %.*s%-*.*s%s\n", (m).namelen-1, (m).str, \
-		       w - (m).namelen + 1, (help ? (m).secondlen-1 : 0), (m).str + (m).namelen, \
-		       (m).str + (m).namelen + (m).secondlen)
+    int i, w = 16, num = numberof(usage_msg) - (help ? 1 : 0);
+#define SHOW(m) do { \
+	int wrap = help && (m).namelen + (m).secondlen - 2 > w; \
+	printf("  %.*s%-*.*s%-*s%s\n", (m).namelen-1, (m).str, \
+	       (wrap ? 0 : w - (m).namelen + 1), \
+	       (help ? (m).secondlen-1 : 0), (m).str + (m).namelen, \
+	       (wrap ? w + 3 : 0), (wrap ? "\n" : ""), \
+	       (m).str + (m).namelen + (m).secondlen); \
+    } while (0)
 
     printf("Usage: %s [switches] [--] [programfile] [arguments]\n", name);
     for (i = 0; i < num; ++i)
