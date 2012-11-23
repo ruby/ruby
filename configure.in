@@ -2814,6 +2814,11 @@ AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
 ])
 SYMBOL_PREFIX="$rb_cv_symbol_prefix"
 test "x$SYMBOL_PREFIX" = xNONE && SYMBOL_PREFIX=''
+DLNOBJ=dln.o
+AC_ARG_ENABLE(dln,
+	      AC_HELP_STRING([--disable-dln], [disable dynamic link feature]),
+	      [test "$enableval" = yes || DLNOBJ=dmydln.o])
+AC_SUBST(DLNOBJ)
 MINIDLNOBJ=dmydln.o
 
 AS_CASE(["$target_os"],

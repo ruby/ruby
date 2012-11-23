@@ -98,7 +98,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		$(BUILTIN_TRANSOBJS) \
 		$(MISSING)
 
-EXPORTOBJS    = dln.$(OBJEXT) \
+EXPORTOBJS    = $(DLNOBJ) \
 		encoding.$(OBJEXT) \
 		version.$(OBJEXT) \
 		$(COMMONOBJS)

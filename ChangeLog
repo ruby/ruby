@@ -1,3 +1,8 @@
+Sat Nov 24 00:00:10 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (--disable-dln): option to disable dynamic linking
+	  feature.  [ruby-core:37676] [Feature #4946]
+
 Fri Nov 23 23:44:41 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (MakeMakefile#pkg_config): strip all white spaces for
