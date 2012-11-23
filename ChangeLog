@@ -1,3 +1,8 @@
+Fri Nov 23 10:45:00 2012  Zachary Scott  <zachary@zacharyscott.net>
+
+	* ext/socket/ipsocket.c (IPSocket#peeraddr): Fix example
+	  [ruby-core:46429] [Bug #6732]
+
 Fri Nov 23 02:40:00 2012  Zachary Scott  <zachary@zacharyscott.net>
 
 	* lib/cgi/core.rb: Documentation for CGI#header alias
