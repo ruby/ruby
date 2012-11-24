@@ -2777,6 +2777,40 @@ rb_ary_delete(VALUE ary, VALUE item)
 }
 
 VALUE
+rb_ary_delete_same_obj(VALUE ary, VALUE item)
+{
+    VALUE v = item;
+    long i1, i2;
+
+    for (i1 = i2 = 0; i1 < RARRAY_LEN(ary); i1++) {
+	VALUE e = RARRAY_PTR(ary)[i1];
+
+	if (e == item) {
+	    v = e;
+	    continue;
+	}
+	if (i1 != i2) {
+	    rb_ary_store(ary, i2, e);
+	}
+	i2++;
+    }
+    if (RARRAY_LEN(ary) == i2) {
+	return Qnil;
+    }
+
+    rb_ary_modify(ary);
+    if (RARRAY_LEN(ary) > i2) {
+	ARY_SET_LEN(ary, i2);
+	if (i2 * 2 < ARY_CAPA(ary) &&
+	    ARY_CAPA(ary) > ARY_DEFAULT_SIZE) {
+	    ary_resize_capa(ary, i2*2);
+	}
+    }
+
+    return v;
+}
+
+VALUE
 rb_ary_delete_at(VALUE ary, long pos)
 {
     long len = RARRAY_LEN(ary);

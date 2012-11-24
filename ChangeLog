@@ -1,3 +1,28 @@
+Sat Nov 24 21:01:55 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* array.c (rb_ary_delete_same_obj): new function for WeakRef.
+	  This deletes same objects as item argument in the array.
+
+	* internal.h (rb_ary_delete_same_obj): add a declaration.
+
+	* gc.c (wmap_final_func): remove WeakRef object reference from the
+	  array. rb_ary_delete() is not usable because it uses rb_equal() to
+	  compare object references.
+
+	* gc.c (wmap_finalize): remove recycled object references from weak
+	  map hash properly. How to get object reference from object id was
+	  wrong. st_delete() doesn't work properly if key and value arguments
+	  are same. The key of obj2wmap is referenced object and the value of
+	  obj2wmap is WeakRef array.
+
+	* gc.c (wmap_aset): obj2wmap should contain WeakRef array in the
+	  definition.
+
+	* test/test_weakref.rb
+	  (TestWeakRef#test_not_reference_different_object,
+	   TestWeakRef#test_weakref_finalize): add tests for above.
+	  [ruby-core:49044] [Bug #7304]
+
 Sat Nov 24 19:44:41 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (unicode_iconv_combine): returning flags are
