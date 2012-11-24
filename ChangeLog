@@ -1,3 +1,13 @@
+Sat Nov 24 12:12:41 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* gc.c (wmap_final_func): rename variables to clarify the meaning.
+	  In wmap2obj the key is WeakRef and the value is referenced object.
+	  In obj2wmap the key is referenced object and the value is an array
+	  of WeakRef.
+
+	* gc.c (wmap_finalize): ditto.
+	  [ruby-core:49044] [Bug #7304]
+
 Sat Nov 24 12:10:26 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* gc.c (wmap_final_func): remove WeakRef object reference from the
