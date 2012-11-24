@@ -1562,7 +1562,7 @@ class TestProcess < Test::Unit::TestCase
     return unless Process.respond_to?(:setsid)
     return unless Process.respond_to?(:getsid)
 
-    IO.popen(["./ruby-trunk", "-e", <<EOS]) do|io|
+    IO.popen([RUBY, "-e", <<EOS]) do|io|
 	Marshal.dump(Process.getsid, STDOUT)
 	newsid = Process.setsid
 	Marshal.dump(newsid, STDOUT)

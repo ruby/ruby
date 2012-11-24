@@ -1,3 +1,8 @@
+Sat Nov 24 12:47:27 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* test/ruby/test_process.rb (TestProcess#test_setsid): "./ruby-trunk"
+	  doesn't work on all environments. EnvUtil.rubybin would be suitable.
+
 Sat Nov 24 12:28:04 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* array.c (rb_ary_aref): fix Segmentation fault at TestArray#test_aref
