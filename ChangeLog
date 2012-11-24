@@ -1,3 +1,8 @@
+Sat Nov 24 19:29:18 2012  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* test/ruby/test_rubyoptions.rb (test_usage, test_usage_long):
+	  reduced, renamed.
+
 Sat Nov 24 13:10:14 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c (rb_tracepoint_attr_raised_exception): should not check

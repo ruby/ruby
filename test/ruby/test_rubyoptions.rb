@@ -30,16 +30,13 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_usage
     assert_in_out_err(%w(-h)) do |r, e|
       assert_operator(r.size, :<=, 24)
-      assert_equal([], e)
-    end
-  end
-
-  def test_usage2
-    assert_in_out_err(%w(-h)) do |r, e|
       longer = r[1..-1].select {|x| x.size > 80}
       assert_equal([], longer)
       assert_equal([], e)
     end
+  end
+
+  def test_usage_long
     assert_in_out_err(%w(--help)) do |r, e|
       longer = r[1..-1].select {|x| x.size > 80}
       assert_equal([], longer)
