@@ -626,36 +626,121 @@ class TestString < Test::Unit::TestCase
   end
 
   def test_each_byte
+    s = S("ABC")
+
     res = []
-    S("ABC").each_byte {|x| res << x }
+    assert_equal s.object_id, s.each_byte {|x| res << x }.object_id
     assert_equal(65, res[0])
     assert_equal(66, res[1])
     assert_equal(67, res[2])
+
+    assert_equal 65, s.each_byte.next
+  end
+
+  def test_bytes
+    s = S("ABC")
+    assert_equal [65, 66, 67], s.bytes
+
+    if RUBY_VERSION >= "2.1.0"
+      assert_warn(/block not used/) {
+        assert_equal [65, 66, 67], s.bytes {}
+      }
+    else
+      assert_warning(/deprecated/) {
+        res = []
+        assert_equal s.object_id, s.bytes {|x| res << x }.object_id
+        assert_equal(65, res[0])
+        assert_equal(66, res[1])
+        assert_equal(67, res[2])
+      }
+    end
   end
 
   def test_each_codepoint
+    # Single byte optimization
+    assert_equal 65, S("ABC").each_codepoint.next
+
+    s = S("\u3042\u3044\u3046")
+
     res = []
-    S("ABC").codepoints.each {|x| res << x}
-    assert_equal([65, 66, 67], res)
+    assert_equal s.object_id, s.each_codepoint {|x| res << x }.object_id
+    assert_equal(0x3042, res[0])
+    assert_equal(0x3044, res[1])
+    assert_equal(0x3046, res[2])
+
+    assert_equal 0x3042, s.each_codepoint.next
+  end
+
+  def test_codepoints
+    # Single byte optimization
+    assert_equal [65, 66, 67], S("ABC").codepoints
+
+    s = S("\u3042\u3044\u3046")
+    assert_equal [0x3042, 0x3044, 0x3046], s.codepoints
+
+    if RUBY_VERSION >= "2.1.0"
+      assert_warn(/block not used/) {
+        assert_equal [0x3042, 0x3044, 0x3046], s.codepoints {}
+      }
+    else
+      assert_warning(/deprecated/) {
+        res = []
+        assert_equal s.object_id, s.codepoints {|x| res << x }.object_id
+        assert_equal(0x3042, res[0])
+        assert_equal(0x3044, res[1])
+        assert_equal(0x3046, res[2])
+      }
+    end
+  end
+
+  def test_each_char
+    s = S("ABC")
+
+    res = []
+    assert_equal s.object_id, s.each_char {|x| res << x }.object_id
+    assert_equal("A", res[0])
+    assert_equal("B", res[1])
+    assert_equal("C", res[2])
+
+    assert_equal "A", S("ABC").each_char.next
+  end
+
+  def test_chars
+    s = S("ABC")
+    assert_equal ["A", "B", "C"], s.chars
+
+    if RUBY_VERSION >= "2.1.0"
+      assert_warn(/block not used/) {
+        assert_equal ["A", "B", "C"], s.chars {}
+      }
+    else
+      assert_warning(/deprecated/) {
+        res = []
+        assert_equal s.object_id, s.chars {|x| res << x }.object_id
+        assert_equal("A", res[0])
+        assert_equal("B", res[1])
+        assert_equal("C", res[2])
+      }
+    end
   end
 
   def test_each_line
     save = $/
     $/ = "\n"
     res=[]
-    S("hello\nworld").lines.each {|x| res << x}
+    S("hello\nworld").each_line {|x| res << x}
     assert_equal(S("hello\n"), res[0])
     assert_equal(S("world"),   res[1])
 
     res=[]
-    S("hello\n\n\nworld").lines(S('')).each {|x| res << x}
+    S("hello\n\n\nworld").each_line(S('')) {|x| res << x}
     assert_equal(S("hello\n\n\n"), res[0])
     assert_equal(S("world"),       res[1])
 
     $/ = "!"
 
     res=[]
-    S("hello!world").lines.each {|x| res << x}
+    S("hello!world").each_line {|x| res << x}
     assert_equal(S("hello!"), res[0])
     assert_equal(S("world"),  res[1])
 
@@ -671,6 +756,28 @@ class TestString < Test::Unit::TestCase
     s = nil
     "foo\nbar".each_line(nil) {|s2| s = s2 }
     assert_equal("foo\nbar", s)
+
+    assert_equal "hello\n", S("hello\nworld").each_line.next
+    assert_equal "hello\nworld", S("hello\nworld").each_line(nil).next
+  end
+
+  def test_lines
+    s = S("hello\nworld")
+    assert_equal ["hello\n", "world"], s.lines
+    assert_equal ["hello\nworld"], s.lines(nil)
+
+    if RUBY_VERSION >= "2.1.0"
+      assert_warn(/block not used/) {
+        assert_equal ["hello\n", "world"], s.lines {}
+      }
+    else
+      assert_warning(/deprecated/) {
+        res = []
+        assert_equal s.object_id, s.lines {|x| res << x }.object_id
+        assert_equal(S("hello\n"), res[0])
+        assert_equal(S("world"),  res[1])
+      }
+    end
   end
 
   def test_empty?

@@ -6098,45 +6098,8 @@ rb_str_split(VALUE str, const char *sep0)
 }
 
 
-/*
- *  call-seq:
- *     str.each_line(separator=$/) {|substr| block }   -> str
- *     str.each_line(separator=$/)                     -> an_enumerator
- *
- *     str.lines(separator=$/) {|substr| block }       -> str
- *     str.lines(separator=$/)                         -> an_enumerator
- *
- *  Splits <i>str</i> using the supplied parameter as the record separator
- *  (<code>$/</code> by default), passing each substring in turn to the supplied
- *  block. If a zero-length record separator is supplied, the string is split
- *  into paragraphs delimited by multiple successive newlines.
- *
- *  If no block is given, an enumerator is returned instead.
- *
- *     print "Example one\n"
- *     "hello\nworld".each_line {|s| p s}
- *     print "Example two\n"
- *     "hello\nworld".each_line('l') {|s| p s}
- *     print "Example three\n"
- *     "hello\n\n\nworld".each_line('') {|s| p s}
- *
- *  <em>produces:</em>
- *
- *     Example one
- *     "hello\n"
- *     "world"
- *     Example two
- *     "hel"
- *     "l"
- *     "o\nworl"
- *     "d"
- *     Example three
- *     "hello\n\n\n"
- *     "world"
- */
-
 static VALUE
-rb_str_each_line(int argc, VALUE *argv, VALUE str)
+rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 {
     rb_encoding *enc;
     VALUE rs;
@@ -6146,6 +6109,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     VALUE line;
     int n;
     VALUE orig = str;
+    VALUE ary;
 
     if (argc == 0) {
 	rs = rb_rs;
@@ -6153,10 +6117,34 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     else {
 	rb_scan_args(argc, argv, "01", &rs);
     }
-    RETURN_ENUMERATOR(str, argc, argv);
+
+    if (rb_block_given_p()) {
+	if (wantarray) {
+#if 0 /* next major */
+	    rb_warn("given block not used");
+	    ary = rb_ary_new();
+#else
+	    rb_warning("passing a block to String#lines is deprecated");
+	    wantarray = 0;
+#endif
+	}
+    }
+    else {
+	if (wantarray)
+	    ary = rb_ary_new();
+	else
+	    RETURN_ENUMERATOR(str, argc, argv);
+    }
+
     if (NIL_P(rs)) {
-	rb_yield(str);
-	return orig;
+	if (wantarray) {
+	    rb_ary_push(ary, str);
+	    return ary;
+	}
+	else {
+	    rb_yield(str);
+	    return orig;
+	}
     }
     str = rb_str_new4(str);
     ptr = p = s = RSTRING_PTR(str);
@@ -6179,7 +6167,10 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	    line = rb_str_new5(str, s, p - s);
 	    OBJ_INFECT(line, str);
 	    rb_enc_cr_str_copy_for_substr(line, str);
-	    rb_yield(line);
+	    if (wantarray)
+		rb_ary_push(ary, line);
+	    else
+		rb_yield(line);
 	    str_mod_check(str, ptr, len);
 	    s = p;
 	}
@@ -6215,7 +6206,10 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	    line = rb_str_new5(str, s, p - s + (rslen ? rslen : n));
 	    OBJ_INFECT(line, str);
 	    rb_enc_cr_str_copy_for_substr(line, str);
-	    rb_yield(line);
+	    if (wantarray)
+		rb_ary_push(ary, line);
+	    else
+		rb_yield(line);
 	    str_mod_check(str, ptr, len);
 	    s = p + (rslen ? rslen : n);
 	}
@@ -6227,11 +6221,76 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	line = rb_str_new5(str, s, pend - s);
 	OBJ_INFECT(line, str);
 	rb_enc_cr_str_copy_for_substr(line, str);
-	rb_yield(line);
+	if (wantarray)
+	    rb_ary_push(ary, line);
+	else
+	    rb_yield(line);
 	RB_GC_GUARD(str);
     }
 
-    return orig;
+    if (wantarray)
+	return ary;
+    else
+	return orig;
+}
+
+/*
+ *  call-seq:
+ *     str.each_line(separator=$/) {|substr| block }   -> str
+ *     str.each_line(separator=$/)                     -> an_enumerator
+ *
+ *  Splits <i>str</i> using the supplied parameter as the record
+ *  separator (<code>$/</code> by default), passing each substring in
+ *  turn to the supplied block.  If a zero-length record separator is
+ *  supplied, the string is split into paragraphs delimited by
+ *  multiple successive newlines.
+ *
+ *  If no block is given, an enumerator is returned instead.
+ *
+ *     print "Example one\n"
+ *     "hello\nworld".each_line {|s| p s}
+ *     print "Example two\n"
+ *     "hello\nworld".each_line('l') {|s| p s}
+ *     print "Example three\n"
+ *     "hello\n\n\nworld".each_line('') {|s| p s}
+ *
+ *  <em>produces:</em>
+ *
+ *     Example one
+ *     "hello\n"
+ *     "world"
+ *     Example two
+ *     "hel"
+ *     "l"
+ *     "o\nworl"
+ *     "d"
+ *     Example three
+ *     "hello\n\n\n"
+ *     "world"
+ */
+
+static VALUE
+rb_str_each_line(int argc, VALUE *argv, VALUE str)
+{
+    return rb_str_enumerate_lines(argc, argv, str, 0);
+}
+
+/*
+ *  call-seq:
+ *     str.lines(separator=$/)  -> an_array
+ *
+ *  Returns an array of lines in <i>str</i> split using the supplied
+ *  record separator (<code>$/</code> by default).  This is a
+ *  shorthand for <code>str.each_line(separator).to_a</code>.
+ *
+ *  If a block is given, which is a deprecated form, works the same as
+ *  <code>each_line</code>.
+ */
+
+static VALUE
+rb_str_lines(int argc, VALUE *argv, VALUE str)
+{
+    return rb_str_enumerate_lines(argc, argv, str, 1);
 }
 
 static VALUE
@@ -6240,16 +6299,49 @@ rb_str_each_byte_size(VALUE str, VALUE args)
     return LONG2FIX(RSTRING_LEN(str));
 }
 
+static VALUE
+rb_str_enumerate_bytes(VALUE str, int wantarray)
+{
+    long i;
+    VALUE ary;
+
+    if (rb_block_given_p()) {
+	if (wantarray) {
+#if 0 /* next major */
+	    rb_warn("given block not used");
+	    ary = rb_ary_new();
+#else
+	    rb_warning("passing a block to String#bytes is deprecated");
+	    wantarray = 0;
+#endif
+	}
+    }
+    else {
+	if (wantarray)
+	    ary = rb_ary_new2(RSTRING_LEN(str));
+	else
+	    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_byte_size);
+    }
+
+    for (i=0; i<RSTRING_LEN(str); i++) {
+	if (wantarray)
+	    rb_ary_push(ary, INT2FIX(RSTRING_PTR(str)[i] & 0xff));
+	else
+	    rb_yield(INT2FIX(RSTRING_PTR(str)[i] & 0xff));
+    }
+    if (wantarray)
+	return ary;
+    else
+	return str;
+}
+
 /*
  *  call-seq:
- *     str.bytes {|fixnum| block }        -> str
- *     str.bytes                          -> an_enumerator
- *
  *     str.each_byte {|fixnum| block }    -> str
  *     str.each_byte                      -> an_enumerator
  *
- *  Passes each byte in <i>str</i> to the given block, or returns
- *  an enumerator if no block is given.
+ *  Passes each byte in <i>str</i> to the given block, or returns an
+ *  enumerator if no block is given.
  *
  *     "hello".each_byte {|c| print c, ' ' }
  *
@@ -6261,13 +6353,24 @@ rb_str_each_byte_size(VALUE str, VALUE args)
 static VALUE
 rb_str_each_byte(VALUE str)
 {
-    long i;
+    return rb_str_enumerate_bytes(str, 0);
+}
 
-    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_byte_size);
-    for (i=0; i<RSTRING_LEN(str); i++) {
-	rb_yield(INT2FIX(RSTRING_PTR(str)[i] & 0xff));
-    }
-    return str;
+/*
+ *  call-seq:
+ *     str.bytes    -> an_array
+ *
+ *  Returns an array of bytes in <i>str</i>.  This is a shorthand for
+ *  <code>str.each_byte.to_a</code>.
+ *
+ *  If a block is given, which is a deprecated form, works the same as
+ *  <code>each_byte</code>.
+ */
+
+static VALUE
+rb_str_bytes(VALUE str)
+{
+    return rb_str_enumerate_bytes(str, 1);
 }
 
 static VALUE
@@ -6285,11 +6388,65 @@ rb_str_each_char_size(VALUE str)
     return LONG2FIX(len);
 }
 
+static VALUE
+rb_str_enumerate_chars(VALUE str, int wantarray)
+{
+    VALUE orig = str;
+    long i, len, n;
+    const char *ptr;
+    rb_encoding *enc;
+    VALUE ary;
+
+    if (rb_block_given_p()) {
+	if (wantarray) {
+#if 0 /* next major */
+	    rb_warn("given block not used");
+	    ary = rb_ary_new();
+#else
+	    rb_warning("passing a block to String#chars is deprecated");
+	    wantarray = 0;
+#endif
+	}
+    }
+    else {
+	if (wantarray)
+	    ary = rb_ary_new();
+	else
+	    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
+    }
+
+    str = rb_str_new4(str);
+    ptr = RSTRING_PTR(str);
+    len = RSTRING_LEN(str);
+    enc = rb_enc_get(str);
+    switch (ENC_CODERANGE(str)) {
+      case ENC_CODERANGE_VALID:
+      case ENC_CODERANGE_7BIT:
+	for (i = 0; i < len; i += n) {
+	    n = rb_enc_fast_mbclen(ptr + i, ptr + len, enc);
+	    if (wantarray)
+		rb_ary_push(ary, rb_str_subseq(str, i, n));
+	    else
+		rb_yield(rb_str_subseq(str, i, n));
+	}
+	break;
+      default:
+	for (i = 0; i < len; i += n) {
+	    n = rb_enc_mbclen(ptr + i, ptr + len, enc);
+	    if (wantarray)
+		rb_ary_push(ary, rb_str_subseq(str, i, n));
+	    else
+		rb_yield(rb_str_subseq(str, i, n));
+	}
+    }
+    if (wantarray)
+	return ary;
+    else
+	return orig;
+}
+
 /*
  *  call-seq:
- *     str.chars {|cstr| block }        -> str
- *     str.chars                        -> an_enumerator
- *
  *     str.each_char {|cstr| block }    -> str
  *     str.each_char                    -> an_enumerator
  *
@@ -6306,38 +6463,79 @@ rb_str_each_char_size(VALUE str)
 static VALUE
 rb_str_each_char(VALUE str)
 {
-    VALUE orig = str;
-    long i, len, n;
-    const char *ptr;
-    rb_encoding *enc;
-
-    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
-    str = rb_str_new4(str);
-    ptr = RSTRING_PTR(str);
-    len = RSTRING_LEN(str);
-    enc = rb_enc_get(str);
-    switch (ENC_CODERANGE(str)) {
-      case ENC_CODERANGE_VALID:
-      case ENC_CODERANGE_7BIT:
-	for (i = 0; i < len; i += n) {
-	    n = rb_enc_fast_mbclen(ptr + i, ptr + len, enc);
-	    rb_yield(rb_str_subseq(str, i, n));
-	}
-	break;
-      default:
-	for (i = 0; i < len; i += n) {
-	    n = rb_enc_mbclen(ptr + i, ptr + len, enc);
-	    rb_yield(rb_str_subseq(str, i, n));
-	}
-    }
-    return orig;
+    return rb_str_enumerate_chars(str, 0);
 }
 
 /*
  *  call-seq:
- *     str.codepoints {|integer| block }        -> str
- *     str.codepoints                           -> an_enumerator
+ *     str.chars    -> an_array
  *
+ *  Returns an array of characters in <i>str</i>.  This is a shorthand
+ *  for <code>str.each_char.to_a</code>.
+ *
+ *  If a block is given, which is a deprecated form, works the same as
+ *  <code>each_char</code>.
+ */
+
+static VALUE
+rb_str_chars(VALUE str)
+{
+    return rb_str_enumerate_chars(str, 1);
+}
+
+
+static VALUE
+rb_str_enumerate_codepoints(VALUE str, int wantarray)
+{
+    VALUE orig = str;
+    int n;
+    unsigned int c;
+    const char *ptr, *end;
+    rb_encoding *enc;
+    VALUE ary;
+
+    if (single_byte_optimizable(str))
+	return rb_str_enumerate_bytes(str, wantarray);
+
+    if (rb_block_given_p()) {
+	if (wantarray) {
+#if 0 /* next major */
+	    rb_warn("given block not used");
+	    ary = rb_ary_new();
+#else
+	    rb_warning("passing a block to String#codepoints is deprecated");
+	    wantarray = 0;
+#endif
+	}
+    }
+    else {
+	if (wantarray)
+	    ary = rb_ary_new();
+	else
+	    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
+    }
+
+    str = rb_str_new4(str);
+    ptr = RSTRING_PTR(str);
+    end = RSTRING_END(str);
+    enc = STR_ENC_GET(str);
+    while (ptr < end) {
+	c = rb_enc_codepoint_len(ptr, end, &n, enc);
+	if (wantarray)
+	    rb_ary_push(ary, UINT2NUM(c));
+	else
+	    rb_yield(UINT2NUM(c));
+	ptr += n;
+    }
+    RB_GC_GUARD(str);
+    if (wantarray)
+	return ary;
+    else
+	return orig;
+}
+
+/*
+ *  call-seq:
  *     str.each_codepoint {|integer| block }    -> str
  *     str.each_codepoint                       -> an_enumerator
  *
@@ -6357,26 +6555,27 @@ rb_str_each_char(VALUE str)
 static VALUE
 rb_str_each_codepoint(VALUE str)
 {
-    VALUE orig = str;
-    int n;
-    unsigned int c;
-    const char *ptr, *end;
-    rb_encoding *enc;
-
-    if (single_byte_optimizable(str)) return rb_str_each_byte(str);
-    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
-    str = rb_str_new4(str);
-    ptr = RSTRING_PTR(str);
-    end = RSTRING_END(str);
-    enc = STR_ENC_GET(str);
-    while (ptr < end) {
-	c = rb_enc_codepoint_len(ptr, end, &n, enc);
-	rb_yield(UINT2NUM(c));
-	ptr += n;
-    }
-    RB_GC_GUARD(str);
-    return orig;
+    return rb_str_enumerate_codepoints(str, 0);
 }
+
+/*
+ *  call-seq:
+ *     str.codepoints   -> an_array
+ *
+ *  Returns an array of the <code>Integer</code> ordinals of the
+ *  characters in <i>str</i>.  This is a shorthand for
+ *  <code>str.each_codepoint.to_a</code>.
+ *
+ *  If a block is given, which is a deprecated form, works the same as
+ *  <code>each_codepoint</code>.
+ */
+
+static VALUE
+rb_str_codepoints(VALUE str)
+{
+    return rb_str_enumerate_codepoints(str, 1);
+}
+
 
 static long
 chopped_length(VALUE str)
@@ -7994,10 +8193,10 @@ Init_String(void)
     rb_define_method(rb_cString, "hex", rb_str_hex, 0);
     rb_define_method(rb_cString, "oct", rb_str_oct, 0);
     rb_define_method(rb_cString, "split", rb_str_split_m, -1);
-    rb_define_method(rb_cString, "lines", rb_str_each_line, -1);
-    rb_define_method(rb_cString, "bytes", rb_str_each_byte, 0);
-    rb_define_method(rb_cString, "chars", rb_str_each_char, 0);
-    rb_define_method(rb_cString, "codepoints", rb_str_each_codepoint, 0);
+    rb_define_method(rb_cString, "lines", rb_str_lines, -1);
+    rb_define_method(rb_cString, "bytes", rb_str_bytes, 0);
+    rb_define_method(rb_cString, "chars", rb_str_chars, 0);
+    rb_define_method(rb_cString, "codepoints", rb_str_codepoints, 0);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat, 1);

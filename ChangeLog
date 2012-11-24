@@ -1,3 +1,21 @@
+Sun Nov 25 03:44:50 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* string.c (rb_str_each_line, rb_str_lines): String#lines now
+	  returns an array instead of an enumerator.  Passing a block is
+	  deprecated but still supported for backwards compatibility.
+	  Based on the patch by yhara. [Feature #6670]
+
+	* string.c (rb_str_each_char, rb_str_chars): Ditto for
+	  String#chars.
+
+	* string.c (rb_str_each_codepoint, rb_str_codepoints): Ditto for
+	  String#codepoints.
+
+	* string.c (rb_str_each_byte, rb_str_bytes): Ditto for
+	  String#bytes.
+
+	* NEWS: Add notes for the above changes.
+
 Sun Nov 25 02:07:37 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_warning)

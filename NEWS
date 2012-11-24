@@ -129,6 +129,11 @@ with all sufficient information, see the ChangeLog file.
   * String
     * added method:
       * added String#b returning a copied string whose encoding is ASCII-8BIT.
+    * change return value:
+      * String#lines now returns an array instead of an enumerator.
+      * String#chars now returns an array instead of an enumerator.
+      * String#codepoints now returns an array instead of an enumerator.
+      * String#bytes now returns an array instead of an enumerator.
 
   * Struct
     * added method:
@@ -301,6 +306,18 @@ with all sufficient information, see the ChangeLog file.
   * Array#values_at
 
     See above.
+
+  * String#lines
+  * String#chars
+  * String#codepoints
+  * String#bytes
+
+    These methods no longer return an Enumerator, although passing a
+    block is still supported for backwards compatibility.
+
+    Code like str.lines.with_index(1) { |line, lineno| ... } no longer
+    works because str.lines returns an array.  Replace lines with
+    each_line in such cases.
 
   * Signal.trap
 
