@@ -2346,7 +2346,7 @@ unicode_iconv(nkf_char wc, int nocombine)
     return 0;
 }
 
-static size_t
+static nkf_char
 unicode_iconv_combine(nkf_char wc, nkf_char wc2)
 {
     nkf_char c1, c2;
@@ -2511,7 +2511,7 @@ nkf_iconv_utf_32(nkf_char c1, nkf_char c2, nkf_char c3, nkf_char c4)
     return (*unicode_iconv)(wc, FALSE);
 }
 
-static size_t
+static nkf_char
 nkf_iconv_utf_32_combine(nkf_char c1, nkf_char c2, nkf_char c3, nkf_char c4, nkf_char c5, nkf_char c6, nkf_char c7, nkf_char c8)
 {
     nkf_char wc, wc2;

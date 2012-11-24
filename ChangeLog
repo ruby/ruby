@@ -1,3 +1,8 @@
+Sat Nov 24 19:44:41 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (unicode_iconv_combine): returning flags are
+	  nkf_char.
+
 Sat Nov 24 19:29:18 2012  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* test/ruby/test_rubyoptions.rb (test_usage, test_usage_long):
