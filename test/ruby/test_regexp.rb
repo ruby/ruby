@@ -888,18 +888,18 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_dup_warn
-    assert_warn(/duplicated/) { Regexp.new('[\u3042\u3043\u3042]') }
-    assert_warn(/duplicated/) { Regexp.new('[\u3042\u3043\u3043]') }
-    assert_warn(/\A\z/) { Regexp.new('[\u3042\u3044\u3043]') }
-    assert_warn(/\A\z/) { Regexp.new('[\u3042\u3045\u3043]') }
-    assert_warn(/\A\z/) { Regexp.new('[\u3042\u3045\u3044]') }
-    assert_warn(/\A\z/) { Regexp.new('[\u3042\u3045\u3043-\u3044]') }
-    assert_warn(/duplicated/) { Regexp.new('[\u3042\u3045\u3042-\u3043]') }
-    assert_warn(/duplicated/) { Regexp.new('[\u3042\u3045\u3044-\u3045]') }
-    assert_warn(/\A\z/) { Regexp.new('[\u3042\u3046\u3044]') }
-    assert_warn(/duplicated/) { Regexp.new('[\u1000-\u2000\u3042-\u3046\u3044]') }
-    assert_warn(/duplicated/) { Regexp.new('[\u3044\u3041-\u3047]') }
-    assert_warn(/duplicated/) { Regexp.new('[\u3042\u3044\u3046\u3041-\u3047]') }
+    assert_warning(/duplicated/) { Regexp.new('[\u3042\u3043\u3042]') }
+    assert_warning(/duplicated/) { Regexp.new('[\u3042\u3043\u3043]') }
+    assert_warning(/\A\z/) { Regexp.new('[\u3042\u3044\u3043]') }
+    assert_warning(/\A\z/) { Regexp.new('[\u3042\u3045\u3043]') }
+    assert_warning(/\A\z/) { Regexp.new('[\u3042\u3045\u3044]') }
+    assert_warning(/\A\z/) { Regexp.new('[\u3042\u3045\u3043-\u3044]') }
+    assert_warning(/duplicated/) { Regexp.new('[\u3042\u3045\u3042-\u3043]') }
+    assert_warning(/duplicated/) { Regexp.new('[\u3042\u3045\u3044-\u3045]') }
+    assert_warning(/\A\z/) { Regexp.new('[\u3042\u3046\u3044]') }
+    assert_warning(/duplicated/) { Regexp.new('[\u1000-\u2000\u3042-\u3046\u3044]') }
+    assert_warning(/duplicated/) { Regexp.new('[\u3044\u3041-\u3047]') }
+    assert_warning(/duplicated/) { Regexp.new('[\u3042\u3044\u3046\u3041-\u3047]') }
   end
 
   def test_property_warn

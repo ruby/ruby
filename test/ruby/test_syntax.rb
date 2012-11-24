@@ -111,13 +111,13 @@ class TestSyntax < Test::Unit::TestCase
 
   def test_warn_grouped_expression
     bug5214 = '[ruby-core:39050]'
-    assert_warn("", bug5214) do
+    assert_warning("", bug5214) do
       assert_valid_syntax("foo \\\n(\n  true)", "test") {$VERBOSE = true}
     end
   end
 
   def test_warn_unreachable
-    assert_warn("test:3: warning: statement not reached\n") do
+    assert_warning("test:3: warning: statement not reached\n") do
       code = "loop do\n" "break\n" "foo\n" "end"
       assert_valid_syntax(code, "test") {$VERBOSE = true}
     end
@@ -150,7 +150,7 @@ class TestSyntax < Test::Unit::TestCase
 
   def test_duplicated_when
     w = 'warning: duplicated when clause is ignored'
-    assert_warn(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
+    assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
       eval %q{
         case 1
         when 1, 1
@@ -159,7 +159,7 @@ class TestSyntax < Test::Unit::TestCase
         end
       }
     }
-    assert_warn(/#{w}/){#/3: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
+    assert_warning(/#{w}/){#/3: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
       a = 1
       eval %q{
         case 1

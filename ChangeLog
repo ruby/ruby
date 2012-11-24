@@ -1,3 +1,11 @@
+Sun Nov 25 02:07:37 2012  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_warning)
+	  (Test::Unit::Assertions#assert_warn), test/ruby/envutil.rb,
+	  test/ruby/test_enumerator.rb, test/ruby/test_io_m17n.rb,
+	  test/ruby/test_regexp.rb, test/ruby/test_syntax.rb:
+	  assert_warn() and assert_warning() are reversed.
+
 Sat Nov 24 21:08:50 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* gc.c (wmap_final_func): rename variables to clarify the meaning.

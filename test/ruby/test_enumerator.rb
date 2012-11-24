@@ -367,8 +367,8 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_inspect_verbose
     bug6214 = '[ruby-dev:45449]'
-    assert_warn("", bug6214) { "".bytes.inspect }
-    assert_warn("", bug6214) { [].lazy.inspect }
+    assert_warning("", bug6214) { "".bytes.inspect }
+    assert_warning("", bug6214) { [].lazy.inspect }
   end
 
   def test_generator

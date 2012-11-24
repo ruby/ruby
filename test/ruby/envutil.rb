@@ -187,15 +187,15 @@ module Test
         assert(status.success?, m)
       end
 
-      def assert_warn(pat, message = nil)
+      def assert_warning(pat, message = nil)
         stderr = EnvUtil.verbose_warning { yield }
         message = ' "' + message + '"' if message
         msg = proc {"warning message #{stderr.inspect} is expected to match #{pat.inspect}#{message}"}
         assert(pat === stderr, msg)
       end
 
-      def assert_warning(*args)
-        assert_warn(*args) {$VERBOSE = false; yield}
+      def assert_warn(*args)
+        assert_warning(*args) {$VERBOSE = false; yield}
       end
 
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 1.5)

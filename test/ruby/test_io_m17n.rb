@@ -989,24 +989,24 @@ EOT
     #bug5568 = '[ruby-core:40727]'
     bug6324 = '[ruby-core:44455]'
     open(__FILE__, "r") do |f|
-      assert_warn('', bug6324) {
+      assert_warning('', bug6324) {
         f.set_encoding("eucjp:euc-jp")
       }
-      assert_warn('', bug6324) {
+      assert_warning('', bug6324) {
         f.set_encoding("eucjp", "euc-jp")
       }
-      assert_warn('', bug6324) {
+      assert_warning('', bug6324) {
         f.set_encoding(Encoding::EUC_JP, "euc-jp")
       }
-      assert_warn('', bug6324) {
+      assert_warning('', bug6324) {
         f.set_encoding("eucjp", Encoding::EUC_JP)
       }
-      assert_warn('', bug6324) {
+      assert_warning('', bug6324) {
         f.set_encoding(Encoding::EUC_JP, Encoding::EUC_JP)
       }
       nonstr = Object.new
       def nonstr.to_str; "eucjp"; end
-      assert_warn('', bug6324) {
+      assert_warning('', bug6324) {
         f.set_encoding(nonstr, nonstr)
       }
     end
