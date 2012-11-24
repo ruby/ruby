@@ -3749,40 +3749,37 @@ wmap_allocate(VALUE klass)
 static int
 wmap_final_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
-    VALUE wmap, ary;
+    VALUE obj, ary;
     if (!existing) return ST_STOP;
-    wmap = (VALUE)arg, ary = (VALUE)*value;
-    rb_ary_delete(ary, wmap);
+    obj = (VALUE)*key, ary = (VALUE)*value;
+    rb_ary_delete(ary, obj);
     if (!RARRAY_LEN(ary)) return ST_DELETE;
     return ST_CONTINUE;
 }
 
 static VALUE
-wmap_finalize(VALUE self, VALUE objid)
+wmap_finalize(VALUE self, VALUE obj)
 {
-    st_data_t orig, wmap, data;
-    VALUE obj, rids;
+    st_data_t data;
+    VALUE rids;
     long i;
     struct weakmap *w;
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    /* Get reference from object id. */
-    obj = objid ^ FIXNUM_FLAG; /* unset FIXNUM_FLAG */
+    obj = NUM2PTR(obj);
 
-    /* obj is original referenced object and/or weak reference. */
-    orig = (st_data_t)obj;
-    if (st_delete(w->obj2wmap, &orig, &data)) {
+    data = (st_data_t)obj;
+    if (st_delete(w->obj2wmap, &data, &data)) {
 	rids = (VALUE)data;
 	for (i = 0; i < RARRAY_LEN(rids); ++i) {
-	    wmap = (st_data_t)RARRAY_PTR(rids)[i];
-	    st_delete(w->wmap2obj, &wmap, NULL);
+	    data = (st_data_t)RARRAY_PTR(rids)[i];
+	    st_delete(w->wmap2obj, &data, NULL);
 	}
     }
 
-    wmap = (st_data_t)obj;
-    if (st_delete(w->wmap2obj, &wmap, &orig)) {
-	wmap = (st_data_t)obj;
-	st_update(w->obj2wmap, orig, wmap_final_func, wmap);
+    data = (st_data_t)obj;
+    if (st_delete(w->wmap2obj, &data, &data)) {
+	st_update(w->obj2wmap, (st_data_t)obj, wmap_final_func, 0);
     }
     return self;
 }
@@ -3804,7 +3801,7 @@ wmap_aset(VALUE self, VALUE wmap, VALUE orig)
 	rids = rb_ary_tmp_new(1);
 	st_insert(w->obj2wmap, (st_data_t)orig, (st_data_t)rids);
     }
-    rb_ary_push(rids, wmap);
+    rb_ary_push(rids, orig);
     st_insert(w->wmap2obj, (st_data_t)wmap, (st_data_t)orig);
     return nonspecial_obj_id(orig);
 }
