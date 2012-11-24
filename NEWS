@@ -109,6 +109,10 @@ with all sufficient information, see the ChangeLog file.
     * added method:
       * added nil.to_h which returns {}
 
+  * Process
+    * added method:
+      * added getsid for getting sessin id (unix only).
+
   * Range
     * added method:
       * added Range#size for lazy size evaluation.

@@ -1558,4 +1558,19 @@ class TestProcess < Test::Unit::TestCase
     }
   end if File.executable?("/bin/sh")
 
+  def test_setsid
+    return unless Process.respond_to?(:setsid)
+    return unless Process.respond_to?(:getsid)
+
+    IO.popen(["./ruby-trunk", "-e", <<EOS]) do|io|
+	Marshal.dump(Process.getsid, STDOUT)
+	newsid = Process.setsid
+	Marshal.dump(newsid, STDOUT)
+	STDOUT.flush
+EOS
+
+      assert_equal(Marshal.load(io), Process.getsid)
+      assert_equal(Marshal.load(io), Process.getsid(io.pid))
+    end
+  end
 end

@@ -1,3 +1,13 @@
+Sat Nov 24 11:47:14 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* process.c (proc_getsid): adds new method for getting session id.
+	  Contributed from fumiyas (Fumiyasu SATOH). Thank you!
+	  [Feature #6757] [ruby-dev:45977]
+	* configure.in: adds getsid check.
+	* test/ruby/test_process.rb (TestProcess#test_setsid): new test
+	  for the above.
+	* NEWS: news for the above.
+
 Sat Nov 24 10:59:14 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_create_core): don't use th->thread_id before

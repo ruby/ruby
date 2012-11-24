@@ -4219,6 +4219,40 @@ proc_setpgid(VALUE obj, VALUE pid, VALUE pgrp)
 #endif
 
 
+#ifdef HAVE_GETSID
+/*
+ *  call-seq:
+ *     Process.getsid()      -> integer
+ *     Process.getsid(pid)   -> integer
+ *
+ *  Returns the session ID for for the given process id. If not give,
+ *  return current process sid. Not available on all platforms.
+ *
+ *     Process.getsid()                #=> 27422
+ *     Process.getsid(0)               #=> 27422
+ *     Process.getsid(Process.pid())   #=> 27422
+ */
+static VALUE
+proc_getsid(int argc, VALUE *argv)
+{
+    rb_pid_t sid;
+    VALUE pid;
+
+    rb_secure(2);
+    rb_scan_args(argc, argv, "01", &pid);
+
+    if (NIL_P(pid))
+	pid = INT2NUM(0);
+
+    sid = getsid(NUM2PIDT(pid));
+    if (sid < 0) rb_sys_fail(0);
+    return PIDT2NUM(sid);
+}
+#else
+#define proc_getsid rb_f_notimplement
+#endif
+
+
 #if defined(HAVE_SETSID) || (defined(HAVE_SETPGRP) && defined(TIOCNOTTY))
 #if !defined(HAVE_SETSID)
 static rb_pid_t ruby_setsid(void);
@@ -6609,6 +6643,7 @@ Init_process(void)
     rb_define_module_function(rb_mProcess, "getpgid", proc_getpgid, 1);
     rb_define_module_function(rb_mProcess, "setpgid", proc_setpgid, 2);
 
+    rb_define_module_function(rb_mProcess, "getsid", proc_getsid, -1);
     rb_define_module_function(rb_mProcess, "setsid", proc_setsid, 0);
 
     rb_define_module_function(rb_mProcess, "getpriority", proc_getpriority, 2);
