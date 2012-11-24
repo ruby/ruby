@@ -570,13 +570,12 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     native_mutex_initialize(&th->interrupt_lock);
 
     /* kick thread */
-    st_insert(th->vm->living_threads, thval, (st_data_t) th->thread_id);
     err = native_thread_create(th);
     if (err) {
-	st_delete_wrap(th->vm->living_threads, th->self);
 	th->status = THREAD_KILLED;
 	rb_raise(rb_eThreadError, "can't create Thread (%d)", err);
     }
+    st_insert(th->vm->living_threads, thval, (st_data_t) th->thread_id);
     return thval;
 }
 

@@ -1,3 +1,8 @@
+Sat Nov 24 10:59:14 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (thread_create_core): don't use th->thread_id before
+	  initialized.
+
 Sat Nov 24 00:00:53 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options, process_options, ruby_process_options): take
