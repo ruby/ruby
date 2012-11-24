@@ -1,3 +1,10 @@
+Sat Nov 24 12:28:04 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* array.c (rb_ary_aref): fix Segmentation fault at TestArray#test_aref
+	  on x64 mingw. Variable argument of rb_scan_args() should be a pointer
+	  (VALUE *), but 0 of variable argument seems not equal to null pointer
+	  on x64 mingw.
+
 Sat Nov 24 12:12:41 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* gc.c (wmap_final_func): rename variables to clarify the meaning.

@@ -1174,7 +1174,7 @@ rb_ary_aref(int argc, VALUE *argv, VALUE ary)
 	return rb_ary_subseq(ary, beg, len);
     }
     if (argc != 1) {
-	rb_scan_args(argc, argv, "11", 0, 0);
+	rb_scan_args(argc, argv, "11", NULL, NULL);
     }
     arg = argv[0];
     /* special case - speeding up */
