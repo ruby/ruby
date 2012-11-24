@@ -1,3 +1,13 @@
+Sat Nov 24 13:10:14 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (rb_tracepoint_attr_raised_exception): should not check
+	  value before event checking.
+
+	* vm_trace.c (rb_tracepoint_attr_return_value): ditto.
+
+	* test/ruby/test_settracefunc.rb: add tests for TracePoint#return_value
+	  and TracePoint#raised_exception.
+
 Sat Nov 24 12:47:27 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* test/ruby/test_process.rb (TestProcess#test_setsid): "./ruby-trunk"

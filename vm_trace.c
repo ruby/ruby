@@ -750,14 +750,14 @@ rb_tracepoint_attr_return_value(VALUE tpval)
     rb_tp_t *tp = tpptr(tpval);
     tp_attr_check_active(tp);
 
-    if (tp->trace_arg->data == Qundef) {
-	rb_bug("tp_attr_return_value_m: unreachable");
-    }
     if (tp->trace_arg->event & (RUBY_EVENT_RETURN | RUBY_EVENT_C_RETURN)) {
 	/* ok */
     }
     else {
 	rb_raise(rb_eRuntimeError, "not supported by this event");
+    }
+    if (tp->trace_arg->data == Qundef) {
+	rb_bug("tp_attr_return_value_m: unreachable");
     }
     return tp->trace_arg->data;
 }
@@ -768,14 +768,14 @@ rb_tracepoint_attr_raised_exception(VALUE tpval)
     rb_tp_t *tp = tpptr(tpval);
     tp_attr_check_active(tp);
 
-    if (tp->trace_arg->data == Qundef) {
-	rb_bug("tp_attr_raised_exception_m: unreachable");
-    }
     if (tp->trace_arg->event & (RUBY_EVENT_RAISE)) {
 	/* ok */
     }
     else {
 	rb_raise(rb_eRuntimeError, "not supported by this event");
+    }
+    if (tp->trace_arg->data == Qundef) {
+	rb_bug("tp_attr_raised_exception_m: unreachable");
     }
     return tp->trace_arg->data;
 }

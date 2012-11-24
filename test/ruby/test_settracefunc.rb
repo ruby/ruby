@@ -639,4 +639,47 @@ class TestSetTraceFunc < Test::Unit::TestCase
     trace.disable
     assert_equal(false, trace.enabled?)
   end
+
+  def method_test_tracepoint_return_value obj
+    obj
+  end
+
+  def test_tracepoint_return_value
+    trace = TracePoint.new(:call, :return){|tp|
+      case tp.event
+      when :call
+        assert_raise(RuntimeError) {tp.return_value}
+      when :return
+        assert_equal("xyzzy", tp.return_value)
+      end
+    }
+    trace.enable{
+      method_test_tracepoint_return_value "xyzzy"
+    }
+  end
+
+  class XYZZYException < Exception; end
+  def method_test_tracepoint_raised_exception err
+    raise err
+  end
+
+  def test_tracepoint_raised_exception
+    trace = TracePoint.new(:call, :return){|tp|
+      case tp.event
+      when :call, :return
+        assert_raise(RuntimeError) { tp.raised_exception }
+      when :raise
+        assert_equal(XYZZYError, tp.raised_exception)
+      end
+    }
+    trace.enable{
+      begin
+        method_test_tracepoint_raised_exception XYZZYException
+      rescue XYZZYException
+        # ok
+      else
+        raise
+      end
+    }
+  end
 end
