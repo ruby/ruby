@@ -1,3 +1,17 @@
+Sun Nov 25 22:34:00 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* array.c (ary_resize_smaller): new function to resize array.
+
+	* array.c (rb_ary_delete): refactoring to extract a function.
+
+	* array.c (rb_ary_delete_same): refactoring.
+	  It renames function, reduces duplicated code and removes unused
+	  code.
+
+	* gc.c (wmap_final_func): follow the above change.
+
+	* internal.h (rb_ary_delete_same): ditto.
+
 Sun Nov 25 22:27:33 2012  Benoit Daloze  <eregontp@gmail.com>
 
 	* array.c: fixes for the updated documentation in r35858:

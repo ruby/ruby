@@ -2720,6 +2720,19 @@ rb_ary_keep_if(VALUE ary)
     return ary;
 }
 
+static void
+ary_resize_smaller(VALUE ary, long len)
+{
+    rb_ary_modify(ary);
+    if (RARRAY_LEN(ary) > len) {
+	ARY_SET_LEN(ary, len);
+	if (len * 2 < ARY_CAPA(ary) &&
+	    ARY_CAPA(ary) > ARY_DEFAULT_SIZE) {
+	    ary_resize_capa(ary, len * 2);
+	}
+    }
+}
+
 /*
  *  call-seq:
  *     ary.delete(obj)            -> obj or nil
@@ -2765,29 +2778,20 @@ rb_ary_delete(VALUE ary, VALUE item)
 	return Qnil;
     }
 
-    rb_ary_modify(ary);
-    if (RARRAY_LEN(ary) > i2) {
-	ARY_SET_LEN(ary, i2);
-	if (i2 * 2 < ARY_CAPA(ary) &&
-	    ARY_CAPA(ary) > ARY_DEFAULT_SIZE) {
-	    ary_resize_capa(ary, i2*2);
-	}
-    }
+    ary_resize_smaller(ary, i2);
 
     return v;
 }
 
-VALUE
-rb_ary_delete_same_obj(VALUE ary, VALUE item)
+void
+rb_ary_delete_same(VALUE ary, VALUE item)
 {
-    VALUE v = item;
     long i1, i2;
 
     for (i1 = i2 = 0; i1 < RARRAY_LEN(ary); i1++) {
 	VALUE e = RARRAY_PTR(ary)[i1];
 
 	if (e == item) {
-	    v = e;
 	    continue;
 	}
 	if (i1 != i2) {
@@ -2796,19 +2800,10 @@ rb_ary_delete_same_obj(VALUE ary, VALUE item)
 	i2++;
     }
     if (RARRAY_LEN(ary) == i2) {
-	return Qnil;
+	return;
     }
 
-    rb_ary_modify(ary);
-    if (RARRAY_LEN(ary) > i2) {
-	ARY_SET_LEN(ary, i2);
-	if (i2 * 2 < ARY_CAPA(ary) &&
-	    ARY_CAPA(ary) > ARY_DEFAULT_SIZE) {
-	    ary_resize_capa(ary, i2*2);
-	}
-    }
-
-    return v;
+    ary_resize_smaller(ary, i2);
 }
 
 VALUE

@@ -3752,7 +3752,7 @@ wmap_final_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
     VALUE wmap, ary;
     if (!existing) return ST_STOP;
     wmap = (VALUE)arg, ary = (VALUE)*value;
-    rb_ary_delete_same_obj(ary, wmap);
+    rb_ary_delete_same(ary, wmap);
     if (!RARRAY_LEN(ary)) return ST_DELETE;
     return ST_CONTINUE;
 }
