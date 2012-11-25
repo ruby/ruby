@@ -1566,11 +1566,13 @@ class TestProcess < Test::Unit::TestCase
 	Marshal.dump(Process.getsid, STDOUT)
 	newsid = Process.setsid
 	Marshal.dump(newsid, STDOUT)
+	Marshal.dump(Process.getsid($$), STDOUT)
 	STDOUT.flush
 EOS
-
       assert_equal(Marshal.load(io), Process.getsid)
-      assert_equal(Marshal.load(io), Process.getsid(io.pid))
+      newsid = Marshal.load(io)
+      getsid = Marshal.load(io)
+      assert_equal(newsid, getsid)
     end
   end
 end

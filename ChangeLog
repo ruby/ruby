@@ -1,3 +1,9 @@
+Mon Nov 26 01:54:26 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/ruby/test_process.rb (test_setsid): call Process.getsid for
+	  child process in child process. because parent process call
+	  Process.getsid with io.pid, Errno::ESRCH could be raised.
+
 Sun Nov 25 22:34:00 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* array.c (ary_resize_smaller): new function to resize array.
