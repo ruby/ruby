@@ -1,3 +1,8 @@
+Sun Nov 25 22:27:33 2012  Benoit Daloze  <eregontp@gmail.com>
+
+	* array.c: fixes for the updated documentation in r35858:
+	  Typos and #take/#drop accept to take/drop 0 elements.
+
 Sun Nov 25 19:43:29 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* NEWS: add a news about iconv.

@@ -1326,9 +1326,9 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *  Returns the _index_ of the first object in +ary+ such that the object is
  *  <code>==</code> to +obj+.
  *
- *  If a block is given instead of an argument, returns the _index_ of first
- *  the object for which the block returns +true+.  Returns +nil+ if no match
- *  is found.
+ *  If a block is given instead of an argument, returns the _index_ of the
+ *  first object for which the block returns +true+.  Returns +nil+ if no
+ *  match is found.
  *
  *  See also Array#rindex.
  *
@@ -1375,8 +1375,9 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns the _index_ of the last object in +self+ <code>==</code> to +obj+.
  *
- *  If a block is given instead of an argument, returns _index_ of first object
- *  for which block returns +true+, starting from the last object.
+ *  If a block is given instead of an argument, returns the _index_ of the
+ *  first object for which the block returns +true+, starting from the last
+ *  object.
  *
  *  Returns +nil+ if no match is found.
  *
@@ -2156,8 +2157,8 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *     ary.rotate(count=1)    -> new_ary
  *
- *  Returns new array by rotating +self+ so that the element at +count+ is the
- *  first element of the new array.
+ *  Returns a new array by rotating +self+ so that the element at +count+ is
+ *  the first element of the new array.
  *
  *  If +count+ is negative then it rotates in the opposite direction, starting
  *  from the end of +self+ where +-1+ is the last element.
@@ -4279,7 +4280,7 @@ static VALUE sym_random;
  *
  *  Shuffles elements in +self+ in place.
  *
- *  The optional +rng+ argument will be used as random number generator.
+ *  The optional +rng+ argument will be used as the random number generator.
  */
 
 static VALUE
@@ -5086,7 +5087,7 @@ done:
  *
  *  Returns first +n+ elements from the array.
  *
- *  If a non-positive number is given, raises an ArgumentError.
+ *  If a negative number is given, raises an ArgumentError.
  *
  *  See also Array#drop
  *
@@ -5141,7 +5142,7 @@ rb_ary_take_while(VALUE ary)
  *  Drops first +n+ elements from +ary+ and returns the rest of the elements in
  *  an array.
  *
- *  If a non-positive number is given, raises an ArgumentError.
+ *  If a negative number is given, raises an ArgumentError.
  *
  *  See also Array#take
  *
@@ -5218,10 +5219,10 @@ rb_ary_drop_while(VALUE ary)
  *     Array.new(3)       #=> [nil, nil, nil]
  *     Array.new(3, true) #=> [0, 0, 0]
  *
- *  Note that the second argument populates the array with references the same
- *  object.  Therefore, it is only recommended in cases when you need to
- *  instantiate arrays with natively immutable objects such Symbols, numbers,
- *  true or false.
+ *  Note that the second argument populates the array with references to the
+ *  same object.  Therefore, it is only recommended in cases when you need to
+ *  instantiate arrays with natively immutable objects such as Symbols,
+ *  numbers, true or false.
  *
  *  To create an array with separate objects a block can be passed instead.
  *  This method is safe to use with mutable objects such as hashes, strings or
