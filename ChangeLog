@@ -1,3 +1,7 @@
+Sun Nov 25 19:43:29 2012  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* NEWS: add a news about iconv.
+
 Sun Nov 25 03:49:23 2012  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb, test/test_set.rb: Move tests embedded in lib/set.rb

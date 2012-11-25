@@ -168,6 +168,9 @@ with all sufficient information, see the ChangeLog file.
   * When HTML5 tagmaker called, overwrite CGI#header,
     CGI#header function is to create a <header> element.
 
+* iconv
+  * Iconv has been removed. Use String#encode instead.
+
 * io/wait
   * new features:
     * added IO#wait_writable method.
