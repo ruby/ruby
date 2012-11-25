@@ -302,8 +302,8 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal("#<Enumerator::Lazy: 1..10:cycle(2)>",
                  Enumerator::Lazy.new(1..10, :cycle, 2).inspect)
     assert_equal("#<Enumerator::Lazy: 1..10>", (1..10).lazy.inspect)
-    assert_equal('#<Enumerator::Lazy: #<Enumerator: "foo":chars>>',
-                 "foo".chars.lazy.inspect)
+    assert_equal('#<Enumerator::Lazy: #<Enumerator: "foo":each_char>>',
+                 "foo".each_char.lazy.inspect)
     assert_equal("#<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:map>",
                  (1..10).lazy.map {}.inspect)
     assert_equal("#<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:take(0)>",
