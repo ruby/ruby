@@ -6109,7 +6109,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
     VALUE line;
     int n;
     VALUE orig = str;
-    VALUE ary;
+    VALUE UNINITIALIZED_VAR(ary);
 
     if (argc == 0) {
 	rs = rb_rs;
@@ -6396,7 +6396,7 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
     long i, len, n;
     const char *ptr;
     rb_encoding *enc;
-    VALUE ary;
+    VALUE UNINITIALIZED_VAR(ary);
 
     if (rb_block_given_p()) {
 	if (wantarray) {
@@ -6494,7 +6494,7 @@ rb_str_enumerate_codepoints(VALUE str, int wantarray)
     unsigned int c;
     const char *ptr, *end;
     rb_encoding *enc;
-    VALUE ary;
+    VALUE UNINITIALIZED_VAR(ary);
 
     if (single_byte_optimizable(str))
 	return rb_str_enumerate_bytes(str, wantarray);

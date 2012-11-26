@@ -1,3 +1,9 @@
+Mon Nov 26 17:10:04 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* string.c (rb_str_enumerate_chars, rb_str_enumerate_codepoints)
+	(rb_str_enumerate_lines): suppress "may be used uninitialized in
+	  this function" warning.
+
 Mon Nov 26 17:00:12 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm_core.h (rb_thread_struct): added 'in_trap' member for marking
