@@ -380,7 +380,9 @@ assert_equal 'ok', %q{
 
 assert_equal 'ok', %q{
   begin
-    10000.times { Thread.new(true) {|x| x == false } }
+    100.times{
+      (1..100).map{ Thread.new(true) {|x| x == false } }.each{|th| th.join}
+    }
   rescue NoMemoryError, StandardError
   end
   :ok

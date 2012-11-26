@@ -1,3 +1,10 @@
+Mon Nov 26 19:10:53 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_thread.rb: try to `join' each 100
+	  threads.
+	  This benchmark seems consuming long time on travis-ci
+	  several times (and make `failure').
+
 Mon Nov 26 18:22:56 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: specify label `built-ruby'.
