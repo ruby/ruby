@@ -1,8 +1,7 @@
-Mon Nov 26 01:54:26 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+Mon Nov 26 10:50:19 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* test/ruby/test_process.rb (test_setsid): call Process.getsid for
-	  child process in child process. because parent process call
-	  Process.getsid with io.pid, Errno::ESRCH could be raised.
+	* test/ruby/test_process.rb (test_setsid): added a few wait for
+	  preventing that Process.getsid(io.pid) makes Errno::ESRCH.
 
 Sun Nov 25 22:34:00 2012  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 

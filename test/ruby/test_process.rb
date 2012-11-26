@@ -1566,13 +1566,15 @@ class TestProcess < Test::Unit::TestCase
 	Marshal.dump(Process.getsid, STDOUT)
 	newsid = Process.setsid
 	Marshal.dump(newsid, STDOUT)
-	Marshal.dump(Process.getsid($$), STDOUT)
 	STDOUT.flush
+	sleep 3
 EOS
+
+      # test Process.getsid() w/o arg
       assert_equal(Marshal.load(io), Process.getsid)
-      newsid = Marshal.load(io)
-      getsid = Marshal.load(io)
-      assert_equal(newsid, getsid)
+      # test Process.setsid return value and Process::getsid(pid)
+      assert_equal(Marshal.load(io), Process.getsid(io.pid))
+      Process.kill(:KILL, io.pid)
     end
   end
 end
