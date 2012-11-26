@@ -60,13 +60,14 @@ class BenchmarkDriver
 
       if /(.+)::(.+)/ =~ e
         # ex) ruby-a::/path/to/ruby-a
-        v = $1.strip
-        e = $2
+        label = $1.strip
+        path = $2
+        version = `#{path} -v`.chomp
       else
-        v =  `#{e} -v`.chomp
-        v.sub!(/ patchlevel \d+/, '')
+        path = e
+        version = label = `#{path} -v`.chomp
       end
-      [e, v]
+      [path, label, version]
     }.compact
 
     @dir = dir
@@ -86,8 +87,8 @@ class BenchmarkDriver
     if @verbose
       @start_time = Time.now
       message @start_time
-      @execs.each_with_index{|(_, v), i|
-        message "target #{i}: #{v}"
+      @execs.each_with_index{|(path, label, version), i|
+        message "target #{i}: " + (label == version ? "#{label}" : "#{label} (#{version})") + " at #{path}"
       }
     end
   end
@@ -255,7 +256,7 @@ end
 
 if __FILE__ == $0
   opt = {
-    :execs => ['ruby'],
+    :execs => [],
     :dir => File.dirname(__FILE__),
     :repeat => 1,
     :output => "bmlog-#{Time.now.strftime('%Y%m%d-%H%M%S')}.#{$$}",
@@ -263,8 +264,10 @@ if __FILE__ == $0
 
   parser = OptionParser.new{|o|
     o.on('-e', '--executables [EXECS]',
-         "Specify benchmark one or more targets. (exec1;exec2;exec3;...)"){|e|
-      opt[:execs] = e.split(/;/)
+      "Specify benchmark one or more targets (e1::path1; e2::path2; e3::path3;...)"){|e|
+       e.split(/;/).each{|path|
+         opt[:execs] << path
+       }
     }
     o.on('-d', '--directory [DIRECTORY]', "Benchmark suites directory"){|d|
       opt[:dir] = d

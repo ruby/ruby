@@ -1,3 +1,9 @@
+Mon Nov 26 18:15:47 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: accept multiple `-e'.
+	  You don't need to use `;' separation character.
+	  [ruby-core:50139] [ruby-trunk - Bug #7380]
+
 Mon Nov 26 17:10:04 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* string.c (rb_str_enumerate_chars, rb_str_enumerate_codepoints)
