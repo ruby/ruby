@@ -1,3 +1,9 @@
+Tue Nov 27 07:47:09 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_terminate_all): add RUBY_VM_CHECK_INTS_BLOCKING().
+	  Otherwise the loop in this function behave as busy loop because
+	  native_sleep() return immediately when RUBY_VM_INTERRUPTED() is true.
+
 Tue Nov 27 04:12:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): git rid of post-1.8 features for cross

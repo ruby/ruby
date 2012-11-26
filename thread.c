@@ -386,6 +386,7 @@ rb_thread_terminate_all(void)
 	PUSH_TAG();
 	if (EXEC_TAG() == 0) {
 	    native_sleep(th, 0);
+	    RUBY_VM_CHECK_INTS_BLOCKING(th);
 	}
 	else {
 	    /* ignore exception */
