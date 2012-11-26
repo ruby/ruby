@@ -1,3 +1,7 @@
+Mon Nov 26 23:55:33 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* NEWS: update for Thread#join incompatible change.
+
 Mon Nov 26 22:44:24 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_thread_terminate_all): use native_sleep() instead

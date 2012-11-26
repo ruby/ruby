@@ -151,6 +151,9 @@ with all sufficient information, see the ChangeLog file.
         variable has been set.
       * added Thread#backtrace_locations which returns similar information of
         Kernel#caller_locations.
+    * incompatible changes:
+      * Thread#join no longer allows to be used from trap handler. Now it raises
+        ThreadError.
 
   * Time
     * change return value:
@@ -343,3 +346,7 @@ with all sufficient information, see the ChangeLog file.
 
   * OpenStruct new methods can conflict with custom attributes named
     "each_pair", "eql?", "hash" or "to_h".
+
+  * Thread#join
+   
+    See above.
