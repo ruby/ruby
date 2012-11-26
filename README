@@ -57,7 +57,7 @@ http://www.ruby-lang.org/
 There is a mailing list to talk about Ruby.
 To subscribe this list, please send the following phrase
 
-	subscribe YourFirstName YourFamilyName
+        subscribe YourFirstName YourFamilyName
 e.g.
         subscribe Joseph Smith
 
@@ -67,6 +67,9 @@ in the mail body (not subject) to the address <mailto:ruby-talk-ctl@ruby-lang.or
 == How to compile and install
 
 This is what you need to do to compile and install Ruby:
+
+0.   If you want to use Microsoft Visual C++ to compile ruby,
+     read win32/README.win32 instead of this document.
 
 1.   If +./configure+ does not exist or is older than configure.in,
      run autoconf to (re)generate configure.
@@ -79,14 +82,16 @@ This is what you need to do to compile and install Ruby:
 
 3.   Edit +defines.h+ if you need. Usually this step will not be needed.
 
-4.   Remove comment mark(<tt>#</tt>) before the module names from +ext/Setup+ (or
-     add module names if not present), if you want to link modules
+4.   Remove comment mark(<tt>#</tt>) before the module names from +ext/Setup+
+     (or add module names if not present), if you want to link modules
      statically.
 
      If you don't want to compile non static extension modules
      (probably on architectures which does not allow dynamic loading),
      remove comment mark from the line "<tt>#option nodynamic</tt>" in
      +ext/Setup+.
+
+     Usually this step will not be needed.
 
 5.   Run +make+.
 

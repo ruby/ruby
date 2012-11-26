@@ -6,7 +6,7 @@
 
 (1) Windows XP or later.
 
-(2) Visual C++ 6.0 or later. (strongly recommended VC++ 10)
+(2) Visual C++ 6.0 or later. (strongly recommended VC++ 10 or later)
 
     Note: if you want to build x64 or ia64 version, use native compiler for
           x64/ia64.
@@ -23,7 +23,7 @@
 (4) If you want to build from SVN source, following commands are required.
      * bison
      * sed
-     * ruby 1.8
+     * ruby 1.8 or later
 
 (5) Enable Command Extension of your command line.  It's the default behavior
     of cmd.exe.  If you want to enable it explicitly, run cmd.exe with /E:ON
