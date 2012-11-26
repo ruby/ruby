@@ -905,6 +905,12 @@ typedef struct rb_trace_arg_struct {
     ID id;
     VALUE klass;
     VALUE data;
+
+    int klass_solved;
+
+    /* calc from cfp */
+    int line;
+    VALUE file;
 } rb_trace_arg_t;
 
 void rb_threadptr_exec_event_hooks(rb_trace_arg_t *trace_arg);
@@ -920,6 +926,8 @@ void rb_threadptr_exec_event_hooks(rb_trace_arg_t *trace_arg);
 	    trace_arg.id = (id_); \
 	    trace_arg.klass = (klass_); \
 	    trace_arg.data = (data_); \
+	    trace_arg.file = Qundef; \
+	    trace_arg.klass_solved = 0; \
 	    rb_threadptr_exec_event_hooks(&trace_arg); \
 	} \
     } \

@@ -642,51 +642,62 @@ rb_control_frame_t *rb_vm_get_ruby_level_next_cfp(rb_thread_t *th, rb_control_fr
 int rb_vm_control_frame_id_and_class(rb_control_frame_t *cfp, ID *idp, VALUE *klassp);
 VALUE rb_binding_new_with_cfp(rb_thread_t *th, rb_control_frame_t *src_cfp);
 
+static void
+fill_file_and_line(rb_trace_arg_t *trace_arg)
+{
+    if (trace_arg->file == Qundef) {
+	rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(trace_arg->th, trace_arg->cfp);
+
+	if (cfp) {
+	    trace_arg->file = cfp->iseq->location.path;
+	    trace_arg->line = rb_vm_get_sourceline(cfp);
+	}
+	else {
+	    trace_arg->file = Qnil;
+	    trace_arg->line = 0;
+	}
+    }
+}
+
 VALUE
 rb_tracepoint_attr_line(VALUE tpval)
 {
     rb_tp_t *tp = tpptr(tpval);
-    rb_control_frame_t *cfp;
     tp_attr_check_active(tp);
-
-    cfp = rb_vm_get_ruby_level_next_cfp(tp->trace_arg->th, tp->trace_arg->cfp);
-    if (cfp) {
-	return INT2FIX(rb_vm_get_sourceline(cfp));
-    }
-    else {
-	return INT2FIX(0);
-    }
+    fill_file_and_line(tp->trace_arg);
+    return INT2FIX(tp->trace_arg->line);
 }
 
 VALUE
 rb_tracepoint_attr_file(VALUE tpval)
 {
     rb_tp_t *tp = tpptr(tpval);
-    rb_control_frame_t *cfp;
     tp_attr_check_active(tp);
-
-    cfp = rb_vm_get_ruby_level_next_cfp(tp->trace_arg->th, tp->trace_arg->cfp);
-    if (cfp) {
-	return cfp->iseq->location.path;
-    }
-    else {
-	return Qnil;
-    }
+    fill_file_and_line(tp->trace_arg);
+    return tp->trace_arg->file;
 }
 
 static void
 fill_id_and_klass(rb_trace_arg_t *trace_arg)
 {
-    if (!trace_arg->klass)
-      rb_vm_control_frame_id_and_class(trace_arg->cfp, &trace_arg->id, &trace_arg->klass);
+    if (!trace_arg->klass_solved) {
+	if (!trace_arg->klass) {
+	    rb_vm_control_frame_id_and_class(trace_arg->cfp, &trace_arg->id, &trace_arg->klass);
+	}
 
-    if (trace_arg->klass) {
-	if (RB_TYPE_P(trace_arg->klass, T_ICLASS)) {
-	    trace_arg->klass = RBASIC(trace_arg->klass)->klass;
+	if (trace_arg->klass) {
+	    if (RB_TYPE_P(trace_arg->klass, T_ICLASS)) {
+		trace_arg->klass = RBASIC(trace_arg->klass)->klass;
+	    }
+	    else if (FL_TEST(trace_arg->klass, FL_SINGLETON)) {
+		trace_arg->klass = rb_iv_get(trace_arg->klass, "__attached__");
+	    }
 	}
-	else if (FL_TEST(trace_arg->klass, FL_SINGLETON)) {
-	    trace_arg->klass = rb_iv_get(trace_arg->klass, "__attached__");
+	else {
+	    trace_arg->klass = Qnil;
 	}
+
+	trace_arg->klass_solved = 1;
     }
 }
 
@@ -696,12 +707,7 @@ rb_tracepoint_attr_id(VALUE tpval)
     rb_tp_t *tp = tpptr(tpval);
     tp_attr_check_active(tp);
     fill_id_and_klass(tp->trace_arg);
-    if (tp->trace_arg->id) {
-	return ID2SYM(tp->trace_arg->id);
-    }
-    else {
-	return Qnil;
-    }
+    return tp->trace_arg->id ? ID2SYM(tp->trace_arg->id) : Qnil;
 }
 
 VALUE
@@ -710,13 +716,7 @@ rb_tracepoint_attr_klass(VALUE tpval)
     rb_tp_t *tp = tpptr(tpval);
     tp_attr_check_active(tp);
     fill_id_and_klass(tp->trace_arg);
-
-    if (tp->trace_arg->klass) {
-	return tp->trace_arg->klass;
-    }
-    else {
-	return Qnil;
-    }
+    return tp->trace_arg->klass;
 }
 
 VALUE
@@ -779,7 +779,6 @@ rb_tracepoint_attr_raised_exception(VALUE tpval)
     }
     return tp->trace_arg->data;
 }
-
 
 static void
 tp_call_trace(VALUE tpval, rb_trace_arg_t *trace_arg)

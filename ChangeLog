@@ -1,3 +1,14 @@
+Tue Nov 27 07:58:03 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: add members to rb_trace_arg_t:
+	  * `klass_solved' represents klass and id is checked.
+	  * `line' represents line calculated from cfp.
+	  * `file' represents line calculated from cfp.
+
+	* vm_trace.c: fix to use above data stractures.
+	  No need to calculate klass and id, line and file
+	  pairs for each trace points.
+
 Tue Nov 27 07:47:09 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_thread_terminate_all): add RUBY_VM_CHECK_INTS_BLOCKING().
