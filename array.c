@@ -2735,12 +2735,12 @@ ary_resize_smaller(VALUE ary, long len)
 
 /*
  *  call-seq:
- *     ary.delete(obj)            -> obj or nil
- *     ary.delete(obj) { block }  -> obj or nil
+ *     ary.delete(obj)            -> item or nil
+ *     ary.delete(obj) { block }  -> item or result of block
  *
  *  Deletes all items from +self+ that are equal to +obj+.
  *
- *  If any items are found, returns +obj+, otherwise +nil+ is returned instead.
+ *  Returns the last deleted item, or +nil+ if no matching item is found.
  *
  *  If the optional code block is given, the result of the block is returned if
  *  the item is not found.  (To remove +nil+ elements and get an informative

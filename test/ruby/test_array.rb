@@ -598,6 +598,14 @@ class TestArray < Test::Unit::TestCase
     a = @cls[*('cab'..'cat').to_a]
     assert_equal(99, a.delete('cup') { 99 } )
     assert_equal(@cls[*('cab'..'cat').to_a], a)
+
+    o = Object.new
+    def o.==(other); true; end
+    o2 = Object.new
+    def o2.==(other); true; end
+    a = @cls[1, o, o2, 2]
+    assert_equal(o2, a.delete(42))
+    assert_equal([1, 2], a)
   end
 
   def test_delete_at
