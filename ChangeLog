@@ -1,3 +1,9 @@
+Mon Nov 26 19:43:42 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (make_compile_option_value): add trace_instruction option.
+	  a patch by davidbalbert (David Albert).
+	  [Bug #6786]
+
 Mon Nov 26 19:10:53 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_thread.rb: try to `join' each 100
