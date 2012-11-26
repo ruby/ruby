@@ -1,5 +1,5 @@
 #! /usr/local/bin/ruby
-# -*- ruby -*-
+# -*- mode: ruby; coding: us-ascii -*-
 
 $extension = nil
 $extstatic = nil
@@ -41,6 +41,12 @@ $top_srcdir = srcdir
 $" << "mkmf.rb"
 load File.expand_path("lib/mkmf.rb", srcdir)
 require 'optparse/shellwords'
+
+if defined?(File::NULL)
+  @null = File::NULL
+elsif !File.chardev?(@null = "/dev/null")
+  @null = "nul"
+end
 
 def sysquote(x)
   @quote ||= /os2/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
@@ -190,7 +196,7 @@ def extmake(target)
             stdout = $stdout.dup
             stderr = $stderr.dup
             unless verbose?
-              $stderr.reopen($stdout.reopen(File::NULL))
+              $stderr.reopen($stdout.reopen(@null))
             end
             begin
               load $0 = conf
@@ -225,7 +231,7 @@ def extmake(target)
 
       mess = "Failed to configure #{target}. It will not be installed.\n"
       if error
-        mess.prepend(error.to_s + "\n")
+        mess = "#{error}\n#{mess}"
       end
 
       Logging::message(mess)

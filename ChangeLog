@@ -1,3 +1,8 @@
+Tue Nov 27 04:12:49 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): git rid of post-1.8 features for cross
+	  compilation.  [ruby-core:50160] [Bug #7439]
+
 Tue Nov 27 00:13:41 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_mutex_trylock, rb_mutex_unlock, mutex_sleep):
