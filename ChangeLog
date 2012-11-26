@@ -1,3 +1,9 @@
+Mon Nov 26 18:22:56 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* common.mk: specify label `built-ruby'.
+
+	* benchmark/driver.rb: quote path.
+
 Mon Nov 26 18:26:28 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (signal_exec): add volatile to make sure setjmp safe.

@@ -88,7 +88,7 @@ class BenchmarkDriver
       @start_time = Time.now
       message @start_time
       @execs.each_with_index{|(path, label, version), i|
-        message "target #{i}: " + (label == version ? "#{label}" : "#{label} (#{version})") + " at #{path}"
+        message "target #{i}: " + (label == version ? "#{label}" : "#{label} (#{version})") + " at \"#{path}\""
       }
     end
   end

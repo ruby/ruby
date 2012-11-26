@@ -940,17 +940,17 @@ OPTS =
 
 benchmark: $(PROGRAM) PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
-	            --executables="$(COMPARE_RUBY); $(RUNRUBY)" \
+	            --executables="$(COMPARE_RUBY); built-ruby::$(RUNRUBY)" \
 	            --pattern='bm_' --directory=$(srcdir)/benchmark $(OPTS)
 
 benchmark-each: $(PROGRAM) PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
-	            --executables="$(COMPARE_RUBY); $(RUNRUBY)" \
+	            --executables="$(COMPARE_RUBY); built-ruby::$(RUNRUBY)" \
 	            --pattern=$(ITEM) --directory=$(srcdir)/benchmark $(OPTS)
 
 tbench: $(PROGRAM) PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
-	            --executables="$(COMPARE_RUBY); $(RUNRUBY)" \
+	            --executables="$(COMPARE_RUBY); built-ruby::$(RUNRUBY)" \
 	            --pattern='bmx_' --directory=$(srcdir)/benchmark $(OPTS)
 
 run.gdb:
