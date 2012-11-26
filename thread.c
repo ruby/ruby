@@ -385,7 +385,7 @@ rb_thread_terminate_all(void)
     while (!rb_thread_alone()) {
 	PUSH_TAG();
 	if (EXEC_TAG() == 0) {
-	    rb_thread_schedule();
+	    native_sleep(th, 0);
 	}
 	else {
 	    /* ignore exception */
@@ -522,6 +522,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	/* delete self other than main thread from living_threads */
 	if (th != main_th) {
 	    st_delete_wrap(th->vm->living_threads, th->self);
+	    if (rb_thread_alone()) {
+		rb_threadptr_interrupt(main_th);
+	    }
 	}
 
 	/* wake up joining threads */

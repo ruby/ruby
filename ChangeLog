@@ -1,3 +1,10 @@
+Mon Nov 26 22:44:24 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_terminate_all): use native_sleep() instead
+	  of rb_thread_schedule(). Otherwise, it consume 100% cpu meaninglessly.
+	  [Bug #5368] [ruby-dev:44546]
+	* thread.c (thread_start_func_2): last sub-thread wakes up main thread.
+
 Mon Nov 26 21:16:04 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm_core.h (RUBY_VM_SET_TIMER_INTERRUPT, RUBY_VM_SET_INTERRUPT)
