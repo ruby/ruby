@@ -1,3 +1,7 @@
+Mon Nov 26 16:36:13 2012  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (argf_each_codepoint): add missing ARGF#codepoints [Bug #7438]
+
 Mon Nov 26 15:50:29 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* bignum.c (bigdivrem): restart calculation when bigdivrem1 was
