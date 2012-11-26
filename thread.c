@@ -567,6 +567,8 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     th->async_errinfo_mask_stack = rb_ary_dup(current_th->async_errinfo_mask_stack);
     RBASIC(th->async_errinfo_mask_stack)->klass = 0;
 
+    th->in_trap = 0;
+
     native_mutex_initialize(&th->interrupt_lock);
 
     /* kick thread */
@@ -790,8 +792,13 @@ static VALUE
 thread_join_m(int argc, VALUE *argv, VALUE self)
 {
     rb_thread_t *target_th;
+    rb_thread_t *cur_th = GET_THREAD();
     double delay = DELAY_INFTY;
     VALUE limit;
+
+    if (cur_th->in_trap) {
+	rb_raise(rb_eThreadError, "can't be called from trap context");
+    }
 
     GetThreadPtr(self, target_th);
 
@@ -4773,6 +4780,8 @@ Init_Thread(void)
 	    th->async_errinfo_queue = rb_ary_tmp_new(0);
 	    th->async_errinfo_queue_checked = 0;
 	    th->async_errinfo_mask_stack = rb_ary_tmp_new(0);
+
+	    th->in_trap = 0;
 	}
     }
 

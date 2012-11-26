@@ -863,4 +863,19 @@ class TestThreadGroup < Test::Unit::TestCase
     end
     assert_in_delta(t1 - t0, 1, 1, bug5757)
   end
+
+  def test_thread_join_in_trap
+    assert_raise(ThreadError) {
+      t = Thread.new{ sleep 0.2; Process.kill(:INT, $$) }
+
+      Signal.trap :INT do
+        t.join
+      end
+
+      t.join
+    }
+  end
+
+
+
 end

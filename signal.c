@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include "ruby_atomic.h"
+#include "eval_intern.h"
 
 #if defined(__native_client__) && defined(NACL_NEWLIB)
 # include "nacl/signal.h"
@@ -623,7 +624,22 @@ static void
 signal_exec(VALUE cmd, int safe, int sig)
 {
     VALUE signum = INT2NUM(sig);
-    rb_eval_cmd(cmd, rb_ary_new3(1, signum), safe);
+    rb_thread_t *cur_th = GET_THREAD();
+    int old_in_trap = cur_th->in_trap;
+    int state;
+
+    cur_th->in_trap = 1;
+    TH_PUSH_TAG(cur_th);
+    if ((state = EXEC_TAG()) == 0) {
+	rb_eval_cmd(cmd, rb_ary_new3(1, signum), safe);
+    }
+    TH_POP_TAG();
+    cur_th->in_trap = old_in_trap;
+
+    if (state) {
+	/* XXX: should be replaced with rb_threadptr_async_errinfo_enque() */
+	JUMP_TAG(state);
+    }
 }
 
 void

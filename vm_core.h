@@ -584,6 +584,9 @@ typedef struct rb_thread_struct {
     void *altstack;
 #endif
     unsigned long running_time_us;
+
+    /* 1 if running trap handler */
+    int in_trap;
 } rb_thread_t;
 
 /* iseq.c */

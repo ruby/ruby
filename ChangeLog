@@ -1,3 +1,15 @@
+Mon Nov 26 17:00:12 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm_core.h (rb_thread_struct): added 'in_trap' member for marking
+	  running trap handler.
+	* signal.c (signal_exec): turn on in_trap when running trap.
+	* thread.c (Init_Thread, thread_create_core): initialize in_trap
+	  when creating new threads.
+	* thread.c (thread_join_m): raise ThreadError when running trap
+	  handler.Bug [#6416][ruby-core:44956]
+	* test/ruby/test_thread.rb (test_thread_join_in_trap): new test
+	  for the above.
+
 Mon Nov 26 16:36:13 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (argf_each_codepoint): add missing ARGF#codepoints [Bug #7438]
