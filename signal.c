@@ -627,7 +627,7 @@ signal_exec(VALUE cmd, int safe, int sig)
     volatile unsigned long old_interrupt_mask = cur_th->interrupt_mask;
     int state;
 
-    cur_th->interrupt_mask |= 0x08;
+    cur_th->interrupt_mask |= TRAP_INTERRUPT_MASK;
     TH_PUSH_TAG(cur_th);
     if ((state = EXEC_TAG()) == 0) {
 	VALUE signum = INT2NUM(sig);

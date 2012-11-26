@@ -855,11 +855,18 @@ GET_THREAD(void)
 #error "unsupported thread model"
 #endif
 
-#define RUBY_VM_SET_TIMER_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, 0x01)
-#define RUBY_VM_SET_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, 0x02)
-#define RUBY_VM_SET_FINALIZER_INTERRUPT(th)	ATOMIC_OR((th)->interrupt_flag, 0x04)
-#define RUBY_VM_SET_TRAP_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, 0x08)
-#define RUBY_VM_INTERRUPTED(th) ((th)->interrupt_flag & 0x0A & ~(th)->interrupt_mask)
+enum {
+    TIMER_INTERRUPT_MASK	 = 0x01,
+    ASYNC_ERRINFO_INTERRUPT_MASK = 0x02,
+    FINALIZER_INTERRUPT_MASK     = 0x04,
+    TRAP_INTERRUPT_MASK		 = 0x08
+};
+
+#define RUBY_VM_SET_TIMER_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, TIMER_INTERRUPT_MASK)
+#define RUBY_VM_SET_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, ASYNC_ERRINFO_INTERRUPT_MASK)
+#define RUBY_VM_SET_FINALIZER_INTERRUPT(th)	ATOMIC_OR((th)->interrupt_flag, FINALIZER_INTERRUPT_MASK)
+#define RUBY_VM_SET_TRAP_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, TRAP_INTERRUPT_MASK)
+#define RUBY_VM_INTERRUPTED(th) ((th)->interrupt_flag & ~(th)->interrupt_mask & (ASYNC_ERRINFO_INTERRUPT_MASK|TRAP_INTERRUPT_MASK))
 #define RUBY_VM_INTERRUPTED_ANY(th) ((th)->interrupt_flag & ~(th)->interrupt_mask)
 
 int rb_signal_buff_size(void);

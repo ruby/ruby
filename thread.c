@@ -810,7 +810,8 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
     double delay = DELAY_INFTY;
     VALUE limit;
 
-    if (cur_th->interrupt_mask & 0x08) {
+    /* When running trap handler */
+    if (cur_th->interrupt_mask & TRAP_INTERRUPT_MASK) {
 	rb_raise(rb_eThreadError, "can't be called from trap context");
     }
 
@@ -1747,10 +1748,10 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	if (!interrupt)
 	    return;
 
-	timer_interrupt = interrupt & 0x01;
-	async_errinfo_interrupt = interrupt & 0x02;
-	finalizer_interrupt = interrupt & 0x04;
-	trap_interrupt = interrupt & 0x08;
+	timer_interrupt = interrupt & TIMER_INTERRUPT_MASK;
+	async_errinfo_interrupt = interrupt & ASYNC_ERRINFO_INTERRUPT_MASK;
+	finalizer_interrupt = interrupt & FINALIZER_INTERRUPT_MASK;
+	trap_interrupt = interrupt & TRAP_INTERRUPT_MASK;
 
 	th->status = THREAD_RUNNABLE;
 
