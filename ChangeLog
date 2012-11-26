@@ -1,3 +1,26 @@
+Mon Nov 26 19:45:18 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ruby_atomic.h (ATOMIC_CAS): new macro for compare-and-exchange.
+
+	* vm_core.h (struct rb_thread_struct): add interrupt_mask member.
+	* thread.c (thread_create_core, Init_Thread): initialize
+	  th->thread_mask.
+
+	* vm_core.h (RUBY_VM_INTERRUPTED_ANY): new macro for avoiding
+	  bare th->interrupt_flag.
+	* vm_core.h (RUBY_VM_INTERRUPTED, RUBY_VM_INTERRUPTED): check
+	  th->interrupt_mask.
+	* thread.c (set_unblock_function, rb_thread_schedule): replace
+	  th->interrupt_flag with RUBY_VM_INTERRUPTED_ANY()
+
+	* signal.c (signal_exec): set up thread->interrupt_mask for
+	  preventing recursive trap handler.
+	* vm_core.h (RUBY_VM_CHECK_INTS, RUBY_VM_CHECK_INTS_BLOCKING): ditto.
+
+	* thread.c (rb_threadptr_execute_interrupts):
+	  don't process interrupt if it is masked.
+	  [Bug #6009] [ruby-core:42524]
+
 Mon Nov 26 19:43:42 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (make_compile_option_value): add trace_instruction option.

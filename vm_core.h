@@ -521,6 +521,7 @@ typedef struct rb_thread_struct {
     VALUE async_errinfo_mask_stack;
 
     rb_atomic_t interrupt_flag;
+    unsigned long interrupt_mask;
     rb_thread_lock_t interrupt_lock;
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
@@ -861,7 +862,8 @@ GET_THREAD(void)
 #define RUBY_VM_SET_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, 0x02)
 #define RUBY_VM_SET_FINALIZER_INTERRUPT(th)	ATOMIC_OR((th)->interrupt_flag, 0x04)
 #define RUBY_VM_SET_TRAP_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, 0x08)
-#define RUBY_VM_INTERRUPTED(th) ((th)->interrupt_flag & 0x0A)
+#define RUBY_VM_INTERRUPTED(th) ((th)->interrupt_flag & 0x0A & ~(th)->interrupt_mask)
+#define RUBY_VM_INTERRUPTED_ANY(th) ((th)->interrupt_flag & ~(th)->interrupt_mask)
 
 int rb_signal_buff_size(void);
 void rb_signal_exec(rb_thread_t *th, int sig);
@@ -879,13 +881,13 @@ void rb_thread_lock_unlock(rb_thread_lock_t *);
 void rb_thread_lock_destroy(rb_thread_lock_t *);
 
 #define RUBY_VM_CHECK_INTS_BLOCKING(th) do { \
-    if (UNLIKELY((th)->interrupt_flag)) { \
+    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(th))) { \
 	rb_threadptr_execute_interrupts(th, 1); \
     } \
 } while (0)
 
 #define RUBY_VM_CHECK_INTS(th) do { \
-    if (UNLIKELY((th)->interrupt_flag)) { \
+    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(th))) {	\
 	rb_threadptr_execute_interrupts(th, 0); \
     } \
 } while (0)

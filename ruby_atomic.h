@@ -13,6 +13,7 @@ typedef unsigned int rb_atomic_t; /* Anything OK */
 # define ATOMIC_DEC(var) __sync_fetch_and_sub(&(var), 1)
 # define ATOMIC_OR(var, val) __sync_or_and_fetch(&(var), (val))
 # define ATOMIC_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
+# define ATOMIC_CAS(var, oldval, newval) __sync_val_compare_and_swap(&(var), (oldval), (newval))
 
 # define ATOMIC_SIZE_ADD(var, val) __sync_fetch_and_add(&(var), (val))
 # define ATOMIC_SIZE_SUB(var, val) __sync_fetch_and_sub(&(var), (val))
@@ -48,7 +49,7 @@ rb_w32_atomic_or(volatile rb_atomic_t *var, rb_atomic_t val)
 # define ATOMIC_OR(var, val) _InterlockedOr(&(var), (val))
 #endif
 # define ATOMIC_EXCHANGE(var, val) InterlockedExchange(&(var), (val))
-
+# define ATOMIC_CAS(var, oldval, newval) InterlockedCompareExchange(&(var), (newval), (oldval))
 # ifdef _M_AMD64
 #  define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd64(&(var), (val))
 #  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd64(&(var), -(val))

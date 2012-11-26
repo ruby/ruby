@@ -625,9 +625,11 @@ signal_exec(VALUE cmd, int safe, int sig)
 {
     rb_thread_t *cur_th = GET_THREAD();
     volatile int old_in_trap = cur_th->in_trap;
+    volatile unsigned long old_interrupt_mask = cur_th->interrupt_mask;
     int state;
 
     cur_th->in_trap = 1;
+    cur_th->interrupt_mask |= 0x08;
     TH_PUSH_TAG(cur_th);
     if ((state = EXEC_TAG()) == 0) {
 	VALUE signum = INT2NUM(sig);
@@ -635,6 +637,7 @@ signal_exec(VALUE cmd, int safe, int sig)
     }
     TH_POP_TAG();
     cur_th = GET_THREAD();
+    cur_th->interrupt_mask = old_interrupt_mask;
     cur_th->in_trap = old_in_trap;
 
     if (state) {

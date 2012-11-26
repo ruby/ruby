@@ -267,7 +267,7 @@ set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func, void *arg,
   check_ints:
     RUBY_VM_CHECK_INTS(th); /* check signal or so */
     native_mutex_lock(&th->interrupt_lock);
-    if (th->interrupt_flag) {
+    if (RUBY_VM_INTERRUPTED_ANY(th)) {
 	native_mutex_unlock(&th->interrupt_lock);
 	goto check_ints;
     }
@@ -582,6 +582,7 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     RBASIC(th->async_errinfo_mask_stack)->klass = 0;
 
     th->in_trap = 0;
+    th->interrupt_mask = 0;
 
     native_mutex_initialize(&th->interrupt_lock);
 
@@ -1054,10 +1055,11 @@ rb_thread_schedule_limits(unsigned long limits_us)
 void
 rb_thread_schedule(void)
 {
+    rb_thread_t *cur_th = GET_THREAD();
     rb_thread_schedule_limits(0);
 
-    if (UNLIKELY(GET_THREAD()->interrupt_flag)) {
-	rb_threadptr_execute_interrupts(GET_THREAD(), 0);
+    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(cur_th))) {
+	rb_threadptr_execute_interrupts(cur_th, 0);
     }
 }
 
@@ -1725,17 +1727,31 @@ rb_threadptr_to_kill(rb_thread_t *th)
 void
 rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 {
-    rb_atomic_t interrupt;
-
     if (th->raised_flag) return;
 
-    while ((interrupt = ATOMIC_EXCHANGE(th->interrupt_flag, 0)) != 0) {
+    while (1) {
 	enum rb_thread_status status = th->status;
-	int timer_interrupt = interrupt & 0x01;
-	int async_errinfo_interrupt = interrupt & 0x02;
-	int finalizer_interrupt = interrupt & 0x04;
-	int trap_interrupt = interrupt & 0x08;
+	rb_atomic_t interrupt;
+	rb_atomic_t old;
 	int sig;
+	int timer_interrupt;
+	int async_errinfo_interrupt;
+	int finalizer_interrupt;
+	int trap_interrupt;
+
+	do {
+	    interrupt = th->interrupt_flag;
+	    old = ATOMIC_CAS(th->interrupt_flag, interrupt, interrupt & th->interrupt_mask);
+	} while (old != interrupt);
+
+	interrupt &= ~th->interrupt_mask;
+	if (!interrupt)
+	    return;
+
+	timer_interrupt = interrupt & 0x01;
+	async_errinfo_interrupt = interrupt & 0x02;
+	finalizer_interrupt = interrupt & 0x04;
+	trap_interrupt = interrupt & 0x08;
 
 	th->status = THREAD_RUNNABLE;
 
@@ -4798,6 +4814,7 @@ Init_Thread(void)
 	    th->async_errinfo_mask_stack = rb_ary_tmp_new(0);
 
 	    th->in_trap = 0;
+	    th->interrupt_mask = 0;
 	}
     }
 
