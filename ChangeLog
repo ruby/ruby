@@ -1,3 +1,7 @@
+Mon Nov 26 18:26:28 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (signal_exec): add volatile to make sure setjmp safe.
+
 Mon Nov 26 18:19:47 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* signal.c (signal_exec): suppress "warning: variable 'signum'

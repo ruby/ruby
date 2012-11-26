@@ -624,7 +624,7 @@ static void
 signal_exec(VALUE cmd, int safe, int sig)
 {
     rb_thread_t *cur_th = GET_THREAD();
-    int old_in_trap = cur_th->in_trap;
+    volatile int old_in_trap = cur_th->in_trap;
     int state;
 
     cur_th->in_trap = 1;
@@ -634,6 +634,7 @@ signal_exec(VALUE cmd, int safe, int sig)
 	rb_eval_cmd(cmd, rb_ary_new3(1, signum), safe);
     }
     TH_POP_TAG();
+    cur_th = GET_THREAD();
     cur_th->in_trap = old_in_trap;
 
     if (state) {
