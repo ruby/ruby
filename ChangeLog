@@ -1,3 +1,10 @@
+Mon Nov 26 15:33:02 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* bignum.c (big_div_struct): added volatile to 'stop' member.
+	  Otherwise, "if (bds->stop)" check in bigdivrem1 don't read
+	  memory and ignore interrupt.
+	* bignum.c (bigdivrem, rb_big_stop): ditto.
+
 Mon Nov 26 12:11:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (DLNOBJ): missing in r37821.

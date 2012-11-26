@@ -2657,7 +2657,7 @@ rb_big_mul(VALUE x, VALUE y)
 struct big_div_struct {
     long nx, ny;
     BDIGIT *yds, *zds;
-    VALUE stop;
+    volatile VALUE stop;
 };
 
 static void *
@@ -2708,8 +2708,8 @@ bigdivrem1(void *ptr)
 static void
 rb_big_stop(void *ptr)
 {
-    VALUE *stop = (VALUE*)ptr;
-    *stop = Qtrue;
+    struct big_div_struct *bds = ptr;
+    bds->stop = Qtrue;
 }
 
 static VALUE
@@ -2794,7 +2794,7 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
     bds.yds = yds;
     bds.stop = Qfalse;
     if (nx > 10000 || ny > 10000) {
-	rb_thread_call_without_gvl(bigdivrem1, &bds, rb_big_stop, &bds.stop);
+	rb_thread_call_without_gvl(bigdivrem1, &bds, rb_big_stop, &bds);
     }
     else {
 	bigdivrem1(&bds);
