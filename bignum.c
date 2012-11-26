@@ -2713,15 +2713,21 @@ rb_big_stop(void *ptr)
 }
 
 static VALUE
-bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
+bigdivrem(VALUE x, VALUE y_, volatile VALUE *divp, volatile VALUE *modp)
 {
+    VALUE y;
     struct big_div_struct bds;
-    long nx = RBIGNUM_LEN(x), ny = RBIGNUM_LEN(y);
+    long nx, ny;
     long i, j;
     VALUE z, yy, zz;
     BDIGIT *xds, *yds, *zds, *tds;
     BDIGIT_DBL t2;
     BDIGIT dd, q;
+
+  retry:
+    y = y_;
+    nx = RBIGNUM_LEN(x);
+    ny = RBIGNUM_LEN(y);
 
     if (BIGZEROP(y)) rb_num_zerodiv();
     xds = BDIGITS(x);
@@ -2795,6 +2801,11 @@ bigdivrem(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
     bds.stop = Qfalse;
     if (nx > 10000 || ny > 10000) {
 	rb_thread_call_without_gvl(bigdivrem1, &bds, rb_big_stop, &bds);
+
+	if (bds.stop == Qtrue) {
+	    /* execute trap handler, but exception was not raised. */
+	    goto retry;
+	}
     }
     else {
 	bigdivrem1(&bds);

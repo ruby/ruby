@@ -1,3 +1,9 @@
+Mon Nov 26 15:50:29 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* bignum.c (bigdivrem): restart calculation when bigdivrem1 was
+	  interrupted by signal. Otherwise, ruby script may see a garbage
+	  value.
+
 Mon Nov 26 15:33:02 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* bignum.c (big_div_struct): added volatile to 'stop' member.
