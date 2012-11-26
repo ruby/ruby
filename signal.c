@@ -623,7 +623,6 @@ sigsegv(int sig SIGINFO_ARG)
 static void
 signal_exec(VALUE cmd, int safe, int sig)
 {
-    VALUE signum = INT2NUM(sig);
     rb_thread_t *cur_th = GET_THREAD();
     int old_in_trap = cur_th->in_trap;
     int state;
@@ -631,6 +630,7 @@ signal_exec(VALUE cmd, int safe, int sig)
     cur_th->in_trap = 1;
     TH_PUSH_TAG(cur_th);
     if ((state = EXEC_TAG()) == 0) {
+	VALUE signum = INT2NUM(sig);
 	rb_eval_cmd(cmd, rb_ary_new3(1, signum), safe);
     }
     TH_POP_TAG();

@@ -1,3 +1,8 @@
+Mon Nov 26 18:19:47 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* signal.c (signal_exec): suppress "warning: variable 'signum'
+	  might be clobbered by 'longjmp' or 'vfork'" warning.
+
 Mon Nov 26 18:15:47 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb: accept multiple `-e'.
