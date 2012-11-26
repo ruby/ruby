@@ -1,3 +1,15 @@
+Tue Nov 27 08:16:03 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c: rename TracePoint#file and TracePoint#line
+	  to TracePoint#path and TracePoint#lineno respectively.
+	  They are consistent to RubyVM::Backtrace::Location.
+
+	* include/ruby/debug.h: ditto.
+
+	* vm_core.h: ditto.
+
+	* test/ruby/test_settracefunc.rb: ditto.
+
 Tue Nov 27 08:04:26 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (rb_thread_terminate_all): broadcast eTerminateSignal

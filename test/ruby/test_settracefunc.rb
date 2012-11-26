@@ -418,7 +418,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     eval <<-EOF.gsub(/^.*?: /, ""), nil, 'xyzzy'
     1: trace = TracePoint.trace(*trace_events){|tp|
-    2:   events << [tp.event, tp.line, tp.file, tp.klass, tp.id, tp.self, tp.binding.eval("local_var"), get_data.(tp)]
+    2:   events << [tp.event, tp.lineno, tp.path, tp.klass, tp.id, tp.self, tp.binding.eval("local_var"), get_data.(tp)]
     3: }
     4: 1.times{|;local_var| local_var = :inner
     5:   tap{}
@@ -584,9 +584,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
     tap{}
     trace.disable
 
-    assert_raise(RuntimeError){tp_store.line}
+    assert_raise(RuntimeError){tp_store.lineno}
     assert_raise(RuntimeError){tp_store.event}
-    assert_raise(RuntimeError){tp_store.file}
+    assert_raise(RuntimeError){tp_store.path}
     assert_raise(RuntimeError){tp_store.id}
     assert_raise(RuntimeError){tp_store.klass}
     assert_raise(RuntimeError){tp_store.binding}

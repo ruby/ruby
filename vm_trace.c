@@ -643,38 +643,38 @@ int rb_vm_control_frame_id_and_class(rb_control_frame_t *cfp, ID *idp, VALUE *kl
 VALUE rb_binding_new_with_cfp(rb_thread_t *th, rb_control_frame_t *src_cfp);
 
 static void
-fill_file_and_line(rb_trace_arg_t *trace_arg)
+fill_path_and_lineno(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->file == Qundef) {
+    if (trace_arg->path == Qundef) {
 	rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(trace_arg->th, trace_arg->cfp);
 
 	if (cfp) {
-	    trace_arg->file = cfp->iseq->location.path;
-	    trace_arg->line = rb_vm_get_sourceline(cfp);
+	    trace_arg->path = cfp->iseq->location.path;
+	    trace_arg->lineno = rb_vm_get_sourceline(cfp);
 	}
 	else {
-	    trace_arg->file = Qnil;
-	    trace_arg->line = 0;
+	    trace_arg->path = Qnil;
+	    trace_arg->lineno = 0;
 	}
     }
 }
 
 VALUE
-rb_tracepoint_attr_line(VALUE tpval)
+rb_tracepoint_attr_lineno(VALUE tpval)
 {
     rb_tp_t *tp = tpptr(tpval);
     tp_attr_check_active(tp);
-    fill_file_and_line(tp->trace_arg);
-    return INT2FIX(tp->trace_arg->line);
+    fill_path_and_lineno(tp->trace_arg);
+    return INT2FIX(tp->trace_arg->lineno);
 }
 
 VALUE
-rb_tracepoint_attr_file(VALUE tpval)
+rb_tracepoint_attr_path(VALUE tpval)
 {
     rb_tp_t *tp = tpptr(tpval);
     tp_attr_check_active(tp);
-    fill_file_and_line(tp->trace_arg);
-    return tp->trace_arg->file;
+    fill_path_and_lineno(tp->trace_arg);
+    return tp->trace_arg->path;
 }
 
 static void
@@ -957,8 +957,8 @@ Init_vm_trace(void)
     rb_define_method(rb_cTracePoint, "enabled?", rb_tracepoint_enabled_p, 0);
 
     rb_define_method(rb_cTracePoint, "event", rb_tracepoint_attr_event, 0);
-    rb_define_method(rb_cTracePoint, "line", rb_tracepoint_attr_line, 0);
-    rb_define_method(rb_cTracePoint, "file", rb_tracepoint_attr_file, 0);
+    rb_define_method(rb_cTracePoint, "lineno", rb_tracepoint_attr_lineno, 0);
+    rb_define_method(rb_cTracePoint, "path", rb_tracepoint_attr_path, 0);
     rb_define_method(rb_cTracePoint, "id", rb_tracepoint_attr_id, 0);
     rb_define_method(rb_cTracePoint, "klass", rb_tracepoint_attr_klass, 0);
     rb_define_method(rb_cTracePoint, "binding", rb_tracepoint_attr_binding, 0);
