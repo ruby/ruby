@@ -1,3 +1,7 @@
+Mon Nov 26 12:11:09 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (DLNOBJ): missing in r37821.
+
 Mon Nov 26 10:50:19 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_process.rb (test_setsid): added a few wait for
