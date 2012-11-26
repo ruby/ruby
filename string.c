@@ -6126,6 +6126,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 #else
 	    rb_warning("passing a block to String#lines is deprecated");
 	    wantarray = 0;
+	    ary = 0;
 #endif
 	}
     }
@@ -6405,6 +6406,7 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
 #else
 	    rb_warning("passing a block to String#chars is deprecated");
 	    wantarray = 0;
+	    ary = 0;
 #endif
 	}
     }
@@ -6505,6 +6507,7 @@ rb_str_enumerate_codepoints(VALUE str, int wantarray)
 #else
 	    rb_warning("passing a block to String#codepoints is deprecated");
 	    wantarray = 0;
+	    ary = 0;
 #endif
 	}
     }
