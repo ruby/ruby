@@ -105,6 +105,12 @@ with all sufficient information, see the ChangeLog file.
       * Module#const_get accepts a qualified constant string, e.g.
         Object.const_get("Foo::Bar::Baz")
 
+  * Mutex
+    * incompatible changes:
+      * Mutex#lock, Mutex#unlock, Mutex#try_lock, Mutex#synchronize
+        and Mutex#sleep no longer allows to be used from trap handler.
+	Now it raises ThreadError.
+
   * NilClass
     * added method:
       * added nil.to_h which returns {}
@@ -349,4 +355,8 @@ with all sufficient information, see the ChangeLog file.
 
   * Thread#join
    
+    See above.
+
+  * Mutex#lock, Mutex#unlock, Mutex#try_lock, Mutex#synchronize and Mutex#sleep
+
     See above.

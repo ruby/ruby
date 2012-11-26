@@ -1,3 +1,9 @@
+Tue Nov 27 00:13:41 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_mutex_trylock, rb_mutex_unlock, mutex_sleep):
+	  raises ThreadError if called from trap handler as Thread#join.
+	* NEWS: news fot the above.
+
 Mon Nov 26 23:55:33 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* NEWS: update for Thread#join incompatible change.

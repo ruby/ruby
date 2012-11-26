@@ -4051,6 +4051,11 @@ rb_mutex_trylock(VALUE self)
     VALUE locked = Qfalse;
     GetMutexPtr(self, mutex);
 
+    /* When running trap handler */
+    if (GET_THREAD()->interrupt_mask & TRAP_INTERRUPT_MASK) {
+	rb_raise(rb_eThreadError, "can't be called from trap context");
+    }
+
     native_mutex_lock(&mutex->lock);
     if (mutex->th == 0) {
 	mutex->th = GET_THREAD();
@@ -4239,6 +4244,11 @@ rb_mutex_unlock(VALUE self)
     rb_mutex_t *mutex;
     GetMutexPtr(self, mutex);
 
+    /* When running trap handler */
+    if (GET_THREAD()->interrupt_mask & TRAP_INTERRUPT_MASK) {
+	rb_raise(rb_eThreadError, "can't be called from trap context");
+    }
+
     err = rb_mutex_unlock_th(mutex, GET_THREAD());
     if (err) rb_raise(rb_eThreadError, "%s", err);
 
@@ -4306,6 +4316,11 @@ static VALUE
 mutex_sleep(int argc, VALUE *argv, VALUE self)
 {
     VALUE timeout;
+
+    /* When running trap handler */
+    if (GET_THREAD()->interrupt_mask & TRAP_INTERRUPT_MASK) {
+	rb_raise(rb_eThreadError, "can't be called from trap context");
+    }
 
     rb_scan_args(argc, argv, "01", &timeout);
     return rb_mutex_sleep(self, timeout);
