@@ -1,3 +1,8 @@
+Tue Nov 27 08:04:26 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (rb_thread_terminate_all): broadcast eTerminateSignal
+	  again when Ctrl-C was pressed. [Feature #1952] [ruby-dev:39107]
+
 Tue Nov 27 07:58:03 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: add members to rb_trace_arg_t:

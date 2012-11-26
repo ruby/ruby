@@ -378,20 +378,27 @@ rb_thread_terminate_all(void)
     /* unlock all locking mutexes */
     rb_threadptr_unlock_all_locking_mutexes(th);
 
-    thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
-    st_foreach(vm->living_threads, terminate_i, (st_data_t)th);
+
     vm->inhibit_thread_creation = 1;
 
+  retry:
+    thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
+    st_foreach(vm->living_threads, terminate_i, (st_data_t)th);
+
     while (!rb_thread_alone()) {
+	int state;
+
 	PUSH_TAG();
-	if (EXEC_TAG() == 0) {
+	if ((state = EXEC_TAG()) == 0) {
 	    native_sleep(th, 0);
 	    RUBY_VM_CHECK_INTS_BLOCKING(th);
 	}
-	else {
-	    /* ignore exception */
-	}
 	POP_TAG();
+
+	/* broadcast eTerminateSignal again if Ctrl-C was pressed. */
+	if (state && rb_obj_is_kind_of(GET_THREAD()->errinfo, rb_eInterrupt)) {
+	    goto retry;
+	}
     }
 }
 
