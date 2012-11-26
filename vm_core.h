@@ -860,7 +860,8 @@ GET_THREAD(void)
 #define RUBY_VM_SET_TIMER_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, 0x01)
 #define RUBY_VM_SET_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, 0x02)
 #define RUBY_VM_SET_FINALIZER_INTERRUPT(th)	ATOMIC_OR((th)->interrupt_flag, 0x04)
-#define RUBY_VM_INTERRUPTED(th) ((th)->interrupt_flag & 0x02)
+#define RUBY_VM_SET_TRAP_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, 0x08)
+#define RUBY_VM_INTERRUPTED(th) ((th)->interrupt_flag & 0x0A)
 
 int rb_signal_buff_size(void);
 void rb_signal_exec(rb_thread_t *th, int sig);

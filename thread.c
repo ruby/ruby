@@ -287,11 +287,14 @@ reset_unblock_function(rb_thread_t *th, const struct rb_unblock_callback *old)
     native_mutex_unlock(&th->interrupt_lock);
 }
 
-void
-rb_threadptr_interrupt(rb_thread_t *th)
+static void
+rb_threadptr_interrupt_common(rb_thread_t *th, int trap)
 {
     native_mutex_lock(&th->interrupt_lock);
-    RUBY_VM_SET_INTERRUPT(th);
+    if (trap)
+	RUBY_VM_SET_TRAP_INTERRUPT(th);
+    else
+	RUBY_VM_SET_INTERRUPT(th);
     if (th->unblock.func) {
 	(th->unblock.func)(th->unblock.arg);
     }
@@ -301,6 +304,17 @@ rb_threadptr_interrupt(rb_thread_t *th)
     native_mutex_unlock(&th->interrupt_lock);
 }
 
+void
+rb_threadptr_interrupt(rb_thread_t *th)
+{
+    rb_threadptr_interrupt_common(th, 0);
+}
+
+void
+rb_threadptr_trap_interrupt(rb_thread_t *th)
+{
+    rb_threadptr_interrupt_common(th, 1);
+}
 
 static int
 terminate_i(st_data_t key, st_data_t val, rb_thread_t *main_thread)
@@ -1718,20 +1732,22 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
     while ((interrupt = ATOMIC_EXCHANGE(th->interrupt_flag, 0)) != 0) {
 	enum rb_thread_status status = th->status;
 	int timer_interrupt = interrupt & 0x01;
+	int async_errinfo_interrupt = interrupt & 0x02;
 	int finalizer_interrupt = interrupt & 0x04;
+	int trap_interrupt = interrupt & 0x08;
 	int sig;
 
 	th->status = THREAD_RUNNABLE;
 
 	/* signal handling */
-	if (th == th->vm->main_thread) {
+	if (trap_interrupt && (th == th->vm->main_thread)) {
 	    while ((sig = rb_get_next_signal()) != 0) {
 		rb_signal_exec(th, sig);
 	    }
 	}
 
 	/* exception from another thread */
-	if (rb_threadptr_async_errinfo_active_p(th)) {
+	if (async_errinfo_interrupt && rb_threadptr_async_errinfo_active_p(th)) {
 	    VALUE err = rb_threadptr_async_errinfo_deque(th, blocking_timing ? INTERRUPT_ON_BLOCKING : INTERRUPT_NONE);
 	    thread_debug("rb_thread_execute_interrupts: %"PRIdVALUE"\n", err);
 
@@ -3546,7 +3562,7 @@ rb_threadptr_check_signal(rb_thread_t *mth)
     /* mth must be main_thread */
     if (rb_signal_buff_size() > 0) {
 	/* wakeup main thread */
-	rb_threadptr_interrupt(mth);
+	rb_threadptr_trap_interrupt(mth);
     }
 }
 
