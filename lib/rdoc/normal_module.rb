@@ -1,14 +1,12 @@
-require 'rdoc/class_module'
-
 ##
 # A normal module, like NormalClass
 
 class RDoc::NormalModule < RDoc::ClassModule
 
   def inspect # :nodoc:
-    "#<%s:0x%x module %s includes: %p attributes: %p methods: %p aliases: %p>" % [
+    "#<%s:0x%x module %s includes: %p extends: %p attributes: %p methods: %p aliases: %p>" % [
       self.class, object_id,
-      full_name, @includes, @attributes, @method_list, @aliases
+      full_name, @includes, @extends, @attributes, @method_list, @aliases
     ]
   end
 
@@ -34,19 +32,24 @@ class RDoc::NormalModule < RDoc::ClassModule
       q.seplist @includes do |inc| q.pp inc end
       q.breakable
 
+      q.breakable
+      q.text "constants:"
+      q.breakable
+      q.seplist @constants do |const| q.pp const end
+
       q.text "attributes:"
       q.breakable
-      q.seplist @attributes do |inc| q.pp inc end
+      q.seplist @attributes do |attr| q.pp attr end
       q.breakable
 
       q.text "methods:"
       q.breakable
-      q.seplist @method_list do |inc| q.pp inc end
+      q.seplist @method_list do |meth| q.pp meth end
       q.breakable
 
       q.text "aliases:"
       q.breakable
-      q.seplist @aliases do |inc| q.pp inc end
+      q.seplist @aliases do |aliaz| q.pp aliaz end
       q.breakable
 
       q.text "comment:"

@@ -1,5 +1,3 @@
-require 'rdoc/class_module'
-
 ##
 # An anonymous class like:
 #

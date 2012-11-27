@@ -4,6 +4,8 @@
 
 class RDoc::Parser::Simple < RDoc::Parser
 
+  include RDoc::Parser::Text
+
   parse_files_matching(//)
 
   attr_reader :content # :nodoc:
@@ -24,18 +26,12 @@ class RDoc::Parser::Simple < RDoc::Parser
 
   def scan
     comment = remove_coding_comment @content
-    comment = remove_private_comments comment
+    comment = remove_private_comment comment
+
+    comment = RDoc::Comment.new comment, @top_level
 
     @top_level.comment = comment
-    @top_level.parser = self.class
     @top_level
-  end
-
-  ##
-  # Removes comments wrapped in <tt>--/++</tt>
-
-  def remove_private_comments text
-    text.gsub(/^--\n.*?^\+\+/m, '').sub(/^--\n.*/m, '')
   end
 
   ##
@@ -43,6 +39,22 @@ class RDoc::Parser::Simple < RDoc::Parser
 
   def remove_coding_comment text
     text.sub(/\A# .*coding[=:].*$/, '')
+  end
+
+  ##
+  # Removes private comments.
+  #
+  # Unlike RDoc::Comment#remove_private this implementation only looks for two
+  # dashes at the beginning of the line.  Three or more dashes are considered
+  # to be a rule and ignored.
+
+  def remove_private_comment comment
+    # Workaround for gsub encoding for Ruby 1.9.2 and earlier
+    empty = ''
+    empty.force_encoding comment.encoding if Object.const_defined? :Encoding
+
+    comment = comment.gsub(%r%^--\n.*?^\+\+\n?%m, empty)
+    comment.sub(%r%^--\n.*%m, empty)
   end
 
 end

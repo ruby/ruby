@@ -7,6 +7,8 @@ class TestRDocInclude < XrefTestCase
 
     @inc = RDoc::Include.new 'M1', 'comment'
     @inc.parent = @m1
+    @inc.record_location @top_level
+    @inc.store = @store
   end
 
   def test_module
@@ -90,6 +92,16 @@ class TestRDocInclude < XrefTestCase
 
     assert_equal [i3_m1, i3_m2, i3_m4], m1_k3.includes
     assert_equal [m1_m2_m4, m1_m2, m1, 'Object'], m1_k3.ancestors
+  end
+
+  def test_store_equals
+    incl = RDoc::Include.new 'M', nil
+    incl.record_location RDoc::TopLevel.new @top_level.name
+
+    incl.store = @store
+
+    assert_same @top_level, incl.file
+    assert_same @store,     incl.file.store
   end
 
 end

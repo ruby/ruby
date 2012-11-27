@@ -1,12 +1,16 @@
-require 'rdoc/method_attr'
-require 'rdoc/token_stream'
-
 ##
 # AnyMethod is the base class for objects representing methods
 
 class RDoc::AnyMethod < RDoc::MethodAttr
 
-  MARSHAL_VERSION = 1 # :nodoc:
+  ##
+  # 2::
+  #   RDoc 4
+  #   Added calls_super
+  #   Added parent name and class
+  #   Added section title
+
+  MARSHAL_VERSION = 2 # :nodoc:
 
   ##
   # Don't rename \#initialize to \::new
@@ -28,6 +32,11 @@ class RDoc::AnyMethod < RDoc::MethodAttr
 
   attr_accessor :params
 
+  ##
+  # If true this method uses +super+ to call a superclass version
+
+  attr_accessor :calls_super
+
   include RDoc::TokenStream
 
   ##
@@ -39,6 +48,8 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     @c_function = nil
     @dont_rename_initialize = false
     @token_stream = nil
+    @calls_super = false
+    @superclass_method = nil
   end
 
   ##
@@ -97,6 +108,10 @@ class RDoc::AnyMethod < RDoc::MethodAttr
       aliases,
       @params,
       @file.absolute_name,
+      @calls_super,
+      @parent.name,
+      @parent.class,
+      @section.title,
     ]
   end
 
@@ -107,34 +122,44 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   # * #full_name
   # * #parent_name
 
-  def marshal_load(array)
+  def marshal_load array
     @dont_rename_initialize = nil
     @is_alias_for           = nil
     @token_stream           = nil
     @aliases                = []
+    @parent                 = nil
+    @parent_name            = nil
+    @parent_class           = nil
+    @section                = nil
+    @file                   = nil
 
-    version       = array[0]
-    @name         = array[1]
-    @full_name    = array[2]
-    @singleton    = array[3]
-    @visibility   = array[4]
-    @comment      = array[5]
-    @call_seq     = array[6]
-    @block_params = array[7]
+    version        = array[0]
+    @name          = array[1]
+    @full_name     = array[2]
+    @singleton     = array[3]
+    @visibility    = array[4]
+    @comment       = array[5]
+    @call_seq      = array[6]
+    @block_params  = array[7]
+    #                      8 handled below
+    @params        = array[9]
+    #                      10 handled below
+    @calls_super   = array[11]
+    @parent_name   = array[12]
+    @parent_title  = array[13]
+    @section_title = array[14]
 
     array[8].each do |new_name, comment|
       add_alias RDoc::Alias.new(nil, @name, new_name, comment, @singleton)
     end
 
-    @params       = array[9]
-
-    @parent_name = if @full_name =~ /#/ then
-                     $`
-                   else
-                     name = @full_name.split('::')
-                     name.pop
-                     name.join '::'
-                   end
+    @parent_name ||= if @full_name =~ /#/ then
+                       $`
+                     else
+                       name = @full_name.split('::')
+                       name.pop
+                       name.join '::'
+                     end
 
     @file = RDoc::TopLevel.new array[10] if version > 0
   end
@@ -169,7 +194,9 @@ class RDoc::AnyMethod < RDoc::MethodAttr
       return []
     end
 
-    params.gsub(/\s+/, '').split ','
+    params = params.gsub(/\s+/, '').split ','
+
+    params.map { |param| param.sub(/=.*/, '') }
   end
 
   ##
@@ -181,10 +208,12 @@ class RDoc::AnyMethod < RDoc::MethodAttr
       params = @call_seq.split("\n").last
       params = params.sub(/[^( ]+/, '')
       params = params.sub(/(\|[^|]+\|)\s*\.\.\.\s*(end|\})/, '\1 \2')
-    else
+    elsif @params then
       params = @params.gsub(/\s*\#.*/, '')
       params = params.tr("\n", " ").squeeze(" ")
       params = "(#{params})" unless params[0] == ?(
+    else
+      params = ''
     end
 
     if @block_params then
@@ -201,6 +230,32 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     end
 
     params
+  end
+
+  ##
+  # Sets the store for this method and its referenced code objects.
+
+  def store= store
+    super
+
+    @file = @store.add_file @file.full_name if @file
+  end
+
+  ##
+  # For methods that +super+, find the superclass method that would be called.
+
+  def superclass_method
+    return unless @calls_super
+    return @superclass_method if @superclass_method
+
+    parent.each_ancestor do |ancestor|
+      if method = ancestor.method_list.find { |m| m.name == @name } then
+        @superclass_method = method
+        break
+      end
+    end
+
+    @superclass_method
   end
 
 end

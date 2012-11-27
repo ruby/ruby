@@ -4,6 +4,21 @@
 class RDoc::Markup::Verbatim < RDoc::Markup::Raw
 
   ##
+  # Format of this verbatim section
+
+  attr_accessor :format
+
+  def initialize *parts # :nodoc:
+    super
+
+    @format = nil
+  end
+
+  def == other # :nodoc:
+    super and @format == other.format
+  end
+
+  ##
   # Calls #accept_verbatim on +visitor+
 
   def accept visitor
@@ -32,6 +47,29 @@ class RDoc::Markup::Verbatim < RDoc::Markup::Raw
     parts.pop if parts.last =~ /\A\r?\n\z/
 
     @parts = parts
+  end
+
+  def pretty_print q # :nodoc:
+    self.class.name =~ /.*::(\w{1,4})/i
+
+    q.group 2, "[#{$1.downcase}: ", ']' do
+      if @format then
+        q.text "format: #{@format}"
+        q.breakable
+      end
+
+      q.seplist @parts do |part|
+        q.pp part
+      end
+    end
+  end
+
+  ##
+  # Is this verbatim section ruby code?
+
+  def ruby?
+    @format ||= nil # TODO for older ri data, switch the tree to marshal_dump
+    @format == :ruby
   end
 
   ##

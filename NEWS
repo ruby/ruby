@@ -272,6 +272,17 @@ with all sufficient information, see the ChangeLog file.
     http://rake.rubyforge.org/doc/release_notes/rake-0_9_4_rdoc.html for a list
     of changes in rake 0.9.3 and 0.9.4.
 
+* rdoc
+  * rdoc has been updated to version 4.0
+
+    This version is largely backwards-compatible with previous rdoc versions.
+    The most notable change is an update to the ri data format (ri data must
+    be regenerated for gems shared across rdoc versions).  Further API changes
+    are internal and won't affect most users.
+
+    See https://github.com/rdoc/rdoc/blob/master/History.rdoc for a list of
+    changes in rdoc 4.0.
+
 * resolv
   * new methods:
     * Resolv::DNS#timeouts=

@@ -1,9 +1,6 @@
 # coding: US-ASCII
 
-require 'rubygems'
-require 'minitest/autorun'
 require File.expand_path '../xref_test_case', __FILE__
-require 'rdoc/code_object'
 
 class TestRDocCodeObject < XrefTestCase
 
@@ -30,6 +27,16 @@ class TestRDocCodeObject < XrefTestCase
     @co.comment = 'I am a comment'
 
     assert_equal 'I am a comment', @co.comment
+  end
+
+  def test_comment_equals_comment
+    @co.comment = comment ''
+
+    assert_equal '', @co.comment.text
+
+    @co.comment = comment 'I am a comment'
+
+    assert_equal 'I am a comment', @co.comment.text
   end
 
   def test_comment_equals_document
@@ -167,7 +174,7 @@ class TestRDocCodeObject < XrefTestCase
   def test_file_name
     assert_equal nil, @co.file_name
 
-    @co.record_location RDoc::TopLevel.new 'lib/file.rb'
+    @co.record_location @store.add_file 'lib/file.rb'
 
     assert_equal 'lib/file.rb', @co.file_name
   end
@@ -254,6 +261,26 @@ class TestRDocCodeObject < XrefTestCase
     @co.record_location @xref_data
 
     refute @co.ignored?
+  end
+
+  def test_section
+    parent = RDoc::Context.new
+    section = parent.sections.first
+
+    @co.parent = parent
+    @co.instance_variable_set :@section, section
+
+    assert_equal section, @co.section
+
+    @co.instance_variable_set :@section, nil
+    @co.instance_variable_set :@section_title, nil
+
+    assert_equal section, @co.section
+
+    @co.instance_variable_set :@section, nil
+    @co.instance_variable_set :@section_title, 'new title'
+
+    assert_equal 'new title', @co.section.title
   end
 
   def test_start_doc

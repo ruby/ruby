@@ -1,6 +1,3 @@
-require 'rdoc/markup/to_html'
-require 'rdoc/cross_reference'
-
 ##
 # Subclass of the RDoc::Markup::ToHtml class that supports looking up method
 # names, classes, etc to create links.  RDoc::CrossReference is used to
@@ -31,21 +28,20 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # references are removed unless +show_hash+ is true.  Only method names
   # preceded by '#' or '::' are linked, unless +hyperlink_all+ is true.
 
-  def initialize(from_path, context, show_hash, hyperlink_all = false,
-                 markup = nil)
+  def initialize(options, from_path, context, markup = nil)
     raise ArgumentError, 'from_path cannot be nil' if from_path.nil?
-    super markup
 
-    crossref_re = hyperlink_all ? ALL_CROSSREF_REGEXP : CROSSREF_REGEXP
+    super options, markup
 
-    @cross_reference = RDoc::CrossReference.new context
-
-    @markup.add_special crossref_re, :CROSSREF
-    @markup.add_special(/rdoc-ref:\S+\w/, :HYPERLINK)
-
+    @context       = context
     @from_path     = from_path
-    @hyperlink_all = hyperlink_all
-    @show_hash     = show_hash
+    @hyperlink_all = @options.hyperlink_all
+    @show_hash     = @options.show_hash
+
+    crossref_re = @hyperlink_all ? ALL_CROSSREF_REGEXP : CROSSREF_REGEXP
+    @markup.add_special crossref_re, :CROSSREF
+
+    @cross_reference = RDoc::CrossReference.new @context
   end
 
   ##
@@ -56,6 +52,8 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
     lookup = name
 
     name = name[1..-1] unless @show_hash if name[0, 1] == '#'
+
+    name = "#{CGI.unescape $'} at #{$1}" if name =~ /(.*[^#:])@/
 
     text = name unless text
 
@@ -71,6 +69,8 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
 
   def handle_special_CROSSREF(special)
     name = special.text
+
+    return name if name =~ /@[\w-]+\.[\w-]/ # labels that look like emails
 
     unless @hyperlink_all then
       # This ensures that words entirely consisting of lowercase letters will
@@ -93,6 +93,25 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   end
 
   ##
+  # +special+ is an rdoc-schemed link that will be converted into a hyperlink.
+  # For the rdoc-ref scheme the cross-reference will be looked up and the
+  # given name will be used.
+  #
+  # All other contents are handled by
+  # {the superclass}[rdoc-ref:RDoc::Markup::ToHtml#handle_special_RDOCLINK]
+
+  def handle_special_RDOCLINK special
+    url = special.text
+
+    case url
+    when /\Ardoc-ref:/ then
+      cross_reference $'
+    else
+      super
+    end
+  end
+
+  ##
   # Generates links for <tt>rdoc-ref:</tt> scheme URLs and allows
   # RDoc::Markup::ToHtml to handle other schemes.
 
@@ -106,13 +125,31 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # Creates an HTML link to +name+ with the given +text+.
 
   def link name, text
+    original_name = name
+
+    if name =~ /(.*[^#:])@/ then
+      name = $1
+      label = $'
+    end
+
     ref = @cross_reference.resolve name, text
+
+    text = ref.output_name @context if
+      RDoc::MethodAttr === ref and text == original_name
 
     case ref
     when String then
       ref
     else
-      "<a href=\"#{ref.as_href @from_path}\">#{text}</a>"
+      path = ref.as_href @from_path
+
+      if path =~ /#/ then
+        path << "-label-#{label}"
+      else
+        path << "#label-#{label}"
+      end if label
+
+      "<a href=\"#{path}\">#{text}</a>"
     end
   end
 

@@ -111,12 +111,45 @@ class TestRDocMethodAttr < XrefTestCase
     assert_nil @m1_m.find_method_or_attribute 'm'
   end
 
+  def test_full_name
+    assert_equal 'C1#m',  @c1_m.full_name
+    assert_equal 'C1::m', @c1__m.full_name
+  end
+
+  def test_output_name
+    assert_equal '#m',  @c1_m.output_name(@c1)
+    assert_equal '::m', @c1__m.output_name(@c1)
+
+    assert_equal 'C1#m', @c1_m.output_name(@c2)
+    assert_equal 'C1.m', @c1__m.output_name(@c2)
+  end
+
+  def test_search_record
+    @c1_m.comment = 'This is a comment.'
+
+    expected = [
+      'm',
+      'C1#m',
+      'm',
+      'C1',
+      'C1.html#method-i-m',
+      '(foo)',
+      "<p>This is a comment.\n",
+    ]
+
+    assert_equal expected, @c1_m.search_record
+  end
+
+  def test_equals2
+    assert_equal @c1_m, @c1_m
+    refute_equal @c1_m, @parent_m
+  end
+
   def test_to_s
     assert_equal 'RDoc::AnyMethod: C1#m',  @c1_m.to_s
     assert_equal 'RDoc::AnyMethod: C2#b',  @c2_b.to_s
     assert_equal 'RDoc::AnyMethod: C1::m', @c1__m.to_s
   end
-
 
 end
 

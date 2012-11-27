@@ -1,5 +1,3 @@
-require 'rdoc/markup/to_rdoc'
-
 ##
 # Outputs RDoc markup with hot backspace action!  You will probably need a
 # pager to use this output format.

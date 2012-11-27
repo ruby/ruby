@@ -1,9 +1,9 @@
-require 'rdoc/markup'
-
 ##
 # Base class for RDoc markup formatters
 #
-# Formatters use a visitor pattern to convert content into output.
+# Formatters are a visitor that converts an RDoc::Markup tree (from a comment)
+# into some kind of output.  RDoc ships with formatters for converting back to
+# rdoc, ANSI text, HTML, a Table of Contents and other formats.
 #
 # If you'd like to write your own Formatter use
 # RDoc::Markup::FormatterTestCase.  If you're writing a text-output formatter
@@ -20,14 +20,21 @@ class RDoc::Markup::Formatter
   ##
   # Creates a new Formatter
 
-  def initialize markup = nil
+  def initialize options, markup = nil
+    @options = options
+
     @markup = markup || RDoc::Markup.new
     @am     = @markup.attribute_manager
+    @am.add_special(/<br>/, :HARD_BREAK)
+
+    @attributes = @am.attributes
 
     @attr_tags = []
 
     @in_tt = 0
-    @tt_bit = RDoc::Markup::Attribute.bitmap_for :TT
+    @tt_bit = @attributes.bitmap_for :TT
+
+    @hard_break = ''
   end
 
   ##
@@ -44,7 +51,7 @@ class RDoc::Markup::Formatter
   # tags for flexibility
 
   def add_tag(name, start, stop)
-    attr = RDoc::Markup::Attribute.bitmap_for name
+    attr = @attributes.bitmap_for name
     @attr_tags << InlineTag.new(attr, start, stop)
   end
 
@@ -58,7 +65,7 @@ class RDoc::Markup::Formatter
   ##
   # Marks up +content+
 
-  def convert(content)
+  def convert content
     @markup.convert content, self
   end
 
@@ -93,7 +100,7 @@ class RDoc::Markup::Formatter
 
     handled = false
 
-    RDoc::Markup::Attribute.each_name_of special.type do |name|
+    @attributes.each_name_of special.type do |name|
       method_name = "handle_special_#{name}"
 
       if respond_to? method_name then
@@ -102,7 +109,11 @@ class RDoc::Markup::Formatter
       end
     end
 
-    raise "Unhandled special: #{special}" unless handled
+    unless handled then
+      special_name = @attributes.as_string special.type
+
+      raise RDoc::Error, "Unhandled special #{special_name}: #{special}"
+    end
 
     special.text
   end
@@ -112,6 +123,17 @@ class RDoc::Markup::Formatter
 
   def convert_string string
     string
+  end
+
+  ##
+  # Use ignore in your subclass to ignore the content of a node.
+  #
+  #   ##
+  #   # We don't support raw nodes in ToNoRaw
+  #
+  #   alias accept_raw ignore
+
+  def ignore *node
   end
 
   ##
@@ -160,10 +182,3 @@ class RDoc::Markup::Formatter
 
 end
 
-class RDoc::Markup
-  autoload :ToAnsi,         'rdoc/markup/to_ansi'
-  autoload :ToBs,           'rdoc/markup/to_bs'
-  autoload :ToHtml,         'rdoc/markup/to_html'
-  autoload :ToHtmlCrossref, 'rdoc/markup/to_html_crossref'
-  autoload :ToRdoc,         'rdoc/markup/to_rdoc'
-end

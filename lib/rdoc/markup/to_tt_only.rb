@@ -1,6 +1,3 @@
-require 'rdoc/markup/formatter'
-require 'rdoc/markup/inline'
-
 ##
 # Extracts sections of text enclosed in plus, tt or code.  Used to discover
 # undocumented parameters.
@@ -21,9 +18,16 @@ class RDoc::Markup::ToTtOnly < RDoc::Markup::Formatter
   # Creates a new tt-only formatter.
 
   def initialize markup = nil
-    super
+    super nil, markup
 
     add_tag :TT, nil, nil
+  end
+
+  ##
+  # Adds tts from +block_quote+ to the output
+
+  def accept_block_quote block_quote
+    tt_sections block_quote.text
   end
 
   ##
@@ -46,7 +50,9 @@ class RDoc::Markup::ToTtOnly < RDoc::Markup::Formatter
   def accept_list_item_start list_item
     case @list_type.last
     when :NOTE, :LABEL then
-      tt_sections(list_item.label)
+      Array(list_item.label).map do |label|
+        tt_sections label
+      end.flatten
     end
   end
 

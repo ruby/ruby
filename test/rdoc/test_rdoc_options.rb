@@ -1,56 +1,130 @@
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc/options'
+require 'rdoc/test_case'
 
-require 'fileutils'
-require 'tmpdir'
-
-class TestRDocOptions < MiniTest::Unit::TestCase
+class TestRDocOptions < RDoc::TestCase
 
   def setup
+    super
+
     @options = RDoc::Options.new
     @generators = RDoc::RDoc::GENERATORS.dup
   end
 
   def teardown
+    super
+
     RDoc::RDoc::GENERATORS.replace @generators
+  end
+
+  def mu_pp obj
+    s = ''
+    s = PP.pp obj, s
+    s = s.force_encoding Encoding.default_external if defined? Encoding
+    s.chomp
   end
 
   def test_check_files
     skip "assumes UNIX permission model" if /mswin|mingw/ =~ RUBY_PLATFORM
+
     out, err = capture_io do
-      Dir.mktmpdir do |dir|
-        Dir.chdir dir do
-          FileUtils.touch 'unreadable'
-          FileUtils.chmod 0, 'unreadable'
+      temp_dir do
+        FileUtils.touch 'unreadable'
+        FileUtils.chmod 0, 'unreadable'
 
-          @options.files = %w[nonexistent unreadable]
+        @options.files = %w[nonexistent unreadable]
 
-          @options.check_files
-        end
+        @options.check_files
       end
     end
 
     assert_empty @options.files
 
-    assert_equal '', out
+    assert_empty out
+    assert_empty err
+  end
 
-    expected = <<-EXPECTED
-file 'nonexistent' not found
-file 'unreadable' not readable
-    EXPECTED
+  def test_check_files_warn
+    @options.verbosity = 2
 
-    assert_equal expected, err
+    out, err = capture_io do
+      @options.files = %w[nonexistent]
+
+      @options.check_files
+    end
+
+    assert_empty out
+    assert_equal "file 'nonexistent' not found\n", err
+    assert_empty @options.files
   end
 
   def test_dry_run_default
     refute @options.dry_run
   end
 
+  def test_encode_with
+    coder = {}
+    class << coder; alias add []=; end
+
+    @options.encode_with coder
+
+    encoding = Object.const_defined?(:Encoding) ? 'UTF-8' : nil
+
+    expected = {
+      'charset'        => 'UTF-8',
+      'encoding'       => encoding,
+      'exclude'        => [],
+      'hyperlink_all'  => false,
+      'line_numbers'   => false,
+      'main_page'      => nil,
+      'markup'         => 'rdoc',
+      'rdoc_include'   => [],
+      'show_hash'      => false,
+      'static_path'    => [],
+      'tab_width'      => 8,
+      'title'          => nil,
+      'visibility'     => :protected,
+      'webcvs'         => nil,
+    }
+
+    assert_equal expected, coder
+  end
+
+  def test_encode_with_trim_paths
+    subdir = nil
+    coder = {}
+    class << coder; alias add []=; end
+
+    temp_dir do |dir|
+      FileUtils.mkdir 'project'
+      FileUtils.mkdir 'dir'
+      FileUtils.touch 'file'
+
+      Dir.chdir 'project' do
+        subdir = File.expand_path 'subdir'
+        FileUtils.mkdir 'subdir'
+        @options.parse %w[
+          --copy subdir
+          --copy ../file
+          --copy ../
+          --copy /
+          --include subdir
+          --include ../dir
+          --include ../
+          --include /
+        ]
+
+        @options.encode_with coder
+      end
+    end
+
+    assert_equal [subdir], coder['rdoc_include']
+
+    assert_equal [subdir], coder['static_path']
+  end
+
   def test_encoding_default
     skip "Encoding not implemented" unless Object.const_defined? :Encoding
 
-    assert_equal Encoding.default_external, @options.encoding
+    assert_equal Encoding::UTF_8, @options.encoding
   end
 
   def test_generator_descriptions
@@ -65,6 +139,63 @@ file 'unreadable' not readable
     EXPECTED
 
     assert_equal expected, @options.generator_descriptions
+  end
+
+  def test_init_with_encoding
+    skip "Encoding not implemented" unless Object.const_defined? :Encoding
+    RDoc.load_yaml
+
+    @options.encoding = Encoding::IBM437
+
+    options = YAML.load YAML.dump @options
+
+    assert_equal Encoding::IBM437, options.encoding
+  end
+
+  def test_init_with_trim_paths
+    RDoc.load_yaml
+
+    yaml = <<-YAML
+--- !ruby/object:RDoc::Options
+static_path:
+- /etc
+rdoc_include:
+- /etc
+    YAML
+
+    options = YAML.load yaml
+
+    assert_empty options.rdoc_include
+    assert_empty options.static_path
+  end
+
+  def test_parse_copy_files_file_relative
+    file = File.basename __FILE__
+    expected = File.expand_path __FILE__
+
+    Dir.chdir File.expand_path('..', __FILE__) do
+      @options.parse %W[--copy-files #{file}]
+
+      assert_equal [expected], @options.static_path
+    end
+  end
+
+  def test_parse_copy_files_file_absolute
+    @options.parse %W[--copy-files #{File.expand_path __FILE__}]
+
+    assert_equal [File.expand_path(__FILE__)], @options.static_path
+  end
+
+  def test_parse_copy_files_directory_relative
+    @options.parse %w[--copy-files .]
+
+    assert_equal [@pwd], @options.static_path
+  end
+
+  def test_parse_copy_files_directory_absolute
+    @options.parse %w[--copy-files /]
+
+    assert_equal ['/'], @options.static_path
   end
 
   def test_parse_coverage
@@ -286,6 +417,17 @@ file 'unreadable' not readable
     assert_equal 'MAIN', @options.main_page
   end
 
+  def test_parse_markup
+    out, err = capture_io do
+      @options.parse %w[--markup tomdoc]
+    end
+
+    assert_empty out
+    assert_empty err
+
+    assert_equal 'tomdoc', @options.markup
+  end
+
   def test_parse_template
     out, err = capture_io do
       @options.parse %w[--template darkfish]
@@ -337,13 +479,21 @@ file 'unreadable' not readable
     $LOAD_PATH.replace orig_LOAD_PATH
   end
 
-  def test_parse_extension_alias
-    out, err = capture_io do
-      @options.parse %w[--extension foobar=rdoc]
-    end
+  def test_parse_write_options
+    tmpdir = File.join Dir.tmpdir, "test_rdoc_options_#{$$}"
+    FileUtils.mkdir_p tmpdir
 
-    assert_empty out
-    assert_empty err
+    Dir.chdir tmpdir do
+      e = assert_raises SystemExit do
+        @options.parse %w[--write-options]
+      end
+
+      assert_equal 0, e.status
+    
+      assert File.exist? '.rdoc_options'
+    end
+  ensure
+    FileUtils.rm_rf tmpdir
   end
 
   def test_setup_generator
@@ -395,6 +545,34 @@ file 'unreadable' not readable
     @options.update_output_dir = false
 
     refute @options.update_output_dir
+  end
+
+  def test_warn
+    out, err = capture_io do
+      @options.warn "warnings off"
+    end
+
+    assert_empty out
+    assert_empty err
+
+    @options.verbosity = 2
+
+    out, err = capture_io do
+      @options.warn "warnings on"
+    end
+
+    assert_empty out
+    assert_equal "warnings on\n", err
+  end
+
+  def test_write_options
+    temp_dir do |dir|
+      @options.write_options
+    
+      assert File.exist? '.rdoc_options'
+
+      assert_equal @options, YAML.load(File.read('.rdoc_options'))
+    end
   end
 
 end

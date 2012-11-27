@@ -1,5 +1,3 @@
-require 'rdoc/any_method'
-
 ##
 # GhostMethod represents a method referenced only by a comment
 

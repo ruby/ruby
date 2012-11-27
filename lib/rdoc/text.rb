@@ -6,9 +6,32 @@
 require 'strscan'
 
 ##
+# For RDoc::Text#snippet
+
+begin
+  gem 'json'
+rescue Gem::LoadError
+end
+
+require 'json'
+
+##
 # Methods for manipulating comment text
 
 module RDoc::Text
+
+  ##
+  # Maps markup formats to classes that can parse them.  If the format is
+  # unknown, "rdoc" format is used.
+
+  MARKUP_FORMAT = {
+    'markdown' => RDoc::Markdown,
+    'rdoc'     => RDoc::Markup,
+    'rd'       => RDoc::RD,
+    'tomdoc'   => RDoc::TomDoc,
+  }
+
+  MARKUP_FORMAT.default = RDoc::Markup
 
   ##
   # Maps an encoding to a Hash of characters properly transcoded for that
@@ -45,7 +68,7 @@ module RDoc::Text
     expanded = []
 
     text.each_line do |line|
-      line.gsub!(/^(.{8}*?)([^\t\r\n]{0,7})\t/) do
+      line.gsub!(/^((?:.{8})*?)([^\t\r\n]{0,7})\t/) do
         r = "#{$1}#{$2}#{' ' * (8 - $2.size)}"
         r.force_encoding text.encoding if Object.const_defined? :Encoding
         r
@@ -80,9 +103,7 @@ module RDoc::Text
   # Requires the including class to implement #formatter
 
   def markup text
-    document = parse text
-
-    document.accept formatter
+    parse(text).accept formatter
   end
 
   ##
@@ -91,9 +112,10 @@ module RDoc::Text
   def normalize_comment text
     return text if text.empty?
 
-    text = strip_hashes text
-    text = expand_tabs text
-    text = flush_left text
+    text = strip_stars    text
+    text = strip_hashes   text
+    text = expand_tabs    text
+    text = flush_left     text
     text = strip_newlines text
     text
   end
@@ -101,35 +123,24 @@ module RDoc::Text
   ##
   # Normalizes +text+ then builds a RDoc::Markup::Document from it
 
-  def parse text
+  def parse text, format = 'rdoc'
     return text if RDoc::Markup::Document === text
+    return text.parse if RDoc::Comment === text
 
-    text = normalize_comment text
+    text = normalize_comment text # TODO remove, should not be necessary
 
     return RDoc::Markup::Document.new if text =~ /\A\n*\z/
 
-    RDoc::Markup::Parser.parse text
-  rescue RDoc::Markup::Parser::Error => e
-    $stderr.puts <<-EOF
-While parsing markup, RDoc encountered a #{e.class}:
+    MARKUP_FORMAT[format].parse text
+  end
 
-#{e}
-\tfrom #{e.backtrace.join "\n\tfrom "}
+  ##
+  # The first +limit+ characters of +text+ as HTML
 
----8<---
-#{text}
----8<---
+  def snippet text, limit = 100
+    document = parse text
 
-RDoc #{RDoc::VERSION}
-
-Ruby #{RUBY_VERSION}-p#{RUBY_PATCHLEVEL} #{RUBY_RELEASE_DATE}
-
-Please file a bug report with the above information at:
-
-https://github.com/rdoc/rdoc/issues
-
-    EOF
-    raise
+    RDoc::Markup::ToHtmlSnippet.new(limit).convert document
   end
 
   ##
@@ -155,6 +166,8 @@ https://github.com/rdoc/rdoc/issues
   # Strips /* */ style comments
 
   def strip_stars text
+    return text unless text =~ %r%/\*.*\*/%m
+
     encoding = text.encoding if Object.const_defined? :Encoding
 
     text = text.gsub %r%Document-method:\s+[\w:.#=!?]+%, ''
@@ -202,10 +215,10 @@ https://github.com/rdoc/rdoc/issues
 
     until s.eos? do
       case
-      when s.scan(/<tt>.*?<\/tt>/) then # skip contents of tt
+      when s.scan(/<(tt|code)>.*?<\/\1>/) then # skip contents of tt
         html << s.matched.gsub('\\\\', '\\')
-      when s.scan(/<tt>.*?/) then
-        warn 'mismatched <tt> tag' # TODO signal file/line
+      when s.scan(/<(tt|code)>.*?/) then
+        warn "mismatched <#{s[1]}> tag" # TODO signal file/line
         html << s.matched
       when s.scan(/<[^>]+\/?s*>/) then # skip HTML tags
         html << s.matched

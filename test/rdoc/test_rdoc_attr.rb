@@ -1,10 +1,10 @@
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc/rdoc'
+require 'rdoc/test_case'
 
-class TestRDocAttr < MiniTest::Unit::TestCase
+class TestRDocAttr < RDoc::TestCase
 
   def setup
+    super
+
     @a = RDoc::Attr.new nil, 'attr', 'RW', ''
   end
 
@@ -43,15 +43,18 @@ class TestRDocAttr < MiniTest::Unit::TestCase
   end
 
   def test_marshal_dump
-    tl = RDoc::TopLevel.new 'file.rb'
+    tl = @store.add_file 'file.rb'
 
     @a.comment = 'this is a comment'
     @a.record_location tl
 
-    cm = RDoc::ClassModule.new 'Klass'
+    cm = tl.add_class RDoc::NormalClass, 'Klass'
     cm.add_attribute @a
 
+    section = cm.sections.first
+
     loaded = Marshal.load Marshal.dump @a
+    loaded.store = @store
 
     assert_equal @a, loaded
 
@@ -65,14 +68,33 @@ class TestRDocAttr < MiniTest::Unit::TestCase
     assert_equal 'RW',         loaded.rw
     assert_equal false,        loaded.singleton
     assert_equal :public,      loaded.visibility
+    assert_equal tl,           loaded.file
+    assert_equal cm,           loaded.parent
+    assert_equal section,      loaded.section
+  end
+
+  def test_marshal_dump_singleton
+    tl = @store.add_file 'file.rb'
+
+    @a.comment = 'this is a comment'
+    @a.record_location tl
+
+    cm = tl.add_class RDoc::NormalClass, 'Klass'
+    cm.add_attribute @a
+
+    section = cm.sections.first
 
     @a.rw = 'R'
     @a.singleton = true
     @a.visibility = :protected
 
     loaded = Marshal.load Marshal.dump @a
+    loaded.store = @store
 
     assert_equal @a, loaded
+
+    comment = RDoc::Markup::Document.new(
+                RDoc::Markup::Paragraph.new('this is a comment'))
 
     assert_equal comment,       loaded.comment
     assert_equal 'Klass::attr', loaded.full_name
@@ -80,16 +102,24 @@ class TestRDocAttr < MiniTest::Unit::TestCase
     assert_equal 'R',           loaded.rw
     assert_equal true,          loaded.singleton
     assert_equal :protected,    loaded.visibility
+    assert_equal tl,            loaded.file
+    assert_equal cm,            loaded.parent
+    assert_equal section,       loaded.section
   end
 
   def test_marshal_load_version_1
-    data = "\x04\bU:\x0FRDoc::Attr[\fi\x06I\"\tattr\x06:\x06EF" \
-           "\"\x0FKlass#attrI\"\aRW\x06;\x06F:\vpublic" \
-           "o:\eRDoc::Markup::Document\x06:\v@parts[\x06" \
-           "o:\x1CRDoc::Markup::Paragraph\x06;\t[\x06I" \
+    tl = @store.add_file 'file.rb'
+    cm = tl.add_class RDoc::NormalClass, 'Klass'
+    section = cm.sections.first
+
+    data = "\x04\bU:\x0FRDoc::Attr[\fi\x06I\"\tattr\x06:\x06EF" +
+           "\"\x0FKlass#attrI\"\aRW\x06;\x06F:\vpublic" +
+           "o:\eRDoc::Markup::Document\x06:\v@parts[\x06" +
+           "o:\x1CRDoc::Markup::Paragraph\x06;\t[\x06I" +
            "\"\x16this is a comment\x06;\x06FF"
 
     loaded = Marshal.load data
+    loaded.store = @store
 
     comment = RDoc::Markup::Document.new(
                 RDoc::Markup::Paragraph.new('this is a comment'))
@@ -101,7 +131,40 @@ class TestRDocAttr < MiniTest::Unit::TestCase
     assert_equal false,        loaded.singleton
     assert_equal :public,      loaded.visibility
 
-    assert_equal nil,          loaded.file # version 2
+    # version 2
+    assert_nil                 loaded.file
+
+    # version 3
+    assert_equal cm,           loaded.parent
+    assert_equal section,      loaded.section
+  end
+
+  def test_marshal_load_version_2
+    tl = @store.add_file 'file.rb'
+    cm = tl.add_class RDoc::NormalClass, 'Klass'
+    section = cm.sections.first
+
+    loaded = Marshal.load "\x04\bU:\x0FRDoc::Attr[\ri\aI\"\tattr\x06" +
+                          ":\x06ETI\"\x0FKlass#attr\x06;\x06TI\"\aRW\x06" +
+                          ";\x06T:\vpublico:\eRDoc::Markup::Document\a" +
+                          ":\v@parts[\x06o:\x1CRDoc::Markup::Paragraph\x06;" +
+                          "\t[\x06I\"\x16this is a comment\x06;\x06T:\n" +
+                          "@file0FI\"\ffile.rb\x06;\x06T"
+    loaded.store = @store
+
+    comment = doc(para('this is a comment'))
+
+    assert_equal comment,      loaded.comment
+    assert_equal 'Klass#attr', loaded.full_name
+    assert_equal 'attr',       loaded.name
+    assert_equal 'RW',         loaded.rw
+    assert_equal false,        loaded.singleton
+    assert_equal :public,      loaded.visibility
+    assert_equal tl,           loaded.file
+
+    # version 3
+    assert_equal cm,           loaded.parent
+    assert_equal section,      loaded.section
   end
 
   def test_params

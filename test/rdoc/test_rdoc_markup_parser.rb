@@ -1,14 +1,12 @@
 # coding: utf-8
 
-require 'pp'
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc/markup'
+require 'rdoc/test_case'
 
-class TestRDocMarkupParser < MiniTest::Unit::TestCase
+class TestRDocMarkupParser < RDoc::TestCase
 
   def setup
-    @RM = RDoc::Markup
+    super
+
     @RMP = @RM::Parser
   end
 
@@ -28,6 +26,19 @@ class TestRDocMarkupParser < MiniTest::Unit::TestCase
     ]
 
     assert_equal @RM::Heading.new(3, 'heading three'), parser.build_heading(3)
+  end
+
+  def test_char_pos
+    parser = @RMP.new
+    s = parser.setup_scanner 'cät'
+
+    s.scan(/\S+/)
+
+    if Object.const_defined? :Encoding then
+      assert_equal 3, parser.char_pos(s.pos)
+    else
+      assert_equal 4, parser.char_pos(s.pos)
+    end
   end
 
   def test_get
@@ -148,13 +159,11 @@ the time
     STR
 
     expected = [
-      @RM::List.new(:BULLET, *[
-        @RM::ListItem.new(nil,
-          @RM::Paragraph.new('l1', 'l1+')),
-        @RM::ListItem.new(nil,
-          @RM::Paragraph.new('l2')),
-      ]),
-    ]
+      list(:BULLET,
+        item(nil,
+          para('l1 ', 'l1+')),
+        item(nil,
+          para('l2')))]
 
     assert_equal expected, @RMP.parse(str).parts
   end
@@ -191,16 +200,16 @@ the time
     STR
 
     expected = [
-      @RM::List.new(:BULLET, *[
-        @RM::ListItem.new(nil,
-          @RM::Paragraph.new('l1'),
-          @RM::List.new(:BULLET, *[
-            @RM::ListItem.new(nil,
-              @RM::Paragraph.new('l1.1', 'text'),
-              @RM::Verbatim.new("code\n", "  code\n"),
-              @RM::Paragraph.new('text'))])),
-        @RM::ListItem.new(nil,
-          @RM::Paragraph.new('l2'))])]
+      list(:BULLET,
+        item(nil,
+          para('l1'),
+          list(:BULLET,
+            item(nil,
+              para('l1.1 ', 'text'),
+              verb("code\n", "  code\n"),
+              para('text')))),
+        item(nil,
+          para('l2')))]
 
     assert_equal expected, @RMP.parse(str).parts
   end
@@ -326,11 +335,11 @@ the time
     STR
 
     expected = [
-      @RM::List.new(:LABEL, *[
-        @RM::ListItem.new('one',
-          @RM::Paragraph.new('item one')),
-        @RM::ListItem.new('two',
-          @RM::Paragraph.new('item two'))])]
+      list(:LABEL,
+        item(%w[one],
+          para('item one')),
+        item(%w[two],
+          para('item two')))]
 
     assert_equal expected, @RMP.parse(str).parts
   end
@@ -343,19 +352,33 @@ the time
     STR
 
     expected = [
-      @RM::List.new(:LABEL, *[
-        @RM::ListItem.new('cat',
-          @RM::Paragraph.new('l1'),
-          @RM::List.new(:BULLET, *[
-            @RM::ListItem.new(nil,
-              @RM::Paragraph.new('l1.1'))])),
-        @RM::ListItem.new('dog',
-          @RM::Paragraph.new('l2'))])]
+      list(:LABEL,
+        item(%w[cat],
+          para('l1'),
+          list(:BULLET,
+            item(nil,
+              para('l1.1')))),
+        item(%w[dog],
+          para('l2')))]
 
     assert_equal expected, @RMP.parse(str).parts
   end
 
-  def test_parse_label_multiline
+  def test_parse_label_multi_label
+    str = <<-STR
+[one]
+[two] some description
+    STR
+
+    expected = [
+      list(:LABEL,
+        item(%w[one two],
+          para('some description')))]
+
+    assert_equal expected, @RMP.parse(str).parts
+  end
+
+  def test_parse_label_multi_line
     str = <<-STR
 [cat] l1
       continuation
@@ -363,11 +386,11 @@ the time
     STR
 
     expected = [
-      @RM::List.new(:LABEL, *[
-        @RM::ListItem.new('cat',
-          @RM::Paragraph.new('l1', 'continuation')),
-        @RM::ListItem.new('dog',
-          @RM::Paragraph.new('l2'))])]
+      list(:LABEL,
+        item(%w[cat],
+          para('l1 ', 'continuation')),
+        item(%w[dog],
+          para('l2')))]
 
     assert_equal expected, @RMP.parse(str).parts
   end
@@ -381,12 +404,11 @@ the time
     STR
 
     expected = [
-      @RM::List.new(:LABEL, *[
-        @RM::ListItem.new('one',
-          @RM::Paragraph.new('item one')),
-        @RM::ListItem.new('two',
-          @RM::Paragraph.new('item two')),
-    ])]
+      list(:LABEL,
+        item(%w[one],
+          para('item one')),
+        item(%w[two],
+          para('item two')))]
 
     assert_equal expected, @RMP.parse(str).parts
   end
@@ -443,6 +465,17 @@ a. 新しい機能
     assert_equal expected, @RMP.parse(str).parts
   end
 
+  def test_parse_line_break
+    str = "now is\nthe time  \nfor all"
+
+    expected = [
+      para('now is ', 'the time'),
+      blank_line,
+      para('for all')]
+
+    assert_equal expected, @RMP.parse(str).parts
+  end
+
   def test_parse_list_list_1
     str = <<-STR
 10. para 1
@@ -456,16 +489,16 @@ a. 新しい機能
     STR
 
     expected = [
-      @RM::List.new(:NUMBER, *[
-        @RM::ListItem.new(nil, *[
-          @RM::Paragraph.new('para 1'),
-          @RM::BlankLine.new,
-          @RM::List.new(:LABEL, *[
-            @RM::ListItem.new('label 1', *[
-              @RM::Paragraph.new('para 1.1'),
-              @RM::BlankLine.new,
-              @RM::Verbatim.new("code\n"),
-              @RM::Paragraph.new('para 1.2')])])])])]
+      list(:NUMBER,
+        item(nil,
+          para('para 1'),
+          blank_line,
+          list(:LABEL,
+            item(%w[label\ 1],
+              para('para 1.1'),
+              blank_line,
+              verb("code\n"),
+              para('para 1.2')))))]
 
     assert_equal expected, @RMP.parse(str).parts
   end
@@ -479,15 +512,15 @@ a. 新しい機能
     STR
 
     expected = [
-      @RM::List.new(:NUMBER, *[
-        @RM::ListItem.new(nil, *[
-          @RM::Paragraph.new('para'),
-          @RM::BlankLine.new,
-          @RM::List.new(:NOTE, *[
-            @RM::ListItem.new('label 1',
-              @RM::Paragraph.new('text 1')),
-            @RM::ListItem.new('label 2',
-              @RM::Paragraph.new('text 2'))])])])]
+      list(:NUMBER,
+        item(nil,
+          para('para'),
+          blank_line,
+          list(:NOTE,
+            item(%w[label\ 1],
+              para('text 1')),
+            item(%w[label\ 2],
+              para('text 2')))))]
 
     assert_equal expected, @RMP.parse(str).parts
   end
@@ -546,11 +579,11 @@ two:: item two
     STR
 
     expected = [
-      @RM::List.new(:NOTE, *[
-        @RM::ListItem.new('one',
-          @RM::Paragraph.new('item one')),
-        @RM::ListItem.new('two',
-          @RM::Paragraph.new('item two'))])]
+      list(:NOTE,
+        item(%w[one],
+          para('item one')),
+        item(%w[two],
+          para('item two')))]
 
     assert_equal expected, @RMP.parse(str).parts
   end
@@ -562,11 +595,9 @@ two::
     STR
 
     expected = [
-      @RM::List.new(:NOTE, *[
-        @RM::ListItem.new('one',
-          @RM::BlankLine.new),
-        @RM::ListItem.new('two',
-          @RM::BlankLine.new)])]
+      list(:NOTE,
+        item(%w[one two],
+          blank_line))]
 
     assert_equal expected, @RMP.parse(str).parts
   end
@@ -577,11 +608,11 @@ one:: two::
     STR
 
     expected = [
-      @RM::List.new(:NOTE, *[
-        @RM::ListItem.new('one',
-          @RM::List.new(:NOTE, *[
-            @RM::ListItem.new('two',
-              @RM::BlankLine.new)]))])]
+      list(:NOTE,
+        item(%w[one],
+          list(:NOTE,
+            item(%w[two],
+              blank_line))))]
 
     assert_equal expected, @RMP.parse(str).parts
   end
@@ -594,14 +625,14 @@ one:: two::
     STR
 
     expected = [
-      @RM::List.new(:NUMBER, *[
-        @RM::ListItem.new(nil,
-          @RM::Paragraph.new('l1'),
-          @RM::List.new(:BULLET, *[
-            @RM::ListItem.new(nil,
-              @RM::Paragraph.new('l1.1'))])),
-        @RM::ListItem.new(nil,
-          @RM::Paragraph.new('l2'))])]
+      list(:NUMBER,
+        item(nil,
+          para('l1'),
+          list(:BULLET,
+            item(nil,
+              para('l1.1')))),
+        item(nil,
+          para('l2')))]
 
     assert_equal expected, @RMP.parse(str).parts
   end
@@ -623,7 +654,7 @@ for all good men
   def test_parse_paragraph_multiline
     str = "now is the time\nfor all good men"
 
-    expected = @RM::Paragraph.new 'now is the time for all good men'
+    expected = @RM::Paragraph.new 'now is the time ', 'for all good men'
     assert_equal [expected], @RMP.parse(str).parts
   end
 
@@ -1185,6 +1216,38 @@ the time
     assert_equal expected, @RMP.tokenize(str)
   end
 
+  def test_tokenize_label_newline
+    str = <<-STR
+[cat]
+  l1
+    STR
+
+    expected = [
+      [:LABEL,   'cat',   0, 0],
+      [:NEWLINE, "\n",    5, 0],
+      [:TEXT,    'l1',    2, 1],
+      [:NEWLINE, "\n",    4, 1],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
+  def test_tokenize_label_newline_windows
+    str = <<-STR
+[cat]\r
+  l1\r
+    STR
+
+    expected = [
+      [:LABEL,   'cat',   0, 0],
+      [:NEWLINE, "\n",    6, 0],
+      [:TEXT,    'l1',    2, 1],
+      [:NEWLINE, "\n",    5, 1],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
   def test_tokenize_lalpha
     str = <<-STR
 a. l1
@@ -1198,6 +1261,53 @@ b. l1.1
       [:LALPHA,  'b',     0, 1],
       [:TEXT,    'l1.1',  3, 1],
       [:NEWLINE, "\n",    7, 1],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
+  def test_tokenize_line_break
+    str = "now is\nthe time  \nfor all\n"
+
+    expected = [
+      [:TEXT,    'now is',    0, 0],
+      [:NEWLINE, "\n",        6, 0],
+      [:TEXT,    'the time',  0, 1],
+      [:BREAK,   "  ",        8, 1],
+      [:NEWLINE, "\n",       10, 1],
+      [:TEXT,    'for all',   0, 2],
+      [:NEWLINE, "\n",        7, 2],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
+  def test_tokenize_line_break_long
+    str = "now is\nthe time   \nfor all\n"
+
+    expected = [
+      [:TEXT,    'now is',     0, 0],
+      [:NEWLINE, "\n",         6, 0],
+      [:TEXT,    'the time ',  0, 1],
+      [:BREAK,   '  ',         9, 1],
+      [:NEWLINE, "\n",        11, 1],
+      [:TEXT,    'for all',    0, 2],
+      [:NEWLINE, "\n",         7, 2],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
+  def test_tokenize_line_break_no_short
+    str = "now is\nthe time \nfor all\n"
+
+    expected = [
+      [:TEXT,    'now is',    0, 0],
+      [:NEWLINE, "\n",        6, 0],
+      [:TEXT,    'the time ', 0, 1],
+      [:NEWLINE, "\n",        9, 1],
+      [:TEXT,    'for all',   0, 2],
+      [:NEWLINE, "\n",        7, 2],
     ]
 
     assert_equal expected, @RMP.tokenize(str)
@@ -1232,6 +1342,64 @@ dog::
       [:NEWLINE, "\n",  5, 0],
       [:NOTE,    'dog', 0, 1],
       [:NEWLINE, "\n",  5, 1],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
+  def test_tokenize_note_newline
+    str = <<-STR
+cat::
+  l1
+    STR
+
+    expected = [
+      [:NOTE,    'cat',   0, 0],
+      [:NEWLINE, "\n",    5, 0],
+      [:TEXT,    'l1',    2, 1],
+      [:NEWLINE, "\n",    4, 1],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
+  def test_tokenize_note_utf_8
+    skip 'Encoding not implemented' unless Object.const_defined? :Encoding
+
+    str = <<-STR
+cät:: l1a
+      l1b
+døg:: l2a
+      l2b
+    STR
+
+    expected = [
+      [:NOTE,    'cät',   0, 0],
+      [:TEXT,    'l1a',   6, 0],
+      [:NEWLINE, "\n",    9, 0],
+      [:TEXT,    'l1b',   6, 1],
+      [:NEWLINE, "\n",    9, 1],
+      [:NOTE,    'døg',   0, 2],
+      [:TEXT,    'l2a',   6, 2],
+      [:NEWLINE, "\n",    9, 2],
+      [:TEXT,    'l2b',   6, 3],
+      [:NEWLINE, "\n",    9, 3],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
+  def test_tokenize_note_newline_windows
+    str = <<-STR
+cat::\r
+  l1\r
+    STR
+
+    expected = [
+      [:NOTE,    'cat',   0, 0],
+      [:NEWLINE, "\n",    6, 0],
+      [:TEXT,    'l1',    2, 1],
+      [:NEWLINE, "\n",    5, 1],
     ]
 
     assert_equal expected, @RMP.tokenize(str)
@@ -1363,6 +1531,24 @@ for all
     assert_equal expected, @RMP.tokenize(str)
   end
 
+  def test_tokenize_rule_windows
+    str = <<-STR
+---\r
+
+--- blah ---\r
+    STR
+
+    expected = [
+      [:RULE,    1,            0, 0],
+      [:NEWLINE, "\n",         4, 0],
+      [:NEWLINE, "\n",         0, 1],
+      [:TEXT, "--- blah ---",  0, 2],
+      [:NEWLINE, "\n",        13, 2],
+    ]
+
+    assert_equal expected, @RMP.tokenize(str)
+  end
+
   def test_tokenize_ualpha
     str = <<-STR
 A. l1
@@ -1436,6 +1622,19 @@ Example heading:
     ]
 
     assert_equal expected, @RMP.tokenize(str)
+  end
+
+  def test_token_pos
+    parser = @RMP.new
+    s = parser.setup_scanner 'cät'
+
+    s.scan(/\S+/)
+
+    if Object.const_defined? :Encoding then
+      assert_equal [3, 0], parser.token_pos(s.pos)
+    else
+      assert_equal [4, 0], parser.token_pos(s.pos)
+    end
   end
 
   # HACK move to Verbatim test case

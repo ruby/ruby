@@ -12,7 +12,9 @@ module RDoc::RI
 
   class Error < RDoc::Error; end
 
-end
+  autoload :Driver, 'rdoc/ri/driver'
+  autoload :Paths,  'rdoc/ri/paths'
+  autoload :Store,  'rdoc/ri/store'
 
-require 'rdoc/ri/store'
+end
 

@@ -1,13 +1,10 @@
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc'
-require 'rdoc/markup'
-require 'rdoc/markup/inline'
-require 'rdoc/markup/to_html_crossref'
+require 'rdoc/test_case'
 
-class TestRDocMarkupAttributeManager < MiniTest::Unit::TestCase
+class TestRDocMarkupAttributeManager < RDoc::TestCase
 
   def setup
+    super
+
     @am = RDoc::Markup::AttributeManager.new
 
     @bold_on  = @am.changed_attribute_by_name([], [:BOLD])
@@ -32,8 +29,8 @@ class TestRDocMarkupAttributeManager < MiniTest::Unit::TestCase
   end
 
   def crossref(text)
-    crossref_bitmap = RDoc::Markup::Attribute.bitmap_for(:_SPECIAL_) |
-                      RDoc::Markup::Attribute.bitmap_for(:CROSSREF)
+    crossref_bitmap = @am.attributes.bitmap_for(:_SPECIAL_) |
+                      @am.attributes.bitmap_for(:CROSSREF)
 
     [ @am.changed_attribute_by_name([], [:CROSSREF, :_SPECIAL_]),
       RDoc::Markup::Special.new(crossref_bitmap, text),
@@ -212,7 +209,7 @@ class TestRDocMarkupAttributeManager < MiniTest::Unit::TestCase
   end
 
   def test_special
-    @am.add_special(RDoc::Markup::ToHtmlCrossref::CROSSREF_REGEXP, :CROSSREF)
+    @am.add_special(RDoc::CrossReference::CROSSREF_REGEXP, :CROSSREF)
 
     #
     # The apostrophes in "cats'" and "dogs'" suppress the flagging of these

@@ -1,16 +1,11 @@
 # coding: utf-8
 
-require 'tempfile'
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc/markup/pre_process'
-require 'rdoc/code_objects'
-require 'rdoc/options'
+require 'rdoc/test_case'
 
-class TestRDocMarkupPreProcess < MiniTest::Unit::TestCase
+class TestRDocMarkupPreProcess < RDoc::TestCase
 
   def setup
-    RDoc::Markup::PreProcess.registered.clear
+    super
 
     @tempfile = Tempfile.new 'test_rdoc_markup_pre_process'
     @file_name = File.basename @tempfile.path
@@ -20,9 +15,21 @@ class TestRDocMarkupPreProcess < MiniTest::Unit::TestCase
   end
 
   def teardown
-    RDoc::Markup::PreProcess.registered.clear
+    super
 
     @tempfile.close
+  end
+
+  def test_class_register
+    RDoc::Markup::PreProcess.register 'for_test' do raise 'fail' end
+
+    assert_equal %w[for_test], RDoc::Markup::PreProcess.registered.keys
+  end
+
+  def test_class_post_process
+    RDoc::Markup::PreProcess.post_process do end
+
+    assert_equal 1, RDoc::Markup::PreProcess.post_processors.length
   end
 
   def test_include_file
@@ -71,6 +78,50 @@ contents of a string.
 
     assert_same out, text
     assert_equal "#\n", text
+  end
+
+  def test_handle_comment
+    text = "# :main: M\n"
+    c = comment text
+
+    out = @pp.handle c
+
+    assert_same out, text
+    assert_equal "#\n", text
+  end
+
+  def test_handle_markup
+    c = comment ':markup: rd'
+
+    @pp.handle c
+
+    assert_equal 'rd', c.format
+  end
+
+  def test_handle_markup_empty
+    c = comment ':markup:'
+
+    @pp.handle c
+
+    assert_equal 'rdoc', c.format
+  end
+
+  def test_handle_post_process
+    cd = RDoc::CodeObject.new
+
+    RDoc::Markup::PreProcess.post_process do |text, code_object|
+      code_object.metadata[:stuff] = text
+
+      :junk
+    end
+
+    text = "# a b c\n"
+
+    out = @pp.handle text, cd
+
+    assert_same out, text
+    assert_equal "# a b c\n", text
+    assert_equal "# a b c\n", cd.metadata[:stuff]
   end
 
   def test_handle_unregistered

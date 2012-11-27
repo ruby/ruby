@@ -1,5 +1,3 @@
-require 'rdoc/code_object'
-
 ##
 # Abstract class representing either a method or an attribute.
 
@@ -100,7 +98,12 @@ class RDoc::MethodAttr < RDoc::CodeObject
   # Order by #singleton then #name
 
   def <=>(other)
-    [@singleton ? 0 : 1, name] <=> [other.singleton ? 0 : 1, other.name]
+    [     @singleton ? 0 : 1,       name] <=>
+    [other.singleton ? 0 : 1, other.name]
+  end
+
+  def == other # :nodoc:
+    super or self.class == other.class and full_name == other.full_name
   end
 
   ##
@@ -135,6 +138,15 @@ class RDoc::MethodAttr < RDoc::CodeObject
     @see
   end
 
+  ##
+  # Sets the store for this class or module and its contained code objects.
+
+  def store= store
+    super
+
+    @file = @store.add_file @file.full_name if @file
+  end
+
   def find_see # :nodoc:
     return nil if singleton || is_alias_for
 
@@ -151,7 +163,7 @@ class RDoc::MethodAttr < RDoc::CodeObject
     return nil unless parent.respond_to? :ancestors
 
     searched = parent.ancestors
-    kernel = RDoc::TopLevel.all_modules_hash['Kernel']
+    kernel = @store.modules_hash['Kernel']
 
     searched << kernel if kernel &&
       parent != kernel && !searched.include?(kernel)
@@ -173,10 +185,10 @@ class RDoc::MethodAttr < RDoc::CodeObject
   # Abstract method. Contexts in their building phase call this
   # to register a new alias for this known method/attribute.
   #
-  # - creates a new AnyMethod/Attribute +newa+ named an_alias.new_name;
-  # - adds +self+ as +newa.is_alias_for+;
-  # - adds +newa+ to #aliases
-  # - adds +newa+ to the methods/attributes of +context+.
+  # - creates a new AnyMethod/Attribute named <tt>an_alias.new_name</tt>;
+  # - adds +self+ as an alias for the new method or attribute
+  # - adds the method or attribute to #aliases
+  # - adds the method or attribute to +context+.
 
   def add_alias(an_alias, context)
     raise NotImplementedError
@@ -261,6 +273,8 @@ class RDoc::MethodAttr < RDoc::CodeObject
   # HTML id-friendly method/attribute name
 
   def html_name
+    require 'cgi'
+
     CGI.escape(@name.gsub('-', '-2D')).gsub('%','-').sub(/^-/, '')
   end
 
@@ -268,14 +282,39 @@ class RDoc::MethodAttr < RDoc::CodeObject
   # Full method/attribute name including namespace
 
   def full_name
-    @full_name || "#{parent_name}#{pretty_name}"
+    @full_name ||= "#{parent_name}#{pretty_name}"
+  end
+
+  def inspect # :nodoc:
+    alias_for = @is_alias_for ? " (alias for #{@is_alias_for.name})" : nil
+    visibility = self.visibility
+    visibility = "forced #{visibility}" if force_documentation
+    "#<%s:0x%x %s (%s)%s>" % [
+      self.class, object_id,
+      full_name,
+      visibility,
+      alias_for,
+    ]
   end
 
   ##
   # '::' for a class method/attribute, '#' for an instance method.
 
   def name_prefix
-    singleton ? '::' : '#'
+    @singleton ? '::' : '#'
+  end
+
+  ##
+  # Name for output to HTML.  For class methods the full name with a "." is
+  # used like +SomeClass.method_name+.  For instance methods the class name is
+  # used if +context+ does not match the parent.
+  #
+  # This is to help prevent people from using :: to call class methods.
+
+  def output_name context
+    return "#{name_prefix}#{@name}" if context == parent
+
+    "#{parent_name}#{@singleton ? '.' : '#'}#{@name}"
   end
 
   ##
@@ -293,7 +332,7 @@ class RDoc::MethodAttr < RDoc::CodeObject
   end
 
   ##
-  # Path to this method
+  # Path to this method for use with HTML generator output.
 
   def path
     "#{@parent.path}##{aref}"
@@ -331,15 +370,19 @@ class RDoc::MethodAttr < RDoc::CodeObject
     end
   end
 
-  def inspect # :nodoc:
-    alias_for = @is_alias_for ? " (alias for #{@is_alias_for.name})" : nil
-    visibility = self.visibility
-    visibility = "forced #{visibility}" if force_documentation
-    "#<%s:0x%x %s (%s)%s>" % [
-      self.class, object_id,
+  ##
+  # Used by RDoc::Generator::JsonIndex to create a record for the search
+  # engine.
+
+  def search_record
+    [
+      @name,
       full_name,
-      visibility,
-      alias_for,
+      @name,
+      @parent.full_name,
+      path,
+      params,
+      snippet(@comment),
     ]
   end
 

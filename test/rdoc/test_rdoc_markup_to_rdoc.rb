@@ -1,7 +1,4 @@
-require 'rubygems'
-require 'rdoc/markup/text_formatter_test_case'
-require 'rdoc/markup/to_rdoc'
-require 'minitest/autorun'
+require 'rdoc/test_case'
 
 class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
 
@@ -16,6 +13,10 @@ class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
 
   def accept_blank_line
     assert_equal "\n", @to.res.join
+  end
+
+  def accept_block_quote
+    assert_equal "> quote\n", @to.res.join
   end
 
   def accept_document
@@ -67,7 +68,7 @@ class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_list_item_end_label
-    assert_equal "\n", @to.res.join
+    assert_equal "cat:\n", @to.res.join
     assert_equal 0, @to.indent, 'indent'
   end
 
@@ -77,7 +78,7 @@ class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_list_item_end_note
-    assert_equal "\n", @to.res.join
+    assert_equal "cat:\n", @to.res.join
     assert_equal 0, @to.indent, 'indent'
   end
 
@@ -244,8 +245,25 @@ class TestRDocMarkupToRDoc < RDoc::Markup::TextFormatterTestCase
     assert_equal "<tt>teletype</tt>:\n  teletype description\n\n", @to.res.join
   end
 
+  def accept_list_item_start_note_multi_description
+    assert_equal "label:\n  description one\n\n  description two\n\n",
+                 @to.res.join
+  end
+
+  def accept_list_item_start_note_multi_label
+    assert_equal "one\ntwo:\n  two headers\n\n", @to.res.join
+  end
+
   def accept_paragraph_b
     assert_equal "reg <b>bold words</b> reg\n", @to.end_accepting
+  end
+
+  def accept_paragraph_br
+    assert_equal "one\ntwo\n", @to.end_accepting
+  end
+
+  def accept_paragraph_break
+    assert_equal "hello\nworld\n", @to.end_accepting
   end
 
   def accept_paragraph_i
@@ -325,6 +343,24 @@ words words words words
     EXPECTED
 
     assert_equal expected, @to.end_accepting
+  end
+
+  # functional test
+  def test_convert_list_note
+    note_list = <<-NOTE_LIST
+foo ::
+bar ::
+  hi
+    NOTE_LIST
+
+    expected = <<-EXPECTED
+foo
+bar:
+  hi
+
+    EXPECTED
+
+    assert_equal expected, @to.convert(note_list)
   end
 
   def test_accept_indented_paragraph

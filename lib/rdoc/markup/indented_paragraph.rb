@@ -29,5 +29,19 @@ class RDoc::Markup::IndentedParagraph < RDoc::Markup::Raw
     visitor.accept_indented_paragraph self
   end
 
+  ##
+  # Joins the raw paragraph text and converts inline HardBreaks to the
+  # +hard_break+ text followed by the indent.
+
+  def text hard_break = nil
+    @parts.map do |part|
+      if RDoc::Markup::HardBreak === part then
+        '%1$s%3$*2$s' % [hard_break, @indent, ' '] if hard_break
+      else
+        part
+      end
+    end.join
+  end
+
 end
 

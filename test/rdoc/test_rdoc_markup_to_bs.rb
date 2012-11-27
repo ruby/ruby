@@ -1,7 +1,4 @@
-require 'rubygems'
-require 'rdoc/markup/text_formatter_test_case'
-require 'rdoc/markup/to_bs'
-require 'minitest/autorun'
+require 'rdoc/test_case'
 
 class TestRDocMarkupToBs < RDoc::Markup::TextFormatterTestCase
 
@@ -16,6 +13,10 @@ class TestRDocMarkupToBs < RDoc::Markup::TextFormatterTestCase
 
   def accept_blank_line
     assert_equal "\n", @to.res.join
+  end
+
+  def accept_block_quote
+    assert_equal "> quote\n", @to.res.join
   end
 
   def accept_document
@@ -68,7 +69,7 @@ class TestRDocMarkupToBs < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_list_item_end_label
-    assert_equal "\n", @to.res.join
+    assert_equal "cat:\n", @to.res.join
     assert_equal 0, @to.indent, 'indent'
   end
 
@@ -78,7 +79,7 @@ class TestRDocMarkupToBs < RDoc::Markup::TextFormatterTestCase
   end
 
   def accept_list_item_end_note
-    assert_equal "\n", @to.res.join
+    assert_equal "cat:\n", @to.res.join
     assert_equal 0, @to.indent, 'indent'
   end
 
@@ -252,9 +253,29 @@ class TestRDocMarkupToBs < RDoc::Markup::TextFormatterTestCase
     assert_equal "teletype:\n  teletype description\n\n", @to.res.join
   end
 
+  def accept_list_item_start_note_multi_description
+    assert_equal "label:\n  description one\n\n  description two\n\n",
+                 @to.res.join
+  end
+
+  def accept_list_item_start_note_multi_label
+    assert_equal "one\ntwo:\n  two headers\n\n", @to.res.join
+  end
+
   def accept_paragraph_b
     skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
     assert_equal "reg b\bbo\bol\bld\bd \b w\bwo\bor\brd\bds\bs reg\n",
+                 @to.end_accepting
+  end
+
+  def accept_paragraph_br
+    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
+    assert_equal "one\ntwo\n", @to.end_accepting
+  end
+
+  def accept_paragraph_break
+    skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
+    assert_equal "hello\nworld\n",
                  @to.end_accepting
   end
 

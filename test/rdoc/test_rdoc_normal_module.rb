@@ -9,7 +9,7 @@ class TestRDocNormalModule < XrefTestCase
   end
 
   def test_ancestors_module
-    top_level = RDoc::TopLevel.new 'file.rb'
+    top_level = @store.add_file 'file.rb'
     mod = top_level.add_module RDoc::NormalModule, 'Mod'
     incl = RDoc::Include.new 'Incl', ''
 

@@ -1,5 +1,3 @@
-require 'rdoc/code_object'
-
 ##
 # Represent an alias, which is an old_name/new_name pair associated with a
 # particular context

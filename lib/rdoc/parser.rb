@@ -1,41 +1,31 @@
-require 'rdoc'
-require 'rdoc/code_objects'
-require 'rdoc/markup/pre_process'
-require 'rdoc/stats'
-
 ##
-# A parser is a class that subclasses RDoc::Parser and implements
+# A parser is simple a class that subclasses RDoc::Parser and implements #scan
+# to fill in an RDoc::TopLevel with parsed data.
 #
-#   #initialize top_level, file_name, body, options, stats
+# The initialize method takes an RDoc::TopLevel to fill with parsed content,
+# the name of the file to be parsed, the content of the file, an RDoc::Options
+# object and an RDoc::Stats object to inform the user of parsed items.  The
+# scan method is then called to parse the file and must return the
+# RDoc::TopLevel object.  By calling super these items will be set for you.
 #
-# and
+# In order to be used by RDoc the parser needs to register the file extensions
+# it can parse.  Use ::parse_files_matching to register extensions.
 #
-#   #scan
-#
-# The initialize method takes a file name to be used, the body of the file,
-# and an RDoc::Options object. The scan method is then called to return an
-# appropriately parsed TopLevel code object.
-#
-# RDoc::Parser::for is a factory that creates the correct parser for a
-# given filename extension.  Parsers have to register themselves RDoc::Parser
-# using parse_files_matching as when they are loaded:
-#
-#   require "rdoc/parser"
+#   require 'rdoc'
 #
 #   class RDoc::Parser::Xyz < RDoc::Parser
-#     parse_files_matching /\.xyz$/ # <<<<
+#     parse_files_matching /\.xyz$/
 #
-#     def initialize top_level, file_name, body, options, stats
-#       ...
+#     def initialize top_level, file_name, content, options, stats
+#       super
+#
+#       # extra initialization if needed
 #     end
 #
 #     def scan
-#       ...
+#       # parse file and fill in @top_level
 #     end
 #   end
-#
-# If a plain text file is detected, RDoc also looks for a shebang line in case
-# the file is a shell script.
 
 class RDoc::Parser
 
@@ -61,7 +51,7 @@ class RDoc::Parser
     old_ext = old_ext.sub(/^\.(.*)/, '\1')
     new_ext = new_ext.sub(/^\.(.*)/, '\1')
 
-    parser = can_parse_by_name "xxx.#{old_ext}"
+    parser = can_parse "xxx.#{old_ext}"
     return false unless parser
 
     RDoc::Parser.parsers.unshift [/\.#{new_ext}$/, parser]
@@ -80,14 +70,14 @@ class RDoc::Parser
 
     have_encoding = s.respond_to? :encoding
 
+    if have_encoding then
+      return false if s.encoding != Encoding::ASCII_8BIT and s.valid_encoding?
+    end
+
     return true if s[0, 2] == Marshal.dump('')[0, 2] or s.index("\x00")
 
     if have_encoding then
-      mode = "r"
-      s.sub!(/\A#!.*\n/, '')     # assume shebang line isn't longer than 1024.
-      encoding = s[/^\s*\#\s*(?:-\*-\s*)?(?:en)?coding:\s*([^\s;]+?)(?:-\*-|[\s;])/, 1]
-      mode = "r:#{encoding}" if encoding
-      s = File.open(file, mode) {|f| f.gets(nil, 1024)}
+      s.force_encoding Encoding.default_external
 
       not s.valid_encoding?
     else
@@ -134,54 +124,51 @@ class RDoc::Parser
     zip_signature == "PK\x03\x04" or
       zip_signature == "PK\x05\x06" or
       zip_signature == "PK\x07\x08"
-  rescue
-    false
   end
 
   ##
   # Return a parser that can handle a particular extension
 
   def self.can_parse(file_name)
-    parser = can_parse_by_name(file_name)
+    parser = RDoc::Parser.parsers.find { |regexp,| regexp =~ file_name }.last
 
     # HACK Selenium hides a jar file using a .txt extension
     return if parser == RDoc::Parser::Simple and zip? file_name
 
-    parser
-  end
-
-  def self.can_parse_by_name(file_name)
-    pattern, parser = RDoc::Parser.parsers.find { |regexp,| regexp =~ file_name }
-
     # The default parser must not parse binary files
     ext_name = File.extname file_name
     return parser if ext_name.empty?
-    return if parser == RDoc::Parser::Simple and ext_name !~ /txt|rdoc/ and file_name[pattern].empty?
+    return if parser == RDoc::Parser::Simple and ext_name !~ /txt|rdoc/
 
     parser
+  rescue Errno::EACCES
   end
 
   ##
-  # Find the correct parser for a particular file name. Return a SimpleParser
-  # for ones that we don't know
+  # Finds and instantiates the correct parser for the given +file_name+ and
+  # +content+.
 
-  def self.for(top_level, file_name, body, options, stats)
+  def self.for top_level, file_name, content, options, stats
     return if binary? file_name
 
-    # If no extension, look for shebang
-    if file_name !~ /\.\w+$/ && body =~ %r{\A#!(.+)} then
-      shebang = $1
-      case shebang
-      when %r{env\s+ruby}, %r{/ruby}
-        file_name = "dummy.rb"
-      end
-    end
+    parser = use_markup content
 
-    parser = can_parse file_name
+    unless parser then
+      # If no extension, look for shebang
+      if file_name !~ /\.\w+$/ && content =~ %r{\A#!(.+)} then
+        shebang = $1
+        case shebang
+        when %r{env\s+ruby}, %r{/ruby}
+          file_name = "dummy.rb"
+        end
+      end
+
+      parser = can_parse file_name
+    end
 
     return unless parser
 
-    parser.new top_level, file_name, body, options, stats
+    parser.new top_level, file_name, content, options, stats
   end
 
   ##
@@ -194,13 +181,48 @@ class RDoc::Parser
   end
 
   ##
-  # Creates a new Parser storing +top_level+, +file_name+, +content+,
-  # +options+ and +stats+ in instance variables.
+  # If there is a <tt>markup: parser_name</tt> comment at the front of the
+  # file, use it to determine the parser.  For example:
   #
-  # Usually invoked by +super+
+  #   # markup: rdoc
+  #   # Class comment can go here
+  #
+  #   class C
+  #   end
+  #
+  # The comment should appear as the first line of the +content+.
+  #
+  # If the content contains a shebang or editor modeline the comment may
+  # appear on the second or third line.
+  #
+  # Any comment style may be used to hide the markup comment.
 
-  def initialize(top_level, file_name, content, options, stats)
+  def self.use_markup content
+    markup = content.lines.first(3).grep(/markup:\s+(\w+)/) { $1 }.first
+
+    return unless markup
+
+    # TODO Ruby should be returned only when the filename is correct
+    return RDoc::Parser::Ruby if %w[tomdoc markdown].include? markup
+
+    markup = Regexp.escape markup
+
+    RDoc::Parser.parsers.find do |_, parser|
+      /^#{markup}$/i =~ parser.name.sub(/.*:/, '')
+    end.last
+  end
+
+  ##
+  # Creates a new Parser storing +top_level+, +file_name+, +content+,
+  # +options+ and +stats+ in instance variables.  In +@preprocess+ an
+  # RDoc::Markup::PreProcess object is created which allows processing of
+  # directives.
+
+  def initialize top_level, file_name, content, options, stats
     @top_level = top_level
+    @top_level.parser = self.class
+    @store = @top_level.store
+
     @file_name = file_name
     @content = content
     @options = options
@@ -210,7 +232,15 @@ class RDoc::Parser
     @preprocess.options = @options
   end
 
+  autoload :RubyTools, 'rdoc/parser/ruby_tools'
+  autoload :Text,      'rdoc/parser/text'
+
 end
 
+# simple must come first in order to show up last in the parsers list
 require 'rdoc/parser/simple'
+require 'rdoc/parser/c'
+require 'rdoc/parser/markdown'
+require 'rdoc/parser/rd'
+require 'rdoc/parser/ruby'
 

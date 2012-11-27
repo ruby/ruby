@@ -1,15 +1,25 @@
 # coding: utf-8
 
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc'
-require 'rdoc/text'
-require 'rdoc/markup'
-require 'rdoc/markup/formatter'
+require 'rdoc/test_case'
 
-class TestRDocText < MiniTest::Unit::TestCase
+class TestRDocText < RDoc::TestCase
 
   include RDoc::Text
+
+  def setup
+    super
+
+    @options = RDoc::Options.new
+
+    @top_level = @store.add_file 'file.rb'
+  end
+
+  def mu_pp obj
+    s = ''
+    s = PP.pp obj, s
+    s = s.force_encoding Encoding.default_external if defined? Encoding
+    s.chomp
+  end
 
   def test_self_encode_fallback
     skip "Encoding not implemented" unless Object.const_defined? :Encoding
@@ -110,13 +120,19 @@ The comments associated with
     assert_equal Encoding::US_ASCII, result.encoding
   end
 
-  def test_markup
-    def formatter() RDoc::Markup::ToHtml.new end
+  def test_markup_string
+    out = markup('hi').gsub("\n", '')
 
-    assert_equal "<p>hi</p>", markup('hi').gsub("\n", '')
+    assert_equal '<p>hi</p>', out
   end
 
-  def test_normalize_comment
+  def test_markup_comment
+    out = markup(comment('hi')).gsub("\n", '')
+
+    assert_equal '<p>hi</p>', out
+  end
+
+  def test_normalize_comment_hash
     text = <<-TEXT
 ##
 # we don't worry too much.
@@ -133,8 +149,55 @@ The comments associated with
     assert_equal expected, normalize_comment(text)
   end
 
+  def test_normalize_comment_stars_single_space
+    text = <<-TEXT
+/*
+ * we don't worry too much.
+ * 
+ * The comments associated with
+ */
+    TEXT
+
+    expected = <<-EXPECTED.rstrip
+we don't worry too much.
+
+The comments associated with
+    EXPECTED
+
+    assert_equal expected, normalize_comment(text)
+  end
+
+  def test_normalize_comment_stars_single_double_space
+    text = <<-TEXT
+/*
+ *  we don't worry too much.
+ *  
+ *  The comments associated with
+ */
+    TEXT
+
+    expected = <<-EXPECTED.rstrip
+we don't worry too much.
+
+The comments associated with
+    EXPECTED
+
+    assert_equal expected, normalize_comment(text)
+  end
+
   def test_parse
     assert_kind_of RDoc::Markup::Document, parse('hi')
+  end
+
+  def test_parse_comment
+    expected = RDoc::Markup::Document.new
+    expected.file = @top_level
+
+    c = comment ''
+    parsed = parse c
+
+    assert_equal expected, parsed
+    assert_same parsed, parse(c)
   end
 
   def test_parse_document
@@ -149,9 +212,91 @@ The comments associated with
     assert_equal RDoc::Markup::Document.new, parse("#\n")
   end
 
+  def test_parse_format_markdown
+    expected =
+      @RM::Document.new(
+        @RM::Paragraph.new('it _works_'))
+
+    parsed = parse 'it *works*', 'markdown'
+
+    assert_equal expected, parsed
+  end
+
+  def test_parse_format_rd
+    expected =
+      @RM::Document.new(
+        @RM::Paragraph.new('it <em>works</em>'))
+
+    parsed = parse 'it ((*works*))', 'rd'
+
+    assert_equal expected, parsed
+  end
+
+  def test_parse_format_tomdoc
+    code = verb('1 + 1')
+    code.format = :ruby
+
+    expected =
+      doc(
+        para('It does a thing'),
+        blank_line,
+        head(3, 'Examples'),
+        blank_line,
+        code)
+
+    text = <<-TOMDOC
+It does a thing
+
+Examples
+
+  1 + 1
+    TOMDOC
+
+    parsed = parse text, 'tomdoc'
+
+    assert_equal expected, parsed
+  end
+
   def test_parse_newline
     assert_equal RDoc::Markup::Document.new, parse("\n")
   end
+
+#  def test_snippet
+#    text = <<-TEXT
+#This is one-hundred characters or more of text in a single paragraph.  This
+#paragraph will be cut off some point after the one-hundredth character.
+#    TEXT
+#
+#    expected = text.gsub(/\r?\n/, ' ').sub(/ some point.*/, '')
+#
+#    assert_equal expected, snippet(text)
+#  end
+#
+#  def test_snippet_comment
+#    c = comment 'This is a comment'
+#
+#    assert_equal 'This is a comment', snippet(c)
+#  end
+#
+#  def test_snippet_no_space
+#    text = <<-TEXT.strip
+#This is one-hundred characters or more of text in a single paragraph.  This
+#paragraph will not be cut
+#    TEXT
+#
+#    expected = <<-EXPECTED.strip.gsub(/\r?\n/, ' ')
+#This is one-hundred characters or more of text in a single paragraph.  This
+#paragraph will not be cut
+#    EXPECTED
+#
+#    assert_equal expected, snippet(text)
+#  end
+#
+#  def test_snippet_short
+#    text = 'This is a comment'
+#
+#    assert_equal text.dup, snippet(text)
+#  end
 
   def test_strip_hashes
     text = <<-TEXT
@@ -309,6 +454,24 @@ The comments associated with
     assert_equal Encoding::BINARY, result.encoding
   end
 
+  def test_strip_stars_no_stars
+    text = <<-TEXT
+* we don't worry too much.
+
+The comments associated with
+
+    TEXT
+
+    expected = <<-EXPECTED
+* we don't worry too much.
+
+The comments associated with
+
+    EXPECTED
+
+    assert_equal expected, strip_stars(text)
+  end
+
   def test_to_html_apostrophe
     assert_equal '‘a', to_html("'a")
     assert_equal 'a’', to_html("a'")
@@ -318,6 +481,10 @@ The comments associated with
 
   def test_to_html_backslash
     assert_equal 'S', to_html('\\S')
+  end
+
+  def test_to_html_br
+    assert_equal '<br>', to_html('<br>')
   end
 
   def test_to_html_copyright
@@ -391,6 +558,10 @@ The comments associated with
     end
 
     assert_equal "mismatched <tt> tag\n", err
+  end
+
+  def formatter()
+    RDoc::Markup::ToHtml.new @options
   end
 
 end

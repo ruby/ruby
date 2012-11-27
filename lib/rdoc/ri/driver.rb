@@ -11,11 +11,7 @@ begin
 rescue LoadError
 end
 
-require 'rdoc/ri'
-require 'rdoc/ri/paths'
-require 'rdoc/markup'
-require 'rdoc/markup/formatter'
-require 'rdoc/text'
+require 'rdoc'
 
 ##
 # For RubyGems backwards compatibility
@@ -61,6 +57,11 @@ class RDoc::RI::Driver
   end
 
   ##
+  # Show all method documentation following a class or module
+
+  attr_accessor :show_all
+
+  ##
   # An RDoc::RI::Store for each entry in the RI path
 
   attr_accessor :stores
@@ -75,17 +76,18 @@ class RDoc::RI::Driver
 
   def self.default_options
     options = {}
-    options[:use_stdout] = !$stdout.tty?
-    options[:width] = 72
     options[:interactive] = false
-    options[:use_cache] = true
-    options[:profile] = false
+    options[:profile]     = false
+    options[:show_all]    = false
+    options[:use_cache]   = true
+    options[:use_stdout]  = !$stdout.tty?
+    options[:width]       = 72
 
     # By default all standard paths are used.
-    options[:use_system] = true
-    options[:use_site] = true
-    options[:use_home] = true
-    options[:use_gems] = true
+    options[:use_system]     = true
+    options[:use_site]       = true
+    options[:use_home]       = true
+    options[:use_gems]       = true
     options[:extra_doc_dirs] = []
 
     return options
@@ -123,7 +125,11 @@ Usage: #{opt.program_name} [options] [names...]
 
 Where name can be:
 
-  Class | Class::method | Class#method | Class.method | method
+  Class | Module | Module::Class
+
+  Class::method | Class#method | Class.method | method
+
+  gem_name: | gem_name:README | gem_name:History
 
 All class names may be abbreviated to their minimum unambiguous form. If a name
 is ambiguous, all valid options will be listed.
@@ -131,12 +137,18 @@ is ambiguous, all valid options will be listed.
 A '.' matches either class or instance methods, while #method
 matches only instance and ::method matches only class methods.
 
+README and other files may be displayed by prefixing them with the gem name
+they're contained in.  If the gem name is followed by a ':' all files in the
+gem will be shown.  The file name extension may be omitted where it is
+unambiguous.
+
 For example:
 
     #{opt.program_name} Fil
     #{opt.program_name} File
     #{opt.program_name} File.new
     #{opt.program_name} zip
+    #{opt.program_name} rdoc:README
 
 Note that shell quoting or escaping may be required for method names containing
 punctuation:
@@ -151,7 +163,10 @@ To see the default directories ri will search, run:
 Specifying the --system, --site, --home, --gems or --doc-dir options will
 limit ri to searching only the specified directories.
 
-Options may also be set in the 'RI' environment variable.
+ri options may be set in the 'RI' environment variable.
+
+The ri pager can be set with the 'RI_PAGER' environment variable or the
+'PAGER' environment variable.
       EOT
 
       opt.separator nil
@@ -159,10 +174,57 @@ Options may also be set in the 'RI' environment variable.
 
       opt.separator nil
 
+      opt.on("--[no-]interactive", "-i",
+             "In interactive mode you can repeatedly",
+             "look up methods with autocomplete.") do |interactive|
+        options[:interactive] = interactive
+      end
+
+      opt.separator nil
+
+      opt.on("--[no-]all", "-a",
+             "Show all documentation for a class or",
+             "module.") do |show_all|
+        options[:show_all] = show_all
+      end
+
+      opt.separator nil
+
+      opt.on("--[no-]list", "-l",
+             "List classes ri knows about.") do |list|
+        options[:list] = list
+      end
+
+      opt.separator nil
+
+      opt.on("--[no-]pager", "-T",
+             "Send output directly to stdout,",
+             "rather than to a pager.") do |use_pager|
+        options[:use_stdout] = !use_pager
+      end
+
+      opt.separator nil
+
+      opt.on("--width=WIDTH", "-w", OptionParser::DecimalInteger,
+             "Set the width of the output.") do |width|
+        options[:width] = width
+      end
+
+      opt.separator nil
+
+      opt.on("--server [PORT]", Integer,
+             "Run RDoc server on the given port.",
+             "The default port is 8214.") do |port|
+        options[:server] = port || 8214
+      end
+
+      opt.separator nil
+
       formatters = RDoc::Markup.constants.grep(/^To[A-Z][a-z]+$/).sort
       formatters = formatters.sort.map do |formatter|
         formatter.to_s.sub('To', '').downcase
       end
+      formatters -= %w[html label test] # remove useless output formats
 
       opt.on("--format=NAME", "-f",
              "Uses the selected formatter. The default",
@@ -173,50 +235,13 @@ Options may also be set in the 'RI' environment variable.
       end
 
       opt.separator nil
-
-      opt.on("--no-pager", "-T",
-             "Send output directly to stdout,",
-             "rather than to a pager.") do
-        options[:use_stdout] = true
-      end
-
-      opt.separator nil
-
-      opt.on("--width=WIDTH", "-w", OptionParser::DecimalInteger,
-             "Set the width of the output.") do |value|
-        options[:width] = value
-      end
-
-      opt.separator nil
-
-      opt.on("--interactive", "-i",
-             "In interactive mode you can repeatedly",
-             "look up methods with autocomplete.") do
-        options[:interactive] = true
-      end
-
-      opt.separator nil
-
-      opt.on("--list", "-l",
-             "List classes ri knows about.") do
-        options[:list] = true
-      end
-
-      opt.separator nil
-
-      opt.on("--[no-]profile",
-             "Run with the ruby profiler") do |value|
-        options[:profile] = value
-      end
-
-      opt.separator nil
       opt.separator "Data source options:"
       opt.separator nil
 
-      opt.on("--list-doc-dirs",
+      opt.on("--[no-]list-doc-dirs",
              "List the directories from which ri will",
-             "source documentation on stdout and exit.") do
-        options[:list_doc_dirs] = true
+             "source documentation on stdout and exit.") do |list_doc_dirs|
+        options[:list_doc_dirs] = list_doc_dirs
       end
 
       opt.separator nil
@@ -282,6 +307,13 @@ Options may also be set in the 'RI' environment variable.
 
       opt.separator nil
       opt.separator "Debug options:"
+      opt.separator nil
+
+      opt.on("--[no-]profile",
+             "Run with the ruby profiler") do |value|
+        options[:profile] = value
+      end
+
       opt.separator nil
 
       opt.on("--dump=CACHE", File,
@@ -356,7 +388,12 @@ Options may also be set in the 'RI' environment variable.
     @list_doc_dirs = options[:list_doc_dirs]
 
     @interactive = options[:interactive]
+    @server      = options[:server]
     @use_stdout  = options[:use_stdout]
+    @show_all    = options[:show_all]
+
+    # pager process for jruby
+    @jruby_pager_process = nil
   end
 
   ##
@@ -404,15 +441,23 @@ Options may also be set in the 'RI' environment variable.
   end
 
   ##
-  # Adds +includes+ to +out+
+  # Adds +extends+ to +out+
 
-  def add_includes out, includes
-    return if includes.empty?
+  def add_extends out, extends
+    add_extension_modules out, 'Extended by', extends
+  end
+
+  ##
+  # Adds a list of +extensions+ to this module of the given +type+ to +out+.
+  # add_includes and add_extends call this, so you should use those directly.
+
+  def add_extension_modules out, type, extensions
+    return if extensions.empty?
 
     out << RDoc::Markup::Rule.new(1)
-    out << RDoc::Markup::Heading.new(1, "Includes:")
+    out << RDoc::Markup::Heading.new(1, "#{type}:")
 
-    includes.each do |modules, store|
+    extensions.each do |modules, store|
       if modules.length == 1 then
         include = modules.first
         name = include.name
@@ -450,6 +495,37 @@ Options may also be set in the 'RI' environment variable.
   end
 
   ##
+  # Adds +includes+ to +out+
+
+  def add_includes out, includes
+    add_extension_modules out, 'Includes', includes
+  end
+
+  ##
+  # Looks up the method +name+ and adds it to +out+
+
+  def add_method out, name
+    filtered   = lookup_method name
+
+    method_out = method_document name, filtered
+
+    out.concat method_out.parts
+  end
+
+  ##
+  # Adds documentation for all methods in +klass+ to +out+
+
+  def add_method_documentation out, klass
+    klass.method_list.each do |method|
+      begin
+        add_method out, method.full_name
+      rescue NotFoundError
+        next
+      end
+    end
+  end
+
+  ##
   # Adds a list of +methods+ to +out+ with a heading of +name+
 
   def add_method_list out, methods, name
@@ -458,10 +534,10 @@ Options may also be set in the 'RI' environment variable.
     out << RDoc::Markup::Heading.new(1, "#{name}:")
     out << RDoc::Markup::BlankLine.new
 
-    if @use_stdout and !@interactive
-      out.push(*methods.map do |method|
+    if @use_stdout and !@interactive then
+      out.concat methods.map { |method|
         RDoc::Markup::Verbatim.new method
-      end)
+      }
     else
       out << RDoc::Markup::IndentedParagraph.new(2, methods.join(', '))
     end
@@ -493,8 +569,8 @@ Options may also be set in the 'RI' environment variable.
 
       klasses = klasses - seen
 
-      ancestors.push(*klasses)
-      unexamined.push(*klasses)
+      ancestors.concat klasses
+      unexamined.concat klasses
     end
 
     ancestors.reverse
@@ -509,7 +585,7 @@ Options may also be set in the 'RI' environment variable.
   ##
   # Builds a RDoc::Markup::Document from +found+, +klasess+ and +includes+
 
-  def class_document name, found, klasses, includes
+  def class_document name, found, klasses, includes, extends
     also_in = []
 
     out = RDoc::Markup::Document.new
@@ -517,6 +593,7 @@ Options may also be set in the 'RI' environment variable.
     add_class out, name, klasses
 
     add_includes out, includes
+    add_extends  out, extends
 
     found.each do |store, klass|
       comment = klass.comment
@@ -542,7 +619,7 @@ Options may also be set in the 'RI' environment variable.
           parts.flatten!
           parts.pop
 
-          out.push(*parts)
+          out.concat parts
         else
           out << comment
         end
@@ -559,13 +636,13 @@ Options may also be set in the 'RI' environment variable.
 
         constants = klass.constants.sort_by { |constant| constant.name }
 
-        list.push(*constants.map do |constant|
+        list.items.concat constants.map { |constant|
           parts = constant.comment.parts if constant.comment
           parts << RDoc::Markup::Paragraph.new('[not documented]') if
             parts.empty?
 
           RDoc::Markup::ListItem.new(constant.name, *parts)
-        end)
+        }
 
         out << list
         out << RDoc::Markup::BlankLine.new
@@ -574,6 +651,8 @@ Options may also be set in the 'RI' environment variable.
       add_method_list out, class_methods,    'Class methods'
       add_method_list out, instance_methods, 'Instance methods'
       add_method_list out, attributes,       'Attributes'
+
+      add_method_documentation out, klass if @show_all
     end
 
     add_also_in out, also_in
@@ -601,26 +680,29 @@ Options may also be set in the 'RI' environment variable.
   end
 
   ##
-  # Returns the stores wherin +name+ is found along with the classes and
-  # includes that match it
+  # Returns the stores wherein +name+ is found along with the classes,
+  # extends and includes that match it
 
-  def classes_and_includes_for name
+  def classes_and_includes_and_extends_for name
     klasses = []
+    extends = []
     includes = []
 
     found = @stores.map do |store|
       begin
         klass = store.load_class name
         klasses  << klass
+        extends  << [klass.extends,  store] if klass.extends
         includes << [klass.includes, store] if klass.includes
         [store, klass]
-      rescue Errno::ENOENT
+      rescue RDoc::Store::MissingFileError
       end
     end.compact
 
+    extends.reject!  do |modules,| modules.empty? end
     includes.reject! do |modules,| modules.empty? end
 
-    [found, klasses, includes]
+    [found, klasses, includes, extends]
   end
 
   ##
@@ -659,7 +741,7 @@ Options may also be set in the 'RI' environment variable.
         completions << "#{klass}#{selector}"
       end
 
-      completions.push(*methods)
+      completions.concat methods
     end
 
     completions.sort.uniq
@@ -682,11 +764,12 @@ Options may also be set in the 'RI' environment variable.
   def display_class name
     return if name =~ /#|\./
 
-    found, klasses, includes = classes_and_includes_for name
+    found, klasses, includes, extends =
+      classes_and_includes_and_extends_for name
 
     return if found.empty?
 
-    out = class_document name, found, klasses, includes
+    out = class_document name, found, klasses, includes, extends
 
     display out
   end
@@ -695,13 +778,9 @@ Options may also be set in the 'RI' environment variable.
   # Outputs formatted RI data for method +name+
 
   def display_method name
-    found = load_methods_matching name
+    out = RDoc::Markup::Document.new
 
-    raise NotFoundError, name if found.empty?
-
-    filtered = filter_methods found, name
-
-    out = method_document name, filtered
+    add_method out, name
 
     display out
   end
@@ -713,6 +792,11 @@ Options may also be set in the 'RI' environment variable.
   # be guessed, raises an error if +name+ couldn't be guessed.
 
   def display_name name
+    if name =~ /\w:(\w|$)/ then
+      display_page name
+      return true
+    end
+
     return true if display_class name
 
     display_method name if name =~ /::|#|\./
@@ -727,7 +811,7 @@ Options may also be set in the 'RI' environment variable.
     page do |io|
       io.puts "#{name} not found, maybe you meant:"
       io.puts
-      io.puts matches.join("\n")
+      io.puts matches.sort.join("\n")
     end
 
     false
@@ -742,6 +826,61 @@ Options may also be set in the 'RI' environment variable.
 
       display_name name
     end
+  end
+
+  ##
+  # Outputs formatted RI data for page +name+.
+
+  def display_page name
+    store_name, page_name = name.split ':', 2
+
+    store = @stores.find { |s| s.source == store_name }
+
+    return display_page_list store if page_name.empty?
+
+    pages = store.cache[:pages]
+
+    unless pages.include? page_name then
+      found_names = pages.select do |n|
+        n =~ /^#{Regexp.escape page_name}\.[^.]+$/
+      end
+
+      if found_names.length > 1 then
+        return display_page_list store, found_names, page_name
+      end
+
+      page_name = found_names.first
+    end
+
+    page = store.load_page page_name
+
+    display page.comment
+  end
+
+  ##
+  # Outputs a formatted RI page list for the pages in +store+.
+
+  def display_page_list store, pages = store.cache[:pages], search = nil
+    out = RDoc::Markup::Document.new
+
+    title = if search then
+              "#{search} pages"
+            else
+              'Pages'
+            end
+
+    out << RDoc::Markup::Heading.new(1, "#{title} in #{store.friendly_path}")
+    out << RDoc::Markup::BlankLine.new
+
+    list = RDoc::Markup::List.new(:BULLET)
+
+    pages.each do |page|
+      list << RDoc::Markup::Paragraph.new(page)
+    end
+
+    out << list
+
+    display out
   end
 
   ##
@@ -776,7 +915,12 @@ Options may also be set in the 'RI' environment variable.
 
     return [selector, method].join if klass.empty?
 
-    "#{expand_class klass}#{selector}#{method}"
+    case selector
+    when ':' then
+      [find_store(klass),   selector, method]
+    else
+      [expand_class(klass), selector, method]
+    end.join
   end
 
   ##
@@ -838,6 +982,55 @@ Options may also be set in the 'RI' environment variable.
     end
 
     self
+  end
+
+  ##
+  # Finds the given +pager+ for jruby.  Returns an IO if +pager+ was found.
+  #
+  # Returns false if +pager+ does not exist.
+  #
+  # Returns nil if the jruby JVM doesn't support ProcessBuilder redirection
+  # (1.6 and older).
+
+  def find_pager_jruby pager
+    require 'java'
+    require 'shellwords'
+
+    return nil unless java.lang.ProcessBuilder.constants.include? :Redirect
+
+    pager = Shellwords.split pager
+
+    pb = java.lang.ProcessBuilder.new(*pager)
+    pb = pb.redirect_output java.lang.ProcessBuilder::Redirect::INHERIT
+
+    @jruby_pager_process = pb.start
+
+    input = @jruby_pager_process.output_stream
+
+    io = input.to_io
+    io.sync = true
+    io
+  rescue java.io.IOException
+    false
+  end
+
+  ##
+  # Finds a store that matches +name+ which can be the name of a gem, "ruby",
+  # "home" or "site".
+  #
+  # See also RDoc::Store#source
+
+  def find_store name
+    @stores.each do |store|
+      source = store.source
+
+      return source if source == name
+
+      return source if
+        store.type == :gem and source =~ /^#{Regexp.escape name}-\d/
+    end
+
+    raise RDoc::RI::Driver::NotFoundError, name
   end
 
   ##
@@ -909,7 +1102,7 @@ Options may also be set in the 'RI' environment variable.
     classes = []
 
     stores.each do |store|
-      classes << store.modules
+      classes << store.module_names
     end
 
     classes = classes.flatten.uniq.sort
@@ -951,7 +1144,7 @@ Options may also be set in the 'RI' environment variable.
             "#{klass}##{match}"
           end
 
-          found.push(*matches)
+          found.concat matches
         end
       end
 
@@ -965,7 +1158,7 @@ Options may also be set in the 'RI' environment variable.
           "#{klass}::#{match}"
         end
 
-        found.push(*matches)
+        found.concat matches
       end
     end
 
@@ -1012,7 +1205,18 @@ Options may also be set in the 'RI' environment variable.
   end
 
   ##
-  # Builds a RDoc::Markup::Document from +found+, +klasess+ and +includes+
+  # Returns a filtered list of methods matching +name+
+
+  def lookup_method name
+    found = load_methods_matching name
+
+    raise NotFoundError, name if found.empty?
+
+    filter_methods found, name
+  end
+
+  ##
+  # Builds a RDoc::Markup::Document from +found+, +klasses+ and +includes+
 
   def method_document name, filtered
     out = RDoc::Markup::Document.new
@@ -1027,12 +1231,19 @@ Options may also be set in the 'RI' environment variable.
         unless name =~ /^#{Regexp.escape method.parent_name}/ then
           out << RDoc::Markup::Heading.new(3, "Implementation from #{method.parent_name}")
         end
+
         out << RDoc::Markup::Rule.new(1)
 
         if method.arglists then
           arglists = method.arglists.chomp.split "\n"
           arglists = arglists.map { |line| line + "\n" }
           out << RDoc::Markup::Verbatim.new(*arglists)
+          out << RDoc::Markup::Rule.new(1)
+        end
+
+        if method.respond_to?(:superclass_method) and method.superclass_method
+          out << RDoc::Markup::BlankLine.new
+          out << RDoc::Markup::Heading.new(4, "(Uses superclass method #{method.superclass_method})")
           out << RDoc::Markup::Rule.new(1)
         end
 
@@ -1080,6 +1291,7 @@ Options may also be set in the 'RI' environment variable.
         yield pager
       ensure
         pager.close
+        @jruby_pager_process.wait_for if @jruby_pager_process
       end
     else
       yield $stdout
@@ -1101,10 +1313,10 @@ Options may also be set in the 'RI' environment variable.
   # Foo::Bar#baz.
   #
   # NOTE: Given Foo::Bar, Bar is considered a class even though it may be a
-  #       method
+  # method
 
   def parse_name name
-    parts = name.split(/(::|#|\.)/)
+    parts = name.split(/(::?|#|\.)/)
 
     if parts.length == 1 then
       if parts.first =~ /^[a-z]|^([%&*+\/<>^`|~-]|\+@|-@|<<|<=>?|===?|=>|=~|>>|\[\]=?|~@)$/ then
@@ -1135,6 +1347,8 @@ Options may also be set in the 'RI' environment variable.
       puts @doc_dirs
     elsif @list then
       list_known_classes @names
+    elsif @server then
+      start_server
     elsif @interactive or @names.empty? then
       interactive
     else
@@ -1151,6 +1365,8 @@ Options may also be set in the 'RI' environment variable.
   def setup_pager
     return if @use_stdout
 
+    jruby = Object.const_defined?(:RUBY_ENGINE) && RUBY_ENGINE == 'jruby'
+
     pagers = [ENV['RI_PAGER'], ENV['PAGER'], 'pager', 'less', 'more']
 
     pagers.compact.uniq.each do |pager|
@@ -1160,9 +1376,17 @@ Options may also be set in the 'RI' environment variable.
 
       next unless in_path? pager_cmd
 
-      io = IO.popen(pager, 'w') rescue next
+      if jruby then
+        case io = find_pager_jruby(pager)
+        when nil   then break
+        when false then next
+        else            io
+        end
+      else
+        io = IO.popen(pager, 'w') rescue next
+      end
 
-      next if $? and $?.exited? # pager didn't work
+      next if $? and $?.pid == io.pid and $?.exited? # pager didn't work
 
       @paging = true
 
@@ -1172,6 +1396,22 @@ Options may also be set in the 'RI' environment variable.
     @use_stdout = true
 
     nil
+  end
+
+  ##
+  # Starts a WEBrick server for ri.
+
+  def start_server
+    require 'webrick'
+
+    server = WEBrick::HTTPServer.new :Port => @server
+
+    server.mount '/', RDoc::Servlet
+
+    trap 'INT'  do server.shutdown end
+    trap 'TERM' do server.shutdown end
+
+    server.start
   end
 
 end

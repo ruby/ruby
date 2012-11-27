@@ -1,12 +1,16 @@
-require 'rdoc/method_attr'
-
 ##
 # An attribute created by \#attr, \#attr_reader, \#attr_writer or
 # \#attr_accessor
 
 class RDoc::Attr < RDoc::MethodAttr
 
-  MARSHAL_VERSION = 2 # :nodoc:
+  ##
+  # 3::
+  #   RDoc 4
+  #    Added parent name and class
+  #    Added section title
+
+  MARSHAL_VERSION = 3 # :nodoc:
 
   ##
   # Is the attribute readable ('R'), writable ('W') or both ('RW')?
@@ -58,6 +62,16 @@ class RDoc::Attr < RDoc::MethodAttr
   end
 
   ##
+  # Attributes never call super.  See RDoc::AnyMethod#calls_super
+  #
+  # An RDoc::Attr can show up in the method list in some situations (see
+  # Gem::ConfigFile)
+
+  def calls_super # :nodoc:
+    false
+  end
+
+  ##
   # Returns attr_reader, attr_writer or attr_accessor as appropriate.
 
   def definition
@@ -93,6 +107,9 @@ class RDoc::Attr < RDoc::MethodAttr
       parse(@comment),
       singleton,
       @file.absolute_name,
+      @parent.full_name,
+      @parent.class,
+      @section.title
     ]
   end
 
@@ -104,17 +121,28 @@ class RDoc::Attr < RDoc::MethodAttr
   # * #parent_name
 
   def marshal_load array
-    version     = array[0]
-    @name       = array[1]
-    @full_name  = array[2]
-    @rw         = array[3]
-    @visibility = array[4]
-    @comment    = array[5]
-    @singleton  = array[6] || false # MARSHAL_VERSION == 0
+    @aliases      = []
+    @parent       = nil
+    @parent_name  = nil
+    @parent_class = nil
+    @section      = nil
+    @file         = nil
+
+    version        = array[0]
+    @name          = array[1]
+    @full_name     = array[2]
+    @rw            = array[3]
+    @visibility    = array[4]
+    @comment       = array[5]
+    @singleton     = array[6] || false # MARSHAL_VERSION == 0
+    #                      7 handled below
+    @parent_name   = array[8]
+    @parent_class  = array[9]
+    @section_title = array[10]
 
     @file = RDoc::TopLevel.new array[7] if version > 1
 
-    @parent_name = @full_name
+    @parent_name ||= @full_name.split('#', 2).first
   end
 
   def pretty_print q # :nodoc:
@@ -130,6 +158,15 @@ class RDoc::Attr < RDoc::MethodAttr
 
   def to_s # :nodoc:
     "#{definition} #{name} in: #{parent}"
+  end
+
+  ##
+  # Attributes do not have token streams.
+  #
+  # An RDoc::Attr can show up in the method list in some situations (see
+  # Gem::ConfigFile)
+
+  def token_stream # :nodoc:
   end
 
 end

@@ -3,11 +3,13 @@
 
 class RDoc::Markup::Document
 
+  include Enumerable
+
   ##
   # The file this document was created from.  See also
   # RDoc::ClassModule#add_comment
 
-  attr_accessor :file
+  attr_reader :file
 
   ##
   # The parts of the Document
@@ -19,7 +21,7 @@ class RDoc::Markup::Document
 
   def initialize *parts
     @parts = []
-    @parts.push(*parts)
+    @parts.concat parts
 
     @file = nil
   end
@@ -31,7 +33,7 @@ class RDoc::Markup::Document
     case part
     when RDoc::Markup::Document then
       unless part.empty? then
-        parts.push(*part.parts)
+        parts.concat part.parts
         parts << RDoc::Markup::BlankLine.new
       end
     when String then
@@ -68,10 +70,36 @@ class RDoc::Markup::Document
   end
 
   ##
+  # Concatenates the given +parts+ onto the document
+
+  def concat parts
+    self.parts.concat parts
+  end
+
+  ##
+  # Enumerator for the parts of this document
+
+  def each &block
+    @parts.each(&block)
+  end
+
+  ##
   # Does this document have no parts?
 
   def empty?
     @parts.empty? or (@parts.length == 1 and merged? and @parts.first.empty?)
+  end
+
+  ##
+  # The file this Document was created from.
+
+  def file= location
+    @file = case location
+            when RDoc::TopLevel then
+              location.absolute_name
+            else
+              location
+            end
   end
 
   ##
@@ -120,7 +148,16 @@ class RDoc::Markup::Document
   # Appends +parts+ to the document
 
   def push *parts
-    self.parts.push(*parts)
+    self.parts.concat parts
+  end
+
+  ##
+  # Returns an Array of headings in the document.
+  #
+  # Require 'rdoc/markup/formatter' before calling this method.
+
+  def table_of_contents
+    accept RDoc::Markup::ToTableOfContents.to_toc
   end
 
 end

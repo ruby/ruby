@@ -1,5 +1,4 @@
 require 'minitest/unit'
-require 'rdoc/markup/formatter'
 
 ##
 # Test case for creating new RDoc::Markup formatters.  See
@@ -35,7 +34,7 @@ require 'rdoc/markup/formatter'
 #
 #  end
 
-class RDoc::Markup::FormatterTestCase < MiniTest::Unit::TestCase
+class RDoc::Markup::FormatterTestCase < RDoc::TestCase
 
   ##
   # Call #setup when inheriting from this test case.
@@ -54,8 +53,9 @@ class RDoc::Markup::FormatterTestCase < MiniTest::Unit::TestCase
   def setup
     super
 
-    @m = RDoc::Markup.new
-    @RM = RDoc::Markup
+    @options = RDoc::Options.new
+
+    @m = @RM.new
 
     @bullet_list = @RM::List.new(:BULLET,
       @RM::ListItem.new(nil, @RM::Paragraph.new('l1')),
@@ -86,7 +86,7 @@ class RDoc::Markup::FormatterTestCase < MiniTest::Unit::TestCase
   # Call to add the visitor tests to your test case
 
   def self.add_visitor_tests
-    self.class_eval do
+    class_eval do
 
       ##
       # Calls start_accepting which needs to verify startup state
@@ -119,6 +119,16 @@ class RDoc::Markup::FormatterTestCase < MiniTest::Unit::TestCase
         accept_blank_line
       end
 
+      ##
+      # Calls accept_block_quote
+
+      def test_accept_block_quote
+        @to.start_accepting
+
+        @to.accept_block_quote block para 'quote'
+
+        accept_block_quote
+      end
       ##
       # Test case that calls <tt>@to.accept_document</tt>
 
@@ -231,6 +241,29 @@ class RDoc::Markup::FormatterTestCase < MiniTest::Unit::TestCase
         @to.accept_paragraph @RM::Paragraph.new('reg <b>bold words</b> reg')
 
         accept_paragraph_b
+      end
+
+      ##
+      # Calls accept_paragraph_br with a RDoc::Markup::Paragraph containing
+      # a \<br>
+
+      def test_accept_paragraph_br
+        @to.start_accepting
+
+        @to.accept_paragraph para 'one<br>two'
+
+        accept_paragraph_br
+      end
+
+      ##
+      # Calls accept_paragraph with a Paragraph containing a hard break
+
+      def test_accept_paragraph_break
+        @to.start_accepting
+
+        @to.accept_paragraph para('hello', hard_break, 'world')
+
+        accept_paragraph_break
       end
 
       ##
@@ -374,9 +407,9 @@ class RDoc::Markup::FormatterTestCase < MiniTest::Unit::TestCase
       # Calls accept_list_item_start_note_2
 
       def test_accept_list_item_start_note_2
-        list = @RM::List.new(:NOTE,
-                 @RM::ListItem.new('<tt>teletype</tt>',
-                   @RM::Paragraph.new('teletype description')))
+        list = list(:NOTE,
+                 item('<tt>teletype</tt>',
+                   para('teletype description')))
 
         @to.start_accepting
 
@@ -385,6 +418,41 @@ class RDoc::Markup::FormatterTestCase < MiniTest::Unit::TestCase
         @to.end_accepting
 
         accept_list_item_start_note_2
+      end
+
+      ##
+      # Calls accept_list_item_start_note_multi_description
+
+      def test_accept_list_item_start_note_multi_description
+        list = list(:NOTE,
+                 item(%w[label],
+                   para('description one')),
+                 item(nil, para('description two')))
+
+        @to.start_accepting
+
+        list.accept @to
+
+        @to.end_accepting
+
+        accept_list_item_start_note_multi_description
+      end
+
+      ##
+      # Calls accept_list_item_start_note_multi_label
+
+      def test_accept_list_item_start_note_multi_label
+        list = list(:NOTE,
+                 item(%w[one two],
+                   para('two headers')))
+
+        @to.start_accepting
+
+        list.accept @to
+
+        @to.end_accepting
+
+        accept_list_item_start_note_multi_label
       end
 
       ##
@@ -635,7 +703,7 @@ class RDoc::Markup::FormatterTestCase < MiniTest::Unit::TestCase
       end
 
       ##
-      # Calls accept_list_end_ulpha
+      # Calls accept_list_end_ualpha
 
       def test_accept_list_end_ualpha
         @to.start_accepting
@@ -670,28 +738,28 @@ class RDoc::Markup::FormatterTestCase < MiniTest::Unit::TestCase
       # Calls list_verbatim with a list containing a verbatim block
 
       def test_list_verbatim # HACK overblown
-        doc = @RM::Document.new(
-                @RM::List.new(:BULLET,
-                  @RM::ListItem.new(nil,
-                    @RM::Paragraph.new('list', 'stuff'),
-                    @RM::BlankLine.new,
-                    @RM::Verbatim.new("* list\n",
-                                      "  with\n",
-                                      "\n",
-                                      "  second\n",
-                                      "\n",
-                                      "  1. indented\n",
-                                      "  2. numbered\n",
-                                      "\n",
-                                      "  third\n",
-                                      "\n",
-                                      "* second\n"))))
+        doc =
+          doc(
+            list(:BULLET,
+              item(nil,
+                para('list stuff'),
+                blank_line,
+                verb("* list\n",
+                     "  with\n",
+                     "\n",
+                     "  second\n",
+                     "\n",
+                     "  1. indented\n",
+                     "  2. numbered\n",
+                     "\n",
+                     "  third\n",
+                     "\n",
+                     "* second\n"))))
 
         doc.accept @to
 
         list_verbatim
       end
-
     end
   end
 

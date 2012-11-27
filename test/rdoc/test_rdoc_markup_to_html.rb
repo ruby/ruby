@@ -1,7 +1,4 @@
-require 'rubygems'
-require 'rdoc/markup/formatter_test_case'
-require 'rdoc/markup/to_html'
-require 'minitest/autorun'
+require 'rdoc/test_case'
 
 class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
@@ -10,7 +7,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   def setup
     super
 
-    @to = RDoc::Markup::ToHtml.new
+    @to = RDoc::Markup::ToHtml.new @options
   end
 
   def test_class_gen_relative_url
@@ -30,36 +27,41 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_empty @to.res.join
   end
 
+  def accept_block_quote
+    assert_equal "\n<blockquote>\n<p>quote</p>\n</blockquote>\n", @to.res.join
+  end
+
   def accept_document
     assert_equal "\n<p>hello</p>\n", @to.res.join
   end
 
   def accept_heading
-    assert_equal "\n<h5>Hello</h5>\n", @to.res.join
+    assert_equal "\n<h5 id=\"label-Hello\">Hello</h5>\n", @to.res.join
   end
 
   def accept_heading_1
-    assert_equal "\n<h1>Hello</h1>\n", @to.res.join
+    assert_equal "\n<h1 id=\"label-Hello\">Hello</h1>\n", @to.res.join
   end
 
   def accept_heading_2
-    assert_equal "\n<h2>Hello</h2>\n", @to.res.join
+    assert_equal "\n<h2 id=\"label-Hello\">Hello</h2>\n", @to.res.join
   end
 
   def accept_heading_3
-    assert_equal "\n<h3>Hello</h3>\n", @to.res.join
+    assert_equal "\n<h3 id=\"label-Hello\">Hello</h3>\n", @to.res.join
   end
 
   def accept_heading_4
-    assert_equal "\n<h4>Hello</h4>\n", @to.res.join
+    assert_equal "\n<h4 id=\"label-Hello\">Hello</h4>\n", @to.res.join
   end
 
   def accept_heading_b
-    assert_equal "\n<h1><b>Hello</b></h1>\n", @to.res.join
+    assert_equal "\n<h1 id=\"label-Hello\"><strong>Hello</strong></h1>\n",
+                 @to.res.join
   end
 
   def accept_heading_suppressed_crossref
-    assert_equal "\n<h1>Hello</h1>\n", @to.res.join
+    assert_equal "\n<h1 id=\"label-Hello\">Hello</h1>\n", @to.res.join
   end
 
   def accept_list_end_bullet
@@ -73,14 +75,14 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal [], @to.list
     assert_equal [], @to.in_list_entry
 
-    assert_equal "<dl class=\"rdoc-list\"></dl>\n", @to.res.join
+    assert_equal "<dl class=\"rdoc-list label-list\"></dl>\n", @to.res.join
   end
 
   def accept_list_end_lalpha
     assert_equal [], @to.list
     assert_equal [], @to.in_list_entry
 
-    assert_equal "<ol style=\"display: lower-alpha\"></ol>\n", @to.res.join
+    assert_equal "<ol style=\"list-style-type: lower-alpha\"></ol>\n", @to.res.join
   end
 
   def accept_list_end_number
@@ -94,14 +96,14 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal [], @to.list
     assert_equal [], @to.in_list_entry
 
-    assert_equal "<table class=\"rdoc-list\"></table>\n", @to.res.join
+    assert_equal "<dl class=\"rdoc-list note-list\"></dl>\n", @to.res.join
   end
 
   def accept_list_end_ualpha
     assert_equal [], @to.list
     assert_equal [], @to.in_list_entry
 
-    assert_equal "<ol style=\"display: upper-alpha\"></ol>\n", @to.res.join
+    assert_equal "<ol style=\"list-style-type: upper-alpha\"></ol>\n", @to.res.join
   end
 
   def accept_list_item_end_bullet
@@ -117,7 +119,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_list_item_end_note
-    assert_equal %w[</td></tr>], @to.in_list_entry
+    assert_equal %w[</dd>], @to.in_list_entry
   end
 
   def accept_list_item_end_number
@@ -133,24 +135,49 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_list_item_start_label
-    assert_equal "<dl class=\"rdoc-list\"><dt>cat</dt>\n<dd>", @to.res.join
+    assert_equal "<dl class=\"rdoc-list label-list\"><dt>cat\n<dd>", @to.res.join
   end
 
   def accept_list_item_start_lalpha
-    assert_equal "<ol style=\"display: lower-alpha\"><li>", @to.res.join
+    assert_equal "<ol style=\"list-style-type: lower-alpha\"><li>", @to.res.join
   end
 
   def accept_list_item_start_note
-    assert_equal "<table class=\"rdoc-list\"><tr><td class=\"rdoc-term\"><p>cat</p></td>\n<td>",
+    assert_equal "<dl class=\"rdoc-list note-list\"><dt>cat\n<dd>",
                  @to.res.join
   end
 
   def accept_list_item_start_note_2
     expected = <<-EXPECTED
-<table class="rdoc-list"><tr><td class="rdoc-term"><p><tt>teletype</tt></p></td>
-<td>
+<dl class="rdoc-list note-list"><dt><code>teletype</code>
+<dd>
 <p>teletype description</p>
-</td></tr></table>
+</dd></dl>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
+  def accept_list_item_start_note_multi_description
+    expected = <<-EXPECTED
+<dl class="rdoc-list note-list"><dt>label
+<dd>
+<p>description one</p>
+</dd><dd>
+<p>description two</p>
+</dd></dl>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
+  def accept_list_item_start_note_multi_label
+    expected = <<-EXPECTED
+<dl class="rdoc-list note-list"><dt>one
+<dt>two
+<dd>
+<p>two headers</p>
+</dd></dl>
     EXPECTED
 
     assert_equal expected, @to.res.join
@@ -161,7 +188,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_list_item_start_ualpha
-    assert_equal "<ol style=\"display: upper-alpha\"><li>", @to.res.join
+    assert_equal "<ol style=\"list-style-type: upper-alpha\"><li>", @to.res.join
   end
 
   def accept_list_start_bullet
@@ -175,21 +202,21 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal [:LABEL], @to.list
     assert_equal [false], @to.in_list_entry
 
-    assert_equal '<dl class="rdoc-list">', @to.res.join
+    assert_equal '<dl class="rdoc-list label-list">', @to.res.join
   end
 
   def accept_list_start_lalpha
     assert_equal [:LALPHA], @to.list
     assert_equal [false], @to.in_list_entry
 
-    assert_equal "<ol style=\"display: lower-alpha\">", @to.res.join
+    assert_equal "<ol style=\"list-style-type: lower-alpha\">", @to.res.join
   end
 
   def accept_list_start_note
     assert_equal [:NOTE], @to.list
     assert_equal [false], @to.in_list_entry
 
-    assert_equal "<table class=\"rdoc-list\">", @to.res.join
+    assert_equal "<dl class=\"rdoc-list note-list\">", @to.res.join
   end
 
   def accept_list_start_number
@@ -203,7 +230,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal [:UALPHA], @to.list
     assert_equal [false], @to.in_list_entry
 
-    assert_equal "<ol style=\"display: upper-alpha\">", @to.res.join
+    assert_equal "<ol style=\"list-style-type: upper-alpha\">", @to.res.join
   end
 
   def accept_paragraph
@@ -211,7 +238,15 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_paragraph_b
-    assert_equal "\n<p>reg <b>bold words</b> reg</p>\n", @to.res.join
+    assert_equal "\n<p>reg <strong>bold words</strong> reg</p>\n", @to.res.join
+  end
+
+  def accept_paragraph_br
+    assert_equal "\n<p>one<br>two</p>\n", @to.res.join
+  end
+
+  def accept_paragraph_break
+    assert_equal "\n<p>hello<br>\nworld</p>\n", @to.res.join
   end
 
   def accept_paragraph_i
@@ -219,11 +254,11 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_paragraph_plus
-    assert_equal "\n<p>reg <tt>teletype</tt> reg</p>\n", @to.res.join
+    assert_equal "\n<p>reg <code>teletype</code> reg</p>\n", @to.res.join
   end
 
   def accept_paragraph_star
-    assert_equal "\n<p>reg <b>bold</b> reg</p>\n", @to.res.join
+    assert_equal "\n<p>reg <strong>bold</strong> reg</p>\n", @to.res.join
   end
 
   def accept_paragraph_underscore
@@ -297,8 +332,133 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal expected, @to.end_accepting
   end
 
+  def test_accept_heading_7
+    @to.start_accepting
+
+    @to.accept_heading @RM::Heading.new(7, 'Hello')
+
+    assert_equal "\n<h6 id=\"label-Hello\">Hello</h6>\n", @to.res.join
+  end
+
+  def test_accept_heading_aref_class
+    @to.code_object = RDoc::NormalClass.new 'Foo'
+    @to.start_accepting
+
+    @to.accept_heading @RM::Heading.new(1, 'Hello')
+
+    assert_equal "\n<h1 id=\"label-Hello\">Hello</h1>\n",
+                 @to.res.join
+  end
+
+  def test_accept_heading_aref_method
+    @to.code_object = RDoc::AnyMethod.new nil, 'foo'
+    @to.start_accepting
+
+    @to.accept_heading @RM::Heading.new(1, 'Hello')
+
+    assert_equal "\n<h1 id=\"method-i-foo-label-Hello\">Hello</h1>\n",
+                 @to.res.join
+  end
+
+  def test_accept_verbatim_parseable
+    verb = @RM::Verbatim.new("class C\n", "end\n")
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    expected = <<-EXPECTED
+
+<pre class="ruby"><span class="ruby-keyword">class</span> <span class="ruby-constant">C</span>
+<span class="ruby-keyword">end</span>
+</pre>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
+  def test_accept_verbatim_parseable_error
+    verb = @RM::Verbatim.new("a % 09 # => blah\n")
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    inner = CGI.escapeHTML "a % 09 # => blah"
+
+    expected = <<-EXPECTED
+
+<pre>#{inner}
+</pre>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
+  def test_accept_verbatim_ruby
+    verb = @RM::Verbatim.new("1 + 1\n")
+    verb.format = :ruby
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    expected = <<-EXPECTED
+
+<pre class="ruby"><span class="ruby-value">1</span> <span class="ruby-operator">+</span> <span class="ruby-value">1</span>
+</pre>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
   def test_convert_string
     assert_equal '&lt;&gt;', @to.convert_string('<>')
+  end
+
+  def test_convert_HYPERLINK_irc
+    result = @to.convert 'irc://irc.freenode.net/#ruby-lang'
+
+    assert_equal "\n<p><a href=\"irc://irc.freenode.net/#ruby-lang\">irc.freenode.net/#ruby-lang</a></p>\n", result
+  end
+
+  def test_convert_RDOCLINK_label_label
+    result = @to.convert 'rdoc-label:label-One'
+
+    assert_equal "\n<p><a href=\"#label-One\">One</a></p>\n", result
+  end
+
+  def test_convert_RDOCLINK_label_foottext
+    result = @to.convert 'rdoc-label:foottext-1'
+
+    assert_equal "\n<p><a href=\"#foottext-1\">*1</a></p>\n", result
+  end
+
+  def test_convert_RDOCLINK_label_footmark
+    result = @to.convert 'rdoc-label:footmark-1'
+
+    assert_equal "\n<p><a href=\"#footmark-1\">^1</a></p>\n", result
+  end
+
+  def test_convert_RDOCLINK_ref
+    result = @to.convert 'rdoc-ref:C'
+
+    assert_equal "\n<p>C</p>\n", result
+  end
+
+  def test_convert_TIDYLINK_footnote
+    result = @to.convert 'text{*1}[rdoc-label:foottext-1:footmark-1]'
+
+    assert_equal "\n<p>text<a id=\"footmark-1\" href=\"#foottext-1\">*1</a></p>\n", result
+  end
+
+  def test_convert_TIDYLINK_rdoc_label
+    result = @to.convert '{foo}[rdoc-label:foottext-1]'
+
+    assert_equal "\n<p><a href=\"#foottext-1\">foo</a></p>\n", result
+  end
+
+  def test_convert_TIDYLINK_irc
+    result = @to.convert '{ruby-lang}[irc://irc.freenode.net/#ruby-lang]'
+
+    assert_equal "\n<p><a href=\"irc://irc.freenode.net/#ruby-lang\">ruby-lang</a></p>\n", result
   end
 
   def test_gen_url
@@ -306,11 +466,21 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
                  @to.gen_url('link:example', 'example')
   end
 
-  def test_gem_url_image_url
+  def test_gen_url_rdoc_label
+    assert_equal '<a href="#foottext-1">example</a>',
+                 @to.gen_url('rdoc-label:foottext-1', 'example')
+  end
+
+  def test_gen_url_rdoc_label_id
+    assert_equal '<a id="footmark-1" href="#foottext-1">example</a>',
+                 @to.gen_url('rdoc-label:foottext-1:footmark-1', 'example')
+  end
+
+  def test_gen_url_image_url
     assert_equal '<img src="http://example.com/image.png" />', @to.gen_url('http://example.com/image.png', 'ignored')
   end
 
-  def test_gem_url_ssl_image_url
+  def test_gen_url_ssl_image_url
     assert_equal '<img src="https://example.com/image.png" />', @to.gen_url('https://example.com/image.png', 'ignored')
   end
 
@@ -320,6 +490,14 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     link = @to.handle_special_HYPERLINK special
 
     assert_equal '<a href="README.txt">README.txt</a>', link
+  end
+
+  def test_handle_special_HYPERLINK_irc
+    special = RDoc::Markup::Special.new 0, 'irc://irc.freenode.net/#ruby-lang'
+
+    link = @to.handle_special_HYPERLINK special
+
+    assert_equal '<a href="irc://irc.freenode.net/#ruby-lang">irc.freenode.net/#ruby-lang</a>', link
   end
 
   def test_list_verbatim_2
@@ -339,8 +517,21 @@ verb2</pre>
     assert_equal expected, @m.convert(str, @to)
   end
 
+  def test_parseable_eh
+    assert @to.parseable?('def x() end'),      'def'
+    assert @to.parseable?('class C end'),      'class'
+    assert @to.parseable?('module M end'),     'module'
+    assert @to.parseable?('a # => blah'),      '=>'
+    assert @to.parseable?('x { |y| ... }'),    '{ |x|'
+    assert @to.parseable?('x do |y| ... end'), 'do |x|'
+    refute @to.parseable?('* 1'),              '* 1'
+    refute @to.parseable?('# only a comment'), '# only a comment'
+    refute @to.parseable?('<% require "foo" %>'),    'ERB'
+    refute @to.parseable?('class="foo"'),      'HTML class'
+  end
+
   def test_to_html
-    assert_equal "\n<p><tt>--</tt></p>\n", util_format("<tt>--</tt>")
+    assert_equal "\n<p><code>--</code></p>\n", util_format("<tt>--</tt>")
   end
 
   def util_format text

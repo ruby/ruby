@@ -7,15 +7,6 @@
 #       by Keiju ISHITSUKA (Nippon Rational Inc.)
 #
 
-require 'rdoc/ruby_token'
-require 'rdoc/ruby_lex'
-
-require 'rdoc/code_objects'
-require 'rdoc/token_stream'
-require 'rdoc/markup/pre_process'
-require 'rdoc/parser'
-require 'rdoc/parser/ruby_tools'
-
 $TOKEN_DEBUG ||= nil
 
 ##
@@ -103,7 +94,7 @@ $TOKEN_DEBUG ||= nil
 # You can force the name of a method using the :method: directive:
 #
 #   ##
-#   # :method: woo_hoo!
+#   # :method: some_method!
 #
 # By default, meta-methods are instance methods.  To indicate that a method is
 # a singleton method instead use the :singleton-method: directive:
@@ -114,7 +105,7 @@ $TOKEN_DEBUG ||= nil
 # You can also use the :singleton-method: directive with a name:
 #
 #   ##
-#   # :singleton-method: woo_hoo!
+#   # :singleton-method: some_method!
 #
 # Additionally you can mark a method as an attribute by
 # using :attr:, :attr_reader:, :attr_writer: or :attr_accessor:.  Just like
@@ -173,6 +164,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     @scanner = RDoc::RubyLex.new content, @options
     @scanner.exception_on_syntax_error = false
     @prev_seek = nil
+    @markup = @options.markup
 
     @encoding = nil
     @encoding = @options.encoding if Object.const_defined? :Encoding
@@ -213,7 +205,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     unget_tk tk
 
-    comment
+    new_comment comment
   end
 
   ##
@@ -223,22 +215,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
     msg = make_message msg
 
     abort msg
-  end
-
-  ##
-  # Look for a 'call-seq' in the comment, and override the normal parameter
-  # stuff
-  #--
-  # TODO handle undent
-
-  def extract_call_seq(comment, meth)
-    if comment.sub!(/:?call-seq:(.*?)(^\s*#?\s*$|\z)/m, '') then
-      seq = $1
-      seq.gsub!(/^\s*\#\s*/, '')
-      meth.call_seq = seq
-    end
-
-    meth
   end
 
   ##
@@ -264,7 +240,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # with :: separated named) and return the ultimate name, the associated
   # container, and the given name (with the ::).
 
-  def get_class_or_module(container)
+  def get_class_or_module container
     skip_tkspace
     name_t = get_tk
     given_name = ''
@@ -283,14 +259,18 @@ class RDoc::Parser::Ruby < RDoc::Parser
     while TkCOLON2 === peek_tk do
       prev_container = container
       container = container.find_module_named name_t.name
-      unless container then
-        container = prev_container.add_module RDoc::NormalModule, name_t.name
-      end
+      container ||= prev_container.add_module RDoc::NormalModule, name_t.name
+
+      container.ignore unless prev_container.document_children
+
       get_tk
+      skip_tkspace false
       name_t = get_tk
       given_name << '::' << name_t.name
     end
+
     skip_tkspace false
+
     return [container, name_t, given_name]
   end
 
@@ -299,9 +279,10 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
   def get_class_specification
     tk = get_tk
-    return "self" if TkSELF === tk
+    return 'self' if TkSELF === tk
+    return ''     if TkGVAR === tk
 
-    res = ""
+    res = ''
     while TkCOLON2 === tk or TkCOLON3 === tk or TkCONSTANT === tk do
       res += tk.name
       tk = get_tk
@@ -412,8 +393,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
            'attr', 'attr_accessor', 'attr_reader', 'attr_writer' then
         false # handled elsewhere
       when 'section' then
-        context.set_current_section param, comment
-        comment.replace ''
+        context.set_current_section param, comment.dup
+        comment.text = ''
         break
       end
     end
@@ -430,6 +411,15 @@ class RDoc::Parser::Ruby < RDoc::Parser
     prefix << "#{@scanner.line_no}:#{@scanner.char_no}:" if @scanner
 
     "#{prefix} #{message}"
+  end
+
+  ##
+  # Creates a comment with the correct format
+
+  def new_comment comment
+    c = RDoc::Comment.new comment, @top_level
+    c.format = @markup
+    c
   end
 
   ##
@@ -590,7 +580,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   ##
   # Parses a class in +context+ with +comment+
 
-  def parse_class(container, single, tk, comment)
+  def parse_class container, single, tk, comment
     offset  = tk.seek
     line_no = tk.line_no
 
@@ -601,6 +591,11 @@ class RDoc::Parser::Ruby < RDoc::Parser
     when TkCONSTANT
       name = name_t.name
       superclass = '::Object'
+
+      if given_name =~ /^::/ then
+        declaration_context = @top_level
+        given_name = $'
+      end
 
       if TkLT === peek_tk then
         get_tk
@@ -626,16 +621,24 @@ class RDoc::Parser::Ruby < RDoc::Parser
       parse_statements cls
     when TkLSHFT
       case name = get_class_specification
-      when "self", container.name
+      when 'self', container.name
         parse_statements container, SINGLE
       else
-        other = RDoc::TopLevel.find_class_named name
+        other = @store.find_class_named name
 
         unless other then
+          if name =~ /^::/ then
+            name = $'
+            container = @top_level
+          end
+
           other = container.add_module RDoc::NormalModule, name
           other.record_location @top_level
           other.offset  = offset
           other.line    = line_no
+
+          # class << $gvar
+          other.ignore if name.empty?
 
           other.add_comment comment, @top_level
         end
@@ -678,6 +681,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
       return false
     end
 
+    value = ''
+    con = RDoc::Constant.new name, value, comment
     nest = 0
     get_tkread
 
@@ -705,13 +710,16 @@ class RDoc::Parser::Ruby < RDoc::Parser
            (@scanner.lex_state == EXPR_END || !@scanner.continue) then
           unget_tk tk
           break
+        else
+          unget_tk tk
+          read_documentation_modifiers con, RDoc::CONSTANT_MODIFIERS
         end
       when TkCONSTANT then
         rhs_name << tk.name
 
         if nest <= 0 and TkNL === peek_tk then
           mod = if rhs_name =~ /^::/ then
-                  RDoc::TopLevel.find_class_or_module rhs_name
+                  @store.find_class_or_module rhs_name
                 else
                   container.find_module_named rhs_name
                 end
@@ -736,14 +744,15 @@ class RDoc::Parser::Ruby < RDoc::Parser
     res = get_tkread.gsub(/^[ \t]+/, '').strip
     res = "" if res == ";"
 
-    con = RDoc::Constant.new name, res, comment
+    value.replace res
     con.record_location @top_level
     con.offset = offset
     con.line   = line_no
     read_documentation_modifiers con, RDoc::CONSTANT_MODIFIERS
 
     @stats.add_constant con
-    container.add_constant con
+    con = container.add_constant con
+
     true
   end
 
@@ -751,15 +760,18 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # Generates an RDoc::Method or RDoc::Attr from +comment+ by looking for
   # :method: or :attr: directives in +comment+.
 
-  def parse_comment(container, tk, comment)
+  def parse_comment container, tk, comment
+    return parse_comment_tomdoc container, tk, comment if @markup == 'tomdoc'
     column  = tk.char_no
     offset  = tk.seek
     line_no = tk.line_no
 
-    singleton = !!comment.sub!(/(^# +:?)(singleton-)(method:)/, '\1\3')
+    text = comment.text
+
+    singleton = !!text.sub!(/(^# +:?)(singleton-)(method:)/, '\1\3')
 
     # REFACTOR
-    if comment.sub!(/^# +:?method: *(\S*).*?\n/i, '') then
+    if text.sub!(/^# +:?method: *(\S*).*?\n/i, '') then
       name = $1 unless $1.empty?
 
       meth = RDoc::GhostMethod.new get_tkread, name
@@ -769,16 +781,17 @@ class RDoc::Parser::Ruby < RDoc::Parser
       meth.line      = line_no
 
       meth.start_collecting_tokens
-      indent = TkSPACE.new nil, 1, 1
+      indent = TkSPACE.new 0, 1, 1
       indent.set_text " " * column
 
-      position_comment = TkCOMMENT.new nil, line_no, 1
+      position_comment = TkCOMMENT.new 0, line_no, 1
       position_comment.set_text "# File #{@top_level.absolute_name}, line #{line_no}"
       meth.add_tokens [position_comment, NEWLINE_TOKEN, indent]
 
       meth.params = ''
 
-      extract_call_seq comment, meth
+      comment.normalize
+      comment.extract_call_seq meth
 
       return unless meth.name
 
@@ -787,7 +800,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       meth.comment = comment
 
       @stats.add_method meth
-    elsif comment.sub!(/# +:?(attr(_reader|_writer|_accessor)?): *(\S*).*?\n/i, '') then
+    elsif text.sub!(/# +:?(attr(_reader|_writer|_accessor)?): *(\S*).*?\n/i, '') then
       rw = case $1
            when 'attr_reader' then 'R'
            when 'attr_writer' then 'W'
@@ -810,6 +823,43 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
   ##
+  # Creates an RDoc::Method on +container+ from +comment+ if there is a
+  # Signature section in the comment
+
+  def parse_comment_tomdoc container, tk, comment
+    return unless signature = RDoc::TomDoc.signature(comment)
+    offset  = tk.seek
+    line_no = tk.line_no
+
+    name, = signature.split %r%[ \(]%, 2
+
+    meth = RDoc::GhostMethod.new get_tkread, name
+    meth.record_location @top_level
+    meth.offset    = offset
+    meth.line      = line_no
+
+    meth.start_collecting_tokens
+    indent = TkSPACE.new 0, 1, 1
+    indent.set_text " " * offset
+
+    position_comment = TkCOMMENT.new 0, line_no, 1
+    position_comment.set_text "# File #{@top_level.absolute_name}, line #{line_no}"
+    meth.add_tokens [position_comment, NEWLINE_TOKEN, indent]
+
+    meth.call_seq = signature
+
+    comment.normalize
+
+    return unless meth.name
+
+    container.add_method meth
+
+    meth.comment = comment
+
+    @stats.add_method meth
+  end
+
+  ##
   # Parses an +include+ in +context+ with +comment+
 
   def parse_include context, comment
@@ -820,6 +870,26 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
       unless name.empty? then
         incl = context.add_include RDoc::Include.new(name, comment)
+        incl.record_location @top_level
+      end
+
+      return unless TkCOMMA === peek_tk
+
+      get_tk
+    end
+  end
+
+  ##
+  # Parses an +extend+ in +context+ with +comment+
+
+  def parse_extend context, comment
+    loop do
+      skip_tkspace_comment
+
+      name = get_constant_with_optional_parens
+
+      unless name.empty? then
+        incl = context.add_extend RDoc::Extend.new(name, comment)
         incl.record_location @top_level
       end
 
@@ -867,7 +937,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     tmp = RDoc::CodeObject.new
     read_documentation_modifiers tmp, RDoc::ATTR_MODIFIERS
 
-    if comment.sub!(/^# +:?(attr(_reader|_writer|_accessor)?): *(\S*).*?\n/i, '') then
+    if comment.text.sub!(/^# +:?(attr(_reader|_writer|_accessor)?): *(\S*).*?\n/i, '') then
       rw = case $1
            when 'attr_reader' then 'R'
            when 'attr_writer' then 'W'
@@ -892,6 +962,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
         @stats.add_attribute att
       end
     end
+
+    att
   end
 
   ##
@@ -908,9 +980,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     skip_tkspace false
 
-    singleton = !!comment.sub!(/(^# +:?)(singleton-)(method:)/, '\1\3')
+    singleton = !!comment.text.sub!(/(^# +:?)(singleton-)(method:)/, '\1\3')
 
-    if comment.sub!(/^# +:?method: *(\S*).*?\n/i, '') then
+    if comment.text.sub!(/^# +:?method: *(\S*).*?\n/i, '') then
       name = $1 unless $1.empty?
     end
 
@@ -939,10 +1011,10 @@ class RDoc::Parser::Ruby < RDoc::Parser
     remove_token_listener self
 
     meth.start_collecting_tokens
-    indent = TkSPACE.new nil, 1, 1
+    indent = TkSPACE.new 0, 1, 1
     indent.set_text " " * column
 
-    position_comment = TkCOMMENT.new nil, line_no, 1
+    position_comment = TkCOMMENT.new 0, line_no, 1
     position_comment.value = "# File #{@top_level.absolute_name}, line #{line_no}"
     meth.add_tokens [position_comment, NEWLINE_TOKEN, indent]
     meth.add_tokens @token_stream
@@ -950,7 +1022,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
     token_listener meth do
       meth.params = ''
 
-      extract_call_seq comment, meth
+      comment.normalize
+      comment.extract_call_seq meth
 
       container.add_method meth
 
@@ -965,7 +1038,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
         when TkSPACE then
           # expression continues
         when TkDO then
-          unget_tk tk
           parse_statements container, single, meth
           break
         else
@@ -977,6 +1049,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
     meth.comment = comment
 
     @stats.add_method meth
+
+    meth
   end
 
   ##
@@ -1002,15 +1076,23 @@ class RDoc::Parser::Ruby < RDoc::Parser
       meth = nil
       added_container = false
 
-      dot = get_tk
-      if TkDOT === dot or TkCOLON2 === dot then
+      case dot = get_tk
+      when TkDOT, TkCOLON2 then
         @scanner.instance_eval do @lex_state = EXPR_FNAME end
         skip_tkspace
         name_t2 = get_tk
 
         case name_t
         when TkSELF, TkMOD then
-          name = name_t2.name
+          name = case name_t2
+                 # NOTE: work around '[' being consumed early and not being
+                 # re-tokenized as a TkAREF
+                 when TkfLBRACK then
+                   get_tk
+                   '[]'
+                 else
+                   name_t2.name
+                 end
         when TkCONSTANT then
           name = name_t2.name
           prev_container = container
@@ -1039,11 +1121,12 @@ class RDoc::Parser::Ruby < RDoc::Parser
         when TkIDENTIFIER, TkIVAR, TkGVAR then
           dummy = RDoc::Context.new
           dummy.parent = container
+          dummy.store  = container.store
           skip_method dummy
           return
         when TkTRUE, TkFALSE, TkNIL then
           klass_name = "#{name_t.name.capitalize}Class"
-          container = RDoc::TopLevel.find_class_named klass_name
+          container = @store.find_class_named klass_name
           container ||= @top_level.add_class RDoc::NormalClass, klass_name
 
           name = name_t2.name
@@ -1084,10 +1167,10 @@ class RDoc::Parser::Ruby < RDoc::Parser
     meth.line   = line_no
 
     meth.start_collecting_tokens
-    indent = TkSPACE.new nil, 1, 1
+    indent = TkSPACE.new 0, 1, 1
     indent.set_text " " * column
 
-    token = TkCOMMENT.new nil, line_no, 1
+    token = TkCOMMENT.new 0, line_no, 1
     token.set_text "# File #{@top_level.absolute_name}, line #{line_no}"
     meth.add_tokens [token, NEWLINE_TOKEN, indent]
     meth.add_tokens @token_stream
@@ -1118,7 +1201,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
       parse_statements container, single, meth
     end
 
-    extract_call_seq comment, meth
+    comment.normalize
+    comment.extract_call_seq meth
 
     meth.comment = comment
 
@@ -1212,17 +1296,18 @@ class RDoc::Parser::Ruby < RDoc::Parser
   ##
   # Parses an RDoc::NormalModule in +container+ with +comment+
 
-  def parse_module(container, single, tk, comment)
+  def parse_module container, single, tk, comment
     container, name_t, = get_class_or_module container
 
     name = name_t.name
 
     mod = container.add_module RDoc::NormalModule, name
+    mod.ignore unless container.document_children
     mod.record_location @top_level
 
     read_documentation_modifiers mod, RDoc::CLASS_MODIFIERS
     mod.add_comment comment, @top_level
-    parse_statements(mod)
+    parse_statements mod
 
     @top_level.add_to_classes_or_modules mod
     @stats.add_module mod
@@ -1253,7 +1338,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # The core of the ruby parser.
 
   def parse_statements(container, single = NORMAL, current_method = nil,
-                       comment = '')
+                       comment = new_comment(''))
+    raise 'no' unless RDoc::Comment === comment
     comment.force_encoding @encoding if @encoding
 
     nest = 1
@@ -1293,6 +1379,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
             end
           end
 
+          comment = new_comment comment
+
           unless comment.empty? then
             look_for_directives_in container, comment
 
@@ -1306,18 +1394,14 @@ class RDoc::Parser::Ruby < RDoc::Parser
           non_comment_seen = true
         end
 
-        unget_tk tk # TODO peek instead of get then unget
+        unget_tk tk
         keep_comment = true
 
       when TkCLASS then
         parse_class container, single, tk, comment
 
       when TkMODULE then
-        if container.document_children then
-          parse_module container, single, tk, comment
-        else
-          nest += 1
-        end
+        parse_module container, single, tk, comment
 
       when TkDEF then
         parse_method container, single, tk, comment
@@ -1354,6 +1438,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
       when TkCASE, TkDO, TkIF, TkUNLESS, TkBEGIN then
         nest += 1
 
+      when TkSUPER then
+        current_method.calls_super = true if current_method
+
       when TkIDENTIFIER then
         if nest == 1 and current_method.nil? then
           case tk.name
@@ -1370,12 +1457,16 @@ class RDoc::Parser::Ruby < RDoc::Parser
           when 'require', 'include' then
             # ignore
           else
-            if comment =~ /\A#\#$/ then
-              case comment
+            if comment.text =~ /\A#\#$/ then
+              case comment.text
               when /^# +:?attr(_reader|_writer|_accessor)?:/ then
                 parse_meta_attr container, single, tk, comment
               else
-                parse_meta_method container, single, tk, comment
+                method = parse_meta_method container, single, tk, comment
+                method.params = container.params if
+                  container.params
+                method.block_params = container.block_params if
+                  container.block_params
               end
             end
           end
@@ -1386,6 +1477,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
           parse_require container, comment
         when "include" then
           parse_include container, comment
+        when "extend" then
+          parse_extend container, comment
         end
 
       when TkEND then
@@ -1410,8 +1503,10 @@ class RDoc::Parser::Ruby < RDoc::Parser
       end
 
       unless keep_comment then
-        comment = ''
+        comment = new_comment ''
         comment.force_encoding @encoding if @encoding
+        container.params = nil
+        container.block_params = nil
       end
 
       begin
@@ -1419,6 +1514,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
         skip_tkspace false
       end while peek_tk == TkNL
     end
+
+    container.params = nil
+    container.block_params = nil
   end
 
   ##
@@ -1497,7 +1595,10 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
   def parse_top_level_statements container
     comment = collect_first_comment
+
     look_for_directives_in container, comment
+
+    @markup = comment.format
 
     # HACK move if to RDoc::Context#comment=
     container.comment = comment if container.document_self unless comment.empty?
@@ -1604,28 +1705,44 @@ class RDoc::Parser::Ruby < RDoc::Parser
   #
   #   class MyClass # :nodoc:
   #
-  # We return the directive name and any parameters as a two element array
+  # We return the directive name and any parameters as a two element array if
+  # the name is in +allowed+.  A directive can be found anywhere up to the end
+  # of the current line.
 
   def read_directive allowed
-    tk = get_tk
+    tokens = []
 
-    if TkCOMMENT === tk then
-      return unless tk.text =~ /\s*:?(\w+):\s*(.*)/
+    while tk = get_tk do
+      tokens << tk
 
-      directive = $1.downcase
+      case tk
+      when TkNL      then return
+      when TkCOMMENT then
+        return unless tk.text =~ /\s*:?([\w-]+):\s*(.*)/
 
-      return [directive, $2] if allowed.include? directive
-    else
-      unget_tk tk
+        directive = $1.downcase
+
+        return [directive, $2] if allowed.include? directive
+
+        return
+      end
+    end
+  ensure
+    unless tokens.length == 1 and TkCOMMENT === tokens.first then
+      tokens.reverse_each do |token|
+        unget_tk token
+      end
     end
   end
 
   ##
-  # Handles the directive for +context+ if the directive is listed in +allow+.
-  # This method is called for directives following a definition.
+  # Handles directives following the definition for +context+ (any
+  # RDoc::CodeObject) if the directives are +allowed+ at this point.
+  #
+  # See also RDoc::Markup::PreProcess#handle_directive
 
-  def read_documentation_modifiers context, allow
-    directive, value = read_directive allow
+  def read_documentation_modifiers context, allowed
+    directive, value = read_directive allowed
 
     return unless directive
 
@@ -1640,13 +1757,11 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
   ##
   # Removes private comments from +comment+
+  #--
+  # TODO remove
 
-  def remove_private_comments(comment)
-    empty = ''
-    empty.force_encoding comment.encoding if Object.const_defined? :Encoding
-
-    comment.gsub!(/^#--.*?^#\+\+\n?/m, empty)
-    comment.sub!(/^#--.*/m, '')
+  def remove_private_comments comment
+    comment.remove_private
   end
 
   ##
@@ -1658,6 +1773,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     catch :eof do
       begin
         parse_top_level_statements @top_level
+
       rescue StandardError => e
         bytes = ''
 
@@ -1770,12 +1886,10 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
   ##
-  # Prints +msg+ to +$stderr+ unless we're being quiet
+  # Prints +message+ to +$stderr+ unless we're being quiet
 
-  def warn(msg)
-    return if @options.quiet
-    msg = make_message msg
-    $stderr.puts msg
+  def warn message
+    @options.warn make_message message
   end
 
 end

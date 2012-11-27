@@ -1,47 +1,107 @@
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc/rdoc'
+require 'rdoc/test_case'
 
-require 'fileutils'
-require 'tempfile'
-require 'tmpdir'
-
-class TestRDocRDoc < MiniTest::Unit::TestCase
+class TestRDocRDoc < RDoc::TestCase
 
   def setup
-    RDoc::TopLevel.reset
+    super
 
     @rdoc = RDoc::RDoc.new
     @rdoc.options = RDoc::Options.new
 
-    @stats = RDoc::Stats.new 0, 0
+    @stats = RDoc::Stats.new @store, 0, 0
     @rdoc.instance_variable_set :@stats, @stats
   end
 
-  def test_class_reset
-    tl = RDoc::TopLevel.new 'file.rb'
-    tl.add_class RDoc::NormalClass, 'C'
-    tl.add_class RDoc::NormalModule, 'M'
+  def test_document # functional test
+    options = RDoc::Options.new
+    options.files = [File.expand_path('../xref_data.rb')]
+    options.setup_generator 'ri'
+    options.main_page = 'MAIN_PAGE.rdoc'
+    options.title     = 'title'
 
-    c = RDoc::Parser::C
-    enclosure_classes = c.send :class_variable_get, :@@enclosure_classes
-    enclosure_classes['A'] = 'B'
-    known_bodies = c.send :class_variable_get, :@@known_bodies
-    known_bodies['A'] = 'B'
+    rdoc = RDoc::RDoc.new
 
-    RDoc::RDoc.reset
+    temp_dir do
+      capture_io do
+        rdoc.document options
+      end
 
-    assert_empty RDoc::TopLevel.all_classes_hash
-    assert_empty RDoc::TopLevel.all_files_hash
-    assert_empty RDoc::TopLevel.all_modules_hash
+      assert File.directory? 'doc'
+      assert_equal rdoc, rdoc.store.rdoc
+    end
 
-    assert_empty c.send :class_variable_get, :@@enclosure_classes
-    assert_empty c.send :class_variable_get, :@@known_bodies
+    store = rdoc.store
+
+    assert_equal 'MAIN_PAGE.rdoc', store.main
+    assert_equal 'title',          store.title
   end
 
   def test_gather_files
-    file = File.expand_path __FILE__
-    assert_equal [file], @rdoc.gather_files([file, file])
+    a = File.expand_path __FILE__
+    b = File.expand_path '../test_rdoc_text.rb', __FILE__
+
+    assert_equal [a, b], @rdoc.gather_files([b, a, b])
+  end
+
+  def test_handle_pipe
+    $stdin = StringIO.new "hello"
+
+    out, = capture_io do
+      @rdoc.handle_pipe
+    end
+
+    assert_equal "\n<p>hello</p>\n", out
+  ensure
+    $stdin = STDIN
+  end
+
+  def test_handle_pipe_rd
+    $stdin = StringIO.new "=begin\nhello\n=end"
+
+    @rdoc.options.markup = 'rd'
+
+    out, = capture_io do
+      @rdoc.handle_pipe
+    end
+
+    assert_equal "\n<p>hello</p>\n", out
+  ensure
+    $stdin = STDIN
+  end
+
+  def test_load_options
+    temp_dir do
+      options = RDoc::Options.new
+      options.markup = 'tomdoc'
+      options.write_options
+
+      options = @rdoc.load_options
+
+      assert_equal 'tomdoc', options.markup
+    end
+  end
+
+  def test_load_options_invalid
+    temp_dir do
+      open '.rdoc_options', 'w' do |io|
+        io.write "a: !ruby.yaml.org,2002:str |\nfoo"
+      end
+
+      e = assert_raises RDoc::Error do
+        @rdoc.load_options
+      end
+
+      options_file = File.expand_path '.rdoc_options'
+      assert_equal "#{options_file} is not a valid rdoc options file", e.message
+    end
+  end
+
+  def load_options_no_file
+    temp_dir do
+      options = @rdoc.load_options
+
+      assert_kind_of RDoc::Options, options
+    end
   end
 
   def test_normalized_file_list
@@ -62,9 +122,29 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
     assert_empty files
   end
 
+  def test_normalized_file_list_non_file_directory
+    skip '/dev/stdin is not a character special' unless
+      File.chardev? '/dev/stdin'
+
+    files = nil
+
+    out, err = capture_io do
+      files = @rdoc.normalized_file_list %w[/dev/stdin]
+    end
+
+    files = files.map { |file| File.expand_path file }
+
+    assert_empty files
+
+    assert_empty out
+    assert_match %r%^rdoc can't parse%, err
+    assert_match %r%/dev/stdin$%,       err
+  end
+
   def test_parse_file_encoding
     skip "Encoding not implemented" unless Object.const_defined? :Encoding
     @rdoc.options.encoding = Encoding::ISO_8859_1
+    @rdoc.store = RDoc::Store.new
 
     Tempfile.open 'test.txt' do |io|
       io.write 'hi'
@@ -73,6 +153,31 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
       top_level = @rdoc.parse_file io.path
 
       assert_equal Encoding::ISO_8859_1, top_level.absolute_name.encoding
+    end
+  end
+
+  def test_parse_file_forbidden
+    @rdoc.store = RDoc::Store.new
+
+    Tempfile.open 'test.txt' do |io|
+      io.write 'hi'
+      io.rewind
+
+      File.chmod 0000, io.path
+
+      begin
+        top_level = :bug
+
+        _, err = capture_io do
+          top_level = @rdoc.parse_file io.path
+        end
+
+        assert_match "Unable to read #{io.path},", err
+
+        assert_nil top_level
+      ensure
+        File.chmod 0400, io.path
+      end
     end
   end
 
@@ -89,9 +194,35 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
     assert_empty @rdoc.remove_unparseable file_list
   end
 
-  def test_setup_output_dir
-    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
+  def test_remove_unparseable_tags_emacs
+    temp_dir do
+      open 'TAGS', 'w' do |io| # emacs
+        io.write "\f\nlib/foo.rb,43\n"
+      end
 
+      file_list = %w[
+        TAGS
+      ]
+
+      assert_empty @rdoc.remove_unparseable file_list
+    end
+  end
+
+  def test_remove_unparseable_tags_vim
+    temp_dir do
+      open 'TAGS', 'w' do |io| # emacs
+        io.write "!_TAG_"
+      end
+
+      file_list = %w[
+        TAGS
+      ]
+
+      assert_empty @rdoc.remove_unparseable file_list
+    end
+  end
+
+  def test_setup_output_dir
     Dir.mktmpdir {|d|
       path = File.join d, 'testdir'
 
@@ -105,8 +236,6 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
   end
 
   def test_setup_output_dir_dry_run
-    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
-
     @rdoc.options.dry_run = true
 
     Dir.mktmpdir do |d|
@@ -119,8 +248,6 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
   end
 
   def test_setup_output_dir_exists
-    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
-
     Dir.mktmpdir {|path|
       open @rdoc.output_flag_file(path), 'w' do |io|
         io.puts Time.at 0
@@ -135,8 +262,6 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
   end
 
   def test_setup_output_dir_exists_empty_created_rid
-    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
-
     Dir.mktmpdir {|path|
       open @rdoc.output_flag_file(path), 'w' do end
 
@@ -162,8 +287,6 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
   end
 
   def test_setup_output_dir_exists_not_rdoc
-    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
-
     Dir.mktmpdir do |dir|
       e = assert_raises RDoc::Error do
         @rdoc.setup_output_dir dir, false
@@ -174,8 +297,6 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
   end
 
   def test_update_output_dir
-    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
-
     Dir.mktmpdir do |d|
       @rdoc.update_output_dir d, Time.now, {}
 
@@ -184,8 +305,6 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
   end
 
   def test_update_output_dir_dont
-    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
-
     Dir.mktmpdir do |d|
       @rdoc.options.update_output_dir = false
       @rdoc.update_output_dir d, Time.now, {}
@@ -195,8 +314,6 @@ class TestRDocRDoc < MiniTest::Unit::TestCase
   end
 
   def test_update_output_dir_dry_run
-    skip "No Dir::mktmpdir, upgrade your ruby" unless Dir.respond_to? :mktmpdir
-
     Dir.mktmpdir do |d|
       @rdoc.options.dry_run = true
       @rdoc.update_output_dir d, Time.now, {}

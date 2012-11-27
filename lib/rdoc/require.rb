@@ -1,5 +1,3 @@
-require 'rdoc/code_object'
-
 ##
 # A file loaded by \#require
 

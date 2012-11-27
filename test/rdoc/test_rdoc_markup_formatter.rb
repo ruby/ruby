@@ -1,17 +1,13 @@
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc'
-require 'rdoc/markup'
-require 'rdoc/markup/formatter'
+require 'rdoc/test_case'
 
-class TestRDocMarkupFormatter < MiniTest::Unit::TestCase
+class TestRDocMarkupFormatter < RDoc::TestCase
 
   class ToTest < RDoc::Markup::Formatter
 
     def initialize markup
-      super
+      super nil, markup
 
-      add_tag :TT, '<tt>', '</tt>'
+      add_tag :TT, '<code>', '</code>'
     end
 
     def accept_paragraph paragraph
@@ -37,20 +33,25 @@ class TestRDocMarkupFormatter < MiniTest::Unit::TestCase
   end
 
   def setup
-    @markup = RDoc::Markup.new
+    super
+
+    @markup = @RM.new
     @markup.add_special(/[A-Z]+/, :CAPS)
+
+    @attribute_manager = @markup.attribute_manager
+    @attributes = @attribute_manager.attributes
 
     @to = ToTest.new @markup
 
-    @caps    = RDoc::Markup::Attribute.bitmap_for :CAPS
-    @special = RDoc::Markup::Attribute.bitmap_for :_SPECIAL_
-    @tt      = RDoc::Markup::Attribute.bitmap_for :TT
+    @caps    = @attributes.bitmap_for :CAPS
+    @special = @attributes.bitmap_for :_SPECIAL_
+    @tt      = @attributes.bitmap_for :TT
   end
 
   def test_convert_tt_special
-    converted = @to.convert '<tt>AAA</tt>'
+    converted = @to.convert '<code>AAA</code>'
 
-    assert_equal '<tt>AAA</tt>', converted
+    assert_equal '<code>AAA</code>', converted
   end
 
 end

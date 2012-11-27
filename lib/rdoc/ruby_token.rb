@@ -60,6 +60,11 @@ module RDoc::RubyToken
       self
     end
 
+    def inspect # :nodoc:
+      klass = self.class.name.split('::').last
+      "{%s %d, %d:%d %p}" % [klass, @seek, @line_no, @char_no, @text]
+    end
+
   end
 
   class TkNode < Token
@@ -83,6 +88,12 @@ module RDoc::RubyToken
     end
 
     alias text node
+
+    def inspect # :nodoc:
+      klass = self.class.name.split('::').last
+      "{%s %d, %d:%d %p}" % [klass, @seek, @line_no, @char_no, @node]
+    end
+
   end
 
   class TkId < Token
@@ -105,6 +116,12 @@ module RDoc::RubyToken
     end
 
     alias text name
+
+    def inspect # :nodoc:
+      klass = self.class.name.split('::').last
+      "{%s %d, %d:%d %p}" % [klass, @seek, @line_no, @char_no, @name]
+    end
+
   end
 
   class TkKW < TkId
@@ -130,6 +147,12 @@ module RDoc::RubyToken
     end
 
     alias text value
+
+    def inspect # :nodoc:
+      klass = self.class.name.split('::').last
+      "{%s %s, %d:%d %p}" % [klass, @seek, @line_no, @char_no, @value]
+    end
+
   end
 
   class TkOp < Token
@@ -153,6 +176,12 @@ module RDoc::RubyToken
     end
 
     alias text name
+
+    def inspect # :nodoc:
+      klass = self.class.name.split('::').last
+      "{%s %d, %d:%d %p}" % [klass, @seek, @line_no, @char_no, @name]
+    end
+
   end
 
   class TkOPASGN < TkOp
@@ -175,6 +204,12 @@ module RDoc::RubyToken
     def text
       @text ||= "#{TkToken2Reading[op]}="
     end
+
+    def inspect # :nodoc:
+      klass = self.class.name.split('::').last
+      "{%s %d, %d:%d %p}" % [klass, @seek, @line_no, @char_no, @op]
+    end
+
   end
 
   class TkUnknownChar < Token
@@ -197,6 +232,12 @@ module RDoc::RubyToken
     end
 
     alias text name
+
+    def inspect # :nodoc:
+      klass = self.class.name.split('::').last
+      "{%s %d, %d:%d %p}" % [klass, @seek, @line_no, @char_no, @name]
+    end
+
   end
 
   class TkError < Token
@@ -329,13 +370,13 @@ module RDoc::RubyToken
     [:TkfLPAREN,    Token,  "("], # func( #
     [:TkfLBRACK,    Token,  "["], # func[ #
     [:TkfLBRACE,    Token,  "{"], # func{ #
-    [:TkSTAR,       Token,  "*"], # *arg
-    [:TkAMPER,      Token,  "&"], # &arg #
     [:TkSYMBEG,     Token,  ":"], # :SYMBOL
 
+    [:TkAMPER,      TkOp,   "&"],
     [:TkGT,         TkOp,   ">"],
     [:TkLT,         TkOp,   "<"],
     [:TkPLUS,       TkOp,   "+"],
+    [:TkSTAR,       TkOp,   "*"],
     [:TkMINUS,      TkOp,   "-"],
     [:TkMULT,       TkOp,   "*"],
     [:TkDIV,        TkOp,   "/"],
@@ -360,7 +401,6 @@ module RDoc::RubyToken
     [:TkSEMICOLON,  Token,  ";"],
 
     [:TkCOMMENT,    TkVal],
-    [:TkRD_COMMENT],
     [:TkSPACE,      Token,  " "],
     [:TkNL,         Token,  "\n"],
     [:TkEND_OF_SCRIPT],
@@ -401,7 +441,9 @@ module RDoc::RubyToken
     def_token(*defs)
   end
 
-  NEWLINE_TOKEN = TkNL.new nil, 0, 0, "\n"
+  def_token :TkRD_COMMENT, TkCOMMENT
+
+  NEWLINE_TOKEN = TkNL.new 0, 0, 0, "\n"
 
   class TkSYMBOL
 

@@ -1,12 +1,10 @@
-require 'pp'
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc/markup'
+require 'rdoc/test_case'
 
-class TestRDocMarkupDocument < MiniTest::Unit::TestCase
+class TestRDocMarkupDocument < RDoc::TestCase
 
   def setup
-    @RM = RDoc::Markup
+    super
+
     @d = @RM::Document.new
   end
 
@@ -47,6 +45,21 @@ class TestRDocMarkupDocument < MiniTest::Unit::TestCase
     end
   end
 
+  def test_concat
+    @d.concat [@RM::BlankLine.new, @RM::BlankLine.new]
+
+    refute_empty @d
+  end
+
+  def test_each
+    a = @RM::Document.new
+    b = @RM::Document.new(@RM::Paragraph.new('hi'))
+
+    @d.push a, b
+
+    assert_equal [a, b], @d.map { |sub_doc| sub_doc }
+  end
+
   def test_empty_eh
     assert_empty @d
 
@@ -80,6 +93,18 @@ class TestRDocMarkupDocument < MiniTest::Unit::TestCase
     @d.file = 'file.rb'
 
     assert_equal @d, d2
+  end
+
+  def test_file_equals
+    @d.file = 'file.rb'
+
+    assert_equal 'file.rb', @d.file
+  end
+
+  def test_file_equals_top_level
+    @d.file = @store.add_file 'file.rb'
+
+    assert_equal 'file.rb', @d.file
   end
 
   def test_lt2
@@ -146,6 +171,24 @@ class TestRDocMarkupDocument < MiniTest::Unit::TestCase
     @d.push @RM::BlankLine.new, @RM::BlankLine.new
 
     refute_empty @d
+  end
+
+  def test_table_of_contents
+    doc = @RM::Document.new(
+      @RM::Heading.new(1, 'A'),
+      @RM::Paragraph.new('B'),
+      @RM::Heading.new(2, 'C'),
+      @RM::Paragraph.new('D'),
+      @RM::Heading.new(1, 'E'),
+      @RM::Paragraph.new('F'))
+
+    expected = [
+      @RM::Heading.new(1, 'A'),
+      @RM::Heading.new(2, 'C'),
+      @RM::Heading.new(1, 'E'),
+    ]
+
+    assert_equal expected, doc.table_of_contents
   end
 
 end

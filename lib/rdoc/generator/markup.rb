@@ -1,14 +1,8 @@
-# This file is loaded by generators.  It allows RDoc's CodeObject tree to
-# avoid loading generator code to increase startup time (for ri).
-
-require 'rdoc/text'
-require 'rdoc/code_objects'
-require 'rdoc/generator'
-require 'rdoc/markup/to_html_crossref'
-require 'rdoc/ruby_token'
-
 ##
 # Handle common RDoc::Markup tasks for various CodeObjects
+#
+# This module is loaded by generators.  It allows RDoc's CodeObject tree to
+# avoid loading generator code to improve startup time for +ri+.
 
 module RDoc::Generator::Markup
 
@@ -39,18 +33,18 @@ module RDoc::Generator::Markup
   def formatter
     return @formatter if defined? @formatter
 
-    show_hash = RDoc::RDoc.current.options.show_hash
-    hyperlink_all = RDoc::RDoc.current.options.hyperlink_all
+    options = @store.rdoc.options
     this = RDoc::Context === self ? self : @parent
 
-    @formatter = RDoc::Markup::ToHtmlCrossref.new(this.path, this, show_hash,
-                                                  hyperlink_all)
+    @formatter = RDoc::Markup::ToHtmlCrossref.new options, this.path, this
+    @formatter.code_object = self
+    @formatter
   end
 
   ##
   # Build a webcvs URL starting for the given +url+ with +full_path+ appended
   # as the destination path.  If +url+ contains '%s' +full_path+ will be
-  # sprintf'd into +url+ instead.
+  # will replace the %s using sprintf on the +url+.
 
   def cvs_url(url, full_path)
     if /%s/ =~ url then
@@ -62,9 +56,13 @@ module RDoc::Generator::Markup
 
 end
 
-class RDoc::AnyMethod
+class RDoc::CodeObject
 
   include RDoc::Generator::Markup
+
+end
+
+class RDoc::MethodAttr
 
   @add_line_numbers = false
 
@@ -82,7 +80,8 @@ class RDoc::AnyMethod
   #
   #   # File xxxxx, line dddd
   #
-  # If it has, line numbers are added an ', line dddd' is removed.
+  # If it has this comment then line numbers are added to +src+ and the <tt>,
+  # line dddd</tt> portion of the comment is removed.
 
   def add_line_numbers(src)
     return unless src.sub!(/\A(.*)(, line (\d+))/, '\1')
@@ -111,32 +110,7 @@ class RDoc::AnyMethod
   def markup_code
     return '' unless @token_stream
 
-    src = ""
-
-    @token_stream.each do |t|
-      next unless t
-
-      style = case t
-              when RDoc::RubyToken::TkCONSTANT then 'ruby-constant'
-              when RDoc::RubyToken::TkKW       then 'ruby-keyword'
-              when RDoc::RubyToken::TkIVAR     then 'ruby-ivar'
-              when RDoc::RubyToken::TkOp       then 'ruby-operator'
-              when RDoc::RubyToken::TkId       then 'ruby-identifier'
-              when RDoc::RubyToken::TkNode     then 'ruby-node'
-              when RDoc::RubyToken::TkCOMMENT  then 'ruby-comment'
-              when RDoc::RubyToken::TkREGEXP   then 'ruby-regexp'
-              when RDoc::RubyToken::TkSTRING   then 'ruby-string'
-              when RDoc::RubyToken::TkVal      then 'ruby-value'
-              end
-
-      text = CGI.escapeHTML t.text
-
-      if style then
-        src << "<span class=\"#{style}\">#{text}</span>"
-      else
-        src << text
-      end
-    end
+    src = RDoc::TokenStream.to_html @token_stream
 
     # dedent the source
     indent = src.length
@@ -151,34 +125,21 @@ class RDoc::AnyMethod
     end
     src.gsub!(/^#{' ' * indent}/, '') if indent > 0
 
-    add_line_numbers(src) if self.class.add_line_numbers
+    add_line_numbers(src) if RDoc::MethodAttr.add_line_numbers
 
     src
   end
 
 end
 
-class RDoc::Attr
+class RDoc::ClassModule
 
-  include RDoc::Generator::Markup
+  ##
+  # Handy wrapper for marking up this class or module's comment
 
-end
-
-class RDoc::Alias
-
-  include RDoc::Generator::Markup
-
-end
-
-class RDoc::Constant
-
-  include RDoc::Generator::Markup
-
-end
-
-class RDoc::Context
-
-  include RDoc::Generator::Markup
+  def description
+    markup @comment_location
+  end
 
 end
 
@@ -195,7 +156,7 @@ class RDoc::TopLevel
   # command line option to set.
 
   def cvs_url
-    url = RDoc::RDoc.current.options.webcvs
+    url = @store.rdoc.options.webcvs
 
     if /%s/ =~ url then
       url % @absolute_name

@@ -1,11 +1,14 @@
-require 'rubygems/test_case'
 require 'rubygems'
+require 'rubygems/test_case'
 require 'rdoc/rubygems_hook'
 
 class TestRDocRubygemsHook < Gem::TestCase
 
   def setup
     super
+
+    skip 'requires RubyGems 1.9+' unless
+      Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.9')
 
     @a = quick_spec 'a'
 
@@ -195,5 +198,5 @@ class TestRDocRubygemsHook < Gem::TestCase
     FileUtils.chmod 0755, @a.doc_dir
   end
 
-end if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.9')
+end
 

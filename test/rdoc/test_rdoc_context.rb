@@ -1,5 +1,3 @@
-require 'rubygems'
-require 'minitest/autorun'
 require File.expand_path '../xref_test_case', __FILE__
 
 class TestRDocContext < XrefTestCase
@@ -8,6 +6,10 @@ class TestRDocContext < XrefTestCase
     super
 
     @context = RDoc::Context.new
+    @context.store = @store
+
+    @enumerator = # 1.8 vs 1.9
+      Object.const_defined?(:Enumerator) ? Enumerator : Enumerable::Enumerator
   end
 
   def test_initialize
@@ -40,7 +42,7 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_add_alias_method_attr
-    top_level = RDoc::TopLevel.new 'file.rb'
+    top_level = @store.add_file 'file.rb'
 
     attr = RDoc::Attr.new nil, 'old_name', 'R', ''
 
@@ -60,7 +62,7 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_add_alias_method
-    top_level = RDoc::TopLevel.new 'file.rb'
+    top_level = @store.add_file 'file.rb'
 
     meth = RDoc::AnyMethod.new nil, 'old_name'
     meth.singleton = false
@@ -103,7 +105,7 @@ class TestRDocContext < XrefTestCase
     @c1.add_class RDoc::NormalClass, 'Klass', 'Object'
 
     assert_includes @c1.classes.map { |k| k.full_name }, 'C1::Klass'
-    assert_includes RDoc::TopLevel.classes.map { |k| k.full_name }, 'C1::Klass'
+    assert_includes @store.all_classes.map { |k| k.full_name }, 'C1::Klass'
   end
 
   def test_add_class_basic_object
@@ -142,7 +144,7 @@ class TestRDocContext < XrefTestCase
     @c1.add_class RDoc::NormalClass, 'Klass', 'Object'
 
     assert_includes @c1.classes.map { |k| k.full_name }, 'C1::Klass'
-    assert_includes RDoc::TopLevel.classes.map { |k| k.full_name }, 'C1::Klass'
+    assert_includes @store.all_classes.map { |k| k.full_name }, 'C1::Klass'
   end
 
   def test_add_class_superclass
@@ -163,9 +165,9 @@ class TestRDocContext < XrefTestCase
     refute_includes @c1.modules.map { |k| k.full_name }, 'C1::Klass',
                     'c1 modules'
 
-    assert_includes RDoc::TopLevel.classes.map { |k| k.full_name }, 'C1::Klass',
+    assert_includes @store.all_classes.map { |k| k.full_name }, 'C1::Klass',
                     'TopLevel classes'
-    refute_includes RDoc::TopLevel.modules.map { |k| k.full_name }, 'C1::Klass',
+    refute_includes @store.all_modules.map { |k| k.full_name }, 'C1::Klass',
                     'TopLevel modules'
   end
 
@@ -176,21 +178,18 @@ class TestRDocContext < XrefTestCase
     assert_equal [const], @context.constants
   end
 
+  def test_add_extend
+    ext = RDoc::Extend.new 'Name', 'comment'
+    @context.add_extend ext
+
+    assert_equal [ext], @context.extends
+  end
+
   def test_add_include
     incl = RDoc::Include.new 'Name', 'comment'
     @context.add_include incl
 
     assert_equal [incl], @context.includes
-  end
-
-  def test_add_include_twice
-    incl1 = RDoc::Include.new 'Name', 'comment'
-    @context.add_include incl1
-
-    incl2 = RDoc::Include.new 'Name', 'comment'
-    @context.add_include incl2
-
-    assert_equal [incl1], @context.includes
   end
 
   def test_add_method
@@ -217,6 +216,34 @@ class TestRDocContext < XrefTestCase
     assert_equal %w[old_name new_name], @context.method_list.map { |m| m.name }
   end
 
+  def test_add_method_duplicate
+    @store.rdoc.options.verbosity = 2
+
+    meth1 = RDoc::AnyMethod.new nil, 'name'
+    meth1.record_location @store.add_file 'first.rb'
+    meth1.visibility = nil
+    meth1.comment = comment 'first'
+
+    @context.add_method meth1
+
+    meth2 = RDoc::AnyMethod.new nil, 'name'
+    meth2.record_location @store.add_file 'second.rb'
+    meth2.comment = comment 'second'
+
+    _, err = capture_io do
+      @context.add_method meth2
+    end
+
+    expected = 'Duplicate method (unknown)#name in file second.rb, ' \
+               'previously in file first.rb'
+
+    assert_equal expected, err.chomp
+
+    method = @context.method_list.first
+
+    assert_equal 'first', method.comment.text
+  end
+
   def test_add_module
     @c1.add_module RDoc::NormalModule, 'Mod'
 
@@ -224,16 +251,33 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_add_module_alias
-    tl = RDoc::TopLevel.new 'file.rb'
+    tl = @store.add_file 'file.rb'
 
     c3_c4 = @c2.add_module_alias @c2_c3, 'C4', tl
 
-    c4 = @c2.find_module_named('C4')
-
     alias_constant = @c2.constants.first
 
-    assert_equal c4, c3_c4
+    assert_equal 'C2::C4', c3_c4.full_name
     assert_equal tl, alias_constant.file
+  end
+
+  def test_add_module_alias_top_level
+    store = RDoc::Store.new
+
+    top_level = store.add_file 'file.rb'
+
+    klass  = top_level.add_class RDoc::NormalClass, 'Klass'
+    klass.comment = 'klass comment'
+
+    object = top_level.add_class RDoc::NormalClass, 'Object'
+
+    top_level.add_module_alias klass, 'A', top_level
+
+    refute_empty object.constants
+
+    constant = object.constants.first
+
+    assert_equal 'klass comment', constant.comment
   end
 
   def test_add_module_class
@@ -255,22 +299,41 @@ class TestRDocContext < XrefTestCase
   def test_add_section
     default_section = @context.sections.first
 
-    @context.add_section nil, '# comment'
+    @context.add_section nil, comment('comment', @top_level)
 
     assert_equal 1, @context.sections.length
-    assert_equal '# comment', @context.sections.first.comment
+    assert_equal [comment("comment", @top_level)],
+                 @context.sections.first.comments
 
-    @context.add_section nil, '# new comment'
+    @context.add_section nil, comment('new comment', @top_level)
 
     assert_equal 1, @context.sections.length
-    assert_equal "# comment\n# ---\n# new comment",
-                 @context.sections.first.comment
+    assert_equal [comment('comment', @top_level),
+                  comment('new comment', @top_level)],
+                 @context.sections.first.comments
 
-    @context.add_section 'other', ''
+    @context.add_section 'other', comment('', @top_level)
 
     assert_equal 2, @context.sections.length
 
     new_section = @context.sections.find { |section| section.title == 'other' }
+    assert new_section
+    assert_equal default_section, @context.current_section
+  end
+
+  def test_add_section_no_comment
+    default_section = @context.sections.first
+
+    @context.add_section nil
+
+    assert_equal 1, @context.sections.length
+
+    @context.add_section 'other'
+
+    assert_equal 2, @context.sections.length
+
+    new_section = @context.sections.find { |section| section.title == 'other' }
+
     assert new_section
     assert_equal default_section, @context.current_section
   end
@@ -288,7 +351,8 @@ class TestRDocContext < XrefTestCase
   def test_add_to_temporary_section
     incl = RDoc::Include.new 'Name', 'comment'
     arr = []
-    section = @context.add_section 'temporary', ''
+    section =
+      @context.add_section 'temporary', RDoc::Comment.new('', @top_level)
     @context.temporary_section = section
 
     @context.add_to arr, incl
@@ -316,19 +380,30 @@ class TestRDocContext < XrefTestCase
     refute_includes arr, incl
   end
 
+  def bench_add_include
+    cm = RDoc::ClassModule.new 'Klass'
+
+    assert_performance_linear 0.9 do |count|
+      count.times do |i|
+        cm.add_include RDoc::Include.new("N::M#{i}", nil)
+      end
+    end
+  end
+
   def test_child_name
     assert_equal 'C1::C1', @c1.child_name('C1')
   end
 
   def test_classes
     assert_equal %w[C2::C3], @c2.classes.map { |k| k.full_name }
-    assert_equal %w[C3::H1 C3::H2], @c3.classes.map { |k| k.full_name }
+    assert_equal %w[C3::H1 C3::H2], @c3.classes.map { |k| k.full_name }.sort
   end
 
   def test_current_section
     default_section = @context.current_section
 
-    new_section = @context.add_section 'other', ''
+    new_section =
+      @context.add_section 'other', RDoc::Comment.new('', @top_level)
     @context.temporary_section = new_section
 
     assert_equal new_section, @context.current_section
@@ -338,13 +413,17 @@ class TestRDocContext < XrefTestCase
   def test_defined_in_eh
     assert @c1.defined_in?(@c1.top_level)
 
-    refute @c1.defined_in?(RDoc::TopLevel.new('name.rb'))
+    refute @c1.defined_in?(@store.add_file('name.rb'))
   end
 
   def test_equals2
     assert_equal @c3,    @c3
     refute_equal @c2,    @c3
     refute_equal @c2_c3, @c3
+  end
+
+  def test_each_method_enumerator
+    assert_kind_of @enumerator, @c1.each_method
   end
 
   def test_each_section
@@ -373,6 +452,10 @@ class TestRDocContext < XrefTestCase
     ]
 
     assert_equal expected_attrs, attrs
+  end
+
+  def test_each_section_enumerator
+    assert_kind_of @enumerator, @c1.each_section
   end
 
   def test_find_attribute_named
@@ -446,6 +529,16 @@ class TestRDocContext < XrefTestCase
     assert_equal @c1__m, @c1.find_symbol('m')
     assert_equal @c1_m,  @c1.find_symbol('#m')
     assert_equal @c1__m, @c1.find_symbol('::m')
+  end
+
+  def test_find_symbol_module
+    assert_nil @m1_m2.find_symbol_module 'N'
+    assert_nil @m1_m2.find_symbol_module 'M2::M1'
+
+    @m1_m2.parent = nil # loaded from legacy ri store
+
+    assert_nil @m1_m2.find_symbol_module 'N'
+    assert_nil @m1_m2.find_symbol_module 'M2::M1'
   end
 
   def test_fully_documented_eh
@@ -650,20 +743,89 @@ class TestRDocContext < XrefTestCase
     assert_equal [@pub, @prot, @priv], methods
   end
 
+  def test_section_contents
+    default = @context.sections.first
+    @context.add_method RDoc::AnyMethod.new(nil, 'm1')
+
+    b = @context.add_section 'B'
+    m = @context.add_method RDoc::AnyMethod.new(nil, 'm2')
+    m.section = b
+
+    assert_equal [default, b], @context.section_contents
+  end
+
+  def test_section_contents_no_default
+    @context = RDoc::Context.new
+    b = @context.add_section 'B'
+    m = @context.add_method RDoc::AnyMethod.new(nil, 'm')
+    m.section = b
+
+    assert_equal [b], @context.section_contents
+  end
+
+  def test_section_contents_only_default
+    @context = RDoc::Context.new
+
+    @context.add_method RDoc::AnyMethod.new(nil, 'm')
+
+    assert_empty @context.section_contents
+  end
+
+  def test_section_contents_unused
+    @context = RDoc::Context.new
+
+    @context.add_method RDoc::AnyMethod.new(nil, 'm')
+    @context.add_section 'B'
+
+    assert_empty @context.section_contents
+  end
+
   def test_set_current_section
     default_section = @context.sections.first
 
-    @context.set_current_section nil, ''
+    @context.set_current_section nil, RDoc::Comment.new('', @top_level)
 
     assert_equal default_section, @context.current_section
 
-    @context.set_current_section 'other', ''
+    @context.set_current_section 'other', RDoc::Comment.new('', @top_level)
 
     new_section = @context.sections.find { |section|
       section != default_section
     }
 
     assert_equal new_section, @context.current_section
+  end
+
+  def test_sort_sections
+    c = RDoc::Context.new
+    c.add_section 'C'
+    c.add_section 'A'
+    c.add_section 'B'
+
+    titles = c.sort_sections.map { |section| section.title }
+
+    assert_equal [nil, 'A', 'B', 'C'], titles
+  end
+
+  def test_sort_sections_tomdoc
+    c = RDoc::Context.new
+    c.add_section 'Public'
+    c.add_section 'Internal'
+    c.add_section 'Deprecated'
+
+    titles = c.sort_sections.map { |section| section.title }
+
+    assert_equal [nil, 'Public', 'Internal', 'Deprecated'], titles
+  end
+
+  def test_sort_sections_tomdoc_missing
+    c = RDoc::Context.new
+    c.add_section 'Internal'
+    c.add_section 'Public'
+
+    titles = c.sort_sections.map { |section| section.title }
+
+    assert_equal [nil, 'Public', 'Internal'], titles
   end
 
   def util_visibilities

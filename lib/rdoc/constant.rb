@@ -1,16 +1,14 @@
-require 'rdoc/code_object'
-
 ##
 # A constant
 
 class RDoc::Constant < RDoc::CodeObject
 
-  ##
-  # If this constant is an alias for a module or class,
-  # this is the RDoc::ClassModule it is an alias for.
-  # +nil+ otherwise.
+  MARSHAL_VERSION = 0 # :nodoc:
 
-  attr_accessor :is_alias_for
+  ##
+  # Sets the module or class this is constant is an alias for.
+
+  attr_writer :is_alias_for
 
   ##
   # The constant's name
@@ -23,13 +21,22 @@ class RDoc::Constant < RDoc::CodeObject
   attr_accessor :value
 
   ##
+  # The constant's visibility
+
+  attr_accessor :visibility
+
+  ##
   # Creates a new constant with +name+, +value+ and +comment+
 
   def initialize(name, value, comment)
     super()
-    @name = name
+
+    @name  = name
     @value = value
+
     @is_alias_for = nil
+    @visibility   = nil
+
     self.comment = comment
   end
 
@@ -59,6 +66,27 @@ class RDoc::Constant < RDoc::CodeObject
     super or is_alias_for && is_alias_for.documented?
   end
 
+  ##
+  # Full constant name including namespace
+
+  def full_name
+    @full_name ||= "#{parent_name}::#{@name}"
+  end
+
+  ##
+  # The module or class this constant is an alias for
+
+  def is_alias_for
+    case @is_alias_for
+    when String then
+      found = @store.find_class_or_module @is_alias_for
+      @is_alias_for = found if found
+      @is_alias_for
+    else
+      @is_alias_for
+    end
+  end
+
   def inspect # :nodoc:
     "#<%s:0x%x %s::%s>" % [
       self.class, object_id,
@@ -67,10 +95,74 @@ class RDoc::Constant < RDoc::CodeObject
   end
 
   ##
-  # Path to this constant
+  # Dumps this Constant for use by ri.  See also #marshal_load
+
+  def marshal_dump
+    alias_name = case found = is_alias_for
+                 when RDoc::CodeObject then found.full_name
+                 else                       found
+                 end
+
+    [ MARSHAL_VERSION,
+      @name,
+      full_name,
+      @visibility,
+      alias_name,
+      parse(@comment),
+      @file.absolute_name,
+      parent.name,
+      parent.class,
+      section.title,
+    ]
+  end
+
+  ##
+  # Loads this Constant from +array+.  For a loaded Constant the following
+  # methods will return cached values:
+  #
+  # * #full_name
+  # * #parent_name
+
+  def marshal_load array
+    initialize array[1], nil, array[5]
+
+    @full_name     = array[2]
+    @visibility    = array[3]
+    @is_alias_for  = array[4]
+    #                      5 handled above
+    #                      6 handled below
+    @parent_name   = array[7]
+    @parent_class  = array[8]
+    @section_title = array[9]
+
+    @file = RDoc::TopLevel.new array[6]
+  end
+
+  ##
+  # Path to this constant for use with HTML generator output.
 
   def path
     "#{@parent.path}##{@name}"
+  end
+
+  def pretty_print q # :nodoc:
+    q.group 2, "[#{self.class.name} #{full_name}", "]" do
+      unless comment.empty? then
+        q.breakable
+        q.text "comment:"
+        q.breakable
+        q.pp @comment
+      end
+    end
+  end
+
+  ##
+  # Sets the store for this class or module and its contained code objects.
+
+  def store= store
+    super
+
+    @file = @store.add_file @file.full_name if @file
   end
 
   def to_s # :nodoc:

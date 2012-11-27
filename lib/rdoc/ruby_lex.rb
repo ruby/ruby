@@ -11,7 +11,6 @@
 
 require "e2mmap"
 require "irb/slex"
-require "rdoc/ruby_token"
 require "stringio"
 
 ##
@@ -20,6 +19,12 @@ require "stringio"
 # The internals are not documented because they are scary.
 
 class RDoc::RubyLex
+
+  ##
+  # Raised upon invalid input
+
+  class Error < RDoc::Error
+  end
 
   # :stopdoc:
 
@@ -50,6 +55,29 @@ class RDoc::RubyLex
   end
 
   self.debug_level = 0
+
+  # :startdoc:
+
+  ##
+  # Returns an Array of +ruby+ tokens.  See ::new for a description of
+  # +options+.
+
+  def self.tokenize ruby, options
+    tokens = []
+
+    scanner = RDoc::RubyLex.new ruby, options
+    scanner.exception_on_syntax_error = true
+
+    while token = scanner.token do
+      tokens << token
+    end
+
+    tokens
+  end
+
+  ##
+  # Creates a new lexer for +content+.  +options+ is an RDoc::Options, only
+  # +tab_width is used.
 
   def initialize(content, options)
     lex_init
@@ -91,7 +119,10 @@ class RDoc::RubyLex
 
     @prompt = nil
     @prev_seek = nil
+    @ltype = nil
   end
+
+  # :stopdoc:
 
   def inspect # :nodoc:
     "#<%s:0x%x pos %d lex_state %p space_seen %p>" % [
@@ -122,8 +153,8 @@ class RDoc::RubyLex
   end
 
   def get_readed
-    if idx = @readed.reverse.index("\n")
-      @base_char_no = idx
+    if idx = @readed.rindex("\n")
+      @base_char_no = @readed.size - (idx + 1)
     else
       @base_char_no += @readed.size
     end
@@ -188,8 +219,8 @@ class RDoc::RubyLex
     @seek -= 1
     if c == "\n"
       @line_no -= 1
-      if idx = @readed.reverse.index("\n")
-        @char_no = @readed.size - idx
+      if idx = @readed.rindex("\n")
+        @char_no = idx + 1
       else
         @char_no = @base_char_no + @readed.size
       end
@@ -323,7 +354,7 @@ class RDoc::RubyLex
         tk = @OP.match(self)
         @space_seen = tk.kind_of?(TkSPACE)
       rescue SyntaxError => e
-        raise RDoc::Error, "syntax error: #{e.message}" if
+        raise Error, "syntax error: #{e.message}" if
           @exception_on_syntax_error
 
         tk = TkError.new(@seek, @line_no, @char_no)
@@ -381,7 +412,7 @@ class RDoc::RubyLex
   def lex_init()
     @OP = IRB::SLex.new
     @OP.def_rules("\0", "\004", "\032") do |op, io|
-      Token(TkEND_OF_SCRIPT)
+      Token(TkEND_OF_SCRIPT, '')
     end
 
     @OP.def_rules(" ", "\t", "\f", "\r", "\13") do |op, io|
@@ -413,7 +444,7 @@ class RDoc::RubyLex
       gets # consume =end
 
       @ltype = nil
-      Token(TkCOMMENT, res)
+      Token(TkRD_COMMENT, res)
     end
 
     @OP.def_rule("\n") do |op, io|
@@ -460,7 +491,7 @@ class RDoc::RubyLex
       |op, io|
       tk = nil
       if @lex_state != EXPR_END && @lex_state != EXPR_CLASS &&
-        (@lex_state != EXPR_ARG || @space_seen)
+         (@lex_state != EXPR_ARG || @space_seen)
         c = peek(0)
         if /\S/ =~ c && (/["'`]/ =~ c || /\w/ =~ c || c == "-")
           tk = identify_here_document
@@ -505,13 +536,8 @@ class RDoc::RubyLex
           @lex_state = EXPR_BEG;
           Token(TkQUESTION)
         else
-          str = ch
-          if ch == '\\'
-            str << read_escape
-          end
           @lex_state = EXPR_END
-          str << (ch.respond_to?(:ord) ? ch.ord : ch[0])
-          Token(TkINTEGER, str)
+          Token(TkSTRING, ch)
         end
       end
     end
@@ -782,7 +808,8 @@ class RDoc::RubyLex
 
     @OP.def_rule("_") do
       if peek_match?(/_END__/) and @lex_state == EXPR_BEG then
-        Token(TkEND_OF_SCRIPT)
+        6.times { getc }
+        Token(TkEND_OF_SCRIPT, '__END__')
       else
         ungetc
         identify_identifier
@@ -909,6 +936,8 @@ class RDoc::RubyLex
                   @indent += 1
                   @indent_stack.push token_c
                 end
+              else
+                token_c = TkIDENTIFIER
               end
 
             elsif DEINDENT_CLAUSE.include?(token)
@@ -929,7 +958,8 @@ class RDoc::RubyLex
       if peek(0) == '='
         token.concat getc
       end
-    elsif @lex_state == EXPR_BEG || @lex_state == EXPR_DOT
+    elsif @lex_state == EXPR_BEG || @lex_state == EXPR_DOT ||
+          @lex_state == EXPR_ARG
       @lex_state = EXPR_ARG
     else
       @lex_state = EXPR_END
@@ -978,14 +1008,15 @@ class RDoc::RubyLex
     end
 
     @here_header = false
-    doc = ''
+    doc = '"'
     while l = gets
-      l = l.sub(/(:?\r)?\n\z/, '')
-      if (indent ? l.strip : l) == quoted
+      l = l.sub(/(:?\r)?\n\z/, "\n")
+      if (indent ? l.strip : l.chomp) == quoted
         break
       end
       doc << l
     end
+    doc << '"'
 
     @here_header = true
     @here_readed.concat reserve
@@ -999,13 +1030,14 @@ class RDoc::RubyLex
   end
 
   def identify_quotation
-    ch = getc
-    if lt = PERCENT_LTYPE[ch]
+    type = ch = getc
+    if lt = PERCENT_LTYPE[type]
       ch = getc
-    elsif ch =~ /\W/
+    elsif type =~ /\W/
+      type = nil
       lt = "\""
     else
-      raise RDoc::Error, "unknown type of %string #{ch.inspect}"
+      return Token(TkMOD, '%')
     end
     #     if ch !~ /\W/
     #       ungetc
@@ -1013,7 +1045,7 @@ class RDoc::RubyLex
     #     end
     #@ltype = lt
     @quoted = ch unless @quoted = PERCENT_PAREN[ch]
-    identify_string(lt, @quoted)
+    identify_string(lt, @quoted, type)
   end
 
   def identify_number(op = "")
@@ -1040,7 +1072,7 @@ class RDoc::RubyLex
       when /[0-7]/
         match = /[0-7_]/
       when /[89]/
-        raise RDoc::Error, "Illegal octal digit"
+        raise Error, "Illegal octal digit"
       else
         return Token(TkINTEGER, num)
       end
@@ -1054,7 +1086,7 @@ class RDoc::RubyLex
         if match =~ ch
           if ch == "_"
             if non_digit
-              raise RDoc::Error, "trailing `#{ch}' in number"
+              raise Error, "trailing `#{ch}' in number"
             else
               non_digit = ch
             end
@@ -1066,10 +1098,10 @@ class RDoc::RubyLex
           ungetc
           num[-1, 1] = ''
           if len0
-            raise RDoc::Error, "numeric literal without digits"
+            raise Error, "numeric literal without digits"
           end
           if non_digit
-            raise RDoc::Error, "trailing `#{non_digit}' in number"
+            raise Error, "trailing `#{non_digit}' in number"
           end
           break
         end
@@ -1090,7 +1122,7 @@ class RDoc::RubyLex
         non_digit = ch
       when allow_point && "."
         if non_digit
-          raise RDoc::Error, "trailing `#{non_digit}' in number"
+          raise Error, "trailing `#{non_digit}' in number"
         end
         type = TkFLOAT
         if peek(0) !~ /[0-9]/
@@ -1102,7 +1134,7 @@ class RDoc::RubyLex
         allow_point = false
       when allow_e && "e", allow_e && "E"
         if non_digit
-          raise RDoc::Error, "trailing `#{non_digit}' in number"
+          raise Error, "trailing `#{non_digit}' in number"
         end
         type = TkFLOAT
         if peek(0) =~ /[+-]/
@@ -1113,7 +1145,7 @@ class RDoc::RubyLex
         non_digit = ch
       else
         if non_digit
-          raise RDoc::Error, "trailing `#{non_digit}' in number"
+          raise Error, "trailing `#{non_digit}' in number"
         end
         ungetc
         num[-1, 1] = ''
@@ -1124,14 +1156,17 @@ class RDoc::RubyLex
     Token(type, num)
   end
 
-  def identify_string(ltype, quoted = ltype)
+  def identify_string(ltype, quoted = ltype, type = nil)
+    close = PERCENT_PAREN.values.include?(quoted)
     @ltype = ltype
     @quoted = quoted
 
-    str = if ltype == quoted then
+    str = if ltype == quoted and %w[" ' /].include? ltype then
             ltype.dup
+          elsif RUBY_VERSION > '1.9' then
+            "%#{type or PERCENT_LTYPE.key ltype}#{PERCENT_PAREN_REV[quoted]}"
           else
-            "%#{PERCENT_PAREN_REV[quoted]}"
+            "%#{type or PERCENT_LTYPE.index ltype}#{PERCENT_PAREN_REV[quoted]}"
           end
 
     subtype = nil
@@ -1141,7 +1176,7 @@ class RDoc::RubyLex
       while ch = getc
         str << ch
 
-        if @quoted == ch and nest == 0
+        if @quoted == ch and nest <= 0
           break
         elsif @ltype != "'" && @ltype != "]" && @ltype != ":" and ch == "#"
           ch = getc
@@ -1152,17 +1187,21 @@ class RDoc::RubyLex
           else
             ungetc
           end
-        elsif ch == '\\' and @ltype == "'" #'
-          case ch = getc
-          when "\\", "\n", "'"
+        elsif ch == '\\'
+          if %w[' /].include? @ltype then
+            case ch = getc
+            when "\\", "\n", "'"
+            when @ltype
+              str << ch
+            else
+              ungetc
+            end
           else
-            ungetc
+            str << read_escape
           end
-        elsif ch == '\\' #'
-          str << read_escape
         end
 
-        if PERCENT_PAREN.values.include?(@quoted)
+        if close then
           if PERCENT_PAREN[ch] == @quoted
             nest += 1
           elsif ch == @quoted

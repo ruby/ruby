@@ -1,11 +1,10 @@
-require 'pp'
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc/markup'
+require 'rdoc/test_case'
 
-class TestRDocMarkupIndentedParagraph < MiniTest::Unit::TestCase
+class TestRDocMarkupIndentedParagraph < RDoc::TestCase
 
   def setup
+    super
+
     @IP = RDoc::Markup::IndentedParagraph
   end
 
@@ -34,6 +33,20 @@ class TestRDocMarkupIndentedParagraph < MiniTest::Unit::TestCase
 
     assert_equal one, one
     refute_equal one, two
+  end
+
+  def test_text
+    paragraph = @IP.new(2, 'hello', ' world')
+
+    assert_equal 'hello world', paragraph.text
+  end
+
+  def test_text_break
+    paragraph = @IP.new(2, 'hello', hard_break, 'world')
+
+    assert_equal 'helloworld', paragraph.text
+
+    assert_equal "hello\n  world", paragraph.text("\n")
   end
 
 end

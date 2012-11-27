@@ -1,0 +1,18 @@
+<body class="file">
+<nav id="metadata">
+  <%= render '_sidebar_navigation.rhtml' %>
+
+  <%= render '_sidebar_search.rhtml' %>
+
+  <%= render '_sidebar_table_of_contents.rhtml' %>
+
+  <div id="project-metadata">
+    <%= render '_sidebar_pages.rhtml' %>
+    <%= render '_sidebar_classes.rhtml' %>
+  </div>
+</nav>
+
+<div id="documentation" class="description">
+  <%= file.description %>
+</div>
+

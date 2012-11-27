@@ -1,12 +1,10 @@
-require 'pp'
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc/markup'
+require 'rdoc/test_case'
 
-class TestRDocMarkupRaw < MiniTest::Unit::TestCase
+class TestRDocMarkupRaw < RDoc::TestCase
 
   def setup
-    @RM = RDoc::Markup
+    super
+
     @p = @RM::Raw.new
   end
 
@@ -21,6 +19,10 @@ class TestRDocMarkupRaw < MiniTest::Unit::TestCase
     @p.push 'hi', 'there'
 
     assert_equal @RM::Raw.new('hi', 'there'), @p
+  end
+
+  def test_pretty_print
+    assert_equal '[raw: ]', mu_pp(@p)
   end
 
 end

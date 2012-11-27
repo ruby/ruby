@@ -1,15 +1,23 @@
-require 'rdoc/class_module'
-
 ##
 # A normal class, neither singleton nor anonymous
 
 class RDoc::NormalClass < RDoc::ClassModule
 
   ##
-  # Appends the superclass, if any, to the included modules.
+  # The ancestors of this class including modules.  Unlike Module#ancestors,
+  # this class is not included in the result.  The result will contain both
+  # RDoc::ClassModules and Strings.
 
   def ancestors
-    superclass ? super + [superclass] : super
+    if String === superclass then
+      super << superclass
+    elsif superclass then
+      ancestors = super
+      ancestors << superclass
+      ancestors.concat superclass.ancestors
+    else
+      super
+    end
   end
 
   ##
@@ -19,11 +27,15 @@ class RDoc::NormalClass < RDoc::ClassModule
     "class #{full_name}"
   end
 
+  def direct_ancestors
+    superclass ? super + [superclass] : super
+  end
+
   def inspect # :nodoc:
     superclass = @superclass ? " < #{@superclass}" : nil
-    "<%s:0x%x class %s%s includes: %p attributes: %p methods: %p aliases: %p>" % [
+    "<%s:0x%x class %s%s includes: %p extends: %p attributes: %p methods: %p aliases: %p>" % [
       self.class, object_id,
-      full_name, superclass, @includes, @attributes, @method_list, @aliases
+      full_name, superclass, @includes, @extends, @attributes, @method_list, @aliases
     ]
   end
 
@@ -46,19 +58,24 @@ class RDoc::NormalClass < RDoc::ClassModule
       q.seplist @includes do |inc| q.pp inc end
 
       q.breakable
+      q.text "constants:"
+      q.breakable
+      q.seplist @constants do |const| q.pp const end
+
+      q.breakable
       q.text "attributes:"
       q.breakable
-      q.seplist @attributes do |inc| q.pp inc end
+      q.seplist @attributes do |attr| q.pp attr end
 
       q.breakable
       q.text "methods:"
       q.breakable
-      q.seplist @method_list do |inc| q.pp inc end
+      q.seplist @method_list do |meth| q.pp meth end
 
       q.breakable
       q.text "aliases:"
       q.breakable
-      q.seplist @aliases do |inc| q.pp inc end
+      q.seplist @aliases do |aliaz| q.pp aliaz end
 
       q.breakable
       q.text "comment:"

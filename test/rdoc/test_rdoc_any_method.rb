@@ -1,8 +1,6 @@
 require File.expand_path '../xref_test_case', __FILE__
-require 'rdoc/code_objects'
-require 'rdoc/generator/markup'
 
-class RDocAnyMethodTest < XrefTestCase
+class TestRDocAnyMethod < XrefTestCase
 
   def test_aref
     m = RDoc::AnyMethod.new nil, 'method?'
@@ -47,34 +45,12 @@ method(a, b) { |c, d| ... }
   def test_markup_code
     tokens = [
       RDoc::RubyToken::TkCONSTANT. new(0, 0, 0, 'CONSTANT'),
-      RDoc::RubyToken::TkDEF.       new(0, 0, 0, 'KW'),
-      RDoc::RubyToken::TkIVAR.     new(0, 0, 0, 'IVAR'),
-      RDoc::RubyToken::TkOp.       new(0, 0, 0, 'Op'),
-      RDoc::RubyToken::TkId.       new(0, 0, 0, 'Id'),
-      RDoc::RubyToken::TkNode.     new(0, 0, 0, 'Node'),
-      RDoc::RubyToken::TkCOMMENT.  new(0, 0, 0, 'COMMENT'),
-      RDoc::RubyToken::TkREGEXP.   new(0, 0, 0, 'REGEXP'),
-      RDoc::RubyToken::TkSTRING.   new(0, 0, 0, 'STRING'),
-      RDoc::RubyToken::TkVal.      new(0, 0, 0, 'Val'),
-      RDoc::RubyToken::TkBACKSLASH.new(0, 0, 0, '\\'),
     ]
 
     @c2_a.collect_tokens
     @c2_a.add_tokens(*tokens)
 
-    expected = [
-      '<span class="ruby-constant">CONSTANT</span>',
-      '<span class="ruby-keyword">KW</span>',
-      '<span class="ruby-ivar">IVAR</span>',
-      '<span class="ruby-operator">Op</span>',
-      '<span class="ruby-identifier">Id</span>',
-      '<span class="ruby-node">Node</span>',
-      '<span class="ruby-comment">COMMENT</span>',
-      '<span class="ruby-regexp">REGEXP</span>',
-      '<span class="ruby-string">STRING</span>',
-      '<span class="ruby-value">Val</span>',
-      '\\'
-    ].join
+    expected = '<span class="ruby-constant">CONSTANT</span>'
 
     assert_equal expected, @c2_a.markup_code
   end
@@ -84,7 +60,9 @@ method(a, b) { |c, d| ... }
   end
 
   def test_marshal_dump
-    top_level = RDoc::TopLevel.new 'file.rb'
+    @store.path = Dir.tmpdir
+    top_level = @store.add_file 'file.rb'
+
     m = RDoc::AnyMethod.new nil, 'method'
     m.block_params = 'some_block'
     m.call_seq     = 'call_seq'
@@ -92,20 +70,23 @@ method(a, b) { |c, d| ... }
     m.params       = 'param'
     m.record_location top_level
 
-    cm = RDoc::ClassModule.new 'Klass'
+    cm = top_level.add_class RDoc::ClassModule, 'Klass'
     cm.add_method m
+
+    section = cm.sections.first
 
     al = RDoc::Alias.new nil, 'method', 'aliased', 'alias comment'
     al_m = m.add_alias al, cm
 
     loaded = Marshal.load Marshal.dump m
+    loaded.store = @store
 
     comment = RDoc::Markup::Document.new(
                 RDoc::Markup::Paragraph.new('this is a comment'))
 
     assert_equal m, loaded
 
-    assert_equal [al_m],         loaded.aliases
+    assert_equal [al_m.name],    loaded.aliases.map { |alas| alas.name }
     assert_equal 'some_block',   loaded.block_params
     assert_equal 'call_seq',     loaded.call_seq
     assert_equal comment,        loaded.comment
@@ -115,6 +96,8 @@ method(a, b) { |c, d| ... }
     assert_equal 'param',        loaded.params
     assert_equal nil,            loaded.singleton # defaults to nil
     assert_equal :public,        loaded.visibility
+    assert_equal cm,             loaded.parent
+    assert_equal section,        loaded.section
   end
 
   def test_marshal_load
@@ -138,28 +121,37 @@ method(a, b) { |c, d| ... }
   end
 
   def test_marshal_load_version_0
+    @store.path = Dir.tmpdir
+    top_level = @store.add_file 'file.rb'
+
     m = RDoc::AnyMethod.new nil, 'method'
-    cm = RDoc::ClassModule.new 'Klass'
+
+    cm = top_level.add_class RDoc::ClassModule, 'Klass'
     cm.add_method m
+
+    section = cm.sections.first
+
     al = RDoc::Alias.new nil, 'method', 'aliased', 'alias comment'
     al_m = m.add_alias al, cm
 
-    loaded = Marshal.load "\x04\bU:\x14RDoc::AnyMethod[\x0Fi\x00I" \
-                          "\"\vmethod\x06:\x06EF\"\x11Klass#method0:\vpublic" \
-                          "o:\eRDoc::Markup::Document\x06:\v@parts[\x06" \
-                          "o:\x1CRDoc::Markup::Paragraph\x06;\t[\x06I" \
-                          "\"\x16this is a comment\x06;\x06FI" \
-                          "\"\rcall_seq\x06;\x06FI\"\x0Fsome_block\x06;\x06F" \
-                          "[\x06[\aI\"\faliased\x06;\x06Fo;\b\x06;\t[\x06" \
-                          "o;\n\x06;\t[\x06I\"\x12alias comment\x06;\x06FI" \
+    loaded = Marshal.load "\x04\bU:\x14RDoc::AnyMethod[\x0Fi\x00I" +
+                          "\"\vmethod\x06:\x06EF\"\x11Klass#method0:\vpublic" +
+                          "o:\eRDoc::Markup::Document\x06:\v@parts[\x06" +
+                          "o:\x1CRDoc::Markup::Paragraph\x06;\t[\x06I" +
+                          "\"\x16this is a comment\x06;\x06FI" +
+                          "\"\rcall_seq\x06;\x06FI\"\x0Fsome_block\x06;\x06F" +
+                          "[\x06[\aI\"\faliased\x06;\x06Fo;\b\x06;\t[\x06" +
+                          "o;\n\x06;\t[\x06I\"\x12alias comment\x06;\x06FI" +
                           "\"\nparam\x06;\x06F"
+
+    loaded.store = @store
 
     comment = RDoc::Markup::Document.new(
                 RDoc::Markup::Paragraph.new('this is a comment'))
 
     assert_equal m, loaded
 
-    assert_equal [al_m],         loaded.aliases
+    assert_equal [al_m.name],    loaded.aliases.map { |alas| alas.name }
     assert_equal 'some_block',   loaded.block_params
     assert_equal 'call_seq',     loaded.call_seq
     assert_equal comment,        loaded.comment
@@ -169,6 +161,8 @@ method(a, b) { |c, d| ... }
     assert_equal nil,            loaded.singleton # defaults to nil
     assert_equal :public,        loaded.visibility
     assert_equal nil,            loaded.file
+    assert_equal cm,             loaded.parent
+    assert_equal section,        loaded.section
   end
 
   def test_name
@@ -198,6 +192,15 @@ method(a, b) { |c, d| ... }
     m.call_seq = call_seq
 
     assert_equal %w[a b c d], m.param_list
+  end
+
+  def test_param_list_default
+    m = RDoc::AnyMethod.new nil, 'method'
+    m.parent = @c1
+
+    m.params = '(b = default)'
+
+    assert_equal %w[b], m.param_list
   end
 
   def test_param_list_params
@@ -257,6 +260,59 @@ method(a, b) { |c, d| ... }
   def test_parent_name
     assert_equal 'C1', @c1.method_list.first.parent_name
     assert_equal 'C1', @c1.method_list.last.parent_name
+  end
+
+  def test_store_equals
+    loaded = Marshal.load Marshal.dump(@c1.method_list.last)
+
+    loaded.store = @store
+
+    assert_equal @store, loaded.file.store
+  end
+
+  def test_superclass_method
+    m3 = RDoc::AnyMethod.new '', 'no_super'
+
+    m2 = RDoc::AnyMethod.new '', 'supers'
+    m2.calls_super = true
+
+    m1 = RDoc::AnyMethod.new '', 'supers'
+
+    c1 = RDoc::NormalClass.new 'Outer'
+    c1.store = @store
+    c1.add_method m1
+
+    c2 = RDoc::NormalClass.new 'Inner', c1
+    c2.store = @store
+    c2.add_method m2
+    c2.add_method m3
+
+    assert_nil m3.superclass_method,
+               'no superclass method for no_super'
+
+    assert_equal m1, m2.superclass_method,
+                 'superclass method missing for supers'
+  end
+
+  def test_superclass_method_multilevel
+    m2 = RDoc::AnyMethod.new '', 'supers'
+    m2.calls_super = true
+
+    m1 = RDoc::AnyMethod.new '', 'supers'
+
+    c1 = RDoc::NormalClass.new 'Outer'
+    c1.store = @store
+    c1.add_method m1
+
+    c2 = RDoc::NormalClass.new 'Middle', c1
+    c2.store = @store
+
+    c3 = RDoc::NormalClass.new 'Inner', c2
+    c3.store = @store
+    c3.add_method m2
+
+    assert_equal m1, m2.superclass_method,
+                 'superclass method missing for supers'
   end
 
 end

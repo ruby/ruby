@@ -1,27 +1,26 @@
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc'
-require 'rdoc/markup'
-require 'rdoc/markup/formatter'
-require 'rdoc/markup/attribute_manager'
+require 'rdoc/test_case'
 
-class TestAttributeManager < MiniTest::Unit::TestCase # HACK fix test name
+class TestAttributeManager < RDoc::TestCase # HACK fix test name
 
   def setup
+    super
+
+    @options = RDoc::Options.new
+
     @am = RDoc::Markup::AttributeManager.new
     @klass = RDoc::Markup::AttributeManager
-    @formatter = RDoc::Markup::Formatter.new
+    @formatter = RDoc::Markup::Formatter.new @options
     @formatter.add_tag :BOLD, '<B>', '</B>'
     @formatter.add_tag :EM, '<EM>', '</EM>'
-    @formatter.add_tag :TT, '<TT>', '</TT>'
+    @formatter.add_tag :TT, '<CODE>', '</CODE>'
   end
 
   def test_convert_attrs_ignores_code
-    assert_equal 'foo <TT>__send__</TT> bar', output('foo <code>__send__</code> bar')
+    assert_equal 'foo <CODE>__send__</CODE> bar', output('foo <code>__send__</code> bar')
   end
 
   def test_convert_attrs_ignores_tt
-    assert_equal 'foo <TT>__send__</TT> bar', output('foo <tt>__send__</tt> bar')
+    assert_equal 'foo <CODE>__send__</CODE> bar', output('foo <tt>__send__</tt> bar')
   end
 
   def test_convert_attrs_preserves_double
@@ -30,7 +29,7 @@ class TestAttributeManager < MiniTest::Unit::TestCase # HACK fix test name
   end
 
   def test_convert_attrs_does_not_ignore_after_tt
-    assert_equal 'the <TT>IF:</TT><EM>key</EM> directive', output('the <tt>IF:</tt>_key_ directive')
+    assert_equal 'the <CODE>IF:</CODE><EM>key</EM> directive', output('the <tt>IF:</tt>_key_ directive')
   end
 
   def test_initial_word_pairs
@@ -73,38 +72,39 @@ class TestAttributeManager < MiniTest::Unit::TestCase # HACK fix test name
   end
 
   def test_add_special
-    @am.add_special("WikiWord", :WIKIWORD)
+    @am.add_special "WikiWord", :WIKIWORD
     specials = @am.special
-    assert_equal(1,specials.size)
-    assert(specials.has_key?("WikiWord"))
+
+    assert_equal 1, specials.size
+    assert specials.assoc "WikiWord"
   end
 
   def test_escapes
-    assert_equal '<TT>text</TT>',   output('<tt>text</tt>')
-    assert_equal '<tt>text</tt>',   output('\\<tt>text</tt>')
-    assert_equal '<tt>',            output('\\<tt>')
-    assert_equal '<TT><tt></TT>',   output('<tt>\\<tt></tt>')
-    assert_equal '<TT>\\<tt></TT>', output('<tt>\\\\<tt></tt>')
-    assert_equal '<B>text</B>',     output('*text*')
-    assert_equal '*text*',          output('\\*text*')
-    assert_equal '\\',              output('\\')
-    assert_equal '\\text',          output('\\text')
-    assert_equal '\\\\text',        output('\\\\text')
-    assert_equal 'text \\ text',    output('text \\ text')
+    assert_equal '<CODE>text</CODE>',   output('<tt>text</tt>')
+    assert_equal '<tt>text</tt>',       output('\\<tt>text</tt>')
+    assert_equal '<tt>',                output('\\<tt>')
+    assert_equal '<CODE><tt></CODE>',   output('<tt>\\<tt></tt>')
+    assert_equal '<CODE>\\<tt></CODE>', output('<tt>\\\\<tt></tt>')
+    assert_equal '<B>text</B>',         output('*text*')
+    assert_equal '*text*',              output('\\*text*')
+    assert_equal '\\',                  output('\\')
+    assert_equal '\\text',              output('\\text')
+    assert_equal '\\\\text',            output('\\\\text')
+    assert_equal 'text \\ text',        output('text \\ text')
 
-    assert_equal 'and <TT>\\s</TT> matches space',
+    assert_equal 'and <CODE>\\s</CODE> matches space',
                  output('and <tt>\\s</tt> matches space')
-    assert_equal 'use <TT><tt>text</TT></tt> for code',
+    assert_equal 'use <CODE><tt>text</CODE></tt> for code',
                  output('use <tt>\\<tt>text</tt></tt> for code')
-    assert_equal 'use <TT><tt>text</tt></TT> for code',
+    assert_equal 'use <CODE><tt>text</tt></CODE> for code',
                  output('use <tt>\\<tt>text\\</tt></tt> for code')
     assert_equal 'use <tt><tt>text</tt></tt> for code',
                  output('use \\<tt>\\<tt>text</tt></tt> for code')
-    assert_equal 'use <tt><TT>text</TT></tt> for code',
+    assert_equal 'use <tt><CODE>text</CODE></tt> for code',
                  output('use \\<tt><tt>text</tt></tt> for code')
-    assert_equal 'use <TT>+text+</TT> for code',
+    assert_equal 'use <CODE>+text+</CODE> for code',
                  output('use <tt>\\+text+</tt> for code')
-    assert_equal 'use <tt><TT>text</TT></tt> for code',
+    assert_equal 'use <tt><CODE>text</CODE></tt> for code',
                  output('use \\<tt>+text+</tt> for code')
     assert_equal 'illegal <tag>not</tag> changed',
                  output('illegal <tag>not</tag> changed')

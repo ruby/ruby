@@ -1,7 +1,4 @@
-require 'rubygems'
-require 'rdoc/markup/formatter_test_case'
-require 'rdoc/markup/to_tt_only'
-require 'minitest/autorun'
+require 'rdoc/test_case'
 
 class TestRDocMarkupToTtOnly < RDoc::Markup::FormatterTestCase
 
@@ -14,6 +11,10 @@ class TestRDocMarkupToTtOnly < RDoc::Markup::FormatterTestCase
   end
 
   def accept_blank_line
+    assert_empty @to.end_accepting
+  end
+
+  def accept_block_quote
     assert_empty @to.end_accepting
   end
 
@@ -125,6 +126,10 @@ class TestRDocMarkupToTtOnly < RDoc::Markup::FormatterTestCase
     assert_empty @to.end_accepting
   end
 
+  def accept_paragraph_break
+    assert_empty @to.end_accepting
+  end
+
   def accept_raw
     assert_empty @to.end_accepting
   end
@@ -177,7 +182,19 @@ class TestRDocMarkupToTtOnly < RDoc::Markup::FormatterTestCase
     assert_equal [nil, 'teletype', nil], @to.res
   end
 
+  def accept_list_item_start_note_multi_description
+    assert_empty @to.res
+  end
+
+  def accept_list_item_start_note_multi_label
+    assert_empty @to.res
+  end
+
   def accept_paragraph_b
+    assert_empty @to.end_accepting
+  end
+
+  def accept_paragraph_br
     assert_empty @to.end_accepting
   end
 

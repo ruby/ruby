@@ -1,6 +1,3 @@
-require 'rdoc/markup'
-require 'rdoc/encoding'
-
 ##
 # Handle common directives that can occur in a block of text:
 #
@@ -9,18 +6,48 @@ require 'rdoc/encoding'
 # Directives can be escaped by preceding them with a backslash.
 #
 # RDoc plugin authors can register additional directives to be handled by
-# using RDoc::Markup::PreProcess::register
+# using RDoc::Markup::PreProcess::register.
+#
+# Any directive that is not built-in to RDoc (including those registered via
+# plugins) will be stored in the metadata hash on the CodeObject the comment
+# is attached to.  See RDoc::Markup@Directives for the list of built-in
+# directives.
 
 class RDoc::Markup::PreProcess
 
+  ##
+  # An RDoc::Options instance that will be filled in with overrides from
+  # directives
+
   attr_accessor :options
 
-  @registered = {}
+  ##
+  # Adds a post-process handler for directives.  The handler will be called
+  # with the result RDoc::Comment (or text String) and the code object for the
+  # comment (if any).
+
+  def self.post_process &block
+    @post_processors << block
+  end
+
+  ##
+  # Registered post-processors
+
+  def self.post_processors
+    @post_processors
+  end
 
   ##
   # Registers +directive+ as one handled by RDoc.  If a block is given the
   # directive will be replaced by the result of the block, otherwise the
   # directive will be removed from the processed text.
+  #
+  # The block will be called with the directive name and the directive
+  # parameter:
+  #
+  #   RDoc::Markup::PreProcess.register 'my-directive' do |directive, param|
+  #     # replace text, etc.
+  #   end
 
   def self.register directive, &block
     @registered[directive] = block
@@ -34,6 +61,16 @@ class RDoc::Markup::PreProcess
   end
 
   ##
+  # Clears all registered directives and post-processors
+
+  def self.reset
+    @post_processors = []
+    @registered = {}
+  end
+
+  reset
+
+  ##
   # Creates a new pre-processor for +input_file_name+ that will look for
   # included files in +include_path+
 
@@ -44,7 +81,7 @@ class RDoc::Markup::PreProcess
   end
 
   ##
-  # Look for directives in a chunk of +text+.
+  # Look for directives in the given +text+.
   #
   # Options that we don't handle are yielded.  If the block returns false the
   # directive is restored to the text.  If the block returns nil or no block
@@ -54,27 +91,56 @@ class RDoc::Markup::PreProcess
   # If no matching directive was registered the directive is restored to the
   # text.
   #
-  # If +code_object+ is given and the param is set as metadata on the
-  # +code_object+.  See RDoc::CodeObject#metadata
+  # If +code_object+ is given and the directive is unknown then the
+  # directive's parameter is set as metadata on the +code_object+.  See
+  # RDoc::CodeObject#metadata for details.
 
   def handle text, code_object = nil, &block
-    encoding = if defined?(Encoding) then text.encoding else nil end
+    if RDoc::Comment === text then
+      comment = text
+      text = text.text
+    end
+
+    encoding = text.encoding if defined?(Encoding)
+
     # regexp helper (square brackets for optional)
     # $1      $2  $3        $4      $5
     # [prefix][\]:directive:[spaces][param]newline
-    text.gsub!(/^([ \t]*(?:#|\/?\*)?[ \t]*)(\\?):(\w+):([ \t]*)(.+)?\n/) do
+    text.gsub!(/^([ \t]*(?:#|\/?\*)?[ \t]*)(\\?):(\w+):([ \t]*)(.+)?(\r?\n|$)/) do
       # skip something like ':toto::'
       next $& if $4.empty? and $5 and $5[0, 1] == ':'
 
       # skip if escaped
       next "#$1:#$3:#$4#$5\n" unless $2.empty?
 
+      # This is not in handle_directive because I didn't want to pass another
+      # argument into it
+      if comment and $3 == 'markup' then
+        next "#{$1.strip}\n" unless $5
+        comment.format = $5.downcase
+        next "#{$1.strip}\n"
+      end
+
       handle_directive $1, $3, $5, code_object, encoding, &block
+    end
+
+    comment = text unless comment
+
+    self.class.post_processors.each do |handler|
+      handler.call comment, code_object
     end
 
     text
   end
 
+  ##
+  # Performs the actions described by +directive+ and its parameter +param+.
+  #
+  # +code_object+ is used for directives that operate on a class or module.
+  # +prefix+ is used to ensure the replacement for handled directives is
+  # correct.  +encoding+ is used for the <tt>include</tt> directive.
+  #
+  # For a list of directives in RDoc see RDoc::Markup.
   #--
   # When 1.8.7 support is ditched prefix can be defaulted to ''
 
@@ -92,7 +158,7 @@ class RDoc::Markup::PreProcess
       blankline
     when 'category' then
       if RDoc::Context === code_object then
-        section = code_object.add_section param, ''
+        section = code_object.add_section param
         code_object.temporary_section = section
       end
 

@@ -43,8 +43,7 @@ module RDoc::Parser::RubyTools
           tk = Token(TkSYMBOL).set_text(":" + tk1.text)
         end
 
-        # remove the identifier we just read (we're about to replace it with a
-        # symbol)
+        # remove the identifier we just read to replace it with a symbol
         @token_listeners.each do |obj|
           obj.pop_token
         end if @token_listeners
@@ -70,7 +69,13 @@ module RDoc::Parser::RubyTools
 
     loop do
       tk = get_tk
-      case tk when *tokens then unget_tk tk; break end
+
+      case tk
+      when *tokens then
+        unget_tk tk
+        break
+      end
+
       read << tk
     end
 

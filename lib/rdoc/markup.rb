@@ -1,5 +1,3 @@
-require 'rdoc'
-
 ##
 # RDoc::Markup parses plain text documents and attempts to decompose them into
 # their constituent parts.  Some of these parts are high-level: paragraphs,
@@ -8,11 +6,44 @@ require 'rdoc'
 # is similar in spirit to that used on WikiWiki webs, where folks create web
 # pages using a simple set of formatting rules.
 #
-# RDoc::Markup itself does no output formatting: this is left to a different
-# set of classes.
+# RDoc::Markup and other markup formats do no output formatting, this is
+# handled by the RDoc::Markup::Formatter subclasses.
 #
-# RDoc::Markup is extendable at runtime: you can add \new markup elements to
-# be recognised in the documents that RDoc::Markup parses.
+# = Supported Formats
+#
+# Besides the RDoc::Markup format, the following formats are built in to RDoc:
+#
+# markdown::
+#   The markdown format as described by
+#   http://daringfireball.net/projects/markdown/.  See RDoc::Markdown for
+#   details on the parser and supported extensions.
+# rd::
+#   The rdtool format.  See RDoc::RD for details on the parser and format.
+# tomdoc::
+#   The TomDoc format as described by http://tomdoc.org/.  See RDoc::TomDoc
+#   for details on the parser and supported extensions.
+#
+# You can choose a markup format using the following methods:
+#
+# per project::
+#   If you build your documentation with rake use RDoc::Task#markup.
+#
+#   If you build your documentation by hand run:
+#
+#      rdoc --markup your_favorite_format --write-options
+#
+#   and commit <tt>.rdoc_options</tt> and ship it with your packaged gem.
+# per file::
+#   At the top of the file use the <tt>:markup:</tt> directive to set the
+#   default format for the rest of the file.
+# per comment::
+#   Use the <tt>:markup:</tt> directive at the top of a comment you want
+#   to write in a different format.
+#
+# = RDoc::Markup
+#
+# RDoc::Markup is extensible at runtime: you can add \new markup elements to
+# be recognized in the documents that RDoc::Markup parses.
 #
 # RDoc::Markup is intended to be the basis for a family of tools which share
 # the common requirement that simple, plain-text should be rendered in a
@@ -26,21 +57,20 @@ require 'rdoc'
 # the +convert+ method, so you can use the same RDoc::Markup converter to
 # convert multiple input strings.
 #
-#   require 'rdoc/markup/to_html'
+#   require 'rdoc'
 #
 #   h = RDoc::Markup::ToHtml.new
 #
 #   puts h.convert(input_string)
 #
-# You can extend the RDoc::Markup parser to recognise new markup
+# You can extend the RDoc::Markup parser to recognize new markup
 # sequences, and to add special processing for text that matches a
 # regular expression.  Here we make WikiWords significant to the parser,
 # and also make the sequences {word} and \<no>text...</no> signify
 # strike-through text.  We then subclass the HTML output class to deal
 # with these:
 #
-#   require 'rdoc/markup'
-#   require 'rdoc/markup/to_html'
+#   require 'rdoc'
 #
 #   class WikiHtml < RDoc::Markup::ToHtml
 #     def handle_special_WIKIWORD(special)
@@ -96,7 +126,12 @@ require 'rdoc'
 # have been removed. In addition, the verbatim text has been shifted
 # left, so the amount of indentation of verbatim text is unimportant.
 #
-# === Headers and Rules
+# For HTML output RDoc makes a small effort to determine if a verbatim section
+# contains ruby source code.  If so, the verbatim block will be marked up as
+# HTML.  Triggers include "def", "class", "module", "require", the "hash
+# rocket"# (=>) or a block call with a parameter.
+#
+# === Headers
 #
 # A line starting with an equal sign (=) is treated as a
 # heading.  Level one headings have one equals sign, level two headings
@@ -104,7 +139,36 @@ require 'rdoc'
 # (seven hyphens or more result in a level six heading).
 #
 # For example, the above header was obtained with:
-#   == Headers and Rules
+#
+#   === Headers
+#
+# In HTML output headers have an id matching their name.  The above example's
+# HTML is:
+#
+#   <h3 id="label-Headers">Headers</h3>
+#
+# If a heading is inside a method body the id will be prefixed with the
+# method's id.  If the above header where in the documentation for a method
+# such as:
+#
+#   ##
+#   # This method does fun things
+#   #
+#   # = Example
+#   #
+#   #   Example of fun things goes here ...
+#
+#   def do_fun_things
+#   end
+#
+# The header's id would be:
+#
+#   <h1 id="method-i-do_fun_things-label-Example">Example</h3>
+#
+# The label can be linked-to using <tt>SomeClass@Headers</tt>.  See
+# {Links}[RDoc::Markup@Links] for further details.
+#
+# === Rules
 #
 # A line starting with three or more hyphens (at the current indent)
 # generates a horizontal rule.  The more hyphens, the thicker the rule
@@ -240,7 +304,6 @@ require 'rdoc'
 #   verbatim text outside of the list (the list is therefore closed)
 # regular paragraph after the list
 #
-#
 # == Text Markup
 #
 # === Bold, Italic, Typewriter Text
@@ -272,15 +335,26 @@ require 'rdoc'
 # === Links
 #
 # Links to starting with +http:+, +https:+, +mailto:+, +ftp:+ or +www.+
-# are recognized.  An HTTP url that references an external image file is
-# converted into an inline image element.
+# are recognized.  An HTTP url that references an external image is converted
+# into an inline image element.
 #
-# Links starting with <tt>rdoc-ref:</tt> will link to the referenced class,
-# module, method, file, etc.  If the referenced item is not documented the
-# text will be and no link will be generated.
+# Classes and methods will be automatically linked to their definition.  For
+# example, <tt>RDoc::Markup</tt> will link to this documentation.  By default
+# methods will only be automatically linked if they contain an <tt>_</tt> (all
+# methods can be automatically linked through the <tt>--hyperlink-all</tt>
+# command line option).
 #
-# Links starting with +link:+ refer to local files whose path is relative to
-# the <tt>--op</tt> directory.
+# Single-word methods can be linked by using the <tt>#</tt> character for
+# instance methods or <tt>::</tt> for class methods.  For example,
+# <tt>#convert</tt> links to #convert.  A class or method may be combined like
+# <tt>RDoc::Markup#convert</tt>.
+#
+# A heading inside the documentation can be linked by following the class
+# or method by an <tt>@</tt> then the heading name.
+# <tt>RDoc::Markup@Links</tt> will link to this section like this:
+# RDoc::Markup@Links.  Spaces in headings with multiple words must be escaped
+# with <tt>+</tt> like <tt>RDoc::Markup@Escaping+Text+Markup</tt>.
+# Punctuation and other special characters must be escaped like CGI.escape.
 #
 # Links can also be of the form <tt>label[url]</tt>, in which case +label+ is
 # used in the displayed text, and +url+ is used as the target.  If +label+
@@ -292,6 +366,11 @@ require 'rdoc'
 # module, method, file, etc.  If the referenced item is does not exist
 # no link will be generated and <tt>rdoc-ref:</tt> will be removed from the
 # resulting text.
+#
+# Links starting with <tt>rdoc-label:label_name</tt> will link to the
+# +label_name+.  You can create a label for the current link (for
+# bidirectional links) by supplying a name for the current link like
+# <tt>rdoc-label:label-other:label-mine</tt>.
 #
 # Links starting with +link:+ refer to local files whose path is relative to
 # the <tt>--op</tt> directory.  Use <tt>rdoc-ref:</tt> instead of
@@ -492,27 +571,54 @@ require 'rdoc'
 #   so you won't see the documentation unless you use the +-a+ command line
 #   option.
 #
-# === Other directives
+# === Method arguments
 #
-# [+:include:+ _filename_]
-#   Include the contents of the named file at this point. This directive
-#   must appear alone on one line, possibly preceded by spaces. In this
-#   position, it can be escaped with a \ in front of the first colon.
+# [+:arg:+ or +:args:+ _parameters_]
+#   Overrides the default argument handling with exactly these parameters.
 #
-#   The file will be searched for in the directories listed by the +--include+
-#   option, or in the current directory by default.  The contents of the file
-#   will be shifted to have the same indentation as the ':' at the start of
-#   the +:include:+ directive.
+#     ##
+#     #  :args: a, b
 #
-# [+:title:+ _text_]
-#   Sets the title for the document.  Equivalent to the <tt>--title</tt>
-#   command line parameter.  (The command line parameter overrides any :title:
-#   directive in the source).
+#     def some_method(*a)
+#     end
 #
-# [+:main:+ _name_]
-#   Equivalent to the <tt>--main</tt> command line parameter.
+# [+:yield:+ or +:yields:+ _parameters_]
+#   Overrides the default yield discovery with these parameters.
 #
-# [<tt>:category: section</tt>]
+#     ##
+#     # :yields: key, value
+#
+#     def each_thing &block
+#       @things.each(&block)
+#     end
+#
+# [+:call-seq:+]
+#   Lines up to the next blank line or lines with a common prefix in the
+#   comment are treated as the method's calling sequence, overriding the
+#   default parsing of method parameters and yield arguments.
+#
+#   Multiple lines may be used.
+#
+#     # :call-seq:
+#     #   ARGF.readlines(sep=$/)     -> array
+#     #   ARGF.readlines(limit)      -> array
+#     #   ARGF.readlines(sep, limit) -> array
+#     #
+#     #   ARGF.to_a(sep=$/)     -> array
+#     #   ARGF.to_a(limit)      -> array
+#     #   ARGF.to_a(sep, limit) -> array
+#     #
+#     # The remaining lines are documentation ...
+#
+# === Sections
+#
+# Sections allow you to group methods in a class into sensible containers.  If
+# you use the sections 'Public', 'Internal' and 'Deprecated' (the three
+# allowed method statuses from TomDoc) the sections will be displayed in that
+# order placing the most useful methods at the top.  Otherwise, sections will
+# be displayed in alphabetical order.
+#
+# [+:category:+ _section_]
 #   Adds this item to the named +section+ overriding the current section.  Use
 #   this to group methods by section in RDoc output while maintaining a
 #   sensible ordering (like alphabetical).
@@ -541,7 +647,7 @@ require 'rdoc'
 #   Use the :section: directive to provide introductory text for a section of
 #   documentation.
 #
-# [<tt>:section: title</tt>]
+# [+:section:+ _title_]
 #   Provides section introductory text in RDoc output.  The title following
 #   +:section:+ is used as the section name and the remainder of the comment
 #   containing the section is used as introductory text.  A section's comment
@@ -573,12 +679,60 @@ require 'rdoc'
 #       # ...
 #     end
 #
-# [+:call-seq:+]
-#   Lines up to the next blank line in the comment are treated as the method's
-#   calling sequence, overriding the default parsing of method parameters and
-#   yield arguments.
+# === Other directives
 #
-# Further directives can be found in RDoc::Parser::Ruby and RDoc::Parser::C.
+# [+:markup:+ _type_]
+#   Overrides the default markup type for this comment with the specified
+#   markup type.  For ruby files, if the first comment contains this directive
+#   it is applied automatically to all comments in the file.
+#
+#   Unless you are converting between markup formats you should use a
+#   <code>.rdoc_options</code> file to specify the default documentation
+#   format for your entire project.  See RDoc::Options@Saved+Options for
+#   instructions.
+#
+#   At the top of a file the +:markup:+ directive applies to the entire file:
+#
+#     # coding: UTF-8
+#     # :markup: TomDoc
+#
+#     # TomDoc comment here ...
+#
+#     class MyClass
+#       # ...
+#
+#   For just one comment:
+#
+#       # ...
+#     end
+#
+#     # :markup: RDoc
+#     #
+#     # This is a comment in RDoc markup format ...
+#
+#     def some_method
+#       # ...
+#
+#   See Markup@DEVELOPERS for instructions on adding a new markup format.
+#
+# [+:include:+ _filename_]
+#   Include the contents of the named file at this point. This directive
+#   must appear alone on one line, possibly preceded by spaces. In this
+#   position, it can be escaped with a \ in front of the first colon.
+#
+#   The file will be searched for in the directories listed by the +--include+
+#   option, or in the current directory by default.  The contents of the file
+#   will be shifted to have the same indentation as the ':' at the start of
+#   the +:include:+ directive.
+#
+# [+:title:+ _text_]
+#   Sets the title for the document.  Equivalent to the <tt>--title</tt>
+#   command line parameter.  (The command line parameter overrides any :title:
+#   directive in the source).
+#
+# [+:main:+ _name_]
+#   Equivalent to the <tt>--main</tt> command line parameter.
+#
 #--
 # Original Author:: Dave Thomas,  dave@pragmaticprogrammer.com
 # License:: Ruby license
@@ -589,6 +743,34 @@ class RDoc::Markup
   # An AttributeManager which handles inline markup.
 
   attr_reader :attribute_manager
+
+  ##
+  # Parses +str+ into an RDoc::Markup::Document.
+
+  def self.parse str
+    RDoc::Markup::Parser.parse str
+  rescue RDoc::Markup::Parser::Error => e
+    $stderr.puts <<-EOF
+While parsing markup, RDoc encountered a #{e.class}:
+
+#{e}
+\tfrom #{e.backtrace.join "\n\tfrom "}
+
+---8<---
+#{text}
+---8<---
+
+RDoc #{RDoc::VERSION}
+
+Ruby #{RUBY_VERSION}-p#{RUBY_PATCHLEVEL} #{RUBY_RELEASE_DATE}
+
+Please file a bug report with the above information at:
+
+https://github.com/rdoc/rdoc/issues
+
+    EOF
+    raise
+  end
 
   ##
   # Take a block of text and use various heuristics to determine its
@@ -644,9 +826,47 @@ class RDoc::Markup
     document.accept formatter
   end
 
-end
+  autoload :Parser,                'rdoc/markup/parser'
+  autoload :PreProcess,            'rdoc/markup/pre_process'
 
-require 'rdoc/markup/parser'
-require 'rdoc/markup/attribute_manager'
-require 'rdoc/markup/inline'
+  # Inline markup classes
+  autoload :AttrChanger,           'rdoc/markup/attr_changer'
+  autoload :AttrSpan,              'rdoc/markup/attr_span'
+  autoload :Attributes,            'rdoc/markup/attributes'
+  autoload :AttributeManager,      'rdoc/markup/attribute_manager'
+  autoload :Special,               'rdoc/markup/special'
+
+  # RDoc::Markup AST
+  autoload :BlankLine,             'rdoc/markup/blank_line'
+  autoload :BlockQuote,            'rdoc/markup/block_quote'
+  autoload :Document,              'rdoc/markup/document'
+  autoload :HardBreak,             'rdoc/markup/hard_break'
+  autoload :Heading,               'rdoc/markup/heading'
+  autoload :Include,               'rdoc/markup/include'
+  autoload :IndentedParagraph,     'rdoc/markup/indented_paragraph'
+  autoload :List,                  'rdoc/markup/list'
+  autoload :ListItem,              'rdoc/markup/list_item'
+  autoload :Paragraph,             'rdoc/markup/paragraph'
+  autoload :Raw,                   'rdoc/markup/raw'
+  autoload :Rule,                  'rdoc/markup/rule'
+  autoload :Verbatim,              'rdoc/markup/verbatim'
+
+  # Formatters
+  autoload :Formatter,             'rdoc/markup/formatter'
+  autoload :FormatterTestCase,     'rdoc/markup/formatter_test_case'
+  autoload :TextFormatterTestCase, 'rdoc/markup/text_formatter_test_case'
+
+  autoload :ToAnsi,                'rdoc/markup/to_ansi'
+  autoload :ToBs,                  'rdoc/markup/to_bs'
+  autoload :ToHtml,                'rdoc/markup/to_html'
+  autoload :ToHtmlCrossref,        'rdoc/markup/to_html_crossref'
+  autoload :ToHtmlSnippet,         'rdoc/markup/to_html_snippet'
+  autoload :ToLabel,               'rdoc/markup/to_label'
+  autoload :ToMarkdown,            'rdoc/markup/to_markdown'
+  autoload :ToRdoc,                'rdoc/markup/to_rdoc'
+  autoload :ToTableOfContents,     'rdoc/markup/to_table_of_contents'
+  autoload :ToTest,                'rdoc/markup/to_test'
+  autoload :ToTtOnly,              'rdoc/markup/to_tt_only'
+
+end
 

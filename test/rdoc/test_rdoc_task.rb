@@ -1,10 +1,11 @@
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc/task'
+require 'rdoc/test_case'
+require 'rake'
 
-class TestRDocTask < MiniTest::Unit::TestCase
+class TestRDocTask < RDoc::TestCase
 
   def setup
+    super
+
     Rake::Task.clear
 
     @t = RDoc::Task.new
@@ -30,6 +31,14 @@ class TestRDocTask < MiniTest::Unit::TestCase
     capture_io do
       assert @t.inline_source
     end
+  end
+
+  def test_markup_option
+    rdoc_task = RDoc::Task.new do |rd|
+      rd.markup = "tomdoc"
+    end
+
+    assert_equal %w[-o html --markup tomdoc], rdoc_task.option_list
   end
 
   def test_tasks_creation

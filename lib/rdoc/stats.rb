@@ -1,5 +1,3 @@
-require 'rdoc'
-
 ##
 # RDoc statistics collector which prints a summary and report of a project's
 # documentation totals.
@@ -25,17 +23,18 @@ class RDoc::Stats
   # Creates a new Stats that will have +num_files+.  +verbosity+ defaults to 1
   # which will create an RDoc::Stats::Normal outputter.
 
-  def initialize num_files, verbosity = 1
-    @files_so_far = 0
+  def initialize store, num_files, verbosity = 1
     @num_files = num_files
+    @store     = store
 
-    @coverage_level = 0
-    @doc_items = nil
+    @coverage_level   = 0
+    @doc_items        = nil
+    @files_so_far     = 0
     @fully_documented = false
-    @num_params = 0
-    @percent_doc = nil
-    @start = Time.now
-    @undoc_params = 0
+    @num_params       = 0
+    @percent_doc      = nil
+    @start            = Time.now
+    @undoc_params     = 0
 
     @display = case verbosity
                when 0 then Quiet.new   num_files
@@ -108,7 +107,10 @@ class RDoc::Stats
   def calculate
     return if @doc_items
 
-    ucm = RDoc::TopLevel.unique_classes_and_modules
+    ucm = @store.unique_classes_and_modules
+
+    classes = @store.unique_classes.reject { |cm| cm.full_name == 'Object' }
+
     constants = []
     ucm.each { |cm| constants.concat cm.constants }
 
@@ -119,10 +121,10 @@ class RDoc::Stats
     ucm.each { |cm| attributes.concat cm.attributes }
 
     @num_attributes, @undoc_attributes = doc_stats attributes
-    @num_classes,    @undoc_classes    = doc_stats RDoc::TopLevel.unique_classes
+    @num_classes,    @undoc_classes    = doc_stats classes
     @num_constants,  @undoc_constants  = doc_stats constants
     @num_methods,    @undoc_methods    = doc_stats methods
-    @num_modules,    @undoc_modules    = doc_stats RDoc::TopLevel.unique_modules
+    @num_modules,    @undoc_modules    = doc_stats @store.unique_modules
 
     @num_items =
       @num_attributes +
@@ -160,7 +162,8 @@ class RDoc::Stats
   # Returns the length and number of undocumented items in +collection+.
 
   def doc_stats collection
-    [collection.length, collection.count { |item| not item.documented? }]
+    visible = collection.select { |item| item.display? }
+    [visible.length, visible.count { |item| not item.documented? }]
   end
 
   ##
@@ -211,9 +214,6 @@ class RDoc::Stats
 
   def report
     if @coverage_level > 0 then
-      require 'rdoc/markup/to_tt_only'
-      require 'rdoc/generator/markup'
-      require 'rdoc/text'
       extend RDoc::Text
     end
 
@@ -225,7 +225,7 @@ class RDoc::Stats
       return great_job if @num_items == @doc_items
     end
 
-    ucm = RDoc::TopLevel.unique_classes_and_modules
+    ucm = @store.unique_classes_and_modules
 
     ucm.sort.each do |cm|
       report << report_class_module(cm) {
@@ -259,8 +259,8 @@ class RDoc::Stats
 
     cm.each_attribute do |attr|
       next if attr.documented?
-      report << "  #{attr.definition} :#{attr.name} " \
-        "# in file #{attr.file.full_name}"
+      line = attr.line ? ":#{attr.line}" : nil
+      report << "  #{attr.definition} :#{attr.name} # in file #{attr.file.full_name}#{line}"
     end
 
     report
@@ -271,14 +271,14 @@ class RDoc::Stats
 
   def report_class_module cm
     return if cm.fully_documented? and @coverage_level.zero?
+    return unless cm.display?
 
     report = []
 
     if cm.in_files.empty? then
       report << "# #{cm.definition} is referenced but empty."
-      report << '#'
-      report << '# It probably came from another project.  ' \
-        "I'm sorry I'm holding it against you."
+      report << "#"
+      report << "# It probably came from another project.  I'm sorry I'm holding it against you."
       report << nil
 
       return report
@@ -321,7 +321,9 @@ class RDoc::Stats
       # TODO constant aliases are listed in the summary but not reported
       # figure out what to do here
       next if constant.documented? || constant.is_alias_for
-      report << "  # in file #{constant.file.full_name}"
+
+      line = constant.line ? ":#{constant.line}" : line
+      report << "  # in file #{constant.file.full_name}#{line}"
       report << "  #{constant.name} = nil"
     end
 
@@ -353,9 +355,13 @@ class RDoc::Stats
       end
 
       next if method.documented? and not param_report
-      report << "  # in file #{method.file.full_name}"
+
+      line = method.line ? ":#{method.line}" : nil
+      scope = method.singleton ? 'self.' : nil
+
+      report << "  # in file #{method.file.full_name}#{line}"
       report << param_report if param_report
-      report << "  def #{method.name}#{method.params}; end"
+      report << "  def #{scope}#{method.name}#{method.params}; end"
       report << nil
     end
 

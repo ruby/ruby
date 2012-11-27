@@ -1,24 +1,22 @@
-require 'tempfile'
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc/options'
-require 'rdoc/parser'
+require 'rdoc/test_case'
 
-class TestRDocParserSimple < MiniTest::Unit::TestCase
+class TestRDocParserSimple < RDoc::TestCase
 
   def setup
+    super
+
     @tempfile = Tempfile.new self.class.name
     filename = @tempfile.path
 
-    @top_level = RDoc::TopLevel.new filename
+    @top_level = @store.add_file filename
     @fn = filename
     @options = RDoc::Options.new
-    @stats = RDoc::Stats.new 0
-
-    RDoc::TopLevel.reset
+    @stats = RDoc::Stats.new @store, 0
   end
 
   def teardown
+    super
+
     @tempfile.close
   end
 
@@ -45,7 +43,7 @@ Regular expressions (<i>regexp</i>s) are patterns which describe the
 contents of a string.
     TEXT
 
-    assert_equal expected, @top_level.comment
+    assert_equal expected, @top_level.comment.text
   end
 
   # RDoc stops processing comments if it finds a comment line CONTAINING
@@ -74,21 +72,39 @@ contents of a string.
   #   # ---
 
   def test_remove_private_comments
-    parser = util_parser ''
-    text = "foo\n\n--\nbar\n++\n\nbaz\n"
+    parser = util_parser "foo\n\n--\nbar\n++\n\nbaz\n"
 
-    expected = "foo\n\n\n\nbaz\n"
+    parser.scan
 
-    assert_equal expected, parser.remove_private_comments(text)
+    expected = "foo\n\n\nbaz"
+
+    assert_equal expected, @top_level.comment.text
+  end
+
+  def test_remove_private_comments_rule
+    parser = util_parser "foo\n---\nbar"
+
+    parser.scan
+
+    expected = "foo\n---\nbar"
+
+    assert_equal expected, @top_level.comment.text
   end
 
   def test_remove_private_comments_star
-    parser = util_parser ''
+    parser = util_parser "* foo\n* bar\n"
 
-    text = "* foo\n* bar\n"
-    expected = text.dup
+    parser.scan
 
-    assert_equal expected, parser.remove_private_comments(text)
+    assert_equal "* foo\n* bar", @top_level.comment.text
+  end
+
+  def test_scan
+    parser = util_parser 'it *really* works'
+
+    parser.scan
+
+    assert_equal 'it *really* works', @top_level.comment.text
   end
 
   def util_parser(content)

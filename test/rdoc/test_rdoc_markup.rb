@@ -1,9 +1,13 @@
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc/markup'
-require 'rdoc/markup/to_test'
+require 'rdoc/test_case'
 
-class TestRDocMarkup < MiniTest::Unit::TestCase
+class TestRDocMarkup < RDoc::TestCase
+
+  def test_class_parse
+    expected = @RM::Document.new(
+      @RM::Paragraph.new('hello'))
+
+    assert_equal expected, RDoc::Markup.parse('hello')
+  end
 
   def test_convert
     str = <<-STR
@@ -44,7 +48,7 @@ the time
     m = RDoc::Markup.new
     m.add_word_pair '{', '}', :STRIKE
 
-    tt = RDoc::Markup::ToTest.new m
+    tt = RDoc::Markup::ToTest.new nil, m
     tt.add_tag :STRIKE, 'STRIKE ', ' STRIKE'
 
     out = m.convert str, tt

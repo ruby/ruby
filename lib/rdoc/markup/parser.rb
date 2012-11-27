@@ -1,5 +1,4 @@
 require 'strscan'
-require 'rdoc/text'
 
 ##
 # A recursive-descent parser for RDoc markup.
@@ -52,7 +51,9 @@ class RDoc::Markup::Parser
   attr_reader :tokens
 
   ##
-  # Parses +str+ into a Document
+  # Parses +str+ into a Document.
+  #
+  # Use RDoc::Markup#parse instead of this method.
 
   def self.parse str
     parser = new
@@ -74,12 +75,15 @@ class RDoc::Markup::Parser
   # Creates a new Parser.  See also ::parse
 
   def initialize
-    @tokens = []
-    @current_token = nil
-    @debug = false
-
-    @line = 0
-    @line_pos = 0
+    @binary_input   = nil
+    @current_token  = nil
+    @debug          = false
+    @have_encoding  = Object.const_defined? :Encoding
+    @input_encoding = nil
+    @line           = 0
+    @line_pos       = 0
+    @s              = nil
+    @tokens         = []
   end
 
   ##
@@ -107,13 +111,13 @@ class RDoc::Markup::Parser
     p :list_start => margin if @debug
 
     list = RDoc::Markup::List.new
+    label = nil
 
     until @tokens.empty? do
       type, data, column, = get
 
       case type
-      when :BULLET, :LABEL, :LALPHA, :NOTE, :NUMBER, :UALPHA then
-
+      when *LIST_TOKENS then
         if column < margin || (list.type && list.type != type) then
           unget
           break
@@ -124,6 +128,8 @@ class RDoc::Markup::Parser
 
         case type
         when :NOTE, :LABEL then
+          label = [] unless label
+
           if peek_type == :NEWLINE then
             # description not on the same line as LABEL/NOTE
             # skip the trailing newline & any blank lines below
@@ -146,30 +152,33 @@ class RDoc::Markup::Parser
             # In all cases, we have an empty description.
             # In the last case only, we continue.
             if peek_type.nil? || column < margin then
-              empty = 1
+              empty = true
             elsif column == margin then
               case peek_type
               when type
-                empty = 2 # continue
+                empty = :continue
               when *LIST_TOKENS
-                empty = 1
+                empty = true
               else
-                empty = 0
+                empty = false
               end
             else
-              empty = 0
+              empty = false
             end
 
-            if empty > 0 then
-              item = RDoc::Markup::ListItem.new(data)
-              item << RDoc::Markup::BlankLine.new
-              list << item
-              break if empty == 1
-              next
+            if empty then
+              label << data
+              next if empty == :continue
+              break
             end
           end
         else
           data = nil
+        end
+
+        if label then
+          data = label << data
+          label = nil
         end
 
         list_item = RDoc::Markup::ListItem.new data
@@ -184,7 +193,13 @@ class RDoc::Markup::Parser
 
     p :list_end => margin if @debug
 
-    return nil if list.empty?
+    if list.empty? then
+      return nil unless label
+      return nil unless [:LABEL, :NOTE].include? list.type
+
+      list_item = RDoc::Markup::ListItem.new label, RDoc::Markup::BlankLine.new
+      list << list_item
+    end
 
     list
   end
@@ -200,14 +215,19 @@ class RDoc::Markup::Parser
     until @tokens.empty? do
       type, data, column, = get
 
-      if type == :TEXT && column == margin then
+      if type == :TEXT and column == margin then
         paragraph << data
-        skip :NEWLINE
+
+        break if peek_token.first == :BREAK
+
+        data << ' ' if skip :NEWLINE
       else
         unget
         break
       end
     end
+
+    paragraph.parts.last.sub!(/ \z/, '') # cleanup
 
     p :paragraph_end => margin if @debug
 
@@ -267,7 +287,7 @@ class RDoc::Markup::Parser
         peek_column ||= column + width
         indent = peek_column - column - width
         line << ' ' * indent
-      when :TEXT then
+      when :BREAK, :TEXT then
         line << data
       else # *LIST_TOKENS
         list_marker = case type
@@ -298,6 +318,19 @@ class RDoc::Markup::Parser
   end
 
   ##
+  # The character offset for the input string at the given +byte_offset+
+
+  def char_pos byte_offset
+    if @have_encoding then
+      matched = @binary_input[0, byte_offset]
+      matched.force_encoding @input_encoding
+      matched.length
+    else
+      byte_offset
+    end
+  end
+
+  ##
   # Pulls the next token from the stream.
 
   def get
@@ -321,7 +354,12 @@ class RDoc::Markup::Parser
     until @tokens.empty? do
       type, data, column, = get
 
-      if type == :NEWLINE then
+      case type
+      when :BREAK then
+        parent << RDoc::Markup::BlankLine.new
+        skip :NEWLINE, false
+        next
+      when :NEWLINE then
         # trailing newlines are skipped below, so this is a blank line
         parent << RDoc::Markup::BlankLine.new
         skip :NEWLINE, false
@@ -373,6 +411,21 @@ class RDoc::Markup::Parser
   end
 
   ##
+  # Creates the StringScanner
+
+  def setup_scanner input
+    @line     = 0
+    @line_pos = 0
+
+    if @have_encoding then
+      @input_encoding = input.encoding
+      @binary_input   = input.dup.force_encoding Encoding::BINARY
+    end
+
+    @s = StringScanner.new input
+  end
+
+  ##
   # Skips the next token if its type is +token_type+.
   #
   # Optionally raises an error if the next token is not of the expected type.
@@ -389,58 +442,55 @@ class RDoc::Markup::Parser
   # Turns text +input+ into a stream of tokens
 
   def tokenize input
-    s = StringScanner.new input
+    setup_scanner input
 
-    @line = 0
-    @line_pos = 0
-
-    until s.eos? do
-      pos = s.pos
+    until @s.eos? do
+      pos = @s.pos
 
       # leading spaces will be reflected by the column of the next token
       # the only thing we loose are trailing spaces at the end of the file
-      next if s.scan(/ +/)
+      next if @s.scan(/ +/)
 
       # note: after BULLET, LABEL, etc.,
       # indent will be the column of the next non-newline token
 
       @tokens << case
                  # [CR]LF => :NEWLINE
-                 when s.scan(/\r?\n/) then
-                   token = [:NEWLINE, s.matched, *token_pos(pos)]
-                   @line_pos = s.pos
+                 when @s.scan(/\r?\n/) then
+                   token = [:NEWLINE, @s.matched, *token_pos(pos)]
+                   @line_pos = char_pos @s.pos
                    @line += 1
                    token
                  # === text => :HEADER then :TEXT
-                 when s.scan(/(=+)(\s*)/) then
-                   level = s[1].length
+                 when @s.scan(/(=+)(\s*)/) then
+                   level = @s[1].length
                    header = [:HEADER, level, *token_pos(pos)]
 
-                   if s[2] =~ /^\r?\n/ then
-                     s.pos -= s[2].length
+                   if @s[2] =~ /^\r?\n/ then
+                     @s.pos -= @s[2].length
                      header
                    else
-                     pos = s.pos
-                     s.scan(/.*/)
+                     pos = @s.pos
+                     @s.scan(/.*/)
                      @tokens << header
-                     [:TEXT, s.matched.sub(/\r$/, ''), *token_pos(pos)]
+                     [:TEXT, @s.matched.sub(/\r$/, ''), *token_pos(pos)]
                    end
                  # --- (at least 3) and nothing else on the line => :RULE
-                 when s.scan(/(-{3,}) *$/) then
-                   [:RULE, s[1].length - 2, *token_pos(pos)]
+                 when @s.scan(/(-{3,}) *\r?$/) then
+                   [:RULE, @s[1].length - 2, *token_pos(pos)]
                  # * or - followed by white space and text => :BULLET
-                 when s.scan(/([*-]) +(\S)/) then
-                   s.pos -= s[2].bytesize # unget \S
-                   [:BULLET, s[1], *token_pos(pos)]
+                 when @s.scan(/([*-]) +(\S)/) then
+                   @s.pos -= @s[2].bytesize # unget \S
+                   [:BULLET, @s[1], *token_pos(pos)]
                  # A. text, a. text, 12. text => :UALPHA, :LALPHA, :NUMBER
-                 when s.scan(/([a-z]|\d+)\. +(\S)/i) then
+                 when @s.scan(/([a-z]|\d+)\. +(\S)/i) then
                    # FIXME if tab(s), the column will be wrong
                    # either support tabs everywhere by first expanding them to
                    # spaces, or assume that they will have been replaced
                    # before (and provide a check for that at least in debug
                    # mode)
-                   list_label = s[1]
-                   s.pos -= s[2].bytesize # unget \S
+                   list_label = @s[1]
+                   @s.pos -= @s[2].bytesize # unget \S
                    list_type =
                      case list_label
                      when /[a-z]/ then :LALPHA
@@ -451,14 +501,21 @@ class RDoc::Markup::Parser
                      end
                    [list_type, list_label, *token_pos(pos)]
                  # [text] followed by spaces or end of line => :LABEL
-                 when s.scan(/\[(.*?)\]( +|$)/) then
-                   [:LABEL, s[1], *token_pos(pos)]
+                 when @s.scan(/\[(.*?)\]( +|\r?$)/) then
+                   [:LABEL, @s[1], *token_pos(pos)]
                  # text:: followed by spaces or end of line => :NOTE
-                 when s.scan(/(.*?)::( +|$)/) then
-                   [:NOTE, s[1], *token_pos(pos)]
+                 when @s.scan(/(.*?)::( +|\r?$)/) then
+                   [:NOTE, @s[1], *token_pos(pos)]
                  # anything else: :TEXT
-                 else s.scan(/.*/)
-                   [:TEXT, s.matched.sub(/\r$/, ''), *token_pos(pos)]
+                 else @s.scan(/(.*?)(  )?\r?$/)
+                   token = [:TEXT, @s[1], *token_pos(pos)]
+
+                   if @s[2] then
+                     @tokens << token
+                     [:BREAK, @s[2], *token_pos(pos + @s[1].length)]
+                   else
+                     token
+                   end
                  end
     end
 
@@ -466,9 +523,12 @@ class RDoc::Markup::Parser
   end
 
   ##
-  # Calculates the column and line of the current token based on +offset+.
+  # Calculates the column (by character) and line of the current token from
+  # +scanner+ based on +byte_offset+.
 
-  def token_pos offset
+  def token_pos byte_offset
+    offset = char_pos byte_offset
+
     [offset - @line_pos, @line]
   end
 
@@ -483,15 +543,4 @@ class RDoc::Markup::Parser
   end
 
 end
-
-require 'rdoc/markup/blank_line'
-require 'rdoc/markup/document'
-require 'rdoc/markup/heading'
-require 'rdoc/markup/list'
-require 'rdoc/markup/list_item'
-require 'rdoc/markup/raw'
-require 'rdoc/markup/paragraph'
-require 'rdoc/markup/indented_paragraph'
-require 'rdoc/markup/rule'
-require 'rdoc/markup/verbatim'
 

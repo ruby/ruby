@@ -1,9 +1,6 @@
-require 'pp'
-require 'rubygems'
-require 'minitest/autorun'
-require 'rdoc/markup'
+require 'rdoc/test_case'
 
-class TestRDocMarkupParagraph < MiniTest::Unit::TestCase
+class TestRDocMarkupParagraph < RDoc::TestCase
 
   def test_accept
     visitor = Object.new
@@ -14,7 +11,21 @@ class TestRDocMarkupParagraph < MiniTest::Unit::TestCase
 
     paragraph.accept visitor
 
-    assert_equal paragraph, visitor.obj
+    assert_same paragraph, visitor.obj
+  end
+
+  def test_text
+    paragraph = para('hello', ' world')
+
+    assert_equal 'hello world', paragraph.text
+  end
+
+  def test_text_break
+    paragraph = para('hello', hard_break, 'world')
+
+    assert_equal 'helloworld', paragraph.text
+
+    assert_equal "hello\nworld", paragraph.text("\n")
   end
 
 end

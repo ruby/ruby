@@ -1,16 +1,12 @@
-require 'minitest/autorun'
-require 'rdoc/rdoc'
-require 'rdoc/generator/darkfish'
-require 'tmpdir'
-require 'fileutils'
+require 'rdoc/test_case'
 
-class TestRDocGeneratorDarkfish < MiniTest::Unit::TestCase
+class TestRDocGeneratorDarkfish < RDoc::TestCase
 
   def setup
-    @pwd = Dir.pwd
+    super
+
     @lib_dir = "#{@pwd}/lib"
     $LOAD_PATH.unshift @lib_dir # ensure we load from this RDoc
-    RDoc::TopLevel.reset
 
     @options = RDoc::Options.new
     @options.option_parser = OptionParser.new
@@ -22,22 +18,27 @@ class TestRDocGeneratorDarkfish < MiniTest::Unit::TestCase
     @options.generator = RDoc::Generator::Darkfish
 
     $LOAD_PATH.each do |path|
-      darkfish_dir = File.join path, 'rdoc/generator/template/darkfish'
+      darkfish_dir = File.join path, 'rdoc/generator/template/darkfish/'
       next unless File.directory? darkfish_dir
       @options.template_dir = darkfish_dir
       break
     end
 
-    rd = RDoc::RDoc.new
-    rd.options = @options
-    RDoc::RDoc.current = rd
+    @rdoc.options = @options
 
-    @g = @options.generator.new @options
+    @g = @options.generator.new @store, @options
+    @rdoc.generator = @g
 
-    rd.generator = @g
+    @top_level = @store.add_file 'file.rb'
+    @top_level.parser = RDoc::Parser::Ruby
+    @klass = @top_level.add_class RDoc::NormalClass, 'Klass'
 
-    @top_level = RDoc::TopLevel.new 'file.rb'
-    @klass = @top_level.add_class RDoc::NormalClass, 'Object'
+    @alias_constant = RDoc::Constant.new 'A', nil, ''
+    @alias_constant.record_location @top_level
+
+    @top_level.add_constant @alias_constant
+
+    @klass.add_module_alias @klass, 'A', @top_level
 
     @meth = RDoc::AnyMethod.new nil, 'method'
     @meth_bang = RDoc::AnyMethod.new nil, 'method!'
@@ -49,9 +50,16 @@ class TestRDocGeneratorDarkfish < MiniTest::Unit::TestCase
 
     @ignored = @top_level.add_class RDoc::NormalClass, 'Ignored'
     @ignored.ignore
+
+    @store.complete :private
+
+    @object      = @store.find_class_or_module 'Object'
+    @klass_alias = @store.find_class_or_module 'Klass::A'
   end
 
   def teardown
+    super
+
     $LOAD_PATH.shift
     Dir.chdir @pwd
     FileUtils.rm_rf @tmpdir
@@ -65,15 +73,23 @@ class TestRDocGeneratorDarkfish < MiniTest::Unit::TestCase
     refute File.exist?(path), "#{path} exists"
   end
 
+  def mu_pp obj
+    s = ''
+    s = PP.pp obj, s
+    s = s.force_encoding Encoding.default_external if defined? Encoding
+    s.chomp
+  end
+
   def test_generate
-    top_level = RDoc::TopLevel.new 'file.rb'
+    top_level = @store.add_file 'file.rb'
     top_level.add_class @klass.class, @klass.name
 
-    @g.generate [top_level]
+    @g.generate
 
     assert_file 'index.html'
     assert_file 'Object.html'
-    assert_file 'file_rb.html'
+    assert_file 'table_of_contents.html'
+    assert_file 'js/search_index.js'
 
     encoding = if Object.const_defined? :Encoding then
                  Regexp.escape Encoding.default_external.name
@@ -85,37 +101,73 @@ class TestRDocGeneratorDarkfish < MiniTest::Unit::TestCase
                  File.read('index.html'))
     assert_match(/<meta content="text\/html; charset=#{encoding}"/,
                  File.read('Object.html'))
-    assert_match(/<meta content="text\/html; charset=#{encoding}"/,
-                 File.read('file_rb.html'))
 
     refute_match(/Ignored/, File.read('index.html'))
   end
 
   def test_generate_dry_run
-    @options.dry_run = true
-    top_level = RDoc::TopLevel.new 'file.rb'
+    @g.dry_run = true
+    top_level = @store.add_file 'file.rb'
     top_level.add_class @klass.class, @klass.name
 
-    @g.generate [top_level]
+    @g.generate
 
     refute_file 'index.html'
     refute_file 'Object.html'
-    refute_file 'file_rb.html'
+  end
+
+  def test_generate_static
+    FileUtils.mkdir_p 'dir/images'
+    FileUtils.touch 'dir/images/image.png'
+    FileUtils.mkdir_p 'file'
+    FileUtils.touch 'file/file.txt'
+
+    @options.static_path = [
+      File.expand_path('dir'),
+      File.expand_path('file/file.txt'),
+    ]
+
+    @g.generate
+
+    assert_file 'images/image.png'
+    assert_file 'file.txt'
+  end
+
+  def test_generate_static_dry_run
+    FileUtils.mkdir 'static'
+    FileUtils.touch 'static/image.png'
+
+    @options.static_path = [File.expand_path('static')]
+    @g.dry_run = true
+
+    @g.generate
+
+    refute_file 'image.png'
+  end
+
+  def test_setup
+    @g.setup
+
+    assert_equal [@klass_alias, @ignored, @klass, @object],
+                 @g.classes.sort_by { |klass| klass.full_name }
+    assert_equal [@top_level],                           @g.files
+    assert_equal [@meth, @meth, @meth_bang, @meth_bang], @g.methods
+    assert_equal [@klass_alias, @klass, @object], @g.modsort
   end
 
   def test_template_for
-    classpage = Pathname.new @options.template_dir + '/classpage.rhtml'
+    classpage = Pathname.new @options.template_dir + 'class.rhtml'
 
-    template = @g.send(:template_for, classpage)
+    template = @g.send(:template_for, classpage, true, RDoc::ERBIO)
     assert_kind_of RDoc::ERBIO, template
 
     assert_same template, @g.send(:template_for, classpage)
   end
 
   def test_template_for_dry_run
-    classpage = Pathname.new @options.template_dir + '/classpage.rhtml'
+    classpage = Pathname.new @options.template_dir + 'class.rhtml'
 
-    template = @g.send(:template_for, classpage)
+    template = @g.send(:template_for, classpage, true, ERB)
     assert_kind_of ERB, template
 
     assert_same template, @g.send(:template_for, classpage)

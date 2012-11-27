@@ -1,5 +1,12 @@
 ##
 # An item within a List that contains paragraphs, headings, etc.
+#
+# For BULLET, NUMBER, LALPHA and UALPHA lists, the label will always be nil.
+# For NOTE and LABEL lists, the list label may contain:
+#
+# * a single String for a single label
+# * an Array of Strings for a list item with multiple terms
+# * nil for an extra description attached to a previously labeled list item
 
 class RDoc::Markup::ListItem
 
@@ -19,7 +26,7 @@ class RDoc::Markup::ListItem
   def initialize label = nil, *parts
     @label = label
     @parts = []
-    @parts.push(*parts)
+    @parts.concat parts
   end
 
   ##
@@ -64,8 +71,14 @@ class RDoc::Markup::ListItem
 
   def pretty_print q # :nodoc:
     q.group 2, '[item: ', ']' do
-      if @label then
-        q.text @label
+      case @label
+      when Array then
+        q.pp @label
+        q.text ';'
+        q.breakable
+      when String then
+        q.pp @label
+        q.text ';'
         q.breakable
       end
 
@@ -79,7 +92,7 @@ class RDoc::Markup::ListItem
   # Adds +parts+ to the ListItem
 
   def push *parts
-    @parts.push(*parts)
+    @parts.concat parts
   end
 
 end

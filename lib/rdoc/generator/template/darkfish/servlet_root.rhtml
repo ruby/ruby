@@ -1,0 +1,37 @@
+<body>
+<nav id="metadata">
+<%= render '_sidebar_search.rhtml' %>
+
+<%= render '_sidebar_installed.rhtml' %>
+</nav>
+
+<div id="documentation" class="description">
+  <h1>Local RDoc Documentation</h1>
+
+  <p>Here you can browse local documentation from the ruby standard library and
+  your installed gems.
+
+<% gems = installed.select { |_, _, _, type,| type == :gem } %>
+<% missing = gems.reject { |_, _, exists,| exists } %>
+<% unless missing.empty? then %>
+  <h2>Missing Gem Documentation</h2>
+
+  <p>You are missing documentation for some of your installed gems.
+  You can install missing documentation for gems by running
+  <kbd>gem rdoc --all</kbd>.  After installing the missing documentation you
+  only need to reload this page.  The newly created documentation will
+  automatically appear.
+
+  <p>You can also install documentation for a specific gem by running one of
+  the following commands.
+
+  <ul>
+  <% names = missing.map { |name,| name.sub(/-([^-]*)$/, '') }.uniq %>
+  <% names.each do |name| %>
+    <li><kbd>gem rdoc <%=h name %></kbd>
+  <% end %>
+  </ul>
+<% end %>
+
+</div>
+

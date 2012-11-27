@@ -1,26 +1,21 @@
 ENV['RDOC_TEST'] = 'yes'
 
-require 'rubygems'
-require 'minitest/autorun'
 require 'rdoc'
-require 'rdoc/stats'
-require 'rdoc/options'
-require 'rdoc/code_objects'
-require 'rdoc/parser/ruby'
 require File.expand_path '../xref_data', __FILE__
 
-class XrefTestCase < MiniTest::Unit::TestCase
+class XrefTestCase < RDoc::TestCase
 
   def setup
-    RDoc::TopLevel.reset
-
-    @file_name = 'xref_data.rb'
-    @xref_data = RDoc::TopLevel.new @file_name
+    super
 
     @options = RDoc::Options.new
     @options.quiet = true
 
-    stats = RDoc::Stats.new 0
+    @file_name = 'xref_data.rb'
+    @xref_data = @store.add_file @file_name
+    @top_level = @xref_data
+
+    stats = RDoc::Stats.new @store, 0
 
     parser = RDoc::Parser::Ruby.new @xref_data, @file_name, XREF_DATA, @options,
                                     stats
@@ -30,9 +25,8 @@ class XrefTestCase < MiniTest::Unit::TestCase
     generator = Object.new
     def generator.class_dir() nil end
     def generator.file_dir() nil end
-    rdoc = RDoc::RDoc.new
-    RDoc::RDoc.current = rdoc
-    rdoc.generator = generator
+    @rdoc.options = @options
+    @rdoc.generator = generator
 
     @c1    = @xref_data.find_module_named 'C1'
     @c1_m  = @c1.method_list.last  # C1#m

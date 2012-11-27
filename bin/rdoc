@@ -5,8 +5,6 @@
 #
 #  Copyright (c) 2003 Dave Thomas
 #  Released under the same terms as Ruby
-#
-#  $Revision$
 
 begin
   gem 'rdoc'
@@ -20,6 +18,10 @@ require 'rdoc/rdoc'
 begin
   r = RDoc::RDoc.new
   r.document ARGV
+rescue Errno::ENOSPC
+  $stderr.puts 'Ran out of space creating documentation'
+  $stderr.puts
+  $stderr.puts 'Please free up some space and try again'
 rescue SystemExit
   raise
 rescue Exception => e
