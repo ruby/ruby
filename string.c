@@ -6304,7 +6304,7 @@ static VALUE
 rb_str_enumerate_bytes(VALUE str, int wantarray)
 {
     long i;
-    VALUE ary = 0;
+    VALUE UNINITIALIZED_VAR(ary);
 
     if (rb_block_given_p()) {
 	if (wantarray) {
