@@ -876,6 +876,9 @@ class TestThreadGroup < Test::Unit::TestCase
     }
   end
 
-
-
+  def test_thread_join_current
+    assert_raises(ThreadError) do
+      Thread.current.join
+    end
+  end
 end

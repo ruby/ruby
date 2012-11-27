@@ -1,3 +1,11 @@
+Tue Nov 27 09:24:47 2012  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (thread_join): raises ThreadError if target thread
+	  is a current thread.
+	* test/ruby/test_thread.rb (test_thread_join_current):
+	  test for the above.
+	* NEWS: news for the above.
+
 Tue Nov 27 10:37:44 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 
 	* ext/fiddle/handle.c: Make Fiddle independent of DL, copy DL::Handle

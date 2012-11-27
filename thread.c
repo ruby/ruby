@@ -736,6 +736,10 @@ thread_join(rb_thread_t *target_th, double delay)
     rb_thread_t *th = GET_THREAD();
     struct join_arg arg;
 
+    if (th == target_th) {
+	rb_raise(rb_eThreadError, "Target thread must not be current thread");
+    }
+
     arg.target = target_th;
     arg.waiting = th;
     arg.limit = timeofday() + delay;
