@@ -380,10 +380,12 @@ rb_thread_terminate_all(void)
 
     vm->inhibit_thread_creation = 1;
 
+  retry:
+    thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
+    st_foreach(vm->living_threads, terminate_i, (st_data_t)th);
+
     while (!rb_thread_alone()) {
 	int state;
-	thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
-	st_foreach(vm->living_threads, terminate_i, (st_data_t)th);
 
 	TH_PUSH_TAG(th);
 	if ((state = TH_EXEC_TAG()) == 0) {
@@ -391,6 +393,10 @@ rb_thread_terminate_all(void)
 	    RUBY_VM_CHECK_INTS_BLOCKING(th);
 	}
 	TH_POP_TAG();
+
+	if (state) {
+	    goto retry;
+	}
     }
 }
 

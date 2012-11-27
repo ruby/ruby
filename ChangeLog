@@ -1,3 +1,8 @@
+Tue Nov 27 12:17:11 2012  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_thread_terminate_all): retry broadcast only when
+	  an exception is raised.
+
 Tue Nov 27 12:02:25 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_terminate_all): broadcast terminate event
