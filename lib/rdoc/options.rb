@@ -1,4 +1,5 @@
 require 'optparse'
+require 'pathname'
 
 ##
 # RDoc::Options handles the parsing and storage of options
@@ -95,6 +96,7 @@ class RDoc::Options
     option_parser
     pipe
     rdoc_include
+    root
     static_path
     stylesheet_url
     template
@@ -103,6 +105,12 @@ class RDoc::Options
     verbosity
     write_options
   ]
+
+  ##
+  # Option validator for OptionParser that matches a directory that exists on
+  # the filesystem.
+
+  Directory = Object.new
 
   ##
   # Option validator for OptionParser that matches a file or directory that
@@ -231,6 +239,13 @@ class RDoc::Options
   attr_accessor :rdoc_include
 
   ##
+  # Root of the source documentation will be generated for.  Set this when
+  # building documentation outside the source directory.  Defaults to the
+  # current directory.
+
+  attr_accessor :root
+
+  ##
   # Include the '#' at the front of hyperlinked instance method names
 
   attr_accessor :show_hash
@@ -304,6 +319,7 @@ class RDoc::Options
     @op_dir = nil
     @pipe = false
     @rdoc_include = []
+    @root = Pathname(Dir.pwd)
     @show_hash = false
     @static_path = []
     @stylesheet_url = nil # TODO remove in RDoc 4
@@ -562,6 +578,14 @@ Usage: #{opt.program_name} [options] [names...]
         end
       end
 
+      opt.accept Directory do |directory|
+        directory = File.expand_path directory
+
+        raise OptionParser::InvalidArgument unless File.directory? directory
+
+        directory
+      end
+
       opt.accept Path do |path|
         path = File.expand_path path
 
@@ -671,6 +695,17 @@ Usage: #{opt.program_name} [options] [names...]
              "The default is rdoc.  Valid values are:",
              markup_formats.join(', ')) do |value|
         @markup = value
+      end
+
+      opt.separator nil
+
+      opt.on("--root=ROOT", Directory,
+             "Root of the source tree documentation",
+             "will be generated for.  Set this when",
+             "building documentation outside the",
+             "source directory.  Default is the",
+             "current directory.") do |root|
+        @root = Pathname(root)
       end
 
       opt.separator nil

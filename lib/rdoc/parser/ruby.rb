@@ -785,7 +785,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       indent.set_text " " * column
 
       position_comment = TkCOMMENT.new 0, line_no, 1
-      position_comment.set_text "# File #{@top_level.absolute_name}, line #{line_no}"
+      position_comment.set_text "# File #{@top_level.relative_name}, line #{line_no}"
       meth.add_tokens [position_comment, NEWLINE_TOKEN, indent]
 
       meth.params = ''
@@ -843,7 +843,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     indent.set_text " " * offset
 
     position_comment = TkCOMMENT.new 0, line_no, 1
-    position_comment.set_text "# File #{@top_level.absolute_name}, line #{line_no}"
+    position_comment.set_text "# File #{@top_level.relative_name}, line #{line_no}"
     meth.add_tokens [position_comment, NEWLINE_TOKEN, indent]
 
     meth.call_seq = signature
@@ -1015,7 +1015,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     indent.set_text " " * column
 
     position_comment = TkCOMMENT.new 0, line_no, 1
-    position_comment.value = "# File #{@top_level.absolute_name}, line #{line_no}"
+    position_comment.value = "# File #{@top_level.relative_name}, line #{line_no}"
     meth.add_tokens [position_comment, NEWLINE_TOKEN, indent]
     meth.add_tokens @token_stream
 
@@ -1171,7 +1171,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     indent.set_text " " * column
 
     token = TkCOMMENT.new 0, line_no, 1
-    token.set_text "# File #{@top_level.absolute_name}, line #{line_no}"
+    token.set_text "# File #{@top_level.relative_name}, line #{line_no}"
     meth.add_tokens [token, NEWLINE_TOKEN, indent]
     meth.add_tokens @token_stream
 

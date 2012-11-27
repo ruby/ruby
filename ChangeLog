@@ -1,3 +1,10 @@
+Tue Nov 27 17:43:46 2012  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/*:  Added --root option for building documentation outside
+	  the source directory.
+	* test/rdoc/*:  ditto
+	* common.mk (rdoc):  Added --root to rdoc rule
+
 Tue Nov 27 16:24:45 2012  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rdoc/test_rdoc_ri_paths.rb:  Fixed duplicate path bug which

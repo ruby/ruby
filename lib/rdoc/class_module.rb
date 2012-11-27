@@ -304,7 +304,7 @@ class RDoc::ClassModule < RDoc::Context
       end,
       @sections.values,
       @in_files.map do |tl|
-        tl.absolute_name
+        tl.relative_name
       end,
       parent.full_name,
       parent.class,

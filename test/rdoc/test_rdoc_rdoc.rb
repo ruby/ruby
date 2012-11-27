@@ -141,6 +141,50 @@ class TestRDocRDoc < RDoc::TestCase
     assert_match %r%/dev/stdin$%,       err
   end
 
+  def test_parse_file
+    pwd = Dir.pwd
+
+    @rdoc.store = RDoc::Store.new
+
+    temp_dir do |dir|
+      @rdoc.options.root = Pathname(Dir.pwd)
+
+      open 'test.txt', 'w' do |io|
+        io.puts 'hi'
+      end
+
+      test_txt = File.join dir, 'test.txt'
+
+      top_level = @rdoc.parse_file 'test.txt'
+
+      assert_equal 'test.txt', top_level.absolute_name
+      assert_equal 'test.txt', top_level.relative_name
+    end
+  end
+
+  def test_parse_file_relative
+    pwd = Dir.pwd
+
+    @rdoc.store = RDoc::Store.new
+
+    temp_dir do |dir|
+      @rdoc.options.root = Pathname(dir)
+
+      open 'test.txt', 'w' do |io|
+        io.puts 'hi'
+      end
+
+      test_txt = File.join dir, 'test.txt'
+
+      Dir.chdir pwd do
+        top_level = @rdoc.parse_file test_txt
+
+        assert_equal test_txt,   top_level.absolute_name
+        assert_equal 'test.txt', top_level.relative_name
+      end
+    end
+  end
+
   def test_parse_file_encoding
     skip "Encoding not implemented" unless Object.const_defined? :Encoding
     @rdoc.options.encoding = Encoding::ISO_8859_1

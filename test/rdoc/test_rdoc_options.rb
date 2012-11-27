@@ -430,6 +430,19 @@ rdoc_include:
     assert_equal 'tomdoc', @options.markup
   end
 
+  def test_parse_root
+    assert_equal Pathname(Dir.pwd), @options.root
+
+    out, err = capture_io do
+      @options.parse %W[--root #{Dir.tmpdir}]
+    end
+
+    assert_empty out
+    assert_empty err
+
+    assert_equal Pathname(Dir.tmpdir), @options.root
+  end
+
   def test_parse_template
     out, err = capture_io do
       @options.parse %w[--template darkfish]

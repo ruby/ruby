@@ -2,6 +2,7 @@ require 'rdoc'
 
 require 'find'
 require 'fileutils'
+require 'pathname'
 require 'time'
 
 ##
@@ -345,7 +346,10 @@ option)
 
     return unless content
 
-    top_level = @store.add_file filename
+    filename_path = Pathname(filename).expand_path
+    relative_path = filename_path.relative_path_from @options.root
+
+    top_level = @store.add_file filename, relative_path.to_s
 
     parser = RDoc::Parser.for top_level, filename, content, @options, @stats
 

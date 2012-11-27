@@ -9,6 +9,20 @@ class TestRDocTopLevel < XrefTestCase
     @top_level.parser = RDoc::Parser::Ruby
   end
 
+  def test_initialize
+    t = RDoc::TopLevel.new 'path/file.rb'
+
+    assert_equal 'path/file.rb', t.absolute_name
+    assert_equal 'path/file.rb', t.relative_name
+  end
+
+  def test_initialize_relative
+    t = RDoc::TopLevel.new 'path/file.rb', 'file.rb'
+
+    assert_equal 'path/file.rb', t.absolute_name
+    assert_equal 'file.rb',      t.relative_name
+  end
+
   def test_add_alias
     a = RDoc::Alias.new nil, 'old', 'new', nil
     @top_level.add_alias a

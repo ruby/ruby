@@ -107,7 +107,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
       @block_params,
       aliases,
       @params,
-      @file.absolute_name,
+      @file.relative_name,
       @calls_super,
       @parent.name,
       @parent.class,

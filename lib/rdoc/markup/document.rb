@@ -96,7 +96,7 @@ class RDoc::Markup::Document
   def file= location
     @file = case location
             when RDoc::TopLevel then
-              location.absolute_name
+              location.relative_name
             else
               location
             end

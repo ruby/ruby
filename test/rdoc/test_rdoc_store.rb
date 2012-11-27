@@ -127,6 +127,21 @@ class TestRDocStore < XrefTestCase
     refute_same top_level, @store.add_file('other.rb')
   end
 
+  def test_add_file_relative
+    top_level = @store.add_file 'path/file.rb', 'file.rb'
+
+    assert_kind_of RDoc::TopLevel, top_level
+    assert_equal @store, top_level.store
+
+    assert_equal 'path/file.rb', top_level.absolute_name
+    assert_equal 'file.rb',      top_level.relative_name
+
+    assert_includes @store.all_files, top_level
+
+    assert_same top_level, @store.add_file('file.rb')
+    refute_same top_level, @store.add_file('other.rb')
+  end
+
   def test_all_classes_and_modules
     expected = %w[
       C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1

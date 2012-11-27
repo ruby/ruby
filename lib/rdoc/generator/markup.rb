@@ -159,9 +159,9 @@ class RDoc::TopLevel
     url = @store.rdoc.options.webcvs
 
     if /%s/ =~ url then
-      url % @absolute_name
+      url % @relative_name
     else
-      url + @absolute_name
+      url + @relative_name
     end
   end
 

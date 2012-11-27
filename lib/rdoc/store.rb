@@ -139,11 +139,11 @@ class RDoc::Store
   # Adds the file with +name+ as an RDoc::TopLevel to the store.  Returns the
   # created RDoc::TopLevel.
 
-  def add_file name
-    unless top_level = @files_hash[name] then
-      top_level = RDoc::TopLevel.new name
+  def add_file absolute_name, relative_name = absolute_name
+    unless top_level = @files_hash[relative_name] then
+      top_level = RDoc::TopLevel.new absolute_name, relative_name
       top_level.store = self
-      @files_hash[name] = top_level
+      @files_hash[relative_name] = top_level
     end
 
     top_level

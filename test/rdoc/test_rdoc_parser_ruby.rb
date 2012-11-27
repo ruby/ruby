@@ -1026,7 +1026,7 @@ EOF
 
     stream = [
       tk(:COMMENT, 0, 1, 1, nil,
-         "# File #{@top_level.absolute_name}, line 1"),
+         "# File #{@top_level.relative_name}, line 1"),
       RDoc::Parser::Ruby::NEWLINE_TOKEN,
       tk(:SPACE,   0, 1, 1, nil, ''),
     ]
@@ -1199,7 +1199,7 @@ EOF
 
     stream = [
       tk(:COMMENT,     0, 1, 1,  nil,
-         "# File #{@top_level.absolute_name}, line 1"),
+         "# File #{@top_level.relative_name}, line 1"),
       RDoc::Parser::Ruby::NEWLINE_TOKEN,
       tk(:SPACE,       0, 1, 1,  nil, ''),
       tk(:IDENTIFIER,  0, 1, 0,  'add_my_method', 'add_my_method'),
@@ -1397,7 +1397,7 @@ end
 
     stream = [
       tk(:COMMENT,     0, 1, 1,  nil,
-         "# File #{@top_level.absolute_name}, line 1"),
+         "# File #{@top_level.relative_name}, line 1"),
       RDoc::Parser::Ruby::NEWLINE_TOKEN,
       tk(:SPACE,       0, 1, 1,  nil,   ''),
       tk(:DEF,         0, 1, 0,  'def', 'def'),

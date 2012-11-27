@@ -109,7 +109,7 @@ class RDoc::Constant < RDoc::CodeObject
       @visibility,
       alias_name,
       parse(@comment),
-      @file.absolute_name,
+      @file.relative_name,
       parent.name,
       parent.class,
       section.title,

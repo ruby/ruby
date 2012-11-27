@@ -35,14 +35,16 @@ class RDoc::TopLevel < RDoc::Context
   attr_accessor :parser
 
   ##
-  # Creates a new TopLevel for +file_name+
+  # Creates a new TopLevel for the file at +absolute_name+.  If documentation
+  # is being generated outside the source dir +relative_name+ is relative to
+  # the source directory.
 
-  def initialize file_name
+  def initialize absolute_name, relative_name = absolute_name
     super()
     @name = nil
-    @relative_name = file_name
-    @absolute_name = file_name
-    @file_stat     = File.stat(file_name) rescue nil # HACK for testing
+    @absolute_name = absolute_name
+    @relative_name = relative_name
+    @file_stat     = File.stat(absolute_name) rescue nil # HACK for testing
     @diagram       = nil
     @parser        = nil
 
@@ -50,10 +52,10 @@ class RDoc::TopLevel < RDoc::Context
   end
 
   ##
-  # An RDoc::TopLevel is equal to another with the same absolute_name
+  # An RDoc::TopLevel is equal to another with the same relative_name
 
   def == other
-    self.class === other and @absolute_name == other.absolute_name
+    self.class === other and @relative_name == other.relative_name
   end
 
   alias eql? ==
@@ -106,7 +108,7 @@ class RDoc::TopLevel < RDoc::Context
   # Base name of this file
 
   def base_name
-    File.basename @absolute_name
+    File.basename @relative_name
   end
 
   alias name base_name
@@ -152,10 +154,10 @@ class RDoc::TopLevel < RDoc::Context
 
   ##
   # An RDoc::TopLevel has the same hash as another with the same
-  # absolute_name
+  # relative_name
 
   def hash
-    @absolute_name.hash
+    @relative_name.hash
   end
 
   ##
@@ -188,7 +190,7 @@ class RDoc::TopLevel < RDoc::Context
   def marshal_dump
     [
       MARSHAL_VERSION,
-      @absolute_name,
+      @relative_name,
       @parser,
       parse(@comment),
     ]
@@ -223,7 +225,7 @@ class RDoc::TopLevel < RDoc::Context
   # Base name of this file without the extension
 
   def page_name
-    basename = File.basename @absolute_name
+    basename = File.basename @relative_name
     basename =~ /\.[^.]*$/
 
     $` || basename
