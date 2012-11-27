@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 =begin
 = $RCSfile$ -- Generator for Makefile
 
@@ -15,7 +16,7 @@
 =end
 
 require "mkmf"
-require_relative 'deprecation'
+require File.expand_path('../deprecation', __FILE__)
 
 dir_config("openssl")
 dir_config("kerberos")

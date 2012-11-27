@@ -1,3 +1,9 @@
+Tue Nov 27 09:58:48 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/digest/*/extconf.rb, ext/openssl/extconf.rb: get git rid of
+	  post-1.8 feature require_relative for cross compilation.
+	  [ruby-core:50160] [Bug #7439]
+
 Tue Nov 27 09:17:59 2012  Koichi Sasada  <ko1@atdot.net>
 
 	* NEWS: add TracePont.

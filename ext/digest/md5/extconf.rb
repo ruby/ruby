@@ -1,3 +1,4 @@
+# -*- coding: us-ascii -*-
 # $RoughId: extconf.rb,v 1.3 2001/08/14 19:54:51 knu Exp $
 # $Id$
 
@@ -10,7 +11,7 @@ $objs = [ "md5init.#{$OBJEXT}" ]
 
 dir_config("openssl")
 pkg_config("openssl")
-require_relative '../../openssl/deprecation'
+require File.expand_path('../../../openssl/deprecation', __FILE__)
 
 if !with_config("bundled-md5") &&
     have_library("crypto") && OpenSSL.check_func("MD5_Transform", "openssl/md5.h")
