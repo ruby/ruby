@@ -195,7 +195,9 @@ rdoc_include:
   def test_parse_copy_files_directory_absolute
     @options.parse %w[--copy-files /]
 
-    assert_equal ['/'], @options.static_path
+    assert_equal 1, @options.static_path.length
+
+    assert_match %r%^([A-Z]:)?/$%, @options.static_path.first
   end
 
   def test_parse_coverage

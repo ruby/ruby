@@ -92,7 +92,7 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     assert_file 'js/search_index.js'
 
     encoding = if Object.const_defined? :Encoding then
-                 Regexp.escape Encoding.default_external.name
+                 Regexp.escape Encoding::UTF_8.name
                else
                  Regexp.escape 'UTF-8'
                end

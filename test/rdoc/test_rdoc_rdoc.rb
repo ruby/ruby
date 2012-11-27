@@ -157,6 +157,8 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_parse_file_forbidden
+    skip 'chmod not supported' if Gem.win_platform?
+
     @rdoc.store = RDoc::Store.new
 
     Tempfile.open 'test.txt' do |io|
@@ -196,7 +198,7 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_remove_unparseable_tags_emacs
     temp_dir do
-      open 'TAGS', 'w' do |io| # emacs
+      open 'TAGS', 'wb' do |io| # emacs
         io.write "\f\nlib/foo.rb,43\n"
       end
 
